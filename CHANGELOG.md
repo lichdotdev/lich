@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Project tabs can be pinned from their right-click menu. Pinned tabs stay together at the left of the strip and close only from that menu; pinning is kept when the window is reopened.
 - The state menu on the Pulls screen has Approved: the open pull requests whose review is approved.
 - A page an agent makes to show you, a report, a diagram, a mockup, opens in its session's browser from a folder of the session's own instead of landing in your checkout, on every provider. The folder stays out of git, survives a restart and a closed card, and goes when the session is deleted. Claude Code may still publish a page to claude.ai with its own Artifact tool; ask for it locally if you want it in the tab.
 - The dock has an Artifacts tab: the pages the active session made, and below them those of the other open sessions in the project. A click opens one in the session's browser, and Attach to prompt hands a page made in one session to another, on any provider: it is copied into the session's own folder and its path pasted at the prompt, with a line saying it is a copy. A footer button opens the tab; a footer layout you already saved lists it under Available.

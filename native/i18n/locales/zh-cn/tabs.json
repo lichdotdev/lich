@@ -20,10 +20,13 @@
     "closeAnyway": "仍然关闭"
   },
   "topbarTabs": {
+    "pinProject": "固定标签页",
+    "unpinProject": "取消固定标签页",
     "projectSettings": "项目设置…",
     "closeProject": "关闭项目"
   },
   "topbarApply": {
+    "pinProjectFailed": "无法保存固定的标签页：{error}",
     "closeProjectFailed": "无法关闭项目：{error}",
     "reorderFailed": "无法重新排序项目：{error}"
   }

@@ -20,10 +20,13 @@
     "closeAnyway": "Cerrar de todos modos"
   },
   "topbarTabs": {
+    "pinProject": "Fijar pestaña",
+    "unpinProject": "Desfijar pestaña",
     "projectSettings": "Ajustes del proyecto…",
     "closeProject": "Cerrar proyecto"
   },
   "topbarApply": {
+    "pinProjectFailed": "No se pudieron guardar las pestañas fijadas: {error}",
     "closeProjectFailed": "No se pudo cerrar el proyecto: {error}",
     "reorderFailed": "No se pudieron reordenar los proyectos: {error}"
   }

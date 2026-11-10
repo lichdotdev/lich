@@ -59,6 +59,65 @@ func TestProjectTabsBadgeEveryTabButTheActive(t *testing.T) {
 	}
 }
 
+func TestProjectTabsGroupPinnedProjectsFirstWithoutChangingTheirRelativeOrder(t *testing.T) {
+	m := modelOn("b")
+	m.pinnedProjects = map[string]bool{"a": true, "c": true}
+	tabs, active := m.projectTabs()
+	ids := make([]string, len(tabs))
+	for i, tab := range tabs {
+		ids[i] = tab.ID
+	}
+	if !slices.Equal(ids, []string{"a", "c", "b"}) || active != "b" || !tabs[0].pinned || !tabs[1].pinned || tabs[2].pinned {
+		t.Errorf("tabs %+v, active %q; want pinned a,c before b", tabs, active)
+	}
+	m.setProjectPinned("b", true)
+	if got, _ := m.projectTabs(); !slices.Equal([]string{got[0].ID, got[1].ID, got[2].ID}, []string{"a", "b", "c"}) {
+		t.Errorf("pinning b did not put it in the pinned group: %+v", got)
+	}
+	m.setProjectPinned("b", false)
+	if got := m.moveProject("c", "a"); !slices.Equal(got, []string{"c", "a", "b"}) {
+		t.Errorf("moving a pinned tab within its group stores %v, want c,a,b", got)
+	}
+}
+
+func TestPinnedProjectsPersistAsGlobalSetting(t *testing.T) {
+	var stored string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/rpc/store.SetSetting":
+			var args []api.SetSettingOptions
+			if err := json.NewDecoder(r.Body).Decode(&args); err != nil {
+				t.Errorf("decode SetSetting: %v", err)
+			} else if len(args) != 1 || args[0].Key != pinnedProjectsKey || args[0].ProjectID != "" {
+				t.Errorf("SetSetting args %+v, want global %s", args, pinnedProjectsKey)
+			} else {
+				stored = args[0].Value
+			}
+			_ = json.NewEncoder(w).Encode(nil)
+		case "/rpc/store.GetSetting":
+			_ = json.NewEncoder(w).Encode(stored)
+		default:
+			t.Errorf("unexpected call %s", r.URL.Path)
+		}
+	}))
+	defer srv.Close()
+	c := clientOf(srv)
+	m := modelOn("a")
+	m.client = c
+	m.setProjectPinned("a", true)
+	m.setProjectPinned("b", true)
+	if err := m.persistPinnedProjects(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	got, err := loadPinnedProjects(context.Background(), c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !got["a"] || !got["b"] || len(got) != 2 {
+		t.Errorf("loaded pinned projects %v, want a and b", got)
+	}
+}
+
 func TestCloseProjectMovesToItsNeighbour(t *testing.T) {
 	cases := []struct {
 		name, active, close string

@@ -1120,6 +1120,10 @@ work when nobody knows it and that the call site never shows. The mechanism and 
 
 ## Window, sidebar and settings
 
+- **Pinned project tabs are a window preference, not a close lock** (`native/cmd/lich-native/projects.go`,
+  `pinnedProjectsKey`): the global setting keeps project ids even while their tabs are closed, so reopening one
+  brings it back to the pinned group. The tab's × is hidden, but Close project in its right-click menu and
+  `close_project` still close it.
 - **A frame is drawn in part only with `GIO_DAMAGE=on`, and only on OpenGL 3 or OpenGL ES 3 and up**
   (`lichdotdev/gio`, `gpu/damage.go`): with it, the window diffs a frame's draw operations against the last
   frame's, redraws only the rectangles that changed into an sRGB framebuffer the renderer keeps, and blits that

@@ -19,10 +19,13 @@
     "closeAnyway": "그래도 닫기"
   },
   "topbarTabs": {
+    "pinProject": "탭 고정",
+    "unpinProject": "탭 고정 해제",
     "projectSettings": "프로젝트 설정…",
     "closeProject": "프로젝트 닫기"
   },
   "topbarApply": {
+    "pinProjectFailed": "고정된 탭을 저장할 수 없습니다: {error}",
     "closeProjectFailed": "프로젝트를 닫을 수 없습니다: {error}",
     "reorderFailed": "프로젝트 순서를 바꿀 수 없습니다: {error}"
   }

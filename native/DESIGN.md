@@ -316,6 +316,8 @@ at once, whatever its row is still doing.
 
 - **The bundled themes stay achromatic.** A colored palette is a custom theme, not a widget's color.
 - **The layout**: top tabs, left sidebar, terminal, right dock, footer.
+- **Pinned project tabs** stay at the left of the top strip, grouped before unpinned tabs with one hairline
+  between the groups; they carry a pin glyph and close from their context menu only.
 - **Semantic color and the diff language badges**: they carry meaning.
 - **Buttons do not move when pressed**; only their color changes.
 - **A sidebar row is one line.** Pull request and changes stay on it; a name too long is cut, not wrapped.

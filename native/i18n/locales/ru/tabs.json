@@ -22,10 +22,13 @@
     "closeAnyway": "Всё равно закрыть"
   },
   "topbarTabs": {
+    "pinProject": "Закрепить вкладку",
+    "unpinProject": "Открепить вкладку",
     "projectSettings": "Настройки проекта…",
     "closeProject": "Закрыть проект"
   },
   "topbarApply": {
+    "pinProjectFailed": "Не удалось сохранить закреплённые вкладки: {error}",
     "closeProjectFailed": "Не удалось закрыть проект: {error}",
     "reorderFailed": "Не удалось изменить порядок проектов: {error}"
   }

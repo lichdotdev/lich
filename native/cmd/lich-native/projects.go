@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"crypto/rand"
+	"encoding/json"
 	"errors"
 	"slices"
 	"strings"
@@ -12,6 +13,8 @@ import (
 
 // homeScreen is the route saved for Home.
 const homeScreen = "/"
+
+const pinnedProjectsKey = "window.pinnedProjects"
 
 // screenPath is the route saved under lastScreenKey for a project's screen,
 // Home for "".
@@ -30,6 +33,7 @@ func saveLastScreen(ctx context.Context, c *backend.Client, projectID string) er
 // projectTab is what one project tab draws.
 type projectTab struct {
 	ID, Name, Path string
+	pinned         bool
 	// status is the badge, statusNone on the active tab: its cards are on
 	// screen saying the same, per session.
 	status string
@@ -49,13 +53,52 @@ func (m *model) projectTabs() (tabs []projectTab, active string) {
 		if p.ID == m.homeID {
 			continue
 		}
-		t := projectTab{ID: p.ID, Name: p.Name, Path: p.Path}
+		t := projectTab{ID: p.ID, Name: p.Name, Path: p.Path, pinned: m.pinnedProjects[p.ID]}
 		if p.ID != active {
 			t.status = m.status.projectStatus(sessionIDs(p))
 		}
 		tabs = append(tabs, t)
 	}
 	return tabs, active
+}
+
+func loadPinnedProjects(ctx context.Context, c *backend.Client) (map[string]bool, error) {
+	raw, err := c.GetSetting(ctx, pinnedProjectsKey, "")
+	if err != nil {
+		return nil, err
+	}
+	pinned := make(map[string]bool)
+	if raw != "" {
+		if err := json.Unmarshal([]byte(raw), &pinned); err != nil {
+			return nil, err
+		}
+	}
+	return pinned, nil
+}
+
+func (m *model) setProjectPinned(id string, pinned bool) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.pinnedProjects == nil {
+		m.pinnedProjects = make(map[string]bool)
+	}
+	if pinned {
+		m.pinnedProjects[id] = true
+	} else {
+		delete(m.pinnedProjects, id)
+	}
+}
+
+func (m *model) persistPinnedProjects(ctx context.Context) error {
+	m.pinnedWriteMu.Lock()
+	defer m.pinnedWriteMu.Unlock()
+	m.mu.Lock()
+	data, err := json.Marshal(m.pinnedProjects)
+	m.mu.Unlock()
+	if err != nil {
+		return err
+	}
+	return m.client.SetSetting(ctx, pinnedProjectsKey, "", string(data))
 }
 
 func sessionIDs(p backend.Project) []string {
@@ -189,13 +232,25 @@ func (m *model) closeProject(id string) (closedProject, bool) {
 	return out, true
 }
 
-// shownOrder is the open projects as the strip draws them: the drag the
-// backend has not confirmed yet, else the stored order. Callers hold m.mu.
+// shownOrder is the open projects as the strip draws them: pending drag order
+// over stored order, with pinned projects grouped first. Callers hold m.mu.
 func (m *model) shownOrder() []backend.Project {
+	var ordered []backend.Project
 	if m.pendingOrder == nil {
-		return m.projects
+		ordered = slices.Clone(m.projects)
+	} else {
+		ordered = orderedBy(m.projects, m.pendingOrder)
 	}
-	return orderedBy(m.projects, m.pendingOrder)
+	slices.SortStableFunc(ordered, func(a, b backend.Project) int {
+		if m.pinnedProjects[a.ID] == m.pinnedProjects[b.ID] {
+			return 0
+		}
+		if m.pinnedProjects[a.ID] {
+			return -1
+		}
+		return 1
+	})
+	return ordered
 }
 
 // orderedBy is ps in the order of ids, a project ids does not name last.

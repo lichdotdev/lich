@@ -20,10 +20,13 @@
     "closeAnyway": "それでも閉じる"
   },
   "topbarTabs": {
+    "pinProject": "タブを固定",
+    "unpinProject": "タブの固定を解除",
     "projectSettings": "プロジェクト設定…",
     "closeProject": "プロジェクトを閉じる"
   },
   "topbarApply": {
+    "pinProjectFailed": "固定したタブを保存できませんでした: {error}",
     "closeProjectFailed": "プロジェクトを閉じられませんでした: {error}",
     "reorderFailed": "プロジェクトを並べ替えられませんでした: {error}"
   }

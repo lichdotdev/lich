@@ -220,7 +220,13 @@ func fakeState(t *testing.T, projects *[]backend.Project, lastScreen string) *ba
 		case "/rpc/store.LoadState":
 			_ = json.NewEncoder(w).Encode(*projects)
 		case "/rpc/store.GetSetting":
-			_ = json.NewEncoder(w).Encode(lastScreen)
+			var args []api.GetSettingOptions
+			_ = json.NewDecoder(r.Body).Decode(&args)
+			value := ""
+			if len(args) > 0 && args[0].Key == lastScreenKey {
+				value = lastScreen
+			}
+			_ = json.NewEncoder(w).Encode(value)
 		case "/rpc/project.Home":
 			_ = json.NewEncoder(w).Encode(fakeHome)
 		case "/rpc/store.AddProject":

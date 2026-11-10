@@ -82,15 +82,17 @@ func newTopbar(root *ui.Root) *topbar {
 
 // topbarAction is what a frame's clicks on the strip asked for.
 type topbarAction struct {
-	home    bool
-	show    string // project id
-	close   string // project id, past any confirmation
-	ask     string // project id whose close needs confirming
-	drop    ui.SortDrop
-	notify  *notification
-	dismiss string // session id
-	pick    bool   // the directory picker
-	reopen  *backend.RecentProject
+	home       bool
+	show       string // project id
+	close      string // project id, past any confirmation
+	ask        string // project id whose close needs confirming
+	pinProject string
+	pin        bool
+	drop       ui.SortDrop
+	notify     *notification
+	dismiss    string // session id
+	pick       bool   // the directory picker
+	reopen     *backend.RecentProject
 	// settings is the Settings button; projectSettings a tab's "Project
 	// settings…", by project id.
 	settings        bool
