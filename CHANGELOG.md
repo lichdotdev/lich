@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - The sidebar draws every block's header and hangs every card from the checkout it runs in, as it already did beside a worktree: a folder holding a project's only sessions no longer vanishes, and a lone session or folder no longer shows loose cards.
+- A page reloaded in a browser tab after an agent took a screenshot of it no longer shows squeezed into the top of
+  the pane until the zoom is changed.
 
 ## [0.87.0] - 2026-11-08
 

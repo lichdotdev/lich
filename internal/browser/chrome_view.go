@@ -63,6 +63,9 @@ func (p *chromePage) listenTab(t *tab) {
 			}
 		case *page.EventDomContentEventFired:
 			p.reloadFront(t, false)
+			if p.shot.Load() {
+				go p.relayAfterShot(t)
+			}
 		case *page.EventFrameNavigated:
 			if e.Frame.ParentID == "" {
 				p.leaveLanded(t)
@@ -122,6 +125,32 @@ func (p *chromePage) reloadFront(t *tab, started bool) {
 	p.listen.mu.Unlock()
 	if onReload != nil {
 		onReload(started)
+	}
+}
+
+// relayAfterShot lays t out at the pane's size again and restarts its frames
+// once the first document after an agent's screenshot is ready. A screenshot
+// with a clip resizes the view and puts it back (Chromium's
+// PageHandler::CaptureScreenshot); on macOS the next document after it drew
+// squeezed into the top of the pane until a zoom laid it out again (Chrome
+// 157, reported 2026-11-10, not reproduced on Linux). The override is cleared
+// first: Chrome ignores one equal to the override it holds.
+func (p *chromePage) relayAfterShot(t *tab) {
+	if p.tabs.frontTab() != t {
+		return
+	}
+	err := p.castPastDialog(func() error {
+		v := p.tabs.lastView()
+		if !p.casting || v == nil || !p.shot.Swap(false) {
+			return nil
+		}
+		if err := p.run(nil, emulation.ClearDeviceMetricsOverride()); err != nil {
+			return err
+		}
+		return p.startCast(nil, *v)
+	})
+	if err != nil && p.Alive() {
+		slog.Warn("browser: lay the page out again after a screenshot", "err", err)
 	}
 }
 
