@@ -67,6 +67,7 @@ func TestPasteChords(t *testing.T) {
 		{"ctrl+shift+v on Windows", "windows", key.Event{Name: "V", Modifiers: key.ModCtrl | key.ModShift}, true},
 		{"cmd+v on macOS", "darwin", key.Event{Name: "V", Modifiers: key.ModCommand}, true},
 		{"ctrl+v attaches instead", "linux", key.Event{Name: "V", Modifiers: key.ModCtrl}, false},
+		{"ctrl+v on Windows", "windows", key.Event{Name: "V", Modifiers: key.ModCtrl}, true},
 		{"ctrl+shift+c", "linux", key.Event{Name: "C", Modifiers: key.ModCtrl | key.ModShift}, false},
 	}
 	for _, c := range cases {
