@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/chromedp/cdproto/browser"
@@ -107,6 +108,9 @@ type chromePage struct {
 	castMu   sync.Mutex
 	castLast chan struct{}
 	casting  bool
+	// shot: an agent's screenshot ran since the frames were last laid out
+	// again after one (relayAfterShot).
+	shot atomic.Bool
 	// leaveMu guards held, the navigation the open beforeunload holds, and
 	// leave, the one an accepted beforeunload left for (chrome_leave.go).
 	leaveMu sync.Mutex
@@ -378,6 +382,7 @@ func (p *chromePage) Screenshot(ctx context.Context, dest string) (w, h int, err
 	if err != nil {
 		return 0, 0, err
 	}
+	p.shot.Store(true)
 	return int(v.W), int(v.H), os.WriteFile(dest, buf, 0o600)
 }
 
