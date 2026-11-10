@@ -182,7 +182,7 @@ func sidebarHeights(before, after sidebarView) []int {
 }
 
 func blocksOf(project string, blocks [][]string) sidebarView {
-	v := sidebarView{project: project, showHeader: true}
+	v := sidebarView{project: project}
 	for i, ids := range blocks {
 		b := blockView{key: string(rune('A' + i)), kind: blockCheckout}
 		for _, id := range ids {
@@ -214,18 +214,6 @@ func TestABlockGrowsInAndShrinksOutWithItsCard(t *testing.T) {
 	}
 	if other := sidebarHeights(blocksOf("p", [][]string{{"a"}}), blocksOf("q", [][]string{{"a"}, {"b"}})); moves(other) {
 		t.Errorf("another project's list: heights %v, want drawn whole at once", other)
-	}
-}
-
-func TestABlocksHeaderUnfoldsWhenTheListSplits(t *testing.T) {
-	alone := blocksOf("p", [][]string{{"a"}})
-	alone.showHeader = false
-	split := blocksOf("p", [][]string{{"a"}})
-	if in := sidebarHeights(alone, split); in[0] >= in[len(in)-1] || !moves(in) {
-		t.Errorf("headers shown: heights %v, want the header unfolding", in)
-	}
-	if out := sidebarHeights(split, alone); out[0] <= out[len(out)-1] || !moves(out) {
-		t.Errorf("headers hidden: heights %v, want the header folding away", out)
 	}
 }
 
@@ -317,7 +305,7 @@ func assertNoDip(t *testing.T, frame func(sidebarView, time.Duration) int, befor
 }
 
 func folderOf(paths ...string) sidebarView {
-	v := sidebarView{project: "p", showHeader: true}
+	v := sidebarView{project: "p"}
 	b := blockView{key: folderKey("Later"), kind: blockFolder, folder: "Later", title: "Later", byCheckout: true}
 	for i, path := range paths {
 		b.sessions = append(b.sessions, sessionView{Session: backend.Session{ID: fmt.Sprint("s", i), Folder: "Later"}, projectID: "p", path: path})

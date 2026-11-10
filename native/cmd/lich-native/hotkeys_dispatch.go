@@ -193,7 +193,7 @@ func (u *window) hotkeyCards() []hotkeyCard {
 		drawn := map[string]bool{}
 		for _, r := range blockRows(b, b.sessions) {
 			if r.kind == rowCard {
-				cards = append(cards, hotkeyCard{id: r.key, shown: !b.folded})
+				cards = append(cards, hotkeyCard{id: r.key, shown: !b.collapsed})
 				drawn[r.key] = true
 			}
 		}

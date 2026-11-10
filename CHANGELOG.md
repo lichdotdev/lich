@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - On Windows, Ctrl+V in a session pastes the clipboard's text straight away, as Ctrl+Shift+V does, instead of waiting on the agent to read the clipboard. A clipboard with no text, an image or a copied file, still goes to the agent as before, and Alt+V still attaches an image when the clipboard holds text too.
 
+### Fixed
+
+- The sidebar draws every block's header and hangs every card from the checkout it runs in, as it already did beside a worktree: a folder holding a project's only sessions no longer vanishes, and a lone session or folder no longer shows loose cards.
+
 ## [0.87.0] - 2026-11-08
 
 > [!CAUTION]

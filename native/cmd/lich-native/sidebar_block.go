@@ -19,7 +19,6 @@ import (
 // blockState is one block's widget state, kept per project and block.
 type blockState struct {
 	toggle   widget.Clickable
-	header   ui.Collapse // shown while the list splits into blocks
 	fold     ui.Collapse
 	cards    ui.Sortable
 	presence ui.Presence
@@ -126,7 +125,7 @@ func (s *sidebar) blockList(gtx C, th *ui.Theme, view sidebarView, active string
 // dropBlocks reads the block drag, a reorder by their headers, which only
 // the live blocks take part in. It reports a drag that ended this frame.
 func (s *sidebar) dropBlocks(gtx C, f blockFrame, keys []string) bool {
-	s.sort.Disabled = f.filtering || !f.view.showHeader
+	s.sort.Disabled = f.filtering || len(f.view.blocks) < 2
 	before := s.sort.Dragging()
 	if d, ok := s.sort.Update(gtx); ok && d.ID != d.Over && !s.motion.leaving(d.Over) {
 		f.act.blockOrder = arrayMove(liveKeys(keys, s.motion.leaving), d.ID, d.Over)
@@ -184,19 +183,17 @@ func (s *sidebar) block(gtx C, th *ui.Theme, b blockView, f blockFrame) D {
 	body := func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
-				return st.header.Layout(gtx, f.view.showHeader, func(gtx C) D {
-					// Every header is a row's height, spaced like a card.
-					header := func(gtx C) D {
-						return layout.Inset{Bottom: cardGap}.Layout(gtx, func(gtx C) D { return s.groupHeader(gtx, th, b, st, f) })
-					}
-					if b.head == nil {
-						return header(gtx)
-					}
-					return moveRow(gtx, sessionRow{motion: b.head}, header)
-				})
+				// Every header is a row's height, spaced like a card.
+				header := func(gtx C) D {
+					return layout.Inset{Bottom: cardGap}.Layout(gtx, func(gtx C) D { return s.groupHeader(gtx, th, b, st, f) })
+				}
+				if b.head == nil {
+					return header(gtx)
+				}
+				return moveRow(gtx, sessionRow{motion: b.head}, header)
 			}),
 			layout.Rigid(func(gtx C) D {
-				return st.fold.Layout(gtx, !b.folded, func(gtx C) D { return s.blockCards(gtx, th, b, st, f, dragEnded) })
+				return st.fold.Layout(gtx, !b.collapsed, func(gtx C) D { return s.blockCards(gtx, th, b, st, f, dragEnded) })
 			}),
 		)
 	}
