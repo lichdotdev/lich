@@ -165,7 +165,7 @@ func railItems(blocks []blockView) []railItem {
 		case b.under != "":
 			items = append(items, railItem{kind: railCheckout, id: "checkout:" + b.key, key: b.key, path: b.under, facts: b.facts[b.under]})
 		}
-		if !b.folded {
+		if !b.collapsed {
 			items = append(items, railRows(b)...)
 		}
 		for i := first; i < len(items); i++ {

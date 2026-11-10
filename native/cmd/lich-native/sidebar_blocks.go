@@ -36,13 +36,12 @@ type blockView struct {
 	checkouts []launchCheckout
 	sessions  []sessionView
 	collapsed bool   // the stored fold, what the chevron shows
-	folded    bool   // collapsed with a header drawn to undo it
 	mark      string // markWait / markDone while collapsed, else markNone
 	// under is the checkout a checkout block draws as the row its sessions
-	// hang from, "" while the block draws no header or is no checkout's.
+	// hang from, "" for a block that is no checkout's.
 	under string
-	// byCheckout is a folder or the pinned block of a project that draws
-	// checkout rows: it draws them too (blockRows).
+	// byCheckout is a folder or the pinned block: it hangs its sessions from
+	// the checkouts they run in (blockRows).
 	byCheckout bool
 	// motherFolds are the mothers of the block folded over their children.
 	motherFolds map[string]bool
@@ -67,15 +66,10 @@ type checkoutFacts struct {
 type sidebarView struct {
 	project string // the shown project's id
 	blocks  []blockView
-	// showHeader is whether blocks draw their headers: once more than one
-	// block splits the list, while a filter makes the checkout the answer, or
-	// when the lone block is a worktree, whose + is the only way to open
-	// another session there.
-	showHeader bool
-	matched    bool
-	notice     string // the empty filter's sentence, "" while something matched
-	counts     map[sessionPhase]int
-	folders    []string // every folder of the project, filter or not
+	matched bool
+	notice  string // the empty filter's sentence, "" while something matched
+	counts  map[sessionPhase]int
+	folders []string // every folder of the project, filter or not
 }
 
 // foldKey is a block's entry in m.folds: the project id is hex, so the
@@ -95,11 +89,10 @@ func (m *model) sidebarBlocks(f sidebarFilter) sidebarView {
 	visible, matched := filterSessions(p.Sessions, f.query, p.Path, m.active, f.phases, m.phaseOfSession)
 	blocks := sessionBlocks(visible)
 	v := sidebarView{
-		project:    p.ID,
-		showHeader: len(blocks) > 1 || f.narrows() || isLoneWorktree(blocks),
-		matched:    matched,
-		counts:     phaseCounts(p.Sessions, f.query, p.Path, m.phaseOfSession),
-		folders:    foldersOf(p.Sessions),
+		project: p.ID,
+		matched: matched,
+		counts:  phaseCounts(p.Sessions, f.query, p.Path, m.phaseOfSession),
+		folders: foldersOf(p.Sessions),
 	}
 	if !matched {
 		v.notice = noMatchNotice(f.query, f.phases)
@@ -107,19 +100,15 @@ func (m *model) sidebarBlocks(f sidebarFilter) sidebarView {
 	pending := m.status.pending()
 	now := time.Now()
 	for _, b := range blocks {
-		v.blocks = append(v.blocks, m.dressBlock(p, b, v.showHeader, pending, now))
+		v.blocks = append(v.blocks, m.dressBlock(p, b, pending, now))
 	}
 	return v
 }
 
-func isLoneWorktree(blocks []sessionBlock) bool {
-	return len(blocks) == 1 && blocks[0].kind == blockCheckout && blocks[0].path != ""
-}
-
 // dressBlock reads one block into its view. Callers hold m.mu.
-func (m *model) dressBlock(p backend.Project, b sessionBlock, header bool, pending []pendingStatus, now time.Time) blockView {
+func (m *model) dressBlock(p backend.Project, b sessionBlock, pending []pendingStatus, now time.Time) blockView {
 	collapsed := m.folds[foldKey(p.ID, b.key)]
-	v := blockView{key: b.key, kind: b.kind, folder: b.folder, path: b.path, collapsed: collapsed, folded: header && collapsed}
+	v := blockView{key: b.key, kind: b.kind, folder: b.folder, path: b.path, collapsed: collapsed}
 	ids := make([]string, 0, len(b.sessions))
 	for _, s := range b.sessions {
 		ids = append(ids, s.ID)
@@ -136,8 +125,8 @@ func (m *model) dressBlock(p backend.Project, b sessionBlock, header bool, pendi
 		}
 		v.facts[sv.path] = m.checkoutFactsOf(p, sv.path)
 	}
-	v.byCheckout = b.kind != blockCheckout && slices.ContainsFunc(p.Sessions, func(s backend.Session) bool { return s.Path != "" })
-	if header && b.kind == blockCheckout {
+	v.byCheckout = b.kind != blockCheckout
+	if b.kind == blockCheckout {
 		v.under = sessionPath(p, backend.Session{Path: b.path})
 		v.facts[v.under] = m.checkoutFactsOf(p, v.under)
 	}

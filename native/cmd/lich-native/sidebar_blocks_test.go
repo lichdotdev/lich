@@ -35,9 +35,9 @@ func blockKeys(v sidebarView) []string {
 	return keys
 }
 
-func TestSidebarBlocksTitleEachKindAndHideHeadersForOneBlock(t *testing.T) {
+func TestSidebarBlocksTitleEachKind(t *testing.T) {
 	m, _ := sidebarModel(t, ss("s1"))
-	if v := m.sidebarBlocks(sidebarFilter{}); v.showHeader || len(v.blocks) != 1 || v.blocks[0].title != "repo" {
+	if v := m.sidebarBlocks(sidebarFilter{}); len(v.blocks) != 1 || v.blocks[0].title != "repo" || v.blocks[0].under != sidebarProject {
 		t.Fatalf("lone block: %+v", v)
 	}
 	stored := pin(filed(ss("s1", "w1@/x/worktrees/p/feat/a", "w2@/x/worktrees/p/feat/a"), "Apps", "w1"), "s1")
@@ -48,8 +48,8 @@ func TestSidebarBlocksTitleEachKindAndHideHeadersForOneBlock(t *testing.T) {
 	for _, b := range v.blocks {
 		titles = append(titles, b.title)
 	}
-	if !v.showHeader || !slices.Equal(titles, []string{"Pinned", "Apps", "feat/a"}) {
-		t.Fatalf("titles = %v (header %v)", titles, v.showHeader)
+	if !slices.Equal(titles, []string{"Pinned", "Apps", "feat/a"}) {
+		t.Fatalf("titles = %v", titles)
 	}
 	folder := v.blocks[1]
 	if folder.color != "teal" || len(folder.checkouts) != 1 || folder.checkouts[0] != (launchCheckout{path: "/x/worktrees/p/feat/a", label: "feat/a"}) {
@@ -60,10 +60,15 @@ func TestSidebarBlocksTitleEachKindAndHideHeadersForOneBlock(t *testing.T) {
 	}
 }
 
-func TestSidebarBlocksKeepTheHeaderOfALoneWorktree(t *testing.T) {
-	m, _ := sidebarModel(t, ss("w1@/x/worktrees/p/feat/a"))
-	if v := m.sidebarBlocks(sidebarFilter{}); !v.showHeader || len(v.blocks) != 1 || v.blocks[0].title != "feat/a" {
-		t.Fatalf("lone worktree: %+v", v)
+func TestSidebarBlocksHangALoneFoldersCardsFromTheirCheckout(t *testing.T) {
+	m, _ := sidebarModel(t, filed(ss("s1"), "Apps", "s1"))
+	v := m.sidebarBlocks(sidebarFilter{})
+	if len(v.blocks) != 1 || v.blocks[0].title != "Apps" {
+		t.Fatalf("lone folder: %+v", v)
+	}
+	rows := blockRows(v.blocks[0], v.blocks[0].sessions)
+	if len(rows) != 2 || rows[0].kind != rowNestedCheckout || rows[0].path != sidebarProject || rows[1].sv.ID != "s1" || rows[1].depth != 1 {
+		t.Fatalf("lone folder rows = %+v", rows)
 	}
 }
 
@@ -71,7 +76,7 @@ func TestSidebarBlocksFilterKeepsTheActiveCardAndSaysWhy(t *testing.T) {
 	m, _ := sidebarModel(t, ss("Relay a", "Docs", "Shell"))
 	reportStatus(m, "Docs", "busy")
 	v := m.sidebarBlocks(sidebarFilter{query: "webgl"})
-	if v.matched || !v.showHeader || v.notice != "No sessions match “webgl”. The active session stays." {
+	if v.matched || v.notice != "No sessions match “webgl”. The active session stays." {
 		t.Fatalf("no-match view: %+v", v)
 	}
 	if len(v.blocks) != 1 || len(v.blocks[0].sessions) != 1 || v.blocks[0].sessions[0].ID != "Shell" {
@@ -92,7 +97,7 @@ func TestFoldIsReadStoredAndMarked(t *testing.T) {
 	}
 	reportStatus(m, "w1", "waiting")
 	v := m.sidebarBlocks(sidebarFilter{})
-	if b := v.blocks[1]; !b.collapsed || !b.folded || b.mark != markWait {
+	if b := v.blocks[1]; !b.collapsed || b.mark != markWait {
 		t.Fatalf("folded block = %+v", b)
 	}
 	if b := v.blocks[0]; b.collapsed || b.mark != markNone {
@@ -103,17 +108,6 @@ func TestFoldIsReadStoredAndMarked(t *testing.T) {
 	}
 	if f.get("lich.sidebar.collapsed."+rootBlockKey+"@p") != "true" || !m.sidebarBlocks(sidebarFilter{}).blocks[0].collapsed {
 		t.Fatal("toggle did not fold and store the root block")
-	}
-}
-
-// A block folded beside a sibling that has since closed is drawn alone and
-// header-less, so it draws open; the stored fold stays for when a header is
-// back.
-func TestALoneBlockDrawsOpenButKeepsItsFold(t *testing.T) {
-	m, _ := sidebarModel(t, ss("s1"))
-	_ = m.toggleFold(context.Background(), rootBlockKey)
-	if b := m.sidebarBlocks(sidebarFilter{}).blocks[0]; !b.collapsed || b.folded {
-		t.Fatalf("lone block = %+v", b)
 	}
 }
 

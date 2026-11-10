@@ -54,7 +54,7 @@ func TestRailDrawsTheTreeInOneColumn(t *testing.T) {
 }
 
 func TestRailLeavesAFoldedBlockItsHead(t *testing.T) {
-	b := blockView{key: "/repo", kind: blockCheckout, under: "/repo", folded: true, sessions: []sessionView{treeSession("s", "", "/repo")}}
+	b := blockView{key: "/repo", kind: blockCheckout, under: "/repo", collapsed: true, sessions: []sessionView{treeSession("s", "", "/repo")}}
 	if got := railShape(railItems([]blockView{b})); !slices.Equal(got, []string{"checkout"}) {
 		t.Errorf("rail = %v, want the checkout's node alone", got)
 	}
