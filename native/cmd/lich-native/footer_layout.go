@@ -21,6 +21,7 @@ var footerItems = []footerItem{
 	{ID: "attach", ExampleKey: "footer.item.attach.example"},
 	{ID: "files", ExampleKey: "footer.item.files.example"},
 	{ID: "changes", Example: "3 · +10 −2"},
+	{ID: "artifacts", ExampleKey: "footer.item.artifacts.example"},
 	{ID: "pr", Example: "PR #123"},
 	{ID: "checkout", Example: "feature/toolbar"},
 	{ID: "path", Example: "~/project"},
@@ -58,7 +59,7 @@ var defaultFooterVisibility = footerVisibility{Model: true, Plan: true, HandsOn:
 
 func defaultFooterLayout() footerLayout {
 	return footerLayout{
-		Left:  []string{"attach", "files", "changes", "pr"},
+		Left:  []string{"attach", "files", "changes", "artifacts", "pr"},
 		Right: []string{"checkout", "model", "context", "plan", "handsOn"},
 	}
 }

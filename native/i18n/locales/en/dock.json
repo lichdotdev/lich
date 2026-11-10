@@ -4,7 +4,8 @@
     "tabReview": "Review",
     "exitFullScreen": "Exit full screen",
     "fullScreen": "Full screen",
-    "closePanel": "Close panel"
+    "closePanel": "Close panel",
+    "tabArtifacts": "Artifacts"
   },
   "searchResults": {
     "prompt": "Search the text of every file in this checkout",
@@ -40,5 +41,15 @@
     },
     "noResults": "No results",
     "invalidRegexp": "Invalid regex"
+  },
+  "artifacts": {
+    "empty": "Pages and files this session's agent makes to show you appear here, with those of the project's other open sessions.",
+    "thisSession": "This session",
+    "otherSessions": "Other sessions",
+    "options": "Options for {name}",
+    "openInBrowser": "Open in browser",
+    "attachToPrompt": "Attach to prompt",
+    "copyPath": "Copy path",
+    "showInFileManager": "Show in file manager"
   }
 }

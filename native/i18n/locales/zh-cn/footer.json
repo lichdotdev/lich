@@ -8,6 +8,9 @@
     },
     "model": {
       "example": "模型"
+    },
+    "artifacts": {
+      "example": "产物"
     }
   },
   "footerEditor": {

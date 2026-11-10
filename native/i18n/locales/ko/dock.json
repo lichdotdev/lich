@@ -4,7 +4,8 @@
     "tabReview": "리뷰",
     "exitFullScreen": "전체 화면 종료",
     "fullScreen": "전체 화면",
-    "closePanel": "패널 닫기"
+    "closePanel": "패널 닫기",
+    "tabArtifacts": "아티팩트"
   },
   "searchResults": {
     "prompt": "이 체크아웃의 모든 파일 내용 검색",
@@ -39,5 +40,15 @@
     },
     "noResults": "결과 없음",
     "invalidRegexp": "잘못된 정규식"
+  },
+  "artifacts": {
+    "empty": "이 세션의 에이전트가 보여 주려고 만든 페이지와 파일이 프로젝트의 다른 열린 세션의 것과 함께 여기에 표시됩니다.",
+    "thisSession": "이 세션",
+    "otherSessions": "다른 세션",
+    "options": "{name} 옵션",
+    "openInBrowser": "브라우저에서 열기",
+    "attachToPrompt": "프롬프트에 첨부",
+    "copyPath": "경로 복사",
+    "showInFileManager": "파일 관리자에서 보기"
   }
 }

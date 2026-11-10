@@ -41,7 +41,8 @@
     "browseCode": "Navegar pelo código",
     "reviewChanges": "Revisar alterações",
     "viewPullRequest": "Ver pull request",
-    "pullRequest": "PR #{number}"
+    "pullRequest": "PR #{number}",
+    "showArtifacts": "Mostrar artifacts"
   },
   "footerSession": {
     "contextWindow": "Janela de contexto",

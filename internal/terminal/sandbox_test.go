@@ -75,7 +75,7 @@ func TestWrapSandboxLeavesAnUnconfinedSpawnAlone(t *testing.T) {
 		{"not confined", "/home/u", false},
 		{"no home to empty", "", true},
 	} {
-		got, _ := wrapSandbox(baseSpec(), providers.Claude, tt.home, nil, "", tt.confined, sandboxCreds{})
+		got, _ := wrapSandbox(baseSpec(), providers.Claude, tt.home, nil, nil, "", tt.confined, sandboxCreds{})
 		if got.bin != original.bin || !slices.Equal(got.args, original.args) {
 			t.Errorf("%s: spawn rewritten to %q %v", tt.name, got.bin, got.args)
 		}
@@ -88,7 +88,7 @@ func TestWrapSandboxKeepsTheCommandAndItsArguments(t *testing.T) {
 		t.Skip("no sandbox backend on this machine")
 	}
 	original := baseSpec()
-	got, _ := wrapSandbox(baseSpec(), providers.Claude, t.TempDir(), nil, "", true, sandboxCreds{})
+	got, _ := wrapSandbox(baseSpec(), providers.Claude, t.TempDir(), nil, nil, "", true, sandboxCreds{})
 	if got.bin == original.bin {
 		t.Fatalf("the spawn was not confined: still %q", got.bin)
 	}
@@ -207,7 +207,7 @@ func TestWrapSandboxBindsTheClaudeProfile(t *testing.T) {
 		t.Skip("no sandbox backend on this machine")
 	}
 	profile := t.TempDir()
-	got, _ := wrapSandbox(baseSpec(), providers.Claude, t.TempDir(), nil, profile, true, sandboxCreds{})
+	got, _ := wrapSandbox(baseSpec(), providers.Claude, t.TempDir(), nil, nil, profile, true, sandboxCreds{})
 	if !slices.ContainsFunc(got.args, func(arg string) bool { return strings.Contains(arg, profile) }) {
 		t.Fatalf("the profile dir %q is not in the confined spawn: %v", profile, got.args)
 	}
@@ -229,7 +229,7 @@ func TestWrapSandboxBindsTheClaudePluginStore(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	got, _ := wrapSandbox(baseSpec(), providers.Claude, t.TempDir(), nil, profile, true, sandboxCreds{})
+	got, _ := wrapSandbox(baseSpec(), providers.Claude, t.TempDir(), nil, nil, profile, true, sandboxCreds{})
 	if !slices.ContainsFunc(got.args, func(arg string) bool { return strings.Contains(arg, plugins) }) {
 		t.Fatalf("the plugin store %q is not in the confined spawn: %v", plugins, got.args)
 	}
@@ -246,7 +246,7 @@ func TestWrapSandboxMountsTheSessionsCopies(t *testing.T) {
 	}
 	copies := sessionDropDir(t.TempDir(), "s1", true)
 
-	got, _ := wrapSandbox(baseSpec(), providers.Claude, t.TempDir(), []string{copies}, "", true, sandboxCreds{})
+	got, _ := wrapSandbox(baseSpec(), providers.Claude, t.TempDir(), []string{copies}, nil, "", true, sandboxCreds{})
 
 	// Substring, not an argv element: the two backends spell a mounted path in
 	// their own vocabulary — bubblewrap takes it as its own argument
@@ -255,6 +255,41 @@ func TestWrapSandboxMountsTheSessionsCopies(t *testing.T) {
 	// carry is the path, not a shape only one of them uses.
 	if !slices.ContainsFunc(got.args, func(arg string) bool { return strings.Contains(arg, copies) }) {
 		t.Fatalf("the session's copies dir %q is not in the confined spawn: %v", copies, got.args)
+	}
+}
+
+// TestWrapSandboxBindsTheSessionsArtifacts: the artifact directory sits under
+// lich's config dir, which the sandbox hides, and a confined agent that cannot
+// write it has nowhere to put the page its browser opens.
+func TestWrapSandboxBindsTheSessionsArtifacts(t *testing.T) {
+	t.Parallel()
+	if !sandbox.Available() {
+		t.Skip("no sandbox backend on this machine")
+	}
+	artifacts := sessionArtifactDir(t.TempDir(), "s1")
+
+	got, _ := wrapSandbox(baseSpec(), providers.Claude, t.TempDir(), nil, []string{artifacts, ""}, "", true, sandboxCreds{})
+
+	if !slices.ContainsFunc(got.args, func(arg string) bool { return strings.Contains(arg, artifacts) }) {
+		t.Fatalf("the session's artifact dir %q is not in the confined spawn: %v", artifacts, got.args)
+	}
+}
+
+func TestSessionArtifactDirCreatesTheSessionsOwn(t *testing.T) {
+	t.Parallel()
+	root := t.TempDir()
+	dir := sessionArtifactDir(root, "s1")
+	if dir != filepath.Join(root, "s1") {
+		t.Fatalf("sessionArtifactDir = %q", dir)
+	}
+	if info, err := os.Stat(dir); err != nil || !info.IsDir() {
+		t.Fatalf("the directory was not created: %v", err)
+	}
+	if got := sessionArtifactDir("", "s1"); got != "" {
+		t.Errorf("with no root = %q, want empty", got)
+	}
+	if got := sessionArtifactDir(root, "../s1"); got != "" {
+		t.Errorf("with an id that is not one element = %q, want empty", got)
 	}
 }
 
@@ -267,7 +302,7 @@ func TestWrapSandboxKeepsTheTokenOutOfTheArguments(t *testing.T) {
 		t.Skip("bubblewrap is not installed")
 	}
 	const token = "gho_secret_probe_value"
-	got, _ := wrapSandbox(baseSpec(), providers.Claude, t.TempDir(), nil, "", true, sandboxCreds{ghEnv: "GH_TOKEN=" + token})
+	got, _ := wrapSandbox(baseSpec(), providers.Claude, t.TempDir(), nil, nil, "", true, sandboxCreds{ghEnv: "GH_TOKEN=" + token})
 
 	if !slices.Contains(got.env, "GH_TOKEN="+token) {
 		t.Errorf("GH_TOKEN missing from the child environment: %v", got.env)
@@ -284,7 +319,7 @@ func TestWrapSandboxAddsNoTokenWithoutOne(t *testing.T) {
 	if _, err := exec.LookPath("bwrap"); err != nil {
 		t.Skip("bubblewrap is not installed")
 	}
-	got, _ := wrapSandbox(baseSpec(), providers.Claude, t.TempDir(), nil, "", true, sandboxCreds{})
+	got, _ := wrapSandbox(baseSpec(), providers.Claude, t.TempDir(), nil, nil, "", true, sandboxCreds{})
 	if slices.ContainsFunc(got.env, func(kv string) bool { return strings.HasPrefix(kv, "GH_TOKEN=") }) {
 		t.Errorf("GH_TOKEN set without the flag: %v", got.env)
 	}
@@ -311,7 +346,7 @@ func TestWrapSandboxNamesTheLinksItSkipped(t *testing.T) {
 		t.Fatalf("symlink .gitconfig: %v", err)
 	}
 
-	_, links := wrapSandbox(baseSpec(), providers.Claude, home, nil, "", true, sandboxCreds{})
+	_, links := wrapSandbox(baseSpec(), providers.Claude, home, nil, nil, "", true, sandboxCreds{})
 
 	if !slices.Contains(links, ".gitconfig") {
 		t.Errorf("skipped links = %v, want them to name .gitconfig", links)
@@ -323,7 +358,7 @@ func TestWrapSandboxNamesTheLinksItSkipped(t *testing.T) {
 // machine would put a warning on a card that has no sandbox to warn about.
 func TestWrapSandboxSkipsNoLinksWhenUnconfined(t *testing.T) {
 	t.Parallel()
-	if _, links := wrapSandbox(baseSpec(), providers.Claude, t.TempDir(), nil, "", false, sandboxCreds{}); links != nil {
+	if _, links := wrapSandbox(baseSpec(), providers.Claude, t.TempDir(), nil, nil, "", false, sandboxCreds{}); links != nil {
 		t.Errorf("an unconfined spawn reported skipped links %v", links)
 	}
 }
@@ -338,15 +373,15 @@ func TestWrapSandboxSkipsClaudesTrustQuestion(t *testing.T) {
 		t.Skip("no sandbox backend on this machine")
 	}
 	sandboxed := "CLAUDE_CODE_SANDBOXED=1"
-	got, _ := wrapSandbox(baseSpec(), providers.Claude, t.TempDir(), nil, "", true, sandboxCreds{})
+	got, _ := wrapSandbox(baseSpec(), providers.Claude, t.TempDir(), nil, nil, "", true, sandboxCreds{})
 	if !slices.Contains(got.env, sandboxed) {
 		t.Errorf("confined Claude Code env lacks %s: %v", sandboxed, got.env)
 	}
-	got, _ = wrapSandbox(baseSpec(), providers.Codex, t.TempDir(), nil, "", true, sandboxCreds{})
+	got, _ = wrapSandbox(baseSpec(), providers.Codex, t.TempDir(), nil, nil, "", true, sandboxCreds{})
 	if slices.Contains(got.env, sandboxed) {
 		t.Errorf("confined Codex env carries %s", sandboxed)
 	}
-	got, _ = wrapSandbox(baseSpec(), providers.Claude, t.TempDir(), nil, "", false, sandboxCreds{})
+	got, _ = wrapSandbox(baseSpec(), providers.Claude, t.TempDir(), nil, nil, "", false, sandboxCreds{})
 	if slices.Contains(got.env, sandboxed) {
 		t.Errorf("unconfined Claude Code env carries %s", sandboxed)
 	}
@@ -384,7 +419,7 @@ func TestWrapSandboxSkipsOMPSetup(t *testing.T) {
 	if !sandbox.Available() {
 		t.Skip("no sandbox backend on this machine")
 	}
-	got, _ := wrapSandbox(baseSpec(), providers.OMP, t.TempDir(), nil, "", true, sandboxCreds{})
+	got, _ := wrapSandbox(baseSpec(), providers.OMP, t.TempDir(), nil, nil, "", true, sandboxCreds{})
 	if !slices.Contains(got.env, "OMP_SKIP_SETUP=1") {
 		t.Errorf("confined oh-my-pi env lacks OMP_SKIP_SETUP=1: %v", got.env)
 	}

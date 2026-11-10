@@ -145,6 +145,7 @@ type Store interface {
 	SetSessionProfile(sessionID, profile string) error
 	SessionUltracode(sessionID string) bool
 	SessionSubagentDepth(sessionID string) int
+	SessionFilesKey(sessionID string) string
 	InheritUltracode(sessionID, forkedFrom string) error
 	InheritSubagent(sessionID, forkedFrom string) error
 	SessionSandbox(sessionID string) string
@@ -279,6 +280,9 @@ type Service struct {
 	// startup; empty leaves a confined session without the copies dropped into
 	// it, never without a spawn. See SetDropDir.
 	dropDir string
+	// artifactDir holds every session's artifact directory (internal/artifact).
+	// Wired at startup; empty spawns sessions without one. See SetArtifactDir.
+	artifactDir string
 	// usageReports is the latest figures each Claude Code session measured
 	// about itself (docs/hooks/mod-usage.md), which the footer's readout
 	// prefers to what lich derives. rateLimitReports is where their rate
@@ -304,6 +308,15 @@ type Service struct {
 // Startup wiring, called before anything spawns.
 func (s *Service) SetDropDir(dir string) {
 	s.dropDir = dir
+}
+
+// SetArtifactDir names the directory holding every session's artifacts
+// (internal/artifact). Each spawn gets its own subdirectory, created then and
+// named in its environment, and bound writable when the session is confined.
+//
+// Startup wiring, called before anything spawns.
+func (s *Service) SetArtifactDir(dir string) {
+	s.artifactDir = dir
 }
 
 // readySettle is how long a session's PTY must stay quiet before lich hands it

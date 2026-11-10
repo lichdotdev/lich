@@ -4,7 +4,8 @@
     "tabReview": "审查",
     "exitFullScreen": "退出全屏",
     "fullScreen": "全屏",
-    "closePanel": "关闭面板"
+    "closePanel": "关闭面板",
+    "tabArtifacts": "产物"
   },
   "searchResults": {
     "prompt": "搜索此检出中每个文件的文本",
@@ -39,5 +40,15 @@
     },
     "noResults": "无结果",
     "invalidRegexp": "无效的正则表达式"
+  },
+  "artifacts": {
+    "empty": "此会话的智能体为展示给你而生成的页面和文件会显示在这里，项目中其他已打开会话的也一样。",
+    "thisSession": "此会话",
+    "otherSessions": "其他会话",
+    "options": "{name} 的选项",
+    "openInBrowser": "在浏览器中打开",
+    "attachToPrompt": "附加到提示词",
+    "copyPath": "复制路径",
+    "showInFileManager": "在文件管理器中显示"
   }
 }

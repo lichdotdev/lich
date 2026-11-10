@@ -41,7 +41,8 @@
     "browseCode": "Browse code",
     "reviewChanges": "Review changes",
     "viewPullRequest": "View pull request",
-    "pullRequest": "PR #{number}"
+    "pullRequest": "PR #{number}",
+    "showArtifacts": "Show artifacts"
   },
   "footerSession": {
     "contextWindow": "Context window",

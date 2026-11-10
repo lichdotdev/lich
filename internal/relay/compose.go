@@ -47,21 +47,37 @@ import (
 //
 // route is where this spawn's own subagents run (SubagentRoute), which decides
 // what the agent is sent to for fanning work out.
+//
+// The artifact sentence is here, and not only in lich's MCP instructions,
+// because it competes with the harness's own way of publishing a page: Claude
+// Code's system prompt sends the agent to a hosted artifact, and Codex and Kiro
+// CLI never read the MCP instructions at all. It names the variable rather than
+// the folder, which the MCP instructions spell out, so the argv stays the same
+// for every session. No single quote either: Codex takes this inside one
+// (internal/terminal, codexBriefingArgs).
 func SpawnBriefing(lang prompt.Lang, hasTools bool, route SubagentRoute) string {
 	text := prompt.For(lang)
-	command := text.BriefingCommandCLI
+	command, opener := text.BriefingCommandCLI, briefingOpenerCLI
 	if hasTools {
-		command = text.BriefingCommandTools
+		command, opener = text.BriefingCommandTools, briefingOpenerTool
 	}
+	artifacts := fmt.Sprintf(text.BriefingArtifacts, opener)
 	switch route {
 	case RouteCards:
-		return text.BriefingIntro + text.BriefingCards + command
+		return text.BriefingIntro + text.BriefingCards + command + artifacts
 	case RouteNative:
-		return text.BriefingIntro + text.BriefingNative
+		return text.BriefingIntro + text.BriefingNative + artifacts
 	default:
-		return text.BriefingIntro + text.BriefingSessions + command
+		return text.BriefingIntro + text.BriefingSessions + command + artifacts
 	}
 }
+
+// How the briefing says to open a page, by the same rule as the command:
+// the tool for a session handed lich's MCP server, the CLI for the rest.
+const (
+	briefingOpenerTool = "browser_open"
+	briefingOpenerCLI  = "`lich browser open PATH`"
+)
 
 // BriefingEnv carries the spawn briefing to a provider whose agent config prints
 // it from a hook (Kiro CLI).

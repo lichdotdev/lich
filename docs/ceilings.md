@@ -1331,6 +1331,26 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   so a page elsewhere cannot rebind a name of its own to the machine and read the checkout through it. It is a static server: no reload on save, no SPA fallback, no headers of the project's.
   The root stays the checkout whatever file is opened, so a build in a subdirectory that links its assets from
   `/` (Vite's default `base`) loads blank from `dist/index.html`; one built with a relative base loads.
+- **A session's artifacts live in a folder of its own for as long as its row, and the agent decides whether a page
+  goes there** (`internal/artifact`, `internal/preview`): every spawn gets `<config>/lich/artifacts/<session id>/`,
+  named in `LICH_ARTIFACT_DIR`, in the MCP instructions and in `browser_open`'s description, and bound writable in a
+  confined session. It is served on a listener of its own at the checkout's `LICH_WORKTREE_PORT` plus 2000
+  (26000-26999, from 26000 for a session with no checkout), so a page there cannot fetch the checkout; every page of
+  one session shares that origin and its storage. The folder is named by the session's files key
+  (`store.SessionFilesKey`), which a resume carries to the row's fresh id, as it does for the dropped-file copies,
+  so it outlives a restart, a closed card and a resume, and a path already said in the conversation keeps naming its
+  page. It goes when the row is deleted; one a crash left behind goes at the next startup. Nothing caps its size, and a session kept in the history keeps its pages.
+  Nothing makes an agent use it: one sentence of the spawn briefing (`relay.SpawnBriefing`, naming the variable, not
+  the folder), the MCP instructions and the tool description are the whole of it. A Codex conversation resumed or
+  forked keeps the briefing it was born with (the bullet on their briefing), and Claude Code's own system prompt
+  still pushes it to publish to claude.ai with its Artifact tool, which the user then gets as a link instead of the
+  tab. No file name is set: the agent picks one, and a second page under the same name replaces the first.
+  The dock's Artifacts tab reads the folders of the open sessions every two seconds (`artifact.RunWatch`, no file
+  watcher), so a new page shows up to that late. It lists a folder's top level only: a file, or a folder holding an
+  `index.html`; hidden entries and symlinks are left out. Other sessions means the open ones of the same project, so
+  a parked session's pages show again only once it is resumed. Attach to prompt copies a page of another session
+  into the active one's folder (a folder page with everything in it), read through an `os.Root` so a link inside
+  the source cannot copy a file from elsewhere; edits to either copy never reach the other.
 - **`browser_eval` hands the agent whatever the page holds, form values and passwords included**
   (`internal/browser/eval.go`): page info never reads a field's value, but a script asks for what it wants, and
   its answer lands in the session's transcript. It runs in the page's own world, so it changes what the user

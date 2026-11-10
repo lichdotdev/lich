@@ -26,6 +26,7 @@ var migrations = []func(*sql.Tx) error{
 	addProjectServices,
 	addThreadFixes,
 	addSessionWatch,
+	addSessionFilesID,
 }
 
 // addSessionEffort is version 2: the reasoning effort a session was opened at,
@@ -201,6 +202,15 @@ func addSessionWatch(tx *sql.Tx) error {
 		}
 	}
 	return nil
+}
+
+// addSessionFilesID is version 14: the key a session's directories on disk are
+// named by (SessionFilesKey), "" for the session's own id. A resume gives the
+// row a fresh id and carries this over, so a dropped copy's or an artifact's
+// path said in the conversation keeps naming the file.
+func addSessionFilesID(tx *sql.Tx) error {
+	_, err := tx.Exec(`ALTER TABLE sessions ADD COLUMN files_id TEXT NOT NULL DEFAULT ''`)
+	return err
 }
 
 // migrate brings db up to len(migrations), one transaction per step, each step

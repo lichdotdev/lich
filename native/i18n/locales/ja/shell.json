@@ -41,7 +41,8 @@
     "browseCode": "コードを閲覧",
     "reviewChanges": "変更をレビュー",
     "viewPullRequest": "プルリクエストを見る",
-    "pullRequest": "PR #{number}"
+    "pullRequest": "PR #{number}",
+    "showArtifacts": "アーティファクトを表示"
   },
   "footerSession": {
     "contextWindow": "コンテキストウィンドウ",

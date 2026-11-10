@@ -236,3 +236,65 @@ func TestURLFailsOnlyWithTheWholeWindowTaken(t *testing.T) {
 		t.Fatalf("tried %d ports, want %d", tries, portCount)
 	}
 }
+
+func TestArtifactURLServesTheArtifactsFromAnOriginOfTheirOwn(t *testing.T) {
+	s := newTestService(t)
+	dir := checkout(t)
+	artifacts := t.TempDir()
+	if err := os.WriteFile(filepath.Join(artifacts, "report.html"), []byte("<h1>report</h1>"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	u, ok, err := s.ArtifactURL(artifacts, 24001, filepath.Join(artifacts, "report.html"))
+	if err != nil || !ok {
+		t.Fatalf("ArtifactURL = %q, %v, %v", u, ok, err)
+	}
+	if code, body := get(t, u); code != http.StatusOK || body != "<h1>report</h1>" {
+		t.Fatalf("GET %s = %d %q", u, code, body)
+	}
+	page, err := s.URL(dir, 24001, filepath.Join(dir, "site", "index.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	artifactURL, _ := url.Parse(u)
+	checkoutURL, _ := url.Parse(page)
+	if artifactURL.Host == checkoutURL.Host {
+		t.Fatalf("artifacts and checkout share the origin %s", artifactURL.Host)
+	}
+}
+
+func TestArtifactURLLeavesAPathOutsideTheArtifactsToTheCheckout(t *testing.T) {
+	s := newTestService(t)
+	dir := checkout(t)
+	u, ok, err := s.ArtifactURL(t.TempDir(), 24001, filepath.Join(dir, "site", "index.html"))
+	if ok || err != nil || u != "" {
+		t.Fatalf("ArtifactURL = %q, %v, %v; want it left to the checkout", u, ok, err)
+	}
+	if u, ok, err := s.ArtifactURL("", 24001, filepath.Join(dir, "site", "index.html")); ok || err != nil || u != "" {
+		t.Fatalf("ArtifactURL with no directory = %q, %v, %v", u, ok, err)
+	}
+}
+
+func TestArtifactURLPrefersTheWindowAboveTheCheckoutsPreview(t *testing.T) {
+	s := New()
+	var asked []int
+	s.listen = func(port int) (net.Listener, error) {
+		asked = append(asked, port)
+		return net.Listen("tcp", "127.0.0.1:0")
+	}
+	t.Cleanup(func() { _ = s.Close() })
+	artifacts := t.TempDir()
+	if _, _, err := s.ArtifactURL(artifacts, 24007, artifacts); err != nil {
+		t.Fatal(err)
+	}
+	if len(asked) != 1 || asked[0] != 26007 {
+		t.Fatalf("listened on %v, want [26007]", asked)
+	}
+	other := t.TempDir()
+	asked = nil
+	if _, _, err := s.ArtifactURL(other, 0, other); err != nil {
+		t.Fatal(err)
+	}
+	if len(asked) != 1 || asked[0] != 26000 {
+		t.Fatalf("listened on %v, want [26000]", asked)
+	}
+}

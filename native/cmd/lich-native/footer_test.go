@@ -152,7 +152,7 @@ func TestEditorDropAppliesAndSavesTheLayout(t *testing.T) {
 	r.f.drop(ui.SortDrop{ID: "clock", Over: "attach"})
 	r.settle(t)
 	want := footerLayout{
-		Left:  []string{"clock", "attach", "files", "changes", "pr"},
+		Left:  []string{"clock", "attach", "files", "changes", "artifacts", "pr"},
 		Right: []string{"checkout", "model", "context", "plan", "handsOn"},
 	}
 	if l, _ := r.f.snapshot(); !reflect.DeepEqual(l, want) {

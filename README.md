@@ -183,6 +183,7 @@ what lich can read back out of it, since each CLI records different things.
 | lich's own messages to the agent (handed tasks, results ready, notices) in the prompt language you pick | yes | yes | yes | yes | yes | yes | yes | yes |
 | Told at spawn, in the prompt language, to fan work out as lich sessions rather than hidden subagents | yes | no | no | no | yes | no | no | no |
 | The session card opens a browser its agent drives, in a tab beside the session | yes | yes | yes | yes | yes | yes | yes | yes |
+| A page the agent makes to show you (a report, a diagram, a mockup) opens in that browser from a folder of the session's own, outside the checkout, kept as long as the session | yes, though Claude Code may still publish it to claude.ai with its own Artifact tool | yes | yes | yes | yes | yes | yes | yes |
 
 </details>
 

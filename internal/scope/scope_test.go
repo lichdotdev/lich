@@ -17,6 +17,7 @@ func TestDeniesTheEscapes(t *testing.T) {
 		"project.ReadFile", "project.Open", "drop.Attach", "system.OpenExternal",
 		"system.Quit", "appupdate.Apply", "agentplugin.Install", "browser.Show",
 		"relay.SetShown", "relay.SetSchedule", "relay.AnnounceMerge",
+		"artifact.List", "artifact.Attach", "artifact.Open",
 	} {
 		if Allows(method) {
 			t.Errorf("%s is allowed to a confined session", method)

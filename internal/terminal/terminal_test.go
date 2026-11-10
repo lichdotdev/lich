@@ -96,6 +96,9 @@ type stubBins struct {
 	// kinds are the providers SessionKind answers per session; a session not
 	// listed has no recorded kind.
 	kinds map[string]string
+	// filesKeys are what SessionFilesKey answers per session; a session not
+	// listed keys its files by its own id.
+	filesKeys map[string]string
 }
 
 // stubLedger mirrors one session_costs row.
@@ -122,6 +125,12 @@ func (s stubBins) SessionEffort(_ string) string       { return s.effort }
 func (s stubBins) Ultracode(_ string) bool             { return s.ultracode }
 func (s stubBins) SubagentCards(_ string) bool         { return !s.subagentCardsOff }
 func (s stubBins) PasteUnfold(_ string) bool           { return s.pasteUnfold }
+func (s stubBins) SessionFilesKey(id string) string {
+	if key, ok := s.filesKeys[id]; ok {
+		return key
+	}
+	return id
+}
 func (s stubBins) SessionSubagentDepth(id string) int {
 	if depth, ok := s.inheritedSubagent[id]; ok {
 		return depth

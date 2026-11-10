@@ -14,7 +14,7 @@ import (
 
 // footerItemIcons is the glyph each chip wears beside its example reading.
 var footerItemIcons = map[string]*icons.Icon{
-	"attach": icAttach, "files": icCode, "changes": icons.Lucide("file-diff"), "pr": icPR,
+	"attach": icAttach, "files": icCode, "changes": icons.Lucide("file-diff"), "artifacts": icDockArtifacts, "pr": icPR,
 	"checkout": icBranch, "path": icFolder, "model": icons.Lucide("cpu"), "context": icGauge,
 	"plan": icGauge, "cost": icons.Lucide("coins"), "handsOn": icTimer, "clock": icons.Lucide("clock"),
 }

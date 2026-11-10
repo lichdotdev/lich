@@ -41,7 +41,8 @@
     "browseCode": "浏览代码",
     "reviewChanges": "审查更改",
     "viewPullRequest": "查看拉取请求",
-    "pullRequest": "PR #{number}"
+    "pullRequest": "PR #{number}",
+    "showArtifacts": "显示产物"
   },
   "footerSession": {
     "contextWindow": "上下文窗口",

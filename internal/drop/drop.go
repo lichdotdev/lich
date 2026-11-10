@@ -10,8 +10,9 @@
 // a prompt without the line that says so (copyNotice). The sandbox binds the
 // copies directory and nothing else of the home.
 //
-// The copies are kept one directory per session, and that is the unit they are
-// deleted in: a confined session sees its own directory mounted and not the one
+// The copies are kept one directory per session, named by its files key
+// (store.SessionFilesKey) so a resume, which gives the row a fresh id, finds
+// the copies it already pasted, and that is the unit they are deleted in: a confined session sees its own directory mounted and not the one
 // beside it, and every copy a session was dropped goes when its row does
 // (Purge): a copy lives exactly as long as the session it was dropped into,
 // and the clock only ever collects the orphans (Prune).
@@ -67,9 +68,11 @@ type Service struct {
 	dir string
 	// pick opens the host's file chooser. See SetPicker.
 	pick func(title string) (string, error)
-	// live reports whether a session's row is still there, open or parked. See
+	// live reports whether a row, open or parked, still holds a files key. See
 	// New.
-	live func(sessionID string) bool
+	live func(filesKey string) bool
+	// filesKey is the files key of a session. See SetFilesKey.
+	filesKey func(sessionID string) string
 	// promptLang is the language of the notice under a copy's path. See
 	// SetPromptLanguage.
 	promptLang func() prompt.Lang
@@ -97,6 +100,20 @@ func (s *Service) SetPicker(pick func(title string) (string, error)) {
 	s.pick = pick
 }
 
+// SetFilesKey wires how a session's id becomes the key its copies directory is
+// named by (store.SessionFilesKey); without it the id is the key. Startup
+// wiring, called before anything serves.
+func (s *Service) SetFilesKey(key func(sessionID string) string) {
+	s.filesKey = key
+}
+
+func (s *Service) keyOf(sessionID string) string {
+	if s.filesKey == nil || sessionID == "" {
+		return sessionID
+	}
+	return s.filesKey(sessionID)
+}
+
 // Dir is where a lich with this config directory keeps the copies. It is the
 // directory the sandbox binds into a confined session, so it is named here
 // rather than spelled out at the two callers (main.go wires it through to
@@ -112,11 +129,11 @@ func Dir(configDir string) string {
 // session that opened before the directory existed would land where that
 // session cannot read it.
 //
-// live answers whether a session's row still exists, open or parked
-// (store.SessionExists): it is what keeps the age rule off the copies of a
+// live answers whether a row, open or parked, still holds a files key
+// (store.FilesKeyInUse): it is what keeps the age rule off the copies of a
 // session that is still around. A nil one makes every copy an orphan, which is
 // what the tests want and never what a running lich does.
-func New(configDir string, live func(sessionID string) bool) *Service {
+func New(configDir string, live func(filesKey string) bool) *Service {
 	dir := Dir(configDir)
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		slog.Warn("drop: could not create the copies dir", "dir", dir, "err", err)
@@ -141,7 +158,7 @@ func (s *Service) Upload(w http.ResponseWriter, r *http.Request) {
 	// lands in, which is both what a confined session can read and what its
 	// close deletes. A copy dropped outside either would live on with nothing
 	// to end it.
-	session := element(r.URL.Query().Get("session"))
+	session := element(s.keyOf(r.URL.Query().Get("session")))
 	if session == "" {
 		http.Error(w, "missing session", http.StatusBadRequest)
 		return
@@ -234,7 +251,7 @@ func under(root, path string) bool {
 func (s *Service) copyIn(sessionID, path string) (string, error) {
 	// Without a session there is no directory the sandbox binds, so a copy would
 	// land where the session it was made for cannot read it.
-	session, name := element(sessionID), element(filepath.Base(path))
+	session, name := element(s.keyOf(sessionID)), element(filepath.Base(path))
 	if session == "" || name == "" {
 		return "", fmt.Errorf("cannot attach %q to session %q", path, sessionID)
 	}
@@ -318,15 +335,15 @@ func (s *Service) Save(sessionID, name string, body io.Reader) (string, error) {
 	return path, nil
 }
 
-// Purge deletes every copy dropped into one session. It is what makes a copy
+// Purge deletes every copy dropped into one session, by its files key. It is what makes a copy
 // die with the session it was dropped into rather than with the clock: the
 // paths pasted from it only ever meant anything inside that conversation, and
 // the session's own row is gone by the time this runs (store.SetSessionGone).
 //
 // Best effort, like Prune: a failure leaves copies that the age rule still
 // clears.
-func (s *Service) Purge(sessionID string) {
-	name := element(sessionID)
+func (s *Service) Purge(filesKey string) {
+	name := element(filesKey)
 	if name == "" {
 		return
 	}

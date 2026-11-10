@@ -22,6 +22,7 @@ var ptBR = Catalog{
 	BriefingCommandTools: "As ferramentas do lich na sua lista abrem uma e entregam a tarefa a ela.",
 	BriefingCommandCLI: "Abra uma com `lich open --worktree BRANCH --prompt 'a tarefa'`, que abre a " +
 		"sessão e entrega a tarefa a ela em um só comando.",
+	BriefingArtifacts: " Uma página que você faz para o usuário ver (um relatório, um diagrama, um mockup) vai na pasta que a variável de ambiente LICH_ARTIFACT_DIR indica, nunca no checkout, e abre com %s na aba de navegador ao lado desta sessão; publique em outro lugar só quando o usuário pedir.",
 
 	RelayMessage:  "[lich] %[1]s, não do seu próprio prompt.\n\n%[2]s\n\n%[3]s",
 	OriginCLI:     "Mensagem repassada pela linha de comando do lich",
@@ -81,7 +82,8 @@ var ptBR = Catalog{
 	ScheduledOnResult: "Armado. Seu prompt será digitado nesta sessão em %[1]s, no máximo %[2]d vezes em um mesmo pull request.",
 	ScheduleCleared:   "O prompt agendado desta sessão foi removido.",
 
-	CopyNotice: "[lich] cópia de %s; o original não é acessível a partir desta sessão, as edições ficam na cópia.",
+	CopyNotice:         "[lich] cópia de %s; o original não é acessível a partir desta sessão, as edições ficam na cópia.",
+	ArtifactCopyNotice: "[lich] cópia de %[1]s da sessão %[2]q; edições ficam na cópia.",
 
 	MCPInstructions: `O lich roda sessões de agentes de código lado a lado em uma janela; estas ferramentas são como esta sessão trabalha com as outras.
 
@@ -94,6 +96,7 @@ Um subagente ou etapa de workflow rodando dentro desta sessão não é o agente 
 Quando uma mensagem [lich] com ticket chega ao SEU prompt, você é a sessão de trabalho: faça a tarefa e responda com %s, um relatório conciso (o que foi feito, onde, o que falta), nunca uma transcrição.
 
 Esta sessão tem um navegador próprio (ferramentas browser_*). Ele roda sem janela dentro do lich, e o usuário vê a mesma página numa aba ao lado desta sessão: o item Navegador do card abre essa aba, e o lich oferece com um aviso quando você abre o navegador. Nenhuma janela própria aparece, e nenhuma é necessária: não peça ao usuário para abrir uma. Abra, leia a página, clique, digite, pressione teclas nomeadas e capture a tela. Capturas são arquivos. Nunca cole os bytes na resposta.`,
+	MCPArtifacts: "Páginas que você faz para o usuário ver (um relatório, um diagrama, um mockup) vão na pasta de artefatos desta sessão, %s, nunca no checkout: lá elas ficam fora do git, sobrevivem a um restart e duram tanto quanto a sessão. Grave o arquivo lá e abra com browser_open: o usuário vê na aba ao lado desta sessão. Publique em qualquer outro lugar, os artefatos hospedados do seu próprio harness incluídos, só quando o usuário pedir isso.",
 	HandOverFailed: "A tarefa não chegou a ela: %[1]v. A sessão está aberta, então entregue a tarefa com " +
 		"%[2]s depois de resolver o que isso diz.",
 	SendToSessionPrivate: "send_to_session com private",

@@ -1,9 +1,9 @@
 package main
 
 // The right dock: the panel at the terminal's right that the
-// footer's Browse code and Review changes buttons open, on its Code or its
-// Review tab. It owns the chrome around both bodies: the drag-resizable width
-// (one, persisted, for both tabs), full screen, the tab bar and the close
+// footer's Browse code, Review changes and Artifacts buttons open, on its
+// Code, its Review or its Artifacts tab. It owns the chrome around both bodies: the drag-resizable width
+// (one, persisted, for every tab), full screen, the tab bar and the close
 // button.
 //
 // The Review tab is a body the dock hands the frame to, through reviewTab:
@@ -69,6 +69,7 @@ const (
 	dockClosed dockTab = iota
 	dockCode
 	dockReview
+	dockArtifacts
 )
 
 // toggled returns the tab after asking for to: asking for the tab on screen
@@ -120,10 +121,11 @@ type dock struct {
 	close      iconActionState
 	code       *codeTab
 	review     reviewTab
+	artifacts  *artifactsTab
 }
 
-func newDock(code *codeTab, review reviewTab) *dock {
-	return &dock{widthRem: dockDefaultRem, resize: ui.ResizeHandle{Edge: ui.PanelEdgeLeft}, code: code, review: review}
+func newDock(code *codeTab, review reviewTab, artifacts *artifactsTab) *dock {
+	return &dock{widthRem: dockDefaultRem, resize: ui.ResizeHandle{Edge: ui.PanelEdgeLeft}, code: code, review: review, artifacts: artifacts}
 }
 
 // holdsKeys reports whether a field of the dock has focus. The terminal asks
@@ -135,6 +137,8 @@ func (d *dock) holdsKeys(gtx C) bool {
 		return d.code.focused(gtx)
 	case dockReview:
 		return d.review.holdsKeys(gtx)
+	case dockArtifacts:
+		return d.artifacts.holdsKeys()
 	}
 	return false
 }
@@ -179,8 +183,12 @@ func (d *dock) layout(gtx C, th *ui.Theme, root *ui.Root, in dockInput) (saveWid
 }
 
 func (d *dock) body(gtx C, th *ui.Theme, root *ui.Root, in dockInput) error {
-	if d.tab == dockReview {
+	switch d.tab {
+	case dockReview:
 		return d.review.layoutBody(gtx, th, in)
+	case dockArtifacts:
+		d.artifacts.layout(gtx, th, root, in.sessionID)
+		return nil
 	}
 	return d.code.layout(gtx, th, root, in)
 }
@@ -194,7 +202,11 @@ func (d *dock) header(gtx C, th *ui.Theme, root *ui.Root, in dockInput) D {
 	if changed {
 		review.Trailing = func(gtx C) D { return diffStat(gtx, th, in.git.Added, in.git.Deleted) }
 	}
-	tabs := th.Tabs(&d.tabs, ui.TabsTrigger{Text: i18n.T("dock.rightDock.tabCode"), Icon: icDockCode}, review)
+	artifacts := ui.TabsTrigger{Text: i18n.T("dock.rightDock.tabArtifacts"), Icon: icDockArtifacts}
+	if n := d.artifacts.count(in.sessionID); n > 0 {
+		artifacts.Trailing = th.Text(ui.TextXS, strconv.Itoa(n)).Mono().Muted().Layout
+	}
+	tabs := th.Tabs(&d.tabs, ui.TabsTrigger{Text: i18n.T("dock.rightDock.tabCode"), Icon: icDockCode}, review, artifacts)
 	tabs.Variant = ui.TabsVariantGhost
 	fullIcon, fullLabel := icDockMaximize, i18n.T("dock.rightDock.fullScreen")
 	if d.fullscreen {

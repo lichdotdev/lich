@@ -171,6 +171,74 @@ func TestReopenSessionRestoresByID(t *testing.T) {
 	}
 }
 
+// TestReopenSessionKeepsTheFilesKey: a resume reinserts the row under a fresh
+// id, and the paths of its dropped copies and its artifacts are already said in
+// the conversation it carries on, so the directory they name has to stay that
+// session's, and go only when the resumed row does.
+func TestReopenSessionKeepsTheFilesKey(t *testing.T) {
+	svc := newTestStore(t)
+	var gone []string
+	svc.SetSessionGone(func(key string) { gone = append(gone, key) })
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "keep", Label: "Session 1", Kind: "claude", NextSeq: 2})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "root", Label: "root work", Kind: "claude", NextSeq: 3})
+	if got := svc.SessionFilesKey("root"); got != "root" {
+		t.Fatalf("SessionFilesKey before any resume = %q, want the session's own id", got)
+	}
+
+	current := "root"
+	for _, fresh := range []string{"fresh", "again"} {
+		_, _ = svc.CloseSession(t.Context(), api.ParkSessionOptions{ProjectID: "p1", SessionID: current, ActiveID: "keep"})
+		if _, err := svc.ReopenSession(t.Context(), api.ReopenSessionOptions{SessionID: current, NewSessionID: fresh}); err != nil {
+			t.Fatalf("ReopenSession: %v", err)
+		}
+		current = fresh
+		if got := svc.SessionFilesKey(fresh); got != "root" {
+			t.Errorf("SessionFilesKey(%s) = %q, want the key the session was born with", fresh, got)
+		}
+	}
+	if !svc.FilesKeyInUse("root") || svc.FilesKeyInUse("fresh") {
+		t.Errorf("FilesKeyInUse(root) = %v, FilesKeyInUse(fresh) = %v; want only the carried key held", svc.FilesKeyInUse("root"), svc.FilesKeyInUse("fresh"))
+	}
+	if len(gone) != 0 {
+		t.Fatalf("resuming reported %v gone", gone)
+	}
+	if err := svc.DeleteSession("p1", "again", "keep"); err != nil {
+		t.Fatal(err)
+	}
+	if len(gone) != 1 || gone[0] != "root" {
+		t.Errorf("reported gone = %v, want the carried key once", gone)
+	}
+	if svc.FilesKeyInUse("root") {
+		t.Error("the key is still held after its row was deleted")
+	}
+}
+
+func TestOpenFilesKeysListsOnlyOpenSessions(t *testing.T) {
+	svc := newTestStore(t)
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "keep", Label: "Session 1", Kind: "claude", NextSeq: 2})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "root", Label: "root work", Kind: "claude", NextSeq: 3})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "parked", Label: "parked", Kind: "claude", NextSeq: 4})
+	_, _ = svc.CloseSession(t.Context(), api.ParkSessionOptions{ProjectID: "p1", SessionID: "root", ActiveID: "keep"})
+	_, _ = svc.ReopenSession(t.Context(), api.ReopenSessionOptions{SessionID: "root", NewSessionID: "fresh"})
+	_, _ = svc.CloseSession(t.Context(), api.ParkSessionOptions{ProjectID: "p1", SessionID: "parked", ActiveID: "keep"})
+
+	keys, err := svc.OpenFilesKeys()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(keys) != 2 || keys["keep"] != "keep" || keys["fresh"] != "root" {
+		t.Errorf("OpenFilesKeys = %v, want keep and the resumed session under its carried key", keys)
+	}
+	if got := svc.SessionLabel("fresh"); got != "root work" {
+		t.Errorf("SessionLabel(fresh) = %q", got)
+	}
+	if got := svc.SessionLabel("never"); got != "" {
+		t.Errorf("SessionLabel(never) = %q, want empty", got)
+	}
+}
+
 // TestReopenSessionKeepsThePin: the pin holds until the user takes it off, and
 // a park by `lich close` — which the sidebar's withheld close button cannot
 // stop — is not that. A resume that dropped it would put the card back in the

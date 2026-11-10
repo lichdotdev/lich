@@ -7,11 +7,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"slices"
 	"strings"
 	"time"
 
 	"github.com/lichdotdev/lich/api"
+	"github.com/lichdotdev/lich/internal/artifact"
 	"github.com/lichdotdev/lich/internal/prompt"
 	"github.com/lichdotdev/lich/internal/relay"
 	"github.com/lichdotdev/lich/internal/spawn"
@@ -116,8 +118,17 @@ const privateToolUsage = "Set this when you are a subagent or workflow step runn
 // this is the only place the whole journey — fan out, carry on, collect — is
 // told as one, and the difference between an agent that orchestrates and one
 // that never realizes it could.
+//
+// The artifact paragraph names the session's own folder, so an agent whose
+// file tools take no variables can write there; a lich mcp started outside a
+// lich session has none, and the paragraph is left out.
 func mcpInstructions(lang prompt.Lang) string {
-	return fmt.Sprintf(prompt.For(lang).MCPInstructions, relay.ToolReply)
+	catalog := prompt.For(lang)
+	text := fmt.Sprintf(catalog.MCPInstructions, relay.ToolReply)
+	if dir := os.Getenv(artifact.EnvVar); dir != "" {
+		text += "\n\n" + fmt.Sprintf(catalog.MCPArtifacts, dir)
+	}
+	return text
 }
 
 // serveMCP runs the stdio server until its input ends. Messages are answered

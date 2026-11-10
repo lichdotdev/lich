@@ -50,6 +50,10 @@ A local file inside the session's checkout, typed or sent as an absolute path
 or a `file:` URL, loads over http instead (`internal/preview`): the backend
 serves that checkout on `127.0.0.1`, at its `LICH_WORKTREE_PORT` plus 1000, so
 each checkout is its own origin, and a path outside the checkout is refused.
+A file in the session's artifact folder (`LICH_ARTIFACT_DIR`, `internal/artifact`),
+where the agent writes the pages it makes to show the user, loads the same way
+from a listener of its own at `LICH_WORKTREE_PORT` plus 2000, so those pages
+never share the checkout's origin.
 Page info never includes form values. Screenshots are files, their longest
 side at most 1280 pixels (`shotMax`); a click at x and y is in that image's
 pixels and lands scaled back to the page's. An annotated screenshot reads the

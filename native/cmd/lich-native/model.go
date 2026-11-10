@@ -120,6 +120,8 @@ type model struct {
 	services servicesStore
 	// threadFixes is the review threads waiting for a push.
 	threadFixes threadFixStore
+	// artifacts is every open session's artifact list.
+	artifacts artifactStore
 	// console is the service whose console is on screen in place of the
 	// active session, "" for none.
 	console string
@@ -356,6 +358,10 @@ func (m *model) follow(ctx context.Context, events <-chan backend.Event) {
 		case api.ThreadFixesEvent.Name:
 			if list, err := backend.Decode(ev, api.ThreadFixesEvent); err == nil {
 				m.threadFixes.set(list)
+			}
+		case api.ArtifactsEvent.Name:
+			if a, err := backend.Decode(ev, api.ArtifactsEvent); err == nil {
+				m.artifacts.apply(a)
 			}
 		case api.ServiceRevealEvent.Name:
 			if r, err := backend.Decode(ev, api.ServiceRevealEvent); err == nil && m.serviceReveal != nil {

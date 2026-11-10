@@ -16,9 +16,11 @@ var browserTools = []mcpTool{
 		Name: "browser_open",
 		Description: "Open a page in this session's browser, creating it if there is none. It runs headless: the " +
 			"user sees the page in a tab beside this session, so headed false is expected. url is " +
-			"http(s), omitted for about:blank, or a file inside this session's checkout, which lich " +
-			"serves over http from 127.0.0.1; other schemes are refused. A URL that answers with a file " +
-			"downloads it to the user's Downloads folder, named in downloads.",
+			"http(s), omitted for about:blank, or a file inside this session's checkout or its artifact " +
+			"folder ($LICH_ARTIFACT_DIR), which lich serves over http from 127.0.0.1; other schemes are " +
+			"refused. A page you make to show the user (a report, a diagram, a mockup) goes in the " +
+			"artifact folder, never the checkout; publish it anywhere else only when the user asks. A URL " +
+			"that answers with a file downloads it to the user's Downloads folder, named in downloads.",
 		Schema: schema(map[string]any{
 			"url": property("string", "Page to load. Omit for about:blank."),
 		}),
@@ -145,7 +147,7 @@ var browserTools = []mcpTool{
 		Name:        "browser_navigate",
 		Description: "Load a URL in this session's open browser, with browser_open's rules.",
 		Schema: schema(map[string]any{
-			"url": property("string", "http(s) URL, about:blank, or a file inside this session's checkout."),
+			"url": property("string", "http(s) URL, about:blank, or a file inside this session's checkout or artifact folder."),
 		}, "url"),
 		Run: func(ctx context.Context, c *client, a mcpArgs) (string, error) {
 			id, err := c.browserOwner()
