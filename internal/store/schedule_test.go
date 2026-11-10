@@ -217,7 +217,7 @@ func TestForfeitIsReportedAfterTheReadIsDone(t *testing.T) {
 	_ = svc.SetSessionSchedule("wt1", 1700000000, "run the release checklist")
 
 	read := make(chan bool, 1)
-	svc.SetScheduleForfeited(func(ForfeitedSchedule) { read <- svc.SessionExists("wt1") })
+	svc.SetScheduleForfeited(func(ForfeitedSchedule) { read <- svc.FilesKeyInUse("wt1") })
 
 	done := make(chan error, 1)
 	go func() { done <- svc.DeleteSession("p1", "wt1", "base") }()

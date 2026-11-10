@@ -19,6 +19,7 @@ import (
 	"github.com/lichdotdev/lich/internal/agentplugin"
 	"github.com/lichdotdev/lich/internal/appkit"
 	"github.com/lichdotdev/lich/internal/appupdate"
+	"github.com/lichdotdev/lich/internal/artifact"
 	"github.com/lichdotdev/lich/internal/browser"
 	"github.com/lichdotdev/lich/internal/claudeprofile"
 	"github.com/lichdotdev/lich/internal/cli"
@@ -222,7 +223,15 @@ func registerServices(db *store.Service, term *terminal.Service, svcs *services.
 	// Never the lich window: this is a second browser the agent drives.
 	brows := browser.New(hub.Emit)
 	previews := preview.New()
+	artifacts := artifact.Dir(configDir)
+	artifactURL := func(session, raw string) (string, bool, error) {
+		_, port := term.SessionCheckout(session)
+		return previews.ArtifactURL(artifact.SessionDir(artifacts, db.SessionFilesKey(session)), port, raw)
+	}
 	brows.SetLocal(preview.IsLocal, func(owner, raw string) (string, error) {
+		if u, ok, err := artifactURL(owner, raw); ok || err != nil {
+			return u, err
+		}
 		dir, port := term.SessionCheckout(owner)
 		return previews.URL(dir, port, raw)
 	})
@@ -268,9 +277,10 @@ func registerServices(db *store.Service, term *terminal.Service, svcs *services.
 	// Every service the window uses goes through the loopback RPC
 	// (internal/rpc). store.Close manages the DB lifecycle and stays Go-only.
 	dispatcher := rpc.New()
-	// db.SessionExists is what keeps the age rule off a live session's copies:
+	// db.FilesKeyInUse is what keeps the age rule off a live session's copies:
 	// they are deleted by the session's row going away, not by the clock.
-	drops := drop.New(configDir, db.SessionExists)
+	drops := drop.New(configDir, db.FilesKeyInUse)
+	drops.SetFilesKey(db.SessionFilesKey)
 	// The other prune runs after each new copy; this one is what clears the
 	// last of them for a lich that is never dropped on again — and the only one
 	// that may remove a session's directory outright, no session having spawned
@@ -288,7 +298,32 @@ func registerServices(db *store.Service, term *terminal.Service, svcs *services.
 	} else {
 		term.SetShellIntegrationDir(shellScripts)
 	}
-	db.SetSessionGone(drops.Purge)
+	// The pages a session's agent writes for its browser live as long as the
+	// row, like the copies, under the same files key.
+	arts := artifact.New(artifacts, db.FilesKeyInUse)
+	arts.PruneOrphans()
+	arts.SetSessions(artifact.Sessions{
+		Open: db.OpenFilesKeys, Key: db.SessionFilesKey, Label: db.SessionLabel, Lang: db.PromptLanguage,
+		// Another session's page keeps its own origin: served from its
+		// folder's listener, not copied under the viewing session's.
+		Show: func(session, from, path string) error {
+			u, ok, err := artifactURL(from, path)
+			if err == nil && !ok {
+				err = fmt.Errorf("%q is not an artifact of session %q", path, from)
+			}
+			if err != nil {
+				return err
+			}
+			_, err = brows.Open(session, u)
+			return err
+		},
+	}, hub.Emit)
+	go arts.RunWatch()
+	term.SetArtifactDir(artifacts)
+	db.SetSessionGone(func(key string) {
+		drops.Purge(key)
+		arts.Purge(key)
+	})
 	// The footer's attach button opens the picker through the drop service, so
 	// the file it copies for a confined session is one a human chose in a dialog
 	// (drop.Attach says why that matters).
@@ -298,6 +333,7 @@ func registerServices(db *store.Service, term *terminal.Service, svcs *services.
 	routes.Terminal(dispatcher, term)
 	routes.Browser(dispatcher, brows)
 	routes.Drop(dispatcher, drops)
+	routes.Artifact(dispatcher, arts)
 	routes.Project(dispatcher, proj)
 	plugins := agentplugin.New(db)
 	routes.AgentPlugin(dispatcher, plugins)

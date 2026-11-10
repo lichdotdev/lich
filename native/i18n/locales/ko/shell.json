@@ -41,7 +41,8 @@
     "browseCode": "코드 둘러보기",
     "reviewChanges": "변경 사항 리뷰",
     "viewPullRequest": "풀 리퀘스트 보기",
-    "pullRequest": "PR #{number}"
+    "pullRequest": "PR #{number}",
+    "showArtifacts": "아티팩트 보기"
   },
   "footerSession": {
     "contextWindow": "컨텍스트 창",

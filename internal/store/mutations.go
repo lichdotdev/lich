@@ -189,6 +189,7 @@ func (s *Service) addSession(
 // to activeID (the neighbor the window picked, or "" when none remain).
 func (s *Service) DeleteSession(projectID, sessionID, activeID string) error {
 	s.noteForfeitedSchedules(`id = ?`, sessionID)
+	gone := s.filesKeysWhere(`id = ?`, sessionID)
 	if err := s.tx(func(tx *sql.Tx) error {
 		if _, err := tx.Exec(`DELETE FROM sessions WHERE id = ?`, sessionID); err != nil {
 			return fmt.Errorf("delete session %q: %w", sessionID, err)
@@ -197,7 +198,7 @@ func (s *Service) DeleteSession(projectID, sessionID, activeID string) error {
 	}); err != nil {
 		return err
 	}
-	s.sessionIsGone(sessionID)
+	s.sessionIsGone(gone...)
 	return nil
 }
 
@@ -279,7 +280,7 @@ func (s *Service) ForgetSession(_ context.Context, opts api.SessionIDOptions) (a
 	const parkedCopies = `is_open = 0 AND (id = ? OR (provider_session_id <> '' AND provider_session_id =
 		(SELECT provider_session_id FROM sessions WHERE id = ? AND is_open = 0)))`
 	s.noteForfeitedSchedules(parkedCopies, opts.ID, opts.ID)
-	gone := s.sessionIDsWhere(parkedCopies, opts.ID, opts.ID)
+	gone := s.filesKeysWhere(parkedCopies, opts.ID, opts.ID)
 	if _, err := s.db.Exec(`DELETE FROM sessions WHERE `+parkedCopies, opts.ID, opts.ID); err != nil {
 		return api.None{}, fmt.Errorf("forget session %q: %w", opts.ID, err)
 	}
@@ -354,8 +355,12 @@ func (s *Service) reopen(newSessionID, where string, args ...any) (*Session, err
 		//
 		// project_id is read rather than passed: reopening by id knows only the
 		// session, and the row is what says where it belongs.
+		//
+		// The files key rides along because the paths of the session's dropped
+		// copies and artifacts are in the conversation it resumes: a fresh key
+		// would leave every one of them naming a directory no row holds.
 		var labelAuto int
-		var projectID, model, effort, sandbox, folder, color, profile string
+		var projectID, model, effort, sandbox, folder, color, profile, filesID string
 		var ultracode bool
 		var subagent int
 		var forkOffset float64
@@ -363,7 +368,8 @@ func (s *Service) reopen(newSessionID, where string, args ...any) (*Session, err
 			`SELECT id, project_id, label, kind, path, provider_session_id, label_auto,
 			        model, effort, ultracode, subagent, sandbox, pinned, folder, color, origin_session_id, origin_label,
 			        forked, scheduled_at, scheduled_prompt, scheduled_by, fork_cost_offset, profile,
-			        watch_on, watch_prompt, watch_by, watch_runs, watch_pr, watch_seen
+			        watch_on, watch_prompt, watch_by, watch_runs, watch_pr, watch_seen,
+			        CASE files_id WHEN '' THEN id ELSE files_id END
 			   FROM sessions `+where,
 			args...,
 		)
@@ -373,6 +379,7 @@ func (s *Service) reopen(newSessionID, where string, args ...any) (*Session, err
 			&old.OriginSessionID, &old.OriginLabel, &old.Forked,
 			&old.ScheduledAt, &old.ScheduledPrompt, &old.ScheduledBy, &forkOffset, &profile,
 			&old.Watch.On, &old.Watch.Prompt, &old.Watch.By, &old.Watch.Runs, &old.Watch.PR, &old.Watch.Seen,
+			&filesID,
 		); err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				return nil // nothing parked; caller creates a new session
@@ -423,12 +430,12 @@ func (s *Service) reopen(newSessionID, where string, args ...any) (*Session, err
 			   (id, project_id, label, kind, path, provider_session_id, label_auto,
 			    model, effort, ultracode, subagent, sandbox, pinned, folder, color, origin_session_id, origin_label,
 			    forked, scheduled_at, scheduled_prompt, scheduled_by, fork_cost_offset, profile,
-			    watch_on, watch_prompt, watch_by, watch_runs, watch_pr, watch_seen, position)
-			 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, `+nextSessionPosition+`)`,
+			    watch_on, watch_prompt, watch_by, watch_runs, watch_pr, watch_seen, files_id, position)
+			 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, `+nextSessionPosition+`)`,
 			newSessionID, projectID, old.Label, old.Kind, old.Path, old.ProviderSessionID, labelAuto,
 			model, effort, ultracode, subagent, sandbox, old.Pinned, folder, color, old.OriginSessionID, old.OriginLabel,
 			old.Forked, old.ScheduledAt, old.ScheduledPrompt, old.ScheduledBy, forkOffset, profile,
-			old.Watch.On, old.Watch.Prompt, old.Watch.By, old.Watch.Runs, old.Watch.PR, old.Watch.Seen, projectID,
+			old.Watch.On, old.Watch.Prompt, old.Watch.By, old.Watch.Runs, old.Watch.PR, old.Watch.Seen, filesID, projectID,
 		); err != nil {
 			return fmt.Errorf("reinsert session %q: %w", newSessionID, err)
 		}
@@ -497,8 +504,8 @@ func (s *Service) PurgeWorktreeSessions(_ context.Context, opts api.WorktreeSess
 	}
 	s.noteForfeitedSchedules(`project_id = ? AND path = ?`, opts.ProjectID, opts.Path)
 	// Read before the delete, because what hangs off a session outside the
-	// database is keyed by id and the rows are about to be gone.
-	gone := s.sessionIDsWhere(`project_id = ? AND path = ?`, opts.ProjectID, opts.Path)
+	// database is keyed by its files key and the rows are about to be gone.
+	gone := s.filesKeysWhere(`project_id = ? AND path = ?`, opts.ProjectID, opts.Path)
 	if _, err := s.db.Exec(
 		`DELETE FROM sessions WHERE project_id = ? AND path = ?`, opts.ProjectID, opts.Path,
 	); err != nil {
@@ -508,15 +515,15 @@ func (s *Service) PurgeWorktreeSessions(_ context.Context, opts api.WorktreeSess
 	return api.None{}, nil
 }
 
-// sessionIDsWhere lists the sessions a delete with the same WHERE is about to
-// remove. Only asked when something is listening for deleted sessions, so a
-// store without that wiring runs the query it always ran. A failed read costs
-// the cleanup, never the delete.
-func (s *Service) sessionIDsWhere(where string, args ...any) []string {
+// filesKeysWhere lists the files keys of the sessions a delete with the same
+// WHERE is about to remove. Only asked when something is listening for deleted
+// sessions, so a store without that wiring runs the query it always ran. A
+// failed read costs the cleanup, never the delete.
+func (s *Service) filesKeysWhere(where string, args ...any) []string {
 	if s.sessionGone == nil {
 		return nil
 	}
-	rows, err := s.db.Query(`SELECT id FROM sessions WHERE `+where, args...)
+	rows, err := s.db.Query(`SELECT CASE files_id WHEN '' THEN id ELSE files_id END FROM sessions WHERE `+where, args...)
 	if err != nil {
 		slog.Warn("list sessions to delete", "err", err)
 		return nil
@@ -912,23 +919,62 @@ func (s *Service) SessionSandbox(sessionID string) string {
 	return sandbox.String
 }
 
-// SessionExists reports whether a session's row is still there, open or
-// parked, the two states a row can be in; only a delete removes it. It is what
-// tells lich's dropped-file copies apart from the ones an unclean exit
-// orphaned (internal/drop): the copies of a session that still exists are
-// still worth keeping, whatever their age.
-//
-// A read that failed answers true: the row not being readable is not the row
-// being gone, and the caller deletes on a false.
-func (s *Service) SessionExists(sessionID string) bool {
-	var exists bool
+// SessionFilesKey names the directories that hang off a session on disk, its
+// dropped-file copies (internal/drop) and its artifacts (internal/artifact).
+// It is the session's own id until a resume reinserts the row under a fresh one
+// (reopen), which carries the key over.
+func (s *Service) SessionFilesKey(sessionID string) string {
+	var key string
+	err := s.db.QueryRow(`SELECT files_id FROM sessions WHERE id = ?`, sessionID).Scan(&key)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		slog.Warn("session files key", "session", sessionID, "err", err)
+	}
+	if key == "" {
+		return sessionID
+	}
+	return key
+}
+
+// OpenFilesKeys maps every open session to its files key (SessionFilesKey).
+func (s *Service) OpenFilesKeys() (map[string]string, error) {
+	rows, err := s.db.Query(`SELECT id, CASE files_id WHEN '' THEN id ELSE files_id END FROM sessions WHERE is_open = 1`)
+	if err != nil {
+		return nil, fmt.Errorf("list open sessions: %w", err)
+	}
+	defer rows.Close()
+	keys := map[string]string{}
+	for rows.Next() {
+		var id, key string
+		if err := rows.Scan(&id, &key); err != nil {
+			return nil, fmt.Errorf("scan open session: %w", err)
+		}
+		keys[id] = key
+	}
+	return keys, rows.Err()
+}
+
+// SessionLabel is the name a session's card shows, "" for an unknown one.
+func (s *Service) SessionLabel(sessionID string) string {
+	var label string
+	err := s.db.QueryRow(`SELECT label FROM sessions WHERE id = ?`, sessionID).Scan(&label)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		slog.Warn("session label", "session", sessionID, "err", err)
+	}
+	return label
+}
+
+// FilesKeyInUse reports whether a row, open or parked, still holds key: what
+// keeps a cleanup off the directories of a session that is still around. A
+// failed read answers true, since deleting on a guess loses the files.
+func (s *Service) FilesKeyInUse(key string) bool {
+	var held bool
 	if err := s.db.QueryRow(
-		`SELECT EXISTS (SELECT 1 FROM sessions WHERE id = ?)`, sessionID,
-	).Scan(&exists); err != nil {
-		slog.Warn("session exists", "session", sessionID, "err", err)
+		`SELECT EXISTS (SELECT 1 FROM sessions WHERE files_id = ? OR (files_id = '' AND id = ?))`, key, key,
+	).Scan(&held); err != nil {
+		slog.Warn("files key in use", "key", key, "err", err)
 		return true
 	}
-	return exists
+	return held
 }
 
 // SetProviderSession records the provider conversation id running inside a lich

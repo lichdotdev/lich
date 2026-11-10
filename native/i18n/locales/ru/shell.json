@@ -41,7 +41,8 @@
     "browseCode": "Обзор кода",
     "reviewChanges": "Просмотр изменений",
     "viewPullRequest": "Открыть pull request",
-    "pullRequest": "PR #{number}"
+    "pullRequest": "PR #{number}",
+    "showArtifacts": "Показать артефакты"
   },
   "footerSession": {
     "contextWindow": "Контекстное окно",

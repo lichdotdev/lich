@@ -218,8 +218,12 @@ func (f *footer) act(gtx C, in footerInput) {
 	if f.w("changes").click.Clicked(gtx) {
 		f.dock.tab = f.dock.tab.toggled(dockReview)
 	}
+	if f.w("artifacts").click.Clicked(gtx) {
+		f.dock.tab = f.dock.tab.toggled(dockArtifacts)
+	}
 	f.w("files").pressed = f.dock.tab == dockCode
 	f.w("changes").pressed = f.dock.tab == dockReview
+	f.w("artifacts").pressed = f.dock.tab == dockArtifacts
 	if f.w("pr").click.Clicked(gtx) && in.pr != nil && f.openPullRequest != nil {
 		f.openPullRequest(prTarget(in.pr, in.path, in.checkout))
 	}
@@ -256,6 +260,8 @@ func (f *footer) slot(gtx C, th *ui.Theme, s footerSlot, in footerInput) D {
 		return footerButton(gtx, th, f.root, w, i18n.T("shell.footerBar.browseCode"), false, false, iconOnly(icCode))
 	case "changes":
 		return footerButton(gtx, th, f.root, w, i18n.T("shell.footerBar.reviewChanges"), true, false, changesContent(in.git))
+	case "artifacts":
+		return footerButton(gtx, th, f.root, w, i18n.T("shell.footerBar.showArtifacts"), false, false, iconOnly(icDockArtifacts))
 	case "pr":
 		return footerButton(gtx, th, f.root, w, i18n.T("shell.footerBar.viewPullRequest"), true, false, glyphText(icPR, i18n.T("shell.footerBar.pullRequest", i18n.Args{"number": in.pr.Number})))
 	case "checkout", "path":

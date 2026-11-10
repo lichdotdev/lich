@@ -10,6 +10,7 @@ import (
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/agentplugin"
+	"github.com/lichdotdev/lich/internal/artifact"
 	"github.com/lichdotdev/lich/internal/providers"
 	"github.com/lichdotdev/lich/internal/relay"
 
@@ -154,6 +155,11 @@ func (s *Service) spawnSession(opts api.StartOptions, profileDir, name string, o
 		return nil, "", err
 	}
 	env = mcpEnv(env, opts.Kind, mcpBin)
+	filesKey := s.store.SessionFilesKey(opts.ID)
+	artifacts := sessionArtifactDir(s.artifactDir, filesKey)
+	if artifacts != "" {
+		env = append(env, artifact.EnvVar+"="+artifacts)
+	}
 	route, lang := subagentRoute(opts.Kind, depth, cardsOn), s.promptLanguage()
 	env = briefingEnv(env, opts.Kind, route, lang)
 	model := s.store.SessionModel(opts.ID)
@@ -193,8 +199,8 @@ func (s *Service) spawnSession(opts api.StartOptions, profileDir, name string, o
 		return nil, "", err
 	}
 	creds := s.sandboxCredentials(opts.ProjectID, opts.Cwd, inSandbox)
-	reads := []string{sessionDropDir(s.dropDir, opts.ID, inSandbox), s.shellIntegrationDir}
-	spec, skippedLinks := wrapSandbox(spec, opts.Kind, userHome(), reads, profileDir, inSandbox, creds)
+	reads := []string{sessionDropDir(s.dropDir, filesKey, inSandbox), s.shellIntegrationDir}
+	spec, skippedLinks := wrapSandbox(spec, opts.Kind, userHome(), reads, []string{artifacts}, profileDir, inSandbox, creds)
 	header, err := encodeFrame(opts.ID, nil)
 	if err != nil {
 		return nil, "", fmt.Errorf("start %q: %w", opts.ID, err)

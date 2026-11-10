@@ -1,9 +1,9 @@
-// Package preview serves a session's checkout over loopback HTTP, so the
-// session's browser can load a local file without a file: URL. A file: page
-// follows its own links to any path on the machine, and the Chromium that
-// loads it runs outside a confined session's sandbox; it also gets a null
-// origin, which blocks module scripts and fetch. Served from an os.Root, the
-// checkout is the whole of what the page can reach.
+// Package preview serves a session's checkout, and its artifact directory,
+// over loopback HTTP, so the session's browser can load a local file without a
+// file: URL. A file: page follows its own links to any path on the machine,
+// and the Chromium that loads it runs outside a confined session's sandbox; it
+// also gets a null origin, which blocks module scripts and fetch. Served from an os.Root, the
+// directory is the whole of what the page can reach.
 package preview
 
 import (
@@ -24,18 +24,22 @@ import (
 // A checkout's preview port is first tried one window above the dev-server
 // port it reserves (internal/terminal/worktreeport.go, 24000-24999), so the two
 // never collide, and the window stays below the ephemeral range Linux
-// allocates outbound connections from (32768).
+// allocates outbound connections from (32768). A session's artifacts get the
+// window above that, on a listener of their own: served from the checkout's
+// origin, a page the agent wrote could fetch the checkout, a .env included.
 const (
-	portOffset = 1000
-	portBase   = 25000
-	portCount  = 1000
+	portOffset         = 1000
+	portBase           = 25000
+	portCount          = 1000
+	artifactPortOffset = 2000
+	artifactPortBase   = 26000
 )
 
 const readHeaderTimeout = 10 * time.Second
 
 var errNoCheckout = errors.New("this session has no checkout to serve files from")
 
-// Service holds one listener per checkout, opened the first time a page from
+// Service holds one listener per served directory, opened the first time a page from
 // it is asked for and kept until Close.
 type Service struct {
 	mu      sync.Mutex
@@ -75,19 +79,60 @@ func (s *Service) URL(dir string, devPort int, raw string) (string, error) {
 		return "", err
 	}
 	dir = filepath.Clean(dir)
-	rel, err := filepath.Rel(dir, path)
-	if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+	rel, ok := within(dir, path)
+	if !ok {
 		return "", fmt.Errorf("%q is outside this session's checkout %q", path, dir)
 	}
-	port, err := s.serve(dir, devPort+portOffset)
+	port, err := s.serve(dir, portBase, devPort+portOffset)
 	if err != nil {
 		return "", err
 	}
+	return pageURL(port, rel), nil
+}
+
+// ArtifactURL is the http URL that serves raw when it names a file in dir, a
+// session's artifact directory (internal/artifact), and ok is false when it
+// does not, which leaves raw to the checkout. devPort is the session's
+// dev-server port, 0 without one; it only places the listener.
+func (s *Service) ArtifactURL(dir string, devPort int, raw string) (string, bool, error) {
+	if dir == "" {
+		return "", false, nil
+	}
+	path, err := localPath(raw)
+	if err != nil {
+		return "", false, err
+	}
+	dir = filepath.Clean(dir)
+	rel, ok := within(dir, path)
+	if !ok {
+		return "", false, nil
+	}
+	first := artifactPortBase
+	if devPort != 0 {
+		first = devPort + artifactPortOffset
+	}
+	port, err := s.serve(dir, artifactPortBase, first)
+	if err != nil {
+		return "", true, err
+	}
+	return pageURL(port, rel), true, nil
+}
+
+// within is path relative to dir, and whether path is dir or inside it.
+func within(dir, path string) (string, bool) {
+	rel, err := filepath.Rel(dir, path)
+	if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+		return "", false
+	}
+	return rel, true
+}
+
+func pageURL(port int, rel string) string {
 	u := url.URL{Scheme: "http", Host: net.JoinHostPort("127.0.0.1", strconv.Itoa(port)), Path: "/"}
 	if rel != "." {
 		u.Path += filepath.ToSlash(rel)
 	}
-	return u.String(), nil
+	return u.String()
 }
 
 // localPath is the absolute path raw names. A file: URL's path is
@@ -114,18 +159,18 @@ func localPath(raw string) (string, error) {
 	return filepath.Clean(path), nil
 }
 
-func (s *Service) serve(dir string, port int) (int, error) {
+func (s *Service) serve(dir string, base, port int) (int, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if srv, ok := s.servers[dir]; ok {
 		return srv.port, nil
 	}
 	if info, err := os.Stat(dir); err != nil || !info.IsDir() {
-		return 0, fmt.Errorf("checkout %q is not a directory: %w", dir, err)
+		return 0, fmt.Errorf("%q is not a directory: %w", dir, err)
 	}
-	ln, err := s.listenFrom(port)
+	ln, err := s.listenFrom(base, port)
 	if err != nil {
-		return 0, fmt.Errorf("serve checkout %q: %w", dir, err)
+		return 0, fmt.Errorf("serve %q: %w", dir, err)
 	}
 	port = ln.Addr().(*net.TCPAddr).Port
 	srv := &http.Server{Handler: loopbackHostOnly(port, rootHandler(dir)), ReadHeaderTimeout: readHeaderTimeout}
@@ -169,23 +214,23 @@ func rootHandler(dir string) http.Handler {
 	})
 }
 
-// listenFrom binds first, or the next free port in the window after it,
-// wrapping at its end: something else on the machine holding the preferred
-// port costs the checkout its usual origin, not its preview.
-func (s *Service) listenFrom(first int) (net.Listener, error) {
+// listenFrom binds first, or the next free port after it in the window that
+// starts at base, wrapping at its end: something else on the machine holding
+// the preferred port costs the page its usual origin, not its preview.
+func (s *Service) listenFrom(base, first int) (net.Listener, error) {
 	var errs []error
 	for offset := range portCount {
-		port := portBase + (first-portBase+offset)%portCount
+		port := base + (first-base+offset)%portCount
 		ln, err := s.listen(port)
 		if err == nil {
 			return ln, nil
 		}
 		errs = append(errs, err)
 	}
-	return nil, fmt.Errorf("no free port in %d-%d: %w", portBase, portBase+portCount-1, errors.Join(errs[0], errs[len(errs)-1]))
+	return nil, fmt.Errorf("no free port in %d-%d: %w", base, base+portCount-1, errors.Join(errs[0], errs[len(errs)-1]))
 }
 
-// Close stops every checkout's listener.
+// Close stops every listener.
 func (s *Service) Close() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()

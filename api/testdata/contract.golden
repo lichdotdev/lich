@@ -3,6 +3,9 @@ agentplugin.Status(None) []PluginStatus
 agentplugin.Update(PluginProviderOptions) None
 appupdate.Apply(None) None
 appupdate.Status(None) AppUpdateStatus
+artifact.Attach(AttachArtifactOptions) DropAttachment
+artifact.List(None) []SessionArtifacts
+artifact.Open(AttachArtifactOptions) None
 browser.Answer(BrowserDialogOptions) None
 browser.AnswerDialog(BrowserDialogOptions) BrowserPageInfo
 browser.Attach(BrowserViewOptions) BrowserHandle
@@ -254,6 +257,7 @@ themes.UpdateFromGit(UpdateThemeOptions) ThemeGitResult
 tray.SetLabels(TrayLabels) None
 
 event appupdate-progress AppUpdateProgress
+event artifacts SessionArtifacts
 event branch-pull-request BranchPullRequest
 event browser-agent BrowserAgentAct
 event browser-download BrowserDownload
@@ -331,6 +335,22 @@ AppUpdateStatus {
 	canSelfApply bool
 	releaseUrl string
 	installCommand string
+}
+
+AttachArtifactOptions {
+	sessionId string
+	from string
+	name string
+}
+
+DropAttachment {
+	path string
+	notice string
+}
+
+SessionArtifacts {
+	sessionId string
+	files []Artifact
 }
 
 BrowserDialogOptions {
@@ -575,11 +595,6 @@ AttachDropOptions {
 	sessionId string
 	root string
 	confined bool
-}
-
-DropAttachment {
-	path string
-	notice string
 }
 
 PatchNotesOptions {
@@ -1903,6 +1918,12 @@ SessionsFiled {
 
 SessionExit {
 	code,omitempty *int
+}
+
+Artifact {
+	name string
+	path string
+	modified int64
 }
 
 BrowserInteractive {

@@ -235,9 +235,9 @@ type Service struct {
 	db *sql.DB
 	// sessionGate, when set, may refuse a new session. See SetSessionGate.
 	sessionGate func() error
-	// sessionGone, when set, is told the id of every session whose row is
-	// deleted for good. See SetSessionGone.
-	sessionGone func(sessionID string)
+	// sessionGone, when set, is told the files key of every session whose row
+	// is deleted for good. See SetSessionGone.
+	sessionGone func(filesKey string)
 	// scheduleForfeited, when set, is told about every scheduled prompt lost
 	// with the session it was parked on. See SetScheduleForfeited.
 	scheduleForfeited func(ForfeitedSchedule)
@@ -270,26 +270,27 @@ type Service struct {
 }
 
 // SetSessionGone registers what to run when a session's row is deleted for
-// good — DeleteSession, PurgeWorktreeSessions and ForgetSession, never
-// CloseSession, which parks the row for a later resume and leaves everything
-// hanging off it alone.
+// good, handed the row's files key (SessionFilesKey): DeleteSession,
+// PurgeWorktreeSessions and ForgetSession, never CloseSession, which parks the
+// row for a later resume and leaves everything hanging off it alone.
 //
 // It is startup wiring, called before anything serves: lich hangs the cleanup
-// of that session's dropped-file copies on it (internal/drop), which is what
-// makes a copy outlive its drop and not its session.
-func (s *Service) SetSessionGone(fn func(sessionID string)) {
+// of that session's dropped-file copies (internal/drop) and its artifacts
+// (internal/artifact) on it, which is what makes them outlive their write and
+// not their session.
+func (s *Service) SetSessionGone(fn func(filesKey string)) {
 	s.sessionGone = fn
 }
 
-// sessionIsGone reports one deleted session to whatever SetSessionGone wired,
-// and nothing at all when the store runs without it — every test, and a lich
-// whose wiring has not run yet.
-func (s *Service) sessionIsGone(sessionIDs ...string) {
+// sessionIsGone reports the files keys of deleted sessions to whatever
+// SetSessionGone wired, and nothing at all when the store runs without it:
+// every test, and a lich whose wiring has not run yet.
+func (s *Service) sessionIsGone(filesKeys ...string) {
 	if s.sessionGone == nil {
 		return
 	}
-	for _, id := range sessionIDs {
-		s.sessionGone(id)
+	for _, key := range filesKeys {
+		s.sessionGone(key)
 	}
 }
 

@@ -4,7 +4,8 @@
     "tabReview": "レビュー",
     "exitFullScreen": "全画面表示を終了",
     "fullScreen": "全画面表示",
-    "closePanel": "パネルを閉じる"
+    "closePanel": "パネルを閉じる",
+    "tabArtifacts": "アーティファクト"
   },
   "searchResults": {
     "prompt": "このチェックアウト内のすべてのファイルのテキストを検索",
@@ -39,5 +40,15 @@
     },
     "noResults": "結果なし",
     "invalidRegexp": "無効な正規表現"
+  },
+  "artifacts": {
+    "empty": "このセッションのエージェントが見せるために作ったページやファイルが、プロジェクトのほかの開いているセッションのものと一緒にここに表示されます。",
+    "thisSession": "このセッション",
+    "otherSessions": "ほかのセッション",
+    "options": "{name} のオプション",
+    "openInBrowser": "ブラウザで開く",
+    "attachToPrompt": "プロンプトに添付",
+    "copyPath": "パスをコピー",
+    "showInFileManager": "ファイルマネージャーで表示"
   }
 }

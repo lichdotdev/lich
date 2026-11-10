@@ -63,6 +63,8 @@ func footerSlotOf(id string, in footerInput) (footerSlot, bool) {
 		return s, in.path != ""
 	case "changes":
 		return s, in.isGit
+	case "artifacts":
+		return s, in.sessionID != ""
 	case "pr":
 		return s, in.pr != nil
 	case "checkout":

@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/lichdotdev/lich/internal/artifact"
 	"github.com/lichdotdev/lich/internal/claudeprofile"
 	"github.com/lichdotdev/lich/internal/project"
 	"github.com/lichdotdev/lich/internal/providers"
@@ -33,6 +34,10 @@ import (
 // under lich's config directory, which the sandbox hides, so they are mounted
 // back after it (sandbox.Spec's Session). Empty entries are left out.
 //
+// writes are this session's own writable paths under that hidden directory:
+// its artifact directory (internal/artifact), where the agent writes the pages
+// its browser opens. Empty entries are left out.
+//
 // profileDir is the Claude Code profile the session runs in, "" for Personal:
 // a profile lives under lich's config dir, which the sandbox mounts read-only,
 // so it is bound writable on top. The links inside it reach Personal's
@@ -45,13 +50,18 @@ import (
 // this is the only moment anything resolves it, and a session that cannot find
 // its own ~/.gitconfig is owed the reason.
 func wrapSandbox(
-	spec ptySpec, kind, home string, reads []string, profileDir string, confined bool, creds sandboxCreds,
+	spec ptySpec, kind, home string, reads, writes []string, profileDir string, confined bool, creds sandboxCreds,
 ) (ptySpec, []string) {
 	if !confined || home == "" || !sandbox.Available() {
 		return spec, nil
 	}
 	read := append(executables(spec.bin), reads...)
 	sb := sandbox.Describe(kind, home, spec.dir, project.GitCommonDir(spec.dir), read, creds.sshAgent)
+	for _, dir := range writes {
+		if dir != "" {
+			sb.Write = append(sb.Write, dir)
+		}
+	}
 	if profileDir != "" {
 		sb.Write = append(sb.Write, profileDir)
 		// A bind of a missing source fails the whole spawn, and a profile that
@@ -234,13 +244,29 @@ func replaceEnv(env []string, entry string) []string {
 // session its drops and never its spawn — and for an unconfined session, which
 // reads the copy at its real path like any other file and would otherwise leave
 // an empty directory behind for every spawn.
-func sessionDropDir(dropDir, sessionID string, confined bool) string {
-	if !confined || dropDir == "" || sessionID == "" {
+func sessionDropDir(dropDir, filesKey string, confined bool) string {
+	if !confined || dropDir == "" || filesKey == "" {
 		return ""
 	}
-	dir := filepath.Join(dropDir, sessionID)
+	dir := filepath.Join(dropDir, filesKey)
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		slog.Warn("session drop dir", "dir", dir, "err", err)
+		return ""
+	}
+	return dir
+}
+
+// sessionArtifactDir is the artifact directory of the session whose files key
+// (store.SessionFilesKey) is filesKey, created now: a confined spawn binds it, and a bind whose source is missing
+// fails the spawn. Empty when there is none to give, which costs the session
+// its artifacts and never its spawn.
+func sessionArtifactDir(root, filesKey string) string {
+	dir := artifact.SessionDir(root, filesKey)
+	if dir == "" {
+		return ""
+	}
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		slog.Warn("session artifact dir", "dir", dir, "err", err)
 		return ""
 	}
 	return dir

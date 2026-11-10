@@ -4,6 +4,7 @@ import (
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/agentplugin"
 	"github.com/lichdotdev/lich/internal/appupdate"
+	"github.com/lichdotdev/lich/internal/artifact"
 	"github.com/lichdotdev/lich/internal/drop"
 	"github.com/lichdotdev/lich/internal/patchnotes"
 	"github.com/lichdotdev/lich/internal/providers"
@@ -14,6 +15,13 @@ import (
 // arrive on /drop, outside the RPC's JSON envelope.
 func Drop(d *rpc.Handler, s *drop.Service) {
 	rpc.Handle(d, api.DropAttach, s.Attach)
+}
+
+// Artifact exposes the sessions' artifacts as api declares them.
+func Artifact(d *rpc.Handler, s *artifact.Service) {
+	rpc.Handle(d, api.ArtifactList, s.List)
+	rpc.Handle(d, api.ArtifactAttach, s.Attach)
+	rpc.Handle(d, api.ArtifactOpen, s.Open)
 }
 
 // PatchNotes exposes the patch notes as api declares them.

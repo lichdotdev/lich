@@ -703,3 +703,44 @@ func TestAttachReportsAFailedDialog(t *testing.T) {
 		t.Fatalf("picker called %d times, want 1", *calls)
 	}
 }
+
+// TestADropAfterAResumeLandsBesideTheEarlierOnes: a resume gives the row a
+// fresh id, and the copies dropped before it are pasted in the conversation it
+// carries on, under the session's files key. A drop after it has to land in
+// that same directory, the one a confined session binds, or the session reads
+// its old copies or its new ones, never both.
+func TestADropAfterAResumeLandsBesideTheEarlierOnes(t *testing.T) {
+	canConfine(t, true)
+	elsewhere := filepath.Join(t.TempDir(), "spec.pdf")
+	if err := os.WriteFile(elsewhere, []byte("bytes"), 0o644); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+	service := New(t.TempDir(), nil)
+	service.SetFilesKey(func(sessionID string) string {
+		if sessionID == "fresh" {
+			return "root"
+		}
+		return sessionID
+	})
+	pick, _ := pickerAt(elsewhere, nil)
+	service.SetPicker(pick)
+
+	recorder := httptest.NewRecorder()
+	service.Upload(recorder, httptest.NewRequest(http.MethodPost, "/drop?name=shot.png&session=fresh", strings.NewReader("bytes")))
+	var answer struct {
+		Path string `json:"path"`
+	}
+	if err := json.Unmarshal(recorder.Body.Bytes(), &answer); err != nil {
+		t.Fatalf("decode %s: %v", recorder.Body, err)
+	}
+	if want := filepath.Join(service.dir, "root", "shot.png"); answer.Path != want {
+		t.Errorf("upload path = %q, want %q", answer.Path, want)
+	}
+	got, err := service.Attach(t.Context(), api.AttachDropOptions{SessionID: "fresh", Root: t.TempDir(), Confined: true})
+	if err != nil {
+		t.Fatalf("Attach: %v", err)
+	}
+	if want := filepath.Join(service.dir, "root", "spec.pdf"); got.Path != want {
+		t.Errorf("Attach path = %q, want %q", got.Path, want)
+	}
+}

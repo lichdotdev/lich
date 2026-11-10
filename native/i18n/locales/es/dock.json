@@ -4,7 +4,8 @@
     "tabReview": "Revisión",
     "exitFullScreen": "Salir de pantalla completa",
     "fullScreen": "Pantalla completa",
-    "closePanel": "Cerrar panel"
+    "closePanel": "Cerrar panel",
+    "tabArtifacts": "Artefactos"
   },
   "searchResults": {
     "prompt": "Busca el texto de cada archivo de este checkout",
@@ -40,5 +41,15 @@
     },
     "noResults": "Sin resultados",
     "invalidRegexp": "Expresión regular no válida"
+  },
+  "artifacts": {
+    "empty": "Aquí aparecen las páginas y los archivos que el agente de esta sesión crea para mostrarte, junto con los de las otras sesiones abiertas del proyecto.",
+    "thisSession": "Esta sesión",
+    "otherSessions": "Otras sesiones",
+    "options": "Opciones de {name}",
+    "openInBrowser": "Abrir en el navegador",
+    "attachToPrompt": "Adjuntar al prompt",
+    "copyPath": "Copiar ruta",
+    "showInFileManager": "Mostrar en el gestor de archivos"
   }
 }

@@ -2,6 +2,7 @@ package relay
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -87,6 +88,27 @@ func TestTheRussianNudgeAgreesWithItsCount(t *testing.T) {
 	} {
 		if got := nudgeNotice(prompt.Russian, count, []string{"docs"}, false); !strings.Contains(got, want) {
 			t.Errorf("count %d: %q, want it to contain %q", count, got, want)
+		}
+	}
+}
+
+// Every spawn is told where a page for the user goes and how it opens, in the
+// harness's own system prompt, where it outranks a hosted artifact; Codex reads
+// the briefing inside single quotes, so a translation must not bring one in.
+func TestSpawnBriefingSendsPagesToTheArtifactFolder(t *testing.T) {
+	t.Parallel()
+	for _, lang := range prompt.Langs {
+		for _, route := range []SubagentRoute{RouteSessions, RouteCards, RouteNative} {
+			for hasTools, opener := range map[bool]string{true: "browser_open", false: "lich browser open PATH"} {
+				briefing := SpawnBriefing(lang, hasTools, route)
+				if !strings.Contains(briefing, "LICH_ARTIFACT_DIR") || !strings.Contains(briefing, opener) {
+					t.Errorf("%s route %d tools %v does not send pages to the artifact folder with %q:\n%s", lang, route, hasTools, opener, briefing)
+				}
+				artifacts := fmt.Sprintf(prompt.For(lang).BriefingArtifacts, opener)
+				if strings.Contains(artifacts, "'") {
+					t.Errorf("%s: the artifact sentence carries a single quote:\n%s", lang, artifacts)
+				}
+			}
 		}
 	}
 }

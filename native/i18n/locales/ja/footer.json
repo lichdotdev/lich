@@ -8,6 +8,9 @@
     },
     "model": {
       "example": "モデル"
+    },
+    "artifacts": {
+      "example": "アーティファクト"
     }
   },
   "footerEditor": {

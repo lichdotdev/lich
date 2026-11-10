@@ -19,6 +19,7 @@ var zhCN = Catalog{
 	BriefingCommandTools: "你工具列表里的 lich 工具可以打开一个会话并把任务交给它。",
 	BriefingCommandCLI: "用 `lich open --worktree BRANCH --prompt '任务内容'` 打开一个会话，" +
 		"这条命令会打开会话并同时把任务交给它。",
+	BriefingArtifacts: "你为用户制作、供其查看的页面（报告、图表、样稿）放进环境变量 LICH_ARTIFACT_DIR 指向的文件夹，绝不放进检出，并用 %s 在本会话旁边的浏览器标签页中打开；只有在用户要求时，才发布到别处。",
 
 	RelayMessage:  "[lich] %[1]s，并非来自你自己的提示词。\n\n%[2]s\n\n%[3]s",
 	OriginCLI:     "由 lich 命令行转发的消息",
@@ -74,7 +75,8 @@ var zhCN = Catalog{
 	ScheduledOnResult: "已启用。发生 %[1]s 时，你的提示词将输入到此会话，同一个拉取请求最多 %[2]d 次。",
 	ScheduleCleared:   "已清除此会话的定时提示词。",
 
-	CopyNotice: "[lich] %s 的副本；原文件无法从本会话访问，修改只会保留在副本中。",
+	CopyNotice:         "[lich] %s 的副本；原文件无法从本会话访问，修改只会保留在副本中。",
+	ArtifactCopyNotice: "[lich] 来自会话 %[2]q 的 %[1]s 的副本；编辑只保留在副本中。",
 
 	MCPInstructions: `lich 在同一个窗口中并排运行编码智能体会话；这些工具就是本会话与其他会话协作的方式。
 
@@ -87,6 +89,7 @@ var zhCN = Catalog{
 当一条带工单的 [lich] 消息出现在你的提示处时，你就是工作者：完成任务，然后用 %s 回答，内容是简明的报告（做了什么、在哪里、还剩什么），不要贴完整记录。
 
 本会话有自己的浏览器（browser_* 工具）。它在 lich 内部无窗口运行，用户在本会话旁边的标签页中看到同一个页面：卡片上的浏览器项会打开该标签页，你打开浏览器时 lich 也会用通知提示。不会出现单独的窗口，也不需要：不要让用户去打开窗口。打开它，阅读页面，点击，输入，按有名字的键，并截图。截图是文件。不要把字节贴进回复。`,
+	MCPArtifacts: "你为用户制作、供其查看的页面（报告、图表、样稿）放进本会话的产物文件夹 %s，绝不放进检出：在那里它们不会进入 git，重启后仍在，并与会话同存。把文件写在那里，再用 browser_open 打开：用户会在本会话旁边的标签页里看到它。只有在用户要求时，才把它发布到别处，包括你自己的宿主工具托管的产物。",
 	HandOverFailed: "任务没有送达：%[1]v。会话已打开，等上述问题处理完后，" +
 		"请用 %[2]s 把任务交给它。",
 	SendToSessionPrivate: "带 private 的 send_to_session",

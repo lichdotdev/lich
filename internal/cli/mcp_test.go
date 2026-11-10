@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/lichdotdev/lich/internal/artifact"
 	"github.com/lichdotdev/lich/internal/prompt"
 	"github.com/lichdotdev/lich/internal/relay"
 	"github.com/lichdotdev/lich/internal/spawn"
@@ -900,5 +901,18 @@ func TestMCPListWorktreesReturnsThemAsJSON(t *testing.T) {
 	}
 	if len(checkouts) != 1 || !checkouts[0].Dirty || len(checkouts[0].Sessions) != 1 {
 		t.Errorf("checkouts = %+v", checkouts)
+	}
+}
+
+func TestMCPInstructionsNameTheSessionsArtifactFolder(t *testing.T) {
+	t.Setenv(artifact.EnvVar, "/home/u/.config/lich/artifacts/s1")
+	for _, lang := range prompt.Langs {
+		if got := mcpInstructions(lang); !strings.Contains(got, "/home/u/.config/lich/artifacts/s1") || !strings.Contains(got, "browser_open") {
+			t.Errorf("%s: the instructions do not send pages to the artifact folder:\n%s", lang, got)
+		}
+	}
+	t.Setenv(artifact.EnvVar, "")
+	if got := mcpInstructions(prompt.English); strings.Contains(got, "artifact folder") {
+		t.Errorf("outside a lich session the instructions still name an artifact folder:\n%s", got)
 	}
 }

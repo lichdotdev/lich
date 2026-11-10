@@ -22,6 +22,10 @@ type Catalog struct {
 	BriefingSessions     string
 	BriefingCommandTools string
 	BriefingCommandCLI   string
+	// BriefingArtifacts follows every route, its own leading space included
+	// where the language separates sentences with one; %s is how to open a
+	// page, a tool name or a command, never translated.
+	BriefingArtifacts string
 
 	// internal/relay: compose, origin and replyInstruction.
 	RelayMessage      string
@@ -66,10 +70,14 @@ type Catalog struct {
 
 	// internal/drop: the line under a copied file's path.
 	CopyNotice string
+	// internal/artifact: the line under a copied artifact's path. %[1]s is its
+	// name, %[2]q the session it came from.
+	ArtifactCopyNotice string
 
 	// internal/cli: the lich command line and its MCP server, read from
 	// EnvVar. MCP tool descriptions, flag help and errors stay English.
 	MCPInstructions        string
+	MCPArtifacts           string // %s is the session's artifact directory
 	HandOverFailed         string
 	SendToSessionPrivate   string
 	OutcomeUnread          string

@@ -38,7 +38,7 @@ func TestConfinedProcessHoldsOnlyItsScopedToken(t *testing.T) {
 	}
 
 	spec := ptySpec{bin: "/bin/sh", dir: cwd, env: []string{"LICH_TOKEN=" + tr.token, "LICH_PORT=" + fmt.Sprint(tr.port), "PATH=" + os.Getenv("PATH")}}
-	spec, _ = wrapSandbox(spec, providers.Claude, home, nil, "", true, sandboxCreds{})
+	spec, _ = wrapSandbox(spec, providers.Claude, home, nil, nil, "", true, sandboxCreds{})
 	spec.env = replaceEnv(spec.env, "LICH_TOKEN="+token)
 	rpc := `curl -s -o /dev/null -w "%{http_code}" -X POST "http://127.0.0.1:$LICH_PORT/rpc/$1?token=$LICH_TOKEN" -d "$2"`
 	script := strings.Join([]string{

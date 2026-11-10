@@ -50,7 +50,7 @@ var (
 	flagSize     = flag.Float64("size", 13, "terminal font size in sp")
 	flagShot     = flag.String("shot", "", "write a PNG of the frame drawn -shot-after into the run")
 	flagAfter    = flag.Duration("shot-after", 3*time.Second, "when to take -shot")
-	flagTab      = flag.String("tab", "terminal", "what opens at start beside the terminal: terminal (nothing), or the dock on code or review")
+	flagTab      = flag.String("tab", "terminal", "what opens at start beside the terminal: terminal (nothing), or the dock on code, review or artifacts")
 	flagWindow   = flag.String("window", "1400x900", "the window's size in dp, WxH, for -shot")
 	flagDropHint = flag.Bool("drop-hint", false, "draw the file-drop hint over the terminal as if a drag were over it, for -shot")
 )
@@ -311,7 +311,7 @@ func run(w *app.Window, rt backend.Runtime) error {
 	if err != nil {
 		return err
 	}
-	u.dock = newDock(code, u.review)
+	u.dock = newDock(code, u.review, u.newArtifactsTab())
 	u.model.diffTouched = u.review.feed.touched
 	u.model.focusSession = u.focusSession
 	u.model.showToast = u.showToast
@@ -329,7 +329,7 @@ func run(w *app.Window, rt backend.Runtime) error {
 	u.model.projectClosed = u.projectClosed
 	u.model.pluginProfiles = u.pluginProfilesFailed
 	u.settings.theme = newThemePicker(ctx, client, u.appearance, &u.toaster, &u.root)
-	u.dock.tab = map[string]dockTab{"code": dockCode, "review": dockReview}[*flagTab]
+	u.dock.tab = map[string]dockTab{"code": dockCode, "review": dockReview, "artifacts": dockArtifacts}[*flagTab]
 	u.footer.dock = u.dock
 	u.footer.openPullRequest = u.openPR
 	u.footer.writePaste = u.terms.writePaste
@@ -424,6 +424,9 @@ func (u *window) connect() error {
 	}
 	if err := u.model.threadFixes.load(u.ctx, u.client); err != nil {
 		return err
+	}
+	if err := u.model.artifacts.load(u.ctx, u.client); err != nil {
+		u.logErr("read the session artifacts", err)
 	}
 	// A stored value this build cannot read starts the window with no
 	// layouts and says so; the next split stores over it.

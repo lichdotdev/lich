@@ -76,11 +76,11 @@ func TestOpenCommitsWithoutAJournalFilePerWrite(t *testing.T) {
 	}
 }
 
-// TestSessionExistsSpansParkedRows: the answer is what internal/drop asks
-// before ageing a dropped-file copy out, and a parked session is one a resume
-// walks straight back into, so its copies are still worth keeping and parking
-// must not read as gone. Only the delete does.
-func TestSessionExistsSpansParkedRows(t *testing.T) {
+// TestFilesKeyInUseSpansParkedRows: the answer is what internal/drop and
+// internal/artifact ask before deleting a session's files, and a parked
+// session is one a resume walks straight back into, so its files are still
+// worth keeping and parking must not read as gone. Only the delete does.
+func TestFilesKeyInUseSpansParkedRows(t *testing.T) {
 	svc := newTestStore(t)
 	if _, err := svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"}); err != nil {
 		t.Fatalf("AddProject: %v", err)
@@ -89,43 +89,35 @@ func TestSessionExistsSpansParkedRows(t *testing.T) {
 		t.Fatalf("AddSession: %v", err)
 	}
 
-	if !svc.SessionExists("s1") {
+	if !svc.FilesKeyInUse("s1") {
 		t.Error("an open session reads as gone")
 	}
 	if _, err := svc.CloseSession(t.Context(), api.ParkSessionOptions{ProjectID: "p1", SessionID: "s1"}); err != nil {
 		t.Fatalf("CloseSession: %v", err)
 	}
-	if !svc.SessionExists("s1") {
+	if !svc.FilesKeyInUse("s1") {
 		t.Error("a parked session reads as gone")
 	}
 	if err := svc.DeleteSession("p1", "s1", ""); err != nil {
 		t.Fatalf("DeleteSession: %v", err)
 	}
-	if svc.SessionExists("s1") {
+	if svc.FilesKeyInUse("s1") {
 		t.Error("a deleted session still reads as there")
 	}
-	if svc.SessionExists("never-existed") {
-		t.Error("an unknown id reads as there")
+	if svc.FilesKeyInUse("never-existed") {
+		t.Error("an unknown key reads as held")
 	}
 }
 
-// A read that cannot be made is not a row that is gone: internal/drop deletes
-// on a false, and answering one for a store that is merely unreadable would
-// take a live session's dropped files with it.
-func TestSessionExistsFailsOpenOnAnUnreadableStore(t *testing.T) {
+// FilesKeyInUse answers internal/drop and internal/artifact, which delete on a
+// false, so an unreadable store must not read as a key no row holds.
+func TestFilesKeyInUseFailsOpenOnAnUnreadableStore(t *testing.T) {
 	svc := newTestStore(t)
-	if _, err := svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"}); err != nil {
-		t.Fatalf("AddProject: %v", err)
-	}
-	if _, err := svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s1", Label: "one", Kind: providers.Claude}); err != nil {
-		t.Fatalf("AddSession: %v", err)
-	}
 	if err := svc.Close(); err != nil {
 		t.Fatalf("Close: %v", err)
 	}
-
-	if !svc.SessionExists("s1") {
-		t.Error("a store that cannot be read reads as a session that is gone")
+	if !svc.FilesKeyInUse("s1") {
+		t.Error("a store that cannot be read reads as a files key no row holds")
 	}
 }
 
@@ -1057,7 +1049,7 @@ func TestOpenDropsTheTerminalThemeSetting(t *testing.T) {
 	_, _ = before.SetSetting(t.Context(), api.SetSettingOptions{Key: "appearance.terminalTheme", ProjectID: "p1", Value: "emerald"})
 	_, _ = before.SetSetting(t.Context(), api.SetSettingOptions{Key: "appearance.theme", Value: "rose-pine"})
 	_ = before.Close()
-	seedDB(t, path, `ALTER TABLE sessions DROP COLUMN scheduled_by; ALTER TABLE sessions DROP COLUMN watch_on; ALTER TABLE sessions DROP COLUMN watch_prompt; ALTER TABLE sessions DROP COLUMN watch_by; ALTER TABLE sessions DROP COLUMN watch_runs; ALTER TABLE sessions DROP COLUMN watch_pr; ALTER TABLE sessions DROP COLUMN watch_seen; ALTER TABLE sessions DROP COLUMN effort; ALTER TABLE sessions DROP COLUMN ultracode; ALTER TABLE sessions DROP COLUMN subagent; ALTER TABLE session_costs DROP COLUMN reported; ALTER TABLE sessions DROP COLUMN color; ALTER TABLE sessions DROP COLUMN profile; ALTER TABLE sessions DROP COLUMN forked; DROP TABLE provider_session_tombstones; DROP TRIGGER sessions_tombstone_ad; DROP TRIGGER sessions_tombstone_ai; DROP TRIGGER sessions_tombstone_au; DROP TABLE project_services; DROP TABLE thread_fixes; PRAGMA user_version = 0`)
+	seedDB(t, path, `ALTER TABLE sessions DROP COLUMN files_id; ALTER TABLE sessions DROP COLUMN scheduled_by; ALTER TABLE sessions DROP COLUMN watch_on; ALTER TABLE sessions DROP COLUMN watch_prompt; ALTER TABLE sessions DROP COLUMN watch_by; ALTER TABLE sessions DROP COLUMN watch_runs; ALTER TABLE sessions DROP COLUMN watch_pr; ALTER TABLE sessions DROP COLUMN watch_seen; ALTER TABLE sessions DROP COLUMN effort; ALTER TABLE sessions DROP COLUMN ultracode; ALTER TABLE sessions DROP COLUMN subagent; ALTER TABLE session_costs DROP COLUMN reported; ALTER TABLE sessions DROP COLUMN color; ALTER TABLE sessions DROP COLUMN profile; ALTER TABLE sessions DROP COLUMN forked; DROP TABLE provider_session_tombstones; DROP TRIGGER sessions_tombstone_ad; DROP TRIGGER sessions_tombstone_ai; DROP TRIGGER sessions_tombstone_au; DROP TABLE project_services; DROP TABLE thread_fixes; PRAGMA user_version = 0`)
 
 	after, err := open(path)
 	if err != nil {

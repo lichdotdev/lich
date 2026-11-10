@@ -187,6 +187,7 @@ distinto.
 | Los mensajes propios de lich al agente (tareas entregadas, resultados listos, avisos) en el idioma de prompt que elijas | sí | sí | sí | sí | sí | sí | sí | sí |
 | Se le indica al iniciarse, en el idioma de prompt, que reparta el trabajo como sesiones de lich en vez de subagentes ocultos | sí | no | no | no | sí | no | no | no |
 | La tarjeta de la sesión abre un navegador que el agente conduce, en una pestaña junto a la sesión | sí | sí | sí | sí | sí | sí | sí | sí |
+| Una página que el agente hace para mostrarte (un informe, un diagrama, un mockup) se abre en ese navegador desde una carpeta propia de la sesión, fuera del checkout, que dura lo que dure la sesión | sí, aunque Claude Code puede seguir publicándola en claude.ai con su propia herramienta Artifact | sí | sí | sí | sí | sí | sí | sí |
 
 </details>
 
