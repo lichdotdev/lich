@@ -11,6 +11,7 @@ import (
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/project"
 	"github.com/lichdotdev/lich/internal/relay"
+	"github.com/lichdotdev/lich/internal/scope"
 	"github.com/lichdotdev/lich/internal/store"
 	"github.com/lichdotdev/lich/internal/terminal"
 )
@@ -41,6 +42,9 @@ type fakeSessions struct {
 	addProjErr error
 	rows       []added
 	addErr     error
+	// refusal is what SessionRefused answers for every kind but a shell, as
+	// the store does.
+	refusal error
 	// models records the model written on each session row, keyed by session id.
 	models   map[string]string
 	modelErr error
@@ -50,6 +54,14 @@ type fakeSessions struct {
 	// ultracodes records each session row ultracode was turned on for.
 	ultracodes   map[string]bool
 	ultracodeErr error
+	// profiles records the profile on each session row, keyed by session id, and
+	// profileErr is the write refusing.
+	profiles   map[string]string
+	profileErr error
+	// sandboxes records the sandbox answer written on each session row, and
+	// sandboxErr is the write refusing.
+	sandboxes  map[string]string
+	sandboxErr error
 	// subagents records how deep each session row marked as a subagent runs.
 	subagents   map[string]int
 	subagentErr error
@@ -240,6 +252,24 @@ func (f *fakeSessions) AddSessionFrom(_ context.Context, opts api.AddSessionFrom
 	return api.None{}, nil
 }
 
+func (f *fakeSessions) SessionRefused(kind string) error {
+	if kind == terminal.KindShell {
+		return nil
+	}
+	return f.refusal
+}
+
+func (f *fakeSessions) SetSessionSandbox(sessionID, sandbox string) error {
+	if f.sandboxErr != nil {
+		return f.sandboxErr
+	}
+	if f.sandboxes == nil {
+		f.sandboxes = map[string]string{}
+	}
+	f.sandboxes[sessionID] = sandbox
+	return nil
+}
+
 func (f *fakeSessions) SandboxDefault(providerID, projectID, cwd string) bool {
 	f.sandboxAsked = append(f.sandboxAsked, [3]string{providerID, projectID, cwd})
 	return f.confines
@@ -275,6 +305,27 @@ func (f *fakeSessions) SetSessionUltracode(sessionID string) error {
 		f.ultracodes = map[string]bool{}
 	}
 	f.ultracodes[sessionID] = true
+	return nil
+}
+
+func (f *fakeSessions) SessionModel(sessionID string) string  { return f.models[sessionID] }
+func (f *fakeSessions) SessionEffort(sessionID string) string { return f.efforts[sessionID] }
+func (f *fakeSessions) SessionUltracode(sessionID string) bool {
+	return f.ultracodes[sessionID]
+}
+
+func (f *fakeSessions) SessionProfile(sessionID string) (string, error) {
+	return f.profiles[sessionID], nil
+}
+
+func (f *fakeSessions) SetSessionProfile(sessionID, profile string) error {
+	if f.profileErr != nil {
+		return f.profileErr
+	}
+	if f.profiles == nil {
+		f.profiles = map[string]string{}
+	}
+	f.profiles[sessionID] = profile
 	return nil
 }
 
@@ -389,6 +440,10 @@ type fakeTerminal struct {
 	deadline time.Time
 	outcome  terminal.ModOutcome
 	runErr   error
+	// suggested is every profile put to the user, as "session/slug";
+	// suggestErr is why one cannot apply.
+	suggested  []string
+	suggestErr error
 }
 
 func (f *fakeTerminal) RunModCommand(ctx context.Context, id string, cmd terminal.ModCommand) (terminal.ModOutcome, error) {
@@ -399,6 +454,11 @@ func (f *fakeTerminal) RunModCommand(ctx context.Context, id string, cmd termina
 }
 
 func (f *fakeTerminal) AgentName(id string) string { return f.names[id] }
+
+func (f *fakeTerminal) SuggestProfile(id, slug string) error {
+	f.suggested = append(f.suggested, id+"/"+slug)
+	return f.suggestErr
+}
 
 func (f *fakeTerminal) CloseBy(id, closerID string) error {
 	f.closed = append(f.closed, id)
@@ -1231,5 +1291,68 @@ func TestOpenReportsNoConfinementWhenTheRungLeavesTheSessionOut(t *testing.T) {
 	}
 	if opened.Confined {
 		t.Error("reported a confinement no rung asked for")
+	}
+}
+
+// A session opened from inside the sandbox is confined whatever the rung says:
+// the row is marked before the spawn reads it, and the caller is told.
+func TestOpenFromAConfinedCallerIsConfined(t *testing.T) {
+	svc, sessions, _, term, _ := newService(t)
+	sessions.confines = false
+
+	opened, err := svc.Open(scope.With(t.Context(), "s1"), OpenOptions{From: "s1"})
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	if !opened.Confined {
+		t.Error("a session opened from the sandbox was reported unconfined")
+	}
+	if got := sessions.sandboxes[opened.ID]; got != store.SessionConfined {
+		t.Errorf("row sandbox = %q, want %q", got, store.SessionConfined)
+	}
+	if len(term.spawns) != 1 {
+		t.Fatalf("started %d sessions, want 1", len(term.spawns))
+	}
+}
+
+func TestOpenFromAConfinedCallerDoesNotStartWhenTheRowCannotBeMarked(t *testing.T) {
+	svc, sessions, _, term, _ := newService(t)
+	sessions.sandboxErr = errors.New("disk full")
+
+	_, err := svc.Open(scope.With(t.Context(), "s1"), OpenOptions{From: "s1"})
+	if err == nil || !strings.Contains(err.Error(), "disk full") {
+		t.Fatalf("err = %v, want the write's failure", err)
+	}
+	if len(term.spawns) != 0 {
+		t.Error("a session the sandbox asked for started unconfined")
+	}
+}
+
+// The window and the command line outside a sandbox hold the launch token, and
+// the rung alone decides for them.
+func TestOpenFromAnUnscopedCallerFollowsTheRung(t *testing.T) {
+	svc, sessions, _, _, _ := newService(t)
+	sessions.confines = false
+	opened, err := svc.Open(t.Context(), OpenOptions{From: "s1"})
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	if opened.Confined || len(sessions.sandboxes) != 0 {
+		t.Errorf("confined %v, rows %v: the rung said no", opened.Confined, sessions.sandboxes)
+	}
+}
+
+// A required update refuses the open first, whoever asks: the gate's error
+// comes back and no row exists to mark confined.
+func TestOpenFromAConfinedCallerIsRefusedByTheGateFirst(t *testing.T) {
+	svc, sessions, _, term, _ := newService(t)
+	sessions.refusal = errors.New("update lich first")
+
+	_, err := svc.Open(scope.With(t.Context(), "s1"), OpenOptions{From: "s1"})
+	if err == nil || !strings.Contains(err.Error(), "update lich first") {
+		t.Fatalf("err = %v, want the gate's refusal", err)
+	}
+	if len(sessions.rows) != 0 || len(sessions.sandboxes) != 0 || len(term.spawns) != 0 {
+		t.Errorf("the refusal still created something: rows %v, sandboxes %v, spawns %d", sessions.rows, sessions.sandboxes, len(term.spawns))
 	}
 }

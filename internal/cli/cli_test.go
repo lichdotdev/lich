@@ -1495,3 +1495,44 @@ func TestFocusTakesExactlyOneSession(t *testing.T) {
 		t.Errorf("a malformed call reached the server: %v", f.calls)
 	}
 }
+
+// A 403 that comes in the RPC's envelope is lich refusing the call to a token
+// it recognised (a confined session's scoped token), not a stale token: the
+// reason is shown, and no other token is tried.
+func TestAScopeRefusalIsShownNotRetried(t *testing.T) {
+	t.Parallel()
+	f := newFakeLich(t, `[]`)
+	f.answers = map[string]answer{"relay.Peers": {
+		status: http.StatusForbidden,
+		body:   `{"error":"relay.Peers is not something a confined session may ask of lich"}`,
+	}}
+	port := f.server.Listener.Addr().(*net.TCPAddr).Port
+
+	var stdout, stderr bytes.Buffer
+	c := &client{
+		env:     f.env,
+		stdout:  &stdout,
+		stderr:  &stderr,
+		running: func() (*singleton.Info, error) { return &singleton.Info{Port: port, Token: "fresh"}, nil },
+	}
+	if code := dispatch([]string{"sessions"}, c); code != 1 {
+		t.Fatalf("exit = %d, want 1 (stdout %q)", code, stdout.String())
+	}
+	if len(f.calls) != 1 {
+		t.Errorf("got %d calls, want the refused one and no retry", len(f.calls))
+	}
+	if !strings.Contains(stderr.String(), "not something a confined session may ask") {
+		t.Errorf("stderr = %q, want lich's reason", stderr.String())
+	}
+}
+
+// With the record hidden from the sandbox, the stale-token message says what a
+// confined session can do about it.
+func TestAStaleTokenWithNoRecordNamesTheConfinedCase(t *testing.T) {
+	t.Parallel()
+	c := &client{running: func() (*singleton.Info, error) { return nil, nil }}
+	_, err := c.reissued("1", "old")
+	if err == nil || !strings.Contains(err.Error(), "start the session again") {
+		t.Fatalf("err = %v", err)
+	}
+}

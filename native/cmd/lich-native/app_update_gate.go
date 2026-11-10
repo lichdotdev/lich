@@ -33,9 +33,10 @@ type appUpdateGate struct {
 }
 
 // shouldPromptUpdate is decideUpdateAction: a newer release Later was not
-// clicked for.
+// clicked for, or a required one, which a Later clicked before it was known
+// to be required cannot put off.
 func shouldPromptUpdate(st backend.AppUpdateStatus, dismissed string) bool {
-	return st.UpdateAvailable && dismissed != st.LatestVersion
+	return st.UpdateAvailable && (st.Required || dismissed != st.LatestVersion)
 }
 
 func (u *window) pollAppUpdate() {
@@ -69,12 +70,15 @@ func (u *window) checkAppUpdate() {
 	g.mu.Lock()
 	seen := g.prompted == st.LatestVersion
 	g.mu.Unlock()
-	if !seen {
+	// A required prompt comes back at every check that finds it gone: its
+	// action closes it, and the update may not have been carried through.
+	if !seen || st.Required && !u.toaster.Live(appUpdateToastID) {
 		u.promptAppUpdate(st)
 	}
 }
 
-// promptAppUpdate raises st's prompt, once per release this run.
+// promptAppUpdate raises st's prompt, once per release this run unless the
+// release is required.
 func (u *window) promptAppUpdate(st backend.AppUpdateStatus) {
 	g := &u.appUpdate
 	g.mu.Lock()
@@ -84,11 +88,18 @@ func (u *window) promptAppUpdate(st backend.AppUpdateStatus) {
 }
 
 // appUpdateToast offers the installer where lich may write its own install,
-// and otherwise the command to paste and the release page.
+// and otherwise the command to paste and the release page. A required update
+// has no Later, and swiping it away raises it again.
 func (u *window) appUpdateToast(st backend.AppUpdateStatus) ui.Toast {
 	version := st.LatestVersion
-	later := &ui.ToastButton{Label: i18n.T("shell.appUpdateGate.later"), OnClick: func() { u.writePref(appUpdateDismissedKey, version) }}
-	t := ui.Toast{ID: appUpdateToastID, Title: i18n.T("shell.appUpdateGate.available", i18n.Args{"version": version}), Duration: ui.ToastForever, Cancel: later}
+	t := ui.Toast{ID: appUpdateToastID, Title: i18n.T("shell.appUpdateGate.available", i18n.Args{"version": version}), Duration: ui.ToastForever}
+	if st.Required {
+		t.Variant, t.Title = ui.ToastWarning, i18n.T("shell.appUpdateGate.required", i18n.Args{"version": version})
+		t.Description = i18n.T("shell.appUpdateGate.requiredDetail")
+		t.OnDismiss = func() { u.toaster.Show(u.appUpdateToast(st)) }
+	} else {
+		t.Cancel = &ui.ToastButton{Label: i18n.T("shell.appUpdateGate.later"), OnClick: func() { u.writePref(appUpdateDismissedKey, version) }}
+	}
 	release := &ui.ToastButton{Label: i18n.T("shell.appUpdateGate.viewRelease"), OnClick: func() { u.settings.openExternal(st.ReleaseURL) }}
 	switch {
 	case st.CanSelfApply:

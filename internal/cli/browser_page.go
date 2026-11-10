@@ -1,6 +1,8 @@
 package cli
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"net/url"
 	"strconv"
@@ -9,6 +11,10 @@ import (
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/prompt"
 )
+
+// boundaryNonceBytes is 8 hex characters: the page must guess them to forge a
+// marker, and a longer one is tokens every answer pays.
+const boundaryNonceBytes = 4
 
 // pageText is a page as an agent reads it: one line per interactive element
 // rather than JSON, whose keys and boxes cost about twice the tokens for the
@@ -28,45 +34,65 @@ func cliPageText(info api.BrowserPageInfo, lang prompt.Lang) string {
 }
 
 // pageTextAsking is the page answer, with waits as what an open dialog asks
-// of the agent.
+// of the agent. What the page writes (title, dialog messages, console errors,
+// text, element labels) sits between boundary markers; lich's own lines stay
+// outside.
 func pageTextAsking(info api.BrowserPageInfo, text *prompt.Catalog, waits string) string {
-	var b strings.Builder
-	fmt.Fprintf(&b, "url: %s\ntitle: %s\n", info.URL, info.Title)
+	var head, body, tail strings.Builder
+	fmt.Fprintf(&head, "url: %s\n", info.URL)
 	if info.WaitTimedOut {
-		b.WriteString(text.PageWaitTimedOut + "\n")
+		head.WriteString(text.PageWaitTimedOut + "\n")
 	}
-	writeDialogs(&b, info, waits)
 	for _, d := range info.Downloads {
-		b.WriteString(downloadLine(d, text))
-		b.WriteByte('\n')
+		head.WriteString(downloadLine(d, text))
+		head.WriteByte('\n')
 	}
+	fmt.Fprintf(&body, "title: %s\n", info.Title)
+	writeDialogs(&body, info)
 	for _, e := range info.ConsoleErrors {
-		fmt.Fprintf(&b, "console error: %s\n", e)
+		fmt.Fprintf(&body, "console error: %s\n", e)
 	}
 	if n := info.ConsoleErrorsMore; n > 0 {
-		fmt.Fprintf(&b, text.Pick(n, text.PageConsoleMore)+"\n", n)
+		fmt.Fprintf(&body, text.Pick(n, text.PageConsoleMore)+"\n", n)
 	}
 	if info.Text != "" {
-		fmt.Fprintf(&b, "text: %s\n", info.Text)
+		fmt.Fprintf(&body, "text: %s\n", info.Text)
+	}
+	if info.InteractiveSame {
+		body.WriteString(text.PageListSame + "\n")
 	}
 	if len(info.Interactive) > 0 {
-		b.WriteString(text.PageInteractive + "\n")
+		body.WriteString(text.PageInteractive + "\n")
 	}
 	base, _ := url.Parse(info.URL)
 	for _, n := range info.Interactive {
-		b.WriteString(elementLine(n, base, text))
-		b.WriteByte('\n')
+		body.WriteString(elementLine(n, base, text))
+		body.WriteByte('\n')
+	}
+	if info.Dialog != nil {
+		tail.WriteString(waits + "\n")
 	}
 	if info.Truncated {
-		b.WriteString(text.PageMore + "\n")
+		tail.WriteString(text.PageMore + "\n")
 	}
-	return strings.TrimSuffix(b.String(), "\n")
+	return strings.TrimSuffix(head.String()+pageBlock(strings.TrimSuffix(body.String(), "\n"))+"\n"+tail.String(), "\n")
+}
+
+// pageBlock marks content a page controls. The nonce is fresh per answer: the
+// MCP server lives as long as the session, so one per process would let a page
+// that saw an answer forge the closing marker of the next. A page cannot close
+// the block with a marker it cannot predict.
+func pageBlock(content string) string {
+	var n [boundaryNonceBytes]byte
+	_, _ = rand.Read(n[:]) // never fails since Go 1.24
+	nonce := hex.EncodeToString(n[:])
+	return fmt.Sprintf("<page %s>\n%s\n</page %s>", nonce, content, nonce)
 }
 
 // writeDialogs names the dialogs the user answered since the last page
 // answer, then the one the page holds open, which the agent must answer
 // before anything else.
-func writeDialogs(b *strings.Builder, info api.BrowserPageInfo, waits string) {
+func writeDialogs(b *strings.Builder, info api.BrowserPageInfo) {
 	for _, d := range info.Dialogs {
 		fmt.Fprintf(b, "dialog answered: %s %q -> %s\n", d.Type, d.Message, d.Answer)
 	}
@@ -78,7 +104,7 @@ func writeDialogs(b *strings.Builder, info api.BrowserPageInfo, waits string) {
 	if d.Default != "" {
 		fmt.Fprintf(b, " default %q", d.Default)
 	}
-	b.WriteString("\n" + waits + "\n")
+	b.WriteByte('\n')
 }
 
 func elementLine(n api.BrowserInteractive, base *url.URL, text *prompt.Catalog) string {
@@ -86,7 +112,10 @@ func elementLine(n api.BrowserInteractive, base *url.URL, text *prompt.Catalog) 
 	if n.Text != "" {
 		parts = append(parts, strconv.Quote(n.Text))
 	}
-	if n.Href != "" {
+	// A labeled link is clicked by its index: its href was 16% of a page
+	// answer, and 17 of 198 navigations went to one, all labeled (measured
+	// 2026-11-07).
+	if n.Href != "" && n.Text == "" {
 		parts = append(parts, "-> "+shortHref(n.Href, base))
 	}
 	if n.Filled != nil && *n.Filled {

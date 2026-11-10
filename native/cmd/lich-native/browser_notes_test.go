@@ -17,7 +17,7 @@ func TestNotesMessageNamesEachElementItsSelectorAndTheNote(t *testing.T) {
 		{el: api.BrowserElement{Label: `h1 "Simple pricing"`, Selector: "section.hero > h1", Component: "Hero", Source: "src/Hero.tsx:14", HTML: "<h1>Simple pricing</h1>", URL: "http://localhost:5173/pricing"}, text: "tighter,\nit wraps on mobile"},
 		{el: api.BrowserElement{Label: `button "Buy"`, Selector: "button.buy", HTML: "<button class=\"buy\">Buy</button>", URL: "http://localhost:5173/pricing"}},
 	}
-	got := notesMessage(notes)
+	got := notesMessage(notes, "")
 	want := `[lich] The person left 2 notes on the page in your browser tab:
 1. h1 "Simple pricing" on http://localhost:5173/pricing
    section.hero > h1
@@ -28,6 +28,22 @@ func TestNotesMessageNamesEachElementItsSelectorAndTheNote(t *testing.T) {
    button.buy
    <button class="buy">Buy</button>
 Each selector above works as the selector of browser_click and browser_type.`
+	if got != want {
+		t.Fatalf("message:\n%s\nwant:\n%s", got, want)
+	}
+}
+
+func TestTheClosingNoteEndsTheMessage(t *testing.T) {
+	notes := []*browserNote{{el: api.BrowserElement{Label: "nav", Selector: "nav", HTML: "<nav></nav>", URL: "http://localhost:5173/"}}}
+	got := notesMessage(notes, "  keep it under\nthe header height\n")
+	want := `[lich] The person left a note on the page in your browser tab:
+1. nav on http://localhost:5173/
+   nav
+   <nav></nav>
+Each selector above works as the selector of browser_click and browser_type.
+
+keep it under
+the header height`
 	if got != want {
 		t.Fatalf("message:\n%s\nwant:\n%s", got, want)
 	}

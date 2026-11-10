@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"regexp"
 	"strings"
 	"testing"
 
@@ -51,8 +52,9 @@ func TestMCPBrowserTabsListsByIndex(t *testing.T) {
 	replies := speak(t, f, `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"browser_tabs","arguments":{}}}`)
 	text, failed := textOf(t, replies[0])
 	want := `[{"index":0,"title":"A","url":"https://example.com/a"},{"index":1,"title":"B","url":"https://example.com/b","front":true}]`
-	if failed || text != want {
-		t.Fatalf("tool answered %q (failed %v), want %q", text, failed, want)
+	m := regexp.MustCompile(`^<page ([0-9a-f]{8})>\n(.*)\n</page ([0-9a-f]{8})>$`).FindStringSubmatch(text)
+	if failed || m == nil || m[1] != m[3] || m[2] != want {
+		t.Fatalf("tool answered %q (failed %v), want %q inside a page block", text, failed, want)
 	}
 }
 

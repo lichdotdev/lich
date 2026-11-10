@@ -1,7 +1,12 @@
 package terminal
 
 import (
+	"log/slog"
+	"os"
+
 	"github.com/lichdotdev/lich/internal/agentplugin"
+	"github.com/lichdotdev/lich/internal/claudeprofile"
+	"github.com/lichdotdev/lich/internal/project"
 	"github.com/lichdotdev/lich/internal/providers"
 )
 
@@ -47,6 +52,37 @@ func (s *Service) awaitsStart(kind, profileDir string) bool {
 		return agentplugin.ClaudeInstalledIn(profileDir)
 	}
 	return installed(kind)
+}
+
+// trustAnswered is whether the question Claude Code and Cursor CLI ask before
+// their prompt, whether cwd is trusted, is answered already, so a session of
+// kind opens straight at its prompt and the hold has nothing to wait out. Then
+// the quiet answers Ready, as it does for the providers that report nothing:
+// a process that came up without lich's hooks (the plugin reinstalled under
+// it) never reports, and held, it sat idle at its prompt while every task sent
+// to it ran out undelivered. Always false for oh-my-pi and Kiro CLI, which ask
+// nothing and whose report comes at start.
+func trustAnswered(kind, cwd, profileDir string) bool {
+	if cwd == "" {
+		return false
+	}
+	switch kind {
+	case providers.Claude:
+		top, origin := project.CheckoutRoots(cwd)
+		trusts, err := claudeprofile.Trusts(profileDir, cwd, top, origin)
+		if err != nil {
+			slog.Warn("terminal: read whether Claude Code trusts the folder", "cwd", cwd, "err", err)
+		}
+		return trusts
+	case providers.Cursor:
+		home, err := os.UserHomeDir()
+		if err != nil {
+			slog.Warn("terminal: read whether Cursor CLI trusts the folder", "cwd", cwd, "err", err)
+			return false
+		}
+		return cursorTrusts(cursorProjectsDir(home), home, cwd)
+	}
+	return false
 }
 
 // holdForStart records on a just-spawned session whether it waits for its

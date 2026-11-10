@@ -21,6 +21,9 @@ type desktopNote struct {
 	body string
 	// meta is "project · branch".
 	meta string
+	// program is a report from the session's own program: nothing the agent
+	// last said describes it.
+	program bool
 }
 
 // noteSink is where desktop notifications go: the desktop's own notification
@@ -36,7 +39,7 @@ type noteSink interface {
 const noteRecapLimit = 140
 
 func noteFor(r statusReport, title string) desktopNote {
-	n := desktopNote{sessionID: r.id, projectID: r.projectID, kind: r.kind, status: r.status, title: title}
+	n := desktopNote{sessionID: r.id, projectID: r.projectID, kind: r.kind, status: r.status, title: title, program: r.program}
 	if r.status == statusWaiting {
 		n.body = r.reason
 	}
@@ -63,7 +66,7 @@ type recapping struct {
 }
 
 func (r recapping) show(n desktopNote) {
-	if n.status != statusDone || n.body != "" {
+	if n.program || n.status != statusDone || n.body != "" {
 		r.next.show(n)
 		return
 	}

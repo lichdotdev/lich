@@ -10,10 +10,106 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Project tabs can be pinned from their right-click menu. Pinned tabs stay together at the left of the strip and close only from that menu; pinning is kept when the window is reopened.
+- The state menu on the Pulls screen has Approved: the open pull requests whose review is approved.
+
+## [0.87.0] - 2026-11-08
+
+> [!CAUTION]
+> **Everyone: this release is a required update.** Before it, a page in any browser on your machine could read a
+> session's checkout through its browser's local-file server, the session token showed in a process's command line,
+> and a session running in the sandbox could reach lich's own token and act on your machine through it, so update now.
+
+### Added
+
+- A release can require its update. When a release fixes a security problem, the update prompt has no Later and comes back if you close it, and lich opens no new agent session until the update is installed: the window, `lich open` and an agent's tools all refuse, each saying why and how to update. Sessions already running are not touched, and a shell still opens so you can run the update there. It counts every release you skipped, not only the latest, and needs GitHub to be reachable. In the What's new dialog such a release carries a red callout.
+- A session can wait for something and then act on it. **Schedule prompt…** on its menu takes a prompt and either a time (`45m`, `2h30`, `14:30` or a full date, with the moment it lands on shown as you type) or a condition on the pull request of its branch: checks fail, checks pass, or a review arrives. Nothing is spent while nothing changes, and the prompt is typed at the session the way a relayed message is, on every provider. A watch on failing checks stays on for each new commit until the pull request closes and stops after 3 runs, telling you it did. A clock or a radar on the session's row says it holds one, and its tooltip says what. An agent can arm the same thing on its own session with `lich schedule` or the `schedule_prompt` MCP tool, and what you set there stays until you change it.
+- An agent can run JavaScript in its session's browser and read the answer (`browser_eval`, `lich browser eval`): the state of your app, a value the page does not print, the result of a `fetch`. The answer is cut at 2000 characters, so a large page state costs the agent's context only what it asks for. The script can read what a field holds, passwords included, which the page reading never hands it.
+- An agent can read part of a page instead of all of it: `browser_info` takes `within`, a CSS selector (`lich browser info --within <css>`), and answers with the text and the buttons and links of the first element it matches, so the main column of a docs site or one open dialog costs a fraction of the page and its navigation. A selector that matches nothing, or is not valid, answers with an error and leaves the indexes of the last read working.
+- A session browser's screenshot can carry each button's and link's index drawn on it (`annotate` on `browser_screenshot`, `lich browser screenshot --annotate`), so an agent clicks an icon with no label by its index instead of working out where it is. Your pane shows the numbers for the moment of the capture.
+- Any program can tell its session's card what it is doing. A build script, a deploy or an agent without lich hooks writes the Program Status Protocol sequence (OSC 7501) and the card shows it working with its message, waiting on you with its question, or finished. A session's own hooks still win when it has them. Programs that ask whether the terminal reads the protocol get the answer. On Windows this has not been verified.
+- When a usage limit stops a Claude Code or Codex turn and another of your logged-in profiles of the same agent still has quota left, a notice offers to continue there. Only clicking it moves the session, the way Continue in does, and sends the continuation right away; otherwise the session waits for the reset as before. A profile whose plan lich cannot read is never offered, and a click after the session has moved on is refused and says why.
+- An agent handing its work off can suggest another of your profiles for the successor (`profile` on `handoff_session`, `lich handoff --profile`). The successor still starts in the caller's profile, and a notice offers the suggested one once its first turn ends: only clicking Continue in moves it. A suggestion that cannot apply is dropped, the agent is told why, and the handoff goes on.
+- An agent can hand its work off to a fresh session of itself at a clean break, instead of carrying on in a context that has grown long. The `handoff_session` tool (and `lich handoff`) takes a short note, what is done, the branch and commits, the next steps and the gotchas, opens a new session in the same checkout on the same provider, model and profile, and types the note at its prompt. The old session stays open for you to close.
+- A Claude Code session whose conversation is compacted while tasks from other sessions still wait on its answer is reminded of them once the compaction ends: each ticket, what it asked and the command that answers it. Before, the summary could drop the ticket, and with two tasks open an answer that named none was refused, so the sessions that asked waited for nothing.
+- Two sessions caught messaging each other back and forth with no work in between are stopped. The second such message in a row reaches its agent with a note that the exchange looks like a loop, and the fourth is refused, so the pair stops spending tokens on nothing. A message that follows real work, a third session joining in, or you typing into either session starts the count over. The same goes for a loop through three sessions or more: a fifth message passed on in a row, each from a session that did nothing but pass on the one it got, is refused. Crush sessions report no tools, so they are never stopped.
+
+### Changed
+
+- A double click in the window's own widgets (text selection, the editor, the tab bar) now registers up to 400 ms apart instead of 200 ms, as the terminal and the browser pane already did.
+- On Windows, the window presents frames through the flip model with at most one frame queued, and a resize shows its new size at once instead of an older frame stretched to it.
+- A session browser's page answer, what `browser_eval` returns, and the tab list and page handle the browser tools answer with now put what the page wrote (its title, text, element labels, console errors, dialog messages) between `<page …>` and `</page …>` markers with a random code that changes on every answer, and `browser_info` tells the agent that text between them is the page's and never instructions. A page that writes "SYSTEM: ignore previous instructions" no longer reads like lich talking, and cannot fake the closing marker. It adds 31 characters to an answer.
+- A session browser's screenshot is at most 1280 pixels on its longest side, so one of a 2000-pixel-wide pane has 60% fewer pixels, which is what an agent pays tokens for when it looks at it, and a click at a point read off it still lands where it was read. The browser tools' descriptions, which an agent reads with every request, are a fifth shorter.
+- A click or key press that leaves a page's buttons and links as the agent last read them answers with one line saying so instead of the whole list again, which about three page answers in ten repeated.
+- A session browser's page answer names where a link goes only when the link has no label of its own: the agent clicks a labeled link by its index, and the addresses were a sixth of what it read.
+- A button or link in a session's browser keeps its index while it is on the page, so an agent's index still clicks it after the page adds something above it or scrolls it away, and an index from a page the agent left fails instead of clicking whatever took its number. Before, every read numbered the page again from 0.
+- A session browser's page answer leaves out of the page's text each line that is only the label of a button or link it lists right below, and cuts the text at 1000 characters instead of 1200: a tenth smaller, with as much of the page's own text as before.
+- A session browser's click, type and key press on an element by index or selector fail before dispatch, naming what is in the way, when another element covers the target's click point (a cookie banner, a modal backdrop: `covered by <div#consent-banner>`) or the target is disabled, instead of clicking whatever is on top or doing nothing and answering with the page as before. A click at an x and y the agent chose is unchanged.
+
+### Fixed
+
+- The New folder dialog opens with the cursor in its name field, so you can type the name at once instead of clicking the field first.
+- The prompt lich parks to continue a turn a usage limit stopped shows on the session again, and can be cancelled from its menu. So does the notice that deleting a session also deleted a prompt scheduled on it. Both went missing with the web window.
+- `GIO_DAMAGE=on` redraws into a framebuffer lich keeps instead of trusting the driver's buffer age, so a driver that misreports it no longer leaves the window with stale pixels.
+- On X11, a wheel notch scrolls once instead of twice, and hover clears when the pointer leaves the window, on Windows too.
+- Codex and Kiro CLI sessions are now told they run inside lich and when to open another session for the work, in your prompt language: both CLIs drop what lich's MCP server says to the model, so they had the tools and no word on using them. Codex gets it in new conversations, unless your `config.toml` sets `developer_instructions`, which lich leaves alone; Kiro gets it once lich next updates its plugin there.
+- An agent's click or key press right after it clicked a download link in a session browser that had just started no longer gets wiped by the page reload Chrome does when it starts that download: lich holds the second action until the reload has landed, or until the browser is 6 seconds old.
+- A worktree created without a name no longer fails with "which already exists" when the name lich picked for it lands on the folder of a worktree whose branch was renamed. lich now skips any name whose folder is taken.
+- A worktree that git creates but cannot read as a checkout is removed along with the error. Before, its folder stayed behind, and creating a worktree under that name again failed with "which already exists".
+- An agent's navigation right after a page downloaded a file no longer fails with `net::ERR_ABORTED` on Chromium 157 and later, which reloads the page almost 4 seconds after the download begins: lich loads the page again.
+- A task sent to a Claude Code or Cursor CLI session in a folder it already trusts reaches its prompt even when that session came up without lich-plugin, which happens when the plugin is updated while the session starts. Before, lich held the task for a report that session would never send, and after 5 minutes answered that the task never reached a prompt while the agent sat idle at it.
+- A session that has printed more than 2 MB keeps its terminal modes when the window rebuilds its terminal, on first showing it or after a reconnect. Before, the mouse could stop working or fall back to an old encoding, a paste could submit at its first line break, keys came through without the kitty protocol, a full-screen app drew over the shell's own screen, and the palette, foreground, background and cursor colors it set reverted. Applies to every provider.
+- Emoji made of several characters show as one in the terminal, as wide as other terminals draw them: a family is one emoji instead of three, a flag is the flag instead of two letters, and the rest of the line no longer shifts to the right. A letter followed by a combining accent shows the accent. Copying the text or opening a link keeps every character.
+
+### Security
+
+- A session running in the sandbox no longer holds lich's own token. It is handed one minted for it alone, which lich
+  accepts only for the calls a confined agent has a use for: messaging the sessions beside it, opening and steering
+  sessions, driving its own browser, reading the project's services and its cost. Starting or editing a service (which
+  runs a command on your machine, outside the sandbox), changing a setting such as the sandbox rung itself, typing into
+  another session's terminal and every other call stay refused, with a message that says why. A session opened from
+  inside the sandbox is confined too, whatever the sandbox setting says for that checkout, and a confined session can
+  message, insert into, control or question only sessions that are themselves confined: a message is carried out by
+  the agent that receives it, so one sent into an unconfined session would run on your machine. Replies reach anyone,
+  which is how a confined worker reports back. A confined session cannot force-close a worktree either.
+- The sandbox hides lich's own directory and the other sessions' worktrees. `~/.config/lich` (lich's token, its database,
+  your other accounts' profiles) and `~/.local/share/lich/worktrees` were readable inside a confined session, as part of
+  `~/.config` and `~/.local/share`; an empty directory now sits over each, with only the session's own profile, dropped
+  files, hook scripts and checkout mounted back.
+- A session browser's local-file server, the one that serves a session's checkout at `http://127.0.0.1:<port>/`, now answers only requests addressed to `127.0.0.1:<port>` or `localhost:<port>`. A page in your ordinary browser could point a name it controls at your machine and read the checkout through it, `.env` files included; such a request is now refused.
+- The command lich pastes to finish a self-update sends the session token to lich in a request header fed through curl's standard input, so it no longer appears in the command line of a process, which every user on the machine can read. The loopback listener accepts `Authorization: Bearer <token>` beside `?token=`. The same goes for the restart `install.sh` makes.
+- lich's own config directory (`~/.config/lich` on Linux) is made readable by your user only, on every start, so an existing install is tightened too. Prompts and session text live in the database there. The directory above it is left as it was.
+
+## [0.86.0] - 2026-11-07
+
+### Added
+
+- The tray tells you which sessions need you. Its menu lists the sessions waiting on you, with what they are asking, and the ones whose finished turn you have not read, then the ones working, with the tool they are running; clicking one opens the window on its card. Hovering the icon lists them all, uncut, where your tray shows the icon's tooltip, and on macOS each entry's tooltip has its whole line. The icon takes a dot when something is going on: amber for a session waiting on you, green for a turn left unread, grey while one works. The services moved into a submenu.
+- The tray of notes on a session browser's page has a box for a note about all of them, the way a batch of review comments does. What you write there closes the message the agent gets. Enter sends the notes, Shift+Enter starts a new line, and Clear empties it with the rest.
+
+### Changed
+
+- The window spends about a tenth less CPU on every frame it draws: it no longer works out which part of a frame changed when it is drawing the whole frame anyway.
+- Moving the pointer over the window no longer redraws it on every move: it draws only when something under the pointer changes, and an agent that tracks the mouse (Claude Code does) no longer makes its output draw at once as the pointer moves. Less power spent while your hand is on the mouse.
+- A link in a terminal underlines, and the pointer turns into a hand, only while Ctrl (Cmd on macOS) is held, the key a click opens it with, as in Ghostty. Before, every link under the pointer underlined.
+- The note under a batch of review comments, in Code, Review and Pulls, is now a box that grows with what you write: Shift+Enter starts a new line, Enter still adds it to the batch.
+
+### Fixed
+
+- Typing or pasting in a terminal you scrolled up brings it back to the bottom, where what you type shows up, the way most terminals do. Before, the text reached the session while the view stayed on the scrollback, and you had to scroll down by hand to see it.
+- Terminal text has the same weight as the rest of the window's text. Before, the soft edges of each letter were blended differently, so light text on a dark theme looked thinner than it should and dark text on a light theme looked heavier.
+- A variable your shell's rc exports with a line break in its value (a certificate, a key) reaches your sessions whole. Before, only its first line arrived, and a later line written like `NAME=value` came through as a variable of its own.
+- A file ticked Viewed on the Pulls screen's Files tab opens folded when the pull request is opened again, until a new commit changes it. Before, it came back open.
+- Opening lich again right after quitting it, or the relaunch after an update, no longer fails with "lich could not listen on 127.0.0.1:47821" while the old lich is still stopping a project's services. Quitting now frees the port before it waits for them.
+
+## [0.85.0] - 2026-11-04
+
+### Added
+
 - A checkout's menu in the sidebar, from a right click or the … on its row, has Close all sessions: every session in that checkout closes at once, each with its own Undo, after a confirmation when any of them is mid-turn, and the last one offers to remove the worktree.
 
 ### Fixed
 
+- On Linux, the window no longer turns to scattered stale pixels on graphics drivers that misreport what their buffers hold, as NVIDIA 595 on COSMIC does: every frame is drawn whole again, as before 0.84.0. Drawing only what changed, and its lower graphics card load, is now opt-in with `GIO_DAMAGE=on` in the environment.
 - A lich built from a release with a label of its own in its version, such as `0.83.0+local.3`, is offered the next release by Check for updates and the startup check. Before, any build with a `+` in its version was taken for a development build and told it was on the latest version.
 
 ## [0.84.0] - 2026-11-03
@@ -6515,7 +6611,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   CPU, costing ~40ms per frame in a full-size window. Under Xwayland typing is
   stall-free at full frame rate.
 
-[Unreleased]: https://github.com/lichdotdev/lich/compare/v0.84.0...HEAD
+[Unreleased]: https://github.com/lichdotdev/lich/compare/v0.87.0...HEAD
+[0.87.0]: https://github.com/lichdotdev/lich/compare/v0.86.0...v0.87.0
+[0.86.0]: https://github.com/lichdotdev/lich/compare/v0.85.0...v0.86.0
+[0.85.0]: https://github.com/lichdotdev/lich/compare/v0.84.0...v0.85.0
 [0.84.0]: https://github.com/lichdotdev/lich/compare/v0.83.0...v0.84.0
 [0.83.0]: https://github.com/lichdotdev/lich/compare/v0.82.0...v0.83.0
 [0.82.0]: https://github.com/lichdotdev/lich/compare/v0.81.0...v0.82.0

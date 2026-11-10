@@ -63,13 +63,19 @@ type Diagnostics struct {
 	LogPath  string `json:"logPath"`
 }
 
-// TrayLabels are the tray menu's words, in the interface language. Running and
+// TrayLabels are the tray menu's words, in the interface language. Idle, More and
 // ServicesRunning carry a {count} placeholder and are written so they need no
 // plural form.
 type TrayLabels struct {
 	Show            string `json:"show"`
-	Running         string `json:"running"`
 	Quit            string `json:"quit"`
+	NoSessions      string `json:"noSessions"`
+	NeedsYou        string `json:"needsYou"`
+	Working         string `json:"working"`
+	Idle            string `json:"idle"`
+	More            string `json:"more"`
+	Waiting         string `json:"waiting"`
+	Done            string `json:"done"`
 	ServicesRunning string `json:"servicesRunning"`
 	ShowOutput      string `json:"showOutput"`
 	Restart         string `json:"restart"`

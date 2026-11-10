@@ -154,7 +154,7 @@ func (q *planQuota) apply(ev backend.Event) {
 		id = e.ID
 	case api.SessionStatusEvent.Name:
 		e, err := backend.Decode(ev, api.SessionStatusEvent)
-		if err != nil || e.State != statusDone {
+		if err != nil || e.State != statusDone || e.Program {
 			return
 		}
 		id = e.ID

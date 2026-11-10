@@ -21,16 +21,12 @@ const foregroundIndex = 0xFFFF
 
 var errPaintTooDeep = errors.New("COLR paint graph deeper than allowed, a cycle")
 
-// colorLayers draws c's COLR color glyph, the format Windows' Segoe UI Emoji
+// colorLayers draws gid's COLR color glyph, the format Windows' Segoe UI Emoji
 // uses (version 0 layers, or a version 1 paint graph), into the two cells
 // colorBitmap scales a PNG into, centered in them. It returns nil when f has no
-// color glyph for c.
-func (r *Rasterizer) colorLayers(f *fontFace, c rune) (*image.RGBA, image.Point, error) {
-	if f.bitmaps == nil || f.bitmaps.COLR == nil {
-		return nil, image.Point{}, nil
-	}
-	gid, ok := f.bitmaps.NominalGlyph(c)
-	if !ok {
+// color glyph for gid.
+func (r *Rasterizer) colorLayers(f *fontFace, gid gotext.GID) (*image.RGBA, image.Point, error) {
+	if f.bitmaps.COLR == nil {
 		return nil, image.Point{}, nil
 	}
 	root, ok := f.bitmaps.COLR.Search(tables.GlyphID(gid))
@@ -53,7 +49,7 @@ func (r *Rasterizer) colorLayers(f *fontFace, c rune) (*image.RGBA, image.Point,
 	fontToPixels := affine{xx: scale, yy: -scale, dy: float64(ext.Ascender) * scale}
 	dst := image.NewRGBA(p.bounds)
 	if err := p.paint(dst, root, fontToPixels, p.opaque(), 0); err != nil {
-		return nil, image.Point{}, fmt.Errorf("draw COLR glyph of %U: %w", c, err)
+		return nil, image.Point{}, fmt.Errorf("draw COLR glyph %d: %w", gid, err)
 	}
 	return dst, image.Pt((boxW-w)/2, (boxH-h)/2), nil
 }

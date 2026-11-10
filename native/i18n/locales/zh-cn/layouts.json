@@ -39,6 +39,7 @@
     "zoom": "页面缩放",
     "zoomReset": "重置为 100%",
     "notePlaceholder": "这里应该改成什么？",
+    "closingPlaceholder": "关于全部的备注…",
     "addNote": "添加备注",
     "saveNote": "保存",
     "deleteNote": "删除",

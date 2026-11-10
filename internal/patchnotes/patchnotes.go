@@ -18,7 +18,9 @@
 // release page, so a release announces itself in one place. The kind is the
 // volume: "important" is the release's headline and opens the popup as its
 // title, "warning" is something the reader must do or avoid, "note" a detail
-// worth a line. The window decides how each kind looks.
+// worth a line, and "caution" marks the release as an update lich requires
+// (internal/appupdate reads it out of the published notes). The window decides
+// how each kind looks.
 //
 // Translations live in changelog/<locale>.md, newest release first, each added
 // by the lich-changelog-i18n skill when a release is cut: the same section,
@@ -30,6 +32,7 @@ import (
 	"context"
 	"errors"
 	"io/fs"
+	"slices"
 	"strings"
 
 	"github.com/lichdotdev/lich/api"
@@ -40,6 +43,9 @@ type Group = api.PatchNotesGroup
 type Highlight = api.PatchNotesHighlight
 
 type Notes = api.PatchNotes
+
+// KindCaution is the alert kind of a release whose update is required.
+const KindCaution = "caution"
 
 // Service serves the notes for one fixed version — the running build.
 type Service struct {
@@ -93,6 +99,15 @@ func Highlights(changelog, version string) []Highlight {
 		return nil
 	}
 	return parseHighlights(body)
+}
+
+// RequiresUpdate reports whether notes carry a caution block before their first
+// group. notes is one release's changelog section, or the GitHub release body
+// composed from it.
+func RequiresUpdate(notes string) bool {
+	return slices.ContainsFunc(parseHighlights(strings.Split(notes, "\n")), func(h Highlight) bool {
+		return h.Kind == KindCaution
+	})
 }
 
 // normalize drops a leading "v" so "v0.11.0" and "0.11.0" compare equal.

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"slices"
 	"time"
 
 	"github.com/lichdotdev/lich/api"
@@ -82,7 +83,7 @@ func (s *Service) Start(_ context.Context, opts api.StartOptions) (api.None, err
 	inheritClaudeTrust(opts.Kind, opts.Cwd, profileDir)
 	inheritCursorTrust(opts.Kind, opts.Cwd)
 	markCrushInitialized(opts.Kind, opts.Cwd)
-	awaits := s.awaitsStart(opts.Kind, profileDir)
+	awaits := s.awaitsStart(opts.Kind, profileDir) && !trustAnswered(opts.Kind, opts.Cwd, profileDir)
 	sess, cwd, err := s.spawnSession(opts, profileDir, name, oc2)
 	if err != nil || sess == nil {
 		return api.None{}, err
@@ -153,6 +154,8 @@ func (s *Service) spawnSession(opts api.StartOptions, profileDir, name string, o
 		return nil, "", err
 	}
 	env = mcpEnv(env, opts.Kind, mcpBin)
+	route, lang := subagentRoute(opts.Kind, depth, cardsOn), s.promptLanguage()
+	env = briefingEnv(env, opts.Kind, route, lang)
 	model := s.store.SessionModel(opts.ID)
 	if oc2 {
 		if env, err = opencode2ModelEnv(env, model, opts.Resume); err != nil {
@@ -174,11 +177,10 @@ func (s *Service) spawnSession(opts api.StartOptions, profileDir, name string, o
 	inheritAntigravityTrust(opts.Kind, opts.Cwd, inSandbox)
 	spec := ptySpec{
 		bin: resolveCommand(opts.Kind, s.store.ProviderBin(opts.Kind, opts.ProjectID), userShell()),
-		args: append(confinedTrustArgs(opts.Kind, opts.Cwd, inSandbox), opencode2Args(oc2, providerArgs(
+		args: slices.Concat(confinedTrustArgs(opts.Kind, opts.Cwd, inSandbox), codexBriefingArgs(opts.Kind, opts.Resume, route, lang), opencode2Args(oc2, providerArgs(
 			opts.Kind, name, opts.Resume, model, s.store.SessionEffort(opts.ID), mcpBin,
-			kiroPluginAgent(opts.Kind), opts.Fork, skipPermissions, ultracode, subagentRoute(opts.Kind, depth, cardsOn),
-			s.promptLanguage(),
-		))...),
+			kiroPluginAgent(opts.Kind), opts.Fork, skipPermissions, ultracode, route, lang,
+		))),
 		dir:  opts.Cwd,
 		env:  env,
 		cols: opts.Cols,
@@ -186,10 +188,13 @@ func (s *Service) spawnSession(opts api.StartOptions, profileDir, name string, o
 	}
 	spec = withShellIntegration(spec, opts.Kind, s.shellIntegrationDir)
 	spec = s.withAccountToken(spec, opts.Cwd, inSandbox)
+	spec, err = s.withScopedToken(spec, opts.ID, inSandbox)
+	if err != nil {
+		return nil, "", err
+	}
 	creds := s.sandboxCredentials(opts.ProjectID, opts.Cwd, inSandbox)
-	spec, skippedLinks := wrapSandbox(
-		spec, opts.Kind, userHome(), sessionDropDir(s.dropDir, opts.ID, inSandbox), profileDir, inSandbox, creds,
-	)
+	reads := []string{sessionDropDir(s.dropDir, opts.ID, inSandbox), s.shellIntegrationDir}
+	spec, skippedLinks := wrapSandbox(spec, opts.Kind, userHome(), reads, profileDir, inSandbox, creds)
 	header, err := encodeFrame(opts.ID, nil)
 	if err != nil {
 		return nil, "", fmt.Errorf("start %q: %w", opts.ID, err)

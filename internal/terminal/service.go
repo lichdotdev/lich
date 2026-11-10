@@ -111,7 +111,7 @@ func (s *Service) ServiceOutput(id string) []byte {
 	if !ok || sess.service == nil {
 		return nil
 	}
-	return sess.replay.snapshot()
+	return sess.replay.text()
 }
 
 // serviceInput is onInput for a service's console: typed bytes go straight to

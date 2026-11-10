@@ -60,13 +60,14 @@ type Tooltip struct {
 	hoverAt time.Time
 	shown   transition
 	// origin is the trigger's top-left in window space, read off events
-	// that carry a position: a Cancel's is zero.
+	// that carry a position: a Cancel's is zero. Enter carries it, so the
+	// trigger takes no motion and moving over it draws no frame.
 	origin image.Point
 }
 
-func (t *Tooltip) update(gtx C, root *Root) {
+func (t *Tooltip) update(gtx C) {
 	for {
-		ev, ok := gtx.Event(pointer.Filter{Target: t, Kinds: pointer.Enter | pointer.Leave | pointer.Move | pointer.Press | pointer.Cancel})
+		ev, ok := gtx.Event(pointer.Filter{Target: t, Kinds: pointer.Enter | pointer.Leave | pointer.Press | pointer.Cancel})
 		if !ok {
 			break
 		}
@@ -75,16 +76,14 @@ func (t *Tooltip) update(gtx C, root *Root) {
 			continue
 		}
 		switch e.Kind {
-		case pointer.Enter, pointer.Move:
-			t.origin = root.origin(e.Position)
-			if !t.hovered {
-				t.hovered, t.hoverAt = true, gtx.Now
-			}
+		case pointer.Enter:
+			t.origin = windowOrigin(e)
+			t.hovered, t.hoverAt = true, gtx.Now
 		case pointer.Leave, pointer.Cancel:
 			t.hovered, t.pressed = false, false
 			t.shown.set(gtx, false)
 		case pointer.Press:
-			t.origin = root.origin(e.Position)
+			t.origin = windowOrigin(e)
 			t.pressed = true
 			t.shown.set(gtx, false)
 		}
@@ -133,7 +132,7 @@ func (t TooltipStyle) Layout(gtx C, trigger layout.Widget) D {
 	if t.Content == nil {
 		return trigger(gtx)
 	}
-	t.State.update(gtx, t.Root)
+	t.State.update(gtx)
 	dims := trigger(gtx)
 	area := clip.Rect{Max: dims.Size}.Push(gtx.Ops)
 	// Passes so the trigger's own Clickable, laid out below, still gets

@@ -143,16 +143,24 @@ distinto.
 | Costo en el pie de ventana | sí | sí | no | sí | sí | sí | no | créditos |
 | Cuánto queda de tu plan | sí | sí | sí | solo OpenCode Go | no | no | sí | no |
 | Un turno que el límite de uso de tu plan detuvo se reanuda cuando el límite se restablece | sí | sí | no | sus propios reintentos | sus propios reintentos | no | no | no |
+| Si otro de tus perfiles aún tiene cuota, un aviso ofrece continuar allí al momento | sí | sí | no | no | no | no | no | no |
+| Al traspasar su trabajo, un agente puede sugerir uno de tus perfiles para su sucesora, y un aviso te deja decidir si moverla | sí | sí | no | no | sí | no | Linux y Windows | solo Linux |
 | Spinner mientras corre un turno, anillo cuando termina | sí | sí | sí | sí | sí | no | sí | sí |
 | La tarjeta toma el nombre de la conversación | sí | por tu primer prompt | por tu primer prompt | sí | sí, desde el segundo turno | no | sí, cuando termina el primer turno | por tu primer prompt, cuando termina el primer turno |
 | Un pull request que abre el agente aparece en su tarjeta al terminar el turno | sí | sí | sí | sí | sí | no, cuando la ventana recupera el foco | sí | sí |
 | Se repinta con el aspecto nuevo al cambiar lich entre un tema claro y uno oscuro | sí | no | no | sí | sí | no | sí | no |
 | Campana cuando el agente está bloqueado esperándote | sí | sí | no | sí | no | no | no | no |
 | Ctrl+Shift+Y salta a la siguiente sesión que te espera | sí | sí | no | sí | no | no | no | no |
+| Un programa en la terminal del agente puede fijar la tarjeta (OSC 7501) mientras el agente corre | no | no | no | no | no | sí | no | no |
+| De vuelta en un shell sin marcas de prompt tras salir del agente, un programa puede volver a fijar la tarjeta | sí | no | no | no | no | sí | sí | no |
+| La bandeja lista las sesiones que te esperan y las que trabajan, y su icono lleva un punto | sí | sí | solo las que trabajan | sí | solo las que trabajan | no | solo las que trabajan | solo las que trabajan |
 | La tarjeta avisa cuando la conversación se está compactando | sí | no | no | no | no | no | no | no |
+| Tras una compactación, al agente se le recuerdan las tareas que otras sesiones le enviaron y que siguen esperando su respuesta | sí | no | no | no | no | no | no | no |
 | Filtro de la barra lateral por estado: En espera, En ejecución, Sin leer | sí | sí | no En espera | sí | no En espera | no, siempre Inactiva | no En espera | no En espera |
 | Si tu agente lo ejecuta dentro de otra sesión (`claude -p`, `cursor-agent -p`), no aparece en la tarjeta de esa sesión | sí | sí | sí | sí | sí | sí | sí | no |
+| Además de las herramientas para llegar a tus otras sesiones, al agente se le indica cuándo usarlas (pasar trabajo a una sesión en su propio worktree) | sí | sí, salvo que tu `config.toml` defina `developer_instructions` | sí | sí | sí | sí | no medido | sí |
 | La máquina no entra en reposo mientras corre un turno | sí | sí | sí | sí | sí | no | sí | sí |
+| Las sesiones que se pasan mensajes sin trabajar entre ellos, dos o en un ciclo de varias, se detienen | sí | sí | sí | sí | sí | no | sí | sí |
 | **Último turno** de la pestaña Revisión, con el resumen del agente | sí | sí | sí | sí | sí | no | sí | sí |
 | Buscar en la conversación desde la paleta | sí | sí | sí | sí | sí | sí | no | sí |
 | Reanudar una conversación iniciada fuera de lich, desde la pestaña Historial de la paleta | sí | sí | sí | sí | sí | Linux; macOS y Windows sin probar | sí | sí |

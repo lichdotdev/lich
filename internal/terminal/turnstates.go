@@ -45,7 +45,8 @@ func (b *statusBook) note(ev statusEvent) {
 		since = prev.since
 		// A busy naming no tool is the gap after one (PostToolUse), and the
 		// card keeps showing that tool through it (statusEntry.applyTool).
-		if ev.State == statusBusy && ev.Tool == "" {
+		// A program's report replaces its record whole, so it has no gap.
+		if ev.State == statusBusy && ev.Tool == "" && !ev.Program {
 			ev.Tool, ev.Detail = prev.event.Tool, prev.event.Detail
 		}
 	}

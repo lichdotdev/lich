@@ -41,6 +41,7 @@
     "zoom": "Zoom de la página",
     "zoomReset": "Restablecer al 100 %",
     "notePlaceholder": "¿Qué debería cambiar aquí?",
+    "closingPlaceholder": "Una nota sobre todas…",
     "addNote": "Añadir nota",
     "saveNote": "Guardar",
     "deleteNote": "Eliminar",

@@ -230,8 +230,10 @@ func TestMCPListsEveryTool(t *testing.T) {
 	want := map[string][]string{
 		"list_sessions":       {},
 		"open_session":        {},
+		"handoff_session":     {"done", "next_steps"},
 		"close_session":       {"session"},
 		"close_project":       {"project"},
+		"schedule_prompt":     {},
 		"list_services":       {},
 		"create_service":      {"name", "command"},
 		"edit_service":        {"service"},
@@ -265,6 +267,7 @@ func TestMCPListsEveryTool(t *testing.T) {
 		"browser_back":        {},
 		"browser_forward":     {},
 		"browser_scroll":      {},
+		"browser_eval":        {"script"},
 		"browser_dialog":      {"accept"},
 		"browser_list":        {},
 		"browser_close":       {},

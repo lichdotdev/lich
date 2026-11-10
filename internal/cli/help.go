@@ -109,6 +109,18 @@ var commands = []command{
 			"session the command runs in needs --self.",
 	},
 	{
+		name: "handoff",
+		args: "--done <text> --next <text> [--branch <branch>] [--commits <text>]\n" +
+			"            [--gotchas <text>] [--kind <provider>] [--model <model>]\n" +
+			"            [--effort <level>] [--profile <slug>] [--json]",
+		about: "Hand this session's work off to a fresh session of itself at a clean\n" +
+			"break: it opens in this session's checkout and folder, on this session's\n" +
+			"provider, model and effort unless the flags name others and in its profile,\n" +
+			"and the note, 8 KB at most, is typed at its prompt. --profile only suggests\n" +
+			"a profile to the user, whose click is the only thing that moves the\n" +
+			"successor there. This session stays open for the user to close.",
+	},
+	{
 		name: "close-project",
 		args: "[--json] <name-or-path>",
 		about: "Close a project as its tab's close does: its sessions stop and stay with\n" +
@@ -133,6 +145,15 @@ var commands = []command{
 		about: "Rename a session's card. With <session> it renames that one, with only a\n" +
 			"name it renames the session the command runs in. The name becomes the\n" +
 			"user's: the provider's auto-title never overwrites it again.",
+	},
+	{
+		name: "schedule",
+		args: "(--when <time> | --on <condition> | --clear) [<prompt>]",
+		about: "Type <prompt> in the session this command runs in, later. --when takes\n" +
+			"45m, 2h30, 14:30 or \"2026-11-12 14:30\". --on waits for the pull request of\n" +
+			"this branch: checks-failed (stays on until it closes, at most 3 runs),\n" +
+			"checks-passed or review (once). What the person set stays until they\n" +
+			"change it. --clear removes it.",
 	},
 	{
 		name: "control",
@@ -160,8 +181,8 @@ var commands = []command{
 		name: "browser",
 		args: "<verb> [args]",
 		about: "Drive this session's browser — the page its tab in the lich window shows.\n" +
-			"Verbs: open [url], info, click, type, press <key>, screenshot [path], navigate <url>,\n" +
-			"reload, back, forward, scroll, dialog [--text t] accept|dismiss, list, close,\n" +
+			"Verbs: open [url], info, click, type, press <key>, screenshot [--annotate] [path], navigate <url>,\n" +
+			"reload, back, forward, scroll, eval <script>, dialog [--text t] accept|dismiss, list, close,\n" +
 			"tabs, tab new [url] | select <index> | close <index>.",
 	},
 	{

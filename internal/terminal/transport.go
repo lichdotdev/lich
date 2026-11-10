@@ -125,11 +125,15 @@ type transport struct {
 	// out is the live connection's writer (writequeue.go). It is swapped with
 	// conn and under the same lock: the two are one client, and send finding a
 	// connection without its writer would have nowhere to put a frame.
-	out         *writeQueue
-	port        int
-	token       string
+	out   *writeQueue
+	port  int
+	token string
+	// scoped is each confined session's own token (scoped.go), guarded by mu.
+	scoped      map[string]string
 	mux         *http.ServeMux
+	srv         *http.Server
 	input       func(id string, data []byte)
+	typed       func(id string)
 	status      func(req hookRequest)
 	linkSession func(sessionID, providerSessionID, provider string) error
 	setTitle    func(sessionID, title string) error
@@ -221,15 +225,22 @@ func newTransport(
 	mux.HandleFunc("/mod/answer", t.modAnswer)
 	mux.HandleFunc("/mod/status", t.modStatus)
 	t.mux = mux
-	// Server and listener live for the process lifetime, like the PTY sessions
-	// they serve; add Shutdown if the app ever needs teardown. Serve returning
-	// is therefore always abnormal — the window just lost RPC and terminals.
+	t.srv = &http.Server{Handler: mux}
+	// Serve returning before close is abnormal: the window just lost RPC and
+	// terminals.
 	go func() {
-		if err := http.Serve(listener, mux); err != nil {
+		if err := t.srv.Serve(stopListening{listener.(*net.TCPListener)}); !errors.Is(err, http.ErrServerClosed) {
 			slog.Error("transport listener stopped", "err", err)
 		}
 	}()
 	return t, nil
+}
+
+// close releases the port on lich's way out, before the teardown that can
+// outlast a relaunch's bind wait (the services' stop grace). Connections a
+// handler took over, the websockets, are not closed here.
+func (t *transport) close() error {
+	return t.srv.Close()
 }
 
 // bindTimeout / restartBindTimeout / bindRetryInterval bound the wait any
@@ -403,21 +414,29 @@ func writeLeaks(w io.Writer) {
 // mount adds a handler to the transport listener behind the same token check
 // every endpoint uses. ServeMux registration is safe after Serve started, so
 // callers wire extra surfaces (RPC, the events push socket) post-construction.
+// A scoped token reaches only the RPC, and only its allowlist (scopedRequest).
 func (t *transport) mount(pattern string, handler http.Handler) {
 	t.mux.Handle(pattern, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !t.authorized(r) {
+		c, ok := t.callerOf(r)
+		if !ok {
 			http.Error(w, "forbidden", http.StatusForbidden)
 			return
+		}
+		if c.scoped() {
+			if r, ok = scopedRequest(w, r, c); !ok {
+				return
+			}
 		}
 		handler.ServeHTTP(w, r)
 	}))
 }
 
-// authorized reports whether the request carries the transport's connect token.
-// The origin is not checked: the random token is the auth.
+// authorized reports whether the request carries the transport's launch token.
+// The origin is not checked: the random token is the auth. A session's scoped
+// token does not pass here: the endpoints that ask this (the window's socket,
+// the restart, the goroutine dump) are the window's and the installer's.
 func (t *transport) authorized(r *http.Request) bool {
-	provided := r.URL.Query().Get("token")
-	return subtle.ConstantTimeCompare([]byte(provided), []byte(t.token)) == 1
+	return subtle.ConstantTimeCompare([]byte(tokenOf(r)), []byte(t.token)) == 1
 }
 
 // servePost is the skeleton every hook endpoint shares: POST only, token
@@ -450,7 +469,8 @@ func servePostLimited[T hookBody](
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	if !t.authorized(r) {
+	c, ok := t.callerOf(r)
+	if !ok {
 		http.Error(w, "invalid token", http.StatusUnauthorized)
 		return
 	}
@@ -467,6 +487,12 @@ func servePostLimited[T hookBody](
 		// this lich predates from a broken script.
 		slog.Warn("hook: bad payload", "path", r.URL.Path, "plugin", pluginLabel(plugin), "err", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	// A session's token reports for that session alone: a confined agent
+	// posting another card's state would drive a spinner it does not own.
+	if !c.ownSession(parsed.session()) {
+		http.Error(w, "the token belongs to another session", http.StatusForbidden)
 		return
 	}
 	t.plugins.note(parsed.session(), plugin)
@@ -735,6 +761,17 @@ func (t *transport) readLoop(conn *websocket.Conn) {
 			t.drop(conn)
 			return
 		}
+		// A text frame is the session a person just typed in. The binary frame
+		// behind it cannot say so: the same path carries an emulator's replies
+		// and mouse reports. Text and not a marker byte because a backend that
+		// predates this skips text frames, so a window updated ahead of a
+		// running backend keeps its keyboard.
+		if kind == websocket.MessageText {
+			if t.typed != nil {
+				t.typed(string(data))
+			}
+			continue
+		}
 		if kind != websocket.MessageBinary {
 			continue
 		}
@@ -744,6 +781,12 @@ func (t *transport) readLoop(conn *websocket.Conn) {
 		}
 		t.input(id, payload)
 	}
+}
+
+// setTyped wires fn to hear which session a person typed in, before the bytes
+// are written. Set once, before the listener has a client.
+func (t *transport) setTyped(fn func(id string)) {
+	t.typed = fn
 }
 
 // forget clears conn as the transport's client and retires the writer that owned

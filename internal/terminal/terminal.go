@@ -111,6 +111,11 @@ type session struct {
 	started     bool
 	// service is set on a PTY StartService spawned, nil on a session's.
 	service *ServiceCommand
+	// progScan, prog and progReplies read and answer OSC 7501 off this PTY's
+	// output (progwire.go).
+	progScan    progScanner
+	prog        programStatus
+	progReplies progReplies
 }
 
 // Store is the persistence the terminal service depends on: the binary to spawn
@@ -191,6 +196,11 @@ type Service struct {
 	// without answering (internal/relay). Guarded by mu: wired after the
 	// transport is already serving.
 	onState func(id, state string)
+	// onTool, when set, receives the tool each PreToolUse report names, and
+	// onTyped every line a person sends at a session's prompt: the relay's
+	// ping-pong breaker reads both. Guarded by mu like onState.
+	onTool  func(id, tool, detail string)
+	onTyped func(id string)
 	// startReports answers whether a provider's sessions run lich's hooks, so
 	// whether a session-start report can be waited for (startgate.go).
 	startReports func(provider string) bool
@@ -208,6 +218,19 @@ type Service struct {
 	// onLimit, when set, is told about every turn a usage limit ended that names
 	// its reset (limit.go). Guarded by mu like onState.
 	onLimit func(id string, resetsAt int64)
+	// quotaLeft, when set, answers whether a profile can take a turn now
+	// (limit_switch.go). Guarded by mu like onState.
+	quotaLeft func(kind, slug string) bool
+	// resumeNow, when set, sends the continuation of a session the person moved
+	// off a limit (limit_switch.go). Guarded by mu like onState.
+	resumeNow func(id string)
+	// spentUntil is when each profile a usage limit stopped a turn in resets,
+	// in unix seconds, keyed by provider and slug (limit_switch.go). Guarded
+	// by mu.
+	spentUntil map[string]int64
+	// profileOffers is the profile each session was offered and has not
+	// answered, by session id (limit_switch.go). Guarded by mu.
+	profileOffers map[string]profileOffer
 	// spawns is how each live session's PTY was started — what it runs and where
 	// — keyed by session id. Read by providerKind, which is what stops a
 	// session-start report from repainting a card lich itself chose the provider
@@ -358,6 +381,7 @@ func New(store Store, env []string, hub *events.Hub) *Service {
 		})
 		ws.setModAborted(s.noteInterrupt)
 		ws.setUsageReported(s.onUsageReport)
+		ws.setTyped(s.programTyped)
 	}
 	return s
 }
@@ -403,18 +427,32 @@ func (s *Service) onHookState(req hookRequest) {
 	if s.repeatedEnding(req.SessionID, req.State) {
 		return
 	}
+	if req.State == statusBusy {
+		s.withdrawLimitOffer(req.SessionID)
+	}
+	// Read before the report closes the turn: a `done` with none open (a
+	// /compact at an idle prompt) leaves no new conversation to move.
+	turnEnded := req.State == statusDone && s.turns.busy(req.SessionID)
 	// The window is told what the report means, not what it said: a
 	// `waiting` outside a turn is a session idle at its prompt, and the
 	// card would draw it as a human being blocked (see turnLog).
 	if s.turns.report(req.SessionID, req.State) {
 		s.noteUnread(req.SessionID, req.State == statusDone)
-		s.publishStatus(statusEvent{
+		s.publishHookStatus(statusEvent{
 			ID:     req.SessionID,
 			State:  req.State,
 			Tool:   req.Tool,
 			Detail: req.Detail,
 			Reason: req.Reason,
 		})
+	}
+	if turnEnded {
+		s.showHeldOffer(req.SessionID)
+	}
+	if req.State == statusBusy && req.Tool != "" {
+		if watch := s.toolWatcher(); watch != nil {
+			watch(req.SessionID, req.Tool, req.Detail)
+		}
 	}
 	// The relay reads the stream raw: it keeps its own turn accounting,
 	// and a report held back from the window still moves an errand.
@@ -601,6 +639,28 @@ func (s *Service) SetSessionState(fn func(id, state string)) {
 	s.onState = fn
 }
 
+// SetToolUse wires fn to the tool every PreToolUse report names. Only one
+// watcher, the relay.
+func (s *Service) SetToolUse(fn func(id, tool, detail string)) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.onTool = fn
+}
+
+// SetUserTyped wires fn to every line a person sends at a session's prompt
+// from the window. Only one watcher, the relay.
+func (s *Service) SetUserTyped(fn func(id string)) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.onTyped = fn
+}
+
+func (s *Service) toolWatcher() func(id, tool, detail string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.onTool
+}
+
 // SetSessionClosed wires fn to every session Close or ContinueIn takes down, called before
 // its process is killed with the session that closed it (CloseBy), empty for a
 // close the window made. Only one watcher, the relay (relay.SessionClosed).
@@ -644,6 +704,15 @@ func (s *Service) SetRestart(fn func() error) {
 		return
 	}
 	s.ws.setRestart(fn)
+}
+
+// CloseTransport frees the loopback port for the next lich, before the slow
+// part of quitting. No-op when the transport failed to start.
+func (s *Service) CloseTransport() error {
+	if s.ws == nil {
+		return nil
+	}
+	return s.ws.close()
 }
 
 // sessionBaseEnv is what every session starts from: the process environment
@@ -767,6 +836,7 @@ func (s *Service) endProcess(id, closerID string) error {
 		closed(id, closerID)
 	}
 	s.spawns.Delete(id)
+	s.forgetProfileOffer(id)
 	// A turn dies with its session, and an open one left behind would keep the
 	// machine awake for a card that no longer exists.
 	s.forgetTurn(id)
@@ -789,6 +859,7 @@ func (s *Service) endProcess(id, closerID string) error {
 	if s.ws != nil {
 		s.ws.plugins.forget(id)
 		s.ws.mods.forget(id)
+		s.ws.revokeScoped(id)
 	}
 	return err
 }

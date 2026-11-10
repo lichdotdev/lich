@@ -6,24 +6,17 @@ import (
 	"github.com/lichdotdev/lich/api"
 )
 
-func TestRunningFillsTheCount(t *testing.T) {
-	l := Labels{Running: "Sessions running: {count}"}
-	if got := l.running(4); got != "Sessions running: 4" {
-		t.Fatalf("running(4) = %q", got)
-	}
-}
-
 func TestSetLabelsStartsOnceThenRelabels(t *testing.T) {
 	starts := 0
 	var relabeled []Labels
-	tr := New(Icons{}, func() {}, func() error { return nil }, func() (int, error) { return 0, nil })
+	tr := New(Icons{}, func() {}, func() error { return nil })
 	tr.start = func(t *Tray) {
 		starts++
 		t.setRelabel(func(l Labels) { relabeled = append(relabeled, l) })
 	}
 
-	en := Labels{Show: "Show lich", Running: "Sessions running: {count}", Quit: "Quit lich"}
-	pt := Labels{Show: "Mostrar o lich", Running: "Sessões rodando: {count}", Quit: "Encerrar o lich"}
+	en := Labels{Show: "Show lich", Quit: "Quit lich"}
+	pt := Labels{Show: "Mostrar o lich", Quit: "Encerrar o lich"}
 	if _, err := tr.SetLabels(t.Context(), api.TrayLabels(en)); err != nil {
 		t.Fatal(err)
 	}
@@ -60,7 +53,7 @@ func TestServiceTitleNamesTheProject(t *testing.T) {
 }
 
 func TestServiceSlotsActOnWhatTheyShowed(t *testing.T) {
-	tr := New(Icons{}, func() {}, func() error { return nil }, func() (int, error) { return 0, nil })
+	tr := New(Icons{}, func() {}, func() error { return nil })
 	if shown, total := tr.runningServices(); shown != nil || total != 0 {
 		t.Fatalf("without services wired: %v, %d", shown, total)
 	}

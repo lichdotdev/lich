@@ -67,7 +67,7 @@ func defineEventFamily[T any](prefix string) EventFamily[T] {
 
 var (
 	// SessionStatusEvent carries a session's processing state ({id, state, tool,
-	// detail, reason} — "busy"/"done"/"waiting"/"idle"/"compacting", plus the tool
+	// detail, reason, program} — "busy"/"done"/"waiting"/"idle"/"compacting", plus the tool
 	// a pre-tool report names and what a waiting one is blocked on), reported by
 	// the lich hooks running inside the PTY (see transport.hook and
 	// docs/hooks/session-state.md). "interrupted" is the one value lich raises
@@ -142,6 +142,12 @@ var (
 	// arrives (planQuota, native/cmd/lich-native/footer_quota.go).
 	SessionLimitEvent = defineEvent[SessionLimit]("session-limit")
 
+	// SessionProfileOfferEvent carries another profile that could take a session:
+	// one with quota left after a usage limit, or one the agent handing off to it
+	// suggested. Nothing moves unless the person answers with
+	// TerminalTakeProfileOffer.
+	SessionProfileOfferEvent = defineEvent[SessionProfileOffer]("session-profile-offer")
+
 	// SessionProfileEvent carries the profile a session moved to: Continue in, or
 	// a resume that found its conversation in another profile.
 	SessionProfileEvent = defineEvent[SessionProfile]("session-profile")
@@ -186,6 +192,18 @@ var (
 	// without the window having written it: delivered, or parked and dropped by
 	// lich itself around a usage limit (resume.go). Payload: SessionSchedule.
 	SessionScheduleEvent = defineEvent[SessionSchedule]("session-schedule")
+
+	// SessionScheduleByEvent follows a SessionScheduleEvent that says who set
+	// the prompt. Payload: SessionScheduleBy.
+	SessionScheduleByEvent = defineEvent[SessionScheduleBy]("session-schedule-by")
+
+	// SessionWatchEvent is emitted when a session's watch is armed, fires or
+	// stops. Payload: SessionWatchChange.
+	SessionWatchEvent = defineEvent[SessionWatchChange]("session-watch")
+
+	// SessionWatchStoppedEvent is emitted when a watch reached its run limit on
+	// one pull request and disarmed. Payload: SessionWatchStopped.
+	SessionWatchStoppedEvent = defineEvent[SessionWatchStopped]("session-watch-stopped")
 
 	// SessionRelayEvent carries which session is waiting on which, so the sidebar
 	// can say it. Global rather than per-session because its consumer — one store

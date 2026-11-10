@@ -18,6 +18,8 @@
   },
   "appUpdateGate": {
     "available": "lich {version} is available",
+    "required": "lich {version} is a required security update",
+    "requiredDetail": "New agent sessions stay closed until it is installed. The ones already running keep working.",
     "updateAndInstall": "Update & install",
     "later": "Later",
     "updated": "lich updated to {version}",
@@ -136,8 +138,14 @@
   },
   "tray": {
     "show": "Show lich",
-    "running": "Sessions running: {count}",
     "quit": "Quit lich",
+    "noSessions": "No sessions running",
+    "needsYou": "Needs you",
+    "working": "Working",
+    "idle": "Idle: {count}",
+    "more": "{count} more",
+    "waiting": "Waiting",
+    "done": "Done",
     "servicesRunning": "Services running: {count}",
     "showOutput": "Show output",
     "restart": "Restart",
@@ -185,7 +193,11 @@
     "unlabeledSession": "A session",
     "open": "Open",
     "needsInput": "{label} needs your input",
-    "finished": "{label} has finished working"
+    "finished": "{label} has finished working",
+    "watchStopped": "Stopped watching pull request #{number}",
+    "watchStoppedDetail": "{label} ran its prompt {runs} times on it.",
+    "scheduleLost": "Scheduled prompt lost",
+    "scheduleLostDetail": "Deleting {label} also deleted the prompt set for {when}."
   },
   "windowClose": {
     "changeInSettings": "· change it in Settings › General",

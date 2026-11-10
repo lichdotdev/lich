@@ -18,6 +18,8 @@
   },
   "appUpdateGate": {
     "available": "lich {version} が利用可能です",
+    "required": "lich {version} は必須のセキュリティアップデートです",
+    "requiredDetail": "インストールするまで、新しいエージェントセッションは開けません。実行中のセッションはそのまま動き続けます。",
     "updateAndInstall": "更新してインストール",
     "later": "後で",
     "updated": "lich を {version} に更新しました",
@@ -136,8 +138,14 @@
   },
   "tray": {
     "show": "lich を表示",
-    "running": "実行中のセッション: {count}",
     "quit": "lich を終了",
+    "noSessions": "実行中のセッションはありません",
+    "needsYou": "あなたの対応が必要",
+    "working": "作業中",
+    "idle": "アイドル: {count}",
+    "more": "他 {count} 件",
+    "waiting": "待機中",
+    "done": "完了",
     "servicesRunning": "実行中のサービス: {count}",
     "showOutput": "出力を表示",
     "restart": "再起動",
@@ -185,7 +193,11 @@
     "unlabeledSession": "セッション",
     "open": "開く",
     "needsInput": "{label} が入力を待っています",
-    "finished": "{label} の作業が完了しました"
+    "finished": "{label} の作業が完了しました",
+    "watchStopped": "プルリクエスト #{number} の監視を停止しました",
+    "watchStoppedDetail": "{label} はこのプルリクエストでプロンプトを {runs} 回実行しました。",
+    "scheduleLost": "予約したプロンプトが失われました",
+    "scheduleLostDetail": "{label} を削除したため、{when} に予約したプロンプトも削除されました。"
   },
   "windowClose": {
     "changeInSettings": "· 設定 › 一般で変更できます",

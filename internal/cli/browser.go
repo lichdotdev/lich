@@ -42,6 +42,8 @@ func (c *client) browser(args []string) error {
 		return c.browserID(api.BrowserForward, args[1:])
 	case "scroll":
 		return c.browserScroll(args[1:])
+	case "eval":
+		return c.browserEval(args[1:])
 	case "dialog":
 		return c.browserDialog(args[1:])
 	case "list":
@@ -76,11 +78,19 @@ func (c *client) browserOpen(args []string) error {
 }
 
 func (c *client) browserInfo(args []string) error {
-	id, err := c.browserOwnerArgs(args)
+	flags := newFlagSet("browser")
+	within := flags.String("within", "", "read only the first element this CSS selector matches")
+	if err := c.parse(flags, args); err != nil {
+		return err
+	}
+	if flags.NArg() != 0 {
+		return usageError("browser")
+	}
+	id, err := c.browserOwner()
 	if err != nil {
 		return err
 	}
-	info, err := callMethod(context.Background(), c, api.BrowserInfo, api.BrowserInfoOptions{ID: id}, openCall)
+	info, err := callMethod(context.Background(), c, api.BrowserInfo, api.BrowserInfoOptions{ID: id, Within: *within}, openCall)
 	if err != nil {
 		return err
 	}
@@ -160,6 +170,7 @@ func (c *client) browserPress(args []string) error {
 
 func (c *client) browserScreenshot(args []string) error {
 	flags := newFlagSet("browser")
+	annotate := flags.Bool("annotate", false, "draw each element's index on the image")
 	if err := c.parse(flags, args); err != nil {
 		return err
 	}
@@ -171,7 +182,7 @@ func (c *client) browserScreenshot(args []string) error {
 	if flags.NArg() > 0 {
 		dest = flags.Arg(0)
 	}
-	path, err := callMethod(context.Background(), c, api.BrowserScreenshot, api.BrowserScreenshotOptions{ID: id, Path: dest}, openCall)
+	path, err := callMethod(context.Background(), c, api.BrowserScreenshot, api.BrowserScreenshotOptions{ID: id, Path: dest, Annotate: *annotate}, openCall)
 	if err != nil {
 		return err
 	}
@@ -210,6 +221,25 @@ func (c *client) browserScroll(args []string) error {
 		return err
 	}
 	_, err = callMethod(context.Background(), c, api.BrowserScroll, api.BrowserScrollOptions{ID: id, DY: *dy}, shortCall)
+	return err
+}
+
+func (c *client) browserEval(args []string) error {
+	flags := newFlagSet("browser")
+	if err := c.parse(flags, args); err != nil {
+		return err
+	}
+	id, err := c.browserOwner()
+	if err != nil {
+		return err
+	}
+	out, err := callMethod(context.Background(), c, api.BrowserEval, api.BrowserEvalOptions{
+		ID: id, Script: strings.Join(flags.Args(), " "),
+	}, openCall)
+	if err != nil {
+		return err
+	}
+	_, err = fmt.Fprintln(c.stdout, pageBlock(out))
 	return err
 }
 
@@ -272,7 +302,7 @@ func registerTarget(flags *flag.FlagSet) *targetFlags {
 		t.index = &n
 		return nil
 	})
-	flags.Func("x", "viewport X", func(s string) error {
+	flags.Func("x", "X in the last screenshot's image", func(s string) error {
 		n, err := strconv.ParseFloat(s, 64)
 		if err != nil {
 			return err
@@ -280,7 +310,7 @@ func registerTarget(flags *flag.FlagSet) *targetFlags {
 		t.x = &n
 		return nil
 	})
-	flags.Func("y", "viewport Y", func(s string) error {
+	flags.Func("y", "Y in the last screenshot's image", func(s string) error {
 		n, err := strconv.ParseFloat(s, 64)
 		if err != nil {
 			return err

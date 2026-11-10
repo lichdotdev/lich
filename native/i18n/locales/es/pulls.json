@@ -155,7 +155,8 @@
     "none": {
       "open": "No hay pull requests abiertos.",
       "closed": "No hay pull requests cerrados.",
-      "merged": "No hay pull requests fusionados."
+      "merged": "No hay pull requests fusionados.",
+      "approved": "No hay pull requests aprobados."
     },
     "noMatch": "Nada coincide con ese filtro.",
     "draft": "Borrador",

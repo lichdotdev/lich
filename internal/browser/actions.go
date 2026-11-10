@@ -72,8 +72,9 @@ func (s *Service) remember(sess *session, url, title string) {
 	s.touch(sess)
 }
 
-// Info returns the page the agent is looking at. Never includes form values.
-func (s *Service) Info(id string) (PageInfo, error) {
+// Info returns the page the agent is looking at, or the subtree of the first
+// element within matches. Never includes form values.
+func (s *Service) Info(id, within string) (PageInfo, error) {
 	sess, err := s.live(id)
 	if err != nil {
 		return PageInfo{}, err
@@ -81,13 +82,14 @@ func (s *Service) Info(id string) (PageInfo, error) {
 	var info PageInfo
 	err = runPage(func(ctx context.Context) error {
 		var e error
-		info, e = sess.page.Info(ctx)
+		info, e = sess.page.Info(ctx, within)
 		return e
 	})
 	if err != nil {
 		return PageInfo{}, s.failed(sess, err)
 	}
 	s.remember(sess, info.URL, info.Title)
+	s.tell(sess, info.Interactive)
 	s.agentActed(sess, api.BrowserAgentAct{})
 	info.Downloads = s.untold(sess)
 	info.ConsoleErrors, info.ConsoleErrorsMore = s.consoleUntold(sess)
@@ -105,6 +107,7 @@ func (s *Service) Click(id string, t Target) error {
 	if err != nil {
 		return err
 	}
+	s.holdForStartup(sess)
 	var x, y float64
 	err = runPage(func(ctx context.Context) error {
 		var e error
@@ -176,6 +179,16 @@ func clickTarget(ctx context.Context, p Page, t Target) (*point, error) {
 // Screenshot writes a PNG to dest (created if empty: inside the profile dir)
 // and returns that path. The bytes stay off the transcript.
 func (s *Service) Screenshot(id, dest string) (string, error) {
+	return s.shoot(id, dest, Page.Screenshot)
+}
+
+// AnnotatedScreenshot is Screenshot with the indexes a click takes drawn on
+// it. The read behind them is not told: the agent got no list in text.
+func (s *Service) AnnotatedScreenshot(id, dest string) (string, error) {
+	return s.shoot(id, dest, Page.AnnotatedScreenshot)
+}
+
+func (s *Service) shoot(id, dest string, take func(Page, context.Context, string) (int, int, error)) (string, error) {
 	sess, err := s.live(id)
 	if err != nil {
 		return "", err
@@ -192,7 +205,7 @@ func (s *Service) Screenshot(id, dest string) (string, error) {
 	var w, h int
 	err = runPage(func(ctx context.Context) error {
 		var err error
-		w, h, err = sess.page.Screenshot(ctx, dest)
+		w, h, err = take(sess.page, ctx, dest)
 		return err
 	})
 	if err != nil {
@@ -306,6 +319,7 @@ func (s *Service) drive(id string, fn func(Page, context.Context) error) (*sessi
 	if err != nil {
 		return nil, err
 	}
+	s.holdForStartup(sess)
 	err = runPage(func(ctx context.Context) error { return fn(sess.page, ctx) })
 	if err != nil {
 		return nil, s.failed(sess, err)

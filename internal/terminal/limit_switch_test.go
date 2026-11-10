@@ -1,0 +1,414 @@
+// stubBins is Unix-tagged (terminal_test.go); nothing here is
+// platform-specific.
+//go:build !windows
+
+package terminal
+
+import (
+	"errors"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/lichdotdev/lich/api"
+	"github.com/lichdotdev/lich/internal/events"
+)
+
+// limitRig is a Personal session holding conversation c1, in a machine with a
+// Work profile, whose quota answers come from the test.
+type limitRig struct {
+	svc     *Service
+	moved   map[string]string
+	resumed *[]string
+	work    string
+}
+
+func newLimitRig(t *testing.T, hub *events.Hub, quotaLeft func(kind, slug string) bool) limitRig {
+	t.Helper()
+	_, work := profileMachine(t)
+	conversationAt(t, filepath.Join(os.Getenv("HOME"), ".claude"), "c1")
+	moved := map[string]string{}
+	svc := New(stubBins{providerSession: "c1", movedProfiles: moved}, nil, hub)
+	svc.SetQuotaLeft(quotaLeft)
+	resumed := &[]string{}
+	svc.SetResumeNow(func(id string) { *resumed = append(*resumed, id) })
+	return limitRig{svc: svc, moved: moved, resumed: resumed, work: work}
+}
+
+func (r limitRig) inWork() bool {
+	_, err := os.Stat(filepath.Join(r.work, "projects", "-work", "c1.jsonl"))
+	return err == nil
+}
+
+func onlyWork(_, slug string) bool { return slug == "work" }
+
+// TestALimitParksTheResumeOffersTheProfileAndMovesNothing: a limit waits for its
+// reset as ever, and a profile with quota left is only offered.
+func TestALimitParksTheResumeOffersTheProfileAndMovesNothing(t *testing.T) {
+	profileMachine(t)
+	writeTranscript(t, "uuid-abc", claudeLimitLine+"\n")
+	hub, rec := newProbeHub(t)
+	moved := map[string]string{}
+	svc := New(stubBins{providerSession: "uuid-abc", movedProfiles: moved}, nil, hub)
+	parks := &parkRecorder{}
+	svc.SetUsageLimit(parks.park)
+	var asked []string
+	svc.SetQuotaLeft(func(kind, slug string) bool {
+		asked = append(asked, kind+"/"+slug)
+		return slug == "work"
+	})
+
+	if !svc.noteLimit("s1") {
+		t.Fatal("the limit was not read")
+	}
+
+	waitFor(t, func() bool { _, ok := rec.payloadOf(api.SessionProfileOfferEvent.Name); return ok }, "the offer")
+	payload, _ := rec.payloadOf(api.SessionProfileOfferEvent.Name)
+	if fields, _ := payload.(map[string]any); fields["id"] != "s1" || fields["profile"] != "work" {
+		t.Errorf("offer = %v, want work for s1", payload)
+	}
+	if at, ok := parks.of("s1"); !ok || at != 1788653400 {
+		t.Errorf("parked %d, %v; want the wait for the reset to run as ever", at, ok)
+	}
+	if len(asked) != 1 || asked[0] != "claude/work" {
+		t.Errorf("asked about %v, want only claude/work: the profile it ran in is not a target", asked)
+	}
+	if len(moved) != 0 {
+		t.Errorf("rows moved without a click: %v", moved)
+	}
+}
+
+// TestNoProfileWithQuotaOffersNothing: a "no" is also what a profile whose plan
+// cannot be read answers (quota.HasQuotaLeft), so unknown quota offers nothing.
+func TestNoProfileWithQuotaOffersNothing(t *testing.T) {
+	r := newLimitRig(t, events.New(), func(string, string) bool { return false })
+
+	r.svc.offerProfile("s1")
+
+	if _, err := r.svc.TakeProfileOffer(t.Context(), api.ContinueInOptions{ID: "s1", Profile: "work"}); !errors.Is(err, errOfferGone) {
+		t.Errorf("click with no offer = %v, want it refused", err)
+	}
+	if len(r.moved) != 0 || r.inWork() || len(*r.resumed) != 0 {
+		t.Errorf("moved %v, in work %v, resumed %v; want nothing", r.moved, r.inWork(), *r.resumed)
+	}
+}
+
+func TestAnOfferMovesNothingUntilItIsClicked(t *testing.T) {
+	r := newLimitRig(t, events.New(), onlyWork)
+
+	r.svc.offerProfile("s1")
+
+	if len(r.moved) != 0 || r.inWork() || len(*r.resumed) != 0 {
+		t.Errorf("moved %v, in work %v, resumed %v; want nothing before the click", r.moved, r.inWork(), *r.resumed)
+	}
+}
+
+// TestTheClickMovesTheSessionAndSendsTheContinuationOnce: one click, one move,
+// one continuation; a second click on the same offer is refused.
+func TestTheClickMovesTheSessionAndSendsTheContinuationOnce(t *testing.T) {
+	r := newLimitRig(t, events.New(), onlyWork)
+	r.svc.offerProfile("s1")
+	opts := api.ContinueInOptions{ID: "s1", Profile: "work"}
+
+	if _, err := r.svc.TakeProfileOffer(t.Context(), opts); err != nil {
+		t.Fatal(err)
+	}
+	if r.moved["s1"] != "work" || !r.inWork() {
+		t.Errorf("row %q, in work %v; want the session moved", r.moved["s1"], r.inWork())
+	}
+	if _, err := r.svc.TakeProfileOffer(t.Context(), opts); !errors.Is(err, errOfferGone) {
+		t.Errorf("second click = %v, want it refused", err)
+	}
+	if len(*r.resumed) != 1 || (*r.resumed)[0] != "s1" {
+		t.Errorf("resumed %v, want s1 once", *r.resumed)
+	}
+}
+
+// TestAStaleClickIsRefused: whatever took the session off its limit since the
+// toast went up leaves the offer gone, and the click moves nothing.
+func TestAStaleClickIsRefused(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		since func(t *testing.T, svc *Service)
+		slug  string
+	}{
+		{"a turn started", func(_ *testing.T, svc *Service) {
+			svc.onHookState(hookRequest{SessionID: "s1", State: statusBusy})
+		}, "work"},
+		{"the session closed", func(t *testing.T, svc *Service) {
+			if _, err := svc.Close(t.Context(), api.SessionIDOptions{ID: "s1"}); err != nil {
+				t.Fatal(err)
+			}
+		}, "work"},
+		{"the process went away, as a manual Continue in ends it", func(t *testing.T, svc *Service) {
+			if err := svc.endProcess("s1", ""); err != nil {
+				t.Fatal(err)
+			}
+		}, "work"},
+		{"another profile than the one offered", func(*testing.T, *Service) {}, "elsewhere"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			r := newLimitRig(t, events.New(), onlyWork)
+			r.svc.offerProfile("s1")
+			tc.since(t, r.svc)
+
+			if _, err := r.svc.TakeProfileOffer(t.Context(), api.ContinueInOptions{ID: "s1", Profile: tc.slug}); !errors.Is(err, errOfferGone) {
+				t.Errorf("click = %v, want it refused", err)
+			}
+			if len(r.moved) != 0 || r.inWork() || len(*r.resumed) != 0 {
+				t.Errorf("moved %v, in work %v, resumed %v; want nothing", r.moved, r.inWork(), *r.resumed)
+			}
+		})
+	}
+}
+
+// TestALimitSkipsAProfileALimitStoppedBeforeItsReset: the reading is cached for
+// minutes, so a profile a limit already stopped a turn in is not offered until
+// it resets.
+func TestALimitSkipsAProfileALimitStoppedBeforeItsReset(t *testing.T) {
+	profileMachine(t)
+	conversationAt(t, filepath.Join(os.Getenv("HOME"), ".claude"), "c1")
+	svc := New(stubBins{providerSession: "c1", movedProfiles: map[string]string{"other": "work"}}, nil, events.New())
+	svc.SetQuotaLeft(func(string, string) bool { return true })
+	svc.markSpent("other", time.Now().Add(time.Hour).Unix())
+
+	if to, ok := svc.spareProfile("claude", ""); ok {
+		t.Fatalf("offered %q, a profile spent until its reset", to)
+	}
+	svc.markSpent("other", time.Now().Add(-time.Minute).Unix())
+	if to, ok := svc.spareProfile("claude", ""); !ok || to != "work" {
+		t.Errorf("after the reset spareProfile = %q, %v, want work", to, ok)
+	}
+}
+
+// suggestedTo is a limit rig whose session holds a standing handoff suggestion
+// of the Work profile.
+func suggestedTo(t *testing.T, hub *events.Hub) limitRig {
+	t.Helper()
+	r := newLimitRig(t, hub, onlyWork)
+	if err := r.svc.SuggestProfile("s1", "work"); err != nil {
+		t.Fatalf("SuggestProfile: %v", err)
+	}
+	return r
+}
+
+// flushed waits for everything emitted so far to reach rec, so that the absence
+// of an event means something.
+func flushed(t *testing.T, hub *events.Hub, rec *eventRecorder) {
+	t.Helper()
+	hub.Emit("flush", "x")
+	waitFor(t, func() bool { _, ok := rec.payloadOf("flush"); return ok }, "the flush")
+	rec.reset()
+}
+
+func offerShown(rec *eventRecorder) bool {
+	_, ok := rec.payloadOf(api.SessionProfileOfferEvent.Name)
+	return ok
+}
+
+func endTurn(svc *Service, id string) {
+	svc.onHookState(hookRequest{SessionID: id, State: statusBusy})
+	svc.onHookState(hookRequest{SessionID: id, State: statusDone})
+}
+
+// The suggestion is held through the turn on the note: a toast before it ends
+// is one whose button Continue in would refuse.
+func TestASuggestionIsShownOnlyOnceATurnEndsAndMovesNothing(t *testing.T) {
+	hub, rec := newProbeHub(t)
+	r := suggestedTo(t, hub)
+
+	flushed(t, hub, rec)
+	if offerShown(rec) {
+		t.Fatal("the offer was shown before any turn")
+	}
+	r.svc.onHookState(hookRequest{SessionID: "s1", State: statusBusy})
+	flushed(t, hub, rec)
+	if offerShown(rec) {
+		t.Fatal("the offer was shown mid-turn")
+	}
+	r.svc.onHookState(hookRequest{SessionID: "s1", State: statusDone})
+
+	waitFor(t, func() bool { return offerShown(rec) }, "the offer")
+	payload, _ := rec.payloadOf(api.SessionProfileOfferEvent.Name)
+	if fields, _ := payload.(map[string]any); fields["id"] != "s1" || fields["profile"] != "work" || fields["handoff"] != true {
+		t.Errorf("offer = %v, want work for s1, from a handoff", payload)
+	}
+	if len(r.moved) != 0 || r.inWork() || len(*r.resumed) != 0 {
+		t.Errorf("moved %v, in work %v, resumed %v; want nothing before the click", r.moved, r.inWork(), *r.resumed)
+	}
+}
+
+func TestASuggestionThatCannotApplyIsRefusedWithTheReason(t *testing.T) {
+	for _, tc := range []struct {
+		name, kind, slug, reason string
+	}{
+		{"no profiles", "crush", "work", "no profiles"},
+		{"a conversation that cannot move", "opencode", "work", "cannot move"},
+		{"an unknown slug", "claude", "nobody", "no claude profile"},
+		{"the profile it runs in", "claude", "personal", "already runs"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			hub, rec := newProbeHub(t)
+			profileMachine(t)
+			svc := New(stubBins{kinds: map[string]string{"s1": tc.kind}}, nil, hub)
+
+			err := svc.SuggestProfile("s1", tc.slug)
+			if err == nil || !strings.Contains(err.Error(), tc.reason) {
+				t.Errorf("SuggestProfile = %v, want a reason with %q", err, tc.reason)
+			}
+			if _, ok := rec.payloadOf(api.SessionProfileOfferEvent.Name); ok {
+				t.Error("a suggestion that cannot apply reached the window")
+			}
+		})
+	}
+}
+
+// The click moves the session and nothing more: a successor was stopped by no
+// limit, so no continuation is owed.
+func TestTheClickMovesTheSuccessorAndSendsNoContinuation(t *testing.T) {
+	r := suggestedTo(t, events.New())
+
+	if _, err := r.svc.TakeProfileOffer(t.Context(), api.ContinueInOptions{ID: "s1", Profile: "work"}); err != nil {
+		t.Fatal(err)
+	}
+	if r.moved["s1"] != "work" || !r.inWork() {
+		t.Errorf("row %q, in work %v; want the session moved", r.moved["s1"], r.inWork())
+	}
+	if len(*r.resumed) != 0 {
+		t.Errorf("resumed %v, want no continuation", *r.resumed)
+	}
+}
+
+// The successor starts a turn on its note, so a turn must not take the offer
+// down the way it takes down a limit's.
+func TestASuggestionOutlivesTheTurnOnItsNote(t *testing.T) {
+	r := suggestedTo(t, events.New())
+	r.svc.onHookState(hookRequest{SessionID: "s1", State: statusBusy})
+	r.svc.turns.report("s1", statusDone)
+
+	if _, err := r.svc.TakeProfileOffer(t.Context(), api.ContinueInOptions{ID: "s1", Profile: "work"}); err != nil {
+		t.Fatal(err)
+	}
+	if r.moved["s1"] != "work" {
+		t.Errorf("row %q, want the session moved", r.moved["s1"])
+	}
+}
+
+// A click mid-turn is Continue in's own refusal, and it moves nothing.
+func TestAClickOnASuccessorMidTurnIsRefusedAndSaysWhy(t *testing.T) {
+	r := suggestedTo(t, events.New())
+	r.svc.onHookState(hookRequest{SessionID: "s1", State: statusBusy})
+
+	_, err := r.svc.TakeProfileOffer(t.Context(), api.ContinueInOptions{ID: "s1", Profile: "work"})
+	if err == nil || !strings.Contains(err.Error(), "mid-turn") {
+		t.Errorf("click = %v, want the turn named", err)
+	}
+	if len(r.moved) != 0 || r.inWork() {
+		t.Errorf("moved %v, in work %v; want nothing", r.moved, r.inWork())
+	}
+}
+
+func TestAStaleClickOnASuggestionIsRefused(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		since func(t *testing.T, r limitRig)
+	}{
+		{"the session closed", func(t *testing.T, r limitRig) {
+			if _, err := r.svc.Close(t.Context(), api.SessionIDOptions{ID: "s1"}); err != nil {
+				t.Fatal(err)
+			}
+		}},
+		{"the process ended", func(t *testing.T, r limitRig) {
+			if err := r.svc.endProcess("s1", ""); err != nil {
+				t.Fatal(err)
+			}
+		}},
+		{"its profile changed", func(_ *testing.T, r limitRig) { r.moved["s1"] = "other" }},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			r := suggestedTo(t, events.New())
+			tc.since(t, r)
+
+			if _, err := r.svc.TakeProfileOffer(t.Context(), api.ContinueInOptions{ID: "s1", Profile: "work"}); !errors.Is(err, errOfferGone) {
+				t.Errorf("click = %v, want it refused", err)
+			}
+			if r.moved["s1"] == "work" || r.inWork() {
+				t.Errorf("moved %v, in work %v; want nothing", r.moved, r.inWork())
+			}
+		})
+	}
+}
+
+// A /compact at an idle prompt reports done with no turn open: no turn ended
+// that left a conversation to move.
+func TestAHeldSuggestionWaitsThroughAnEndingWithNoTurnOpen(t *testing.T) {
+	hub, rec := newProbeHub(t)
+	r := suggestedTo(t, hub)
+
+	r.svc.onHookState(hookRequest{SessionID: "s1", State: statusDone})
+	flushed(t, hub, rec)
+
+	if offerShown(rec) {
+		t.Error("the offer was shown off an ending with no turn open")
+	}
+}
+
+func TestAHeldSuggestionIsShownOnce(t *testing.T) {
+	hub, rec := newProbeHub(t)
+	r := suggestedTo(t, hub)
+	endTurn(r.svc, "s1")
+	waitFor(t, func() bool { return offerShown(rec) }, "the offer")
+	flushed(t, hub, rec)
+
+	endTurn(r.svc, "s1")
+	flushed(t, hub, rec)
+
+	if offerShown(rec) {
+		t.Error("a second turn showed the offer again")
+	}
+}
+
+func TestAHeldSuggestionIsDroppedWhenTheSessionCloses(t *testing.T) {
+	hub, rec := newProbeHub(t)
+	r := suggestedTo(t, hub)
+
+	if _, err := r.svc.Close(t.Context(), api.SessionIDOptions{ID: "s1"}); err != nil {
+		t.Fatal(err)
+	}
+	endTurn(r.svc, "s1")
+	flushed(t, hub, rec)
+
+	if offerShown(rec) {
+		t.Error("a closed session's held offer was shown")
+	}
+}
+
+// The click took the toast down, so a refusal for a turn in progress has to
+// bring it back when that turn ends, and the second click must work.
+func TestAMidTurnRefusalKeepsTheOfferAndShowsItAgain(t *testing.T) {
+	hub, rec := newProbeHub(t)
+	r := suggestedTo(t, hub)
+	endTurn(r.svc, "s1")
+	waitFor(t, func() bool { return offerShown(rec) }, "the offer")
+	flushed(t, hub, rec)
+	opts := api.ContinueInOptions{ID: "s1", Profile: "work"}
+
+	r.svc.onHookState(hookRequest{SessionID: "s1", State: statusBusy})
+	if _, err := r.svc.TakeProfileOffer(t.Context(), opts); !errors.Is(err, errMidTurn) {
+		t.Fatalf("click mid-turn = %v, want the turn named", err)
+	}
+	if len(r.moved) != 0 || r.inWork() {
+		t.Fatalf("moved %v, in work %v; want nothing", r.moved, r.inWork())
+	}
+	r.svc.onHookState(hookRequest{SessionID: "s1", State: statusDone})
+
+	waitFor(t, func() bool { return offerShown(rec) }, "the offer shown again")
+	if _, err := r.svc.TakeProfileOffer(t.Context(), opts); err != nil {
+		t.Fatalf("click after the turn: %v", err)
+	}
+	if r.moved["s1"] != "work" || !r.inWork() {
+		t.Errorf("row %q, in work %v; want the session moved", r.moved["s1"], r.inWork())
+	}
+}

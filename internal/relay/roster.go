@@ -21,6 +21,10 @@ import (
 type candidate struct {
 	ID   string
 	Peer Peer
+	// Confined is whether the session runs in the sandbox, read off its row:
+	// what a confined caller is held to before text goes to its prompt
+	// (scope.Target).
+	Confined bool
 }
 
 // roster returns every live session except the caller's own.
@@ -42,7 +46,7 @@ func (s *Service) roster(fromID string) ([]candidate, error) {
 			if !live {
 				continue
 			}
-			found = append(found, candidate{ID: sess.ID, Peer: s.peerOf(p, sess)})
+			found = append(found, candidate{ID: sess.ID, Peer: s.peerOf(p, sess), Confined: sess.Sandbox == store.SessionConfined})
 		}
 	}
 	return found, nil

@@ -7,7 +7,18 @@ under are in [`../ceilings.md`](../ceilings.md).
 ## Spawn
 
 lich appends nothing to the agent's system prompt (`internal/terminal/command.go`, `briefingFlags`): Codex has
-no per-spawn append flag, so the point the briefing makes exists only in lich's MCP instructions.
+no per-spawn append flag, and it never hands lich's MCP instructions to the model: a stdio server's `instructions`
+in its initialize result did not reach it (measured 2026-11-07 on 0.162.1, `codex exec` with a probe server
+registered through `-c mcp_servers.*`, as the spawn does: the server was initialized and its tools listed, the
+model answered that it had no such text, and the rollout holds none of it).
+
+So a new conversation gets the briefing as `-c developer_instructions='...'` (`codexBriefingArgs`), which adds a
+developer message beside Codex's base instructions, as a TOML literal string so no double quote reaches cmd.exe
+(measured 2026-11-08 on 0.162.1, on `codex exec` and on the TUI lich spawns: the model quoted a marker that lived
+only there, and the `codex-tui` rollout's developer message holds it). `model_instructions_file` would replace
+the base instructions instead. On resume Codex ignores the override and the conversation keeps what it was born
+with (same run). A `developer_instructions` already in the user's `config.toml` wins, and that session goes
+without the briefing.
 
 In a fresh worktree Codex asks whether the folder is trusted, and text typed then is lost to a second screen
 (measured 2026-10-08). Codex (0.161.0) reports nothing before its first turn, not even at its prompt in a trusted

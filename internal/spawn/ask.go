@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/lichdotdev/lich/api"
+	"github.com/lichdotdev/lich/internal/scope"
+	"github.com/lichdotdev/lich/internal/store"
 	"github.com/lichdotdev/lich/internal/terminal"
 )
 
@@ -32,6 +34,9 @@ func (s *Service) Ask(ctx context.Context, opts AskOptions) (Answered, error) {
 	fromID, target, projectName, question := opts.From, opts.Target, opts.Project, opts.Question
 	found, err := s.claudeTarget(target, projectName, "ask", "asked")
 	if err != nil {
+		return Answered{}, err
+	}
+	if err := scope.Target(ctx, found.session.Label, found.session.Sandbox == store.SessionConfined); err != nil {
 		return Answered{}, err
 	}
 	label := found.session.Label

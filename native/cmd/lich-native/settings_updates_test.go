@@ -6,6 +6,7 @@ import (
 
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/ui"
+	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
 func TestSplitLeadInTakesTheBoldSentence(t *testing.T) {
@@ -110,5 +111,27 @@ func TestPluginOutcomeReadsTheLastCheck(t *testing.T) {
 		if got := pluginOutcome(tc.checked, tc.failed); got != tc.want {
 			t.Errorf("pluginOutcome(%v, %v) = %q, want %q", tc.checked, tc.failed, got, tc.want)
 		}
+	}
+}
+
+func TestCalloutToneDrawsCautionAndWarningInTheDangerColor(t *testing.T) {
+	th := &ui.Theme{Palette: ui.Dark}
+	for kind, wantIcon := range map[string]*icons.Icon{"caution": icNotesCaution, "warning": icNotesWarning} {
+		icon, ink, danger := calloutTone(th, kind)
+		if icon != wantIcon || ink != th.Destructive || !danger {
+			t.Errorf("%s: icon %p ink %v danger %v, want its own glyph in Destructive", kind, icon, ink, danger)
+		}
+	}
+	if icon, ink, danger := calloutTone(th, "note"); icon != icNotesNote || ink != th.MutedForeground || danger {
+		t.Errorf("note: icon %p ink %v danger %v, want the muted note", icon, ink, danger)
+	}
+}
+
+// A caution block is a callout, never the headline: important keeps that.
+func TestLayoutHighlightsKeepsCautionAsACallout(t *testing.T) {
+	caution := backend.PatchNotesHighlight{Kind: "caution", Text: "c"}
+	lead, callouts := layoutHighlights([]backend.PatchNotesHighlight{caution})
+	if lead != nil || !reflect.DeepEqual(callouts, []backend.PatchNotesHighlight{caution}) {
+		t.Fatalf("lead %v callouts %v, want caution as the one callout", lead, callouts)
 	}
 }

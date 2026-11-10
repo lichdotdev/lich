@@ -20,6 +20,11 @@ var (
 	BrowserScroll     = define[BrowserScrollOptions, None]("browser.Scroll")
 	BrowserList       = define[SessionIDOptions, []BrowserHandle]("browser.List")
 	BrowserClose      = define[SessionIDOptions, None]("browser.Close")
+
+	// BrowserEval runs the agent's script in the page and answers with its
+	// value: a string as it is, anything else as JSON.
+	BrowserEval = define[BrowserEvalOptions, string]("browser.Eval")
+
 	// BrowserTabs lists the browser's tabs; BrowserTabAction is the agent
 	// opening, selecting or closing one, answered with the page then in front.
 	BrowserTabs      = define[SessionIDOptions, []BrowserTab]("browser.Tabs")
@@ -274,11 +279,14 @@ type BrowserOpenOptions struct {
 
 // BrowserInfoOptions reads session ID's page. WaitFor and WaitGone, when set,
 // hold the read until that text is on the page's visible text, or off it
-// (case-sensitive substring, the whole page, not only the viewport).
+// (case-sensitive substring, the whole page, not only the viewport). Within,
+// when set, is a CSS selector that limits the page text and the element list
+// to the first element it matches.
 type BrowserInfoOptions struct {
 	ID       string `json:"id"`
 	WaitFor  string `json:"waitFor,omitempty"`
 	WaitGone string `json:"waitGone,omitempty"`
+	Within   string `json:"within,omitempty"`
 }
 
 // BrowserTarget picks an element. Index is the one page-info stamped;
@@ -315,16 +323,23 @@ type BrowserPressOptions struct {
 }
 
 // BrowserScreenshotOptions captures the page to Path, or to a file lich
-// chooses when Path is empty.
+// chooses when Path is empty. Annotate draws each listed element's index on
+// the image.
 type BrowserScreenshotOptions struct {
-	ID   string `json:"id"`
-	Path string `json:"path"`
+	ID       string `json:"id"`
+	Path     string `json:"path"`
+	Annotate bool   `json:"annotate"`
 }
 
 // BrowserScrollOptions scrolls the page by DY CSS pixels. Positive is down.
 type BrowserScrollOptions struct {
 	ID string `json:"id"`
 	DY int    `json:"dy"`
+}
+
+type BrowserEvalOptions struct {
+	ID     string `json:"id"`
+	Script string `json:"script"`
 }
 
 // BrowserRect is an element's viewport box, integer pixels.
@@ -356,6 +371,9 @@ type BrowserPageInfo struct {
 	Text        string               `json:"text"`
 	Interactive []BrowserInteractive `json:"interactive"`
 	Truncated   bool                 `json:"truncated"`
+	// InteractiveSame leaves Interactive out: it is the list the agent's last
+	// page answer gave, every element and index as they were.
+	InteractiveSame bool `json:"interactiveSame,omitempty"`
 	// Downloads are the ones the agent has not heard of in their current
 	// state: what its last action saved, or one it saw start and that ended
 	// since.

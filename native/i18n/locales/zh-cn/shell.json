@@ -18,6 +18,8 @@
   },
   "appUpdateGate": {
     "available": "lich {version} 可用",
+    "required": "lich {version} 是必须安装的安全更新",
+    "requiredDetail": "安装之前无法打开新的智能体会话，已在运行的会话不受影响。",
     "updateAndInstall": "更新并安装",
     "later": "稍后",
     "updated": "lich 已更新到 {version}",
@@ -136,8 +138,14 @@
   },
   "tray": {
     "show": "显示 lich",
-    "running": "运行中的会话：{count}",
     "quit": "退出 lich",
+    "noSessions": "没有运行中的会话",
+    "needsYou": "需要你处理",
+    "working": "工作中",
+    "idle": "空闲：{count}",
+    "more": "还有 {count} 个",
+    "waiting": "等待中",
+    "done": "已完成",
     "servicesRunning": "运行中的服务：{count}",
     "showOutput": "显示输出",
     "restart": "重启",
@@ -185,7 +193,11 @@
     "unlabeledSession": "一个会话",
     "open": "打开",
     "needsInput": "{label} 需要你的输入",
-    "finished": "{label} 已完成工作"
+    "finished": "{label} 已完成工作",
+    "watchStopped": "已停止监视拉取请求 #{number}",
+    "watchStoppedDetail": "{label} 已在其上运行提示词 {runs} 次。",
+    "scheduleLost": "定时提示词已丢失",
+    "scheduleLostDetail": "删除 {label} 时也删除了定于 {when} 的提示词。"
   },
   "windowClose": {
     "changeInSettings": "· 可在设置 › 通用中更改",

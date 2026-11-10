@@ -21,12 +21,12 @@ func inPortuguese(t *testing.T) {
 }
 
 func TestTrayLabelsAreInTheInterfaceLanguageAndKeepTheCountPlaceholder(t *testing.T) {
-	if got := trayLabels(); got.Show != "Show lich" || got.Running != "Sessions running: {count}" {
+	if got := trayLabels(); got.Show != "Show lich" || got.Idle != "Idle: {count}" {
 		t.Errorf("English labels: %+v", got)
 	}
 	inPortuguese(t)
 	got := trayLabels()
-	if got.Show != "Mostrar o lich" || got.Running != "Sessões rodando: {count}" {
+	if got.Show != "Mostrar o lich" || got.Idle != "Ociosas: {count}" {
 		t.Errorf("pt-BR labels: %+v", got)
 	}
 }

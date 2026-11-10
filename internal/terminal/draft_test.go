@@ -303,3 +303,33 @@ func TestOverlappingDeliveriesKeepTheKeyboardHeld(t *testing.T) {
 		t.Error("the keystrokes were never handed back")
 	}
 }
+
+// The relay's ping-pong breaker resets on a person stepping into the exchange,
+// which is a line sent at the prompt: a bare Enter, a line thrown away and the
+// newlines inside a paste are not one.
+func TestASentLineIsReportedAsTyped(t *testing.T) {
+	t.Parallel()
+	svc, _ := settled(t)
+	typed := make(chan string, 4)
+	svc.SetUserTyped(func(id string) { typed <- id })
+
+	svc.noteInput("s1", []byte("\r"))
+	svc.noteInput("s1", []byte("never mind"))
+	svc.noteInput("s1", []byte{ctrlC})
+	svc.noteInput("s1", []byte("\x1b[200~line one\nline two"))
+	select {
+	case <-typed:
+		t.Fatal("a line that was never sent was reported as typed")
+	case <-time.After(50 * time.Millisecond):
+	}
+
+	svc.noteInput("s1", []byte("\x1b[201~\r"))
+	select {
+	case id := <-typed:
+		if id != "s1" {
+			t.Errorf("typed reported %q, want s1", id)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("a sent line was never reported as typed")
+	}
+}

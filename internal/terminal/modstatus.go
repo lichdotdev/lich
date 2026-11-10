@@ -15,13 +15,18 @@ func (t *transport) modStatus(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	if !t.authorized(r) {
+	c, ok := t.callerOf(r)
+	if !ok {
 		http.Error(w, "invalid token", http.StatusUnauthorized)
 		return
 	}
 	session := r.URL.Query().Get("session_id")
 	if session == "" {
 		http.Error(w, "session_id is required", http.StatusBadRequest)
+		return
+	}
+	if !c.ownSession(session) {
+		http.Error(w, "the token belongs to another session", http.StatusForbidden)
 		return
 	}
 	t.plugins.note(session, r.Header.Get(pluginVersionHeader))

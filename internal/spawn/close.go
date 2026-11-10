@@ -8,6 +8,7 @@ import (
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/relay"
+	"github.com/lichdotdev/lich/internal/scope"
 	"github.com/lichdotdev/lich/internal/store"
 
 	"github.com/lichdotdev/lich/internal/events"
@@ -42,6 +43,9 @@ type CloseOptions = api.CloseSessionOptions
 // directory, has nothing at stake and closes on the spot.
 func (s *Service) Close(ctx context.Context, opts CloseOptions) (Closed, error) {
 	fromID, target, projectName, worktree, force := opts.From, opts.Target, opts.Project, opts.Worktree, opts.Force
+	if err := scope.Force(ctx, force); err != nil {
+		return Closed{}, err
+	}
 	if worktree != "" && worktree != KeepWorktree && worktree != RemoveWorktree {
 		return Closed{}, fmt.Errorf(
 			"%q is not something to do with a worktree — %q keeps the checkout, %q deletes it",

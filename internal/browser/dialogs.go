@@ -149,6 +149,7 @@ func (s *Service) heldPage(id string) (api.BrowserPageInfo, error) {
 		return api.BrowserPageInfo{}, err
 	}
 	s.mu.Lock()
+	sess.still = false
 	info := api.BrowserPageInfo{URL: sess.url, Title: sess.title}
 	if sess.dialog != nil {
 		d := *sess.dialog

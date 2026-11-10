@@ -3,7 +3,6 @@ package relay
 import (
 	"context"
 	"log/slog"
-	"slices"
 	"time"
 
 	"github.com/lichdotdev/lich/api"
@@ -20,16 +19,10 @@ import (
 // its reset (internal/terminal, limit.go); this file decides whether to park.
 
 // isResumePrompt is how a parked prompt is told apart as lich's continuation
-// (prompt.Catalog.ResumePrompt): the row has no column saying who wrote it.
-// Every locale's text matches, because the row keeps the language it was
-// parked in and the setting may have changed since.
+// (prompt.Catalog.ResumePrompt).
 // ponytail: matched by text, a person who parks these exact words has them
 // dropped on the session's next turn; a column on the row if that ever matters.
-func isResumePrompt(parked string) bool {
-	return slices.ContainsFunc(prompt.Langs, func(lang prompt.Lang) bool {
-		return parked == prompt.For(lang).ResumePrompt
-	})
-}
+func isResumePrompt(parked string) bool { return prompt.IsResume(parked) }
 
 // resumeGrace is how long after the reset the prompt is due. Claude Code's own
 // autoContinueAtUsageLimit, where the server enables it, resumes at the reset
@@ -65,7 +58,29 @@ func (s *Service) ParkResume(id string, resetsAt int64) {
 	}
 	s.markResume(id)
 	if s.events != nil {
-		events.Send(s.events.Emit, api.SessionScheduleEvent, ScheduleEvent{ID: id, At: due, Prompt: resumePrompt})
+		s.emitSchedule(ScheduleEvent{ID: id, At: due, Prompt: resumePrompt}, api.ScheduledByLich)
+	}
+}
+
+// ResumeNow makes session id's continuation due at once: the person moved it to
+// a profile with quota left. It takes the row the reset's continuation sits on,
+// so there is one continuation either way and it is typed once the session is
+// back at its prompt. A prompt the person parked there stays and goes out at its
+// own time.
+func (s *Service) ResumeNow(id string) {
+	sess, ok := s.sessionRow(id)
+	if !ok || (sess.ScheduledPrompt != "" && !isResumePrompt(sess.ScheduledPrompt)) {
+		return
+	}
+	due := s.now().Unix()
+	resumePrompt := prompt.For(s.lang()).ResumePrompt
+	if err := s.sessions.SetSessionSchedule(id, due, resumePrompt); err != nil {
+		slog.Warn("relay: resume now", "session", sess.Label, "err", err)
+		return
+	}
+	s.markResume(id)
+	if s.events != nil {
+		s.emitSchedule(ScheduleEvent{ID: id, At: due, Prompt: resumePrompt}, api.ScheduledByLich)
 	}
 }
 

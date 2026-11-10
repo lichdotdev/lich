@@ -2,6 +2,7 @@ package gioterm
 
 import (
 	"errors"
+	"fmt"
 	"image/color"
 	"testing"
 )
@@ -89,4 +90,21 @@ func TestClosedTerminalIgnoresCalls(t *testing.T) {
 		t.Fatal("a closed terminal found a link")
 	}
 	v.Close()
+}
+
+func TestScrollToBottomReturnsToTheLiveScreen(t *testing.T) {
+	v := newSizedTerminal(t)
+	for i := range 100 {
+		v.Write(fmt.Appendf(nil, "line %d\r\n", i))
+	}
+	v.Write([]byte("prompt"))
+	live := screenText(t, v)
+	v.Scroll(-30)
+	if screenText(t, v) == live {
+		t.Fatal("scrolling up left the live screen in view")
+	}
+	v.ScrollToBottom()
+	if got := screenText(t, v); got != live {
+		t.Fatalf("after ScrollToBottom the viewport shows\n%s\nwant\n%s", got, live)
+	}
 }

@@ -168,6 +168,13 @@ func (c *Client) ContinueIn(ctx context.Context, id, slug string) error {
 	return err
 }
 
+// TakeProfileOffer moves a session to the profile it was offered. The backend
+// refuses an offer no longer standing.
+func (c *Client) TakeProfileOffer(ctx context.Context, id, slug string) error {
+	_, err := callMethod(ctx, c, api.TerminalTakeProfileOffer, api.ContinueInOptions{ID: id, Profile: slug})
+	return err
+}
+
 // ProfileGone reports whether err is a spawn refused for a profile deleted
 // since the session was born in it.
 func ProfileGone(err error) bool {

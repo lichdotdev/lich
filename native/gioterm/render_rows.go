@@ -28,6 +28,7 @@ type rowRenderer struct {
 	// clear is what the rows' default background was composed in: the
 	// terminal's own, or transparent while an image lies under the text.
 	clear color.NRGBA
+	blend blender
 }
 
 func newRowRenderer(r *glyphs.Rasterizer, size unit.Sp) *rowRenderer {
@@ -46,7 +47,7 @@ func (rr *rowRenderer) Measure(gtx layout.Context) error {
 	return err
 }
 
-func (rr *rowRenderer) Release() { rr.imgs, rr.ops = nil, nil }
+func (rr *rowRenderer) Release() { rr.imgs, rr.ops, rr.blend = nil, nil, blender{} }
 
 func (rr *rowRenderer) Draw(gtx layout.Context, s Snapshot) (int, error) {
 	return rr.draw(gtx, s.s, s.cells, s.dirty, s.below, s.above)
@@ -134,7 +135,7 @@ func (rr *rowRenderer) compose(img *image.RGBA, row []cell, sn snap, cursorX int
 		}
 	}
 	for x, c := range row {
-		if c.cp <= ' ' {
+		if c.cp <= ' ' && c.rest == "" {
 			continue
 		}
 		st := styles[x]
@@ -142,14 +143,14 @@ func (rr *rowRenderer) compose(img *image.RGBA, row []cell, sn snap, cursorX int
 		if st.faint {
 			col.A = 140
 		}
-		if rects, alpha, ok := blockElement(rune(c.cp)); ok {
+		if rects, alpha, ok := blockElement(rune(c.cp)); ok && c.rest == "" {
 			col.A = uint8(uint16(col.A) * uint16(alpha) / 255)
 			for _, r := range rects {
 				draw.Draw(img, r.pixels(x*cw, cw, ch), image.NewUniform(col), image.Point{}, draw.Over)
 			}
 			continue
 		}
-		m, err := rr.r.Mask(glyphs.Key{R: rune(c.cp), Bold: st.bold, Italic: st.ital})
+		m, err := rr.r.Mask(glyphs.Key{R: rune(c.cp), Rest: c.rest, Bold: st.bold, Italic: st.ital})
 		if err != nil {
 			return err
 		}
@@ -160,8 +161,13 @@ func (rr *rowRenderer) compose(img *image.RGBA, row []cell, sn snap, cursorX int
 		if m.Img == nil {
 			continue
 		}
+		ground := clear
+		if st.bg != sn.bg {
+			ground = rgba(st.bg)
+		}
+		// ground is opaque or transparent black, the same premultiplied or not.
 		dst := m.Img.Bounds().Add(m.Off).Add(image.Pt(x*cw, 0))
-		draw.DrawMask(img, dst, image.NewUniform(col), image.Point{}, m.Img, image.Point{}, draw.Over)
+		rr.blend.mask(img, dst, col, color.RGBA(ground), m.Img, image.Point{})
 	}
 	return nil
 }

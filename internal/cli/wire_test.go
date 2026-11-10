@@ -332,7 +332,17 @@ func (s *spawnStore) SetSessionUltracode(_ string) error {
 	return nil
 }
 
+func (*spawnStore) SessionModel(string) string             { return "" }
+func (*spawnStore) SessionEffort(string) string            { return "" }
+func (*spawnStore) SessionUltracode(string) bool           { return false }
+func (*spawnStore) SessionProfile(string) (string, error)  { return "", nil }
+func (*spawnStore) SetSessionProfile(string, string) error { return nil }
+
 func (s *spawnStore) SetRunEntrypoint(_, _ string) error { return nil }
+
+func (*spawnStore) SessionRefused(string) error { return nil }
+
+func (*spawnStore) SetSessionSandbox(string, string) error { return nil }
 
 func (s *spawnStore) SandboxDefault(_, _, _ string) bool {
 	s.mu.Lock()
@@ -476,6 +486,8 @@ func (s *spawnTerminal) Start(_ context.Context, opts api.StartOptions) (api.Non
 // Nothing renamed itself here either, so a session is addressed by the name
 // lich derives for it.
 func (*spawnTerminal) AgentName(string) string { return "" }
+
+func (*spawnTerminal) SuggestProfile(string, string) error { return nil }
 
 func (s *spawnTerminal) CloseBy(id, _ string) error {
 	s.mu.Lock()

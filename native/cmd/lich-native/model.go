@@ -12,6 +12,7 @@ import (
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
+	"github.com/lichdotdev/lich/native/ui"
 )
 
 // gitPoll is how often each shown path's branch and changes are re-read. The
@@ -70,6 +71,10 @@ type model struct {
 	xdgProfiles map[string]*profileBook
 	// notify hands each session-status report to the desktop channel.
 	notify func(statusReport)
+	// withdrawStale hears a report whose alert is held, for what it takes down.
+	withdrawStale func(statusReport)
+	// alerts limits what notify hears from a session's own program.
+	alerts programAlerts
 	// seen hears a session the window just showed the user.
 	seen func(id string)
 	// loginProgress takes each step of a profile login, of the provider kind
@@ -80,6 +85,8 @@ type model struct {
 	diffTouched func(checkout string)
 	// focusSession brings a session's card up, as `lich focus` asks.
 	focusSession func(projectID, id string)
+	// showToast puts a toast up.
+	showToast func(ui.Toast)
 	// raise brings the window forward, as the tray asks.
 	raise func()
 	// leave closes the window.
@@ -101,6 +108,9 @@ type model struct {
 	// duplicate hears a session report a conversation another open card
 	// runs (api.SessionDuplicateEvent).
 	duplicate func(sessionDuplicate)
+	// profileOffer hears another profile offered to a session
+	// (api.SessionProfileOfferEvent).
+	profileOffer func(api.SessionProfileOffer)
 	// pluginIncompatible hears a session report from a lich plugin outside
 	// the range this lich speaks (PluginIncompatibleEvent).
 	pluginIncompatible func()
@@ -329,6 +339,7 @@ func (m *model) follow(ctx context.Context, events <-chan backend.Event) {
 		if id, exited := api.TerminalExitEvents.ID(ev.Name); exited {
 			m.mu.Lock()
 			m.status.exited(id)
+			m.alerts.forget(id)
 			m.mu.Unlock()
 			if m.exited != nil {
 				m.exited(id, readSessionExit(ev))
@@ -371,6 +382,9 @@ func (m *model) follow(ctx context.Context, events <-chan backend.Event) {
 			if s, err := backend.Decode(ev, api.SessionTitleEvent); err == nil {
 				m.rename(s.ID, s.Label)
 			}
+		case api.SessionScheduleEvent.Name, api.SessionScheduleByEvent.Name, api.SessionWatchEvent.Name,
+			api.SessionWatchStoppedEvent.Name, api.ScheduleForfeitedEvent.Name:
+			m.scheduleEvent(ev)
 		case api.SessionConversationEvent.Name:
 			if c, err := backend.Decode(ev, api.SessionConversationEvent); err == nil {
 				m.setConversation(c.ID, c.ProviderSessionID)
@@ -378,6 +392,10 @@ func (m *model) follow(ctx context.Context, events <-chan backend.Event) {
 		case api.SessionProfileEvent.Name:
 			if moved, err := backend.Decode(ev, api.SessionProfileEvent); err == nil {
 				m.setProfile(moved.ID, moved.Profile)
+			}
+		case api.SessionProfileOfferEvent.Name:
+			if o, err := backend.Decode(ev, api.SessionProfileOfferEvent); err == nil && m.profileOffer != nil {
+				m.profileOffer(o)
 			}
 		case api.ProfileChangedEvent.Name:
 			if c, err := backend.Decode(ev, api.ProfileChangedEvent); err == nil {

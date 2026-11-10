@@ -11,6 +11,8 @@ The OAuth credentials sit at that root, the customizations under `config/`, and 
 
 lich appends nothing to the agent's system prompt (`internal/terminal/command.go`, `briefingFlags`): Antigravity
 has no per-spawn append flag, so the point the briefing makes exists only in lich's MCP instructions.
+Antigravity does hand those to the model (measured 2026-11-07 on 1.4.12, `agy -p` with a probe server added by
+`agy mcp add`: the model quoted a marker that lived only in the server's initialize `instructions`).
 
 In a fresh worktree Antigravity asks whether the folder is trusted, and text typed then is lost to a second
 screen (measured 2026-10-08); it reports nothing before its first turn, so the start gate has only a quiet screen

@@ -144,7 +144,13 @@ func (s *Service) noteInput(id string, data []byte) bool {
 		data = append(sess.escPending, data...)
 		sess.escPending = nil
 	}
-	interrupted := false
+	interrupted, sent := false, false
+	// Deferred after the unlock, so it runs before it and reads onTyped under mu.
+	defer func() {
+		if sent && s.onTyped != nil {
+			go s.onTyped(id)
+		}
+	}()
 	for i := 0; i < len(data); i++ {
 		switch b := data[i]; {
 		case b == esc:
@@ -156,6 +162,7 @@ func (s *Service) noteInput(id string, data []byte) bool {
 			i += n - 1
 		case b == '\r' || b == '\n' || b == ctrlC:
 			// Sent, or thrown away. Either way the line is the user's no longer.
+			sent = sent || (b != ctrlC && !sess.pasting && !sess.draftAt.IsZero())
 			sess.draftAt = time.Time{}
 			interrupted = interrupted || (b == ctrlC && !sess.pasting)
 		case b >= 0x20:

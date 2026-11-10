@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -370,6 +371,71 @@ func TestSessionProfileEventMovesTheCard(t *testing.T) {
 	}
 	if got := m.profileNameOf(claudeKind, ""); got != "" {
 		t.Errorf("Personal carries no tag, got %q", got)
+	}
+}
+
+// TestALimitOfferIsReadOffItsEventAndNamesTheProfile: the backend's offer
+// reaches the window with the session's label and the profile's name.
+func TestALimitOfferIsReadOffItsEventAndNamesTheProfile(t *testing.T) {
+	m := newModel(nil, func() {})
+	m.projects = []backend.Project{{ID: "p", Sessions: []backend.Session{{ID: "s1", Label: "api", Kind: claudeKind}}}}
+	var told []string
+	m.profileOffer = func(o api.SessionProfileOffer) {
+		if label, name, ok := m.profileOfferOf(o); ok {
+			told = append(told, label+" -> "+name)
+		}
+	}
+	events := make(chan backend.Event, 2)
+	events <- backend.Event{Name: api.SessionProfileOfferEvent.Name, Data: []byte(`{"id":"s1","profile":"personal"}`)}
+	events <- backend.Event{Name: api.SessionProfileOfferEvent.Name, Data: []byte(`{"id":"gone","profile":"work"}`)}
+	close(events)
+	m.follow(context.Background(), events)
+
+	if want := []string{"api -> Personal"}; !slices.Equal(told, want) {
+		t.Errorf("told %q, want %q", told, want)
+	}
+}
+
+// TestALimitOfferToastOnlyMovesOnItsAction: Wait and swiping the toast
+// away do nothing; the action is the one way to the move.
+func TestALimitOfferToastOnlyMovesOnItsAction(t *testing.T) {
+	taken := 0
+	toast := limitOfferToast("s1", "api", "Work", func() { taken++ })
+	if toast.Duration != ui.ToastForever || toast.OnDismiss != nil || toast.Cancel.OnClick != nil {
+		t.Fatalf("toast %+v, want it up until answered with nothing behind Wait or a dismiss", toast)
+	}
+	if want := "Continue in Work"; toast.Action.Label != want {
+		t.Errorf("action %q, want %q", toast.Action.Label, want)
+	}
+	if taken != 0 {
+		t.Fatal("building the toast took the offer")
+	}
+	toast.Action.OnClick()
+	if taken != 1 {
+		t.Errorf("the action took the offer %d times, want once", taken)
+	}
+}
+
+// TestAHandoffOfferAsksRatherThanStopsAndMovesOnlyOnItsAction: the suggestion
+// has its own wording, and the same click is the only way to the move.
+func TestAHandoffOfferAsksRatherThanStopsAndMovesOnlyOnItsAction(t *testing.T) {
+	taken := 0
+	toast := handoffOfferToast("s1", "api", "Work", func() { taken++ })
+	if toast.Duration != ui.ToastForever || toast.Cancel.OnClick != nil || toast.Cancel.Label != "Keep" {
+		t.Fatalf("toast %+v, want it up until answered with nothing behind Keep", toast)
+	}
+	if !strings.Contains(toast.Title, "api") || !strings.Contains(toast.Description, "Work") {
+		t.Errorf("title %q, description %q; want the session and the profile", toast.Title, toast.Description)
+	}
+	if want := "Continue in Work"; toast.Action.Label != want {
+		t.Errorf("action %q, want %q", toast.Action.Label, want)
+	}
+	if taken != 0 {
+		t.Fatal("building the toast took the offer")
+	}
+	toast.Action.OnClick()
+	if taken != 1 {
+		t.Errorf("the action took the offer %d times, want once", taken)
 	}
 }
 

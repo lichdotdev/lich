@@ -31,8 +31,10 @@ type Catalog struct {
 	ReplyRouteCLI     string
 	ReplyRouteTools   string
 	ReplyOnlyWayBack  string
+	PingPongWarning   string
 	WorkerTask        string
 	PickTicketNudge   string
+	CompactReminder   Plural
 	NudgeResultsReady Plural
 	NudgeRouteCLI     string
 	NudgeRouteTools   string
@@ -52,6 +54,15 @@ type Catalog struct {
 	// written in one language has to be recognised in every other: match it
 	// with relay's isResumePrompt, never with ==.
 	ResumePrompt string
+	// The line in front of a watch's prompt, naming what was met. %[1]d is the
+	// pull request; %[2]s, where it appears, the commit.
+	WatchChecksFailed string
+	WatchChecksPassed string
+	WatchReview       string
+	// `lich schedule` and schedule_prompt's answers.
+	ScheduledAtResult string // %[1]s is when
+	ScheduledOnResult string // %[1]s is the condition, %[2]d the run limit
+	ScheduleCleared   string
 
 	// internal/drop: the line under a copied file's path.
 	CopyNotice string
@@ -82,12 +93,20 @@ type Catalog struct {
 	ClosedKept             string
 	ClosedPlain            string
 	ClosedProject          string
+	HandoffNote            string
+	HandoffNone            string
+	HandoffSent            string
+
+	HandoffProfileSuggested string
+	HandoffProfileDropped   string
 
 	// internal/cli: a browser page as the browser_* tools answer with it. The
 	// line tags (url:, title:, wait:, text:, interactive, downloading:, dialog
 	// open:) and browser_dialog stay English in every locale: the tool
-	// descriptions name them.
+	// descriptions name them. PageListSame stands for an element list the
+	// agent's last page answer already gave it.
 	PageInteractive  string
+	PageListSame     string
 	PageMore         string
 	PageFilled       string
 	PageChecked      string

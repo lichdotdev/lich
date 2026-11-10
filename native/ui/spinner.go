@@ -36,6 +36,10 @@ const StillFrame = 125 * time.Millisecond
 // asking for one of its own.
 type LoopBeat struct {
 	due atomic.Int64
+	// frame is the frame the beat was last moved in, read and written on
+	// the frame's goroutine only: every looping animation of a frame asks
+	// for the same beat.
+	frame time.Time
 }
 
 // Pending reports whether a looping frame is due after now.
@@ -43,7 +47,31 @@ func (b *LoopBeat) Pending(now time.Time) bool {
 	return b != nil && b.due.Load() > now.UnixNano()
 }
 
-// Loop asks for a looping animation's next frame: LoopFrame from now, or
+// next is the looping frame after now, on the beat's grid, frame apart from
+// the last beat. A frame drawn before the beat already shows the animation
+// where the beat would and takes its place: the beat moves one frame on,
+// in phase, so a window under steady input draws its own frames and not the
+// beat's on top, and one under scarce input draws the beat's alone. A beat
+// further out than one already moved on (a still window's, when it takes
+// focus) or long past restarts from now.
+func (b *LoopBeat) next(now time.Time, frame time.Duration) time.Time {
+	due := time.Unix(0, b.due.Load())
+	if now.Equal(b.frame) {
+		return due
+	}
+	b.frame = now
+	switch {
+	case due.After(now.Add(2 * frame)):
+		return now.Add(frame)
+	case due.After(now.Add(frame)):
+		return due
+	case due.Add(frame).After(now):
+		return due.Add(frame)
+	}
+	return now.Add(frame)
+}
+
+// Loop asks for a looping animation's next frame: LoopFrame apart, or
 // StillFrame while the window is Still.
 func (th *Theme) Loop(gtx layout.Context) {
 	frame := LoopFrame
@@ -52,6 +80,7 @@ func (th *Theme) Loop(gtx layout.Context) {
 	}
 	at := gtx.Now.Add(frame)
 	if th.Beat != nil {
+		at = th.Beat.next(gtx.Now, frame)
 		th.Beat.due.Store(at.UnixNano())
 	}
 	gtx.Execute(op.InvalidateCmd{At: at})

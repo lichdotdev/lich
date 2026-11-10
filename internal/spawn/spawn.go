@@ -34,6 +34,7 @@ import (
 	"github.com/lichdotdev/lich/internal/project"
 	"github.com/lichdotdev/lich/internal/providers"
 	"github.com/lichdotdev/lich/internal/relay"
+	"github.com/lichdotdev/lich/internal/scope"
 	"github.com/lichdotdev/lich/internal/store"
 	"github.com/lichdotdev/lich/internal/terminal"
 
@@ -64,10 +65,17 @@ type Sessions interface {
 	RecentProjects(_ context.Context, opts api.SearchTermOptions) ([]store.Recent, error)
 	AddProject(_ context.Context, opts api.AddProjectOptions) (api.None, error)
 	AddSessionFrom(_ context.Context, opts api.AddSessionFromOptions) (api.None, error)
+	SessionRefused(kind string) error
 	SandboxDefault(providerID, projectID, cwd string) bool
+	SetSessionSandbox(sessionID, sandbox string) error
 	SetSessionModel(sessionID, model string) error
 	SetSessionEffort(sessionID, effort string) error
 	SetSessionUltracode(sessionID string) error
+	SessionModel(sessionID string) string
+	SessionEffort(sessionID string) string
+	SessionUltracode(sessionID string) bool
+	SessionProfile(sessionID string) (string, error)
+	SetSessionProfile(sessionID, profile string) error
 	SetSessionSubagentDepth(sessionID string, depth int) error
 	SessionSubagentDepth(sessionID string) int
 	RenameSession(_ context.Context, opts api.LabelSessionOptions) (api.None, error)
@@ -105,6 +113,9 @@ type Terminal interface {
 	// peer roster, read out of the provider's own record. Empty when there is
 	// none, which is what leaves `lich close` matching the derived name.
 	AgentName(id string) string
+	// SuggestProfile offers the person a profile for a session, moving nothing,
+	// and answers why it cannot apply when it cannot.
+	SuggestProfile(id, slug string) error
 	// RunModCommand queues cmd for the session's Claude Code mod and waits,
 	// until ctx ends, for the mod to confirm it.
 	RunModCommand(ctx context.Context, id string, cmd terminal.ModCommand) (terminal.ModOutcome, error)
@@ -139,8 +150,8 @@ func New(sessions Sessions, worktrees Worktrees, term Terminal, events Events) *
 type OpenOptions = api.OpenSessionOptions
 
 // Open creates a session and starts its PTY.
-func (s *Service) Open(_ context.Context, opts OpenOptions) (Session, error) {
-	return s.openSession(request{
+func (s *Service) Open(ctx context.Context, opts OpenOptions) (Session, error) {
+	return s.openSession(ctx, request{
 		fromID: opts.From, projectName: opts.Project, kind: opts.Kind, worktree: opts.Worktree,
 		base: opts.Base, model: opts.Model, effort: opts.Effort, folder: opts.Folder,
 		ultracode: opts.Ultracode,
@@ -167,21 +178,25 @@ type OpenSubagentOptions = api.OpenSubagentOptions
 // The project is always the caller's. A caller that is not a session lich holds
 // is refused before anything is opened: there is no checkout to share and no
 // one to report to.
-func (s *Service) OpenSubagent(_ context.Context, opts OpenSubagentOptions) (Session, error) {
-	return s.openSession(request{
+func (s *Service) OpenSubagent(ctx context.Context, opts OpenSubagentOptions) (Session, error) {
+	return s.openSession(ctx, request{
 		fromID: opts.From, kind: opts.Kind, worktree: opts.Worktree, base: opts.Base,
 		model: opts.Model, effort: opts.Effort, ultracode: opts.Ultracode, subagent: true,
 	})
 }
 
-// request is one Open or OpenSubagent call. subagent selects OpenSubagent's
-// placement, folder and row depth.
+// request is one Open, OpenSubagent or Handoff call. subagent selects
+// OpenSubagent's placement, folder and row depth; handoff selects Handoff's
+// placement, folder and the caller's settings (inheritCaller).
 type request struct {
-	fromID, projectName, kind, worktree, base, model, effort, folder string
-	ultracode, subagent                                              bool
+	fromID, projectName, kind, worktree, base, model, effort, folder, profile string
+	ultracode, subagent, handoff                                              bool
 }
 
-func (s *Service) openSession(req request) (Session, error) {
+// ctx says who is asking (scope.Session): a session opened from inside the
+// sandbox is confined whatever the rung says, since a confined agent that
+// could open an unconfined session would have its way out of the sandbox.
+func (s *Service) openSession(ctx context.Context, req request) (Session, error) {
 	if req.base != "" && req.worktree == "" {
 		return Session{}, fmt.Errorf(
 			"a base is the branch a new worktree starts from, and no worktree was asked "+
@@ -201,11 +216,8 @@ func (s *Service) openSession(req request) (Session, error) {
 		return Session{}, fmt.Errorf("read the workspace: %w", err)
 	}
 	originID, originLabel := originOf(projects, req.fromID)
-	if req.subagent && originID == "" {
-		return Session{}, errors.New(
-			"a subagent is opened for the session asking for it, and this is not running " +
-				"in a session lich holds — open it without --subagent, or from inside a session",
-		)
+	if err := refuseOrphan(req, originID); err != nil {
+		return Session{}, err
 	}
 	projects, target, err := s.ensureProject(projects, req.fromID, req.projectName)
 	if err != nil {
@@ -214,6 +226,16 @@ func (s *Service) openSession(req request) (Session, error) {
 	kind, err := resolveKind(projects, req.fromID, req.kind)
 	if err != nil {
 		return Session{}, err
+	}
+	// Asked here as well as at the insert, which is where it is enforced: a
+	// refusal has to come before place creates a worktree nobody will open.
+	if err := s.sessions.SessionRefused(kind); err != nil {
+		return Session{}, err
+	}
+	if req.handoff {
+		if req, err = s.inheritCaller(req, projects, kind); err != nil {
+			return Session{}, err
+		}
 	}
 	model, effort, folder := strings.TrimSpace(req.model), strings.TrimSpace(req.effort), strings.TrimSpace(req.folder)
 	if err := checkOverrides(kind, model, effort, req.ultracode); err != nil {
@@ -230,6 +252,9 @@ func (s *Service) openSession(req request) (Session, error) {
 		if req.worktree == "" {
 			at = besideCaller(target, req.fromID, at)
 		}
+	}
+	if req.handoff {
+		folder, at = callerFolder(target, req.fromID), besideCaller(target, req.fromID, at)
 	}
 	cwd, stored, label := at.cwd, at.stored, at.label
 
@@ -254,6 +279,15 @@ func (s *Service) openSession(req request) (Session, error) {
 	if _, err := s.sessions.AddSessionFrom(context.Background(), api.AddSessionFromOptions{ProjectID: target.ID, SessionID: id, Label: label, Kind: kind, Path: stored, NextSeq: opened.NextSeq, OriginID: originID, OriginLabel: originLabel, Folder: folder}); err != nil {
 		return Session{}, err
 	}
+	// On the row, which the spawn reads first (internal/terminal, confined),
+	// and before anything else: a session the sandbox asked for that is not
+	// confined is the one failure here that may not be reported and carried on.
+	if scope.Session(ctx) != "" {
+		if err := s.sessions.SetSessionSandbox(id, store.SessionConfined); err != nil {
+			return Session{}, fmt.Errorf("session %q could not be marked confined, so it was not started: %w", label, err)
+		}
+		opened.Confined = true
+	}
 	// Before the card is announced, so the reload it triggers reads the model
 	// the session was born on (the card's tooltip compares it with the running
 	// one). A write that fails must not be what hides the session, nor cost it
@@ -262,7 +296,7 @@ func (s *Service) openSession(req request) (Session, error) {
 	// prevent. So the error is only held: the spawn below reads the model back
 	// from the row, the session starts on the provider's own default and the
 	// failure is reported once it is running.
-	overrideErr := s.recordOverrides(id, label, model, effort, req.ultracode)
+	overrideErr := errors.Join(s.recordOverrides(id, label, model, effort, req.ultracode), s.recordProfile(id, label, req.profile))
 	// A session born into a folder wears the color its sessions share, or it
 	// would take it off the folder; held like an override's failure.
 	colorErr := s.wearFolderColor(context.Background(), target, store.Session{ID: id}, folder)
@@ -305,12 +339,20 @@ func besideCaller(target store.Project, fromID string, at placement) placement {
 // it and its workers join it, since moving it out would undo the user's own
 // grouping; one in none goes into a folder named after its label, beside them.
 func subagentFolder(target store.Project, fromID, originLabel string) (string, string) {
-	for _, sess := range target.Sessions {
-		if sess.ID == fromID && sess.Folder != "" {
-			return sess.Folder, ""
-		}
+	if folder := callerFolder(target, fromID); folder != "" {
+		return folder, ""
 	}
 	return originLabel, fromID
+}
+
+// callerFolder is the folder the caller is filed under, "" for none.
+func callerFolder(target store.Project, fromID string) string {
+	for _, sess := range target.Sessions {
+		if sess.ID == fromID {
+			return sess.Folder
+		}
+	}
+	return ""
 }
 
 // fileCaller files the session that asked for a subagent under its workers'

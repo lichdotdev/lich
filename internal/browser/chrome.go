@@ -112,6 +112,9 @@ type chromePage struct {
 	leaveMu sync.Mutex
 	held    *leave
 	leave   *leave
+	// idxMu guards idxNext, the index pageInfoScript hands out next.
+	idxMu   sync.Mutex
+	idxNext int
 }
 
 // downloadFolder is downloadDir, which the live tests point at a folder of
@@ -252,12 +255,28 @@ func (p *chromePage) Settle(ctx context.Context) error {
 	}))
 }
 
-func (p *chromePage) Info(ctx context.Context) (PageInfo, error) {
-	var info PageInfo
-	if err := p.run(ctx, chromedp.Evaluate(pageInfoScript, &info)); err != nil {
+func (p *chromePage) Info(ctx context.Context, within string) (PageInfo, error) {
+	arg, err := json.Marshal(within)
+	if err != nil {
 		return PageInfo{}, err
 	}
-	return info, nil
+	p.idxMu.Lock()
+	base := p.idxNext
+	p.idxMu.Unlock()
+	var info struct {
+		PageInfo
+		Next int `json:"next"`
+	}
+	if err := p.run(ctx, chromedp.Evaluate(pageInfoScript+"("+strconv.Itoa(base)+", "+string(arg)+")", &info)); err != nil {
+		return PageInfo{}, err
+	}
+	if info.Error != "" {
+		return PageInfo{}, errors.New(info.Error)
+	}
+	p.idxMu.Lock()
+	p.idxNext = max(p.idxNext, info.Next)
+	p.idxMu.Unlock()
+	return info.PageInfo, nil
 }
 
 func (p *chromePage) HasText(ctx context.Context, text string) (bool, error) {
@@ -320,6 +339,20 @@ func (p *chromePage) Press(ctx context.Context, key string, t Target) error {
 // to: a screenshot's clip is in the document's coordinates.
 const viewportJS = `({x: visualViewport.pageLeft, y: visualViewport.pageTop, w: innerWidth, h: innerHeight, dpr: devicePixelRatio})`
 
+// shotMax is the longest side of the image a screenshot writes. The agent
+// reads it as an image, priced by its pixels: a 2000x1626 pane's came to
+// about 2,350 tokens, more than three page reads (measured 2026-11-07).
+const shotMax = 1280
+
+// shotScale is the image pixels per CSS pixel of a w by h viewport's
+// screenshot, which the x and y read off it are divided by.
+func shotScale(w, h int) float64 {
+	if long := max(w, h); long > shotMax {
+		return float64(shotMax) / float64(long)
+	}
+	return 1
+}
+
 // Screenshot clips at 1/devicePixelRatio: at the device scale, a pane on a
 // HiDPI monitor or at a page zoom gave an image up to 1.5x the viewport, and
 // every point an agent read off it missed by as much.
@@ -338,7 +371,7 @@ func (p *chromePage) Screenshot(ctx context.Context, dest string) (w, h int, err
 	err = p.run(ctx, chromedp.ActionFunc(func(ctx context.Context) error {
 		var err error
 		buf, err = page.CaptureScreenshot().
-			WithClip(&page.Viewport{X: v.X, Y: v.Y, Width: v.W, Height: v.H, Scale: 1 / v.DPR}).
+			WithClip(&page.Viewport{X: v.X, Y: v.Y, Width: v.W, Height: v.H, Scale: shotScale(int(v.W), int(v.H)) / v.DPR}).
 			Do(ctx)
 		return err
 	}))
@@ -492,40 +525,57 @@ type point struct {
 // nothing. A point given outside the viewport is reported, not clicked, and
 // so is one read off a screenshot of another viewport size: the person resized
 // the pane, moved the window to another monitor or zoomed the page since, and
-// the page laid out again under it.
-const resolveJS = `(function(index, selector, x, y, shotW, shotH) {
+// the page laid out again under it. x and y are the image's pixels, scale
+// per CSS pixel, and an outside point is reported in them.
+const resolveJS = `(function(index, selector, x, y, shotW, shotH, scale) {
   var inView = function(px, py) { return px >= 0 && py >= 0 && px < innerWidth && py < innerHeight; };
   if (typeof x === 'number' && typeof y === 'number') {
     if (shotW > 0 && (shotW !== innerWidth || shotH !== innerHeight)) return {x: x, y: y, resized: true, w: innerWidth, h: innerHeight};
-    if (!inView(x, y)) return {x: x, y: y, outside: true, w: innerWidth, h: innerHeight};
-    return {x: x, y: y};
+    if (!inView(x / scale, y / scale)) return {x: x, y: y, outside: true, w: Math.round(innerWidth * scale), h: Math.round(innerHeight * scale)};
+    return {x: x / scale, y: y / scale};
   }
   var el = null;
   if (selector) el = document.querySelector(selector);
   else if (typeof index === 'number') {
-    el = document.querySelector('[data-lich-idx="' + index + '"]');
+    var reg = window.__lichIdx;
+    el = Array.from(document.querySelectorAll('[data-lich-idx="' + index + '"]')).find(function(e) {
+      return reg && reg.of.get(e) === index && e.getClientRects().length > 0;
+    }) || null;
   }
   if (!el) return null;
+  if (el.matches(':disabled') || el.getAttribute('aria-disabled') === 'true') return {disabled: true};
   var r = el.getBoundingClientRect();
   if (!inView(r.left + r.width / 2, r.top + r.height / 2)) {
     el.scrollIntoView({block: 'center', inline: 'center', behavior: 'instant'});
     r = el.getBoundingClientRect();
   }
-  return {x: r.left + r.width / 2, y: r.top + r.height / 2};
+  var cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+  var hit = document.elementFromPoint(cx, cy);
+  // A label's click reaches its control, which is how a custom checkbox hides
+  // the real input under a styled sibling.
+  var lbl = hit && hit.closest('label');
+  if (hit && hit !== el && !el.contains(hit) && !(lbl && lbl.control === el)) {
+    var cls = typeof hit.className === 'string' ? hit.className.trim().split(/\s+/)[0] : '';
+    return {x: cx, y: cy, covered: hit.tagName.toLowerCase() + (hit.id ? '#' + hit.id : cls ? '.' + cls : '')};
+  }
+  return {x: cx, y: cy};
 })`
 
 // resolved is resolveJS's answer: the point, or a point outside the
-// viewport of w by h, or read off a screenshot of another size than w by h.
+// viewport of w by h, or read off a screenshot of another size than w by h,
+// or an element that is disabled or covered by another at its click point.
 type resolved struct {
 	point
-	Outside bool    `json:"outside"`
-	Resized bool    `json:"resized"`
-	W       float64 `json:"w"`
-	H       float64 `json:"h"`
+	Disabled bool    `json:"disabled"`
+	Covered  string  `json:"covered"`
+	Outside  bool    `json:"outside"`
+	Resized  bool    `json:"resized"`
+	W        float64 `json:"w"`
+	H        float64 `json:"h"`
 }
 
 func (p *chromePage) resolve(ctx context.Context, t Target) (point, error) {
-	args, err := json.Marshal([]any{t.Index, t.Selector, t.X, t.Y, t.shotW, t.shotH})
+	args, err := json.Marshal([]any{t.Index, t.Selector, t.X, t.Y, t.shotW, t.shotH, shotScale(t.shotW, t.shotH)})
 	if err != nil {
 		return point{}, err
 	}
@@ -537,8 +587,14 @@ func (p *chromePage) resolve(ctx context.Context, t Target) (point, error) {
 	if r == nil {
 		return point{}, fmt.Errorf("no element matches that target: the page may have changed since it was read; read it again for fresh indexes")
 	}
+	if r.Disabled {
+		return point{}, fmt.Errorf("the element is disabled: a click on it does nothing; read the page again to see what enables it")
+	}
+	if r.Covered != "" {
+		return point{}, coveredError(r.Covered)
+	}
 	if r.Resized {
-		return point{}, fmt.Errorf("the viewport is %gx%g, and your last screenshot was %dx%d: the page was resized since; take a new screenshot before clicking at x and y",
+		return point{}, fmt.Errorf("the viewport is %gx%g, and was %dx%d at your last screenshot: the page was resized since; take a new screenshot before clicking at x and y",
 			r.W, r.H, t.shotW, t.shotH)
 	}
 	if r.Outside {
@@ -546,4 +602,8 @@ func (p *chromePage) resolve(ctx context.Context, t Target) (point, error) {
 			r.X, r.Y, r.W, r.H)
 	}
 	return r.point, nil
+}
+
+func coveredError(by string) error {
+	return fmt.Errorf("the element is covered by <%s> at its click point: dismiss that first, then read the page again", by)
 }

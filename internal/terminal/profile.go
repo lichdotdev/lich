@@ -19,6 +19,8 @@ import (
 
 type profileEvent = api.SessionProfile
 
+var errMidTurn = errors.New("the session is mid-turn; continue it in another profile once the turn ends")
+
 // profileOps is what the service asks of one provider's profiles: the packages
 // that keep them (internal/claudeprofile, internal/codexprofile,
 // internal/ompprofile), which answer the same calls on their own directories.
@@ -28,6 +30,9 @@ type profileOps struct {
 	owner        func(conversationID string) (profilestore.Profile, string, bool)
 	env          func(env []string, dir string) []string
 	moveTo       func(conversationID, toSlug string) error
+	// list is every profile, Personal first: set for the providers lich reads
+	// a usage limit for, the only ones a session is offered a move off one in.
+	list func() ([]profilestore.Profile, error)
 	// slugOf is the profile a state directory belongs to, for a provider
 	// whose directory is not named after it.
 	slugOf func(dir string) string
@@ -43,10 +48,12 @@ var profilestores = withXDGProfiles(map[string]profileOps{
 	providers.Claude: {
 		configDir: claudeprofile.ConfigDir, ensureShared: claudeprofile.EnsureShared,
 		owner: claudeprofile.Owner, env: claudeprofile.Env, moveTo: claudeprofile.MoveConversation,
+		list: claudeprofile.List,
 	},
 	providers.Codex: {
 		configDir: codexprofile.ConfigDir, ensureShared: codexprofile.EnsureShared,
 		owner: codexprofile.Owner, env: codexprofile.Env, moveTo: codexprofile.MoveConversation,
+		list: codexprofile.List,
 	},
 	providers.OMP: {
 		configDir: ompprofile.ConfigDir, ensureShared: ompprofile.EnsureShared,
@@ -218,7 +225,7 @@ func (s *Service) ContinueIn(ctx context.Context, opts api.ContinueInOptions) (a
 		return api.None{}, fmt.Errorf("a %s conversation cannot move to another profile; start a new session there", kind)
 	}
 	if s.turns.busy(opts.ID) {
-		return api.None{}, errors.New("the session is mid-turn; continue it in another profile once the turn ends")
+		return api.None{}, errMidTurn
 	}
 	if _, err := profilestores[kind].configDir(opts.Profile); err != nil {
 		return api.None{}, err

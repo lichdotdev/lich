@@ -50,9 +50,23 @@ A local file inside the session's checkout, typed or sent as an absolute path
 or a `file:` URL, loads over http instead (`internal/preview`): the backend
 serves that checkout on `127.0.0.1`, at its `LICH_WORKTREE_PORT` plus 1000, so
 each checkout is its own origin, and a path outside the checkout is refused.
-Page info never includes form values. Screenshots are files. Click, type and
-press are real input events. `press` is named keys only. Arbitrary JavaScript
-in the page is not a tool.
+Page info never includes form values. Screenshots are files, their longest
+side at most 1280 pixels (`shotMax`); a click at x and y is in that image's
+pixels and lands scaled back to the page's. An annotated screenshot reads the
+page first and draws each element's index on the image (`chrome_annotate.go`);
+that read is not told, as its list never reached the agent in text. A click, key, tab or dialog
+answer whose element list is the one the agent's last page answer gave says
+so in one line instead (`internal/browser/told.go`); `browser_info` always
+answers with the whole list of what it reads. With `within`, a CSS selector, it
+reads the first element it matches (its text and the buttons and links under it,
+not the element itself) and a selector that matches nothing is an error; the
+actions that follow answer with the whole page. Click, type and
+press are real input events. A click, or the click a target of type or press
+makes, by index or selector fails before dispatch when the element is disabled
+or another one covers its click point, naming it (`covered by <div#consent-banner>`). `press` is named keys only. `browser_eval` runs
+the agent's script in the front tab (`browser.Eval`) and answers with its
+value, a string as it is and anything else as JSON, cut at 2000 characters; it
+can read any field's value, so page info's rule ends where the agent asks.
 
 ## Notes on the page
 
@@ -123,6 +137,12 @@ prose around them, the element list's legend, the filled and checked marks,
 the note that more elements wait below, and what a held dialog asks of the
 agent, follows the session's prompt language.
 
+What the page wrote (`title:`, `console error:`, `dialog answered:` and
+`dialog open:`, `text:`, the element list and its legend) sits between
+`<page 3f9a1c2e>` and `</page 3f9a1c2e>`, a fresh random nonce per answer;
+`url:`, `wait:`, the download lines and what a held dialog asks stay outside.
+`browser_eval` and `lich browser eval` wrap their value the same way.
+
 ## Downloads
 
 A file the page downloads lands in the user's Downloads folder
@@ -140,10 +160,11 @@ finished but lich could not move into Downloads answers `download failed:`
 with the path it would have taken. `browser_open` and
 `browser_navigate` on a URL that answers with a file download it the same way:
 Chrome aborts that navigation and the page stays where it was, so the answer
-is the handle with `downloads` rather than an error. That answer also
-waits until 2.5 seconds after the download began, because Chrome reloads the
-page about 1.5 seconds after an `<a download>` and the reload aborts a
-navigation started before it. `browser-download` tells the
+is the handle with `downloads` rather than an error. A download a page asks
+for in a browser's first seconds reloads the page when Chrome starts it, so
+the agent's next click or key press waits for that reload when the answer
+before it showed the page as it was, and a navigation the reload aborts is
+loaded again. `browser-download` tells the
 window when a file is complete, and the window shows a toast naming it with a
 button that opens its folder. The same holds in a window opened with Open in a
 window.

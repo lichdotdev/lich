@@ -10,8 +10,12 @@ type AppUpdateStatus struct {
 	CurrentVersion  string `json:"currentVersion"`
 	LatestVersion   string `json:"latestVersion"`
 	UpdateAvailable bool   `json:"updateAvailable"`
-	CanSelfApply    bool   `json:"canSelfApply"`
-	ReleaseURL      string `json:"releaseUrl"`
+	// Required is true when a release newer than the running one, up to the
+	// latest, marks itself required: no new agent session opens until lich is
+	// updated.
+	Required     bool   `json:"required"`
+	CanSelfApply bool   `json:"canSelfApply"`
+	ReleaseURL   string `json:"releaseUrl"`
 	// InstallCommand is the shell command the UI pastes (never auto-runs) to
 	// update a package-manager-owned install; empty on the self-apply platforms.
 	InstallCommand string `json:"installCommand"`

@@ -38,6 +38,7 @@ type fakePage struct {
 	onDownload     func(guid string, d api.BrowserDownload)
 	onConsoleError func(text string)
 	onDialog       func(*api.BrowserDialog)
+	onReload       func(started bool)
 	answers        []answer
 	// onClick runs after a click, as what the page does in answer to it;
 	// onNavigate as a navigation starts.
@@ -54,6 +55,10 @@ type fakePage struct {
 	texts     []string
 	settles   int
 	selection string
+	navAborts int
+	evals     []string
+	evalOut   string
+	evalErr   error
 	element   api.BrowserElement
 	pointedAt [2]float64
 	boxes     map[string]api.BrowserRect
@@ -61,8 +66,10 @@ type fakePage struct {
 	info      PageInfo
 	shotErr   error
 	shotSize  [2]int
+	annotated int
 	navErr    error
 	infoErr   error
+	within    []string
 	// pageText is what HasText searches; onTextRead runs before each search,
 	// as the page changing between two reads.
 	pageText   string
@@ -106,6 +113,10 @@ func (p *fakePage) Navigate(_ context.Context, url string) error {
 	if p.navErr != nil {
 		return p.navErr
 	}
+	if p.navAborts > 0 {
+		p.navAborts--
+		return errNavAborted
+	}
 	p.url = url
 	p.navigations = append(p.navigations, url)
 	return nil
@@ -118,9 +129,10 @@ func (p *fakePage) Settle(context.Context) error {
 	return nil
 }
 
-func (p *fakePage) Info(context.Context) (PageInfo, error) {
+func (p *fakePage) Info(_ context.Context, within string) (PageInfo, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
+	p.within = append(p.within, within)
 	if p.infoErr != nil {
 		return PageInfo{}, p.infoErr
 	}
@@ -185,6 +197,13 @@ func (p *fakePage) Screenshot(_ context.Context, dest string) (w, h int, err err
 	return p.shotSize[0], p.shotSize[1], os.WriteFile(dest, []byte("png"), 0o600)
 }
 
+func (p *fakePage) AnnotatedScreenshot(ctx context.Context, dest string) (w, h int, err error) {
+	p.mu.Lock()
+	p.annotated++
+	p.mu.Unlock()
+	return p.Screenshot(ctx, dest)
+}
+
 func (p *fakePage) Reload(context.Context) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -242,6 +261,12 @@ func (p *fakePage) Listen(onFrame func(string), onInfo func(url, title string), 
 	defer p.mu.Unlock()
 	p.onFrame, p.onInfo, p.onDownload, p.onConsoleError, p.onDialog = onFrame, onInfo, onDownload, onConsoleError, onDialog
 	p.onTabs = onTabs
+}
+
+func (p *fakePage) OnReload(onReload func(bool)) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.onReload = onReload
 }
 
 func (p *fakePage) OnFileChooser(func(page.FileChooserOpenedMode) ([]string, error)) {}
@@ -316,6 +341,13 @@ func (p *fakePage) Key(_ context.Context, k api.BrowserKeyOptions) error {
 	defer p.mu.Unlock()
 	p.keys = append(p.keys, k)
 	return nil
+}
+
+func (p *fakePage) Eval(_ context.Context, script string) (string, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.evals = append(p.evals, script)
+	return p.evalOut, p.evalErr
 }
 
 func (p *fakePage) Selection(context.Context) (string, error) {

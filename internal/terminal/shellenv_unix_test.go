@@ -81,12 +81,31 @@ func TestRunShellDumpWaitsOutSilenceBeforeEnd(t *testing.T) {
 	defer cancel()
 
 	out, _, err := runShellDump(ctx, "/bin/sh",
-		"echo "+shellEnvSentinel+"; sleep 1; echo LATE=yes; echo "+shellEnvEnd, shellEnvEnd, os.Environ())
+		"echo "+shellEnvSentinel+"; sleep 1; printf 'LATE=yes\\0'; echo "+shellEnvEnd, shellEnvEnd, os.Environ())
 	if err != nil {
 		t.Fatalf("runShellDump error: %v", err)
 	}
 	if got := parseShellEnvDump(shellEnvSentinel, shellEnvEnd, out); !slices.Equal(got, []string{"LATE=yes"}) {
 		t.Fatalf("dump after a silent stretch = %v (raw %q), want [LATE=yes]", got, out)
+	}
+}
+
+// TestShellEnvDumpCmdLeavesBytesUntranslated pins the stty in the dump: under
+// ONLCR a macOS pty turns a "\n" that meets a full output queue into "\r\r\n",
+// which the parse cannot tell from a value's own "\r\n" (the 0.86.0 release
+// suite lost a certificate's line break that way on macos-15-intel).
+func TestShellEnvDumpCmdLeavesBytesUntranslated(t *testing.T) {
+	t.Parallel()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	out, _, err := runShellDump(ctx, "/bin/sh", shellEnvDumpCmd, shellEnvEnd, os.Environ())
+	if err != nil {
+		t.Fatalf("runShellDump error: %v", err)
+	}
+	_, after, _ := strings.Cut(out, shellEnvSentinel)
+	if !strings.HasPrefix(after, "\n") {
+		t.Fatalf("the sentinel line ends in %q, want the pty's ONLCR off", after[:min(len(after), 2)])
 	}
 }
 
@@ -125,7 +144,7 @@ func TestReresolveShellEnvSingleFlightWhileReaderParked(t *testing.T) {
 	script := "#!/bin/sh\n" +
 		"echo x >> " + spawns + "\n" +
 		"echo " + shellEnvSentinel + "\n" +
-		"echo PATH=/late/install\n" +
+		"printf 'PATH=/late/install\\0'\n" +
 		"echo " + shellEnvEnd + "\n" +
 		"exec " + sleep + " 30\n"
 	if err := os.WriteFile(fake, []byte(script), 0o755); err != nil {
@@ -194,6 +213,33 @@ func TestResolveShellEnvKeepsValuesUnquoted(t *testing.T) {
 	if !slices.Contains(got, want) {
 		t.Fatalf("resolved env lost %q: %q", want, slices.DeleteFunc(got, func(kv string) bool {
 			return !strings.HasPrefix(kv, "LICH_TEST_SPECIAL=")
+		}))
+	}
+}
+
+// TestResolveShellEnvKeepsMultiLineValues pins the NUL-separated dump: read line
+// by line, a value spanning newlines lost its tail, and a continuation line
+// shaped like an assignment came back as a variable of its own (a PATH= line
+// there would be pinned into lich itself by PinPath).
+func TestResolveShellEnvKeepsMultiLineValues(t *testing.T) {
+	sh, err := exec.LookPath("sh")
+	if err != nil {
+		t.Skip("no sh on PATH")
+	}
+	t.Setenv("SHELL", sh)
+	const want = "LICH_TEST_CERT=-----BEGIN-----\nLICH_TEST_INJECTED=yes\r\n-----END-----"
+	got, err := ReresolveShellEnv([]string{"PATH=" + os.Getenv("PATH"), "HOME=" + t.TempDir(), want})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Contains(got, want) {
+		t.Errorf("resolved env lost the multi-line value: %q", slices.DeleteFunc(slices.Clone(got), func(kv string) bool {
+			return !strings.HasPrefix(kv, "LICH_TEST_")
+		}))
+	}
+	if slices.ContainsFunc(got, func(kv string) bool { return strings.HasPrefix(kv, "LICH_TEST_INJECTED=") }) {
+		t.Errorf("a continuation line came back as a variable: %q", slices.DeleteFunc(slices.Clone(got), func(kv string) bool {
+			return !strings.HasPrefix(kv, "LICH_TEST_")
 		}))
 	}
 }

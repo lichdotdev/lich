@@ -196,3 +196,45 @@ func TestTooltipWithoutLabelDrawsNothing(t *testing.T) {
 }
 
 func abs(n int) int { return max(n, -n) }
+
+// Moving the pointer over a trigger it already entered changes nothing a
+// frame would show, so it asks for none: every event a handler takes is a
+// frame, and the Root and the trigger taking motion drew one per move.
+func TestTooltipMotionOverTheTriggerAsksNoFrame(t *testing.T) {
+	var (
+		router input.Router
+		root   Root
+		state  Tooltip
+	)
+	th := testTheme()
+	triggerAt := image.Pt(130, 100)
+	frame := func() {
+		ops := new(op.Ops)
+		gtx := layout.Context{Ops: ops, Now: time.Unix(1000, 0), Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}, Constraints: layout.Exact(image.Pt(300, 200)), Source: router.Source()}
+		root.Layout(gtx, func(gtx C) D {
+			defer op.Offset(triggerAt).Push(gtx.Ops).Pop()
+			gtx.Constraints = layout.Exact(tooltipTestTrigger)
+			return th.Tooltip(&root, &state, "Settings").Layout(gtx, func(gtx C) D { return D{Size: gtx.Constraints.Min} })
+		})
+		router.Frame(ops)
+	}
+	move := func(at image.Point) {
+		router.Queue(pointer.Event{Kind: pointer.Move, Source: pointer.Mouse, Position: f32.Pt(float32(at.X), float32(at.Y))})
+	}
+	frame()
+	move(triggerAt.Add(image.Pt(5, 5)))
+	if _, wake := router.WakeupTime(); !wake {
+		t.Fatal("entering the trigger asked for no frame")
+	}
+	frame()
+	router.WakeupTime()
+	if state.origin != triggerAt {
+		t.Errorf("trigger origin read off Enter is %v, want %v", state.origin, triggerAt)
+	}
+	for x := 6; x < 30; x += 4 {
+		move(triggerAt.Add(image.Pt(x, 8)))
+	}
+	if at, wake := router.WakeupTime(); wake && at.IsZero() {
+		t.Error("moving inside the trigger asked for a frame at once")
+	}
+}

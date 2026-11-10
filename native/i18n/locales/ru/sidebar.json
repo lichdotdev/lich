@@ -47,7 +47,9 @@
     "forkHere": "Здесь",
     "forkWorktree": "Worktree…",
     "forkResumeOnly": "только возобновление",
-    "copyReplyCommand": "Скопировать команду ответа"
+    "copyReplyCommand": "Скопировать команду ответа",
+    "schedule": "Запланировать промпт…",
+    "scheduled": "Запланировано…"
   },
   "settingsCard": {
     "close": "Закрыть настройки"
@@ -179,6 +181,14 @@
     "adopted": "lich не создавал worktree в {path}. Удаление сотрёт эту директорию, но сохранит её ветку."
   },
   "sidebarProfile": {
+    "handoffOfferTitle": "Перенести {label} в другой профиль?",
+    "handoffOfferDescription": "Агент, передавший работу, предлагает {profile}",
+    "handoffOfferKeep": "Оставить",
+    "limitOfferTitle": "{label} упёрлась в лимит использования",
+    "limitOfferDescription": "В {profile} лимит ещё не исчерпан",
+    "offerContinue": "Продолжить в {profile}",
+    "limitOfferWait": "Подождать",
+    "offerFailed": "Не удалось продолжить {label} в {profile}: {error}",
     "continueIn": "Продолжить в",
     "continueInHint": "Тот же разговор, другой вход",
     "goneTitle": "{label} запущена в профиле, которого больше нет",
@@ -225,5 +235,41 @@
   },
   "checkoutRow": {
     "newSessionHere": "Новая сессия здесь"
+  },
+  "scheduleDialog": {
+    "title": "Запланировать промпт",
+    "titleArmed": "Запланированный промпт",
+    "description": "Позже введёт промпт в {label}.",
+    "atTime": "В указанное время",
+    "checksFailed": "Проверки не прошли",
+    "checksPassed": "Проверки прошли",
+    "review": "Пришло ревью",
+    "keepsWatching": "следит дальше",
+    "once": "один раз",
+    "when": "Когда",
+    "whenPlaceholder": "2h30 или 14:30",
+    "prompt": "Промпт",
+    "promptPlaceholder": "Что должна сделать эта сессия?",
+    "whenError": "Не удалось разобрать. Попробуйте 45m, 2h30 или 14:30.",
+    "landsToday": "Сегодня в {clock}, через {left}",
+    "landsTomorrow": "Завтра в {clock}, через {left}",
+    "landsOn": "{date} в {clock}, через {left}",
+    "runsOnce": "Сработает один раз.",
+    "staysOn": "Работает, пока пул-реквест не закроют. Останавливается после {limit} запусков.",
+    "noPR": "У этой ветки пока нет пул-реквеста. Наблюдение начнётся, когда он откроется.",
+    "setByAgent": "Задано агентом этой сессии.",
+    "setByLich": "Задано lich после лимита использования.",
+    "runsUsed": "Использовано запусков: {runs} из {limit}.",
+    "remove": "Удалить",
+    "save": "Сохранить",
+    "schedule": "Запланировать",
+    "failed": "Не удалось сохранить запланированный промпт"
+  },
+  "scheduleTip": {
+    "checksFailed": "Вводит промпт, когда проверки не прошли",
+    "checksPassed": "Вводит промпт, когда проверки прошли",
+    "review": "Вводит промпт, когда приходит ревью",
+    "at": "Промпт в {when}",
+    "resume": "Продолжит после лимита использования в {when}"
   }
 }

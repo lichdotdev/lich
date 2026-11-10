@@ -18,6 +18,8 @@
   },
   "appUpdateGate": {
     "available": "O lich {version} está disponível",
+    "required": "O lich {version} é uma atualização de segurança obrigatória",
+    "requiredDetail": "Novas sessões de agente não abrem até ela ser instalada. As que já estão rodando continuam funcionando.",
     "updateAndInstall": "Atualizar e instalar",
     "later": "Depois",
     "updated": "lich atualizado para {version}",
@@ -136,8 +138,14 @@
   },
   "tray": {
     "show": "Mostrar o lich",
-    "running": "Sessões rodando: {count}",
     "quit": "Encerrar o lich",
+    "noSessions": "Nenhuma sessão rodando",
+    "needsYou": "Precisa de você",
+    "working": "Trabalhando",
+    "idle": "Ociosas: {count}",
+    "more": "Mais {count}",
+    "waiting": "Aguardando",
+    "done": "Concluída",
     "servicesRunning": "Serviços rodando: {count}",
     "showOutput": "Mostrar saída",
     "restart": "Reiniciar",
@@ -185,7 +193,11 @@
     "unlabeledSession": "Uma sessão",
     "open": "Abrir",
     "needsInput": "{label} precisa da sua atenção",
-    "finished": "{label} terminou o trabalho"
+    "finished": "{label} terminou o trabalho",
+    "watchStopped": "Parou de vigiar o pull request #{number}",
+    "watchStoppedDetail": "{label} rodou o prompt {runs} vezes nele.",
+    "scheduleLost": "Prompt agendado perdido",
+    "scheduleLostDetail": "Apagar {label} também apagou o prompt marcado para {when}."
   },
   "windowClose": {
     "changeInSettings": "· mude em Configurações › Geral",

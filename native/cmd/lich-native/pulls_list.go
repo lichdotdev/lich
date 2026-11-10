@@ -26,6 +26,8 @@ import (
 
 func (s pullsState) label() string {
 	switch s {
+	case pullsApproved:
+		return i18n.T("pulls.pullsStats.approved")
 	case pullsClosed:
 		return i18n.T("pulls.pullsStats.closed")
 	case pullsMerged:
@@ -36,6 +38,8 @@ func (s pullsState) label() string {
 
 func (s pullsState) none() string {
 	switch s {
+	case pullsApproved:
+		return i18n.T("pulls.pullsList.none.approved")
 	case pullsClosed:
 		return i18n.T("pulls.pullsList.none.closed")
 	case pullsMerged:
@@ -124,8 +128,8 @@ func filterCountColor(th *ui.Theme, f pullsFilter, n int) color.NRGBA {
 	return th.MutedForeground
 }
 
-// stateRow is the uppercase state beside the field, a menu of the states gh
-// is asked for.
+// stateRow is the uppercase state beside the field, a menu of the states the
+// index can list.
 func (p *pullsScreen) stateRow(gtx C, th *ui.Theme) D {
 	entries := make([]ui.MenuEntry, len(pullsStates))
 	for i, s := range pullsStates {

@@ -196,3 +196,33 @@ func TestListenRetriesUntilPortFreesWithWaitMarker(t *testing.T) {
 		t.Fatal("listen() never bound after the port was freed")
 	}
 }
+
+// The restart chain a session pastes sends the token as a header, so it never
+// lands in a process's command line.
+func TestRestartAcceptsABearerToken(t *testing.T) {
+	t.Parallel()
+	tr := newRestartTransport(t)
+	fired := make(chan struct{}, 1)
+	tr.setRestart(func() error { fired <- struct{}{}; return nil })
+
+	for token, want := range map[string]int{tr.token: http.StatusNoContent, "wrong": http.StatusUnauthorized} {
+		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("http://127.0.0.1:%d/restart", tr.port), nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		req.Header.Set("Authorization", "Bearer "+token)
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatalf("post: %v", err)
+		}
+		_ = resp.Body.Close()
+		if resp.StatusCode != want {
+			t.Fatalf("Bearer %q: status = %d, want %d", token, resp.StatusCode, want)
+		}
+	}
+	select {
+	case <-fired:
+	case <-time.After(5 * time.Second):
+		t.Fatal("restart callback never fired")
+	}
+}

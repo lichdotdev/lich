@@ -31,12 +31,19 @@ var zhCN = Catalog{
 		"不要通过给其他会话发消息来回答，用其他任何方式发送的答案都会丢失。" +
 		"回答请写成简明的报告，说明做了什么、在哪里做的、还剩什么，不要贴完整记录：" +
 		"发送方要为读到的每个字节付费，而细节本来就在你的提交和文件里。",
+	PingPongWarning: "[lich] 与发送方的这段往来看起来像是一个循环：消息来回传递，中间没有做任何工作。只有在有工作要汇报时才回复。",
 	WorkerTask: "[lich] 来自会话 %[1]q 的任务，该会话把本会话作为它的子智能体打开。" +
 		"你完成后的最终消息会作为报告发回给它。\n\n%[2]s",
 	PickTicketNudge: "[lich] 你的这一轮结束时没有发送任何答案，因此 %[1]d 个请求已作为未回答退回给了各自的发送方：\n" +
 		"%[2]s\n会话之外没有任何办法判断那一轮对应其中哪一个，所以无法替你回答其中任何一个。" +
 		"你仍在处理的那一个依然可以回答，并且此后的每个答案都必须指明它的工单：" +
 		"lich reply <ticket> \"<answer>\"。",
+	CompactReminder: Plural{
+		One: "[lich] 你的对话刚刚被压缩，转交给本会话的 %[1]d 个请求仍在等待你的答案：\n%[2]s\n" +
+			"发送方被阻塞在该工单上，不读取任何其他内容：工作完成后，请按其工单回答。",
+		Other: "[lich] 你的对话刚刚被压缩，转交给本会话的 %[1]d 个请求仍在等待你的答案：\n%[2]s\n" +
+			"每个发送方都被阻塞在各自的工单上，不读取任何其他内容：每项工作完成后，请按其工单回答。",
+	},
 	NudgeResultsReady: Plural{
 		One:   "你发出的任务 %[2]s 的结果已就绪",
 		Other: "你发出的 %[1]d 个任务的结果已就绪（%[2]s）",
@@ -57,9 +64,15 @@ var zhCN = Catalog{
 	BlockedSummary: "lich 会话 %q 正在等待权限确认",
 	MergeNotice: "[lich] 拉取请求 #%[1]d %[2]q（分支 %[3]s）已合并到 %[4]s。" +
 		"这是一条通知，不是任务：请更新你所记录的这项工作的状态，不要做其他任何事。",
-	MergeSummary: "拉取请求 #%[1]d 已合并到 %[2]s",
-	LateNotice:   "[lich] 原定于 %[1]s 发送，延迟 %[2]s 送达。\n\n",
-	ResumePrompt: "[lich] 你的用量上限已重置。请继续之前进行的任务。",
+	MergeSummary:      "拉取请求 #%[1]d 已合并到 %[2]s",
+	LateNotice:        "[lich] 原定于 %[1]s 发送，延迟 %[2]s 送达。\n\n",
+	ResumePrompt:      "[lich] 你的用量上限已重置。请继续之前进行的任务。",
+	WatchChecksFailed: "[lich] 拉取请求 #%[1]d 的提交 %[2]s 检查失败。\n\n",
+	WatchChecksPassed: "[lich] 拉取请求 #%[1]d 的提交 %[2]s 检查通过。\n\n",
+	WatchReview:       "[lich] 拉取请求 #%[1]d 收到了新的评审。\n\n",
+	ScheduledAtResult: "已安排。你的提示词将在 %[1]s 输入到此会话。",
+	ScheduledOnResult: "已启用。发生 %[1]s 时，你的提示词将输入到此会话，同一个拉取请求最多 %[2]d 次。",
+	ScheduleCleared:   "已清除此会话的定时提示词。",
 
 	CopyNotice: "[lich] %s 的副本；原文件无法从本会话访问，修改只会保留在副本中。",
 
@@ -127,7 +140,18 @@ var zhCN = Catalog{
 	ClosedPlain: "已关闭 %q。\n",
 	ClosedProject: "已关闭项目 %[1]q (%[2]s)，并停止了它的会话。会话仍保留在项目中：" +
 		"再次在 %[2]s 打开会话，会连同这些会话重新打开该项目。\n",
-	PageInteractive:  "interactive (索引 标签 \"文字\" -> 链接):",
+	HandoffNote: "[lich] 会话 %[1]q 把它的工作交接给了你：你是它的接任者，在同一个检出目录中全新打开，以便继续这项工作。" +
+		"原会话会一直保持打开，直到用户关闭它；它并不在等你，所以不需要回复它。在此基础上动手之前，先对照仓库" +
+		"（git status、git log）核实这份说明，然后按下一步继续。" +
+		"\n\n已完成：\n%[2]s\n\n分支：%[3]s\n\n提交：\n%[4]s\n\n下一步：\n%[5]s\n\n注意事项：\n%[6]s",
+	HandoffNone: "（无）",
+	HandoffSent: "交接说明已送到它的提示符。你的会话会保持打开，直到用户关闭它：请在此停下，不要继续已交接的工作。\n",
+
+	HandoffProfileSuggested: "配置档案 %q 会在其第一轮结束时作为建议显示给用户。除非用户移动它，否则它留在你的配置档案中。\n",
+	HandoffProfileDropped:   "你建议的配置档案 %[1]q 已被放弃，会话在你的配置档案中运行：%[2]s。\n",
+
+	PageInteractive:  "interactive (索引 标签 \"文字\"，没有文字时为 -> 链接):",
+	PageListSame:     "interactive: 与上一次页面应答相同，索引也相同",
 	PageMore:         "(下方还有更多元素，滚动页面即可看到)",
 	PageFilled:       "(已填写)",
 	PageChecked:      "(已勾选)",

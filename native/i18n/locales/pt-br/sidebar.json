@@ -45,7 +45,9 @@
     "forkHere": "Aqui",
     "forkWorktree": "Worktree…",
     "forkResumeOnly": "só retoma",
-    "copyReplyCommand": "Copiar comando de resposta"
+    "copyReplyCommand": "Copiar comando de resposta",
+    "schedule": "Agendar prompt…",
+    "scheduled": "Agendado…"
   },
   "settingsCard": {
     "close": "Fechar configurações"
@@ -171,6 +173,14 @@
     "adopted": "O lich não criou a worktree em {path}. Remover apaga esse diretório, mas mantém a branch."
   },
   "sidebarProfile": {
+    "handoffOfferTitle": "Mover {label} para outro perfil?",
+    "handoffOfferDescription": "O agente que passou o trabalho para ela sugere {profile}",
+    "handoffOfferKeep": "Manter",
+    "limitOfferTitle": "{label} atingiu o limite de uso",
+    "limitOfferDescription": "{profile} ainda tem cota",
+    "offerContinue": "Continuar em {profile}",
+    "limitOfferWait": "Esperar",
+    "offerFailed": "Não foi possível continuar {label} em {profile}: {error}",
     "continueIn": "Continuar em",
     "continueInHint": "Mesma conversa, outro login",
     "goneTitle": "{label} foi iniciada em um perfil que não existe mais",
@@ -217,5 +227,41 @@
   },
   "checkoutRow": {
     "newSessionHere": "Nova sessão aqui"
+  },
+  "scheduleDialog": {
+    "title": "Agendar um prompt",
+    "titleArmed": "Prompt agendado",
+    "description": "Digita um prompt em {label} mais tarde.",
+    "atTime": "Em um horário",
+    "checksFailed": "Checks falham",
+    "checksPassed": "Checks passam",
+    "review": "Chega uma revisão",
+    "keepsWatching": "continua vigiando",
+    "once": "uma vez",
+    "when": "Quando",
+    "whenPlaceholder": "2h30 ou 14:30",
+    "prompt": "Prompt",
+    "promptPlaceholder": "O que esta sessão deve fazer?",
+    "whenError": "Não deu para entender. Tente 45m, 2h30 ou 14:30.",
+    "landsToday": "Hoje às {clock}, em {left}",
+    "landsTomorrow": "Amanhã às {clock}, em {left}",
+    "landsOn": "{date} às {clock}, em {left}",
+    "runsOnce": "Roda uma vez.",
+    "staysOn": "Fica ligado até o pull request fechar. Para depois de {limit} execuções.",
+    "noPR": "Esta branch ainda não tem pull request. A vigilância começa quando um abrir.",
+    "setByAgent": "Definido pelo agente desta sessão.",
+    "setByLich": "Definido pelo lich depois do limite de uso.",
+    "runsUsed": "{runs} de {limit} execuções usadas.",
+    "remove": "Remover",
+    "save": "Salvar",
+    "schedule": "Agendar",
+    "failed": "Não foi possível salvar o prompt agendado"
+  },
+  "scheduleTip": {
+    "checksFailed": "Digita o prompt quando os checks falham",
+    "checksPassed": "Digita o prompt quando os checks passam",
+    "review": "Digita o prompt quando chega uma revisão",
+    "at": "Prompt às {when}",
+    "resume": "Continua depois do limite de uso às {when}"
   }
 }

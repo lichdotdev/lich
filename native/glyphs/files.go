@@ -16,6 +16,7 @@ import (
 // Rasterizer: each terminal and diff view has its own, and a fallback such as
 // a CJK collection or a color emoji font is tens of megabytes.
 type fontFile struct {
+	path string
 	// sf is the file's first face; sfnt keeps reading from data.
 	sf   *sfnt.Font
 	data []byte
@@ -23,6 +24,12 @@ type fontFile struct {
 	// cannot draw (CBDT and sbix bitmaps, COLR layers); nil when the file has
 	// none.
 	color *gotext.Font
+
+	// text is the first face as go-text reads it, for shaping graphemes of
+	// several codepoints: parsed on the first one, as most files never see one.
+	textOnce sync.Once
+	text     *gotext.Font
+	textErr  error
 }
 
 var fontFiles = struct {
@@ -56,9 +63,25 @@ func openFontFile(path string) (*fontFile, error) {
 	if err != nil {
 		return nil, fmt.Errorf("parse color glyphs of %s: %w", path, err)
 	}
-	f := &fontFile{sf: sf, data: data, color: color}
+	f := &fontFile{path: path, sf: sf, data: data, color: color}
 	fontFiles.byPath[path] = f
 	return f, nil
+}
+
+func (f *fontFile) textFont() (*gotext.Font, error) {
+	f.textOnce.Do(func() {
+		if f.color != nil {
+			f.text = f.color
+			return
+		}
+		loaders, err := ot.NewLoaders(bytes.NewReader(f.data))
+		if err != nil {
+			f.textErr = err
+			return
+		}
+		f.text, f.textErr = gotext.NewFont(loaders[0])
+	})
+	return f.text, f.textErr
 }
 
 // parseColor parses the first face of data when it carries color glyphs, and

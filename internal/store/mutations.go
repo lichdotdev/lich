@@ -156,6 +156,9 @@ func (s *Service) addSession(
 	if kind == "" {
 		kind = providers.Claude
 	}
+	if err := s.SessionRefused(kind); err != nil {
+		return err
+	}
 	if sandbox != SessionConfined && sandbox != SessionUnconfined {
 		sandbox = ""
 	}
@@ -359,7 +362,8 @@ func (s *Service) reopen(newSessionID, where string, args ...any) (*Session, err
 		row := tx.QueryRow(
 			`SELECT id, project_id, label, kind, path, provider_session_id, label_auto,
 			        model, effort, ultracode, subagent, sandbox, pinned, folder, color, origin_session_id, origin_label,
-			        forked, scheduled_at, scheduled_prompt, fork_cost_offset, profile
+			        forked, scheduled_at, scheduled_prompt, scheduled_by, fork_cost_offset, profile,
+			        watch_on, watch_prompt, watch_by, watch_runs, watch_pr, watch_seen
 			   FROM sessions `+where,
 			args...,
 		)
@@ -367,7 +371,8 @@ func (s *Service) reopen(newSessionID, where string, args ...any) (*Session, err
 			&old.ID, &projectID, &old.Label, &old.Kind, &old.Path, &old.ProviderSessionID,
 			&labelAuto, &model, &effort, &ultracode, &subagent, &sandbox, &old.Pinned, &folder, &color,
 			&old.OriginSessionID, &old.OriginLabel, &old.Forked,
-			&old.ScheduledAt, &old.ScheduledPrompt, &forkOffset, &profile,
+			&old.ScheduledAt, &old.ScheduledPrompt, &old.ScheduledBy, &forkOffset, &profile,
+			&old.Watch.On, &old.Watch.Prompt, &old.Watch.By, &old.Watch.Runs, &old.Watch.PR, &old.Watch.Seen,
 		); err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				return nil // nothing parked; caller creates a new session
@@ -417,11 +422,13 @@ func (s *Service) reopen(newSessionID, where string, args ...any) (*Session, err
 			`INSERT INTO sessions
 			   (id, project_id, label, kind, path, provider_session_id, label_auto,
 			    model, effort, ultracode, subagent, sandbox, pinned, folder, color, origin_session_id, origin_label,
-			    forked, scheduled_at, scheduled_prompt, fork_cost_offset, profile, position)
-			 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, `+nextSessionPosition+`)`,
+			    forked, scheduled_at, scheduled_prompt, scheduled_by, fork_cost_offset, profile,
+			    watch_on, watch_prompt, watch_by, watch_runs, watch_pr, watch_seen, position)
+			 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, `+nextSessionPosition+`)`,
 			newSessionID, projectID, old.Label, old.Kind, old.Path, old.ProviderSessionID, labelAuto,
 			model, effort, ultracode, subagent, sandbox, old.Pinned, folder, color, old.OriginSessionID, old.OriginLabel,
-			old.Forked, old.ScheduledAt, old.ScheduledPrompt, forkOffset, profile, projectID,
+			old.Forked, old.ScheduledAt, old.ScheduledPrompt, old.ScheduledBy, forkOffset, profile,
+			old.Watch.On, old.Watch.Prompt, old.Watch.By, old.Watch.Runs, old.Watch.PR, old.Watch.Seen, projectID,
 		); err != nil {
 			return fmt.Errorf("reinsert session %q: %w", newSessionID, err)
 		}
@@ -450,6 +457,8 @@ func (s *Service) reopen(newSessionID, where string, args ...any) (*Session, err
 			Forked:            old.Forked,
 			ScheduledAt:       old.ScheduledAt,
 			ScheduledPrompt:   old.ScheduledPrompt,
+			ScheduledBy:       old.ScheduledBy,
+			Watch:             old.Watch,
 		}
 		return nil
 	})
@@ -669,6 +678,25 @@ func (s *Service) SetSessionUnread(_ context.Context, opts api.SessionUnreadOpti
 		return api.None{}, fmt.Errorf("set session %q unread: %w", opts.SessionID, err)
 	}
 	return api.None{}, nil
+}
+
+// UnreadSessions is the set of sessions whose last finished turn nobody has
+// read yet, the mark SetSessionUnread writes.
+func (s *Service) UnreadSessions() (map[string]bool, error) {
+	rows, err := s.db.Query(`SELECT id FROM sessions WHERE unread = 1`)
+	if err != nil {
+		return nil, fmt.Errorf("read unread sessions: %w", err)
+	}
+	defer rows.Close()
+	unread := map[string]bool{}
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, fmt.Errorf("read unread sessions: %w", err)
+		}
+		unread[id] = true
+	}
+	return unread, rows.Err()
 }
 
 // SetSessionTitle sets a session's label from the provider's ai-title reported

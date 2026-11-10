@@ -54,7 +54,7 @@ exceptions: they read the machine, not a running lich.
 | Var               | Purpose                                          |
 |-------------------|--------------------------------------------------|
 | `LICH_PORT`       | endpoint port (loopback)                         |
-| `LICH_TOKEN`      | auth token (`?token=`)                           |
+| `LICH_TOKEN`      | auth token (`?token=` or `Authorization: Bearer`) |
 | `LICH_SESSION_ID` | the card this command is running in — the sender |
 | `LICH_BIN`        | the path of the lich this session belongs to     |
 | `LICH_PROMPT_LANG`| language of text written for the agent (`en`)    |
@@ -131,7 +131,7 @@ guess at the one it resembles, and exit 1 — a typo does not open a window.
 Arguments the app itself takes still do: bare `lich`, and `lich --no-window`
 (the backend with no window, which `lich native` starts).
 
-`--json` on `sessions`, `whoami`, `send`, `insert`, `focus`, `wait`, `open`, `close`, `rename`, `control`, `ask`, `worktrees`, `folders`, `file`,
+`--json` on `sessions`, `whoami`, `send`, `insert`, `focus`, `wait`, `open`, `handoff`, `close`, `rename`, `control`, `ask`, `worktrees`, `folders`, `file`,
 `rename-folder`, `color-folder`, `cost` and `version`
 replaces the prose with one JSON line: the peer array, the result object and the session
 object exactly as this document describes them. An empty roster is `[]`, never
@@ -655,6 +655,55 @@ conversation back up.
 - Unlike `sessions`, this reaches a card whose terminal was never opened: it is
   still a session, and closing it is the one thing you can do with it.
 
+### `lich handoff --done <text> --next <text> [--branch <branch>] [--commits <text>] [--gotchas <text>] [--kind <provider>] [--model <model>] [--effort <level>] [--profile <slug>] [--json]`
+
+Hands the session it runs in off to a fresh session of itself, at a clean break:
+just committed, tests green, the next step clear. The successor opens in the
+caller's checkout and folder, and the note is typed at its prompt once there is
+one.
+
+```
+Opened session "Session 5" (claude) in project "lich", in worktree /home/you/.local/share/lich/worktrees/1a2b/auth-fix.
+It answers to "Session 5". Its agent may still be starting, so a task you send it is held until the agent is up rather than lost.
+The handoff note is at its prompt. Your session stays open until the user closes it: stop here rather than carry on with the work you handed off.
+```
+
+- **`--done` and `--next` are required**, and refused before anything opens:
+  they are all the successor starts from. `--branch`, `--commits` and
+  `--gotchas` left out read as none in the note.
+- **The five fields together are capped at 8 KB**, the limit `send` puts on a
+  prompt, and an oversized note is refused before anything opens.
+- **The successor is the caller again unless a flag says otherwise**: same
+  provider and, on that provider, the model, effort, ultracode and profile the
+  caller was opened with. A model, effort or profile belongs to one provider, so
+  a `--kind` of another starts it on that provider's defaults.
+- **`--profile` only suggests a profile to the user.** The successor still
+  starts on this session's profile; a notice offers the suggested one once the
+  successor's first turn ends, and only its Continue in button moves the successor. A suggestion that cannot apply
+  (a provider with no profiles or whose conversations cannot move, an unknown
+  slug, the profile it already runs in) is dropped, the result says why, and
+  the handoff goes on. `--json` carries the reason in `profileDropped`.
+- **The note carries no ticket.** Nothing is owed back, and the caller is not
+  closed: closing it is the user's call.
+- **Run outside a lich session it is refused**: there is no checkout to hand on.
+- The note waits up to 45 seconds for the successor's prompt. Past that, or
+  when it is refused, the command exits 1 with the session still open, named on
+  stdout; `lich send` gets the note there once its agent is up.
+- `--json` prints the opened session's object, the one `open --json` prints.
+
+### `lich schedule (--when <time> | --on <condition> | --clear) [<prompt>]`
+
+Types `<prompt>` in the session the command runs in, later. It only ever acts
+on its own session, and something the person set there stays until they change
+it: the command fails rather than replacing it.
+
+- `--when` takes `45m`, `2h30`, `14:30` (tomorrow if that has passed) or
+  `"2026-11-12 14:30"`.
+- `--on` waits for the pull request of this branch: `checks-failed` stays on
+  until the pull request closes, at most 3 runs on it; `checks-passed` and
+  `review` run once. `lich schedule` takes one trigger at a time.
+- `--clear` removes it.
+
 ### `lich close-project [--json] <name-or-path>`
 
 Closes a project open in the window, as its tab's close does: the tab leaves the
@@ -997,14 +1046,15 @@ tab in the lich window shows. It has to run inside a session
 
 ```
 lich browser open [url]
-lich browser info
+lich browser info [--within <css>]
 lich browser click --index <n> | --selector <css> | --x <n> --y <n>
 lich browser type [--clear] [--index <n>] <text>
 lich browser press [--index <n>] <key>
-lich browser screenshot [path]
+lich browser screenshot [--annotate] [path]
 lich browser navigate <url>
 lich browser reload | back | forward
 lich browser scroll [--dy <pixels>]
+lich browser eval <script>
 lich browser list
 lich browser close
 ```
@@ -1012,10 +1062,18 @@ lich browser close
 `open` with no URL loads `about:blank`. The browser runs headless and the user
 sees its page in a tab beside the session; one that **Open in a window** moved
 to a Chromium window of its own is reused there. `info` describes the page, one line per clickable node
-(index, tag, label, link), and never includes what was typed into a field;
+(index, tag, label, and a link only when it has no label), and never includes what was typed into a field;
+an element keeps its index while it lives, even after the page changes around it or scrolls it out of the list;
 `click` and `press` print the same description of the page they left, once a
 navigation they started has its document; `type` prints nothing, as a field
-filled seldom changes the page. `screenshot` prints the PNG's path.
+filled seldom changes the page. `screenshot` prints the PNG's path; its longest
+side is at most 1280 pixels, and `--x`/`--y` are that image's pixels. `--annotate`
+draws each element's `info` index on the image, at its box, for a button with no label. `eval`
+runs the script in the page and prints its value, a string as it is and
+anything else as JSON, cut at 2000 characters.
+What the page wrote, in `info`, `click`, `press` and `eval`, is between
+`<page nonce>` and `</page nonce>` lines, a new random nonce each time, so an
+agent can tell it from lich's own lines.
 URLs are http, https or `about:blank`.
 
 ### `lich mcp`
@@ -1043,8 +1101,10 @@ at lich.
 | `wait_for_answer` | optional `ticket`, `timeout_seconds` and `no_wait` — with a ticket, `lich wait <ticket>`; without one, the collect: everything ready at once. `no_wait` is `lich wait --no-wait` and takes no ticket. |
 | `reply_to_session` | `answer`, optional `ticket` — what a relayed message asks for; without a ticket, the one request open against the calling session, and a refusal naming each open ticket when there are two. |
 | `open_session` | optional `project` (a name, or an absolute directory path, which is opened as a project first), `kind`, `worktree`, `base`, `model`, `effort`, `ultracode`, `folder` — `lich open` — plus optional `prompt` and `private` — `lich open --prompt [--private]`, the same hand-off in the same call. |
+| `handoff_session` | `done`, `next_steps`, optional `branch`, `commits`, `gotchas`, `kind`, `model`, `effort`, `profile` (only a suggestion to the user). Same as `lich handoff`. A note that did not land is reported beside the open session, as `open_session`'s `prompt` is. |
 | `close_session` | `session`, optional `project`, `worktree` (`keep`/`remove`), `force`. |
 | `close_project` | `project` (a name or a directory path) — `lich close-project`. |
+| `schedule_prompt` | optional `when`, `on`, `prompt`, `clear`: `lich schedule`, on the session it runs in. |
 | `list_services` | optional `project`: the project's services with their state, as JSON. `lich service list`. |
 | `create_service` | `name`, `command`, optional `start_with_lich` and `project`. Saved, not started. `lich service add`. |
 | `edit_service` | `service`, optional `name`, `command`, `start_with_lich` and `project`; what is left out stays. `lich service edit`. |
@@ -1504,7 +1564,12 @@ whoever asked.
   its own permissions — in a session running without permission prompts, that is
   every tool it has. This does not widen lich's trust boundary (`LICH_TOKEN` is
   already in every PTY, and any process in one can already write to any
-  session), but it is the first feature that uses it, and there is no switch.
+  session), but it is the first feature that uses it, and there is no switch. A
+  confined session's `LICH_TOKEN` is scoped (`internal/scope`): the service
+  writes, `lich quit` and the window's own calls are refused, a session it opens
+  is confined, and `send`, `insert`, `submit`, `control` and `ask` reach only
+  sessions that are themselves confined, since the target carries the text out
+  as its task; `reply` reaches anyone.
 - **The tools cost context in every session, used or not.** Fourteen tool
   definitions are in the prompt of every Claude Code and Codex session lich
   spawns, whether or not that session ever talks to another one. The command

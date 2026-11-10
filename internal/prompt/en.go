@@ -36,6 +36,7 @@ var en = Catalog{
 		"sent any other way is lost. Keep the answer a concise report — what was done, " +
 		"where, and what remains — never a transcript: the sender pays to read every byte, " +
 		"and the detail is in your commits and files anyway.",
+	PingPongWarning: "[lich] This exchange with the sender looks like a loop: messages are going back and forth with no work done between them. Only reply if there is work to report.",
 	WorkerTask: "[lich] Task from session %[1]q, which opened this session as its subagent. " +
 		"Your final message when you finish is sent back to it as your report.\n\n%[2]s",
 	PickTicketNudge: "[lich] Your turn ended with no answer sent, so %[1]d requests went back to their senders " +
@@ -43,6 +44,14 @@ var en = Catalog{
 		"which is why none of them could be answered for you. One you are still working on " +
 		"still takes its answer, and every answer from here on has to name its ticket: " +
 		"lich reply <ticket> \"<answer>\".",
+	CompactReminder: Plural{
+		One: "[lich] Your conversation was just compacted, and %[1]d request relayed to this session " +
+			"still waits on your answer:\n%[2]s\nIts sender is blocked on that ticket and reading " +
+			"nothing else: when the work is done, answer it by its ticket.",
+		Other: "[lich] Your conversation was just compacted, and %[1]d requests relayed to this session " +
+			"still wait on your answers:\n%[2]s\nEach sender is blocked on its own ticket and reading " +
+			"nothing else: when each piece of work is done, answer it by its ticket.",
+	},
 	NudgeResultsReady: Plural{
 		One:   "The task you sent %[2]s has its result ready",
 		Other: "Results from %[1]d tasks you sent are ready (%[2]s)",
@@ -63,9 +72,15 @@ var en = Catalog{
 	BlockedSummary: "lich session %q is waiting on a permission prompt",
 	MergeNotice: "[lich] Pull request #%[1]d %[2]q (branch %[3]s) was merged into %[4]s. " +
 		"This is a notice, not a task: update whatever you keep about this work's state, and do nothing else.",
-	MergeSummary: "Pull request #%[1]d merged into %[2]s",
-	LateNotice:   "[lich] Scheduled for %[1]s, delivered %[2]s late.\n\n",
-	ResumePrompt: "[lich] Your usage limit reset. Continue the task you were working on.",
+	MergeSummary:      "Pull request #%[1]d merged into %[2]s",
+	LateNotice:        "[lich] Scheduled for %[1]s, delivered %[2]s late.\n\n",
+	ResumePrompt:      "[lich] Your usage limit reset. Continue the task you were working on.",
+	WatchChecksFailed: "[lich] The checks failed on pull request #%[1]d at commit %[2]s.\n\n",
+	WatchChecksPassed: "[lich] The checks passed on pull request #%[1]d at commit %[2]s.\n\n",
+	WatchReview:       "[lich] A new review arrived on pull request #%[1]d.\n\n",
+	ScheduledAtResult: "Scheduled. Your prompt will be typed in this session at %[1]s.",
+	ScheduledOnResult: "Armed. Your prompt will be typed in this session on %[1]s, at most %[2]d times on one pull request.",
+	ScheduleCleared:   "Cleared this session's scheduled prompt.",
 
 	CopyNotice: "[lich] copy of %s; the original is not reachable from this session, edits stay in the copy.",
 
@@ -135,7 +150,19 @@ This session has a browser of its own (browser_* tools). It runs headless inside
 	ClosedPlain: "Closed %q.\n",
 	ClosedProject: "Closed the project %[1]q (%[2]s) and stopped its sessions. They stay with it: opening a session " +
 		"on %[2]s again reopens the project with them.\n",
-	PageInteractive:  "interactive (index tag \"label\" -> link):",
+	HandoffNote: "[lich] Session %[1]q handed its work off to you: you are its successor, opened fresh in the same " +
+		"checkout to carry it on. That session stays open until the user closes it and is not waiting on you, so " +
+		"nothing goes back to it. Check this note against the repository (git status, git log) before you build " +
+		"on it, then carry on with the next steps.\n\nDone:\n%[2]s\n\nBranch: %[3]s\n\nCommits:\n%[4]s\n\n" +
+		"Next steps:\n%[5]s\n\nGotchas:\n%[6]s",
+	HandoffNone: "(none)",
+	HandoffSent: "The handoff note is at its prompt. Your session stays open until the user closes it: stop " +
+		"here rather than carry on with the work you handed off.\n",
+	HandoffProfileSuggested: "The profile %q goes to the user as a suggestion once its first turn ends. It stays in your profile unless they move it.\n",
+	HandoffProfileDropped:   "The profile %[1]q you suggested was dropped, and the session runs in yours: %[2]s.\n",
+
+	PageInteractive:  "interactive (index tag \"label\", or -> link when it has none):",
+	PageListSame:     "interactive: the same as in your last page answer, indexes included",
 	PageMore:         "(more elements below, scroll to reach them)",
 	PageFilled:       "(filled)",
 	PageChecked:      "(checked)",

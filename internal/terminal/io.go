@@ -23,6 +23,7 @@ func (s *Service) stream(id string, sess *session) {
 	for {
 		n, err := p.Read(buf)
 		if n > 0 {
+			s.readProgramStatus(id, sess, buf[:n])
 			s.noteOutput(id, sess, buf[:n])
 			sess.feed.Lock()
 			sess.replay.append(buf[:n])
@@ -85,12 +86,13 @@ func (s *Service) stream(id string, sess *session) {
 	// freeze every session's I/O.
 	if reaped && sess.service != nil {
 		if sess.service.Exited != nil {
-			sess.service.Exited(code, sess.replay.snapshot())
+			sess.service.Exited(code, sess.replay.text())
 		}
 		events.Send(s.hub.Emit, api.TerminalExitEvents.Of(id), exitPayload(code))
 		return
 	}
 	if reaped {
+		s.forgetProfileOffer(id)
 		// Outside mu: the relay takes its own lock, and it calls into this
 		// service under it.
 		if exited != nil {

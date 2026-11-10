@@ -347,7 +347,9 @@ func registerServices(db *store.Service, term *terminal.Service, svcs *services.
 		)
 		routes.Profiles(dispatcher, api.XDGProfiles[provider.ID], profiles)
 	}
-	routes.AppUpdate(dispatcher, appupdate.New(version, coord.Install, hub.Emit))
+	updates := appupdate.New(version, coord.Install, hub.Emit)
+	db.SetSessionGate(updates.RequiredUpdate)
+	routes.AppUpdate(dispatcher, updates)
 	routes.PatchNotes(dispatcher, patchnotes.New(version, changelog, changelogTranslations))
 	routes.Store(dispatcher, db)
 	// Read before run writes this run's runtime file over the previous
@@ -444,6 +446,8 @@ func registerServices(db *store.Service, term *terminal.Service, svcs *services.
 	// answering the request it was given.
 	rl := relay.New(db, term, hub)
 	term.SetSessionState(rl.Observe)
+	term.SetToolUse(rl.ObserveTool)
+	term.SetUserTyped(rl.UserTyped)
 	// A worker's mod reports its answer, and a closed worker's errand ends
 	// without a word to its caller.
 	term.SetWorkerAnswer(rl.WorkerAnswered)
@@ -483,10 +487,14 @@ func registerServices(db *store.Service, term *terminal.Service, svcs *services.
 	// of its own.
 	proj.SetAgentCheckouts(rl.AgentCheckouts)
 	proj.SetAnnounceMerge(rl.AnnounceMerge)
+	proj.SetPullRequestWatch(rl.WatchesCheckout, rl.ReadPullRequest)
 	go proj.RunBranchPRWatch()
 	// A turn a usage limit ended is picked up again once it resets, through
 	// the same scheduled prompt. Codex reports no end for that turn, so the
-	// terminal watches its open turns for one.
+	// terminal watches its open turns for one. Another profile with quota left
+	// is offered to the person, whose answer sends the prompt at once.
+	term.SetQuotaLeft(plans.HasQuotaLeft)
+	term.SetResumeNow(rl.ResumeNow)
 	term.SetUsageLimit(rl.ParkResume)
 	go term.RunLimitWatch()
 	routes.Relay(dispatcher, rl)
@@ -500,7 +508,17 @@ func registerServices(db *store.Service, term *terminal.Service, svcs *services.
 	routes.Themes(dispatcher, themes.New(version, db, hub.Emit))
 	// The tray is what a lich with its window closed shows of itself; it comes
 	// up once the window hands it its words (tray.SetLabels).
-	trayIcon := tray.New(trayIcons(), func() { showWindow(sys, "from the tray") }, coord.Quit, liveCount)
+	trayIcon := tray.New(trayIcons(), func() { showWindow(sys, "from the tray") }, coord.Quit)
+	trayIcon.SetSessions(tray.Sessions{
+		Live:   func() ([]api.Peer, error) { return rl.Peers(context.Background(), relay.PeersOptions{}) },
+		Status: term.Status,
+		Unread: db.UnreadSessions,
+		Focus: func(id string) {
+			if _, err := rl.Focus(context.Background(), relay.FocusOptions{Target: id}); err != nil {
+				slog.Warn("tray: focus a session", "session", id, "err", err)
+			}
+		},
+	})
 	trayIcon.SetServices(tray.Services{
 		Running: svcs.Running,
 		Reveal:  svcs.Reveal,
@@ -555,6 +573,11 @@ func run(term *terminal.Service, configDir string, coord *restart.Coordinator, b
 	}
 
 	serve(coord, start.open, closeNative)
+	// The deferred teardown waits out the services' stop grace; a relaunch or
+	// a restart successor binding the port gives up well before that.
+	if err := term.CloseTransport(); err != nil {
+		slog.Warn("close the loopback listener", "err", err)
+	}
 }
 
 // serve opens the window and returns when lich is told to quit (`lich quit`,

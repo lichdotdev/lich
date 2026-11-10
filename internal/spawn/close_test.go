@@ -8,6 +8,7 @@ import (
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/project"
 	"github.com/lichdotdev/lich/internal/relay"
+	"github.com/lichdotdev/lich/internal/scope"
 	"github.com/lichdotdev/lich/internal/store"
 )
 
@@ -474,5 +475,22 @@ func TestCloseTheLastSessionOfAProjectLeavesNoneActive(t *testing.T) {
 	}
 	if got := sessions.parked[0].activeID; got != "" {
 		t.Errorf("active session = %q, want none left", got)
+	}
+}
+
+func TestAConfinedCallerCannotForceAClose(t *testing.T) {
+	svc, _, worktrees, _, _ := closer(t)
+	worktrees.dirty["/wt/alone"] = true
+	scoped := scope.With(t.Context(), "s1")
+
+	_, err := svc.Close(scoped, CloseOptions{From: "s1", Target: "alone", Worktree: RemoveWorktree, Force: true})
+	if err == nil || !strings.Contains(err.Error(), "force") {
+		t.Fatalf("err = %v, want force refused", err)
+	}
+	if len(worktrees.removed) != 0 {
+		t.Errorf("removed %+v from the sandbox", worktrees.removed)
+	}
+	if _, err := svc.Close(scoped, CloseOptions{From: "s1", Target: "alone", Worktree: KeepWorktree}); err != nil {
+		t.Errorf("a plain close from the sandbox: %v", err)
 	}
 }

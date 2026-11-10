@@ -6,6 +6,8 @@
 package terminal
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -147,6 +149,9 @@ func TestHoldForStartIgnoresASessionThatWasReplaced(t *testing.T) {
 // Through the real spawn: the session settles, stays held, and is released by
 // the provider's report coming through the same path the hook's POST takes.
 func TestStartHoldsAProviderSessionUntilItsReport(t *testing.T) {
+	// The hold reads whether Claude Code trusts the folder: an empty config
+	// keeps the machine's own trust list out of the test.
+	t.Setenv("CLAUDE_CONFIG_DIR", t.TempDir())
 	bin := stayAliveBin(t)
 	svc := New(stubBins{bin: bin}, nil, events.New())
 	svc.SetStartReports(func(string) bool { return true })
@@ -165,5 +170,49 @@ func TestStartHoldsAProviderSessionUntilItsReport(t *testing.T) {
 	}
 	if !svc.ready("s1") {
 		t.Error("the session stayed held after its provider reported start")
+	}
+}
+
+// The hold waits out a trust question, so a folder Claude Code already trusts
+// has nothing to wait for. A process that came up without lich's hooks (the
+// plugin reinstalled under it) never reports, and held, it sat idle at its
+// prompt while every task sent to it timed out undelivered.
+func TestStartDoesNotHoldAClaudeSessionInAFolderItTrusts(t *testing.T) {
+	config, cwd := t.TempDir(), t.TempDir()
+	t.Setenv("CLAUDE_CONFIG_DIR", config)
+	trust := `{"projects":{"` + filepath.ToSlash(cwd) + `":{"hasTrustDialogAccepted":true}}}`
+	if err := os.WriteFile(filepath.Join(config, ".claude.json"), []byte(trust), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	svc := New(stubBins{bin: stayAliveBin(t)}, nil, events.New())
+	svc.SetStartReports(func(string) bool { return true })
+	t.Cleanup(func() { _, _ = svc.Close(t.Context(), api.SessionIDOptions{ID: "s1"}) })
+
+	if _, err := svc.Start(t.Context(), api.StartOptions{ID: "s1", ProjectID: "p1", Cwd: cwd, Kind: providers.Claude, Cols: 80, Rows: 24}); err != nil {
+		t.Fatalf("Start = %v, want nil", err)
+	}
+	time.Sleep(readySettle + 100*time.Millisecond)
+	if !svc.ready("s1") {
+		t.Error("a settled Claude Code session in a trusted folder was held for a start report")
+	}
+}
+
+// Cursor CLI finds its trust in the folder or a parent, under CURSOR_DATA_DIR.
+func TestStartDoesNotHoldACursorSessionInAFolderItTrusts(t *testing.T) {
+	data, cwd := t.TempDir(), t.TempDir()
+	t.Setenv("CURSOR_DATA_DIR", data)
+	if err := writeCursorTrust(filepath.Join(data, "projects"), cwd); err != nil {
+		t.Fatal(err)
+	}
+	svc := New(stubBins{bin: stayAliveBin(t)}, nil, events.New())
+	svc.SetStartReports(func(string) bool { return true })
+	t.Cleanup(func() { _, _ = svc.Close(t.Context(), api.SessionIDOptions{ID: "s1"}) })
+
+	if _, err := svc.Start(t.Context(), api.StartOptions{ID: "s1", ProjectID: "p1", Cwd: cwd, Kind: providers.Cursor, Cols: 80, Rows: 24}); err != nil {
+		t.Fatalf("Start = %v, want nil", err)
+	}
+	time.Sleep(readySettle + 100*time.Millisecond)
+	if !svc.ready("s1") {
+		t.Error("a settled Cursor CLI session in a trusted folder was held for a start report")
 	}
 }

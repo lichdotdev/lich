@@ -30,7 +30,17 @@ good, and lich does not write it: that setting disables a safety confirmation fo
 including the ones lich never spawned.
 
 lich appends nothing to the agent's system prompt (`internal/terminal/command.go`, `briefingFlags` has no entry
-for Kiro), so the point the briefing makes exists only in lich's MCP instructions.
+for Kiro), and Kiro never hands lich's MCP instructions to the model: a stdio server's `instructions` in its
+initialize result did not reach it (measured 2026-11-07 on 2.21.0, `kiro-cli chat --no-interactive` with a probe
+server in the workspace `mcp.json`: the server was initialized and its tools listed, and the model answered that
+nothing in its context held such text).
+
+So the spawn sets `LICH_BRIEFING` (`briefingEnv`) and an `agentSpawn` hook in lich's agent prints it
+(`report-briefing.sh`, `internal/agentplugin/kiro.go`), since Kiro feeds a hook's stdout to the model as context
+(measured 2026-11-08 on 2.21.0, with `--no-interactive`, on the TUI and on `--resume`: the model quoted a marker
+that lived only in that output, and without the variable it had none). The agent's own `prompt` is one text per
+install, which could follow neither the session's language nor whether lich spawned it. The hook is written by
+the plugin install, so an agent installed before it briefs nothing until the next install.
 
 A misspelled effort level starts without a word. On resume the model comes back from the conversation (2.21.0);
 the effort is unmeasured, since no model on the measuring account accepts one.

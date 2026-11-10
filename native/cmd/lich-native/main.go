@@ -37,6 +37,7 @@ import (
 	"github.com/lichdotdev/lich/native/fonts"
 	"github.com/lichdotdev/lich/native/gioterm"
 	"github.com/lichdotdev/lich/native/i18n"
+	"github.com/lichdotdev/lich/native/internal/framelog"
 	"github.com/lichdotdev/lich/native/internal/shot"
 	"github.com/lichdotdev/lich/native/ui"
 )
@@ -225,29 +226,35 @@ func run(w *app.Window, rt backend.Runtime) error {
 	th.Fg, th.Bg = ui.Dark.Foreground, ui.Dark.Background
 
 	beat := &ui.LoopBeat{}
+	frameLog, err := openFrameLog(beat)
+	if err != nil {
+		return err
+	}
+	defer frameLog.Close()
+	invalidate := frameLog.Invalidator(w.Invalidate)
 	u := &window{
 		ctx: ctx, client: client, th: th, win: w, zoom: defaultZoom, browserZoom: defaultZoom, browserViews: newBrowserQueue(),
 		theme: &ui.Theme{Palette: ui.Dark, Shaper: th.Shaper, Sans: fonts.Sans, Mono: faces[0].Font.Typeface, Surface: ui.Dark.Canvas, Beat: beat},
-		model: newModel(client, w.Invalidate),
-		terms: &terminals{client: client, invalidate: w.Invalidate, beat: beat, renderer: *flagRenderer, family: *flagFont,
-			size: unit.Sp(*flagSize), byID: map[string]*termView{}},
+		model: newModel(client, invalidate),
+		terms: &terminals{client: client, invalidate: invalidate, beat: beat, renderer: *flagRenderer, family: *flagFont,
+			size: unit.Sp(*flagSize), byID: map[string]*termView{}, invalidateEcho: frameLog.Tagged(w.Invalidate, causeEcho)},
 	}
-	u.appearance = &appearance{ctx: ctx, client: client, invalidate: w.Invalidate}
+	u.appearance = &appearance{ctx: ctx, client: client, invalidate: invalidate}
 	caption := platformCaption()
 	u.caption.Store(&caption)
 	go followCaption(ctx, func(l captionLayout) {
 		u.caption.Store(&l)
-		w.Invalidate()
+		invalidate()
 	})
-	u.toaster.Invalidate = w.Invalidate
-	u.duplicates.Invalidate = w.Invalidate
+	u.toaster.Invalidate = invalidate
+	u.duplicates.Invalidate = invalidate
 	u.terms.toaster = &u.toaster
 	u.terms.profileGone = u.profileGone
 	u.sidebar = newSidebar(&u.root)
 	u.console = newServiceConsole()
-	u.palette = newCommandPalette(w.Invalidate)
-	u.worktree = newWorktreeDialog(client, &u.root, w.Invalidate)
-	u.pulls = newPullsScreen(newPullsStore(ctx, client, w.Invalidate), &u.root)
+	u.palette = newCommandPalette(invalidate)
+	u.worktree = newWorktreeDialog(client, &u.root, invalidate)
+	u.pulls = newPullsScreen(newPullsStore(ctx, client, invalidate), &u.root)
 	u.pulls.sessionsIn = func(projectID, path string) []string {
 		ids, _, _ := u.model.sessionsAt(projectID, path)
 		return ids
@@ -259,6 +266,7 @@ func run(w *app.Window, rt backend.Runtime) error {
 	u.model.exited = u.sessionExited
 	u.model.serviceReveal = u.revealService
 	u.model.duplicate = u.warnDuplicate
+	u.model.profileOffer = u.offerProfile
 	u.model.browserOpened = u.offerBrowser
 	u.model.browserIdle = u.askIdleBrowser
 	u.model.browserDownloaded = u.tellDownload
@@ -272,7 +280,7 @@ func run(w *app.Window, rt backend.Runtime) error {
 		w.Activate(token)
 	}, func(id string) { u.notifier.closed(id) })
 	sink := recapping{next: notes, said: func(id string) (string, error) { return client.LastTurnSaid(ctx, id) }}
-	u.notifier = newNotifier(ctx, client, sink, w.Invalidate)
+	u.notifier = newNotifier(ctx, client, sink, invalidate)
 	u.model.seen = u.notifier.seen
 	attention := attentionToast{show: func(t ui.Toast) { u.toaster.Show(t) }, open: func(projectID, id string) {
 		u.settings.hide()
@@ -282,29 +290,31 @@ func run(w *app.Window, rt backend.Runtime) error {
 		u.notifier.report(r)
 		attention.report(r)
 	}
-	u.settings = newSettingsScreen(ctx, client, &u.root, w.Invalidate)
+	u.model.withdrawStale = u.notifier.withdrawStale
+	u.settings = newSettingsScreen(ctx, client, &u.root, invalidate)
 	u.settings.notify = u.notifier
 	u.settings.services.store = &u.model.services
 	u.settings.services.home = u.model.homeProject
 	u.settings.promptUpdate = u.promptAppUpdate
-	u.footer = newFooter(ctx, client, &u.root, u.model.usage, u.model.quota, w.Invalidate)
-	u.gate = &spawnGate{probe: client, invalidate: w.Invalidate, park: u.parkSession, notify: func(t ui.Toast) { u.toaster.Show(t) }}
+	u.footer = newFooter(ctx, client, &u.root, u.model.usage, u.model.quota, invalidate)
+	u.gate = &spawnGate{probe: client, invalidate: invalidate, park: u.parkSession, notify: func(t ui.Toast) { u.toaster.Show(t) }}
 	u.footer.toaster = &u.toaster
 	comments, notify := &u.comments, func(t ui.Toast) { u.toaster.Show(t) }
-	if u.review, err = newReviewPanel(client, &u.root, comments, *flagFont, unit.Sp(*flagSize), w.Invalidate, notify); err != nil {
+	if u.review, err = newReviewPanel(client, &u.root, comments, *flagFont, unit.Sp(*flagSize), invalidate, notify); err != nil {
 		return err
 	}
-	if u.pulls.view.files, err = newReviewPanel(client, &u.root, comments, *flagFont, unit.Sp(*flagSize), w.Invalidate, notify); err != nil {
+	if u.pulls.view.files, err = newReviewPanel(client, &u.root, comments, *flagFont, unit.Sp(*flagSize), invalidate, notify); err != nil {
 		return err
 	}
 	u.pulls.view.files.pr = &prFiles{ticks: map[string]*widget.Bool{}}
-	code, err := newCodeTab(client, w.Invalidate, *flagFont, unit.Sp(*flagSize), comments, notify)
+	code, err := newCodeTab(client, invalidate, *flagFont, unit.Sp(*flagSize), comments, notify)
 	if err != nil {
 		return err
 	}
 	u.dock = newDock(code, u.review)
 	u.model.diffTouched = u.review.feed.touched
 	u.model.focusSession = u.focusSession
+	u.model.showToast = u.showToast
 	u.model.raise = func() { w.Activate("") }
 	u.model.leave = u.leave
 	u.review.wrote = func(checkout string) { u.model.checkoutWritten(u.ctx, checkout) }
@@ -346,19 +356,22 @@ func run(w *app.Window, rt backend.Runtime) error {
 		case app.DestroyEvent:
 			return e.Err
 		case app.ConfigEvent:
+			frameLog.Note(framelog.CauseConfig)
 			u.chrome = chromeOf(e.Config)
 			u.model.setFocused(u.ctx, e.Config.Focused)
 			u.pulls.setFocused(e.Config.Focused)
 			u.toaster.SetHidden(!e.Config.Focused)
 			if still := !e.Config.Focused; still != u.theme.Still {
 				u.theme.Still = still
-				w.Invalidate()
+				invalidate()
 			}
 		case *app.ClosingEvent:
 			u.onClosing(e)
 		case app.DropEvent:
-			u.onDrag(e, w.Invalidate)
+			frameLog.Note(framelog.CauseDrop)
+			u.onDrag(e, invalidate)
 		case app.FrameEvent:
+			frame := frameLog.Begin(e.Size)
 			gtx := app.NewContext(&ops, e)
 			u.terms.unzoomed = gtx.Metric
 			gtx.Metric.PxPerDp *= float32(u.zoom)
@@ -378,7 +391,9 @@ func run(w *app.Window, rt backend.Runtime) error {
 					*flagShot = ""
 				}
 			}
+			frame.HandOff()
 			e.Frame(gtx.Ops)
+			frame.End()
 			frames.Add(1)
 		}
 	}
@@ -544,6 +559,7 @@ func (u *window) layout(gtx C) error {
 		u.shortcuts.layout(gtx, u.theme, u.settings.hotkeys.current())
 		u.layoutPalette(gtx, u.theme)
 		u.layoutWorktreeDialog(gtx, u.theme)
+		u.sidebar.schedule.layout(u.ctx, gtx, u.theme, u.client, u.showToast)
 		u.layoutRemoveConfirm(gtx, u.theme)
 		u.layoutCloseWorktreeConfirm(gtx, u.theme)
 		u.layoutCloseAllConfirm(gtx, u.theme)
@@ -928,6 +944,11 @@ func (u *window) apply(act sidebarAction) {
 	if act.forkHere != "" {
 		go u.forkHere(act.forkHere)
 	}
+	if act.schedule != "" {
+		if sv, ok := u.model.sessionViewOf(act.schedule); ok {
+			u.sidebar.schedule.show(sv)
+		}
+	}
 	if act.forkWorktree != "" {
 		u.showForkDialog(act.forkWorktree)
 	}
@@ -1054,23 +1075,25 @@ func (u *window) applySidebarWrites(w sidebarWrites) {
 
 // newSession adds a session of the launch's kind at its dir ("" for the
 // project's own checkout), filed under its folder, and puts it on screen;
-// typeahead is typed into it once it starts.
-func (u *window) newSession(l launchRequest, typeahead string) {
+// typeahead is typed into it once it starts. It reports whether the session
+// was added: one the backend refused is said in a toast.
+func (u *window) newSession(l launchRequest, typeahead string) bool {
 	kind := l.kind
 	p, ok := u.model.project()
 	if !ok {
 		log.Print("new session: the backend has no project open")
-		return
+		return false
 	}
 	id := strings.ToLower(rand.Text())
 	label := fmt.Sprintf("%s %d", strings.ToUpper(kind[:1])+kind[1:], p.NextSeq+1)
 	if err := u.client.AddSessionInFolder(u.ctx, p.ID, id, label, kind, checkoutPath(l.dir, p.Path), p.NextSeq+1, l.folder); err != nil {
 		u.logErr("new session", err)
-		return
+		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: backend.ErrorText(err)})
+		return false
 	}
 	if err := u.model.reload(u.ctx); err != nil {
 		u.logErr("reload", err)
-		return
+		return true
 	}
 	u.logErr("load folds", u.model.loadFolds(u.ctx))
 	if typeahead != "" {
@@ -1079,6 +1102,7 @@ func (u *window) newSession(l launchRequest, typeahead string) {
 	u.model.setActive(u.ctx, id)
 	u.logErr("set active session", u.client.SetActiveSession(u.ctx, p.ID, id))
 	u.model.invalidate()
+	return true
 }
 
 // windowSize reads -window; one that is not WxH is the default size.

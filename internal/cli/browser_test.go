@@ -63,6 +63,36 @@ func TestBrowserPressSendsKeyAndOptionalTarget(t *testing.T) {
 	}
 }
 
+func TestBrowserScreenshotAnnotates(t *testing.T) {
+	f := newFakeLich(t, `"/tmp/shot.png"`)
+
+	code, stdout, stderr := run(t, f, "browser", "screenshot", "--annotate", "shot.png")
+	if code != 0 {
+		t.Fatalf("exit = %d, stderr = %q", code, stderr)
+	}
+	opts := optionsOf[api.BrowserScreenshotOptions](t, f.only(t))
+	if opts.ID != "s1" || opts.Path != "shot.png" || !opts.Annotate {
+		t.Errorf("options = %+v", opts)
+	}
+	if stdout != "/tmp/shot.png\n" {
+		t.Errorf("stdout = %q", stdout)
+	}
+}
+
+func TestMCPBrowserScreenshotAnnotates(t *testing.T) {
+	f := newFakeLich(t, `"/tmp/shot.png"`)
+
+	replies := speak(t, f, `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":
+		{"name":"browser_screenshot","arguments":{"annotate":true}}}`)
+	text, failed := textOf(t, replies[0])
+	if failed || text != "/tmp/shot.png" {
+		t.Fatalf("tool answered %q, failed %v", text, failed)
+	}
+	if opts := optionsOf[api.BrowserScreenshotOptions](t, f.only(t)); opts.ID != "s1" || !opts.Annotate {
+		t.Errorf("options = %+v", opts)
+	}
+}
+
 func TestMCPBrowserPressCallsPress(t *testing.T) {
 	f := newFakeLich(t, `null`)
 
@@ -74,6 +104,37 @@ func TestMCPBrowserPressCallsPress(t *testing.T) {
 	}
 	opts := optionsOf[api.BrowserPressOptions](t, f.only(t))
 	if opts.ID != "s1" || opts.Key != "Tab" {
+		t.Errorf("options = %+v", opts)
+	}
+}
+
+func TestBrowserEvalPrintsTheScriptsValue(t *testing.T) {
+	f := newFakeLich(t, `"{\"n\":2}"`)
+
+	code, stdout, stderr := run(t, f, "browser", "eval", "({n:", "2})")
+	if code != 0 {
+		t.Fatalf("exit = %d, stderr = %q", code, stderr)
+	}
+	opts := optionsOf[api.BrowserEvalOptions](t, f.only(t))
+	if opts.ID != "s1" || opts.Script != "({n: 2})" {
+		t.Errorf("options = %+v", opts)
+	}
+	if got := fixNonce(stdout); got != "<page N>\n{\"n\":2}\n</page N>\n" {
+		t.Errorf("stdout = %q", stdout)
+	}
+}
+
+func TestMCPBrowserEvalAnswersTheValue(t *testing.T) {
+	f := newFakeLich(t, `"Eval"`)
+
+	replies := speak(t, f, `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":
+		{"name":"browser_eval","arguments":{"script":"document.title"}}}`)
+	text, failed := textOf(t, replies[0])
+	if failed || fixNonce(text) != "<page N>\nEval\n</page N>" {
+		t.Fatalf("tool answered %q (failed %v), want the value in a page block", text, failed)
+	}
+	opts := optionsOf[api.BrowserEvalOptions](t, f.only(t))
+	if opts.ID != "s1" || opts.Script != "document.title" {
 		t.Errorf("options = %+v", opts)
 	}
 }
@@ -113,6 +174,9 @@ func TestMCPBrowserOpenUsesTheCaller(t *testing.T) {
 	opts := optionsOf[api.BrowserOpenOptions](t, f.only(t))
 	if opts.ID != "s1" || opts.URL != "https://example.com" {
 		t.Errorf("options = %+v", opts)
+	}
+	if !strings.HasPrefix(text, "<page ") || !strings.Contains(text, `"url":"https://example.com"`) {
+		t.Errorf("the handle, whose title the page writes, came outside a page block: %q", text)
 	}
 }
 
@@ -163,6 +227,36 @@ func TestMCPBrowserDialogAnswersWithThePage(t *testing.T) {
 	}
 	opts := optionsOf[api.BrowserDialogOptions](t, f.only(t))
 	if opts.ID != "s1" || opts.Accept || opts.Text != nil {
+		t.Errorf("options = %+v", opts)
+	}
+}
+
+func TestBrowserInfoSendsWithin(t *testing.T) {
+	f := newFakeLich(t, `{"url":"https://example.com","title":"t","text":"main text"}`)
+
+	code, stdout, stderr := run(t, f, "browser", "info", "--within", "main")
+	if code != 0 {
+		t.Fatalf("exit = %d, stderr = %q", code, stderr)
+	}
+	opts := optionsOf[api.BrowserInfoOptions](t, f.only(t))
+	if opts.ID != "s1" || opts.Within != "main" {
+		t.Errorf("options = %+v", opts)
+	}
+	if !strings.Contains(stdout, "main text") {
+		t.Errorf("stdout = %q", stdout)
+	}
+}
+
+func TestMCPBrowserInfoSendsWithin(t *testing.T) {
+	f := newFakeLich(t, `{"url":"https://example.com","title":"t"}`)
+
+	replies := speak(t, f, `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":
+		{"name":"browser_info","arguments":{"within":"#dialog"}}}`)
+	if text, failed := textOf(t, replies[0]); failed {
+		t.Fatalf("tool reported a failure: %s", text)
+	}
+	opts := optionsOf[api.BrowserInfoOptions](t, f.only(t))
+	if opts.ID != "s1" || opts.Within != "#dialog" {
 		t.Errorf("options = %+v", opts)
 	}
 }

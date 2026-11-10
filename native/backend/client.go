@@ -269,7 +269,8 @@ func (c *Client) Terminal(ctx context.Context, onOutput, onReplay func(id string
 	return &Stream{conn: conn}, finished, nil
 }
 
-// Send writes keystrokes to session id.
+// Send writes bytes to session id's PTY that nobody typed: an emulator's reply,
+// a mouse report.
 func (s *Stream) Send(ctx context.Context, id string, data []byte) error {
 	frame, err := encodeFrame(id, data)
 	if err != nil {
@@ -277,6 +278,22 @@ func (s *Stream) Send(ctx context.Context, id string, data []byte) error {
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	return s.conn.Write(ctx, websocket.MessageBinary, frame)
+}
+
+// SendTyped writes what a person typed or pasted to session id's PTY, behind
+// the text frame that tells the backend somebody typed
+// (internal/terminal/transport.go, readLoop).
+func (s *Stream) SendTyped(ctx context.Context, id string, data []byte) error {
+	frame, err := encodeFrame(id, data)
+	if err != nil {
+		return err
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if err := s.conn.Write(ctx, websocket.MessageText, []byte(id)); err != nil {
+		return err
+	}
 	return s.conn.Write(ctx, websocket.MessageBinary, frame)
 }
 

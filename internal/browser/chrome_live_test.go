@@ -414,6 +414,34 @@ func TestChromeScrollTurnsTheWheelAtThePoint(t *testing.T) {
 	}
 }
 
+func TestChromePageTextLeavesOutTheListedLabelsAndCutsAt1000(t *testing.T) {
+	p, _ := liveChrome(t)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		fmt.Fprintf(w, `<nav><a href="/a">Pricing</a><br><button>Sign in</button></nav>
+<p>Pricing plans for teams</p><p>%s</p>`, strings.Repeat("x", 1500))
+	}))
+	t.Cleanup(srv.Close)
+	ctx, cancel := context.WithTimeout(context.Background(), pageWait)
+	defer cancel()
+	if err := p.Navigate(ctx, srv.URL); err != nil {
+		t.Fatal(err)
+	}
+	info, err := p.Info(ctx, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(info.Interactive) != 2 {
+		t.Fatalf("listed %+v, want the link and the button", info.Interactive)
+	}
+	if !strings.HasPrefix(info.Text, "Pricing plans for teams\n") || strings.Contains(info.Text, "Sign in") {
+		t.Fatalf("text %.60q…, want the paragraph without the listed labels", info.Text)
+	}
+	if n := len([]rune(info.Text)); n != 1000 {
+		t.Fatalf("text of %d runes, want it cut at 1000", n)
+	}
+}
+
 func TestChromeSelectionReadsAFieldAndNotAPassword(t *testing.T) {
 	p, _ := liveChrome(t)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
@@ -512,13 +540,13 @@ func TestChromeClickByIndexHitsTheLastReadNotAnEarlierOne(t *testing.T) {
 	if err := p.Resize(ctx, Viewport{W: 800, H: 600, Scale: 1}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := p.Info(ctx); err != nil {
+	if _, err := p.Info(ctx, ""); err != nil {
 		t.Fatal(err)
 	}
 	if err := p.run(ctx, chromedp.Evaluate(`window.scrollTo(0, document.body.scrollHeight)`, nil)); err != nil {
 		t.Fatal(err)
 	}
-	info, err := p.Info(ctx)
+	info, err := p.Info(ctx, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -567,6 +595,55 @@ func TestChromeScreenshotIsInCSSPixelsOnAHiDPIPane(t *testing.T) {
 	}
 }
 
+func TestChromeScreenshotOfAWidePaneIs1280AndClicksMapBack(t *testing.T) {
+	p, _ := liveChrome(t)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		fmt.Fprint(w, `<body style="margin:0;height:100vh" onclick="document.body.dataset.at = event.clientX + ',' + event.clientY">`)
+	}))
+	t.Cleanup(srv.Close)
+	ctx, cancel := context.WithTimeout(context.Background(), pageWait)
+	defer cancel()
+	if err := p.Navigate(ctx, srv.URL); err != nil {
+		t.Fatal(err)
+	}
+	if err := p.Resize(ctx, Viewport{W: 2000, H: 1000, Scale: 1}); err != nil {
+		t.Fatal(err)
+	}
+	dest := t.TempDir() + "/shot.png"
+	w, h, err := p.Screenshot(ctx, dest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	f, err := os.Open(dest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+	img, err := png.DecodeConfig(f)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if w != 2000 || h != 1000 || img.Width != 1280 || img.Height != 640 {
+		t.Fatalf("screenshot = %dx%d image of a %dx%d viewport, want 1280x640 of 2000x1000", img.Width, img.Height, w, h)
+	}
+	x, y := 640.0, 320.0
+	if _, _, err := p.Click(ctx, Target{X: &x, Y: &y, shotW: w, shotH: h}); err != nil {
+		t.Fatal(err)
+	}
+	var at string
+	if err := p.run(ctx, chromedp.Evaluate(`document.body.dataset.at`, &at)); err != nil {
+		t.Fatal(err)
+	}
+	if at != "1000,500" {
+		t.Fatalf("the image's 640,320 clicked the page at %s, want 1000,500", at)
+	}
+	x = 1280
+	if _, _, err := p.Click(ctx, Target{X: &x, Y: &y, shotW: w, shotH: h}); err == nil || !strings.Contains(err.Error(), "1280x640") {
+		t.Fatalf("a point past the image's edge answered %v, want it named against the 1280x640 image", err)
+	}
+}
+
 func TestChromeClickRefusesAPointReadOffAnotherViewport(t *testing.T) {
 	p, srv := liveChrome(t)
 	ctx, cancel := context.WithTimeout(context.Background(), pageWait)
@@ -587,5 +664,213 @@ func TestChromeClickRefusesAPointReadOffAnotherViewport(t *testing.T) {
 	_, _, err := p.Click(ctx, Target{X: &x, Y: &y, shotW: 800, shotH: 600})
 	if err == nil || !strings.Contains(err.Error(), "new screenshot") {
 		t.Fatalf("click read off 800x600 in a 700x600 viewport: %v, want an error asking for a new screenshot", err)
+	}
+}
+
+func clickRig(t *testing.T, body string) (*chromePage, context.Context) {
+	t.Helper()
+	p, _ := liveChrome(t)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		fmt.Fprint(w, `<body style="margin:0">`+body)
+	}))
+	t.Cleanup(srv.Close)
+	ctx, cancel := context.WithTimeout(context.Background(), pageWait)
+	t.Cleanup(cancel)
+	if err := p.Navigate(ctx, srv.URL); err != nil {
+		t.Fatal(err)
+	}
+	if err := p.Resize(ctx, Viewport{W: 800, H: 600, Scale: 1}); err != nil {
+		t.Fatal(err)
+	}
+	return p, ctx
+}
+
+func clicked(t *testing.T, p *chromePage, ctx context.Context) string {
+	t.Helper()
+	var hit string
+	if err := p.run(ctx, chromedp.Evaluate(`document.body.dataset.hit || ""`, &hit)); err != nil {
+		t.Fatal(err)
+	}
+	return hit
+}
+
+func TestChromeClickRefusesAnElementUnderAnOverlayAndClicksOnceItIsGone(t *testing.T) {
+	p, ctx := clickRig(t, `<button id="buy" onclick="document.body.dataset.hit = 'buy'">Buy</button>
+<div id="consent-banner" style="position:fixed;inset:0;background:#0008"></div>`)
+	_, _, err := p.Click(ctx, Target{Selector: "#buy"})
+	if err == nil || !strings.Contains(err.Error(), "<div#consent-banner>") {
+		t.Fatalf("click under an overlay: %v, want an error naming div#consent-banner", err)
+	}
+	if hit := clicked(t, p, ctx); hit != "" {
+		t.Fatalf("the click reached %q under the overlay", hit)
+	}
+	if err := p.run(ctx, chromedp.Evaluate(`document.getElementById('consent-banner').remove()`, nil)); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := p.Click(ctx, Target{Selector: "#buy"}); err != nil {
+		t.Fatal(err)
+	}
+	if hit := clicked(t, p, ctx); hit != "buy" {
+		t.Fatalf("clicked %q after the overlay left, want buy", hit)
+	}
+}
+
+func TestChromeClickAndTypeRefuseADisabledTarget(t *testing.T) {
+	p, ctx := clickRig(t, `<button id="off" disabled onclick="document.body.dataset.hit = 'off'">Off</button>
+<fieldset disabled><input id="in"></fieldset>
+<div id="aria" role="button" aria-disabled="true" style="height:20px">Aria</div>`)
+	for _, sel := range []string{"#off", "#in", "#aria"} {
+		if _, _, err := p.Click(ctx, Target{Selector: sel}); err == nil || !strings.Contains(err.Error(), "disabled") {
+			t.Fatalf("click %s: %v, want a disabled error", sel, err)
+		}
+	}
+	if err := p.Type(ctx, "x", false, Target{Selector: "#in"}); err == nil || !strings.Contains(err.Error(), "disabled") {
+		t.Fatalf("type into a fieldset-disabled input: %v, want a disabled error", err)
+	}
+	if hit := clicked(t, p, ctx); hit != "" {
+		t.Fatalf("the click reached %q", hit)
+	}
+}
+
+func TestChromeClickIsNotCoveredByItsOwnChildOrItsLabel(t *testing.T) {
+	p, ctx := clickRig(t, `<a id="link" href="#x" onclick="document.body.dataset.hit = 'link'; return false"><span style="display:block;padding:10px">Open</span></a>
+<label style="display:block;margin-top:40px"><input id="box" type="checkbox" style="position:absolute;opacity:0;left:0;top:60px;width:20px;height:20px"
+ onclick="document.body.dataset.hit = 'box'"><span style="display:block;position:absolute;left:0;top:60px;width:20px;height:20px;background:#ccc"></span></label>`)
+	if _, _, err := p.Click(ctx, Target{Selector: "#link"}); err != nil {
+		t.Fatal(err)
+	}
+	if hit := clicked(t, p, ctx); hit != "link" {
+		t.Fatalf("clicked %q, want link", hit)
+	}
+	if _, _, err := p.Click(ctx, Target{Selector: "#box"}); err != nil {
+		t.Fatalf("a checkbox under its own label's styled span: %v", err)
+	}
+	if hit := clicked(t, p, ctx); hit != "box" {
+		t.Fatalf("clicked %q, want box", hit)
+	}
+}
+
+func TestChromeInfoWithinReadsOnlyTheSubtreeAndItsIndexesClick(t *testing.T) {
+	p, _ := liveChrome(t)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		fmt.Fprint(w, `<nav>Site navigation<br><a href="/docs">Docs</a><button>Menu</button></nav>
+<main>Main column text<br><button onclick="document.body.dataset.hit = 'save'">Save</button></main>
+<footer>Footer words<br><button>Legal</button></footer>`)
+	}))
+	t.Cleanup(srv.Close)
+	ctx, cancel := context.WithTimeout(context.Background(), pageWait)
+	defer cancel()
+	if err := p.Navigate(ctx, srv.URL); err != nil {
+		t.Fatal(err)
+	}
+	info, err := p.Info(ctx, "main")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.Text != "Main column text" {
+		t.Fatalf("text %q, want only main's, without the label of its button", info.Text)
+	}
+	if len(info.Interactive) != 1 || info.Interactive[0].Text != "Save" {
+		t.Fatalf("listed %+v, want only Save", info.Interactive)
+	}
+	for _, within := range []string{"#nope", "a["} {
+		_, err := p.Info(ctx, within)
+		if err == nil {
+			t.Fatalf("within %q: no error", within)
+		}
+		if within == "#nope" && !strings.Contains(err.Error(), "no element matches #nope") {
+			t.Fatalf("within %q: %v, want it to say nothing matches", within, err)
+		}
+	}
+	// A refused selector wiped nothing: the scoped read's index still resolves.
+	index := info.Interactive[0].Index
+	if _, _, err := p.Click(ctx, Target{Index: &index}); err != nil {
+		t.Fatal(err)
+	}
+	var hit string
+	if err := p.run(ctx, chromedp.Evaluate(`document.body.dataset.hit || ""`, &hit)); err != nil {
+		t.Fatal(err)
+	}
+	if hit != "save" {
+		t.Fatalf("index %d from the scoped read clicked %q, want save", index, hit)
+	}
+	whole, err := p.Info(ctx, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(whole.Interactive) != 4 {
+		t.Fatalf("whole page listed %+v, want the 4 buttons and links", whole.Interactive)
+	}
+}
+
+func TestChromeAnnotatedScreenshotLabelsWhatAClickByIndexHits(t *testing.T) {
+	p, _ := liveChrome(t)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		icon := `<svg width="24" height="24"><circle cx="12" cy="12" r="10"/></svg>`
+		fmt.Fprintf(w, `<body style="margin:0">
+<button id="star" style="position:absolute;left:100px;top:100px;width:80px;height:60px">%s</button>
+<button id="trash" style="position:absolute;left:400px;top:300px;width:80px;height:60px">%s</button>
+<script>addEventListener('click', (e) => { document.body.dataset.hit = e.target.closest('button')?.id || '' })</script>`, icon, icon)
+	}))
+	t.Cleanup(srv.Close)
+	ctx, cancel := context.WithTimeout(context.Background(), pageWait)
+	defer cancel()
+	if err := p.Navigate(ctx, srv.URL); err != nil {
+		t.Fatal(err)
+	}
+	if err := p.Resize(ctx, Viewport{W: 2000, H: 1000, Scale: 1}); err != nil {
+		t.Fatal(err)
+	}
+	const layout = `[...document.querySelectorAll('button')].map((b) => JSON.stringify(b.getBoundingClientRect())).join()`
+	var before, after string
+	if err := p.run(ctx, chromedp.Evaluate(layout, &before)); err != nil {
+		t.Fatal(err)
+	}
+	dest := t.TempDir() + "/shot.png"
+	w, h, err := p.AnnotatedScreenshot(ctx, dest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	f, err := os.Open(dest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+	img, err := png.Decode(f)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if w != 2000 || h != 1000 || img.Bounds().Dx() != 1280 || img.Bounds().Dy() != 640 {
+		t.Fatalf("annotated shot = %v image of %dx%d, want 1280x640 of 2000x1000", img.Bounds(), w, h)
+	}
+	// Inside the label's padding at trash's top left corner, left of its
+	// digit, whose antialiasing differs between platforms' fonts: CSS
+	// 400+3,300+10 at 0.64.
+	if r, g, b, _ := img.At(258, 198).RGBA(); r>>8 < 0xb0 || g>>8 > 0x40 || b>>8 < 0x40 {
+		t.Fatalf("pixel under trash's label = %d,%d,%d, want the label's red", r>>8, g>>8, b>>8)
+	}
+	var left int
+	if err := p.run(ctx, chromedp.Evaluate(`document.querySelectorAll('`+annotateTag+`').length`, &left)); err != nil {
+		t.Fatal(err)
+	}
+	if err := p.run(ctx, chromedp.Evaluate(layout, &after)); err != nil {
+		t.Fatal(err)
+	}
+	if left != 0 || after != before {
+		t.Fatalf("after the shot: %d overlays left, layout %s, want none and %s", left, after, before)
+	}
+	trash := 1
+	if _, _, err := p.Click(ctx, Target{Index: &trash}); err != nil {
+		t.Fatal(err)
+	}
+	var hit string
+	if err := p.run(ctx, chromedp.Evaluate(`document.body.dataset.hit`, &hit)); err != nil {
+		t.Fatal(err)
+	}
+	if hit != "trash" {
+		t.Fatalf("a click on index 1 hit %q, want trash", hit)
 	}
 }

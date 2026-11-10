@@ -45,7 +45,8 @@ for entry in "$HOME"/.config/* "$HOME"/.config/.[!.]*; do
   [ "$name" = lich ] || ln -sfn "$entry" "$CONFIG/$name"
 done
 
-if ! curl -sf -o /dev/null -X POST -d '[]' "http://127.0.0.1:$PORT/rpc/store.LoadState?token=$(sed -n 's/.*"token":"\([^"]*\)".*/\1/p' "$RUNTIME" 2>/dev/null)"; then
+if ! printf 'header = "Authorization: Bearer %s"\n' "$(sed -n 's/.*"token":"\([^"]*\)".*/\1/p' "$RUNTIME" 2>/dev/null)" |
+  curl -sf -o /dev/null -X POST -d '[]' -K - "http://127.0.0.1:$PORT/rpc/store.LoadState"; then
   rm -f "$RUNTIME"
   (
     # Whatever lich or agent session launched this must not leak into the

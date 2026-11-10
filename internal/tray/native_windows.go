@@ -1,3 +1,3 @@
 package tray
 
-func (t *Tray) icon() []byte { return t.icons.ICO }
+func (t *Tray) icon(b badge) []byte { return t.icons[b].ICO }

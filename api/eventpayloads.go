@@ -11,6 +11,12 @@ type SessionStatus struct {
 	Tool   string `json:"tool,omitempty"`
 	Detail string `json:"detail,omitempty"`
 	Reason string `json:"reason,omitempty"`
+	// Program marks a report read from the session's own output (OSC 7501)
+	// rather than from a hook. The window limits the alerts these raise, since
+	// nothing bounds how often a program can change its state, and reads none
+	// of a hook's other meanings into them: an "idle" is not the CLI leaving, a
+	// busy with no tool clears the tool line.
+	Program bool `json:"program,omitempty"`
 }
 
 // SessionTitle is the payload of SessionTitleEvent: the session whose label changed
@@ -81,6 +87,16 @@ type SessionProfile struct {
 	Profile string `json:"profile"`
 }
 
+// SessionProfileOffer is the payload of SessionProfileOfferEvent.
+type SessionProfileOffer struct {
+	ID string `json:"id"`
+	// Profile is the slug offered, "personal" for Personal.
+	Profile string `json:"profile"`
+	// Handoff is true for a profile the agent handing off to this session
+	// suggested, false for one with quota left after a usage limit.
+	Handoff bool `json:"handoff"`
+}
+
 // SessionTodo is the payload of SessionTodoEvent. Both counts are the whole list the
 // agent last wrote, so a card can decide for itself whether a list is worth
 // drawing (a finished one is not, and neither is a list of one).
@@ -121,6 +137,28 @@ type SessionSchedule struct {
 	ID     string `json:"id"`
 	At     int64  `json:"at"`
 	Prompt string `json:"prompt,omitempty"`
+}
+
+// SessionScheduleBy is the payload of SessionScheduleByEvent: who set the
+// prompt the last SessionScheduleEvent for this session named.
+type SessionScheduleBy struct {
+	ID string `json:"id"`
+	By string `json:"by"`
+}
+
+// SessionWatchChange is the payload of SessionWatchEvent: a session's watch as
+// it now stands.
+type SessionWatchChange struct {
+	ID    string       `json:"id"`
+	Watch SessionWatch `json:"watch"`
+}
+
+// SessionWatchStopped is the payload of SessionWatchStoppedEvent.
+type SessionWatchStopped struct {
+	ID     string `json:"id"`
+	Label  string `json:"label"`
+	Number int    `json:"number"`
+	Runs   int    `json:"runs"`
 }
 
 // SessionRelay is the payload of SessionRelayEvent: the session whose mark changed,

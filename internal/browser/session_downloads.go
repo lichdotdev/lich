@@ -21,13 +21,9 @@ const downloadPoll = 50 * time.Millisecond
 // whether it became a download: the two arrive in either order.
 const downloadNotice = time.Second
 
-// downloadQuiet is how long after a download begins a click or a key press
-// holds its answer. Chrome reloads the page 1.46 to 1.70 seconds after an
-// <a download> begins (24 samples, Chromium 155, measured 2026-10-27), and
-// the reload aborts a navigation the agent started before it
-// (net::ERR_ABORTED). A 1.5-second hold sat inside that spread and the next
-// navigate failed 2 times in 40; this one clears it.
-const downloadQuiet = 2500 * time.Millisecond
+// downloadReload is how long after a download began an aborted navigation
+// that is no download of its own is taken for Chrome's reload and tried again.
+const downloadReload = 10 * time.Second
 
 // download is one of a session's downloads and the state the agent last
 // heard it in, "" before it heard of it.
@@ -67,18 +63,11 @@ func (sess *session) noteDownloadLocked(guid string, d api.BrowserDownload) bool
 }
 
 // downloadsAfter waits up to wait for the downloads the agent has not heard
-// of yet to end, and out the quiet after the last one began, then returns
-// what it has not heard.
+// of yet to end, then returns what it has not heard.
 func (s *Service) downloadsAfter(sess *session, wait time.Duration) []api.BrowserDownload {
 	deadline := time.Now().Add(wait)
 	for s.freshInProgress(sess) && time.Now().Before(deadline) {
 		time.Sleep(downloadPoll)
-	}
-	s.mu.Lock()
-	hold := time.Until(sess.downloadBegun.Add(s.quiet))
-	s.mu.Unlock()
-	if hold > 0 {
-		time.Sleep(hold)
 	}
 	return s.untold(sess)
 }
@@ -116,10 +105,27 @@ func (s *Service) untold(sess *session) []api.BrowserDownload {
 	return out
 }
 
-// navigate loads u in sess's page. A URL that answers with a file is a
+// navigate loads u in sess's page, once more when Chrome's reload after an
+// earlier download aborted it.
+func (s *Service) navigate(ctx context.Context, sess *session, u string) (download bool, err error) {
+	before := time.Now()
+	download, err = s.navigateOnce(ctx, sess, u)
+	if !errors.Is(err, errNavAborted) {
+		return download, err
+	}
+	s.mu.Lock()
+	reloaded := !sess.downloadBegun.Before(before.Add(-downloadReload))
+	s.mu.Unlock()
+	if !reloaded {
+		return false, err
+	}
+	return s.navigateOnce(ctx, sess, u)
+}
+
+// navigateOnce loads u in sess's page. A URL that answers with a file is a
 // download, not a page: Chrome aborts the navigation and the page stays where
 // it was, which is a load that worked.
-func (s *Service) navigate(ctx context.Context, sess *session, u string) (download bool, err error) {
+func (s *Service) navigateOnce(ctx context.Context, sess *session, u string) (download bool, err error) {
 	before := time.Now()
 	err = sess.page.Navigate(ctx, u)
 	if errors.Is(err, errNavAborted) && s.downloadSince(sess, before) {

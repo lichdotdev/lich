@@ -6,6 +6,7 @@ import (
 
 	"gioui.org/unit"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
@@ -174,8 +175,73 @@ func (u *window) profileGone(s sessionView) {
 
 // startNewInProjectProfile opens a session of the card's kind where it ran,
 // born in whatever profile the project uses now, and parks the card it
-// replaces.
+// replaces. A session the backend refused replaces nothing, so the card stays.
 func (u *window) startNewInProjectProfile(s sessionView) {
-	u.newSession(launchRequest{kind: s.Kind, dir: s.path, folder: s.Folder}, "")
-	u.closeSession(s.ID)
+	if u.newSession(launchRequest{kind: s.Kind, dir: s.path, folder: s.Folder}, "") {
+		u.closeSession(s.ID)
+	}
+}
+
+// offerProfile asks whether to continue a session in another profile: one a
+// usage limit left spare, or one the agent handing off to it suggested. It stays
+// up until answered: the other button, or swiping it away, changes nothing.
+func (u *window) offerProfile(o api.SessionProfileOffer) {
+	label, profile, ok := u.model.profileOfferOf(o)
+	if !ok {
+		return
+	}
+	take := func() { u.takeProfileOffer(o, label, profile) }
+	if o.Handoff {
+		u.duplicates.Show(handoffOfferToast(o.ID, label, profile, take))
+		return
+	}
+	u.duplicates.Show(limitOfferToast(o.ID, label, profile, take))
+}
+
+func handoffOfferToast(id, label, profile string, take func()) ui.Toast {
+	toast := limitOfferToast(id, label, profile, take)
+	toast.Title = i18n.T("sidebar.sidebarProfile.handoffOfferTitle", i18n.Args{"label": label})
+	toast.Description = i18n.T("sidebar.sidebarProfile.handoffOfferDescription", i18n.Args{"profile": profile})
+	toast.Cancel = &ui.ToastButton{Label: i18n.T("sidebar.sidebarProfile.handoffOfferKeep")}
+	return toast
+}
+
+func limitOfferToast(id, label, profile string, take func()) ui.Toast {
+	return ui.Toast{
+		ID:          "limit-offer:" + id,
+		Title:       i18n.T("sidebar.sidebarProfile.limitOfferTitle", i18n.Args{"label": label}),
+		Description: i18n.T("sidebar.sidebarProfile.limitOfferDescription", i18n.Args{"profile": profile}),
+		Icon:        icContinueIn,
+		Duration:    ui.ToastForever,
+		Cancel:      &ui.ToastButton{Label: i18n.T("sidebar.sidebarProfile.limitOfferWait")},
+		Action:      &ui.ToastButton{Label: i18n.T("sidebar.sidebarProfile.offerContinue", i18n.Args{"profile": profile}), OnClick: take},
+	}
+}
+
+// takeProfileOffer sends the person's yes; the backend refuses an offer the
+// session has moved past, and the error says so.
+func (u *window) takeProfileOffer(o api.SessionProfileOffer, label, profile string) {
+	go func() {
+		if err := u.client.TakeProfileOffer(u.ctx, o.ID, o.Profile); err != nil {
+			u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("sidebar.sidebarProfile.offerFailed",
+				i18n.Args{"label": label, "profile": profile, "error": backend.ErrorText(err)})})
+		}
+	}()
+}
+
+// profileOfferOf is the session's label and the name of the profile offered to
+// it, false for a session no open project holds.
+func (m *model) profileOfferOf(o api.SessionProfileOffer) (label, profile string, ok bool) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	p, i := m.sessionAt(o.ID)
+	if p == nil {
+		return "", "", false
+	}
+	s := p.Sessions[i]
+	profile = o.Profile
+	if book := m.profileBook(s.Kind); book != nil {
+		profile = book.nameOf(o.Profile)
+	}
+	return s.Label, profile, true
 }

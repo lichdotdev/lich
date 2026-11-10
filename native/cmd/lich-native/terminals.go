@@ -105,6 +105,9 @@ type terminals struct {
 	client     *backend.Client
 	stream     *backend.Stream
 	invalidate func()
+	// invalidateEcho is invalidate for output inside the echo window, which
+	// the frame log tells from other output; nil is invalidate.
+	invalidateEcho func()
 	// beat is the window's looping frame: output that lands while one is
 	// due rides it, so a busy ring and a streaming agent cost one frame
 	// rate, not two.
@@ -143,6 +146,11 @@ type terminals struct {
 	// spawn is refused, so a toast in place of the generic failure offers a
 	// way on.
 	profileGone func(s sessionView)
+	// linkKeyHeld is the shortcut modifier held down (Ctrl, Cmd on macOS):
+	// links underline only then, as they open only on a click with it, and
+	// the grids follow the pointer only then. Read and written on the
+	// frame's goroutine.
+	linkKeyHeld bool
 	// copyOnSelectOff is Settings › General's copy on select turned off;
 	// zero is on, which is what a window with no terminal copy keeps.
 	copyOnSelectOff atomic.Bool
@@ -200,19 +208,30 @@ func (ts *terminals) onOutput(id string, data []byte) {
 		return
 	}
 	t.vt.Write(data)
-	if shown && !ts.rides(time.Now()) {
-		ts.invalidate()
+	now := time.Now()
+	if !shown || ts.rides(now) {
+		return
 	}
+	if ts.echoing(now) && ts.invalidateEcho != nil {
+		ts.invalidateEcho()
+		return
+	}
+	ts.invalidate()
 }
 
 // echoWindow is how long after a write to the PTY its output still counts as
 // the echo of that write.
 const echoWindow = 200 * time.Millisecond
 
+// echoing reports whether output at now may be the echo of a write.
+func (ts *terminals) echoing(now time.Time) bool {
+	return now.UnixNano()-ts.sent.Load() <= int64(echoWindow)
+}
+
 // rides reports whether output at now can wait for the looping frame already
 // due, which is never while a keystroke's echo may be in it.
 func (ts *terminals) rides(now time.Time) bool {
-	return ts.beat.Pending(now) && now.UnixNano()-ts.sent.Load() > int64(echoWindow)
+	return ts.beat.Pending(now) && !ts.echoing(now)
 }
 
 // onReplay seeds a terminal attach left waiting with its session's tail.
@@ -249,10 +268,46 @@ func (ts *terminals) send(id string, b []byte) {
 	ts.reply(id, b)
 }
 
+// sendTyped sends what was typed or pasted, back on the live screen first so
+// it is seen.
+func (ts *terminals) sendTyped(t *termView, b []byte) {
+	if len(b) == 0 {
+		return
+	}
+	t.vt.ScrollToBottom()
+	ts.sent.Store(time.Now().UnixNano())
+	ts.deliver(t.id, b, (*backend.Stream).SendTyped)
+}
+
+// sendReport writes a mouse report of kind to session id's PTY. A pointer
+// crossing a program that tracks it reports every move, which is no one
+// typing; a press or a release is, and its answer is drawn at once.
+func (ts *terminals) sendReport(id string, kind pointer.Kind, report []byte) {
+	if kind == pointer.Move || kind == pointer.Drag {
+		ts.reply(id, report)
+		return
+	}
+	ts.send(id, report)
+}
+
+// scroll sends the frame's share of what the wheel scrolled, and asks for
+// the next frame while rows are still owed.
+func (ts *terminals) scroll(gtx C, t *termView) {
+	send, more := t.scrollStep()
+	ts.send(t.id, send)
+	if more {
+		gtx.Execute(op.InvalidateCmd{})
+	}
+}
+
 // reply writes the terminal's answer to a query of the program's (cursor
-// position, device attributes) to session id's PTY. A program polling the
-// terminal is no one typing, so its answers never open the echo window.
+// position, device attributes), or a motion report, to session id's PTY.
+// Neither is anyone typing, so neither opens the echo window.
 func (ts *terminals) reply(id string, b []byte) {
+	ts.deliver(id, b, (*backend.Stream).Send)
+}
+
+func (ts *terminals) deliver(id string, b []byte, write func(*backend.Stream, context.Context, string, []byte) error) {
 	if len(b) == 0 {
 		return
 	}
@@ -262,7 +317,7 @@ func (ts *terminals) reply(id string, b []byte) {
 	if t != nil && t.readOnly.Load() {
 		return
 	}
-	if err := stream.Send(context.Background(), id, b); err != nil {
+	if err := write(stream, context.Background(), id, b); err != nil {
 		log.Printf("send to %s: %v", id, err)
 	}
 }
@@ -497,11 +552,7 @@ func (ts *terminals) layout(gtx layout.Context, t *termView, focus bool) error {
 		}
 	}
 	ts.input(gtx, t, focus)
-	send, more := t.scrollStep()
-	ts.send(t.id, send)
-	if more {
-		gtx.Execute(op.InvalidateCmd{})
-	}
+	ts.scroll(gtx, t)
 	snap, err := t.vt.Update()
 	if err != nil {
 		return err
@@ -512,7 +563,9 @@ func (ts *terminals) layout(gtx layout.Context, t *termView, focus bool) error {
 	if _, err := t.r.Draw(gtx, snap); err != nil {
 		return err
 	}
-	t.drawHoveredLink(gtx, snap.Foreground())
+	if l, ok := ts.underlinedLink(t); ok {
+		drawLink(gtx, t.vt, l, snap.Foreground())
+	}
 	// Gio reports a pointer in the space of the clip it hit, not of the
 	// event.Op: this one, inside the padding, is the grid's own.
 	defer clip.Rect(image.Rectangle{Max: size}).Push(gtx.Ops).Pop()
@@ -545,8 +598,9 @@ func (ts *terminals) refit(gtx layout.Context, t *termView, size image.Point, co
 }
 
 func (ts *terminals) input(gtx layout.Context, t *termView, focus bool) {
+	ts.readLinkKey(gtx)
 	filters := append(gioterm.KeyFilters(t.tag),
-		pointer.Filter{Target: t.tag, Kinds: pointer.Scroll | pointer.Press | pointer.Release | pointer.Drag | pointer.Move | pointer.Leave,
+		pointer.Filter{Target: t.tag, Kinds: ts.pointerKinds(t),
 			ScrollY: pointer.ScrollRange{Min: -1 << 20, Max: 1 << 20}},
 		key.Filter{Focus: t.tag, Name: "V", Required: key.ModCommand},
 		transfer.TargetFilter{Target: t.tag, Type: "application/text"})
@@ -563,7 +617,7 @@ func (ts *terminals) input(gtx layout.Context, t *termView, focus bool) {
 		}
 		switch e := ev.(type) {
 		case key.EditEvent, key.CompositionEvent, key.SelectionEvent, key.FocusEvent:
-			ts.send(t.id, []byte(t.composition.Update(e, t.tag, gtx.Execute)))
+			ts.sendTyped(t, []byte(t.composition.Update(e, t.tag, gtx.Execute)))
 		case key.Event:
 			if e.State != key.Press {
 				break
@@ -578,7 +632,7 @@ func (ts *terminals) input(gtx layout.Context, t *termView, focus bool) {
 				}
 				break
 			}
-			ts.send(t.id, terminalKeyBytes(t.vt, e, runtime.GOOS))
+			ts.sendTyped(t, terminalKeyBytes(t.vt, e, runtime.GOOS))
 		case transfer.DataEvent:
 			text, err := readTransfer(e)
 			if err != nil {
@@ -590,6 +644,7 @@ func (ts *terminals) input(gtx layout.Context, t *termView, focus bool) {
 			if e.Kind == pointer.Press {
 				gtx.Execute(key.FocusCmd{Tag: t.tag})
 			}
+			ts.followLinkKey(e)
 			t.track(e)
 			if url, took := t.linkClick(e); took {
 				if url != "" {
@@ -597,8 +652,8 @@ func (ts *terminals) input(gtx layout.Context, t *termView, focus bool) {
 				}
 				break
 			}
-			send, copied := t.pointer(e)
-			ts.send(t.id, send)
+			report, copied := t.pointer(e)
+			ts.sendReport(t.id, e.Kind, report)
 			if copied != "" && !ts.copyOnSelectOff.Load() {
 				ts.copySelection(gtx, copied)
 			}

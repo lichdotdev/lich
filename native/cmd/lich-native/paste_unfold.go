@@ -119,5 +119,5 @@ func (ts *terminals) pasteClipboard(t *termView, text string, goos string) {
 	if text != "" {
 		paste = ts.unfolded(context.Background(), t.id, text, paste)
 	}
-	ts.send(t.id, []byte(paste))
+	ts.sendTyped(t, []byte(paste))
 }

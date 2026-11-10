@@ -63,6 +63,10 @@ func SpawnBriefing(lang prompt.Lang, hasTools bool, route SubagentRoute) string 
 	}
 }
 
+// BriefingEnv carries the spawn briefing to a provider whose agent config prints
+// it from a hook (Kiro CLI).
+const BriefingEnv = "LICH_BRIEFING"
+
 // SubagentRoute is where a spawned session's own subagents run, as far as its
 // briefing is concerned.
 type SubagentRoute int
@@ -136,6 +140,14 @@ func replyInstruction(lang prompt.Lang, hasTools bool, ticketID string) string {
 // next answer, which is the one that can still name its ticket.
 func pickTicketNudge(lang prompt.Lang, count int, errands string) string {
 	return fmt.Sprintf(prompt.For(lang).PickTicketNudge, count, errands)
+}
+
+// compactReminder is what a worker is told after its conversation was
+// compacted while it still owed answers: each errand with the reply that
+// closes it, the same lines a refused ticketless answer lists.
+func compactReminder(lang prompt.Lang, count int, errands string) string {
+	text := prompt.For(lang)
+	return fmt.Sprintf(text.Pick(count, text.CompactReminder), count, errands)
 }
 
 // nudgeNotice is the one line typed at a sender's prompt when results are

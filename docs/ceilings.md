@@ -12,12 +12,36 @@ work when nobody knows it and that the call site never shows. The mechanism and 
 - **A session is ready for work only once its agent reports from its own prompt, where it can**
   (`internal/terminal/startgate.go`): in a fresh worktree several providers ask a question first (trust the
   folder, initialize the project), and anything typed then (a relayed task, `lich open --prompt`, a scheduled
-  prompt, an issue or pull request handed over) goes into the question, with the Enter behind it answering it
+  prompt, an issue or pull request handed over, a handoff note) goes into the question, with the Enter behind it answering it
   (what each provider then does: `docs/providers/`, Spawn). Claude Code, Cursor CLI, oh-my-pi and Kiro CLI stay
   unready until their session-start report, which their hooks send only from the agent's prompt. That hold needs
   lich-plugin's hooks in the provider: without them nothing would ever release it, so nothing is held and the
-  typed text lands in the question. Codex, Antigravity, Crush and opencode report nothing before their first
-  turn, so a quiet screen is still all lich has for them.
+  typed text lands in the question. Claude Code and Cursor CLI are not held in a folder lich reads as trusted
+  already (`trustAnswered`): no question is coming, and the quiet screen is the answer. The hold trusts the
+  plugin on disk at spawn to be the one that process runs, so a session whose provider came up without the hooks
+  (the plugin reinstalled while it started) stays unready until the delivery runs out: on Claude Code and Cursor
+  CLI only in a folder not trusted yet, on oh-my-pi and Kiro CLI always. Codex, Antigravity, Crush and opencode
+  report nothing before their first turn, so a quiet screen is still all lich has for them.
+- **A handoff leaves two sessions in one checkout** (`internal/spawn/handoff.go`, `internal/cli/handoff.go`):
+  `handoff_session` and `lich handoff` never close the caller, so until the user does, both agents can edit the
+  same files; the caller is only told to stop. The note is the caller's own account of its work, checked against
+  nothing, and waits 45 seconds for the successor's prompt (inside the 120 seconds an MCP client gives the call),
+  where a relayed task waits five minutes; past that the session is open without it. The successor inherits the
+  model, effort, ultracode and profile the caller was opened with, not one switched inside it (`/model`). It
+  reaches every provider through spawn and `relay.Submit`. The successor always starts on the caller's profile,
+  because lich moves work to another account only on the user's click; a `profile` on the call is only a suggestion
+  put to the user as a toast once the successor's first turn has ended, so its button works when it appears: the
+  first turn runs on the caller's account (`internal/terminal/limit_switch.go` `SuggestProfile`, the same offer as
+  a usage limit's and the same `TakeProfileOffer`). It reaches the providers whose conversations can change profile where they have
+  profiles: Claude Code, Codex, oh-my-pi, Cursor CLI (Linux and Windows) and Kiro CLI (Linux only). Antigravity and
+  Crush have no profiles and opencode's conversations cannot move, so there the suggestion is dropped and the result
+  says why, and the handoff goes on. Whether the profile is logged in is not checked. The toast waits for a `done`
+  with a turn open, whichever turn that is: all five report one through lich's hooks, so a session of any of them
+  without its lich plugin or extension installed, or a Codex turn a usage limit ended (Codex reports no end for
+  those), never shows it, and the card's Continue in stays available. Unlike a limit's, the offer stands through
+  later turns: a click on one that started since is Continue in's own refusal naming the turn, and the offer goes
+  back to waiting and shows again when that turn ends, because the click took the toast down. A toast standing when
+  the backend restarts is forgotten by the process and refused on click.
 - **opencode 2 is told apart by its `--version`, and every 2.x session runs a server of its own**
   (`internal/providers/version.go` `IsOpencode2`, `internal/terminal/opencode2.go`): 2.x keeps 1.x's binary name,
   config and database but not its argv, so the spawn asks the binary for its major, once per path, size and
@@ -156,6 +180,42 @@ work when nobody knows it and that the call site never shows. The mechanism and 
     and the model-scoped caps a report does not carry.
   - An errand sent privately (a subagent or workflow step inside the session) never shows on the status line,
     since the session's own collect never reaches it.
+- **A program's own status (OSC 7501) is a second source, and the hook outranks it** (`internal/terminal/progwire.go`):
+  from the first hook state the window hears until a hook reports `idle` or the shell starts a prompt (OSC 133 A),
+  the program's records are kept and the card is the hook's. Only Claude Code and Cursor CLI report `idle`, so
+  in a session lich spawned as any other provider, and in a shell lich does not integrate where one of them ran, a
+  program never drives the card again (Provider support table, README). Crush reports no state, so a program in a
+  Crush session drives the card throughout. A command an agent runs through its shell tool usually writes to a pipe
+  the agent reads, not to the PTY, so its report never reaches lich at all.
+  - A `working`, `blocked` or `idle` record ends at a shell prompt (OSC 133 A, which lich's shell integration marks
+    for bash, zsh and fish), at the next report, at a full reset (RIS) or when the session's process exits. There
+    is no foreground process watch: in a shell lich does not integrate, a program that exits without reporting
+    `done` or `error` leaves its state on the card until one of those. `done` and `error` end when you type or paste
+    from the clipboard into the terminal (the window says so in a text frame on `/ws`); an emulator's automatic reply,
+    a mouse report, a dropped or attached file and looking at the card do not end them.
+  - The card shows one record: `blocked`, then `working`, then `error`, `done` and `idle`. `working` outranks the
+    finished states on purpose, because they outlive a prompt and the card reads them as a finished turn; tuios
+    ranks them the other way. The card has no error state, so `error` shows as a finished turn. `kind` and
+    `progress` are read and dropped: the card has no place for either. The relay never sees these states, so a
+    delivery does not wait on a program that says it is working, and they do not keep the machine awake.
+  - A program's state reaches the card and the tray at once, at most 10 times a second per session, a burst folding
+    into its newest state. Only the alerts it raises (the toast and the desktop notification, sound included) are
+    limited further, in the window (`programAlerts`, `native/cmd/lich-native/program_alerts.go`), to one per session
+    in 30 seconds: inside them the newest alert is held and goes out when they end, if the session is still in that
+    state, so a second question arrives up to 30 seconds late rather than not at all. A hook's alerts are not limited.
+    The tray's dot and menu read the current state, so they are not alerts and follow a program that flips.
+  - Nothing else a report causes outside the terminal runs per report. The unread mark is written when it changes, at most
+    four times in 30 seconds, and past that not at all: under a flood the mark may be out of date when a window
+    reopens, which beats a late write undoing a card you read. A program's `done` does not look the pull request up
+    again, re-read the plan's usage or quote the agent's last reply in its notification, and its `idle` does not
+    clear the provider's mark, an in-flight relay mark or the footer's numbers, which a hook's `idle` does.
+  - The backend answers `OSC 7501 ; ?`, because the window's libghostty-vt answers it only when the window sets a
+    program status callback (`GHOSTTY_TERMINAL_OPT_PROGRAM_STATUS`). `native/gioterm` sets none; one that did
+    would answer the query a second time. One goroutine per session writes the answers, so a child that stops
+    reading its input costs one blocked write however often it asks.
+  - **Unverified on Windows.** The PTY opens ConPTY without passthrough (`internal/terminal/pty_windows.go`), which
+    may drop an OSC it does not know before lich reads it. Nobody has measured it there, so a report may simply never
+    arrive.
 
 ## Transcripts, cost and plan usage
 
@@ -244,6 +304,22 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   which is also what keeps it from landing behind Claude Code's own `autoContinueAtUsageLimit`, a setting the
   server enables per account, which is why the prompt is due two minutes after the reset rather than at it. The
   window draws neither the limit nor the parked prompt on the card.
+- **A session a usage limit stopped is offered another profile only on Claude Code and Codex, and only one whose
+  plan reads** (`internal/terminal/limit_switch.go`, `internal/quota` `HasQuotaLeft`): the wait for the reset runs
+  as ever, and when another logged-in profile of the same provider reads with every window under 100%, a toast
+  offers it. Nothing moves without the click, because a profile can be another account and which account holds a
+  conversation is the person's to say. A profile whose plan cannot be read (signed out, an error, an account lich
+  may not ask about) or reads with no windows counts as having none. The readings are cached for five minutes, so
+  a profile a limit stopped a turn in is not offered again before its own reset, whatever its reading says; that
+  memory, like a standing offer, lives in the backend's process and a restart forgets it, and with no window
+  attached the offer goes nowhere and the session just waits. Only the first profile with quota is offered. The
+  toast stays until answered and is not taken down when the session moves on: a turn starting, the card closing or
+  moving, or the process ending withdraws the offer, and a click after that is refused and says so. The click's
+  continuation takes the row the reset's prompt sits on, so it is typed once, up to 30 seconds later, once the
+  respawned session is at its prompt, and one that waits past that for a slow start carries the late notice. A
+  prompt a person parked there stays and goes out at its own time, so that click moves the session and sends
+  nothing. The other six providers record no limit lich can read (above), so none of them is offered anything;
+  opencode's conversations could not move between profiles anyway. Nothing crosses providers.
 - **The pace marker is borrowed calibration, and it is silent far more often than it is wrong**
   (`internal/quota/pace.go`): the two numbers that decide when a weekly window is marked as spending ahead —
   fifteen percentage points past the elapsed share, and no marking at all in the first twenty-four hours after
@@ -264,6 +340,27 @@ work when nobody knows it and that the call site never shows. The mechanism and 
 
 ## Relay, errands and subagents
 
+- **Only a Claude Code session with the mod is reminded of its errands after a compaction**
+  (`internal/relay/observe.go`, `compactReminderLocked`; docs/hooks/session-state.md): a relayed task is a turn of
+  the worker's conversation, and a compaction may summarise its ticket away. With two errands open an answer that
+  names none is refused, so the worker cannot answer either. The mod's `session.compact` is the only compaction
+  lich hears (`compacting`), so on the other seven providers, and on Claude Code without the mod, the ticket can
+  still be lost. The reminder is typed when the compaction's closing report arrives: after a mid-turn
+  auto-compaction that report is `busy`, and the reminder queues behind the running turn, so an errand that turn
+  ends unanswered is reminded after it is already closed, where only a late answer by its ticket still lands.
+- **Codex and Kiro CLI sessions get the spawn briefing, not lich's MCP instructions** (`internal/cli/mcp.go`,
+  `mcpInstructions`; `internal/terminal/command.go`, `codexBriefingArgs`, `briefingEnv`): both initialize the
+  server, list its tools and never hand its initialize `instructions` to the model (measured 2026-11-07 on
+  0.162.1 and 2.21.0, `docs/providers/codex.md`, `docs/providers/kiro.md`). Each now gets the short briefing by a
+  route of its own (a `developer_instructions` override on Codex, an `agentSpawn` hook on Kiro), so the longer text
+  about waiting without polling and answering tickets still stops at each tool's own description there. On Codex,
+  a user whose `config.toml` sets `developer_instructions` keeps their text and gets no briefing, since a `-c`
+  would replace it; a project's `.codex/config.toml` setting it is replaced for the session, unread; and a
+  conversation resumed or forked keeps whatever it was born with, none if it began before this or outside lich.
+  On Kiro, the hook is written by the plugin install, so an agent installed earlier briefs nothing until the next
+  one. Claude Code, Antigravity, opencode and Crush were measured passing the instructions on; Cursor CLI was not
+  measured (no login on the measuring machine), and oh-my-pi is briefed on its command line whatever its MCP
+  client does.
 - **A new Claude Code session's roster name is its own, and lich does not know it** (`internal/terminal`,
   `nameArgs`; `internal/relay`, `RosterNameOf`): lich spawns it without `--name`, because a name passed there is
   the user's to Claude Code and a session holding one never writes the `ai-title` its card is titled from
@@ -409,6 +506,36 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   shell, monitor or workflow off answers with what it said when it did, and the errand takes that first answer, so
   the report of the turn that resumes later is lost. A lich-plugin older than the release carrying that fallback
   never answers such a worker, and its errand stays open until the worker is closed.
+- **The ping-pong breaker knows a turn did no work only from the tools its hooks named** (`internal/relay/pingpong.go`):
+  a message between the same two sessions counts toward the streak only when the sending turn reported tools through
+  `PreToolUse` and every one was a relay tool (`send_to_session`, `reply_to_session`, `wait_for_answer`,
+  `list_sessions`). The second such message in a row carries a warning and the fourth is refused. Crush reports no
+  tools, and neither does a provider without the plugin installed, so a message from or to such a session never
+  counts: it may be working unseen. A turn that reaches the relay through the command line
+  (`lich send`, `"$LICH_BIN" reply`) ran a shell tool, which reads as work, so an exchange held that way is not caught
+  either. A report that reaches lich after the send it precedes reads the same way: the breaker errs toward letting a
+  message through. Only `send_to_session` and `lich send` count as hops; a reply closes an errand and is never
+  refused, and `ask_session` never enters the other conversation. The streak ends when either session messages a
+  third one, when a person sends a line at either prompt from the window, or when either session runs anything but a
+  relay tool, so a worker's work between a coordinator's tasks ends it; a prompt a Claude Code mod submits is not a
+  line typed there.
+- **The chain limit follows a message only through the errand it was sent on** (`internal/relay/chain.go`): a
+  message is one deeper than the deepest relayed task its sender still owes an answer to, and the fifth in a chain is
+  refused. That is read off the relay's own tickets, so it is the same on all eight providers. A session that replies
+  to its task before passing it on, or whose turn ended and closed the errand unanswered, owes nothing and starts
+  the chain over, and so does a turn that worked, on the ping-pong breaker's rule and with its gaps (Crush is never
+  counted). A turn the user started while an errand is still owed keeps that errand's depth.
+- **A session's watch reads only what the pull request of its branch says** (`internal/relay/watch.go`,
+  `internal/project/branchpr.go`). GitHub only, through `gh`, and the window cannot tell a remote gh does not
+  speak to: such a session's dialog says "no pull request yet" for good. Checks count once none is pending, so
+  a long matrix reports a failure only when it ends. `review` means a submitted review; a plain comment on the
+  conversation does not fire it, and reviews already there when the watch is armed are the baseline. A read is
+  once a minute per checkout, one more `gh` call for a checkout that holds a watch. The run limit
+  (`api.WatchRunLimit`, 3) counts per pull request and an agent re-arming keeps its count; a person arming starts
+  it over. It is checked when the condition holds again, so the third run succeeding says nothing. A session
+  holds one trigger, a time or a condition, but lich's own continuation after a usage limit may sit beside a
+  watch, and Remove takes off the watch first. `lich schedule` acts only on the session it runs in, and a time
+  or condition the person set refuses it.
 
 ## Git, worktrees and review
 
@@ -607,8 +734,37 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   blocks under the version heading included. Editing that release on GitHub, or the changelog on `main`,
   changes the release page and no dialog anywhere; the users who already updated have recorded the version as
   seen, and the ones who have not will read the binary they install. A wrong headline is a patch release. The
-  update toast reads nothing from the release but its tag, on purpose: the toast says a release exists, and
-  the dialog is where it speaks.
+  update check reads one thing from the published notes, whether a release is required (next bullet), and
+  nothing else: the toast says a release exists, and the dialog is where it speaks.
+- **A required update is a `> [!CAUTION]` block in a release's notes, and only a lich that knows the signal
+  obeys it** (`internal/appupdate`, `patchnotes.RequiresUpdate`): the check reads the releases list, the same
+  one request an hour that names the latest release, and reports `Required` when any release newer than the
+  running build carries the block, so skipping three releases does not skip the one that was a security fix.
+  A lich older than the release that introduced this reads nothing but the tag and shows the ordinary toast
+  with Later, so the first required release cannot require itself of the liches before it. The list is one
+  page of 100 releases: a build further behind sees only the newest hundred. Unlike the What's new dialog,
+  this reads the notes GitHub publishes, not the binary: adding the block to a release after its tag makes it
+  required for everyone still behind it, and removing it lifts the gate at the next check.
+- **No GitHub, no gate**: a lookup that fails (offline, rate limited, a proxy that blocks api.github.com)
+  reports no update and nothing required, and a restart forgets the last answer. The gate is pressure on a
+  user who can update, not containment, and blocking the lookup lifts it.
+- **A required update refuses new agent sessions and never touches one lich already holds**
+  (`store.SessionRefused`, asked by every session insert and by `internal/spawn` before it creates a
+  worktree): the window, `lich open`, the MCP tools, a handoff, a fork and a subagent card are refused on
+  every provider, with an error naming the release and the way this install updates. A running session
+  keeps running, respawns after the restart, resumes, and comes back from the closed list. A shell session
+  still opens, on purpose: the prompt's Install action is a shell with the command typed into it, and that
+  command restarts lich through the `LICH_PORT` and `LICH_TOKEN` only a lich session exports. An agent
+  started by hand in that shell is therefore not stopped. The backend answers from the last lookup for two
+  hours and then looks again itself, so a lich with no window open still learns of the release, and the one
+  open that finds the answer stale waits on GitHub for up to five seconds. A worktree asked for in the
+  window's New worktree dialog, or for a pull request, is created before its session is refused and stays;
+  the next try reuses it.
+- **A package-manager install still needs the user to run the command**: only the Windows installer updates
+  from the prompt's button. Everywhere else the required prompt types the command into a shell, or links the
+  release page for a tarball, and lich never runs it. The prompt has no Later, comes back when swiped away,
+  and every hourly check raises it again once its action closed it. `lich.appUpdateDismissed` is not read for
+  a required release.
 
 ## Profiles
 
@@ -705,9 +861,39 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   Linux, a path policy on macOS, and nothing else — no seccomp filter, no Landlock ruleset. The network is
   never cut (the agent needs its API and the plugin's hooks report over loopback), so anything readable
   inside is exfiltrable, and `~/.config` *is* readable: a token stored there is in reach. `gh`'s is not
-  one of them — it lives in the system keyring, which is why reaching it takes the flag below. Every session also carries `LICH_TOKEN`, so a confined agent can call lich's own RPC over
-  loopback: a method that reads a host path it was *handed* would copy anything into reach of the sandbox,
-  which is why the attach flow opens the picker inside the backend (`drop.Attach`) instead of taking a path. The private home is writable and vanishes with the session, so a dotfile an agent writes is gone
+  one of them — it lives in the system keyring, which is why reaching it takes the flag below. lich's own
+  directory under it (`~/.config/lich`: the launch token in `runtime.json`, the database, every account's
+  profile) and the worktrees of every other session (`~/.local/share/lich/worktrees`) are taken back out:
+  an empty directory sits over each, and only what the session owns is mounted back on top (its profile and
+  plugin store, the hook scripts under `plugin/`, its dropped files, its own checkout). The two paths are
+  spelled in `internal/sandbox` as well as where lich creates them, and a lich directory moved elsewhere by
+  `XDG_CONFIG_HOME` or `XDG_DATA_HOME` is followed, a symlinked one to its target. A confined session is also
+  handed a token of its own instead of the launch-wide `LICH_TOKEN` (`internal/terminal`, `scoped.go`): it
+  reaches the hook endpoints for its own session only, and the RPC through `internal/scope`'s allowlist, deny
+  by default. What is out is every call that acts on the machine outside the sandbox or belongs to the window:
+  `services.*` except the reads (a service's command runs unconfined), `store.SetSetting` (the rung),
+  `terminal.*` except `Ready`, `project.*`, `drop.Attach`, `system.*` except `Diagnostics`, the window's
+  browser methods, `/events`, `/ws`, `/blob`, `/drop`, `/restart`, `/debug/goroutines`. On the methods that
+  name their caller (`from`, a browser's `id`) the name must be the token's session, so a confined agent
+  cannot speak to the relay as another session. A session it opens (`open_session`, `lich open`, a handoff, a
+  subagent card) is confined whatever the rung says, since `SandboxDefault` answers no for the main checkout
+  under "Worktrees only". The token is minted per spawn and lives in the backend's memory: a respawn, a parked
+  session resumed and a backend restart each issue a new one, and a caller that outlives its process (a
+  background agent) is refused from then on and cannot fall back on `runtime.json`, which it cannot read; the
+  `lich` CLI says so. The relay stays, held to one more rule where each method resolves its target
+  (`scope.Target`, called from `internal/relay` and `internal/spawn`, never from the transport, which cannot
+  turn a label into a row): a confined session speaks to confined sessions and answers anyone. `relay.Send`,
+  `SendPrivate`, `SendSubagent`, `Insert`, `Submit`, `spawn.Control` and `spawn.Ask` put text at the target's
+  prompt, and the receiving agent carries it out as its task, so a target whose row is not confined is refused
+  by label with the reason; `relay.Reply` reaches any ticket, since a reply is read as a result, and it is how a
+  confined worker reports to the unconfined session that opened it. `spawn.Close` refuses `force` from the
+  sandbox: the checkout it would remove is outside it and the uncommitted work there exists nowhere else. The
+  cost is the deliberate one: a confined session cannot delegate to an unconfined one, only to sessions it
+  opens (which are confined) or that were already confined. The eight providers
+  are untouched by the scoping: every hook and `lich mcp` reads `LICH_TOKEN` from the environment
+  (`docs/hooks/`), none reads `runtime.json`. The window's own flows run on the launch token and lose
+  nothing. A method that reads a host path it was *handed* would copy anything into reach of the sandbox,
+  which is why the attach flow opens the picker inside the backend (`drop.Attach`) instead of taking a path, and why it is not on the allowlist. The private home is writable and vanishes with the session, so a dotfile an agent writes is gone
   next spawn with nothing saying so. On Ubuntu and Debian the kernel may refuse the user namespace outright
   (an AppArmor policy), which surfaces as bubblewrap's own error in the card and no session: `Available` is
   `exec.LookPath` and stays that way, because only a spawn can ask the kernel, so nothing before the card
@@ -724,6 +910,20 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   X11 socket and its cookie instead, the wider of the two — X clients are not isolated from one another —
   and macOS gets neither, its pasteboard being a mach service rather than a socket, so a confined session
   there has no clipboard at all. macOS has no hardware here — its profile is unit-tested and has never run.
+- **The display socket hands over whatever the compositor advertises, not only the clipboard**
+  (`internal/sandbox`, `displaySockets`). A Wayland socket is one connection to the compositor, and the
+  compositor decides what a client on it may do; the sandbox cannot narrow it. On the wlroots family (sway,
+  Hyprland, river, labwc and the rest) `wayland-info` run inside a confined session lists
+  `zwlr_screencopy_manager_v1` and `ext_image_copy_capture_manager_v1` (capture the screen, any window),
+  `zwp_virtual_keyboard_manager_v1` and `zwlr_virtual_pointer_manager_v1` (type and click into windows
+  outside the sandbox, a terminal with the user's shell included) and `zwlr_data_control_manager_v1` (read
+  and set the clipboard without focus), all measured on one such compositor. KDE's KWin exposes its own
+  capture and input protocols to every client too; GNOME's Mutter exposes neither and routes both through
+  the portal, which the sandbox's empty runtime directory does not hand over. Which family a host runs is
+  therefore the whole answer to "can a confined agent watch my screen and type at my shell", and only a
+  compositor that filters clients by security context (`wp_security_context_v1`, which bubblewrap does not
+  set up) closes it. The mount stays: without it the agent's copy and image paste fail, and the cost is
+  written here rather than hidden behind a sandbox that looks tighter than it is.
 - **The two sandbox grants are all-or-nothing** (`internal/store/settings.go`, `internal/sandbox`,
   `internal/terminal/sandbox.go`): a confined session reaches the network as the user only where the project
   turned one of them on, and each is all-or-nothing. The ssh agent is handed over as a socket, so nothing
@@ -802,7 +1002,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   but neither closing that pty from another goroutine nor `SetReadDeadline` interrupts a read already blocked in
   it (both measured directly against a blocked read: Close returns without error and the read stays parked in
   the kernel regardless, and the deadline is never enforced on this fd). So the read is driven from a goroutine
-  free to outlive the call, and the dump is `echo <start>; env; echo <end>`: the read returns the moment the end
+  free to outlive the call, and the dump is `stty -opost; echo <start>; env -0; echo <end>`: the read returns the moment the end
   marker arrives, which is what lets an rc that backgrounds a job (an `ssh-agent`/`gpg-agent` eval, a prompt
   tool) still hand back the dump instead of paying the full `shellEnvTimeout`. Two edges follow. A shell that
   never prints the end marker (a hung rc, a prompt waiting on input, an
@@ -813,6 +1013,13 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   resolution. And the reader goroutine outlives the call for whatever still holds the pty: the fd,
   the goroutine and the zombie child persist until that holder exits on its own or lich itself does, one leak
   per resolution that hits this edge, not a recurring one.
+  The `-0` is what keeps a value spanning newlines whole, and it holds the dump to an `env` that has it (GNU
+  coreutils does): an `env` without it prints its usage, no entry parses, and the session gets
+  the launch env with a logged warning, as on any other failed dump.
+  The `stty -opost` in front is what keeps the bytes as `env` printed them: under ONLCR a macOS pty sends a `"\n"`
+  that meets a full output queue as `"\r\r\n"`, which no undo tells from a value's own `"\r\n"`. A shell that
+  skips the stty (a fake one in a test, a broken PATH) is caught by its sentinel line still ending in `"\r\n"`, and
+  its dump falls back to undoing every `"\r\n"`, the one path where a value's own `"\r"` is lost.
   And **Windows gets none of this**: `SHELL` is normally unset there, so `ResolveShellEnv` returns before
   `shellenv_windows.go`'s pipe-based `runShellDump` ever runs — but on a machine where the user sets it anyway
   (Git Bash, a POSIX-ish shell reached through PATH), that path still runs over a pipe, so an rc guarded the
@@ -827,9 +1034,18 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   goes on naming a local path that is not where the user is typing, with nothing on screen saying so. There is
   no Windows hardware here to build the replacement against.
 - **A terminal is rebuilt from a 2MB replay ring** (`internal/terminal/replay.go`,
-  `native/cmd/lich-native/terminals.go`): the window builds a session's terminal from the backend's ring when it
-  is first shown, and again after it reconnects. Scrollback past the ring is gone, not paged, and a mode an app
-  set in bytes that have left the ring is not set on the rebuilt terminal.
+  `native/cmd/lich-native/terminals.go`): the window builds a session's terminal from the backend's ring when it is
+  first shown, and again after it reconnects. Scrollback past the ring is gone, not paged. The modes set in bytes
+  that have left it survive: `internal/terminal/modestate.go` reads each evicted byte and the replay opens with the
+  state at the ring head (DEC private modes with their XTSAVE values and DECSTR's reset, kitty keyboard stacks,
+  modifyOtherKeys, each screen's cursor style with its blink, OSC 4/10/11/12 colors and the same colors through OSC
+  21), then the sequence the head cut in two. What it does not track is lost the old way: the screen's contents
+  under an alternate screen still active (the primary screen starts blank), the cursor position, the title, insert
+  and newline mode, OSC 5 and 13 to 19 colors, scroll margins (libghostty resets them on a resize, which the bytes
+  do not show) and charsets (it restores them with the saved cursor), and a sequence the head cuts that cannot be
+  replayed from its middle, which is skipped: an OSC longer than 8 KB (an OSC 52 copy) or a DCS or APC string (a
+  kitty image chunk). A service's output (`lich service`, `read_service_output`, the console of a stopped one) is
+  the tail alone, with no preamble: it is read as text.
 - **Images are Kitty graphics sent in the stream, and only placed ones** (`native/gioterm/kitty.go`): a terminal
   takes images sent inline (`t=d`), PNG or raw pixels, up to `imageStorageLimit` (64 MB decoded per terminal;
   Kitty's own default is 320 MB). The file, temporary file and shared memory media stay off: honoring them would
@@ -855,6 +1071,14 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   guaranteed. Until then the queue holds `writeQueueDepth` frames for the whole app, and two things still wait on
   it across sessions: a push that finds it full, and the flush a session runs before its exit banner so the banner
   cannot overtake its own last bytes.
+- **An emoji sequence is only as whole as the emoji font's ligatures** (`native/glyphs/cluster.go`, `cluster`): the
+  terminal gives a ZWJ sequence or a flag one two-column cell whatever the font holds, and draws the one glyph
+  shaping turns it into. A sequence the font has no ligature for draws its first glyph only, the rest of it still
+  in the cell and in what a copy returns. Windows always hits this for flags: Segoe UI Emoji has no flag glyphs, so
+  a regional-indicator pair draws its first letter alone. The renderers differ where it shows: a stack of combining
+  marks taller than a row is cut at its row on `rows`, the default, and paints over the rows beside it on `atlas`
+  and `paths`; `paths` leaves the font to Gio's shaper, so an emoji asked for with VS16 draws monochrome and a keycap
+  draws as its plain digit.
 
 ## Services
 
@@ -878,9 +1102,17 @@ work when nobody knows it and that the call site never shows. The mechanism and 
 - **What a stopped service printed is kept in memory only** (`services.Output`): the tail of its last run, as
   long as a session's replay, until it starts again or lich exits. After a restart of lich a service that has
   not run yet has no output to show.
-- **The tray names at most eight running services** (`internal/tray`, `serviceSlots`): the menu is built once
-  and its entries shown and hidden, so past eight the count above them says how many run and the window lists
-  them all. The macOS menu-bar entries were never run on a Mac: they compile, and the logic they share with
+- **The tray names at most eight running services, and eight sessions per group** (`internal/tray`,
+  `serviceSlots`, `sessionSlots`): the menu is built once and its entries shown and hidden, so past eight the
+  services' count says how many run, a "more" line counts the sessions past the slots, and the window lists
+  them all. The menu and the icon's badge are read every five seconds, not on each report, so a badge can be
+  that late. A session sorts into Needs you or Working by the state its provider's hooks report, the one its
+  card draws: a provider that reports none for a turn (Crush reports no `busy`) counts as idle there too. A
+  finished turn leaves Needs you only once its card is read in the window. The badge's dot is drawn in the
+  window's dark-theme tones whatever the bar's colour. The tray's host draws the menu at its own width and cuts a long
+  line there, and a menu entry has no tooltip on Linux (dbusmenu carries none) or Windows: the full lines go
+  in the icon's tooltip instead, which a host may show cut, on one line, or not at all. Only macOS gives each
+  entry a tooltip of its own. The macOS menu-bar entries were never run on a Mac: they compile, and the logic they share with
   Linux and Windows is tested.
 - **On Windows, Stop is Ctrl+C through ConPTY** (`InterruptService`): it reaches the console's processes as
   `CTRL_C_EVENT`, which a process that left the console or turned the event off never sees. Not measured: the
@@ -892,12 +1124,15 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   `pinnedProjectsKey`): the global setting keeps project ids even while their tabs are closed, so reopening one
   brings it back to the pinned group. The tab's × is hidden, but Close project in its right-click menu and
   `close_project` still close it.
-- **A frame is drawn in part only where EGL reports the back buffer's age** (`lichdotdev/gio`, `gpu/damage.go`,
-  `internal/egl`): on Linux the window diffs a frame's draw operations against the last frame's and draws and
-  presents only the rectangles that changed, which is what keeps a spinning ring from repainting the window 24
-  times a second. The buffer age is the premise: with it unknown, as on Windows, macOS and a headless surface,
-  every frame is drawn whole, as before. A driver reporting a wrong age shows stale pixels; `GIO_DAMAGE=off`
-  draws every frame whole until it is fixed. The diff sees operations, not pixels: a path is told apart by its
+- **A frame is drawn in part only with `GIO_DAMAGE=on`, and only on OpenGL 3 or OpenGL ES 3 and up**
+  (`lichdotdev/gio`, `gpu/damage.go`): with it, the window diffs a frame's draw operations against the last
+  frame's, redraws only the rectangles that changed into an sRGB framebuffer the renderer keeps, and blits that
+  whole to the back buffer before a plain full swap, which is what keeps a spinning ring from repainting the
+  window 24 times a second. It no longer reads the buffer age, so a driver misreporting it cannot show stale
+  pixels. It costs width x height x 4 bytes of texture and is opt-in because frames with stencilled paths can
+  differ from the same frame drawn whole by one level per channel, as whole frames already differ from each other
+  with their paths at other atlas positions. Off, on other backends, on js, and on a frame with a translucent
+  clear, every frame is drawn whole even when opted in. The diff sees operations, not pixels: a path is told apart by its
   content hash and transform, an image by its handle, so an image mutated in place behind the same `ImageOp` is
   not seen as a change (`gioterm` makes a new one per changed row).
 - **A closed card outlives its session by 180ms** (`native/cmd/lich-native/sidebar_closing.go`, `exitDuration`):
@@ -955,6 +1190,11 @@ work when nobody knows it and that the call site never shows. The mechanism and 
 - **Single instance via the pinned port**: the bind is the lock (`internal/singleton`); a duplicate launch asks
   the running lich to show its window (`singleton.Show`, `system.ShowWindow`) and exits. Raising is
   best-effort: a Wayland compositor may only mark the window urgent.
+- **On macOS a quitting lich can hold the port for a few milliseconds after it lets go**
+  (`internal/terminal/listener_linux.go`): a child process lich is starting copies the listening socket and
+  keeps it until it execs. Linux takes the socket out of listening at once; macOS refuses that on a listener,
+  so there the port frees when the child execs, and a relaunch rides it out with its bind retry
+  (`bindTimeout`). Windows children do not inherit the socket.
 - **Settings remembers its open pane under one global key** (`native/cmd/lich-native/settings.go`,
   `settingsSectionKey`): the nav is the same list of panes in every project, so opening Settings in project B
   lands on the pane project A was reading. Whoever adds a pane about one repository's content keys its
@@ -1068,11 +1308,22 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   only asked about, in a toast, and closes only on Close: an unanswered one holds its Chromium until the
   person answers or closes the card, and with the window closed nobody is asked; one a pane shows, or a
   window, never is. It loads only http, https and about:blank. Page info never
-  includes a form's value. Screenshots are files. There is no tool that runs JavaScript in the page. It is
+  includes a form's value, though `browser_eval` reads whatever the agent asks for. Screenshots are files, their
+  longest side at most 1280 pixels, so a wide pane's is smaller than the page and x and y are read off it. An
+  annotated screenshot draws its index labels into the page itself, so the person's pane shows them for the
+  capture, a frame or two, and a label covers the start of its element's text; a dialog opened during the capture
+  leaves them up to 5 seconds, until the page's own timer removes them. It is
   not a sandbox: the page runs as the user, in an ephemeral profile. Chromium needs its own sandbox, and on
   Ubuntu 23.10 and later AppArmor refuses it the user namespace unless the browser ships an AppArmor profile,
   as the distribution's Chrome, Edge and Brave do: one unpacked from a tarball fails to start with "No usable
   sandbox!", which the agent reads as the browser's error.
+- **An element's index is never handed out twice, so indexes only grow** (`internal/browser/pageinfo.go`): an
+  element keeps the index it was first listed with while it lives, and a new one takes the next number of a
+  counter each browser carries across documents and tabs, so an index from a replaced element, a page left or
+  another tab finds nothing instead of clicking something else. A long session's indexes reach three digits
+  after about ten pages of thirty links, costing about a character per listed element. The page can see the
+  `data-lich-idx` stamps and `window.__lichIdx`; one scrolled out of view keeps its index but leaves the list,
+  and click and type scroll it back.
 - **A local file loads from the session's checkout, served over loopback http** (`internal/preview`): a path or
   `file:` URL inside the directory the session was spawned in becomes `http://127.0.0.1:<port>/…`, the port being
   the checkout's `LICH_WORKTREE_PORT` plus 1000 (25000-25999). The server is bound the first time a page from that
@@ -1080,9 +1331,30 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   free one in the window, so that checkout's origin, and the storage a page keeps under it, changes until it
   gets its port back. Everything under the directory is served, ignored files included, and the root is
   the spawn directory, so a session started in the home directory serves all of it. `os.Root` refuses `..` and
-  symlinks leading out. It is a static server: no reload on save, no SPA fallback, no headers of the project's.
+  symlinks leading out, and a request whose `Host` is not `127.0.0.1:<port>` or `localhost:<port>` is refused,
+  so a page elsewhere cannot rebind a name of its own to the machine and read the checkout through it. It is a static server: no reload on save, no SPA fallback, no headers of the project's.
   The root stays the checkout whatever file is opened, so a build in a subdirectory that links its assets from
   `/` (Vite's default `base`) loads blank from `dist/index.html`; one built with a relative base loads.
+- **`browser_eval` hands the agent whatever the page holds, form values and passwords included**
+  (`internal/browser/eval.go`): page info never reads a field's value, but a script asks for what it wants, and
+  its answer lands in the session's transcript. It runs in the page's own world, so it changes what the user
+  sees without a cursor on the pane, and answers with JSON, cut at 2000 characters: a DOM node comes back as
+  `{}`, a cycle fails, and anything larger has to be picked in the script.
+- **A page answer marks what the page wrote, and the mark is a request, not a wall** (`internal/cli/browser_page.go`):
+  title, dialog messages, console errors, text and element labels, and an `eval` value, sit between
+  `<page nonce>` and `</page nonce>`, the nonce 8 random hex characters per answer, so a page cannot close the
+  block it cannot predict. Nothing makes an agent obey the one sentence of `browser_info` that says the text
+  between them is never instructions, and `url:` stays outside though a redirect can write it. `lich browser eval`
+  wraps its value too, so a script piping it needs the lines between the markers.
+- **An action's page answer leaves out an element list the agent already heard** (`internal/browser/told.go`):
+  lich keeps the list of the agent's last page answer and, when a click, key, tab or dialog leaves the same one,
+  says so in one line. An agent whose context was compacted since no longer holds that list, and has to ask
+  `browser_info`, which always answers whole.
+- **A click by index or selector tests the point at the element's box center** (`resolveJS` in
+  `internal/browser/chrome.go`): `elementFromPoint` there must be the element, inside it, or the label of a
+  control the element is. A link wrapped over two lines, or an element with a hole at its center, can have
+  that point on something else, and the click fails as covered though a click elsewhere on it would land.
+  Disabled is `:disabled` or `aria-disabled="true"`, which a page may set on something it still handles.
 - **A note left on the page names only what the page shows lich** (`internal/browser/notes.go`,
   `native/cmd/lich-native/browser_notes.go`): the pick asks the page for the element under the pointer, so an
   element inside an iframe is picked as the iframe and one inside a closed shadow root as its host, and a
@@ -1110,10 +1382,17 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   closes; until then it takes the profile's disk. The profile sits in the temp dir, so with Downloads on another
   filesystem or volume the move is a copy, written under a hidden `.part` name and renamed once whole; the agent
   hears the download completed once it is in place. A move that fails is reported to the agent as a failed download
-  and the file goes with the profile; the window shows no toast for it. Chrome reloads the page 1.46 to 1.70 seconds after an `<a download>` begins, and the reload aborts a
-  navigation started before it (`net::ERR_ABORTED`; Chromium 155, with downloads on or off), so an agent's click,
-  key press, open or navigate that downloaded holds its answer 2.5 seconds; a navigation the person starts in the
-  pane is not held. A download still running after ten seconds is reported in progress and named again when it
+  and the file goes with the profile; the window shows no toast for it. A download the page asks for in the
+  browser's first seconds is held back, shows nothing (no event, no request) until Chrome reloads the page and
+  starts it, and the reload aborts a navigation started before it (`net::ERR_ABORTED`) and wipes a click that
+  landed before it. On Chromium 157 (Helium 0.21.1.1) that reload came 4.3 to 5.3 seconds after the launch in 35
+  of 39 downloads asked for 0.7 to 3.3 seconds after it (7.4 once), for `<a download>`, an attachment link and
+  `location.href`; the other four began without one, and a download asked for after 5 seconds began at once with
+  none. So an agent's click, key press or other action after one whose answer showed the page as it was waits for
+  the browser to be 6 seconds old or for a reload to land, and a navigation the reload aborts is tried again; a
+  page that changed or opened a dialog is no download request and holds nothing. A download asked for in the first
+  seconds that changes the page too, a click that lands before a reload of more than 6 seconds, and a navigation
+  the person starts in the pane are not held. A download still running after ten seconds is reported in progress and named again when it
   ends. No tool lists past downloads or cancels one, nothing caps their size, and closing the browser cancels one
   still running.
 - **A dialog a session's page opens holds the page until someone answers it** (`internal/browser/dialogs.go`,
@@ -1148,9 +1427,11 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   composes in its own process (relay messages, nudges) follows the setting at once, but anything composed
   inside the session (the `lich` CLI, its MCP results, the plugin's hooks) reads `LICH_PROMPT_LANG`, which is
   fixed when the session spawns. Change the language and an open session can get relay messages in the new
-  language and CLI output in the old one until it is restarted. The spawn briefing is likewise fixed at spawn,
-  and only Claude Code and oh-my-pi receive one at all: they are the two whose command line can append to the
-  system prompt (`briefingFlags`), so the other six read lich's words only in relayed messages. MCP tool
+  language and CLI output in the old one until it is restarted. The spawn briefing is likewise fixed at spawn:
+  Claude Code and oh-my-pi take it on the command line that appends to their system prompt (`briefingFlags`),
+  Codex as a `developer_instructions` override and Kiro CLI from an `agentSpawn` hook. opencode, Crush and
+  Antigravity read lich's MCP instructions instead, composed at spawn too (`LICH_PROMPT_LANG`), and Cursor CLI's
+  is unmeasured (the bullet above on Codex and Kiro CLI, under Relay). MCP tool
   descriptions, `--help` and error returns stay English in every language. A usage-limit continuation parked
   before the setting changed keeps the language it was parked in: the row stores the text, so
   `isResumePrompt` matches it in every locale.

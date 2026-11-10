@@ -34,5 +34,9 @@
     "item": "{index}. {label} em {url}",
     "note": "Nota: {note}",
     "selectors": "Cada seletor acima serve como o selector de browser_click e browser_type."
+  },
+  "schedule": {
+    "checksFailed": "Os checks deste pull request falharam. Leia com gh, corrija a causa e faça push.",
+    "review": "Chegou uma nova revisão neste pull request. Leia com gh e resolva o que ela pede."
   }
 }

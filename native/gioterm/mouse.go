@@ -81,6 +81,13 @@ static GhosttyMouseTrackingMode mouse_tracking(GhosttyTerminal t) {
 	return m;
 }
 
+static bool any_mouse(GhosttyTerminal t) {
+	GhosttyTerminalModeConfig c = {0};
+	c.mode = GHOSTTY_MODE_ANY_MOUSE;
+	if (ghostty_terminal_get(t, GHOSTTY_TERMINAL_DATA_MODE, &c) != GHOSTTY_SUCCESS) return false;
+	return c.value;
+}
+
 static GhosttyResult encode_mouse(GhosttyMouseEncoder enc, GhosttyMouseEvent ev, GhosttyTerminal t,
 		GhosttyMouseAction action, GhosttyMouseButton button, GhosttyMods mods, float x, float y,
 		uint32_t cols, uint32_t rows, uint32_t cell_w, uint32_t cell_h, bool any_pressed,
@@ -165,6 +172,18 @@ func (v *Terminal) MouseTracking() bool {
 		return false
 	}
 	return C.mouse_tracking(v.t) != C.GHOSTTY_MOUSE_TRACKING_NONE
+}
+
+// MouseMotion reports whether the program asked for every motion of the
+// pointer, buttons up (mode 1003). The other modes report motion only while a
+// button is held, which Gio delivers as a drag.
+func (v *Terminal) MouseMotion() bool {
+	v.mu.Lock()
+	defer v.mu.Unlock()
+	if v.closed {
+		return false
+	}
+	return bool(C.any_mouse(v.t))
 }
 
 // EncodeMouse is what the program expects for a pointer event at pixel

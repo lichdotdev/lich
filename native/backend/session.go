@@ -39,6 +39,12 @@ func (c *Client) RenameSession(ctx context.Context, sessionID, label string) err
 	return err
 }
 
+// SetSchedule sets, replaces or clears the trigger a session waits on.
+func (c *Client) SetSchedule(ctx context.Context, opts api.SetScheduleOptions) error {
+	_, err := callMethod(ctx, c, api.RelaySetSchedule, opts)
+	return err
+}
+
 // SetSessionColor tints a session's card, "" for the theme's.
 func (c *Client) SetSessionColor(ctx context.Context, sessionID, color string) error {
 	_, err := callMethod(ctx, c, api.StoreSetSessionColor, api.SessionColorOptions{SessionID: sessionID, Color: color})

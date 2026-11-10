@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"os"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strconv"
 	"strings"
@@ -22,6 +23,36 @@ func newTestStore(t testing.TB) *Service {
 	}
 	t.Cleanup(func() { _ = svc.Close() })
 	return svc
+}
+
+// The directory holds prompts and session text, so an install made before the
+// directory was private is tightened on the next start.
+func TestOpenMakesTheDatabaseDirectoryPrivate(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Windows has no POSIX modes")
+	}
+	parent := t.TempDir()
+	dir := filepath.Join(parent, "lich")
+	if err := os.Mkdir(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(parent, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	svc, err := open(filepath.Join(dir, "lich.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = svc.Close() })
+	for path, want := range map[string]os.FileMode{dir: 0o700, parent: 0o755} {
+		info, err := os.Stat(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got := info.Mode().Perm(); got != want {
+			t.Errorf("%s mode = %o, want %o", path, got, want)
+		}
+	}
 }
 
 // TestOpenCommitsWithoutAJournalFilePerWrite pins the journal setup: the
@@ -1026,7 +1057,7 @@ func TestOpenDropsTheTerminalThemeSetting(t *testing.T) {
 	_, _ = before.SetSetting(t.Context(), api.SetSettingOptions{Key: "appearance.terminalTheme", ProjectID: "p1", Value: "emerald"})
 	_, _ = before.SetSetting(t.Context(), api.SetSettingOptions{Key: "appearance.theme", Value: "rose-pine"})
 	_ = before.Close()
-	seedDB(t, path, `ALTER TABLE sessions DROP COLUMN effort; ALTER TABLE sessions DROP COLUMN ultracode; ALTER TABLE sessions DROP COLUMN subagent; ALTER TABLE session_costs DROP COLUMN reported; ALTER TABLE sessions DROP COLUMN color; ALTER TABLE sessions DROP COLUMN profile; ALTER TABLE sessions DROP COLUMN forked; DROP TABLE provider_session_tombstones; DROP TRIGGER sessions_tombstone_ad; DROP TRIGGER sessions_tombstone_ai; DROP TRIGGER sessions_tombstone_au; DROP TABLE project_services; DROP TABLE thread_fixes; PRAGMA user_version = 0`)
+	seedDB(t, path, `ALTER TABLE sessions DROP COLUMN scheduled_by; ALTER TABLE sessions DROP COLUMN watch_on; ALTER TABLE sessions DROP COLUMN watch_prompt; ALTER TABLE sessions DROP COLUMN watch_by; ALTER TABLE sessions DROP COLUMN watch_runs; ALTER TABLE sessions DROP COLUMN watch_pr; ALTER TABLE sessions DROP COLUMN watch_seen; ALTER TABLE sessions DROP COLUMN effort; ALTER TABLE sessions DROP COLUMN ultracode; ALTER TABLE sessions DROP COLUMN subagent; ALTER TABLE session_costs DROP COLUMN reported; ALTER TABLE sessions DROP COLUMN color; ALTER TABLE sessions DROP COLUMN profile; ALTER TABLE sessions DROP COLUMN forked; DROP TABLE provider_session_tombstones; DROP TRIGGER sessions_tombstone_ad; DROP TRIGGER sessions_tombstone_ai; DROP TRIGGER sessions_tombstone_au; DROP TABLE project_services; DROP TABLE thread_fixes; PRAGMA user_version = 0`)
 
 	after, err := open(path)
 	if err != nil {
@@ -1633,5 +1664,27 @@ func TestSetSessionUnreadIgnoresAMissingSession(t *testing.T) {
 	svc := newTestStore(t)
 	if _, err := svc.SetSessionUnread(t.Context(), api.SessionUnreadOptions{SessionID: "ghost", Unread: true}); err != nil {
 		t.Fatalf("SetSessionUnread on a missing session: %v", err)
+	}
+}
+
+func TestUnreadSessionsListsOnlyTheMarked(t *testing.T) {
+	svc := newTestStore(t)
+	if _, err := svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "demo", Path: "/tmp/demo"}); err != nil {
+		t.Fatalf("AddProject: %v", err)
+	}
+	for _, id := range []string{"s1", "s2"} {
+		if _, err := svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: id, Label: id, NextSeq: 2}); err != nil {
+			t.Fatalf("AddSession(%s): %v", id, err)
+		}
+	}
+	if _, err := svc.SetSessionUnread(t.Context(), api.SessionUnreadOptions{SessionID: "s2", Unread: true}); err != nil {
+		t.Fatalf("SetSessionUnread: %v", err)
+	}
+	unread, err := svc.UnreadSessions()
+	if err != nil {
+		t.Fatalf("UnreadSessions: %v", err)
+	}
+	if len(unread) != 1 || !unread["s2"] {
+		t.Errorf("UnreadSessions = %v, want only s2", unread)
 	}
 }

@@ -12,6 +12,7 @@ browser.Close(SessionIDOptions) None
 browser.DefaultView(BrowserDefaultViewOptions) None
 browser.Detach(SessionIDOptions) None
 browser.ElementAt(BrowserPointOptions) BrowserElement
+browser.Eval(BrowserEvalOptions) string
 browser.Forward(SessionIDOptions) None
 browser.Info(BrowserInfoOptions) BrowserPageInfo
 browser.Keep(SessionIDOptions) None
@@ -147,10 +148,12 @@ relay.Focused(None) FocusedSession
 relay.Insert(InsertTextOptions) InsertedText
 relay.Peers(PeersOptions) []Peer
 relay.Reply(ReplyOptions) None
+relay.ScheduleSelf(ScheduleSelfOptions) None
 relay.Self(SelfOptions) Peer
 relay.Send(SendOptions) SendResult
 relay.SendPrivate(SendOptions) SendResult
 relay.SendSubagent(SendOptions) SendResult
+relay.SetSchedule(SetScheduleOptions) None
 relay.SetShown(ShownSessionOptions) None
 relay.Submit(SubmitOptions) None
 relay.Wait(WaitOptions) SendResult
@@ -172,6 +175,7 @@ spawn.ColorFolder(ColorFolderOptions) ColoredFolder
 spawn.Control(ControlSessionOptions) ControlledSession
 spawn.File(FileSessionOptions) FiledSession
 spawn.Folders(FoldersOptions) []SessionFolder
+spawn.Handoff(HandoffSessionOptions) OpenedSession
 spawn.Open(OpenSessionOptions) OpenedSession
 spawn.OpenSubagent(OpenSubagentOptions) OpenedSession
 spawn.Project(ProjectRefOptions) ProjectRef
@@ -233,6 +237,7 @@ terminal.ResumeAvailable(ResumeAvailableOptions) bool
 terminal.SearchTranscripts(SearchTranscriptsOptions) []TranscriptMatch
 terminal.SetVisible(SetVisibleOptions) None
 terminal.Start(StartOptions) None
+terminal.TakeProfileOffer(ContinueInOptions) None
 terminal.TurnStates(None) []TurnState
 terminal.WorkdirMissing(WorkdirOptions) bool
 terminal.Write(WriteOptions) None
@@ -277,16 +282,20 @@ event session-limit SessionLimit
 event session-mcp SessionMCP
 event session-opened OpenedSession
 event session-profile SessionProfile
+event session-profile-offer SessionProfileOffer
 event session-relay SessionRelay
 event session-relay-stalled RelayStalled
 event session-sandbox SessionSandbox
 event session-schedule SessionSchedule
+event session-schedule-by SessionScheduleBy
 event session-schedule-forfeited ScheduleForfeited
 event session-status SessionStatus
 event session-title SessionTitle
 event session-todo SessionTodo
 event session-touched SessionTouched
 event session-usage SessionUsage
+event session-watch SessionWatchChange
+event session-watch-stopped SessionWatchStopped
 event sessions-colored SessionsColored
 event sessions-filed SessionsFiled
 event terminal:data:<id> string
@@ -318,6 +327,7 @@ AppUpdateStatus {
 	currentVersion string
 	latestVersion string
 	updateAvailable bool
+	required bool
 	canSelfApply bool
 	releaseUrl string
 	installCommand string
@@ -335,6 +345,7 @@ BrowserPageInfo {
 	text string
 	interactive []BrowserInteractive
 	truncated bool
+	interactiveSame,omitempty bool
 	downloads,omitempty []BrowserDownload
 	waitTimedOut,omitempty bool
 	consoleErrors,omitempty []string
@@ -390,10 +401,16 @@ BrowserElement {
 	box BrowserRect
 }
 
+BrowserEvalOptions {
+	id string
+	script string
+}
+
 BrowserInfoOptions {
 	id string
 	waitFor,omitempty string
 	waitGone,omitempty string
+	within,omitempty string
 }
 
 BrowserKeyOptions {
@@ -462,6 +479,7 @@ BrowserState {
 BrowserScreenshotOptions {
 	id string
 	path string
+	annotate bool
 }
 
 BrowserScrollOptions {
@@ -998,6 +1016,13 @@ ReplyOptions {
 	answer string
 }
 
+ScheduleSelfOptions {
+	from string
+	at int64
+	on string
+	prompt string
+}
+
 SelfOptions {
 	from string
 }
@@ -1016,6 +1041,13 @@ SendResult {
 	status string
 	answer string
 	private,omitempty bool
+}
+
+SetScheduleOptions {
+	sessionId string
+	at int64
+	on string
+	prompt string
 }
 
 ShownSessionOptions {
@@ -1157,16 +1189,12 @@ SessionFolder {
 	sessions []string
 }
 
-OpenSessionOptions {
+HandoffSessionOptions {
 	from string
-	project string
 	kind string
-	worktree string
-	base string
 	model string
 	effort string
-	folder string
-	ultracode bool
+	profile string
 }
 
 OpenedSession {
@@ -1182,6 +1210,19 @@ OpenedSession {
 	originLabel string
 	confined bool
 	folder string
+	profileDropped,omitempty string
+}
+
+OpenSessionOptions {
+	from string
+	project string
+	kind string
+	worktree string
+	base string
+	model string
+	effort string
+	folder string
+	ultracode bool
 }
 
 OpenSubagentOptions {
@@ -1391,6 +1432,8 @@ Session {
 	forked bool
 	scheduledAt int64
 	scheduledPrompt string
+	scheduledBy string
+	watch SessionWatch
 	unread bool
 	mcpServers []string
 	sandboxSkippedLinks []string
@@ -1613,8 +1656,14 @@ UpdateThemeOptions {
 
 TrayLabels {
 	show string
-	running string
 	quit string
+	noSessions string
+	needsYou string
+	working string
+	idle string
+	more string
+	waiting string
+	done string
 	servicesRunning string
 	showOutput string
 	restart string
@@ -1750,6 +1799,12 @@ SessionProfile {
 	profile string
 }
 
+SessionProfileOffer {
+	id string
+	profile string
+	handoff bool
+}
+
 SessionRelay {
 	id string
 	peer string
@@ -1775,6 +1830,11 @@ SessionSchedule {
 	prompt,omitempty string
 }
 
+SessionScheduleBy {
+	id string
+	by string
+}
+
 ScheduleForfeited {
 	label string
 	at int64
@@ -1787,6 +1847,7 @@ SessionStatus {
 	tool,omitempty string
 	detail,omitempty string
 	reason,omitempty string
+	program,omitempty bool
 }
 
 SessionTitle {
@@ -1814,6 +1875,18 @@ SessionUsage {
 	costUsd,omitempty *float64
 	costMiss,omitempty string
 	cache,omitempty *SessionCache
+}
+
+SessionWatchChange {
+	id string
+	watch SessionWatch
+}
+
+SessionWatchStopped {
+	id string
+	label string
+	number int
+	runs int
 }
 
 SessionsColored {
@@ -2011,6 +2084,15 @@ CostTotal {
 	unpriced int
 	source string
 	costUsd float64
+}
+
+SessionWatch {
+	on string
+	prompt string
+	by string
+	runs int
+	pr int
+	seen string
 }
 
 ThemeSource {

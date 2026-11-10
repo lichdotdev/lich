@@ -17,6 +17,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -27,6 +28,7 @@ import (
 	_ "modernc.org/sqlite"
 
 	"github.com/lichdotdev/lich/api"
+	"github.com/lichdotdev/lich/internal/prompt"
 )
 
 // schema is the version-1 shape, applied once by the first migration
@@ -231,6 +233,8 @@ const busyTimeoutMS = 5000
 // Service owns the SQLite connection and exposes persistence to the window.
 type Service struct {
 	db *sql.DB
+	// sessionGate, when set, may refuse a new session. See SetSessionGate.
+	sessionGate func() error
 	// sessionGone, when set, is told the id of every session whose row is
 	// deleted for good. See SetSessionGone.
 	sessionGone func(sessionID string)
@@ -369,8 +373,14 @@ func New() (*Service, error) {
 // deleting a rollback journal per write, which on Windows costs tens of
 // milliseconds a commit; a power loss can drop the last commits, never corrupt.
 func open(path string) (*Service, error) {
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+	dir := filepath.Dir(path)
+	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return nil, fmt.Errorf("create data directory: %w", err)
+	}
+	// MkdirAll leaves an existing directory as it was, and installs made before
+	// it was private hold the database and its prompts in a 0755 one.
+	if err := os.Chmod(dir, 0o700); err != nil {
+		slog.Warn("could not make the data directory private", "dir", dir, "err", err)
 	}
 
 	dsn := fmt.Sprintf("file:%s?_pragma=foreign_keys(1)&_pragma=busy_timeout(%d)&_pragma=journal_mode(WAL)&_pragma=synchronous(NORMAL)", path, busyTimeoutMS)
@@ -596,8 +606,8 @@ func (s *Service) ProjectAt(path string) (string, string) {
 func (s *Service) sessionsOf(projectID string) ([]Session, error) {
 	rows, err := s.db.Query(
 		`SELECT id, label, kind, path, provider_session_id, sandbox, pinned,
-		        folder, color, profile, model, origin_session_id, origin_label, forked, scheduled_at, scheduled_prompt, unread,
-		        mcp_servers, sandbox_links
+		        folder, color, profile, model, origin_session_id, origin_label, forked, scheduled_at, scheduled_prompt, scheduled_by, unread,
+		        mcp_servers, sandbox_links, watch_on, watch_prompt, watch_by, watch_runs, watch_pr, watch_seen
 		   FROM sessions WHERE project_id = ? AND is_open = 1 ORDER BY position, rowid`,
 		projectID,
 	)
@@ -614,12 +624,16 @@ func (s *Service) sessionsOf(projectID string) ([]Session, error) {
 			&sess.ID, &sess.Label, &sess.Kind, &sess.Path, &sess.ProviderSessionID,
 			&sess.Sandbox, &sess.Pinned, &sess.Folder, &sess.Color, &sess.Profile, &sess.Model,
 			&sess.OriginSessionID, &sess.OriginLabel, &sess.Forked,
-			&sess.ScheduledAt, &sess.ScheduledPrompt, &sess.Unread, &servers, &links,
+			&sess.ScheduledAt, &sess.ScheduledPrompt, &sess.ScheduledBy, &sess.Unread, &servers, &links,
+			&sess.Watch.On, &sess.Watch.Prompt, &sess.Watch.By, &sess.Watch.Runs, &sess.Watch.PR, &sess.Watch.Seen,
 		); err != nil {
 			return nil, fmt.Errorf("scan session: %w", err)
 		}
 		sess.MCPServers = decodeStrings(servers)
 		sess.SandboxSkippedLinks = decodeStrings(links)
+		if prompt.IsResume(sess.ScheduledPrompt) {
+			sess.ScheduledBy = api.ScheduledByLich
+		}
 		sessions = append(sessions, sess)
 	}
 	if err := rows.Err(); err != nil {

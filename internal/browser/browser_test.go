@@ -18,7 +18,7 @@ func testService(t *testing.T, launch *fakeLauncher) *Service {
 		return t.TempDir(), nil
 	}, func() time.Time { return now }, 5*time.Minute)
 	s.now = func() time.Time { return now }
-	s.quiet = 0
+	s.startup, s.reloadWait = 0, 0
 	t.Cleanup(func() { _ = s.Cleanup() })
 	return s
 }
@@ -147,7 +147,7 @@ func TestCloseOwnedByAndCleanup(t *testing.T) {
 func TestActionsNeedABrowserAndRecordOnThePage(t *testing.T) {
 	launch := &fakeLauncher{}
 	s := testService(t, launch)
-	if _, err := s.Info("missing"); !errors.Is(err, errNoBrowser) {
+	if _, err := s.Info("missing", ""); !errors.Is(err, errNoBrowser) {
 		t.Fatalf("Info with none: %v", err)
 	}
 
@@ -324,7 +324,7 @@ func TestUseWithdrawsTheIdleQuestion(t *testing.T) {
 	}
 	now = now.Add(2 * time.Minute)
 	s.Reap()
-	if _, err := s.Info("s"); err != nil {
+	if _, err := s.Info("s", ""); err != nil {
 		t.Fatalf("the agent lost an idle browser it went back to: %v", err)
 	}
 	if running := s.Running(); len(running) != 1 || running[0].Idle {
@@ -374,6 +374,18 @@ func TestNavigateUpdatesHandle(t *testing.T) {
 	}
 }
 
+func TestShotScaleCapsTheLongSideAt1280(t *testing.T) {
+	cases := []struct {
+		w, h int
+		want float64
+	}{{800, 600, 1}, {1280, 720, 1}, {2560, 1000, 0.5}, {1000, 2560, 0.5}, {0, 0, 1}}
+	for _, c := range cases {
+		if got := shotScale(c.w, c.h); got != c.want {
+			t.Errorf("shotScale(%d, %d) = %g, want %g", c.w, c.h, got, c.want)
+		}
+	}
+}
+
 func TestScreenshotWritesTheAskedPath(t *testing.T) {
 	s := testService(t, &fakeLauncher{})
 	if _, err := s.Open("s", ""); err != nil {
@@ -397,7 +409,7 @@ func TestFailedInfoDropsTheBrowser(t *testing.T) {
 	}
 	launch.pages[0].infoErr = errors.New("chrome gone")
 	launch.pages[0].dead = true
-	if _, err := s.Info("s"); err == nil {
+	if _, err := s.Info("s", ""); err == nil {
 		t.Fatal("Info succeeded on a dead page")
 	}
 	list, _ := s.List("s")
@@ -475,7 +487,7 @@ func TestInfoReturnsPageInfoWithoutDroppingTheBrowser(t *testing.T) {
 	}
 	launch.pages[0].title = "Example"
 	launch.pages[0].info = PageInfo{Title: "Example", Text: "hello", Interactive: []Interactive{{Tag: "a", Text: "Home"}}}
-	info, err := s.Info("s")
+	info, err := s.Info("s", "")
 	if err != nil {
 		t.Fatal(err)
 	}

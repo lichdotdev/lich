@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/lichdotdev/lich/api"
+	"github.com/lichdotdev/lich/internal/scope"
 )
 
 // Insert is the other half of what an editor needs from lich: put text at a
@@ -48,16 +49,16 @@ type InsertOptions = api.InsertTextOptions
 // permission prompt is refused: what is typed there is read by the dialog, not
 // the prompt. A person's half-written line is not a reason to refuse; the text
 // is added to the end of it, which is where it was meant to go.
-func (s *Service) Insert(_ context.Context, opts InsertOptions) (Inserted, error) {
+func (s *Service) Insert(ctx context.Context, opts InsertOptions) (Inserted, error) {
 	fromID, target, project, text, waitSeconds := opts.From, opts.Target, opts.Project, opts.Text, opts.WaitSeconds
 	wait := defaultInsertWait
 	if waitSeconds > 0 {
 		wait = min(time.Duration(waitSeconds)*time.Second, MaxWait)
 	}
-	return s.insert(fromID, target, project, text, wait)
+	return s.insert(ctx, fromID, target, project, text, wait)
 }
 
-func (s *Service) insert(fromID, target, project, text string, wait time.Duration) (Inserted, error) {
+func (s *Service) insert(ctx context.Context, fromID, target, project, text string, wait time.Duration) (Inserted, error) {
 	text = sanitize(text)
 	if strings.TrimSpace(text) == "" {
 		return Inserted{}, errors.New("nothing to insert: the text is empty")
@@ -68,6 +69,9 @@ func (s *Service) insert(fromID, target, project, text string, wait time.Duratio
 	}
 	dest, err := s.insertTarget(fromID, target, project)
 	if err != nil {
+		return Inserted{}, err
+	}
+	if err := scope.Target(ctx, dest.Peer.Label, dest.Confined); err != nil {
 		return Inserted{}, err
 	}
 	if s.reportedState(dest.ID) == stateWaiting {

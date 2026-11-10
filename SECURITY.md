@@ -19,6 +19,13 @@ expected.
 The latest release only. lich updates in place on Windows and macOS and through
 the AUR on Arch, so a fix ships as a new version rather than as a backport.
 
+A release that fixes a vulnerability can mark its update as required. A lich
+behind it then shows an update prompt that cannot be put off and opens no new
+agent session until the update is installed; sessions already running keep
+working, and a shell still opens so the update can be run. lich learns this
+from GitHub's release list, so a lich that cannot reach GitHub is not told, and
+versions from before this mechanism only offer the update.
+
 ## What the attack surface actually is
 
 lich runs entirely on your machine. There is no server, no account and no
@@ -29,7 +36,17 @@ telemetry, so the interesting boundaries are local ones:
   every request is authenticated by a per-run token. Anything that reaches it
   without that token, or from off-host, is a vulnerability.
 - **The session token.** It is never written to the log. Finding it in a log,
-  a crash report or a URL is a vulnerability.
+  a crash report or a process's command line is a vulnerability.
+- **The sandbox's token.** A session running in the sandbox is handed a token
+  of its own, not the launch token, and that token answers only to an allowlist
+  of calls (`internal/scope`) and to the hook endpoints for its own session.
+  The launch token's record, lich's database and the other sessions' checkouts
+  are hidden from the sandbox. A confined session reaching a denied call, the
+  launch token, or another session's state is a vulnerability, and so is a
+  confined session putting text at the prompt of a session that is not
+  confined, by any method: the receiving agent would carry it out on the
+  machine. What it may still do by design is listed in `docs/ceilings.md`
+  under Sandbox: message confined sessions, reply to anyone.
 - **The workspace.** Projects, sessions and settings live in SQLite under your
   config directory.
 - **`GH_TOKEN`.** A project can name the GitHub account `gh` runs as, which

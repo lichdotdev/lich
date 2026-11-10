@@ -4,28 +4,10 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"strings"
 	"testing"
 )
-
-func TestParseTag(t *testing.T) {
-	tests := []struct {
-		name, json, want string
-	}{
-		{"v prefix", `{"tag_name":"v0.2.0"}`, "0.2.0"},
-		{"no prefix", `{"tag_name":"1.4.2"}`, "1.4.2"},
-		{"pre-release", `{"tag_name":"v0.2.0-rc.3"}`, "0.2.0-rc.3"},
-		{"missing", `{"name":"x"}`, ""},
-		{"malformed", `not json`, ""},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			if got := parseTag([]byte(tc.json)); got != tc.want {
-				t.Fatalf("parseTag() = %q, want %q", got, tc.want)
-			}
-		})
-	}
-}
 
 // GitHub serves a different JSON shape without the Accept header and rejects
 // an unidentified client outright, so every read lich makes carries both.
@@ -62,52 +44,55 @@ func serveBody(t *testing.T, status int, body string) (*http.Client, string) {
 	return srv.Client(), srv.URL
 }
 
-func TestLatestTag(t *testing.T) {
-	tests := []struct {
-		name       string
-		status     int
-		body, want string
-	}{
-		{"tag with v prefix", http.StatusOK, `{"tag_name":"v0.2.0"}`, "0.2.0"},
-		{"pre-release tag", http.StatusOK, `{"tag_name":"v0.2.0-rc.3"}`, "0.2.0-rc.3"},
-		{"malformed json", http.StatusOK, `{"tag_name":`, ""},
-		{"not found", http.StatusNotFound, `{"message":"Not Found"}`, ""},
-		{"server error", http.StatusInternalServerError, ``, ""},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			client, url := serveBody(t, tc.status, tc.body)
-			if got := LatestTag(client, url); got != tc.want {
-				t.Fatalf("LatestTag() = %q, want %q", got, tc.want)
-			}
-		})
+func TestReleasesCarryTheNotes(t *testing.T) {
+	body := `[
+		{"tag_name":"v0.14.0-rc.1","prerelease":true,"body":"rc"},
+		{"tag_name":"v0.13.1","body":"> [!CAUTION]\n> **Everyone: update.**"},
+		{"tag_name":"v0.13.0","draft":true},
+		{"tag_name":"0.12.0"}
+	]`
+	client, url := serveBody(t, http.StatusOK, body)
+	got := Releases(client, url)
+	want := []Release{{Tag: "0.13.1", Body: "> [!CAUTION]\n> **Everyone: update.**"}, {Tag: "0.12.0"}}
+	if !slices.Equal(got, want) {
+		t.Fatalf("Releases() = %+v, want %+v", got, want)
 	}
 }
 
-func TestLatestTagNetworkFailure(t *testing.T) {
+func TestReleasesNetworkFailure(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
 	client := srv.Client()
 	url := srv.URL
 	srv.Close()
 
-	if got := LatestTag(client, url); got != "" {
-		t.Fatalf("LatestTag() = %q, want %q for an unreachable server", got, "")
+	if got := Releases(client, url); got != nil {
+		t.Fatalf("Releases() = %v, want nil for an unreachable server", got)
 	}
 }
 
-func TestLatestTagCapsBody(t *testing.T) {
-	// The tag is valid but padded past BodyLimit: the cap truncates the body
+func TestReleasesCapBody(t *testing.T) {
+	// The list is valid but padded past ListLimit: the cap truncates the body
 	// mid-JSON, so a parse failure here proves the read is bounded.
-	body := `{"tag_name":"v9.9.9","body":"` + strings.Repeat("x", BodyLimit*2) + `"}`
+	body := `[{"tag_name":"v9.9.9","body":"` + strings.Repeat("x", ListLimit+1) + `"}]`
 	client, url := serveBody(t, http.StatusOK, body)
-	if got := LatestTag(client, url); got != "" {
-		t.Fatalf("LatestTag() = %q, want %q — body read past BodyLimit", got, "")
+	if got := Releases(client, url); got != nil {
+		t.Fatalf("Releases() = %v, want nil: body read past ListLimit", got)
 	}
 }
 
-func TestLatestTagBadURL(t *testing.T) {
-	if got := LatestTag(&http.Client{}, "://not a url"); got != "" {
-		t.Fatalf("LatestTag() = %q, want %q for an unbuildable request", got, "")
+// A page of 100 real releases is over two MiB, past the cap a small metadata
+// read is held to.
+func TestReleasesReadAListLargerThanBodyLimit(t *testing.T) {
+	body := `[{"tag_name":"v9.9.9","body":"` + strings.Repeat("x", BodyLimit*2) + `"}]`
+	client, url := serveBody(t, http.StatusOK, body)
+	if got := Releases(client, url); len(got) != 1 || got[0].Tag != "9.9.9" {
+		t.Fatalf("Releases() = %d releases, want the one in a list past BodyLimit", len(got))
+	}
+}
+
+func TestReleasesBadURL(t *testing.T) {
+	if got := Releases(&http.Client{}, "://not a url"); got != nil {
+		t.Fatalf("Releases() = %v, want nil for an unbuildable request", got)
 	}
 }
 

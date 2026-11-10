@@ -18,6 +18,8 @@
   },
   "appUpdateGate": {
     "available": "Доступен lich {version}",
+    "required": "lich {version}: обязательное обновление безопасности",
+    "requiredDetail": "Новые сессии агентов не открываются, пока оно не установлено. Уже запущенные продолжают работать.",
     "updateAndInstall": "Обновить и установить",
     "later": "Позже",
     "updated": "lich обновлён до {version}",
@@ -148,8 +150,14 @@
   },
   "tray": {
     "show": "Показать lich",
-    "running": "Запущено сессий: {count}",
     "quit": "Выйти из lich",
+    "noSessions": "Нет запущенных сессий",
+    "needsYou": "Ждут вас",
+    "working": "Работают",
+    "idle": "Простаивают: {count}",
+    "more": "Ещё {count}",
+    "waiting": "Ждёт",
+    "done": "Готово",
     "servicesRunning": "Запущено сервисов: {count}",
     "showOutput": "Показать вывод",
     "restart": "Перезапустить",
@@ -203,7 +211,11 @@
     "unlabeledSession": "Сессия",
     "open": "Открыть",
     "needsInput": "{label}: нужен ваш ответ",
-    "finished": "{label}: работа завершена"
+    "finished": "{label}: работа завершена",
+    "watchStopped": "Наблюдение за пул-реквестом #{number} остановлено",
+    "watchStoppedDetail": "{label}: промпт запущен на нём раз: {runs}.",
+    "scheduleLost": "Запланированный промпт потерян",
+    "scheduleLostDetail": "Удаление {label} удалило и промпт, запланированный на {when}."
   },
   "windowClose": {
     "changeInSettings": "· измените в разделе Настройки › Общие",

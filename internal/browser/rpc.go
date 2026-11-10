@@ -34,7 +34,7 @@ func (s *Service) Read(_ context.Context, opts api.BrowserInfoOptions) (api.Brow
 	if err != nil {
 		return api.BrowserPageInfo{}, err
 	}
-	info, err := s.Info(opts.ID)
+	info, err := s.Info(opts.ID, opts.Within)
 	if errors.Is(err, errDialogOpen) {
 		return s.heldPage(opts.ID)
 	}
@@ -74,13 +74,17 @@ func (s *Service) pageAfter(id string) (api.BrowserPageInfo, error) {
 			return err
 		}
 		var err error
-		info, err = p.Info(ctx)
+		info, err = p.Info(ctx, "")
 		return err
 	})
 	if err != nil {
 		return s.heldOr(id, err)
 	}
+	s.mu.Lock()
+	sess.still = info.URL == sess.beforeURL && info.Title == sess.beforeTitle
+	s.mu.Unlock()
 	s.remember(sess, info.URL, info.Title)
+	s.leaveOutTold(sess, &info)
 	info.Downloads = s.downloadsAfter(sess, downloadWait)
 	info.ConsoleErrors, info.ConsoleErrorsMore = s.consoleUntold(sess)
 	info.Dialogs = s.answeredUntold(sess)
@@ -98,6 +102,9 @@ func (s *Service) heldOr(id string, err error) (api.BrowserPageInfo, error) {
 
 // Capture writes a PNG of this session's page and returns its path.
 func (s *Service) Capture(_ context.Context, opts api.BrowserScreenshotOptions) (string, error) {
+	if opts.Annotate {
+		return s.AnnotatedScreenshot(opts.ID, opts.Path)
+	}
 	return s.Screenshot(opts.ID, opts.Path)
 }
 
@@ -181,7 +188,7 @@ func handleAPI(h Handle) api.BrowserHandle {
 }
 
 func infoAPI(p PageInfo) api.BrowserPageInfo {
-	out := api.BrowserPageInfo{URL: p.URL, Title: p.Title, Text: p.Text, Truncated: p.Truncated, Downloads: p.Downloads,
+	out := api.BrowserPageInfo{URL: p.URL, Title: p.Title, Text: p.Text, Truncated: p.Truncated, InteractiveSame: p.InteractiveSame, Downloads: p.Downloads,
 		ConsoleErrors: p.ConsoleErrors, ConsoleErrorsMore: p.ConsoleErrorsMore, Dialogs: p.Dialogs}
 	if p.Interactive == nil {
 		return out
