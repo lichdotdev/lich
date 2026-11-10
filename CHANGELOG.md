@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - The state menu on the Pulls screen has Approved: the open pull requests whose review is approved.
 
+### Changed
+
+- On Windows, Ctrl+V in a session pastes the clipboard's text straight away, as Ctrl+Shift+V does, instead of waiting on the agent to read the clipboard. A clipboard with no text, an image or a copied file, still goes to the agent as before, and Alt+V still attaches an image when the clipboard holds text too.
+
 ## [0.87.0] - 2026-11-08
 
 > [!CAUTION]

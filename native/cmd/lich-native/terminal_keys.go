@@ -48,12 +48,22 @@ func imageAttach(goos string) string {
 	return "\x16"
 }
 
-// isPasteChord is the clipboard paste: Ctrl+Shift+V, and Cmd+V on macOS.
+// isPasteChord is the clipboard paste: Ctrl+Shift+V, Cmd+V on macOS, and
+// Ctrl+V on Windows, where Claude Code's own paste of text was slow to land
+// and a clipboard with no text still reaches the agent as its image key.
 func isPasteChord(e key.Event, goos string) bool {
 	if e.Name != "V" {
 		return false
 	}
-	return e.Modifiers == key.ModCtrl|key.ModShift || goos == "darwin" && e.Modifiers == key.ModCommand
+	switch e.Modifiers {
+	case key.ModCtrl | key.ModShift:
+		return true
+	case key.ModCommand:
+		return goos == "darwin"
+	case key.ModCtrl:
+		return goos == "windows"
+	}
+	return false
 }
 
 // isCopyChord is the clipboard copy: Ctrl+Shift+C, and Cmd+C on macOS.
