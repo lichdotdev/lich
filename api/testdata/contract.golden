@@ -671,6 +671,7 @@ CreateWorktreeOptions {
 	name string
 	base string
 	baseIsRemote bool
+	seedFrom,omitempty string
 }
 
 Worktree {

@@ -1,6 +1,7 @@
 package project
 
 import (
+	"cmp"
 	"context"
 	"encoding/json"
 	"errors"
@@ -322,6 +323,9 @@ func (s *Service) CreateWorktree(_ context.Context, opts api.CreateWorktreeOptio
 	reused := branchExists(opts.ProjectPath, opts.Name)
 	if reused {
 		source = opts.Name
+		// The carry refuses a reused worktree, so nothing of SeedFrom's arrives
+		// for its ignored files to agree with.
+		opts.SeedFrom = ""
 	} else {
 		if opts.BaseIsRemote {
 			remote, branch, ok := strings.Cut(opts.Base, "/")
@@ -357,7 +361,7 @@ func (s *Service) CreateWorktree(_ context.Context, opts api.CreateWorktreeOptio
 	if _, err := runGit(wtPath, "rev-parse", "--is-inside-work-tree"); err != nil {
 		return nil, discardUnreadableWorktree(opts.ProjectPath, wtPath)
 	}
-	seedWorktree(opts.ProjectPath, wtPath)
+	seedWorktree(opts.ProjectPath, cmp.Or(opts.SeedFrom, opts.ProjectPath), wtPath)
 	return &Worktree{Name: opts.Name, Path: canonicalPath(wtPath), Reused: reused}, nil
 }
 
@@ -457,7 +461,7 @@ func (s *Service) CreateWorktreeFromPR(_ context.Context, opts api.CreateWorktre
 		}
 		return nil, err
 	}
-	seedWorktree(opts.ProjectPath, wtPath)
+	seedWorktree(opts.ProjectPath, opts.ProjectPath, wtPath)
 	return &Worktree{Name: head.RefName, Path: canonicalPath(wtPath)}, nil
 }
 

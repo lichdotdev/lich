@@ -322,6 +322,15 @@ func (d *worktreeDialog) request(v worktreeView) worktreeRequest {
 	return r
 }
 
+// seedFrom is the checkout the new worktree takes its ignored files from when
+// it takes that checkout's work too; empty leaves them to the project's.
+func (r worktreeRequest) seedFrom() string {
+	if r.carry {
+		return r.source
+	}
+	return ""
+}
+
 func (d *worktreeDialog) setSubmitting(err string) {
 	d.mu.Lock()
 	d.submitting, d.submitErr = err == "", err
@@ -348,7 +357,7 @@ func (u *window) openWorktree(r worktreeRequest) {
 		<-r.check.done
 	}
 	start, remote := startPoint(r.base, r.check, r.carry)
-	wt, err := u.client.CreateWorktree(u.ctx, r.project.Path, r.project.ID, r.name, start, remote)
+	wt, err := u.client.CreateWorktree(u.ctx, r.project.Path, r.project.ID, r.name, start, remote, r.seedFrom())
 	if err != nil {
 		d.setSubmitting(backend.ErrorText(err))
 		return

@@ -136,13 +136,16 @@ type CarryUncommittedOptions struct {
 }
 
 // CreateWorktreeOptions creates worktree Name of the project at ProjectPath,
-// branched from Base (a remote branch when BaseIsRemote).
+// branched from Base (a remote branch when BaseIsRemote). SeedFrom is the
+// checkout whose working tree the caller is about to carry into it; empty, or
+// a branch that already exists, seeds from ProjectPath.
 type CreateWorktreeOptions struct {
 	ProjectPath  string `json:"projectPath"`
 	ProjectID    string `json:"projectId"`
 	Name         string `json:"name"`
 	Base         string `json:"base"`
 	BaseIsRemote bool   `json:"baseIsRemote"`
+	SeedFrom     string `json:"seedFrom,omitempty"`
 }
 
 // CreateWorktreeFromPROptions creates a worktree on pull request Number's

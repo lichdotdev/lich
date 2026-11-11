@@ -36,6 +36,17 @@ func TestParseIssueRef(t *testing.T) {
 	}
 }
 
+// TestSeedFrom pins that a worktree takes its ignored files from a checkout
+// only when it takes that checkout's work.
+func TestSeedFrom(t *testing.T) {
+	if got := (worktreeRequest{carry: true, source: "/fork"}).seedFrom(); got != "/fork" {
+		t.Errorf("carrying: seedFrom = %q, want /fork", got)
+	}
+	if got := (worktreeRequest{source: "/fork"}).seedFrom(); got != "" {
+		t.Errorf("not carrying: seedFrom = %q, want empty", got)
+	}
+}
+
 func doneCheck(f backend.BaseFreshness, err string) *baseCheck {
 	c := &baseCheck{done: make(chan struct{}), freshness: f, err: err}
 	close(c.done)
