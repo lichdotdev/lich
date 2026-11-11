@@ -150,10 +150,11 @@ func (s *settingsScreen) layoutExtensionDialogs(gtx C, th *ui.Theme) {
 		p.with(func(t *extensionTasks) { t.asking = "" })
 	}
 	remove := extensionConfirm{state: &p.removeDialog, slot: 1, open: t.removal != nil, destructive: true,
-		title: i18n.T("settings.extensionsSettings.removeTitle"), action: i18n.T("settings.extensionsSettings.remove"),
-		body: func(gtx C) D { return p.deleteDataRow(gtx, th.On(th.Popover)) }}
+		action: i18n.T("settings.extensionsSettings.remove"),
+		body:   func(gtx C) D { return p.deleteDataRow(gtx, th.On(th.Popover)) }}
 	if t.removal != nil {
-		remove.desc = i18n.T("settings.extensionsSettings.removeDescription", i18n.Args{"name": t.removal.Name})
+		remove.title = i18n.T("settings.extensionsSettings.removeTitle", i18n.Args{"name": t.removal.Name})
+		remove.desc = i18n.T("settings.extensionsSettings.removeDescription")
 	}
 	if pressed, closed := p.confirmDialog(gtx, th, remove); pressed {
 		s.confirmRemoval(*t.removal)
@@ -173,23 +174,17 @@ type extensionConfirm struct {
 }
 
 // deleteDataRow is the remove confirmation's box with its label, which a
-// click also ticks, and the muted line saying what stays without it.
+// click also ticks.
 func (p *extensionsSettings) deleteDataRow(gtx C, th *ui.Theme) D {
 	if p.deleteDataLabel.Clicked(gtx) {
 		p.deleteData.Value = !p.deleteData.Value
 	}
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+		layout.Rigid(th.Checkbox(&p.deleteData).Layout),
+		ui.Gap(2),
 		layout.Rigid(func(gtx C) D {
-			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-				layout.Rigid(th.Checkbox(&p.deleteData).Layout),
-				ui.Gap(2),
-				layout.Rigid(func(gtx C) D {
-					return p.deleteDataLabel.Layout(gtx, th.Text(ui.TextSM, i18n.T("settings.extensionsSettings.removeDeleteData")).Layout)
-				}),
-			)
+			return p.deleteDataLabel.Layout(gtx, th.Text(ui.TextSM, i18n.T("settings.extensionsSettings.removeDeleteData")).Layout)
 		}),
-		ui.VGap(1),
-		layout.Rigid(th.Text(ui.TextSM, i18n.T("settings.extensionsSettings.removeKeepsData")).Muted().Layout),
 	)
 }
 
