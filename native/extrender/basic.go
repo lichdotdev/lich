@@ -4,7 +4,6 @@ import (
 	"image"
 
 	"gioui.org/layout"
-	"gioui.org/text"
 	"gioui.org/unit"
 	"gioui.org/widget"
 
@@ -128,22 +127,7 @@ func spacing(j extension.Justify) layout.Spacing {
 }
 
 func drawLabel(r *Renderer, gtx C, th *ui.Theme, n extension.Node, _ string) D {
-	p := props[extension.LabelProps](n)
-	l := th.Text(textSize(p.Size, ui.TextSM), p.Text).In(r.color(th, p.Color, th.Foreground)).Weight(weight(p.Weight))
-	if p.Mono {
-		l = l.Mono()
-	}
-	l.MaxLines = p.MaxLines
-	if p.LineHeight > 0 {
-		l.LineHeight = unit.Sp(p.LineHeight)
-	}
-	switch p.Align {
-	case extension.TextAlignCenter:
-		l.Align = text.Middle
-	case extension.TextAlignEnd:
-		l.Align = text.End
-	}
-	return l.Layout(gtx)
+	return r.label(th, props[extension.LabelProps](n)).Layout(gtx)
 }
 
 func drawButton(r *Renderer, gtx C, th *ui.Theme, n extension.Node, id string) D {
