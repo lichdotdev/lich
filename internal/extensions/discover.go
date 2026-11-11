@@ -42,6 +42,9 @@ func discover(dir, lichVersion string) []*installed {
 	}
 	var found []*installed
 	for _, entry := range entries {
+		if strings.HasPrefix(entry.Name(), stagingPrefix) {
+			continue
+		}
 		root := filepath.Join(dir, entry.Name())
 		// Stat follows a symlink, the way to develop an extension in place. One
 		// that dangles falls through to fail on its manifest and gets listed.
@@ -57,7 +60,7 @@ func load(root, dirName, lichVersion string) *installed {
 	if abs, err := filepath.Abs(root); err == nil {
 		root = abs
 	}
-	x := &installed{id: dirName, root: root}
+	x := &installed{id: dirName, root: root, source: readSource(root)}
 	x.manifest, x.exe, x.invalid = readManifest(root, dirName, lichVersion)
 	if x.invalid != nil {
 		x.status, x.errText = statusInvalid, x.invalid.Error()

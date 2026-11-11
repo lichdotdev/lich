@@ -308,6 +308,10 @@ var (
 	// ExtensionStatusEvent carries an extension once its state has changed.
 	ExtensionStatusEvent = defineEvent[Extension]("extension-status")
 
+	// ExtensionRemovedEvent names an extension once its directory is gone, for
+	// the window to drop it.
+	ExtensionRemovedEvent = defineEvent[ExtensionIDOptions]("extension-removed")
+
 	// ExtensionMessageEvent carries a line an extension wrote, after lich
 	// accepted it. With no window attached it is dropped, like every event.
 	ExtensionMessageEvent = defineEvent[ExtensionMessage]("extension-message")

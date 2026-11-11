@@ -7,7 +7,18 @@ var (
 	ExtensionsSend = define[ExtensionSendOptions, None]("extensions.Send")
 	// ExtensionsRestart starts an extension again, the one way back from failed.
 	ExtensionsRestart = define[ExtensionIDOptions, None]("extensions.Restart")
+	// ExtensionsInstall downloads the latest release of a GitHub repository's
+	// extension, installs it and starts it.
+	ExtensionsInstall = define[ExtensionInstallOptions, Extension]("extensions.Install")
+	// ExtensionsRemove stops an extension and deletes its directory.
+	ExtensionsRemove = define[ExtensionIDOptions, None]("extensions.Remove")
 )
+
+// ExtensionInstallOptions names the repository to install from:
+// https://github.com/<owner>/<repo>, with or without .git.
+type ExtensionInstallOptions struct {
+	URL string `json:"url"`
+}
 
 // ExtensionIDOptions names one extension.
 type ExtensionIDOptions struct {
@@ -33,7 +44,8 @@ type ExtensionSurface struct {
 
 // Extension is one directory under lich's extensions directory and where its
 // process is. Name and Surfaces come from its manifest, so they are the
-// extension's own words.
+// extension's own words. Source and Release are the repository and tag it was
+// installed from, empty for one placed by hand.
 type Extension struct {
 	ID       string             `json:"id"`
 	Name     string             `json:"name"`
@@ -42,6 +54,8 @@ type Extension struct {
 	Error    string             `json:"error,omitempty"`
 	Dir      string             `json:"dir"`
 	Surfaces []ExtensionSurface `json:"surfaces"`
+	Source   string             `json:"source,omitempty"`
+	Release  string             `json:"release,omitempty"`
 }
 
 // ExtensionSendOptions writes Message, one line of the extension contract, to

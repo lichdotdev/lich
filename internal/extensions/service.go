@@ -12,6 +12,8 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net/http"
+	"runtime"
 	"sync"
 	"time"
 
@@ -65,6 +67,16 @@ type Service struct {
 	emit        func(name string, data any)
 	timing      timing
 
+	// The installer's GitHub reads, fields so tests can serve releases locally.
+	metadata   *http.Client
+	download   *http.Client
+	releaseAPI string
+	goos       string
+	goarch     string
+	// installMu serialises installs, so two of one id never race to its
+	// directory.
+	installMu sync.Mutex
+
 	ctx    context.Context
 	cancel context.CancelFunc
 	wg     sync.WaitGroup
@@ -81,6 +93,7 @@ type installed struct {
 	root     string
 	exe      string
 	manifest extension.Manifest
+	source   source
 	invalid  error
 	stderr   logBudget
 	refused  logBudget
@@ -104,7 +117,9 @@ func New(dir, lichVersion string, env []string, emit func(name string, data any)
 	ctx, cancel := context.WithCancel(context.Background())
 	return &Service{
 		dir: dir, lichVersion: lichVersion, env: env, emit: emit, ctx: ctx, cancel: cancel,
-		timing: timing{firstBackoff: firstBackoff, maxBackoff: maxBackoff, stableRun: stableRun, stopGrace: stopGrace, killWait: killWait},
+		timing:   timing{firstBackoff: firstBackoff, maxBackoff: maxBackoff, stableRun: stableRun, stopGrace: stopGrace, killWait: killWait},
+		metadata: &http.Client{Timeout: metadataTimeout}, download: &http.Client{Timeout: downloadTimeout},
+		releaseAPI: releaseAPI, goos: runtime.GOOS, goarch: runtime.GOARCH,
 	}
 }
 
@@ -221,6 +236,9 @@ func (s *Service) Restart(ctx context.Context, opts api.ExtensionIDOptions) (api
 	if s.ctx.Err() != nil {
 		return api.None{}, errors.New("lich is shutting down")
 	}
+	if s.find(opts.ID) != x {
+		return api.None{}, fmt.Errorf("extension %q was removed", opts.ID)
+	}
 	s.launch(x)
 	return api.None{}, nil
 }
@@ -244,6 +262,7 @@ func (x *installed) view() api.Extension {
 	return api.Extension{
 		ID: x.id, Name: cmp.Or(x.manifest.Name, x.id), Version: x.manifest.Version,
 		Status: x.status, Error: x.errText, Dir: x.root, Surfaces: surfaces,
+		Source: x.source.URL, Release: x.source.Release,
 	}
 }
 

@@ -1135,7 +1135,17 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   every directory under `<config dir>/lich/extensions` (`extensions-dev` under `LICH_DEV`) with a valid manifest is
   started when the backend boots. There is no prompt, no signature and no permission list in this version, and
   the sandbox of `internal/sandbox` does not apply, so an extension can read and do whatever the user can. The
-  directory is read once per launch: adding, editing or removing one takes a restart of lich.
+  directory is read once per launch: an extension added or edited by hand takes a restart of lich, while one
+  installed or removed through `extensions.Install` and `extensions.Remove` is started or stopped at once.
+- **Installing runs code from the internet as the user, vouched for only by its own release**
+  (`internal/extensions/install.go`): the archive is checked against the `checksums.txt` the same release carries,
+  which proves the download arrived whole, not who built it or what it does. Whoever controls the repository
+  controls what runs. Only `https://github.com/<owner>/<repo>` is accepted, only its latest release that is neither
+  a draft nor a pre-release, only the archive named for this OS and architecture (`docs/extensions.md`), and only
+  public repositories: the GitHub API is read without a token, so its unauthenticated rate limit applies. There is
+  no update: remove the extension and install it again. An install lich is killed in the middle of leaves an
+  `.installing-*` directory that discovery skips and nothing deletes. Remove deletes the directory, or only the
+  link when it is a symlink, and what the extension wrote elsewhere stays.
 - **What an extension writes is input, and what fails the checks is dropped without telling it**
   (`internal/extensions/inbound.go`): a line over 3 MiB, JSON nested over 512 levels, a tree over 5000 nodes or 64
   deep, a kind that only travels from lich to the extension, and `openExternal` with anything but an http or https
