@@ -1,4 +1,4 @@
-package main
+package diffview
 
 import (
 	"fmt"
@@ -9,18 +9,19 @@ import (
 	"github.com/lichdotdev/godemirror"
 )
 
-// cardBlock is one widget hung under a line of a file card's diff; key names
+// Block is one widget hung under a line of a diff; Key names
 // it across frames, so its height and its place survive a redraw.
-type cardBlock struct {
-	key    string
-	at     godemirror.LineRef
-	widget layout.Widget
+type Block struct {
+	Key    string
+	At     godemirror.LineRef
+	Widget layout.Widget
 }
 
-// cardBlocks is a card's blocks as the view holds them, and each one's height
-// as last laid out: the card is as tall as its rows plus these, so the panel
-// scrolls and the editor never does.
-type cardBlocks struct {
+// Blocks is what hangs under a diff's lines as its view holds them, and each
+// one's height as last laid out: the diff is as tall as its rows plus these, so
+// a scrolling parent scrolls and the editor never does. The zero value is ready
+// to use, and it can outlive the View it was drawn with.
+type Blocks struct {
 	// placed is the signature of the blocks the view was last given: every
 	// SetBlocks highlights the content again, so it is called only on a change.
 	placed string
@@ -33,10 +34,10 @@ type cardBlocks struct {
 }
 
 // place hands the view blocks when they differ from the ones it holds.
-func (b *cardBlocks) place(view *godemirror.DiffView, blocks []cardBlock) {
+func (b *Blocks) place(view *godemirror.DiffView, blocks []Block) {
 	keys := make([]string, len(blocks))
 	for i, bl := range blocks {
-		keys[i] = fmt.Sprint(bl.key, "@", bl.at.Side, ":", bl.at.Line)
+		keys[i] = fmt.Sprint(bl.Key, "@", bl.At.Side, ":", bl.At.Line)
 	}
 	sig := strings.Join(keys, "\n")
 	if sig == b.placed {
@@ -45,14 +46,14 @@ func (b *cardBlocks) place(view *godemirror.DiffView, blocks []cardBlock) {
 	b.placed, b.moved = sig, true
 	out := make([]godemirror.DiffBlock, len(blocks))
 	for i, bl := range blocks {
-		out[i] = godemirror.DiffBlock{At: bl.at, Widget: b.measured(bl.key, bl.widget)}
+		out[i] = godemirror.DiffBlock{At: bl.At, Widget: b.measured(bl.Key, bl.Widget)}
 	}
 	view.SetBlocks(out)
 }
 
 // measured lays w out and records its height for the frame.
-func (b *cardBlocks) measured(key string, w layout.Widget) layout.Widget {
-	return func(gtx C) D {
+func (b *Blocks) measured(key string, w layout.Widget) layout.Widget {
+	return func(gtx layout.Context) layout.Dimensions {
 		dims := w(gtx)
 		if b.heights == nil {
 			b.heights, b.seen = map[string]int{}, map[string]bool{}
@@ -63,14 +64,14 @@ func (b *cardBlocks) measured(key string, w layout.Widget) layout.Widget {
 }
 
 // height is the blocks' room as the last frame measured it.
-func (b *cardBlocks) height() int { return b.total }
+func (b *Blocks) height() int { return b.total }
 
-func (b *cardBlocks) startFrame() { clear(b.seen) }
+func (b *Blocks) startFrame() { clear(b.seen) }
 
 // endFrame drops the heights of blocks the view no longer laid out (closed,
 // or under a line folded into a gap) and reports whether the room changed,
 // or the blocks did, which the next frame has to be drawn at.
-func (b *cardBlocks) endFrame() bool {
+func (b *Blocks) endFrame() bool {
 	total := 0
 	for key, h := range b.heights {
 		if !b.seen[key] {

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"image"
 
 	"gioui.org/layout"
@@ -9,6 +10,7 @@ import (
 	"github.com/lichdotdev/lich/native/fonts"
 	"github.com/lichdotdev/lich/native/ui"
 	"github.com/lichdotdev/lich/native/ui/codeview"
+	"github.com/lichdotdev/lich/native/ui/diffview"
 	"github.com/lichdotdev/lich/native/ui/markdown"
 )
 
@@ -20,6 +22,11 @@ type richState struct {
 	md      markdown.Cache
 	code    *codeview.View
 	codeErr error
+
+	diff      *diffview.View
+	diffBlock diffview.Blocks
+	diffPatch godemirror.FilePatch
+	diffErr   error
 }
 
 func (g *gallery) markdownSection(gtx C, th *ui.Theme) D {
@@ -59,4 +66,49 @@ func (g *gallery) codeSection(gtx C, th *ui.Theme) D {
 		r.codeErr = err
 	}
 	return dims
+}
+
+const richPatch = `diff --git a/demo.go b/demo.go
+--- a/demo.go
++++ b/demo.go
+@@ -1,6 +1,6 @@
+ package demo
+
+-// Greet says hello.
+-func Greet(name string) string {
++// Hello says hello.
++func Hello(name string) string {
+ 	return "hello, " + name
+ }
+`
+
+var richDiffLabels = diffview.Labels{
+	Expand: func(count int) string { return fmt.Sprintf("Expand %d lines", count) },
+	Revert: func() string { return "Revert" },
+}
+
+func (g *gallery) diffSection(gtx C, th *ui.Theme) D {
+	r := &g.rich
+	if r.diff == nil && r.diffErr == nil {
+		r.diffErr = r.buildDiff()
+	}
+	if r.diffErr != nil {
+		return th.Text(ui.TextSM, r.diffErr.Error()).Muted().Layout(gtx)
+	}
+	dims, _, err := r.diff.Layout(gtx, diffview.Frame{
+		Theme: th, Code: godemirror.DarkTheme, Patch: r.diffPatch,
+		Height: gtx.Dp(richCodeHeight), Blocks: &r.diffBlock,
+	})
+	r.diffErr = err
+	return dims
+}
+
+func (r *richState) buildDiff() error {
+	files, err := godemirror.ParsePatch(richPatch)
+	if err != nil {
+		return err
+	}
+	r.diffPatch = files[0]
+	r.diff, err = diffview.New(fonts.SystemMono, 13, diffview.Options{Buttons: diffview.NewButtons(richDiffLabels)})
+	return err
 }

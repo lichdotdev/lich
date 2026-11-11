@@ -20,6 +20,7 @@ import (
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
+	"github.com/lichdotdev/lich/native/ui/diffview"
 )
 
 // The file tree's width in rem, PullsFiles' TREE_DEFAULT_REM and the bounds
@@ -281,16 +282,16 @@ type inlineFrame struct {
 // diffBlocks are path's review threads still anchored to a line (an outdated
 // one lives in the Conversation tab alone) and its pending comments, each
 // under its line.
-func (v *pullView) diffBlocks(path string) []cardBlock {
+func (v *pullView) diffBlocks(path string) []diffview.Block {
 	f := v.inline
-	var out []cardBlock
+	var out []diffview.Block
 	if conv := f.p.store.conversation(f.p.project.Path, f.d.Number).val; conv != nil {
 		for _, t := range conv.Threads {
 			if t.Path != path || t.IsOutdated || t.Line == 0 {
 				continue
 			}
 			id := t.ID
-			out = append(out, cardBlock{key: "thread:" + id, at: lineRef(t.Side, t.Line), widget: func(gtx C) D { return v.inlineThread(gtx, id) }})
+			out = append(out, diffview.Block{Key: "thread:" + id, At: lineRef(t.Side, t.Line), Widget: func(gtx C) D { return v.inlineThread(gtx, id) }})
 		}
 	}
 	for i, c := range v.pendingOf(f.d.URL).snapshot() {
@@ -299,7 +300,7 @@ func (v *pullView) diffBlocks(path string) []cardBlock {
 		}
 		key := fmt.Sprint("pending:", i, ":", c.Body)
 		index, comment := i, c
-		out = append(out, cardBlock{key: key, at: lineRef(c.Side, c.Line), widget: func(gtx C) D { return v.inlinePending(gtx, index, comment) }})
+		out = append(out, diffview.Block{Key: key, At: lineRef(c.Side, c.Line), Widget: func(gtx C) D { return v.inlinePending(gtx, index, comment) }})
 	}
 	return out
 }

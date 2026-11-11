@@ -1,4 +1,4 @@
-package main
+package diffview
 
 import (
 	"image"
@@ -12,7 +12,6 @@ import (
 	"gioui.org/widget"
 
 	"github.com/lichdotdev/godemirror"
-	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
@@ -31,20 +30,29 @@ const (
 	affordanceIcon   = unit.Dp(12)
 )
 
-// affordances owns the clickables behind a diff's buttons, keyed by what
-// they act on so a button keeps its state across the rebuilds its own click
-// causes. theme is the one on screen, set every frame.
-type affordances struct {
+// Labels are the words on a diff's buttons, read when each is drawn so a
+// change of language shows at once.
+type Labels struct {
+	Expand func(count int) string
+	Revert func() string
+}
+
+// Buttons owns the clickables behind a diff's buttons, keyed by what they act
+// on so a button keeps its state across the rebuilds its own click causes.
+// theme is the one on screen, set every frame by Layout.
+type Buttons struct {
+	labels Labels
 	theme  *ui.Theme
 	expand map[int]*widget.Clickable
 	revert map[int]*widget.Clickable
 }
 
-func newAffordances() *affordances {
-	return &affordances{expand: map[int]*widget.Clickable{}, revert: map[int]*widget.Clickable{}}
+// NewButtons builds the Buttons Options takes.
+func NewButtons(labels Labels) *Buttons {
+	return &Buttons{labels: labels, expand: map[int]*widget.Clickable{}, revert: map[int]*widget.Clickable{}}
 }
 
-func clickableAt(m map[int]*widget.Clickable, key int) *widget.Clickable {
+func clickable(m map[int]*widget.Clickable, key int) *widget.Clickable {
 	c, ok := m[key]
 	if !ok {
 		c = new(widget.Clickable)
@@ -53,13 +61,13 @@ func clickableAt(m map[int]*widget.Clickable, key int) *widget.Clickable {
 	return c
 }
 
-// expandButton offers a gap's lines, keyed by its last line, which stays put
+// Expand offers a gap's lines, keyed by its last line, which stays put
 // while the gap fills from its top.
-func (a *affordances) expandButton(g godemirror.Gap, onClick func()) layout.Widget {
-	c := clickableAt(a.expand, g.To)
+func (a *Buttons) Expand(g godemirror.Gap, onClick func()) layout.Widget {
+	c := clickable(a.expand, g.To)
 	count := g.To - g.From + 1
 	return func(gtx C) D {
-		text := i18n.T("git.codemirror.expand", i18n.Args{"count": count})
+		text := a.labels.Expand(count)
 		for c.Clicked(gtx) {
 			onClick()
 		}
@@ -72,9 +80,9 @@ func (a *affordances) expandButton(g godemirror.Gap, onClick func()) layout.Widg
 	}
 }
 
-// revertButton undoes one chunk, keyed by where it starts.
-func (a *affordances) revertButton(chunk godemirror.Chunk, onClick func()) layout.Widget {
-	c := clickableAt(a.revert, chunk.OldStart)
+// Revert undoes one chunk, keyed by where it starts.
+func (a *Buttons) Revert(chunk godemirror.Chunk, onClick func()) layout.Widget {
+	c := clickable(a.revert, chunk.OldStart)
 	return func(gtx C) D {
 		for c.Clicked(gtx) {
 			onClick()
@@ -88,7 +96,7 @@ func (a *affordances) revertButton(chunk godemirror.Chunk, onClick func()) layou
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 				layout.Rigid(func(gtx C) D { return icRevertBlock.Layout(gtx, affordanceIcon, th.Foreground) }),
 				layout.Rigid(layout.Spacer{Width: affordanceGap}.Layout),
-				layout.Rigid(th.Text(affordanceText, i18n.T("git.codemirror.revert")).Leading(revertLeading).Layout),
+				layout.Rigid(th.Text(affordanceText, a.labels.Revert()).Leading(revertLeading).Layout),
 			)
 		})
 	}
@@ -96,7 +104,7 @@ func (a *affordances) revertButton(chunk godemirror.Chunk, onClick func()) layou
 
 // button lays content out padded on a rounded background with an optional
 // 1px border, as c's target, with the hand cursor.
-func (a *affordances) button(gtx C, c *widget.Clickable, bg, edge color.NRGBA, content layout.Widget) D {
+func (a *Buttons) button(gtx C, c *widget.Clickable, bg, edge color.NRGBA, content layout.Widget) D {
 	return c.Layout(gtx, func(gtx C) D {
 		gtx.Constraints.Min = image.Point{}
 		return layout.Background{}.Layout(gtx,

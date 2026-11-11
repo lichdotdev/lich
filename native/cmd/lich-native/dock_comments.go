@@ -524,3 +524,12 @@ func (b *commentBatch) sendButton(gtx C, th *ui.Theme) D {
 		send.Layout,
 	)
 }
+
+func clickableAt(m map[int]*widget.Clickable, key int) *widget.Clickable {
+	c, ok := m[key]
+	if !ok {
+		c = new(widget.Clickable)
+		m[key] = c
+	}
+	return c
+}

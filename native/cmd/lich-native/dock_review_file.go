@@ -14,7 +14,7 @@ import (
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/lichdiff"
 	"github.com/lichdotdev/lich/native/ui"
-	"github.com/lichdotdev/lich/native/ui/codeview"
+	"github.com/lichdotdev/lich/native/ui/diffview"
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
@@ -43,13 +43,13 @@ type fileCard struct {
 	gen    int
 	filled map[int]int
 
-	view         *godemirror.DiffView
+	view         *diffview.View
 	bin          *binaryPreview
 	md           *markdownPreview
 	previewing   bool
 	viewFail     bool
-	afford       *affordances
-	blocks       cardBlocks
+	afford       *diffview.Buttons
+	blocks       diffview.Blocks
 	headerHeight int
 
 	toggle          widget.Clickable
@@ -61,7 +61,7 @@ type fileCard struct {
 }
 
 func newFileCard(p *reviewPanel, f patchFile, hiding bool, bulkSeen int) *fileCard {
-	c := &fileCard{panel: p, bulkSeen: bulkSeen, afford: newAffordances()}
+	c := &fileCard{panel: p, bulkSeen: bulkSeen, afford: diffview.NewButtons(reviewDiffLabels)}
 	c.sync(f, hiding)
 	return c
 }
@@ -256,24 +256,30 @@ func (c *fileCard) body(gtx C, p *reviewPanel) D {
 	})
 }
 
+// reviewDiffLabels are the diff's buttons' words.
+var reviewDiffLabels = diffview.Labels{
+	Expand: func(count int) string { return i18n.T("git.codemirror.expand", i18n.Args{"count": count}) },
+	Revert: func() string { return i18n.T("git.codemirror.revert") },
+}
+
 // diff lays the editor out exactly as tall as its rows and the composer
 // open under them, so the panel scrolls and the editor never does.
-func (c *fileCard) diff(gtx C, p *reviewPanel, view *godemirror.DiffView) D {
-	c.afford.theme = p.th
-	view.SetTheme(p.diffTheme())
-	view.Split, view.Nested = p.splitShown(gtx), true
-	view.SetPatch(c.patch)
-	c.blocks.place(view, c.cardBlocks(p))
-	rows := diffRows(c.shown, view.Split, c.filled)
-	height := rows*p.cellHeight(gtx) + c.blocks.height()
-	gtx.Constraints = layout.Exact(image.Pt(gtx.Constraints.Max.X, height))
-	c.blocks.startFrame()
-	dims, err := view.Layout(gtx)
+func (c *fileCard) diff(gtx C, p *reviewPanel, view *diffview.View) D {
+	split := p.splitShown(gtx)
+	dims, changed, err := view.Layout(gtx, diffview.Frame{
+		Theme:  p.th,
+		Code:   p.code,
+		Patch:  c.patch,
+		Split:  split,
+		Height: diffRows(c.shown, split, c.filled) * p.cellHeight(gtx),
+		Blocks: &c.blocks,
+		Items:  c.cardBlocks(p),
+	})
 	if err != nil && !c.viewFail {
 		c.viewFail = true
 		log.Printf("review %s: %v", c.git.path, err)
 	}
-	if c.blocks.endFrame() {
+	if changed {
 		p.invalidate()
 	}
 	return dims
@@ -282,16 +288,16 @@ func (c *fileCard) diff(gtx C, p *reviewPanel, view *godemirror.DiffView) D {
 // ensureView builds the card's editor on first need. A rename gets no revert:
 // its old side lives under another path, which the one-file revert cannot
 // reach; Discard still reverts the pair.
-func (c *fileCard) ensureView(p *reviewPanel) *godemirror.DiffView {
+func (c *fileCard) ensureView(p *reviewPanel) *diffview.View {
 	if c.view != nil || c.viewFail {
 		return c.view
 	}
-	opts := godemirror.DiffOptions{HighlightChanges: true, StyleTags: codeview.StyleTags, ExpandWidget: c.afford.expandButton, RevertWidget: c.afford.revertButton}
+	opts := diffview.Options{Buttons: c.afford}
 	opts.Expand = func(g godemirror.Gap) { p.expand(c, c.gen, g) }
 	if c.git.status != statusRenamed && p.pr == nil {
 		opts.Revert = func(ch godemirror.Chunk) { p.revert(c.git.path, lichdiff.RevertLines(ch)) }
 	}
-	view, err := codeview.NewDiffEditor(p.family, p.size, opts)
+	view, err := diffview.New(p.family, p.size, opts)
 	if err != nil {
 		c.viewFail = true
 		log.Printf("review %s: %v", c.git.path, err)
@@ -315,11 +321,11 @@ func (c *fileCard) composerBlock(gtx C) D {
 
 // cardBlocks are what hangs under the card's lines: the composer while it is
 // open, and on the Pulls screen the review threads and pending comments.
-func (c *fileCard) cardBlocks(p *reviewPanel) []cardBlock {
-	var out []cardBlock
+func (c *fileCard) cardBlocks(p *reviewPanel) []diffview.Block {
+	var out []diffview.Block
 	if c.composer.isOpen() {
 		at := godemirror.LineRef{Side: godemirror.NewSide, Line: c.composer.at()}
-		out = append(out, cardBlock{key: "composer", at: at, widget: c.composerBlock})
+		out = append(out, diffview.Block{Key: "composer", At: at, Widget: c.composerBlock})
 	}
 	if p.pr != nil && p.pr.blocks != nil {
 		out = append(out, p.pr.blocks(c.git.path)...)
