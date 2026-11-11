@@ -1137,15 +1137,18 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   it asks lich for (below), and the sandbox of `internal/sandbox` does not apply, so an extension can read and do
   whatever the user can. The
   directory is read once per launch: an extension added or edited by hand takes a restart of lich, while one
-  installed or removed through `extensions.InstallFromGit`, `extensions.InstallFromDir` and `extensions.Remove` is started or stopped at once.
+  installed or removed through `extensions.CommitInstall` and `extensions.Remove` is started or stopped at once.
 - **Installing runs code from the internet as the user, vouched for only by its own release**
   (`internal/extensions/install.go`): the archive is checked against the `checksums.txt` the same release carries,
   which proves the download arrived whole, not who built it or what it does. Whoever controls the repository
   controls what runs. Only `https://github.com/<owner>/<repo>` is accepted, only its latest release that is neither
   a draft nor a pre-release, only the archive named for this OS and architecture (`docs/extensions.md`), and only
   public repositories: the GitHub API is read without a token, so its unauthenticated rate limit applies. There is
-  no update: remove the extension and install it again. An install lich is killed in the middle of leaves an
-  `.installing-*` directory that discovery skips and nothing deletes. Remove deletes the directory, or only the
+  no update: remove the extension and install it again. A prepared install waits in an `.installing-*` directory
+  that discovery skips until its confirmation is answered, for at most 15 minutes (`internal/extensions/staged.go`,
+  `stagedTTL`): a person who takes longer gets an error naming the expired install and starts again. A download
+  lich is killed in the middle of stays on disk until lich next starts, which deletes every `.installing-*`
+  directory. Remove deletes the directory, or only the
   link when it is a symlink, and what the extension wrote elsewhere stays.
 - **An extension's data directory outlives it, and nothing bounds its size** (`internal/extensions`):
   `<config dir>/lich/extension-data/<id>` is created before each start and handed over in `LICH_EXTENSION_DATA`.
@@ -1176,8 +1179,10 @@ work when nobody knows it and that the call site never shows. The mechanism and 
 - **An extension with `sessions:write` drives the person's sessions, and the install is the only consent**
   (`internal/extensions/calls.go`): it can open a session in any open project or directory path, on any provider,
   in a new or existing worktree, and type any prompt into any live session, as `open_session` and
-  `send_to_session` do for an agent. lich asks nothing past the install, and the window does not yet show an
-  extension's permissions before it starts. The permissions bound only the calls: the process itself is
+  `send_to_session` do for an agent. The install confirmation lists every permission the staged manifest declares,
+  this one in the wait tone, and lich asks nothing past it: there is no per-call prompt and no way to grant part of
+  the list. The lines are lich's words for a permission name, so they say what the call can reach, not what the
+  extension says it does with it. The permissions bound only the calls: the process itself is
   unsandboxed. Every provider is reached exactly as those MCP tools reach it, with their gaps (the Provider support
   table: a session whose provider reports no state lists an empty state and sends no `session.status`).
 - **What an extension opens or sends is recorded as coming from no session** (`internal/extensions/methods.go`):

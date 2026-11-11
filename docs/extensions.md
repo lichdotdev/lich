@@ -325,13 +325,25 @@ title := cat.In(lang.Tag(), "board.count", i18n.Args{"count": len(cards)})
 
 A person installs an extension from lich's Settings in one of two ways:
 
-- **From a folder** on disk holding `manifest.json` and the executable at its root. lich copies it into the
-  extensions directory (at most 1 GiB and 1000 entries, no symlinks anywhere in it), validates the copy as it does
-  at startup, marks the executable runnable and starts it. The copy is what runs; the folder is left untouched.
+- **From a folder** on disk holding `manifest.json` and the executable at its root. lich copies it into a staging
+  directory under the extensions directory (at most 1 GiB and 1000 entries, no symlinks anywhere in it), validates
+  the copy as it does at startup and marks the executable runnable. The copy is what runs; the folder is left
+  untouched.
 - **From GitHub**, by pasting the repository URL, as below.
 
-Either way an id that is already installed is refused; to update, remove the extension and install it again. The
-remove keeps its [data directory](#keeping-data), so the new install picks up what the old one saved.
+Either way the install is two steps, and nothing runs until the second. The first,
+`extensions.PrepareFromDir` or `extensions.PrepareFromGit`, does all of the above and stops, returning the staged
+copy's id, name, version, source, release and `permissions` under a token. lich then asks: the confirmation names
+the extension and its version, where it comes from, that it runs as the person with access to their files and
+accounts, and, under **It can also**, one line per permission the manifest lists, in lich's own words rather than
+the extension's, with `sessions:write` set apart. An extension that lists none shows no list. Install sends the
+token to `extensions.CommitInstall`, which moves the copy into place and starts it; Cancel sends it to
+`extensions.DiscardInstall`, which deletes it. A token commits or discards once, and a staged copy nobody answers
+is deleted after 15 minutes, or when lich next starts. The installed extension's status in Settings lists the same
+permission lines on hover.
+
+An id that is already installed is refused, at both steps; to update, remove the extension and install it again.
+The remove keeps its [data directory](#keeping-data), so the new install picks up what the old one saved.
 
 ## Publishing a release
 
@@ -345,5 +357,6 @@ draft nor a pre-release. That release carries:
 - `checksums.txt` in the `sha256sum` format, one `<hex>  <file name>` line per archive.
 
 lich downloads the archive for the machine it runs on and `checksums.txt`, refuses an archive whose sha256 does not
-match, unpacks it, validates the manifest as it does at startup, marks the executable runnable and starts it. An
+match, unpacks it, validates the manifest as it does at startup and marks the executable runnable, then asks as
+[above](#installing) before it starts it. An
 archive is at most 256 MiB compressed, 1 GiB and 1000 entries unpacked.
