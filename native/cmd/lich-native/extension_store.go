@@ -48,6 +48,18 @@ func (s *extensionStore) setStatus(e backend.Extension) {
 	s.list = append(s.list, e)
 }
 
+// remove drops extension id and its surfaces' renders.
+func (s *extensionStore) remove(id string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.list = slices.DeleteFunc(s.list, func(x backend.Extension) bool { return x.ID == id })
+	for k := range s.renders {
+		if k.ext == id {
+			delete(s.renders, k)
+		}
+	}
+}
+
 func (s *extensionStore) setRender(id string, r extension.RenderData) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -80,12 +92,19 @@ func (s *extensionStore) render(k extensionKey) (extension.RenderData, bool) {
 	return r, ok
 }
 
-// extensionEvent applies extension-status and extension-message. A render
-// lands in the store; every other message is the window's to act on.
+// extensionEvent applies extension-status, extension-removed and
+// extension-message. A render lands in the store; every other message is the
+// window's to act on.
 func (m *model) extensionEvent(ev backend.Event) {
-	if ev.Name == api.ExtensionStatusEvent.Name {
+	switch ev.Name {
+	case api.ExtensionStatusEvent.Name:
 		if e, err := backend.Decode(ev, api.ExtensionStatusEvent); err == nil {
 			m.extensions.setStatus(e)
+		}
+		return
+	case api.ExtensionRemovedEvent.Name:
+		if e, err := backend.Decode(ev, api.ExtensionRemovedEvent); err == nil {
+			m.extensions.remove(e.ID)
 		}
 		return
 	}

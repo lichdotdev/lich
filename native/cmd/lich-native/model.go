@@ -382,7 +382,7 @@ func (m *model) follow(ctx context.Context, events <-chan backend.Event) {
 			if a, err := backend.Decode(ev, api.ArtifactsEvent); err == nil {
 				m.artifacts.apply(a)
 			}
-		case api.ExtensionStatusEvent.Name, api.ExtensionMessageEvent.Name:
+		case api.ExtensionStatusEvent.Name, api.ExtensionRemovedEvent.Name, api.ExtensionMessageEvent.Name:
 			m.extensionEvent(ev)
 		case api.ServiceRevealEvent.Name:
 			if r, err := backend.Decode(ev, api.ServiceRevealEvent); err == nil && m.serviceReveal != nil {

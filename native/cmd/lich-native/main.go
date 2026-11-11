@@ -314,6 +314,7 @@ func run(w *app.Window, rt backend.Runtime) error {
 	u.settings.notify = u.notifier
 	u.settings.services.store = &u.model.services
 	u.settings.services.home = u.model.homeProject
+	u.settings.extensions.store = &u.model.extensions
 	u.settings.promptUpdate = u.promptAppUpdate
 	u.footer = newFooter(ctx, client, &u.root, u.model.usage, u.model.quota, invalidate)
 	u.footer.tour = &u.tour.Tour
@@ -614,6 +615,7 @@ func (u *window) layout(gtx C) error {
 		u.git.layoutDialogs(gtx, u.theme)
 		u.commentEdit.layout(gtx, u.theme, &u.comments)
 		u.settings.theme.layoutDialogs(gtx, u.theme)
+		u.settings.layoutExtensionDialogs(gtx, u.theme)
 		u.settings.layoutFontReplication(gtx, u.theme)
 		u.layoutProviderSetup(gtx, u.theme)
 		u.layoutPluginGate(gtx, u.theme)

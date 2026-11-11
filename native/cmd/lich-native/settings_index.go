@@ -111,6 +111,10 @@ var settingsSections = []settingsSection{
 	{id: sectionServices, labelKey: "settings.settings.section.services", icon: icons.Lucide("server"), rows: []settingEntry{
 		{titleKey: "settings.servicesSettings.title", alsoKey: "settings.servicesSettings.searchWords", key: servicesKey, scope: scopeProjectOnly},
 	}},
+	{id: sectionExtensions, labelKey: "settings.settings.section.extensions", icon: icons.Lucide("puzzle"), rows: []settingEntry{
+		{titleKey: "settings.extensionsSettings.installRow", alsoKey: "settings.extensionsSettings.installSearchWords", key: extensionsInstallKey},
+		{titleKey: "settings.extensionsSettings.listRow", alsoKey: "settings.extensionsSettings.listSearchWords", key: extensionsListKey},
+	}},
 	{id: sectionEditor, labelKey: "settings.settingsIndex.sectionEditor", icon: icons.Lucide("code"), rows: []settingEntry{
 		{titleKey: "settings.settingsAppearance.editorFontTitle", alsoKey: "settings.settingsAppearance.editorFontSearchWords", key: editorFontKey},
 		{titleKey: "settings.settingsAppearance.editorSizeTitle", alsoKey: "settings.settingsAppearance.editorSizeSearchWords", key: editorFontSizeKey},

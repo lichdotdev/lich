@@ -147,7 +147,13 @@ func (s *extensionScreen) renderer(k extensionKey) *extrender.Renderer {
 // of the window holds the keyboard, which leaves only ctrl chords live.
 func (s *extensionScreen) layout(gtx C, th *ui.Theme, typing bool) extensionAction {
 	gtx.Constraints.Min = gtx.Constraints.Max
-	ext, _ := s.store.byID(s.shown.ext)
+	ext, ok := s.store.byID(s.shown.ext)
+	if !ok {
+		// Removed: its process is gone, so there is no one to tell the surface closed.
+		s.open = false
+		delete(s.trees, s.shown)
+		return extensionAction{}
+	}
 	tree, has := s.store.render(s.shown)
 	switch extensionViewOf(ext.Status, has) {
 	case extensionFailed:

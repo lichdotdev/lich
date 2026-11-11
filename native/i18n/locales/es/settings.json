@@ -30,7 +30,8 @@
       "versionControl": "Control de versiones",
       "updates": "Actualizaciones",
       "help": "Ayuda",
-      "services": "Servicios"
+      "services": "Servicios",
+      "extensions": "Extensiones"
     },
     "notYet": "Aún no está aquí",
     "projectDesc": "Lo que este proyecto cambia respecto a Global. Una fila sin cambios sigue a Global."
@@ -632,5 +633,37 @@
     "commandHint": "Se ejecuta en la carpeta del proyecto, sin los archivos rc de tu shell. Mantenlo en primer plano: un comando que se desprende (-d, &) termina enseguida y aparece como detenido.",
     "startWithLich": "Iniciar con lich",
     "save": "Guardar"
+  },
+  "extensionsSettings": {
+    "description": "Cada extensión se ejecuta en tu equipo como tú, con acceso a tus archivos y cuentas.",
+    "openFolder": "Abrir carpeta",
+    "fromGit": "Desde GitHub",
+    "fromDir": "Desde una carpeta",
+    "dirPlaceholder": "Ninguna carpeta elegida",
+    "chooseFolder": "Elegir carpeta…",
+    "install": "Instalar",
+    "installing": "Instalando…",
+    "gitHint": "lich descarga la última versión compilada para este sistema y la verifica con las sumas de comprobación de la versión.",
+    "dirHint": "lich copia una carpeta que contiene el manifiesto y el programa ya compilado para este sistema.",
+    "pickTitle": "Elige el manifest.json de la extensión",
+    "installTitle": "¿Instalar esta extensión?",
+    "installDescription": "Viene de {source}. Se ejecutará en tu equipo como tú, con acceso a tus archivos y cuentas. Instálala solo si confías en quien la hizo.",
+    "removeTitle": "¿Quitar la extensión?",
+    "removeDescription": "lich detiene {name} y borra su carpeta. Lo que haya guardado dentro se va con ella.",
+    "remove": "Quitar",
+    "restart": "Reiniciar",
+    "emptyTitle": "Aún no hay extensiones",
+    "emptyDescription": "Una extensión añade su propia pantalla a lich. Instala una desde su repositorio de GitHub o desde una carpeta.",
+    "installRow": "Instalar una extensión",
+    "installSearchWords": "extensiones añadir instalar plugin mod github repositorio versión carpeta",
+    "listRow": "Extensiones instaladas",
+    "listSearchWords": "extensiones quitar desinstalar reiniciar plugin mod estado",
+    "status": {
+      "running": "En ejecución",
+      "restarting": "Reiniciando",
+      "failed": "Falló",
+      "invalid": "No válida",
+      "stopped": "Detenida"
+    }
   }
 }

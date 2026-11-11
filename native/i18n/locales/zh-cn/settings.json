@@ -30,7 +30,8 @@
       "versionControl": "版本控制",
       "updates": "更新",
       "help": "帮助",
-      "services": "服务"
+      "services": "服务",
+      "extensions": "扩展"
     },
     "notYet": "这里还没有",
     "projectDesc": "此项目相对全局所做的更改。没有更改的行沿用全局。"
@@ -631,5 +632,37 @@
     "commandHint": "在项目目录中运行，不加载 shell 的 rc 文件。请保持在前台运行：会脱离的命令（-d、&）会立即退出并显示为已停止。",
     "startWithLich": "随 lich 启动",
     "save": "保存"
+  },
+  "extensionsSettings": {
+    "description": "每个扩展都以你的身份在你的电脑上运行，可以访问你的文件和账户。",
+    "openFolder": "打开文件夹",
+    "fromGit": "从 GitHub",
+    "fromDir": "从文件夹",
+    "dirPlaceholder": "未选择文件夹",
+    "chooseFolder": "选择文件夹…",
+    "install": "安装",
+    "installing": "正在安装…",
+    "gitHint": "lich 会下载为此系统构建的最新版本，并用该版本的校验和进行核对。",
+    "dirHint": "lich 会复制一个包含清单和已为此系统构建好的程序的文件夹。",
+    "pickTitle": "选择扩展的 manifest.json",
+    "installTitle": "安装此扩展？",
+    "installDescription": "它来自 {source}。它将以你的身份在你的电脑上运行，可以访问你的文件和账户。只有在你信任其作者时才安装。",
+    "removeTitle": "移除扩展？",
+    "removeDescription": "lich 会停止 {name} 并删除它的文件夹。它保存在其中的内容也会一并删除。",
+    "remove": "移除",
+    "restart": "重启",
+    "emptyTitle": "还没有扩展",
+    "emptyDescription": "扩展会为 lich 添加它自己的界面。可以从它的 GitHub 仓库或文件夹安装。",
+    "installRow": "安装扩展",
+    "installSearchWords": "扩展 添加 安装 插件 mod github 仓库 版本 文件夹",
+    "listRow": "已安装的扩展",
+    "listSearchWords": "扩展 移除 卸载 重启 插件 mod 状态",
+    "status": {
+      "running": "运行中",
+      "restarting": "正在重启",
+      "failed": "失败",
+      "invalid": "无效",
+      "stopped": "已停止"
+    }
   }
 }

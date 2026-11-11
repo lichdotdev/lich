@@ -30,7 +30,8 @@
       "versionControl": "Controle de versão",
       "updates": "Atualizações",
       "help": "Ajuda",
-      "services": "Serviços"
+      "services": "Serviços",
+      "extensions": "Extensões"
     },
     "notYet": "Ainda não está aqui",
     "projectDesc": "O que este projeto muda em relação ao Global. Uma linha sem mudança segue o Global."
@@ -632,5 +633,37 @@
     "commandHint": "Roda na pasta do projeto, sem os arquivos rc do seu shell. Mantenha-o em primeiro plano: um comando que se desprende (-d, &) sai na hora e aparece como parado.",
     "startWithLich": "Iniciar com o lich",
     "save": "Salvar"
+  },
+  "extensionsSettings": {
+    "description": "Cada extensão roda no seu computador como você, com acesso aos seus arquivos e contas.",
+    "openFolder": "Abrir pasta",
+    "fromGit": "Do GitHub",
+    "fromDir": "De uma pasta",
+    "dirPlaceholder": "Nenhuma pasta escolhida",
+    "chooseFolder": "Escolher pasta…",
+    "install": "Instalar",
+    "installing": "Instalando…",
+    "gitHint": "O lich baixa a release mais recente feita para este sistema e confere com os checksums da release.",
+    "dirHint": "O lich copia uma pasta com o manifesto e o programa já compilado para este sistema.",
+    "pickTitle": "Escolha o manifest.json da extensão",
+    "installTitle": "Instalar esta extensão?",
+    "installDescription": "Ela vem de {source}. Ela vai rodar no seu computador como você, com acesso aos seus arquivos e contas. Instale só se você confia em quem a fez.",
+    "removeTitle": "Remover extensão?",
+    "removeDescription": "O lich para {name} e apaga a pasta dela. O que ela salvou lá dentro vai junto.",
+    "remove": "Remover",
+    "restart": "Reiniciar",
+    "emptyTitle": "Nenhuma extensão ainda",
+    "emptyDescription": "Uma extensão adiciona uma tela própria ao lich. Instale uma pelo repositório no GitHub ou de uma pasta.",
+    "installRow": "Instalar uma extensão",
+    "installSearchWords": "extensões adicionar instalar plugin mod github repositório release pasta",
+    "listRow": "Extensões instaladas",
+    "listSearchWords": "extensões remover desinstalar reiniciar plugin mod status",
+    "status": {
+      "running": "Rodando",
+      "restarting": "Reiniciando",
+      "failed": "Falhou",
+      "invalid": "Inválida",
+      "stopped": "Parada"
+    }
   }
 }

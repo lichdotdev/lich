@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/extension"
@@ -34,4 +36,36 @@ func (c *Client) SendExtension(ctx context.Context, id string, msg extension.Mes
 func (c *Client) RestartExtension(ctx context.Context, id string) error {
 	_, err := callMethod(ctx, c, api.ExtensionsRestart, api.ExtensionIDOptions{ID: id})
 	return err
+}
+
+// InstallExtensionFromGit installs and starts the latest release of the
+// GitHub repository at url.
+func (c *Client) InstallExtensionFromGit(ctx context.Context, url string) (Extension, error) {
+	return callMethod(ctx, c, api.ExtensionsInstallFromGit, api.ExtensionGitInstallOptions{URL: url})
+}
+
+// InstallExtensionFromDir copies the extension in dir and starts it.
+func (c *Client) InstallExtensionFromDir(ctx context.Context, dir string) (Extension, error) {
+	return callMethod(ctx, c, api.ExtensionsInstallFromDir, api.ExtensionDirInstallOptions{Dir: dir})
+}
+
+// RemoveExtension stops extension id and deletes its directory.
+func (c *Client) RemoveExtension(ctx context.Context, id string) error {
+	_, err := callMethod(ctx, c, api.ExtensionsRemove, api.ExtensionIDOptions{ID: id})
+	return err
+}
+
+// ExtensionsDir is the directory a lich on this machine reads extensions
+// from, the way internal/extensions names it: the backend has no call that
+// answers it, and the list cannot when it is empty.
+func ExtensionsDir(getenv func(string) string) (string, error) {
+	dir, err := os.UserConfigDir()
+	if err != nil {
+		return "", fmt.Errorf("resolve config directory: %w", err)
+	}
+	name := "extensions"
+	if getenv("LICH_DEV") != "" {
+		name = "extensions-dev"
+	}
+	return filepath.Join(dir, "lich", name), nil
 }
