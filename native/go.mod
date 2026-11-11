@@ -42,3 +42,5 @@ require (
 replace gioui.org => github.com/lichdotdev/gio v0.0.0-20261108212453-3dc6e3e4274b
 
 replace github.com/lichdotdev/lich => ../
+
+replace github.com/lichdotdev/lich/extension => ../extension

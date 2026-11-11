@@ -26,6 +26,7 @@ import (
 	"github.com/lichdotdev/lich/internal/codexprofile"
 	"github.com/lichdotdev/lich/internal/drop"
 	"github.com/lichdotdev/lich/internal/events"
+	"github.com/lichdotdev/lich/internal/extensions"
 	"github.com/lichdotdev/lich/internal/logging"
 	"github.com/lichdotdev/lich/internal/ompprofile"
 	"github.com/lichdotdev/lich/internal/patchnotes"
@@ -161,13 +162,20 @@ func app() {
 	// Deferred after the hands-on flush, so it runs first: a service's process
 	// is lich's child, and quitting lich is what stops it.
 	defer shutdownServices(svcs, coord)
-	sys, closeBrowsers := registerServices(db, term, svcs, hub, configDir, logPath, env, launchEnv, coord)
+	exts := extensions.New(extensions.Dir(configDir), version, env, hub.Emit)
+	defer exts.Shutdown()
+	sys, closeBrowsers := registerServices(db, term, svcs, exts, hub, configDir, logPath, env, launchEnv, coord)
 	defer closeBrowsers()
 
 	coord.SetWindowOpen(hub.Attached)
 	term.SetRestart(coord.Do)
 
-	run(term, configDir, coord, servicesBoot(svcs), startWindow(sys, noWindow), closeWindow(hub))
+	bootServices := servicesBoot(svcs)
+	boot := func() {
+		bootServices()
+		exts.Boot()
+	}
+	run(term, configDir, coord, boot, startWindow(sys, noWindow), closeWindow(hub))
 }
 
 func shutdownServices(svcs *services.Service, coord *restart.Coordinator) {
@@ -232,7 +240,7 @@ func resolveEnv() (launchEnv, env []string) {
 // in the order main built them: a service that hands another one a callback has
 // to exist first. It is lifted out of main only for its length; nothing here
 // runs anywhere else.
-func registerServices(db *store.Service, term *terminal.Service, svcs *services.Service, hub *events.Hub,
+func registerServices(db *store.Service, term *terminal.Service, svcs *services.Service, exts *extensions.Service, hub *events.Hub,
 	configDir, logPath string, env, launchEnv []string, coord *restart.Coordinator) (*system.Service, func()) {
 	// One Chromium per session, closed with the card and with the process.
 	// Never the lich window: this is a second browser the agent drives.
@@ -583,6 +591,7 @@ func registerServices(db *store.Service, term *terminal.Service, svcs *services.
 	})
 	routes.Tray(dispatcher, trayIcon)
 	routes.Services(dispatcher, svcs)
+	routes.Extensions(dispatcher, exts)
 	term.Mount("/rpc/", dispatcher)
 	term.Mount("/drop", http.HandlerFunc(drops.Upload))
 	term.Mount("/blob", http.HandlerFunc(proj.ServeBlob))

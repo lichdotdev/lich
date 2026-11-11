@@ -64,6 +64,8 @@ cursorprofile.LoginCommand(ProfileSlugOptions) string
 cursorprofile.Profiles(None) []ProfileInfo
 cursorprofile.UpdateProfile(UpdateProfileOptions) Profile
 drop.Attach(AttachDropOptions) DropAttachment
+extensions.List(None) []Extension
+extensions.Send(ExtensionSendOptions) None
 kiroprofile.CreateProfile(CreateProfileOptions) Profile
 kiroprofile.DeleteProfile(ProfileSlugOptions) None
 kiroprofile.LoginCommand(ProfileSlugOptions) string
@@ -266,6 +268,8 @@ event browser-state BrowserState
 event browser:frame:<id> string
 event claude-profile-login ProfileLogin
 event codex-profile-login ProfileLogin
+event extension-message ExtensionMessage
+event extension-status Extension
 event lich-plugin-profiles PluginProfiles
 event plugin-incompatible PluginIncompatible
 event profile-changed ProfileChanged
@@ -597,6 +601,20 @@ AttachDropOptions {
 	sessionId string
 	root string
 	confined bool
+}
+
+Extension {
+	id string
+	name string
+	version string
+	status string
+	error,omitempty string
+	surfaces []ExtensionSurface
+}
+
+ExtensionSendOptions {
+	id string
+	message json
 }
 
 PatchNotesOptions {
@@ -1745,6 +1763,11 @@ ProfileLogin {
 	pluginError,omitempty string
 }
 
+ExtensionMessage {
+	extensionId string
+	message json
+}
+
 PluginProfiles {
 	provider string
 	name string
@@ -1976,6 +1999,12 @@ ProfileUpdate {
 	name,omitempty string
 	color,omitempty *string
 	image,omitempty *string
+}
+
+ExtensionSurface {
+	id string
+	title string
+	icon,omitempty string
 }
 
 PatchNotesHighlight {
