@@ -22,6 +22,9 @@ type Manifest struct {
 	MinLichVersion string    `json:"minLichVersion,omitempty"`
 	Executable     string    `json:"executable"`
 	Surfaces       []Surface `json:"surfaces,omitempty"`
+	// Permissions is every Permission the extension's calls and
+	// subscriptions need; lich refuses any other.
+	Permissions []Permission `json:"permissions,omitempty"`
 }
 
 // Surface is a full screen the extension draws, opened from the top bar.

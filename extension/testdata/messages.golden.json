@@ -1,6 +1,15 @@
 [
   {
     "v": 1,
+    "kind": "call",
+    "data": {
+      "id": "id",
+      "method": "method",
+      "params": {}
+    }
+  },
+  {
+    "v": 1,
     "kind": "clipboard",
     "data": {
       "text": "text"
@@ -40,6 +49,14 @@
   },
   {
     "v": 1,
+    "kind": "lich.event",
+    "data": {
+      "name": "name",
+      "data": {}
+    }
+  },
+  {
+    "v": 1,
     "kind": "openExternal",
     "data": {
       "url": "url"
@@ -60,6 +77,15 @@
           "handler": "handler"
         }
       ]
+    }
+  },
+  {
+    "v": 1,
+    "kind": "result",
+    "data": {
+      "id": "id",
+      "data": {},
+      "error": "error"
     }
   },
   {

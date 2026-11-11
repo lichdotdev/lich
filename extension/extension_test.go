@@ -28,6 +28,10 @@ func fill(v reflect.Value, name string, parents ...reflect.Type) {
 		v.Set(reflect.ValueOf(Separator.New(NoProps{})))
 		return
 	}
+	if v.Type() == reflect.TypeFor[json.RawMessage]() {
+		v.SetBytes([]byte(`{}`))
+		return
+	}
 	switch v.Kind() {
 	case reflect.String:
 		v.SetString(name)
