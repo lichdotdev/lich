@@ -3,8 +3,18 @@
   "unavailable": "Abra uma sessão primeiro",
   "open": {
     "title": "Dê um navegador ao seu agente",
-    "body": "Sua sessão pode abrir uma página dentro do próprio lich. Clique com o botão direito na sua sessão e escolha Navegador.",
-    "hint": "Escolha Navegador no menu da sua sessão para continuar"
+    "body": "Sua sessão pode abrir uma página dentro do próprio lich, pelo menu dela.",
+    "hint": "Clique com o botão direito na sua sessão para continuar"
+  },
+  "item": {
+    "title": "Escolha Navegador",
+    "body": "Ele abre uma aba de navegador ao lado da sua sessão.",
+    "hint": "Clique em Navegador para continuar"
+  },
+  "again": {
+    "title": "Abra o navegador",
+    "body": "Sua sessão está num layout, então o navegador dela fica numa aba própria. Escolha Navegador no menu dela de novo e clique em Mover.",
+    "hint": "Abra o navegador da sua sessão para continuar"
   },
   "pane": {
     "title": "Você e seu agente veem a mesma página",

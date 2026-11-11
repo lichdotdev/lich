@@ -77,7 +77,11 @@ func (s *sidebar) card(gtx C, th *ui.Theme, sv *sessionView, active bool, folder
 		if len(sv.continueIn) > 0 {
 			extra = append(extra, continueInItem(th, sv, &act))
 		}
-		return cardMenu(sv, folders, &act, func() { rename.Start(sv.Label) }, func() { s.askFolderName([]string{sv.ID}) }, extra...)
+		e := cardMenu(sv, folders, &act, func() { rename.Start(sv.Label) }, func() { s.askFolderName([]string{sv.ID}) }, extra...)
+		if active {
+			tourBrowserSpot(e, s.tour)
+		}
+		return e
 	}
 	more, ok := s.moreMenus[sv.ID]
 	if !ok {

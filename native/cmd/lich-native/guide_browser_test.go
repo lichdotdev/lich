@@ -1,10 +1,12 @@
 package main
 
 import (
+	"image"
 	"testing"
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
+	"github.com/lichdotdev/lich/native/ui"
 )
 
 func TestBrowserGuideWaitsOnTheActiveSessionsBrowser(t *testing.T) {
@@ -31,5 +33,54 @@ func TestBrowserGuideWaitsOnTheActiveSessionsBrowser(t *testing.T) {
 	u.browserPanes["a"].notes = browserNotes{list: []*browserNote{{}}}
 	if !u.tourBrowserPicking() || !u.tourBrowserNoted() {
 		t.Fatal("a note left, picking over: want both steps done")
+	}
+}
+
+func TestBrowserGuideFollowsTheShownCardsMenu(t *testing.T) {
+	u := &window{model: newModel(nil, func() {}), browserPanes: map[string]*browserPaneUI{}, sidebar: newSidebar(nil)}
+	u.model.projects = []backend.Project{{ID: "p", Sessions: []backend.Session{{ID: "a"}, {ID: "b"}}}}
+	u.model.activeProject, u.model.active = "p", "a"
+
+	other := new(ui.MenuState)
+	other.OpenAt(image.Point{})
+	u.sidebar.menus["b"] = other
+	if u.tourCardMenuOpen() {
+		t.Fatal("another card's menu opened the shown session's")
+	}
+	more := new(ui.MenuState)
+	more.OpenAt(image.Point{})
+	u.sidebar.moreMenus["a"] = more
+	if !u.tourCardMenuOpen() {
+		t.Fatal("the corner menu of the shown card does not count")
+	}
+
+	if u.tourBrowserChosen() {
+		t.Fatal("nothing chosen yet")
+	}
+	u.layoutStage.move = moveConfirm{open: true, browser: true, session: "b"}
+	if u.tourBrowserChosen() {
+		t.Fatal("another session's move question moved the guide on")
+	}
+	u.layoutStage.move.session = "a"
+	if !u.tourBrowserChosen() {
+		t.Fatal("the move question for the shown session must end the step, or the tour covers it")
+	}
+}
+
+func TestTourBrowserSpotMarksOnlyTheBrowserEntry(t *testing.T) {
+	var act sidebarAction
+	entries := cardMenu(&sessionView{Session: backend.Session{ID: "a"}}, nil, &act, func() {}, func() {})
+	tourBrowserSpot(entries, nil)
+	spots := 0
+	for _, e := range entries {
+		if e.Spot != nil {
+			spots++
+			if e.Label != "Browser" {
+				t.Fatalf("spot on %q", e.Label)
+			}
+		}
+	}
+	if spots != 1 {
+		t.Fatalf("spots = %d, want 1", spots)
 	}
 }
