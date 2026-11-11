@@ -23,6 +23,9 @@ type composedState struct {
 	skeletonButton widget.Clickable
 
 	picture *ui.ImageData
+
+	splitH, splitV           ui.SplitPane
+	splitHRatio, splitVRatio float64
 }
 
 func (g *gallery) composedSection(gtx C, th *ui.Theme) D {
@@ -32,6 +35,7 @@ func (g *gallery) composedSection(gtx C, th *ui.Theme) D {
 	kids = append(kids, g.skeletons(th)...)
 	kids = append(kids, g.markedTexts(th)...)
 	kids = append(kids, g.images(th)...)
+	kids = append(kids, g.splitPanes(th)...)
 	return ui.Stack(4, kids...)(gtx)
 }
 
@@ -159,5 +163,31 @@ func (g *gallery) images(th *ui.Theme) []layout.Widget {
 			box(widget.Fill, "fill", 96, 64),
 			box(widget.Contain, "96x96", 96, 96),
 		),
+	}
+}
+
+func (g *gallery) splitPanes(th *ui.Theme) []layout.Widget {
+	if g.splitHRatio == 0 {
+		g.splitHRatio, g.splitVRatio = 0.5, 0.5
+		g.splitH.MinRatio, g.splitH.MaxRatio = 0.1, 0.9
+		g.splitV.MinRatio, g.splitV.MaxRatio = 0.1, 0.9
+	}
+	panel := func(text string) layout.Widget {
+		return func(gtx C) D {
+			ui.Fill(gtx, th.Over(th.Palette.Muted), ui.RadiusMD)
+			return layout.Center.Layout(gtx, th.Text(ui.TextXS, text).Muted().Layout)
+		}
+	}
+	split := func(s *ui.SplitPane, axis layout.Axis, ratio *float64, a, b string) layout.Widget {
+		return func(gtx C) D {
+			gtx.Constraints.Max.Y = gtx.Dp(120)
+			gtx.Constraints.Min = gtx.Constraints.Max
+			return s.Layout(gtx, axis, ratio, gtx.Dp(ui.Space(1.5)), gtx.Dp(48), gtx.Dp(48), panel(a), panel(b))
+		}
+	}
+	return []layout.Widget{
+		caption(th, "SplitPane: drag the gap; 48dp minimum per side, 10% to 90%"),
+		split(&g.splitH, layout.Horizontal, &g.splitHRatio, "first", "second"),
+		split(&g.splitV, layout.Vertical, &g.splitVRatio, "top", "bottom"),
 	}
 }
