@@ -1,4 +1,4 @@
-package main
+package markdown
 
 import (
 	"image"
@@ -38,9 +38,9 @@ func proseText(b markdownBlock) string {
 
 func TestALongMarkdownFileLaysOutOnlyTheBlocksInItsWindow(t *testing.T) {
 	src := strings.Repeat("## Heading\n\nA paragraph of the changelog, long enough to wrap once or twice in the column.\n\n", 1000)
-	m := markdownCache{}
+	m := Cache{}
 	gtx, _ := markdownFrame(800)
-	m.layoutWindow(gtx, markdownTheme(), "k", src, nil, markdownWindow{top: 0, bottom: 800})
+	m.LayoutWindow(gtx, markdownTheme(), "k", src, nil, Window{Top: 0, Bottom: 800})
 	laid := 0
 	for _, h := range m["k"].heights {
 		if h > 0 {
@@ -102,7 +102,7 @@ func TestMarkdownReadingColorsAndHierarchy(t *testing.T) {
 		th.Palette = palette
 		blocks := renderBlocks(th, "## Heading\n\nBody with [a link](https://example.com).\n\n| Header |\n|---|\n| Cell |")
 		heading := blocks[0].prose.spans[0]
-		if heading.Color != th.Foreground || heading.Font.Weight != font.Bold || heading.Size <= markdownBodySize {
+		if heading.Color != th.Foreground || heading.Font.Weight != font.Bold || heading.Size <= BodySize {
 			t.Errorf("heading style = %+v, want prominent foreground heading", heading)
 		}
 		for _, span := range blocks[1].prose.spans {
@@ -123,7 +123,7 @@ func TestMarkdownReadingColorsAndHierarchy(t *testing.T) {
 func TestMarkdownUpdatesWhenInterfaceAndEditorFontsChange(t *testing.T) {
 	th := markdownTheme()
 	th.Sans, th.Mono = "Interface A", "Editor A"
-	cache := markdownCache{}
+	cache := Cache{}
 	src := "## Heading\n\n- Text `code` after\n\n| Header |\n|---|\n| `cell` |"
 	cache.text(th, "body", src).heights[0] = 42
 	th.Sans, th.Mono = "Interface B", "Editor B"

@@ -10,6 +10,7 @@ import (
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
+	"github.com/lichdotdev/lich/native/ui/markdown"
 )
 
 // codeMarkdown is the preview's rendering state; rendering goes back to the
@@ -17,7 +18,7 @@ import (
 type codeMarkdown struct {
 	rendering bool
 	toggle    ui.IconActionState
-	rendered  markdownCache
+	rendered  markdown.Cache
 	scroll    widget.List
 }
 
@@ -39,9 +40,9 @@ func (p *preview) markdownBody(gtx C, th *ui.Theme) D {
 	}
 	inset, viewport := ui.Space(3), gtx.Constraints.Max.Y
 	return th.ScrollArea(&p.md.scroll).Layout(gtx, 1, func(gtx C, _ int) D {
-		window := viewportWindow(p.md.scroll.Position.Offset-gtx.Dp(inset), viewport)
+		window := markdown.ViewportWindow(p.md.scroll.Position.Offset-gtx.Dp(inset), viewport)
 		return layout.UniformInset(inset).Layout(gtx, func(gtx C) D {
-			return p.md.rendered.layoutWindow(gtx, th, p.rel, text, func(url string) { openLink(p.client, p.env.notify, url) }, window)
+			return p.md.rendered.LayoutWindow(gtx, th, p.rel, text, func(url string) { openLink(p.client, p.env.notify, url) }, window)
 		})
 	})
 }

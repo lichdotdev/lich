@@ -10,6 +10,7 @@ import (
 
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
+	"github.com/lichdotdev/lich/native/ui/markdown"
 )
 
 // The line heights the list's and rows' bars sit in, so each bar takes the
@@ -219,13 +220,13 @@ var skeletonProseLines = []float32{1, 0.96, 0.98, 0.93, 0.6}
 // a block gap apart, down to the bottom of the column.
 func skeletonProse(gtx C, th *ui.Theme) D {
 	full := gtx.Metric.PxToDp(gtx.Constraints.Max.X)
-	line := unit.Dp(gtx.Metric.PxToDp(int(float32(gtx.Sp(markdownBodySize)) * markdownLineHeightScale)))
-	bar := unit.Dp(gtx.Metric.PxToDp(gtx.Sp(markdownBodySize)))
+	line := unit.Dp(gtx.Metric.PxToDp(int(float32(gtx.Sp(markdown.BodySize)) * markdown.LineHeightScale)))
+	bar := unit.Dp(gtx.Metric.PxToDp(gtx.Sp(markdown.BodySize)))
 	var children []layout.FlexChild
-	y, gap := 0, gtx.Dp(ui.Space(markdownBlockGap))
+	y, gap := 0, gtx.Dp(ui.Space(markdown.BlockGap))
 	for y < gtx.Constraints.Max.Y {
 		if len(children) > 0 {
-			children = append(children, ui.VGap(markdownBlockGap))
+			children = append(children, ui.VGap(markdown.BlockGap))
 			y += gap
 		}
 		for _, w := range skeletonProseLines {

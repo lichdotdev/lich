@@ -16,6 +16,7 @@ import (
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
 	"github.com/lichdotdev/lich/native/ui/icons"
+	"github.com/lichdotdev/lich/native/ui/markdown"
 )
 
 // The PR island's padding under the toolbar strip: the sidebar's, an 8px
@@ -99,7 +100,7 @@ type pullView struct {
 	tree      filesTree
 	inline    inlineFrame
 	root      *ui.Root
-	md        markdownCache
+	md        markdown.Cache
 	pending   map[string]*pendingReview // by PR URL
 	submit    submitState
 	mergeEdit mergeDialog
@@ -150,7 +151,7 @@ func (v *pullView) init() {
 	v.viewed = map[string]map[string]string{}
 	v.pending = map[string]*pendingReview{}
 	v.talk.init()
-	v.md = markdownCache{}
+	v.md = markdown.Cache{}
 	v.tree.closed = map[string]bool{}
 	v.tree.rows.list.Axis = layout.Vertical
 }

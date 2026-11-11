@@ -1,4 +1,6 @@
-package main
+// Package markdown draws Markdown text: GFM tables and task lists, links handed
+// back to the caller, and only the blocks a viewport can show.
+package markdown
 
 import (
 	"image"
@@ -15,11 +17,16 @@ import (
 	"github.com/lichdotdev/lich/native/ui"
 )
 
+type (
+	C = layout.Context
+	D = layout.Dimensions
+)
+
 const (
-	markdownBodySize        = unit.Sp(15)
-	markdownH1              = unit.Sp(20)
-	markdownH2              = unit.Sp(19)
-	markdownLineHeightScale = 1.5
+	BodySize        = unit.Sp(15)
+	markdownH1      = unit.Sp(20)
+	markdownH2      = unit.Sp(19)
+	LineHeightScale = 1.5
 	// markdownHeadingLineHeightScale is GitHub's line-height for headings,
 	// which keeps an h1 or h2's rule close to its text.
 	markdownHeadingLineHeightScale = 1.25
@@ -57,39 +64,39 @@ type markdownCell struct {
 	spans []richtext.SpanStyle
 	code  []bool
 	state richtext.InteractiveText
-	// lineHeight is the line height scale, markdownLineHeightScale when 0.
+	// lineHeight is the line height scale, LineHeightScale when 0.
 	lineHeight float32
 }
 
-// markdownCache keeps each body's markdownText by a key of the caller's, so
+// Cache keeps each body's markdownText by a key of the caller's, so
 // a frame does not parse the same text again and a link's hover survives.
-type markdownCache map[string]*markdownText
+type Cache map[string]*markdownText
 
-// markdownBlockGap is the room between blocks.
-const markdownBlockGap = 4
+// BlockGap is the room between blocks.
+const BlockGap = 4
 
-// markdownWindow is the stretch of a body, in its own pixels, a frame can
+// Window is the stretch of a body, in its own pixels, a frame can
 // show. A block outside it is not laid out and keeps the height it last had.
-type markdownWindow struct{ top, bottom int }
+type Window struct{ Top, Bottom int }
 
-var markdownWhole = markdownWindow{top: math.MinInt, bottom: math.MaxInt}
+var whole = Window{Top: math.MinInt, Bottom: math.MaxInt}
 
-// viewportWindow is the window of a body whose top sits top pixels above
+// ViewportWindow is the window of a body whose top sits top pixels above
 // the viewport's, a viewport of room either side so a scroll lands on drawn
 // blocks.
-func viewportWindow(top, viewport int) markdownWindow {
-	return markdownWindow{top: top - viewport, bottom: top + 2*viewport}
+func ViewportWindow(top, viewport int) Window {
+	return Window{Top: top - viewport, Bottom: top + 2*viewport}
 }
 
 // layout draws src as Markdown; a link clicked lands in open.
-func (m markdownCache) layout(gtx C, th *ui.Theme, key, src string, open func(url string)) D {
-	return m.layoutWindow(gtx, th, key, src, open, markdownWhole)
+func (m Cache) Layout(gtx C, th *ui.Theme, key, src string, open func(url string)) D {
+	return m.LayoutWindow(gtx, th, key, src, open, whole)
 }
 
-// layoutWindow is layout drawing only the blocks within window.
-func (m markdownCache) layoutWindow(gtx C, th *ui.Theme, key, src string, open func(url string), window markdownWindow) D {
+// LayoutWindow is layout drawing only the blocks within window.
+func (m Cache) LayoutWindow(gtx C, th *ui.Theme, key, src string, open func(url string), window Window) D {
 	t := m.text(th, key, src)
-	gap, estimate := gtx.Dp(ui.Space(markdownBlockGap)), t.estimate(gtx)
+	gap, estimate := gtx.Dp(ui.Space(BlockGap)), t.estimate(gtx)
 	y, width := 0, gtx.Constraints.Min.X
 	for i, b := range t.blocks {
 		if i > 0 {
@@ -99,7 +106,7 @@ func (m markdownCache) layoutWindow(gtx C, th *ui.Theme, key, src string, open f
 		if h == 0 {
 			h = estimate
 		}
-		if y+h < window.top || y > window.bottom {
+		if y+h < window.Top || y > window.Bottom {
 			y += h
 			continue
 		}
@@ -116,7 +123,7 @@ func (m markdownCache) layoutWindow(gtx C, th *ui.Theme, key, src string, open f
 }
 
 // text is the cache's entry for key, parsed again when src or the theme changes.
-func (m markdownCache) text(th *ui.Theme, key, src string) *markdownText {
+func (m Cache) text(th *ui.Theme, key, src string) *markdownText {
 	t, ok := m[key]
 	if !ok {
 		t = new(markdownText)
@@ -141,7 +148,7 @@ func (t *markdownText) estimate(gtx C) int {
 		}
 	}
 	if measured == 0 {
-		return 2 * gtx.Sp(markdownBodySize)
+		return 2 * gtx.Sp(BodySize)
 	}
 	return sum / measured
 }
@@ -183,5 +190,5 @@ func (c *markdownCell) lineHeightScale() float32 {
 	if c.lineHeight != 0 {
 		return c.lineHeight
 	}
-	return markdownLineHeightScale
+	return LineHeightScale
 }

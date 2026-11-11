@@ -1,4 +1,4 @@
-package main
+package markdown
 
 import (
 	"image"
@@ -43,7 +43,7 @@ func TestMarkdownInlineCodeBackgroundWrapsWithText(t *testing.T) {
 	ops := new(op.Ops)
 	gtx := layout.Context{Ops: ops, Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}, Constraints: layout.Constraints{Max: image.Pt(180, 150)}}
 	paint.Fill(ops, th.Background)
-	(markdownCache{}).layout(gtx, th, "test", "`one two three four five six seven eight nine`", nil)
+	(Cache{}).Layout(gtx, th, "test", "`one two three four five six seven eight nine`", nil)
 	if err := win.Frame(ops); err != nil {
 		t.Fatal(err)
 	}
@@ -63,7 +63,7 @@ func TestMarkdownInlineCodeBackgroundWrapsWithText(t *testing.T) {
 			}
 		}
 	}
-	if first < 0 || last-first < gtx.Sp(markdownBodySize)*2 {
+	if first < 0 || last-first < gtx.Sp(BodySize)*2 {
 		t.Errorf("background extends from %d to %d, want backgrounds on multiple lines", first, last)
 	}
 }

@@ -9,6 +9,7 @@ import (
 	"gioui.org/unit"
 
 	"github.com/lichdotdev/lich/native/ui"
+	"github.com/lichdotdev/lich/native/ui/markdown"
 )
 
 // skeletonWidths are ragged fractions a list's bars take, so it reads as
@@ -116,8 +117,8 @@ func skeletonConversation(gtx C, th *ui.Theme) D {
 // skeletonMarkdownLine is a line of a Markdown body w wide.
 func skeletonMarkdownLine(th *ui.Theme, w unit.Dp) layout.Widget {
 	return func(gtx C) D {
-		line := gtx.Metric.PxToDp(int(float32(gtx.Sp(markdownBodySize)) * markdownLineHeightScale))
-		return skeletonBar(th, w, line, gtx.Metric.PxToDp(gtx.Sp(markdownBodySize)))(gtx)
+		line := gtx.Metric.PxToDp(int(float32(gtx.Sp(markdown.BodySize)) * markdown.LineHeightScale))
+		return skeletonBar(th, w, line, gtx.Metric.PxToDp(gtx.Sp(markdown.BodySize)))(gtx)
 	}
 }
 

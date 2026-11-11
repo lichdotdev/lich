@@ -1,4 +1,4 @@
-package main
+package markdown
 
 import (
 	"fmt"
@@ -37,7 +37,7 @@ func renderList(th *ui.Theme, source []byte, list *ast.List) *markdownList {
 			index++
 		}
 		entry := markdownListItem{marker: markdownCell{spans: []richtext.SpanStyle{{
-			Font: font.Font{Typeface: th.Sans}, Size: markdownBodySize, Color: markdownProseColor(th), Content: marker,
+			Font: font.Font{Typeface: th.Sans}, Size: BodySize, Color: markdownProseColor(th), Content: marker,
 		}}}}
 		if box := taskCheckBox(item); box != nil {
 			entry.task = &widget.Bool{Value: box.IsChecked}
@@ -109,7 +109,7 @@ func (item *markdownListItem) markerWidth(gtx C, th *ui.Theme) int {
 func (item *markdownListItem) layoutTask(gtx C, th *ui.Theme) D {
 	box := th.Checkbox(item.task)
 	box.Disabled = true
-	line := int(float32(gtx.Sp(markdownBodySize)) * markdownLineHeightScale)
+	line := int(float32(gtx.Sp(BodySize)) * LineHeightScale)
 	return layout.E.Layout(gtx, func(gtx C) D {
 		call := op.Record(gtx.Ops)
 		dims := box.Layout(gtx)

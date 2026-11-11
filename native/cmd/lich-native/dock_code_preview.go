@@ -19,6 +19,7 @@ import (
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
 	"github.com/lichdotdev/lich/native/ui/icons"
+	"github.com/lichdotdev/lich/native/ui/markdown"
 )
 
 var icPreviewBack = icons.Lucide("chevron-left")
@@ -69,7 +70,7 @@ func newPreview(client *backend.Client, view *godemirror.View, family string, si
 	p := &preview{client: client, view: view, family: family, size: size, blockAt: -1, image: newBlobView(invalidate), find: newFindBar()}
 	p.file.invalidate = invalidate
 	p.scroll.Axis = layout.Vertical
-	p.md.rendered = markdownCache{}
+	p.md.rendered = markdown.Cache{}
 	p.md.scroll.Axis = layout.Vertical
 	return p
 }

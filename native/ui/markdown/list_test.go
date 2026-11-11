@@ -1,4 +1,4 @@
-package main
+package markdown
 
 import (
 	"image"
@@ -42,7 +42,7 @@ func TestMarkdownListWrapsInsideMarkerColumn(t *testing.T) {
 	body.Constraints.Max.X -= markerWidth + gtx.Dp(ui.Space(2))
 	bodySize := item.layoutBody(body, th, nil).Size
 	got := list.layout(gtx, th, nil).Size
-	if bodySize.Y <= gtx.Sp(markdownBodySize)*2 {
+	if bodySize.Y <= gtx.Sp(BodySize)*2 {
 		t.Fatalf("test item did not wrap: height %d", bodySize.Y)
 	}
 	if got.Y != bodySize.Y || got.X < bodySize.X+markerWidth+gtx.Dp(ui.Space(2)) {

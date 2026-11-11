@@ -148,6 +148,7 @@ type gallery struct {
 
 	side *sidebar
 	cov  coverageState
+	rich richState
 
 	toastState
 	contentState
@@ -223,6 +224,7 @@ func (g *gallery) content(gtx C) D {
 					g.section("Toast", g.toastsSection),
 					g.section("IconAction, CornerButton, BarIconButton", g.iconButtonsSection),
 					g.section("DiffStat, MetaGlyph, Pill, KeyCap", g.metaSection),
+					g.section("Markdown", g.markdownSection),
 				)),
 			)
 		}),

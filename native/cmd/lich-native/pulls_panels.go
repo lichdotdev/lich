@@ -376,7 +376,7 @@ func (v *pullView) overviewRows(th *ui.Theme, d backend.PRDetail, act *pullsActi
 			if body == "" {
 				return th.Text(ui.TextSM, i18n.T("pulls.pullsOverview.noDescription")).Muted().Layout(gtx)
 			}
-			return v.md.layout(gtx, th, "body:"+d.URL, body, act.open)
+			return v.md.Layout(gtx, th, "body:"+d.URL, body, act.open)
 		})
 	}}
 }

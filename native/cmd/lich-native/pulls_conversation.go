@@ -195,7 +195,7 @@ func (v *pullView) talkEntry(th *ui.Theme, p *pullsScreen, key string, who autho
 							if editing {
 								return v.editBox(gtx, th, target, act)
 							}
-							return v.md.layout(gtx, th, key, body, act.open)
+							return v.md.Layout(gtx, th, key, body, act.open)
 						})
 					}),
 				)

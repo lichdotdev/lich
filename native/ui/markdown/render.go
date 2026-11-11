@@ -1,4 +1,4 @@
-package main
+package markdown
 
 // Markdown to richtext, one block per top-level node, so a long file lays
 // out only the blocks on screen. gioui.org/x/markdown renders a whole source
@@ -78,7 +78,7 @@ type spanWriter struct {
 
 func renderNode(th *ui.Theme, source []byte, n ast.Node, fg color.NRGBA) *markdownCell {
 	w := &spanWriter{th: th, source: source, fg: fg}
-	w.cur = richtext.SpanStyle{Font: font.Font{Typeface: th.Sans}, Size: markdownBodySize, Color: fg}
+	w.cur = richtext.SpanStyle{Font: font.Font{Typeface: th.Sans}, Size: BodySize, Color: fg}
 	_ = ast.Walk(n, w.visit)
 	if last := len(w.spans) - 1; last >= 0 {
 		w.spans[last].Content = strings.TrimRight(w.spans[last].Content, "\n")
@@ -176,7 +176,7 @@ func (w *spanWriter) codeSpan(entering bool) {
 
 func (w *spanWriter) heading(n *ast.Heading, entering bool) {
 	if !entering {
-		w.cur.Size = markdownBodySize
+		w.cur.Size = BodySize
 		w.cur.Font.Weight = font.Normal
 		w.cur.Color = w.fg
 		w.headingWeight = font.Normal
