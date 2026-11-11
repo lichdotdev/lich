@@ -1,15 +1,12 @@
 package main
 
 import (
-	"image"
 	"image/color"
 	"slices"
 	"time"
 
 	"gioui.org/layout"
 	"gioui.org/op"
-	"gioui.org/op/clip"
-	"gioui.org/op/paint"
 	"gioui.org/unit"
 	"gioui.org/widget"
 	"gioui.org/widget/material"
@@ -369,11 +366,8 @@ func trayColor(th *ui.Theme, tint string) color.NRGBA {
 // wears it on the whole tray, as its cards wore it at rest. The rows run to
 // the tray's edges, clipped to its corners, so a lit row fills it to the end.
 func folderTray(gtx C, th *ui.Theme, tint string, w layout.Widget) D {
-	return trayUnder(gtx, trayColor(th, tint), w)
+	return ui.Tray(gtx, trayColor(th, tint), w)
 }
-
-// dropBorder is the width of the border a block a card would go to wears.
-var dropBorder = unit.Dp(1.5)
 
 // dropTray is the tray of a block a carried card would go to if let go:
 // tinted as its cards are under the pointer, with a border in its color.
@@ -382,23 +376,5 @@ func dropTray(gtx C, th *ui.Theme, tint string, w layout.Widget) D {
 	if c, ok := cardColors[tint]; ok {
 		fill, edge = th.Over(ui.MixOKLab(color.NRGBA{}, c, tintHover)), c
 	}
-	d := trayUnder(gtx, fill, w)
-	rr := gtx.Dp(ui.RadiusLG)
-	width := float32(gtx.Dp(dropBorder))
-	inset := int(width / 2)
-	edgeRect := image.Rectangle{Min: image.Pt(inset, inset), Max: d.Size.Sub(image.Pt(inset, inset))}
-	paint.FillShape(gtx.Ops, edge, clip.Stroke{Path: clip.UniformRRect(edgeRect, rr-inset).Path(gtx.Ops), Width: width}.Op())
-	return d
-}
-
-// trayUnder lays w on a tray of fill, clipped to its corners.
-func trayUnder(gtx C, tray color.NRGBA, w layout.Widget) D {
-	rec := op.Record(gtx.Ops)
-	d := w(gtx)
-	content := rec.Stop()
-	shape := clip.UniformRRect(image.Rectangle{Max: d.Size}, gtx.Dp(ui.RadiusLG))
-	paint.FillShape(gtx.Ops, tray, shape.Op(gtx.Ops))
-	defer shape.Push(gtx.Ops).Pop()
-	content.Add(gtx.Ops)
-	return d
+	return ui.DropTray(gtx, fill, edge, w)
 }

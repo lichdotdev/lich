@@ -205,7 +205,11 @@ func (c *fileCard) title(gtx C, th *ui.Theme, light bool) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Rigid(func(gtx C) D { return chevron.Layout(gtx, ui.Space(3.5), th.MutedForeground) }),
 			ui.Gap(2),
-			layout.Rigid(func(gtx C) D { return badge(gtx, th, languageAbbr(c.git.path), light) }),
+			layout.Rigid(func(gtx C) D {
+				b := languageAbbr(c.git.path)
+				bg, fg := b.colors(th, light)
+				return th.AbbrBadge(b.abbr, bg, fg).Layout(gtx)
+			}),
 			ui.Gap(2),
 			layout.Rigid(func(gtx C) D { return truncated(gtx, th.Text(ui.TextXS, base).Weight(font.Medium)) }),
 			ui.Gap(2),
@@ -224,14 +228,6 @@ const (
 	badgeSize = unit.Dp(20)
 	badgeText = unit.Sp(9)
 )
-
-func badge(gtx C, th *ui.Theme, b langBadge, light bool) D {
-	bg, fg := b.colors(th, light)
-	size := gtx.Dp(badgeSize)
-	gtx.Constraints = layout.Exact(image.Pt(size, size))
-	ui.Fill(gtx, bg, ui.RadiusSM)
-	return layout.Center.Layout(gtx, th.On(bg).Text(badgeText, b.abbr).In(fg).Weight(font.Bold).Layout)
-}
 
 // body is what opening the file reveals: the binary line, the Markdown
 // preview, the whitespace line, or the diff with its right-click menu.

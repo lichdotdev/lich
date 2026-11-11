@@ -1,19 +1,13 @@
 package main
 
 import (
-	"image"
-	"strconv"
 	"strings"
 
-	"gioui.org/font"
 	"gioui.org/io/event"
 	"gioui.org/io/key"
 	"gioui.org/layout"
-	"gioui.org/op"
-	"gioui.org/text"
 	"gioui.org/unit"
 	"gioui.org/widget"
-	"golang.org/x/image/math/fixed"
 
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
@@ -210,38 +204,8 @@ func (s *settingsScreen) sectionRow(gtx C, th *ui.Theme, sec settingsSection, va
 			children = append(children, layout.Rigid(th.Text(ui.TextXS, where).In(th.Over(ui.Alpha(fg, navWhereOpacity))).Layout), ui.Gap(1.5))
 		}
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-			append(children, layout.Rigid(func(gtx C) D { return countBadge(gtx, th, badge) }))...)
+			append(children, layout.Rigid(func(gtx C) D { return th.CountBadge(gtx, badge) }))...)
 	})
-}
-
-// countBadge is the mockup's amber override count, nothing for none.
-func countBadge(gtx C, th *ui.Theme, n int) D {
-	if n == 0 {
-		return D{}
-	}
-	label := th.Text(navSmall, strconv.Itoa(n)).In(th.ToneWait).Weight(font.SemiBold)
-	gtx.Constraints.Min = image.Point{}
-	ink := inkBounds(gtx, th, label)
-	size := image.Pt(max(ink.Dx()+gtx.Dp(navBadgePadX)*2, gtx.Dp(navBadgeSize)), gtx.Dp(navBadgeSize))
-	box := gtx
-	box.Constraints = layout.Exact(size)
-	ui.Fill(box, th.Over(ui.Alpha(th.ToneWait, navBadgeFill)), navBadgeSize/2)
-	center := ink.Min.Add(ink.Max).Div(2)
-	defer op.Offset(size.Div(2).Sub(center)).Push(gtx.Ops).Pop()
-	label.Layout(gtx)
-	return D{Size: size}
-}
-
-// inkBounds is the box label's glyphs paint, where its Layout puts them: a
-// digit's advance carries side bearings that sit it off center in a pill.
-func inkBounds(gtx C, th *ui.Theme, label ui.LabelStyle) image.Rectangle {
-	th.Shaper.LayoutString(text.Parameters{Font: label.Font, PxPerEm: fixed.I(gtx.Sp(label.Size)), MaxLines: 1, MaxWidth: gtx.Constraints.Max.X, Locale: gtx.Locale}, label.Text)
-	var ink image.Rectangle
-	for g, ok := th.Shaper.NextGlyph(); ok; g, ok = th.Shaper.NextGlyph() {
-		x, y := g.X, fixed.I(int(g.Y))
-		ink = ink.Union(image.Rect((x + g.Bounds.Min.X).Floor(), (y + g.Bounds.Min.Y).Floor(), (x + g.Bounds.Max.X).Ceil(), (y + g.Bounds.Max.Y).Ceil()))
-	}
-	return ink
 }
 
 // results are the nav while the field has text: the count, then each hit as

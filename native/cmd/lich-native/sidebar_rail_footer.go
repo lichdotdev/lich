@@ -113,7 +113,7 @@ func railServicesBadge(gtx C, th *ui.Theme, t servicesTally) D {
 	r := float32(gtx.Dp(3))
 	center := f32.Pt(float32(size.X)-r, r)
 	if !t.failed {
-		pulseRing(gtx, th, center, r, float32(gtx.Dp(3)), c)
+		th.PulseRing(gtx, center, r, float32(gtx.Dp(3)), c)
 	}
 	ui.StrokeArc(gtx, center, r+float32(gtx.Dp(1)), float32(gtx.Dp(2)), 0, 2*math.Pi, th.Surface)
 	ui.StrokeArc(gtx, center, r/2, r, 0, 2*math.Pi, c)
@@ -207,7 +207,13 @@ func (r *sidebarRail) searchButton(gtx C, th *ui.Theme, s *sidebar) D {
 				return ui.SquareFace(gtx, bg, func(gtx C) D {
 					return layout.Stack{}.Layout(gtx,
 						layout.Stacked(func(gtx C) D { return icSearch.Layout(gtx, ui.Space(4), th.MutedForeground) }),
-						layout.Expanded(func(gtx C) D { return railFilterDot(gtx, th.On(bg), narrows && !r.foot.searchPanel.Opened()) }),
+						layout.Expanded(func(gtx C) D {
+							if !narrows || r.foot.searchPanel.Opened() {
+								return D{Size: gtx.Constraints.Min}
+							}
+							on := th.On(bg)
+							return on.CornerDot(gtx, on.Foreground)
+						}),
 					)
 				})
 			})
@@ -237,18 +243,4 @@ func (r *sidebarRail) searchOpened(gtx C, h *sidebarHeader, was bool) {
 	if !open {
 		h.searchFocused = false
 	}
-}
-
-// railFilterDot is the dot on the filter button's corner while a filter
-// narrows the rail with its panel closed, ringed in the button's fill.
-func railFilterDot(gtx C, th *ui.Theme, on bool) D {
-	size := gtx.Constraints.Min
-	if !on {
-		return D{Size: size}
-	}
-	r := float32(gtx.Dp(3))
-	center := f32.Pt(float32(size.X)-r, r)
-	ui.StrokeArc(gtx, center, r+float32(gtx.Dp(1)), float32(gtx.Dp(2)), 0, 2*math.Pi, th.Surface)
-	ui.StrokeArc(gtx, center, r/2, r, 0, 2*math.Pi, th.Foreground)
-	return D{Size: size}
 }

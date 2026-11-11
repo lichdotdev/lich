@@ -763,7 +763,7 @@ func (u *window) island(gtx C, v stageView, termWidth int) error {
 	if u.terms.has(v.active.ID) {
 		u.drop.setRect(image.Rectangle{Min: u.islandAt, Max: u.islandAt.Add(size)})
 		if u.drop.hinting() || *flagDropHint {
-			dropHint(gtx, u.theme.On(fill), v.active.Label, v.active.sandbox.Confined)
+			dropHintFor(u.theme.On(fill), v.active.Label, v.active.sandbox.Confined).Layout(gtx)
 		}
 	}
 	return nil

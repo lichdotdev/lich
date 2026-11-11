@@ -5,10 +5,8 @@ import (
 	"image/color"
 	"math"
 
-	"gioui.org/f32"
 	"gioui.org/font"
 	"gioui.org/layout"
-	"gioui.org/op"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
 	"gioui.org/widget"
@@ -40,8 +38,6 @@ const (
 	// tabDetachedFill is the active tab that sits over the gap between two
 	// islands and so grows out of neither: a raised fill instead of a merge.
 	tabDetachedFill = 0.08
-	// kappa places a cubic's controls so it draws a quarter circle.
-	kappa = 0.5523
 )
 
 var (
@@ -357,9 +353,9 @@ func (t *topbar) fillets(gtx C, f topbarFrame, w int) {
 	left := t.activeIndex(f)*w - t.list.Position.Offset
 	bottom := gtx.Constraints.Max.Y
 	if left != s.x0 {
-		fillet(gtx, image.Pt(left-r, bottom-r), r, false, s.color)
+		ui.Fillet(gtx, image.Pt(left-r, bottom-r), r, false, s.color)
 	}
-	fillet(gtx, image.Pt(left+w, bottom-r), r, true, s.color)
+	ui.Fillet(gtx, image.Pt(left+w, bottom-r), r, true, s.color)
 }
 
 // mergeShare is how far the active tab has grown into the island it merges
@@ -467,24 +463,4 @@ func (t *topbar) hoverSquare(gtx C, f topbarFrame) (x0 int, ok bool) {
 	}
 	left := -t.list.Position.Offset
 	return x0, left == x0 && left+t.tabW+gtx.Dp(tabRadius) <= x1
-}
-
-// fillet fills the r×r box at p minus the quarter disc around its top corner
-// on the side away from the tab: right is the fillet right of the tab.
-func fillet(gtx C, p image.Point, r int, right bool, c color.NRGBA) {
-	defer op.Offset(p).Push(gtx.Ops).Pop()
-	s := float32(r)
-	var path clip.Path
-	path.Begin(gtx.Ops)
-	if right {
-		path.MoveTo(f32.Pt(0, 0))
-		path.CubeTo(f32.Pt(0, s*kappa), f32.Pt(s-s*kappa, s), f32.Pt(s, s))
-		path.LineTo(f32.Pt(0, s))
-	} else {
-		path.MoveTo(f32.Pt(s, 0))
-		path.CubeTo(f32.Pt(s, s*kappa), f32.Pt(s*kappa, s), f32.Pt(0, s))
-		path.LineTo(f32.Pt(s, s))
-	}
-	path.Close()
-	paint.FillShape(gtx.Ops, c, clip.Outline{Path: path.End()}.Op())
 }

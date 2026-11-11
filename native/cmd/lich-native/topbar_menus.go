@@ -2,13 +2,9 @@ package main
 
 import (
 	"image"
-	"image/color"
 	"strconv"
 
-	"gioui.org/f32"
 	"gioui.org/layout"
-	"gioui.org/op/clip"
-	"gioui.org/op/paint"
 	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/backend"
@@ -158,24 +154,11 @@ func (t *topbar) bellButton(gtx C, th *ui.Theme, items []notification, act *topb
 		return pop.Layout(gtx, func(gtx C) D {
 			d := th.BarIconButton(&b.trigger, icBell, b.popover.Opened()).Layout(gtx)
 			if len(items) > 0 {
-				pendingDot(gtx, th, d.Size)
+				th.NotifyDot(gtx, d.Size)
 			}
 			return d
 		})
 	})
-}
-
-// pendingDot is the red dot on the bell, ringed in the canvas it sits on.
-func pendingDot(gtx C, th *ui.Theme, button image.Point) {
-	inset, dot, ring := gtx.Dp(5), gtx.Dp(8), gtx.Dp(2)
-	center := f32.Pt(float32(button.X-inset-dot/2), float32(inset+dot/2))
-	circle := func(radius int, c color.NRGBA) {
-		r := float32(radius)
-		box := image.Rect(int(center.X-r), int(center.Y-r), int(center.X+r), int(center.Y+r))
-		paint.FillShape(gtx.Ops, c, clip.Ellipse(box).Op(gtx.Ops))
-	}
-	circle(dot/2+ring, th.Surface)
-	circle(dot/2, th.Destructive)
 }
 
 func (b *bellMenu) content(gtx C, th *ui.Theme, items []notification) D {

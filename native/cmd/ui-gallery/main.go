@@ -153,6 +153,7 @@ type gallery struct {
 	toastState
 	contentState
 	rowsState
+	marksState
 }
 
 func newGallery(th *ui.Theme) *gallery {
@@ -217,6 +218,8 @@ func (g *gallery) content(gtx C) D {
 					g.section("PopoverRow, SelectTrigger, RuleAbove, VerticalRule", g.rowsSection),
 					g.section("NavRow, PanelRow, FillRow, MenuHeader, MenuSeparator, RailHairline, CaptionDivider, OrRule", g.listRowsSection),
 					g.section("GhostTextButton, CardIconButton, GhostIconButton, SquareFace, LabelFace", g.facesSection),
+					g.section("StatusDot, MarkDot, Dot, Swatch, NotifyDot", g.dotsSection),
+					g.section("GaugeBar, SegmentBar, DonutGauge, GaugeRow", g.gaugesSection),
 				)),
 				ui.Gap(6),
 				layout.Flexed(1, stack(6,
@@ -233,6 +236,8 @@ func (g *gallery) content(gtx C) D {
 					g.section("File tree", g.treeSection),
 					g.section("IconLine, IconLabel, MonoGlyph, MutedGlyph, CenteredIcon, BoxIcon, TriggerChevron, TinyChip", g.glyphsSection),
 					g.section("HoverLink, TrailingIconLink, TwoLines, SpinnerLine, SpinnerBeside, CheckRow", g.linesSection),
+					g.section("CountBadge, OutlineBadge, AbbrBadge, Tag, KeyHint", g.badgesSection),
+					g.section("Tray, DashedBorder, rings, Fillet, Checker, FillIf, DropHint", g.surfacesSection),
 				)),
 			)
 		}),

@@ -1,4 +1,4 @@
-package main
+package ui
 
 import (
 	"image"
@@ -11,7 +11,6 @@ import (
 	"gioui.org/unit"
 
 	"github.com/lichdotdev/lich/native/fonts"
-	"github.com/lichdotdev/lich/native/ui"
 )
 
 // A "1" in Onest has most of its advance to the right of its ink: centering
@@ -21,7 +20,7 @@ func TestCountBadgeCentersTheDigitInk(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	th := &ui.Theme{Palette: ui.Dark, Shaper: text.NewShaper(text.WithCollection(faces)), Sans: fonts.Sans, Surface: ui.Dark.Canvas}
+	th := &Theme{Palette: Dark, Shaper: text.NewShaper(text.WithCollection(faces)), Sans: fonts.Sans, Surface: Dark.Canvas}
 	const side = 40
 	win, err := headless.NewWindow(side, side)
 	if err != nil {
@@ -31,7 +30,7 @@ func TestCountBadgeCentersTheDigitInk(t *testing.T) {
 	for _, n := range []int{1, 7, 12} {
 		ops := new(op.Ops)
 		gtx := layout.Context{Ops: ops, Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}, Constraints: layout.Constraints{Max: image.Pt(side, side)}}
-		d := countBadge(gtx, th, n)
+		d := th.CountBadge(gtx, n)
 		if err := win.Frame(ops); err != nil {
 			t.Fatal(err)
 		}
@@ -56,5 +55,3 @@ func TestCountBadgeCentersTheDigitInk(t *testing.T) {
 		}
 	}
 }
-
-func abs(n int) int { return max(n, -n) }

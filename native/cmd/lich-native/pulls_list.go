@@ -12,8 +12,6 @@ import (
 	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/op"
-	"gioui.org/op/clip"
-	"gioui.org/op/paint"
 	"gioui.org/unit"
 	"gioui.org/widget"
 	"gioui.org/widget/material"
@@ -322,34 +320,12 @@ func rowMeta(gtx C, th *ui.Theme, pr backend.PRSummary, now time.Time) D {
 		add(th.Text(ui.TextXS, pr.HeadRefName).Mono().Muted().Layout)
 	}
 	if pr.IsDraft {
-		add(func(gtx C) D { return draftBadge(gtx, th) })
+		add(th.OutlineBadge(i18n.T("pulls.pullsList.draft")).Layout)
 	}
 	if pr.IsCrossRepository {
 		add(th.Text(ui.TextXS, i18n.T("pulls.pullsList.fork")).Muted().Layout)
 	}
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx, facts...)
-}
-
-// draftBorderAlpha keeps the badge's outline visible on a selected row,
-// where the Border token sits on the Accent fill at nearly its own shade.
-const draftBorderAlpha = 0.5
-
-// draftBadge is the outlined, muted "Draft": the pull request's state, set
-// apart from the amber the verdict beside it can take.
-func draftBadge(gtx C, th *ui.Theme) D {
-	gtx.Constraints.Min = image.Point{}
-	return layout.Stack{}.Layout(gtx,
-		layout.Expanded(func(gtx C) D {
-			rr := clip.UniformRRect(image.Rectangle{Max: gtx.Constraints.Min}, gtx.Dp(ui.RadiusSM))
-			border := th.Over(ui.Alpha(th.MutedForeground, draftBorderAlpha))
-			paint.FillShape(gtx.Ops, border, clip.Stroke{Path: rr.Path(gtx.Ops), Width: float32(gtx.Dp(1))}.Op())
-			return D{Size: gtx.Constraints.Min}
-		}),
-		layout.Stacked(func(gtx C) D {
-			return layout.Inset{Left: ui.Space(1), Right: ui.Space(1)}.Layout(gtx,
-				th.Text(ui.TextXS, i18n.T("pulls.pullsList.draft")).Muted().Layout)
-		}),
-	)
 }
 
 // waitsOnReviewer is a CHANGES_REQUESTED verdict whose every thread is

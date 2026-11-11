@@ -407,18 +407,11 @@ func (s *settingsScreen) scopePill(gtx C, th *ui.Theme) D {
 	}
 	return th.Pill(func(gtx C) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-			layout.Rigid(func(gtx C) D { return swatch(gtx, projectSwatch(s.scope)) }),
+			layout.Rigid(func(gtx C) D { return ui.Swatch(gtx, projectSwatch(s.scope)) }),
 			ui.Gap(2),
 			layout.Rigid(th.Text(ui.TextXS, name).Muted().Weight(font.Medium).Layout),
 		)
 	}, ui.Space(1.75), ui.Space(2.25)).Layout(gtx)
-}
-
-// swatch is the mockup's 10px rounded square of a project's color.
-func swatch(gtx C, c color.NRGBA) D {
-	size := image.Pt(gtx.Dp(10), gtx.Dp(10))
-	gtx.Constraints = layout.Exact(size)
-	return ui.Fill(gtx, c, unit.Dp(3))
 }
 
 func settingsProjectsOf(tabs []projectTab) []settingsProject {

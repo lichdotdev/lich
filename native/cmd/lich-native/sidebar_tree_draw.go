@@ -226,7 +226,7 @@ func withLinks(gtx C, th *ui.Theme, l sessionRowLinks, row layout.Widget) D {
 func foldedCount(th *ui.Theme, kids int, mark string) []layout.FlexChild {
 	var out []layout.FlexChild
 	if dot, ok := markColor(th, blockView{collapsed: true, mark: mark}); ok {
-		out = append(out, layout.Rigid(func(gtx C) D { return markDot(gtx, dot) }), ui.Gap(1))
+		out = append(out, layout.Rigid(func(gtx C) D { return ui.MarkDot(gtx, dot) }), ui.Gap(1))
 	}
 	return append(out, layout.Rigid(th.Text(ui.TextXS, strconv.Itoa(kids)).Muted().Mono().Layout), ui.Gap(1.5))
 }

@@ -195,7 +195,7 @@ func (p *themePicker) importCardLayout(gtx C, th *ui.Theme) D {
 				box.Constraints = layout.Exact(size)
 				ui.Fill(box, th.Over(ui.Alpha(th.Accent, 0.5)), ui.RadiusMD)
 			}
-			dashedBorder(gtx, size, gtx.Dp(ui.RadiusMD), edge)
+			ui.DashedBorder(gtx, size, gtx.Dp(ui.RadiusMD), edge, importDash, importDashGap)
 			icon := gtx.Dp(ui.Space(5))
 			defer op.Offset(image.Pt((size.X-icon)/2, (size.Y-icon)/2)).Push(gtx.Ops).Pop()
 			icImportTheme.Layout(gtx, ui.Space(5), ink)
@@ -252,29 +252,4 @@ func systemMiniature(gtx C, th *ui.Theme, light, dark ui.Palette, size image.Poi
 		edge.Pop()
 	}
 	return D{Size: size}
-}
-
-// dashedBorder strokes a 1px dashed line just inside a rounded box: dashes
-// along the straight edges, the corners' arcs whole.
-func dashedBorder(gtx C, size image.Point, r int, c color.NRGBA) {
-	w := gtx.Dp(1)
-	dash, gap := gtx.Dp(importDash), gtx.Dp(importDashGap)
-	for _, corner := range []image.Rectangle{
-		{Max: image.Pt(r, r)}, {Min: image.Pt(size.X-r, 0), Max: image.Pt(size.X, r)},
-		{Min: image.Pt(0, size.Y-r), Max: image.Pt(r, size.Y)}, {Min: size.Sub(image.Pt(r, r)), Max: size},
-	} {
-		cl := clip.Rect(corner).Push(gtx.Ops)
-		ui.InsetRing(gtx, size, r, w, c)
-		cl.Pop()
-	}
-	for x := r; x < size.X-r; x += dash + gap {
-		end := min(x+dash, size.X-r)
-		paint.FillShape(gtx.Ops, c, clip.Rect{Min: image.Pt(x, 0), Max: image.Pt(end, w)}.Op())
-		paint.FillShape(gtx.Ops, c, clip.Rect{Min: image.Pt(x, size.Y-w), Max: image.Pt(end, size.Y)}.Op())
-	}
-	for y := r; y < size.Y-r; y += dash + gap {
-		end := min(y+dash, size.Y-r)
-		paint.FillShape(gtx.Ops, c, clip.Rect{Min: image.Pt(0, y), Max: image.Pt(w, end)}.Op())
-		paint.FillShape(gtx.Ops, c, clip.Rect{Min: image.Pt(size.X-w, y), Max: image.Pt(size.X, end)}.Op())
-	}
 }

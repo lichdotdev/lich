@@ -64,7 +64,7 @@ func (o *shortcutsOverlay) layout(gtx C, th *ui.Theme, bound hotkeyBindings) {
 	dlg := th.Dialog(&o.dialog, o.open, i18n.T("shell.shortcutsOverlay.title"), i18n.T("shell.shortcutsOverlay.rebind"))
 	dlg.MaxWidth, dlg.HideClose, dlg.Scrim = shortcutsWidth, true, shortcutsScrim
 	dlg.Body = func(gtx C) D { return o.body(gtx, on, shortcutGroupsOf(bound, runtime.GOOS)) }
-	dlg.Actions = []layout.Widget{func(gtx C) D { return closeHint(gtx, on) }}
+	dlg.Actions = []layout.Widget{on.KeyHint(shortcutsEsc, i18n.T("shell.shortcutsOverlay.close")).Layout}
 	if dlg.Layout(gtx) {
 		o.open = false
 	}
@@ -89,15 +89,6 @@ func shortcutsHeading(th *ui.Theme, title string) layout.Widget {
 	return func(gtx C) D {
 		return inset.Layout(gtx, th.Text(text2XS, strings.ToUpper(title)).Muted().Weight(font.SemiBold).Layout)
 	}
-}
-
-// closeHint is the footer's key cap and the word beside it.
-func closeHint(gtx C, th *ui.Theme) D {
-	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-		layout.Rigid(func(gtx C) D { return th.KeyCap(shortcutsEsc).Layout(gtx) }),
-		ui.Gap(1.5),
-		layout.Rigid(th.Text(ui.TextXS, i18n.T("shell.shortcutsOverlay.close")).Muted().Layout),
-	)
 }
 
 // hotkeyShortcuts is the chord's toggle: the same one closes it again.

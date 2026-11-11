@@ -187,7 +187,7 @@ func (f *footer) zoneBox(gtx C, th *ui.Theme, zone string, items []string, in fo
 	}
 	return layout.Background{}.Layout(gtx,
 		func(gtx C) D {
-			d := fillIf(gtx, bg, ui.RadiusLG)
+			d := ui.FillIf(gtx, bg, ui.RadiusLG)
 			if f.editor.sortable.Over() == zone {
 				// Inside the box rather than outside it: the zone is clipped
 				// to its own bounds, which hid all but the corners of an
@@ -286,7 +286,7 @@ func (f *footer) previewLayout(gtx C, th *ui.Theme, l footerLayout, in footerInp
 	strip := func(gtx C) D {
 		gtx.Constraints.Min.X = gtx.Constraints.Max.X
 		return layout.Background{}.Layout(gtx,
-			func(gtx C) D { return fillIf(gtx, th.Sidebar, ui.RadiusLG) },
+			func(gtx C) D { return ui.FillIf(gtx, th.Sidebar, ui.RadiusLG) },
 			func(gtx C) D {
 				gtx.Constraints.Min.Y = gtx.Dp(ui.Space(12))
 				return layout.Inset{Left: ui.Space(3), Right: ui.Space(3), Top: ui.Space(2), Bottom: ui.Space(2)}.Layout(gtx, func(gtx C) D {

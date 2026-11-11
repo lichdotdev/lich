@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 	"image"
-	"image/color"
 
 	"gioui.org/font"
 	"gioui.org/io/event"
@@ -287,7 +286,7 @@ func (u *window) paneDrop(gtx C, th *ui.Theme, sv sessionView, at image.Point) {
 	corner := u.islandAt.Add(at)
 	u.drop.setRect(image.Rectangle{Min: corner, Max: corner.Add(gtx.Constraints.Max)})
 	if u.drop.hinting() || *flagDropHint {
-		dropHint(gtx, th, sv.Label, sv.sandbox.Confined)
+		dropHintFor(th, sv.Label, sv.sandbox.Confined).Layout(gtx)
 	}
 }
 
@@ -335,7 +334,7 @@ func (u *window) paneHeader(gtx C, th *ui.Theme, v stageView, sv sessionView, fo
 				if !v.mixed {
 					return D{}
 				}
-				return layout.Flex{Alignment: layout.Middle}.Layout(gtx, layout.Rigid(func(gtx C) D { return projectTag(gtx, th, v.projectNames[sv.projectID], fg) }), ui.Gap(1.5))
+				return layout.Flex{Alignment: layout.Middle}.Layout(gtx, layout.Rigid(th.Tag(v.projectNames[sv.projectID], fg).Layout), ui.Gap(1.5))
 			}),
 			layout.Flexed(1, func(gtx C) D {
 				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
@@ -392,11 +391,6 @@ func zoomChip(gtx C, th *ui.Theme, v stageView) D {
 			layout.Rigid(th.Text(ui.TextXS, text).Muted().Layout),
 		)
 	}, ui.Space(2), ui.Space(2)).Layout(gtx)
-}
-
-// projectTag is the project's name in an outlined pill.
-func projectTag(gtx C, th *ui.Theme, name string, fg color.NRGBA) D {
-	return th.Pill(th.Text(ui.TextXS, name).In(fg).Layout, ui.Space(2), ui.Space(2)).Layout(gtx)
 }
 
 // worktreeLabel names the worktree a pane's session runs in, "" for the

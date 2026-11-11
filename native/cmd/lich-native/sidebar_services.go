@@ -3,12 +3,9 @@ package main
 import (
 	"fmt"
 	"image"
-	"image/color"
-	"math"
 	"strconv"
 	"time"
 
-	"gioui.org/f32"
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/widget"
@@ -216,63 +213,22 @@ func servicesGlyph(gtx C, th *ui.Theme, t servicesTally) D {
 	case t.failed:
 		return stateDot(gtx, th, api.ServiceFailed)
 	case t.up > 0:
-		return beatingDot(gtx, th)
+		return th.BeatingDot(gtx, th.TonePass)
 	}
 	return stateDot(gtx, th, api.ServiceStopped)
 }
 
-// beatingDot is the running dot with its beat, for the places that say a
-// service is up rather than list it: the footer's row and the console's bar.
-func beatingDot(gtx C, th *ui.Theme) D {
-	size := gtx.Dp(14)
-	center := f32.Pt(float32(size)/2, float32(size)/2)
-	dot := float32(gtx.Dp(3.5))
-	pulseRing(gtx, th, center, dot, float32(gtx.Dp(3.5)), th.TonePass)
-	ui.StrokeArc(gtx, center, dot/2, dot, 0, 2*math.Pi, th.TonePass)
-	return D{Size: image.Pt(size, size)}
-}
-
-// The running dot beats: a ring grows out of it for pulseLength, drawn at
-// ui.LoopFrame, then rests until pulseEvery comes round. It beats for as
-// long as a service runs, hours, so the rest is what keeps it cheap: no
-// frame is asked for in it. Every frame costs the window the same whatever
-// it shows (about 0.3% of a laptop GPU, measured 2026-11-01), and a beat
-// every 2.4s was 8 frames a second all day for a 14dp dot.
-const (
-	pulseEvery  = 6 * time.Second
-	pulseLength = 800 * time.Millisecond
-)
-
-// pulseRing is that beat around center: a ring from radius to radius+reach
-// that fades as it grows, and the next frame it needs.
-func pulseRing(gtx C, th *ui.Theme, center f32.Point, radius, reach float32, c color.NRGBA) {
-	at := time.Duration(gtx.Now.UnixMilli()%pulseEvery.Milliseconds()) * time.Millisecond
-	if at >= pulseLength {
-		gtx.Execute(op.InvalidateCmd{At: gtx.Now.Add(pulseEvery - at)})
-		return
-	}
-	phase := float32(at) / float32(pulseLength)
-	eased := 1 - (1-phase)*(1-phase)
-	ui.StrokeArc(gtx, center, radius+reach*eased, float32(gtx.Dp(1.5)), 0, 2*math.Pi, ui.Alpha(c, 0.7*(1-phase)))
-	th.Loop(gtx)
-}
-
 // stateDot is a service state as a 14dp glyph.
 func stateDot(gtx C, th *ui.Theme, state string) D {
-	size := gtx.Dp(14)
-	center := f32.Pt(float32(size)/2, float32(size)/2)
-	dot := float32(gtx.Dp(3.5))
 	switch state {
 	case api.ServiceRunning:
-		ui.StrokeArc(gtx, center, dot/2, dot, 0, 2*math.Pi, th.TonePass)
+		return ui.StatusDot(gtx, th.TonePass)
 	case api.ServiceStopping:
-		ui.StrokeArc(gtx, center, dot/2, dot, 0, 2*math.Pi, th.ToneWait)
+		return ui.StatusDot(gtx, th.ToneWait)
 	case api.ServiceFailed:
-		ui.StrokeArc(gtx, center, dot/2, dot, 0, 2*math.Pi, th.Destructive)
-	default:
-		ui.StrokeArc(gtx, center, dot-float32(gtx.Dp(0.75)), float32(gtx.Dp(1.5)), 0, 2*math.Pi, th.MutedForeground)
+		return ui.StatusDot(gtx, th.Destructive)
 	}
-	return D{Size: image.Pt(size, size)}
+	return ui.HollowDot(gtx, th.MutedForeground)
 }
 
 func (f *servicesFooter) rowList(gtx C, th *ui.Theme, root *ui.Root, list []backend.Service, console string, act *sidebarAction) D {

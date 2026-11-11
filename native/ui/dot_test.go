@@ -1,4 +1,4 @@
-package main
+package ui
 
 import (
 	"testing"
@@ -11,23 +11,21 @@ import (
 	"gioui.org/op"
 	"gioui.org/text"
 	"gioui.org/unit"
-
-	"github.com/lichdotdev/lich/native/ui"
 )
 
 // beatWake draws a running service's beat at the instant now and reads the
 // frame it asks for next.
-func beatWake(th *ui.Theme, now time.Time) (time.Time, bool) {
+func beatWake(th *Theme, now time.Time) (time.Time, bool) {
 	var r input.Router
 	ops := new(op.Ops)
 	gtx := layout.Context{Ops: ops, Now: now, Source: r.Source(), Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}}
-	pulseRing(gtx, th, f32.Pt(7, 7), 3, 3, th.TonePass)
+	th.PulseRing(gtx, f32.Pt(7, 7), 3, 3, th.TonePass)
 	r.Frame(ops)
 	return r.WakeupTime()
 }
 
 func TestServiceBeatPacing(t *testing.T) {
-	th := &ui.Theme{Palette: ui.Dark, Shaper: text.NewShaper(text.WithCollection(gofont.Collection())), Surface: ui.Dark.Background}
+	th := &Theme{Palette: Dark, Shaper: text.NewShaper(text.WithCollection(gofont.Collection())), Surface: Dark.Background}
 	beat := time.UnixMilli(6 * 1000)
 	inPulse, resting := beat.Add(100*time.Millisecond), beat.Add(1000*time.Millisecond)
 	if at, ok := beatWake(th, inPulse); !ok || !at.Equal(inPulse.Add(42*time.Millisecond)) {

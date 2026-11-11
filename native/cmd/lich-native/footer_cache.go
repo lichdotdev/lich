@@ -1,13 +1,7 @@
 package main
 
 import (
-	"image"
-	"image/color"
-
 	"gioui.org/layout"
-	"gioui.org/op"
-	"gioui.org/op/clip"
-	"gioui.org/op/paint"
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/i18n"
@@ -41,33 +35,14 @@ func cacheDetail(th *ui.Theme, head layout.Widget, c api.SessionCache, hit int) 
 		tone = th.TonePass
 	}
 	line := para(th.Text(ui.TextXS, i18n.T("shell.footerSession.cacheHit", i18n.Args{"percent": hit})).In(tone)).Layout
-	bar := func(gtx C) D { return cacheBar(gtx, th, c) }
+	bar := func(gtx C) D {
+		return th.SegmentBar(gtx,
+			ui.Segment{Share: c.Read, Color: th.MutedForeground},
+			ui.Segment{Share: c.Write, Color: th.ToneWait},
+			ui.Segment{Share: c.Uncached, Color: th.Foreground})
+	}
 	return func(gtx C) D {
 		gtx.Constraints.Min.X = min(gtx.Dp(planMinWide), gtx.Constraints.Max.X)
 		return stack(gtx, 1, []layout.Widget{head, line, bar})
 	}
-}
-
-// cacheBar is gaugeBar split three ways, each part as wide as its share.
-func cacheBar(gtx C, th *ui.Theme, c api.SessionCache) D {
-	size := image.Pt(gtx.Constraints.Max.X, gtx.Dp(ui.Space(1.5)))
-	defer clip.UniformRRect(image.Rectangle{Max: size}, gtx.Dp(ui.Space(0.75))).Push(gtx.Ops).Pop()
-	paint.FillShape(gtx.Ops, th.Over(th.Border), clip.Rect{Max: size}.Op())
-	total := c.Read + c.Write + c.Uncached
-	parts := []struct {
-		tokens int
-		color  color.NRGBA
-	}{{c.Read, th.MutedForeground}, {c.Write, th.ToneWait}, {c.Uncached, th.Foreground}}
-	x, sum := 0, 0
-	for _, p := range parts {
-		sum += p.tokens
-		// Each edge comes from the running sum, so rounding never leaves the
-		// bar a pixel short of full.
-		end := size.X * sum / total
-		stackOp := op.Offset(image.Pt(x, 0)).Push(gtx.Ops)
-		paint.FillShape(gtx.Ops, p.color, clip.Rect{Max: image.Pt(end-x, size.Y)}.Op())
-		stackOp.Pop()
-		x = end
-	}
-	return D{Size: size}
 }

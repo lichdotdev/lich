@@ -335,12 +335,6 @@ func notesCounts(groups []backend.PatchNotesGroup) string {
 	return strings.Join(parts, notesCountSep)
 }
 
-func notesDotOf(gtx C, c color.NRGBA, size unit.Dp) D {
-	px := gtx.Dp(size)
-	gtx.Constraints = layout.Exact(image.Pt(px, px))
-	return ui.Fill(gtx, c, size/2)
-}
-
 // notesLead is the headline: the largest type the app uses and nothing else.
 func notesLead(th *ui.Theme, h backend.PatchNotesHighlight) layout.Widget {
 	headline, body := splitLeadIn(h.Text)
@@ -457,7 +451,7 @@ func notesGroupHeading(th *ui.Theme, label string, divider bool) layout.Widget {
 		}
 		children = append(children, ui.VGap(3.5), layout.Rigid(func(gtx C) D {
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-				layout.Rigid(func(gtx C) D { return notesDotOf(gtx, noteDot(th, label), notesGroupDot) }),
+				layout.Rigid(func(gtx C) D { return ui.Dot(gtx, noteDot(th, label), notesGroupDot) }),
 				ui.Gap(1.5),
 				layout.Rigid(th.Text(ui.TextXS, strings.ToUpper(notesGroupLabel(label))).Muted().Weight(font.SemiBold).Layout),
 			)

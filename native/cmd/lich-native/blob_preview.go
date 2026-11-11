@@ -206,30 +206,10 @@ func (p *previewImage) draw(gtx C, th *ui.Theme) D {
 	size := image.Pt(max(1, int(w*scale)), max(1, int(h*scale)))
 	box := image.Pt(maxW, size.Y)
 	defer clip.UniformRRect(image.Rectangle{Max: box}, gtx.Dp(ui.RadiusSM)).Push(gtx.Ops).Pop()
-	checker(gtx, th, box)
+	th.Checker(gtx, box, ui.Space(checkerCell))
 	gtx.Constraints = layout.Exact(box)
 	return layout.Center.Layout(gtx, func(gtx C) D {
 		gtx.Constraints = layout.Exact(size)
 		return widget.Image{Src: p.src, Fit: widget.Fill}.Layout(gtx)
 	})
-}
-
-// checker is .preview-checker: card ground, muted squares, so a transparent
-// pixel reads as transparent rather than as the panel.
-func checker(gtx C, th *ui.Theme, size image.Point) {
-	paint.FillShape(gtx.Ops, th.Card, clip.Rect{Max: size}.Op())
-	cell := gtx.Dp(ui.Space(checkerCell))
-	var p clip.Path
-	p.Begin(gtx.Ops)
-	for y := 0; y*cell < size.Y; y++ {
-		for x := y % 2; x*cell < size.X; x += 2 {
-			r := image.Rect(x*cell, y*cell, min(size.X, (x+1)*cell), min(size.Y, (y+1)*cell))
-			p.MoveTo(layout.FPt(r.Min))
-			p.LineTo(layout.FPt(image.Pt(r.Max.X, r.Min.Y)))
-			p.LineTo(layout.FPt(r.Max))
-			p.LineTo(layout.FPt(image.Pt(r.Min.X, r.Max.Y)))
-			p.Close()
-		}
-	}
-	paint.FillShape(gtx.Ops, th.Muted, clip.Outline{Path: p.End()}.Op())
 }
