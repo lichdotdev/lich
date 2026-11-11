@@ -3,6 +3,12 @@ package extension
 // ManifestFile is the name of the manifest in an extension's directory.
 const ManifestFile = "manifest.json"
 
+// DataDirEnv names the environment variable holding the absolute path of the
+// extension's data directory, which lich creates before starting it and keeps
+// across a reinstall. The install directory is replaced by one, so nothing the
+// extension saves belongs there.
+const DataDirEnv = "LICH_EXTENSION_DATA"
+
 // ManifestFormat is the newest manifest format this package reads.
 const ManifestFormat = 1
 

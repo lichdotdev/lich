@@ -1146,6 +1146,12 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   no update: remove the extension and install it again. An install lich is killed in the middle of leaves an
   `.installing-*` directory that discovery skips and nothing deletes. Remove deletes the directory, or only the
   link when it is a symlink, and what the extension wrote elsewhere stays.
+- **An extension's data directory outlives it, and nothing bounds its size** (`internal/extensions`):
+  `<config dir>/lich/extension-data/<id>` is created before each start and handed over in `LICH_EXTENSION_DATA`.
+  Remove keeps it, so a reinstall of the same id finds it, and so does any other extension later installed under
+  that id. It goes only through `extensions.DeleteData`, which the remove confirmation calls when its box is
+  ticked, and which refuses an installed id; data left behind by an extension removed without the box stays on
+  disk until it is deleted by hand. lich does not limit how much an extension writes there.
 - **Installing from a folder copies it once, and refuses links** (`internal/extensions/installdir.go`): the picked
   folder is copied under the same bounds as an archive (1 GiB, 1000 entries) and validated as discovery does. A
   symlink anywhere in it, the folder itself included, fails the install rather than being followed. The copy is

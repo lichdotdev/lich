@@ -87,6 +87,25 @@ out(extension.Render.New(extension.RenderData{
 out(extension.Focus.New(extension.FocusData{Surface: "main", Key: "search"}))
 ```
 
+## Keeping data
+
+An extension that saves something, a token or its settings, keeps it in its data directory:
+`<config dir>/lich/extension-data/<id>` (`extension-data-dev` under `LICH_DEV`). lich creates it, readable only by
+the user, before every start and passes its absolute path in `LICH_EXTENSION_DATA`, named in Go as
+`extension.DataDirEnv`. Never write into the extension's own directory: an update is a remove and an install, and
+the install replaces that directory whole. The data directory survives both, so the next install of the same id
+finds what the last one saved. It goes only when the person ticks "Also delete what it saved" while removing the
+extension.
+
+```go
+dir := os.Getenv(extension.DataDirEnv)
+token, err := os.ReadFile(filepath.Join(dir, "token"))
+if errors.Is(err, fs.ErrNotExist) {
+	// first run: nothing saved yet
+}
+err = os.WriteFile(filepath.Join(dir, "token"), token, 0o600)
+```
+
 ## What lich enforces
 
 - A line over 3 MiB, JSON nested over 512 levels, a tree over 5000 nodes or 64 deep, a kind that only travels
@@ -107,7 +126,8 @@ A person installs an extension from lich's Settings in one of two ways:
   at startup, marks the executable runnable and starts it. The copy is what runs; the folder is left untouched.
 - **From GitHub**, by pasting the repository URL, as below.
 
-Either way an id that is already installed is refused; to update, remove the extension and install it again.
+Either way an id that is already installed is refused; to update, remove the extension and install it again. The
+remove keeps its [data directory](#keeping-data), so the new install picks up what the old one saved.
 
 ## Publishing a release
 

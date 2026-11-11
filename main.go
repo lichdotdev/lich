@@ -162,7 +162,7 @@ func app() {
 	// Deferred after the hands-on flush, so it runs first: a service's process
 	// is lich's child, and quitting lich is what stops it.
 	defer shutdownServices(svcs, coord)
-	exts := extensions.New(extensions.Dir(configDir), version, env, hub.Emit)
+	exts := extensions.New(extensions.Dir(configDir), extensions.DataDir(configDir), version, env, hub.Emit)
 	defer exts.Shutdown()
 	sys, closeBrowsers := registerServices(db, term, svcs, exts, hub, configDir, logPath, env, launchEnv, coord)
 	defer closeBrowsers()

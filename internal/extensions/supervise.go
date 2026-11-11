@@ -5,10 +5,14 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"os"
 	"os/exec"
+	"path/filepath"
+	"slices"
 	"sync"
 	"time"
 
+	"github.com/lichdotdev/lich/extension"
 	"github.com/lichdotdev/lich/internal/winexec"
 )
 
@@ -97,9 +101,13 @@ type process struct {
 // kill after it, which is the whole stop sequence. A failure to start is
 // returned, not retried: a missing or non-executable file stays that way.
 func (s *Service) start(ctx context.Context, x *installed) (*process, error) {
+	data := filepath.Join(s.dataDir, x.id)
+	if err := os.MkdirAll(data, 0o700); err != nil {
+		return nil, fmt.Errorf("could not create its data directory: %w", err)
+	}
 	cmd := exec.CommandContext(ctx, x.exe)
 	cmd.Dir = x.root
-	cmd.Env = s.env
+	cmd.Env = append(slices.Clip(s.env), extension.DataDirEnv+"="+data)
 	winexec.Hide(cmd)
 	cmd.Stdout = newFramer(maxLineBytes,
 		func(line []byte) { s.handleLine(x, line) },

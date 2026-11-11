@@ -64,6 +64,7 @@ cursorprofile.LoginCommand(ProfileSlugOptions) string
 cursorprofile.Profiles(None) []ProfileInfo
 cursorprofile.UpdateProfile(UpdateProfileOptions) Profile
 drop.Attach(AttachDropOptions) DropAttachment
+extensions.DeleteData(ExtensionIDOptions) None
 extensions.Dir(None) string
 extensions.InstallFromDir(ExtensionDirInstallOptions) Extension
 extensions.InstallFromGit(ExtensionGitInstallOptions) Extension
@@ -620,6 +621,10 @@ AttachDropOptions {
 	confined bool
 }
 
+ExtensionIDOptions {
+	id string
+}
+
 ExtensionDirInstallOptions {
 	dir string
 }
@@ -638,10 +643,6 @@ Extension {
 
 ExtensionGitInstallOptions {
 	url string
-}
-
-ExtensionIDOptions {
-	id string
 }
 
 ExtensionSendOptions {

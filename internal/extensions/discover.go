@@ -23,9 +23,19 @@ var idPattern = regexp.MustCompile(fmt.Sprintf(`^[a-z0-9][a-z0-9._-]{0,%d}$`, id
 // its own, as it has its own themes and database: otherwise `task dev` would
 // start a second copy of every extension the installed lich runs.
 func Dir(configDir string) string {
-	name := "extensions"
+	return devAware(configDir, "extensions")
+}
+
+// DataDir holds a directory per extension id for what the extension keeps,
+// apart from Dir so a reinstall, which replaces the install directory, keeps
+// it.
+func DataDir(configDir string) string {
+	return devAware(configDir, "extension-data")
+}
+
+func devAware(configDir, name string) string {
 	if os.Getenv("LICH_DEV") != "" {
-		name = "extensions-dev"
+		name += "-dev"
 	}
 	return filepath.Join(configDir, "lich", name)
 }

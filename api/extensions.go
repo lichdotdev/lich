@@ -15,8 +15,12 @@ var (
 	// ExtensionsInstallFromDir copies a folder on disk holding an extension into
 	// the extensions directory and starts it.
 	ExtensionsInstallFromDir = define[ExtensionDirInstallOptions, Extension]("extensions.InstallFromDir")
-	// ExtensionsRemove stops an extension and deletes its directory.
+	// ExtensionsRemove stops an extension and deletes its directory. Its data
+	// directory is kept.
 	ExtensionsRemove = define[ExtensionIDOptions, None]("extensions.Remove")
+	// ExtensionsDeleteData deletes the data directory of an extension that is
+	// not installed, and refuses one that is.
+	ExtensionsDeleteData = define[ExtensionIDOptions, None]("extensions.DeleteData")
 )
 
 // ExtensionGitInstallOptions names the repository to install from:

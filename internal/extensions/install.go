@@ -292,7 +292,8 @@ func (s *Service) place(id, stage string) (api.Extension, error) {
 
 // Remove stops an extension and deletes its directory. A directory that is a
 // symlink, an extension developed in place, loses the link and keeps its
-// target.
+// target. Its data directory stays, for DeleteData or the next install of the
+// same id.
 func (s *Service) Remove(ctx context.Context, opts api.ExtensionIDOptions) (api.None, error) {
 	s.mu.Lock()
 	x := s.find(opts.ID)
@@ -320,6 +321,25 @@ func (s *Service) Remove(ctx context.Context, opts api.ExtensionIDOptions) (api.
 	s.all = removeFrom(s.all, x)
 	s.mu.Unlock()
 	events.Send(s.emit, api.ExtensionRemovedEvent, api.ExtensionIDOptions{ID: x.id})
+	return api.None{}, nil
+}
+
+// DeleteData deletes the data directory of an extension that is not
+// installed. installMu keeps an install of the same id from starting while it
+// goes.
+func (s *Service) DeleteData(_ context.Context, opts api.ExtensionIDOptions) (api.None, error) {
+	if !idPattern.MatchString(opts.ID) {
+		return api.None{}, fmt.Errorf("%q is not an extension id", opts.ID)
+	}
+	s.installMu.Lock()
+	defer s.installMu.Unlock()
+	if s.checkFree(opts.ID) != nil {
+		return api.None{}, fmt.Errorf("extension %q is installed: remove it first, then delete its data", opts.ID)
+	}
+	data := filepath.Join(s.dataDir, opts.ID)
+	if err := os.RemoveAll(data); err != nil {
+		return api.None{}, fmt.Errorf("delete %s: %w; delete it by hand", data, err)
+	}
 	return api.None{}, nil
 }
 

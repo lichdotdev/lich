@@ -22,6 +22,17 @@ func TestDirIsSeparateForADevInstance(t *testing.T) {
 	}
 }
 
+func TestDataDirIsSeparateForADevInstance(t *testing.T) {
+	t.Setenv("LICH_DEV", "")
+	if got, want := DataDir("/cfg"), filepath.Join("/cfg", "lich", "extension-data"); got != want {
+		t.Errorf("DataDir = %q, want %q", got, want)
+	}
+	t.Setenv("LICH_DEV", "1")
+	if got, want := DataDir("/cfg"), filepath.Join("/cfg", "lich", "extension-data-dev"); got != want {
+		t.Errorf("under LICH_DEV DataDir = %q, want %q", got, want)
+	}
+}
+
 func TestDiscoverWithNoDirectoryIsEmpty(t *testing.T) {
 	if got := discover(filepath.Join(t.TempDir(), "absent"), "1.0.0"); len(got) != 0 {
 		t.Errorf("discover = %v, want nothing", got)
@@ -141,7 +152,7 @@ func TestListWithNoExtensionIsAnEmptyArray(t *testing.T) {
 
 func TestExtensionsDirIsTheDirectoryItReads(t *testing.T) {
 	dir := t.TempDir()
-	got, err := New(dir, "1.2.3", nil, func(string, any) {}).ExtensionsDir(t.Context(), api.None{})
+	got, err := New(dir, t.TempDir(), "1.2.3", nil, func(string, any) {}).ExtensionsDir(t.Context(), api.None{})
 	if err != nil || got != dir {
 		t.Fatalf("ExtensionsDir = %q, %v; want %q", got, err, dir)
 	}

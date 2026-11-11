@@ -62,6 +62,7 @@ type timing struct {
 // Service is every installed extension and its process.
 type Service struct {
 	dir         string
+	dataDir     string
 	lichVersion string
 	env         []string
 	emit        func(name string, data any)
@@ -112,11 +113,12 @@ type installed struct {
 }
 
 // New returns the extensions under dir, none discovered or running until Boot.
-// env is what their processes get.
-func New(dir, lichVersion string, env []string, emit func(name string, data any)) *Service {
+// env is what their processes get, and each one's data directory is under
+// dataDir.
+func New(dir, dataDir, lichVersion string, env []string, emit func(name string, data any)) *Service {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &Service{
-		dir: dir, lichVersion: lichVersion, env: env, emit: emit, ctx: ctx, cancel: cancel,
+		dir: dir, dataDir: dataDir, lichVersion: lichVersion, env: env, emit: emit, ctx: ctx, cancel: cancel,
 		timing:   timing{firstBackoff: firstBackoff, maxBackoff: maxBackoff, stableRun: stableRun, stopGrace: stopGrace, killWait: killWait},
 		metadata: &http.Client{Timeout: metadataTimeout}, download: &http.Client{Timeout: downloadTimeout},
 		releaseAPI: releaseAPI, goos: runtime.GOOS, goarch: runtime.GOARCH,
