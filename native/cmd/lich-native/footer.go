@@ -269,7 +269,9 @@ func (f *footer) slot(gtx C, th *ui.Theme, s footerSlot, in footerInput) D {
 	case "files":
 		return footerButton(gtx, th, f.root, w, i18n.T("shell.footerBar.browseCode"), false, false, iconOnly(icCode))
 	case "changes":
-		return footerButton(gtx, th, f.root, w, i18n.T("shell.footerBar.reviewChanges"), true, false, changesContent(in.git))
+		return f.tour.Anchor(gtx, tourReviewChip, func(gtx C) D {
+			return footerButton(gtx, th, f.root, w, i18n.T("shell.footerBar.reviewChanges"), true, false, changesContent(in.git))
+		})
 	case "artifacts":
 		return footerButton(gtx, th, f.root, w, i18n.T("shell.footerBar.showArtifacts"), false, false, iconOnly(icDockArtifacts))
 	case "pr":

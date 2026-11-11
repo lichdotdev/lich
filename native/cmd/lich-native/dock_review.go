@@ -20,6 +20,7 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 
+	driver "github.com/lichdotdev/gio-driver"
 	"github.com/lichdotdev/godemirror"
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/glyphs"
@@ -47,6 +48,9 @@ type reviewPanel struct {
 	family     string
 	size       unit.Sp
 	cells      *glyphs.Rasterizer
+
+	// tour is the window's guided tour, which points at the comment batch.
+	tour *driver.Tour
 
 	// wrote hears the checkout an edit of the panel's own changed, for the git
 	// store the card, footer and badge read.
@@ -133,7 +137,7 @@ func newReviewPanel(client *backend.Client, root *ui.Root, comments *commentStor
 	if err != nil {
 		return nil, err
 	}
-	p := &reviewPanel{client: client, root: root, comments: comments, notify: notify,
+	p := &reviewPanel{tour: new(driver.Tour), client: client, root: root, comments: comments, notify: notify,
 		invalidate: invalidate, family: family, size: size, cells: cells, bulkOpen: true, cards: map[string]*fileCard{}}
 	p.feed = diffFeed{client: client, invalidate: invalidate}
 	p.list.Axis = layout.Vertical
@@ -177,7 +181,9 @@ func (p *reviewPanel) bodyWithBatch(gtx C, th *ui.Theme) error {
 			p.panelBody(gtx, th)
 			return D{Size: gtx.Constraints.Max}
 		}),
-		layout.Rigid(func(gtx C) D { return p.batch.layout(gtx, th, p.comments, p.target, p.submit, p.notify) }),
+		layout.Rigid(func(gtx C) D {
+			return p.tour.Anchor(gtx, tourReviewBatch, func(gtx C) D { return p.batch.layout(gtx, th, p.comments, p.target, p.submit, p.notify) })
+		}),
 	)
 	return nil
 }

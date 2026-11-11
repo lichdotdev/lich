@@ -1,0 +1,23 @@
+{
+  "label": "Revisar cambios",
+  "unavailable": "Necesita una sesión con cambios",
+  "chip": {
+    "title": "Mira qué cambió",
+    "body": "Aquí ves cuántos archivos cambió el agente, con las líneas añadidas y eliminadas.",
+    "hint": "Haz clic en el recuento para abrir Revisión"
+  },
+  "panel": {
+    "title": "Léelo archivo por archivo",
+    "body": "La pestaña Revisión muestra cada archivo que cambió el agente, cada uno con su diff."
+  },
+  "comment": {
+    "title": "Comenta una línea",
+    "body": "Selecciona líneas de un diff, haz clic derecho y elige Comentario para la sesión. Escribe qué cambiar y haz clic en Añadir al lote.",
+    "hint": "Añade un comentario para continuar"
+  },
+  "send": {
+    "title": "Envía tus comentarios",
+    "body": "Los comentarios esperan aquí, así puedes escribir varios antes. Enviar se los pasa todos al agente en un solo mensaje.",
+    "hint": "Haz clic en Enviar para continuar"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "label": "Review changes",
+  "unavailable": "Needs a session with changes",
+  "chip": {
+    "title": "See what changed",
+    "body": "This counts the files the agent changed here, with the lines added and removed.",
+    "hint": "Click the count to open Review"
+  },
+  "panel": {
+    "title": "Read it file by file",
+    "body": "The Review tab shows every file the agent changed, each with its diff."
+  },
+  "comment": {
+    "title": "Comment on a line",
+    "body": "Select lines in a diff, right-click and pick Comment for the session. Write what to change, then click Add to batch.",
+    "hint": "Add a comment to continue"
+  },
+  "send": {
+    "title": "Send your comments",
+    "body": "Comments wait here, so you can write several first. Send hands them all to the agent as one message.",
+    "hint": "Click Send to continue"
+  }
+}

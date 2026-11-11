@@ -175,8 +175,10 @@ func (d *dock) layout(gtx C, th *ui.Theme, root *ui.Root, in dockInput) (saveWid
 		layout.Rigid(on.Separator),
 		layout.Flexed(1, func(gtx C) D {
 			gtx.Constraints.Min = gtx.Constraints.Max
-			err = d.body(gtx, on, root, in)
-			return D{Size: gtx.Constraints.Max}
+			return d.tour.Anchor(gtx, tourReviewPanel, func(gtx C) D {
+				err = d.body(gtx, on, root, in)
+				return D{Size: gtx.Constraints.Max}
+			})
 		}),
 	)
 	if !d.fullscreen {

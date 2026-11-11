@@ -325,6 +325,7 @@ func run(w *app.Window, rt backend.Runtime) error {
 	}
 	u.dock = newDock(code, u.review, u.newArtifactsTab())
 	u.dock.tour = &u.tour.Tour
+	u.review.tour = &u.tour.Tour
 	u.model.diffTouched = u.review.feed.touched
 	u.model.focusSession = u.focusSession
 	u.model.showToast = u.showToast
