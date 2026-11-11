@@ -1,0 +1,818 @@
+[
+  {
+    "type": "barIconButton",
+    "key": "key",
+    "props": {
+      "icon": "icon",
+      "on": true,
+      "onPress": "onPress"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "bodyLine",
+    "key": "key",
+    "props": {
+      "text": "text"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "box",
+    "key": "key",
+    "props": {
+      "direction": "direction",
+      "gap": 1.5,
+      "padding": 1.5,
+      "paddingX": 1.5,
+      "paddingY": 1.5,
+      "align": "align",
+      "justify": "justify",
+      "grow": 1.5,
+      "width": 1.5,
+      "height": 1.5,
+      "background": "background",
+      "radius": 1.5
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "busyRing",
+    "key": "key",
+    "props": {
+      "size": 1.5,
+      "color": "color",
+      "track": "track"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "button",
+    "key": "key",
+    "props": {
+      "text": "text",
+      "icon": "icon",
+      "variant": "variant",
+      "size": "size",
+      "disabled": true,
+      "lit": true,
+      "onPress": "onPress"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "checkbox",
+    "key": "key",
+    "props": {
+      "checked": true,
+      "disabled": true,
+      "onChange": "onChange"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "chip",
+    "key": "key",
+    "props": {
+      "label": "label",
+      "count": 1,
+      "on": true,
+      "onPress": "onPress"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "collapse",
+    "key": "key",
+    "props": {
+      "open": true
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "contextMenu",
+    "key": "key",
+    "props": {
+      "entries": [
+        {
+          "kind": "kind",
+          "label": "label",
+          "icon": "icon",
+          "shortcut": "shortcut",
+          "shortcutDestructive": true,
+          "lead": {
+            "type": "separator",
+            "props": {}
+          },
+          "variant": "variant",
+          "inset": true,
+          "disabled": true,
+          "checked": true,
+          "sub": [
+            {}
+          ],
+          "columns": 1,
+          "swatch": "swatch",
+          "onSelect": "onSelect",
+          "onCheckedChange": "onCheckedChange"
+        }
+      ]
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "cornerButton",
+    "key": "key",
+    "props": {
+      "icon": "icon",
+      "on": true,
+      "onPress": "onPress"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "dialog",
+    "key": "key",
+    "props": {
+      "open": true,
+      "title": "title",
+      "description": "description",
+      "actions": [
+        {
+          "type": "separator",
+          "props": {}
+        }
+      ],
+      "maxWidth": 1.5,
+      "hideClose": true,
+      "raw": true,
+      "top": 1.5,
+      "scrim": 1.5,
+      "onClose": "onClose"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "diffStat",
+    "key": "key",
+    "props": {
+      "added": 1,
+      "deleted": 1
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "dropdownMenu",
+    "key": "key",
+    "props": {
+      "entries": [
+        {
+          "kind": "kind",
+          "label": "label",
+          "icon": "icon",
+          "shortcut": "shortcut",
+          "shortcutDestructive": true,
+          "lead": {
+            "type": "separator",
+            "props": {}
+          },
+          "variant": "variant",
+          "inset": true,
+          "disabled": true,
+          "checked": true,
+          "sub": [
+            {}
+          ],
+          "columns": 1,
+          "swatch": "swatch",
+          "onSelect": "onSelect",
+          "onCheckedChange": "onCheckedChange"
+        }
+      ]
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "dropdownPanel",
+    "key": "key",
+    "props": {
+      "trigger": {
+        "type": "separator",
+        "props": {}
+      },
+      "width": 1.5,
+      "alignEnd": true
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "footnote",
+    "key": "key",
+    "props": {
+      "text": "text"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "formLabel",
+    "key": "key",
+    "props": {
+      "text": "text",
+      "size": 1.5,
+      "weight": "weight",
+      "uppercase": true,
+      "disabled": true
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "icon",
+    "key": "key",
+    "props": {
+      "name": "name",
+      "size": 1.5,
+      "color": "color"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "iconAction",
+    "key": "key",
+    "props": {
+      "icon": "icon",
+      "label": "label",
+      "pressed": true,
+      "onPress": "onPress"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "inlineEdit",
+    "key": "key",
+    "props": {
+      "value": "value",
+      "size": 1.5,
+      "mono": true,
+      "padRight": 1.5,
+      "onCommit": "onCommit",
+      "onCancel": "onCancel"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "input",
+    "key": "key",
+    "props": {
+      "value": "value",
+      "placeholder": "placeholder",
+      "leading": "leading",
+      "leadingSize": 1.5,
+      "height": 1.5,
+      "width": 1.5,
+      "textSize": 1.5,
+      "mono": true,
+      "password": true,
+      "borderless": true,
+      "bare": true,
+      "clearable": true,
+      "disabled": true,
+      "invalid": true,
+      "onChange": "onChange",
+      "onSubmit": "onSubmit"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "inputGroup",
+    "key": "key",
+    "props": {
+      "value": "value",
+      "placeholder": "placeholder",
+      "multiline": true,
+      "start": [
+        {
+          "type": "separator",
+          "props": {}
+        }
+      ],
+      "end": [
+        {
+          "type": "separator",
+          "props": {}
+        }
+      ],
+      "width": 1.5,
+      "disabled": true,
+      "invalid": true,
+      "onChange": "onChange",
+      "onSubmit": "onSubmit"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "keyCap",
+    "key": "key",
+    "props": {
+      "keys": "keys"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "label",
+    "key": "key",
+    "props": {
+      "text": "text",
+      "size": 1.5,
+      "color": "color",
+      "weight": "weight",
+      "mono": true,
+      "maxLines": 1,
+      "lineHeight": 1.5,
+      "align": "align"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "metaGlyph",
+    "key": "key",
+    "props": {
+      "icon": "icon",
+      "text": "text",
+      "color": "color"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "notice",
+    "key": "key",
+    "props": {
+      "text": "text"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "panelNotice",
+    "key": "key",
+    "props": {
+      "text": "text",
+      "padX": 1.5
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "pill",
+    "key": "key",
+    "props": {
+      "padLeft": 1.5,
+      "padRight": 1.5
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "popoverRow",
+    "key": "key",
+    "props": {
+      "onPress": "onPress"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "presence",
+    "key": "key",
+    "props": {},
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "progress",
+    "key": "key",
+    "props": {
+      "percent": 1
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "resizeHandle",
+    "key": "key",
+    "props": {
+      "edge": "edge",
+      "width": 1.5,
+      "minWidth": 1.5,
+      "maxWidth": 1.5,
+      "onResize": "onResize"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "scroll",
+    "key": "key",
+    "props": {
+      "direction": "direction"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "selectTrigger",
+    "key": "key",
+    "props": {
+      "value": "value",
+      "width": 1.5,
+      "lead": {
+        "type": "separator",
+        "props": {}
+      }
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "separator",
+    "key": "key",
+    "props": {},
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "skeleton",
+    "key": "key",
+    "props": {
+      "width": 1.5,
+      "height": 1.5
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "sortableList",
+    "key": "key",
+    "props": {
+      "gap": 1.5,
+      "horizontal": true,
+      "within": true,
+      "leaves": true,
+      "onReorder": "onReorder"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "spinner",
+    "key": "key",
+    "props": {
+      "size": 1.5,
+      "color": "color"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "switch",
+    "key": "key",
+    "props": {
+      "checked": true,
+      "size": "size",
+      "disabled": true,
+      "onChange": "onChange"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "tabs",
+    "key": "key",
+    "props": {
+      "selected": 1,
+      "triggers": [
+        {
+          "text": "text",
+          "icon": "icon",
+          "trailing": {
+            "type": "separator",
+            "props": {}
+          },
+          "disabled": true
+        }
+      ],
+      "variant": "variant",
+      "orientation": "orientation",
+      "onChange": "onChange"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "textarea",
+    "key": "key",
+    "props": {
+      "value": "value",
+      "placeholder": "placeholder",
+      "resizable": true,
+      "maxHeight": 1.5,
+      "width": 1.5,
+      "disabled": true,
+      "invalid": true,
+      "onChange": "onChange"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "toggle",
+    "key": "key",
+    "props": {
+      "pressed": true,
+      "text": "text",
+      "icon": "icon",
+      "variant": "variant",
+      "size": "size",
+      "height": 1.5,
+      "padX": 1.5,
+      "textSize": 1.5,
+      "disabled": true,
+      "onChange": "onChange"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "toggleGroup",
+    "key": "key",
+    "props": {
+      "value": "value",
+      "items": [
+        {
+          "value": "value",
+          "text": "text",
+          "icon": "icon",
+          "disabled": true
+        }
+      ],
+      "variant": "variant",
+      "size": "size",
+      "itemHeight": 1.5,
+      "itemPadX": 1.5,
+      "itemText": 1.5,
+      "onChange": "onChange"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "tooltip",
+    "key": "key",
+    "props": {
+      "text": "text",
+      "content": {
+        "type": "separator",
+        "props": {}
+      },
+      "variant": "variant",
+      "side": "side"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "verticalRule",
+    "key": "key",
+    "props": {},
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "wrap",
+    "key": "key",
+    "props": {
+      "gapX": 1.5,
+      "gapY": 1.5,
+      "justify": "justify",
+      "contentStart": true
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "wrapItem",
+    "key": "key",
+    "props": {
+      "marginAuto": true
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  }
+]

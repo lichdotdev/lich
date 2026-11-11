@@ -40,6 +40,12 @@ jobs:
       # that falls into the wrong OS's build, an OS-only file that stops
       # compiling — fails the PR instead of a release tag. vet builds the
       # _test.go files too, so it catches test-only tag mistakes `go build` misses.
+      - name: Extension module
+        working-directory: extension
+        run: |
+          go vet ./...
+          go test ./...
+
       - name: Cross-compile all targets
         run: |
           for os in linux darwin windows; do

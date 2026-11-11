@@ -1,0 +1,104 @@
+[
+  {
+    "v": 1,
+    "kind": "clipboard",
+    "data": {
+      "text": "text"
+    }
+  },
+  {
+    "v": 1,
+    "kind": "event",
+    "data": {
+      "handler": "handler",
+      "text": "text",
+      "checked": true,
+      "index": 1,
+      "order": [
+        "order"
+      ],
+      "width": 1.5
+    }
+  },
+  {
+    "v": 1,
+    "kind": "openExternal",
+    "data": {
+      "url": "url"
+    }
+  },
+  {
+    "v": 1,
+    "kind": "render",
+    "data": {
+      "surface": "surface",
+      "root": {
+        "type": "separator",
+        "props": {}
+      },
+      "shortcuts": [
+        {
+          "keys": "keys",
+          "handler": "handler"
+        }
+      ]
+    }
+  },
+  {
+    "v": 1,
+    "kind": "surface.closed",
+    "data": {
+      "surface": "surface"
+    }
+  },
+  {
+    "v": 1,
+    "kind": "surface.opened",
+    "data": {
+      "surface": "surface"
+    }
+  },
+  {
+    "v": 1,
+    "kind": "toast",
+    "data": {
+      "id": "id",
+      "variant": "variant",
+      "title": "title",
+      "description": "description",
+      "action": {
+        "label": "label",
+        "onPress": "onPress"
+      },
+      "cancel": {
+        "label": "label",
+        "onPress": "onPress"
+      },
+      "secondary": {
+        "label": "label",
+        "onPress": "onPress"
+      },
+      "icon": "icon",
+      "iconColor": "iconColor",
+      "spin": true,
+      "lines": [
+        {
+          "icon": "icon",
+          "text": "text"
+        }
+      ],
+      "progress": {
+        "percent": 1
+      },
+      "durationMs": 1,
+      "onDismiss": "onDismiss"
+    }
+  },
+  {
+    "v": 1,
+    "kind": "toast.dismiss",
+    "data": {
+      "id": "id"
+    }
+  }
+]
