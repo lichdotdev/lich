@@ -160,14 +160,29 @@ func app() {
 	svcs := services.New(db, term, hub.Emit)
 	// Deferred after the hands-on flush, so it runs first: a service's process
 	// is lich's child, and quitting lich is what stops it.
-	defer svcs.Shutdown(serviceQuitGrace)
+	defer shutdownServices(svcs, coord)
 	sys, closeBrowsers := registerServices(db, term, svcs, hub, configDir, logPath, env, launchEnv, coord)
 	defer closeBrowsers()
 
 	coord.SetWindowOpen(hub.Attached)
 	term.SetRestart(coord.Do)
 
-	run(term, configDir, coord, svcs.Boot, startWindow(sys, noWindow), closeWindow(hub))
+	run(term, configDir, coord, servicesBoot(svcs), startWindow(sys, noWindow), closeWindow(hub))
+}
+
+func shutdownServices(svcs *services.Service, coord *restart.Coordinator) {
+	if coord.Restarting() {
+		svcs.ShutdownForRestart(serviceQuitGrace)
+		return
+	}
+	svcs.Shutdown(serviceQuitGrace)
+}
+
+func servicesBoot(svcs *services.Service) func() {
+	if os.Getenv(restart.WaitEnv) == "" {
+		return svcs.Boot
+	}
+	return func() { svcs.BootAfterRestart(serviceQuitGrace + services.RestartWaitMargin) }
 }
 
 // windowStart is what a launch does about lich's window: open it, its own or

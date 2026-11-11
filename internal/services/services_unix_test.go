@@ -23,6 +23,20 @@ type memStore struct {
 	projects map[string]string
 	closed   map[string]bool
 	configs  []api.ServiceConfig
+	settings map[string]string
+}
+
+func (m *memStore) GetSetting(_ context.Context, opts api.GetSettingOptions) (string, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m.settings[opts.Key], nil
+}
+
+func (m *memStore) SetSetting(_ context.Context, opts api.SetSettingOptions) (api.None, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.settings[opts.Key] = opts.Value
+	return api.None{}, nil
 }
 
 func (m *memStore) Services() ([]api.ServiceConfig, error) {
@@ -98,7 +112,7 @@ func (e *emitted) emit(name string, data any) {
 func newTestServices(t *testing.T) (*Service, *memStore, *emitted) {
 	t.Helper()
 	t.Setenv("SHELL", "/bin/sh")
-	st := &memStore{projects: map[string]string{"p1": t.TempDir(), "p2": t.TempDir()}, closed: map[string]bool{}}
+	st := &memStore{projects: map[string]string{"p1": t.TempDir(), "p2": t.TempDir()}, closed: map[string]bool{}, settings: map[string]string{}}
 	em := &emitted{}
 	svc := New(st, terminal.New(termStore{}, nil, events.New()), em.emit)
 	t.Cleanup(func() { svc.Shutdown(time.Second) })
@@ -284,6 +298,128 @@ func TestBootStartsOnlyThoseSavedToStartWithLich(t *testing.T) {
 	if running := svc.Running(); len(running) != 1 || running[0].ID != auto.ID {
 		t.Errorf("Running() = %+v", running)
 	}
+}
+
+func start(t *testing.T, svc *Service, id string) {
+	t.Helper()
+	if _, err := svc.Start(context.Background(), api.ServiceIDOptions{ID: id}); err != nil {
+		t.Fatalf("Start %s: %v", id, err)
+	}
+	waitState(t, svc, id, api.ServiceRunning)
+}
+
+// successor is the lich after a restart: the same database, nothing running.
+func successor(t *testing.T, st *memStore) *Service {
+	t.Helper()
+	next := New(st, terminal.New(termStore{}, nil, events.New()), (&emitted{}).emit)
+	t.Cleanup(func() { next.Shutdown(time.Second) })
+	return next
+}
+
+func TestRestartBringsBackWhatWasRunning(t *testing.T) {
+	svc, st, _ := newTestServices(t)
+	manual := save(t, svc, "p1", "manual", "sleep 30", false)
+	idle := save(t, svc, "p1", "idle", "sleep 30", false)
+	start(t, svc, manual.ID)
+	svc.ShutdownForRestart(time.Second)
+
+	next := successor(t, st)
+	next.BootAfterRestart(10 * time.Second)
+	waitState(t, next, manual.ID, api.ServiceRunning)
+	if got := stateOf(t, next, idle.ID).State; got != api.ServiceStopped {
+		t.Errorf("service never started by hand is %s after the restart", got)
+	}
+	if got := st.settings[restartRunningKey]; got != "" {
+		t.Errorf("record left after the boot that read it: %q", got)
+	}
+}
+
+func TestRestartWaitsForTheOutgoingLichToStopItsServices(t *testing.T) {
+	svc, st, _ := newTestServices(t)
+	manual := save(t, svc, "p1", "manual", "sleep 30", false)
+	auto := save(t, svc, "p1", "auto", "sleep 30", true)
+	start(t, svc, manual.ID)
+
+	next := successor(t, st)
+	next.BootAfterRestart(10 * time.Second)
+	time.Sleep(100 * time.Millisecond)
+	for _, id := range []string{manual.ID, auto.ID} {
+		if got := stateOf(t, next, id).State; got != api.ServiceStopped {
+			t.Errorf("%s is %s while the outgoing lich is still stopping it", id, got)
+		}
+	}
+
+	svc.ShutdownForRestart(time.Second)
+	waitState(t, next, manual.ID, api.ServiceRunning)
+	waitState(t, next, auto.ID, api.ServiceRunning)
+}
+
+func TestPlainLaunchIgnoresAndConsumesARestartRecord(t *testing.T) {
+	svc, st, _ := newTestServices(t)
+	manual := save(t, svc, "p1", "manual", "sleep 30", false)
+	start(t, svc, manual.ID)
+	svc.ShutdownForRestart(time.Second)
+
+	next := successor(t, st)
+	next.Boot()
+	time.Sleep(100 * time.Millisecond)
+	if got := stateOf(t, next, manual.ID).State; got != api.ServiceStopped {
+		t.Errorf("plain launch started the recorded service: %s", got)
+	}
+	if got := st.settings[restartRunningKey]; got != "" {
+		t.Errorf("record survived a plain launch: %q", got)
+	}
+}
+
+func TestRestartSkipsADeletedServiceAndAClosedProject(t *testing.T) {
+	svc, st, _ := newTestServices(t)
+	deleted := save(t, svc, "p1", "deleted", "sleep 30", false)
+	kept := save(t, svc, "p1", "kept", "sleep 30", false)
+	closed := save(t, svc, "p2", "closed", "sleep 30", false)
+	for _, id := range []string{deleted.ID, kept.ID, closed.ID} {
+		start(t, svc, id)
+	}
+	svc.ShutdownForRestart(time.Second)
+	if _, err := svc.Delete(context.Background(), api.ServiceIDOptions{ID: deleted.ID}); err != nil {
+		t.Fatal(err)
+	}
+	st.setClosed("p2", true)
+
+	next := successor(t, st)
+	next.BootAfterRestart(10 * time.Second)
+	waitState(t, next, kept.ID, api.ServiceRunning)
+	if got := stateOf(t, next, closed.ID).State; got != api.ServiceStopped {
+		t.Errorf("service of a closed project is %s", got)
+	}
+	if running := next.Running(); len(running) != 1 {
+		t.Errorf("Running() = %+v", running)
+	}
+}
+
+func TestRestartLeavesDownAServiceAlreadyStopping(t *testing.T) {
+	svc, st, _ := newTestServices(t)
+	stubborn := save(t, svc, "p1", "stubborn", "trap '' INT; sleep 30", false)
+	start(t, svc, stubborn.ID)
+	if _, err := svc.Stop(context.Background(), api.ServiceIDOptions{ID: stubborn.ID}); err != nil {
+		t.Fatal(err)
+	}
+	svc.ShutdownForRestart(100 * time.Millisecond)
+
+	next := successor(t, st)
+	next.BootAfterRestart(10 * time.Second)
+	time.Sleep(100 * time.Millisecond)
+	if got := stateOf(t, next, stubborn.ID).State; got != api.ServiceStopped {
+		t.Errorf("a service the user was stopping came back: %s", got)
+	}
+}
+
+func TestRestartStartsThoseSavedToStartWithLichWhenNoRecordArrives(t *testing.T) {
+	svc, st, _ := newTestServices(t)
+	auto := save(t, svc, "p1", "auto", "sleep 30", true)
+
+	next := successor(t, st)
+	next.BootAfterRestart(50 * time.Millisecond)
+	waitState(t, next, auto.ID, api.ServiceRunning)
 }
 
 func TestStartAllAndStopAllStayInTheirProject(t *testing.T) {

@@ -1089,10 +1089,11 @@ work when nobody knows it and that the call site never shows. The mechanism and 
 - **A service lives as long as its project's tab** (`services.ProjectChanged`, `main.go`): closing the tab asks
   its services to stop and kills what is still up after 10 seconds, without asking first, and reopening the
   project starts only the ones saved to start with lich; one started by hand stays down. Closing the window
-  stops nothing. Quitting lich stops everything the same way, and an in-place restart after an update is a quit:
-  the new lich starts the services saved to start with lich in the projects it opens with, so one started by
-  hand is down after an update. Home's services, edited from Settings › Services in Global, run for as long as
-  lich does, since Home has no tab to close.
+  stops nothing. Quitting lich stops everything the same way, and the next launch starts only the services saved
+  to start with lich in the projects it opens with. After an in-place restart nothing comes up until the outgoing
+  lich has finished stopping its services, up to its 10 second grace, or a command holding a port would lose it to
+  its own second copy. Home's services, edited from Settings › Services in Global, run for as long as lich does,
+  since Home has no tab to close.
 - **What a stopped service printed is kept in memory only** (`services.Output`): the tail of its last run, as
   long as a session's replay, until it starts again or lich exits. After a restart of lich a service that has
   not run yet has no output to show.

@@ -115,6 +115,14 @@ func (c *Coordinator) Install(installer string) error {
 	return err
 }
 
+// Restarting reports whether a successor was launched, which is what tells
+// this lich's way out from a quit.
+func (c *Coordinator) Restarting() bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.started
+}
+
 // installerArgs is half of a contract with build/windows/lich.iss. /UPDATEPID is
 // no Inno switch: the script reads it back as {param:UPDATEPID|0} to tell an
 // update from a fresh install and to wait for this process to release its exe.
