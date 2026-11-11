@@ -4,11 +4,14 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"gioui.org/font"
 	"gioui.org/font/opentype"
@@ -92,6 +95,30 @@ func DownloadDir() (string, error) {
 		return "", err
 	}
 	return filepath.Join(cache, "lich", "fonts"), nil
+}
+
+// Downloaded lists the Regular font files in DownloadDir, none when nothing
+// was downloaded yet. The system's own lookups never see that folder, and a
+// fallback face must be the plain one: Bold sorts first.
+func Downloaded() ([]string, error) {
+	dir, err := DownloadDir()
+	if err != nil {
+		return nil, err
+	}
+	entries, err := os.ReadDir(dir)
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	var paths []string
+	for _, e := range entries {
+		if name := e.Name(); strings.HasSuffix(name, "-Regular.otf") || strings.HasSuffix(name, "-Regular.ttf") {
+			paths = append(paths, filepath.Join(dir, e.Name()))
+		}
+	}
+	return paths, nil
 }
 
 // Fetch downloads each of files into dir, skipping the ones already there

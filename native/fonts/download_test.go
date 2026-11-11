@@ -10,6 +10,8 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"runtime"
+	"slices"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -201,5 +203,37 @@ func assertEmpty(t *testing.T, dir string) {
 	}
 	if len(entries) != 0 {
 		t.Errorf("left %d files behind, the first %s", len(entries), entries[0].Name())
+	}
+}
+
+// The download holds a family's Bold, Medium and Regular, and Bold sorts
+// first: a terminal drawing at normal weight must be offered the Regular only.
+func TestDownloadedListsTheRegularFilesOnly(t *testing.T) {
+	cache := t.TempDir()
+	switch runtime.GOOS {
+	case "windows":
+		t.Setenv("LocalAppData", cache)
+	case "darwin":
+		t.Setenv("HOME", cache)
+		cache = filepath.Join(cache, "Library", "Caches")
+	default:
+		t.Setenv("XDG_CACHE_HOME", cache)
+	}
+	dir := filepath.Join(cache, "lich", "fonts")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"NotoSansSC-Bold.otf", "NotoSansSC-Medium.otf", "NotoSansSC-Regular.otf", "NotoSansSC-Regular.otf.part"} {
+		if err := os.WriteFile(filepath.Join(dir, name), nil, 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	got, err := Downloaded()
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []string{filepath.Join(dir, "NotoSansSC-Regular.otf")}
+	if !slices.Equal(got, want) {
+		t.Errorf("Downloaded() = %v, want %v", got, want)
 	}
 }

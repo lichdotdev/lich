@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/lichdotdev/lich/native/fonts"
 )
 
 // Each lookup through fontconfig is a subprocess, ~20 ms, run inside a frame:
@@ -137,5 +139,39 @@ func TestAKeycapWithoutAnEmojiFontDrawsItsDigit(t *testing.T) {
 	m := mask(t, r, Key{R: '1', Rest: "\ufe0f\u20e3"})
 	if m.Color != nil || m.Img == nil {
 		t.Fatalf("drew color %v, outline %v; want the digit's outline", m.Color != nil, m.Img != nil)
+	}
+}
+
+// A font lich downloaded sits in its own cache, where fontconfig never looks:
+// with none installed covering a character, the terminal must still draw it
+// from the download. fc-list answers nothing, as it does on a machine with no
+// CJK font, and an emoji font linked into the download folder stands in for
+// the downloaded Noto Sans SC.
+func TestADownloadedFontCoversWhatNoInstalledOneDoes(t *testing.T) {
+	const c = '🚀'
+	installed, err := fonts.Covering(c)
+	if err != nil || installed == "" {
+		t.Fatalf("Covering(%q) = %q, %v", c, installed, err)
+	}
+	cache := t.TempDir()
+	t.Setenv("XDG_CACHE_HOME", cache)
+	dir := filepath.Join(cache, "lich", "fonts")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(installed, filepath.Join(dir, "NotoSansSC-Regular.otf")); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "NotoSansSC-Bold.otf.part"), []byte("half a font"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	fakeFcList(t, "*) exit 0 ;;")
+	r := sizedRasterizer(t)
+	f, err := r.faceFor(Key{R: c})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if f == nil {
+		t.Fatalf("%q has no face, though the downloaded font covers it", c)
 	}
 }

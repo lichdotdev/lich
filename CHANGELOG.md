@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - An agent's browser click on a link that wraps over two lines no longer fails as covered: it lands on the link's first line instead of the empty space between the lines.
+- Chinese, Japanese or Korean text in a terminal draws from the font lich downloaded for the window when no installed font covers it, instead of as empty boxes while the rest of the window reads fine.
 
 ## [0.88.0] - 2026-11-10
 

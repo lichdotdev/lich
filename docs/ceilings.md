@@ -1275,12 +1275,8 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   `fc-match` subprocess inside a frame: a family installed while lich runs, after a terminal or the editor
   already asked for it, keeps drawing in the substitute fontconfig gave until lich restarts. Choosing it in a
   font picker for the first time is not affected.
-- **The Chinese font the native window downloads reaches its interface, not its terminal on Linux**
-  (`native/fonts/download.go`, `native/glyphs/raster.go`): the terminal finds a glyph its family lacks through
-  fontconfig (`fonts.Covering`), which never sees `<user cache dir>/lich/fonts`, so with no Chinese font
-  installed a branch name or agent output in Chinese still draws as tofu in the terminal while the cards and
-  Settings around it read fine. Installing a Chinese font system-wide covers both. Windows and macOS find the
-  terminal's fallback by scanning the system font folders, which leave lich's cache out the same way.
+  A Chinese, Japanese or Korean font downloaded while a terminal is open leaves the characters that terminal already
+  drew as empty boxes empty until lich restarts or its font or font size changes.
 - **Following the OS's light or dark is polled on macOS**: a theme's `pair` and `lich theme switch` reach the
   window through the backend's `theme-selection` event. Following the OS
   reads the freedesktop appearance portal on Linux and `AppsUseLightTheme` in the registry on Windows, both
