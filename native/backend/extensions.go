@@ -53,6 +53,13 @@ func (c *Client) RemoveExtension(ctx context.Context, id string) error {
 	return err
 }
 
+// DeleteExtensionData deletes the data directory of extension id, which must
+// be removed first.
+func (c *Client) DeleteExtensionData(ctx context.Context, id string) error {
+	_, err := callMethod(ctx, c, api.ExtensionsDeleteData, api.ExtensionIDOptions{ID: id})
+	return err
+}
+
 // ExtensionsDir is the directory the backend reads extensions from.
 func (c *Client) ExtensionsDir(ctx context.Context) (string, error) {
 	return callMethod(ctx, c, api.ExtensionsDir, api.None{})

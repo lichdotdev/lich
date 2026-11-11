@@ -94,11 +94,17 @@ func (b *extensionBackend) stub() *rpcStub {
 		switch method {
 		case api.ProjectPickDirectory.Name:
 			return b.pick, http.StatusOK
-		case api.ExtensionsRemove.Name, api.ExtensionsRestart.Name, api.SystemOpenFolder.Name:
+		case api.ExtensionsRemove.Name, api.ExtensionsDeleteData.Name, api.ExtensionsRestart.Name, api.SystemOpenFolder.Name:
 			return api.None{}, http.StatusOK
 		}
 		return backend.Extension{ID: "x"}, http.StatusOK
 	}}
+}
+
+func (b *extensionBackend) called() []string {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return slices.Clone(b.calls)
 }
 
 func (b *extensionBackend) last() (string, string) {
@@ -213,6 +219,49 @@ func TestEditingTheURLClearsOnlyTheGitHubRowsError(t *testing.T) {
 	p.urlEvents(gtx)
 	if got := p.snapshot().err; got.text != "" {
 		t.Errorf("error %+v after editing the URL, want it gone", got)
+	}
+}
+
+func TestTheRemoveConfirmationDeletesTheDataOnlyWhenTicked(t *testing.T) {
+	cases := []struct {
+		ticked bool
+		want   []string
+	}{
+		{false, []string{api.ExtensionsRemove.Name}},
+		{true, []string{api.ExtensionsRemove.Name, api.ExtensionsDeleteData.Name}},
+	}
+	for _, c := range cases {
+		b := &extensionBackend{}
+		s := extensionsScreen(t, b)
+		p := &s.extensions
+		e := backend.Extension{ID: "notes", Name: "Notes"}
+		p.deleteData.Value = true
+		p.askRemove(e)
+		if p.deleteData.Value {
+			t.Fatal("the remove confirmation opened with its box ticked")
+		}
+		p.deleteData.Value = c.ticked
+		s.confirmRemoval(e)
+		eventually(t, "the calls were made", func() bool { return len(b.called()) == len(c.want) })
+		if got := b.called(); !slices.Equal(got, c.want) {
+			t.Errorf("ticked %v called %v, want %v", c.ticked, got, c.want)
+		}
+		if _, args := b.last(); args != `{"id":"notes"}` {
+			t.Errorf("ticked %v last call had %s, want notes", c.ticked, args)
+		}
+	}
+}
+
+func TestDeleteDataIsNotCalledWhenRemoveFails(t *testing.T) {
+	b := &extensionBackend{fail: "busy"}
+	s := extensionsScreen(t, b)
+	e := backend.Extension{ID: "notes", Name: "Notes"}
+	s.extensions.askRemove(e)
+	s.extensions.deleteData.Value = true
+	s.confirmRemoval(e)
+	eventually(t, "the error landed on the row", func() bool { return s.extensions.snapshot().errorAt(errAtRow("notes")) != "" })
+	if got := b.called(); !slices.Equal(got, []string{api.ExtensionsRemove.Name}) {
+		t.Errorf("called %v after a failed Remove, want Remove alone", got)
 	}
 }
 

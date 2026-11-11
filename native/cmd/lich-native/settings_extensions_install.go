@@ -150,12 +150,13 @@ func (s *settingsScreen) layoutExtensionDialogs(gtx C, th *ui.Theme) {
 		p.with(func(t *extensionTasks) { t.asking = "" })
 	}
 	remove := extensionConfirm{state: &p.removeDialog, slot: 1, open: t.removal != nil, destructive: true,
-		title: i18n.T("settings.extensionsSettings.removeTitle"), action: i18n.T("settings.extensionsSettings.remove")}
+		title: i18n.T("settings.extensionsSettings.removeTitle"), action: i18n.T("settings.extensionsSettings.remove"),
+		body: func(gtx C) D { return p.deleteDataRow(gtx, th.On(th.Popover)) }}
 	if t.removal != nil {
 		remove.desc = i18n.T("settings.extensionsSettings.removeDescription", i18n.Args{"name": t.removal.Name})
 	}
 	if pressed, closed := p.confirmDialog(gtx, th, remove); pressed {
-		s.removeExtension(*t.removal)
+		s.confirmRemoval(*t.removal)
 	} else if closed {
 		p.with(func(t *extensionTasks) { t.removal = nil })
 	}
@@ -168,6 +169,28 @@ type extensionConfirm struct {
 	slot                int
 	open, destructive   bool
 	title, desc, action string
+	body                layout.Widget
+}
+
+// deleteDataRow is the remove confirmation's box with its label, which a
+// click also ticks, and the muted line saying what stays without it.
+func (p *extensionsSettings) deleteDataRow(gtx C, th *ui.Theme) D {
+	if p.deleteDataLabel.Clicked(gtx) {
+		p.deleteData.Value = !p.deleteData.Value
+	}
+	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+		layout.Rigid(func(gtx C) D {
+			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+				layout.Rigid(th.Checkbox(&p.deleteData).Layout),
+				ui.Gap(2),
+				layout.Rigid(func(gtx C) D {
+					return p.deleteDataLabel.Layout(gtx, th.Text(ui.TextSM, i18n.T("settings.extensionsSettings.removeDeleteData")).Layout)
+				}),
+			)
+		}),
+		ui.VGap(1),
+		layout.Rigid(th.Text(ui.TextSM, i18n.T("settings.extensionsSettings.removeKeepsData")).Muted().Layout),
+	)
 }
 
 // confirmDialog is Cancel and the action at sm:max-w-xl. It reports whether
@@ -187,6 +210,7 @@ func (p *extensionsSettings) confirmDialog(gtx C, th *ui.Theme, c extensionConfi
 	}
 	dlg := th.Dialog(c.state, c.open, c.title, c.desc)
 	dlg.MaxWidth = ui.DialogWidthXL
+	dlg.Body = c.body
 	dlg.Actions = []layout.Widget{cancel.Layout, confirm.Layout}
 	if dlg.Layout(gtx) {
 		closed = true

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"os"
 	"strings"
 	"sync"
@@ -93,6 +94,9 @@ type extensionsSettings struct {
 
 	installDialog, removeDialog ui.DialogState
 	cancel, confirm             [2]widget.Clickable
+	// deleteData is the remove confirmation's box, unticked each time it opens.
+	deleteData      widget.Bool
+	deleteDataLabel widget.Clickable
 
 	mu    sync.Mutex
 	tasks extensionTasks
@@ -150,6 +154,7 @@ func (p *extensionsSettings) askInstall(from, src string) {
 }
 
 func (p *extensionsSettings) askRemove(e backend.Extension) {
+	p.deleteData.Value = false
 	p.with(func(t *extensionTasks) { t.removal = &e })
 }
 
@@ -223,13 +228,34 @@ func (s *settingsScreen) installExtension(fromDir bool, src string) {
 	}()
 }
 
+// confirmRemoval is the remove confirmation's action, which its box picks.
+func (s *settingsScreen) confirmRemoval(e backend.Extension) {
+	if s.extensions.deleteData.Value {
+		s.removeExtensionAndData(e)
+		return
+	}
+	s.removeExtension(e)
+}
+
 func (s *settingsScreen) removeExtension(e backend.Extension) {
+	s.runRemoval(e, s.client.RemoveExtension)
+}
+
+func (s *settingsScreen) removeExtensionAndData(e backend.Extension) {
+	s.runRemoval(e, s.client.RemoveExtension, s.client.DeleteExtensionData)
+}
+
+// runRemoval makes the calls in order and stops at the first that fails.
+func (s *settingsScreen) runRemoval(e backend.Extension, calls ...func(ctx context.Context, id string) error) {
 	p := &s.extensions
 	p.with(func(t *extensionTasks) { t.removal = nil })
 	p.clearError(errAtRow(e.ID))
 	go func() {
-		if err := s.client.RemoveExtension(s.ctx, e.ID); err != nil {
-			p.fail(errAtRow(e.ID), err)
+		for _, call := range calls {
+			if err := call(s.ctx, e.ID); err != nil {
+				p.fail(errAtRow(e.ID), err)
+				break
+			}
 		}
 		s.invalidate()
 	}()
