@@ -49,6 +49,13 @@ func (r *Renderer) stacked(th *ui.Theme, n extension.Node, id string) layout.Wid
 	return ui.Stack(0, r.children(th, n, id)...)
 }
 
+// The inline empty state's glyph: the kit's inline form has none of its own,
+// so it would draw at size 0; a row icon's size, a text line's gap.
+const (
+	inlineEmptyIconSize = 16
+	inlineEmptyIconGap  = 2
+)
+
 func drawEmptyState(r *Renderer, gtx C, th *ui.Theme, n extension.Node, id string) D {
 	p := props[extension.EmptyStateProps](n)
 	var actions layout.Widget
@@ -58,7 +65,7 @@ func drawEmptyState(r *Renderer, gtx C, th *ui.Theme, n extension.Node, id strin
 	e := th.EmptyState(r.icon(p.Icon), p.Title, p.Description, actions)
 	if n.Type == extension.InlineEmptyState.Name {
 		e = th.InlineEmptyState(p.Title, p.Description, actions)
-		e.Icon = r.icon(p.Icon)
+		e.Icon, e.IconSize, e.IconGap = r.icon(p.Icon), inlineEmptyIconSize, inlineEmptyIconGap
 	}
 	tuneEmptyState(&e, p)
 	return e.Layout(gtx)

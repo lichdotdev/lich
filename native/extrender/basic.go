@@ -65,8 +65,8 @@ func boxFlex(r *Renderer, th *ui.Theme, n extension.Node, id string, p extension
 			kids = append(kids, layout.Rigid(gapOf(axis, p.Gap)))
 		}
 		w := r.child(th, c, id, i)
-		if grow := props[extension.BoxProps](c).Grow; c.Type == extension.Box.Name && grow > 0 {
-			kids = append(kids, layout.Flexed(float32(grow), w))
+		if grow := growOf(c); grow > 0 {
+			kids = append(kids, layout.Flexed(grow, filled(w)))
 			continue
 		}
 		kids = append(kids, layout.Rigid(stretched(axis, p.Align, w)))
@@ -77,6 +77,33 @@ func boxFlex(r *Renderer, th *ui.Theme, n extension.Node, id string, p extension
 			gtx.Constraints.Min.X = gtx.Constraints.Max.X
 		}
 		return flex.Layout(gtx, kids...)
+	}
+}
+
+// fillers take the room their box leaves without a grow of their own: a
+// scroll area or a split pane is only useful filling it, and an empty state
+// sits centered in it.
+var fillers = map[string]bool{
+	extension.Scroll.Name: true, extension.ThinScrollArea.Name: true,
+	extension.SplitPane.Name: true, extension.EmptyState.Name: true,
+}
+
+// growOf is the share of its box's free room a child takes, 0 for none.
+func growOf(c extension.Node) float32 {
+	if c.Type == extension.Box.Name {
+		return float32(props[extension.BoxProps](c).Grow)
+	}
+	if fillers[c.Type] {
+		return 1
+	}
+	return 0
+}
+
+// filled hands w the whole room its share gives, both ways.
+func filled(w layout.Widget) layout.Widget {
+	return func(gtx C) D {
+		gtx.Constraints.Min = gtx.Constraints.Max
+		return w(gtx)
 	}
 }
 

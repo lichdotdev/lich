@@ -10,6 +10,9 @@ import (
 	"gioui.org/f32"
 	"gioui.org/io/input"
 	"gioui.org/io/pointer"
+	"gioui.org/layout"
+	"gioui.org/op"
+	"gioui.org/unit"
 
 	"github.com/lichdotdev/lich/extension"
 )
@@ -108,5 +111,26 @@ func TestADraggedSplitPaneSendsItsRatio(t *testing.T) {
 	frame(r, router, tree)
 	if s := r.state[""].(*splitState); s.ratio != 0.75 {
 		t.Errorf("ratio after the drag, before the extension answers = %v, want the dragged 0.75", s.ratio)
+	}
+}
+
+func TestAnEmptyStateFillsItsBoxAndSitsCentered(t *testing.T) {
+	act := extension.Button.New(extension.ButtonProps{Text: "Connect", OnPress: "connect"})
+	empty := extension.EmptyState.New(extension.EmptyStateProps{Title: "Nothing here"}, act)
+	g := newRig(t, column(label("header"), empty))
+	g.click(pointer.ButtonPrimary, float32(rigWindow.X/2), float32(rigWindow.Y/2)+20)
+	g.once("connect")
+}
+
+func TestAnInlineEmptyStateDrawsItsIcon(t *testing.T) {
+	without := extension.InlineEmptyState.New(extension.EmptyStateProps{Title: "No issues"})
+	with := extension.InlineEmptyState.New(extension.EmptyStateProps{Title: "No issues", Icon: "circle-alert"})
+	r := New(nil, func(extension.EventData) {})
+	var ops op.Ops
+	gtx := layout.Context{Ops: &ops, Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}, Constraints: layout.Constraints{Max: rigWindow}}
+	plain := r.node(gtx, testTheme(), without, "a").Size.Y
+	iconed := r.node(gtx, testTheme(), with, "b").Size.Y
+	if iconed <= plain {
+		t.Errorf("an inline empty state with an icon is %dpx tall, without %dpx: the icon took no room", iconed, plain)
 	}
 }

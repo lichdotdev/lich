@@ -61,6 +61,9 @@ component and message. Import `github.com/lichdotdev/lich/extension` rather than
 
 Stderr goes to lich's log.
 
+A `box` lays its children along its axis. A child `box` with `grow` takes that share of the room left; a `scroll`,
+`thinScroll`, `splitPane` or `emptyState` takes the room left on its own, and an empty state sits centered in it.
+
 ## What lich enforces
 
 - A line over 3 MiB, JSON nested over 512 levels, a tree over 5000 nodes or 64 deep, a kind that only travels
