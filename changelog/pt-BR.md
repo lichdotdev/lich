@@ -1,3 +1,25 @@
+## [0.88.0] - 2026-11-10
+
+### Added
+
+- Um agente pode mostrar o código de que está falando: peça para ver e o arquivo abre somente leitura na aba Código do dock, nas linhas que ele encontrou, no checkout próprio daquela sessão e com o seu teclado ainda no terminal, em todos os provedores. O agente pode deixar um comentário curto embaixo dessas linhas quando tem algo a acrescentar. De uma sessão que você não está olhando, um toast oferece o arquivo em vez de tomar a tela.
+- Ctrl+clique (Cmd+clique no macOS) em um `path:line` impresso em um terminal o abre na aba Código. Um nome sem diretório, como em um stack trace do Java, é procurado no checkout, e uma escolha aparece quando mais de um arquivo serve.
+- As abas de projeto podem ser fixadas pelo menu de clique direito. As abas fixadas ficam juntas à esquerda da faixa e só fecham por esse menu; a fixação é mantida quando a janela é reaberta.
+- O menu de estado da tela Pull requests tem Aprovado: os pull requests abertos cuja revisão está aprovada.
+- Uma página que um agente faz para mostrar a você, um relatório, um diagrama, um mockup, abre no navegador da sessão a partir de uma pasta própria da sessão em vez de cair no seu checkout, em todos os provedores. A pasta fica fora do git, sobrevive a uma reinicialização e a um card fechado, e some quando a sessão é excluída. O Claude Code ainda pode publicar uma página no claude.ai com a própria ferramenta Artifact; peça para ser local se quiser a página na aba.
+- O dock tem uma aba Artifacts: as páginas que a sessão ativa fez e, abaixo delas, as das outras sessões abertas do projeto. Um clique abre uma no navegador da sessão, e Anexar ao prompt entrega uma página feita em uma sessão a outra, em qualquer provedor: ela é copiada para a pasta própria da sessão e o caminho dela é colado no prompt, com uma linha dizendo que é uma cópia. Um botão no rodapé abre a aba; um layout de rodapé que você já salvou a lista em Disponíveis.
+
+### Changed
+
+- No Windows, Ctrl+V em uma sessão cola o texto da área de transferência na hora, como Ctrl+Shift+V faz, em vez de esperar o agente ler a área de transferência. Uma área de transferência sem texto, uma imagem ou um arquivo copiado, ainda vai para o agente como antes, e Alt+V ainda anexa uma imagem quando a área de transferência também tem texto.
+
+### Fixed
+
+- Abrir um arquivo de novo na aba Código agora o mostra como está no disco, em vez da versão lida na primeira vez.
+- A barra lateral desenha o cabeçalho de cada bloco e pendura cada card no checkout em que ele roda, como já fazia ao lado de uma worktree: uma pasta que guarda as únicas sessões de um projeto não some mais, e uma sessão ou pasta isolada não mostra mais cards soltos.
+- Uma página recarregada em uma aba do navegador depois que um agente tirou uma captura de tela dela não aparece mais espremida no topo do painel até o zoom ser alterado.
+- Um arquivo solto ou anexado a uma sessão no sandbox antes de ela ser fechada continua lá quando você retoma a sessão pela aba Histórico. Antes, a sessão retomada não conseguia abrir as cópias que já tinha recebido, e elas eram apagadas três dias depois.
+
 ## [0.87.0] - 2026-11-08
 
 > [!CAUTION]

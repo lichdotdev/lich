@@ -1,3 +1,25 @@
+## [0.88.0] - 2026-11-10
+
+### Added
+
+- Un agente puede mostrarte el código del que habla: pídele verlo y el archivo se abre en solo lectura en la pestaña Código del dock, en las líneas que encontró, en el checkout propio de esa sesión y con tu teclado todavía en el terminal, en todos los proveedores. El agente puede dejar un comentario breve bajo esas líneas cuando tiene algo que añadir. Desde una sesión que no estás mirando, un aviso lo ofrece en lugar de tomar la pantalla.
+- Ctrl+clic (Cmd+clic en macOS) sobre un `path:line` impreso en un terminal lo abre en la pestaña Código. Un nombre sin directorio, como en un stack trace de Java, se busca en el checkout, y aparece una elección cuando encaja más de un archivo.
+- Las pestañas de proyecto se pueden fijar desde su menú contextual. Las pestañas fijadas quedan juntas a la izquierda de la barra y solo se cierran desde ese menú; lo fijado se conserva al reabrir la ventana.
+- El menú de estado de la pantalla Pull requests tiene Aprobado: los pull requests abiertos cuya revisión está aprobada.
+- Una página que un agente crea para mostrarte, un informe, un diagrama, una maqueta, se abre en el navegador de su sesión desde una carpeta propia de la sesión en lugar de caer en tu checkout, en todos los proveedores. La carpeta queda fuera de git, sobrevive a un reinicio y a una tarjeta cerrada, y desaparece cuando se elimina la sesión. Claude Code aún puede publicar una página en claude.ai con su propia herramienta Artifact; pídela en local si la quieres en la pestaña.
+- El dock tiene una pestaña Artefactos: las páginas que hizo la sesión activa y, debajo, las de las otras sesiones abiertas del proyecto. Un clic abre una en el navegador de la sesión, y Adjuntar al prompt entrega una página hecha en una sesión a otra, en cualquier proveedor: se copia en la carpeta propia de la sesión y su ruta se pega en el prompt, con una línea que dice que es una copia. Un botón del pie abre la pestaña; un diseño del pie que ya guardaste la lista en Disponibles.
+
+### Changed
+
+- En Windows, Ctrl+V en una sesión pega de inmediato el texto del portapapeles, como hace Ctrl+Shift+V, en lugar de esperar a que el agente lea el portapapeles. Un portapapeles sin texto, una imagen o un archivo copiado, sigue llegando al agente como antes, y Alt+V sigue adjuntando una imagen cuando el portapapeles también contiene texto.
+
+### Fixed
+
+- Volver a abrir un archivo en la pestaña Código lo muestra ahora tal como está en disco, en lugar de la versión leída la primera vez.
+- La barra lateral dibuja el encabezado de cada bloque y cuelga cada tarjeta del checkout en el que se ejecuta, como ya hacía junto a una worktree: una carpeta que contiene las únicas sesiones de un proyecto ya no desaparece, y una sesión o carpeta suelta ya no muestra tarjetas sueltas.
+- Una página recargada en una pestaña del navegador después de que un agente le tomara una captura de pantalla ya no aparece comprimida en la parte superior del panel hasta que se cambia el zoom.
+- Un archivo soltado o adjuntado a una sesión en sandbox antes de cerrarla sigue ahí cuando reanudas la sesión desde la pestaña Historial. Antes, la sesión reanudada no podía abrir las copias que ya se le habían entregado, y se eliminaban tres días después.
+
 ## [0.87.0] - 2026-11-08
 
 > [!CAUTION]

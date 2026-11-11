@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.88.0] - 2026-11-10
+
 ### Added
 
 - An agent can show you the code it is talking about: ask to see it and the file opens read-only in the dock's Code tab, on the lines it found, in that session's own checkout and with your keyboard still in the terminal, on every provider. The agent can leave a short comment under those lines when it has something to add. From a session you are not looking at, a toast offers it instead of taking the screen.
@@ -6627,7 +6629,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   CPU, costing ~40ms per frame in a full-size window. Under Xwayland typing is
   stall-free at full frame rate.
 
-[Unreleased]: https://github.com/lichdotdev/lich/compare/v0.87.0...HEAD
+[Unreleased]: https://github.com/lichdotdev/lich/compare/v0.88.0...HEAD
+[0.88.0]: https://github.com/lichdotdev/lich/compare/v0.87.0...v0.88.0
 [0.87.0]: https://github.com/lichdotdev/lich/compare/v0.86.0...v0.87.0
 [0.86.0]: https://github.com/lichdotdev/lich/compare/v0.85.0...v0.86.0
 [0.85.0]: https://github.com/lichdotdev/lich/compare/v0.84.0...v0.85.0
