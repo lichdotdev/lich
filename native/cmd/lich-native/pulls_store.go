@@ -45,6 +45,7 @@ type pullsStore struct {
 	checkouts map[string]*pullsRead[[]backend.Worktree]
 	diffs     map[string]*pullsRead[string]
 	talks     map[string]*pullsRead[*backend.PRConversation]
+	accounts  map[string]*pullsRead[backend.GitHubAccountState]
 	// avatars is by address, and never stale: GitHub's address changes with
 	// the picture.
 	avatars map[string]*pullsRead[*ui.AvatarImage]
@@ -60,6 +61,7 @@ func newPullsStore(ctx context.Context, c *backend.Client, invalidate func()) *p
 		checkouts: map[string]*pullsRead[[]backend.Worktree]{},
 		diffs:     map[string]*pullsRead[string]{},
 		talks:     map[string]*pullsRead[*backend.PRConversation]{},
+		accounts:  map[string]*pullsRead[backend.GitHubAccountState]{},
 		avatars:   map[string]*pullsRead[*ui.AvatarImage]{},
 	}
 }
@@ -115,6 +117,7 @@ func (s *pullsStore) stale() {
 	staleAll(s.checkouts)
 	staleAll(s.diffs)
 	staleAll(s.talks)
+	staleAll(s.accounts)
 	s.mu.Unlock()
 	s.invalidate()
 }
@@ -199,6 +202,12 @@ func (s *pullsStore) avatar(path, url string) *ui.AvatarImage {
 		}
 		return decodeAuthorAvatar(data)
 	}).val
+}
+
+func (s *pullsStore) account(path string) pullsRead[backend.GitHubAccountState] {
+	return read(s, s.accounts, path, func() (backend.GitHubAccountState, error) {
+		return s.client.GitHubAccountOf(s.ctx, path)
+	})
 }
 
 func (s *pullsStore) checkoutsOf(path string) []backend.Worktree {

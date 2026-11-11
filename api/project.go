@@ -34,6 +34,7 @@ var (
 	ProjectWorktreeDirty            = define[PathOptions, bool]("project.WorktreeDirty")
 	ProjectWorktreeAdopted          = define[PathOptions, bool]("project.WorktreeAdopted")
 	ProjectGitHubAccounts           = define[None, []string]("project.GitHubAccounts")
+	ProjectGitHubAccountOf          = define[PathOptions, GitHubAccountState]("project.GitHubAccountOf")
 	ProjectIssue                    = define[NumberOptions, Issue]("project.Issue")
 	ProjectRecheckPullRequest       = define[PathOptions, None]("project.RecheckPullRequest")
 	ProjectListPullRequests         = define[ListPullRequestsOptions, []PRSummary]("project.ListPullRequests")
@@ -501,6 +502,17 @@ type CommitIdentity struct {
 	Name  string `json:"name"`
 	Email string `json:"email"`
 	Local bool   `json:"local"`
+}
+
+// GitHubAccountState is how the checkout's project answers to gh: Account is
+// the one it selected, "" for gh's active one; Accounts is every account gh is
+// signed in to, "<host>/<login>"; Hidden is whether GitHub answers Account as
+// if the repository did not exist, asked only when there is another account
+// to pick instead.
+type GitHubAccountState struct {
+	Account  string   `json:"account"`
+	Accounts []string `json:"accounts"`
+	Hidden   bool     `json:"hidden"`
 }
 
 // RevertLine names one changed line of the diff the panel drew. Side "old" is a

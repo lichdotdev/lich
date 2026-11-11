@@ -71,6 +71,16 @@
     "none": "Nenhum pull request aberto.",
     "openOnGitHub": "Abrir no GitHub"
   },
+  "pullsAccount": {
+    "chooseTitle": "Escolha uma conta do GitHub",
+    "chooseDescription": "O gh está conectado a mais de uma conta. Escolha a que enxerga este repositório.",
+    "hiddenTitle": "{account} não enxerga este repositório",
+    "hiddenDescription": "O GitHub respondeu como se ele não existisse. Escolha outra conta.",
+    "continue": "Continuar",
+    "tryAgain": "Tentar de novo",
+    "later": "Você pode mudar depois em Configurações › Controle de versão.",
+    "saveFailed": "Não foi possível salvar a conta: {error}"
+  },
   "submitReviewDialog": {
     "verdict": {
       "approve": {

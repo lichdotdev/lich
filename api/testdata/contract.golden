@@ -111,6 +111,7 @@ project.GitCommit(GitCommitOptions) GitCommitDetail
 project.GitCommitDiff(GitCommitDiffOptions) string
 project.GitCreateBranch(GitCreateBranchOptions) None
 project.GitDeleteBranch(GitBranchOptions) string
+project.GitHubAccountOf(PathOptions) GitHubAccountState
 project.GitHubAccounts(None) []string
 project.GitLog(GitLogOptions) GitLogPage
 project.GitRefs(PathOptions) GitRefs
@@ -797,6 +798,12 @@ GitCreateBranchOptions {
 	path string
 	name string
 	from string
+}
+
+GitHubAccountState {
+	account string
+	accounts []string
+	hidden bool
 }
 
 GitLogOptions {

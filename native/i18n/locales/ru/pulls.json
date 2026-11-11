@@ -73,6 +73,16 @@
     "none": "Нет открытого pull request.",
     "openOnGitHub": "Открыть на GitHub"
   },
+  "pullsAccount": {
+    "chooseTitle": "Выберите аккаунт GitHub",
+    "chooseDescription": "gh вошёл в несколько аккаунтов. Выберите тот, которому виден этот репозиторий.",
+    "hiddenTitle": "{account} не видит этот репозиторий",
+    "hiddenDescription": "GitHub ответил так, будто его не существует. Выберите другой аккаунт.",
+    "continue": "Продолжить",
+    "tryAgain": "Повторить",
+    "later": "Это можно изменить позже в разделе Настройки › Контроль версий.",
+    "saveFailed": "Не удалось сохранить аккаунт: {error}"
+  },
   "submitReviewDialog": {
     "verdict": {
       "approve": {
