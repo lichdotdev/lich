@@ -8,8 +8,10 @@ import (
 	"sync"
 	"testing"
 
+	"gioui.org/font/gofont"
 	"gioui.org/layout"
 	"gioui.org/op"
+	"gioui.org/text"
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/extension"
@@ -94,8 +96,10 @@ func (b *extensionBackend) stub() *rpcStub {
 		switch method {
 		case api.ProjectPickDirectory.Name:
 			return b.pick, http.StatusOK
-		case api.ExtensionsRemove.Name, api.ExtensionsDeleteData.Name, api.ExtensionsRestart.Name, api.SystemOpenFolder.Name:
+		case api.ExtensionsRemove.Name, api.ExtensionsDeleteData.Name, api.ExtensionsRestart.Name, api.SystemOpenFolder.Name, api.ExtensionsDiscardInstall.Name:
 			return api.None{}, http.StatusOK
+		case api.ExtensionsPrepareFromGit.Name, api.ExtensionsPrepareFromDir.Name:
+			return testPreview, http.StatusOK
 		}
 		return backend.Extension{ID: "x"}, http.StatusOK
 	}}
@@ -123,28 +127,52 @@ func extensionsScreen(t *testing.T, b *extensionBackend) *settingsScreen {
 	return s
 }
 
-func TestInstallFromGitHubAsksFirstAndNamesTheURL(t *testing.T) {
-	s := extensionsScreen(t, &extensionBackend{})
-	p := &s.extensions
-	p.askInstall(installFromGit, "  ")
-	if p.snapshot().asking != "" {
-		t.Fatal("an empty field asked to install")
+var testPreview = backend.ExtensionInstallPreview{Token: "tok", ID: "x", Name: "X", Version: "1.0.0", Permissions: []string{"sessions:write"}}
+
+// The contract changed: Install and Choose folder… stage the extension first,
+// and the confirmation opens on what staging returned.
+func TestInstallPreparesFirstThenAsksOnThePreview(t *testing.T) {
+	cases := []struct {
+		from, src, method, args string
+	}{
+		{installFromGit, "  https://github.com/o/r  ", api.ExtensionsPrepareFromGit.Name, `{"url":"https://github.com/o/r"}`},
+		{installFromDir, "/home/me/ext", api.ExtensionsPrepareFromDir.Name, `{"dir":"/home/me/ext"}`},
 	}
-	p.with(func(t *extensionTasks) { t.err = extensionError{installFromGit, "old"} })
-	p.askInstall(installFromGit, "  https://github.com/o/r  ")
-	if got := p.snapshot(); got.asking != "https://github.com/o/r" || got.askingFrom != installFromGit || got.err.text != "" {
-		t.Errorf("%+v, want the URL asked from GitHub and the old error gone", got)
+	for _, c := range cases {
+		b := &extensionBackend{}
+		s := extensionsScreen(t, b)
+		p := &s.extensions
+		p.with(func(t *extensionTasks) { t.err = extensionError{c.from, "old"} })
+		s.prepareInstall(c.from, c.src)
+		if got := p.snapshot(); got.installing != c.from || got.asking || got.err.text != "" {
+			t.Errorf("%s: %+v, want the row busy, nothing asked yet and the old error gone", c.from, got)
+		}
+		eventually(t, "the prepare answered", func() bool { return p.snapshot().asking })
+		if method, args := b.last(); method != c.method || args != c.args {
+			t.Errorf("called %s %s, want %s %s", method, args, c.method, c.args)
+		}
+		if got := p.snapshot(); got.installing != "" || got.askingFrom != c.from || got.preview.Token != "tok" {
+			t.Errorf("%s: %+v, want the preview asked from its row", c.from, got)
+		}
 	}
 }
 
-func TestChooseFolderGoesStraightToTheConfirmationForThatFolder(t *testing.T) {
-	s := extensionsScreen(t, &extensionBackend{pick: "/home/me/ext"})
-	p := &s.extensions
-	p.with(func(t *extensionTasks) { t.err = extensionError{installFromDir, "old"} })
+func TestAnEmptyFieldPreparesNothing(t *testing.T) {
+	b := &extensionBackend{}
+	s := extensionsScreen(t, b)
+	s.prepareInstall(installFromGit, "  ")
+	if got := s.extensions.snapshot(); got.installing != "" || got.asking || len(b.called()) != 0 {
+		t.Errorf("%+v and calls %v for an empty field, want nothing", got, b.called())
+	}
+}
+
+func TestChooseFolderStagesThatFolder(t *testing.T) {
+	b := &extensionBackend{pick: "/home/me/ext"}
+	s := extensionsScreen(t, b)
 	s.pickExtensionDir()
-	eventually(t, "the picker answered", func() bool { return p.snapshot().asking != "" })
-	if got := p.snapshot(); got.asking != "/home/me/ext" || got.askingFrom != installFromDir || got.err.text != "" {
-		t.Errorf("%+v, want the folder asked from a folder and the old error gone", got)
+	eventually(t, "the folder was staged", func() bool { return s.extensions.snapshot().asking })
+	if method, args := b.last(); method != api.ExtensionsPrepareFromDir.Name || args != `{"dir":"/home/me/ext"}` {
+		t.Errorf("called %s %s, want the picked folder prepared", method, args)
 	}
 }
 
@@ -153,54 +181,144 @@ func TestACancelledFolderPickAsksNothing(t *testing.T) {
 	s := extensionsScreen(t, b)
 	s.pickExtensionDir()
 	eventually(t, "the picker was called", func() bool { m, _ := b.last(); return m != "" })
-	if got := s.extensions.snapshot().asking; got != "" {
-		t.Errorf("asking %q after a cancelled pick, want nothing", got)
+	if got := s.extensions.snapshot(); got.asking || got.installing != "" {
+		t.Errorf("%+v after a cancelled pick, want nothing", got)
 	}
 }
 
-func TestConfirmedInstallCallsTheRightMethodAndShowsBusyOnItsRow(t *testing.T) {
-	cases := []struct {
-		fromDir         bool
-		src, want, from string
-		wantMethod      string
-	}{
-		{false, "https://github.com/o/r", `{"url":"https://github.com/o/r"}`, installFromGit, api.ExtensionsInstallFromGit.Name},
-		{true, "/home/me/ext", `{"dir":"/home/me/ext"}`, installFromDir, api.ExtensionsInstallFromDir.Name},
-	}
-	for _, c := range cases {
-		b := &extensionBackend{}
-		s := extensionsScreen(t, b)
-		p := &s.extensions
-		p.with(func(t *extensionTasks) { t.asking = c.src })
-		s.installExtension(c.fromDir, c.src)
-		if got := p.snapshot(); got.installing != c.from || got.asking != "" {
-			t.Errorf("%s: %+v, want %s busy and the dialog shut", c.wantMethod, got, c.from)
-		}
-		eventually(t, "the install finished", func() bool { return p.snapshot().installing == "" })
-		if method, args := b.last(); method != c.wantMethod || args != c.want {
-			t.Errorf("called %s %s, want %s %s", method, args, c.wantMethod, c.want)
-		}
-		if got := p.snapshot().err; got.text != "" {
-			t.Errorf("%s: error %+v after a success", c.wantMethod, got)
-		}
-	}
+func asked(s *settingsScreen, from string) {
+	s.extensions.with(func(t *extensionTasks) { t.asking, t.preview, t.askingFrom = true, testPreview, from })
 }
 
-func TestAFailedInstallLeavesTheBackendsWordsUnderItsRow(t *testing.T) {
-	s := extensionsScreen(t, &extensionBackend{fail: "no release for linux_amd64"})
+func TestInstallInTheConfirmationCommitsTheToken(t *testing.T) {
+	b := &extensionBackend{}
+	s := extensionsScreen(t, b)
 	p := &s.extensions
 	p.url.SetText("https://github.com/o/r")
-	s.installExtension(false, "https://github.com/o/r")
-	eventually(t, "the install finished", func() bool { return p.snapshot().installing == "" })
-	t2 := p.snapshot()
-	if got := t2.errorAt(installFromGit); got != "no release for linux_amd64" {
-		t.Errorf("GitHub row's error = %q, want the backend's words", got)
+	asked(s, installFromGit)
+	s.commitInstall()
+	if got := p.snapshot(); got.installing != installFromGit || got.asking {
+		t.Errorf("%+v, want the GitHub row busy and the dialog shut", got)
 	}
-	if got := t2.errorAt(installFromDir); got != "" {
-		t.Errorf("the folder row shows %q, want nothing: the error came from GitHub", got)
+	eventually(t, "the commit finished", func() bool { return p.snapshot().installing == "" })
+	if method, args := b.last(); method != api.ExtensionsCommitInstall.Name || args != `{"token":"tok"}` {
+		t.Errorf("called %s %s, want the token committed", method, args)
+	}
+	if got := p.snapshot().err; got.text != "" || p.url.Text() != "" {
+		t.Errorf("error %+v and field %q after a success, want neither", got, p.url.Text())
+	}
+}
+
+func TestClosingTheConfirmationDiscardsTheToken(t *testing.T) {
+	b := &extensionBackend{}
+	s := extensionsScreen(t, b)
+	asked(s, installFromDir)
+	s.discardInstall()
+	if s.extensions.snapshot().asking {
+		t.Error("the dialog stayed open")
+	}
+	eventually(t, "the discard was sent", func() bool { m, _ := b.last(); return m != "" })
+	if method, args := b.last(); method != api.ExtensionsDiscardInstall.Name || args != `{"token":"tok"}` {
+		t.Errorf("called %s %s, want the token discarded", method, args)
+	}
+}
+
+func TestAFailedPrepareLeavesTheBackendsWordsUnderItsRowAndAsksNothing(t *testing.T) {
+	s := extensionsScreen(t, &extensionBackend{fail: "no release for linux_amd64"})
+	p := &s.extensions
+	s.prepareInstall(installFromGit, "https://github.com/o/r")
+	eventually(t, "the prepare finished", func() bool { return p.snapshot().installing == "" })
+	got := p.snapshot()
+	if got.errorAt(installFromGit) != "no release for linux_amd64" || got.errorAt(installFromDir) != "" || got.asking {
+		t.Errorf("%+v, want the backend's words under the GitHub row and no dialog", got)
+	}
+}
+
+func TestAFailedCommitLeavesTheBackendsWordsAndTheField(t *testing.T) {
+	s := extensionsScreen(t, &extensionBackend{fail: "already installed"})
+	p := &s.extensions
+	p.url.SetText("https://github.com/o/r")
+	asked(s, installFromGit)
+	s.commitInstall()
+	eventually(t, "the commit finished", func() bool { return p.snapshot().installing == "" })
+	if got := p.snapshot().errorAt(installFromGit); got != "already installed" {
+		t.Errorf("GitHub row's error = %q, want the backend's words", got)
 	}
 	if p.url.Text() == "" {
 		t.Error("a failed install emptied the field")
+	}
+}
+
+func TestEachPermissionHasLichsOwnLine(t *testing.T) {
+	want := map[extension.Permission]string{
+		extension.PermissionProjectsRead:  "See your open projects and their worktrees",
+		extension.PermissionSessionsRead:  "See your sessions and what each one is doing",
+		extension.PermissionSessionsWrite: "Open sessions and type prompts into them",
+		extension.PermissionSessionEvents: "Follow each session's status as it changes",
+	}
+	for _, p := range extension.Permissions {
+		if got := permissionText(string(p)); got != want[p] {
+			t.Errorf("%s = %q, want %q", p, got, want[p])
+		}
+	}
+	if got := permissionText("files:write"); got != "files:write" {
+		t.Errorf("an unknown permission reads %q, want its name", got)
+	}
+}
+
+func TestOnlyActingOnSessionsIsInTheWaitTone(t *testing.T) {
+	th := testTheme()
+	for _, p := range extension.Permissions {
+		want := th.Foreground
+		if p == extension.PermissionSessionsWrite {
+			want = th.ToneWait
+		}
+		if got := permissionTone(th, string(p)); got != want {
+			t.Errorf("%s tone = %v, want %v", p, got, want)
+		}
+	}
+}
+
+func TestTheConfirmationTitleAndSourceLine(t *testing.T) {
+	git := backend.ExtensionInstallPreview{Name: "Notes", Version: "1.2.0", Source: "https://github.com/o/notes", Release: "v1.2.0"}
+	if got := installTitle(git); got != "Install Notes 1.2.0?" {
+		t.Errorf("title = %q", got)
+	}
+	if got := installTitle(backend.ExtensionInstallPreview{Name: "Notes"}); got != "Install Notes?" {
+		t.Errorf("title without a version = %q", got)
+	}
+	if got := previewSourceLine(git); got != "github.com/o/notes · v1.2.0" {
+		t.Errorf("source line = %q", got)
+	}
+}
+
+func shapingTheme() *ui.Theme {
+	return &ui.Theme{Palette: ui.Dark, Shaper: text.NewShaper(text.WithCollection(gofont.Collection()))}
+}
+
+func TestNoPermissionsDrawsNoList(t *testing.T) {
+	th := shapingTheme()
+	height := func(perms []string) int {
+		gtx := layout.Context{Ops: new(op.Ops), Constraints: layout.Constraints{Max: image.Pt(600, 2000)}}
+		return installWarning(gtx, th, perms).Size.Y
+	}
+	none, one, two := height(nil), height([]string{"projects:read"}), height([]string{"projects:read", "sessions:write"})
+	if !(none < one && one < two) {
+		t.Errorf("heights none %d, one %d, two %d: want the list only when there are permissions, a line each", none, one, two)
+	}
+}
+
+func TestTheStatusTooltipListsThePermissions(t *testing.T) {
+	th := shapingTheme()
+	height := func(e backend.Extension) int {
+		gtx := layout.Context{Ops: new(op.Ops), Constraints: layout.Constraints{Max: image.Pt(600, 2000)}}
+		return statusTip(gtx, th, e).Size.Y
+	}
+	errOnly := height(backend.Extension{Error: "exit 1"})
+	both := height(backend.Extension{Error: "exit 1", Permissions: []string{"sessions:read"}})
+	permsOnly := height(backend.Extension{Permissions: []string{"sessions:read"}})
+	if !(errOnly < both && permsOnly < both && permsOnly > 0) {
+		t.Errorf("heights error %d, permissions %d, both %d: want the list under the error", errOnly, permsOnly, both)
 	}
 }
 

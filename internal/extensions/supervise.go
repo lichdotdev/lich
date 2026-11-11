@@ -85,7 +85,7 @@ func (s *Service) sleep(ctx context.Context, d time.Duration) bool {
 
 func (s *Service) detachQueue(x *installed) {
 	s.mu.Lock()
-	x.queue = nil
+	x.queue, x.subscribed = nil, nil
 	s.mu.Unlock()
 }
 

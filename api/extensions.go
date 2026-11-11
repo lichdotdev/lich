@@ -9,12 +9,18 @@ var (
 	ExtensionsRestart = define[ExtensionIDOptions, None]("extensions.Restart")
 	// ExtensionsDir is the directory lich reads extensions from.
 	ExtensionsDir = define[None, string]("extensions.Dir")
-	// ExtensionsInstallFromGit downloads the latest release of a GitHub
-	// repository's extension, installs it and starts it.
-	ExtensionsInstallFromGit = define[ExtensionGitInstallOptions, Extension]("extensions.InstallFromGit")
-	// ExtensionsInstallFromDir copies a folder on disk holding an extension into
-	// the extensions directory and starts it.
-	ExtensionsInstallFromDir = define[ExtensionDirInstallOptions, Extension]("extensions.InstallFromDir")
+	// ExtensionsPrepareFromGit downloads the latest release of a GitHub
+	// repository's extension, checks and stages it, and returns what it is;
+	// nothing runs until CommitInstall.
+	ExtensionsPrepareFromGit = define[ExtensionGitInstallOptions, ExtensionInstallPreview]("extensions.PrepareFromGit")
+	// ExtensionsPrepareFromDir stages a copy of a folder on disk holding an
+	// extension, as PrepareFromGit does.
+	ExtensionsPrepareFromDir = define[ExtensionDirInstallOptions, ExtensionInstallPreview]("extensions.PrepareFromDir")
+	// ExtensionsCommitInstall moves a staged extension into place and starts it.
+	// A token commits once.
+	ExtensionsCommitInstall = define[ExtensionInstallTokenOptions, Extension]("extensions.CommitInstall")
+	// ExtensionsDiscardInstall deletes a staged extension.
+	ExtensionsDiscardInstall = define[ExtensionInstallTokenOptions, None]("extensions.DiscardInstall")
 	// ExtensionsRemove stops an extension and deletes its directory. Its data
 	// directory is kept.
 	ExtensionsRemove = define[ExtensionIDOptions, None]("extensions.Remove")
@@ -33,6 +39,25 @@ type ExtensionGitInstallOptions struct {
 // executable at its root.
 type ExtensionDirInstallOptions struct {
 	Dir string `json:"dir"`
+}
+
+// ExtensionInstallTokenOptions names a staged install by the token its
+// preview carries.
+type ExtensionInstallTokenOptions struct {
+	Token string `json:"token"`
+}
+
+// ExtensionInstallPreview is a staged install: what the person is asked to
+// confirm, read from the staged copy's manifest. Token names the copy for
+// CommitInstall or DiscardInstall, and expires when neither comes in time.
+type ExtensionInstallPreview struct {
+	Token       string   `json:"token"`
+	ID          string   `json:"id"`
+	Name        string   `json:"name"`
+	Version     string   `json:"version"`
+	Source      string   `json:"source"`
+	Release     string   `json:"release,omitempty"`
+	Permissions []string `json:"permissions"`
 }
 
 // ExtensionIDOptions names one extension.
@@ -81,6 +106,9 @@ type Extension struct {
 	Source   string                   `json:"source,omitempty"`
 	Release  string                   `json:"release,omitempty"`
 	Text     map[string]ExtensionText `json:"text,omitempty"`
+	// Permissions is what the manifest lists, the extension.Permission names
+	// its calls and subscriptions may use.
+	Permissions []string `json:"permissions"`
 }
 
 // ExtensionSendOptions writes Message, one line of the extension contract, to

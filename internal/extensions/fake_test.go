@@ -34,6 +34,7 @@ const (
 	modeStderr     = "stderr"
 	modeDataDir    = "data-dir"
 	modeLanguage   = "language"
+	modeAPI        = "api"
 
 	readyTitle = "ready"
 )
@@ -69,6 +70,9 @@ func fakeExtension() {
 		fmt.Println(toastLine(os.Getenv(extension.DataDirEnv)))
 	case modeLanguage:
 		fmt.Println(toastLine("language " + os.Getenv(extension.LanguageEnv)))
+	case modeAPI:
+		apiExtension()
+		return
 	case modeStderr:
 		fmt.Fprintln(os.Stderr, strings.Repeat("x", maxLogLineBytes+1))
 		for i := range 3 * maxLogLines {
@@ -267,7 +271,7 @@ func boot(t *testing.T, dir string, adjust ...func(*timing)) (*Service, *recorde
 	t.Helper()
 	r := &recorder{}
 	s := New(dir, filepath.Join(t.TempDir(), "data"), "1.2.3", append(os.Environ(), fakeEnv+"=1"), r.emit)
-	s.timing = timing{firstBackoff: time.Millisecond, maxBackoff: 4 * time.Millisecond, stableRun: time.Hour, stopGrace: 5 * time.Second, killWait: 10 * time.Second}
+	s.timing = timing{firstBackoff: time.Millisecond, maxBackoff: 4 * time.Millisecond, stableRun: time.Hour, stopGrace: 5 * time.Second, killWait: 10 * time.Second, callTimeout: callTimeout, stagedTTL: time.Hour}
 	for _, change := range adjust {
 		change(&s.timing)
 	}

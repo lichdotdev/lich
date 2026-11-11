@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/lichdotdev/lich/extension"
@@ -70,7 +71,7 @@ func load(root, dirName, lichVersion string) *installed {
 	if abs, err := filepath.Abs(root); err == nil {
 		root = abs
 	}
-	x := &installed{id: dirName, root: root, source: readSource(root)}
+	x := &installed{id: dirName, root: root, source: readSource(root), inFlight: make(chan struct{}, maxCallsInFlight)}
 	x.manifest, x.exe, x.invalid = readManifest(root, dirName, lichVersion)
 	if x.invalid == nil {
 		x.text, x.invalid = readLocales(root, x.manifest)
@@ -118,7 +119,19 @@ func validate(m extension.Manifest, dirName, lichVersion string) error {
 	if err := checkMinLichVersion(m.MinLichVersion, lichVersion); err != nil {
 		return err
 	}
-	return checkSurfaces(m.Surfaces)
+	if err := checkSurfaces(m.Surfaces); err != nil {
+		return err
+	}
+	return checkPermissions(m.Permissions)
+}
+
+func checkPermissions(permissions []extension.Permission) error {
+	for _, p := range permissions {
+		if !slices.Contains(extension.Permissions, p) {
+			return fmt.Errorf("permission %q is not one this lich knows: %v", p, extension.Permissions)
+		}
+	}
+	return nil
 }
 
 func checkMinLichVersion(minimum, lichVersion string) error {

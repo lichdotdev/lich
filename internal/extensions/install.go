@@ -2,6 +2,7 @@ package extensions
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
@@ -44,7 +45,7 @@ const (
 	stagingPrefix = ".installing-"
 )
 
-// repoPattern is the one URL shape Install takes. GitHub owners are letters,
+// repoPattern is the one URL shape PrepareFromGit takes. GitHub owners are letters,
 // digits and dashes; repositories add dots and underscores.
 var repoPattern = regexp.MustCompile(`^https://github\.com/([A-Za-z0-9-]+)/([A-Za-z0-9_.-]+?)(?:\.git)?$`)
 
@@ -66,53 +67,68 @@ type asset struct {
 	URL  string `json:"browser_download_url"`
 }
 
-// InstallFromGit downloads the latest release of a GitHub repository's
-// extension for this platform, verifies and unpacks it, and starts it.
-func (s *Service) InstallFromGit(_ context.Context, opts api.ExtensionGitInstallOptions) (api.Extension, error) {
+// PrepareFromGit downloads the latest release of a GitHub repository's
+// extension for this platform, verifies and unpacks it, and stages it for
+// CommitInstall.
+func (s *Service) PrepareFromGit(_ context.Context, opts api.ExtensionGitInstallOptions) (api.ExtensionInstallPreview, error) {
 	owner, repo, err := parseRepo(opts.URL)
 	if err != nil {
-		return api.Extension{}, err
+		return api.ExtensionInstallPreview{}, err
 	}
 	s.installMu.Lock()
 	defer s.installMu.Unlock()
 	rel, err := s.latestRelease(owner, repo)
 	if err != nil {
-		return api.Extension{}, err
+		return api.ExtensionInstallPreview{}, err
 	}
 	id, archive, err := pickAsset(rel, s.goos, s.goarch)
 	if err != nil {
-		return api.Extension{}, err
+		return api.ExtensionInstallPreview{}, err
 	}
 	src := source{URL: "https://github.com/" + owner + "/" + repo, Release: rel.Tag}
-	return s.installAs(id, src, func(stage string) error { return s.unpack(rel, archive, id, stage) })
+	return s.stageAs(id, src, func(stage string) error { return s.unpack(rel, archive, id, stage) })
 }
 
-// installAs has fill lay the extension out in a fresh stage directory, checks
-// it as discovery would, then moves it into place and starts it. A failure at
-// any step leaves nothing behind.
-func (s *Service) installAs(id string, src source, fill func(stage string) error) (api.Extension, error) {
+// stageAs has fill lay the extension out in a fresh stage directory and checks
+// it as discovery would, leaving it for CommitInstall. A failure at any step
+// leaves nothing behind.
+func (s *Service) stageAs(id string, src source, fill func(stage string) error) (api.ExtensionInstallPreview, error) {
 	if err := s.checkFree(id); err != nil {
-		return api.Extension{}, err
+		return api.ExtensionInstallPreview{}, err
 	}
 	if err := os.MkdirAll(s.dir, 0o755); err != nil {
-		return api.Extension{}, fmt.Errorf("create the extensions directory: %w", err)
+		return api.ExtensionInstallPreview{}, fmt.Errorf("create the extensions directory: %w", err)
 	}
 	work, err := os.MkdirTemp(s.dir, stagingPrefix)
 	if err != nil {
-		return api.Extension{}, fmt.Errorf("create a work directory under %s: %w", s.dir, err)
+		return api.ExtensionInstallPreview{}, fmt.Errorf("create a work directory under %s: %w", s.dir, err)
 	}
-	defer func() { _ = os.RemoveAll(work) }()
 	stage := filepath.Join(work, id)
+	m, err := s.fillStage(stage, id, src, fill)
+	if err != nil {
+		_ = os.RemoveAll(work)
+		return api.ExtensionInstallPreview{}, err
+	}
+	token, err := s.hold(id, work)
+	if err != nil {
+		_ = os.RemoveAll(work)
+		return api.ExtensionInstallPreview{}, err
+	}
+	return api.ExtensionInstallPreview{
+		Token: token, ID: id, Name: cmp.Or(m.Name, id), Version: m.Version,
+		Source: src.URL, Release: src.Release, Permissions: permissionNames(m),
+	}, nil
+}
+
+func (s *Service) fillStage(stage, id string, src source, fill func(stage string) error) (extension.Manifest, error) {
 	if err := fill(stage); err != nil {
-		return api.Extension{}, err
+		return extension.Manifest{}, err
 	}
-	if err := s.checkStage(stage, id); err != nil {
-		return api.Extension{}, err
+	m, err := s.checkStage(stage, id)
+	if err != nil {
+		return extension.Manifest{}, err
 	}
-	if err := writeSource(stage, src); err != nil {
-		return api.Extension{}, err
-	}
-	return s.place(id, stage)
+	return m, writeSource(stage, src)
 }
 
 func parseRepo(url string) (owner, repo string, err error) {
@@ -236,21 +252,21 @@ func parseChecksum(data, name string) string {
 // checkStage runs discovery's validation on the unpacked directory and makes
 // the executable runnable: tar modes are the author's, and lich does not trust
 // them to be right.
-func (s *Service) checkStage(stage, id string) error {
+func (s *Service) checkStage(stage, id string) (extension.Manifest, error) {
 	m, exe, err := readManifest(stage, id, s.lichVersion)
 	if err != nil && m.ID != "" && m.ID != id {
-		return fmt.Errorf("the manifest's id %q differs from the release asset's %q: ask the extension's author to make them match", m.ID, id)
+		return m, fmt.Errorf("the manifest's id %q differs from the release asset's %q: ask the extension's author to make them match", m.ID, id)
 	}
 	if err != nil {
-		return fmt.Errorf("the extension's %s is not valid: %w", extension.ManifestFile, err)
+		return m, fmt.Errorf("the extension's %s is not valid: %w", extension.ManifestFile, err)
 	}
 	if _, err := readLocales(stage, m); err != nil {
-		return fmt.Errorf("the extension's %s are not valid: %w", exti18n.LocalesDir, err)
+		return m, fmt.Errorf("the extension's %s are not valid: %w", exti18n.LocalesDir, err)
 	}
 	if err := os.Chmod(exe, 0o755); err != nil {
-		return fmt.Errorf("make the executable runnable: %w", err)
+		return m, fmt.Errorf("make the executable runnable: %w", err)
 	}
-	return nil
+	return m, nil
 }
 
 func writeSource(stage string, src source) error {

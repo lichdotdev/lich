@@ -35,7 +35,8 @@ release tag, or the folder, it came from. Do not ship a file by that name.
   "version": "0.1.0",
   "minLichVersion": "0.90.0",
   "executable": "hello",
-  "surfaces": [{ "id": "main", "title": "Hello", "icon": "hand" }]
+  "surfaces": [{ "id": "main", "title": "Hello", "icon": "hand" }],
+  "permissions": ["sessions:read"]
 }
 ```
 
@@ -46,6 +47,8 @@ release tag, or the folder, it came from. Do not ship a file by that name.
 - `executable` is a path relative to the directory and must resolve inside it, symlinks included, to a regular
   file. On Windows name the `.exe`.
 - Surface ids are non-empty and unique. A surface is opened from the window's top bar.
+- `permissions` lists what the extension's [calls](#calling-lich) use, each one of `extension.Permissions`. A name
+  this lich does not know makes the manifest invalid.
 
 An extension that fails these checks is listed with its error and never started.
 
@@ -60,6 +63,9 @@ component and message. Import `github.com/lichdotdev/lich/extension` rather than
   `clipboard` and `focus`.
 - From lich: `surface.opened`, `surface.closed`, `event` (a handler the tree named fired) and `language` (see
   Translating an extension).
+  `clipboard`, `focus` and `call` (see [Calling lich](#calling-lich)).
+- From lich: `surface.opened`, `surface.closed`, `event` (a handler the tree named fired), `result` (the answer to
+  a `call`) and `lich.event` (an event the extension subscribed to).
 
 Stderr goes to lich's log.
 
@@ -118,6 +124,96 @@ board := extension.Box.New(extension.BoxProps{Direction: extension.DirectionRow,
 // on the event "move:done": take e.Key out of the column e.From, insert it in
 // done at e.Index, and render again.
 ```
+
+## Calling lich
+
+An extension reads and acts on lich over the same stdin and stdout, with no token and no network: lich knows which
+extension asked because it started the process. A `call` names a method and carries its params; lich answers each
+one with a `result` under the same id, carrying `data` or `error`. An unknown method, a permission the manifest
+does not list, params that do not decode, a call past the bound and a call past the timeout are all error results,
+never dropped lines:
+
+```json
+{"v":1,"kind":"call","data":{"id":"1","method":"sessions.send","params":{"session":"api-3","prompt":"run the tests"}}}
+{"v":1,"kind":"result","data":{"id":"1","data":{"ticket":"t1","target":"api-3","status":"answered","answer":"green"}}}
+{"v":1,"kind":"result","data":{"id":"2","error":"sessions.open needs the permission \"sessions:write\", which the extension's manifest does not list"}}
+```
+
+The methods mirror the tools lich gives agents over MCP and mean what they mean there. Their params and results are
+the Go types in [`extension/methods.go`](../extension/methods.go), and `extension/testdata/methods.golden.json`
+records each one's JSON. A call comes from no session, as `lich` run outside one does: nothing defaults to "your
+own" project or provider.
+
+| Method | Permission | Mirrors | Params | Result |
+| --- | --- | --- | --- | --- |
+| `projects.list` | `projects:read` | the projects the window holds | none | `[{id, name, path}]` |
+| `worktrees.list` | `projects:read` | `list_worktrees` | `{project}`, required | `[{name, path, dirty, sessions}]` |
+| `sessions.list` | `sessions:read` | `list_sessions` | none | `[{label, name, project, kind, state, id, path, projectPath, tool, detail, reason, focused}]` |
+| `sessions.open` | `sessions:write` | `open_session` | `{project, worktree, provider, prompt}`, project required | `{id, projectId, project, label, name, kind, path, confined, task, taskError}` |
+| `sessions.send` | `sessions:write` | `send_to_session` | `{session, project, prompt, waitSeconds}` | `{ticket, target, status, answer}` |
+| `events.subscribe` | each event's own | | `{names}` | `{}` |
+
+`sessions.send` holds for a quick answer for `waitSeconds`, at most 90, which is also what 0 means; a session still
+working then comes back `pending` with a ticket. `sessions.open` with a prompt hands it over as `open_session`
+does, holding 20 seconds, and reports a hand-over that failed in `taskError` beside the session, which is open
+either way.
+
+One event so far: `session.status`, a session's new state (`{id, state, tool, detail, reason}`), with the
+permission `events:session`. Subscribing checks every name first and starts none when one is refused. A restarted
+extension starts with no subscriptions.
+
+| Permission | Allows |
+| --- | --- |
+| `projects:read` | `projects.list`, `worktrees.list` |
+| `sessions:read` | `sessions.list` |
+| `sessions:write` | `sessions.open`, `sessions.send` |
+| `events:session` | subscribing to `session.status` |
+
+lich runs at most 8 calls of one extension at once, refusing the ninth, and gives each 2 minutes.
+
+### The Go SDK
+
+`extension.Conn` is the loop an extension would otherwise write: it correlates call ids, decodes results into their
+types, delivers every other message from lich on one channel, `Messages()`, in order, and writes from any
+goroutine. Every call takes a context and returns when it ends. Results never wait behind `Messages()`, so a
+handler may call lich on the goroutine reading it. `Messages()` closes when lich closes stdin: exit then.
+
+```go
+conn := extension.NewConn(os.Stdin, os.Stdout)
+ctx := context.Background()
+
+sessions, err := conn.Sessions(ctx)
+if err != nil {
+	log.Fatal(err)
+}
+for _, s := range sessions {
+	if s.State == "done" {
+		_, err := conn.SendToSession(ctx, extension.SendParams{Session: s.ID, Prompt: "run the tests"})
+		if err != nil {
+			log.Print(err)
+		}
+		break
+	}
+}
+
+if err := conn.Subscribe(ctx, extension.SessionStatus.Name); err != nil {
+	log.Fatal(err)
+}
+for msg := range conn.Messages() {
+	switch data := msg.Data.(type) {
+	case extension.LichEventData:
+		status, err := extension.SessionStatus.Decode(data)
+		if err == nil && status.State == "waiting" {
+			_ = conn.Send(extension.ShowToast.New(extension.ToastData{Title: "A session is waiting on you"}))
+		}
+	case extension.SurfaceData:
+		// surface.opened or surface.closed: msg.Kind says which
+	}
+}
+```
+
+The manifest of this one lists `sessions:read`, `sessions:write` and `events:session`. `extension.Call(ctx, conn,
+method, params)` calls any declared method; the helpers on `Conn` are that call for each one.
 
 ## Keeping data
 
@@ -217,6 +313,9 @@ title := cat.In(lang.Tag(), "board.count", i18n.Args{"count": len(cards)})
   from lich to the extension, and `openExternal` with a URL that is not http or https are dropped and logged. The
   extension is not told.
 - `render` is coalesced to 30 a second per surface; the newest tree always arrives.
+- At most 8 calls run at once per extension, each for at most 2 minutes, and a call needs the permission its
+  method names in the manifest. A `result` or `lich.event` lich cannot queue because the extension stopped reading
+  its stdin is dropped and logged.
 - Any exit lich did not ask for is a crash, exit 0 included. lich restarts after 1 second, doubling up to 30, and
   gives up after 5 crashes in a row each within 30 seconds of its start.
 - To stop an extension lich closes its stdin and kills it 3 seconds later. Exit when stdin ends.
@@ -226,13 +325,25 @@ title := cat.In(lang.Tag(), "board.count", i18n.Args{"count": len(cards)})
 
 A person installs an extension from lich's Settings in one of two ways:
 
-- **From a folder** on disk holding `manifest.json` and the executable at its root. lich copies it into the
-  extensions directory (at most 1 GiB and 1000 entries, no symlinks anywhere in it), validates the copy as it does
-  at startup, marks the executable runnable and starts it. The copy is what runs; the folder is left untouched.
+- **From a folder** on disk holding `manifest.json` and the executable at its root. lich copies it into a staging
+  directory under the extensions directory (at most 1 GiB and 1000 entries, no symlinks anywhere in it), validates
+  the copy as it does at startup and marks the executable runnable. The copy is what runs; the folder is left
+  untouched.
 - **From GitHub**, by pasting the repository URL, as below.
 
-Either way an id that is already installed is refused; to update, remove the extension and install it again. The
-remove keeps its [data directory](#keeping-data), so the new install picks up what the old one saved.
+Either way the install is two steps, and nothing runs until the second. The first,
+`extensions.PrepareFromDir` or `extensions.PrepareFromGit`, does all of the above and stops, returning the staged
+copy's id, name, version, source, release and `permissions` under a token. lich then asks: the confirmation names
+the extension and its version, where it comes from, that it runs as the person with access to their files and
+accounts, and, under **It can also**, one line per permission the manifest lists, in lich's own words rather than
+the extension's, with `sessions:write` set apart. An extension that lists none shows no list. Install sends the
+token to `extensions.CommitInstall`, which moves the copy into place and starts it; Cancel sends it to
+`extensions.DiscardInstall`, which deletes it. A token commits or discards once, and a staged copy nobody answers
+is deleted after 15 minutes, or when lich next starts. The installed extension's status in Settings lists the same
+permission lines on hover.
+
+An id that is already installed is refused, at both steps; to update, remove the extension and install it again.
+The remove keeps its [data directory](#keeping-data), so the new install picks up what the old one saved.
 
 ## Publishing a release
 
@@ -246,5 +357,6 @@ draft nor a pre-release. That release carries:
 - `checksums.txt` in the `sha256sum` format, one `<hex>  <file name>` line per archive.
 
 lich downloads the archive for the machine it runs on and `checksums.txt`, refuses an archive whose sha256 does not
-match, unpacks it, validates the manifest as it does at startup, marks the executable runnable and starts it. An
+match, unpacks it, validates the manifest as it does at startup and marks the executable runnable, then asks as
+[above](#installing) before it starts it. An
 archive is at most 256 MiB compressed, 1 GiB and 1000 entries unpacked.

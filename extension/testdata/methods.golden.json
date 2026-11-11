@@ -1,0 +1,105 @@
+[
+  {
+    "method": "events.subscribe",
+    "params": {
+      "names": [
+        "names"
+      ]
+    },
+    "permission": "",
+    "result": {}
+  },
+  {
+    "method": "projects.list",
+    "params": {},
+    "permission": "projects:read",
+    "result": [
+      {
+        "id": "id",
+        "name": "name",
+        "path": "path"
+      }
+    ]
+  },
+  {
+    "method": "sessions.list",
+    "params": {},
+    "permission": "sessions:read",
+    "result": [
+      {
+        "label": "label",
+        "name": "name",
+        "project": "project",
+        "kind": "kind",
+        "state": "state",
+        "id": "id",
+        "path": "path",
+        "projectPath": "projectPath",
+        "tool": "tool",
+        "detail": "detail",
+        "reason": "reason",
+        "focused": true
+      }
+    ]
+  },
+  {
+    "method": "sessions.open",
+    "params": {
+      "project": "project",
+      "worktree": "worktree",
+      "provider": "provider",
+      "prompt": "prompt"
+    },
+    "permission": "sessions:write",
+    "result": {
+      "id": "id",
+      "projectId": "projectId",
+      "project": "project",
+      "label": "label",
+      "name": "name",
+      "kind": "kind",
+      "path": "path",
+      "confined": true,
+      "task": {
+        "ticket": "ticket",
+        "target": "target",
+        "status": "status",
+        "answer": "answer"
+      },
+      "taskError": "taskError"
+    }
+  },
+  {
+    "method": "sessions.send",
+    "params": {
+      "session": "session",
+      "project": "project",
+      "prompt": "prompt",
+      "waitSeconds": 1
+    },
+    "permission": "sessions:write",
+    "result": {
+      "ticket": "ticket",
+      "target": "target",
+      "status": "status",
+      "answer": "answer"
+    }
+  },
+  {
+    "method": "worktrees.list",
+    "params": {
+      "project": "project"
+    },
+    "permission": "projects:read",
+    "result": [
+      {
+        "name": "name",
+        "path": "path",
+        "dirty": true,
+        "sessions": [
+          "sessions"
+        ]
+      }
+    ]
+  }
+]

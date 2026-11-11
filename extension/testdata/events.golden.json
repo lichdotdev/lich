@@ -1,0 +1,13 @@
+[
+  {
+    "data": {
+      "id": "id",
+      "state": "state",
+      "tool": "tool",
+      "detail": "detail",
+      "reason": "reason"
+    },
+    "name": "session.status",
+    "permission": "events:session"
+  }
+]

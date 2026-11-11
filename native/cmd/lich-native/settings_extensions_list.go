@@ -130,7 +130,8 @@ func extensionDetails(gtx C, th *ui.Theme, e backend.Extension) D {
 	)
 }
 
-// extensionStatus is the dot and its word, the error one hover away.
+// extensionStatus is the dot and its word, the error and the permissions one
+// hover away.
 func (s *settingsScreen) extensionStatus(gtx C, th *ui.Theme, e backend.Extension, r *extensionRowState) D {
 	word := th.Text(ui.TextXS, extensionStatusText(e.Status)).In(extensionStatusTone(th, e.Status))
 	status := func(gtx C) D {
@@ -140,12 +141,26 @@ func (s *settingsScreen) extensionStatus(gtx C, th *ui.Theme, e backend.Extensio
 			layout.Rigid(word.Layout),
 		)
 	}
-	if e.Error == "" {
+	if e.Error == "" && len(e.Permissions) == 0 {
 		return status(gtx)
 	}
-	return th.TooltipCard(s.root, &r.state, func(gtx C) D {
-		return th.On(th.Popover).Text(ui.TextXS, e.Error).Mono().Wrapped().Layout(gtx)
-	}).Layout(gtx, status)
+	return th.TooltipCard(s.root, &r.state, func(gtx C) D { return statusTip(gtx, th.On(th.Popover), e) }).Layout(gtx, status)
+}
+
+// statusTip is the status's tooltip: the error, then what the extension can
+// do, in the confirmation's words.
+func statusTip(gtx C, th *ui.Theme, e backend.Extension) D {
+	var children []layout.FlexChild
+	if e.Error != "" {
+		children = append(children, layout.Rigid(th.Text(ui.TextXS, e.Error).Mono().Wrapped().Layout))
+	}
+	if len(e.Permissions) > 0 {
+		if e.Error != "" {
+			children = append(children, ui.VGap(3))
+		}
+		children = append(children, layout.Rigid(func(gtx C) D { return permissionList(gtx, th, e.Permissions) }))
+	}
+	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
 }
 
 // extensionStatusTone is the status word's color: the destructive tone for

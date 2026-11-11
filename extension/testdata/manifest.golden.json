@@ -11,5 +11,8 @@
       "title": "title",
       "icon": "icon"
     }
+  ],
+  "permissions": [
+    "permissions"
   ]
 }

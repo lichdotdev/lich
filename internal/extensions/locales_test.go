@@ -91,9 +91,9 @@ func TestInstallRefusesABadCatalog(t *testing.T) {
 	from := install(t, t.TempDir(), testID, modeEcho)
 	writeCatalog(t, from, "en", `not json`)
 	s, _ := boot(t, filepath.Join(t.TempDir(), "extensions"))
-	_, err := s.InstallFromDir(context.Background(), api.ExtensionDirInstallOptions{Dir: from})
+	_, err := s.PrepareFromDir(context.Background(), api.ExtensionDirInstallOptions{Dir: from})
 	if err == nil || !strings.Contains(err.Error(), "locales are not valid") {
-		t.Fatalf("InstallFromDir() = %v, want the catalog refused", err)
+		t.Fatalf("PrepareFromDir() = %v, want the catalog refused", err)
 	}
 }
 

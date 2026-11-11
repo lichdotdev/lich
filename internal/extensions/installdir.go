@@ -12,24 +12,23 @@ import (
 	"github.com/lichdotdev/lich/extension"
 )
 
-// InstallFromDir copies a folder holding manifest.json and the executable at
-// its root into the extensions directory and starts the copy. The folder is
-// left as it was.
-func (s *Service) InstallFromDir(_ context.Context, opts api.ExtensionDirInstallOptions) (api.Extension, error) {
+// PrepareFromDir copies a folder holding manifest.json and the executable at
+// its root into a stage for CommitInstall. The folder is left as it was.
+func (s *Service) PrepareFromDir(_ context.Context, opts api.ExtensionDirInstallOptions) (api.ExtensionInstallPreview, error) {
 	from, err := filepath.Abs(opts.Dir)
 	if err != nil {
-		return api.Extension{}, fmt.Errorf("resolve %s: %w", opts.Dir, err)
+		return api.ExtensionInstallPreview{}, fmt.Errorf("resolve %s: %w", opts.Dir, err)
 	}
 	if info, err := os.Lstat(from); err != nil || !info.IsDir() {
-		return api.Extension{}, fmt.Errorf("%s is not a folder: pick the folder that holds the extension's %s", opts.Dir, extension.ManifestFile)
+		return api.ExtensionInstallPreview{}, fmt.Errorf("%s is not a folder: pick the folder that holds the extension's %s", opts.Dir, extension.ManifestFile)
 	}
 	id, err := manifestID(from)
 	if err != nil {
-		return api.Extension{}, err
+		return api.ExtensionInstallPreview{}, err
 	}
 	s.installMu.Lock()
 	defer s.installMu.Unlock()
-	return s.installAs(id, source{URL: from}, func(stage string) error {
+	return s.stageAs(id, source{URL: from}, func(stage string) error {
 		if err := copyTree(from, stage); err != nil {
 			return fmt.Errorf("copy %s: %w", from, err)
 		}

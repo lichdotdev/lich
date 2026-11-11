@@ -14,6 +14,8 @@ type (
 	ExtensionSurface = api.ExtensionSurface
 	ExtensionText    = api.ExtensionText
 	ExtensionMessage = api.ExtensionMessage
+	// ExtensionInstallPreview is a staged install waiting for its confirmation.
+	ExtensionInstallPreview = api.ExtensionInstallPreview
 )
 
 // Extensions is every extension under lich's extensions directory.
@@ -37,15 +39,26 @@ func (c *Client) RestartExtension(ctx context.Context, id string) error {
 	return err
 }
 
-// InstallExtensionFromGit installs and starts the latest release of the
-// GitHub repository at url.
-func (c *Client) InstallExtensionFromGit(ctx context.Context, url string) (Extension, error) {
-	return callMethod(ctx, c, api.ExtensionsInstallFromGit, api.ExtensionGitInstallOptions{URL: url})
+// PrepareExtensionFromGit stages the latest release of the GitHub repository
+// at url; nothing runs until CommitExtensionInstall.
+func (c *Client) PrepareExtensionFromGit(ctx context.Context, url string) (ExtensionInstallPreview, error) {
+	return callMethod(ctx, c, api.ExtensionsPrepareFromGit, api.ExtensionGitInstallOptions{URL: url})
 }
 
-// InstallExtensionFromDir copies the extension in dir and starts it.
-func (c *Client) InstallExtensionFromDir(ctx context.Context, dir string) (Extension, error) {
-	return callMethod(ctx, c, api.ExtensionsInstallFromDir, api.ExtensionDirInstallOptions{Dir: dir})
+// PrepareExtensionFromDir stages a copy of the extension in dir.
+func (c *Client) PrepareExtensionFromDir(ctx context.Context, dir string) (ExtensionInstallPreview, error) {
+	return callMethod(ctx, c, api.ExtensionsPrepareFromDir, api.ExtensionDirInstallOptions{Dir: dir})
+}
+
+// CommitExtensionInstall installs and starts the staged extension token names.
+func (c *Client) CommitExtensionInstall(ctx context.Context, token string) (Extension, error) {
+	return callMethod(ctx, c, api.ExtensionsCommitInstall, api.ExtensionInstallTokenOptions{Token: token})
+}
+
+// DiscardExtensionInstall deletes the staged extension token names.
+func (c *Client) DiscardExtensionInstall(ctx context.Context, token string) error {
+	_, err := callMethod(ctx, c, api.ExtensionsDiscardInstall, api.ExtensionInstallTokenOptions{Token: token})
+	return err
 }
 
 // RemoveExtension stops extension id and deletes its directory.

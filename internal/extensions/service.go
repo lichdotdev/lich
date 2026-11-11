@@ -58,6 +58,8 @@ type timing struct {
 	stableRun    time.Duration
 	stopGrace    time.Duration
 	killWait     time.Duration
+	callTimeout  time.Duration
+	stagedTTL    time.Duration
 }
 
 // Service is every installed extension and its process.
@@ -70,6 +72,8 @@ type Service struct {
 	language func() string
 	emit     func(name string, data any)
 	timing   timing
+	lich     Lich
+	calls    map[string]route
 
 	// The installer's GitHub reads, fields so tests can serve releases locally.
 	metadata   *http.Client
@@ -80,6 +84,9 @@ type Service struct {
 	// installMu serialises installs, so two of one id never race to its
 	// directory.
 	installMu sync.Mutex
+	// stagedMu guards staged, the prepared installs by token.
+	stagedMu sync.Mutex
+	staged   map[string]stagedInstall
 
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -105,11 +112,15 @@ type installed struct {
 	renders  renderGate
 	// restartMu serialises Restart calls on this extension.
 	restartMu sync.Mutex
+	// inFlight holds a token for each call running, up to maxCallsInFlight.
+	inFlight chan struct{}
 
 	// mu: Service.mu
 	status  string
 	errText string
 	queue   chan []byte
+	// subscribed is the events the running process asked for, by name.
+	subscribed map[string]bool
 	// stop and done belong to the current supervise goroutine; done closes
 	// when it has returned.
 	stop context.CancelFunc
@@ -121,12 +132,17 @@ type installed struct {
 // dataDir.
 func New(dir, dataDir, lichVersion string, env []string, emit func(name string, data any)) *Service {
 	ctx, cancel := context.WithCancel(context.Background())
-	return &Service{
+	s := &Service{
 		dir: dir, dataDir: dataDir, lichVersion: lichVersion, env: env, emit: emit, ctx: ctx, cancel: cancel,
-		timing:   timing{firstBackoff: firstBackoff, maxBackoff: maxBackoff, stableRun: stableRun, stopGrace: stopGrace, killWait: killWait},
+		timing: timing{
+			firstBackoff: firstBackoff, maxBackoff: maxBackoff, stableRun: stableRun, stopGrace: stopGrace,
+			killWait: killWait, callTimeout: callTimeout, stagedTTL: stagedTTL,
+		},
 		metadata: &http.Client{Timeout: metadataTimeout}, download: &http.Client{Timeout: downloadTimeout},
 		releaseAPI: releaseAPI, goos: runtime.GOOS, goarch: runtime.GOARCH,
 	}
+	s.calls = s.routes()
+	return s
 }
 
 // SetLanguage names where the interface language an extension starts with
@@ -140,8 +156,10 @@ func (s *Service) startLanguage() string {
 	return s.language()
 }
 
-// Boot discovers the extensions and starts every valid one.
+// Boot deletes what earlier runs left staged, then discovers the extensions
+// and starts every valid one.
 func (s *Service) Boot() {
+	sweepStaged(s.dir)
 	found := discover(s.dir, s.lichVersion)
 	s.mu.Lock()
 	s.all = found
@@ -279,8 +297,16 @@ func (x *installed) view() api.Extension {
 	return api.Extension{
 		ID: x.id, Name: cmp.Or(x.manifest.Name, x.id), Version: x.manifest.Version,
 		Status: x.status, Error: x.errText, Dir: x.root, Surfaces: surfaces,
-		Source: x.source.URL, Release: x.source.Release, Text: x.text,
+		Source: x.source.URL, Release: x.source.Release, Text: x.text, Permissions: permissionNames(x.manifest),
 	}
+}
+
+func permissionNames(m extension.Manifest) []string {
+	out := make([]string, 0, len(m.Permissions))
+	for _, p := range m.Permissions {
+		out = append(out, string(p))
+	}
+	return out
 }
 
 // setStatus records a state and tells the window, once it is true.

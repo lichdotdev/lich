@@ -51,6 +51,7 @@ var fromExtension = map[string]bool{
 	extension.OpenExternal.Name: true,
 	extension.Clipboard.Name:    true,
 	extension.Focus.Name:        true,
+	extension.CallMethod.Name:   true,
 }
 
 // toExtension is what extensions.Send may write to one.
@@ -67,6 +68,10 @@ func (s *Service) handleLine(x *installed, line []byte) {
 	msg, encoded, err := vetMessage(line)
 	if err != nil {
 		x.refused.note(x.id, msgRefused, err.Error())
+		return
+	}
+	if call, ok := msg.Data.(extension.CallData); ok {
+		s.call(x, call)
 		return
 	}
 	if render, ok := msg.Data.(extension.RenderData); ok {
