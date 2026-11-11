@@ -147,6 +147,7 @@ type gallery struct {
 	footerRight []string
 
 	side *sidebar
+	cov  coverageState
 
 	toastState
 	contentState
@@ -186,6 +187,7 @@ func (g *gallery) layout(gtx C) D {
 	paint.Fill(gtx.Ops, ui.Dark.Background)
 	return g.root.Layout(gtx, func(gtx C) D {
 		g.layoutDialog(gtx)
+		g.layoutCoverageDialogs(gtx)
 		toaster := g.th.Toaster(&g.toaster, false)
 		toaster.Expand = *flagToastsExpanded
 		toaster.Position = toastPositions[*flagToastsAt]
@@ -224,5 +226,7 @@ func (g *gallery) content(gtx C) D {
 				)),
 			)
 		}),
+		ui.VGap(6),
+		layout.Rigid(g.coverage),
 	)
 }
