@@ -20,6 +20,11 @@
     "title": "You and your agent see the same page",
     "body": "Your agent drives this page with its browser tools, so ask it things like \"open localhost:3000 and check the login\". You can click and type here too."
   },
+  "address": {
+    "title": "Open a page",
+    "body": "Type an address and press Enter: your app on localhost, or lichdotdev.github.io/lich to try it out. Your agent can open pages here too.",
+    "hint": "Open a page to continue"
+  },
   "pick": {
     "title": "Point at the page",
     "body": "Instead of describing where something is, leave a note right on it.",

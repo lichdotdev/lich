@@ -259,7 +259,7 @@ func (u *window) browserToolbar(gtx C, p *browserPaneUI, session string, st api.
 				return th.IconAction(&u.root, &p.reload, icBrowserReload, i18n.T("layouts.browser.reload"), p.flashing(gtx, "reload")).Layout(gtx)
 			}),
 			ui.Gap(1.5),
-			layout.Flexed(1, field.Layout),
+			layout.Flexed(1, func(gtx C) D { return u.spot(gtx, tourBrowserAddr, field.Layout) }),
 			ui.Gap(1.5),
 			layout.Rigid(func(gtx C) D { return u.browserZoomControl(gtx, &p.pageZoom) }),
 			layout.Rigid(func(gtx C) D {

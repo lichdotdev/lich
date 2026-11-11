@@ -14,6 +14,7 @@ const browserGuideID = "browser"
 const (
 	tourBrowserItem  = "browser.item"
 	tourBrowserPane  = "browser.pane"
+	tourBrowserAddr  = "browser.address"
 	tourBrowserPick  = "browser.pick"
 	tourBrowserPage  = "browser.page"
 	tourBrowserNotes = "browser.notes"
@@ -30,6 +31,9 @@ var browserTour = []tourStep{
 	{anchor: tourSession, side: driver.Right, until: (*window).tourBrowserOpen,
 		text: tourText{"tourBrowser.again.title", "tourBrowser.again.body", "tourBrowser.again.hint"}},
 	{anchor: tourBrowserPane, side: driver.Left, text: tourText{"tourBrowser.pane.title", "tourBrowser.pane.body", ""}},
+	// A new browser shows no page, and notes need one.
+	{anchor: tourBrowserAddr, side: driver.Bottom, until: (*window).tourBrowserHasPage,
+		text: tourText{"tourBrowser.address.title", "tourBrowser.address.body", "tourBrowser.address.hint"}},
 	{anchor: tourBrowserPick, side: driver.Bottom, until: (*window).tourBrowserPicking,
 		text: tourText{"tourBrowser.pick.title", "tourBrowser.pick.body", "tourBrowser.pick.hint"}},
 	{anchor: tourBrowserPage, side: driver.Left, until: (*window).tourBrowserNoted,
@@ -78,6 +82,13 @@ func (u *window) tourBrowserOpen() bool {
 	}
 	st, ok := u.model.browserState(id)
 	return u.model.browserTabOf(id) != "" || ok && st.Open
+}
+
+// tourBrowserHasPage is whether the shown session's browser shows a page,
+// not the blank one it opens on.
+func (u *window) tourBrowserHasPage() bool {
+	st, ok := u.model.browserState(u.model.shownSession())
+	return ok && displayURL(st.URL) != ""
 }
 
 // tourBrowserNotes is the active session's notes, nil before its pane drew;
