@@ -34,7 +34,8 @@
     "shortcuts": "キーボードショートカット",
     "quit": "lich を終了",
     "startServices": "プロジェクトのサービスを開始",
-    "toggleGit": "Git パネルの表示を切り替える"
+    "toggleGit": "Git パネルの表示を切り替える",
+    "tour": "ツアーを見る"
   },
   "terminalCost": {
     "a": "Ctrl+{key} はシェルの「行頭へ移動」です。セッションはこのキーを受け取れなくなります。",

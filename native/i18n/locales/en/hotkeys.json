@@ -34,7 +34,8 @@
     "shortcuts": "Keyboard shortcuts",
     "quit": "Quit lich",
     "startServices": "Start the project's services",
-    "toggleGit": "Toggle the Git panel"
+    "toggleGit": "Toggle the Git panel",
+    "tour": "Take the tour"
   },
   "terminalCost": {
     "a": "Ctrl+{key} is the shell's move to the start of the line; sessions will no longer see it.",

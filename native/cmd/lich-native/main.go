@@ -180,6 +180,7 @@ type window struct {
 	optIn      notifyOptIn
 	gitMissing gitMissing
 	setup      providerSetup
+	tour       windowTour
 	plugin     pluginGate
 	appUpdate  appUpdateGate
 	drop       terminalDrop
@@ -239,7 +240,7 @@ func run(w *app.Window, rt backend.Runtime) error {
 	invalidate := frameLog.Invalidator(w.Invalidate)
 	u := &window{
 		ctx: ctx, client: client, th: th, win: w, zoom: defaultZoom, browserZoom: defaultZoom, browserViews: newBrowserQueue(),
-		theme: &ui.Theme{Palette: ui.Dark, Shaper: th.Shaper, Sans: fonts.Sans, Mono: faces[0].Font.Typeface, Surface: ui.Dark.Canvas, Beat: beat},
+		theme: &ui.Theme{Palette: ui.Dark, Shaper: th.Shaper, Sans: fonts.Sans, Mono: faces[0].Font.Typeface, Surface: ui.Dark.Canvas, Beat: beat, Overlays: &ui.OverlayCount{}},
 		model: newModel(client, invalidate),
 		terms: &terminals{client: client, invalidate: invalidate, beat: beat, renderer: *flagRenderer, family: *flagFont,
 			size: unit.Sp(*flagSize), byID: map[string]*termView{}, invalidateEcho: frameLog.Tagged(w.Invalidate, causeEcho)},
@@ -256,6 +257,7 @@ func run(w *app.Window, rt backend.Runtime) error {
 	u.terms.toaster = &u.toaster
 	u.terms.profileGone = u.profileGone
 	u.sidebar = newSidebar(&u.root)
+	u.sidebar.tour = &u.tour.Tour
 	u.console = newServiceConsole()
 	u.palette = newCommandPalette(invalidate)
 	u.worktree = newWorktreeDialog(client, &u.root, invalidate)
@@ -267,6 +269,7 @@ func run(w *app.Window, rt backend.Runtime) error {
 	u.pulls.sessionLabel = u.model.sessionLabel
 	u.pulls.waiting = u.model.threadFixes.has
 	u.pulls.onAccount = u.model.accountChanged
+	u.pulls.tour = &u.tour.Tour
 	u.model.prChanged = u.prChanged
 	u.model.themeSelection = u.appearance.applySelection
 	u.model.exited = u.sessionExited
@@ -282,6 +285,7 @@ func run(w *app.Window, rt backend.Runtime) error {
 	u.model.appUpdateProgress = u.updateProgressed
 	u.palette.closed = u.model.closed
 	u.topbar = newTopbar(&u.root)
+	u.topbar.tour = &u.tour.Tour
 	u.topbar.open.closed = u.model.closed
 	notes := newDesktopNotes(ctx, backendNotes{ctx: ctx, client: client}, func(projectID, id, token string) {
 		u.focusSession(projectID, id)
@@ -305,6 +309,7 @@ func run(w *app.Window, rt backend.Runtime) error {
 	u.settings.services.home = u.model.homeProject
 	u.settings.promptUpdate = u.promptAppUpdate
 	u.footer = newFooter(ctx, client, &u.root, u.model.usage, u.model.quota, invalidate)
+	u.footer.tour = &u.tour.Tour
 	u.gate = &spawnGate{probe: client, invalidate: invalidate, park: u.parkSession, notify: func(t ui.Toast) { u.toaster.Show(t) }}
 	u.footer.toaster = &u.toaster
 	comments, notify := &u.comments, func(t ui.Toast) { u.toaster.Show(t) }
@@ -320,6 +325,8 @@ func run(w *app.Window, rt backend.Runtime) error {
 		return err
 	}
 	u.dock = newDock(code, u.review, u.newArtifactsTab())
+	u.dock.tour = &u.tour.Tour
+	u.review.tour = &u.tour.Tour
 	u.model.diffTouched = u.review.feed.touched
 	u.model.focusSession = u.focusSession
 	u.model.showToast = u.showToast
@@ -569,7 +576,8 @@ func (u *window) layout(gtx C) error {
 	var top topbarAction
 	var contentErr error
 	v := u.stageView(gtx.Now)
-	u.root.Layout(gtx, func(gtx C) D {
+	u.frameTour(gtx)
+	content := func(gtx C) D {
 		u.layoutCodeMenu(gtx)
 		filed := u.sidebar.layoutFolderDialog(gtx, u.theme, u.model.projectFolders())
 		defer func() {
@@ -618,7 +626,8 @@ func (u *window) layout(gtx C) error {
 		duplicates.Position = ui.ToastBottomRight
 		duplicates.Layout(gtx)
 		return D{Size: gtx.Constraints.Max}
-	})
+	}
+	u.root.Layout(gtx, func(gtx C) D { return u.tour.Layout(gtx, content) })
 	pointerArea.Pop()
 	u.endStrandedDrag(gtx)
 	u.apply(act)
@@ -770,9 +779,10 @@ func (u *window) island(gtx C, v stageView, termWidth, termHeight int) error {
 	case v.hasLayout:
 		return u.layoutIsland(gtx, v)
 	case !v.hasActive:
-		emptySessionsView(gtx, u.theme.On(fill), &u.emptyNew, u.model.newSessionKind() == "shell")
+		emptySessionsView(gtx, u.theme.On(fill), &u.emptyNew, u.model.newSessionKind() == "shell", u.spot)
 		return nil
 	}
+	u.spot(gtx, tourStage, func(C) D { return D{Size: size} })
 	u.layoutStage.metric = gtx.Metric
 	u.terms.onScreen(v.active.ID)
 	term := gtx
@@ -827,7 +837,7 @@ func (u *window) topbarFrame(gtx C, v stageView, edge int) topbarFrame {
 		brandWidth: width, brandName: name, stripX: edge, island: u.islandColor(v),
 		tabs: v.strip, active: v.stripActive, pending: u.model.notifications(),
 		caption: u.caption.Load().under(u.settings.look.prefs.windowButtons), chrome: u.chrome,
-		windowButtons: u.settings.look.prefs.windowButtons,
+		windowButtons: u.settings.look.prefs.windowButtons, guides: u.guideItems(),
 	}
 	// Settings is no project's screen, so no tab merges into it.
 	if u.settings.open {

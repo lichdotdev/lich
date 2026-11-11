@@ -1,0 +1,20 @@
+{
+  "label": "Hand off work",
+  "unavailable": "Needs a session running an agent",
+  "ask": {
+    "title": "Ask your agent to hand off",
+    "body": "When the context is full or the task changes, ask your agent: \"Hand this off to a new lich session.\" It writes a brief of what is done and what comes next, and a new session picks up from there."
+  },
+  "successor": {
+    "title": "The new session sits under this one",
+    "body": "It opens in the same checkout and hangs under this row in the list. Click it to see the brief arrive."
+  },
+  "delegates": {
+    "title": "Keep both in sight",
+    "body": "Show beside lays the new session out next to this one, so you can watch it start."
+  },
+  "close": {
+    "title": "Close the old one yourself",
+    "body": "Both sessions can edit the same files until you close this one. Once the new one is going, right-click this row and pick Close session."
+  }
+}

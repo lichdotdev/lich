@@ -1,0 +1,22 @@
+{
+  "label": "Pull requests",
+  "unavailable": "Abre un proyecto primero",
+  "open": {
+    "title": "Tus pull requests",
+    "body": "Los pull requests del proyecto en GitHub están a un clic, sin salir de lich.",
+    "hint": "Haz clic en Pull requests para continuar"
+  },
+  "filter": {
+    "title": "Encuentra el que buscas",
+    "body": "Todos, Listos, Borradores y Con fallos acotan la lista, y el campo de arriba filtra por número, título, autor o rama. El menú de al lado cambia entre abiertos, cerrados y fusionados."
+  },
+  "pick": {
+    "title": "Abre un pull request",
+    "body": "Cada fila es un pull request con sus checks y revisiones.",
+    "hint": "Haz clic en un pull request para continuar"
+  },
+  "review": {
+    "title": "Haz checkout y revísalo",
+    "body": "Abrir en una sesión crea un worktree en la rama del pull request y abre una sesión allí, o Ir a la sesión cuando ya hay una. En Archivos, selecciona líneas, haz clic derecho y elige Comentar en el pull request, luego Añadir a la revisión y Enviar revisión."
+  }
+}

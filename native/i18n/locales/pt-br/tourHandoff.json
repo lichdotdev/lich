@@ -1,0 +1,20 @@
+{
+  "label": "Passar o trabalho adiante",
+  "unavailable": "Precisa de uma sessão rodando um agente",
+  "ask": {
+    "title": "Peça ao agente para passar o trabalho adiante",
+    "body": "Quando o contexto encher ou a tarefa mudar, peça ao agente: \"Passe isso para uma nova sessão do lich.\" Ele escreve um resumo do que foi feito e do que vem depois, e uma sessão nova continua dali."
+  },
+  "successor": {
+    "title": "A sessão nova fica embaixo desta",
+    "body": "Ela abre no mesmo checkout e aparece embaixo desta linha na lista. Clique nela para ver o resumo chegar."
+  },
+  "delegates": {
+    "title": "Mantenha as duas à vista",
+    "body": "Mostrar ao lado coloca a sessão nova ao lado desta, para você ver ela começar."
+  },
+  "close": {
+    "title": "Feche a antiga você mesmo",
+    "body": "As duas sessões podem editar os mesmos arquivos até você fechar esta. Quando a nova estiver andando, clique com o botão direito nesta linha e escolha Fechar sessão."
+  }
+}

@@ -9,6 +9,7 @@ import (
 
 	"gioui.org/layout"
 	"gioui.org/op"
+	driver "github.com/lichdotdev/gio-driver"
 
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
@@ -28,6 +29,8 @@ var (
 // footer is the status strip under the stage, following the active session,
 // laid out as the user arranged it.
 type footer struct {
+	// tour is the window's guided tour, which points at the footer's chips.
+	tour       *driver.Tour
 	ctx        context.Context
 	client     *backend.Client
 	root       *ui.Root
@@ -66,7 +69,7 @@ type footer struct {
 
 func newFooter(ctx context.Context, client *backend.Client, root *ui.Root, usage *footerUsage, quota *planQuota, invalidate func()) *footer {
 	return &footer{
-		ctx: ctx, client: client, root: root, invalidate: invalidate, usage: usage,
+		tour: new(driver.Tour), ctx: ctx, client: client, root: root, invalidate: invalidate, usage: usage,
 		quota:   quota,
 		handsOn: newHandsOn(func(id string) (int64, error) { return client.HandsOn(ctx, id) }, invalidate),
 		cost:    &costGate{get: client.GetSetting, set: client.SetSetting, onChange: invalidate},
@@ -266,7 +269,9 @@ func (f *footer) slot(gtx C, th *ui.Theme, s footerSlot, in footerInput) D {
 	case "files":
 		return footerButton(gtx, th, f.root, w, i18n.T("shell.footerBar.browseCode"), false, false, iconOnly(icCode))
 	case "changes":
-		return footerButton(gtx, th, f.root, w, i18n.T("shell.footerBar.reviewChanges"), true, false, changesContent(in.git))
+		return f.tour.Anchor(gtx, tourReviewChip, func(gtx C) D {
+			return footerButton(gtx, th, f.root, w, i18n.T("shell.footerBar.reviewChanges"), true, false, changesContent(in.git))
+		})
 	case "artifacts":
 		return footerButton(gtx, th, f.root, w, i18n.T("shell.footerBar.showArtifacts"), false, false, iconOnly(icDockArtifacts))
 	case "pr":
@@ -278,7 +283,9 @@ func (f *footer) slot(gtx C, th *ui.Theme, s footerSlot, in footerInput) D {
 		}
 		if s.ID == "checkout" && f.git != nil && in.inRepository() {
 			gtx.Constraints.Max.X = min(gtx.Constraints.Max.X, gtx.Dp(checkoutMaxWidth))
-			return footerButton(gtx, th, f.root, w, s.Hint, true, false, branchContent(ic, s.Text))
+			return f.tour.Anchor(gtx, worktreesBranch, func(gtx C) D {
+				return footerButton(gtx, th, f.root, w, s.Hint, true, false, branchContent(ic, s.Text))
+			})
 		}
 		glyph := func(gtx C) D { return ic.Layout(gtx, footerGlyph, th.MutedForeground) }
 		return footerSpan(gtx, th, f.root, &w.tip, s.Hint, checkoutMaxWidth, glyph, s.Text)
@@ -286,7 +293,9 @@ func (f *footer) slot(gtx C, th *ui.Theme, s footerSlot, in footerInput) D {
 		glyph := func(gtx C) D { return providerIcon(in.provider).Layout(gtx, 14, th.MutedForeground) }
 		return footerSpan(gtx, th, f.root, &w.tip, s.Hint, modelMaxWidth, glyph, s.Text)
 	case "delegates":
-		return footerButton(gtx, th, f.root, w, i18n.T("layouts.delegates.hint"), true, false, glyphText(icDelegates, s.Text))
+		return f.tour.Anchor(gtx, tourDelegates, func(gtx C) D {
+			return footerButton(gtx, th, f.root, w, i18n.T("layouts.delegates.hint"), true, false, glyphText(icDelegates, s.Text))
+		})
 	case "clock":
 		return layout.Inset{Left: ui.Space(2), Right: ui.Space(2)}.Layout(gtx, th.Text(ui.TextXS, s.Text).Muted().Layout)
 	}

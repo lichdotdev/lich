@@ -35,6 +35,7 @@ import (
 	"gioui.org/op/clip"
 	"gioui.org/unit"
 
+	driver "github.com/lichdotdev/gio-driver"
 	"github.com/lichdotdev/godemirror"
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
@@ -103,7 +104,10 @@ type reviewTab interface {
 }
 
 type dock struct {
-	tab dockTab
+	// tour is the window's guided tour, which points at the dock's tabs and
+	// body.
+	tour *driver.Tour
+	tab  dockTab
 	// islands are the visible stage and dock bounds from the last layout,
 	// in the project tab strip's coordinates. The strip uses them to detach
 	// its active tab when a resize makes it cross an island edge.
@@ -124,7 +128,7 @@ type dock struct {
 }
 
 func newDock(code *codeTab, review reviewTab, artifacts *artifactsTab) *dock {
-	return &dock{widthRem: dockDefaultRem, resize: ui.ResizeHandle{Edge: ui.PanelEdgeLeft}, code: code, review: review, artifacts: artifacts}
+	return &dock{tour: new(driver.Tour), widthRem: dockDefaultRem, resize: ui.ResizeHandle{Edge: ui.PanelEdgeLeft}, code: code, review: review, artifacts: artifacts}
 }
 
 // holdsKeys reports whether a field of the dock has focus. The terminal asks
@@ -171,8 +175,10 @@ func (d *dock) layout(gtx C, th *ui.Theme, root *ui.Root, in dockInput) (saveWid
 		layout.Rigid(on.Separator),
 		layout.Flexed(1, func(gtx C) D {
 			gtx.Constraints.Min = gtx.Constraints.Max
-			err = d.body(gtx, on, root, in)
-			return D{Size: gtx.Constraints.Max}
+			return d.tour.Anchor(gtx, tourReviewPanel, func(gtx C) D {
+				err = d.body(gtx, on, root, in)
+				return D{Size: gtx.Constraints.Max}
+			})
 		}),
 	)
 	if !d.fullscreen {

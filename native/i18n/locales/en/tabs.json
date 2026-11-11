@@ -29,5 +29,10 @@
     "pinProjectFailed": "Could not save the pinned tabs: {error}",
     "closeProjectFailed": "Could not close the project: {error}",
     "reorderFailed": "Could not reorder the projects: {error}"
+  },
+  "mainMenu": {
+    "open": "Menu",
+    "guides": "Guides",
+    "basics": "The basics"
   }
 }

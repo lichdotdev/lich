@@ -7,6 +7,8 @@ import (
 	"gioui.org/layout"
 	"gioui.org/unit"
 	"gioui.org/widget"
+	driver "github.com/lichdotdev/gio-driver"
+
 	"github.com/lichdotdev/lich/native/ui"
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
@@ -16,6 +18,9 @@ const remDp = 16
 
 type sidebar struct {
 	root *ui.Root // where tooltips and menus float
+	// tour is the window's guided tour, which points at New Session and the
+	// active card.
+	tour *driver.Tour
 	// The session cards, keyed by session id.
 	tips    map[string]*ui.Tooltip
 	menus   map[string]*ui.MenuState
@@ -62,6 +67,7 @@ type sidebar struct {
 func newSidebar(root *ui.Root) *sidebar {
 	s := &sidebar{
 		root:         root,
+		tour:         new(driver.Tour),
 		cards:        map[string]*widget.Clickable{},
 		moreClicks:   map[string]*widget.Clickable{},
 		moreMenus:    map[string]*ui.MenuState{},

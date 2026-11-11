@@ -179,3 +179,45 @@ func TestDropdownPanelRowClosingItAsksForTheNextFrame(t *testing.T) {
 		t.Error("the frame that closed the panel asked for no next frame")
 	}
 }
+
+func TestOverlayCountSeesAnOpenMenu(t *testing.T) {
+	var c chosen
+	g, s, th := &menuRig{size: image.Pt(400, 400)}, new(MenuState), testTheme()
+	th.Overlays = &OverlayCount{}
+	frame := func() bool {
+		th.Overlays.Frame()
+		g.frame(func(gtx C, trigger layout.Widget) D {
+			return th.DropdownMenu(&g.root, s, []MenuEntry{c.item("A")}).Layout(gtx, trigger)
+		})
+		th.Overlays.Frame()
+		return th.Overlays.Open()
+	}
+	if frame() {
+		t.Fatal("a closed menu counted as open")
+	}
+	g.click(pointer.ButtonPrimary, triggerAt.Add(image.Pt(10, 10)))
+	if !frame() {
+		t.Fatal("an open menu did not count")
+	}
+	g.press(key.NameEscape)
+	frame()
+	if frame() {
+		t.Fatal("a closed menu still counts")
+	}
+}
+
+func TestMenuSpotGetsTheRowAtItsSize(t *testing.T) {
+	var c chosen
+	var got image.Point
+	b := c.item("B")
+	b.Spot = func(gtx C, row layout.Widget) D {
+		d := row(gtx)
+		got = d.Size
+		return d
+	}
+	_, _, frame := openDropdown(t, []MenuEntry{c.item("A"), b})
+	frame()
+	if got.X < dropdownWidth-8 || got.Y != dropdownRow {
+		t.Fatalf("spot got a row of %v, want about %dx%d", got, dropdownWidth-8, dropdownRow)
+	}
+}

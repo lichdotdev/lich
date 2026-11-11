@@ -57,6 +57,9 @@ func closeBody(name string, running int) string {
 // applyTopbar carries out what the strip's clicks asked for.
 func (u *window) applyTopbar(act topbarAction) {
 	u.applySettingsAction(act)
+	if act.tour != "" {
+		u.startGuide(act.tour)
+	}
 	if act.captionClicked {
 		// Off the frame: Window.Option waits on the event loop this frame
 		// is holding.

@@ -105,6 +105,7 @@ func (d DialogStyle) Layout(gtx C) (dismissed bool) {
 	if !ok {
 		return dismissed
 	}
+	d.theme.Overlays.count()
 	macro := op.Record(gtx.Ops)
 	d.overlay(gtx, amount)
 	if d.Root != nil {
@@ -112,6 +113,26 @@ func (d DialogStyle) Layout(gtx C) (dismissed bool) {
 	}
 	op.Defer(gtx.Ops, macro.Stop())
 	return dismissed
+}
+
+// OverlayCount counts the dialogs and menus on screen, a fading dialog
+// included, for what draws over the window and must step aside for them.
+type OverlayCount struct{ shown, last int }
+
+// Frame closes a frame's count; call it once a frame, before the overlays.
+func (c *OverlayCount) Frame() { c.last, c.shown = c.shown, 0 }
+
+// Open is whether the last frame showed a dialog or a menu.
+func (c *OverlayCount) Open() bool { return c.last > 0 }
+
+// Shown is how many dialogs and menus the last frame showed, one over another.
+func (c *OverlayCount) Shown() int { return c.last }
+
+// count is one overlay on screen; a Theme with no count ignores it.
+func (c *OverlayCount) count() {
+	if c != nil {
+		c.shown++
+	}
 }
 
 // Animating reports whether the dialog is on screen or still fading out: a

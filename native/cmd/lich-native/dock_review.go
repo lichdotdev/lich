@@ -20,6 +20,7 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 
+	driver "github.com/lichdotdev/gio-driver"
 	"github.com/lichdotdev/godemirror"
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/glyphs"
@@ -47,6 +48,10 @@ type reviewPanel struct {
 	family     string
 	size       unit.Sp
 	cells      *glyphs.Rasterizer
+
+	// tour is the window's guided tour, which points at the comment menu,
+	// the composer and the batch.
+	tour *driver.Tour
 
 	// wrote hears the checkout an edit of the panel's own changed, for the git
 	// store the card, footer and badge read.
@@ -133,7 +138,7 @@ func newReviewPanel(client *backend.Client, root *ui.Root, comments *commentStor
 	if err != nil {
 		return nil, err
 	}
-	p := &reviewPanel{client: client, root: root, comments: comments, notify: notify,
+	p := &reviewPanel{tour: new(driver.Tour), client: client, root: root, comments: comments, notify: notify,
 		invalidate: invalidate, family: family, size: size, cells: cells, bulkOpen: true, cards: map[string]*fileCard{}}
 	p.feed = diffFeed{client: client, invalidate: invalidate}
 	p.list.Axis = layout.Vertical
@@ -152,6 +157,35 @@ func (p *reviewPanel) holdsKeys(gtx C) bool {
 	}
 	for _, c := range p.cards {
 		if c.composer.holdsKeys(gtx) {
+			return true
+		}
+	}
+	return false
+}
+
+// spot lets the tour point at w. Only the dock's panel has a tour: the Pulls
+// screen's lays out the same cards with none.
+func (p *reviewPanel) spot(gtx C, id string, w layout.Widget) D {
+	if p.tour == nil {
+		return w(gtx)
+	}
+	return p.tour.Anchor(gtx, id, w)
+}
+
+// menuOpen is whether a card's right-click menu is on screen.
+func (p *reviewPanel) menuOpen() bool {
+	for _, c := range p.cards {
+		if c.menu.Opened() {
+			return true
+		}
+	}
+	return false
+}
+
+// composing is whether a card's comment composer is open.
+func (p *reviewPanel) composing() bool {
+	for _, c := range p.cards {
+		if c.composer.isOpen() {
 			return true
 		}
 	}
@@ -177,7 +211,9 @@ func (p *reviewPanel) bodyWithBatch(gtx C, th *ui.Theme) error {
 			p.panelBody(gtx, th)
 			return D{Size: gtx.Constraints.Max}
 		}),
-		layout.Rigid(func(gtx C) D { return p.batch.layout(gtx, th, p.comments, p.target, p.submit, p.notify) }),
+		layout.Rigid(func(gtx C) D {
+			return p.spot(gtx, tourReviewBatch, func(gtx C) D { return p.batch.layout(gtx, th, p.comments, p.target, p.submit, p.notify) })
+		}),
 	)
 	return nil
 }

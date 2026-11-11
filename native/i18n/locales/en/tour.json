@@ -1,0 +1,48 @@
+{
+  "basics": {
+    "open": {
+      "title": "Open your first project",
+      "body": "lich works inside a folder. Open a git repository with the + next to the tabs and your agents will work there.",
+      "hint": "Click + to open a folder and continue"
+    },
+    "start": {
+      "title": "Start an agent",
+      "body": "A session runs your agent in a real terminal, inside this project.",
+      "hint": "Click New session to continue"
+    },
+    "startShell": {
+      "title": "Start a terminal",
+      "body": "lich found no agent on this machine, so a session opens a plain terminal. You can add an agent later in Settings.",
+      "hint": "Click New terminal to continue"
+    },
+    "stage": {
+      "title": "This is your agent",
+      "body": "The same CLI you run in your own terminal, with its own keys and commands. Click it and type to talk to it."
+    },
+    "stageShell": {
+      "title": "This is your terminal",
+      "body": "A shell in this project. Once an agent is installed, New session opens it here instead."
+    },
+    "session": {
+      "title": "Every session gets a row",
+      "body": "Click a row to switch to its session, and right-click it for everything else you can do with it."
+    },
+    "worktree": {
+      "title": "One task, one worktree",
+      "body": "To work on two things at once, open New Session and pick Worktree. Each one gets its own checkout, so two agents never touch the same files."
+    },
+    "menu": {
+      "title": "Come back any time",
+      "body": "Settings and these guides live in this menu."
+    }
+  },
+  "progress": "{index} of {total}",
+  "next": "Next",
+  "back": "Back",
+  "done": "Done",
+  "skip": "Skip tour",
+  "skipped": {
+    "title": "The tour is in the menu",
+    "body": "Open it again from Guides, in the menu at the top right."
+  }
+}

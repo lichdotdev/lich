@@ -28,5 +28,10 @@
     "pinProjectFailed": "고정된 탭을 저장할 수 없습니다: {error}",
     "closeProjectFailed": "프로젝트를 닫을 수 없습니다: {error}",
     "reorderFailed": "프로젝트 순서를 바꿀 수 없습니다: {error}"
+  },
+  "mainMenu": {
+    "open": "메뉴",
+    "guides": "가이드",
+    "basics": "기본"
   }
 }

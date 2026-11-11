@@ -67,6 +67,7 @@ func (p DropdownPanelStyle) Layout(gtx C, trigger layout.Widget) D {
 		s.open = false
 		return dims
 	}
+	p.theme.Overlays.count()
 	macro := op.Record(gtx.Ops)
 	p.overlay(gtx)
 	op.Defer(gtx.Ops, macro.Stop())

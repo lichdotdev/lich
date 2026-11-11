@@ -423,6 +423,7 @@ func (u *window) notesTray(gtx C, p *browserPaneUI, session string) {
 	page := gtx.Constraints.Max
 	size := image.Pt(max(page.X-2*edge, 0), height)
 	defer op.Offset(image.Pt(edge, page.Y-height-edge)).Push(gtx.Ops).Pop()
+	u.spot(gtx, tourBrowserNotes, func(C) D { return D{Size: size} })
 	defer noteEnter(gtx, n.trayShown, image.Rect(size.X/2, size.Y, size.X/2, size.Y+1), size)()
 	gtx.Constraints = layout.Exact(size)
 	shape := clip.UniformRRect(image.Rectangle{Max: size}, gtx.Dp(paneRadius))

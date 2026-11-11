@@ -137,8 +137,8 @@ func (u *window) layoutWorktreeDialog(gtx C, th *ui.Theme) {
 	create.Disabled = v.base == "" || v.submitting
 	dlg := th.Dialog(&d.dialog, d.open, title, description)
 	dlg.Root = d.root
-	dlg.Body = func(gtx C) D { return d.body(gtx, on, u.ctx, v) }
-	dlg.Actions = []layout.Widget{cancel.Layout, create.Layout}
+	dlg.Body = func(gtx C) D { return d.body(gtx, on, u.ctx, v, u.spot) }
+	dlg.Actions = []layout.Widget{cancel.Layout, func(gtx C) D { return u.spot(gtx, worktreesCreate, create.Layout) }}
 	// An Escape that closes the branch list leaves the dialog open.
 	listOpen := d.pickerOpen
 	if dlg.Layout(gtx) && !v.submitting && !listOpen {
@@ -216,14 +216,18 @@ func (d *worktreeDialog) searchKeys(gtx C, ctx context.Context) {
 	}
 }
 
-func (d *worktreeDialog) body(gtx C, th *ui.Theme, ctx context.Context, v worktreeView) D {
+// body is the dialog's fields; spot lets the tour point at the name and the
+// base.
+func (d *worktreeDialog) body(gtx C, th *ui.Theme, ctx context.Context, v worktreeView, spot func(C, string, layout.Widget) D) D {
 	group, branch := splitBase(v.base)
 	children := []layout.FlexChild{
-		layout.Rigid(func(gtx C) D { return d.nameField(gtx, th, v, group == baseWorktree) }),
+		layout.Rigid(func(gtx C) D {
+			return spot(gtx, worktreesName, func(gtx C) D { return d.nameField(gtx, th, v, group == baseWorktree) })
+		}),
 		ui.VGap(4),
 		layout.Rigid(th.Label(i18n.T("sidebar.worktreeDialogView.from")).Layout),
 		ui.VGap(1.5),
-		layout.Rigid(func(gtx C) D { return d.basePicker(gtx, th, ctx, v) }),
+		layout.Rigid(func(gtx C) D { return spot(gtx, worktreesFrom, func(gtx C) D { return d.basePicker(gtx, th, ctx, v) }) }),
 	}
 	if text, warn := freshnessLine(branch, v.check, d.carry.Value && d.canCarry(v.base)); text != "" && group == baseLocal {
 		line := th.Text(ui.TextXS, text).Muted()

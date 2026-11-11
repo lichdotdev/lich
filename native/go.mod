@@ -9,6 +9,7 @@ require (
 	github.com/creack/pty v1.1.24
 	github.com/go-text/typesetting v0.3.5
 	github.com/godbus/dbus/v5 v5.2.2
+	github.com/lichdotdev/gio-driver v0.0.0-20261111143827-fb7064d51698
 	github.com/lichdotdev/godemirror v0.8.1
 	github.com/lichdotdev/lich v0.0.0
 	github.com/yuin/goldmark v1.4.13

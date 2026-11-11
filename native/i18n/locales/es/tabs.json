@@ -29,5 +29,10 @@
     "pinProjectFailed": "No se pudieron guardar las pestañas fijadas: {error}",
     "closeProjectFailed": "No se pudo cerrar el proyecto: {error}",
     "reorderFailed": "No se pudieron reordenar los proyectos: {error}"
+  },
+  "mainMenu": {
+    "open": "Menú",
+    "guides": "Guías",
+    "basics": "Lo básico"
   }
 }

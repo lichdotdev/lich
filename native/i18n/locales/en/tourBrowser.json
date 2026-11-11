@@ -1,0 +1,42 @@
+{
+  "label": "Browser",
+  "unavailable": "Open a session first",
+  "open": {
+    "title": "Give your agent a browser",
+    "body": "Your session can open a page right inside lich, from its menu.",
+    "hint": "Right-click your session to continue"
+  },
+  "item": {
+    "title": "Pick Browser",
+    "body": "It opens a browser tab beside your session.",
+    "hint": "Click Browser to continue"
+  },
+  "again": {
+    "title": "Open the browser",
+    "body": "Your session sits in a layout, so its browser takes a tab of its own. Pick Browser in its menu again and press Move.",
+    "hint": "Open your session's browser to continue"
+  },
+  "pane": {
+    "title": "You and your agent see the same page",
+    "body": "Your agent drives this page with its browser tools, so ask it things like \"open localhost:3000 and check the login\". You can click and type here too."
+  },
+  "address": {
+    "title": "Open a page",
+    "body": "Type an address and press Enter: your app on localhost, or lichdotdev.github.io/lich to try it out. Your agent can open pages here too.",
+    "hint": "Open a page to continue"
+  },
+  "pick": {
+    "title": "Point at the page",
+    "body": "Instead of describing where something is, leave a note right on it.",
+    "hint": "Click Leave notes on the page to continue"
+  },
+  "note": {
+    "title": "Leave a note",
+    "body": "Click any element on the page, write what should change, and press Add note.",
+    "hint": "Add a note to continue"
+  },
+  "send": {
+    "title": "Send your notes",
+    "body": "Your notes wait here. Send types all of them into your session as one message, each one naming the element it is about."
+  }
+}

@@ -11,6 +11,7 @@ import (
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
 	"gioui.org/widget"
+	driver "github.com/lichdotdev/gio-driver"
 
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
@@ -36,11 +37,13 @@ var (
 	icBell         = icons.Lucide("bell")
 	icPullRequests = icons.Lucide("git-pull-request-arrow")
 	icSettings     = icons.Lucide("settings")
+	icMainMenu     = icons.Lucide("menu")
+	icGuides       = icons.Lucide("circle-question-mark")
 )
 
 // topbar is the native window's top strip: the brand over the sidebar's
 // column, the project tabs from the terminal island's edge, and the bell,
-// Pull requests and Settings on the right. The native window has no Home tab,
+// Pull requests and the menu on the right. The native window has no Home tab,
 // and the active tab merges into the island under it.
 type topbar struct {
 	root  *ui.Root
@@ -60,10 +63,13 @@ type topbar struct {
 	open      openMenu
 	bell      bellMenu
 	hints     map[string]*ui.Tooltip
-	settings  widget.Clickable
+	menu      ui.MenuState
+	menuOpen  widget.Clickable
 	pulls     widget.Clickable
-	confirm   closeConfirm
-	controls  captionControls
+	// tour is the window's guided tour, which points at the menu.
+	tour     *driver.Tour
+	confirm  closeConfirm
+	controls captionControls
 	// shift is how far right of the terminal island's edge the strip starts:
 	// past the window's own buttons on the left when the sidebar is too
 	// narrow to hold them and the brand.
@@ -72,7 +78,7 @@ type topbar struct {
 
 func newTopbar(root *ui.Root) *topbar {
 	return &topbar{root: root, list: layout.List{Axis: layout.Horizontal},
-		tabs: map[string]*tabState{}, hints: map[string]*ui.Tooltip{}}
+		tabs: map[string]*tabState{}, hints: map[string]*ui.Tooltip{}, tour: new(driver.Tour)}
 }
 
 // topbarAction is what a frame's clicks on the strip asked for.
@@ -88,9 +94,10 @@ type topbarAction struct {
 	dismiss    string // session id
 	pick       bool   // the directory picker
 	reopen     *backend.RecentProject
-	// settings is the Settings button; projectSettings a tab's "Project
-	// settings…", by project id.
+	// settings is the menu's Settings; projectSettings a tab's "Project
+	// settings…", by project id. tour is the menu's Basics guide.
 	settings        bool
+	tour            string // a guide's id
 	projectSettings string
 	pulls           bool // the Pull requests button
 	// renamed is a layout tab's new name, committed this frame.
@@ -121,6 +128,7 @@ type topbarFrame struct {
 	active         string
 	pending        []notification
 	settings       bool // the Settings screen is open
+	guides         []guideItem
 	pulls          bool // the Pulls screen is open
 	caption        captionLayout
 	chrome         windowChrome
@@ -192,7 +200,7 @@ func (t *topbar) rightSide(gtx C, th *ui.Theme, f topbarFrame, act *topbarAction
 		ui.Gap(1),
 		layout.Rigid(func(gtx C) D { return t.pullsButton(gtx, th, f.pulls, act) }),
 		ui.Gap(1),
-		layout.Rigid(func(gtx C) D { return t.settingsButton(gtx, th, f.settings, act) }),
+		layout.Rigid(func(gtx C) D { return t.menuButton(gtx, th, f.settings, f.guides, act) }),
 	}
 	pad := gtx.Dp(gutter)
 	if f.chrome.buttonsShown(f.windowButtons) && len(f.caption.right) > 0 {
@@ -284,14 +292,30 @@ func brandColumn(rail, panel int, open, morphing bool, p float32) (int, float32)
 	return lerpInt(rail, panel, openness), openness
 }
 
-// settingsButton opens Settings, and closes it while it is open.
-func (t *topbar) settingsButton(gtx C, th *ui.Theme, open bool, act *topbarAction) D {
-	if t.settings.Clicked(gtx) {
-		act.settings = true
+// menuButton is the strip's menu: Settings, which closes Settings while it
+// is open, and the guides in a submenu. The button is lit while Settings is.
+func (t *topbar) menuButton(gtx C, th *ui.Theme, settingsOpen bool, guides []guideItem, act *topbarAction) D {
+	entries := []ui.MenuEntry{
+		{Label: i18n.T("tabs.projectTabs.settings"), Icon: icSettings, OnClick: func() { act.settings = true }},
+		{Kind: ui.MenuSeparator},
+		{Kind: ui.MenuSubTrigger, Label: i18n.T("tabs.mainMenu.guides"), Icon: icGuides, Sub: guideEntries(guides, act)},
 	}
-	tip := th.Tooltip(t.root, t.hint("settings"), i18n.T("tabs.projectTabs.settings"))
+	tip := th.Tooltip(t.root, t.hint("menu"), i18n.T("tabs.mainMenu.open"))
 	tip.Side = ui.SideBottom
-	return tip.Layout(gtx, func(gtx C) D { return th.BarIconButton(&t.settings, icSettings, open).Layout(gtx) })
+	button := func(gtx C) D {
+		return tip.Layout(gtx, th.BarIconButton(&t.menuOpen, icMainMenu, settingsOpen || t.menu.Opened()).Layout)
+	}
+	return t.tour.Anchor(gtx, tourMenu, func(gtx C) D { return th.DropdownMenu(t.root, &t.menu, entries).Layout(gtx, button) })
+}
+
+// guideEntries is the Guides submenu: a guide that cannot run now is
+// disabled, its reason where a shortcut would sit.
+func guideEntries(guides []guideItem, act *topbarAction) []ui.MenuEntry {
+	entries := make([]ui.MenuEntry, len(guides))
+	for i, g := range guides {
+		entries[i] = ui.MenuEntry{Label: g.label, Disabled: g.unavailable != "", Shortcut: g.unavailable, OnClick: func() { act.tour = g.id }}
+	}
+	return entries
 }
 
 // pullsButton opens the Pulls screen, and closes it while it is open.
@@ -301,7 +325,9 @@ func (t *topbar) pullsButton(gtx C, th *ui.Theme, open bool, act *topbarAction) 
 	}
 	tip := th.Tooltip(t.root, t.hint("pulls"), i18n.T("tabs.projectTabs.pullRequests"))
 	tip.Side = ui.SideBottom
-	return tip.Layout(gtx, func(gtx C) D { return th.BarIconButton(&t.pulls, icPullRequests, open).Layout(gtx) })
+	return t.tour.Anchor(gtx, tourPullsButton, func(gtx C) D {
+		return tip.Layout(gtx, func(gtx C) D { return th.BarIconButton(&t.pulls, icPullRequests, open).Layout(gtx) })
+	})
 }
 
 func (t *topbar) hint(key string) *ui.Tooltip {

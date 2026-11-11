@@ -1,0 +1,42 @@
+{
+  "label": "Navegador",
+  "unavailable": "Abre una sesión primero",
+  "open": {
+    "title": "Dale un navegador a tu agente",
+    "body": "Tu sesión puede abrir una página dentro del propio lich, desde su menú.",
+    "hint": "Haz clic derecho en tu sesión para continuar"
+  },
+  "item": {
+    "title": "Elige Navegador",
+    "body": "Abre una pestaña de navegador junto a tu sesión.",
+    "hint": "Haz clic en Navegador para continuar"
+  },
+  "again": {
+    "title": "Abre el navegador",
+    "body": "Tu sesión está en un diseño, así que su navegador va en una pestaña propia. Elige Navegador en su menú otra vez y pulsa Mover.",
+    "hint": "Abre el navegador de tu sesión para continuar"
+  },
+  "pane": {
+    "title": "Tú y tu agente ven la misma página",
+    "body": "Tu agente controla esta página con sus herramientas de navegador, así que pídele cosas como \"abre localhost:3000 y revisa el login\". Tú también puedes hacer clic y escribir aquí."
+  },
+  "address": {
+    "title": "Abre una página",
+    "body": "Escribe una dirección y pulsa Enter: tu app en localhost, o lichdotdev.github.io/lich para probar. Tu agente también puede abrir páginas aquí.",
+    "hint": "Abre una página para continuar"
+  },
+  "pick": {
+    "title": "Señala en la página",
+    "body": "En lugar de describir dónde está algo, deja una nota justo encima.",
+    "hint": "Haz clic en Dejar notas en la página para continuar"
+  },
+  "note": {
+    "title": "Deja una nota",
+    "body": "Haz clic en cualquier elemento de la página, escribe qué debe cambiar y pulsa Añadir nota.",
+    "hint": "Añade una nota para continuar"
+  },
+  "send": {
+    "title": "Envía tus notas",
+    "body": "Tus notas esperan aquí. Enviar las escribe todas en tu sesión como un solo mensaje, cada una con el elemento al que se refiere."
+  }
+}

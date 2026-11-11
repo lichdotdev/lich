@@ -143,7 +143,8 @@ func (s *sidebar) headerRow(gtx C, th *ui.Theme, m *model, act *sidebarAction) D
 		s.setOpen(gtx, false, act)
 	}
 	entries := append(launchEntries(s.launchProviders, i18n.T("sidebar.sessionLaunchMenuItems.terminal"), func(kind string) { act.launch = launchRequest{kind: kind} }),
-		ui.MenuEntry{Label: i18n.T("sidebar.sessionLaunchMenuItems.worktree"), Icon: icWtBranch, OnClick: func() { act.worktree = true }})
+		ui.MenuEntry{Label: i18n.T("sidebar.sessionLaunchMenuItems.worktree"), Icon: icWtBranch, OnClick: func() { act.worktree = true },
+			Spot: func(gtx C, row layout.Widget) D { return s.tour.Anchor(gtx, worktreesItem, row) }})
 	trigger := func(gtx C) D {
 		gtx.Constraints.Min.X = gtx.Constraints.Max.X
 		tip := th.Tooltip(s.root, s.hint("new"), i18n.T("sidebar.sessionSidebar.newSession"))
@@ -158,7 +159,9 @@ func (s *sidebar) headerRow(gtx C, th *ui.Theme, m *model, act *sidebarAction) D
 		})
 	}
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-		layout.Flexed(1, func(gtx C) D { return th.DropdownMenu(s.root, &h.newMenu, entries).Layout(gtx, trigger) }),
+		layout.Flexed(1, func(gtx C) D {
+			return s.tour.Anchor(gtx, tourNew, func(gtx C) D { return th.DropdownMenu(s.root, &h.newMenu, entries).Layout(gtx, trigger) })
+		}),
 		ui.Gap(1),
 		square("filter", i18n.T("sidebar.sessionSidebar.filter"), sideButton{click: &h.search, icon: icSearch, on: h.open}),
 		ui.Gap(1),

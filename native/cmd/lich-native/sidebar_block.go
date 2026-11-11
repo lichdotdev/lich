@@ -326,7 +326,18 @@ func (s *sidebar) blockRow(gtx C, th *ui.Theme, st *blockState, b blockView, r s
 	sv.place.cut, sv.place.loose = st.drag.cut(sv.ID, gtx.Now), st.drag.loose(sv.ID, gtx.Now)
 	folders := slices.DeleteFunc(slices.Clone(f.view.folders), func(name string) bool { return name == sv.Folder })
 	face := func(gtx C) D {
-		d, a := s.card(gtx, th, &sv, sv.ID == f.active, folders)
+		var a sidebarAction
+		card := func(gtx C) D {
+			var d D
+			d, a = s.card(gtx, th, &sv, sv.ID == f.active, folders)
+			return d
+		}
+		var d D
+		if sv.ID == f.active {
+			d = s.tour.Anchor(gtx, tourSession, card)
+		} else {
+			d = card(gtx)
+		}
 		if dragEnded {
 			a.activate = ""
 		}

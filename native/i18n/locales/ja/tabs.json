@@ -29,5 +29,10 @@
     "pinProjectFailed": "固定したタブを保存できませんでした: {error}",
     "closeProjectFailed": "プロジェクトを閉じられませんでした: {error}",
     "reorderFailed": "プロジェクトを並べ替えられませんでした: {error}"
+  },
+  "mainMenu": {
+    "open": "メニュー",
+    "guides": "ガイド",
+    "basics": "基本"
   }
 }

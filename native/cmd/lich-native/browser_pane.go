@@ -130,6 +130,7 @@ func (u *window) browserPaneAt(gtx C, v stageView, session string, r image.Recta
 	defer op.Offset(r.Min).Push(gtx.Ops).Pop()
 	gtx.Constraints = layout.Exact(r.Size())
 	size := r.Size()
+	u.spot(gtx, tourBrowserPane, func(C) D { return D{Size: size} })
 	focused := pane == v.layout.Focus
 	th := u.theme
 	shape := clip.UniformRRect(image.Rectangle{Max: size}, gtx.Dp(paneRadius))
@@ -155,6 +156,7 @@ func (u *window) browserPaneAt(gtx C, v stageView, session string, r image.Recta
 	// Unlike a terminal, the page is not dimmed out of focus: the person keeps
 	// the session's prompt in focus nearly always, and watches the page.
 	u.browserPage(page, p, session, frame, focused)
+	u.spot(page, tourBrowserPage, func(C) D { return D{Size: page.Constraints.Max} })
 	u.notesOverlay(page, p, session, st.URL)
 	u.notesTray(page, p, session)
 	u.dialogCardAt(page, p, session, head+bar)
@@ -257,7 +259,7 @@ func (u *window) browserToolbar(gtx C, p *browserPaneUI, session string, st api.
 				return th.IconAction(&u.root, &p.reload, icBrowserReload, i18n.T("layouts.browser.reload"), p.flashing(gtx, "reload")).Layout(gtx)
 			}),
 			ui.Gap(1.5),
-			layout.Flexed(1, field.Layout),
+			layout.Flexed(1, func(gtx C) D { return u.spot(gtx, tourBrowserAddr, field.Layout) }),
 			ui.Gap(1.5),
 			layout.Rigid(func(gtx C) D { return u.browserZoomControl(gtx, &p.pageZoom) }),
 			layout.Rigid(func(gtx C) D {
@@ -267,7 +269,7 @@ func (u *window) browserToolbar(gtx C, p *browserPaneUI, session string, st api.
 				return layout.Inset{Right: ui.Space(1.5)}.Layout(gtx, th.Text(ui.TextXS, i18n.T("layouts.browser.pickHint")).In(notePick).Layout)
 			}),
 			layout.Rigid(func(gtx C) D {
-				return th.IconAction(&u.root, &p.notes.pick, icBrowserPick, i18n.T("layouts.browser.pick"), p.notes.picking).Layout(gtx)
+				return u.spot(gtx, tourBrowserPick, th.IconAction(&u.root, &p.notes.pick, icBrowserPick, i18n.T("layouts.browser.pick"), p.notes.picking).Layout)
 			}),
 			layout.Rigid(func(gtx C) D {
 				return th.IconAction(&u.root, &p.window, icBrowserWindow, i18n.T("layouts.browser.openInWindow"), false).Layout(gtx)

@@ -274,3 +274,33 @@ func TestDialogAnimatingCoversTheCloseTransition(t *testing.T) {
 		t.Fatal("a dialog done fading out is animating")
 	}
 }
+
+func TestOverlayCountSeesADialogUntilItHasFaded(t *testing.T) {
+	r := newDialogRig()
+	r.th.Overlays = &OverlayCount{}
+	frame := func() bool {
+		r.th.Overlays.Frame()
+		r.frame()
+		r.th.Overlays.Frame()
+		return r.th.Overlays.Open()
+	}
+	if frame() {
+		t.Fatal("a closed dialog counted as open")
+	}
+	r.open = true
+	if !frame() {
+		t.Fatal("an opening dialog did not count")
+	}
+	if !r.th.On(color.NRGBA{}).Overlays.Open() {
+		t.Fatal("a Theme copy lost the window's count")
+	}
+	r.open = false
+	if !frame() {
+		t.Fatal("a fading dialog stopped counting before it faded")
+	}
+	r.now = r.now.Add(dialogTransition)
+	frame()
+	if frame() {
+		t.Fatal("a faded dialog still counts")
+	}
+}
