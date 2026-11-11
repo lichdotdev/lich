@@ -215,31 +215,10 @@ func (c *codeTab) hitRow(gtx C, th *ui.Theme, i int, hit searchMatch, query stri
 					return layout.Flex{Alignment: layout.Baseline}.Layout(gtx,
 						layout.Rigid(on.Text(ui.TextXS, padLineNumber(hit.Line)).Mono().Muted().Layout),
 						ui.Gap(2),
-						layout.Flexed(1, func(gtx C) D { return hitText(gtx, on, hit.Text, query) }),
+						layout.Flexed(1, on.MarkedText(highlightSegments(hit.Text, query)).Layout),
 					)
 				})
 			},
 		)
 	})
-}
-
-// hitText draws the line's segments, a hit on a bg-tone-wait/30 mark.
-func hitText(gtx C, th *ui.Theme, text, query string) D {
-	segs := highlightSegments(text, query)
-	kids := make([]layout.FlexChild, len(segs))
-	mark := th.Over(ui.Alpha(th.ToneWait, 0.3))
-	for i, s := range segs {
-		l := th.Text(ui.TextXS, s.text).Mono()
-		l.MaxLines = 1
-		if !s.hit {
-			kids[i] = layout.Rigid(l.Layout)
-			continue
-		}
-		kids[i] = layout.Rigid(func(gtx C) D {
-			return layout.Background{}.Layout(gtx,
-				func(gtx C) D { return ui.Fill(gtx, mark, ui.RadiusSM) },
-				th.On(mark).Text(ui.TextXS, s.text).Mono().Layout)
-		})
-	}
-	return layout.Flex{Alignment: layout.Baseline}.Layout(gtx, kids...)
 }

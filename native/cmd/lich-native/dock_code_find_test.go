@@ -222,7 +222,7 @@ func TestMatchSegmentsCutAtRuneColumnsAndDropTheIndent(t *testing.T) {
 		{From: godemirror.Pos{Col: 4}, To: godemirror.Pos{Col: 9}},
 		{From: godemirror.Pos{Col: 11}, To: godemirror.Pos{Col: 16}},
 	}
-	want := []segment{{text: "é "}, {text: "shown", hit: true}, {text: ", "}, {text: "shown", hit: true}}
+	want := []ui.MarkedSegment{{Text: "é "}, {Text: "shown", Marked: true}, {Text: ", "}, {Text: "shown", Marked: true}}
 	if got := matchSegments(text, matches); !slices.Equal(got, want) {
 		t.Errorf("segments = %+v, want %+v", got, want)
 	}

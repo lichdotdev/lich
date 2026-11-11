@@ -26,6 +26,7 @@ func (g *gallery) composedSection(gtx C, th *ui.Theme) D {
 	kids = append(kids, g.avatars(th)...)
 	kids = append(kids, g.headings(th)...)
 	kids = append(kids, g.skeletons(th)...)
+	kids = append(kids, g.markedTexts(th)...)
 	return ui.Stack(4, kids...)(gtx)
 }
 
@@ -103,5 +104,15 @@ func (g *gallery) skeletons(th *ui.Theme) []layout.Widget {
 		th.SkeletonShape(button.Layout).Layout,
 		caption(th, "SkeletonFill and SkeletonRow: rows down to the bottom"),
 		fill,
+	}
+}
+
+func (g *gallery) markedTexts(th *ui.Theme) []layout.Widget {
+	line := func(segs ...ui.MarkedSegment) layout.Widget { return th.MarkedText(segs).Layout }
+	return []layout.Widget{
+		caption(th, "MarkedText: no mark, one mark, several marks"),
+		line(ui.MarkedSegment{Text: "func resolve(path string) error {"}),
+		line(ui.MarkedSegment{Text: "func "}, ui.MarkedSegment{Text: "resolve", Marked: true}, ui.MarkedSegment{Text: "(path string) error {"}),
+		line(ui.MarkedSegment{Text: "err", Marked: true}, ui.MarkedSegment{Text: " := resolve("}, ui.MarkedSegment{Text: "err", Marked: true}, ui.MarkedSegment{Text: ")"}),
 	}
 }

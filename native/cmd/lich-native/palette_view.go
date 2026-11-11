@@ -535,9 +535,9 @@ func paletteSnippet(on *ui.Theme, snippet, query string) layout.Widget {
 		segs := querySegments(snippet, query)
 		kids := make([]layout.FlexChild, len(segs))
 		for i, seg := range segs {
-			l := on.Text(ui.TextXS, seg.text).In(on.Over(ui.Alpha(on.MutedForeground, paletteSnippetOpacity)))
-			if seg.hit {
-				l = on.Text(ui.TextXS, seg.text).In(on.Foreground).Weight(font.Medium)
+			l := on.Text(ui.TextXS, seg.Text).In(on.Over(ui.Alpha(on.MutedForeground, paletteSnippetOpacity)))
+			if seg.Marked {
+				l = on.Text(ui.TextXS, seg.Text).In(on.Foreground).Weight(font.Medium)
 			}
 			l.MaxLines = 1
 			kids[i] = layout.Rigid(l.Layout)
