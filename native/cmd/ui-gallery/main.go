@@ -154,6 +154,7 @@ type gallery struct {
 	contentState
 	rowsState
 	marksState
+	composedState
 }
 
 func newGallery(th *ui.Theme) *gallery {
@@ -238,6 +239,7 @@ func (g *gallery) content(gtx C) D {
 					g.section("HoverLink, TrailingIconLink, TwoLines, SpinnerLine, SpinnerBeside, CheckRow", g.linesSection),
 					g.section("CountBadge, OutlineBadge, AbbrBadge, Tag, KeyHint", g.badgesSection),
 					g.section("Tray, DashedBorder, rings, Fillet, Checker, FillIf, DropHint", g.surfacesSection),
+					g.section("Composed", g.composedSection),
 				)),
 			)
 		}),
