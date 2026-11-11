@@ -10,9 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Clicking the branch name in the footer opens a Git panel between the terminal and the footer, so your sessions stay in view while you read the history. It shows every branch as a colored graph, with branches and tags beside it and the selected commit's message and files on the right; a click on a file opens its diff. Search by text or hash, or narrow by author, date, path or branch, and a branch a session is on carries that session's ring. A local branch's menu checks it out, renames it, starts a new branch from it or deletes it, with an Undo; a checkout under a session asks first, and so does a delete that would leave commits on no branch. Its height and column widths are dragged and kept, it expands over the terminal, and Keyboard shortcuts in Settings can give it a key.
+- With gh signed in to more than one GitHub account, the Pulls screen asks which one a project uses before it lists anything, instead of quietly running as whichever account gh last switched to. It asks again when GitHub hides the repository from the account the project uses, so you can pick another without going through Settings.
 
 ### Fixed
 
+- An account gh reads from `GH_TOKEN` as well as its keyring is listed once in Settings › Version Control, not twice.
 - An agent's browser click on a link that wraps over two lines no longer fails as covered: it lands on the link's first line instead of the empty space between the lines.
 - Chinese, Japanese or Korean text in a terminal draws from the font lich downloaded for the window when no installed font covers it, instead of as empty boxes while the rest of the window reads fine.
 - A Claude Code session in a profile no longer has its subagents turned into cards by the lich plugin your Personal login has when the profile's own copy is older and cannot open them; the profile's plugin decides. An oh-my-pi session in a profile that holds its own `mcp.json` now reads that file's servers for the tool names on its card, not Personal's.

@@ -11,8 +11,21 @@ import (
 // toolerror.go for why the raw stderr never travels with it.
 func ghFailure(args []string, stderr string, runErr, ctxErr error) error {
 	logToolFailure("gh", args, stderr, runErr)
-	return errors.New(ghMessage(stderr, runErr, ctxErr))
+	message := ghMessage(stderr, runErr, ctxErr)
+	if message == repoHiddenMessage {
+		return errRepoHidden
+	}
+	return errors.New(message)
 }
+
+// repoHiddenMessage is GitHub's "could not resolve to a repository": it does
+// not tell a missing repository from one the account cannot see, and the
+// second is the one a person with several gh accounts hits.
+const repoHiddenMessage = "GitHub does not show this repository to the account lich is using here. " +
+	"Choose the account that can see it in Settings → Version Control."
+
+// errRepoHidden is that failure, for GitHubAccountOf to tell apart.
+var errRepoHidden = errors.New(repoHiddenMessage)
 
 // errUnreadableAnswer covers gh answering with something this build cannot
 // decode — a field it renamed, a broken pipe mid-JSON. The decoder's own text
@@ -39,11 +52,7 @@ func ghReport(stderr string, stdout []byte) string {
 // ghFailures maps what gh reports onto what the person reading the screen can
 // do about it.
 var ghFailures = []toolFailure{
-	{
-		"could not resolve to a repository",
-		"GitHub does not show this repository to the account lich is using here. " +
-			"Choose the account that can see it in Settings → Version Control.",
-	},
+	{"could not resolve to a repository", repoHiddenMessage},
 	{"could not resolve to a pullrequest", "GitHub has no pull request with that number."},
 	// What `gh issue view` says for a number GitHub has never issued. Its
 	// wording names both kinds because GitHub numbers them in one sequence, but

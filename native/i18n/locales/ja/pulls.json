@@ -71,6 +71,16 @@
     "none": "オープンなプルリクエストはありません。",
     "openOnGitHub": "GitHub で開く"
   },
+  "pullsAccount": {
+    "chooseTitle": "GitHub アカウントを選択",
+    "chooseDescription": "gh は複数のアカウントにサインインしています。このリポジトリを見られるアカウントを選んでください。",
+    "hiddenTitle": "{account} はこのリポジトリを見られません",
+    "hiddenDescription": "GitHub は存在しないかのように応答しました。別のアカウントを選んでください。",
+    "continue": "続ける",
+    "tryAgain": "再試行",
+    "later": "あとで設定 › バージョン管理で変更できます。",
+    "saveFailed": "アカウントを保存できませんでした: {error}"
+  },
   "submitReviewDialog": {
     "verdict": {
       "approve": {

@@ -71,6 +71,16 @@
     "none": "No open pull request.",
     "openOnGitHub": "Open on GitHub"
   },
+  "pullsAccount": {
+    "chooseTitle": "Choose a GitHub account",
+    "chooseDescription": "gh is signed in to more than one account. Pick the one that can see this repository.",
+    "hiddenTitle": "{account} can’t see this repository",
+    "hiddenDescription": "GitHub answered as if it didn’t exist. Pick another account.",
+    "continue": "Continue",
+    "tryAgain": "Try again",
+    "later": "You can change it later in Settings › Version Control.",
+    "saveFailed": "Couldn’t save the account: {error}"
+  },
   "submitReviewDialog": {
     "verdict": {
       "approve": {

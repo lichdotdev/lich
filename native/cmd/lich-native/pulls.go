@@ -89,6 +89,7 @@ type pullsScreen struct {
 	rowClicks  map[int]*widget.Clickable
 
 	view    pullView
+	account accountPicker
 	confirm removeConfirm
 	// files is what the Files tab draws with and sends through.
 	files filesInput
@@ -98,6 +99,9 @@ type pullsScreen struct {
 	sessionLabel func(id string) string
 	// waiting is whether a review thread waits for the push that resolves it.
 	waiting func(threadID string) bool
+	// onAccount has the pull request badges ask gh again once the gate
+	// stored a project's account.
+	onAccount func()
 }
 
 // reviewSession is where the pull request's comments go: a session in the
@@ -141,6 +145,9 @@ func newPullsScreen(store *pullsStore, root *ui.Root) *pullsScreen {
 func (p *pullsScreen) show(project backend.Project, branch string, branchPR int) {
 	if p.project.ID != project.ID {
 		p.selected = 0
+		p.account.mu.Lock()
+		p.account.pick, p.account.saveErr = "", ""
+		p.account.mu.Unlock()
 	}
 	p.open, p.project, p.branch, p.branchPR = true, project, branch, branchPR
 	if branchPR != 0 {
@@ -197,12 +204,28 @@ func (p *pullsScreen) layout(gtx C, th *ui.Theme) pullsAction {
 	}
 	p.spans = append(p.spans[:0], islandSpan{x0: 0, x1: gtx.Constraints.Max.X, color: th.Background})
 	pullsIsland(gtx, th, th.Background, p.squareX == 0, func(gtx C, th *ui.Theme) D {
+		account := p.store.account(p.project.Path)
+		if !account.loaded {
+			return p.awaitAccount(gtx, th, &act)
+		}
+		if d, ok := p.accountGateLayout(gtx, th, account.val); ok {
+			return d
+		}
 		if p.selected == 0 {
 			return p.indexLayout(gtx, th, rows, &act)
 		}
 		return p.view.layout(gtx, th, p, &act)
 	})
 	return act
+}
+
+// awaitAccount is the screen's skeleton while it does not know yet whether
+// the gate stands in front of it.
+func (p *pullsScreen) awaitAccount(gtx C, th *ui.Theme, act *pullsAction) D {
+	if p.selected == 0 {
+		return p.indexLayout(gtx, th, pullsRead[[]backend.PRSummary]{}, act)
+	}
+	return p.view.withToolbar(gtx, th, p, func(gtx C) D { return skeletonHeading(gtx, th) }, p.view.detailSkeleton(th))
 }
 
 // visible is the index's rows under its filter and query, the order the

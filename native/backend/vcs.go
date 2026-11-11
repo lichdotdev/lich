@@ -51,6 +51,14 @@ func (c *Client) GitHubAccounts(ctx context.Context) ([]string, error) {
 	return accounts, err
 }
 
+type GitHubAccountState = api.GitHubAccountState
+
+// GitHubAccountOf is the gh account the checkout at path runs as, the ones it
+// could run as instead, and whether GitHub hides the repository from it.
+func (c *Client) GitHubAccountOf(ctx context.Context, path string) (GitHubAccountState, error) {
+	return callMethod(ctx, c, api.ProjectGitHubAccountOf, api.PathOptions{Path: path})
+}
+
 // CommitIdentity returns who commits in the checkout at path land as.
 func (c *Client) CommitIdentity(ctx context.Context, path string) (CommitIdentity, error) {
 	return callMethod(ctx, c, api.ProjectCommitIdentity, api.PathOptions{Path: path})

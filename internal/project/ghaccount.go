@@ -2,8 +2,10 @@ package project
 
 import (
 	"context"
+	"errors"
 	"github.com/lichdotdev/lich/api"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 )
@@ -172,9 +174,33 @@ func (s *Service) GitHubAccounts(_ context.Context, _ api.None) ([]string, error
 	return parseGHAccounts(string(out)), nil
 }
 
+// GitHubAccountOf answers the Pulls screen's question before it lists: which
+// account the checkout's project runs gh as, which it could run as instead,
+// and whether GitHub hides the repository from the one selected. The
+// visibility costs a gh call, so it is asked only for a selected account with
+// another one to switch to.
+func (s *Service) GitHubAccountOf(ctx context.Context, o api.PathOptions) (api.GitHubAccountState, error) {
+	accounts, err := s.GitHubAccounts(ctx, api.None{})
+	if err != nil {
+		return api.GitHubAccountState{}, err
+	}
+	state := api.GitHubAccountState{Accounts: accounts}
+	if s.accounts != nil {
+		state.Account = s.accounts(o.Path)
+	}
+	if state.Account == "" || len(accounts) < 2 {
+		return state, nil
+	}
+	_, err = s.gh(prReadTimeout, o.Path, "repo", "view", "--json", "name")
+	state.Hidden = errors.Is(err, errRepoHidden)
+	return state, nil
+}
+
 // parseGHAccounts pulls the accounts out of `gh auth status`. Deliberately
 // tolerant: an unparseable line is skipped, so a future gh reword degrades to a
 // shorter list (the account stays configurable by hand) rather than an error.
+// An account gh reads from GH_TOKEN as well as its keyring is listed once per
+// source; it is one account.
 func parseGHAccounts(out string) []string {
 	matches := ghAccountLine.FindAllStringSubmatch(out, -1)
 	if len(matches) == 0 {
@@ -182,7 +208,9 @@ func parseGHAccounts(out string) []string {
 	}
 	accounts := make([]string, 0, len(matches))
 	for _, m := range matches {
-		accounts = append(accounts, m[1]+"/"+m[2])
+		if a := m[1] + "/" + m[2]; !slices.Contains(accounts, a) {
+			accounts = append(accounts, a)
+		}
 	}
 	return accounts
 }

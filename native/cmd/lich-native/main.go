@@ -266,6 +266,7 @@ func run(w *app.Window, rt backend.Runtime) error {
 	}
 	u.pulls.sessionLabel = u.model.sessionLabel
 	u.pulls.waiting = u.model.threadFixes.has
+	u.pulls.onAccount = u.model.accountChanged
 	u.model.prChanged = u.prChanged
 	u.model.themeSelection = u.appearance.applySelection
 	u.model.exited = u.sessionExited

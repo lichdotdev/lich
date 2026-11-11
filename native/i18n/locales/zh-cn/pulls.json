@@ -71,6 +71,16 @@
     "none": "没有打开的拉取请求。",
     "openOnGitHub": "在 GitHub 上打开"
   },
+  "pullsAccount": {
+    "chooseTitle": "选择 GitHub 账号",
+    "chooseDescription": "gh 登录了多个账号。请选择能看到此仓库的账号。",
+    "hiddenTitle": "{account} 看不到此仓库",
+    "hiddenDescription": "GitHub 的回应就像它不存在一样。请选择其他账号。",
+    "continue": "继续",
+    "tryAgain": "重试",
+    "later": "之后可以在设置 › 版本控制中更改。",
+    "saveFailed": "无法保存账号：{error}"
+  },
   "submitReviewDialog": {
     "verdict": {
       "approve": {

@@ -33,6 +33,14 @@ func TestParseGHAccounts(t *testing.T) {
 				"ghe.example.com\n  ✓ Logged in to ghe.example.com account omartelo (keyring)\n",
 			[]string{"github.com/omartelo", "ghe.example.com/omartelo"},
 		},
+		{
+			"an account gh reads from GH_TOKEN and its keyring is one account",
+			"github.com\n" +
+				"  ✓ Logged in to github.com account omartelo (GH_TOKEN)\n" +
+				"  ✓ Logged in to github.com account marcelo-filho_snk (keyring)\n" +
+				"  ✓ Logged in to github.com account omartelo (keyring)\n",
+			[]string{"github.com/omartelo", "github.com/marcelo-filho_snk"},
+		},
 		{"not logged in", "You are not logged into any GitHub hosts.\n", nil},
 		{"empty", "", nil},
 	}
@@ -282,4 +290,76 @@ func TestGHTokenEnvNamesTheHostsVariable(t *testing.T) {
 	if got := ghTokenEnv(gh.run, "github.com/nobody"); got != "" {
 		t.Errorf("ghTokenEnv on failure = %q, want \"\"", got)
 	}
+}
+
+func TestGitHubAccountOf(t *testing.T) {
+	t.Parallel()
+	const two = "  ✓ Logged in to github.com account octocat (keyring)\n" +
+		"  ✓ Logged in to github.com account octocat-work (keyring)\n"
+	hidden := ghFailure([]string{"repo", "view"}, "GraphQL: Could not resolve to a Repository with the name 'acme/api'.", errTest, nil)
+	tests := []struct {
+		name    string
+		account string
+		gh      *fakeGH
+		want    api.GitHubAccountState
+		calls   int
+	}{
+		{
+			"no account selected skips the visibility read",
+			"",
+			&fakeGH{out: []byte(two)},
+			api.GitHubAccountState{Accounts: []string{"github.com/octocat", "github.com/octocat-work"}},
+			1,
+		},
+		{
+			"one signed-in account has nothing to switch to",
+			"github.com/octocat",
+			&fakeGH{out: []byte("  ✓ Logged in to github.com account octocat (keyring)\n")},
+			api.GitHubAccountState{Account: "github.com/octocat", Accounts: []string{"github.com/octocat"}},
+			1,
+		},
+		{
+			"selected account GitHub hides the repository from",
+			"github.com/octocat",
+			&fakeGH{outs: [][]byte{[]byte(two), []byte("gho_x\n")}, errs: []error{nil, nil, hidden}},
+			api.GitHubAccountState{Account: "github.com/octocat", Accounts: []string{"github.com/octocat", "github.com/octocat-work"}, Hidden: true},
+			3,
+		},
+		{
+			"selected account that sees the repository",
+			"github.com/octocat",
+			&fakeGH{outs: [][]byte{[]byte(two), []byte("gho_x\n"), []byte(`{"name":"api"}`)}},
+			api.GitHubAccountState{Account: "github.com/octocat", Accounts: []string{"github.com/octocat", "github.com/octocat-work"}},
+			3,
+		},
+		{
+			"another failure is not a hidden repository",
+			"github.com/octocat",
+			&fakeGH{outs: [][]byte{[]byte(two), []byte("gho_x\n")}, errs: []error{nil, nil, errTest}},
+			api.GitHubAccountState{Account: "github.com/octocat", Accounts: []string{"github.com/octocat", "github.com/octocat-work"}},
+			3,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			svc := withGH(tt.gh)
+			svc.SetAccounts(func(string) string { return tt.account })
+			got, err := svc.GitHubAccountOf(t.Context(), api.PathOptions{Path: "/repo"})
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if got.Account != tt.want.Account || got.Hidden != tt.want.Hidden || !slices.Equal(got.Accounts, tt.want.Accounts) {
+				t.Errorf("GitHubAccountOf() = %+v, want %+v", got, tt.want)
+			}
+			if tt.gh.calls != tt.calls {
+				t.Errorf("gh ran %d times %v, want %d", tt.gh.calls, tt.gh.history, tt.calls)
+			}
+		})
+	}
+
+	t.Run("gh that cannot list fails the read", func(t *testing.T) {
+		if _, err := withGH(&fakeGH{err: errTest}).GitHubAccountOf(t.Context(), api.PathOptions{Path: "/repo"}); err == nil {
+			t.Error("err = nil, want the listing failure")
+		}
+	})
 }

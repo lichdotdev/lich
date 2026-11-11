@@ -66,6 +66,7 @@ func projectBranches(d *rpc.Handler, s *project.Service) {
 
 func projectPullRequests(d *rpc.Handler, s *project.Service) {
 	rpc.Handle(d, api.ProjectGitHubAccounts, s.GitHubAccounts)
+	rpc.Handle(d, api.ProjectGitHubAccountOf, s.GitHubAccountOf)
 	rpc.Handle(d, api.ProjectIssue, s.Issue)
 	rpc.Handle(d, api.ProjectRecheckPullRequest, s.RecheckPullRequest)
 	rpc.Handle(d, api.ProjectListPullRequests, s.ListPullRequests)
