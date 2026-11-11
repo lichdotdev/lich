@@ -150,7 +150,12 @@ func newProbeHub(t *testing.T) (*events.Hub, *eventRecorder) {
 // wait in these tests is for something that must happen, never for a duration.
 func waitFor(t *testing.T, cond func() bool, what string) {
 	t.Helper()
-	deadline := time.Now().Add(5 * time.Second)
+	waitForWithin(t, 5*time.Second, cond, what)
+}
+
+func waitForWithin(t *testing.T, budget time.Duration, cond func() bool, what string) {
+	t.Helper()
+	deadline := time.Now().Add(budget)
 	for time.Now().Before(deadline) {
 		if cond() {
 			return

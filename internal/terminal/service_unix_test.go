@@ -3,6 +3,7 @@
 package terminal
 
 import (
+	"fmt"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -131,9 +132,11 @@ func TestServicesAreNotCountedAsSessions(t *testing.T) {
 func TestServiceOutputCarriesNoModesPreamble(t *testing.T) {
 	t.Setenv("SHELL", "/bin/sh")
 	svc := New(stubBins{}, nil, events.New())
-	line := `printf '\033[?2004h'; head -c 3000000 /dev/zero | tr '\0' x; printf END; sleep 30`
+	// Just past the ring, and a wait sized for the slowest PTY CI has (macOS
+	// Intel, #1089): how fast the bytes cross is not what this test is about.
+	line := fmt.Sprintf(`printf '\033[?2004h'; head -c %d /dev/zero | tr '\0' x; printf END; sleep 30`, replayCapBytes)
 	run := startTestService(t, svc, "svc-1", line)
-	waitFor(t, func() bool { return strings.HasSuffix(string(svc.ServiceOutput("svc-1")), "END") }, "the output to pass the ring")
+	waitForWithin(t, 30*time.Second, func() bool { return strings.HasSuffix(string(svc.ServiceOutput("svc-1")), "END") }, "the output to pass the ring")
 	if out := string(svc.ServiceOutput("svc-1")); strings.Contains(out, "\x1b") || !strings.HasPrefix(out, "x") {
 		t.Errorf("live output starts %q, want the tail alone", out[:min(16, len(out))])
 	}
