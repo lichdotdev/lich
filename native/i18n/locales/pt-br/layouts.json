@@ -58,7 +58,20 @@
     "dialogFromPage": "Esta página diz",
     "dialogOK": "OK",
     "dialogStay": "Ficar",
-    "dialogLeave": "Sair"
+    "dialogLeave": "Sair",
+    "cursorClick": "Clicando",
+    "cursorType": "Digitando",
+    "cursorPress": "Pressionando tecla",
+    "cursorScroll": "Rolando",
+    "cursorNavigate": "Navegando",
+    "cursorReload": "Recarregando",
+    "cursorBack": "Voltando",
+    "cursorForward": "Avançando",
+    "cursorAccept": "Aceitando diálogo",
+    "cursorDismiss": "Dispensando diálogo",
+    "cursorTabNew": "Abrindo aba",
+    "cursorTabSelect": "Trocando de aba",
+    "cursorTabClose": "Fechando aba"
   },
   "split": {
     "noRoom": "Não há espaço para outro painel aqui. Alargue a janela ou tire um painel antes."

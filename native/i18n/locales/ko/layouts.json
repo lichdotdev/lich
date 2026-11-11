@@ -55,7 +55,20 @@
     "dialogFromPage": "이 페이지 내용:",
     "dialogOK": "확인",
     "dialogStay": "머무르기",
-    "dialogLeave": "나가기"
+    "dialogLeave": "나가기",
+    "cursorClick": "클릭 중",
+    "cursorType": "입력 중",
+    "cursorPress": "키 누르는 중",
+    "cursorScroll": "스크롤 중",
+    "cursorNavigate": "이동 중",
+    "cursorReload": "새로 고침 중",
+    "cursorBack": "뒤로 가는 중",
+    "cursorForward": "앞으로 가는 중",
+    "cursorAccept": "대화 상자 수락 중",
+    "cursorDismiss": "대화 상자 닫는 중",
+    "cursorTabNew": "탭 여는 중",
+    "cursorTabSelect": "탭 전환 중",
+    "cursorTabClose": "탭 닫는 중"
   },
   "split": {
     "noRoom": "여기에는 창을 하나 더 놓을 공간이 없습니다. 창을 넓히거나 먼저 창 하나를 빼세요."

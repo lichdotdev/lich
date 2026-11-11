@@ -58,7 +58,20 @@
     "dialogFromPage": "This page says",
     "dialogOK": "OK",
     "dialogStay": "Stay",
-    "dialogLeave": "Leave"
+    "dialogLeave": "Leave",
+    "cursorClick": "Clicking",
+    "cursorType": "Typing",
+    "cursorPress": "Pressing key",
+    "cursorScroll": "Scrolling",
+    "cursorNavigate": "Navigating",
+    "cursorReload": "Reloading",
+    "cursorBack": "Going back",
+    "cursorForward": "Going forward",
+    "cursorAccept": "Accepting dialog",
+    "cursorDismiss": "Dismissing dialog",
+    "cursorTabNew": "Opening tab",
+    "cursorTabSelect": "Switching tab",
+    "cursorTabClose": "Closing tab"
   },
   "split": {
     "noRoom": "No room for another pane here. Make the window wider or take a pane out first."

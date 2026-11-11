@@ -55,7 +55,20 @@
     "dialogFromPage": "此网页显示",
     "dialogOK": "确定",
     "dialogStay": "留下",
-    "dialogLeave": "离开"
+    "dialogLeave": "离开",
+    "cursorClick": "正在点击",
+    "cursorType": "正在输入",
+    "cursorPress": "正在按键",
+    "cursorScroll": "正在滚动",
+    "cursorNavigate": "正在跳转",
+    "cursorReload": "正在刷新",
+    "cursorBack": "正在后退",
+    "cursorForward": "正在前进",
+    "cursorAccept": "正在接受对话框",
+    "cursorDismiss": "正在关闭对话框",
+    "cursorTabNew": "正在打开标签页",
+    "cursorTabSelect": "正在切换标签页",
+    "cursorTabClose": "正在关闭标签页"
   },
   "split": {
     "noRoom": "这里没有空间再放一个窗格。请加宽窗口，或先移出一个窗格。"

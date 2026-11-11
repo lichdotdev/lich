@@ -519,13 +519,13 @@ func isLocalHost(text string) bool {
 }
 
 // agentLook is how session's agent cursor is drawn: in its card color, or the
-// theme's primary for a card without one, naming the provider that runs in it;
-// busy is whether the agent's turn is running.
-func (u *window) agentLook(session string) (tint color.NRGBA, provider string, icon *icons.Icon, busy bool) {
+// theme's primary for a card without one, with the icon of the provider that
+// runs in it; busy is whether the agent's turn is running.
+func (u *window) agentLook(session string) (tint color.NRGBA, icon *icons.Icon, busy bool) {
 	tint = u.theme.Primary
 	sv, ok := u.model.sessionViewOf(session)
 	if !ok {
-		return tint, "", providerIcon(""), false
+		return tint, providerIcon(""), false
 	}
 	if c, tinted := cardColors[sv.Color]; tinted {
 		tint = c
@@ -534,11 +534,7 @@ func (u *window) agentLook(session string) (tint color.NRGBA, provider string, i
 	if sv.agent != "" {
 		kind = sv.agent
 	}
-	provider = kind
-	if info, found := u.model.providers.find(kind); found && info.name != "" {
-		provider = info.name
-	}
-	return tint, provider, providerIcon(kind), sv.status == statusBusy
+	return tint, providerIcon(kind), sv.status == statusBusy
 }
 
 // toolbarFlash is how long a toolbar button the agent's cursor pressed stays
@@ -617,9 +613,9 @@ func (u *window) paintAgentCursor(gtx C, p *browserPaneUI, session string) {
 	if !p.cursor.shown {
 		return
 	}
-	tint, provider, icon, busy := u.agentLook(session)
+	tint, icon, busy := u.agentLook(session)
 	p.cursor.observe(gtx.Now, busy)
-	u.drawAgentCursor(gtx, &p.cursor, tint, u.theme.PrimaryForeground, provider, icon)
+	u.drawAgentCursor(gtx, &p.cursor, tint, u.theme.PrimaryForeground, icon)
 }
 
 // flashing reports whether the agent's cursor lit the toolbar or dialog

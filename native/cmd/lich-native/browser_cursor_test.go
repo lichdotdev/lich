@@ -183,7 +183,7 @@ func TestDrawAgentCursorLaysOutWithoutAPage(t *testing.T) {
 	for _, d := range []time.Duration{0, cursorGlide, cursorGlide + cursorDip/2, agentHold + cursorFade/2, agentHold + cursorFade} {
 		gtx := layout.Context{Ops: new(op.Ops), Now: t0.Add(d), Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1},
 			Constraints: layout.Exact(image.Pt(400, 300))}
-		u.drawAgentCursor(gtx, &c, th.Primary, th.PrimaryForeground, "Claude Code", providerIcon("claude"))
+		u.drawAgentCursor(gtx, &c, th.Primary, th.PrimaryForeground, providerIcon("claude"))
 	}
 	if c.shown {
 		t.Fatal("cursor still shown after it faded out")
@@ -263,5 +263,54 @@ func TestAgentCursorGoesOnOnceAClickDippedAndLeavesItsRing(t *testing.T) {
 	}
 	if !c.settled().After(c.played()) {
 		t.Fatal("settled before the rings faded")
+	}
+}
+
+func TestCursorBadgeNamesTheActionHoldsAndLeaves(t *testing.T) {
+	var c agentCursor
+	t0 := time.Unix(100, 0)
+	play(&c, t0, clickMark(t0, 40, 30))
+	if got := cursorVerb(c.action); got != "Clicking" {
+		t.Fatalf("badge says %q during a click, want Clicking", got)
+	}
+	played := c.played()
+	const hold, fade = 900 * time.Millisecond, 150 * time.Millisecond
+	if a := c.badgeAlpha(played.Add(hold - time.Millisecond)); a != 1 {
+		t.Fatalf("badge alpha %v just before its hold ran out, want 1", a)
+	}
+	if a := c.badgeAlpha(played.Add(hold + fade/2)); a <= 0 || a >= 1 {
+		t.Fatalf("badge alpha %v halfway through its fade, want between 0 and 1", a)
+	}
+	if a := c.badgeAlpha(played.Add(hold + fade)); a != 0 {
+		t.Fatalf("badge alpha %v after its fade, want 0", a)
+	}
+	next := played.Add(hold + fade)
+	play(&c, next, scrollMark(next, 40, 90, 120))
+	if got, a := cursorVerb(c.action), c.badgeAlpha(next); got != "Scrolling" || a != 1 {
+		t.Fatalf("at the next action the badge says %q at alpha %v, want Scrolling at 1", got, a)
+	}
+}
+
+func TestCursorVerbNamesEveryActionTheCursorPlays(t *testing.T) {
+	want := map[string]string{
+		"click": "Clicking", "type": "Typing", "press": "Pressing key", "scroll": "Scrolling",
+		"navigate": "Navigating", "reload": "Reloading", "back": "Going back", "forward": "Going forward",
+		"accept": "Accepting dialog", "dismiss": "Dismissing dialog",
+		"tab-new": "Opening tab", "tab-select": "Switching tab", "tab-close": "Closing tab",
+	}
+	for action, verb := range want {
+		if got := cursorVerb(action); got != verb {
+			t.Errorf("%s: badge says %q, want %q", action, got, verb)
+		}
+	}
+	for _, played := range []map[string]bool{toolbarActions, headerActions, dialogActions} {
+		for action := range played {
+			if want[action] == "" {
+				t.Errorf("%s is played by the cursor and has no verb", action)
+			}
+		}
+	}
+	if got := cursorVerb("screenshot"); got != "" {
+		t.Fatalf("badge says %q for an action the cursor does not play, want none", got)
 	}
 }
