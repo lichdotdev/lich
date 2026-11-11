@@ -36,8 +36,8 @@ func subagentEnv(env []string, kind string, depth int, cardsOn bool) []string {
 // (relay.SubagentRoute): its own Agent tool, as cards, where a plugin release
 // whose mod does that is installed; the same tool kept native in a card that
 // does not open cards; and lich sessions everywhere else.
-func subagentRoute(kind string, depth int, cardsOn bool) relay.SubagentRoute {
-	if kind != providers.Claude || !agentplugin.ClaudeRunsSubagentCards() {
+func subagentRoute(kind, profileDir string, depth int, cardsOn bool) relay.SubagentRoute {
+	if kind != providers.Claude || !agentplugin.ClaudeRunsSubagentCards(profileDir) {
 		return relay.RouteSessions
 	}
 	if cardsOn {

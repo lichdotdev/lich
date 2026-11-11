@@ -160,7 +160,7 @@ func (s *Service) spawnSession(opts api.StartOptions, profileDir, name string, o
 	if artifacts != "" {
 		env = append(env, artifact.EnvVar+"="+artifacts)
 	}
-	route, lang := subagentRoute(opts.Kind, depth, cardsOn), s.promptLanguage()
+	route, lang := subagentRoute(opts.Kind, profileDir, depth, cardsOn), s.promptLanguage()
 	env = briefingEnv(env, opts.Kind, route, lang)
 	model := s.store.SessionModel(opts.ID)
 	if oc2 {

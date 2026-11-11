@@ -10,6 +10,7 @@ import (
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/events"
 	"github.com/lichdotdev/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/relay"
 )
 
 // Unix-only with the stubBins it reads, which live in the PTY suite.
@@ -66,18 +67,26 @@ func TestForkOfASubagentKeepsItsDepth(t *testing.T) {
 	}
 }
 
-// A session in a profile opens a worker's cards by the plugin that profile
-// holds, not by Personal's.
-func TestSubagentCardsOnReadsTheProfilesPlugin(t *testing.T) {
-	withClaudePlugin(t, "0.19.0")
+// claudeProfileWithPlugin lays out a profile's Claude Code config directory
+// holding the lich plugin at version, and returns it.
+func claudeProfileWithPlugin(t *testing.T, version string) string {
+	t.Helper()
 	profile := t.TempDir()
 	if err := os.MkdirAll(filepath.Join(profile, "plugins"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	state := `{"plugins":{"lich@lich-plugin":[{"scope":"user","version":"0.18.4"}]}}`
+	state := `{"plugins":{"lich@lich-plugin":[{"scope":"user","version":"` + version + `"}]}}`
 	if err := os.WriteFile(filepath.Join(profile, "plugins", "installed_plugins.json"), []byte(state), 0o644); err != nil {
 		t.Fatal(err)
 	}
+	return profile
+}
+
+// A session in a profile opens a worker's cards by the plugin that profile
+// holds, not by Personal's.
+func TestSubagentCardsOnReadsTheProfilesPlugin(t *testing.T) {
+	withClaudePlugin(t, "0.19.0")
+	profile := claudeProfileWithPlugin(t, "0.18.4")
 	svc := New(stubBins{subagentDepth: 1}, nil, events.New())
 
 	if !svc.subagentCardsOn(providers.Claude, "", 1) {
@@ -85,5 +94,19 @@ func TestSubagentCardsOnReadsTheProfilesPlugin(t *testing.T) {
 	}
 	if svc.subagentCardsOn(providers.Claude, profile, 1) {
 		t.Error("a profile on 0.18.4 beside a Personal on 0.19.0: want a worker's subagents native")
+	}
+}
+
+// The briefing of a session in a profile points at the Agent tool only when the
+// plugin that profile holds opens cards, not when Personal's does.
+func TestSubagentRouteReadsTheProfilesPlugin(t *testing.T) {
+	withClaudePlugin(t, "0.19.0")
+	profile := claudeProfileWithPlugin(t, "0.14.0")
+
+	if got := subagentRoute(providers.Claude, "", 0, true); got != relay.RouteCards {
+		t.Errorf("Personal on 0.19.0: subagentRoute = %v, want the cards route", got)
+	}
+	if got := subagentRoute(providers.Claude, profile, 0, true); got != relay.RouteSessions {
+		t.Errorf("a profile on 0.14.0 beside a Personal on 0.19.0: subagentRoute = %v, want the sessions route", got)
 	}
 }
