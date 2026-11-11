@@ -1,8 +1,6 @@
 package main
 
 import (
-	"strings"
-
 	"gioui.org/font"
 	"gioui.org/layout"
 
@@ -56,11 +54,10 @@ func (s *settingsScreen) notifyRow(gtx C, key string) (string, func(gtx C, th *u
 // groupHeading is SettingGroup's label: small, muted and uppercase, the gap
 // above it dropped for the section's first group.
 func groupHeading(th *ui.Theme, label string, first bool) layout.Widget {
-	inset := layout.Inset{Left: rowPadX, Top: groupGapAbove, Bottom: groupGapBelow}
+	h := th.SectionHeading(label)
+	h.Weight, h.Inset = font.SemiBold, layout.Inset{Left: rowPadX, Top: groupGapAbove, Bottom: groupGapBelow}
 	if first {
-		inset.Top = 0
+		h.Inset.Top = 0
 	}
-	return func(gtx C) D {
-		return inset.Layout(gtx, th.Text(ui.TextXS, strings.ToUpper(label)).Muted().Weight(font.SemiBold).Layout)
-	}
+	return h.Layout
 }

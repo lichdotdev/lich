@@ -508,7 +508,7 @@ func (v *pullView) commentBox(gtx C, th *ui.Theme, act *pullsAction) D {
 	send.Size, send.Disabled = ui.SizeSM, body == "" || busy
 	return layout.Inset{Left: pullsPadX, Right: pullsPadX, Top: ui.Space(5), Bottom: ui.Space(5)}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-			layout.Rigid(sectionHeading(th, i18n.T("pulls.pullsConversation.commentOn"))),
+			layout.Rigid(th.SectionHeading(i18n.T("pulls.pullsConversation.commentOn")).Layout),
 			ui.VGap(2),
 			layout.Rigid(func(gtx C) D {
 				ta := th.Textarea(&s.comment, i18n.T("pulls.pullsConversation.commentPlaceholder"))
@@ -531,7 +531,7 @@ func (v *pullView) pendingRows(th *ui.Theme, r *pendingReview) []layout.Widget {
 	rows := []layout.Widget{func(gtx C) D {
 		return layout.Inset{Left: pullsPadX, Right: pullsPadX, Top: ui.Space(4)}.Layout(gtx, func(gtx C) D {
 			return layout.Flex{Alignment: layout.Baseline}.Layout(gtx,
-				layout.Rigid(sectionHeading(th, i18n.T("pulls.pullsConversation.pendingHead"))),
+				layout.Rigid(th.SectionHeading(i18n.T("pulls.pullsConversation.pendingHead")).Layout),
 				ui.Gap(2),
 				layout.Rigid(th.Text(ui.TextXS, i18n.T("pulls.pullsConversation.pendingNote")).Muted().Layout),
 			)

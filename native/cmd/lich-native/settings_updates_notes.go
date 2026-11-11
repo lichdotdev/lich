@@ -444,6 +444,8 @@ func notesGroupCount(label string, items int) string {
 
 // notesGroupHeading is a group's divider and its dot and label.
 func notesGroupHeading(th *ui.Theme, label string, divider bool) layout.Widget {
+	heading := th.SectionHeading(notesGroupLabel(label))
+	heading.Weight = font.SemiBold
 	return func(gtx C) D {
 		children := []layout.FlexChild{}
 		if divider {
@@ -453,7 +455,7 @@ func notesGroupHeading(th *ui.Theme, label string, divider bool) layout.Widget {
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 				layout.Rigid(func(gtx C) D { return ui.Dot(gtx, noteDot(th, label), notesGroupDot) }),
 				ui.Gap(1.5),
-				layout.Rigid(th.Text(ui.TextXS, strings.ToUpper(notesGroupLabel(label))).Muted().Weight(font.SemiBold).Layout),
+				layout.Rigid(heading.Layout),
 			)
 		}), ui.VGap(1.5))
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)

@@ -131,7 +131,7 @@ func (v *pullView) descriptionHeading(gtx C, th *ui.Theme, p *pullsScreen, d bac
 	if s.bodyCancel.Clicked(gtx) && v.busyNow() != "body" {
 		s.bodyURL = ""
 	}
-	heading := sectionHeading(th, i18n.T("pulls.pullsOverview.description"))
+	heading := th.SectionHeading(i18n.T("pulls.pullsOverview.description")).Layout
 	if s.bodyURL == d.URL {
 		return heading(gtx)
 	}

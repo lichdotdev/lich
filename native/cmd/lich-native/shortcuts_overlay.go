@@ -2,7 +2,6 @@ package main
 
 import (
 	"runtime"
-	"strings"
 
 	"gioui.org/font"
 	"gioui.org/layout"
@@ -85,10 +84,9 @@ func (o *shortcutsOverlay) body(gtx C, th *ui.Theme, groups []shortcutGroup) D {
 
 // shortcutsHeading is the group's px-3 pt-3 pb-1 uppercase label.
 func shortcutsHeading(th *ui.Theme, title string) layout.Widget {
-	inset := layout.Inset{Left: hotkeyLinePadX, Right: hotkeyLinePadX, Top: ui.Space(3), Bottom: ui.Space(1)}
-	return func(gtx C) D {
-		return inset.Layout(gtx, th.Text(text2XS, strings.ToUpper(title)).Muted().Weight(font.SemiBold).Layout)
-	}
+	h := th.SectionHeading(title)
+	h.Size, h.Weight, h.Inset = text2XS, font.SemiBold, layout.Inset{Left: hotkeyLinePadX, Right: hotkeyLinePadX, Top: ui.Space(3), Bottom: ui.Space(1)}
+	return h.Layout
 }
 
 // hotkeyShortcuts is the chord's toggle: the same one closes it again.

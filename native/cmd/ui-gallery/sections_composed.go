@@ -4,7 +4,9 @@ import (
 	"image"
 	"image/color"
 
+	"gioui.org/font"
 	"gioui.org/layout"
+	"gioui.org/unit"
 	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/ui"
@@ -20,6 +22,7 @@ type composedState struct {
 func (g *gallery) composedSection(gtx C, th *ui.Theme) D {
 	kids := g.emptyStates(th)
 	kids = append(kids, g.avatars(th)...)
+	kids = append(kids, g.headings(th)...)
 	return stack(4, kids...)(gtx)
 }
 
@@ -65,5 +68,18 @@ func (g *gallery) avatars(th *ui.Theme) []layout.Widget {
 			th.Avatar(nil, "M", 24).Layout,
 			tinted.Layout,
 		),
+	}
+}
+
+const headingCompact unit.Sp = 10.5
+
+func (g *gallery) headings(th *ui.Theme) []layout.Widget {
+	semi := th.SectionHeading("Settings group")
+	semi.Weight, semi.Inset = font.SemiBold, layout.Inset{Left: ui.Space(3)}
+	compact := th.SectionHeading("Shortcuts group")
+	compact.Size, compact.Weight = headingCompact, font.SemiBold
+	return []layout.Widget{
+		caption(th, "SectionHeading: default, semibold with inset, compact"),
+		stack(1, th.SectionHeading("Description").Layout, semi.Layout, compact.Layout),
 	}
 }

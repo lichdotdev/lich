@@ -213,7 +213,7 @@ func (v *pullView) conflictsList(gtx C, th *ui.Theme, files []string) D {
 	heading := i18n.T("pulls.pullsConflicts.count", i18n.Args{"count": len(files)})
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			return layout.Inset{Left: ui.Space(2), Right: ui.Space(2), Top: ui.Space(1.5), Bottom: ui.Space(1)}.Layout(gtx, sectionHeading(th, heading))
+			return layout.Inset{Left: ui.Space(2), Right: ui.Space(2), Top: ui.Space(1.5), Bottom: ui.Space(1)}.Layout(gtx, th.SectionHeading(heading).Layout)
 		}),
 		layout.Rigid(func(gtx C) D {
 			return th.ScrollArea(&v.conflictsRows).Layout(gtx, len(files), func(gtx C, i int) D { return conflictRow(gtx, th, files[i]) })
@@ -331,7 +331,7 @@ func (v *pullView) facts(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDetail
 		if len(children) > 0 {
 			children = append(children, ui.VGap(5))
 		}
-		children = append(children, layout.Rigid(sectionHeading(th, title)))
+		children = append(children, layout.Rigid(th.SectionHeading(title).Layout))
 		for _, w := range body {
 			if w != nil {
 				children = append(children, ui.VGap(2), layout.Rigid(w))
@@ -379,10 +379,6 @@ func (v *pullView) overviewRows(th *ui.Theme, d backend.PRDetail, act *pullsActi
 			return v.md.Layout(gtx, th, "body:"+d.URL, body, act.open)
 		})
 	}}
-}
-
-func sectionHeading(th *ui.Theme, text string) layout.Widget {
-	return th.Text(ui.TextXS, strings.ToUpper(text)).Muted().Weight(font.Medium).Layout
 }
 
 // reviewVerdict is what a review state says its author did, ok false for a
