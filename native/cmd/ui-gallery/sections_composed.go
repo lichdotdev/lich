@@ -39,6 +39,7 @@ func (g *gallery) composedSection(gtx C, th *ui.Theme) D {
 	kids = append(kids, g.images(th)...)
 	kids = append(kids, g.splitPanes(th)...)
 	kids = append(kids, g.scrollAreas(th)...)
+	kids = append(kids, g.fileIcons(th)...)
 	return ui.Stack(4, kids...)(gtx)
 }
 
@@ -209,5 +210,16 @@ func (g *gallery) scrollAreas(th *ui.Theme) []layout.Widget {
 	return []layout.Widget{
 		caption(th, "ThinScrollArea: overlay bar, 8px thumb; and with Track padding"),
 		ui.Columns(3, column(&g.scrollThin, 0, 0), column(&g.scrollTuned, 0.5, 2)),
+	}
+}
+
+func (g *gallery) fileIcons(th *ui.Theme) []layout.Widget {
+	entry := func(path string, size unit.Dp) layout.Widget {
+		return ui.Row(1.5, th.FileIcon(path, size).Layout, th.Text(ui.TextXS, path).Muted().Mono().Layout)
+	}
+	return []layout.Widget{
+		caption(th, "FileIcon: devicon by path; muted file glyph without one"),
+		ui.Row(4, entry("main.go", ui.Space(3.5)), entry("app.tsx", ui.Space(3.5)), entry("schema.sql", ui.Space(3.5))),
+		ui.Row(4, entry("no-icon.xyz", ui.Space(3.5)), entry("Makefile", ui.Space(4))),
 	}
 }
