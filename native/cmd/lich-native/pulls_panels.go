@@ -470,7 +470,7 @@ func (v *pullView) commitRows(gtx C, th *ui.Theme, d backend.PRDetail) []layout.
 // commitRow is a commit's headline, who and when, the chevron when it has a
 // body to open, and its short oid.
 func commitRow(gtx C, th *ui.Theme, c backend.PRCommit, click *widget.Clickable, hasBody, open bool, now time.Time) D {
-	return panelRow(gtx, th, click, hasBody, func(gtx C, th *ui.Theme) D {
+	return th.PanelRow(gtx, click, hasBody, pullsRowEdge, pullsRowPadX, func(gtx C, th *ui.Theme) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Flexed(1, func(gtx C) D {
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
@@ -513,7 +513,7 @@ func (v *pullView) checkRows(gtx C, th *ui.Theme, d backend.PRDetail, act *pulls
 			case "pending":
 				ic, fg = icPullRunning, th.ToneWait
 			}
-			return panelRow(gtx, th, click, c.URL != "", func(gtx C, th *ui.Theme) D {
+			return th.PanelRow(gtx, click, c.URL != "", pullsRowEdge, pullsRowPadX, func(gtx C, th *ui.Theme) D {
 				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 					layout.Rigid(func(gtx C) D { return pullGlyph(gtx, th, ic, ui.Space(4), fg) }),
 					ui.Gap(3),
@@ -532,7 +532,7 @@ func (v *pullView) checkRows(gtx C, th *ui.Theme, d backend.PRDetail, act *pulls
 						if !c.Required {
 							return D{}
 						}
-						return layout.Inset{Right: ui.Space(3)}.Layout(gtx, paletteChip(th, i18n.T("pulls.pullsChecks.required"), th.MutedForeground))
+						return layout.Inset{Right: ui.Space(3)}.Layout(gtx, th.TinyChip(i18n.T("pulls.pullsChecks.required"), th.MutedForeground).Layout)
 					}),
 					layout.Rigid(th.Text(ui.TextXS, checkDuration(c.StartedAt, c.CompletedAt, now)).Muted().Layout),
 				)
@@ -540,27 +540,6 @@ func (v *pullView) checkRows(gtx C, th *ui.Theme, d backend.PRDetail, act *pulls
 		}
 	}
 	return rows
-}
-
-// panelRow is a tab's py-2 row, hover-filled like a sidebar card while it
-// does something.
-func panelRow(gtx C, th *ui.Theme, click *widget.Clickable, live bool, content func(gtx C, th *ui.Theme) D) D {
-	gtx.Constraints.Min.X = gtx.Constraints.Max.X
-	return click.Layout(gtx, func(gtx C) D {
-		bg := th.Surface
-		if live && click.Hovered() {
-			bg = th.Over(ui.Alpha(th.Accent, ghostHoverFill))
-		}
-		return layout.Inset{Left: pullsRowEdge, Right: pullsRowEdge}.Layout(gtx, func(gtx C) D {
-			return layout.Background{}.Layout(gtx,
-				func(gtx C) D { return ui.Fill(gtx, bg, ui.RadiusMD) },
-				func(gtx C) D {
-					return layout.Inset{Left: pullsRowPadX, Right: pullsRowPadX, Top: ui.Space(2), Bottom: ui.Space(2)}.Layout(gtx, func(gtx C) D {
-						return content(gtx, th.On(bg))
-					})
-				})
-		})
-	})
 }
 
 func boolOf(m map[string]*widget.Bool, id string) *widget.Bool {

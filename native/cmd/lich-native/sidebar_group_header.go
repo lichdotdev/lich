@@ -215,7 +215,7 @@ func (s *sidebar) titleContent(gtx C, th *ui.Theme, b blockView, hovered, refuse
 		return layout.Center.Layout(gtx, func(gtx C) D {
 			return s.morph.glyph(gtx, glyphNode+b.key, func(gtx C) D {
 				gtx.Constraints = layout.Exact(image.Pt(gtx.Dp(ui.Space(3)), gtx.Dp(ui.Space(3))))
-				return centeredIcon(gtx, glyph, ui.Space(3), glyphColor)
+				return ui.CenteredIcon(gtx, glyph, ui.Space(3), glyphColor)
 			})
 		})
 	}), ui.Gap(1.5)}

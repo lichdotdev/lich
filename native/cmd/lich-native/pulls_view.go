@@ -263,7 +263,7 @@ func (v *pullView) crumb(gtx C, th *ui.Theme, p *pullsScreen) D {
 				return v.withTip(gtx, th, p, "back", i18n.T("pulls.pullsNav.back"), b.Layout)
 			}),
 			ui.Gap(2.5),
-			layout.Rigid(func(gtx C) D { return hoverText(gtx, th, &v.indexLink, i18n.T("tabs.projectTabs.pullRequests")) }),
+			layout.Rigid(func(gtx C) D { return th.HoverLink(gtx, &v.indexLink, i18n.T("tabs.projectTabs.pullRequests")) }),
 			ui.Gap(1.5),
 			layout.Rigid(func(gtx C) D { return icPullRight.Layout(gtx, ui.Space(3), th.MutedForeground) }),
 			ui.Gap(1.5),
@@ -276,17 +276,6 @@ func (v *pullView) crumb(gtx C, th *ui.Theme, p *pullsScreen) D {
 				return v.stepper(gtx, th, p, at, len(rows))
 			}),
 		)
-	})
-}
-
-// hoverText is a click in muted words that brighten under the pointer.
-func hoverText(gtx C, th *ui.Theme, click *widget.Clickable, text string) D {
-	return click.Layout(gtx, func(gtx C) D {
-		fg := th.MutedForeground
-		if click.Hovered() {
-			fg = th.Foreground
-		}
-		return th.Text(ui.TextXS, text).In(fg).Layout(gtx)
 	})
 }
 

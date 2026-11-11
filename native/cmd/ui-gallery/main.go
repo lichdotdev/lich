@@ -152,6 +152,7 @@ type gallery struct {
 
 	toastState
 	contentState
+	rowsState
 }
 
 func newGallery(th *ui.Theme) *gallery {
@@ -214,6 +215,8 @@ func (g *gallery) content(gtx C) D {
 					g.section("Chip, ResizeHandle, Collapse, Presence, Sortable list", g.sidebarSection),
 					g.section("Notice, Footnote, PanelNotice, BodyLine", g.noticesSection),
 					g.section("PopoverRow, SelectTrigger, RuleAbove, VerticalRule", g.rowsSection),
+					g.section("NavRow, PanelRow, FillRow, MenuHeader, MenuSeparator, RailHairline, CaptionDivider, OrRule", g.listRowsSection),
+					g.section("GhostTextButton, CardIconButton, GhostIconButton, SquareFace, LabelFace", g.facesSection),
 				)),
 				ui.Gap(6),
 				layout.Flexed(1, stack(6,
@@ -228,6 +231,8 @@ func (g *gallery) content(gtx C) D {
 					g.section("Code view", g.codeSection),
 					g.section("Diff view", g.diffSection),
 					g.section("File tree", g.treeSection),
+					g.section("IconLine, IconLabel, MonoGlyph, MutedGlyph, CenteredIcon, BoxIcon, TriggerChevron, TinyChip", g.glyphsSection),
+					g.section("HoverLink, TrailingIconLink, TwoLines, SpinnerLine, SpinnerBeside, CheckRow", g.linesSection),
 				)),
 			)
 		}),

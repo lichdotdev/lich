@@ -96,7 +96,7 @@ var (
 	// inside the island's 8px edge, so its nodes centre where the open
 	// sidebar's do (rowInset + sessionTreeRingR from the edge).
 	railWidth = railRow + 2*ui.Space(2)
-	// railHeaderRow is the open sidebar's header row (labelFace).
+	// railHeaderRow is the open sidebar's header row (LabelFace).
 	railHeaderRow = ui.Space(9)
 	railRow       = 2*sessionTreeRingR + 2*ui.Space(1.5)
 	railChildR    = unit.Dp(8)    // a child's node: smaller, on its mother's line
@@ -447,7 +447,7 @@ func (r *sidebarRail) session(gtx C, th *ui.Theme, s *sidebar, it railItem, acti
 				case click.Hovered():
 					bg = th.Over(ui.Alpha(th.Accent, railHoverFill))
 				}
-				return squareFace(gtx, bg, func(gtx C) D {
+				return ui.SquareFace(gtx, bg, func(gtx C) D {
 					if it.small {
 						return railSmall(gtx, true, func(gtx C) D { return s.statusGlyph(gtx, th, sv) })
 					}
@@ -455,13 +455,5 @@ func (r *sidebarRail) session(gtx C, th *ui.Theme, s *sidebar, it railItem, acti
 				})
 			})
 		})
-	})
-}
-
-// railHairline is `my-1 h-px w-5 bg-border`, over the rail's footer.
-func railHairline(gtx C, th *ui.Theme) D {
-	return layout.Inset{Top: ui.Space(2), Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
-		gtx.Constraints = layout.Exact(image.Pt(gtx.Dp(ui.Space(5)), gtx.Dp(1)))
-		return ui.Fill(gtx, th.Over(th.Border), 0)
 	})
 }

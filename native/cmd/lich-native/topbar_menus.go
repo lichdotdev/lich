@@ -6,7 +6,6 @@ import (
 	"strconv"
 
 	"gioui.org/f32"
-	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
@@ -88,14 +87,14 @@ func (t *topbar) openButton(gtx C, th *ui.Theme, act *topbarAction) D {
 
 func (o *openMenu) content(gtx C, th *ui.Theme, recents []backend.RecentProject, missing map[string]bool) D {
 	children := []layout.FlexChild{
-		layout.Rigid(func(gtx C) D { return menuHeader(gtx, th, i18n.T("tabs.openProjectMenu.recent"), "") }),
-		layout.Rigid(menuSeparator(th)),
+		layout.Rigid(func(gtx C) D { return th.MenuHeader(gtx, i18n.T("tabs.openProjectMenu.recent"), "") }),
+		layout.Rigid(th.MenuSeparator),
 	}
 	for i, r := range recents {
 		children = append(children, layout.Rigid(func(gtx C) D { return recentRow(gtx, th, &o.rows[i], r, missing[r.Path]) }))
 	}
 	children = append(children,
-		layout.Rigid(menuSeparator(th)),
+		layout.Rigid(th.MenuSeparator),
 		layout.Rigid(func(gtx C) D {
 			return th.PopoverRow(&o.folder, func(gtx C, th *ui.Theme) D {
 				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
@@ -118,42 +117,13 @@ func recentRow(gtx C, th *ui.Theme, click *widget.Clickable, r backend.RecentPro
 		children := []layout.FlexChild{
 			layout.Rigid(func(gtx C) D { return ic.Layout(gtx, ui.Space(4), th.MutedForeground) }),
 			ui.Gap(2),
-			layout.Flexed(1, twoLines(th, r.Name, displayPath(r.Path))),
+			layout.Flexed(1, th.TwoLines(r.Name, displayPath(r.Path)).Layout),
 		}
 		if gone {
 			children = append(children, ui.Gap(2), layout.Rigid(th.Text(10, i18n.T("tabs.openProjectMenu.relocate")).Muted().Mono().Layout))
 		}
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
 	}).Layout(gtx)
-}
-
-// twoLines is a row's `flex min-w-0 flex-col`: the label, and a muted
-// text-xs line under it, each truncated.
-func twoLines(th *ui.Theme, top, under string) layout.Widget {
-	return func(gtx C) D {
-		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-			layout.Rigid(th.Text(ui.TextSM, top).Layout),
-			layout.Rigid(th.Text(ui.TextXS, under).Muted().Layout),
-		)
-	}
-}
-
-// menuHeader is the menus' plain-div title: `px-2 py-1.5 text-xs
-// font-semibold`, and a count on the right when there is one.
-func menuHeader(gtx C, th *ui.Theme, title, count string) D {
-	return layout.Inset{Left: ui.Space(2), Right: ui.Space(2), Top: ui.Space(1.5), Bottom: ui.Space(1.5)}.Layout(gtx, func(gtx C) D {
-		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-			layout.Flexed(1, th.Text(ui.TextXS, title).Weight(font.SemiBold).Layout),
-			layout.Rigid(th.Text(ui.TextXS, count).Muted().Layout),
-		)
-	})
-}
-
-// menuSeparator is DropdownMenuSeparator: -mx-1 my-1 h-px.
-func menuSeparator(th *ui.Theme) layout.Widget {
-	return func(gtx C) D {
-		return layout.Inset{Top: ui.Space(1), Bottom: ui.Space(1)}.Layout(gtx, th.Separator)
-	}
 }
 
 // bellMenu is NotificationsButton: the cross-project queue of sessions
@@ -214,8 +184,8 @@ func (b *bellMenu) content(gtx C, th *ui.Theme, items []notification) D {
 		count = strconv.Itoa(len(items))
 	}
 	children := []layout.FlexChild{
-		layout.Rigid(func(gtx C) D { return menuHeader(gtx, th, i18n.T("tabs.notificationsButton.title"), count) }),
-		layout.Rigid(menuSeparator(th)),
+		layout.Rigid(func(gtx C) D { return th.MenuHeader(gtx, i18n.T("tabs.notificationsButton.title"), count) }),
+		layout.Rigid(th.MenuSeparator),
 	}
 	if len(items) == 0 {
 		children = append(children, layout.Rigid(func(gtx C) D {
@@ -243,7 +213,7 @@ func (b *bellMenu) row(gtx C, th *ui.Theme, item notification) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Rigid(func(gtx C) D { return ic.Layout(gtx, ui.Space(4), tone) }),
 			ui.Gap(2),
-			layout.Flexed(1, twoLines(th, item.sessionLabel, item.projectName)),
+			layout.Flexed(1, th.TwoLines(item.sessionLabel, item.projectName).Layout),
 			ui.Gap(2),
 			layout.Rigid(func(gtx C) D {
 				if !click.Hovered() && !x.Hovered() {

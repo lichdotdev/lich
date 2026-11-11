@@ -347,7 +347,9 @@ func (s *settingsScreen) providerToggleRow(gtx C, th *ui.Theme, p providerInfo, 
 		sub = []layout.FlexChild{layout.Rigid(th.Text(ui.TextXS, i18n.T("settings.providerToggleRow.notFound")).Muted().Layout)}
 		if p.docs != "" {
 			sub = append(sub, ui.Gap(1.5), layout.Rigid(th.Text(ui.TextXS, "·").Muted().Layout), ui.Gap(1.5),
-				layout.Rigid(func(gtx C) D { return docsLink(gtx, th, &st.docs, i18n.T("settings.providerDocsLink.howToInstall")) }))
+				layout.Rigid(func(gtx C) D {
+					return th.TrailingIconLink(gtx, &st.docs, i18n.T("settings.providerDocsLink.howToInstall"), icProviderDocs)
+				}))
 		}
 	}
 	row := func(gtx C) D {
@@ -371,22 +373,6 @@ func (s *settingsScreen) providerToggleRow(gtx C, th *ui.Theme, p providerInfo, 
 		return row(gtx)
 	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, layout.Rigid(th.Separator), layout.Rigid(row))
-}
-
-// docsLink is ProviderDocsLink: the page documenting the provider, text and
-// the arrow out of the window.
-func docsLink(gtx C, th *ui.Theme, click *widget.Clickable, label string) D {
-	return click.Layout(gtx, func(gtx C) D {
-		ink := th.MutedForeground
-		if click.Hovered() {
-			ink = th.Foreground
-		}
-		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-			layout.Rigid(th.Text(ui.TextXS, label).In(ink).Layout),
-			ui.Gap(1),
-			layout.Rigid(func(gtx C) D { return icProviderDocs.Layout(gtx, ui.Space(3), ink) }),
-		)
-	})
 }
 
 // providerHeader is ProviderDetail's head: the way back, then the provider's
@@ -430,7 +416,9 @@ func (s *settingsScreen) providerHeader(th *ui.Theme, p providerInfo) []layout.W
 			})
 			var docs *recorded
 			if p.docs != "" {
-				d := record(loose, func(gtx C) D { return docsLink(gtx, th, &pr.docs, i18n.T("settings.providerDetail.documentation")) })
+				d := record(loose, func(gtx C) D {
+					return th.TrailingIconLink(gtx, &pr.docs, i18n.T("settings.providerDetail.documentation"), icProviderDocs)
+				})
 				docs = &d
 			}
 			toggle := record(loose, func(gtx C) D {

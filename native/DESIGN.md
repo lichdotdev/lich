@@ -100,7 +100,7 @@ their text with the tone itself.
 
 Lucide through `icons.Lucide`, at `Space(3.5)` or `Space(4)`; `Space(3)` (12) inside dense meta and rows.
 Provider marks and file-type logos have their own sets in `ui/icons`. An icon centered in a box of odd
-leftover goes through `centeredIcon`, at a fractional offset, or it lands half a pixel off.
+leftover goes through `ui.CenteredIcon`, at a fractional offset, or it lands half a pixel off.
 
 ## Controls
 

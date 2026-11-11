@@ -195,7 +195,7 @@ func (s *settingsScreen) sectionRow(gtx C, th *ui.Theme, sec settingsSection, va
 	}
 	badge := sectionBadge(sec, s.scope, s.projects, values)
 	dim := s.scope != "" && !sec.projectScoped()
-	return navRow(gtx, th, click, sec.id == s.section, func(gtx C, th *ui.Theme) D {
+	return th.NavRow(gtx, click, sec.id == s.section, navRowHeight, navRowPadX, func(gtx C, th *ui.Theme) D {
 		fg, icon := th.Foreground, th.MutedForeground
 		if dim {
 			fg = th.Over(ui.Alpha(th.MutedForeground, navDimOpacity))
@@ -211,29 +211,6 @@ func (s *settingsScreen) sectionRow(gtx C, th *ui.Theme, sec settingsSection, va
 		}
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			append(children, layout.Rigid(func(gtx C) D { return countBadge(gtx, th, badge) }))...)
-	})
-}
-
-// navRow is a h-8 rounded-md row: accent while on, accent/50 hovered.
-func navRow(gtx C, th *ui.Theme, click *widget.Clickable, on bool, content func(gtx C, th *ui.Theme) D) D {
-	gtx.Constraints.Min.X = gtx.Constraints.Max.X
-	return click.Layout(gtx, func(gtx C) D {
-		bg := th.Surface
-		switch {
-		case on:
-			bg = th.Accent
-		case click.Hovered():
-			bg = th.Over(ui.Alpha(th.Accent, ghostHoverFill))
-		}
-		return layout.Background{}.Layout(gtx,
-			func(gtx C) D { return ui.Fill(gtx, bg, ui.RadiusMD) },
-			func(gtx C) D {
-				gtx.Constraints.Min.Y = gtx.Dp(navRowHeight)
-				return layout.Inset{Left: navRowPadX, Right: navRowPadX}.Layout(gtx, func(gtx C) D {
-					return layout.W.Layout(gtx, func(gtx C) D { return content(gtx, th.On(bg)) })
-				})
-			},
-		)
 	})
 }
 

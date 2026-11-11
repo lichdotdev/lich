@@ -10,7 +10,6 @@ import (
 	"gioui.org/op"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
-	"gioui.org/unit"
 	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/backend"
@@ -198,7 +197,7 @@ func (t *topbar) rightSide(gtx C, th *ui.Theme, f topbarFrame, act *topbarAction
 	pad := gtx.Dp(gutter)
 	if f.chrome.buttonsShown(f.windowButtons) && len(f.caption.right) > 0 {
 		children = append(children,
-			layout.Rigid(func(gtx C) D { return captionDivider(gtx, th) }),
+			layout.Rigid(func(gtx C) D { return th.CaptionDivider(gtx, gutter, captionSeparator) }),
 			layout.Rigid(func(gtx C) D { return t.captionButtons(gtx, th, f, f.caption.right, act) }))
 		// Windows' buttons sit in the window's corner, as its own do.
 		if f.caption.style == captionStyleWindows {
@@ -227,7 +226,7 @@ func (t *topbar) leftSide(gtx C, th *ui.Theme, f topbarFrame, act *topbarAction)
 	row.Constraints.Min = image.Point{}
 	d := layout.Flex{Alignment: layout.Middle}.Layout(row,
 		layout.Rigid(func(gtx C) D { return t.captionButtons(gtx, th, f, f.caption.left, act) }),
-		layout.Rigid(func(gtx C) D { return captionDivider(gtx, th) }),
+		layout.Rigid(func(gtx C) D { return th.CaptionDivider(gtx, gutter, captionSeparator) }),
 	)
 	call := macro.Stop()
 	defer op.Offset(image.Pt(gtx.Dp(gutter), (gtx.Constraints.Max.Y-d.Size.Y)/2)).Push(gtx.Ops).Pop()
@@ -241,15 +240,6 @@ func (t *topbar) captionButtons(gtx C, th *ui.Theme, f topbarFrame, buttons []ca
 		act.caption, act.captionClicked = b, true
 	}
 	return d
-}
-
-// captionDivider is the rule between lich's own buttons and the window's.
-func captionDivider(gtx C, th *ui.Theme) D {
-	return layout.Inset{Left: gutter, Right: gutter}.Layout(gtx, func(gtx C) D {
-		size := image.Pt(gtx.Dp(unit.Dp(1)), gtx.Dp(captionSeparator))
-		paint.FillShape(gtx.Ops, th.Over(th.Border), clip.Rect{Max: size}.Op())
-		return D{Size: size}
-	})
 }
 
 // brandButton is the mark and the name over the sidebar's column, a

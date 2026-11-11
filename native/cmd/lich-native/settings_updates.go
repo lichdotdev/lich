@@ -136,7 +136,12 @@ func (u *updatesSettings) appControl(gtx C, th *ui.Theme) D {
 	u.mu.Unlock()
 	b := th.Button(&u.checkApp, i18n.T("settings.updatesSettings.checkForUpdates"))
 	b.Size, b.Disabled = ui.SizeSM, checking
-	children := []layout.FlexChild{layout.Rigid(func(gtx C) D { return busyButton(gtx, th, b, checking) })}
+	children := []layout.FlexChild{layout.Rigid(func(gtx C) D {
+		if checking {
+			return th.SpinnerBeside(gtx, b.Layout)
+		}
+		return b.Layout(gtx)
+	})}
 	if result != "" {
 		children = append(children, ui.Gap(3), layout.Rigid(th.Text(ui.TextXS, result).Muted().Layout))
 	}
@@ -167,17 +172,4 @@ func (u *updatesSettings) runAppCheck(s *settingsScreen) {
 	u.checkingApp, u.appResult = false, result
 	u.mu.Unlock()
 	s.invalidate()
-}
-
-// busyButton is a Button that draws LoaderCircle under animate-spin before
-// its label while busy.
-func busyButton(gtx C, th *ui.Theme, b ui.ButtonStyle, busy bool) D {
-	if !busy {
-		return b.Layout(gtx)
-	}
-	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-		layout.Rigid(func(gtx C) D { return th.Spinner(gtx, ui.Space(4), th.MutedForeground) }),
-		ui.Gap(2),
-		layout.Rigid(b.Layout),
-	)
 }

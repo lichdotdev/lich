@@ -78,15 +78,6 @@ func stack(gtx C, gap float32, ws []layout.Widget) D {
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
 }
 
-// iconLine is a glyph and what follows it, gap-1.5 apart.
-func iconLine(gtx C, ic *icons.Icon, glyph ui.LabelStyle, rest ...layout.FlexChild) D {
-	children := []layout.FlexChild{
-		layout.Rigid(func(gtx C) D { return ic.Layout(gtx, 12, glyph.Color) }),
-		ui.Gap(1.5),
-	}
-	return layout.Flex{Alignment: layout.Middle}.Layout(gtx, append(children, rest...)...)
-}
-
 // footLine is the tooltip's last line: the model the provider runs and, in
 // the corner, how long the status has lasted while it has a clock. The
 // tooltip is redrawn when that reading changes.
@@ -109,19 +100,19 @@ func footLine(th *ui.Theme, sv *sessionView) layout.Widget {
 // for being a symlink.
 func sandboxSection(th *ui.Theme, s sandboxEvent) layout.Widget {
 	line := th.Text(ui.TextXS, i18n.T("sidebar.sessionTooltip.notMounted", i18n.Args{"paths": strings.Join(s.SkippedLinks, ", ")})).Muted()
-	return func(gtx C) D { return iconLine(gtx, icSandboxed, line, layout.Flexed(1, para(line).Layout)) }
+	return func(gtx C) D { return ui.IconLine(gtx, icSandboxed, line.Color, layout.Flexed(1, para(line).Layout)) }
 }
 
 func branchSection(th *ui.Theme, sv *sessionView) layout.Widget {
 	return func(gtx C) D {
 		muted := th.Text(ui.TextXS, sv.git.Branch).Muted()
 		children := []layout.FlexChild{
-			layout.Rigid(func(gtx C) D { return iconLine(gtx, icBranch, muted, layout.Rigid(muted.Layout)) }),
+			layout.Rigid(func(gtx C) D { return ui.IconLine(gtx, icBranch, muted.Color, layout.Rigid(muted.Layout)) }),
 		}
 		if sv.pr != nil {
 			number := th.Text(ui.TextXS, "#"+strconv.Itoa(sv.pr.Number)).Muted()
 			children = append(children, ui.Gap(2), layout.Rigid(func(gtx C) D {
-				return iconLine(gtx, icPR, number, layout.Rigid(number.Layout))
+				return ui.IconLine(gtx, icPR, number.Color, layout.Rigid(number.Layout))
 			}))
 		}
 		if sv.git.Files > 0 {
@@ -144,7 +135,7 @@ func baseSections(th *ui.Theme, b *backend.BaseStatus) []layout.Widget {
 	if n := len(b.Conflicts); n > 0 {
 		line := th.Text(ui.TextXS, i18n.T("git.baseStatus.conflict", i18n.Args{"count": n})).In(th.ToneWait)
 		out = append(out,
-			func(gtx C) D { return iconLine(gtx, icConflict, line, layout.Flexed(1, line.Layout)) },
+			func(gtx C) D { return ui.IconLine(gtx, icConflict, line.Color, layout.Flexed(1, line.Layout)) },
 			conflictPaths(th, b.Conflicts),
 		)
 	}
@@ -190,7 +181,7 @@ func modelSection(th *ui.Theme, requested, running string) layout.Widget {
 			}
 			children = append(children, layout.Rigid(l.Layout))
 		}
-		return iconLine(gtx, icModel, th.Text(ui.TextXS, "").Muted(), children...)
+		return ui.IconLine(gtx, icModel, th.MutedForeground, children...)
 	}
 }
 

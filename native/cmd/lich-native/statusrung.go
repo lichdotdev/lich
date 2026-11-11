@@ -1,8 +1,6 @@
 package main
 
 import (
-	"image/color"
-
 	"gioui.org/font"
 	"gioui.org/layout"
 
@@ -51,9 +49,9 @@ func statusRung(th *ui.Theme, sv *sessionView) (layout.Widget, bool) {
 		if reason == "" {
 			reason = i18n.T("sidebar.sessionStatusRung.waitingOnYou")
 		}
-		return rungLine(th, icWaiting, th.ToneWait, th.Text(ui.TextXS, reason).In(th.ToneWait).Weight(font.Medium)), true
+		return ui.IconLabel(icWaiting, th.ToneWait, th.Text(ui.TextXS, reason).In(th.ToneWait).Weight(font.Medium)).Layout, true
 	case sv.status == statusCompacting:
-		return rungLine(th, icCompacting, th.MutedForeground, th.Text(ui.TextXS, i18n.T("sidebar.sessionStatusRung.compacting")).Weight(font.Medium)), true
+		return ui.IconLabel(icCompacting, th.MutedForeground, th.Text(ui.TextXS, i18n.T("sidebar.sessionStatusRung.compacting")).Weight(font.Medium)).Layout, true
 	case sv.tool.Name != "":
 		return toolRung(th, sv), true
 	}
@@ -69,18 +67,7 @@ func relayRung(th *ui.Theme, r sessionRelay) layout.Widget {
 	if r.Peer == "" {
 		peer = th.Text(ui.TextXS, i18n.T("sidebar.sessionStatusRung.commandLine")).Muted().Italic()
 	}
-	return rungLine(th, ic, th.MutedForeground, peer)
-}
-
-// rungLine is a glyph and one truncating line of text-xs.
-func rungLine(th *ui.Theme, ic *icons.Icon, glyph color.NRGBA, text ui.LabelStyle) layout.Widget {
-	return func(gtx C) D {
-		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-			layout.Rigid(func(gtx C) D { return ic.Layout(gtx, 12, glyph) }),
-			ui.Gap(1),
-			layout.Flexed(1, text.Layout),
-		)
-	}
+	return ui.IconLabel(ic, th.MutedForeground, peer).Layout
 }
 
 // toolRung is the tool's glyph, its label and the detail the harness sent.

@@ -39,7 +39,7 @@ func skeletonPanel(gtx C, row func(gtx C, i int) D) D {
 	return layout.Inset{Top: ui.Space(1), Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D { return skeletonFill(gtx, row) })
 }
 
-// skeletonPanelRow is panelRow's insets around content.
+// skeletonPanelRow is PanelRow's insets around content.
 func skeletonPanelRow(gtx C, content layout.Widget) D {
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 	pad := pullsRowEdge + pullsRowPadX

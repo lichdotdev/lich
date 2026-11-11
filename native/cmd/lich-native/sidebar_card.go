@@ -19,7 +19,6 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 	"github.com/lichdotdev/lich/native/ui"
-	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
 func clickable(m map[string]*widget.Clickable, key string) *widget.Clickable {
@@ -317,18 +316,7 @@ func (s *sidebar) statusGlyph(gtx C, th *ui.Theme, sv *sessionView) D {
 		kind = sv.agent
 	}
 	if sv.place.hot {
-		return centeredIcon(gtx, foldIcon(!sv.place.folded), 13, th.Foreground)
+		return ui.CenteredIcon(gtx, foldIcon(!sv.place.folded), 13, th.Foreground)
 	}
-	return centeredIcon(gtx, providerIcon(kind), 13, ui.Alpha(th.MutedForeground, 1-entry.glyph))
-}
-
-// centeredIcon draws ic in the middle of the exact box gtx holds, at a
-// fractional offset: an odd leftover would otherwise round the glyph half a
-// pixel up and left of its ring.
-func centeredIcon(gtx C, ic *icons.Icon, size unit.Dp, c color.NRGBA) D {
-	box := gtx.Constraints.Min
-	off := f32.Pt(float32(box.X-gtx.Dp(size))/2, float32(box.Y-gtx.Dp(size))/2)
-	defer op.Affine(f32.Affine2D{}.Offset(off)).Push(gtx.Ops).Pop()
-	ic.Layout(gtx, size, c)
-	return D{Size: box}
+	return ui.CenteredIcon(gtx, providerIcon(kind), 13, ui.Alpha(th.MutedForeground, 1-entry.glyph))
 }

@@ -2,7 +2,6 @@ package main
 
 import (
 	"image"
-	"image/color"
 	"math"
 	"strconv"
 	"strings"
@@ -307,15 +306,7 @@ func nodeGlyphs(th *ui.Theme, blocks []blockView) map[string]layout.Widget {
 // headGlyph is a group head's glyph in the box it is given, colored as it
 // rests.
 func headGlyph(th *ui.Theme, ic *icons.Icon, tint string) layout.Widget {
-	return func(gtx C) D { return boxIcon(ic, headGlyphColor(th, tint))(gtx) }
-}
-
-// boxIcon is ic centered in the box it is given, as large as the box allows.
-func boxIcon(ic *icons.Icon, c color.NRGBA) layout.Widget {
-	return func(gtx C) D {
-		box := gtx.Constraints.Min
-		return centeredIcon(gtx, ic, unit.Dp(float32(min(box.X, box.Y))/gtx.Metric.PxPerDp), c)
-	}
+	return func(gtx C) D { return ui.BoxIcon(gtx, ic, headGlyphColor(th, tint)) }
 }
 
 func (s *sidebar) flyingGlyph(gtx C, th *ui.Theme, name string, side morphSide, box image.Rectangle, alpha float32, sessions map[string]*sessionView, nodes map[string]layout.Widget) {

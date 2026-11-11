@@ -42,7 +42,7 @@ func (r *sidebarRail) holdsKeys() bool {
 // tree starts where the open sidebar's does.
 func (r *sidebarRail) footer(gtx C, th *ui.Theme, s *sidebar, m *model, act *sidebarAction) D {
 	children := []layout.FlexChild{
-		layout.Rigid(func(gtx C) D { return railHairline(gtx, th) }),
+		layout.Rigid(func(gtx C) D { return th.RailHairline(gtx) }),
 		layout.Rigid(func(gtx C) D { return r.searchButton(gtx, th, s) }),
 		ui.VGap(1),
 		// New session is not named for the morph: the open sidebar's sits at
@@ -78,7 +78,7 @@ func (r *sidebarRail) servicesButton(gtx C, th *ui.Theme, s *sidebar, projectID 
 				if t.total == 0 {
 					fg = th.Over(ui.Alpha(fg, 0.55))
 				}
-				return squareFace(gtx, bg, func(gtx C) D {
+				return ui.SquareFace(gtx, bg, func(gtx C) D {
 					return layout.Stack{}.Layout(gtx,
 						layout.Stacked(func(gtx C) D { return icServices.Layout(gtx, ui.Space(4), fg) }),
 						layout.Expanded(func(gtx C) D { return railServicesBadge(gtx, th.On(bg), t) }),
@@ -141,7 +141,7 @@ func (r *sidebarRail) profileButton(gtx C, th *ui.Theme, s *sidebar, m *model, f
 		return menu.Layout(gtx, func(gtx C) D {
 			return r.foot.profile.Layout(gtx, func(gtx C) D {
 				bg := railFill(th, r.foot.profileMenu.Opened(), r.foot.profile.Hovered())
-				return squareFace(gtx, bg, func(gtx C) D { return profileAvatar(gtx, th.On(bg), look, ui.Space(4)) })
+				return ui.SquareFace(gtx, bg, func(gtx C) D { return profileAvatar(gtx, th.On(bg), look, ui.Space(4)) })
 			})
 		})
 	})
@@ -204,7 +204,7 @@ func (r *sidebarRail) searchButton(gtx C, th *ui.Theme, s *sidebar) D {
 			return r.foot.search.Layout(gtx, func(gtx C) D {
 				narrows := h.filter().narrows()
 				bg := railFill(th, r.foot.searchPanel.Opened() || narrows, r.foot.search.Hovered())
-				return squareFace(gtx, bg, func(gtx C) D {
+				return ui.SquareFace(gtx, bg, func(gtx C) D {
 					return layout.Stack{}.Layout(gtx,
 						layout.Stacked(func(gtx C) D { return icSearch.Layout(gtx, ui.Space(4), th.MutedForeground) }),
 						layout.Expanded(func(gtx C) D { return railFilterDot(gtx, th.On(bg), narrows && !r.foot.searchPanel.Opened()) }),

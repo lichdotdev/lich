@@ -5,7 +5,6 @@ import (
 	"image/color"
 	"math"
 
-	"gioui.org/f32"
 	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/op"
@@ -154,13 +153,18 @@ func (p *themePicker) cardActions(gtx C, th *ui.Theme, c *themeCard, s themeCard
 		}
 		t := op.Offset(image.Pt(x, pad)).Push(gtx.Ops)
 		tip := on.Tooltip(p.root, &c.updateTip, i18n.T("settings.themePicker.updateHint"))
-		tip.Layout(gtx, func(gtx C) D { return cardIconButton(gtx, on, &c.update, icRefresh, turn, s.updating != "") })
+		tip.Layout(gtx, func(gtx C) D {
+			if s.updating != "" {
+				return on.CardIconDisabled(gtx, icRefresh, cardActionBtn, turn)
+			}
+			return on.CardIconButton(gtx, &c.update, icRefresh, cardActionBtn, turn)
+		})
 		t.Pop()
 		x += btn + gap
 	}
 	t := op.Offset(image.Pt(x, pad)).Push(gtx.Ops)
 	tip := on.Tooltip(p.root, &c.removeTip, i18n.T("settings.themePicker.removeNamed", i18n.Args{"name": s.name}))
-	tip.Layout(gtx, func(gtx C) D { return cardIconButton(gtx, on, &c.remove, icTrash, 0, false) })
+	tip.Layout(gtx, func(gtx C) D { return on.CardIconButton(gtx, &c.remove, icTrash, cardActionBtn, 0) })
 	t.Pop()
 }
 
@@ -169,32 +173,6 @@ func spinAngle(gtx C) float32 {
 	gtx.Execute(op.InvalidateCmd{})
 	secs := float64(gtx.Now.UnixMilli()%1000) / 1000 / spinTurn
 	return float32(secs * 2 * math.Pi)
-}
-
-// cardIconButton is a ghost icon-xs button whose icon can be turned; a
-// disabled one is drawn at half strength and takes no click.
-func cardIconButton(gtx C, th *ui.Theme, click *widget.Clickable, ic *icons.Icon, turn float32, disabled bool) D {
-	draw := func(gtx C) D {
-		size := gtx.Dp(cardActionBtn)
-		gtx.Constraints = layout.Exact(image.Pt(size, size))
-		ink := th.Foreground
-		if disabled {
-			ink = th.Over(ui.Alpha(ink, 0.5))
-		} else if click.Hovered() {
-			ui.Fill(gtx, th.Over(ui.Alpha(th.Muted, 0.5)), ui.RadiusMD)
-		}
-		icon := gtx.Dp(ui.Space(3))
-		off := (size - icon) / 2
-		defer op.Offset(image.Pt(off, off)).Push(gtx.Ops).Pop()
-		c := f32.Pt(float32(icon)/2, float32(icon)/2)
-		defer op.Affine(f32.AffineId().Rotate(c, turn)).Push(gtx.Ops).Pop()
-		ic.Layout(gtx, ui.Space(3), ink)
-		return D{Size: image.Pt(size, size)}
-	}
-	if disabled {
-		return draw(gtx)
-	}
-	return click.Layout(gtx, draw)
 }
 
 // importCardLayout is the strip's first card: a dashed frame with a + in
@@ -299,24 +277,4 @@ func dashedBorder(gtx C, size image.Point, r int, c color.NRGBA) {
 		paint.FillShape(gtx.Ops, c, clip.Rect{Min: image.Pt(0, y), Max: image.Pt(w, end)}.Op())
 		paint.FillShape(gtx.Ops, c, clip.Rect{Min: image.Pt(size.X-w, y), Max: image.Pt(size.X, end)}.Op())
 	}
-}
-
-// ghostTextButton is a ghost xs button in ink: h-6 px-2, the hover fill
-// muted/50.
-func ghostTextButton(gtx C, th *ui.Theme, click *widget.Clickable, label string, ink color.NRGBA) D {
-	return click.Layout(gtx, func(gtx C) D {
-		macro := op.Record(gtx.Ops)
-		gtx.Constraints.Min = image.Pt(0, gtx.Dp(ui.Space(6)))
-		d := layout.Inset{Left: ui.Space(2), Right: ui.Space(2)}.Layout(gtx, func(gtx C) D {
-			return layout.Center.Layout(gtx, th.Text(ui.TextXS, label).In(ink).Weight(font.Medium).Layout)
-		})
-		call := macro.Stop()
-		if click.Hovered() {
-			box := gtx
-			box.Constraints = layout.Exact(d.Size)
-			ui.Fill(box, th.Over(ui.Alpha(th.Muted, 0.5)), ui.RadiusMD)
-		}
-		call.Add(gtx.Ops)
-		return d
-	})
 }

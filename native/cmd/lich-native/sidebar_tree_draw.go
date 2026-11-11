@@ -277,7 +277,7 @@ func checkoutNode(gtx C, th *ui.Theme, glyph *icons.Icon, entry treeEntry) D {
 	side := gtx.Dp(sessionTreeRingR) * 2
 	ringArc(gtx, side, entry, th.Over(ui.Alpha(th.MutedForeground, neutralRingAlpha)))
 	gtx.Constraints = layout.Exact(image.Pt(side, side))
-	return centeredIcon(gtx, glyph, 12, ui.Alpha(th.MutedForeground, 1-entry.glyph))
+	return ui.CenteredIcon(gtx, glyph, 12, ui.Alpha(th.MutedForeground, 1-entry.glyph))
 }
 
 // nodeGround is the surface under a node of b's rows: its tray in a folder,
@@ -323,7 +323,9 @@ func checkoutTooltip(th *ui.Theme, path string, f checkoutFacts) layout.Widget {
 	sections := []layout.Widget{}
 	if f.git.Branch != "" {
 		branch := th.Text(ui.TextXS, f.git.Branch).Weight(font.Medium)
-		sections = append(sections, func(gtx C) D { return iconLine(gtx, icBranch, branch.Muted(), layout.Flexed(1, para(branch).Layout)) })
+		sections = append(sections, func(gtx C) D {
+			return ui.IconLine(gtx, icBranch, branch.Muted().Color, layout.Flexed(1, para(branch).Layout))
+		})
 	}
 	sections = append(sections, para(th.Text(ui.TextXS, path).Muted().Mono()).Layout)
 	sections = append(sections, baseSections(th, f.base)...)
@@ -332,7 +334,9 @@ func checkoutTooltip(th *ui.Theme, path string, f checkoutFacts) layout.Widget {
 	}
 	if f.pr != nil && f.pr.Title != "" {
 		title := th.Text(ui.TextXS, f.pr.Title)
-		sections = append(sections, func(gtx C) D { return iconLine(gtx, icPR, title.Muted(), layout.Flexed(1, para(title).Layout)) })
+		sections = append(sections, func(gtx C) D {
+			return ui.IconLine(gtx, icPR, title.Muted().Color, layout.Flexed(1, para(title).Layout))
+		})
 	}
 	return func(gtx C) D { return stack(gtx, 1.5, sections) }
 }

@@ -5,7 +5,6 @@ import (
 	"io"
 	"strings"
 
-	"gioui.org/font"
 	"gioui.org/io/clipboard"
 	"gioui.org/io/key"
 	"gioui.org/layout"
@@ -212,7 +211,7 @@ func confirmLabel(kind flowKind) string {
 func (s *settingsScreen) flowBody(gtx C, th *ui.Theme, f *profileFlow, d flowData) D {
 	switch {
 	case d.step == stepWorking:
-		return spinnerLine(gtx, th, d.working)
+		return th.SpinnerLine(gtx, d.working)
 	case d.step == stepWaiting:
 		return s.loginBody(gtx, th, f, d)
 	case d.step == stepResult:
@@ -388,7 +387,7 @@ func (s *settingsScreen) loginBody(gtx C, th *ui.Theme, f *profileFlow, d flowDa
 	if d.authenticating {
 		waiting = i18n.T("settings.settingsProfilesDialogs.authenticating")
 	}
-	children := []layout.FlexChild{layout.Rigid(func(gtx C) D { return spinnerLine(gtx, th, waiting) })}
+	children := []layout.FlexChild{layout.Rigid(func(gtx C) D { return th.SpinnerLine(gtx, waiting) })}
 	if d.url != "" {
 		children = append(children, ui.VGap(4), layout.Rigid(func(gtx C) D { return s.addressBlock(gtx, th, f, d.url) }))
 	}
@@ -398,7 +397,7 @@ func (s *settingsScreen) loginBody(gtx C, th *ui.Theme, f *profileFlow, d flowDa
 	if d.failure != "" {
 		children = append(children, ui.VGap(2), layout.Rigid(func(gtx C) D { return wrapped(gtx, th.Text(ui.TextXS, d.failure).In(th.Destructive)) }))
 	}
-	children = append(children, ui.VGap(4), layout.Rigid(func(gtx C) D { return terminalLink(gtx, th, &f.term) }))
+	children = append(children, ui.VGap(4), layout.Rigid(func(gtx C) D { return th.HoverLink(gtx, &f.term, i18n.T("settings.settingsProfilesDialogs.terminal")) }))
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
 }
 
@@ -434,16 +433,6 @@ func (s *settingsScreen) codeBlock(gtx C, th *ui.Theme, f *profileFlow) D {
 			)
 		}),
 	)
-}
-
-func terminalLink(gtx C, th *ui.Theme, click *widget.Clickable) D {
-	return click.Layout(gtx, func(gtx C) D {
-		ink := th.MutedForeground
-		if click.Hovered() {
-			ink = th.Foreground
-		}
-		return th.Text(ui.TextXS, i18n.T("settings.settingsProfilesDialogs.terminal")).In(ink).Layout(gtx)
-	})
 }
 
 // resultBody is how a login or a copy ended: the account, then each plugin
@@ -482,14 +471,5 @@ func pluginResult(gtx C, th *ui.Theme, r backend.ProfilePluginResult) D {
 		}),
 		ui.Gap(2),
 		layout.Flexed(1, func(gtx C) D { return layout.Flex{Axis: layout.Vertical}.Layout(gtx, lines...) }),
-	)
-}
-
-// spinnerLine is LoaderCircle turning one lap a second beside a muted label.
-func spinnerLine(gtx C, th *ui.Theme, label string) D {
-	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-		layout.Rigid(func(gtx C) D { return th.Spinner(gtx, ui.Space(4), th.MutedForeground) }),
-		ui.Gap(2),
-		layout.Rigid(th.Text(ui.TextSM, label).Muted().Weight(font.Normal).Layout),
 	)
 }

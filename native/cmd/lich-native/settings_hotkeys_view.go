@@ -10,7 +10,6 @@ import (
 	"gioui.org/op"
 	"gioui.org/op/clip"
 	"gioui.org/unit"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
@@ -141,30 +140,24 @@ func (s *settingsScreen) hotkeyRow(gtx C, th *ui.Theme, a hotkeyAction, conflict
 				layout.Rigid(func(gtx C) D { return captureButton(gtx, th, r, c, recording, len(conflicts) > 0) }),
 				layout.Rigid(layout.Spacer{Width: hotkeyRowGap}.Layout),
 				layout.Rigid(func(gtx C) D {
-					return hotkeyIconButton(gtx, th, s.root, &r.unassign, &r.unassignTip, icHotkeyUnassign, i18n.T("settings.hotkeysSettings.unassignHint"), c.Key == "")
+					return th.GhostIconButton(gtx, s.root, &r.unassign, &r.unassignTip, icHotkeyUnassign, i18n.T("settings.hotkeysSettings.unassignHint"), c.Key == "")
 				}),
 				layout.Rigid(layout.Spacer{Width: hotkeyRowGap}.Layout),
 				layout.Rigid(func(gtx C) D {
-					return hotkeyIconButton(gtx, th, s.root, &r.reset, &r.resetTip, icHotkeyReset, i18n.T("settings.hotkeysSettings.resetHint"), c == defaultHotkeys()[a.id])
+					return th.GhostIconButton(gtx, s.root, &r.reset, &r.resetTip, icHotkeyReset, i18n.T("settings.hotkeysSettings.resetHint"), c == defaultHotkeys()[a.id])
 				}),
 			)
 		})
 		call := macro.Stop()
 		switch {
 		case lit > 0:
-			fillRow(gtx, th, d.Size, hotkeyLitFill*lit)
+			th.FillRow(gtx, d.Size, hotkeyLitFill*lit)
 		case r.hover.Hovered():
-			fillRow(gtx, th, d.Size, hotkeyHoverFill)
+			th.FillRow(gtx, d.Size, hotkeyHoverFill)
 		}
 		call.Add(gtx.Ops)
 		return d
 	})
-}
-
-func fillRow(gtx C, th *ui.Theme, size image.Point, alpha float32) {
-	fill := gtx
-	fill.Constraints = layout.Exact(size)
-	ui.Fill(fill, th.Over(ui.Alpha(th.Accent, alpha)), ui.RadiusMD)
 }
 
 // hotkeyName is the row's left column: the action, the amber line naming who
@@ -216,7 +209,7 @@ func captureButton(gtx C, th *ui.Theme, r *hotkeyRow, c combo, recording, confli
 			border = th.Over(ui.Alpha(th.ToneWait, 0.6))
 		}
 		if !recording && r.capture.Hovered() {
-			fillRow(gtx, th, size, 1)
+			th.FillRow(gtx, size, 1)
 		}
 		ui.InsetBorder(gtx, size, gtx.Dp(ui.RadiusMD), border)
 		call.Add(gtx.Ops)
@@ -224,14 +217,6 @@ func captureButton(gtx C, th *ui.Theme, r *hotkeyRow, c combo, recording, confli
 		event.Op(gtx.Ops, &r.tag)
 		return D{Size: size}
 	})
-}
-
-// hotkeyIconButton is a ghost icon button under its tooltip, dimmed and inert while
-// disabled.
-func hotkeyIconButton(gtx C, th *ui.Theme, root *ui.Root, click *widget.Clickable, tip *ui.Tooltip, ic *icons.Icon, hint string, disabled bool) D {
-	b := th.Button(click, "")
-	b.Icon, b.Variant, b.Size, b.Disabled = ic, ui.VariantGhost, ui.SizeIcon, disabled
-	return th.Tooltip(root, tip, hint).Layout(gtx, b.Layout)
 }
 
 // shortcutLine is ShortcutLine: what it does on the left, the chord as a key

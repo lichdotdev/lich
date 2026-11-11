@@ -233,7 +233,7 @@ func (d *scheduleDialog) kindList(gtx C, th *ui.Theme) D {
 			rows = append(rows, ui.VGap(0.5))
 		}
 		rows = append(rows, layout.Rigid(func(gtx C) D {
-			return navRow(gtx, th, &d.options[i], d.kind == kind, func(gtx C, th *ui.Theme) D {
+			return th.NavRow(gtx, &d.options[i], d.kind == kind, navRowHeight, navRowPadX, func(gtx C, th *ui.Theme) D {
 				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 					layout.Rigid(func(gtx C) D { return scheduleKindIcon(kind).Layout(gtx, ui.Space(3.5), th.MutedForeground) }),
 					ui.Gap(2),
