@@ -93,11 +93,11 @@ func (s *Service) claudePinMarketplace(env []string) error {
 // runs a general-purpose subagent as a lich session (hooks/agent-cards.js).
 const SubagentCardsRelease = "0.15.0"
 
-// ClaudeRunsSubagentCards reports whether the installed Claude Code plugin is a
-// release whose mod turns subagents into lich sessions. It reads Claude Code's
-// plugin state on each call.
-func ClaudeRunsSubagentCards() bool {
-	version, ok := claudeInstalledVersion()
+// ClaudeRunsSubagentCards reports whether the Claude Code plugin installed in
+// profileDir ("" for Personal) is a release whose mod turns subagents into lich
+// sessions. It reads Claude Code's plugin state on each call.
+func ClaudeRunsSubagentCards(profileDir string) bool {
+	version, ok := claudeInstalledVersionFor(profileDir)
 	return ok && runsSubagentCards(version)
 }
 
@@ -112,16 +112,25 @@ func runsSubagentCards(version string) bool {
 // session that answers nothing.
 const NestedSubagentCardsRelease = "0.19.0"
 
-// ClaudeNestsSubagentCards reports whether the installed Claude Code plugin is a
-// release a worker can open cards from. It reads Claude Code's plugin state on
-// each call.
-func ClaudeNestsSubagentCards() bool {
-	version, ok := claudeInstalledVersion()
+// ClaudeNestsSubagentCards reports whether the Claude Code plugin installed in
+// profileDir ("" for Personal) is a release a worker can open cards from. It
+// reads Claude Code's plugin state on each call.
+func ClaudeNestsSubagentCards(profileDir string) bool {
+	version, ok := claudeInstalledVersionFor(profileDir)
 	return ok && nestsSubagentCards(version)
 }
 
 func nestsSubagentCards(version string) bool {
 	return !semver.Less(version, NestedSubagentCardsRelease)
+}
+
+// claudeInstalledVersionFor is the installed version in profileDir, or in
+// Personal's plugin state when profileDir is "".
+func claudeInstalledVersionFor(profileDir string) (string, bool) {
+	if profileDir == "" {
+		return claudeInstalledVersion()
+	}
+	return claudeInstalledVersionIn(profileDir)
 }
 
 // claudeInstalledVersion reads the plugin's installed version from Claude

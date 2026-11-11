@@ -3,11 +3,14 @@
 package terminal
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/events"
 	"github.com/lichdotdev/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/relay"
 )
 
 // Unix-only with the stubBins it reads, which live in the PTY suite.
@@ -34,7 +37,7 @@ func TestSubagentCardsOnFollowsTheDepth(t *testing.T) {
 			withClaudePlugin(t, c.plugin)
 			svc := New(c.bins, nil, events.New())
 			depth := c.bins.SessionSubagentDepth("s1")
-			if got := svc.subagentCardsOn(providers.Claude, depth); got != c.wantOn {
+			if got := svc.subagentCardsOn(providers.Claude, "", depth); got != c.wantOn {
 				t.Errorf("subagentCardsOn = %v, want %v", got, c.wantOn)
 			}
 		})
@@ -59,7 +62,51 @@ func TestForkOfASubagentKeepsItsDepth(t *testing.T) {
 	if got := store.inheritedSubagent["s2"]; got != maxSubagentDepth {
 		t.Errorf("the fork's row is %d deep, want the worker's %d", got, maxSubagentDepth)
 	}
-	if svc.subagentCardsOn(providers.Claude, store.SessionSubagentDepth("s2")) {
+	if svc.subagentCardsOn(providers.Claude, "", store.SessionSubagentDepth("s2")) {
 		t.Error("the fork of a worker at the limit opens cards, want its subagents native")
+	}
+}
+
+// claudeProfileWithPlugin lays out a profile's Claude Code config directory
+// holding the lich plugin at version, and returns it.
+func claudeProfileWithPlugin(t *testing.T, version string) string {
+	t.Helper()
+	profile := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(profile, "plugins"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	state := `{"plugins":{"lich@lich-plugin":[{"scope":"user","version":"` + version + `"}]}}`
+	if err := os.WriteFile(filepath.Join(profile, "plugins", "installed_plugins.json"), []byte(state), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	return profile
+}
+
+// A session in a profile opens a worker's cards by the plugin that profile
+// holds, not by Personal's.
+func TestSubagentCardsOnReadsTheProfilesPlugin(t *testing.T) {
+	withClaudePlugin(t, "0.19.0")
+	profile := claudeProfileWithPlugin(t, "0.18.4")
+	svc := New(stubBins{subagentDepth: 1}, nil, events.New())
+
+	if !svc.subagentCardsOn(providers.Claude, "", 1) {
+		t.Error("Personal on 0.19.0: want a worker's cards on")
+	}
+	if svc.subagentCardsOn(providers.Claude, profile, 1) {
+		t.Error("a profile on 0.18.4 beside a Personal on 0.19.0: want a worker's subagents native")
+	}
+}
+
+// The briefing of a session in a profile points at the Agent tool only when the
+// plugin that profile holds opens cards, not when Personal's does.
+func TestSubagentRouteReadsTheProfilesPlugin(t *testing.T) {
+	withClaudePlugin(t, "0.19.0")
+	profile := claudeProfileWithPlugin(t, "0.14.0")
+
+	if got := subagentRoute(providers.Claude, "", 0, true); got != relay.RouteCards {
+		t.Errorf("Personal on 0.19.0: subagentRoute = %v, want the cards route", got)
+	}
+	if got := subagentRoute(providers.Claude, profile, 0, true); got != relay.RouteSessions {
+		t.Errorf("a profile on 0.14.0 beside a Personal on 0.19.0: subagentRoute = %v, want the sessions route", got)
 	}
 }

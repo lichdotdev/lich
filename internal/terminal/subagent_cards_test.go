@@ -80,7 +80,7 @@ func TestSubagentRoute(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			if got := subagentRoute(c.kind, c.depth, c.cardsOn); got != c.want {
+			if got := subagentRoute(c.kind, "", c.depth, c.cardsOn); got != c.want {
 				t.Errorf("subagentRoute = %v, want %v", got, c.want)
 			}
 		})
@@ -90,7 +90,7 @@ func TestSubagentRoute(t *testing.T) {
 // Without a plugin whose mod opens cards, nothing is told about the Agent tool.
 func TestSubagentRouteWithoutTheCardPlugin(t *testing.T) {
 	withClaudePlugin(t, "0.14.0")
-	if got := subagentRoute(providers.Claude, 1, false); got != relay.RouteSessions {
+	if got := subagentRoute(providers.Claude, "", 1, false); got != relay.RouteSessions {
 		t.Errorf("subagentRoute = %v, want the sessions route", got)
 	}
 }

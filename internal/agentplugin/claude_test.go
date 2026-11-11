@@ -36,3 +36,26 @@ func TestRunsSubagentCardsFromTheFirstCardRelease(t *testing.T) {
 		}
 	}
 }
+
+// A profile has a plugin set of its own, so a worker may open cards only if the
+// plugin in the profile the session runs in is a release that tells it by depth,
+// whatever Personal's is.
+func TestClaudeNestsSubagentCardsAnswersForTheProfile(t *testing.T) {
+	state := func(version string) string {
+		return `{"plugins":{"lich@lich-plugin":[{"scope":"user","version":"` + version + `"}]}}`
+	}
+	personal := writeClaudeState(t, state("0.19.0"))
+	t.Setenv("CLAUDE_CONFIG_DIR", personal)
+	older := writeClaudeState(t, state("0.18.4"))
+	t.Setenv("CLAUDE_CONFIG_DIR", personal)
+
+	if !ClaudeNestsSubagentCards("") {
+		t.Error("Personal on 0.19.0: want cards to nest")
+	}
+	if ClaudeNestsSubagentCards(older) {
+		t.Error("a profile on 0.18.4 beside a Personal on 0.19.0: want cards not to nest")
+	}
+	if ClaudeNestsSubagentCards(t.TempDir()) {
+		t.Error("a profile with no plugin: want cards not to nest")
+	}
+}

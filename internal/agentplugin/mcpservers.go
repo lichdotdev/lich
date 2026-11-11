@@ -42,10 +42,11 @@ const opencodeProjectDir = ".opencode"
 
 // MCPServers names the MCP servers whose tools a session of this provider,
 // started in cwd, can call — sorted, with lich's own always among them, since
-// lich is registered wherever it spawns a session.
-func MCPServers(provider, cwd string) []string {
+// lich is registered wherever it spawns a session. profileDir is the profile
+// the session runs in, "" for Personal.
+func MCPServers(provider, cwd, profileDir string) []string {
 	names := map[string]bool{relay.MCPServerName: true}
-	for _, name := range registeredServers(provider, cwd) {
+	for _, name := range registeredServers(provider, cwd, profileDir) {
 		names[name] = true
 	}
 	return slices.Sorted(maps.Keys(names))
@@ -54,18 +55,28 @@ func MCPServers(provider, cwd string) []string {
 // registeredServers reads the provider's own documents, or answers nothing at
 // all — an absent file, one lich cannot parse and a provider that keeps none are
 // the same answer, and it is the one that leaves a tool name whole.
-func registeredServers(provider, cwd string) []string {
+func registeredServers(provider, cwd, profileDir string) []string {
 	switch provider {
 	case providers.OMP:
-		dir, err := ompAgentDir()
+		dir, err := ompSessionDir(profileDir)
 		if err != nil {
 			return nil
 		}
 		return serverKeys(filepath.Join(dir, ompMCPFile), mcpServersKey)
 	case providers.OpenCode:
+		// opencode's profiles move its data home only; its config is every profile's.
 		return opencodeServers(cwd)
 	}
 	return nil
+}
+
+// ompSessionDir is the agent directory omp reads its documents from in a
+// session: the profile's own, else Personal's.
+func ompSessionDir(profileDir string) (string, error) {
+	if profileDir != "" {
+		return profileDir, nil
+	}
+	return ompAgentDir()
 }
 
 // opencodeServers reads every document opencode merges its config from: the

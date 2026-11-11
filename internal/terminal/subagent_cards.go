@@ -36,8 +36,8 @@ func subagentEnv(env []string, kind string, depth int, cardsOn bool) []string {
 // (relay.SubagentRoute): its own Agent tool, as cards, where a plugin release
 // whose mod does that is installed; the same tool kept native in a card that
 // does not open cards; and lich sessions everywhere else.
-func subagentRoute(kind string, depth int, cardsOn bool) relay.SubagentRoute {
-	if kind != providers.Claude || !agentplugin.ClaudeRunsSubagentCards() {
+func subagentRoute(kind, profileDir string, depth int, cardsOn bool) relay.SubagentRoute {
+	if kind != providers.Claude || !agentplugin.ClaudeRunsSubagentCards(profileDir) {
 		return relay.RouteSessions
 	}
 	if cardsOn {
@@ -54,9 +54,9 @@ func subagentRoute(kind string, depth int, cardsOn bool) relay.SubagentRoute {
 // maxSubagentDepth whose plugin tells a worker by its depth. Under an older
 // plugin a worker's own subagents stay native, since that mod would stop
 // answering for a worker that opens cards.
-func (s *Service) subagentCardsOn(kind string, depth int) bool {
+func (s *Service) subagentCardsOn(kind, profileDir string, depth int) bool {
 	if !s.store.SubagentCards(kind) {
 		return false
 	}
-	return depth == 0 || (depth < maxSubagentDepth && agentplugin.ClaudeNestsSubagentCards())
+	return depth == 0 || (depth < maxSubagentDepth && agentplugin.ClaudeNestsSubagentCards(profileDir))
 }
