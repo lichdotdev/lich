@@ -222,7 +222,7 @@ func (r *sidebarRail) slot(gtx C, th *ui.Theme, st *railSort) {
 		k := float32(gtx.Dp(railChildR)) / float32(gtx.Dp(sessionTreeRingR))
 		defer op.Affine(f32.Affine2D{}.Scale(center, f32.Pt(k, k))).Push(gtx.Ops).Pop()
 	}
-	slotRing(gtx, center, c)
+	ui.DashedCircle(gtx, center, sessionTreeRingR, sessionTreeStroke, dragDash, c)
 }
 
 // dropRail reads the block's drag in the rail as dropCards reads the open

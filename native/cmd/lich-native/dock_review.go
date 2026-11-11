@@ -25,6 +25,7 @@ import (
 	"github.com/lichdotdev/lich/native/glyphs"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
+	"github.com/lichdotdev/lich/native/ui/diffview"
 )
 
 // revertUndoFor is REVERT_UNDO_MS: a revert's Undo stays longer than a plain
@@ -114,7 +115,7 @@ type prFiles struct {
 	own bool
 	// blocks are the review threads and pending comments under a file's
 	// lines.
-	blocks func(path string) []cardBlock
+	blocks func(path string) []diffview.Block
 }
 
 func (f *prFiles) isViewed(c *fileCard) bool { return f.viewed[c.git.path] == c.gitText }
@@ -263,13 +264,6 @@ func (p *reviewPanel) fold(c *fileCard) {
 // splitShown is shownLayout: side by side only once the cards are wide
 // enough.
 func (p *reviewPanel) splitShown(gtx C) bool { return p.split && p.splitOK }
-
-// diffTheme is the window theme's code palette on the panel's own ground.
-func (p *reviewPanel) diffTheme() godemirror.Theme {
-	t := p.code
-	t.Background, t.GutterBackground = p.th.Surface, p.th.Surface
-	return t
-}
 
 // expand fetches a gap's lines off the UI goroutine: from the working tree,
 // or from a pull request's head.

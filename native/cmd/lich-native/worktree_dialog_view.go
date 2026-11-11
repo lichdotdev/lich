@@ -239,11 +239,11 @@ func (d *worktreeDialog) body(gtx C, th *ui.Theme, ctx context.Context, v worktr
 	// rung, so it has no box to tick.
 	if v.canConfine && group != baseWorktree && d.fork == nil {
 		children = append(children, ui.VGap(3), layout.Rigid(func(gtx C) D {
-			return checkRow(gtx, th, &d.confined, i18n.T("sidebar.worktreeSandboxRow.runConfined"), "")
+			return th.CheckRow(gtx, &d.confined, i18n.T("sidebar.worktreeSandboxRow.runConfined"), "")
 		}))
 	}
 	if failure := v.loadErr + v.submitErr; failure != "" {
-		children = append(children, ui.VGap(3), layout.Rigid(func(gtx C) D { return wrapped(gtx, th.Text(ui.TextXS, failure).In(th.Destructive)) }))
+		children = append(children, ui.VGap(3), layout.Rigid(func(gtx C) D { return th.Text(ui.TextXS, failure).In(th.Destructive).Wrapped().Layout(gtx) }))
 	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
 }
@@ -272,7 +272,7 @@ func (d *worktreeDialog) nameField(gtx C, th *ui.Theme, v worktreeView, reopenin
 			children = append(children, layout.Rigid(th.Text(ui.TextXS, fmt.Sprintf("#%d %s", v.issue.Number, v.issue.Title)).Layout))
 		}
 		if v.issueErr != "" {
-			children = append(children, layout.Rigid(func(gtx C) D { return wrapped(gtx, th.Text(ui.TextXS, v.issueErr).In(th.Destructive)) }))
+			children = append(children, layout.Rigid(func(gtx C) D { return th.Text(ui.TextXS, v.issueErr).In(th.Destructive).Wrapped().Layout(gtx) }))
 		}
 		branch := v.newBranch(d.name.Text())
 		if branch == "" {
@@ -295,7 +295,9 @@ func (d *worktreeDialog) basePicker(gtx C, th *ui.Theme, ctx context.Context, v 
 		return d.branchList(gtx, th, ctx, v)
 	})
 	lead := func(gtx C) D { return icWtBranch.Layout(gtx, ui.Space(4), th.MutedForeground) }
-	return pop.Layout(gtx, func(gtx C) D { return selectTriggerWith(gtx, th, lead, label, width) })
+	trigger := th.SelectTrigger(label, width)
+	trigger.Lead = lead
+	return pop.Layout(gtx, trigger.Layout)
 }
 
 func (d *worktreeDialog) branchList(gtx C, th *ui.Theme, ctx context.Context, v worktreeView) D {
@@ -363,20 +365,5 @@ func (d *worktreeDialog) branchRow(gtx C, th *ui.Theme, ctx context.Context, r w
 
 func (d *worktreeDialog) carryRow(gtx C, th *ui.Theme) D {
 	note := i18n.T("sidebar.worktreeDialogView.carryFiles", i18n.Args{"count": d.checkout.Files})
-	return checkRow(gtx, th, &d.carry, i18n.T("sidebar.worktreeDialogView.carry"), note)
-}
-
-// checkRow is a checkbox with its label, and a muted line under the label.
-func checkRow(gtx C, th *ui.Theme, box *widget.Bool, label, note string) D {
-	text := []layout.FlexChild{layout.Rigid(th.Text(ui.TextSM, label).Layout)}
-	if note != "" {
-		text = append(text, layout.Rigid(th.Text(ui.TextXS, note).Muted().Layout))
-	}
-	return layout.Flex{Alignment: layout.Start}.Layout(gtx,
-		layout.Rigid(func(gtx C) D {
-			return layout.Inset{Top: ui.Space(0.5)}.Layout(gtx, th.Checkbox(box).Layout)
-		}),
-		ui.Gap(2.5),
-		layout.Flexed(1, func(gtx C) D { return layout.Flex{Axis: layout.Vertical}.Layout(gtx, text...) }),
-	)
+	return th.CheckRow(gtx, &d.carry, i18n.T("sidebar.worktreeDialogView.carry"), note)
 }

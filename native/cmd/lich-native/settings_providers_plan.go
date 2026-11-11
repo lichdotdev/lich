@@ -40,7 +40,7 @@ func planBody(gtx C, th *ui.Theme, plan backend.QuotaPlan) D {
 	case "signed-out":
 		return planSignedOutLine(gtx, th, loginCommands[plan.Provider])
 	case "error":
-		return wrapped(gtx, th.Text(ui.TextXS, i18n.T("settings.planUsageSetting.readFailed")).Muted())
+		return th.Text(ui.TextXS, i18n.T("settings.planUsageSetting.readFailed")).Muted().Wrapped().Layout(gtx)
 	}
 	gtx.Constraints.Max.X = min(gtx.Constraints.Max.X, gtx.Sp(ui.TextXS)*proseCh*6/10)
 	children := []layout.FlexChild{layout.Rigid(func(gtx C) D { return planHead(gtx, th, plan.Plan) })}
@@ -77,10 +77,10 @@ func planHead(gtx C, th *ui.Theme, plan string) D {
 	muted := func(text string) layout.Widget {
 		return th.Text(planHeadSize, strings.ToUpper(text)).Muted().Layout
 	}
-	return planRow(gtx,
+	return planRow(
 		th.Text(ui.TextXS, plan).Muted().Layout,
 		func(gtx C) D { return D{Size: image.Pt(gtx.Constraints.Max.X, 0)} },
-		muted(i18n.T("settings.planUsageSetting.used")), muted(i18n.T("settings.planUsageSetting.resets")))
+		muted(i18n.T("settings.planUsageSetting.used")), muted(i18n.T("settings.planUsageSetting.resets"))).Layout(gtx)
 }
 
 // planGauge is QuotaGauge on one line: the label (and the pace mark), the
@@ -95,10 +95,10 @@ func planGauge(gtx C, th *ui.Theme, g quotaGauge) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
 	}
 	row := func(gtx C) D {
-		return planRow(gtx, label,
-			func(gtx C) D { return gaugeBar(gtx, th, g.Percent, tone) },
+		return planRow(label,
+			func(gtx C) D { return th.GaugeBar(gtx, g.Percent, tone) },
 			th.Text(ui.TextXS, g.Reading).In(tone).Layout,
-			th.Text(ui.TextXS, g.Left).Muted().Layout)
+			th.Text(ui.TextXS, g.Left).Muted().Layout).Layout(gtx)
 	}
 	if g.Locked == "" {
 		return row(gtx)
@@ -106,31 +106,11 @@ func planGauge(gtx C, th *ui.Theme, g quotaGauge) D {
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(row),
 		ui.VGap(1),
-		layout.Rigid(func(gtx C) D { return wrapped(gtx, th.Text(ui.TextXS, g.Locked).In(th.Destructive)) }),
+		layout.Rigid(func(gtx C) D { return th.Text(ui.TextXS, g.Locked).In(th.Destructive).Wrapped().Layout(gtx) }),
 	)
 }
 
-// planRow lays out the grid's four columns.
-func planRow(gtx C, label, bar, reading, left layout.Widget) D {
-	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-		fixedColumn(planLabelW, label),
-		ui.Gap(3),
-		layout.Flexed(1, bar),
-		ui.Gap(3),
-		fixedColumn(planReadingW, alignEnd(reading)),
-		ui.Gap(3),
-		fixedColumn(planLeftW, alignEnd(left)),
-	)
-}
-
-func fixedColumn(width unit.Dp, w layout.Widget) layout.FlexChild {
-	return layout.Rigid(func(gtx C) D {
-		px := gtx.Dp(width)
-		gtx.Constraints.Min.X, gtx.Constraints.Max.X = px, px
-		return w(gtx)
-	})
-}
-
-func alignEnd(w layout.Widget) layout.Widget {
-	return func(gtx C) D { return layout.E.Layout(gtx, w) }
+// planRow is the grid's four columns at the page's widths.
+func planRow(label, bar, reading, left layout.Widget) ui.GaugeRowStyle {
+	return ui.GaugeRowStyle{LabelW: planLabelW, ReadingW: planReadingW, LeftW: planLeftW, Label: label, Bar: bar, Reading: reading, Left: left}
 }

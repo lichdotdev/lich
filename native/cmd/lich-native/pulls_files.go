@@ -12,8 +12,6 @@ import (
 	"time"
 
 	"gioui.org/layout"
-	"gioui.org/op/clip"
-	"gioui.org/op/paint"
 	"gioui.org/unit"
 	"gioui.org/widget"
 
@@ -22,6 +20,8 @@ import (
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
+	"github.com/lichdotdev/lich/native/ui/diffview"
+	"github.com/lichdotdev/lich/native/ui/filetree"
 )
 
 // The file tree's width in rem, PullsFiles' TREE_DEFAULT_REM and the bounds
@@ -50,10 +50,10 @@ func loadTreeWidth(ctx context.Context, c *backend.Client) (float64, error) {
 // filesTree is the Files tab's file tree: the PR's paths nested, folders open
 // until folded, a file's click scrolling its card into view.
 type filesTree struct {
-	rows   treeRows
+	rows   filetree.Rows
 	closed map[string]bool
 	hidden bool
-	toggle iconActionState
+	toggle ui.IconActionState
 	// widthRem is the tree's width, dragged by resize.
 	widthRem float64
 	resize   ui.ResizeHandle
@@ -144,7 +144,7 @@ func (v *pullView) filesTab(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDet
 	case !read.loaded:
 		return v.skeletonFiles(gtx, th)
 	case read.err != "":
-		return panelNotice(gtx, th, i18n.T("pulls.pullsFiles.loadFailed", i18n.Args{"error": read.err}))
+		return th.PanelNotice(i18n.T("pulls.pullsFiles.loadFailed", i18n.Args{"error": read.err}), pullsPadX).Layout(gtx)
 	}
 	files.takeRead(d.URL, &diffRead{text: read.val})
 	files.takeAnswers()
@@ -170,12 +170,12 @@ func (v *pullView) filesBody(gtx C, th *ui.Theme) D {
 			if v.tree.hidden {
 				return D{}
 			}
-			return verticalRule(gtx, th)
+			return th.VerticalRule(gtx)
 		}),
 		layout.Flexed(1, func(gtx C) D {
 			gtx.Constraints.Min = gtx.Constraints.Max
 			if err := v.files.bodyWithBatch(gtx, th); err != nil {
-				return notice(gtx, th, err.Error())
+				return th.Notice(err.Error()).Layout(gtx)
 			}
 			return D{Size: gtx.Constraints.Max}
 		}),
@@ -223,30 +223,23 @@ func (v *pullView) treeLayout(gtx C, th *ui.Theme) D {
 	t, files := &v.tree, v.files
 	if key := strings.Join(files.order, "\x00"); key != t.builtFor {
 		t.builtFor = key
-		t.rows.tree = buildTree(files.order)
-		stats := map[string]lineDelta{}
+		t.rows.Tree = filetree.Build(files.order)
+		stats := map[string]filetree.Delta{}
 		for path, c := range files.cards {
-			stats[path] = lineDelta{c.patch.Added, c.patch.Deleted}
+			stats[path] = filetree.Delta{Added: c.patch.Added, Deleted: c.patch.Deleted}
 		}
-		t.rows.stats = withDirStats(t.rows.tree, stats)
+		t.rows.Stats = filetree.WithDirStats(t.rows.Tree, stats)
 	}
-	for _, node := range t.rows.clicked(gtx) {
-		if node.dir {
-			t.closed[node.path] = !t.closed[node.path]
+	for _, node := range t.rows.Clicked(gtx) {
+		if node.Dir {
+			t.closed[node.Path] = !t.closed[node.Path]
 			continue
 		}
-		t.active = node.path
-		files.scrollToFile(node.path)
+		t.active = node.Path
+		files.scrollToFile(node.Path)
 	}
-	rows := visibleRows(t.rows.tree, func(path string) bool { return !t.closed[path] })
-	return t.rows.layout(gtx, th, rows, t.active)
-}
-
-// verticalRule is a 1px border-r seam the height of gtx.
-func verticalRule(gtx C, th *ui.Theme) D {
-	size := image.Pt(gtx.Dp(1), gtx.Constraints.Max.Y)
-	paint.FillShape(gtx.Ops, th.Over(th.Border), clip.Rect{Max: size}.Op())
-	return D{Size: size}
+	rows := filetree.VisibleRows(t.rows.Tree, func(path string) bool { return !t.closed[path] })
+	return t.rows.Layout(gtx, th, rows, t.active)
 }
 
 // filesToolbar is the tree's toggle, "N of M viewed", and the dock's split
@@ -259,7 +252,7 @@ func (v *pullView) filesToolbar(gtx C, th *ui.Theme) D {
 			viewed++
 		}
 	}
-	if v.tree.toggle.click.Clicked(gtx) {
+	if v.tree.toggle.Click.Clicked(gtx) {
 		v.tree.hidden = !v.tree.hidden
 	}
 	treeIcon, treeLabel := icPullHide, i18n.T("pulls.pullsFiles.hideTree")
@@ -268,7 +261,7 @@ func (v *pullView) filesToolbar(gtx C, th *ui.Theme) D {
 	}
 	return layout.Inset{Left: ui.Space(2), Right: ui.Space(2), Top: ui.Space(1.5), Bottom: ui.Space(1.5)}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-			layout.Rigid(func(gtx C) D { return iconAction(gtx, th, v.root, &v.tree.toggle, treeIcon, treeLabel, false) }),
+			layout.Rigid(func(gtx C) D { return th.IconAction(v.root, &v.tree.toggle, treeIcon, treeLabel, false).Layout(gtx) }),
 			ui.Gap(2),
 			layout.Rigid(th.Text(ui.TextXS, i18n.T("pulls.pullsFiles.viewed", i18n.Args{"viewed": viewed, "total": len(files.order)})).Muted().Layout),
 			layout.Flexed(1, func(gtx C) D { return D{Size: gtx.Constraints.Min} }),
@@ -290,16 +283,16 @@ type inlineFrame struct {
 // diffBlocks are path's review threads still anchored to a line (an outdated
 // one lives in the Conversation tab alone) and its pending comments, each
 // under its line.
-func (v *pullView) diffBlocks(path string) []cardBlock {
+func (v *pullView) diffBlocks(path string) []diffview.Block {
 	f := v.inline
-	var out []cardBlock
+	var out []diffview.Block
 	if conv := f.p.store.conversation(f.p.project.Path, f.d.Number).val; conv != nil {
 		for _, t := range conv.Threads {
 			if t.Path != path || t.IsOutdated || t.Line == 0 {
 				continue
 			}
 			id := t.ID
-			out = append(out, cardBlock{key: "thread:" + id, at: lineRef(t.Side, t.Line), widget: func(gtx C) D { return v.inlineThread(gtx, id) }})
+			out = append(out, diffview.Block{Key: "thread:" + id, At: lineRef(t.Side, t.Line), Widget: func(gtx C) D { return v.inlineThread(gtx, id) }})
 		}
 	}
 	for i, c := range v.pendingOf(f.d.URL).snapshot() {
@@ -308,7 +301,7 @@ func (v *pullView) diffBlocks(path string) []cardBlock {
 		}
 		key := fmt.Sprint("pending:", i, ":", c.Body)
 		index, comment := i, c
-		out = append(out, cardBlock{key: key, at: lineRef(c.Side, c.Line), widget: func(gtx C) D { return v.inlinePending(gtx, index, comment) }})
+		out = append(out, diffview.Block{Key: key, At: lineRef(c.Side, c.Line), Widget: func(gtx C) D { return v.inlinePending(gtx, index, comment) }})
 	}
 	return out
 }
@@ -355,7 +348,7 @@ func (v *pullView) inlinePending(gtx C, i int, c backend.ReviewComment) D {
 			func(gtx C) D {
 				on := th.On(th.Sidebar)
 				return layout.UniformInset(ui.Space(3)).Layout(gtx, func(gtx C) D {
-					body := func(gtx C) D { return wrapped(gtx, on.Text(ui.TextSM, c.Body)) }
+					body := func(gtx C) D { return on.Text(ui.TextSM, c.Body).Wrapped().Layout(gtx) }
 					if editing {
 						body = func(gtx C) D { return v.pendingEditBox(gtx, on) }
 					}

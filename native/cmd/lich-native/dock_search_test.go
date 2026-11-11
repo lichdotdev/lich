@@ -4,6 +4,8 @@ import (
 	"reflect"
 	"testing"
 	"time"
+
+	"github.com/lichdotdev/lich/native/ui"
 )
 
 func TestGroupMatchesFoldsConsecutiveHitsOfAFile(t *testing.T) {
@@ -15,7 +17,7 @@ func TestGroupMatchesFoldsConsecutiveHitsOfAFile(t *testing.T) {
 
 func TestHighlightSegmentsMarksEveryCaseInsensitiveOccurrence(t *testing.T) {
 	got := highlightSegments("Foo bar foo", "FOO")
-	want := []segment{{"Foo", true}, {" bar ", false}, {"foo", true}}
+	want := []ui.MarkedSegment{{Text: "Foo", Marked: true}, {Text: " bar ", Marked: false}, {Text: "foo", Marked: true}}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("segments = %+v, want %+v", got, want)
 	}
@@ -23,7 +25,7 @@ func TestHighlightSegmentsMarksEveryCaseInsensitiveOccurrence(t *testing.T) {
 
 func TestHighlightSegmentsShowsALineWhoseLowercaseResizesPlain(t *testing.T) {
 	got := highlightSegments("İstanbul", "stan")
-	if !reflect.DeepEqual(got, []segment{{"İstanbul", false}}) {
+	if !reflect.DeepEqual(got, []ui.MarkedSegment{{Text: "İstanbul", Marked: false}}) {
 		t.Errorf("segments = %+v", got)
 	}
 }

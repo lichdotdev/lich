@@ -146,13 +146,13 @@ func (s *settingsScreen) serviceRow(gtx C, th *ui.Theme, v backend.Service) D {
 					layout.Rigid(th.Text(ui.TextXS, v.Command).Mono().Muted().Layout),
 				)
 			}),
-			layout.Rigid(func(gtx C) D { return cornerButton(gtx, th, edit, icServiceEdit, false) }),
+			layout.Rigid(func(gtx C) D { return th.CornerButton(edit, icServiceEdit, false).Layout(gtx) }),
 			ui.Gap(1),
 			layout.Rigid(func(gtx C) D {
 				if serviceUp(v) {
 					return D{Size: image.Pt(gtx.Dp(16), gtx.Dp(16))}
 				}
-				return cornerButton(gtx, th, del, icServiceDelete, false)
+				return th.CornerButton(del, icServiceDelete, false).Layout(gtx)
 			}),
 		)
 	})
@@ -185,7 +185,7 @@ func (s *settingsScreen) serviceForm(gtx C, th *ui.Theme, v backend.Service) D {
 		layout.Rigid(th.Label(i18n.T("settings.servicesSettings.command")).Layout), ui.VGap(1.5),
 		layout.Rigid(command.Layout), ui.VGap(1.5),
 		layout.Rigid(func(gtx C) D {
-			return wrapped(gtx, th.Text(ui.TextXS, i18n.T("settings.servicesSettings.commandHint")).Muted())
+			return th.Text(ui.TextXS, i18n.T("settings.servicesSettings.commandHint")).Muted().Wrapped().Layout(gtx)
 		}),
 		ui.VGap(3),
 		layout.Rigid(func(gtx C) D {
@@ -199,7 +199,7 @@ func (s *settingsScreen) serviceForm(gtx C, th *ui.Theme, v backend.Service) D {
 		children = append(children, ui.VGap(2), layout.Rigid(func(gtx C) D {
 			l := th.Text(ui.TextXS, errText)
 			l.Color = th.Destructive
-			return wrapped(gtx, l)
+			return l.Wrapped().Layout(gtx)
 		}))
 	}
 	children = append(children, ui.VGap(3), layout.Rigid(func(gtx C) D {

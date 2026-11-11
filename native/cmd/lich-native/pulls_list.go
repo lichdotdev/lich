@@ -12,16 +12,12 @@ import (
 	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/op"
-	"gioui.org/op/clip"
-	"gioui.org/op/paint"
 	"gioui.org/unit"
 	"gioui.org/widget"
-	"gioui.org/widget/material"
 
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
-	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
 func (s pullsState) label() string {
@@ -156,33 +152,22 @@ func (p *pullsScreen) rowList(gtx C, th *ui.Theme, list pullsRead[[]backend.PRSu
 	case !list.loaded:
 		return listSkeleton(gtx, th)
 	case list.err != "":
-		return notice(gtx, th, list.err)
+		return th.Notice(list.err).Layout(gtx)
 	case len(list.val) == 0:
-		return notice(gtx, th, p.state.none())
+		return th.Notice(p.state.none()).Layout(gtx)
 	case len(rows) == 0:
-		return notice(gtx, th, i18n.T("pulls.pullsList.noMatch"))
+		return th.Notice(i18n.T("pulls.pullsList.noMatch")).Layout(gtx)
 	}
 	now := gtx.Now
 	if p.cursorAt(rows) < 0 {
 		p.cursor = rows[0].Number
 	}
-	return p.rowScroll(gtx, th).Layout(gtx, len(rows), func(gtx C, i int) D { return p.row(gtx, th, rows[i], now) })
+	return th.ThinScrollArea(&p.rows).Layout(gtx, len(rows), func(gtx C, i int) D { return p.row(gtx, th, rows[i], now) })
 }
 
 // cursorAt is the cursor's row in rows, -1 when it is not among them.
 func (p *pullsScreen) cursorAt(rows []backend.PRSummary) int {
 	return position(rows, p.cursor)
-}
-
-// rowScroll is the sidebar's scrollColumn over the rows: the scrollbar takes
-// room only once they overflow.
-func (p *pullsScreen) rowScroll(gtx C, th *ui.Theme) material.ListStyle {
-	list := th.ScrollArea(&p.rows)
-	list.Indicator.MinorWidth = ui.Space(2)
-	list.Indicator.CornerRadius = ui.Space(1)
-	list.Track.MinorPadding = 0
-	list.AnchorStrategy = material.Overlay
-	return list
 }
 
 // The index row's columns at its right: the checks, the verdict and the
@@ -253,34 +238,23 @@ func rowTitle(gtx C, th *ui.Theme, pr backend.PRSummary) D {
 	)
 }
 
-// cell lays w in a column w wide, against its right edge.
-func cell(gtx C, width unit.Dp, w layout.Widget) D {
-	px := gtx.Dp(width)
-	gtx.Constraints.Min.X, gtx.Constraints.Max.X = px, px
-	return layout.E.Layout(gtx, w)
-}
-
 // rowSide is the row's columns: the checks, the verdict worth acting on and
 // the checkout the branch sits in, which shows only where it fits whole.
 func rowSide(gtx C, th *ui.Theme, pr backend.PRSummary, checkout string) D {
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-		layout.Rigid(func(gtx C) D {
-			return cell(gtx, rowChecksWidth, func(gtx C) D {
-				if verdictOf(pr.Checks) == verdictNone {
-					return D{}
-				}
-				return checksChip(gtx, th, pr.Checks)
-			})
-		}),
-		layout.Rigid(func(gtx C) D { return cell(gtx, rowVerdictWidth, func(gtx C) D { return rowVerdict(gtx, th, pr) }) }),
-		layout.Rigid(func(gtx C) D {
-			return cell(gtx, rowCheckoutWidth, func(gtx C) D {
-				if checkout == "" {
-					return D{}
-				}
-				return wholeOrNothing(gtx, func(gtx C) D { return metaGlyph(gtx, th, icCheckout, checkout, th.MutedForeground) })
-			})
-		}),
+		ui.FixedColumn(rowChecksWidth, ui.AlignEnd(func(gtx C) D {
+			if verdictOf(pr.Checks) == verdictNone {
+				return D{}
+			}
+			return checksChip(gtx, th, pr.Checks)
+		})),
+		ui.FixedColumn(rowVerdictWidth, ui.AlignEnd(func(gtx C) D { return rowVerdict(gtx, th, pr) })),
+		ui.FixedColumn(rowCheckoutWidth, ui.AlignEnd(func(gtx C) D {
+			if checkout == "" {
+				return D{}
+			}
+			return wholeOrNothing(gtx, func(gtx C) D { return th.MetaGlyph(icCheckout, checkout, th.MutedForeground).Layout(gtx) })
+		})),
 	)
 }
 
@@ -291,7 +265,7 @@ func rowVerdict(gtx C, th *ui.Theme, pr backend.PRSummary) D {
 	case pr.ReviewDecision == "APPROVED":
 		return th.Text(ui.TextXS, i18n.T("pulls.pullsStats.approved")).In(th.TonePass).Layout(gtx)
 	case waitsOnReviewer(pr):
-		return metaGlyph(gtx, th, icPullCheck2, i18n.T("pulls.pullsStats.changesRequested"), th.ToneWait)
+		return th.MetaGlyph(icPullCheck2, i18n.T("pulls.pullsStats.changesRequested"), th.ToneWait).Layout(gtx)
 	case pr.ReviewDecision == "CHANGES_REQUESTED":
 		return th.Text(ui.TextXS, i18n.T("pulls.pullsStats.changesRequested")).In(th.Destructive).Layout(gtx)
 	}
@@ -323,34 +297,12 @@ func rowMeta(gtx C, th *ui.Theme, pr backend.PRSummary, now time.Time) D {
 		add(th.Text(ui.TextXS, pr.HeadRefName).Mono().Muted().Layout)
 	}
 	if pr.IsDraft {
-		add(func(gtx C) D { return draftBadge(gtx, th) })
+		add(th.OutlineBadge(i18n.T("pulls.pullsList.draft")).Layout)
 	}
 	if pr.IsCrossRepository {
 		add(th.Text(ui.TextXS, i18n.T("pulls.pullsList.fork")).Muted().Layout)
 	}
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx, facts...)
-}
-
-// draftBorderAlpha keeps the badge's outline visible on a selected row,
-// where the Border token sits on the Accent fill at nearly its own shade.
-const draftBorderAlpha = 0.5
-
-// draftBadge is the outlined, muted "Draft": the pull request's state, set
-// apart from the amber the verdict beside it can take.
-func draftBadge(gtx C, th *ui.Theme) D {
-	gtx.Constraints.Min = image.Point{}
-	return layout.Stack{}.Layout(gtx,
-		layout.Expanded(func(gtx C) D {
-			rr := clip.UniformRRect(image.Rectangle{Max: gtx.Constraints.Min}, gtx.Dp(ui.RadiusSM))
-			border := th.Over(ui.Alpha(th.MutedForeground, draftBorderAlpha))
-			paint.FillShape(gtx.Ops, border, clip.Stroke{Path: rr.Path(gtx.Ops), Width: float32(gtx.Dp(1))}.Op())
-			return D{Size: gtx.Constraints.Min}
-		}),
-		layout.Stacked(func(gtx C) D {
-			return layout.Inset{Left: ui.Space(1), Right: ui.Space(1)}.Layout(gtx,
-				th.Text(ui.TextXS, i18n.T("pulls.pullsList.draft")).Muted().Layout)
-		}),
-	)
 }
 
 // waitsOnReviewer is a CHANGES_REQUESTED verdict whose every thread is
@@ -391,15 +343,6 @@ func checksChip(gtx C, th *ui.Theme, c backend.ChecksRollup) D {
 	)
 }
 
-// metaGlyph is a size-3 glyph and its text-xs words, gap-1.
-func metaGlyph(gtx C, th *ui.Theme, ic *icons.Icon, text string, fg color.NRGBA) D {
-	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-		layout.Rigid(func(gtx C) D { return ic.Layout(gtx, ui.Space(3), fg) }),
-		ui.Gap(1),
-		layout.Rigid(th.Text(ui.TextXS, text).In(fg).Layout),
-	)
-}
-
 // listSkeletonMaxRows bounds the skeleton under an unbounded height; no
 // island is that tall.
 const listSkeletonMaxRows = 60
@@ -429,19 +372,17 @@ func skeletonRow(gtx C, th *ui.Theme, title float32) D {
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
 						return layout.Flex{}.Layout(gtx,
-							layout.Rigid(skeletonBar(th, ui.Space(10), skeletonSMLine, ui.Space(3.5))),
+							layout.Rigid(th.SkeletonBar(ui.Space(10), skeletonSMLine, ui.Space(3.5)).Layout),
 							ui.Gap(1.5),
-							layout.Rigid(skeletonBar(th, full*unit.Dp(title), skeletonSMLine, ui.Space(3.5))),
+							layout.Rigid(th.SkeletonBar(full*unit.Dp(title), skeletonSMLine, ui.Space(3.5)).Layout),
 						)
 					}),
 					ui.VGap(1),
-					layout.Rigid(skeletonBar(th, full*unit.Dp(title)*0.6, skeletonXSLine, ui.Space(3))),
+					layout.Rigid(th.SkeletonBar(full*unit.Dp(title)*0.6, skeletonXSLine, ui.Space(3)).Layout),
 				)
 			}),
 			ui.Gap(4),
-			layout.Rigid(func(gtx C) D {
-				return cell(gtx, rowChecksWidth, skeletonBar(th, ui.Space(9), skeletonXSLine, ui.Space(3)))
-			}),
+			ui.FixedColumn(rowChecksWidth, ui.AlignEnd(th.SkeletonBar(ui.Space(9), skeletonXSLine, ui.Space(3)).Layout)),
 			layout.Rigid(layout.Spacer{Width: rowVerdictWidth + rowCheckoutWidth}.Layout),
 		)
 	})

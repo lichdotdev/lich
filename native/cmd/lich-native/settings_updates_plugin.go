@@ -212,7 +212,12 @@ func (c *pluginControls) row(gtx C, th *ui.Theme, st backend.PluginStatus, busy 
 	if label, variant, ok := pluginAction(st); ok {
 		b := th.Button(clickableOf(c.actions, st.Provider), label)
 		b.Size, b.Variant, b.Disabled = ui.SizeSM, variant, busy
-		children = append(children, ui.Gap(2.5), layout.Rigid(func(gtx C) D { return busyButton(gtx, th, b, busy) }))
+		children = append(children, ui.Gap(2.5), layout.Rigid(func(gtx C) D {
+			if busy {
+				return th.SpinnerBeside(gtx, b.Layout)
+			}
+			return b.Layout(gtx)
+		}))
 	}
 	line := func(gtx C) D {
 		gtx.Constraints.Min.X = gtx.Constraints.Max.X
@@ -229,7 +234,7 @@ func (c *pluginControls) row(gtx C, th *ui.Theme, st backend.PluginStatus, busy 
 			layout.Rigid(line),
 			layout.Rigid(func(gtx C) D {
 				return layout.Inset{Left: indent, Top: ui.Space(0.5)}.Layout(gtx, func(gtx C) D {
-					return wrapped(gtx, th.Text(ui.TextXS, i18n.T(hint)).Muted())
+					return th.Text(ui.TextXS, i18n.T(hint)).Muted().Wrapped().Layout(gtx)
 				})
 			}),
 		)
@@ -245,7 +250,12 @@ func (c *pluginControls) footer(gtx C, th *ui.Theme, offerAll, busy bool, outcom
 	if offerAll {
 		all := th.Button(&c.updateAll, i18n.T("settings.pluginSetting.updateAll"))
 		all.Size, all.Disabled = ui.SizeSM, busy
-		children = append(children, ui.Gap(3), layout.Rigid(func(gtx C) D { return busyButton(gtx, th, all, busy) }))
+		children = append(children, ui.Gap(3), layout.Rigid(func(gtx C) D {
+			if busy {
+				return th.SpinnerBeside(gtx, all.Layout)
+			}
+			return all.Layout(gtx)
+		}))
 	}
 	if outcome != "" {
 		children = append(children, ui.Gap(3), layout.Rigid(th.Text(ui.TextXS, outcome).Muted().Layout))

@@ -2,7 +2,6 @@ package main
 
 import (
 	"image"
-	"image/color"
 	"maps"
 	"math"
 	"slices"
@@ -163,7 +162,7 @@ func (s *sidebar) dragSlot(gtx C, th *ui.Theme, d *dragLine) {
 			strokeLinks(gtx, []linkSeg{dash}, size, c, width)
 		}
 	}
-	slotRing(gtx, f32.Pt(treeColumn(gtx, r.depth), float32(height)/2), c)
+	ui.DashedCircle(gtx, f32.Pt(treeColumn(gtx, r.depth), float32(height)/2), sessionTreeRingR, sessionTreeStroke, dragDash, c)
 }
 
 // elbowPoints is a row's elbow as a polyline: down its parent's line to the
@@ -208,17 +207,6 @@ func dashed(pts []f32.Point, dash float32) []linkSeg {
 
 func lerpPt(a, b f32.Point, t float32) f32.Point {
 	return f32.Pt(a.X+(b.X-a.X)*t, a.Y+(b.Y-a.Y)*t)
-}
-
-// slotRing is a node's ring in dashes, centred on center, one stroke a dash
-// (dashedRing says why).
-func slotRing(gtx C, center f32.Point, c color.NRGBA) {
-	stroke := float32(gtx.Dp(sessionTreeStroke))
-	r := float32(gtx.Dp(sessionTreeRingR)) - stroke/2
-	ring := roundedRect{min: center.Sub(f32.Pt(r, r)), max: center.Add(f32.Pt(r, r)), radius: r}
-	ring.eachDash(float32(gtx.Dp(dragDash)), 0, func(from, to float32) {
-		paint.FillShape(gtx.Ops, c, clip.Stroke{Path: ring.span(gtx.Ops, from, to), Width: stroke}.Op())
-	})
 }
 
 // dragLinks reads the block's card drag into its tree: while a card is in the

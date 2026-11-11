@@ -64,6 +64,18 @@ func (th *Theme) ScrollArea(state *widget.List) material.ListStyle {
 	return list
 }
 
+// ThinScrollArea is ScrollArea with the window's list bar: an 8px thumb on a
+// transparent track laid over the rows, so the bar never pushes their right
+// edge in.
+func (th *Theme) ThinScrollArea(state *widget.List) material.ListStyle {
+	list := th.ScrollArea(state)
+	list.Indicator.MinorWidth = Space(2)
+	list.Indicator.CornerRadius = Space(1)
+	list.Track.MinorPadding = 0
+	list.AnchorStrategy = material.Overlay
+	return list
+}
+
 // scrollbar is ScrollArea's bar alone, over state, for a widget that scrolls
 // itself.
 func (th *Theme) scrollbar(state *widget.Scrollbar) material.ScrollbarStyle {

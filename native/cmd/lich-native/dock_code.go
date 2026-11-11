@@ -23,6 +23,8 @@ import (
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
+	"github.com/lichdotdev/lich/native/ui/codeview"
+	"github.com/lichdotdev/lich/native/ui/filetree"
 )
 
 // plainFolderTick is how often a plain folder's tree re-reads. A plain folder
@@ -41,7 +43,7 @@ type fileListing = backend.FileListing
 // counts.
 type treeData struct {
 	listing fileListing
-	stats   map[string]lineDelta
+	stats   map[string]filetree.Delta
 }
 
 type codeTab struct {
@@ -65,22 +67,24 @@ type codeTab struct {
 	search  remote[searchResult]
 	settle  settler
 
-	rows    treeRows
-	hits    hitList
-	preview *preview
-	batch   commentBatch
+	rows     filetree.Rows
+	rowsFrom *treeData
+	rowsFor  string
+	hits     hitList
+	preview  *preview
+	batch    commentBatch
 }
 
 func newCodeTab(client *backend.Client, invalidate func(), family string, size unit.Sp, comments *commentStore, notify func(ui.Toast)) (*codeTab, error) {
-	view, err := newCodeView(family, size)
+	view, err := codeview.New(family, size)
 	if err != nil {
 		return nil, err
 	}
 	c := &codeTab{client: client, comments: comments, notify: notify, toggled: map[string]bool{}}
 	c.mode.Value = browseByName
 	c.tree.invalidate, c.search.invalidate = invalidate, invalidate
-	c.preview = newPreview(client, view, family, size, invalidate)
-	c.rows.list.Axis, c.hits.list.Axis = layout.Vertical, layout.Vertical
+	c.preview = newPreview(client, view, invalidate)
+	c.rows.List.Axis, c.hits.list.Axis = layout.Vertical, layout.Vertical
 	return c, nil
 }
 
@@ -167,7 +171,7 @@ func readTree(ctx context.Context, client *backend.Client, path string) (*treeDa
 	}
 	// The diff only feeds the rows' +/- badges: a checkout with nothing to
 	// diff answers an error here, and that means no badges, never no tree.
-	stats := map[string]lineDelta{}
+	stats := map[string]filetree.Delta{}
 	if text, err := client.DiffText(ctx, path); err == nil {
 		if files, err := godemirror.ParsePatch(text); err == nil {
 			stats = diffStatsByPath(files)

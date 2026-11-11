@@ -5,7 +5,6 @@ import (
 	"image/color"
 	"math"
 
-	"gioui.org/f32"
 	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/op"
@@ -108,7 +107,7 @@ func cardBody(gtx C, th *ui.Theme, name, caption string, selected bool, preview 
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			if selected {
-				insetRing(gtx, frame, gtx.Dp(ui.RadiusLG), gtx.Dp(2), th.Over(ui.Alpha(th.Foreground, cardSelectedRing)))
+				ui.InsetRing(gtx, frame, gtx.Dp(ui.RadiusLG), gtx.Dp(2), th.Over(ui.Alpha(th.Foreground, cardSelectedRing)))
 			}
 			inner := frame.Sub(image.Pt(2*pad, 2*pad))
 			t := op.Offset(image.Pt(pad, pad)).Push(gtx.Ops)
@@ -154,13 +153,18 @@ func (p *themePicker) cardActions(gtx C, th *ui.Theme, c *themeCard, s themeCard
 		}
 		t := op.Offset(image.Pt(x, pad)).Push(gtx.Ops)
 		tip := on.Tooltip(p.root, &c.updateTip, i18n.T("settings.themePicker.updateHint"))
-		tip.Layout(gtx, func(gtx C) D { return cardIconButton(gtx, on, &c.update, icRefresh, turn, s.updating != "") })
+		tip.Layout(gtx, func(gtx C) D {
+			if s.updating != "" {
+				return on.CardIconDisabled(gtx, icRefresh, cardActionBtn, turn)
+			}
+			return on.CardIconButton(gtx, &c.update, icRefresh, cardActionBtn, turn)
+		})
 		t.Pop()
 		x += btn + gap
 	}
 	t := op.Offset(image.Pt(x, pad)).Push(gtx.Ops)
 	tip := on.Tooltip(p.root, &c.removeTip, i18n.T("settings.themePicker.removeNamed", i18n.Args{"name": s.name}))
-	tip.Layout(gtx, func(gtx C) D { return cardIconButton(gtx, on, &c.remove, icTrash, 0, false) })
+	tip.Layout(gtx, func(gtx C) D { return on.CardIconButton(gtx, &c.remove, icTrash, cardActionBtn, 0) })
 	t.Pop()
 }
 
@@ -169,32 +173,6 @@ func spinAngle(gtx C) float32 {
 	gtx.Execute(op.InvalidateCmd{})
 	secs := float64(gtx.Now.UnixMilli()%1000) / 1000 / spinTurn
 	return float32(secs * 2 * math.Pi)
-}
-
-// cardIconButton is a ghost icon-xs button whose icon can be turned; a
-// disabled one is drawn at half strength and takes no click.
-func cardIconButton(gtx C, th *ui.Theme, click *widget.Clickable, ic *icons.Icon, turn float32, disabled bool) D {
-	draw := func(gtx C) D {
-		size := gtx.Dp(cardActionBtn)
-		gtx.Constraints = layout.Exact(image.Pt(size, size))
-		ink := th.Foreground
-		if disabled {
-			ink = th.Over(ui.Alpha(ink, 0.5))
-		} else if click.Hovered() {
-			ui.Fill(gtx, th.Over(ui.Alpha(th.Muted, 0.5)), ui.RadiusMD)
-		}
-		icon := gtx.Dp(ui.Space(3))
-		off := (size - icon) / 2
-		defer op.Offset(image.Pt(off, off)).Push(gtx.Ops).Pop()
-		c := f32.Pt(float32(icon)/2, float32(icon)/2)
-		defer op.Affine(f32.AffineId().Rotate(c, turn)).Push(gtx.Ops).Pop()
-		ic.Layout(gtx, ui.Space(3), ink)
-		return D{Size: image.Pt(size, size)}
-	}
-	if disabled {
-		return draw(gtx)
-	}
-	return click.Layout(gtx, draw)
 }
 
 // importCardLayout is the strip's first card: a dashed frame with a + in
@@ -217,7 +195,7 @@ func (p *themePicker) importCardLayout(gtx C, th *ui.Theme) D {
 				box.Constraints = layout.Exact(size)
 				ui.Fill(box, th.Over(ui.Alpha(th.Accent, 0.5)), ui.RadiusMD)
 			}
-			dashedBorder(gtx, size, gtx.Dp(ui.RadiusMD), edge)
+			ui.DashedBorder(gtx, size, gtx.Dp(ui.RadiusMD), edge, importDash, importDashGap)
 			icon := gtx.Dp(ui.Space(5))
 			defer op.Offset(image.Pt((size.X-icon)/2, (size.Y-icon)/2)).Push(gtx.Ops).Pop()
 			icImportTheme.Layout(gtx, ui.Space(5), ink)
@@ -250,7 +228,7 @@ func themeMiniature(gtx C, th *ui.Theme, p ui.Palette, size image.Point, ring bo
 		y += barH + contentH*miniBarGap
 	}
 	if ring {
-		insetBorder(gtx, size, gtx.Dp(ui.RadiusSM), ui.Over(p.Background, ui.Alpha(th.Foreground, cardMiniRing)))
+		ui.InsetBorder(gtx, size, gtx.Dp(ui.RadiusSM), ui.Over(p.Background, ui.Alpha(th.Foreground, cardMiniRing)))
 	}
 	return D{Size: size}
 }
@@ -270,60 +248,8 @@ func systemMiniature(gtx C, th *ui.Theme, light, dark ui.Palette, size image.Poi
 		themeMiniature(gtx, th, p, image.Pt(w, size.Y), false)
 		t.Pop()
 		edge := clip.Rect{Min: image.Pt(x, 0), Max: image.Pt(x+w, size.Y)}.Push(gtx.Ops)
-		insetBorder(gtx, size, gtx.Dp(ui.RadiusSM), ui.Over(p.Background, ui.Alpha(th.Foreground, cardMiniRing)))
+		ui.InsetBorder(gtx, size, gtx.Dp(ui.RadiusSM), ui.Over(p.Background, ui.Alpha(th.Foreground, cardMiniRing)))
 		edge.Pop()
 	}
-	return D{Size: size}
-}
-
-// dashedBorder strokes a 1px dashed line just inside a rounded box: dashes
-// along the straight edges, the corners' arcs whole.
-func dashedBorder(gtx C, size image.Point, r int, c color.NRGBA) {
-	w := gtx.Dp(1)
-	dash, gap := gtx.Dp(importDash), gtx.Dp(importDashGap)
-	for _, corner := range []image.Rectangle{
-		{Max: image.Pt(r, r)}, {Min: image.Pt(size.X-r, 0), Max: image.Pt(size.X, r)},
-		{Min: image.Pt(0, size.Y-r), Max: image.Pt(r, size.Y)}, {Min: size.Sub(image.Pt(r, r)), Max: size},
-	} {
-		cl := clip.Rect(corner).Push(gtx.Ops)
-		insetRing(gtx, size, r, w, c)
-		cl.Pop()
-	}
-	for x := r; x < size.X-r; x += dash + gap {
-		end := min(x+dash, size.X-r)
-		paint.FillShape(gtx.Ops, c, clip.Rect{Min: image.Pt(x, 0), Max: image.Pt(end, w)}.Op())
-		paint.FillShape(gtx.Ops, c, clip.Rect{Min: image.Pt(x, size.Y-w), Max: image.Pt(end, size.Y)}.Op())
-	}
-	for y := r; y < size.Y-r; y += dash + gap {
-		end := min(y+dash, size.Y-r)
-		paint.FillShape(gtx.Ops, c, clip.Rect{Min: image.Pt(0, y), Max: image.Pt(w, end)}.Op())
-		paint.FillShape(gtx.Ops, c, clip.Rect{Min: image.Pt(size.X-w, y), Max: image.Pt(size.X, end)}.Op())
-	}
-}
-
-// ghostTextButton is a ghost xs button in ink: h-6 px-2, the hover fill
-// muted/50.
-func ghostTextButton(gtx C, th *ui.Theme, click *widget.Clickable, label string, ink color.NRGBA) D {
-	return click.Layout(gtx, func(gtx C) D {
-		macro := op.Record(gtx.Ops)
-		gtx.Constraints.Min = image.Pt(0, gtx.Dp(ui.Space(6)))
-		d := layout.Inset{Left: ui.Space(2), Right: ui.Space(2)}.Layout(gtx, func(gtx C) D {
-			return layout.Center.Layout(gtx, th.Text(ui.TextXS, label).In(ink).Weight(font.Medium).Layout)
-		})
-		call := macro.Stop()
-		if click.Hovered() {
-			box := gtx
-			box.Constraints = layout.Exact(d.Size)
-			ui.Fill(box, th.Over(ui.Alpha(th.Muted, 0.5)), ui.RadiusMD)
-		}
-		call.Add(gtx.Ops)
-		return d
-	})
-}
-
-// ruleAbove is border-t: a 1px line of border across gtx.
-func ruleAbove(gtx C, th *ui.Theme) D {
-	size := image.Pt(gtx.Constraints.Max.X, gtx.Dp(1))
-	paint.FillShape(gtx.Ops, th.Over(th.Border), clip.Rect{Max: size}.Op())
 	return D{Size: size}
 }

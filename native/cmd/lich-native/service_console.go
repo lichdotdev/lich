@@ -298,7 +298,7 @@ func consolePill(gtx C, th *ui.Theme, v backend.Service) D {
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			if v.State == api.ServiceRunning {
-				return beatingDot(gtx, th)
+				return th.BeatingDot(gtx, th.TonePass)
 			}
 			return stateDot(gtx, th, v.State)
 		}),

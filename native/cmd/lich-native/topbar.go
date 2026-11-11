@@ -10,7 +10,6 @@ import (
 	"gioui.org/op"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
-	"gioui.org/unit"
 	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/backend"
@@ -21,9 +20,6 @@ import (
 
 const brandName = "lich"
 
-// barDisabledOpacity is the opacity of a disabled bar button.
-const barDisabledOpacity = 0.5
-
 // The strip's geometry, from the approved topbar mockup (option E3).
 var (
 	topbarHeight = ui.Space(11) // h-11
@@ -32,7 +28,6 @@ var (
 	// brandPadLeft centres the icon over the rail, the column every tree
 	// node sits in, in both shapes, so it never moves.
 	brandPadLeft = (railWidth - brandIcon) / 2
-	barButton    = ui.Space(7) // the right side's size-7 icon buttons
 	barGap       = ui.Space(1)
 )
 
@@ -202,7 +197,7 @@ func (t *topbar) rightSide(gtx C, th *ui.Theme, f topbarFrame, act *topbarAction
 	pad := gtx.Dp(gutter)
 	if f.chrome.buttonsShown(f.windowButtons) && len(f.caption.right) > 0 {
 		children = append(children,
-			layout.Rigid(func(gtx C) D { return captionDivider(gtx, th) }),
+			layout.Rigid(func(gtx C) D { return th.CaptionDivider(gtx, gutter, captionSeparator) }),
 			layout.Rigid(func(gtx C) D { return t.captionButtons(gtx, th, f, f.caption.right, act) }))
 		// Windows' buttons sit in the window's corner, as its own do.
 		if f.caption.style == captionStyleWindows {
@@ -231,7 +226,7 @@ func (t *topbar) leftSide(gtx C, th *ui.Theme, f topbarFrame, act *topbarAction)
 	row.Constraints.Min = image.Point{}
 	d := layout.Flex{Alignment: layout.Middle}.Layout(row,
 		layout.Rigid(func(gtx C) D { return t.captionButtons(gtx, th, f, f.caption.left, act) }),
-		layout.Rigid(func(gtx C) D { return captionDivider(gtx, th) }),
+		layout.Rigid(func(gtx C) D { return th.CaptionDivider(gtx, gutter, captionSeparator) }),
 	)
 	call := macro.Stop()
 	defer op.Offset(image.Pt(gtx.Dp(gutter), (gtx.Constraints.Max.Y-d.Size.Y)/2)).Push(gtx.Ops).Pop()
@@ -245,15 +240,6 @@ func (t *topbar) captionButtons(gtx C, th *ui.Theme, f topbarFrame, buttons []ca
 		act.caption, act.captionClicked = b, true
 	}
 	return d
-}
-
-// captionDivider is the rule between lich's own buttons and the window's.
-func captionDivider(gtx C, th *ui.Theme) D {
-	return layout.Inset{Left: gutter, Right: gutter}.Layout(gtx, func(gtx C) D {
-		size := image.Pt(gtx.Dp(unit.Dp(1)), gtx.Dp(captionSeparator))
-		paint.FillShape(gtx.Ops, th.Over(th.Border), clip.Rect{Max: size}.Op())
-		return D{Size: size}
-	})
 }
 
 // brandButton is the mark and the name over the sidebar's column, a
@@ -298,32 +284,6 @@ func brandColumn(rail, panel int, open, morphing bool, p float32) (int, float32)
 	return lerpInt(rail, panel, openness), openness
 }
 
-// barIconButton is a size-7 ghost icon button of the strip: muted, accent/50
-// hovered, accent while its popover is open, faded when disabled.
-func barIconButton(gtx C, th *ui.Theme, click *widget.Clickable, ic *icons.Icon, on bool) D {
-	size := gtx.Dp(barButton)
-	gtx.Constraints = layout.Exact(image.Pt(size, size))
-	face := func(gtx C) D {
-		hovered := click != nil && click.Hovered()
-		fg := th.MutedForeground
-		switch {
-		case click == nil:
-			fg = th.Over(ui.Alpha(fg, barDisabledOpacity))
-		case on:
-			ui.Fill(gtx, th.Accent, ui.RadiusMD)
-			fg = th.Foreground
-		case hovered:
-			ui.Fill(gtx, th.Over(ui.Alpha(th.Accent, ghostHoverFill)), ui.RadiusMD)
-			fg = th.Foreground
-		}
-		return layout.Center.Layout(gtx, func(gtx C) D { return ic.Layout(gtx, ui.Space(4), fg) })
-	}
-	if click == nil {
-		return face(gtx)
-	}
-	return click.Layout(gtx, face)
-}
-
 // settingsButton opens Settings, and closes it while it is open.
 func (t *topbar) settingsButton(gtx C, th *ui.Theme, open bool, act *topbarAction) D {
 	if t.settings.Clicked(gtx) {
@@ -331,7 +291,7 @@ func (t *topbar) settingsButton(gtx C, th *ui.Theme, open bool, act *topbarActio
 	}
 	tip := th.Tooltip(t.root, t.hint("settings"), i18n.T("tabs.projectTabs.settings"))
 	tip.Side = ui.SideBottom
-	return tip.Layout(gtx, func(gtx C) D { return barIconButton(gtx, th, &t.settings, icSettings, open) })
+	return tip.Layout(gtx, func(gtx C) D { return th.BarIconButton(&t.settings, icSettings, open).Layout(gtx) })
 }
 
 // pullsButton opens the Pulls screen, and closes it while it is open.
@@ -341,7 +301,7 @@ func (t *topbar) pullsButton(gtx C, th *ui.Theme, open bool, act *topbarAction) 
 	}
 	tip := th.Tooltip(t.root, t.hint("pulls"), i18n.T("tabs.projectTabs.pullRequests"))
 	tip.Side = ui.SideBottom
-	return tip.Layout(gtx, func(gtx C) D { return barIconButton(gtx, th, &t.pulls, icPullRequests, open) })
+	return tip.Layout(gtx, func(gtx C) D { return th.BarIconButton(&t.pulls, icPullRequests, open).Layout(gtx) })
 }
 
 func (t *topbar) hint(key string) *ui.Tooltip {

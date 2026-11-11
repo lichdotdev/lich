@@ -1,16 +1,11 @@
 package main
 
 import (
-	"image"
 	"image/color"
-	"math"
 	"strconv"
 
-	"gioui.org/f32"
 	"gioui.org/font"
 	"gioui.org/layout"
-	"gioui.org/op/clip"
-	"gioui.org/op/paint"
 	"gioui.org/unit"
 	"gioui.org/widget"
 
@@ -24,12 +19,6 @@ const (
 	footerDisabledOpacity = 0.4
 	// readoutHoverOpacity is FooterReadout's hover:bg-accent/50.
 	readoutHoverOpacity = 0.5
-	// ringTrackOpacity is ContextRing's opacity-20 track.
-	ringTrackOpacity = 0.2
-	// ContextRing's viewBox, and the radius and stroke drawn in it.
-	ringViewBox = 36
-	ringRadius  = 15.9155
-	ringStroke  = 4
 )
 
 var (
@@ -71,21 +60,13 @@ func buttonFace(gtx C, th *ui.Theme, wide, lit, disabled bool, content footerCon
 		gtx.Constraints.Min.X, gtx.Constraints.Max.X, pad = h, h, 0
 	}
 	return layout.Background{}.Layout(gtx,
-		func(gtx C) D { return fillIf(gtx, bg, ui.RadiusMD) },
+		func(gtx C) D { return ui.FillIf(gtx, bg, ui.RadiusMD) },
 		func(gtx C) D {
 			return layout.Inset{Left: pad, Right: pad}.Layout(gtx, func(gtx C) D {
 				return layout.Center.Layout(gtx, func(gtx C) D { return content(gtx, onFill(th, bg), fg) })
 			})
 		},
 	)
-}
-
-// fillIf paints c unless it is transparent, a box at rest.
-func fillIf(gtx C, c color.NRGBA, radius unit.Dp) D {
-	if c.A == 0 {
-		return D{Size: gtx.Constraints.Min}
-	}
-	return ui.Fill(gtx, c, radius)
 }
 
 // onFill is th drawing on bg, or on th's own surface when bg is transparent.
@@ -108,7 +89,7 @@ func footerReadoutView(gtx C, th *ui.Theme, root *ui.Root, w *footerWidgets, r f
 	}
 	tip := th.TooltipCard(root, &w.tip, func(gtx C) D {
 		pop := th.On(th.Popover)
-		return stack(gtx, 1.5, []layout.Widget{pop.Text(ui.TextXS, title).Weight(font.Medium).Layout, detail})
+		return ui.Stack(1.5, pop.Text(ui.TextXS, title).Weight(font.Medium).Layout, detail)(gtx)
 	})
 	return tip.Layout(gtx, func(gtx C) D {
 		return w.click.Layout(gtx, func(gtx C) D {
@@ -118,7 +99,7 @@ func footerReadoutView(gtx C, th *ui.Theme, root *ui.Root, w *footerWidgets, r f
 			}
 			gtx.Constraints.Min.Y = gtx.Dp(ui.Space(8))
 			return layout.Background{}.Layout(gtx,
-				func(gtx C) D { return fillIf(gtx, bg, ui.RadiusMD) },
+				func(gtx C) D { return ui.FillIf(gtx, bg, ui.RadiusMD) },
 				func(gtx C) D {
 					return layout.Inset{Left: ui.Space(2), Right: ui.Space(2)}.Layout(gtx, func(gtx C) D {
 						return layout.W.Layout(gtx, func(gtx C) D { return content(gtx, onFill(th, bg), toneColor(th, r.Tone)) })
@@ -135,7 +116,7 @@ func readoutDetail(th *ui.Theme, lines []string) layout.Widget {
 	for i, line := range lines {
 		rows[i] = para(th.Text(ui.TextXS, line).Muted()).Layout
 	}
-	return func(gtx C) D { return stack(gtx, 1, rows) }
+	return func(gtx C) D { return ui.Stack(1, rows...)(gtx) }
 }
 
 // toneColor is usageColor's text class.
@@ -184,39 +165,6 @@ func footerSpan(gtx C, th *ui.Theme, root *ui.Root, tip *ui.Tooltip, hint string
 	})
 }
 
-// contextRing is ContextRing: a size-4 donut, a 20% track under an arc
-// filled to percent clockwise from the top, with round ends.
-func contextRing(gtx C, th *ui.Theme, percent int, fg color.NRGBA) D {
-	size := gtx.Dp(footerIconGlyph)
-	scale := float32(size) / ringViewBox
-	center := f32.Pt(float32(size)/2, float32(size)/2)
-	radius, width := ringRadius*scale, ringStroke*scale
-	ui.StrokeArc(gtx, center, radius, width, 0, 2*math.Pi, th.Over(ui.Alpha(fg, ringTrackOpacity)))
-	share := float32(min(max(percent, 0), 100)) / 100
-	if share > 0 {
-		ui.StrokeArc(gtx, center, radius, width, -math.Pi/2, share*2*math.Pi, fg)
-		top := center.Sub(f32.Pt(0, radius))
-		end := arcPoint(center, radius, share)
-		dot(gtx, top, width/2, fg)
-		dot(gtx, end, width/2, fg)
-	}
-	return D{Size: image.Pt(size, size)}
-}
-
-func arcPoint(center f32.Point, radius, share float32) f32.Point {
-	angle := float64(share)*2*math.Pi - math.Pi/2
-	return center.Add(f32.Pt(radius*float32(math.Cos(angle)), radius*float32(math.Sin(angle))))
-}
-
-// dot is a stroke's round cap.
-func dot(gtx C, at f32.Point, r float32, c color.NRGBA) {
-	var p clip.Path
-	p.Begin(gtx.Ops)
-	p.MoveTo(at.Add(f32.Pt(r, 0)))
-	p.ArcTo(at, at, 2*math.Pi)
-	paint.FillShape(gtx.Ops, c, clip.Outline{Path: p.End()}.Op())
-}
-
 // footerWidgets is one footer control's state.
 type footerWidgets struct {
 	click widget.Clickable
@@ -245,7 +193,7 @@ func changesContent(git backend.DiffStats) footerContent {
 			ui.Gap(1.5),
 			layout.Rigid(th.Text(ui.TextXS, "·").In(th.Over(ui.Alpha(fg, separatorOpacity))).Layout),
 			ui.Gap(1.5),
-			layout.Rigid(func(gtx C) D { return diffStat(gtx, th, git.Added, git.Deleted) }),
+			layout.Rigid(func(gtx C) D { return th.DiffStat(git.Added, git.Deleted).Layout(gtx) }),
 		)
 	}
 }
@@ -257,7 +205,7 @@ const separatorOpacity = 0.5
 func ringContent(percent int, text string) footerContent {
 	return func(gtx C, th *ui.Theme, fg color.NRGBA) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-			layout.Rigid(func(gtx C) D { return contextRing(gtx, th, percent, fg) }),
+			layout.Rigid(func(gtx C) D { return th.DonutGauge(gtx, footerIconGlyph, percent, fg) }),
 			ui.Gap(1.5),
 			layout.Rigid(th.Text(ui.TextXS, text).In(fg).Layout),
 		)

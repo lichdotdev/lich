@@ -13,6 +13,7 @@ import (
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
+	"github.com/lichdotdev/lich/native/ui/filetree"
 )
 
 // hitList is the search list on screen: its rows and the hits' clickables,
@@ -50,14 +51,14 @@ func (c *codeTab) searchBody(gtx C, th *ui.Theme) D {
 	}
 	c.fetchSearch(settled)
 	if settled == "" {
-		return notice(gtx, th, i18n.T("dock.searchResults.prompt"))
+		return th.Notice(i18n.T("dock.searchResults.prompt")).Layout(gtx)
 	}
 	data, loading, err := c.search.get()
 	switch {
 	case err != nil:
-		return notice(gtx, th, backend.ErrorText(err))
+		return th.Notice(backend.ErrorText(err)).Layout(gtx)
 	case loading:
-		return notice(gtx, th, i18n.T("dock.searchResults.searching"))
+		return th.Notice(i18n.T("dock.searchResults.searching")).Layout(gtx)
 	}
 	groups := groupMatches(data.Matches)
 	note := strings.TrimSpace(searchFootnote(data) + " " + c.listingNote())
@@ -65,7 +66,7 @@ func (c *codeTab) searchBody(gtx C, th *ui.Theme) D {
 		layout.Flexed(1, func(gtx C) D {
 			gtx.Constraints.Min = gtx.Constraints.Max
 			if len(groups) == 0 {
-				return notice(gtx, th, i18n.T("dock.searchResults.noMatch", i18n.Args{"query": settled}))
+				return th.Notice(i18n.T("dock.searchResults.noMatch", i18n.Args{"query": settled})).Layout(gtx)
 			}
 			return c.hitsView(gtx, th, data, groups)
 		}),
@@ -73,7 +74,7 @@ func (c *codeTab) searchBody(gtx C, th *ui.Theme) D {
 			if note == "" {
 				return D{}
 			}
-			return footnote(gtx, th, note)
+			return th.Footnote(note).Layout(gtx)
 		}),
 	)
 }
@@ -179,7 +180,7 @@ func hitGroupHeader(gtx C, th *ui.Theme, g searchGroup) D {
 	dir, base := splitPath(g.path)
 	return layout.Inset{Left: ui.Space(2), Right: ui.Space(2), Top: ui.Space(1.5), Bottom: ui.Space(0.5)}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-			layout.Rigid(func(gtx C) D { return fileIcon(gtx, th, g.path) }),
+			layout.Rigid(th.FileIcon(g.path, filetree.Glyph).Layout),
 			ui.Gap(1.5),
 			layout.Rigid(func(gtx C) D {
 				if dir == "" {
@@ -214,31 +215,10 @@ func (c *codeTab) hitRow(gtx C, th *ui.Theme, i int, hit searchMatch, query stri
 					return layout.Flex{Alignment: layout.Baseline}.Layout(gtx,
 						layout.Rigid(on.Text(ui.TextXS, padLineNumber(hit.Line)).Mono().Muted().Layout),
 						ui.Gap(2),
-						layout.Flexed(1, func(gtx C) D { return hitText(gtx, on, hit.Text, query) }),
+						layout.Flexed(1, on.MarkedText(highlightSegments(hit.Text, query)).Layout),
 					)
 				})
 			},
 		)
 	})
-}
-
-// hitText draws the line's segments, a hit on a bg-tone-wait/30 mark.
-func hitText(gtx C, th *ui.Theme, text, query string) D {
-	segs := highlightSegments(text, query)
-	kids := make([]layout.FlexChild, len(segs))
-	mark := th.Over(ui.Alpha(th.ToneWait, 0.3))
-	for i, s := range segs {
-		l := th.Text(ui.TextXS, s.text).Mono()
-		l.MaxLines = 1
-		if !s.hit {
-			kids[i] = layout.Rigid(l.Layout)
-			continue
-		}
-		kids[i] = layout.Rigid(func(gtx C) D {
-			return layout.Background{}.Layout(gtx,
-				func(gtx C) D { return ui.Fill(gtx, mark, ui.RadiusSM) },
-				th.On(mark).Text(ui.TextXS, s.text).Mono().Layout)
-		})
-	}
-	return layout.Flex{Alignment: layout.Baseline}.Layout(gtx, kids...)
 }

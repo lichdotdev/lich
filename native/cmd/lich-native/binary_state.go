@@ -8,7 +8,6 @@ import (
 	"context"
 	"path/filepath"
 
-	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/widget"
 
@@ -58,21 +57,5 @@ func (e *fileExits) layout(gtx C, th *ui.Theme) D {
 // binaryState is a file the preview cannot draw: title, an optional hint
 // under it, and the exits.
 func binaryState(gtx C, th *ui.Theme, title, hint string, exits *fileExits) D {
-	t := th.Text(ui.TextSM, title).Weight(font.Medium)
-	t.MaxLines = 0
-	return layout.UniformInset(ui.Space(4)).Layout(gtx, func(gtx C) D {
-		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-			layout.Rigid(t.Layout),
-			layout.Rigid(func(gtx C) D {
-				if hint == "" {
-					return D{}
-				}
-				l := th.Text(ui.TextXS, hint).Muted()
-				l.MaxLines = 0
-				return layout.Inset{Top: ui.Space(1)}.Layout(gtx, l.Layout)
-			}),
-			ui.VGap(3),
-			layout.Rigid(func(gtx C) D { return exits.layout(gtx, th) }),
-		)
-	})
+	return th.InlineEmptyState(title, hint, func(gtx C) D { return exits.layout(gtx, th) }).Layout(gtx)
 }

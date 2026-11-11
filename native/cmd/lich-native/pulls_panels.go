@@ -213,7 +213,7 @@ func (v *pullView) conflictsList(gtx C, th *ui.Theme, files []string) D {
 	heading := i18n.T("pulls.pullsConflicts.count", i18n.Args{"count": len(files)})
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			return layout.Inset{Left: ui.Space(2), Right: ui.Space(2), Top: ui.Space(1.5), Bottom: ui.Space(1)}.Layout(gtx, sectionHeading(th, heading))
+			return layout.Inset{Left: ui.Space(2), Right: ui.Space(2), Top: ui.Space(1.5), Bottom: ui.Space(1)}.Layout(gtx, th.SectionHeading(heading).Layout)
 		}),
 		layout.Rigid(func(gtx C) D {
 			return th.ScrollArea(&v.conflictsRows).Layout(gtx, len(files), func(gtx C, i int) D { return conflictRow(gtx, th, files[i]) })
@@ -227,9 +227,9 @@ func conflictRow(gtx C, th *ui.Theme, file string) D {
 	dir, base := splitPath(file)
 	return layout.Inset{Left: ui.Space(2), Right: ui.Space(2), Top: ui.Space(1), Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-			layout.Rigid(func(gtx C) D { return truncated(gtx, th.Text(ui.TextXS, base).Mono().Weight(font.Medium)) }),
+			layout.Rigid(func(gtx C) D { return th.Text(ui.TextXS, base).Mono().Weight(font.Medium).Truncated().Layout(gtx) }),
 			ui.Gap(2),
-			layout.Flexed(1, func(gtx C) D { return truncated(gtx, th.Text(ui.TextXS, dir).Mono().Muted()) }),
+			layout.Flexed(1, func(gtx C) D { return th.Text(ui.TextXS, dir).Mono().Muted().Truncated().Layout(gtx) }),
 		)
 	})
 }
@@ -312,7 +312,7 @@ func (v *pullView) overview(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDet
 	}
 	return layout.Flex{}.Layout(gtx,
 		layout.Flexed(1, description),
-		layout.Rigid(func(gtx C) D { return verticalRule(gtx, th) }),
+		layout.Rigid(func(gtx C) D { return th.VerticalRule(gtx) }),
 		layout.Rigid(func(gtx C) D {
 			w := gtx.Dp(overviewFactsWidth)
 			gtx.Constraints.Min.X, gtx.Constraints.Max.X = w, w
@@ -331,7 +331,7 @@ func (v *pullView) facts(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDetail
 		if len(children) > 0 {
 			children = append(children, ui.VGap(5))
 		}
-		children = append(children, layout.Rigid(sectionHeading(th, title)))
+		children = append(children, layout.Rigid(th.SectionHeading(title).Layout))
 		for _, w := range body {
 			if w != nil {
 				children = append(children, ui.VGap(2), layout.Rigid(w))
@@ -356,9 +356,9 @@ func (v *pullView) checkoutFact(th *ui.Theme, p *pullsScreen, d backend.PRDetail
 	if !ok {
 		return []layout.Widget{th.Text(ui.TextSM, i18n.T("pulls.pullsNav.notCheckedOut")).Muted().Layout}
 	}
-	out := []layout.Widget{func(gtx C) D { return metaGlyph(gtx, th, icCheckout, checkoutName(wt), th.Foreground) }}
+	out := []layout.Widget{func(gtx C) D { return th.MetaGlyph(icCheckout, checkoutName(wt), th.Foreground).Layout(gtx) }}
 	for _, id := range p.sessionsIn(p.project.ID, wt.Path) {
-		out = append(out, func(gtx C) D { return metaGlyph(gtx, th, icPullSession, p.sessionLabel(id), th.MutedForeground) })
+		out = append(out, func(gtx C) D { return th.MetaGlyph(icPullSession, p.sessionLabel(id), th.MutedForeground).Layout(gtx) })
 	}
 	return out
 }
@@ -376,13 +376,9 @@ func (v *pullView) overviewRows(th *ui.Theme, d backend.PRDetail, act *pullsActi
 			if body == "" {
 				return th.Text(ui.TextSM, i18n.T("pulls.pullsOverview.noDescription")).Muted().Layout(gtx)
 			}
-			return v.md.layout(gtx, th, "body:"+d.URL, body, act.open)
+			return v.md.Layout(gtx, th, "body:"+d.URL, body, act.open)
 		})
 	}}
-}
-
-func sectionHeading(th *ui.Theme, text string) layout.Widget {
-	return th.Text(ui.TextXS, strings.ToUpper(text)).Muted().Weight(font.Medium).Layout
 }
 
 // reviewVerdict is what a review state says its author did, ok false for a
@@ -439,7 +435,7 @@ func reviewerChips(gtx C, th *ui.Theme, reviewers []backend.PRReviewer) D {
 // commitRows is PullsCommits: each commit, its body behind a click.
 func (v *pullView) commitRows(gtx C, th *ui.Theme, d backend.PRDetail) []layout.Widget {
 	if len(d.Commits) == 0 {
-		return []layout.Widget{func(gtx C) D { return panelNotice(gtx, th, i18n.T("pulls.pullsCommits.none")) }}
+		return []layout.Widget{func(gtx C) D { return th.PanelNotice(i18n.T("pulls.pullsCommits.none"), pullsPadX).Layout(gtx) }}
 	}
 	now := gtx.Now
 	rows := make([]layout.Widget, len(d.Commits))
@@ -458,7 +454,7 @@ func (v *pullView) commitRows(gtx C, th *ui.Theme, d backend.PRDetail) []layout.
 						return D{}
 					}
 					return layout.Inset{Left: pullsPadX, Right: pullsPadX, Bottom: ui.Space(3)}.Layout(gtx, func(gtx C) D {
-						return wrapped(gtx, th.Text(ui.TextXS, body).Muted())
+						return th.Text(ui.TextXS, body).Muted().Wrapped().Layout(gtx)
 					})
 				}),
 			)
@@ -470,7 +466,7 @@ func (v *pullView) commitRows(gtx C, th *ui.Theme, d backend.PRDetail) []layout.
 // commitRow is a commit's headline, who and when, the chevron when it has a
 // body to open, and its short oid.
 func commitRow(gtx C, th *ui.Theme, c backend.PRCommit, click *widget.Clickable, hasBody, open bool, now time.Time) D {
-	return panelRow(gtx, th, click, hasBody, func(gtx C, th *ui.Theme) D {
+	return th.PanelRow(gtx, click, hasBody, pullsRowEdge, pullsRowPadX, func(gtx C, th *ui.Theme) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Flexed(1, func(gtx C) D {
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
@@ -496,7 +492,7 @@ func commitRow(gtx C, th *ui.Theme, c backend.PRCommit, click *widget.Clickable,
 // checkRows is PullsChecks: each check, its run opened in the browser.
 func (v *pullView) checkRows(gtx C, th *ui.Theme, d backend.PRDetail, act *pullsAction) []layout.Widget {
 	if len(d.CheckRuns) == 0 {
-		return []layout.Widget{func(gtx C) D { return panelNotice(gtx, th, i18n.T("pulls.pullsChecks.none")) }}
+		return []layout.Widget{func(gtx C) D { return th.PanelNotice(i18n.T("pulls.pullsChecks.none"), pullsPadX).Layout(gtx) }}
 	}
 	now := gtx.Now
 	rows := make([]layout.Widget, len(d.CheckRuns))
@@ -513,7 +509,7 @@ func (v *pullView) checkRows(gtx C, th *ui.Theme, d backend.PRDetail, act *pulls
 			case "pending":
 				ic, fg = icPullRunning, th.ToneWait
 			}
-			return panelRow(gtx, th, click, c.URL != "", func(gtx C, th *ui.Theme) D {
+			return th.PanelRow(gtx, click, c.URL != "", pullsRowEdge, pullsRowPadX, func(gtx C, th *ui.Theme) D {
 				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 					layout.Rigid(func(gtx C) D { return pullGlyph(gtx, th, ic, ui.Space(4), fg) }),
 					ui.Gap(3),
@@ -532,7 +528,7 @@ func (v *pullView) checkRows(gtx C, th *ui.Theme, d backend.PRDetail, act *pulls
 						if !c.Required {
 							return D{}
 						}
-						return layout.Inset{Right: ui.Space(3)}.Layout(gtx, paletteChip(th, i18n.T("pulls.pullsChecks.required"), th.MutedForeground))
+						return layout.Inset{Right: ui.Space(3)}.Layout(gtx, th.TinyChip(i18n.T("pulls.pullsChecks.required"), th.MutedForeground).Layout)
 					}),
 					layout.Rigid(th.Text(ui.TextXS, checkDuration(c.StartedAt, c.CompletedAt, now)).Muted().Layout),
 				)
@@ -540,32 +536,6 @@ func (v *pullView) checkRows(gtx C, th *ui.Theme, d backend.PRDetail, act *pulls
 		}
 	}
 	return rows
-}
-
-// panelRow is a tab's py-2 row, hover-filled like a sidebar card while it
-// does something.
-func panelRow(gtx C, th *ui.Theme, click *widget.Clickable, live bool, content func(gtx C, th *ui.Theme) D) D {
-	gtx.Constraints.Min.X = gtx.Constraints.Max.X
-	return click.Layout(gtx, func(gtx C) D {
-		bg := th.Surface
-		if live && click.Hovered() {
-			bg = th.Over(ui.Alpha(th.Accent, ghostHoverFill))
-		}
-		return layout.Inset{Left: pullsRowEdge, Right: pullsRowEdge}.Layout(gtx, func(gtx C) D {
-			return layout.Background{}.Layout(gtx,
-				func(gtx C) D { return ui.Fill(gtx, bg, ui.RadiusMD) },
-				func(gtx C) D {
-					return layout.Inset{Left: pullsRowPadX, Right: pullsRowPadX, Top: ui.Space(2), Bottom: ui.Space(2)}.Layout(gtx, func(gtx C) D {
-						return content(gtx, th.On(bg))
-					})
-				})
-		})
-	})
-}
-
-func panelNotice(gtx C, th *ui.Theme, text string) D {
-	return layout.Inset{Left: pullsPadX, Right: pullsPadX, Top: ui.Space(5), Bottom: ui.Space(5)}.Layout(gtx,
-		th.Text(ui.TextSM, text).Muted().Layout)
 }
 
 func boolOf(m map[string]*widget.Bool, id string) *widget.Bool {

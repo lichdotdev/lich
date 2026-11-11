@@ -206,7 +206,7 @@ func binAlsoOnPathLine(gtx C, th *ui.Theme, others []backend.ProviderBinary) D {
 		return D{}
 	}
 	return layout.Inset{Top: ui.Space(2)}.Layout(gtx, func(gtx C) D {
-		return wrapped(gtx, th.Text(ui.TextXS, line).Muted())
+		return th.Text(ui.TextXS, line).Muted().Wrapped().Layout(gtx)
 	})
 }
 
@@ -282,7 +282,7 @@ func binProblem(gtx C, th *ui.Theme, check backend.BinaryCheck, known bool, aske
 				return layout.Inset{Top: unit.Dp(2)}.Layout(gtx, func(gtx C) D { return icBinWarn.Layout(gtx, binGlyphSize, th.Destructive) })
 			}),
 			ui.Gap(2),
-			layout.Flexed(1, func(gtx C) D { return wrapped(gtx, th.Text(ui.TextXS, text).In(th.Destructive)) }),
+			layout.Flexed(1, func(gtx C) D { return th.Text(ui.TextXS, text).In(th.Destructive).Wrapped().Layout(gtx) }),
 		)
 	})
 }

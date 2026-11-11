@@ -4,7 +4,6 @@ import (
 	"image"
 	"image/color"
 
-	"gioui.org/font"
 	"gioui.org/io/event"
 	"gioui.org/io/key"
 	"gioui.org/io/pointer"
@@ -236,7 +235,7 @@ type sideButton struct {
 }
 
 // ghostHoverFill is the opacity of the fill under a hovered ghost button.
-const ghostHoverFill = 0.5
+const ghostHoverFill = ui.GhostHoverFill
 
 func (b sideButton) layout(th *ui.Theme) layout.Widget {
 	return func(gtx C) D {
@@ -256,10 +255,10 @@ func (b sideButton) layout(th *ui.Theme) layout.Widget {
 				fg = th.Foreground
 			}
 			if b.label == "" {
-				return squareFace(gtx, bg, b.iconWidget(fg))
+				return ui.SquareFace(gtx, bg, b.iconWidget(fg))
 			}
 			face := th.On(opaqueOr(bg, th))
-			return labelFace(gtx, face, bg, b.iconWidget(face.MutedForeground), b.label)
+			return face.LabelFace(gtx, bg, b.iconWidget(face.MutedForeground), b.label)
 		})
 	}
 }
@@ -278,33 +277,6 @@ func opaqueOr(bg color.NRGBA, th *ui.Theme) color.NRGBA {
 		return th.Surface
 	}
 	return bg
-}
-
-func squareFace(gtx C, bg color.NRGBA, icon layout.Widget) D {
-	size := gtx.Dp(ui.Space(8))
-	gtx.Constraints = layout.Exact(image.Pt(size, size))
-	return layout.Background{}.Layout(gtx,
-		func(gtx C) D { return ui.Fill(gtx, bg, ui.RadiusMD) },
-		func(gtx C) D { return layout.Center.Layout(gtx, icon) },
-	)
-}
-
-func labelFace(gtx C, th *ui.Theme, bg color.NRGBA, icon layout.Widget, label string) D {
-	h := gtx.Dp(ui.Space(9))
-	gtx.Constraints.Min.Y, gtx.Constraints.Max.Y = h, h
-	return layout.Background{}.Layout(gtx,
-		func(gtx C) D { return ui.Fill(gtx, bg, ui.RadiusMD) },
-		func(gtx C) D {
-			return layout.Inset{Left: ui.Space(2.5), Right: ui.Space(2.5)}.Layout(gtx, func(gtx C) D {
-				gtx.Constraints.Min.Y = h
-				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-					layout.Rigid(icon),
-					ui.Gap(2),
-					layout.Flexed(1, th.Text(ui.TextSM, label).Weight(font.Medium).Layout),
-				)
-			})
-		},
-	)
 }
 
 func noticeText(gtx C, th *ui.Theme, text string) D {

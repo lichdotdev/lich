@@ -57,34 +57,13 @@ func sessionTooltip(th *ui.Theme, sv *sessionView) layout.Widget {
 	if sv.running != "" || sv.aged {
 		sections = append(sections, footLine(th, sv))
 	}
-	return func(gtx C) D { return stack(gtx, 1.5, sections) }
+	return func(gtx C) D { return ui.Stack(1.5, sections...)(gtx) }
 }
 
 // para lets a label wrap instead of truncating.
 func para(l ui.LabelStyle) ui.LabelStyle {
 	l.MaxLines = 0
 	return l
-}
-
-// stack lays widgets out top to bottom, gap apart (flex-col gap-N).
-func stack(gtx C, gap float32, ws []layout.Widget) D {
-	children := make([]layout.FlexChild, 0, 2*len(ws))
-	for i, w := range ws {
-		if i > 0 {
-			children = append(children, ui.VGap(gap))
-		}
-		children = append(children, layout.Rigid(w))
-	}
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
-}
-
-// iconLine is a glyph and what follows it, gap-1.5 apart.
-func iconLine(gtx C, ic *icons.Icon, glyph ui.LabelStyle, rest ...layout.FlexChild) D {
-	children := []layout.FlexChild{
-		layout.Rigid(func(gtx C) D { return ic.Layout(gtx, 12, glyph.Color) }),
-		ui.Gap(1.5),
-	}
-	return layout.Flex{Alignment: layout.Middle}.Layout(gtx, append(children, rest...)...)
 }
 
 // footLine is the tooltip's last line: the model the provider runs and, in
@@ -109,23 +88,23 @@ func footLine(th *ui.Theme, sv *sessionView) layout.Widget {
 // for being a symlink.
 func sandboxSection(th *ui.Theme, s sandboxEvent) layout.Widget {
 	line := th.Text(ui.TextXS, i18n.T("sidebar.sessionTooltip.notMounted", i18n.Args{"paths": strings.Join(s.SkippedLinks, ", ")})).Muted()
-	return func(gtx C) D { return iconLine(gtx, icSandboxed, line, layout.Flexed(1, para(line).Layout)) }
+	return func(gtx C) D { return ui.IconLine(gtx, icSandboxed, line.Color, layout.Flexed(1, para(line).Layout)) }
 }
 
 func branchSection(th *ui.Theme, sv *sessionView) layout.Widget {
 	return func(gtx C) D {
 		muted := th.Text(ui.TextXS, sv.git.Branch).Muted()
 		children := []layout.FlexChild{
-			layout.Rigid(func(gtx C) D { return iconLine(gtx, icBranch, muted, layout.Rigid(muted.Layout)) }),
+			layout.Rigid(func(gtx C) D { return ui.IconLine(gtx, icBranch, muted.Color, layout.Rigid(muted.Layout)) }),
 		}
 		if sv.pr != nil {
 			number := th.Text(ui.TextXS, "#"+strconv.Itoa(sv.pr.Number)).Muted()
 			children = append(children, ui.Gap(2), layout.Rigid(func(gtx C) D {
-				return iconLine(gtx, icPR, number, layout.Rigid(number.Layout))
+				return ui.IconLine(gtx, icPR, number.Color, layout.Rigid(number.Layout))
 			}))
 		}
 		if sv.git.Files > 0 {
-			children = append(children, ui.Gap(2), layout.Rigid(func(gtx C) D { return diffStat(gtx, th, sv.git.Added, sv.git.Deleted) }))
+			children = append(children, ui.Gap(2), layout.Rigid(func(gtx C) D { return th.DiffStat(sv.git.Added, sv.git.Deleted).Layout(gtx) }))
 		}
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
 	}
@@ -144,7 +123,7 @@ func baseSections(th *ui.Theme, b *backend.BaseStatus) []layout.Widget {
 	if n := len(b.Conflicts); n > 0 {
 		line := th.Text(ui.TextXS, i18n.T("git.baseStatus.conflict", i18n.Args{"count": n})).In(th.ToneWait)
 		out = append(out,
-			func(gtx C) D { return iconLine(gtx, icConflict, line, layout.Flexed(1, line.Layout)) },
+			func(gtx C) D { return ui.IconLine(gtx, icConflict, line.Color, layout.Flexed(1, line.Layout)) },
 			conflictPaths(th, b.Conflicts),
 		)
 	}
@@ -190,7 +169,7 @@ func modelSection(th *ui.Theme, requested, running string) layout.Widget {
 			}
 			children = append(children, layout.Rigid(l.Layout))
 		}
-		return iconLine(gtx, icModel, th.Text(ui.TextXS, "").Muted(), children...)
+		return ui.IconLine(gtx, icModel, th.MutedForeground, children...)
 	}
 }
 
@@ -217,7 +196,7 @@ func conflictPaths(th *ui.Theme, paths []string) layout.Widget {
 		rows = append(rows, th.Text(ui.TextXS, i18n.T("sidebar.sessionTooltip.morePaths", i18n.Args{"count": more})).Muted().Layout)
 	}
 	return func(gtx C) D {
-		return layout.Inset{Left: ui.Space(4)}.Layout(gtx, func(gtx C) D { return stack(gtx, 0.5, rows) })
+		return layout.Inset{Left: ui.Space(4)}.Layout(gtx, func(gtx C) D { return ui.Stack(0.5, rows...)(gtx) })
 	}
 }
 

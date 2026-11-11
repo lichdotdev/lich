@@ -233,7 +233,7 @@ func (d *scheduleDialog) kindList(gtx C, th *ui.Theme) D {
 			rows = append(rows, ui.VGap(0.5))
 		}
 		rows = append(rows, layout.Rigid(func(gtx C) D {
-			return navRow(gtx, th, &d.options[i], d.kind == kind, func(gtx C, th *ui.Theme) D {
+			return th.NavRow(gtx, &d.options[i], d.kind == kind, navRowHeight, navRowPadX, func(gtx C, th *ui.Theme) D {
 				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 					layout.Rigid(func(gtx C) D { return scheduleKindIcon(kind).Layout(gtx, ui.Space(3.5), th.MutedForeground) }),
 					ui.Gap(2),
@@ -439,7 +439,7 @@ func scheduleTipLine(th *ui.Theme, ic *icons.Icon, title, detail string) layout.
 		return layout.Flex{}.Layout(gtx,
 			layout.Rigid(func(gtx C) D { return ic.Layout(gtx, ui.Space(3), th.MutedForeground) }),
 			ui.Gap(1.5),
-			layout.Flexed(1, func(gtx C) D { return stack(gtx, 0.5, lines) }),
+			layout.Flexed(1, func(gtx C) D { return ui.Stack(0.5, lines...)(gtx) }),
 		)
 	}
 }

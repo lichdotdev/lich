@@ -12,8 +12,6 @@ import (
 	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/op"
-	"gioui.org/op/clip"
-	"gioui.org/op/paint"
 	"gioui.org/unit"
 	"gioui.org/widget"
 	"github.com/lichdotdev/lich/native/i18n"
@@ -215,7 +213,7 @@ func (s *sidebar) titleContent(gtx C, th *ui.Theme, b blockView, hovered, refuse
 		return layout.Center.Layout(gtx, func(gtx C) D {
 			return s.morph.glyph(gtx, glyphNode+b.key, func(gtx C) D {
 				gtx.Constraints = layout.Exact(image.Pt(gtx.Dp(ui.Space(3)), gtx.Dp(ui.Space(3))))
-				return centeredIcon(gtx, glyph, ui.Space(3), glyphColor)
+				return ui.CenteredIcon(gtx, glyph, ui.Space(3), glyphColor)
 			})
 		})
 	}), ui.Gap(1.5)}
@@ -225,7 +223,7 @@ func (s *sidebar) titleContent(gtx C, th *ui.Theme, b blockView, hovered, refuse
 		kids = append(kids, ui.Gap(1.5), layout.Rigid(count.Layout))
 	}
 	if dot, ok := markColor(th, b); ok {
-		kids = append(kids, ui.Gap(1.5), layout.Rigid(func(gtx C) D { return markDot(gtx, fade(dot, 1)) }))
+		kids = append(kids, ui.Gap(1.5), layout.Rigid(func(gtx C) D { return ui.MarkDot(gtx, fade(dot, 1)) }))
 	}
 	kids = append(kids, ui.Gap(1.5), layout.Flexed(1, th.Separator))
 	// The line is a row's height already (headerLine); the content centres in it.
@@ -247,12 +245,6 @@ func markColor(th *ui.Theme, b blockView) (color.NRGBA, bool) {
 		return th.TonePass, true
 	}
 	return color.NRGBA{}, false
-}
-
-func markDot(gtx C, c color.NRGBA) D {
-	size := gtx.Dp(ui.Space(1.5))
-	paint.FillShape(gtx.Ops, c, clip.Ellipse{Max: image.Pt(size, size)}.Op(gtx.Ops))
-	return D{Size: image.Pt(size, size)}
 }
 
 // chevron is a ChevronRight, turned down while open.

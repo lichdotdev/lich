@@ -3,11 +3,9 @@ package main
 import (
 	"context"
 	"image"
-	"math"
 	"strings"
 	"sync"
 
-	"gioui.org/f32"
 	"gioui.org/font"
 	"gioui.org/gesture"
 	"gioui.org/layout"
@@ -158,14 +156,14 @@ func (p *themePicker) triggerButton(gtx C, th *ui.Theme, v appearanceView) D {
 				ui.Gap(2.5),
 				layout.Rigid(on.Text(ui.TextSM, selectionName(v)).Weight(font.Medium).Layout),
 				ui.Gap(3),
-				layout.Rigid(func(gtx C) D { return triggerChevron(gtx, on, p.open) }),
+				layout.Rigid(func(gtx C) D { return on.TriggerChevron(gtx, p.open) }),
 			)
 		})
 		call := macro.Stop()
 		box := gtx
 		box.Constraints = layout.Exact(d.Size)
 		ui.Fill(box, bg, ui.RadiusMD)
-		insetBorder(gtx, d.Size, gtx.Dp(ui.RadiusMD), th.Over(th.Palette.Input))
+		ui.InsetBorder(gtx, d.Size, gtx.Dp(ui.RadiusMD), th.Over(th.Palette.Input))
 		call.Add(gtx.Ops)
 		return d
 	})
@@ -185,17 +183,6 @@ func (p *themePicker) selectionMiniature(gtx C, th *ui.Theme, v appearanceView, 
 		return systemMiniature(gtx, th, light.palette, dark.palette, px)
 	}
 	return themeMiniature(gtx, th, v.resolved.palette, px, true)
-}
-
-// triggerChevron is the size-4 chevron-down, turned half a circle while
-// open.
-func triggerChevron(gtx C, th *ui.Theme, open bool) D {
-	size := gtx.Dp(ui.Space(4))
-	if open {
-		c := f32.Pt(float32(size)/2, float32(size)/2)
-		defer op.Affine(f32.AffineId().Rotate(c, math.Pi)).Push(gtx.Ops).Pop()
-	}
-	return icChevronDown.Layout(gtx, ui.Space(4), th.Foreground)
 }
 
 // stripLayout is the count line, the two-row grid of cards and the broken
@@ -289,7 +276,7 @@ func (p *themePicker) brokenList(gtx C, th *ui.Theme, broken []backend.BrokenThe
 		return D{}
 	}
 	children := []layout.FlexChild{
-		layout.Rigid(func(gtx C) D { return ruleAbove(gtx, th) }),
+		layout.Rigid(func(gtx C) D { return th.RuleAbove(gtx) }),
 		ui.VGap(2),
 		layout.Rigid(func(gtx C) D {
 			return layout.Inset{Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
@@ -337,7 +324,7 @@ func (p *themePicker) brokenRow(gtx C, th *ui.Theme, b backend.BrokenTheme, row 
 			layout.Flexed(1, reason.Layout),
 			ui.Gap(4),
 			layout.Rigid(func(gtx C) D {
-				return ghostTextButton(gtx, on, &row.remove, i18n.T("settings.brokenThemeList.remove"), on.Destructive)
+				return on.GhostTextButton(gtx, &row.remove, i18n.T("settings.brokenThemeList.remove"), on.Destructive)
 			}),
 		)
 	})

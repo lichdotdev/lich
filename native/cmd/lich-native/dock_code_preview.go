@@ -18,16 +18,16 @@ import (
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
+	"github.com/lichdotdev/lich/native/ui/codeview"
 	"github.com/lichdotdev/lich/native/ui/icons"
+	"github.com/lichdotdev/lich/native/ui/markdown"
 )
 
 var icPreviewBack = icons.Lucide("chevron-left")
 
 type preview struct {
 	client *backend.Client
-	view   *godemirror.View
-	family string
-	size   unit.Sp
+	view   *codeview.View
 	file   remote[string]
 	image  *blobView
 	exits  fileExits
@@ -42,7 +42,7 @@ type preview struct {
 	note agentNote
 	// shown is the read on the view, its key; content is what was set there.
 	shown   string
-	content godemirror.Content
+	content codeview.Source
 
 	back     widget.Clickable
 	backTip  ui.Tooltip
@@ -65,11 +65,11 @@ type previewEnv struct {
 	notify   func(ui.Toast)
 }
 
-func newPreview(client *backend.Client, view *godemirror.View, family string, size unit.Sp, invalidate func()) *preview {
-	p := &preview{client: client, view: view, family: family, size: size, blockAt: -1, image: newBlobView(invalidate), find: newFindBar()}
+func newPreview(client *backend.Client, view *codeview.View, invalidate func()) *preview {
+	p := &preview{client: client, view: view, blockAt: -1, image: newBlobView(invalidate), find: newFindBar()}
 	p.file.invalidate = invalidate
 	p.scroll.Axis = layout.Vertical
-	p.md.rendered = markdownCache{}
+	p.md.rendered = markdown.Cache{}
 	p.md.scroll.Axis = layout.Vertical
 	return p
 }
@@ -119,11 +119,11 @@ func (p *preview) layout(gtx C, th *ui.Theme, root *ui.Root, env previewEnv) (D,
 			return p.client.ReadFile(ctx, path, rel)
 		})
 	}
-	if p.md.toggle.click.Clicked(gtx) {
+	if p.md.toggle.Click.Clicked(gtx) {
 		p.md.rendering = !p.md.rendering
 	}
 	if !p.md.rendering {
-		p.find.keys(gtx, p.view)
+		p.find.keys(gtx, p.view.View)
 	}
 	var err error
 	dims := layout.Flex{Axis: layout.Vertical}.Layout(gtx,
@@ -156,7 +156,7 @@ func (p *preview) holdsKeys(gtx C) bool {
 	if p.composer.isOpen() || p.menu.Opened() {
 		return true
 	}
-	return gtx.Focused(p.view) || p.find.holdsKeys(gtx)
+	return gtx.Focused(p.view.View) || p.find.holdsKeys(gtx)
 }
 
 // findRow is the find bar under the header while it is open over a text file,
@@ -166,9 +166,9 @@ func (p *preview) findRow(gtx C, th *ui.Theme, root *ui.Root, kind blobKind) D {
 		return D{}
 	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(func(gtx C) D { return p.find.layout(gtx, th, root, p.view) }),
+		layout.Rigid(func(gtx C) D { return p.find.layout(gtx, th, root, p.view.View) }),
 		layout.Rigid(th.Separator),
-		layout.Rigid(func(gtx C) D { return p.find.layoutList(gtx, th, p.view) }),
+		layout.Rigid(func(gtx C) D { return p.find.layoutList(gtx, th, p.view.View) }),
 	)
 }
 
@@ -224,11 +224,10 @@ func (p *preview) body(gtx C, th *ui.Theme, root *ui.Root, key string) (D, error
 	case err != nil:
 		return binaryState(gtx, th, backend.ErrorText(err), "", &p.exits), nil
 	case loading:
-		return notice(gtx, th, i18n.T("dock.filesPanel.loading")), nil
+		return th.Notice(i18n.T("dock.filesPanel.loading")).Layout(gtx), nil
 	}
 	p.show(key, text)
 	p.syncComposer()
-	p.view.Theme = previewTheme(th, p.env.code)
 	var viewErr error
 	lines := ""
 	if from, to, ok := p.view.SelectedLines(); ok {
@@ -238,7 +237,7 @@ func (p *preview) body(gtx C, th *ui.Theme, root *ui.Root, key string) (D, error
 	dims := th.ContextMenu(root, &p.menu, entries).Layout(gtx, func(gtx C) D {
 		return layout.Inset{Top: ui.Space(1), Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
 			gtx.Constraints.Min = gtx.Constraints.Max
-			d, err := p.view.Layout(gtx)
+			d, err := p.view.Layout(gtx, th, p.env.code)
 			viewErr = err
 			return d
 		})
@@ -261,8 +260,8 @@ func (p *preview) show(key, text string) {
 		return
 	}
 	p.shown, p.blockAt = key, -1
-	p.content = godemirror.Content{Filename: p.rel, Text: text, StyleTags: codeStyleTags, Blocks: p.blocksWith(-1)}
-	p.view.SetContent(p.content)
+	p.content = codeview.Source{Filename: p.rel, Text: text, Blocks: p.blocksWith(-1)}
+	p.view.SetSource(p.content)
 	if p.line > 0 {
 		p.view.SelectLines(p.line-1, max(p.line, p.endLine)-1)
 		p.view.ScrollToLine(p.line-1, godemirror.AlignCenter)
@@ -284,12 +283,12 @@ func (p *preview) syncComposer() {
 	}
 	p.blockAt = at
 	if at < 0 {
-		p.view.UpdateContent(p.content)
+		p.view.UpdateSource(p.content)
 		return
 	}
 	c := p.content
 	c.Blocks = p.blocksWith(at)
-	p.view.SetContent(c)
+	p.view.SetSource(c)
 	p.view.ScrollToLine(at, godemirror.AlignCenter)
 }
 
@@ -299,36 +298,14 @@ func (p *preview) composerBlock(gtx C) D {
 	})
 }
 
-// codeStyleTags tags more of the code than CodeMirror's grammars do, so a
-// theme can color it as an IDE does: Java's enum constants, annotations,
-// fields and import paths, parameter declarations, and each language's
-// builtins.
-var codeStyleTags = []godemirror.StyleTags{
-	godemirror.RicherJavaTags(),
-	godemirror.RicherGoTags(), godemirror.GoBuiltinTags(),
-	godemirror.RicherJavaScriptTags(), godemirror.JavaScriptBuiltinTags(),
-	godemirror.RicherPythonTags(), godemirror.PythonBuiltinTags(),
-	godemirror.RicherRustTags(), godemirror.RustBuiltinTags(),
-}
-
-// previewTheme is the window theme's code palette on the theme's surface.
-func previewTheme(th *ui.Theme, code godemirror.Theme) godemirror.Theme {
-	code.Background, code.GutterBackground = th.Surface, th.Surface
-	return code
-}
-
 // setFont swaps the view for one in family at size, keeping what it shows.
 func (p *preview) setFont(family string, size unit.Sp) error {
-	if family == p.family && size == p.size {
-		return nil
-	}
-	view, err := newCodeView(family, size)
-	if err != nil {
+	changed, err := p.view.SetFont(family, size)
+	if err != nil || !changed {
 		return err
 	}
-	p.view, p.family, p.size = view, family, size
 	if p.content.Text != "" {
-		p.view.SetContent(p.content)
+		p.view.SetSource(p.content)
 	}
 	return nil
 }

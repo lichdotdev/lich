@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 	"image"
-	"image/color"
 
 	"gioui.org/font"
 	"gioui.org/io/event"
@@ -49,19 +48,10 @@ type paneUI struct {
 	zoomTip, unsplitTip, delegatesTip ui.Tooltip
 }
 
-// paneDivider is the gap between a split's two sides, dragged to move the
-// ratio; ratio holds the drag's value until it is stored on release.
-type paneDivider struct {
-	dragging   bool
-	press      float32
-	startRatio float64
-	ratio      float64
-}
-
 // layoutStage is the window's state for the layout on screen.
 type layoutStage struct {
 	panes    map[string]*paneUI
-	dividers map[string]*paneDivider
+	dividers map[string]*ui.SplitPane
 	// metric is the island's, which the smallest pane is measured in.
 	metric  unit.Metric
 	move    moveConfirm
@@ -92,13 +82,13 @@ func (s *layoutStage) pane(id string) *paneUI {
 	return p
 }
 
-func (s *layoutStage) divider(key string) *paneDivider {
+func (s *layoutStage) divider(key string) *ui.SplitPane {
 	if s.dividers == nil {
-		s.dividers = map[string]*paneDivider{}
+		s.dividers = map[string]*ui.SplitPane{}
 	}
 	d, ok := s.dividers[key]
 	if !ok {
-		d = new(paneDivider)
+		d = &ui.SplitPane{MinRatio: ratioMin, MaxRatio: ratioMax}
 		s.dividers[key] = d
 	}
 	return d
@@ -137,87 +127,38 @@ func (u *window) paneTree(gtx C, v stageView, n *paneNode, path string, r image.
 		}
 		return u.paneAt(gtx, v, n.Session, r, several)
 	}
-	first, second, gap := u.splitRects(gtx, v, n, path, r)
+	d := u.layoutStage.divider(v.layout.ID + "/" + path)
+	axis := paneAxis(n)
+	minFirst, minSecond := splitMins(gtx, n)
+	first, second, gap := d.Rects(r, axis, n.Ratio, gtx.Dp(gutter), minFirst, minSecond)
 	if err := u.paneTree(gtx, v, n.First, path+"0", first, several); err != nil {
 		return err
 	}
 	if err := u.paneTree(gtx, v, n.Second, path+"1", second, several); err != nil {
 		return err
 	}
-	u.dividerAt(gtx, v.layout.ID, n, path, r, gap)
+	if ratio, released := d.Divider(gtx, r, gap, axis, n.Ratio); released {
+		u.model.setRatio(v.layout.ID, pathSteps(path), ratio)
+	}
 	return nil
 }
 
-// splitRects divides r between n's sides at its ratio, the one being dragged
-// while a drag is on, keeping each side its smallest size while r has room.
-func (u *window) splitRects(gtx C, v stageView, n *paneNode, path string, r image.Rectangle) (first, second, gap image.Rectangle) {
-	ratio := n.Ratio
-	if d := u.layoutStage.divider(v.layout.ID + "/" + path); d.dragging {
-		ratio = d.ratio
+func paneAxis(n *paneNode) layout.Axis {
+	if n.Axis == splitRow {
+		return layout.Horizontal
 	}
+	return layout.Vertical
+}
+
+// splitMins is the smallest size n's two sides keep along its axis.
+func splitMins(gtx C, n *paneNode) (first, second int) {
 	g := gtx.Dp(gutter)
 	fw, fh := minSize(n.First, gtx.Dp(paneMinWidth), gtx.Dp(paneMinHeight), g)
 	sw, sh := minSize(n.Second, gtx.Dp(paneMinWidth), gtx.Dp(paneMinHeight), g)
-	span, lo, hi := r.Dy()-g, fh, sh
 	if n.Axis == splitRow {
-		span, lo, hi = r.Dx()-g, fw, sw
+		return fw, sw
 	}
-	at := int(ratio * float64(span))
-	if lo+hi <= span {
-		at = min(max(at, lo), span-hi)
-	}
-	if n.Axis == splitRow {
-		x := r.Min.X + at
-		return image.Rect(r.Min.X, r.Min.Y, x, r.Max.Y), image.Rect(x+g, r.Min.Y, r.Max.X, r.Max.Y), image.Rect(x, r.Min.Y, x+g, r.Max.Y)
-	}
-	y := r.Min.Y + at
-	return image.Rect(r.Min.X, r.Min.Y, r.Max.X, y), image.Rect(r.Min.X, y+g, r.Max.X, r.Max.Y), image.Rect(r.Min.X, y, r.Max.X, y+g)
-}
-
-// dividerAt makes the gap between n's sides draggable, storing the ratio it
-// was let go at.
-func (u *window) dividerAt(gtx C, layoutID string, n *paneNode, path string, r, gap image.Rectangle) {
-	d := u.layoutStage.divider(layoutID + "/" + path)
-	span := float32(r.Dy() - gap.Dy())
-	if n.Axis == splitRow {
-		span = float32(r.Dx() - gap.Dx())
-	}
-	for {
-		ev, ok := gtx.Event(pointer.Filter{Target: d, Kinds: pointer.Press | pointer.Drag | pointer.Release | pointer.Cancel})
-		if !ok {
-			break
-		}
-		e, ok := ev.(pointer.Event)
-		if !ok || span <= 0 {
-			continue
-		}
-		at := e.Position.Y
-		if n.Axis == splitRow {
-			at = e.Position.X
-		}
-		switch e.Kind {
-		case pointer.Press:
-			d.dragging, d.press, d.startRatio, d.ratio = true, at, n.Ratio, n.Ratio
-		case pointer.Drag:
-			if d.dragging {
-				d.ratio = clampRatio(d.startRatio + float64((at-d.press)/span))
-			}
-		case pointer.Release:
-			if d.dragging {
-				d.dragging = false
-				u.model.setRatio(layoutID, pathSteps(path), d.ratio)
-			}
-		case pointer.Cancel:
-			d.dragging = false
-		}
-	}
-	defer clip.Rect(gap).Push(gtx.Ops).Pop()
-	cursor := pointer.CursorRowResize
-	if n.Axis == splitRow {
-		cursor = pointer.CursorColResize
-	}
-	cursor.Add(gtx.Ops)
-	event.Op(gtx.Ops, d)
+	return fh, sh
 }
 
 func pathSteps(path string) []bool {
@@ -287,7 +228,7 @@ func (u *window) paneDrop(gtx C, th *ui.Theme, sv sessionView, at image.Point) {
 	corner := u.islandAt.Add(at)
 	u.drop.setRect(image.Rectangle{Min: corner, Max: corner.Add(gtx.Constraints.Max)})
 	if u.drop.hinting() || *flagDropHint {
-		dropHint(gtx, th, sv.Label, sv.sandbox.Confined)
+		dropHintFor(th, sv.Label, sv.sandbox.Confined).Layout(gtx)
 	}
 }
 
@@ -335,7 +276,7 @@ func (u *window) paneHeader(gtx C, th *ui.Theme, v stageView, sv sessionView, fo
 				if !v.mixed {
 					return D{}
 				}
-				return layout.Flex{Alignment: layout.Middle}.Layout(gtx, layout.Rigid(func(gtx C) D { return projectTag(gtx, th, v.projectNames[sv.projectID], fg) }), ui.Gap(1.5))
+				return layout.Flex{Alignment: layout.Middle}.Layout(gtx, layout.Rigid(th.Tag(v.projectNames[sv.projectID], fg).Layout), ui.Gap(1.5))
 			}),
 			layout.Flexed(1, func(gtx C) D {
 				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
@@ -359,11 +300,11 @@ func (u *window) paneButtons(gtx C, th *ui.Theme, v stageView, sv sessionView, p
 	unsplit := th.Tooltip(&u.root, &p.unsplitTip, i18n.T("layouts.pane.unsplit"))
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			return zoom.Layout(gtx, func(gtx C) D { return cornerButton(gtx, th, &p.zoom, icPaneZoom, false) })
+			return zoom.Layout(gtx, func(gtx C) D { return th.CornerButton(&p.zoom, icPaneZoom, false).Layout(gtx) })
 		}),
 		ui.Gap(1.5),
 		layout.Rigid(func(gtx C) D {
-			return unsplit.Layout(gtx, func(gtx C) D { return cornerButton(gtx, th, &p.unsplit, icPaneUnsplit, false) })
+			return unsplit.Layout(gtx, func(gtx C) D { return th.CornerButton(&p.unsplit, icPaneUnsplit, false).Layout(gtx) })
 		}),
 	)
 }
@@ -385,18 +326,13 @@ func zoomChip(gtx C, th *ui.Theme, v stageView) D {
 	if waiting > 0 {
 		text = i18n.T("layouts.pane.hiddenWaiting", i18n.Args{"count": hidden, "waiting": waiting})
 	}
-	return pill(gtx, th, func(gtx C) D {
+	return th.Pill(func(gtx C) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Rigid(func(gtx C) D { return icPaneUnzoom.Layout(gtx, 12, th.MutedForeground) }),
 			ui.Gap(1.5),
 			layout.Rigid(th.Text(ui.TextXS, text).Muted().Layout),
 		)
-	}, ui.Space(2), ui.Space(2))
-}
-
-// projectTag is the project's name in an outlined pill.
-func projectTag(gtx C, th *ui.Theme, name string, fg color.NRGBA) D {
-	return pill(gtx, th, th.Text(ui.TextXS, name).In(fg).Layout, ui.Space(2), ui.Space(2))
+	}, ui.Space(2), ui.Space(2)).Layout(gtx)
 }
 
 // worktreeLabel names the worktree a pane's session runs in, "" for the

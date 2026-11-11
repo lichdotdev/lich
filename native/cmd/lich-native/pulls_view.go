@@ -16,6 +16,7 @@ import (
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
 	"github.com/lichdotdev/lich/native/ui/icons"
+	"github.com/lichdotdev/lich/native/ui/markdown"
 )
 
 // The PR island's padding under the toolbar strip: the sidebar's, an 8px
@@ -99,7 +100,7 @@ type pullView struct {
 	tree      filesTree
 	inline    inlineFrame
 	root      *ui.Root
-	md        markdownCache
+	md        markdown.Cache
 	pending   map[string]*pendingReview // by PR URL
 	submit    submitState
 	mergeEdit mergeDialog
@@ -150,9 +151,9 @@ func (v *pullView) init() {
 	v.viewed = map[string]map[string]string{}
 	v.pending = map[string]*pendingReview{}
 	v.talk.init()
-	v.md = markdownCache{}
+	v.md = markdown.Cache{}
 	v.tree.closed = map[string]bool{}
-	v.tree.rows.list.Axis = layout.Vertical
+	v.tree.rows.List.Axis = layout.Vertical
 }
 
 func (v *pullView) tip(key string) *ui.Tooltip {
@@ -169,11 +170,11 @@ func (v *pullView) layout(gtx C, th *ui.Theme, p *pullsScreen, act *pullsAction)
 	read := p.store.detail(p.project.Path, p.selected)
 	switch {
 	case read.val == nil && read.err != "":
-		return v.withToolbar(gtx, th, p, nil, func(gtx C) D { return notice(gtx, th, read.err) })
+		return v.withToolbar(gtx, th, p, nil, func(gtx C) D { return th.Notice(read.err).Layout(gtx) })
 	case read.val == nil && !read.loaded, read.val == nil && read.loading:
 		return v.withToolbar(gtx, th, p, func(gtx C) D { return skeletonHeading(gtx, th) }, v.detailSkeleton(th))
 	case read.val == nil:
-		return v.withToolbar(gtx, th, p, nil, func(gtx C) D { return notice(gtx, th, i18n.T("pulls.pullsEmptyState.none")) })
+		return v.withToolbar(gtx, th, p, nil, func(gtx C) D { return th.Notice(i18n.T("pulls.pullsEmptyState.none")).Layout(gtx) })
 	}
 	d := v.edit.shown(*read.val, read, p.store.lastStale())
 	if stillSettling(d) && !read.loading {
@@ -262,7 +263,7 @@ func (v *pullView) crumb(gtx C, th *ui.Theme, p *pullsScreen) D {
 				return v.withTip(gtx, th, p, "back", i18n.T("pulls.pullsNav.back"), b.Layout)
 			}),
 			ui.Gap(2.5),
-			layout.Rigid(func(gtx C) D { return hoverText(gtx, th, &v.indexLink, i18n.T("tabs.projectTabs.pullRequests")) }),
+			layout.Rigid(func(gtx C) D { return th.HoverLink(gtx, &v.indexLink, i18n.T("tabs.projectTabs.pullRequests")) }),
 			ui.Gap(1.5),
 			layout.Rigid(func(gtx C) D { return icPullRight.Layout(gtx, ui.Space(3), th.MutedForeground) }),
 			ui.Gap(1.5),
@@ -275,17 +276,6 @@ func (v *pullView) crumb(gtx C, th *ui.Theme, p *pullsScreen) D {
 				return v.stepper(gtx, th, p, at, len(rows))
 			}),
 		)
-	})
-}
-
-// hoverText is a click in muted words that brighten under the pointer.
-func hoverText(gtx C, th *ui.Theme, click *widget.Clickable, text string) D {
-	return click.Layout(gtx, func(gtx C) D {
-		fg := th.MutedForeground
-		if click.Hovered() {
-			fg = th.Foreground
-		}
-		return th.Text(ui.TextXS, text).In(fg).Layout(gtx)
 	})
 }
 
@@ -405,7 +395,7 @@ func (v *pullView) stats(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDetail
 	items := []ui.WrapChild{
 		ui.WrapItem(func(gtx C) D { return stateStat(gtx, th, d) }),
 		ui.WrapItem(func(gtx C) D {
-			return metaGlyph(gtx, th, icPullBranch, d.HeadRefName+" → "+d.BaseRefName, th.MutedForeground)
+			return th.MetaGlyph(icPullBranch, d.HeadRefName+" → "+d.BaseRefName, th.MutedForeground).Layout(gtx)
 		}),
 		ui.WrapItem(th.Text(ui.TextXS, i18n.T("pulls.pullsOverview.openedBy", i18n.Args{"author": d.Author})).Muted().Layout),
 	}
@@ -583,7 +573,7 @@ func (v *pullView) tabStrip(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDet
 			if d.Additions == 0 && d.Deletions == 0 {
 				return D{}
 			}
-			return layout.Inset{Left: ui.Space(4)}.Layout(gtx, func(gtx C) D { return diffStat(gtx, th, d.Additions, d.Deletions) })
+			return layout.Inset{Left: ui.Space(4)}.Layout(gtx, func(gtx C) D { return th.DiffStat(d.Additions, d.Deletions).Layout(gtx) })
 		}),
 	)
 }

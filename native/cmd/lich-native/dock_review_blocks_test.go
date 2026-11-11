@@ -14,6 +14,7 @@ import (
 
 	"github.com/lichdotdev/godemirror"
 	"github.com/lichdotdev/lich/native/ui"
+	"github.com/lichdotdev/lich/native/ui/diffview"
 )
 
 const blockTestPatch = "diff --git a/a.go b/a.go\nindex 1..2 100644\n--- a/a.go\n+++ b/a.go\n@@ -1,3 +1,3 @@\n one\n-two\n+TWO\n three\n"
@@ -54,12 +55,12 @@ func TestFileCardMakesRoomForTheBlocksUnderItsLines(t *testing.T) {
 	p.th = &ui.Theme{Palette: ui.Dark, Shaper: text.NewShaper(text.WithCollection(gofont.Collection())), Surface: ui.Dark.Sidebar}
 	const blockSize = 77
 	var shown bool
-	p.pr = &prFiles{ticks: map[string]*widget.Bool{}, blocks: func(string) []cardBlock {
+	p.pr = &prFiles{ticks: map[string]*widget.Bool{}, blocks: func(string) []diffview.Block {
 		if !shown {
 			return nil
 		}
-		return []cardBlock{{key: "thread:T", at: godemirror.LineRef{Side: godemirror.NewSide, Line: 2},
-			widget: func(gtx C) D { return D{Size: image.Pt(gtx.Constraints.Max.X, blockSize)} }}}
+		return []diffview.Block{{Key: "thread:T", At: godemirror.LineRef{Side: godemirror.NewSide, Line: 2},
+			Widget: func(gtx C) D { return D{Size: image.Pt(gtx.Constraints.Max.X, blockSize)} }}}
 	}}
 	c := newFileCard(p, files[0], false, 0)
 	bare := cardHeight(t, p, c)

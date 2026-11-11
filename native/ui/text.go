@@ -57,6 +57,12 @@ func (l LabelStyle) Italic() LabelStyle { l.Font.Style = font.Italic; return l }
 // Centered sets text-center.
 func (l LabelStyle) Centered() LabelStyle { l.Align = text.Middle; return l }
 
+// Wrapped lets the text take as many lines as it needs.
+func (l LabelStyle) Wrapped() LabelStyle { l.MaxLines = 0; return l }
+
+// Truncated keeps the text on one line, cut with "…".
+func (l LabelStyle) Truncated() LabelStyle { l.MaxLines = 1; return l }
+
 // In sets the color.
 func (l LabelStyle) In(c color.NRGBA) LabelStyle { l.Color = c; return l }
 

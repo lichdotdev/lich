@@ -127,17 +127,19 @@ func (v *pullView) conversationRows(gtx C, th *ui.Theme, p *pullsScreen, d backe
 	switch {
 	case read.val == nil && read.err != "":
 		return []layout.Widget{func(gtx C) D {
-			return panelNotice(gtx, th, i18n.T("pulls.pullsConversation.readFailed", i18n.Args{"error": read.err}))
+			return th.PanelNotice(i18n.T("pulls.pullsConversation.readFailed", i18n.Args{"error": read.err}), pullsPadX).Layout(gtx)
 		}}
 	case read.val == nil:
-		return []layout.Widget{func(gtx C) D { return panelNotice(gtx, th, i18n.T("pulls.pullsConversation.loading")) }}
+		return []layout.Widget{func(gtx C) D { return th.PanelNotice(i18n.T("pulls.pullsConversation.loading"), pullsPadX).Layout(gtx) }}
 	}
 	items, resolved := conversationTimeline(read.val)
 	now := gtx.Now
 	v.talkClicks(gtx, v.pendingOf(d.URL))
 	rows := v.pendingRows(th, v.pendingOf(d.URL))
 	if len(items) == 0 && len(resolved) == 0 {
-		rows = append(rows, func(gtx C) D { return panelNotice(gtx, th, i18n.T("pulls.pullsConversation.nothingYet")) })
+		rows = append(rows, func(gtx C) D {
+			return th.PanelNotice(i18n.T("pulls.pullsConversation.nothingYet"), pullsPadX).Layout(gtx)
+		})
 	}
 	for _, it := range items {
 		switch {
@@ -193,7 +195,7 @@ func (v *pullView) talkEntry(th *ui.Theme, p *pullsScreen, key string, who autho
 							if editing {
 								return v.editBox(gtx, th, target, act)
 							}
-							return v.md.layout(gtx, th, key, body, act.open)
+							return v.md.Layout(gtx, th, key, body, act.open)
 						})
 					}),
 				)
@@ -271,7 +273,7 @@ func threadHeader(gtx C, th *ui.Theme, t backend.PRReviewThread, open, waiting b
 		layout.Rigid(func(gtx C) D { return chevron.Layout(gtx, ui.Space(3.5), th.MutedForeground) }),
 		ui.Gap(1.5),
 		layout.Flexed(1, func(gtx C) D {
-			return truncated(gtx, th.Text(ui.TextXS, t.Path+" · "+anchor).Mono())
+			return th.Text(ui.TextXS, t.Path+" · "+anchor).Mono().Truncated().Layout(gtx)
 		}),
 	}
 	if t.IsOutdated {
@@ -282,7 +284,7 @@ func threadHeader(gtx C, th *ui.Theme, t backend.PRReviewThread, open, waiting b
 	}
 	if t.IsResolved {
 		children = append(children, ui.Gap(2), layout.Rigid(func(gtx C) D {
-			return metaGlyph(gtx, th, icPullCheck, i18n.T("pulls.reviewThread.resolved"), th.TonePass)
+			return th.MetaGlyph(icPullCheck, i18n.T("pulls.reviewThread.resolved"), th.TonePass).Layout(gtx)
 		}))
 	}
 	children = append(children, ui.Gap(2), layout.Rigid(th.Text(ui.TextXS, fmt.Sprint(len(t.Comments))).Muted().Layout))
@@ -367,7 +369,7 @@ func hunkLine(gtx C, th *ui.Theme, line string) D {
 	return layout.Background{}.Layout(gtx,
 		func(gtx C) D { return ui.Fill(gtx, tint, 0) },
 		func(gtx C) D {
-			return truncated(gtx, th.Text(ui.TextXS, strings.ReplaceAll(line, "\t", hunkTab)).Mono().In(fg))
+			return th.Text(ui.TextXS, strings.ReplaceAll(line, "\t", hunkTab)).Mono().In(fg).Truncated().Layout(gtx)
 		})
 }
 
@@ -506,7 +508,7 @@ func (v *pullView) commentBox(gtx C, th *ui.Theme, act *pullsAction) D {
 	send.Size, send.Disabled = ui.SizeSM, body == "" || busy
 	return layout.Inset{Left: pullsPadX, Right: pullsPadX, Top: ui.Space(5), Bottom: ui.Space(5)}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-			layout.Rigid(sectionHeading(th, i18n.T("pulls.pullsConversation.commentOn"))),
+			layout.Rigid(th.SectionHeading(i18n.T("pulls.pullsConversation.commentOn")).Layout),
 			ui.VGap(2),
 			layout.Rigid(func(gtx C) D {
 				ta := th.Textarea(&s.comment, i18n.T("pulls.pullsConversation.commentPlaceholder"))
@@ -529,7 +531,7 @@ func (v *pullView) pendingRows(th *ui.Theme, r *pendingReview) []layout.Widget {
 	rows := []layout.Widget{func(gtx C) D {
 		return layout.Inset{Left: pullsPadX, Right: pullsPadX, Top: ui.Space(4)}.Layout(gtx, func(gtx C) D {
 			return layout.Flex{Alignment: layout.Baseline}.Layout(gtx,
-				layout.Rigid(sectionHeading(th, i18n.T("pulls.pullsConversation.pendingHead"))),
+				layout.Rigid(th.SectionHeading(i18n.T("pulls.pullsConversation.pendingHead")).Layout),
 				ui.Gap(2),
 				layout.Rigid(th.Text(ui.TextXS, i18n.T("pulls.pullsConversation.pendingNote")).Muted().Layout),
 			)
@@ -547,7 +549,7 @@ func (v *pullView) pendingRow(gtx C, th *ui.Theme, i int, c backend.ReviewCommen
 	s := &v.talk
 	discard, edit := clickableAt(s.discards, i), clickableAt(s.edits, i)
 	editing := s.pendingEdit.open && s.pendingEdit.index == i
-	body := func(gtx C) D { return wrapped(gtx, th.Text(ui.TextSM, c.Body)) }
+	body := func(gtx C) D { return th.Text(ui.TextSM, c.Body).Wrapped().Layout(gtx) }
 	if editing {
 		body = func(gtx C) D { return v.pendingEditBox(gtx, th) }
 	}

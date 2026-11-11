@@ -50,7 +50,7 @@ func TestPickingAProfileColorSendsIt(t *testing.T) {
 func TestAProfileChangedEventRedrawsTheProfileKeepingItsLogin(t *testing.T) {
 	m := newModel(nil, func() {})
 	m.profiles.list = []backend.Profile{{Slug: personalProfile, Name: "Personal"}, {Slug: "work", Name: "Work", LoggedIn: true, Email: "w@x.y"}}
-	m.profiles.images = map[string]*avatarImage{}
+	m.profiles.images = map[string]*ui.AvatarImage{}
 	m.profileChanged(backend.ProfileChanged{Provider: claudeKind, Profile: api.Profile{Slug: "work", Name: "Client", Color: "teal", Image: tinyPNG(t)}})
 	look := m.profiles.look("work")
 	if look.name != "Client" || look.color != "teal" || look.image == nil {

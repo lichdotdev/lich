@@ -52,13 +52,13 @@ func (s *settingsScreen) scopeButton(gtx C, th *ui.Theme) D {
 				bg = th.Over(ui.Alpha(th.Accent, ghostHoverFill))
 				ui.Fill(gtx, bg, ui.RadiusMD)
 			}
-			insetBorder(gtx, size, gtx.Dp(ui.RadiusMD), th.Over(th.Border))
+			ui.InsetBorder(gtx, size, gtx.Dp(ui.RadiusMD), th.Over(th.Border))
 			on := th.On(bg)
 			value := i18n.T("settings.settingsNav.scopeGlobal")
 			lead := func(gtx C) D { return icScopeGlobal.Layout(gtx, ui.Space(4), on.MutedForeground) }
 			if p, ok := s.scopeProject(); ok {
 				value = p.name
-				lead = func(gtx C) D { return swatch(gtx, projectSwatch(p.id)) }
+				lead = func(gtx C) D { return ui.Swatch(gtx, projectSwatch(p.id)) }
 			}
 			return layout.Inset{Left: navRowPadX, Right: navRowPadX}.Layout(gtx, func(gtx C) D {
 				return layout.W.Layout(gtx, func(gtx C) D {
@@ -103,7 +103,7 @@ func (s *settingsScreen) scopeMenu(gtx C, th *ui.Theme, values scopedValues) D {
 	}
 	for _, p := range s.projects {
 		children = append(children, layout.Rigid(func(gtx C) D {
-			return s.scopeRow(gtx, th, p.id, func(gtx C, _ *ui.Theme) D { return swatch(gtx, projectSwatch(p.id)) },
+			return s.scopeRow(gtx, th, p.id, func(gtx C, _ *ui.Theme) D { return ui.Swatch(gtx, projectSwatch(p.id)) },
 				p.name, changesLabel(projectChanges(p.id, values)))
 		}))
 	}
@@ -124,7 +124,7 @@ func changesLabel(n int) string {
 // the check on the scope being edited.
 func (s *settingsScreen) scopeRow(gtx C, th *ui.Theme, id string, lead func(gtx C, th *ui.Theme) D, name, changes string) D {
 	click := clickableOf(s.nav.scopeRows, id)
-	return popoverRow(gtx, th, click, func(gtx C, th *ui.Theme) D {
+	return th.PopoverRow(click, func(gtx C, th *ui.Theme) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
 				gtx.Constraints = layout.Exact(image.Pt(gtx.Dp(scopeMenuIcon), gtx.Dp(scopeMenuIcon)))
@@ -145,5 +145,5 @@ func (s *settingsScreen) scopeRow(gtx C, th *ui.Theme, id string, lead func(gtx 
 				return layout.Inset{Left: ui.Space(2)}.Layout(gtx, func(gtx C) D { return icScopeCheck.Layout(gtx, scopeMenuIcon, th.Foreground) })
 			}),
 		)
-	})
+	}).Layout(gtx)
 }

@@ -90,19 +90,23 @@ func (u *window) notesOverlay(gtx C, p *browserPaneUI, session, pageURL string) 
 		}
 		ring := noteRing(gtx, cssRect(note.box, scale))
 		if i == lit {
-			ringFill(gtx, ring, withAlpha(notePick, 0x1a))
-			dashedRing(gtx, ring, notePick, 1.5, !n.open)
+			ui.FillRRect(gtx, ring, noteRingRadius, withAlpha(notePick, 0x1a))
+			if n.open {
+				ui.DashedRing(gtx, ring, noteRingRadius, noteRingWidth, notePick, noteHalo)
+			} else {
+				ui.MarchingRing(gtx, ring, noteRingRadius, noteRingWidth, notePick, noteHalo)
+			}
 		} else {
-			ringFill(gtx, ring, withAlpha(notePick, 0x0d))
-			dashedRing(gtx, ring, notePick, 1.5, false)
+			ui.FillRRect(gtx, ring, noteRingRadius, withAlpha(notePick, 0x0d))
+			ui.DashedRing(gtx, ring, noteRingRadius, noteRingWidth, notePick, noteHalo)
 		}
 	}
 	if n.open && n.editing < 0 {
 		ring := noteRing(gtx, cssRect(n.draftBox(), scale))
-		ringFill(gtx, ring, withAlpha(notePick, 0x1a))
+		ui.FillRRect(gtx, ring, noteRingRadius, withAlpha(notePick, 0x1a))
 		// Still while the note is written: the pick is made, and redrawing the
 		// window each frame for it cost a third of a core (measured 2026-10-27).
-		dashedRing(gtx, ring, notePick, 1.5, false)
+		ui.DashedRing(gtx, ring, noteRingRadius, noteRingWidth, notePick, noteHalo)
 	}
 	if n.picking && !n.open && n.hover.Label != "" {
 		ring := noteRing(gtx, cssRect(n.hoverBox(gtx.Now), scale))
@@ -111,8 +115,8 @@ func (u *window) notesOverlay(gtx C, p *browserPaneUI, session, pageURL string) 
 			// would step it.
 			gtx.Execute(op.InvalidateCmd{})
 		}
-		ringFill(gtx, ring, withAlpha(notePick, 0x1a))
-		dashedRing(gtx, ring, notePick, 1.5, true)
+		ui.FillRRect(gtx, ring, noteRingRadius, withAlpha(notePick, 0x1a))
+		ui.MarchingRing(gtx, ring, noteRingRadius, noteRingWidth, notePick, noteHalo)
 		u.hoverTag(gtx, ring, n.hover)
 	}
 	for i, note := range n.list {
@@ -512,7 +516,7 @@ func (u *window) noteRow(gtx C, n *browserNotes, i int) D {
 				ui.Gap(2.5),
 				layout.Flexed(1, th.Text(ui.TextXS, text).In(muted).Layout),
 				layout.Rigid(func(gtx C) D {
-					return cornerButton(gtx, th, &note.remove, icNoteRemove, false)
+					return th.CornerButton(&note.remove, icNoteRemove, false).Layout(gtx)
 				}),
 			)
 		})

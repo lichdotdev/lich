@@ -10,14 +10,15 @@ import (
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
+	"github.com/lichdotdev/lich/native/ui/markdown"
 )
 
 // codeMarkdown is the preview's rendering state; rendering goes back to the
 // source whenever another file opens.
 type codeMarkdown struct {
 	rendering bool
-	toggle    iconActionState
-	rendered  markdownCache
+	toggle    ui.IconActionState
+	rendered  markdown.Cache
 	scroll    widget.List
 }
 
@@ -26,7 +27,7 @@ func (p *preview) markdownToggle(gtx C, th *ui.Theme, root *ui.Root) D {
 	if p.md.rendering {
 		label = i18n.T("dock.filesPanel.showSource")
 	}
-	return iconAction(gtx, th, root, &p.md.toggle, icMarkdownPreview, label, p.md.rendering)
+	return th.IconAction(root, &p.md.toggle, icMarkdownPreview, label, p.md.rendering).Layout(gtx)
 }
 
 func (p *preview) markdownBody(gtx C, th *ui.Theme) D {
@@ -35,13 +36,13 @@ func (p *preview) markdownBody(gtx C, th *ui.Theme) D {
 	case err != nil:
 		return binaryState(gtx, th, backend.ErrorText(err), "", &p.exits)
 	case loading:
-		return notice(gtx, th, i18n.T("dock.filesPanel.loading"))
+		return th.Notice(i18n.T("dock.filesPanel.loading")).Layout(gtx)
 	}
 	inset, viewport := ui.Space(3), gtx.Constraints.Max.Y
 	return th.ScrollArea(&p.md.scroll).Layout(gtx, 1, func(gtx C, _ int) D {
-		window := viewportWindow(p.md.scroll.Position.Offset-gtx.Dp(inset), viewport)
+		window := markdown.ViewportWindow(p.md.scroll.Position.Offset-gtx.Dp(inset), viewport)
 		return layout.UniformInset(inset).Layout(gtx, func(gtx C) D {
-			return p.md.rendered.layoutWindow(gtx, th, p.rel, text, func(url string) { openLink(p.client, p.env.notify, url) }, window)
+			return p.md.rendered.LayoutWindow(gtx, th, p.rel, text, func(url string) { openLink(p.client, p.env.notify, url) }, window)
 		})
 	})
 }

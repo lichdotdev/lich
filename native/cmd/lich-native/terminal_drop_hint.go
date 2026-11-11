@@ -5,58 +5,20 @@ import (
 	"strings"
 
 	"gioui.org/app"
-	"gioui.org/font"
-	"gioui.org/layout"
-	"gioui.org/op/paint"
-	"gioui.org/unit"
 
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
-const (
-	// dropHintFill is the accent's opacity over the terminal.
-	dropHintFill = 0.45
-	// dropHintDetailMin is the pane height below which the detail line goes.
-	dropHintDetailMin = unit.Dp(120)
-)
-
-// dropHint covers the terminal while a file drag is over it:
-// which session the file lands in, and under it what
-// the drop does. th draws on the terminal's background.
-func dropHint(gtx C, th *ui.Theme, label string, confined bool) D {
-	// The fill stays translucent so the terminal reads through it;
-	// th.Over is only the color the text measures its contrast
-	// against.
-	tint := ui.Alpha(th.Accent, dropHintFill)
-	paint.Fill(gtx.Ops, tint)
-	on := th.On(th.Over(tint))
-	showDetail := gtx.Constraints.Max.Y >= gtx.Dp(dropHintDetailMin)
+// dropHintFor is the hint for a file drag over the terminal of the session
+// named label, its detail line what the drop does there.
+func dropHintFor(th *ui.Theme, label string, confined bool) ui.DropHintStyle {
 	detail := i18n.T("terminal.dropHint.pasted")
 	if confined {
 		detail = i18n.T("terminal.dropHint.confined")
 	}
-	gtx.Constraints.Min = gtx.Constraints.Max
-	return layout.Center.Layout(gtx, func(gtx C) D {
-		return layout.Inset{Left: ui.Space(4), Right: ui.Space(4)}.Layout(gtx, func(gtx C) D {
-			rows := []layout.FlexChild{
-				layout.Rigid(func(gtx C) D { return icAttach.Layout(gtx, ui.Space(5), on.Foreground) }),
-				ui.VGap(1.5),
-				layout.Rigid(func(gtx C) D {
-					before, after := attachToSplit()
-					return layout.Flex{}.Layout(gtx,
-						layout.Rigid(on.Text(ui.TextSM, before).Layout),
-						layout.Rigid(on.Text(ui.TextSM, label).Weight(font.SemiBold).Layout),
-						layout.Rigid(on.Text(ui.TextSM, after).Layout),
-					)
-				}),
-			}
-			if showDetail {
-				rows = append(rows, ui.VGap(1.5), layout.Rigid(on.Text(ui.TextXS, detail).Muted().Layout))
-			}
-			return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx, rows...)
-		})
-	})
+	before, after := attachToSplit()
+	return th.DropHint(icAttach, before, label, after, detail)
 }
 
 // attachToSplit is the hint's headline around the session's name, which is

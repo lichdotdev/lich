@@ -2,14 +2,9 @@ package main
 
 import (
 	"image"
-	"image/color"
 	"strconv"
 
-	"gioui.org/f32"
-	"gioui.org/font"
 	"gioui.org/layout"
-	"gioui.org/op/clip"
-	"gioui.org/op/paint"
 	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/backend"
@@ -64,7 +59,7 @@ func (t *topbar) openButton(gtx C, th *ui.Theme, act *topbarAction) D {
 		if o.plus.Clicked(gtx) {
 			act.pick = true
 		}
-		return tip.Layout(gtx, func(gtx C) D { return barIconButton(gtx, th, &o.plus, icPlus, false) })
+		return tip.Layout(gtx, func(gtx C) D { return th.BarIconButton(&o.plus, icPlus, false).Layout(gtx) })
 	}
 	if len(o.rows) < len(recents) {
 		o.rows = make([]widget.Clickable, len(recents))
@@ -82,35 +77,35 @@ func (t *topbar) openButton(gtx C, th *ui.Theme, act *topbarAction) D {
 	content := func(gtx C, th *ui.Theme) D { return o.content(gtx, th, recents, missing) }
 	pop := th.DropdownPanel(t.root, &o.popover, menuWidth, content)
 	return tip.Layout(gtx, func(gtx C) D {
-		return pop.Layout(gtx, func(gtx C) D { return barIconButton(gtx, th, &o.plus, icPlus, o.popover.Opened()) })
+		return pop.Layout(gtx, func(gtx C) D { return th.BarIconButton(&o.plus, icPlus, o.popover.Opened()).Layout(gtx) })
 	})
 }
 
 func (o *openMenu) content(gtx C, th *ui.Theme, recents []backend.RecentProject, missing map[string]bool) D {
 	children := []layout.FlexChild{
-		layout.Rigid(func(gtx C) D { return menuHeader(gtx, th, i18n.T("tabs.openProjectMenu.recent"), "") }),
-		layout.Rigid(menuSeparator(th)),
+		layout.Rigid(func(gtx C) D { return th.MenuHeader(gtx, i18n.T("tabs.openProjectMenu.recent"), "") }),
+		layout.Rigid(th.MenuSeparator),
 	}
 	for i, r := range recents {
 		children = append(children, layout.Rigid(func(gtx C) D { return recentRow(gtx, th, &o.rows[i], r, missing[r.Path]) }))
 	}
 	children = append(children,
-		layout.Rigid(menuSeparator(th)),
+		layout.Rigid(th.MenuSeparator),
 		layout.Rigid(func(gtx C) D {
-			return popoverRow(gtx, th, &o.folder, func(gtx C, th *ui.Theme) D {
+			return th.PopoverRow(&o.folder, func(gtx C, th *ui.Theme) D {
 				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 					layout.Rigid(func(gtx C) D { return icFolderOpen.Layout(gtx, ui.Space(4), th.MutedForeground) }),
 					ui.Gap(2),
 					layout.Rigid(th.Text(ui.TextSM, i18n.T("tabs.openProjectMenu.openFolder")).Layout),
 				)
-			})
+			}).Layout(gtx)
 		}),
 	)
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
 }
 
 func recentRow(gtx C, th *ui.Theme, click *widget.Clickable, r backend.RecentProject, gone bool) D {
-	return popoverRow(gtx, th, click, func(gtx C, th *ui.Theme) D {
+	return th.PopoverRow(click, func(gtx C, th *ui.Theme) D {
 		ic := icFolderPlain
 		if gone {
 			ic = icFolderGone
@@ -118,62 +113,13 @@ func recentRow(gtx C, th *ui.Theme, click *widget.Clickable, r backend.RecentPro
 		children := []layout.FlexChild{
 			layout.Rigid(func(gtx C) D { return ic.Layout(gtx, ui.Space(4), th.MutedForeground) }),
 			ui.Gap(2),
-			layout.Flexed(1, twoLines(th, r.Name, displayPath(r.Path))),
+			layout.Flexed(1, th.TwoLines(r.Name, displayPath(r.Path)).Layout),
 		}
 		if gone {
 			children = append(children, ui.Gap(2), layout.Rigid(th.Text(10, i18n.T("tabs.openProjectMenu.relocate")).Muted().Mono().Layout))
 		}
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
-	})
-}
-
-// twoLines is a row's `flex min-w-0 flex-col`: the label, and a muted
-// text-xs line under it, each truncated.
-func twoLines(th *ui.Theme, top, under string) layout.Widget {
-	return func(gtx C) D {
-		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-			layout.Rigid(th.Text(ui.TextSM, top).Layout),
-			layout.Rigid(th.Text(ui.TextXS, under).Muted().Layout),
-		)
-	}
-}
-
-// menuHeader is the menus' plain-div title: `px-2 py-1.5 text-xs
-// font-semibold`, and a count on the right when there is one.
-func menuHeader(gtx C, th *ui.Theme, title, count string) D {
-	return layout.Inset{Left: ui.Space(2), Right: ui.Space(2), Top: ui.Space(1.5), Bottom: ui.Space(1.5)}.Layout(gtx, func(gtx C) D {
-		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-			layout.Flexed(1, th.Text(ui.TextXS, title).Weight(font.SemiBold).Layout),
-			layout.Rigid(th.Text(ui.TextXS, count).Muted().Layout),
-		)
-	})
-}
-
-// menuSeparator is DropdownMenuSeparator: -mx-1 my-1 h-px.
-func menuSeparator(th *ui.Theme) layout.Widget {
-	return func(gtx C) D {
-		return layout.Inset{Top: ui.Space(1), Bottom: ui.Space(1)}.Layout(gtx, th.Separator)
-	}
-}
-
-// popoverRow is a DropdownMenuItem drawn by hand: px-2 py-1.5, rounded-sm,
-// bg-accent while the pointer is on it.
-func popoverRow(gtx C, th *ui.Theme, click *widget.Clickable, content func(gtx C, th *ui.Theme) D) D {
-	gtx.Constraints.Min.X = gtx.Constraints.Max.X
-	return click.Layout(gtx, func(gtx C) D {
-		bg := th.Surface
-		if click.Hovered() {
-			bg = th.Accent
-		}
-		return layout.Background{}.Layout(gtx,
-			func(gtx C) D { return ui.Fill(gtx, bg, ui.RadiusSM) },
-			func(gtx C) D {
-				return layout.Inset{Left: ui.Space(2), Right: ui.Space(2), Top: ui.Space(1.5), Bottom: ui.Space(1.5)}.Layout(gtx, func(gtx C) D {
-					return content(gtx, th.On(bg))
-				})
-			},
-		)
-	})
+	}).Layout(gtx)
 }
 
 // bellMenu is NotificationsButton: the cross-project queue of sessions
@@ -206,26 +152,13 @@ func (t *topbar) bellButton(gtx C, th *ui.Theme, items []notification, act *topb
 	pop.AlignEnd = true
 	return tip.Layout(gtx, func(gtx C) D {
 		return pop.Layout(gtx, func(gtx C) D {
-			d := barIconButton(gtx, th, &b.trigger, icBell, b.popover.Opened())
+			d := th.BarIconButton(&b.trigger, icBell, b.popover.Opened()).Layout(gtx)
 			if len(items) > 0 {
-				pendingDot(gtx, th, d.Size)
+				th.NotifyDot(gtx, d.Size)
 			}
 			return d
 		})
 	})
-}
-
-// pendingDot is the red dot on the bell, ringed in the canvas it sits on.
-func pendingDot(gtx C, th *ui.Theme, button image.Point) {
-	inset, dot, ring := gtx.Dp(5), gtx.Dp(8), gtx.Dp(2)
-	center := f32.Pt(float32(button.X-inset-dot/2), float32(inset+dot/2))
-	circle := func(radius int, c color.NRGBA) {
-		r := float32(radius)
-		box := image.Rect(int(center.X-r), int(center.Y-r), int(center.X+r), int(center.Y+r))
-		paint.FillShape(gtx.Ops, c, clip.Ellipse(box).Op(gtx.Ops))
-	}
-	circle(dot/2+ring, th.Surface)
-	circle(dot/2, th.Destructive)
 }
 
 func (b *bellMenu) content(gtx C, th *ui.Theme, items []notification) D {
@@ -234,8 +167,8 @@ func (b *bellMenu) content(gtx C, th *ui.Theme, items []notification) D {
 		count = strconv.Itoa(len(items))
 	}
 	children := []layout.FlexChild{
-		layout.Rigid(func(gtx C) D { return menuHeader(gtx, th, i18n.T("tabs.notificationsButton.title"), count) }),
-		layout.Rigid(menuSeparator(th)),
+		layout.Rigid(func(gtx C) D { return th.MenuHeader(gtx, i18n.T("tabs.notificationsButton.title"), count) }),
+		layout.Rigid(th.MenuSeparator),
 	}
 	if len(items) == 0 {
 		children = append(children, layout.Rigid(func(gtx C) D {
@@ -255,7 +188,7 @@ func (b *bellMenu) content(gtx C, th *ui.Theme, items []notification) D {
 // the × that dismisses it, shown while the row is highlighted.
 func (b *bellMenu) row(gtx C, th *ui.Theme, item notification) D {
 	click, x := b.rows[item.ID], b.dismiss[item.ID]
-	return popoverRow(gtx, th, click, func(gtx C, th *ui.Theme) D {
+	return th.PopoverRow(click, func(gtx C, th *ui.Theme) D {
 		ic, tone := icTabDone, th.TonePass
 		if item.Status == statusWaiting {
 			ic, tone = icTabWaiting, th.ToneWait
@@ -263,16 +196,16 @@ func (b *bellMenu) row(gtx C, th *ui.Theme, item notification) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Rigid(func(gtx C) D { return ic.Layout(gtx, ui.Space(4), tone) }),
 			ui.Gap(2),
-			layout.Flexed(1, twoLines(th, item.sessionLabel, item.projectName)),
+			layout.Flexed(1, th.TwoLines(item.sessionLabel, item.projectName).Layout),
 			ui.Gap(2),
 			layout.Rigid(func(gtx C) D {
 				if !click.Hovered() && !x.Hovered() {
 					return D{Size: image.Pt(gtx.Dp(16), gtx.Dp(16))}
 				}
-				return cornerButton(gtx, th, x, icTabClose, false)
+				return th.CornerButton(x, icTabClose, false).Layout(gtx)
 			}),
 		)
-	})
+	}).Layout(gtx)
 }
 
 func clickableOf(m map[string]*widget.Clickable, id string) *widget.Clickable {

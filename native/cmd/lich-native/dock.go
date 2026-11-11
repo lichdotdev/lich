@@ -34,7 +34,6 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op/clip"
 	"gioui.org/unit"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/godemirror"
 	"github.com/lichdotdev/lich/native/backend"
@@ -117,8 +116,8 @@ type dock struct {
 	fullscreen bool
 	resize     ui.ResizeHandle
 	tabs       ui.TabsState
-	full       iconActionState
-	close      iconActionState
+	full       ui.IconActionState
+	close      ui.IconActionState
 	code       *codeTab
 	review     reviewTab
 	artifacts  *artifactsTab
@@ -200,7 +199,7 @@ func (d *dock) header(gtx C, th *ui.Theme, root *ui.Root, in dockInput) D {
 	changed := in.isGit && in.git.Files > 0
 	review := ui.TabsTrigger{Text: i18n.T("dock.rightDock.tabReview"), Icon: icDockReview}
 	if changed {
-		review.Trailing = func(gtx C) D { return diffStat(gtx, th, in.git.Added, in.git.Deleted) }
+		review.Trailing = func(gtx C) D { return th.DiffStat(in.git.Added, in.git.Deleted).Layout(gtx) }
 	}
 	artifacts := ui.TabsTrigger{Text: i18n.T("dock.rightDock.tabArtifacts"), Icon: icDockArtifacts}
 	if n := d.artifacts.count(in.sessionID); n > 0 {
@@ -230,7 +229,7 @@ func (d *dock) header(gtx C, th *ui.Theme, root *ui.Root, in dockInput) D {
 				return d.review.layoutActions(gtx, th)
 			}),
 			ui.Gap(1),
-			layout.Rigid(func(gtx C) D { return iconAction(gtx, th, root, &d.full, fullIcon, fullLabel, false) }),
+			layout.Rigid(func(gtx C) D { return th.IconAction(root, &d.full, fullIcon, fullLabel, false).Layout(gtx) }),
 			ui.Gap(1),
 			layout.Rigid(func(gtx C) D { return d.closeButton(gtx, th, root) }),
 		)
@@ -240,10 +239,10 @@ func (d *dock) header(gtx C, th *ui.Theme, root *ui.Root, in dockInput) D {
 // act runs the header's clicks before the stage row reads whether the dock
 // is open and how wide, so the frame shows their outcome.
 func (d *dock) act(gtx C) {
-	for d.full.click.Clicked(gtx) {
+	for d.full.Click.Clicked(gtx) {
 		d.fullscreen = !d.fullscreen
 	}
-	for d.close.click.Clicked(gtx) {
+	for d.close.Click.Clicked(gtx) {
 		d.tab = dockClosed
 	}
 }
@@ -251,57 +250,10 @@ func (d *dock) act(gtx C) {
 // closeButton is the dock's ghost ×: a 1rem glyph, where an iconAction would
 // draw its icon at 0.875rem.
 func (d *dock) closeButton(gtx C, th *ui.Theme, root *ui.Root) D {
-	b := th.Button(&d.close.click, "")
+	b := th.Button(&d.close.Click, "")
 	b.Icon, b.Variant, b.Size = icDockClose, ui.VariantGhost, ui.SizeIconXS
-	tip := th.Tooltip(root, &d.close.tip, i18n.T("dock.rightDock.closePanel"))
+	tip := th.Tooltip(root, &d.close.Tip, i18n.T("dock.rightDock.closePanel"))
 	return tip.Layout(gtx, b.Layout)
-}
-
-// iconActionState is an IconAction's clickable and tooltip.
-type iconActionState struct {
-	click widget.Clickable
-	tip   ui.Tooltip
-}
-
-// iconAction is a bare icon button for a panel's header, its meaning in a
-// tooltip, filled with the accent while hovered or pressed.
-func iconAction(gtx C, th *ui.Theme, root *ui.Root, s *iconActionState, ic *icons.Icon, label string, pressed bool) D {
-	tip := th.Tooltip(root, &s.tip, label)
-	return tip.Layout(gtx, func(gtx C) D {
-		return s.click.Layout(gtx, func(gtx C) D {
-			side := gtx.Dp(ui.Space(6))
-			gtx.Constraints = layout.Exact(image.Pt(side, side))
-			fg := th.MutedForeground
-			if pressed || s.click.Hovered() {
-				ui.Fill(gtx, th.Accent, ui.RadiusMD)
-				fg = th.AccentForeground
-			}
-			return layout.Center.Layout(gtx, func(gtx C) D { return ic.Layout(gtx, ui.Space(3.5), fg) })
-		})
-	})
-}
-
-// notice is the quiet line a panel shows instead of content.
-func notice(gtx C, th *ui.Theme, text string) D {
-	l := th.Text(ui.TextXS, text).Muted()
-	l.MaxLines = 0
-	return layout.Inset{Left: ui.Space(3), Right: ui.Space(3), Top: ui.Space(4), Bottom: ui.Space(4)}.Layout(gtx, l.Layout)
-}
-
-// footnote is a notice under a list: what the listing owes the reader about
-// itself.
-func footnote(gtx C, th *ui.Theme, text string) D {
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(th.Separator),
-		layout.Rigid(func(gtx C) D {
-			return layout.Inset{Left: ui.Space(3), Right: ui.Space(3), Top: ui.Space(2), Bottom: ui.Space(2)}.Layout(gtx,
-				func(gtx C) D {
-					l := th.Text(ui.TextXS, text).Muted()
-					l.MaxLines = 0
-					return l.Layout(gtx)
-				})
-		}),
-	)
 }
 
 // parseDockWidth parses a stored width within the dock's bounds: garbage,

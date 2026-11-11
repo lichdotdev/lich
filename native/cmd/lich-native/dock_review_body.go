@@ -37,7 +37,7 @@ func (p *reviewPanel) setHiding(hiding bool) {
 
 // reviewActions are the header's IconActions while the Review tab is on.
 type reviewActions struct {
-	bulk, split iconActionState
+	bulk, split ui.IconActionState
 }
 
 // layoutActions is the Review tab's part of the dock header: the
@@ -45,10 +45,10 @@ type reviewActions struct {
 // then holds per panel, and collapse/expand all.
 func (p *reviewPanel) layoutActions(gtx C, th *ui.Theme) D {
 	a := &p.actions
-	for a.bulk.click.Clicked(gtx) {
+	for a.bulk.Click.Clicked(gtx) {
 		p.bulkOpen, p.bulk = !p.bulkOpen, p.bulk+1
 	}
-	for a.split.click.Clicked(gtx) {
+	for a.split.Click.Clicked(gtx) {
 		p.split = !p.split
 	}
 	bulkIcon, bulkLabel := icExpandAll, i18n.T("diff.diffBulk.expandAll")
@@ -60,9 +60,9 @@ func (p *reviewPanel) layoutActions(gtx C, th *ui.Theme) D {
 		splitLabel = i18n.T("diff.dockReviewBody.unified")
 	}
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-		layout.Rigid(func(gtx C) D { return iconAction(gtx, th, p.root, &a.split, icSplit, splitLabel, p.split) }),
+		layout.Rigid(func(gtx C) D { return th.IconAction(p.root, &a.split, icSplit, splitLabel, p.split).Layout(gtx) }),
 		ui.Gap(1),
-		layout.Rigid(func(gtx C) D { return iconAction(gtx, th, p.root, &a.bulk, bulkIcon, bulkLabel, false) }),
+		layout.Rigid(func(gtx C) D { return th.IconAction(p.root, &a.bulk, bulkIcon, bulkLabel, false).Layout(gtx) }),
 	)
 }
 
@@ -70,11 +70,11 @@ func (p *reviewPanel) layoutActions(gtx C, th *ui.Theme) D {
 func (p *reviewPanel) panelBody(gtx C, th *ui.Theme) {
 	switch r := p.shown; {
 	case r == nil:
-		notice(gtx, th, i18n.T("diff.reviewPanel.loading"))
+		th.Notice(i18n.T("diff.reviewPanel.loading")).Layout(gtx)
 	case r.failed:
-		notice(gtx, th, i18n.T("diff.reviewPanel.notRepository"))
+		th.Notice(i18n.T("diff.reviewPanel.notRepository")).Layout(gtx)
 	case len(p.order) == 0:
-		notice(gtx, th, i18n.T("diff.reviewPanel.noChanges"))
+		th.Notice(i18n.T("diff.reviewPanel.noChanges")).Layout(gtx)
 	default:
 		p.fileList(gtx, th)
 	}

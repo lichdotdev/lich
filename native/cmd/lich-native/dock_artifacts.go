@@ -112,7 +112,7 @@ func (t *artifactsTab) motion(owner string) *ui.Presence {
 func (t *artifactsTab) layout(gtx C, th *ui.Theme, root *ui.Root, active string) D {
 	own, others := t.groups(active)
 	if len(own) == 0 && len(others) == 0 {
-		return notice(gtx, th, i18n.T("dock.artifacts.empty"))
+		return th.Notice(i18n.T("dock.artifacts.empty")).Layout(gtx)
 	}
 	var items []layout.Widget
 	add := func(w layout.Widget) { items = append(items, w) }
@@ -172,7 +172,7 @@ func (t *artifactsTab) fileRow(gtx C, th *ui.Theme, root *ui.Root, active, owner
 	more := func(gtx C) D {
 		return th.DropdownMenu(root, &r.menu, entries()).Layout(gtx, func(gtx C) D {
 			return th.Tooltip(root, &r.tip, i18n.T("dock.artifacts.options", i18n.Args{"name": f.Name})).Layout(gtx, func(gtx C) D {
-				return cornerButton(gtx, th, &r.more, icGroupMore, r.menu.Opened())
+				return th.CornerButton(&r.more, icGroupMore, r.menu.Opened()).Layout(gtx)
 			})
 		})
 	}
@@ -282,10 +282,12 @@ func artifactAge(gtx C, th *ui.Theme, modified int64) D {
 // artifactGroupLabel is a group's uppercase label and the rule to the row's
 // end, in the node column's start.
 func artifactGroupLabel(gtx C, th *ui.Theme, text string) D {
+	heading := th.SectionHeading(text)
+	heading.Size, heading.Weight, heading.Leading = text2XS, font.SemiBold, text2XSLeading
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 	return layout.Inset{Top: ui.Space(2.5), Bottom: ui.Space(1), Left: ui.Space(3.5), Right: ui.Space(1.5)}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-			layout.Rigid(th.Text(text2XS, strings.ToUpper(text)).Weight(font.SemiBold).Leading(text2XSLeading).Muted().Layout),
+			layout.Rigid(heading.Layout),
 			ui.Gap(2),
 			layout.Flexed(1, func(gtx C) D {
 				gtx.Constraints = layout.Exact(image.Pt(gtx.Constraints.Max.X, gtx.Dp(1)))

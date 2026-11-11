@@ -54,7 +54,7 @@ const doubleClick = 400 * time.Millisecond
 // browserPaneUI is one page pane's widgets and what it last told the
 // backend, kept across frames by session.
 type browserPaneUI struct {
-	back, forward, reload, window iconActionState
+	back, forward, reload, window ui.IconActionState
 	pageZoom                      browserZoomState
 	zoom, close                   widget.Clickable
 	zoomTip, closeTip             ui.Tooltip
@@ -191,12 +191,12 @@ func (u *window) browserHeader(gtx C, p *browserPaneUI, session string, st api.B
 			ui.Gap(1.5),
 			layout.Rigid(func(gtx C) D {
 				zoom := th.Tooltip(&u.root, &p.zoomTip, i18n.T("layouts.pane.zoom"))
-				return zoom.Layout(gtx, func(gtx C) D { return cornerButton(gtx, th, &p.zoom, icPaneZoom, false) })
+				return zoom.Layout(gtx, func(gtx C) D { return th.CornerButton(&p.zoom, icPaneZoom, false).Layout(gtx) })
 			}),
 			ui.Gap(1.5),
 			layout.Rigid(func(gtx C) D {
 				closer := th.Tooltip(&u.root, &p.closeTip, i18n.T("layouts.browser.close"))
-				return closer.Layout(gtx, func(gtx C) D { return cornerButton(gtx, th, &p.close, icPaneUnsplit, false) })
+				return closer.Layout(gtx, func(gtx C) D { return th.CornerButton(&p.close, icPaneUnsplit, false).Layout(gtx) })
 			}),
 		)
 	})
@@ -209,19 +209,19 @@ func (u *window) browserToolbar(gtx C, p *browserPaneUI, session string, st api.
 	nav := func(action string) {
 		u.sendBrowser(session, action, func(ctx context.Context) error { return u.client.BrowserNav(ctx, session, action, "") })
 	}
-	if p.back.click.Clicked(gtx) {
+	if p.back.Click.Clicked(gtx) {
 		nav("back")
 	}
-	if p.forward.click.Clicked(gtx) {
+	if p.forward.Click.Clicked(gtx) {
 		nav("forward")
 	}
-	if p.reload.click.Clicked(gtx) {
+	if p.reload.Click.Clicked(gtx) {
 		nav("reload")
 	}
-	if p.notes.pick.click.Clicked(gtx) {
+	if p.notes.pick.Click.Clicked(gtx) {
 		p.notes.setPicking(!p.notes.picking)
 	}
-	if p.window.click.Clicked(gtx) {
+	if p.window.Click.Clicked(gtx) {
 		u.sendBrowser(session, "show", func(ctx context.Context) error { return u.client.ShowBrowser(ctx, session) })
 	}
 	for {
@@ -248,13 +248,13 @@ func (u *window) browserToolbar(gtx C, p *browserPaneUI, session string, st api.
 		gtx.Constraints.Min.Y = gtx.Constraints.Max.Y
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
-				return iconAction(gtx, th, &u.root, &p.back, icBrowserBack, i18n.T("layouts.browser.back"), p.flashing(gtx, "back"))
+				return th.IconAction(&u.root, &p.back, icBrowserBack, i18n.T("layouts.browser.back"), p.flashing(gtx, "back")).Layout(gtx)
 			}),
 			layout.Rigid(func(gtx C) D {
-				return iconAction(gtx, th, &u.root, &p.forward, icBrowserForward, i18n.T("layouts.browser.forward"), p.flashing(gtx, "forward"))
+				return th.IconAction(&u.root, &p.forward, icBrowserForward, i18n.T("layouts.browser.forward"), p.flashing(gtx, "forward")).Layout(gtx)
 			}),
 			layout.Rigid(func(gtx C) D {
-				return iconAction(gtx, th, &u.root, &p.reload, icBrowserReload, i18n.T("layouts.browser.reload"), p.flashing(gtx, "reload"))
+				return th.IconAction(&u.root, &p.reload, icBrowserReload, i18n.T("layouts.browser.reload"), p.flashing(gtx, "reload")).Layout(gtx)
 			}),
 			ui.Gap(1.5),
 			layout.Flexed(1, field.Layout),
@@ -267,10 +267,10 @@ func (u *window) browserToolbar(gtx C, p *browserPaneUI, session string, st api.
 				return layout.Inset{Right: ui.Space(1.5)}.Layout(gtx, th.Text(ui.TextXS, i18n.T("layouts.browser.pickHint")).In(notePick).Layout)
 			}),
 			layout.Rigid(func(gtx C) D {
-				return iconAction(gtx, th, &u.root, &p.notes.pick, icBrowserPick, i18n.T("layouts.browser.pick"), p.notes.picking)
+				return th.IconAction(&u.root, &p.notes.pick, icBrowserPick, i18n.T("layouts.browser.pick"), p.notes.picking).Layout(gtx)
 			}),
 			layout.Rigid(func(gtx C) D {
-				return iconAction(gtx, th, &u.root, &p.window, icBrowserWindow, i18n.T("layouts.browser.openInWindow"), false)
+				return th.IconAction(&u.root, &p.window, icBrowserWindow, i18n.T("layouts.browser.openInWindow"), false).Layout(gtx)
 			}),
 		)
 	})

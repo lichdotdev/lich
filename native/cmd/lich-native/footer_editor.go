@@ -85,7 +85,7 @@ func (f *footer) editorBody(gtx C, th *ui.Theme, l footerLayout, disabled bool, 
 			layout.Flexed(1, f.zone(th, footerRight, l.Right, in)),
 		)
 	}
-	return stack(gtx, 4, []layout.Widget{sides, f.zone(th, footerAvailable, availableItems(l), in)})
+	return ui.Stack(4, sides, f.zone(th, footerAvailable, availableItems(l), in))(gtx)
 }
 
 // drop applies a drag that landed.
@@ -151,7 +151,7 @@ func (f *footer) zone(th *ui.Theme, zone string, items []string, in footerInput)
 			gtx.Constraints.Min.X = gtx.Constraints.Max.X
 			return f.editor.sortable.Zone(gtx, zone, func(gtx C) D { return f.zoneBox(gtx, th, zone, items, in) })
 		}
-		return stack(gtx, 1.5, []layout.Widget{th.Text(ui.TextXS, i18n.T(footerZoneLabelKeys[zone])).Muted().Layout, box})
+		return ui.Stack(1.5, th.Text(ui.TextXS, i18n.T(footerZoneLabelKeys[zone])).Muted().Layout, box)(gtx)
 	}
 }
 
@@ -187,12 +187,12 @@ func (f *footer) zoneBox(gtx C, th *ui.Theme, zone string, items []string, in fo
 	}
 	return layout.Background{}.Layout(gtx,
 		func(gtx C) D {
-			d := fillIf(gtx, bg, ui.RadiusLG)
+			d := ui.FillIf(gtx, bg, ui.RadiusLG)
 			if f.editor.sortable.Over() == zone {
 				// Inside the box rather than outside it: the zone is clipped
 				// to its own bounds, which hid all but the corners of an
 				// outer ring.
-				insetRing(gtx, gtx.Constraints.Min, gtx.Dp(ui.RadiusLG), gtx.Dp(2), th.Ring)
+				ui.InsetRing(gtx, gtx.Constraints.Min, gtx.Dp(ui.RadiusLG), gtx.Dp(2), th.Ring)
 			}
 			return d
 		},
@@ -286,7 +286,7 @@ func (f *footer) previewLayout(gtx C, th *ui.Theme, l footerLayout, in footerInp
 	strip := func(gtx C) D {
 		gtx.Constraints.Min.X = gtx.Constraints.Max.X
 		return layout.Background{}.Layout(gtx,
-			func(gtx C) D { return fillIf(gtx, th.Sidebar, ui.RadiusLG) },
+			func(gtx C) D { return ui.FillIf(gtx, th.Sidebar, ui.RadiusLG) },
 			func(gtx C) D {
 				gtx.Constraints.Min.Y = gtx.Dp(ui.Space(12))
 				return layout.Inset{Left: ui.Space(3), Right: ui.Space(3), Top: ui.Space(2), Bottom: ui.Space(2)}.Layout(gtx, func(gtx C) D {
@@ -294,7 +294,7 @@ func (f *footer) previewLayout(gtx C, th *ui.Theme, l footerLayout, in footerInp
 				})
 			})
 	}
-	return stack(gtx, 2, []layout.Widget{th.Text(ui.TextXS, i18n.T("footer.footerEditor.previewHint")).Muted().Layout, strip})
+	return ui.Stack(2, th.Text(ui.TextXS, i18n.T("footer.footerEditor.previewHint")).Muted().Layout, strip)(gtx)
 }
 
 // previewSides is the footer's wrap: the left side, the right side at the

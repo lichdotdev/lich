@@ -95,7 +95,7 @@ func newSidebar(icon func(string) *icons.Icon) *sidebar {
 
 func (g *gallery) sidebarSection(gtx C, th *ui.Theme) D {
 	s := g.side
-	return stack(3,
+	return ui.Stack(3,
 		caption(th, "SessionPhaseChips: Chip with a count; empty and off dims"),
 		s.phaseChips(th),
 		caption(th, "SessionSidebar: a tree of rows; drag a card (onto another block files it), a header, or the right edge; … adds a session"),

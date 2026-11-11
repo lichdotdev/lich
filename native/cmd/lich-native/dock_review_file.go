@@ -14,6 +14,7 @@ import (
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/lichdiff"
 	"github.com/lichdotdev/lich/native/ui"
+	"github.com/lichdotdev/lich/native/ui/diffview"
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
@@ -42,25 +43,25 @@ type fileCard struct {
 	gen    int
 	filled map[int]int
 
-	view         *godemirror.DiffView
+	view         *diffview.View
 	bin          *binaryPreview
 	md           *markdownPreview
 	previewing   bool
 	viewFail     bool
-	afford       *affordances
-	blocks       cardBlocks
+	afford       *diffview.Buttons
+	blocks       diffview.Blocks
 	headerHeight int
 
 	toggle          widget.Clickable
-	attach, discard iconActionState
-	preview         iconActionState
+	attach, discard ui.IconActionState
+	preview         ui.IconActionState
 	menu            ui.MenuState
 	composer        commentComposer
 	panel           *reviewPanel
 }
 
 func newFileCard(p *reviewPanel, f patchFile, hiding bool, bulkSeen int) *fileCard {
-	c := &fileCard{panel: p, bulkSeen: bulkSeen, afford: newAffordances()}
+	c := &fileCard{panel: p, bulkSeen: bulkSeen, afford: diffview.NewButtons(reviewDiffLabels)}
 	c.sync(f, hiding)
 	return c
 }
@@ -116,13 +117,13 @@ func (c *fileCard) layout(gtx C, p *reviewPanel) D {
 			c.open = true
 		}
 	}
-	if c.attach.click.Clicked(gtx) {
+	if c.attach.Click.Clicked(gtx) {
 		p.inject(fileReference(c.git.path))
 	}
-	if c.preview.click.Clicked(gtx) {
+	if c.preview.Click.Clicked(gtx) {
 		c.previewing, c.open = !c.previewing, true
 	}
-	if c.discard.click.Clicked(gtx) {
+	if c.discard.Click.Clicked(gtx) {
 		p.pendingDiscard = &c.git
 	}
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
@@ -168,7 +169,7 @@ func (c *fileCard) headerRow(gtx C, th *ui.Theme, p *reviewPanel) D {
 			if c.onlyWhitespace() {
 				return th.Text(ui.TextXS, i18n.T("diff.fileDiff.whitespaceOnly")).Muted().Layout(gtx)
 			}
-			return diffStat(gtx, th, c.patch.Added, c.patch.Deleted)
+			return th.DiffStat(c.patch.Added, c.patch.Deleted).Layout(gtx)
 		}))
 	}
 	attachGap := ui.Gap(2)
@@ -178,13 +179,13 @@ func (c *fileCard) headerRow(gtx C, th *ui.Theme, p *reviewPanel) D {
 	}
 	children = append(children,
 		attachGap, layout.Rigid(func(gtx C) D {
-			return iconAction(gtx, th, p.root, &c.attach, icAttach, i18n.T("diff.fileDiff.addAsContext"), false)
+			return th.IconAction(p.root, &c.attach, icAttach, i18n.T("diff.fileDiff.addAsContext"), false).Layout(gtx)
 		}))
 	if p.pr != nil {
 		children = append(children, ui.Gap(2), layout.Rigid(func(gtx C) D { return c.viewedTick(gtx, th, p) }))
 	} else {
 		children = append(children, ui.Gap(1), layout.Rigid(func(gtx C) D {
-			return iconAction(gtx, th, p.root, &c.discard, icDiscard, i18n.T("diff.fileDiff.discard"), false)
+			return th.IconAction(p.root, &c.discard, icDiscard, i18n.T("diff.fileDiff.discard"), false).Layout(gtx)
 		}))
 	}
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
@@ -204,18 +205,17 @@ func (c *fileCard) title(gtx C, th *ui.Theme, light bool) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Rigid(func(gtx C) D { return chevron.Layout(gtx, ui.Space(3.5), th.MutedForeground) }),
 			ui.Gap(2),
-			layout.Rigid(func(gtx C) D { return badge(gtx, th, languageAbbr(c.git.path), light) }),
+			layout.Rigid(func(gtx C) D {
+				b := languageAbbr(c.git.path)
+				bg, fg := b.colors(th, light)
+				return th.AbbrBadge(b.abbr, bg, fg).Layout(gtx)
+			}),
 			ui.Gap(2),
-			layout.Rigid(func(gtx C) D { return truncated(gtx, th.Text(ui.TextXS, base).Weight(font.Medium)) }),
+			layout.Rigid(func(gtx C) D { return th.Text(ui.TextXS, base).Weight(font.Medium).Truncated().Layout(gtx) }),
 			ui.Gap(2),
-			layout.Flexed(1, func(gtx C) D { return truncated(gtx, th.Text(ui.TextXS, dir).Muted()) }),
+			layout.Flexed(1, func(gtx C) D { return th.Text(ui.TextXS, dir).Muted().Truncated().Layout(gtx) }),
 		)
 	})
-}
-
-func truncated(gtx C, l ui.LabelStyle) D {
-	l.MaxLines = 1
-	return l.Layout(gtx)
 }
 
 // badgeSize and badgeText are the badge's size-5 and text-[0.5625rem].
@@ -223,14 +223,6 @@ const (
 	badgeSize = unit.Dp(20)
 	badgeText = unit.Sp(9)
 )
-
-func badge(gtx C, th *ui.Theme, b langBadge, light bool) D {
-	bg, fg := b.colors(th, light)
-	size := gtx.Dp(badgeSize)
-	gtx.Constraints = layout.Exact(image.Pt(size, size))
-	ui.Fill(gtx, bg, ui.RadiusSM)
-	return layout.Center.Layout(gtx, th.On(bg).Text(badgeText, b.abbr).In(fg).Weight(font.Bold).Layout)
-}
 
 // body is what opening the file reveals: the binary line, the Markdown
 // preview, the whitespace line, or the diff with its right-click menu.
@@ -242,11 +234,11 @@ func (c *fileCard) body(gtx C, p *reviewPanel) D {
 	case c.previewing:
 		return c.markdownBody(gtx, p)
 	case c.onlyWhitespace():
-		return bodyLine(gtx, th, i18n.T("diff.fileDiff.onlyWhitespaceChanged"))
+		return th.BodyLine(i18n.T("diff.fileDiff.onlyWhitespaceChanged")).Layout(gtx)
 	}
 	view := c.ensureView(p)
 	if view == nil {
-		return bodyLine(gtx, th, i18n.T("diff.fileDiff.readFailed", i18n.Args{"path": c.git.path}))
+		return th.BodyLine(i18n.T("diff.fileDiff.readFailed", i18n.Args{"path": c.git.path})).Layout(gtx)
 	}
 	return layout.Inset{Top: ui.Space(1), Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
 		return th.ContextMenuLazy(p.root, &c.menu, func() []ui.MenuEntry { return c.menuEntries(p) }).Layout(gtx, func(gtx C) D {
@@ -255,30 +247,30 @@ func (c *fileCard) body(gtx C, p *reviewPanel) D {
 	})
 }
 
-// bodyLine is the px-9 py-2 text-xs muted line a body without a diff shows.
-func bodyLine(gtx C, th *ui.Theme, text string) D {
-	return layout.Inset{Left: ui.Space(9), Right: ui.Space(9), Top: ui.Space(2), Bottom: ui.Space(2)}.Layout(gtx,
-		th.Text(ui.TextXS, text).Muted().Layout)
+// reviewDiffLabels are the diff's buttons' words.
+var reviewDiffLabels = diffview.Labels{
+	Expand: func(count int) string { return i18n.T("git.codemirror.expand", i18n.Args{"count": count}) },
+	Revert: func() string { return i18n.T("git.codemirror.revert") },
 }
 
 // diff lays the editor out exactly as tall as its rows and the composer
 // open under them, so the panel scrolls and the editor never does.
-func (c *fileCard) diff(gtx C, p *reviewPanel, view *godemirror.DiffView) D {
-	c.afford.theme = p.th
-	view.SetTheme(p.diffTheme())
-	view.Split, view.Nested = p.splitShown(gtx), true
-	view.SetPatch(c.patch)
-	c.blocks.place(view, c.cardBlocks(p))
-	rows := diffRows(c.shown, view.Split, c.filled)
-	height := rows*p.cellHeight(gtx) + c.blocks.height()
-	gtx.Constraints = layout.Exact(image.Pt(gtx.Constraints.Max.X, height))
-	c.blocks.startFrame()
-	dims, err := view.Layout(gtx)
+func (c *fileCard) diff(gtx C, p *reviewPanel, view *diffview.View) D {
+	split := p.splitShown(gtx)
+	dims, changed, err := view.Layout(gtx, diffview.Frame{
+		Theme:  p.th,
+		Code:   p.code,
+		Patch:  c.patch,
+		Split:  split,
+		Height: diffRows(c.shown, split, c.filled) * p.cellHeight(gtx),
+		Blocks: &c.blocks,
+		Items:  c.cardBlocks(p),
+	})
 	if err != nil && !c.viewFail {
 		c.viewFail = true
 		log.Printf("review %s: %v", c.git.path, err)
 	}
-	if c.blocks.endFrame() {
+	if changed {
 		p.invalidate()
 	}
 	return dims
@@ -287,16 +279,16 @@ func (c *fileCard) diff(gtx C, p *reviewPanel, view *godemirror.DiffView) D {
 // ensureView builds the card's editor on first need. A rename gets no revert:
 // its old side lives under another path, which the one-file revert cannot
 // reach; Discard still reverts the pair.
-func (c *fileCard) ensureView(p *reviewPanel) *godemirror.DiffView {
+func (c *fileCard) ensureView(p *reviewPanel) *diffview.View {
 	if c.view != nil || c.viewFail {
 		return c.view
 	}
-	opts := godemirror.DiffOptions{HighlightChanges: true, StyleTags: codeStyleTags, ExpandWidget: c.afford.expandButton, RevertWidget: c.afford.revertButton}
+	opts := diffview.Options{Buttons: c.afford}
 	opts.Expand = func(g godemirror.Gap) { p.expand(c, c.gen, g) }
 	if c.git.status != statusRenamed && p.pr == nil {
 		opts.Revert = func(ch godemirror.Chunk) { p.revert(c.git.path, lichdiff.RevertLines(ch)) }
 	}
-	view, err := newDiffView(p.family, p.size, opts)
+	view, err := diffview.New(p.family, p.size, opts)
 	if err != nil {
 		c.viewFail = true
 		log.Printf("review %s: %v", c.git.path, err)
@@ -320,11 +312,11 @@ func (c *fileCard) composerBlock(gtx C) D {
 
 // cardBlocks are what hangs under the card's lines: the composer while it is
 // open, and on the Pulls screen the review threads and pending comments.
-func (c *fileCard) cardBlocks(p *reviewPanel) []cardBlock {
-	var out []cardBlock
+func (c *fileCard) cardBlocks(p *reviewPanel) []diffview.Block {
+	var out []diffview.Block
 	if c.composer.isOpen() {
 		at := godemirror.LineRef{Side: godemirror.NewSide, Line: c.composer.at()}
-		out = append(out, cardBlock{key: "composer", at: at, widget: c.composerBlock})
+		out = append(out, diffview.Block{Key: "composer", At: at, Widget: c.composerBlock})
 	}
 	if p.pr != nil && p.pr.blocks != nil {
 		out = append(out, p.pr.blocks(c.git.path)...)

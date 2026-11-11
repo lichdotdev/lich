@@ -176,7 +176,7 @@ func (p *themePicker) importBody(gtx C, th *ui.Theme, url string, busy bool) D {
 		ui.VGap(2),
 		layout.Rigid(hint.Layout),
 		ui.VGap(4),
-		layout.Rigid(func(gtx C) D { return orRule(gtx, th) }),
+		layout.Rigid(func(gtx C) D { return th.OrRule(gtx, i18n.T("settings.importThemeDialog.or")) }),
 		ui.VGap(4),
 		layout.Rigid(func(gtx C) D {
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
@@ -185,23 +185,6 @@ func (p *themePicker) importBody(gtx C, th *ui.Theme, url string, busy bool) D {
 				layout.Flexed(1, th.Text(ui.TextXS, i18n.T("settings.importThemeDialog.fileHint")).Muted().Layout),
 			)
 		}),
-	)
-}
-
-// orRule is the "—— or ——" between the two ways in.
-func orRule(gtx C, th *ui.Theme) D {
-	line := func(gtx C) D {
-		return layout.Center.Layout(gtx, func(gtx C) D {
-			gtx.Constraints.Max.Y = gtx.Dp(1)
-			return ruleAbove(gtx, th)
-		})
-	}
-	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-		layout.Flexed(1, line),
-		ui.Gap(3),
-		layout.Rigid(th.Text(ui.TextXS, i18n.T("settings.importThemeDialog.or")).Muted().Layout),
-		ui.Gap(3),
-		layout.Flexed(1, line),
 	)
 }
 

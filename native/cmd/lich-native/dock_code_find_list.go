@@ -158,7 +158,7 @@ func (l *findList) row(gtx C, th *ui.Theme, view *godemirror.View, i int, line f
 					return layout.Flex{Alignment: layout.Baseline}.Layout(gtx,
 						layout.Rigid(on.Text(ui.TextXS, padLineNumber(line.line+1)).Mono().Muted().Layout),
 						ui.Gap(2),
-						layout.Flexed(1, func(gtx C) D { return markedText(gtx, on, segs) }),
+						layout.Flexed(1, on.MarkedText(segs).Layout),
 					)
 				})
 			},
@@ -168,43 +168,22 @@ func (l *findList) row(gtx C, th *ui.Theme, view *godemirror.View, i int, line f
 
 // matchSegments cuts text at its matches' columns, which count runes, with
 // the line's indentation dropped as the Text search's hits drop it.
-func matchSegments(text string, matches []godemirror.Match) []segment {
+func matchSegments(text string, matches []godemirror.Match) []ui.MarkedSegment {
 	runes := []rune(text)
-	var out []segment
+	var out []ui.MarkedSegment
 	at := 0
 	for _, m := range matches {
 		if m.From.Col > at {
-			out = append(out, segment{text: string(runes[at:m.From.Col])})
+			out = append(out, ui.MarkedSegment{Text: string(runes[at:m.From.Col])})
 		}
-		out = append(out, segment{text: string(runes[m.From.Col:m.To.Col]), hit: true})
+		out = append(out, ui.MarkedSegment{Text: string(runes[m.From.Col:m.To.Col]), Marked: true})
 		at = m.To.Col
 	}
 	if at < len(runes) {
-		out = append(out, segment{text: string(runes[at:])})
+		out = append(out, ui.MarkedSegment{Text: string(runes[at:])})
 	}
-	if len(out) > 0 && !out[0].hit {
-		out[0].text = strings.TrimLeft(out[0].text, " \t")
+	if len(out) > 0 && !out[0].Marked {
+		out[0].Text = strings.TrimLeft(out[0].Text, " \t")
 	}
 	return out
-}
-
-// markedText draws the segments in one line, a match on a bg-tone-wait/30
-// mark.
-func markedText(gtx C, th *ui.Theme, segs []segment) D {
-	kids := make([]layout.FlexChild, len(segs))
-	mark := th.Over(ui.Alpha(th.ToneWait, 0.3))
-	for i, s := range segs {
-		l := th.Text(ui.TextXS, s.text).Mono()
-		l.MaxLines = 1
-		if !s.hit {
-			kids[i] = layout.Rigid(l.Layout)
-			continue
-		}
-		kids[i] = layout.Rigid(func(gtx C) D {
-			return layout.Background{}.Layout(gtx,
-				func(gtx C) D { return ui.Fill(gtx, mark, ui.RadiusSM) },
-				th.On(mark).Text(ui.TextXS, s.text).Mono().Layout)
-		})
-	}
-	return layout.Flex{Alignment: layout.Baseline}.Layout(gtx, kids...)
 }

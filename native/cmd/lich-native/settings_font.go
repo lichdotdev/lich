@@ -162,7 +162,7 @@ func fontTrigger(gtx C, th *ui.Theme, family string) D {
 	gtx.Constraints = layout.Exact(size)
 	bg := th.Over(ui.Alpha(th.Palette.Input, 0.3))
 	ui.Fill(gtx, bg, ui.RadiusMD)
-	insetBorder(gtx, size, gtx.Dp(ui.RadiusMD), th.Over(th.Palette.Input))
+	ui.InsetBorder(gtx, size, gtx.Dp(ui.RadiusMD), th.Over(th.Palette.Input))
 	on := th.On(bg)
 	return layout.Inset{Left: ui.Space(2.5), Right: ui.Space(2.5)}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,

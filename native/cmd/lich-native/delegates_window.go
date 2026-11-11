@@ -25,13 +25,13 @@ func (u *window) delegatesChip(gtx C, th *ui.Theme, v stageView, sv sessionView,
 	return layout.Inset{Right: ui.Space(2)}.Layout(gtx, func(gtx C) D {
 		return tip.Layout(gtx, func(gtx C) D {
 			return p.delegates.Layout(gtx, func(gtx C) D {
-				return pill(gtx, th, func(gtx C) D {
+				return th.Pill(func(gtx C) D {
 					return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 						layout.Rigid(func(gtx C) D { return icDelegates.Layout(gtx, 12, th.MutedForeground) }),
 						ui.Gap(1.5),
 						layout.Rigid(th.Text(ui.TextXS, delegatesText(o)).Muted().Layout),
 					)
-				}, ui.Space(2), ui.Space(2))
+				}, ui.Space(2), ui.Space(2)).Layout(gtx)
 			})
 		})
 	})

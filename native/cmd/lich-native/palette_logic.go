@@ -7,6 +7,7 @@ import (
 
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
+	"github.com/lichdotdev/lich/native/ui"
 )
 
 // The command palette's data join: open projects and their sessions, the closed
@@ -251,16 +252,16 @@ func rankSessions(sessions []paletteSession, turns map[string]string) []paletteS
 
 // querySegments marks in text every run the query's tokens match, the way
 // the history search splits a query into words.
-func querySegments(text, query string) []segment {
-	segs := []segment{{text: text}}
+func querySegments(text, query string) []ui.MarkedSegment {
+	segs := []ui.MarkedSegment{{Text: text}}
 	for _, token := range strings.Fields(query) {
-		var next []segment
+		var next []ui.MarkedSegment
 		for _, s := range segs {
-			if s.hit {
+			if s.Marked {
 				next = append(next, s)
 				continue
 			}
-			next = append(next, highlightSegments(s.text, token)...)
+			next = append(next, highlightSegments(s.Text, token)...)
 		}
 		segs = next
 	}

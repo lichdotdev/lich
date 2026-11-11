@@ -147,8 +147,14 @@ type gallery struct {
 	footerRight []string
 
 	side *sidebar
+	cov  coverageState
+	rich richState
 
 	toastState
+	contentState
+	rowsState
+	marksState
+	composedState
 }
 
 func newGallery(th *ui.Theme) *gallery {
@@ -185,6 +191,7 @@ func (g *gallery) layout(gtx C) D {
 	paint.Fill(gtx.Ops, ui.Dark.Background)
 	return g.root.Layout(gtx, func(gtx C) D {
 		g.layoutDialog(gtx)
+		g.layoutCoverageDialogs(gtx)
 		toaster := g.th.Toaster(&g.toaster, false)
 		toaster.Expand = *flagToastsExpanded
 		toaster.Position = toastPositions[*flagToastsAt]
@@ -203,21 +210,40 @@ func (g *gallery) content(gtx C) D {
 		ui.VGap(6),
 		layout.Rigid(func(gtx C) D {
 			return layout.Flex{Alignment: layout.Start}.Layout(gtx,
-				layout.Flexed(1, stack(6,
+				layout.Flexed(1, ui.Stack(6,
 					g.section("Button", g.buttonsSection),
 					g.section("Input, Textarea, InputGroup", g.inputsSection),
 					g.section("Tooltip, menus and Dialog", g.overlaysSection),
 					g.section("Chip, ResizeHandle, Collapse, Presence, Sortable list", g.sidebarSection),
+					g.section("Notice, Footnote, PanelNotice, BodyLine", g.noticesSection),
+					g.section("PopoverRow, SelectTrigger, RuleAbove, VerticalRule", g.rowsSection),
+					g.section("NavRow, PanelRow, FillRow, MenuHeader, MenuSeparator, RailHairline, CaptionDivider, OrRule", g.listRowsSection),
+					g.section("GhostTextButton, CardIconButton, GhostIconButton, SquareFace, LabelFace", g.facesSection),
+					g.section("StatusDot, MarkDot, Dot, Swatch, NotifyDot", g.dotsSection),
+					g.section("GaugeBar, SegmentBar, DonutGauge, GaugeRow", g.gaugesSection),
 				)),
 				ui.Gap(6),
-				layout.Flexed(1, stack(6,
+				layout.Flexed(1, ui.Stack(6,
 					g.section("Checkbox, Switch, Toggle, ToggleGroup", g.selectionSection),
 					g.section("Tabs", g.tabsSection),
 					g.section("Label, Text, Skeleton, Separator, icons", g.typographySection),
 					g.section("Wrap, Sortable", g.layoutSection),
 					g.section("Toast", g.toastsSection),
+					g.section("IconAction, CornerButton, BarIconButton", g.iconButtonsSection),
+					g.section("DiffStat, MetaGlyph, Pill, KeyCap", g.metaSection),
+					g.section("Markdown", g.markdownSection),
+					g.section("Code view", g.codeSection),
+					g.section("Diff view", g.diffSection),
+					g.section("File tree", g.treeSection),
+					g.section("IconLine, IconLabel, MonoGlyph, MutedGlyph, CenteredIcon, BoxIcon, TriggerChevron, TinyChip", g.glyphsSection),
+					g.section("HoverLink, TrailingIconLink, TwoLines, SpinnerLine, SpinnerBeside, CheckRow", g.linesSection),
+					g.section("CountBadge, OutlineBadge, AbbrBadge, Tag, KeyHint", g.badgesSection),
+					g.section("Tray, DashedBorder, rings, Fillet, Checker, FillIf, DropHint", g.surfacesSection),
+					g.section("Composed", g.composedSection),
 				)),
 			)
 		}),
+		ui.VGap(6),
+		layout.Rigid(g.coverage),
 	)
 }

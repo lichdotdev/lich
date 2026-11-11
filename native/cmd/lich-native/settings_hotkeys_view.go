@@ -9,9 +9,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/op/clip"
-	"gioui.org/op/paint"
 	"gioui.org/unit"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
@@ -32,7 +30,6 @@ var (
 	hotkeyRowPadY    = ui.Space(1.5)
 	hotkeyLinePadX   = ui.Space(3)
 	hotkeyNoteGap    = ui.Space(2)
-	hotkeyKeyCapSize = unit.Sp(10) // text-[0.625rem]
 )
 
 // hotkeyNoteCh is the note's max-w-prose, a ch taken as 0.6em as settingsDescCh
@@ -143,30 +140,24 @@ func (s *settingsScreen) hotkeyRow(gtx C, th *ui.Theme, a hotkeyAction, conflict
 				layout.Rigid(func(gtx C) D { return captureButton(gtx, th, r, c, recording, len(conflicts) > 0) }),
 				layout.Rigid(layout.Spacer{Width: hotkeyRowGap}.Layout),
 				layout.Rigid(func(gtx C) D {
-					return hotkeyIconButton(gtx, th, s.root, &r.unassign, &r.unassignTip, icHotkeyUnassign, i18n.T("settings.hotkeysSettings.unassignHint"), c.Key == "")
+					return th.GhostIconButton(gtx, s.root, &r.unassign, &r.unassignTip, icHotkeyUnassign, i18n.T("settings.hotkeysSettings.unassignHint"), c.Key == "")
 				}),
 				layout.Rigid(layout.Spacer{Width: hotkeyRowGap}.Layout),
 				layout.Rigid(func(gtx C) D {
-					return hotkeyIconButton(gtx, th, s.root, &r.reset, &r.resetTip, icHotkeyReset, i18n.T("settings.hotkeysSettings.resetHint"), c == defaultHotkeys()[a.id])
+					return th.GhostIconButton(gtx, s.root, &r.reset, &r.resetTip, icHotkeyReset, i18n.T("settings.hotkeysSettings.resetHint"), c == defaultHotkeys()[a.id])
 				}),
 			)
 		})
 		call := macro.Stop()
 		switch {
 		case lit > 0:
-			fillRow(gtx, th, d.Size, hotkeyLitFill*lit)
+			th.FillRow(gtx, d.Size, hotkeyLitFill*lit)
 		case r.hover.Hovered():
-			fillRow(gtx, th, d.Size, hotkeyHoverFill)
+			th.FillRow(gtx, d.Size, hotkeyHoverFill)
 		}
 		call.Add(gtx.Ops)
 		return d
 	})
-}
-
-func fillRow(gtx C, th *ui.Theme, size image.Point, alpha float32) {
-	fill := gtx
-	fill.Constraints = layout.Exact(size)
-	ui.Fill(fill, th.Over(ui.Alpha(th.Accent, alpha)), ui.RadiusMD)
 }
 
 // hotkeyName is the row's left column: the action, the amber line naming who
@@ -218,22 +209,14 @@ func captureButton(gtx C, th *ui.Theme, r *hotkeyRow, c combo, recording, confli
 			border = th.Over(ui.Alpha(th.ToneWait, 0.6))
 		}
 		if !recording && r.capture.Hovered() {
-			fillRow(gtx, th, size, 1)
+			th.FillRow(gtx, size, 1)
 		}
-		insetBorder(gtx, size, gtx.Dp(ui.RadiusMD), border)
+		ui.InsetBorder(gtx, size, gtx.Dp(ui.RadiusMD), border)
 		call.Add(gtx.Ops)
 		defer clip.Rect{Max: size}.Push(gtx.Ops).Pop()
 		event.Op(gtx.Ops, &r.tag)
 		return D{Size: size}
 	})
-}
-
-// hotkeyIconButton is a ghost icon button under its tooltip, dimmed and inert while
-// disabled.
-func hotkeyIconButton(gtx C, th *ui.Theme, root *ui.Root, click *widget.Clickable, tip *ui.Tooltip, ic *icons.Icon, hint string, disabled bool) D {
-	b := th.Button(click, "")
-	b.Icon, b.Variant, b.Size, b.Disabled = ic, ui.VariantGhost, ui.SizeIcon, disabled
-	return th.Tooltip(root, tip, hint).Layout(gtx, b.Layout)
 }
 
 // shortcutLine is ShortcutLine: what it does on the left, the chord as a key
@@ -248,27 +231,8 @@ func shortcutLine(gtx C, th *ui.Theme, r shortcutRow) D {
 				if r.keys == hotkeyUnassigned {
 					return th.Text(ui.TextXS, r.keys).Muted().Layout(gtx)
 				}
-				return keyCap(gtx, th, r.keys)
+				return th.KeyCap(r.keys).Layout(gtx)
 			}),
 		)
 	})
-}
-
-// keyCap is Keys: rounded, a hairline border with a thicker bottom one, on
-// bg-muted, 10px mono text.
-func keyCap(gtx C, th *ui.Theme, keys string) D {
-	macro := op.Record(gtx.Ops)
-	gtx.Constraints.Min = image.Point{}
-	d := layout.Inset{Left: ui.Space(2), Right: ui.Space(2), Top: ui.Space(1.5), Bottom: ui.Space(1.5) + 1}.Layout(gtx,
-		th.Text(hotkeyKeyCapSize, keys).Mono().Muted().Leading(hotkeyKeyCapSize).Layout)
-	call := macro.Stop()
-	box := gtx
-	box.Constraints = layout.Exact(d.Size)
-	ui.Fill(box, th.Over(th.Palette.Muted), ui.RadiusSM)
-	border := th.Over(th.Border)
-	insetBorder(gtx, d.Size, gtx.Dp(ui.RadiusSM), border)
-	r := gtx.Dp(ui.RadiusSM)
-	paint.FillShape(gtx.Ops, border, clip.Rect{Min: image.Pt(r, d.Size.Y-2*gtx.Dp(1)), Max: image.Pt(d.Size.X-r, d.Size.Y-gtx.Dp(1))}.Op())
-	call.Add(gtx.Ops)
-	return d
 }

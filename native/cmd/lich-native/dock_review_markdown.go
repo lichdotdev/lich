@@ -13,6 +13,7 @@ import (
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
 	"github.com/lichdotdev/lich/native/ui/icons"
+	"github.com/lichdotdev/lich/native/ui/markdown"
 )
 
 var icMarkdownPreview = icons.Lucide("book-open")
@@ -21,7 +22,7 @@ var icMarkdownPreview = icons.Lucide("book-open")
 // file and its rendered blocks.
 type markdownPreview struct {
 	read     remote[string]
-	rendered markdownCache
+	rendered markdown.Cache
 }
 
 // previewsMarkdown reports whether the card offers its file rendered: a
@@ -57,27 +58,27 @@ func (c *fileCard) previewToggle(gtx C, th *ui.Theme, p *reviewPanel) D {
 	if c.previewing {
 		label = i18n.T("diff.fileDiff.showDiff")
 	}
-	return iconAction(gtx, th, p.root, &c.preview, icMarkdownPreview, label, c.previewing)
+	return th.IconAction(p.root, &c.preview, icMarkdownPreview, label, c.previewing).Layout(gtx)
 }
 
 // markdownBody is the preview, px-9 like the lines a body without a diff
 // shows.
 func (c *fileCard) markdownBody(gtx C, p *reviewPanel) D {
 	if c.md == nil {
-		c.md = &markdownPreview{rendered: markdownCache{}}
+		c.md = &markdownPreview{rendered: markdown.Cache{}}
 		c.md.read.invalidate = p.invalidate
 	}
 	src, loading, err := c.markdownSource(p)
 	switch {
 	case err != nil:
-		return bodyLine(gtx, p.th, backend.ErrorText(err))
+		return p.th.BodyLine(backend.ErrorText(err)).Layout(gtx)
 	case loading:
-		return bodyLine(gtx, p.th, i18n.T("diff.binaryPreview.loading"))
+		return p.th.BodyLine(i18n.T("diff.binaryPreview.loading")).Layout(gtx)
 	}
 	inset := layout.Inset{Left: ui.Space(9), Right: ui.Space(9), Top: ui.Space(3), Bottom: ui.Space(4)}
-	window := viewportWindow(-(p.itemTop(p.laying) + c.headerHeight + gtx.Dp(inset.Top)), p.viewport)
+	window := markdown.ViewportWindow(-(p.itemTop(p.laying) + c.headerHeight + gtx.Dp(inset.Top)), p.viewport)
 	return inset.Layout(gtx, func(gtx C) D {
-		return c.md.rendered.layoutWindow(gtx, p.th, c.git.path, src, func(url string) { openLink(p.client, p.notify, url) }, window)
+		return c.md.rendered.LayoutWindow(gtx, p.th, c.git.path, src, func(url string) { openLink(p.client, p.notify, url) }, window)
 	})
 }
 

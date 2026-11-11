@@ -1,8 +1,6 @@
 package main
 
 import (
-	"gioui.org/font"
-	"gioui.org/layout"
 	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/i18n"
@@ -16,16 +14,7 @@ import (
 func homeView(gtx C, th *ui.Theme, open *widget.Clickable) D {
 	button := th.Button(open, i18n.T("shell.home.openProject"))
 	button.Icon = icFolderOpen
-	return layout.Center.Layout(gtx, func(gtx C) D {
-		return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
-			layout.Rigid(func(gtx C) D { return icFolderOpen.Layout(gtx, ui.Space(12), th.MutedForeground) }),
-			ui.VGap(4),
-			layout.Rigid(th.Text(18, i18n.T("shell.home.title")).Leading(28).Weight(font.SemiBold).Layout),
-			layout.Rigid(th.Text(ui.TextSM, i18n.T("shell.home.description")).Muted().Layout),
-			ui.VGap(4),
-			layout.Rigid(button.Layout),
-		)
-	})
+	return th.EmptyState(icFolderOpen, i18n.T("shell.home.title"), i18n.T("shell.home.description"), button.Layout).Layout(gtx)
 }
 
 var icSquareTerminal = icons.Lucide("square-terminal")
@@ -40,14 +29,5 @@ func emptySessionsView(gtx C, th *ui.Theme, open *widget.Clickable, noAgent bool
 	}
 	button := th.Button(open, text)
 	button.Icon = icon
-	return layout.Center.Layout(gtx, func(gtx C) D {
-		return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
-			layout.Rigid(func(gtx C) D { return icSquareTerminal.Layout(gtx, ui.Space(12), th.MutedForeground) }),
-			ui.VGap(4),
-			layout.Rigid(th.Text(18, i18n.T("shell.emptySessions.title")).Leading(28).Weight(font.SemiBold).Layout),
-			layout.Rigid(th.Text(ui.TextSM, description).Muted().Layout),
-			ui.VGap(4),
-			layout.Rigid(button.Layout),
-		)
-	})
+	return th.EmptyState(icSquareTerminal, i18n.T("shell.emptySessions.title"), description, button.Layout).Layout(gtx)
 }

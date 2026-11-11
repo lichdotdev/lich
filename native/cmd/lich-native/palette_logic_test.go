@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/lichdotdev/lich/native/backend"
+	"github.com/lichdotdev/lich/native/ui"
 )
 
 var paletteOpen = []paletteProject{
@@ -455,11 +456,11 @@ func TestAgoLabelPhrasesTheUnit(t *testing.T) {
 }
 
 func TestQuerySegmentsMarksEveryToken(t *testing.T) {
-	hits := func(segs []segment) []string {
+	hits := func(segs []ui.MarkedSegment) []string {
 		var out []string
 		for _, s := range segs {
-			if s.hit {
-				out = append(out, s.text)
+			if s.Marked {
+				out = append(out, s.Text)
 			}
 		}
 		return out

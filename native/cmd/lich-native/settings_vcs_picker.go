@@ -7,7 +7,6 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
-	"gioui.org/unit"
 	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/backend"
@@ -152,7 +151,7 @@ func (s *settingsScreen) vcsPicker(gtx C, th *ui.Theme, project, stored string, 
 		}
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, rows...)
 	})
-	return pop.Layout(gtx, func(gtx C) D { return selectTrigger(gtx, th, label, vcsPickerWidth) })
+	return pop.Layout(gtx, th.SelectTrigger(label, vcsPickerWidth).Layout)
 }
 
 // vcsOption is one SelectItem, checked when chosen; picking it stores it and
@@ -186,32 +185,5 @@ func (s *settingsScreen) vcsOption(gtx C, th *ui.Theme, project, value, label st
 				}),
 			)
 		})
-	})
-}
-
-// selectTrigger is the outline SelectTrigger, width wide, naming the value.
-func selectTrigger(gtx C, th *ui.Theme, value string, width unit.Dp) D {
-	return selectTriggerWith(gtx, th, nil, value, width)
-}
-
-// selectTriggerWith is selectTrigger with a mark of its own before the value.
-func selectTriggerWith(gtx C, th *ui.Theme, lead layout.Widget, value string, width unit.Dp) D {
-	size := image.Pt(gtx.Dp(width), gtx.Dp(ui.Space(9)))
-	gtx.Constraints = layout.Exact(size)
-	bg := th.Over(ui.Alpha(th.Palette.Input, 0.3))
-	ui.Fill(gtx, bg, ui.RadiusMD)
-	insetBorder(gtx, size, gtx.Dp(ui.RadiusMD), th.Over(th.Palette.Input))
-	on := th.On(bg)
-	return layout.Inset{Left: ui.Space(2.5), Right: ui.Space(2.5)}.Layout(gtx, func(gtx C) D {
-		var children []layout.FlexChild
-		if lead != nil {
-			children = append(children, layout.Rigid(lead), ui.Gap(2))
-		}
-		children = append(children,
-			layout.Flexed(1, on.Text(ui.TextSM, value).Layout),
-			ui.Gap(2),
-			layout.Rigid(func(gtx C) D { return icChevronDown.Layout(gtx, ui.Space(4), on.MutedForeground) }),
-		)
-		return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
 	})
 }

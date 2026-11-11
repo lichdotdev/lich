@@ -121,17 +121,12 @@ func (s *settingsScreen) grantRow(gtx C, th *ui.Theme, e settingEntry, r setting
 	r.globalValue = grantLabel(m.globals[e.key])
 	r.sample = func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-			layout.Rigid(func(gtx C) D { return wrapped(gtx, th.Text(rowDescSize, desc).Muted().Leading(20)) }),
+			layout.Rigid(func(gtx C) D { return th.Text(rowDescSize, desc).Muted().Leading(20).Wrapped().Layout(gtx) }),
 			ui.VGap(1),
-			layout.Rigid(func(gtx C) D { return wrapped(gtx, th.Text(ui.TextXS, detail).Muted().Mono().Leading(18)) }),
+			layout.Rigid(func(gtx C) D { return th.Text(ui.TextXS, detail).Muted().Mono().Leading(18).Wrapped().Layout(gtx) }),
 		)
 	}
 	return r.layout(gtx, th, first, func(gtx C, th *ui.Theme) D { return th.Switch(sw).Layout(gtx) })
-}
-
-func wrapped(gtx C, l ui.LabelStyle) D {
-	l.MaxLines = 0
-	return l.Layout(gtx)
 }
 
 // sandboxStatus is StatusStrip: the machine's answer drawn as state, the
@@ -145,7 +140,7 @@ func sandboxStatus(gtx C, th *ui.Theme, backend string) D {
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 	return layout.Stack{}.Layout(gtx,
 		layout.Expanded(func(gtx C) D {
-			insetBorder(gtx, gtx.Constraints.Min, gtx.Dp(ui.RadiusMD), th.Over(th.Border))
+			ui.InsetBorder(gtx, gtx.Constraints.Min, gtx.Dp(ui.RadiusMD), th.Over(th.Border))
 			return D{Size: gtx.Constraints.Min}
 		}),
 		layout.Stacked(func(gtx C) D {
@@ -170,7 +165,7 @@ func proseLine(th *ui.Theme, text string) layout.Widget {
 	return func(gtx C) D {
 		return layout.Inset{Left: rowPadX, Right: rowPadX}.Layout(gtx, func(gtx C) D {
 			gtx.Constraints.Max.X = min(gtx.Constraints.Max.X, gtx.Sp(ui.TextXS)*proseCh*6/10)
-			return wrapped(gtx, th.Text(ui.TextXS, text).Muted().Leading(16))
+			return th.Text(ui.TextXS, text).Muted().Leading(16).Wrapped().Layout(gtx)
 		})
 	}
 }

@@ -16,6 +16,7 @@ import (
 	"github.com/lichdotdev/godemirror"
 	"github.com/lichdotdev/lich/native/fonts"
 	"github.com/lichdotdev/lich/native/ui"
+	"github.com/lichdotdev/lich/native/ui/codeview"
 )
 
 // findRig lays the bar and the code view out through an input.Router, in the
@@ -30,7 +31,7 @@ type findRig struct {
 
 func newFindRig(t *testing.T, content string) *findRig {
 	t.Helper()
-	view, err := newCodeView(fonts.SystemMono, 13)
+	view, err := codeview.NewEditor(fonts.SystemMono, 13)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -176,7 +177,7 @@ func TestANewViewGetsTheSearchAgain(t *testing.T) {
 	r.press(keyFind, key.ModShortcut)
 	r.bar.query.SetText("shown")
 	r.frame(nil)
-	view, err := newCodeView(fonts.SystemMono, 13)
+	view, err := codeview.NewEditor(fonts.SystemMono, 13)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -221,7 +222,7 @@ func TestMatchSegmentsCutAtRuneColumnsAndDropTheIndent(t *testing.T) {
 		{From: godemirror.Pos{Col: 4}, To: godemirror.Pos{Col: 9}},
 		{From: godemirror.Pos{Col: 11}, To: godemirror.Pos{Col: 16}},
 	}
-	want := []segment{{text: "é "}, {text: "shown", hit: true}, {text: ", "}, {text: "shown", hit: true}}
+	want := []ui.MarkedSegment{{Text: "é "}, {Text: "shown", Marked: true}, {Text: ", "}, {Text: "shown", Marked: true}}
 	if got := matchSegments(text, matches); !slices.Equal(got, want) {
 		t.Errorf("segments = %+v, want %+v", got, want)
 	}
@@ -231,7 +232,7 @@ func TestMatchSegmentsCutAtRuneColumnsAndDropTheIndent(t *testing.T) {
 // hold it, so the code and the find bar have to count.
 func TestCodeTabHoldsTheKeysWhileTheCodeOrTheFindBarHasThem(t *testing.T) {
 	r := newFindRig(t, "shown\nnone\nshown")
-	c := &codeTab{preview: &preview{view: r.view, find: r.bar}}
+	c := &codeTab{preview: &preview{view: &codeview.View{View: r.view}, find: r.bar}}
 	holds := func() bool { return c.focused(layout.Context{Source: r.router.Source()}) }
 	if !holds() {
 		t.Error("the focused code leaves the keys to the terminal")

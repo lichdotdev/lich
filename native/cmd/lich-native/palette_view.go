@@ -34,12 +34,11 @@ const (
 	// paletteHintBarFill is the opacity of the hint bar's black fill.
 	paletteHintBarFill = 0.1
 	// paletteEmptyWidth is the widest the empty hint grows, in dp.
-	paletteEmptyWidth unit.Dp = 330
-	paletteInputSize  unit.Sp = 15
-	paletteTabSize    unit.Sp = 13
-	paletteTinySize   unit.Sp = 10
-	// paletteTinyLeading is the tiny text's line height, 20/14 of its 10px size.
-	paletteTinyLeading    unit.Sp = 14.3
+	paletteEmptyWidth     unit.Dp = 330
+	paletteInputSize      unit.Sp = 15
+	paletteTabSize        unit.Sp = 13
+	paletteTinySize       unit.Sp = ui.TinyTextSize
+	paletteTinyLeading    unit.Sp = ui.TinyTextLeading
 	paletteInputRow               = 11.5 // 12px of padding around a 22.5px line
 	paletteGlyphSize              = 16
 	paletteEnterSize              = 14
@@ -49,7 +48,6 @@ const (
 	paletteCountOpacity           = 0.7 // the count's
 	paletteSnippetOpacity         = 0.8 // the snippet's
 	paletteQueryOpacity           = 0.8 // the query's
-	paletteChipOpacity            = 0.4 // a chip's border, its tone at 40%
 )
 
 var (
@@ -236,7 +234,7 @@ func paletteHint(th *ui.Theme, label string, keys ...string) layout.Widget {
 			if i > 0 {
 				children = append(children, ui.Gap(1))
 			}
-			children = append(children, layout.Rigid(func(gtx C) D { return keyCap(gtx, th, k) }))
+			children = append(children, layout.Rigid(func(gtx C) D { return th.KeyCap(k).Layout(gtx) }))
 		}
 		children = append(children, ui.Gap(1.5), layout.Rigid(th.Text(ui.TextXS, label).Muted().Layout))
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
@@ -422,13 +420,13 @@ func paletteFaceOf(on *ui.Theme, v *paletteView, r paletteRow, fg color.NRGBA, r
 			text: paletteLine(on, fg, s.label, shortPath(s.path)),
 		}
 		if s.status == statusWaiting {
-			face.trailing = paletteChip(on, i18n.T("session.filter.phase.waiting"), on.ToneWait)
+			face.trailing = on.TinyChip(i18n.T("session.filter.phase.waiting"), on.ToneWait).Layout
 		}
 		return face
 	case rowMessage:
 		m := r.message
 		face := paletteFace{
-			lead: paletteGlyph(on, icPaletteMessage),
+			lead: on.MutedGlyph(icPaletteMessage, paletteGlyphSize).Layout,
 			text: paletteLine(on, fg, m.snippet, m.label),
 		}
 		if m.count > 1 {
@@ -437,7 +435,7 @@ func paletteFaceOf(on *ui.Theme, v *paletteView, r paletteRow, fg color.NRGBA, r
 		return face
 	case rowProject:
 		return paletteFace{
-			lead:     paletteGlyph(on, icPaletteFolder),
+			lead:     on.MutedGlyph(icPaletteFolder, paletteGlyphSize).Layout,
 			text:     paletteLine(on, fg, r.project.Name, shortPath(r.project.Path)),
 			trailing: paletteSmall(on, i18n.T("palette.commandPalette.sessions", i18n.Args{"count": v.sessionCount[r.project.ID]})),
 		}
@@ -447,7 +445,7 @@ func paletteFaceOf(on *ui.Theme, v *paletteView, r paletteRow, fg color.NRGBA, r
 			icon, word = icPaletteFolderGone, i18n.T("palette.commandPalette.relocate")
 		}
 		return paletteFace{
-			lead:     paletteGlyph(on, icon),
+			lead:     on.MutedGlyph(icon, paletteGlyphSize).Layout,
 			text:     paletteLine(on, fg, r.project.Name, shortPath(r.project.Path)),
 			trailing: paletteSmall(on, word),
 		}
@@ -466,13 +464,13 @@ func paletteFaceOf(on *ui.Theme, v *paletteView, r paletteRow, fg color.NRGBA, r
 		}
 	}
 	return paletteFace{
-		lead: paletteGlyph(on, icPaletteAction),
+		lead: on.MutedGlyph(icPaletteAction, paletteGlyphSize).Layout,
 		text: func(gtx C) D { return on.Text(ui.TextSM, hotkeyLabel(r.action)).In(fg).Layout(gtx) },
 		trailing: func(gtx C) D {
 			if r.keys == hotkeyUnassigned {
 				return on.Text(ui.TextXS, r.keys).Muted().Layout(gtx)
 			}
-			return keyCap(gtx, on, r.keys)
+			return on.KeyCap(r.keys).Layout(gtx)
 		},
 	}
 }
@@ -512,9 +510,9 @@ func paletteHistoryFace(on *ui.Theme, h paletteHistory, query string, fg color.N
 			)
 		}
 	}
-	mark := paletteIconText(on, icPaletteBranch, h.branch, on.MutedForeground)
+	mark := on.MonoGlyph(icPaletteBranch, h.branch, on.MutedForeground).Layout
 	if h.gone {
-		mark = paletteChip(on, i18n.T("palette.commandPalette.checkoutGone"), on.ToneWait)
+		mark = on.TinyChip(i18n.T("palette.commandPalette.checkoutGone"), on.ToneWait).Layout
 	}
 	return paletteFace{
 		lead: paletteRingOf(on, ring, h.Kind, "", false, ""),
@@ -537,9 +535,9 @@ func paletteSnippet(on *ui.Theme, snippet, query string) layout.Widget {
 		segs := querySegments(snippet, query)
 		kids := make([]layout.FlexChild, len(segs))
 		for i, seg := range segs {
-			l := on.Text(ui.TextXS, seg.text).In(on.Over(ui.Alpha(on.MutedForeground, paletteSnippetOpacity)))
-			if seg.hit {
-				l = on.Text(ui.TextXS, seg.text).In(on.Foreground).Weight(font.Medium)
+			l := on.Text(ui.TextXS, seg.Text).In(on.Over(ui.Alpha(on.MutedForeground, paletteSnippetOpacity)))
+			if seg.Marked {
+				l = on.Text(ui.TextXS, seg.Text).In(on.Foreground).Weight(font.Medium)
 			}
 			l.MaxLines = 1
 			kids[i] = layout.Rigid(l.Layout)
@@ -560,39 +558,9 @@ func paletteLine(on *ui.Theme, fg color.NRGBA, title, note string) layout.Widget
 	}
 }
 
-// paletteChip is an outlined word in a tone: the "waiting" a session waiting
-// on the user trails with, the "checkout gone" of a history row.
-func paletteChip(on *ui.Theme, word string, tone color.NRGBA) layout.Widget {
-	return func(gtx C) D {
-		macro := op.Record(gtx.Ops)
-		gtx.Constraints.Min = image.Point{}
-		d := layout.Inset{Left: ui.Space(2), Right: ui.Space(2), Top: unit.Dp(1), Bottom: unit.Dp(1)}.Layout(gtx,
-			on.Text(paletteTinySize, word).Leading(paletteTinyLeading).Mono().In(tone).Layout)
-		call := macro.Stop()
-		insetBorder(gtx, d.Size, d.Size.Y/2, on.Over(ui.Alpha(tone, paletteChipOpacity)))
-		call.Add(gtx.Ops)
-		return d
-	}
-}
-
 // paletteSmall is the trailing note: monospace, tiny, muted.
 func paletteSmall(on *ui.Theme, s string) layout.Widget {
 	return on.Text(paletteTinySize, s).Leading(paletteTinyLeading).Mono().Muted().Layout
-}
-
-func paletteGlyph(on *ui.Theme, icon *icons.Icon) layout.Widget {
-	return func(gtx C) D { return icon.Layout(gtx, paletteGlyphSize, on.MutedForeground) }
-}
-
-// paletteIconText is a small glyph and its words.
-func paletteIconText(on *ui.Theme, icon *icons.Icon, s string, c color.NRGBA) layout.Widget {
-	return func(gtx C) D {
-		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-			layout.Rigid(func(gtx C) D { return icon.Layout(gtx, ui.Space(3), c) }),
-			ui.Gap(1),
-			layout.Rigid(on.Text(ui.TextXS, s).Mono().In(c).Layout),
-		)
-	}
 }
 
 func paletteRingOf(on *ui.Theme, ring paletteRing, kind, status string, unread bool, agent string) layout.Widget {

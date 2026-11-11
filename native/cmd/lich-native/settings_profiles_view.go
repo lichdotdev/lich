@@ -92,7 +92,9 @@ func (s *settingsScreen) profilePicker(gtx C, th *ui.Theme, c *profileSettings, 
 	})
 	name := c.book.nameOf(shown)
 	lead := func(gtx C) D { return profileAvatar(gtx, th, c.book.look(shown), profileAvatarSel) }
-	return pop.Layout(gtx, func(gtx C) D { return selectTriggerWith(gtx, th, lead, name, profilePickerW) })
+	trigger := th.SelectTrigger(name, profilePickerW)
+	trigger.Lead = lead
+	return pop.Layout(gtx, trigger.Layout)
 }
 
 // profileOption is one SelectItem of the picker: the avatar and the name,
@@ -201,7 +203,7 @@ func profileText(gtx C, th *ui.Theme, prov profileProvider, p backend.Profile) D
 	}
 	if len(p.Copied) > 0 {
 		children = append(children, ui.VGap(1), layout.Rigid(func(gtx C) D {
-			return wrapped(gtx, th.Text(ui.TextXS, profileSentence(prov, prov.words.copiedNoteKey)).Muted())
+			return th.Text(ui.TextXS, profileSentence(prov, prov.words.copiedNoteKey)).Muted().Wrapped().Layout(gtx)
 		}))
 	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)

@@ -13,6 +13,7 @@ import (
 	"github.com/lichdotdev/lich/native/i18n"
 
 	"github.com/lichdotdev/lich/native/backend"
+	"github.com/lichdotdev/lich/native/ui"
 )
 
 // searchSettle is how long typing has to pause before the checkout is read:
@@ -44,22 +45,17 @@ func groupMatches(matches []searchMatch) []searchGroup {
 	return groups
 }
 
-type segment struct {
-	text string
-	hit  bool
-}
-
 // highlightSegments splits a hit's line into the runs matching query and the
 // runs between, case-insensitively and as a literal, the way the backend
 // matched. A line whose lowercase changes length is shown plain rather than
 // cut at the wrong offsets.
-func highlightSegments(text, query string) []segment {
+func highlightSegments(text, query string) []ui.MarkedSegment {
 	needle := strings.ToLower(query)
 	hay := strings.ToLower(text)
 	if needle == "" || len(hay) != len(text) {
-		return []segment{{text: text}}
+		return []ui.MarkedSegment{{Text: text}}
 	}
-	var out []segment
+	var out []ui.MarkedSegment
 	from := 0
 	for {
 		at := strings.Index(hay[from:], needle)
@@ -68,13 +64,13 @@ func highlightSegments(text, query string) []segment {
 		}
 		at += from
 		if at > from {
-			out = append(out, segment{text: text[from:at]})
+			out = append(out, ui.MarkedSegment{Text: text[from:at]})
 		}
-		out = append(out, segment{text: text[at : at+len(needle)], hit: true})
+		out = append(out, ui.MarkedSegment{Text: text[at : at+len(needle)], Marked: true})
 		from = at + len(needle)
 	}
 	if from < len(text) {
-		out = append(out, segment{text: text[from:]})
+		out = append(out, ui.MarkedSegment{Text: text[from:]})
 	}
 	return out
 }
