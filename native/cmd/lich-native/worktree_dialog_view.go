@@ -243,7 +243,7 @@ func (d *worktreeDialog) body(gtx C, th *ui.Theme, ctx context.Context, v worktr
 		}))
 	}
 	if failure := v.loadErr + v.submitErr; failure != "" {
-		children = append(children, ui.VGap(3), layout.Rigid(func(gtx C) D { return wrapped(gtx, th.Text(ui.TextXS, failure).In(th.Destructive)) }))
+		children = append(children, ui.VGap(3), layout.Rigid(func(gtx C) D { return th.Text(ui.TextXS, failure).In(th.Destructive).Wrapped().Layout(gtx) }))
 	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
 }
@@ -272,7 +272,7 @@ func (d *worktreeDialog) nameField(gtx C, th *ui.Theme, v worktreeView, reopenin
 			children = append(children, layout.Rigid(th.Text(ui.TextXS, fmt.Sprintf("#%d %s", v.issue.Number, v.issue.Title)).Layout))
 		}
 		if v.issueErr != "" {
-			children = append(children, layout.Rigid(func(gtx C) D { return wrapped(gtx, th.Text(ui.TextXS, v.issueErr).In(th.Destructive)) }))
+			children = append(children, layout.Rigid(func(gtx C) D { return th.Text(ui.TextXS, v.issueErr).In(th.Destructive).Wrapped().Layout(gtx) }))
 		}
 		branch := v.newBranch(d.name.Text())
 		if branch == "" {

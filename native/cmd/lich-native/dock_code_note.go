@@ -68,7 +68,7 @@ func (p *preview) noteBody(gtx C, th *ui.Theme) D {
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 					layout.Rigid(th.Text(ui.TextXS, p.note.author).Muted().Layout),
 					ui.VGap(0.5),
-					layout.Rigid(func(gtx C) D { return wrapped(gtx, th.Text(ui.TextSM, p.note.text)) }),
+					layout.Rigid(func(gtx C) D { return th.Text(ui.TextSM, p.note.text).Wrapped().Layout(gtx) }),
 				)
 			}),
 		)

@@ -56,10 +56,10 @@ func (g *gallery) toastsSection(gtx C, th *ui.Theme) D {
 		b.Variant = ui.VariantOutline
 		buttons = append(buttons, b.Layout)
 	}
-	return stack(4,
+	return ui.Stack(4,
 		caption(th, "Toaster: hover the stack to expand it, drag a toast right or up to dismiss it"),
-		row(2, buttons[:4]...),
-		row(2, buttons[4:]...),
+		ui.Row(2, buttons[:4]...),
+		ui.Row(2, buttons[4:]...),
 	)(gtx)
 }
 

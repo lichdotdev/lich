@@ -250,34 +250,23 @@ func rowTitle(gtx C, th *ui.Theme, pr backend.PRSummary) D {
 	)
 }
 
-// cell lays w in a column w wide, against its right edge.
-func cell(gtx C, width unit.Dp, w layout.Widget) D {
-	px := gtx.Dp(width)
-	gtx.Constraints.Min.X, gtx.Constraints.Max.X = px, px
-	return layout.E.Layout(gtx, w)
-}
-
 // rowSide is the row's columns: the checks, the verdict worth acting on and
 // the checkout the branch sits in, which shows only where it fits whole.
 func rowSide(gtx C, th *ui.Theme, pr backend.PRSummary, checkout string) D {
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-		layout.Rigid(func(gtx C) D {
-			return cell(gtx, rowChecksWidth, func(gtx C) D {
-				if verdictOf(pr.Checks) == verdictNone {
-					return D{}
-				}
-				return checksChip(gtx, th, pr.Checks)
-			})
-		}),
-		layout.Rigid(func(gtx C) D { return cell(gtx, rowVerdictWidth, func(gtx C) D { return rowVerdict(gtx, th, pr) }) }),
-		layout.Rigid(func(gtx C) D {
-			return cell(gtx, rowCheckoutWidth, func(gtx C) D {
-				if checkout == "" {
-					return D{}
-				}
-				return wholeOrNothing(gtx, func(gtx C) D { return th.MetaGlyph(icCheckout, checkout, th.MutedForeground).Layout(gtx) })
-			})
-		}),
+		ui.FixedColumn(rowChecksWidth, ui.AlignEnd(func(gtx C) D {
+			if verdictOf(pr.Checks) == verdictNone {
+				return D{}
+			}
+			return checksChip(gtx, th, pr.Checks)
+		})),
+		ui.FixedColumn(rowVerdictWidth, ui.AlignEnd(func(gtx C) D { return rowVerdict(gtx, th, pr) })),
+		ui.FixedColumn(rowCheckoutWidth, ui.AlignEnd(func(gtx C) D {
+			if checkout == "" {
+				return D{}
+			}
+			return wholeOrNothing(gtx, func(gtx C) D { return th.MetaGlyph(icCheckout, checkout, th.MutedForeground).Layout(gtx) })
+		})),
 	)
 }
 
@@ -405,9 +394,7 @@ func skeletonRow(gtx C, th *ui.Theme, title float32) D {
 				)
 			}),
 			ui.Gap(4),
-			layout.Rigid(func(gtx C) D {
-				return cell(gtx, rowChecksWidth, th.SkeletonBar(ui.Space(9), skeletonXSLine, ui.Space(3)).Layout)
-			}),
+			ui.FixedColumn(rowChecksWidth, ui.AlignEnd(th.SkeletonBar(ui.Space(9), skeletonXSLine, ui.Space(3)).Layout)),
 			layout.Rigid(layout.Spacer{Width: rowVerdictWidth + rowCheckoutWidth}.Layout),
 		)
 	})

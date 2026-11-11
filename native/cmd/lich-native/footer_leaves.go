@@ -89,7 +89,7 @@ func footerReadoutView(gtx C, th *ui.Theme, root *ui.Root, w *footerWidgets, r f
 	}
 	tip := th.TooltipCard(root, &w.tip, func(gtx C) D {
 		pop := th.On(th.Popover)
-		return stack(gtx, 1.5, []layout.Widget{pop.Text(ui.TextXS, title).Weight(font.Medium).Layout, detail})
+		return ui.Stack(1.5, pop.Text(ui.TextXS, title).Weight(font.Medium).Layout, detail)(gtx)
 	})
 	return tip.Layout(gtx, func(gtx C) D {
 		return w.click.Layout(gtx, func(gtx C) D {
@@ -116,7 +116,7 @@ func readoutDetail(th *ui.Theme, lines []string) layout.Widget {
 	for i, line := range lines {
 		rows[i] = para(th.Text(ui.TextXS, line).Muted()).Layout
 	}
-	return func(gtx C) D { return stack(gtx, 1, rows) }
+	return func(gtx C) D { return ui.Stack(1, rows...)(gtx) }
 }
 
 // toneColor is usageColor's text class.

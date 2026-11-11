@@ -338,7 +338,7 @@ func checkoutTooltip(th *ui.Theme, path string, f checkoutFacts) layout.Widget {
 			return ui.IconLine(gtx, icPR, title.Muted().Color, layout.Flexed(1, para(title).Layout))
 		})
 	}
-	return func(gtx C) D { return stack(gtx, 1.5, sections) }
+	return func(gtx C) D { return ui.Stack(1.5, sections...)(gtx) }
 }
 
 // nestedCheckout is a checkout row a mother's group or a folder draws, the

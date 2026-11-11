@@ -234,7 +234,7 @@ func (c *pluginControls) row(gtx C, th *ui.Theme, st backend.PluginStatus, busy 
 			layout.Rigid(line),
 			layout.Rigid(func(gtx C) D {
 				return layout.Inset{Left: indent, Top: ui.Space(0.5)}.Layout(gtx, func(gtx C) D {
-					return wrapped(gtx, th.Text(ui.TextXS, i18n.T(hint)).Muted())
+					return th.Text(ui.TextXS, i18n.T(hint)).Muted().Wrapped().Layout(gtx)
 				})
 			}),
 		)

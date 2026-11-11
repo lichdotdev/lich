@@ -588,7 +588,7 @@ func (s *settingsScreen) ladderBlock(gtx C, th *ui.Theme, r settingRow, first bo
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(func(gtx C) D { return layout.W.Layout(gtx, g.Layout) }),
 			ui.VGap(2),
-			layout.Rigid(func(gtx C) D { return wrapped(gtx, th.Text(ui.TextXS, consequence).Muted()) }),
+			layout.Rigid(func(gtx C) D { return th.Text(ui.TextXS, consequence).Muted().Wrapped().Layout(gtx) }),
 		)
 	})
 }

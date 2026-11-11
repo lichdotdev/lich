@@ -46,7 +46,7 @@ func skeletonCommits(gtx C, th *ui.Theme) D {
 func skeletonCommitRow(gtx C, th *ui.Theme, i int) D {
 	return skeletonRowBox.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-			layout.Flexed(1, spanning(skeletonTwoLines(th, skeletonWidth(i)))),
+			layout.Flexed(1, ui.Spanning(skeletonTwoLines(th, skeletonWidth(i)))),
 			layout.Rigid(th.SkeletonText(ui.TextXS, ui.Space(12.5)).Layout),
 		)
 	})
@@ -64,7 +64,7 @@ func skeletonCheckRow(gtx C, th *ui.Theme, i int) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Rigid(th.Skeleton(ui.Space(4), ui.Space(4)).Layout),
 			ui.Gap(3),
-			layout.Flexed(1, spanning(skeletonTwoLines(th, skeletonWidth(i)))),
+			layout.Flexed(1, ui.Spanning(skeletonTwoLines(th, skeletonWidth(i)))),
 			layout.Rigid(th.SkeletonText(ui.TextXS, ui.Space(8)).Layout),
 		)
 	})
@@ -201,7 +201,7 @@ func skeletonCardHeader(gtx C, th *ui.Theme, i int) D {
 			return layout.Inset{Left: ui.Space(2), Right: ui.Space(2), Top: ui.Space(1), Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
 				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 					layout.Rigid(layout.Spacer{Height: ui.Space(6)}.Layout),
-					layout.Flexed(1, spanning(on.SkeletonText(ui.TextXS, ui.Space(40+8*float32(i%3))).Layout)),
+					layout.Flexed(1, ui.Spanning(on.SkeletonText(ui.TextXS, ui.Space(40+8*float32(i%3))).Layout)),
 					layout.Rigid(on.SkeletonText(ui.TextXS, ui.Space(10)).Layout),
 				)
 			})

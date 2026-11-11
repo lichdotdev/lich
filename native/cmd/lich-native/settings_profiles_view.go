@@ -203,7 +203,7 @@ func profileText(gtx C, th *ui.Theme, prov profileProvider, p backend.Profile) D
 	}
 	if len(p.Copied) > 0 {
 		children = append(children, ui.VGap(1), layout.Rigid(func(gtx C) D {
-			return wrapped(gtx, th.Text(ui.TextXS, profileSentence(prov, prov.words.copiedNoteKey)).Muted())
+			return th.Text(ui.TextXS, profileSentence(prov, prov.words.copiedNoteKey)).Muted().Wrapped().Layout(gtx)
 		}))
 	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)

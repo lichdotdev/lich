@@ -57,25 +57,13 @@ func sessionTooltip(th *ui.Theme, sv *sessionView) layout.Widget {
 	if sv.running != "" || sv.aged {
 		sections = append(sections, footLine(th, sv))
 	}
-	return func(gtx C) D { return stack(gtx, 1.5, sections) }
+	return func(gtx C) D { return ui.Stack(1.5, sections...)(gtx) }
 }
 
 // para lets a label wrap instead of truncating.
 func para(l ui.LabelStyle) ui.LabelStyle {
 	l.MaxLines = 0
 	return l
-}
-
-// stack lays widgets out top to bottom, gap apart (flex-col gap-N).
-func stack(gtx C, gap float32, ws []layout.Widget) D {
-	children := make([]layout.FlexChild, 0, 2*len(ws))
-	for i, w := range ws {
-		if i > 0 {
-			children = append(children, ui.VGap(gap))
-		}
-		children = append(children, layout.Rigid(w))
-	}
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
 }
 
 // footLine is the tooltip's last line: the model the provider runs and, in
@@ -208,7 +196,7 @@ func conflictPaths(th *ui.Theme, paths []string) layout.Widget {
 		rows = append(rows, th.Text(ui.TextXS, i18n.T("sidebar.sessionTooltip.morePaths", i18n.Args{"count": more})).Muted().Layout)
 	}
 	return func(gtx C) D {
-		return layout.Inset{Left: ui.Space(4)}.Layout(gtx, func(gtx C) D { return stack(gtx, 0.5, rows) })
+		return layout.Inset{Left: ui.Space(4)}.Layout(gtx, func(gtx C) D { return ui.Stack(0.5, rows...)(gtx) })
 	}
 }
 

@@ -227,9 +227,9 @@ func conflictRow(gtx C, th *ui.Theme, file string) D {
 	dir, base := splitPath(file)
 	return layout.Inset{Left: ui.Space(2), Right: ui.Space(2), Top: ui.Space(1), Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-			layout.Rigid(func(gtx C) D { return truncated(gtx, th.Text(ui.TextXS, base).Mono().Weight(font.Medium)) }),
+			layout.Rigid(func(gtx C) D { return th.Text(ui.TextXS, base).Mono().Weight(font.Medium).Truncated().Layout(gtx) }),
 			ui.Gap(2),
-			layout.Flexed(1, func(gtx C) D { return truncated(gtx, th.Text(ui.TextXS, dir).Mono().Muted()) }),
+			layout.Flexed(1, func(gtx C) D { return th.Text(ui.TextXS, dir).Mono().Muted().Truncated().Layout(gtx) }),
 		)
 	})
 }
@@ -454,7 +454,7 @@ func (v *pullView) commitRows(gtx C, th *ui.Theme, d backend.PRDetail) []layout.
 						return D{}
 					}
 					return layout.Inset{Left: pullsPadX, Right: pullsPadX, Bottom: ui.Space(3)}.Layout(gtx, func(gtx C) D {
-						return wrapped(gtx, th.Text(ui.TextXS, body).Muted())
+						return th.Text(ui.TextXS, body).Muted().Wrapped().Layout(gtx)
 					})
 				}),
 			)

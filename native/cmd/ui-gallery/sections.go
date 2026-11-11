@@ -15,52 +15,6 @@ import (
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
-// row lays its widgets side by side, gap Tailwind units apart.
-func row(gap float32, ws ...layout.Widget) layout.Widget {
-	return func(gtx C) D {
-		gtx.Constraints.Min = image.Point{}
-		kids := make([]layout.FlexChild, 0, 2*len(ws))
-		for i, w := range ws {
-			if i > 0 {
-				kids = append(kids, ui.Gap(gap))
-			}
-			kids = append(kids, layout.Rigid(w))
-		}
-		return layout.Flex{Alignment: layout.Middle}.Layout(gtx, kids...)
-	}
-}
-
-// stack lays its widgets one under the other, gap Tailwind units apart. The
-// section's full-width minimum stops here: a button in a stack keeps its own
-// width, and a field that wants the row asks for it.
-func stack(gap float32, ws ...layout.Widget) layout.Widget {
-	return func(gtx C) D {
-		gtx.Constraints.Min = image.Point{}
-		kids := make([]layout.FlexChild, 0, 2*len(ws))
-		for i, w := range ws {
-			if i > 0 {
-				kids = append(kids, ui.VGap(gap))
-			}
-			kids = append(kids, layout.Rigid(w))
-		}
-		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, kids...)
-	}
-}
-
-// split gives each widget an equal share of the width.
-func split(gap float32, ws ...layout.Widget) layout.Widget {
-	return func(gtx C) D {
-		kids := make([]layout.FlexChild, 0, 2*len(ws))
-		for i, w := range ws {
-			if i > 0 {
-				kids = append(kids, ui.Gap(gap))
-			}
-			kids = append(kids, layout.Flexed(1, w))
-		}
-		return layout.Flex{Alignment: layout.Start}.Layout(gtx, kids...)
-	}
-}
-
 // minWidth pads a grid column out to width, so the header names line up with
 // buttons of different natural widths.
 func minWidth(width unit.Dp, w layout.Widget) layout.Widget {
@@ -102,7 +56,10 @@ func (g *gallery) section(title string, body func(C, *ui.Theme) D) layout.Widget
 								func(gtx C) D { return ui.Fill(gtx, th.Card, ui.RadiusLG-1) },
 								func(gtx C) D {
 									return layout.UniformInset(ui.Space(4)).Layout(gtx, func(gtx C) D {
+										// The section's full width stops here: a specimen keeps
+										// its own, and a field that wants the row asks for it.
 										full := gtx.Constraints.Min.X
+										gtx.Constraints.Min = image.Point{}
 										d := body(gtx, th.On(th.Card))
 										d.Size.X = max(d.Size.X, full)
 										return d
@@ -152,7 +109,7 @@ func (g *gallery) buttonsSection(gtx C, th *ui.Theme) D {
 	for _, col := range buttonColumns {
 		header = append(header, minWidth(col.width, caption(th, col.name)))
 	}
-	rows := []layout.Widget{row(1.5, header...)}
+	rows := []layout.Widget{ui.Row(1.5, header...)}
 	for v, variant := range buttonVariants {
 		cells := []layout.Widget{minWidth(buttonLabelWidth, th.Text(ui.TextXS, variant.name).Muted().Mono().Layout)}
 		for s, col := range buttonColumns {
@@ -164,9 +121,9 @@ func (g *gallery) buttonsSection(gtx C, th *ui.Theme) D {
 			}
 			cells = append(cells, minWidth(col.width, b.Layout))
 		}
-		rows = append(rows, row(1.5, cells...))
+		rows = append(rows, ui.Row(1.5, cells...))
 	}
-	return stack(2.5, append(rows, g.disabledButtons(th), g.litButtons(th))...)(gtx)
+	return ui.Stack(2.5, append(rows, g.disabledButtons(th), g.litButtons(th))...)(gtx)
 }
 
 // litButtons are drawn hovered with no pointer on them, as the browser pane
@@ -178,7 +135,7 @@ func (g *gallery) litButtons(th *ui.Theme) layout.Widget {
 		b.Variant, b.Icon, b.Lit = variant.variant, g.icon("play"), true
 		cells = append(cells, b.Layout)
 	}
-	return row(2, cells...)
+	return ui.Row(2, cells...)
 }
 
 func (g *gallery) disabledButtons(th *ui.Theme) layout.Widget {
@@ -188,12 +145,12 @@ func (g *gallery) disabledButtons(th *ui.Theme) layout.Widget {
 		b.Variant, b.Icon, b.Disabled = variant.variant, g.icon("play"), true
 		cells = append(cells, b.Layout)
 	}
-	return row(2, cells...)
+	return ui.Row(2, cells...)
 }
 
 func (g *gallery) inputsSection(gtx C, th *ui.Theme) D {
 	field := func(label string, w layout.Widget) layout.Widget {
-		return stack(1.5, th.Label(label).Layout, w)
+		return ui.Stack(1.5, th.Label(label).Layout, w)
 	}
 	empty := th.Input(&g.inputs[0], "Branch name")
 	filled := th.Input(&g.inputs[1], "Branch name")
@@ -222,10 +179,10 @@ func (g *gallery) inputsSection(gtx C, th *ui.Theme) D {
 	groupDisabled.Disabled = true
 	groupDisabled.Start = ui.InputGroupAddon{Items: []layout.Widget{th.InputGroupIcon(g.icon("git-branch"))}}
 
-	return stack(4,
-		split(4, field("Empty, placeholder", empty.Layout), field("Filled", filled.Layout)),
-		split(4, field("Disabled", disabled.Layout), field("Invalid", invalid.Layout)),
-		split(4, field("Dense (h-7)", dense.Layout), field("Leading icon", leading.Layout)),
+	return ui.Stack(4,
+		ui.Columns(4, field("Empty, placeholder", empty.Layout), field("Filled", filled.Layout)),
+		ui.Columns(4, field("Disabled", disabled.Layout), field("Invalid", invalid.Layout)),
+		ui.Columns(4, field("Dense (h-7)", dense.Layout), field("Leading icon", leading.Layout)),
 		field("Textarea", area.Layout),
 		field("InputGroup, icon addon", withIcon.Layout),
 		field("InputGroup, text and button addons", withButton.Layout),
@@ -239,14 +196,14 @@ func (g *gallery) selectionSection(gtx C, th *ui.Theme) D {
 		c.Disabled = disabled
 		l := th.Label(label)
 		l.Disabled = disabled
-		return row(2, c.Layout, l.Layout)
+		return ui.Row(2, c.Layout, l.Layout)
 	}
 	sw := func(i int, size ui.SwitchSize, label string, disabled bool) layout.Widget {
 		s := th.Switch(&g.switches[i])
 		s.Size, s.Disabled = size, disabled
 		l := th.Label(label)
 		l.Disabled = disabled
-		return row(2, s.Layout, l.Layout)
+		return ui.Row(2, s.Layout, l.Layout)
 	}
 	toggle := func(i int, label string, variant ui.ToggleVariant, icon *icons.Icon, disabled bool) layout.Widget {
 		t := th.Toggle(&g.toggles[i], label)
@@ -266,20 +223,20 @@ func (g *gallery) selectionSection(gtx C, th *ui.Theme) D {
 	)
 	grid.Variant, grid.Size = ui.ToggleVariantOutline, ui.ToggleSizeSM
 
-	return stack(4,
+	return ui.Stack(4,
 		caption(th, "Checkbox"),
-		row(6, check(0, "Unchecked", false), check(1, "Checked", false), check(2, "Disabled", true), check(3, "Disabled on", true)),
+		ui.Row(6, check(0, "Unchecked", false), check(1, "Checked", false), check(2, "Disabled", true), check(3, "Disabled on", true)),
 		caption(th, "Switch, default and sm"),
-		row(6, sw(0, ui.SwitchSizeDefault, "Off", false), sw(1, ui.SwitchSizeDefault, "On", false), sw(2, ui.SwitchSizeSM, "Small", false), sw(3, ui.SwitchSizeSM, "Disabled on", true)),
+		ui.Row(6, sw(0, ui.SwitchSizeDefault, "Off", false), sw(1, ui.SwitchSizeDefault, "On", false), sw(2, ui.SwitchSizeSM, "Small", false), sw(3, ui.SwitchSizeSM, "Disabled on", true)),
 		caption(th, "Toggle: default, outline, with icon, disabled"),
-		row(2,
+		ui.Row(2,
 			toggle(0, "Default", ui.ToggleVariantDefault, nil, false),
 			toggle(1, "Outline", ui.ToggleVariantOutline, nil, false),
 			toggle(2, "Bold", ui.ToggleVariantDefault, g.icon("bold"), false),
 			toggle(3, "Disabled", ui.ToggleVariantOutline, g.icon("italic"), true),
 		),
 		caption(th, "ToggleGroup: default (icons) and outline sm (text)"),
-		row(4, bold.Layout, grid.Layout),
+		ui.Row(4, bold.Layout, grid.Layout),
 	)(gtx)
 }
 
@@ -300,14 +257,14 @@ func (g *gallery) tabsSection(gtx C, th *ui.Theme) D {
 	for i, v := range variants {
 		h := th.Tabs(&g.tabsH[i], triggers...)
 		h.Variant = v.variant
-		horizontal = append(horizontal, stack(1.5, caption(th, v.name+", horizontal"),
+		horizontal = append(horizontal, ui.Stack(1.5, caption(th, v.name+", horizontal"),
 			height(88, func(gtx C) D { return h.Layout(gtx, panels...) })))
 		vt := th.Tabs(&g.tabsV[i], triggers...)
 		vt.Variant, vt.Orientation = v.variant, ui.TabsVertical
-		vertical = append(vertical, stack(1.5, caption(th, v.name+", vertical"),
+		vertical = append(vertical, ui.Stack(1.5, caption(th, v.name+", vertical"),
 			height(110, func(gtx C) D { return vt.Layout(gtx, panels...) })))
 	}
-	return stack(4, append(horizontal, split(4, vertical...))...)(gtx)
+	return ui.Stack(4, append(horizontal, ui.Columns(4, vertical...))...)(gtx)
 }
 
 func (g *gallery) typographySection(gtx C, th *ui.Theme) D {
@@ -327,9 +284,9 @@ func (g *gallery) typographySection(gtx C, th *ui.Theme) D {
 	upper := th.Label("Label, uppercase")
 	upper.Uppercase = true
 
-	return stack(4,
+	return ui.Stack(4,
 		caption(th, "Text xs / sm / base"),
-		stack(1,
+		ui.Stack(1,
 			th.Text(ui.TextXS, "text-xs: the quick brown fox jumps over the lazy dog").Layout,
 			th.Text(ui.TextSM, "text-sm: the quick brown fox jumps over the lazy dog").Layout,
 			th.Text(ui.TextBase, "text-base: the quick brown fox jumps over the lazy dog").Layout,
@@ -337,18 +294,18 @@ func (g *gallery) typographySection(gtx C, th *ui.Theme) D {
 			th.Text(ui.TextSM, "text-sm mono: git rebase --onto main").Mono().Layout,
 		),
 		caption(th, "Label"),
-		row(6, th.Label("Label").Layout, disabled.Layout, upper.Layout),
+		ui.Row(6, th.Label("Label").Layout, disabled.Layout, upper.Layout),
 		caption(th, "Separator"),
 		th.Separator,
 		caption(th, "Skeleton"),
-		row(3,
+		ui.Row(3,
 			th.Skeleton(40, 40).Layout,
-			stack(2, th.Skeleton(220, 14).Layout, th.Skeleton(160, 14).Layout),
+			ui.Stack(2, th.Skeleton(220, 14).Layout, th.Skeleton(160, 14).Layout),
 		),
 		caption(th, "Lucide icons"),
-		row(3, lucide...),
+		ui.Row(3, lucide...),
 		caption(th, "Lobe marks"),
-		row(4, lobe...),
+		ui.Row(4, lobe...),
 	)(gtx)
 }
 
@@ -365,7 +322,7 @@ func (g *gallery) overlaysSection(gtx C, th *ui.Theme) D {
 	pop := th.On(th.Popover)
 	cardTrigger := th.Button(&g.tipCardTrigger, "Hover for a card")
 	cardTrigger.Variant, cardTrigger.Icon = ui.VariantOutline, g.icon("info")
-	card := th.TooltipCard(&g.root, &g.tipCard, stack(1,
+	card := th.TooltipCard(&g.root, &g.tipCard, ui.Stack(1,
 		pop.Text(ui.TextXS, "claude · opus").Weight(font.Medium).Layout,
 		pop.Text(ui.TextXS, "12 turns, 48k tokens").Muted().Layout,
 	))
@@ -396,9 +353,9 @@ func (g *gallery) overlaysSection(gtx C, th *ui.Theme) D {
 	if g.pinned {
 		status = "Pinned: yes. Last action: " + g.lastAction
 	}
-	return stack(4,
+	return ui.Stack(4,
 		caption(th, "Tooltip (label and card)"),
-		row(2,
+		ui.Row(2,
 			func(gtx C) D { return tip.Layout(gtx, tipTrigger.Layout) },
 			func(gtx C) D { return card.Layout(gtx, cardTrigger.Layout) },
 		),
@@ -476,12 +433,12 @@ func (g *gallery) layoutSection(gtx C, th *ui.Theme) D {
 	if d, ok := g.sortable.Update(gtx); ok {
 		g.footerLeft, g.footerRight = moveFooterItem(g.footerLeft, g.footerRight, d)
 	}
-	return stack(4,
+	return ui.Stack(4,
 		caption(th, "Wrap: FooterBar, full width and at 280dp"),
 		g.footerBar(th, 0),
 		g.footerBar(th, 280),
 		caption(th, "Sortable: FooterLayoutEditor (drag; or focus a chip, Space, arrows, Space)"),
-		split(3, g.footerZone(th, "left", g.footerLeft), g.footerZone(th, "right", g.footerRight)),
+		ui.Columns(3, g.footerZone(th, "left", g.footerLeft), g.footerZone(th, "right", g.footerRight)),
 		g.footerZone(th, "available", g.footerAvailable()),
 	)(gtx)
 }
@@ -553,7 +510,7 @@ func footerSection(th *ui.Theme, items []string, justify ui.Justify) layout.Widg
 
 // footerZone is FooterZoneView: a heading over the drop area.
 func (g *gallery) footerZone(th *ui.Theme, zone string, items []string) layout.Widget {
-	return stack(1.5,
+	return ui.Stack(1.5,
 		th.Text(ui.TextXS, footerZoneLabels[zone]).Muted().Layout,
 		func(gtx C) D {
 			gtx.Constraints.Min.X = gtx.Constraints.Max.X

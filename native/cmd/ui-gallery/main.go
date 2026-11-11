@@ -210,7 +210,7 @@ func (g *gallery) content(gtx C) D {
 		ui.VGap(6),
 		layout.Rigid(func(gtx C) D {
 			return layout.Flex{Alignment: layout.Start}.Layout(gtx,
-				layout.Flexed(1, stack(6,
+				layout.Flexed(1, ui.Stack(6,
 					g.section("Button", g.buttonsSection),
 					g.section("Input, Textarea, InputGroup", g.inputsSection),
 					g.section("Tooltip, menus and Dialog", g.overlaysSection),
@@ -223,7 +223,7 @@ func (g *gallery) content(gtx C) D {
 					g.section("GaugeBar, SegmentBar, DonutGauge, GaugeRow", g.gaugesSection),
 				)),
 				ui.Gap(6),
-				layout.Flexed(1, stack(6,
+				layout.Flexed(1, ui.Stack(6,
 					g.section("Checkbox, Switch, Toggle, ToggleGroup", g.selectionSection),
 					g.section("Tabs", g.tabsSection),
 					g.section("Label, Text, Skeleton, Separator, icons", g.typographySection),

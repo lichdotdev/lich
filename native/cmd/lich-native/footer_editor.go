@@ -85,7 +85,7 @@ func (f *footer) editorBody(gtx C, th *ui.Theme, l footerLayout, disabled bool, 
 			layout.Flexed(1, f.zone(th, footerRight, l.Right, in)),
 		)
 	}
-	return stack(gtx, 4, []layout.Widget{sides, f.zone(th, footerAvailable, availableItems(l), in)})
+	return ui.Stack(4, sides, f.zone(th, footerAvailable, availableItems(l), in))(gtx)
 }
 
 // drop applies a drag that landed.
@@ -151,7 +151,7 @@ func (f *footer) zone(th *ui.Theme, zone string, items []string, in footerInput)
 			gtx.Constraints.Min.X = gtx.Constraints.Max.X
 			return f.editor.sortable.Zone(gtx, zone, func(gtx C) D { return f.zoneBox(gtx, th, zone, items, in) })
 		}
-		return stack(gtx, 1.5, []layout.Widget{th.Text(ui.TextXS, i18n.T(footerZoneLabelKeys[zone])).Muted().Layout, box})
+		return ui.Stack(1.5, th.Text(ui.TextXS, i18n.T(footerZoneLabelKeys[zone])).Muted().Layout, box)(gtx)
 	}
 }
 
@@ -294,7 +294,7 @@ func (f *footer) previewLayout(gtx C, th *ui.Theme, l footerLayout, in footerInp
 				})
 			})
 	}
-	return stack(gtx, 2, []layout.Widget{th.Text(ui.TextXS, i18n.T("footer.footerEditor.previewHint")).Muted().Layout, strip})
+	return ui.Stack(2, th.Text(ui.TextXS, i18n.T("footer.footerEditor.previewHint")).Muted().Layout, strip)(gtx)
 }
 
 // previewSides is the footer's wrap: the left side, the right side at the

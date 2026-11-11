@@ -123,7 +123,7 @@ func (v *pullView) threadComment(gtx C, th *ui.Theme, p *pullsScreen, t commentT
 					if editing {
 						return v.editBox(gtx, th, t, act)
 					}
-					return wrapped(gtx, th.Text(ui.TextSM, c.Body))
+					return th.Text(ui.TextSM, c.Body).Wrapped().Layout(gtx)
 				})
 			}),
 		)

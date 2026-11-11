@@ -232,7 +232,7 @@ func (s *settingsScreen) formBody(gtx C, th *ui.Theme, f *profileFlow, d flowDat
 		children = append(children, ui.VGap(4), layout.Rigid(func(gtx C) D { return s.checklist(gtx, th, f, d) }))
 	}
 	if d.failure != "" {
-		children = append(children, ui.VGap(3), layout.Rigid(func(gtx C) D { return wrapped(gtx, th.Text(ui.TextXS, d.failure).In(th.Destructive)) }))
+		children = append(children, ui.VGap(3), layout.Rigid(func(gtx C) D { return th.Text(ui.TextXS, d.failure).In(th.Destructive).Wrapped().Layout(gtx) }))
 	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
 }
@@ -328,7 +328,7 @@ func (s *settingsScreen) checklist(gtx C, th *ui.Theme, f *profileFlow, d flowDa
 	}
 	if d.kind == flowNew {
 		children = append(children, ui.VGap(2), layout.Rigid(func(gtx C) D {
-			return wrapped(gtx, th.Text(ui.TextXS, i18n.T("settings.settingsProfilesDialogs.pluginsHint")).Muted())
+			return th.Text(ui.TextXS, i18n.T("settings.settingsProfilesDialogs.pluginsHint")).Muted().Wrapped().Layout(gtx)
 		}))
 	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
@@ -395,7 +395,7 @@ func (s *settingsScreen) loginBody(gtx C, th *ui.Theme, f *profileFlow, d flowDa
 		children = append(children, ui.VGap(4), layout.Rigid(func(gtx C) D { return s.codeBlock(gtx, th, f) }))
 	}
 	if d.failure != "" {
-		children = append(children, ui.VGap(2), layout.Rigid(func(gtx C) D { return wrapped(gtx, th.Text(ui.TextXS, d.failure).In(th.Destructive)) }))
+		children = append(children, ui.VGap(2), layout.Rigid(func(gtx C) D { return th.Text(ui.TextXS, d.failure).In(th.Destructive).Wrapped().Layout(gtx) }))
 	}
 	children = append(children, ui.VGap(4), layout.Rigid(func(gtx C) D { return th.HoverLink(gtx, &f.term, i18n.T("settings.settingsProfilesDialogs.terminal")) }))
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
@@ -408,7 +408,7 @@ func (s *settingsScreen) addressBlock(gtx C, th *ui.Theme, f *profileFlow, url s
 	copyURL.Variant, copyURL.Size, copyURL.Icon = ui.VariantGhost, ui.SizeSM, icDlgCopy
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			return wrapped(gtx, th.Text(ui.TextXS, profileSentence(f.ps.provider, f.ps.provider.words.addressDescKey)).Muted())
+			return th.Text(ui.TextXS, profileSentence(f.ps.provider, f.ps.provider.words.addressDescKey)).Muted().Wrapped().Layout(gtx)
 		}),
 		ui.VGap(1.5),
 		layout.Rigid(th.Text(ui.TextXS, url).Mono().Layout),
@@ -441,7 +441,7 @@ func (s *settingsScreen) resultBody(gtx C, th *ui.Theme, d flowData) D {
 	var children []layout.FlexChild
 	switch {
 	case d.failure != "":
-		children = append(children, layout.Rigid(func(gtx C) D { return wrapped(gtx, th.Text(ui.TextSM, d.failure).In(th.Destructive)) }))
+		children = append(children, layout.Rigid(func(gtx C) D { return th.Text(ui.TextSM, d.failure).In(th.Destructive).Wrapped().Layout(gtx) }))
 	case d.account != "":
 		children = append(children, layout.Rigid(th.Text(ui.TextSM, d.account).Layout))
 	}
@@ -450,7 +450,7 @@ func (s *settingsScreen) resultBody(gtx C, th *ui.Theme, d flowData) D {
 	}
 	if d.pluginNote != "" {
 		note := i18n.T("settings.settingsProfilesDialogs.lichPluginNote", i18n.Args{"error": d.pluginNote})
-		children = append(children, ui.VGap(3), layout.Rigid(func(gtx C) D { return wrapped(gtx, th.Text(ui.TextXS, note).In(th.Destructive)) }))
+		children = append(children, ui.VGap(3), layout.Rigid(func(gtx C) D { return th.Text(ui.TextXS, note).In(th.Destructive).Wrapped().Layout(gtx) }))
 	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
 }
@@ -463,7 +463,7 @@ func pluginResult(gtx C, th *ui.Theme, r backend.ProfilePluginResult) D {
 	name, _, _ := strings.Cut(r.Key, "@")
 	lines := []layout.FlexChild{layout.Rigid(th.Text(ui.TextSM, name).Layout)}
 	if r.Message != "" {
-		lines = append(lines, layout.Rigid(func(gtx C) D { return wrapped(gtx, th.Text(ui.TextXS, r.Message).Muted()) }))
+		lines = append(lines, layout.Rigid(func(gtx C) D { return th.Text(ui.TextXS, r.Message).Muted().Wrapped().Layout(gtx) }))
 	}
 	return layout.Flex{}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {

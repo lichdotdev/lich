@@ -211,16 +211,11 @@ func (c *fileCard) title(gtx C, th *ui.Theme, light bool) D {
 				return th.AbbrBadge(b.abbr, bg, fg).Layout(gtx)
 			}),
 			ui.Gap(2),
-			layout.Rigid(func(gtx C) D { return truncated(gtx, th.Text(ui.TextXS, base).Weight(font.Medium)) }),
+			layout.Rigid(func(gtx C) D { return th.Text(ui.TextXS, base).Weight(font.Medium).Truncated().Layout(gtx) }),
 			ui.Gap(2),
-			layout.Flexed(1, func(gtx C) D { return truncated(gtx, th.Text(ui.TextXS, dir).Muted()) }),
+			layout.Flexed(1, func(gtx C) D { return th.Text(ui.TextXS, dir).Muted().Truncated().Layout(gtx) }),
 		)
 	})
-}
-
-func truncated(gtx C, l ui.LabelStyle) D {
-	l.MaxLines = 1
-	return l.Layout(gtx)
 }
 
 // badgeSize and badgeText are the badge's size-5 and text-[0.5625rem].

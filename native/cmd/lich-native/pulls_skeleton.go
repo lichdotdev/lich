@@ -40,16 +40,6 @@ func (v *pullView) detailSkeleton(th *ui.Theme) layout.Widget {
 	}
 }
 
-// spanning is w taking all the room a Flexed gives it, as text does, so a
-// Rigid after it lands at the row's end and not beside the bar.
-func spanning(w layout.Widget) layout.Widget {
-	return func(gtx C) D {
-		dims := w(gtx)
-		dims.Size.X = max(dims.Size.X, gtx.Constraints.Min.X)
-		return dims
-	}
-}
-
 // skeletonHeading is titleRow: heading's title over the stats line, beside
 // the actions Open in Session, Merge and ⋯ as blocks of their size.
 func skeletonHeading(gtx C, th *ui.Theme) D {
@@ -91,7 +81,7 @@ func skeletonHeading(gtx C, th *ui.Theme) D {
 			)
 		})
 	}
-	return layout.Flex{}.Layout(gtx, layout.Flexed(1, spanning(heading)), layout.Rigid(actions))
+	return layout.Flex{}.Layout(gtx, layout.Flexed(1, ui.Spanning(heading)), layout.Rigid(actions))
 }
 
 // skeletonTabOrder is every tab a pull request can show, as tabsOf lists them.
@@ -132,7 +122,7 @@ func skeletonOverview(gtx C, th *ui.Theme) D {
 			moreB := th.Button(&more, "")
 			moreB.Icon, moreB.Size = icPullMore, ui.SizeIconXS
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-				layout.Flexed(1, spanning(th.SkeletonText(ui.TextXS, ui.Space(24)).Layout)),
+				layout.Flexed(1, ui.Spanning(th.SkeletonText(ui.TextXS, ui.Space(24)).Layout)),
 				layout.Rigid(th.SkeletonShape(moreB.Layout).Layout),
 			)
 		})

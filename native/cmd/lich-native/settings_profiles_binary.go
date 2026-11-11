@@ -50,7 +50,7 @@ func (s *settingsScreen) profileBinaryWarning(gtx C, c *profileSettings, values 
 			ui.Gap(2),
 			layout.Flexed(1, func(gtx C) D {
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-					layout.Rigid(func(gtx C) D { return wrapped(gtx, th.Text(rowNoteSize, text).In(th.ToneWait)) }),
+					layout.Rigid(func(gtx C) D { return th.Text(rowNoteSize, text).In(th.ToneWait).Wrapped().Layout(gtx) }),
 					ui.VGap(2),
 					layout.Rigid(func(gtx C) D { return layout.Flex{Alignment: layout.Middle}.Layout(gtx, buttons...) }),
 				)

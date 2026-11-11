@@ -36,7 +36,7 @@ func planDetails(th *ui.Theme, plan backend.QuotaPlan, now time.Time) layout.Wid
 	}
 	return func(gtx C) D {
 		gtx.Constraints.Min.X = min(gtx.Dp(planMinWide), gtx.Constraints.Max.X)
-		return stack(gtx, 2.5, rows)
+		return ui.Stack(2.5, rows...)(gtx)
 	}
 }
 
@@ -57,12 +57,12 @@ func quotaGaugeRow(th *ui.Theme, g quotaGauge) layout.Widget {
 		)
 	}
 	rows := []layout.Widget{head, func(gtx C) D { return th.GaugeBar(gtx, g.Percent, tone) }}
-	gauge := func(gtx C) D { return stack(gtx, 1, rows) }
+	gauge := func(gtx C) D { return ui.Stack(1, rows...)(gtx) }
 	if g.Locked == "" {
 		return gauge
 	}
 	reason := para(th.Text(ui.TextXS, g.Locked).In(th.Destructive)).Layout
-	return func(gtx C) D { return stack(gtx, 1, []layout.Widget{gauge, reason}) }
+	return func(gtx C) D { return ui.Stack(1, gauge, reason)(gtx) }
 }
 
 func gaugeLabel(gtx C, th *ui.Theme, g quotaGauge) D {

@@ -26,7 +26,7 @@ func (g *gallery) composedSection(gtx C, th *ui.Theme) D {
 	kids = append(kids, g.avatars(th)...)
 	kids = append(kids, g.headings(th)...)
 	kids = append(kids, g.skeletons(th)...)
-	return stack(4, kids...)(gtx)
+	return ui.Stack(4, kids...)(gtx)
 }
 
 func (g *gallery) emptyStates(th *ui.Theme) []layout.Widget {
@@ -64,7 +64,7 @@ func (g *gallery) avatars(th *ui.Theme) []layout.Widget {
 	tinted.Background, tinted.Foreground = color.NRGBA{R: 186, G: 58, B: 80, A: 255}, th.Foreground
 	return []layout.Widget{
 		caption(th, "Avatar: image at 16, 24 and 40; neutral initial; tinted initial"),
-		row(3,
+		ui.Row(3,
 			th.Avatar(g.sample, "L", 16).Layout,
 			th.Avatar(g.sample, "L", 24).Layout,
 			th.Avatar(g.sample, "L", 40).Layout,
@@ -83,7 +83,7 @@ func (g *gallery) headings(th *ui.Theme) []layout.Widget {
 	compact.Size, compact.Weight = headingCompact, font.SemiBold
 	return []layout.Widget{
 		caption(th, "SectionHeading: default, semibold with inset, compact"),
-		stack(1, th.SectionHeading("Description").Layout, semi.Layout, compact.Layout),
+		ui.Stack(1, th.SectionHeading("Description").Layout, semi.Layout, compact.Layout),
 	}
 }
 
@@ -97,8 +97,8 @@ func (g *gallery) skeletons(th *ui.Theme) []layout.Widget {
 	}
 	return []layout.Widget{
 		caption(th, "SkeletonBar and SkeletonText: bars of text-sm and text-xs lines"),
-		row(3, th.SkeletonBar(ui.Space(16), ui.Space(5), ui.Space(3.5)).Layout, th.SkeletonBar(ui.Space(10), ui.Space(4), ui.Space(3)).Layout),
-		row(3, th.SkeletonText(ui.TextSM, ui.Space(24)).Layout, th.SkeletonText(ui.TextXS, ui.Space(16)).Layout),
+		ui.Row(3, th.SkeletonBar(ui.Space(16), ui.Space(5), ui.Space(3.5)).Layout, th.SkeletonBar(ui.Space(10), ui.Space(4), ui.Space(3)).Layout),
+		ui.Row(3, th.SkeletonText(ui.TextSM, ui.Space(24)).Layout, th.SkeletonText(ui.TextXS, ui.Space(16)).Layout),
 		caption(th, "SkeletonShape: a button's measure"),
 		th.SkeletonShape(button.Layout).Layout,
 		caption(th, "SkeletonFill and SkeletonRow: rows down to the bottom"),

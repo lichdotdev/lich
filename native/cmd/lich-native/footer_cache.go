@@ -43,6 +43,6 @@ func cacheDetail(th *ui.Theme, head layout.Widget, c api.SessionCache, hit int) 
 	}
 	return func(gtx C) D {
 		gtx.Constraints.Min.X = min(gtx.Dp(planMinWide), gtx.Constraints.Max.X)
-		return stack(gtx, 1, []layout.Widget{head, line, bar})
+		return ui.Stack(1, head, line, bar)(gtx)
 	}
 }

@@ -348,7 +348,7 @@ func (v *pullView) inlinePending(gtx C, i int, c backend.ReviewComment) D {
 			func(gtx C) D {
 				on := th.On(th.Sidebar)
 				return layout.UniformInset(ui.Space(3)).Layout(gtx, func(gtx C) D {
-					body := func(gtx C) D { return wrapped(gtx, on.Text(ui.TextSM, c.Body)) }
+					body := func(gtx C) D { return on.Text(ui.TextSM, c.Body).Wrapped().Layout(gtx) }
 					if editing {
 						body = func(gtx C) D { return v.pendingEditBox(gtx, on) }
 					}

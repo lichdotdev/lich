@@ -40,7 +40,7 @@ func planBody(gtx C, th *ui.Theme, plan backend.QuotaPlan) D {
 	case "signed-out":
 		return planSignedOutLine(gtx, th, loginCommands[plan.Provider])
 	case "error":
-		return wrapped(gtx, th.Text(ui.TextXS, i18n.T("settings.planUsageSetting.readFailed")).Muted())
+		return th.Text(ui.TextXS, i18n.T("settings.planUsageSetting.readFailed")).Muted().Wrapped().Layout(gtx)
 	}
 	gtx.Constraints.Max.X = min(gtx.Constraints.Max.X, gtx.Sp(ui.TextXS)*proseCh*6/10)
 	children := []layout.FlexChild{layout.Rigid(func(gtx C) D { return planHead(gtx, th, plan.Plan) })}
@@ -106,7 +106,7 @@ func planGauge(gtx C, th *ui.Theme, g quotaGauge) D {
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(row),
 		ui.VGap(1),
-		layout.Rigid(func(gtx C) D { return wrapped(gtx, th.Text(ui.TextXS, g.Locked).In(th.Destructive)) }),
+		layout.Rigid(func(gtx C) D { return th.Text(ui.TextXS, g.Locked).In(th.Destructive).Wrapped().Layout(gtx) }),
 	)
 }
 

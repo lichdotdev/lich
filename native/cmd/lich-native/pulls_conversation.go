@@ -273,7 +273,7 @@ func threadHeader(gtx C, th *ui.Theme, t backend.PRReviewThread, open, waiting b
 		layout.Rigid(func(gtx C) D { return chevron.Layout(gtx, ui.Space(3.5), th.MutedForeground) }),
 		ui.Gap(1.5),
 		layout.Flexed(1, func(gtx C) D {
-			return truncated(gtx, th.Text(ui.TextXS, t.Path+" · "+anchor).Mono())
+			return th.Text(ui.TextXS, t.Path+" · "+anchor).Mono().Truncated().Layout(gtx)
 		}),
 	}
 	if t.IsOutdated {
@@ -369,7 +369,7 @@ func hunkLine(gtx C, th *ui.Theme, line string) D {
 	return layout.Background{}.Layout(gtx,
 		func(gtx C) D { return ui.Fill(gtx, tint, 0) },
 		func(gtx C) D {
-			return truncated(gtx, th.Text(ui.TextXS, strings.ReplaceAll(line, "\t", hunkTab)).Mono().In(fg))
+			return th.Text(ui.TextXS, strings.ReplaceAll(line, "\t", hunkTab)).Mono().In(fg).Truncated().Layout(gtx)
 		})
 }
 
@@ -549,7 +549,7 @@ func (v *pullView) pendingRow(gtx C, th *ui.Theme, i int, c backend.ReviewCommen
 	s := &v.talk
 	discard, edit := clickableAt(s.discards, i), clickableAt(s.edits, i)
 	editing := s.pendingEdit.open && s.pendingEdit.index == i
-	body := func(gtx C) D { return wrapped(gtx, th.Text(ui.TextSM, c.Body)) }
+	body := func(gtx C) D { return th.Text(ui.TextSM, c.Body).Wrapped().Layout(gtx) }
 	if editing {
 		body = func(gtx C) D { return v.pendingEditBox(gtx, th) }
 	}
