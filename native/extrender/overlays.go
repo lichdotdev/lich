@@ -146,7 +146,12 @@ type dialogState struct {
 // drawDialog lays the dialog over the box it is drawn in and takes no room
 // there: put it first in the surface's root box, where that box is the whole
 // surface and the dialog claims Escape ahead of what follows.
-func drawDialog(r *Renderer, gtx C, th *ui.Theme, n extension.Node, id string) D {
+func drawDialog(r *Renderer, _ C, th *ui.Theme, n extension.Node, id string) D {
+	r.dialogs = append(r.dialogs, func(gtx C) D { return layoutDialog(r, gtx, th, n, id) })
+	return D{}
+}
+
+func layoutDialog(r *Renderer, gtx C, th *ui.Theme, n extension.Node, id string) D {
 	p := props[extension.DialogProps](n)
 	s := stateOf[dialogState](r, id)
 	if s.open.take(p.Open) {

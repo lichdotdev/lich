@@ -103,3 +103,12 @@ func TestADropdownPanelOpensItsChildren(t *testing.T) {
 		t.Error("the open panel did not draw its row")
 	}
 }
+
+func TestADialogDeepInTheTreeCoversTheWholeSurface(t *testing.T) {
+	dialog := extension.Dialog.New(extension.DialogProps{Open: true, Title: "Delete?", OnClose: "close"})
+	small := extension.Box.New(extension.BoxProps{Width: 40, Height: 40}, dialog)
+	g := newRig(t, column(small))
+	g.wait(time.Second)
+	g.click(pointer.ButtonPrimary, float32(rigWindow.X-10), float32(rigWindow.Y-10))
+	g.once("close")
+}

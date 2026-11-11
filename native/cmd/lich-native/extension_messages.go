@@ -3,11 +3,11 @@ package main
 import (
 	"context"
 	"image/color"
-	"strings"
 	"sync"
 	"time"
 
 	"github.com/lichdotdev/lich/extension"
+	"github.com/lichdotdev/lich/native/extrender"
 	"github.com/lichdotdev/lich/native/ui"
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
@@ -87,7 +87,7 @@ func extensionToast(id string, t extension.ToastData, send func(string, extensio
 	}
 	if t.IconColor != "" {
 		name := t.IconColor
-		out.IconColor = func(th *ui.Theme) color.NRGBA { return themeColor(th, name) }
+		out.IconColor = func(th *ui.Theme) color.NRGBA { return extrender.Color(th, name, th.Foreground) }
 	}
 	for _, l := range t.Lines {
 		out.Lines = append(out.Lines, ui.ToastLine{Icon: lookupIcon(l.Icon), Text: l.Text})
@@ -127,34 +127,6 @@ func lookupIcon(name extension.Icon) *icons.Icon {
 	}
 	ic, _ := icons.LookupLucide(string(name))
 	return ic
-}
-
-// themeColor is a token's color in th or a hex value, the foreground for
-// anything else; the names are the ones a tree's colors take (extrender).
-func themeColor(th *ui.Theme, name string) color.NRGBA {
-	tokens := map[string]color.NRGBA{
-		"background": th.Background, "foreground": th.Foreground, "canvas": th.Canvas,
-		"card": th.Card, "card-foreground": th.CardForeground,
-		"popover": th.Popover, "popover-foreground": th.PopoverForeground,
-		"primary": th.Primary, "primary-foreground": th.PrimaryForeground,
-		"secondary": th.Secondary, "secondary-foreground": th.SecondaryForeground,
-		"muted": th.Muted, "muted-foreground": th.MutedForeground,
-		"accent": th.Accent, "accent-foreground": th.AccentForeground,
-		"destructive": th.Destructive, "tone-pass": th.TonePass, "tone-wait": th.ToneWait,
-		"border": th.Border, "input": th.Palette.Input, "ring": th.Palette.Ring,
-		"sidebar": th.Sidebar, "sidebar-foreground": th.SidebarForeground,
-		"sidebar-accent": th.SidebarAccent, "sidebar-accent-foreground": th.SidebarAccentForeground,
-		"sidebar-border": th.SidebarBorder,
-	}
-	if c, ok := tokens[name]; ok {
-		return c
-	}
-	if strings.HasPrefix(name, "#") {
-		if c, err := ui.ParseColor(name); err == nil {
-			return c
-		}
-	}
-	return th.Foreground
 }
 
 // extensionMessage carries out what an extension asked the window for.

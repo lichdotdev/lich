@@ -11,7 +11,10 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/op/paint"
+	"gioui.org/unit"
 	"gioui.org/widget"
+
+	"github.com/lichdotdev/godemirror"
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/extension"
@@ -60,6 +63,8 @@ type extensionScreen struct {
 	open  bool
 	shown extensionKey
 	trees map[extensionKey]*extrender.Renderer
+	// code is the palette and font the window's own code views draw with.
+	code extrender.Code
 
 	restart, folder widget.Clickable
 	// clip is text an extension asked to copy, from the events goroutine,
@@ -75,6 +80,24 @@ type extensionAction struct {
 
 func newExtensionScreen(store *extensionStore, root *ui.Root, send func(string, extension.Message)) *extensionScreen {
 	return &extensionScreen{store: store, root: root, send: send, trees: map[extensionKey]*extrender.Renderer{}}
+}
+
+// setCodeTheme and setCodeFont follow the window's code palette and editor
+// font, so an extension's code and diff views read like the window's.
+func (s *extensionScreen) setCodeTheme(t godemirror.Theme) {
+	s.code.Theme = t
+	s.applyCode()
+}
+
+func (s *extensionScreen) setCodeFont(family string, size unit.Sp) {
+	s.code.Family, s.code.Size = family, size
+	s.applyCode()
+}
+
+func (s *extensionScreen) applyCode() {
+	for _, r := range s.trees {
+		r.SetCode(s.code)
+	}
 }
 
 // show puts surface k on screen, telling the extension it left the one it
@@ -114,6 +137,7 @@ func (s *extensionScreen) renderer(k extensionKey) *extrender.Renderer {
 	r, ok := s.trees[k]
 	if !ok {
 		r = extrender.New(s.root, func(e extension.EventData) { s.send(k.ext, extension.FireEvent.New(e)) })
+		r.SetCode(s.code)
 		s.trees[k] = r
 	}
 	return r

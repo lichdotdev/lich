@@ -41,6 +41,10 @@ type Renderer struct {
 	state map[string]any
 	seen  map[string]bool
 	code  Code
+	// dialogs are the dialogs the tree opened this frame, drawn after it over
+	// the whole surface: a dialog covers what it is drawn in, and a node does
+	// not know where in the surface it sits.
+	dialogs []layout.Widget
 }
 
 // New returns a renderer that hands every event to send. root is the window's
@@ -52,7 +56,11 @@ func New(root *ui.Root, send func(extension.EventData)) *Renderer {
 // Layout draws tree filling gtx.
 func (r *Renderer) Layout(gtx C, th *ui.Theme, tree extension.Node) D {
 	clear(r.seen)
+	r.dialogs = r.dialogs[:0]
 	d := r.node(gtx, th, tree, "")
+	for i := 0; i < len(r.dialogs); i++ {
+		r.dialogs[i](gtx)
+	}
 	for id := range r.state {
 		if !r.seen[id] {
 			delete(r.state, id)

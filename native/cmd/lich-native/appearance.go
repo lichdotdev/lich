@@ -134,6 +134,7 @@ func (a *appearance) load() error {
 // draws with, and the terminals' default colors.
 func (u *window) paintTheme(e themeEntry) {
 	u.light, u.code = e.light(), e.code
+	u.extension.setCodeTheme(e.code)
 	p := e.palette
 	u.theme.Palette, u.theme.Surface = p, p.Canvas
 	u.th.Fg, u.th.Bg = p.Foreground, p.Background

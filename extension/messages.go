@@ -40,7 +40,9 @@ type ClipboardData struct {
 	Text string `json:"text"`
 }
 
-// SurfaceData names a surface the person opened or left.
+// SurfaceData names a surface the person opened or left. Answer
+// surface.opened with a render: lich keeps only what reaches an open window,
+// so a render sent before the surface opened may never be drawn.
 type SurfaceData struct {
 	Surface string `json:"surface"`
 }

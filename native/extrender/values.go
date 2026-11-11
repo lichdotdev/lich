@@ -15,6 +15,12 @@ import (
 // color is a token's color in th, or a hex value; anything else is the
 // foreground, so a typo stays readable.
 func (r *Renderer) color(th *ui.Theme, s string, fallback color.NRGBA) color.NRGBA {
+	return Color(th, s, fallback)
+}
+
+// Color is the color an extension names: a theme token, or a hex value; any
+// other name is the foreground, so a typo stays readable.
+func Color(th *ui.Theme, s string, fallback color.NRGBA) color.NRGBA {
 	if s == "" {
 		return fallback
 	}
