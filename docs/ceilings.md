@@ -1133,8 +1133,9 @@ work when nobody knows it and that the call site never shows. The mechanism and 
 
 - **An extension runs unsandboxed, as the user, and placing its directory is the only consent** (`internal/extensions`):
   every directory under `<config dir>/lich/extensions` (`extensions-dev` under `LICH_DEV`) with a valid manifest is
-  started when the backend boots. There is no prompt, no signature and no permission list in this version, and
-  the sandbox of `internal/sandbox` does not apply, so an extension can read and do whatever the user can. The
+  started when the backend boots. There is no prompt and no signature, the manifest's permissions bound only what
+  it asks lich for (below), and the sandbox of `internal/sandbox` does not apply, so an extension can read and do
+  whatever the user can. The
   directory is read once per launch: an extension added or edited by hand takes a restart of lich, while one
   installed or removed through `extensions.InstallFromGit`, `extensions.InstallFromDir` and `extensions.Remove` is started or stopped at once.
 - **Installing runs code from the internet as the user, vouched for only by its own release**
@@ -1172,6 +1173,28 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   is the backend's best guess: with no language chosen it reads the environment's locale, which macOS and
   Windows leave out, so there an extension starts in English until a window attaches and sends `language`. A
   plural `manifest.name` or title is ignored.
+- **An extension with `sessions:write` drives the person's sessions, and the install is the only consent**
+  (`internal/extensions/calls.go`): it can open a session in any open project or directory path, on any provider,
+  in a new or existing worktree, and type any prompt into any live session, as `open_session` and
+  `send_to_session` do for an agent. lich asks nothing past the install, and the window does not yet show an
+  extension's permissions before it starts. The permissions bound only the calls: the process itself is
+  unsandboxed. Every provider is reached exactly as those MCP tools reach it, with their gaps (the Provider support
+  table: a session whose provider reports no state lists an empty state and sends no `session.status`).
+- **What an extension opens or sends is recorded as coming from no session** (`internal/extensions/methods.go`):
+  lich records who asked only as the origin session of a new session, and an extension is none, so a session it
+  opens has no origin on its card, and the prompt it sends arrives introduced as relayed by the lich command line,
+  as `lich send` outside a session does. Nothing records which extension did it.
+- **An extension cannot collect a send that outlived its wait** (`internal/extensions/methods.go`): `sessions.send`
+  holds at most 90 seconds, and a session still working then is `pending` with a ticket no method of this API
+  redeems; the answer goes to no inbox, since the call came from no session. Watching `session.status` for the
+  target turning `done` is the way to know it finished.
+- **Calls are bounded per extension, not across them** (`internal/extensions/calls.go`): 8 running at once, the
+  ninth refused, each cut at 2 minutes, which is also where a `sessions.open` slower than that ends while the
+  session it was opening may still appear. A result or event the extension does not read in time, past the 64
+  lines its stdin queue holds, is dropped and logged.
+- **Extension text is the extension's own** (`internal/extensions`): the name, surface titles, toasts and every
+  string in its tree stay in whatever language it wrote them and never go through lich's catalogs. An extension
+  learns no locale from lich.
 - **A message sent while no window is attached is dropped** (`internal/events`): an extension's lines ride
   `/events` like every event, with no queue and no replay, and the extension is not told. A window that attaches
   later sees nothing until the extension renders again. One slow window stalls that extension's stdout rather than

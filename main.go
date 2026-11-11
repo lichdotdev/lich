@@ -569,6 +569,11 @@ func registerServices(db *store.Service, term *terminal.Service, svcs *services.
 	// its turn ended, the way a native subagent ends with its result.
 	rl.SetWorkerFinished(spawner.CloseFinishedWorker)
 	routes.Spawn(dispatcher, spawner)
+	// An extension's calls reach what lich's MCP tools reach.
+	exts.SetLich(extensions.Lich{
+		Projects: db.LoadState, Peers: rl.Peers, Worktrees: spawner.Worktrees, Open: spawner.Open, Send: rl.Send,
+	})
+	hub.Observe(exts.Observe)
 	routes.Themes(dispatcher, themes.New(version, db, hub.Emit))
 	// The tray is what a lich with its window closed shows of itself; it comes
 	// up once the window hands it its words (tray.SetLabels).

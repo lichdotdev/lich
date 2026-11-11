@@ -16,6 +16,17 @@ func TestEmitDropsWithoutClient(t *testing.T) {
 	hub.Emit("session-touched", nil) // must not panic
 }
 
+func TestObserversSeeEveryEventWithOrWithoutAClient(t *testing.T) {
+	hub := New()
+	var seen []string
+	hub.Observe(func(name string, data any) { seen = append(seen, name+"="+data.(string)) })
+	hub.Emit("session-status", "busy")
+	hub.Emit("session-title", "x")
+	if got := strings.Join(seen, ","); got != "session-status=busy,session-title=x" {
+		t.Errorf("observed %q", got)
+	}
+}
+
 func TestEmitDeliversToConnectedClient(t *testing.T) {
 	hub := New()
 	server := httptest.NewServer(hub)

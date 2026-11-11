@@ -31,7 +31,8 @@ type Hub struct {
 	mu   sync.Mutex
 	conn *websocket.Conn
 	// gone is closed once conn leaves: dropped, or replaced by another client.
-	gone chan struct{}
+	gone      chan struct{}
+	observers []func(name string, data any)
 }
 
 func New() *Hub {
@@ -40,11 +41,22 @@ func New() *Hub {
 	return &Hub{gone: gone}
 }
 
+// Observe hands fn every event emitted from now on, a client connected or
+// not. fn runs on the emitter's goroutine and must not block.
+func (h *Hub) Observe(fn func(name string, data any)) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.observers = append(h.observers, fn)
+}
+
 // Emit pushes one event to the connected client; without one it is dropped.
 func (h *Hub) Emit(name string, data any) {
 	h.mu.Lock()
-	conn := h.conn
+	conn, observers := h.conn, h.observers
 	h.mu.Unlock()
+	for _, observe := range observers {
+		observe(name, data)
+	}
 	if conn == nil {
 		return
 	}

@@ -81,6 +81,9 @@ type Extension struct {
 	Source   string                   `json:"source,omitempty"`
 	Release  string                   `json:"release,omitempty"`
 	Text     map[string]ExtensionText `json:"text,omitempty"`
+	// Permissions is what the manifest lists, the extension.Permission names
+	// its calls and subscriptions may use.
+	Permissions []string `json:"permissions"`
 }
 
 // ExtensionSendOptions writes Message, one line of the extension contract, to

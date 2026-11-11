@@ -58,6 +58,7 @@ type timing struct {
 	stableRun    time.Duration
 	stopGrace    time.Duration
 	killWait     time.Duration
+	callTimeout  time.Duration
 }
 
 // Service is every installed extension and its process.
@@ -70,6 +71,8 @@ type Service struct {
 	language func() string
 	emit     func(name string, data any)
 	timing   timing
+	lich     Lich
+	calls    map[string]route
 
 	// The installer's GitHub reads, fields so tests can serve releases locally.
 	metadata   *http.Client
@@ -105,11 +108,15 @@ type installed struct {
 	renders  renderGate
 	// restartMu serialises Restart calls on this extension.
 	restartMu sync.Mutex
+	// inFlight holds a token for each call running, up to maxCallsInFlight.
+	inFlight chan struct{}
 
 	// mu: Service.mu
 	status  string
 	errText string
 	queue   chan []byte
+	// subscribed is the events the running process asked for, by name.
+	subscribed map[string]bool
 	// stop and done belong to the current supervise goroutine; done closes
 	// when it has returned.
 	stop context.CancelFunc
@@ -121,12 +128,17 @@ type installed struct {
 // dataDir.
 func New(dir, dataDir, lichVersion string, env []string, emit func(name string, data any)) *Service {
 	ctx, cancel := context.WithCancel(context.Background())
-	return &Service{
+	s := &Service{
 		dir: dir, dataDir: dataDir, lichVersion: lichVersion, env: env, emit: emit, ctx: ctx, cancel: cancel,
-		timing:   timing{firstBackoff: firstBackoff, maxBackoff: maxBackoff, stableRun: stableRun, stopGrace: stopGrace, killWait: killWait},
+		timing: timing{
+			firstBackoff: firstBackoff, maxBackoff: maxBackoff, stableRun: stableRun, stopGrace: stopGrace,
+			killWait: killWait, callTimeout: callTimeout,
+		},
 		metadata: &http.Client{Timeout: metadataTimeout}, download: &http.Client{Timeout: downloadTimeout},
 		releaseAPI: releaseAPI, goos: runtime.GOOS, goarch: runtime.GOARCH,
 	}
+	s.calls = s.routes()
+	return s
 }
 
 // SetLanguage names where the interface language an extension starts with
@@ -276,10 +288,14 @@ func (x *installed) view() api.Extension {
 	for _, surface := range x.manifest.Surfaces {
 		surfaces = append(surfaces, api.ExtensionSurface{ID: surface.ID, Title: surface.Title, Icon: string(surface.Icon)})
 	}
+	permissions := make([]string, 0, len(x.manifest.Permissions))
+	for _, p := range x.manifest.Permissions {
+		permissions = append(permissions, string(p))
+	}
 	return api.Extension{
 		ID: x.id, Name: cmp.Or(x.manifest.Name, x.id), Version: x.manifest.Version,
 		Status: x.status, Error: x.errText, Dir: x.root, Surfaces: surfaces,
-		Source: x.source.URL, Release: x.source.Release, Text: x.text,
+		Source: x.source.URL, Release: x.source.Release, Text: x.text, Permissions: permissions,
 	}
 }
 

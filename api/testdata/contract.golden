@@ -640,6 +640,7 @@ Extension {
 	source,omitempty string
 	release,omitempty string
 	text,omitempty map[string]ExtensionText
+	permissions []string
 }
 
 ExtensionGitInstallOptions {
