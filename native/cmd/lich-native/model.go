@@ -140,6 +140,8 @@ type model struct {
 	browsers      browserStore
 	browserOpened func(api.BrowserState)
 	browserIdle   func(api.BrowserState)
+	// showCode hears an agent point at lines of its checkout.
+	showCode func(api.ShowCode)
 	// browserDownloaded hears a file a session's page finished downloading.
 	browserDownloaded func(api.BrowserDownload)
 }
@@ -449,6 +451,10 @@ func (m *model) follow(ctx context.Context, events <-chan backend.Event) {
 		case api.BrowserAgentEvent.Name:
 			if a, err := backend.Decode(ev, api.BrowserAgentEvent); err == nil {
 				m.applyBrowserAgent(a, time.Now())
+			}
+		case api.ShowCodeEvent.Name:
+			if s, err := backend.Decode(ev, api.ShowCodeEvent); err == nil && m.showCode != nil {
+				m.showCode(s)
 			}
 		case api.BrowserDownloadEvent.Name:
 			if d, err := backend.Decode(ev, api.BrowserDownloadEvent); err == nil && m.browserDownloaded != nil {

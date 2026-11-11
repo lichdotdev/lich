@@ -51,5 +51,14 @@
     "attachToPrompt": "Anexar ao prompt",
     "copyPath": "Copiar caminho",
     "showInFileManager": "Mostrar no gerenciador de arquivos"
+  },
+  "showCode": {
+    "pointed": "{session} apontou para {file}",
+    "show": "Mostrar",
+    "notFound": "{file} não existe neste checkout",
+    "matches": {
+      "one": "{count} arquivo corresponde",
+      "other": "{count} arquivos correspondem"
+    }
   }
 }

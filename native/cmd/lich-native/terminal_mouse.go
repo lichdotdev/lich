@@ -59,6 +59,13 @@ func (t *termView) pointer(e pointer.Event) (send []byte, copied string) {
 	return nil, ""
 }
 
+// takeLinkCode is the code the last linkClick pressed on, once.
+func (t *termView) takeLinkCode() *gioterm.CodeRef {
+	code := t.linkCode
+	t.linkCode = nil
+	return code
+}
+
 // linkClick is the link a Ctrl+click (Cmd+click on macOS) opens,
 // whether the program tracks the
 // mouse or not. took is e kept from the program and the selection: the press
@@ -70,7 +77,7 @@ func (t *termView) linkClick(e pointer.Event) (url string, took bool) {
 			return "", false
 		}
 		l, ok := t.vt.LinkAt(e.Position.X, e.Position.Y)
-		t.linkHeld = ok
+		t.linkHeld, t.linkCode = ok, l.Code
 		return l.URL, ok
 	case pointer.Release:
 		if t.linkHeld {

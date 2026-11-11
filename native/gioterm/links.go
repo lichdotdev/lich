@@ -40,6 +40,7 @@ import "C"
 import (
 	"image"
 	"regexp"
+	"strconv"
 	"strings"
 	"unicode/utf8"
 	"unsafe"
@@ -54,15 +55,25 @@ const linkURIMax = 2048
 const linkGraphemeMax = 8
 
 // Link is a link on the grid: where it goes and the viewport cells it covers,
-// From to To inclusive, which may run over soft-wrapped rows.
+// From to To inclusive, which may run over soft-wrapped rows. URL is empty on a
+// link to code, which Code names instead.
 type Link struct {
 	URL      string
+	Code     *CodeRef
 	From, To image.Point
 }
 
+// CodeRef is a file and line as a program printed them. Package is the
+// directory a stack frame's package names, "" when the line holds none.
+type CodeRef struct {
+	Path    string
+	Line    int
+	Package string
+}
+
 // LinkAt is the link under pixel (x, y): the cell's OSC 8 hyperlink, else a
-// URL printed in the line there, soft-wrapped rows joined; ok false when
-// there is none.
+// URL or a path:line printed in the line there, soft-wrapped rows joined; ok
+// false when there is none.
 func (v *Terminal) LinkAt(x, y float32) (l Link, ok bool) {
 	v.mu.Lock()
 	defer v.mu.Unlock()
@@ -105,12 +116,20 @@ func (v *Terminal) LinkAt(x, y float32) (l Link, ok bool) {
 			}
 		}
 	}
-	start, end, ok := urlAround(line, at)
-	if !ok {
-		return Link{}, false
-	}
+	return v.printedLink(line, cellOf, at, first)
+}
+
+// printedLink is the URL or path:line in line covering index at, placed back
+// on the grid through cellOf; first is the row line starts on.
+func (v *Terminal) printedLink(line []rune, cellOf []int, at, first int) (Link, bool) {
 	cell := func(i int) image.Point { return image.Pt(i%v.cols, first+i/v.cols) }
-	return Link{URL: string(line[start:end]), From: cell(cellOf[start]), To: cell(cellOf[end-1])}, true
+	if start, end, ok := urlAround(line, at); ok {
+		return Link{URL: string(line[start:end]), From: cell(cellOf[start]), To: cell(cellOf[end-1])}, true
+	}
+	if start, end, ref, ok := codeRefAround(line, at); ok {
+		return Link{Code: &ref, From: cell(cellOf[start]), To: cell(cellOf[end-1])}, true
+	}
+	return Link{}, false
 }
 
 func (v *Terminal) hyperlink(col, row int) string {
@@ -167,6 +186,49 @@ func urlAround(line []rune, at int) (start, end int, ok bool) {
 		}
 	}
 	return 0, 0, false
+}
+
+// codeRefPattern is a path:line, with an optional :column. The name has to end
+// in an extension starting with a letter or follow a slash, which keeps
+// localhost:3000, 12:30 and 127.0.0.1:80 out.
+var codeRefPattern = regexp.MustCompile(`(?:[A-Za-z]:)?[\p{L}\p{N}_.@+~/\\-]*(?:\.\p{L}[\p{L}\p{N}]*|[/\\][\p{L}\p{N}_.@+~-]+):(\d+)(?::\d+)?`)
+
+// stackFrame is the method a Java or Kotlin frame names just before its
+// (File.java:12).
+var stackFrame = regexp.MustCompile(`\bat\s+([\p{L}\p{N}_$.]+)\($`)
+
+// codeRefAround is the rune span [start, end) of the path:line in line
+// covering index at, and what it names; ok false when none does.
+func codeRefAround(line []rune, at int) (start, end int, ref CodeRef, ok bool) {
+	text := string(line)
+	offset := len(string(line[:at]))
+	for _, m := range codeRefPattern.FindAllStringSubmatchIndex(text, -1) {
+		if offset < m[0] || offset >= m[1] {
+			continue
+		}
+		n, err := strconv.Atoi(text[m[2]:m[3]])
+		if err != nil || n == 0 {
+			return 0, 0, CodeRef{}, false
+		}
+		ref = CodeRef{Path: text[m[0] : m[2]-1], Line: n, Package: framePackage(text[:m[0]])}
+		start = utf8.RuneCountInString(text[:m[0]])
+		return start, start + utf8.RuneCountInString(text[m[0]:m[1]]), ref, true
+	}
+	return 0, 0, CodeRef{}, false
+}
+
+// framePackage is the directory of the frame ending before: com.acme.Foo.run
+// is class Foo's method in com/acme.
+func framePackage(before string) string {
+	m := stackFrame.FindStringSubmatch(before)
+	if m == nil {
+		return ""
+	}
+	parts := strings.Split(m[1], ".")
+	if len(parts) < 3 {
+		return ""
+	}
+	return strings.Join(parts[:len(parts)-2], "/")
 }
 
 // trimURL drops trailing punctuation and closing brackets the URL never

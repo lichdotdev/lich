@@ -52,6 +52,8 @@ type termView struct {
 	held gioterm.MouseButton
 	// linkHeld is a press that opened a link, whose release is kept too.
 	linkHeld bool
+	// linkCode is the path:line that press was on, nil on a URL.
+	linkCode *gioterm.CodeRef
 	// wheelPending is the rows the wheel scrolled that the coming frames
 	// still owe, negative is up; wheelAt is the wheel event they came from,
 	// where a tracking program is told they happened.
@@ -125,6 +127,9 @@ type terminals struct {
 	// sidebar morph lands, or the frame one landed in, so the grid follows it
 	// at once rather than after refitSettle more of a clipped grid.
 	refitNow bool
+
+	// followCode opens a path:line a person clicked in session id's terminal.
+	followCode func(id string, ref gioterm.CodeRef)
 
 	mu   sync.Mutex
 	byID map[string]*termView
@@ -649,6 +654,9 @@ func (ts *terminals) input(gtx layout.Context, t *termView, focus bool) {
 			if url, took := t.linkClick(e); took {
 				if url != "" {
 					ts.openLink(url)
+				}
+				if code := t.takeLinkCode(); code != nil && ts.followCode != nil {
+					ts.followCode(t.id, *code)
 				}
 				break
 			}

@@ -7,6 +7,7 @@ package main
 import (
 	"context"
 	"image"
+	"strconv"
 	"strings"
 
 	"gioui.org/layout"
@@ -34,6 +35,11 @@ type preview struct {
 
 	rel  string // "" while closed
 	line int    // the line to land on, 1-based; 0 for the top
+	// endLine is the last line to select, 0 for line alone.
+	endLine int
+	opens   int
+	// note is what the agent said about those lines, under the last one.
+	note agentNote
 	// shown is the read on the view, its key; content is what was set there.
 	shown   string
 	content godemirror.Content
@@ -71,9 +77,22 @@ func newPreview(client *backend.Client, view *godemirror.View, family string, si
 func (p *preview) isOpen() bool { return p.rel != "" }
 
 func (p *preview) openAt(rel string, line int) {
-	p.rel, p.line, p.shown = rel, line, ""
+	p.rel, p.line, p.endLine, p.shown, p.note = rel, line, 0, "", agentNote{}
+	p.opens++
 	p.md.rendering = false
 	p.composer.close()
+}
+
+// openLines shows rel with lines line to end selected.
+func (p *preview) openLines(rel string, line, end int) {
+	p.openAt(rel, line)
+	p.endLine = end
+}
+
+// fileKey changes with every open, so opening a file again reads what is on
+// disk now and not what the last open read.
+func (p *preview) fileKey(checkout string) string {
+	return checkout + "\x00" + p.rel + "\x00" + strconv.Itoa(p.opens)
 }
 
 func (p *preview) close() {
@@ -89,7 +108,7 @@ func (p *preview) layout(gtx C, th *ui.Theme, root *ui.Root, env previewEnv) (D,
 		p.close()
 		return D{Size: gtx.Constraints.Max}, nil
 	}
-	key, path, rel := env.checkout+"\x00"+p.rel, env.checkout, p.rel
+	key, path, rel := p.fileKey(env.checkout), env.checkout, p.rel
 	kind := previewKindOf(rel)
 	p.exits.update(gtx, p.client, env.notify, path, rel)
 	switch kind {
@@ -242,10 +261,10 @@ func (p *preview) show(key, text string) {
 		return
 	}
 	p.shown, p.blockAt = key, -1
-	p.content = godemirror.Content{Filename: p.rel, Text: text, StyleTags: codeStyleTags}
+	p.content = godemirror.Content{Filename: p.rel, Text: text, StyleTags: codeStyleTags, Blocks: p.blocksWith(-1)}
 	p.view.SetContent(p.content)
 	if p.line > 0 {
-		p.view.SelectLines(p.line-1, p.line-1)
+		p.view.SelectLines(p.line-1, max(p.line, p.endLine)-1)
 		p.view.ScrollToLine(p.line-1, godemirror.AlignCenter)
 	}
 }
@@ -269,7 +288,7 @@ func (p *preview) syncComposer() {
 		return
 	}
 	c := p.content
-	c.Blocks = []godemirror.BlockWidget{{After: at, Widget: p.composerBlock}}
+	c.Blocks = p.blocksWith(at)
 	p.view.SetContent(c)
 	p.view.ScrollToLine(at, godemirror.AlignCenter)
 }

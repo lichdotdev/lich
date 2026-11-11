@@ -52,6 +52,9 @@ type Service struct {
 	// baseRefs remembers the remote base refs just fetched, so a worktree
 	// created right after BaseFreshness does not fetch the same ref again.
 	baseRefs refetchGuard
+	// sessionCheckout is the directory a live session runs in (showcode.go);
+	// nil knows none.
+	sessionCheckout func(id string) string
 	// emit reports a pull request write (prchanged.go); nil reports nothing.
 	emit func(name string, data any)
 	// fixes keeps the review threads waiting for a push (threadfix.go); nil

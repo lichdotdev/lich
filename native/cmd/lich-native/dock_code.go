@@ -244,6 +244,16 @@ func (c *codeTab) open(rel string, line int) {
 	c.preview.openAt(rel, line)
 }
 
+// showLines opens rel of checkout on lines line to end. It follows the checkout
+// first: the session asked for may be the one the dock is about to come to,
+// and following it later would close the file.
+func (c *codeTab) showLines(checkout, rel string, line, end int, note agentNote) {
+	c.follow(checkout)
+	c.selected = rel
+	c.preview.openLines(rel, line, end)
+	c.preview.note = note
+}
+
 // requestSearch is FilesPanel's file-search request: the text search, over a
 // closed preview, with its field focused and selected.
 func (c *codeTab) requestSearch() {

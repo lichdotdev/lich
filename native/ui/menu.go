@@ -111,6 +111,13 @@ func (s *MenuState) OpenAt(origin image.Point, path ...int) {
 	}
 }
 
+// OpenAtPointer opens a menu whose Layout sits at the window's origin where the
+// pointer is, for a menu asked for by something other than its trigger.
+func (s *MenuState) OpenAtPointer(root *Root) {
+	at := root.pointer.Round()
+	s.menuOpen(image.Rectangle{Min: at, Max: at}, image.Point{})
+}
+
 func (s *MenuState) menuOpen(anchor image.Rectangle, origin image.Point) {
 	s.open, s.focus, s.anchor, s.origin = true, true, anchor, origin
 	s.levels = []*menuLevel{{highlight: -1}}

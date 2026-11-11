@@ -274,6 +274,7 @@ func TestMCPListsEveryTool(t *testing.T) {
 		"browser_close":       {},
 		"browser_tabs":        {},
 		"browser_tab":         {"action"},
+		"show_code":           {"path"},
 	}
 	// The read-only ones, which a client may auto-allow. wait_for_answer is
 	// not among them: collecting drains the inbox.
