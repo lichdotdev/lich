@@ -50,7 +50,7 @@ var (
 	flagSize     = flag.Float64("size", 13, "terminal font size in sp")
 	flagShot     = flag.String("shot", "", "write a PNG of the frame drawn -shot-after into the run")
 	flagAfter    = flag.Duration("shot-after", 3*time.Second, "when to take -shot")
-	flagTab      = flag.String("tab", "terminal", "what opens at start beside the terminal: terminal (nothing), or the dock on code, review or artifacts")
+	flagTab      = flag.String("tab", "terminal", "what opens at start beside the terminal: terminal (nothing), the dock on code, review or artifacts, or git for the Git panel")
 	flagWindow   = flag.String("window", "1400x900", "the window's size in dp, WxH, for -shot")
 	flagDropHint = flag.Bool("drop-hint", false, "draw the file-drop hint over the terminal as if a drag were over it, for -shot")
 )
@@ -111,6 +111,7 @@ type window struct {
 	comments    commentStore
 	commentEdit commentEditDialog
 	dock        *dock
+	git         *gitPanel
 	sidebar     *sidebar
 	// console is what a service's console keeps between frames.
 	console serviceConsole
@@ -337,6 +338,10 @@ func run(w *app.Window, rt backend.Runtime) error {
 	u.settings.theme = newThemePicker(ctx, client, u.appearance, &u.toaster, &u.root)
 	u.dock.tab = map[string]dockTab{"code": dockCode, "review": dockReview, "artifacts": dockArtifacts}[*flagTab]
 	u.footer.dock = u.dock
+	u.git = newGitPanel(u.ctx, client, &u.root, invalidate, notify, *flagFont, unit.Sp(*flagSize))
+	u.git.openSession = u.focusSession
+	u.footer.git = u.git
+	u.git.open = *flagTab == "git"
 	u.footer.openPullRequest = u.openPR
 	u.footer.writePaste = u.terms.writePaste
 	u.footer.showDelegates = func(id string) { u.layoutStage.delegates = id }
@@ -463,6 +468,12 @@ func (u *window) connect() error {
 	if err := u.loadSidebar(); err != nil {
 		return err
 	}
+	if u.git.heightRem, err = loadGitHeight(u.ctx, u.client); err != nil {
+		return err
+	}
+	if err = u.git.loadColumns(u.ctx, u.client); err != nil {
+		return err
+	}
 	if u.dock.widthRem, err = loadDockWidth(u.ctx, u.client); err != nil {
 		return err
 	}
@@ -578,6 +589,7 @@ func (u *window) layout(gtx C) error {
 		u.layoutMergeDialog(gtx, u.theme)
 		u.layoutDeleteCommentDialog(gtx, u.theme)
 		u.review.layoutDialogs(gtx, u.theme)
+		u.git.layoutDialogs(gtx, u.theme)
 		u.commentEdit.layout(gtx, u.theme, &u.comments)
 		u.settings.theme.layoutDialogs(gtx, u.theme)
 		u.settings.layoutFontReplication(gtx, u.theme)
@@ -687,6 +699,7 @@ func (u *window) body(gtx C, v stageView) (int, sidebarAction, error) {
 		return d
 	}).Size.X
 	var err error
+	u.git.act(gtx)
 	u.islandAt = image.Pt(edge, bar)
 	u.stage(gtx, edge, func(gtx C) D {
 		return layout.Inset{Right: gutter}.Layout(gtx, func(gtx C) D {
@@ -695,6 +708,11 @@ func (u *window) body(gtx C, v stageView) (int, sidebarAction, error) {
 					if u.settings.open {
 						u.pulls.hide()
 						u.settings.layout(gtx, u.theme, settingsProjectsOf(v.tabs))
+						return D{Size: gtx.Constraints.Max}
+					}
+					if u.git.covers {
+						u.dock.islands = []islandSpan{{x1: gtx.Constraints.Max.X, color: u.theme.Sidebar}}
+						u.layoutGit(gtx, v)
 						return D{Size: gtx.Constraints.Max}
 					}
 					if u.pulls.open && !v.home {
@@ -709,6 +727,7 @@ func (u *window) body(gtx C, v stageView) (int, sidebarAction, error) {
 					err = u.stageRow(gtx, v)
 					return D{Size: gtx.Constraints.Max}
 				}),
+				layout.Rigid(func(gtx C) D { return u.gitPanelRow(gtx, v) }),
 				layout.Rigid(func(gtx C) D { return u.footer.layoutBar(gtx, u.theme, v.in) }),
 			)
 		})
@@ -720,8 +739,9 @@ func (u *window) body(gtx C, v stageView) (int, sidebarAction, error) {
 // the terminal, in the color the active tab merges with. Its top-left corner
 // is square while that tab sits on it. A lone session's terminal is laid out
 // termWidth wide, which a dock slide or a sidebar morph sets to where the box
-// is going: wider, the box clips it; narrower, its fill shows past it.
-func (u *window) island(gtx C, v stageView, termWidth int) error {
+// is going: wider, the box clips it; narrower, its fill shows past it. The Git
+// panel's slide sets termHeight the same way.
+func (u *window) island(gtx C, v stageView, termWidth, termHeight int) error {
 	size := gtx.Constraints.Max
 	gtx.Constraints.Min = size
 	r := gtx.Dp(ui.RadiusLG)
@@ -755,7 +775,7 @@ func (u *window) island(gtx C, v stageView, termWidth int) error {
 	u.layoutStage.metric = gtx.Metric
 	u.terms.onScreen(v.active.ID)
 	term := gtx
-	term.Constraints = layout.Exact(image.Pt(termWidth, size.Y))
+	term.Constraints = layout.Exact(image.Pt(termWidth, termHeight))
 	if err := u.content(term, v.active, u.terminalTakesKeys(gtx)); err != nil {
 		return err
 	}
@@ -835,7 +855,7 @@ func (u *window) stageRow(gtx C, v stageView) error {
 		d.slide.snap(open)
 	}
 	share := d.slide.at(gtx, open)
-	u.terms.refitNow = d.slide.began || d.slide.landed || u.sidebar.morph.holdsStage()
+	u.terms.refitNow = d.slide.began || d.slide.landed || u.sidebar.morph.holdsStage() || u.git.moved()
 	defer func() { u.terms.refitNow = false }()
 	size := gtx.Constraints.Max
 	// The session's terminal takes the width the dock's slide and the
@@ -846,9 +866,10 @@ func (u *window) stageRow(gtx C, v stageView) error {
 		termWidth -= d.width(gtx) + gtx.Dp(gutter)
 	}
 	termWidth = max(termWidth, 0)
+	termHeight := max(size.Y-u.git.pending(), 0)
 	if share == 0 {
 		d.islands = nil
-		return u.island(gtx, v, termWidth)
+		return u.island(gtx, v, termWidth, termHeight)
 	}
 	at, w, slot := 0, size.X, 0
 	if !d.fullscreen {
@@ -865,7 +886,7 @@ func (u *window) stageRow(gtx C, v stageView) error {
 	}
 	island := gtx
 	island.Constraints = layout.Exact(image.Pt(max(size.X-slot, 0), size.Y))
-	if err := u.island(island, v, termWidth); err != nil {
+	if err := u.island(island, v, termWidth, termHeight); err != nil {
 		return err
 	}
 	defer clip.Rect{Max: size}.Push(gtx.Ops).Pop()
@@ -883,6 +904,68 @@ func (u *window) stageRow(gtx C, v stageView) error {
 		go func() { u.logErr("dock width", saveDockWidth(u.ctx, u.client, rem)) }()
 	}
 	return err
+}
+
+// gitPanelRow is the Git panel between the stage and the footer, when it is
+// open and there is a repository for it to read.
+//
+// It slides up from the footer as the dock slides in from the side, and grows
+// over the stage to expand. pendingPx is what the stage still has to give up
+// once the slide lands: the terminal is laid out at that size from the first
+// frame, so the agent redraws once rather than on every frame of the slide.
+func (u *window) gitPanelRow(gtx C, v stageView) D {
+	g := u.git
+	shown := u.gitShown(v)
+	open := g.slide.at(gtx, shown)
+	grow := g.grow.at(gtx, shown && g.expanded)
+	g.covers, g.pendingPx = false, 0
+	if open == 0 {
+		g.hidden()
+		return D{}
+	}
+	maxY := gtx.Constraints.Max.Y
+	h, released := g.height(gtx, maxY)
+	if released {
+		rem := g.heightRem
+		go func() { u.logErr("git panel height", saveGitHeight(u.ctx, u.client, rem)) }()
+	}
+	if open == 1 && grow == 1 {
+		g.covers = true
+		return D{}
+	}
+	full := max(maxY-gtx.Dp(gitFooterHeight)-gtx.Dp(gutter), h)
+	slot := int(open * float32(h+gtx.Dp(gutter)+int(grow*float32(full-h))))
+	if shown {
+		g.pendingPx = h + gtx.Dp(gutter) - slot
+	} else {
+		g.pendingPx = -slot
+	}
+	// Laid out at the height it is heading for and slid up from under the
+	// footer, so its rows move rather than squeeze.
+	size := image.Pt(gtx.Constraints.Max.X, h+int(grow*float32(full-h)))
+	defer clip.Rect{Max: image.Pt(size.X, slot)}.Push(gtx.Ops).Pop()
+	defer op.Offset(image.Pt(0, slot-size.Y)).Push(gtx.Ops).Pop()
+	panel := gtx
+	panel.Constraints = layout.Exact(size)
+	u.layoutGit(panel, v)
+	return D{Size: image.Pt(size.X, slot)}
+}
+
+// gitFooterHeight is the footer strip's one-line height, what an expanding
+// panel stops short of.
+const gitFooterHeight = unit.Dp(44)
+
+// gitShown is whether the Git panel has a repository to read and room to draw.
+func (u *window) gitShown(v stageView) bool {
+	return u.git.open && !v.home && !u.settings.open && v.in.inRepository()
+}
+
+func (u *window) layoutGit(gtx C, v stageView) {
+	in := gitPanelInput{path: v.in.path, sessions: u.model.branchSessions(gtx.Now), code: u.code}
+	if sv, ok := u.model.sessionIn(v.in.path, gtx.Now); ok {
+		in.here = &sv
+	}
+	u.git.layout(gtx, u.theme, in)
 }
 
 // gutter is the canvas around the sidebar.
@@ -930,7 +1013,7 @@ func (u *window) lostNotice(gtx C) D {
 // terminalTakesKeys is whether the terminal on screen takes the keyboard back
 // this frame: not while a field or a dialog over it is typing.
 func (u *window) terminalTakesKeys(gtx C) bool {
-	typing := u.sidebar.holdsKeys() || u.footer.holdsKeys() || u.dock.holdsKeys(gtx) || u.topbar.holdsKeys()
+	typing := u.sidebar.holdsKeys() || u.footer.holdsKeys() || u.dock.holdsKeys(gtx) || u.git.holdsKeys(gtx) || u.topbar.holdsKeys()
 	return !typing && !u.palette.open && !u.worktree.open && !u.comments.isEditing()
 }
 

@@ -430,6 +430,7 @@ func (u *window) loadSettings() error {
 	for _, panel := range u.diffPanels() {
 		panel.hiding, panel.split = prefs.hideWhitespace, prefs.split()
 	}
+	u.git.detail.split = prefs.split()
 	if err := u.settings.loadHotkeys(); err != nil {
 		return err
 	}
@@ -440,6 +441,9 @@ func (u *window) loadSettings() error {
 // whitespace at once, the layout as each panel's split, which its header
 // toggle goes on flipping from there.
 func (u *window) takeEditorPref(key string, prefs editorPrefs) {
+	if key == diffLayoutKey {
+		u.git.detail.split = prefs.split()
+	}
 	for _, panel := range u.diffPanels() {
 		switch key {
 		case hideWhitespaceKey:

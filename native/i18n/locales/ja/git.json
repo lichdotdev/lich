@@ -32,5 +32,61 @@
       "other": "変更のない {count} 行を展開"
     },
     "revert": "元に戻す"
+  },
+  "panel": {
+    "log": "ログ",
+    "close": "Git パネルを閉じる",
+    "searchPlaceholder": "テキストまたはハッシュ",
+    "pathPlaceholder": "パス",
+    "branchPlaceholder": "ブランチまたはタグ",
+    "author": "作成者",
+    "authorAny": "すべての作成者",
+    "date": "日付",
+    "dateAny": "すべての期間",
+    "dateDay": "過去 24 時間",
+    "dateWeek": "過去 7 日間",
+    "dateMonth": "過去 30 日間",
+    "local": "ローカル",
+    "tags": "タグ",
+    "head": "HEAD ({name})",
+    "selectCommit": "コミットを選択するとファイルが表示されます。",
+    "noCommits": "一致するコミットはありません。",
+    "loadFailed": "履歴を読み取れませんでした: {error}",
+    "commitFailed": "このコミットを読み取れませんでした: {error}",
+    "diffFailed": "この差分を読み取れませんでした: {error}",
+    "binary": "このファイルはバイナリです。",
+    "noDiff": "このファイルに変更はありません。",
+    "back": "ログに戻る",
+    "files": "ファイル"
+  },
+  "branch": {
+    "checkout": "チェックアウト",
+    "checkoutRemote": "ローカルブランチとしてチェックアウト",
+    "open": "{name} を開く",
+    "newBranch": "ここから新しいブランチ…",
+    "rename": "名前を変更…",
+    "delete": "削除",
+    "onBranch": "現在このブランチにいます",
+    "inWorktree": "別の worktree でチェックアウト中",
+    "options": "{name} の操作",
+    "from": "{name} から",
+    "checkoutTitle": "{session} を {branch} に切り替えますか?",
+    "checkoutBody": "{session} はこのチェックアウトで作業中です。エージェントの足元のブランチが変わり、コミットしていない変更も一緒に移ります。",
+    "deleteTitle": "{name} を削除しますか?",
+    "deleteBody": {
+      "one": "{count} 件のコミットはこのブランチにしかありません。しばらくは reflog から復元できますが、どのブランチも指さなくなります。",
+      "other": "{count} 件のコミットはこのブランチにしかありません。しばらくは reflog から復元できますが、どのブランチも指さなくなります。"
+    },
+    "deleted": "{name} を削除しました",
+    "onlyCommits": {
+      "one": "{count} 件のコミットはこのブランチにしかありませんでした",
+      "other": "{count} 件のコミットはこのブランチにしかありませんでした"
+    },
+    "undo": "元に戻す",
+    "checkoutFailed": "{name} をチェックアウトできませんでした",
+    "createFailed": "{name} を作成できませんでした",
+    "renameFailed": "{name} の名前を変更できませんでした",
+    "deleteFailed": "{name} を削除できませんでした",
+    "undoFailed": "{name} を元に戻せませんでした"
   }
 }

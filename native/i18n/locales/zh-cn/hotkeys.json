@@ -33,7 +33,8 @@
     "pulls": "拉取请求",
     "shortcuts": "键盘快捷键",
     "quit": "退出 lich",
-    "startServices": "启动项目的服务"
+    "startServices": "启动项目的服务",
+    "toggleGit": "切换 Git 面板"
   },
   "terminalCost": {
     "a": "Ctrl+{key} 是 shell 的移到行首操作，会话将不再收到它。",

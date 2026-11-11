@@ -32,5 +32,61 @@
       "other": "Expandir {count} linhas sem alteração"
     },
     "revert": "Reverter"
+  },
+  "panel": {
+    "log": "Log",
+    "close": "Fechar o painel Git",
+    "searchPlaceholder": "Texto ou hash",
+    "pathPlaceholder": "Caminho",
+    "branchPlaceholder": "Branch ou tag",
+    "author": "Autor",
+    "authorAny": "Todos os autores",
+    "date": "Data",
+    "dateAny": "Qualquer data",
+    "dateDay": "Últimas 24 horas",
+    "dateWeek": "Últimos 7 dias",
+    "dateMonth": "Últimos 30 dias",
+    "local": "Locais",
+    "tags": "Tags",
+    "head": "HEAD ({name})",
+    "selectCommit": "Selecione um commit para ver os arquivos.",
+    "noCommits": "Nenhum commit encontrado.",
+    "loadFailed": "Não foi possível ler o histórico: {error}",
+    "commitFailed": "Não foi possível ler este commit: {error}",
+    "diffFailed": "Não foi possível ler este diff: {error}",
+    "binary": "Este arquivo é binário.",
+    "noDiff": "Nada mudou neste arquivo.",
+    "back": "Voltar ao log",
+    "files": "Arquivos"
+  },
+  "branch": {
+    "checkout": "Checkout",
+    "checkoutRemote": "Checkout como branch local",
+    "open": "Abrir {name}",
+    "newBranch": "Nova branch a partir daqui…",
+    "rename": "Renomear…",
+    "delete": "Apagar",
+    "onBranch": "Você está nesta branch",
+    "inWorktree": "Em checkout em outro worktree",
+    "options": "Ações de {name}",
+    "from": "A partir de {name}",
+    "checkoutTitle": "Trocar {session} para {branch}?",
+    "checkoutBody": "{session} está trabalhando neste checkout. O agente vai encontrar outra branch embaixo dele, e as mudanças sem commit vão junto na troca.",
+    "deleteTitle": "Apagar {name}?",
+    "deleteBody": {
+      "one": "{count} commit está só nesta branch. Ele continua recuperável pelo reflog por um tempo, mas nenhuma branch vai apontar para ele.",
+      "other": "{count} commits estão só nesta branch. Eles continuam recuperáveis pelo reflog por um tempo, mas nenhuma branch vai apontar para eles."
+    },
+    "deleted": "{name} apagada",
+    "onlyCommits": {
+      "one": "{count} commit estava só nesta branch",
+      "other": "{count} commits estavam só nesta branch"
+    },
+    "undo": "Desfazer",
+    "checkoutFailed": "Não foi possível fazer checkout de {name}",
+    "createFailed": "Não foi possível criar {name}",
+    "renameFailed": "Não foi possível renomear {name}",
+    "deleteFailed": "Não foi possível apagar {name}",
+    "undoFailed": "Não foi possível trazer {name} de volta"
   }
 }

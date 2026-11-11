@@ -105,7 +105,16 @@ project.EditReviewBody(PRReviewBodyOptions) None
 project.EditReviewComment(PRCommentBodyOptions) None
 project.Exists(PathOptions) bool
 project.FileLines(FileLinesOptions) []string
+project.GitBranchOnly(GitBranchOptions) int
+project.GitCheckout(GitCheckoutOptions) None
+project.GitCommit(GitCommitOptions) GitCommitDetail
+project.GitCommitDiff(GitCommitDiffOptions) string
+project.GitCreateBranch(GitCreateBranchOptions) None
+project.GitDeleteBranch(GitBranchOptions) string
 project.GitHubAccounts(None) []string
+project.GitLog(GitLogOptions) GitLogPage
+project.GitRefs(PathOptions) GitRefs
+project.GitRenameBranch(GitRenameBranchOptions) None
 project.Home(None) *OpenedProject
 project.Issue(NumberOptions) Issue
 project.ListBranches(PathOptions) Branches
@@ -749,6 +758,73 @@ FileLinesOptions {
 	ref string
 	from int
 	to int
+}
+
+GitBranchOptions {
+	path string
+	name string
+}
+
+GitCheckoutOptions {
+	path string
+	branch string
+	remote,omitempty bool
+}
+
+GitCommitOptions {
+	path string
+	hash string
+}
+
+GitCommitDetail {
+	hash string
+	author string
+	email string
+	when int64
+	message string
+	refs []GitRef
+	files []GitCommitFile
+}
+
+GitCommitDiffOptions {
+	path string
+	hash string
+	file string
+	oldFile,omitempty string
+}
+
+GitCreateBranchOptions {
+	path string
+	name string
+	from string
+}
+
+GitLogOptions {
+	path string
+	ref,omitempty string
+	query,omitempty string
+	author,omitempty string
+	since,omitempty int64
+	file,omitempty string
+	skip,omitempty int
+	limit int
+}
+
+GitLogPage {
+	commits []GitCommit
+	more bool
+}
+
+GitRefs {
+	refs []GitRef
+	head string
+	stamp string
+}
+
+GitRenameBranchOptions {
+	path string
+	name string
+	newName string
 }
 
 OpenedProject {
@@ -2022,6 +2098,31 @@ CommitPattern {
 	operator string
 	pattern string
 	negate bool
+}
+
+GitRef {
+	name string
+	kind string
+	head,omitempty bool
+	worktree,omitempty string
+}
+
+GitCommitFile {
+	path string
+	oldPath,omitempty string
+	added int
+	deleted int
+	binary,omitempty bool
+}
+
+GitCommit {
+	hash string
+	parents []string
+	author string
+	when int64
+	subject string
+	refs []GitRef
+	head,omitempty bool
 }
 
 ChecksRollup {

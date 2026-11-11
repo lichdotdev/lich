@@ -4,6 +4,7 @@ import (
 	"image"
 	"testing"
 
+	"gioui.org/f32"
 	"gioui.org/io/pointer"
 	"gioui.org/layout"
 	"gioui.org/op"
@@ -139,5 +140,16 @@ func TestChipClickKeepsTheFocusWhereItWas(t *testing.T) {
 	focused := layout.Context{Source: r.router.Source()}.Focused(&click)
 	if !clicked || focused {
 		t.Errorf("click: clicked %v focused %v, want a click and no focus", clicked, focused)
+	}
+}
+
+func TestTopEdgeGrowsUpward(t *testing.T) {
+	r := ResizeHandle{Edge: PanelEdgeTop, pressX: 100, startWidth: 300, laidOut: 300, pressLaidOut: 300}
+	gtx := layout.Context{Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}}
+	if got := r.drag(gtx, 50, 100, 600); got != 350 {
+		t.Errorf("dragging 50 up = %v, want 350", got)
+	}
+	if got := r.along(f32.Pt(7, 9)); got != 9 {
+		t.Errorf("a top edge reads the pointer's y, got %v", got)
 	}
 }

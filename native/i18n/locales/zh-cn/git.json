@@ -32,5 +32,61 @@
       "other": "展开 {count} 行未更改内容"
     },
     "revert": "还原"
+  },
+  "panel": {
+    "log": "日志",
+    "close": "关闭 Git 面板",
+    "searchPlaceholder": "文本或哈希",
+    "pathPlaceholder": "路径",
+    "branchPlaceholder": "分支或标签",
+    "author": "作者",
+    "authorAny": "所有作者",
+    "date": "日期",
+    "dateAny": "任意时间",
+    "dateDay": "最近 24 小时",
+    "dateWeek": "最近 7 天",
+    "dateMonth": "最近 30 天",
+    "local": "本地",
+    "tags": "标签",
+    "head": "HEAD ({name})",
+    "selectCommit": "选择一个提交以查看其文件。",
+    "noCommits": "没有匹配的提交。",
+    "loadFailed": "无法读取历史记录：{error}",
+    "commitFailed": "无法读取此提交：{error}",
+    "diffFailed": "无法读取此差异：{error}",
+    "binary": "此文件是二进制文件。",
+    "noDiff": "此文件没有更改。",
+    "back": "返回日志",
+    "files": "文件"
+  },
+  "branch": {
+    "checkout": "检出",
+    "checkoutRemote": "检出为本地分支",
+    "open": "打开 {name}",
+    "newBranch": "从这里新建分支…",
+    "rename": "重命名…",
+    "delete": "删除",
+    "onBranch": "你正在此分支上",
+    "inWorktree": "已在另一个 worktree 中检出",
+    "options": "{name} 的操作",
+    "from": "从 {name}",
+    "checkoutTitle": "将 {session} 切换到 {branch}?",
+    "checkoutBody": "{session} 正在此检出中工作。它的代理会发现脚下换了分支,未提交的修改也会随切换一起带过去。",
+    "deleteTitle": "删除 {name}?",
+    "deleteBody": {
+      "one": "有 {count} 个提交只在此分支上。一段时间内仍可从 reflog 恢复,但不会再有分支指向它。",
+      "other": "有 {count} 个提交只在此分支上。一段时间内仍可从 reflog 恢复,但不会再有分支指向它们。"
+    },
+    "deleted": "已删除 {name}",
+    "onlyCommits": {
+      "one": "有 {count} 个提交只在此分支上",
+      "other": "有 {count} 个提交只在此分支上"
+    },
+    "undo": "撤销",
+    "checkoutFailed": "无法检出 {name}",
+    "createFailed": "无法创建 {name}",
+    "renameFailed": "无法重命名 {name}",
+    "deleteFailed": "无法删除 {name}",
+    "undoFailed": "无法恢复 {name}"
   }
 }

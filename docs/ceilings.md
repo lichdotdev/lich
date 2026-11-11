@@ -576,6 +576,22 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   nothing is lost there.
 - **git status is polled**: every shown path is re-read each `gitPoll` (`native/cmd/lich-native/model.go`,
   `pollGit`); the lich plugin's `session-touched` hook nudges an immediate refresh.
+- **The Git panel's history is paged by re-walking it** (`internal/project/gitlog.go`): every page is a `git log
+  --date-order --skip=N`, and ordering walks the whole history first, so on a very large repository without a
+  commit-graph each page costs seconds and one over `gitLogBudget` (30s) fails with a message rather than a partial
+  list. `--skip` also means a commit landing while you scroll can repeat or hide a row until the next read, which
+  the ref poll (`gitLogPoll`, only while the panel is open) triggers. The Author menu lists only authors of the
+  commits already loaded, and the graph clips past `gitMaxLanes`.
+- **A branch delete's Undo is a new branch at the old commit** (`internal/project/gitbranch.go`): the toast's Undo
+  makes the branch again where it pointed, without its upstream setting or its reflog, and only for as long as the
+  toast is up. The dialog asks first only when commits would be on no branch, remote branch or tag
+  (`GitBranchOnly`); a branch whose commits are on a remote is deleted at once, even when that remote branch is the
+  only copy left. A checkout in a checkout with a session confirms, then switches under the agent with whatever it
+  has not committed: git refuses only edits the switch would overwrite.
+- **A narrowed history has no graph** (`native/cmd/lich-native/git_store.go`, `narrowed`): text, author, date and path
+  leave parents out of the page, so a line would join commits that are not adjacent. Narrowing by a branch keeps the
+  graph, since that page holds the branch's whole ancestry. A merge's files and diff are against its first parent;
+  the changes it brought from the other side as a conflict resolution do not show separately.
 - **A read must not write the index** (`internal/project/git.go`, `readOnlyGit`): git status and git diff refresh a
   stat-stale index and take `.git/index.lock` to save it, so a poll that does so fails an agent's own `git commit`
   in the same checkout on "index.lock: File exists" (measured at 5% of commits against a busy poll). `gitQuiet`

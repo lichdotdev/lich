@@ -48,6 +48,7 @@ var hotkeyHandlers = map[hotkeyID]hotkeyHandler{
 	hotkeySearchInFiles:      {(*window).hasProject, (*window).hotkeySearch},
 	hotkeySettings:           {(*window).hasProject, (*window).hotkeyOpenSettings},
 	hotkeyStartServices:      {(*window).hasProject, (*window).hotkeyStartServices},
+	hotkeyToggleGit:          {(*window).hasProject, func(u *window, _ C) { u.git.open = !u.git.open }},
 	hotkeyPulls:              {(*window).hasProject, func(u *window, _ C) { u.togglePulls() }},
 	hotkeyShortcuts:          {nil, (*window).hotkeyShortcuts},
 	hotkeyCommandPalette:     {nil, (*window).hotkeyPalette},

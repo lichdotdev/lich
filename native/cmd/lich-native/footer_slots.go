@@ -54,6 +54,12 @@ func footerSlots(ids []string, in footerInput) []footerSlot {
 	return out
 }
 
+// inRepository is whether path is in a repository. isGit alone is not it: the
+// status poll answers a plain folder too, with nothing in the answer.
+func (in footerInput) inRepository() bool {
+	return in.isGit && (in.git.Branch != "" || in.git.Head != "")
+}
+
 func footerSlotOf(id string, in footerInput) (footerSlot, bool) {
 	s := footerSlot{ID: id}
 	switch id {

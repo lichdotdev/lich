@@ -142,6 +142,18 @@ func glyphText(ic *icons.Icon, text string) footerContent {
 	}
 }
 
+// branchContent is glyphText for a name that can outgrow the control: it is cut
+// with an ellipsis.
+func branchContent(ic *icons.Icon, text string) footerContent {
+	return func(gtx C, th *ui.Theme, fg color.NRGBA) D {
+		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+			layout.Rigid(func(gtx C) D { return ic.Layout(gtx, footerGlyph, fg) }),
+			ui.Gap(1.5),
+			layout.Rigid(func(gtx C) D { return th.Text(ui.TextXS, text).In(fg).Truncated().Layout(gtx) }),
+		)
+	}
+}
+
 // footerText is a plain reading in fg.
 func footerText(text string) footerContent {
 	return func(gtx C, th *ui.Theme, fg color.NRGBA) D { return th.Text(ui.TextXS, text).In(fg).Layout(gtx) }

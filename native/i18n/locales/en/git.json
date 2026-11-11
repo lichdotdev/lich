@@ -32,5 +32,61 @@
       "other": "Expand {count} unchanged lines"
     },
     "revert": "Revert"
+  },
+  "panel": {
+    "log": "Log",
+    "close": "Close the Git panel",
+    "searchPlaceholder": "Text or hash",
+    "pathPlaceholder": "Path",
+    "branchPlaceholder": "Branch or tag",
+    "author": "Author",
+    "authorAny": "All authors",
+    "date": "Date",
+    "dateAny": "Any time",
+    "dateDay": "Last 24 hours",
+    "dateWeek": "Last 7 days",
+    "dateMonth": "Last 30 days",
+    "local": "Local",
+    "tags": "Tags",
+    "head": "HEAD ({name})",
+    "selectCommit": "Select a commit to see its files.",
+    "noCommits": "No commits match.",
+    "loadFailed": "Could not read the history: {error}",
+    "commitFailed": "Could not read this commit: {error}",
+    "diffFailed": "Could not read this diff: {error}",
+    "binary": "This file is binary.",
+    "noDiff": "Nothing changed in this file.",
+    "back": "Back to the log",
+    "files": "Files"
+  },
+  "branch": {
+    "checkout": "Checkout",
+    "checkoutRemote": "Checkout as local branch",
+    "open": "Open {name}",
+    "newBranch": "New branch from here…",
+    "rename": "Rename…",
+    "delete": "Delete",
+    "onBranch": "You are on this branch",
+    "inWorktree": "Checked out in another worktree",
+    "options": "Actions for {name}",
+    "from": "From {name}",
+    "checkoutTitle": "Switch {session} to {branch}?",
+    "checkoutBody": "{session} is working in this checkout. Its agent will find a different branch under it, and edits it has not committed go along with the switch.",
+    "deleteTitle": "Delete {name}?",
+    "deleteBody": {
+      "one": "{count} commit is only on this branch. It stays recoverable from the reflog for a while, but no branch will point to it.",
+      "other": "{count} commits are only on this branch. They stay recoverable from the reflog for a while, but no branch will point to them."
+    },
+    "deleted": "Deleted {name}",
+    "onlyCommits": {
+      "one": "{count} commit was only on this branch",
+      "other": "{count} commits were only on this branch"
+    },
+    "undo": "Undo",
+    "checkoutFailed": "Could not check out {name}",
+    "createFailed": "Could not create {name}",
+    "renameFailed": "Could not rename {name}",
+    "deleteFailed": "Could not delete {name}",
+    "undoFailed": "Could not bring back {name}"
   }
 }

@@ -72,7 +72,9 @@ A card painted a color mixes it into the accent: `tintRest` 0.10 at rest, `tintH
 
 ### Semantic color
 
-The only chromatic color besides a card's own paint. It encodes state and never decorates.
+The only chromatic color besides a card's own paint and the history graph's lanes. It encodes state and never
+decorates. A lane's color (`th.GraphLanes`, one set per scheme, not a theme token) carries which branch a line is,
+which the eye cannot follow through a crossing in one gray: use it for that graph and nothing else.
 
 | Token | Meaning |
 | --- | --- |
@@ -315,7 +317,9 @@ at once, whatever its row is still doing.
 ## Fixed by decision: do not "fix" these
 
 - **The bundled themes stay achromatic.** A colored palette is a custom theme, not a widget's color.
-- **The layout**: top tabs, left sidebar, terminal, right dock, footer.
+- **The layout**: top tabs, left sidebar, terminal, right dock, footer, and the Git panel rising from the footer
+  across the terminal and the dock. It takes height, never width: fewer terminal rows repaint, while fewer columns
+  would rewrap what the agent printed.
 - **Pinned project tabs** stay at the left of the top strip, grouped before unpinned tabs with one hairline
   between the groups; they carry a pin glyph and close from their context menu only.
 - **Semantic color and the diff language badges**: they carry meaning.
