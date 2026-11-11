@@ -1,0 +1,27 @@
+{
+  "label": "Navegador",
+  "unavailable": "Abra uma sessão primeiro",
+  "open": {
+    "title": "Dê um navegador ao seu agente",
+    "body": "Sua sessão pode abrir uma página dentro do próprio lich. Clique com o botão direito na sua sessão e escolha Navegador.",
+    "hint": "Escolha Navegador no menu da sua sessão para continuar"
+  },
+  "pane": {
+    "title": "Você e seu agente veem a mesma página",
+    "body": "Seu agente controla esta página com as ferramentas de navegador dele, então peça coisas como \"abra localhost:3000 e confira o login\". Você também pode clicar e digitar aqui."
+  },
+  "pick": {
+    "title": "Aponte na página",
+    "body": "Em vez de descrever onde algo está, deixe uma nota em cima dele.",
+    "hint": "Clique em Deixar notas na página para continuar"
+  },
+  "note": {
+    "title": "Deixe uma nota",
+    "body": "Clique em qualquer elemento da página, escreva o que deve mudar e aperte Adicionar nota.",
+    "hint": "Adicione uma nota para continuar"
+  },
+  "send": {
+    "title": "Envie suas notas",
+    "body": "Suas notas esperam aqui. Enviar digita todas na sua sessão como uma mensagem só, cada uma dizendo de qual elemento fala."
+  }
+}
