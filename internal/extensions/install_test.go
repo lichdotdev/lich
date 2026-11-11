@@ -14,6 +14,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"reflect"
 	"runtime"
 	"slices"
 	"strings"
@@ -172,19 +173,39 @@ func assertNothingInstalled(t *testing.T, s *Service, dir string) {
 	}
 }
 
-func TestInstallStartsTheLatestRelease(t *testing.T) {
+// commit is CommitInstall of preview, which must succeed.
+func commit(t *testing.T, s *Service, preview api.ExtensionInstallPreview) api.Extension {
+	t.Helper()
+	got, err := s.CommitInstall(context.Background(), api.ExtensionInstallTokenOptions{Token: preview.Token})
+	if err != nil {
+		t.Fatalf("CommitInstall() = %v", err)
+	}
+	return got
+}
+
+// The contract changed: an install is now PrepareFromGit, which stages and
+// runs nothing, then CommitInstall, which starts it.
+func TestPrepareFromGitStagesAndCommitStartsTheLatestRelease(t *testing.T) {
 	srv := releaseServer(t, signed(map[string][]byte{
 		hostAsset():                tarball(t, extensionEntries(t, testID, selfBytes(t))),
 		assetName("plan9", "mips"): []byte("not for this machine"),
 	}))
 	s, r, dir := installer(t, srv)
 
-	got, err := s.InstallFromGit(context.Background(), api.ExtensionGitInstallOptions{URL: testRepo + ".git"})
+	preview, err := s.PrepareFromGit(context.Background(), api.ExtensionGitInstallOptions{URL: testRepo + ".git"})
 	if err != nil {
-		t.Fatalf("InstallFromGit() = %v", err)
+		t.Fatalf("PrepareFromGit() = %v", err)
 	}
+	want := api.ExtensionInstallPreview{Token: preview.Token, ID: testID, Name: "Fake " + testID, Version: "1.0.0", Source: testRepo, Release: testTag, Permissions: []string{}}
+	if preview.Token == "" || !reflect.DeepEqual(preview, want) {
+		t.Fatalf("PrepareFromGit() = %+v, want %+v with a token", preview, want)
+	}
+	if list, _ := s.List(context.Background(), api.None{}); len(list) != 0 {
+		t.Fatalf("List() = %+v after prepare, want nothing installed", list)
+	}
+	got := commit(t, s, preview)
 	if got.ID != testID || got.Source != testRepo || got.Release != testTag {
-		t.Fatalf("InstallFromGit() = %+v, want id %q from %s at %s", got, testID, testRepo, testTag)
+		t.Fatalf("CommitInstall() = %+v, want id %q from %s at %s", got, testID, testRepo, testTag)
 	}
 	waitStatus(t, r, statusRunning)
 	if _, err := s.Send(context.Background(), sendOptions(t, testID, extension.SurfaceOpened.New(extension.SurfaceData{Surface: "main"}))); err != nil {
@@ -201,15 +222,15 @@ func TestInstallStartsTheLatestRelease(t *testing.T) {
 	}
 }
 
-func TestInstallRefusesARepositoryThatIsNotGitHub(t *testing.T) {
+func TestPrepareFromGitRefusesARepositoryThatIsNotGitHub(t *testing.T) {
 	for _, url := range []string{
 		"http://github.com/someone/fake-ext", "https://gitlab.com/someone/fake-ext", "https://github.com/someone",
 		"https://github.com/someone/fake-ext/tree/main", "git@github.com:someone/fake-ext.git",
 		"https://github.com/someone/..", "https://github.com.evil.example/someone/fake-ext", "",
 	} {
 		s := &Service{}
-		if _, err := s.InstallFromGit(context.Background(), api.ExtensionGitInstallOptions{URL: url}); !errors.Is(err, errNotGitHub) {
-			t.Errorf("InstallFromGit(%q) = %v, want the GitHub-only refusal", url, err)
+		if _, err := s.PrepareFromGit(context.Background(), api.ExtensionGitInstallOptions{URL: url}); !errors.Is(err, errNotGitHub) {
+			t.Errorf("PrepareFromGit(%q) = %v, want the GitHub-only refusal", url, err)
 		}
 	}
 	for url, want := range map[string]string{
@@ -221,7 +242,7 @@ func TestInstallRefusesARepositoryThatIsNotGitHub(t *testing.T) {
 	}
 }
 
-func TestInstallFailsLeavingNothingBehind(t *testing.T) {
+func TestPrepareFromGitFailsLeavingNothingBehind(t *testing.T) {
 	good := func(t *testing.T) []byte { return tarball(t, extensionEntries(t, testID, []byte("x"))) }
 	for name, tc := range map[string]struct {
 		assets func(t *testing.T) map[string][]byte
@@ -269,9 +290,9 @@ func TestInstallFailsLeavingNothingBehind(t *testing.T) {
 	} {
 		t.Run(name, func(t *testing.T) {
 			s, _, dir := installer(t, releaseServer(t, tc.assets(t)))
-			_, err := s.InstallFromGit(context.Background(), api.ExtensionGitInstallOptions{URL: testRepo})
+			_, err := s.PrepareFromGit(context.Background(), api.ExtensionGitInstallOptions{URL: testRepo})
 			if err == nil || !strings.Contains(err.Error(), tc.want) {
-				t.Fatalf("InstallFromGit() = %v, want an error naming %q", err, tc.want)
+				t.Fatalf("PrepareFromGit() = %v, want an error naming %q", err, tc.want)
 			}
 			assertNothingInstalled(t, s, dir)
 			if _, err := os.Lstat(filepath.Join(filepath.Dir(dir), "escaped")); err == nil {
@@ -281,7 +302,7 @@ func TestInstallFailsLeavingNothingBehind(t *testing.T) {
 	}
 }
 
-func TestInstallRefusesAnIDAlreadyInstalled(t *testing.T) {
+func TestPrepareRefusesAnIDAlreadyInstalled(t *testing.T) {
 	srv := releaseServer(t, signed(map[string][]byte{hostAsset(): tarball(t, extensionEntries(t, testID, []byte("x")))}))
 	dir := filepath.Join(t.TempDir(), "extensions")
 	install(t, dir, testID, modeEcho)
@@ -289,9 +310,9 @@ func TestInstallRefusesAnIDAlreadyInstalled(t *testing.T) {
 	s.releaseAPI = srv.URL + "/repos/"
 	waitStatus(t, r, statusRunning)
 
-	_, err := s.InstallFromGit(context.Background(), api.ExtensionGitInstallOptions{URL: testRepo})
+	_, err := s.PrepareFromGit(context.Background(), api.ExtensionGitInstallOptions{URL: testRepo})
 	if err == nil || !strings.Contains(err.Error(), "already installed") {
-		t.Fatalf("InstallFromGit() = %v, want the already-installed refusal", err)
+		t.Fatalf("PrepareFromGit() = %v, want the already-installed refusal", err)
 	}
 	if list, _ := s.List(context.Background(), api.None{}); len(list) != 1 || list[0].Source != "" {
 		t.Fatalf("List() = %+v, want the hand-placed extension untouched", list)
@@ -374,17 +395,25 @@ func TestRemoveUnlinksAnExtensionDevelopedInPlace(t *testing.T) {
 	}
 }
 
-func TestInstallFromDirCopiesAndStarts(t *testing.T) {
-	from := install(t, t.TempDir(), testID, modeEcho)
+// The contract changed: a folder install is now PrepareFromDir, then
+// CommitInstall.
+func TestPrepareFromDirCopiesAndCommitStarts(t *testing.T) {
+	from := install(t, t.TempDir(), testID, modeEcho, func(m *extension.Manifest) {
+		m.Permissions = []extension.Permission{extension.PermissionSessionsRead, extension.PermissionSessionsWrite}
+	})
 	dir := filepath.Join(t.TempDir(), "extensions")
 	s, r := boot(t, dir)
 
-	got, err := s.InstallFromDir(context.Background(), api.ExtensionDirInstallOptions{Dir: from})
+	preview, err := s.PrepareFromDir(context.Background(), api.ExtensionDirInstallOptions{Dir: from})
 	if err != nil {
-		t.Fatalf("InstallFromDir() = %v", err)
+		t.Fatalf("PrepareFromDir() = %v", err)
 	}
+	if preview.ID != testID || preview.Source != from || preview.Release != "" || !slices.Equal(preview.Permissions, []string{"sessions:read", "sessions:write"}) {
+		t.Fatalf("PrepareFromDir() = %+v, want %q from %s with its two permissions", preview, testID, from)
+	}
+	got := commit(t, s, preview)
 	if got.ID != testID || got.Source != from || got.Release != "" || got.Dir != filepath.Join(dir, testID) {
-		t.Fatalf("InstallFromDir() = %+v, want %q copied from %s with no release", got, testID, from)
+		t.Fatalf("CommitInstall() = %+v, want %q copied from %s with no release", got, testID, from)
 	}
 	waitStatus(t, r, statusRunning)
 	if _, err := os.Stat(filepath.Join(from, extension.ManifestFile)); err != nil {
@@ -393,12 +422,12 @@ func TestInstallFromDirCopiesAndStarts(t *testing.T) {
 	if again := load(got.Dir, testID, "1.2.3"); again.source != (source{URL: from}) {
 		t.Fatalf("a later discovery reads source %+v", again.source)
 	}
-	if _, err := s.InstallFromDir(context.Background(), api.ExtensionDirInstallOptions{Dir: from}); err == nil || !strings.Contains(err.Error(), "already installed") {
-		t.Fatalf("a second InstallFromDir() = %v, want the already-installed refusal", err)
+	if _, err := s.PrepareFromDir(context.Background(), api.ExtensionDirInstallOptions{Dir: from}); err == nil || !strings.Contains(err.Error(), "already installed") {
+		t.Fatalf("a second PrepareFromDir() = %v, want the already-installed refusal", err)
 	}
 }
 
-func TestInstallFromDirFailsLeavingNothingBehind(t *testing.T) {
+func TestPrepareFromDirFailsLeavingNothingBehind(t *testing.T) {
 	for name, tc := range map[string]struct {
 		folder func(t *testing.T) string
 		want   string
@@ -428,16 +457,16 @@ func TestInstallFromDirFailsLeavingNothingBehind(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			dir := filepath.Join(t.TempDir(), "extensions")
 			s, _ := boot(t, dir)
-			_, err := s.InstallFromDir(context.Background(), api.ExtensionDirInstallOptions{Dir: tc.folder(t)})
+			_, err := s.PrepareFromDir(context.Background(), api.ExtensionDirInstallOptions{Dir: tc.folder(t)})
 			if err == nil || !strings.Contains(err.Error(), tc.want) {
-				t.Fatalf("InstallFromDir() = %v, want an error naming %q", err, tc.want)
+				t.Fatalf("PrepareFromDir() = %v, want an error naming %q", err, tc.want)
 			}
 			assertNothingInstalled(t, s, dir)
 		})
 	}
 }
 
-func TestInstallFromDirRefusesAFolderThatIsALink(t *testing.T) {
+func TestPrepareFromDirRefusesAFolderThatIsALink(t *testing.T) {
 	from := install(t, t.TempDir(), testID, modeEcho)
 	link := filepath.Join(t.TempDir(), "link")
 	if err := os.Symlink(from, link); err != nil {
@@ -445,8 +474,8 @@ func TestInstallFromDirRefusesAFolderThatIsALink(t *testing.T) {
 	}
 	dir := filepath.Join(t.TempDir(), "extensions")
 	s, _ := boot(t, dir)
-	if _, err := s.InstallFromDir(context.Background(), api.ExtensionDirInstallOptions{Dir: link}); err == nil {
-		t.Fatal("InstallFromDir(link) = nil, want links refused")
+	if _, err := s.PrepareFromDir(context.Background(), api.ExtensionDirInstallOptions{Dir: link}); err == nil {
+		t.Fatal("PrepareFromDir(link) = nil, want links refused")
 	}
 	assertNothingInstalled(t, s, dir)
 }

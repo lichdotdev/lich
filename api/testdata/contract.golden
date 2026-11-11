@@ -64,11 +64,13 @@ cursorprofile.LoginCommand(ProfileSlugOptions) string
 cursorprofile.Profiles(None) []ProfileInfo
 cursorprofile.UpdateProfile(UpdateProfileOptions) Profile
 drop.Attach(AttachDropOptions) DropAttachment
+extensions.CommitInstall(ExtensionInstallTokenOptions) Extension
 extensions.DeleteData(ExtensionIDOptions) None
 extensions.Dir(None) string
-extensions.InstallFromDir(ExtensionDirInstallOptions) Extension
-extensions.InstallFromGit(ExtensionGitInstallOptions) Extension
+extensions.DiscardInstall(ExtensionInstallTokenOptions) None
 extensions.List(None) []Extension
+extensions.PrepareFromDir(ExtensionDirInstallOptions) ExtensionInstallPreview
+extensions.PrepareFromGit(ExtensionGitInstallOptions) ExtensionInstallPreview
 extensions.Remove(ExtensionIDOptions) None
 extensions.Restart(ExtensionIDOptions) None
 extensions.Send(ExtensionSendOptions) None
@@ -621,12 +623,8 @@ AttachDropOptions {
 	confined bool
 }
 
-ExtensionIDOptions {
-	id string
-}
-
-ExtensionDirInstallOptions {
-	dir string
+ExtensionInstallTokenOptions {
+	token string
 }
 
 Extension {
@@ -640,6 +638,24 @@ Extension {
 	source,omitempty string
 	release,omitempty string
 	text,omitempty map[string]ExtensionText
+	permissions []string
+}
+
+ExtensionIDOptions {
+	id string
+}
+
+ExtensionDirInstallOptions {
+	dir string
+}
+
+ExtensionInstallPreview {
+	token string
+	id string
+	name string
+	version string
+	source string
+	release,omitempty string
 	permissions []string
 }
 

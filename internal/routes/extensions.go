@@ -12,8 +12,10 @@ func Extensions(d *rpc.Handler, s *extensions.Service) {
 	rpc.Handle(d, api.ExtensionsSend, s.Send)
 	rpc.Handle(d, api.ExtensionsRestart, s.Restart)
 	rpc.Handle(d, api.ExtensionsDir, s.ExtensionsDir)
-	rpc.Handle(d, api.ExtensionsInstallFromGit, s.InstallFromGit)
-	rpc.Handle(d, api.ExtensionsInstallFromDir, s.InstallFromDir)
+	rpc.Handle(d, api.ExtensionsPrepareFromGit, s.PrepareFromGit)
+	rpc.Handle(d, api.ExtensionsPrepareFromDir, s.PrepareFromDir)
+	rpc.Handle(d, api.ExtensionsCommitInstall, s.CommitInstall)
+	rpc.Handle(d, api.ExtensionsDiscardInstall, s.DiscardInstall)
 	rpc.Handle(d, api.ExtensionsRemove, s.Remove)
 	rpc.Handle(d, api.ExtensionsDeleteData, s.DeleteData)
 }

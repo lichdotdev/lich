@@ -271,7 +271,7 @@ func boot(t *testing.T, dir string, adjust ...func(*timing)) (*Service, *recorde
 	t.Helper()
 	r := &recorder{}
 	s := New(dir, filepath.Join(t.TempDir(), "data"), "1.2.3", append(os.Environ(), fakeEnv+"=1"), r.emit)
-	s.timing = timing{firstBackoff: time.Millisecond, maxBackoff: 4 * time.Millisecond, stableRun: time.Hour, stopGrace: 5 * time.Second, killWait: 10 * time.Second, callTimeout: callTimeout}
+	s.timing = timing{firstBackoff: time.Millisecond, maxBackoff: 4 * time.Millisecond, stableRun: time.Hour, stopGrace: 5 * time.Second, killWait: 10 * time.Second, callTimeout: callTimeout, stagedTTL: time.Hour}
 	for _, change := range adjust {
 		change(&s.timing)
 	}
