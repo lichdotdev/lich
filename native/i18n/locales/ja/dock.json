@@ -50,5 +50,14 @@
     "attachToPrompt": "プロンプトに添付",
     "copyPath": "パスをコピー",
     "showInFileManager": "ファイルマネージャーで表示"
+  },
+  "showCode": {
+    "pointed": "{session} が {file} を示しました",
+    "show": "表示",
+    "notFound": "このチェックアウトに {file} はありません",
+    "matches": {
+      "one": "{count} 件のファイルが一致",
+      "other": "{count} 件のファイルが一致"
+    }
   }
 }

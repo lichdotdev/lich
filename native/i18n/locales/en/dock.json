@@ -51,5 +51,14 @@
     "attachToPrompt": "Attach to prompt",
     "copyPath": "Copy path",
     "showInFileManager": "Show in file manager"
+  },
+  "showCode": {
+    "pointed": "{session} pointed at {file}",
+    "show": "Show",
+    "notFound": "No {file} in this checkout",
+    "matches": {
+      "one": "{count} file matches",
+      "other": "{count} files match"
+    }
   }
 }

@@ -50,5 +50,14 @@
     "attachToPrompt": "附加到提示词",
     "copyPath": "复制路径",
     "showInFileManager": "在文件管理器中显示"
+  },
+  "showCode": {
+    "pointed": "{session} 指向了 {file}",
+    "show": "显示",
+    "notFound": "此检出中没有 {file}",
+    "matches": {
+      "one": "{count} 个文件匹配",
+      "other": "{count} 个文件匹配"
+    }
   }
 }

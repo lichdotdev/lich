@@ -53,5 +53,16 @@
     "attachToPrompt": "Прикрепить к промпту",
     "copyPath": "Скопировать путь",
     "showInFileManager": "Показать в файловом менеджере"
+  },
+  "showCode": {
+    "pointed": "{session} указывает на {file}",
+    "show": "Показать",
+    "notFound": "В этой рабочей копии нет {file}",
+    "matches": {
+      "one": "Подходит {count} файл",
+      "few": "Подходят {count} файла",
+      "many": "Подходят {count} файлов",
+      "other": "Подходят {count} файла"
+    }
   }
 }

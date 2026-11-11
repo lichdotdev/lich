@@ -98,6 +98,9 @@ var allowed = map[string]string{
 	"browser.TabAction":    "id",
 	"browser.AnswerDialog": "id",
 
+	// Refused outside the session's own checkout (project.ShowCode).
+	"project.ShowCode": "id",
+
 	// Reads only: a service's command runs on the machine, outside the
 	// sandbox, so starting, stopping or editing one stays with the window.
 	"services.List":       "",

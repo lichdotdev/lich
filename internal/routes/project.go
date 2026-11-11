@@ -8,6 +8,7 @@ import (
 
 // Project exposes the project service as api declares it.
 func Project(d *rpc.Handler, s *project.Service) {
+	rpc.Handle(d, api.ProjectShowCode, s.ShowCode)
 	projectFiles(d, s)
 	projectChanges(d, s)
 	projectBranches(d, s)

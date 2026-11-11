@@ -50,5 +50,14 @@
     "attachToPrompt": "프롬프트에 첨부",
     "copyPath": "경로 복사",
     "showInFileManager": "파일 관리자에서 보기"
+  },
+  "showCode": {
+    "pointed": "{session}에서 {file}을(를) 가리켰습니다",
+    "show": "표시",
+    "notFound": "이 체크아웃에 {file}이(가) 없습니다",
+    "matches": {
+      "one": "파일 {count}개 일치",
+      "other": "파일 {count}개 일치"
+    }
   }
 }

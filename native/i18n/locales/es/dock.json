@@ -51,5 +51,14 @@
     "attachToPrompt": "Adjuntar al prompt",
     "copyPath": "Copiar ruta",
     "showInFileManager": "Mostrar en el gestor de archivos"
+  },
+  "showCode": {
+    "pointed": "{session} señaló {file}",
+    "show": "Mostrar",
+    "notFound": "No hay {file} en este checkout",
+    "matches": {
+      "one": "{count} archivo coincide",
+      "other": "{count} archivos coinciden"
+    }
   }
 }

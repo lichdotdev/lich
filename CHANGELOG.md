@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- An agent can show you the code it is talking about: ask to see it and the file opens read-only in the dock's Code tab, on the lines it found, in that session's own checkout and with your keyboard still in the terminal, on every provider. The agent can leave a short comment under those lines when it has something to add. From a session you are not looking at, a toast offers it instead of taking the screen.
+- Ctrl+click (Cmd+click on macOS) on a `path:line` printed in a terminal opens it in the Code tab. A name with no directory, as in a Java stack trace, is searched for in the checkout, and a choice appears when more than one file fits.
 - Project tabs can be pinned from their right-click menu. Pinned tabs stay together at the left of the strip and close only from that menu; pinning is kept when the window is reopened.
 - The state menu on the Pulls screen has Approved: the open pull requests whose review is approved.
 - A page an agent makes to show you, a report, a diagram, a mockup, opens in its session's browser from a folder of the session's own instead of landing in your checkout, on every provider. The folder stays out of git, survives a restart and a closed card, and goes when the session is deleted. Claude Code may still publish a page to claude.ai with its own Artifact tool; ask for it locally if you want it in the tab.
@@ -20,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Opening a file again in the Code tab shows it as it is on disk now, instead of the version read the first time.
 - The sidebar draws every block's header and hangs every card from the checkout it runs in, as it already did beside a worktree: a folder holding a project's only sessions no longer vanishes, and a lone session or folder no longer shows loose cards.
 - A page reloaded in a browser tab after an agent took a screenshot of it no longer shows squeezed into the top of
   the pane until the zoom is changed.

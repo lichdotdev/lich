@@ -243,6 +243,10 @@ func registerServices(db *store.Service, term *terminal.Service, svcs *services.
 	// directory, so it validates the picked one against the workspace.
 	proj.SetProjects(db.ProjectAt)
 	proj.SetEmit(hub.Emit)
+	proj.SetSessionCheckout(func(id string) string {
+		dir, _ := term.SessionCheckout(id)
+		return dir
+	})
 	// A review thread handed to a session waits for the pull request's next
 	// push across restarts, since the push comes whenever the agent gets there.
 	proj.SetThreadFixes(db)

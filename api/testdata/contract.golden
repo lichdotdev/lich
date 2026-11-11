@@ -130,6 +130,7 @@ project.ResolveReviewThread(ResolveThreadOptions) None
 project.RestoreLines(RestoreLinesOptions) None
 project.RevertLines(RevertLinesOptions) RevertResult
 project.Search(SearchOptions) SearchResult
+project.ShowCode(ShowCodeOptions) ShowCode
 project.SubmitReview(SubmitReviewOptions) None
 project.ThreadFixes(None) []ThreadFix
 project.Tree(PathOptions) FileListing
@@ -302,6 +303,7 @@ event session-watch SessionWatchChange
 event session-watch-stopped SessionWatchStopped
 event sessions-colored SessionsColored
 event sessions-filed SessionsFiled
+event show-code ShowCode
 event terminal:data:<id> string
 event terminal:exit:<id> SessionExit
 event theme-selection ThemeSelection
@@ -885,6 +887,22 @@ SearchResult {
 	matches []SearchMatch
 	cut bool
 	tooLarge int
+}
+
+ShowCodeOptions {
+	id string
+	path string
+	line,omitempty int
+	endLine,omitempty int
+	comment,omitempty string
+}
+
+ShowCode {
+	sessionId string
+	rel string
+	line,omitempty int
+	endLine,omitempty int
+	comment,omitempty string
 }
 
 SubmitReviewOptions {

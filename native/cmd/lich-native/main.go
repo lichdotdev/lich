@@ -152,6 +152,10 @@ type window struct {
 	// hideSettings is a request, from another goroutine, to take Settings down
 	// at the next frame.
 	hideSettings atomic.Bool
+	// codeAsk is a request, from another goroutine, the frame carries out; a
+	// later one replaces it.
+	codeAsk  atomic.Pointer[func()]
+	codeMenu codeMenu
 	// emptyNew is the empty stage's New session button.
 	emptyNew widget.Clickable
 	// exitFocus is the card that had focus last frame, and exitRaised the
@@ -270,6 +274,8 @@ func run(w *app.Window, rt backend.Runtime) error {
 	u.model.browserOpened = u.offerBrowser
 	u.model.browserIdle = u.askIdleBrowser
 	u.model.browserDownloaded = u.tellDownload
+	u.model.showCode = u.tellShowCode
+	u.terms.followCode = u.followCodeRef
 	u.model.pluginIncompatible = func() { go u.checkPlugin() }
 	u.model.appUpdateProgress = u.updateProgressed
 	u.palette.closed = u.model.closed
@@ -533,6 +539,7 @@ func (u *window) layout(gtx C) error {
 	if u.hideSettings.CompareAndSwap(true, false) {
 		u.settings.hide()
 	}
+	u.takeCodeAsk()
 	paint.Fill(gtx.Ops, u.theme.Canvas)
 	if u.model.connectionLost() {
 		u.lostNotice(gtx)
@@ -551,6 +558,7 @@ func (u *window) layout(gtx C) error {
 	var contentErr error
 	v := u.stageView(gtx.Now)
 	u.root.Layout(gtx, func(gtx C) D {
+		u.layoutCodeMenu(gtx)
 		filed := u.sidebar.layoutFolderDialog(gtx, u.theme, u.model.projectFolders())
 		defer func() {
 			if filed.ids != nil {
