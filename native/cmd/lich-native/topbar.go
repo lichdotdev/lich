@@ -325,7 +325,9 @@ func (t *topbar) pullsButton(gtx C, th *ui.Theme, open bool, act *topbarAction) 
 	}
 	tip := th.Tooltip(t.root, t.hint("pulls"), i18n.T("tabs.projectTabs.pullRequests"))
 	tip.Side = ui.SideBottom
-	return tip.Layout(gtx, func(gtx C) D { return th.BarIconButton(&t.pulls, icPullRequests, open).Layout(gtx) })
+	return t.tour.Anchor(gtx, tourPullsButton, func(gtx C) D {
+		return tip.Layout(gtx, func(gtx C) D { return th.BarIconButton(&t.pulls, icPullRequests, open).Layout(gtx) })
+	})
 }
 
 func (t *topbar) hint(key string) *ui.Tooltip {

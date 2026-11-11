@@ -55,12 +55,14 @@ func (p *pullsScreen) indexLayout(gtx C, th *ui.Theme, list pullsRead[[]backend.
 		layout.Rigid(func(gtx C) D { return p.indexHeader(gtx, th) }),
 		layout.Rigid(func(gtx C) D {
 			tabs := p.filterTabs(th, counts)
-			return layout.Inset{Left: pullsPadX, Right: pullsPadX, Bottom: ui.Space(2)}.Layout(gtx, func(gtx C) D { return tabs.Layout(gtx) })
+			return layout.Inset{Left: pullsPadX, Right: pullsPadX, Bottom: ui.Space(2)}.Layout(gtx, func(gtx C) D {
+				return p.tour.Anchor(gtx, tourPullsFilter, func(gtx C) D { return tabs.Layout(gtx) })
+			})
 		}),
 		layout.Rigid(th.Separator),
 		layout.Flexed(1, func(gtx C) D {
 			// Read after the filter tabs took their click.
-			return p.rowList(gtx, th, list, p.visible(list.val))
+			return p.tour.Anchor(gtx, tourPullsList, func(gtx C) D { return p.rowList(gtx, th, list, p.visible(list.val)) })
 		}),
 	)
 }

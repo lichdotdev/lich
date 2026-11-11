@@ -1,0 +1,22 @@
+{
+  "label": "Pull requests",
+  "unavailable": "Open a project first",
+  "open": {
+    "title": "Your pull requests",
+    "body": "The project's pull requests from GitHub live one click away, without leaving lich.",
+    "hint": "Click Pull requests to continue"
+  },
+  "filter": {
+    "title": "Find the one you need",
+    "body": "All, Ready, Drafts and Failing narrow the list, and the field above filters by number, title, author or branch. The menu next to it switches between open, closed and merged."
+  },
+  "pick": {
+    "title": "Open a pull request",
+    "body": "Each row is a pull request with its checks and reviews.",
+    "hint": "Click a pull request to continue"
+  },
+  "review": {
+    "title": "Check it out and review it",
+    "body": "Open in Session makes a worktree on the pull request's branch and starts a session there, or Go to session when one is already open. In Files, select lines, right-click and pick Comment on the pull request, then Add to review and Submit review."
+  }
+}

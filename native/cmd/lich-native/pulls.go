@@ -12,6 +12,8 @@ import (
 	"gioui.org/op/paint"
 	"gioui.org/widget"
 
+	driver "github.com/lichdotdev/gio-driver"
+
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/ui"
 	"github.com/lichdotdev/lich/native/ui/icons"
@@ -102,6 +104,8 @@ type pullsScreen struct {
 	// onAccount has the pull request badges ask gh again once the gate
 	// stored a project's account.
 	onAccount func()
+	// tour is the window's guided tour, which points at the index and Open in Session.
+	tour *driver.Tour
 }
 
 // reviewSession is where the pull request's comments go: a session in the
@@ -134,7 +138,7 @@ func (p *pullsScreen) prCheckout(d backend.PRDetail) string {
 }
 
 func newPullsScreen(store *pullsStore, root *ui.Root) *pullsScreen {
-	p := &pullsScreen{store: store, root: root, state: pullsOpen, rowClicks: map[int]*widget.Clickable{}}
+	p := &pullsScreen{store: store, root: root, state: pullsOpen, rowClicks: map[int]*widget.Clickable{}, tour: new(driver.Tour)}
 	p.rows.Axis = layout.Vertical
 	p.view.init()
 	p.view.root = root

@@ -109,7 +109,7 @@ func (v *pullView) sessionButton(gtx C, th *ui.Theme, p *pullsScreen, d backend.
 	}
 	b := th.Button(&v.session, label)
 	b.Icon, b.Variant, b.Size, b.Disabled = icPullSession, ui.VariantSecondary, ui.SizeSM, blocked != "" || busy != ""
-	return v.withTip(gtx, th, p, "session", blocked, b.Layout)
+	return p.tour.Anchor(gtx, tourPullsSession, func(gtx C) D { return v.withTip(gtx, th, p, "session", blocked, b.Layout) })
 }
 
 // mergeReasonForReview is why a review cannot be left: only a pull request
