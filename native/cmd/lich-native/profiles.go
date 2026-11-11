@@ -10,6 +10,7 @@ import (
 
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
+	"github.com/lichdotdev/lich/native/ui"
 )
 
 // claudeProfileKey is store.claudeProfileKey: the profile new Claude Code
@@ -183,7 +184,7 @@ type profileBook struct {
 
 	mu       sync.Mutex
 	list     []backend.Profile
-	images   map[string]*avatarImage
+	images   map[string]*ui.AvatarImage
 	loaded   bool
 	loadedAt time.Time
 	reading  bool
@@ -207,7 +208,7 @@ func (b *profileBook) reload(ctx context.Context) error {
 		return slices.ContainsFunc(list, func(p backend.Profile) bool { return p.Slug == old.Slug })
 	})
 	b.list, b.loaded, b.loadedAt = list, true, time.Now()
-	b.images = map[string]*avatarImage{}
+	b.images = map[string]*ui.AvatarImage{}
 	for _, p := range list {
 		b.images[p.Slug] = decodeAvatar(p)
 	}

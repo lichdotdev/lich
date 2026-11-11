@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/lichdotdev/lich/native/backend"
+	"github.com/lichdotdev/lich/native/ui"
 )
 
 // pendingRecheck is how often a pull request still settling is read again
@@ -46,7 +47,7 @@ type pullsStore struct {
 	talks     map[string]*pullsRead[*backend.PRConversation]
 	// avatars is by address, and never stale: GitHub's address changes with
 	// the picture.
-	avatars map[string]*pullsRead[*avatarImage]
+	avatars map[string]*pullsRead[*ui.AvatarImage]
 }
 
 func newPullsStore(ctx context.Context, c *backend.Client, invalidate func()) *pullsStore {
@@ -59,7 +60,7 @@ func newPullsStore(ctx context.Context, c *backend.Client, invalidate func()) *p
 		checkouts: map[string]*pullsRead[[]backend.Worktree]{},
 		diffs:     map[string]*pullsRead[string]{},
 		talks:     map[string]*pullsRead[*backend.PRConversation]{},
-		avatars:   map[string]*pullsRead[*avatarImage]{},
+		avatars:   map[string]*pullsRead[*ui.AvatarImage]{},
 	}
 }
 
@@ -187,11 +188,11 @@ func (s *pullsStore) conversation(path string, number int) pullsRead[*backend.PR
 
 // avatar is the picture at url, an author's Avatar; nil while it loads, when
 // it failed, or when there is none.
-func (s *pullsStore) avatar(path, url string) *avatarImage {
+func (s *pullsStore) avatar(path, url string) *ui.AvatarImage {
 	if url == "" {
 		return nil
 	}
-	return read(s, s.avatars, url, func() (*avatarImage, error) {
+	return read(s, s.avatars, url, func() (*ui.AvatarImage, error) {
 		data, err := s.client.PullRequestAvatar(s.ctx, path, url)
 		if err != nil {
 			return nil, err
