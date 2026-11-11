@@ -10,10 +10,20 @@
     "title": "Read it file by file",
     "body": "The Review tab shows every file the agent changed, each with its diff."
   },
+  "select": {
+    "title": "Comment on lines",
+    "body": "Select the lines you want changed in a diff, then right-click them.",
+    "hint": "Select lines and right-click them to continue"
+  },
+  "pick": {
+    "title": "Pick Comment for the session",
+    "body": "It opens a box under those lines for your comment.",
+    "hint": "Click Comment for the session to continue"
+  },
   "comment": {
-    "title": "Comment on a line",
-    "body": "Select lines in a diff, right-click and pick Comment for the session. Write what to change, then click Add to batch.",
-    "hint": "Add a comment to continue"
+    "title": "Write what to change",
+    "body": "Say what the agent should change in these lines, then click Add to batch.",
+    "hint": "Click Add to batch to continue"
   },
   "send": {
     "title": "Send your comments",

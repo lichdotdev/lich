@@ -27,3 +27,22 @@ func TestReviewGuideNeedsAnAgentWithChanges(t *testing.T) {
 		}
 	}
 }
+
+func TestReviewGuideWaitsOnAnyCardsComposer(t *testing.T) {
+	p := &reviewPanel{cards: map[string]*fileCard{"a.go": {}, "b.go": {}}}
+	if p.composing() {
+		t.Fatal("composing with every composer closed")
+	}
+	p.cards["b.go"].composer.open("b.go", "3-4")
+	if !p.composing() {
+		t.Error("not composing with b.go's composer open")
+	}
+}
+
+func TestReviewPanelWithoutATourStillLaysOutItsSpots(t *testing.T) {
+	var drawn bool
+	(&reviewPanel{}).spot(C{}, tourReviewComposer, func(C) D { drawn = true; return D{} })
+	if !drawn {
+		t.Error("the Pulls screen's panel, which has no tour, skipped the widget")
+	}
+}

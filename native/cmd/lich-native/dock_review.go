@@ -49,7 +49,8 @@ type reviewPanel struct {
 	size       unit.Sp
 	cells      *glyphs.Rasterizer
 
-	// tour is the window's guided tour, which points at the comment batch.
+	// tour is the window's guided tour, which points at the comment menu,
+	// the composer and the batch.
 	tour *driver.Tour
 
 	// wrote hears the checkout an edit of the panel's own changed, for the git
@@ -162,6 +163,35 @@ func (p *reviewPanel) holdsKeys(gtx C) bool {
 	return false
 }
 
+// spot lets the tour point at w. Only the dock's panel has a tour: the Pulls
+// screen's lays out the same cards with none.
+func (p *reviewPanel) spot(gtx C, id string, w layout.Widget) D {
+	if p.tour == nil {
+		return w(gtx)
+	}
+	return p.tour.Anchor(gtx, id, w)
+}
+
+// menuOpen is whether a card's right-click menu is on screen.
+func (p *reviewPanel) menuOpen() bool {
+	for _, c := range p.cards {
+		if c.menu.Opened() {
+			return true
+		}
+	}
+	return false
+}
+
+// composing is whether a card's comment composer is open.
+func (p *reviewPanel) composing() bool {
+	for _, c := range p.cards {
+		if c.composer.isOpen() {
+			return true
+		}
+	}
+	return false
+}
+
 // layoutBody is the panel under the dock's header: the checkout's
 // working-tree diff, and the comment batch at its foot.
 func (p *reviewPanel) layoutBody(gtx C, th *ui.Theme, in dockInput) error {
@@ -182,7 +212,7 @@ func (p *reviewPanel) bodyWithBatch(gtx C, th *ui.Theme) error {
 			return D{Size: gtx.Constraints.Max}
 		}),
 		layout.Rigid(func(gtx C) D {
-			return p.tour.Anchor(gtx, tourReviewBatch, func(gtx C) D { return p.batch.layout(gtx, th, p.comments, p.target, p.submit, p.notify) })
+			return p.spot(gtx, tourReviewBatch, func(gtx C) D { return p.batch.layout(gtx, th, p.comments, p.target, p.submit, p.notify) })
 		}),
 	)
 	return nil

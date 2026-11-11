@@ -10,10 +10,20 @@
     "title": "Léelo archivo por archivo",
     "body": "La pestaña Revisión muestra cada archivo que cambió el agente, cada uno con su diff."
   },
+  "select": {
+    "title": "Comenta unas líneas",
+    "body": "Selecciona en un diff las líneas que quieres cambiar y haz clic derecho sobre ellas.",
+    "hint": "Selecciona líneas y haz clic derecho para continuar"
+  },
+  "pick": {
+    "title": "Elige Comentario para la sesión",
+    "body": "Abre un cuadro bajo esas líneas para tu comentario.",
+    "hint": "Haz clic en Comentario para la sesión para continuar"
+  },
   "comment": {
-    "title": "Comenta una línea",
-    "body": "Selecciona líneas de un diff, haz clic derecho y elige Comentario para la sesión. Escribe qué cambiar y haz clic en Añadir al lote.",
-    "hint": "Añade un comentario para continuar"
+    "title": "Escribe qué cambiar",
+    "body": "Di qué debe cambiar el agente en estas líneas y haz clic en Añadir al lote.",
+    "hint": "Haz clic en Añadir al lote para continuar"
   },
   "send": {
     "title": "Envía tus comentarios",

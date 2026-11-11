@@ -10,10 +10,20 @@
     "title": "Leia arquivo por arquivo",
     "body": "A aba Revisão mostra cada arquivo que o agente alterou, cada um com seu diff."
   },
+  "select": {
+    "title": "Comente umas linhas",
+    "body": "Selecione num diff as linhas que você quer mudar e clique nelas com o botão direito.",
+    "hint": "Selecione linhas e clique com o botão direito para continuar"
+  },
+  "pick": {
+    "title": "Escolha Comentar para a sessão",
+    "body": "Abre uma caixa sob essas linhas para o seu comentário.",
+    "hint": "Clique em Comentar para a sessão para continuar"
+  },
   "comment": {
-    "title": "Comente uma linha",
-    "body": "Selecione linhas de um diff, clique com o botão direito e escolha Comentar para a sessão. Escreva o que mudar e clique em Adicionar ao lote.",
-    "hint": "Adicione um comentário para continuar"
+    "title": "Escreva o que mudar",
+    "body": "Diga o que o agente deve mudar nessas linhas e clique em Adicionar ao lote.",
+    "hint": "Clique em Adicionar ao lote para continuar"
   },
   "send": {
     "title": "Envie seus comentários",

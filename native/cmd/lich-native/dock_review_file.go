@@ -307,7 +307,9 @@ func (c *fileCard) composerBlock(gtx C) D {
 	if p.pr != nil {
 		c.composer.toReview = p.pr.toReview
 	}
-	return composerSlot.Layout(gtx, func(gtx C) D { return c.composer.layout(gtx, p.th, p.comments, p.target) })
+	return p.spot(gtx, tourReviewComposer, func(gtx C) D {
+		return composerSlot.Layout(gtx, func(gtx C) D { return c.composer.layout(gtx, p.th, p.comments, p.target) })
+	})
 }
 
 // cardBlocks are what hangs under the card's lines: the composer while it is
@@ -334,6 +336,8 @@ func (c *fileCard) menuEntries(p *reviewPanel) []ui.MenuEntry {
 		changes = c.view.SelectedChanges()
 	}
 	entries := injectEntries(path, lines, p.inject, func() { c.composer.open(path, lines) })
+	// The last of injectEntries is Comment for the session.
+	entries[len(entries)-1].Spot = func(gtx C, row layout.Widget) D { return p.spot(gtx, tourReviewItem, row) }
 	if p.pr != nil {
 		return append(entries, reviewCommentEntries(lines, p.pr.own, func() { c.composer.openReview(path, lines) })...)
 	}
