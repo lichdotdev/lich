@@ -1,0 +1,17 @@
+{
+  "label": "Worktrees",
+  "unavailable": "Open a git project first",
+  "create": {
+    "title": "Start a task in a worktree",
+    "body": "Open New Session and pick Worktree. Name it with a few words or an issue like #123, choose a base under From, then click Create.",
+    "hint": "Create a worktree session to continue"
+  },
+  "card": {
+    "title": "A checkout of its own",
+    "body": "The new session sits in its own checkout block, with its branch on the header. Its agent works there without touching your main checkout's files."
+  },
+  "branch": {
+    "title": "The branch on screen",
+    "body": "This chip shows the branch of the session on screen. Click it for its history and branch actions."
+  }
+}

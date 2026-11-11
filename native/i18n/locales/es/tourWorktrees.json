@@ -1,0 +1,17 @@
+{
+  "label": "Worktrees",
+  "unavailable": "Abre primero un proyecto git",
+  "create": {
+    "title": "Empieza una tarea en una worktree",
+    "body": "Abre Nueva sesión y elige Worktree. Ponle unas palabras o una issue como #123, elige una base en Desde y haz clic en Crear.",
+    "hint": "Crea una sesión en worktree para continuar"
+  },
+  "card": {
+    "title": "Un checkout propio",
+    "body": "La nueva sesión queda en su propio bloque de checkout, con su rama en la cabecera. Su agente trabaja ahí sin tocar los archivos de tu checkout principal."
+  },
+  "branch": {
+    "title": "La rama en pantalla",
+    "body": "Este chip muestra la rama de la sesión en pantalla. Haz clic para ver su historial y las acciones de rama."
+  }
+}

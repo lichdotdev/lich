@@ -281,7 +281,9 @@ func (f *footer) slot(gtx C, th *ui.Theme, s footerSlot, in footerInput) D {
 		}
 		if s.ID == "checkout" && f.git != nil && in.inRepository() {
 			gtx.Constraints.Max.X = min(gtx.Constraints.Max.X, gtx.Dp(checkoutMaxWidth))
-			return footerButton(gtx, th, f.root, w, s.Hint, true, false, branchContent(ic, s.Text))
+			return f.tour.Anchor(gtx, worktreesBranch, func(gtx C) D {
+				return footerButton(gtx, th, f.root, w, s.Hint, true, false, branchContent(ic, s.Text))
+			})
 		}
 		glyph := func(gtx C) D { return ic.Layout(gtx, footerGlyph, th.MutedForeground) }
 		return footerSpan(gtx, th, f.root, &w.tip, s.Hint, checkoutMaxWidth, glyph, s.Text)
