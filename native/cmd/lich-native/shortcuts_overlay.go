@@ -94,7 +94,7 @@ func shortcutsHeading(th *ui.Theme, title string) layout.Widget {
 // closeHint is the footer's key cap and the word beside it.
 func closeHint(gtx C, th *ui.Theme) D {
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-		layout.Rigid(func(gtx C) D { return keyCap(gtx, th, shortcutsEsc) }),
+		layout.Rigid(func(gtx C) D { return th.KeyCap(shortcutsEsc).Layout(gtx) }),
 		ui.Gap(1.5),
 		layout.Rigid(th.Text(ui.TextXS, i18n.T("shell.shortcutsOverlay.close")).Muted().Layout),
 	)

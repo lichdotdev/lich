@@ -295,7 +295,9 @@ func (d *worktreeDialog) basePicker(gtx C, th *ui.Theme, ctx context.Context, v 
 		return d.branchList(gtx, th, ctx, v)
 	})
 	lead := func(gtx C) D { return icWtBranch.Layout(gtx, ui.Space(4), th.MutedForeground) }
-	return pop.Layout(gtx, func(gtx C) D { return selectTriggerWith(gtx, th, lead, label, width) })
+	trigger := th.SelectTrigger(label, width)
+	trigger.Lead = lead
+	return pop.Layout(gtx, trigger.Layout)
 }
 
 func (d *worktreeDialog) branchList(gtx C, th *ui.Theme, ctx context.Context, v worktreeView) D {

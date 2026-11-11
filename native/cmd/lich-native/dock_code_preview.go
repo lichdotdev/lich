@@ -119,7 +119,7 @@ func (p *preview) layout(gtx C, th *ui.Theme, root *ui.Root, env previewEnv) (D,
 			return p.client.ReadFile(ctx, path, rel)
 		})
 	}
-	if p.md.toggle.click.Clicked(gtx) {
+	if p.md.toggle.Click.Clicked(gtx) {
 		p.md.rendering = !p.md.rendering
 	}
 	if !p.md.rendering {
@@ -224,7 +224,7 @@ func (p *preview) body(gtx C, th *ui.Theme, root *ui.Root, key string) (D, error
 	case err != nil:
 		return binaryState(gtx, th, backend.ErrorText(err), "", &p.exits), nil
 	case loading:
-		return notice(gtx, th, i18n.T("dock.filesPanel.loading")), nil
+		return th.Notice(i18n.T("dock.filesPanel.loading")).Layout(gtx), nil
 	}
 	p.show(key, text)
 	p.syncComposer()

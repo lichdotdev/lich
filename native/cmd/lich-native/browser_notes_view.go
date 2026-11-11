@@ -512,7 +512,7 @@ func (u *window) noteRow(gtx C, n *browserNotes, i int) D {
 				ui.Gap(2.5),
 				layout.Flexed(1, th.Text(ui.TextXS, text).In(muted).Layout),
 				layout.Rigid(func(gtx C) D {
-					return cornerButton(gtx, th, &note.remove, icNoteRemove, false)
+					return th.CornerButton(&note.remove, icNoteRemove, false).Layout(gtx)
 				}),
 			)
 		})

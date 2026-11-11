@@ -236,7 +236,7 @@ func paletteHint(th *ui.Theme, label string, keys ...string) layout.Widget {
 			if i > 0 {
 				children = append(children, ui.Gap(1))
 			}
-			children = append(children, layout.Rigid(func(gtx C) D { return keyCap(gtx, th, k) }))
+			children = append(children, layout.Rigid(func(gtx C) D { return th.KeyCap(k).Layout(gtx) }))
 		}
 		children = append(children, ui.Gap(1.5), layout.Rigid(th.Text(ui.TextXS, label).Muted().Layout))
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
@@ -472,7 +472,7 @@ func paletteFaceOf(on *ui.Theme, v *paletteView, r paletteRow, fg color.NRGBA, r
 			if r.keys == hotkeyUnassigned {
 				return on.Text(ui.TextXS, r.keys).Muted().Layout(gtx)
 			}
-			return keyCap(gtx, on, r.keys)
+			return on.KeyCap(r.keys).Layout(gtx)
 		},
 	}
 }
@@ -569,7 +569,7 @@ func paletteChip(on *ui.Theme, word string, tone color.NRGBA) layout.Widget {
 		d := layout.Inset{Left: ui.Space(2), Right: ui.Space(2), Top: unit.Dp(1), Bottom: unit.Dp(1)}.Layout(gtx,
 			on.Text(paletteTinySize, word).Leading(paletteTinyLeading).Mono().In(tone).Layout)
 		call := macro.Stop()
-		insetBorder(gtx, d.Size, d.Size.Y/2, on.Over(ui.Alpha(tone, paletteChipOpacity)))
+		ui.InsetBorder(gtx, d.Size, d.Size.Y/2, on.Over(ui.Alpha(tone, paletteChipOpacity)))
 		call.Add(gtx.Ops)
 		return d
 	}

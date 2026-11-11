@@ -125,7 +125,7 @@ func branchSection(th *ui.Theme, sv *sessionView) layout.Widget {
 			}))
 		}
 		if sv.git.Files > 0 {
-			children = append(children, ui.Gap(2), layout.Rigid(func(gtx C) D { return diffStat(gtx, th, sv.git.Added, sv.git.Deleted) }))
+			children = append(children, ui.Gap(2), layout.Rigid(func(gtx C) D { return th.DiffStat(sv.git.Added, sv.git.Deleted).Layout(gtx) }))
 		}
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
 	}

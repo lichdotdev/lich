@@ -258,7 +258,7 @@ func (s *settingsScreen) paneLayout(gtx C, th *ui.Theme, values scopedValues) D 
 	size := gtx.Dp(settingsCloseSize)
 	defer op.Offset(image.Pt(gtx.Constraints.Max.X-inset-size, inset)).Push(gtx.Ops).Pop()
 	tip := th.Tooltip(s.root, &s.nav.closeTip, i18n.T("sidebar.settingsCard.close"))
-	tip.Layout(gtx, func(gtx C) D { return barIconButton(gtx, th, &s.close, icSettingsClose, false) })
+	tip.Layout(gtx, func(gtx C) D { return th.BarIconButton(&s.close, icSettingsClose, false).Layout(gtx) })
 	return d
 }
 
@@ -405,24 +405,13 @@ func (s *settingsScreen) scopePill(gtx C, th *ui.Theme) D {
 			name = p.name
 		}
 	}
-	return pill(gtx, th, func(gtx C) D {
+	return th.Pill(func(gtx C) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Rigid(func(gtx C) D { return swatch(gtx, projectSwatch(s.scope)) }),
 			ui.Gap(2),
 			layout.Rigid(th.Text(ui.TextXS, name).Muted().Weight(font.Medium).Layout),
 		)
-	}, ui.Space(1.75), ui.Space(2.25))
-}
-
-// pill is a rounded-full box with an inset 1px border around w.
-func pill(gtx C, th *ui.Theme, w layout.Widget, padL, padR unit.Dp) D {
-	macro := op.Record(gtx.Ops)
-	gtx.Constraints.Min = image.Point{}
-	d := layout.Inset{Left: padL, Right: padR, Top: unit.Dp(3), Bottom: unit.Dp(3)}.Layout(gtx, w)
-	call := macro.Stop()
-	insetBorder(gtx, d.Size, d.Size.Y/2, th.Over(th.Border))
-	call.Add(gtx.Ops)
-	return d
+	}, ui.Space(1.75), ui.Space(2.25)).Layout(gtx)
 }
 
 // swatch is the mockup's 10px rounded square of a project's color.

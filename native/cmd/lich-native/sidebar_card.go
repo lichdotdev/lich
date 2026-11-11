@@ -88,7 +88,7 @@ func (s *sidebar) card(gtx C, th *ui.Theme, sv *sessionView, active bool, folder
 	moreButton := func(gtx C) D {
 		click := clickable(s.moreClicks, sv.ID)
 		return th.DropdownMenu(s.root, more, entries()).Layout(gtx, func(gtx C) D {
-			return cornerButton(gtx, th, click, icGroupMore, more.Opened())
+			return th.CornerButton(click, icGroupMore, more.Opened()).Layout(gtx)
 		})
 	}
 	d := th.ContextMenuLazy(s.root, menu, entries).Layout(gtx, func(gtx C) D {
@@ -178,7 +178,7 @@ func (s *sidebar) cardBody(gtx C, th *ui.Theme, sv *sessionView, prChip *widget.
 		row = append(row, ui.Gap(1.5), layout.Rigid(func(gtx C) D { return s.prBadge(gtx, th, prChip, sv.pr.Number) }))
 	}
 	if sv.git.Files > 0 {
-		row = append(row, ui.Gap(1.5), layout.Rigid(func(gtx C) D { return diffStat(gtx, th, sv.git.Added, sv.git.Deleted) }))
+		row = append(row, ui.Gap(1.5), layout.Rigid(func(gtx C) D { return th.DiffStat(sv.git.Added, sv.git.Deleted).Layout(gtx) }))
 	}
 	return s.cardLine(gtx, th, sv, more, hovered, row)
 }

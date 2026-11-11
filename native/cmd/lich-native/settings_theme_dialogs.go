@@ -193,7 +193,7 @@ func orRule(gtx C, th *ui.Theme) D {
 	line := func(gtx C) D {
 		return layout.Center.Layout(gtx, func(gtx C) D {
 			gtx.Constraints.Max.Y = gtx.Dp(1)
-			return ruleAbove(gtx, th)
+			return th.RuleAbove(gtx)
 		})
 	}
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,

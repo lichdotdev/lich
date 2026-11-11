@@ -160,7 +160,7 @@ func (s *settingsScreen) providerPicker(gtx C, th *ui.Theme, m providersMachine,
 		}
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, rows...)
 	})
-	return pop.Layout(gtx, func(gtx C) D { return selectTrigger(gtx, th, m.nameOf(shown), providerTriggerW) })
+	return pop.Layout(gtx, th.SelectTrigger(m.nameOf(shown), providerTriggerW).Layout)
 }
 
 // providerOption is one SelectItem: the mark and the name, checked when

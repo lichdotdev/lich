@@ -146,13 +146,13 @@ func (s *settingsScreen) serviceRow(gtx C, th *ui.Theme, v backend.Service) D {
 					layout.Rigid(th.Text(ui.TextXS, v.Command).Mono().Muted().Layout),
 				)
 			}),
-			layout.Rigid(func(gtx C) D { return cornerButton(gtx, th, edit, icServiceEdit, false) }),
+			layout.Rigid(func(gtx C) D { return th.CornerButton(edit, icServiceEdit, false).Layout(gtx) }),
 			ui.Gap(1),
 			layout.Rigid(func(gtx C) D {
 				if serviceUp(v) {
 					return D{Size: image.Pt(gtx.Dp(16), gtx.Dp(16))}
 				}
-				return cornerButton(gtx, th, del, icServiceDelete, false)
+				return th.CornerButton(del, icServiceDelete, false).Layout(gtx)
 			}),
 		)
 	})

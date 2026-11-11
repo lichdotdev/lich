@@ -359,11 +359,11 @@ func (u *window) paneButtons(gtx C, th *ui.Theme, v stageView, sv sessionView, p
 	unsplit := th.Tooltip(&u.root, &p.unsplitTip, i18n.T("layouts.pane.unsplit"))
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			return zoom.Layout(gtx, func(gtx C) D { return cornerButton(gtx, th, &p.zoom, icPaneZoom, false) })
+			return zoom.Layout(gtx, func(gtx C) D { return th.CornerButton(&p.zoom, icPaneZoom, false).Layout(gtx) })
 		}),
 		ui.Gap(1.5),
 		layout.Rigid(func(gtx C) D {
-			return unsplit.Layout(gtx, func(gtx C) D { return cornerButton(gtx, th, &p.unsplit, icPaneUnsplit, false) })
+			return unsplit.Layout(gtx, func(gtx C) D { return th.CornerButton(&p.unsplit, icPaneUnsplit, false).Layout(gtx) })
 		}),
 	)
 }
@@ -385,18 +385,18 @@ func zoomChip(gtx C, th *ui.Theme, v stageView) D {
 	if waiting > 0 {
 		text = i18n.T("layouts.pane.hiddenWaiting", i18n.Args{"count": hidden, "waiting": waiting})
 	}
-	return pill(gtx, th, func(gtx C) D {
+	return th.Pill(func(gtx C) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Rigid(func(gtx C) D { return icPaneUnzoom.Layout(gtx, 12, th.MutedForeground) }),
 			ui.Gap(1.5),
 			layout.Rigid(th.Text(ui.TextXS, text).Muted().Layout),
 		)
-	}, ui.Space(2), ui.Space(2))
+	}, ui.Space(2), ui.Space(2)).Layout(gtx)
 }
 
 // projectTag is the project's name in an outlined pill.
 func projectTag(gtx C, th *ui.Theme, name string, fg color.NRGBA) D {
-	return pill(gtx, th, th.Text(ui.TextXS, name).In(fg).Layout, ui.Space(2), ui.Space(2))
+	return th.Pill(th.Text(ui.TextXS, name).In(fg).Layout, ui.Space(2), ui.Space(2)).Layout(gtx)
 }
 
 // worktreeLabel names the worktree a pane's session runs in, "" for the

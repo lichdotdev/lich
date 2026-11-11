@@ -105,9 +105,9 @@ func (c *codeTab) treeBody(gtx C, th *ui.Theme) D {
 	data, loading, err := c.tree.get()
 	switch {
 	case err != nil:
-		return notice(gtx, th, i18n.T("dock.filesPanel.readFailed"))
+		return th.Notice(i18n.T("dock.filesPanel.readFailed")).Layout(gtx)
 	case loading || data == nil:
-		return notice(gtx, th, i18n.T("dock.filesPanel.loading"))
+		return th.Notice(i18n.T("dock.filesPanel.loading")).Layout(gtx)
 	}
 	query := c.query.Text()
 	filtering := strings.TrimSpace(query) != ""
@@ -123,7 +123,7 @@ func (c *codeTab) treeBody(gtx C, th *ui.Theme) D {
 				if filtering {
 					empty = i18n.T("dock.filesPanel.noMatch")
 				}
-				return notice(gtx, th, empty)
+				return th.Notice(empty).Layout(gtx)
 			}
 			return c.treeList(gtx, th, rows)
 		}),
@@ -131,7 +131,7 @@ func (c *codeTab) treeBody(gtx C, th *ui.Theme) D {
 			if note == "" {
 				return D{}
 			}
-			return footnote(gtx, th, note)
+			return th.Footnote(note).Layout(gtx)
 		}),
 	)
 }
@@ -293,7 +293,7 @@ func (t *treeRows) rowParts(th *ui.Theme, r treeRow, lit bool) (lead, stat layou
 		if !changed {
 			return D{}
 		}
-		return layout.Inset{Left: ui.Space(2)}.Layout(gtx, func(gtx C) D { return diffStat(gtx, th, d.added, d.deleted) })
+		return layout.Inset{Left: ui.Space(2)}.Layout(gtx, func(gtx C) D { return th.DiffStat(d.added, d.deleted).Layout(gtx) })
 	}
 	return lead, stat
 }

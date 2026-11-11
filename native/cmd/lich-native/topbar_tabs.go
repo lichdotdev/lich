@@ -101,7 +101,7 @@ func (t *topbar) strip(gtx C, th *ui.Theme, f topbarFrame, act *topbarAction) D 
 		act.drop = d
 	}
 	dragEnded := before != "" && t.sort.Dragging() == ""
-	plus := gtx.Dp(barButton) + gtx.Dp(barGap)
+	plus := gtx.Dp(ui.BarButtonSize) + gtx.Dp(barGap)
 	w := tabWidth(gtx.Constraints.Max.X-plus, len(f.tabs), gtx.Dp(tabWidthMax), gtx.Dp(tabWidthMin))
 	t.tabW = w
 	t.lay(gtx, f, w)
@@ -308,7 +308,7 @@ func (t *topbar) tabContent(gtx C, on *ui.Theme, tab projectTab, st *tabState, f
 			if !showClose || tab.pinned {
 				return D{Size: image.Pt(gtx.Dp(16), gtx.Dp(16))}
 			}
-			return cornerButton(gtx, on, &st.close, icTabClose, false)
+			return on.CornerButton(&st.close, icTabClose, false).Layout(gtx)
 		}),
 	)
 }

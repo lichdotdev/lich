@@ -149,6 +149,7 @@ type gallery struct {
 	side *sidebar
 
 	toastState
+	contentState
 }
 
 func newGallery(th *ui.Theme) *gallery {
@@ -208,6 +209,8 @@ func (g *gallery) content(gtx C) D {
 					g.section("Input, Textarea, InputGroup", g.inputsSection),
 					g.section("Tooltip, menus and Dialog", g.overlaysSection),
 					g.section("Chip, ResizeHandle, Collapse, Presence, Sortable list", g.sidebarSection),
+					g.section("Notice, Footnote, PanelNotice, BodyLine", g.noticesSection),
+					g.section("PopoverRow, SelectTrigger, RuleAbove, VerticalRule", g.rowsSection),
 				)),
 				ui.Gap(6),
 				layout.Flexed(1, stack(6,
@@ -216,6 +219,8 @@ func (g *gallery) content(gtx C) D {
 					g.section("Label, Text, Skeleton, Separator, icons", g.typographySection),
 					g.section("Wrap, Sortable", g.layoutSection),
 					g.section("Toast", g.toastsSection),
+					g.section("IconAction, CornerButton, BarIconButton", g.iconButtonsSection),
+					g.section("DiffStat, MetaGlyph, Pill, KeyCap", g.metaSection),
 				)),
 			)
 		}),

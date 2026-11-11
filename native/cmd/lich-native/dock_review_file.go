@@ -52,8 +52,8 @@ type fileCard struct {
 	headerHeight int
 
 	toggle          widget.Clickable
-	attach, discard iconActionState
-	preview         iconActionState
+	attach, discard ui.IconActionState
+	preview         ui.IconActionState
 	menu            ui.MenuState
 	composer        commentComposer
 	panel           *reviewPanel
@@ -116,13 +116,13 @@ func (c *fileCard) layout(gtx C, p *reviewPanel) D {
 			c.open = true
 		}
 	}
-	if c.attach.click.Clicked(gtx) {
+	if c.attach.Click.Clicked(gtx) {
 		p.inject(fileReference(c.git.path))
 	}
-	if c.preview.click.Clicked(gtx) {
+	if c.preview.Click.Clicked(gtx) {
 		c.previewing, c.open = !c.previewing, true
 	}
-	if c.discard.click.Clicked(gtx) {
+	if c.discard.Click.Clicked(gtx) {
 		p.pendingDiscard = &c.git
 	}
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
@@ -168,7 +168,7 @@ func (c *fileCard) headerRow(gtx C, th *ui.Theme, p *reviewPanel) D {
 			if c.onlyWhitespace() {
 				return th.Text(ui.TextXS, i18n.T("diff.fileDiff.whitespaceOnly")).Muted().Layout(gtx)
 			}
-			return diffStat(gtx, th, c.patch.Added, c.patch.Deleted)
+			return th.DiffStat(c.patch.Added, c.patch.Deleted).Layout(gtx)
 		}))
 	}
 	attachGap := ui.Gap(2)
@@ -178,13 +178,13 @@ func (c *fileCard) headerRow(gtx C, th *ui.Theme, p *reviewPanel) D {
 	}
 	children = append(children,
 		attachGap, layout.Rigid(func(gtx C) D {
-			return iconAction(gtx, th, p.root, &c.attach, icAttach, i18n.T("diff.fileDiff.addAsContext"), false)
+			return th.IconAction(p.root, &c.attach, icAttach, i18n.T("diff.fileDiff.addAsContext"), false).Layout(gtx)
 		}))
 	if p.pr != nil {
 		children = append(children, ui.Gap(2), layout.Rigid(func(gtx C) D { return c.viewedTick(gtx, th, p) }))
 	} else {
 		children = append(children, ui.Gap(1), layout.Rigid(func(gtx C) D {
-			return iconAction(gtx, th, p.root, &c.discard, icDiscard, i18n.T("diff.fileDiff.discard"), false)
+			return th.IconAction(p.root, &c.discard, icDiscard, i18n.T("diff.fileDiff.discard"), false).Layout(gtx)
 		}))
 	}
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
@@ -242,23 +242,17 @@ func (c *fileCard) body(gtx C, p *reviewPanel) D {
 	case c.previewing:
 		return c.markdownBody(gtx, p)
 	case c.onlyWhitespace():
-		return bodyLine(gtx, th, i18n.T("diff.fileDiff.onlyWhitespaceChanged"))
+		return th.BodyLine(i18n.T("diff.fileDiff.onlyWhitespaceChanged")).Layout(gtx)
 	}
 	view := c.ensureView(p)
 	if view == nil {
-		return bodyLine(gtx, th, i18n.T("diff.fileDiff.readFailed", i18n.Args{"path": c.git.path}))
+		return th.BodyLine(i18n.T("diff.fileDiff.readFailed", i18n.Args{"path": c.git.path})).Layout(gtx)
 	}
 	return layout.Inset{Top: ui.Space(1), Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
 		return th.ContextMenuLazy(p.root, &c.menu, func() []ui.MenuEntry { return c.menuEntries(p) }).Layout(gtx, func(gtx C) D {
 			return c.diff(gtx, p, view)
 		})
 	})
-}
-
-// bodyLine is the px-9 py-2 text-xs muted line a body without a diff shows.
-func bodyLine(gtx C, th *ui.Theme, text string) D {
-	return layout.Inset{Left: ui.Space(9), Right: ui.Space(9), Top: ui.Space(2), Bottom: ui.Space(2)}.Layout(gtx,
-		th.Text(ui.TextXS, text).Muted().Layout)
 }
 
 // diff lays the editor out exactly as tall as its rows and the composer

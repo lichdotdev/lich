@@ -16,7 +16,7 @@ import (
 // source whenever another file opens.
 type codeMarkdown struct {
 	rendering bool
-	toggle    iconActionState
+	toggle    ui.IconActionState
 	rendered  markdownCache
 	scroll    widget.List
 }
@@ -26,7 +26,7 @@ func (p *preview) markdownToggle(gtx C, th *ui.Theme, root *ui.Root) D {
 	if p.md.rendering {
 		label = i18n.T("dock.filesPanel.showSource")
 	}
-	return iconAction(gtx, th, root, &p.md.toggle, icMarkdownPreview, label, p.md.rendering)
+	return th.IconAction(root, &p.md.toggle, icMarkdownPreview, label, p.md.rendering).Layout(gtx)
 }
 
 func (p *preview) markdownBody(gtx C, th *ui.Theme) D {
@@ -35,7 +35,7 @@ func (p *preview) markdownBody(gtx C, th *ui.Theme) D {
 	case err != nil:
 		return binaryState(gtx, th, backend.ErrorText(err), "", &p.exits)
 	case loading:
-		return notice(gtx, th, i18n.T("dock.filesPanel.loading"))
+		return th.Notice(i18n.T("dock.filesPanel.loading")).Layout(gtx)
 	}
 	inset, viewport := ui.Space(3), gtx.Constraints.Max.Y
 	return th.ScrollArea(&p.md.scroll).Layout(gtx, 1, func(gtx C, _ int) D {

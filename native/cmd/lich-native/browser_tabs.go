@@ -35,7 +35,7 @@ var (
 // was last drawn, in the header's coordinates, for the agent's cursor.
 type browserTabsUI struct {
 	pick, close map[string]*widget.Clickable
-	newTab      iconActionState
+	newTab      ui.IconActionState
 	closeTip    map[string]*ui.Tooltip
 	at, closeAt map[string]image.Rectangle
 	newAt       image.Rectangle
@@ -88,7 +88,7 @@ func (u *window) browserTabs(gtx C, p *browserPaneUI, session string, st api.Bro
 	}
 	t.newAt = image.Rect(x, y, x+plus, y+plus)
 	off := op.Offset(image.Pt(x, (gtx.Constraints.Max.Y-plus)/2)).Push(gtx.Ops)
-	iconAction(gtx, th, &u.root, &t.newTab, icTabNew, i18n.T("layouts.browser.newTab"), p.tabFlash(gtx, "new"))
+	th.IconAction(&u.root, &t.newTab, icTabNew, i18n.T("layouts.browser.newTab"), p.tabFlash(gtx, "new")).Layout(gtx)
 	off.Pop()
 	return D{Size: gtx.Constraints.Max}
 }
@@ -112,7 +112,7 @@ func (u *window) paneNameAndNewTab(gtx C, p *browserPaneUI, focused bool) D {
 		}),
 		ui.Gap(1),
 		layout.Rigid(func(gtx C) D {
-			return iconAction(gtx, th, &u.root, &p.tabs.newTab, icTabNew, i18n.T("layouts.browser.newTab"), p.tabFlash(gtx, "new"))
+			return th.IconAction(&u.root, &p.tabs.newTab, icTabNew, i18n.T("layouts.browser.newTab"), p.tabFlash(gtx, "new")).Layout(gtx)
 		}),
 	)
 }
@@ -141,7 +141,9 @@ func (u *window) tabLayout(gtx C, p *browserPaneUI, tab api.BrowserTab, pick, cl
 	off.Pop()
 	off = op.Offset(box.Min).Push(gtx.Ops)
 	closeTip := th.Tooltip(&u.root, tip, i18n.T("layouts.browser.closeTab"))
-	closeTip.Layout(gtx, func(gtx C) D { return cornerButton(gtx, th, closer, icTabClose, p.tabFlash(gtx, "close "+tab.ID)) })
+	closeTip.Layout(gtx, func(gtx C) D {
+		return th.CornerButton(closer, icTabClose, p.tabFlash(gtx, "close "+tab.ID)).Layout(gtx)
+	})
 	off.Pop()
 	return box
 }
@@ -163,7 +165,7 @@ func (u *window) tabClicks(gtx C, p *browserPaneUI, session string, tabs []api.B
 	nav := func(action, tab string) {
 		u.sendBrowser(session, "tab", func(ctx context.Context) error { return u.client.BrowserTabNav(ctx, session, action, tab) })
 	}
-	if p.tabs.newTab.click.Clicked(gtx) {
+	if p.tabs.newTab.Click.Clicked(gtx) {
 		nav(api.TabNew, "")
 		gtx.Execute(key.FocusCmd{Tag: &p.url})
 	}

@@ -28,7 +28,7 @@ var pullsDescriptionMaxHeight = ui.Space(80)
 type editState struct {
 	titleURL  string
 	title     ui.InlineEdit
-	titleOpen iconActionState
+	titleOpen ui.IconActionState
 
 	bodyURL    string
 	body       widget.Editor
@@ -92,7 +92,7 @@ func (s *editState) titleEditing(d backend.PRDetail) bool {
 // leaving the field saves, Escape cancels, as a session card's rename.
 func (v *pullView) pullTitle(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDetail, act *pullsAction) D {
 	s := &v.edit
-	if s.titleOpen.click.Clicked(gtx) {
+	if s.titleOpen.Click.Clicked(gtx) {
 		s.titleURL = d.URL
 		s.title.Start(d.Title)
 	}
@@ -115,7 +115,7 @@ func (v *pullView) pullTitle(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDe
 				}),
 				ui.Gap(1),
 				layout.Rigid(func(gtx C) D {
-					return iconAction(gtx, th, p.root, &s.titleOpen, icPullEdit, i18n.T("pulls.pullRequestView.editTitle"), false)
+					return th.IconAction(p.root, &s.titleOpen, icPullEdit, i18n.T("pulls.pullRequestView.editTitle"), false).Layout(gtx)
 				}),
 			)
 		}),

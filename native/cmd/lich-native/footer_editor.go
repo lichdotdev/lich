@@ -192,7 +192,7 @@ func (f *footer) zoneBox(gtx C, th *ui.Theme, zone string, items []string, in fo
 				// Inside the box rather than outside it: the zone is clipped
 				// to its own bounds, which hid all but the corners of an
 				// outer ring.
-				insetRing(gtx, gtx.Constraints.Min, gtx.Dp(ui.RadiusLG), gtx.Dp(2), th.Ring)
+				ui.InsetRing(gtx, gtx.Constraints.Min, gtx.Dp(ui.RadiusLG), gtx.Dp(2), th.Ring)
 			}
 			return d
 		},

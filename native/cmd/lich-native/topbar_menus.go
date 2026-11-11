@@ -64,7 +64,7 @@ func (t *topbar) openButton(gtx C, th *ui.Theme, act *topbarAction) D {
 		if o.plus.Clicked(gtx) {
 			act.pick = true
 		}
-		return tip.Layout(gtx, func(gtx C) D { return barIconButton(gtx, th, &o.plus, icPlus, false) })
+		return tip.Layout(gtx, func(gtx C) D { return th.BarIconButton(&o.plus, icPlus, false).Layout(gtx) })
 	}
 	if len(o.rows) < len(recents) {
 		o.rows = make([]widget.Clickable, len(recents))
@@ -82,7 +82,7 @@ func (t *topbar) openButton(gtx C, th *ui.Theme, act *topbarAction) D {
 	content := func(gtx C, th *ui.Theme) D { return o.content(gtx, th, recents, missing) }
 	pop := th.DropdownPanel(t.root, &o.popover, menuWidth, content)
 	return tip.Layout(gtx, func(gtx C) D {
-		return pop.Layout(gtx, func(gtx C) D { return barIconButton(gtx, th, &o.plus, icPlus, o.popover.Opened()) })
+		return pop.Layout(gtx, func(gtx C) D { return th.BarIconButton(&o.plus, icPlus, o.popover.Opened()).Layout(gtx) })
 	})
 }
 
@@ -97,20 +97,20 @@ func (o *openMenu) content(gtx C, th *ui.Theme, recents []backend.RecentProject,
 	children = append(children,
 		layout.Rigid(menuSeparator(th)),
 		layout.Rigid(func(gtx C) D {
-			return popoverRow(gtx, th, &o.folder, func(gtx C, th *ui.Theme) D {
+			return th.PopoverRow(&o.folder, func(gtx C, th *ui.Theme) D {
 				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 					layout.Rigid(func(gtx C) D { return icFolderOpen.Layout(gtx, ui.Space(4), th.MutedForeground) }),
 					ui.Gap(2),
 					layout.Rigid(th.Text(ui.TextSM, i18n.T("tabs.openProjectMenu.openFolder")).Layout),
 				)
-			})
+			}).Layout(gtx)
 		}),
 	)
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
 }
 
 func recentRow(gtx C, th *ui.Theme, click *widget.Clickable, r backend.RecentProject, gone bool) D {
-	return popoverRow(gtx, th, click, func(gtx C, th *ui.Theme) D {
+	return th.PopoverRow(click, func(gtx C, th *ui.Theme) D {
 		ic := icFolderPlain
 		if gone {
 			ic = icFolderGone
@@ -124,7 +124,7 @@ func recentRow(gtx C, th *ui.Theme, click *widget.Clickable, r backend.RecentPro
 			children = append(children, ui.Gap(2), layout.Rigid(th.Text(10, i18n.T("tabs.openProjectMenu.relocate")).Muted().Mono().Layout))
 		}
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
-	})
+	}).Layout(gtx)
 }
 
 // twoLines is a row's `flex min-w-0 flex-col`: the label, and a muted
@@ -154,26 +154,6 @@ func menuSeparator(th *ui.Theme) layout.Widget {
 	return func(gtx C) D {
 		return layout.Inset{Top: ui.Space(1), Bottom: ui.Space(1)}.Layout(gtx, th.Separator)
 	}
-}
-
-// popoverRow is a DropdownMenuItem drawn by hand: px-2 py-1.5, rounded-sm,
-// bg-accent while the pointer is on it.
-func popoverRow(gtx C, th *ui.Theme, click *widget.Clickable, content func(gtx C, th *ui.Theme) D) D {
-	gtx.Constraints.Min.X = gtx.Constraints.Max.X
-	return click.Layout(gtx, func(gtx C) D {
-		bg := th.Surface
-		if click.Hovered() {
-			bg = th.Accent
-		}
-		return layout.Background{}.Layout(gtx,
-			func(gtx C) D { return ui.Fill(gtx, bg, ui.RadiusSM) },
-			func(gtx C) D {
-				return layout.Inset{Left: ui.Space(2), Right: ui.Space(2), Top: ui.Space(1.5), Bottom: ui.Space(1.5)}.Layout(gtx, func(gtx C) D {
-					return content(gtx, th.On(bg))
-				})
-			},
-		)
-	})
 }
 
 // bellMenu is NotificationsButton: the cross-project queue of sessions
@@ -206,7 +186,7 @@ func (t *topbar) bellButton(gtx C, th *ui.Theme, items []notification, act *topb
 	pop.AlignEnd = true
 	return tip.Layout(gtx, func(gtx C) D {
 		return pop.Layout(gtx, func(gtx C) D {
-			d := barIconButton(gtx, th, &b.trigger, icBell, b.popover.Opened())
+			d := th.BarIconButton(&b.trigger, icBell, b.popover.Opened()).Layout(gtx)
 			if len(items) > 0 {
 				pendingDot(gtx, th, d.Size)
 			}
@@ -255,7 +235,7 @@ func (b *bellMenu) content(gtx C, th *ui.Theme, items []notification) D {
 // the × that dismisses it, shown while the row is highlighted.
 func (b *bellMenu) row(gtx C, th *ui.Theme, item notification) D {
 	click, x := b.rows[item.ID], b.dismiss[item.ID]
-	return popoverRow(gtx, th, click, func(gtx C, th *ui.Theme) D {
+	return th.PopoverRow(click, func(gtx C, th *ui.Theme) D {
 		ic, tone := icTabDone, th.TonePass
 		if item.Status == statusWaiting {
 			ic, tone = icTabWaiting, th.ToneWait
@@ -269,10 +249,10 @@ func (b *bellMenu) row(gtx C, th *ui.Theme, item notification) D {
 				if !click.Hovered() && !x.Hovered() {
 					return D{Size: image.Pt(gtx.Dp(16), gtx.Dp(16))}
 				}
-				return cornerButton(gtx, th, x, icTabClose, false)
+				return th.CornerButton(x, icTabClose, false).Layout(gtx)
 			}),
 		)
-	})
+	}).Layout(gtx)
 }
 
 func clickableOf(m map[string]*widget.Clickable, id string) *widget.Clickable {

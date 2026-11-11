@@ -312,7 +312,7 @@ func (v *pullView) overview(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDet
 	}
 	return layout.Flex{}.Layout(gtx,
 		layout.Flexed(1, description),
-		layout.Rigid(func(gtx C) D { return verticalRule(gtx, th) }),
+		layout.Rigid(func(gtx C) D { return th.VerticalRule(gtx) }),
 		layout.Rigid(func(gtx C) D {
 			w := gtx.Dp(overviewFactsWidth)
 			gtx.Constraints.Min.X, gtx.Constraints.Max.X = w, w
@@ -356,9 +356,9 @@ func (v *pullView) checkoutFact(th *ui.Theme, p *pullsScreen, d backend.PRDetail
 	if !ok {
 		return []layout.Widget{th.Text(ui.TextSM, i18n.T("pulls.pullsNav.notCheckedOut")).Muted().Layout}
 	}
-	out := []layout.Widget{func(gtx C) D { return metaGlyph(gtx, th, icCheckout, checkoutName(wt), th.Foreground) }}
+	out := []layout.Widget{func(gtx C) D { return th.MetaGlyph(icCheckout, checkoutName(wt), th.Foreground).Layout(gtx) }}
 	for _, id := range p.sessionsIn(p.project.ID, wt.Path) {
-		out = append(out, func(gtx C) D { return metaGlyph(gtx, th, icPullSession, p.sessionLabel(id), th.MutedForeground) })
+		out = append(out, func(gtx C) D { return th.MetaGlyph(icPullSession, p.sessionLabel(id), th.MutedForeground).Layout(gtx) })
 	}
 	return out
 }
@@ -439,7 +439,7 @@ func reviewerChips(gtx C, th *ui.Theme, reviewers []backend.PRReviewer) D {
 // commitRows is PullsCommits: each commit, its body behind a click.
 func (v *pullView) commitRows(gtx C, th *ui.Theme, d backend.PRDetail) []layout.Widget {
 	if len(d.Commits) == 0 {
-		return []layout.Widget{func(gtx C) D { return panelNotice(gtx, th, i18n.T("pulls.pullsCommits.none")) }}
+		return []layout.Widget{func(gtx C) D { return th.PanelNotice(i18n.T("pulls.pullsCommits.none"), pullsPadX).Layout(gtx) }}
 	}
 	now := gtx.Now
 	rows := make([]layout.Widget, len(d.Commits))
@@ -496,7 +496,7 @@ func commitRow(gtx C, th *ui.Theme, c backend.PRCommit, click *widget.Clickable,
 // checkRows is PullsChecks: each check, its run opened in the browser.
 func (v *pullView) checkRows(gtx C, th *ui.Theme, d backend.PRDetail, act *pullsAction) []layout.Widget {
 	if len(d.CheckRuns) == 0 {
-		return []layout.Widget{func(gtx C) D { return panelNotice(gtx, th, i18n.T("pulls.pullsChecks.none")) }}
+		return []layout.Widget{func(gtx C) D { return th.PanelNotice(i18n.T("pulls.pullsChecks.none"), pullsPadX).Layout(gtx) }}
 	}
 	now := gtx.Now
 	rows := make([]layout.Widget, len(d.CheckRuns))
@@ -561,11 +561,6 @@ func panelRow(gtx C, th *ui.Theme, click *widget.Clickable, live bool, content f
 				})
 		})
 	})
-}
-
-func panelNotice(gtx C, th *ui.Theme, text string) D {
-	return layout.Inset{Left: pullsPadX, Right: pullsPadX, Top: ui.Space(5), Bottom: ui.Space(5)}.Layout(gtx,
-		th.Text(ui.TextSM, text).Muted().Layout)
 }
 
 func boolOf(m map[string]*widget.Bool, id string) *widget.Bool {

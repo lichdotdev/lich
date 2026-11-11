@@ -9,7 +9,6 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/op/clip"
-	"gioui.org/op/paint"
 	"gioui.org/unit"
 	"gioui.org/widget"
 
@@ -32,7 +31,6 @@ var (
 	hotkeyRowPadY    = ui.Space(1.5)
 	hotkeyLinePadX   = ui.Space(3)
 	hotkeyNoteGap    = ui.Space(2)
-	hotkeyKeyCapSize = unit.Sp(10) // text-[0.625rem]
 )
 
 // hotkeyNoteCh is the note's max-w-prose, a ch taken as 0.6em as settingsDescCh
@@ -220,7 +218,7 @@ func captureButton(gtx C, th *ui.Theme, r *hotkeyRow, c combo, recording, confli
 		if !recording && r.capture.Hovered() {
 			fillRow(gtx, th, size, 1)
 		}
-		insetBorder(gtx, size, gtx.Dp(ui.RadiusMD), border)
+		ui.InsetBorder(gtx, size, gtx.Dp(ui.RadiusMD), border)
 		call.Add(gtx.Ops)
 		defer clip.Rect{Max: size}.Push(gtx.Ops).Pop()
 		event.Op(gtx.Ops, &r.tag)
@@ -248,27 +246,8 @@ func shortcutLine(gtx C, th *ui.Theme, r shortcutRow) D {
 				if r.keys == hotkeyUnassigned {
 					return th.Text(ui.TextXS, r.keys).Muted().Layout(gtx)
 				}
-				return keyCap(gtx, th, r.keys)
+				return th.KeyCap(r.keys).Layout(gtx)
 			}),
 		)
 	})
-}
-
-// keyCap is Keys: rounded, a hairline border with a thicker bottom one, on
-// bg-muted, 10px mono text.
-func keyCap(gtx C, th *ui.Theme, keys string) D {
-	macro := op.Record(gtx.Ops)
-	gtx.Constraints.Min = image.Point{}
-	d := layout.Inset{Left: ui.Space(2), Right: ui.Space(2), Top: ui.Space(1.5), Bottom: ui.Space(1.5) + 1}.Layout(gtx,
-		th.Text(hotkeyKeyCapSize, keys).Mono().Muted().Leading(hotkeyKeyCapSize).Layout)
-	call := macro.Stop()
-	box := gtx
-	box.Constraints = layout.Exact(d.Size)
-	ui.Fill(box, th.Over(th.Palette.Muted), ui.RadiusSM)
-	border := th.Over(th.Border)
-	insetBorder(gtx, d.Size, gtx.Dp(ui.RadiusSM), border)
-	r := gtx.Dp(ui.RadiusSM)
-	paint.FillShape(gtx.Ops, border, clip.Rect{Min: image.Pt(r, d.Size.Y-2*gtx.Dp(1)), Max: image.Pt(d.Size.X-r, d.Size.Y-gtx.Dp(1))}.Op())
-	call.Add(gtx.Ops)
-	return d
 }

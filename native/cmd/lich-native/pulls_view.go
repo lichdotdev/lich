@@ -169,11 +169,11 @@ func (v *pullView) layout(gtx C, th *ui.Theme, p *pullsScreen, act *pullsAction)
 	read := p.store.detail(p.project.Path, p.selected)
 	switch {
 	case read.val == nil && read.err != "":
-		return v.withToolbar(gtx, th, p, nil, func(gtx C) D { return notice(gtx, th, read.err) })
+		return v.withToolbar(gtx, th, p, nil, func(gtx C) D { return th.Notice(read.err).Layout(gtx) })
 	case read.val == nil && !read.loaded, read.val == nil && read.loading:
 		return v.withToolbar(gtx, th, p, func(gtx C) D { return skeletonHeading(gtx, th) }, v.detailSkeleton(th))
 	case read.val == nil:
-		return v.withToolbar(gtx, th, p, nil, func(gtx C) D { return notice(gtx, th, i18n.T("pulls.pullsEmptyState.none")) })
+		return v.withToolbar(gtx, th, p, nil, func(gtx C) D { return th.Notice(i18n.T("pulls.pullsEmptyState.none")).Layout(gtx) })
 	}
 	d := v.edit.shown(*read.val, read, p.store.lastStale())
 	if stillSettling(d) && !read.loading {
@@ -405,7 +405,7 @@ func (v *pullView) stats(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDetail
 	items := []ui.WrapChild{
 		ui.WrapItem(func(gtx C) D { return stateStat(gtx, th, d) }),
 		ui.WrapItem(func(gtx C) D {
-			return metaGlyph(gtx, th, icPullBranch, d.HeadRefName+" → "+d.BaseRefName, th.MutedForeground)
+			return th.MetaGlyph(icPullBranch, d.HeadRefName+" → "+d.BaseRefName, th.MutedForeground).Layout(gtx)
 		}),
 		ui.WrapItem(th.Text(ui.TextXS, i18n.T("pulls.pullsOverview.openedBy", i18n.Args{"author": d.Author})).Muted().Layout),
 	}
@@ -583,7 +583,7 @@ func (v *pullView) tabStrip(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDet
 			if d.Additions == 0 && d.Deletions == 0 {
 				return D{}
 			}
-			return layout.Inset{Left: ui.Space(4)}.Layout(gtx, func(gtx C) D { return diffStat(gtx, th, d.Additions, d.Deletions) })
+			return layout.Inset{Left: ui.Space(4)}.Layout(gtx, func(gtx C) D { return th.DiffStat(d.Additions, d.Deletions).Layout(gtx) })
 		}),
 	)
 }

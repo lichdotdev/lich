@@ -145,7 +145,7 @@ func sandboxStatus(gtx C, th *ui.Theme, backend string) D {
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 	return layout.Stack{}.Layout(gtx,
 		layout.Expanded(func(gtx C) D {
-			insetBorder(gtx, gtx.Constraints.Min, gtx.Dp(ui.RadiusMD), th.Over(th.Border))
+			ui.InsetBorder(gtx, gtx.Constraints.Min, gtx.Dp(ui.RadiusMD), th.Over(th.Border))
 			return D{Size: gtx.Constraints.Min}
 		}),
 		layout.Stacked(func(gtx C) D {

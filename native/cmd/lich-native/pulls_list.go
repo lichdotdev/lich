@@ -21,7 +21,6 @@ import (
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
-	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
 func (s pullsState) label() string {
@@ -156,11 +155,11 @@ func (p *pullsScreen) rowList(gtx C, th *ui.Theme, list pullsRead[[]backend.PRSu
 	case !list.loaded:
 		return listSkeleton(gtx, th)
 	case list.err != "":
-		return notice(gtx, th, list.err)
+		return th.Notice(list.err).Layout(gtx)
 	case len(list.val) == 0:
-		return notice(gtx, th, p.state.none())
+		return th.Notice(p.state.none()).Layout(gtx)
 	case len(rows) == 0:
-		return notice(gtx, th, i18n.T("pulls.pullsList.noMatch"))
+		return th.Notice(i18n.T("pulls.pullsList.noMatch")).Layout(gtx)
 	}
 	now := gtx.Now
 	if p.cursorAt(rows) < 0 {
@@ -278,7 +277,7 @@ func rowSide(gtx C, th *ui.Theme, pr backend.PRSummary, checkout string) D {
 				if checkout == "" {
 					return D{}
 				}
-				return wholeOrNothing(gtx, func(gtx C) D { return metaGlyph(gtx, th, icCheckout, checkout, th.MutedForeground) })
+				return wholeOrNothing(gtx, func(gtx C) D { return th.MetaGlyph(icCheckout, checkout, th.MutedForeground).Layout(gtx) })
 			})
 		}),
 	)
@@ -291,7 +290,7 @@ func rowVerdict(gtx C, th *ui.Theme, pr backend.PRSummary) D {
 	case pr.ReviewDecision == "APPROVED":
 		return th.Text(ui.TextXS, i18n.T("pulls.pullsStats.approved")).In(th.TonePass).Layout(gtx)
 	case waitsOnReviewer(pr):
-		return metaGlyph(gtx, th, icPullCheck2, i18n.T("pulls.pullsStats.changesRequested"), th.ToneWait)
+		return th.MetaGlyph(icPullCheck2, i18n.T("pulls.pullsStats.changesRequested"), th.ToneWait).Layout(gtx)
 	case pr.ReviewDecision == "CHANGES_REQUESTED":
 		return th.Text(ui.TextXS, i18n.T("pulls.pullsStats.changesRequested")).In(th.Destructive).Layout(gtx)
 	}
@@ -388,15 +387,6 @@ func checksChip(gtx C, th *ui.Theme, c backend.ChecksRollup) D {
 		layout.Rigid(func(gtx C) D { return pullGlyph(gtx, th, ic, ui.Space(3), fg) }),
 		ui.Gap(1),
 		layout.Rigid(th.Text(ui.TextXS, text).Mono().In(fg).Layout),
-	)
-}
-
-// metaGlyph is a size-3 glyph and its text-xs words, gap-1.
-func metaGlyph(gtx C, th *ui.Theme, ic *icons.Icon, text string, fg color.NRGBA) D {
-	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-		layout.Rigid(func(gtx C) D { return ic.Layout(gtx, ui.Space(3), fg) }),
-		ui.Gap(1),
-		layout.Rigid(th.Text(ui.TextXS, text).In(fg).Layout),
 	)
 }
 

@@ -399,7 +399,7 @@ func notesCallout(th *ui.Theme, h backend.PatchNotesHighlight) layout.Widget {
 			bg.Constraints = layout.Exact(d.Size)
 			ui.Fill(bg, fill, ui.RadiusMD)
 			if danger {
-				insetBorder(gtx, d.Size, gtx.Dp(ui.RadiusMD), th.Over(ui.Alpha(th.Destructive, 0.3)))
+				ui.InsetBorder(gtx, d.Size, gtx.Dp(ui.RadiusMD), th.Over(ui.Alpha(th.Destructive, 0.3)))
 			}
 			call.Add(gtx.Ops)
 			return d

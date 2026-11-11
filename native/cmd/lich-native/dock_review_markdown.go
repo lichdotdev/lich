@@ -57,7 +57,7 @@ func (c *fileCard) previewToggle(gtx C, th *ui.Theme, p *reviewPanel) D {
 	if c.previewing {
 		label = i18n.T("diff.fileDiff.showDiff")
 	}
-	return iconAction(gtx, th, p.root, &c.preview, icMarkdownPreview, label, c.previewing)
+	return th.IconAction(p.root, &c.preview, icMarkdownPreview, label, c.previewing).Layout(gtx)
 }
 
 // markdownBody is the preview, px-9 like the lines a body without a diff
@@ -70,9 +70,9 @@ func (c *fileCard) markdownBody(gtx C, p *reviewPanel) D {
 	src, loading, err := c.markdownSource(p)
 	switch {
 	case err != nil:
-		return bodyLine(gtx, p.th, backend.ErrorText(err))
+		return p.th.BodyLine(backend.ErrorText(err)).Layout(gtx)
 	case loading:
-		return bodyLine(gtx, p.th, i18n.T("diff.binaryPreview.loading"))
+		return p.th.BodyLine(i18n.T("diff.binaryPreview.loading")).Layout(gtx)
 	}
 	inset := layout.Inset{Left: ui.Space(9), Right: ui.Space(9), Top: ui.Space(3), Bottom: ui.Space(4)}
 	window := viewportWindow(-(p.itemTop(p.laying) + c.headerHeight + gtx.Dp(inset.Top)), p.viewport)

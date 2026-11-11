@@ -92,7 +92,9 @@ func (s *settingsScreen) profilePicker(gtx C, th *ui.Theme, c *profileSettings, 
 	})
 	name := c.book.nameOf(shown)
 	lead := func(gtx C) D { return profileAvatar(gtx, th, c.book.look(shown), profileAvatarSel) }
-	return pop.Layout(gtx, func(gtx C) D { return selectTriggerWith(gtx, th, lead, name, profilePickerW) })
+	trigger := th.SelectTrigger(name, profilePickerW)
+	trigger.Lead = lead
+	return pop.Layout(gtx, trigger.Layout)
 }
 
 // profileOption is one SelectItem of the picker: the avatar and the name,

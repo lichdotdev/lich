@@ -127,17 +127,19 @@ func (v *pullView) conversationRows(gtx C, th *ui.Theme, p *pullsScreen, d backe
 	switch {
 	case read.val == nil && read.err != "":
 		return []layout.Widget{func(gtx C) D {
-			return panelNotice(gtx, th, i18n.T("pulls.pullsConversation.readFailed", i18n.Args{"error": read.err}))
+			return th.PanelNotice(i18n.T("pulls.pullsConversation.readFailed", i18n.Args{"error": read.err}), pullsPadX).Layout(gtx)
 		}}
 	case read.val == nil:
-		return []layout.Widget{func(gtx C) D { return panelNotice(gtx, th, i18n.T("pulls.pullsConversation.loading")) }}
+		return []layout.Widget{func(gtx C) D { return th.PanelNotice(i18n.T("pulls.pullsConversation.loading"), pullsPadX).Layout(gtx) }}
 	}
 	items, resolved := conversationTimeline(read.val)
 	now := gtx.Now
 	v.talkClicks(gtx, v.pendingOf(d.URL))
 	rows := v.pendingRows(th, v.pendingOf(d.URL))
 	if len(items) == 0 && len(resolved) == 0 {
-		rows = append(rows, func(gtx C) D { return panelNotice(gtx, th, i18n.T("pulls.pullsConversation.nothingYet")) })
+		rows = append(rows, func(gtx C) D {
+			return th.PanelNotice(i18n.T("pulls.pullsConversation.nothingYet"), pullsPadX).Layout(gtx)
+		})
 	}
 	for _, it := range items {
 		switch {
@@ -282,7 +284,7 @@ func threadHeader(gtx C, th *ui.Theme, t backend.PRReviewThread, open, waiting b
 	}
 	if t.IsResolved {
 		children = append(children, ui.Gap(2), layout.Rigid(func(gtx C) D {
-			return metaGlyph(gtx, th, icPullCheck, i18n.T("pulls.reviewThread.resolved"), th.TonePass)
+			return th.MetaGlyph(icPullCheck, i18n.T("pulls.reviewThread.resolved"), th.TonePass).Layout(gtx)
 		}))
 	}
 	children = append(children, ui.Gap(2), layout.Rigid(th.Text(ui.TextXS, fmt.Sprint(len(t.Comments))).Muted().Layout))

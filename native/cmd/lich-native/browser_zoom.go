@@ -26,7 +26,7 @@ var zoomValueMinWidth = ui.Space(10)
 // browserZoomState is the toolbar's zoom control: the button, its panel and
 // the panel's rows.
 type browserZoomState struct {
-	button         iconActionState
+	button         ui.IconActionState
 	panel          ui.DropdownPanelState
 	out, in, reset widget.Clickable
 	outTip, inTip  ui.Tooltip
@@ -60,7 +60,7 @@ func (u *window) browserZoomControl(gtx C, z *browserZoomState) D {
 		// trigger had when it opened, and the reading showing up moves it.
 		layout.Rigid(func(gtx C) D {
 			return pop.Layout(gtx, func(gtx C) D {
-				return iconAction(gtx, th, &u.root, &z.button, icBrowserZoom, i18n.T("layouts.browser.zoom"), z.panel.Opened())
+				return th.IconAction(&u.root, &z.button, icBrowserZoom, i18n.T("layouts.browser.zoom"), z.panel.Opened()).Layout(gtx)
 			})
 		}),
 	)
@@ -92,12 +92,12 @@ func (u *window) browserZoomPanel(gtx C, th *ui.Theme, z *browserZoomState) D {
 		})
 	}
 	resetRow := func(gtx C) D {
-		return popoverRow(gtx, th, &z.reset, func(gtx C, th *ui.Theme) D {
+		return th.PopoverRow(&z.reset, func(gtx C, th *ui.Theme) D {
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 				layout.Flexed(1, th.Text(ui.TextSM, i18n.T("layouts.browser.zoomReset")).Layout),
 				layout.Rigid(th.Text(ui.TextXS, zoomChord("0", isMac)).Muted().Layout),
 			)
-		})
+		}).Layout(gtx)
 	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(zoomRow),

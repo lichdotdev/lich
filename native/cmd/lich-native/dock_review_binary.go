@@ -45,7 +45,7 @@ func (c *fileCard) binaryBody(gtx C, p *reviewPanel) D {
 	}
 	c.bin.exits.update(gtx, p.client, p.notify, p.checkout, c.git.path)
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(func(gtx C) D { return bodyLine(gtx, p.th, i18n.T("diff.binaryPreview.binary")) }),
+		layout.Rigid(func(gtx C) D { return p.th.BodyLine(i18n.T("diff.binaryPreview.binary")).Layout(gtx) }),
 		layout.Rigid(func(gtx C) D {
 			if c.git.status == statusDeleted {
 				return D{}
@@ -68,7 +68,7 @@ func (c *fileCard) prBinary(gtx C, p *reviewPanel) D {
 	b := p.th.Button(&c.bin.github, i18n.T("diff.dockReviewBinary.viewOnGitHub"))
 	b.Size, b.Variant = ui.SizeXS, ui.VariantOutline
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-		layout.Rigid(func(gtx C) D { return bodyLine(gtx, p.th, i18n.T("diff.binaryPreview.binary")) }),
+		layout.Rigid(func(gtx C) D { return p.th.BodyLine(i18n.T("diff.binaryPreview.binary")).Layout(gtx) }),
 		layout.Rigid(b.Layout),
 	)
 }

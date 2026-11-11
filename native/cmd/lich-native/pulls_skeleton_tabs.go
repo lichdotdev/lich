@@ -154,7 +154,7 @@ func (v *pullView) skeletonFiles(gtx C, th *ui.Theme) D {
 					if v.tree.hidden {
 						return D{}
 					}
-					return verticalRule(gtx, th)
+					return th.VerticalRule(gtx)
 				}),
 				layout.Flexed(1, func(gtx C) D { return skeletonCards(gtx, th) }),
 			)

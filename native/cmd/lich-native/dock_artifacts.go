@@ -112,7 +112,7 @@ func (t *artifactsTab) motion(owner string) *ui.Presence {
 func (t *artifactsTab) layout(gtx C, th *ui.Theme, root *ui.Root, active string) D {
 	own, others := t.groups(active)
 	if len(own) == 0 && len(others) == 0 {
-		return notice(gtx, th, i18n.T("dock.artifacts.empty"))
+		return th.Notice(i18n.T("dock.artifacts.empty")).Layout(gtx)
 	}
 	var items []layout.Widget
 	add := func(w layout.Widget) { items = append(items, w) }
@@ -172,7 +172,7 @@ func (t *artifactsTab) fileRow(gtx C, th *ui.Theme, root *ui.Root, active, owner
 	more := func(gtx C) D {
 		return th.DropdownMenu(root, &r.menu, entries()).Layout(gtx, func(gtx C) D {
 			return th.Tooltip(root, &r.tip, i18n.T("dock.artifacts.options", i18n.Args{"name": f.Name})).Layout(gtx, func(gtx C) D {
-				return cornerButton(gtx, th, &r.more, icGroupMore, r.menu.Opened())
+				return th.CornerButton(&r.more, icGroupMore, r.menu.Opened()).Layout(gtx)
 			})
 		})
 	}

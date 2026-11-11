@@ -134,7 +134,7 @@ func (r settingRow) content(gtx C, th *ui.Theme, control func(gtx C, th *ui.Them
 // control is the row's control, or the Global only pill in its place.
 func (r settingRow) control(gtx C, th, text *ui.Theme, control func(gtx C, th *ui.Theme) D) D {
 	if r.kind == rowGlobalOnly {
-		return pill(gtx, text, text.Text(ui.TextXS, i18n.T("settings.settingsRow.globalOnly")).Muted().Layout, ui.Space(2), ui.Space(2))
+		return text.Pill(text.Text(ui.TextXS, i18n.T("settings.settingsRow.globalOnly")).Muted().Layout, ui.Space(2), ui.Space(2)).Layout(gtx)
 	}
 	return control(gtx, th)
 }
@@ -208,7 +208,7 @@ func resetButton(gtx C, th *ui.Theme, click *widget.Clickable) D {
 			hover.Constraints = layout.Exact(d.Size)
 			ui.Fill(hover, th.Over(ui.Alpha(th.Accent, ghostHoverFill)), unit.Dp(5))
 		}
-		insetBorder(gtx, d.Size, gtx.Dp(5), th.Over(th.Border))
+		ui.InsetBorder(gtx, d.Size, gtx.Dp(5), th.Over(th.Border))
 		call.Add(gtx.Ops)
 		return d
 	})
@@ -223,18 +223,4 @@ func fadedTheme(th *ui.Theme, opacity float32) *ui.Theme {
 	f.Primary, f.Palette.Input, f.Border = fade(th.Primary), fade(th.Palette.Input), fade(th.Border)
 	f.Accent, f.Background = fade(th.Accent), fade(th.Background)
 	return &f
-}
-
-// insetBorder strokes a 1px line just inside size, a box-shadow inset 0 0 0
-// 1px.
-func insetBorder(gtx C, size image.Point, r int, c color.NRGBA) {
-	insetRing(gtx, size, r, gtx.Dp(1), c)
-}
-
-// insetRing strokes a line width pixels wide just inside size, ring-inset:
-// a stroke twice as wide on the edge, clipped to the inside half.
-func insetRing(gtx C, size image.Point, r, width int, c color.NRGBA) {
-	rr := clip.UniformRRect(image.Rectangle{Max: size}, r)
-	defer rr.Push(gtx.Ops).Pop()
-	paint.FillShape(gtx.Ops, c, clip.Stroke{Path: rr.Path(gtx.Ops), Width: float32(2 * width)}.Op())
 }

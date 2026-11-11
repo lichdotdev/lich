@@ -267,7 +267,9 @@ func (s *settingsScreen) copySource(gtx C, th *ui.Theme, f *profileFlow, d flowD
 		layout.Rigid(th.Label(i18n.T("settings.settingsProfilesDialogs.copyFrom")).Layout),
 		ui.VGap(1.5),
 		layout.Rigid(func(gtx C) D {
-			return pop.Layout(gtx, func(gtx C) D { return selectTriggerWith(gtx, th, lead, name, profilePickerW) })
+			trigger := th.SelectTrigger(name, profilePickerW)
+			trigger.Lead = lead
+			return pop.Layout(gtx, trigger.Layout)
 		}),
 	)
 }

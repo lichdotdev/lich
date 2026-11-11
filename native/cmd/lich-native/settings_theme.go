@@ -165,7 +165,7 @@ func (p *themePicker) triggerButton(gtx C, th *ui.Theme, v appearanceView) D {
 		box := gtx
 		box.Constraints = layout.Exact(d.Size)
 		ui.Fill(box, bg, ui.RadiusMD)
-		insetBorder(gtx, d.Size, gtx.Dp(ui.RadiusMD), th.Over(th.Palette.Input))
+		ui.InsetBorder(gtx, d.Size, gtx.Dp(ui.RadiusMD), th.Over(th.Palette.Input))
 		call.Add(gtx.Ops)
 		return d
 	})
@@ -289,7 +289,7 @@ func (p *themePicker) brokenList(gtx C, th *ui.Theme, broken []backend.BrokenThe
 		return D{}
 	}
 	children := []layout.FlexChild{
-		layout.Rigid(func(gtx C) D { return ruleAbove(gtx, th) }),
+		layout.Rigid(func(gtx C) D { return th.RuleAbove(gtx) }),
 		ui.VGap(2),
 		layout.Rigid(func(gtx C) D {
 			return layout.Inset{Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {

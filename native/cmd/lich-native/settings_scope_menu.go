@@ -52,7 +52,7 @@ func (s *settingsScreen) scopeButton(gtx C, th *ui.Theme) D {
 				bg = th.Over(ui.Alpha(th.Accent, ghostHoverFill))
 				ui.Fill(gtx, bg, ui.RadiusMD)
 			}
-			insetBorder(gtx, size, gtx.Dp(ui.RadiusMD), th.Over(th.Border))
+			ui.InsetBorder(gtx, size, gtx.Dp(ui.RadiusMD), th.Over(th.Border))
 			on := th.On(bg)
 			value := i18n.T("settings.settingsNav.scopeGlobal")
 			lead := func(gtx C) D { return icScopeGlobal.Layout(gtx, ui.Space(4), on.MutedForeground) }
@@ -124,7 +124,7 @@ func changesLabel(n int) string {
 // the check on the scope being edited.
 func (s *settingsScreen) scopeRow(gtx C, th *ui.Theme, id string, lead func(gtx C, th *ui.Theme) D, name, changes string) D {
 	click := clickableOf(s.nav.scopeRows, id)
-	return popoverRow(gtx, th, click, func(gtx C, th *ui.Theme) D {
+	return th.PopoverRow(click, func(gtx C, th *ui.Theme) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
 				gtx.Constraints = layout.Exact(image.Pt(gtx.Dp(scopeMenuIcon), gtx.Dp(scopeMenuIcon)))
@@ -145,5 +145,5 @@ func (s *settingsScreen) scopeRow(gtx C, th *ui.Theme, id string, lead func(gtx 
 				return layout.Inset{Left: ui.Space(2)}.Layout(gtx, func(gtx C) D { return icScopeCheck.Layout(gtx, scopeMenuIcon, th.Foreground) })
 			}),
 		)
-	})
+	}).Layout(gtx)
 }

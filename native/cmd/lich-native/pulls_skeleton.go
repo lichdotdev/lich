@@ -202,7 +202,7 @@ func skeletonOverview(gtx C, th *ui.Theme) D {
 				layout.Flexed(1, prose),
 			)
 		}),
-		layout.Rigid(func(gtx C) D { return verticalRule(gtx, th) }),
+		layout.Rigid(func(gtx C) D { return th.VerticalRule(gtx) }),
 		layout.Rigid(func(gtx C) D {
 			w := gtx.Dp(overviewFactsWidth)
 			gtx.Constraints.Min.X, gtx.Constraints.Max.X = w, w

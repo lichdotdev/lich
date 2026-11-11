@@ -108,7 +108,7 @@ func cardBody(gtx C, th *ui.Theme, name, caption string, selected bool, preview 
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			if selected {
-				insetRing(gtx, frame, gtx.Dp(ui.RadiusLG), gtx.Dp(2), th.Over(ui.Alpha(th.Foreground, cardSelectedRing)))
+				ui.InsetRing(gtx, frame, gtx.Dp(ui.RadiusLG), gtx.Dp(2), th.Over(ui.Alpha(th.Foreground, cardSelectedRing)))
 			}
 			inner := frame.Sub(image.Pt(2*pad, 2*pad))
 			t := op.Offset(image.Pt(pad, pad)).Push(gtx.Ops)
@@ -250,7 +250,7 @@ func themeMiniature(gtx C, th *ui.Theme, p ui.Palette, size image.Point, ring bo
 		y += barH + contentH*miniBarGap
 	}
 	if ring {
-		insetBorder(gtx, size, gtx.Dp(ui.RadiusSM), ui.Over(p.Background, ui.Alpha(th.Foreground, cardMiniRing)))
+		ui.InsetBorder(gtx, size, gtx.Dp(ui.RadiusSM), ui.Over(p.Background, ui.Alpha(th.Foreground, cardMiniRing)))
 	}
 	return D{Size: size}
 }
@@ -270,7 +270,7 @@ func systemMiniature(gtx C, th *ui.Theme, light, dark ui.Palette, size image.Poi
 		themeMiniature(gtx, th, p, image.Pt(w, size.Y), false)
 		t.Pop()
 		edge := clip.Rect{Min: image.Pt(x, 0), Max: image.Pt(x+w, size.Y)}.Push(gtx.Ops)
-		insetBorder(gtx, size, gtx.Dp(ui.RadiusSM), ui.Over(p.Background, ui.Alpha(th.Foreground, cardMiniRing)))
+		ui.InsetBorder(gtx, size, gtx.Dp(ui.RadiusSM), ui.Over(p.Background, ui.Alpha(th.Foreground, cardMiniRing)))
 		edge.Pop()
 	}
 	return D{Size: size}
@@ -286,7 +286,7 @@ func dashedBorder(gtx C, size image.Point, r int, c color.NRGBA) {
 		{Min: image.Pt(0, size.Y-r), Max: image.Pt(r, size.Y)}, {Min: size.Sub(image.Pt(r, r)), Max: size},
 	} {
 		cl := clip.Rect(corner).Push(gtx.Ops)
-		insetRing(gtx, size, r, w, c)
+		ui.InsetRing(gtx, size, r, w, c)
 		cl.Pop()
 	}
 	for x := r; x < size.X-r; x += dash + gap {
@@ -319,11 +319,4 @@ func ghostTextButton(gtx C, th *ui.Theme, click *widget.Clickable, label string,
 		call.Add(gtx.Ops)
 		return d
 	})
-}
-
-// ruleAbove is border-t: a 1px line of border across gtx.
-func ruleAbove(gtx C, th *ui.Theme) D {
-	size := image.Pt(gtx.Constraints.Max.X, gtx.Dp(1))
-	paint.FillShape(gtx.Ops, th.Over(th.Border), clip.Rect{Max: size}.Op())
-	return D{Size: size}
 }

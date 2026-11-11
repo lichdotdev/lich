@@ -191,7 +191,7 @@ func (f *servicesFooter) allButton(gtx C, th *ui.Theme, root *ui.Root, t service
 		ic, hint = icServiceStop, i18n.T("sidebar.services.stopAll")
 	}
 	tip := th.Tooltip(root, &f.allTip, hint)
-	return tip.Layout(gtx, func(gtx C) D { return cornerButton(gtx, th, &f.all, ic, false) })
+	return tip.Layout(gtx, func(gtx C) D { return th.CornerButton(&f.all, ic, false).Layout(gtx) })
 }
 
 // servicesCount is the closed row's readout: up/total, in the running tone
@@ -346,14 +346,14 @@ func serviceRowButtons(gtx C, th *ui.Theme, v backend.Service, start, stop, rest
 	switch v.State {
 	case api.ServiceRunning:
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-			layout.Rigid(func(gtx C) D { return cornerButton(gtx, th, restart, icServiceRestart, false) }),
+			layout.Rigid(func(gtx C) D { return th.CornerButton(restart, icServiceRestart, false).Layout(gtx) }),
 			ui.Gap(1),
-			layout.Rigid(func(gtx C) D { return cornerButton(gtx, th, stop, icServiceStop, false) }),
+			layout.Rigid(func(gtx C) D { return th.CornerButton(stop, icServiceStop, false).Layout(gtx) }),
 		)
 	case api.ServiceStopping:
 		return D{}
 	}
-	return cornerButton(gtx, th, start, icServiceStart, false)
+	return th.CornerButton(start, icServiceStart, false).Layout(gtx)
 }
 
 // serviceReadout is a row's right side at rest: how long it has run, or how

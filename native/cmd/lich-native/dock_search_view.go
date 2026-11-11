@@ -50,14 +50,14 @@ func (c *codeTab) searchBody(gtx C, th *ui.Theme) D {
 	}
 	c.fetchSearch(settled)
 	if settled == "" {
-		return notice(gtx, th, i18n.T("dock.searchResults.prompt"))
+		return th.Notice(i18n.T("dock.searchResults.prompt")).Layout(gtx)
 	}
 	data, loading, err := c.search.get()
 	switch {
 	case err != nil:
-		return notice(gtx, th, backend.ErrorText(err))
+		return th.Notice(backend.ErrorText(err)).Layout(gtx)
 	case loading:
-		return notice(gtx, th, i18n.T("dock.searchResults.searching"))
+		return th.Notice(i18n.T("dock.searchResults.searching")).Layout(gtx)
 	}
 	groups := groupMatches(data.Matches)
 	note := strings.TrimSpace(searchFootnote(data) + " " + c.listingNote())
@@ -65,7 +65,7 @@ func (c *codeTab) searchBody(gtx C, th *ui.Theme) D {
 		layout.Flexed(1, func(gtx C) D {
 			gtx.Constraints.Min = gtx.Constraints.Max
 			if len(groups) == 0 {
-				return notice(gtx, th, i18n.T("dock.searchResults.noMatch", i18n.Args{"query": settled}))
+				return th.Notice(i18n.T("dock.searchResults.noMatch", i18n.Args{"query": settled})).Layout(gtx)
 			}
 			return c.hitsView(gtx, th, data, groups)
 		}),
@@ -73,7 +73,7 @@ func (c *codeTab) searchBody(gtx C, th *ui.Theme) D {
 			if note == "" {
 				return D{}
 			}
-			return footnote(gtx, th, note)
+			return th.Footnote(note).Layout(gtx)
 		}),
 	)
 }

@@ -12,8 +12,6 @@ import (
 	"time"
 
 	"gioui.org/layout"
-	"gioui.org/op/clip"
-	"gioui.org/op/paint"
 	"gioui.org/unit"
 	"gioui.org/widget"
 
@@ -53,7 +51,7 @@ type filesTree struct {
 	rows   treeRows
 	closed map[string]bool
 	hidden bool
-	toggle iconActionState
+	toggle ui.IconActionState
 	// widthRem is the tree's width, dragged by resize.
 	widthRem float64
 	resize   ui.ResizeHandle
@@ -144,7 +142,7 @@ func (v *pullView) filesTab(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDet
 	case !read.loaded:
 		return v.skeletonFiles(gtx, th)
 	case read.err != "":
-		return panelNotice(gtx, th, i18n.T("pulls.pullsFiles.loadFailed", i18n.Args{"error": read.err}))
+		return th.PanelNotice(i18n.T("pulls.pullsFiles.loadFailed", i18n.Args{"error": read.err}), pullsPadX).Layout(gtx)
 	}
 	files.takeRead(d.URL, &diffRead{text: read.val})
 	files.takeAnswers()
@@ -170,12 +168,12 @@ func (v *pullView) filesBody(gtx C, th *ui.Theme) D {
 			if v.tree.hidden {
 				return D{}
 			}
-			return verticalRule(gtx, th)
+			return th.VerticalRule(gtx)
 		}),
 		layout.Flexed(1, func(gtx C) D {
 			gtx.Constraints.Min = gtx.Constraints.Max
 			if err := v.files.bodyWithBatch(gtx, th); err != nil {
-				return notice(gtx, th, err.Error())
+				return th.Notice(err.Error()).Layout(gtx)
 			}
 			return D{Size: gtx.Constraints.Max}
 		}),
@@ -242,13 +240,6 @@ func (v *pullView) treeLayout(gtx C, th *ui.Theme) D {
 	return t.rows.layout(gtx, th, rows, t.active)
 }
 
-// verticalRule is a 1px border-r seam the height of gtx.
-func verticalRule(gtx C, th *ui.Theme) D {
-	size := image.Pt(gtx.Dp(1), gtx.Constraints.Max.Y)
-	paint.FillShape(gtx.Ops, th.Over(th.Border), clip.Rect{Max: size}.Op())
-	return D{Size: size}
-}
-
 // filesToolbar is the tree's toggle, "N of M viewed", and the dock's split
 // and collapse-all toggles; the diff's size sits on the tab strip.
 func (v *pullView) filesToolbar(gtx C, th *ui.Theme) D {
@@ -259,7 +250,7 @@ func (v *pullView) filesToolbar(gtx C, th *ui.Theme) D {
 			viewed++
 		}
 	}
-	if v.tree.toggle.click.Clicked(gtx) {
+	if v.tree.toggle.Click.Clicked(gtx) {
 		v.tree.hidden = !v.tree.hidden
 	}
 	treeIcon, treeLabel := icPullHide, i18n.T("pulls.pullsFiles.hideTree")
@@ -268,7 +259,7 @@ func (v *pullView) filesToolbar(gtx C, th *ui.Theme) D {
 	}
 	return layout.Inset{Left: ui.Space(2), Right: ui.Space(2), Top: ui.Space(1.5), Bottom: ui.Space(1.5)}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-			layout.Rigid(func(gtx C) D { return iconAction(gtx, th, v.root, &v.tree.toggle, treeIcon, treeLabel, false) }),
+			layout.Rigid(func(gtx C) D { return th.IconAction(v.root, &v.tree.toggle, treeIcon, treeLabel, false).Layout(gtx) }),
 			ui.Gap(2),
 			layout.Rigid(th.Text(ui.TextXS, i18n.T("pulls.pullsFiles.viewed", i18n.Args{"viewed": viewed, "total": len(files.order)})).Muted().Layout),
 			layout.Flexed(1, func(gtx C) D { return D{Size: gtx.Constraints.Min} }),

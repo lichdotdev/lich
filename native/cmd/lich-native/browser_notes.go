@@ -17,6 +17,7 @@ import (
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
+	"github.com/lichdotdev/lich/native/ui"
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
@@ -60,7 +61,7 @@ type browserNote struct {
 // browserNotes is one pane's pick and its notes.
 type browserNotes struct {
 	picking bool
-	pick    iconActionState
+	pick    ui.IconActionState
 	// hover is the element under the pointer while picking; its outline
 	// glides from hoverFrom, where it stood at hoverAt.
 	hover     api.BrowserElement
