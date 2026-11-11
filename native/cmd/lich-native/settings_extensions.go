@@ -57,12 +57,15 @@ func errAtRow(id string) string { return "row/" + id }
 // extensionTasks is the pane's state the backend's answers change from their
 // goroutines; it is read and written under extensionsSettings.mu.
 type extensionTasks struct {
-	// installing is the install row whose install runs, "" for none.
+	// installing is the install row whose prepare or commit runs, "" for none.
 	installing string
 	err        extensionError
-	// asking is the source the install confirmation names, "" while it is
-	// shut; askingFrom is the row it came from.
-	asking, askingFrom string
+	// asking is whether the install confirmation is open on preview, the
+	// staged install from the row askingFrom. preview outlives asking so the
+	// dialog keeps its words while it closes.
+	asking     bool
+	preview    backend.ExtensionInstallPreview
+	askingFrom string
 	// removal is the extension the remove confirmation names.
 	removal *backend.Extension
 }
@@ -139,18 +142,40 @@ func (p *extensionsSettings) clearError(at string) {
 	})
 }
 
-// askInstall opens the confirmation for src from the install row from;
-// nothing happens for an empty source or while an install runs.
-func (p *extensionsSettings) askInstall(from, src string) {
+// prepareInstall stages src from the install row from and opens the
+// confirmation on what it is; nothing happens for an empty source or while an
+// install runs.
+func (s *settingsScreen) prepareInstall(from, src string) {
+	p := &s.extensions
 	src = strings.TrimSpace(src)
+	start := false
 	p.with(func(t *extensionTasks) {
 		if src != "" && t.installing == "" {
-			t.asking, t.askingFrom = src, from
+			start, t.installing = true, from
 			if t.err.at == from {
 				t.err = extensionError{}
 			}
 		}
 	})
+	if !start {
+		return
+	}
+	go func() {
+		prepare := s.client.PrepareExtensionFromGit
+		if from == installFromDir {
+			prepare = s.client.PrepareExtensionFromDir
+		}
+		preview, err := prepare(s.ctx, src)
+		p.with(func(t *extensionTasks) {
+			t.installing = ""
+			if err != nil {
+				t.err = extensionError{from, backend.ErrorText(err)}
+				return
+			}
+			t.asking, t.preview, t.askingFrom = true, preview, from
+		})
+		s.invalidate()
+	}()
 }
 
 func (p *extensionsSettings) askRemove(e backend.Extension) {
@@ -198,33 +223,44 @@ func (s *settingsScreen) openExtensionDir(e backend.Extension) {
 	}()
 }
 
-// installExtension runs the confirmed install from src: the busy state on
-// the row's button while it runs, the backend's words under the row when it
-// fails.
-func (s *settingsScreen) installExtension(fromDir bool, src string) {
+// commitInstall is the confirmation's Install: the busy state on the row's
+// button while it runs, the backend's words under the row when it fails.
+func (s *settingsScreen) commitInstall() {
 	p := &s.extensions
-	from := installFromGit
-	if fromDir {
-		from = installFromDir
-	}
-	p.with(func(t *extensionTasks) { t.asking, t.installing, t.err = "", from, extensionError{} })
+	var token, from string
+	p.with(func(t *extensionTasks) {
+		token, from = t.preview.Token, t.askingFrom
+		t.asking, t.installing, t.err = false, from, extensionError{}
+	})
 	go func() {
-		var err error
-		if fromDir {
-			_, err = s.client.InstallExtensionFromDir(s.ctx, src)
-		} else {
-			_, err = s.client.InstallExtensionFromGit(s.ctx, src)
-		}
+		_, err := s.client.CommitExtensionInstall(s.ctx, token)
 		p.with(func(t *extensionTasks) {
 			t.installing = ""
 			if err != nil {
 				t.err = extensionError{from, backend.ErrorText(err)}
 			}
 		})
-		if err == nil && !fromDir {
+		if err == nil && from == installFromGit {
 			p.url.SetText("")
 		}
 		s.invalidate()
+	}()
+}
+
+// discardInstall is the confirmation closed without Install: the staged copy
+// goes.
+func (s *settingsScreen) discardInstall() {
+	p := &s.extensions
+	var token, from string
+	p.with(func(t *extensionTasks) {
+		token, from = t.preview.Token, t.askingFrom
+		t.asking = false
+	})
+	go func() {
+		if err := s.client.DiscardExtensionInstall(s.ctx, token); err != nil {
+			p.fail(from, err)
+			s.invalidate()
+		}
 	}()
 }
 
@@ -272,7 +308,7 @@ func (s *settingsScreen) restartExtension(id string) {
 }
 
 // pickExtensionDir asks for the folder through the backend's directory
-// picker and goes straight to the install confirmation for it.
+// picker and goes straight to staging it.
 func (s *settingsScreen) pickExtensionDir() {
 	go func() {
 		path, err := s.client.PickDirectory(s.ctx, i18n.T("settings.extensionsSettings.pickTitle"))
@@ -280,7 +316,7 @@ func (s *settingsScreen) pickExtensionDir() {
 		case err != nil:
 			s.extensions.fail(installFromDir, err)
 		case path != "":
-			s.extensions.askInstall(installFromDir, path)
+			s.prepareInstall(installFromDir, path)
 		}
 		s.invalidate()
 	}()

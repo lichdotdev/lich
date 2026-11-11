@@ -62,7 +62,7 @@ func (s *settingsScreen) extensionsInstallRows(th *ui.Theme) []layout.Widget {
 	return []layout.Widget{
 		func(gtx C) D {
 			if p.urlEvents(gtx) || p.install.Clicked(gtx) {
-				p.askInstall(installFromGit, p.url.Text())
+				s.prepareInstall(installFromGit, p.url.Text())
 				// The dialogs were laid out before the row took the click.
 				gtx.Execute(op.InvalidateCmd{})
 			}
@@ -140,14 +140,14 @@ func (p *extensionsSettings) dirControl(gtx C, th *ui.Theme, installing string) 
 func (s *settingsScreen) layoutExtensionDialogs(gtx C, th *ui.Theme) {
 	p := &s.extensions
 	t := p.snapshot()
-	asking := t.asking != ""
-	install := extensionConfirm{state: &p.installDialog, slot: 0, open: asking,
-		title: i18n.T("settings.extensionsSettings.installTitle"), action: i18n.T("settings.extensionsSettings.install"),
-		desc: i18n.T("settings.extensionsSettings.installDescription", i18n.Args{"source": t.asking})}
+	install := extensionConfirm{state: &p.installDialog, slot: 0, open: t.asking,
+		title: installTitle(t.preview), action: i18n.T("settings.extensionsSettings.install"),
+		desc: i18n.T("settings.extensionsSettings.installSource", i18n.Args{"source": previewSourceLine(t.preview)}),
+		body: func(gtx C) D { return installWarning(gtx, th.On(th.Popover), t.preview.Permissions) }}
 	if pressed, closed := p.confirmDialog(gtx, th, install); pressed {
-		s.installExtension(t.askingFrom == installFromDir, t.asking)
-	} else if closed {
-		p.with(func(t *extensionTasks) { t.asking = "" })
+		s.commitInstall()
+	} else if closed && t.asking {
+		s.discardInstall()
 	}
 	remove := extensionConfirm{state: &p.removeDialog, slot: 1, open: t.removal != nil, destructive: true,
 		action: i18n.T("settings.extensionsSettings.remove"),
