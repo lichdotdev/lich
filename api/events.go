@@ -305,6 +305,13 @@ var (
 	// tray's Show output does from outside it.
 	ServiceRevealEvent = defineEvent[ServiceIDOptions]("service-reveal")
 
+	// ExtensionStatusEvent carries an extension once its state has changed.
+	ExtensionStatusEvent = defineEvent[Extension]("extension-status")
+
+	// ExtensionMessageEvent carries a line an extension wrote, after lich
+	// accepted it. With no window attached it is dropped, like every event.
+	ExtensionMessageEvent = defineEvent[ExtensionMessage]("extension-message")
+
 	// WindowCloseEvent asks the native window to close, lich quitting.
 	WindowCloseEvent = defineEvent[None]("window-close")
 

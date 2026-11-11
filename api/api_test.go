@@ -162,6 +162,9 @@ func (r *renderer) ref(t reflect.Type) string {
 		}
 		return t.Name()
 	}
+	if t == reflect.TypeFor[json.RawMessage]() {
+		return "json"
+	}
 	if t.Kind() == reflect.Slice && t.Elem().Kind() == reflect.Uint8 {
 		return "base64"
 	}

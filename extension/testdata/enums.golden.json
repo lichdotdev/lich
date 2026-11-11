@@ -1,0 +1,119 @@
+{
+  "align": [
+    "start",
+    "center",
+    "end",
+    "stretch"
+  ],
+  "anchor": [
+    "top-left",
+    "top",
+    "top-right",
+    "left",
+    "center",
+    "right",
+    "bottom-left",
+    "bottom",
+    "bottom-right"
+  ],
+  "diffSide": [
+    "old",
+    "new"
+  ],
+  "direction": [
+    "column",
+    "row"
+  ],
+  "fontWeight": [
+    "regular",
+    "medium",
+    "semibold"
+  ],
+  "imageFit": [
+    "contain",
+    "cover",
+    "fill",
+    "scale-down",
+    "unscaled"
+  ],
+  "justify": [
+    "start",
+    "center",
+    "end",
+    "between"
+  ],
+  "menuEntryKind": [
+    "item",
+    "checkbox",
+    "radio",
+    "sub",
+    "label",
+    "separator",
+    "swatch"
+  ],
+  "panelEdge": [
+    "left",
+    "right"
+  ],
+  "side": [
+    "top",
+    "bottom",
+    "left",
+    "right"
+  ],
+  "size": [
+    "default",
+    "xs",
+    "sm",
+    "lg",
+    "icon",
+    "icon-xs",
+    "icon-sm",
+    "icon-lg"
+  ],
+  "switchSize": [
+    "default",
+    "sm"
+  ],
+  "tabsOrientation": [
+    "horizontal",
+    "vertical"
+  ],
+  "tabsVariant": [
+    "default",
+    "line",
+    "ghost"
+  ],
+  "textAlign": [
+    "start",
+    "center",
+    "end"
+  ],
+  "toastVariant": [
+    "default",
+    "success",
+    "info",
+    "warning",
+    "error"
+  ],
+  "toggleSize": [
+    "default",
+    "sm",
+    "lg"
+  ],
+  "toggleVariant": [
+    "default",
+    "outline"
+  ],
+  "tooltipVariant": [
+    "label",
+    "card"
+  ],
+  "variant": [
+    "default",
+    "outline",
+    "secondary",
+    "ghost",
+    "destructive"
+  ]
+}

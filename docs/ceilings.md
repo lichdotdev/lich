@@ -1113,6 +1113,35 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   `CTRL_C_EVENT`, which a process that left the console or turned the event off never sees. Not measured: the
   service tests spawn real PTYs and run on Linux and macOS only.
 
+## Extensions
+
+- **An extension runs unsandboxed, as the user, and placing its directory is the only consent** (`internal/extensions`):
+  every directory under `<config dir>/lich/extensions` (`extensions-dev` under `LICH_DEV`) with a valid manifest is
+  started when the backend boots. There is no prompt, no signature and no permission list in this version, and
+  the sandbox of `internal/sandbox` does not apply, so an extension can read and do whatever the user can. The
+  directory is read once per launch: adding, editing or removing one takes a restart of lich.
+- **What an extension writes is input, and what fails the checks is dropped without telling it**
+  (`internal/extensions/inbound.go`): a line over 3 MiB, JSON nested over 512 levels, a tree over 5000 nodes or 64
+  deep, a kind that only travels from lich to the extension, and `openExternal` with anything but an http or https
+  URL are refused and written to lich's log, and the process goes on. Its log is budgeted at 100 lines a minute
+  each for stderr and for refusals, so past that a refusal leaves no trace beyond the count of lines dropped. The
+  surface a `render` names is not checked against the manifest.
+- **Extension text is the extension's own** (`internal/extensions`): the name, surface titles, toasts and every
+  string in its tree stay in whatever language it wrote them and never go through lich's catalogs. An extension
+  learns no locale from lich.
+- **A message sent while no window is attached is dropped** (`internal/events`): an extension's lines ride
+  `/events` like every event, with no queue and no replay, and the extension is not told. A window that attaches
+  later sees nothing until the extension renders again. One slow window stalls that extension's stdout rather than
+  queueing, and a write stalled past 5 seconds drops the `/events` socket for every session.
+- **Any exit lich did not ask for counts as a crash** (`internal/extensions/supervise.go`), a clean exit 0 included.
+  It restarts after 1 second, doubling, capped at 30, and lich gives up after 5 crashes in a row, each within 30
+  seconds of its start: the extension shows failed until lich launches again. A file that cannot be executed at
+  all fails at once, with no retries.
+- **Stopping reaches the extension's own process only** (`internal/extensions/supervise.go`): stdin closes, 3
+  seconds later the process is killed, and whatever it started is left running. If lich itself is killed, stdin
+  ending is the only signal an extension gets. During an in-place restart the outgoing lich stops its extensions
+  while its successor starts them, so two copies can overlap for up to that grace.
+
 ## Window, sidebar and settings
 
 - **Pinned project tabs are a window preference, not a close lock** (`native/cmd/lich-native/projects.go`,

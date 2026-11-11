@@ -1,0 +1,2150 @@
+[
+  {
+    "type": "abbrBadge",
+    "key": "key",
+    "props": {
+      "abbr": "abbr",
+      "background": "background",
+      "foreground": "foreground"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "alignEnd",
+    "key": "key",
+    "props": {},
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "avatar",
+    "key": "key",
+    "props": {
+      "image": "AQ==",
+      "initial": "initial",
+      "size": 1.5,
+      "background": "background",
+      "foreground": "foreground"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "barIconButton",
+    "key": "key",
+    "props": {
+      "icon": "icon",
+      "on": true,
+      "onPress": "onPress"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "beatingDot",
+    "key": "key",
+    "props": {
+      "color": "color"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "bodyLine",
+    "key": "key",
+    "props": {
+      "text": "text"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "box",
+    "key": "key",
+    "props": {
+      "direction": "direction",
+      "gap": 1.5,
+      "padding": 1.5,
+      "paddingX": 1.5,
+      "paddingY": 1.5,
+      "align": "align",
+      "justify": "justify",
+      "grow": 1.5,
+      "width": 1.5,
+      "height": 1.5,
+      "background": "background",
+      "radius": 1.5
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "boxIcon",
+    "key": "key",
+    "props": {
+      "icon": "icon",
+      "color": "color"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "busyRing",
+    "key": "key",
+    "props": {
+      "size": 1.5,
+      "color": "color",
+      "track": "track"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "button",
+    "key": "key",
+    "props": {
+      "text": "text",
+      "icon": "icon",
+      "variant": "variant",
+      "size": "size",
+      "disabled": true,
+      "lit": true,
+      "onPress": "onPress"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "captionDivider",
+    "key": "key",
+    "props": {
+      "inset": 1.5,
+      "height": 1.5
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "cardIconButton",
+    "key": "key",
+    "props": {
+      "icon": "icon",
+      "size": 1.5,
+      "turn": 1.5,
+      "onPress": "onPress"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "centeredIcon",
+    "key": "key",
+    "props": {
+      "name": "name",
+      "size": 1.5,
+      "color": "color"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "checkRow",
+    "key": "key",
+    "props": {
+      "checked": true,
+      "label": "label",
+      "note": "note",
+      "onChange": "onChange"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "checkbox",
+    "key": "key",
+    "props": {
+      "checked": true,
+      "disabled": true,
+      "onChange": "onChange"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "checker",
+    "key": "key",
+    "props": {
+      "width": 1.5,
+      "height": 1.5,
+      "cell": 1.5
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "chip",
+    "key": "key",
+    "props": {
+      "label": "label",
+      "count": 1,
+      "on": true,
+      "onPress": "onPress"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "codeView",
+    "key": "key",
+    "props": {
+      "filename": "filename",
+      "text": "text",
+      "size": 1.5,
+      "blocks": [
+        {
+          "after": 1,
+          "content": {
+            "type": "separator",
+            "props": {}
+          }
+        }
+      ]
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "collapse",
+    "key": "key",
+    "props": {
+      "open": true
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "columns",
+    "key": "key",
+    "props": {
+      "gap": 1.5
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "contextMenu",
+    "key": "key",
+    "props": {
+      "entries": [
+        {
+          "kind": "kind",
+          "label": "label",
+          "icon": "icon",
+          "shortcut": "shortcut",
+          "shortcutDestructive": true,
+          "lead": {
+            "type": "separator",
+            "props": {}
+          },
+          "variant": "variant",
+          "inset": true,
+          "disabled": true,
+          "checked": true,
+          "sub": [
+            {}
+          ],
+          "columns": 1,
+          "swatch": "swatch",
+          "onSelect": "onSelect",
+          "onCheckedChange": "onCheckedChange"
+        }
+      ]
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "cornerButton",
+    "key": "key",
+    "props": {
+      "icon": "icon",
+      "on": true,
+      "onPress": "onPress"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "cornerDot",
+    "key": "key",
+    "props": {
+      "color": "color"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "countBadge",
+    "key": "key",
+    "props": {
+      "count": 1
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "dashedBorder",
+    "key": "key",
+    "props": {
+      "width": 1.5,
+      "height": 1.5,
+      "radius": 1.5,
+      "color": "color",
+      "dashLength": 1.5,
+      "gapLength": 1.5
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "dashedCircle",
+    "key": "key",
+    "props": {
+      "x": 1.5,
+      "y": 1.5,
+      "outer": 1.5,
+      "stroke": 1.5,
+      "dash": 1.5,
+      "color": "color"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "dashedRing",
+    "key": "key",
+    "props": {
+      "x": 1.5,
+      "y": 1.5,
+      "width": 1.5,
+      "height": 1.5,
+      "radius": 1.5,
+      "strokeWidth": 1.5,
+      "color": "color",
+      "halo": "halo"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "dialog",
+    "key": "key",
+    "props": {
+      "open": true,
+      "title": "title",
+      "description": "description",
+      "actions": [
+        {
+          "type": "separator",
+          "props": {}
+        }
+      ],
+      "maxWidth": 1.5,
+      "hideClose": true,
+      "raw": true,
+      "top": 1.5,
+      "scrim": 1.5,
+      "onClose": "onClose"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "diffStat",
+    "key": "key",
+    "props": {
+      "added": 1,
+      "deleted": 1
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "diffView",
+    "key": "key",
+    "props": {
+      "patch": "patch",
+      "split": true,
+      "height": 1.5,
+      "size": 1.5,
+      "blocks": [
+        {
+          "key": "key",
+          "side": "side",
+          "line": 1,
+          "content": {
+            "type": "separator",
+            "props": {}
+          }
+        }
+      ]
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "donutGauge",
+    "key": "key",
+    "props": {
+      "size": 1.5,
+      "percent": 1,
+      "color": "color"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "dot",
+    "key": "key",
+    "props": {
+      "color": "color",
+      "size": 1.5
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "dotAt",
+    "key": "key",
+    "props": {
+      "x": 1.5,
+      "y": 1.5,
+      "radius": 1.5,
+      "color": "color"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "dropHint",
+    "key": "key",
+    "props": {
+      "icon": "icon",
+      "before": "before",
+      "label": "label",
+      "after": "after",
+      "detail": "detail"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "dropTray",
+    "key": "key",
+    "props": {
+      "fill": "fill",
+      "edge": "edge"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "dropdownMenu",
+    "key": "key",
+    "props": {
+      "entries": [
+        {
+          "kind": "kind",
+          "label": "label",
+          "icon": "icon",
+          "shortcut": "shortcut",
+          "shortcutDestructive": true,
+          "lead": {
+            "type": "separator",
+            "props": {}
+          },
+          "variant": "variant",
+          "inset": true,
+          "disabled": true,
+          "checked": true,
+          "sub": [
+            {}
+          ],
+          "columns": 1,
+          "swatch": "swatch",
+          "onSelect": "onSelect",
+          "onCheckedChange": "onCheckedChange"
+        }
+      ]
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "dropdownPanel",
+    "key": "key",
+    "props": {
+      "trigger": {
+        "type": "separator",
+        "props": {}
+      },
+      "width": 1.5,
+      "alignEnd": true
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "emptyState",
+    "key": "key",
+    "props": {
+      "icon": "icon",
+      "title": "title",
+      "description": "description",
+      "iconSize": 1.5,
+      "iconGap": 1.5,
+      "descriptionGap": 1.5,
+      "actionsGap": 1.5,
+      "titleSize": 1.5,
+      "descriptionSize": 1.5,
+      "titleLeading": 1.5,
+      "titleWeight": "titleWeight",
+      "maxLines": 1,
+      "anchor": "anchor",
+      "align": "align",
+      "pad": 1.5
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "fileIcon",
+    "key": "key",
+    "props": {
+      "path": "path",
+      "size": 1.5
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "fileTree",
+    "key": "key",
+    "props": {
+      "paths": [
+        "paths"
+      ],
+      "stats": {
+        "stats": {
+          "added": 1,
+          "deleted": 1
+        }
+      },
+      "selected": "selected",
+      "closedPaths": [
+        "closedPaths"
+      ],
+      "onSelect": "onSelect",
+      "onToggle": "onToggle"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "fillIf",
+    "key": "key",
+    "props": {
+      "color": "color",
+      "radius": 1.5
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "fillRRect",
+    "key": "key",
+    "props": {
+      "x": 1.5,
+      "y": 1.5,
+      "width": 1.5,
+      "height": 1.5,
+      "radius": 1.5,
+      "color": "color"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "fillRow",
+    "key": "key",
+    "props": {
+      "width": 1.5,
+      "height": 1.5,
+      "alpha": 1.5
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "fillet",
+    "key": "key",
+    "props": {
+      "x": 1.5,
+      "y": 1.5,
+      "radius": 1.5,
+      "right": true,
+      "color": "color"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "fixedColumn",
+    "key": "key",
+    "props": {
+      "width": 1.5
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "footnote",
+    "key": "key",
+    "props": {
+      "text": "text"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "formLabel",
+    "key": "key",
+    "props": {
+      "text": "text",
+      "size": 1.5,
+      "weight": "weight",
+      "uppercase": true,
+      "disabled": true
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "gaugeBar",
+    "key": "key",
+    "props": {
+      "percent": 1,
+      "tone": "tone"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "gaugeRow",
+    "key": "key",
+    "props": {
+      "labelWidth": 1.5,
+      "readingWidth": 1.5,
+      "leftWidth": 1.5,
+      "label": {
+        "type": "separator",
+        "props": {}
+      },
+      "bar": {
+        "type": "separator",
+        "props": {}
+      },
+      "reading": {
+        "type": "separator",
+        "props": {}
+      },
+      "left": {
+        "type": "separator",
+        "props": {}
+      }
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "ghostIconButton",
+    "key": "key",
+    "props": {
+      "icon": "icon",
+      "hint": "hint",
+      "disabled": true,
+      "onPress": "onPress"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "ghostTextButton",
+    "key": "key",
+    "props": {
+      "label": "label",
+      "color": "color",
+      "onPress": "onPress"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "hollowDot",
+    "key": "key",
+    "props": {
+      "color": "color"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "hoverLink",
+    "key": "key",
+    "props": {
+      "text": "text",
+      "onPress": "onPress"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "icon",
+    "key": "key",
+    "props": {
+      "name": "name",
+      "size": 1.5,
+      "color": "color"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "iconAction",
+    "key": "key",
+    "props": {
+      "icon": "icon",
+      "label": "label",
+      "pressed": true,
+      "onPress": "onPress"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "iconLabel",
+    "key": "key",
+    "props": {
+      "icon": "icon",
+      "glyph": "glyph",
+      "label": {
+        "text": "text",
+        "size": 1.5,
+        "color": "color",
+        "weight": "weight",
+        "mono": true,
+        "maxLines": 1,
+        "lineHeight": 1.5,
+        "align": "align"
+      }
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "iconLine",
+    "key": "key",
+    "props": {
+      "icon": "icon",
+      "color": "color"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "image",
+    "key": "key",
+    "props": {
+      "data": "AQ==",
+      "fit": "fit",
+      "position": "position",
+      "width": 1.5,
+      "height": 1.5
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "inlineEdit",
+    "key": "key",
+    "props": {
+      "value": "value",
+      "size": 1.5,
+      "mono": true,
+      "padRight": 1.5,
+      "onCommit": "onCommit",
+      "onCancel": "onCancel"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "inlineEmptyState",
+    "key": "key",
+    "props": {
+      "icon": "icon",
+      "title": "title",
+      "description": "description",
+      "iconSize": 1.5,
+      "iconGap": 1.5,
+      "descriptionGap": 1.5,
+      "actionsGap": 1.5,
+      "titleSize": 1.5,
+      "descriptionSize": 1.5,
+      "titleLeading": 1.5,
+      "titleWeight": "titleWeight",
+      "maxLines": 1,
+      "anchor": "anchor",
+      "align": "align",
+      "pad": 1.5
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "input",
+    "key": "key",
+    "props": {
+      "value": "value",
+      "placeholder": "placeholder",
+      "leading": "leading",
+      "leadingSize": 1.5,
+      "height": 1.5,
+      "width": 1.5,
+      "textSize": 1.5,
+      "mono": true,
+      "password": true,
+      "borderless": true,
+      "bare": true,
+      "clearable": true,
+      "disabled": true,
+      "invalid": true,
+      "onChange": "onChange",
+      "onSubmit": "onSubmit"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "inputGroup",
+    "key": "key",
+    "props": {
+      "value": "value",
+      "placeholder": "placeholder",
+      "multiline": true,
+      "start": [
+        {
+          "type": "separator",
+          "props": {}
+        }
+      ],
+      "end": [
+        {
+          "type": "separator",
+          "props": {}
+        }
+      ],
+      "width": 1.5,
+      "disabled": true,
+      "invalid": true,
+      "onChange": "onChange",
+      "onSubmit": "onSubmit"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "insetBorder",
+    "key": "key",
+    "props": {
+      "width": 1.5,
+      "height": 1.5,
+      "radius": 1.5,
+      "color": "color"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "insetRing",
+    "key": "key",
+    "props": {
+      "width": 1.5,
+      "height": 1.5,
+      "radius": 1.5,
+      "strokeWidth": 1.5,
+      "color": "color"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "keyCap",
+    "key": "key",
+    "props": {
+      "keys": "keys"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "keyHint",
+    "key": "key",
+    "props": {
+      "keys": "keys",
+      "label": "label"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "label",
+    "key": "key",
+    "props": {
+      "text": "text",
+      "size": 1.5,
+      "color": "color",
+      "weight": "weight",
+      "mono": true,
+      "maxLines": 1,
+      "lineHeight": 1.5,
+      "align": "align"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "labelFace",
+    "key": "key",
+    "props": {
+      "background": "background",
+      "label": "label"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "marchingRing",
+    "key": "key",
+    "props": {
+      "x": 1.5,
+      "y": 1.5,
+      "width": 1.5,
+      "height": 1.5,
+      "radius": 1.5,
+      "strokeWidth": 1.5,
+      "color": "color",
+      "halo": "halo"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "markDot",
+    "key": "key",
+    "props": {
+      "color": "color"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "markdown",
+    "key": "key",
+    "props": {
+      "text": "text",
+      "onOpen": "onOpen"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "markedText",
+    "key": "key",
+    "props": {
+      "segments": [
+        {
+          "text": "text",
+          "marked": true
+        }
+      ]
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "menuHeader",
+    "key": "key",
+    "props": {
+      "title": "title",
+      "count": "count"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "menuSeparator",
+    "key": "key",
+    "props": {},
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "metaGlyph",
+    "key": "key",
+    "props": {
+      "icon": "icon",
+      "text": "text",
+      "color": "color"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "monoGlyph",
+    "key": "key",
+    "props": {
+      "icon": "icon",
+      "text": "text",
+      "color": "color"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "mutedGlyph",
+    "key": "key",
+    "props": {
+      "icon": "icon",
+      "size": 1.5
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "navRow",
+    "key": "key",
+    "props": {
+      "on": true,
+      "height": 1.5,
+      "padX": 1.5,
+      "onPress": "onPress"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "notice",
+    "key": "key",
+    "props": {
+      "text": "text"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "notifyDot",
+    "key": "key",
+    "props": {
+      "width": 1.5,
+      "height": 1.5
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "orRule",
+    "key": "key",
+    "props": {
+      "word": "word"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "outlineBadge",
+    "key": "key",
+    "props": {
+      "text": "text"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "panelNotice",
+    "key": "key",
+    "props": {
+      "text": "text",
+      "padX": 1.5
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "panelRow",
+    "key": "key",
+    "props": {
+      "live": true,
+      "edge": 1.5,
+      "padX": 1.5,
+      "onPress": "onPress"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "pill",
+    "key": "key",
+    "props": {
+      "padLeft": 1.5,
+      "padRight": 1.5
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "popoverRow",
+    "key": "key",
+    "props": {
+      "onPress": "onPress"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "presence",
+    "key": "key",
+    "props": {},
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "progress",
+    "key": "key",
+    "props": {
+      "percent": 1
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "pulseRing",
+    "key": "key",
+    "props": {
+      "x": 1.5,
+      "y": 1.5,
+      "radius": 1.5,
+      "reach": 1.5,
+      "color": "color"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "pulsingCornerDot",
+    "key": "key",
+    "props": {
+      "color": "color"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "railHairline",
+    "key": "key",
+    "props": {},
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "resizeHandle",
+    "key": "key",
+    "props": {
+      "edge": "edge",
+      "width": 1.5,
+      "minWidth": 1.5,
+      "maxWidth": 1.5,
+      "onResize": "onResize"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "row",
+    "key": "key",
+    "props": {
+      "gap": 1.5
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "scroll",
+    "key": "key",
+    "props": {
+      "direction": "direction"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "sectionHeading",
+    "key": "key",
+    "props": {
+      "text": "text",
+      "size": 1.5,
+      "weight": "weight",
+      "leading": 1.5,
+      "padTop": 1.5,
+      "padRight": 1.5,
+      "padBottom": 1.5,
+      "padLeft": 1.5
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "segmentBar",
+    "key": "key",
+    "props": {
+      "segments": [
+        {
+          "share": 1,
+          "color": "color"
+        }
+      ]
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "selectTrigger",
+    "key": "key",
+    "props": {
+      "value": "value",
+      "width": 1.5,
+      "lead": {
+        "type": "separator",
+        "props": {}
+      }
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "separator",
+    "key": "key",
+    "props": {},
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "skeleton",
+    "key": "key",
+    "props": {
+      "width": 1.5,
+      "height": 1.5
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "skeletonBar",
+    "key": "key",
+    "props": {
+      "width": 1.5,
+      "line": 1.5,
+      "height": 1.5
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "skeletonFill",
+    "key": "key",
+    "props": {
+      "maxRows": 1,
+      "padY": 1.5
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "skeletonRow",
+    "key": "key",
+    "props": {
+      "padX": 1.5,
+      "padY": 1.5
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "skeletonShape",
+    "key": "key",
+    "props": {},
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "skeletonText",
+    "key": "key",
+    "props": {
+      "size": 1.5,
+      "width": 1.5
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "sortableList",
+    "key": "key",
+    "props": {
+      "gap": 1.5,
+      "horizontal": true,
+      "within": true,
+      "leaves": true,
+      "onReorder": "onReorder"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "spanning",
+    "key": "key",
+    "props": {},
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "spinner",
+    "key": "key",
+    "props": {
+      "size": 1.5,
+      "color": "color"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "spinnerBeside",
+    "key": "key",
+    "props": {},
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "spinnerLine",
+    "key": "key",
+    "props": {
+      "text": "text"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "splitPane",
+    "key": "key",
+    "props": {
+      "direction": "direction",
+      "ratio": 1.5,
+      "minRatio": 1.5,
+      "maxRatio": 1.5,
+      "gap": 1.5,
+      "minFirst": 1.5,
+      "minSecond": 1.5,
+      "onResize": "onResize"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "squareFace",
+    "key": "key",
+    "props": {
+      "background": "background"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "stack",
+    "key": "key",
+    "props": {
+      "gap": 1.5
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "statusDot",
+    "key": "key",
+    "props": {
+      "color": "color"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "strokeArc",
+    "key": "key",
+    "props": {
+      "x": 1.5,
+      "y": 1.5,
+      "radius": 1.5,
+      "width": 1.5,
+      "start": 1.5,
+      "sweep": 1.5,
+      "color": "color"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "swatch",
+    "key": "key",
+    "props": {
+      "color": "color"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "switch",
+    "key": "key",
+    "props": {
+      "checked": true,
+      "size": "size",
+      "disabled": true,
+      "onChange": "onChange"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "tabs",
+    "key": "key",
+    "props": {
+      "selected": 1,
+      "triggers": [
+        {
+          "text": "text",
+          "icon": "icon",
+          "trailing": {
+            "type": "separator",
+            "props": {}
+          },
+          "disabled": true
+        }
+      ],
+      "variant": "variant",
+      "orientation": "orientation",
+      "onChange": "onChange"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "tag",
+    "key": "key",
+    "props": {
+      "text": "text",
+      "color": "color"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "textarea",
+    "key": "key",
+    "props": {
+      "value": "value",
+      "placeholder": "placeholder",
+      "resizable": true,
+      "maxHeight": 1.5,
+      "width": 1.5,
+      "disabled": true,
+      "invalid": true,
+      "onChange": "onChange"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "thinScroll",
+    "key": "key",
+    "props": {
+      "direction": "direction"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "tinyChip",
+    "key": "key",
+    "props": {
+      "word": "word",
+      "tone": "tone"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "toggle",
+    "key": "key",
+    "props": {
+      "pressed": true,
+      "text": "text",
+      "icon": "icon",
+      "variant": "variant",
+      "size": "size",
+      "height": 1.5,
+      "padX": 1.5,
+      "textSize": 1.5,
+      "disabled": true,
+      "onChange": "onChange"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "toggleGroup",
+    "key": "key",
+    "props": {
+      "value": "value",
+      "items": [
+        {
+          "value": "value",
+          "text": "text",
+          "icon": "icon",
+          "disabled": true
+        }
+      ],
+      "variant": "variant",
+      "size": "size",
+      "itemHeight": 1.5,
+      "itemPadX": 1.5,
+      "itemText": 1.5,
+      "onChange": "onChange"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "tooltip",
+    "key": "key",
+    "props": {
+      "text": "text",
+      "content": {
+        "type": "separator",
+        "props": {}
+      },
+      "variant": "variant",
+      "side": "side"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "trailingIconLink",
+    "key": "key",
+    "props": {
+      "label": "label",
+      "icon": "icon",
+      "onPress": "onPress"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "tray",
+    "key": "key",
+    "props": {
+      "fill": "fill"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "triggerChevron",
+    "key": "key",
+    "props": {
+      "open": true
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "twoLines",
+    "key": "key",
+    "props": {
+      "top": "top",
+      "under": "under"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "verticalRule",
+    "key": "key",
+    "props": {},
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "wrap",
+    "key": "key",
+    "props": {
+      "gapX": 1.5,
+      "gapY": 1.5,
+      "justify": "justify",
+      "contentStart": true
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "wrapItem",
+    "key": "key",
+    "props": {
+      "marginAuto": true
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  }
+]
