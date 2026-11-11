@@ -148,6 +148,8 @@ type window struct {
 	// and extOutbox what the window sends extensions, in order.
 	extension *extensionScreen
 	extOutbox *extensionOutbox
+	// extLanguage tells extensions the interface language.
+	extLanguage extensionLanguage
 	// closeWorktree is the closed toast's question before removing a worktree.
 	closeWorktree closeWorktreeConfirm
 	// closeAllConfirm is Close all sessions' question when a turn is in flight.
@@ -277,6 +279,8 @@ func run(w *app.Window, rt backend.Runtime) error {
 	u.extOutbox = newExtensionOutbox()
 	u.extension = newExtensionScreen(&u.model.extensions, &u.root, u.extOutbox.send)
 	u.model.extensionMessage = u.extensionMessage
+	u.extLanguage.send = u.extOutbox.send
+	u.model.extensionStarted = u.extLanguage.started
 	u.model.prChanged = u.prChanged
 	u.model.themeSelection = u.appearance.applySelection
 	u.model.exited = u.sessionExited
@@ -567,6 +571,7 @@ func (u *window) connect() error {
 
 func (u *window) layout(gtx C) error {
 	u.followLanguage()
+	u.extLanguage.follow(u.model.extensions.all())
 	u.takeTheme()
 	if u.hideSettings.CompareAndSwap(true, false) {
 		u.settings.hide()

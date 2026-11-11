@@ -163,6 +163,7 @@ func app() {
 	// is lich's child, and quitting lich is what stops it.
 	defer shutdownServices(svcs, coord)
 	exts := extensions.New(extensions.Dir(configDir), extensions.DataDir(configDir), version, env, hub.Emit)
+	exts.SetLanguage(db.InterfaceLanguage)
 	defer exts.Shutdown()
 	sys, closeBrowsers := registerServices(db, term, svcs, exts, hub, configDir, logPath, env, launchEnv, coord)
 	defer closeBrowsers()

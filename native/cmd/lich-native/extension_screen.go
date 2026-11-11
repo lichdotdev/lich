@@ -118,7 +118,7 @@ func (s *extensionScreen) show(k extensionKey) {
 	s.hide()
 	s.open, s.shown = true, k
 	s.focus.Store(nil)
-	s.send(k.ext, extension.SurfaceOpened.New(extension.SurfaceData{Surface: k.surface}))
+	s.send(k.ext, extension.SurfaceOpened.New(extension.SurfaceData{Surface: k.surface, Language: string(i18n.Current())}))
 }
 
 func (s *extensionScreen) hide() {
@@ -194,11 +194,11 @@ func (s *extensionScreen) layout(gtx C, th *ui.Theme, typing bool) extensionActi
 	tree, has := s.store.render(s.shown)
 	switch extensionViewOf(ext.Status, has) {
 	case extensionFailed:
-		return s.failed(gtx, th, ext.ID, ext.Name, ext.Error, ext.Dir)
+		return s.failed(gtx, th, ext.ID, extensionName(ext), ext.Error, ext.Dir)
 	case extensionStarting:
 		layout.Center.Layout(gtx, func(gtx C) D { return th.Spinner(gtx, ui.Space(6), th.MutedForeground) })
 	case extensionRestarting:
-		s.restarting(gtx, th, ext.Name, tree.Root)
+		s.restarting(gtx, th, extensionName(ext), tree.Root)
 	case extensionLive:
 		for _, h := range pollShortcuts(gtx, tree.Shortcuts, typing || !gtx.Source.Focused(nil)) {
 			s.send(ext.ID, extension.FireEvent.New(extension.EventData{Handler: h}))

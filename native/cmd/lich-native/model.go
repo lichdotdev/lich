@@ -130,6 +130,8 @@ type model struct {
 	// extensionMessage hears a message an extension sent the window, a
 	// render aside.
 	extensionMessage func(id string, msg extension.Message)
+	// extensionStarted hears an extension that went to running.
+	extensionStarted func(id string)
 	// console is the service whose console is on screen in place of the
 	// active session, "" for none.
 	console string

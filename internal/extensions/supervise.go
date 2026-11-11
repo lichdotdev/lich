@@ -107,7 +107,7 @@ func (s *Service) start(ctx context.Context, x *installed) (*process, error) {
 	}
 	cmd := exec.CommandContext(ctx, x.exe)
 	cmd.Dir = x.root
-	cmd.Env = append(slices.Clip(s.env), extension.DataDirEnv+"="+data)
+	cmd.Env = append(slices.Clip(s.env), extension.DataDirEnv+"="+data, extension.LanguageEnv+"="+s.startLanguage())
 	winexec.Hide(cmd)
 	cmd.Stdout = newFramer(maxLineBytes,
 		func(line []byte) { s.handleLine(x, line) },

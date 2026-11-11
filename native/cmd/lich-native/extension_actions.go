@@ -38,7 +38,7 @@ func (u *window) applyExtension(act extensionAction) {
 			if err := u.client.RestartExtension(u.ctx, id); err != nil {
 				name := id
 				if e, ok := u.model.extensions.byID(id); ok {
-					name = e.Name
+					name = extensionName(e)
 				}
 				u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("shell.extensionScreen.restartFailed", i18n.Args{"name": name, "error": backend.ErrorText(err)})})
 			}

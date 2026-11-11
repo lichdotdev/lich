@@ -99,7 +99,11 @@ func (m *model) extensionEvent(ev backend.Event) {
 	switch ev.Name {
 	case api.ExtensionStatusEvent.Name:
 		if e, err := backend.Decode(ev, api.ExtensionStatusEvent); err == nil {
+			was, _ := m.extensions.byID(e.ID)
 			m.extensions.setStatus(e)
+			if e.Status == api.ExtensionRunning && was.Status != api.ExtensionRunning && m.extensionStarted != nil {
+				m.extensionStarted(e.ID)
+			}
 		}
 		return
 	case api.ExtensionRemovedEvent.Name:

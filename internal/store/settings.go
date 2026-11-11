@@ -1,13 +1,16 @@
 package store
 
 import (
+	"cmp"
 	"context"
 	"database/sql"
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/lichdotdev/lich/api"
+	exti18n "github.com/lichdotdev/lich/extension/i18n"
 	"github.com/lichdotdev/lich/internal/prompt"
 	"github.com/lichdotdev/lich/internal/providers"
 )
@@ -384,4 +387,28 @@ func (s *Service) PromptLanguage() prompt.Lang {
 		return prompt.English
 	}
 	return prompt.Parse(value)
+}
+
+// interfaceLanguageKey is the window's own setting for the language it shows
+// (native/cmd/lich-native uiLanguageKey); empty follows the system's.
+const interfaceLanguageKey = "lich.appearance.language"
+
+// InterfaceLanguage is the tag of the language the window shows, resolved the
+// window's way as far as the backend can: the stored choice, or before one is
+// made the environment's locale. macOS and Windows keep the system's language
+// outside the environment, so there an unset choice reads English until a
+// window attaches and says otherwise. A failed read is English too.
+func (s *Service) InterfaceLanguage() string {
+	value, err := s.GetSetting(context.Background(), api.GetSettingOptions{Key: interfaceLanguageKey, ProjectID: globalScope})
+	if err != nil {
+		return string(prompt.English)
+	}
+	if value == "" {
+		value = exti18n.TagFromEnv(os.Getenv)
+	}
+	tags := make([]string, len(prompt.Langs))
+	for i, l := range prompt.Langs {
+		tags[i] = string(l)
+	}
+	return cmp.Or(exti18n.Match(value, tags), string(prompt.English))
 }

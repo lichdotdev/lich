@@ -1164,9 +1164,14 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   URL are refused and written to lich's log, and the process goes on. Its log is budgeted at 100 lines a minute
   each for stderr and for refusals, so past that a refusal leaves no trace beyond the count of lines dropped. The
   surface a `render` names is not checked against the manifest.
-- **Extension text is the extension's own** (`internal/extensions`): the name, surface titles, toasts and every
-  string in its tree stay in whatever language it wrote them and never go through lich's catalogs. An extension
-  learns no locale from lich.
+- **lich translates only an extension's name and surface titles** (`internal/extensions/locales.go`,
+  `extension/i18n`): it reads them from the extension's own catalogs (`locales/<tag>/extension.json`), falling
+  back to English and then to the manifest. Toasts and every string in a tree are the extension's to translate:
+  lich hands it the language (`LICH_LANGUAGE` at start, `language` on each change and start, and in
+  `surface.opened`) and the `extension/i18n` package, and never looks a tree's text up itself. `LICH_LANGUAGE`
+  is the backend's best guess: with no language chosen it reads the environment's locale, which macOS and
+  Windows leave out, so there an extension starts in English until a window attaches and sends `language`. A
+  plural `manifest.name` or title is ignored.
 - **A message sent while no window is attached is dropped** (`internal/events`): an extension's lines ride
   `/events` like every event, with no queue and no replay, and the extension is not told. A window that attaches
   later sees nothing until the extension renders again. One slow window stalls that extension's stdout rather than

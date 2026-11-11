@@ -12,6 +12,7 @@ import (
 type (
 	Extension        = api.Extension
 	ExtensionSurface = api.ExtensionSurface
+	ExtensionText    = api.ExtensionText
 	ExtensionMessage = api.ExtensionMessage
 )
 
