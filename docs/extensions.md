@@ -87,6 +87,36 @@ out(extension.Render.New(extension.RenderData{
 out(extension.Focus.New(extension.FocusData{Surface: "main", Key: "search"}))
 ```
 
+### Moving items between lists
+
+A `sortableList` reorders its keyed children and sends `onReorder` with the keys in their new order. Lists on one
+surface with the same non-empty `group` also exchange items, wherever they sit in the tree: a card dragged out of
+one list travels over everything, and let go over another list of the group it fires that list's `onMove`. The
+event carries the item's `key`, the `index` it landed at in the receiving list and, in `from`, the `key` of the
+list it left; the list it left sends nothing. A drop over no list of the group sends nothing at all.
+
+Nothing moves on screen until the extension renders again: lich keeps both lists as they were sent, so the
+extension moves the item in its own data and answers with a render. Give every list of a group a `key`, and keep
+item keys unique across the group. A list takes a drop over the room its box gives it, past its last item too, so
+an empty column still takes one.
+
+```go
+column := func(id string, cards []string) extension.Node {
+	items := make([]extension.Node, len(cards))
+	for i, c := range cards {
+		items[i] = extension.Label.New(extension.LabelProps{Text: c}).WithKey(c)
+	}
+	list := extension.SortableList.New(extension.SortableListProps{Group: "board", Gap: 4,
+		OnReorder: extension.Handler("reorder:" + id), OnMove: extension.Handler("move:" + id)}, items...).WithKey(id)
+	return extension.Box.New(extension.BoxProps{Width: 220}, list)
+}
+board := extension.Box.New(extension.BoxProps{Direction: extension.DirectionRow, Gap: 12},
+	column("todo", todo), column("doing", doing), column("done", done))
+
+// on the event "move:done": take e.Key out of the column e.From, insert it in
+// done at e.Index, and render again.
+```
+
 ## Keeping data
 
 An extension that saves something, a token or its settings, keeps it in its data directory:

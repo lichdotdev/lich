@@ -245,13 +245,18 @@ type CollapseProps struct {
 }
 
 // SortableListProps reorders its keyed children; OnReorder carries the keys
-// in their new order.
+// in their new order. Lists on one surface with the same non-empty Group
+// exchange items: an item dropped into another list fires that list's OnMove
+// with the item's key, the index it landed at and the source list's key, and
+// the source fires no OnReorder. Keys are unique across a group.
 type SortableListProps struct {
 	Gap        float64 `json:"gap,omitempty"`
 	Horizontal bool    `json:"horizontal,omitempty"`
 	Within     bool    `json:"within,omitempty"`
 	Leaves     bool    `json:"leaves,omitempty"`
+	Group      string  `json:"group,omitempty"`
 	OnReorder  Handler `json:"onReorder,omitempty"`
+	OnMove     Handler `json:"onMove,omitempty"`
 }
 
 type ResizeHandleProps struct {
