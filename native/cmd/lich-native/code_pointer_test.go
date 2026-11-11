@@ -7,6 +7,7 @@ import (
 
 	"github.com/lichdotdev/lich/native/fonts"
 	"github.com/lichdotdev/lich/native/gioterm"
+	"github.com/lichdotdev/lich/native/ui/codeview"
 )
 
 func TestCodeRefMatches(t *testing.T) {
@@ -65,11 +66,11 @@ func TestCodeLabelNamesTheFileAndItsLines(t *testing.T) {
 
 // An agent that edits a file and points at it again has to show the edit.
 func TestOpeningTheSameFileAgainReadsItAgain(t *testing.T) {
-	view, err := newCodeView(fonts.SystemMono, 13)
+	view, err := codeview.New(fonts.SystemMono, 13)
 	if err != nil {
 		t.Fatal(err)
 	}
-	p := newPreview(nil, view, fonts.SystemMono, 13, func() {})
+	p := newPreview(nil, view, func() {})
 	p.openAt("a.go", 7)
 	first := p.fileKey("/c")
 	p.openAt("a.go", 7)
@@ -79,11 +80,11 @@ func TestOpeningTheSameFileAgainReadsItAgain(t *testing.T) {
 }
 
 func TestAgentNoteHangsUnderTheLastLineAndGoesWithTheFile(t *testing.T) {
-	view, err := newCodeView(fonts.SystemMono, 13)
+	view, err := codeview.New(fonts.SystemMono, 13)
 	if err != nil {
 		t.Fatal(err)
 	}
-	p := newPreview(nil, view, fonts.SystemMono, 13, func() {})
+	p := newPreview(nil, view, func() {})
 	p.openLines("a.go", 2, 3)
 	if blocks := p.blocksWith(-1); blocks != nil {
 		t.Fatalf("no note, no composer: %d blocks", len(blocks))
@@ -100,11 +101,11 @@ func TestAgentNoteHangsUnderTheLastLineAndGoesWithTheFile(t *testing.T) {
 }
 
 func TestNoteAndComposerNeverShareALineAsTwoBlocks(t *testing.T) {
-	view, err := newCodeView(fonts.SystemMono, 13)
+	view, err := codeview.New(fonts.SystemMono, 13)
 	if err != nil {
 		t.Fatal(err)
 	}
-	p := newPreview(nil, view, fonts.SystemMono, 13, func() {})
+	p := newPreview(nil, view, func() {})
 	p.openLines("a.go", 5, 7)
 	if got := p.blocksWith(2); len(got) != 1 || got[0].After != 2 {
 		t.Fatalf("composer alone: %+v", got)
@@ -120,11 +121,11 @@ func TestNoteAndComposerNeverShareALineAsTwoBlocks(t *testing.T) {
 }
 
 func TestOpenLinesSelectsARangeAndOpenAtForgetsIt(t *testing.T) {
-	view, err := newCodeView(fonts.SystemMono, 13)
+	view, err := codeview.New(fonts.SystemMono, 13)
 	if err != nil {
 		t.Fatal(err)
 	}
-	p := newPreview(nil, view, fonts.SystemMono, 13, func() {})
+	p := newPreview(nil, view, func() {})
 	p.openLines("a.go", 2, 3)
 	p.show("k", "one\ntwo\nthree\nfour\n")
 	from, to, ok := p.view.SelectedLines()

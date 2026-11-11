@@ -14,6 +14,7 @@ import (
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/lichdiff"
 	"github.com/lichdotdev/lich/native/ui"
+	"github.com/lichdotdev/lich/native/ui/codeview"
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
@@ -285,12 +286,12 @@ func (c *fileCard) ensureView(p *reviewPanel) *godemirror.DiffView {
 	if c.view != nil || c.viewFail {
 		return c.view
 	}
-	opts := godemirror.DiffOptions{HighlightChanges: true, StyleTags: codeStyleTags, ExpandWidget: c.afford.expandButton, RevertWidget: c.afford.revertButton}
+	opts := godemirror.DiffOptions{HighlightChanges: true, StyleTags: codeview.StyleTags, ExpandWidget: c.afford.expandButton, RevertWidget: c.afford.revertButton}
 	opts.Expand = func(g godemirror.Gap) { p.expand(c, c.gen, g) }
 	if c.git.status != statusRenamed && p.pr == nil {
 		opts.Revert = func(ch godemirror.Chunk) { p.revert(c.git.path, lichdiff.RevertLines(ch)) }
 	}
-	view, err := newDiffView(p.family, p.size, opts)
+	view, err := codeview.NewDiffEditor(p.family, p.size, opts)
 	if err != nil {
 		c.viewFail = true
 		log.Printf("review %s: %v", c.git.path, err)

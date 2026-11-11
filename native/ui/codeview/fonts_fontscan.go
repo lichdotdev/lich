@@ -1,6 +1,6 @@
 //go:build windows || darwin
 
-package main
+package codeview
 
 import (
 	"os"
@@ -12,11 +12,11 @@ import (
 	"github.com/lichdotdev/lich/native/fonts"
 )
 
-// newCodeView builds the code view from the files fonts.Locate picks for
+// NewEditor builds a godemirror view from the files fonts.Locate picks for
 // family: godemirror resolves a family name only through fontconfig's fc-match,
 // which Windows and macOS do not ship. A character the family lacks is drawn
 // as a box.
-func newCodeView(family string, size unit.Sp) (*godemirror.View, error) {
+func NewEditor(family string, size unit.Sp) (*godemirror.View, error) {
 	files, err := codeFonts(family)
 	if err != nil {
 		return nil, err
@@ -24,7 +24,7 @@ func newCodeView(family string, size unit.Sp) (*godemirror.View, error) {
 	return godemirror.NewFromFonts(files, size)
 }
 
-func newDiffView(family string, size unit.Sp, opts godemirror.DiffOptions) (*godemirror.DiffView, error) {
+func NewDiffEditor(family string, size unit.Sp, opts godemirror.DiffOptions) (*godemirror.DiffView, error) {
 	files, err := codeFonts(family)
 	if err != nil {
 		return nil, err

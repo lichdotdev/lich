@@ -23,6 +23,7 @@ import (
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
+	"github.com/lichdotdev/lich/native/ui/codeview"
 )
 
 // plainFolderTick is how often a plain folder's tree re-reads. A plain folder
@@ -72,14 +73,14 @@ type codeTab struct {
 }
 
 func newCodeTab(client *backend.Client, invalidate func(), family string, size unit.Sp, comments *commentStore, notify func(ui.Toast)) (*codeTab, error) {
-	view, err := newCodeView(family, size)
+	view, err := codeview.New(family, size)
 	if err != nil {
 		return nil, err
 	}
 	c := &codeTab{client: client, comments: comments, notify: notify, toggled: map[string]bool{}}
 	c.mode.Value = browseByName
 	c.tree.invalidate, c.search.invalidate = invalidate, invalidate
-	c.preview = newPreview(client, view, family, size, invalidate)
+	c.preview = newPreview(client, view, invalidate)
 	c.rows.list.Axis, c.hits.list.Axis = layout.Vertical, layout.Vertical
 	return c, nil
 }
