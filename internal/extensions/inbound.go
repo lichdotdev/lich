@@ -50,6 +50,7 @@ var fromExtension = map[string]bool{
 	extension.DismissToast.Name: true,
 	extension.OpenExternal.Name: true,
 	extension.Clipboard.Name:    true,
+	extension.Focus.Name:        true,
 }
 
 // toExtension is what extensions.Send may write to one.

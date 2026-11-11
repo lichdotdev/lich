@@ -5,7 +5,9 @@ package extrender
 import (
 	"strconv"
 
+	"gioui.org/io/key"
 	"gioui.org/layout"
+	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/extension"
 	"github.com/lichdotdev/lich/native/ui"
@@ -41,6 +43,8 @@ type Renderer struct {
 	state map[string]any
 	seen  map[string]bool
 	code  Code
+	// focus is the key whose field takes the keyboard this frame.
+	focus string
 	// dialogs are the dialogs the tree opened this frame, drawn after it over
 	// the whole surface: a dialog covers what it is drawn in, and a node does
 	// not know where in the surface it sits.
@@ -66,7 +70,21 @@ func (r *Renderer) Layout(gtx C, th *ui.Theme, tree extension.Node) D {
 			delete(r.state, id)
 		}
 	}
+	r.focus = ""
 	return d
+}
+
+// Focus gives the keyboard to the field under k on the next frame; a k no
+// field on that frame has is forgotten.
+func (r *Renderer) Focus(k string) { r.focus = k }
+
+// takeFocus focuses ed when n is the field Focus asked for.
+func (r *Renderer) takeFocus(gtx C, n extension.Node, ed *widget.Editor) {
+	if r.focus == "" || n.Key != r.focus {
+		return
+	}
+	r.focus = ""
+	gtx.Execute(key.FocusCmd{Tag: ed})
 }
 
 // node draws n. A type with no drawer is one the backend let through from a

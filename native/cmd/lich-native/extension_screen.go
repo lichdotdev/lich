@@ -8,6 +8,7 @@ import (
 
 	"gioui.org/font"
 	"gioui.org/io/clipboard"
+	"gioui.org/io/key"
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/op/paint"
@@ -70,6 +71,14 @@ type extensionScreen struct {
 	// clip is text an extension asked to copy, from the events goroutine,
 	// which the next frame writes.
 	clip atomic.Pointer[string]
+	// focus is a field an extension asked to focus, from the events
+	// goroutine, which the next frame hands to the surface it names.
+	focus atomic.Pointer[extensionFocus]
+}
+
+type extensionFocus struct {
+	at  extensionKey
+	key string
 }
 
 // extensionAction is what the failed state's buttons asked for, by
@@ -108,6 +117,7 @@ func (s *extensionScreen) show(k extensionKey) {
 	}
 	s.hide()
 	s.open, s.shown = true, k
+	s.focus.Store(nil)
 	s.send(k.ext, extension.SurfaceOpened.New(extension.SurfaceData{Surface: k.surface}))
 }
 
@@ -123,6 +133,32 @@ func (s *extensionScreen) hide() {
 func (s *extensionScreen) isShown(k extensionKey) bool { return s.open && s.shown == k }
 
 func (s *extensionScreen) copy(text string) { s.clip.Store(&text) }
+
+func (s *extensionScreen) requestFocus(ext string, d extension.FocusData) {
+	s.focus.Store(&extensionFocus{at: extensionKey{ext, d.Surface}, key: d.Key})
+}
+
+// takeFocus hands a pending focus to the surface on screen; one for another
+// surface is dropped.
+func (s *extensionScreen) takeFocus() {
+	if f := s.focus.Swap(nil); f != nil && f.at == s.shown {
+		s.renderer(s.shown).Focus(f.key)
+	}
+}
+
+// giveBackKeys drops the keyboard on an Escape the surface's own widgets left
+// unread, as the window's fields do, so its plain shortcuts fire again.
+func giveBackKeys(gtx C) {
+	for {
+		ev, ok := gtx.Event(key.Filter{Name: key.NameEscape})
+		if !ok {
+			return
+		}
+		if e, isKey := ev.(key.Event); isKey && e.State == key.Press {
+			gtx.Execute(key.FocusCmd{})
+		}
+	}
+}
 
 // writeClipboard hands the frame's pending copy to the system.
 func (s *extensionScreen) writeClipboard(gtx C) {
@@ -154,6 +190,7 @@ func (s *extensionScreen) layout(gtx C, th *ui.Theme, typing bool) extensionActi
 		delete(s.trees, s.shown)
 		return extensionAction{}
 	}
+	s.takeFocus()
 	tree, has := s.store.render(s.shown)
 	switch extensionViewOf(ext.Status, has) {
 	case extensionFailed:
@@ -167,6 +204,9 @@ func (s *extensionScreen) layout(gtx C, th *ui.Theme, typing bool) extensionActi
 			s.send(ext.ID, extension.FireEvent.New(extension.EventData{Handler: h}))
 		}
 		s.renderer(s.shown).Layout(gtx, th, tree.Root)
+		if !typing && !gtx.Source.Focused(nil) {
+			giveBackKeys(gtx)
+		}
 	}
 	return extensionAction{}
 }

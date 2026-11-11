@@ -55,14 +55,37 @@ line on stdout is one JSON message; each line lich writes to stdin is one too. T
 the JSON of each are in [`extension/`](../extension/), and `extension/testdata/` records the wire form of every
 component and message. Import `github.com/lichdotdev/lich/extension` rather than writing the JSON by hand.
 
-- From the extension: `render` (a surface's tree and shortcuts), `toast`, `toast.dismiss`, `openExternal` and
-  `clipboard`.
+- From the extension: `render` (a surface's tree and shortcuts), `toast`, `toast.dismiss`, `openExternal`,
+  `clipboard` and `focus`.
 - From lich: `surface.opened`, `surface.closed` and `event` (a handler the tree named fired).
 
 Stderr goes to lich's log.
 
 A `box` lays its children along its axis. A child `box` with `grow` takes that share of the room left; a `scroll`,
 `thinScroll`, `splitPane` or `emptyState` takes the room left on its own, and an empty state sits centered in it.
+
+### Moving the keyboard
+
+`focus` gives the keyboard to a field: the `input`, `inputGroup`, `textarea` or `inlineEdit` whose node carries
+`key` on `surface`. It lands on the next frame that draws that field. A key no field has on that frame, a surface
+that is not the one on screen, or a surface that opens after the message was sent drops it, and the extension is
+not told. An `inlineEdit` holds the keyboard on its own while it edits, so for one `focus` changes nothing.
+
+While a field holds the keyboard, only shortcuts with ctrl fire; a plain key is typed. Escape hands the keyboard
+back to the surface, and plain shortcuts fire again. So `/` to search is a shortcut whose handler answers with
+`focus`:
+
+```go
+search := extension.Input.New(extension.InputProps{Placeholder: "Search", OnChange: "query"}).WithKey("search")
+out(extension.Render.New(extension.RenderData{
+	Surface:   "main",
+	Root:      extension.Box.New(extension.BoxProps{}, search, results),
+	Shortcuts: []extension.Shortcut{{Keys: "/", Handler: "find"}},
+}))
+
+// on the event "find":
+out(extension.Focus.New(extension.FocusData{Surface: "main", Key: "search"}))
+```
 
 ## What lich enforces
 

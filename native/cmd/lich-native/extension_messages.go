@@ -140,6 +140,8 @@ func (u *window) extensionMessage(id string, msg extension.Message) {
 		go func() { u.logErr("open an extension's link", u.client.OpenExternal(u.ctx, d.URL)) }()
 	case extension.ClipboardData:
 		u.extension.copy(d.Text)
+	case extension.FocusData:
+		u.extension.requestFocus(id, d)
 	}
 	u.model.invalidate()
 }

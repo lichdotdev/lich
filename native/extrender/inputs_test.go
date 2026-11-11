@@ -99,3 +99,40 @@ func TestAnInlineEditCommitsOrCancels(t *testing.T) {
 	g.once("cancel")
 	g.frame()
 }
+
+func keyedFields(extra ...extension.Node) extension.Node {
+	return column(append([]extension.Node{
+		extension.Input.New(extension.InputProps{OnChange: "a"}).WithKey("a"),
+		extension.InputGroup.New(extension.InputGroupProps{OnChange: "b"}).WithKey("b"),
+		extension.Textarea.New(extension.TextareaProps{OnChange: "c"}).WithKey("c"),
+	}, extra...)...)
+}
+
+func TestFocusGivesTheKeyboardToTheFieldUnderItsKey(t *testing.T) {
+	g := newRig(t, keyedFields())
+	for _, k := range []string{"b", "c", "a"} {
+		g.r.Focus(k)
+		g.frame()
+		g.typed(k)
+		if e := g.once(extension.Handler(k)); e.Text != k {
+			t.Errorf("after Focus(%q) typing sent %+v", k, e)
+		}
+	}
+	if len(g.got) != 3 {
+		t.Errorf("typing reached other fields: %+v", g.got)
+	}
+}
+
+func TestFocusOnAKeyNoFieldHasIsDroppedAfterThatFrame(t *testing.T) {
+	g := newRig(t, keyedFields(label("ghost").WithKey("ghost")))
+	g.r.Focus("a")
+	g.frame()
+	g.r.Focus("ghost")
+	g.frame()
+	g.tree = keyedFields(extension.Input.New(extension.InputProps{OnChange: "ghost"}).WithKey("ghost"))
+	g.frame()
+	g.typed("x")
+	if len(g.fired("ghost")) != 0 || len(g.fired("a")) != 1 {
+		t.Errorf("a focus on a label moved the keyboard or waited for a field: %+v", g.got)
+	}
+}

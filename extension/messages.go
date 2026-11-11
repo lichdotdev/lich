@@ -9,6 +9,7 @@ var (
 	DismissToast = kind[DismissToastData]("toast.dismiss")
 	OpenExternal = kind[OpenExternalData]("openExternal")
 	Clipboard    = kind[ClipboardData]("clipboard")
+	Focus        = kind[FocusData]("focus")
 
 	FireEvent     = kind[EventData]("event")
 	SurfaceOpened = kind[SurfaceData]("surface.opened")
@@ -38,6 +39,15 @@ type OpenExternalData struct {
 // ClipboardData replaces the clipboard's text.
 type ClipboardData struct {
 	Text string `json:"text"`
+}
+
+// FocusData gives the keyboard to the field under Key on Surface: an input,
+// inputGroup, textarea or inlineEdit. It lands on the next frame that draws
+// that field and is dropped when that frame has none, or when Surface is not
+// the one on screen. Escape hands the keyboard back to the surface.
+type FocusData struct {
+	Surface string `json:"surface"`
+	Key     string `json:"key"`
 }
 
 // SurfaceData names a surface the person opened or left. Answer

@@ -80,6 +80,7 @@ func drawInput(r *Renderer, gtx C, th *ui.Theme, n extension.Node, id string) D 
 	}
 	s.take(p.Value)
 	s.events(r, gtx, p.OnChange, p.OnSubmit)
+	r.takeFocus(gtx, n, &s.editor)
 	in := th.Input(&s.editor, p.Placeholder)
 	in.Leading, in.LeadingSize = r.icon(p.Leading), unit.Dp(p.LeadingSize)
 	in.Height, in.Width, in.TextSize = unit.Dp(p.Height), unit.Dp(p.Width), unit.Sp(p.TextSize)
@@ -97,6 +98,7 @@ func drawInputGroup(r *Renderer, gtx C, th *ui.Theme, n extension.Node, id strin
 	s.editor.SingleLine = !p.Multiline
 	s.take(p.Value)
 	s.events(r, gtx, p.OnChange, p.OnSubmit)
+	r.takeFocus(gtx, n, &s.editor)
 	g := th.InputGroup(&s.editor, p.Placeholder)
 	if p.Multiline {
 		g = th.InputGroupTextarea(&s.editor, p.Placeholder)
@@ -130,6 +132,7 @@ func drawTextarea(r *Renderer, gtx C, th *ui.Theme, n extension.Node, id string)
 	s.editor.SingleLine = false
 	s.take(p.Value)
 	s.events(r, gtx, p.OnChange, "")
+	r.takeFocus(gtx, n, &s.editor)
 	ta := th.Textarea(&s.editor, p.Placeholder)
 	if p.Resizable {
 		ta.Resize = &s.resize
