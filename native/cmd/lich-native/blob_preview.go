@@ -75,7 +75,7 @@ func previewKindOf(rel string) blobKind {
 // previewImage is a decoded image, scaled to maxPreviewEdge, and what its
 // caption says about the file.
 type previewImage struct {
-	src           paint.ImageOp
+	src           *ui.ImageData
 	width, height int
 	format        string
 	bytes         int
@@ -98,7 +98,7 @@ func decodePreview(data []byte) (*previewImage, error) {
 		return nil, errors.New(i18n.T("diff.blobPreview.undecodable", i18n.Args{"error": err}))
 	}
 	return &previewImage{
-		src:    paint.NewImageOp(fitEdge(img, maxPreviewEdge)),
+		src:    ui.NewImageData(fitEdge(img, maxPreviewEdge)),
 		width:  cfg.Width,
 		height: cfg.Height,
 		format: strings.ToUpper(format),
@@ -210,6 +210,8 @@ func (p *previewImage) draw(gtx C, th *ui.Theme) D {
 	gtx.Constraints = layout.Exact(box)
 	return layout.Center.Layout(gtx, func(gtx C) D {
 		gtx.Constraints = layout.Exact(size)
-		return widget.Image{Src: p.src, Fit: widget.Fill}.Layout(gtx)
+		img := th.Image(p.src)
+		img.Fit = widget.Fill
+		return img.Layout(gtx)
 	})
 }

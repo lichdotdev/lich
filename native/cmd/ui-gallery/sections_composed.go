@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"image"
 	"image/color"
+	"image/png"
 
 	"gioui.org/font"
 	"gioui.org/layout"
@@ -19,6 +21,8 @@ type composedState struct {
 	sample       *ui.AvatarImage
 
 	skeletonButton widget.Clickable
+
+	picture *ui.ImageData
 }
 
 func (g *gallery) composedSection(gtx C, th *ui.Theme) D {
@@ -27,6 +31,7 @@ func (g *gallery) composedSection(gtx C, th *ui.Theme) D {
 	kids = append(kids, g.headings(th)...)
 	kids = append(kids, g.skeletons(th)...)
 	kids = append(kids, g.markedTexts(th)...)
+	kids = append(kids, g.images(th)...)
 	return ui.Stack(4, kids...)(gtx)
 }
 
@@ -114,5 +119,45 @@ func (g *gallery) markedTexts(th *ui.Theme) []layout.Widget {
 		line(ui.MarkedSegment{Text: "func resolve(path string) error {"}),
 		line(ui.MarkedSegment{Text: "func "}, ui.MarkedSegment{Text: "resolve", Marked: true}, ui.MarkedSegment{Text: "(path string) error {"}),
 		line(ui.MarkedSegment{Text: "err", Marked: true}, ui.MarkedSegment{Text: " := resolve("}, ui.MarkedSegment{Text: "err", Marked: true}, ui.MarkedSegment{Text: ")"}),
+	}
+}
+
+// sampleData decodes the sample through DecodeImage, the bytes path; a failure
+// falls back to the image path, so the page draws either way.
+func (g *gallery) sampleData() *ui.ImageData {
+	if g.picture != nil {
+		return g.picture
+	}
+	src := sampleImage()
+	var buf bytes.Buffer
+	if err := png.Encode(&buf, src); err == nil {
+		if decoded, err := ui.DecodeImage(buf.Bytes()); err == nil {
+			g.picture = decoded
+			return g.picture
+		}
+	}
+	g.picture = ui.NewImageData(src)
+	return g.picture
+}
+
+func (g *gallery) images(th *ui.Theme) []layout.Widget {
+	src := g.sampleData()
+	box := func(fit widget.Fit, name string, w, h unit.Dp) layout.Widget {
+		img := th.Image(src)
+		img.Fit, img.Width, img.Height = fit, w, h
+		return ui.Stack(1, caption(th, name), func(gtx C) D {
+			return layout.Background{}.Layout(gtx,
+				func(gtx C) D { return ui.Fill(gtx, th.Over(th.Palette.Muted), ui.RadiusSM) },
+				img.Layout)
+		})
+	}
+	return []layout.Widget{
+		caption(th, "Image: fits in a 96x64 box, and at its own size"),
+		ui.Row(3,
+			box(widget.Contain, "contain", 96, 64),
+			box(widget.Cover, "cover", 96, 64),
+			box(widget.Fill, "fill", 96, 64),
+			box(widget.Contain, "96x96", 96, 96),
+		),
 	}
 }
