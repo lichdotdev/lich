@@ -224,7 +224,7 @@ func (t *Rows) rowParts(th *ui.Theme, r Row, lit bool) (lead, stat layout.Widget
 		name = name.Weight(font.Medium)
 	} else {
 		glyphs[0] = layout.Spacer{Width: Glyph, Height: Glyph}.Layout
-		glyphs[1] = func(gtx C) D { return FileIcon(gtx, th, r.Node.Path) }
+		glyphs[1] = th.FileIcon(r.Node.Path, Glyph).Layout
 		if !lit {
 			name = name.Muted()
 		}
@@ -242,16 +242,3 @@ func (t *Rows) rowParts(th *ui.Theme, r Row, lit bool) (lead, stat layout.Widget
 	}
 	return lead, stat
 }
-
-// FileIcon draws the file's devicon, or the muted file glyph at 70%
-// opacity for a file it has none for.
-func FileIcon(gtx C, th *ui.Theme, p string) D {
-	if ic := icons.DeviconFor(p); ic != nil {
-		return ic.Layout(gtx, Glyph, th.Foreground)
-	}
-	return icFileGlyph.Layout(gtx, Glyph, th.Over(ui.Alpha(th.MutedForeground, fileIconOpacity)))
-}
-
-const fileIconOpacity = 0.7
-
-var icFileGlyph = icons.Lucide("file")

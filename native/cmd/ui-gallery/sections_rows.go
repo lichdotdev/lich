@@ -39,9 +39,9 @@ var (
 
 func (g *gallery) glyphsSection(gtx C, th *ui.Theme) D {
 	ic := g.icon
-	return stack(4,
+	return ui.Stack(4,
 		caption(th, "IconLine: glyph, gap-1.5, any children"),
-		stack(1,
+		ui.Stack(1,
 			func(gtx C) D {
 				return ui.IconLine(gtx, ic("git-branch"), th.MutedForeground, layout.Rigid(th.Text(ui.TextXS, "feature/toolbar").Muted().Layout))
 			},
@@ -52,20 +52,20 @@ func (g *gallery) glyphsSection(gtx C, th *ui.Theme) D {
 		caption(th, "IconLabel: glyph, gap-1, label filling the line"),
 		minWidth(220, ui.IconLabel(ic("hourglass"), th.ToneWait, th.Text(ui.TextXS, "Waiting on you").In(th.ToneWait)).Layout),
 		caption(th, "MonoGlyph: MetaGlyph in the mono face"),
-		row(4,
+		ui.Row(4,
 			th.MonoGlyph(ic("git-branch"), "feature/toolbar", th.MutedForeground).Layout,
 			th.MonoGlyph(ic("git-branch"), "main", th.Foreground).Layout,
 		),
 		caption(th, "MutedGlyph: 16 and 12"),
-		row(4, th.MutedGlyph(ic("folder"), 16).Layout, th.MutedGlyph(ic("message-square"), 12).Layout),
+		ui.Row(4, th.MutedGlyph(ic("folder"), 16).Layout, th.MutedGlyph(ic("message-square"), 12).Layout),
 		caption(th, "CenteredIcon in a 22x22 box, BoxIcon in 22x22 and 14x14"),
-		row(4,
+		ui.Row(4,
 			box(22, 22, func(gtx C) D { return ui.CenteredIcon(gtx, ic("git-branch"), 13, th.Foreground) }),
 			box(22, 22, func(gtx C) D { return ui.BoxIcon(gtx, ic("folder"), th.Foreground) }),
 			box(14, 14, func(gtx C) D { return ui.BoxIcon(gtx, ic("folder"), th.Foreground) }),
 		),
 		caption(th, "TriggerChevron: closed, open (click the field)"),
-		row(4,
+		ui.Row(4,
 			func(gtx C) D { return th.TriggerChevron(gtx, false) },
 			func(gtx C) D { return th.TriggerChevron(gtx, true) },
 			func(gtx C) D {
@@ -77,7 +77,7 @@ func (g *gallery) glyphsSection(gtx C, th *ui.Theme) D {
 			},
 		),
 		caption(th, "TinyChip: wait, muted, pass"),
-		row(3,
+		ui.Row(3,
 			th.TinyChip("waiting", th.ToneWait).Layout,
 			th.TinyChip("required", th.MutedForeground).Layout,
 			th.TinyChip("gone", th.TonePass).Layout,
@@ -89,7 +89,7 @@ func (g *gallery) linesSection(gtx C, th *ui.Theme) D {
 	s := &g.rowsState
 	b := th.Button(&s.busyButton, "Check for updates")
 	b.Size = ui.SizeSM
-	return stack(4,
+	return ui.Stack(4,
 		caption(th, "HoverLink: rest, hover"),
 		func(gtx C) D { return th.HoverLink(gtx, &s.links[0], "Pull requests") },
 		caption(th, "TrailingIconLink"),
@@ -127,13 +127,13 @@ func (g *gallery) listRowsSection(gtx C, th *ui.Theme) D {
 			})
 		}
 	}
-	return stack(4,
+	return ui.Stack(4,
 		caption(th, "NavRow: rest, hover, on (click to move it)"),
-		stack(0, item(0, "General"), item(1, "Appearance"), item(2, "Hotkeys")),
+		ui.Stack(0, item(0, "General"), item(1, "Appearance"), item(2, "Hotkeys")),
 		caption(th, "PanelRow: live (hover it), not live"),
-		stack(0, panel(0, true, "Lint · passed"), panel(1, false, "Deploy · no link")),
+		ui.Stack(0, panel(0, true, "Lint · passed"), panel(1, false, "Deploy · no link")),
 		caption(th, "FillRow: accent at 0.4 and 1"),
-		row(3,
+		ui.Row(3,
 			func(gtx C) D {
 				th.FillRow(gtx, image.Pt(gtx.Dp(120), gtx.Dp(28)), 0.4)
 				return D{Size: image.Pt(gtx.Dp(120), gtx.Dp(28))}
@@ -145,7 +145,7 @@ func (g *gallery) listRowsSection(gtx C, th *ui.Theme) D {
 		),
 		caption(th, "MenuHeader, MenuSeparator"),
 		minWidth(260, func(gtx C) D {
-			return stack(0,
+			return ui.Stack(0,
 				func(gtx C) D { return th.MenuHeader(gtx, "Notifications", "3") },
 				th.MenuSeparator,
 				func(gtx C) D { return th.MenuHeader(gtx, "Recent", "") },
@@ -168,22 +168,22 @@ func (g *gallery) facesSection(gtx C, th *ui.Theme) D {
 		}
 	}
 	icon := func(gtx C) D { return g.icon("folder").Layout(gtx, ui.Space(4), th.MutedForeground) }
-	return stack(4,
+	return ui.Stack(4,
 		caption(th, "GhostTextButton: rest, hover, destructive ink"),
-		row(3,
+		ui.Row(3,
 			func(gtx C) D { return th.GhostTextButton(gtx, &s.ghostTexts[0], "Remove", th.Foreground) },
 			func(gtx C) D { return th.GhostTextButton(gtx, &s.ghostTexts[1], "Remove", th.Destructive) },
 		),
 		caption(th, "CardIconButton: rest, turned, CardIconDisabled"),
-		row(3,
+		ui.Row(3,
 			func(gtx C) D { return th.CardIconButton(gtx, &s.cardIcons[0], g.icon("refresh-cw"), cardBtnSide, 0) },
 			func(gtx C) D { return th.CardIconButton(gtx, &s.cardIcons[1], g.icon("refresh-cw"), cardBtnSide, 1.2) },
 			func(gtx C) D { return th.CardIconDisabled(gtx, g.icon("refresh-cw"), cardBtnSide, 0) },
 		),
 		caption(th, "GhostIconButton: tooltip, disabled"),
-		row(3, tip(0, "Reset to default", false), tip(1, "Nothing to reset", true)),
+		ui.Row(3, tip(0, "Reset to default", false), tip(1, "Nothing to reset", true)),
 		caption(th, "SquareFace: rest, Accent"),
-		row(3,
+		ui.Row(3,
 			func(gtx C) D { return ui.SquareFace(gtx, th.Surface, icon) },
 			func(gtx C) D { return ui.SquareFace(gtx, th.Accent, icon) },
 		),

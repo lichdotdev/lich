@@ -180,7 +180,7 @@ func hitGroupHeader(gtx C, th *ui.Theme, g searchGroup) D {
 	dir, base := splitPath(g.path)
 	return layout.Inset{Left: ui.Space(2), Right: ui.Space(2), Top: ui.Space(1.5), Bottom: ui.Space(0.5)}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-			layout.Rigid(th.FileIcon(g.path, treeGlyph).Layout),
+			layout.Rigid(th.FileIcon(g.path, filetree.Glyph).Layout),
 			ui.Gap(1.5),
 			layout.Rigid(func(gtx C) D {
 				if dir == "" {

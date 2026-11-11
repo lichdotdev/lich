@@ -108,24 +108,12 @@ type GaugeRowStyle struct {
 
 func (r GaugeRowStyle) Layout(gtx C) D {
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-		fixedColumn(r.LabelW, r.Label),
+		FixedColumn(r.LabelW, r.Label),
 		Gap(3),
 		layout.Flexed(1, r.Bar),
 		Gap(3),
-		fixedColumn(r.ReadingW, alignEnd(r.Reading)),
+		FixedColumn(r.ReadingW, AlignEnd(r.Reading)),
 		Gap(3),
-		fixedColumn(r.LeftW, alignEnd(r.Left)),
+		FixedColumn(r.LeftW, AlignEnd(r.Left)),
 	)
-}
-
-func fixedColumn(width unit.Dp, w layout.Widget) layout.FlexChild {
-	return layout.Rigid(func(gtx C) D {
-		px := gtx.Dp(width)
-		gtx.Constraints.Min.X, gtx.Constraints.Max.X = px, px
-		return w(gtx)
-	})
-}
-
-func alignEnd(w layout.Widget) layout.Widget {
-	return func(gtx C) D { return layout.E.Layout(gtx, w) }
 }

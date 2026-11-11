@@ -91,12 +91,12 @@ func (c *coverageState) init() {
 func (g *gallery) coverage(gtx C) D {
 	th := g.th
 	g.cov.init()
-	return stack(6,
+	return ui.Stack(6,
 		th.Text(ui.TextBase, "Coverage").Weight(font.Medium).Layout,
 		th.Text(ui.TextSM, "The rest of the kit: each variant, state and part the sections above do not draw.").Muted().Layout,
 		func(gtx C) D {
 			return layout.Flex{Alignment: layout.Start}.Layout(gtx,
-				layout.Flexed(1, stack(6,
+				layout.Flexed(1, ui.Stack(6,
 					g.section("InlineEdit", g.inlineSection),
 					g.section("Progress, Spinner, BusyRing, Reveal", g.motionSection),
 					g.section("Input, Textarea variants", g.fieldVariantsSection),
@@ -105,7 +105,7 @@ func (g *gallery) coverage(gtx C) D {
 					g.section("Menu entries, ContextMenu", g.menuVariantsSection),
 				)),
 				ui.Gap(6),
-				layout.Flexed(1, stack(6,
+				layout.Flexed(1, ui.Stack(6,
 					g.section("Toast: secondary, icon, lines", g.toastVariantsSection),
 					g.section("Dialog variants", g.dialogVariantsSection),
 					g.section("ResizeHandle left, Toggle, ToggleGroup, Tabs", g.controlVariantsSection),
@@ -120,7 +120,7 @@ func (g *gallery) coverage(gtx C) D {
 }
 
 func labeled(th *ui.Theme, label string, w layout.Widget) layout.Widget {
-	return stack(1.5, caption(th, label), w)
+	return ui.Stack(1.5, caption(th, label), w)
 }
 
 // capped limits a widget to width, as a w-* does on a block.
@@ -160,7 +160,7 @@ func (g *gallery) inlineSection(gtx C, th *ui.Theme) D {
 	}
 	rename := th.Button(&c.inlineStart, "Rename")
 	rename.Variant, rename.Size, rename.Icon = ui.VariantOutline, ui.SizeSM, g.icon("pencil")
-	return stack(3,
+	return ui.Stack(3,
 		caption(th, "Enter or blur commits, Escape or an unchanged value cancels"),
 		capped(280, name),
 		rename.Layout,
@@ -186,14 +186,14 @@ func (g *gallery) motionSection(gtx C, th *ui.Theme) D {
 			return ui.Reveal(gtx, rows, func(gtx C) D { return g.revealBox(gtx, th) })
 		}
 	}
-	return stack(4,
-		stack(2.5, bars...),
+	return ui.Stack(4,
+		ui.Stack(2.5, bars...),
 		caption(th, "Spinner: size 4, 6, muted"),
-		row(4, spin(ui.Space(4), th.Foreground), spin(ui.Space(6), th.Foreground), spin(ui.Space(6), th.MutedForeground)),
+		ui.Row(4, spin(ui.Space(4), th.Foreground), spin(ui.Space(6), th.Foreground), spin(ui.Space(6), th.MutedForeground)),
 		caption(th, "BusyRing: size 4, 6, TonePass"),
-		row(4, ring(ui.Space(4), th.Foreground), ring(ui.Space(6), th.Foreground), ring(ui.Space(6), th.TonePass)),
+		ui.Row(4, ring(ui.Space(4), th.Foreground), ring(ui.Space(6), th.Foreground), ring(ui.Space(6), th.TonePass)),
 		caption(th, "Reveal at 0.25, 0.5 and 1 of the height"),
-		split(3, box(0.25), box(0.5), box(1)),
+		ui.Columns(3, box(0.25), box(0.5), box(1)),
 	)(gtx)
 }
 
@@ -204,7 +204,7 @@ func (g *gallery) revealBox(gtx C, th *ui.Theme) D {
 	return layout.Background{}.Layout(gtx,
 		func(gtx C) D { return ui.Fill(gtx, th.Over(ui.Alpha(th.Muted, 0.6)), ui.RadiusMD) },
 		func(gtx C) D {
-			return layout.UniformInset(ui.Space(2)).Layout(gtx, stack(1,
+			return layout.UniformInset(ui.Space(2)).Layout(gtx, ui.Stack(1,
 				th.Text(ui.TextXS, "First line").Layout,
 				th.Text(ui.TextXS, "Second line").Layout,
 				th.Text(ui.TextXS, "Third line").Layout,
@@ -236,12 +236,12 @@ func (g *gallery) fieldVariantsSection(gtx C, th *ui.Theme) D {
 	invalid.Invalid = true
 	narrowArea := th.Textarea(&c.areas[3], "Width 240")
 	narrowArea.Width = 240
-	return stack(4,
-		split(4, labeled(th, "Input, Mono", mono.Layout), labeled(th, "Borderless", borderless.Layout)),
-		split(4, labeled(th, "Bare", bare.Layout), labeled(th, "Clear (X while it has text)", clearable.Layout)),
-		split(4, labeled(th, "Width", narrow.Layout), labeled(th, "LeadingSize", leading.Layout)),
+	return ui.Stack(4,
+		ui.Columns(4, labeled(th, "Input, Mono", mono.Layout), labeled(th, "Borderless", borderless.Layout)),
+		ui.Columns(4, labeled(th, "Bare", bare.Layout), labeled(th, "Clear (X while it has text)", clearable.Layout)),
+		ui.Columns(4, labeled(th, "Width", narrow.Layout), labeled(th, "LeadingSize", leading.Layout)),
 		labeled(th, "Textarea, Resize nil", resizeNone.Layout),
-		split(4, labeled(th, "Textarea, Disabled", disabled.Layout), labeled(th, "Textarea, Invalid", invalid.Layout)),
+		ui.Columns(4, labeled(th, "Textarea, Disabled", disabled.Layout), labeled(th, "Textarea, Invalid", invalid.Layout)),
 		labeled(th, "Textarea, Width", narrowArea.Layout),
 	)(gtx)
 }
@@ -264,7 +264,7 @@ func (g *gallery) groupVariantsSection(gtx C, th *ui.Theme) D {
 	send.Icon, send.Size = g.icon("arrow-up"), ui.SizeIconXS
 	area.Start = ui.InputGroupAddon{Items: []layout.Widget{th.InputGroupIcon(g.icon("paperclip"))}}
 	area.End = ui.InputGroupAddon{Items: []layout.Widget{send.Layout}, Button: true}
-	return stack(4,
+	return ui.Stack(4,
 		labeled(th, "InputGroup, Invalid", invalid.Layout),
 		labeled(th, "InputGroup, Width", narrow.Layout),
 		labeled(th, "End addon, text", endText.Layout),
@@ -298,11 +298,11 @@ func (g *gallery) popupVariantsSection(gtx C, th *ui.Theme) D {
 			)
 		}
 	}
-	return stack(4,
+	return ui.Stack(4,
 		caption(th, "Tooltip, SideLeft and SideRight (hover)"),
 		func(gtx C) D {
 			return layout.Inset{Left: ui.Space(36), Right: ui.Space(36)}.Layout(gtx,
-				row(2, sideTip(0, ui.SideLeft, "left"), sideTip(1, ui.SideRight, "right")))
+				ui.Row(2, sideTip(0, ui.SideLeft, "left"), sideTip(1, ui.SideRight, "right")))
 		},
 		caption(th, "DropdownPanel: left edge aligned, then AlignEnd"),
 		spread(panel(0, false, "Align start"), panel(1, true, "Align end")),
@@ -313,13 +313,13 @@ func (g *gallery) popupVariantsSection(gtx C, th *ui.Theme) D {
 func (g *gallery) panelRows(gtx C, th *ui.Theme) D {
 	item := func(title, sub string) layout.Widget {
 		return func(gtx C) D {
-			return layout.UniformInset(ui.Space(2)).Layout(gtx, stack(0.5,
+			return layout.UniformInset(ui.Space(2)).Layout(gtx, ui.Stack(0.5,
 				th.Text(ui.TextSM, title).Layout,
 				th.Text(ui.TextXS, sub).Muted().Layout,
 			))
 		}
 	}
-	return stack(0,
+	return ui.Stack(0,
 		item("claude · opus", "12 turns, 48k tokens"),
 		item("codex · gpt", "3 turns, 9k tokens"),
 	)(gtx)
@@ -348,7 +348,7 @@ func (g *gallery) menuVariantsSection(gtx C, th *ui.Theme) D {
 			Variant: ui.VariantDestructive, OnClick: func() { c.menuLast = "Delete everything" }},
 	}
 	menu := th.ContextMenu(&g.root, &c.menu, entries)
-	return stack(4,
+	return ui.Stack(4,
 		caption(th, "ContextMenu: radio, Lead, Inset, Disabled, ShortcutDestructive; right-click the area"),
 		func(gtx C) D {
 			return menu.Layout(gtx, func(gtx C) D {
@@ -389,7 +389,7 @@ func (g *gallery) toastVariantsSection(gtx C, th *ui.Theme) D {
 		b.Variant = ui.VariantOutline
 		buttons = append(buttons, b.Layout)
 	}
-	return stack(4, caption(th, "Raised on the page's Toaster"), row(2, buttons...))(gtx)
+	return ui.Stack(4, caption(th, "Raised on the page's Toaster"), ui.Row(2, buttons...))(gtx)
 }
 
 func (g *gallery) dialogVariantsSection(gtx C, th *ui.Theme) D {
@@ -404,7 +404,7 @@ func (g *gallery) dialogVariantsSection(gtx C, th *ui.Theme) D {
 		b.Variant = ui.VariantOutline
 		buttons = append(buttons, b.Layout)
 	}
-	return stack(4, caption(th, "Each opens its own dialog"), row(2, buttons...))(gtx)
+	return ui.Stack(4, caption(th, "Each opens its own dialog"), ui.Row(2, buttons...))(gtx)
 }
 
 // layoutCoverageDialogs lays out the coverage section's dialogs. Like
@@ -455,7 +455,7 @@ func (g *gallery) coverageDialog(i int) ui.DialogStyle {
 func (g *gallery) rawDialogPanel(gtx C, th *ui.Theme) D {
 	field := th.Input(&g.cov.dialogPick, "Raw: no header, footer or ×")
 	field.Bare = true
-	return layout.UniformInset(ui.Space(2)).Layout(gtx, stack(1,
+	return layout.UniformInset(ui.Space(2)).Layout(gtx, ui.Stack(1,
 		field.Layout,
 		th.Separator,
 		th.Text(ui.TextSM, "Top places the panel 20% down; Scrim darkens the window").Muted().Layout,
@@ -483,11 +483,11 @@ func (g *gallery) controlVariantsSection(gtx C, th *ui.Theme) D {
 		ui.TabsTrigger{Text: "Checks"},
 	)
 	panel := th.Text(ui.TextSM, "A trailing widget sits after the trigger's text").Muted().Layout
-	return stack(4,
+	return ui.Stack(4,
 		caption(th, "ResizeHandle, PanelEdgeLeft: drag the left edge of the panel"),
 		fullWidth(g.leftPanel(th)),
 		caption(th, "Toggle, ToggleSizeLG"),
-		row(2, large.Layout, largeIcon.Layout),
+		ui.Row(2, large.Layout, largeIcon.Layout),
 		caption(th, "ToggleGroup, ItemHeight, ItemPadX and ItemText overrides"),
 		group.Layout,
 		caption(th, "Tabs, Trailing"),
@@ -520,7 +520,7 @@ func (g *gallery) leftPanel(th *ui.Theme) layout.Widget {
 
 func (g *gallery) sortSection(gtx C, th *ui.Theme) D {
 	c := &g.cov
-	return stack(4,
+	return ui.Stack(4,
 		caption(th, "SortList, vertical (default)"),
 		g.sortDemo(th, &c.sortV, &c.idsV, ui.SortList{Gap: ui.Space(1), Within: true}),
 		caption(th, "SortList, Horizontal"),
@@ -584,7 +584,7 @@ func (g *gallery) labelVariantsSection(gtx C, th *ui.Theme) D {
 	two := th.Text(ui.TextSM, long)
 	two.MaxLines = 2
 	tail := th.Text(ui.TextXS, "~/work/lichdotdev/lich/native/cmd/ui-gallery/sections_coverage.go").Mono().Muted()
-	return stack(4,
+	return ui.Stack(4,
 		caption(th, "Italic"),
 		italic.Layout,
 		caption(th, "Centered, laid out at the full width"),
@@ -619,14 +619,14 @@ func (g *gallery) iconVariantsSection(gtx C, th *ui.Theme) D {
 		files = append(files, g.deviconFile(th, name))
 	}
 	mark := icons.LichMark()
-	return stack(4,
+	return ui.Stack(4,
 		caption(th, "Icon.Layout, then Icon.LayoutFilled"),
-		row(3, outline...),
-		row(3, filled...),
+		ui.Row(3, outline...),
+		ui.Row(3, filled...),
 		caption(th, "icons.Sonner"),
-		row(4, sonner...),
+		ui.Row(4, sonner...),
 		caption(th, "icons.LichMark at 4, 6 and 10"),
-		row(4, glyph(mark, ui.Space(4), th.Foreground, false), glyph(mark, ui.Space(6), th.Foreground, false), glyph(mark, ui.Space(10), th.Foreground, false)),
+		ui.Row(4, glyph(mark, ui.Space(4), th.Foreground, false), glyph(mark, ui.Space(6), th.Foreground, false), glyph(mark, ui.Space(10), th.Foreground, false)),
 		caption(th, "icons.DeviconFor, by file name; nil when it has none"),
 		func(gtx C) D {
 			return ui.Wrap{GapX: ui.Space(4), GapY: ui.Space(3)}.Layout(gtx, wrapItems(files)...)
@@ -650,7 +650,7 @@ func (g *gallery) deviconFile(th *ui.Theme, name string) layout.Widget {
 		}
 		return b.Layout(gtx, ui.Space(5), th.Foreground)
 	}
-	return row(1.5, mark, caption(th, name))
+	return ui.Row(1.5, mark, caption(th, name))
 }
 
 // paletteTokens are every color of the theme's Palette, in its declaration order.
@@ -678,7 +678,7 @@ const paletteSwatch = 5 // Space units: size-5
 func (g *gallery) paletteSection(gtx C, th *ui.Theme) D {
 	var kids []ui.WrapChild
 	for _, t := range paletteTokens(th.Palette) {
-		kids = append(kids, ui.WrapItem(row(2, swatch(th, t.color), th.Text(ui.TextXS, t.name).Mono().Muted().Layout)))
+		kids = append(kids, ui.WrapItem(ui.Row(2, swatch(th, t.color), th.Text(ui.TextXS, t.name).Mono().Muted().Layout)))
 	}
 	return ui.Wrap{GapX: ui.Space(4), GapY: ui.Space(2)}.Layout(gtx, kids...)
 }

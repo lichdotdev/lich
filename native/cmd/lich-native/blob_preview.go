@@ -19,7 +19,6 @@ import (
 
 	"gioui.org/layout"
 	"gioui.org/op/clip"
-	"gioui.org/op/paint"
 	"gioui.org/unit"
 	"gioui.org/widget"
 	xdraw "golang.org/x/image/draw"

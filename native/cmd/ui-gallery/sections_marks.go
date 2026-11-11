@@ -57,36 +57,36 @@ func (g *gallery) dotsSection(gtx C, th *ui.Theme) D {
 		ui.DotAt(gtx, center, float32(gtx.Dp(4)), th.ToneWait)
 		return D{}
 	})
-	return stack(4,
+	return ui.Stack(4,
 		caption(th, "StatusDot: pass, wait, destructive; HollowDot: muted"),
-		row(4,
+		ui.Row(4,
 			func(gtx C) D { return ui.StatusDot(gtx, th.TonePass) },
 			func(gtx C) D { return ui.StatusDot(gtx, th.ToneWait) },
 			func(gtx C) D { return ui.StatusDot(gtx, th.Destructive) },
 			func(gtx C) D { return ui.HollowDot(gtx, th.MutedForeground) },
 		),
 		caption(th, "BeatingDot (one beat, then rest), PulseRing on a DotAt"),
-		row(4, func(gtx C) D { return th.BeatingDot(gtx, th.TonePass) }, pulse),
+		ui.Row(4, func(gtx C) D { return th.BeatingDot(gtx, th.TonePass) }, pulse),
 		caption(th, "MarkDot: wait, pass, beside a title"),
-		row(5,
-			row(2, func(gtx C) D { return ui.MarkDot(gtx, th.ToneWait) }, th.Text(ui.TextSM, "Needs you").Layout),
-			row(2, func(gtx C) D { return ui.MarkDot(gtx, th.TonePass) }, th.Text(ui.TextSM, "Done").Layout),
+		ui.Row(5,
+			ui.Row(2, func(gtx C) D { return ui.MarkDot(gtx, th.ToneWait) }, th.Text(ui.TextSM, "Needs you").Layout),
+			ui.Row(2, func(gtx C) D { return ui.MarkDot(gtx, th.TonePass) }, th.Text(ui.TextSM, "Done").Layout),
 		),
 		caption(th, "Dot: 6, 8 and 12dp"),
-		row(3,
+		ui.Row(3,
 			func(gtx C) D { return ui.Dot(gtx, th.Foreground, 6) },
 			func(gtx C) D { return ui.Dot(gtx, th.TonePass, 8) },
 			func(gtx C) D { return ui.Dot(gtx, th.MutedForeground, 12) },
 		),
 		caption(th, "Swatch"),
-		row(2,
+		ui.Row(2,
 			func(gtx C) D { return ui.Swatch(gtx, ui.Dark.Primary) },
 			func(gtx C) D { return ui.Swatch(gtx, th.TonePass) },
 			func(gtx C) D { return ui.Swatch(gtx, th.ToneWait) },
 			func(gtx C) D { return ui.Swatch(gtx, th.Destructive) },
 		),
 		caption(th, "NotifyDot on a bar button, CornerDot and PulsingCornerDot on a rail button"),
-		row(4, bell, filter, live),
+		ui.Row(4, bell, filter, live),
 	)(gtx)
 }
 
@@ -113,17 +113,17 @@ func (g *gallery) gaugesSection(gtx C, th *ui.Theme) D {
 			Reading: th.Text(ui.TextXS, reading).In(tone).Layout, Left: label(left),
 		}.Layout
 	}
-	return stack(4,
+	return ui.Stack(4,
 		caption(th, "GaugeBar: empty, 35% pass, 70% wait, 100% destructive"),
-		stack(2, bar(0, th.TonePass), bar(35, th.TonePass), bar(70, th.ToneWait), bar(100, th.Destructive)),
+		ui.Stack(2, bar(0, th.TonePass), bar(35, th.TonePass), bar(70, th.ToneWait), bar(100, th.Destructive)),
 		caption(th, "SegmentBar: three parts, one part, no share (bare track)"),
-		stack(2, parts(60, 10, 30), parts(1, 0, 0), parts(0, 0, 0)),
+		ui.Stack(2, parts(60, 10, 30), parts(1, 0, 0), parts(0, 0, 0)),
 		caption(th, "DonutGauge, 16dp: 0, 25, 60, 100%"),
-		row(3, donut(16, 0, th.MutedForeground), donut(16, 25, th.TonePass), donut(16, 60, th.ToneWait), donut(16, 100, th.Destructive)),
+		ui.Row(3, donut(16, 0, th.MutedForeground), donut(16, 25, th.TonePass), donut(16, 60, th.ToneWait), donut(16, 100, th.Destructive)),
 		caption(th, "DonutGauge, 32dp"),
-		row(3, donut(32, 25, th.TonePass), donut(32, 60, th.ToneWait)),
+		ui.Row(3, donut(32, 25, th.TonePass), donut(32, 60, th.ToneWait)),
 		caption(th, "GaugeRowStyle: label, bar, reading, time left"),
-		stack(2,
+		ui.Stack(2,
 			gaugeRow("Session", 12, th.TonePass, "12%", "4h 10m"),
 			gaugeRow("Week", 78, th.ToneWait, "78%", "2d"),
 			gaugeRow("Week (Opus)", 100, th.Destructive, "100%", "6h"),
@@ -134,19 +134,19 @@ func (g *gallery) gaugesSection(gtx C, th *ui.Theme) D {
 func (g *gallery) badgesSection(gtx C, th *ui.Theme) D {
 	count := func(n int) layout.Widget { return func(gtx C) D { return th.CountBadge(gtx, n) } }
 	abbr := func(text string, bg, fg color.NRGBA) layout.Widget { return th.AbbrBadge(text, bg, fg).Layout }
-	return stack(4,
+	return ui.Stack(4,
 		caption(th, "CountBadge: 1, 7, 12, 128 (0 draws nothing)"),
-		row(3, count(1), count(7), count(12), count(128), count(0)),
+		ui.Row(3, count(1), count(7), count(12), count(128), count(0)),
 		caption(th, "OutlineBadge"),
-		row(3, th.OutlineBadge("Draft").Layout, th.OutlineBadge("Fork").Layout),
+		ui.Row(3, th.OutlineBadge("Draft").Layout, th.OutlineBadge("Fork").Layout),
 		caption(th, "AbbrBadge"),
-		row(3,
+		ui.Row(3,
 			abbr("TS", ui.MixOKLab(ui.Dark.Card, th.ToneWait, 0.25), th.ToneWait),
 			abbr("GO", ui.MixOKLab(ui.Dark.Card, th.TonePass, 0.25), th.TonePass),
 			abbr("MD", ui.MixOKLab(ui.Dark.Card, th.Destructive, 0.25), th.Destructive),
 		),
 		caption(th, "Tag: muted, foreground"),
-		row(3, th.Tag("lich", th.MutedForeground).Layout, th.Tag("lich-plugin", th.Foreground).Layout),
+		ui.Row(3, th.Tag("lich", th.MutedForeground).Layout, th.Tag("lich-plugin", th.Foreground).Layout),
 		caption(th, "KeyHint"),
 		th.KeyHint("Esc", "Close").Layout,
 	)(gtx)
@@ -154,7 +154,7 @@ func (g *gallery) badgesSection(gtx C, th *ui.Theme) D {
 
 func (g *gallery) surfacesSection(gtx C, th *ui.Theme) D {
 	lines := func(gtx C) D {
-		return layout.UniformInset(ui.Space(3)).Layout(gtx, stack(1,
+		return layout.UniformInset(ui.Space(3)).Layout(gtx, ui.Stack(1,
 			th.Text(ui.TextSM, "feature/toolbar").Layout,
 			th.Text(ui.TextXS, "3 sessions").Muted().Layout,
 		))
@@ -215,13 +215,13 @@ func (g *gallery) surfacesSection(gtx C, th *ui.Theme) D {
 			return dark.DropHint(g.icon("paperclip"), "Attach to ", "feature/toolbar", "", detail).Layout(gtx)
 		})
 	}
-	return stack(4,
+	return ui.Stack(4,
 		caption(th, "Tray, DropTray (muted edge), DropTray tinted"),
-		stack(2, tray(plain), dropTray(hover, th.MutedForeground), dropTray(tinted, th.ToneWait)),
+		ui.Stack(2, tray(plain), dropTray(hover, th.MutedForeground), dropTray(tinted, th.ToneWait)),
 		caption(th, "DashedBorder"),
 		dashedBox,
 		caption(th, "FillRRect veil under DashedRing, MarchingRing"),
-		row(4, dashes, marching),
+		ui.Row(4, dashes, marching),
 		caption(th, "DashedCircle"),
 		circle,
 		caption(th, "Fillet: either side of a tab"),
@@ -229,8 +229,8 @@ func (g *gallery) surfacesSection(gtx C, th *ui.Theme) D {
 		caption(th, "Checker"),
 		checker,
 		caption(th, "FillIf: transparent, accent"),
-		row(3, fillIf(color.NRGBA{}), fillIf(th.Accent)),
+		ui.Row(3, fillIf(color.NRGBA{}), fillIf(th.Accent)),
 		caption(th, "DropHint: tall enough for its detail, too short for it"),
-		stack(2, hint(130, false), hint(100, true)),
+		ui.Stack(2, hint(130, false), hint(100, true)),
 	)(gtx)
 }
