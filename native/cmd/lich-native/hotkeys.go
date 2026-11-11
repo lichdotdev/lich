@@ -48,6 +48,7 @@ const (
 	hotkeySettings           hotkeyID = "settings"
 	hotkeyPulls              hotkeyID = "pulls"
 	hotkeyToggleGit          hotkeyID = "toggleGit"
+	hotkeyTour               hotkeyID = "tour"
 	hotkeyShortcuts          hotkeyID = "shortcuts"
 	hotkeyStartServices      hotkeyID = "startServices"
 )
@@ -131,6 +132,7 @@ var hotkeyActions = labelActions([]hotkeyAction{
 	{id: hotkeyCommandPalette, labelKey: "hotkeys.action.commandPalette", group: hotkeyGroupApp, combo: combo{Mod: true, Key: "k"}},
 	{id: hotkeySettings, labelKey: "hotkeys.action.settings", group: hotkeyGroupApp, combo: combo{Mod: true, Key: ","}},
 	{id: hotkeyPulls, labelKey: "hotkeys.action.pulls", group: hotkeyGroupApp, combo: shiftChord("p")},
+	{id: hotkeyTour, labelKey: "hotkeys.action.tour", group: hotkeyGroupApp, combo: comboUnassigned},
 	{id: hotkeyShortcuts, labelKey: "hotkeys.action.shortcuts", group: hotkeyGroupApp, combo: combo{Mod: true, Key: "/"}},
 	{id: hotkeyStartServices, labelKey: "hotkeys.action.startServices", group: hotkeyGroupApp, combo: comboUnassigned},
 	{id: hotkeyQuit, labelKey: "hotkeys.action.quit", group: hotkeyGroupApp, combo: comboUnassigned},

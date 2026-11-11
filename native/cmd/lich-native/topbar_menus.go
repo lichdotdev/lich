@@ -49,8 +49,13 @@ func (o *openMenu) snapshot() ([]backend.RecentProject, map[string]bool) {
 	return answer.rows[:min(len(answer.rows), recentLimit)], answer.missing
 }
 
-// openButton is the "+" right after the last tab.
+// openButton is the "+" right after the last tab, where the tour opens a
+// project.
 func (t *topbar) openButton(gtx C, th *ui.Theme, act *topbarAction) D {
+	return t.tour.Anchor(gtx, tourOpen, func(gtx C) D { return t.openButtonFace(gtx, th, act) })
+}
+
+func (t *topbar) openButtonFace(gtx C, th *ui.Theme, act *topbarAction) D {
 	o := &t.open
 	recents, missing := o.snapshot()
 	tip := th.Tooltip(t.root, t.hint("open"), i18n.T("tabs.openProjectMenu.open"))

@@ -1,0 +1,48 @@
+{
+  "basics": {
+    "open": {
+      "title": "Abra seu primeiro projeto",
+      "body": "O lich trabalha dentro de uma pasta. Abra um repositório git pelo + ao lado das abas e seus agentes vão trabalhar nele.",
+      "hint": "Clique em + para abrir uma pasta e continuar"
+    },
+    "start": {
+      "title": "Inicie um agente",
+      "body": "Uma sessão roda seu agente num terminal de verdade, dentro deste projeto.",
+      "hint": "Clique em Nova sessão para continuar"
+    },
+    "startShell": {
+      "title": "Inicie um terminal",
+      "body": "O lich não encontrou nenhum agente nesta máquina, então uma sessão abre um terminal comum. Você pode adicionar um agente depois em Configurações.",
+      "hint": "Clique em Novo terminal para continuar"
+    },
+    "stage": {
+      "title": "Este é o seu agente",
+      "body": "A mesma CLI que você usa no seu terminal, com as mesmas teclas e comandos. Clique nele e digite para conversar."
+    },
+    "stageShell": {
+      "title": "Este é o seu terminal",
+      "body": "Um shell neste projeto. Quando houver um agente instalado, Nova sessão abre ele aqui."
+    },
+    "session": {
+      "title": "Cada sessão ganha uma linha",
+      "body": "Clique numa linha para ir para a sessão dela, e clique com o botão direito para todo o resto que dá para fazer com ela."
+    },
+    "worktree": {
+      "title": "Uma tarefa, uma worktree",
+      "body": "Para trabalhar em duas coisas ao mesmo tempo, abra Nova sessão e escolha Worktree. Cada uma ganha o próprio checkout, então dois agentes nunca mexem nos mesmos arquivos."
+    },
+    "menu": {
+      "title": "Volte quando quiser",
+      "body": "As configurações e estes guias ficam neste menu."
+    }
+  },
+  "progress": "{index} de {total}",
+  "next": "Próximo",
+  "back": "Voltar",
+  "done": "Concluir",
+  "skip": "Pular tour",
+  "skipped": {
+    "title": "O tour está no menu",
+    "body": "Abra de novo em Guias, no menu do canto superior direito."
+  }
+}

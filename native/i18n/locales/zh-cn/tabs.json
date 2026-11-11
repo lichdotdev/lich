@@ -29,5 +29,10 @@
     "pinProjectFailed": "无法保存固定的标签页：{error}",
     "closeProjectFailed": "无法关闭项目：{error}",
     "reorderFailed": "无法重新排序项目：{error}"
+  },
+  "mainMenu": {
+    "open": "菜单",
+    "guides": "指南",
+    "basics": "基础"
   }
 }

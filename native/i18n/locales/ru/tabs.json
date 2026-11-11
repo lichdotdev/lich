@@ -31,5 +31,10 @@
     "pinProjectFailed": "Не удалось сохранить закреплённые вкладки: {error}",
     "closeProjectFailed": "Не удалось закрыть проект: {error}",
     "reorderFailed": "Не удалось изменить порядок проектов: {error}"
+  },
+  "mainMenu": {
+    "open": "Меню",
+    "guides": "Руководства",
+    "basics": "Основы"
   }
 }

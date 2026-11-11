@@ -179,3 +179,29 @@ func TestDropdownPanelRowClosingItAsksForTheNextFrame(t *testing.T) {
 		t.Error("the frame that closed the panel asked for no next frame")
 	}
 }
+
+func TestOverlayCountSeesAnOpenMenu(t *testing.T) {
+	var c chosen
+	g, s, th := &menuRig{size: image.Pt(400, 400)}, new(MenuState), testTheme()
+	th.Overlays = &OverlayCount{}
+	frame := func() bool {
+		th.Overlays.Frame()
+		g.frame(func(gtx C, trigger layout.Widget) D {
+			return th.DropdownMenu(&g.root, s, []MenuEntry{c.item("A")}).Layout(gtx, trigger)
+		})
+		th.Overlays.Frame()
+		return th.Overlays.Open()
+	}
+	if frame() {
+		t.Fatal("a closed menu counted as open")
+	}
+	g.click(pointer.ButtonPrimary, triggerAt.Add(image.Pt(10, 10)))
+	if !frame() {
+		t.Fatal("an open menu did not count")
+	}
+	g.press(key.NameEscape)
+	frame()
+	if frame() {
+		t.Fatal("a closed menu still counts")
+	}
+}

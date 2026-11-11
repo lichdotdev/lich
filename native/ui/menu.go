@@ -238,6 +238,7 @@ func (m menuCore) layout(gtx C) {
 	if !m.s.open {
 		return
 	}
+	m.th.Overlays.count()
 	m.panel = m.th.On(m.th.Popover)
 	macro := op.Record(gtx.Ops)
 	m.drawOverlay(gtx)

@@ -128,6 +128,9 @@ type Theme struct {
 	// Beat is the window's, kept across On: where Loop records the frame
 	// it asked for.
 	Beat *LoopBeat
+	// Overlays is the window's, kept across On: how many dialogs and menus
+	// are on screen.
+	Overlays *OverlayCount
 }
 
 // On returns a copy of th drawing on surface, for the children of a widget

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"gioui.org/layout"
 	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/i18n"
@@ -22,12 +23,12 @@ var icSquareTerminal = icons.Lucide("square-terminal")
 // emptySessionsView is the empty screen over a project with no session open.
 // noAgent is a project whose new session would be a shell, so the button says
 // what it will spawn. th is on the island it fills.
-func emptySessionsView(gtx C, th *ui.Theme, open *widget.Clickable, noAgent bool) D {
+func emptySessionsView(gtx C, th *ui.Theme, open *widget.Clickable, noAgent bool, spot func(C, string, layout.Widget) D) D {
 	description, text, icon := i18n.T("shell.emptySessions.description"), i18n.T("shell.emptySessions.newSession"), icPlus
 	if noAgent {
 		description, text, icon = i18n.T("shell.emptySessions.noAgent"), i18n.T("shell.emptySessions.newTerminal"), icSquareTerminal
 	}
 	button := th.Button(open, text)
 	button.Icon = icon
-	return th.EmptyState(icSquareTerminal, i18n.T("shell.emptySessions.title"), description, button.Layout).Layout(gtx)
+	return th.EmptyState(icSquareTerminal, i18n.T("shell.emptySessions.title"), description, func(gtx C) D { return spot(gtx, tourNewEmpty, button.Layout) }).Layout(gtx)
 }

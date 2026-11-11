@@ -158,7 +158,9 @@ func (s *sidebar) headerRow(gtx C, th *ui.Theme, m *model, act *sidebarAction) D
 		})
 	}
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-		layout.Flexed(1, func(gtx C) D { return th.DropdownMenu(s.root, &h.newMenu, entries).Layout(gtx, trigger) }),
+		layout.Flexed(1, func(gtx C) D {
+			return s.tour.Anchor(gtx, tourNew, func(gtx C) D { return th.DropdownMenu(s.root, &h.newMenu, entries).Layout(gtx, trigger) })
+		}),
 		ui.Gap(1),
 		square("filter", i18n.T("sidebar.sessionSidebar.filter"), sideButton{click: &h.search, icon: icSearch, on: h.open}),
 		ui.Gap(1),

@@ -34,7 +34,8 @@
     "shortcuts": "Atalhos de teclado",
     "quit": "Encerrar o lich",
     "startServices": "Iniciar os serviços do projeto",
-    "toggleGit": "Alternar o painel Git"
+    "toggleGit": "Alternar o painel Git",
+    "tour": "Fazer o tour"
   },
   "terminalCost": {
     "a": "Ctrl+{key} é o atalho do shell para ir ao início da linha; as sessões não o receberão mais.",

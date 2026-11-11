@@ -29,5 +29,10 @@
     "pinProjectFailed": "Não foi possível salvar as abas fixadas: {error}",
     "closeProjectFailed": "Não foi possível fechar o projeto: {error}",
     "reorderFailed": "Não foi possível reordenar os projetos: {error}"
+  },
+  "mainMenu": {
+    "open": "Menu",
+    "guides": "Guias",
+    "basics": "O básico"
   }
 }
