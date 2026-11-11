@@ -353,6 +353,7 @@ func (u *window) applyLayoutStage() {
 		st.switchTab = ""
 		u.settings.hide()
 		u.pulls.hide()
+		u.extension.hide()
 		u.showStripTab(id)
 		if carried := u.sidebar.carry.Carrying(); carried != "" {
 			u.model.showOtherThan(u.ctx, carried)

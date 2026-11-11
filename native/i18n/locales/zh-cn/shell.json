@@ -218,5 +218,12 @@
   },
   "notifyPrompt": {
     "description": "刚才有会话在你离开时请求了你的输入。发生这种情况时，lich 可以弹出桌面通知，注明会话及其项目，这样你就可以启动任务后离开窗口。你正在查看的会话不会发送通知。你可以随时在设置 › 通用中更改。"
+  },
+  "extensionScreen": {
+    "restarting": "{name} 已停止，正在重启…",
+    "failedTitle": "{name} 已停止",
+    "restart": "重启",
+    "openFolder": "打开文件夹",
+    "restartFailed": "无法重启 {name}：{error}"
   }
 }

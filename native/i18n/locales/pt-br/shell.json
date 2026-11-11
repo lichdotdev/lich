@@ -218,5 +218,12 @@
   },
   "notifyPrompt": {
     "description": "Uma sessão acabou de pedir sua atenção enquanto você estava em outro lugar. O lich pode mostrar uma notificação na área de trabalho quando isso acontecer, com o nome da sessão e do projeto, para você iniciar uma tarefa e se afastar da janela. Sessões que você está olhando nunca notificam. Você pode mudar isso quando quiser em Configurações › Geral."
+  },
+  "extensionScreen": {
+    "restarting": "{name} parou e está reiniciando…",
+    "failedTitle": "{name} parou",
+    "restart": "Reiniciar",
+    "openFolder": "Abrir pasta",
+    "restartFailed": "Não foi possível reiniciar {name}: {error}"
   }
 }

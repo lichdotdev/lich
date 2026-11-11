@@ -218,5 +218,12 @@
   },
   "notifyPrompt": {
     "description": "A session just asked for your input while you were somewhere else. lich can raise a desktop notification when that happens, naming the session and its project, so you can start something and walk away from the window. Sessions you are looking at never notify. You can change this any time in Settings › General."
+  },
+  "extensionScreen": {
+    "restarting": "{name} stopped and is restarting…",
+    "failedTitle": "{name} stopped",
+    "restart": "Restart",
+    "openFolder": "Open folder",
+    "restartFailed": "Could not restart {name}: {error}"
   }
 }

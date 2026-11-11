@@ -67,9 +67,13 @@ func (u *window) applyTopbar(act topbarAction) {
 	}
 	if act.home || act.show != "" {
 		u.pulls.hide()
+		u.extension.hide()
 	}
 	if act.pulls {
 		u.togglePulls()
+	}
+	if act.extension.ext != "" {
+		u.toggleExtension(act.extension)
 	}
 	if act.home {
 		u.model.showHome()

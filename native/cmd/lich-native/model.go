@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/lichdotdev/lich/api"
+	"github.com/lichdotdev/lich/extension"
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/ui"
 )
@@ -124,6 +125,11 @@ type model struct {
 	threadFixes threadFixStore
 	// artifacts is every open session's artifact list.
 	artifacts artifactStore
+	// extensions is every extension, its state and its surfaces' renders.
+	extensions extensionStore
+	// extensionMessage hears a message an extension sent the window, a
+	// render aside.
+	extensionMessage func(id string, msg extension.Message)
 	// console is the service whose console is on screen in place of the
 	// active session, "" for none.
 	console string
@@ -376,6 +382,8 @@ func (m *model) follow(ctx context.Context, events <-chan backend.Event) {
 			if a, err := backend.Decode(ev, api.ArtifactsEvent); err == nil {
 				m.artifacts.apply(a)
 			}
+		case api.ExtensionStatusEvent.Name, api.ExtensionMessageEvent.Name:
+			m.extensionEvent(ev)
 		case api.ServiceRevealEvent.Name:
 			if r, err := backend.Decode(ev, api.ServiceRevealEvent); err == nil && m.serviceReveal != nil {
 				m.serviceReveal(r.ID)
