@@ -24,6 +24,27 @@ type Palette struct {
 	Sidebar, SidebarForeground             color.NRGBA
 	SidebarAccent, SidebarAccentForeground color.NRGBA
 	SidebarBorder                          color.NRGBA
+	// GraphLanes are the history graph's branch colors. A theme file does not
+	// set them: a new required token would refuse every theme already published.
+	GraphLanes [6]color.NRGBA
+}
+
+var graphLanesDark = [6]color.NRGBA{
+	OKLCH(0.72, 0.13, 255, 1), OKLCH(0.75, 0.14, 150, 1), OKLCH(0.78, 0.14, 70, 1),
+	OKLCH(0.72, 0.16, 320, 1), OKLCH(0.75, 0.12, 200, 1), OKLCH(0.72, 0.17, 25, 1),
+}
+
+var graphLanesLight = [6]color.NRGBA{
+	OKLCH(0.55, 0.15, 255, 1), OKLCH(0.55, 0.14, 150, 1), OKLCH(0.58, 0.15, 60, 1),
+	OKLCH(0.55, 0.17, 320, 1), OKLCH(0.55, 0.11, 200, 1), OKLCH(0.55, 0.19, 25, 1),
+}
+
+// GraphLanesFor is the graph colors of a theme's scheme.
+func GraphLanesFor(light bool) [6]color.NRGBA {
+	if light {
+		return graphLanesLight
+	}
+	return graphLanesDark
 }
 
 // Dark is the dark theme (themes/dark.json).
@@ -55,6 +76,7 @@ var Dark = Palette{
 	SidebarAccent:           OKLCH(0.274, 0.006, 286.033, 1),
 	SidebarAccentForeground: OKLCH(0.985, 0, 0, 1),
 	SidebarBorder:           OKLCH(1, 0, 0, 0.10),
+	GraphLanes:              graphLanesDark,
 }
 
 // Light is the light theme (themes/light.json).
@@ -86,6 +108,7 @@ var Light = Palette{
 	SidebarAccent:           OKLCH(0.9, 0.004, 286.32, 1),
 	SidebarAccentForeground: OKLCH(0.21, 0.006, 285.885, 1),
 	SidebarBorder:           OKLCH(0.888, 0.004, 286.32, 1),
+	GraphLanes:              graphLanesLight,
 }
 
 // Theme is what every primitive draws with: the palette, the shaper, the

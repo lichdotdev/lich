@@ -32,5 +32,61 @@
       "other": "Expandir {count} líneas sin cambios"
     },
     "revert": "Revertir"
+  },
+  "panel": {
+    "log": "Registro",
+    "close": "Cerrar el panel de Git",
+    "searchPlaceholder": "Texto o hash",
+    "pathPlaceholder": "Ruta",
+    "branchPlaceholder": "Rama o etiqueta",
+    "author": "Autor",
+    "authorAny": "Todos los autores",
+    "date": "Fecha",
+    "dateAny": "Cualquier momento",
+    "dateDay": "Últimas 24 horas",
+    "dateWeek": "Últimos 7 días",
+    "dateMonth": "Últimos 30 días",
+    "local": "Locales",
+    "tags": "Etiquetas",
+    "head": "HEAD ({name})",
+    "selectCommit": "Selecciona un commit para ver sus archivos.",
+    "noCommits": "Ningún commit coincide.",
+    "loadFailed": "No se pudo leer el historial: {error}",
+    "commitFailed": "No se pudo leer este commit: {error}",
+    "diffFailed": "No se pudo leer este diff: {error}",
+    "binary": "Este archivo es binario.",
+    "noDiff": "Nada cambió en este archivo.",
+    "back": "Volver al registro",
+    "files": "Archivos"
+  },
+  "branch": {
+    "checkout": "Checkout",
+    "checkoutRemote": "Checkout como rama local",
+    "open": "Abrir {name}",
+    "newBranch": "Nueva rama desde aquí…",
+    "rename": "Renombrar…",
+    "delete": "Eliminar",
+    "onBranch": "Estás en esta rama",
+    "inWorktree": "Con checkout en otro worktree",
+    "options": "Acciones de {name}",
+    "from": "Desde {name}",
+    "checkoutTitle": "¿Cambiar {session} a {branch}?",
+    "checkoutBody": "{session} está trabajando en este checkout. Su agente encontrará otra rama debajo, y los cambios sin commit pasan junto con el cambio.",
+    "deleteTitle": "¿Eliminar {name}?",
+    "deleteBody": {
+      "one": "{count} commit está solo en esta rama. Se puede recuperar del reflog por un tiempo, pero ninguna rama apuntará a él.",
+      "other": "{count} commits están solo en esta rama. Se pueden recuperar del reflog por un tiempo, pero ninguna rama apuntará a ellos."
+    },
+    "deleted": "{name} eliminada",
+    "onlyCommits": {
+      "one": "{count} commit estaba solo en esta rama",
+      "other": "{count} commits estaban solo en esta rama"
+    },
+    "undo": "Deshacer",
+    "checkoutFailed": "No se pudo hacer checkout de {name}",
+    "createFailed": "No se pudo crear {name}",
+    "renameFailed": "No se pudo renombrar {name}",
+    "deleteFailed": "No se pudo eliminar {name}",
+    "undoFailed": "No se pudo recuperar {name}"
   }
 }

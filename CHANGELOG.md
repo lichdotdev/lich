@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Clicking the branch name in the footer opens a Git panel between the terminal and the footer, so your sessions stay in view while you read the history. It shows every branch as a colored graph, with branches and tags beside it and the selected commit's message and files on the right; a click on a file opens its diff. Search by text or hash, or narrow by author, date, path or branch, and a branch a session is on carries that session's ring. A local branch's menu checks it out, renames it, starts a new branch from it or deletes it, with an Undo; a checkout under a session asks first, and so does a delete that would leave commits on no branch. Its height and column widths are dragged and kept, it expands over the terminal, and Keyboard shortcuts in Settings can give it a key.
+
 ### Fixed
 
 - An agent's browser click on a link that wraps over two lines no longer fails as covered: it lands on the link's first line instead of the empty space between the lines.

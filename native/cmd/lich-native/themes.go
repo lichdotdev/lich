@@ -183,6 +183,7 @@ func paletteOf(def backend.Theme) (ui.Palette, error) {
 		darken = canvasDarkenLight
 	}
 	p.Canvas = ui.MixOKLab(p.Background, color.NRGBA{A: 255}, darken)
+	p.GraphLanes = ui.GraphLanesFor(def.Scheme == themeSchemeLight)
 	return p, nil
 }
 

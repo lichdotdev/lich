@@ -47,6 +47,7 @@ const (
 	hotkeyRotateSplit        hotkeyID = "rotateSplit"
 	hotkeySettings           hotkeyID = "settings"
 	hotkeyPulls              hotkeyID = "pulls"
+	hotkeyToggleGit          hotkeyID = "toggleGit"
 	hotkeyShortcuts          hotkeyID = "shortcuts"
 	hotkeyStartServices      hotkeyID = "startServices"
 )
@@ -118,6 +119,7 @@ var hotkeyActions = labelActions([]hotkeyAction{
 	{id: hotkeyPrevProject, labelKey: "hotkeys.action.prevProject", group: hotkeyGroupView, combo: shiftChord("ArrowLeft")},
 	{id: hotkeyToggleSidebar, labelKey: "hotkeys.action.toggleSidebar", group: hotkeyGroupView, combo: shiftChord("s")},
 	{id: hotkeyToggleDock, labelKey: "hotkeys.action.toggleDock", group: hotkeyGroupView, combo: shiftChord("d")},
+	{id: hotkeyToggleGit, labelKey: "hotkeys.action.toggleGit", group: hotkeyGroupView, combo: comboUnassigned},
 	{id: hotkeyToggleFullscreen, labelKey: "hotkeys.action.toggleFullscreen", group: hotkeyGroupView, combo: combo{Key: "F11"}},
 	{id: hotkeySearchInFiles, labelKey: "hotkeys.action.searchInFiles", group: hotkeyGroupView, combo: comboUnassigned},
 	{id: hotkeySplitBeside, labelKey: "hotkeys.action.splitBeside", group: hotkeyGroupView, combo: shiftChord("g")},

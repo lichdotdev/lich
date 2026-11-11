@@ -3,6 +3,7 @@ package ui
 import (
 	"image"
 
+	"gioui.org/f32"
 	"gioui.org/io/event"
 	"gioui.org/io/pointer"
 	"gioui.org/op/clip"
@@ -17,6 +18,9 @@ type PanelEdge uint8
 const (
 	PanelEdgeRight PanelEdge = iota
 	PanelEdgeLeft
+	// PanelEdgeTop is a panel anchored on its bottom that grows upward; its
+	// "width" is its height.
+	PanelEdgeTop
 )
 
 // ResizeHandle geometry: `absolute inset-y-2 w-1.5 rounded-full`, on the
@@ -61,18 +65,26 @@ func (r *ResizeHandle) Update(gtx C, width, minWidth, maxWidth unit.Dp) (next un
 		case pointer.Enter, pointer.Leave:
 			r.hovered = e.Kind == pointer.Enter
 		case pointer.Press:
-			r.dragging, r.pressX, r.startWidth, r.pressLaidOut = true, e.Position.X, width, r.laidOut
+			r.dragging, r.pressX, r.startWidth, r.pressLaidOut = true, r.along(e.Position), width, r.laidOut
 		case pointer.Drag, pointer.Release:
 			if !r.dragging {
 				continue
 			}
-			next = r.drag(gtx, e.Position.X, minWidth, maxWidth)
+			next = r.drag(gtx, r.along(e.Position), minWidth, maxWidth)
 			released = e.Kind == pointer.Release
 			r.dragging = !released
 		case pointer.Cancel:
 			r.dragging = false
 		}
 	}
+}
+
+// along is a pointer position on the axis the handle drags.
+func (r *ResizeHandle) along(p f32.Point) float32 {
+	if r.Edge == PanelEdgeTop {
+		return p.Y
+	}
+	return p.X
 }
 
 // drag is the width a pointer at x asks for. Positions are in the panel's own
@@ -83,7 +95,7 @@ func (r *ResizeHandle) Update(gtx C, width, minWidth, maxWidth unit.Dp) (next un
 // by whole pixels.
 func (r *ResizeHandle) drag(gtx C, x float32, minWidth, maxWidth unit.Dp) unit.Dp {
 	travel := x - r.pressX
-	if r.Edge == PanelEdgeLeft {
+	if r.Edge != PanelEdgeRight {
 		travel = -(travel - float32(r.laidOut-r.pressLaidOut))
 	}
 	next := r.startWidth + unit.Dp(travel/gtx.Metric.PxPerDp)
@@ -98,13 +110,20 @@ func (r *ResizeHandle) Dragging() bool { return r.dragging }
 // last, to win the tie with the panel's content.
 func (r *ResizeHandle) Layout(gtx C, th *Theme) D {
 	box := gtx.Constraints.Max
-	r.laidOut = box.X
 	w, inset := gtx.Dp(ResizeWidth), gtx.Dp(resizeInset)
-	x := 0
-	if r.Edge == PanelEdgeRight {
-		x = box.X - w
+	var strip image.Rectangle
+	cursor := pointer.CursorColResize
+	switch r.Edge {
+	case PanelEdgeTop:
+		r.laidOut = box.Y
+		strip, cursor = image.Rect(inset, 0, max(box.X-inset, inset), w), pointer.CursorRowResize
+	case PanelEdgeRight:
+		r.laidOut = box.X
+		strip = image.Rect(box.X-w, inset, box.X, max(box.Y-inset, inset))
+	default:
+		r.laidOut = box.X
+		strip = image.Rect(0, inset, w, max(box.Y-inset, inset))
 	}
-	strip := image.Rect(x, inset, x+w, max(box.Y-inset, inset))
 	target := float32(0)
 	if r.hovered || r.dragging {
 		target = 1
@@ -116,6 +135,6 @@ func (r *ResizeHandle) Layout(gtx C, th *Theme) D {
 	}
 	defer clip.Rect(strip).Push(gtx.Ops).Pop()
 	event.Op(gtx.Ops, r)
-	pointer.CursorColResize.Add(gtx.Ops)
+	cursor.Add(gtx.Ops)
 	return D{Size: box}
 }

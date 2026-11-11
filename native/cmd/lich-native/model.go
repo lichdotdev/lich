@@ -655,6 +655,41 @@ func (m *model) viewOf(p backend.Project, s backend.Session, now time.Time) sess
 	}
 }
 
+// branchSessions are the shown project's sessions by the branch each is on, the
+// first one for a branch several share.
+func (m *model) branchSessions(now time.Time) map[string]sessionView {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	p := m.shownProject()
+	if p == nil {
+		return nil
+	}
+	out := make(map[string]sessionView, len(p.Sessions))
+	for _, s := range p.Sessions {
+		v := m.viewOf(*p, s, now)
+		if _, taken := out[v.git.Branch]; v.git.Branch != "" && !taken {
+			out[v.git.Branch] = v
+		}
+	}
+	return out
+}
+
+// sessionIn is the shown project's first session working in path.
+func (m *model) sessionIn(path string, now time.Time) (sessionView, bool) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	p := m.shownProject()
+	if p == nil {
+		return sessionView{}, false
+	}
+	for _, s := range p.Sessions {
+		if v := m.viewOf(*p, s, now); v.shown == path {
+			return v, true
+		}
+	}
+	return sessionView{}, false
+}
+
 // gitStatus is path's last branch and changes, false while git has not
 // answered for it or it is not a checkout.
 func (m *model) gitStatus(path string) (backend.DiffStats, bool) {

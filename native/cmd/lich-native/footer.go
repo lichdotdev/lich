@@ -60,6 +60,7 @@ type footer struct {
 	customize func()
 	// dock is what Browse code and Review changes open, on their tab.
 	dock    *dock
+	git     *gitPanel
 	toaster *ui.Toaster
 }
 
@@ -224,6 +225,12 @@ func (f *footer) act(gtx C, in footerInput) {
 	f.w("files").pressed = f.dock.tab == dockCode
 	f.w("changes").pressed = f.dock.tab == dockReview
 	f.w("artifacts").pressed = f.dock.tab == dockArtifacts
+	if f.git != nil {
+		if f.w("checkout").click.Clicked(gtx) {
+			f.git.open = !f.git.open
+		}
+		f.w("checkout").pressed = f.git.open && in.inRepository()
+	}
 	if f.w("pr").click.Clicked(gtx) && in.pr != nil && f.openPullRequest != nil {
 		f.openPullRequest(prTarget(in.pr, in.path, in.checkout))
 	}
@@ -268,6 +275,10 @@ func (f *footer) slot(gtx C, th *ui.Theme, s footerSlot, in footerInput) D {
 		ic := icFolder
 		if s.ID == "checkout" && in.git.Branch != "" {
 			ic = icBranch
+		}
+		if s.ID == "checkout" && f.git != nil && in.inRepository() {
+			gtx.Constraints.Max.X = min(gtx.Constraints.Max.X, gtx.Dp(checkoutMaxWidth))
+			return footerButton(gtx, th, f.root, w, s.Hint, true, false, branchContent(ic, s.Text))
 		}
 		glyph := func(gtx C) D { return ic.Layout(gtx, footerGlyph, th.MutedForeground) }
 		return footerSpan(gtx, th, f.root, &w.tip, s.Hint, checkoutMaxWidth, glyph, s.Text)
