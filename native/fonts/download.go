@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"gioui.org/font"
 	"gioui.org/font/opentype"
@@ -96,8 +97,9 @@ func DownloadDir() (string, error) {
 	return filepath.Join(cache, "lich", "fonts"), nil
 }
 
-// Downloaded lists the font files in DownloadDir, none when nothing was
-// downloaded yet. The system's own lookups never see that folder.
+// Downloaded lists the Regular font files in DownloadDir, none when nothing
+// was downloaded yet. The system's own lookups never see that folder, and a
+// fallback face must be the plain one: Bold sorts first.
 func Downloaded() ([]string, error) {
 	dir, err := DownloadDir()
 	if err != nil {
@@ -112,7 +114,7 @@ func Downloaded() ([]string, error) {
 	}
 	var paths []string
 	for _, e := range entries {
-		if ext := filepath.Ext(e.Name()); ext == ".otf" || ext == ".ttf" {
+		if name := e.Name(); strings.HasSuffix(name, "-Regular.otf") || strings.HasSuffix(name, "-Regular.ttf") {
 			paths = append(paths, filepath.Join(dir, e.Name()))
 		}
 	}
