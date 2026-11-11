@@ -9,6 +9,7 @@ import (
 
 	"gioui.org/layout"
 	"gioui.org/op"
+	driver "github.com/lichdotdev/gio-driver"
 
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
@@ -28,6 +29,8 @@ var (
 // footer is the status strip under the stage, following the active session,
 // laid out as the user arranged it.
 type footer struct {
+	// tour is the window's guided tour, which points at the footer's chips.
+	tour       *driver.Tour
 	ctx        context.Context
 	client     *backend.Client
 	root       *ui.Root
@@ -66,7 +69,7 @@ type footer struct {
 
 func newFooter(ctx context.Context, client *backend.Client, root *ui.Root, usage *footerUsage, quota *planQuota, invalidate func()) *footer {
 	return &footer{
-		ctx: ctx, client: client, root: root, invalidate: invalidate, usage: usage,
+		tour: new(driver.Tour), ctx: ctx, client: client, root: root, invalidate: invalidate, usage: usage,
 		quota:   quota,
 		handsOn: newHandsOn(func(id string) (int64, error) { return client.HandsOn(ctx, id) }, invalidate),
 		cost:    &costGate{get: client.GetSetting, set: client.SetSetting, onChange: invalidate},

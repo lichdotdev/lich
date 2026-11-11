@@ -308,6 +308,7 @@ func run(w *app.Window, rt backend.Runtime) error {
 	u.settings.services.home = u.model.homeProject
 	u.settings.promptUpdate = u.promptAppUpdate
 	u.footer = newFooter(ctx, client, &u.root, u.model.usage, u.model.quota, invalidate)
+	u.footer.tour = &u.tour.Tour
 	u.gate = &spawnGate{probe: client, invalidate: invalidate, park: u.parkSession, notify: func(t ui.Toast) { u.toaster.Show(t) }}
 	u.footer.toaster = &u.toaster
 	comments, notify := &u.comments, func(t ui.Toast) { u.toaster.Show(t) }
@@ -323,6 +324,7 @@ func run(w *app.Window, rt backend.Runtime) error {
 		return err
 	}
 	u.dock = newDock(code, u.review, u.newArtifactsTab())
+	u.dock.tour = &u.tour.Tour
 	u.model.diffTouched = u.review.feed.touched
 	u.model.focusSession = u.focusSession
 	u.model.showToast = u.showToast
