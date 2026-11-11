@@ -20,7 +20,7 @@ Each extension is one directory under lich's config directory:
 name is the extension's id. A symlinked directory works too, the way to develop an extension in place.
 
 lich writes one file of its own into a directory it installed: `.lich-source.json`, recording the repository and
-release tag it came from. Do not ship a file by that name.
+release tag, or the folder, it came from. Do not ship a file by that name.
 
 ## The manifest
 
@@ -72,10 +72,20 @@ Stderr goes to lich's log.
 - To stop an extension lich closes its stdin and kills it 3 seconds later. Exit when stdin ends.
 - An extension runs unsandboxed, as the user. See the Extensions section of [ceilings](ceilings.md).
 
+## Installing
+
+A person installs an extension from lich's Settings in one of two ways:
+
+- **From a folder** on disk holding `manifest.json` and the executable at its root. lich copies it into the
+  extensions directory (at most 1 GiB and 1000 entries, no symlinks anywhere in it), validates the copy as it does
+  at startup, marks the executable runnable and starts it. The copy is what runs; the folder is left untouched.
+- **From GitHub**, by pasting the repository URL, as below.
+
+Either way an id that is already installed is refused; to update, remove the extension and install it again.
+
 ## Publishing a release
 
-A person installs an extension by pasting its repository URL, `https://github.com/<owner>/<repo>` (with or without
-`.git`), into lich's Settings. lich installs the repository's latest release: the newest one that is neither a
+For an install from GitHub, the URL is `https://github.com/<owner>/<repo>` (with or without `.git`). lich installs the repository's latest release: the newest one that is neither a
 draft nor a pre-release. That release carries:
 
 - One archive per OS and architecture, named `<id>_<goos>_<goarch>.tar.gz` with Go's names (`linux_amd64`,
@@ -86,5 +96,4 @@ draft nor a pre-release. That release carries:
 
 lich downloads the archive for the machine it runs on and `checksums.txt`, refuses an archive whose sha256 does not
 match, unpacks it, validates the manifest as it does at startup, marks the executable runnable and starts it. An
-archive is at most 256 MiB compressed, 1 GiB and 1000 entries unpacked. An id that is already installed is refused;
-to update, remove the extension and install it again.
+archive is at most 256 MiB compressed, 1 GiB and 1000 entries unpacked.

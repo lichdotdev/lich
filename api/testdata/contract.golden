@@ -64,7 +64,8 @@ cursorprofile.LoginCommand(ProfileSlugOptions) string
 cursorprofile.Profiles(None) []ProfileInfo
 cursorprofile.UpdateProfile(UpdateProfileOptions) Profile
 drop.Attach(AttachDropOptions) DropAttachment
-extensions.Install(ExtensionInstallOptions) Extension
+extensions.InstallFromDir(ExtensionDirInstallOptions) Extension
+extensions.InstallFromGit(ExtensionGitInstallOptions) Extension
 extensions.List(None) []Extension
 extensions.Remove(ExtensionIDOptions) None
 extensions.Restart(ExtensionIDOptions) None
@@ -617,8 +618,8 @@ AttachDropOptions {
 	confined bool
 }
 
-ExtensionInstallOptions {
-	url string
+ExtensionDirInstallOptions {
+	dir string
 }
 
 Extension {
@@ -631,6 +632,10 @@ Extension {
 	surfaces []ExtensionSurface
 	source,omitempty string
 	release,omitempty string
+}
+
+ExtensionGitInstallOptions {
+	url string
 }
 
 ExtensionIDOptions {

@@ -179,12 +179,12 @@ func TestInstallStartsTheLatestRelease(t *testing.T) {
 	}))
 	s, r, dir := installer(t, srv)
 
-	got, err := s.Install(context.Background(), api.ExtensionInstallOptions{URL: testRepo + ".git"})
+	got, err := s.InstallFromGit(context.Background(), api.ExtensionGitInstallOptions{URL: testRepo + ".git"})
 	if err != nil {
-		t.Fatalf("Install() = %v", err)
+		t.Fatalf("InstallFromGit() = %v", err)
 	}
 	if got.ID != testID || got.Source != testRepo || got.Release != testTag {
-		t.Fatalf("Install() = %+v, want id %q from %s at %s", got, testID, testRepo, testTag)
+		t.Fatalf("InstallFromGit() = %+v, want id %q from %s at %s", got, testID, testRepo, testTag)
 	}
 	waitStatus(t, r, statusRunning)
 	if _, err := s.Send(context.Background(), sendOptions(t, testID, extension.SurfaceOpened.New(extension.SurfaceData{Surface: "main"}))); err != nil {
@@ -208,8 +208,8 @@ func TestInstallRefusesARepositoryThatIsNotGitHub(t *testing.T) {
 		"https://github.com/someone/..", "https://github.com.evil.example/someone/fake-ext", "",
 	} {
 		s := &Service{}
-		if _, err := s.Install(context.Background(), api.ExtensionInstallOptions{URL: url}); !errors.Is(err, errNotGitHub) {
-			t.Errorf("Install(%q) = %v, want the GitHub-only refusal", url, err)
+		if _, err := s.InstallFromGit(context.Background(), api.ExtensionGitInstallOptions{URL: url}); !errors.Is(err, errNotGitHub) {
+			t.Errorf("InstallFromGit(%q) = %v, want the GitHub-only refusal", url, err)
 		}
 	}
 	for url, want := range map[string]string{
@@ -269,9 +269,9 @@ func TestInstallFailsLeavingNothingBehind(t *testing.T) {
 	} {
 		t.Run(name, func(t *testing.T) {
 			s, _, dir := installer(t, releaseServer(t, tc.assets(t)))
-			_, err := s.Install(context.Background(), api.ExtensionInstallOptions{URL: testRepo})
+			_, err := s.InstallFromGit(context.Background(), api.ExtensionGitInstallOptions{URL: testRepo})
 			if err == nil || !strings.Contains(err.Error(), tc.want) {
-				t.Fatalf("Install() = %v, want an error naming %q", err, tc.want)
+				t.Fatalf("InstallFromGit() = %v, want an error naming %q", err, tc.want)
 			}
 			assertNothingInstalled(t, s, dir)
 			if _, err := os.Lstat(filepath.Join(filepath.Dir(dir), "escaped")); err == nil {
@@ -289,9 +289,9 @@ func TestInstallRefusesAnIDAlreadyInstalled(t *testing.T) {
 	s.releaseAPI = srv.URL + "/repos/"
 	waitStatus(t, r, statusRunning)
 
-	_, err := s.Install(context.Background(), api.ExtensionInstallOptions{URL: testRepo})
+	_, err := s.InstallFromGit(context.Background(), api.ExtensionGitInstallOptions{URL: testRepo})
 	if err == nil || !strings.Contains(err.Error(), "already installed") {
-		t.Fatalf("Install() = %v, want the already-installed refusal", err)
+		t.Fatalf("InstallFromGit() = %v, want the already-installed refusal", err)
 	}
 	if list, _ := s.List(context.Background(), api.None{}); len(list) != 1 || list[0].Source != "" {
 		t.Fatalf("List() = %+v, want the hand-placed extension untouched", list)
@@ -372,4 +372,81 @@ func TestRemoveUnlinksAnExtensionDevelopedInPlace(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(target, extension.ManifestFile)); err != nil {
 		t.Fatalf("the link's target lost its files: %v", err)
 	}
+}
+
+func TestInstallFromDirCopiesAndStarts(t *testing.T) {
+	from := install(t, t.TempDir(), testID, modeEcho)
+	dir := filepath.Join(t.TempDir(), "extensions")
+	s, r := boot(t, dir)
+
+	got, err := s.InstallFromDir(context.Background(), api.ExtensionDirInstallOptions{Dir: from})
+	if err != nil {
+		t.Fatalf("InstallFromDir() = %v", err)
+	}
+	if got.ID != testID || got.Source != from || got.Release != "" || got.Dir != filepath.Join(dir, testID) {
+		t.Fatalf("InstallFromDir() = %+v, want %q copied from %s with no release", got, testID, from)
+	}
+	waitStatus(t, r, statusRunning)
+	if _, err := os.Stat(filepath.Join(from, extension.ManifestFile)); err != nil {
+		t.Fatalf("the picked folder lost its files: %v", err)
+	}
+	if again := load(got.Dir, testID, "1.2.3"); again.source != (source{URL: from}) {
+		t.Fatalf("a later discovery reads source %+v", again.source)
+	}
+	if _, err := s.InstallFromDir(context.Background(), api.ExtensionDirInstallOptions{Dir: from}); err == nil || !strings.Contains(err.Error(), "already installed") {
+		t.Fatalf("a second InstallFromDir() = %v, want the already-installed refusal", err)
+	}
+}
+
+func TestInstallFromDirFailsLeavingNothingBehind(t *testing.T) {
+	for name, tc := range map[string]struct {
+		folder func(t *testing.T) string
+		want   string
+	}{
+		"missing":     {func(t *testing.T) string { return filepath.Join(t.TempDir(), "nope") }, "is not a folder"},
+		"a file":      {func(t *testing.T) string { p := filepath.Join(t.TempDir(), "f"); writeFile(t, p, "x"); return p }, "is not a folder"},
+		"no manifest": {func(t *testing.T) string { return t.TempDir() }, "no readable manifest.json"},
+		"bad json": {func(t *testing.T) string {
+			d := t.TempDir()
+			writeFile(t, filepath.Join(d, extension.ManifestFile), "{")
+			return d
+		}, "parse manifest.json"},
+		"id escapes": {func(t *testing.T) string {
+			return install(t, t.TempDir(), testID, modeEcho, func(m *extension.Manifest) { m.ID = "../x" })
+		}, "must be lowercase"},
+		"invalid manifest": {func(t *testing.T) string {
+			return install(t, t.TempDir(), testID, modeEcho, func(m *extension.Manifest) { m.Executable = "" })
+		}, "is not valid"},
+		"symlink inside": {func(t *testing.T) string {
+			d := install(t, t.TempDir(), testID, modeEcho)
+			if err := os.Symlink(t.TempDir(), filepath.Join(d, "link")); err != nil {
+				t.Skipf("no symlinks here: %v", err)
+			}
+			return d
+		}, "links are not accepted"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			dir := filepath.Join(t.TempDir(), "extensions")
+			s, _ := boot(t, dir)
+			_, err := s.InstallFromDir(context.Background(), api.ExtensionDirInstallOptions{Dir: tc.folder(t)})
+			if err == nil || !strings.Contains(err.Error(), tc.want) {
+				t.Fatalf("InstallFromDir() = %v, want an error naming %q", err, tc.want)
+			}
+			assertNothingInstalled(t, s, dir)
+		})
+	}
+}
+
+func TestInstallFromDirRefusesAFolderThatIsALink(t *testing.T) {
+	from := install(t, t.TempDir(), testID, modeEcho)
+	link := filepath.Join(t.TempDir(), "link")
+	if err := os.Symlink(from, link); err != nil {
+		t.Skipf("no symlinks here: %v", err)
+	}
+	dir := filepath.Join(t.TempDir(), "extensions")
+	s, _ := boot(t, dir)
+	if _, err := s.InstallFromDir(context.Background(), api.ExtensionDirInstallOptions{Dir: link}); err == nil {
+		t.Fatal("InstallFromDir(link) = nil, want links refused")
+	}
+	assertNothingInstalled(t, s, dir)
 }

@@ -1136,7 +1136,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   started when the backend boots. There is no prompt, no signature and no permission list in this version, and
   the sandbox of `internal/sandbox` does not apply, so an extension can read and do whatever the user can. The
   directory is read once per launch: an extension added or edited by hand takes a restart of lich, while one
-  installed or removed through `extensions.Install` and `extensions.Remove` is started or stopped at once.
+  installed or removed through `extensions.InstallFromGit`, `extensions.InstallFromDir` and `extensions.Remove` is started or stopped at once.
 - **Installing runs code from the internet as the user, vouched for only by its own release**
   (`internal/extensions/install.go`): the archive is checked against the `checksums.txt` the same release carries,
   which proves the download arrived whole, not who built it or what it does. Whoever controls the repository
@@ -1146,6 +1146,12 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   no update: remove the extension and install it again. An install lich is killed in the middle of leaves an
   `.installing-*` directory that discovery skips and nothing deletes. Remove deletes the directory, or only the
   link when it is a symlink, and what the extension wrote elsewhere stays.
+- **Installing from a folder copies it once, and refuses links** (`internal/extensions/installdir.go`): the picked
+  folder is copied under the same bounds as an archive (1 GiB, 1000 entries) and validated as discovery does. A
+  symlink anywhere in it, the folder itself included, fails the install rather than being followed. The copy is
+  what runs: editing the folder afterwards changes nothing until the extension is removed and installed again,
+  so to develop in place symlink the folder into the extensions directory instead. Its source is the folder's
+  path, with no release, and nothing checks who wrote what is in it.
 - **What an extension writes is input, and what fails the checks is dropped without telling it**
   (`internal/extensions/inbound.go`): a line over 3 MiB, JSON nested over 512 levels, a tree over 5000 nodes or 64
   deep, a kind that only travels from lich to the extension, and `openExternal` with anything but an http or https

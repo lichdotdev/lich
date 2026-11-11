@@ -65,10 +65,9 @@ type asset struct {
 	URL  string `json:"browser_download_url"`
 }
 
-// Install downloads the latest release of a GitHub repository's extension
-// for this platform, verifies and unpacks it, and starts it. A failure at any
-// step leaves nothing behind.
-func (s *Service) Install(_ context.Context, opts api.ExtensionInstallOptions) (api.Extension, error) {
+// InstallFromGit downloads the latest release of a GitHub repository's
+// extension for this platform, verifies and unpacks it, and starts it.
+func (s *Service) InstallFromGit(_ context.Context, opts api.ExtensionGitInstallOptions) (api.Extension, error) {
 	owner, repo, err := parseRepo(opts.URL)
 	if err != nil {
 		return api.Extension{}, err
@@ -83,6 +82,14 @@ func (s *Service) Install(_ context.Context, opts api.ExtensionInstallOptions) (
 	if err != nil {
 		return api.Extension{}, err
 	}
+	src := source{URL: "https://github.com/" + owner + "/" + repo, Release: rel.Tag}
+	return s.installAs(id, src, func(stage string) error { return s.unpack(rel, archive, id, stage) })
+}
+
+// installAs has fill lay the extension out in a fresh stage directory, checks
+// it as discovery would, then moves it into place and starts it. A failure at
+// any step leaves nothing behind.
+func (s *Service) installAs(id string, src source, fill func(stage string) error) (api.Extension, error) {
 	if err := s.checkFree(id); err != nil {
 		return api.Extension{}, err
 	}
@@ -95,10 +102,13 @@ func (s *Service) Install(_ context.Context, opts api.ExtensionInstallOptions) (
 	}
 	defer func() { _ = os.RemoveAll(work) }()
 	stage := filepath.Join(work, id)
-	if err := s.unpack(rel, archive, id, stage); err != nil {
+	if err := fill(stage); err != nil {
 		return api.Extension{}, err
 	}
-	if err := writeSource(stage, source{URL: "https://github.com/" + owner + "/" + repo, Release: rel.Tag}); err != nil {
+	if err := s.checkStage(stage, id); err != nil {
+		return api.Extension{}, err
+	}
+	if err := writeSource(stage, src); err != nil {
 		return api.Extension{}, err
 	}
 	return s.place(id, stage)
@@ -163,7 +173,7 @@ func (s *Service) checkFree(id string) error {
 }
 
 // unpack downloads the archive into stage after checking it against the
-// release's checksums, then validates what it held as discovery would.
+// release's checksums.
 func (s *Service) unpack(rel release, archive asset, id, stage string) error {
 	want, err := s.checksum(rel, archive.Name)
 	if err != nil {
@@ -187,7 +197,7 @@ func (s *Service) unpack(rel release, archive asset, id, stage string) error {
 	if err := extract(file, stage); err != nil {
 		return fmt.Errorf("unpack %s: %w; ask the extension's author to fix the release", archive.Name, err)
 	}
-	return s.checkStage(stage, id)
+	return nil
 }
 
 func (s *Service) checksum(rel release, name string) ([]byte, error) {
@@ -231,7 +241,7 @@ func (s *Service) checkStage(stage, id string) error {
 		return fmt.Errorf("the manifest's id %q differs from the release asset's %q: ask the extension's author to make them match", m.ID, id)
 	}
 	if err != nil {
-		return fmt.Errorf("the release's %s is not valid: %w", extension.ManifestFile, err)
+		return fmt.Errorf("the extension's %s is not valid: %w", extension.ManifestFile, err)
 	}
 	if err := os.Chmod(exe, 0o755); err != nil {
 		return fmt.Errorf("make the executable runnable: %w", err)

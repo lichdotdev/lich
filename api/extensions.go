@@ -7,17 +7,26 @@ var (
 	ExtensionsSend = define[ExtensionSendOptions, None]("extensions.Send")
 	// ExtensionsRestart starts an extension again, the one way back from failed.
 	ExtensionsRestart = define[ExtensionIDOptions, None]("extensions.Restart")
-	// ExtensionsInstall downloads the latest release of a GitHub repository's
-	// extension, installs it and starts it.
-	ExtensionsInstall = define[ExtensionInstallOptions, Extension]("extensions.Install")
+	// ExtensionsInstallFromGit downloads the latest release of a GitHub
+	// repository's extension, installs it and starts it.
+	ExtensionsInstallFromGit = define[ExtensionGitInstallOptions, Extension]("extensions.InstallFromGit")
+	// ExtensionsInstallFromDir copies a folder on disk holding an extension into
+	// the extensions directory and starts it.
+	ExtensionsInstallFromDir = define[ExtensionDirInstallOptions, Extension]("extensions.InstallFromDir")
 	// ExtensionsRemove stops an extension and deletes its directory.
 	ExtensionsRemove = define[ExtensionIDOptions, None]("extensions.Remove")
 )
 
-// ExtensionInstallOptions names the repository to install from:
+// ExtensionGitInstallOptions names the repository to install from:
 // https://github.com/<owner>/<repo>, with or without .git.
-type ExtensionInstallOptions struct {
+type ExtensionGitInstallOptions struct {
 	URL string `json:"url"`
+}
+
+// ExtensionDirInstallOptions names a folder holding manifest.json and the
+// executable at its root.
+type ExtensionDirInstallOptions struct {
+	Dir string `json:"dir"`
 }
 
 // ExtensionIDOptions names one extension.
@@ -44,8 +53,8 @@ type ExtensionSurface struct {
 
 // Extension is one directory under lich's extensions directory and where its
 // process is. Name and Surfaces come from its manifest, so they are the
-// extension's own words. Source and Release are the repository and tag it was
-// installed from, empty for one placed by hand.
+// extension's own words. Source is the repository or folder it was installed
+// from and Release the repository's tag, both empty for one placed by hand.
 type Extension struct {
 	ID       string             `json:"id"`
 	Name     string             `json:"name"`
