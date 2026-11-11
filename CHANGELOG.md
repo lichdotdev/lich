@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- An agent's browser click on a link that wraps over two lines no longer fails as covered: it lands on the link's first line instead of the empty space between the lines.
+
 ## [0.88.0] - 2026-11-10
 
 ### Added

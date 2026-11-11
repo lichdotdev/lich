@@ -549,10 +549,16 @@ const resolveJS = `(function(index, selector, x, y, shotW, shotH, scale) {
   }
   if (!el) return null;
   if (el.matches(':disabled') || el.getAttribute('aria-disabled') === 'true') return {disabled: true};
-  var r = el.getBoundingClientRect();
+  // An inline element wrapped over lines has a bounding box whose center can be
+  // on neither line, so it is clicked on its first non-empty line box instead.
+  var box = function() {
+    var rs = Array.from(el.getClientRects());
+    return rs.length > 1 && rs.find(function(b) { return b.width > 0 && b.height > 0; }) || el.getBoundingClientRect();
+  };
+  var r = box();
   if (!inView(r.left + r.width / 2, r.top + r.height / 2)) {
     el.scrollIntoView({block: 'center', inline: 'center', behavior: 'instant'});
-    r = el.getBoundingClientRect();
+    r = box();
   }
   var cx = r.left + r.width / 2, cy = r.top + r.height / 2;
   var hit = document.elementFromPoint(cx, cy);

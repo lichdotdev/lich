@@ -751,6 +751,16 @@ func TestChromeClickIsNotCoveredByItsOwnChildOrItsLabel(t *testing.T) {
 	}
 }
 
+func TestChromeClickReachesALinkWrappedOverTwoLines(t *testing.T) {
+	p, ctx := clickRig(t, `<div style="width:200px;font:16px/48px monospace">aaaaaaaaaaaaaa <a id="link" href="#x" onclick="document.body.dataset.hit = 'link'; return false">go to the next place</a></div>`)
+	if _, _, err := p.Click(ctx, Target{Selector: "#link"}); err != nil {
+		t.Fatalf("click on a link wrapped over two lines: %v", err)
+	}
+	if hit := clicked(t, p, ctx); hit != "link" {
+		t.Fatalf("clicked %q, want link", hit)
+	}
+}
+
 func TestChromeInfoWithinReadsOnlyTheSubtreeAndItsIndexesClick(t *testing.T) {
 	p, _ := liveChrome(t)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {

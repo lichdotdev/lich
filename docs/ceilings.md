@@ -1372,8 +1372,8 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   `browser_info`, which always answers whole.
 - **A click by index or selector tests the point at the element's box center** (`resolveJS` in
   `internal/browser/chrome.go`): `elementFromPoint` there must be the element, inside it, or the label of a
-  control the element is. A link wrapped over two lines, or an element with a hole at its center, can have
-  that point on something else, and the click fails as covered though a click elsewhere on it would land.
+  control the element is. An element with a hole at its center can have that point on something else, and the
+  click fails as covered though a click elsewhere on it would land.
   Disabled is `:disabled` or `aria-disabled="true"`, which a page may set on something it still handles.
 - **A note left on the page names only what the page shows lich** (`internal/browser/notes.go`,
   `native/cmd/lich-native/browser_notes.go`): the pick asks the page for the element under the pointer, so an
