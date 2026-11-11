@@ -389,3 +389,23 @@ func TestDefaultViewResizesOnlyTheUnwatchedPages(t *testing.T) {
 		t.Fatalf("a watched page left its pane's size: %v", p.viewports)
 	}
 }
+
+func TestAPaneLeavingDoesNotLayOutABrowserInItsOwnWindow(t *testing.T) {
+	s, launch, _ := viewService(t)
+	s.SetDefaultView(Viewport{W: 1920, H: 1080, Scale: 1})
+	if _, err := s.Attach("s", Viewport{W: 500, H: 400, Scale: 1}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.OpenVisible("s"); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Resize("s", Viewport{W: 600, H: 400, Scale: 1}); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Detach("s"); err != nil {
+		t.Fatal(err)
+	}
+	if p := launch.pages[len(launch.pages)-1]; len(p.viewports) != 0 {
+		t.Fatalf("a browser in its own window was resized to %v and no longer follows its window", p.viewports)
+	}
+}

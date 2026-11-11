@@ -54,8 +54,12 @@ func (s *Service) Attach(owner string, v Viewport) (Handle, error) {
 
 // Detach stops the frames of a pane that closed or went off screen. The
 // browser keeps running for the agent, at the window's size again rather than
-// the pane's.
+// the pane's. A browser in its own window is left alone: an override there
+// pins the page and the window's own resizing stops laying it out.
 func (s *Service) Detach(owner string) error {
+	if s.inWindow(owner) {
+		return nil
+	}
 	view := s.unwatchedView()
 	sess, err := s.steer(owner, inputWait, func(p Page, ctx context.Context) error {
 		if err := p.StopScreencast(ctx); err != nil || view == (Viewport{}) {
@@ -81,8 +85,11 @@ func (s *Service) Resize(owner string, v Viewport) error {
 		return err
 	}
 	s.mu.Lock()
-	watching := sess.watching
+	watching, headed := sess.watching, sess.headed
 	s.mu.Unlock()
+	if headed {
+		return nil
+	}
 	_, err = s.steer(owner, inputWait, func(p Page, ctx context.Context) error {
 		if watching {
 			return p.Screencast(ctx, v)
@@ -112,6 +119,13 @@ func (s *Service) SetDefaultView(v Viewport) {
 		}
 		cancel()
 	}
+}
+
+func (s *Service) inWindow(owner string) bool {
+	s.mu.Lock()
+	defer s.unlock()
+	sess := s.lookupLocked(owner)
+	return sess != nil && sess.headed
 }
 
 func (s *Service) unwatchedView() Viewport {
