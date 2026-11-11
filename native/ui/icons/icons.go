@@ -84,6 +84,21 @@ func Lucide(name string) *Icon {
 	return ic
 }
 
+// LookupLucide is Lucide for a name from outside lich, such as an
+// extension's: it reports a name the set lacks instead of panicking.
+func LookupLucide(name string) (*Icon, bool) {
+	set, err := lucideSet()
+	if err != nil {
+		return nil, false
+	}
+	nodes, ok := set[name]
+	if !ok {
+		return nil, false
+	}
+	ic, err := parseLucide(nodes)
+	return ic, err == nil
+}
+
 // parseLucide reads one icon's nodes: [element, attributes] pairs. Every
 // element is stroked; one with fill="currentColor" is filled as well.
 func parseLucide(nodes [][2]json.RawMessage) (*Icon, error) {

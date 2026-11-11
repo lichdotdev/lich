@@ -65,6 +65,7 @@ cursorprofile.Profiles(None) []ProfileInfo
 cursorprofile.UpdateProfile(UpdateProfileOptions) Profile
 drop.Attach(AttachDropOptions) DropAttachment
 extensions.List(None) []Extension
+extensions.Restart(ExtensionIDOptions) None
 extensions.Send(ExtensionSendOptions) None
 kiroprofile.CreateProfile(CreateProfileOptions) Profile
 kiroprofile.DeleteProfile(ProfileSlugOptions) None
@@ -619,7 +620,12 @@ Extension {
 	version string
 	status string
 	error,omitempty string
+	dir string
 	surfaces []ExtensionSurface
+}
+
+ExtensionIDOptions {
+	id string
 }
 
 ExtensionSendOptions {

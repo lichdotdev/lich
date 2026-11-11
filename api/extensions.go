@@ -5,7 +5,14 @@ import "encoding/json"
 var (
 	ExtensionsList = define[None, []Extension]("extensions.List")
 	ExtensionsSend = define[ExtensionSendOptions, None]("extensions.Send")
+	// ExtensionsRestart starts an extension again, the one way back from failed.
+	ExtensionsRestart = define[ExtensionIDOptions, None]("extensions.Restart")
 )
+
+// ExtensionIDOptions names one extension.
+type ExtensionIDOptions struct {
+	ID string `json:"id"`
+}
 
 // The states an Extension is in. Invalid never started, its Error says why;
 // restarting is the wait after a crash; failed is lich having given up on it.
@@ -33,6 +40,7 @@ type Extension struct {
 	Version  string             `json:"version"`
 	Status   string             `json:"status"`
 	Error    string             `json:"error,omitempty"`
+	Dir      string             `json:"dir"`
 	Surfaces []ExtensionSurface `json:"surfaces"`
 }
 
