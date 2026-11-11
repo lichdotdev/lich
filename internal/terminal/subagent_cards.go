@@ -54,9 +54,9 @@ func subagentRoute(kind string, depth int, cardsOn bool) relay.SubagentRoute {
 // maxSubagentDepth whose plugin tells a worker by its depth. Under an older
 // plugin a worker's own subagents stay native, since that mod would stop
 // answering for a worker that opens cards.
-func (s *Service) subagentCardsOn(kind string, depth int) bool {
+func (s *Service) subagentCardsOn(kind, profileDir string, depth int) bool {
 	if !s.store.SubagentCards(kind) {
 		return false
 	}
-	return depth == 0 || (depth < maxSubagentDepth && agentplugin.ClaudeNestsSubagentCards())
+	return depth == 0 || (depth < maxSubagentDepth && agentplugin.ClaudeNestsSubagentCards(profileDir))
 }

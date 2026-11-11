@@ -101,7 +101,7 @@ func (s *Service) Start(_ context.Context, opts api.StartOptions) (api.None, err
 	events.Send(s.hub.Emit, api.SessionAgentEvent, agentEvent{ID: opts.ID, Agent: ""})
 	s.reportProfileMove(opts.ID, bornIn)
 	s.reportSandbox(opts.ID, sess.confined, sess.sandboxLinks)
-	s.reportMCPServers(opts.ID, opts.Kind, cwd)
+	s.reportMCPServers(opts.ID, opts.Kind, cwd, profileDir)
 	go watchCwd(opts.ID, sess.pty.Pid(), cwd, sess.done, s.publishCwd)
 	return api.None{}, nil
 }
@@ -140,7 +140,7 @@ func (s *Service) spawnSession(opts api.StartOptions, profileDir, name string, o
 	skipPermissions := s.store.SkipPermissions(opts.Kind, opts.ProjectID, opts.Cwd)
 	ultracode := s.store.Ultracode(opts.Kind) || s.store.SessionUltracode(opts.ID)
 	depth := s.store.SessionSubagentDepth(opts.ID)
-	cardsOn := s.subagentCardsOn(opts.Kind, depth)
+	cardsOn := s.subagentCardsOn(opts.Kind, profileDir, depth)
 	// The model and effort are read from the row rather than passed in, so every
 	// spawn that starts a conversation of its own gets them: the window's first
 	// view and a restart. A resume leaves them to the provider (modelArgs).
@@ -322,8 +322,8 @@ func (s *Service) reportSandbox(id string, confined bool, links []string) {
 // A failed write is logged and nothing else. It costs a card the split on the
 // next reload — the event has already gone out — and refusing to spawn a
 // session over the way its tool names draw would be the worse trade.
-func (s *Service) reportMCPServers(id, kind, cwd string) {
-	servers := agentplugin.MCPServers(kind, cwd)
+func (s *Service) reportMCPServers(id, kind, cwd, profileDir string) {
+	servers := agentplugin.MCPServers(kind, cwd, profileDir)
 	if err := s.store.SetSessionMCPServers(id, servers); err != nil {
 		slog.Warn("record MCP servers", "session", id, "error", err)
 	}

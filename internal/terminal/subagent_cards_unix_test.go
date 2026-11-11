@@ -3,6 +3,8 @@
 package terminal
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/lichdotdev/lich/api"
@@ -34,7 +36,7 @@ func TestSubagentCardsOnFollowsTheDepth(t *testing.T) {
 			withClaudePlugin(t, c.plugin)
 			svc := New(c.bins, nil, events.New())
 			depth := c.bins.SessionSubagentDepth("s1")
-			if got := svc.subagentCardsOn(providers.Claude, depth); got != c.wantOn {
+			if got := svc.subagentCardsOn(providers.Claude, "", depth); got != c.wantOn {
 				t.Errorf("subagentCardsOn = %v, want %v", got, c.wantOn)
 			}
 		})
@@ -59,7 +61,29 @@ func TestForkOfASubagentKeepsItsDepth(t *testing.T) {
 	if got := store.inheritedSubagent["s2"]; got != maxSubagentDepth {
 		t.Errorf("the fork's row is %d deep, want the worker's %d", got, maxSubagentDepth)
 	}
-	if svc.subagentCardsOn(providers.Claude, store.SessionSubagentDepth("s2")) {
+	if svc.subagentCardsOn(providers.Claude, "", store.SessionSubagentDepth("s2")) {
 		t.Error("the fork of a worker at the limit opens cards, want its subagents native")
+	}
+}
+
+// A session in a profile opens a worker's cards by the plugin that profile
+// holds, not by Personal's.
+func TestSubagentCardsOnReadsTheProfilesPlugin(t *testing.T) {
+	withClaudePlugin(t, "0.19.0")
+	profile := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(profile, "plugins"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	state := `{"plugins":{"lich@lich-plugin":[{"scope":"user","version":"0.18.4"}]}}`
+	if err := os.WriteFile(filepath.Join(profile, "plugins", "installed_plugins.json"), []byte(state), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	svc := New(stubBins{subagentDepth: 1}, nil, events.New())
+
+	if !svc.subagentCardsOn(providers.Claude, "", 1) {
+		t.Error("Personal on 0.19.0: want a worker's cards on")
+	}
+	if svc.subagentCardsOn(providers.Claude, profile, 1) {
+		t.Error("a profile on 0.18.4 beside a Personal on 0.19.0: want a worker's subagents native")
 	}
 }

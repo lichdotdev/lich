@@ -112,11 +112,14 @@ func runsSubagentCards(version string) bool {
 // session that answers nothing.
 const NestedSubagentCardsRelease = "0.19.0"
 
-// ClaudeNestsSubagentCards reports whether the installed Claude Code plugin is a
-// release a worker can open cards from. It reads Claude Code's plugin state on
-// each call.
-func ClaudeNestsSubagentCards() bool {
+// ClaudeNestsSubagentCards reports whether the Claude Code plugin installed in
+// profileDir ("" for Personal) is a release a worker can open cards from. It
+// reads Claude Code's plugin state on each call.
+func ClaudeNestsSubagentCards(profileDir string) bool {
 	version, ok := claudeInstalledVersion()
+	if profileDir != "" {
+		version, ok = claudeInstalledVersionIn(profileDir)
+	}
 	return ok && nestsSubagentCards(version)
 }
 

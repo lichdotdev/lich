@@ -41,7 +41,7 @@ func TestMCPServersReadsOMPDocument(t *testing.T) {
 		"ai-memory":{"command":"memory"}
 	}}`)
 
-	got := MCPServers(providers.OMP, t.TempDir())
+	got := MCPServers(providers.OMP, t.TempDir(), "")
 
 	if want := []string{"ai-memory", "lich"}; !slices.Equal(got, want) {
 		t.Errorf("MCPServers = %v, want %v", got, want)
@@ -54,7 +54,7 @@ func TestMCPServersReadsOpenCodeGlobalConfig(t *testing.T) {
 	dir := opencodeConfigHome(t)
 	writeMCPConfig(t, dir, "opencode.jsonc", `{"mcp":{"ai-memory":{"type":"remote"}}}`)
 
-	got := MCPServers(providers.OpenCode, t.TempDir())
+	got := MCPServers(providers.OpenCode, t.TempDir(), "")
 
 	if want := []string{"ai-memory", "lich"}; !slices.Equal(got, want) {
 		t.Errorf("MCPServers = %v, want %v", got, want)
@@ -68,7 +68,7 @@ func TestMCPServersReadsOpenCode2Shape(t *testing.T) {
 	writeMCPConfig(t, dir, "opencode.jsonc", `{"mcp":{"servers":{"ai-memory":{"type":"remote"}},"timeout":{"catalog":5}}}`)
 	writeMCPConfig(t, dir, "opencode.json", `{"mcp":{"legacy":{"type":"local"}}}`)
 
-	got := MCPServers(providers.OpenCode, t.TempDir())
+	got := MCPServers(providers.OpenCode, t.TempDir(), "")
 
 	if want := []string{"ai-memory", "legacy", "lich"}; !slices.Equal(got, want) {
 		t.Errorf("MCPServers = %v, want %v", got, want)
@@ -82,7 +82,7 @@ func TestMCPServersMergesEveryOpenCodeGlobalDocument(t *testing.T) {
 	writeMCPConfig(t, dir, "config.json", `{"mcp":{"first":{}}}`)
 	writeMCPConfig(t, dir, "opencode.json", `{"mcp":{"second":{}}}`)
 
-	got := MCPServers(providers.OpenCode, t.TempDir())
+	got := MCPServers(providers.OpenCode, t.TempDir(), "")
 
 	if want := []string{"first", "lich", "second"}; !slices.Equal(got, want) {
 		t.Errorf("MCPServers = %v, want %v", got, want)
@@ -101,7 +101,7 @@ func TestMCPServersReadsOpenCodeProjectConfig(t *testing.T) {
 		`{"mcp":{"repo-dot-dir":{}}}`)
 	writeMCPConfig(t, deep, "opencode.jsonc", `{"mcp":{"package":{}}}`)
 
-	got := MCPServers(providers.OpenCode, deep)
+	got := MCPServers(providers.OpenCode, deep, "")
 
 	want := []string{"lich", "package", "repo-dot-dir", "repo-root"}
 	if !slices.Equal(got, want) {
@@ -116,7 +116,7 @@ func TestMCPServersIgnoresARelativeCwd(t *testing.T) {
 	opencodeConfigHome(t)
 
 	for _, cwd := range []string{"", "relative/path"} {
-		if got := MCPServers(providers.OpenCode, cwd); !slices.Equal(got, []string{relay.MCPServerName}) {
+		if got := MCPServers(providers.OpenCode, cwd, ""); !slices.Equal(got, []string{relay.MCPServerName}) {
 			t.Errorf("MCPServers(%q) = %v, want just lich's own", cwd, got)
 		}
 	}
@@ -150,7 +150,7 @@ func TestMCPServersAnswersLichAloneWithoutADocument(t *testing.T) {
 			if tc.setup != nil {
 				cwd = tc.setup()
 			}
-			got := MCPServers(tc.provider, cwd)
+			got := MCPServers(tc.provider, cwd, "")
 			if want := []string{relay.MCPServerName}; !slices.Equal(got, want) {
 				t.Errorf("MCPServers = %v, want %v", got, want)
 			}
@@ -166,7 +166,7 @@ func TestMCPServersFollowsOpenCodeConfigDirOverride(t *testing.T) {
 	t.Setenv("OPENCODE_CONFIG_DIR", override)
 	writeMCPConfig(t, override, "opencode.json", `{"mcp":{"elsewhere":{}}}`)
 
-	got := MCPServers(providers.OpenCode, t.TempDir())
+	got := MCPServers(providers.OpenCode, t.TempDir(), "")
 
 	if want := []string{"elsewhere", "lich"}; !slices.Equal(got, want) {
 		t.Errorf("MCPServers = %v, want %v", got, want)
@@ -187,7 +187,7 @@ func TestMCPServersReadsACommentedJSONC(t *testing.T) {
 		},
 	}`)
 
-	got := MCPServers(providers.OpenCode, cwd)
+	got := MCPServers(providers.OpenCode, cwd, "")
 
 	if want := []string{"documented", "lich"}; !slices.Equal(got, want) {
 		t.Errorf("MCPServers = %v, want %v", got, want)
@@ -203,7 +203,7 @@ func TestMCPServersReadsTheOpenCodeConfigOverride(t *testing.T) {
 	}
 	t.Setenv("OPENCODE_CONFIG", extra)
 
-	got := MCPServers(providers.OpenCode, t.TempDir())
+	got := MCPServers(providers.OpenCode, t.TempDir(), "")
 
 	if want := []string{"extra", "lich"}; !slices.Equal(got, want) {
 		t.Errorf("MCPServers = %v, want %v", got, want)
@@ -230,5 +230,23 @@ func TestJSONCLeavesStringsAlone(t *testing.T) {
 				t.Errorf("jsonc(%q) = %q, want %q", tc.in, got, tc.want)
 			}
 		})
+	}
+}
+
+// An oh-my-pi profile reads the mcp.json in its own agent directory. It is a
+// link to Personal's until the profile holds a document of its own (a copy on a
+// platform without links, one omp wrote there), and then the profile's list is
+// the one that counts.
+func TestMCPServersReadsTheProfilesOMPDocument(t *testing.T) {
+	personal := ompHome(t)
+	writeMCPConfig(t, personal, ompMCPFile, `{"mcpServers":{"personal-only":{"command":"p"}}}`)
+	profile := t.TempDir()
+	writeMCPConfig(t, profile, ompMCPFile, `{"mcpServers":{"profile-only":{"command":"q"}}}`)
+
+	if got, want := MCPServers(providers.OMP, t.TempDir(), profile), []string{"lich", "profile-only"}; !slices.Equal(got, want) {
+		t.Errorf("profile: MCPServers = %v, want %v", got, want)
+	}
+	if got, want := MCPServers(providers.OMP, t.TempDir(), ""), []string{"lich", "personal-only"}; !slices.Equal(got, want) {
+		t.Errorf("Personal: MCPServers = %v, want %v", got, want)
 	}
 }

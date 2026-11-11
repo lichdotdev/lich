@@ -831,12 +831,9 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   All eight providers print a version (measured on Claude Code 2.1.299, Codex 0.162.1, Antigravity 1.3.5,
   opencode 1.18.35, oh-my-pi 18.8.9, Crush 0.98.1, Cursor CLI 2026.10.01, Kiro CLI 2.21.0); a CLI whose
   `--version` hangs past 10 s or prints no version shows its path alone.
-- **The binary setting and lich's own plugin checks still answer for Personal**: a profile's session runs the
-  configured Claude Code binary, so a wrapper that exports its own `CLAUDE_CONFIG_DIR` or a token still wins
-  over the profile, and the same binary answers the profile's `auth status` and installs its plugins. The
-  start gate reads the profile's own plugin state, but the nested-subagent-cards check and the MCP servers a
-  card lists read Personal's, so a profile on an older lich plugin than Personal's can be offered cards its
-  plugin cannot open: one whose follow-up install failed, or one still waiting for it.
+- **The binary setting still answers for Personal**: a profile's session runs the configured Claude Code
+  binary, so a wrapper that exports its own `CLAUDE_CONFIG_DIR` or a token still wins over the profile, and the
+  same binary answers the profile's `auth status` and installs its plugins.
 - **A profile's lich plugin follows Personal's, after it and in the background**
   (`internal/agentplugin/profiles.go`): an install or update of the lich plugin for Claude Code or Codex,
   from Settings or anywhere else, runs in Personal and returns; then the same pinned install runs as each
