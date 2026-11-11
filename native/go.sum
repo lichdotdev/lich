@@ -27,8 +27,8 @@ github.com/hexops/gotextdiff v1.0.3 h1:gitA9+qJrrTCsiCl7+kh75nPqQt1cx4ZkudSTLoUq
 github.com/hexops/gotextdiff v1.0.3/go.mod h1:pSWU5MAI3yDq+fZBTazCSJysOMbxWL1BSow5/V2vxeg=
 github.com/lichdotdev/gio v0.0.0-20261108212453-3dc6e3e4274b h1:KAZyw9ZRzGQSRPKvc7pjEQKHYGsYImf1l0NaMWaBXuI=
 github.com/lichdotdev/gio v0.0.0-20261108212453-3dc6e3e4274b/go.mod h1:x8MAOooc/v4UUaB5o6BS/FpYdxnzh3LBvZlTBmYpnlQ=
-github.com/lichdotdev/gio-driver v0.0.0-20261111131415-37ce67a26bc8 h1:9x+YzTQrcr+OrmBYrHfg9896gIe4Ko0PgdWAahf3ISM=
-github.com/lichdotdev/gio-driver v0.0.0-20261111131415-37ce67a26bc8/go.mod h1:oMHgzM+KvxqOH0rwg2uS66YLAMfM2ZCzT+YW2H2Hmsw=
+github.com/lichdotdev/gio-driver v0.0.0-20261111143827-fb7064d51698 h1:F0uUKZW1r+ZtfLzWZqkUwy0AvW4Xmh3/jyQdd1Ic3L0=
+github.com/lichdotdev/gio-driver v0.0.0-20261111143827-fb7064d51698/go.mod h1:oMHgzM+KvxqOH0rwg2uS66YLAMfM2ZCzT+YW2H2Hmsw=
 github.com/lichdotdev/godemirror v0.8.1 h1:6Hgi0wrCOcpPhOPJFfID7l+vmR08RMYhPDChyzopBdM=
 github.com/lichdotdev/godemirror v0.8.1/go.mod h1:xCdFPbos7+4/bCymJIx7FnL4EpsuMpebRCbGM5Un4fg=
 github.com/yuin/goldmark v1.4.13 h1:fVcFKWvrslecOb/tg+Cc05dkeYx540o0FuFt3nUVDoE=
