@@ -293,7 +293,9 @@ func (f *footer) slot(gtx C, th *ui.Theme, s footerSlot, in footerInput) D {
 		glyph := func(gtx C) D { return providerIcon(in.provider).Layout(gtx, 14, th.MutedForeground) }
 		return footerSpan(gtx, th, f.root, &w.tip, s.Hint, modelMaxWidth, glyph, s.Text)
 	case "delegates":
-		return footerButton(gtx, th, f.root, w, i18n.T("layouts.delegates.hint"), true, false, glyphText(icDelegates, s.Text))
+		return f.tour.Anchor(gtx, tourDelegates, func(gtx C) D {
+			return footerButton(gtx, th, f.root, w, i18n.T("layouts.delegates.hint"), true, false, glyphText(icDelegates, s.Text))
+		})
 	case "clock":
 		return layout.Inset{Left: ui.Space(2), Right: ui.Space(2)}.Layout(gtx, th.Text(ui.TextXS, s.Text).Muted().Layout)
 	}

@@ -88,3 +88,17 @@ func TestBasicsWaitsOnlyForOpeningAProjectAndASession(t *testing.T) {
 		t.Fatalf("the tour ends on %q, want the menu that holds it", last)
 	}
 }
+
+// The handoff has no button: its one waiting step is the agent's terminal,
+// where the person asks for it.
+func TestHandoffWaitsOnlyOnTheAgent(t *testing.T) {
+	var waiting []string
+	for _, s := range handoffTour {
+		if s.until != nil {
+			waiting = append(waiting, s.anchor)
+		}
+	}
+	if len(waiting) != 1 || waiting[0] != tourStage || handoffTour[0].anchor != tourStage {
+		t.Fatalf("waiting steps = %v, want only the first, on the terminal", waiting)
+	}
+}
