@@ -35,6 +35,8 @@ type Store interface {
 	ProjectName(projectID string) string
 	ProjectPath(projectID string) string
 	ProjectOpen(projectID string) bool
+	GetSetting(ctx context.Context, opts api.GetSettingOptions) (string, error)
+	SetSetting(ctx context.Context, opts api.SetSettingOptions) (api.None, error)
 }
 
 // terminalPrefix keeps a service's PTY id apart from every session id, which

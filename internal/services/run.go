@@ -1,6 +1,8 @@
 package services
 
 import (
+	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -213,19 +215,78 @@ func (s *Service) signal() {
 	s.changed = make(chan struct{})
 }
 
-// Boot starts the services saved to start with lich whose project has a tab
-// open. One that fails to start is logged and shown failed; it does not hold
-// up the others.
+// restartRunningKey is the global setting an outgoing lich leaves its running
+// services under for its successor. Empty means no record; a record with none
+// running is "[]", so the successor can tell one from the other while it waits.
+const restartRunningKey = "services.restartRunning"
+
+const (
+	// RestartWaitMargin is what a successor adds to the outgoing lich's stop
+	// grace before giving up on its record: the kill after the grace, and the
+	// write that follows it.
+	RestartWaitMargin = killWait + 5*time.Second
+	restartPoll       = 100 * time.Millisecond
+)
+
+// Boot is a plain launch: it starts the services saved to start with lich whose
+// project has a tab open, and drops a record no successor consumed, which must
+// not start anything at this later launch. One that fails to start is logged
+// and shown failed; it does not hold up the others.
 func (s *Service) Boot() {
+	s.writeRestartRecord("")
+	s.startAtBoot(nil)
+}
+
+// BootAfterRestart is the boot of a restart's successor. The outgoing lich has
+// freed the port but is still stopping its services, so a second copy started
+// now would lose the fight for whatever they hold: everything waits for its
+// record, written once they are down.
+func (s *Service) BootAfterRestart(wait time.Duration) {
+	go func() { s.startAtBoot(s.takeRestartRecord(wait)) }()
+}
+
+func (s *Service) startAtBoot(wasRunning []string) {
 	configs, err := s.store.Services()
 	if err != nil {
 		slog.Warn("services: read at boot", "err", err)
 		return
 	}
 	for _, c := range configs {
-		if c.StartWithLich && s.store.ProjectOpen(c.ProjectID) {
+		if (c.StartWithLich || slices.Contains(wasRunning, c.ID)) && s.store.ProjectOpen(c.ProjectID) {
 			s.startWithLich(c)
 		}
+	}
+}
+
+// takeRestartRecord waits up to limit for the outgoing lich's record and clears
+// it. Past limit it returns nil: a lich that crashed on its way out wrote none.
+func (s *Service) takeRestartRecord(limit time.Duration) []string {
+	deadline := time.After(limit)
+	for {
+		raw, err := s.store.GetSetting(context.Background(), api.GetSettingOptions{Key: restartRunningKey})
+		if err != nil {
+			slog.Warn("services: read the restart record", "err", err)
+			return nil
+		}
+		if raw != "" {
+			s.writeRestartRecord("")
+			var ids []string
+			if err := json.Unmarshal([]byte(raw), &ids); err != nil {
+				slog.Warn("services: parse the restart record", "err", err)
+			}
+			return ids
+		}
+		select {
+		case <-deadline:
+			return nil
+		case <-time.After(restartPoll):
+		}
+	}
+}
+
+func (s *Service) writeRestartRecord(value string) {
+	if _, err := s.store.SetSetting(context.Background(), api.SetSettingOptions{Key: restartRunningKey, Value: value}); err != nil {
+		slog.Warn("services: write the restart record", "err", err)
 	}
 }
 
@@ -289,6 +350,26 @@ func (s *Service) Shutdown(grace time.Duration) {
 		ids = append(ids, v.ID)
 	}
 	s.stopAndKill(ids, grace)
+}
+
+// ShutdownForRestart is Shutdown with a successor on its way: what is running
+// now is recorded once it is all down, which is what the successor waits on. A
+// service already stopping was on its way out by the user's hand, so it stays
+// out of the record.
+func (s *Service) ShutdownForRestart(grace time.Duration) {
+	ids := []string{}
+	for _, v := range s.Running() {
+		if v.State == api.ServiceRunning {
+			ids = append(ids, v.ID)
+		}
+	}
+	s.Shutdown(grace)
+	raw, err := json.Marshal(ids)
+	if err != nil {
+		slog.Warn("services: encode the restart record", "err", err)
+		return
+	}
+	s.writeRestartRecord(string(raw))
 }
 
 // stopAndKill asks services ids to stop, kills the ones still up once grace

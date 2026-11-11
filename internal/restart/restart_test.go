@@ -68,6 +68,30 @@ func TestDoSpawnsThenStops(t *testing.T) {
 	}
 }
 
+func TestRestartingOnlyOnceASuccessorIsLaunched(t *testing.T) {
+	spawnErr := errors.New("exe mid-swap")
+	c := &Coordinator{
+		exePath: "/usr/local/bin/lich",
+		spawn:   func(string, []string, []string) error { return spawnErr },
+	}
+	if c.Restarting() {
+		t.Fatal("Restarting before any restart")
+	}
+	if err := c.Do(); err == nil {
+		t.Fatal("Do with a failing spawn returned nil")
+	}
+	if c.Restarting() {
+		t.Fatal("Restarting after a launch that failed")
+	}
+	spawnErr = nil
+	if err := c.Do(); err != nil {
+		t.Fatal(err)
+	}
+	if !c.Restarting() {
+		t.Fatal("not Restarting after the successor was launched")
+	}
+}
+
 func TestDoIsIdempotent(t *testing.T) {
 	spawns, stops := 0, 0
 	c := &Coordinator{
