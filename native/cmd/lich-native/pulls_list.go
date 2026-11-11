@@ -395,18 +395,18 @@ func skeletonRow(gtx C, th *ui.Theme, title float32) D {
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
 						return layout.Flex{}.Layout(gtx,
-							layout.Rigid(skeletonBar(th, ui.Space(10), skeletonSMLine, ui.Space(3.5))),
+							layout.Rigid(th.SkeletonBar(ui.Space(10), skeletonSMLine, ui.Space(3.5)).Layout),
 							ui.Gap(1.5),
-							layout.Rigid(skeletonBar(th, full*unit.Dp(title), skeletonSMLine, ui.Space(3.5))),
+							layout.Rigid(th.SkeletonBar(full*unit.Dp(title), skeletonSMLine, ui.Space(3.5)).Layout),
 						)
 					}),
 					ui.VGap(1),
-					layout.Rigid(skeletonBar(th, full*unit.Dp(title)*0.6, skeletonXSLine, ui.Space(3))),
+					layout.Rigid(th.SkeletonBar(full*unit.Dp(title)*0.6, skeletonXSLine, ui.Space(3)).Layout),
 				)
 			}),
 			ui.Gap(4),
 			layout.Rigid(func(gtx C) D {
-				return cell(gtx, rowChecksWidth, skeletonBar(th, ui.Space(9), skeletonXSLine, ui.Space(3)))
+				return cell(gtx, rowChecksWidth, th.SkeletonBar(ui.Space(9), skeletonXSLine, ui.Space(3)).Layout)
 			}),
 			layout.Rigid(layout.Spacer{Width: rowVerdictWidth + rowCheckoutWidth}.Layout),
 		)

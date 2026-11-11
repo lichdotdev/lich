@@ -17,12 +17,15 @@ import (
 type composedState struct {
 	emptyActions [4]widget.Clickable
 	sample       *ui.AvatarImage
+
+	skeletonButton widget.Clickable
 }
 
 func (g *gallery) composedSection(gtx C, th *ui.Theme) D {
 	kids := g.emptyStates(th)
 	kids = append(kids, g.avatars(th)...)
 	kids = append(kids, g.headings(th)...)
+	kids = append(kids, g.skeletons(th)...)
 	return stack(4, kids...)(gtx)
 }
 
@@ -81,5 +84,24 @@ func (g *gallery) headings(th *ui.Theme) []layout.Widget {
 	return []layout.Widget{
 		caption(th, "SectionHeading: default, semibold with inset, compact"),
 		stack(1, th.SectionHeading("Description").Layout, semi.Layout, compact.Layout),
+	}
+}
+
+func (g *gallery) skeletons(th *ui.Theme) []layout.Widget {
+	button := th.Button(&g.skeletonButton, "Open in session")
+	fill := func(gtx C) D {
+		gtx.Constraints.Max.Y = gtx.Dp(96)
+		return ui.SkeletonFill{MaxRows: 6, PadY: ui.Space(1)}.Layout(gtx, func(gtx C, i int) D {
+			return ui.SkeletonRow{PadX: ui.Space(3), PadY: ui.Space(2)}.Layout(gtx, th.SkeletonText(ui.TextSM, ui.Space(30+float32(i%3)*10)).Layout)
+		})
+	}
+	return []layout.Widget{
+		caption(th, "SkeletonBar and SkeletonText: bars of text-sm and text-xs lines"),
+		row(3, th.SkeletonBar(ui.Space(16), ui.Space(5), ui.Space(3.5)).Layout, th.SkeletonBar(ui.Space(10), ui.Space(4), ui.Space(3)).Layout),
+		row(3, th.SkeletonText(ui.TextSM, ui.Space(24)).Layout, th.SkeletonText(ui.TextXS, ui.Space(16)).Layout),
+		caption(th, "SkeletonShape: a button's measure"),
+		th.SkeletonShape(button.Layout).Layout,
+		caption(th, "SkeletonFill and SkeletonRow: rows down to the bottom"),
+		fill,
 	}
 }

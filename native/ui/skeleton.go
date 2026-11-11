@@ -6,6 +6,7 @@ import (
 
 	"gioui.org/layout"
 	"gioui.org/op"
+	"gioui.org/op/clip"
 	"gioui.org/unit"
 )
 
@@ -79,4 +80,98 @@ func tabsEase(progress float64) float64 {
 		}
 	}
 	return at((lo+hi)/2, y1, y2)
+}
+
+// SkeletonBarStyle is a bar of Width by Height centred in a line of height
+// Line.
+type SkeletonBarStyle struct {
+	Width, Line, Height unit.Dp
+	theme               *Theme
+}
+
+func (th *Theme) SkeletonBar(width, line, height unit.Dp) SkeletonBarStyle {
+	return SkeletonBarStyle{Width: width, Line: line, Height: height, theme: th}
+}
+
+func (b SkeletonBarStyle) Layout(gtx C) D {
+	pad := (b.Line - b.Height) / 2
+	return layout.Inset{Top: pad, Bottom: pad}.Layout(gtx, b.theme.Skeleton(b.Width, b.Height).Layout)
+}
+
+// SkeletonTextStyle is a bar of Width standing for a line of text at Size: as
+// tall as the font, centred in the line the text takes.
+type SkeletonTextStyle struct {
+	Size  unit.Sp
+	Width unit.Dp
+	theme *Theme
+}
+
+func (th *Theme) SkeletonText(size unit.Sp, width unit.Dp) SkeletonTextStyle {
+	return SkeletonTextStyle{Size: size, Width: width, theme: th}
+}
+
+func (t SkeletonTextStyle) Layout(gtx C) D {
+	line := measured(gtx, t.theme.Text(t.Size, "Ag").Layout).Y
+	bar := min(gtx.Sp(t.Size), line)
+	defer op.Offset(image.Pt(0, (line-bar)/2)).Push(gtx.Ops).Pop()
+	t.theme.Skeleton(t.Width, gtx.Metric.PxToDp(bar)).Layout(gtx)
+	return D{Size: image.Pt(min(gtx.Dp(t.Width), gtx.Constraints.Max.X), line)}
+}
+
+// SkeletonShapeStyle is a block the size Widget would take: a button whose
+// label is known but whose state is not.
+type SkeletonShapeStyle struct {
+	Widget layout.Widget
+	theme  *Theme
+}
+
+func (th *Theme) SkeletonShape(w layout.Widget) SkeletonShapeStyle {
+	return SkeletonShapeStyle{Widget: w, theme: th}
+}
+
+func (s SkeletonShapeStyle) Layout(gtx C) D {
+	size := measured(gtx, s.Widget)
+	return s.theme.Skeleton(gtx.Metric.PxToDp(size.X), gtx.Metric.PxToDp(size.Y)).Layout(gtx)
+}
+
+// SkeletonFill lays row after row down to the bottom of gtx, as a loaded list
+// fills its panel. MaxRows bounds it under an unbounded height, PadY insets
+// the rows top and bottom.
+type SkeletonFill struct {
+	MaxRows int
+	PadY    unit.Dp
+}
+
+func (f SkeletonFill) Layout(gtx C, row func(gtx C, i int) D) D {
+	return layout.Inset{Top: f.PadY, Bottom: f.PadY}.Layout(gtx, func(gtx C) D {
+		defer clip.Rect{Max: gtx.Constraints.Max}.Push(gtx.Ops).Pop()
+		y := 0
+		for i := 0; y < gtx.Constraints.Max.Y && i < f.MaxRows; i++ {
+			g := gtx
+			g.Constraints.Min.Y = 0
+			stack := op.Offset(image.Pt(0, y)).Push(gtx.Ops)
+			y += row(g, i).Size.Y
+			stack.Pop()
+		}
+		return D{Size: image.Pt(gtx.Constraints.Max.X, min(y, gtx.Constraints.Max.Y))}
+	})
+}
+
+// SkeletonRow is a full-width list row's padding around its bars.
+type SkeletonRow struct {
+	PadX, PadY unit.Dp
+}
+
+func (r SkeletonRow) Layout(gtx C, content layout.Widget) D {
+	gtx.Constraints.Min.X = gtx.Constraints.Max.X
+	return layout.Inset{Left: r.PadX, Right: r.PadX, Top: r.PadY, Bottom: r.PadY}.Layout(gtx, content)
+}
+
+// measured is the size w takes, laid out and thrown away.
+func measured(gtx C, w layout.Widget) image.Point {
+	macro := op.Record(gtx.Ops)
+	gtx.Constraints.Min = image.Point{}
+	size := w(gtx).Size
+	macro.Stop()
+	return size
 }

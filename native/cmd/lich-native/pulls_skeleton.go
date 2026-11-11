@@ -1,10 +1,7 @@
 package main
 
 import (
-	"image"
-
 	"gioui.org/layout"
-	"gioui.org/op"
 	"gioui.org/unit"
 	"gioui.org/widget"
 
@@ -43,35 +40,6 @@ func (v *pullView) detailSkeleton(th *ui.Theme) layout.Widget {
 	}
 }
 
-// skeletonBar is a bar of width by height centred in a line of height line.
-func skeletonBar(th *ui.Theme, width, line, height unit.Dp) layout.Widget {
-	pad := (line - height) / 2
-	return func(gtx C) D {
-		return layout.Inset{Top: pad, Bottom: pad}.Layout(gtx, th.Skeleton(width, height).Layout)
-	}
-}
-
-// measured is the size w takes, laid out and thrown away.
-func measured(gtx C, w layout.Widget) image.Point {
-	macro := op.Record(gtx.Ops)
-	gtx.Constraints.Min = image.Point{}
-	size := w(gtx).Size
-	macro.Stop()
-	return size
-}
-
-// skeletonText is a bar of width standing for a line of text at size: as
-// tall as the font, centred in the line the text takes.
-func skeletonText(th *ui.Theme, size unit.Sp, width unit.Dp) layout.Widget {
-	return func(gtx C) D {
-		line := measured(gtx, th.Text(size, "Ag").Layout).Y
-		bar := min(gtx.Sp(size), line)
-		defer op.Offset(image.Pt(0, (line-bar)/2)).Push(gtx.Ops).Pop()
-		th.Skeleton(width, gtx.Metric.PxToDp(bar)).Layout(gtx)
-		return D{Size: image.Pt(min(gtx.Dp(width), gtx.Constraints.Max.X), line)}
-	}
-}
-
 // spanning is w taking all the room a Flexed gives it, as text does, so a
 // Rigid after it lands at the row's end and not beside the bar.
 func spanning(w layout.Widget) layout.Widget {
@@ -79,15 +47,6 @@ func spanning(w layout.Widget) layout.Widget {
 		dims := w(gtx)
 		dims.Size.X = max(dims.Size.X, gtx.Constraints.Min.X)
 		return dims
-	}
-}
-
-// skeletonShape is a block the size w would take: a button whose label is
-// known but whose state is not.
-func skeletonShape(th *ui.Theme, w layout.Widget) layout.Widget {
-	return func(gtx C) D {
-		size := measured(gtx, w)
-		return th.Skeleton(gtx.Metric.PxToDp(size.X), gtx.Metric.PxToDp(size.Y)).Layout(gtx)
 	}
 }
 
@@ -103,9 +62,9 @@ func skeletonHeading(gtx C, th *ui.Theme) D {
 		moreB := th.Button(&more, "")
 		moreB.Icon, moreB.Size = icPullMore, ui.SizeIconSM
 		return ui.Wrap{GapX: ui.Space(2), Justify: ui.JustifyEnd}.Layout(gtx,
-			ui.WrapItem(skeletonShape(th, sessionB.Layout)),
-			ui.WrapItem(skeletonShape(th, mergeB.Layout)),
-			ui.WrapItem(skeletonShape(th, moreB.Layout)),
+			ui.WrapItem(th.SkeletonShape(sessionB.Layout).Layout),
+			ui.WrapItem(th.SkeletonShape(mergeB.Layout).Layout),
+			ui.WrapItem(th.SkeletonShape(moreB.Layout).Layout),
 		)
 	}
 	heading := func(gtx C) D {
@@ -114,7 +73,7 @@ func skeletonHeading(gtx C, th *ui.Theme) D {
 				layout.Rigid(func(gtx C) D {
 					// The spacer is the title's pencil, which sets the line when taller.
 					return layout.Flex{}.Layout(gtx,
-						layout.Rigid(skeletonText(th, pullsTitleSize, ui.Space(120))),
+						layout.Rigid(th.SkeletonText(pullsTitleSize, ui.Space(120)).Layout),
 						ui.Gap(1),
 						layout.Rigid(layout.Spacer{Width: ui.Space(6), Height: ui.Space(6)}.Layout),
 					)
@@ -122,11 +81,11 @@ func skeletonHeading(gtx C, th *ui.Theme) D {
 				ui.VGap(3),
 				layout.Rigid(func(gtx C) D {
 					return layout.Flex{}.Layout(gtx,
-						layout.Rigid(skeletonText(th, ui.TextXS, ui.Space(14))),
+						layout.Rigid(th.SkeletonText(ui.TextXS, ui.Space(14)).Layout),
 						ui.Gap(4),
-						layout.Rigid(skeletonText(th, ui.TextXS, ui.Space(48))),
+						layout.Rigid(th.SkeletonText(ui.TextXS, ui.Space(48)).Layout),
 						ui.Gap(4),
-						layout.Rigid(skeletonText(th, ui.TextXS, ui.Space(24))),
+						layout.Rigid(th.SkeletonText(ui.TextXS, ui.Space(24)).Layout),
 					)
 				}),
 			)
@@ -145,7 +104,7 @@ func (v *pullView) skeletonTabs(gtx C, th *ui.Theme) D {
 	for _, t := range skeletonTabOrder {
 		trigger := ui.TabsTrigger{Text: t.label()}
 		if t != tabOverview {
-			trigger.Trailing = skeletonText(th, ui.TextSM, ui.Space(2.5))
+			trigger.Trailing = th.SkeletonText(ui.TextSM, ui.Space(2.5)).Layout
 		}
 		triggers = append(triggers, trigger)
 	}
@@ -158,7 +117,7 @@ func (v *pullView) skeletonTabs(gtx C, th *ui.Theme) D {
 			return d
 		}),
 		layout.Rigid(func(gtx C) D {
-			return layout.Inset{Left: ui.Space(4)}.Layout(gtx, skeletonText(th, ui.TextXS, ui.Space(16)))
+			return layout.Inset{Left: ui.Space(4)}.Layout(gtx, th.SkeletonText(ui.TextXS, ui.Space(16)).Layout)
 		}),
 	)
 }
@@ -173,8 +132,8 @@ func skeletonOverview(gtx C, th *ui.Theme) D {
 			moreB := th.Button(&more, "")
 			moreB.Icon, moreB.Size = icPullMore, ui.SizeIconXS
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-				layout.Flexed(1, spanning(skeletonText(th, ui.TextXS, ui.Space(24)))),
-				layout.Rigid(skeletonShape(th, moreB.Layout)),
+				layout.Flexed(1, spanning(th.SkeletonText(ui.TextXS, ui.Space(24)).Layout)),
+				layout.Rigid(th.SkeletonShape(moreB.Layout).Layout),
 			)
 		})
 	}
@@ -230,7 +189,7 @@ func skeletonProse(gtx C, th *ui.Theme) D {
 			y += gap
 		}
 		for _, w := range skeletonProseLines {
-			children = append(children, layout.Rigid(skeletonBar(th, full*unit.Dp(w), line, bar)))
+			children = append(children, layout.Rigid(th.SkeletonBar(full*unit.Dp(w), line, bar).Layout))
 			y += gtx.Dp(line)
 		}
 	}
@@ -245,9 +204,9 @@ func skeletonFacts(gtx C, th *ui.Theme) D {
 			children = append(children, ui.VGap(5))
 		}
 		children = append(children,
-			layout.Rigid(skeletonBar(th, ui.Space(18), skeletonXSLine, ui.Space(3))),
+			layout.Rigid(th.SkeletonBar(ui.Space(18), skeletonXSLine, ui.Space(3)).Layout),
 			ui.VGap(2),
-			layout.Rigid(skeletonBar(th, w, skeletonSMLine, ui.Space(3.5))),
+			layout.Rigid(th.SkeletonBar(w, skeletonSMLine, ui.Space(3.5)).Layout),
 		)
 	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)

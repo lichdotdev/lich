@@ -64,3 +64,24 @@ func TestSkeletonAsksForTheNextFrame(t *testing.T) {
 		t.Error("a pulsing skeleton must keep the window redrawing")
 	}
 }
+
+func TestSkeletonBarTakesItsLine(t *testing.T) {
+	d := layoutAt(testTheme().SkeletonBar(Space(10), Space(5), Space(3)).Layout, 0, 300)
+	if d.Size != image.Pt(40, 20) {
+		t.Errorf("size = %v, want the line's 20px height and the bar's 40px width", d.Size)
+	}
+}
+
+func TestSkeletonFillStopsAtMaxRowsAndAtTheBottom(t *testing.T) {
+	row := func(gtx C, i int) D { return D{Size: image.Pt(10, 100)} }
+	var laid int
+	counting := func(gtx C, i int) D { laid++; return row(gtx, i) }
+	if d := layoutAt(func(gtx C) D { return SkeletonFill{MaxRows: 2}.Layout(gtx, counting) }, 0, 300); d.Size.Y != 200 || laid != 2 {
+		t.Errorf("bounded by rows: %v tall, %d laid", d.Size, laid)
+	}
+	laid = 0
+	h := layoutAt(func(gtx C) D { return SkeletonFill{MaxRows: 100}.Layout(gtx, counting) }, 0, 300)
+	if h.Size.Y != 1000 || laid != 10 {
+		t.Errorf("bounded by the height: %v tall, %d laid", h.Size, laid)
+	}
+}
