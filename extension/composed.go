@@ -129,7 +129,7 @@ type FixedColumnProps struct {
 // SplitPaneProps draws its two children side by side (row) or one over the
 // other (column), with a divider Gap wide between them. Ratio is the share
 // the first takes, held between MinRatio and MaxRatio (0 means 1) and
-// MinFirst and MinSecond. OnResize carries the new ratio in EventData.Width
+// MinFirst and MinSecond. OnResize carries the new ratio in EventData.Ratio
 // when a drag ends.
 type SplitPaneProps struct {
 	Direction Direction `json:"direction,omitempty"`

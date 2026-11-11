@@ -85,7 +85,8 @@ type DismissToastData struct {
 
 // EventData is lich calling a Handler. The field that carries a value depends
 // on the control: Text for fields and groups, Checked for switches, Index for
-// tabs, Order for a sortable list, Width for a resize handle.
+// tabs, Order for a sortable list, Width for a resize handle, Ratio for a
+// split pane.
 type EventData struct {
 	Handler Handler  `json:"handler"`
 	Text    string   `json:"text,omitempty"`
@@ -93,4 +94,5 @@ type EventData struct {
 	Index   int      `json:"index,omitempty"`
 	Order   []string `json:"order,omitempty"`
 	Width   float64  `json:"width,omitempty"`
+	Ratio   float64  `json:"ratio,omitempty"`
 }
