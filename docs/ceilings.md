@@ -1135,7 +1135,29 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   every directory under `<config dir>/lich/extensions` (`extensions-dev` under `LICH_DEV`) with a valid manifest is
   started when the backend boots. There is no prompt, no signature and no permission list in this version, and
   the sandbox of `internal/sandbox` does not apply, so an extension can read and do whatever the user can. The
-  directory is read once per launch: adding, editing or removing one takes a restart of lich.
+  directory is read once per launch: an extension added or edited by hand takes a restart of lich, while one
+  installed or removed through `extensions.InstallFromGit`, `extensions.InstallFromDir` and `extensions.Remove` is started or stopped at once.
+- **Installing runs code from the internet as the user, vouched for only by its own release**
+  (`internal/extensions/install.go`): the archive is checked against the `checksums.txt` the same release carries,
+  which proves the download arrived whole, not who built it or what it does. Whoever controls the repository
+  controls what runs. Only `https://github.com/<owner>/<repo>` is accepted, only its latest release that is neither
+  a draft nor a pre-release, only the archive named for this OS and architecture (`docs/extensions.md`), and only
+  public repositories: the GitHub API is read without a token, so its unauthenticated rate limit applies. There is
+  no update: remove the extension and install it again. An install lich is killed in the middle of leaves an
+  `.installing-*` directory that discovery skips and nothing deletes. Remove deletes the directory, or only the
+  link when it is a symlink, and what the extension wrote elsewhere stays.
+- **An extension's data directory outlives it, and nothing bounds its size** (`internal/extensions`):
+  `<config dir>/lich/extension-data/<id>` is created before each start and handed over in `LICH_EXTENSION_DATA`.
+  Remove keeps it, so a reinstall of the same id finds it, and so does any other extension later installed under
+  that id. It goes only through `extensions.DeleteData`, which the remove confirmation calls when its box is
+  ticked, and which refuses an installed id; data left behind by an extension removed without the box stays on
+  disk until it is deleted by hand. lich does not limit how much an extension writes there.
+- **Installing from a folder copies it once, and refuses links** (`internal/extensions/installdir.go`): the picked
+  folder is copied under the same bounds as an archive (1 GiB, 1000 entries) and validated as discovery does. A
+  symlink anywhere in it, the folder itself included, fails the install rather than being followed. The copy is
+  what runs: editing the folder afterwards changes nothing until the extension is removed and installed again,
+  so to develop in place symlink the folder into the extensions directory instead. Its source is the folder's
+  path, with no release, and nothing checks who wrote what is in it.
 - **What an extension writes is input, and what fails the checks is dropped without telling it**
   (`internal/extensions/inbound.go`): a line over 3 MiB, JSON nested over 512 levels, a tree over 5000 nodes or 64
   deep, a kind that only travels from lich to the extension, and `openExternal` with anything but an http or https
@@ -1149,6 +1171,16 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   `/events` like every event, with no queue and no replay, and the extension is not told. A window that attaches
   later sees nothing until the extension renders again. One slow window stalls that extension's stdout rather than
   queueing, and a write stalled past 5 seconds drops the `/events` socket for every session.
+- **`render` is coalesced, at 30 a second per surface** (`internal/extensions/throttle.go`): the first goes out at
+  once, and while the interval has not passed only the newest is kept and sent when it ends, so a loop of renders
+  costs the window a frame rate and the newest tree always arrives. The older ones in between never reach the
+  window. A surface the manifest does not list shares one gate with every other such surface, so naming a new
+  surface each time is no way around the limit, and of those only the newest render arrives. Other kinds (toasts,
+  `openExternal`, clipboard) are not limited: a loop of those still reaches the window line by line, and a process
+  that exits drops the render it had pending.
+- **Restart is the way back from failed** (`Service.Restart`, `extensions.Restart`): it stops a running extension
+  as lich stops it on exit, starts it again and starts its crash count over. It does not re-read the directory, so
+  an edited manifest or a newly invalid one takes a restart of lich, and an invalid extension is refused.
 - **Any exit lich did not ask for counts as a crash** (`internal/extensions/supervise.go`), a clean exit 0 included.
   It restarts after 1 second, doubling, capped at 30, and lich gives up after 5 crashes in a row, each within 30
   seconds of its start: the extension shows failed until lich launches again. A file that cannot be executed at

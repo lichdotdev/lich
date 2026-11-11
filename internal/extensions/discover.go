@@ -23,9 +23,19 @@ var idPattern = regexp.MustCompile(fmt.Sprintf(`^[a-z0-9][a-z0-9._-]{0,%d}$`, id
 // its own, as it has its own themes and database: otherwise `task dev` would
 // start a second copy of every extension the installed lich runs.
 func Dir(configDir string) string {
-	name := "extensions"
+	return devAware(configDir, "extensions")
+}
+
+// DataDir holds a directory per extension id for what the extension keeps,
+// apart from Dir so a reinstall, which replaces the install directory, keeps
+// it.
+func DataDir(configDir string) string {
+	return devAware(configDir, "extension-data")
+}
+
+func devAware(configDir, name string) string {
 	if os.Getenv("LICH_DEV") != "" {
-		name = "extensions-dev"
+		name += "-dev"
 	}
 	return filepath.Join(configDir, "lich", name)
 }
@@ -42,6 +52,9 @@ func discover(dir, lichVersion string) []*installed {
 	}
 	var found []*installed
 	for _, entry := range entries {
+		if strings.HasPrefix(entry.Name(), stagingPrefix) {
+			continue
+		}
 		root := filepath.Join(dir, entry.Name())
 		// Stat follows a symlink, the way to develop an extension in place. One
 		// that dangles falls through to fail on its manifest and gets listed.
@@ -54,7 +67,10 @@ func discover(dir, lichVersion string) []*installed {
 }
 
 func load(root, dirName, lichVersion string) *installed {
-	x := &installed{id: dirName, root: root}
+	if abs, err := filepath.Abs(root); err == nil {
+		root = abs
+	}
+	x := &installed{id: dirName, root: root, source: readSource(root)}
 	x.manifest, x.exe, x.invalid = readManifest(root, dirName, lichVersion)
 	if x.invalid != nil {
 		x.status, x.errText = statusInvalid, x.invalid.Error()

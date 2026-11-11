@@ -109,6 +109,7 @@ func TestAcceptedKinds(t *testing.T) {
 		extension.DismissToast.New(extension.DismissToastData{ID: "t"}),
 		extension.OpenExternal.New(extension.OpenExternalData{URL: "https://example.com/a?b=c"}),
 		extension.Clipboard.New(extension.ClipboardData{Text: "t"}),
+		extension.Focus.New(extension.FocusData{Surface: "main", Key: "search"}),
 	} {
 		if _, err := vetLine(encodeLine(t, msg)); err != nil {
 			t.Errorf("%s: %v", msg.Kind, err)

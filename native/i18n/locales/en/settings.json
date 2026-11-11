@@ -30,7 +30,8 @@
       "versionControl": "Version Control",
       "updates": "Updates",
       "help": "Help",
-      "services": "Services"
+      "services": "Services",
+      "extensions": "Extensions"
     },
     "notYet": "Not here yet",
     "projectDesc": "What this project changes from Global. A row without a change follows Global."
@@ -632,5 +633,41 @@
     "commandHint": "Runs in the project's directory, without your shell's rc files. Keep it in the foreground: a command that detaches (-d, &) exits at once and shows as stopped.",
     "startWithLich": "Start with lich",
     "save": "Save"
+  },
+  "extensionsSettings": {
+    "description": "Each extension runs on your computer as you, with access to your files and accounts.",
+    "openFolder": "Open folder",
+    "fromGit": "From GitHub",
+    "fromDir": "From a folder",
+    "chooseFolder": "Choose folder…",
+    "install": "Install",
+    "installing": "Installing…",
+    "gitDescription": "The latest release built for this system, checked against its checksums.",
+    "dirDescription": "A folder with manifest.json and the program, already built for this system.",
+    "pickTitle": "Choose the extension's folder",
+    "installTitle": "Install this extension?",
+    "installDescription": "It comes from {source}. It will run on your computer as you, with access to your files and accounts. Install it only if you trust who made it.",
+    "removeTitle": "Remove {name}?",
+    "removeDescription": "lich stops it and deletes the program. What it saved is kept, so installing it again picks up where it left off.",
+    "removeDeleteData": "Also delete what it saved",
+    "remove": "Remove",
+    "removeMenuItem": "Remove…",
+    "restart": "Restart",
+    "emptyTitle": "No extensions yet",
+    "emptyDescription": "An extension adds its own screen to lich. Install one from its GitHub repository or from a folder.",
+    "installed": "Installed",
+    "installedCount": "Installed · {n}",
+    "rowOptions": "Options for {name}",
+    "installRow": "Install an extension",
+    "installSearchWords": "extensions add install plugin mod github repository release folder",
+    "listRow": "Installed extensions",
+    "listSearchWords": "extensions remove uninstall restart plugin mod status",
+    "status": {
+      "running": "Running",
+      "restarting": "Restarting",
+      "failed": "Failed",
+      "invalid": "Invalid",
+      "stopped": "Stopped"
+    }
   }
 }

@@ -18,6 +18,7 @@ func (u *window) applyService(r serviceRequest) {
 	case serviceShow:
 		u.settings.hide()
 		u.pulls.hide()
+		u.extension.hide()
 		u.model.openConsole(r.id)
 		u.model.invalidate()
 	case serviceEdit:
@@ -80,6 +81,7 @@ func (u *window) revealService(id string) {
 // in the form, a new one for "".
 func (u *window) openServiceSettings(projectID, id string) {
 	u.pulls.hide()
+	u.extension.hide()
 	u.settings.openSection(sectionServices)
 	tabs, _ := u.model.projectTabs()
 	scope := projectID

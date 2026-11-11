@@ -64,7 +64,13 @@ cursorprofile.LoginCommand(ProfileSlugOptions) string
 cursorprofile.Profiles(None) []ProfileInfo
 cursorprofile.UpdateProfile(UpdateProfileOptions) Profile
 drop.Attach(AttachDropOptions) DropAttachment
+extensions.DeleteData(ExtensionIDOptions) None
+extensions.Dir(None) string
+extensions.InstallFromDir(ExtensionDirInstallOptions) Extension
+extensions.InstallFromGit(ExtensionGitInstallOptions) Extension
 extensions.List(None) []Extension
+extensions.Remove(ExtensionIDOptions) None
+extensions.Restart(ExtensionIDOptions) None
 extensions.Send(ExtensionSendOptions) None
 kiroprofile.CreateProfile(CreateProfileOptions) Profile
 kiroprofile.DeleteProfile(ProfileSlugOptions) None
@@ -124,6 +130,7 @@ project.ListPullRequests(ListPullRequestsOptions) []PRSummary
 project.MergePullRequest(MergePullRequestOptions) None
 project.Missing(PathsOptions) []string
 project.Open(None) *OpenedProject
+project.PickDirectory(PickFileOptions) string
 project.PickFile(PickFileOptions) string
 project.PickSaveFile(PickSaveFileOptions) string
 project.PullRequestAvatar(AvatarOptions) base64
@@ -279,6 +286,7 @@ event browser:frame:<id> string
 event claude-profile-login ProfileLogin
 event codex-profile-login ProfileLogin
 event extension-message ExtensionMessage
+event extension-removed ExtensionIDOptions
 event extension-status Extension
 event lich-plugin-profiles PluginProfiles
 event plugin-incompatible PluginIncompatible
@@ -613,13 +621,28 @@ AttachDropOptions {
 	confined bool
 }
 
+ExtensionIDOptions {
+	id string
+}
+
+ExtensionDirInstallOptions {
+	dir string
+}
+
 Extension {
 	id string
 	name string
 	version string
 	status string
 	error,omitempty string
+	dir string
 	surfaces []ExtensionSurface
+	source,omitempty string
+	release,omitempty string
+}
+
+ExtensionGitInstallOptions {
+	url string
 }
 
 ExtensionSendOptions {

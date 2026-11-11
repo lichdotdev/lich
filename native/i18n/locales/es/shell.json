@@ -218,5 +218,12 @@
   },
   "notifyPrompt": {
     "description": "Una sesión acaba de pedirte una respuesta mientras estabas en otro sitio. lich puede mostrar una notificación de escritorio cuando eso pase, con el nombre de la sesión y de su proyecto, para que puedas iniciar algo y alejarte de la ventana. Las sesiones que estás mirando nunca notifican. Puedes cambiarlo cuando quieras en Ajustes › General."
+  },
+  "extensionScreen": {
+    "restarting": "{name} se detuvo y se está reiniciando…",
+    "failedTitle": "{name} se detuvo",
+    "restart": "Reiniciar",
+    "openFolder": "Abrir carpeta",
+    "restartFailed": "No se pudo reiniciar {name}: {error}"
   }
 }

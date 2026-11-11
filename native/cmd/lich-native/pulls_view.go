@@ -6,7 +6,6 @@ import (
 	"image/color"
 	"sync"
 
-	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/unit"
@@ -368,17 +367,10 @@ func (v *pullView) body(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDetail,
 	)
 }
 
-// stat is PullsStats' Stat: a size-3.5 glyph and its words in one tone.
-func stat(gtx C, th *ui.Theme, ic *icons.Icon, text string, fg color.NRGBA) D {
-	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-		layout.Rigid(func(gtx C) D { return pullGlyph(gtx, th, ic, ui.Space(3.5), fg) }),
-		ui.Gap(1.5),
-		layout.Rigid(func(gtx C) D {
-			l := th.Text(ui.TextXS, text).In(fg).Weight(font.Medium)
-			l.MaxLines = 0
-			return l.Layout(gtx)
-		}),
-	)
+// pullStat is PullsStats' Stat: a size-3.5 glyph and its words in one tone.
+func pullStat(gtx C, th *ui.Theme, ic *icons.Icon, text string, fg color.NRGBA) D {
+	glyph := func(gtx C) D { return pullGlyph(gtx, th, ic, ui.Space(3.5), fg) }
+	return th.Stat(gtx, glyph, text, fg)
 }
 
 // pullGlyph is ic at size, icPullRunning drawn as a BusyRing.
@@ -428,12 +420,12 @@ func (v *pullView) verdicts(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDet
 	var out prVerdicts
 	if ic, text, fg, ok := checksStat(th, d.Checks); ok {
 		out.checks = func(gtx C) D {
-			return v.checksStat.Layout(gtx, func(gtx C) D { return stat(gtx, th, ic, text, fg) })
+			return v.checksStat.Layout(gtx, func(gtx C) D { return pullStat(gtx, th, ic, text, fg) })
 		}
 	}
 	if ic, text, fg, ok := mergeableStat(th, d); ok {
 		out.merge = func(gtx C) D {
-			face := func(gtx C) D { return stat(gtx, th, ic, text, fg) }
+			face := func(gtx C) D { return pullStat(gtx, th, ic, text, fg) }
 			if conflictsWithBase(d) {
 				return v.conflictsStat(gtx, th, p, d, face)
 			}
@@ -443,7 +435,7 @@ func (v *pullView) verdicts(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDet
 	open, total := threadTally(p.store.conversation(p.project.Path, d.Number).val)
 	if ic, text, fg, ok := reviewStat(th, d.ReviewDecision, open, total); ok {
 		out.review = func(gtx C) D {
-			return v.reviewStat.Layout(gtx, func(gtx C) D { return stat(gtx, th, ic, text, fg) })
+			return v.reviewStat.Layout(gtx, func(gtx C) D { return pullStat(gtx, th, ic, text, fg) })
 		}
 	}
 	return out
@@ -452,13 +444,13 @@ func (v *pullView) verdicts(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDet
 func stateStat(gtx C, th *ui.Theme, d backend.PRDetail) D {
 	switch {
 	case d.State == "MERGED":
-		return stat(gtx, th, icPullMerged, i18n.T("pulls.pullsStats.merged"), th.MutedForeground)
+		return pullStat(gtx, th, icPullMerged, i18n.T("pulls.pullsStats.merged"), th.MutedForeground)
 	case d.State == "CLOSED":
-		return stat(gtx, th, icPullX, i18n.T("pulls.pullsStats.closed"), th.MutedForeground)
+		return pullStat(gtx, th, icPullX, i18n.T("pulls.pullsStats.closed"), th.MutedForeground)
 	case d.IsDraft:
-		return stat(gtx, th, icPullRequests, i18n.T("pulls.pullsStats.draft"), th.ToneWait)
+		return pullStat(gtx, th, icPullRequests, i18n.T("pulls.pullsStats.draft"), th.ToneWait)
 	}
-	return stat(gtx, th, icPullRequests, i18n.T("pulls.pullsStats.open"), th.TonePass)
+	return pullStat(gtx, th, icPullRequests, i18n.T("pulls.pullsStats.open"), th.TonePass)
 }
 
 func checksStat(th *ui.Theme, c backend.ChecksRollup) (*icons.Icon, string, color.NRGBA, bool) {

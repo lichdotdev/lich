@@ -218,5 +218,12 @@
   },
   "notifyPrompt": {
     "description": "別の作業をしている間に、セッションが入力を求めました。lich はそのようなときにセッション名とプロジェクト名を添えてデスクトップ通知を出せるので、作業を始めたらウィンドウを離れても大丈夫です。表示中のセッションは通知しません。設定 › 一般でいつでも変更できます。"
+  },
+  "extensionScreen": {
+    "restarting": "{name} が停止したため再起動しています…",
+    "failedTitle": "{name} が停止しました",
+    "restart": "再起動",
+    "openFolder": "フォルダを開く",
+    "restartFailed": "{name} を再起動できませんでした: {error}"
   }
 }

@@ -144,6 +144,10 @@ type window struct {
 	worktree *worktreeDialog
 	// pulls is the Pulls screen, drawn over the stage while open.
 	pulls *pullsScreen
+	// extension is an extension's surface, drawn over the stage while open,
+	// and extOutbox what the window sends extensions, in order.
+	extension *extensionScreen
+	extOutbox *extensionOutbox
 	// closeWorktree is the closed toast's question before removing a worktree.
 	closeWorktree closeWorktreeConfirm
 	// closeAllConfirm is Close all sessions' question when a turn is in flight.
@@ -270,6 +274,9 @@ func run(w *app.Window, rt backend.Runtime) error {
 	u.pulls.waiting = u.model.threadFixes.has
 	u.pulls.onAccount = u.model.accountChanged
 	u.pulls.tour = &u.tour.Tour
+	u.extOutbox = newExtensionOutbox()
+	u.extension = newExtensionScreen(&u.model.extensions, &u.root, u.extOutbox.send)
+	u.model.extensionMessage = u.extensionMessage
 	u.model.prChanged = u.prChanged
 	u.model.themeSelection = u.appearance.applySelection
 	u.model.exited = u.sessionExited
@@ -307,6 +314,7 @@ func run(w *app.Window, rt backend.Runtime) error {
 	u.settings.notify = u.notifier
 	u.settings.services.store = &u.model.services
 	u.settings.services.home = u.model.homeProject
+	u.settings.extensions.store = &u.model.extensions
 	u.settings.promptUpdate = u.promptAppUpdate
 	u.footer = newFooter(ctx, client, &u.root, u.model.usage, u.model.quota, invalidate)
 	u.footer.tour = &u.tour.Tour
@@ -447,6 +455,9 @@ func (u *window) connect() error {
 	if err := u.model.artifacts.load(u.ctx, u.client); err != nil {
 		u.logErr("read the session artifacts", err)
 	}
+	if err := u.model.extensions.load(u.ctx, u.client); err != nil {
+		u.logErr("read the extensions", err)
+	}
 	// A stored value this build cannot read starts the window with no
 	// layouts and says so; the next split stores over it.
 	if err := u.model.loadLayouts(u.ctx); err != nil {
@@ -526,6 +537,7 @@ func (u *window) connect() error {
 	u.paletteShot()
 	u.worktreeShot()
 	u.pullsShot()
+	u.extensionShot()
 	if *flagCustomizeFooter {
 		u.customizeFooter()
 	}
@@ -539,6 +551,7 @@ func (u *window) connect() error {
 	}
 	go u.model.follow(u.ctx, events)
 	go u.browserViews.run(u.ctx, func(err error) { log.Printf("browser default view: %v", err) })
+	go u.extOutbox.run(u.ctx, u.client.SendExtension, func(err error) { log.Printf("send to an extension: %v", err) })
 	go u.loadProfiles()
 	go u.model.pollGit(u.ctx)
 	go u.warnUncleanExit()
@@ -559,6 +572,7 @@ func (u *window) layout(gtx C) error {
 		u.settings.hide()
 	}
 	u.takeCodeAsk()
+	u.extension.writeClipboard(gtx)
 	paint.Fill(gtx.Ops, u.theme.Canvas)
 	if u.model.connectionLost() {
 		u.lostNotice(gtx)
@@ -601,6 +615,7 @@ func (u *window) layout(gtx C) error {
 		u.git.layoutDialogs(gtx, u.theme)
 		u.commentEdit.layout(gtx, u.theme, &u.comments)
 		u.settings.theme.layoutDialogs(gtx, u.theme)
+		u.settings.layoutExtensionDialogs(gtx, u.theme)
 		u.settings.layoutFontReplication(gtx, u.theme)
 		u.layoutProviderSetup(gtx, u.theme)
 		u.layoutPluginGate(gtx, u.theme)
@@ -717,12 +732,17 @@ func (u *window) body(gtx C, v stageView) (int, sidebarAction, error) {
 				layout.Flexed(1, func(gtx C) D {
 					if u.settings.open {
 						u.pulls.hide()
+						u.extension.hide()
 						u.settings.layout(gtx, u.theme, settingsProjectsOf(v.tabs))
 						return D{Size: gtx.Constraints.Max}
 					}
 					if u.git.covers {
 						u.dock.islands = []islandSpan{{x1: gtx.Constraints.Max.X, color: u.theme.Sidebar}}
 						u.layoutGit(gtx, v)
+						return D{Size: gtx.Constraints.Max}
+					}
+					if u.extension.open {
+						u.applyExtension(u.extension.layout(gtx, u.theme, !u.terminalTakesKeys(gtx)))
 						return D{Size: gtx.Constraints.Max}
 					}
 					if u.pulls.open && !v.home {
@@ -844,9 +864,16 @@ func (u *window) topbarFrame(gtx C, v stageView, edge int) topbarFrame {
 		f.active, f.settings = "", true
 	}
 	f.pulls = u.pulls.open && !v.home
-	if f.pulls && !f.settings {
+	f.extensions = u.model.extensions.all()
+	switch {
+	case f.settings:
+	case u.extension.open:
+		// The extension draws its own islands, which the strip cannot know,
+		// so no tab merges into them.
+		f.active, f.extension = "", u.extension.shown
+	case f.pulls:
 		f.islands = u.pulls.spans
-	} else if !f.settings {
+	default:
 		f.islands = u.dock.islands
 	}
 	return f
@@ -1033,6 +1060,7 @@ func (u *window) apply(act sidebarAction) {
 	if act.activate != "" {
 		u.settings.hide()
 		u.pulls.hide()
+		u.extension.hide()
 		u.model.setActive(u.ctx, act.activate)
 		if p, ok := u.model.project(); ok {
 			id := act.activate

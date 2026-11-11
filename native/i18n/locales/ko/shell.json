@@ -215,5 +215,12 @@
   },
   "notifyPrompt": {
     "description": "다른 곳에 있는 동안 세션이 방금 입력을 요청했습니다. 이럴 때 lich가 세션과 프로젝트 이름을 담아 데스크톱 알림을 띄울 수 있으니, 작업을 시작해 두고 창을 떠나 있어도 됩니다. 보고 있는 세션은 알림을 보내지 않습니다. 설정 › 일반에서 언제든 바꿀 수 있습니다."
+  },
+  "extensionScreen": {
+    "restarting": "{name}이(가) 중지되어 다시 시작하는 중…",
+    "failedTitle": "{name}이(가) 중지됨",
+    "restart": "다시 시작",
+    "openFolder": "폴더 열기",
+    "restartFailed": "{name}을(를) 다시 시작할 수 없습니다: {error}"
   }
 }

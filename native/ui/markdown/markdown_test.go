@@ -162,3 +162,16 @@ func TestMarkdownRulesUnderTopHeadingsOnly(t *testing.T) {
 		t.Errorf("rules = %v, want %v", got, want)
 	}
 }
+
+// The walker visits a fenced block on the way in and on the way out; drawing
+// it on both turns showed every fenced block twice (Pulls descriptions too).
+func TestAFencedCodeBlockIsDrawnOnce(t *testing.T) {
+	blocks := renderBlocks(markdownTheme(), "a\n\n```\npanic: nil map\n```\n\nb")
+	var all strings.Builder
+	for _, b := range blocks {
+		all.WriteString(proseText(b))
+	}
+	if got := strings.Count(all.String(), "panic: nil map"); got != 1 {
+		t.Errorf("the fenced block shows %d times in %q, want once", got, all.String())
+	}
+}

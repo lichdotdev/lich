@@ -14,6 +14,7 @@ var (
 	TwoLines         = component[TwoLinesProps]("twoLines")
 	SpinnerLine      = component[TextProps]("spinnerLine")
 	SpinnerBeside    = component[NoProps]("spinnerBeside")
+	Stat             = component[StatProps]("stat")
 
 	CheckRow   = component[CheckRowProps]("checkRow")
 	NavRow     = component[NavRowProps]("navRow")
@@ -47,6 +48,14 @@ type IconLabelProps struct {
 	Icon  Icon       `json:"icon"`
 	Glyph string     `json:"glyph,omitempty"`
 	Label LabelProps `json:"label"`
+}
+
+// StatProps is the props of Stat, which draws its first child, a glyph the
+// extension sizes (an icon, or a busyRing for work in flight), and Text after
+// it.
+type StatProps struct {
+	Text  string `json:"text"`
+	Color string `json:"color,omitempty"`
 }
 
 type MutedGlyphProps struct {

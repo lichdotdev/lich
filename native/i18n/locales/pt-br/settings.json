@@ -30,7 +30,8 @@
       "versionControl": "Controle de versão",
       "updates": "Atualizações",
       "help": "Ajuda",
-      "services": "Serviços"
+      "services": "Serviços",
+      "extensions": "Extensões"
     },
     "notYet": "Ainda não está aqui",
     "projectDesc": "O que este projeto muda em relação ao Global. Uma linha sem mudança segue o Global."
@@ -632,5 +633,41 @@
     "commandHint": "Roda na pasta do projeto, sem os arquivos rc do seu shell. Mantenha-o em primeiro plano: um comando que se desprende (-d, &) sai na hora e aparece como parado.",
     "startWithLich": "Iniciar com o lich",
     "save": "Salvar"
+  },
+  "extensionsSettings": {
+    "description": "Cada extensão roda no seu computador como você, com acesso aos seus arquivos e contas.",
+    "openFolder": "Abrir pasta",
+    "fromGit": "Do GitHub",
+    "fromDir": "De uma pasta",
+    "chooseFolder": "Escolher pasta…",
+    "install": "Instalar",
+    "installing": "Instalando…",
+    "gitDescription": "A release mais recente feita para este sistema, conferida com os checksums dela.",
+    "dirDescription": "Uma pasta com manifest.json e o programa, já compilado para este sistema.",
+    "pickTitle": "Escolha a pasta da extensão",
+    "installTitle": "Instalar esta extensão?",
+    "installDescription": "Ela vem de {source}. Ela vai rodar no seu computador como você, com acesso aos seus arquivos e contas. Instale só se você confia em quem a fez.",
+    "removeTitle": "Remover {name}?",
+    "removeDescription": "O lich para a extensão e apaga o programa. O que ela salvou fica, então ao instalar de novo ela continua de onde parou.",
+    "removeDeleteData": "Apagar também o que ela salvou",
+    "remove": "Remover",
+    "removeMenuItem": "Remover…",
+    "restart": "Reiniciar",
+    "emptyTitle": "Nenhuma extensão ainda",
+    "emptyDescription": "Uma extensão adiciona uma tela própria ao lich. Instale uma pelo repositório no GitHub ou de uma pasta.",
+    "installed": "Instaladas",
+    "installedCount": "Instaladas · {n}",
+    "rowOptions": "Opções de {name}",
+    "installRow": "Instalar uma extensão",
+    "installSearchWords": "extensões adicionar instalar plugin mod github repositório release pasta",
+    "listRow": "Extensões instaladas",
+    "listSearchWords": "extensões remover desinstalar reiniciar plugin mod status",
+    "status": {
+      "running": "Rodando",
+      "restarting": "Reiniciando",
+      "failed": "Falhou",
+      "invalid": "Inválida",
+      "stopped": "Parada"
+    }
   }
 }

@@ -30,7 +30,8 @@
       "versionControl": "バージョン管理",
       "updates": "アップデート",
       "help": "ヘルプ",
-      "services": "サービス"
+      "services": "サービス",
+      "extensions": "拡張機能"
     },
     "notYet": "まだありません",
     "projectDesc": "このプロジェクトでグローバルから変更している項目です。変更のない行はグローバルに従います。"
@@ -632,5 +633,41 @@
     "commandHint": "プロジェクトのディレクトリで、シェルの rc ファイルを読まずに実行します。フォアグラウンドのままにしてください。切り離されるコマンド (-d、&) はすぐに終了し、停止として表示されます。",
     "startWithLich": "lich と一緒に開始",
     "save": "保存"
+  },
+  "extensionsSettings": {
+    "description": "拡張機能はあなたのコンピューター上であなたとして動作し、あなたのファイルとアカウントにアクセスできます。",
+    "openFolder": "フォルダーを開く",
+    "fromGit": "GitHub から",
+    "fromDir": "フォルダーから",
+    "chooseFolder": "フォルダーを選択…",
+    "install": "インストール",
+    "installing": "インストール中…",
+    "gitDescription": "このシステム向けにビルドされた最新リリース。チェックサムで検証されます。",
+    "dirDescription": "manifest.json と、このシステム向けにビルド済みのプログラムを含むフォルダー。",
+    "pickTitle": "拡張機能のフォルダーを選択",
+    "installTitle": "この拡張機能をインストールしますか？",
+    "installDescription": "提供元は {source} です。あなたのコンピューター上であなたとして動作し、あなたのファイルとアカウントにアクセスできます。作成者を信頼できる場合にのみインストールしてください。",
+    "removeTitle": "{name} を削除しますか？",
+    "removeDescription": "lich は停止してプログラムを削除します。保存したデータは残るため、再インストールすると続きから使えます。",
+    "removeDeleteData": "保存したデータも削除する",
+    "remove": "削除",
+    "removeMenuItem": "削除…",
+    "restart": "再起動",
+    "emptyTitle": "拡張機能はまだありません",
+    "emptyDescription": "拡張機能は lich に独自の画面を追加します。GitHub リポジトリまたはフォルダーからインストールできます。",
+    "installed": "インストール済み",
+    "installedCount": "インストール済み · {n}",
+    "rowOptions": "{name} のオプション",
+    "installRow": "拡張機能をインストール",
+    "installSearchWords": "拡張機能 追加 インストール プラグイン mod github リポジトリ リリース フォルダー",
+    "listRow": "インストール済みの拡張機能",
+    "listSearchWords": "拡張機能 削除 アンインストール 再起動 プラグイン mod 状態",
+    "status": {
+      "running": "実行中",
+      "restarting": "再起動中",
+      "failed": "失敗",
+      "invalid": "無効",
+      "stopped": "停止"
+    }
   }
 }

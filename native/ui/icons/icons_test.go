@@ -212,3 +212,12 @@ func TestIconPathsAreRecordedOncePerScale(t *testing.T) {
 		}
 	}
 }
+
+func TestLookupLobeReportsAMissingName(t *testing.T) {
+	if ic, ok := LookupLobe("claude"); !ok || ic == nil {
+		t.Error("LookupLobe(claude) found nothing")
+	}
+	if _, ok := LookupLobe("no-such-mark"); ok {
+		t.Error("LookupLobe(no-such-mark) found a mark")
+	}
+}

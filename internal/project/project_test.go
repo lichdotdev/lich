@@ -546,3 +546,17 @@ func TestRelocateCancelledChangesNothing(t *testing.T) {
 		t.Fatal("Relocate error was swallowed")
 	}
 }
+
+func TestPickDirectoryUsesRequestedTitle(t *testing.T) {
+	t.Parallel()
+	picker := &pickerStub{dirPath: "/tmp/ext"}
+	path, err := New(picker).PickDirectory(t.Context(), api.PickFileOptions{Title: "Choose the extension's folder"})
+	if err != nil || path != picker.dirPath || picker.dirTitle != "Choose the extension's folder" {
+		t.Fatalf("PickDirectory = %q, %v; title = %q", path, err, picker.dirTitle)
+	}
+
+	picker.dirError = errors.New("picker failed")
+	if _, err := New(picker).PickDirectory(t.Context(), api.PickFileOptions{}); err == nil {
+		t.Fatal("PickDirectory hid the picker's error")
+	}
+}

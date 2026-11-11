@@ -70,6 +70,12 @@ type topbar struct {
 	tour     *driver.Tour
 	confirm  closeConfirm
 	controls captionControls
+
+	// surfaceClicks and surfaceIcons are the extension surfaces' buttons
+	// (topbar_extensions.go).
+	surfaceClicks map[extensionKey]*widget.Clickable
+	surfaceIcons  map[string]*icons.Icon
+
 	// shift is how far right of the terminal island's edge the strip starts:
 	// past the window's own buttons on the left when the sidebar is too
 	// narrow to hold them and the brand.
@@ -100,6 +106,8 @@ type topbarAction struct {
 	tour            string // a guide's id
 	projectSettings string
 	pulls           bool // the Pull requests button
+	// extension is the extension surface button clicked, zero for none.
+	extension extensionKey
 	// renamed is a layout tab's new name, committed this frame.
 	renamed layoutRename
 	// caption is a window button clicked, when captionClicked.
@@ -133,6 +141,11 @@ type topbarFrame struct {
 	caption        captionLayout
 	chrome         windowChrome
 	windowButtons  string // the window buttons setting
+
+	// extensions is every extension, whose surfaces get a button each, and
+	// extension the surface on screen, zero for none.
+	extensions []backend.Extension
+	extension  extensionKey
 }
 
 // islandSpan is one island under the tab strip: its left and right edges in
@@ -189,8 +202,9 @@ func (t *topbar) place(gtx C, p image.Point, w layout.Widget) {
 	w(gtx)
 }
 
-// rightSide lays the bell, Pull requests and Settings out flush right,
-// centered in the band, and answers how wide they are.
+// rightSide lays the bell, the extensions' surfaces, Pull requests and
+// the menu out flush right, centered in the band, and answers how wide they
+// are.
 func (t *topbar) rightSide(gtx C, th *ui.Theme, f topbarFrame, act *topbarAction) int {
 	macro := op.Record(gtx.Ops)
 	row := gtx
@@ -198,10 +212,13 @@ func (t *topbar) rightSide(gtx C, th *ui.Theme, f topbarFrame, act *topbarAction
 	children := []layout.FlexChild{
 		layout.Rigid(func(gtx C) D { return t.bellButton(gtx, th, f.pending, act) }),
 		ui.Gap(1),
+	}
+	children = append(children, t.extensionButtons(th, f, act)...)
+	children = append(children,
 		layout.Rigid(func(gtx C) D { return t.pullsButton(gtx, th, f.pulls, act) }),
 		ui.Gap(1),
 		layout.Rigid(func(gtx C) D { return t.menuButton(gtx, th, f.settings, f.guides, act) }),
-	}
+	)
 	pad := gtx.Dp(gutter)
 	if f.chrome.buttonsShown(f.windowButtons) && len(f.caption.right) > 0 {
 		children = append(children,

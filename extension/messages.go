@@ -9,6 +9,7 @@ var (
 	DismissToast = kind[DismissToastData]("toast.dismiss")
 	OpenExternal = kind[OpenExternalData]("openExternal")
 	Clipboard    = kind[ClipboardData]("clipboard")
+	Focus        = kind[FocusData]("focus")
 
 	FireEvent     = kind[EventData]("event")
 	SurfaceOpened = kind[SurfaceData]("surface.opened")
@@ -40,7 +41,18 @@ type ClipboardData struct {
 	Text string `json:"text"`
 }
 
-// SurfaceData names a surface the person opened or left.
+// FocusData gives the keyboard to the field under Key on Surface: an input,
+// inputGroup, textarea or inlineEdit. It lands on the next frame that draws
+// that field and is dropped when that frame has none, or when Surface is not
+// the one on screen. Escape hands the keyboard back to the surface.
+type FocusData struct {
+	Surface string `json:"surface"`
+	Key     string `json:"key"`
+}
+
+// SurfaceData names a surface the person opened or left. Answer
+// surface.opened with a render: lich keeps only what reaches an open window,
+// so a render sent before the surface opened may never be drawn.
 type SurfaceData struct {
 	Surface string `json:"surface"`
 }

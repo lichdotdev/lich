@@ -47,6 +47,7 @@ func (u *window) showPulls(number int) {
 		return
 	}
 	u.settings.hide()
+	u.extension.hide()
 	branch, prNumber := u.checkoutPR(p)
 	if number != 0 {
 		prNumber = number

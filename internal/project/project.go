@@ -222,6 +222,16 @@ func (s *Service) PickFile(_ context.Context, opts api.PickFileOptions) (string,
 	return path, nil
 }
 
+// PickDirectory shows the native directory picker and returns the chosen
+// directory, or "" if the user cancels the dialog.
+func (s *Service) PickDirectory(_ context.Context, opts api.PickFileOptions) (string, error) {
+	path, err := s.picker.PickDirectory(opts.Title)
+	if err != nil {
+		return "", fmt.Errorf("open dialog failed: %w", err)
+	}
+	return path, nil
+}
+
 // PickSaveFile shows the native save dialog seeded with opts.DefaultName and returns
 // the chosen destination, or "" if the user cancels.
 func (s *Service) PickSaveFile(_ context.Context, opts api.PickSaveFileOptions) (string, error) {

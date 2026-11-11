@@ -1836,6 +1836,20 @@
     ]
   },
   {
+    "type": "stat",
+    "key": "key",
+    "props": {
+      "text": "text",
+      "color": "color"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
     "type": "statusDot",
     "key": "key",
     "props": {

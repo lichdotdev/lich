@@ -23,6 +23,14 @@
   },
   {
     "v": 1,
+    "kind": "focus",
+    "data": {
+      "surface": "surface",
+      "key": "key"
+    }
+  },
+  {
+    "v": 1,
     "kind": "openExternal",
     "data": {
       "url": "url"

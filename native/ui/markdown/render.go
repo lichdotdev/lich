@@ -129,7 +129,9 @@ func (w *spanWriter) visit(n ast.Node, entering bool) (ast.WalkStatus, error) {
 			w.listItem()
 		}
 	case *ast.CodeBlock, *ast.FencedCodeBlock:
-		w.codeBlock(n)
+		if entering {
+			w.codeBlock(n)
+		}
 		return ast.WalkSkipChildren, nil
 	case *ast.HTMLBlock, *ast.RawHTML:
 		return ast.WalkSkipChildren, nil

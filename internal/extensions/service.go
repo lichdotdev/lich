@@ -9,8 +9,11 @@ import (
 	"cmp"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
+	"net/http"
+	"runtime"
 	"sync"
 	"time"
 
@@ -59,10 +62,21 @@ type timing struct {
 // Service is every installed extension and its process.
 type Service struct {
 	dir         string
+	dataDir     string
 	lichVersion string
 	env         []string
 	emit        func(name string, data any)
 	timing      timing
+
+	// The installer's GitHub reads, fields so tests can serve releases locally.
+	metadata   *http.Client
+	download   *http.Client
+	releaseAPI string
+	goos       string
+	goarch     string
+	// installMu serialises installs, so two of one id never race to its
+	// directory.
+	installMu sync.Mutex
 
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -80,23 +94,34 @@ type installed struct {
 	root     string
 	exe      string
 	manifest extension.Manifest
+	source   source
 	invalid  error
 	stderr   logBudget
 	refused  logBudget
+	renders  renderGate
+	// restartMu serialises Restart calls on this extension.
+	restartMu sync.Mutex
 
 	// mu: Service.mu
 	status  string
 	errText string
 	queue   chan []byte
+	// stop and done belong to the current supervise goroutine; done closes
+	// when it has returned.
+	stop context.CancelFunc
+	done chan struct{}
 }
 
 // New returns the extensions under dir, none discovered or running until Boot.
-// env is what their processes get.
-func New(dir, lichVersion string, env []string, emit func(name string, data any)) *Service {
+// env is what their processes get, and each one's data directory is under
+// dataDir.
+func New(dir, dataDir, lichVersion string, env []string, emit func(name string, data any)) *Service {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &Service{
-		dir: dir, lichVersion: lichVersion, env: env, emit: emit, ctx: ctx, cancel: cancel,
-		timing: timing{firstBackoff: firstBackoff, maxBackoff: maxBackoff, stableRun: stableRun, stopGrace: stopGrace, killWait: killWait},
+		dir: dir, dataDir: dataDir, lichVersion: lichVersion, env: env, emit: emit, ctx: ctx, cancel: cancel,
+		timing:   timing{firstBackoff: firstBackoff, maxBackoff: maxBackoff, stableRun: stableRun, stopGrace: stopGrace, killWait: killWait},
+		metadata: &http.Client{Timeout: metadataTimeout}, download: &http.Client{Timeout: downloadTimeout},
+		releaseAPI: releaseAPI, goos: runtime.GOOS, goarch: runtime.GOARCH,
 	}
 }
 
@@ -110,15 +135,32 @@ func (s *Service) Boot() {
 		if x.invalid != nil {
 			continue
 		}
-		s.wg.Add(1)
-		go s.supervise(x)
+		s.mu.Lock()
+		s.launch(x)
+		s.mu.Unlock()
 	}
+}
+
+// launch starts x's supervise goroutine. Called with mu held, which is what
+// keeps wg.Add from racing the wg.Wait in Shutdown.
+func (s *Service) launch(x *installed) {
+	ctx, stop := context.WithCancel(s.ctx)
+	done := make(chan struct{})
+	x.stop, x.done = stop, done
+	s.wg.Add(1)
+	go func() {
+		defer s.wg.Done()
+		defer close(done)
+		s.supervise(ctx, x)
+	}()
 }
 
 // Shutdown stops every extension: stdin closes, each gets its grace, and what
 // is still up is killed. Bounded, so nothing here can hold up lich's exit.
 func (s *Service) Shutdown() {
+	s.mu.Lock()
 	s.cancel()
+	s.mu.Unlock()
 	done := make(chan struct{})
 	go func() {
 		s.wg.Wait()
@@ -165,6 +207,44 @@ func (s *Service) Send(_ context.Context, opts api.ExtensionSendOptions) (api.No
 	}
 }
 
+// Restart starts an extension again, which is the only way back from failed,
+// and starts its count of quick crashes over. One that is running or waiting
+// to restart is stopped first, as lich stops it on exit.
+func (s *Service) Restart(ctx context.Context, opts api.ExtensionIDOptions) (api.None, error) {
+	s.mu.Lock()
+	x := s.find(opts.ID)
+	s.mu.Unlock()
+	if x == nil {
+		return api.None{}, fmt.Errorf("no extension %q", opts.ID)
+	}
+	if x.invalid != nil {
+		return api.None{}, fmt.Errorf("extension %q is invalid and cannot start: %w", opts.ID, x.invalid)
+	}
+	x.restartMu.Lock()
+	defer x.restartMu.Unlock()
+	s.mu.Lock()
+	stop, done := x.stop, x.done
+	s.mu.Unlock()
+	if stop != nil {
+		stop()
+		select {
+		case <-done:
+		case <-ctx.Done():
+			return api.None{}, ctx.Err()
+		}
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.ctx.Err() != nil {
+		return api.None{}, errors.New("lich is shutting down")
+	}
+	if s.find(opts.ID) != x {
+		return api.None{}, fmt.Errorf("extension %q was removed", opts.ID)
+	}
+	s.launch(x)
+	return api.None{}, nil
+}
+
 // find returns the extension with id, or nil. Called with mu held.
 func (s *Service) find(id string) *installed {
 	for _, x := range s.all {
@@ -183,7 +263,8 @@ func (x *installed) view() api.Extension {
 	}
 	return api.Extension{
 		ID: x.id, Name: cmp.Or(x.manifest.Name, x.id), Version: x.manifest.Version,
-		Status: x.status, Error: x.errText, Surfaces: surfaces,
+		Status: x.status, Error: x.errText, Dir: x.root, Surfaces: surfaces,
+		Source: x.source.URL, Release: x.source.Release,
 	}
 }
 
@@ -198,4 +279,9 @@ func (s *Service) setStatus(x *installed, status, errText string) {
 
 func (s *Service) deliver(x *installed, message json.RawMessage) {
 	events.Send(s.emit, api.ExtensionMessageEvent, api.ExtensionMessage{ExtensionID: x.id, Message: message})
+}
+
+// ExtensionsDir is the directory extensions are read from and installed into.
+func (s *Service) ExtensionsDir(context.Context, api.None) (string, error) {
+	return s.dir, nil
 }

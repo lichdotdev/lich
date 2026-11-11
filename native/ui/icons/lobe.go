@@ -27,3 +27,13 @@ func Lobe(name string) *Icon {
 	}
 	return ic
 }
+
+// LookupLobe is Lobe for a name from outside lich, as LookupLucide is Lucide.
+func LookupLobe(name string) (*Icon, bool) {
+	d, ok := lobePaths[name]
+	if !ok {
+		return nil, false
+	}
+	ic, err := fillOnly(d)
+	return ic, err == nil
+}
