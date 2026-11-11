@@ -97,8 +97,10 @@ type DismissToastData struct {
 
 // EventData is lich calling a Handler. The field that carries a value depends
 // on the control: Text for fields and groups, Checked for switches, Index for
-// tabs, Order for a sortable list, Width for a resize handle, Ratio for a
-// split pane.
+// tabs, Order for a sortable list's reorder, Width for a resize handle, Ratio
+// for a split pane. A sortable list's move carries the moved item's Key, the
+// Index it landed at in the receiving list and the key of the list it came
+// From.
 type EventData struct {
 	Handler Handler  `json:"handler"`
 	Text    string   `json:"text,omitempty"`
@@ -107,4 +109,6 @@ type EventData struct {
 	Order   []string `json:"order,omitempty"`
 	Width   float64  `json:"width,omitempty"`
 	Ratio   float64  `json:"ratio,omitempty"`
+	Key     string   `json:"key,omitempty"`
+	From    string   `json:"from,omitempty"`
 }

@@ -18,7 +18,9 @@
         "order"
       ],
       "width": 1.5,
-      "ratio": 1.5
+      "ratio": 1.5,
+      "key": "key",
+      "from": "from"
     }
   },
   {

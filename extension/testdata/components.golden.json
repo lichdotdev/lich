@@ -1731,7 +1731,9 @@
       "horizontal": true,
       "within": true,
       "leaves": true,
-      "onReorder": "onReorder"
+      "group": "group",
+      "onReorder": "onReorder",
+      "onMove": "onMove"
     },
     "children": [
       {

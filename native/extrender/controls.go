@@ -404,36 +404,6 @@ func childKey(c extension.Node, i int) string {
 	return strconv.Itoa(i)
 }
 
-func drawSortableList(r *Renderer, gtx C, th *ui.Theme, n extension.Node, id string) D {
-	p := props[extension.SortableListProps](n)
-	s := stateOf[ui.Sortable](r, id)
-	keys := make([]string, len(n.Children))
-	for i, c := range n.Children {
-		keys[i] = childKey(c, i)
-	}
-	if d, ok := s.Update(gtx); ok {
-		if order, moved := reorder(keys, d); moved {
-			r.fire(p.OnReorder, extension.EventData{Order: order})
-		}
-	}
-	list := ui.SortList{Gap: unit.Dp(p.Gap), Horizontal: p.Horizontal, Within: p.Within, Leaves: p.Leaves}
-	return s.List(gtx, list, keys, func(gtx C, i int) D {
-		return s.Item(gtx, keys[i], r.child(th, n.Children[i], id, i), nil)
-	})
-}
-
-// reorder is keys with the dropped one moved to the slot of the one it was
-// dropped over, as dnd-kit's arrayMove; a drop on itself or off the list
-// moves nothing.
-func reorder(keys []string, d ui.SortDrop) ([]string, bool) {
-	from, to := slices.Index(keys, d.ID), slices.Index(keys, d.Over)
-	if from < 0 || to < 0 || from == to {
-		return nil, false
-	}
-	out := slices.Delete(slices.Clone(keys), from, from+1)
-	return slices.Insert(out, to, d.ID), true
-}
-
 type resizeState struct {
 	handle ui.ResizeHandle
 	width  unit.Dp

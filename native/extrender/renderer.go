@@ -5,8 +5,10 @@ package extrender
 import (
 	"strconv"
 
+	"gioui.org/io/event"
 	"gioui.org/io/key"
 	"gioui.org/layout"
+	"gioui.org/op/clip"
 	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/extension"
@@ -49,6 +51,7 @@ type Renderer struct {
 	// the whole surface: a dialog covers what it is drawn in, and a node does
 	// not know where in the surface it sits.
 	dialogs []layout.Widget
+	drag    dragPointer
 }
 
 // New returns a renderer that hands every event to send. root is the window's
@@ -61,10 +64,16 @@ func New(root *ui.Root, send func(extension.EventData)) *Renderer {
 func (r *Renderer) Layout(gtx C, th *ui.Theme, tree extension.Node) D {
 	clear(r.seen)
 	r.dialogs = r.dialogs[:0]
+	r.readPointer(gtx)
+	r.holdGroups(gtx)
+	area := clip.Rect{Max: gtx.Constraints.Max}.Push(gtx.Ops)
+	event.Op(gtx.Ops, &r.drag)
 	d := r.node(gtx, th, tree, "")
 	for i := 0; i < len(r.dialogs); i++ {
 		r.dialogs[i](gtx)
 	}
+	area.Pop()
+	r.releaseStranded(gtx)
 	for id := range r.state {
 		if !r.seen[id] {
 			delete(r.state, id)
