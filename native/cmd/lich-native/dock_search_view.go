@@ -13,6 +13,7 @@ import (
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
+	"github.com/lichdotdev/lich/native/ui/filetree"
 )
 
 // hitList is the search list on screen: its rows and the hits' clickables,
@@ -179,7 +180,7 @@ func hitGroupHeader(gtx C, th *ui.Theme, g searchGroup) D {
 	dir, base := splitPath(g.path)
 	return layout.Inset{Left: ui.Space(2), Right: ui.Space(2), Top: ui.Space(1.5), Bottom: ui.Space(0.5)}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-			layout.Rigid(func(gtx C) D { return fileIcon(gtx, th, g.path) }),
+			layout.Rigid(func(gtx C) D { return filetree.FileIcon(gtx, th, g.path) }),
 			ui.Gap(1.5),
 			layout.Rigid(func(gtx C) D {
 				if dir == "" {

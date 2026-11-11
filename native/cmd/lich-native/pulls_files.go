@@ -21,6 +21,7 @@ import (
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
 	"github.com/lichdotdev/lich/native/ui/diffview"
+	"github.com/lichdotdev/lich/native/ui/filetree"
 )
 
 // The file tree's width in rem, PullsFiles' TREE_DEFAULT_REM and the bounds
@@ -49,7 +50,7 @@ func loadTreeWidth(ctx context.Context, c *backend.Client) (float64, error) {
 // filesTree is the Files tab's file tree: the PR's paths nested, folders open
 // until folded, a file's click scrolling its card into view.
 type filesTree struct {
-	rows   treeRows
+	rows   filetree.Rows
 	closed map[string]bool
 	hidden bool
 	toggle ui.IconActionState
@@ -222,23 +223,23 @@ func (v *pullView) treeLayout(gtx C, th *ui.Theme) D {
 	t, files := &v.tree, v.files
 	if key := strings.Join(files.order, "\x00"); key != t.builtFor {
 		t.builtFor = key
-		t.rows.tree = buildTree(files.order)
-		stats := map[string]lineDelta{}
+		t.rows.Tree = filetree.Build(files.order)
+		stats := map[string]filetree.Delta{}
 		for path, c := range files.cards {
-			stats[path] = lineDelta{c.patch.Added, c.patch.Deleted}
+			stats[path] = filetree.Delta{Added: c.patch.Added, Deleted: c.patch.Deleted}
 		}
-		t.rows.stats = withDirStats(t.rows.tree, stats)
+		t.rows.Stats = filetree.WithDirStats(t.rows.Tree, stats)
 	}
-	for _, node := range t.rows.clicked(gtx) {
-		if node.dir {
-			t.closed[node.path] = !t.closed[node.path]
+	for _, node := range t.rows.Clicked(gtx) {
+		if node.Dir {
+			t.closed[node.Path] = !t.closed[node.Path]
 			continue
 		}
-		t.active = node.path
-		files.scrollToFile(node.path)
+		t.active = node.Path
+		files.scrollToFile(node.Path)
 	}
-	rows := visibleRows(t.rows.tree, func(path string) bool { return !t.closed[path] })
-	return t.rows.layout(gtx, th, rows, t.active)
+	rows := filetree.VisibleRows(t.rows.Tree, func(path string) bool { return !t.closed[path] })
+	return t.rows.Layout(gtx, th, rows, t.active)
 }
 
 // filesToolbar is the tree's toggle, "N of M viewed", and the dock's split

@@ -227,6 +227,7 @@ func (g *gallery) content(gtx C) D {
 					g.section("Markdown", g.markdownSection),
 					g.section("Code view", g.codeSection),
 					g.section("Diff view", g.diffSection),
+					g.section("File tree", g.treeSection),
 				)),
 			)
 		}),

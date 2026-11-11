@@ -1,94 +1,16 @@
 package main
 
-// The Code tab's tree logic: flat repo-relative paths nested into folders,
-// narrowed by the name filter, and flattened into the rows on screen.
+// What the Code tab's tree reads from the session's listing: the name filter,
+// the line counts by path and the note a listing that left something out owes.
 
 import (
-	"slices"
 	"strings"
 
 	"github.com/lichdotdev/godemirror"
 
 	"github.com/lichdotdev/lich/native/i18n"
+	"github.com/lichdotdev/lich/native/ui/filetree"
 )
-
-type treeNode struct {
-	name     string // what the row shows: the last segment, or a collapsed chain
-	path     string // repo-relative, the row's id for folds and ReadFile
-	dir      bool
-	children []*treeNode
-}
-
-// buildTree nests paths into folders, folders before files and each group
-// sorted case-insensitively, then collapses the chains of single folders.
-func buildTree(paths []string) []*treeNode {
-	var root []*treeNode
-	indexes := map[*treeNode]map[treeChildKey]*treeNode{}
-	rootIndex := make(map[treeChildKey]*treeNode)
-	for _, p := range paths {
-		level := &root
-		index := rootIndex
-		prefix := ""
-		parts := strings.FieldsFunc(p, func(r rune) bool { return r == '/' })
-		for i, name := range parts {
-			prefix = strings.TrimPrefix(prefix+"/"+name, "/")
-			dir := i < len(parts)-1
-			key := treeChildKey{name: name, dir: dir}
-			node := index[key]
-			if node == nil {
-				node = &treeNode{name: name, path: prefix, dir: dir}
-				*level = append(*level, node)
-				index[key] = node
-			}
-			level = &node.children
-			if i+1 < len(parts) {
-				if indexes[node] == nil {
-					indexes[node] = make(map[treeChildKey]*treeNode)
-				}
-				index = indexes[node]
-			}
-		}
-	}
-	sortTree(root)
-	return collapseChains(root)
-}
-
-type treeChildKey struct {
-	name string
-	dir  bool
-}
-
-func sortTree(nodes []*treeNode) {
-	slices.SortStableFunc(nodes, func(a, b *treeNode) int {
-		if a.dir != b.dir {
-			if a.dir {
-				return -1
-			}
-			return 1
-		}
-		return strings.Compare(strings.ToLower(a.name), strings.ToLower(b.name))
-	})
-	for _, n := range nodes {
-		sortTree(n.children)
-	}
-}
-
-// collapseChains merges a folder holding only one folder into one row,
-// keeping the deepest path as its id: src/main/java reads as one row, not
-// three levels of indentation before the first file.
-func collapseChains(nodes []*treeNode) []*treeNode {
-	out := make([]*treeNode, len(nodes))
-	for i, n := range nodes {
-		merged := *n
-		for len(merged.children) == 1 && merged.children[0].dir {
-			only := merged.children[0]
-			merged = treeNode{name: merged.name + "/" + only.name, path: only.path, dir: true, children: only.children}
-		}
-		merged.children = collapseChains(merged.children)
-		out[i] = &merged
-	}
-	return out
-}
 
 func filterPaths(paths []string, query string) []string {
 	if strings.TrimSpace(query) == "" {
@@ -103,72 +25,13 @@ func filterPaths(paths []string, query string) []string {
 	return out
 }
 
-type lineDelta struct{ added, deleted int }
-
 // diffStatsByPath keys each changed file's counts by its current path.
-func diffStatsByPath(files []godemirror.FilePatch) map[string]lineDelta {
-	out := make(map[string]lineDelta, len(files))
+func diffStatsByPath(files []godemirror.FilePatch) map[string]filetree.Delta {
+	out := make(map[string]filetree.Delta, len(files))
 	for _, f := range files {
-		out[f.Path] = lineDelta{f.Added, f.Deleted}
+		out[f.Path] = filetree.Delta{Added: f.Added, Deleted: f.Deleted}
 	}
 	return out
-}
-
-// withDirStats adds every folder holding a changed file, summed, so a closed
-// folder says where the diff is. It sums the tree it is given, so a filtered
-// tree counts only what the filter left.
-func withDirStats(tree []*treeNode, files map[string]lineDelta) map[string]lineDelta {
-	out := make(map[string]lineDelta, len(files))
-	for k, v := range files {
-		out[k] = v
-	}
-	var walk func(n *treeNode) (lineDelta, bool)
-	walk = func(n *treeNode) (lineDelta, bool) {
-		if !n.dir {
-			d, ok := files[n.path]
-			return d, ok
-		}
-		var sum lineDelta
-		found := false
-		for _, c := range n.children {
-			if d, ok := walk(c); ok {
-				sum.added, sum.deleted, found = sum.added+d.added, sum.deleted+d.deleted, true
-			}
-		}
-		if found {
-			out[n.path] = sum
-		}
-		return sum, found
-	}
-	for _, n := range tree {
-		walk(n)
-	}
-	return out
-}
-
-// treeRow is one row on screen.
-type treeRow struct {
-	node  *treeNode
-	depth int
-	open  bool
-}
-
-// visibleRows flattens the tree to the rows on screen: a folder's children
-// only while it is open.
-func visibleRows(tree []*treeNode, isOpen func(path string) bool) []treeRow {
-	var rows []treeRow
-	var walk func(nodes []*treeNode, depth int)
-	walk = func(nodes []*treeNode, depth int) {
-		for _, n := range nodes {
-			open := n.dir && isOpen(n.path)
-			rows = append(rows, treeRow{node: n, depth: depth, open: open})
-			if open {
-				walk(n.children, depth+1)
-			}
-		}
-	}
-	walk(tree, 0)
-	return rows
 }
 
 // treeFootnote is what a listing that is not the whole folder owes the

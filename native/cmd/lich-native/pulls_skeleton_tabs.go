@@ -9,6 +9,7 @@ import (
 	"gioui.org/unit"
 
 	"github.com/lichdotdev/lich/native/ui"
+	"github.com/lichdotdev/lich/native/ui/filetree"
 	"github.com/lichdotdev/lich/native/ui/markdown"
 )
 
@@ -169,7 +170,7 @@ func skeletonTree(gtx C, th *ui.Theme) D {
 		return skeletonFill(gtx, func(gtx C, i int) D {
 			depth := min(i%4, 2)
 			gtx.Constraints.Min.X = gtx.Constraints.Max.X
-			indent := treeIndentBase + treeIndent*unit.Dp(depth)
+			indent := filetree.IndentBase + filetree.Indent*unit.Dp(depth)
 			return layout.Inset{Left: indent, Right: ui.Space(2), Top: ui.Space(0.5), Bottom: ui.Space(0.5)}.Layout(gtx, func(gtx C) D {
 				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 					layout.Rigid(skeletonText(th, ui.TextXS, ui.Space(16+4*float32(i%3)))),

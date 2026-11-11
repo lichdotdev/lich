@@ -11,6 +11,7 @@ import (
 	"github.com/lichdotdev/lich/native/ui"
 	"github.com/lichdotdev/lich/native/ui/codeview"
 	"github.com/lichdotdev/lich/native/ui/diffview"
+	"github.com/lichdotdev/lich/native/ui/filetree"
 	"github.com/lichdotdev/lich/native/ui/markdown"
 )
 
@@ -27,6 +28,10 @@ type richState struct {
 	diffBlock diffview.Blocks
 	diffPatch godemirror.FilePatch
 	diffErr   error
+
+	tree       filetree.Rows
+	treeClosed map[string]bool
+	treeOpen   string
 }
 
 func (g *gallery) markdownSection(gtx C, th *ui.Theme) D {
@@ -111,4 +116,26 @@ func (r *richState) buildDiff() error {
 	r.diffPatch = files[0]
 	r.diff, err = diffview.New(fonts.SystemMono, 13, diffview.Options{Buttons: diffview.NewButtons(richDiffLabels)})
 	return err
+}
+
+var richPaths = []string{"native/ui/markdown/markdown.go", "native/ui/codeview/view.go", "native/ui/tabs.go", "README.md"}
+
+func (g *gallery) treeSection(gtx C, th *ui.Theme) D {
+	r := &g.rich
+	if r.tree.Tree == nil {
+		r.tree.List.Axis = layout.Vertical
+		r.tree.Tree = filetree.Build(richPaths)
+		r.tree.Stats = filetree.WithDirStats(r.tree.Tree, map[string]filetree.Delta{"native/ui/tabs.go": {Added: 12, Deleted: 3}})
+		r.treeClosed = map[string]bool{}
+	}
+	for _, n := range r.tree.Clicked(gtx) {
+		if n.Dir {
+			r.treeClosed[n.Path] = !r.treeClosed[n.Path]
+			continue
+		}
+		r.treeOpen = n.Path
+	}
+	rows := filetree.VisibleRows(r.tree.Tree, func(path string) bool { return !r.treeClosed[path] })
+	gtx.Constraints = layout.Exact(image.Pt(gtx.Constraints.Max.X, gtx.Dp(richCodeHeight)))
+	return r.tree.Layout(gtx, th, rows, r.treeOpen)
 }

@@ -153,7 +153,7 @@ func (v *pullView) init() {
 	v.talk.init()
 	v.md = markdown.Cache{}
 	v.tree.closed = map[string]bool{}
-	v.tree.rows.list.Axis = layout.Vertical
+	v.tree.rows.List.Axis = layout.Vertical
 }
 
 func (v *pullView) tip(key string) *ui.Tooltip {
