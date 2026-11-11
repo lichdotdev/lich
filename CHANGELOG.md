@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A Claude Code session in a profile no longer has its subagents turned into cards by the lich plugin your Personal login has when the profile's own copy is older and cannot open them; the profile's plugin decides. An oh-my-pi session in a profile that holds its own `mcp.json` now reads that file's servers for the tool names on its card, not Personal's.
 - A session forked into a worktree with its uncommitted work brings its own copies of the ignored files the project names (`.env*`, or `.worktreeinclude`), instead of the main checkout's, which could silently disagree with the work carried beside them.
 - A service you started by hand is running again after lich restarts for an update, as long as its project is still open. Quitting lich and opening it later still brings up only the services saved to start with lich.
+- A session's browser opened in its own window from the browser pane follows that window again: the page used to stay stuck at the size it had inside lich and ignore every resize of the window.
 
 ## [0.88.0] - 2026-11-10
 
