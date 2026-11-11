@@ -19,6 +19,7 @@ import (
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/extension"
+	exti18n "github.com/lichdotdev/lich/extension/i18n"
 	"github.com/lichdotdev/lich/internal/events"
 )
 
@@ -65,8 +66,10 @@ type Service struct {
 	dataDir     string
 	lichVersion string
 	env         []string
-	emit        func(name string, data any)
-	timing      timing
+	// language is the tag an extension starts with in extension.LanguageEnv.
+	language func() string
+	emit     func(name string, data any)
+	timing   timing
 
 	// The installer's GitHub reads, fields so tests can serve releases locally.
 	metadata   *http.Client
@@ -94,6 +97,7 @@ type installed struct {
 	root     string
 	exe      string
 	manifest extension.Manifest
+	text     map[string]api.ExtensionText
 	source   source
 	invalid  error
 	stderr   logBudget
@@ -123,6 +127,17 @@ func New(dir, dataDir, lichVersion string, env []string, emit func(name string, 
 		metadata: &http.Client{Timeout: metadataTimeout}, download: &http.Client{Timeout: downloadTimeout},
 		releaseAPI: releaseAPI, goos: runtime.GOOS, goarch: runtime.GOARCH,
 	}
+}
+
+// SetLanguage names where the interface language an extension starts with
+// comes from, before Boot. Without one it starts with English.
+func (s *Service) SetLanguage(language func() string) { s.language = language }
+
+func (s *Service) startLanguage() string {
+	if s.language == nil {
+		return exti18n.Source
+	}
+	return s.language()
 }
 
 // Boot discovers the extensions and starts every valid one.
@@ -264,7 +279,7 @@ func (x *installed) view() api.Extension {
 	return api.Extension{
 		ID: x.id, Name: cmp.Or(x.manifest.Name, x.id), Version: x.manifest.Version,
 		Status: x.status, Error: x.errText, Dir: x.root, Surfaces: surfaces,
-		Source: x.source.URL, Release: x.source.Release,
+		Source: x.source.URL, Release: x.source.Release, Text: x.text,
 	}
 }
 

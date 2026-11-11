@@ -33,6 +33,7 @@ const (
 	modeScript     = "script"
 	modeStderr     = "stderr"
 	modeDataDir    = "data-dir"
+	modeLanguage   = "language"
 
 	readyTitle = "ready"
 )
@@ -66,6 +67,8 @@ func fakeExtension() {
 		_, _ = io.Copy(os.Stdout, script)
 	case modeDataDir:
 		fmt.Println(toastLine(os.Getenv(extension.DataDirEnv)))
+	case modeLanguage:
+		fmt.Println(toastLine("language " + os.Getenv(extension.LanguageEnv)))
 	case modeStderr:
 		fmt.Fprintln(os.Stderr, strings.Repeat("x", maxLogLineBytes+1))
 		for i := range 3 * maxLogLines {

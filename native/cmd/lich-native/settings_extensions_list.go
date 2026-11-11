@@ -119,7 +119,7 @@ func (s *settingsScreen) extensionRowBody(gtx C, th *ui.Theme, e backend.Extensi
 
 // extensionDetails is the name and version over the source line.
 func extensionDetails(gtx C, th *ui.Theme, e backend.Extension) D {
-	name := []layout.FlexChild{layout.Rigid(th.Text(ui.TextSM, e.Name).Weight(font.Medium).Layout)}
+	name := []layout.FlexChild{layout.Rigid(th.Text(ui.TextSM, extensionName(e)).Weight(font.Medium).Layout)}
 	if e.Version != "" {
 		name = append(name, ui.Gap(2), layout.Rigid(th.Text(ui.TextXS, e.Version).Mono().Muted().Layout))
 	}
@@ -175,7 +175,7 @@ func extensionDot(gtx C, th *ui.Theme, status string) D {
 
 // extensionMore is the row's ⋯ and the menu it opens.
 func (s *settingsScreen) extensionMore(gtx C, th *ui.Theme, e backend.Extension, r *extensionRowState, entries []ui.MenuEntry) D {
-	hint := i18n.T("settings.extensionsSettings.rowOptions", i18n.Args{"name": e.Name})
+	hint := i18n.T("settings.extensionsSettings.rowOptions", i18n.Args{"name": extensionName(e)})
 	return th.DropdownMenu(s.root, &r.menu, entries).Layout(gtx, func(gtx C) D {
 		return th.Tooltip(s.root, &r.moreTip, hint).Layout(gtx, func(gtx C) D {
 			b := th.Button(&r.more, "")

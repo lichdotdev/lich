@@ -33,6 +33,13 @@
   },
   {
     "v": 1,
+    "kind": "language",
+    "data": {
+      "tag": "tag"
+    }
+  },
+  {
+    "v": 1,
     "kind": "openExternal",
     "data": {
       "url": "url"
@@ -59,14 +66,16 @@
     "v": 1,
     "kind": "surface.closed",
     "data": {
-      "surface": "surface"
+      "surface": "surface",
+      "language": "language"
     }
   },
   {
     "v": 1,
     "kind": "surface.opened",
     "data": {
-      "surface": "surface"
+      "surface": "surface",
+      "language": "language"
     }
   },
   {

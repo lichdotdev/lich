@@ -153,7 +153,7 @@ func (s *settingsScreen) layoutExtensionDialogs(gtx C, th *ui.Theme) {
 		action: i18n.T("settings.extensionsSettings.remove"),
 		body:   func(gtx C) D { return p.deleteDataRow(gtx, th.On(th.Popover)) }}
 	if t.removal != nil {
-		remove.title = i18n.T("settings.extensionsSettings.removeTitle", i18n.Args{"name": t.removal.Name})
+		remove.title = i18n.T("settings.extensionsSettings.removeTitle", i18n.Args{"name": extensionName(*t.removal)})
 		remove.desc = i18n.T("settings.extensionsSettings.removeDescription")
 	}
 	if pressed, closed := p.confirmDialog(gtx, th, remove); pressed {

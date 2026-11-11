@@ -12,6 +12,7 @@ Each extension is one directory under lich's config directory:
 <config dir>/lich/extensions/<id>/
   manifest.json
   <executable>
+  locales/<tag>/<namespace>.json   (optional, see Translating an extension)
   ...anything else the extension reads
 ```
 
@@ -57,7 +58,8 @@ component and message. Import `github.com/lichdotdev/lich/extension` rather than
 
 - From the extension: `render` (a surface's tree and shortcuts), `toast`, `toast.dismiss`, `openExternal`,
   `clipboard` and `focus`.
-- From lich: `surface.opened`, `surface.closed` and `event` (a handler the tree named fired).
+- From lich: `surface.opened`, `surface.closed`, `event` (a handler the tree named fired) and `language` (see
+  Translating an extension).
 
 Stderr goes to lich's log.
 
@@ -134,6 +136,79 @@ if errors.Is(err, fs.ErrNotExist) {
 	// first run: nothing saved yet
 }
 err = os.WriteFile(filepath.Join(dir, "token"), token, 0o600)
+```
+
+## Translating an extension
+
+An extension translates itself with the catalogs lich uses for its own screens, in the same format. Ship them
+beside the manifest:
+
+```
+locales/en/extension.json
+locales/en/board.json
+locales/pt-br/extension.json
+locales/pt-br/board.json
+```
+
+- A folder is a BCP 47 tag (`en`, `pt-br`, `zh-cn`; case does not matter) and a file is a namespace, a tree of
+  JSON objects read by a dotted key: `board.json` holding `{"empty": {"title": "No cards"}}` is the key
+  `board.empty.title`. English is the source: write `en` first and every other language from it.
+- `{name}` in a message is a placeholder, filled by name. `{` is always one.
+- An object holding `other` is a plural, its keys CLDR forms picked by the int `count`:
+  `{"one": "{count} card", "other": "{count} cards"}`. lich tells apart the forms its own languages use: `one`
+  for English and Spanish (1) and for Portuguese (0 and 1), `one`, `few` and `many` for Russian, and only
+  `other` for Chinese, Japanese and Korean. Every other language reads `other`. Because of this rule, no key in a
+  catalog can be named `other` unless its object is a plural.
+- lich reads the name and each surface's title from the namespace `extension`: `manifest.name` and
+  `manifest.surfaces.<surface id>.title`, so `locales/pt-br/extension.json` is
+  `{"manifest": {"name": "Quadro", "surfaces": {"main": {"title": "Quadro"}}}}`. The top bar and Settings show
+  the one for the interface's language, then English's, then the manifest's own text. A plural there is ignored.
+- Discovery and install read `locales/` and list the extension as invalid, with the reason, when a catalog is
+  not valid JSON or holds something other than strings and objects, when anything inside `locales/` is a link,
+  or past 64 entries in `locales/`, 512 catalogs or 8 MiB of them. Only `.json` files in a language's folder are
+  read.
+
+lich does not translate anything else for the extension: toasts and the tree are the extension's to look up.
+It tells the extension the language its interface is in three ways:
+
+- `LICH_LANGUAGE` (`extension.LanguageEnv`) at start: the language chosen in Settings, or before one is chosen
+  the language of the environment's locale. On macOS and Windows the system's language is not in the
+  environment, so there an unset choice starts as `en` until the window says otherwise.
+- `language` with `{"tag": "pt-BR"}`, to every running extension when the person changes the language, when an
+  extension starts while a window is open, and when a window opens.
+- `language` in every `surface.opened`.
+
+The tag is one lich ships: `en`, `pt-BR`, `es`, `zh-CN`, `ja`, `ko` or `ru`.
+
+`github.com/lichdotdev/lich/extension/i18n` reads the catalogs, with lich's own lookup and plural rules.
+`OpenDir` loads `locales/`, `In(tag, key, args)` answers in a language, falling back to English and then to the
+key itself, and `Language` tracks the current tag:
+
+```go
+import (
+	"github.com/lichdotdev/lich/extension"
+	"github.com/lichdotdev/lich/extension/i18n"
+)
+
+cat, err := i18n.OpenDir(".") // lich starts the extension in its own directory
+if err != nil {
+	log.Fatal(err)
+}
+lang := i18n.FromEnv()
+
+// before any surface opens:
+out(extension.ShowToast.New(extension.ToastData{Title: cat.In(lang.Tag(), "board.synced")}))
+
+// for each message from lich:
+switch d := msg.Data.(type) {
+case extension.SurfaceData:
+	lang.Set(d.Language) // empty on surface.closed, which Set ignores
+case extension.LanguageData:
+	lang.Set(d.Tag)
+	// render the open surface again, in the new language
+}
+
+title := cat.In(lang.Tag(), "board.count", i18n.Args{"count": len(cards)})
 ```
 
 ## What lich enforces

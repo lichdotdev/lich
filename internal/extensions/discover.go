@@ -72,6 +72,9 @@ func load(root, dirName, lichVersion string) *installed {
 	}
 	x := &installed{id: dirName, root: root, source: readSource(root)}
 	x.manifest, x.exe, x.invalid = readManifest(root, dirName, lichVersion)
+	if x.invalid == nil {
+		x.text, x.invalid = readLocales(root, x.manifest)
+	}
 	if x.invalid != nil {
 		x.status, x.errText = statusInvalid, x.invalid.Error()
 		slog.Warn("extensions: invalid", "extension", dirName, "err", x.invalid)

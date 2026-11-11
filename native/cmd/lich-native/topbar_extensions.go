@@ -30,7 +30,7 @@ func surfaceButtons(list []backend.Extension) []surfaceButton {
 			continue
 		}
 		for _, s := range e.Surfaces {
-			out = append(out, surfaceButton{key: extensionKey{e.ID, s.ID}, title: s.Title, icon: s.Icon, status: e.Status})
+			out = append(out, surfaceButton{key: extensionKey{e.ID, s.ID}, title: surfaceTitle(e, s), icon: s.Icon, status: e.Status})
 		}
 	}
 	return out

@@ -14,6 +14,7 @@ var (
 	FireEvent     = kind[EventData]("event")
 	SurfaceOpened = kind[SurfaceData]("surface.opened")
 	SurfaceClosed = kind[SurfaceData]("surface.closed")
+	Language      = kind[LanguageData]("language")
 )
 
 // RenderData replaces what a surface shows. Shortcuts are live while the
@@ -52,9 +53,11 @@ type FocusData struct {
 
 // SurfaceData names a surface the person opened or left. Answer
 // surface.opened with a render: lich keeps only what reaches an open window,
-// so a render sent before the surface opened may never be drawn.
+// so a render sent before the surface opened may never be drawn. Language is
+// the tag of the interface's language, on surface.opened only.
 type SurfaceData struct {
-	Surface string `json:"surface"`
+	Surface  string `json:"surface"`
+	Language string `json:"language,omitempty"`
 }
 
 type ToastButton struct {

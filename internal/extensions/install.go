@@ -20,6 +20,7 @@ import (
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/extension"
+	exti18n "github.com/lichdotdev/lich/extension/i18n"
 	"github.com/lichdotdev/lich/internal/events"
 	"github.com/lichdotdev/lich/internal/ghrelease"
 )
@@ -242,6 +243,9 @@ func (s *Service) checkStage(stage, id string) error {
 	}
 	if err != nil {
 		return fmt.Errorf("the extension's %s is not valid: %w", extension.ManifestFile, err)
+	}
+	if _, err := readLocales(stage, m); err != nil {
+		return fmt.Errorf("the extension's %s are not valid: %w", exti18n.LocalesDir, err)
 	}
 	if err := os.Chmod(exe, 0o755); err != nil {
 		return fmt.Errorf("make the executable runnable: %w", err)

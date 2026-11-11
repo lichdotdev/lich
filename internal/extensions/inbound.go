@@ -58,6 +58,7 @@ var toExtension = map[string]bool{
 	extension.FireEvent.Name:     true,
 	extension.SurfaceOpened.Name: true,
 	extension.SurfaceClosed.Name: true,
+	extension.Language.Name:      true,
 }
 
 // handleLine vets one line of stdout. A bad line is refused and logged, and

@@ -57,25 +57,35 @@ type ExtensionSurface struct {
 	Icon  string `json:"icon,omitempty"`
 }
 
+// ExtensionText is an extension's name and surface titles, by surface id, in
+// one language of its catalogs. What it leaves out reads the manifest's.
+type ExtensionText struct {
+	Name     string            `json:"name,omitempty"`
+	Surfaces map[string]string `json:"surfaces,omitempty"`
+}
+
 // Extension is one directory under lich's extensions directory and where its
 // process is. Name and Surfaces come from its manifest, so they are the
-// extension's own words. Source is the repository or folder it was installed
-// from and Release the repository's tag, both empty for one placed by hand.
+// extension's own words; Text holds their translations, by the tag of each
+// folder of the extension's locales. Source is the repository or folder it
+// was installed from and Release the repository's tag, both empty for one
+// placed by hand.
 type Extension struct {
-	ID       string             `json:"id"`
-	Name     string             `json:"name"`
-	Version  string             `json:"version"`
-	Status   string             `json:"status"`
-	Error    string             `json:"error,omitempty"`
-	Dir      string             `json:"dir"`
-	Surfaces []ExtensionSurface `json:"surfaces"`
-	Source   string             `json:"source,omitempty"`
-	Release  string             `json:"release,omitempty"`
+	ID       string                   `json:"id"`
+	Name     string                   `json:"name"`
+	Version  string                   `json:"version"`
+	Status   string                   `json:"status"`
+	Error    string                   `json:"error,omitempty"`
+	Dir      string                   `json:"dir"`
+	Surfaces []ExtensionSurface       `json:"surfaces"`
+	Source   string                   `json:"source,omitempty"`
+	Release  string                   `json:"release,omitempty"`
+	Text     map[string]ExtensionText `json:"text,omitempty"`
 }
 
 // ExtensionSendOptions writes Message, one line of the extension contract, to
-// the process of extension ID. Only event, surface.opened and surface.closed
-// are accepted.
+// the process of extension ID. Only event, surface.opened, surface.closed and
+// language are accepted.
 type ExtensionSendOptions struct {
 	ID      string          `json:"id"`
 	Message json.RawMessage `json:"message"`

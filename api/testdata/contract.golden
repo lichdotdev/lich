@@ -639,6 +639,7 @@ Extension {
 	surfaces []ExtensionSurface
 	source,omitempty string
 	release,omitempty string
+	text,omitempty map[string]ExtensionText
 }
 
 ExtensionGitInstallOptions {
@@ -2111,6 +2112,11 @@ ExtensionSurface {
 	id string
 	title string
 	icon,omitempty string
+}
+
+ExtensionText {
+	name,omitempty string
+	surfaces,omitempty map[string]string
 }
 
 PatchNotesHighlight {
