@@ -64,7 +64,20 @@
     "dialogFromPage": "Эта страница сообщает",
     "dialogOK": "ОК",
     "dialogStay": "Остаться",
-    "dialogLeave": "Покинуть"
+    "dialogLeave": "Покинуть",
+    "cursorClick": "Кликает",
+    "cursorType": "Печатает",
+    "cursorPress": "Нажимает клавишу",
+    "cursorScroll": "Прокручивает",
+    "cursorNavigate": "Переходит",
+    "cursorReload": "Обновляет",
+    "cursorBack": "Идёт назад",
+    "cursorForward": "Идёт вперёд",
+    "cursorAccept": "Принимает диалог",
+    "cursorDismiss": "Отклоняет диалог",
+    "cursorTabNew": "Открывает вкладку",
+    "cursorTabSelect": "Переключает вкладку",
+    "cursorTabClose": "Закрывает вкладку"
   },
   "split": {
     "noRoom": "Здесь нет места для ещё одной панели. Сделайте окно шире или сначала уберите панель."

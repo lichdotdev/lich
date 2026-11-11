@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Extensions can be translated. An extension that ships translations shows its name and screen titles in your interface language, in the top bar and Settings › Extensions, and is told which language that is, at start and whenever you change it, so its own screens and messages can follow. Extension authors get lich's translation format and a Go package to read it; see Translating an extension in `docs/extensions.md`.
 - Extensions can read and act on lich: list your projects, their worktrees and your sessions, open a session, give one a task and hear when a session changes state, the way your agents do through lich's tools. An extension asks over the same channel it draws through and only for what its manifest lists, and the Go package `extension` carries a client that does the bookkeeping. See [Writing a lich extension](docs/extensions.md#calling-lich).
 
+### Changed
+
+- The badge beside the agent's cursor in a session's browser says what the agent is doing, Clicking, Typing, Scrolling, Navigating and so on, where it named the provider, which the session already tells you. It keeps the provider's icon, stays for a moment after each action and then leaves the arrow alone while the agent thinks. Applies to every provider.
+
 ### Fixed
 
 - A fenced code block in a pull request's description or a comment showed twice.

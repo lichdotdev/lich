@@ -14,15 +14,16 @@ import (
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
 
+	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
 // The agent's pointer over its page: lich's own arrow, in the session's card
 // color or the theme's primary, outlined in primary-foreground so it reads
-// over any page, with a badge naming the provider. It glides to each click,
+// over any page, with a badge naming what it is doing. It glides to each click,
 // dips, rings, and fades once the agent goes quiet. Timings from the approved
-// mockup (2026-10-26).
+// mockups (2026-10-26, the badge's 2026-11-11).
 const (
 	cursorGlide = 280 * time.Millisecond
 	cursorDip   = 170 * time.Millisecond
@@ -37,6 +38,11 @@ const (
 	// and played whole the cursor fell seconds behind the page, pointing at
 	// where fields had been before the page scrolled.
 	cursorCatchUp = 0.4
+	// cursorBadgeHold is how long the badge goes on naming an action after
+	// it played, so a run of actions swaps its text instead of blinking, and
+	// an agent that stopped to think is not said to be clicking.
+	cursorBadgeHold = 900 * time.Millisecond
+	cursorBadgeFade = 150 * time.Millisecond
 )
 
 // cursorShadow is the drop shadow under the arrow, the mockup's 35% black.
@@ -209,6 +215,46 @@ func (c *agentCursor) played() time.Time {
 	return c.landing().Add(c.span(cursorDip))
 }
 
+// badgeAlpha is the badge's opacity at now: whole while its action plays and
+// for cursorBadgeHold after, then fading out over cursorBadgeFade.
+func (c *agentCursor) badgeAlpha(now time.Time) float32 {
+	return 1 - progress(now.Sub(c.played())-cursorBadgeHold, cursorBadgeFade)
+}
+
+// cursorVerb is what the badge says while the cursor plays action, empty for
+// one the cursor does not play.
+func cursorVerb(action string) string {
+	switch action {
+	case "click":
+		return i18n.T("layouts.browser.cursorClick")
+	case "type":
+		return i18n.T("layouts.browser.cursorType")
+	case "press":
+		return i18n.T("layouts.browser.cursorPress")
+	case "scroll":
+		return i18n.T("layouts.browser.cursorScroll")
+	case "navigate":
+		return i18n.T("layouts.browser.cursorNavigate")
+	case "reload":
+		return i18n.T("layouts.browser.cursorReload")
+	case "back":
+		return i18n.T("layouts.browser.cursorBack")
+	case "forward":
+		return i18n.T("layouts.browser.cursorForward")
+	case "accept":
+		return i18n.T("layouts.browser.cursorAccept")
+	case "dismiss":
+		return i18n.T("layouts.browser.cursorDismiss")
+	case "tab-new":
+		return i18n.T("layouts.browser.cursorTabNew")
+	case "tab-select":
+		return i18n.T("layouts.browser.cursorTabSelect")
+	case "tab-close":
+		return i18n.T("layouts.browser.cursorTabClose")
+	}
+	return ""
+}
+
 // settled is when nothing about the cursor moves any more until it fades.
 func (c *agentCursor) settled() time.Time {
 	end := c.played()
@@ -251,9 +297,9 @@ func arrowPath(ops *op.Ops, unit float32) clip.PathSpec {
 }
 
 // drawAgentCursor draws c over its pane, in tint with outline around it, the
-// badge naming provider with its icon. It asks for the frames its motion
-// needs.
-func (u *window) drawAgentCursor(gtx C, c *agentCursor, tint, outline color.NRGBA, provider string, icon *icons.Icon) {
+// badge naming its action beside the provider's icon. It asks for the frames
+// its motion needs.
+func (u *window) drawAgentCursor(gtx C, c *agentCursor, tint, outline color.NRGBA, icon *icons.Icon) {
 	now := gtx.Now
 	a := c.alpha(now)
 	if a <= 0 {
@@ -285,15 +331,33 @@ func (u *window) drawAgentCursor(gtx C, c *agentCursor, tint, outline color.NRGB
 	paint.FillShape(gtx.Ops, tint, clip.Outline{Path: arrowPath(gtx.Ops, unit)}.Op())
 	paint.FillShape(gtx.Ops, outline, clip.Stroke{Path: arrowPath(gtx.Ops, unit), Width: 1.6 * unit}.Op())
 	place.Pop()
-	badge := op.Offset(image.Pt(int(at.X)+gtx.Dp(12), int(at.Y)+gtx.Dp(15))).Push(gtx.Ops)
-	u.cursorBadge(gtx, tint, outline, provider, icon)
-	badge.Pop()
-	// A busy cursor waits for the turn's end, whose status event redraws.
+	if verb, shown := cursorVerb(c.action), c.badgeAlpha(now); verb != "" && shown > 0 {
+		badge := op.Offset(image.Pt(int(at.X)+gtx.Dp(12), int(at.Y)+gtx.Dp(15))).Push(gtx.Ops)
+		fade := paint.PushOpacity(gtx.Ops, shown)
+		u.cursorBadge(gtx, tint, outline, verb, icon)
+		fade.Pop()
+		badge.Pop()
+	}
+	c.askFrames(gtx)
+}
+
+// askFrames asks for the frames the cursor's motion needs after this one:
+// every frame while something moves or fades, else one when the badge's or
+// the cursor's hold runs out. A busy cursor with nothing left to play waits
+// for the turn's end, whose status event redraws.
+func (c *agentCursor) askFrames(gtx C) {
+	now := gtx.Now
+	badgeFades := c.played().Add(cursorBadgeHold)
+	fades := c.last.Add(agentHold)
 	switch {
-	case now.Before(c.settled()) || len(c.pending) > 0 || !c.busy && c.last.Add(agentHold).Before(now):
+	case now.Before(c.settled()) || len(c.pending) > 0 || !c.busy && fades.Before(now):
 		gtx.Execute(op.InvalidateCmd{})
+	case !now.Before(badgeFades) && now.Before(badgeFades.Add(cursorBadgeFade)):
+		gtx.Execute(op.InvalidateCmd{})
+	case now.Before(badgeFades) && (c.busy || badgeFades.Before(fades)):
+		gtx.Execute(op.InvalidateCmd{At: badgeFades})
 	case !c.busy:
-		gtx.Execute(op.InvalidateCmd{At: c.last.Add(agentHold)})
+		gtx.Execute(op.InvalidateCmd{At: fades})
 	}
 }
 
@@ -336,9 +400,9 @@ func drawScrollChevrons(gtx C, at f32.Point, landed, span time.Duration, dir int
 	}
 }
 
-// cursorBadge is the pill beside the arrow: the provider's icon and name in
-// ink on tint, outlined like the arrow.
-func (u *window) cursorBadge(gtx C, tint, outline color.NRGBA, provider string, icon *icons.Icon) {
+// cursorBadge is the pill beside the arrow: the provider's icon and what the
+// cursor is doing in ink on tint, outlined like the arrow.
+func (u *window) cursorBadge(gtx C, tint, outline color.NRGBA, verb string, icon *icons.Icon) {
 	th := u.theme.On(tint)
 	fg := inkOn(tint, outline)
 	gtx.Constraints.Min = image.Point{}
@@ -348,7 +412,7 @@ func (u *window) cursorBadge(gtx C, tint, outline color.NRGBA, provider string, 
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Rigid(func(gtx C) D { return icon.Layout(gtx, ui.Space(3), fg) }),
 			ui.Gap(1),
-			layout.Rigid(th.Text(ui.TextXS, provider).In(fg).Weight(font.Medium).Layout),
+			layout.Rigid(th.Text(ui.TextXS, verb).In(fg).Weight(font.Medium).Layout),
 		)
 	})
 	call := rec.Stop()

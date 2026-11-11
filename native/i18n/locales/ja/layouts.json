@@ -55,7 +55,20 @@
     "dialogFromPage": "このページの内容",
     "dialogOK": "OK",
     "dialogStay": "留まる",
-    "dialogLeave": "移動する"
+    "dialogLeave": "移動する",
+    "cursorClick": "クリック中",
+    "cursorType": "入力中",
+    "cursorPress": "キーを押下中",
+    "cursorScroll": "スクロール中",
+    "cursorNavigate": "移動中",
+    "cursorReload": "再読み込み中",
+    "cursorBack": "前のページに戻り中",
+    "cursorForward": "次のページに進み中",
+    "cursorAccept": "ダイアログを承認中",
+    "cursorDismiss": "ダイアログを却下中",
+    "cursorTabNew": "タブを開いています",
+    "cursorTabSelect": "タブを切り替え中",
+    "cursorTabClose": "タブを閉じています"
   },
   "split": {
     "noRoom": "ここには別のペインを置く余裕がありません。ウィンドウを広げるか、先にペインを外してください。"
