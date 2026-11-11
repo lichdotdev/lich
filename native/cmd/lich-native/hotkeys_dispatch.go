@@ -51,7 +51,7 @@ var hotkeyHandlers = map[hotkeyID]hotkeyHandler{
 	hotkeyToggleGit:          {(*window).hasProject, func(u *window, _ C) { u.git.open = !u.git.open }},
 	hotkeyPulls:              {(*window).hasProject, func(u *window, _ C) { u.togglePulls() }},
 	hotkeyShortcuts:          {nil, (*window).hotkeyShortcuts},
-	hotkeyTour:               {nil, func(u *window, _ C) { u.startTour() }},
+	hotkeyTour:               {nil, func(u *window, _ C) { u.startGuide(basicsID) }},
 	hotkeyCommandPalette:     {nil, (*window).hotkeyPalette},
 	hotkeyQuit:               {nil, func(u *window, _ C) { go u.askOrQuit(closeAsk) }},
 }

@@ -25,26 +25,52 @@ func TestFirstTourOpensOnlyAfterAFirstRunSetup(t *testing.T) {
 	}
 }
 
-// The step keys live in a table, out of the literal-key scan's sight, so
-// they are checked here.
-func TestEveryBasicsStepNamesKeysInTheCatalog(t *testing.T) {
-	check := func(key string) {
+// The guides' keys live in tables, out of the literal-key scan's sight, so
+// they are checked here, for every guide registered.
+func TestEveryGuideNamesKeysInTheCatalog(t *testing.T) {
+	check := func(g *guide, key string) {
 		if key != "" && i18n.T(key) == key {
-			t.Errorf("%q is not in the catalog", key)
+			t.Errorf("guide %s: %q is not in the catalog", g.id, key)
 		}
 	}
-	for i, s := range basicsTour {
-		for _, w := range []*tourText{&s.text, s.shell} {
-			if w == nil {
-				continue
+	for _, g := range guides {
+		check(g, g.label)
+		check(g, g.unavailable)
+		if (g.ready != nil) != (g.unavailable != "") {
+			t.Errorf("guide %s: a guide that can be unavailable says why, and only then", g.id)
+		}
+		for i, s := range g.steps {
+			for _, w := range []*tourText{&s.text, s.shell} {
+				if w == nil {
+					continue
+				}
+				check(g, w.title)
+				check(g, w.body)
+				check(g, w.hint)
 			}
-			check(w.title)
-			check(w.body)
-			check(w.hint)
+			if (s.until != nil) != (s.text.hint != "") {
+				t.Errorf("guide %s, step %d: a hint names the action a waiting step expects, and only one", g.id, i)
+			}
+			if s.anchor == "" && s.until != nil {
+				t.Errorf("guide %s, step %d: a step that waits for an action points at where to do it", g.id, i)
+			}
 		}
-		if (s.until != nil) != (s.text.hint != "") {
-			t.Errorf("step %d: a hint names the action a waiting step expects, and only one", i)
+	}
+}
+
+func TestGuidesAreUniqueAndBasicsComesFirst(t *testing.T) {
+	ids, orders := map[string]bool{}, map[int]bool{}
+	for _, g := range guides {
+		if ids[g.id] || orders[g.order] {
+			t.Errorf("guide %s: its id or order is taken", g.id)
 		}
+		ids[g.id], orders[g.order] = true, true
+		if len(g.steps) == 0 {
+			t.Errorf("guide %s has no steps", g.id)
+		}
+	}
+	if len(guides) == 0 || guides[0].id != basicsID {
+		t.Fatal("the Guides menu does not open with the basics")
 	}
 }
 

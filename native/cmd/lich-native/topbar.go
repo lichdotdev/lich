@@ -97,7 +97,7 @@ type topbarAction struct {
 	// settings is the menu's Settings; projectSettings a tab's "Project
 	// settings…", by project id. tour is the menu's Basics guide.
 	settings        bool
-	tour            bool
+	tour            string // a guide's id
 	projectSettings string
 	pulls           bool // the Pull requests button
 	// renamed is a layout tab's new name, committed this frame.
@@ -128,6 +128,7 @@ type topbarFrame struct {
 	active         string
 	pending        []notification
 	settings       bool // the Settings screen is open
+	guides         []guideItem
 	pulls          bool // the Pulls screen is open
 	caption        captionLayout
 	chrome         windowChrome
@@ -199,7 +200,7 @@ func (t *topbar) rightSide(gtx C, th *ui.Theme, f topbarFrame, act *topbarAction
 		ui.Gap(1),
 		layout.Rigid(func(gtx C) D { return t.pullsButton(gtx, th, f.pulls, act) }),
 		ui.Gap(1),
-		layout.Rigid(func(gtx C) D { return t.menuButton(gtx, th, f.settings, act) }),
+		layout.Rigid(func(gtx C) D { return t.menuButton(gtx, th, f.settings, f.guides, act) }),
 	}
 	pad := gtx.Dp(gutter)
 	if f.chrome.buttonsShown(f.windowButtons) && len(f.caption.right) > 0 {
@@ -293,12 +294,11 @@ func brandColumn(rail, panel int, open, morphing bool, p float32) (int, float32)
 
 // menuButton is the strip's menu: Settings, which closes Settings while it
 // is open, and the guides in a submenu. The button is lit while Settings is.
-func (t *topbar) menuButton(gtx C, th *ui.Theme, settingsOpen bool, act *topbarAction) D {
+func (t *topbar) menuButton(gtx C, th *ui.Theme, settingsOpen bool, guides []guideItem, act *topbarAction) D {
 	entries := []ui.MenuEntry{
 		{Label: i18n.T("tabs.projectTabs.settings"), Icon: icSettings, OnClick: func() { act.settings = true }},
-		{Kind: ui.MenuSubTrigger, Label: i18n.T("tabs.mainMenu.guides"), Icon: icGuides, Sub: []ui.MenuEntry{
-			{Label: i18n.T("tabs.mainMenu.basics"), OnClick: func() { act.tour = true }},
-		}},
+		{Kind: ui.MenuSeparator},
+		{Kind: ui.MenuSubTrigger, Label: i18n.T("tabs.mainMenu.guides"), Icon: icGuides, Sub: guideEntries(guides, act)},
 	}
 	tip := th.Tooltip(t.root, t.hint("menu"), i18n.T("tabs.mainMenu.open"))
 	tip.Side = ui.SideBottom
@@ -306,6 +306,16 @@ func (t *topbar) menuButton(gtx C, th *ui.Theme, settingsOpen bool, act *topbarA
 		return tip.Layout(gtx, th.BarIconButton(&t.menuOpen, icMainMenu, settingsOpen || t.menu.Opened()).Layout)
 	}
 	return t.tour.Anchor(gtx, tourMenu, func(gtx C) D { return th.DropdownMenu(t.root, &t.menu, entries).Layout(gtx, button) })
+}
+
+// guideEntries is the Guides submenu: a guide that cannot run now is
+// disabled, its reason where a shortcut would sit.
+func guideEntries(guides []guideItem, act *topbarAction) []ui.MenuEntry {
+	entries := make([]ui.MenuEntry, len(guides))
+	for i, g := range guides {
+		entries[i] = ui.MenuEntry{Label: g.label, Disabled: g.unavailable != "", Shortcut: g.unavailable, OnClick: func() { act.tour = g.id }}
+	}
+	return entries
 }
 
 // pullsButton opens the Pulls screen, and closes it while it is open.

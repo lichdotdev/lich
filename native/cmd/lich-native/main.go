@@ -833,7 +833,7 @@ func (u *window) topbarFrame(gtx C, v stageView, edge int) topbarFrame {
 		brandWidth: width, brandName: name, stripX: edge, island: u.islandColor(v),
 		tabs: v.strip, active: v.stripActive, pending: u.model.notifications(),
 		caption: u.caption.Load().under(u.settings.look.prefs.windowButtons), chrome: u.chrome,
-		windowButtons: u.settings.look.prefs.windowButtons,
+		windowButtons: u.settings.look.prefs.windowButtons, guides: u.guideItems(),
 	}
 	// Settings is no project's screen, so no tab merges into it.
 	if u.settings.open {

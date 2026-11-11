@@ -4,6 +4,7 @@ import (
 	"image"
 	"image/color"
 	"log"
+	"slices"
 	"sync/atomic"
 	"time"
 
@@ -22,16 +23,6 @@ import (
 // tourSeenKey is the global setting set once the first-run tour has ended,
 // finished or skipped, so it never opens by itself again.
 const tourSeenKey = "tour.basics.seen"
-
-// The widgets the Basics tour points at.
-const (
-	tourOpen     = "open"
-	tourNewEmpty = "newEmpty"
-	tourStage    = "stage"
-	tourSession  = "session"
-	tourNew      = "new"
-	tourMenu     = "menu"
-)
 
 // tourPopoverWidth is the mockup's 320px popover.
 var tourPopoverWidth = ui.Space(80)
@@ -57,23 +48,58 @@ type tourStep struct {
 	until  func(u *window) bool
 }
 
-var basicsTour = []tourStep{
-	{anchor: tourOpen, side: driver.Bottom, until: (*window).tourProjectOpen,
-		text: tourText{"tour.basics.open.title", "tour.basics.open.body", "tour.basics.open.hint"}},
-	{anchor: tourNewEmpty, side: driver.Bottom, until: (*window).tourSessionOpen,
-		text:  tourText{"tour.basics.start.title", "tour.basics.start.body", "tour.basics.start.hint"},
-		shell: &tourText{"tour.basics.startShell.title", "tour.basics.startShell.body", "tour.basics.startShell.hint"}},
-	{anchor: tourStage, side: driver.Right,
-		text:  tourText{"tour.basics.stage.title", "tour.basics.stage.body", ""},
-		shell: &tourText{"tour.basics.stageShell.title", "tour.basics.stageShell.body", ""}},
-	{anchor: tourSession, side: driver.Right, text: tourText{"tour.basics.session.title", "tour.basics.session.body", ""}},
-	{anchor: tourNew, side: driver.Right, text: tourText{"tour.basics.worktree.title", "tour.basics.worktree.body", ""}},
-	{anchor: tourMenu, side: driver.Bottom, text: tourText{"tour.basics.menu.title", "tour.basics.menu.body", ""}},
+// guide is one tour of the Guides menu.
+type guide struct {
+	// id names the guide for the menu and the palette; order sorts the menu.
+	id    string
+	order int
+	// label is the menu entry's catalog key.
+	label string
+	steps []tourStep
+	// ready, when set, is whether the guide can run in the window as it is;
+	// when it cannot, the menu shows it disabled with unavailable, a key.
+	ready       func(u *window) bool
+	unavailable string
+}
+
+// guides is every guide, in menu order; each guide_*.go registers its own.
+var guides []*guide
+
+func registerGuide(g *guide) {
+	guides = append(guides, g)
+	slices.SortStableFunc(guides, func(a, b *guide) int { return a.order - b.order })
+}
+
+func guideByID(id string) *guide {
+	for _, g := range guides {
+		if g.id == id {
+			return g
+		}
+	}
+	return nil
+}
+
+// guideItem is a guide as the menu shows it, its words read this frame.
+type guideItem struct {
+	id, label, unavailable string
+}
+
+func (u *window) guideItems() []guideItem {
+	items := make([]guideItem, len(guides))
+	for i, g := range guides {
+		items[i] = guideItem{id: g.id, label: i18n.T(g.label)}
+		if g.ready != nil && !g.ready(u) {
+			items[i].unavailable = i18n.T(g.unavailable)
+		}
+	}
+	return items
 }
 
 // windowTour is the window's guided tour and when it opens by itself.
 type windowTour struct {
 	driver.Tour
+	// guide is the one running or last run.
+	guide *guide
 	// offered is the first-run check made; due asks the next frame to start.
 	offered bool
 	due     atomic.Bool
@@ -93,7 +119,7 @@ func decideFirstTour(setupShown, setupDone bool, seen string) bool {
 func (u *window) frameTour(gtx C) {
 	u.offerTour()
 	if u.tour.due.CompareAndSwap(true, false) {
-		u.startTour()
+		u.startGuide(basicsID)
 	}
 	for {
 		e, ok := u.tour.Update(gtx)
@@ -128,24 +154,28 @@ func (u *window) offerTour() {
 	}()
 }
 
-// startTour opens the Basics tour from its first step; a step whose action
-// is already done moves on by itself.
-func (u *window) startTour() {
-	steps := make([]driver.Step, len(basicsTour))
-	for i, s := range basicsTour {
+// startGuide opens the guide named id from its first step; a step whose
+// action is already done moves on by itself.
+func (u *window) startGuide(id string) {
+	g := guideByID(id)
+	if g == nil {
+		return
+	}
+	steps := make([]driver.Step, len(g.steps))
+	for i, s := range g.steps {
 		steps[i] = driver.Step{Anchor: s.anchor, Side: s.side}
 		if s.until != nil {
 			steps[i].Until = func() bool { return s.until(u) }
 		}
 	}
-	u.tour.Steps, u.tour.Popover = steps, u.tourPopover
+	u.tour.guide, u.tour.Steps, u.tour.Popover = g, steps, u.tourPopover
 	u.tour.Spotlight = driver.Spotlight{Scrim: ui.Alpha(color.NRGBA{A: 0xff}, tourScrim), Padding: ui.Space(1.5), Radius: ui.RadiusLG, Offset: ui.Space(2), Margin: ui.Space(2)}
 	u.tour.Motion = &tourMotion
 	u.tour.Start()
 }
 
-// tourEnded remembers the tour as seen and, when it was skipped, says where
-// to find it again.
+// tourEnded remembers the first-run tour as seen and, when a tour was
+// skipped, says where to find it again.
 func (u *window) tourEnded(e driver.Event) {
 	go func() {
 		if err := u.client.SetSetting(u.ctx, tourSeenKey, "", "1"); err != nil {
@@ -169,7 +199,7 @@ func (u *window) spot(gtx C, id string, w layout.Widget) D { return u.tour.Ancho
 
 // tourWords is step's text, the terminal's when no agent is on PATH.
 func (u *window) tourWords(step int) tourText {
-	s := basicsTour[step]
+	s := u.tour.guide.steps[step]
 	if s.shell != nil && u.model.newSessionKind() == "shell" {
 		return *s.shell
 	}
