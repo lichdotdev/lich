@@ -18,6 +18,9 @@ type (
 	FontWeight      string
 	MenuEntryKind   string
 	ToastVariant    string
+	Anchor          string
+	ImageFit        string
+	DiffSide        string
 )
 
 const (
@@ -93,6 +96,25 @@ const (
 	MenuSeparator    MenuEntryKind = "separator"
 	MenuSwatch       MenuEntryKind = "swatch"
 
+	AnchorTopLeft     Anchor = "top-left"
+	AnchorTop         Anchor = "top"
+	AnchorTopRight    Anchor = "top-right"
+	AnchorLeft        Anchor = "left"
+	AnchorCenter      Anchor = "center"
+	AnchorRight       Anchor = "right"
+	AnchorBottomLeft  Anchor = "bottom-left"
+	AnchorBottom      Anchor = "bottom"
+	AnchorBottomRight Anchor = "bottom-right"
+
+	ImageContain   ImageFit = "contain"
+	ImageCover     ImageFit = "cover"
+	ImageFill      ImageFit = "fill"
+	ImageScaleDown ImageFit = "scale-down"
+	ImageUnscaled  ImageFit = "unscaled"
+
+	DiffOld DiffSide = "old"
+	DiffNew DiffSide = "new"
+
 	ToastDefault ToastVariant = "default"
 	ToastSuccess ToastVariant = "success"
 	ToastInfo    ToastVariant = "info"
@@ -120,6 +142,9 @@ func EnumValues() map[string][]string {
 		"fontWeight":      values(FontRegular, FontMedium, FontSemibold),
 		"menuEntryKind":   values(MenuItem, MenuCheckboxItem, MenuRadioItem, MenuSubTrigger, MenuLabel, MenuSeparator, MenuSwatch),
 		"toastVariant":    values(ToastDefault, ToastSuccess, ToastInfo, ToastWarning, ToastError),
+		"anchor":          values(AnchorTopLeft, AnchorTop, AnchorTopRight, AnchorLeft, AnchorCenter, AnchorRight, AnchorBottomLeft, AnchorBottom, AnchorBottomRight),
+		"imageFit":        values(ImageContain, ImageCover, ImageFill, ImageScaleDown, ImageUnscaled),
+		"diffSide":        values(DiffOld, DiffNew),
 	}
 }
 

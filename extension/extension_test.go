@@ -14,8 +14,9 @@ import (
 var update = flag.Bool("update", false, "rewrite testdata/ from the declared components and messages")
 
 // fill sets every field of v, so a field nobody wrote an example for still
-// reaches the golden. A string holds its JSON name. A type nested in itself
-// (a menu's submenu) stops at the second level.
+// reaches the golden. A string holds its JSON name, and a map holds one entry
+// keyed by that name. A type nested in itself (a menu's submenu) stops at the
+// second level.
 func fill(v reflect.Value, name string, parents ...reflect.Type) {
 	if slices.Contains(parents, v.Type()) {
 		return
@@ -34,6 +35,13 @@ func fill(v reflect.Value, name string, parents ...reflect.Type) {
 		v.SetBool(true)
 	case reflect.Int:
 		v.SetInt(1)
+	case reflect.Uint8:
+		v.SetUint(1)
+	case reflect.Map:
+		v.Set(reflect.MakeMap(v.Type()))
+		value := reflect.New(v.Type().Elem()).Elem()
+		fill(value, name, parents...)
+		v.SetMapIndex(reflect.ValueOf(name).Convert(v.Type().Key()), value)
 	case reflect.Float64:
 		v.SetFloat(1.5)
 	case reflect.Pointer:

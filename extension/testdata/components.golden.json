@@ -1,11 +1,67 @@
 [
   {
+    "type": "abbrBadge",
+    "key": "key",
+    "props": {
+      "abbr": "abbr",
+      "background": "background",
+      "foreground": "foreground"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "alignEnd",
+    "key": "key",
+    "props": {},
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "avatar",
+    "key": "key",
+    "props": {
+      "image": "AQ==",
+      "initial": "initial",
+      "size": 1.5,
+      "background": "background",
+      "foreground": "foreground"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
     "type": "barIconButton",
     "key": "key",
     "props": {
       "icon": "icon",
       "on": true,
       "onPress": "onPress"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "beatingDot",
+    "key": "key",
+    "props": {
+      "color": "color"
     },
     "children": [
       {
@@ -52,6 +108,20 @@
     ]
   },
   {
+    "type": "boxIcon",
+    "key": "key",
+    "props": {
+      "icon": "icon",
+      "color": "color"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
     "type": "busyRing",
     "key": "key",
     "props": {
@@ -86,12 +156,88 @@
     ]
   },
   {
+    "type": "captionDivider",
+    "key": "key",
+    "props": {
+      "inset": 1.5,
+      "height": 1.5
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "cardIconButton",
+    "key": "key",
+    "props": {
+      "icon": "icon",
+      "size": 1.5,
+      "turn": 1.5,
+      "onPress": "onPress"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "centeredIcon",
+    "key": "key",
+    "props": {
+      "name": "name",
+      "size": 1.5,
+      "color": "color"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "checkRow",
+    "key": "key",
+    "props": {
+      "checked": true,
+      "label": "label",
+      "note": "note",
+      "onChange": "onChange"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
     "type": "checkbox",
     "key": "key",
     "props": {
       "checked": true,
       "disabled": true,
       "onChange": "onChange"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "checker",
+    "key": "key",
+    "props": {
+      "width": 1.5,
+      "height": 1.5,
+      "cell": 1.5
     },
     "children": [
       {
@@ -117,10 +263,47 @@
     ]
   },
   {
+    "type": "codeView",
+    "key": "key",
+    "props": {
+      "filename": "filename",
+      "text": "text",
+      "size": 1.5,
+      "blocks": [
+        {
+          "after": 1,
+          "content": {
+            "type": "separator",
+            "props": {}
+          }
+        }
+      ]
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
     "type": "collapse",
     "key": "key",
     "props": {
       "open": true
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "columns",
+    "key": "key",
+    "props": {
+      "gap": 1.5
     },
     "children": [
       {
@@ -181,6 +364,88 @@
     ]
   },
   {
+    "type": "cornerDot",
+    "key": "key",
+    "props": {
+      "color": "color"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "countBadge",
+    "key": "key",
+    "props": {
+      "count": 1
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "dashedBorder",
+    "key": "key",
+    "props": {
+      "width": 1.5,
+      "height": 1.5,
+      "radius": 1.5,
+      "color": "color",
+      "dashLength": 1.5,
+      "gapLength": 1.5
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "dashedCircle",
+    "key": "key",
+    "props": {
+      "x": 1.5,
+      "y": 1.5,
+      "outer": 1.5,
+      "stroke": 1.5,
+      "dash": 1.5,
+      "color": "color"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "dashedRing",
+    "key": "key",
+    "props": {
+      "x": 1.5,
+      "y": 1.5,
+      "width": 1.5,
+      "height": 1.5,
+      "radius": 1.5,
+      "strokeWidth": 1.5,
+      "color": "color",
+      "halo": "halo"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
     "type": "dialog",
     "key": "key",
     "props": {
@@ -213,6 +478,109 @@
     "props": {
       "added": 1,
       "deleted": 1
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "diffView",
+    "key": "key",
+    "props": {
+      "patch": "patch",
+      "split": true,
+      "height": 1.5,
+      "size": 1.5,
+      "blocks": [
+        {
+          "key": "key",
+          "side": "side",
+          "line": 1,
+          "content": {
+            "type": "separator",
+            "props": {}
+          }
+        }
+      ]
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "donutGauge",
+    "key": "key",
+    "props": {
+      "size": 1.5,
+      "percent": 1,
+      "color": "color"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "dot",
+    "key": "key",
+    "props": {
+      "color": "color",
+      "size": 1.5
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "dotAt",
+    "key": "key",
+    "props": {
+      "x": 1.5,
+      "y": 1.5,
+      "radius": 1.5,
+      "color": "color"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "dropHint",
+    "key": "key",
+    "props": {
+      "icon": "icon",
+      "before": "before",
+      "label": "label",
+      "after": "after",
+      "detail": "detail"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "dropTray",
+    "key": "key",
+    "props": {
+      "fill": "fill",
+      "edge": "edge"
     },
     "children": [
       {
@@ -276,6 +644,151 @@
     ]
   },
   {
+    "type": "emptyState",
+    "key": "key",
+    "props": {
+      "icon": "icon",
+      "title": "title",
+      "description": "description",
+      "iconSize": 1.5,
+      "iconGap": 1.5,
+      "descriptionGap": 1.5,
+      "actionsGap": 1.5,
+      "titleSize": 1.5,
+      "descriptionSize": 1.5,
+      "titleLeading": 1.5,
+      "titleWeight": "titleWeight",
+      "maxLines": 1,
+      "anchor": "anchor",
+      "align": "align",
+      "pad": 1.5
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "fileIcon",
+    "key": "key",
+    "props": {
+      "path": "path",
+      "size": 1.5
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "fileTree",
+    "key": "key",
+    "props": {
+      "paths": [
+        "paths"
+      ],
+      "stats": {
+        "stats": {
+          "added": 1,
+          "deleted": 1
+        }
+      },
+      "selected": "selected",
+      "closedPaths": [
+        "closedPaths"
+      ],
+      "onSelect": "onSelect",
+      "onToggle": "onToggle"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "fillIf",
+    "key": "key",
+    "props": {
+      "color": "color",
+      "radius": 1.5
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "fillRRect",
+    "key": "key",
+    "props": {
+      "x": 1.5,
+      "y": 1.5,
+      "width": 1.5,
+      "height": 1.5,
+      "radius": 1.5,
+      "color": "color"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "fillRow",
+    "key": "key",
+    "props": {
+      "width": 1.5,
+      "height": 1.5,
+      "alpha": 1.5
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "fillet",
+    "key": "key",
+    "props": {
+      "x": 1.5,
+      "y": 1.5,
+      "radius": 1.5,
+      "right": true,
+      "color": "color"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "fixedColumn",
+    "key": "key",
+    "props": {
+      "width": 1.5
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
     "type": "footnote",
     "key": "key",
     "props": {
@@ -297,6 +810,109 @@
       "weight": "weight",
       "uppercase": true,
       "disabled": true
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "gaugeBar",
+    "key": "key",
+    "props": {
+      "percent": 1,
+      "tone": "tone"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "gaugeRow",
+    "key": "key",
+    "props": {
+      "labelWidth": 1.5,
+      "readingWidth": 1.5,
+      "leftWidth": 1.5,
+      "label": {
+        "type": "separator",
+        "props": {}
+      },
+      "bar": {
+        "type": "separator",
+        "props": {}
+      },
+      "reading": {
+        "type": "separator",
+        "props": {}
+      },
+      "left": {
+        "type": "separator",
+        "props": {}
+      }
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "ghostIconButton",
+    "key": "key",
+    "props": {
+      "icon": "icon",
+      "hint": "hint",
+      "disabled": true,
+      "onPress": "onPress"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "ghostTextButton",
+    "key": "key",
+    "props": {
+      "label": "label",
+      "color": "color",
+      "onPress": "onPress"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "hollowDot",
+    "key": "key",
+    "props": {
+      "color": "color"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "hoverLink",
+    "key": "key",
+    "props": {
+      "text": "text",
+      "onPress": "onPress"
     },
     "children": [
       {
@@ -337,6 +953,61 @@
     ]
   },
   {
+    "type": "iconLabel",
+    "key": "key",
+    "props": {
+      "icon": "icon",
+      "glyph": "glyph",
+      "label": {
+        "text": "text",
+        "size": 1.5,
+        "color": "color",
+        "weight": "weight",
+        "mono": true,
+        "maxLines": 1,
+        "lineHeight": 1.5,
+        "align": "align"
+      }
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "iconLine",
+    "key": "key",
+    "props": {
+      "icon": "icon",
+      "color": "color"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "image",
+    "key": "key",
+    "props": {
+      "data": "AQ==",
+      "fit": "fit",
+      "position": "position",
+      "width": 1.5,
+      "height": 1.5
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
     "type": "inlineEdit",
     "key": "key",
     "props": {
@@ -346,6 +1017,33 @@
       "padRight": 1.5,
       "onCommit": "onCommit",
       "onCancel": "onCancel"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "inlineEmptyState",
+    "key": "key",
+    "props": {
+      "icon": "icon",
+      "title": "title",
+      "description": "description",
+      "iconSize": 1.5,
+      "iconGap": 1.5,
+      "descriptionGap": 1.5,
+      "actionsGap": 1.5,
+      "titleSize": 1.5,
+      "descriptionSize": 1.5,
+      "titleLeading": 1.5,
+      "titleWeight": "titleWeight",
+      "maxLines": 1,
+      "anchor": "anchor",
+      "align": "align",
+      "pad": 1.5
     },
     "children": [
       {
@@ -415,10 +1113,57 @@
     ]
   },
   {
+    "type": "insetBorder",
+    "key": "key",
+    "props": {
+      "width": 1.5,
+      "height": 1.5,
+      "radius": 1.5,
+      "color": "color"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "insetRing",
+    "key": "key",
+    "props": {
+      "width": 1.5,
+      "height": 1.5,
+      "radius": 1.5,
+      "strokeWidth": 1.5,
+      "color": "color"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
     "type": "keyCap",
     "key": "key",
     "props": {
       "keys": "keys"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "keyHint",
+    "key": "key",
+    "props": {
+      "keys": "keys",
+      "label": "label"
     },
     "children": [
       {
@@ -448,12 +1193,161 @@
     ]
   },
   {
+    "type": "labelFace",
+    "key": "key",
+    "props": {
+      "background": "background",
+      "label": "label"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "marchingRing",
+    "key": "key",
+    "props": {
+      "x": 1.5,
+      "y": 1.5,
+      "width": 1.5,
+      "height": 1.5,
+      "radius": 1.5,
+      "strokeWidth": 1.5,
+      "color": "color",
+      "halo": "halo"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "markDot",
+    "key": "key",
+    "props": {
+      "color": "color"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "markdown",
+    "key": "key",
+    "props": {
+      "text": "text",
+      "onOpen": "onOpen"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "markedText",
+    "key": "key",
+    "props": {
+      "segments": [
+        {
+          "text": "text",
+          "marked": true
+        }
+      ]
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "menuHeader",
+    "key": "key",
+    "props": {
+      "title": "title",
+      "count": "count"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "menuSeparator",
+    "key": "key",
+    "props": {},
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
     "type": "metaGlyph",
     "key": "key",
     "props": {
       "icon": "icon",
       "text": "text",
       "color": "color"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "monoGlyph",
+    "key": "key",
+    "props": {
+      "icon": "icon",
+      "text": "text",
+      "color": "color"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "mutedGlyph",
+    "key": "key",
+    "props": {
+      "icon": "icon",
+      "size": 1.5
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "navRow",
+    "key": "key",
+    "props": {
+      "on": true,
+      "height": 1.5,
+      "padX": 1.5,
+      "onPress": "onPress"
     },
     "children": [
       {
@@ -476,11 +1370,67 @@
     ]
   },
   {
+    "type": "notifyDot",
+    "key": "key",
+    "props": {
+      "width": 1.5,
+      "height": 1.5
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "orRule",
+    "key": "key",
+    "props": {
+      "word": "word"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "outlineBadge",
+    "key": "key",
+    "props": {
+      "text": "text"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
     "type": "panelNotice",
     "key": "key",
     "props": {
       "text": "text",
       "padX": 1.5
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "panelRow",
+    "key": "key",
+    "props": {
+      "live": true,
+      "edge": 1.5,
+      "padX": 1.5,
+      "onPress": "onPress"
     },
     "children": [
       {
@@ -541,6 +1491,47 @@
     ]
   },
   {
+    "type": "pulseRing",
+    "key": "key",
+    "props": {
+      "x": 1.5,
+      "y": 1.5,
+      "radius": 1.5,
+      "reach": 1.5,
+      "color": "color"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "pulsingCornerDot",
+    "key": "key",
+    "props": {
+      "color": "color"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "railHairline",
+    "key": "key",
+    "props": {},
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
     "type": "resizeHandle",
     "key": "key",
     "props": {
@@ -558,10 +1549,61 @@
     ]
   },
   {
+    "type": "row",
+    "key": "key",
+    "props": {
+      "gap": 1.5
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
     "type": "scroll",
     "key": "key",
     "props": {
       "direction": "direction"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "sectionHeading",
+    "key": "key",
+    "props": {
+      "text": "text",
+      "size": 1.5,
+      "weight": "weight",
+      "leading": 1.5,
+      "padTop": 1.5,
+      "padRight": 1.5,
+      "padBottom": 1.5,
+      "padLeft": 1.5
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "segmentBar",
+    "key": "key",
+    "props": {
+      "segments": [
+        {
+          "share": 1,
+          "color": "color"
+        }
+      ]
     },
     "children": [
       {
@@ -614,6 +1656,74 @@
     ]
   },
   {
+    "type": "skeletonBar",
+    "key": "key",
+    "props": {
+      "width": 1.5,
+      "line": 1.5,
+      "height": 1.5
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "skeletonFill",
+    "key": "key",
+    "props": {
+      "maxRows": 1,
+      "padY": 1.5
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "skeletonRow",
+    "key": "key",
+    "props": {
+      "padX": 1.5,
+      "padY": 1.5
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "skeletonShape",
+    "key": "key",
+    "props": {},
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "skeletonText",
+    "key": "key",
+    "props": {
+      "size": 1.5,
+      "width": 1.5
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
     "type": "sortableList",
     "key": "key",
     "props": {
@@ -631,10 +1741,136 @@
     ]
   },
   {
+    "type": "spanning",
+    "key": "key",
+    "props": {},
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
     "type": "spinner",
     "key": "key",
     "props": {
       "size": 1.5,
+      "color": "color"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "spinnerBeside",
+    "key": "key",
+    "props": {},
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "spinnerLine",
+    "key": "key",
+    "props": {
+      "text": "text"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "splitPane",
+    "key": "key",
+    "props": {
+      "direction": "direction",
+      "ratio": 1.5,
+      "minRatio": 1.5,
+      "maxRatio": 1.5,
+      "gap": 1.5,
+      "minFirst": 1.5,
+      "minSecond": 1.5,
+      "onResize": "onResize"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "squareFace",
+    "key": "key",
+    "props": {
+      "background": "background"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "stack",
+    "key": "key",
+    "props": {
+      "gap": 1.5
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "statusDot",
+    "key": "key",
+    "props": {
+      "color": "color"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "strokeArc",
+    "key": "key",
+    "props": {
+      "x": 1.5,
+      "y": 1.5,
+      "radius": 1.5,
+      "width": 1.5,
+      "start": 1.5,
+      "sweep": 1.5,
+      "color": "color"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "swatch",
+    "key": "key",
+    "props": {
       "color": "color"
     },
     "children": [
@@ -688,6 +1924,20 @@
     ]
   },
   {
+    "type": "tag",
+    "key": "key",
+    "props": {
+      "text": "text",
+      "color": "color"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
     "type": "textarea",
     "key": "key",
     "props": {
@@ -699,6 +1949,33 @@
       "disabled": true,
       "invalid": true,
       "onChange": "onChange"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "thinScroll",
+    "key": "key",
+    "props": {
+      "direction": "direction"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "tinyChip",
+    "key": "key",
+    "props": {
+      "word": "word",
+      "tone": "tone"
     },
     "children": [
       {
@@ -767,6 +2044,61 @@
       },
       "variant": "variant",
       "side": "side"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "trailingIconLink",
+    "key": "key",
+    "props": {
+      "label": "label",
+      "icon": "icon",
+      "onPress": "onPress"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "tray",
+    "key": "key",
+    "props": {
+      "fill": "fill"
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "triggerChevron",
+    "key": "key",
+    "props": {
+      "open": true
+    },
+    "children": [
+      {
+        "type": "separator",
+        "props": {}
+      }
+    ]
+  },
+  {
+    "type": "twoLines",
+    "key": "key",
+    "props": {
+      "top": "top",
+      "under": "under"
     },
     "children": [
       {

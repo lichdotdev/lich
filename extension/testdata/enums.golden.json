@@ -5,6 +5,21 @@
     "end",
     "stretch"
   ],
+  "anchor": [
+    "top-left",
+    "top",
+    "top-right",
+    "left",
+    "center",
+    "right",
+    "bottom-left",
+    "bottom",
+    "bottom-right"
+  ],
+  "diffSide": [
+    "old",
+    "new"
+  ],
   "direction": [
     "column",
     "row"
@@ -13,6 +28,13 @@
     "regular",
     "medium",
     "semibold"
+  ],
+  "imageFit": [
+    "contain",
+    "cover",
+    "fill",
+    "scale-down",
+    "unscaled"
   ],
   "justify": [
     "start",
