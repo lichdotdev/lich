@@ -572,6 +572,11 @@ func registerServices(db *store.Service, term *terminal.Service, svcs *services.
 	// An extension's calls reach what lich's MCP tools reach.
 	exts.SetLich(extensions.Lich{
 		Projects: db.LoadState, Peers: rl.Peers, Worktrees: spawner.Worktrees, Open: spawner.Open, Send: rl.Send,
+		Wait: rl.Wait, Ask: spawner.Ask, Project: spawner.Project,
+		Services: svcs.List, StartService: svcs.Start, StopService: svcs.Stop, RestartService: svcs.Restart,
+		Output: svcs.Output, LiveOutput: svcs.LiveOutput,
+		Diff: proj.Diff, BaseStatus: proj.BaseStatus, PullRequest: proj.OpenPullRequest,
+		Notify: sys.Notify, ShowCode: proj.ShowCode, OpenURL: brows.OpenURL, Attached: hub.Attached,
 	})
 	hub.Observe(exts.Observe)
 	routes.Themes(dispatcher, themes.New(version, db, hub.Emit))

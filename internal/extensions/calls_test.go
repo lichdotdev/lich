@@ -27,10 +27,11 @@ type fakeLich struct {
 	sends  []api.SendOptions
 	sendFn func(api.SendOptions) (api.SendResult, error)
 	block  chan struct{}
+	more   moreLich
 }
 
 func (f *fakeLich) lich() Lich {
-	return Lich{
+	l := Lich{
 		Projects: func(context.Context, api.None) ([]api.Project, error) {
 			return []api.Project{{ID: "p1", Name: "lich", Path: "/src/lich", Sessions: []api.Session{{ID: "s1"}}}}, nil
 		},
@@ -64,6 +65,8 @@ func (f *fakeLich) lich() Lich {
 			return api.SendResult{Ticket: "t1", Target: opts.Target, Status: "answered", Answer: "done"}, nil
 		},
 	}
+	f.wire(&l)
+	return l
 }
 
 func (f *fakeLich) record(fn func()) {

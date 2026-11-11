@@ -94,6 +94,8 @@ type Service struct {
 
 	mu  sync.Mutex
 	all []*installed
+	// serviceStates is each service's state as the last services event had it.
+	serviceStates map[string]string
 }
 
 // installed is one extension directory. The fields below mu are Service.mu's;
@@ -121,6 +123,11 @@ type installed struct {
 	queue   chan []byte
 	// subscribed is the events the running process asked for, by name.
 	subscribed map[string]bool
+	// tickets is the pending sends this extension may collect. They outlive a
+	// restart, as the sends do.
+	tickets map[string]bool
+	// notified is when its last notifications went up, the newest last.
+	notified []time.Time
 	// stop and done belong to the current supervise goroutine; done closes
 	// when it has returned.
 	stop context.CancelFunc

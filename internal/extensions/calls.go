@@ -39,6 +39,27 @@ type Lich struct {
 	Worktrees func(context.Context, api.WorktreesOptions) ([]api.WorktreeCheckout, error)
 	Open      func(context.Context, api.OpenSessionOptions) (api.OpenedSession, error)
 	Send      func(context.Context, api.SendOptions) (api.SendResult, error)
+	Wait      func(context.Context, api.WaitOptions) (api.SendResult, error)
+	Ask       func(context.Context, api.AskSessionOptions) (api.SessionAnswer, error)
+
+	Project        func(context.Context, api.ProjectRefOptions) (api.ProjectRef, error)
+	Services       func(context.Context, api.None) ([]api.Service, error)
+	StartService   func(context.Context, api.ServiceIDOptions) (api.None, error)
+	StopService    func(context.Context, api.ServiceIDOptions) (api.None, error)
+	RestartService func(context.Context, api.ServiceIDOptions) (api.None, error)
+	Output         func(context.Context, api.ServiceIDOptions) ([]byte, error)
+	LiveOutput     func(context.Context, api.ServiceIDOptions) ([]byte, error)
+
+	Diff        func(context.Context, api.PathOptions) (api.DiffStats, error)
+	BaseStatus  func(context.Context, api.PathOptions) (*api.BaseStatus, error)
+	PullRequest func(context.Context, api.PathOptions) (*api.PullRequest, error)
+
+	Notify   func(context.Context, api.NotifyOptions) (api.None, error)
+	ShowCode func(context.Context, api.ShowCodeOptions) (api.ShowCode, error)
+	OpenURL  func(context.Context, api.BrowserOpenOptions) (api.BrowserHandle, error)
+	// Attached is whether a window is connected to show what ShowCode and
+	// OpenURL do.
+	Attached func() bool
 }
 
 // SetLich wires the services calls reach, before Boot.
@@ -74,6 +95,18 @@ func (s *Service) routes() map[string]route {
 	add(handle(extension.ListWorktrees, s.listWorktrees))
 	add(handle(extension.OpenSession, s.openSession))
 	add(handle(extension.SendToSession, s.sendToSession))
+	add(handle(extension.AskSession, s.askSession))
+	add(handle(extension.CollectAnswer, s.collectAnswer))
+	add(handle(extension.ListServices, s.listServices))
+	add(handle(extension.StartService, s.serviceAction(func(l Lich) serviceAct { return l.StartService })))
+	add(handle(extension.StopService, s.serviceAction(func(l Lich) serviceAct { return l.StopService })))
+	add(handle(extension.RestartService, s.serviceAction(func(l Lich) serviceAct { return l.RestartService })))
+	add(handle(extension.ServiceOutput, s.serviceOutput))
+	add(handle(extension.GitStatus, s.gitStatus))
+	add(handle(extension.GitPullRequest, s.gitPullRequest))
+	add(handle(extension.Notify, s.notify))
+	add(handle(extension.ShowCode, s.showCode))
+	add(handle(extension.OpenURL, s.openURL))
 	add(handle(extension.Subscribe, s.subscribe))
 	return table
 }

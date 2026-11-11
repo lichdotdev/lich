@@ -306,3 +306,27 @@ func waitPRs(t *testing.T, w *watching, ok func(*branchPRs) bool) {
 	}
 	t.Fatal("the watch never reached the state")
 }
+
+func TestOpenPullRequestReadsTheWatchFirst(t *testing.T) {
+	t.Parallel()
+	gh := &fakeGH{out: []byte(featMerged)}
+	svc := withGH(gh)
+	svc.prs.record("/repo", &PullRequest{Number: 7, State: prOpen})
+	pr, err := svc.OpenPullRequest(context.Background(), api.PathOptions{Path: "/repo"})
+	if err != nil || pr == nil || pr.Number != 7 || gh.calls != 0 {
+		t.Fatalf("got %+v, %v after %d gh calls; want the watch's read and no call", pr, err, gh.calls)
+	}
+	svc.prs.record("/none", nil)
+	if pr, err := svc.OpenPullRequest(context.Background(), api.PathOptions{Path: "/none"}); err != nil || pr != nil || gh.calls != 0 {
+		t.Errorf("a checkout read with no PR: %+v, %v after %d gh calls", pr, err, gh.calls)
+	}
+	if pr, err := svc.OpenPullRequest(context.Background(), api.PathOptions{Path: "/new"}); err != nil || pr != nil || gh.calls != 1 {
+		t.Errorf("an unread checkout whose PR merged: %+v, %v after %d gh calls; want nil after one read", pr, err, gh.calls)
+	}
+	if _, read := svc.prs.lastRead("/new"); read {
+		t.Error("the read for an extension started following the checkout")
+	}
+	if _, err := withGH(&fakeGH{err: errTest}).OpenPullRequest(context.Background(), api.PathOptions{Path: "/x"}); !errors.Is(err, errTest) {
+		t.Errorf("a failed read: %v", err)
+	}
+}
