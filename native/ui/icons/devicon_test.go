@@ -101,3 +101,16 @@ func TestInkOnlyTellsBlackMarksFromColoredOnes(t *testing.T) {
 		}
 	}
 }
+
+func TestLookupDeviconTakesTheDeviconNameOrTheFile(t *testing.T) {
+	for _, name := range []string{"go", "GO", "GoOriginal", "graphql", "database"} {
+		if _, ok := LookupDevicon(name); !ok {
+			t.Errorf("LookupDevicon(%q) found nothing", name)
+		}
+	}
+	for _, name := range []string{"", "nope", "../devicons.json", "devicons"} {
+		if _, ok := LookupDevicon(name); ok {
+			t.Errorf("LookupDevicon(%q) found an icon, want none", name)
+		}
+	}
+}

@@ -152,3 +152,39 @@ func (b *Bitmap) render(px int, c color.NRGBA) image.Image {
 	}
 	return dst
 }
+
+// LookupDevicon is the devicon of that name, as devicon.dev spells it ("go",
+// "typescript", "css3"), or the PNG's own name ("GoOriginal"), for a name from
+// outside lich: it reports a name the set lacks instead of panicking.
+func LookupDevicon(name string) (*Bitmap, bool) {
+	want := strings.ToLower(name)
+	entries, err := deviconFiles.ReadDir("devicon")
+	if err != nil || want == "" {
+		return nil, false
+	}
+	for _, e := range entries {
+		stem, ok := strings.CutSuffix(e.Name(), ".png")
+		if !ok || !deviconNamed(stem, want) {
+			continue
+		}
+		if b, ok := deviconBitmaps[stem]; ok {
+			return b, true
+		}
+		b := loadDevicon(stem)
+		deviconBitmaps[stem] = b
+		return b, true
+	}
+	return nil, false
+}
+
+// deviconNamed reports whether the PNG stem is the devicon want names, with
+// or without the variant gen.sh appends.
+func deviconNamed(stem, want string) bool {
+	lower := strings.ToLower(stem)
+	for _, variant := range []string{"original", "plain"} {
+		if base, ok := strings.CutSuffix(lower, variant); ok && base == want {
+			return true
+		}
+	}
+	return lower == want
+}

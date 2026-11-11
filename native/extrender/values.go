@@ -47,14 +47,37 @@ func tokens(th *ui.Theme) map[string]color.NRGBA {
 }
 
 // icon is the glyph an extension names, nil for a name no set has: an icon
-// lookup panics on an unknown name, and this name comes from outside.
+// lookup panics on an unknown name, and this name comes from outside. A
+// devicon is a bitmap the kit's components cannot take, so it is nil here and
+// only the icon component draws it.
 func (r *Renderer) icon(name extension.Icon) *icons.Icon {
-	if name == "" {
-		return nil
+	if ic, ok := iconCache[name]; ok {
+		return ic
 	}
-	ic, _ := icons.LookupLucide(string(name))
+	var ic *icons.Icon
+	var ok bool
+	if mark, lobe := strings.CutPrefix(string(name), lobePrefix); lobe {
+		ic, ok = icons.LookupLobe(mark)
+	} else if name != "" && !strings.HasPrefix(string(name), deviconPrefix) {
+		ic, ok = icons.LookupLucide(string(name))
+	}
+	// Only a hit is kept: the set of names that exist is bounded, the names
+	// an extension may send are not.
+	if ok {
+		iconCache[name] = ic
+	}
 	return ic
 }
+
+const (
+	lobePrefix    = "lobe:"
+	deviconPrefix = "devicon:"
+)
+
+// iconCache keeps one Icon per name: an Icon records its paths once and the
+// GPU keeps them, a fresh one each frame is re-uploaded each frame. Icons are
+// drawn from the window's goroutine alone.
+var iconCache = map[extension.Icon]*icons.Icon{}
 
 // textSize is size in sp, or def when the extension left it out.
 func textSize(size float64, def unit.Sp) unit.Sp {

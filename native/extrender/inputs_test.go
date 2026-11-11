@@ -1,0 +1,101 @@
+package extrender
+
+import (
+	"testing"
+
+	"gioui.org/io/key"
+	"gioui.org/io/pointer"
+
+	"github.com/lichdotdev/lich/extension"
+)
+
+func everyInput() extension.Node {
+	button := extension.Button.New(extension.ButtonProps{Text: "Copy", OnPress: "copy"})
+	return column(
+		extension.Input.New(extension.InputProps{Value: "v", Placeholder: "Name", Leading: "search", LeadingSize: 14, Height: 28,
+			Width: 200, TextSize: 12, Mono: true, Password: true, Borderless: true, Bare: true, Clearable: true, Disabled: true,
+			Invalid: true, OnChange: "change", OnSubmit: "submit"}),
+		extension.InputGroup.New(extension.InputGroupProps{Value: "g", Placeholder: "URL", Start: []extension.Node{label("https://")},
+			End: []extension.Node{button}, Width: 240, Disabled: true, Invalid: true, OnChange: "change", OnSubmit: "submit"}),
+		extension.InputGroup.New(extension.InputGroupProps{Placeholder: "Message", Multiline: true, End: []extension.Node{button}}),
+		extension.Textarea.New(extension.TextareaProps{Value: "t", Placeholder: "Notes", Resizable: true, MaxHeight: 80, Width: 240,
+			Disabled: true, Invalid: true, OnChange: "change"}),
+		extension.InlineEdit.New(extension.InlineEditProps{Value: "name", Size: 13, Mono: true, PadRight: 4, OnCommit: "commit", OnCancel: "cancel"}),
+	)
+}
+
+func TestEveryInputDrawsWithEveryProp(t *testing.T) {
+	drawsWithoutPanic(t, everyInput())
+}
+
+func TestTypingInAnInputSendsItsText(t *testing.T) {
+	input := func(value string) extension.Node {
+		return column(extension.Input.New(extension.InputProps{Value: value, OnChange: "change", OnSubmit: "submit"}))
+	}
+	g := newRig(t, input(""))
+	g.click(pointer.ButtonPrimary, 10, 10)
+	g.typed("skipo")
+	if e := g.once("change"); e.Text != "skipo" {
+		t.Errorf("change event = %+v, want skipo", e)
+	}
+	s := stateOf[inputState](g.r, "/0")
+	g.frame()
+	if got := s.editor.Text(); got != "skipo" {
+		t.Errorf("a stale render left %q in the field, want the typed skipo", got)
+	}
+	g.press(key.NameReturn)
+	if e := g.once("submit"); e.Text != "skipo" {
+		t.Errorf("submit event = %+v, want skipo", e)
+	}
+	g.tree = input("reset")
+	g.frame()
+	g.frame()
+	if got := s.editor.Text(); got != "reset" {
+		t.Errorf("a new value from the extension left %q, want reset", got)
+	}
+	if len(g.fired("change")) != 1 {
+		t.Errorf("the extension's own value was sent back to it: %+v", g.fired("change"))
+	}
+}
+
+func TestAPasswordInputMasksItsText(t *testing.T) {
+	g := newRig(t, column(extension.Input.New(extension.InputProps{Value: "secret", Password: true})))
+	if s := stateOf[inputState](g.r, "/0"); s.editor.Mask != passwordMask {
+		t.Errorf("mask = %q, want %q", s.editor.Mask, passwordMask)
+	}
+}
+
+func TestTypingInAGroupAndATextareaSendsTheirText(t *testing.T) {
+	for _, n := range []extension.Node{
+		extension.InputGroup.New(extension.InputGroupProps{Multiline: true, OnChange: "change"}),
+		extension.Textarea.New(extension.TextareaProps{OnChange: "change"}),
+	} {
+		g := newRig(t, column(n))
+		g.click(pointer.ButtonPrimary, 20, 10)
+		g.typed("hi")
+		if e := g.once("change"); e.Text != "hi" {
+			t.Errorf("%s change event = %+v, want hi", n.Type, e)
+		}
+	}
+}
+
+func TestAnInlineEditCommitsOrCancels(t *testing.T) {
+	edit := column(extension.InlineEdit.New(extension.InlineEditProps{Value: "old", OnCommit: "commit", OnCancel: "cancel"}))
+	g := newRig(t, edit)
+	g.frame()
+	// Start selected all of "old"; a platform's edit names the range it
+	// replaces, where a bare EditEvent would insert at 0.
+	g.router.Queue(key.EditEvent{Range: key.Range{Start: 0, End: len("old")}, Text: "new"})
+	g.frame()
+	g.press(key.NameReturn)
+	if e := g.once("commit"); e.Text != "new" {
+		t.Errorf("commit event = %+v, want new", e)
+	}
+	g.frame()
+
+	g = newRig(t, edit)
+	g.frame()
+	g.press(key.NameEscape)
+	g.once("cancel")
+	g.frame()
+}
