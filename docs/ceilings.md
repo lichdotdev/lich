@@ -1220,8 +1220,9 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   two notification settings are about sessions (one needing input, one finishing a turn), so neither applies,
   and the window's focus does not either: the notification goes up while the person is in lich. Each extension
   raises at most 3 a minute (`maxNotifications`), the bound kept across its restarts; the rest are refused with
-  an error. There is no click action, and on a desktop with no notification server the call fails with
-  `system.Notify`'s error.
+  an error. There is no click action, and a call that returns fine says only that the notification was handed
+  off: on a Linux desktop with no notification server it still returns without error and nothing shows (measured
+  on a rig with no session bus).
 - **An extension with `window` acts on screen in a session's name** (`internal/extensions/methods_window.go`):
   `window.showCode` opens any file of a live session's checkout in the dock and `window.openURL` loads any http
   or https page in a session's browser tab, both as the session's own tools do, and the person sees them as that
