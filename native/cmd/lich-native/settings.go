@@ -266,12 +266,9 @@ func (s *settingsScreen) paneLayout(gtx C, th *ui.Theme, values scopedValues) D 
 // edge, over the padding, its track starting below the × so the two never
 // sit side by side.
 func paneScroll(th *ui.Theme, state *widget.List) material.ListStyle {
-	list := th.ScrollArea(state)
-	list.Indicator.MinorWidth = ui.Space(2)
-	list.Indicator.CornerRadius = ui.Space(1)
+	list := th.ThinScrollArea(state)
 	list.Track.MinorPadding = ui.Space(0.5)
 	list.Track.MajorPadding = settingsCloseInset + settingsCloseSize + ui.Space(2) - settingsPanePadY
-	list.AnchorStrategy = material.Overlay
 	return list
 }
 

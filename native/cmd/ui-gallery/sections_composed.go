@@ -26,6 +26,8 @@ type composedState struct {
 
 	splitH, splitV           ui.SplitPane
 	splitHRatio, splitVRatio float64
+
+	scrollThin, scrollTuned widget.List
 }
 
 func (g *gallery) composedSection(gtx C, th *ui.Theme) D {
@@ -36,6 +38,7 @@ func (g *gallery) composedSection(gtx C, th *ui.Theme) D {
 	kids = append(kids, g.markedTexts(th)...)
 	kids = append(kids, g.images(th)...)
 	kids = append(kids, g.splitPanes(th)...)
+	kids = append(kids, g.scrollAreas(th)...)
 	return ui.Stack(4, kids...)(gtx)
 }
 
@@ -189,5 +192,22 @@ func (g *gallery) splitPanes(th *ui.Theme) []layout.Widget {
 		caption(th, "SplitPane: drag the gap; 48dp minimum per side, 10% to 90%"),
 		split(&g.splitH, layout.Horizontal, &g.splitHRatio, "first", "second"),
 		split(&g.splitV, layout.Vertical, &g.splitVRatio, "top", "bottom"),
+	}
+}
+
+func (g *gallery) scrollAreas(th *ui.Theme) []layout.Widget {
+	if g.scrollThin.Axis != layout.Vertical {
+		g.scrollThin.Axis, g.scrollTuned.Axis = layout.Vertical, layout.Vertical
+	}
+	column := func(list *widget.List, minor, major float32) layout.Widget {
+		return height(72, func(gtx C) D {
+			area := th.ThinScrollArea(list)
+			area.Track.MinorPadding, area.Track.MajorPadding = ui.Space(minor), ui.Space(major)
+			return area.Layout(gtx, 12, func(gtx C, i int) D { return th.Text(ui.TextXS, "A scrolling list row").Layout(gtx) })
+		})
+	}
+	return []layout.Widget{
+		caption(th, "ThinScrollArea: overlay bar, 8px thumb; and with Track padding"),
+		ui.Columns(3, column(&g.scrollThin, 0, 0), column(&g.scrollTuned, 0.5, 2)),
 	}
 }

@@ -14,7 +14,6 @@ import (
 	"gioui.org/op"
 	"gioui.org/unit"
 	"gioui.org/widget"
-	"gioui.org/widget/material"
 
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
@@ -163,23 +162,12 @@ func (p *pullsScreen) rowList(gtx C, th *ui.Theme, list pullsRead[[]backend.PRSu
 	if p.cursorAt(rows) < 0 {
 		p.cursor = rows[0].Number
 	}
-	return p.rowScroll(gtx, th).Layout(gtx, len(rows), func(gtx C, i int) D { return p.row(gtx, th, rows[i], now) })
+	return th.ThinScrollArea(&p.rows).Layout(gtx, len(rows), func(gtx C, i int) D { return p.row(gtx, th, rows[i], now) })
 }
 
 // cursorAt is the cursor's row in rows, -1 when it is not among them.
 func (p *pullsScreen) cursorAt(rows []backend.PRSummary) int {
 	return position(rows, p.cursor)
-}
-
-// rowScroll is the sidebar's scrollColumn over the rows: the scrollbar takes
-// room only once they overflow.
-func (p *pullsScreen) rowScroll(gtx C, th *ui.Theme) material.ListStyle {
-	list := th.ScrollArea(&p.rows)
-	list.Indicator.MinorWidth = ui.Space(2)
-	list.Indicator.CornerRadius = ui.Space(1)
-	list.Track.MinorPadding = 0
-	list.AnchorStrategy = material.Overlay
-	return list
 }
 
 // The index row's columns at its right: the checks, the verdict and the

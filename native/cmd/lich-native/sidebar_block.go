@@ -141,11 +141,7 @@ func liveKeys(keys []string, leaving func(key string) bool) []string {
 // does.
 // Overflow is read off the previous frame's list.
 func (s *sidebar) scrollColumn(gtx C, th *ui.Theme) material.ListStyle {
-	list := th.ScrollArea(&s.list)
-	list.Indicator.MinorWidth = ui.Space(2)
-	list.Indicator.CornerRadius = ui.Space(1)
-	list.Track.MinorPadding = 0
-	list.AnchorStrategy = material.Overlay
+	list := th.ThinScrollArea(&s.list)
 	if s.list.Position.Length > gtx.Constraints.Max.Y {
 		list.AnchorStrategy = material.Occupy
 	}
