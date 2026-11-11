@@ -1,10 +1,6 @@
 package main
 
 import (
-	"image"
-
-	"gioui.org/layout"
-	"gioui.org/unit"
 	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/ui"
@@ -64,11 +60,7 @@ func (g *gallery) iconButtonsSection(gtx C, th *ui.Theme) D {
 }
 
 func (g *gallery) metaSection(gtx C, th *ui.Theme) D {
-	swatch := func(gtx C) D {
-		size := gtx.Dp(10)
-		gtx.Constraints = layout.Exact(image.Pt(size, size))
-		return ui.Fill(gtx, ui.Dark.Primary, unit.Dp(3))
-	}
+	swatch := func(gtx C) D { return ui.Swatch(gtx, ui.Dark.Primary) }
 	return stack(4,
 		caption(th, "DiffStat"),
 		row(6, th.DiffStat(12, 3).Layout, th.DiffStat(0, 41).Layout, th.DiffStat(0, 0).Layout),

@@ -126,3 +126,10 @@ func (th *Theme) CornerDot(gtx C, c color.NRGBA) D {
 	StrokeArc(gtx, center, r/2, r, 0, 2*math.Pi, c)
 	return D{Size: size}
 }
+
+// PulsingCornerDot is CornerDot with the beat around it, for something live.
+func (th *Theme) PulsingCornerDot(gtx C, c color.NRGBA) D {
+	r := float32(gtx.Dp(3))
+	th.PulseRing(gtx, f32.Pt(float32(gtx.Constraints.Min.X)-r, r), r, r, c)
+	return th.CornerDot(gtx, c)
+}

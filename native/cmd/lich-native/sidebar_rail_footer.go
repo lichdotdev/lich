@@ -2,10 +2,8 @@ package main
 
 import (
 	"image/color"
-	"math"
 	"strconv"
 
-	"gioui.org/f32"
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/unit"
@@ -102,22 +100,13 @@ func railServicesHint(t servicesTally) string {
 // the running tone while one runs, none otherwise. It carries a ring of the
 // button's fill so it reads off the icon's stroke under it.
 func railServicesBadge(gtx C, th *ui.Theme, t servicesTally) D {
-	size := gtx.Constraints.Min
-	c := th.TonePass
 	switch {
 	case t.failed:
-		c = th.Destructive
+		return th.CornerDot(gtx, th.Destructive)
 	case t.up == 0:
-		return D{Size: size}
+		return D{Size: gtx.Constraints.Min}
 	}
-	r := float32(gtx.Dp(3))
-	center := f32.Pt(float32(size.X)-r, r)
-	if !t.failed {
-		th.PulseRing(gtx, center, r, float32(gtx.Dp(3)), c)
-	}
-	ui.StrokeArc(gtx, center, r+float32(gtx.Dp(1)), float32(gtx.Dp(2)), 0, 2*math.Pi, th.Surface)
-	ui.StrokeArc(gtx, center, r/2, r, 0, 2*math.Pi, c)
-	return D{Size: size}
+	return th.PulsingCornerDot(gtx, th.TonePass)
 }
 
 // railFill is a rail button's fill: accent while its popup is open, the

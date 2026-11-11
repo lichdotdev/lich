@@ -43,6 +43,14 @@ func (g *gallery) dotsSection(gtx C, th *ui.Theme) D {
 			)
 		})(gtx)
 	}
+	live := func(gtx C) D {
+		return sized(32, 32, func(gtx C) D {
+			return layout.Stack{}.Layout(gtx,
+				layout.Stacked(func(gtx C) D { return g.icon("server").Layout(gtx, ui.Space(4), th.MutedForeground) }),
+				layout.Expanded(func(gtx C) D { return th.PulsingCornerDot(gtx, th.TonePass) }),
+			)
+		})(gtx)
+	}
 	pulse := sized(24, 24, func(gtx C) D {
 		center := f32.Pt(float32(gtx.Constraints.Min.X)/2, float32(gtx.Constraints.Min.Y)/2)
 		th.PulseRing(gtx, center, float32(gtx.Dp(4)), float32(gtx.Dp(6)), th.ToneWait)
@@ -77,8 +85,8 @@ func (g *gallery) dotsSection(gtx C, th *ui.Theme) D {
 			func(gtx C) D { return ui.Swatch(gtx, th.ToneWait) },
 			func(gtx C) D { return ui.Swatch(gtx, th.Destructive) },
 		),
-		caption(th, "NotifyDot on a bar button, CornerDot on a rail button"),
-		row(4, bell, filter),
+		caption(th, "NotifyDot on a bar button, CornerDot and PulsingCornerDot on a rail button"),
+		row(4, bell, filter, live),
 	)(gtx)
 }
 
