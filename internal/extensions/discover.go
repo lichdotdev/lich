@@ -54,6 +54,9 @@ func discover(dir, lichVersion string) []*installed {
 }
 
 func load(root, dirName, lichVersion string) *installed {
+	if abs, err := filepath.Abs(root); err == nil {
+		root = abs
+	}
 	x := &installed{id: dirName, root: root}
 	x.manifest, x.exe, x.invalid = readManifest(root, dirName, lichVersion)
 	if x.invalid != nil {

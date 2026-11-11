@@ -62,45 +62,54 @@ var toExtension = map[string]bool{
 // handleLine vets one line of stdout. A bad line is refused and logged, and
 // the extension goes on: one bug in it should not cost the user its screen.
 func (s *Service) handleLine(x *installed, line []byte) {
-	message, err := vetLine(line)
+	msg, encoded, err := vetMessage(line)
 	if err != nil {
 		x.refused.note(x.id, msgRefused, err.Error())
 		return
 	}
-	s.deliver(x, message)
+	if render, ok := msg.Data.(extension.RenderData); ok {
+		x.renders.submit(x.throttleKey(render.Surface), encoded, func(m json.RawMessage) { s.deliver(x, m) })
+		return
+	}
+	s.deliver(x, encoded)
 }
 
-// vetLine returns the event payload for a line, re-encoded from what was
-// decoded so the window can only receive what was checked: no unknown field or
-// duplicate key survives.
 func vetLine(line []byte) (json.RawMessage, error) {
-	if nesting := jsonNesting(line); nesting > maxJSONNesting {
-		return nil, fmt.Errorf("JSON nested %d levels, the limit is %d", nesting, maxJSONNesting)
-	}
+	_, encoded, err := vetMessage(line)
+	return encoded, err
+}
+
+// vetMessage returns a line's message and its event payload, re-encoded from
+// what was decoded so the window can only receive what was checked: no unknown
+// field or duplicate key survives.
+func vetMessage(line []byte) (extension.Message, json.RawMessage, error) {
 	var msg extension.Message
+	if nesting := jsonNesting(line); nesting > maxJSONNesting {
+		return msg, nil, fmt.Errorf("JSON nested %d levels, the limit is %d", nesting, maxJSONNesting)
+	}
 	if err := json.Unmarshal(line, &msg); err != nil {
-		return nil, err
+		return msg, nil, err
 	}
 	if !fromExtension[msg.Kind] {
-		return nil, fmt.Errorf("an extension may not send %q", msg.Kind)
+		return msg, nil, fmt.Errorf("an extension may not send %q", msg.Kind)
 	}
 	if open, ok := msg.Data.(extension.OpenExternalData); ok {
 		if err := checkExternalURL(open.URL); err != nil {
-			return nil, err
+			return msg, nil, err
 		}
 	}
 	if err := (&treeWalk{}).visit(reflect.ValueOf(msg.Data), 0); err != nil {
-		return nil, err
+		return msg, nil, err
 	}
 	encoded, err := json.Marshal(msg)
 	if err != nil {
-		return nil, err
+		return msg, nil, err
 	}
 	// Encoding can grow a line that fit: every < becomes <.
 	if len(encoded) > maxLineBytes {
-		return nil, fmt.Errorf("message encodes to %d bytes, the limit is %d", len(encoded), maxLineBytes)
+		return msg, nil, fmt.Errorf("message encodes to %d bytes, the limit is %d", len(encoded), maxLineBytes)
 	}
-	return encoded, nil
+	return msg, encoded, nil
 }
 
 func encodeOutbound(raw json.RawMessage) ([]byte, error) {

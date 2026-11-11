@@ -9,6 +9,7 @@ import (
 	"cmp"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"sync"
@@ -83,11 +84,18 @@ type installed struct {
 	invalid  error
 	stderr   logBudget
 	refused  logBudget
+	renders  renderGate
+	// restartMu serialises Restart calls on this extension.
+	restartMu sync.Mutex
 
 	// mu: Service.mu
 	status  string
 	errText string
 	queue   chan []byte
+	// stop and done belong to the current supervise goroutine; done closes
+	// when it has returned.
+	stop context.CancelFunc
+	done chan struct{}
 }
 
 // New returns the extensions under dir, none discovered or running until Boot.
@@ -110,15 +118,32 @@ func (s *Service) Boot() {
 		if x.invalid != nil {
 			continue
 		}
-		s.wg.Add(1)
-		go s.supervise(x)
+		s.mu.Lock()
+		s.launch(x)
+		s.mu.Unlock()
 	}
+}
+
+// launch starts x's supervise goroutine. Called with mu held, which is what
+// keeps wg.Add from racing the wg.Wait in Shutdown.
+func (s *Service) launch(x *installed) {
+	ctx, stop := context.WithCancel(s.ctx)
+	done := make(chan struct{})
+	x.stop, x.done = stop, done
+	s.wg.Add(1)
+	go func() {
+		defer s.wg.Done()
+		defer close(done)
+		s.supervise(ctx, x)
+	}()
 }
 
 // Shutdown stops every extension: stdin closes, each gets its grace, and what
 // is still up is killed. Bounded, so nothing here can hold up lich's exit.
 func (s *Service) Shutdown() {
+	s.mu.Lock()
 	s.cancel()
+	s.mu.Unlock()
 	done := make(chan struct{})
 	go func() {
 		s.wg.Wait()
@@ -165,6 +190,41 @@ func (s *Service) Send(_ context.Context, opts api.ExtensionSendOptions) (api.No
 	}
 }
 
+// Restart starts an extension again, which is the only way back from failed,
+// and starts its count of quick crashes over. One that is running or waiting
+// to restart is stopped first, as lich stops it on exit.
+func (s *Service) Restart(ctx context.Context, opts api.ExtensionIDOptions) (api.None, error) {
+	s.mu.Lock()
+	x := s.find(opts.ID)
+	s.mu.Unlock()
+	if x == nil {
+		return api.None{}, fmt.Errorf("no extension %q", opts.ID)
+	}
+	if x.invalid != nil {
+		return api.None{}, fmt.Errorf("extension %q is invalid and cannot start: %w", opts.ID, x.invalid)
+	}
+	x.restartMu.Lock()
+	defer x.restartMu.Unlock()
+	s.mu.Lock()
+	stop, done := x.stop, x.done
+	s.mu.Unlock()
+	if stop != nil {
+		stop()
+		select {
+		case <-done:
+		case <-ctx.Done():
+			return api.None{}, ctx.Err()
+		}
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.ctx.Err() != nil {
+		return api.None{}, errors.New("lich is shutting down")
+	}
+	s.launch(x)
+	return api.None{}, nil
+}
+
 // find returns the extension with id, or nil. Called with mu held.
 func (s *Service) find(id string) *installed {
 	for _, x := range s.all {
@@ -183,7 +243,7 @@ func (x *installed) view() api.Extension {
 	}
 	return api.Extension{
 		ID: x.id, Name: cmp.Or(x.manifest.Name, x.id), Version: x.manifest.Version,
-		Status: x.status, Error: x.errText, Surfaces: surfaces,
+		Status: x.status, Error: x.errText, Dir: x.root, Surfaces: surfaces,
 	}
 }
 

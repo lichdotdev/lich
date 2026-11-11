@@ -1149,6 +1149,16 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   `/events` like every event, with no queue and no replay, and the extension is not told. A window that attaches
   later sees nothing until the extension renders again. One slow window stalls that extension's stdout rather than
   queueing, and a write stalled past 5 seconds drops the `/events` socket for every session.
+- **`render` is coalesced, at 30 a second per surface** (`internal/extensions/throttle.go`): the first goes out at
+  once, and while the interval has not passed only the newest is kept and sent when it ends, so a loop of renders
+  costs the window a frame rate and the newest tree always arrives. The older ones in between never reach the
+  window. A surface the manifest does not list shares one gate with every other such surface, so naming a new
+  surface each time is no way around the limit, and of those only the newest render arrives. Other kinds (toasts,
+  `openExternal`, clipboard) are not limited: a loop of those still reaches the window line by line, and a process
+  that exits drops the render it had pending.
+- **Restart is the way back from failed** (`Service.Restart`, `extensions.Restart`): it stops a running extension
+  as lich stops it on exit, starts it again and starts its crash count over. It does not re-read the directory, so
+  an edited manifest or a newly invalid one takes a restart of lich, and an invalid extension is refused.
 - **Any exit lich did not ask for counts as a crash** (`internal/extensions/supervise.go`), a clean exit 0 included.
   It restarts after 1 second, doubling, capped at 30, and lich gives up after 5 crashes in a row, each within 30
   seconds of its start: the extension shows failed until lich launches again. A file that cannot be executed at

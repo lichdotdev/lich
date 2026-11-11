@@ -1,6 +1,7 @@
 package extensions
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"log/slog"
@@ -14,12 +15,11 @@ import (
 // supervise runs one extension until lich stops or gives up on it. Every exit
 // lich did not ask for counts as a crash, a clean one included: an extension
 // is meant to live as long as lich does.
-func (s *Service) supervise(x *installed) {
-	defer s.wg.Done()
+func (s *Service) supervise(ctx context.Context, x *installed) {
 	quick := 0
 	for {
-		run, err := s.start(x)
-		if s.ctx.Err() != nil && err != nil {
+		run, err := s.start(ctx, x)
+		if ctx.Err() != nil && err != nil {
 			s.setStatus(x, statusStopped, "")
 			return
 		}
@@ -31,7 +31,8 @@ func (s *Service) supervise(x *installed) {
 		s.setStatus(x, statusRunning, "")
 		exit := run.wait()
 		s.detachQueue(x)
-		if s.ctx.Err() != nil {
+		x.renders.reset()
+		if ctx.Err() != nil {
 			s.setStatus(x, statusStopped, "")
 			return
 		}
@@ -46,7 +47,7 @@ func (s *Service) supervise(x *installed) {
 			return
 		}
 		s.setStatus(x, statusRestarting, reason)
-		if !s.sleep(backoff(quick, s.timing.firstBackoff, s.timing.maxBackoff)) {
+		if !s.sleep(ctx, backoff(quick, s.timing.firstBackoff, s.timing.maxBackoff)) {
 			s.setStatus(x, statusStopped, "")
 			return
 		}
@@ -66,14 +67,14 @@ func backoff(quick int, first, ceiling time.Duration) time.Duration {
 	return min(wait, ceiling)
 }
 
-// sleep waits for d and reports false if lich stopped meanwhile.
-func (s *Service) sleep(d time.Duration) bool {
+// sleep waits for d and reports false if ctx ended meanwhile.
+func (s *Service) sleep(ctx context.Context, d time.Duration) bool {
 	timer := time.NewTimer(d)
 	defer timer.Stop()
 	select {
 	case <-timer.C:
 		return true
-	case <-s.ctx.Done():
+	case <-ctx.Done():
 		return false
 	}
 }
@@ -95,8 +96,8 @@ type process struct {
 // open after the process exits. cmd.Cancel closes stdin and WaitDelay is the
 // kill after it, which is the whole stop sequence. A failure to start is
 // returned, not retried: a missing or non-executable file stays that way.
-func (s *Service) start(x *installed) (*process, error) {
-	cmd := exec.CommandContext(s.ctx, x.exe)
+func (s *Service) start(ctx context.Context, x *installed) (*process, error) {
+	cmd := exec.CommandContext(ctx, x.exe)
 	cmd.Dir = x.root
 	cmd.Env = s.env
 	winexec.Hide(cmd)

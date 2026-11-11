@@ -115,6 +115,7 @@ type recorder struct {
 	mu       sync.Mutex
 	statuses []api.Extension
 	messages []api.ExtensionMessage
+	arrived  []time.Time
 }
 
 func (r *recorder) emit(name string, data any) {
@@ -131,6 +132,7 @@ func (r *recorder) emit(name string, data any) {
 			panic("message under " + name)
 		}
 		r.messages = append(r.messages, v)
+		r.arrived = append(r.arrived, time.Now())
 	}
 }
 
