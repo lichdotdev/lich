@@ -1,110 +1,137 @@
 package main
 
 import (
+	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/op"
+	"gioui.org/unit"
 	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
-// extensionsInstallBox is the toggle between GitHub and a folder, the field
-// and Install for the one in view, the line saying what lich does with it,
-// and the last error.
-func (s *settingsScreen) extensionsInstallBox(gtx C, th *ui.Theme) D {
-	p := &s.extensions
-	t := p.snapshot()
-	// The toggle takes its click as it is drawn, after the hint and the field
-	// read which source is in view.
-	if p.from.Update(gtx) {
-		p.with(func(t *extensionTasks) { t.err = "" })
-		t.err = ""
+var (
+	extensionURLFieldW  = ui.Space(72)
+	extensionFieldH     = ui.Space(8)
+	extensionErrorPad   = ui.Space(3)
+	extensionTitleBelow = ui.Space(4)
+)
+
+// extensionsTitle is the section's title line, Open folder on its right, and
+// the line under it when Open folder failed.
+func (s *settingsScreen) extensionsTitle(th *ui.Theme, label string) layout.Widget {
+	return func(gtx C) D {
+		p := &s.extensions
+		if p.folder.Clicked(gtx) {
+			go s.openExtensionsFolder()
+		}
+		open := th.Button(&p.folder, i18n.T("settings.extensionsSettings.openFolder"))
+		open.Variant, open.Size, open.Icon = ui.VariantGhost, ui.SizeSM, icExtensionsFolder
+		line := func(gtx C) D {
+			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+				layout.Flexed(1, th.Text(settingsTitle, label).Weight(font.SemiBold).Leading(32).Layout),
+				layout.Rigid(open.Layout),
+			)
+		}
+		return layout.Inset{Bottom: extensionTitleBelow}.Layout(gtx, func(gtx C) D {
+			return withErrorLine(gtx, th, p.snapshot().errorAt(errAtFolder), 0, line)
+		})
 	}
-	if p.choose.Clicked(gtx) && !t.installing {
-		s.pickExtensionDir()
+}
+
+// withErrorLine is w over text on one line in the destructive tone, at the
+// row's left edge padX; text "" is w alone.
+func withErrorLine(gtx C, th *ui.Theme, text string, padX unit.Dp, w layout.Widget) D {
+	if text == "" {
+		return w(gtx)
 	}
-	if p.install.Clicked(gtx) || p.submitted(gtx) {
-		p.askInstall()
-		// The dialogs were laid out before the box took the click.
-		gtx.Execute(op.InvalidateCmd{})
-	}
-	gtx.Constraints.Min.X = gtx.Constraints.Max.X
-	return layout.Background{}.Layout(gtx,
-		func(gtx C) D { return ui.Fill(gtx, th.Sidebar, ui.RadiusMD) },
-		func(gtx C) D {
-			on := th.On(th.Sidebar)
-			return layout.UniformInset(ui.Space(3)).Layout(gtx, func(gtx C) D { return p.installBody(gtx, on, t) })
-		},
+	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+		layout.Rigid(w),
+		layout.Rigid(func(gtx C) D {
+			return layout.Inset{Left: padX, Right: padX, Bottom: extensionErrorPad}.Layout(gtx, th.Text(ui.TextXS, text).In(th.Destructive).Layout)
+		}),
 	)
 }
 
-// submitted reports Enter in the field in view.
-func (p *extensionsSettings) submitted(gtx C) bool {
-	field := &p.url
-	if p.from.Value == installFromDir {
-		field = &p.dir
+// extensionsInstallRows are the two install rows: from GitHub, from a folder.
+func (s *settingsScreen) extensionsInstallRows(th *ui.Theme) []layout.Widget {
+	p := &s.extensions
+	git := settingRow{title: i18n.T("settings.extensionsSettings.fromGit"), description: i18n.T("settings.extensionsSettings.gitDescription")}
+	dir := settingRow{title: i18n.T("settings.extensionsSettings.fromDir"), description: i18n.T("settings.extensionsSettings.dirDescription")}
+	return []layout.Widget{
+		func(gtx C) D {
+			if p.urlEvents(gtx) || p.install.Clicked(gtx) {
+				p.askInstall(installFromGit, p.url.Text())
+				// The dialogs were laid out before the row took the click.
+				gtx.Execute(op.InvalidateCmd{})
+			}
+			t := p.snapshot()
+			return withErrorLine(gtx, th, t.errorAt(installFromGit), rowPadX, func(gtx C) D {
+				return git.layout(gtx, th, true, func(gtx C, th *ui.Theme) D { return p.gitControl(gtx, th, t.installing) })
+			})
+		},
+		func(gtx C) D {
+			t := p.snapshot()
+			if p.choose.Clicked(gtx) && t.installing == "" {
+				s.pickExtensionDir()
+			}
+			return withErrorLine(gtx, th, t.errorAt(installFromDir), rowPadX, func(gtx C) D {
+				return dir.layout(gtx, th, false, func(gtx C, th *ui.Theme) D { return p.dirControl(gtx, th, t.installing) })
+			})
+		},
 	}
-	field.Submit = true
+}
+
+// urlEvents reports Enter in the URL field, and drops the GitHub row's error
+// once the URL changes.
+func (p *extensionsSettings) urlEvents(gtx C) bool {
+	p.url.Submit = true
 	hit := false
 	for {
-		ev, more := field.Update(gtx)
+		ev, more := p.url.Update(gtx)
 		if !more {
 			return hit
 		}
-		if _, ok := ev.(widget.SubmitEvent); ok {
+		switch ev.(type) {
+		case widget.SubmitEvent:
 			hit = true
+		case widget.ChangeEvent:
+			p.clearError(installFromGit)
 		}
 	}
 }
 
-func (p *extensionsSettings) installBody(gtx C, th *ui.Theme, t extensionTasks) D {
-	hint := i18n.T("settings.extensionsSettings.gitHint")
-	if p.from.Value == installFromDir {
-		hint = i18n.T("settings.extensionsSettings.dirHint")
-	}
-	children := []layout.FlexChild{
-		layout.Rigid(th.ToggleGroup(&p.from,
-			ui.ToggleItem{Value: installFromGit, Text: i18n.T("settings.extensionsSettings.fromGit"), Disabled: t.installing},
-			ui.ToggleItem{Value: installFromDir, Text: i18n.T("settings.extensionsSettings.fromDir"), Disabled: t.installing},
-		).Layout),
-		ui.VGap(3),
-		layout.Rigid(func(gtx C) D { return p.installField(gtx, th, t.installing) }),
-		ui.VGap(2),
-		layout.Rigid(th.Text(ui.TextXS, hint).Muted().Wrapped().Layout),
-	}
-	if t.err != "" {
-		children = append(children, ui.VGap(2), layout.Rigid(func(gtx C) D {
-			l := th.Text(ui.TextXS, t.err)
-			l.Color = th.Destructive
-			return l.Wrapped().Layout(gtx)
-		}))
-	}
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
-}
-
-// installField is the URL field, or the folder field with Choose folder…,
-// then Install, which shows the busy state while an install runs.
-func (p *extensionsSettings) installField(gtx C, th *ui.Theme, busy bool) D {
+// gitControl is the URL field and Install, which shows the busy state while
+// its install runs.
+func (p *extensionsSettings) gitControl(gtx C, th *ui.Theme, installing string) D {
 	install := th.Button(&p.install, i18n.T("settings.extensionsSettings.install"))
-	if busy {
+	if installing == installFromGit {
 		install.Text = i18n.T("settings.extensionsSettings.installing")
 	}
-	install.Size, install.Disabled = ui.SizeSM, busy || p.source() == ""
-	children := []layout.FlexChild{}
-	if p.from.Value == installFromDir {
-		field := th.Input(&p.dir, i18n.T("settings.extensionsSettings.dirPlaceholder"))
-		field.Mono, field.TextSize, field.Disabled, field.Height = true, ui.TextXS, busy, ui.Space(8)
-		choose := th.Button(&p.choose, i18n.T("settings.extensionsSettings.chooseFolder"))
-		choose.Variant, choose.Size, choose.Icon, choose.Disabled = ui.VariantOutline, ui.SizeSM, icExtensionPick, busy
-		children = append(children, layout.Flexed(1, field.Layout), ui.Gap(2), layout.Rigid(choose.Layout))
-	} else {
-		field := th.Input(&p.url, extensionPlaceholder)
-		field.Mono, field.TextSize, field.Disabled, field.Height = true, ui.TextXS, busy, ui.Space(8)
-		children = append(children, layout.Flexed(1, field.Layout))
+	install.Size, install.Disabled = ui.SizeSM, installing != "" || p.url.Text() == ""
+	field := th.Input(&p.url, extensionPlaceholder)
+	field.Mono, field.TextSize, field.Disabled, field.Height = true, ui.TextXS, installing != "", extensionFieldH
+	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+		layout.Rigid(func(gtx C) D {
+			w := min(gtx.Constraints.Max.X, gtx.Dp(extensionURLFieldW))
+			gtx.Constraints.Min.X, gtx.Constraints.Max.X = w, w
+			return field.Layout(gtx)
+		}),
+		ui.Gap(2),
+		layout.Rigid(install.Layout),
+	)
+}
+
+// dirControl is Choose folder…, which shows the busy state while its install
+// runs.
+func (p *extensionsSettings) dirControl(gtx C, th *ui.Theme, installing string) D {
+	choose := th.Button(&p.choose, i18n.T("settings.extensionsSettings.chooseFolder"))
+	if installing == installFromDir {
+		choose.Text = i18n.T("settings.extensionsSettings.installing")
 	}
-	children = append(children, ui.Gap(2), layout.Rigid(install.Layout))
-	return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
+	choose.Variant, choose.Size, choose.Icon, choose.Disabled = ui.VariantOutline, ui.SizeSM, icExtensionPick, installing != ""
+	return choose.Layout(gtx)
 }
 
 // layoutExtensionDialogs draws the install and remove confirmations. The
@@ -118,7 +145,7 @@ func (s *settingsScreen) layoutExtensionDialogs(gtx C, th *ui.Theme) {
 		title: i18n.T("settings.extensionsSettings.installTitle"), action: i18n.T("settings.extensionsSettings.install"),
 		desc: i18n.T("settings.extensionsSettings.installDescription", i18n.Args{"source": t.asking})}
 	if pressed, closed := p.confirmDialog(gtx, th, install); pressed {
-		s.installExtension(p.from.Value == installFromDir, t.asking)
+		s.installExtension(t.askingFrom == installFromDir, t.asking)
 	} else if closed {
 		p.with(func(t *extensionTasks) { t.asking = "" })
 	}

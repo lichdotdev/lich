@@ -283,6 +283,8 @@ func (s *settingsScreen) paneRows(sec settingsSection, th *ui.Theme, values scop
 	}
 	if p, ok := s.providerScreen(); ok && sec.id == sectionProviders {
 		rows = append(rows, s.providerHeader(th, p)...)
+	} else if sec.id == sectionExtensions {
+		rows = append(rows, s.extensionsTitle(th, sec.label()))
 	} else {
 		rows = append(rows, func(gtx C) D {
 			return layout.Inset{Bottom: ui.Space(4)}.Layout(gtx, th.Text(settingsTitle, sec.label()).Weight(font.SemiBold).Leading(32).Layout)

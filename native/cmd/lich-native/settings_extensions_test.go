@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"image"
 	"net/http"
+	"slices"
 	"sync"
 	"testing"
 
@@ -75,6 +76,8 @@ type extensionBackend struct {
 	calls []string
 	args  []string
 	fail  string
+	// pick is the folder the directory picker answers.
+	pick string
 }
 
 func (b *extensionBackend) stub() *rpcStub {
@@ -88,7 +91,10 @@ func (b *extensionBackend) stub() *rpcStub {
 		if b.fail != "" {
 			return failing(b.fail)
 		}
-		if method == api.ExtensionsRemove.Name {
+		switch method {
+		case api.ProjectPickDirectory.Name:
+			return b.pick, http.StatusOK
+		case api.ExtensionsRemove.Name, api.ExtensionsRestart.Name, api.SystemOpenFolder.Name:
 			return api.None{}, http.StatusOK
 		}
 		return backend.Extension{ID: "x"}, http.StatusOK
@@ -108,39 +114,52 @@ func extensionsScreen(t *testing.T, b *extensionBackend) *settingsScreen {
 	t.Helper()
 	s := newSettingsScreen(t.Context(), b.stub().client(t), new(ui.Root), func() {})
 	s.extensions.store = new(extensionStore)
-	s.extensions.from.Value = installFromGit
 	return s
 }
 
-func TestInstallAsksFirstAndNamesTheSourceInView(t *testing.T) {
+func TestInstallFromGitHubAsksFirstAndNamesTheURL(t *testing.T) {
 	s := extensionsScreen(t, &extensionBackend{})
 	p := &s.extensions
-	p.askInstall()
+	p.askInstall(installFromGit, "  ")
 	if p.snapshot().asking != "" {
 		t.Fatal("an empty field asked to install")
 	}
-	p.url.SetText("  https://github.com/o/r  ")
-	p.dir.SetText("/home/me/ext")
-	p.with(func(t *extensionTasks) { t.err = "old" })
-	p.askInstall()
-	if got := p.snapshot(); got.asking != "https://github.com/o/r" || got.err != "" {
-		t.Errorf("from GitHub: %+v, want the URL asked and the old error gone", got)
-	}
-	p.from.Value = installFromDir
-	p.askInstall()
-	if got := p.snapshot().asking; got != "/home/me/ext" {
-		t.Errorf("from a folder: asking %q, want the folder", got)
+	p.with(func(t *extensionTasks) { t.err = extensionError{installFromGit, "old"} })
+	p.askInstall(installFromGit, "  https://github.com/o/r  ")
+	if got := p.snapshot(); got.asking != "https://github.com/o/r" || got.askingFrom != installFromGit || got.err.text != "" {
+		t.Errorf("%+v, want the URL asked from GitHub and the old error gone", got)
 	}
 }
 
-func TestConfirmedInstallCallsTheRightMethodAndShowsBusy(t *testing.T) {
+func TestChooseFolderGoesStraightToTheConfirmationForThatFolder(t *testing.T) {
+	s := extensionsScreen(t, &extensionBackend{pick: "/home/me/ext"})
+	p := &s.extensions
+	p.with(func(t *extensionTasks) { t.err = extensionError{installFromDir, "old"} })
+	s.pickExtensionDir()
+	eventually(t, "the picker answered", func() bool { return p.snapshot().asking != "" })
+	if got := p.snapshot(); got.asking != "/home/me/ext" || got.askingFrom != installFromDir || got.err.text != "" {
+		t.Errorf("%+v, want the folder asked from a folder and the old error gone", got)
+	}
+}
+
+func TestACancelledFolderPickAsksNothing(t *testing.T) {
+	b := &extensionBackend{}
+	s := extensionsScreen(t, b)
+	s.pickExtensionDir()
+	eventually(t, "the picker was called", func() bool { m, _ := b.last(); return m != "" })
+	if got := s.extensions.snapshot().asking; got != "" {
+		t.Errorf("asking %q after a cancelled pick, want nothing", got)
+	}
+}
+
+func TestConfirmedInstallCallsTheRightMethodAndShowsBusyOnItsRow(t *testing.T) {
 	cases := []struct {
-		fromDir    bool
-		src, want  string
-		wantMethod string
+		fromDir         bool
+		src, want, from string
+		wantMethod      string
 	}{
-		{false, "https://github.com/o/r", `{"url":"https://github.com/o/r"}`, api.ExtensionsInstallFromGit.Name},
-		{true, "/home/me/ext", `{"dir":"/home/me/ext"}`, api.ExtensionsInstallFromDir.Name},
+		{false, "https://github.com/o/r", `{"url":"https://github.com/o/r"}`, installFromGit, api.ExtensionsInstallFromGit.Name},
+		{true, "/home/me/ext", `{"dir":"/home/me/ext"}`, installFromDir, api.ExtensionsInstallFromDir.Name},
 	}
 	for _, c := range cases {
 		b := &extensionBackend{}
@@ -148,30 +167,52 @@ func TestConfirmedInstallCallsTheRightMethodAndShowsBusy(t *testing.T) {
 		p := &s.extensions
 		p.with(func(t *extensionTasks) { t.asking = c.src })
 		s.installExtension(c.fromDir, c.src)
-		if got := p.snapshot(); !got.installing || got.asking != "" {
-			t.Errorf("%s: %+v, want busy and the dialog shut", c.wantMethod, got)
+		if got := p.snapshot(); got.installing != c.from || got.asking != "" {
+			t.Errorf("%s: %+v, want %s busy and the dialog shut", c.wantMethod, got, c.from)
 		}
-		eventually(t, "the install finished", func() bool { return !p.snapshot().installing })
+		eventually(t, "the install finished", func() bool { return p.snapshot().installing == "" })
 		if method, args := b.last(); method != c.wantMethod || args != c.want {
 			t.Errorf("called %s %s, want %s %s", method, args, c.wantMethod, c.want)
 		}
-		if p.snapshot().err != "" {
-			t.Errorf("%s: error %q after a success", c.wantMethod, p.snapshot().err)
+		if got := p.snapshot().err; got.text != "" {
+			t.Errorf("%s: error %+v after a success", c.wantMethod, got)
 		}
 	}
 }
 
-func TestAFailedInstallLeavesTheBackendsWordsUnderTheBox(t *testing.T) {
+func TestAFailedInstallLeavesTheBackendsWordsUnderItsRow(t *testing.T) {
 	s := extensionsScreen(t, &extensionBackend{fail: "no release for linux_amd64"})
 	p := &s.extensions
 	p.url.SetText("https://github.com/o/r")
 	s.installExtension(false, "https://github.com/o/r")
-	eventually(t, "the install finished", func() bool { return !p.snapshot().installing })
-	if got := p.snapshot().err; got != "no release for linux_amd64" {
-		t.Errorf("error = %q, want the backend's words", got)
+	eventually(t, "the install finished", func() bool { return p.snapshot().installing == "" })
+	t2 := p.snapshot()
+	if got := t2.errorAt(installFromGit); got != "no release for linux_amd64" {
+		t.Errorf("GitHub row's error = %q, want the backend's words", got)
+	}
+	if got := t2.errorAt(installFromDir); got != "" {
+		t.Errorf("the folder row shows %q, want nothing: the error came from GitHub", got)
 	}
 	if p.url.Text() == "" {
 		t.Error("a failed install emptied the field")
+	}
+}
+
+func TestEditingTheURLClearsOnlyTheGitHubRowsError(t *testing.T) {
+	s := extensionsScreen(t, &extensionBackend{})
+	p := &s.extensions
+	gtx := layout.Context{Ops: new(op.Ops), Constraints: layout.Exact(image.Pt(400, 300))}
+	p.with(func(t *extensionTasks) { t.err = extensionError{installFromDir, "bad folder"} })
+	p.url.SetText("https://github.com/o/r")
+	p.urlEvents(gtx)
+	if got := p.snapshot().errorAt(installFromDir); got != "bad folder" {
+		t.Errorf("the folder row's error = %q after a URL edit, want it kept", got)
+	}
+	p.with(func(t *extensionTasks) { t.err = extensionError{installFromGit, "no release"} })
+	p.url.SetText("https://github.com/o/r2")
+	p.urlEvents(gtx)
+	if got := p.snapshot().err; got.text != "" {
+		t.Errorf("error %+v after editing the URL, want it gone", got)
 	}
 }
 
@@ -194,16 +235,64 @@ func TestRemoveAsksThenCallsRemoveWithTheID(t *testing.T) {
 	}
 }
 
-func TestTheEmptyListIsOneEmptyStateAndAListIsOneRowEach(t *testing.T) {
+func TestTheRowMenuOffersRestartOnlyWhenNotRunning(t *testing.T) {
+	s := extensionsScreen(t, &extensionBackend{})
+	cases := map[string][]string{
+		api.ExtensionRunning:    {"Open folder", "---", "Remove…"},
+		api.ExtensionRestarting: {"Restart", "Open folder", "---", "Remove…"},
+		api.ExtensionFailed:     {"Restart", "Open folder", "---", "Remove…"},
+		api.ExtensionInvalid:    {"Restart", "Open folder", "---", "Remove…"},
+		api.ExtensionStopped:    {"Restart", "Open folder", "---", "Remove…"},
+	}
+	for status, want := range cases {
+		got := menuLabels(s.extensionMenu(backend.Extension{ID: "a", Status: status}))
+		if !slices.Equal(got, want) {
+			t.Errorf("%s: menu %q, want %q", status, got, want)
+		}
+	}
+}
+
+func TestEachRowMenuEntryCallsItsMethod(t *testing.T) {
+	b := &extensionBackend{}
+	s := extensionsScreen(t, b)
+	e := backend.Extension{ID: "notes", Name: "Notes", Status: api.ExtensionFailed, Dir: "/cfg/ext/notes"}
+	entries := s.extensionMenu(e)
+	want := []struct{ method, args string }{
+		{api.ExtensionsRestart.Name, `{"id":"notes"}`},
+		{api.SystemOpenFolder.Name, `{"dir":"/cfg/ext/notes"}`},
+	}
+	for i, w := range want {
+		entries[i].OnClick()
+		eventually(t, w.method+" was called", func() bool { m, _ := b.last(); return m == w.method })
+		if _, args := b.last(); args != w.args {
+			t.Errorf("%s with %s, want %s", w.method, args, w.args)
+		}
+	}
+	entries[len(entries)-1].OnClick()
+	if got := s.extensions.snapshot().removal; got == nil || got.ID != "notes" {
+		t.Errorf("Remove… left removal %+v, want the confirmation for notes", got)
+	}
+}
+
+func TestARowActionsErrorLandsUnderThatRow(t *testing.T) {
+	s := extensionsScreen(t, &extensionBackend{fail: "not failed"})
+	s.restartExtension("notes")
+	eventually(t, "the restart failed", func() bool { return s.extensions.snapshot().err.text != "" })
+	if got := s.extensions.snapshot().errorAt(errAtRow("notes")); got != "not failed" {
+		t.Errorf("notes' row shows %q, want the backend's words", got)
+	}
+}
+
+func TestTheListIsAHeadingOverOneRowEachOrTheEmptyState(t *testing.T) {
 	s := extensionsScreen(t, &extensionBackend{})
 	th := testTheme()
 	empty := len(s.extensionsPaneRows(th))
 	s.extensions.store.setStatus(backend.Extension{ID: "a"})
 	s.extensions.store.setStatus(backend.Extension{ID: "b"})
-	if got := len(s.extensionsPaneRows(th)); got != empty+2 {
-		t.Errorf("rows = %d with two extensions, want %d: the empty state gives way to a spacer and a row each", got, empty+2)
+	if got := len(s.extensionsPaneRows(th)); got != empty+1 {
+		t.Errorf("rows = %d with two extensions, want %d: the empty state gives way to a row each", got, empty+1)
 	}
-	if empty != 3 {
-		t.Errorf("rows = %d with none, want the header, the box and the empty state", empty)
+	if empty != 5 {
+		t.Errorf("rows = %d with none, want the description, two install rows, the heading and the empty state", empty)
 	}
 }
