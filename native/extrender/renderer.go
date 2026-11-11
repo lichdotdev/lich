@@ -40,6 +40,7 @@ type Renderer struct {
 	send  func(extension.EventData)
 	state map[string]any
 	seen  map[string]bool
+	code  Code
 }
 
 // New returns a renderer that hands every event to send. root is the window's
