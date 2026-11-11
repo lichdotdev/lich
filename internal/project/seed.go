@@ -20,13 +20,16 @@ var defaultIncludes = []string{".env*"}
 // alone — an empty one seeds nothing.
 const includeFile = ".worktreeinclude"
 
-// seedWorktree copies gitignored files matching the include patterns from the
-// main checkout into a fresh worktree. A worktree starts with tracked files
-// only, so without this every new checkout is missing its .env files and
-// local credentials. Failures never fail the creation — a worktree without
-// its env files is still usable — they are logged and the rest is copied.
-// Returns the repo-relative paths copied, for the log and the tests.
-func seedWorktree(projectPath, wtPath string) []string {
+// seedWorktree copies gitignored files matching the include patterns from
+// srcPath into a fresh worktree. A worktree starts with tracked files only, so
+// without this every new checkout is missing its .env files and local
+// credentials. srcPath is the main checkout, or the checkout whose work is
+// about to be carried in, so the two cannot disagree; the patterns are always
+// projectPath's, because srcPath's may be an older copy of them. A file srcPath
+// does not have stays absent. Failures never fail the creation, since a
+// worktree without its env files is still usable: they are logged and the rest
+// is copied. Returns the repo-relative paths copied, for the log and the tests.
+func seedWorktree(projectPath, srcPath, wtPath string) []string {
 	patterns := includePatterns(projectPath)
 	if len(patterns) == 0 {
 		return nil
@@ -34,7 +37,7 @@ func seedWorktree(projectPath, wtPath string) []string {
 	// --directory collapses wholly-ignored directories (node_modules) into one
 	// entry instead of enumerating every file inside; -z spares us git's
 	// C-style quoting of non-ASCII names.
-	out, err := runGit(projectPath, "ls-files", "-z", "--others", "--ignored", "--exclude-standard", "--directory")
+	out, err := runGit(srcPath, "ls-files", "-z", "--others", "--ignored", "--exclude-standard", "--directory")
 	if err != nil {
 		slog.Warn("worktree seed: list ignored files", "err", err)
 		return nil
@@ -53,7 +56,7 @@ func seedWorktree(projectPath, wtPath string) []string {
 		if !matchesInclude(entry, patterns) {
 			continue
 		}
-		src := filepath.Join(projectPath, filepath.FromSlash(entry))
+		src := filepath.Join(srcPath, filepath.FromSlash(entry))
 		dst := filepath.Join(wtPath, filepath.FromSlash(entry))
 		if err := copyFile(src, dst); err != nil {
 			slog.Warn("worktree seed: copy", "file", entry, "err", err)

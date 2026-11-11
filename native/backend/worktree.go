@@ -25,9 +25,10 @@ func (c *Client) BaseFreshness(ctx context.Context, path, branch string) (BaseFr
 }
 
 // CreateWorktree checks a new branch name out off base; a remote base is
-// fetched first.
-func (c *Client) CreateWorktree(ctx context.Context, projectPath, projectID, name, base string, baseIsRemote bool) (*Worktree, error) {
-	return callMethod(ctx, c, api.ProjectCreateWorktree, api.CreateWorktreeOptions{ProjectPath: projectPath, ProjectID: projectID, Name: name, Base: base, BaseIsRemote: baseIsRemote})
+// fetched first. seedFrom is the checkout about to be carried in, empty for
+// none.
+func (c *Client) CreateWorktree(ctx context.Context, projectPath, projectID, name, base string, baseIsRemote bool, seedFrom string) (*Worktree, error) {
+	return callMethod(ctx, c, api.ProjectCreateWorktree, api.CreateWorktreeOptions{ProjectPath: projectPath, ProjectID: projectID, Name: name, Base: base, BaseIsRemote: baseIsRemote, SeedFrom: seedFrom})
 }
 
 // CarryUncommitted copies src's uncommitted work onto dst.

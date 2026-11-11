@@ -561,19 +561,16 @@ work when nobody knows it and that the call site never shows. The mechanism and 
 - **A working-tree row carries what git can name, and nothing else**
   (`internal/project/carry.go`): the copy is `git diff HEAD --binary` applied to the new checkout plus the
   untracked files `--exclude-standard` lists. What `.gitignore` covers is not carried from the forked
-  session at all — and the fork is not without it either, which is the trap: `seedWorktree` copies the
-  ignored files the project names (`.env*`, or `.worktreeinclude`) out of the **main checkout** into every
-  new worktree, so an ignored file the forked session had edited arrives as the main checkout's version of
-  it, silently disagreeing with the tracked work that came from the fork. `node_modules` and the rest of
-  the build output are not carried at all. Everything arrives
-  unstaged: which changes the source had staged is a fact about the commit *it* is preparing. The row is
+  session, except the ignored files the project names (`.env*`, or `.worktreeinclude`, read from the main
+  checkout): `seedWorktree` copies those from the forked session's checkout, and one that session does not
+  have stays absent. `node_modules` and the rest of the build output are not carried at all. Everything
+  arrives unstaged: which changes the source had staged is a fact about the commit *it* is preparing. The row is
   offered only when the base is the forked session's own branch, because the patch is read against that
   checkout's HEAD; picking any other base branches off it at its last commit, the way every fork did before.
   And it rides on the fork entry itself, so the five providers whose CLI only resumes (README's provider
   table) cannot reach it either.
-  The **+** dialog offers the same row for the project's own checkout, never preselected. The ignored-file
-  trap does not apply there, because `seedWorktree` reads the same checkout the copy does, and no provider is
-  out, because the worktree exists before any session opens on it. What it adds is a snapshot that is not
+  The **+** dialog offers the same row for the project's own checkout, never preselected. No provider is
+  out there, because the worktree exists before any session opens on it. What it adds is a snapshot that is not
   atomic: a session still writing in that checkout while the diff is read and the untracked files are copied
   can leave the new worktree with a mix of two moments. The source is only ever read, never cleaned, so
   nothing is lost there.

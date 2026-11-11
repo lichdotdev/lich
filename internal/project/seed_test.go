@@ -235,3 +235,116 @@ func TestCreateWorktreeSeedsFromIncludeFile(t *testing.T) {
 		t.Errorf(".env seeded despite .worktreeinclude override (err=%v)", err)
 	}
 }
+
+// carriedCheckout is a worktree of repo whose copies of the seeded files have
+// moved on from the main checkout's: .env edited, api/.env.local deleted.
+func carriedCheckout(t *testing.T, repo string) string {
+	t.Helper()
+	src, err := New(nil).CreateWorktree(t.Context(), api.CreateWorktreeOptions{ProjectPath: repo, ProjectID: "pid", Name: "forked", Base: "main"})
+	if err != nil {
+		t.Fatalf("CreateWorktree(source): %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(src.Path, ".env"), []byte("SECRET=edited\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Remove(filepath.Join(src.Path, "api", ".env.local")); err != nil {
+		t.Fatal(err)
+	}
+	return src.Path
+}
+
+// TestCreateWorktreeSeedsFromTheCarriedCheckout proves a worktree about to
+// receive a checkout's work gets that checkout's ignored files, so they cannot
+// disagree with the tracked work carried beside them. A file the checkout no
+// longer has stays absent, the way a deleted tracked file arrives deleted.
+func TestCreateWorktreeSeedsFromTheCarriedCheckout(t *testing.T) {
+	t.Setenv("XDG_DATA_HOME", t.TempDir())
+	repo, _ := seedRepo(t)
+	src := carriedCheckout(t, repo)
+
+	wt, err := New(nil).CreateWorktree(t.Context(), api.CreateWorktreeOptions{ProjectPath: repo, ProjectID: "pid", Name: "fork-target", Base: "forked", SeedFrom: src})
+	if err != nil {
+		t.Fatalf("CreateWorktree: %v", err)
+	}
+	env, err := os.ReadFile(filepath.Join(wt.Path, ".env"))
+	if err != nil {
+		t.Fatalf(".env not seeded: %v", err)
+	}
+	if string(env) != "SECRET=edited\n" {
+		t.Errorf(".env content = %q, want the carried checkout's", env)
+	}
+	if _, err := os.Stat(filepath.Join(wt.Path, "api", ".env.local")); !os.IsNotExist(err) {
+		t.Errorf("api/.env.local seeded from the main checkout, want absent (err=%v)", err)
+	}
+}
+
+// TestCreateWorktreeSeedFromKeepsTheProjectsIncludeFile proves the patterns
+// still come from the main checkout when the files come from another one:
+// read from the source, whose worktree has no .worktreeinclude, the default
+// patterns would seed .env too.
+func TestCreateWorktreeSeedFromKeepsTheProjectsIncludeFile(t *testing.T) {
+	t.Setenv("XDG_DATA_HOME", t.TempDir())
+	repo, _ := seedRepo(t)
+	src := carriedCheckout(t, repo)
+	if err := os.WriteFile(filepath.Join(src, "api", ".env.local"), []byte("LOCAL=src\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(repo, ".worktreeinclude"), []byte("api/.env.local\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	wt, err := New(nil).CreateWorktree(t.Context(), api.CreateWorktreeOptions{ProjectPath: repo, ProjectID: "pid", Name: "fork-target", Base: "forked", SeedFrom: src})
+	if err != nil {
+		t.Fatalf("CreateWorktree: %v", err)
+	}
+	local, err := os.ReadFile(filepath.Join(wt.Path, "api", ".env.local"))
+	if err != nil {
+		t.Fatalf("api/.env.local not seeded: %v", err)
+	}
+	if string(local) != "LOCAL=src\n" {
+		t.Errorf("api/.env.local content = %q, want the carried checkout's", local)
+	}
+	if _, err := os.Stat(filepath.Join(wt.Path, ".env")); !os.IsNotExist(err) {
+		t.Errorf(".env seeded despite the main checkout's .worktreeinclude (err=%v)", err)
+	}
+}
+
+// TestCreateWorktreeReusedBranchIgnoresSeedFrom proves a branch that already
+// exists seeds from the main checkout: the carry refuses a reused worktree, so
+// nothing of the source's arrives for these files to agree with.
+func TestCreateWorktreeReusedBranchIgnoresSeedFrom(t *testing.T) {
+	t.Setenv("XDG_DATA_HOME", t.TempDir())
+	repo, git := seedRepo(t)
+	src := carriedCheckout(t, repo)
+	git("branch", "prepared", "main")
+
+	wt, err := New(nil).CreateWorktree(t.Context(), api.CreateWorktreeOptions{ProjectPath: repo, ProjectID: "pid", Name: "prepared", Base: "forked", SeedFrom: src})
+	if err != nil {
+		t.Fatalf("CreateWorktree: %v", err)
+	}
+	if !wt.Reused {
+		t.Fatal("Reused = false, want the existing branch checked out")
+	}
+	env, err := os.ReadFile(filepath.Join(wt.Path, ".env"))
+	if err != nil {
+		t.Fatalf(".env not seeded: %v", err)
+	}
+	if string(env) != "SECRET=1\n" {
+		t.Errorf(".env content = %q, want the main checkout's", env)
+	}
+}
+
+// TestCreateWorktreeSeedFromFailureKeepsTheWorktree proves a source the seed
+// cannot read costs the seed only: the worktree is still created.
+func TestCreateWorktreeSeedFromFailureKeepsTheWorktree(t *testing.T) {
+	t.Setenv("XDG_DATA_HOME", t.TempDir())
+	repo, _ := seedRepo(t)
+
+	wt, err := New(nil).CreateWorktree(t.Context(), api.CreateWorktreeOptions{ProjectPath: repo, ProjectID: "pid", Name: "fork-target", Base: "main", SeedFrom: filepath.Join(t.TempDir(), "gone")})
+	if err != nil {
+		t.Fatalf("CreateWorktree: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(wt.Path, ".env")); !os.IsNotExist(err) {
+		t.Errorf(".env seeded from an unreadable source, want absent (err=%v)", err)
+	}
+}

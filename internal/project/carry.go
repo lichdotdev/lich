@@ -25,13 +25,10 @@ import (
 // carried: it is a fact about the commit opts.Src is preparing, and opts.Dst is a
 // different piece of work from here on.
 //
-// What git ignores is not carried either (--exclude-standard), and it is the
-// one part of the checkout a fork does not get from the session it forked:
-// seedWorktree copies the ignored files the project names (`.env*` by default)
-// out of the *main* checkout into every new worktree, and nothing builds the
-// rest. So an ignored file the forked session edited arrives as the
-// main checkout's copy of it. When opts.Src is the main checkout the two agree,
-// because both copies are read from the same place.
+// What git ignores is not carried here either (--exclude-standard). The ignored
+// files the project names (`.env*` by default) reach opts.Dst through
+// seedWorktree, when CreateWorktree was handed opts.Src as SeedFrom. Nothing
+// builds the rest.
 func (s *Service) CarryUncommitted(_ context.Context, opts api.CarryUncommittedOptions) (api.None, error) {
 	// --binary, so an edited image or any other non-text file comes over as
 	// bytes instead of as an unappliable "Binary files differ" line.
