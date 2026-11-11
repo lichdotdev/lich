@@ -134,3 +134,17 @@ func TestAnInlineEmptyStateDrawsItsIcon(t *testing.T) {
 		t.Errorf("an inline empty state with an icon is %dpx tall, without %dpx: the icon took no room", iconed, plain)
 	}
 }
+
+// A box that grows along a row takes the row's free width, not the height its
+// column leaves: a search field beside a button keeps the row one field tall.
+func TestABoxGrowingInARowKeepsTheRowItsOwnHeight(t *testing.T) {
+	field := extension.Box.New(extension.BoxProps{Grow: 1}, extension.Input.New(extension.InputProps{Placeholder: "Search"}))
+	row := extension.Box.New(extension.BoxProps{Direction: extension.DirectionRow}, field,
+		extension.Button.New(extension.ButtonProps{Text: "Reload"}))
+	r := New(nil, func(extension.EventData) {})
+	var ops op.Ops
+	gtx := layout.Context{Ops: &ops, Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}, Constraints: layout.Constraints{Max: rigWindow}}
+	if h := r.node(gtx, testTheme(), row, "").Size.Y; h > 60 {
+		t.Errorf("the row is %dpx tall in a %dpx window; a growing field stretched it down", h, rigWindow.Y)
+	}
+}

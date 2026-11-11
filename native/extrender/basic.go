@@ -66,7 +66,7 @@ func boxFlex(r *Renderer, th *ui.Theme, n extension.Node, id string, p extension
 		}
 		w := r.child(th, c, id, i)
 		if grow := growOf(c); grow > 0 {
-			kids = append(kids, layout.Flexed(grow, filled(w)))
+			kids = append(kids, layout.Flexed(grow, across(axis, c, w)))
 			continue
 		}
 		kids = append(kids, layout.Rigid(stretched(axis, p.Align, w)))
@@ -99,10 +99,15 @@ func growOf(c extension.Node) float32 {
 	return 0
 }
 
-// filled hands w the whole room its share gives, both ways.
-func filled(w layout.Widget) layout.Widget {
+// across widens a filler to its column, so an empty state centers across it
+// as well as down it. A growing box only takes its share along the axis: in a
+// row, filling the height too would stretch the row down its whole column.
+func across(axis layout.Axis, c extension.Node, w layout.Widget) layout.Widget {
+	if axis != layout.Vertical || !fillers[c.Type] {
+		return w
+	}
 	return func(gtx C) D {
-		gtx.Constraints.Min = gtx.Constraints.Max
+		gtx.Constraints.Min.X = gtx.Constraints.Max.X
 		return w(gtx)
 	}
 }
