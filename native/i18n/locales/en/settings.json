@@ -645,7 +645,7 @@
     "installing": "Installing…",
     "gitHint": "lich downloads the latest release built for this system and checks it against the release's checksums.",
     "dirHint": "lich copies a folder holding the manifest and the program already built for this system.",
-    "pickTitle": "Choose the extension's manifest.json",
+    "pickTitle": "Choose the extension's folder",
     "installTitle": "Install this extension?",
     "installDescription": "It comes from {source}. It will run on your computer as you, with access to your files and accounts. Install it only if you trust who made it.",
     "removeTitle": "Remove extension?",

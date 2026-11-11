@@ -278,3 +278,8 @@ func (s *Service) setStatus(x *installed, status, errText string) {
 func (s *Service) deliver(x *installed, message json.RawMessage) {
 	events.Send(s.emit, api.ExtensionMessageEvent, api.ExtensionMessage{ExtensionID: x.id, Message: message})
 }
+
+// ExtensionsDir is the directory extensions are read from and installed into.
+func (s *Service) ExtensionsDir(context.Context, api.None) (string, error) {
+	return s.dir, nil
+}

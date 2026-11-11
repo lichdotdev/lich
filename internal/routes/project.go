@@ -23,6 +23,7 @@ func projectFiles(d *rpc.Handler, s *project.Service) {
 	rpc.Handle(d, api.ProjectExists, s.Exists)
 	rpc.Handle(d, api.ProjectMissing, s.Missing)
 	rpc.Handle(d, api.ProjectPickFile, s.PickFile)
+	rpc.Handle(d, api.ProjectPickDirectory, s.PickDirectory)
 	rpc.Handle(d, api.ProjectPickSaveFile, s.PickSaveFile)
 	rpc.Handle(d, api.ProjectTree, s.Tree)
 	rpc.Handle(d, api.ProjectSearch, s.Search)

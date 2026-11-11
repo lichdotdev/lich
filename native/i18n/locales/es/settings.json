@@ -645,7 +645,7 @@
     "installing": "Instalando…",
     "gitHint": "lich descarga la última versión compilada para este sistema y la verifica con las sumas de comprobación de la versión.",
     "dirHint": "lich copia una carpeta que contiene el manifiesto y el programa ya compilado para este sistema.",
-    "pickTitle": "Elige el manifest.json de la extensión",
+    "pickTitle": "Elige la carpeta de la extensión",
     "installTitle": "¿Instalar esta extensión?",
     "installDescription": "Viene de {source}. Se ejecutará en tu equipo como tú, con acceso a tus archivos y cuentas. Instálala solo si confías en quien la hizo.",
     "removeTitle": "¿Quitar la extensión?",

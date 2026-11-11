@@ -188,18 +188,3 @@ func TestRuntimePathFollowsLichDev(t *testing.T) {
 		t.Fatalf("paths = %q, %q", daily, dev)
 	}
 }
-
-func TestExtensionsDirFollowsLichDev(t *testing.T) {
-	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
-	daily, err := ExtensionsDir(func(string) string { return "" })
-	if err != nil {
-		t.Fatal(err)
-	}
-	dev, err := ExtensionsDir(func(k string) string { return map[string]string{"LICH_DEV": "1"}[k] })
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !strings.HasSuffix(daily, filepath.Join("lich", "extensions")) || !strings.HasSuffix(dev, filepath.Join("lich", "extensions-dev")) {
-		t.Fatalf("paths = %q, %q", daily, dev)
-	}
-}

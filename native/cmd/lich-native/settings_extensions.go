@@ -2,7 +2,6 @@ package main
 
 import (
 	"os"
-	"path/filepath"
 	"strings"
 	"sync"
 
@@ -173,7 +172,7 @@ func (s *settingsScreen) extensionsHeader(gtx C, th *ui.Theme) D {
 }
 
 func (s *settingsScreen) openExtensionsFolder() {
-	dir, err := backend.ExtensionsDir(os.Getenv)
+	dir, err := s.client.ExtensionsDir(s.ctx)
 	if err == nil {
 		err = os.MkdirAll(dir, 0o755)
 	}
@@ -233,17 +232,15 @@ func (s *settingsScreen) restartExtension(id string) {
 	}()
 }
 
-// pickExtensionDir asks for the folder through the backend's file picker,
-// on the manifest it holds: the backend has no folder picker but the one that
-// opens a project.
+// pickExtensionDir asks for the folder through the backend's directory picker.
 func (s *settingsScreen) pickExtensionDir() {
 	go func() {
-		path, err := s.client.PickFile(s.ctx, i18n.T("settings.extensionsSettings.pickTitle"))
+		path, err := s.client.PickDirectory(s.ctx, i18n.T("settings.extensionsSettings.pickTitle"))
 		switch {
 		case err != nil:
 			s.extensions.with(func(t *extensionTasks) { t.err = backend.ErrorText(err) })
 		case path != "":
-			s.extensions.dir.SetText(filepath.Dir(path))
+			s.extensions.dir.SetText(path)
 		}
 		s.invalidate()
 	}()

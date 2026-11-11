@@ -645,7 +645,7 @@
     "installing": "Instalando…",
     "gitHint": "O lich baixa a release mais recente feita para este sistema e confere com os checksums da release.",
     "dirHint": "O lich copia uma pasta com o manifesto e o programa já compilado para este sistema.",
-    "pickTitle": "Escolha o manifest.json da extensão",
+    "pickTitle": "Escolha a pasta da extensão",
     "installTitle": "Instalar esta extensão?",
     "installDescription": "Ela vem de {source}. Ela vai rodar no seu computador como você, com acesso aos seus arquivos e contas. Instale só se você confia em quem a fez.",
     "removeTitle": "Remover extensão?",

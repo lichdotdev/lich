@@ -9,6 +9,7 @@ var (
 	ProjectExists                   = define[PathOptions, bool]("project.Exists")
 	ProjectMissing                  = define[PathsOptions, []string]("project.Missing")
 	ProjectPickFile                 = define[PickFileOptions, string]("project.PickFile")
+	ProjectPickDirectory            = define[PickFileOptions, string]("project.PickDirectory")
 	ProjectPickSaveFile             = define[PickSaveFileOptions, string]("project.PickSaveFile")
 	ProjectDiff                     = define[PathOptions, DiffStats]("project.Diff")
 	ProjectDiffText                 = define[PathOptions, string]("project.DiffText")

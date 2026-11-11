@@ -64,6 +64,7 @@ cursorprofile.LoginCommand(ProfileSlugOptions) string
 cursorprofile.Profiles(None) []ProfileInfo
 cursorprofile.UpdateProfile(UpdateProfileOptions) Profile
 drop.Attach(AttachDropOptions) DropAttachment
+extensions.Dir(None) string
 extensions.InstallFromDir(ExtensionDirInstallOptions) Extension
 extensions.InstallFromGit(ExtensionGitInstallOptions) Extension
 extensions.List(None) []Extension
@@ -128,6 +129,7 @@ project.ListPullRequests(ListPullRequestsOptions) []PRSummary
 project.MergePullRequest(MergePullRequestOptions) None
 project.Missing(PathsOptions) []string
 project.Open(None) *OpenedProject
+project.PickDirectory(PickFileOptions) string
 project.PickFile(PickFileOptions) string
 project.PickSaveFile(PickSaveFileOptions) string
 project.PullRequestAvatar(AvatarOptions) base64

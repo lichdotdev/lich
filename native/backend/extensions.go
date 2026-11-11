@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
-	"path/filepath"
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/extension"
@@ -55,17 +53,7 @@ func (c *Client) RemoveExtension(ctx context.Context, id string) error {
 	return err
 }
 
-// ExtensionsDir is the directory a lich on this machine reads extensions
-// from, the way internal/extensions names it: the backend has no call that
-// answers it, and the list cannot when it is empty.
-func ExtensionsDir(getenv func(string) string) (string, error) {
-	dir, err := os.UserConfigDir()
-	if err != nil {
-		return "", fmt.Errorf("resolve config directory: %w", err)
-	}
-	name := "extensions"
-	if getenv("LICH_DEV") != "" {
-		name = "extensions-dev"
-	}
-	return filepath.Join(dir, "lich", name), nil
+// ExtensionsDir is the directory the backend reads extensions from.
+func (c *Client) ExtensionsDir(ctx context.Context) (string, error) {
+	return callMethod(ctx, c, api.ExtensionsDir, api.None{})
 }

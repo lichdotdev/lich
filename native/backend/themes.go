@@ -73,6 +73,11 @@ func (c *Client) SaveThemeTemplate(ctx context.Context, path string) error {
 	return err
 }
 
+// PickDirectory opens the backend's directory picker; "" is a cancelled one.
+func (c *Client) PickDirectory(ctx context.Context, title string) (string, error) {
+	return callMethod(ctx, c, api.ProjectPickDirectory, api.PickFileOptions{Title: title})
+}
+
 // PickFile opens the backend's file picker; "" is a cancelled one.
 func (c *Client) PickFile(ctx context.Context, title string) (string, error) {
 	return callMethod(ctx, c, api.ProjectPickFile, api.PickFileOptions{Title: title})

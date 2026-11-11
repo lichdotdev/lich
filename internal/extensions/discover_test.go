@@ -138,3 +138,11 @@ func TestListWithNoExtensionIsAnEmptyArray(t *testing.T) {
 		t.Errorf("list = %#v, %v; want empty and non-nil", list, err)
 	}
 }
+
+func TestExtensionsDirIsTheDirectoryItReads(t *testing.T) {
+	dir := t.TempDir()
+	got, err := New(dir, "1.2.3", nil, func(string, any) {}).ExtensionsDir(t.Context(), api.None{})
+	if err != nil || got != dir {
+		t.Fatalf("ExtensionsDir = %q, %v; want %q", got, err, dir)
+	}
+}

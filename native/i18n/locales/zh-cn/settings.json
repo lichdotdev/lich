@@ -644,7 +644,7 @@
     "installing": "正在安装…",
     "gitHint": "lich 会下载为此系统构建的最新版本，并用该版本的校验和进行核对。",
     "dirHint": "lich 会复制一个包含清单和已为此系统构建好的程序的文件夹。",
-    "pickTitle": "选择扩展的 manifest.json",
+    "pickTitle": "选择扩展的文件夹",
     "installTitle": "安装此扩展？",
     "installDescription": "它来自 {source}。它将以你的身份在你的电脑上运行，可以访问你的文件和账户。只有在你信任其作者时才安装。",
     "removeTitle": "移除扩展？",

@@ -7,6 +7,8 @@ var (
 	ExtensionsSend = define[ExtensionSendOptions, None]("extensions.Send")
 	// ExtensionsRestart starts an extension again, the one way back from failed.
 	ExtensionsRestart = define[ExtensionIDOptions, None]("extensions.Restart")
+	// ExtensionsDir is the directory lich reads extensions from.
+	ExtensionsDir = define[None, string]("extensions.Dir")
 	// ExtensionsInstallFromGit downloads the latest release of a GitHub
 	// repository's extension, installs it and starts it.
 	ExtensionsInstallFromGit = define[ExtensionGitInstallOptions, Extension]("extensions.InstallFromGit")
