@@ -11,13 +11,13 @@ package i18n
 
 import (
 	"embed"
-	"encoding/json"
 	"fmt"
 	"io/fs"
 	"path"
-	"regexp"
 	"strings"
 	"sync/atomic"
+
+	format "github.com/lichdotdev/lich/extension/i18n"
 )
 
 // Locale is a BCP 47 tag lich ships a catalog for: the same string the
@@ -60,17 +60,12 @@ func (l Locale) Name() string {
 // Match is the locale for a BCP 47 tag: an exact match, then a language
 // match (any Portuguese reads pt-BR), then English.
 func Match(tag string) Locale {
-	for _, l := range Locales {
-		if strings.EqualFold(string(l), tag) {
-			return l
-		}
+	tags := make([]string, len(Locales))
+	for i, l := range Locales {
+		tags[i] = string(l)
 	}
-	language, _, _ := strings.Cut(tag, "-")
-	for _, l := range Locales {
-		prefix, _, _ := strings.Cut(string(l), "-")
-		if language != "" && strings.EqualFold(prefix, language) {
-			return l
-		}
+	if m := format.Match(tag, tags); m != "" {
+		return Locale(m)
 	}
 	return EN
 }
@@ -101,56 +96,15 @@ func mustLoad() map[Locale]map[string]message {
 // load reads every namespace file of the locale directory dir into one map
 // from dotted key to message.
 func load(fsys fs.FS, dir string) (map[string]message, error) {
-	entries, err := fs.ReadDir(fsys, path.Join("locales", dir))
+	c, err := format.Load(fsys, path.Join("locales", dir))
 	if err != nil {
 		return nil, err
 	}
-	out := map[string]message{}
-	for _, e := range entries {
-		data, err := fs.ReadFile(fsys, path.Join("locales", dir, e.Name()))
-		if err != nil {
-			return nil, err
-		}
-		var tree map[string]any
-		if err := json.Unmarshal(data, &tree); err != nil {
-			return nil, fmt.Errorf("%s: %w", e.Name(), err)
-		}
-		if err := flatten(out, strings.TrimSuffix(e.Name(), ".json"), tree); err != nil {
-			return nil, fmt.Errorf("%s: %w", e.Name(), err)
-		}
+	out := make(map[string]message, len(c))
+	for key, m := range c {
+		out[key] = message{text: m.Text, plural: m.Plural}
 	}
 	return out, nil
-}
-
-// flatten walks tree into out under prefix. An object holding "other" is a
-// plural: every CLDR rule falls back to it.
-func flatten(out map[string]message, prefix string, tree map[string]any) error {
-	if _, ok := tree["other"]; ok {
-		forms := make(map[string]string, len(tree))
-		for form, v := range tree {
-			s, ok := v.(string)
-			if !ok {
-				return fmt.Errorf("%s.%s: a plural form must be a string", prefix, form)
-			}
-			forms[form] = s
-		}
-		out[prefix] = message{plural: forms}
-		return nil
-	}
-	for k, v := range tree {
-		key := prefix + "." + k
-		switch v := v.(type) {
-		case string:
-			out[key] = message{text: v}
-		case map[string]any:
-			if err := flatten(out, key, v); err != nil {
-				return err
-			}
-		default:
-			return fmt.Errorf("%s: want a string or an object, got %T", key, v)
-		}
-	}
-	return nil
 }
 
 var current atomic.Value // Locale
@@ -185,7 +139,7 @@ func SetPromptLanguage(l Locale) { promptLanguage.Store(l) }
 
 // Args are a message's placeholder values by name; "count" picks a plural's
 // form and must be an int.
-type Args map[string]any
+type Args = format.Args
 
 // T is the message under key in the interface language, its placeholders
 // filled from args.
@@ -212,30 +166,21 @@ func template(l Locale, key string, values Args) string {
 	if !ok {
 		panic(fmt.Sprintf("i18n: no message %q in %s", key, l))
 	}
-	if m.plural == nil {
-		return m.text
+	text, err := format.Message{Text: m.text, Plural: m.plural}.Template(string(l), values)
+	if err != nil {
+		panic(fmt.Sprintf("i18n: %q %v", key, err))
 	}
-	count, ok := values["count"].(int)
-	if !ok {
-		panic(fmt.Sprintf("i18n: %q is a plural and needs an int count", key))
-	}
-	if form, ok := m.plural[pluralForm(l, count)]; ok {
-		return form
-	}
-	return m.plural["other"]
+	return text
 }
 
-var placeholder = regexp.MustCompile(`\{(\w+)\}`)
+var placeholder = format.Placeholder
 
 func fill(text string, values Args) string {
-	return placeholder.ReplaceAllStringFunc(text, func(match string) string {
-		name := match[1 : len(match)-1]
-		v, ok := values[name]
-		if !ok {
-			panic(fmt.Sprintf("i18n: no value for {%s} in %q", name, text))
-		}
-		return fmt.Sprint(v)
-	})
+	out, err := format.Fill(text, values)
+	if err != nil {
+		panic("i18n: " + err.Error())
+	}
+	return out
 }
 
 // Has reports whether the English catalog holds key, for a test that checks
