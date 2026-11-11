@@ -125,6 +125,9 @@ func (c *OverlayCount) Frame() { c.last, c.shown = c.shown, 0 }
 // Open is whether the last frame showed a dialog or a menu.
 func (c *OverlayCount) Open() bool { return c.last > 0 }
 
+// Shown is how many dialogs and menus the last frame showed, one over another.
+func (c *OverlayCount) Shown() int { return c.last }
+
 // count is one overlay on screen; a Theme with no count ignores it.
 func (c *OverlayCount) count() {
 	if c != nil {

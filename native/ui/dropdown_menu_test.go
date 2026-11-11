@@ -205,3 +205,19 @@ func TestOverlayCountSeesAnOpenMenu(t *testing.T) {
 		t.Fatal("a closed menu still counts")
 	}
 }
+
+func TestMenuSpotGetsTheRowAtItsSize(t *testing.T) {
+	var c chosen
+	var got image.Point
+	b := c.item("B")
+	b.Spot = func(gtx C, row layout.Widget) D {
+		d := row(gtx)
+		got = d.Size
+		return d
+	}
+	_, _, frame := openDropdown(t, []MenuEntry{c.item("A"), b})
+	frame()
+	if got.X < dropdownWidth-8 || got.Y != dropdownRow {
+		t.Fatalf("spot got a row of %v, want about %dx%d", got, dropdownWidth-8, dropdownRow)
+	}
+}

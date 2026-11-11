@@ -46,6 +46,12 @@ type tourStep struct {
 	text   tourText
 	shell  *tourText
 	until  func(u *window) bool
+	// layer is how many dialogs and menus the anchor sits under: a step in
+	// the New Session menu is 1, one in a dialog's own dropdown 2. reopen is
+	// the step that opens them, where the tour goes back when they close
+	// before the step is done.
+	layer  int
+	reopen int
 }
 
 // guide is one tour of the Guides menu.
@@ -100,6 +106,8 @@ type windowTour struct {
 	driver.Tour
 	// guide is the one running or last run.
 	guide *guide
+	// missing is since when the current step's dialog or menu is closed.
+	missing time.Time
 	// offered is the first-run check made; due asks the next frame to start.
 	offered bool
 	due     atomic.Bool
@@ -129,10 +137,36 @@ func (u *window) frameTour(gtx C) {
 		u.tourEnded(e)
 	}
 	u.theme.Overlays.Frame()
-	if u.theme.Overlays.Open() {
+	u.layerTour(gtx.Now)
+}
+
+// tourReopenGrace is how long a step's dialog or menu may be missing before
+// the tour goes back to the step that opens it: one menu closing as the
+// dialog it chose opens leaves a frame or two with neither.
+const tourReopenGrace = 300 * time.Millisecond
+
+// layerTour steps the tour aside for a dialog or menu over its step, and
+// sends it back to reopen one its step lives in when that one closes early.
+func (u *window) layerTour(now time.Time) {
+	shown, layer, reopen := u.theme.Overlays.Shown(), 0, 0
+	if u.tour.Active() && u.tour.guide != nil {
+		s := u.tour.guide.steps[u.tour.Index()]
+		layer, reopen = s.layer, s.reopen
+	}
+	if shown > layer {
 		u.tour.Pause()
 	} else {
 		u.tour.Resume()
+	}
+	if shown >= layer {
+		u.tour.missing = time.Time{}
+		return
+	}
+	if u.tour.missing.IsZero() {
+		u.tour.missing = now
+	} else if now.Sub(u.tour.missing) > tourReopenGrace {
+		u.tour.missing = time.Time{}
+		u.tour.GoTo(reopen)
 	}
 }
 

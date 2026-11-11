@@ -66,6 +66,9 @@ type MenuEntry struct {
 	// OnCheckedChange runs with the new state when a checkbox item is
 	// chosen; the menu stays open.
 	OnCheckedChange func(checked bool)
+	// Spot, when set, is handed a widget of the row's size laid at the row,
+	// for a guided tour to point at it.
+	Spot func(gtx C, row layout.Widget) D
 }
 
 func (e MenuEntry) actionable() bool {
@@ -548,10 +551,15 @@ func (m menuCore) layoutPanel(gtx C, lv *menuLevel, entries []MenuEntry, minWidt
 	m.drawSurface(gtx, size)
 	lv.rows = lv.rows[:0]
 	y := pad
-	for _, r := range rows {
+	for i, r := range rows {
 		rect := image.Rect(pad, y, pad+width, y+r.height)
 		lv.rows = append(lv.rows, rect)
 		r.draw(gtx, rect)
+		if spot := entries[i].Spot; spot != nil {
+			at := op.Offset(rect.Min).Push(gtx.Ops)
+			spot(gtx, func(C) D { return D{Size: rect.Size()} })
+			at.Pop()
+		}
 		y += r.height
 	}
 	return size

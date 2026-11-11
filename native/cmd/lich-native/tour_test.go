@@ -51,6 +51,9 @@ func TestEveryGuideNamesKeysInTheCatalog(t *testing.T) {
 			if (s.until != nil) != (s.text.hint != "") {
 				t.Errorf("guide %s, step %d: a hint names the action a waiting step expects, and only one", g.id, i)
 			}
+			if s.layer > 0 && (s.reopen >= i || g.steps[s.reopen].layer >= s.layer) {
+				t.Errorf("guide %s, step %d: a step under a menu or dialog goes back to an earlier step that opens it", g.id, i)
+			}
 			if s.anchor == "" && s.until != nil {
 				t.Errorf("guide %s, step %d: a step that waits for an action points at where to do it", g.id, i)
 			}

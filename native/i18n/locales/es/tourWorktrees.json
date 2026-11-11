@@ -1,10 +1,28 @@
 {
   "label": "Worktrees",
   "unavailable": "Abre primero un proyecto git",
-  "create": {
+  "open": {
     "title": "Empieza una tarea en una worktree",
-    "body": "Abre Nueva sesión y elige Worktree. Ponle unas palabras o una issue como #123, elige una base en Desde y haz clic en Crear.",
-    "hint": "Crea una sesión en worktree para continuar"
+    "body": "Una worktree da a una tarea su propio checkout y su rama, así que su agente nunca toca los archivos de tu checkout principal.",
+    "hint": "Abre Nueva sesión para continuar"
+  },
+  "pick": {
+    "title": "Elige Worktree",
+    "body": "Abre una sesión en una worktree nueva, en una rama propia.",
+    "hint": "Haz clic en Worktree para continuar"
+  },
+  "name": {
+    "title": "Ponle nombre",
+    "body": "Unas palabras o una issue como #123, y la rama toma ese nombre. Déjalo vacío para uno aleatorio."
+  },
+  "from": {
+    "title": "Elige desde dónde empieza",
+    "body": "La rama de la que parte la worktree. Haz clic para buscar entre tus ramas locales y remotas."
+  },
+  "create": {
+    "title": "Créala",
+    "body": "lich crea la worktree y abre una sesión en ella.",
+    "hint": "Haz clic en Crear para continuar"
   },
   "card": {
     "title": "Un checkout propio",

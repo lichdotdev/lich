@@ -143,7 +143,8 @@ func (s *sidebar) headerRow(gtx C, th *ui.Theme, m *model, act *sidebarAction) D
 		s.setOpen(gtx, false, act)
 	}
 	entries := append(launchEntries(s.launchProviders, i18n.T("sidebar.sessionLaunchMenuItems.terminal"), func(kind string) { act.launch = launchRequest{kind: kind} }),
-		ui.MenuEntry{Label: i18n.T("sidebar.sessionLaunchMenuItems.worktree"), Icon: icWtBranch, OnClick: func() { act.worktree = true }})
+		ui.MenuEntry{Label: i18n.T("sidebar.sessionLaunchMenuItems.worktree"), Icon: icWtBranch, OnClick: func() { act.worktree = true },
+			Spot: func(gtx C, row layout.Widget) D { return s.tour.Anchor(gtx, worktreesItem, row) }})
 	trigger := func(gtx C) D {
 		gtx.Constraints.Min.X = gtx.Constraints.Max.X
 		tip := th.Tooltip(s.root, s.hint("new"), i18n.T("sidebar.sessionSidebar.newSession"))

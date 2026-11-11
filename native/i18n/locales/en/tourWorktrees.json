@@ -1,10 +1,28 @@
 {
   "label": "Worktrees",
   "unavailable": "Open a git project first",
-  "create": {
+  "open": {
     "title": "Start a task in a worktree",
-    "body": "Open New Session and pick Worktree. Name it with a few words or an issue like #123, choose a base under From, then click Create.",
-    "hint": "Create a worktree session to continue"
+    "body": "A worktree gives a task its own checkout and branch, so its agent never touches your main checkout's files.",
+    "hint": "Open New Session to continue"
+  },
+  "pick": {
+    "title": "Pick Worktree",
+    "body": "It opens a session in a new worktree, on a branch of its own.",
+    "hint": "Click Worktree to continue"
+  },
+  "name": {
+    "title": "Name it",
+    "body": "A few words or an issue like #123, and the branch takes that name. Leave it blank for a random one."
+  },
+  "from": {
+    "title": "Pick where it starts",
+    "body": "The branch the worktree starts from. Click it to search your local and remote branches."
+  },
+  "create": {
+    "title": "Create it",
+    "body": "lich creates the worktree and opens a session in it.",
+    "hint": "Click Create to continue"
   },
   "card": {
     "title": "A checkout of its own",
