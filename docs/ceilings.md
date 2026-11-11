@@ -1189,10 +1189,44 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   lich records who asked only as the origin session of a new session, and an extension is none, so a session it
   opens has no origin on its card, and the prompt it sends arrives introduced as relayed by the lich command line,
   as `lich send` outside a session does. Nothing records which extension did it.
-- **An extension cannot collect a send that outlived its wait** (`internal/extensions/methods.go`): `sessions.send`
-  holds at most 90 seconds, and a session still working then is `pending` with a ticket no method of this API
-  redeems; the answer goes to no inbox, since the call came from no session. Watching `session.status` for the
-  target turning `done` is the way to know it finished.
+- **An extension collects a pending send only by its ticket, and only its own** (`internal/extensions/methods.go`):
+  a send from no session goes to no inbox and no note announces its answer, so `sessions.answer` with the ticket
+  is the one way to it, each wait at most 90 seconds. The relay redeems a ticket for any caller, so the extension
+  layer keeps the tickets each extension's `sessions.send` and `sessions.open` returned `pending` and refuses any
+  other; an extension cannot read another's answers, nor a session's, by guessing a ticket. A ticket is spent
+  once its outcome is not `pending`. The tickets are kept in memory: a lich restart forgets them, and the relay
+  with them.
+- **An extension with `sessions:ask` reads what a Claude Code session knows** (`internal/extensions/methods.go`,
+  `spawn.Ask`): a side question is answered from that session's whole conversation, so the extension can learn
+  anything said in it, and the answer arrives with nobody at the session told. It carries `ask_session`'s gaps
+  unchanged: only a Claude Code session with the lich-plugin mod loaded answers (every other provider is
+  refused before anything is queued, the Provider support table's `lich ask` row), the wait is 90 seconds with
+  no ticket and a later answer dropped, the fork runs on and is billed past it, and the answer is cut at 16,000
+  characters (the mod ceiling above).
+- **An extension with `services:write` runs the commands a project saved, and `services:read` reads what they
+  print** (`internal/extensions/methods_services.go`): it starts, stops and restarts any saved service of any
+  open project, as the service tools do for an agent, but cannot create, edit or delete one. A console read may
+  carry tokens a dev server prints. `service.status` fires per service whose state changed between two
+  services events; a service lich has not listed before fires only when it is not stopped, and one deleted
+  fires nothing.
+- **`git.status` reads git on each call, and has no ahead count** (`internal/extensions/methods_window.go`):
+  the window keeps the git state it shows in its own process, so the backend has no store to answer from and
+  runs the two reads a card runs (`project.Diff`, `project.BaseStatus`). What it carries is what a card shows:
+  the commits behind the base branch and the files that would conflict, not how far the branch is ahead of
+  its upstream. `git.pullRequest` reads the branch watch's store and makes one `gh` call only for a checkout
+  the watch never read, which it does not then start following.
+- **An extension's notifications obey no notification setting, only a bound** (`internal/extensions/methods_window.go`):
+  `notify` goes through `system.Notify`, the path lich's backend raises its own on (a schedule forfeited). lich's
+  two notification settings are about sessions (one needing input, one finishing a turn), so neither applies,
+  and the window's focus does not either: the notification goes up while the person is in lich. Each extension
+  raises at most 3 a minute (`maxNotifications`), the bound kept across its restarts; the rest are refused with
+  an error. There is no click action, and on a desktop with no notification server the call fails with
+  `system.Notify`'s error.
+- **An extension with `window` acts on screen in a session's name** (`internal/extensions/methods_window.go`):
+  `window.showCode` opens any file of a live session's checkout in the dock and `window.openURL` loads any http
+  or https page in a session's browser tab, both as the session's own tools do, and the person sees them as that
+  session's. Both need a window attached to `/events`, and refuse otherwise. `window.openURL` takes neither a
+  local file nor the artifact folder, which `browser_open` serves, and drives no page past the load.
 - **Calls are bounded per extension, not across them** (`internal/extensions/calls.go`): 8 running at once, the
   ninth refused, each cut at 2 minutes, which is also where a `sessions.open` slower than that ends while the
   session it was opening may still appear. A result or event the extension does not read in time, past the 64
