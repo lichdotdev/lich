@@ -4,14 +4,11 @@ import (
 	"image"
 	"image/color"
 	"maps"
-	"math"
 	"strconv"
 	"strings"
 
-	"gioui.org/f32"
 	"gioui.org/font"
 	"gioui.org/layout"
-	"gioui.org/op"
 	"gioui.org/unit"
 	"gioui.org/widget"
 	"github.com/lichdotdev/lich/native/i18n"
@@ -51,9 +48,8 @@ func aroundValue(key, placeholder string, rest ...i18n.Args) (before, after stri
 }
 
 var (
-	icGroupChevron = icons.Lucide("chevron-right")
-	icGroupFolder  = icons.Lucide("folder")
-	icGroupMore    = icons.Lucide("ellipsis")
+	icGroupFolder = icons.Lucide("folder")
+	icGroupMore   = icons.Lucide("ellipsis")
 )
 
 // groupHeader is a block's header: the title (or the folder's rename field) and the …,
@@ -245,17 +241,6 @@ func markColor(th *ui.Theme, b blockView) (color.NRGBA, bool) {
 		return th.TonePass, true
 	}
 	return color.NRGBA{}, false
-}
-
-// chevron is a ChevronRight, turned down while open.
-// ponytail: turns at once instead of easing.
-func chevron(gtx C, c color.NRGBA, open bool) D {
-	size := gtx.Dp(ui.Space(3))
-	if open {
-		center := f32.Pt(float32(size)/2, float32(size)/2)
-		defer op.Affine(f32.Affine2D{}.Rotate(center, math.Pi/2)).Push(gtx.Ops).Pop()
-	}
-	return icGroupChevron.Layout(gtx, ui.Space(3), c)
 }
 
 // folderRenameField is the header's input while a folder is renamed: the

@@ -27,6 +27,7 @@ func init() {
 		extension.TwoLines.Name:         drawTwoLines,
 		extension.SpinnerLine.Name:      drawSpinnerLine,
 		extension.SpinnerBeside.Name:    drawSpinnerBeside,
+		extension.Stat.Name:             drawStat,
 		extension.CheckRow.Name:         drawCheckRow,
 		extension.NavRow.Name:           drawNavRow,
 		extension.PanelRow.Name:         drawPanelRow,
@@ -189,6 +190,11 @@ func drawSpinnerLine(_ *Renderer, gtx C, th *ui.Theme, n extension.Node, _ strin
 
 func drawSpinnerBeside(r *Renderer, gtx C, th *ui.Theme, n extension.Node, id string) D {
 	return th.SpinnerBeside(gtx, r.stacked(th, n, id))
+}
+
+func drawStat(r *Renderer, gtx C, th *ui.Theme, n extension.Node, id string) D {
+	p := props[extension.StatProps](n)
+	return th.Stat(gtx, r.side(th, n, id, 0), p.Text, r.color(th, p.Color, th.Foreground))
 }
 
 // checkState is the row's box, showing the extension's Checked until the

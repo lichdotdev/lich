@@ -217,6 +217,7 @@ func (g *gallery) content(gtx C) D {
 					g.section("Chip, ResizeHandle, Collapse, Presence, Sortable list", g.sidebarSection),
 					g.section("Notice, Footnote, PanelNotice, BodyLine", g.noticesSection),
 					g.section("PopoverRow, SelectTrigger, RuleAbove, VerticalRule", g.rowsSection),
+					g.section("Stat", g.statSection),
 					g.section("NavRow, PanelRow, FillRow, MenuHeader, MenuSeparator, RailHairline, CaptionDivider, OrRule", g.listRowsSection),
 					g.section("GhostTextButton, CardIconButton, GhostIconButton, SquareFace, LabelFace", g.facesSection),
 					g.section("StatusDot, MarkDot, Dot, Swatch, NotifyDot", g.dotsSection),
