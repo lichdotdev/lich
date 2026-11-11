@@ -654,7 +654,13 @@
       "projectsRead": "Ver tus proyectos abiertos y sus worktrees",
       "sessionsRead": "Ver tus sesiones y lo que hace cada una",
       "sessionsWrite": "Abrir sesiones y escribir prompts en ellas",
-      "sessionEvents": "Seguir el estado de cada sesión cuando cambia"
+      "sessionEvents": "Seguir el estado de cada sesión cuando cambia",
+      "sessionsAsk": "Hacer preguntas aparte a tus sesiones de Claude Code y leer sus respuestas",
+      "servicesRead": "Ver los servicios de tus proyectos y lo que imprimen",
+      "servicesWrite": "Iniciar, detener y reiniciar los servicios de tus proyectos",
+      "gitRead": "Ver la rama, los cambios y el pull request de cada checkout",
+      "notify": "Mostrar notificaciones de escritorio",
+      "window": "Mostrar archivos en el dock y abrir páginas en el navegador de una sesión"
     },
     "removeTitle": "¿Quitar {name}?",
     "removeDescription": "lich la detiene y borra el programa. Lo que guardó se conserva, así que al instalarla de nuevo sigue donde lo dejó.",

@@ -255,6 +255,12 @@ func TestEachPermissionHasLichsOwnLine(t *testing.T) {
 		extension.PermissionSessionsRead:  "See your sessions and what each one is doing",
 		extension.PermissionSessionsWrite: "Open sessions and type prompts into them",
 		extension.PermissionSessionEvents: "Follow each session's status as it changes",
+		extension.PermissionSessionsAsk:   "Ask your Claude Code sessions side questions and read their answers",
+		extension.PermissionServicesRead:  "See your projects' services and what they print",
+		extension.PermissionServicesWrite: "Start, stop and restart your projects' services",
+		extension.PermissionGitRead:       "See each checkout's branch, changes and pull request",
+		extension.PermissionNotify:        "Show desktop notifications",
+		extension.PermissionWindow:        "Show files in the dock and open pages in a session's browser",
 	}
 	for _, p := range extension.Permissions {
 		if got := permissionText(string(p)); got != want[p] {
@@ -266,11 +272,14 @@ func TestEachPermissionHasLichsOwnLine(t *testing.T) {
 	}
 }
 
-func TestOnlyActingOnSessionsIsInTheWaitTone(t *testing.T) {
+func TestOnlyThePermissionsThatActAreInTheWaitTone(t *testing.T) {
 	th := testTheme()
+	acting := []extension.Permission{
+		extension.PermissionSessionsWrite, extension.PermissionSessionsAsk, extension.PermissionServicesWrite, extension.PermissionWindow,
+	}
 	for _, p := range extension.Permissions {
 		want := th.Foreground
-		if p == extension.PermissionSessionsWrite {
+		if slices.Contains(acting, p) {
 			want = th.ToneWait
 		}
 		if got := permissionTone(th, string(p)); got != want {

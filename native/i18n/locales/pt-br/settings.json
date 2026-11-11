@@ -654,7 +654,13 @@
       "projectsRead": "Ver seus projetos abertos e as worktrees deles",
       "sessionsRead": "Ver suas sessões e o que cada uma está fazendo",
       "sessionsWrite": "Abrir sessões e digitar prompts nelas",
-      "sessionEvents": "Acompanhar o status de cada sessão quando ele muda"
+      "sessionEvents": "Acompanhar o status de cada sessão quando ele muda",
+      "sessionsAsk": "Fazer perguntas à parte às suas sessões do Claude Code e ler as respostas",
+      "servicesRead": "Ver os serviços dos seus projetos e o que eles imprimem",
+      "servicesWrite": "Iniciar, parar e reiniciar os serviços dos seus projetos",
+      "gitRead": "Ver a branch, as mudanças e o pull request de cada checkout",
+      "notify": "Mostrar notificações na área de trabalho",
+      "window": "Mostrar arquivos no dock e abrir páginas no navegador de uma sessão"
     },
     "removeTitle": "Remover {name}?",
     "removeDescription": "O lich para a extensão e apaga o programa. O que ela salvou fica, então ao instalar de novo ela continua de onde parou.",

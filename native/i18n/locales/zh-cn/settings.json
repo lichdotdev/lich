@@ -653,7 +653,13 @@
       "projectsRead": "查看你打开的项目及其 worktree",
       "sessionsRead": "查看你的会话以及每个会话在做什么",
       "sessionsWrite": "打开会话并向其中输入提示词",
-      "sessionEvents": "跟踪每个会话的状态变化"
+      "sessionEvents": "跟踪每个会话的状态变化",
+      "sessionsAsk": "向你的 Claude Code 会话提旁问并读取回答",
+      "servicesRead": "查看你项目的服务及其输出",
+      "servicesWrite": "启动、停止和重启你项目的服务",
+      "gitRead": "查看每个检出的分支、更改和 pull request",
+      "notify": "显示桌面通知",
+      "window": "在停靠栏中显示文件，并在会话的浏览器中打开页面"
     },
     "removeTitle": "移除 {name}？",
     "removeDescription": "lich 会停止它并删除程序。它保存的内容会保留，重新安装后可以接着使用。",
