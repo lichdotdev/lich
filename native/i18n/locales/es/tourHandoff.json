@@ -2,9 +2,8 @@
   "label": "Pasar el trabajo",
   "unavailable": "Necesita una sesión con un agente",
   "ask": {
-    "title": "Pide a tu agente que pase el trabajo",
-    "body": "Cuando el contexto se llene o la tarea cambie, pide a tu agente que pase el trabajo a una sesión nueva. Escribe un resumen de lo hecho y de lo que sigue, y una sesión nueva continúa desde ahí.",
-    "hint": "Pide a tu agente que pase el trabajo para continuar"
+    "title": "Pide a tu agente que traspase el trabajo",
+    "body": "Cuando el contexto se llene o la tarea cambie, pide a tu agente: \"Pasa esto a una nueva sesión de lich.\" Escribe un resumen de lo hecho y de lo que sigue, y una sesión nueva continúa desde ahí."
   },
   "successor": {
     "title": "La sesión nueva queda bajo esta",

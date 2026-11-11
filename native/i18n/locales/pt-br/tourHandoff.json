@@ -2,9 +2,8 @@
   "label": "Passar o trabalho adiante",
   "unavailable": "Precisa de uma sessão rodando um agente",
   "ask": {
-    "title": "Peça ao agente para passar adiante",
-    "body": "Quando o contexto encher ou a tarefa mudar, peça ao agente para passar o trabalho a uma sessão nova. Ele escreve um resumo do que foi feito e do que vem a seguir, e uma sessão nova continua dali.",
-    "hint": "Peça ao agente para passar adiante e continuar"
+    "title": "Peça ao agente para passar o trabalho adiante",
+    "body": "Quando o contexto encher ou a tarefa mudar, peça ao agente: \"Passe isso para uma nova sessão do lich.\" Ele escreve um resumo do que foi feito e do que vem depois, e uma sessão nova continua dali."
   },
   "successor": {
     "title": "A sessão nova fica embaixo desta",

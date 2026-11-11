@@ -94,14 +94,15 @@ func TestBasicsWaitsOnlyForOpeningAProjectAndASession(t *testing.T) {
 
 // The handoff has no button: its one waiting step is the agent's terminal,
 // where the person asks for it.
-func TestHandoffWaitsOnlyOnTheAgent(t *testing.T) {
-	var waiting []string
-	for _, s := range handoffTour {
+// The handoff depends on the agent having lich's tools and picking them, so
+// no step may hold the tour until it happens.
+func TestHandoffNeverWaitsOnTheAgent(t *testing.T) {
+	for i, s := range handoffTour {
 		if s.until != nil {
-			waiting = append(waiting, s.anchor)
+			t.Errorf("step %d waits; the handoff guide must never hold the tour", i)
 		}
 	}
-	if len(waiting) != 1 || waiting[0] != tourStage || handoffTour[0].anchor != tourStage {
-		t.Fatalf("waiting steps = %v, want only the first, on the terminal", waiting)
+	if handoffTour[0].anchor != tourStage {
+		t.Fatal("the guide does not open on the terminal, where the agent is asked")
 	}
 }

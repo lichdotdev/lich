@@ -3,8 +3,7 @@
   "unavailable": "Needs a session running an agent",
   "ask": {
     "title": "Ask your agent to hand off",
-    "body": "When the context is full or the task changes, tell your agent to hand off to a fresh session. It writes a brief of what is done and what comes next, and a new session picks up from there.",
-    "hint": "Ask your agent to hand off to continue"
+    "body": "When the context is full or the task changes, ask your agent: \"Hand this off to a new lich session.\" It writes a brief of what is done and what comes next, and a new session picks up from there."
   },
   "successor": {
     "title": "The new session sits under this one",
