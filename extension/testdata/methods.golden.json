@@ -10,6 +10,50 @@
     "result": {}
   },
   {
+    "method": "git.pullRequest",
+    "params": {
+      "path": "path"
+    },
+    "permission": "git:read",
+    "result": {
+      "pullRequest": {
+        "number": 1,
+        "url": "url",
+        "title": "title",
+        "head": "head",
+        "base": "base"
+      }
+    }
+  },
+  {
+    "method": "git.status",
+    "params": {
+      "path": "path"
+    },
+    "permission": "git:read",
+    "result": {
+      "branch": "branch",
+      "head": "head",
+      "files": 1,
+      "added": 1,
+      "deleted": 1,
+      "base": "base",
+      "behind": 1,
+      "conflicts": [
+        "conflicts"
+      ]
+    }
+  },
+  {
+    "method": "notify",
+    "params": {
+      "title": "title",
+      "body": "body"
+    },
+    "permission": "notify",
+    "result": {}
+  },
+  {
     "method": "projects.list",
     "params": {},
     "permission": "projects:read",
@@ -20,6 +64,119 @@
         "path": "path"
       }
     ]
+  },
+  {
+    "method": "services.list",
+    "params": {
+      "project": "project"
+    },
+    "permission": "services:read",
+    "result": [
+      {
+        "id": "id",
+        "name": "name",
+        "command": "command",
+        "startWithLich": true,
+        "state": "state",
+        "exitCode": 1,
+        "startedAt": 1,
+        "stoppedAt": 1
+      }
+    ]
+  },
+  {
+    "method": "services.output",
+    "params": {
+      "project": "project",
+      "service": "service"
+    },
+    "permission": "services:read",
+    "result": {
+      "output": "output"
+    }
+  },
+  {
+    "method": "services.restart",
+    "params": {
+      "project": "project",
+      "service": "service"
+    },
+    "permission": "services:write",
+    "result": {
+      "id": "id",
+      "name": "name",
+      "command": "command",
+      "startWithLich": true,
+      "state": "state",
+      "exitCode": 1,
+      "startedAt": 1,
+      "stoppedAt": 1
+    }
+  },
+  {
+    "method": "services.start",
+    "params": {
+      "project": "project",
+      "service": "service"
+    },
+    "permission": "services:write",
+    "result": {
+      "id": "id",
+      "name": "name",
+      "command": "command",
+      "startWithLich": true,
+      "state": "state",
+      "exitCode": 1,
+      "startedAt": 1,
+      "stoppedAt": 1
+    }
+  },
+  {
+    "method": "services.stop",
+    "params": {
+      "project": "project",
+      "service": "service"
+    },
+    "permission": "services:write",
+    "result": {
+      "id": "id",
+      "name": "name",
+      "command": "command",
+      "startWithLich": true,
+      "state": "state",
+      "exitCode": 1,
+      "startedAt": 1,
+      "stoppedAt": 1
+    }
+  },
+  {
+    "method": "sessions.answer",
+    "params": {
+      "ticket": "ticket",
+      "waitSeconds": 1
+    },
+    "permission": "sessions:write",
+    "result": {
+      "ticket": "ticket",
+      "target": "target",
+      "status": "status",
+      "answer": "answer"
+    }
+  },
+  {
+    "method": "sessions.ask",
+    "params": {
+      "session": "session",
+      "project": "project",
+      "question": "question"
+    },
+    "permission": "sessions:ask",
+    "result": {
+      "id": "id",
+      "project": "project",
+      "label": "label",
+      "answer": "answer"
+    }
   },
   {
     "method": "sessions.list",
@@ -83,6 +240,35 @@
       "target": "target",
       "status": "status",
       "answer": "answer"
+    }
+  },
+  {
+    "method": "window.openURL",
+    "params": {
+      "session": "session",
+      "url": "url"
+    },
+    "permission": "window",
+    "result": {
+      "url": "url",
+      "title": "title"
+    }
+  },
+  {
+    "method": "window.showCode",
+    "params": {
+      "session": "session",
+      "path": "path",
+      "line": 1,
+      "endLine": 1,
+      "comment": "comment"
+    },
+    "permission": "window",
+    "result": {
+      "session": "session",
+      "path": "path",
+      "line": 1,
+      "endLine": 1
     }
   },
   {

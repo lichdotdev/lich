@@ -118,6 +118,70 @@ func (c *Conn) SendToSession(ctx context.Context, params SendParams) (SendResult
 	return Call(ctx, c, SendToSession, params)
 }
 
+// Ask calls AskSession.
+func (c *Conn) Ask(ctx context.Context, params AskParams) (AskResult, error) {
+	return Call(ctx, c, AskSession, params)
+}
+
+// Answer calls CollectAnswer.
+func (c *Conn) Answer(ctx context.Context, params AnswerParams) (SendResult, error) {
+	return Call(ctx, c, CollectAnswer, params)
+}
+
+// Services calls ListServices for project.
+func (c *Conn) Services(ctx context.Context, project string) ([]Service, error) {
+	return Call(ctx, c, ListServices, ServicesParams{Project: project})
+}
+
+// StartService calls StartService.
+func (c *Conn) StartService(ctx context.Context, params ServiceParams) (Service, error) {
+	return Call(ctx, c, StartService, params)
+}
+
+// StopService calls StopService.
+func (c *Conn) StopService(ctx context.Context, params ServiceParams) (Service, error) {
+	return Call(ctx, c, StopService, params)
+}
+
+// RestartService calls RestartService.
+func (c *Conn) RestartService(ctx context.Context, params ServiceParams) (Service, error) {
+	return Call(ctx, c, RestartService, params)
+}
+
+// ServiceOutput calls ServiceOutput.
+func (c *Conn) ServiceOutput(ctx context.Context, params ServiceParams) (string, error) {
+	out, err := Call(ctx, c, ServiceOutput, params)
+	return out.Output, err
+}
+
+// GitStatus calls GitStatus for the checkout at path.
+func (c *Conn) GitStatus(ctx context.Context, path string) (GitStatusResult, error) {
+	return Call(ctx, c, GitStatus, GitParams{Path: path})
+}
+
+// PullRequest calls GitPullRequest for the checkout at path: nil when its
+// branch has no open pull request.
+func (c *Conn) PullRequest(ctx context.Context, path string) (*PullRequest, error) {
+	out, err := Call(ctx, c, GitPullRequest, GitParams{Path: path})
+	return out.PullRequest, err
+}
+
+// Notify calls Notify.
+func (c *Conn) Notify(ctx context.Context, title, body string) error {
+	_, err := Call(ctx, c, Notify, NotifyParams{Title: title, Body: body})
+	return err
+}
+
+// ShowCode calls ShowCode.
+func (c *Conn) ShowCode(ctx context.Context, params ShowCodeParams) (ShownCode, error) {
+	return Call(ctx, c, ShowCode, params)
+}
+
+// OpenURL calls OpenURL.
+func (c *Conn) OpenURL(ctx context.Context, session, url string) (OpenedURL, error) {
+	return Call(ctx, c, OpenURL, OpenURLParams{Session: session, URL: url})
+}
+
 // Subscribe starts the events named, which then arrive on Messages as
 // lich.event.
 func (c *Conn) Subscribe(ctx context.Context, names ...string) error {

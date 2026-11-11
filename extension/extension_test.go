@@ -37,7 +37,7 @@ func fill(v reflect.Value, name string, parents ...reflect.Type) {
 		v.SetString(name)
 	case reflect.Bool:
 		v.SetBool(true)
-	case reflect.Int:
+	case reflect.Int, reflect.Int64:
 		v.SetInt(1)
 	case reflect.Uint8:
 		v.SetUint(1)

@@ -223,3 +223,35 @@ func TestConnWritesWholeLinesFromManyGoroutines(t *testing.T) {
 		}
 	}
 }
+
+func TestEachHelperCallsItsMethod(t *testing.T) {
+	f, conn := newFakeLich(t, func(call CallData) *ResultData {
+		return &ResultData{ID: call.ID, Data: json.RawMessage(`null`)}
+	})
+	ctx := within(t)
+	helpers := map[string]func() error{
+		AskSession.Name:    func() error { _, err := conn.Ask(ctx, AskParams{Session: "a", Question: "q"}); return err },
+		CollectAnswer.Name: func() error { _, err := conn.Answer(ctx, AnswerParams{Ticket: "t"}); return err },
+		ListServices.Name:  func() error { _, err := conn.Services(ctx, "lich"); return err },
+		StartService.Name:  func() error { _, err := conn.StartService(ctx, ServiceParams{Service: "web"}); return err },
+		StopService.Name:   func() error { _, err := conn.StopService(ctx, ServiceParams{Service: "web"}); return err },
+		RestartService.Name: func() error {
+			_, err := conn.RestartService(ctx, ServiceParams{Service: "web"})
+			return err
+		},
+		ServiceOutput.Name:  func() error { _, err := conn.ServiceOutput(ctx, ServiceParams{Service: "web"}); return err },
+		GitStatus.Name:      func() error { _, err := conn.GitStatus(ctx, "/src"); return err },
+		GitPullRequest.Name: func() error { _, err := conn.PullRequest(ctx, "/src"); return err },
+		Notify.Name:         func() error { return conn.Notify(ctx, "t", "b") },
+		ShowCode.Name:       func() error { _, err := conn.ShowCode(ctx, ShowCodeParams{Session: "s", Path: "a.go"}); return err },
+		OpenURL.Name:        func() error { _, err := conn.OpenURL(ctx, "s", "https://example.com"); return err },
+	}
+	for name, helper := range helpers {
+		if err := helper(); err != nil {
+			t.Errorf("%s: %v", name, err)
+		}
+		if call := <-f.calls; call.Method != name {
+			t.Errorf("the helper for %s called %s", name, call.Method)
+		}
+	}
+}
