@@ -4,8 +4,10 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -92,6 +94,29 @@ func DownloadDir() (string, error) {
 		return "", err
 	}
 	return filepath.Join(cache, "lich", "fonts"), nil
+}
+
+// Downloaded lists the font files in DownloadDir, none when nothing was
+// downloaded yet. The system's own lookups never see that folder.
+func Downloaded() ([]string, error) {
+	dir, err := DownloadDir()
+	if err != nil {
+		return nil, err
+	}
+	entries, err := os.ReadDir(dir)
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	var paths []string
+	for _, e := range entries {
+		if ext := filepath.Ext(e.Name()); ext == ".otf" || ext == ".ttf" {
+			paths = append(paths, filepath.Join(dir, e.Name()))
+		}
+	}
+	return paths, nil
 }
 
 // Fetch downloads each of files into dir, skipping the ones already there

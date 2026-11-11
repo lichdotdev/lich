@@ -175,7 +175,7 @@ func (r *Rasterizer) covers(f *fontFace, c rune) bool {
 }
 
 // faceFor picks the family's face for k, or a fallback that covers its
-// character. It returns nil when nothing installed does.
+// character. It returns nil when nothing installed or downloaded does.
 func (r *Rasterizer) faceFor(k Key) (*fontFace, error) {
 	primary := r.styles[styleIndex(k)]
 	if r.covers(primary, k.R) {
@@ -194,19 +194,36 @@ func (r *Rasterizer) faceFor(k Key) (*fontFace, error) {
 	if err != nil {
 		return nil, err
 	}
-	var f *fontFace
+	var paths []string
 	if path != "" {
-		if f, err = r.load(path); err != nil {
-			return nil, err
-		}
-		if r.covers(f, k.R) {
-			r.fallbacks = append(r.fallbacks, f)
-		} else {
-			f = nil
-		}
+		paths = []string{path}
+	} else if paths, err = fonts.Downloaded(); err != nil {
+		return nil, err
+	}
+	f, err := r.firstCovering(paths, k.R)
+	if err != nil {
+		return nil, err
+	}
+	if f != nil {
+		r.fallbacks = append(r.fallbacks, f)
 	}
 	r.byRune[k.R] = f
 	return f, nil
+}
+
+// firstCovering loads paths in order and returns the first face that has a
+// glyph for c, or nil when none does.
+func (r *Rasterizer) firstCovering(paths []string, c rune) (*fontFace, error) {
+	for _, path := range paths {
+		f, err := r.load(path)
+		if err != nil {
+			return nil, err
+		}
+		if r.covers(f, c) {
+			return f, nil
+		}
+	}
+	return nil, nil
 }
 
 // Mask returns k's coverage, rasterizing it on first use.
