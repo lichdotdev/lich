@@ -8,13 +8,8 @@
   },
   "item": {
     "title": "Elige Navegador",
-    "body": "Abre una pestaña de navegador junto a tu sesión.",
+    "body": "Abre un navegador junto a tu sesión.",
     "hint": "Haz clic en Navegador para continuar"
-  },
-  "again": {
-    "title": "Abre el navegador",
-    "body": "Tu sesión está en un diseño, así que su navegador va en una pestaña propia. Elige Navegador en su menú otra vez y pulsa Mover.",
-    "hint": "Abre el navegador de tu sesión para continuar"
   },
   "pane": {
     "title": "Tú y tu agente ven la misma página",

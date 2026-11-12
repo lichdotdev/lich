@@ -237,9 +237,12 @@ The sidebar is the window's reference list; its geometry lives in `sidebar_tree_
 Every row is one line, 34dp tall: `Space(1.5)` above and below a 22px node. Rows stand flush, no gap
 (`cardGap` is 0), so the tree's links run from row to row unbroken.
 
-- **A session row**: its status ring around the provider mark, the shield, fork and browser glyphs it
+- **A session row**: its status ring around the provider mark, the shield and fork glyphs it
   earns, its name, then its pull request and changes unless a checkout row above already shows them, and
   the corner slot.
+- **A browser row**: a session's running browser, first under it: the globe in a neutral ring, the page's
+  host as its name, the corner slot. The name is `MutedForeground` while the page is off the stage. A folded
+  mother shows a globe on her own row instead.
 - **A checkout row**: the branch glyph in a neutral ring, the branch, its pull request and changes, the
   corner slot. A project's checkout is the root its sessions hang from; a child running in another
   checkout than its mother hangs from a checkout row of its own inside her group.

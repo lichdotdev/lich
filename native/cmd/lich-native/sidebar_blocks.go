@@ -45,6 +45,8 @@ type blockView struct {
 	byCheckout bool
 	// motherFolds are the mothers of the block folded over their children.
 	motherFolds map[string]bool
+	// carried is the session whose card is in the air, "" for none.
+	carried string
 	// checkouts' facts, keyed by path: the header's and every checkout a
 	// child runs in apart from its mother.
 	facts map[string]checkoutFacts

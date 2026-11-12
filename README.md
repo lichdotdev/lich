@@ -55,7 +55,7 @@ Read what the agent changed next to its session, comment on the lines that need 
 
 ### Point at the page, tell the agent
 
-The agent drives a browser in a tab beside its session, and you use the same page. Point at what's wrong, leave a note on it and send every note back as one prompt.
+The agent drives a browser beside its session, and you use the same page. Point at what's wrong, leave a note on it and send every note back as one prompt.
 
 </td>
 <td width="50%"><img src="docs/media/page-notes.png" alt="The session's browser beside its terminal, with two numbered notes pinned to elements of the page" width="100%" /></td>
@@ -182,7 +182,7 @@ what lich can read back out of it, since each CLI records different things.
 | A task you hand another session reports back "unanswered" as soon as that agent ends its turn without replying | yes | yes | yes | yes | yes | no, waits for the deadline | yes | yes |
 | lich's own messages to the agent (handed tasks, results ready, notices) in the prompt language you pick | yes | yes | yes | yes | yes | yes | yes | yes |
 | Told at spawn, in the prompt language, to fan work out as lich sessions rather than hidden subagents | yes | no | no | no | yes | no | no | no |
-| The session card opens a browser its agent drives, in a tab beside the session | yes | yes | yes | yes | yes | yes | yes | yes |
+| The session card opens a browser its agent drives, beside the session's terminal | yes | yes | yes | yes | yes | yes | yes | yes |
 | A page the agent makes to show you (a report, a diagram, a mockup) opens in that browser from a folder of the session's own, outside the checkout, kept as long as the session | yes, though Claude Code may still publish it to claude.ai with its own Artifact tool | yes | yes | yes | yes | yes | yes | yes |
 
 </details>

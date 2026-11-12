@@ -54,11 +54,11 @@ const doubleClick = 400 * time.Millisecond
 // browserPaneUI is one page pane's widgets and what it last told the
 // backend, kept across frames by session.
 type browserPaneUI struct {
-	back, forward, reload, window ui.IconActionState
-	pageZoom                      browserZoomState
-	zoom, close                   widget.Clickable
-	zoomTip, closeTip             ui.Tooltip
-	url                           widget.Editor
+	back, forward, reload, window  ui.IconActionState
+	pageZoom                       browserZoomState
+	zoom, minimize, close          widget.Clickable
+	zoomTip, minimizeTip, closeTip ui.Tooltip
+	url                            widget.Editor
 	// shownURL is the page's URL the field last showed: a navigation
 	// replaces the field's text unless the person is editing it.
 	shownURL    string
@@ -164,7 +164,6 @@ func (u *window) browserPaneAt(gtx C, v stageView, session string, r image.Recta
 	u.paintAgentCursor(gtx, p, session)
 	u.paneFocusTarget(gtx, pane)
 	area.Pop()
-	u.lockedDropRefusal(gtx, session, image.Rectangle{Max: size}, r.Add(u.islandAt))
 	border, width := line, float32(gtx.Dp(1))
 	if several && focused {
 		border, width = th.Ring, float32(gtx.Dp(1.5))
@@ -172,13 +171,17 @@ func (u *window) browserPaneAt(gtx C, v stageView, session string, r image.Recta
 	paint.FillShape(gtx.Ops, border, clip.Stroke{Path: shape.Path(gtx.Ops), Width: width}.Op())
 }
 
-// browserHeader is the page pane's top row: its name or its tabs, zoom and
-// close.
+// browserHeader is the page pane's top row: its name or its tabs, zoom,
+// minimize, which leaves the browser running off screen, and close.
 func (u *window) browserHeader(gtx C, p *browserPaneUI, session string, st api.BrowserState, focused bool) {
 	th := u.theme
 	pane := browserPaneOf(session)
 	if p.zoom.Clicked(gtx) {
 		u.layoutStage.focus, u.layoutStage.zoom = pane, true
+	}
+	if p.minimize.Clicked(gtx) {
+		u.model.minimizePage(session)
+		u.model.invalidate()
 	}
 	if p.close.Clicked(gtx) {
 		session := paneSession(pane)
@@ -194,6 +197,11 @@ func (u *window) browserHeader(gtx C, p *browserPaneUI, session string, st api.B
 			layout.Rigid(func(gtx C) D {
 				zoom := th.Tooltip(&u.root, &p.zoomTip, i18n.T("layouts.pane.zoom"))
 				return zoom.Layout(gtx, func(gtx C) D { return th.CornerButton(&p.zoom, icPaneZoom, false).Layout(gtx) })
+			}),
+			ui.Gap(1.5),
+			layout.Rigid(func(gtx C) D {
+				minimize := th.Tooltip(&u.root, &p.minimizeTip, i18n.T("layouts.browser.minimize"))
+				return minimize.Layout(gtx, func(gtx C) D { return th.CornerButton(&p.minimize, icMinimize, false).Layout(gtx) })
 			}),
 			ui.Gap(1.5),
 			layout.Rigid(func(gtx C) D {
@@ -458,16 +466,6 @@ func (u *window) settleBrowserPanes() {
 		p.view = api.BrowserViewOptions{}
 		u.sendBrowser(session, "detach", func(ctx context.Context) error { return u.client.DetachBrowser(ctx, session) })
 	}
-}
-
-// lockedDropRefusal tells a drag carried over a browser tab's pane that the
-// tab takes no one else.
-func (u *window) lockedDropRefusal(gtx C, session string, local, at image.Rectangle) {
-	carried := u.sidebar.carry.Carrying()
-	if carried == "" || carried == session || !u.layoutStage.pointer.at.In(at) {
-		return
-	}
-	u.dropHighlight(gtx, local, i18n.T("layouts.browser.locked", i18n.Args{"label": u.model.sessionLabel(session)}))
 }
 
 // displayURL is the page's URL as the address field shows it: about:blank

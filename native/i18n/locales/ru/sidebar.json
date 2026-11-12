@@ -236,6 +236,12 @@
   "checkoutRow": {
     "newSessionHere": "Новая сессия здесь"
   },
+  "browserRow": {
+    "show": "Показать",
+    "minimize": "Свернуть",
+    "minimized": "Свёрнут",
+    "inWindow": "В отдельном окне"
+  },
   "scheduleDialog": {
     "title": "Запланировать промпт",
     "titleArmed": "Запланированный промпт",

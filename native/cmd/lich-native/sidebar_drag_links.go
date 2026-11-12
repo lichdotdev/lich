@@ -234,6 +234,7 @@ func (s *sidebar) dragLinks(gtx C, st *blockState, keys []string, byKey map[stri
 // they go with her: the list moves her row alone, and they open under her
 // where she lands.
 func carriedFold(b blockView, dragging string) blockView {
+	b.carried = dragging
 	if dragging == "" || b.motherFolds[dragging] {
 		return b
 	}

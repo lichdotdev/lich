@@ -18,6 +18,7 @@
   "browser": {
     "title": "Browser",
     "close": "Close the browser",
+    "minimize": "Minimize: the browser keeps running",
     "newTab": "New tab",
     "closeTab": "Close tab",
     "blankTab": "New tab",
@@ -26,7 +27,6 @@
     "forward": "Forward",
     "reload": "Reload",
     "openInWindow": "Open in a window",
-    "locked": "This tab holds only {label} and its browser",
     "opened": "{label} opened a browser",
     "dismiss": "Dismiss",
     "open": "Open",
@@ -35,7 +35,6 @@
     "keepOpen": "Keep open",
     "closeIdle": "Close",
     "showFolder": "Open folder",
-    "moveBody": "It leaves \"{layout}\". A browser tab holds only {label} and its browser.",
     "pick": "Leave notes on the page",
     "pickHint": "Click an element to leave a note",
     "zoom": "Page zoom",

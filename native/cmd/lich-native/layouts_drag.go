@@ -213,6 +213,12 @@ func (u *window) endStrandedDrag(gtx C) {
 	}
 }
 
+// drawn reports whether target had a pane on screen in the last frame.
+func (d *dragPointer) drawn(target string) bool {
+	_, ok := d.last[target]
+	return ok
+}
+
 // fits reports whether target's pane, as last drawn, holds two panes of the
 // smallest size side by side for edge left or right, stacked for top or
 // bottom; the middle swaps and always fits.

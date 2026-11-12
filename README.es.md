@@ -55,7 +55,7 @@ Lee lo que cambió el agente junto a su sesión, comenta las líneas que necesit
 
 ### Señala la página, díselo al agente
 
-El agente maneja un navegador en una pestaña junto a su sesión, y tú usas la misma página. Señala lo que está mal, deja una nota encima y envía todas las notas de vuelta en un solo prompt.
+El agente maneja un navegador junto a su sesión, y tú usas la misma página. Señala lo que está mal, deja una nota encima y envía todas las notas de vuelta en un solo prompt.
 
 </td>
 <td width="50%"><img src="docs/media/page-notes.png" alt="El navegador de la sesión junto a su terminal, con dos notas numeradas fijadas a elementos de la página" width="100%" /></td>
@@ -186,7 +186,7 @@ distinto.
 | Una tarea que entregas a otra sesión informa "sin respuesta" en cuanto ese agente termina su turno sin responder | sí | sí | sí | sí | sí | no, espera al plazo | sí | sí |
 | Los mensajes propios de lich al agente (tareas entregadas, resultados listos, avisos) en el idioma de prompt que elijas | sí | sí | sí | sí | sí | sí | sí | sí |
 | Se le indica al iniciarse, en el idioma de prompt, que reparta el trabajo como sesiones de lich en vez de subagentes ocultos | sí | no | no | no | sí | no | no | no |
-| La tarjeta de la sesión abre un navegador que el agente conduce, en una pestaña junto a la sesión | sí | sí | sí | sí | sí | sí | sí | sí |
+| La tarjeta de la sesión abre un navegador que el agente conduce, junto al terminal de la sesión | sí | sí | sí | sí | sí | sí | sí | sí |
 | Una página que el agente hace para mostrarte (un informe, un diagrama, un mockup) se abre en ese navegador desde una carpeta propia de la sesión, fuera del checkout, que dura lo que dure la sesión | sí, aunque Claude Code puede seguir publicándola en claude.ai con su propia herramienta Artifact | sí | sí | sí | sí | sí | sí | sí |
 
 </details>

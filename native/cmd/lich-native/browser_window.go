@@ -13,16 +13,29 @@ import (
 // The window's side of a session browser: the card's Browser item, the toast
 // that offers a browser the agent opened, and the one that names a download.
 
-// applyBrowser opens the browser of the card the menu was opened on.
+// applyBrowser carries out what a card's menu or a browser row asked of a
+// session's browser: show it, minimize its page, move it to a window of its
+// own, or close it.
 func (u *window) applyBrowser(act sidebarAction) {
 	if act.browser != "" {
 		u.openBrowser(act.browser)
 	}
+	if id := act.browserMinimize; id != "" {
+		u.model.minimizePage(id)
+		u.model.invalidate()
+	}
+	if id := act.browserWindow; id != "" {
+		u.sendBrowser(id, "show", func(ctx context.Context) error { return u.client.ShowBrowser(ctx, id) })
+	}
+	if id := act.browserClose; id != "" {
+		u.sendBrowser(id, "close", func(ctx context.Context) error { return u.client.CloseBrowser(ctx, id) })
+	}
 }
 
-// openBrowser puts session's browser on screen: in its tab, asked about
-// first when the session sits in another layout, or, for a browser moved to
-// its own window, by bringing that window forward.
+// openBrowser puts session's browser on screen: its page beside its
+// terminal, refused with a toast when the pane on screen has no room for
+// both, or, for a browser moved to its own window, by bringing that window
+// forward.
 func (u *window) openBrowser(session string) {
 	if st, ok := u.model.browserState(session); ok && st.Open && st.Headed {
 		go func() {
@@ -32,11 +45,11 @@ func (u *window) openBrowser(session string) {
 		}()
 		return
 	}
-	if from := u.model.layoutOf(session); from != "" && u.model.browserTabOf(session) == "" {
-		u.askMoveToBrowser(session, from)
+	if d := &u.layoutStage.pointer; !u.model.pageShown(session) && d.drawn(session) && !d.fits(session, edgeRight) {
+		u.toaster.Show(ui.Toast{Title: i18n.T("layouts.split.noRoom")})
 		return
 	}
-	u.model.openBrowserTab(u.ctx, session, false)
+	u.model.showPage(u.ctx, session)
 	u.model.invalidate()
 }
 
@@ -124,14 +137,4 @@ func downloadToast(d api.BrowserDownload, openFolder func(dir string)) ui.Toast 
 		Lines:  []ui.ToastLine{{Icon: icFolder, Text: dir}},
 		Action: &ui.ToastButton{Label: i18n.T("layouts.browser.showFolder"), OnClick: func() { openFolder(dir) }},
 	}
-}
-
-// browserTabOf is the id of session's browser tab, "" for none.
-func (m *model) browserTabOf(session string) string {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	if i := m.layouts.browserTab(session); i >= 0 {
-		return m.layouts.tabs[i].ID
-	}
-	return ""
 }

@@ -8,13 +8,8 @@
   },
   "item": {
     "title": "Pick Browser",
-    "body": "It opens a browser tab beside your session.",
+    "body": "It opens a browser beside your session.",
     "hint": "Click Browser to continue"
-  },
-  "again": {
-    "title": "Open the browser",
-    "body": "Your session sits in a layout, so its browser takes a tab of its own. Pick Browser in its menu again and press Move.",
-    "hint": "Open your session's browser to continue"
   },
   "pane": {
     "title": "You and your agent see the same page",

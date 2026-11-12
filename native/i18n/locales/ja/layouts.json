@@ -16,6 +16,7 @@
   "browser": {
     "title": "ブラウザ",
     "close": "ブラウザを閉じる",
+    "minimize": "最小化：ブラウザは動いたままです",
     "newTab": "新しいタブ",
     "closeTab": "タブを閉じる",
     "blankTab": "新しいタブ",
@@ -24,7 +25,6 @@
     "forward": "進む",
     "reload": "再読み込み",
     "openInWindow": "ウィンドウで開く",
-    "locked": "このタブには {label} とそのブラウザしか置けません",
     "opened": "{label} がブラウザを開きました",
     "dismiss": "閉じる",
     "open": "開く",
@@ -33,7 +33,6 @@
     "keepOpen": "開いたままにする",
     "closeIdle": "閉じる",
     "showFolder": "フォルダを開く",
-    "moveBody": "「{layout}」から外れます。ブラウザのタブには {label} とそのブラウザしか置けません。",
     "pick": "ページにメモを残す",
     "pickHint": "要素をクリックしてメモを残す",
     "zoom": "ページのズーム",

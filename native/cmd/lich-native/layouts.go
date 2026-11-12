@@ -64,7 +64,7 @@ type layoutTab struct {
 }
 
 // sessions are the tab's sessions in reading order, left to right and top to
-// bottom; a browser tab's page is a pane, not a session (panes).
+// bottom; a page the stage put in is a pane, not a session (panes).
 func (t *layoutTab) sessions() []string {
 	return slices.DeleteFunc(t.panes(), func(pane string) bool {
 		_, page := browserOwner(pane)
@@ -123,7 +123,6 @@ func (t *layoutTab) remove(session string) bool {
 	}
 	walk(t.Root)
 	if t.Focus == session {
-		// A page may be all that is left: the session closed beside its own.
 		t.Focus = t.panes()[0]
 	}
 	return true
@@ -283,8 +282,7 @@ func (ls *layoutTabs) openBeside(name, left string, column []string) string {
 
 // take removes session from whichever layout holds it, reporting whether
 // one did. A layout left with a single pane is no layout any more: it goes,
-// and left is the session that pane showed, "" while the layout stays or
-// when what is left is a page, whose session just went.
+// and left is the session that pane showed, "" while the layout stays.
 func (ls *layoutTabs) take(session string) (left string, ok bool) {
 	i := ls.of(session)
 	if i < 0 {
@@ -294,9 +292,6 @@ func (ls *layoutTabs) take(session string) (left string, ok bool) {
 	t.remove(session)
 	if t.Root.leaf() {
 		left = t.Root.Session
-		if _, page := browserOwner(left); page {
-			left = ""
-		}
 		ls.tabs = slices.Delete(ls.tabs, i, i+1)
 	}
 	return left, true
@@ -328,7 +323,8 @@ func (ls *layoutTabs) marshal() (string, error) {
 
 // parseLayouts reads the stored layouts. A session in two panes keeps the
 // first; a tree with a broken node is an error, since repairing it would
-// guess which half the user meant.
+// guess which half the user meant. A page pane, which a build before pages
+// followed their sessions stored in a tab of its own, is dropped.
 func parseLayouts(raw string) (layoutTabs, error) {
 	var ls layoutTabs
 	if raw == "" {
@@ -346,6 +342,14 @@ func parseLayouts(raw string) (layoutTabs, error) {
 		var n int
 		if _, err := fmt.Sscanf(t.ID, "layout-%d", &n); err == nil {
 			ls.seq = max(ls.seq, n)
+		}
+		for _, pane := range t.panes() {
+			if _, page := browserOwner(pane); page && !t.remove(pane) {
+				break
+			}
+		}
+		if t.Root == nil {
+			continue
 		}
 		for _, id := range t.sessions() {
 			if seen[id] && !t.remove(id) {

@@ -1,8 +1,8 @@
-# Decision: the session browser is a tab of frames
+# Decision: the session browser is a pane of frames
 
 **Status: the card's Browser item opens it.** Right-click a session card →
-**Browser**, above Open in. That opens a tab beside the session: its terminal
-and its page, split as any layout is. The agent drives the same page through
+**Browser**, above Open in. That puts the page beside the session's terminal,
+wherever that terminal is shown. The agent drives the same page through
 `lich browser` and the `browser_*` MCP tools.
 
 ## Why frames and not a webview
@@ -22,13 +22,13 @@ clicked.
 
 ## One browser per card
 
-- the card's Browser item → its tab, starting a headless browser at
-  `about:blank` when there is none. A session in another layout is asked
-  about before it moves.
+- the card's Browser item → its page beside its terminal, starting a headless
+  browser at `about:blank` when there is none. A pane with no room for both
+  refuses with a toast, as a split does.
 - the agent's `browser_open` first → a headless browser, and a toast in the
-  bottom-right corner whose Open shows that same page in the tab
+  bottom-right corner whose Open shows that same page beside the terminal
 - **Open in a window** → the page reopens as a headed window on the same
-  profile, with its cookies (session ones included); its tab goes. chromedp
+  profile, with its cookies (session ones included); its pane goes. chromedp
   cannot show a headless process in place, so what lives only in the page, a
   half-filled form or sessionStorage, does not survive. Browser on the card
   then brings that window forward.
@@ -40,8 +40,36 @@ never closed on its own: its state turns `idle`, the window asks with a toast,
 and Close (`browser.Close`) or Keep open (`browser.Keep`, five more minutes)
 answers. Unanswered, it stays open and is not asked about again; any use
 withdraws the question. One a pane shows, or a window, is never asked about.
-The tab takes no other
-session, and closing its page closes the browser.
+
+## The page belongs to its session, not to a tab
+
+The page makes no tab in the strip and is a pane of no stored layout
+(`native/cmd/lich-native/pages.go`). The window keeps, per session, whether
+its page is on screen and how it sits against the terminal (side by side or
+stacked, and the divider), under `lich.native.pages`, and the stage draws the
+page beside that session's terminal: alone in its project, or inside whatever
+layout holds the session. So the session is in one place with its page, the
+page follows it in and out of every split, and closing a layout's tab hides
+or closes no browser.
+
+The pane's header carries the two ways out, which are the person's to pick:
+
+- **Minimize** takes the page off the screen and leaves the browser running,
+  for the agent to keep using. The card's Browser item brings it back on the
+  page it was on. Taking the page's pane out with the unsplit key, or the
+  terminal's out of that pair when the session is in no layout, does the same.
+- **Close** (the ×) closes the browser.
+
+For as long as the Chromium runs, the sidebar's tree shows it as a row under
+its session, the globe in a ring and the page's host: a minimized browser is
+seen there, its name muted. A click on the row shows the page, and its menu
+holds Show or Minimize, Open in a window and Close the browser.
+
+An earlier build gave each page a locked layout tab holding only the session
+and its page. The same session then showed in two tabs, that one and its
+project's, and closing the tab left the browser running with nothing saying
+so. A page pane such a build stored in a layout is dropped when the layouts
+are read.
 
 ## What the agent may load
 

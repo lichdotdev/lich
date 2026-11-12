@@ -468,6 +468,9 @@ func (u *window) connect() error {
 		u.logErr("load layouts", err)
 		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("layouts.load.failed", i18n.Args{"error": backend.ErrorText(err)})})
 	}
+	if err := u.model.loadPages(u.ctx); err != nil {
+		u.logErr("load the shown pages", err)
+	}
 	if err := u.model.hydrateBrowsers(u.ctx); err != nil {
 		u.logErr("read the session browsers", err)
 	}

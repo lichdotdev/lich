@@ -61,13 +61,15 @@ const (
 	// rowNestedCheckout is a checkout inside a mother's group: a child running in
 	// another checkout than its mother's hangs from it.
 	rowNestedCheckout
+	// rowBrowser is a session's running browser, the first row under it.
+	rowBrowser
 )
 
 // sessionRow is one line of a block's tree.
 type sessionRow struct {
 	kind sessionRowKind
 	key  string
-	sv   sessionView // rowCard
+	sv   sessionView // rowCard, and rowBrowser's session
 	path string      // rowNestedCheckout: the checkout
 	// depth is the row's level; its elbow leaves the ring of level depth-1.
 	depth int
@@ -124,7 +126,7 @@ func sessionRows(sessions []sessionView, under string, folded func(id string) bo
 func blockRows(b blockView, sessions []sessionView) []sessionRow {
 	folded := func(id string) bool { return b.motherFolds[id] }
 	if !b.byCheckout {
-		return sessionRows(sessions, b.under, folded)
+		return withoutCarriedBrowser(sessionRows(sessions, b.under, folded), b.carried)
 	}
 	in := make(map[string]sessionView, len(sessions))
 	for _, sv := range sessions {
@@ -155,7 +157,21 @@ func blockRows(b blockView, sessions []sessionView) []sessionRow {
 		rows = append(rows, sessionRow{kind: rowNestedCheckout, key: "__checkout__:" + b.key + ":" + path, path: path, stub: true})
 		rows = append(rows, sessionRows(groups[path], path, folded)...)
 	}
-	return rows
+	return withoutCarriedBrowser(rows, b.carried)
+}
+
+// withoutCarriedBrowser is rows without the browser of the session in the
+// air, so its card moves alone in the list as a mother folded over her
+// children does; the browser opens under it again where it lands.
+func withoutCarriedBrowser(rows []sessionRow, carried string) []sessionRow {
+	at := slices.IndexFunc(rows, func(r sessionRow) bool { return r.kind == rowBrowser && carried != "" && r.sv.ID == carried })
+	if at < 0 {
+		return rows
+	}
+	if at > 0 && rows[at].tail {
+		rows[at-1].stub = false
+	}
+	return slices.Delete(rows, at, at+1)
 }
 
 // tree builds sessionRows' rows depth first.
@@ -178,8 +194,8 @@ func (t *tree) descendants(id string, seen map[string]bool) []sessionView {
 	return out
 }
 
-// walk adds sv at depth and, unless it is folded, its group under it. seen
-// guards against an origin cycle.
+// walk adds sv at depth and, unless it is folded, its browser and its group
+// under it. seen guards against an origin cycle.
 func (t *tree) walk(sv sessionView, depth int, lanes []bool, tail, hideGit bool, seen map[string]bool) {
 	if seen[sv.ID] {
 		return
@@ -191,9 +207,14 @@ func (t *tree) walk(sv sessionView, depth int, lanes []bool, tail, hideGit bool,
 	if row.folded {
 		row.mark = treeMark(all)
 	}
-	row.stub = len(all) > 0 && !row.folded
+	open := len(all) > 0 && !row.folded
+	browser := sv.browser && !row.folded
+	row.stub = open || browser
 	t.rows = append(t.rows, row)
-	if row.stub {
+	if browser {
+		t.rows = append(t.rows, sessionRow{kind: rowBrowser, key: browserRowKey(sv.ID), sv: sv, depth: depth + 1, lanes: childLanes(row), tail: !open})
+	}
+	if open {
 		t.group(sv, depth+1, childLanes(row), seen)
 	}
 }
