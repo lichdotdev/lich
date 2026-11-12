@@ -30,14 +30,14 @@ func (m *model) duplicateOf(d sessionDuplicate) (duplicateWarning, bool) {
 	}, true
 }
 
-// warnDuplicate raises the warning in the bottom-right toaster, where it
-// stays until answered: the conversation goes on in two cards until then.
+// warnDuplicate raises the warning, which stays until answered: the
+// conversation goes on in two cards until then.
 func (u *window) warnDuplicate(d sessionDuplicate) {
 	w, ok := u.model.duplicateOf(d)
 	if !ok {
 		return
 	}
-	u.duplicates.Show(ui.Toast{
+	u.toaster.Show(ui.Toast{
 		ID:       "duplicate:" + w.id,
 		Variant:  ui.ToastWarning,
 		Title:    i18n.T("terminal.duplicate.title", i18n.Args{"label": w.label, "holder": w.holderLabel}),

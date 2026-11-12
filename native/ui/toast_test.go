@@ -185,6 +185,7 @@ type toasterRig struct {
 	now    time.Time
 	size   image.Point
 	pos    ToastPosition
+	bottom int
 }
 
 func newToasterRig(t *testing.T) *toasterRig {
@@ -199,7 +200,7 @@ func (r *toasterRig) frame() {
 		Constraints: layout.Exact(r.size),
 	}
 	toaster := testTheme().Toaster(&r.state, false)
-	toaster.Position = r.pos
+	toaster.Position, toaster.Bottom = r.pos, r.bottom
 	toaster.Layout(gtx)
 	r.router.Frame(ops)
 }
@@ -259,6 +260,25 @@ func TestToasterSitsInItsCorner(t *testing.T) {
 				t.Fatal("the middle of the window is on the toast")
 			}
 		})
+	}
+}
+
+func TestABottomStackStandsOverTheFooterItIsGiven(t *testing.T) {
+	const footer = 120
+	r := newToasterRig(t)
+	r.pos, r.bottom = ToastBottomRight, footer
+	r.state.Show(Toast{ID: "x", Title: "hello", Duration: ToastForever})
+	r.settle()
+	x := float32(r.size.X-int(toastOffsetSide)) - 20
+	r.pointer(pointer.Move, f32.Pt(x, float32(r.size.Y-footer)-10))
+	r.frame()
+	if !r.state.hovered {
+		t.Fatal("the toast does not stand right over the footer's 120px")
+	}
+	r.pointer(pointer.Move, f32.Pt(x, float32(r.size.Y-footer)+10))
+	r.frame()
+	if r.state.hovered {
+		t.Fatal("the toast covers the footer")
 	}
 }
 

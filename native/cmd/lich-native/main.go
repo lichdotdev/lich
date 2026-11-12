@@ -125,10 +125,9 @@ type window struct {
 	theme    *ui.Theme
 	root     ui.Root
 	toaster  ui.Toaster
-	// duplicates holds the warnings about a conversation resumed in two
-	// cards, the questions of cards whose process exited and the browsers
-	// agents opened, in the bottom-right corner, apart from every other toast.
-	duplicates ui.Toaster
+	// footerHeight is the footer bar's height this frame, which the toasts
+	// stand over.
+	footerHeight int
 	// caption is where the topbar draws the window's buttons, swapped whole
 	// when the desktop's layout changes; chrome what the window manager last
 	// said about the window.
@@ -259,7 +258,6 @@ func run(w *app.Window, rt backend.Runtime) error {
 		invalidate()
 	})
 	u.toaster.Invalidate = invalidate
-	u.duplicates.Invalidate = invalidate
 	u.terms.toaster = &u.toaster
 	u.terms.profileGone = u.profileGone
 	u.sidebar = newSidebar(&u.root)
@@ -645,12 +643,7 @@ func (u *window) layout(gtx C) error {
 		top = u.topbar.layout(gtx, u.theme, u.topbarFrame(gtx, v, edge))
 		u.drawCarried(gtx)
 		top.close = closed
-		toasts := u.theme.Toaster(&u.toaster, u.light)
-		toasts.Expand = *flagToastsExpanded
-		toasts.Layout(gtx)
-		duplicates := u.theme.Toaster(&u.duplicates, u.light)
-		duplicates.Position = ui.ToastBottomRight
-		duplicates.Layout(gtx)
+		u.layoutToasts(gtx)
 		return D{Size: gtx.Constraints.Max}
 	}
 	u.root.Layout(gtx, func(gtx C) D { return u.tour.Layout(gtx, content) })
@@ -769,7 +762,11 @@ func (u *window) body(gtx C, v stageView) (int, sidebarAction, error) {
 					return D{Size: gtx.Constraints.Max}
 				}),
 				layout.Rigid(func(gtx C) D { return u.gitPanelRow(gtx, v) }),
-				layout.Rigid(func(gtx C) D { return u.footer.layoutBar(gtx, u.theme, v.in) }),
+				layout.Rigid(func(gtx C) D {
+					d := u.footer.layoutBar(gtx, u.theme, v.in)
+					u.footerHeight = d.Size.Y
+					return d
+				}),
 			)
 		})
 	})

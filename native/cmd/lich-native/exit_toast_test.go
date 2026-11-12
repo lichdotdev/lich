@@ -107,17 +107,17 @@ func TestDismissedExitToastComesBackWhenTheCardIsFocused(t *testing.T) {
 	u := exitedWindow(t)
 	u.syncExitToasts("s1")
 	u.sessionExited("s1", code(1))
-	if !u.duplicates.Live("exit:s1") {
+	if !u.toaster.Live("exit:s1") {
 		t.Fatal("no toast once the process exited")
 	}
-	u.duplicates.Dismiss("exit:s1")
+	u.toaster.Dismiss("exit:s1")
 	u.syncExitToasts("s1")
-	if u.duplicates.Live("exit:s1") {
+	if u.toaster.Live("exit:s1") {
 		t.Fatal("the dismissed toast came back with no change of focus")
 	}
 	u.syncExitToasts("")
 	u.syncExitToasts("s1")
-	if !u.duplicates.Live("exit:s1") {
+	if !u.toaster.Live("exit:s1") {
 		t.Fatal("focusing the exited card again did not bring its toast back")
 	}
 }
@@ -127,13 +127,13 @@ func TestExitToastGoesOnceTheCardRunsAgain(t *testing.T) {
 	u.sessionExited("s1", code(1))
 	u.terms.running("s1")
 	u.syncExitToasts("s1")
-	if u.duplicates.Live("exit:s1") {
+	if u.toaster.Live("exit:s1") {
 		t.Fatal("the toast stayed over a card whose process runs again")
 	}
 	u.sessionExited("s1", code(1))
 	u.terms.drop("s1")
 	u.syncExitToasts("s1")
-	if u.duplicates.Live("exit:s1") {
+	if u.toaster.Live("exit:s1") {
 		t.Fatal("the toast stayed over a card whose terminal is gone")
 	}
 }

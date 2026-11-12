@@ -140,6 +140,10 @@ type ToasterStyle struct {
 	// Expand is sonner's expand prop: the stack drawn expanded without a
 	// hover.
 	Expand bool
+	// Bottom is how far over the window's bottom edge a bottom stack stands,
+	// in pixels: what the window keeps there and the gap over it. 0 is
+	// toastOffsetBottom.
+	Bottom int
 	theme  *Theme
 }
 
@@ -175,7 +179,11 @@ func (s ToasterStyle) frame(gtx C) []func() {
 	}
 	s.place(gtx)
 	macro := op.Record(gtx.Ops)
-	off := op.Offset(s.Position.anchor(gtx, gtx.Constraints.Max)).Push(gtx.Ops)
+	at := s.Position.anchor(gtx, gtx.Constraints.Max)
+	if s.Position.bottom() && s.Bottom > 0 {
+		at.Y = gtx.Constraints.Max.Y - s.Bottom
+	}
+	off := op.Offset(at).Push(gtx.Ops)
 	entries := t.stack.entries
 	for i := len(entries) - 1; i >= 0; i-- {
 		s.paint(gtx, entries[i])

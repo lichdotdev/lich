@@ -73,7 +73,7 @@ func (u *window) raiseExit(id string) {
 	}
 	u.exitRaised[id] = true
 	u.exitMu.Unlock()
-	u.duplicates.Show(exitToast(sv, e,
+	u.toaster.Show(exitToast(sv, e,
 		func(resume string) { go u.restartExited(sv, resume) },
 		func() { u.closeSession(id) }))
 }
@@ -92,7 +92,7 @@ func (u *window) restartExited(sv sessionView, resume string) {
 func (u *window) syncExitToasts(focused string) {
 	if focused != u.exitFocus {
 		u.exitFocus = focused
-		if !u.duplicates.Live(exitToastID(focused)) {
+		if !u.toaster.Live(exitToastID(focused)) {
 			u.raiseExit(focused)
 		}
 	}
@@ -101,7 +101,7 @@ func (u *window) syncExitToasts(focused string) {
 	for id := range u.exitRaised {
 		if _, exited := u.terms.exitOf(id); !exited {
 			delete(u.exitRaised, id)
-			u.duplicates.Dismiss(exitToastID(id))
+			u.toaster.Dismiss(exitToastID(id))
 		}
 	}
 }

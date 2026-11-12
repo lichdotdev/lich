@@ -191,6 +191,14 @@ their own line above the title rather than squeezing it.
 
 A `th.Separator` closes the header off from the body.
 
+### Toasts
+
+The window has one toast stack, in the bottom-right corner, the `gutter` over the footer however many rows
+the footer wraps to (`layoutToasts`). It grows upward, and a toast comes in and leaves by the bottom edge. A
+screen keeps its actions at the right of its header, so nothing the window raises stands in the top-right
+corner; a question that waits for an answer goes on the same stack as a passing note, not in a corner of its
+own.
+
 ### Body
 
 A reading pane, a column of prose and settings rows under a title, is the one place that leaves the 8px
