@@ -31,11 +31,11 @@ func swatchMenu(c *chosen) []MenuEntry {
 	return []MenuEntry{{Kind: MenuSubTrigger, Label: "Color", Sub: cells, Columns: 3}, c.item("Rename")}
 }
 
-// swatchGridAt is the first cell's top-left: the grid opens against the
-// Color row's right edge, inside the root's p-1, 3px above the row
-// (alignOffset -3), with p-1 of its own around 28px cells (p-1.5 about
-// size-4) 2px apart (gap-0.5).
-var swatchGridAt = image.Pt(triggerAt.X+dropdownWidth-4+4, dropdownTop+4-3+4)
+// swatchGridAt is the first cell's top-left: the grid opens 4px off the
+// root panel's right edge (menuSubGap), 3px above the row (alignOffset -3),
+// with p-1 of its own around 28px cells (p-1.5 about size-4) 2px apart
+// (gap-0.5).
+var swatchGridAt = image.Pt(triggerAt.X+dropdownWidth+4+4, dropdownTop+4-3+4)
 
 func TestSwatchGridKeyboardMovesInTwoDimensions(t *testing.T) {
 	cases := []struct {

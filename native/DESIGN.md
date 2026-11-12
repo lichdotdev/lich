@@ -137,6 +137,8 @@ Buttons do not move when pressed; only their color changes.
   entries. Opening something in a group (a session in a folder or a checkout) is the menu's first entry,
   never a `+` on the row.
 - A menu never opens or ends on a separator, and never shows two in a row.
+- A submenu stands `menuSubGap` (4px) off its parent's edge, level with the row that opens it, and never
+  over the parent. At the window's edge it flips to the parent's other side, the same gap away.
 
 ### Tooltips
 

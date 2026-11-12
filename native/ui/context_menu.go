@@ -15,7 +15,7 @@ var contextGeometry = menuGeometry{
 	minWidth: Space(44), subMinWidth: Space(44),
 	itemPadX: Space(2), itemPadY: Space(1.5), shortcutPL: Space(5),
 	root: popupPlace{side: SideRight, align: alignStart, alignOffset: 4},
-	sub:  popupPlace{side: SideRight, align: alignStart, alignOffset: 4},
+	sub:  popupPlace{side: SideRight, align: alignStart, sideOffset: menuSubGap, alignOffset: 4},
 }
 
 // ContextMenuStyle draws a shadcn ContextMenu: Entries open at the pointer

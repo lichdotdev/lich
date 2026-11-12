@@ -153,6 +153,7 @@ type menuGeometry struct {
 }
 
 const (
+	menuSubGap          unit.Dp = 4  // between a submenu and its parent's edge
 	menuLineSM          unit.Dp = 20 // text-sm's line-height, 1.25rem
 	menuLineXS          unit.Dp = 16 // text-xs's, 1rem
 	menuRingOpacity             = 0.1
@@ -456,7 +457,7 @@ func (m menuCore) drawOverlay(gtx C) {
 	}
 	anchor, place, minWidth, entries, cols := m.s.anchor, m.geo.root, m.geo.minWidth, m.entries, 0
 	for _, lv := range m.s.levels {
-		m.drawPanel(gtx, lv, anchor, place, func(gtx C) image.Point {
+		box := m.drawPanel(gtx, lv, anchor, place, func(gtx C) image.Point {
 			if cols > 0 {
 				return m.layoutGrid(gtx, lv, entries, cols)
 			}
@@ -465,13 +466,17 @@ func (m menuCore) drawOverlay(gtx C) {
 		if lv.highlight < 0 || lv.highlight >= len(entries) {
 			return
 		}
-		trigger := entries[lv.highlight]
-		anchor, place, minWidth, entries, cols = lv.rows[lv.highlight], m.geo.sub, m.geo.subMinWidth, trigger.Sub, trigger.Columns
+		trigger, row := entries[lv.highlight], lv.rows[lv.highlight]
+		// The panel's edges, not the row's inside its padding: a submenu
+		// anchored on the row lands over its parent on either side.
+		anchor = image.Rect(box.Min.X, row.Min.Y, box.Max.X, row.Max.Y)
+		place, minWidth, entries, cols = m.geo.sub, m.geo.subMinWidth, trigger.Sub, trigger.Columns
 	}
 }
 
-// drawPanel places what layout draws at its origin beside anchor.
-func (m menuCore) drawPanel(gtx C, lv *menuLevel, anchor image.Rectangle, place popupPlace, layout func(C) image.Point) {
+// drawPanel places what layout draws at its origin beside anchor, and returns
+// where it landed.
+func (m menuCore) drawPanel(gtx C, lv *menuLevel, anchor image.Rectangle, place popupPlace, layout func(C) image.Point) image.Rectangle {
 	macro := op.Record(gtx.Ops)
 	size := layout(gtx)
 	call := macro.Stop()
@@ -486,6 +491,7 @@ func (m menuCore) drawPanel(gtx C, lv *menuLevel, anchor image.Rectangle, place 
 	defer op.Offset(pos).Push(gtx.Ops).Pop()
 	defer menuEnter(gtx, lv, side, anchor.Min.Sub(pos), size)()
 	call.Add(gtx.Ops)
+	return box
 }
 
 // menuDuration is the content's duration-100.
