@@ -260,6 +260,9 @@ Every row is one line, 34dp tall: `Space(1.5)` above and below a 22px node. Rows
 - **A layout's sidebar**: the layout's name where New Session stands, then its sessions under each
   project's name in `TextXS` `MutedForeground`, in the same tree of checkout, session and browser rows, with their motion. No
   card there wears the active fill: the focused pane's ring says which session has the keys.
+- **A pane's motion**: a pane new to the stage grows out of the edge it was split on in 200ms ease-out, and
+  one that leaves shrinks back into it in 180ms ease-in, the neighbours giving and taking the room over the
+  same time. A zoom, a divider and a change of tab move at once.
 - **A checkout row**: the branch glyph in a neutral ring, the branch, its pull request and changes, the
   corner slot. A project's checkout is the root its sessions hang from; a child running in another
   checkout than its mother hangs from a checkout row of its own inside her group.

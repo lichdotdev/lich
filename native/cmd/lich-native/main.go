@@ -818,7 +818,19 @@ func (u *window) island(gtx C, v stageView, termWidth, termHeight int) error {
 	u.terms.onScreen(v.active.ID)
 	term := gtx
 	term.Constraints = layout.Exact(image.Pt(termWidth, termHeight))
-	if err := u.content(term, v.active, u.terminalTakesKeys(gtx)); err != nil {
+	// A session alone has no pane, but the panes it came from or goes to
+	// move against its place, so it stands in the run as one (paneMotion).
+	motion, alone := &u.layoutStage.motion, image.Rectangle{Max: size}.Inset(gtx.Dp(gutter))
+	motion.begin(gtx.Now, false, []string{v.active.ID})
+	reveal := clip.Rect{Max: size}
+	if frame := motion.frame(v.active.ID, alone); frame != alone {
+		reveal = clip.Rect(frame)
+	}
+	area := reveal.Push(gtx.Ops)
+	err := u.content(term, v.active, u.terminalTakesKeys(gtx))
+	area.Pop()
+	u.endPaneMotion(gtx)
+	if err != nil {
 		return err
 	}
 	u.paneDropZones(gtx, v.active.ID, image.Rectangle{Max: size}, image.Rectangle{Max: size}.Add(u.islandAt), true)

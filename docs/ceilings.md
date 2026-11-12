@@ -1336,6 +1336,11 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   takes a dropped file; a file dropped on a pane in the background goes nowhere. A pinned card cannot be dragged onto a pane: the
   pinned block shares no carry with the panes, so its card never leaves the sidebar. The panes' drop zones are
   not SortCarry targets (`layouts_drag.go`): a new drop target over the stage belongs there, not in the carry.
+  A pane entering or leaving moves only its frame and its neighbours' (`stage_motion.go`): each terminal is
+  drawn at its final size from the first frame, so for the 200ms a neighbour that gains room shows its wider
+  terminal cut by a frame still narrow. A pane that left is drawn as an empty frame shrinking, not with its
+  terminal, and not at all when more than one pane takes its room. Swapping two panes, rotating a split, a
+  zoom and a divider do not animate.
   Show beside puts the delegates in a column on the right half of their opener's pane, or stacked under it
   when that pane is too narrow to halve (`delegateRoom`), and lays out only the delegates that fit the 180dp pane
   floor, counted from where the panes were drawn the frame before (`columnRoom`); the rest stay out and
