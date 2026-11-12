@@ -74,6 +74,10 @@ lives in the code, `docs/` and `CHANGELOG.md` — never restate any of it here.
   `for os in linux darwin windows; do GOOS=$os go build ./... && GOOS=$os go vet ./...; done`
   Cross-compiling only proves it builds; the backend suite runs on real Windows and macOS runners on every PR,
   and that is the answer to trust.
+- Answering a review finding, from a bot or a person? It asks how to make the code work as written, never whether
+  it should exist. Decide first whether the flagged code belongs in the PR: remove what is speculative, unrun or
+  out of scope instead of building more to support it, and refute a wrong finding with evidence (the line, the
+  upstream source, the behaviour on the base branch).
 
 ## Hard Invariants
 
