@@ -241,7 +241,8 @@ lich подскажет нужную команду.
 lich состоит из двух бинарников: `lich`, статический бэкенд на чистом Go, и
 `lich-native`, окно, которое собирается с cgo из `native/`. Понадобятся
 **Go 1.27.0+** и **[Task](https://taskfile.dev)**; для окна нужны ещё компилятор
-C, системные пакеты Gio и `libghostty-vt`, собранная из коммита, указанного в
+C, системные пакеты Gio, `libturbojpeg` из libjpeg-turbo и `libghostty-vt`,
+собранная из коммита, указанного в
 `native/GHOSTTY_COMMIT`. Как её собрать, описано в
 [`native/slice.sh`](native/slice.sh), а само окно в
 [`docs/native-window.md`](docs/native-window.md).

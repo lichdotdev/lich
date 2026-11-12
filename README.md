@@ -233,7 +233,8 @@ version is in [CHANGELOG.md](CHANGELOG.md).
 lich is two binaries: `lich`, a static pure-Go backend, and `lich-native`, the
 window, built with cgo from `native/`. You need **Go 1.27.0+** and
 **[Task](https://taskfile.dev)**; the window also needs a C toolchain, Gio's
-system packages and a `libghostty-vt` built from the commit in
+system packages, libjpeg-turbo's `libturbojpeg` and a `libghostty-vt` built
+from the commit in
 `native/GHOSTTY_COMMIT`. [`native/slice.sh`](native/slice.sh) says how, and
 [`docs/native-window.md`](docs/native-window.md) covers the window.
 

@@ -88,6 +88,10 @@ Wayland, X11 and EGL on Linux, and `libghostty-vt` is a C library. It is a separ
 reason: the `lich` binary stays pure Go and static, and nothing about `native/` reaches its build. The native module gets its own CI job, with Gio's system packages and a `libghostty-vt`
 built from a pinned Ghostty commit.
 
+The session browser's frames are JPEGs decoded by libjpeg-turbo, a C library too, found as `libturbojpeg` through
+`pkg-config`. A window built on a developer's machine links the distribution's own, shared; CI and the releases link
+a static one that `native/libjpeg-turbo.sh` builds from a pinned commit, so the shipped window needs none beside it.
+
 ## Known limits
 
 - **One window at a time.** `/events` and `/ws` accept a single client, and the newest replaces the one
