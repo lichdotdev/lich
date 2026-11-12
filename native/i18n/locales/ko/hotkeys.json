@@ -28,7 +28,7 @@
     "otherPane": "다음 창에 포커스",
     "zoomPane": "포커스된 창 확대",
     "unsplitPane": "포커스된 창을 레이아웃에서 빼기",
-    "rotateSplit": "포커스된 분할을 좌우와 위아래로 전환",
+    "rotateSplit": "포커스된 창을 좌우 배치와 위아래 배치 사이에서 전환",
     "settings": "설정",
     "pulls": "풀 리퀘스트",
     "shortcuts": "키보드 단축키",

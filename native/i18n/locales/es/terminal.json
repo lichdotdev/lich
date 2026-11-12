@@ -7,23 +7,23 @@
   "exitToast": {
     "ended": "{label} terminó",
     "endedWithCode": "{label} terminó con el código {code}",
-    "resumes": "Retomar vuelve a abrir {id}….",
-    "resumesIn": "Retomar vuelve a abrir {id}… en {profile}.",
+    "resumes": "Reanudar vuelve a abrir {id}…",
+    "resumesIn": "Reanudar vuelve a abrir {id}… en {profile}.",
     "closeSession": "Cerrar sesión",
     "startNew": "Empezar otra",
-    "resume": "Retomar",
+    "resume": "Reanudar",
     "restart": "Reiniciar"
   },
   "drop": {
-    "notAttached": "No adjuntado: {files}"
+    "notAttached": "No se adjuntó: {files}"
   },
   "host": {
-    "rememberFailed": "No se pudo recordar la elección: {error}",
+    "rememberFailed": "No se pudo guardar la elección: {error}",
     "noRoom": "No cabe otro panel"
   },
   "view": {
     "restartFailed": "La sesión no se pudo reiniciar: {error}",
-    "pasteSettingFailed": "No se pudo leer si los pegados largos se despliegan, así que este se pegó una vez: {error}",
+    "pasteSettingFailed": "No se pudo leer si los pegados largos se despliegan, así que este se pegó una sola vez: {error}",
     "startFailed": "La sesión no se pudo iniciar: {error}"
   },
   "dropFiles": {
@@ -40,7 +40,7 @@
     "tooLarge": "{name} (más de {size} MB)"
   },
   "duplicate": {
-    "title": "{label} retomó una conversación que ya está abierta en {holder}.",
+    "title": "{label} reanudó una conversación que ya está abierta en {holder}.",
     "keepBoth": "Mantener ambas",
     "switch": "Cambiar"
   }

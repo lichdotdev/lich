@@ -24,7 +24,7 @@
   },
   "fileTree": {
     "hidden": "已隐藏：{names}。",
-    "cut": "此文件夹中的文件数超出了文件树能列出的数量。"
+    "cut": "此文件夹中的文件太多，文件树无法全部列出。"
   },
   "codemirror": {
     "expand": {
@@ -67,15 +67,15 @@
     "rename": "重命名…",
     "delete": "删除",
     "onBranch": "你正在此分支上",
-    "inWorktree": "已在另一个 worktree 中检出",
+    "inWorktree": "已在另一个工作树中检出",
     "options": "{name} 的操作",
     "from": "从 {name}",
-    "checkoutTitle": "将 {session} 切换到 {branch}?",
-    "checkoutBody": "{session} 正在此检出中工作。它的代理会发现脚下换了分支,未提交的修改也会随切换一起带过去。",
-    "deleteTitle": "删除 {name}?",
+    "checkoutTitle": "将 {session} 切换到 {branch}？",
+    "checkoutBody": "{session} 正在此检出中工作。切换后，它的智能体会发现所在分支变了，尚未提交的修改也会随之带到新分支。",
+    "deleteTitle": "删除 {name}？",
     "deleteBody": {
-      "one": "有 {count} 个提交只在此分支上。一段时间内仍可从 reflog 恢复,但不会再有分支指向它。",
-      "other": "有 {count} 个提交只在此分支上。一段时间内仍可从 reflog 恢复,但不会再有分支指向它们。"
+      "one": "有 {count} 个提交只在此分支上。删除后一段时间内仍可通过 reflog 找回，但不会再有分支指向它。",
+      "other": "有 {count} 个提交只在此分支上。删除后一段时间内仍可通过 reflog 找回，但不会再有分支指向它们。"
     },
     "deleted": "已删除 {name}",
     "onlyCommits": {

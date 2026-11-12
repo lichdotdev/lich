@@ -1,8 +1,8 @@
 {
   "baseStatus": {
     "behind": {
-      "one": "{base} から {count} コミット遅れ",
-      "other": "{base} から {count} コミット遅れ"
+      "one": "{base} より {count} コミット遅れ",
+      "other": "{base} より {count} コミット遅れ"
     },
     "conflict": {
       "one": "{count} 個のファイルにコンフリクト",
@@ -24,7 +24,7 @@
   },
   "fileTree": {
     "hidden": "非表示: {names}。",
-    "cut": "このフォルダーにはツリーに表示しきれないほど多くのファイルがあります。"
+    "cut": "このフォルダーはファイルが多すぎて、ツリーにすべては表示できません。"
   },
   "codemirror": {
     "expand": {
@@ -63,19 +63,19 @@
     "checkout": "チェックアウト",
     "checkoutRemote": "ローカルブランチとしてチェックアウト",
     "open": "{name} を開く",
-    "newBranch": "ここから新しいブランチ…",
+    "newBranch": "ここから新しいブランチを作成…",
     "rename": "名前を変更…",
     "delete": "削除",
-    "onBranch": "現在このブランチにいます",
-    "inWorktree": "別の worktree でチェックアウト中",
+    "onBranch": "現在のブランチです",
+    "inWorktree": "別のワークツリーでチェックアウト中",
     "options": "{name} の操作",
     "from": "{name} から",
-    "checkoutTitle": "{session} を {branch} に切り替えますか?",
-    "checkoutBody": "{session} はこのチェックアウトで作業中です。エージェントの足元のブランチが変わり、コミットしていない変更も一緒に移ります。",
-    "deleteTitle": "{name} を削除しますか?",
+    "checkoutTitle": "{session} を {branch} に切り替えますか？",
+    "checkoutBody": "{session} はこのチェックアウトで作業中です。エージェントが作業しているブランチが切り替わり、未コミットの変更もそのまま持ち越されます。",
+    "deleteTitle": "{name} を削除しますか？",
     "deleteBody": {
-      "one": "{count} 件のコミットはこのブランチにしかありません。しばらくは reflog から復元できますが、どのブランチも指さなくなります。",
-      "other": "{count} 件のコミットはこのブランチにしかありません。しばらくは reflog から復元できますが、どのブランチも指さなくなります。"
+      "one": "{count} 件のコミットはこのブランチにしかありません。どのブランチからも参照されなくなりますが、しばらくは reflog から復元できます。",
+      "other": "{count} 件のコミットはこのブランチにしかありません。どのブランチからも参照されなくなりますが、しばらくは reflog から復元できます。"
     },
     "deleted": "{name} を削除しました",
     "onlyCommits": {
@@ -87,6 +87,6 @@
     "createFailed": "{name} を作成できませんでした",
     "renameFailed": "{name} の名前を変更できませんでした",
     "deleteFailed": "{name} を削除できませんでした",
-    "undoFailed": "{name} を元に戻せませんでした"
+    "undoFailed": "{name} を復元できませんでした"
   }
 }

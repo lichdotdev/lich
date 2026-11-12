@@ -117,16 +117,16 @@
   "providerSetupDialog": {
     "chooseTitle": "エージェントを選択",
     "noneTitle": "コーディングエージェントが見つかりません",
-    "chooseDescription": "lich がこのマシンで見つけたエージェントです。使うものを有効にしてください。それ以外は新規セッションのメニューに表示されません。",
+    "chooseDescription": "lich がこのマシンで見つけたエージェントです。使うものを有効にしてください。それ以外は「新規セッション」メニューに表示されません。",
     "noneDescription": "lich はこのマシンにインストール済みのエージェントを実行しますが、見つかりませんでした。いずれかをインストールしてから、もう一度確認してください。",
     "changeLater": "設定 › プロバイダーでいつでも変更できます。",
-    "pointToBinary": "すでにインストール済みですか？設定 › プロバイダーで lich にそのバイナリの場所を指定してください。",
+    "pointToBinary": "すでにインストール済みですか？設定 › プロバイダーでバイナリの場所を指定してください。",
     "continue": "続行"
   },
   "resumeSessionDialog": {
     "title": "前回のセッションを再開しますか？",
-    "description": "{label} に会話が残っています ({id})。再開すると中断したところから会話を続けられます。新規で始めると空の会話になります。",
-    "alwaysFor": "{provider} では常にこうする",
+    "description": "{label} に前回の会話が残っています（{id}）。再開すると中断したところから続けられます。新規で始めると空の会話になります。",
+    "alwaysFor": "{provider} では常にこの選択を使う",
     "changeInSettings": "· 設定 › プロバイダーで変更できます",
     "thisProvider": "このプロバイダー",
     "startNew": "新規で始める",
@@ -141,10 +141,10 @@
     "show": "lich を表示",
     "quit": "lich を終了",
     "noSessions": "実行中のセッションはありません",
-    "needsYou": "あなたの対応が必要",
+    "needsYou": "対応が必要",
     "working": "作業中",
     "idle": "アイドル: {count}",
-    "more": "他 {count} 件",
+    "more": "ほか {count} 件",
     "waiting": "待機中",
     "done": "完了",
     "servicesRunning": "実行中のサービス: {count}",
@@ -212,18 +212,18 @@
     "close": "閉じる"
   },
   "main": {
-    "lostTitle": "別の lich ウィンドウに切り替わったか、lich が終了しました。",
+    "lostTitle": "別の lich ウィンドウが接続を引き継いだか、lich が終了しました。",
     "lostHint": "ここで開き直すには `lich native` を実行してください。",
     "renameFailed": "セッション名を変更できませんでした: {error}"
   },
   "notifyPrompt": {
-    "description": "別の作業をしている間に、セッションが入力を求めました。lich はそのようなときにセッション名とプロジェクト名を添えてデスクトップ通知を出せるので、作業を始めたらウィンドウを離れても大丈夫です。表示中のセッションは通知しません。設定 › 一般でいつでも変更できます。"
+    "description": "ほかの作業中に、セッションが入力を求めました。こうしたとき lich はセッション名とプロジェクト名を添えてデスクトップ通知を出せるので、作業を始めたらウィンドウを離れても大丈夫です。表示中のセッションは通知しません。設定 › 一般でいつでも変更できます。"
   },
   "extensionScreen": {
     "restarting": "{name} が停止したため再起動しています…",
     "failedTitle": "{name} が停止しました",
     "restart": "再起動",
-    "openFolder": "フォルダを開く",
+    "openFolder": "フォルダーを開く",
     "restartFailed": "{name} を再起動できませんでした: {error}"
   }
 }

@@ -8,7 +8,7 @@
     "tabArtifacts": "Artefactos"
   },
   "searchResults": {
-    "prompt": "Busca el texto de cada archivo de este checkout",
+    "prompt": "Busca texto en todos los archivos de este checkout",
     "searching": "Buscando…",
     "noMatch": "Ningún archivo contiene “{query}”"
   },

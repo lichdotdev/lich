@@ -1,7 +1,7 @@
 {
   "plugin": {
-    "incompatibleInstall": "Este lich no es compatible con el plugin de lich de {installs}. Instala la v{version}, la versión que este lich admite.",
-    "incompatibleUpdate": "Este lich no es compatible con el plugin de lich de {installs}. Actualiza lich, o comprueba que tienes conexión para encontrar una versión que este lich admita."
+    "incompatibleInstall": "Este lich no es compatible con el plugin de lich de {installs}. Instala la v{version}, que es la que admite.",
+    "incompatibleUpdate": "Este lich no es compatible con el plugin de lich de {installs}. Actualiza lich o comprueba tu conexión para buscar una versión compatible."
   },
   "progress": {
     "updateFailed": "Falló la actualización: {error}",

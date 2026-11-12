@@ -20,7 +20,7 @@
       "one": "{count} 项设置",
       "other": "{count} 项设置"
     },
-    "noMatch": "没有与 {query} 匹配的内容。搜索只匹配每项设置的名称，不匹配其值。",
+    "noMatch": "没有与 {query} 匹配的内容。搜索只看设置名称，不搜索设置值。",
     "section": {
       "appearance": "外观",
       "notifications": "通知",
@@ -34,7 +34,7 @@
       "extensions": "扩展"
     },
     "notYet": "这里还没有",
-    "projectDesc": "此项目相对全局所做的更改。没有更改的行沿用全局。"
+    "projectDesc": "此项目与全局设置不同的地方。未更改的项沿用全局设置。"
   },
   "appearanceSettings": {
     "importPickTitle": "导入主题",
@@ -105,7 +105,7 @@
     "repositoryHint": "包含 {file} 和一个或多个主题文件的仓库。更新时，lich 比较的是其清单中的版本。",
     "or": "或",
     "chooseFile": "选择文件…",
-    "fileHint": "单个主题文件。没有版本，也没有更新。",
+    "fileHint": "单个主题文件，没有版本号，也不会收到更新。",
     "downloadTemplate": "下载模板"
   },
   "fontSetting": {
@@ -120,7 +120,7 @@
     "searchWords": "状态栏 布局 排列",
     "loading": "正在加载已保存的选择…",
     "saving": "正在保存…",
-    "description": "在两侧之间拖动项目，或拖出以隐藏。对所有项目生效。",
+    "description": "在左右两侧之间拖动条目，拖出页脚即可隐藏。对所有项目生效。",
     "restoreDefault": "恢复默认",
     "saveFailed": "无法保存页脚：{error}",
     "ceilingTitle": "花费上限",
@@ -134,14 +134,14 @@
       "left": "左侧",
       "right": "右侧"
     },
-    "allPlaced": "所有项目都已在页脚中",
-    "dragHere": "将项目拖到此处",
-    "previewEmpty": "未选择页脚项目"
+    "allPlaced": "所有条目都已在页脚中",
+    "dragHere": "将条目拖到此处",
+    "previewEmpty": "未选择页脚条目"
   },
   "diffLayoutSetting": {
     "title": "差异布局",
     "searchWords": "并排 拆分 统一 评审",
-    "description": "审查标签页和拉取请求中变更的显示方式。面板过窄而放不下两列时，并排视图会显示为统一视图。",
+    "description": "更改在“审查”标签页和拉取请求中的显示方式。面板太窄放不下两列时，并排视图会改用统一视图显示。",
     "layout": {
       "unified": "统一",
       "split": "并排"
@@ -149,16 +149,16 @@
   },
   "notificationsSettings": {
     "needsInputTitle": "会话需要输入时通知我",
-    "needsInputDescription": "当会话被你阻塞（例如权限提示或提问），且你当前不在 lich 窗口中时，发出桌面通知。你在 lich 中时不会有变化：由卡片上的提醒铃和提示消息来告知。",
+    "needsInputDescription": "会话在等你处理（权限确认、提问），而你当前不在 lich 窗口时，弹出桌面通知。在 lich 窗口内一切照旧：由卡片上的铃铛和提示消息提醒你。",
     "finishedTitle": "会话完成工作时通知我",
-    "finishedDescription": "当会话结束一轮、没有需要询问你的内容，且你当前不在 lich 窗口中时，发出桌面通知。与上面的设置相互独立：即使你不想被每个提示打扰，也值得知道自己离开时的长时间运行已经结束。不会附带提示消息：在 lich 中，卡片及其项目标签页已经会告知。"
+    "finishedDescription": "会话结束一轮且没有要问你的事，而你当前不在 lich 窗口时，弹出桌面通知。它与上一项设置互不影响，因此你可以只在离开期间的长任务结束时收到通知，而不必每次提示都被打扰。不会附带提示消息：在 lich 内，卡片和项目标签页已经会显示。"
   },
   "hotkeysSettings": {
     "alsoBound": "同时绑定到 {actions}",
     "pressKeys": "请按下按键…",
     "unassignHint": "不为此操作绑定快捷键",
     "resetHint": "恢复默认快捷键",
-    "passthroughNote": "lich 会在这些按键送往智能体终端的途中改写它们，因此它们是固定的，不可重新绑定。"
+    "passthroughNote": "lich 会在这些按键送往智能体终端时改写它们，因此无法重新绑定。"
   },
   "providersPane": {
     "detecting": "正在检测提供商…",
@@ -166,7 +166,7 @@
     "moreDetected": "另检测到 {count} 个",
     "defaultTitle": "默认提供商",
     "defaultSearchWords": "智能体 新建会话",
-    "defaultDescription": "隐式的会话操作所启动的提供商：新建会话快捷键、空项目中的“新建会话”按钮，以及新创建的工作树。",
+    "defaultDescription": "不指定提供商的会话操作所启动的提供商：新建会话快捷键、空项目中的“新建会话”按钮，以及新建的工作树。",
     "defaultHere": "此处默认",
     "skipEverywhere": "无提示"
   },
@@ -196,7 +196,7 @@
   "providerBinSettings": {
     "skipTitle": "跳过权限提示",
     "skipSearchWords": "yolo 危险 批准 确认",
-    "skipDescription": "{provider} 可以在不询问的情况下运行到什么程度：它会不经确认地编辑文件、运行命令和安装内容，lich 使用 {flag} 启动它。",
+    "skipDescription": "{provider} 在多大范围内无需询问即可运行：它会不经确认地编辑文件、运行命令、安装软件，lich 会以 {flag} 启动它。",
     "skip": {
       "never": {
         "label": "从不",
@@ -208,7 +208,7 @@
       },
       "everywhere": {
         "label": "所有位置",
-        "consequence": "包括你工作的目录树。不会再询问任何内容。"
+        "consequence": "包括你自己工作的目录树，任何操作都不会再询问。"
       }
     },
     "confirmTitle": "跳过权限提示：{level}",
@@ -218,17 +218,17 @@
   "planUsageSetting": {
     "title": "套餐用量",
     "searchWords": "配额 订阅 上限 用量",
-    "description": "你的订阅在每个时间窗口内已用掉多少，从你的账户读取，lich 打开期间每 5 分钟刷新一次。",
+    "description": "订阅在每个时间窗口内的已用额度，从你的账户读取；lich 运行期间每 5 分钟刷新一次。",
     "signedOut": "已登出。",
     "signedOutRun": "已登出。运行 {command} 以读取套餐用量。",
-    "readFailed": "无法读取套餐用量。提供商的用量端点没有文档，可能已经变更。",
+    "readFailed": "无法读取套餐用量。提供商的用量接口没有公开文档，可能已经变了。",
     "used": "已用",
     "resets": "重置于"
   },
   "closeSetting": {
     "title": "关闭窗口时",
     "searchWords": "退出 关闭 后台 窗口 托盘 继续运行",
-    "description": "关闭窗口时 lich 如何处理其会话。若没有正在运行的会话，关闭窗口即退出 lich。",
+    "description": "关闭窗口时 lich 如何处理会话。没有会话在运行时，关闭窗口即退出 lich。",
     "choice": {
       "ask": {
         "label": "询问",
@@ -236,7 +236,7 @@
       },
       "background": {
         "label": "继续运行",
-        "consequence": "窗口关闭，会话继续工作；再次打开 lich 即可回到屏幕上。"
+        "consequence": "窗口关闭，会话继续工作；再次打开 lich 即可重新显示。"
       },
       "quit": {
         "label": "退出",
@@ -269,7 +269,7 @@
   "restoreSetting": {
     "title": "恢复的会话",
     "searchWords": "恢复 继续 对话 新建 重启 询问",
-    "description": "在 lich 重启之前运行过 {provider} 的卡片，在你第一次打开时的行为。",
+    "description": "lich 重启前运行着 {provider} 的卡片，第一次打开时如何处理。",
     "choice": {
       "ask": {
         "label": "询问",
@@ -277,7 +277,7 @@
       },
       "resume": {
         "label": "继续",
-        "consequence": "已恢复的卡片在打开时继续其对话。如需空白会话，请新建会话。"
+        "consequence": "打开已恢复的卡片时接着之前的对话。需要空白对话时，请新建会话。"
       },
       "fresh": {
         "label": "重新开始",
@@ -288,18 +288,18 @@
   "pasteUnfoldSetting": {
     "title": "展开长粘贴",
     "searchWords": "粘贴 折叠 标签 摘要 占位符 文本 paste fold chip summary",
-    "descriptionNextPaste": "{provider} 会折叠成占位符的粘贴将以完整文本出现，方便你在发送前编辑。从下一次粘贴起，对所有 {provider} 会话生效。",
-    "descriptionNextSession": "{provider} 会折叠成占位符的粘贴将以完整文本出现，方便你在发送前编辑。对更改后打开的会话生效。"
+    "descriptionNextPaste": "原本会被 {provider} 折叠成占位符的粘贴内容，将以完整文本贴入，方便你在发送前编辑。从下一次粘贴起，对所有 {provider} 会话生效。",
+    "descriptionNextSession": "原本会被 {provider} 折叠成占位符的粘贴内容，将以完整文本贴入，方便你在发送前编辑。对更改后打开的会话生效。"
   },
   "subagentCardsSetting": {
     "title": "子智能体作为 lich 会话",
     "searchWords": "智能体 子智能体 卡片 工作树 委派 后台",
-    "description": "通用子智能体会打开自己的卡片和工作树，而不是隐藏在 {provider} 内部运行。对更改后打开的会话生效。"
+    "description": "通用子智能体会打开自己的卡片和工作树，不再隐藏在 {provider} 内部运行。对更改后打开的会话生效。"
   },
   "ultracodeSetting": {
     "title": "Ultracode",
     "searchWords": "工作流 编排 多智能体 强度",
-    "description": "每个 {provider} 会话启动时都开启 ultracode，在其运行的任意强度下编排多智能体工作流。会话重启或恢复后仍保持开启。"
+    "description": "每个 {provider} 会话启动时都开启 ultracode，无论以哪种强度运行，都会编排多智能体工作流。会话重启或恢复后仍保持开启。"
   },
   "sandboxSettings": {
     "rung": {
@@ -310,35 +310,35 @@
     },
     "exposes": {
       "off": "每个会话都在本机上运行。",
-      "ask": "你取消勾选其选项的会话会在本机上运行。",
+      "ask": "取消勾选的会话会直接在本机上运行。",
       "worktrees": "项目目录中的会话在本机上运行。"
     },
-    "summary": "空的主目录，本机只读，仅在检出目录中可写。网络保持开启。",
+    "summary": "主目录为空，本机只读，只有检出目录可写。网络保持开启。",
     "confinedTitle": "哪些会话在受限环境中运行",
     "confinedSearchWords": "隔离 bwrap seatbelt",
-    "confinedHint": "“询问”会在“新建会话”菜单和“新建工作树”对话框中提出这个问题。在无人可以回答的地方打开的会话（由其他会话或通过 MCP 工具打开）会受限运行。终端永远不受限；沙箱是为无人值守的智能体准备的。",
+    "confinedHint": "选择“询问”时，“新建会话”菜单和“新建工作树”对话框会询问这一项。无人能作答时打开的会话（由其他会话或通过 MCP 工具打开）会受限运行。终端从不受限；沙箱是给无人值守的智能体用的。",
     "carryTitle": "受限会话可以带入什么",
     "sshTitle": "SSH 代理",
     "sshSearchWords": "推送 密钥",
-    "sshDescription": "git push 可在其中使用。会话运行期间，使用你的代理中的每个身份，对任意主机签名。",
+    "sshDescription": "沙箱内可以使用 git push。会话运行期间，可用 SSH 代理中的所有身份为任意主机签名。",
     "sshLoaded": "已加载：{keys}",
     "sshNone": "未加载任何密钥。",
     "ghTitle": "GitHub 令牌",
     "ghSearchWords": "gh 凭据",
-    "ghDescription": "gh 可在其中使用。智能体可以从其环境中读出该令牌，并在此仓库之外使用它。",
+    "ghDescription": "沙箱内可以使用 gh。智能体能从环境变量中读出该令牌，并在此仓库之外使用。",
     "ghAccount": "以 {login} 身份。",
     "ghActiveAccount": "以 gh 的活动账户身份。",
     "confirmTitle": "减少受限的 {provider} 会话",
     "confirmDescription": "{rung}：{exposes}",
     "confirm": "不再限制",
-    "canConfine": "此机器可以限制会话",
-    "cannotConfine": "此机器无法限制会话",
+    "canConfine": "本机可以让会话受限运行",
+    "cannotConfine": "本机无法让会话受限运行",
     "statusDetail": "：{detail}"
   },
   "vcsToolsSetting": {
     "title": "命令行工具",
     "searchWords": "git gh 安装",
-    "description": "lich 通过 git 和 GitHub CLI 工作。此界面上的一切操作都经由它们执行。",
+    "description": "lich 依靠 git 和 GitHub CLI 运作，此页面上的所有功能都通过它们完成。",
     "notOnPath": "不在 $PATH 中",
     "install": "安装"
   },
@@ -346,7 +346,7 @@
     "account": "GitHub 账户",
     "accountFor": "{name} 的 GitHub 账户",
     "accountSearchWords": "登录 gh 切换",
-    "accountDescription": "lich 为此项目以哪个账户运行 gh：用于拉取请求、检查、PR 检出，以及其会话中运行的 gh（会话下次启动时生效）。gh 每个主机只保留一个活动账户，因此只有其他账户可见的仓库会显示为未找到。企业主机上的账户会连同主机一起列出。",
+    "accountDescription": "lich 在此项目中以哪个账户运行 gh：拉取请求、检查、PR 检出，以及会话中运行的 gh 都使用它（会话下次启动时生效）。gh 每个主机只有一个活动账户，因此只有其他账户能看到的仓库会显示为未找到。企业主机上的账户会和主机一起列出。",
     "activeAccount": "gh 的活动账户",
     "listFailed": "无法列出 GitHub 账户：{error}",
     "noAccounts": "gh 尚未登录任何账户。请在终端中运行 `gh auth login`。"
@@ -359,7 +359,7 @@
     "available": "lich {version} 可用，请按提示操作。",
     "upToDate": "你使用的已是最新版本。",
     "checkFailed": "检查失败，是否已联网？",
-    "whatsNewTitle": "新增内容",
+    "whatsNewTitle": "新功能",
     "whatsNewSearchWords": "更新日志 发行说明",
     "patchNotesFor": "v{version} 的更新说明。",
     "noPatchNotes": "此构建没有更新说明。",
@@ -369,8 +369,8 @@
     "title": "lich 插件",
     "searchWords": "钩子 安装",
     "description": "在支持运行它的提供商 CLI 中提供会话状态、标题、git 刷新和恢复。",
-    "installed": "插件已安装。重启会话以生效。",
-    "updated": "插件已更新。重启会话以生效。",
+    "installed": "插件已安装，重启会话后生效。",
+    "updated": "插件已更新，重启会话后生效。",
     "checked": "已检查。",
     "checkFailed": "检查失败，是否已联网？",
     "cliMissing": "未安装 CLI",
@@ -410,7 +410,7 @@
       "one": "{count} 项更改",
       "other": "{count} 项更改"
     },
-    "scopeNote": "只有项目可以更改的设置处于启用状态，其余设置在所有地方都相同。"
+    "scopeNote": "只有项目可以单独更改的设置可用，其余设置全局统一。"
   },
   "settingsRow": {
     "overriddenIn": "已在以下项目覆盖",
@@ -425,9 +425,9 @@
     "terminalGroup": "终端"
   },
   "settingsHelp": {
-    "bugDescription": "在浏览器中打开缺陷表单，并已填好版本和平台。lich 不会替你提交 issue，需要你自己填写。在终端运行 `lich rage`，可把日志、版本以及 lich 在这台机器上发现的内容打包成一个压缩包以便附上。",
+    "bugDescription": "在浏览器中打开问题报告表单，版本和平台已自动填好。issue 需要你自己填写并提交。在终端运行 `lich rage`，可将日志、版本以及 lich 在本机检测到的信息打包成一个压缩文件，方便附上。",
     "logSearchWords": "调试 日志 原生窗口",
-    "logDescription": "该文件夹包含 lich 的日志，旁边是原生窗口的日志（lich-native.log）。其中有绝对路径、项目和分支名称以及你的 gh 登录名，但绝不含会话令牌。附加到任何地方之前请先阅读。",
+    "logDescription": "该文件夹包含 lich 的日志，旁边是原生窗口的日志（lich-native.log）。其中有绝对路径、项目和分支名称以及你的 gh 登录名，但绝不含会话令牌。附到任何地方之前，请先检查一遍内容。",
     "logFailed": "无法打开日志文件夹：{error}"
   },
   "settingsProviders": {
@@ -481,10 +481,10 @@
   "settingsUpdatesPlugin": {
     "hint": {
       "codex": "在 Codex 会话中运行 /hooks，以信任插件的钩子。",
-      "crush": "上报其会话 ID 并刷新 git 状态。它没有回合结束事件，因此其卡片不显示状态，并保留自己的名称。",
-      "omp": "上报其状态、名称和 git 变更。它没有可观察到的审批事件，因此等待你授权的会话会显示加载动画，而不是铃铛。",
-      "antigravity": "上报其状态、名称和 git 变更。它没有可观察到的审批事件，因此等待你授权的会话会显示加载动画，而不是铃铛。",
-      "cursor": "运行 Claude Code 中已安装的插件，因此上报该版本所上报的内容，并随其更新。lich 在此仅添加自己的工具。它同样不会触发审批事件，因此等待你授权的会话会显示加载动画，而不是铃铛。"
+      "crush": "上报会话 ID 并刷新 git 状态。它没有“一轮结束”事件，所以卡片不显示状态，并保留自己的名称。",
+      "omp": "上报状态、名称和 git 变更。目前没有观察到它的审批事件，因此等待你授权的会话会显示加载动画，而不是铃铛。",
+      "antigravity": "上报状态、名称和 git 变更。目前没有观察到它的审批事件，因此等待你授权的会话会显示加载动画，而不是铃铛。",
+      "cursor": "使用 Claude Code 中安装的插件，因此上报的内容与该版本一致，并随它一起更新。lich 在这里只添加自己的工具。它也不会触发审批事件，因此等待你授权的会话会显示加载动画，而不是铃铛。"
     },
     "installFailed": "安装失败：{error}",
     "updateFailed": "更新失败：{error}",
@@ -525,10 +525,10 @@
   "settingsProfilesDialogs": {
     "name": "名称",
     "namePlaceholder": "工作",
-    "bring": "从 {name} 带来的插件",
-    "noPlugins": "{name} 没有可带来的插件。",
+    "bring": "要从 {name} 带过来的插件",
+    "noPlugins": "{name} 没有可带过来的插件。",
     "lichLocked": "lich 会在每个配置文件中安装它",
-    "pluginsHint": "之后还可以从配置文件的菜单中复制更多插件。你的组织可能会拒绝其中一些。",
+    "pluginsHint": "之后还可以从配置文件的菜单中复制更多插件。你的组织可能不允许安装其中部分插件。",
     "createAndLogin": "创建并登录",
     "renameTitle": "重命名配置文件",
     "readyDesc": "可将它选为某个项目或所有新会话的配置文件。",
@@ -563,12 +563,12 @@
     "loggedIn": "已登录",
     "personal": "个人",
     "profileDesc": "新会话使用哪个 {provider} 登录。会话会一直使用创建时的配置文件，恢复时也一样。",
-    "renameDescPlugins": "只会更改名称：其登录、插件和历史记录保持不变。",
-    "deleteDescPlugins": "其登录、插件和对话历史将被删除，在其中启动的会话将无法再恢复。",
+    "renameDescPlugins": "只改名称，登录、插件和历史记录都不变。",
+    "deleteDescPlugins": "登录信息、插件和对话历史都会删除，在此配置文件中启动的会话将无法再恢复。",
     "loginDesc": "请在 {provider} 打开的浏览器标签页中登录。完成后会自动继续。",
     "claude": {
       "profilesDesc": "每个配置文件都是独立的 Claude 登录，有各自的插件和历史记录。设置、CLAUDE.md、智能体、命令、技能和钩子在所有配置文件中都相同。",
-      "copiedNote": "设置、CLAUDE.md、智能体、命令、技能和钩子在此配置文件中是副本：在其他配置文件中编辑它们不再影响这里。",
+      "copiedNote": "设置、CLAUDE.md、智能体、命令、技能和钩子在此配置文件中是独立副本，在其他配置文件中修改不会再同步到这里。",
       "searchAlso": "claude 账户 登录 个人 工作",
       "profilesAlso": "claude 账户 登录 个人 工作 插件",
       "newDesc": "独立的 Claude 登录，有各自的插件和历史记录。",
@@ -576,20 +576,20 @@
     },
     "codex": {
       "profilesDesc": "每个配置文件都是独立的 Codex 登录，有各自的插件和历史记录。个人配置文件的 config.toml 设置、AGENTS.md、钩子、技能和规则在所有配置文件中都相同。",
-      "copiedNote": "AGENTS.md 和 hooks.json 在此配置文件中是副本：在其他配置文件中编辑它们不再影响这里。",
+      "copiedNote": "AGENTS.md 和 hooks.json 在此配置文件中是独立副本，在其他配置文件中修改不会再同步到这里。",
       "searchAlso": "codex 账户 登录 个人 工作 chatgpt",
       "profilesAlso": "codex 账户 登录 个人 工作 chatgpt 插件",
       "newDesc": "独立的 Codex 登录，有各自的插件和历史记录。",
       "addressDesc": "如果浏览器没有打开，请在此地址登录。"
     },
     "omp": {
-      "profilesDesc": "每个配置文件都是独立的一组 oh-my-pi 登录，有各自的历史记录。config.yml、models.yml、mcp.json、AGENTS.md、技能、规则、命令、提示词和扩展在所有配置文件中都相同。",
-      "copiedNote": "config.yml、models.yml、mcp.json 和 markdown 文件在此配置文件中是副本：在其他配置文件中编辑它们不再影响这里。",
+      "profilesDesc": "每个配置文件都有一组独立的 oh-my-pi 登录和各自的历史记录。config.yml、models.yml、mcp.json、AGENTS.md、技能、规则、命令、提示词和扩展在所有配置文件中都相同。",
+      "copiedNote": "config.yml、models.yml、mcp.json 和 markdown 文件在此配置文件中是独立副本，在其他配置文件中修改不会再同步到这里。",
       "searchAlso": "omp oh-my-pi 账户 登录 个人 工作",
       "profilesAlso": "omp oh-my-pi 账户 登录 个人 工作",
       "newDesc": "独立的 oh-my-pi 登录，有各自的历史记录。创建后需在终端中登录。",
-      "renameDesc": "只会更改名称：其登录和历史记录保持不变。",
-      "deleteDesc": "其登录和对话历史将被删除，在其中启动的会话将无法再恢复。"
+      "renameDesc": "只改名称，登录和历史记录都不变。",
+      "deleteDesc": "登录信息和对话历史都会删除，在此配置文件中启动的会话将无法再恢复。"
     }
   },
   "profilesXdg": {
@@ -598,31 +598,31 @@
       "searchAlso": "opencode 账户 登录 个人 工作",
       "profilesAlso": "opencode 账户 登录 个人 工作",
       "newDesc": "独立的 opencode 登录，有各自的历史记录。创建后需在终端中登录。",
-      "renameDesc": "只会更改名称：其登录和历史记录保持不变。",
-      "deleteDesc": "其登录和对话历史将被删除，在其中启动的会话将无法再恢复。"
+      "renameDesc": "只改名称，登录和历史记录都不变。",
+      "deleteDesc": "登录信息和对话历史都会删除，在此配置文件中启动的会话将无法再恢复。"
     },
     "cursor": {
       "profilesDesc": "每个配置文件都是独立的 Cursor 登录，有各自的聊天和 CLI 设置。~/.cursor 中的 mcp.json、钩子和技能在所有配置文件中都相同。",
       "searchAlso": "cursor cursor-agent 账户 登录 个人 工作",
       "profilesAlso": "cursor cursor-agent 账户 登录 个人 工作",
       "newDesc": "独立的 Cursor 登录，有各自的聊天记录。创建后需在终端中登录。",
-      "renameDesc": "只会更改名称：其登录和聊天记录保持不变。",
-      "deleteDesc": "其登录和聊天记录将被删除，在其中启动的会话将无法再恢复。"
+      "renameDesc": "只改名称，登录和聊天记录都不变。",
+      "deleteDesc": "登录信息和聊天记录都会删除，在此配置文件中启动的会话将无法再恢复。"
     },
     "kiro": {
       "profilesDesc": "每个配置文件都是独立的 Kiro 登录。~/.kiro 中的对话、智能体、steering 和设置在所有配置文件中都相同。",
       "searchAlso": "kiro kiro-cli 账户 登录 个人 工作 aws builder",
       "profilesAlso": "kiro kiro-cli 账户 登录 个人 工作",
       "newDesc": "独立的 Kiro 登录。创建后需在终端中登录。",
-      "renameDesc": "只会更改名称：其登录保持不变。",
-      "deleteDesc": "其登录将被删除，在其中启动的会话将无法再恢复。对话会保留：所有配置文件共享它们。"
+      "renameDesc": "只改名称，登录不变。",
+      "deleteDesc": "登录信息会删除，在此配置文件中启动的会话将无法再恢复。对话会保留，因为所有配置文件共享对话。"
     }
   },
   "servicesSettings": {
     "title": "服务",
     "searchWords": "服务 命令 docker 容器 隧道 开发服务器 随 lich 启动 services",
-    "description": "lich 为这个项目持续运行的命令，每个都在自己的控制台里：容器、隧道、开发服务器。命令退出时，服务就停止了。",
-    "globalDescription": "在你的主目录中运行、显示在 lich 首页上的服务。项目自己的服务在它的范围里。",
+    "description": "lich 为此项目保持运行的命令，每条命令都有自己的控制台，例如容器、隧道、开发服务器。命令退出即表示服务已停止。",
+    "globalDescription": "在主目录中运行的服务，显示在 lich 首页。项目自己的服务在该项目的范围中设置。",
     "add": "添加服务",
     "startsWithLich": "随 lich 启动",
     "name": "名称",
@@ -641,7 +641,7 @@
     "chooseFolder": "选择文件夹…",
     "install": "安装",
     "installing": "正在安装…",
-    "gitDescription": "为此系统构建的最新版本，并用其校验和进行验证。",
+    "gitDescription": "下载为此系统构建的最新版本，并核对校验和。",
     "dirDescription": "包含 manifest.json 和已为此系统构建好的程序的文件夹。",
     "pickTitle": "选择扩展的文件夹",
     "installTitle": "安装 {name} {version}？",
@@ -650,14 +650,14 @@
     "installWarning": "它将以你的身份在你的电脑上运行，可以访问你的文件和账户。只有在你信任其作者时才安装。",
     "permissionsLabel": "它还可以",
     "permission": {
-      "projectsRead": "查看你打开的项目及其 worktree",
+      "projectsRead": "查看你打开的项目及其工作树",
       "sessionsRead": "查看你的会话以及每个会话在做什么",
       "sessionsWrite": "打开会话并向其中输入提示词",
       "sessionEvents": "跟踪每个会话的状态变化",
-      "sessionsAsk": "向你的 Claude Code 会话提旁问并读取回答",
+      "sessionsAsk": "向你的 Claude Code 会话额外提问并读取回答",
       "servicesRead": "查看你项目的服务及其输出",
       "servicesWrite": "启动、停止和重启你项目的服务",
-      "gitRead": "查看每个检出的分支、更改和 pull request",
+      "gitRead": "查看每个检出的分支、更改和拉取请求",
       "notify": "显示桌面通知",
       "window": "在停靠栏中显示文件，并在会话的浏览器中打开页面"
     },
@@ -668,7 +668,7 @@
     "removeMenuItem": "移除…",
     "restart": "重启",
     "emptyTitle": "还没有扩展",
-    "emptyDescription": "扩展会为 lich 添加它自己的界面。可以从它的 GitHub 仓库或文件夹安装。",
+    "emptyDescription": "扩展会给 lich 添加一个自己的界面。可从扩展的 GitHub 仓库或文件夹安装。",
     "installed": "已安装",
     "installedCount": "已安装 · {n}",
     "rowOptions": "{name} 的选项",

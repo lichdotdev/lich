@@ -17,6 +17,6 @@
   },
   "review": {
     "title": "Faça checkout e revise",
-    "body": "Abrir em sessão cria um worktree na branch do pull request e abre uma sessão nele, ou Ir para a sessão quando já existe uma. Em Arquivos, selecione linhas, clique com o botão direito e escolha Comentar no pull request, depois Adicionar à revisão e Enviar revisão."
+    "body": "Abrir em sessão cria uma worktree na branch do pull request e abre uma sessão nela, ou Ir para a sessão quando já existe uma. Em Arquivos, selecione linhas, clique com o botão direito e escolha Comentar no pull request, depois Adicionar à revisão e Enviar revisão."
   }
 }

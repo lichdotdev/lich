@@ -106,7 +106,7 @@ func TestAroundValueSplitsAtThePlaceholder(t *testing.T) {
 	}{
 		{i18n.EN, "No matches for ", " in sessions"},
 		{i18n.ZhCN, "在sessions中没有与 ", " 匹配的结果"},
-		{i18n.KO, "sessions에서 ", "와(과) 일치하는 항목이 없습니다"},
+		{i18n.KO, "sessions에서 ", " 검색 결과가 없습니다"},
 	}
 	for _, c := range cases {
 		inLocale(t, c.locale)

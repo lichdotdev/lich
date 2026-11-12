@@ -16,12 +16,12 @@
   "newFolderDialog": {
     "title": "Nueva carpeta",
     "description": {
-      "one": "Archiva esta sesión bajo un nombre propio. Sigue abierta y su checkout no cambia.",
-      "other": "Archiva estas {count} sesiones bajo un nombre propio. Siguen abiertas y sus checkouts no cambian."
+      "one": "Guarda esta sesión en una carpeta con el nombre que elijas. Sigue abierta y su checkout no cambia.",
+      "other": "Guarda estas {count} sesiones en una carpeta con el nombre que elijas. Siguen abiertas y sus checkouts no cambian."
     },
     "name": "Nombre",
     "placeholder": "Sistema de diseño",
-    "exists": "{name} ya existe, así que se archiva en ella.",
+    "exists": "{name} ya existe, así que irán a esa carpeta.",
     "moveHere": "Mover aquí"
   },
   "sessionCard": {
@@ -118,11 +118,11 @@
     "discardAndRemove": "Descartar cambios y eliminar"
   },
   "closeAllDialog": {
-    "title": "Las sesiones siguen en ejecución",
+    "title": "Hay sesiones en ejecución",
     "closeAnyway": "Cerrar de todos modos",
     "running": {
-      "one": "Una sesión está a mitad de un turno. Cerrarla la detiene; el turno en curso se pierde.",
-      "other": "{count} sesiones están a mitad de un turno. Cerrarlas las detiene; los turnos en curso se pierden."
+      "one": "Una sesión está a mitad de turno. Si la cierras, se detendrá y el turno en curso se perderá.",
+      "other": "{count} sesiones están a mitad de turno. Si las cierras, se detendrán y los turnos en curso se perderán."
     }
   },
   "worktreeSandboxRow": {
@@ -131,13 +131,13 @@
   "sessionTooltip": {
     "notMounted": "No montado (enlaces simbólicos): {paths}",
     "morePaths": "+{count} más",
-    "modelChanged": "Abierta con {requested}, ejecutando {running}"
+    "modelChanged": "Abierta con {requested}, se ejecuta con {running}"
   },
   "worktreeDialogView": {
     "title": "Nueva sesión en worktree",
     "description": "Un checkout separado en su propia rama, con una sesión propia.",
     "name": "Nombre",
-    "namePlaceholder": "Vacío para un nombre aleatorio, palabras o #issue",
+    "namePlaceholder": "Palabras, #issue o vacío para un nombre aleatorio",
     "branchLine": "rama: {branch}",
     "randomBranch": "un nombre aleatorio",
     "opensSelected": "Abre la sesión de la worktree seleccionada.",
@@ -146,7 +146,7 @@
     "noMatch": "Ninguna rama coincide.",
     "local": "Locales",
     "remote": "Remotas",
-    "opensSession": "abre su sesión",
+    "opensSession": "abre su sesión en su lugar",
     "carry": "Llevar los cambios sin confirmar",
     "carryFiles": {
       "one": "{count} archivo de este checkout",
@@ -154,7 +154,7 @@
     },
     "create": "Crear",
     "open": "Abrir",
-    "forkTitle": "Bifurcar {label} a un worktree",
+    "forkTitle": "Bifurcar {label} en una worktree",
     "forkDescription": "Un checkout aparte, en su propia rama.",
     "fork": "Bifurcar"
   },
@@ -170,7 +170,7 @@
     "keepsChanges": "Empieza desde {branch} local para conservar tus cambios"
   },
   "closeWorktree": {
-    "adopted": "lich no creó la worktree de {path}. Eliminarla borra ese directorio pero conserva su rama."
+    "adopted": "lich no creó la worktree de {path}. Al eliminarla se borra ese directorio, pero se conserva su rama."
   },
   "sidebarProfile": {
     "handoffOfferTitle": "¿Mover {label} a otro perfil?",
@@ -194,7 +194,7 @@
     "otherProviders": "Otros proveedores"
   },
   "fork": {
-    "pruned": "{name} ya no tiene una conversación que bifurcar: {provider} la borró.",
+    "pruned": "{name} ya no tiene ninguna conversación que bifurcar porque {provider} la borró.",
     "failed": "No se pudo bifurcar {name}: {error}"
   },
   "services": {
@@ -242,13 +242,13 @@
     "whenPlaceholder": "2h30 o 14:30",
     "prompt": "Prompt",
     "promptPlaceholder": "¿Qué debería hacer esta sesión?",
-    "whenError": "No se entiende. Prueba con 45m, 2h30 o 14:30.",
+    "whenError": "No se reconoce ese formato. Prueba con 45m, 2h30 o 14:30.",
     "landsToday": "Hoy a las {clock}, en {left}",
     "landsTomorrow": "Mañana a las {clock}, en {left}",
     "landsOn": "{date} a las {clock}, en {left}",
     "runsOnce": "Se ejecuta una vez.",
-    "staysOn": "Sigue activo hasta que se cierre la pull request. Se detiene tras {limit} ejecuciones.",
-    "noPR": "Esta rama aún no tiene pull request. La vigilancia empieza cuando se abra una.",
+    "staysOn": "Sigue activo hasta que se cierre el pull request. Se detiene tras {limit} ejecuciones.",
+    "noPR": "Esta rama aún no tiene pull request. La vigilancia empieza cuando se abra uno.",
     "setByAgent": "Configurado por el agente de esta sesión.",
     "setByLich": "Configurado por lich tras el límite de uso.",
     "runsUsed": "{runs} de {limit} ejecuciones usadas.",

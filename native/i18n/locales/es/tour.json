@@ -25,7 +25,7 @@
     },
     "session": {
       "title": "Cada sesión tiene su fila",
-      "body": "Haz clic en una fila para pasar a su sesión, y clic derecho para todo lo demás que puedes hacer con ella."
+      "body": "Haz clic en una fila para pasar a su sesión, o clic derecho para ver todo lo demás que puedes hacer con ella."
     },
     "worktree": {
       "title": "Una tarea, una worktree",

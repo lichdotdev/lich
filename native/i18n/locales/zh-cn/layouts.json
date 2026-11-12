@@ -24,7 +24,7 @@
     "forward": "前进",
     "reload": "重新加载",
     "openInWindow": "在窗口中打开",
-    "locked": "此标签页只容纳 {label} 及其浏览器",
+    "locked": "此标签页只放 {label} 和它的浏览器",
     "opened": "{label} 打开了浏览器",
     "dismiss": "忽略",
     "open": "打开",
@@ -33,13 +33,13 @@
     "keepOpen": "保持打开",
     "closeIdle": "关闭",
     "showFolder": "打开文件夹",
-    "moveBody": "它将离开“{layout}”。浏览器标签页只容纳 {label} 及其浏览器。",
+    "moveBody": "它会移出“{layout}”。浏览器标签页只放 {label} 和它的浏览器。",
     "pick": "在页面上留下备注",
     "pickHint": "点击一个元素来留下备注",
     "zoom": "页面缩放",
     "zoomReset": "重置为 100%",
     "notePlaceholder": "这里应该改成什么？",
-    "closingPlaceholder": "关于全部的备注…",
+    "closingPlaceholder": "针对全部备注的说明…",
     "addNote": "添加备注",
     "saveNote": "保存",
     "deleteNote": "删除",
@@ -75,7 +75,7 @@
   },
   "move": {
     "title": "将 {label} 移到这里？",
-    "body": "{label} 在布局 {layout} 中。移动后会离开那里，会话继续运行。",
+    "body": "{label} 位于布局“{layout}”中。移过来后会从原布局移出，会话继续运行。",
     "confirm": "移动"
   },
   "load": {
@@ -93,12 +93,12 @@
       "other": "{count} 个委派 · 并排显示"
     },
     "add": "已显示 {here}/{count} · 添加 {missing} 个",
-    "hint": "把此会话打开的会话并排放在旁边",
+    "hint": "把此会话打开的会话排在它旁边",
     "moveTitle": {
-      "other": "把 {count} 个委派放到这里?"
+      "other": "把 {count} 个委派放到这里？"
     },
     "moveBody": {
-      "other": "有 {count} 个委派在其他布局中。放到这里会把它们从那里移出;会话会继续运行。"
+      "other": "有 {count} 个委派会话在其他布局中。放到这里会把它们从原布局移出，会话继续运行。"
     }
   }
 }

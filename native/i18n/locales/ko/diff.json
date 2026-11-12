@@ -16,7 +16,7 @@
     },
     "clear": "비우기",
     "send": "보내기",
-    "sendFailed": "댓글을 보내지 못했습니다"
+    "sendFailed": "코멘트를 보내지 못했습니다"
   },
   "commentEdit": {
     "title": "코멘트 편집",
@@ -45,7 +45,7 @@
     }
   },
   "fileDiff": {
-    "readFailed": "{path}을(를) 읽을 수 없습니다",
+    "readFailed": "{path} 파일을 읽을 수 없습니다",
     "whitespaceOnly": "공백만",
     "onlyWhitespaceChanged": "공백만 변경됨",
     "addAsContext": "파일을 컨텍스트로 추가",
@@ -70,8 +70,8 @@
     "onPullRequest": "풀 리퀘스트에 · {lines}",
     "addToBatch": "묶음에 추가",
     "addToReview": "리뷰에 추가",
-    "sessionPlaceholder": "여기서 무엇을 바꿔야 하나요? 나머지와 함께 세션으로 보내집니다.",
-    "reviewPlaceholder": "코멘트를 남기세요. 리뷰를 제출할 때 보내집니다."
+    "sessionPlaceholder": "여기서 무엇을 바꿔야 하나요? 다른 코멘트와 함께 세션에 보냅니다.",
+    "reviewPlaceholder": "코멘트를 남기세요. 리뷰를 제출할 때 함께 보냅니다."
   },
   "dockReviewBody": {
     "split": "나란히",
@@ -82,14 +82,14 @@
     "reveal": "폴더에서 보기",
     "pdf": "PDF 문서",
     "pdfHint": "데스크톱에서 PDF를 여는 앱으로 열립니다.",
-    "openFailed": "{name}을(를) 열 수 없습니다",
-    "revealFailed": "{name}을(를) 폴더에서 보여 줄 수 없습니다"
+    "openFailed": "{name} 파일을 열 수 없습니다",
+    "revealFailed": "폴더에서 {name} 파일을 표시할 수 없습니다"
   },
   "dockReviewBinary": {
     "viewOnGitHub": "GitHub에서 보기"
   },
   "blobPreview": {
-    "tooManyPixels": "{width} × {height}는 미리 보기 한도인 {megapixels} MP를 넘습니다",
+    "tooManyPixels": "{width} × {height} 크기는 미리 보기 한도인 {megapixels} MP를 넘습니다",
     "undecodable": "이 이미지를 디코딩할 수 없습니다: {error}"
   }
 }

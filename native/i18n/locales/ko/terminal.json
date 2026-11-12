@@ -2,11 +2,11 @@
   "dropHint": {
     "attachTo": "{label}에 첨부",
     "confined": "체크아웃 밖의 파일은 사본으로 전달됩니다",
-    "pasted": "경로가 프롬프트에 붙여 넣어집니다"
+    "pasted": "프롬프트에 경로를 붙여 넣습니다"
   },
   "exitToast": {
     "ended": "{label} 종료됨",
-    "endedWithCode": "{label}이(가) 코드 {code}(으)로 종료됨",
+    "endedWithCode": "{label} 종료됨 (종료 코드 {code})",
     "resumes": "재개하면 {id}…를 다시 엽니다.",
     "resumesIn": "재개하면 {profile}에서 {id}…를 다시 엽니다.",
     "closeSession": "세션 닫기",
@@ -39,7 +39,7 @@
     "tooLarge": "{name}({size}MB 초과)"
   },
   "duplicate": {
-    "title": "{label}에서 {holder}에 이미 열려 있는 대화를 재개했습니다.",
+    "title": "{label} 세션이 {holder} 세션에 이미 열려 있는 대화를 재개했습니다.",
     "keepBoth": "둘 다 유지",
     "switch": "전환"
   }

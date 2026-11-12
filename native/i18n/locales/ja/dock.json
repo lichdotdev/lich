@@ -42,11 +42,11 @@
     "invalidRegexp": "無効な正規表現"
   },
   "artifacts": {
-    "empty": "このセッションのエージェントが見せるために作ったページやファイルが、プロジェクトのほかの開いているセッションのものと一緒にここに表示されます。",
+    "empty": "このセッションのエージェントが表示用に作ったページやファイルが、プロジェクト内でほかに開いているセッションの分と一緒にここに並びます。",
     "thisSession": "このセッション",
     "otherSessions": "ほかのセッション",
     "options": "{name} のオプション",
-    "openInBrowser": "ブラウザで開く",
+    "openInBrowser": "ブラウザーで開く",
     "attachToPrompt": "プロンプトに添付",
     "copyPath": "パスをコピー",
     "showInFileManager": "ファイルマネージャーで表示"

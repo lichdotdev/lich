@@ -34,13 +34,13 @@
     "shortcuts": "Atalhos de teclado",
     "quit": "Encerrar o lich",
     "startServices": "Iniciar os serviços do projeto",
-    "toggleGit": "Alternar o painel Git",
+    "toggleGit": "Mostrar ou ocultar o painel Git",
     "tour": "Fazer o tour"
   },
   "terminalCost": {
     "a": "Ctrl+{key} é o atalho do shell para ir ao início da linha; as sessões não o receberão mais.",
     "c": "Ctrl+{key} é o atalho do shell para interromper; as sessões não o receberão mais.",
-    "d": "Ctrl+{key} é o atalho do shell para fim de entrada; as sessões não o receberão mais.",
+    "d": "Ctrl+{key} é o atalho do shell para indicar o fim da entrada; as sessões não o receberão mais.",
     "e": "Ctrl+{key} é o atalho do shell para ir ao fim da linha; as sessões não o receberão mais.",
     "k": "Ctrl+{key} é o atalho do shell para apagar até o fim da linha; as sessões não o receberão mais.",
     "l": "Ctrl+{key} é o atalho do shell para limpar a tela; as sessões não o receberão mais.",
@@ -52,7 +52,7 @@
     "z": "Ctrl+{key} é o atalho do shell para suspender; as sessões não o receberão mais.",
     "f": "Ctrl+{key} é a busca do próprio terminal da sessão; as sessões não o receberão mais.",
     "v": "Ctrl+{key} é a colagem de imagem que o lich envia ao agente; as sessões não o receberão mais.",
-    "Backspace": "Ctrl+{key} é o apagar palavra que o lich envia ao agente; as sessões não o receberão mais."
+    "Backspace": "Ctrl+{key} é o atalho de apagar palavra que o lich envia ao agente; as sessões não o receberão mais."
   },
   "unassigned": "Sem atalho",
   "shortcuts": {

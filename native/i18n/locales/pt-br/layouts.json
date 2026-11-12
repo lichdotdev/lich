@@ -35,7 +35,7 @@
     "keepOpen": "Manter aberto",
     "closeIdle": "Fechar",
     "showFolder": "Abrir pasta",
-    "moveBody": "Ela sai de \"{layout}\". A aba do navegador só comporta {label} e o navegador dela.",
+    "moveBody": "Ela sai de \"{layout}\". Uma aba de navegador só comporta {label} e o navegador dela.",
     "pick": "Deixar notas na página",
     "pickHint": "Clique num elemento para deixar uma nota",
     "zoom": "Zoom da página",

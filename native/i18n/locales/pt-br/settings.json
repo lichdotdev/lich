@@ -4,7 +4,7 @@
     "uiTitle": "Idioma da interface",
     "uiDescription": "O idioma das telas do próprio lich.",
     "promptTitle": "Idioma dos prompts",
-    "promptDescription": "O idioma do texto que o lich entrega aos seus agentes: instruções, mensagens repassadas e avisos. Sessões iniciadas a partir de agora usam ele em tudo; as já abertas recebem ele só nas mensagens repassadas.",
+    "promptDescription": "O idioma do texto que o lich entrega aos seus agentes: instruções, mensagens repassadas e avisos. Sessões iniciadas a partir de agora passam a usá-lo em tudo; as que já estão abertas só o recebem nas mensagens repassadas.",
     "uiSearchWords": "idioma língua tradução inglês português",
     "promptSearchWords": "idioma língua tradução agente instruções mensagens inglês português",
     "promptSaveFailed": "Não foi possível salvar o idioma dos prompts: {error}",
@@ -62,7 +62,7 @@
     "textSmaller": "Diminuir texto do terminal",
     "textLarger": "Aumentar texto do terminal",
     "copyOnSelectTitle": "Copiar ao selecionar",
-    "copyOnSelectDescription": "Copia uma seleção do terminal para a área de transferência assim que você a faz. Desativado, copie com Ctrl+Shift+C (Cmd+C no macOS).",
+    "copyOnSelectDescription": "Copia uma seleção do terminal para a área de transferência assim que você a faz. Com a opção desligada, copie com Ctrl+Shift+C (Cmd+C no macOS).",
     "copyOnSelectSearchWords": "área de transferência seleção terminal automático",
     "replaceThemesTitle": "Substituir temas importados?",
     "replaceThemesDescription": "O repositório traz temas que já estão instalados: {themes}. Instalar mesmo assim? Isso exclui as versões anteriores permanentemente.",
@@ -105,7 +105,7 @@
     "repositoryHint": "Um repositório com {file} e um ou mais arquivos de tema. A versão do manifesto é o que o lich compara ao atualizar.",
     "or": "ou",
     "chooseFile": "Escolher arquivo…",
-    "fileHint": "Um único arquivo de tema. Sem versão, sem atualizações.",
+    "fileHint": "Um único arquivo de tema. Não tem versão nem recebe atualizações.",
     "downloadTemplate": "Baixar modelo"
   },
   "fontSetting": {
@@ -125,7 +125,7 @@
     "saveFailed": "Não foi possível salvar o rodapé: {error}",
     "ceilingTitle": "Teto de gasto",
     "ceilingSearchWords": "custo orçamento limite usd dólar",
-    "ceilingDescription": "Avisa quando o custo de API da sessão se aproxima desse valor: âmbar em 80%, vermelho em 95%. Vazio para nenhum.",
+    "ceilingDescription": "Avisa quando o custo de API da sessão se aproxima desse valor: âmbar em 80%, vermelho em 95%. Deixe vazio para não ter teto.",
     "ceilingPlaceholder": "Sem teto"
   },
   "footerLayoutEditor": {
@@ -141,7 +141,7 @@
   "diffLayoutSetting": {
     "title": "Layout do diff",
     "searchWords": "lado a lado dividido unificado revisão",
-    "description": "Como as mudanças são desenhadas na aba Review e nos pull requests. Lado a lado mostra o unificado enquanto o painel é estreito demais para duas colunas.",
+    "description": "Como as mudanças são desenhadas na aba Revisão e nos pull requests. No modo lado a lado, o diff aparece unificado enquanto o painel for estreito demais para duas colunas.",
     "layout": {
       "unified": "Unificado",
       "split": "Lado a lado"
@@ -149,16 +149,16 @@
   },
   "notificationsSettings": {
     "needsInputTitle": "Me notificar quando uma sessão precisar de resposta",
-    "needsInputDescription": "Mostra uma notificação do sistema quando uma sessão está parada esperando você (um pedido de permissão, uma pergunta) e a janela do lich não é aquela em que você está. Enquanto você está no lich nada muda: o sino do card e o toast avisam.",
+    "needsInputDescription": "Mostra uma notificação do sistema quando uma sessão está parada esperando você (um pedido de permissão, uma pergunta) e a janela do lich não é aquela em que você está. Com você no lich, nada muda: quem avisa são o sino do card e o toast.",
     "finishedTitle": "Me notificar quando uma sessão terminar o trabalho",
-    "finishedDescription": "Mostra uma notificação do sistema quando uma sessão termina o turno sem nada mais a perguntar, e a janela do lich não é aquela em que você está. Independe da configuração acima: vale saber de uma execução longa da qual você se afastou, mesmo que prefira não ouvir falar de cada pedido de resposta. Nenhum toast acompanha: dentro do lich, o card e a aba do projeto já avisam."
+    "finishedDescription": "Mostra uma notificação do sistema quando uma sessão termina o turno sem nada mais a perguntar, e a janela do lich não é aquela em que você está. Funciona independente da configuração acima, então você pode ser avisado de uma execução longa da qual se afastou sem ser avisado a cada pedido de resposta. Não vem com toast, porque dentro do lich o card e a aba do projeto já mostram isso."
   },
   "hotkeysSettings": {
     "alsoBound": "Também atribuído a {actions}",
     "pressKeys": "Pressione as teclas…",
     "unassignHint": "Deixar esta ação sem atalho",
     "resetHint": "Restaurar o atalho padrão",
-    "passthroughNote": "O lich reescreve estes no caminho até o terminal do agente, então são fixos e não podem ser reatribuídos."
+    "passthroughNote": "O lich reescreve estes no caminho até o terminal do agente, então não podem ser reatribuídos."
   },
   "providersPane": {
     "detecting": "Detectando provedores…",
@@ -196,7 +196,7 @@
   "providerBinSettings": {
     "skipTitle": "Pular pedidos de permissão",
     "skipSearchWords": "yolo perigoso aprovações",
-    "skipDescription": "Até onde {provider} roda sem perguntar: edita arquivos, executa comandos e instala coisas sem confirmar, e o lich o inicia com {flag}.",
+    "skipDescription": "Até onde o {provider} vai sem perguntar. Ele edita arquivos, executa comandos e instala coisas sem confirmação, e o lich o inicia com {flag}.",
     "skip": {
       "never": {
         "label": "Nunca",
@@ -208,11 +208,11 @@
       },
       "everywhere": {
         "label": "Em todo lugar",
-        "consequence": "Inclusive a árvore em que você trabalha. Nada vai perguntar."
+        "consequence": "Inclusive na árvore em que você trabalha. Nada vai pedir confirmação."
       }
     },
     "confirmTitle": "Pular pedidos de permissão: {level}",
-    "confirmDescription": "{provider} vai editar arquivos, executar comandos e instalar coisas sem confirmar, iniciado com {flag}. {consequence}",
+    "confirmDescription": "O {provider} vai editar arquivos, executar comandos e instalar coisas sem confirmação, iniciado com {flag}. {consequence}",
     "confirm": "Pular pedidos"
   },
   "planUsageSetting": {
@@ -236,7 +236,7 @@
       },
       "background": {
         "label": "Manter rodando",
-        "consequence": "A janela fecha e as sessões continuam trabalhando; abrir o lich de novo as traz de volta."
+        "consequence": "A janela fecha e as sessões continuam trabalhando. Quando você abrir o lich de novo, elas voltam."
       },
       "quit": {
         "label": "Encerrar",
@@ -255,11 +255,11 @@
       },
       "show": {
         "label": "Sempre mostrar",
-        "consequence": "O lich desenha os botões mesmo quando o gerenciador de janelas desenha a própria barra de título, ou nenhuma, como faz um tiling."
+        "consequence": "O lich desenha os botões mesmo quando o gerenciador de janelas desenha a própria barra de título, ou quando não desenha nenhuma, como os gerenciadores tiling."
       },
       "hide": {
         "label": "Esconder",
-        "consequence": "A janela fica sem botões: minimize, maximize e feche pelo teclado ou pelo gerenciador de janelas."
+        "consequence": "A janela fica sem botões. Minimize, maximize e feche pelo teclado ou pelo gerenciador de janelas."
       }
     }
   },
@@ -277,7 +277,7 @@
       },
       "resume": {
         "label": "Retomar",
-        "consequence": "Os cards restaurados continuam a conversa ao abrir. Para um vazio, abra uma nova sessão."
+        "consequence": "Os cards restaurados continuam a conversa ao abrir. Para começar do zero, abra uma nova sessão."
       },
       "fresh": {
         "label": "Começar nova",
@@ -286,10 +286,10 @@
     }
   },
   "pasteUnfoldSetting": {
-    "title": "Expandir pastes longos",
+    "title": "Expandir colagens longas",
     "searchWords": "paste colar colado dobrar chip resumo placeholder texto",
-    "descriptionNextPaste": "Um paste que {provider} dobraria num placeholder entra como o texto inteiro, para você editar antes de enviar. Vale a partir do próximo paste, em todas as sessões de {provider}.",
-    "descriptionNextSession": "Um paste que {provider} dobraria num placeholder entra como o texto inteiro, para você editar antes de enviar. Vale para as sessões abertas depois da mudança."
+    "descriptionNextPaste": "Uma colagem que o {provider} dobraria num placeholder entra como o texto inteiro, para você editar antes de enviar. Vale a partir da próxima colagem, em todas as sessões do {provider}.",
+    "descriptionNextSession": "Uma colagem que o {provider} dobraria num placeholder entra como o texto inteiro, para você editar antes de enviar. Vale para as sessões abertas depois da mudança."
   },
   "subagentCardsSetting": {
     "title": "Subagentes como sessões do lich",
@@ -316,7 +316,7 @@
     "summary": "Um home vazio, a máquina somente leitura, escrita só no checkout. A rede continua ligada.",
     "confinedTitle": "Quais sessões rodam confinadas",
     "confinedSearchWords": "isolar isolamento bwrap seatbelt",
-    "confinedHint": "Perguntar coloca a pergunta no menu Nova sessão e no diálogo Nova worktree. Uma sessão aberta onde ninguém pode responder (por outra sessão, ou pela ferramenta MCP) é confinada. Terminais nunca são confinados; o sandbox é para agentes trabalhando sem supervisão.",
+    "confinedHint": "Perguntar coloca a pergunta no menu Nova sessão e no diálogo Nova sessão em worktree. Uma sessão aberta onde ninguém pode responder (por outra sessão, ou pela ferramenta MCP) é confinada. Terminais nunca são confinados, porque o sandbox é para agentes trabalhando sem supervisão.",
     "carryTitle": "O que uma sessão confinada pode levar para dentro",
     "sshTitle": "Agente SSH",
     "sshSearchWords": "push chaves",
@@ -354,11 +354,11 @@
   "updatesSettings": {
     "applicationTitle": "Aplicativo",
     "applicationSearchWords": "versão atualizar upgrade",
-    "applicationDescription": "lich {version}: procura atualizações ao iniciar e a cada hora.",
+    "applicationDescription": "lich {version}. Procura atualizações ao iniciar e a cada hora.",
     "checkForUpdates": "Buscar atualizações",
-    "available": "O lich {version} está disponível: siga o aviso.",
+    "available": "O lich {version} está disponível. Siga o aviso.",
     "upToDate": "Você está na versão mais recente.",
-    "checkFailed": "A verificação falhou: você está online?",
+    "checkFailed": "A verificação falhou. Você está online?",
     "whatsNewTitle": "Novidades",
     "whatsNewSearchWords": "changelog notas de versão novidades",
     "patchNotesFor": "Notas da v{version}.",
@@ -372,7 +372,7 @@
     "installed": "Plugin instalado. Reinicie suas sessões para aplicar.",
     "updated": "Plugin atualizado. Reinicie suas sessões para aplicar.",
     "checked": "Verificado.",
-    "checkFailed": "A verificação falhou: você está online?",
+    "checkFailed": "A verificação falhou. Você está online?",
     "cliMissing": "CLI não instalada",
     "notInstalled": "Plugin não instalado",
     "unsupported": "v{version}, não suportada por este lich",
@@ -383,17 +383,17 @@
     "checkForUpdates": "Buscar atualizações"
   },
   "helpSettings": {
-    "bugTitle": "Reportar um bug",
+    "bugTitle": "Relatar um bug",
     "bugSearchWords": "issue problema github",
-    "openBugReport": "Abrir reporte de bug",
+    "openBugReport": "Abrir relatório de bug",
     "logTitle": "Arquivo de log",
     "openingLogFolder": "Abrindo a pasta de logs…",
     "logFolderOpened": "Pasta de logs aberta.",
     "openLogFolder": "Abrir pasta de logs",
-    "noLogFile": "Log só no stderr: não há arquivo de log.",
+    "noLogFile": "O log vai só para o stderr, então não há arquivo de log.",
     "aboutTitle": "Sobre",
     "aboutSearchWords": "versão licença",
-    "aboutVersion": "lich {version}, {platform}.",
+    "aboutVersion": "lich {version} · {platform}.",
     "repository": "Repositório"
   },
   "settingsIndex": {
@@ -425,13 +425,13 @@
     "terminalGroup": "Terminal"
   },
   "settingsHelp": {
-    "bugDescription": "Abre o formulário de bug no navegador com a versão e a plataforma preenchidas. O lich não registra o issue — você mesmo o escreve. Rode `lich rage` num terminal para juntar os logs, as versões e o que o lich encontrou nesta máquina num único arquivo para anexar.",
+    "bugDescription": "Abre o formulário de bug no navegador com a versão e a plataforma preenchidas. Você mesmo escreve e envia o issue. Rode `lich rage` num terminal para juntar os logs, as versões e o que o lich encontrou nesta máquina num único arquivo para anexar.",
     "logSearchWords": "depuração logs janela nativa",
-    "logDescription": "A pasta guarda o log do lich e, ao lado, o da janela nativa (lich-native.log). Eles contêm caminhos absolutos, nomes de projetos e branches e o seu login do gh — nunca um token de sessão. Leia-os antes de anexá-los a qualquer coisa.",
+    "logDescription": "A pasta guarda o log do lich e, ao lado, o da janela nativa (lich-native.log). Eles contêm caminhos absolutos, nomes de projetos e branches e o seu login do gh, mas nunca um token de sessão. Leia-os antes de anexá-los a qualquer coisa.",
     "logFailed": "Não foi possível abrir a pasta de logs: {error}"
   },
   "settingsProviders": {
-    "pathRereadFailed": "Não foi possível reler o PATH; reinicie o lich.",
+    "pathRereadFailed": "Não foi possível reler o PATH. Reabra o lich.",
     "otherVersionsOnPath": "outras versões no PATH"
   },
   "settingsProvidersBin": {
@@ -452,7 +452,7 @@
     "editorSizeReset": "Redefinir o tamanho do texto do editor"
   },
   "settingsEditor": {
-    "hideWhitespaceDescription": "Omite mudanças que só mexem no espaçamento na aba Review."
+    "hideWhitespaceDescription": "Na aba Revisão, omite as mudanças que só mexem no espaçamento."
   },
   "settingsTheme": {
     "autoLightDark": "Claro/escuro automático",
@@ -476,7 +476,7 @@
     "grantOff": "Desligado"
   },
   "settingsVcs": {
-    "pathReread": "Não foi possível reler o PATH; reabra o lich."
+    "pathReread": "Não foi possível reler o PATH. Reabra o lich."
   },
   "settingsUpdatesPlugin": {
     "hint": {
@@ -517,7 +517,7 @@
     "newProfile": "Novo perfil",
     "options": "Opções de {name}",
     "advancedBinary": "Avançado · Binário",
-    "binaryOverrides": "As sessões daqui sobem por {path}. Um script que define o próprio login ou diretório de configuração passa por cima de {profile}, e o Continuar em pode perder a conversa.",
+    "binaryOverrides": "As sessões daqui iniciam por {path}. Um script que define o próprio login ou diretório de configuração passa por cima de {profile}, e o Continuar em pode perder a conversa.",
     "showBinary": "Mostrar binário",
     "useDefaultBinary": "Usar o binário padrão",
     "loading": "Lendo os perfis…"
@@ -566,63 +566,63 @@
     "profileDesc": "Qual login do {provider} as novas sessões usam. Uma sessão mantém o perfil em que nasceu, inclusive ao retomar.",
     "renameDescPlugins": "Só o nome muda: o login, os plugins e o histórico continuam como estão.",
     "deleteDescPlugins": "O login, os plugins e o histórico de conversas são removidos, e as sessões iniciadas nele não podem mais ser retomadas.",
-    "loginDesc": "Entre na aba do navegador que o {provider} abriu. Isto continua sozinho quando você terminar.",
+    "loginDesc": "Entre na aba do navegador que o {provider} abriu. O processo segue sozinho quando você terminar.",
     "claude": {
-      "profilesDesc": "Cada perfil é um login do Claude próprio, com seus plugins e seu histórico. Configurações, CLAUDE.md, agentes, comandos, skills e hooks são os mesmos em todos.",
-      "copiedNote": "Configurações, CLAUDE.md, agentes, comandos, skills e hooks são cópias neste perfil: editá-los em outro perfil não chega mais aqui.",
+      "profilesDesc": "Cada perfil tem o próprio login do Claude, com plugins e histórico próprios. Configurações, CLAUDE.md, agentes, comandos, skills e hooks são os mesmos em todos.",
+      "copiedNote": "Configurações, CLAUDE.md, agentes, comandos, skills e hooks são cópias neste perfil, então editá-los em outro perfil não muda mais este.",
       "searchAlso": "claude conta login pessoal trabalho",
       "profilesAlso": "claude contas logins pessoal trabalho entrar plugins",
-      "newDesc": "Um login do Claude próprio, com seus plugins e seu histórico.",
+      "newDesc": "Um login do Claude só dele, com plugins e histórico próprios.",
       "addressDesc": "Se o navegador não abriu, entre neste endereço e cole o código que ele mostrar."
     },
     "codex": {
-      "profilesDesc": "Cada perfil é um login do Codex próprio, com seus plugins e seu histórico. As configurações do config.toml do Pessoal, AGENTS.md, hooks, skills e regras são os mesmos em todos.",
-      "copiedNote": "AGENTS.md e hooks.json são cópias neste perfil: editá-los em outro perfil não chega mais aqui.",
+      "profilesDesc": "Cada perfil tem o próprio login do Codex, com plugins e histórico próprios. As configurações do config.toml do Pessoal, AGENTS.md, hooks, skills e regras são os mesmos em todos.",
+      "copiedNote": "AGENTS.md e hooks.json são cópias neste perfil, então editá-los em outro perfil não muda mais este.",
       "searchAlso": "codex conta login pessoal trabalho chatgpt",
       "profilesAlso": "codex contas logins pessoal trabalho entrar chatgpt plugins",
-      "newDesc": "Um login do Codex próprio, com seus plugins e seu histórico.",
+      "newDesc": "Um login do Codex só dele, com plugins e histórico próprios.",
       "addressDesc": "Se o navegador não abriu, entre neste endereço."
     },
     "omp": {
-      "profilesDesc": "Cada perfil é um conjunto próprio de logins do oh-my-pi, com seu histórico. config.yml, models.yml, mcp.json, AGENTS.md, skills, regras, comandos, prompts e extensões são os mesmos em todos.",
-      "copiedNote": "config.yml, models.yml, mcp.json e os arquivos markdown são cópias neste perfil: editá-los em outro perfil não chega mais aqui.",
+      "profilesDesc": "Cada perfil tem o próprio conjunto de logins do oh-my-pi, com histórico próprio. config.yml, models.yml, mcp.json, AGENTS.md, skills, regras, comandos, prompts e extensões são os mesmos em todos.",
+      "copiedNote": "config.yml, models.yml, mcp.json e os arquivos markdown são cópias neste perfil, então editá-los em outro perfil não muda mais este.",
       "searchAlso": "omp oh-my-pi conta login pessoal trabalho",
       "profilesAlso": "omp oh-my-pi contas logins pessoal trabalho entrar",
-      "newDesc": "Um login do oh-my-pi próprio, com seu histórico. Você faz o login em um terminal assim que ele for criado.",
+      "newDesc": "Um login do oh-my-pi só dele, com histórico próprio. Você faz o login num terminal depois que ele for criado.",
       "renameDesc": "Só o nome muda: os logins e o histórico continuam como estão.",
       "deleteDesc": "Os logins e o histórico de conversas são removidos, e as sessões iniciadas nele não podem mais ser retomadas."
     }
   },
   "profilesXdg": {
     "opencode": {
-      "profilesDesc": "Cada perfil é um login do opencode próprio, com seu histórico. A configuração, os plugins, os agentes e os servidores MCP do opencode são os mesmos em todos.",
+      "profilesDesc": "Cada perfil tem o próprio login do opencode, com histórico próprio. A configuração, os plugins, os agentes e os servidores MCP do opencode são os mesmos em todos.",
       "searchAlso": "opencode conta login pessoal trabalho",
       "profilesAlso": "opencode contas logins pessoal trabalho entrar",
-      "newDesc": "Um login do opencode próprio, com seu histórico. Você faz o login em um terminal assim que ele for criado.",
+      "newDesc": "Um login do opencode só dele, com histórico próprio. Você faz o login num terminal depois que ele for criado.",
       "renameDesc": "Só o nome muda: o login e o histórico continuam como estão.",
       "deleteDesc": "O login e o histórico de conversas são removidos, e as sessões iniciadas nele não podem mais ser retomadas."
     },
     "cursor": {
-      "profilesDesc": "Cada perfil é um login do Cursor próprio, com seus chats e suas configurações da CLI. mcp.json, hooks e skills em ~/.cursor são os mesmos em todos.",
+      "profilesDesc": "Cada perfil tem o próprio login do Cursor, com chats e configurações da CLI próprios. mcp.json, hooks e skills em ~/.cursor são os mesmos em todos.",
       "searchAlso": "cursor cursor-agent conta login pessoal trabalho",
       "profilesAlso": "cursor cursor-agent contas logins pessoal trabalho entrar",
-      "newDesc": "Um login do Cursor próprio, com seus chats. Você faz o login em um terminal assim que ele for criado.",
+      "newDesc": "Um login do Cursor só dele, com chats próprios. Você faz o login num terminal depois que ele for criado.",
       "renameDesc": "Só o nome muda: o login e os chats continuam como estão.",
       "deleteDesc": "O login e os chats são removidos, e as sessões iniciadas nele não podem mais ser retomadas."
     },
     "kiro": {
-      "profilesDesc": "Cada perfil é um login do Kiro próprio. Conversas, agentes, steering e configurações em ~/.kiro são os mesmos em todos.",
+      "profilesDesc": "Cada perfil tem o próprio login do Kiro. Conversas, agentes, steering e configurações em ~/.kiro são os mesmos em todos.",
       "searchAlso": "kiro kiro-cli conta login pessoal trabalho aws builder",
       "profilesAlso": "kiro kiro-cli contas logins pessoal trabalho entrar",
-      "newDesc": "Um login do Kiro próprio. Você faz o login em um terminal assim que ele for criado.",
+      "newDesc": "Um login do Kiro só dele. Você faz o login num terminal depois que ele for criado.",
       "renameDesc": "Só o nome muda: o login continua como está.",
-      "deleteDesc": "O login é removido e as sessões iniciadas nele não podem mais ser retomadas. As conversas ficam: todos os perfis as compartilham."
+      "deleteDesc": "O login é removido e as sessões iniciadas nele não podem mais ser retomadas. As conversas ficam, porque todos os perfis as compartilham."
     }
   },
   "servicesSettings": {
     "title": "Serviços",
     "searchWords": "serviços comandos docker container túnel servidor de desenvolvimento iniciar com o lich services",
-    "description": "Comandos que o lich mantém rodando para este projeto, cada um no seu próprio console: um container, um túnel, um servidor de desenvolvimento. Quando o comando sai, o serviço parou.",
+    "description": "Comandos que o lich mantém rodando para este projeto, cada um no seu próprio console: um container, um túnel, um servidor de desenvolvimento. Quando o comando termina, o serviço para.",
     "globalDescription": "Serviços que rodam na sua pasta home, listados na tela inicial do lich. Os serviços de um projeto ficam no escopo dele.",
     "add": "Adicionar serviço",
     "startsWithLich": "Inicia com o lich",
@@ -630,7 +630,7 @@
     "namePlaceholder": "tailscale",
     "command": "Comando",
     "commandPlaceholder": "docker compose up",
-    "commandHint": "Roda na pasta do projeto, sem os arquivos rc do seu shell. Mantenha-o em primeiro plano: um comando que se desprende (-d, &) sai na hora e aparece como parado.",
+    "commandHint": "Roda na pasta do projeto, sem os arquivos rc do seu shell. Mantenha o comando em primeiro plano. Um comando que se desanexa (-d, &) termina na hora e aparece como parado.",
     "startWithLich": "Iniciar com o lich",
     "save": "Salvar"
   },
@@ -642,7 +642,7 @@
     "chooseFolder": "Escolher pasta…",
     "install": "Instalar",
     "installing": "Instalando…",
-    "gitDescription": "A release mais recente feita para este sistema, conferida com os checksums dela.",
+    "gitDescription": "A release mais recente compilada para este sistema, conferida pelos checksums dela.",
     "dirDescription": "Uma pasta com manifest.json e o programa, já compilado para este sistema.",
     "pickTitle": "Escolha a pasta da extensão",
     "installTitle": "Instalar {name} {version}?",

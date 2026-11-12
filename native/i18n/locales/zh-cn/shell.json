@@ -4,12 +4,12 @@
     "update": "更新",
     "later": "稍后",
     "installVersion": "安装 v{version}",
-    "updated": "插件已更新。重启会话以应用。",
-    "installed": "插件已安装。重启会话以应用。",
+    "updated": "插件已更新，重启会话后生效。",
+    "installed": "插件已安装，重启会话后生效。",
     "codexTrust": "Codex：在 Codex 会话中运行 /hooks 以信任该插件的钩子。",
     "installFailed": "安装失败：{error}",
     "title": "启用智能体集成",
-    "description": "lich 插件会向应用报告会话的状态和标题，刷新其 git 状态，并让已恢复的会话继续之前的对话。请将它安装到你使用的 CLI 中。",
+    "description": "lich 插件会把会话的状态和标题报告给应用、刷新会话的 git 状态，并让恢复的会话接着之前的对话继续。请把它安装到你使用的 CLI 中。",
     "needsHooks": "需要通过 /hooks 信任",
     "dontAskAgain": "不再询问",
     "notNow": "暂不",
@@ -50,14 +50,14 @@
     "cacheHit": "缓存：命中率 {percent}%",
     "costUnavailable": "费用不可用",
     "sessionCost": "会话费用",
-    "costOfBudget": "预算 {budget} 中的 {cost}",
+    "costOfBudget": "{cost} / 预算 {budget}",
     "costNote": "此会话各对话的 API 费用。订阅收费可能不同。",
-    "handsOnTime": "亲自操作时长",
-    "handsOnFailed": "无法读取亲自操作时长。"
+    "handsOnTime": "实际操作时长",
+    "handsOnFailed": "无法读取实际操作时长。"
   },
   "gitMissingGate": {
     "title": "未安装 git",
-    "description": "lich 通过 git 读取每个分支、差异和工作树。没有 git 时会话仍可运行，但版本控制相关界面会保持为空。",
+    "description": "lich 通过 git 读取所有分支、差异和工作树。没有 git 时会话仍可运行，但版本控制相关的界面都会是空的。",
     "notNow": "暂不",
     "installGit": "安装 git"
   },
@@ -67,7 +67,7 @@
     "openProject": "打开项目"
   },
   "notificationsOptIn": {
-    "title": "会话需要你时通知你？",
+    "title": "会话需要你处理时发送通知？",
     "noThanks": "不用了",
     "notifyMe": "通知我"
   },
@@ -105,8 +105,8 @@
         "other": "{count} 项修复"
       },
       "security": {
-        "one": "{count} 项安全",
-        "other": "{count} 项安全"
+        "one": "{count} 项安全更新",
+        "other": "{count} 项安全更新"
       }
     }
   },
@@ -117,16 +117,16 @@
   "providerSetupDialog": {
     "chooseTitle": "选择你的智能体",
     "noneTitle": "未找到编码智能体",
-    "chooseDescription": "lich 在你的机器上找到了这些。打开你使用的，其余的不会出现在新建会话菜单中。",
-    "noneDescription": "lich 运行你机器上已安装的智能体，但一个也没找到。请安装一个，然后再检查。",
+    "chooseDescription": "lich 在这台机器上找到了以下智能体。启用你要用的，其余的不会出现在“新建会话”菜单里。",
+    "noneDescription": "lich 运行的是本机已安装的智能体，目前一个也没找到。安装一个后再检查一次。",
     "changeLater": "你可以随时在设置 › 提供商中更改。",
-    "pointToBinary": "已经安装了？在设置 › 提供商中让 lich 指向它的可执行文件。",
+    "pointToBinary": "已经装好了？在设置 › 提供商中为 lich 指定它的可执行文件。",
     "continue": "继续"
   },
   "resumeSessionDialog": {
     "title": "恢复之前的会话？",
-    "description": "{label} 留下了一段对话（{id}）。选择恢复可从中断处继续，或选择新建以开始空白对话。",
-    "alwaysFor": "对 {provider} 始终如此",
+    "description": "{label} 有一段未结束的对话（{id}）。恢复会从中断处接着进行，新建则开始一段空白对话。",
+    "alwaysFor": "对 {provider} 始终执行此操作",
     "changeInSettings": "· 可在设置 › 提供商中更改",
     "thisProvider": "此提供商",
     "startNew": "新建",
@@ -156,8 +156,8 @@
   "closeDialog": {
     "title": "让 lich 继续运行？",
     "running": {
-      "one": "{count} 个会话正在运行。它们会在后台继续工作，再次打开 lich 即可回到屏幕上。",
-      "other": "{count} 个会话正在运行。它们会在后台继续工作，再次打开 lich 即可回到屏幕上。"
+      "one": "{count} 个会话正在运行。它会在后台继续工作，再次打开 lich 即可重新显示。",
+      "other": "{count} 个会话正在运行。它们会在后台继续工作，再次打开 lich 即可重新显示。"
     },
     "dontAsk": "不再询问",
     "keep": "继续运行",
@@ -173,7 +173,7 @@
   },
   "uncleanExitGate": {
     "title": "lich 上次运行意外结束",
-    "description": "你的会话已恢复，但它们正在运行的内容已随之停止。",
+    "description": "会话已恢复，但当时正在运行的任务都已中断。",
     "openLogFolder": "打开日志文件夹",
     "dismiss": "忽略"
   },
@@ -183,7 +183,7 @@
     "reopens": "lich 会自行关闭并重新打开。"
   },
   "projects": {
-    "relocated": "{name} 现在打开 {path}",
+    "relocated": "{name} 现在指向 {path}",
     "relocateFailed": "重新定位失败：{error}",
     "noLongerAvailable": "{label} 已无法恢复",
     "bringBackFailed": "无法恢复 {label}",
@@ -196,12 +196,12 @@
     "needsInput": "{label} 需要你的输入",
     "finished": "{label} 已完成工作",
     "watchStopped": "已停止监视拉取请求 #{number}",
-    "watchStoppedDetail": "{label} 已在其上运行提示词 {runs} 次。",
+    "watchStoppedDetail": "{label} 已针对它运行了 {runs} 次提示词。",
     "scheduleLost": "定时提示词已丢失",
     "scheduleLostDetail": "删除 {label} 时也删除了定于 {when} 的提示词。"
   },
   "windowClose": {
-    "changeInSettings": "· 可在设置 › 通用中更改",
+    "changeInSettings": "· 可在设置 › 常规中更改",
     "quitFailed": "无法退出 lich：{error}",
     "countFailed": "无法统计运行中的会话：{error}"
   },
@@ -217,7 +217,7 @@
     "renameFailed": "无法重命名会话：{error}"
   },
   "notifyPrompt": {
-    "description": "刚才有会话在你离开时请求了你的输入。发生这种情况时，lich 可以弹出桌面通知，注明会话及其项目，这样你就可以启动任务后离开窗口。你正在查看的会话不会发送通知。你可以随时在设置 › 通用中更改。"
+    "description": "刚才有会话在你不在时等待输入。lich 可以在这种时候弹出桌面通知，写明是哪个会话、哪个项目，这样你启动任务后就可以离开窗口。正在查看的会话不会发通知。可以随时在设置 › 常规中更改。"
   },
   "extensionScreen": {
     "restarting": "{name} 已停止，正在重启…",

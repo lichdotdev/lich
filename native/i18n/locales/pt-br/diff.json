@@ -65,7 +65,7 @@
     "notRepository": "Não é um repositório git",
     "loading": "Carregando…",
     "noChanges": "Nenhuma alteração não commitada",
-    "squeezed": "Lado a lado precisa de um painel mais largo"
+    "squeezed": "A visão lado a lado precisa de um painel mais largo"
   },
   "reviewSlots": {
     "forSession": "para a sessão · {lines}",
@@ -73,7 +73,7 @@
     "addToBatch": "Adicionar ao lote",
     "addToReview": "Adicionar à revisão",
     "sessionPlaceholder": "O que deve mudar aqui? Vai para a sessão junto com o resto.",
-    "reviewPlaceholder": "Deixe um comentário. Ele é enviado quando você enviar a revisão."
+    "reviewPlaceholder": "Deixe um comentário. Ele vai junto quando você enviar a revisão."
   },
   "dockReviewBody": {
     "split": "Lado a lado",
@@ -85,7 +85,7 @@
     "pdf": "Documento PDF",
     "pdfHint": "Abre no app que o seu desktop usa para ler PDFs.",
     "openFailed": "Não foi possível abrir {name}",
-    "revealFailed": "Não foi possível mostrar {name} na pasta dele"
+    "revealFailed": "Não foi possível mostrar {name} na pasta"
   },
   "dockReviewBinary": {
     "viewOnGitHub": "Ver no GitHub"

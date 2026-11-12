@@ -3,15 +3,15 @@
   "unavailable": "Precisa de uma sessão com alterações",
   "chip": {
     "title": "Veja o que mudou",
-    "body": "Aqui está quantos arquivos o agente alterou, com as linhas adicionadas e removidas.",
+    "body": "Esta contagem mostra quantos arquivos o agente alterou aqui, com as linhas adicionadas e removidas.",
     "hint": "Clique na contagem para abrir a Revisão"
   },
   "panel": {
     "title": "Leia arquivo por arquivo",
-    "body": "A aba Revisão mostra cada arquivo que o agente alterou, cada um com seu diff."
+    "body": "A aba Revisão mostra todos os arquivos que o agente alterou, cada um com o seu diff."
   },
   "select": {
-    "title": "Comente umas linhas",
+    "title": "Comente linhas",
     "body": "Selecione num diff as linhas que você quer mudar e clique nelas com o botão direito.",
     "hint": "Selecione linhas e clique com o botão direito para continuar"
   },

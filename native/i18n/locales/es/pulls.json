@@ -27,12 +27,12 @@
   },
   "mergeGate": {
     "changesRequested": "Un revisor pidió cambios",
-    "reviewRequired": "GitHub exige una revisión que aún no se ha dejado",
+    "reviewRequired": "GitHub exige una revisión que todavía nadie ha hecho",
     "merged": "El pull request ya está fusionado",
     "closed": "El pull request está cerrado",
     "draft": "El pull request es un borrador",
     "conflicts": "Conflictos con {base}",
-    "behind": "La rama base avanzó: actualiza primero esta rama",
+    "behind": "La rama base avanzó. Actualiza primero esta rama",
     "pattern": {
       "match": "{target} debe coincidir con {pattern}",
       "notMatch": "{target} no debe coincidir con {pattern}",
@@ -48,7 +48,7 @@
       "authorEmail": "el correo del autor",
       "committerEmail": "el correo de quien hizo el commit"
     },
-    "ruleNote": "Un conjunto de reglas gobierna {base}: cada commit {clauses}."
+    "ruleNote": "{base} tiene un conjunto de reglas: cada commit {clauses}."
   },
   "pullsChecks": {
     "none": "No se informó ninguna comprobación.",
@@ -60,7 +60,7 @@
   "pullsConflicts": {
     "loading": "Averiguando qué archivos están en conflicto…",
     "failed": "No se pudo averiguar qué archivos están en conflicto: {error}",
-    "stale": "Ahora no hay archivos en conflicto aquí: puede que GitHub aún no se haya actualizado.",
+    "stale": "Ahora mismo no hay archivos en conflicto. Puede que GitHub aún no se haya actualizado.",
     "count": {
       "one": "{count} archivo en conflicto",
       "other": "{count} archivos en conflicto"
@@ -94,7 +94,7 @@
       }
     },
     "summaryPlaceholder": "Resumen (opcional)",
-    "summaryAlone": "Sin comentarios de línea: solo se envía el resumen."
+    "summaryAlone": "No hay comentarios de línea, así que solo se envía el resumen."
   },
   "pullsConversation": {
     "commentFailed": "No se pudo comentar: {error}",
@@ -107,12 +107,12 @@
     "comment": "Comentar",
     "commentPlaceholder": "Algo sobre el pull request en su conjunto",
     "readFailed": "No se pudo leer la conversación: {error}",
-    "nothingYet": "Aún no se ha dicho nada.",
+    "nothingYet": "Aún no hay comentarios.",
     "line": "línea {line}",
     "lines": "líneas {start}-{end}",
     "outdated": "desactualizado",
     "pendingHead": "Revisión pendiente",
-    "pendingNote": "Se envía cuando envías la revisión.",
+    "pendingNote": "Se publicará al enviar la revisión.",
     "discard": "Descartar",
     "edit": "Editar",
     "save": "Guardar"
@@ -220,25 +220,25 @@
   },
   "pulls": {
     "alreadyRemoved": "{name} ya se había eliminado",
-    "pinnedSession": "La worktree tiene una sesión fijada: desfíjala primero.",
-    "notCreatedByLich": "lich no creó esta worktree: elimínala desde la barra lateral.",
-    "dirty": "La worktree tiene cambios sin confirmar: elimínala desde la barra lateral.",
+    "pinnedSession": "La worktree tiene una sesión fijada. Desfíjala primero.",
+    "notCreatedByLich": "Esta worktree no la creó lich. Elimínala desde la barra lateral.",
+    "dirty": "La worktree tiene cambios sin confirmar. Elimínala desde la barra lateral.",
     "removed": "Se eliminó {name}",
     "removeFailed": "No se pudo eliminar la worktree: {error}",
     "merged": "Se fusionó #{number} en {base}",
     "announceFailed": "No se pudo avisar a las sesiones de {name}: {error}",
     "removeWorktree": "Eliminar worktree",
     "openSessionFailed": "No se pudo abrir una sesión: {error}",
-    "handedOff": "#{number} entregado a {session}",
+    "handedOff": "Se pasó #{number} a {session}",
     "goToSession": "Ir a la sesión",
     "openInSession": "Abrir en una sesión",
-    "forkBlocked": "La rama de origen vive en un fork que no permite ediciones de los mantenedores: no se pudieron enviar sus commits de vuelta",
+    "forkBlocked": "La rama de origen está en un fork que no permite ediciones de los mantenedores, así que no se pudieron enviar sus commits de vuelta",
     "runningRemoval": {
       "removeAnyway": "Eliminar de todos modos"
     }
   },
   "pullRequestView": {
-    "rebaseAndMerge": "Rebase y fusionar",
+    "rebaseAndMerge": "Hacer rebase y fusionar",
     "mergeFailed": "No se pudo fusionar: {error}",
     "approvedToast": "Se aprobó #{number}",
     "reviewSent": "Revisión enviada en #{number}",
@@ -267,10 +267,10 @@
     "renameFailed": "No se pudo renombrar el pull request: {error}"
   },
   "pullsActions": {
-    "runningTitle": "Las sesiones siguen en ejecución",
+    "runningTitle": "Hay sesiones en ejecución",
     "running": {
-      "one": "Una sesión en {name} está a mitad de un turno. Eliminar la worktree la detiene; el turno en curso se pierde.",
-      "other": "{count} sesiones en {name} están a mitad de un turno. Eliminar la worktree las detiene; el turno en curso se pierde."
+      "one": "Una sesión de {name} está a mitad de turno. Si eliminas la worktree, se detendrá y el turno en curso se perderá.",
+      "other": "{count} sesiones de {name} están a mitad de turno. Si eliminas la worktree, se detendrán y el turno en curso se perderá."
     }
   },
   "pullsView": {
@@ -278,8 +278,8 @@
   },
   "pullsLogic": {
     "failing": {
-      "one": "{count} comprobación falla; GitHub fusionará igualmente",
-      "other": "{count} comprobaciones fallan; GitHub fusionará igualmente"
+      "one": "{count} comprobación falla, pero GitHub fusionará igualmente",
+      "other": "{count} comprobaciones fallan, pero GitHub fusionará igualmente"
     },
     "durationSeconds": "{value} s",
     "durationMinutes": "{value} min",

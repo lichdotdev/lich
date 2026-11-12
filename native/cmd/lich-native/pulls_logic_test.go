@@ -75,7 +75,7 @@ func TestMergeBlockedReasonFollowsTheWebOrder(t *testing.T) {
 		"draft":             {draft, "Pull request is a draft"},
 		"conflicting":       {detail("OPEN", "CONFLICTING", "BLOCKED", "APPROVED"), "Conflicts with main"},
 		"dirty":             {detail("OPEN", "UNKNOWN", "DIRTY", ""), "Conflicts with main"},
-		"behind":            {detail("OPEN", "MERGEABLE", "BEHIND", ""), "Base branch has moved — update this branch first"},
+		"behind":            {detail("OPEN", "MERGEABLE", "BEHIND", ""), "Base branch has moved; update this branch first"},
 		"changes requested": {detail("OPEN", "MERGEABLE", "BLOCKED", "CHANGES_REQUESTED"), "A reviewer asked for changes"},
 		"review required":   {detail("OPEN", "MERGEABLE", "BLOCKED", "REVIEW_REQUIRED"), "GitHub requires a review that has not been left"},
 		"blocked unknown":   {detail("OPEN", "MERGEABLE", "BLOCKED", "APPROVED"), ""},

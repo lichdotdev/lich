@@ -14,8 +14,8 @@
     }
   },
   "browser": {
-    "title": "ブラウザ",
-    "close": "ブラウザを閉じる",
+    "title": "ブラウザー",
+    "close": "ブラウザーを閉じる",
     "newTab": "新しいタブ",
     "closeTab": "タブを閉じる",
     "blankTab": "新しいタブ",
@@ -24,16 +24,16 @@
     "forward": "進む",
     "reload": "再読み込み",
     "openInWindow": "ウィンドウで開く",
-    "locked": "このタブには {label} とそのブラウザしか置けません",
-    "opened": "{label} がブラウザを開きました",
+    "locked": "このタブには {label} とそのブラウザーしか置けません",
+    "opened": "{label} がブラウザーを開きました",
     "dismiss": "閉じる",
     "open": "開く",
     "downloaded": "{name} をダウンロードしました",
-    "idle": "{label} の使われていないブラウザを閉じますか？",
+    "idle": "{label} の使われていないブラウザーを閉じますか？",
     "keepOpen": "開いたままにする",
     "closeIdle": "閉じる",
-    "showFolder": "フォルダを開く",
-    "moveBody": "「{layout}」から外れます。ブラウザのタブには {label} とそのブラウザしか置けません。",
+    "showFolder": "フォルダーを開く",
+    "moveBody": "「{layout}」から外れます。ブラウザーのタブには {label} とそのブラウザーしか置けません。",
     "pick": "ページにメモを残す",
     "pickHint": "要素をクリックしてメモを残す",
     "zoom": "ページのズーム",
@@ -62,10 +62,10 @@
     "cursorScroll": "スクロール中",
     "cursorNavigate": "移動中",
     "cursorReload": "再読み込み中",
-    "cursorBack": "前のページに戻り中",
-    "cursorForward": "次のページに進み中",
+    "cursorBack": "前のページに戻っています",
+    "cursorForward": "次のページに進んでいます",
     "cursorAccept": "ダイアログを承認中",
-    "cursorDismiss": "ダイアログを却下中",
+    "cursorDismiss": "ダイアログを閉じています",
     "cursorTabNew": "タブを開いています",
     "cursorTabSelect": "タブを切り替え中",
     "cursorTabClose": "タブを閉じています"
@@ -95,7 +95,7 @@
     "add": "{count} 件中 {here} 件を表示中 · {missing} 件を追加",
     "hint": "このセッションが開いたセッションを横に並べます",
     "moveTitle": {
-      "other": "委任先 {count} 件をここに並べますか?"
+      "other": "委任先 {count} 件をここに並べますか？"
     },
     "moveBody": {
       "other": "委任先 {count} 件が別のレイアウトにあります。ここに並べるとそこから外れます。セッションは動き続けます。"

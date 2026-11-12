@@ -4,15 +4,15 @@
     "uiTitle": "インターフェースの言語",
     "uiDescription": "lich 自体の画面で使う言語です。",
     "promptTitle": "プロンプトの言語",
-    "promptDescription": "lich がエージェントに渡すテキスト（ブリーフィング、中継されたメッセージ、通知）の言語です。今後開始するセッションではすべてにこの言語を使います。開いているセッションでは中継されたメッセージにのみ使われます。",
+    "promptDescription": "lich がエージェントに渡すテキスト（ブリーフィング、中継メッセージ、通知）の言語です。これから開始するセッションではすべてのテキストに、開いているセッションでは中継メッセージにだけ使われます。",
     "uiSearchWords": "言語 ロケール 翻訳 英語 ポルトガル語 日本語",
     "promptSearchWords": "言語 ロケール 翻訳 エージェント ブリーフィング 中継 英語 ポルトガル語 日本語",
-    "promptSaveFailed": "プロンプトの言語を保存できませんでした：{error}",
+    "promptSaveFailed": "プロンプトの言語を保存できませんでした: {error}",
     "hanFontTitle": "{language}用のフォントをダウンロードしますか？",
-    "hanFontDescription": "{language}の表示には {font} フォントが必要ですが、このコンピューターにはこの言語を表示できるフォントがインストールされていません。lich はこのフォント（約 {size} MB）をダウンロードし、専用のフォルダーに保存できます。",
+    "hanFontDescription": "{language}の表示には {font} フォントが必要ですが、このコンピューターには対応するフォントがインストールされていません。lich がこのフォント（約 {size} MB）をダウンロードし、専用のフォルダーに保存できます。",
     "hanFontDownload": "ダウンロード",
     "hanFontProgress": "ダウンロード中… {done} / {total} MB",
-    "hanFontFailed": "{font} フォントをダウンロードできませんでした：{error}"
+    "hanFontFailed": "{font} フォントをダウンロードできませんでした: {error}"
   },
   "settings": {
     "search": "設定を検索",
@@ -20,7 +20,7 @@
       "one": "{count} 件の設定",
       "other": "{count} 件の設定"
     },
-    "noMatch": "{query} に一致する項目はありません。検索対象は各設定の名前で、値は対象外です。",
+    "noMatch": "{query} に一致する項目はありません。検索対象は設定の名前だけで、値は含まれません。",
     "section": {
       "appearance": "外観",
       "notifications": "通知",
@@ -39,20 +39,20 @@
   "appearanceSettings": {
     "importPickTitle": "テーマをインポート",
     "templatePickTitle": "テーマのテンプレートを保存",
-    "imported": "テーマをインポートしました：{name}",
-    "importFailed": "テーマのインポートに失敗しました：{error}",
+    "imported": "テーマをインポートしました: {name}",
+    "importFailed": "テーマのインポートに失敗しました: {error}",
     "installed": {
       "one": "{pack} v{version} から {count} 個のテーマをインストールしました",
       "other": "{pack} v{version} から {count} 個のテーマをインストールしました"
     },
-    "installFailed": "テーマのインストールに失敗しました：{error}",
+    "installFailed": "テーマのインストールに失敗しました: {error}",
     "upToDate": "{pack} はすでに v{version} です",
     "updated": "{pack} を v{version} に更新しました",
-    "updateFailed": "テーマの更新に失敗しました：{error}",
-    "removed": "テーマを削除しました：{name}",
-    "removeFailed": "テーマの削除に失敗しました：{error}",
+    "updateFailed": "テーマの更新に失敗しました: {error}",
+    "removed": "テーマを削除しました: {name}",
+    "removeFailed": "テーマの削除に失敗しました: {error}",
     "templateSaved": "テーマのテンプレートを {path} に保存しました",
-    "templateFailed": "テーマのテンプレートの作成に失敗しました：{error}",
+    "templateFailed": "テーマテンプレートを保存できませんでした: {error}",
     "zoomTitle": "ズーム",
     "zoomOut": "縮小",
     "zoomIn": "拡大",
@@ -65,7 +65,7 @@
     "copyOnSelectDescription": "ターミナルで選択したテキストを、選択した直後にクリップボードへコピーします。オフのときは Ctrl+Shift+C（macOS では Cmd+C）でコピーします。",
     "copyOnSelectSearchWords": "クリップボード 選択 ターミナル 自動",
     "replaceThemesTitle": "インポート済みのテーマを置き換えますか？",
-    "replaceThemesDescription": "このリポジトリには、すでにインストール済みのテーマが含まれています：{themes}。それでもインストールしますか？以前のバージョンは完全に削除されます。",
+    "replaceThemesDescription": "このリポジトリには、すでにインストール済みのテーマが含まれています: {themes}。それでもインストールしますか？以前のバージョンは完全に削除されます。",
     "replaceThemes": "テーマを置き換える",
     "removeThemeTitle": "インポートしたテーマを削除しますか？",
     "removeThemeDescription": "{name} を削除しますか？インポートしたテーマファイルが lich から削除されます。",
@@ -120,9 +120,9 @@
     "searchWords": "ステータスバー レイアウト 配置",
     "loading": "保存済みの選択を読み込み中…",
     "saving": "保存中…",
-    "description": "項目を左右の間でドラッグするか、外へドラッグして非表示にします。すべてのプロジェクトに適用されます。",
+    "description": "項目を左右にドラッグして移動します。外にドラッグすると非表示になります。すべてのプロジェクトに適用されます。",
     "restoreDefault": "デフォルトに戻す",
-    "saveFailed": "フッターを保存できませんでした：{error}",
+    "saveFailed": "フッターを保存できませんでした: {error}",
     "ceilingTitle": "支出の上限",
     "ceilingSearchWords": "コスト 予算 ドル usd",
     "ceilingDescription": "セッションの API コストがこの金額に近づくと警告します。80% で黄色、95% で赤になります。空欄なら上限なしです。",
@@ -141,24 +141,24 @@
   "diffLayoutSetting": {
     "title": "差分のレイアウト",
     "searchWords": "左右 分割 統合 レビュー 差分",
-    "description": "レビュータブとプルリクエストで変更を表示する方法です。パネルが 2 列には狭すぎるあいだ、左右分割は統合表示になります。",
+    "description": "レビュータブとプルリクエストで変更を表示する方法です。パネルの幅が 2 列表示に足りないときは、左右分割でも統合表示になります。",
     "layout": {
       "unified": "統合",
       "split": "左右分割"
     }
   },
   "notificationsSettings": {
-    "needsInputTitle": "セッションが入力を必要としたら通知する",
-    "needsInputDescription": "セッションがあなたの対応待ち（権限の確認や質問など）で止まり、lich のウィンドウが使用中のウィンドウでないときに、デスクトップ通知を表示します。lich を使用中は何も変わりません。カードのベルとトーストでお知らせします。",
+    "needsInputTitle": "セッションが入力待ちになったら通知する",
+    "needsInputDescription": "権限の確認や質問でセッションが止まり、lich 以外のウィンドウを使っているときに、デスクトップ通知を表示します。lich を使っている間は変わらず、カードのベルとトーストで知らせます。",
     "finishedTitle": "セッションの作業が終わったら通知する",
-    "finishedDescription": "セッションが確認事項を残さずにターンを終え、lich のウィンドウが使用中のウィンドウでないときに、デスクトップ通知を表示します。上の設定とは独立しています。すべてのプロンプトの通知は不要でも、席を離れていた長い実行の終了は知っておく価値があります。トーストは表示されません。lich の中では、カードとそのプロジェクトタブがすでに知らせています。"
+    "finishedDescription": "セッションが確認事項を残さずにターンを終え、lich 以外のウィンドウを使っているときに、デスクトップ通知を表示します。上の設定とは別に動作するので、プロンプトごとの通知は受け取らずに、席を外していた長い実行の完了だけを知ることができます。トーストは表示されません。lich の中ではカードとプロジェクトタブで分かるためです。"
   },
   "hotkeysSettings": {
     "alsoBound": "{actions} にも割り当てられています",
     "pressKeys": "キーを押してください…",
     "unassignHint": "このアクションを未割り当てにします",
     "resetHint": "デフォルトのショートカットに戻します",
-    "passthroughNote": "これらは lich がエージェントのターミナルに送る途中で書き換えるため、割り当て直せず固定です。"
+    "passthroughNote": "lich がエージェントのターミナルへ送る途中で書き換えるため、割り当てを変更できません。"
   },
   "providersPane": {
     "detecting": "プロバイダーを検出中…",
@@ -166,7 +166,7 @@
     "moreDetected": "ほかに {count} 個を検出",
     "defaultTitle": "デフォルトのプロバイダー",
     "defaultSearchWords": "エージェント 新しいセッション",
-    "defaultDescription": "暗黙のセッション操作で起動するプロバイダーです。新しいセッションのショートカット、空のプロジェクトの「新しいセッション」ボタン、新しく作成したワークツリーが対象です。",
+    "defaultDescription": "プロバイダーを指定せずにセッションを開くときに起動するプロバイダーです。対象は新しいセッションのショートカット、空のプロジェクトの「新しいセッション」ボタン、新しく作成したワークツリーです。",
     "defaultHere": "ここでのデフォルト",
     "skipEverywhere": "確認なし"
   },
@@ -196,11 +196,11 @@
   "providerBinSettings": {
     "skipTitle": "権限の確認をスキップ",
     "skipSearchWords": "yolo 危険 承認",
-    "skipDescription": "{provider} が確認なしで実行する範囲です。ファイルの編集、コマンドの実行、インストールを確認なしで行い、lich は {flag} を付けて起動します。",
+    "skipDescription": "{provider} が確認を求めずに動作する範囲です。ファイルの編集、コマンドの実行、インストールを確認なしで行い、lich は {flag} を付けて起動します。",
     "skip": {
       "never": {
         "label": "しない",
-        "consequence": "すべての編集とコマンドが、どのチェックアウトでもあなたの確認を待ちます。"
+        "consequence": "どのチェックアウトでも、すべての編集とコマンドが確認を待ちます。"
       },
       "worktrees": {
         "label": "ワークツリーのみ",
@@ -208,20 +208,20 @@
       },
       "everywhere": {
         "label": "どこでも",
-        "consequence": "作業中のツリーも含みます。何も確認されません。"
+        "consequence": "作業中のツリーも含みます。確認は一切ありません。"
       }
     },
-    "confirmTitle": "権限の確認をスキップ：{level}",
+    "confirmTitle": "権限の確認をスキップ: {level}",
     "confirmDescription": "{provider} は {flag} を付けて起動され、ファイルの編集、コマンドの実行、インストールを確認なしで行います。{consequence}",
     "confirm": "確認をスキップ"
   },
   "planUsageSetting": {
     "title": "プランの使用量",
     "searchWords": "クォータ サブスクリプション 上限 使用量",
-    "description": "サブスクリプションが各期間をどれだけ使ったかを示します。アカウントから読み取り、lich が開いているあいだ 5 分ごとに更新します。",
+    "description": "サブスクリプションの各期間の使用量です。アカウントから取得し、lich を開いている間は 5 分ごとに更新します。",
     "signedOut": "サインアウトしています。",
     "signedOutRun": "サインアウトしています。プランの使用量を読み取るには {command} を実行してください。",
-    "readFailed": "プランの使用量を読み取れませんでした。プロバイダーの使用量エンドポイントは非公開のため、変更された可能性があります。",
+    "readFailed": "プランの使用量を読み取れませんでした。プロバイダーの使用量エンドポイントはドキュメント化されていないため、仕様が変わった可能性があります。",
     "used": "使用済み",
     "resets": "リセット"
   },
@@ -236,7 +236,7 @@
       },
       "background": {
         "label": "実行を続ける",
-        "consequence": "ウィンドウは閉じますが、セッションは作業を続けます。lich を再び開くと元に戻ります。"
+        "consequence": "ウィンドウは閉じますが、セッションは作業を続けます。lich をもう一度開くと画面に戻ります。"
       },
       "quit": {
         "label": "終了",
@@ -294,12 +294,12 @@
   "subagentCardsSetting": {
     "title": "サブエージェントを lich セッションとして実行",
     "searchWords": "エージェント サブエージェント カード ワークツリー 委任 バックグラウンド",
-    "description": "汎用サブエージェントが {provider} の中で隠れて動く代わりに、専用のカードとワークツリーを開きます。変更後に開いたセッションに適用されます。"
+    "description": "汎用サブエージェントを {provider} の内部で見えないまま動かさず、専用のカードとワークツリーで開きます。変更後に開いたセッションに適用されます。"
   },
   "ultracodeSetting": {
     "title": "Ultracode",
     "searchWords": "ワークフロー オーケストレーション マルチエージェント エフォート",
-    "description": "すべての {provider} セッションが ultracode をオンにして開始し、どのエフォートで動いていてもマルチエージェントのワークフローをオーケストレーションします。セッションを再起動または再開してもオンのままです。"
+    "description": "すべての {provider} セッションを ultracode オンで開始し、エフォートに関係なくマルチエージェントのワークフローを組み立てて実行します。再起動や再開をしてもオンのままです。"
   },
   "sandboxSettings": {
     "rung": {
@@ -313,32 +313,32 @@
       "ask": "チェックを外したセッションはマシン上で直接実行されます。",
       "worktrees": "プロジェクトディレクトリのセッションはマシン上で直接実行されます。"
     },
-    "summary": "空のホーム、読み取り専用のマシン、書き込みはチェックアウト内のみ。ネットワークはオンのままです。",
+    "summary": "ホームは空、マシンは読み取り専用、書き込めるのはチェックアウト内だけです。ネットワークは使えます。",
     "confinedTitle": "隔離して実行するセッション",
     "confinedSearchWords": "隔離 bwrap seatbelt",
-    "confinedHint": "「確認する」を選ぶと、「新しいセッション」メニューと「新しいワークツリー」ダイアログで確認します。誰も答えられない場所で開かれたセッション（別のセッションから、または MCP ツール経由）は隔離されます。ターミナルは隔離されません。サンドボックスは無人で作業するエージェントのためのものです。",
+    "confinedHint": "「確認する」にすると、「新規セッション」メニューと「新しいワークツリーセッション」ダイアログで毎回確認します。誰も答えられない場所で開かれたセッション（別のセッションから、または MCP ツール経由）は隔離されます。ターミナルは隔離されません。サンドボックスは無人で作業するエージェントのためのものです。",
     "carryTitle": "隔離されたセッションに持ち込めるもの",
     "sshTitle": "SSH エージェント",
     "sshSearchWords": "push 鍵 キー",
     "sshDescription": "内部で git push が使えます。セッションが動いているあいだ、どのホストに対しても、エージェント内のすべての ID で署名します。",
-    "sshLoaded": "読み込み済み：{keys}",
+    "sshLoaded": "読み込み済み: {keys}",
     "sshNone": "何も読み込まれていません。",
     "ghTitle": "GitHub トークン",
     "ghSearchWords": "gh 認証情報",
-    "ghDescription": "内部で gh が使えます。エージェントは環境変数からトークンを読み取り、このリポジトリの外で使うことができます。",
+    "ghDescription": "内部で gh が使えます。エージェントは環境変数からトークンを読み取り、このリポジトリの外でも使えてしまいます。",
     "ghAccount": "{login} として。",
     "ghActiveAccount": "gh のアクティブなアカウントとして。",
     "confirmTitle": "隔離する {provider} セッションを減らす",
-    "confirmDescription": "{rung}：{exposes}",
+    "confirmDescription": "{rung}: {exposes}",
     "confirm": "隔離しない",
     "canConfine": "このマシンはセッションを隔離できます",
     "cannotConfine": "このマシンはセッションを隔離できません",
-    "statusDetail": "：{detail}"
+    "statusDetail": "· {detail}"
   },
   "vcsToolsSetting": {
     "title": "コマンドラインツール",
     "searchWords": "git gh インストール",
-    "description": "lich は git と GitHub CLI を使って動作します。この画面の操作はすべてこれらを通して行われます。",
+    "description": "lich は git と GitHub CLI を使って動作します。この画面の機能はすべてこの 2 つを通して動きます。",
     "notOnPath": "$PATH にありません",
     "install": "インストール"
   },
@@ -346,9 +346,9 @@
     "account": "GitHub アカウント",
     "accountFor": "GitHub アカウント（{name}）",
     "accountSearchWords": "ログイン gh 切り替え",
-    "accountDescription": "このプロジェクトで lich が gh を実行するアカウントです（プルリクエスト、チェック、PR のチェックアウト、セッション内で実行される gh。セッションには次回の起動から反映されます）。gh はホストごとにアクティブなアカウントを 1 つ保持するため、別のアカウントでしか見えないリポジトリは見つからないと表示されます。エンタープライズホストのアカウントはホスト名とともに表示されます。",
+    "accountDescription": "このプロジェクトで lich が gh を実行するときのアカウントです。プルリクエスト、チェック、PR のチェックアウト、セッション内で実行される gh に使われ、セッションには次回の起動から反映されます。gh はホストごとにアクティブなアカウントを 1 つしか持たないため、別のアカウントでしか見えないリポジトリは「見つからない」と表示されます。エンタープライズホストのアカウントはホスト名と一緒に表示されます。",
     "activeAccount": "gh のアクティブなアカウント",
-    "listFailed": "GitHub アカウントを一覧表示できませんでした：{error}",
+    "listFailed": "GitHub アカウントを一覧表示できませんでした: {error}",
     "noAccounts": "gh はどのアカウントにもサインインしていません。ターミナルで `gh auth login` を実行してください。"
   },
   "updatesSettings": {
@@ -356,9 +356,9 @@
     "applicationSearchWords": "バージョン アップグレード",
     "applicationDescription": "lich {version}。起動時と 1 時間ごとにアップデートを確認します。",
     "checkForUpdates": "アップデートを確認",
-    "available": "lich {version} が利用可能です。表示される案内に従ってください。",
+    "available": "lich {version} を利用できます。表示される案内に従ってください。",
     "upToDate": "最新バージョンです。",
-    "checkFailed": "確認に失敗しました。オンラインですか？",
+    "checkFailed": "確認に失敗しました。ネットワーク接続を確認してください。",
     "whatsNewTitle": "新機能",
     "whatsNewSearchWords": "変更履歴 リリースノート",
     "patchNotesFor": "v{version} のパッチノートです。",
@@ -368,11 +368,11 @@
   "pluginSetting": {
     "title": "lich プラグイン",
     "searchWords": "フック インストール",
-    "description": "セッションの状態、タイトル、git の更新、再開を、それを実行できるプロバイダー CLI の中で提供します。",
+    "description": "プラグインに対応したプロバイダー CLI の中で、セッションの状態とタイトル、git の更新、再開を提供します。",
     "installed": "プラグインをインストールしました。適用するにはセッションを再起動してください。",
     "updated": "プラグインを更新しました。適用するにはセッションを再起動してください。",
     "checked": "確認しました。",
-    "checkFailed": "確認に失敗しました。オンラインですか？",
+    "checkFailed": "確認に失敗しました。ネットワーク接続を確認してください。",
     "cliMissing": "CLI がインストールされていません",
     "notInstalled": "プラグインがインストールされていません",
     "unsupported": "v{version}、この lich ではサポートされていません",
@@ -390,7 +390,7 @@
     "openingLogFolder": "ログフォルダーを開いています…",
     "logFolderOpened": "ログフォルダーを開きました。",
     "openLogFolder": "ログフォルダーを開く",
-    "noLogFile": "ログは stderr のみに出力されています。ログファイルはありません。",
+    "noLogFile": "ログは stderr にのみ出力されているため、ログファイルはありません。",
     "aboutTitle": "このアプリについて",
     "aboutSearchWords": "バージョン ライセンス",
     "aboutVersion": "lich {version}（{platform}）。",
@@ -410,12 +410,12 @@
       "one": "{count} 件の変更",
       "other": "{count} 件の変更"
     },
-    "scopeNote": "プロジェクトで変更できる設定だけがオンになっています。それ以外はどこでも同じです。"
+    "scopeNote": "プロジェクトで変更できる設定だけが有効になっています。それ以外はどこでも共通です。"
   },
   "settingsRow": {
     "overriddenIn": "上書きしているプロジェクト",
     "followsGlobal": "グローバルに従う",
-    "globalValue": "グローバル：{value}",
+    "globalValue": "グローバル: {value}",
     "useGlobal": "グローバルを使う",
     "globalOnly": "グローバルのみ",
     "projectOnly": "プロジェクトのみ"
@@ -425,20 +425,20 @@
     "terminalGroup": "ターミナル"
   },
   "settingsHelp": {
-    "bugDescription": "バージョンとプラットフォームが入力された状態で、ブラウザーでバグ報告フォームを開きます。lich が issue を作成するのではなく、あなた自身が書きます。ターミナルで `lich rage` を実行すると、ログ、バージョン、このマシンで lich が見つけた情報を 1 つのアーカイブにまとめて添付できます。",
+    "bugDescription": "バージョンとプラットフォームが入力された状態で、ブラウザーでバグ報告フォームを開きます。issue の本文は自分で書いて送信してください。ターミナルで `lich rage` を実行すると、ログ、バージョン、このマシンで lich が見つけた情報を 1 つのアーカイブにまとめて添付できます。",
     "logSearchWords": "デバッグ ログ ネイティブ ウィンドウ",
     "logDescription": "このフォルダーには lich のログと、その隣にネイティブウィンドウのログ（lich-native.log）があります。ログには絶対パス、プロジェクト名とブランチ名、gh のログイン名が含まれます。セッショントークンは含まれません。何かに添付する前に内容を確認してください。",
-    "logFailed": "ログフォルダーを開けませんでした：{error}"
+    "logFailed": "ログフォルダーを開けませんでした: {error}"
   },
   "settingsProviders": {
     "pathRereadFailed": "PATH を再読み込みできませんでした。lich を再起動してください。",
     "otherVersionsOnPath": "PATH 上のほかのバージョン"
   },
   "settingsProvidersBin": {
-    "pickFailed": "ファイル選択ダイアログを開けませんでした：{error}"
+    "pickFailed": "ファイル選択ダイアログを開けませんでした: {error}"
   },
   "settingsProvidersVersion": {
-    "alsoOnPath": "PATH 上にもあります：{versions}。選ぶには上でいずれかを固定してください。"
+    "alsoOnPath": "PATH 上にはほかに {versions} もあります。使うバージョンは上で固定してください。"
   },
   "settingsAppearance": {
     "uiFontTitle": "インターフェースのフォント",
@@ -460,12 +460,12 @@
     "pairDark": "ダーク側"
   },
   "settingsThemeActions": {
-    "reloadFailed": "テーマを再読み込みできませんでした：{error}"
+    "reloadFailed": "テーマを再読み込みできませんでした: {error}"
   },
   "appearancePrefs": {
-    "terminalFontFailed": "{family} でターミナルを描画できませんでした：{error}",
-    "editorFontFailed": "{family} でコードを描画できませんでした：{error}",
-    "uiFontFailed": "{family} でインターフェースを描画できませんでした：{error}",
+    "terminalFontFailed": "{family} でターミナルを描画できませんでした: {error}",
+    "editorFontFailed": "{family} でコードを描画できませんでした: {error}",
+    "uiFontFailed": "{family} でインターフェースを描画できませんでした: {error}",
     "replicateFontTitle": "ターミナルとエディターでも {family} を使いますか？",
     "replicateFontDescription": "インターフェースではすでに使用中です。各フォントはこの「外観」でそれぞれ個別に変更できます。",
     "replicateFontKeep": "インターフェースのみ",
@@ -481,14 +481,14 @@
   "settingsUpdatesPlugin": {
     "hint": {
       "codex": "プラグインのフックを信頼するには、Codex セッションで /hooks を実行してください。",
-      "crush": "セッション ID を報告し、git の状態を更新します。ターン終了イベントがないため、カードには状態が表示されず、名前も独自のままです。",
+      "crush": "セッション ID を報告し、git の状態を更新します。ターン終了イベントがないため、カードに状態は表示されず、名前も変わりません。",
       "omp": "状態、名前、git の変更を報告します。承認イベントが確認されていないため、権限の確認を待っているセッションにはベルではなくスピナーが表示されます。",
       "antigravity": "状態、名前、git の変更を報告します。承認イベントが確認されていないため、権限の確認を待っているセッションにはベルではなくスピナーが表示されます。",
-      "cursor": "Claude Code にインストールされたプラグインを実行するため、そのバージョンが報告する内容を報告し、一緒に更新されます。ここでは lich は独自のツールだけを追加します。こちらも承認イベントを発生させないため、権限の確認を待っているセッションにはベルではなくスピナーが表示されます。"
+      "cursor": "Claude Code にインストールされたプラグインを実行するため、報告内容と更新はそのバージョンに従います。ここで lich が追加するのは独自のツールだけです。こちらも承認イベントを出さないため、権限の確認を待っているセッションにはベルではなくスピナーが表示されます。"
     },
-    "installFailed": "インストールに失敗しました：{error}",
-    "updateFailed": "更新に失敗しました：{error}",
-    "profileFailed": "{pass} のプロファイル {profile} で lich プラグインが更新されていません：{error}"
+    "installFailed": "インストールに失敗しました: {error}",
+    "updateFailed": "更新に失敗しました: {error}",
+    "profileFailed": "{pass} のプロファイル {profile} で lich プラグインが更新されていません: {error}"
   },
   "settingsProfiles": {
     "title": "プロファイル",
@@ -512,14 +512,14 @@
     "chooseImage": "画像を選択…",
     "chooseImageTitle": "プロファイル画像を選択",
     "removeImage": "画像を削除",
-    "lookFailed": "プロファイルを変更できませんでした：{error}",
+    "lookFailed": "プロファイルを変更できませんでした: {error}",
     "delete": "削除",
     "newProfile": "新しいプロファイル",
     "options": "{name} のオプション",
     "advancedBinary": "詳細 · バイナリ",
-    "binaryOverrides": "ここのセッションは {path} から起動します。独自のログインや設定ディレクトリを指定するスクリプトは {profile} より優先され、「次で続ける」で会話を見失うことがあります。",
+    "binaryOverrides": "ここのセッションは {path} から起動します。独自のログインや設定ディレクトリを指定するスクリプトは {profile} より優先され、「別のプロファイルで続ける」で会話が失われることがあります。",
     "showBinary": "バイナリを表示",
-    "useDefaultBinary": "既定のバイナリを使う",
+    "useDefaultBinary": "デフォルトのバイナリを使う",
     "loading": "プロファイルを読み込み中…"
   },
   "settingsProfilesDialogs": {
@@ -527,7 +527,7 @@
     "namePlaceholder": "仕事",
     "bring": "{name} から持ち込むプラグイン",
     "noPlugins": "{name} には持ち込めるプラグインがありません。",
-    "lichLocked": "lich はすべてのプロファイルにこれをインストールします",
+    "lichLocked": "lich がすべてのプロファイルにインストールします",
     "pluginsHint": "あとでプロファイルのメニューから追加でコピーできます。組織によっては一部が拒否される場合があります。",
     "createAndLogin": "作成してログイン",
     "renameTitle": "プロファイル名を変更",
@@ -550,7 +550,7 @@
     "failedTitle": "{name} にログインできませんでした",
     "copiedTitle": "{name} のプラグイン",
     "loggedInAs": "{email} としてログイン済み",
-    "lichPluginNote": "lich プラグインをインストールできませんでした：{error}",
+    "lichPluginNote": "lich プラグインをインストールできませんでした: {error}",
     "done": "完了"
   },
   "profiles": {
@@ -616,7 +616,7 @@
       "profilesAlso": "kiro kiro-cli アカウント ログイン 個人 仕事",
       "newDesc": "専用の Kiro ログインです。作成後にターミナルからログインします。",
       "renameDesc": "変わるのは名前だけです。ログインはそのまま残ります。",
-      "deleteDesc": "ログインが削除され、このプロファイルで開始したセッションは再開できなくなります。会話は残ります。すべてのプロファイルで共有されているためです。"
+      "deleteDesc": "ログインが削除され、このプロファイルで開始したセッションは再開できなくなります。会話はすべてのプロファイルで共有されているため残ります。"
     }
   },
   "servicesSettings": {
@@ -635,7 +635,7 @@
     "save": "保存"
   },
   "extensionsSettings": {
-    "description": "拡張機能はあなたのコンピューター上であなたとして動作し、あなたのファイルとアカウントにアクセスできます。",
+    "description": "拡張機能はこのコンピューター上でユーザーの権限で動作し、ファイルやアカウントにアクセスできます。",
     "openFolder": "フォルダーを開く",
     "fromGit": "GitHub から",
     "fromDir": "フォルダーから",
@@ -648,22 +648,22 @@
     "installTitle": "{name} {version} をインストールしますか？",
     "installTitleNoVersion": "{name} をインストールしますか？",
     "installSource": "提供元: {source}",
-    "installWarning": "あなたのコンピューター上であなたとして動作し、あなたのファイルとアカウントにアクセスできます。作成者を信頼できる場合にのみインストールしてください。",
+    "installWarning": "このコンピューター上でユーザーの権限で動作し、ファイルやアカウントにアクセスできます。作成者を信頼できる場合にのみインストールしてください。",
     "permissionsLabel": "さらにできること",
     "permission": {
-      "projectsRead": "開いているプロジェクトとその worktree を見る",
+      "projectsRead": "開いているプロジェクトとそのワークツリーを見る",
       "sessionsRead": "セッションとそれぞれの作業内容を見る",
       "sessionsWrite": "セッションを開き、プロンプトを入力する",
       "sessionEvents": "各セッションの状態の変化を追う",
       "sessionsAsk": "Claude Code セッションに横から質問し、その答えを読む",
       "servicesRead": "プロジェクトのサービスとその出力を見る",
       "servicesWrite": "プロジェクトのサービスを起動・停止・再起動する",
-      "gitRead": "各チェックアウトのブランチ、変更、pull request を見る",
+      "gitRead": "各チェックアウトのブランチ、変更、プルリクエストを見る",
       "notify": "デスクトップ通知を表示する",
       "window": "ドックにファイルを表示し、セッションのブラウザーでページを開く"
     },
     "removeTitle": "{name} を削除しますか？",
-    "removeDescription": "lich は停止してプログラムを削除します。保存したデータは残るため、再インストールすると続きから使えます。",
+    "removeDescription": "lich は拡張機能を停止してプログラムを削除します。保存されたデータは残るため、もう一度インストールすると続きから使えます。",
     "removeDeleteData": "保存したデータも削除する",
     "remove": "削除",
     "removeMenuItem": "削除…",

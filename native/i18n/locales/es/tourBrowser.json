@@ -13,7 +13,7 @@
   },
   "again": {
     "title": "Abre el navegador",
-    "body": "Tu sesión está en un diseño, así que su navegador va en una pestaña propia. Elige Navegador en su menú otra vez y pulsa Mover.",
+    "body": "Tu sesión está en un diseño, así que su navegador va en una pestaña propia. Elige otra vez Navegador en su menú y pulsa Mover.",
     "hint": "Abre el navegador de tu sesión para continuar"
   },
   "pane": {
@@ -22,7 +22,7 @@
   },
   "address": {
     "title": "Abre una página",
-    "body": "Escribe una dirección y pulsa Enter: tu app en localhost, o lichdotdev.github.io/lich para probar. Tu agente también puede abrir páginas aquí.",
+    "body": "Escribe una dirección y pulsa Enter. Puede ser tu app en localhost o, para probar, lichdotdev.github.io/lich. Tu agente también puede abrir páginas aquí.",
     "hint": "Abre una página para continuar"
   },
   "pick": {
@@ -37,6 +37,6 @@
   },
   "send": {
     "title": "Envía tus notas",
-    "body": "Tus notas esperan aquí. Enviar las escribe todas en tu sesión como un solo mensaje, cada una con el elemento al que se refiere."
+    "body": "Tus notas esperan aquí. Enviar las escribe todas en tu sesión como un solo mensaje, y cada una indica el elemento al que se refiere."
   }
 }
