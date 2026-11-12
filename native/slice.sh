@@ -27,11 +27,21 @@ BACKEND_BIN=${LICH_BIN:-lich}
 CONFIG=$SLICE_HOME/config
 RUNTIME=$CONFIG/lich/runtime-dev.json
 PORT=47901
+# 10s: the backend stops its sessions before it exits.
+STOP_WAIT_TICKS=100
 
 if [ "${1:-}" = stop ]; then
   pid=$(sed -n 's/.*"pid":\([0-9]*\).*/\1/p' "$RUNTIME" 2>/dev/null)
   [ -n "$pid" ] || { echo "no backend running (no $RUNTIME)" >&2; exit 1; }
-  kill "$pid"
+  kill "$pid" 2>/dev/null || { echo "backend $pid is not running" >&2; exit 0; }
+  # Wait for it to exit, so a slice started right after does not find the old
+  # backend still answering on the port.
+  i=0
+  while kill -0 "$pid" 2>/dev/null; do
+    i=$((i + 1))
+    [ "$i" -le "$STOP_WAIT_TICKS" ] || { echo "backend $pid did not exit after SIGTERM" >&2; exit 1; }
+    sleep 0.1
+  done
   exit 0
 fi
 
