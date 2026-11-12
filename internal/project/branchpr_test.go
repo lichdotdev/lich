@@ -330,3 +330,13 @@ func TestOpenPullRequestReadsTheWatchFirst(t *testing.T) {
 		t.Errorf("a failed read: %v", err)
 	}
 }
+
+func TestOpenPullRequestOfARepositoryWithNoRemote(t *testing.T) {
+	t.Parallel()
+	repo, _ := initRepo(t)
+	gh := &fakeGH{err: errTest}
+	pr, err := withGH(gh).OpenPullRequest(context.Background(), api.PathOptions{Path: repo})
+	if err != nil || pr != nil || gh.calls != 0 {
+		t.Errorf("got %+v, %v after %d gh calls; want none, no error and no call", pr, err, gh.calls)
+	}
+}

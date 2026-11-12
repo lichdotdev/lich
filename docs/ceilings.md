@@ -1209,12 +1209,13 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   carry tokens a dev server prints. `service.status` fires per service whose state changed between two
   services events; a service lich has not listed before fires only when it is not stopped, and one deleted
   fires nothing.
-- **`git.status` reads git on each call, and has no ahead count** (`internal/extensions/methods_window.go`):
-  the window keeps the git state it shows in its own process, so the backend has no store to answer from and
-  runs the two reads a card runs (`project.Diff`, `project.BaseStatus`). What it carries is what a card shows:
-  the commits behind the base branch and the files that would conflict, not how far the branch is ahead of
-  its upstream. `git.pullRequest` reads the branch watch's store and makes one `gh` call only for a checkout
-  the watch never read, which it does not then start following.
+- **`git.status` reads git on each call, and counts against the upstream without fetching**
+  (`internal/extensions/methods_window.go`): the window keeps the git state it shows in its own process, so the
+  backend has no store to answer from and runs the reads a card runs (`project.Diff`, `project.BaseStatus`),
+  plus `project.UpstreamCounts`. Ahead and behind come from the refs on disk, as `git status` counts them, so
+  they are as fresh as the last fetch. `git.pullRequest` reads the branch watch's store and makes one `gh` call
+  only for a checkout the watch never read, which it does not then start following; a repository with no
+  remote answers no pull request without one.
 - **An extension's notifications obey no notification setting, only a bound** (`internal/extensions/methods_window.go`):
   `notify` goes through `system.Notify`, the path lich's backend raises its own on (a schedule forfeited). lich's
   two notification settings are about sessions (one needing input, one finishing a turn), so neither applies,
@@ -1232,9 +1233,6 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   ninth refused, each cut at 2 minutes, which is also where a `sessions.open` slower than that ends while the
   session it was opening may still appear. A result or event the extension does not read in time, past the 64
   lines its stdin queue holds, is dropped and logged.
-- **Extension text is the extension's own** (`internal/extensions`): the name, surface titles, toasts and every
-  string in its tree stay in whatever language it wrote them and never go through lich's catalogs. An extension
-  learns no locale from lich.
 - **A message sent while no window is attached is dropped** (`internal/events`): an extension's lines ride
   `/events` like every event, with no queue and no replay, and the extension is not told. A window that attaches
   later sees nothing until the extension renders again. One slow window stalls that extension's stdout rather than
