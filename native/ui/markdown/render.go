@@ -35,33 +35,55 @@ func renderBlocks(th *ui.Theme, src string) []markdownBlock {
 	doc := markdownParser.Parse(text.NewReader(source))
 	var out []markdownBlock
 	for n := doc.FirstChild(); n != nil; n = n.NextSibling() {
-		if block, ok := renderBlock(th, source, n); ok {
+		if block, ok := renderBlock(th, source, n, markdownProseColor(th)); ok {
 			out = append(out, block)
 		}
 	}
 	return out
 }
 
-func renderBlock(th *ui.Theme, source []byte, n ast.Node) (markdownBlock, bool) {
+// renderBlock renders n with its text in fg.
+func renderBlock(th *ui.Theme, source []byte, n ast.Node, fg color.NRGBA) (markdownBlock, bool) {
 	switch n := n.(type) {
 	case *extast.Table:
 		return markdownBlock{table: renderTable(th, source, n)}, true
 	case *ast.List:
-		return markdownBlock{list: renderList(th, source, n)}, true
+		return markdownBlock{list: renderList(th, source, n, fg)}, true
 	case *ast.Heading:
-		cell := renderNode(th, source, n, markdownProseColor(th))
+		cell := renderNode(th, source, n, fg)
 		cell.lineHeight = markdownHeadingLineHeightScale
 		return markdownBlock{prose: cell, rule: n.Level <= 2}, len(cell.spans) > 0
 	case *ast.Blockquote:
-		cell := renderNode(th, source, n, th.MutedForeground)
-		return markdownBlock{prose: cell, quote: true}, len(cell.spans) > 0
+		return renderQuote(th, source, n)
 	case *ast.FencedCodeBlock, *ast.CodeBlock:
-		cell := renderNode(th, source, n, markdownProseColor(th))
+		cell := renderNode(th, source, n, fg)
+		cell.lineHeight = markdownCodeLineHeightScale
 		return markdownBlock{prose: cell, panel: true}, len(cell.spans) > 0
 	default:
-		cell := renderNode(th, source, n, markdownProseColor(th))
+		cell := renderNode(th, source, n, fg)
 		return markdownBlock{prose: cell}, len(cell.spans) > 0
 	}
+}
+
+// renderQuote keeps a quote of paragraphs as one run of text, and gives one
+// holding anything else, a code block or a list, a block per child.
+func renderQuote(th *ui.Theme, source []byte, n *ast.Blockquote) (markdownBlock, bool) {
+	paragraphs := true
+	for child := n.FirstChild(); child != nil; child = child.NextSibling() {
+		_, isParagraph := child.(*ast.Paragraph)
+		paragraphs = paragraphs && isParagraph
+	}
+	if paragraphs {
+		cell := renderNode(th, source, n, th.MutedForeground)
+		return markdownBlock{prose: cell, quote: true}, len(cell.spans) > 0
+	}
+	var blocks []markdownBlock
+	for child := n.FirstChild(); child != nil; child = child.NextSibling() {
+		if block, ok := renderBlock(th, source, child, th.MutedForeground); ok {
+			blocks = append(blocks, block)
+		}
+	}
+	return markdownBlock{blocks: blocks, quote: true}, len(blocks) > 0
 }
 
 // spanWriter walks a node into spans, preserving its inline formatting.
@@ -233,7 +255,7 @@ func (w *spanWriter) codeBlock(n ast.Node) {
 	lines := n.Lines()
 	for i := range lines.Len() {
 		seg := lines.At(i)
-		w.emit(string(seg.Value(w.source)))
+		w.emit(expandTabs(string(seg.Value(w.source))))
 	}
 	w.monospace(false)
 }
@@ -280,7 +302,33 @@ func (w *spanWriter) text(n *ast.Text) {
 		w.emit(string(bytes.TrimRight(content, " ")) + "\n")
 	case n.SoftLineBreak():
 		w.emit(string(bytes.TrimRight(content, " ")) + " ")
+	case w.inlineCode:
+		w.emit(expandTabs(string(content)))
 	default:
 		w.emit(string(content))
 	}
+}
+
+// codeTabSize is the code view's tab stop, godemirror's tabSize.
+const codeTabSize = 4
+
+// expandTabs is line with each tab as the spaces up to its next stop: the
+// mono font has no glyph for a tab.
+func expandTabs(line string) string {
+	if !strings.Contains(line, "\t") {
+		return line
+	}
+	var out strings.Builder
+	column := 0
+	for _, r := range line {
+		if r != '\t' {
+			out.WriteRune(r)
+			column++
+			continue
+		}
+		pad := codeTabSize - column%codeTabSize
+		out.WriteString(strings.Repeat(" ", pad))
+		column += pad
+	}
+	return out.String()
 }

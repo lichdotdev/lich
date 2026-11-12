@@ -30,6 +30,9 @@ const (
 	// markdownHeadingLineHeightScale is GitHub's line-height for headings,
 	// which keeps an h1 or h2's rule close to its text.
 	markdownHeadingLineHeightScale = 1.25
+	// markdownCodeLineHeightScale sets a code block as the code view sets
+	// source, on the mono face's own line, about 1.3 of its size, not prose's.
+	markdownCodeLineHeightScale = 1.3
 )
 
 func markdownProseColor(th *ui.Theme) color.NRGBA {
@@ -60,6 +63,9 @@ type markdownBlock struct {
 	// quote draws the prose behind a bar, a blockquote; panel draws it on a
 	// fill of its own, a code block.
 	quote, panel bool
+	// blocks is what a quote holds when that is more than paragraphs, each
+	// drawn as it is outside one; the quote then has no prose.
+	blocks []markdownBlock
 }
 
 // markdownCell is rendered Markdown and the link state it is laid out with.
@@ -164,7 +170,12 @@ func (b markdownBlock) layout(gtx C, th *ui.Theme, open func(url string)) D {
 		return b.list.layout(gtx, th, open)
 	}
 	if b.quote {
-		return b.prose.layoutQuote(gtx, th, open)
+		return layoutQuote(gtx, th, func(gtx C) D {
+			if b.blocks != nil {
+				return layoutBlocks(gtx, th, open, b.blocks, BlockGap)
+			}
+			return b.prose.layout(gtx, th, open)
+		})
 	}
 	if b.panel {
 		return b.prose.layoutPanel(gtx, th, open)

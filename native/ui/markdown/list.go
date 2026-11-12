@@ -3,6 +3,7 @@ package markdown
 import (
 	"fmt"
 	"image"
+	"image/color"
 
 	"gioui.org/font"
 	"gioui.org/layout"
@@ -27,7 +28,7 @@ type markdownListItem struct {
 	blocks []markdownBlock
 }
 
-func renderList(th *ui.Theme, source []byte, list *ast.List) *markdownList {
+func renderList(th *ui.Theme, source []byte, list *ast.List, fg color.NRGBA) *markdownList {
 	out := &markdownList{}
 	index := list.Start
 	for item := list.FirstChild(); item != nil; item = item.NextSibling() {
@@ -37,13 +38,13 @@ func renderList(th *ui.Theme, source []byte, list *ast.List) *markdownList {
 			index++
 		}
 		entry := markdownListItem{marker: markdownCell{spans: []richtext.SpanStyle{{
-			Font: font.Font{Typeface: th.Sans}, Size: BodySize, Color: markdownProseColor(th), Content: marker,
+			Font: font.Font{Typeface: th.Sans}, Size: BodySize, Color: fg, Content: marker,
 		}}}}
 		if box := taskCheckBox(item); box != nil {
 			entry.task = &widget.Bool{Value: box.IsChecked}
 		}
 		for child := item.FirstChild(); child != nil; child = child.NextSibling() {
-			if block, ok := renderBlock(th, source, child); ok {
+			if block, ok := renderBlock(th, source, child, fg); ok {
 				entry.blocks = append(entry.blocks, block)
 			}
 		}
@@ -121,10 +122,16 @@ func (item *markdownListItem) layoutTask(gtx C, th *ui.Theme) D {
 }
 
 func (item *markdownListItem) layoutBody(gtx C, th *ui.Theme, open func(string)) D {
-	children := make([]layout.FlexChild, 0, len(item.blocks)*2)
-	for i, block := range item.blocks {
+	return layoutBlocks(gtx, th, open, item.blocks, 2)
+}
+
+// layoutBlocks stacks blocks, gap between them, as an item or a quote holds
+// them.
+func layoutBlocks(gtx C, th *ui.Theme, open func(string), blocks []markdownBlock, gap float32) D {
+	children := make([]layout.FlexChild, 0, len(blocks)*2)
+	for i, block := range blocks {
 		if i > 0 {
-			children = append(children, ui.VGap(2))
+			children = append(children, ui.VGap(gap))
 		}
 		children = append(children, layout.Rigid(func(gtx C) D {
 			gtx.Constraints.Min = image.Point{}
