@@ -442,6 +442,19 @@ func TestABrowserNoWindowSizedDrawsAtTheMost(t *testing.T) {
 	}
 }
 
+func TestAFrameTheWindowsSocketReadsIsSent(t *testing.T) {
+	s, launch, out := viewService(t)
+	if _, err := s.Attach("s", Viewport{W: 640, H: 480, Scale: 1}); err != nil {
+		t.Fatal(err)
+	}
+	name := api.BrowserFrameEvents.Of("s").Name
+	frame := strings.Repeat("A", maxFrameData)
+	launch.pages[0].onFrame(frame)
+	if frames := out.named(name); len(frames) != 1 || frames[0] != frame {
+		t.Fatalf("a %d-byte frame, under the window's %d-byte read limit, was not sent", len(frame), api.MaxEventBytes)
+	}
+}
+
 func TestAFramePastTheWindowsSocketLimitIsNotSent(t *testing.T) {
 	s, launch, out := viewService(t)
 	if _, err := s.Attach("s", Viewport{W: 640, H: 480, Scale: 1}); err != nil {
@@ -449,9 +462,9 @@ func TestAFramePastTheWindowsSocketLimitIsNotSent(t *testing.T) {
 	}
 	page := launch.pages[0]
 	name := api.BrowserFrameEvents.Of("s").Name
-	// The window's /events socket reads 4 MiB a message at most, and a larger
-	// one ends it for every session.
-	page.onFrame(strings.Repeat("A", 4<<20))
+	// The window's /events socket reads api.MaxEventBytes a message at most,
+	// and a larger one ends it for every session.
+	page.onFrame(strings.Repeat("A", api.MaxEventBytes))
 	if frames := out.named(name); len(frames) != 0 {
 		t.Fatalf("sent a %d-byte frame, past what the window's socket reads", len(frames[0].(string)))
 	}

@@ -198,7 +198,7 @@ func (c *Client) Events(ctx context.Context) (<-chan Event, error) {
 	if err != nil {
 		return nil, fmt.Errorf("events: %w", err)
 	}
-	conn.SetReadLimit(maxFrame)
+	conn.SetReadLimit(api.MaxEventBytes)
 	out := make(chan Event, 64)
 	go func() {
 		defer close(out)
@@ -222,9 +222,9 @@ func (c *Client) Events(ctx context.Context) (<-chan Event, error) {
 	return out, nil
 }
 
-// maxFrame bounds one WebSocket message. The backend caps its own reads at
-// 1 MiB (internal/terminal/transport.go); output frames carry PTY reads, which
-// are far smaller.
+// maxFrame bounds one /ws message: output frames carry PTY reads, far smaller,
+// and a replay frame stays under it (internal/terminal's replay test). It is
+// not api.MaxEventBytes: /ws carries no frame that needs that room.
 const maxFrame = 4 << 20
 
 // Stream is the /ws socket: PTY output of every session in, keystrokes out.

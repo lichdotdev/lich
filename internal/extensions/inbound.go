@@ -15,9 +15,9 @@ import (
 
 const (
 	// maxLineBytes bounds a line from an extension and the event it becomes.
-	// The window's /events socket reads at most 4 MiB a frame (maxFrame in
-	// native/backend/client.go) and one frame over it ends that socket for
-	// every session, so this leaves room for the envelope.
+	// The window's /events socket reads at most api.MaxEventBytes a frame and
+	// one frame over it ends that socket for every session, so this leaves
+	// room for the envelope.
 	maxLineBytes = 3 << 20
 	// maxTreeNodes and maxTreeDepth bound what one render costs the window,
 	// which walks the tree on its UI goroutine every frame, recursively:
