@@ -41,7 +41,7 @@ require (
 // operations are diffed), pointer.Event.WindowPosition (a widget's place in the
 // window without watching motion), a double click window of 400 ms, and the
 // flip model on Windows. Every patch of ours lands on that branch.
-replace gioui.org => github.com/lichdotdev/gio v0.0.0-20261108212453-3dc6e3e4274b
+replace gioui.org => github.com/lichdotdev/gio v0.0.0-20261112203107-8e32f3143c92
 
 replace github.com/lichdotdev/lich => ../
 
