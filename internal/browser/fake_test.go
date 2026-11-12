@@ -3,6 +3,7 @@ package browser
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"strings"
 	"sync"
@@ -83,6 +84,11 @@ type fakePage struct {
 	pageText   string
 	textReads  int
 	onTextRead func(reads int)
+	// idxNext is IndexNext's. listsTabs: NewTab tells onTabs every tab, as
+	// Chrome's does, its ids t0, t1 and on.
+	idxNext   int
+	listsTabs bool
+	tabs      []api.BrowserTab
 }
 
 type typed struct {
@@ -281,7 +287,34 @@ func (p *fakePage) OnFileChooser(func(page.FileChooserOpenedMode) ([]string, err
 
 // NewTab, SelectTab, CloseTab and DevTools record the tab action and fail
 // with tabErr.
-func (p *fakePage) NewTab(context.Context) error { return p.tabAction("new", "") }
+func (p *fakePage) NewTab(context.Context) error {
+	err := p.tabAction("new", "")
+	p.mu.Lock()
+	if !p.listsTabs {
+		p.mu.Unlock()
+		return err
+	}
+	if len(p.tabs) == 0 {
+		p.tabs = []api.BrowserTab{{ID: "t0"}}
+	}
+	p.tabs = append(p.tabs, api.BrowserTab{ID: fmt.Sprintf("t%d", len(p.tabs))})
+	tabs, onTabs := append([]api.BrowserTab{}, p.tabs...), p.onTabs
+	p.mu.Unlock()
+	onTabs(tabs)
+	return err
+}
+
+func (p *fakePage) IndexNext() int {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p.idxNext
+}
+
+func (p *fakePage) SetIndexNext(n int) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.idxNext = n
+}
 
 func (p *fakePage) SelectTab(_ context.Context, id string) error { return p.tabAction("select", id) }
 
@@ -434,6 +467,8 @@ type fakeLauncher struct {
 	headed []bool
 	dirs   []string
 	scales []float64
+	// listsTabs is each page's.
+	listsTabs bool
 	// gate, when set, runs before the page exists: a test holds a launch open
 	// with it to see what else the service lets through meanwhile.
 	gate func()
@@ -445,7 +480,7 @@ func (f *fakeLauncher) launch(dir string, headed bool, scale float64) (Page, err
 	}
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	p := &fakePage{url: "about:blank"}
+	p := &fakePage{url: "about:blank", listsTabs: f.listsTabs}
 	f.pages = append(f.pages, p)
 	f.headed = append(f.headed, headed)
 	f.dirs = append(f.dirs, dir)

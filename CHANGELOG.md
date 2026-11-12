@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A session's browser pane no longer freezes on its last frame on a very busy page at ultrawide or 4K size: frames up to twice as large now reach the window.
 - On Linux with an NVIDIA GPU, `lich-native.log` no longer says "no GPU acceleration, the window draws on the CPU" while the window runs on the GPU. The line came from drawing a desktop notification's icon, which Mesa draws on the CPU; it now appears only when the window itself has no GPU.
 - Switching tabs in a session's browser now shows the page the new tab last showed, where it kept the previous tab's page on screen until the new tab drew; a tab that was never in front shows the empty pane.
+- A session's browser stays sharp when you move the window to a monitor of another density: about a second after the move, lich starts the browser again at the new scale, with its tabs, the tab you were on, its DevTools and your sign-ins. What lives only in the page, like a half-filled form or how far you had scrolled, starts over; it never happens while the page shows a dialog or is paused in the debugger, while the agent is acting on it, or for a browser open in its own window. Changing the page zoom does not restart it.
 
 ## [0.89.0] - 2026-11-12
 

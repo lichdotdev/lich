@@ -360,13 +360,14 @@ func (u *window) setBrowserZoom(zoom float64) {
 	u.win.Invalidate()
 }
 
-// syncBrowserView tells the backend the window's size, at the page zoom, when
-// it changed: a page no pane shows lays out there instead of at Chrome's
-// cramped 800x600.
+// syncBrowserView tells the backend the window's size, at the page zoom, and
+// its own scale, when they changed: a page no pane shows lays out there
+// instead of at Chrome's cramped 800x600, and a pane's browser relaunches on a
+// move to a monitor of another density, never on a zoom.
 func (u *window) syncBrowserView(gtx C) {
 	scale := u.pageScale(gtx)
 	size := gtx.Constraints.Max
-	want := api.BrowserDefaultViewOptions{W: int(float32(size.X) / scale), H: int(float32(size.Y) / scale), Scale: float64(scale)}
+	want := api.BrowserDefaultViewOptions{W: int(float32(size.X) / scale), H: int(float32(size.Y) / scale), Scale: float64(scale), Window: float64(gtx.Metric.PxPerDp)}
 	if want.W <= 0 || want.H <= 0 || want == u.browserView {
 		return
 	}

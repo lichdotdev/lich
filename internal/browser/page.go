@@ -147,6 +147,11 @@ type Page interface {
 	// front; CloseTab closes it, unless it is the last one. Every other call
 	// acts on the front tab.
 	NewTab(ctx context.Context) error
+	// IndexNext is the element index Info hands out next. SetIndexNext
+	// carries it into the browser that replaces this one, so a number the
+	// agent holds is never handed to a second element.
+	IndexNext() int
+	SetIndexNext(n int)
 	SelectTab(ctx context.Context, id string) error
 	CloseTab(ctx context.Context, id string) error
 	// DevTools shows in the pane, in place of the front tab, that tab's

@@ -225,11 +225,13 @@ type BrowserViewOptions struct {
 }
 
 // BrowserDefaultViewOptions is the window's size: W and H in CSS pixels, Scale
-// the device pixels per CSS pixel.
+// the device pixels per CSS pixel, which is Window, the window's own scale,
+// times the page zoom.
 type BrowserDefaultViewOptions struct {
-	W     int     `json:"w"`
-	H     int     `json:"h"`
-	Scale float64 `json:"scale"`
+	W      int     `json:"w"`
+	H      int     `json:"h"`
+	Scale  float64 `json:"scale"`
+	Window float64 `json:"window"`
 }
 
 // BrowserMouseOptions is one pointer event over the pane, in CSS pixels.

@@ -23,6 +23,7 @@ func (s *Service) Eval(_ context.Context, opts api.BrowserEvalOptions) (string, 
 	if strings.TrimSpace(opts.Script) == "" {
 		return "", errNoScript
 	}
+	defer s.agentTurn(opts.ID)()
 	var out string
 	sess, err := s.drive(opts.ID, func(p Page, ctx context.Context) error {
 		var err error

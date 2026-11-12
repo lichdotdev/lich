@@ -30,6 +30,11 @@ func (s *Service) Attach(owner string, v Viewport) (Handle, error) {
 	if owner == "" {
 		return Handle{}, errNoOwner
 	}
+	// A browser drawing at another scale than the window's would show the
+	// pane blurred frames.
+	if _, err := s.rescale(owner); err != nil {
+		return Handle{}, err
+	}
 	lock := s.ownerLock(owner)
 	lock.Lock()
 	defer lock.Unlock()
@@ -52,7 +57,7 @@ func (s *Service) Attach(owner string, v Viewport) (Handle, error) {
 		return Handle{}, s.failed(sess, err)
 	}
 	s.mu.Lock()
-	sess.watching = true
+	sess.watching, sess.view = true, v
 	s.mu.Unlock()
 	return s.handleOf(sess), nil
 }
@@ -101,15 +106,22 @@ func (s *Service) Resize(owner string, v Viewport) error {
 		}
 		return p.Resize(ctx, v)
 	})
+	if err == nil && watching {
+		s.mu.Lock()
+		sess.view = v
+		s.mu.Unlock()
+	}
 	return err
 }
 
 // SetDefaultView sets the size a headless page no pane shows lays out at, and
 // lays out the running ones there. It is not a use: a window resized does not
-// keep an idle browser from the reaper.
-func (s *Service) SetDefaultView(v Viewport) {
+// keep an idle browser from the reaper. window is the window's own scale: a
+// pane's browser launched under another relaunches once it holds still.
+func (s *Service) SetDefaultView(v Viewport, window float64) {
 	s.mu.Lock()
-	s.defaultView = v
+	s.defaultView, s.window = v, window
+	s.scheduleRescaleLocked()
 	var pages []Page
 	for _, sess := range s.byID {
 		if sess.alive() && !sess.headed && !sess.watching {
@@ -337,7 +349,12 @@ func (f *frameStream) still() {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.capturing, f.captured = false, time.Now()
-	if !ok || f.drawn != drawn || tab != jpeg.Tab || len(data) > maxFrameData || len(data) > stillGrowth*len(jpeg.Data) {
+	// A relaunch replaced the browser while it captured: the old page's PNG
+	// would land over the new one's frames.
+	f.s.mu.Lock()
+	current := f.s.byID[f.sess.id] == f.sess
+	f.s.mu.Unlock()
+	if !ok || !current || f.drawn != drawn || tab != jpeg.Tab || len(data) > maxFrameData || len(data) > stillGrowth*len(jpeg.Data) {
 		return
 	}
 	events.Send(f.s.emit, f.frames, api.BrowserFrame{Tab: tab, Data: data})
