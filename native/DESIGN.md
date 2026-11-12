@@ -300,13 +300,18 @@ the footer; it outlives the panel, and the button stays lit with a dot while it 
 Motion says where something came from and where it went. It never holds anything up: a session's pane opens
 at once, whatever its row is still doing.
 
-- **Rows of a tree move by their line.** Coming in (a mother opens, a session or a worktree appears), the
+- **Rows of a tree move by their line.** Coming in (a mother or a block opens, a session or a worktree appears), the
   row opens with its name already on it, then the line runs down to it, draws its ring from the left where
-  the link arrives, and the glyph comes in last. Leaving (a mother folds, a session closes) plays the other
+  the link arrives, and the glyph comes in last. Leaving (a mother or a block folds, a session closes) plays the other
   way: the name and glyph go, the ring undraws, the line runs back up, the row closes. A worktree's last
   session leaving takes the worktree's row out after it; a folder's last session takes its checkout row,
   then the folder's header fades and its tray closes; a new folder plays that backwards. The rail moves the
   same way, in the same timings, its rings and line without the names. Timings live in `sidebar_tree_motion.go`.
+  A folded folder keeps its tray until its rows have left.
+- **A ring redraws when its session's status changes.** The ring of the status it left fades while the new
+  one draws from the left, as a ring coming into the tree does, in `statusTurnDuration` (400ms). Busy and
+  compacting are one ring, so nothing plays between them, and only a live report plays: a status read at
+  startup is drawn at rest.
 - **A dragged card lets go of its line and joins where it lands.** As it lifts, its elbow runs back to its
   parent's line; while it is in the air, the rows are linked in the order the list shows them, and its slot
   draws a dashed elbow and ring; let go, it settles and the line draws back to its ring

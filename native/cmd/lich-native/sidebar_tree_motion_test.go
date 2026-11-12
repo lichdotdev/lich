@@ -204,3 +204,29 @@ func TestRelinkMatchesTheTreesOwnLinks(t *testing.T) {
 		treeSession("a", "", "/wt/a"), treeSession("a-child", "a", "/wt/c"), treeSession("a2", "", "/wt/a"), treeSession("b", "", "/wt/b"),
 	}))
 }
+
+func TestTreeMotionClosesAFoldedBlocksRowsFromItsTop(t *testing.T) {
+	sessions, now := motionTree(), time.Now()
+	open := blockView{sessions: sessions}
+	folded := blockView{sessions: sessions, collapsed: true}
+	var m treeMotion
+	m.update(now, foldedRows(open, motionRows(sessions)))
+	m.update(now, foldedRows(folded, motionRows(sessions)))
+	if len(m.runs) != 1 || !m.runs[0].closing || m.runs[0].after != "" || len(m.runs[0].rows) != 5 {
+		t.Fatalf("runs = %+v, want every row closing from the block's top", m.runs)
+	}
+	if !m.hasRows() {
+		t.Error("hasRows = false while the rows leave, want the folder's tray held")
+	}
+	rows := m.place(now, foldedRows(folded, motionRows(sessions)))
+	if len(rows) != 5 || rows[0].motion == nil || !rows[0].motion.closing {
+		t.Fatalf("rows = %v, want the five drawn while they leave", rowShape(rows))
+	}
+	end := now.Add(m.runs[0].length())
+	if m.update(end, nil) || m.hasRows() || len(m.place(end, nil)) != 0 {
+		t.Error("a folded block still draws rows once its close has played")
+	}
+	if !m.update(end, foldedRows(open, motionRows(sessions))) || m.runs[0].closing {
+		t.Errorf("runs = %+v, want the rows opening as the block unfolds", m.runs)
+	}
+}

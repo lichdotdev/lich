@@ -33,7 +33,7 @@ const (
 
 // The coming in's pace (treeOpenLine aside).
 const (
-	treeEnterRing  = 400 * time.Millisecond
+	treeEnterRing  = 300 * time.Millisecond
 	treeEnterName  = 160 * time.Millisecond
 	treeEnterDelay = 80 * time.Millisecond // a row's name after its row starts opening
 )
@@ -231,6 +231,10 @@ func stretches(rows, other []sessionRow) []image.Point {
 	}
 	return out
 }
+
+// hasRows is whether the block drew rows last frame or still draws ones
+// leaving.
+func (m *treeMotion) hasRows() bool { return len(m.prev) > 0 || len(m.runs) > 0 }
 
 func keySet(rows []sessionRow) map[string]bool {
 	keys := make(map[string]bool, len(rows))

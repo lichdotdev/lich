@@ -626,6 +626,7 @@ type sessionView struct {
 	host      string
 	status    string
 	unread    bool          // a done turn nobody has read
+	turn      statusTurn    // the last status change, which the ring plays
 	age       time.Duration // how long status has lasted, while aged
 	aged      bool          // status has a clock (busy, compacting, waiting)
 	agent     string        // provider CLI live in the PTY, "" for none
@@ -662,7 +663,7 @@ func (m *model) viewOf(p backend.Project, s backend.Session, now time.Time) sess
 	web := webView{url: st.URL, title: st.Title, headed: st.Headed, shown: page != nil, focused: page != nil && page.focused}
 	return sessionView{
 		Session: s, projectID: p.ID, path: sessionPath(p, s), shown: shown, host: m.cwd[s.ID].Host, web: web,
-		status: m.status.status(s.ID), unread: m.status.unread(s.ID), age: age, aged: aged,
+		status: m.status.status(s.ID), unread: m.status.unread(s.ID), turn: m.status.turn(s.ID), age: age, aged: aged,
 		agent: m.agent[s.ID], sandbox: m.sandbox[s.ID], git: m.git[shown],
 		base: m.base[shown], pr: m.prs[shown].pr,
 		relay: m.relay[s.ID], tool: tool, reason: m.status.reason(s.ID), browser: m.browsers.states[s.ID].Open,
