@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- The Git panel opens as soon as the branch in the footer is clicked. It used to wait for the mouse to move before sliding up.
+
 ## [0.89.0] - 2026-11-12
 
 ### Added

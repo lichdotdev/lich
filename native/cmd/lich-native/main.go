@@ -728,7 +728,7 @@ func (u *window) body(gtx C, v stageView) (int, sidebarAction, error) {
 		return d
 	}).Size.X
 	var err error
-	u.git.act(gtx)
+	u.actGit(gtx)
 	u.islandAt = image.Pt(edge, bar)
 	u.stage(gtx, edge, func(gtx C) D {
 		return layout.Inset{Right: gutter}.Layout(gtx, func(gtx C) D {
@@ -1010,6 +1010,13 @@ func (u *window) gitPanelRow(gtx C, v stageView) D {
 	panel.Constraints = layout.Exact(size)
 	u.layoutGit(panel, v)
 	return D{Size: image.Pt(size.X, slot)}
+}
+
+// actGit runs every click that opens, closes or expands the Git panel, before
+// the frame reads any of it.
+func (u *window) actGit(gtx C) {
+	u.footer.actGit(gtx)
+	u.git.act(gtx)
 }
 
 // gitFooterHeight is the footer strip's one-line height, what an expanding

@@ -341,6 +341,11 @@ at once, whatever its row is still doing.
   jumps.
 - **A moving item takes no input**, but advances its tween before `gtx.Disabled()`: a disabled context drops
   the redraw request, and the motion freezes on its first frame.
+- **A click shows in the frame that took it.** Gio draws one frame per event, so a click read after the
+  thing it changes was laid out leaves the old state on screen until the mouse moves. Read the click before
+  that layout, as `actGit` does for the Git panel, whose row comes before the footer button that opens it.
+  A control that opens, closes or resizes something laid out elsewhere gets a `frameRig.click` test
+  (`stale_*_test.go`), which fails on exactly this.
 
 ## Fixed by decision: do not "fix" these
 

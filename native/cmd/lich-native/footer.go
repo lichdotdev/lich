@@ -229,9 +229,6 @@ func (f *footer) act(gtx C, in footerInput) {
 	f.w("changes").pressed = f.dock.tab == dockReview
 	f.w("artifacts").pressed = f.dock.tab == dockArtifacts
 	if f.git != nil {
-		if f.w("checkout").click.Clicked(gtx) {
-			f.git.open = !f.git.open
-		}
 		f.w("checkout").pressed = f.git.open && in.inRepository()
 	}
 	if f.w("pr").click.Clicked(gtx) && in.pr != nil && f.openPullRequest != nil {
@@ -239,6 +236,15 @@ func (f *footer) act(gtx C, in footerInput) {
 	}
 	if f.w("delegates").click.Clicked(gtx) && in.delegates > 0 {
 		f.showDelegates(in.sessionID)
+	}
+}
+
+// actGit runs the branch's click before the frame lays the Git panel out: the
+// panel's row comes before the footer, and a click read there would open it
+// only on the next event.
+func (f *footer) actGit(gtx C) {
+	if f.w("checkout").click.Clicked(gtx) {
+		f.git.open = !f.git.open
 	}
 }
 
