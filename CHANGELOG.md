@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.90.0] - 2026-11-12
+
 ### Added
 
 - A session's browser opens Chrome's DevTools for its page as one more tab of the pane, from a new button in the toolbar: Elements, Console, Network and Sources, drawn in the page's place while the tab is selected. While the page is paused in the debugger, the tab shows a pause sign and the agent's browser tools say the page is paused instead of acting on it. The agent never sees or drives DevTools, so it works the same with every provider.
@@ -6687,7 +6689,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   CPU, costing ~40ms per frame in a full-size window. Under Xwayland typing is
   stall-free at full frame rate.
 
-[Unreleased]: https://github.com/lichdotdev/lich/compare/v0.89.0...HEAD
+[Unreleased]: https://github.com/lichdotdev/lich/compare/v0.90.0...HEAD
+[0.90.0]: https://github.com/lichdotdev/lich/compare/v0.89.0...v0.90.0
 [0.89.0]: https://github.com/lichdotdev/lich/compare/v0.88.0...v0.89.0
 [0.88.0]: https://github.com/lichdotdev/lich/compare/v0.87.0...v0.88.0
 [0.87.0]: https://github.com/lichdotdev/lich/compare/v0.86.0...v0.87.0

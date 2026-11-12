@@ -1,3 +1,22 @@
+## [0.90.0] - 2026-11-12
+
+### Added
+
+- El navegador de una sesión abre las DevTools de Chrome para su página como una pestaña más del panel, desde un botón nuevo de la barra de herramientas: Elements, Console, Network y Sources, dibujadas en lugar de la página mientras la pestaña está seleccionada. Mientras la página está en pausa en el depurador, la pestaña muestra un signo de pausa y las herramientas de navegador del agente avisan de que la página está en pausa en vez de actuar sobre ella. El agente nunca ve ni maneja las DevTools, así que funciona igual con todos los proveedores.
+
+### Changed
+
+- El texto en el navegador de una sesión se ve nítido cuando la página deja de moverse: un instante después del último cambio, la página se redibuja una vez sin el desenfoque ni los halos que la imagen en movimiento tiene alrededor de las letras. Una página que muestra una foto grande conserva la imagen en movimiento, que ya se ve igual. Vale para todos los proveedores.
+
+### Fixed
+
+- El panel de Git se abre en cuanto se hace clic en la rama del pie. Antes esperaba a que el ratón se moviera para deslizarse hacia arriba.
+- En una extensión, una lista dentro de un scroll sobre el que se arrastra un elemento se ilumina hasta el final del scroll, borde inferior incluido. Antes la iluminación se salía de la pantalla sin borde inferior.
+- El panel del navegador de una sesión ya no se congela en su último fotograma en una página muy cargada a tamaño ultrapanorámico o 4K: ahora llegan a la ventana fotogramas de hasta el doble de tamaño.
+- En Linux con una GPU NVIDIA, `lich-native.log` ya no dice "no GPU acceleration, the window draws on the CPU" mientras la ventana se ejecuta en la GPU. La línea venía de dibujar el icono de una notificación de escritorio, que Mesa dibuja en la CPU; ahora aparece solo cuando la propia ventana no tiene GPU.
+- Al cambiar de pestaña en el navegador de una sesión ahora se ve la página que la pestaña nueva mostró por última vez, en lugar de mantener en pantalla la página de la pestaña anterior hasta que la nueva dibujaba; una pestaña que nunca estuvo delante muestra el panel vacío.
+- El navegador de una sesión se mantiene nítido al mover la ventana a un monitor de otra densidad: alrededor de un segundo después del cambio, lich vuelve a iniciar el navegador a la escala nueva, con sus pestañas, la pestaña en la que estabas, sus DevTools y tus sesiones iniciadas. Lo que vive solo en la página, como un formulario a medio rellenar o cuánto habías desplazado, empieza de cero; nunca ocurre mientras la página muestra un diálogo o está en pausa en el depurador, mientras el agente actúa sobre ella, ni en un navegador abierto en su propia ventana. Cambiar el zoom de la página no lo reinicia.
+
 ## [0.89.0] - 2026-11-12
 
 ### Added

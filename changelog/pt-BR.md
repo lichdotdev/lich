@@ -1,3 +1,22 @@
+## [0.90.0] - 2026-11-12
+
+### Added
+
+- O navegador de uma sessão abre o DevTools do Chrome para a página dela como mais uma aba do painel, a partir de um novo botão na barra de ferramentas: Elements, Console, Network e Sources, desenhados no lugar da página enquanto a aba está selecionada. Enquanto a página está pausada no depurador, a aba mostra um sinal de pausa e as ferramentas de navegador do agente avisam que a página está pausada em vez de agir sobre ela. O agente nunca vê nem controla o DevTools, então funciona igual em todos os provedores.
+
+### Changed
+
+- O texto no navegador de uma sessão fica nítido quando a página para de se mover: um instante depois da última mudança, a página é redesenhada uma vez, sem o desfoque e as franjas que a imagem em movimento tem em volta das letras. Uma página com uma foto grande mantém a imagem em movimento, que já tem o mesmo aspecto. Vale para todos os provedores.
+
+### Fixed
+
+- O painel Git abre assim que a branch no rodapé é clicada. Antes ele esperava o mouse se mover para só então subir.
+- Em uma extensão, uma lista dentro de uma rolagem sobre a qual um item é arrastado agora é destacada até o fim da rolagem, borda inferior incluída. Antes o destaque saía da tela, sem borda inferior.
+- O painel do navegador de uma sessão não congela mais no último quadro em uma página muito movimentada em tamanho ultrawide ou 4K: quadros até duas vezes maiores agora chegam à janela.
+- No Linux com uma GPU NVIDIA, o `lich-native.log` não diz mais "no GPU acceleration, the window draws on the CPU" enquanto a janela roda na GPU. A linha vinha do desenho do ícone de uma notificação do desktop, que o Mesa desenha na CPU; agora ela só aparece quando a própria janela não tem GPU.
+- Trocar de aba no navegador de uma sessão agora mostra a página que a nova aba exibiu por último, onde antes mantinha na tela a página da aba anterior até a nova desenhar; uma aba que nunca esteve na frente mostra o painel vazio.
+- O navegador de uma sessão continua nítido quando você move a janela para um monitor de outra densidade: cerca de um segundo depois da mudança, o lich inicia o navegador de novo na nova escala, com as abas, a aba em que você estava, o DevTools e os seus logins. O que vive só na página, como um formulário preenchido pela metade ou até onde você tinha rolado, recomeça; isso nunca acontece enquanto a página mostra um diálogo ou está pausada no depurador, enquanto o agente está agindo sobre ela, nem em um navegador aberto em janela própria. Mudar o zoom da página não o reinicia.
+
 ## [0.89.0] - 2026-11-12
 
 ### Added
