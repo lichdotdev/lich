@@ -46,7 +46,7 @@ const launchWait = 60 * time.Second
 // is this ephemeral dir, never lich/chromium-profile. Attaching to the UI
 // window would expose the page and the session token; this process must stay
 // a sidecar.
-func chromeLaunch(dir string, headed bool) (Page, error) {
+func chromeLaunch(dir string, headed bool, scale float64) (Page, error) {
 	exe, err := chromium.FindBrowser(exec.LookPath)
 	if err != nil {
 		return nil, err
@@ -57,7 +57,7 @@ func chromeLaunch(dir string, headed bool) (Page, error) {
 	if headed {
 		opts = append(opts, chromedp.Flag("headless", false))
 	} else {
-		opts = append(opts, chromedp.Flag("force-device-scale-factor", strconv.FormatFloat(frameScale, 'f', -1, 64)))
+		opts = append(opts, chromedp.Flag("force-device-scale-factor", strconv.FormatFloat(scale, 'f', -1, 64)))
 	}
 	allocCtx, allocCancel := chromedp.NewExecAllocator(context.Background(), opts...)
 	ctx, cancel := chromedp.NewContext(allocCtx)
@@ -66,7 +66,7 @@ func chromeLaunch(dir string, headed bool) (Page, error) {
 		allocCancel()
 		return nil, err
 	}
-	p := &chromePage{ctx: ctx, cancel: cancel, allocCancel: allocCancel}
+	p := &chromePage{ctx: ctx, cancel: cancel, allocCancel: allocCancel, scale: scale}
 	p.tabs.start(&tab{ctx: ctx, id: chromedp.FromContext(ctx).Target.TargetID})
 	if err := p.allowDownloads(dir); err != nil {
 		slog.Warn("browser: downloads stay off", "err", err)
@@ -74,13 +74,29 @@ func chromeLaunch(dir string, headed bool) (Page, error) {
 	return p, nil
 }
 
-// frameScale is the scale a headless browser draws at, forced at its launch,
-// and the most a pane's frames get. The screencast copies the browser's own
-// surface, which an emulated scale does not change: a 2x pane got 1x frames,
-// blurred. A busy page forced to 2 and drawn at 2x ran at 28 fps against 45 at
-// 1x, and at 33 drawn at 1.5x (measured 2026-10-29): 1.5 trades sharpness
-// for frame rate.
-const frameScale = 1.5
+// frameScale is the most a headless browser draws at, and so the most a pane's
+// frames get; minFrameScale is the least. The scale is forced at the launch:
+// the screencast copies the browser's own surface, which an emulated scale
+// does not change. A busy page forced to 2 and drawn at 2x ran at 28 fps
+// against 45 at 1x, and at 33 drawn at 1.5x (measured 2026-10-29): 1.5 trades
+// sharpness for frame rate.
+const (
+	frameScale    = 1.5
+	minFrameScale = 1
+)
+
+// launchScale is the scale a headless browser launched for a window drawing
+// pages at scale draws at: the window's own, so the frames are the pane's
+// pixels. A browser forced to 1.5 under a 1x pane reduced every frame to the
+// pane's size, which blurred its text and sent a 1140x1300 pane 28 to 38
+// frames a second where one drawn at 1x sent 49 to 60 (measured 2026-11-11).
+// With no window heard from yet it is frameScale.
+func launchScale(scale float64) float64 {
+	if scale <= 0 {
+		return frameScale
+	}
+	return min(max(scale, minFrameScale), frameScale)
+}
 
 // disabledFeatures replaces chromedp's own disable-features list, which it
 // repeats, adding the optimization guide's model downloads. Those go through
@@ -96,8 +112,10 @@ type chromePage struct {
 	ctx         context.Context
 	cancel      context.CancelFunc
 	allocCancel context.CancelFunc
-	listen      listeners
-	tabs        tabStack
+	// scale is what the browser draws at, forced at its launch.
+	scale  float64
+	listen listeners
+	tabs   tabStack
 	// dl names the files the page downloads; nil when downloads are off.
 	dl *downloads
 	// gate is held while the page has a JavaScript dialog open.

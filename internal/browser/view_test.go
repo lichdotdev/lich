@@ -409,3 +409,35 @@ func TestAPaneLeavingDoesNotLayOutABrowserInItsOwnWindow(t *testing.T) {
 		t.Fatalf("a browser in its own window was resized to %v and no longer follows its window", p.viewports)
 	}
 }
+
+func TestABrowserDrawsAtTheScaleTheWindowDrawsPagesAt(t *testing.T) {
+	for name, tc := range map[string]struct {
+		window, want float64
+	}{
+		"a 1x window":                        {1, 1},
+		"a window between the two":           {1.25, 1.25},
+		"a 2x window, past the most":         {2, 1.5},
+		"a page zoomed out, under the least": {0.5, 1},
+	} {
+		t.Run(name, func(t *testing.T) {
+			s, launch, _ := viewService(t)
+			s.SetDefaultView(Viewport{W: 1280, H: 720, Scale: tc.window})
+			if _, err := s.Open("s", "https://example.com"); err != nil {
+				t.Fatal(err)
+			}
+			if len(launch.scales) != 1 || launch.scales[0] != tc.want {
+				t.Fatalf("launched at %v, want %v", launch.scales, tc.want)
+			}
+		})
+	}
+}
+
+func TestABrowserNoWindowSizedDrawsAtTheMost(t *testing.T) {
+	s, launch, _ := viewService(t)
+	if _, err := s.Open("s", "https://example.com"); err != nil {
+		t.Fatal(err)
+	}
+	if len(launch.scales) != 1 || launch.scales[0] != 1.5 {
+		t.Fatalf("launched at %v, want 1.5", launch.scales)
+	}
+}
