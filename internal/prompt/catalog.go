@@ -67,6 +67,14 @@ type Catalog struct {
 	ScheduledAtResult string // %[1]s is when
 	ScheduledOnResult string // %[1]s is the condition, %[2]d the run limit
 	ScheduleCleared   string
+	// `lich check-log` and read_check_log's answers. %[1]d is the pull
+	// request, %[2]s the commit, then the counts named in the text.
+	CheckLogNoPR    string
+	CheckLogClean   string // %[3]d passed, %[4]d pending
+	CheckLogRunning string // %[3]d failed, %[4]d pending
+	CheckLogFailed  string // %[3]d failed
+	CheckLogCut     string // %[1]d is the lines left out
+	CheckLogNoLog   string
 
 	// internal/drop: the line under a copied file's path.
 	CopyNotice string

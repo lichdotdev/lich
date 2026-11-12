@@ -96,6 +96,7 @@ project.BaseStatus(PathOptions) *BaseStatus
 project.BranchRules(PathBranchOptions) *BranchRules
 project.BranchesOf(PathsOptions) map[string]string
 project.CarryUncommitted(CarryUncommittedOptions) None
+project.CheckLog(CheckLogOptions) CheckLog
 project.CommentOnPullRequest(PRBodyOptions) None
 project.CommitIdentity(PathOptions) CommitIdentity
 project.CreatePullRequest(PathOptions) None
@@ -720,6 +721,19 @@ PathsOptions {
 CarryUncommittedOptions {
 	src string
 	dst string
+}
+
+CheckLogOptions {
+	id string
+	lines,omitempty int
+}
+
+CheckLog {
+	number,omitempty int
+	head,omitempty string
+	passed int
+	pending int
+	failed,omitempty []FailedCheck
 }
 
 PRBodyOptions {
@@ -2153,6 +2167,12 @@ CommitPattern {
 	negate bool
 }
 
+FailedCheck {
+	name string
+	url,omitempty string
+	steps,omitempty []StepLog
+}
+
 GitRef {
 	name string
 	kind string
@@ -2344,6 +2364,12 @@ SessionCache {
 	read int
 	write int
 	uncached int
+}
+
+StepLog {
+	step,omitempty string
+	lines []string
+	cut,omitempty int
 }
 
 PRThreadComment {
