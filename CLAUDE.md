@@ -28,6 +28,9 @@ lives in the code, `docs/` and `CHANGELOG.md` — never restate any of it here.
   language touches, and the rules for writing a message.
 - **How the window looks**: `native/DESIGN.md`, the tokens, button sizes, spacing and screen layout. Read it
   before drawing or changing UI; a pattern corrected in review lands there in the same PR.
+- **What a screen should cut**: `.claude/skills/lich-ux-declutter/`. Run it on the shot before calling a UI
+  change done. A PR that adds user-visible copy quotes that copy in its description and says why it cannot be
+  removed or shown only when relevant.
 - **User-facing feature history**: `CHANGELOG.md`.
 
 ## Rules of the codebase
