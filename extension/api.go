@@ -22,11 +22,28 @@ const (
 	PermissionSessionsWrite Permission = "sessions:write"
 	// PermissionSessionEvents subscribes to session.status.
 	PermissionSessionEvents Permission = "events:session"
+	// PermissionSessionsAsk puts side questions to Claude Code sessions and
+	// reads their answers.
+	PermissionSessionsAsk Permission = "sessions:ask"
+	// PermissionServicesRead lists a project's services, reads their output
+	// and subscribes to service.status.
+	PermissionServicesRead Permission = "services:read"
+	// PermissionServicesWrite starts, stops and restarts services.
+	PermissionServicesWrite Permission = "services:write"
+	// PermissionGitRead reads a checkout's git status and pull request.
+	PermissionGitRead Permission = "git:read"
+	// PermissionNotify raises desktop notifications.
+	PermissionNotify Permission = "notify"
+	// PermissionWindow shows a file in the dock and opens pages in a session's
+	// browser tab.
+	PermissionWindow Permission = "window"
 )
 
 // Permissions is every permission this build knows, the names a manifest may list.
 var Permissions = []Permission{
 	PermissionProjectsRead, PermissionSessionsRead, PermissionSessionsWrite, PermissionSessionEvents,
+	PermissionSessionsAsk, PermissionServicesRead, PermissionServicesWrite, PermissionGitRead,
+	PermissionNotify, PermissionWindow,
 }
 
 var (

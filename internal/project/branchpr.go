@@ -187,6 +187,24 @@ func fillPRRead(read *api.PRRead, out []byte) error {
 	return nil
 }
 
+// OpenPullRequest is the open pull request of opts.Path's branch, nil when it
+// has none open, as the badge shows it: the watch's last read when there is
+// one, else one gh read, which is not recorded, since only the window's ask
+// starts following a checkout.
+func (s *Service) OpenPullRequest(_ context.Context, opts api.PathOptions) (*api.PullRequest, error) {
+	pr, read := s.prs.lastRead(opts.Path)
+	if !read {
+		var err error
+		if pr, err = s.BranchPullRequest(opts.Path); err != nil {
+			return nil, err
+		}
+	}
+	if pr == nil || pr.State != prOpen {
+		return nil, nil
+	}
+	return pr, nil
+}
+
 // BranchPullRequest returns the pull request of the branch checked out at path
 // whatever its state, nil when the branch has none.
 func (s *Service) BranchPullRequest(path string) (*PullRequest, error) {
@@ -250,6 +268,13 @@ func (b *branchPRs) record(path string, pr *PullRequest) bool {
 	prev := b.last[path]
 	b.last[path] = pr
 	return prev != nil && prev.State == prOpen && pr != nil && pr.State == prMerged && pr.Number == prev.Number
+}
+
+func (b *branchPRs) lastRead(path string) (*PullRequest, bool) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	pr, read := b.last[path]
+	return pr, read
 }
 
 func (b *branchPRs) forget(path string) {

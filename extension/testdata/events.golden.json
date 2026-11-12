@@ -2,6 +2,17 @@
   {
     "data": {
       "id": "id",
+      "name": "name",
+      "projectId": "projectId",
+      "state": "state",
+      "exitCode": 1
+    },
+    "name": "service.status",
+    "permission": "services:read"
+  },
+  {
+    "data": {
+      "id": "id",
       "state": "state",
       "tool": "tool",
       "detail": "detail",

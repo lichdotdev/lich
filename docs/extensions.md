@@ -151,23 +151,63 @@ own" project or provider.
 | `sessions.list` | `sessions:read` | `list_sessions` | none | `[{label, name, project, kind, state, id, path, projectPath, tool, detail, reason, focused}]` |
 | `sessions.open` | `sessions:write` | `open_session` | `{project, worktree, provider, prompt}`, project required | `{id, projectId, project, label, name, kind, path, confined, task, taskError}` |
 | `sessions.send` | `sessions:write` | `send_to_session` | `{session, project, prompt, waitSeconds}` | `{ticket, target, status, answer}` |
+| `sessions.answer` | `sessions:write` | `wait_for_answer` with a ticket | `{ticket, waitSeconds}` | `{ticket, target, status, answer}` |
+| `sessions.ask` | `sessions:ask` | `ask_session` | `{session, project, question}` | `{id, project, label, answer}` |
+| `services.list` | `services:read` | `list_services` | `{project}`, required | `[{id, name, command, startWithLich, state, exitCode, startedAt, stoppedAt}]` |
+| `services.start` | `services:write` | `start_service` | `{project, service}` | the service, as listed |
+| `services.stop` | `services:write` | `stop_service` | `{project, service}` | the service, as listed |
+| `services.restart` | `services:write` | `restart_service` | `{project, service}` | the service, as listed |
+| `services.output` | `services:read` | `read_service_output` | `{project, service}` | `{output}` |
+| `git.status` | `git:read` | a card's git line | `{path}` | `{branch, head, files, added, deleted, base, behind, conflicts}` |
+| `git.pullRequest` | `git:read` | a card's pull request badge | `{path}` | `{pullRequest: {number, url, title, head, base}}`, `null` when none is open |
+| `notify` | `notify` | lich's desktop notification | `{title, body}` | `{}` |
+| `window.showCode` | `window` | `show_code` | `{session, path, line, endLine, comment}` | `{session, path, line, endLine}` |
+| `window.openURL` | `window` | `browser_open` | `{session, url}` | `{url, title}` |
 | `events.subscribe` | each event's own | | `{names}` | `{}` |
 
 `sessions.send` holds for a quick answer for `waitSeconds`, at most 90, which is also what 0 means; a session still
 working then comes back `pending` with a ticket. `sessions.open` with a prompt hands it over as `open_session`
 does, holding 20 seconds, and reports a hand-over that failed in `taskError` beside the session, which is open
-either way.
+either way. `sessions.answer` waits on such a ticket the same way, up to 90 seconds, and comes back `pending` again
+while the session still works. It takes only a ticket this extension's own `sessions.send` or `sessions.open`
+returned `pending`; any other ticket is refused, and one is spent once its outcome is anything but `pending`.
 
-One event so far: `session.status`, a session's new state (`{id, state, tool, detail, reason}`), with the
-permission `events:session`. Subscribing checks every name first and starts none when one is refused. A restarted
-extension starts with no subscriptions.
+`sessions.ask` puts a side question to a running Claude Code session, which answers from its own conversation
+without stopping its turn, as `ask_session` does: other providers are refused, and so is a session without the
+lich-plugin mod. It waits up to 90 seconds and has no ticket: a session that has not answered by then is an error,
+and its later answer is dropped. Ask for a brief answer.
+
+A service is named by its project and its name, matched ignoring case; an action answers with the service as it
+is right after, so `services.stop` may still read `stopping`. `services.output` is one read of the console, terminal
+escapes included: what a running service has printed so far, or what a stopped one printed in its last run.
+
+`git.status` and `git.pullRequest` name a checkout by its directory and read what a card shows of it: the branch,
+uncommitted changes and standing against the base branch, and the open pull request of the branch. The pull request
+comes from lich's own watch when it has read that checkout, and from one `gh` read otherwise.
+
+`notify` raises a desktop notification the way lich raises its own, title over body, each cut at 120 characters,
+at most 3 a minute per extension; one past that is refused. `window.showCode` opens a file of a session's checkout
+in the window's dock, at a line or a range, as `show_code` does. `window.openURL` loads an http or https page in a
+session's browser, the tab beside that session, as `browser_open` does. Both name the session by its id, and both
+are refused when no lich window is open.
+
+Two events: `session.status`, a session's new state (`{id, state, tool, detail, reason}`), with the permission
+`events:session`, and `service.status`, a service that started, stopped or failed (`{id, name, projectId, state,
+exitCode}`), with `services:read`. Subscribing checks every name first and starts none when one is refused. A
+restarted extension starts with no subscriptions.
 
 | Permission | Allows |
 | --- | --- |
 | `projects:read` | `projects.list`, `worktrees.list` |
 | `sessions:read` | `sessions.list` |
-| `sessions:write` | `sessions.open`, `sessions.send` |
+| `sessions:write` | `sessions.open`, `sessions.send`, `sessions.answer` |
+| `sessions:ask` | `sessions.ask` |
 | `events:session` | subscribing to `session.status` |
+| `services:read` | `services.list`, `services.output`, subscribing to `service.status` |
+| `services:write` | `services.start`, `services.stop`, `services.restart` |
+| `git:read` | `git.status`, `git.pullRequest` |
+| `notify` | `notify` |
+| `window` | `window.showCode`, `window.openURL` |
 
 lich runs at most 8 calls of one extension at once, refusing the ninth, and gives each 2 minutes.
 
@@ -212,8 +252,18 @@ for msg := range conn.Messages() {
 }
 ```
 
-The manifest of this one lists `sessions:read`, `sessions:write` and `events:session`. `extension.Call(ctx, conn,
-method, params)` calls any declared method; the helpers on `Conn` are that call for each one.
+The manifest of this one lists `sessions:read`, `sessions:write` and `events:session`. Asking a session and printing its
+answer needs only `sessions:ask`:
+
+```go
+answer, err := conn.Ask(ctx, extension.AskParams{Session: "api-3", Question: "Are the tests green? One line."})
+if err != nil {
+	log.Fatal(err)
+}
+fmt.Println(answer.Label, "says:", answer.Answer)
+```
+
+`extension.Call(ctx, conn, method, params)` calls any declared method; the helpers on `Conn` are that call for each one.
 
 ## Keeping data
 

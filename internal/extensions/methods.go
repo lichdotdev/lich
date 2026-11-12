@@ -2,13 +2,12 @@ package extensions
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"log/slog"
 	"slices"
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/extension"
+	"github.com/lichdotdev/lich/internal/relay"
 )
 
 // Every method calls its service with no From: an extension is no session,
@@ -58,7 +57,7 @@ func (s *Service) listWorktrees(ctx context.Context, _ *installed, params extens
 // openSession reports a first task that did not arrive beside the session
 // rather than as a failed call, as open_session does: the session is open
 // either way, and a failed call would read as if it were not.
-func (s *Service) openSession(ctx context.Context, _ *installed, params extension.OpenSessionParams) (extension.OpenedSession, error) {
+func (s *Service) openSession(ctx context.Context, x *installed, params extension.OpenSessionParams) (extension.OpenedSession, error) {
 	opened, err := s.lich.Open(ctx, api.OpenSessionOptions{
 		Project: params.Project, Kind: params.Provider, Worktree: params.Worktree,
 	})
@@ -79,23 +78,71 @@ func (s *Service) openSession(ctx context.Context, _ *installed, params extensio
 		out.TaskError = err.Error()
 		return out, nil
 	}
-	task := sendResult(result)
+	task := s.held(x, result)
 	out.Task = &task
 	return out, nil
 }
 
-func (s *Service) sendToSession(ctx context.Context, _ *installed, params extension.SendParams) (extension.SendResult, error) {
-	wait := params.WaitSeconds
-	if wait <= 0 || wait > maxSendWaitSeconds {
-		wait = maxSendWaitSeconds
-	}
+func (s *Service) sendToSession(ctx context.Context, x *installed, params extension.SendParams) (extension.SendResult, error) {
 	result, err := s.lich.Send(ctx, api.SendOptions{
-		Target: params.Session, Project: params.Project, Prompt: params.Prompt, WaitSeconds: wait,
+		Target: params.Session, Project: params.Project, Prompt: params.Prompt, WaitSeconds: clampWait(params.WaitSeconds),
 	})
 	if err != nil {
 		return extension.SendResult{}, err
 	}
+	return s.held(x, result), nil
+}
+
+// clampWait is send_to_session's and wait_for_answer's cap on holding the
+// line, and what they hold for when none is asked.
+func clampWait(seconds int) int {
+	if seconds <= 0 || seconds > maxSendWaitSeconds {
+		return maxSendWaitSeconds
+	}
+	return seconds
+}
+
+// held records a pending result's ticket as x's: the relay redeems any ticket
+// for anyone, so the one owner check is here.
+func (s *Service) held(x *installed, r api.SendResult) extension.SendResult {
+	if r.Status == relay.StatusPending {
+		s.mu.Lock()
+		if x.tickets == nil {
+			x.tickets = map[string]bool{}
+		}
+		x.tickets[r.Ticket] = true
+		s.mu.Unlock()
+	}
+	return sendResult(r)
+}
+
+// collectAnswer waits on one of x's tickets, which it holds until an outcome
+// other than pending comes back.
+func (s *Service) collectAnswer(ctx context.Context, x *installed, params extension.AnswerParams) (extension.SendResult, error) {
+	s.mu.Lock()
+	owned := x.tickets[params.Ticket]
+	s.mu.Unlock()
+	if !owned {
+		return extension.SendResult{}, fmt.Errorf("ticket %q is not one this extension's sessions.send or sessions.open returned pending", params.Ticket)
+	}
+	result, err := s.lich.Wait(ctx, api.WaitOptions{Ticket: params.Ticket, WaitSeconds: clampWait(params.WaitSeconds)})
+	if err != nil {
+		return extension.SendResult{}, err
+	}
+	if result.Status != relay.StatusPending {
+		s.mu.Lock()
+		delete(x.tickets, params.Ticket)
+		s.mu.Unlock()
+	}
 	return sendResult(result), nil
+}
+
+func (s *Service) askSession(ctx context.Context, _ *installed, params extension.AskParams) (extension.AskResult, error) {
+	answer, err := s.lich.Ask(ctx, api.AskSessionOptions{Target: params.Session, Project: params.Project, Question: params.Question})
+	if err != nil {
+		return extension.AskResult{}, err
+	}
+	return extension.AskResult{ID: answer.ID, Project: answer.Project, Label: answer.Label, Answer: answer.Answer}, nil
 }
 
 func sendResult(r api.SendResult) extension.SendResult {
@@ -128,26 +175,18 @@ func (s *Service) subscribe(_ context.Context, x *installed, params extension.Su
 // Observe hands every app event to the extensions subscribed to it. It runs
 // on the emitter's goroutine, so it only queues.
 func (s *Service) Observe(name string, data any) {
-	if name != api.SessionStatusEvent.Name {
-		return
-	}
-	status, ok := data.(api.SessionStatus)
-	if !ok {
-		return
-	}
-	line, err := json.Marshal(extension.SessionStatus.New(extension.SessionStatusData{
-		ID: status.ID, State: status.State, Tool: status.Tool, Detail: status.Detail, Reason: status.Reason,
-	}))
-	if err != nil {
-		slog.Warn("extensions: encode an event", "event", name, "err", err)
-		return
-	}
-	line = append(line, '\n')
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	for _, x := range s.all {
-		if x.subscribed[extension.SessionStatus.Name] {
-			s.enqueue(x, line)
+	switch name {
+	case api.SessionStatusEvent.Name:
+		if status, ok := data.(api.SessionStatus); ok {
+			s.broadcast(extension.SessionStatus.Name, extension.SessionStatus.New(extension.SessionStatusData{
+				ID: status.ID, State: status.State, Tool: status.Tool, Detail: status.Detail, Reason: status.Reason,
+			}))
+		}
+	case api.ServicesEvent.Name:
+		if list, ok := data.([]api.Service); ok {
+			s.observeServices(list)
 		}
 	}
 }

@@ -654,7 +654,13 @@
       "projectsRead": "開いているプロジェクトとその worktree を見る",
       "sessionsRead": "セッションとそれぞれの作業内容を見る",
       "sessionsWrite": "セッションを開き、プロンプトを入力する",
-      "sessionEvents": "各セッションの状態の変化を追う"
+      "sessionEvents": "各セッションの状態の変化を追う",
+      "sessionsAsk": "Claude Code セッションに横から質問し、その答えを読む",
+      "servicesRead": "プロジェクトのサービスとその出力を見る",
+      "servicesWrite": "プロジェクトのサービスを起動・停止・再起動する",
+      "gitRead": "各チェックアウトのブランチ、変更、pull request を見る",
+      "notify": "デスクトップ通知を表示する",
+      "window": "ドックにファイルを表示し、セッションのブラウザーでページを開く"
     },
     "removeTitle": "{name} を削除しますか？",
     "removeDescription": "lich は停止してプログラムを削除します。保存したデータは残るため、再インストールすると続きから使えます。",

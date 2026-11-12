@@ -42,7 +42,7 @@ func installWarning(gtx C, th *ui.Theme, permissions []string) D {
 }
 
 // permissionList is the uppercase label over one line per permission, the
-// one that acts on sessions in the wait tone.
+// ones that act in the wait tone.
 func permissionList(gtx C, th *ui.Theme, permissions []string) D {
 	label := strings.ToUpper(i18n.T("settings.extensionsSettings.permissionsLabel"))
 	children := []layout.FlexChild{
@@ -55,7 +55,8 @@ func permissionList(gtx C, th *ui.Theme, permissions []string) D {
 }
 
 func permissionTone(th *ui.Theme, p string) color.NRGBA {
-	if extension.Permission(p) == extension.PermissionSessionsWrite {
+	switch extension.Permission(p) {
+	case extension.PermissionSessionsWrite, extension.PermissionSessionsAsk, extension.PermissionServicesWrite, extension.PermissionWindow:
 		return th.ToneWait
 	}
 	return th.Foreground
@@ -73,6 +74,18 @@ func permissionText(p string) string {
 		return i18n.T("settings.extensionsSettings.permission.sessionsWrite")
 	case extension.PermissionSessionEvents:
 		return i18n.T("settings.extensionsSettings.permission.sessionEvents")
+	case extension.PermissionSessionsAsk:
+		return i18n.T("settings.extensionsSettings.permission.sessionsAsk")
+	case extension.PermissionServicesRead:
+		return i18n.T("settings.extensionsSettings.permission.servicesRead")
+	case extension.PermissionServicesWrite:
+		return i18n.T("settings.extensionsSettings.permission.servicesWrite")
+	case extension.PermissionGitRead:
+		return i18n.T("settings.extensionsSettings.permission.gitRead")
+	case extension.PermissionNotify:
+		return i18n.T("settings.extensionsSettings.permission.notify")
+	case extension.PermissionWindow:
+		return i18n.T("settings.extensionsSettings.permission.window")
 	}
 	return p
 }
