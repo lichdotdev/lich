@@ -3,6 +3,7 @@
 package extrender
 
 import (
+	"image"
 	"strconv"
 
 	"gioui.org/io/event"
@@ -52,6 +53,9 @@ type Renderer struct {
 	// not know where in the surface it sits.
 	dialogs []layout.Widget
 	drag    dragPointer
+	// scrollRoom is, on each axis, how far the viewport of the scroll being
+	// drawn runs on from the start of the child being drawn; 0 outside one.
+	scrollRoom image.Point
 }
 
 // New returns a renderer that hands every event to send. root is the window's

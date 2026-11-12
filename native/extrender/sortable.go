@@ -97,7 +97,7 @@ func drawSortableList(r *Renderer, gtx C, th *ui.Theme, n extension.Node, id str
 	}
 	takes := g.carry.Carrying() != "" && !slices.Contains(keys, g.carry.Carrying())
 	if t, ok := g.landing(); takes && ok && t.list == id {
-		lightRoom(gtx, th, dropRoom(gtx, p, d.Size))
+		lightRoom(gtx, th, r.dropRoom(gtx, p, d.Size))
 	}
 	drawn.Add(gtx.Ops)
 	tops := items.tops(gtx.Dp(list.Gap), p.Horizontal)
@@ -110,9 +110,17 @@ func drawSortableList(r *Renderer, gtx C, th *ui.Theme, n extension.Node, id str
 }
 
 // dropRoom is the room a list takes a drop over: its breadth, by all the
-// length it is given.
-func dropRoom(gtx C, p extension.SortableListProps, size image.Point) image.Point {
-	return along(length(gtx.Constraints.Max, p.Horizontal), p.Horizontal).Add(along(length(size, !p.Horizontal), !p.Horizontal))
+// length it is given. A scroll gives its children no end, so there the room
+// ends with the scroll's viewport.
+// shortcut: the room is measured from the top of the scroll's child, so a
+// list set lower inside that child overruns the viewport by as much; give
+// the list its own offset when a board needs a header inside the scroll.
+func (r *Renderer) dropRoom(gtx C, p extension.SortableListProps, size image.Point) image.Point {
+	end := length(gtx.Constraints.Max, p.Horizontal)
+	if room := length(r.scrollRoom, p.Horizontal); room > 0 {
+		end = min(end, room)
+	}
+	return along(end, p.Horizontal).Add(along(length(size, !p.Horizontal), !p.Horizontal))
 }
 
 // dropTrayAlpha is the sidebar's folder tray tint (folderTrayAlpha): a card
@@ -179,7 +187,7 @@ func (r *Renderer) drawInAir(gtx C, slot image.Point, call op.CallOp) {
 // and the last one on to the end of the room the list is given, so an empty
 // list or the space under the last item still takes a drop.
 func (r *Renderer) layTargets(gtx C, g *groupState, id string, p extension.SortableListProps, it listItems, tops []int, size image.Point) {
-	room := dropRoom(gtx, p, size)
+	room := r.dropRoom(gtx, p, size)
 	end, cross := length(room, p.Horizontal), length(room, !p.Horizontal)
 	from := 0
 	for i := 0; i <= len(tops); i++ {
