@@ -140,6 +140,10 @@ func drawTextarea(r *Renderer, gtx C, th *ui.Theme, n extension.Node, id string)
 	if p.MaxHeight > 0 {
 		ta.MaxHeight, ta.Scrollbar = unit.Dp(p.MaxHeight), &s.bar
 	}
+	if p.Grow {
+		// A growing child's minimum is its share of the box (growOf).
+		ta.MinHeight, ta.Scrollbar = gtx.Metric.PxToDp(gtx.Constraints.Min.Y), &s.bar
+	}
 	ta.Width, ta.Disabled, ta.Invalid = unit.Dp(p.Width), p.Disabled, p.Invalid
 	return ta.Layout(gtx)
 }

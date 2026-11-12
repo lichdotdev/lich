@@ -53,8 +53,9 @@ type FocusData struct {
 
 // SurfaceData names a surface the person opened or left. Answer
 // surface.opened with a render: lich keeps only what reaches an open window,
-// so a render sent before the surface opened may never be drawn. Language is
-// the tag of the interface's language, on surface.opened only.
+// so a render sent before the surface opened may never be drawn. A process
+// that starts while its surface is on screen is sent surface.opened again.
+// Language is the tag of the interface's language, on surface.opened only.
 type SurfaceData struct {
 	Surface  string `json:"surface"`
 	Language string `json:"language,omitempty"`

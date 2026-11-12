@@ -93,7 +93,7 @@ func growOf(c extension.Node) float32 {
 	if c.Type == extension.Box.Name {
 		return float32(props[extension.BoxProps](c).Grow)
 	}
-	if fillers[c.Type] {
+	if fillers[c.Type] || c.Type == extension.Textarea.Name && props[extension.TextareaProps](c).Grow {
 		return 1
 	}
 	return 0

@@ -1960,6 +1960,7 @@
       "value": "value",
       "placeholder": "placeholder",
       "resizable": true,
+      "grow": true,
       "maxHeight": 1.5,
       "width": 1.5,
       "disabled": true,

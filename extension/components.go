@@ -221,14 +221,17 @@ type InputGroupProps struct {
 }
 
 type TextareaProps struct {
-	Value       string  `json:"value,omitempty"`
-	Placeholder string  `json:"placeholder,omitempty"`
-	Resizable   bool    `json:"resizable,omitempty"`
-	MaxHeight   float64 `json:"maxHeight,omitempty"`
-	Width       float64 `json:"width,omitempty"`
-	Disabled    bool    `json:"disabled,omitempty"`
-	Invalid     bool    `json:"invalid,omitempty"`
-	OnChange    Handler `json:"onChange,omitempty"`
+	Value       string `json:"value,omitempty"`
+	Placeholder string `json:"placeholder,omitempty"`
+	Resizable   bool   `json:"resizable,omitempty"`
+	// Grow takes the room its box leaves, as a scroll does, up to MaxHeight;
+	// text past it scrolls.
+	Grow      bool    `json:"grow,omitempty"`
+	MaxHeight float64 `json:"maxHeight,omitempty"`
+	Width     float64 `json:"width,omitempty"`
+	Disabled  bool    `json:"disabled,omitempty"`
+	Invalid   bool    `json:"invalid,omitempty"`
+	OnChange  Handler `json:"onChange,omitempty"`
 }
 
 type InlineEditProps struct {

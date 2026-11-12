@@ -63,7 +63,9 @@ type extensionScreen struct {
 
 	open  bool
 	shown extensionKey
-	trees map[extensionKey]*extrender.Renderer
+	// onScreen is shown while open, for the events goroutine.
+	onScreen atomic.Pointer[extensionKey]
+	trees    map[extensionKey]*extrender.Renderer
 	// code is the palette and font the window's own code views draw with.
 	code extrender.Code
 
@@ -117,8 +119,22 @@ func (s *extensionScreen) show(k extensionKey) {
 	}
 	s.hide()
 	s.open, s.shown = true, k
+	s.onScreen.Store(&k)
 	s.focus.Store(nil)
+	s.sendOpened(k)
+}
+
+func (s *extensionScreen) sendOpened(k extensionKey) {
 	s.send(k.ext, extension.SurfaceOpened.New(extension.SurfaceData{Surface: k.surface, Language: string(i18n.Current())}))
+}
+
+// started tells extension id, which has just started, that its surface is on
+// screen: the new process never saw the surface.opened its predecessor got.
+// It runs on the events goroutine.
+func (s *extensionScreen) started(id string) {
+	if k := s.onScreen.Load(); k != nil && k.ext == id {
+		s.sendOpened(*k)
+	}
 }
 
 func (s *extensionScreen) hide() {
@@ -126,6 +142,7 @@ func (s *extensionScreen) hide() {
 		return
 	}
 	s.open = false
+	s.onScreen.Store(nil)
 	s.send(s.shown.ext, extension.SurfaceClosed.New(extension.SurfaceData{Surface: s.shown.surface}))
 }
 
@@ -187,6 +204,7 @@ func (s *extensionScreen) layout(gtx C, th *ui.Theme, typing bool) extensionActi
 	if !ok {
 		// Removed: its process is gone, so there is no one to tell the surface closed.
 		s.open = false
+		s.onScreen.Store(nil)
 		delete(s.trees, s.shown)
 		return extensionAction{}
 	}

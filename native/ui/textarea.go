@@ -33,6 +33,9 @@ type TextareaStyle struct {
 	// MaxHeight is max-h-*, the frame's ceiling; 0 leaves the constraint as
 	// the only one, which a scrolling list never sets.
 	MaxHeight unit.Dp
+	// MinHeight is min-h-*, the frame's floor when above min-h-16; the
+	// ceiling wins over it.
+	MinHeight unit.Dp
 	// Scrollbar is the bar shown while the text overflows, draggable as a
 	// list's; nil scrolls with the wheel and the caret alone.
 	Scrollbar   *widget.Scrollbar
@@ -60,7 +63,7 @@ func (s TextareaStyle) Layout(gtx C) D {
 	}
 	field := inputText{theme: s.theme, editor: s.Editor, placeholder: s.Placeholder, size: TextSM,
 		font: font.Font{Typeface: s.theme.Sans}, padLeft: inputPadX, padRight: inputPadX, padY: textareaPadY,
-		minHeight: textareaMinHeight}
+		minHeight: max(textareaMinHeight, min(s.MinHeight, gtx.Metric.PxToDp(gtx.Constraints.Max.Y)))}
 	r := s.Resize
 	if r != nil {
 		floor := max(gtx.Dp(textareaMinHeight), gtx.Constraints.Min.Y)
