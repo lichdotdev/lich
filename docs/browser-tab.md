@@ -251,8 +251,9 @@ DevTools.
   tab is refused (`agentTabs`, `Service.TabAct`). Its URL, which reaches the
   whole browser, is in no state the window or the agent receives.
 - What DevTools opens in a new window (a Learn more link, a request opened in
-  a new tab) joins the tabs as a page, after the page it inspects, in front, as
-  a link the person followed there.
+  a new tab) joins the tabs as a page, after the page it inspects, behind:
+  DevTools stays on the pane and the agent on its page. The agent lists the new
+  tab like any other.
 - While a page is stopped in DevTools' debugger, its DevTools tab carries a
   pause glyph. Lich hears the pause on its own session of the page: it enables
   the debugger there with breakpoints off, only while DevTools is open, so it

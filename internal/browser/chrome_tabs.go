@@ -54,14 +54,16 @@ func (p *chromePage) followTabs() {
 		}
 		// Both the created and the info-changed event can name the tab.
 		if _, taken := p.listen.taken.LoadOrStore(info.TargetID, true); !taken {
-			go p.bringIn(info.TargetID, info.URL, opener)
+			go p.bringIn(info.TargetID, info.URL, opener, info.OpenerID)
 		}
 	})
 }
 
 // bringIn attaches to the tab id opener opened, and puts it in front when
-// opener was.
-func (p *chromePage) bringIn(id target.ID, url string, opener *tab) {
+// opener was. One opener's DevTools opened (openedBy is not opener) stays
+// behind: in front, it would take the pane from DevTools and every agent tool
+// from the page the agent was on.
+func (p *chromePage) bringIn(id target.ID, url string, opener *tab, openedBy target.ID) {
 	if _, err := allowURL(url); err != nil {
 		slog.Warn("browser: a new tab's URL is not one the page may load", "url", url, "err", err)
 		p.closeTarget(id)
@@ -78,7 +80,7 @@ func (p *chromePage) bringIn(id target.ID, url string, opener *tab) {
 		return
 	}
 	p.tabs.add(t)
-	if p.tabs.frontTab() != opener {
+	if p.tabs.frontTab() != opener || openedBy != opener.id {
 		p.tabsChanged()
 		return
 	}

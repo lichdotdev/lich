@@ -60,18 +60,37 @@ func (p *chromePage) openDevTools(ctx context.Context, t *tab) error {
 	front := fmt.Sprintf("http://127.0.0.1:%[1]s/devtools/inspector.html?ws=127.0.0.1:%[1]s/devtools/page/%[2]s", port, t.id)
 	err = runOn(t.ctx, ctx, watchPauses)
 	if err == nil {
-		err = runOn(d.ctx, ctx, chromedp.ActionFunc(func(ctx context.Context) error {
-			_, _, errorText, _, err := page.Navigate(front).Do(ctx)
-			if err == nil && errorText != "" {
-				err = fmt.Errorf("DevTools load error %s", errorText)
-			}
-			return err
-		}))
+		err = runOn(d.ctx, ctx, loadDevTools(front))
 	}
 	if err != nil {
 		p.closeDevTools(t)
 	}
 	return err
+}
+
+// devtoolsLoads is how many times the front-end is loaded before giving up. In
+// a browser launched a moment before, its first load sat 4 s on about:blank and
+// then aborted in 5 of 15 runs; the load after it came in under a second
+// (Helium 157, measured 2026-11-12).
+const devtoolsLoads = 3
+
+// loadDevTools navigates to the front-end at url, again when a load aborts.
+func loadDevTools(url string) chromedp.Action {
+	return chromedp.ActionFunc(func(ctx context.Context) error {
+		var err error
+		for range devtoolsLoads {
+			var errorText string
+			_, _, errorText, _, err = page.Navigate(url).Do(ctx)
+			if err != nil || errorText == "" {
+				return err
+			}
+			err = fmt.Errorf("DevTools load error %s", errorText)
+			if errorText != abortedText {
+				return err
+			}
+		}
+		return err
+	})
 }
 
 // newDevTools is a blank target in a window of its own, set to load the

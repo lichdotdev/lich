@@ -202,7 +202,7 @@ func TestChromeClosingAPageClosesItsDevTools(t *testing.T) {
 	}
 }
 
-func TestChromeAWindowDevToolsOpensComesInAsATab(t *testing.T) {
+func TestChromeAWindowDevToolsOpensComesInBehind(t *testing.T) {
 	s, out, url := devtoolsService(t, "/")
 	if err := s.DevTools("s"); err != nil {
 		t.Fatal(err)
@@ -213,15 +213,15 @@ func TestChromeAWindowDevToolsOpensComesInAsATab(t *testing.T) {
 		t.Fatal(err)
 	}
 	pane := waitPane(t, out, func(tabs []api.BrowserTab) bool { return len(tabs) == 3 })
-	if !pane[1].DevTools || !strings.HasSuffix(pane[2].URL, "/learn") || !pane[2].Front {
-		t.Fatalf("window's tabs = %+v, want the window as a tab in front, past the DevTools", pane)
+	if !pane[1].DevTools || !pane[1].Front || !strings.HasSuffix(pane[2].URL, "/learn") || pane[2].Front {
+		t.Fatalf("window's tabs = %+v, want the window as a tab behind, past the DevTools still shown", pane)
 	}
 	agent, err := s.Tabs("s")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(agent) != 2 || !agent[1].Front {
-		t.Fatalf("agent's tabs = %+v, want the page and the new tab, in front", agent)
+	if len(agent) != 2 || !agent[0].Front || agent[1].Front {
+		t.Fatalf("agent's tabs = %+v, want the page still in front, the new tab behind", agent)
 	}
 }
 
