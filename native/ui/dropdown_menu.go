@@ -5,16 +5,18 @@ import (
 
 	"gioui.org/io/pointer"
 	"gioui.org/layout"
+	"gioui.org/unit"
 )
 
 // dropdownGeometry transcribes shadcn's dropdown menu: min-w-32 content below the
 // trigger (sideOffset 4), items px-2.5 py-2, submenus min-w-[6rem] to the
-// right (alignOffset -3).
+// right (alignOffset -3). A submenu stands menuSubGap off its parent, where
+// shadcn lays it over the parent's padding.
 var dropdownGeometry = menuGeometry{
 	minWidth: Space(32), subMinWidth: Space(24),
 	itemPadX: Space(2.5), itemPadY: Space(2),
 	root: popupPlace{side: SideBottom, align: alignStart, sideOffset: 4},
-	sub:  popupPlace{side: SideRight, align: alignStart, alignOffset: -3},
+	sub:  popupPlace{side: SideRight, align: alignStart, sideOffset: menuSubGap, alignOffset: -3},
 }
 
 // DropdownMenuStyle draws a shadcn DropdownMenu: a trigger that opens Entries
@@ -23,7 +25,9 @@ type DropdownMenuStyle struct {
 	Root    *Root
 	State   *MenuState
 	Entries []MenuEntry
-	theme   *Theme
+	// MinWidth widens the panel past min-w-32, for a menu of short labels.
+	MinWidth unit.Dp
+	theme    *Theme
 }
 
 func (th *Theme) DropdownMenu(root *Root, state *MenuState, entries []MenuEntry) DropdownMenuStyle {
@@ -40,6 +44,8 @@ func (d DropdownMenuStyle) Layout(gtx C, trigger layout.Widget) D {
 		origin := d.Root.origin(at)
 		s.menuOpen(image.Rectangle{Min: origin, Max: origin.Add(dims.Size)}, origin)
 	}
-	menuCore{th: d.theme, root: d.Root, s: s, entries: d.Entries, geo: &dropdownGeometry}.layout(gtx)
+	geo := dropdownGeometry
+	geo.minWidth = max(geo.minWidth, d.MinWidth)
+	menuCore{th: d.theme, root: d.Root, s: s, entries: d.Entries, geo: &geo}.layout(gtx)
 	return dims
 }

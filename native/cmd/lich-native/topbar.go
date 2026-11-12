@@ -30,6 +30,9 @@ var (
 	// node sits in, in both shapes, so it never moves.
 	brandPadLeft = (railWidth - brandIcon) / 2
 	barGap       = ui.Space(1)
+	// mainMenuMinWidth is the context menu's min-w-44: two short labels in
+	// the dropdown's min-w-32 read cramped.
+	mainMenuMinWidth = ui.Space(44)
 )
 
 var (
@@ -322,7 +325,11 @@ func (t *topbar) menuButton(gtx C, th *ui.Theme, settingsOpen bool, guides []gui
 	button := func(gtx C) D {
 		return tip.Layout(gtx, th.BarIconButton(&t.menuOpen, icMainMenu, settingsOpen || t.menu.Opened()).Layout)
 	}
-	return t.tour.Anchor(gtx, tourMenu, func(gtx C) D { return th.DropdownMenu(t.root, &t.menu, entries).Layout(gtx, button) })
+	return t.tour.Anchor(gtx, tourMenu, func(gtx C) D {
+		menu := th.DropdownMenu(t.root, &t.menu, entries)
+		menu.MinWidth = mainMenuMinWidth
+		return menu.Layout(gtx, button)
+	})
 }
 
 // guideEntries is the Guides submenu: a guide that cannot run now is

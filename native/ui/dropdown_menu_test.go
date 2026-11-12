@@ -221,3 +221,28 @@ func TestMenuSpotGetsTheRowAtItsSize(t *testing.T) {
 		t.Fatalf("spot got a row of %v, want about %dx%d", got, dropdownWidth-8, dropdownRow)
 	}
 }
+
+// At the window's right edge a submenu flips to the left of its parent and
+// sits beside it, mirroring where it opens on the right: never over it.
+func TestDropdownSubmenuFlippedLeftSitsBesideItsParent(t *testing.T) {
+	defer func(at image.Point) { triggerAt = at }(triggerAt)
+	triggerAt = image.Pt(400-triggerSize.X, 30)
+	entries := []MenuEntry{{Label: "Settings"}, {Kind: MenuSubTrigger, Label: "Guides", Sub: []MenuEntry{{Label: "The basics"}, {Label: "Worktrees", Disabled: true, Shortcut: "Open a git project first"}}}}
+	g, s, frame := openDropdown(t, entries)
+	parent := s.levels[0].rows[1]
+	g.hover(parent.Min.Add(image.Pt(20, 10)))
+	frame()
+	frame()
+	if len(s.levels) != 2 {
+		t.Fatalf("hovering the trigger row opened %d levels, want 2", len(s.levels))
+	}
+	parent = s.levels[0].rows[1]
+	// A panel's edge is p-1 outside its rows.
+	parentLeft, subRight := parent.Min.X-4, s.levels[1].rows[0].Max.X+4
+	if subRight != parentLeft-4 {
+		t.Errorf("submenu ends at x %d, want %d: 4px left of its parent's edge at %d", subRight, parentLeft-4, parentLeft)
+	}
+	if top := s.levels[1].rows[0].Min.Y; top != parent.Min.Y-3+4 {
+		t.Errorf("submenu's first row at y %d, want %d: alignOffset -3 from the trigger row plus p-1", top, parent.Min.Y-3+4)
+	}
+}
