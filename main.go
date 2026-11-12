@@ -575,7 +575,7 @@ func registerServices(db *store.Service, term *terminal.Service, svcs *services.
 		Wait: rl.Wait, Ask: spawner.Ask, Project: spawner.Project,
 		Services: svcs.List, StartService: svcs.Start, StopService: svcs.Stop, RestartService: svcs.Restart,
 		Output: svcs.Output, LiveOutput: svcs.LiveOutput,
-		Diff: proj.Diff, BaseStatus: proj.BaseStatus, PullRequest: proj.OpenPullRequest,
+		Diff: proj.Diff, BaseStatus: proj.BaseStatus, Upstream: proj.UpstreamCounts, PullRequest: proj.OpenPullRequest,
 		Notify: sys.Notify, ShowCode: proj.ShowCode, OpenURL: brows.OpenURL, Attached: hub.Attached,
 	})
 	hub.Observe(exts.Observe)

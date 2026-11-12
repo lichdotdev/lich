@@ -40,12 +40,35 @@ func (s *Service) BaseFreshness(_ context.Context, opts api.PathBranchOptions) (
 	if err != nil {
 		return f, err
 	}
-	ahead, behind, _ := strings.Cut(strings.TrimSpace(counts), "\t")
-	if f.Ahead, err = strconv.Atoi(ahead); err != nil {
-		return f, fmt.Errorf("git counted %q commits ahead: %w", ahead, err)
+	f.Ahead, f.Behind, err = parseCounts(counts)
+	return f, err
+}
+
+// UpstreamCounts counts HEAD against its upstream from the refs on disk, with
+// no fetch: the numbers `git status` prints. A detached HEAD or a branch with
+// no upstream answers zero.
+func (s *Service) UpstreamCounts(_ context.Context, opts api.PathOptions) (BaseFreshness, error) {
+	upstream, ok := gitQuiet(opts.Path, "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{upstream}")
+	if !ok {
+		return BaseFreshness{}, nil
 	}
-	if f.Behind, err = strconv.Atoi(behind); err != nil {
-		return f, fmt.Errorf("git counted %q commits behind: %w", behind, err)
+	f := BaseFreshness{Upstream: strings.TrimSpace(upstream)}
+	counts, err := runGit(opts.Path, "rev-list", "--left-right", "--count", "HEAD...@{upstream}")
+	if err != nil {
+		return f, err
 	}
-	return f, nil
+	f.Ahead, f.Behind, err = parseCounts(counts)
+	return f, err
+}
+
+// parseCounts reads `rev-list --left-right --count`: ahead, a tab, behind.
+func parseCounts(counts string) (ahead, behind int, err error) {
+	left, right, _ := strings.Cut(strings.TrimSpace(counts), "\t")
+	if ahead, err = strconv.Atoi(left); err != nil {
+		return 0, 0, fmt.Errorf("git counted %q commits ahead: %w", left, err)
+	}
+	if behind, err = strconv.Atoi(right); err != nil {
+		return 0, 0, fmt.Errorf("git counted %q commits behind: %w", right, err)
+	}
+	return ahead, behind, nil
 }
