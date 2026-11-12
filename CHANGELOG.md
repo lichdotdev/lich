@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- A session's browser opens Chrome's DevTools for its page as one more tab of the pane, from a new button in the toolbar: Elements, Console, Network and Sources, drawn in the page's place while the tab is selected. While the page is paused in the debugger, the tab shows a pause sign and the agent's browser tools say the page is paused instead of acting on it. The agent never sees or drives DevTools, so it works the same with every provider.
+
 ### Changed
 
 - Text in a session's browser is sharp once the page stops moving: a moment after the last change, the page is redrawn once without the blur and fringes the moving picture has around letters. A page showing a large photo keeps the moving picture, which already looks the same. Applies to every provider.

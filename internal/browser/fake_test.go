@@ -279,13 +279,15 @@ func (p *fakePage) OnReload(onReload func(bool)) {
 
 func (p *fakePage) OnFileChooser(func(page.FileChooserOpenedMode) ([]string, error)) {}
 
-// NewTab, SelectTab and CloseTab record the tab action and fail with
-// tabErr.
+// NewTab, SelectTab, CloseTab and DevTools record the tab action and fail
+// with tabErr.
 func (p *fakePage) NewTab(context.Context) error { return p.tabAction("new", "") }
 
 func (p *fakePage) SelectTab(_ context.Context, id string) error { return p.tabAction("select", id) }
 
 func (p *fakePage) CloseTab(_ context.Context, id string) error { return p.tabAction("close", id) }
+
+func (p *fakePage) DevTools(context.Context) error { return p.tabAction("devtools", "") }
 
 func (p *fakePage) tabAction(action, id string) error {
 	p.mu.Lock()

@@ -175,11 +175,12 @@ func (s *Service) Nav(owner, action, rawURL string) error {
 // steer runs one of the window's own calls on owner's page, bounded by wait.
 // Unlike an agent action, a call that fails leaves the browser running
 // unless its process is gone: the person is still looking at the page. A
-// call a dialog held off does nothing and is no error: the pane shows the
-// dialog, and answering it is what the person can do.
+// call a dialog or the debugger held off does nothing and is no error: the
+// pane shows the dialog, DevTools the pause, and answering or resuming is what
+// the person can do.
 func (s *Service) steer(owner string, wait time.Duration, fn func(Page, context.Context) error) (*session, error) {
 	sess, err := s.onPage(owner, wait, fn)
-	if errors.Is(err, errDialogOpen) {
+	if errors.Is(err, errDialogOpen) || errors.Is(err, errPaused) {
 		return sess, nil
 	}
 	return sess, err
@@ -354,7 +355,7 @@ func (s *Service) captureStill(sess *session) (tab, data string, ok bool) {
 	defer cancel()
 	tab, data, err := sess.page.Still(ctx)
 	if err != nil {
-		if sess.alive() && !errors.Is(err, errDialogOpen) && !errors.Is(err, errAnnotating) && !errors.Is(err, errTabChanged) {
+		if sess.alive() && !errors.Is(err, errDialogOpen) && !errors.Is(err, errPaused) && !errors.Is(err, errAnnotating) && !errors.Is(err, errTabChanged) {
 			slog.Warn("browser: capture a still page", "owner", sess.owner, "err", err)
 		}
 		return "", "", false
@@ -415,6 +416,6 @@ func (s *Service) agentPoint(owner string) *point {
 func (s *session) stateLocked(open bool) api.BrowserState {
 	return api.BrowserState{
 		Owner: s.owner, Open: open, Headed: s.headed, ByAgent: s.byAgent, URL: s.url, Title: s.title,
-		Dialog: s.dialog, Tabs: s.tabs, Idle: s.asked,
+		Dialog: s.dialog, Tabs: s.paneTabs, Idle: s.asked,
 	}
 }

@@ -66,7 +66,7 @@ func chromeLaunch(dir string, headed bool, scale float64) (Page, error) {
 		allocCancel()
 		return nil, err
 	}
-	p := &chromePage{ctx: ctx, cancel: cancel, allocCancel: allocCancel, scale: scale}
+	p := &chromePage{ctx: ctx, cancel: cancel, allocCancel: allocCancel, scale: scale, dir: dir}
 	p.tabs.start(&tab{ctx: ctx, id: chromedp.FromContext(ctx).Target.TargetID})
 	if err := p.allowDownloads(dir); err != nil {
 		slog.Warn("browser: downloads stay off", "err", err)
@@ -113,19 +113,23 @@ type chromePage struct {
 	cancel      context.CancelFunc
 	allocCancel context.CancelFunc
 	// scale is what the browser draws at, forced at its launch.
-	scale  float64
+	scale float64
+	// dir is the profile, where Chrome writes the port DevTools reaches it on.
+	dir    string
 	listen listeners
 	tabs   tabStack
 	// dl names the files the page downloads; nil when downloads are off.
 	dl *downloads
-	// gate is held while the page has a JavaScript dialog open.
-	gate dialogGate
+	// gate is held while the page has a JavaScript dialog open; pause while
+	// a tab is stopped in its DevTools debugger.
+	gate, pause dialogGate
 	// castMu guards castLast, the last screencast start or stop queued, which
 	// the next one waits for: they can run on past their caller
-	// (castPastDialog). casting says one is running.
+	// (castPastDialog). casting says one is running, on the target of castOn.
 	castMu   sync.Mutex
 	castLast chan struct{}
 	casting  bool
+	castOn   context.Context
 	// shot: an agent's screenshot ran since the frames were last laid out
 	// again after one (relayAfterShot).
 	shot atomic.Bool
@@ -193,19 +197,33 @@ func (p *chromePage) Close() error {
 
 // run is runFree for an action the page's script or input takes part in,
 // which waits on an open JavaScript dialog: it fails with errDialogOpen at
-// once while one is open, and as soon as one opens while it runs.
+// once while one is open, and as soon as one opens while it runs. A page
+// stopped in its debugger fails it with errPaused the same way: it still
+// answered a script, with the document as it stood, and took a click or a key
+// as done and lost it (Chromium 157, measured 2026-11-12).
 func (p *chromePage) run(wait context.Context, actions ...chromedp.Action) error {
+	return p.runPast(wait, p.pause.held(), actions...)
+}
+
+// runLayout is run for the page's layout, which a pause does not hold.
+func (p *chromePage) runLayout(wait context.Context, actions ...chromedp.Action) error {
+	return p.runPast(wait, nil, actions...)
+}
+
+func (p *chromePage) runPast(wait context.Context, paused <-chan struct{}, actions ...chromedp.Action) error {
 	held := p.gate.held()
 	select {
 	case <-held:
 		return errDialogOpen
+	case <-paused:
+		return errPaused
 	default:
 	}
 	ctx, cancel := withPageDeadline(p.tabs.frontTab().ctx, wait)
 	defer cancel()
 	done := make(chan error, 1)
 	go func() { done <- chromedp.Run(ctx, actions...) }()
-	return awaitAction(done, held)
+	return awaitAction(done, held, paused)
 }
 
 // dialogGrace is how long a call whose page just opened a dialog still waits
@@ -215,18 +233,21 @@ func (p *chromePage) run(wait context.Context, actions ...chromedp.Action) error
 const dialogGrace = 250 * time.Millisecond
 
 // awaitAction returns the call's result, or errDialogOpen when a dialog holds
-// it past dialogGrace.
-func awaitAction(done <-chan error, held <-chan struct{}) error {
+// it past dialogGrace, or errPaused when the debugger does.
+func awaitAction(done <-chan error, held, paused <-chan struct{}) error {
+	why := errDialogOpen
 	select {
 	case err := <-done:
 		return err
 	case <-held:
+	case <-paused:
+		why = errPaused
 	}
 	select {
 	case err := <-done:
 		return err
 	case <-time.After(dialogGrace):
-		return errDialogOpen
+		return why
 	}
 }
 
@@ -235,7 +256,12 @@ func awaitAction(done <-chan error, held <-chan struct{}) error {
 // chromedp.Run on that context is "invalid context" and the headed window is
 // then closed.
 func (p *chromePage) runFree(wait context.Context, actions ...chromedp.Action) error {
-	ctx, cancel := withPageDeadline(p.tabs.frontTab().ctx, wait)
+	return runOn(p.tabs.frontTab().ctx, wait, actions...)
+}
+
+// runOn is runFree on the target of the chromedp context target.
+func runOn(target, wait context.Context, actions ...chromedp.Action) error {
+	ctx, cancel := withPageDeadline(target, wait)
 	defer cancel()
 	return chromedp.Run(ctx, actions...)
 }

@@ -37,6 +37,7 @@ func Browser(d *rpc.Handler, s *browser.Service) {
 	rpc.Handle(d, api.BrowserText, s.TextInput)
 	rpc.Handle(d, api.BrowserNav, s.NavView)
 	rpc.Handle(d, api.BrowserTabNav, s.TabView)
+	rpc.Handle(d, api.BrowserDevTools, s.DevToolsView)
 	rpc.Handle(d, api.BrowserTabs, s.ListTabs)
 	rpc.Handle(d, api.BrowserTabAction, s.ActOnTab)
 	rpc.Handle(d, api.BrowserAnswer, s.Answer)

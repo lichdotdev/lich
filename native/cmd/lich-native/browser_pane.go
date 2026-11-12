@@ -55,6 +55,7 @@ const doubleClick = 400 * time.Millisecond
 // backend, kept across frames by session.
 type browserPaneUI struct {
 	back, forward, reload, window  ui.IconActionState
+	devtools                       ui.IconActionState
 	pageZoom                       browserZoomState
 	zoom, minimize, close          widget.Clickable
 	zoomTip, minimizeTip, closeTip ui.Tooltip
@@ -157,11 +158,18 @@ func (u *window) browserPaneAt(gtx C, v stageView, session string, r image.Recta
 	// the session's prompt in focus nearly always, and watches the page.
 	u.browserPage(page, p, session, frame, focused)
 	u.spot(page, tourBrowserPage, func(C) D { return D{Size: page.Constraints.Max} })
-	u.notesOverlay(page, p, session, st.URL)
-	u.notesTray(page, p, session)
+	// DevTools in the page's place: the notes and the agent's cursor are the
+	// page's.
+	_, inspecting := devtoolsOf(st.Tabs)
+	if !inspecting {
+		u.notesOverlay(page, p, session, st.URL)
+		u.notesTray(page, p, session)
+	}
 	u.dialogCardAt(page, p, session, head+bar)
 	off.Pop()
-	u.paintAgentCursor(gtx, p, session)
+	if !inspecting {
+		u.paintAgentCursor(gtx, p, session)
+	}
 	u.paneFocusTarget(gtx, pane)
 	area.Pop()
 	border, width := line, float32(gtx.Dp(1))
@@ -212,8 +220,9 @@ func (u *window) browserHeader(gtx C, p *browserPaneUI, session string, st api.B
 	})
 }
 
-// browserToolbar is back, forward, reload, the address, the zoom and Open in
-// window.
+// browserToolbar is back, forward, reload, the address, the zoom, the notes,
+// DevTools and Open in window. On DevTools, the notes are gone and the rest
+// acts on the page.
 func (u *window) browserToolbar(gtx C, p *browserPaneUI, session string, st api.BrowserState) {
 	th := u.theme
 	nav := func(action string) {
@@ -228,8 +237,15 @@ func (u *window) browserToolbar(gtx C, p *browserPaneUI, session string, st api.
 	if p.reload.Click.Clicked(gtx) {
 		nav("reload")
 	}
+	devtools, inspecting := devtoolsOf(st.Tabs)
 	if p.notes.pick.Click.Clicked(gtx) {
 		p.notes.setPicking(!p.notes.picking)
+	}
+	if inspecting && p.notes.picking {
+		p.notes.setPicking(false)
+	}
+	if p.devtools.Click.Clicked(gtx) {
+		u.openDevTools(session)
 	}
 	if p.window.Click.Clicked(gtx) {
 		u.sendBrowser(session, "show", func(ctx context.Context) error { return u.client.ShowBrowser(ctx, session) })
@@ -277,7 +293,13 @@ func (u *window) browserToolbar(gtx C, p *browserPaneUI, session string, st api.
 				return layout.Inset{Right: ui.Space(1.5)}.Layout(gtx, th.Text(ui.TextXS, i18n.T("layouts.browser.pickHint")).In(notePick).Layout)
 			}),
 			layout.Rigid(func(gtx C) D {
+				if inspecting {
+					return D{}
+				}
 				return u.spot(gtx, tourBrowserPick, th.IconAction(&u.root, &p.notes.pick, icBrowserPick, i18n.T("layouts.browser.pick"), p.notes.picking).Layout)
+			}),
+			layout.Rigid(func(gtx C) D {
+				return th.IconAction(&u.root, &p.devtools, icDevTools, i18n.T("layouts.browser.openDevTools"), devtools).Layout(gtx)
 			}),
 			layout.Rigid(func(gtx C) D {
 				return th.IconAction(&u.root, &p.window, icBrowserWindow, i18n.T("layouts.browser.openInWindow"), false).Layout(gtx)

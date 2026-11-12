@@ -3,6 +3,7 @@ package browser
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/lichdotdev/lich/api"
 )
@@ -12,7 +13,7 @@ import (
 func (s *Service) tabsSink(sess *session) func([]api.BrowserTab) {
 	return func(tabs []api.BrowserTab) {
 		s.mu.Lock()
-		sess.tabs = tabs
+		sess.tabs, sess.paneTabs = agentTabs(tabs), tabs
 		registered := s.byID[sess.id] == sess
 		s.mu.Unlock()
 		if registered {
@@ -34,17 +35,41 @@ func (s *Service) Tabs(id string) ([]api.BrowserTab, error) {
 
 // TabAct is the agent opening, selecting or closing a tab, which the pane
 // plays as its cursor on the header's tabs. A new tab with a URL then loads
-// it, as Navigate does.
+// it, as Navigate does. A DevTools tab is not one the agent can name, and
+// selecting the tab it drives leaves the pane on that tab's DevTools.
 func (s *Service) TabAct(opts api.BrowserTabOptions) error {
 	fn, err := tabStep(opts)
 	if err != nil {
 		return err
+	}
+	sess, err := s.live(opts.ID)
+	if err != nil {
+		return err
+	}
+	s.mu.Lock()
+	pane, agent := sess.paneTabs, sess.tabs
+	s.mu.Unlock()
+	if slices.ContainsFunc(pane, func(t api.BrowserTab) bool { return t.DevTools && t.ID == opts.Tab }) {
+		return errNoTab
+	}
+	if opts.Action == api.TabSelect && slices.ContainsFunc(agent, func(t api.BrowserTab) bool { return t.Front && t.ID == opts.Tab }) {
+		fn = func(Page, context.Context) error { return nil }
 	}
 	act := api.BrowserAgentAct{Action: "tab-" + opts.Action, Tab: opts.Tab}
 	if err := s.act(opts.ID, act, fn); err != nil || opts.Action != api.TabNew || opts.URL == "" {
 		return err
 	}
 	_, err = s.Navigate(opts.ID, opts.URL)
+	return err
+}
+
+// DevTools is the person opening DevTools for the front tab in the pane, or
+// selecting it.
+func (s *Service) DevTools(owner string) error {
+	if s.inWindow(owner) {
+		return errInWindow
+	}
+	_, err := s.steer(owner, pageWait, func(p Page, ctx context.Context) error { return p.DevTools(ctx) })
 	return err
 }
 

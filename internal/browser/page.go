@@ -149,6 +149,11 @@ type Page interface {
 	NewTab(ctx context.Context) error
 	SelectTab(ctx context.Context, id string) error
 	CloseTab(ctx context.Context, id string) error
+	// DevTools shows in the pane, in place of the front tab, that tab's
+	// DevTools, a tab of its own the agent never sees, opening it first when
+	// it has none. SelectTab and CloseTab take its id too; every agent call
+	// still acts on the page.
+	DevTools(ctx context.Context) error
 	// AnswerDialog answers the open JavaScript dialog: OK with text (a
 	// prompt's answer) when accept, Cancel otherwise. Every other call that
 	// runs the page's script or input fails with errDialogOpen while one is

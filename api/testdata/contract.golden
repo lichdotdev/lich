@@ -14,6 +14,7 @@ browser.Click(BrowserClickOptions) BrowserPageInfo
 browser.Close(SessionIDOptions) None
 browser.DefaultView(BrowserDefaultViewOptions) None
 browser.Detach(SessionIDOptions) None
+browser.DevTools(SessionIDOptions) None
 browser.ElementAt(BrowserPointOptions) BrowserElement
 browser.Eval(BrowserEvalOptions) string
 browser.Forward(SessionIDOptions) None
@@ -546,6 +547,8 @@ BrowserTab {
 	url string
 	title string
 	front,omitempty bool
+	devtools,omitempty bool
+	paused,omitempty bool
 }
 
 BrowserTextOptions {

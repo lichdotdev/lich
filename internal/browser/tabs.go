@@ -26,6 +26,20 @@ type tab struct {
 	// when this one closes; nil for one the person or the agent opened.
 	opener     *tab
 	url, title string
+	// devtools is the pane's DevTools for this tab, nil for none.
+	devtools *devtools
+}
+
+// devtools is Chrome's own DevTools front-end inspecting one tab, a target
+// lich creates in a headless window of its own: as a tab behind the page it
+// drew no frames (Chromium 157, measured 2026-11-12). It is never one of the
+// tabs the agent lists or drives. paused: the tab it inspects is stopped in
+// its debugger.
+type devtools struct {
+	ctx    context.Context
+	cancel context.CancelFunc
+	id     target.ID
+	paused bool
 }
 
 // tabStack is the page's tabs in the order the pane shows them. A tab one
@@ -36,6 +50,9 @@ type tabStack struct {
 	mu    sync.Mutex
 	open  []*tab
 	front *tab
+	// inspecting: the pane shows the front tab's DevTools in its place. The
+	// agent still drives the front tab.
+	inspecting bool
 	// view is the size the page was last laid out at, which a tab coming to
 	// the front is laid out at too.
 	view *Viewport
@@ -59,10 +76,95 @@ func (s *tabStack) frontTab() *tab {
 	return s.front
 }
 
+// setFront puts t in front, shown in the pane.
 func (s *tabStack) setFront(t *tab) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.front = t
+	s.front, s.inspecting = t, false
+}
+
+// inspect puts t in front with its DevTools shown in its place, unless t has
+// none or left the stack meanwhile.
+func (s *tabStack) inspect(t *tab) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if t.devtools != nil && slices.Contains(s.open, t) {
+		s.front, s.inspecting = t, true
+	}
+}
+
+// shown is what the pane draws: the front tab's DevTools while inspecting,
+// else nil for the front tab itself.
+func (s *tabStack) shown() *devtools {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.inspecting {
+		return s.front.devtools
+	}
+	return nil
+}
+
+// setDevTools gives t its DevTools, false when t has one already or left the
+// stack, in which case d is the caller's to close.
+func (s *tabStack) setDevTools(t *tab, d *devtools) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if t.devtools != nil || !slices.Contains(s.open, t) {
+		return false
+	}
+	t.devtools = d
+	return true
+}
+
+// dropDevTools takes t's DevTools away, and says whether the pane showed it;
+// nil when it had none.
+func (s *tabStack) dropDevTools(t *tab) (d *devtools, shown bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	d, t.devtools = t.devtools, nil
+	shown = d != nil && s.inspecting && s.front == t
+	if shown {
+		s.inspecting = false
+	}
+	return d, shown
+}
+
+// inspected is the tab whose DevTools target is id, nil for none.
+func (s *tabStack) inspected(id target.ID) *tab {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for _, t := range s.open {
+		if t.devtools != nil && t.devtools.id == id {
+			return t
+		}
+	}
+	return nil
+}
+
+// setPaused records whether t is stopped in its debugger, and says whether
+// that changed.
+func (s *tabStack) setPaused(t *tab, paused bool) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	d := t.devtools
+	if d == nil || d.paused == paused {
+		return false
+	}
+	d.paused = paused
+	return true
+}
+
+func (s *tabStack) anyPaused() bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return slices.ContainsFunc(s.open, func(t *tab) bool { return t.devtools != nil && t.devtools.paused })
+}
+
+// inspectedBy is t's DevTools, nil for none.
+func (s *tabStack) inspectedBy(t *tab) *devtools {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return t.devtools
 }
 
 // add puts t right after the tabs its opener opened before it, or last.
@@ -116,6 +218,7 @@ func (s *tabStack) remove(id target.ID) (t *tab, front bool) {
 	if s.front != t {
 		return t, false
 	}
+	s.inspecting = false
 	s.front = s.open[min(i, len(s.open)-1)]
 	if t.opener != nil {
 		s.front = t.opener
@@ -134,12 +237,35 @@ func (s *tabStack) setInfo(t *tab, url, title string) bool {
 	return true
 }
 
+// list is the tabs as the pane shows them, each DevTools tab right after the
+// tab it inspects and Front while the pane shows it. It carries no DevTools
+// URL: that one drives the whole browser.
 func (s *tabStack) list() []api.BrowserTab {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	out := make([]api.BrowserTab, len(s.open))
-	for i, t := range s.open {
-		out[i] = api.BrowserTab{ID: string(t.id), URL: t.url, Title: t.title, Front: t == s.front}
+	out := make([]api.BrowserTab, 0, len(s.open))
+	for _, t := range s.open {
+		front := t == s.front
+		out = append(out, api.BrowserTab{ID: string(t.id), URL: t.url, Title: t.title, Front: front && !s.inspecting})
+		if d := t.devtools; d != nil {
+			out = append(out, api.BrowserTab{ID: string(d.id), DevTools: true, Paused: d.paused, Front: front && s.inspecting})
+		}
+	}
+	return out
+}
+
+// agentTabs is the pane's tabs as the agent sees them: no DevTools tab, and
+// in front the tab the agent drives, which a DevTools tab in front inspects.
+func agentTabs(pane []api.BrowserTab) []api.BrowserTab {
+	out := make([]api.BrowserTab, 0, len(pane))
+	for _, t := range pane {
+		if !t.DevTools {
+			out = append(out, t)
+			continue
+		}
+		if t.Front && len(out) > 0 {
+			out[len(out)-1].Front = true
+		}
 	}
 	return out
 }
