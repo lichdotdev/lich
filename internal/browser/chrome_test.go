@@ -40,7 +40,7 @@ func TestAwaitActionKeepsAResultThatLandsJustAfterADialogOpens(t *testing.T) {
 		time.Sleep(20 * time.Millisecond)
 		done <- nil
 	}()
-	if err := awaitAction(done, held); err != nil {
+	if err := awaitAction(done, held, nil); err != nil {
 		t.Fatalf("awaitAction = %v, want the call's own result", err)
 	}
 }
@@ -48,7 +48,7 @@ func TestAwaitActionKeepsAResultThatLandsJustAfterADialogOpens(t *testing.T) {
 func TestAwaitActionReportsADialogThatHoldsTheCall(t *testing.T) {
 	held := make(chan struct{})
 	close(held)
-	if err := awaitAction(make(chan error), held); !errors.Is(err, errDialogOpen) {
+	if err := awaitAction(make(chan error), held, nil); !errors.Is(err, errDialogOpen) {
 		t.Fatalf("awaitAction = %v, want errDialogOpen", err)
 	}
 }
@@ -57,8 +57,16 @@ func TestAwaitActionReturnsTheCallsError(t *testing.T) {
 	done := make(chan error, 1)
 	want := errors.New("boom")
 	done <- want
-	if err := awaitAction(done, make(chan struct{})); !errors.Is(err, want) {
+	if err := awaitAction(done, make(chan struct{}), nil); !errors.Is(err, want) {
 		t.Fatalf("awaitAction = %v, want %v", err, want)
+	}
+}
+
+func TestAwaitActionReportsAPauseThatHoldsTheCall(t *testing.T) {
+	paused := make(chan struct{})
+	close(paused)
+	if err := awaitAction(make(chan error), make(chan struct{}), paused); !errors.Is(err, errPaused) {
+		t.Fatalf("awaitAction = %v, want errPaused", err)
 	}
 }
 

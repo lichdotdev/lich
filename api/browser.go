@@ -53,6 +53,10 @@ var (
 	// BrowserTabNav is the person opening, selecting or closing a tab in the
 	// pane, the window's side of BrowserTabAction.
 	BrowserTabNav = define[BrowserTabOptions, None]("browser.TabNav")
+	// BrowserDevTools is the person opening Chrome's DevTools for the front
+	// tab in the pane, as a tab of its own, or selecting it when it is open.
+	// The agent never sees that tab.
+	BrowserDevTools = define[SessionIDOptions, None]("browser.DevTools")
 	// BrowserAnswer is the person answering the page's open dialog in the
 	// pane, the window's side of BrowserAnswerDialog.
 	BrowserAnswer = define[BrowserDialogOptions, None]("browser.Answer")
@@ -135,12 +139,17 @@ type BrowserFrame struct {
 }
 
 // BrowserTab is one tab of a session's browser. ID is Chrome's own for it;
-// Front marks the one shown and driven.
+// Front marks the one shown and driven. In BrowserState, a DevTools tab
+// follows the page tab it inspects, and is Front while the pane shows it in
+// place of that page, which the agent still drives; Paused says that page is
+// stopped in the debugger. The agent's list never holds a DevTools tab.
 type BrowserTab struct {
-	ID    string `json:"id"`
-	URL   string `json:"url"`
-	Title string `json:"title"`
-	Front bool   `json:"front,omitempty"`
+	ID       string `json:"id"`
+	URL      string `json:"url"`
+	Title    string `json:"title"`
+	Front    bool   `json:"front,omitempty"`
+	DevTools bool   `json:"devtools,omitempty"`
+	Paused   bool   `json:"paused,omitempty"`
 }
 
 // Tab actions: open a blank tab in front, bring Tab to the front, close Tab.

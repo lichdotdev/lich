@@ -1458,12 +1458,13 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   that socket for every session: the pane keeps its last frame until one fits. A wall of photographs in a 4K
   pane made 2.7 MiB frames and a page drawing pure noise in a 3440x1440 one 4.5 MiB (measured 2026-11-11);
   noise in a 4K pane, about 7.5 MiB by pixel count, still fits. A page still for 600 ms (`stillAfter`) gets one
-  PNG capture of it, and so none while a focused field's caret blinks every 500 ms, so still text loses the JPEG's ringing; nothing is captured while the page holds a dialog,
+  PNG capture of it, and none while a caret blinks in a focused field, which the capture checks first since a
+  late blink frame passes 600 ms on a loaded machine, so still text loses the JPEG's ringing; nothing is captured while the page holds a dialog,
   and a PNG over 3 times its JPEG (`stillGrowth`) is not sent: a photo, 11 times its JPEG and no sharper,
   keeps the JPEG (measured 2026-11-12). A still page gets two captures at most (`stillTries`): where the frame
   a capture draws is not the one before it byte for byte, as on Apple silicon under a pane drawn below the
   browser's scale, that frame replaces the PNG and the pane stays on the JPEG (CI, macos-latest, 2026-11-12). The native window cannot hold a webview: on Linux it speaks Wayland without GTK. So the pane
-  has no DevTools, shows the arrow whatever cursor the page asks for, draws only the front tab, and leaves the page's own dialogs out. Its
+  shows the arrow whatever cursor the page asks for, draws only the front tab, and leaves the page's own dialogs out. Its
   tabs sit on the pane's header (`internal/browser/tabs.go`): what a tab opens in a new tab or window joins
   them, in front when its opener was, and closing it brings its opener back as it was. A tab behind the front
   one is never drawn, so the header names it by title and has no thumbnail, and switching shows that tab's own last frame
@@ -1495,6 +1496,24 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   Ubuntu 23.10 and later AppArmor refuses it the user namespace unless the browser ships an AppArmor profile,
   as the distribution's Chrome, Edge and Brave do: one unpacked from a tarball fails to start with "No usable
   sandbox!", which the agent reads as the browser's error.
+- **The pane's DevTools is Chrome's front-end drawn as frames** (`internal/browser/chrome_devtools.go`,
+  `docs/browser-tab.md`): a target lich creates in a headless window of its own, loading the browser's own
+  DevTools from its debugging port, screencast like a page. It has no device toolbar (it emulates on the
+  page's own target, which the pane does not show as a device), no DevTools extensions, the arrow for every
+  cursor, and Chrome's colors, not lich's theme. It draws its first frame about 2 s after the button on a warm
+  browser and 5 s right after the browser launched, its first document blank until a second replaces it 4.5 s
+  after the launch, and 16 s at 40% of a core (Helium 157, measured 2026-11-12), and scrolls its Console
+  at about 40 frames a second in a 900x600 pane; idle, it gets the still PNG a page gets, except while the
+  Console's prompt caret blinks. The page zoom scales DevTools as it scales a page. A page stopped in its
+  debugger stops drawing: the pane keeps its last frame and the DevTools tab carries a pause glyph, which
+  lich hears by enabling the debugger on its own session of that page, breakpoints off, while DevTools is
+  open (under 4 ms, and the page's scriptParsed events a second time). Every agent tool then fails at once
+  naming the pause: a paused page answered reads with the document as it stood and lost clicks and keys
+  while reporting them done. The person resumes in DevTools or closes it. A dialog DevTools itself opens is
+  not handled. Opening DevTools logs chromedp's `unhandled node event *dom.EventAdoptedStyleSheetsModified`
+  once or twice: chromedp 0.16 has no case for that DOM event its own session receives, and the node tree
+  lich never reads loses nothing, so it is left in the log rather than filtered. A browser relaunched closes
+  its DevTools.
 - **An element's index is never handed out twice, so indexes only grow** (`internal/browser/pageinfo.go`): an
   element keeps the index it was first listed with while it lives, and a new one takes the next number of a
   counter each browser carries across documents and tabs, so an index from a replaced element, a page left or

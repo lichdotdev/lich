@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"image"
 	"image/jpeg"
@@ -296,5 +297,35 @@ func TestChromeABlinkingCaretGetsNoStill(t *testing.T) {
 		if strings.HasPrefix(f.(api.BrowserFrame).Data, pngPrefix) {
 			t.Fatal("a blink of the caret was captured as a still")
 		}
+	}
+}
+
+// A caret frame late past stillAfter, which a loaded runner sends, must not
+// get its PNG either: Still itself refuses while a caret blinks.
+func TestChromeStillRefusesWhileACaretBlinks(t *testing.T) {
+	p, srv := liveChrome(t)
+	ctx, cancel := context.WithTimeout(context.Background(), pageWait)
+	defer cancel()
+	if err := p.Navigate(ctx, srv.URL); err != nil {
+		t.Fatal(err)
+	}
+	// A page whose window has no focus blinks no caret.
+	if err := p.Focus(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := p.Still(ctx); err != nil {
+		t.Fatalf("Still with no caret = %v, want a capture", err)
+	}
+	if err := p.run(ctx, chromedp.Evaluate(`document.getElementById("f").focus()`, nil)); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := p.Still(ctx); !errors.Is(err, errCaret) {
+		t.Fatalf("Still with a caret in the field = %v, want errCaret", err)
+	}
+	if err := p.run(ctx, chromedp.Evaluate(`(() => { const f = document.getElementById("f"); f.value = "abc"; f.select() })()`, nil)); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := p.Still(ctx); err != nil {
+		t.Fatalf("Still with the field's text selected = %v, want a capture", err)
 	}
 }

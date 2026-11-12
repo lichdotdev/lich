@@ -36,6 +36,12 @@ var errAnnotating = errors.New("the agent's labels are drawn on the page")
 // capture may be of either.
 var errTabChanged = errors.New("another tab came to the front during the capture")
 
+// errCaret: a caret blinks on the page, which is not still however long a
+// blink took. Leaving it to stillAfter, a caret frame late past it on a
+// loaded macos-15-intel runner got a PNG between two blinks (2026-11-12),
+// and frames 500 ms apart came up to 1.7 s apart at 3% of a core (Helium 157).
+var errCaret = errors.New("a caret blinks on the page")
+
 // annotateJS draws each listed element's index at its box, from the read
 // Info just made, which stamped the indexes a click takes. The host is fixed, takes
 // no pointer events and sits above everything, so the page lays out and

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"image"
+	"image/color"
 
 	"gioui.org/f32"
 	"gioui.org/font"
@@ -37,6 +38,8 @@ type browserTabsUI struct {
 	pick, close map[string]*widget.Clickable
 	newTab      ui.IconActionState
 	closeTip    map[string]*ui.Tooltip
+	// pausedTip is a DevTools tab's, on its glyph while its page is paused.
+	pausedTip   map[string]*ui.Tooltip
 	at, closeAt map[string]image.Rectangle
 	newAt       image.Rectangle
 }
@@ -44,10 +47,12 @@ type browserTabsUI struct {
 func (t *browserTabsUI) widgets(id string) (pick, closer *widget.Clickable, tip *ui.Tooltip) {
 	if t.pick == nil {
 		t.pick, t.close, t.closeTip = map[string]*widget.Clickable{}, map[string]*widget.Clickable{}, map[string]*ui.Tooltip{}
+		t.pausedTip = map[string]*ui.Tooltip{}
 		t.at, t.closeAt = map[string]image.Rectangle{}, map[string]image.Rectangle{}
 	}
 	if t.pick[id] == nil {
 		t.pick[id], t.close[id], t.closeTip[id] = new(widget.Clickable), new(widget.Clickable), new(ui.Tooltip)
+		t.pausedTip[id] = new(ui.Tooltip)
 	}
 	return t.pick[id], t.close[id], t.closeTip[id]
 }
@@ -134,9 +139,13 @@ func (u *window) tabLayout(gtx C, p *browserPaneUI, tab api.BrowserTab, pick, cl
 	side := gtx.Dp(16)
 	right := gtx.Dp(ui.Space(1.5))
 	box := image.Rect(size.X-right-side, (size.Y-side)/2, size.X-right, (size.Y+side)/2)
+	left := gtx.Dp(ui.Space(2.5))
+	if tab.DevTools {
+		left += u.devtoolsGlyph(gtx, p, tab, left, fg)
+	}
 	label := gtx
-	label.Constraints = layout.Exact(image.Pt(max(box.Min.X-gtx.Dp(ui.Space(2.5))-gtx.Dp(ui.Space(1)), 0), size.Y))
-	off := op.Offset(image.Pt(gtx.Dp(ui.Space(2.5)), 0)).Push(gtx.Ops)
+	label.Constraints = layout.Exact(image.Pt(max(box.Min.X-left-gtx.Dp(ui.Space(1)), 0), size.Y))
+	off := op.Offset(image.Pt(left, 0)).Push(gtx.Ops)
 	layout.W.Layout(label, th.Text(ui.TextXS, tabLabel(tab)).In(fg).Layout)
 	off.Pop()
 	off = op.Offset(box.Min).Push(gtx.Ops)
@@ -148,9 +157,29 @@ func (u *window) tabLayout(gtx C, p *browserPaneUI, tab api.BrowserTab, pick, cl
 	return box
 }
 
-// tabLabel names a tab by its title, else its address, else as a blank one.
+// devtoolsGlyph draws a DevTools tab's glyph at x in fg, the one that tells it
+// from a page titled DevTools, or a pause while its page is paused, and returns
+// the width it takes with the gap after it.
+func (u *window) devtoolsGlyph(gtx C, p *browserPaneUI, tab api.BrowserTab, x int, fg color.NRGBA) int {
+	th := u.theme
+	side := gtx.Dp(ui.Space(3))
+	off := op.Offset(image.Pt(x, (gtx.Constraints.Max.Y-side)/2)).Push(gtx.Ops)
+	defer off.Pop()
+	if !tab.Paused {
+		icDevTools.Layout(gtx, ui.Space(3), fg)
+		return side + gtx.Dp(ui.Space(1.5))
+	}
+	paused := th.Tooltip(&u.root, p.tabs.pausedTip[tab.ID], i18n.T("layouts.browser.paused"))
+	paused.Layout(gtx, func(gtx C) D { return icDevToolsPaused.Layout(gtx, ui.Space(3), th.ToneWait) })
+	return side + gtx.Dp(ui.Space(1.5))
+}
+
+// tabLabel names a tab by its title, else its address, else as a blank one;
+// a DevTools tab as DevTools.
 func tabLabel(tab api.BrowserTab) string {
 	switch {
+	case tab.DevTools:
+		return i18n.T("layouts.browser.devtools")
 	case tab.Title != "":
 		return tab.Title
 	case tab.URL != "" && tab.URL != "about:blank":

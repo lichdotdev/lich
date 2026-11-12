@@ -17,7 +17,8 @@ the pane's own pixels. `browser.Attach` starts its
 screencast at the pane's size; each frame reaches the window as
 `browser:frame:<session>`, naming the tab it is of, and is acked only once sent, so a window slow to
 draw slows the stream. Once the page sends no frame for `stillAfter`, the
-backend sends one PNG capture of the front tab as the next frame
+backend sends one PNG capture of what the pane shows, the front tab or its
+DevTools, as the next frame
 (`frameSink`), dropped if a JPEG came while it was taken or if it is over
 `stillGrowth` times the JPEG it would replace; a frame byte for byte the last
 one, which a capture draws, is no change, and any other frame within
@@ -230,10 +231,43 @@ there are more.
   opener, so a dialog there holds the front tab too: it reaches the pane and
   the agent at once, and the answer goes to the tab that opened it.
 
+## DevTools
+
+The toolbar's DevTools button opens Chrome's own DevTools for the front tab
+as one more tab of the pane, right after the tab it inspects, and selects it;
+with one open, the button is lit and only selects it. While the DevTools tab is
+selected the pane draws DevTools in the page's place and sends it the pointer,
+the keys and the pane's size; the notes button is gone, and back, forward,
+reload and the address still act on the page. Closing the page tab closes its
+DevTools.
+
+- It is the browser's own front-end, served on its debugging port
+  (`inspector.html?ws=...`), loaded by a target lich creates in a headless
+  window of its own (`internal/browser/chrome_devtools.go`): as a tab behind
+  the page it drew no frames. Its own screencast of the page and its Paused in
+  debugger bar over the page are turned off before it loads.
+- The agent never sees it. `browser_tabs` lists the pages only, with the page
+  DevTools inspects in front, every tool keeps acting on that page, the
+  agent's cursor is not drawn over DevTools, and a tab action naming a DevTools
+  tab is refused (`agentTabs`, `Service.TabAct`). Its URL, which reaches the
+  whole browser, is in no state the window or the agent receives.
+- What DevTools opens in a new window (a Learn more link, a request opened in
+  a new tab) joins the tabs as a page, after the page it inspects, behind:
+  DevTools stays on the pane and the agent on its page. The agent lists the new
+  tab like any other.
+- While a page is stopped in DevTools' debugger, its DevTools tab carries a
+  pause glyph. Lich hears the pause on its own session of the page: it enables
+  the debugger there with breakpoints off, only while DevTools is open, so it
+  never pauses the page itself. A paused page answers a script with the
+  document as it stood and takes a click or a key as done and loses it, so
+  every agent tool fails at once naming the pause, and the pane's own input to
+  the page does nothing. Closing DevTools lets the page go on.
+
 ## Providers
 
 Claude Code, Codex and opencode receive the tools at spawn. Antigravity,
 oh-my-pi, Crush, Cursor CLI and Kiro receive them from the lich MCP server the
 plugin registers. Downloads and dialogs reach all eight the same way: in the
 answer of the same tools, and `browser_dialog` for all of them. Tabs too:
-`browser_tabs` and `browser_tab` reach all eight.
+`browser_tabs` and `browser_tab` reach all eight. DevTools changes none of
+the agent's tools, so it is the same on all eight.

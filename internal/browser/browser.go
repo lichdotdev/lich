@@ -117,10 +117,11 @@ type session struct {
 	dialog   *api.BrowserDialog
 	dialogAt time.Time
 	answered []api.BrowserDialog
-	// tabs are the page's, in the pane's order.
-	tabs     []api.BrowserTab
-	page     Page
-	lastUsed time.Time
+	// tabs are the page's as the agent lists them; paneTabs as the pane does,
+	// with its DevTools tabs.
+	tabs, paneTabs []api.BrowserTab
+	page           Page
+	lastUsed       time.Time
 }
 
 // New starts a service that launches the system Chromium (chromium.FindBrowser)

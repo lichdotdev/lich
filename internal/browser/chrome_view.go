@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	"github.com/chromedp/cdproto/browser"
+	"github.com/chromedp/cdproto/debugger"
 	"github.com/chromedp/cdproto/emulation"
 	"github.com/chromedp/cdproto/input"
 	"github.com/chromedp/cdproto/page"
@@ -72,6 +73,12 @@ func (p *chromePage) listenTab(t *tab) {
 			if e.Frame.ParentID == "" {
 				p.leaveLanded(t)
 			}
+		case *debugger.EventPaused:
+			p.debuggerPaused(t, true)
+			return
+		case *debugger.EventResumed:
+			p.debuggerPaused(t, false)
+			return
 		case *page.EventJavascriptDialogOpening:
 			held := ""
 			if e.Type == page.DialogTypeBeforeunload {
@@ -146,7 +153,7 @@ func (p *chromePage) relayAfterShot(t *tab) {
 		if !p.casting || v == nil || !p.shot.Swap(false) {
 			return nil
 		}
-		if err := p.run(nil, emulation.ClearDeviceMetricsOverride()); err != nil {
+		if err := p.runLayout(nil, emulation.ClearDeviceMetricsOverride()); err != nil {
 			return err
 		}
 		return p.startCast(nil, *v)
@@ -159,7 +166,7 @@ func (p *chromePage) relayAfterShot(t *tab) {
 func (p *chromePage) frontEvent(t *tab, ev any) {
 	switch e := ev.(type) {
 	case *page.EventScreencastFrame:
-		go p.deliver(t.id, e)
+		go p.deliver(t.ctx, t.id, e)
 	case *page.EventFrameNavigated:
 		if e.Frame.ParentID == "" {
 			go p.reportInfo()
@@ -225,7 +232,7 @@ func (p *chromePage) reportInfo() {
 		Title string `json:"title"`
 	}
 	if err := p.run(nil, chromedp.Evaluate(`({url: location.href, title: document.title})`, &info)); err != nil {
-		if p.Alive() && !errors.Is(err, errDialogOpen) {
+		if p.Alive() && !errors.Is(err, errDialogOpen) && !errors.Is(err, errPaused) {
 			slog.Warn("browser: read the page's URL and title", "err", err)
 		}
 		return
@@ -241,7 +248,7 @@ func (p *chromePage) reportInfo() {
 // deliver hands one frame on, then acks it. Chrome sends no next frame until
 // the ack, so a window slow to take frames slows the stream instead of
 // piling it up.
-func (p *chromePage) deliver(tab target.ID, frame *page.EventScreencastFrame) {
+func (p *chromePage) deliver(on context.Context, tab target.ID, frame *page.EventScreencastFrame) {
 	p.listen.mu.Lock()
 	onFrame := p.listen.onFrame
 	p.listen.mu.Unlock()
@@ -251,10 +258,26 @@ func (p *chromePage) deliver(tab target.ID, frame *page.EventScreencastFrame) {
 	ack := chromedp.ActionFunc(func(ctx context.Context) error {
 		return page.ScreencastFrameAck(frame.SessionID).Do(ctx)
 	})
-	if err := p.runFree(nil, ack); err != nil && p.Alive() {
+	if err := runOn(on, nil, ack); err != nil && p.Alive() && on.Err() == nil {
 		slog.Warn("browser: ack a screencast frame", "err", err)
 	}
 }
+
+// caretScript says whether a caret blinks in the focused document: an
+// editable element, inside shadow roots too (DevTools' Console prompt), holds
+// the focus with nothing selected.
+const caretScript = `(() => {
+	if (!document.hasFocus()) return false;
+	let el = document.activeElement;
+	while (el && el.shadowRoot && el.shadowRoot.activeElement) el = el.shadowRoot.activeElement;
+	if (!el) return false;
+	const field = el.isContentEditable || el.tagName === 'TEXTAREA' ||
+		(el.tagName === 'INPUT' && typeof el.selectionStart === 'number');
+	if (!field) return false;
+	if (typeof el.selectionStart === 'number') return el.selectionStart === el.selectionEnd;
+	const sel = (el.getRootNode().getSelection ? el.getRootNode() : document).getSelection();
+	return !sel || sel.isCollapsed;
+})()`
 
 // Still captures what the screencast shows, as a base64 PNG. A capture while
 // the agent's labels are drawn would keep them on a still pane. Encoded for
@@ -264,9 +287,20 @@ func (p *chromePage) Still(ctx context.Context) (tab, data string, err error) {
 	if p.annotating.Load() > 0 {
 		return "", "", errAnnotating
 	}
-	front := p.tabs.frontTab()
+	front, shown := p.tabs.frontTab(), p.tabs.shown()
+	id := front.id
+	if shown != nil {
+		id = shown.id
+	}
+	var caret bool
+	if err := p.runShown(ctx, chromedp.Evaluate(caretScript, &caret)); err != nil {
+		return "", "", err
+	}
+	if caret {
+		return "", "", errCaret
+	}
 	var buf []byte
-	err = p.run(ctx, chromedp.ActionFunc(func(ctx context.Context) error {
+	err = p.runShown(ctx, chromedp.ActionFunc(func(ctx context.Context) error {
 		var err error
 		buf, err = page.CaptureScreenshot().WithFormat(page.CaptureScreenshotFormatPng).WithOptimizeForSpeed(true).Do(ctx)
 		return err
@@ -274,10 +308,10 @@ func (p *chromePage) Still(ctx context.Context) (tab, data string, err error) {
 	if err != nil {
 		return "", "", err
 	}
-	if p.tabs.frontTab() != front {
+	if p.tabs.frontTab() != front || p.tabs.shown() != shown {
 		return "", "", errTabChanged
 	}
-	return string(front.id), base64.StdEncoding.EncodeToString(buf), nil
+	return string(id), base64.StdEncoding.EncodeToString(buf), nil
 }
 
 // Screencast starts the frames at v, or restarts them there: Chrome keeps
@@ -286,18 +320,26 @@ func (p *chromePage) Screencast(ctx context.Context, v Viewport) error {
 	return p.castPastDialog(func() error { return p.startCast(ctx, v) })
 }
 
-// startCast is Screencast's step, run in its turn among the others.
+// startCast is Screencast's step, run in its turn among the others, on what
+// the pane shows.
 func (p *chromePage) startCast(ctx context.Context, v Viewport) error {
 	v = p.atDrawScale(v)
 	w, h := v.devicePixels()
 	if err := p.stopCast(ctx); err != nil {
 		return err
 	}
-	if err := p.Resize(ctx, v); err != nil {
+	on := p.tabs.frontTab().ctx
+	if d := p.tabs.shown(); d != nil {
+		on = d.ctx
+		p.tabs.setView(v)
+		if err := runOn(on, ctx, emulation.SetDeviceMetricsOverride(int64(v.W), int64(v.H), v.Scale, false)); err != nil {
+			return err
+		}
+	} else if err := p.Resize(ctx, v); err != nil {
 		return err
 	}
-	p.casting = true
-	return p.runFree(ctx, page.StartScreencast().
+	p.casting, p.castOn = true, on
+	return runOn(on, ctx, page.StartScreencast().
 		WithFormat(page.ScreencastFormatJpeg).
 		WithQuality(screencastQuality).
 		WithMaxWidth(w).
@@ -314,7 +356,7 @@ func (p *chromePage) stopCast(ctx context.Context) error {
 	if !p.casting {
 		return nil
 	}
-	if err := p.runFree(ctx, page.StopScreencast()); err != nil {
+	if err := runOn(p.castOn, ctx, page.StopScreencast()); err != nil {
 		return err
 	}
 	p.casting = false
@@ -362,7 +404,7 @@ func (p *chromePage) castPastDialog(step func() error) error {
 func (p *chromePage) Resize(ctx context.Context, v Viewport) error {
 	v = p.atDrawScale(v)
 	p.tabs.setView(v)
-	err := p.run(ctx, emulation.SetDeviceMetricsOverride(int64(v.W), int64(v.H), v.Scale, false))
+	err := p.runLayout(ctx, emulation.SetDeviceMetricsOverride(int64(v.W), int64(v.H), v.Scale, false))
 	if !errors.Is(err, errDialogOpen) {
 		return err
 	}
@@ -388,7 +430,7 @@ func (p *chromePage) Mouse(ctx context.Context, m api.BrowserMouseOptions) error
 		// buttons is what a drag reads: which button is still held as it moves.
 		ev = ev.WithButtons(mouseButtons[m.Button])
 	}
-	return p.run(ctx, ev)
+	return p.runShown(ctx, ev)
 }
 
 // Key sends a key that types no text. Enter is the exception CDP needs: its
@@ -409,11 +451,11 @@ func (p *chromePage) Key(ctx context.Context, k api.BrowserKeyOptions) error {
 		WithWindowsVirtualKeyCode(int64(k.KeyCode)).
 		WithNativeVirtualKeyCode(int64(k.KeyCode)).
 		WithModifiers(input.Modifier(k.Modifiers))
-	return p.run(ctx, ev)
+	return p.runShown(ctx, ev)
 }
 
 func (p *chromePage) InsertText(ctx context.Context, text string) error {
-	return p.run(ctx, input.InsertText(text))
+	return p.runShown(ctx, input.InsertText(text))
 }
 
 // selectionScript reads the selection of a text field, which getSelection
@@ -429,7 +471,7 @@ const selectionScript = `(() => {
 
 func (p *chromePage) Selection(ctx context.Context) (string, error) {
 	var text string
-	return text, p.run(ctx, chromedp.Evaluate(selectionScript, &text))
+	return text, p.runShown(ctx, chromedp.Evaluate(selectionScript, &text))
 }
 
 var mouseTypes = map[string]input.MouseType{

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/chromedp/cdproto/target"
+	"github.com/lichdotdev/lich/api"
 )
 
 // stackOf starts a stack on a tab "root" and adds tabs named by id, each
@@ -113,5 +114,126 @@ func TestTabStackAnswersTheDialogWhereItWasOpened(t *testing.T) {
 	}
 	if !s.dialogClosed(root) || s.dialogHolder() != a {
 		t.Fatal("once the dialog closed, the holder is not the front tab")
+	}
+}
+
+// withDevTools is s with tab id inspected by a DevTools target named after it.
+func withDevTools(t *testing.T, s *tabStack, id target.ID) *tab {
+	t.Helper()
+	tb := s.byID(id)
+	if !s.setDevTools(tb, &devtools{id: "dt-" + id, cancel: func() {}}) {
+		t.Fatalf("setDevTools(%s) refused", id)
+	}
+	return tb
+}
+
+func TestTabStackListsADevToolsTabRightAfterTheTabItInspects(t *testing.T) {
+	s := stackOf([]target.ID{"a"}, nil)
+	withDevTools(t, s, "root")
+	if got, want := order(s), []target.ID{"root", "dt-root", "a"}; !slices.Equal(got, want) {
+		t.Fatalf("order = %v, want %v", got, want)
+	}
+	if dt := s.list()[1]; !dt.DevTools || dt.URL != "" || dt.Front {
+		t.Fatalf("DevTools tab = %+v, want a DevTools tab with no URL, behind the page", dt)
+	}
+}
+
+func TestTabStackInspectingPutsTheDevToolsTabInFrontInThePaneOnly(t *testing.T) {
+	s := stackOf(nil, nil)
+	root := withDevTools(t, s, "root")
+	s.inspect(root)
+	pane := s.list()
+	if pane[0].Front || !pane[1].Front {
+		t.Fatalf("pane tabs = %+v, want the DevTools tab in front", pane)
+	}
+	agent := agentTabs(pane)
+	if len(agent) != 1 || agent[0].ID != "root" || !agent[0].Front {
+		t.Fatalf("agent tabs = %+v, want only the page, in front", agent)
+	}
+	if s.shown() != root.devtools || s.frontTab() != root {
+		t.Fatal("the pane does not show the DevTools of the tab the agent drives")
+	}
+}
+
+func TestTabStackSelectingATabLeavesDevTools(t *testing.T) {
+	s := stackOf([]target.ID{"a"}, nil)
+	s.inspect(withDevTools(t, s, "root"))
+	s.setFront(s.byID("root"))
+	if s.shown() != nil {
+		t.Fatal("selecting the page left its DevTools on the pane")
+	}
+}
+
+func TestTabStackInspectsNoTabWithoutDevTools(t *testing.T) {
+	s := stackOf([]target.ID{"a"}, nil)
+	s.inspect(s.byID("a"))
+	if s.shown() != nil || s.frontTab().id != "root" {
+		t.Fatal("inspect moved to a tab with no DevTools")
+	}
+}
+
+func TestTabStackClosingTheInspectedTabTakesItsDevToolsAndShowsThePageBack(t *testing.T) {
+	s := stackOf([]target.ID{"a"}, nil)
+	a := withDevTools(t, s, "a")
+	s.inspect(a)
+	got, front := s.remove("a")
+	if got == nil || !front || got.devtools == nil {
+		t.Fatalf("remove(a) = %v, %v; want the front tab with its DevTools to close", got, front)
+	}
+	if s.shown() != nil || s.inspected("dt-a") != nil {
+		t.Fatal("the closed tab's DevTools stayed on the pane")
+	}
+	if got, want := order(s), []target.ID{"root"}; !slices.Equal(got, want) {
+		t.Fatalf("order = %v, want %v", got, want)
+	}
+}
+
+func TestTabStackDroppingDevToolsSaysWhetherThePaneShowedIt(t *testing.T) {
+	s := stackOf(nil, nil)
+	root := withDevTools(t, s, "root")
+	if _, shown := s.dropDevTools(root); shown {
+		t.Fatal("DevTools behind its page reported as shown")
+	}
+	withDevTools(t, s, "root")
+	s.inspect(root)
+	if d, shown := s.dropDevTools(root); d == nil || !shown || s.shown() != nil {
+		t.Fatalf("dropDevTools = %v, %v; want the shown DevTools, and the page back", d, shown)
+	}
+	if d, _ := s.dropDevTools(root); d != nil {
+		t.Fatal("a tab dropped its DevTools twice")
+	}
+}
+
+func TestTabStackGivesATabOneDevTools(t *testing.T) {
+	s := stackOf(nil, nil)
+	root := withDevTools(t, s, "root")
+	if s.setDevTools(root, &devtools{id: "second"}) {
+		t.Fatal("a tab took a second DevTools")
+	}
+}
+
+func TestTabStackPausedMarksTheDevToolsTab(t *testing.T) {
+	s := stackOf([]target.ID{"a"}, nil)
+	root := withDevTools(t, s, "root")
+	if s.setPaused(s.byID("a"), true) {
+		t.Fatal("a tab with no DevTools took a pause")
+	}
+	if !s.setPaused(root, true) || s.setPaused(root, true) {
+		t.Fatal("setPaused did not report the change once")
+	}
+	if !s.anyPaused() || !s.list()[1].Paused {
+		t.Fatalf("tabs = %+v, want the DevTools tab paused", s.list())
+	}
+	s.setPaused(root, false)
+	if s.anyPaused() {
+		t.Fatal("still paused after the page went on")
+	}
+}
+
+func TestAgentTabsLeaveDevToolsOutAndKeepTheirOrder(t *testing.T) {
+	pane := []api.BrowserTab{{ID: "a"}, {ID: "dt-a", DevTools: true}, {ID: "b", Front: true}, {ID: "dt-b", DevTools: true, Paused: true}}
+	want := []api.BrowserTab{{ID: "a"}, {ID: "b", Front: true}}
+	if got := agentTabs(pane); !slices.Equal(got, want) {
+		t.Fatalf("agentTabs = %+v, want %+v", got, want)
 	}
 }

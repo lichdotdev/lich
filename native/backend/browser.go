@@ -90,6 +90,13 @@ func (c *Client) BrowserTabNav(ctx context.Context, id, action, tab string) erro
 	return err
 }
 
+// BrowserDevTools opens DevTools for the front tab of session's page, or
+// selects it when it is open.
+func (c *Client) BrowserDevTools(ctx context.Context, id string) error {
+	_, err := callMethod(ctx, c, api.BrowserDevTools, api.SessionIDOptions{ID: id})
+	return err
+}
+
 // BrowserAnswer answers the JavaScript dialog session's page holds open.
 func (c *Client) BrowserAnswer(ctx context.Context, o api.BrowserDialogOptions) error {
 	_, err := callMethod(ctx, c, api.BrowserAnswer, o)

@@ -270,6 +270,11 @@ func (s *Service) TabView(_ context.Context, opts api.BrowserTabOptions) (api.No
 	return api.None{}, s.TabNav(opts)
 }
 
+// DevToolsView opens or selects the front tab's DevTools in the pane.
+func (s *Service) DevToolsView(_ context.Context, opts api.SessionIDOptions) (api.None, error) {
+	return api.None{}, s.DevTools(opts.ID)
+}
+
 // NavView runs the pane's toolbar.
 func (s *Service) NavView(_ context.Context, opts api.BrowserNavOptions) (api.None, error) {
 	return api.None{}, s.Nav(opts.ID, opts.Action, opts.URL)
