@@ -169,6 +169,8 @@ func dispatch(args []string, c *client) int {
 		return c.run(c.rename, args[1:])
 	case "schedule":
 		return c.run(c.schedule, args[1:])
+	case "check-log":
+		return c.run(c.checkLog, args[1:])
 	case "control":
 		return c.run(c.control, args[1:])
 	case "ask":

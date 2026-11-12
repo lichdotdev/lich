@@ -90,7 +90,8 @@ var scheduleTools = []mcpTool{
 			"when something happens on this branch's pull request. Use it instead of polling for CI " +
 			"or for a review. It only acts on your own session, and something the person set there " +
 			"stays until they change it. checks-failed stays on until the pull request closes, at " +
-			"most 3 runs on it; checks-passed and review run once.",
+			"most 3 runs on it; checks-passed and review run once. When checks-failed fires, " +
+			"read_check_log reads why.",
 		Schema: schema(map[string]any{
 			"when":   property("string", "When to type it: 45m, 2h30, 14:30 or 2026-11-12 14:30. Give this or on."),
 			"on":     property("string", "What to wait for: checks-failed, checks-passed or review. Give this or when."),

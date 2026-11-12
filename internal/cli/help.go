@@ -156,6 +156,14 @@ var commands = []command{
 			"change it. --clear removes it.",
 	},
 	{
+		name: "check-log",
+		args: "[--lines <n>] [--json]",
+		about: "Print why the checks failed on the pull request of the branch this\n" +
+			"session runs on: each failed check with its link, and for a GitHub\n" +
+			"Actions job the last --lines (default 80) of each failing step, without\n" +
+			"timestamps or terminal escapes. Logs are read once no check is running.",
+	},
+	{
 		name: "control",
 		args: "[--project <name-or-path>] [--json] <session>\n" +
 			"            prompt <text> | abort | model [<model>] | effort [<level>] |\n" +

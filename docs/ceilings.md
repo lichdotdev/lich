@@ -536,6 +536,14 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   holds one trigger, a time or a condition, but lich's own continuation after a usage limit may sit beside a
   watch, and Remove takes off the watch first. `lich schedule` acts only on the session it runs in, and a time
   or condition the person set refuses it.
+- **Only a GitHub Actions job carries a log in `lich check-log`** (`internal/project/checklog.go`): the job is
+  read off the check's `detailsUrl` (`.../actions/runs/<run>/job/<job>`), so a commit status or another app's
+  check is listed by name and link with nothing more. Logs are read only once no check is pending, since gh
+  refuses a job's log while its run goes on. When GitHub's archive does not split a job by step (gh names every
+  line `UNKNOWN STEP`, which is what this repository's runs get), the failing step is guessed from the runner's
+  own markers: the last `##[group]Run` before the job's last `##[error]`. A job with two failing steps under
+  `continue-on-error` then shows the last one only, and a step that prints its own `##[group]Run` line is cut
+  there. Nothing parses a test framework's output: the tail is whatever the step printed last.
 
 ## Git, worktrees and review
 

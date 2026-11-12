@@ -100,6 +100,9 @@ var allowed = map[string]string{
 
 	// Refused outside the session's own checkout (project.ShowCode).
 	"project.ShowCode": "id",
+	// A read of the session's own pull request, as the gh it already runs
+	// with the project's token could make.
+	"project.CheckLog": "id",
 
 	// Reads only: a service's command runs on the machine, outside the
 	// sandbox, so starting, stopping or editing one stays with the window.
