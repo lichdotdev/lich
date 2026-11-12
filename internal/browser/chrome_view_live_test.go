@@ -211,3 +211,41 @@ func TestChromeAStillPaneGetsAPNGAndKeepsIt(t *testing.T) {
 		t.Fatalf("%d frames, %d of them PNG; want one or two PNGs, the last frame one", len(frames), stills)
 	}
 }
+
+// The probe page's field, clicked into from the pane, blinks its caret.
+func TestChromeABlinkingCaretGetsNoStill(t *testing.T) {
+	_, srv := liveChrome(t)
+	s := newService(chromeLaunch, func(string, string) (string, error) {
+		return t.TempDir(), nil
+	}, time.Now, 5*time.Minute)
+	t.Cleanup(func() { _ = s.Cleanup() })
+	out := &emitted{}
+	s.emit = out.emit
+	if _, err := s.Open("s", srv.URL); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.Attach("s", Viewport{W: 640, H: 480, Scale: frameScale}); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.current("s").page.Focus(nil); err != nil {
+		t.Fatal(err)
+	}
+	for _, ty := range []string{"press", "release"} {
+		if _, err := s.MouseInput(context.Background(), api.BrowserMouseOptions{ID: "s", Type: ty, X: 100, Y: 25, Button: "left", Clicks: 1}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	time.Sleep(time.Second)
+	name := api.BrowserFrameEvents.Of("s").Name
+	before := len(out.named(name))
+	time.Sleep(3 * time.Second)
+	after := out.named(name)[before:]
+	if len(after) < 3 {
+		t.Fatalf("%d frames in 3 s: the caret is not blinking, and the test proves nothing", len(after))
+	}
+	for _, f := range after {
+		if strings.HasPrefix(f.(api.BrowserFrame).Data, pngPrefix) {
+			t.Fatal("a blink of the caret was captured as a still")
+		}
+	}
+}

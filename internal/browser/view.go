@@ -222,9 +222,10 @@ const maxFrameData = api.MaxEventBytes - 1<<10
 
 // stillAfter is how long a page sends no frame before its pane gets one PNG
 // of it: a JPEG's ringing around text stays on screen for as long as the page
-// is still. Longer than the gap between two frames of a scroll or of typing,
-// so a capture rarely lands mid-stream.
-const stillAfter = 400 * time.Millisecond
+// is still. Past a focused field's caret, which blinks every 500 ms: under it,
+// each blink was captured, two PNGs a second for 17% of a core, and the text
+// flickered between sharp and blurred (Chromium 157, measured 2026-11-12).
+const stillAfter = 600 * time.Millisecond
 
 // stillWait bounds a still capture: 30 ms for text at 1280x720, 200 ms for a
 // photo at 2880x1620 (measured 2026-11-12).
