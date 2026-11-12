@@ -21,13 +21,19 @@ import (
 // shows, fed by browser.Running once and browser-state after; the page's last
 // frame; and when the agent last acted on it.
 
-// browserFrame is a page's last screencast frame, ready to draw.
+// browserFrame is a tab's last screencast frame, ready to draw.
 type browserFrame struct {
 	img  paint.ImageOp
 	size image.Point
-	// seq orders the frames of a page: decoders finish out of order.
+	// seq orders the frames of a page: decoders finish out of order, and the
+	// highest of a page's tabs is the one fronted last.
 	seq uint64
 }
+
+// tabFramesKept is how many tabs of a session's browser keep their last frame
+// for a switch back to them. A decoded frame is 4 bytes a pixel (8 MB at
+// 1920x1080), so a session holds at most this many of them.
+const tabFramesKept = 4
 
 // pendingFrame is a page's newest frame not yet decoded.
 type pendingFrame struct {
@@ -54,7 +60,8 @@ const agentMarksKept = 8
 
 type browserStore struct {
 	states map[string]api.BrowserState
-	frames map[string]browserFrame
+	// frames are each session's tabs' last frames, by Chrome's tab id.
+	frames map[string]map[string]browserFrame
 	// pending is each page's newest frame not yet decoded (decodeFrames),
 	// under its own lock: the /events loop never waits on m.mu for a frame.
 	pendingMu sync.Mutex
@@ -65,7 +72,7 @@ type browserStore struct {
 }
 
 func newBrowserStore() browserStore {
-	return browserStore{states: map[string]api.BrowserState{}, frames: map[string]browserFrame{}, pending: map[string]pendingFrame{}, agent: map[string][]browserMark{}}
+	return browserStore{states: map[string]api.BrowserState{}, frames: map[string]map[string]browserFrame{}, pending: map[string]pendingFrame{}, agent: map[string][]browserMark{}}
 }
 
 // hydrateBrowsers reads the browsers running now, and takes off the screen
@@ -117,6 +124,7 @@ func (m *model) applyBrowserState(st api.BrowserState) {
 	idle := m.browserIdle
 	if st.Open {
 		m.browsers.states[st.Owner] = st
+		m.dropClosedTabFramesLocked(st)
 	} else {
 		delete(m.browsers.states, st.Owner)
 		delete(m.browsers.frames, st.Owner)
@@ -197,11 +205,11 @@ func (m *model) decodeFrames(kick <-chan struct{}) <-chan struct{} {
 // goroutine, so the pane only draws it, and keeps it unless a newer one
 // landed first.
 func (m *model) applyBrowserFrame(owner string, ev backend.Event, seq uint64) error {
-	data, err := backend.Decode(ev, api.BrowserFrameEvents.Of(owner))
+	f, err := backend.Decode(ev, api.BrowserFrameEvents.Of(owner))
 	if err != nil {
 		return err
 	}
-	raw, err := base64.StdEncoding.DecodeString(data)
+	raw, err := base64.StdEncoding.DecodeString(f.Data)
 	if err != nil {
 		return fmt.Errorf("%s: %w", ev.Name, err)
 	}
@@ -211,11 +219,64 @@ func (m *model) applyBrowserFrame(owner string, ev backend.Event, seq uint64) er
 	}
 	frame := browserFrame{img: paint.NewImageOp(img), size: img.Bounds().Size(), seq: seq}
 	m.mu.Lock()
-	if frame.seq > m.browsers.frames[owner].seq {
-		m.browsers.frames[owner] = frame
-	}
+	m.storeTabFrameLocked(owner, f.Tab, frame)
 	m.mu.Unlock()
 	return nil
+}
+
+// storeTabFrameLocked keeps frame as tab's last unless a newer one landed
+// first, and lets go of the tab fronted longest ago past tabFramesKept.
+func (m *model) storeTabFrameLocked(owner, tab string, frame browserFrame) {
+	tabs := m.browsers.frames[owner]
+	if tabs == nil {
+		tabs = map[string]browserFrame{}
+		m.browsers.frames[owner] = tabs
+	}
+	if old, ok := tabs[tab]; ok && old.seq >= frame.seq {
+		return
+	}
+	tabs[tab] = frame
+	for len(tabs) > tabFramesKept {
+		oldest := ""
+		for id, f := range tabs {
+			if oldest == "" || f.seq < tabs[oldest].seq {
+				oldest = id
+			}
+		}
+		delete(tabs, oldest)
+	}
+}
+
+// dropClosedTabFramesLocked frees the frames of tabs st no longer lists. A
+// browser that never changed its tabs lists none, and its frames stay.
+func (m *model) dropClosedTabFramesLocked(st api.BrowserState) {
+	if len(st.Tabs) == 0 {
+		return
+	}
+	for id := range m.browsers.frames[st.Owner] {
+		if !slices.ContainsFunc(st.Tabs, func(t api.BrowserTab) bool { return t.ID == id }) {
+			delete(m.browsers.frames[st.Owner], id)
+		}
+	}
+}
+
+// frontFrameLocked is the last frame of session's front tab: none for a tab
+// not yet in front, never another tab's. Before the browser lists its tabs it
+// has the one, and the newest frame is its.
+func (m *model) frontFrameLocked(session string) browserFrame {
+	tabs := m.browsers.frames[session]
+	for _, t := range m.browsers.states[session].Tabs {
+		if t.Front {
+			return tabs[t.ID]
+		}
+	}
+	var newest browserFrame
+	for _, f := range tabs {
+		if f.seq > newest.seq {
+			newest = f
+		}
+	}
+	return newest
 }
 
 func (m *model) applyBrowserAgent(a api.BrowserAgentAct, now time.Time) {
@@ -232,5 +293,5 @@ func (m *model) applyBrowserAgent(a api.BrowserAgentAct, now time.Time) {
 func (m *model) browserView(session string) (api.BrowserState, browserFrame, []browserMark) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return m.browsers.states[session], m.browsers.frames[session], slices.Clone(m.browsers.agent[session])
+	return m.browsers.states[session], m.frontFrameLocked(session), slices.Clone(m.browsers.agent[session])
 }

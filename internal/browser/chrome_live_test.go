@@ -148,7 +148,7 @@ func TestChromeScreencastSendsFramesAndPageInfo(t *testing.T) {
 	p, srv := liveChrome(t)
 	frames := make(chan string, 4)
 	titles := make(chan string, 4)
-	p.Listen(func(data string) {
+	p.Listen(func(_, data string) {
 		select {
 		case frames <- data:
 		default:
@@ -192,7 +192,7 @@ func TestChromeScreencastSendsFramesAndPageInfo(t *testing.T) {
 func TestChromeScreencastDrawsAHiDPIPaneAtTheFrameScale(t *testing.T) {
 	p, srv := liveChrome(t)
 	frames := make(chan string, 1)
-	p.Listen(func(data string) {
+	p.Listen(func(_, data string) {
 		select {
 		case frames <- data:
 		default:
@@ -233,7 +233,7 @@ func TestChromeScreencastDrawsAHiDPIPaneAtTheFrameScale(t *testing.T) {
 func TestChromeLaunchedAtA1xWindowsScaleSendsThePanesOwnPixels(t *testing.T) {
 	p, srv := liveChromeAt(t, 1)
 	frames := make(chan string, 1)
-	p.Listen(func(data string) {
+	p.Listen(func(_, data string) {
 		select {
 		case frames <- data:
 		default:
@@ -334,7 +334,7 @@ func startNewTabRig(t *testing.T, ctx context.Context, start string) newTabRig {
 	}))
 	t.Cleanup(srv.Close)
 	r := newTabRig{p: pg.(*chromePage), srv: srv, urls: make(chan string, 8), dialogs: make(chan *api.BrowserDialog, 8)}
-	r.p.Listen(func(string) {}, func(url, _ string) { r.urls <- url }, func(string, api.BrowserDownload) {}, func(string) {},
+	r.p.Listen(func(string, string) {}, func(url, _ string) { r.urls <- url }, func(string, api.BrowserDownload) {}, func(string) {},
 		func(d *api.BrowserDialog) { r.dialogs <- d }, func([]api.BrowserTab) {})
 	if err := r.p.Navigate(ctx, srv.URL+start); err != nil {
 		t.Fatal(err)

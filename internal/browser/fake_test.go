@@ -33,7 +33,7 @@ type fakePage struct {
 	cookies        []*network.CookieParam
 	setCookies     []*network.CookieParam
 	clickAt        [2]float64
-	onFrame        func(string)
+	onFrame        func(tab, data string)
 	onInfo         func(url, title string)
 	onDownload     func(guid string, d api.BrowserDownload)
 	onConsoleError func(text string)
@@ -256,7 +256,7 @@ func (p *fakePage) SetCookies(_ context.Context, cookies []*network.CookieParam)
 	return nil
 }
 
-func (p *fakePage) Listen(onFrame func(string), onInfo func(url, title string), onDownload func(string, api.BrowserDownload), onConsoleError func(string), onDialog func(*api.BrowserDialog), onTabs func([]api.BrowserTab)) {
+func (p *fakePage) Listen(onFrame func(tab, data string), onInfo func(url, title string), onDownload func(string, api.BrowserDownload), onConsoleError func(string), onDialog func(*api.BrowserDialog), onTabs func([]api.BrowserTab)) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	p.onFrame, p.onInfo, p.onDownload, p.onConsoleError, p.onDialog = onFrame, onInfo, onDownload, onConsoleError, onDialog

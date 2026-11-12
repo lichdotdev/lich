@@ -69,7 +69,7 @@ func TestBrowserFrameIsDecodedForThePane(t *testing.T) {
 	if err := jpeg.Encode(&buf, image.NewRGBA(image.Rect(0, 0, 8, 6)), nil); err != nil {
 		t.Fatal(err)
 	}
-	send(m, api.BrowserFrameEvents.Of("orch").Name, base64.StdEncoding.EncodeToString(buf.Bytes()))
+	send(m, api.BrowserFrameEvents.Of("orch").Name, api.BrowserFrame{Data: base64.StdEncoding.EncodeToString(buf.Bytes())})
 	if _, frame, _ := m.browserView("orch"); frame.size != image.Pt(8, 6) {
 		t.Fatalf("frame size %v", frame.size)
 	}
@@ -111,7 +111,7 @@ func TestBrowserFrameSurplusDecodesOnlyTheNewest(t *testing.T) {
 	offered := make(chan struct{})
 	go func() {
 		// A stale frame that fails to decode: decoding it would log.
-		m.offerBrowserFrame("orch", backend.Event{Name: name, Data: json.RawMessage(`"!!"`)}, kick)
+		m.offerBrowserFrame("orch", backend.Event{Name: name, Data: json.RawMessage(`{"data":"!!"}`)}, kick)
 		m.offerBrowserFrame("orch", newest, kick)
 		close(offered)
 	}()
@@ -161,15 +161,26 @@ func takenWhileDecoding(m *model, frame backend.Event, kick chan<- struct{}) boo
 	return pendingFrames(m) == 0
 }
 
-// jpegFrame is a frame event of a w by 6 page.
+// jpegFrame is a frame event of a w by 6 page, of no tab in particular.
 func jpegFrame(t *testing.T, name string, w int) backend.Event {
+	t.Helper()
+	return tabFrame(t, name, "", w)
+}
+
+// tabFrame is a frame event of tab, a w by 6 page.
+func tabFrame(t *testing.T, name, tab string, w int) backend.Event {
+	t.Helper()
+	data, _ := json.Marshal(tabPayload(t, tab, w))
+	return backend.Event{Name: name, Data: data}
+}
+
+func tabPayload(t *testing.T, tab string, w int) api.BrowserFrame {
 	t.Helper()
 	var buf bytes.Buffer
 	if err := jpeg.Encode(&buf, image.NewRGBA(image.Rect(0, 0, w, 6)), nil); err != nil {
 		t.Fatal(err)
 	}
-	data, _ := json.Marshal(base64.StdEncoding.EncodeToString(buf.Bytes()))
-	return backend.Event{Name: name, Data: data}
+	return api.BrowserFrame{Tab: tab, Data: base64.StdEncoding.EncodeToString(buf.Bytes())}
 }
 
 func pendingFrames(m *model) int {

@@ -50,9 +50,9 @@ func TestAttachWatchesTheAgentsPageWithoutRelaunching(t *testing.T) {
 	if !page.casting || page.viewports[0] != v {
 		t.Fatalf("screencast not started at %+v: casting=%v viewports=%v", v, page.casting, page.viewports)
 	}
-	page.onFrame("anBlZw==")
+	page.onFrame("t1", "anBlZw==")
 	frames := out.named(api.BrowserFrameEvents.Of("s").Name)
-	if len(frames) != 1 || frames[0] != "anBlZw==" {
+	if len(frames) != 1 || frames[0] != (api.BrowserFrame{Tab: "t1", Data: "anBlZw=="}) {
 		t.Fatalf("frames = %v", frames)
 	}
 }
@@ -449,8 +449,8 @@ func TestAFrameTheWindowsSocketReadsIsSent(t *testing.T) {
 	}
 	name := api.BrowserFrameEvents.Of("s").Name
 	frame := strings.Repeat("A", maxFrameData)
-	launch.pages[0].onFrame(frame)
-	if frames := out.named(name); len(frames) != 1 || frames[0] != frame {
+	launch.pages[0].onFrame("t1", frame)
+	if frames := out.named(name); len(frames) != 1 || frames[0] != (api.BrowserFrame{Tab: "t1", Data: frame}) {
 		t.Fatalf("a %d-byte frame, under the window's %d-byte read limit, was not sent", len(frame), api.MaxEventBytes)
 	}
 }
@@ -464,12 +464,12 @@ func TestAFramePastTheWindowsSocketLimitIsNotSent(t *testing.T) {
 	name := api.BrowserFrameEvents.Of("s").Name
 	// The window's /events socket reads api.MaxEventBytes a message at most,
 	// and a larger one ends it for every session.
-	page.onFrame(strings.Repeat("A", api.MaxEventBytes))
+	page.onFrame("t1", strings.Repeat("A", api.MaxEventBytes))
 	if frames := out.named(name); len(frames) != 0 {
-		t.Fatalf("sent a %d-byte frame, past what the window's socket reads", len(frames[0].(string)))
+		t.Fatalf("sent a %d-byte frame, past what the window's socket reads", len(frames[0].(api.BrowserFrame).Data))
 	}
-	page.onFrame("anBlZw==")
-	if frames := out.named(name); len(frames) != 1 || frames[0] != "anBlZw==" {
+	page.onFrame("t1", "anBlZw==")
+	if frames := out.named(name); len(frames) != 1 || frames[0] != (api.BrowserFrame{Tab: "t1", Data: "anBlZw=="}) {
 		t.Fatalf("frames after one that fits = %v, want that one", frames)
 	}
 }

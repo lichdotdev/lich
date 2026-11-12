@@ -38,7 +38,7 @@ func frontOf(tabs []api.BrowserTab) api.BrowserTab {
 func TestChromeTabsOpenSwitchAndCloseKeepingEachPage(t *testing.T) {
 	p, srv := liveChrome(t)
 	tabs := make(chan []api.BrowserTab, 32)
-	p.Listen(func(string) {}, func(string, string) {}, func(string, api.BrowserDownload) {}, func(string) {},
+	p.Listen(func(string, string) {}, func(string, string) {}, func(string, api.BrowserDownload) {}, func(string) {},
 		func(*api.BrowserDialog) {}, func(got []api.BrowserTab) { tabs <- got })
 	ctx, cancel := context.WithTimeout(context.Background(), pageWait)
 	defer cancel()
@@ -90,7 +90,7 @@ func TestChromeTabsOpenSwitchAndCloseKeepingEachPage(t *testing.T) {
 func TestChromeNewTabReportsThePageTitleOnceLoaded(t *testing.T) {
 	p, srv := liveChrome(t)
 	tabs := make(chan []api.BrowserTab, 32)
-	p.Listen(func(string) {}, func(string, string) {}, func(string, api.BrowserDownload) {}, func(string) {},
+	p.Listen(func(string, string) {}, func(string, string) {}, func(string, api.BrowserDownload) {}, func(string) {},
 		func(*api.BrowserDialog) {}, func(got []api.BrowserTab) { tabs <- got })
 	ctx, cancel := context.WithTimeout(context.Background(), pageWait)
 	defer cancel()

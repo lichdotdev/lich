@@ -91,7 +91,7 @@ func TestChromeAPaneOpenedOnADialogShowsThePage(t *testing.T) {
 	p, srv := liveChrome(t)
 	frames := make(chan string, 8)
 	opened := make(chan struct{}, 1)
-	p.Listen(func(data string) {
+	p.Listen(func(_, data string) {
 		select {
 		case frames <- data:
 		default:
