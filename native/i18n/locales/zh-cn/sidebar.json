@@ -228,6 +228,12 @@
   "checkoutRow": {
     "newSessionHere": "在此新建会话"
   },
+  "browserRow": {
+    "show": "显示",
+    "minimize": "最小化",
+    "minimized": "已最小化",
+    "inWindow": "在独立窗口中"
+  },
   "scheduleDialog": {
     "title": "定时发送提示词",
     "titleArmed": "已定时的提示词",

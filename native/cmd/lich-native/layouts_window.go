@@ -16,10 +16,16 @@ func (u *window) hasLayout() bool {
 	return ok
 }
 
-// hotkeyUnsplit takes the focused pane out of the layout on screen.
+// hotkeyUnsplit takes the focused pane out of the layout on screen; a page
+// is minimized, its browser left running.
 func (u *window) hotkeyUnsplit(C) {
 	active, ok := u.model.activeSession()
 	if !ok {
+		return
+	}
+	if t, ok := u.model.shownLayoutTab(); ok && t.Focus == browserPaneOf(active.ID) {
+		u.model.minimizePage(active.ID)
+		u.model.invalidate()
 		return
 	}
 	u.model.unsplit(u.ctx, active.ID)
@@ -81,28 +87,19 @@ type moveConfirm struct {
 	orchestrator string
 	delegates    []string
 	away         int
-	// browser is a move into session's browser tab instead.
-	browser bool
-	cancel  widget.Clickable
-	confirm widget.Clickable
+	cancel       widget.Clickable
+	confirm      widget.Clickable
 }
 
 func (u *window) askMove(r besideRequest, id, from string) {
 	c := &u.layoutStage.move
 	c.open, c.req, c.session, c.from = true, r, id, u.model.layoutName(from)
-	c.label, c.delegates, c.browser = u.model.sessionLabel(id), nil, false
-}
-
-func (u *window) askMoveToBrowser(id, from string) {
-	c := &u.layoutStage.move
-	c.open, c.session, c.from = true, id, u.model.layoutName(from)
-	c.label, c.delegates, c.browser = u.model.sessionLabel(id), nil, true
-	u.model.invalidate()
+	c.label, c.delegates = u.model.sessionLabel(id), nil
 }
 
 func (u *window) askMoveDelegates(orchestrator string, ids []string, away int) {
 	c := &u.layoutStage.move
-	c.open, c.orchestrator, c.delegates, c.away, c.browser = true, orchestrator, ids, away, false
+	c.open, c.orchestrator, c.delegates, c.away = true, orchestrator, ids, away
 	// The question was laid out at the top of this frame, closed.
 	u.model.invalidate()
 }
@@ -116,12 +113,9 @@ func (u *window) layoutMoveConfirm(gtx C, th *ui.Theme) {
 	}
 	if c.confirm.Clicked(gtx) && c.open {
 		c.open = false
-		switch {
-		case c.browser:
-			u.model.openBrowserTab(u.ctx, c.session, true)
-		case c.delegates != nil:
+		if c.delegates != nil {
 			u.model.showDelegates(u.ctx, c.orchestrator, c.delegates)
-		default:
+		} else {
 			u.model.splitBeside(u.ctx, c.req.target, c.session, c.req.edge, true)
 		}
 		u.model.invalidate()
@@ -142,10 +136,6 @@ func (u *window) layoutMoveConfirm(gtx C, th *ui.Theme) {
 }
 
 func (c *moveConfirm) question() (title, body string) {
-	if c.browser {
-		return i18n.T("layouts.move.title", i18n.Args{"label": c.label}),
-			i18n.T("layouts.browser.moveBody", i18n.Args{"label": c.label, "layout": c.from})
-	}
 	if c.delegates != nil {
 		return i18n.T("layouts.delegates.moveTitle", i18n.Args{"count": len(c.delegates)}),
 			i18n.T("layouts.delegates.moveBody", i18n.Args{"count": c.away})

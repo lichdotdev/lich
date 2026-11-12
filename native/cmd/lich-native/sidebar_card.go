@@ -196,7 +196,7 @@ func (s *sidebar) cardLine(gtx C, th *ui.Theme, sv *sessionView, more layout.Wid
 
 // titleRow is the start of the card's line: the status ring around the
 // provider mark, a shield on a session that runs sandboxed, a fork on one born
-// of a fork, a globe while its browser runs, and the label.
+// of a fork, a globe while a fold hides its browser's row, and the label.
 func (s *sidebar) titleRow(th *ui.Theme, sv *sessionView) []layout.FlexChild {
 	row := []layout.FlexChild{
 		layout.Rigid(func(gtx C) D {
@@ -214,7 +214,7 @@ func (s *sidebar) titleRow(th *ui.Theme, sv *sessionView) []layout.FlexChild {
 	if sv.Forked {
 		row = append(row, layout.Rigid(func(gtx C) D { return icMenuFork.Layout(gtx, 12, th.MutedForeground) }), ui.Gap(1.5))
 	}
-	if sv.browser {
+	if sv.browser && sv.place.folded {
 		row = append(row, layout.Rigid(func(gtx C) D { return icBrowser.Layout(gtx, 12, th.MutedForeground) }), ui.Gap(1.5))
 	}
 	if mark := scheduleMark(sv); mark != nil {

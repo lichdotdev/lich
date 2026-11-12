@@ -55,7 +55,7 @@ Leia o que o agente mudou ao lado da sessão dele, comente as linhas que precisa
 
 ### Aponte na página, fale com o agente
 
-O agente pilota um navegador numa aba ao lado da sessão, e você usa a mesma página. Aponte o que está errado, deixe uma nota em cima e mande todas as notas de volta num prompt só.
+O agente pilota um navegador ao lado da sessão, e você usa a mesma página. Aponte o que está errado, deixe uma nota em cima e mande todas as notas de volta num prompt só.
 
 </td>
 <td width="50%"><img src="docs/media/page-notes.png" alt="O navegador da sessão ao lado do terminal, com duas notas numeradas presas a elementos da página" width="100%" /></td>
@@ -185,7 +185,7 @@ o lich consegue ler de volta, porque cada CLI registra coisas diferentes.
 | Uma tarefa passada para outra sessão volta como "sem resposta" assim que aquele agente encerra o turno sem responder | sim | sim | sim | sim | sim | não, espera o prazo | sim | sim |
 | As mensagens do próprio lich para o agente (tarefas delegadas, resultados prontos, avisos) no idioma de prompt que você escolher | sim | sim | sim | sim | sim | sim | sim | sim |
 | Instruído na criação, no idioma de prompt, a distribuir o trabalho em sessões do lich em vez de subagentes ocultos | sim | não | não | não | sim | não | não | não |
-| O card da sessão abre um navegador que o agente dirige, numa aba ao lado da sessão | sim | sim | sim | sim | sim | sim | sim | sim |
+| O card da sessão abre um navegador que o agente dirige, ao lado do terminal da sessão | sim | sim | sim | sim | sim | sim | sim | sim |
 | Uma página que o agente faz para te mostrar (um relatório, um diagrama, um mockup) abre nesse navegador a partir de uma pasta própria da sessão, fora do checkout, mantida enquanto a sessão existir | sim, mas o Claude Code ainda pode publicá-la no claude.ai com a própria ferramenta Artifact | sim | sim | sim | sim | sim | sim | sim |
 
 </details>

@@ -307,12 +307,23 @@ func (s *sidebar) blockCards(gtx C, th *ui.Theme, b blockView, st *blockState, f
 }
 
 // blockRow is one row in its motion: a checkout a mother's children run in,
-// or a card. Every card drags, but a reorder only moves it among the stored
+// a session's browser, or a card. Every card drags, but a reorder only moves it among the stored
 // order: the tree is read off the origins, so a child stays under its mother.
 func (s *sidebar) blockRow(gtx C, th *ui.Theme, st *blockState, b blockView, r sessionRow, tree bool, f blockFrame, dragEnded bool) D {
 	if r.kind == rowNestedCheckout {
 		row := func(gtx C) D {
 			return layout.Inset{Bottom: cardGap}.Layout(gtx, func(gtx C) D { return s.nestedCheckout(gtx, th, r, b, f.act, tree) })
+		}
+		if r.motion != nil {
+			return moveRow(gtx, r, row)
+		}
+		return st.presence.Layout(gtx, r.key, row)
+	}
+	if r.kind == rowBrowser {
+		row := func(gtx C) D {
+			return layout.Inset{Bottom: cardGap}.Layout(gtx, func(gtx C) D {
+				return s.browserRow(gtx, th, r, b, f.act, tree, r.sv.ID == f.active, dragEnded)
+			})
 		}
 		if r.motion != nil {
 			return moveRow(gtx, r, row)
@@ -329,7 +340,7 @@ func (s *sidebar) blockRow(gtx C, th *ui.Theme, st *blockState, b blockView, r s
 		var a sidebarAction
 		card := func(gtx C) D {
 			var d D
-			d, a = s.card(gtx, th, &sv, sv.ID == f.active, folders)
+			d, a = s.card(gtx, th, &sv, sv.ID == f.active && !sv.web.focused, folders)
 			return d
 		}
 		var d D

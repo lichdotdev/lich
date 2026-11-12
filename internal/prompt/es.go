@@ -22,7 +22,7 @@ var es = Catalog{
 	BriefingCommandTools: "Las herramientas de lich de tu lista abren una y le entregan la tarea.",
 	BriefingCommandCLI: "Abre una con `lich open --worktree BRANCH --prompt 'la tarea'`, que abre la " +
 		"sesión y le entrega la tarea en un solo comando.",
-	BriefingArtifacts: " Una página que haces para que el usuario la vea (un informe, un diagrama, un mockup) va en la carpeta que indica la variable de entorno LICH_ARTIFACT_DIR, nunca en el checkout, y se abre con %s en la pestaña del navegador junto a esta sesión; publícala en otro lugar solo cuando el usuario lo pida.",
+	BriefingArtifacts: " Una página que haces para que el usuario la vea (un informe, un diagrama, un mockup) va en la carpeta que indica la variable de entorno LICH_ARTIFACT_DIR, nunca en el checkout, y se abre con %s en el navegador junto al terminal de esta sesión; publícala en otro lugar solo cuando el usuario lo pida.",
 
 	RelayMessage:  "[lich] %[1]s, no de tu propio prompt.\n\n%[2]s\n\n%[3]s",
 	OriginCLI:     "Mensaje retransmitido por la línea de comandos de lich",
@@ -95,8 +95,8 @@ Un subagente o paso de workflow que corre dentro de esta sesión no es su agente
 
 Cuando un mensaje [lich] con ticket llega a TU prompt, eres la sesión de trabajo: haz la tarea y responde con %s, un informe conciso (qué se hizo, dónde, qué falta), nunca una transcripción.
 
-Esta sesión tiene un navegador propio (herramientas browser_*). Corre sin ventana dentro de lich, y el usuario ve la misma página en una pestaña junto a esta sesión: la abre el elemento Navegador de la tarjeta, y lich se la ofrece con un aviso cuando abres el navegador. No aparece ninguna ventana propia y no hace falta: no le pidas al usuario que abra una. Ábrelo, lee la página, haz clic, escribe, pulsa teclas con nombre y captura la pantalla. Las capturas son archivos. Nunca pegues sus bytes en la respuesta.`,
-	MCPArtifacts: "Las páginas que haces para que el usuario las vea (un informe, un diagrama, un mockup) van en la carpeta de artefactos de esta sesión, %s, nunca en el checkout: ahí quedan fuera de git, sobreviven a un reinicio y duran lo que dure la sesión. Escribe el archivo ahí y ábrelo con browser_open: el usuario lo ve en la pestaña junto a esta sesión. Publícalo en cualquier otro lugar, incluidos los artefactos alojados de tu propio harness, solo cuando el usuario lo pida.",
+Esta sesión tiene un navegador propio (herramientas browser_*). Corre sin ventana dentro de lich, y el usuario ve la misma página junto al terminal de esta sesión: la abre el elemento Navegador de la tarjeta, y lich se la ofrece con un aviso cuando abres el navegador. No aparece ninguna ventana propia y no hace falta: no le pidas al usuario que abra una. Ábrelo, lee la página, haz clic, escribe, pulsa teclas con nombre y captura la pantalla. Las capturas son archivos. Nunca pegues sus bytes en la respuesta.`,
+	MCPArtifacts: "Las páginas que haces para que el usuario las vea (un informe, un diagrama, un mockup) van en la carpeta de artefactos de esta sesión, %s, nunca en el checkout: ahí quedan fuera de git, sobreviven a un reinicio y duran lo que dure la sesión. Escribe el archivo ahí y ábrelo con browser_open: el usuario lo ve junto al terminal de esta sesión. Publícalo en cualquier otro lugar, incluidos los artefactos alojados de tu propio harness, solo cuando el usuario lo pida.",
 	HandOverFailed: "La tarea no le llegó: %[1]v. La sesión está abierta, así que entrégale la tarea con " +
 		"%[2]s cuando resuelvas lo que eso dice.",
 	SendToSessionPrivate: "send_to_session con private",

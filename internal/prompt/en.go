@@ -23,7 +23,7 @@ var en = Catalog{
 	BriefingCommandTools: "The lich tools in your list open one and hand it the task.",
 	BriefingCommandCLI: "Open one with `lich open --worktree BRANCH --prompt 'the task'`, which opens the " +
 		"session and hands it the task in one command.",
-	BriefingArtifacts: " A page you make for the user to look at (a report, a diagram, a mockup) goes in the folder the LICH_ARTIFACT_DIR environment variable names, never in the checkout, and opens with %s in the browser tab beside this session; publish it anywhere else only when the user asks.",
+	BriefingArtifacts: " A page you make for the user to look at (a report, a diagram, a mockup) goes in the folder the LICH_ARTIFACT_DIR environment variable names, never in the checkout, and opens with %s in the browser beside the terminal of this session; publish it anywhere else only when the user asks.",
 
 	RelayMessage:  "[lich] %[1]s, not from your own prompt.\n\n%[2]s\n\n%[3]s",
 	OriginCLI:     "Message relayed by the lich command line",
@@ -96,8 +96,8 @@ A subagent or workflow step running inside this session is not its agent, and li
 
 When a [lich] message carrying a ticket arrives at YOUR prompt, you are the worker: do the task, then answer with %s — a concise report (what was done, where, what remains), never a transcript.
 
-This session has a browser of its own (browser_* tools). It runs headless inside lich, and the user sees the same page in a tab beside this session: the card's Browser item opens it, and lich offers it with a notice when you open the browser. No window of its own appears, and none is needed: do not ask the user to open one. Open it, read the page, click, type, press named keys, and screenshot. Screenshots are files. Never paste their bytes into a reply.`,
-	MCPArtifacts: "Pages you make for the user to look at (a report, a diagram, a mockup) go in this session's artifact folder, %s, never in the checkout: there they stay out of git, survive a restart and last as long as the session. Write the file there and open it with browser_open: the user sees it in the tab beside this session. Publish it anywhere else, your own harness's hosted artifacts included, only when the user asks for that.",
+This session has a browser of its own (browser_* tools). It runs headless inside lich, and the user sees the same page beside this session's terminal: the card's Browser item opens it, and lich offers it with a notice when you open the browser. No window of its own appears, and none is needed: do not ask the user to open one. Open it, read the page, click, type, press named keys, and screenshot. Screenshots are files. Never paste their bytes into a reply.`,
+	MCPArtifacts: "Pages you make for the user to look at (a report, a diagram, a mockup) go in this session's artifact folder, %s, never in the checkout: there they stay out of git, survive a restart and last as long as the session. Write the file there and open it with browser_open: the user sees it beside this session's terminal. Publish it anywhere else, your own harness's hosted artifacts included, only when the user asks for that.",
 	HandOverFailed: "The task did not reach it: %[1]v. The session is open, so hand it the task with " +
 		"%[2]s once whatever that says is dealt with.",
 	SendToSessionPrivate: "send_to_session with private",

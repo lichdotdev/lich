@@ -43,7 +43,7 @@ var (
 	// ShowCode opens a file of a session's checkout in the window's dock, as
 	// show_code does.
 	ShowCode = method[ShowCodeParams, ShownCode]("window.showCode", PermissionWindow)
-	// OpenURL loads a page in a session's browser tab, as browser_open does.
+	// OpenURL loads a page in a session's browser, as browser_open does.
 	OpenURL = method[OpenURLParams, OpenedURL]("window.openURL", PermissionWindow)
 	// Subscribe starts the events named. Each needs its own permission, and
 	// the call is refused whole when one is missing.
@@ -307,7 +307,7 @@ type ShownCode struct {
 }
 
 // OpenURLParams loads URL, http or https, in the browser of Session, its id
-// as ListSessions returns it, which the person sees in a tab beside it.
+// as ListSessions returns it, which the person sees beside that session's terminal.
 type OpenURLParams struct {
 	Session string `json:"session"`
 	URL     string `json:"url"`

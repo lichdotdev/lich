@@ -18,6 +18,7 @@
   "browser": {
     "title": "Navegador",
     "close": "Cerrar el navegador",
+    "minimize": "Minimizar: el navegador sigue abierto",
     "newTab": "Nueva pestaña",
     "closeTab": "Cerrar pestaña",
     "blankTab": "Nueva pestaña",
@@ -26,7 +27,6 @@
     "forward": "Adelante",
     "reload": "Recargar",
     "openInWindow": "Abrir en una ventana",
-    "locked": "Esta pestaña es solo de {label} y su navegador",
     "opened": "{label} abrió un navegador",
     "dismiss": "Descartar",
     "open": "Abrir",
@@ -35,7 +35,6 @@
     "keepOpen": "Mantener abierto",
     "closeIdle": "Cerrar",
     "showFolder": "Abrir carpeta",
-    "moveBody": "Sale de \"{layout}\". La pestaña del navegador solo admite {label} y su navegador.",
     "pick": "Dejar notas en la página",
     "pickHint": "Haz clic en un elemento para dejar una nota",
     "zoom": "Zoom de la página",

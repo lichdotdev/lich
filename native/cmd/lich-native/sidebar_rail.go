@@ -194,6 +194,9 @@ func railRows(b blockView) []railItem {
 			items = append(items, railItem{kind: railCheckout, id: r.key, depth: r.depth, key: r.key, path: r.path, facts: b.facts[r.path], small: r.depth > base})
 			continue
 		}
+		if r.kind == rowBrowser {
+			continue
+		}
 		sv := r.sv
 		items = append(items, railItem{kind: railCard, id: r.key, depth: r.depth, sv: &sv, small: r.depth > base, kids: r.kids, folded: r.folded})
 	}

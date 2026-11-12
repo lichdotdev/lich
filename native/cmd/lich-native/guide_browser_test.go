@@ -54,17 +54,6 @@ func TestBrowserGuideFollowsTheShownCardsMenu(t *testing.T) {
 		t.Fatal("the corner menu of the shown card does not count")
 	}
 
-	if u.tourBrowserChosen() {
-		t.Fatal("nothing chosen yet")
-	}
-	u.layoutStage.move = moveConfirm{open: true, browser: true, session: "b"}
-	if u.tourBrowserChosen() {
-		t.Fatal("another session's move question moved the guide on")
-	}
-	u.layoutStage.move.session = "a"
-	if !u.tourBrowserChosen() {
-		t.Fatal("the move question for the shown session must end the step, or the tour covers it")
-	}
 }
 
 func TestTourBrowserSpotMarksOnlyTheBrowserEntry(t *testing.T) {

@@ -224,6 +224,12 @@
   "checkoutRow": {
     "newSessionHere": "여기서 새 세션"
   },
+  "browserRow": {
+    "show": "표시",
+    "minimize": "최소화",
+    "minimized": "최소화됨",
+    "inWindow": "별도 창에서 열림"
+  },
   "scheduleDialog": {
     "title": "프롬프트 예약",
     "titleArmed": "예약된 프롬프트",

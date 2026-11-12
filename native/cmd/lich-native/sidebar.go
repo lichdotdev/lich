@@ -136,11 +136,13 @@ type sidebarAction struct {
 	// Open in, from the card menu: a directory for a shell session, the
 	// editor or the file manager. browser is the session whose Chromium to show.
 	terminalAt, editorAt, folderAt, browser string
-	rename                                  sessionRename
-	color, colorTo                          string // session id, and its new tint ("" for the theme)
-	continueIn                              continueRequest
-	profilePick                             profilePick
-	worktree                                bool // the + menu asked for a worktree session
+	// From a browser row's menu, each the session whose browser it is.
+	browserMinimize, browserWindow, browserClose string
+	rename                                       sessionRename
+	color, colorTo                               string // session id, and its new tint ("" for the theme)
+	continueIn                                   continueRequest
+	profilePick                                  profilePick
+	worktree                                     bool // the + menu asked for a worktree session
 	// The session to fork, in its own checkout or into a new worktree.
 	forkHere, forkWorktree string
 	schedule               string // the session whose Schedule prompt… was picked

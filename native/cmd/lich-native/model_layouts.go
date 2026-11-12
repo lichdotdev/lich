@@ -71,6 +71,9 @@ func (m *model) routeLocked(id string) bool {
 		return false
 	}
 	m.activeProject, m.home = p.ID, p.ID == m.homeID
+	if page := m.pages[id]; page != nil {
+		page.focused = false
+	}
 	i := m.layouts.of(id)
 	if i < 0 {
 		m.shownLayout = ""
@@ -116,11 +119,19 @@ func (m *model) showLayout(ctx context.Context, id string) bool {
 	return true
 }
 
-// shownLayoutTab is a copy of the layout on screen, false with none.
+// shownLayoutTab is what the stage lays out as panes, false for a session
+// alone with no page: a copy of the layout on screen, or the active session
+// alone, with the pages their sessions show.
 func (m *model) shownLayoutTab() (layoutTab, bool) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return m.shownLayoutLocked()
+	t, ok := m.shownLayoutLocked()
+	if !ok {
+		if t, ok = m.soloLayoutLocked(); !ok {
+			return layoutTab{}, false
+		}
+	}
+	return m.pages.withPages(t), true
 }
 
 func (m *model) shownLayoutLocked() (layoutTab, bool) {
@@ -167,11 +178,10 @@ func (m *model) layoutOf(id string) string {
 // splitBeside puts session against target's edge and brings it into focus:
 // in the layout holding target, else in a new layout of the two named after
 // target. A session that is in another layout already stays where it is
-// unless move is set, and a browser tab takes no one; it reports false when
-// nothing was split.
+// unless move is set; it reports false when nothing was split.
 func (m *model) splitBeside(ctx context.Context, target, session string, edge paneEdge, move bool) bool {
 	m.mu.Lock()
-	if target == session || !m.liveLocked(target) || !m.liveLocked(session) || m.layouts.locked(m.layouts.of(target)) {
+	if target == session || !m.liveLocked(target) || !m.liveLocked(session) {
 		m.mu.Unlock()
 		return false
 	}
@@ -196,11 +206,13 @@ func (m *model) splitBeside(ctx context.Context, target, session string, edge pa
 
 // unsplit takes session out of its layout, leaving the session running. The
 // pane that takes the focus comes on screen, or, with one pane left and so
-// no layout, that pane's session alone.
+// no layout, that pane's session alone. A session in no layout is split from
+// its page only, which is minimized.
 func (m *model) unsplit(ctx context.Context, session string) {
 	m.mu.Lock()
 	i := m.layouts.of(session)
 	if i < 0 {
+		m.dropPageLocked(session)
 		m.mu.Unlock()
 		return
 	}
@@ -209,11 +221,6 @@ func (m *model) unsplit(ctx context.Context, session string) {
 	next := left
 	if t := m.layouts.byID(id); t != nil {
 		next = paneSession(t.Focus)
-	}
-	if next == "" {
-		// The session left its browser tab, which goes with it: it is what
-		// stays on screen.
-		next = session
 	}
 	m.mu.Unlock()
 	m.setActive(ctx, next)
@@ -239,11 +246,16 @@ func (m *model) closeLayout(ctx context.Context, id string) {
 }
 
 // toggleZoom zooms the focused pane of the layout on screen over the others,
-// or back.
+// or back; with no layout, the active session's terminal or page over the
+// other.
 func (m *model) toggleZoom() {
 	m.mu.Lock()
 	t := m.layouts.byID(m.shownLayout)
 	if t == nil {
+		if page := m.pages[m.active]; page != nil {
+			page.Zoomed = !page.Zoomed
+			m.savePagesLocked()
+		}
 		m.mu.Unlock()
 		return
 	}
@@ -269,18 +281,22 @@ func (m *model) cyclePane(ctx context.Context, step int) {
 	m.focusPane(ctx, ids[(at+step+len(ids))%len(ids)])
 }
 
-// focusPane puts pane in focus: its session on screen, and in the layout
-// holding it, the pane itself, which for a page is not its session's.
+// focusPane puts pane in focus: its session on screen and in focus in the
+// layout holding it, the keys going to the session's page when pane is that.
 func (m *model) focusPane(ctx context.Context, pane string) {
 	session := paneSession(pane)
 	if active, ok := m.activeSession(); !ok || active.ID != session {
 		m.setActive(ctx, session)
 	}
+	_, onPage := browserOwner(pane)
 	m.mu.Lock()
 	changed := false
-	if i := m.layouts.of(session); i >= 0 && m.layouts.tabs[i].Focus != pane {
-		m.layouts.tabs[i].Focus = pane
+	if i := m.layouts.of(session); i >= 0 && m.layouts.tabs[i].Focus != session {
+		m.layouts.tabs[i].Focus = session
 		changed = true
+	}
+	if page := m.pages[session]; page != nil {
+		page.focused = onPage
 	}
 	m.mu.Unlock()
 	if changed {
@@ -288,18 +304,22 @@ func (m *model) focusPane(ctx context.Context, pane string) {
 	}
 }
 
-// setRatio stores a divider's new ratio once its drag ends.
+// setRatio stores a divider's new ratio once its drag ends. path is the
+// divider's in the layout as drawn, where a session showing its page is a
+// split of the two: a path ending on that session names their divider.
 func (m *model) setRatio(layoutID string, path []bool, ratio float64) {
 	m.mu.Lock()
-	t := m.layouts.byID(layoutID)
-	if t == nil {
-		m.mu.Unlock()
+	defer m.mu.Unlock()
+	var n *paneNode
+	if t := m.layouts.byID(layoutID); t != nil {
+		n = t.Root
+	} else if session, ok := strings.CutPrefix(layoutID, soloLayoutPrefix); ok {
+		n = &paneNode{Session: session}
+	} else {
 		return
 	}
-	n := t.Root
 	for _, second := range path {
 		if n.leaf() {
-			m.mu.Unlock()
 			return
 		}
 		if second {
@@ -308,13 +328,15 @@ func (m *model) setRatio(layoutID string, path []bool, ratio float64) {
 			n = n.First
 		}
 	}
-	if n.leaf() {
-		m.mu.Unlock()
+	if !n.leaf() {
+		n.Ratio = clampRatio(ratio)
+		m.saveLayoutsLocked()
 		return
 	}
-	n.Ratio = clampRatio(ratio)
-	m.mu.Unlock()
-	m.saveLayouts()
+	if page := m.pages[n.Session]; page != nil {
+		page.Ratio = clampRatio(ratio)
+		m.savePagesLocked()
+	}
 }
 
 // layoutStripTabs are the layouts as strip tabs, each but the one on screen
@@ -466,9 +488,20 @@ func (m *model) movePane(ctx context.Context, source, target string, edge paneEd
 }
 
 // rotateFocused turns the split holding the focused pane of the layout on
-// screen between side by side and stacked.
+// screen between side by side and stacked. For a session showing its page
+// that split is the two of them, whichever has the focus.
 func (m *model) rotateFocused() bool {
 	m.mu.Lock()
+	if page := m.pages[m.active]; page != nil {
+		if page.Axis == splitRow {
+			page.Axis = splitColumn
+		} else {
+			page.Axis = splitRow
+		}
+		m.savePagesLocked()
+		m.mu.Unlock()
+		return true
+	}
 	t := m.layouts.byID(m.shownLayout)
 	if t == nil || !t.rotate(t.Focus) {
 		m.mu.Unlock()

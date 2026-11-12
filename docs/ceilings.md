@@ -1226,7 +1226,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   on a rig with no session bus).
 - **An extension with `window` acts on screen in a session's name** (`internal/extensions/methods_window.go`):
   `window.showCode` opens any file of a live session's checkout in the dock and `window.openURL` loads any http
-  or https page in a session's browser tab, both as the session's own tools do, and the person sees them as that
+  or https page in a session's browser, both as the session's own tools do, and the person sees them as that
   session's. Both need a window attached to `/events`, and refuse otherwise. `window.openURL` takes neither a
   local file nor the artifact folder, which `browser_open` serves, and drives no page past the load.
 - **Calls are bounded per extension, not across them** (`internal/extensions/calls.go`): 8 running at once, the
@@ -1424,7 +1424,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
 
 - **A session's browser is a second Chromium, one per card, drawn from frames** (`internal/browser`,
   `docs/browser-tab.md`): a headless Chrome, Edge, Chromium, Brave, Vivaldi or Helium already installed,
-  whose page reaches the session's browser tab as a JPEG screencast over `/events`, at the page's own frame
+  whose page reaches the session's page pane as a JPEG screencast over `/events`, at the page's own frame
   rate; a window slower to decode skips to the newest frame. A HiDPI pane gets frames drawn at 1.5x at most
   (`frameScale`): 2x halved a busy page's frame rate. The browser draws at a scale forced at its launch, the one
   the window drew pages at then (its own scale times the page zoom, 1 at least; 1.5 when no window had said),
@@ -1445,7 +1445,14 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   opener the front tab shares that renderer and is held by it too. Open in
   a window moves the front tab to a real Chromium window for those, reopening it on the same profile with every
   cookie, since chromedp cannot show a headless process in place. A half-filled form or sessionStorage is
-  lost on that move. Closing the card, or the session's process ending, closes the browser; Continue in,
+  lost on that move. The page is drawn beside its session's terminal and is a pane of no stored layout
+  (`native/cmd/lich-native/pages.go`): it sits after the terminal, at its right or under it, and cannot be
+  dragged anywhere else or dropped on. Minimize on its header hides it and leaves the Chromium running;
+  minimizing forgets where the divider was. A running browser is a row of the sidebar's tree under its
+  session (`sidebar_browser_row.go`), named by the page's host and muted while minimized or in a window of its
+  own, so the name does not say which of the two; the tooltip does. The row is no session: it files nowhere,
+  a drag leaves it where it was, a folded mother hides it behind a globe on her own row, and the collapsed
+  sidebar does not draw it at all. Closing the card, or the session's process ending, closes the browser; Continue in,
   which ends the process and spawns it again in the same card, keeps it. Closing that
   window does not close the session. A headless browser no pane shows and no one used for five minutes is
   only asked about, in a toast, and closes only on Close: an unanswered one holds its Chromium until the

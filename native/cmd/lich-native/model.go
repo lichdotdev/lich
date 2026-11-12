@@ -142,6 +142,8 @@ type model struct {
 	// screen, "" for a project's session alone.
 	layouts     layoutTabs
 	shownLayout string
+	// pages are the pages shown beside their sessions' terminals (pages.go).
+	pages pageViews
 	// browsers are the session browsers (browser_model.go); browserOpened
 	// hears one the agent started, and browserIdle one the backend starts or
 	// stops asking about (State.Idle).
@@ -167,7 +169,8 @@ func newModel(client *backend.Client, invalidate func()) *model {
 		xdgProfiles:   xdgProfileBooks(client, invalidate, quota),
 		providers:     newProviderBook(client, invalidate),
 		closed:        newClosedProjects(client, invalidate),
-		browsers:      newBrowserStore()}
+		browsers:      newBrowserStore(),
+		pages:         pageViews{}}
 }
 
 func (m *model) reload(ctx context.Context) error {
@@ -456,7 +459,7 @@ func (m *model) follow(ctx context.Context, events <-chan backend.Event) {
 			m.sessionTouched(ctx, ev)
 		case api.BrowserStateEvent.Name:
 			if st, err := backend.Decode(ev, api.BrowserStateEvent); err == nil {
-				m.applyBrowserState(ctx, st)
+				m.applyBrowserState(st)
 			}
 		case api.BrowserAgentEvent.Name:
 			if a, err := backend.Decode(ev, api.BrowserAgentEvent); err == nil {
@@ -628,6 +631,7 @@ type sessionView struct {
 	agent     string        // provider CLI live in the PTY, "" for none
 	sandbox   sandboxEvent
 	browser   bool         // a browser of this session runs
+	web       webView      // what that browser shows, and where
 	relay     sessionRelay // Direction "" for none
 	tool      sessionTool  // Name "" outside a tool call
 	reason    string       // what a waiting session is blocked on, "" for unsaid
@@ -654,8 +658,10 @@ func (m *model) viewOf(p backend.Project, s backend.Session, now time.Time) sess
 	age, aged := m.status.age(s.ID, now)
 	tool, _ := m.status.tool(s.ID)
 	usage, _ := m.usage.get(s.ID)
+	st, page := m.browsers.states[s.ID], m.pages[s.ID]
+	web := webView{url: st.URL, title: st.Title, headed: st.Headed, shown: page != nil, focused: page != nil && page.focused}
 	return sessionView{
-		Session: s, projectID: p.ID, path: sessionPath(p, s), shown: shown, host: m.cwd[s.ID].Host,
+		Session: s, projectID: p.ID, path: sessionPath(p, s), shown: shown, host: m.cwd[s.ID].Host, web: web,
 		status: m.status.status(s.ID), unread: m.status.unread(s.ID), age: age, aged: aged,
 		agent: m.agent[s.ID], sandbox: m.sandbox[s.ID], git: m.git[shown],
 		base: m.base[shown], pr: m.prs[shown].pr,

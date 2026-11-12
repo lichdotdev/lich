@@ -18,6 +18,7 @@
   "browser": {
     "title": "Navegador",
     "close": "Fechar o navegador",
+    "minimize": "Minimizar: o navegador continua rodando",
     "newTab": "Nova aba",
     "closeTab": "Fechar aba",
     "blankTab": "Nova aba",
@@ -26,7 +27,6 @@
     "forward": "Avançar",
     "reload": "Recarregar",
     "openInWindow": "Abrir em janela",
-    "locked": "Esta aba é só de {label} e do navegador dela",
     "opened": "{label} abriu um navegador",
     "dismiss": "Dispensar",
     "open": "Abrir",
@@ -35,7 +35,6 @@
     "keepOpen": "Manter aberto",
     "closeIdle": "Fechar",
     "showFolder": "Abrir pasta",
-    "moveBody": "Ela sai de \"{layout}\". Uma aba de navegador só comporta {label} e o navegador dela.",
     "pick": "Deixar notas na página",
     "pickHint": "Clique num elemento para deixar uma nota",
     "zoom": "Zoom da página",

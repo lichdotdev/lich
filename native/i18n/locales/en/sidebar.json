@@ -228,6 +228,12 @@
   "checkoutRow": {
     "newSessionHere": "New session here"
   },
+  "browserRow": {
+    "show": "Show",
+    "minimize": "Minimize",
+    "minimized": "Minimized",
+    "inWindow": "In its own window"
+  },
   "scheduleDialog": {
     "title": "Schedule a prompt",
     "titleArmed": "Scheduled prompt",

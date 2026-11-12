@@ -8,13 +8,8 @@
   },
   "item": {
     "title": "Escolha Navegador",
-    "body": "Abre uma aba de navegador ao lado da sua sessão.",
+    "body": "Abre um navegador ao lado da sua sessão.",
     "hint": "Clique em Navegador para continuar"
-  },
-  "again": {
-    "title": "Abra o navegador",
-    "body": "Sua sessão está num layout, então o navegador dela fica numa aba própria. Escolha Navegador no menu dela de novo e clique em Mover.",
-    "hint": "Abra o navegador da sua sessão para continuar"
   },
   "pane": {
     "title": "Você e seu agente veem a mesma página",

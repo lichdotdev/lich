@@ -68,9 +68,9 @@ func newBrowserStore() browserStore {
 	return browserStore{states: map[string]api.BrowserState{}, frames: map[string]browserFrame{}, pending: map[string]pendingFrame{}, agent: map[string][]browserMark{}}
 }
 
-// hydrateBrowsers reads the browsers running now, and takes out of the
-// layouts every page whose browser did not survive (a backend restarted, or
-// a browser moved to its own window while this one was away).
+// hydrateBrowsers reads the browsers running now, and takes off the screen
+// every page whose browser did not survive (a backend restarted, or a
+// browser moved to its own window while this one was away).
 func (m *model) hydrateBrowsers(ctx context.Context) error {
 	running, err := m.client.RunningBrowsers(ctx)
 	if err != nil {
@@ -81,16 +81,8 @@ func (m *model) hydrateBrowsers(ctx context.Context) error {
 		m.browsers.states[st.Owner] = st
 	}
 	idle := m.browserIdle
-	pruned := false
-	for _, t := range append([]layoutTab(nil), m.layouts.tabs...) {
-		if owner, ok := t.browserOf(); ok && !m.browserShowableLocked(owner) {
-			pruned = m.layouts.dropBrowser(owner) || pruned
-		}
-	}
+	m.prunePagesLocked(m.browserShowableLocked)
 	m.mu.Unlock()
-	if pruned {
-		m.saveLayouts()
-	}
 	for _, st := range running {
 		if st.Idle && idle != nil {
 			idle(st)
@@ -116,10 +108,10 @@ func (m *model) browserState(session string) (api.BrowserState, bool) {
 }
 
 // applyBrowserState takes a browser-state event: a page that can no longer
-// be drawn leaves its tab, a browser the agent just started is offered to
+// be drawn leaves the screen, a browser the agent just started is offered to
 // the person (browserOpened), and the question about an idle one goes up or
 // down (browserIdle).
-func (m *model) applyBrowserState(ctx context.Context, st api.BrowserState) {
+func (m *model) applyBrowserState(st api.BrowserState) {
 	m.mu.Lock()
 	prev, known := m.browsers.states[st.Owner]
 	idle := m.browserIdle
@@ -133,18 +125,10 @@ func (m *model) applyBrowserState(ctx context.Context, st api.BrowserState) {
 		m.browsers.pendingMu.Unlock()
 		delete(m.browsers.agent, st.Owner)
 	}
-	shownTab := ""
-	if i := m.layouts.browserTab(st.Owner); i >= 0 && m.shownLayout == m.layouts.tabs[i].ID {
-		shownTab = m.shownLayout
+	if !m.browserShowableLocked(st.Owner) {
+		m.dropPageLocked(st.Owner)
 	}
-	dropped := !m.browserShowableLocked(st.Owner) && m.layouts.dropBrowser(st.Owner)
 	m.mu.Unlock()
-	if dropped {
-		m.saveLayouts()
-		if shownTab != "" {
-			m.setActive(ctx, st.Owner)
-		}
-	}
 	if st.Open && st.ByAgent && !known && m.browserOpened != nil {
 		m.browserOpened(st)
 	}
@@ -249,34 +233,4 @@ func (m *model) browserView(session string) (api.BrowserState, browserFrame, []b
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	return m.browsers.states[session], m.browsers.frames[session], slices.Clone(m.browsers.agent[session])
-}
-
-// openBrowserTab puts session's browser tab on screen, making it when there
-// is none. A session in another layout stays there unless move is set; it
-// reports false when nothing opened.
-func (m *model) openBrowserTab(ctx context.Context, session string, move bool) bool {
-	m.mu.Lock()
-	if !m.liveLocked(session) {
-		m.mu.Unlock()
-		return false
-	}
-	if i := m.layouts.browserTab(session); i >= 0 {
-		m.mu.Unlock()
-		m.focusPane(ctx, browserPaneOf(session))
-		return true
-	}
-	if m.layouts.of(session) >= 0 {
-		if !move {
-			m.mu.Unlock()
-			return false
-		}
-		m.layouts.take(session)
-	}
-	p, i := m.sessionAt(session)
-	m.layouts.openBrowser(p.Sessions[i].Label, session)
-	m.mu.Unlock()
-	m.setActive(ctx, session)
-	m.focusPane(ctx, browserPaneOf(session))
-	m.saveLayouts()
-	return true
 }
