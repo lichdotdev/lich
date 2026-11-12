@@ -16,6 +16,17 @@ var (
 	flagToastsExpanded = flag.Bool("toasts-expanded", false, "draw the toast stack expanded, as a hover would, for -shot")
 )
 
+// layoutToasts draws the stack in the bottom-right corner, the gutter over
+// the footer however many rows it wraps to: a screen keeps its actions in its
+// top-right corner, and a stack there covers them.
+func (u *window) layoutToasts(gtx C) {
+	toasts := u.theme.Toaster(&u.toaster, u.light)
+	toasts.Position = ui.ToastBottomRight
+	toasts.Bottom = u.footerHeight + gtx.Dp(gutter)
+	toasts.Expand = *flagToastsExpanded
+	toasts.Layout(gtx)
+}
+
 // failure is an error toast with a formatted title.
 func failure(format string, args ...any) ui.Toast {
 	for i, arg := range args {

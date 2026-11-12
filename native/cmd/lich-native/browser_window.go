@@ -61,7 +61,7 @@ func (u *window) offerBrowser(st api.BrowserState) {
 		return
 	}
 	session := st.Owner
-	u.duplicates.Show(ui.Toast{
+	u.toaster.Show(ui.Toast{
 		ID:          "browser:" + session,
 		Title:       i18n.T("layouts.browser.opened", i18n.Args{"label": label}),
 		Description: displayURL(st.URL),
@@ -78,14 +78,14 @@ func (u *window) offerBrowser(st api.BrowserState) {
 func (u *window) askIdleBrowser(st api.BrowserState) {
 	id := idleBrowserToastID(st.Owner)
 	if !st.Open || !st.Idle {
-		u.duplicates.Dismiss(id)
+		u.toaster.Dismiss(id)
 		return
 	}
 	label, project := u.model.sessionPlace(st.Owner)
 	if label == "" {
 		return
 	}
-	u.duplicates.Show(idleBrowserToast(st, label, project, func() { u.answerIdleBrowser(st.Owner, u.client.KeepBrowser) },
+	u.toaster.Show(idleBrowserToast(st, label, project, func() { u.answerIdleBrowser(st.Owner, u.client.KeepBrowser) },
 		func() { u.answerIdleBrowser(st.Owner, u.client.CloseBrowser) }))
 }
 

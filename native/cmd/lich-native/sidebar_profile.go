@@ -192,10 +192,10 @@ func (u *window) offerProfile(o api.SessionProfileOffer) {
 	}
 	take := func() { u.takeProfileOffer(o, label, profile) }
 	if o.Handoff {
-		u.duplicates.Show(handoffOfferToast(o.ID, label, profile, take))
+		u.toaster.Show(handoffOfferToast(o.ID, label, profile, take))
 		return
 	}
-	u.duplicates.Show(limitOfferToast(o.ID, label, profile, take))
+	u.toaster.Show(limitOfferToast(o.ID, label, profile, take))
 }
 
 func handoffOfferToast(id, label, profile string, take func()) ui.Toast {
