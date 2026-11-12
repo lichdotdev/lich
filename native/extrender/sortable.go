@@ -115,10 +115,14 @@ func dropRoom(gtx C, p extension.SortableListProps, size image.Point) image.Poin
 	return along(length(gtx.Constraints.Max, p.Horizontal), p.Horizontal).Add(along(length(size, !p.Horizontal), !p.Horizontal))
 }
 
-// lightRoom draws room as the sidebar draws the block a carried card would
+// dropTrayAlpha is the sidebar's folder tray tint (folderTrayAlpha): a card
+// filled with the accent, as boards commonly are, stays distinct on it.
+const dropTrayAlpha = 0.45
+
+// lightRoom draws room as the sidebar draws the folder a carried card would
 // be filed into.
 func lightRoom(gtx C, th *ui.Theme, room image.Point) {
-	ui.DropTray(gtx, th.Over(th.Accent), th.MutedForeground, func(C) D { return D{Size: room} })
+	ui.DropTray(gtx, th.Over(ui.Alpha(th.Accent, dropTrayAlpha)), th.MutedForeground, func(C) D { return D{Size: room} })
 }
 
 // dropped hands a drop to the extension: a reorder to this list, a move to

@@ -225,3 +225,27 @@ func TestOnlyTheDropTargetIsLit(t *testing.T) {
 		t.Errorf("the list the item left is lit: %v at rest, %v now", a, b)
 	}
 }
+
+// TestACardStandsOutOfTheLitList keeps a filled card readable on the tray: a
+// board's cards are commonly filled with "accent", the tray's own hue.
+func TestACardStandsOutOfTheLitList(t *testing.T) {
+	filled := func(k string) extension.Node {
+		return extension.Box.New(extension.BoxProps{Height: 30, Background: "accent"}, label(k)).WithKey(k)
+	}
+	column := func(key string, cards ...string) extension.Node {
+		kids := make([]extension.Node, len(cards))
+		for i, c := range cards {
+			kids[i] = filled(c)
+		}
+		return extension.Box.New(extension.BoxProps{Width: 150}, extension.SortableList.New(extension.SortableListProps{
+			Group: "board", OnMove: extension.Handler("move:" + key)}, kids...).WithKey(key))
+	}
+	g := newRig(t, extension.Box.New(extension.BoxProps{Direction: extension.DirectionRow, Gap: 20},
+		column("todo", "a", "b"), column("done", "x", "y")))
+	g.hover(f32.Pt(75, 15), f32.Pt(245, 40))
+	lit := g.shot()
+	// The right end of the target's first card, past its label, and the tray under its last card.
+	if card, tray := lit.RGBAAt(310, 15), lit.RGBAAt(245, 150); card == tray {
+		t.Errorf("a card in the lit list is the tray's color, %v", card)
+	}
+}
