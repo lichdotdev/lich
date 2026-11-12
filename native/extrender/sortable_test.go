@@ -134,3 +134,118 @@ func TestADragWhoseListGoesAwayEndsWhenThePointerGoesUp(t *testing.T) {
 		t.Errorf("carrying %q, events %+v; want the drag let go with nothing sent", carry.Carrying(), g.got)
 	}
 }
+
+// hover presses at from and carries the item to to, a frame after each step,
+// and holds it there.
+func (g *rig) hover(from, to f32.Point) {
+	g.router.Queue(
+		pointer.Event{Kind: pointer.Move, Source: pointer.Mouse, Position: from},
+		pointer.Event{Kind: pointer.Press, Source: pointer.Mouse, Buttons: pointer.ButtonPrimary, Position: from},
+	)
+	g.frame()
+	// The first move stays on the item, as a hand's does: Gio starts the
+	// transfer the targets hear from the source under that move.
+	path := []f32.Point{from.Add(f32.Pt(6, 0))}
+	const steps = 8
+	for i := 1; i <= steps; i++ {
+		path = append(path, from.Add(to.Sub(from).Mul(float32(i)/steps)))
+	}
+	for _, at := range path {
+		g.router.Queue(pointer.Event{Kind: pointer.Move, Source: pointer.Mouse, Buttons: pointer.ButtonPrimary, Position: at})
+		g.frame()
+	}
+	g.frame()
+}
+
+// landing is the onMove of the list drawn as the drop target, "" for none.
+func (g *rig) landing() extension.Handler {
+	t, _ := stateOf[groupState](g.r, groupPrefix+"board").landing()
+	return t.onMove
+}
+
+func TestTheListAnItemIsCarriedOverIsTheDropTarget(t *testing.T) {
+	cases := []struct {
+		name     string
+		from, to f32.Point
+		want     extension.Handler
+	}{
+		{"over another list of the group", f32.Pt(75, 15), f32.Pt(245, 40), "move:done"},
+		{"under its last item", f32.Pt(75, 15), f32.Pt(245, 200), "move:done"},
+		{"back over the other list", f32.Pt(245, 45), f32.Pt(75, 5), "move:todo"},
+		{"within its own list", f32.Pt(75, 15), f32.Pt(75, 75), ""},
+		{"over no list", f32.Pt(75, 15), f32.Pt(360, 150), ""},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			g := newRig(t, board("board", "board"))
+			g.hover(tc.from, tc.to)
+			if got := g.landing(); got != tc.want {
+				t.Errorf("drop target = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestTheDropTargetGoesWithTheItem(t *testing.T) {
+	from, over := f32.Pt(75, 15), f32.Pt(245, 40)
+	ends := map[string][]pointer.Event{
+		"dropped":              {{Kind: pointer.Release, Source: pointer.Mouse, Position: over}},
+		"cancelled":            {{Kind: pointer.Cancel, Source: pointer.Mouse}},
+		"carried off the list": {{Kind: pointer.Move, Source: pointer.Mouse, Buttons: pointer.ButtonPrimary, Position: f32.Pt(360, 150)}},
+	}
+	for name, evs := range ends {
+		t.Run(name, func(t *testing.T) {
+			g := newRig(t, board("board", "board"))
+			g.hover(from, over)
+			if got := g.landing(); got != "move:done" {
+				t.Fatalf("drop target = %q, want move:done", got)
+			}
+			for _, e := range evs {
+				g.router.Queue(e)
+			}
+			g.frame()
+			g.frame()
+			if got := g.landing(); got != "" {
+				t.Errorf("drop target = %q after the item was %s, want none", got, name)
+			}
+		})
+	}
+}
+
+func TestOnlyTheDropTargetIsLit(t *testing.T) {
+	g := newRig(t, board("board", "board"))
+	rest := g.shot()
+	g.hover(f32.Pt(75, 15), f32.Pt(245, 40))
+	lit := g.shot()
+	// Under the last item of each column, where no card and no carried item is.
+	if a, b := rest.RGBAAt(245, 150), lit.RGBAAt(245, 150); a == b {
+		t.Errorf("the list under the item is drawn as at rest, %v", a)
+	}
+	if a, b := rest.RGBAAt(75, 150), lit.RGBAAt(75, 150); a != b {
+		t.Errorf("the list the item left is lit: %v at rest, %v now", a, b)
+	}
+}
+
+// TestACardStandsOutOfTheLitList keeps a filled card readable on the tray: a
+// board's cards are commonly filled with "accent", the tray's own hue.
+func TestACardStandsOutOfTheLitList(t *testing.T) {
+	filled := func(k string) extension.Node {
+		return extension.Box.New(extension.BoxProps{Height: 30, Background: "accent"}, label(k)).WithKey(k)
+	}
+	column := func(key string, cards ...string) extension.Node {
+		kids := make([]extension.Node, len(cards))
+		for i, c := range cards {
+			kids[i] = filled(c)
+		}
+		return extension.Box.New(extension.BoxProps{Width: 150}, extension.SortableList.New(extension.SortableListProps{
+			Group: "board", OnMove: extension.Handler("move:" + key)}, kids...).WithKey(key))
+	}
+	g := newRig(t, extension.Box.New(extension.BoxProps{Direction: extension.DirectionRow, Gap: 20},
+		column("todo", "a", "b"), column("done", "x", "y")))
+	g.hover(f32.Pt(75, 15), f32.Pt(245, 40))
+	lit := g.shot()
+	// The right end of the target's first card, past its label, and the tray under its last card.
+	if card, tray := lit.RGBAAt(310, 15), lit.RGBAAt(245, 150); card == tray {
+		t.Errorf("a card in the lit list is the tray's color, %v", card)
+	}
+}

@@ -26,8 +26,15 @@ type groupState struct {
 }
 
 type moveTarget struct {
+	list   string
 	onMove extension.Handler
 	index  int
+}
+
+// landing is the slot the item in the air would drop into if let go now.
+func (g *groupState) landing() (moveTarget, bool) {
+	t, ok := g.targets[g.carry.Over()]
+	return t, ok
 }
 
 // listItems is what a list's items drew this frame, for the one in the air
@@ -71,6 +78,7 @@ func drawSortableList(r *Renderer, gtx C, th *ui.Theme, n extension.Node, id str
 		inAir = s.Dragging()
 	}
 	items := listItems{calls: make([]op.CallOp, len(keys)), sizes: make([]image.Point, len(keys))}
+	rec := op.Record(gtx.Ops)
 	d := s.List(gtx, list, keys, func(gtx C, i int) D {
 		m := op.Record(gtx.Ops)
 		cd := r.child(th, n.Children[i], id, i)(gtx)
@@ -82,16 +90,39 @@ func drawSortableList(r *Renderer, gtx C, th *ui.Theme, n extension.Node, id str
 			return cd
 		}, nil)
 	})
+	drawn := rec.Stop()
 	if g == nil {
+		drawn.Add(gtx.Ops)
 		return d
 	}
+	takes := g.carry.Carrying() != "" && !slices.Contains(keys, g.carry.Carrying())
+	if t, ok := g.landing(); takes && ok && t.list == id {
+		lightRoom(gtx, th, dropRoom(gtx, p, d.Size))
+	}
+	drawn.Add(gtx.Ops)
 	tops := items.tops(gtx.Dp(list.Gap), p.Horizontal)
 	if a := slices.Index(keys, inAir); a >= 0 {
 		r.drawInAir(gtx, along(tops[a], p.Horizontal), items.calls[a])
-	} else if c := g.carry.Carrying(); c != "" && !slices.Contains(keys, c) {
+	} else if takes {
 		r.layTargets(gtx, g, id, p, items, tops, d.Size)
 	}
 	return d
+}
+
+// dropRoom is the room a list takes a drop over: its breadth, by all the
+// length it is given.
+func dropRoom(gtx C, p extension.SortableListProps, size image.Point) image.Point {
+	return along(length(gtx.Constraints.Max, p.Horizontal), p.Horizontal).Add(along(length(size, !p.Horizontal), !p.Horizontal))
+}
+
+// dropTrayAlpha is the sidebar's folder tray tint (folderTrayAlpha): a card
+// filled with the accent, as boards commonly are, stays distinct on it.
+const dropTrayAlpha = 0.45
+
+// lightRoom draws room as the sidebar draws the folder a carried card would
+// be filed into.
+func lightRoom(gtx C, th *ui.Theme, room image.Point) {
+	ui.DropTray(gtx, th.Over(ui.Alpha(th.Accent, dropTrayAlpha)), th.MutedForeground, func(C) D { return D{Size: room} })
 }
 
 // dropped hands a drop to the extension: a reorder to this list, a move to
@@ -148,8 +179,8 @@ func (r *Renderer) drawInAir(gtx C, slot image.Point, call op.CallOp) {
 // and the last one on to the end of the room the list is given, so an empty
 // list or the space under the last item still takes a drop.
 func (r *Renderer) layTargets(gtx C, g *groupState, id string, p extension.SortableListProps, it listItems, tops []int, size image.Point) {
-	end := length(gtx.Constraints.Max, p.Horizontal)
-	cross := length(size, !p.Horizontal)
+	room := dropRoom(gtx, p, size)
+	end, cross := length(room, p.Horizontal), length(room, !p.Horizontal)
 	from := 0
 	for i := 0; i <= len(tops); i++ {
 		to := end
@@ -158,7 +189,7 @@ func (r *Renderer) layTargets(gtx C, g *groupState, id string, p extension.Sorta
 		}
 		to = max(to, from)
 		tid := id + "#" + strconv.Itoa(i)
-		g.targets[tid] = moveTarget{onMove: p.OnMove, index: i}
+		g.targets[tid] = moveTarget{list: id, onMove: p.OnMove, index: i}
 		slot := along(from, p.Horizontal)
 		box := along(to-from, p.Horizontal).Add(along(cross, !p.Horizontal))
 		st := op.Offset(slot).Push(gtx.Ops)

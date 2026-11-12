@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"gioui.org/f32"
+	"gioui.org/gpu/headless"
 	"gioui.org/io/input"
 	"gioui.org/io/key"
 	"gioui.org/io/pointer"
@@ -45,6 +46,24 @@ func (g *rig) frame() {
 		Constraints: layout.Exact(rigWindow), Source: g.router.Source()}
 	g.root.Layout(gtx, func(gtx C) D { return g.r.Layout(gtx, testTheme(), g.tree) })
 	g.router.Frame(&g.ops)
+}
+
+// shot is the frame just drawn, as the window paints it.
+func (g *rig) shot() *image.RGBA {
+	g.t.Helper()
+	win, err := headless.NewWindow(rigWindow.X, rigWindow.Y)
+	if err != nil {
+		g.t.Skipf("no headless GPU: %v", err)
+	}
+	defer win.Release()
+	if err := win.Frame(&g.ops); err != nil {
+		g.t.Fatal(err)
+	}
+	img := image.NewRGBA(image.Rectangle{Max: rigWindow})
+	if err := win.Screenshot(img); err != nil {
+		g.t.Fatal(err)
+	}
+	return img
 }
 
 // wait moves the clock on by d and draws, for a motion or a tooltip delay.
