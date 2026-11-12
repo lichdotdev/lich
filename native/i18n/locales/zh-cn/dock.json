@@ -8,7 +8,7 @@
     "tabArtifacts": "产物"
   },
   "searchResults": {
-    "prompt": "搜索此检出中每个文件的文本",
+    "prompt": "在此检出的所有文件中搜索文本",
     "searching": "正在搜索…",
     "noMatch": "没有文件包含“{query}”"
   },
@@ -42,7 +42,7 @@
     "invalidRegexp": "无效的正则表达式"
   },
   "artifacts": {
-    "empty": "此会话的智能体为展示给你而生成的页面和文件会显示在这里，项目中其他已打开会话的也一样。",
+    "empty": "此会话的智能体生成给你看的页面和文件会显示在这里，项目中其他已打开会话生成的也会一并列出。",
     "thisSession": "此会话",
     "otherSessions": "其他会话",
     "options": "{name} 的选项",

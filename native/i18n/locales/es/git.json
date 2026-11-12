@@ -18,8 +18,8 @@
     },
     "cutNote": "Se muestran las primeras {count} líneas que coinciden. Acota la búsqueda.",
     "tooLarge": {
-      "one": "{count} archivo de más de 1 MB sin buscar.",
-      "other": "{count} archivos de más de 1 MB sin buscar."
+      "one": "No se buscó en {count} archivo de más de 1 MB.",
+      "other": "No se buscó en {count} archivos de más de 1 MB."
     }
   },
   "fileTree": {
@@ -42,7 +42,7 @@
     "author": "Autor",
     "authorAny": "Todos los autores",
     "date": "Fecha",
-    "dateAny": "Cualquier momento",
+    "dateAny": "Cualquier fecha",
     "dateDay": "Últimas 24 horas",
     "dateWeek": "Últimos 7 días",
     "dateMonth": "Últimos 30 días",
@@ -55,7 +55,7 @@
     "commitFailed": "No se pudo leer este commit: {error}",
     "diffFailed": "No se pudo leer este diff: {error}",
     "binary": "Este archivo es binario.",
-    "noDiff": "Nada cambió en este archivo.",
+    "noDiff": "Este archivo no tiene cambios.",
     "back": "Volver al registro",
     "files": "Archivos"
   },
@@ -67,17 +67,17 @@
     "rename": "Renombrar…",
     "delete": "Eliminar",
     "onBranch": "Estás en esta rama",
-    "inWorktree": "Con checkout en otro worktree",
+    "inWorktree": "Ya está en checkout en otra worktree",
     "options": "Acciones de {name}",
     "from": "Desde {name}",
     "checkoutTitle": "¿Cambiar {session} a {branch}?",
-    "checkoutBody": "{session} está trabajando en este checkout. Su agente encontrará otra rama debajo, y los cambios sin commit pasan junto con el cambio.",
+    "checkoutBody": "{session} está trabajando en este checkout. Su agente se encontrará con otra rama, y los cambios que aún no ha confirmado pasan a la rama nueva.",
     "deleteTitle": "¿Eliminar {name}?",
     "deleteBody": {
-      "one": "{count} commit está solo en esta rama. Se puede recuperar del reflog por un tiempo, pero ninguna rama apuntará a él.",
-      "other": "{count} commits están solo en esta rama. Se pueden recuperar del reflog por un tiempo, pero ninguna rama apuntará a ellos."
+      "one": "{count} commit solo existe en esta rama. Podrás recuperarlo del reflog durante un tiempo, pero ninguna rama apuntará a él.",
+      "other": "{count} commits solo existen en esta rama. Podrás recuperarlos del reflog durante un tiempo, pero ninguna rama apuntará a ellos."
     },
-    "deleted": "{name} eliminada",
+    "deleted": "Se eliminó {name}",
     "onlyCommits": {
       "one": "{count} commit estaba solo en esta rama",
       "other": "{count} commits estaban solo en esta rama"

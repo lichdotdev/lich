@@ -9,7 +9,7 @@
     "promptSearchWords": "언어 로케일 번역 에이전트 브리핑 전달 영어 포르투갈어 한국어 language",
     "promptSaveFailed": "프롬프트 언어를 저장하지 못했습니다: {error}",
     "hanFontTitle": "{language} 글꼴을 다운로드할까요?",
-    "hanFontDescription": "{language} 표시에는 {font} 글꼴이 필요한데, 이 컴퓨터에 설치된 글꼴 중 이 언어를 그리는 것이 없습니다. lich가 글꼴을 다운로드해(약 {size} MB) 자체 폴더에 보관할 수 있습니다.",
+    "hanFontDescription": "{language} 표시에는 {font} 글꼴이 필요한데, 이 컴퓨터에 설치된 글꼴로는 표시할 수 없습니다. lich가 이 글꼴(약 {size} MB)을 다운로드해 자체 폴더에 보관할 수 있습니다.",
     "hanFontDownload": "다운로드",
     "hanFontProgress": "다운로드 중… {total} MB 중 {done} MB",
     "hanFontFailed": "{font} 글꼴을 다운로드하지 못했습니다: {error}"
@@ -19,7 +19,7 @@
     "resultCount": {
       "other": "설정 {count}개"
     },
-    "noMatch": "{query}와(과) 일치하는 항목이 없습니다. 검색은 설정 값이 아니라 각 설정의 이름을 읽습니다.",
+    "noMatch": "{query} 검색 결과가 없습니다. 설정 값은 검색하지 않고 설정 이름만 검색합니다.",
     "section": {
       "appearance": "모양",
       "notifications": "알림",
@@ -44,8 +44,8 @@
       "other": "{pack} v{version}에서 테마 {count}개를 설치했습니다"
     },
     "installFailed": "테마 설치 실패: {error}",
-    "upToDate": "{pack}은(는) 이미 v{version}입니다",
-    "updated": "{pack}을(를) v{version}(으)로 업데이트했습니다",
+    "upToDate": "{pack} 테마 팩은 이미 v{version}입니다",
+    "updated": "{pack} 테마 팩을 v{version} 버전으로 업데이트했습니다",
     "updateFailed": "테마 업데이트 실패: {error}",
     "removed": "테마를 삭제했습니다: {name}",
     "removeFailed": "테마 삭제 실패: {error}",
@@ -66,7 +66,7 @@
     "replaceThemesDescription": "저장소에 이미 설치된 테마가 있습니다: {themes}. 그래도 설치할까요? 이전 버전은 영구히 삭제됩니다.",
     "replaceThemes": "테마 교체",
     "removeThemeTitle": "가져온 테마를 삭제할까요?",
-    "removeThemeDescription": "{name}을(를) 삭제할까요? 가져온 테마 파일이 lich에서 삭제됩니다.",
+    "removeThemeDescription": "{name} 테마를 삭제할까요? 가져온 테마 파일이 lich에서 삭제됩니다.",
     "removeTheme": "테마 삭제",
     "replaceThemeTitle": "가져온 테마를 교체할까요?",
     "replaceThemeDescription": "ID가 {id}인 테마가 이미 있습니다. 그래도 가져올까요? 이전 테마는 영구히 삭제됩니다.",
@@ -98,7 +98,7 @@
     "repositoryUrl": "저장소 URL",
     "install": "설치",
     "installing": "설치 중…",
-    "repositoryHint": "{file}과(와) 테마 파일을 하나 이상 담은 저장소입니다. 업데이트할 때 lich는 매니페스트의 버전을 비교합니다.",
+    "repositoryHint": "{file} 파일과 테마 파일을 하나 이상 담은 저장소입니다. 업데이트할 때 lich는 매니페스트의 버전을 비교합니다.",
     "or": "또는",
     "chooseFile": "파일 선택…",
     "fileHint": "테마 파일 하나입니다. 버전도 업데이트도 없습니다.",
@@ -116,7 +116,7 @@
     "searchWords": "상태 표시줄 레이아웃 배치 footer",
     "loading": "저장된 선택 불러오는 중…",
     "saving": "저장 중…",
-    "description": "항목을 양쪽 사이로 끌어 옮기거나, 밖으로 끌어 숨기세요. 모든 프로젝트에 적용됩니다.",
+    "description": "항목을 끌어 왼쪽과 오른쪽 사이로 옮기거나, 밖으로 끌어내 숨기세요. 모든 프로젝트에 적용됩니다.",
     "restoreDefault": "기본값 복원",
     "saveFailed": "하단 바를 저장하지 못했습니다: {error}",
     "ceilingTitle": "지출 한도",
@@ -137,7 +137,7 @@
   "diffLayoutSetting": {
     "title": "Diff 레이아웃",
     "searchWords": "나란히 분할 통합 리뷰 diff",
-    "description": "리뷰 탭과 풀 리퀘스트에서 변경 사항을 그리는 방식입니다. 나란히 보기는 패널이 두 열을 담기에 너무 좁으면 통합 보기로 표시됩니다.",
+    "description": "리뷰 탭과 풀 리퀘스트에서 변경 사항을 표시하는 방식입니다. 나란히 보기는 패널이 두 열을 담기에 너무 좁으면 통합 보기로 표시됩니다.",
     "layout": {
       "unified": "통합",
       "split": "나란히"
@@ -145,16 +145,16 @@
   },
   "notificationsSettings": {
     "needsInputTitle": "세션이 입력을 기다릴 때 알림",
-    "needsInputDescription": "세션이 당신을 기다리고 있고(권한 확인이나 질문), 지금 보고 있는 창이 lich 창이 아닐 때 데스크톱 알림을 띄웁니다. lich 안에 있을 때는 달라지는 것이 없습니다. 카드의 종 아이콘과 토스트가 알려 줍니다.",
+    "needsInputDescription": "세션이 권한 확인이나 질문으로 응답을 기다리는데 지금 보고 있는 창이 lich가 아니면 데스크톱 알림을 띄웁니다. lich를 보고 있을 때는 그대로입니다. 카드의 종 아이콘과 토스트로 알 수 있습니다.",
     "finishedTitle": "세션이 작업을 마쳤을 때 알림",
-    "finishedDescription": "세션이 더 물어볼 것 없이 턴을 마쳤고, 지금 보고 있는 창이 lich 창이 아닐 때 데스크톱 알림을 띄웁니다. 위 설정과는 별개입니다. 모든 프롬프트마다 알림을 받고 싶지 않더라도, 자리를 비운 사이 끝난 긴 작업은 알아 둘 만합니다. 토스트는 함께 뜨지 않습니다. lich 안에서는 카드와 프로젝트 탭이 이미 알려 줍니다."
+    "finishedDescription": "세션이 더 물어볼 것 없이 턴을 마쳤는데 지금 보고 있는 창이 lich가 아니면 데스크톱 알림을 띄웁니다. 위 설정과 따로 동작하므로, 프롬프트마다 알림을 받지 않고도 자리를 비운 사이 끝난 긴 작업은 알 수 있습니다. 토스트는 뜨지 않습니다. lich 안에서는 카드와 프로젝트 탭에 이미 표시됩니다."
   },
   "hotkeysSettings": {
     "alsoBound": "{actions}에도 지정됨",
     "pressKeys": "키를 누르세요…",
     "unassignHint": "이 작업에 단축키를 지정하지 않음",
     "resetHint": "기본 단축키 복원",
-    "passthroughNote": "lich가 에이전트 터미널로 보내는 도중에 바꿔 쓰는 키라서, 다시 지정할 수 없고 고정되어 있습니다."
+    "passthroughNote": "lich가 에이전트 터미널로 보내면서 바꿔 쓰는 키라서 다시 지정할 수 없습니다."
   },
   "providersPane": {
     "detecting": "프로바이더 감지 중…",
@@ -162,7 +162,7 @@
     "moreDetected": "{count}개 더 감지됨",
     "defaultTitle": "기본 프로바이더",
     "defaultSearchWords": "에이전트 새 세션 provider",
-    "defaultDescription": "암묵적인 세션 작업이 실행할 프로바이더입니다. 새 세션 단축키, 빈 프로젝트의 새 세션 버튼, 새로 만든 worktree가 해당됩니다.",
+    "defaultDescription": "프로바이더를 따로 고르지 않고 세션을 열 때 쓸 프로바이더입니다. 새 세션 단축키, 빈 프로젝트의 새 세션 버튼, 새로 만든 worktree가 여기에 해당합니다.",
     "defaultHere": "여기서 기본값",
     "skipEverywhere": "확인 없음"
   },
@@ -192,11 +192,11 @@
   "providerBinSettings": {
     "skipTitle": "권한 확인 건너뛰기",
     "skipSearchWords": "yolo 위험 승인",
-    "skipDescription": "{provider}이(가) 묻지 않고 실행하는 범위입니다. 확인 없이 파일을 수정하고, 명령을 실행하고, 무언가를 설치하며, lich는 {flag}을(를) 붙여 실행합니다.",
+    "skipDescription": "{provider}가 묻지 않고 실행하는 범위입니다. 확인 없이 파일을 수정하고 명령을 실행하며 무엇이든 설치합니다. lich는 {flag} 플래그를 붙여 실행합니다.",
     "skip": {
       "never": {
         "label": "안 함",
-        "consequence": "모든 체크아웃에서 모든 수정과 명령이 당신을 기다립니다."
+        "consequence": "모든 체크아웃에서 수정과 명령마다 확인을 기다립니다."
       },
       "worktrees": {
         "label": "worktree에서만",
@@ -208,16 +208,16 @@
       }
     },
     "confirmTitle": "권한 확인 건너뛰기: {level}",
-    "confirmDescription": "{provider}은(는) {flag}을(를) 붙여 실행되며, 확인 없이 파일을 수정하고 명령을 실행하고 무언가를 설치합니다. {consequence}",
+    "confirmDescription": "{provider}는 {flag} 플래그를 붙여 실행되며, 확인 없이 파일을 수정하고 명령을 실행하며 무엇이든 설치합니다. {consequence}",
     "confirm": "확인 건너뛰기"
   },
   "planUsageSetting": {
     "title": "플랜 사용량",
     "searchWords": "할당량 구독 한도 quota",
-    "description": "구독이 각 구간에서 얼마나 썼는지 보여 줍니다. 계정에서 읽어 오며, lich가 열려 있는 동안 5분마다 새로 고칩니다.",
+    "description": "구독 한도를 구간별로 얼마나 썼는지 보여 줍니다. 계정에서 읽어 오며, lich가 열려 있는 동안 5분마다 새로 고칩니다.",
     "signedOut": "로그아웃됨.",
-    "signedOutRun": "로그아웃됨. 플랜 사용량을 읽으려면 {command}을(를) 실행하세요.",
-    "readFailed": "플랜 사용량을 읽을 수 없습니다. 프로바이더의 사용량 엔드포인트는 문서화되지 않아 바뀌었을 수 있습니다.",
+    "signedOutRun": "로그아웃됨. 플랜 사용량을 읽으려면 {command} 명령을 실행하세요.",
+    "readFailed": "플랜 사용량을 읽을 수 없습니다. 프로바이더의 사용량 엔드포인트는 공개 문서가 없어 바뀌었을 수 있습니다.",
     "used": "사용",
     "resets": "초기화"
   },
@@ -265,7 +265,7 @@
   "restoreSetting": {
     "title": "복원된 세션",
     "searchWords": "재개 대화 새로 시작 다시 시작 묻기",
-    "description": "lich가 다시 시작되기 전에 {provider}을(를) 실행하던 카드를 처음 열 때 할 일입니다.",
+    "description": "lich가 다시 시작되기 전에 {provider}를 실행하던 카드를 처음 열 때 할 일입니다.",
     "choice": {
       "ask": {
         "label": "묻기",
@@ -273,7 +273,7 @@
       },
       "resume": {
         "label": "재개",
-        "consequence": "복원된 카드는 열 때 대화를 이어 갑니다. 빈 세션은 새 세션으로 여세요."
+        "consequence": "복원된 카드는 열 때 대화를 이어 갑니다. 빈 세션이 필요하면 새 세션을 여세요."
       },
       "fresh": {
         "label": "새로 시작",
@@ -284,13 +284,13 @@
   "pasteUnfoldSetting": {
     "title": "긴 붙여넣기 펼치기",
     "searchWords": "붙여넣기 접기 칩 요약 자리표시자 붙여 넣은 텍스트",
-    "descriptionNextPaste": "{provider}이(가) 자리표시자로 접을 붙여넣기를 전체 텍스트로 넣어, 보내기 전에 편집할 수 있게 합니다. 모든 {provider} 세션의 다음 붙여넣기부터 적용됩니다.",
-    "descriptionNextSession": "{provider}이(가) 자리표시자로 접을 붙여넣기를 전체 텍스트로 넣어, 보내기 전에 편집할 수 있게 합니다. 바꾼 뒤 연 세션부터 적용됩니다."
+    "descriptionNextPaste": "{provider}가 자리표시자로 접을 붙여넣기를 전체 텍스트 그대로 넣어, 보내기 전에 편집할 수 있게 합니다. 모든 {provider} 세션의 다음 붙여넣기부터 적용됩니다.",
+    "descriptionNextSession": "{provider}가 자리표시자로 접을 붙여넣기를 전체 텍스트 그대로 넣어, 보내기 전에 편집할 수 있게 합니다. 바꾼 뒤 연 세션부터 적용됩니다."
   },
   "subagentCardsSetting": {
     "title": "서브에이전트를 lich 세션으로",
     "searchWords": "에이전트 서브에이전트 카드 worktree 위임 백그라운드",
-    "description": "general-purpose 서브에이전트가 {provider} 안에 숨어서 실행되지 않고, 자기 카드와 worktree를 엽니다. 바꾼 뒤 연 세션부터 적용됩니다."
+    "description": "general-purpose 서브에이전트가 {provider} 안에서 보이지 않게 실행되는 대신 자기 카드와 worktree를 엽니다. 바꾼 뒤 연 세션부터 적용됩니다."
   },
   "ultracodeSetting": {
     "title": "Ultracode",
@@ -312,18 +312,18 @@
     "summary": "빈 홈, 읽기 전용 머신, 체크아웃 안에서만 쓰기 가능. 네트워크는 그대로 켜져 있습니다.",
     "confinedTitle": "격리 실행할 세션",
     "confinedSearchWords": "격리 bwrap seatbelt",
-    "confinedHint": "묻기를 고르면 새 세션 메뉴와 새 worktree 대화 상자에서 묻습니다. 아무도 답할 수 없는 곳에서 열린 세션(다른 세션이 열었거나 MCP 도구로 연 세션)은 격리됩니다. 터미널은 격리되지 않습니다. 샌드박스는 무인으로 작업하는 에이전트를 위한 것입니다.",
+    "confinedHint": "묻기를 고르면 새 세션 메뉴와 새 worktree 대화 상자에서 묻습니다. 아무도 답할 수 없는 곳에서 열린 세션(다른 세션이 열었거나 MCP 도구로 연 세션)은 격리됩니다. 터미널은 격리되지 않습니다. 샌드박스는 지켜보는 사람 없이 작업하는 에이전트를 위한 것입니다.",
     "carryTitle": "격리된 세션이 가져갈 수 있는 것",
     "sshTitle": "SSH 에이전트",
     "sshSearchWords": "푸시 키",
-    "sshDescription": "안에서 git push가 동작합니다. 세션이 실행되는 동안 에이전트에 있는 모든 ID로, 어떤 호스트에든 서명합니다.",
+    "sshDescription": "샌드박스 안에서도 git push를 쓸 수 있습니다. 세션이 실행되는 동안 SSH 에이전트에 있는 모든 키로 어떤 호스트에든 서명합니다.",
     "sshLoaded": "불러옴: {keys}",
     "sshNone": "불러온 키가 없습니다.",
     "ghTitle": "GitHub 토큰",
     "ghSearchWords": "gh 자격 증명",
-    "ghDescription": "안에서 gh가 동작합니다. 에이전트는 환경 변수에서 토큰을 읽어 이 저장소 밖에서도 쓸 수 있습니다.",
-    "ghAccount": "{login}(으)로.",
-    "ghActiveAccount": "gh의 활성 계정으로.",
+    "ghDescription": "샌드박스 안에서도 gh를 쓸 수 있습니다. 에이전트가 환경 변수에서 토큰을 읽어 이 저장소 밖에서도 쓸 수 있습니다.",
+    "ghAccount": "계정: {login}.",
+    "ghActiveAccount": "계정: gh의 활성 계정.",
     "confirmTitle": "격리하는 {provider} 세션 줄이기",
     "confirmDescription": "{rung}: {exposes}",
     "confirm": "격리하지 않기",
@@ -334,15 +334,15 @@
   "vcsToolsSetting": {
     "title": "명령줄 도구",
     "searchWords": "git gh 설치",
-    "description": "lich는 git과 GitHub CLI를 사용합니다. 이 화면의 모든 것이 이 도구들을 거칩니다.",
+    "description": "lich는 git과 GitHub CLI를 사용합니다. 이 화면의 모든 기능이 두 도구로 동작합니다.",
     "notOnPath": "$PATH에 없음",
     "install": "설치"
   },
   "versionControlSettings": {
     "account": "GitHub 계정",
-    "accountFor": "GitHub 계정: {name}",
+    "accountFor": "{name}의 GitHub 계정",
     "accountSearchWords": "로그인 gh 전환",
-    "accountDescription": "이 프로젝트에서 lich가 gh를 실행할 계정입니다(풀 리퀘스트, 체크, PR 체크아웃, 세션 안에서 실행하는 gh. 세션에는 다음 시작부터 적용됩니다). gh는 호스트마다 활성 계정을 하나만 두므로, 다른 계정만 볼 수 있는 저장소는 찾을 수 없다고 나옵니다. 엔터프라이즈 호스트의 계정은 호스트와 함께 표시됩니다.",
+    "accountDescription": "이 프로젝트에서 lich가 gh를 실행할 계정입니다. 풀 리퀘스트, 체크, PR 체크아웃, 그리고 세션 안에서 실행하는 gh에 쓰이며, 세션에는 다음 시작부터 적용됩니다. gh는 호스트마다 활성 계정을 하나만 두므로, 다른 계정만 볼 수 있는 저장소는 찾을 수 없다고 나옵니다. 엔터프라이즈 호스트의 계정은 호스트 이름과 함께 표시됩니다.",
     "activeAccount": "gh의 활성 계정",
     "listFailed": "GitHub 계정 목록을 가져오지 못했습니다: {error}",
     "noAccounts": "gh에 로그인된 계정이 없습니다. 터미널에서 `gh auth login`을 실행하세요."
@@ -350,11 +350,11 @@
   "updatesSettings": {
     "applicationTitle": "애플리케이션",
     "applicationSearchWords": "버전 업그레이드",
-    "applicationDescription": "lich {version}: 시작할 때와 매시간 업데이트를 확인합니다.",
+    "applicationDescription": "lich {version}. 시작할 때와 매시간 업데이트를 확인합니다.",
     "checkForUpdates": "업데이트 확인",
-    "available": "lich {version}을(를) 사용할 수 있습니다. 안내를 따르세요.",
+    "available": "lich {version} 버전을 사용할 수 있습니다. 안내를 따르세요.",
     "upToDate": "최신 버전입니다.",
-    "checkFailed": "확인 실패. 온라인 상태인가요?",
+    "checkFailed": "확인 실패. 인터넷에 연결되어 있나요?",
     "whatsNewTitle": "새로운 기능",
     "whatsNewSearchWords": "변경 내역 릴리스 노트 changelog",
     "patchNotesFor": "v{version} 패치 노트.",
@@ -368,12 +368,12 @@
     "installed": "플러그인을 설치했습니다. 적용하려면 세션을 다시 시작하세요.",
     "updated": "플러그인을 업데이트했습니다. 적용하려면 세션을 다시 시작하세요.",
     "checked": "확인했습니다.",
-    "checkFailed": "확인 실패. 온라인 상태인가요?",
+    "checkFailed": "확인 실패. 인터넷에 연결되어 있나요?",
     "cliMissing": "CLI가 설치되지 않음",
     "notInstalled": "플러그인이 설치되지 않음",
     "unsupported": "v{version}, 이 lich에서 지원하지 않음",
     "install": "설치",
-    "updateTo": "v{version}(으)로 업데이트",
+    "updateTo": "v{version} 버전으로 업데이트",
     "updateAll": "모두 업데이트",
     "installVersion": "v{version} 설치",
     "checkForUpdates": "업데이트 확인"
@@ -420,9 +420,9 @@
     "terminalGroup": "터미널"
   },
   "settingsHelp": {
-    "bugDescription": "버전과 플랫폼이 채워진 버그 양식을 브라우저에서 엽니다. lich가 이슈를 대신 올리지 않으며, 직접 작성해야 합니다. 터미널에서 `lich rage`를 실행하면 로그, 버전, lich가 이 머신에서 찾은 정보를 첨부용 압축 파일 하나로 묶습니다.",
+    "bugDescription": "버전과 플랫폼이 채워진 버그 양식을 브라우저에서 엽니다. 이슈는 직접 작성해서 올려야 합니다. 터미널에서 `lich rage`를 실행하면 로그, 버전, lich가 이 머신에서 찾은 정보를 첨부용 압축 파일 하나로 묶습니다.",
     "logSearchWords": "디버그 로그 네이티브 창",
-    "logDescription": "이 폴더에는 lich의 로그와, 그 옆에 네이티브 창의 로그(lich-native.log)가 있습니다. 로그에는 절대 경로, 프로젝트와 브랜치 이름, gh 로그인 정보가 담겨 있습니다. 세션 토큰은 절대 담기지 않습니다. 어디에 첨부하기 전에 내용을 읽어 보세요.",
+    "logDescription": "이 폴더에는 lich의 로그와, 그 옆에 네이티브 창의 로그(lich-native.log)가 있습니다. 로그에는 절대 경로, 프로젝트와 브랜치 이름, gh 로그인 정보가 담기지만 세션 토큰은 담기지 않습니다. 어딘가에 첨부하기 전에 내용을 확인하세요.",
     "logFailed": "로그 폴더를 열 수 없습니다: {error}"
   },
   "settingsProviders": {
@@ -458,11 +458,11 @@
     "reloadFailed": "테마를 다시 읽지 못했습니다: {error}"
   },
   "appearancePrefs": {
-    "terminalFontFailed": "{family}(으)로 터미널을 그리지 못했습니다: {error}",
-    "editorFontFailed": "{family}(으)로 코드를 그리지 못했습니다: {error}",
-    "uiFontFailed": "{family}(으)로 인터페이스를 그리지 못했습니다: {error}",
-    "replicateFontTitle": "터미널과 편집기에서도 {family}을(를) 사용할까요?",
-    "replicateFontDescription": "인터페이스는 이미 이 글꼴을 사용합니다. 각 글꼴은 여기 모양에서 따로 바꿀 수 있습니다.",
+    "terminalFontFailed": "{family} 글꼴로 터미널을 표시하지 못했습니다: {error}",
+    "editorFontFailed": "{family} 글꼴로 코드를 표시하지 못했습니다: {error}",
+    "uiFontFailed": "{family} 글꼴로 인터페이스를 표시하지 못했습니다: {error}",
+    "replicateFontTitle": "터미널과 에디터에도 {family} 글꼴을 사용할까요?",
+    "replicateFontDescription": "인터페이스에는 이미 이 글꼴을 쓰고 있습니다. 글꼴은 여기 모양 설정에서 각각 따로 바꿀 수 있습니다.",
     "replicateFontKeep": "인터페이스만",
     "replicateFontApply": "모두에 사용"
   },
@@ -479,7 +479,7 @@
       "crush": "세션 ID를 알리고 git 상태를 새로 고칩니다. 턴 종료 이벤트가 없어서 카드에 상태가 표시되지 않고 이름도 바뀌지 않습니다.",
       "omp": "상태, 이름, git 변경 사항을 알립니다. 관찰된 승인 이벤트가 없어서, 권한을 기다리는 세션에는 종 아이콘 대신 스피너가 표시됩니다.",
       "antigravity": "상태, 이름, git 변경 사항을 알립니다. 관찰된 승인 이벤트가 없어서, 권한을 기다리는 세션에는 종 아이콘 대신 스피너가 표시됩니다.",
-      "cursor": "Claude Code에 설치된 플러그인을 실행하므로, 그 버전이 알리는 것을 알리고 함께 업데이트됩니다. lich는 여기에 자체 도구만 추가합니다. 이것도 승인 이벤트가 없어서, 권한을 기다리는 세션에는 종 아이콘 대신 스피너가 표시됩니다."
+      "cursor": "Claude Code에 설치된 플러그인을 실행하므로, 그 버전과 같은 내용을 알리고 함께 업데이트됩니다. lich는 여기에 자체 도구만 추가합니다. 승인 이벤트도 보내지 않아서, 권한을 기다리는 세션에는 종 아이콘 대신 스피너가 표시됩니다."
     },
     "installFailed": "설치 실패: {error}",
     "updateFailed": "업데이트 실패: {error}",
@@ -512,7 +512,7 @@
     "newProfile": "새 프로필",
     "options": "{name} 옵션",
     "advancedBinary": "고급 · 바이너리",
-    "binaryOverrides": "여기 세션은 {path}(으)로 시작합니다. 자체 로그인이나 설정 디렉터리를 지정하는 스크립트는 {profile}보다 우선하며, '다음에서 계속'이 대화를 찾지 못할 수 있습니다.",
+    "binaryOverrides": "여기 세션은 {path} 실행 파일로 시작합니다. 자체 로그인이나 설정 디렉터리를 지정하는 스크립트는 {profile}보다 우선하며, '다음에서 계속'이 대화를 찾지 못할 수 있습니다.",
     "showBinary": "바이너리 보기",
     "useDefaultBinary": "기본 바이너리 사용",
     "loading": "프로필 읽는 중…"
@@ -528,12 +528,12 @@
     "renameTitle": "프로필 이름 바꾸기",
     "readyDesc": "프로젝트의 프로필이나, 모든 새 세션의 프로필로 고르세요.",
     "failedDesc": "프로필 메뉴에서 다시 시도하거나, 터미널에서 로그인하세요.",
-    "deleteTitle": "{name}을(를) 삭제할까요?",
+    "deleteTitle": "{name} 프로필을 삭제할까요?",
     "copyTitle": "{name}에 플러그인 복사",
-    "copyDesc": "이 프로필로 {provider}을(를) 통해 설치되므로, 그 계정의 규칙이 적용됩니다.",
+    "copyDesc": "{provider}를 통해 이 프로필로 설치되므로, 이 프로필 계정의 규칙이 적용됩니다.",
     "copyFrom": "복사할 프로필",
     "copy": "플러그인 복사",
-    "loginTitle": "{name}에 로그인",
+    "loginTitle": "{name} 프로필로 로그인",
     "waiting": "로그인을 기다리는 중…",
     "authenticating": "인증하는 중…",
     "openBrowser": "브라우저에서 열기",
@@ -542,9 +542,9 @@
     "submitCode": "제출",
     "terminal": "대신 터미널에서 로그인",
     "readyTitle": "{name} 준비 완료",
-    "failedTitle": "{name}에 로그인할 수 없습니다",
+    "failedTitle": "{name} 프로필로 로그인할 수 없습니다",
     "copiedTitle": "{name}의 플러그인",
-    "loggedInAs": "{email}(으)로 로그인됨",
+    "loggedInAs": "{email} 계정으로 로그인됨",
     "lichPluginNote": "lich 플러그인을 설치할 수 없습니다: {error}",
     "done": "완료"
   },
@@ -560,7 +560,7 @@
     "profileDesc": "새 세션이 쓸 {provider} 로그인입니다. 세션은 재개할 때도 처음 만들어진 프로필을 유지합니다.",
     "renameDescPlugins": "이름만 바뀝니다. 로그인, 플러그인, 기록은 그대로입니다.",
     "deleteDescPlugins": "로그인, 플러그인, 대화 기록이 삭제되며, 이 프로필에서 시작한 세션은 더 이상 재개할 수 없습니다.",
-    "loginDesc": "{provider}이(가) 연 브라우저 탭에서 로그인하세요. 마치면 알아서 이어집니다.",
+    "loginDesc": "{provider}가 연 브라우저 탭에서 로그인하세요. 마치면 알아서 이어집니다.",
     "claude": {
       "profilesDesc": "각 프로필은 자체 플러그인과 기록을 가진 별도의 Claude 로그인입니다. 설정, CLAUDE.md, 에이전트, 명령, 스킬, hook은 모든 프로필에서 같습니다.",
       "copiedNote": "이 프로필의 설정, CLAUDE.md, 에이전트, 명령, 스킬, hook은 사본입니다. 다른 프로필에서 수정해도 여기에는 반영되지 않습니다.",
@@ -616,20 +616,20 @@
   "servicesSettings": {
     "title": "서비스",
     "searchWords": "서비스 명령 docker 컨테이너 터널 개발 서버 lich와 함께 시작 services",
-    "description": "lich가 이 프로젝트를 위해 계속 실행하는 명령입니다. 컨테이너, 터널, 개발 서버가 각자 자기 콘솔에서 실행됩니다. 명령이 끝나면 그 서비스는 중지된 것입니다.",
-    "globalDescription": "홈 디렉터리에서 실행되고 lich 시작 화면에 표시되는 서비스입니다. 프로젝트의 서비스는 해당 범위에 있습니다.",
+    "description": "lich가 이 프로젝트를 위해 계속 실행해 두는 명령입니다. 컨테이너, 터널, 개발 서버 같은 명령이 각자 자기 콘솔에서 실행됩니다. 명령이 끝나면 서비스도 중지된 것입니다.",
+    "globalDescription": "홈 디렉터리에서 실행되고 lich 시작 화면에 표시되는 서비스입니다. 프로젝트별 서비스는 각 프로젝트 범위에서 관리합니다.",
     "add": "서비스 추가",
     "startsWithLich": "lich와 함께 시작",
     "name": "이름",
     "namePlaceholder": "tailscale",
     "command": "명령",
     "commandPlaceholder": "docker compose up",
-    "commandHint": "프로젝트 폴더에서 셸의 rc 파일 없이 실행됩니다. 포그라운드로 두세요. 분리되는 명령(-d, &)은 바로 끝나고 중지됨으로 표시됩니다.",
+    "commandHint": "프로젝트 폴더에서 셸의 rc 파일 없이 실행됩니다. 포그라운드에서 실행되게 두세요. 백그라운드로 분리되는 명령(-d, &)은 바로 끝나서 중지됨으로 표시됩니다.",
     "startWithLich": "lich와 함께 시작",
     "save": "저장"
   },
   "extensionsSettings": {
-    "description": "각 확장 프로그램은 사용자의 컴퓨터에서 사용자 권한으로 실행되며, 사용자의 파일과 계정에 접근할 수 있습니다.",
+    "description": "확장 프로그램은 이 컴퓨터에서 사용자 권한으로 실행되며, 파일과 계정에 접근할 수 있습니다.",
     "openFolder": "폴더 열기",
     "fromGit": "GitHub에서",
     "fromDir": "폴더에서",
@@ -639,10 +639,10 @@
     "gitDescription": "이 시스템용으로 빌드된 최신 릴리스이며, 체크섬으로 검증합니다.",
     "dirDescription": "manifest.json과 이 시스템용으로 이미 빌드된 프로그램이 들어 있는 폴더입니다.",
     "pickTitle": "확장 프로그램 폴더 선택",
-    "installTitle": "{name} {version}을(를) 설치할까요?",
-    "installTitleNoVersion": "{name}을(를) 설치할까요?",
+    "installTitle": "{name} {version} 확장 프로그램을 설치할까요?",
+    "installTitleNoVersion": "{name} 확장 프로그램을 설치할까요?",
     "installSource": "출처: {source}",
-    "installWarning": "사용자의 컴퓨터에서 사용자 권한으로 실행되며, 사용자의 파일과 계정에 접근할 수 있습니다. 만든 사람을 신뢰할 때만 설치하세요.",
+    "installWarning": "이 컴퓨터에서 사용자 권한으로 실행되며, 파일과 계정에 접근할 수 있습니다. 만든 사람을 신뢰할 때만 설치하세요.",
     "permissionsLabel": "추가로 할 수 있는 일",
     "permission": {
       "projectsRead": "열린 프로젝트와 그 worktree 보기",
@@ -652,11 +652,11 @@
       "sessionsAsk": "Claude Code 세션에 따로 질문하고 답 읽기",
       "servicesRead": "프로젝트의 서비스와 그 출력 보기",
       "servicesWrite": "프로젝트의 서비스를 시작, 중지, 재시작하기",
-      "gitRead": "각 체크아웃의 브랜치, 변경 사항, pull request 보기",
+      "gitRead": "각 체크아웃의 브랜치, 변경 사항, 풀 리퀘스트 보기",
       "notify": "데스크톱 알림 띄우기",
       "window": "독에 파일을 보여 주고 세션의 브라우저에서 페이지 열기"
     },
-    "removeTitle": "{name}을(를) 제거할까요?",
+    "removeTitle": "{name} 확장 프로그램을 제거할까요?",
     "removeDescription": "lich가 중지하고 프로그램을 삭제합니다. 저장한 데이터는 유지되므로 다시 설치하면 이어서 사용할 수 있습니다.",
     "removeDeleteData": "저장한 데이터도 삭제",
     "remove": "제거",

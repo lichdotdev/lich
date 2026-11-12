@@ -5,7 +5,7 @@
     "resumeFailed": "Could not resume {label}: {error}",
     "actionUnavailable": "{label} is not available here",
     "nothingClosed": "Nothing closed yet",
-    "nothingClosedHint": "Close a session and it waits here — its branch, its agent and its conversation — until its worktree is removed.",
+    "nothingClosedHint": "Close a session and it waits here with its branch, agent and conversation until its worktree is removed.",
     "noMatches": "No matches for {query}",
     "noMatchesInTab": "No matches for {query} in {tab}",
     "shownOfTotal": "{shown} of {total}",

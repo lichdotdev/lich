@@ -11,10 +11,10 @@
   },
   "delegates": {
     "title": "Mantenha as duas à vista",
-    "body": "Mostrar ao lado coloca a sessão nova ao lado desta, para você ver ela começar."
+    "body": "Mostrar ao lado coloca a sessão nova ao lado desta, para você acompanhar o começo dela."
   },
   "close": {
     "title": "Feche a antiga você mesmo",
-    "body": "As duas sessões podem editar os mesmos arquivos até você fechar esta. Quando a nova estiver andando, clique com o botão direito nesta linha e escolha Fechar sessão."
+    "body": "As duas sessões podem editar os mesmos arquivos até você fechar esta. Quando a nova já estiver rodando, clique com o botão direito nesta linha e escolha Fechar sessão."
   }
 }

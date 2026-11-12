@@ -14,7 +14,7 @@
   },
   "cost": {
     "mixedModels": "Esta conversación cambió de modelo, así que lich no puede calcular su precio.",
-    "unpricedModel": "Aún no hay precio para este modelo: lich necesita la red para obtenerlo."
+    "unpricedModel": "Aún no hay precio para este modelo. lich necesita conexión a la red para obtenerlo."
   },
   "handsOn": {
     "detailTurn": "Cuánto tiempo se ha trabajado en esta sesión: escribiéndole, informando o ejecutando un turno. Una pausa de más de 15 minutos cuenta como tiempo de ausencia.",
@@ -22,7 +22,7 @@
   },
   "spawnGate": {
     "checkoutGone": "La worktree de esta sesión ya no existe, así que la sesión se cerró. Vuelve a crear la worktree para retomarla.",
-    "conversationGone": "La conversación anterior ya no está disponible: se inicia una nueva sesión."
+    "conversationGone": "La conversación anterior ya no está disponible, así que se inicia una sesión nueva."
   },
   "palette": {
     "untitledConversation": "Conversación sin título",

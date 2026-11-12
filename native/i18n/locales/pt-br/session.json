@@ -17,8 +17,8 @@
     "unpricedModel": "Ainda não há preço para este modelo. O lich precisa da rede para buscar um."
   },
   "handsOn": {
-    "detailTurn": "Há quanto tempo esta sessão está em uso: digitando nela, recebendo relatórios ou executando um turno. Uma pausa maior que 15 minutos conta como tempo ausente.",
-    "detailTool": "Há quanto tempo esta sessão está em uso: digitando nela ou recebendo o relatório de uma chamada de ferramenta. Uma pausa maior que 15 minutos conta como tempo ausente."
+    "detailTurn": "Tempo de trabalho nesta sessão: digitando nela, recebendo relatórios ou rodando um turno. Uma pausa de mais de 15 minutos conta como ausência.",
+    "detailTool": "Tempo de trabalho nesta sessão: digitando nela ou recebendo o relatório de uma chamada de ferramenta. Uma pausa de mais de 15 minutos conta como ausência."
   },
   "spawnGate": {
     "checkoutGone": "A worktree desta sessão não existe mais, então a sessão foi fechada. Recrie a worktree para retomá-la.",

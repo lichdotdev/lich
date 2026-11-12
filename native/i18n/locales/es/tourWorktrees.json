@@ -13,7 +13,7 @@
   },
   "name": {
     "title": "Ponle nombre",
-    "body": "Unas palabras o una issue como #123, y la rama toma ese nombre. Déjalo vacío para uno aleatorio."
+    "body": "Escribe unas palabras o una issue como #123 y la rama se llamará así. Si lo dejas vacío, recibe un nombre aleatorio."
   },
   "from": {
     "title": "Elige desde dónde empieza",

@@ -27,12 +27,12 @@
   },
   "mergeGate": {
     "changesRequested": "Um revisor pediu alterações",
-    "reviewRequired": "O GitHub exige uma revisão que ainda não foi deixada",
+    "reviewRequired": "O GitHub exige uma revisão que ainda não foi feita",
     "merged": "O pull request já foi mergeado",
     "closed": "O pull request está fechado",
     "draft": "O pull request é um rascunho",
     "conflicts": "Conflita com {base}",
-    "behind": "A branch base avançou: atualize esta branch primeiro",
+    "behind": "A branch base avançou. Atualize esta branch primeiro",
     "pattern": {
       "match": "{target} deve corresponder a {pattern}",
       "notMatch": "{target} não deve corresponder a {pattern}",
@@ -51,7 +51,7 @@
     "ruleNote": "Um ruleset governa {base}: em todo commit, {clauses}."
   },
   "pullsChecks": {
-    "none": "Nenhuma verificação reportada.",
+    "none": "Nenhum check reportado.",
     "required": "Obrigatório"
   },
   "pullsCommits": {
@@ -94,7 +94,7 @@
       }
     },
     "summaryPlaceholder": "Resumo (opcional)",
-    "summaryAlone": "Nenhum comentário em linha: só o resumo será enviado."
+    "summaryAlone": "Não há comentários em linha, então só o resumo será enviado."
   },
   "pullsConversation": {
     "commentFailed": "Falha ao comentar: {error}",
@@ -107,12 +107,12 @@
     "comment": "Comentar",
     "commentPlaceholder": "Algo sobre o pull request como um todo",
     "readFailed": "Não foi possível ler a conversa: {error}",
-    "nothingYet": "Nada dito ainda.",
+    "nothingYet": "Ainda não há comentários.",
     "line": "linha {line}",
     "lines": "linhas {start}-{end}",
     "outdated": "desatualizada",
     "pendingHead": "Revisão pendente",
-    "pendingNote": "Enviada quando você enviar a revisão.",
+    "pendingNote": "Vai junto quando você enviar a revisão.",
     "discard": "Descartar",
     "edit": "Editar",
     "save": "Salvar"
@@ -132,11 +132,11 @@
     "editFailed": "Não foi possível atualizar a descrição: {error}"
   },
   "pullsStats": {
-    "checksFailing": "{failed} de {total} verificações falhando",
-    "checksRunning": "{pending} de {total} verificações em execução",
+    "checksFailing": "{failed} de {total} checks falhando",
+    "checksRunning": "{pending} de {total} checks em execução",
     "checksPassed": {
-      "one": "{count} verificação passou",
-      "other": "{count} verificações passaram"
+      "one": "{count} check passou",
+      "other": "{count} checks passaram"
     },
     "merged": "Mergeado",
     "closed": "Fechado",
@@ -261,16 +261,16 @@
       "overview": "Visão geral",
       "commits": "Commits",
       "conversation": "Conversa",
-      "checks": "Verificações"
+      "checks": "Checks"
     },
     "editTitle": "Renomear pull request",
     "renameFailed": "Não foi possível renomear o pull request: {error}"
   },
   "pullsActions": {
-    "runningTitle": "As sessões ainda estão em execução",
+    "runningTitle": "Ainda há sessões em execução",
     "running": {
-      "one": "Uma sessão em {name} está no meio de um turno. Remover a worktree a interrompe; o turno em andamento é perdido.",
-      "other": "{count} sessões em {name} estão no meio de um turno. Remover a worktree as interrompe; o turno em andamento é perdido."
+      "one": "Uma sessão em {name} está no meio de um turno. Remover a worktree interrompe a sessão, e o turno em andamento é perdido.",
+      "other": "{count} sessões em {name} estão no meio de um turno. Remover a worktree interrompe as sessões, e o turno em andamento é perdido."
     }
   },
   "pullsView": {
@@ -278,8 +278,8 @@
   },
   "pullsLogic": {
     "failing": {
-      "one": "{count} verificação está falhando; o GitHub fará o merge mesmo assim",
-      "other": "{count} verificações estão falhando; o GitHub fará o merge mesmo assim"
+      "one": "{count} check está falhando, mas o GitHub fará o merge mesmo assim",
+      "other": "{count} checks estão falhando, mas o GitHub fará o merge mesmo assim"
     },
     "durationSeconds": "{value}s",
     "durationMinutes": "{value}min",

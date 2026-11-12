@@ -1,11 +1,11 @@
 {
   "commandPalette": {
-    "placeholder": "Vá para uma sessão, projeto ou algo que foi dito, ou digite > para ações…",
+    "placeholder": "Vá para uma sessão, um projeto ou algo que foi dito, ou digite > para ações…",
     "forgetFailed": "Não foi possível esquecer {label}: {error}",
     "resumeFailed": "Não foi possível retomar {label}: {error}",
     "actionUnavailable": "{label} não está disponível aqui",
     "nothingClosed": "Nada fechado ainda",
-    "nothingClosedHint": "Feche uma sessão e ela espera aqui, com sua branch, seu agente e sua conversa, até que a worktree seja removida.",
+    "nothingClosedHint": "Uma sessão fechada fica aqui, com a branch, o agente e a conversa, até a worktree dela ser removida.",
     "noMatches": "Nenhum resultado para {query}",
     "noMatchesInTab": "Nenhum resultado para {query} em {tab}",
     "shownOfTotal": "{shown} de {total}",

@@ -8,7 +8,7 @@
   },
   "panel": {
     "title": "Léelo archivo por archivo",
-    "body": "La pestaña Revisión muestra cada archivo que cambió el agente, cada uno con su diff."
+    "body": "La pestaña Revisión muestra todos los archivos que cambió el agente, cada uno con su diff."
   },
   "select": {
     "title": "Comenta unas líneas",
@@ -27,7 +27,7 @@
   },
   "send": {
     "title": "Envía tus comentarios",
-    "body": "Los comentarios esperan aquí, así puedes escribir varios antes. Enviar se los pasa todos al agente en un solo mensaje.",
+    "body": "Los comentarios esperan aquí, así que puedes escribir varios antes de enviarlos. Enviar se los pasa todos al agente en un solo mensaje.",
     "hint": "Haz clic en Enviar para continuar"
   }
 }

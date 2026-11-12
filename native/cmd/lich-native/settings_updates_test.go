@@ -107,7 +107,7 @@ func TestPluginOutcomeReadsTheLastCheck(t *testing.T) {
 	for _, tc := range []struct {
 		checked, failed bool
 		want            string
-	}{{false, true, ""}, {true, false, "Checked."}, {true, true, "Check failed — are you online?"}} {
+	}{{false, true, ""}, {true, false, "Checked."}, {true, true, "Check failed. Are you online?"}} {
 		if got := pluginOutcome(tc.checked, tc.failed); got != tc.want {
 			t.Errorf("pluginOutcome(%v, %v) = %q, want %q", tc.checked, tc.failed, got, tc.want)
 		}

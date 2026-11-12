@@ -33,8 +33,8 @@
     "moveToFolder": "フォルダーに移動",
     "takeOutOf": "{folder} から出す",
     "newFolder": "新しいフォルダー…",
-    "browser": "ブラウザ",
-    "browserFailed": "ブラウザを開けませんでした: {error}",
+    "browser": "ブラウザー",
+    "browserFailed": "ブラウザーを開けませんでした: {error}",
     "openIn": "次で開く",
     "terminal": "ターミナル",
     "editor": "エディター",
@@ -73,7 +73,7 @@
   },
   "sessionStatusRung": {
     "commandLine": "コマンドライン",
-    "waitingOnYou": "あなたの入力待ち",
+    "waitingOnYou": "対応待ち",
     "compacting": "圧縮中…"
   },
   "sessionGroup": {
@@ -129,15 +129,15 @@
     "runConfined": "隔離して実行"
   },
   "sessionTooltip": {
-    "notMounted": "マウントされていません (シンボリックリンク): {paths}",
+    "notMounted": "マウントされていません（シンボリックリンク）: {paths}",
     "morePaths": "ほか {count} 件",
     "modelChanged": "{requested} で開始、{running} で実行中"
   },
   "worktreeDialogView": {
     "title": "新しいワークツリーセッション",
-    "description": "専用のブランチ上の独立したチェックアウトと、専用のセッションです。",
+    "description": "独自のブランチを持つ別のチェックアウトを作り、専用のセッションを開きます。",
     "name": "名前",
-    "namePlaceholder": "空欄でランダムな名前、または語句か #issue",
+    "namePlaceholder": "語句か #issue を入力（空欄ならランダムな名前）",
     "branchLine": "ブランチ: {branch}",
     "randomBranch": "ランダムな名前",
     "opensSelected": "選択したワークツリーのセッションを開きます。",
@@ -155,12 +155,12 @@
     "create": "作成",
     "open": "開く",
     "forkTitle": "{label} をワークツリーにフォーク",
-    "forkDescription": "独自のブランチを持つ別のチェックアウト。",
+    "forkDescription": "独自のブランチを持つ別のチェックアウトです。",
     "fork": "フォーク"
   },
   "worktreeLogic": {
     "checking": "リモートを確認しています…",
-    "behind": "{upstream} より {count} 件遅れています · {upstream} から開始",
+    "behind": "{upstream} より {count} コミット遅れ · {upstream} から開始",
     "notPushed": {
       "one": "{count} 件のコミットが未プッシュ · ローカルの {branch} から開始",
       "other": "{count} 件のコミットが未プッシュ · ローカルの {branch} から開始"
@@ -174,14 +174,14 @@
   },
   "sidebarProfile": {
     "handoffOfferTitle": "{label} を別のプロファイルに移しますか？",
-    "handoffOfferDescription": "引き継いだエージェントは {profile} を提案しています",
+    "handoffOfferDescription": "引き継ぎ元のエージェントが {profile} を提案しています",
     "handoffOfferKeep": "そのまま",
     "limitOfferTitle": "{label} が使用量の上限に達しました",
     "limitOfferDescription": "{profile} にはまだ残量があります",
     "offerContinue": "{profile} で続ける",
     "limitOfferWait": "待つ",
     "offerFailed": "{label} を {profile} で続行できませんでした: {error}",
-    "continueIn": "次で続ける",
+    "continueIn": "別のプロファイルで続ける",
     "continueInHint": "同じ会話を別のログインで",
     "goneTitle": "{label} は、もう存在しないプロファイルで開始されました",
     "goneDescription": "この会話は再開できません。代わりに、このプロジェクトのプロファイルで新しいセッションを始めてください。",
@@ -194,7 +194,7 @@
     "otherProviders": "その他のプロバイダー"
   },
   "fork": {
-    "pruned": "{name} にはフォークできる会話がもうありません: {provider} が削除しました。",
+    "pruned": "{name} にはフォークできる会話が残っていません。{provider} が削除しました。",
     "failed": "{name} をフォークできませんでした: {error}"
   },
   "services": {
@@ -215,7 +215,7 @@
     "editShort": "編集",
     "delete": "サービスを削除",
     "newService": "新しいサービス…",
-    "failedOp": "サービスが応じませんでした: {error}",
+    "failedOp": "サービスを操作できませんでした: {error}",
     "railHint": "サービス · {up}/{total} 実行中",
     "console": {
       "ctrlC": "Ctrl+C でサービスを停止",
@@ -241,7 +241,7 @@
     "when": "いつ",
     "whenPlaceholder": "2h30 または 14:30",
     "prompt": "プロンプト",
-    "promptPlaceholder": "このセッションに何をさせますか?",
+    "promptPlaceholder": "このセッションに何をさせますか？",
     "whenError": "読み取れません。45m、2h30、14:30 のように入力してください。",
     "landsToday": "今日 {clock}、あと {left}",
     "landsTomorrow": "明日 {clock}、あと {left}",
@@ -250,7 +250,7 @@
     "staysOn": "プルリクエストが閉じるまで有効です。{limit} 回実行すると停止します。",
     "noPR": "このブランチにはまだプルリクエストがありません。作成されると監視が始まります。",
     "setByAgent": "このセッションのエージェントが設定しました。",
-    "setByLich": "利用上限のあと lich が設定しました。",
+    "setByLich": "使用量の上限に達したため lich が設定しました。",
     "runsUsed": "{limit} 回中 {runs} 回実行済み。",
     "remove": "削除",
     "save": "保存",
@@ -261,7 +261,7 @@
     "checksFailed": "チェックが失敗するとプロンプトを入力します",
     "checksPassed": "チェックが成功するとプロンプトを入力します",
     "review": "レビューが届くとプロンプトを入力します",
-    "at": "{when} にプロンプト",
-    "resume": "利用上限のあと {when} に再開します"
+    "at": "{when} にプロンプトを入力",
+    "resume": "使用量の上限が解除される {when} に再開します"
   }
 }

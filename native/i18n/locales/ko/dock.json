@@ -10,7 +10,7 @@
   "searchResults": {
     "prompt": "이 체크아웃의 모든 파일 내용 검색",
     "searching": "검색 중…",
-    "noMatch": "“{query}”을(를) 포함한 파일이 없습니다"
+    "noMatch": "“{query}” 텍스트가 들어 있는 파일이 없습니다"
   },
   "filesPanel": {
     "searchPlaceholder": "파일 내용 검색",
@@ -31,8 +31,8 @@
     "wholeWord": "단어 단위로",
     "regexp": "정규식 사용",
     "showAll": "모든 일치 항목 표시",
-    "previous": "이전 일치",
-    "next": "다음 일치",
+    "previous": "이전 일치 항목",
+    "next": "다음 일치 항목",
     "close": "닫기",
     "position": "{current}/{total}",
     "matches": {
@@ -42,7 +42,7 @@
     "invalidRegexp": "잘못된 정규식"
   },
   "artifacts": {
-    "empty": "이 세션의 에이전트가 보여 주려고 만든 페이지와 파일이 프로젝트의 다른 열린 세션의 것과 함께 여기에 표시됩니다.",
+    "empty": "이 세션의 에이전트가 보여 주려고 만든 페이지와 파일이 여기에 나타납니다. 프로젝트에 열려 있는 다른 세션의 것도 함께 표시됩니다.",
     "thisSession": "이 세션",
     "otherSessions": "다른 세션",
     "options": "{name} 옵션",
@@ -52,9 +52,9 @@
     "showInFileManager": "파일 관리자에서 보기"
   },
   "showCode": {
-    "pointed": "{session}에서 {file}을(를) 가리켰습니다",
+    "pointed": "{session}에서 {file} 파일을 가리켰습니다",
     "show": "표시",
-    "notFound": "이 체크아웃에 {file}이(가) 없습니다",
+    "notFound": "이 체크아웃에 {file} 파일이 없습니다",
     "matches": {
       "one": "파일 {count}개 일치",
       "other": "파일 {count}개 일치"

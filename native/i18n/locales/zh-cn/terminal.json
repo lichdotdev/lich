@@ -2,7 +2,7 @@
   "dropHint": {
     "attachTo": "附加到 {label}",
     "confined": "位于检出目录之外时，会以副本形式传入",
-    "pasted": "其路径会粘贴到提示符处"
+    "pasted": "文件路径会粘贴到提示符处"
   },
   "exitToast": {
     "ended": "{label} 已结束",
@@ -41,7 +41,7 @@
   },
   "duplicate": {
     "title": "{label} 恢复了一个已在 {holder} 中打开的对话。",
-    "keepBoth": "保留两者",
+    "keepBoth": "两个都保留",
     "switch": "切换"
   }
 }

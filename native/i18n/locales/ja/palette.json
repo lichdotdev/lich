@@ -1,13 +1,13 @@
 {
   "commandPalette": {
-    "placeholder": "セッション、プロジェクト、発言内容にジャンプ。> を入力するとアクション…",
+    "placeholder": "セッション、プロジェクト、会話の内容に移動。> でアクション…",
     "forgetFailed": "{label} を履歴から削除できませんでした: {error}",
     "resumeFailed": "{label} を再開できませんでした: {error}",
     "actionUnavailable": "{label} はここでは利用できません",
     "nothingClosed": "閉じたものはまだありません",
-    "nothingClosedHint": "セッションを閉じると、ワークツリーが削除されるまで、ブランチ、エージェント、会話ごとここで待機します。",
+    "nothingClosedHint": "閉じたセッションは、ワークツリーが削除されるまでブランチ、エージェント、会話ごとここに残ります。",
     "noMatches": "{query} に一致するものはありません",
-    "noMatchesInTab": "{tab} に {query} に一致するものはありません",
+    "noMatchesInTab": "{tab} には {query} に一致するものがありません",
     "shownOfTotal": "{total} 件中 {shown} 件",
     "tab": {
       "All": "すべて",
@@ -16,7 +16,7 @@
       "Messages": "メッセージ",
       "History": "履歴"
     },
-    "checkoutGone": "チェックアウトなし",
+    "checkoutGone": "チェックアウト削除済み",
     "matches": {
       "one": "{count} 件の一致",
       "other": "{count} 件の一致"
@@ -26,7 +26,7 @@
       "other": "{count} 件のセッション"
     },
     "relocate": "場所を変更",
-    "reopen": "再度開く"
+    "reopen": "開き直す"
   },
   "paletteLogic": {
     "indexedNewest": "インデックス済み: 最新 {size} 件"

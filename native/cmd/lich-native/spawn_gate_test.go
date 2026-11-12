@@ -168,7 +168,7 @@ func TestGoneConversationSpawnsFreshAndSaysSo(t *testing.T) {
 	if got := released(t, g); got != "" {
 		t.Errorf("resume = %q, want fresh", got)
 	}
-	if len(told) != 1 || told[0].Title != "The previous conversation is no longer available — starting a new session." {
+	if len(told) != 1 || told[0].Title != "The previous conversation is no longer available, so a new session is starting." {
 		t.Errorf("toasts %+v, want the conversation-gone notice", told)
 	}
 }

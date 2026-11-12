@@ -1,11 +1,11 @@
 {
   "commandPalette": {
-    "placeholder": "Перейти к сессии, проекту или сказанному, либо введите > для действий…",
+    "placeholder": "Сессия, проект или фраза из разговора. Введите > для действий…",
     "forgetFailed": "Не удалось забыть {label}: {error}",
     "resumeFailed": "Не удалось возобновить {label}: {error}",
     "actionUnavailable": "{label} здесь недоступно",
     "nothingClosed": "Закрытых пока нет",
-    "nothingClosedHint": "Закройте сессию, и она будет ждать здесь вместе со своей веткой, агентом и разговором, пока её worktree не удалят.",
+    "nothingClosedHint": "Закрытая сессия ждёт здесь вместе с веткой, агентом и разговором, пока её worktree не удалят.",
     "noMatches": "Нет совпадений для {query}",
     "noMatchesInTab": "Нет совпадений для {query} (вкладка {tab})",
     "shownOfTotal": "{shown} из {total}",

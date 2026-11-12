@@ -27,7 +27,7 @@
   },
   "mergeGate": {
     "changesRequested": "评审者请求了更改",
-    "reviewRequired": "GitHub 要求先完成评审，但尚未有人评审",
+    "reviewRequired": "GitHub 要求的评审尚未完成",
     "merged": "拉取请求已合并",
     "closed": "拉取请求已关闭",
     "draft": "拉取请求仍是草稿",
@@ -48,7 +48,7 @@
       "authorEmail": "作者邮箱",
       "committerEmail": "提交者邮箱"
     },
-    "ruleNote": "规则集约束着 {base}：对每个提交，{clauses}。"
+    "ruleNote": "{base} 受规则集约束：每个提交的{clauses}。"
   },
   "pullsChecks": {
     "none": "没有检查结果。",
@@ -75,7 +75,7 @@
     "chooseTitle": "选择 GitHub 账号",
     "chooseDescription": "gh 登录了多个账号。请选择能看到此仓库的账号。",
     "hiddenTitle": "{account} 看不到此仓库",
-    "hiddenDescription": "GitHub 的回应就像它不存在一样。请选择其他账号。",
+    "hiddenDescription": "GitHub 返回的结果是仓库不存在。请换一个账号。",
     "continue": "继续",
     "tryAgain": "重试",
     "later": "之后可以在设置 › 版本控制中更改。",
@@ -105,9 +105,9 @@
     },
     "commentOn": "评论此拉取请求",
     "comment": "评论",
-    "commentPlaceholder": "说点关于整个拉取请求的内容",
+    "commentPlaceholder": "针对整个拉取请求发表评论",
     "readFailed": "无法读取对话：{error}",
-    "nothingYet": "还没有任何发言。",
+    "nothingYet": "还没有评论。",
     "line": "第 {line} 行",
     "lines": "第 {start}-{end} 行",
     "outdated": "已过时",
@@ -200,26 +200,26 @@
     "deleteTitle": "删除这条评论？",
     "deleteGone": "GitHub 无法恢复它。",
     "deleteLast": "这是该讨论串中唯一的评论，因此讨论串也会一并删除。GitHub 无法恢复它。",
-    "verdictStays": "结论保持不变。",
+    "verdictStays": "评审结论不变。",
     "more": "评论选项"
   },
   "threadSend": {
     "send": "发送到会话",
-    "sendTip": "将此讨论发送到 {name}",
+    "sendTip": "将此讨论串发送给 {name}",
     "sendAll": {
-      "one": "将 {count} 个未解决的讨论发送到会话",
-      "other": "将 {count} 个未解决的讨论发送到会话"
+      "one": "将 {count} 个未解决的讨论串发送到会话",
+      "other": "将 {count} 个未解决的讨论串发送到会话"
     },
     "waiting": "已发送 · 等待 push",
     "sent": {
-      "one": "已将讨论发送到 {name}",
-      "other": "已将 {count} 个讨论发送到 {name}"
+      "one": "已将讨论串发送给 {name}",
+      "other": "已将 {count} 个讨论串发送给 {name}"
     },
-    "awaitFailed": "会话已收到讨论，但未能更新 GitHub：{error}"
+    "awaitFailed": "会话已收到讨论串，但未能更新 GitHub：{error}"
   },
   "pulls": {
     "alreadyRemoved": "{name} 已被移除",
-    "pinnedSession": "该工作树有已固定的会话，请先取消固定。",
+    "pinnedSession": "该工作树有已置顶的会话，请先取消置顶。",
     "notCreatedByLich": "此工作树不是 lich 创建的，请在侧边栏中移除。",
     "dirty": "该工作树有未提交的更改，请在侧边栏中移除。",
     "removed": "已移除 {name}",
@@ -231,7 +231,7 @@
     "handedOff": "已将 #{number} 交给 {session}",
     "goToSession": "前往会话",
     "openInSession": "在会话中打开",
-    "forkBlocked": "头部分支位于不允许维护者编辑的分叉上，无法把提交推回去",
+    "forkBlocked": "源分支位于不允许维护者编辑的分叉上，提交无法推送回去",
     "runningRemoval": {
       "removeAnyway": "仍然移除"
     }

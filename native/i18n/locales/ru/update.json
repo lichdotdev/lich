@@ -1,6 +1,6 @@
 {
   "plugin": {
-    "incompatibleInstall": "Плагин lich в {installs} не поддерживается этой версией lich. Установите v{version}: именно этот релиз поддерживается.",
+    "incompatibleInstall": "Плагин lich в {installs} не поддерживается этой версией lich. Установите v{version}, которую она поддерживает.",
     "incompatibleUpdate": "Плагин lich в {installs} не поддерживается этой версией lich. Обновите lich или проверьте подключение к сети, чтобы найти поддерживаемый релиз."
   },
   "progress": {

@@ -32,23 +32,23 @@
     "closed": "Pull request закрыт",
     "draft": "Pull request в статусе черновика",
     "conflicts": "Конфликты с {base}",
-    "behind": "Базовая ветка ушла вперёд: сначала обновите эту ветку",
+    "behind": "Базовая ветка ушла вперёд. Сначала обновите эту ветку.",
     "pattern": {
-      "match": "{target}: обязательно соответствие {pattern}",
-      "notMatch": "{target}: соответствие {pattern} запрещено",
-      "startWith": "{target}: обязательно начало с {pattern}",
-      "notStartWith": "{target}: начало с {pattern} запрещено",
-      "endWith": "{target}: обязательно окончание на {pattern}",
-      "notEndWith": "{target}: окончание на {pattern} запрещено",
-      "contain": "{target}: обязательно содержит {pattern}",
-      "notContain": "{target}: содержать {pattern} запрещено"
+      "match": "{target} должен соответствовать {pattern}",
+      "notMatch": "{target} не должен соответствовать {pattern}",
+      "startWith": "{target} должен начинаться с {pattern}",
+      "notStartWith": "{target} не должен начинаться с {pattern}",
+      "endWith": "{target} должен заканчиваться на {pattern}",
+      "notEndWith": "{target} не должен заканчиваться на {pattern}",
+      "contain": "{target} должен содержать {pattern}",
+      "notContain": "{target} не должен содержать {pattern}"
     },
     "target": {
-      "message": "сообщение",
+      "message": "текст сообщения",
       "authorEmail": "email автора",
       "committerEmail": "email коммитера"
     },
-    "ruleNote": "Для {base} действует набор правил. Каждый коммит: {clauses}."
+    "ruleNote": "Для {base} действует набор правил. Для каждого коммита: {clauses}."
   },
   "pullsChecks": {
     "none": "Проверок нет.",
@@ -60,7 +60,7 @@
   "pullsConflicts": {
     "loading": "Выясняем, в каких файлах конфликты…",
     "failed": "Не удалось выяснить, в каких файлах конфликты: {error}",
-    "stale": "Сейчас конфликтующих файлов нет: возможно, GitHub ещё не обновил данные.",
+    "stale": "Сейчас конфликтующих файлов нет. Возможно, GitHub ещё не обновил данные.",
     "count": {
       "one": "{count} конфликтующий файл",
       "few": "{count} конфликтующих файла",
@@ -75,7 +75,7 @@
   },
   "pullsAccount": {
     "chooseTitle": "Выберите аккаунт GitHub",
-    "chooseDescription": "gh вошёл в несколько аккаунтов. Выберите тот, которому виден этот репозиторий.",
+    "chooseDescription": "В gh выполнен вход в несколько аккаунтов. Выберите тот, у которого есть доступ к этому репозиторию.",
     "hiddenTitle": "{account} не видит этот репозиторий",
     "hiddenDescription": "GitHub ответил так, будто его не существует. Выберите другой аккаунт.",
     "continue": "Продолжить",
@@ -96,7 +96,7 @@
       }
     },
     "summaryPlaceholder": "Итог (необязательно)",
-    "summaryAlone": "Комментариев к строкам нет: отправится только итог."
+    "summaryAlone": "Комментариев к строкам нет, поэтому отправится только итог."
   },
   "pullsConversation": {
     "commentFailed": "Не удалось отправить комментарий: {error}",
@@ -109,7 +109,7 @@
     },
     "commentOn": "Комментарий к pull request",
     "comment": "Комментировать",
-    "commentPlaceholder": "Что-нибудь о pull request в целом",
+    "commentPlaceholder": "Комментарий ко всему pull request",
     "readFailed": "Не удалось прочитать обсуждение: {error}",
     "nothingYet": "Пока ничего не написано.",
     "line": "строка {line}",
@@ -201,7 +201,7 @@
     "reopen": "Открыть снова",
     "resolve": "Решено",
     "reply": "Ответить",
-    "replyPlaceholder": "Ответьте в этом обсуждении",
+    "replyPlaceholder": "Ответ в этом обсуждении",
     "edit": "Изменить",
     "save": "Сохранить",
     "saving": "Сохранение…",
@@ -234,9 +234,9 @@
   },
   "pulls": {
     "alreadyRemoved": "{name} уже удалён",
-    "pinnedSession": "В worktree есть закреплённая сессия: сначала открепите её.",
-    "notCreatedByLich": "lich не создавал этот worktree: удалите его из боковой панели.",
-    "dirty": "В worktree есть незакоммиченные изменения: удалите его из боковой панели.",
+    "pinnedSession": "В worktree есть закреплённая сессия. Сначала открепите её.",
+    "notCreatedByLich": "Этот worktree создан не через lich. Удалите его из боковой панели.",
+    "dirty": "В worktree есть незакоммиченные изменения. Удалите его из боковой панели.",
     "removed": "Удалено: {name}",
     "removeFailed": "Не удалось удалить worktree: {error}",
     "merged": "#{number} слит в {base}",
@@ -246,7 +246,7 @@
     "handedOff": "#{number} передан в {session}",
     "goToSession": "Перейти к сессии",
     "openInSession": "Открыть в сессии",
-    "forkBlocked": "Головная ветка находится в форке, который не разрешает правки от мейнтейнеров: коммиты нельзя отправить обратно",
+    "forkBlocked": "Головная ветка находится в форке, где мейнтейнерам запрещено вносить правки, поэтому коммиты не удалось отправить обратно",
     "runningRemoval": {
       "removeAnyway": "Всё равно удалить"
     }

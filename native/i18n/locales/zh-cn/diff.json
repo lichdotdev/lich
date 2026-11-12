@@ -6,10 +6,10 @@
     "deleted": "已删除",
     "binary": "二进制文件",
     "loading": "正在加载…",
-    "missing": "不在此修订中"
+    "missing": "此版本中不存在"
   },
   "commentBatch": {
-    "openSession": "打开一个会话，将这些评论发送给它",
+    "openSession": "先打开一个会话来接收这些评论",
     "notePlaceholder": "关于整个更改的备注…",
     "count": {
       "one": "{count} 条评论",
@@ -37,9 +37,9 @@
     "injectFile": "注入文件",
     "injectLines": "注入行",
     "injectLinesRange": "注入行 {lines}",
-    "sessionComment": "给会话的评论…",
-    "sessionCommentRange": "给会话的评论 {lines}…",
-    "reviewCommentRange": "对拉取请求的评论 {lines}…",
+    "sessionComment": "给会话留评论…",
+    "sessionCommentRange": "给会话留评论 {lines}…",
+    "reviewCommentRange": "在拉取请求上评论 {lines}…",
     "revertSelected": "还原所选行",
     "revert": {
       "one": "还原 {count} 行更改",
@@ -49,7 +49,7 @@
   "fileDiff": {
     "readFailed": "无法读取 {path}",
     "whitespaceOnly": "仅空白字符",
-    "onlyWhitespaceChanged": "仅空白字符发生了更改",
+    "onlyWhitespaceChanged": "只改动了空白字符",
     "addAsContext": "将文件添加为上下文",
     "discard": "放弃更改",
     "viewed": "已查看",
@@ -68,12 +68,12 @@
     "squeezed": "并排视图需要更宽的面板"
   },
   "reviewSlots": {
-    "forSession": "给会话 · {lines}",
-    "onPullRequest": "对拉取请求 · {lines}",
+    "forSession": "发给会话 · {lines}",
+    "onPullRequest": "在拉取请求上 · {lines}",
     "addToBatch": "添加到批次",
-    "addToReview": "添加到审查",
-    "sessionPlaceholder": "这里应该改什么？它会连同其他内容一起发送给会话。",
-    "reviewPlaceholder": "留下评论。提交审查时一并发送。"
+    "addToReview": "添加到评审",
+    "sessionPlaceholder": "这里要怎么改？会和其他评论一起发给会话。",
+    "reviewPlaceholder": "留下评论，提交评审时一并发送。"
   },
   "dockReviewBody": {
     "split": "并排",
@@ -83,7 +83,7 @@
     "open": "用默认应用打开",
     "reveal": "在文件夹中显示",
     "pdf": "PDF 文档",
-    "pdfHint": "用桌面上阅读 PDF 的应用打开。",
+    "pdfHint": "用系统默认的 PDF 阅读器打开。",
     "openFailed": "无法打开 {name}",
     "revealFailed": "无法在文件夹中显示 {name}"
   },

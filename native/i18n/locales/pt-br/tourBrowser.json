@@ -8,7 +8,7 @@
   },
   "item": {
     "title": "Escolha Navegador",
-    "body": "Ele abre uma aba de navegador ao lado da sua sessão.",
+    "body": "Abre uma aba de navegador ao lado da sua sessão.",
     "hint": "Clique em Navegador para continuar"
   },
   "again": {
@@ -22,11 +22,11 @@
   },
   "address": {
     "title": "Abra uma página",
-    "body": "Digite um endereço e aperte Enter: seu app no localhost, ou lichdotdev.github.io/lich para experimentar. Seu agente também pode abrir páginas aqui.",
+    "body": "Digite um endereço e aperte Enter, por exemplo o seu app no localhost ou lichdotdev.github.io/lich para experimentar. Seu agente também pode abrir páginas aqui.",
     "hint": "Abra uma página para continuar"
   },
   "pick": {
-    "title": "Aponte na página",
+    "title": "Aponte direto na página",
     "body": "Em vez de descrever onde algo está, deixe uma nota em cima dele.",
     "hint": "Clique em Deixar notas na página para continuar"
   },
@@ -37,6 +37,6 @@
   },
   "send": {
     "title": "Envie suas notas",
-    "body": "Suas notas esperam aqui. Enviar digita todas na sua sessão como uma mensagem só, cada uma dizendo de qual elemento fala."
+    "body": "Suas notas esperam aqui. Enviar digita todas na sua sessão numa única mensagem, e cada nota indica o elemento a que se refere."
   }
 }

@@ -14,8 +14,8 @@
     "settings": "Ajustes",
     "closeTitle": "Hay sesiones en ejecución",
     "closeBody": {
-      "one": "Cerrar {name} detiene una sesión a mitad de un turno. Al reabrir el proyecto se ofrece reanudar donde se quedó cada una; el turno en curso se pierde.",
-      "other": "Cerrar {name} detiene {count} sesiones a mitad de un turno. Al reabrir el proyecto se ofrece reanudar donde se quedó cada una; el turno en curso se pierde."
+      "one": "Cerrar {name} detiene una sesión a mitad de turno. Al reabrir el proyecto podrás reanudar cada sesión donde se quedó, pero el turno en curso se perderá.",
+      "other": "Cerrar {name} detiene {count} sesiones a mitad de turno. Al reabrir el proyecto podrás reanudar cada sesión donde se quedó, pero el turno en curso se perderá."
     },
     "closeAnyway": "Cerrar de todos modos"
   },

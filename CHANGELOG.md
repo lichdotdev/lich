@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The interface reads more naturally in Portuguese, Spanish, Japanese, Korean, Russian and Chinese: each language was reread whole and reworded where it followed the English sentence too closely, with one term per concept throughout, so a few labels changed name (the pull request tab is Checks in Portuguese, for one). The English lost its dashes.
 - The badge beside the agent's cursor in a session's browser says what the agent is doing, Clicking, Typing, Scrolling, Navigating and so on, where it named the provider, which the session already tells you. It keeps the provider's icon, stays for a moment after each action and then leaves the arrow alone while the agent thinks. Applies to every provider.
 - A session's browser tab decodes each frame of its page three to five times faster, so the picture trails the page by less and the window spends less CPU on a page that animates. Building the window from source now needs libjpeg-turbo's `libturbojpeg`; `CONTRIBUTING.md` names the package.
 
