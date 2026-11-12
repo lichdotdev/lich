@@ -38,8 +38,8 @@ var (
 	errStopped = errors.New("browser service is shutting down")
 )
 
-// Service is one Chromium context per lich session: the window Browser tab
-// opens and the page the agent drives are the same one. Headless until
+// Service is one Chromium context per lich session: the page the window
+// shows beside the session and the page the agent drives are the same one. Headless until
 // someone asks for a window; headed after OpenVisible.
 type Service struct {
 	mu     sync.Mutex

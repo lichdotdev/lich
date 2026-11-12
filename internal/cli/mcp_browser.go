@@ -15,7 +15,7 @@ var browserTools = []mcpTool{
 	{
 		Name: "browser_open",
 		Description: "Open a page in this session's browser, creating it if there is none. It runs headless: the " +
-			"user sees the page in a tab beside this session, so headed false is expected. url is " +
+			"user sees the page beside this session's terminal, so headed false is expected. url is " +
 			"http(s), omitted for about:blank, or a file inside this session's checkout or its artifact " +
 			"folder ($LICH_ARTIFACT_DIR), which lich serves over http from 127.0.0.1; other schemes are " +
 			"refused. A page you make to show the user (a report, a diagram, a mockup) goes in the " +

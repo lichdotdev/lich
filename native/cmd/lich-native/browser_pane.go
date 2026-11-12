@@ -456,6 +456,7 @@ func (u *window) browserPointer(gtx C, p *browserPaneUI, session string, scale f
 
 // settleBrowserPanes stops the frames of every page pane that was on screen
 // last frame and is not on this one, after the frame laid everything out.
+// A pane that left with its browser has nothing to stop.
 func (u *window) settleBrowserPanes() {
 	for session, p := range u.browserPanes {
 		gone := p.wasOnScreen && !p.onScreen
@@ -464,6 +465,9 @@ func (u *window) settleBrowserPanes() {
 			continue
 		}
 		p.view = api.BrowserViewOptions{}
+		if st, ok := u.model.browserState(session); !ok || !st.Open {
+			continue
+		}
 		u.sendBrowser(session, "detach", func(ctx context.Context) error { return u.client.DetachBrowser(ctx, session) })
 	}
 }

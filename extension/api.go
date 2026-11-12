@@ -35,7 +35,7 @@ const (
 	// PermissionNotify raises desktop notifications.
 	PermissionNotify Permission = "notify"
 	// PermissionWindow shows a file in the dock and opens pages in a session's
-	// browser tab.
+	// browser.
 	PermissionWindow Permission = "window"
 )
 
