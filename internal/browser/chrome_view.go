@@ -262,7 +262,7 @@ func (p *chromePage) Screencast(ctx context.Context, v Viewport) error {
 
 // startCast is Screencast's step, run in its turn among the others.
 func (p *chromePage) startCast(ctx context.Context, v Viewport) error {
-	v = v.atFrameScale()
+	v = p.atDrawScale(v)
 	w, h := v.devicePixels()
 	if err := p.stopCast(ctx); err != nil {
 		return err
@@ -334,7 +334,7 @@ func (p *chromePage) castPastDialog(step func() error) error {
 // started (measured 2026-10-28). That size is laid out once the dialog closes;
 // until then the frames come at the size the page had.
 func (p *chromePage) Resize(ctx context.Context, v Viewport) error {
-	v = v.atFrameScale()
+	v = p.atDrawScale(v)
 	p.tabs.setView(v)
 	err := p.run(ctx, emulation.SetDeviceMetricsOverride(int64(v.W), int64(v.H), v.Scale, false))
 	if !errors.Is(err, errDialogOpen) {
@@ -416,10 +416,10 @@ var mouseTypes = map[string]input.MouseType{
 // mouseButtons is CDP's buttons bit set: left 1, right 2, middle 4.
 var mouseButtons = map[string]int64{"left": 1, "right": 2, "middle": 4}
 
-// atFrameScale is v at no more than frameScale: a page laid out past the
-// scale its browser draws at reads a devicePixelRatio its frames do not have.
-func (v Viewport) atFrameScale() Viewport {
-	v.Scale = min(v.Scale, frameScale)
+// atDrawScale is v at no more than the scale the browser draws at: a page
+// laid out past it reads a devicePixelRatio its frames do not have.
+func (p *chromePage) atDrawScale(v Viewport) Viewport {
+	v.Scale = min(v.Scale, p.scale)
 	return v
 }
 

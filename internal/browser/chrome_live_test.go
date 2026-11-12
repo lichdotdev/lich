@@ -23,6 +23,12 @@ import (
 
 func liveChrome(t *testing.T) (*chromePage, *httptest.Server) {
 	t.Helper()
+	return liveChromeAt(t, frameScale)
+}
+
+// liveChromeAt is a headless Chrome drawing at scale, and a page to load.
+func liveChromeAt(t *testing.T, scale float64) (*chromePage, *httptest.Server) {
+	t.Helper()
 	if _, err := chromium.FindBrowser(exec.LookPath); err != nil {
 		t.Skip("no Chromium-family browser on this machine")
 	}
@@ -34,7 +40,7 @@ func liveChrome(t *testing.T) (*chromePage, *httptest.Server) {
  oninput="document.body.dataset.seen = this.value"></form>`)
 	}))
 	t.Cleanup(srv.Close)
-	p, err := chromeLaunch(t.TempDir(), false)
+	p, err := chromeLaunch(t.TempDir(), false, scale)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -99,7 +105,7 @@ func TestPromoteRelaunchesOnTheProfileWithItsCookies(t *testing.T) {
 	_, srv := liveChrome(t)
 	// headless both times: what is under test is the relaunch on the same
 	// profile, and a headed window needs a display the suite may not have.
-	launch := func(dir string, _ bool) (Page, error) { return chromeLaunch(dir, false) }
+	launch := func(dir string, _ bool, scale float64) (Page, error) { return chromeLaunch(dir, false, scale) }
 	s := newService(launch, func(string, string) (string, error) { return t.TempDir(), nil }, time.Now, idleAfter)
 	t.Cleanup(func() {
 		if err := s.Cleanup(); err != nil {
@@ -224,6 +230,50 @@ func TestChromeScreencastDrawsAHiDPIPaneAtTheFrameScale(t *testing.T) {
 	}
 }
 
+func TestChromeLaunchedAtA1xWindowsScaleSendsThePanesOwnPixels(t *testing.T) {
+	p, srv := liveChromeAt(t, 1)
+	frames := make(chan string, 1)
+	p.Listen(func(data string) {
+		select {
+		case frames <- data:
+		default:
+		}
+	}, func(string, string) {}, func(string, api.BrowserDownload) {}, func(string) {}, func(*api.BrowserDialog) {}, func([]api.BrowserTab) {})
+	ctx, cancel := context.WithTimeout(context.Background(), pageWait)
+	defer cancel()
+	if err := p.Navigate(ctx, srv.URL); err != nil {
+		t.Fatal(err)
+	}
+	if err := p.Screencast(ctx, Viewport{W: 400, H: 300, Scale: 1}); err != nil {
+		t.Fatal(err)
+	}
+	if ratio, err := p.Eval(ctx, "devicePixelRatio"); err != nil || ratio != "1" {
+		t.Fatalf("devicePixelRatio = %q, %v, want 1: the browser draws at the window's scale", ratio, err)
+	}
+	// The first frames can predate the layout at the pane's size.
+	deadline := time.After(10 * time.Second)
+	last := "none"
+	for {
+		select {
+		case data := <-frames:
+			raw, err := base64.StdEncoding.DecodeString(data)
+			if err != nil {
+				t.Fatal(err)
+			}
+			cfg, err := jpeg.DecodeConfig(bytes.NewReader(raw))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if cfg.Width == 400 && cfg.Height == 300 {
+				return
+			}
+			last = fmt.Sprintf("%dx%d", cfg.Width, cfg.Height)
+		case <-deadline:
+			t.Fatalf("last frame %s, want the 1x pane's own 400x300", last)
+		}
+	}
+}
+
 func TestChromeWindowInputTypesAndSubmits(t *testing.T) {
 	p, srv := liveChrome(t)
 	ctx, cancel := context.WithTimeout(context.Background(), pageWait)
@@ -265,7 +315,7 @@ type newTabRig struct {
 
 func startNewTabRig(t *testing.T, ctx context.Context, start string) newTabRig {
 	t.Helper()
-	pg, err := chromeLaunch(t.TempDir(), false)
+	pg, err := chromeLaunch(t.TempDir(), false, frameScale)
 	if err != nil {
 		t.Fatal(err)
 	}

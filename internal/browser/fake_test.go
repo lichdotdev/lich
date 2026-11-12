@@ -405,12 +405,13 @@ type fakeLauncher struct {
 	pages  []*fakePage
 	headed []bool
 	dirs   []string
+	scales []float64
 	// gate, when set, runs before the page exists: a test holds a launch open
 	// with it to see what else the service lets through meanwhile.
 	gate func()
 }
 
-func (f *fakeLauncher) launch(dir string, headed bool) (Page, error) {
+func (f *fakeLauncher) launch(dir string, headed bool, scale float64) (Page, error) {
 	if f.gate != nil {
 		f.gate()
 	}
@@ -420,6 +421,7 @@ func (f *fakeLauncher) launch(dir string, headed bool) (Page, error) {
 	f.pages = append(f.pages, p)
 	f.headed = append(f.headed, headed)
 	f.dirs = append(f.dirs, dir)
+	f.scales = append(f.scales, scale)
 	return p, nil
 }
 
