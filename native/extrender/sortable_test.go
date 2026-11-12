@@ -249,3 +249,26 @@ func TestACardStandsOutOfTheLitList(t *testing.T) {
 		t.Errorf("a card in the lit list is the tray's color, %v", card)
 	}
 }
+
+// TestALitListInAScrollEndsWithItsViewport keeps the tray's bottom edge on
+// screen: a scroll gives its children no end to fill up to.
+func TestALitListInAScrollEndsWithItsViewport(t *testing.T) {
+	tree := func() extension.Node {
+		todo := extension.Box.New(extension.BoxProps{Width: 150}, sortable("todo", "board", "a", "b", "c"))
+		done := extension.Box.New(extension.BoxProps{Width: 150, Height: 200},
+			extension.Scroll.New(extension.ScrollProps{}, sortable("done", "board", "x", "y")))
+		return extension.Box.New(extension.BoxProps{Direction: extension.DirectionRow, Gap: 20}, todo, done)
+	}
+	g := newRig(t, tree())
+	g.hover(f32.Pt(75, 15), f32.Pt(245, 40))
+	lit := g.shot()
+	// The viewport's last row, and the tray's fill well above it.
+	if edge, fill := lit.RGBAAt(245, 199), lit.RGBAAt(245, 150); edge == fill {
+		t.Errorf("the tray has no bottom edge at the end of the scroll: %v there as in its fill", edge)
+	}
+	g = newRig(t, tree())
+	g.drag(f32.Pt(75, 15), f32.Pt(245, 190))
+	if e := g.once("move:done"); e.Index != 2 {
+		t.Errorf("move = %+v, want the end of the list for a drop at the viewport's end", e)
+	}
+}

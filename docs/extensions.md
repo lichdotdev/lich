@@ -108,7 +108,9 @@ folder a session would be filed into; the list it left is never lit.
 Nothing moves on screen until the extension renders again: lich keeps both lists as they were sent, so the
 extension moves the item in its own data and answers with a render. Give every list of a group a `key`, and keep
 item keys unique across the group. A list takes a drop over the room its box gives it, past its last item too, so
-an empty column still takes one.
+an empty column still takes one. A `scroll` gives its children no end along its axis, so a list in one takes a
+drop down to the end of what the scroll shows. That room is measured from the start of the scroll's own child: put
+the list straight into the `scroll`, and a column's header above the `scroll`, not inside it.
 
 ```go
 column := func(id string, cards []string) extension.Node {

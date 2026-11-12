@@ -120,7 +120,29 @@ func drawScroll(r *Renderer, gtx C, th *ui.Theme, n extension.Node, id string) D
 		list.Axis = layout.Horizontal
 	}
 	kids := r.children(th, n, id)
-	return th.ScrollArea(list).Layout(gtx, len(kids), func(gtx C, i int) D { return kids[i](gtx) })
+	horizontal := list.Axis == layout.Horizontal
+	view := length(gtx.Constraints.Max, horizontal)
+	outer := r.scrollRoom
+	laid := 0
+	d := th.ScrollArea(list).Layout(gtx, len(kids), func(gtx C, i int) D {
+		top := laid - list.Position.Offset
+		if i < list.Position.First {
+			// Laid out backward, to end where the first one starts: it is
+			// above the viewport, or comes into it for the frame of a scroll.
+			top = -list.Position.Offset
+		}
+		r.scrollRoom = outer
+		if horizontal {
+			r.scrollRoom.X = view - top
+		} else {
+			r.scrollRoom.Y = view - top
+		}
+		d := kids[i](gtx)
+		laid += length(d.Size, horizontal)
+		return d
+	})
+	r.scrollRoom = outer
+	return d
 }
 
 func drawWrap(r *Renderer, gtx C, th *ui.Theme, n extension.Node, id string) D {
