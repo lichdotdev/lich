@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - The Git panel opens as soon as the branch in the footer is clicked. It used to wait for the mouse to move before sliding up.
+- A session's browser pane no longer freezes on its last frame on a very busy page at ultrawide or 4K size: frames up to twice as large now reach the window.
 
 ## [0.89.0] - 2026-11-12
 

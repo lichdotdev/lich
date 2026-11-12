@@ -6,6 +6,12 @@ import (
 	"strings"
 )
 
+// MaxEventBytes is what the window's /events socket reads in one message: one
+// over it ends that socket for every session. The backend bounds what it sends
+// (a browser frame, an extension's line) below it, leaving room for the
+// envelope, so the two sides share this value instead of each keeping a copy.
+const MaxEventBytes = 8 << 20
+
 // Event names one message of the /events stream; T is its payload (None for
 // one that carries nothing).
 type Event[T any] struct {

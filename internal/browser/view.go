@@ -211,11 +211,10 @@ func (s *Service) Running() []api.BrowserState {
 }
 
 // maxFrameData bounds a frame sent to the window. Its /events socket reads at
-// most 4 MiB a message (maxFrame in native/backend/client.go) and one message
-// over it ends that socket for every session, so this leaves room for the
-// envelope. A 3440x1440 pane of a page drawing noise sent frames of 4.5 MiB
-// (measured 2026-11-11).
-const maxFrameData = 4<<20 - 1<<10
+// most api.MaxEventBytes a message and one message over it ends that socket
+// for every session, so this leaves room for the envelope. A 3440x1440 pane of
+// a page drawing noise sent frames of 4.5 MiB (measured 2026-11-11).
+const maxFrameData = api.MaxEventBytes - 1<<10
 
 // frameSink sends the window sess's frames, except one too large for its
 // socket: the pane keeps its last frame until one fits.
