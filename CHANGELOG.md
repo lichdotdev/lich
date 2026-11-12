@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - A page of fine noise or film grain shown in a very large browser pane could send the window a picture larger than its connection to the backend accepts, which cut the window off from every session. Such a picture is now skipped, and the pane keeps the last one until the next that fits.
 - A session's browser on a screen that is not HiDPI drew its page at 1.5 times the pane's size and shrank every frame to fit, which blurred text and held an animated page to about 30 frames a second in a large pane. The browser now draws at the window's own scale: text is sharp and the same pane gets 49 to 60. A browser already open keeps the scale it started at, so after you change the page zoom or move the window to a monitor of another density, close it and open it again for sharp frames.
+- Markdown draws a quote behind a bar in muted text and a code block on a panel of its own, in a pull request's description and comments, the Markdown previews and extension screens; both used to read like the text around them.
 - A fenced code block in a pull request's description or a comment showed twice.
 - An account gh reads from `GH_TOKEN` as well as its keyring is listed once in Settings › Version Control, not twice.
 - An agent's browser click on a link that wraps over two lines no longer fails as covered: it lands on the link's first line instead of the empty space between the lines.

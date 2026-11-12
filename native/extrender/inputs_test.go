@@ -136,3 +136,37 @@ func TestFocusOnAKeyNoFieldHasIsDroppedAfterThatFrame(t *testing.T) {
 		t.Errorf("a focus on a label moved the keyboard or waited for a field: %+v", g.got)
 	}
 }
+
+// typesAt reports whether a click at y, in a 300px column holding only
+// textarea, lands in the field.
+func typesAt(t *testing.T, textarea extension.TextareaProps, y float32) bool {
+	t.Helper()
+	textarea.OnChange = "change"
+	g := newRig(t, column(extension.Textarea.New(textarea)))
+	g.click(pointer.ButtonPrimary, 20, y)
+	g.typed("hi")
+	return len(g.fired("change")) == 1
+}
+
+func TestAGrowingTextareaFillsItsBox(t *testing.T) {
+	const bottom = 280
+	if typesAt(t, extension.TextareaProps{}, bottom) {
+		t.Fatal("a textarea with no grow reached the bottom of its box")
+	}
+	if !typesAt(t, extension.TextareaProps{Grow: true}, bottom) {
+		t.Error("a growing textarea left the bottom of its box empty")
+	}
+	if !typesAt(t, extension.TextareaProps{Grow: true, Resizable: true}, bottom) {
+		t.Error("a growing resizable textarea left the bottom of its box empty")
+	}
+}
+
+func TestMaxHeightCapsAGrowingTextarea(t *testing.T) {
+	capped := extension.TextareaProps{Grow: true, MaxHeight: 100}
+	if !typesAt(t, capped, 90) {
+		t.Error("a growing textarea did not reach its maxHeight")
+	}
+	if typesAt(t, capped, 280) {
+		t.Error("a growing textarea grew past its maxHeight")
+	}
+}

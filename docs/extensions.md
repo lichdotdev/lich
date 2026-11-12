@@ -69,6 +69,8 @@ Stderr goes to lich's log.
 
 A `box` lays its children along its axis. A child `box` with `grow` takes that share of the room left; a `scroll`,
 `thinScroll`, `splitPane` or `emptyState` takes the room left on its own, and an empty state sits centered in it.
+A `textarea` is as tall as its text; with `grow` it takes the room left too, up to its `maxHeight`, and text past
+that scrolls.
 
 ### Moving the keyboard
 
@@ -366,7 +368,8 @@ title := cat.In(lang.Tag(), "board.count", i18n.Args{"count": len(cards)})
   method names in the manifest. A `result` or `lich.event` lich cannot queue because the extension stopped reading
   its stdin is dropped and logged.
 - Any exit lich did not ask for is a crash, exit 0 included. lich restarts after 1 second, doubling up to 30, and
-  gives up after 5 crashes in a row each within 30 seconds of its start.
+  gives up after 5 crashes in a row each within 30 seconds of its start. A process that starts while its surface
+  is on screen is sent `surface.opened` for it again, since it never saw the first one.
 - To stop an extension lich closes its stdin and kills it 3 seconds later. Exit when stdin ends.
 - An extension runs unsandboxed, as the user. See the Extensions section of [ceilings](ceilings.md).
 

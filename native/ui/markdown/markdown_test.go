@@ -175,3 +175,40 @@ func TestAFencedCodeBlockIsDrawnOnce(t *testing.T) {
 		t.Errorf("the fenced block shows %d times in %q, want once", got, all.String())
 	}
 }
+
+func TestABlockquoteIsMutedBehindABar(t *testing.T) {
+	th := markdownTheme()
+	blocks := renderBlocks(th, "Body\n\n> Quoted **words**\n> go on")
+	if len(blocks) != 2 || !blocks[1].quote || blocks[0].quote {
+		t.Fatalf("blocks = %+v, want a paragraph and a quote", blocks)
+	}
+	for _, span := range blocks[1].prose.spans {
+		if span.Color != th.MutedForeground {
+			t.Errorf("quoted span %q color = %v, want muted %v", span.Content, span.Color, th.MutedForeground)
+		}
+	}
+	gtx, _ := markdownFrame(400)
+	plain := blocks[1]
+	plain.quote = false
+	if quoted, bare := blocks[1].layout(gtx, th, nil), plain.layout(gtx, th, nil); quoted.Size.X-bare.Size.X != gtx.Dp(quoteBar+quoteInset) {
+		t.Errorf("a quote is %d wide and its text %d, want the bar and inset between them", quoted.Size.X, bare.Size.X)
+	}
+}
+
+func TestAFencedCodeBlockSitsInAPanel(t *testing.T) {
+	th := markdownTheme()
+	blocks := renderBlocks(th, "Run `this`:\n\n```go\ngo test ./...\n```\n\n    indented")
+	if len(blocks) != 3 || blocks[0].panel || !blocks[1].panel || !blocks[2].panel {
+		t.Fatalf("panels = %+v, want the two code blocks alone", blocks)
+	}
+	gtx, _ := markdownFrame(400)
+	plain := blocks[1]
+	plain.panel = false
+	panel, bare := blocks[1].layout(gtx, th, nil), plain.layout(gtx, th, nil)
+	if panel.Size.X != gtx.Constraints.Max.X {
+		t.Errorf("a code panel is %d wide, want the body's %d", panel.Size.X, gtx.Constraints.Max.X)
+	}
+	if panel.Size.Y-bare.Size.Y != 2*gtx.Dp(codePanelPad) {
+		t.Errorf("a code panel is %d tall and its text %d, want the padding around it", panel.Size.Y, bare.Size.Y)
+	}
+}

@@ -129,3 +129,31 @@ func TestSettingsReadsTheTranslatedName(t *testing.T) {
 		t.Errorf("no catalogs: %q, want the manifest's", got)
 	}
 }
+
+// A process that starts under a surface already on screen never saw the
+// surface.opened its predecessor got, so it would not know to render.
+func TestAnExtensionThatStartsUnderItsOpenSurfaceHearsItOpened(t *testing.T) {
+	var log languageLog
+	s := newExtensionScreen(&extensionStore{}, nil, log.send)
+	m := newTestModel(nil)
+	m.extensionStarted = s.started
+	restart := func(id string) []string {
+		for _, status := range []string{api.ExtensionRestarting, api.ExtensionRunning} {
+			m.extensionEvent(extensionEv(t, api.ExtensionStatusEvent.Name, backend.Extension{ID: id, Status: status}))
+		}
+		return log.take()
+	}
+	s.show(extensionKey{"a", "main"})
+	log.take()
+	if got := restart("a"); !slices.Equal(got, []string{"a surface.opened en"}) {
+		t.Errorf("a restart under the open surface sent %v, want surface.opened", got)
+	}
+	if got := restart("b"); len(got) != 0 {
+		t.Errorf("a restart of an extension off screen sent %v", got)
+	}
+	s.hide()
+	log.take()
+	if got := restart("a"); len(got) != 0 {
+		t.Errorf("a restart after the surface closed sent %v", got)
+	}
+}

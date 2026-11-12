@@ -57,6 +57,9 @@ type markdownBlock struct {
 	// rule underlines the prose across the body's width, GitHub's border
 	// under an h1 or h2.
 	rule bool
+	// quote draws the prose behind a bar, a blockquote; panel draws it on a
+	// fill of its own, a code block.
+	quote, panel bool
 }
 
 // markdownCell is rendered Markdown and the link state it is laid out with.
@@ -159,6 +162,12 @@ func (b markdownBlock) layout(gtx C, th *ui.Theme, open func(url string)) D {
 	}
 	if b.list != nil {
 		return b.list.layout(gtx, th, open)
+	}
+	if b.quote {
+		return b.prose.layoutQuote(gtx, th, open)
+	}
+	if b.panel {
+		return b.prose.layoutPanel(gtx, th, open)
 	}
 	if b.rule {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,

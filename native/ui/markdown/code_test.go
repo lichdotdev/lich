@@ -67,3 +67,35 @@ func TestMarkdownInlineCodeBackgroundWrapsWithText(t *testing.T) {
 		t.Errorf("background extends from %d to %d, want backgrounds on multiple lines", first, last)
 	}
 }
+
+func TestAQuoteBarAndACodePanelAreDrawn(t *testing.T) {
+	size := image.Pt(240, 200)
+	win, err := headless.NewWindow(size.X, size.Y)
+	if err != nil {
+		t.Skipf("no headless GPU: %v", err)
+	}
+	defer win.Release()
+	th := markdownTheme()
+	ops := new(op.Ops)
+	gtx := layout.Context{Ops: ops, Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}, Constraints: layout.Constraints{Max: size}}
+	paint.Fill(ops, th.Background)
+	(Cache{}).Layout(gtx, th, "test", "> quoted\n\n```\ncode\n```", nil)
+	if err := win.Frame(ops); err != nil {
+		t.Fatal(err)
+	}
+	img := image.NewRGBA(image.Rectangle{Max: size})
+	if err := win.Screenshot(img); err != nil {
+		t.Fatal(err)
+	}
+	ground := img.RGBAAt(size.X-1, size.Y-1)
+	if bar := img.RGBAAt(1, 6); bar == ground {
+		t.Error("no bar at the left of the blockquote")
+	}
+	if beside := img.RGBAAt(size.X-2, 6); beside != ground {
+		t.Errorf("the blockquote is filled at its right edge (%v), want only a bar", beside)
+	}
+	quote := gtx.Sp(BodySize)*3/2 + gtx.Dp(ui.Space(BlockGap))
+	if panel := img.RGBAAt(size.X-gtx.Dp(codePanelPad), quote+gtx.Dp(codePanelPad)); panel == ground {
+		t.Error("no panel behind the fenced code block")
+	}
+}

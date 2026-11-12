@@ -280,7 +280,10 @@ func run(w *app.Window, rt backend.Runtime) error {
 	u.extension = newExtensionScreen(&u.model.extensions, &u.root, u.extOutbox.send)
 	u.model.extensionMessage = u.extensionMessage
 	u.extLanguage.send = u.extOutbox.send
-	u.model.extensionStarted = u.extLanguage.started
+	u.model.extensionStarted = func(id string) {
+		u.extLanguage.started(id)
+		u.extension.started(id)
+	}
 	u.model.prChanged = u.prChanged
 	u.model.themeSelection = u.appearance.applySelection
 	u.model.exited = u.sessionExited

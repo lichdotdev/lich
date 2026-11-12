@@ -92,6 +92,8 @@ their text with the tone itself.
   named per screen.
 - Markdown prose is 15sp: larger than interface body text for sustained reading, while leaving more room for
   long descriptions than `TextBase`.
+- In Markdown a blockquote is `MutedForeground` text `Space(4)` behind a `Space(1)` bar in `Border`, and a code
+  block sits across the body on the inline code's fill, `RadiusSM`, `Space(2)` padding (`ui/markdown`).
 - Text a person reads goes through `i18n.T`; nothing literal (see the `lich-i18n` skill).
 - Text from the outside world (a diff hunk, a PR body, a commit message) is cleaned before it is shaped:
   tabs become four spaces, because the fonts have no glyph for a tab and draw a missing-glyph box.

@@ -52,6 +52,12 @@ func renderBlock(th *ui.Theme, source []byte, n ast.Node) (markdownBlock, bool) 
 		cell := renderNode(th, source, n, markdownProseColor(th))
 		cell.lineHeight = markdownHeadingLineHeightScale
 		return markdownBlock{prose: cell, rule: n.Level <= 2}, len(cell.spans) > 0
+	case *ast.Blockquote:
+		cell := renderNode(th, source, n, th.MutedForeground)
+		return markdownBlock{prose: cell, quote: true}, len(cell.spans) > 0
+	case *ast.FencedCodeBlock, *ast.CodeBlock:
+		cell := renderNode(th, source, n, markdownProseColor(th))
+		return markdownBlock{prose: cell, panel: true}, len(cell.spans) > 0
 	default:
 		cell := renderNode(th, source, n, markdownProseColor(th))
 		return markdownBlock{prose: cell}, len(cell.spans) > 0
