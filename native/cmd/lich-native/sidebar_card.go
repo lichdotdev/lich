@@ -189,7 +189,8 @@ func (s *sidebar) cardBody(gtx C, th *ui.Theme, sv *sessionView, prChip *widget.
 
 // cardLine ends row with the corner slot and lays it out in the card's insets.
 func (s *sidebar) cardLine(gtx C, th *ui.Theme, sv *sessionView, more layout.Widget, hovered bool, row []layout.FlexChild) D {
-	if sv.split != "" {
+	// In a layout's own list every card is in it, so the mark says nothing.
+	if sv.split != "" && !sv.guest {
 		row = append(row, ui.Gap(1.5), layout.Rigid(func(gtx C) D { return icSplit.Layout(gtx, 12, th.MutedForeground) }))
 	}
 	row = append(row, ui.Gap(1), layout.Rigid(func(gtx C) D { return s.cardSlot(gtx, th, sv, more, hovered) }))
