@@ -29,7 +29,7 @@ tasks:
       - cmd: CGO_ENABLED=0 go build {{.GO_BUILD_FLAGS}} -o {{.BIN_DIR}}/{{.APP_NAME}}{{exeExt}} .
 
   build:native:
-    desc: Build the native window into bin/lich-native (cgo; libghostty-vt on PKG_CONFIG_PATH, native/slice.sh)
+    desc: Build the native window into bin/lich-native (cgo; libturbojpeg, and libghostty-vt on PKG_CONFIG_PATH, native/slice.sh)
     # Its own module and binary, built with cgo (docs/native-window.md); it
     # never reaches the lich binary's build. The packages ship it beside lich,
     # where lich looks for it.

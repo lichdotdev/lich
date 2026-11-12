@@ -220,7 +220,7 @@ Windows 安装程序装的版本会原地更新；通过 Homebrew、Scoop、AUR 
 
 lich 由两个二进制文件组成：`lich` 是静态的纯 Go 后端，`lich-native` 是窗口，在 `native/`
 下用 cgo 构建。你需要 **Go 1.27.0+** 和 **[Task](https://taskfile.dev)**；窗口另需 C 工具链、
-Gio 的系统软件包，以及用 `native/GHOSTTY_COMMIT` 记录的提交构建的 `libghostty-vt`。
+Gio 的系统软件包、libjpeg-turbo 的 `libturbojpeg`，以及用 `native/GHOSTTY_COMMIT` 记录的提交构建的 `libghostty-vt`。
 构建方法见 [`native/slice.sh`](native/slice.sh)，窗口说明见
 [`docs/native-window.md`](docs/native-window.md)。
 

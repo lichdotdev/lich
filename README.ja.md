@@ -233,7 +233,7 @@ Linux のパッケージでインストールした場合はそれぞれのパ�
 lich は2つのバイナリでできています。静的な純粋 Go のバックエンド `lich` と、
 `native/` から cgo でビルドするウィンドウ `lich-native` です。必要なのは **Go 1.27.0 以降** と
 **[Task](https://taskfile.dev)** で、ウィンドウにはさらに C ツールチェーン、Gio のシステムパッケージ、
-そして `native/GHOSTTY_COMMIT` に記されたコミットからビルドした `libghostty-vt` が必要です。
+libjpeg-turbo の `libturbojpeg`、そして `native/GHOSTTY_COMMIT` に記されたコミットからビルドした `libghostty-vt` が必要です。
 ビルド方法は [`native/slice.sh`](native/slice.sh)、ウィンドウの詳細は
 [`docs/native-window.md`](docs/native-window.md) にあります。
 

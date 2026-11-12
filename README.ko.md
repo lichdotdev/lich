@@ -230,7 +230,8 @@ Linux 패키지로 설치했다면 해당 패키지 매니저로 업데이트하
 
 lich는 바이너리 두 개로 이루어집니다. 백엔드 `lich`는 정적 순수 Go 바이너리이고, 창
 `lich-native`는 `native/`에서 cgo로 빌드합니다. 필요한 것은 **Go 1.27.0+**와
-**[Task](https://taskfile.dev)**이며, 창을 빌드하려면 C 툴체인과 Gio의 시스템 패키지, 그리고
+**[Task](https://taskfile.dev)**이며, 창을 빌드하려면 C 툴체인과 Gio의 시스템 패키지,
+libjpeg-turbo의 `libturbojpeg`, 그리고
 `native/GHOSTTY_COMMIT`에 적힌 커밋에서 빌드한 `libghostty-vt`가 추가로 필요합니다.
 빌드 방법은 [`native/slice.sh`](native/slice.sh)에, 창에 대한 설명은
 [`docs/native-window.md`](docs/native-window.md)에 있습니다.

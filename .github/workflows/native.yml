@@ -37,7 +37,8 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             gcc pkg-config libwayland-dev libx11-dev libx11-xcb-dev libxkbcommon-x11-dev \
             libgles2-mesa-dev libegl1-mesa-dev libffi-dev libxcursor-dev libvulkan-dev \
-            libgl1-mesa-dri libegl-mesa0 xvfb fontconfig fonts-dejavu-core fonts-noto-color-emoji
+            libgl1-mesa-dri libegl-mesa0 xvfb fontconfig fonts-dejavu-core fonts-noto-color-emoji \
+            cmake nasm
 
       - name: Pinned Ghostty commit
         id: ghostty
@@ -66,8 +67,12 @@ jobs:
           git checkout FETCH_HEAD
           zig build -Demit-lib-vt -Doptimize=ReleaseFast -Dcpu=baseline --prefix ~/libghostty-vt
 
-      - name: Point pkg-config at libghostty-vt
-        run: echo "PKG_CONFIG_PATH=$HOME/libghostty-vt/share/pkgconfig" >> "$GITHUB_ENV"
+      # The static libturbojpeg the releases link, not the runner's own.
+      - name: Build libjpeg-turbo
+        run: ./libjpeg-turbo.sh "$HOME/libjpeg-turbo"
+
+      - name: Point pkg-config at libghostty-vt and libjpeg-turbo
+        run: echo "PKG_CONFIG_PATH=$HOME/libjpeg-turbo/lib/pkgconfig:$HOME/libghostty-vt/share/pkgconfig" >> "$GITHUB_ENV"
 
       - name: gofmt
         run: |
@@ -130,8 +135,16 @@ jobs:
           path: ~/libghostty-vt-windows
           key: libghostty-vt-windows-${{ steps.ghostty.outputs.commit }}
 
+      # libjpeg-turbo's SIMD code is assembly (native/libjpeg-turbo.sh).
+      - name: System packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends cmake nasm
+
       - name: Build lich-native.exe
-        run: LIBGHOSTTY_VT_WINDOWS="$HOME/libghostty-vt-windows" ./build-windows.sh "$RUNNER_TEMP/out/lich-native.exe"
+        run: |
+          LIBGHOSTTY_VT_WINDOWS="$HOME/libghostty-vt-windows" LIBJPEG_TURBO_WINDOWS="$HOME/libjpeg-turbo-windows" \
+            ./build-windows.sh "$RUNNER_TEMP/out/lich-native.exe"
 
       # One test binary per package, at the package's own path, so the windows
       # job runs each from its package directory the way go test does. The
@@ -145,7 +158,7 @@ jobs:
           CXX: zig c++ -target x86_64-windows-gnu
           CGO_LDFLAGS_ALLOW: '.*\.lib'
         run: |
-          export PKG_CONFIG_PATH="$HOME/libghostty-vt-windows/share/pkgconfig"
+          export PKG_CONFIG_PATH="$HOME/libjpeg-turbo-windows/lib/pkgconfig:$HOME/libghostty-vt-windows/share/pkgconfig"
           for dir in $(go list -f '{{if or .TestGoFiles .XTestGoFiles}}{{.Dir}}{{end}}' ./...); do
             rel="${dir#"$PWD"/}"
             go test -c -o "$RUNNER_TEMP/out/tests/$rel/pkg.test.exe" "./$rel"
@@ -262,8 +275,12 @@ jobs:
           git checkout FETCH_HEAD
           zig build -Demit-lib-vt -Doptimize=ReleaseFast -Dtarget=aarch64-macos.13.0 --prefix ~/libghostty-vt
 
-      - name: Point pkg-config at libghostty-vt
-        run: echo "PKG_CONFIG_PATH=$HOME/libghostty-vt/share/pkgconfig" >> "$GITHUB_ENV"
+      # The static libturbojpeg the releases link, not the runner's own.
+      - name: Build libjpeg-turbo
+        run: ./libjpeg-turbo.sh "$HOME/libjpeg-turbo"
+
+      - name: Point pkg-config at libghostty-vt and libjpeg-turbo
+        run: echo "PKG_CONFIG_PATH=$HOME/libjpeg-turbo/lib/pkgconfig:$HOME/libghostty-vt/share/pkgconfig" >> "$GITHUB_ENV"
 
       - name: go vet
         run: go vet ./...
