@@ -311,6 +311,18 @@ func (p *chromePage) Settle(ctx context.Context) error {
 	}))
 }
 
+func (p *chromePage) IndexNext() int {
+	p.idxMu.Lock()
+	defer p.idxMu.Unlock()
+	return p.idxNext
+}
+
+func (p *chromePage) SetIndexNext(n int) {
+	p.idxMu.Lock()
+	defer p.idxMu.Unlock()
+	p.idxNext = n
+}
+
 func (p *chromePage) Info(ctx context.Context, within string) (PageInfo, error) {
 	arg, err := json.Marshal(within)
 	if err != nil {

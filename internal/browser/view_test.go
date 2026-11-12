@@ -340,7 +340,7 @@ func TestAgentClickAnswersWithThePageItLeft(t *testing.T) {
 func TestAHeadlessBrowserStartsAtTheWindowsSize(t *testing.T) {
 	s, launch, _ := viewService(t)
 	window := Viewport{W: 1920, H: 1080, Scale: 1.25}
-	s.SetDefaultView(window)
+	s.SetDefaultView(window, window.Scale)
 	if _, err := s.Open("s", "https://example.com"); err != nil {
 		t.Fatal(err)
 	}
@@ -358,7 +358,7 @@ func TestAHeadlessBrowserStartsAtTheWindowsSize(t *testing.T) {
 func TestDetachLaysThePageOutAtTheWindowsSizeAgain(t *testing.T) {
 	s, launch, _ := viewService(t)
 	window := Viewport{W: 1920, H: 1080, Scale: 1}
-	s.SetDefaultView(window)
+	s.SetDefaultView(window, window.Scale)
 	if _, err := s.Attach("s", Viewport{W: 500, H: 400, Scale: 1}); err != nil {
 		t.Fatal(err)
 	}
@@ -381,7 +381,7 @@ func TestDefaultViewResizesOnlyTheUnwatchedPages(t *testing.T) {
 		t.Fatal(err)
 	}
 	window := Viewport{W: 1600, H: 900, Scale: 1}
-	s.SetDefaultView(window)
+	s.SetDefaultView(window, window.Scale)
 	if p := launch.pages[0]; len(p.viewports) != 1 || p.viewports[0] != window {
 		t.Fatalf("unwatched page viewports = %v, want %v", p.viewports, window)
 	}
@@ -392,7 +392,7 @@ func TestDefaultViewResizesOnlyTheUnwatchedPages(t *testing.T) {
 
 func TestAPaneLeavingDoesNotLayOutABrowserInItsOwnWindow(t *testing.T) {
 	s, launch, _ := viewService(t)
-	s.SetDefaultView(Viewport{W: 1920, H: 1080, Scale: 1})
+	s.SetDefaultView(Viewport{W: 1920, H: 1080, Scale: 1}, 1)
 	if _, err := s.Attach("s", Viewport{W: 500, H: 400, Scale: 1}); err != nil {
 		t.Fatal(err)
 	}
@@ -421,7 +421,7 @@ func TestABrowserDrawsAtTheScaleTheWindowDrawsPagesAt(t *testing.T) {
 	} {
 		t.Run(name, func(t *testing.T) {
 			s, launch, _ := viewService(t)
-			s.SetDefaultView(Viewport{W: 1280, H: 720, Scale: tc.window})
+			s.SetDefaultView(Viewport{W: 1280, H: 720, Scale: tc.window}, tc.window)
 			if _, err := s.Open("s", "https://example.com"); err != nil {
 				t.Fatal(err)
 			}

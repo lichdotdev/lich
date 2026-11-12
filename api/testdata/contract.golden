@@ -431,6 +431,7 @@ BrowserDefaultViewOptions {
 	w int
 	h int
 	scale float64
+	window float64
 }
 
 BrowserPointOptions {

@@ -1448,13 +1448,17 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   whose page reaches the session's page pane as a JPEG screencast over `/events`, at the page's own frame
   rate; a window slower to decode skips to the newest frame. A HiDPI pane gets frames drawn at 1.5x at most
   (`frameScale`): 2x halved a busy page's frame rate. The browser draws at a scale forced at its launch, the one
-  the window drew pages at then (its own scale times the page zoom, 1 at least; 1.5 when no window had said),
-  and it keeps that scale until it is closed. A pane drawn at another scale afterwards, the page zoom changed or
-  the window moved to a monitor of another density, gets the frames of the launch: enlarged by the window past
-  that scale, and under it reduced by Chrome frame by frame, which blurs text. A browser drawing at 1.5x under a
-  1x pane also cost a 1140x1300 pane 11 to 29 frames a second, for the pixels it draws; one drawing at 1x under a
-  page zoomed to 90% lost none (measured 2026-11-11). Closing the browser and opening it again draws at the new
-  scale. A frame past what the window's `/events` socket reads, 8 MiB as base64, is not sent, since it would end
+  the window drew pages at then (its own scale times the page zoom, 1 at least; 1.5 when no window had said).
+  A page zoom changed afterwards keeps the frames of the launch, enlarged by the window past that scale and under
+  it reduced by Chrome, which blurs text (between 100% and 150% on a 1x screen), until the browser is closed and
+  opened again or relaunched: a relaunch on a zoom would cost the page its scroll and a half-filled form. A move
+  of the window to a monitor of another density does relaunch it once the window's own scale holds still for a
+  second (`rescaleWait`), on its profile at that scale times the zoom then, with its tabs, the front one, their
+  DevTools and its cookies, never while a dialog is open, a page is paused in the debugger, an agent's call runs
+  or it is in its own window, and one no pane shows when a pane next does. A half-filled form, sessionStorage,
+  where each tab was scrolled and a download under way are lost to it. A browser drawing at 1.5x
+  under a 1x pane also cost a 1140x1300 pane 11 to 29 frames a second, for the pixels it draws; one drawing at 1x
+  under a page zoomed to 90% lost none (measured 2026-11-11). A frame past what the window's `/events` socket reads, 8 MiB as base64, is not sent, since it would end
   that socket for every session: the pane keeps its last frame until one fits. A wall of photographs in a 4K
   pane made 2.7 MiB frames and a page drawing pure noise in a 3440x1440 one 4.5 MiB (measured 2026-11-11);
   noise in a 4K pane, about 7.5 MiB by pixel count, still fits. A page still for 600 ms (`stillAfter`) gets one

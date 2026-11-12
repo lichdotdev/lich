@@ -13,7 +13,12 @@ would take one, Linux would not. The page is a **headless Chromium** on
 `chromium.FindBrowser` (the system's Chrome, Edge, Chromium, Brave, Vivaldi
 or Helium), with its own user-data directory. The browser draws at the scale
 the window drew pages at when it launched (`launchScale`), so the frames are
-the pane's own pixels. `browser.Attach` starts its
+the pane's own pixels. A page zoom changed after the launch keeps drawing
+from the launch's frames, blurred between 100% and 150% on a 1x screen,
+until the browser is reopened. A move to a monitor of another density
+relaunches a browser a pane shows at the new scale once it holds still
+(`internal/browser/rescale.go`), like Open in a window below, with its tabs
+and their DevTools too. `browser.Attach` starts its
 screencast at the pane's size; each frame reaches the window as
 `browser:frame:<session>`, naming the tab it is of, and is acked only once sent, so a window slow to
 draw slows the stream. Once the page sends no frame for `stillAfter`, the

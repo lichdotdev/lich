@@ -55,6 +55,13 @@ type Service struct {
 	// owners serializes one session's launch, promotion and reuse, so a slow
 	// Chrome start holds that card alone and mu is never held across CDP.
 	owners map[string]*sync.Mutex
+	// turns holds a relaunch off one session's browser while an agent's call
+	// on it runs (agentTurn). Taken before owners, never after.
+	turns map[string]*sync.RWMutex
+	// rescaleWait is how long the window's scale must hold still before the
+	// browsers it shows relaunch at it; rescaleTimer counts it down.
+	rescaleWait  time.Duration
+	rescaleTimer *time.Timer
 	// dead holds what the locked code took out of the maps; unlock closes it
 	// after mu is released, because closing waits for Chrome to exit.
 	dead    []*session
@@ -69,6 +76,8 @@ type Service struct {
 	// window's, since Chrome's own 800x600 lays most sites out cramped. Zero
 	// until the window says.
 	defaultView Viewport
+	// window is the window's own scale, the monitor's, without the page zoom.
+	window float64
 	// isLocal and local are SetLocal's.
 	isLocal func(raw string) bool
 	local   func(owner, raw string) (string, error)
@@ -89,6 +98,11 @@ type session struct {
 	// attaches counts the panes that started drawing it, each on a window
 	// that may hold none of its frames.
 	attaches uint64
+	// scale is what the browser draws at, forced at its launch, and window
+	// the window's own scale it was launched or last kept under; view is the
+	// pane that shows it, while watching.
+	scale, window float64
+	view          Viewport
 	// agentAt is where the agent last acted, where its next scroll turns.
 	agentAt *point
 	// shotW and shotH are the viewport of the agent's last screenshot.
@@ -136,18 +150,20 @@ func New(emit func(name string, data any)) *Service {
 
 func newService(launch Launcher, mkTmp func(string, string) (string, error), now func() time.Time, idle time.Duration) *Service {
 	return &Service{
-		launch:     launch,
-		mkTmp:      mkTmp,
-		now:        now,
-		idle:       idle,
-		startup:    startupGrace,
-		reloadWait: reloadWait,
-		textWait:   maxTextWait,
-		byOwner:    make(map[string]*session),
-		byID:       make(map[string]*session),
-		owners:     make(map[string]*sync.Mutex),
-		stop:       make(chan struct{}),
-		emit:       func(string, any) {},
+		launch:      launch,
+		mkTmp:       mkTmp,
+		now:         now,
+		idle:        idle,
+		startup:     startupGrace,
+		reloadWait:  reloadWait,
+		textWait:    maxTextWait,
+		byOwner:     make(map[string]*session),
+		byID:        make(map[string]*session),
+		owners:      make(map[string]*sync.Mutex),
+		turns:       make(map[string]*sync.RWMutex),
+		rescaleWait: rescaleWait,
+		stop:        make(chan struct{}),
+		emit:        func(string, any) {},
 	}
 }
 
@@ -203,27 +219,40 @@ func (s *Service) OpenVisible(owner string) (Handle, error) {
 // place, and a session cookie lives only in the process. What else lives only
 // in the page (a half-filled form, sessionStorage) does not survive.
 func (s *Service) promote(sess *session) (Handle, error) {
+	spec, err := s.handOver(sess)
+	if err != nil {
+		return Handle{}, err
+	}
+	s.emitState(sess, false)
+	spec.headed = true
+	return s.start(spec)
+}
+
+// handOver reads the cookies of sess's browser for the one that replaces it
+// on the same profile, then takes sess out of the maps and closes it: Chrome
+// holds its profile locked while it runs. A close that fails leaves no
+// browser, which the window hears.
+func (s *Service) handOver(sess *session) (launchSpec, error) {
 	var cookies []*network.CookieParam
 	if err := runPage(func(ctx context.Context) error {
 		var err error
 		cookies, err = sess.page.Cookies(ctx)
 		return err
 	}); err != nil {
-		return Handle{}, s.failed(sess, err)
+		return launchSpec{}, s.failed(sess, err)
 	}
 	s.mu.Lock()
 	s.detachLocked(sess)
+	spec := launchSpec{owner: sess.owner, url: sess.url, headed: sess.headed, byAgent: sess.byAgent, dir: sess.dir, cookies: cookies}
 	s.unlock()
-	err := sess.page.Close()
-	s.emitState(sess, false)
-	if err != nil {
-		return Handle{}, errors.Join(err, os.RemoveAll(sess.dir))
+	if spec.url == "" {
+		spec.url = "about:blank"
 	}
-	u := sess.url
-	if u == "" {
-		u = "about:blank"
+	if err := sess.page.Close(); err != nil {
+		s.emitState(sess, false)
+		return launchSpec{}, errors.Join(err, os.RemoveAll(sess.dir))
 	}
-	return s.start(launchSpec{owner: sess.owner, url: u, headed: true, byAgent: sess.byAgent, dir: sess.dir, cookies: cookies})
+	return spec, nil
 }
 
 // List returns this session's browser, or an empty list. Never null: a
@@ -292,48 +321,44 @@ func (s *Service) launchFresh(owner, u string, headed, byAgent bool) (Handle, er
 }
 
 // launchSpec is one browser start: whose, where it opens, how, on which
-// profile, and the cookies it carries over from the one it replaces.
+// profile, and what it carries over from the one it replaces: its cookies,
+// and on a relaunch its id, its other tabs, its element counter and the pane
+// that shows it. An empty id is a new one.
 type launchSpec struct {
-	owner, url, dir string
-	headed, byAgent bool
-	cookies         []*network.CookieParam
+	id, owner, url, dir string
+	headed, byAgent     bool
+	cookies             []*network.CookieParam
+	tabs                []api.BrowserTab
+	idxNext             int
+	view                *Viewport
 }
 
 // start launches a browser on spec.dir, loads the cookies and then the URL,
 // and registers it. The caller holds the owner's lock; mu is taken only to
 // register.
 func (s *Service) start(spec launchSpec) (Handle, error) {
-	page, err := s.launch(spec.dir, spec.headed, launchScale(s.unwatchedView().Scale))
+	s.mu.Lock()
+	scale, window := launchScale(s.defaultView.Scale), s.window
+	s.mu.Unlock()
+	page, err := s.launch(spec.dir, spec.headed, scale)
 	if err != nil {
 		return Handle{}, errors.Join(err, os.RemoveAll(spec.dir))
 	}
 	sess := &session{
-		id: newID(), owner: spec.owner, dir: spec.dir, url: spec.url, headed: spec.headed,
-		byAgent: spec.byAgent, page: page, lastUsed: s.now(), launched: time.Now(),
+		id: spec.id, owner: spec.owner, dir: spec.dir, url: spec.url, headed: spec.headed,
+		byAgent: spec.byAgent, page: page, lastUsed: s.now(), launched: time.Now(), scale: scale, window: window,
 	}
+	if sess.id == "" {
+		sess.id = newID()
+	}
+	if spec.view != nil {
+		sess.watching, sess.view = true, *spec.view
+	}
+	page.SetIndexNext(spec.idxNext)
 	page.OnFileChooser(s.fileSink(sess))
 	page.Listen(s.frameSink(sess), s.infoSink(sess), s.downloadSink(sess), s.consoleSink(sess), s.dialogSink(sess), s.tabsSink(sess))
 	page.OnReload(s.reloadSink(sess))
-	view := s.unwatchedView()
-	if err := runPage(func(ctx context.Context) error {
-		if !spec.headed && view != (Viewport{}) {
-			if err := page.Resize(ctx, view); err != nil {
-				return err
-			}
-		}
-		if len(spec.cookies) > 0 {
-			if err := page.SetCookies(ctx, spec.cookies); err != nil {
-				return err
-			}
-		}
-		download, err := s.navigate(ctx, sess, spec.url)
-		if download {
-			s.mu.Lock()
-			sess.url = "about:blank"
-			s.mu.Unlock()
-		}
-		return err
-	}); err != nil {
+	if err := runPage(func(ctx context.Context) error { return s.load(ctx, sess, spec) }); err != nil {
 		return Handle{}, errors.Join(err, page.Close(), os.RemoveAll(spec.dir))
 	}
 	s.mu.Lock()
@@ -348,6 +373,38 @@ func (s *Service) start(spec launchSpec) (Handle, error) {
 	s.unlock()
 	s.emitState(sess, true)
 	return h, nil
+}
+
+// load lays a just launched page out, gives it the cookies it carries and
+// loads its URL, then its other tabs and the pane's frames on a relaunch.
+func (s *Service) load(ctx context.Context, sess *session, spec launchSpec) error {
+	view := s.unwatchedView()
+	if !spec.headed && view != (Viewport{}) {
+		if err := sess.page.Resize(ctx, view); err != nil {
+			return err
+		}
+	}
+	if len(spec.cookies) > 0 {
+		if err := sess.page.SetCookies(ctx, spec.cookies); err != nil {
+			return err
+		}
+	}
+	download, err := s.navigate(ctx, sess, spec.url)
+	if download {
+		s.mu.Lock()
+		sess.url = "about:blank"
+		s.mu.Unlock()
+	}
+	if err != nil {
+		return err
+	}
+	if err := s.reopenTabs(ctx, sess, spec.tabs); err != nil {
+		return err
+	}
+	if spec.view != nil {
+		return sess.page.Screencast(ctx, *spec.view)
+	}
+	return nil
 }
 
 func (s *Service) ownerLock(owner string) *sync.Mutex {

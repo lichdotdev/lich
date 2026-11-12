@@ -42,6 +42,7 @@ func (s *Service) dialogSink(sess *session) func(*api.BrowserDialog) {
 // plays as its cursor pressing the dialog's button. It answers with the page
 // as it stands after.
 func (s *Service) AnswerDialog(_ context.Context, opts api.BrowserDialogOptions) (api.BrowserPageInfo, error) {
+	defer s.agentTurn(opts.ID)()
 	sess, d, err := s.openDialog(opts.ID)
 	if err != nil {
 		return api.BrowserPageInfo{}, err

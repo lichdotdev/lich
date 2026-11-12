@@ -20,6 +20,7 @@ func (s *Service) Show(_ context.Context, opts api.SessionIDOptions) (api.Browse
 // OpenURL navigates this session's browser, creating a headless one when the
 // card has not opened a window.
 func (s *Service) OpenURL(_ context.Context, opts api.BrowserOpenOptions) (api.BrowserHandle, error) {
+	defer s.agentTurn(opts.ID)()
 	h, err := s.Open(opts.ID, opts.URL)
 	if err != nil {
 		return api.BrowserHandle{}, err
@@ -30,6 +31,7 @@ func (s *Service) OpenURL(_ context.Context, opts api.BrowserOpenOptions) (api.B
 // Read returns the page the agent is looking at, once the text it waits for
 // came or went. A wait that gives up still answers with the page.
 func (s *Service) Read(_ context.Context, opts api.BrowserInfoOptions) (api.BrowserPageInfo, error) {
+	defer s.agentTurn(opts.ID)()
 	timedOut, err := s.waitText(opts)
 	if err != nil {
 		return api.BrowserPageInfo{}, err
@@ -45,6 +47,7 @@ func (s *Service) Read(_ context.Context, opts api.BrowserInfoOptions) (api.Brow
 
 // ClickAt clicks in this session's browser.
 func (s *Service) ClickAt(_ context.Context, opts api.BrowserClickOptions) (api.BrowserPageInfo, error) {
+	defer s.agentTurn(opts.ID)()
 	if err := s.Click(opts.ID, targetOf(opts.BrowserTarget)); err != nil {
 		return s.heldOr(opts.ID, err)
 	}
@@ -53,11 +56,13 @@ func (s *Service) ClickAt(_ context.Context, opts api.BrowserClickOptions) (api.
 
 // TypeText types into this session's browser.
 func (s *Service) TypeText(_ context.Context, opts api.BrowserTypeOptions) (api.None, error) {
+	defer s.agentTurn(opts.ID)()
 	return api.None{}, s.Type(opts.ID, opts.Text, opts.Clear, targetOf(opts.BrowserTarget))
 }
 
 // PressKey presses one named key in this session's browser.
 func (s *Service) PressKey(_ context.Context, opts api.BrowserPressOptions) (api.BrowserPageInfo, error) {
+	defer s.agentTurn(opts.ID)()
 	if err := s.Press(opts.ID, opts.Key, targetOf(opts.BrowserTarget)); err != nil {
 		return s.heldOr(opts.ID, err)
 	}
@@ -102,6 +107,7 @@ func (s *Service) heldOr(id string, err error) (api.BrowserPageInfo, error) {
 
 // Capture writes a PNG of this session's page and returns its path.
 func (s *Service) Capture(_ context.Context, opts api.BrowserScreenshotOptions) (string, error) {
+	defer s.agentTurn(opts.ID)()
 	if opts.Annotate {
 		return s.AnnotatedScreenshot(opts.ID, opts.Path)
 	}
@@ -110,6 +116,7 @@ func (s *Service) Capture(_ context.Context, opts api.BrowserScreenshotOptions) 
 
 // Go loads a URL in this session's already-open browser.
 func (s *Service) Go(_ context.Context, opts api.BrowserOpenOptions) (api.BrowserHandle, error) {
+	defer s.agentTurn(opts.ID)()
 	h, err := s.Navigate(opts.ID, opts.URL)
 	if err != nil {
 		return api.BrowserHandle{}, err
@@ -128,21 +135,25 @@ func (s *Service) withDownloads(h api.BrowserHandle) api.BrowserHandle {
 
 // ReloadPage reloads this session's page.
 func (s *Service) ReloadPage(_ context.Context, opts api.SessionIDOptions) (api.None, error) {
+	defer s.agentTurn(opts.ID)()
 	return api.None{}, s.Reload(opts.ID)
 }
 
 // GoBack goes back in this session's history.
 func (s *Service) GoBack(_ context.Context, opts api.SessionIDOptions) (api.None, error) {
+	defer s.agentTurn(opts.ID)()
 	return api.None{}, s.Back(opts.ID)
 }
 
 // GoForward goes forward in this session's history.
 func (s *Service) GoForward(_ context.Context, opts api.SessionIDOptions) (api.None, error) {
+	defer s.agentTurn(opts.ID)()
 	return api.None{}, s.Forward(opts.ID)
 }
 
 // ScrollBy scrolls this session's page.
 func (s *Service) ScrollBy(_ context.Context, opts api.BrowserScrollOptions) (api.None, error) {
+	defer s.agentTurn(opts.ID)()
 	return api.None{}, s.Scroll(opts.ID, opts.DY)
 }
 
@@ -167,6 +178,7 @@ func (s *Service) ListTabs(_ context.Context, opts api.SessionIDOptions) ([]api.
 // ActOnTab is the agent opening, selecting or closing a tab, answered with
 // the page then in front.
 func (s *Service) ActOnTab(_ context.Context, opts api.BrowserTabOptions) (api.BrowserPageInfo, error) {
+	defer s.agentTurn(opts.ID)()
 	if err := s.TabAct(opts); err != nil {
 		return s.heldOr(opts.ID, err)
 	}
@@ -232,7 +244,7 @@ func (s *Service) ResizeView(_ context.Context, opts api.BrowserViewOptions) (ap
 
 // DefaultView sets the size a page no pane shows lays out at.
 func (s *Service) DefaultView(_ context.Context, opts api.BrowserDefaultViewOptions) (api.None, error) {
-	s.SetDefaultView(Viewport{W: opts.W, H: opts.H, Scale: opts.Scale})
+	s.SetDefaultView(Viewport{W: opts.W, H: opts.H, Scale: opts.Scale}, opts.Window)
 	return api.None{}, nil
 }
 
