@@ -159,6 +159,9 @@ type Page interface {
 	// and none leaves it as it was.
 	OnFileChooser(pick func(page.FileChooserOpenedMode) ([]string, error))
 	Screencast(ctx context.Context, v Viewport) error
+	// Still is what the screencast shows, as the front tab's id and a base64
+	// PNG.
+	Still(ctx context.Context) (tab, data string, err error)
 	StopScreencast(ctx context.Context) error
 	Resize(ctx context.Context, v Viewport) error
 	Mouse(ctx context.Context, m api.BrowserMouseOptions) error

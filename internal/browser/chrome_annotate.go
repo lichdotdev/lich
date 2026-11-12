@@ -3,6 +3,7 @@ package browser
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"time"
@@ -28,6 +29,12 @@ const annotateLinger = 5 * time.Second
 // unannotateWait bounds the removal, which runs also when the call's own
 // deadline has passed.
 const unannotateWait = 2 * time.Second
+
+var errAnnotating = errors.New("the agent's labels are drawn on the page")
+
+// errTabChanged: another tab came to the front while Still captured, and the
+// capture may be of either.
+var errTabChanged = errors.New("another tab came to the front during the capture")
 
 // annotateJS draws each listed element's index at its box, from the read
 // Info just made, which stamped the indexes a click takes. The host is fixed, takes
@@ -65,6 +72,8 @@ func (p *chromePage) AnnotatedScreenshot(ctx context.Context, dest string) (w, h
 	if err != nil {
 		return 0, 0, err
 	}
+	p.annotating.Add(1)
+	defer p.annotating.Add(-1)
 	defer p.unannotate()
 	script := annotateJS + "(" + string(els) + fmt.Sprintf(", %d, %d, %d)", shotMax, labelPx, annotateLinger.Milliseconds())
 	if err := p.run(ctx, chromedp.Evaluate(script, nil)); err != nil {

@@ -74,7 +74,8 @@ var (
 	BrowserStateEvent = defineEvent[BrowserState]("browser-state")
 
 	// BrowserFrameEvents carries a base64 JPEG of a session's page while a pane
-	// shows it: per session, like terminal output, so only that pane listens.
+	// shows it, and a PNG once the page is still: per session, like terminal
+	// output, so only that pane listens.
 	BrowserFrameEvents = defineEventFamily[BrowserFrame]("browser:frame:")
 
 	// BrowserAgentEvent is emitted each time the agent acts on its page, so the

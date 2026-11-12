@@ -16,7 +16,11 @@ the window drew pages at when it launched (`launchScale`), so the frames are
 the pane's own pixels. `browser.Attach` starts its
 screencast at the pane's size; each frame reaches the window as
 `browser:frame:<session>`, naming the tab it is of, and is acked only once sent, so a window slow to
-draw slows the stream. The pane's pointer, keys, committed text (an input
+draw slows the stream. Once the page sends no frame for `stillAfter`, the
+backend sends one PNG capture of the front tab as the next frame
+(`frameSink`), dropped if a JPEG came while it was taken or if it is over
+`stillGrowth` times the JPEG it would replace; a frame byte for byte the last
+one, which a capture draws, is no change. The pane's pointer, keys, committed text (an input
 method's or a paste) and toolbar go back through `browser.Mouse`, `.Key`,
 `.Text` and `.Nav`, which light nothing up: only the agent's actions emit
 `browser-agent`, which the pane shows as the agent chip and a mark where it

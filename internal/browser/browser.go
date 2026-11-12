@@ -86,6 +86,9 @@ type session struct {
 	// reaper asked the window whether to close it, and nobody has answered or
 	// used it since.
 	byAgent, watching, asked bool
+	// attaches counts the panes that started drawing it, each on a window
+	// that may hold none of its frames.
+	attaches uint64
 	// agentAt is where the agent last acted, where its next scroll turns.
 	agentAt *point
 	// shotW and shotH are the viewport of the agent's last screenshot.

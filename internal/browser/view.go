@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -44,6 +45,9 @@ func (s *Service) Attach(owner string, v Viewport) (Handle, error) {
 	if sess.headed {
 		return Handle{}, errInWindow
 	}
+	s.mu.Lock()
+	sess.attaches++
+	s.mu.Unlock()
 	if err := runPage(func(ctx context.Context) error { return sess.page.Screencast(ctx, v) }); err != nil {
 		return Handle{}, s.failed(sess, err)
 	}
@@ -216,21 +220,111 @@ func (s *Service) Running() []api.BrowserState {
 // a page drawing noise sent frames of 4.5 MiB (measured 2026-11-11).
 const maxFrameData = api.MaxEventBytes - 1<<10
 
+// stillAfter is how long a page sends no frame before its pane gets one PNG
+// of it: a JPEG's ringing around text stays on screen for as long as the page
+// is still. Longer than the gap between two frames of a scroll or of typing,
+// so a capture rarely lands mid-stream.
+const stillAfter = 400 * time.Millisecond
+
+// stillWait bounds a still capture: 30 ms for text at 1280x720, 200 ms for a
+// photo at 2880x1620 (measured 2026-11-12).
+const stillWait = 2 * time.Second
+
+// stillGrowth is how many times the JPEG it replaces a still PNG may weigh. Text
+// came to 0.8 to 1.1 times its JPEG and a photo to 9 to 11 times, no sharper
+// for it: 0.37% of its colour values moved by more than 16, where text has
+// its ringing (Chromium 157, 1280x720 and 2880x1620, measured 2026-11-12).
+const stillGrowth = 3
+
 // frameSink sends the window sess's frames, except one too large for its
-// socket: the pane keeps its last frame until one fits.
+// socket: the pane keeps its last frame until one fits. Once the page is
+// still for stillAfter, it sends one PNG of it too.
 func (s *Service) frameSink(sess *session) func(tab, data string) {
-	frames := api.BrowserFrameEvents.Of(sess.owner)
-	var skipping atomic.Bool
-	return func(tab, data string) {
-		if len(data) > maxFrameData {
-			if !skipping.Swap(true) {
-				slog.Warn("browser: a frame too large for the window, its pane keeps the last one", "owner", sess.owner, "bytes", len(data))
-			}
-			return
-		}
-		skipping.Store(false)
-		events.Send(s.emit, frames, api.BrowserFrame{Tab: tab, Data: data})
+	f := &frameStream{s: s, sess: sess, frames: api.BrowserFrameEvents.Of(sess.owner)}
+	return f.frame
+}
+
+// frameStream is the frames of one browser on their way to the window. mu
+// orders the sends: a still captured before the page drew again is never sent
+// after that frame, which the window keeps as the newest.
+type frameStream struct {
+	s        *Service
+	sess     *session
+	frames   api.Event[api.BrowserFrame]
+	skipping atomic.Bool
+	mu       sync.Mutex
+	drawn    uint64
+	// last is the last frame sent, of the pane attached attach-th.
+	last   api.BrowserFrame
+	attach uint64
+	settle *time.Timer
+}
+
+func (f *frameStream) frame(tab, data string) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.s.mu.Lock()
+	attach := f.sess.attaches
+	f.s.mu.Unlock()
+	// A capture draws a frame byte for byte the last one (Chromium 157,
+	// measured 2026-11-12): taken as a change, it would replace the PNG and
+	// settle into another capture, for as long as the pane is open. A pane
+	// attached since may be on a window holding no frame.
+	frame := api.BrowserFrame{Tab: tab, Data: data}
+	if frame == f.last && attach == f.attach {
+		return
 	}
+	f.drawn++
+	if f.settle == nil {
+		f.settle = time.AfterFunc(stillAfter, f.still)
+	} else {
+		f.settle.Reset(stillAfter)
+	}
+	if len(data) > maxFrameData {
+		if !f.skipping.Swap(true) {
+			slog.Warn("browser: a frame too large for the window, its pane keeps the last one", "owner", f.sess.owner, "bytes", len(data))
+		}
+		return
+	}
+	f.skipping.Store(false)
+	f.last, f.attach = frame, attach
+	events.Send(f.s.emit, f.frames, frame)
+}
+
+// still sends a PNG of the page once it settled, unless it drew again
+// meanwhile or the PNG weighs too much for what it gives.
+func (f *frameStream) still() {
+	f.mu.Lock()
+	drawn, jpeg := f.drawn, f.last
+	f.mu.Unlock()
+	tab, data, ok := f.s.captureStill(f.sess)
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if !ok || f.drawn != drawn || tab != jpeg.Tab || len(data) > maxFrameData || len(data) > stillGrowth*len(jpeg.Data) {
+		return
+	}
+	events.Send(f.s.emit, f.frames, api.BrowserFrame{Tab: tab, Data: data})
+}
+
+// captureStill is sess's page as a PNG while a pane draws it. A page holding
+// a dialog is not captured: Page.captureScreenshot waits for it to close.
+func (s *Service) captureStill(sess *session) (tab, data string, ok bool) {
+	s.mu.Lock()
+	drawn := sess.watching && !sess.headed && sess.alive()
+	s.mu.Unlock()
+	if !drawn {
+		return "", "", false
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), stillWait)
+	defer cancel()
+	tab, data, err := sess.page.Still(ctx)
+	if err != nil {
+		if sess.alive() && !errors.Is(err, errDialogOpen) && !errors.Is(err, errAnnotating) && !errors.Is(err, errTabChanged) {
+			slog.Warn("browser: capture a still page", "owner", sess.owner, "err", err)
+		}
+		return "", "", false
+	}
+	return tab, data, true
 }
 
 // infoSink records the page's URL and title as it navigates on its own (a
