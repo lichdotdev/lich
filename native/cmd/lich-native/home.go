@@ -23,6 +23,14 @@ var icSquareTerminal = icons.Lucide("square-terminal")
 // emptySessionsView is the empty screen over a project with no session open.
 // noAgent is a project whose new session would be a shell, so the button says
 // what it will spawn. th is on the island it fills.
+// allInLayoutView is the stage of a project whose every session is a pane of
+// a layout: where they are, and the way to a session of its own.
+func allInLayoutView(gtx C, th *ui.Theme, open *widget.Clickable, spot func(C, string, layout.Widget) D) D {
+	button := th.Button(open, i18n.T("shell.emptySessions.newSession"))
+	button.Icon = icPlus
+	return th.EmptyState(icSquareTerminal, i18n.T("shell.emptySessions.allInLayoutTitle"), i18n.T("shell.emptySessions.allInLayout"), func(gtx C) D { return spot(gtx, tourNewEmpty, button.Layout) }).Layout(gtx)
+}
+
 func emptySessionsView(gtx C, th *ui.Theme, open *widget.Clickable, noAgent bool, spot func(C, string, layout.Widget) D) D {
 	description, text, icon := i18n.T("shell.emptySessions.description"), i18n.T("shell.emptySessions.newSession"), icPlus
 	if noAgent {

@@ -131,6 +131,12 @@ func TestColumnRoomCountsThePanesThatFit(t *testing.T) {
 			t.Errorf("columnRoom(%s, below %v) = %d, want %d", c.target, c.below, got, c.want)
 		}
 	}
+	if n, under := d.delegateRoom("wide", false); n != 3 || under {
+		t.Errorf("delegateRoom(wide) = %d under %v, want the column of 3 beside it", n, under)
+	}
+	if n, under := d.delegateRoom("narrow", false); n != 2 || !under {
+		t.Errorf("delegateRoom(narrow) = %d under %v, want 2 under it: too narrow to halve, tall enough to stack", n, under)
+	}
 }
 
 // The drag pointer covers the window: with nothing carried a pointer moving

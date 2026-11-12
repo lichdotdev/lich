@@ -34,7 +34,9 @@
     "description": "打开一个会话，开始在此项目中工作。",
     "noAgent": "在 PATH 中未找到智能体，因此这里会打开终端。请在设置 › 提供商中配置。",
     "newTerminal": "新建终端",
-    "newSession": "新建会话"
+    "newSession": "新建会话",
+    "allInLayoutTitle": "所有会话都在布局中",
+    "allInLayout": "在侧边栏选择一个会话即可前往其布局，也可以新建会话。"
   },
   "footerBar": {
     "attachFile": "附加文件",

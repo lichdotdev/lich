@@ -46,7 +46,11 @@ func cardMenu(sv *sessionView, folders []string, act *sidebarAction, startRename
 		ui.MenuEntry{Kind: ui.MenuSubTrigger, Label: i18n.T("sidebar.cardColor.menu"), Icon: icMenuColor, Columns: 3, Sub: colorSwatches(sv.Color, func(name string) {
 			act.color, act.colorTo = sv.ID, name
 		})},
-		ui.MenuEntry{Kind: ui.MenuSubTrigger, Label: i18n.T("sidebar.sessionCard.moveToFolder"), Icon: icFolder, Sub: cardFolderMenu(sv, folders, act, newFolder)},
+	)
+	if !sv.guest {
+		entries = append(entries, ui.MenuEntry{Kind: ui.MenuSubTrigger, Label: i18n.T("sidebar.sessionCard.moveToFolder"), Icon: icFolder, Sub: cardFolderMenu(sv, folders, act, newFolder)})
+	}
+	entries = append(entries,
 		ui.MenuEntry{Label: i18n.T("sidebar.sessionCard.browser"), Icon: icBrowser, OnClick: func() { act.browser = sv.ID }},
 		ui.MenuEntry{Kind: ui.MenuSubTrigger, Label: i18n.T("sidebar.sessionCard.openIn"), Icon: icOpenIn, Sub: openInMenu(sv, act)},
 		pullRequestItem(sv, act),
@@ -59,6 +63,9 @@ func cardMenu(sv *sessionView, folders []string, act *sidebarAction, startRename
 	}
 	if r := sv.relay; r.Direction == relayIn && r.Ticket != "" {
 		entries = append(entries, ui.MenuEntry{Label: i18n.T("sidebar.sessionCard.copyReplyCommand"), Icon: icMenuCopy, OnClick: func() { act.copyText = replyCommand(r.Ticket) }})
+	}
+	if sv.split != "" {
+		entries = append(entries, ui.MenuEntry{Label: i18n.T("layouts.pane.unsplit"), Icon: icSplit, OnClick: func() { act.unsplit = sv.ID }})
 	}
 	entries = append(entries, extra...)
 	if !sv.Pinned {

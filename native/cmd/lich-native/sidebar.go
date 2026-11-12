@@ -22,9 +22,12 @@ type sidebar struct {
 	// active card.
 	tour *driver.Tour
 	// The session cards, keyed by session id.
-	tips    map[string]*ui.Tooltip
-	menus   map[string]*ui.MenuState
-	renames map[string]*ui.InlineEdit
+	tips  map[string]*ui.Tooltip
+	menus map[string]*ui.MenuState
+	// splitShown is the layout whose own list was drawn last frame, "" for
+	// none: a row new to that list came in now and moves in.
+	splitShown string
+	renames    map[string]*ui.InlineEdit
 	// renamed is the label a rename committed during this frame's layout.
 	renamed sessionRename
 	cards   map[string]*widget.Clickable
@@ -138,6 +141,7 @@ type sidebarAction struct {
 	terminalAt, editorAt, folderAt, browser string
 	// From a browser row's menu, each the session whose browser it is.
 	browserMinimize, browserWindow, browserClose string
+	unsplit                                      string // the session to take out of its split
 	rename                                       sessionRename
 	color, colorTo                               string // session id, and its new tint ("" for the theme)
 	continueIn                                   continueRequest
@@ -211,6 +215,7 @@ func (a *sidebarAction) takeCard(c sidebarAction) {
 	pick(&a.editorAt, c.editorAt)
 	pick(&a.folderAt, c.folderAt)
 	pick(&a.browser, c.browser)
+	pick(&a.unsplit, c.unsplit)
 	pick(&a.forkHere, c.forkHere)
 	pick(&a.forkWorktree, c.forkWorktree)
 	pick(&a.schedule, c.schedule)
@@ -269,12 +274,21 @@ func (s *sidebar) panel(gtx C, th *ui.Theme, m *model, active string) (D, sideba
 	s.header.clicks(gtx)
 	view := m.sidebarBlocks(s.header.filter())
 	s.launchProviders = m.launchProviders()
+	splitID, splitName, groups, split := m.splitSidebar(gtx.Now)
+	if !split {
+		s.splitShown = ""
+	}
 	layout.UniformInset(ui.Space(2)).Layout(gtx, func(gtx C) D {
 		children := []layout.FlexChild{
-			layout.Rigid(func(gtx C) D { return s.headerRow(gtx, on, m, &act) }),
+			layout.Rigid(func(gtx C) D {
+				if split {
+					return s.splitHeader(gtx, on, splitName, &act)
+				}
+				return s.headerRow(gtx, on, m, &act)
+			}),
 			ui.VGap(2),
 		}
-		if s.header.open {
+		if s.header.open && !split {
 			children = append(children, layout.Rigid(func(gtx C) D { return s.filterRow(gtx, on, view) }), ui.VGap(2))
 		}
 		children = append(children, layout.Flexed(1, func(gtx C) D {
@@ -282,9 +296,12 @@ func (s *sidebar) panel(gtx C, th *ui.Theme, m *model, active string) (D, sideba
 			// strip, so its scrollbar sits clear of the strip, and the rows
 			// inside it end on the island's edge (blockList).
 			gtx.Constraints.Max.X += gtx.Dp(ui.Space(2)) - gtx.Dp(ui.ResizeWidth)
+			if split {
+				return s.splitList(gtx, on, splitID, groups, &act)
+			}
 			return s.blockList(gtx, on, view, active, &act)
 		}))
-		if p, ok := m.project(); ok {
+		if p, ok := m.project(); ok && !split {
 			list, console := m.services.of(p.ID), m.consoleShown()
 			children = append(children, ui.VGap(2), layout.Rigid(func(gtx C) D {
 				return s.services.layout(gtx, on, s.root, p.ID, list, console, &act)

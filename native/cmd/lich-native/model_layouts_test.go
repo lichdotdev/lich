@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"slices"
 	"strconv"
 	"sync"
 	"testing"
@@ -112,8 +113,8 @@ func TestASessionInALayoutIsAlwaysShownThere(t *testing.T) {
 	if !m.setActiveProject("plugin") {
 		t.Fatal("project not found")
 	}
-	if id, _, active := layoutScreen(t, m); id != "" || active != "wa" {
-		t.Fatalf("a project tab: layout %q active %q, want the project's own session", id, active)
+	if id, _, active := layoutScreen(t, m); id != "" || active != "wb" {
+		t.Fatalf("a project tab: layout %q active %q, want its session in no layout, never the pane alone", id, active)
 	}
 	if !m.showLayout(ctx, layoutID) {
 		t.Fatal("showLayout refused")
@@ -339,5 +340,74 @@ func TestALayoutTabSaysAPaneWaitsWhileAnotherTabIsUp(t *testing.T) {
 	m.setActive(ctx, "notes")
 	if got := layoutTab().status; got != statusWaiting {
 		t.Fatalf("the layout off screen badged %q, want waiting", got)
+	}
+}
+
+func TestAProjectNeverShowsAloneASessionThatIsInALayout(t *testing.T) {
+	m, _ := newLayoutsModel(t)
+	ctx := context.Background()
+	m.splitBeside(ctx, "orch", "wa", edgeRight, false)
+	if !m.setActiveProject("lich") {
+		t.Fatal("refused an open project")
+	}
+	if id, project, active := layoutScreen(t, m); id != "" || project != "lich" || active != "notes" {
+		t.Fatalf("lich shows layout %q project %q active %q, want its session in no layout", id, project, active)
+	}
+	if m.everySessionInALayout() {
+		t.Fatal("notes is in no layout")
+	}
+	m.splitBeside(ctx, "orch", "notes", edgeBottom, false)
+	m.setActiveProject("lich")
+	if _, _, active := layoutScreen(t, m); active != "" || !m.everySessionInALayout() {
+		t.Fatalf("lich shows %q alone with every session in a layout, want none", active)
+	}
+	m.setActiveProject("plugin")
+	if _, active, ok := m.closeSession("wb"); !ok || active != "" {
+		t.Fatalf("closing wb left %q alone on screen, want none: wa is in a layout", active)
+	}
+}
+
+func TestALayoutsSidebarListsItsSessionsByProject(t *testing.T) {
+	m, _ := newLayoutsModel(t)
+	ctx := context.Background()
+	if _, _, _, ok := m.splitSidebar(time.Now()); ok {
+		t.Fatal("a sidebar of a layout with none on screen")
+	}
+	m.splitBeside(ctx, "orch", "wa", edgeRight, false)
+	m.splitBeside(ctx, "wa", "notes", edgeBottom, false)
+	_, name, groups, ok := m.splitSidebar(time.Now())
+	if !ok || name != "orchestrator" || len(groups) != 2 {
+		t.Fatalf("sidebar %q %+v %v, want the layout's two projects", name, groups, ok)
+	}
+	ids := func(g splitGroup) []string {
+		var out []string
+		for _, sv := range g.block.sessions {
+			if !sv.guest || sv.split == "" {
+				t.Errorf("%s: guest %v split %q, want a card of the layout's own list", sv.ID, sv.guest, sv.split)
+			}
+			out = append(out, sv.ID)
+		}
+		return out
+	}
+	if got := ids(groups[0]); groups[0].project != "lich" || !slices.Equal(got, []string{"orch", "notes"}) {
+		t.Fatalf("first group %q %v, want lich with its two sessions together", groups[0].project, got)
+	}
+	if got := ids(groups[1]); groups[1].project != "lich-plugin" || !slices.Equal(got, []string{"wa"}) {
+		t.Fatalf("second group %q %v", groups[1].project, got)
+	}
+}
+
+func TestALayoutsSidebarKeepsTheTreeOfMothersAndChildren(t *testing.T) {
+	m, _ := newLayoutsModel(t)
+	ctx := context.Background()
+	m.mu.Lock()
+	m.projects[0].Sessions[1].OriginSessionID = "orch"
+	m.mu.Unlock()
+	m.splitBeside(ctx, "orch", "notes", edgeRight, false)
+	_, _, groups, _ := m.splitSidebar(time.Now())
+	rows := blockRows(groups[0].block, groups[0].block.sessions)
+	want := []string{"0:__checkout__:__layout__:lich:/dev/lich", "1:orch.", "2:notes."}
+	if got := rowShape(rows); !slices.Equal(got, want) {
+		t.Fatalf("rows %v, want %v: the child under its mother, both under their checkout", got, want)
 	}
 }

@@ -1323,13 +1323,21 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   success over nothing, and answers with every session that moved, which is how a merge shows.
 - **A layout is a free split tree** (`native/cmd/lich-native/layouts.go`, `model_layouts.go`,
   `stage_layout.go`): a layout is stored under `lich.native.layouts`. A session sits in one pane of one layout, because its PTY has one
-  size; clicking its card anywhere shows it in that layout, while its project's tab shows it alone. A split
+  size; clicking its card anywhere shows it in that layout, and its project's tab never shows it alone
+  (`aloneLocked`, `sidebar_split.go`): the tab shows the project's first session in no layout, or a notice
+  when every session is in one, which is also what a session closed there or a window reopened lands on, so
+  the tab does not come back on the session it last showed. A layout's tab has a sidebar of its own, its
+  sessions under their projects' names in the project sidebar's tree. That list is not the project's: it has
+  no New Session, filter or services, a card there offers no folder and is not dragged, a mother's children
+  cannot be folded, a checkout row has no menu, a folder is not drawn, and no card is lit, the panes showing
+  which session has the focus. The collapsed sidebar still lists the focused pane's project. A split
   is refused, with a toast, when a pane would drop under 480dp (51 columns at the default 13sp, measured with
   Claude Code and Codex): a larger terminal font fits fewer columns in the same floor. Only the focused pane
   takes a dropped file; a file dropped on a pane in the background goes nowhere. A pinned card cannot be dragged onto a pane: the
   pinned block shares no carry with the panes, so its card never leaves the sidebar. The panes' drop zones are
   not SortCarry targets (`layouts_drag.go`): a new drop target over the stage belongs there, not in the carry.
-  Show beside lays out only the delegates that fit the 180dp pane
+  Show beside puts the delegates in a column on the right half of their opener's pane, or stacked under it
+  when that pane is too narrow to halve (`delegateRoom`), and lays out only the delegates that fit the 180dp pane
   floor, counted from where the panes were drawn the frame before (`columnRoom`); the rest stay out and
   the pane header offers them. Its footer item is not an item of the Footer layout, so Settings can neither
   move nor hide it: it shows only while the session, in no layout, has delegates.

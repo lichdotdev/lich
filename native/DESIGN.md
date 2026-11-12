@@ -255,6 +255,11 @@ Every row is one line, 34dp tall: `Space(1.5)` above and below a 22px node. Rows
 - **A browser row**: a session's running browser, first under it: the globe in a neutral ring, the page's
   host as its name, the corner slot. The name is `MutedForeground` while the page is off the stage. A folded
   mother shows a globe on her own row instead.
+- **A session in a layout** carries the columns glyph before its corner slot, in its project's sidebar and
+  in the layout's own.
+- **A layout's sidebar**: the layout's name where New Session stands, then its sessions under each
+  project's name in `TextXS` `MutedForeground`, in the same tree of checkout, session and browser rows, with their motion. No
+  card there wears the active fill: the focused pane's ring says which session has the keys.
 - **A checkout row**: the branch glyph in a neutral ring, the branch, its pull request and changes, the
   corner slot. A project's checkout is the root its sessions hang from; a child running in another
   checkout than its mother hangs from a checkout row of its own inside her group.

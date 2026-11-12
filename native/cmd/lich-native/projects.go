@@ -118,6 +118,7 @@ func (m *model) showHome() {
 	if p := m.projectByID(m.homeID); p != nil {
 		m.active = p.ActiveSessionID
 	}
+	m.aloneLocked()
 }
 
 // onHome reports whether Home is on screen: chosen, or no project is open.

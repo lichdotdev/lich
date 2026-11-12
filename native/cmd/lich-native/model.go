@@ -217,6 +217,7 @@ func (m *model) reload(ctx context.Context) error {
 	if p := m.shownProject(); p != nil && !slices.ContainsFunc(p.Sessions, func(s backend.Session) bool { return s.ID == m.active }) {
 		m.active = p.ActiveSessionID
 	}
+	m.aloneLocked()
 	pruned := m.layouts.prune(m.liveLocked)
 	if pruned {
 		m.refocusLayoutLocked()
@@ -276,6 +277,7 @@ func (m *model) setActiveProject(id string) bool {
 	m.active = m.projects[i].ActiveSessionID
 	m.shownLayout = ""
 	m.console = ""
+	m.aloneLocked()
 	return true
 }
 
@@ -643,8 +645,11 @@ type sessionView struct {
 	// continueIn are the other logins its conversation could move to.
 	profileName string
 	continueIn  []continueTarget
-	// layout is the name of the layout the session sits in, "" for none.
-	layout string
+	// split is the id of the layout the session is a pane of, "" for none.
+	split string
+	// guest is a card drawn in a layout's own sidebar, outside its project's
+	// folders: its menu files it nowhere.
+	guest bool
 	// running is the model the provider's transcript reports, "" for a
 	// provider that reports none.
 	running string
@@ -661,6 +666,10 @@ func (m *model) viewOf(p backend.Project, s backend.Session, now time.Time) sess
 	usage, _ := m.usage.get(s.ID)
 	st, page := m.browsers.states[s.ID], m.pages[s.ID]
 	web := webView{url: st.URL, title: st.Title, headed: st.Headed, shown: page != nil, focused: page != nil && page.focused}
+	split := ""
+	if i := m.layouts.of(s.ID); i >= 0 {
+		split = m.layouts.tabs[i].ID
+	}
 	return sessionView{
 		Session: s, projectID: p.ID, path: sessionPath(p, s), shown: shown, host: m.cwd[s.ID].Host, web: web,
 		status: m.status.status(s.ID), unread: m.status.unread(s.ID), turn: m.status.turn(s.ID), age: age, aged: aged,
@@ -668,7 +677,7 @@ func (m *model) viewOf(p backend.Project, s backend.Session, now time.Time) sess
 		base: m.base[shown], pr: m.prs[shown].pr,
 		relay: m.relay[s.ID], tool: tool, reason: m.status.reason(s.ID), browser: m.browsers.states[s.ID].Open,
 		profileName: m.profileNameOf(s.Kind, s.Profile), continueIn: m.continueTargets(s.Kind, s.Profile),
-		layout: m.layoutNameOfLocked(s.ID), running: usage.Model,
+		split: split, running: usage.Model,
 	}
 }
 
@@ -841,6 +850,7 @@ func (m *model) closeSession(id string) (projectID, active string, ok bool) {
 			m.active = p.Sessions[i-1].ID
 		}
 		p.ActiveSessionID = m.active
+		m.aloneLocked()
 	}
 	return p.ID, m.active, true
 }

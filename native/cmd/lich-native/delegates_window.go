@@ -52,15 +52,16 @@ func delegatesText(o delegateOffer) string {
 func (u *window) layDelegatesOut(orchestrator string) {
 	o := u.model.delegateOffer(orchestrator)
 	target, below := u.model.delegateSlot(orchestrator, o.all)
-	ids := o.missing[:min(len(o.missing), u.layoutStage.pointer.columnRoom(target, below))]
+	room, under := u.layoutStage.pointer.delegateRoom(target, below)
+	ids := o.missing[:min(len(o.missing), room)]
 	if len(ids) == 0 {
 		u.toaster.Show(ui.Toast{Title: i18n.T("layouts.split.noRoom")})
 		return
 	}
 	if away := u.model.inOtherLayouts(orchestrator, ids); away > 0 {
-		u.askMoveDelegates(orchestrator, ids, away)
+		u.askMoveDelegates(orchestrator, ids, away, under)
 		return
 	}
-	u.model.showDelegates(u.ctx, orchestrator, ids)
+	u.model.showDelegates(u.ctx, orchestrator, ids, under)
 	u.model.invalidate()
 }

@@ -806,6 +806,9 @@ func (u *window) island(gtx C, v stageView, termWidth, termHeight int) error {
 		return u.consoleIsland(gtx, v.console, termWidth)
 	case v.hasLayout:
 		return u.layoutIsland(gtx, v)
+	case !v.hasActive && u.model.everySessionInALayout():
+		allInLayoutView(gtx, u.theme.On(fill), &u.emptyNew, u.spot)
+		return nil
 	case !v.hasActive:
 		emptySessionsView(gtx, u.theme.On(fill), &u.emptyNew, u.model.newSessionKind() == "shell", u.spot)
 		return nil
@@ -1107,6 +1110,10 @@ func (u *window) apply(act sidebarAction) {
 	}
 	u.applyOpenIn(act)
 	u.applyBrowser(act)
+	if act.unsplit != "" {
+		u.model.unsplit(u.ctx, act.unsplit)
+		u.model.invalidate()
+	}
 	u.applyContinueIn(act)
 	if pick := act.profilePick; pick.key != "" {
 		u.settings.writeProviderKey(pick.key, pick.projectID, pick.value, nil)

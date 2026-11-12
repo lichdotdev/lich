@@ -87,6 +87,7 @@ type moveConfirm struct {
 	orchestrator string
 	delegates    []string
 	away         int
+	under        bool // the delegates go under the slot's pane (delegateRoom)
 	cancel       widget.Clickable
 	confirm      widget.Clickable
 }
@@ -97,9 +98,9 @@ func (u *window) askMove(r besideRequest, id, from string) {
 	c.label, c.delegates = u.model.sessionLabel(id), nil
 }
 
-func (u *window) askMoveDelegates(orchestrator string, ids []string, away int) {
+func (u *window) askMoveDelegates(orchestrator string, ids []string, away int, under bool) {
 	c := &u.layoutStage.move
-	c.open, c.orchestrator, c.delegates, c.away = true, orchestrator, ids, away
+	c.open, c.orchestrator, c.delegates, c.away, c.under = true, orchestrator, ids, away, under
 	// The question was laid out at the top of this frame, closed.
 	u.model.invalidate()
 }
@@ -114,7 +115,7 @@ func (u *window) layoutMoveConfirm(gtx C, th *ui.Theme) {
 	if c.confirm.Clicked(gtx) && c.open {
 		c.open = false
 		if c.delegates != nil {
-			u.model.showDelegates(u.ctx, c.orchestrator, c.delegates)
+			u.model.showDelegates(u.ctx, c.orchestrator, c.delegates, c.under)
 		} else {
 			u.model.splitBeside(u.ctx, c.req.target, c.session, c.req.edge, true)
 		}
