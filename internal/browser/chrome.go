@@ -129,6 +129,9 @@ type chromePage struct {
 	// shot: an agent's screenshot ran since the frames were last laid out
 	// again after one (relayAfterShot).
 	shot atomic.Bool
+	// annotating counts the agent's labelled screenshots running, which Still
+	// waits out.
+	annotating atomic.Int32
 	// leaveMu guards held, the navigation the open beforeunload holds, and
 	// leave, the one an accepted beforeunload left for (chrome_leave.go).
 	leaveMu sync.Mutex

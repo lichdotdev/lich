@@ -1457,7 +1457,12 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   scale. A frame past what the window's `/events` socket reads, 8 MiB as base64, is not sent, since it would end
   that socket for every session: the pane keeps its last frame until one fits. A wall of photographs in a 4K
   pane made 2.7 MiB frames and a page drawing pure noise in a 3440x1440 one 4.5 MiB (measured 2026-11-11);
-  noise in a 4K pane, about 7.5 MiB by pixel count, still fits. The native window cannot hold a webview: on Linux it speaks Wayland without GTK. So the pane
+  noise in a 4K pane, about 7.5 MiB by pixel count, still fits. A page still for 600 ms (`stillAfter`) gets one
+  PNG capture of it, and so none while a focused field's caret blinks every 500 ms, so still text loses the JPEG's ringing; nothing is captured while the page holds a dialog,
+  and a PNG over 3 times its JPEG (`stillGrowth`) is not sent: a photo, 11 times its JPEG and no sharper,
+  keeps the JPEG (measured 2026-11-12). A still page gets two captures at most (`stillTries`): where the frame
+  a capture draws is not the one before it byte for byte, as on Apple silicon under a pane drawn below the
+  browser's scale, that frame replaces the PNG and the pane stays on the JPEG (CI, macos-latest, 2026-11-12). The native window cannot hold a webview: on Linux it speaks Wayland without GTK. So the pane
   has no DevTools, shows the arrow whatever cursor the page asks for, draws only the front tab, and leaves the page's own dialogs out. Its
   tabs sit on the pane's header (`internal/browser/tabs.go`): what a tab opens in a new tab or window joins
   them, in front when its opener was, and closing it brings its opener back as it was. A tab behind the front

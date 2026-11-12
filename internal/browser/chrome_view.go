@@ -2,6 +2,7 @@ package browser
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"log/slog"
 	"math"
@@ -253,6 +254,30 @@ func (p *chromePage) deliver(tab target.ID, frame *page.EventScreencastFrame) {
 	if err := p.runFree(nil, ack); err != nil && p.Alive() {
 		slog.Warn("browser: ack a screencast frame", "err", err)
 	}
+}
+
+// Still captures what the screencast shows, as a base64 PNG. A capture while
+// the agent's labels are drawn would keep them on a still pane. Encoded for
+// speed: a photo filling a 2880x1620 pane took 1 s to capture, 200 ms so, for
+// a PNG a fifth larger (Chromium 157, measured 2026-11-12).
+func (p *chromePage) Still(ctx context.Context) (tab, data string, err error) {
+	if p.annotating.Load() > 0 {
+		return "", "", errAnnotating
+	}
+	front := p.tabs.frontTab()
+	var buf []byte
+	err = p.run(ctx, chromedp.ActionFunc(func(ctx context.Context) error {
+		var err error
+		buf, err = page.CaptureScreenshot().WithFormat(page.CaptureScreenshotFormatPng).WithOptimizeForSpeed(true).Do(ctx)
+		return err
+	}))
+	if err != nil {
+		return "", "", err
+	}
+	if p.tabs.frontTab() != front {
+		return "", "", errTabChanged
+	}
+	return string(front.id), base64.StdEncoding.EncodeToString(buf), nil
 }
 
 // Screencast starts the frames at v, or restarts them there: Chrome keeps

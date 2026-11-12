@@ -1,10 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"fmt"
 	"image"
+	"image/png"
 	"log"
 	"slices"
 	"sync"
@@ -213,7 +215,7 @@ func (m *model) applyBrowserFrame(owner string, ev backend.Event, seq uint64) er
 	if err != nil {
 		return fmt.Errorf("%s: %w", ev.Name, err)
 	}
-	img, err := turbojpeg.Decode(raw)
+	img, err := decodeFrame(raw)
 	if err != nil {
 		return fmt.Errorf("%s: %w", ev.Name, err)
 	}
@@ -277,6 +279,17 @@ func (m *model) frontFrameLocked(session string) browserFrame {
 		}
 	}
 	return newest
+}
+
+// pngSignature starts a PNG: the frame the backend sends once the page is
+// still, where every other frame is a JPEG.
+var pngSignature = []byte("\x89PNG\r\n\x1a\n")
+
+func decodeFrame(raw []byte) (image.Image, error) {
+	if bytes.HasPrefix(raw, pngSignature) {
+		return png.Decode(bytes.NewReader(raw))
+	}
+	return turbojpeg.Decode(raw)
 }
 
 func (m *model) applyBrowserAgent(a api.BrowserAgentAct, now time.Time) {

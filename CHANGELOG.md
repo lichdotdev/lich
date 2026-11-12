@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Text in a session's browser is sharp once the page stops moving: a moment after the last change, the page is redrawn once without the blur and fringes the moving picture has around letters. A page showing a large photo keeps the moving picture, which already looks the same. Applies to every provider.
+
 ### Fixed
 
 - The Git panel opens as soon as the branch in the footer is clicked. It used to wait for the mouse to move before sliding up.

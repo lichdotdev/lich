@@ -2,6 +2,7 @@ package browser
 
 import (
 	"context"
+	"errors"
 	"os"
 	"strings"
 	"sync"
@@ -45,10 +46,17 @@ type fakePage struct {
 	onClick    func()
 	onNavigate func()
 	casting    bool
-	viewports  []Viewport
-	mice       []api.BrowserMouseOptions
-	mouseErr   error
-	clickErr   error
+	// still and stillTab are what Still captures; stills counts the captures, and
+	// onStill runs during one, as the page painting while it is taken.
+	still     string
+	stillTab  string
+	stillErr  error
+	stills    int
+	onStill   func()
+	viewports []Viewport
+	mice      []api.BrowserMouseOptions
+	mouseErr  error
+	clickErr  error
 	// dead is a Chrome whose process ended under the page.
 	dead      bool
 	keys      []api.BrowserKeyOptions
@@ -311,6 +319,24 @@ func (p *fakePage) Screencast(_ context.Context, v Viewport) error {
 	p.viewports = append(p.viewports, v)
 	return nil
 }
+
+func (p *fakePage) Still(context.Context) (tab, data string, err error) {
+	p.mu.Lock()
+	p.stills++
+	onStill := p.onStill
+	p.mu.Unlock()
+	if onStill != nil {
+		onStill()
+	}
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if p.still == "" && p.stillErr == nil {
+		return "", "", errNothingStill
+	}
+	return p.stillTab, p.still, p.stillErr
+}
+
+var errNothingStill = errors.New("the fake page has no still to capture")
 
 func (p *fakePage) StopScreencast(context.Context) error {
 	p.mu.Lock()

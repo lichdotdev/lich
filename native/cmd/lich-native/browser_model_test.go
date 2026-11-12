@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"image"
 	"image/jpeg"
+	"image/png"
 	"log"
 	"os"
 	"path/filepath"
@@ -146,6 +147,28 @@ func TestOlderBrowserFrameDecodedLastKeepsTheNewer(t *testing.T) {
 	}
 	if _, f, _ := m.browserView("orch"); f.size != image.Pt(9, 6) {
 		t.Fatalf("frame size %v, want the newer frame's", f.size)
+	}
+}
+
+func TestAStillPNGFrameReplacesTheJPEG(t *testing.T) {
+	m, _ := newLayoutsModel(t)
+	name := api.BrowserFrameEvents.Of("orch").Name
+	if err := m.applyBrowserFrame("orch", tabFrame(t, name, "t1", 9), 1); err != nil {
+		t.Fatal(err)
+	}
+	var buf bytes.Buffer
+	if err := png.Encode(&buf, image.NewRGBA(image.Rect(0, 0, 7, 6))); err != nil {
+		t.Fatal(err)
+	}
+	data, _ := json.Marshal(api.BrowserFrame{Tab: "t1", Data: base64.StdEncoding.EncodeToString(buf.Bytes())})
+	if err := m.applyBrowserFrame("orch", backend.Event{Name: name, Data: data}, 2); err != nil {
+		t.Fatal(err)
+	}
+	m.mu.Lock()
+	f := m.browsers.frames["orch"]["t1"]
+	m.mu.Unlock()
+	if f.size != image.Pt(7, 6) {
+		t.Fatalf("tab t1's frame size %v, want the PNG's", f.size)
 	}
 }
 
