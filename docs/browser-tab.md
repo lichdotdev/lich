@@ -17,7 +17,8 @@ the pane's own pixels. `browser.Attach` starts its
 screencast at the pane's size; each frame reaches the window as
 `browser:frame:<session>`, naming the tab it is of, and is acked only once sent, so a window slow to
 draw slows the stream. Once the page sends no frame for `stillAfter`, the
-backend sends one PNG capture of the front tab as the next frame
+backend sends one PNG capture of what the pane shows, the front tab or its
+DevTools, as the next frame
 (`frameSink`), dropped if a JPEG came while it was taken or if it is over
 `stillGrowth` times the JPEG it would replace; a frame byte for byte the last
 one, which a capture draws, is no change, and any other frame within

@@ -126,16 +126,13 @@ func TestChromeDevToolsDrawsInThePaneWhileTheAgentDrivesThePage(t *testing.T) {
 		t.Fatalf("window's tabs = %+v, want the page then its DevTools, which carries no URL", pane)
 	}
 	waitDevToolsBuilt(t, s)
-	// Once still, the pane gets a PNG of DevTools.
-	deadline := time.Now().Add(20 * time.Second)
-	for {
-		if _, stills := framesOf(out, 0, dt.ID); stills > 0 {
-			break
-		}
-		if time.Now().After(deadline) {
-			t.Fatal("no PNG of DevTools once still")
-		}
-		time.Sleep(100 * time.Millisecond)
+	// The still is of what the pane shows. Whether its PNG reaches the pane is
+	// the page's rule too, which on Apple silicon may keep the JPEG.
+	ctx, cancel := context.WithTimeout(context.Background(), pageWait)
+	defer cancel()
+	tab, data, err := s.current("s").page.Still(ctx)
+	if err != nil || tab != dt.ID || !strings.HasPrefix(data, pngPrefix) {
+		t.Fatalf("Still = %s, %d bytes, %v; want a PNG of the DevTools tab %s", tab, len(data), err, dt.ID)
 	}
 	agent, err := s.Tabs("s")
 	if err != nil {
