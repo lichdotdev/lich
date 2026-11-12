@@ -282,15 +282,11 @@ func (s *sidebar) statusRing(gtx C, th *ui.Theme, sv *sessionView) D {
 // neutralRingAlpha is how strongly a ring with no status draws in a tree.
 const neutralRingAlpha = 0.35
 
-func (s *sidebar) statusGlyph(gtx C, th *ui.Theme, sv *sessionView) D {
-	size := gtx.Dp(2 * sessionTreeRingR)
-	entry := sv.place.entry
-	// A ring mixes over its row's ground, not the card's fill, so hovering
-	// or lighting the card leaves it, and a tray tints it as it tints a
-	// checkout's.
-	th = onGround(th, sv.place.ground)
-	switch sv.status {
-	case "busy", "compacting":
+// ring draws a session's ring for status in a box of size, as much of it as
+// entry has brought in.
+func (s *sidebar) ring(gtx C, th *ui.Theme, status string, unread, tree bool, size int, entry treeEntry) {
+	switch status {
+	case statusBusy, statusCompacting:
 		ringArc(gtx, size, entry, th.Over(ui.Alpha(th.MutedForeground, 0.25)))
 		if entry.ring == 0 {
 			stroke := float32(gtx.Dp(sessionTreeStroke))
@@ -299,21 +295,40 @@ func (s *sidebar) statusGlyph(gtx C, th *ui.Theme, sv *sessionView) D {
 			ui.StrokeArc(gtx, center, float32(size)/2-stroke/2, stroke, turn, math.Pi/2, th.MutedForeground)
 		}
 		th.Loop(gtx)
-	case "waiting":
+	case statusWaiting:
 		ringArc(gtx, size, entry, th.ToneWait)
-	case "done":
+	case statusDone:
 		ring := th.TonePass
-		if !sv.unread {
+		if !unread {
 			ring = th.Over(ui.Alpha(ring, 0.3))
 		}
 		ringArc(gtx, size, entry, ring)
 	default:
 		// In a tree every ring is where a link ends, so one with no status
 		// still draws, neutral.
-		if sv.place.tree {
+		if tree {
 			ringArc(gtx, size, entry, th.Over(ui.Alpha(th.MutedForeground, neutralRingAlpha)))
 		}
 	}
+}
+
+func (s *sidebar) statusGlyph(gtx C, th *ui.Theme, sv *sessionView) D {
+	size := gtx.Dp(2 * sessionTreeRingR)
+	entry := sv.place.entry
+	// A ring mixes over its row's ground, not the card's fill, so hovering
+	// or lighting the card leaves it, and a tray tints it as it tints a
+	// checkout's.
+	th = onGround(th, sv.place.ground)
+	// A status change redraws the ring: the one it left fades while the new
+	// one draws from the left, as a ring coming into the tree does.
+	if p := sv.turn.progress(gtx.Now); p < 1 {
+		fade := paint.PushOpacity(gtx.Ops, 1-p)
+		s.ring(gtx, th, sv.turn.from, sv.turn.unread, sv.place.tree, size, treeEntry{})
+		fade.Pop()
+		entry.ring = max(entry.ring, 1-p)
+		gtx.Execute(op.InvalidateCmd{})
+	}
+	s.ring(gtx, th, sv.status, sv.unread, sv.place.tree, size, entry)
 	gtx.Constraints = layout.Exact(image.Pt(size, size))
 	kind := sv.Kind
 	if sv.agent != "" {

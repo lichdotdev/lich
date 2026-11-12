@@ -16,7 +16,6 @@ import (
 // blockState is one block's widget state, kept per project and block.
 type blockState struct {
 	toggle   widget.Clickable
-	fold     ui.Collapse
 	cards    ui.Sortable
 	presence ui.Presence
 	tree     treeMotion
@@ -166,10 +165,8 @@ func arrayMove(ids []string, id, over string) []string {
 	return slices.Insert(moved, to, id)
 }
 
-// block draws one block: the header, which folds in and out as the list
-// starts and stops splitting into blocks, then the cards in the fold. A block
-// dragged by its header wears the sidebar's fill, so it covers the blocks it
-// passes over.
+// block draws one block: the header, then its rows. A block dragged by its
+// header wears the sidebar's fill, so it covers the blocks it passes over.
 func (s *sidebar) block(gtx C, th *ui.Theme, b blockView, f blockFrame) D {
 	st := s.blockState(b)
 	dragEnded := s.dropCards(gtx, st, b, f)
@@ -185,18 +182,16 @@ func (s *sidebar) block(gtx C, th *ui.Theme, b blockView, f blockFrame) D {
 				}
 				return moveRow(gtx, sessionRow{motion: b.head}, header)
 			}),
-			layout.Rigid(func(gtx C) D {
-				return st.fold.Layout(gtx, !b.collapsed, func(gtx C) D { return s.blockCards(gtx, th, b, st, f, dragEnded) })
-			}),
+			layout.Rigid(func(gtx C) D { return s.blockCards(gtx, th, b, st, f, dragEnded) }),
 		)
 	}
-	// A closed folder is its header alone, with nothing to set apart, until
-	// it is where a carried card would go.
+	// A closed folder is its header alone, with nothing to set apart, once
+	// its rows have left and until it is where a carried card would go.
 	inner := body
 	switch {
 	case s.carry.Hovers(b.key):
 		body = func(gtx C) D { return dropTray(gtx, th, b.color, inner) }
-	case b.kind == blockFolder && !b.collapsed:
+	case b.kind == blockFolder && (!b.collapsed || st.tree.hasRows()):
 		body = func(gtx C) D { return folderTray(gtx, th, b.color, inner) }
 	}
 	if s.sort.Dragging() != b.key {
@@ -242,6 +237,15 @@ func (s *sidebar) dropCards(gtx C, st *blockState, b blockView, f blockFrame) bo
 // run from row to row unbroken, each row clipped to its own box.
 var cardGap = unit.Dp(0)
 
+// foldedRows is rows as b draws them: none while it is folded, so folding it
+// takes its rows out by the tree's motion, as folding a mother takes hers.
+func foldedRows(b blockView, rows []sessionRow) []sessionRow {
+	if b.collapsed {
+		return nil
+	}
+	return rows
+}
+
 // blockCards is the block's rows, each in its CardTransition: the gap between
 // rows lives inside the motion, so a closing card takes it along, and the list
 // cancels the one the last row trails. The rows are the block's sessions as
@@ -250,7 +254,7 @@ var cardGap = unit.Dp(0)
 func (s *sidebar) blockCards(gtx C, th *ui.Theme, b blockView, st *blockState, f blockFrame, dragEnded bool) D {
 	b = carriedFold(b, st.cards.Dragging())
 	shown, _ := st.closing.shown(b.sessions, gtx.Now)
-	live := blockRows(b, b.sessions)
+	live, placed := foldedRows(b, blockRows(b, b.sessions)), foldedRows(b, blockRows(b, shown))
 	switch {
 	case b.move != nil && b.move.leaving:
 		live = nil
@@ -262,7 +266,7 @@ func (s *sidebar) blockCards(gtx C, th *ui.Theme, b blockView, st *blockState, f
 	if st.tree.update(gtx.Now, live) {
 		gtx.Execute(op.InvalidateCmd{})
 	}
-	rows := st.tree.place(gtx.Now, blockRows(b, shown))
+	rows := st.tree.place(gtx.Now, placed)
 	byKey := make(map[string]sessionRow, len(rows))
 	tree := b.under != "" || b.byCheckout
 	for _, r := range rows {

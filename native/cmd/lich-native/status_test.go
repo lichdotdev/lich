@@ -339,3 +339,32 @@ func TestStatusStoreRunning(t *testing.T) {
 		t.Errorf("running = %v, want %v", got, want)
 	}
 }
+
+func TestStatusStoreStampsTheTurnARingPlays(t *testing.T) {
+	s := newStatusStore()
+	replay(t, s, []step{{ev: statusEvent{ID: "a", State: "busy"}, secs: 1}, {ev: statusEvent{ID: "a", State: "done"}, secs: 5}})
+	done := t0.Add(5 * time.Second)
+	if got, want := s.turn("a"), (statusTurn{from: statusBusy, at: done}); got != want {
+		t.Fatalf("turn = %+v, want %+v", got, want)
+	}
+	if p := s.turn("a").progress(done); p != 0 {
+		t.Errorf("progress = %v as the turn starts, want 0", p)
+	}
+	if p := s.turn("a").progress(done.Add(400 * time.Millisecond)); p != 1 {
+		t.Errorf("progress = %v after 400ms, want the ring whole", p)
+	}
+	replay(t, s, []step{{ev: statusEvent{ID: "a", State: "busy"}, secs: 9}})
+	if got := s.turn("a"); got.from != statusDone || !got.unread {
+		t.Errorf("turn = %+v, want it leaving an unread finished turn", got)
+	}
+	replay(t, s, []step{{ev: statusEvent{ID: "a", State: "compacting"}, secs: 12}})
+	if got := s.turn("a"); !got.at.Equal(t0.Add(9 * time.Second)) {
+		t.Errorf("turn = %+v, want none from busy to compacting: they draw the same ring", got)
+	}
+	if p := s.turn("a").progress(t0); p != 1 {
+		t.Errorf("progress = %v on a clock behind the turn, want 1: the ring does not wait on it", p)
+	}
+	if p := (statusTurn{}).progress(t0); p != 1 {
+		t.Errorf("progress = %v for a session that never changed, want 1", p)
+	}
+}

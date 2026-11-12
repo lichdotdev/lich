@@ -37,8 +37,31 @@ type pendingStatus struct {
 	Status string
 }
 
+// statusTurn is the change a ring plays: the status the session left,
+// whether that was a finished turn still unread, and when it left it.
+type statusTurn struct {
+	from   string
+	unread bool
+	at     time.Time
+}
+
+// progress is how far the ring has redrawn at now, 1 at rest. A clock that
+// jumped backwards reads as at rest, or the ring would wait on it.
+func (t statusTurn) progress(now time.Time) float32 {
+	elapsed := now.Sub(t.at)
+	if t.at.IsZero() || elapsed < 0 {
+		return 1
+	}
+	return treeEase(float32(elapsed) / float32(statusTurnDuration))
+}
+
+// statusTurnDuration is how long a ring takes to redraw in its new status.
+const statusTurnDuration = 400 * time.Millisecond
+
 type statusEntry struct {
 	status string
+	// turn is the last change a live report made, for the ring to play.
+	turn statusTurn
 	// reason leaves with "waiting": no other state carries one.
 	reason string
 	// since is stamped on the state's transition alone: the hook repeats a
@@ -116,6 +139,10 @@ func (e *statusEntry) applyState(p statusEvent, now time.Time) bool {
 	}
 	if e.status != next {
 		e.since = now
+		// Busy and compacting draw the same ring.
+		if !(spins(e.status) && spins(next)) {
+			e.turn = statusTurn{from: e.status, unread: e.status == statusDone && !e.seen, at: now}
+		}
 	}
 	e.status = next
 	e.reason = reason
@@ -161,6 +188,16 @@ func (s *statusStore) status(id string) string {
 	}
 	return statusNone
 }
+
+// turn is the last status change a live report made to the session.
+func (s *statusStore) turn(id string) statusTurn {
+	if e, ok := s.entries[id]; ok {
+		return e.turn
+	}
+	return statusTurn{}
+}
+
+func spins(status string) bool { return status == statusBusy || status == statusCompacting }
 
 // tool is what the session's turn is running, false when nothing.
 func (s *statusStore) tool(id string) (sessionTool, bool) {
