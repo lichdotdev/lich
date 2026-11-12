@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"os"
 	"slices"
+	"strings"
 	"sync"
 	"time"
 
@@ -190,9 +191,13 @@ func fillPRRead(read *api.PRRead, out []byte) error {
 // OpenPullRequest is the open pull request of opts.Path's branch, nil when it
 // has none open, as the badge shows it: the watch's last read when there is
 // one, else one gh read, which is not recorded, since only the window's ask
-// starts following a checkout.
+// starts following a checkout. A repository with no remote has none, with no
+// gh read.
 func (s *Service) OpenPullRequest(_ context.Context, opts api.PathOptions) (*api.PullRequest, error) {
 	pr, read := s.prs.lastRead(opts.Path)
+	if remotes, ok := gitQuiet(opts.Path, "remote"); !read && ok && strings.TrimSpace(remotes) == "" {
+		return nil, nil
+	}
 	if !read {
 		var err error
 		if pr, err = s.BranchPullRequest(opts.Path); err != nil {
