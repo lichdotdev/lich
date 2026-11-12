@@ -46,13 +46,14 @@ func (s *sidebar) card(gtx C, th *ui.Theme, sv *sessionView, active bool, folder
 		act.activate = sv.ID
 		act.openPR, act.openPRURL = prTarget(sv.pr, sv.shown, sv.path)
 	}
-	fill := cardFill(th, sv.Color, active, click.Hovered())
+	lit := click.Hovered()
+	fill := cardFill(th, sv.Color, active, lit)
 	th = th.On(fill)
 	// A card at rest with no tint of its own, or on a tray of its color,
 	// paints nothing, so the surface under it shows through.
 	paint := fill
-	resting := !active && !click.Hovered()
-	if cardLayer(th, sv.Color, active, click.Hovered()).A == 0 || resting && sv.place.onTray {
+	resting := !active && !lit
+	if cardLayer(th, sv.Color, active, lit).A == 0 || resting && sv.place.onTray {
 		paint = color.NRGBA{}
 	}
 	tip, ok := s.tips[sv.ID]
@@ -188,6 +189,10 @@ func (s *sidebar) cardBody(gtx C, th *ui.Theme, sv *sessionView, prChip *widget.
 
 // cardLine ends row with the corner slot and lays it out in the card's insets.
 func (s *sidebar) cardLine(gtx C, th *ui.Theme, sv *sessionView, more layout.Widget, hovered bool, row []layout.FlexChild) D {
+	// In a layout's own list every card is in it, so the mark says nothing.
+	if sv.split != "" && !sv.guest {
+		row = append(row, ui.Gap(1.5), layout.Rigid(func(gtx C) D { return icSplit.Layout(gtx, 12, th.MutedForeground) }))
+	}
 	row = append(row, ui.Gap(1), layout.Rigid(func(gtx C) D { return s.cardSlot(gtx, th, sv, more, hovered) }))
 	return layout.Inset{Top: ui.Space(1.5), Bottom: ui.Space(1.5), Left: rowInset, Right: ui.Space(1)}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx, row...)

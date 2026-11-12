@@ -143,3 +143,24 @@ func TestTheCardsPullRequestOpensWhereItBelongs(t *testing.T) {
 		})
 	}
 }
+
+func TestCardMenuTakesASessionOutOfItsSplit(t *testing.T) {
+	var act sidebarAction
+	sv := &sessionView{Session: backend.Session{ID: "s1", Kind: "claude"}, split: "layout-1"}
+	entry(t, cardMenu(sv, nil, &act, nil, func() {}), "Take out of the layout").OnClick()
+	if act.unsplit != "s1" {
+		t.Fatalf("act %+v, want s1 taken out", act)
+	}
+	sv.split = ""
+	if slices.Contains(labels(cardMenu(sv, nil, &act, nil, func() {})), "Take out of the layout") {
+		t.Fatal("a session in no split is offered a way out of one")
+	}
+}
+
+func TestACardInALayoutsOwnSidebarIsFiledNowhere(t *testing.T) {
+	var act sidebarAction
+	sv := &sessionView{Session: backend.Session{ID: "s1", Kind: "claude"}, split: "layout-1", guest: true}
+	if got := labels(cardMenu(sv, []string{"Work"}, &act, nil, func() {})); slices.Contains(got, "Move to folder") {
+		t.Fatalf("menu %v offers a folder of a project the list does not show", got)
+	}
+}

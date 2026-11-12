@@ -45,6 +45,9 @@ type blockView struct {
 	byCheckout bool
 	// motherFolds are the mothers of the block folded over their children.
 	motherFolds map[string]bool
+	// ofLayout is a project's sessions in a layout's own sidebar: its rows
+	// fold and file nothing and open no session, those being the project's.
+	ofLayout bool
 	// carried is the session whose card is in the air, "" for none.
 	carried string
 	// checkouts' facts, keyed by path: the header's and every checkout a

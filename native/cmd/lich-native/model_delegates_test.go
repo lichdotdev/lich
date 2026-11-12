@@ -38,7 +38,7 @@ func TestDelegatesReachIntoOtherProjects(t *testing.T) {
 
 func TestShowDelegatesOpensALayoutNamedAfterTheOrchestrator(t *testing.T) {
 	m, b := newDelegatesModel(t)
-	if !m.showDelegates(context.Background(), "orch", []string{"wa", "wb"}) {
+	if !m.showDelegates(context.Background(), "orch", []string{"wa", "wb"}, false) {
 		t.Fatal("show refused")
 	}
 	if got := shownShape(t, m); got != "row(orch,column(wa,wb))" {
@@ -60,7 +60,7 @@ func TestShowDelegatesStacksUnderTheOnesAlreadyThere(t *testing.T) {
 	if target, below := m.delegateSlot("orch", m.delegatesOf("orch")); target != "wa" || !below {
 		t.Fatalf("slot %q below %v, want under worker-a", target, below)
 	}
-	m.showDelegates(ctx, "orch", []string{"wb"})
+	m.showDelegates(ctx, "orch", []string{"wb"}, false)
 	if got := shownShape(t, m); got != "row(orch,column(wa,wb))" {
 		t.Fatalf("on screen %s", got)
 	}
@@ -70,7 +70,7 @@ func TestShowDelegatesBesideTheOrchestratorWhenNoneIsThere(t *testing.T) {
 	m, _ := newDelegatesModel(t)
 	ctx := context.Background()
 	m.splitBeside(ctx, "orch", "notes", edgeRight, false)
-	m.showDelegates(ctx, "orch", []string{"wa"})
+	m.showDelegates(ctx, "orch", []string{"wa"}, false)
 	if got := shownShape(t, m); got != "row(row(orch,wa),notes)" {
 		t.Fatalf("on screen %s", got)
 	}
@@ -80,7 +80,7 @@ func TestShowDelegatesTakesADelegateOutOfAnotherLayout(t *testing.T) {
 	m, _ := newDelegatesModel(t)
 	ctx := context.Background()
 	m.splitBeside(ctx, "notes", "wb", edgeRight, false)
-	m.showDelegates(ctx, "orch", []string{"wa", "wb"})
+	m.showDelegates(ctx, "orch", []string{"wa", "wb"}, false)
 	if got := m.layoutOf("notes"); got != "" {
 		t.Fatalf("notes still in layout %q after its only partner left", got)
 	}
@@ -102,5 +102,15 @@ func TestDelegateOfferCountsTheOnesInTheOrchestratorsLayout(t *testing.T) {
 	m.splitBeside(ctx, "orch", "wa", edgeRight, false)
 	if o := m.delegateOffer("orch"); o.here != 1 || !reflect.DeepEqual(o.missing, []string{"wb"}) {
 		t.Fatalf("with worker-a beside: %+v", o)
+	}
+}
+
+func TestShowDelegatesUnderTheOrchestratorWhenAColumnBesideItDoesNotFit(t *testing.T) {
+	m, _ := newDelegatesModel(t)
+	ctx := context.Background()
+	m.splitBeside(ctx, "orch", "notes", edgeRight, false)
+	m.showDelegates(ctx, "orch", []string{"wa"}, true)
+	if got := shownShape(t, m); got != "row(column(orch,wa),notes)" {
+		t.Fatalf("on screen %s, want the delegate under the orchestrator", got)
 	}
 }

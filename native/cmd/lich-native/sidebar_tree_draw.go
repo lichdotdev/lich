@@ -370,6 +370,11 @@ func (s *sidebar) nestedCheckout(gtx C, th *ui.Theme, r sessionRow, b blockView,
 	hovered := hover.Hovered() || more.Opened()
 	p := r.place(tree)
 	p.ground = nodeGround(th, b)
+	if b.ofLayout {
+		return tooltip.Layout(gtx, func(gtx C) D {
+			return withLinks(gtx, th, p.sessionRowLinks, checkoutLine(th, f, p, true, s.nodeGlyph(r.key), nil, false))
+		})
+	}
 	line := checkoutLine(th, f, p, true, s.nodeGlyph(r.key), moreButton, hovered)
 	return th.ContextMenuLazy(s.root, menu, entries).Layout(gtx, func(gtx C) D {
 		return tooltip.Layout(gtx, func(gtx C) D {

@@ -51,9 +51,10 @@ func (m *model) delegateSlotLocked(orchestrator string, delegates []string) (tar
 
 // showDelegates lays orchestrator out with ids in a column at its right:
 // in a new layout named after it when it is in none, else in its own layout
-// at delegateSlot. A delegate in another layout is taken out of it; asking
+// at delegateSlot, or under that slot's pane when under is set, for one too
+// narrow to halve. A delegate in another layout is taken out of it; asking
 // first is the caller's. It reports false when nothing was laid out.
-func (m *model) showDelegates(ctx context.Context, orchestrator string, ids []string) bool {
+func (m *model) showDelegates(ctx context.Context, orchestrator string, ids []string, under bool) bool {
 	m.mu.Lock()
 	if len(ids) == 0 || !m.liveLocked(orchestrator) || slices.ContainsFunc(ids, func(id string) bool { return !m.liveLocked(id) }) {
 		m.mu.Unlock()
@@ -67,7 +68,7 @@ func (m *model) showDelegates(ctx context.Context, orchestrator string, ids []st
 	case i < 0:
 		p, at := m.sessionAt(orchestrator)
 		m.layouts.openBeside(p.Sessions[at].Label, orchestrator, ids)
-	case below:
+	case below || under:
 		m.layouts.tabs[i].stackUnder(target, ids)
 	default:
 		m.layouts.tabs[i].columnBeside(target, ids)

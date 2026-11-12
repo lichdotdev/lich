@@ -27,6 +27,7 @@ func (m *model) loadLayouts(ctx context.Context) error {
 	m.mu.Lock()
 	m.layouts = ls
 	pruned := m.layouts.prune(m.liveLocked)
+	m.aloneLocked()
 	m.mu.Unlock()
 	if pruned {
 		m.saveLayouts()
@@ -154,15 +155,6 @@ func cloneNode(n *paneNode) *paneNode {
 	c := *n
 	c.First, c.Second = cloneNode(n.First), cloneNode(n.Second)
 	return &c
-}
-
-// layoutNameOfLocked is the name of the layout holding session id, "" for
-// none. Callers hold m.mu.
-func (m *model) layoutNameOfLocked(id string) string {
-	if i := m.layouts.of(id); i >= 0 {
-		return m.layouts.tabs[i].Name
-	}
-	return ""
 }
 
 // layoutOf is the id of the layout holding session id, "" for none.

@@ -339,6 +339,9 @@ func (s *sidebar) blockRow(gtx C, th *ui.Theme, st *blockState, b blockView, r s
 	sv.place.onTray = b.kind == blockFolder && b.color != "" && sv.Color == b.color
 	sv.place.ground = nodeGround(th, b)
 	sv.place.cut, sv.place.loose = st.drag.cut(sv.ID, gtx.Now), st.drag.loose(sv.ID, gtx.Now)
+	if b.ofLayout {
+		sv.place.kids = 0
+	}
 	folders := slices.DeleteFunc(slices.Clone(f.view.folders), func(name string) bool { return name == sv.Folder })
 	face := func(gtx C) D {
 		var a sidebarAction

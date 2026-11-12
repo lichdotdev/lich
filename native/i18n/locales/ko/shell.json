@@ -34,7 +34,9 @@
     "description": "이 프로젝트에서 작업을 시작하려면 세션을 여세요.",
     "noAgent": "PATH에서 에이전트를 찾지 못해 터미널이 열립니다. 설정 › 프로바이더에서 에이전트를 지정하세요.",
     "newTerminal": "새 터미널",
-    "newSession": "새 세션"
+    "newSession": "새 세션",
+    "allInLayoutTitle": "모든 세션이 레이아웃에 있습니다",
+    "allInLayout": "사이드바에서 세션을 고르면 해당 레이아웃으로 이동합니다. 새 세션을 열 수도 있습니다."
   },
   "footerBar": {
     "attachFile": "파일 첨부",

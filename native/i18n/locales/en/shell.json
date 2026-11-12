@@ -34,7 +34,9 @@
     "description": "Open a session to start working in this project.",
     "noAgent": "No agent found on PATH, so this opens a terminal. Set one in Settings › Providers.",
     "newTerminal": "New terminal",
-    "newSession": "New session"
+    "newSession": "New session",
+    "allInLayoutTitle": "Every session is in a layout",
+    "allInLayout": "Pick one in the sidebar to go to its layout, or open a new session."
   },
   "footerBar": {
     "attachFile": "Attach file",

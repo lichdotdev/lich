@@ -67,7 +67,8 @@ type layoutStage struct {
 	// delegates is the session whose delegates chip was clicked.
 	delegates string
 	// sort drags the panes by their headers, over the sidebar's carry.
-	sort ui.Sortable
+	sort   ui.Sortable
+	motion paneMotion
 }
 
 func (s *layoutStage) pane(id string) *paneUI {
@@ -109,7 +110,11 @@ func (u *window) layoutIsland(gtx C, v stageView) error {
 	}
 	u.terms.onScreen(onScreenOf(root)...)
 	in := image.Rectangle{Max: gtx.Constraints.Max}.Inset(gtx.Dp(gutter))
-	return u.paneTree(gtx, v, root, "", in, len(lt.panes()) > 1)
+	drawn := layoutTab{Root: root}
+	st.motion.begin(gtx.Now, lt.Zoomed, drawn.panes())
+	err := u.paneTree(gtx, v, root, "", in, len(lt.panes()) > 1)
+	u.endPaneMotion(gtx)
+	return err
 }
 
 func onScreenOf(n *paneNode) []string {
@@ -121,11 +126,13 @@ func onScreenOf(n *paneNode) []string {
 // root, then one digit per step, 0 first and 1 second.
 func (u *window) paneTree(gtx C, v stageView, n *paneNode, path string, r image.Rectangle, several bool) error {
 	if n.leaf() {
-		if owner, page := browserOwner(n.Session); page {
-			u.browserPaneAt(gtx, v, owner, r, several)
-			return nil
-		}
-		return u.paneAt(gtx, v, n.Session, r, several)
+		return u.paneLeaf(gtx, n.Session, r, func() error {
+			if owner, page := browserOwner(n.Session); page {
+				u.browserPaneAt(gtx, v, owner, r, several)
+				return nil
+			}
+			return u.paneAt(gtx, v, n.Session, r, several)
+		})
 	}
 	d := u.layoutStage.divider(v.layout.ID + "/" + path)
 	axis := paneAxis(n)

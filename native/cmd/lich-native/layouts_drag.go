@@ -253,6 +253,16 @@ func (d *dragPointer) columnRoom(target string, below bool) int {
 	return stacked
 }
 
+// delegateRoom is how many delegates fit at target, and whether they go
+// under it: where it is as delegateSlot answered, or, for a pane too narrow
+// to halve, stacked under it instead of refused.
+func (d *dragPointer) delegateRoom(target string, below bool) (n int, under bool) {
+	if n := d.columnRoom(target, below); n > 0 || below {
+		return n, below
+	}
+	return d.columnRoom(target, true), true
+}
+
 // zoneAt is the drop zone at p of a pane other than carried, "" for none.
 // Only a pane of the layout on screen swaps with another, through the
 // middle; a card from the sidebar or a session alone has none.

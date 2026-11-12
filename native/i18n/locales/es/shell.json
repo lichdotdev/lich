@@ -34,7 +34,9 @@
     "description": "Abre una sesión para empezar a trabajar en este proyecto.",
     "noAgent": "No se encontró ningún agente en el PATH, así que se abrirá una terminal. Configura uno en Ajustes › Proveedores.",
     "newTerminal": "Nueva terminal",
-    "newSession": "Nueva sesión"
+    "newSession": "Nueva sesión",
+    "allInLayoutTitle": "Todas las sesiones están en un diseño",
+    "allInLayout": "Elige una en la barra lateral para ir a su diseño o abre una sesión nueva."
   },
   "footerBar": {
     "attachFile": "Adjuntar archivo",
