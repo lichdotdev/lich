@@ -133,13 +133,13 @@ type Page interface {
 	// into the process that replaces it.
 	Cookies(ctx context.Context) ([]*network.CookieParam, error)
 	SetCookies(ctx context.Context, cookies []*network.CookieParam) error
-	// Listen hands the page what to call with each screencast frame (base64
-	// JPEG), with its URL and title whenever they change, with each step of a
+	// Listen hands the page what to call with each screencast frame (a tab's
+	// id and its base64 JPEG), with its URL and title whenever they change, with each step of a
 	// download it starts, with each error its console shows, and with each
 	// JavaScript dialog it opens, then nil once that dialog is closed, and
 	// with its tabs whenever one opens, closes, comes to the front or changes
 	// its URL or title.
-	Listen(onFrame func(data string), onInfo func(url, title string), onDownload func(guid string, d api.BrowserDownload), onConsoleError func(text string), onDialog func(*api.BrowserDialog), onTabs func([]api.BrowserTab))
+	Listen(onFrame func(tab, data string), onInfo func(url, title string), onDownload func(guid string, d api.BrowserDownload), onConsoleError func(text string), onDialog func(*api.BrowserDialog), onTabs func([]api.BrowserTab))
 	// OnReload hands the page what to call with true when its front tab starts
 	// a reload and false once the reloaded document is ready.
 	OnReload(onReload func(started bool))

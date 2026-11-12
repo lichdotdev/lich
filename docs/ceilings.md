@@ -1461,8 +1461,9 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   has no DevTools, shows the arrow whatever cursor the page asks for, draws only the front tab, and leaves the page's own dialogs out. Its
   tabs sit on the pane's header (`internal/browser/tabs.go`): what a tab opens in a new tab or window joins
   them, in front when its opener was, and closing it brings its opener back as it was. A tab behind the front
-  one is never drawn, so the header names it by title and has no thumbnail, and switching shows the last frame
-  until the new tab's first. Tabs shrink to share the header and those past its width are cut off; there is
+  one is never drawn, so the header names it by title and has no thumbnail, and switching shows that tab's own last frame
+  (the window keeps one for each of the last four tabs fronted; a tab never in front shows the empty pane)
+  until its live one. Tabs shrink to share the header and those past its width are cut off; there is
   no overflow menu and no reordering. A dialog a tab behind opens reaches the agent at once, since with its
   opener the front tab shares that renderer and is held by it too. Open in
   a window moves the front tab to a real Chromium window for those, reopening it on the same profile with every

@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - The Git panel opens as soon as the branch in the footer is clicked. It used to wait for the mouse to move before sliding up.
 - A session's browser pane no longer freezes on its last frame on a very busy page at ultrawide or 4K size: frames up to twice as large now reach the window.
+- Switching tabs in a session's browser now shows the page the new tab last showed, where it kept the previous tab's page on screen until the new tab drew; a tab that was never in front shows the empty pane.
 
 ## [0.89.0] - 2026-11-12
 

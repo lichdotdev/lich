@@ -11,6 +11,7 @@ import (
 	"github.com/chromedp/cdproto/emulation"
 	"github.com/chromedp/cdproto/input"
 	"github.com/chromedp/cdproto/page"
+	"github.com/chromedp/cdproto/target"
 	"github.com/chromedp/chromedp"
 	"github.com/lichdotdev/lich/api"
 )
@@ -26,7 +27,7 @@ type listeners struct {
 	mu sync.Mutex
 	// taken are the tabs followTabs already brought in.
 	taken          sync.Map
-	onFrame        func(data string)
+	onFrame        func(tab, data string)
 	onInfo         func(url, title string)
 	onConsoleError func(text string)
 	onDialog       func(*api.BrowserDialog)
@@ -35,7 +36,7 @@ type listeners struct {
 	onFileChooser  func(page.FileChooserOpenedMode) ([]string, error)
 }
 
-func (p *chromePage) Listen(onFrame func(data string), onInfo func(url, title string), onDownload func(guid string, d api.BrowserDownload), onConsoleError func(text string), onDialog func(*api.BrowserDialog), onTabs func([]api.BrowserTab)) {
+func (p *chromePage) Listen(onFrame func(tab, data string), onInfo func(url, title string), onDownload func(guid string, d api.BrowserDownload), onConsoleError func(text string), onDialog func(*api.BrowserDialog), onTabs func([]api.BrowserTab)) {
 	p.listen.mu.Lock()
 	p.listen.onFrame, p.listen.onInfo = onFrame, onInfo
 	p.listen.onConsoleError, p.listen.onDialog, p.listen.onTabs = onConsoleError, onDialog, onTabs
@@ -101,7 +102,7 @@ func (p *chromePage) listenTab(t *tab) {
 			return
 		}
 		if p.tabs.frontTab() == t {
-			p.frontEvent(ev)
+			p.frontEvent(t, ev)
 		}
 	})
 }
@@ -154,10 +155,10 @@ func (p *chromePage) relayAfterShot(t *tab) {
 	}
 }
 
-func (p *chromePage) frontEvent(ev any) {
+func (p *chromePage) frontEvent(t *tab, ev any) {
 	switch e := ev.(type) {
 	case *page.EventScreencastFrame:
-		go p.deliver(e)
+		go p.deliver(t.id, e)
 	case *page.EventFrameNavigated:
 		if e.Frame.ParentID == "" {
 			go p.reportInfo()
@@ -239,12 +240,12 @@ func (p *chromePage) reportInfo() {
 // deliver hands one frame on, then acks it. Chrome sends no next frame until
 // the ack, so a window slow to take frames slows the stream instead of
 // piling it up.
-func (p *chromePage) deliver(frame *page.EventScreencastFrame) {
+func (p *chromePage) deliver(tab target.ID, frame *page.EventScreencastFrame) {
 	p.listen.mu.Lock()
 	onFrame := p.listen.onFrame
 	p.listen.mu.Unlock()
 	if onFrame != nil {
-		onFrame(frame.Data)
+		onFrame(string(tab), frame.Data)
 	}
 	ack := chromedp.ActionFunc(func(ctx context.Context) error {
 		return page.ScreencastFrameAck(frame.SessionID).Do(ctx)

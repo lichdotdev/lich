@@ -285,7 +285,7 @@ event branch-pull-request BranchPullRequest
 event browser-agent BrowserAgentAct
 event browser-download BrowserDownload
 event browser-state BrowserState
-event browser:frame:<id> string
+event browser:frame:<id> BrowserFrame
 event claude-profile-login ProfileLogin
 event codex-profile-login ProfileLogin
 event extension-message ExtensionMessage
@@ -1887,6 +1887,11 @@ BrowserDownload {
 	path string
 	bytes int64
 	state string
+}
+
+BrowserFrame {
+	tab string
+	data string
 }
 
 ProfileLogin {

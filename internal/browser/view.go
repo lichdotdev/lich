@@ -218,10 +218,10 @@ const maxFrameData = api.MaxEventBytes - 1<<10
 
 // frameSink sends the window sess's frames, except one too large for its
 // socket: the pane keeps its last frame until one fits.
-func (s *Service) frameSink(sess *session) func(string) {
+func (s *Service) frameSink(sess *session) func(tab, data string) {
 	frames := api.BrowserFrameEvents.Of(sess.owner)
 	var skipping atomic.Bool
-	return func(data string) {
+	return func(tab, data string) {
 		if len(data) > maxFrameData {
 			if !skipping.Swap(true) {
 				slog.Warn("browser: a frame too large for the window, its pane keeps the last one", "owner", sess.owner, "bytes", len(data))
@@ -229,7 +229,7 @@ func (s *Service) frameSink(sess *session) func(string) {
 			return
 		}
 		skipping.Store(false)
-		events.Send(s.emit, frames, data)
+		events.Send(s.emit, frames, api.BrowserFrame{Tab: tab, Data: data})
 	}
 }
 

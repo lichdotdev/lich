@@ -75,7 +75,7 @@ var (
 
 	// BrowserFrameEvents carries a base64 JPEG of a session's page while a pane
 	// shows it: per session, like terminal output, so only that pane listens.
-	BrowserFrameEvents = defineEventFamily[string]("browser:frame:")
+	BrowserFrameEvents = defineEventFamily[BrowserFrame]("browser:frame:")
 
 	// BrowserAgentEvent is emitted each time the agent acts on its page, so the
 	// pane can show that the page moved because of it, and where it clicked.
@@ -123,6 +123,14 @@ type BrowserState struct {
 	// it, and nobody used it for the idle window. It stays until browser.Close,
 	// browser.Keep or a use answers it; the browser stays open meanwhile.
 	Idle bool `json:"idle,omitempty"`
+}
+
+// BrowserFrame is one screencast frame: Data is the base64 JPEG, Tab the
+// BrowserTab.ID of the tab it is of. Chrome sends no frames for a tab behind
+// another, so the window keeps each tab's last one to show on a switch.
+type BrowserFrame struct {
+	Tab  string `json:"tab"`
+	Data string `json:"data"`
 }
 
 // BrowserTab is one tab of a session's browser. ID is Chrome's own for it;

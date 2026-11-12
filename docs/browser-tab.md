@@ -15,7 +15,7 @@ or Helium), with its own user-data directory. The browser draws at the scale
 the window drew pages at when it launched (`launchScale`), so the frames are
 the pane's own pixels. `browser.Attach` starts its
 screencast at the pane's size; each frame reaches the window as
-`browser:frame:<session>` and is acked only once sent, so a window slow to
+`browser:frame:<session>`, naming the tab it is of, and is acked only once sent, so a window slow to
 draw slows the stream. The pane's pointer, keys, committed text (an input
 method's or a paste) and toolbar go back through `browser.Mouse`, `.Key`,
 `.Text` and `.Nav`, which light nothing up: only the agent's actions emit

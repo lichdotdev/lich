@@ -55,7 +55,7 @@ func castRig(t *testing.T) (*chromePage, chan string, context.Context) {
 	t.Helper()
 	p, _ := liveChrome(t)
 	frames := make(chan string, 64)
-	p.Listen(func(data string) {
+	p.Listen(func(_, data string) {
 		select {
 		case frames <- data:
 		default:
