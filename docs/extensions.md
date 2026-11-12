@@ -101,7 +101,9 @@ A `sortableList` reorders its keyed children and sends `onReorder` with the keys
 surface with the same non-empty `group` also exchange items, wherever they sit in the tree: a card dragged out of
 one list travels over everything, and let go over another list of the group it fires that list's `onMove`. The
 event carries the item's `key`, the `index` it landed at in the receiving list and, in `from`, the `key` of the
-list it left; the list it left sends nothing. A drop over no list of the group sends nothing at all.
+list it left; the list it left sends nothing. A drop over no list of the group sends nothing at all. While the item
+is over another list of the group, lich draws that list's room as the drop target, the way the sidebar lights the
+folder a session would be filed into; the list it left is never lit.
 
 Nothing moves on screen until the extension renders again: lich keeps both lists as they were sent, so the
 extension moves the item in its own data and answers with a render. Give every list of a group a `key`, and keep
