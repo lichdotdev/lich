@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.89.0] - 2026-11-12
+
 ### Added
 
 - A guided tour opens on a fresh install once you have chosen your agents: it walks you through opening a project, starting a session, the terminal, the session rows, worktrees and where to find the tour again. Steps that ask you to do something wait until you do it, and the tour steps aside while a dialog or a menu is open. Run it again any time from Guides in the new menu at the top right, which also holds Settings, or from the command palette. Guides also walks you through worktrees, reviewing what an agent changed, pull requests, handing work off to a fresh session and a session's browser; a guide that needs something you don't have yet, like a session with changes, says so in the menu.
@@ -6668,7 +6670,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   CPU, costing ~40ms per frame in a full-size window. Under Xwayland typing is
   stall-free at full frame rate.
 
-[Unreleased]: https://github.com/lichdotdev/lich/compare/v0.88.0...HEAD
+[Unreleased]: https://github.com/lichdotdev/lich/compare/v0.89.0...HEAD
+[0.89.0]: https://github.com/lichdotdev/lich/compare/v0.88.0...v0.89.0
 [0.88.0]: https://github.com/lichdotdev/lich/compare/v0.87.0...v0.88.0
 [0.87.0]: https://github.com/lichdotdev/lich/compare/v0.86.0...v0.87.0
 [0.86.0]: https://github.com/lichdotdev/lich/compare/v0.85.0...v0.86.0
