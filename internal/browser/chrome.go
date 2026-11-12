@@ -51,9 +51,14 @@ func chromeLaunch(dir string, headed bool, scale float64) (Page, error) {
 	if err != nil {
 		return nil, err
 	}
+	port, err := freePort()
+	if err != nil {
+		return nil, err
+	}
 	opts := append([]chromedp.ExecAllocatorOption{}, chromedp.DefaultExecAllocatorOptions[:]...)
 	opts = append(opts, chromedp.ExecPath(exe), chromedp.UserDataDir(dir), chromedp.WSURLReadTimeout(launchWait),
-		chromedp.Flag("disable-features", disabledFeatures))
+		chromedp.Flag("disable-features", disabledFeatures), chromedp.Flag("remote-debugging-port", port),
+		chromedp.Flag("remote-allow-origins", devtoolsOrigin(port)))
 	if headed {
 		opts = append(opts, chromedp.Flag("headless", false))
 	} else {
@@ -66,7 +71,7 @@ func chromeLaunch(dir string, headed bool, scale float64) (Page, error) {
 		allocCancel()
 		return nil, err
 	}
-	p := &chromePage{ctx: ctx, cancel: cancel, allocCancel: allocCancel, scale: scale, dir: dir}
+	p := &chromePage{ctx: ctx, cancel: cancel, allocCancel: allocCancel, scale: scale, port: port}
 	p.tabs.start(&tab{ctx: ctx, id: chromedp.FromContext(ctx).Target.TargetID})
 	if err := p.allowDownloads(dir); err != nil {
 		slog.Warn("browser: downloads stay off", "err", err)
@@ -114,8 +119,8 @@ type chromePage struct {
 	allocCancel context.CancelFunc
 	// scale is what the browser draws at, forced at its launch.
 	scale float64
-	// dir is the profile, where Chrome writes the port DevTools reaches it on.
-	dir    string
+	// port is the browser's debugging port, which DevTools reaches it on.
+	port   string
 	listen listeners
 	tabs   tabStack
 	// dl names the files the page downloads; nil when downloads are off.

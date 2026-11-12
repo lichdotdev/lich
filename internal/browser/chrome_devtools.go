@@ -5,9 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"os"
-	"path/filepath"
-	"strings"
+	"net"
+	"strconv"
 
 	"github.com/chromedp/cdproto/cdp"
 	"github.com/chromedp/cdproto/debugger"
@@ -44,10 +43,6 @@ func (p *chromePage) DevTools(ctx context.Context) error {
 // watches t's debugger before the front-end attaches, so it hears the first
 // pause.
 func (p *chromePage) openDevTools(ctx context.Context, t *tab) error {
-	port, err := debuggingPort(p.dir)
-	if err != nil {
-		return err
-	}
 	d, err := p.newDevTools(ctx)
 	if err != nil {
 		return err
@@ -57,7 +52,7 @@ func (p *chromePage) openDevTools(ctx context.Context, t *tab) error {
 		d.cancel()
 		return errNoTab
 	}
-	front := fmt.Sprintf("http://127.0.0.1:%[1]s/devtools/inspector.html?ws=127.0.0.1:%[1]s/devtools/page/%[2]s", port, t.id)
+	front := fmt.Sprintf("%[1]s/devtools/inspector.html?ws=127.0.0.1:%[2]s/devtools/page/%[3]s", devtoolsOrigin(p.port), p.port, t.id)
 	err = runOn(t.ctx, ctx, watchPauses)
 	if err == nil {
 		err = runOn(d.ctx, ctx, loadDevTools(front))
@@ -134,18 +129,23 @@ var watchPauses = chromedp.ActionFunc(func(ctx context.Context) error {
 	return debugger.SetBreakpointsActive(false).Do(ctx)
 })
 
-// debuggingPort is the port Chrome wrote into its profile, for
-// --remote-debugging-port=0.
-func debuggingPort(dir string) (string, error) {
-	raw, err := os.ReadFile(filepath.Join(dir, "DevToolsActivePort"))
+// devtoolsOrigin is where the browser serves the DevTools front-end on port.
+// The front-end's WebSocket comes from it, which Chrome 151 refused with a 403
+// unless --remote-allow-origins named it; Chrome 157 let it through (measured
+// 2026-11-12). Naming the one origin keeps every web page out.
+func devtoolsOrigin(port string) string {
+	return "http://127.0.0.1:" + port
+}
+
+// freePort is a loopback port free a moment ago, for Chrome's debugging port:
+// the origin allowed in has to be named before the browser starts.
+func freePort() (string, error) {
+	l, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		return "", err
 	}
-	port, _, _ := strings.Cut(string(raw), "\n")
-	if port == "" {
-		return "", errors.New("chrome wrote no debugging port")
-	}
-	return port, nil
+	defer l.Close()
+	return strconv.Itoa(l.Addr().(*net.TCPAddr).Port), nil
 }
 
 // listenDevTools hands on d's frames while the pane shows it.
