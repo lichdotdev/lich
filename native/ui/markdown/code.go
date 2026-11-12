@@ -46,13 +46,13 @@ var (
 	quoteInset = ui.Space(4)
 )
 
-// layoutQuote draws the cell as a blockquote, behind a bar down its left.
-func (c *markdownCell) layoutQuote(gtx C, th *ui.Theme, open func(string)) D {
+// layoutQuote draws body as a blockquote, behind a bar down its left.
+func layoutQuote(gtx C, th *ui.Theme, body layout.Widget) D {
 	bar, lead := gtx.Dp(quoteBar), gtx.Dp(quoteBar+quoteInset)
 	inner := gtx
 	inner.Constraints.Max.X = max(gtx.Constraints.Max.X-lead, 0)
 	stack := op.Offset(image.Pt(lead, 0)).Push(gtx.Ops)
-	d := c.layout(inner, th, open)
+	d := body(inner)
 	stack.Pop()
 	paint.FillShape(gtx.Ops, th.Border, clip.Rect{Max: image.Pt(bar, d.Size.Y)}.Op())
 	return D{Size: image.Pt(lead+d.Size.X, d.Size.Y)}
