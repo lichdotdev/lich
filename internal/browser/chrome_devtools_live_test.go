@@ -64,6 +64,34 @@ func waitPane(t *testing.T, out *emitted, ok func([]api.BrowserTab) bool) []api.
 	return nil
 }
 
+// devtoolsBuilt bounds the wait for DevTools' front-end to build its UI and
+// attach to the page. Its first document in a browser launched a moment
+// before stays blank until a second one replaces it 4.5 s after the launch,
+// and the whole front-end took 16 s at 40% of a core (Helium 157, measured
+// 2026-11-12); a macos-15-intel runner took over 20 s.
+const devtoolsBuilt = 90 * time.Second
+
+// waitDevToolsBuilt waits for the shown DevTools' front-end to build its UI.
+func waitDevToolsBuilt(t *testing.T, s *Service) {
+	t.Helper()
+	d := s.current("s").page.(*chromePage).tabs.shown()
+	if d == nil {
+		t.Fatal("the pane shows no DevTools")
+	}
+	deadline := time.Now().Add(devtoolsBuilt)
+	for time.Now().Before(deadline) {
+		var built bool
+		ctx, cancel := context.WithTimeout(d.ctx, time.Second)
+		err := chromedp.Run(ctx, chromedp.Evaluate(`document.readyState === "complete" && document.body.childElementCount > 0`, &built))
+		cancel()
+		if err == nil && built {
+			return
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+	t.Fatal("DevTools never built its UI")
+}
+
 func devtoolsTab(tabs []api.BrowserTab) (api.BrowserTab, bool) {
 	i := slices.IndexFunc(tabs, func(t api.BrowserTab) bool { return t.DevTools })
 	if i < 0 {
@@ -97,7 +125,8 @@ func TestChromeDevToolsDrawsInThePaneWhileTheAgentDrivesThePage(t *testing.T) {
 	if len(pane) != 2 || pane[0].DevTools || dt.URL != "" || dt.Title != "" {
 		t.Fatalf("window's tabs = %+v, want the page then its DevTools, which carries no URL", pane)
 	}
-	// DevTools builds its UI in 2 to 5 s; once still, its pane gets a PNG of it.
+	waitDevToolsBuilt(t, s)
+	// Once still, the pane gets a PNG of DevTools.
 	deadline := time.Now().Add(20 * time.Second)
 	for {
 		if _, stills := framesOf(out, 0, dt.ID); stills > 0 {
@@ -141,6 +170,7 @@ func TestChromeAPauseInDevToolsHoldsTheAgentUntilDevToolsCloses(t *testing.T) {
 	if err := s.DevTools("s"); err != nil {
 		t.Fatal(err)
 	}
+	waitDevToolsBuilt(t, s)
 	pane := waitPane(t, out, func(tabs []api.BrowserTab) bool { dt, ok := devtoolsTab(tabs); return ok && dt.Paused })
 	start := time.Now()
 	if _, err := s.Info("s", ""); !errors.Is(err, errPaused) {

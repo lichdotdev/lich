@@ -1458,7 +1458,8 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   that socket for every session: the pane keeps its last frame until one fits. A wall of photographs in a 4K
   pane made 2.7 MiB frames and a page drawing pure noise in a 3440x1440 one 4.5 MiB (measured 2026-11-11);
   noise in a 4K pane, about 7.5 MiB by pixel count, still fits. A page still for 600 ms (`stillAfter`) gets one
-  PNG capture of it, and so none while a focused field's caret blinks every 500 ms, so still text loses the JPEG's ringing; nothing is captured while the page holds a dialog,
+  PNG capture of it, and none while a caret blinks in a focused field, which the capture checks first since a
+  late blink frame passes 600 ms on a loaded machine, so still text loses the JPEG's ringing; nothing is captured while the page holds a dialog,
   and a PNG over 3 times its JPEG (`stillGrowth`) is not sent: a photo, 11 times its JPEG and no sharper,
   keeps the JPEG (measured 2026-11-12). A still page gets two captures at most (`stillTries`): where the frame
   a capture draws is not the one before it byte for byte, as on Apple silicon under a pane drawn below the
@@ -1500,7 +1501,8 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   DevTools from its debugging port, screencast like a page. It has no device toolbar (it emulates on the
   page's own target, which the pane does not show as a device), no DevTools extensions, the arrow for every
   cursor, and Chrome's colors, not lich's theme. It draws its first frame about 2 s after the button on a warm
-  browser and 5 s right after the browser launched (Helium 157, measured 2026-11-12), and scrolls its Console
+  browser and 5 s right after the browser launched, its first document blank until a second replaces it 4.5 s
+  after the launch, and 16 s at 40% of a core (Helium 157, measured 2026-11-12), and scrolls its Console
   at about 40 frames a second in a 900x600 pane; idle, it gets the still PNG a page gets, except while the
   Console's prompt caret blinks. The page zoom scales DevTools as it scales a page. A page stopped in its
   debugger stops drawing: the pane keeps its last frame and the DevTools tab carries a pause glyph, which

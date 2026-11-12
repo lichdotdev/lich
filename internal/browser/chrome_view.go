@@ -263,6 +263,22 @@ func (p *chromePage) deliver(on context.Context, tab target.ID, frame *page.Even
 	}
 }
 
+// caretScript says whether a caret blinks in the focused document: an
+// editable element, inside shadow roots too (DevTools' Console prompt), holds
+// the focus with nothing selected.
+const caretScript = `(() => {
+	if (!document.hasFocus()) return false;
+	let el = document.activeElement;
+	while (el && el.shadowRoot && el.shadowRoot.activeElement) el = el.shadowRoot.activeElement;
+	if (!el) return false;
+	const field = el.isContentEditable || el.tagName === 'TEXTAREA' ||
+		(el.tagName === 'INPUT' && typeof el.selectionStart === 'number');
+	if (!field) return false;
+	if (typeof el.selectionStart === 'number') return el.selectionStart === el.selectionEnd;
+	const sel = (el.getRootNode().getSelection ? el.getRootNode() : document).getSelection();
+	return !sel || sel.isCollapsed;
+})()`
+
 // Still captures what the screencast shows, as a base64 PNG. A capture while
 // the agent's labels are drawn would keep them on a still pane. Encoded for
 // speed: a photo filling a 2880x1620 pane took 1 s to capture, 200 ms so, for
@@ -275,6 +291,13 @@ func (p *chromePage) Still(ctx context.Context) (tab, data string, err error) {
 	id := front.id
 	if shown != nil {
 		id = shown.id
+	}
+	var caret bool
+	if err := p.runShown(ctx, chromedp.Evaluate(caretScript, &caret)); err != nil {
+		return "", "", err
+	}
+	if caret {
+		return "", "", errCaret
 	}
 	var buf []byte
 	err = p.runShown(ctx, chromedp.ActionFunc(func(ctx context.Context) error {
