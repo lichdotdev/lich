@@ -182,10 +182,28 @@ func quietFrames(t *testing.T, frames <-chan string) (string, image.Config) {
 // pngPrefix is how a base64 PNG starts.
 const pngPrefix = "iVBORw0KGgo"
 
-// The pane draws at scale 1 on a browser drawing at 1.5, where the first
-// capture's frame is a pixel narrower than the one before it and so settles
-// into one more capture.
 func TestChromeAStillPaneGetsAPNGAndKeepsIt(t *testing.T) {
+	frames := stillPane(t, frameScale)
+	if n := countPNGs(frames); n != 1 || !strings.HasPrefix(frames[len(frames)-1].Data, pngPrefix) {
+		t.Fatalf("frames %s; want one PNG, the last frame", describeFrames(frames))
+	}
+}
+
+// A pane drawn under the browser's scale: the first capture's frame is a pixel
+// narrower than the one before it, and on Apple silicon every capture's frame
+// differs from the one before it (CI, macos-latest, 2026-11-12). The page gets
+// no more captures than its tries and then stops, PNG or not.
+func TestChromeAStillPaneUnderTheBrowsersScaleStopsCapturing(t *testing.T) {
+	frames := stillPane(t, 1)
+	if n := countPNGs(frames); n > stillTries {
+		t.Fatalf("frames %s; want %d PNGs at most", describeFrames(frames), stillTries)
+	}
+}
+
+// stillPane is the frames a still page sent a pane at scale until it sent
+// none for two settles in a row.
+func stillPane(t *testing.T, scale float64) []api.BrowserFrame {
+	t.Helper()
 	_, srv := liveChrome(t)
 	s := newService(chromeLaunch, func(string, string) (string, error) {
 		return t.TempDir(), nil
@@ -196,20 +214,51 @@ func TestChromeAStillPaneGetsAPNGAndKeepsIt(t *testing.T) {
 	if _, err := s.Open("s", srv.URL); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := s.Attach("s", Viewport{W: 640, H: 480, Scale: 1}); err != nil {
+	if _, err := s.Attach("s", Viewport{W: 640, H: 480, Scale: scale}); err != nil {
 		t.Fatal(err)
 	}
-	time.Sleep(4 * time.Second)
-	frames := out.named(api.BrowserFrameEvents.Of("s").Name)
-	stills := 0
+	name := api.BrowserFrameEvents.Of("s").Name
+	quiet := 2 * (stillAfter + stillEcho + stillWait/4)
+	deadline := time.Now().Add(15 * time.Second)
+	for n := -1; ; {
+		time.Sleep(quiet)
+		var frames []api.BrowserFrame
+		for _, f := range out.named(name) {
+			frames = append(frames, f.(api.BrowserFrame))
+		}
+		if len(frames) == n {
+			return frames
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("a still page kept sending frames: %s", describeFrames(frames))
+		}
+		n = len(frames)
+	}
+}
+
+func countPNGs(frames []api.BrowserFrame) int {
+	n := 0
 	for _, f := range frames {
-		if strings.HasPrefix(f.(api.BrowserFrame).Data, pngPrefix) {
-			stills++
+		if strings.HasPrefix(f.Data, pngPrefix) {
+			n++
 		}
 	}
-	if stills == 0 || stills > 2 || !strings.HasPrefix(frames[len(frames)-1].(api.BrowserFrame).Data, pngPrefix) {
-		t.Fatalf("%d frames, %d of them PNG; want one or two PNGs, the last frame one", len(frames), stills)
+	return n
+}
+
+// describeFrames names each frame's format and size, what a failure on a
+// runner nobody here can reach has to go on.
+func describeFrames(frames []api.BrowserFrame) string {
+	var b strings.Builder
+	for _, f := range frames {
+		raw, _ := base64.StdEncoding.DecodeString(f.Data)
+		cfg, format, err := image.DecodeConfig(bytes.NewReader(raw))
+		if err != nil {
+			format = err.Error()
+		}
+		fmt.Fprintf(&b, "[%s %dx%d %d B] ", format, cfg.Width, cfg.Height, len(f.Data))
 	}
+	return b.String()
 }
 
 // The probe page's field, clicked into from the pane, blinks its caret.

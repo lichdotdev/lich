@@ -237,6 +237,19 @@ const stillWait = 2 * time.Second
 // its ringing (Chromium 157, 1280x720 and 2880x1620, measured 2026-11-12).
 const stillGrowth = 3
 
+// stillEcho is how long after a capture a frame is still taken for the one
+// the capture itself draws, which Chrome on Linux sends 8 to 21 ms into it
+// (Chromium 157, measured 2026-11-12). On Apple silicon that frame is not the
+// one before it byte for byte, so it went for a change and started the settle
+// over, a capture every stillAfter for as long as the pane was open (CI,
+// macos-latest, 2026-11-12).
+const stillEcho = 250 * time.Millisecond
+
+// stillTries is how many captures one still page gets. The second is for a
+// pane drawn under the browser's scale, where the first capture's frame is a
+// pixel narrower than the one before it and the ones after it are equal.
+const stillTries = 2
+
 // frameSink sends the window sess's frames, except one too large for its
 // socket: the pane keeps its last frame until one fits. Once the page is
 // still for stillAfter, it sends one PNG of it too.
@@ -259,6 +272,11 @@ type frameStream struct {
 	last   api.BrowserFrame
 	attach uint64
 	settle *time.Timer
+	// capturing is set during a capture and captured when the last one
+	// ended; tries counts the captures since the page last drew on its own.
+	capturing bool
+	captured  time.Time
+	tries     int
 }
 
 func (f *frameStream) frame(tab, data string) {
@@ -276,11 +294,7 @@ func (f *frameStream) frame(tab, data string) {
 		return
 	}
 	f.drawn++
-	if f.settle == nil {
-		f.settle = time.AfterFunc(stillAfter, f.still)
-	} else {
-		f.settle.Reset(stillAfter)
-	}
+	f.arm()
 	if len(data) > maxFrameData {
 		if !f.skipping.Swap(true) {
 			slog.Warn("browser: a frame too large for the window, its pane keeps the last one", "owner", f.sess.owner, "bytes", len(data))
@@ -292,15 +306,35 @@ func (f *frameStream) frame(tab, data string) {
 	events.Send(f.s.emit, f.frames, frame)
 }
 
+// arm starts the settle over, unless the frame is a capture's own and the
+// page had its tries: whatever a capture draws, a still page stops there.
+func (f *frameStream) arm() {
+	if f.capturing || time.Since(f.captured) < stillEcho {
+		if f.tries >= stillTries {
+			return
+		}
+	} else {
+		f.tries = 0
+	}
+	if f.settle == nil {
+		f.settle = time.AfterFunc(stillAfter, f.still)
+	} else {
+		f.settle.Reset(stillAfter)
+	}
+}
+
 // still sends a PNG of the page once it settled, unless it drew again
 // meanwhile or the PNG weighs too much for what it gives.
 func (f *frameStream) still() {
 	f.mu.Lock()
 	drawn, jpeg := f.drawn, f.last
+	f.capturing = true
+	f.tries++
 	f.mu.Unlock()
 	tab, data, ok := f.s.captureStill(f.sess)
 	f.mu.Lock()
 	defer f.mu.Unlock()
+	f.capturing, f.captured = false, time.Now()
 	if !ok || f.drawn != drawn || tab != jpeg.Tab || len(data) > maxFrameData || len(data) > stillGrowth*len(jpeg.Data) {
 		return
 	}

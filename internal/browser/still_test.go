@@ -200,3 +200,52 @@ func TestAPaneAttachedAgainGetsTheFrameItMayNotHold(t *testing.T) {
 	page.onFrame(stillTab, jpegFrame)
 	waitFrames(t, out, name, jpegFrame, jpegFrame)
 }
+
+// echoingRig is a page whose every capture draws a frame unlike any before
+// it, during the capture or, when late, just after it.
+func echoingRig(t *testing.T, late bool) (*fakePage, *emitted, string) {
+	t.Helper()
+	_, page, out, name := stillRig(t, stillFrame)
+	n := 0
+	page.mu.Lock()
+	page.onStill = func() {
+		n++
+		frame := jpegFrame + strconv.Itoa(n)
+		if !late {
+			page.onFrame(stillTab, frame)
+			return
+		}
+		go func() {
+			time.Sleep(stillEcho / 5)
+			page.onFrame(stillTab, frame)
+		}()
+	}
+	page.mu.Unlock()
+	return page, out, name
+}
+
+func TestACaptureDrawingANewFrameEachTimeStopsAtItsTries(t *testing.T) {
+	for _, late := range []bool{false, true} {
+		page, _, _ := echoingRig(t, late)
+		page.onFrame(stillTab, jpegFrame)
+		for range stillTries + 2 {
+			settled()
+		}
+		if n := stills(page); n != stillTries {
+			t.Fatalf("late=%v: %d captures of a still page, want %d", late, n, stillTries)
+		}
+	}
+}
+
+func TestAPageDrawingAgainAfterItsTriesIsCapturedAgain(t *testing.T) {
+	page, _, _ := echoingRig(t, false)
+	page.onFrame(stillTab, jpegFrame)
+	for range stillTries + 1 {
+		settled()
+	}
+	page.onFrame(stillTab, "bmV3")
+	settled()
+	if n := stills(page); n != stillTries+1 {
+		t.Fatalf("%d captures, want %d and one for the page drawing again", n, stillTries+1)
+	}
+}
