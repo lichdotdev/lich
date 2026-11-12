@@ -409,3 +409,54 @@ func TestAPaneLeavingDoesNotLayOutABrowserInItsOwnWindow(t *testing.T) {
 		t.Fatalf("a browser in its own window was resized to %v and no longer follows its window", p.viewports)
 	}
 }
+
+func TestABrowserDrawsAtTheScaleTheWindowDrawsPagesAt(t *testing.T) {
+	for name, tc := range map[string]struct {
+		window, want float64
+	}{
+		"a 1x window":                        {1, 1},
+		"a window between the two":           {1.25, 1.25},
+		"a 2x window, past the most":         {2, 1.5},
+		"a page zoomed out, under the least": {0.5, 1},
+	} {
+		t.Run(name, func(t *testing.T) {
+			s, launch, _ := viewService(t)
+			s.SetDefaultView(Viewport{W: 1280, H: 720, Scale: tc.window})
+			if _, err := s.Open("s", "https://example.com"); err != nil {
+				t.Fatal(err)
+			}
+			if len(launch.scales) != 1 || launch.scales[0] != tc.want {
+				t.Fatalf("launched at %v, want %v", launch.scales, tc.want)
+			}
+		})
+	}
+}
+
+func TestABrowserNoWindowSizedDrawsAtTheMost(t *testing.T) {
+	s, launch, _ := viewService(t)
+	if _, err := s.Open("s", "https://example.com"); err != nil {
+		t.Fatal(err)
+	}
+	if len(launch.scales) != 1 || launch.scales[0] != 1.5 {
+		t.Fatalf("launched at %v, want 1.5", launch.scales)
+	}
+}
+
+func TestAFramePastTheWindowsSocketLimitIsNotSent(t *testing.T) {
+	s, launch, out := viewService(t)
+	if _, err := s.Attach("s", Viewport{W: 640, H: 480, Scale: 1}); err != nil {
+		t.Fatal(err)
+	}
+	page := launch.pages[0]
+	name := api.BrowserFrameEvents.Of("s").Name
+	// The window's /events socket reads 4 MiB a message at most, and a larger
+	// one ends it for every session.
+	page.onFrame(strings.Repeat("A", 4<<20))
+	if frames := out.named(name); len(frames) != 0 {
+		t.Fatalf("sent a %d-byte frame, past what the window's socket reads", len(frames[0].(string)))
+	}
+	page.onFrame("anBlZw==")
+	if frames := out.named(name); len(frames) != 1 || frames[0] != "anBlZw==" {
+		t.Fatalf("frames after one that fits = %v, want that one", frames)
+	}
+}

@@ -13,14 +13,14 @@
   },
   "name": {
     "title": "Dê um nome",
-    "body": "Algumas palavras ou uma issue como #123, e a branch ganha esse nome. Deixe vazio para um nome aleatório."
+    "body": "Escreva algumas palavras ou uma issue como #123, e a branch recebe esse nome. Deixe em branco para um nome aleatório."
   },
   "from": {
     "title": "Escolha de onde ela parte",
     "body": "A branch de onde a worktree começa. Clique para buscar entre suas branches locais e remotas."
   },
   "create": {
-    "title": "Crie",
+    "title": "Crie a worktree",
     "body": "O lich cria a worktree e abre uma sessão nela.",
     "hint": "Clique em Criar para continuar"
   },

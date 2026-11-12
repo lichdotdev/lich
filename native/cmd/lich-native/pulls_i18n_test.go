@@ -67,11 +67,11 @@ func TestMergeHintCountsTheRedChecksInTheInterfaceLanguage(t *testing.T) {
 	}
 	i18n.SetCurrent(i18n.PtBR)
 	defer i18n.SetCurrent(i18n.EN)
-	if got := mergeHint(red, nil); got != "1 verificação está falhando; o GitHub fará o merge mesmo assim" {
+	if got := mergeHint(red, nil); got != "1 check está falhando, mas o GitHub fará o merge mesmo assim" {
 		t.Errorf("pt-BR one = %q", got)
 	}
 	red.Checks.Failed = 3
-	if got := mergeHint(red, nil); got != "3 verificações estão falhando; o GitHub fará o merge mesmo assim" {
+	if got := mergeHint(red, nil); got != "3 checks estão falhando, mas o GitHub fará o merge mesmo assim" {
 		t.Errorf("pt-BR other = %q", got)
 	}
 }
@@ -87,10 +87,10 @@ func TestChecksStatPicksThePluralOfTheInterfaceLanguage(t *testing.T) {
 	}
 	i18n.SetCurrent(i18n.PtBR)
 	defer i18n.SetCurrent(i18n.EN)
-	if _, text, _, _ := checksStat(testTheme(), one); text != "1 verificação passou" {
+	if _, text, _, _ := checksStat(testTheme(), one); text != "1 check passou" {
 		t.Errorf("pt-BR one = %q", text)
 	}
-	if _, text, _, _ := checksStat(testTheme(), many); text != "4 verificações passaram" {
+	if _, text, _, _ := checksStat(testTheme(), many); text != "4 checks passaram" {
 		t.Errorf("pt-BR other = %q", text)
 	}
 }
@@ -162,7 +162,7 @@ func TestRunningRemovalNamesTheWorktreeAndCountsTheSessions(t *testing.T) {
 	i18n.SetCurrent(i18n.PtBR)
 	defer i18n.SetCurrent(i18n.EN)
 	many := i18n.T("pulls.pullsActions.running", i18n.Args{"count": 3, "name": "wt"})
-	if many != "3 sessões em wt estão no meio de um turno. Remover a worktree as interrompe; o turno em andamento é perdido." {
+	if many != "3 sessões em wt estão no meio de um turno. Remover a worktree interrompe as sessões, e o turno em andamento é perdido." {
 		t.Errorf("pt-BR other = %q", many)
 	}
 }

@@ -240,7 +240,8 @@ lo que cambió en cada versión está en [CHANGELOG.md](CHANGELOG.md).
 lich son dos binarios: `lich`, un backend estático en Go puro, y `lich-native`,
 la ventana, compilada con cgo desde `native/`. Necesitas **Go 1.27.0+** y
 **[Task](https://taskfile.dev)**; la ventana suma un toolchain de C, los
-paquetes de sistema de Gio y una `libghostty-vt` compilada desde el commit en
+paquetes de sistema de Gio, la `libturbojpeg` de libjpeg-turbo y una
+`libghostty-vt` compilada desde el commit en
 `native/GHOSTTY_COMMIT`. [`native/slice.sh`](native/slice.sh) explica cómo, y
 [`docs/native-window.md`](docs/native-window.md) describe la ventana.
 

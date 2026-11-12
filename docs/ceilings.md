@@ -1428,7 +1428,16 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   `docs/browser-tab.md`): a headless Chrome, Edge, Chromium, Brave, Vivaldi or Helium already installed,
   whose page reaches the session's page pane as a JPEG screencast over `/events`, at the page's own frame
   rate; a window slower to decode skips to the newest frame. A HiDPI pane gets frames drawn at 1.5x at most
-  (`frameScale`): the browser draws at a scale forced at its launch, and 2x halved a busy page's frame rate. The native window cannot hold a webview: on Linux it speaks Wayland without GTK. So the pane
+  (`frameScale`): 2x halved a busy page's frame rate. The browser draws at a scale forced at its launch, the one
+  the window drew pages at then (its own scale times the page zoom, 1 at least; 1.5 when no window had said),
+  and it keeps that scale until it is closed. A pane drawn at another scale afterwards, the page zoom changed or
+  the window moved to a monitor of another density, gets the frames of the launch: enlarged by the window past
+  that scale, and under it reduced by Chrome frame by frame, which blurs text. A browser drawing at 1.5x under a
+  1x pane also cost a 1140x1300 pane 11 to 29 frames a second, for the pixels it draws; one drawing at 1x under a
+  page zoomed to 90% lost none (measured 2026-11-11). Closing the browser and opening it again draws at the new
+  scale. A frame past what the window's `/events` socket reads, 4 MiB as base64, is not sent, since it would end
+  that socket for every session: the pane keeps its last frame until one fits. A wall of photographs in a 4K
+  pane made 2.7 MiB frames and a page drawing pure noise in a 3440x1440 one 4.5 MiB (measured 2026-11-11). The native window cannot hold a webview: on Linux it speaks Wayland without GTK. So the pane
   has no DevTools, shows the arrow whatever cursor the page asks for, draws only the front tab, and leaves the page's own dialogs out. Its
   tabs sit on the pane's header (`internal/browser/tabs.go`): what a tab opens in a new tab or window joins
   them, in front when its opener was, and closing it brings its opener back as it was. A tab behind the front

@@ -20,7 +20,7 @@
   },
   "fileTree": {
     "hidden": "숨김: {names}.",
-    "cut": "이 폴더에는 트리에 표시할 수 있는 것보다 많은 파일이 있습니다."
+    "cut": "이 폴더는 파일이 너무 많아 트리에 모두 표시할 수 없습니다."
   },
   "codemirror": {
     "expand": {
@@ -58,19 +58,19 @@
     "checkout": "체크아웃",
     "checkoutRemote": "로컬 브랜치로 체크아웃",
     "open": "{name} 열기",
-    "newBranch": "여기서 새 브랜치…",
+    "newBranch": "여기서 새 브랜치 만들기…",
     "rename": "이름 바꾸기…",
     "delete": "삭제",
     "onBranch": "현재 이 브랜치에 있습니다",
     "inWorktree": "다른 worktree에서 체크아웃됨",
     "options": "{name} 작업",
     "from": "{name}에서",
-    "checkoutTitle": "{session}을(를) {branch}(으)로 전환할까요?",
-    "checkoutBody": "{session}이(가) 이 체크아웃에서 작업 중입니다. 에이전트 아래의 브랜치가 바뀌고, 커밋하지 않은 변경도 함께 옮겨집니다.",
-    "deleteTitle": "{name}을(를) 삭제할까요?",
+    "checkoutTitle": "{session} 세션을 {branch} 브랜치로 전환할까요?",
+    "checkoutBody": "{session} 세션이 이 체크아웃에서 작업 중입니다. 에이전트가 작업하던 브랜치가 바뀌고, 커밋하지 않은 변경 사항도 새 브랜치로 함께 넘어갑니다.",
+    "deleteTitle": "{name} 브랜치를 삭제할까요?",
     "deleteBody": {
-      "one": "커밋 {count}개가 이 브랜치에만 있습니다. 한동안 reflog에서 복구할 수 있지만 어떤 브랜치도 가리키지 않게 됩니다.",
-      "other": "커밋 {count}개가 이 브랜치에만 있습니다. 한동안 reflog에서 복구할 수 있지만 어떤 브랜치도 가리키지 않게 됩니다."
+      "one": "커밋 {count}개가 이 브랜치에만 있습니다. 한동안 reflog에서 복구할 수 있지만, 이 커밋을 가리키는 브랜치는 없어집니다.",
+      "other": "커밋 {count}개가 이 브랜치에만 있습니다. 한동안 reflog에서 복구할 수 있지만, 이 커밋들을 가리키는 브랜치는 없어집니다."
     },
     "deleted": "{name} 삭제됨",
     "onlyCommits": {
@@ -78,10 +78,10 @@
       "other": "커밋 {count}개가 이 브랜치에만 있었습니다"
     },
     "undo": "실행 취소",
-    "checkoutFailed": "{name}을(를) 체크아웃하지 못했습니다",
-    "createFailed": "{name}을(를) 만들지 못했습니다",
-    "renameFailed": "{name}의 이름을 바꾸지 못했습니다",
-    "deleteFailed": "{name}을(를) 삭제하지 못했습니다",
-    "undoFailed": "{name}을(를) 되살리지 못했습니다"
+    "checkoutFailed": "{name} 브랜치를 체크아웃하지 못했습니다",
+    "createFailed": "{name} 브랜치를 만들지 못했습니다",
+    "renameFailed": "{name} 브랜치 이름을 바꾸지 못했습니다",
+    "deleteFailed": "{name} 브랜치를 삭제하지 못했습니다",
+    "undoFailed": "{name} 브랜치를 되살리지 못했습니다"
   }
 }

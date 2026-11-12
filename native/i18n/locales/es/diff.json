@@ -73,7 +73,7 @@
     "addToBatch": "Añadir al lote",
     "addToReview": "Añadir a la revisión",
     "sessionPlaceholder": "¿Qué debería cambiar aquí? Se envía a la sesión junto con el resto.",
-    "reviewPlaceholder": "Deja un comentario. Se envía cuando envías la revisión."
+    "reviewPlaceholder": "Deja un comentario. Se publicará al enviar la revisión."
   },
   "dockReviewBody": {
     "split": "En paralelo",
@@ -83,7 +83,7 @@
     "open": "Abrir en la app predeterminada",
     "reveal": "Mostrar en la carpeta",
     "pdf": "Documento PDF",
-    "pdfHint": "Se abre en la app con la que tu escritorio lee PDF.",
+    "pdfHint": "Se abre con el visor de PDF predeterminado de tu escritorio.",
     "openFailed": "No se pudo abrir {name}",
     "revealFailed": "No se pudo mostrar {name} en su carpeta"
   },

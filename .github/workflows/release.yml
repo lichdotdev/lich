@@ -20,10 +20,10 @@ permissions:
   contents: write
 
 jobs:
-  # The native window (native/, cgo: Gio and libghostty-vt) for both systems,
-  # built first and handed to the jobs that package it beside lich. Linux
-  # builds on the oldest supported runner: its glibc is the floor the binary
-  # asks of a user's machine. Windows is cross-built with Zig
+  # The native window (native/, cgo: Gio, libghostty-vt and libjpeg-turbo) for
+  # both systems, built first and handed to the jobs that package it beside
+  # lich. Linux builds on the oldest supported runner: its glibc is the floor
+  # the binary asks of a user's machine. Windows is cross-built with Zig
   # (native/build-windows.sh), as native.yml proves on every PR. macOS needs
   # Apple's SDK, so its native window builds in the mac job.
   native:
@@ -51,7 +51,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             gcc pkg-config libwayland-dev libx11-dev libx11-xcb-dev libxkbcommon-x11-dev \
-            libgles2-mesa-dev libegl1-mesa-dev libffi-dev libxcursor-dev libvulkan-dev
+            libgles2-mesa-dev libegl1-mesa-dev libffi-dev libxcursor-dev libvulkan-dev \
+            cmake nasm
 
       - name: Pinned Ghostty commit
         id: ghostty
@@ -83,18 +84,21 @@ jobs:
       - name: Build lich-native (linux, windows)
         run: |
           mkdir -p "$RUNNER_TEMP/out"
-          PKG_CONFIG_PATH="$HOME/libghostty-vt/share/pkgconfig" CGO_ENABLED=1 \
+          ./libjpeg-turbo.sh "$HOME/libjpeg-turbo"
+          PKG_CONFIG_PATH="$HOME/libjpeg-turbo/lib/pkgconfig:$HOME/libghostty-vt/share/pkgconfig" CGO_ENABLED=1 \
             go build -trimpath -ldflags "-s -w" -o "$RUNNER_TEMP/out/lich-native" ./cmd/lich-native
-          LIBGHOSTTY_VT_WINDOWS="$HOME/libghostty-vt-windows" ./build-windows.sh "$RUNNER_TEMP/out/lich-native.exe"
+          LIBGHOSTTY_VT_WINDOWS="$HOME/libghostty-vt-windows" LIBJPEG_TURBO_WINDOWS="$HOME/libjpeg-turbo-windows" \
+            ./build-windows.sh "$RUNNER_TEMP/out/lich-native.exe"
 
-      # libghostty-vt is linked in, and nothing asks for a glibc newer than the
-      # 2.34 the packages require (build/linux/nfpm/nfpm.yaml, README): the
-      # runner's own 2.35 is not the promise.
+      # libghostty-vt and libjpeg-turbo are linked in, and nothing asks for a
+      # glibc newer than the 2.34 the packages require
+      # (build/linux/nfpm/nfpm.yaml, README): the runner's own 2.35 is not the
+      # promise.
       - name: Check what lich-native asks of a machine
         run: |
           bin="$RUNNER_TEMP/out/lich-native"
-          if objdump -p "$bin" | grep NEEDED | grep -qi ghostty; then
-            echo "::error::lich-native links libghostty-vt dynamically"; objdump -p "$bin" | grep NEEDED; exit 1
+          if objdump -p "$bin" | grep NEEDED | grep -qiE 'ghostty|turbojpeg'; then
+            echo "::error::lich-native links libghostty-vt or libjpeg-turbo dynamically"; objdump -p "$bin" | grep NEEDED; exit 1
           fi
           floor="$(objdump -T "$bin" | grep -o 'GLIBC_[0-9.]*' | sort -uV | tail -1)"
           echo "lich-native asks for $floor"
@@ -373,12 +377,18 @@ jobs:
             echo "${{ steps.ghostty.outputs.commit }}" > ~/libghostty-vt/.commit
           fi
 
-      # The window (cgo: Gio's Cocoa and Metal, libghostty-vt), built on the
-      # runner of its own architecture.
+      # libjpeg-turbo's SIMD code is assembly on Intel (native/libjpeg-turbo.sh).
+      - name: Install nasm
+        if: matrix.arch == 'amd64'
+        run: HOMEBREW_NO_AUTO_UPDATE=1 brew install nasm
+
+      # The window (cgo: Gio's Cocoa and Metal, libghostty-vt, libjpeg-turbo),
+      # built on the runner of its own architecture.
       - name: Build lich-native (${{ matrix.arch }})
         working-directory: native
         run: |
-          PKG_CONFIG_PATH="$HOME/libghostty-vt/share/pkgconfig" CGO_ENABLED=1 \
+          ./libjpeg-turbo.sh "$HOME/libjpeg-turbo"
+          PKG_CONFIG_PATH="$HOME/libjpeg-turbo/lib/pkgconfig:$HOME/libghostty-vt/share/pkgconfig" CGO_ENABLED=1 \
             go build -trimpath -ldflags "-s -w" -o ../bin/lich-native ./cmd/lich-native
           bash ../.github/scripts/mac-native-floor.sh ../bin/lich-native
 

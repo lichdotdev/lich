@@ -1,7 +1,7 @@
 {
   "plugin": {
-    "incompatibleInstall": "{installs} 中的 lich 插件不受此 lich 支持。请安装 v{version}，即此 lich 支持的版本。",
-    "incompatibleUpdate": "{installs} 中的 lich 插件不受此 lich 支持。请更新 lich，或确认已联网以查找此 lich 支持的版本。"
+    "incompatibleInstall": "当前 lich 不支持 {installs} 中的 lich 插件。请安装此 lich 支持的 v{version}。",
+    "incompatibleUpdate": "当前 lich 不支持 {installs} 中的 lich 插件。请更新 lich，或确认已联网，以便查找此 lich 支持的版本。"
   },
   "progress": {
     "updateFailed": "更新失败：{error}",

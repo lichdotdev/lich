@@ -78,7 +78,7 @@
     "hiddenDescription": "GitHub は存在しないかのように応答しました。別のアカウントを選んでください。",
     "continue": "続ける",
     "tryAgain": "再試行",
-    "later": "あとで設定 › バージョン管理で変更できます。",
+    "later": "設定 › バージョン管理であとから変更できます。",
     "saveFailed": "アカウントを保存できませんでした: {error}"
   },
   "submitReviewDialog": {
@@ -93,8 +93,8 @@
         "title": "変更をリクエスト"
       }
     },
-    "summaryPlaceholder": "概要 (任意)",
-    "summaryAlone": "行コメントはありません。概要のみを送信します。"
+    "summaryPlaceholder": "概要（任意）",
+    "summaryAlone": "行コメントがないため、概要だけを送信します。"
   },
   "pullsConversation": {
     "commentFailed": "コメントに失敗しました: {error}",
@@ -105,9 +105,9 @@
     },
     "commentOn": "プルリクエストにコメント",
     "comment": "コメント",
-    "commentPlaceholder": "プルリクエスト全体について",
+    "commentPlaceholder": "プルリクエスト全体へのコメント",
     "readFailed": "会話を読み込めませんでした: {error}",
-    "nothingYet": "まだ発言はありません。",
+    "nothingYet": "まだコメントはありません。",
     "line": "{line} 行目",
     "lines": "{start}-{end} 行目",
     "outdated": "古い",
@@ -199,7 +199,7 @@
     "deleteFailed": "コメントを削除できませんでした: {error}",
     "deleteTitle": "このコメントを削除しますか？",
     "deleteGone": "GitHub では元に戻せません。",
-    "deleteLast": "このスレッドの唯一のコメントなので、スレッドも削除されます。GitHub では元に戻せません。",
+    "deleteLast": "スレッドに残っている唯一のコメントのため、スレッドごと削除されます。GitHub では元に戻せません。",
     "verdictStays": "判定は変わりません。",
     "more": "コメントのオプション"
   },
@@ -231,7 +231,7 @@
     "handedOff": "#{number} を {session} に渡しました",
     "goToSession": "セッションへ移動",
     "openInSession": "セッションで開く",
-    "forkBlocked": "head ブランチはメンテナーによる編集を許可していないフォークにあるため、コミットをプッシュし返せません",
+    "forkBlocked": "head ブランチのあるフォークがメンテナーによる編集を許可していないため、コミットをプッシュできませんでした",
     "runningRemoval": {
       "removeAnyway": "それでも削除"
     }
@@ -252,9 +252,9 @@
     },
     "merging": "マージ中…",
     "merge": "マージ",
-    "methodBypass": "{method} (ルールを回避)",
-    "editMessage": "{method} (メッセージを編集…)",
-    "editMessageBypass": "{method} (メッセージを編集… ルールを回避)",
+    "methodBypass": "{method}（ルールを回避）",
+    "editMessage": "{method}（メッセージを編集…）",
+    "editMessageBypass": "{method}（メッセージを編集…、ルールを回避）",
     "refresh": "更新",
     "tab": {
       "overview": "概要",
@@ -305,6 +305,6 @@
     "more": "その他の操作",
     "create": "新しいプルリクエスト",
     "checkout": "チェックアウト",
-    "notCheckedOut": "チェックアウトなし"
+    "notCheckedOut": "未チェックアウト"
   }
 }

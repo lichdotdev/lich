@@ -237,7 +237,8 @@ está no [CHANGELOG.md](CHANGELOG.md).
 O lich são dois binários: o `lich`, um backend estático em Go puro, e o
 `lich-native`, a janela, compilada com cgo a partir de `native/`. Você precisa
 de **Go 1.27.0+** e do **[Task](https://taskfile.dev)**; a janela pede também um
-toolchain C, os pacotes de sistema do Gio e uma `libghostty-vt` compilada a
+toolchain C, os pacotes de sistema do Gio, a `libturbojpeg` do libjpeg-turbo e
+uma `libghostty-vt` compilada a
 partir do commit em `native/GHOSTTY_COMMIT`. O [`native/slice.sh`](native/slice.sh)
 explica como, e o [`docs/native-window.md`](docs/native-window.md) descreve a
 janela.

@@ -105,7 +105,7 @@
     "repositoryHint": "A repository holding {file} and one or more theme files. Its manifest version is what lich compares on update.",
     "or": "or",
     "chooseFile": "Choose file…",
-    "fileHint": "A single theme file. No version, no updates.",
+    "fileHint": "A single theme file. It has no version and gets no updates.",
     "downloadTemplate": "Download template"
   },
   "fontSetting": {
@@ -149,16 +149,16 @@
   },
   "notificationsSettings": {
     "needsInputTitle": "Notify me when a session needs input",
-    "needsInputDescription": "Raise a desktop notification when a session is blocked on you — a permission prompt, a question — and the lich window is not the one you are in. While you are in lich nothing changes: the card's bell and the toast do the telling.",
+    "needsInputDescription": "Raise a desktop notification when a session is blocked on you (a permission prompt, a question) and the lich window is not the one you are in. While you are in lich nothing changes: the card's bell and the toast do the telling.",
     "finishedTitle": "Notify me when a session finishes working",
-    "finishedDescription": "Raise a desktop notification when a session ends its turn with nothing left to ask you, and the lich window is not the one you are in. Independent of the setting above — a long run you walked away from is worth knowing about even if you would rather not hear about every prompt. No toast comes with it: inside lich, the card and its project tab already say so."
+    "finishedDescription": "Raise a desktop notification when a session ends its turn with nothing left to ask you, and the lich window is not the one you are in. It works independently of the setting above, so you can hear about a long run you walked away from without hearing about every prompt. No toast comes with it: inside lich, the card and its project tab already say so."
   },
   "hotkeysSettings": {
     "alsoBound": "Also bound to {actions}",
     "pressKeys": "Press keys…",
     "unassignHint": "Leave this action unbound",
     "resetHint": "Restore the default shortcut",
-    "passthroughNote": "lich rewrites these on their way to the agent's terminal, so they are fixed rather than rebindable."
+    "passthroughNote": "lich rewrites these on their way to the agent's terminal, so they cannot be rebound."
   },
   "providersPane": {
     "detecting": "Detecting providers…",
@@ -316,7 +316,7 @@
     "summary": "An empty home, the machine read-only, writes only in the checkout. The network stays on.",
     "confinedTitle": "Which sessions run confined",
     "confinedSearchWords": "isolate bwrap seatbelt",
-    "confinedHint": "Ask puts the question in the New session menu and the New worktree dialog. A session opened where nobody can answer — by another session, or through the MCP tool — is confined. Terminals are never confined; the sandbox is for agents working unattended.",
+    "confinedHint": "Ask puts the question in the New session menu and the New worktree dialog. A session opened where nobody can answer (by another session, or through the MCP tool) is confined. Terminals are never confined; the sandbox is for agents working unattended.",
     "carryTitle": "What a confined session may carry in",
     "sshTitle": "SSH agent",
     "sshSearchWords": "push keys",
@@ -329,11 +329,11 @@
     "ghAccount": "As {login}.",
     "ghActiveAccount": "As gh's active account.",
     "confirmTitle": "Confine fewer {provider} sessions",
-    "confirmDescription": "{rung} — {exposes}",
+    "confirmDescription": "{rung}: {exposes}",
     "confirm": "Leave unconfined",
     "canConfine": "This machine can confine sessions",
     "cannotConfine": "This machine cannot confine sessions",
-    "statusDetail": "— {detail}"
+    "statusDetail": "· {detail}"
   },
   "vcsToolsSetting": {
     "title": "Command-line tools",
@@ -346,7 +346,7 @@
     "account": "GitHub account",
     "accountFor": "GitHub account for {name}",
     "accountSearchWords": "login gh switch",
-    "accountDescription": "Which account lich runs gh as for this project — pull requests, checks, PR checkouts and the gh its sessions run, from their next start. gh keeps one active account per host, so a repository only another account can see reads as not found. Accounts on an enterprise host are listed with it.",
+    "accountDescription": "Which account lich runs gh as for this project: pull requests, checks, PR checkouts and the gh its sessions run, from their next start. gh keeps one active account per host, so a repository only another account can see reads as not found. Accounts on an enterprise host are listed with it.",
     "activeAccount": "gh's active account",
     "listFailed": "Could not list GitHub accounts: {error}",
     "noAccounts": "gh is signed in to no account. Run `gh auth login` in a terminal."
@@ -354,11 +354,11 @@
   "updatesSettings": {
     "applicationTitle": "Application",
     "applicationSearchWords": "version upgrade",
-    "applicationDescription": "lich {version} — checks for updates on startup and hourly.",
+    "applicationDescription": "lich {version}. Checks for updates on startup and hourly.",
     "checkForUpdates": "Check for updates",
-    "available": "lich {version} is available — follow the prompt.",
+    "available": "lich {version} is available. Follow the prompt.",
     "upToDate": "You're on the latest version.",
-    "checkFailed": "Check failed — are you online?",
+    "checkFailed": "Check failed. Are you online?",
     "whatsNewTitle": "What's new",
     "whatsNewSearchWords": "changelog release notes",
     "patchNotesFor": "Patch notes for v{version}.",
@@ -372,7 +372,7 @@
     "installed": "Plugin installed. Restart your sessions to apply.",
     "updated": "Plugin updated. Restart your sessions to apply.",
     "checked": "Checked.",
-    "checkFailed": "Check failed — are you online?",
+    "checkFailed": "Check failed. Are you online?",
     "cliMissing": "CLI not installed",
     "notInstalled": "Plugin not installed",
     "unsupported": "v{version}, not supported by this lich",
@@ -390,10 +390,10 @@
     "openingLogFolder": "Opening log folder…",
     "logFolderOpened": "Log folder opened.",
     "openLogFolder": "Open log folder",
-    "noLogFile": "Logging to stderr only — there is no log file.",
+    "noLogFile": "Logging to stderr only, so there is no log file.",
     "aboutTitle": "About",
     "aboutSearchWords": "version license",
-    "aboutVersion": "lich {version} — {platform}.",
+    "aboutVersion": "lich {version} · {platform}.",
     "repository": "Repository"
   },
   "settingsIndex": {
@@ -425,9 +425,9 @@
     "terminalGroup": "Terminal"
   },
   "settingsHelp": {
-    "bugDescription": "Opens the bug form in your browser with the version and platform filled in. lich does not file the issue — you write it yourself. Run `lich rage` in a terminal to pack the logs, the versions and what lich found on this machine into one archive to attach.",
+    "bugDescription": "Opens the bug form in your browser with the version and platform filled in. You write and submit the issue yourself. Run `lich rage` in a terminal to pack the logs, the versions and what lich found on this machine into one archive to attach.",
     "logSearchWords": "debug logs native window",
-    "logDescription": "The folder holds lich's log and, beside it, the native window's (lich-native.log). They hold absolute paths, project and branch names, and your gh login — never a session token. Read them before you attach them to anything.",
+    "logDescription": "The folder holds lich's log and, beside it, the native window's (lich-native.log). They hold absolute paths, project and branch names, and your gh login, but never a session token. Read them before you attach them to anything.",
     "logFailed": "Could not open the log folder: {error}"
   },
   "settingsProviders": {

@@ -176,5 +176,6 @@ type Page interface {
 }
 
 // Launcher starts a Chromium with its own user-data-dir. headed is a real
-// window; false is headless. The directory is the caller's to delete.
-type Launcher func(dir string, headed bool) (Page, error)
+// window; false is headless, which draws at scale until it is closed. The
+// directory is the caller's to delete.
+type Launcher func(dir string, headed bool, scale float64) (Page, error)

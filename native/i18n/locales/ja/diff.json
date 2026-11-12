@@ -36,10 +36,10 @@
   "injectMenu": {
     "injectFile": "ファイルを挿入",
     "injectLines": "行を挿入",
-    "injectLinesRange": "行 {lines} を挿入",
+    "injectLinesRange": "{lines} 行目を挿入",
     "sessionComment": "セッションへのコメント…",
-    "sessionCommentRange": "セッションへのコメント {lines}…",
-    "reviewCommentRange": "プルリクエストにコメント {lines}…",
+    "sessionCommentRange": "セッションへのコメント（{lines} 行目）…",
+    "reviewCommentRange": "プルリクエストにコメント（{lines} 行目）…",
     "revertSelected": "選択した行を元に戻す",
     "revert": {
       "one": "変更された {count} 行を元に戻す",
@@ -60,7 +60,7 @@
     "discardFailed": "変更を破棄できませんでした: {error}",
     "reverted": "{name} の +{added} -{deleted} を元に戻しました",
     "undo": "元に戻す",
-    "undoFailed": "{name} での復元を取り消せませんでした",
+    "undoFailed": "{name} で元に戻した変更を復元できませんでした",
     "revertFailed": "{name} の行を元に戻せませんでした",
     "notRepository": "git リポジトリではありません",
     "loading": "読み込み中…",
@@ -68,12 +68,12 @@
     "squeezed": "左右に並べて表示するにはパネルの幅が足りません"
   },
   "reviewSlots": {
-    "forSession": "セッション向け · {lines}",
-    "onPullRequest": "プルリクエスト上 · {lines}",
+    "forSession": "セッションへ · {lines}",
+    "onPullRequest": "プルリクエストへ · {lines}",
     "addToBatch": "バッチに追加",
     "addToReview": "レビューに追加",
-    "sessionPlaceholder": "ここで何を変えるべきですか？ほかのコメントと一緒にセッションへ送られます。",
-    "reviewPlaceholder": "コメントを残してください。レビューを送信したときに送られます。"
+    "sessionPlaceholder": "ここをどう変えますか？ほかのコメントとまとめてセッションに送られます。",
+    "reviewPlaceholder": "コメントを入力してください。レビューを送信すると一緒に投稿されます。"
   },
   "dockReviewBody": {
     "split": "左右に並べる",
@@ -83,7 +83,7 @@
     "open": "既定のアプリで開く",
     "reveal": "フォルダーに表示",
     "pdf": "PDF ドキュメント",
-    "pdfHint": "デスクトップで PDF を開くアプリで開きます。",
+    "pdfHint": "デスクトップで PDF に使っているアプリで開きます。",
     "openFailed": "{name} を開けませんでした",
     "revealFailed": "{name} をフォルダーに表示できませんでした"
   },

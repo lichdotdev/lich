@@ -32,7 +32,7 @@
   "emptySessions": {
     "title": "No session open",
     "description": "Open a session to start working in this project.",
-    "noAgent": "No agent found on PATH, so this opens a terminal — set one in Settings › Providers.",
+    "noAgent": "No agent found on PATH, so this opens a terminal. Set one in Settings › Providers.",
     "newTerminal": "New terminal",
     "newSession": "New session"
   },
@@ -57,7 +57,7 @@
   },
   "gitMissingGate": {
     "title": "git is not installed",
-    "description": "lich reads every branch, diff and worktree through git. Sessions still run without it — the version control surfaces stay empty.",
+    "description": "lich reads every branch, diff and worktree through git. Sessions still run without it, but the version control surfaces stay empty.",
     "notNow": "Not now",
     "installGit": "Install git"
   },
@@ -117,7 +117,7 @@
   "providerSetupDialog": {
     "chooseTitle": "Choose your agents",
     "noneTitle": "No coding agents found",
-    "chooseDescription": "lich found these on your machine. Turn on the ones you use — the rest stay out of the New Session menu.",
+    "chooseDescription": "lich found these on your machine. Turn on the ones you use; the rest stay out of the New Session menu.",
     "noneDescription": "lich runs the agents already installed on your machine, and found none. Install one, then check again.",
     "changeLater": "You can change this any time in Settings › Providers.",
     "pointToBinary": "Already have one installed? Point lich at its binary in Settings › Providers.",

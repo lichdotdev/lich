@@ -23,7 +23,7 @@
   },
   "view": {
     "restartFailed": "Falha ao reiniciar a sessão: {error}",
-    "pasteSettingFailed": "Não deu para ler se o paste longo deve ser expandido, então este foi colado uma vez: {error}",
+    "pasteSettingFailed": "Não foi possível ler a configuração de expandir colagens longas, então esta foi colada uma única vez: {error}",
     "startFailed": "Falha ao iniciar a sessão: {error}"
   },
   "dropFiles": {

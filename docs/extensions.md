@@ -60,12 +60,10 @@ the JSON of each are in [`extension/`](../extension/), and `extension/testdata/`
 component and message. Import `github.com/lichdotdev/lich/extension` rather than writing the JSON by hand.
 
 - From the extension: `render` (a surface's tree and shortcuts), `toast`, `toast.dismiss`, `openExternal`,
-  `clipboard` and `focus`.
-- From lich: `surface.opened`, `surface.closed`, `event` (a handler the tree named fired) and `language` (see
-  Translating an extension).
   `clipboard`, `focus` and `call` (see [Calling lich](#calling-lich)).
-- From lich: `surface.opened`, `surface.closed`, `event` (a handler the tree named fired), `result` (the answer to
-  a `call`) and `lich.event` (an event the extension subscribed to).
+- From lich: `surface.opened`, `surface.closed`, `event` (a handler the tree named fired), `language` (see
+  Translating an extension), `result` (the answer to a `call`) and `lich.event` (an event the extension subscribed
+  to).
 
 Stderr goes to lich's log.
 

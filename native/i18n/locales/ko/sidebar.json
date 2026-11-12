@@ -16,11 +16,11 @@
   "newFolderDialog": {
     "title": "새 폴더",
     "description": {
-      "other": "세션 {count}개를 원하는 이름으로 정리합니다. 세션은 열린 채로 있고, 체크아웃도 바뀌지 않습니다."
+      "other": "세션 {count}개를 원하는 이름의 폴더에 넣습니다. 세션은 열린 채로 있고, 체크아웃도 바뀌지 않습니다."
     },
     "name": "이름",
     "placeholder": "디자인 시스템",
-    "exists": "{name}이(가) 이미 있으므로 그 폴더에 넣습니다.",
+    "exists": "{name} 폴더가 이미 있어서 그 폴더에 넣습니다.",
     "moveHere": "여기로 이동"
   },
   "sessionCard": {
@@ -84,7 +84,7 @@
     "newSessionIn": "{name}에 새 세션",
     "optionsFor": "{name} 옵션",
     "renameFolder": "폴더 이름 바꾸기",
-    "mergesInto": "{name}이(가) 이미 있으므로, 이름을 바꾸면 이 폴더가 그 폴더에 합쳐집니다.",
+    "mergesInto": "{name} 폴더가 이미 있어서, 이름을 바꾸면 이 폴더가 그 폴더에 합쳐집니다.",
     "ungroup": "그룹 해제",
     "moveToFolder": "그룹을 폴더로 이동",
     "newFolder": "새 폴더…",
@@ -97,17 +97,17 @@
   },
   "folderLaunchMenuItems": {
     "newSessionIn": "{folder}에 새 세션",
-    "newSessionInOn": "{folder}에 새 세션, {checkout}에서"
+    "newSessionInOn": "{checkout}에서 {folder}에 새 세션"
   },
   "worktreeDialog": {
     "lookingUpIssue": "#{number} 찾는 중…",
     "loadingBranches": "브랜치 불러오는 중…",
     "worktrees": "Worktree",
     "creating": "만드는 중…",
-    "carryReused": "{name}이(가) 이미 있어서 현재 상태 그대로 열었고, 커밋하지 않은 변경 사항은 원래 자리에 남아 있습니다.",
+    "carryReused": "{name} worktree가 이미 있어서 현재 상태 그대로 열었고, 커밋하지 않은 변경 사항은 원래 위치에 그대로 있습니다.",
     "carryFailed": "worktree는 열렸지만, 커밋하지 않은 변경 사항을 복사하지 못했습니다: {error}",
     "handoffLost": "세션에 메시지를 보내지 못했습니다: {error}",
-    "neverPrompted": "세션이 프롬프트 상태에 이르지 못했습니다"
+    "neverPrompted": "세션이 입력을 받을 수 있는 상태가 되지 않았습니다"
   },
   "worktreeCloseDialogs": {
     "closeTitle": "worktree 세션 닫기",
@@ -120,7 +120,7 @@
     "title": "세션이 아직 실행 중입니다",
     "closeAnyway": "그래도 닫기",
     "running": {
-      "other": "세션 {count}개가 턴 진행 중입니다. 닫으면 멈추고, 진행 중이던 턴은 사라집니다."
+      "other": "세션 {count}개가 아직 턴을 진행하고 있습니다. 닫으면 세션이 멈추고 진행 중이던 턴은 사라집니다."
     }
   },
   "worktreeSandboxRow": {
@@ -129,11 +129,11 @@
   "sessionTooltip": {
     "notMounted": "마운트되지 않음(심볼릭 링크): {paths}",
     "morePaths": "+{count}개 더",
-    "modelChanged": "{requested}(으)로 시작, {running} 실행 중"
+    "modelChanged": "{requested} 모델로 시작, 지금은 {running} 실행 중"
   },
   "worktreeDialogView": {
     "title": "새 worktree 세션",
-    "description": "자체 브랜치와 자체 세션을 가진 별도의 체크아웃입니다.",
+    "description": "브랜치와 세션을 따로 갖는 별도의 체크아웃입니다.",
     "name": "이름",
     "namePlaceholder": "비우면 무작위 이름, 단어 또는 #이슈",
     "branchLine": "브랜치: {branch}",
@@ -151,13 +151,13 @@
     },
     "create": "만들기",
     "open": "열기",
-    "forkTitle": "{label}을(를) worktree로 포크",
+    "forkTitle": "{label} 세션을 worktree로 포크",
     "forkDescription": "자체 브랜치를 가진 별도의 체크아웃입니다.",
     "fork": "포크"
   },
   "worktreeLogic": {
     "checking": "원격 확인 중…",
-    "behind": "{upstream}보다 {count}개 뒤처짐 · {upstream}에서 시작",
+    "behind": "{upstream}보다 커밋 {count}개 뒤처짐 · {upstream}에서 시작",
     "notPushed": {
       "other": "푸시하지 않은 커밋 {count}개 · 로컬 {branch}에서 시작"
     },
@@ -169,17 +169,17 @@
     "adopted": "{path}의 worktree는 lich가 만든 것이 아닙니다. 삭제하면 그 디렉터리는 지워지지만 브랜치는 남습니다."
   },
   "sidebarProfile": {
-    "handoffOfferTitle": "{label}을(를) 다른 프로필로 옮길까요?",
-    "handoffOfferDescription": "작업을 넘긴 에이전트가 {profile}을(를) 제안합니다",
+    "handoffOfferTitle": "{label} 세션을 다른 프로필로 옮길까요?",
+    "handoffOfferDescription": "작업을 넘긴 에이전트가 {profile} 프로필을 제안합니다",
     "handoffOfferKeep": "유지",
-    "limitOfferTitle": "{label}이(가) 사용량 한도에 도달했습니다",
+    "limitOfferTitle": "{label} 세션이 사용량 한도에 도달했습니다",
     "limitOfferDescription": "{profile}에는 아직 사용량이 남아 있습니다",
     "offerContinue": "{profile}에서 계속",
     "limitOfferWait": "기다리기",
-    "offerFailed": "{label}을(를) {profile}에서 계속할 수 없습니다: {error}",
+    "offerFailed": "{label} 세션을 {profile} 프로필에서 계속할 수 없습니다: {error}",
     "continueIn": "다음에서 계속",
     "continueInHint": "같은 대화, 다른 로그인",
-    "goneTitle": "{label}은(는) 더 이상 없는 프로필에서 시작되었습니다",
+    "goneTitle": "{label} 세션은 이제 없는 프로필에서 시작되었습니다",
     "goneDescription": "이 대화는 재개할 수 없습니다. 대신 이 프로젝트의 프로필로 새 세션을 시작하세요.",
     "startNew": "새로 시작",
     "dismiss": "닫기",
@@ -190,8 +190,8 @@
     "otherProviders": "다른 프로바이더"
   },
   "fork": {
-    "pruned": "{name}에는 포크할 대화가 더 이상 없습니다: {provider}이(가) 삭제했습니다.",
-    "failed": "{name}을(를) 포크하지 못했습니다: {error}"
+    "pruned": "{provider}가 대화를 정리해서 {name} 세션에는 포크할 대화가 남아 있지 않습니다.",
+    "failed": "{name} 세션을 포크하지 못했습니다: {error}"
   },
   "services": {
     "title": "서비스",
@@ -211,7 +211,7 @@
     "editShort": "편집",
     "delete": "서비스 삭제",
     "newService": "새 서비스…",
-    "failedOp": "서비스가 요청을 받지 않았습니다: {error}",
+    "failedOp": "서비스가 요청을 처리하지 못했습니다: {error}",
     "railHint": "서비스 · {up}/{total} 실행 중",
     "console": {
       "ctrlC": "Ctrl+C로 서비스 중지",
@@ -252,7 +252,7 @@
     "staysOn": "풀 리퀘스트가 닫힐 때까지 유지됩니다. {limit}회 실행 후 멈춥니다.",
     "noPR": "이 브랜치에는 아직 풀 리퀘스트가 없습니다. 열리면 감시를 시작합니다.",
     "setByAgent": "이 세션의 에이전트가 설정했습니다.",
-    "setByLich": "사용량 한도 이후 lich가 설정했습니다.",
+    "setByLich": "사용량 한도에 걸려 lich가 설정했습니다.",
     "runsUsed": "{limit}회 중 {runs}회 실행됨.",
     "remove": "제거",
     "save": "저장",
@@ -263,7 +263,7 @@
     "checksFailed": "체크가 실패하면 프롬프트를 입력합니다",
     "checksPassed": "체크가 통과하면 프롬프트를 입력합니다",
     "review": "리뷰가 도착하면 프롬프트를 입력합니다",
-    "at": "{when} 프롬프트",
+    "at": "{when}에 프롬프트 입력",
     "resume": "사용량 한도 이후 {when}에 계속합니다"
   }
 }

@@ -16,12 +16,12 @@
   "newFolderDialog": {
     "title": "Nova pasta",
     "description": {
-      "one": "Arquiva esta sessão sob um nome seu. Ela continua aberta, e o checkout dela não muda.",
-      "other": "Arquiva estas {count} sessões sob um nome seu. Elas continuam abertas, e os checkouts delas não mudam."
+      "one": "Guarda esta sessão numa pasta com o nome que você escolher. Ela continua aberta, e o checkout dela não muda.",
+      "other": "Guarda estas {count} sessões numa pasta com o nome que você escolher. Elas continuam abertas, e os checkouts delas não mudam."
     },
     "name": "Nome",
     "placeholder": "Design system",
-    "exists": "{name} já existe, então isto vai para ela.",
+    "exists": "{name} já existe, então vai tudo para essa pasta.",
     "moveHere": "Mover para cá"
   },
   "sessionCard": {
@@ -118,11 +118,11 @@
     "discardAndRemove": "Descartar alterações e remover"
   },
   "closeAllDialog": {
-    "title": "As sessões ainda estão em execução",
+    "title": "Ainda há sessões em execução",
     "closeAnyway": "Fechar mesmo assim",
     "running": {
-      "one": "Uma sessão está no meio de um turno. Fechar a interrompe; o turno em andamento é perdido.",
-      "other": "{count} sessões estão no meio de um turno. Fechar as interrompe; os turnos em andamento são perdidos."
+      "one": "Uma sessão está no meio de um turno. Fechar interrompe a sessão, e o turno em andamento é perdido.",
+      "other": "{count} sessões estão no meio de um turno. Fechar interrompe as sessões, e os turnos em andamento são perdidos."
     }
   },
   "worktreeSandboxRow": {
@@ -135,7 +135,7 @@
   },
   "worktreeDialogView": {
     "title": "Nova sessão em worktree",
-    "description": "Um checkout separado em sua própria branch, com uma sessão própria.",
+    "description": "Um checkout separado, numa branch própria e com uma sessão só dele.",
     "name": "Nome",
     "namePlaceholder": "Vazio para um nome aleatório, palavras ou #issue",
     "branchLine": "branch: {branch}",
@@ -154,7 +154,7 @@
     },
     "create": "Criar",
     "open": "Abrir",
-    "forkTitle": "Fork de {label} para uma worktree",
+    "forkTitle": "Fazer fork de {label} numa worktree",
     "forkDescription": "Um checkout separado, na própria branch.",
     "fork": "Fazer fork"
   },
@@ -165,8 +165,8 @@
       "one": "{count} commit não enviado · começa da {branch} local",
       "other": "{count} commits não enviados · começa da {branch} local"
     },
-    "unreachable": "Não foi possível alcançar {remote} · começa da {branch} local",
-    "unreachableRemote": "Não foi possível alcançar o remoto · começa da {branch} local",
+    "unreachable": "Sem acesso a {remote} · começa da {branch} local",
+    "unreachableRemote": "Sem acesso ao remoto · começa da {branch} local",
     "keepsChanges": "Começa da {branch} local para manter suas alterações"
   },
   "closeWorktree": {
@@ -194,7 +194,7 @@
     "otherProviders": "Outros provedores"
   },
   "fork": {
-    "pruned": "{name} não tem mais conversa para fazer fork: o {provider} a apagou.",
+    "pruned": "{name} não tem mais conversa para fazer fork, porque o {provider} a apagou.",
     "failed": "Não foi possível fazer fork de {name}: {error}"
   },
   "services": {

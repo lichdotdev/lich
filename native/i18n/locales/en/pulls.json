@@ -32,7 +32,7 @@
     "closed": "Pull request is closed",
     "draft": "Pull request is a draft",
     "conflicts": "Conflicts with {base}",
-    "behind": "Base branch has moved — update this branch first",
+    "behind": "Base branch has moved; update this branch first",
     "pattern": {
       "match": "{target} must match {pattern}",
       "notMatch": "{target} must not match {pattern}",
@@ -59,27 +59,27 @@
   },
   "pullsConflicts": {
     "loading": "Working out which files conflict…",
-    "failed": "Couldn’t work out which files conflict: {error}",
-    "stale": "No file conflicts here now — GitHub may not have caught up.",
+    "failed": "Couldn't work out which files conflict: {error}",
+    "stale": "No file conflicts here now. GitHub may not have caught up.",
     "count": {
       "one": "{count} conflicting file",
       "other": "{count} conflicting files"
     }
   },
   "pullsEmptyState": {
-    "openFailed": "Couldn’t open a pull request: {error}",
+    "openFailed": "Couldn't open a pull request: {error}",
     "none": "No open pull request.",
     "openOnGitHub": "Open on GitHub"
   },
   "pullsAccount": {
     "chooseTitle": "Choose a GitHub account",
     "chooseDescription": "gh is signed in to more than one account. Pick the one that can see this repository.",
-    "hiddenTitle": "{account} can’t see this repository",
-    "hiddenDescription": "GitHub answered as if it didn’t exist. Pick another account.",
+    "hiddenTitle": "{account} can't see this repository",
+    "hiddenDescription": "GitHub answered as if it didn't exist. Pick another account.",
     "continue": "Continue",
     "tryAgain": "Try again",
     "later": "You can change it later in Settings › Version Control.",
-    "saveFailed": "Couldn’t save the account: {error}"
+    "saveFailed": "Couldn't save the account: {error}"
   },
   "submitReviewDialog": {
     "verdict": {
@@ -93,8 +93,8 @@
         "title": "Request changes"
       }
     },
-    "summaryPlaceholder": "Summary — optional",
-    "summaryAlone": "No line comments — this sends the summary alone."
+    "summaryPlaceholder": "Summary (optional)",
+    "summaryAlone": "No line comments, so this sends the summary alone."
   },
   "pullsConversation": {
     "commentFailed": "Comment failed: {error}",
@@ -106,7 +106,7 @@
     "commentOn": "Comment on the pull request",
     "comment": "Comment",
     "commentPlaceholder": "Something about the pull request as a whole",
-    "readFailed": "Couldn’t read the conversation: {error}",
+    "readFailed": "Couldn't read the conversation: {error}",
     "nothingYet": "Nothing said yet.",
     "line": "line {line}",
     "lines": "lines {start}-{end}",
@@ -178,7 +178,7 @@
     }
   },
   "pullsFiles": {
-    "loadFailed": "Couldn’t load the diff: {error}",
+    "loadFailed": "Couldn't load the diff: {error}",
     "hideTree": "Hide the file tree",
     "showTree": "Show the file tree",
     "viewed": "{viewed} of {total} viewed"
@@ -220,19 +220,19 @@
   },
   "pulls": {
     "alreadyRemoved": "{name} was already removed",
-    "pinnedSession": "Worktree has a pinned session — unpin it first.",
-    "notCreatedByLich": "lich did not create this worktree — remove it from the sidebar.",
-    "dirty": "Worktree has uncommitted changes — remove it from the sidebar.",
+    "pinnedSession": "Worktree has a pinned session. Unpin it first.",
+    "notCreatedByLich": "lich did not create this worktree. Remove it from the sidebar.",
+    "dirty": "Worktree has uncommitted changes. Remove it from the sidebar.",
     "removed": "Removed {name}",
     "removeFailed": "Failed to remove worktree: {error}",
     "merged": "Merged #{number} into {base}",
-    "announceFailed": "Couldn’t tell the sessions in {name}: {error}",
+    "announceFailed": "Couldn't tell the sessions in {name}: {error}",
     "removeWorktree": "Remove worktree",
-    "openSessionFailed": "Couldn’t open a session: {error}",
+    "openSessionFailed": "Couldn't open a session: {error}",
     "handedOff": "Handed #{number} to {session}",
     "goToSession": "Go to session",
     "openInSession": "Open in Session",
-    "forkBlocked": "The head branch lives on a fork that does not allow edits by maintainers — its commits could not be pushed back",
+    "forkBlocked": "The head branch lives on a fork that does not allow edits by maintainers, so its commits could not be pushed back",
     "runningRemoval": {
       "removeAnyway": "Remove anyway"
     }

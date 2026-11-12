@@ -30,7 +30,7 @@
     "opened": "{label} abrió un navegador",
     "dismiss": "Descartar",
     "open": "Abrir",
-    "downloaded": "Descargado {name}",
+    "downloaded": "Se descargó {name}",
     "idle": "¿Cerrar el navegador inactivo de {label}?",
     "keepOpen": "Mantener abierto",
     "closeIdle": "Cerrar",
@@ -77,7 +77,7 @@
   },
   "move": {
     "title": "¿Mover {label} aquí?",
-    "body": "{label} está en el diseño {layout}. Al moverla sale de allí; la sesión sigue en ejecución.",
+    "body": "{label} está en el diseño {layout}. Si la mueves, saldrá de ese diseño, pero la sesión seguirá en ejecución.",
     "confirm": "Mover"
   },
   "load": {
@@ -96,14 +96,14 @@
       "other": "{count} delegados · Mostrar al lado"
     },
     "add": "{here} de {count} aquí · Añadir {missing}",
-    "hint": "Coloca al lado las sesiones que abrió esta",
+    "hint": "Muestra junto a esta sesión las que ella abrió",
     "moveTitle": {
       "one": "¿Traer {count} delegado aquí?",
       "other": "¿Traer {count} delegados aquí?"
     },
     "moveBody": {
-      "one": "{count} delegado está en otro layout. Traerlo aquí lo saca de allí; la sesión sigue en marcha.",
-      "other": "{count} delegados están en otros layouts. Traerlos aquí los saca de allí; las sesiones siguen en marcha."
+      "one": "{count} delegado está en otro diseño. Si lo traes aquí, saldrá de allí, pero la sesión seguirá en marcha.",
+      "other": "{count} delegados están en otros diseños. Si los traes aquí, saldrán de allí, pero las sesiones seguirán en marcha."
     }
   }
 }

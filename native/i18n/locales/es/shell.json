@@ -10,7 +10,7 @@
     "installFailed": "Falló la instalación: {error}",
     "title": "Activa la integración con agentes",
     "description": "El plugin de lich informa a la aplicación del estado y los títulos de tus sesiones, actualiza su estado de git y permite que una sesión restaurada reanude su conversación. Instálalo en las CLI que usas.",
-    "needsHooks": "necesita /hooks para confiar en él",
+    "needsHooks": "hay que confiar en él con /hooks",
     "dontAskAgain": "No volver a preguntar",
     "notNow": "Ahora no",
     "installing": "Instalando…",
@@ -19,7 +19,7 @@
   "appUpdateGate": {
     "available": "lich {version} está disponible",
     "required": "lich {version} es una actualización de seguridad obligatoria",
-    "requiredDetail": "No se abren nuevas sesiones de agentes hasta que se instale. Las que ya están en marcha siguen funcionando.",
+    "requiredDetail": "No se podrán abrir sesiones de agente nuevas hasta que se instale. Las que ya están en marcha siguen funcionando.",
     "updateAndInstall": "Actualizar e instalar",
     "later": "Más tarde",
     "updated": "lich se actualizó a la {version}",
@@ -32,7 +32,7 @@
   "emptySessions": {
     "title": "No hay ninguna sesión abierta",
     "description": "Abre una sesión para empezar a trabajar en este proyecto.",
-    "noAgent": "No se encontró ningún agente en el PATH, así que esto abre una terminal. Configura uno en Ajustes › Proveedores.",
+    "noAgent": "No se encontró ningún agente en el PATH, así que se abrirá una terminal. Configura uno en Ajustes › Proveedores.",
     "newTerminal": "Nueva terminal",
     "newSession": "Nueva sesión"
   },
@@ -51,13 +51,13 @@
     "costUnavailable": "Costo no disponible",
     "sessionCost": "Costo de la sesión",
     "costOfBudget": "{cost} de {budget} de presupuesto",
-    "costNote": "Costo de API de las conversaciones de esta sesión. Los cargos de la suscripción pueden diferir.",
+    "costNote": "Costo de API de las conversaciones de esta sesión. Los cargos de la suscripción pueden ser distintos.",
     "handsOnTime": "Tiempo activo",
     "handsOnFailed": "No se pudo leer el tiempo activo."
   },
   "gitMissingGate": {
     "title": "git no está instalado",
-    "description": "lich lee cada rama, diff y worktree a través de git. Las sesiones siguen funcionando sin él, pero las superficies de control de versiones quedan vacías.",
+    "description": "lich lee todas las ramas, diffs y worktrees con git. Las sesiones siguen funcionando sin él, pero las vistas de control de versiones quedan vacías.",
     "notNow": "Ahora no",
     "installGit": "Instalar git"
   },
@@ -117,15 +117,15 @@
   "providerSetupDialog": {
     "chooseTitle": "Elige tus agentes",
     "noneTitle": "No se encontraron agentes de código",
-    "chooseDescription": "lich encontró estos en tu máquina. Activa los que uses: el resto queda fuera del menú Nueva sesión.",
+    "chooseDescription": "lich encontró estos agentes en tu máquina. Activa los que uses y el resto no aparecerá en el menú Nueva sesión.",
     "noneDescription": "lich ejecuta los agentes que ya tienes instalados en tu máquina y no encontró ninguno. Instala uno y vuelve a comprobar.",
     "changeLater": "Puedes cambiarlo cuando quieras en Ajustes › Proveedores.",
-    "pointToBinary": "¿Ya tienes uno instalado? Indica a lich su binario en Ajustes › Proveedores.",
+    "pointToBinary": "¿Ya tienes uno instalado? Indica la ruta de su binario en Ajustes › Proveedores.",
     "continue": "Continuar"
   },
   "resumeSessionDialog": {
     "title": "¿Reanudar la sesión anterior?",
-    "description": "{label} dejó una conversación ({id}). Reanúdala para retomarla donde se detuvo, o empieza de cero para una vacía.",
+    "description": "{label} dejó una conversación ({id}). Reanúdala para seguir donde se quedó o empieza de cero con una vacía.",
     "alwaysFor": "Hacer siempre esto para {provider}",
     "changeInSettings": "· cámbialo en Ajustes › Proveedores",
     "thisProvider": "este proveedor",
@@ -156,24 +156,24 @@
   "closeDialog": {
     "title": "¿Mantener lich en ejecución?",
     "running": {
-      "one": "{count} sesión está en ejecución. En segundo plano sigue trabajando, y abrir lich de nuevo la devuelve a la pantalla.",
-      "other": "{count} sesiones están en ejecución. En segundo plano siguen trabajando, y abrir lich de nuevo las devuelve a la pantalla."
+      "one": "{count} sesión está en ejecución. En segundo plano seguirá trabajando, y al abrir lich de nuevo volverá a aparecer en pantalla.",
+      "other": "{count} sesiones están en ejecución. En segundo plano seguirán trabajando, y al abrir lich de nuevo volverán a aparecer en pantalla."
     },
     "dontAsk": "No volver a preguntar",
     "keep": "Mantener en ejecución",
     "quit": "Salir de lich",
     "services": {
-      "one": "{count} servicio está en marcha. En segundo plano sigue funcionando, y salir de lich lo detiene.",
-      "other": "{count} servicios están en marcha. En segundo plano siguen funcionando, y salir de lich los detiene."
+      "one": "{count} servicio está en marcha. En segundo plano seguirá funcionando, y al salir de lich se detendrá.",
+      "other": "{count} servicios están en marcha. En segundo plano seguirán funcionando, y al salir de lich se detendrán."
     },
     "servicesToo": {
-      "one": "También hay {count} servicio en marcha, y salir de lich lo detiene.",
-      "other": "También hay {count} servicios en marcha, y salir de lich los detiene."
+      "one": "También hay {count} servicio en marcha, que se detendrá al salir de lich.",
+      "other": "También hay {count} servicios en marcha, que se detendrán al salir de lich."
     }
   },
   "uncleanExitGate": {
     "title": "La ejecución anterior de lich terminó de forma inesperada",
-    "description": "Tus sesiones se restauraron, pero lo que estaban ejecutando se detuvo con ella.",
+    "description": "Tus sesiones se restauraron, pero lo que estaban ejecutando se detuvo con el cierre.",
     "openLogFolder": "Abrir carpeta del log",
     "dismiss": "Descartar"
   },
@@ -195,10 +195,10 @@
     "open": "Abrir",
     "needsInput": "{label} necesita una respuesta tuya",
     "finished": "{label} terminó de trabajar",
-    "watchStopped": "Se dejó de vigilar la pull request #{number}",
-    "watchStoppedDetail": "{label} ejecutó su prompt {runs} veces en ella.",
+    "watchStopped": "Se dejó de vigilar el pull request #{number}",
+    "watchStoppedDetail": "{label} ejecutó su prompt {runs} veces en él.",
     "scheduleLost": "Prompt programado perdido",
-    "scheduleLostDetail": "Al eliminar {label} también se eliminó el prompt fijado para {when}."
+    "scheduleLostDetail": "Al eliminar {label} también se eliminó el prompt programado para {when}."
   },
   "windowClose": {
     "changeInSettings": "· cámbialo en Ajustes › General",
@@ -213,11 +213,11 @@
   },
   "main": {
     "lostTitle": "Otra ventana de lich tomó el control, o lich se cerró.",
-    "lostHint": "Ejecuta `lich native` para reabrir aquí.",
+    "lostHint": "Ejecuta `lich native` para volver a abrirla aquí.",
     "renameFailed": "No se pudo renombrar la sesión: {error}"
   },
   "notifyPrompt": {
-    "description": "Una sesión acaba de pedirte una respuesta mientras estabas en otro sitio. lich puede mostrar una notificación de escritorio cuando eso pase, con el nombre de la sesión y de su proyecto, para que puedas iniciar algo y alejarte de la ventana. Las sesiones que estás mirando nunca notifican. Puedes cambiarlo cuando quieras en Ajustes › General."
+    "description": "Una sesión acaba de pedirte una respuesta mientras estabas en otra parte. lich puede mostrar una notificación de escritorio cuando pase, con el nombre de la sesión y de su proyecto, para que puedas lanzar algo y apartarte de la ventana. Las sesiones que tienes a la vista nunca notifican. Puedes cambiarlo cuando quieras en Ajustes › General."
   },
   "extensionScreen": {
     "restarting": "{name} se detuvo y se está reiniciando…",

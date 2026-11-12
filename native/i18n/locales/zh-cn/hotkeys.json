@@ -10,7 +10,7 @@
     "newWorktree": "新建工作树会话",
     "renameSession": "重命名当前会话",
     "closeSession": "关闭当前会话",
-    "togglePin": "固定或取消固定当前会话",
+    "togglePin": "置顶或取消置顶当前会话",
     "openTerminal": "在会话目录中打开终端",
     "delegate": "委派给另一个会话",
     "nextSession": "下一个会话",
@@ -28,7 +28,7 @@
     "otherPane": "聚焦下一个窗格",
     "zoomPane": "放大当前聚焦的窗格",
     "unsplitPane": "将当前聚焦的窗格移出布局",
-    "rotateSplit": "在左右与上下之间切换当前聚焦的分割",
+    "rotateSplit": "切换聚焦窗格的排列：左右或上下",
     "settings": "设置",
     "pulls": "拉取请求",
     "shortcuts": "键盘快捷键",
@@ -38,27 +38,27 @@
     "tour": "开始导览"
   },
   "terminalCost": {
-    "a": "Ctrl+{key} 是 shell 的移到行首操作，会话将不再收到它。",
-    "c": "Ctrl+{key} 是 shell 的中断操作，会话将不再收到它。",
-    "d": "Ctrl+{key} 是 shell 的输入结束操作，会话将不再收到它。",
-    "e": "Ctrl+{key} 是 shell 的移到行尾操作，会话将不再收到它。",
-    "k": "Ctrl+{key} 是 shell 的删除到行尾操作，会话将不再收到它。",
-    "l": "Ctrl+{key} 是 shell 的清屏操作，会话将不再收到它。",
-    "q": "Ctrl+{key} 是 shell 的恢复输出操作，会话将不再收到它。",
-    "r": "Ctrl+{key} 是 shell 的历史搜索，会话将不再收到它。",
-    "s": "Ctrl+{key} 是 shell 的暂停输出操作，会话将不再收到它。",
-    "u": "Ctrl+{key} 是 shell 的删除到行首操作，会话将不再收到它。",
-    "w": "Ctrl+{key} 是 shell 的删除单词操作，会话将不再收到它。",
-    "z": "Ctrl+{key} 是 shell 的挂起操作，会话将不再收到它。",
-    "f": "Ctrl+{key} 是会话终端自带的搜索，会话将不再收到它。",
-    "v": "Ctrl+{key} 是 lich 发送给智能体的图片粘贴操作，会话将不再收到它。",
-    "Backspace": "Ctrl+{key} 是 lich 发送给智能体的删除单词操作，会话将不再收到它。"
+    "a": "Ctrl+{key} 在 shell 中用于移到行首，会话将收不到这个按键。",
+    "c": "Ctrl+{key} 在 shell 中用于中断，会话将收不到这个按键。",
+    "d": "Ctrl+{key} 在 shell 中用于结束输入，会话将收不到这个按键。",
+    "e": "Ctrl+{key} 在 shell 中用于移到行尾，会话将收不到这个按键。",
+    "k": "Ctrl+{key} 在 shell 中用于删除到行尾，会话将收不到这个按键。",
+    "l": "Ctrl+{key} 在 shell 中用于清屏，会话将收不到这个按键。",
+    "q": "Ctrl+{key} 在 shell 中用于恢复输出，会话将收不到这个按键。",
+    "r": "Ctrl+{key} 在 shell 中用于搜索历史，会话将收不到这个按键。",
+    "s": "Ctrl+{key} 在 shell 中用于暂停输出，会话将收不到这个按键。",
+    "u": "Ctrl+{key} 在 shell 中用于删除到行首，会话将收不到这个按键。",
+    "w": "Ctrl+{key} 在 shell 中用于删除前一个词，会话将收不到这个按键。",
+    "z": "Ctrl+{key} 在 shell 中用于挂起，会话将收不到这个按键。",
+    "f": "Ctrl+{key} 用于会话终端自己的搜索，会话将收不到这个按键。",
+    "v": "Ctrl+{key} 是 lich 发给智能体的图片粘贴，会话将收不到这个按键。",
+    "Backspace": "Ctrl+{key} 是 lich 发给智能体的“删除前一个词”，会话将收不到这个按键。"
   },
   "unassigned": "未分配",
   "shortcuts": {
     "passthroughTitle": "传递给智能体",
     "attachImage": "从剪贴板附加图片",
-    "newline": "插入换行而不发送",
-    "eraseWord": "删除前一个单词"
+    "newline": "换行但不发送",
+    "eraseWord": "删除前一个词"
   }
 }

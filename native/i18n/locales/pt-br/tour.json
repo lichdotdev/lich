@@ -21,11 +21,11 @@
     },
     "stageShell": {
       "title": "Este é o seu terminal",
-      "body": "Um shell neste projeto. Quando houver um agente instalado, Nova sessão abre ele aqui."
+      "body": "Um shell neste projeto. Quando houver um agente instalado, Nova sessão passa a abri-lo aqui."
     },
     "session": {
       "title": "Cada sessão ganha uma linha",
-      "body": "Clique numa linha para ir para a sessão dela, e clique com o botão direito para todo o resto que dá para fazer com ela."
+      "body": "Clique numa linha para ir para a sessão dela e clique com o botão direito para ver tudo o que mais dá para fazer com ela."
     },
     "worktree": {
       "title": "Uma tarefa, uma worktree",

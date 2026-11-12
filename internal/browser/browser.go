@@ -299,7 +299,7 @@ type launchSpec struct {
 // and registers it. The caller holds the owner's lock; mu is taken only to
 // register.
 func (s *Service) start(spec launchSpec) (Handle, error) {
-	page, err := s.launch(spec.dir, spec.headed)
+	page, err := s.launch(spec.dir, spec.headed, launchScale(s.unwatchedView().Scale))
 	if err != nil {
 		return Handle{}, errors.Join(err, os.RemoveAll(spec.dir))
 	}

@@ -7,18 +7,18 @@
       "idle": "空闲"
     },
     "phaseJoiner": "或",
-    "noMatch": "没有会话。当前会话保持显示。",
-    "noMatchQuery": "没有与“{query}”匹配的会话。当前会话保持显示。",
-    "noMatchPhases": "没有{phases}的会话。当前会话保持显示。",
-    "noMatchPhasesQuery": "没有与“{query}”匹配的{phases}会话。当前会话保持显示。"
+    "noMatch": "没有会话。当前会话仍会显示。",
+    "noMatchQuery": "没有与“{query}”匹配的会话。当前会话仍会显示。",
+    "noMatchPhases": "没有{phases}的会话。当前会话仍会显示。",
+    "noMatchPhasesQuery": "没有与“{query}”匹配的{phases}会话。当前会话仍会显示。"
   },
   "cost": {
     "mixedModels": "此对话切换过模型，因此 lich 无法计价。",
     "unpricedModel": "此模型暂无价格，lich 需要联网获取。"
   },
   "handsOn": {
-    "detailTurn": "此会话被实际操作的时长，包括输入、汇报或运行一轮的时间。超过 15 分钟的间隔计为离开。",
-    "detailTool": "此会话被实际操作的时长，包括输入或汇报工具调用的时间。超过 15 分钟的间隔计为离开。"
+    "detailTurn": "此会话的实际操作时长：你在输入、它在汇报或在运行一轮的时间。超过 15 分钟的间隔算作离开。",
+    "detailTool": "此会话的实际操作时长：你在输入或它在汇报工具调用的时间。超过 15 分钟的间隔算作离开。"
   },
   "spawnGate": {
     "checkoutGone": "此会话的工作树已不存在，因此会话已关闭。请重新创建工作树以继续。",

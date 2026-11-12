@@ -25,10 +25,10 @@ backend, `lich`, is pure Go (`CGO_ENABLED=0`) and needs no C toolchain.
 `zenity` provides the folder picker on Linux.
 
 The window, `lich-native`, is its own Go module in `native/`, built with cgo:
-it needs a C compiler and `pkg-config`, Gio's system libraries (on
-Debian/Ubuntu `libwayland-dev libx11-dev libx11-xcb-dev libxkbcommon-x11-dev
-libgles2-mesa-dev libegl1-mesa-dev libffi-dev libxcursor-dev libvulkan-dev`),
-and a `libghostty-vt` built with **Zig 0.16** from the Ghostty commit in
+it needs a C compiler and `pkg-config`, Gio's system libraries and
+libjpeg-turbo (on Debian/Ubuntu `libwayland-dev libx11-dev libx11-xcb-dev
+libxkbcommon-x11-dev libgles2-mesa-dev libegl1-mesa-dev libffi-dev
+libxcursor-dev libvulkan-dev libturbojpeg0-dev`), and a `libghostty-vt` built with **Zig 0.16** from the Ghostty commit in
 `native/GHOSTTY_COMMIT`, with `PKG_CONFIG_PATH` pointing at it. The header of
 `native/slice.sh` says how to build it; `native/build-windows.sh` cross-builds
 the Windows window from Linux.

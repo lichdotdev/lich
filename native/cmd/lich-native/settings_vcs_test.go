@@ -62,8 +62,8 @@ func TestIdentityLineSaysWhereTheEmailComesFrom(t *testing.T) {
 		want identityLine
 	}{
 		{backend.CommitIdentity{}, identityLine{"No git identity in this checkout.", "", "Commits will be refused until user.email is set."}},
-		{backend.CommitIdentity{Name: "Ana", Email: "a@x.io"}, identityLine{"Commits land as Ana", "<a@x.io>", "— git user.email, not this account."}},
-		{backend.CommitIdentity{Email: "a@x.io", Local: true}, identityLine{"Commits land as", "<a@x.io>", "— set in this repository, overriding your global one."}},
+		{backend.CommitIdentity{Name: "Ana", Email: "a@x.io"}, identityLine{"Commits land as Ana", "<a@x.io>", "· git user.email, not this account."}},
+		{backend.CommitIdentity{Email: "a@x.io", Local: true}, identityLine{"Commits land as", "<a@x.io>", "· set in this repository, overriding your global one."}},
 	}
 	for _, c := range cases {
 		if got := identityLineOf(c.id); got != c.want {

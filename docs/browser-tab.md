@@ -11,7 +11,9 @@ lich's window is native (`docs/native-window.md`). On Linux it speaks Wayland
 directly, without GTK, so no system webview fits inside it; Windows and macOS
 would take one, Linux would not. The page is a **headless Chromium** on
 `chromium.FindBrowser` (the system's Chrome, Edge, Chromium, Brave, Vivaldi
-or Helium), with its own user-data directory. `browser.Attach` starts its
+or Helium), with its own user-data directory. The browser draws at the scale
+the window drew pages at when it launched (`launchScale`), so the frames are
+the pane's own pixels. `browser.Attach` starts its
 screencast at the pane's size; each frame reaches the window as
 `browser:frame:<session>` and is acked only once sent, so a window slow to
 draw slows the stream. The pane's pointer, keys, committed text (an input

@@ -1,12 +1,10 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"encoding/base64"
 	"fmt"
 	"image"
-	"image/jpeg"
 	"log"
 	"slices"
 	"sync"
@@ -16,6 +14,7 @@ import (
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
+	"github.com/lichdotdev/lich/native/internal/turbojpeg"
 )
 
 // The model's store of session browsers: which sessions have one and what it
@@ -139,8 +138,8 @@ func (m *model) applyBrowserState(st api.BrowserState) {
 }
 
 // frameDecoders is how many frames the window decodes at once. A busy page's
-// 1280x720 frame takes 15 ms to decode (measured 2026-10-29), so one decoder
-// only just keeps up with 60 fps; four leave room for a slower CPU.
+// 1920x1080 frame takes 9 ms to decode (measured 2026-11-11), so one decoder
+// keeps up with 60 fps; four leave room for a slower CPU.
 const frameDecoders = 4
 
 // offerBrowserFrame hands owner's newest frame to decodeFrames, replacing one
@@ -206,7 +205,7 @@ func (m *model) applyBrowserFrame(owner string, ev backend.Event, seq uint64) er
 	if err != nil {
 		return fmt.Errorf("%s: %w", ev.Name, err)
 	}
-	img, err := jpeg.Decode(bytes.NewReader(raw))
+	img, err := turbojpeg.Decode(raw)
 	if err != nil {
 		return fmt.Errorf("%s: %w", ev.Name, err)
 	}

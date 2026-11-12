@@ -16,12 +16,12 @@
   "newFolderDialog": {
     "title": "新建文件夹",
     "description": {
-      "one": "将此会话归入你自己命名的文件夹。会话保持打开，其检出不会改变。",
-      "other": "将这 {count} 个会话归入你自己命名的文件夹。会话保持打开，它们的检出不会改变。"
+      "one": "将此会话归入你命名的文件夹。会话保持打开，检出也不变。",
+      "other": "将这 {count} 个会话归入你命名的文件夹。会话保持打开，检出也不变。"
     },
     "name": "名称",
     "placeholder": "设计系统",
-    "exists": "{name} 已存在，因此会归入其中。",
+    "exists": "{name} 已存在，会话将归入该文件夹。",
     "moveHere": "移到此处"
   },
   "sessionCard": {
@@ -43,7 +43,7 @@
     "closeSession": "关闭会话",
     "fork": "分叉",
     "forkHere": "在此处",
-    "forkWorktree": "Worktree…",
+    "forkWorktree": "工作树…",
     "forkResumeOnly": "仅可恢复",
     "copyReplyCommand": "复制回复命令",
     "schedule": "定时发送提示词…",
@@ -105,7 +105,7 @@
     "loadingBranches": "正在加载分支…",
     "worktrees": "工作树",
     "creating": "正在创建…",
-    "carryReused": "{name} 已经存在，因此按原样打开，你未提交的更改仍留在原处。",
+    "carryReused": "{name} 已存在，已按现状打开，未提交的更改仍留在原处。",
     "carryFailed": "工作树已打开，但无法复制你未提交的更改：{error}",
     "handoffLost": "无法将消息发送给该会话：{error}",
     "neverPrompted": "会话始终没有进入提示符"
@@ -131,11 +131,11 @@
   "sessionTooltip": {
     "notMounted": "未挂载（符号链接）：{paths}",
     "morePaths": "另外 {count} 项",
-    "modelChanged": "以 {requested} 打开，正在运行 {running}"
+    "modelChanged": "启动时为 {requested}，当前运行 {running}"
   },
   "worktreeDialogView": {
     "title": "新建工作树会话",
-    "description": "在独立分支上的单独检出，并带有自己的会话。",
+    "description": "独立分支上的单独检出，带有自己的会话。",
     "name": "名称",
     "namePlaceholder": "留空则随机命名，也可填写文字或 #议题",
     "branchLine": "分支：{branch}",
@@ -154,8 +154,8 @@
     },
     "create": "创建",
     "open": "打开",
-    "forkTitle": "将 {label} 分叉到 worktree",
-    "forkDescription": "一个独立的检出，位于自己的分支上。",
+    "forkTitle": "将 {label} 分叉到工作树",
+    "forkDescription": "独立分支上的单独检出。",
     "fork": "分叉"
   },
   "worktreeLogic": {
@@ -173,8 +173,8 @@
     "adopted": "位于 {path} 的工作树不是 lich 创建的。删除会移除该目录，但保留其分支。"
   },
   "sidebarProfile": {
-    "handoffOfferTitle": "要将 {label} 移到其他配置档案吗？",
-    "handoffOfferDescription": "移交工作的代理建议使用 {profile}",
+    "handoffOfferTitle": "要将 {label} 移到其他配置文件吗？",
+    "handoffOfferDescription": "交接工作的智能体建议使用 {profile}",
     "handoffOfferKeep": "保留",
     "limitOfferTitle": "{label} 已达到用量上限",
     "limitOfferDescription": "{profile} 还有剩余额度",
@@ -183,12 +183,12 @@
     "offerFailed": "无法在 {profile} 中继续 {label}：{error}",
     "continueIn": "转到",
     "continueInHint": "同一对话，换一个登录",
-    "goneTitle": "{label} 是在一个已不存在的配置档案中启动的",
-    "goneDescription": "无法恢复它的对话。请改为在此项目的配置档案中新建会话。",
+    "goneTitle": "{label} 是在一个已不存在的配置文件中启动的",
+    "goneDescription": "无法恢复它的对话。请改为在此项目的配置文件中新建会话。",
     "startNew": "新建会话",
     "dismiss": "忽略",
-    "resumesIn": "它将在 {profile} · {email} 中恢复，即它启动时所用的配置档案。",
-    "resumesInNoEmail": "它将在 {profile} 中恢复，即它启动时所用的配置档案。",
+    "resumesIn": "它将在 {profile} · {email} 中恢复，即它启动时所用的配置文件。",
+    "resumesInNoEmail": "它将在 {profile} 中恢复，即它启动时所用的配置文件。",
     "footerTitle": "{project} 中新的 {provider} 会话",
     "useGlobal": "使用全局（{profile}）",
     "otherProviders": "其他提供商"
@@ -215,7 +215,7 @@
     "editShort": "编辑",
     "delete": "删除服务",
     "newService": "新建服务…",
-    "failedOp": "服务没有接受这个操作：{error}",
+    "failedOp": "服务未执行该操作：{error}",
     "railHint": "服务 · {up}/{total} 运行中",
     "console": {
       "ctrlC": "Ctrl+C 停止服务",
@@ -247,16 +247,16 @@
     "when": "时间",
     "whenPlaceholder": "2h30 或 14:30",
     "prompt": "提示词",
-    "promptPlaceholder": "这个会话应该做什么?",
+    "promptPlaceholder": "这个会话要做什么？",
     "whenError": "无法识别。请试试 45m、2h30 或 14:30。",
     "landsToday": "今天 {clock}，{left} 后",
     "landsTomorrow": "明天 {clock}，{left} 后",
     "landsOn": "{date} {clock}，{left} 后",
     "runsOnce": "只运行一次。",
-    "staysOn": "持续生效直到拉取请求关闭。运行 {limit} 次后停止。",
+    "staysOn": "持续生效，直到拉取请求关闭。运行 {limit} 次后停止。",
     "noPR": "此分支还没有拉取请求。打开后开始监视。",
     "setByAgent": "由此会话的智能体设置。",
-    "setByLich": "由 lich 在用量限制后设置。",
+    "setByLich": "达到用量上限后由 lich 设置。",
     "runsUsed": "已运行 {runs}/{limit} 次。",
     "remove": "移除",
     "save": "保存",
@@ -267,7 +267,7 @@
     "checksFailed": "检查失败时输入提示词",
     "checksPassed": "检查通过时输入提示词",
     "review": "收到评审时输入提示词",
-    "at": "{when} 的提示词",
+    "at": "{when} 发送提示词",
     "resume": "用量限制后于 {when} 继续"
   }
 }

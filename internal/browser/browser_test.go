@@ -449,7 +449,7 @@ func TestOpenReplacesABrowserWhoseChromeDied(t *testing.T) {
 }
 
 func TestLaunchFailureLeavesNoBrowser(t *testing.T) {
-	s := newService(func(string, bool) (Page, error) {
+	s := newService(func(string, bool, float64) (Page, error) {
 		return nil, errors.New("no chrome")
 	}, func(string, string) (string, error) {
 		return t.TempDir(), nil
