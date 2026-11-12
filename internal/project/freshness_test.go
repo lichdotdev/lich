@@ -130,3 +130,31 @@ func TestCreateWorktreeReusesTheFetchBaseFreshnessJustMade(t *testing.T) {
 		t.Errorf("worktree HEAD = %s, want the upstream BaseFreshness fetched, %s", got, seen)
 	}
 }
+
+// TestUpstreamCountsReadsLocalRefs proves no fetch happens: a commit on origin
+// since the last fetch is not counted, the local one is.
+func TestUpstreamCountsReadsLocalRefs(t *testing.T) {
+	t.Parallel()
+	repo, git := initRepo(t)
+	origin, originGit := originWithMain(t, git)
+	commitIn(t, origin, originGit, "unfetched\n")
+	commitIn(t, repo, git, "local\n")
+
+	got, err := New(nil).UpstreamCounts(t.Context(), api.PathOptions{Path: repo})
+	if err != nil {
+		t.Fatalf("UpstreamCounts: %v", err)
+	}
+	if want := (BaseFreshness{Upstream: "origin/main", Ahead: 1}); got != want {
+		t.Errorf("UpstreamCounts = %+v, want %+v", got, want)
+	}
+}
+
+func TestUpstreamCountsWithoutUpstream(t *testing.T) {
+	t.Parallel()
+	repo, _ := initRepo(t)
+
+	got, err := New(nil).UpstreamCounts(t.Context(), api.PathOptions{Path: repo})
+	if err != nil || got != (BaseFreshness{}) {
+		t.Errorf("UpstreamCounts(no upstream) = %+v, %v; want zero", got, err)
+	}
+}

@@ -52,6 +52,7 @@ type Lich struct {
 
 	Diff        func(context.Context, api.PathOptions) (api.DiffStats, error)
 	BaseStatus  func(context.Context, api.PathOptions) (*api.BaseStatus, error)
+	Upstream    func(context.Context, api.PathOptions) (api.BaseFreshness, error)
 	PullRequest func(context.Context, api.PathOptions) (*api.PullRequest, error)
 
 	Notify   func(context.Context, api.NotifyOptions) (api.None, error)

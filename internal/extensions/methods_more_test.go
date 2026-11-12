@@ -3,6 +3,7 @@ package extensions
 import (
 	"context"
 	"errors"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -70,6 +71,9 @@ func (f *fakeLich) wire(l *Lich) {
 	}
 	l.BaseStatus = func(context.Context, api.PathOptions) (*api.BaseStatus, error) {
 		return &api.BaseStatus{Base: "origin/main", Behind: 4}, nil
+	}
+	l.Upstream = func(context.Context, api.PathOptions) (api.BaseFreshness, error) {
+		return api.BaseFreshness{Upstream: "origin/feat", Ahead: 2, Behind: 1}, nil
 	}
 	l.PullRequest = func(_ context.Context, opts api.PathOptions) (*api.PullRequest, error) {
 		if opts.Path != "/wt/feat" {
@@ -265,8 +269,9 @@ func TestServiceStatusFiresWhenAStateMoves(t *testing.T) {
 func TestGitReadsTheCardsAnswers(t *testing.T) {
 	s, x := apiService(t, &fakeLich{}, extension.PermissionGitRead)
 	status, err := call(t, s, x, extension.GitStatus, extension.GitParams{Path: "/wt/feat"})
-	want := extension.GitStatusResult{Branch: "feat", Head: "abc", Files: 2, Added: 10, Deleted: 3, Base: "origin/main", Behind: 4}
-	if err != nil || status.Branch != want.Branch || status.Behind != 4 || status.Files != 2 || status.Conflicts == nil {
+	want := extension.GitStatusResult{Branch: "feat", Head: "abc", Files: 2, Added: 10, Deleted: 3,
+		Upstream: "origin/feat", Ahead: 2, Behind: 1, Base: "origin/main", BehindBase: 4, Conflicts: []string{}}
+	if err != nil || !reflect.DeepEqual(status, want) {
 		t.Errorf("status %+v, %v; want %+v with an empty conflict list", status, err, want)
 	}
 	pr, err := call(t, s, x, extension.GitPullRequest, extension.GitParams{Path: "/wt/feat"})

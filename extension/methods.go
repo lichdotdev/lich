@@ -245,18 +245,23 @@ type GitParams struct {
 }
 
 // GitStatusResult is what a card shows of a checkout: its Branch and Head
-// commit, its uncommitted Files, Added and Deleted lines, and against Base
-// (the branch it merges into, "origin/main" form, empty when it has none) the
-// commits it is Behind and the files that would conflict.
+// commit, its uncommitted Files, Added and Deleted lines; the commits it is
+// Ahead and Behind its Upstream ("origin/feat" form, empty when it tracks
+// none), counted from the refs on disk with no fetch, as `git status` does;
+// and against Base (the branch it merges into, "origin/main" form, empty when
+// it has none) the commits it is BehindBase and the files that would conflict.
 type GitStatusResult struct {
-	Branch    string   `json:"branch"`
-	Head      string   `json:"head"`
-	Files     int      `json:"files"`
-	Added     int      `json:"added"`
-	Deleted   int      `json:"deleted"`
-	Base      string   `json:"base"`
-	Behind    int      `json:"behind"`
-	Conflicts []string `json:"conflicts"`
+	Branch     string   `json:"branch"`
+	Head       string   `json:"head"`
+	Files      int      `json:"files"`
+	Added      int      `json:"added"`
+	Deleted    int      `json:"deleted"`
+	Upstream   string   `json:"upstream"`
+	Ahead      int      `json:"ahead"`
+	Behind     int      `json:"behind"`
+	Base       string   `json:"base"`
+	BehindBase int      `json:"behindBase"`
+	Conflicts  []string `json:"conflicts"`
 }
 
 // PullRequestResult carries the open pull request of the checkout's branch,

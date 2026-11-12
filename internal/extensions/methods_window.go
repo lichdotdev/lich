@@ -23,7 +23,7 @@ var errNoWindow = errors.New("no lich window is open to show it")
 
 // gitStatus reads what a card reads of a checkout (native gitstate.go
 // refreshPath): the window's store is in the window, so the backend reads
-// the same two answers it does.
+// the same answers it does.
 func (s *Service) gitStatus(ctx context.Context, _ *installed, params extension.GitParams) (extension.GitStatusResult, error) {
 	opts := api.PathOptions{Path: params.Path}
 	diff, err := s.lich.Diff(ctx, opts)
@@ -34,12 +34,17 @@ func (s *Service) gitStatus(ctx context.Context, _ *installed, params extension.
 	if err != nil {
 		return extension.GitStatusResult{}, err
 	}
+	upstream, err := s.lich.Upstream(ctx, opts)
+	if err != nil {
+		return extension.GitStatusResult{}, err
+	}
 	out := extension.GitStatusResult{
 		Branch: diff.Branch, Head: diff.Head, Files: diff.Files, Added: diff.Added, Deleted: diff.Deleted,
+		Upstream: upstream.Upstream, Ahead: upstream.Ahead, Behind: upstream.Behind,
 		Conflicts: []string{},
 	}
 	if base != nil {
-		out.Base, out.Behind = base.Base, base.Behind
+		out.Base, out.BehindBase = base.Base, base.Behind
 		if base.Conflicts != nil {
 			out.Conflicts = base.Conflicts
 		}

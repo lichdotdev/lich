@@ -158,7 +158,7 @@ own" project or provider.
 | `services.stop` | `services:write` | `stop_service` | `{project, service}` | the service, as listed |
 | `services.restart` | `services:write` | `restart_service` | `{project, service}` | the service, as listed |
 | `services.output` | `services:read` | `read_service_output` | `{project, service}` | `{output}` |
-| `git.status` | `git:read` | a card's git line | `{path}` | `{branch, head, files, added, deleted, base, behind, conflicts}` |
+| `git.status` | `git:read` | a card's git line | `{path}` | `{branch, head, files, added, deleted, upstream, ahead, behind, base, behindBase, conflicts}` |
 | `git.pullRequest` | `git:read` | a card's pull request badge | `{path}` | `{pullRequest: {number, url, title, head, base}}`, `null` when none is open |
 | `notify` | `notify` | lich's desktop notification | `{title, body}` | `{}` |
 | `window.showCode` | `window` | `show_code` | `{session, path, line, endLine, comment}` | `{session, path, line, endLine}` |
@@ -182,7 +182,8 @@ is right after, so `services.stop` may still read `stopping`. `services.output` 
 escapes included: what a running service has printed so far, or what a stopped one printed in its last run.
 
 `git.status` and `git.pullRequest` name a checkout by its directory and read what a card shows of it: the branch,
-uncommitted changes and standing against the base branch, and the open pull request of the branch. The pull request
+uncommitted changes, the commits ahead of and behind its upstream as `git status` counts them (no fetch), its
+standing against the base branch, and the open pull request of the branch. The pull request
 comes from lich's own watch when it has read that checkout, and from one `gh` read otherwise.
 
 `notify` raises a desktop notification the way lich raises its own, title over body, each cut at 120 characters,
