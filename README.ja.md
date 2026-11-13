@@ -13,7 +13,7 @@
     Claude Code、Codex、opencode など、いま使っているエージェントを、それぞれ専用のワークツリーで、ひとつのウィンドウに。
   </p>
   <h3><a href="#インストール">lich をダウンロード</a> · <a href="https://lichdotdev.github.io/lich/index.ja.html">lichdotdev.github.io/lich</a></h3>
-  <img src="docs/media/session.png" alt="1つの分割画面に並んだ4つの Claude Code セッション。それぞれ専用の git ワークツリーで動いています。サイドバーには各セッションがブランチと差分バッジ付きで並び、その下にプロジェクトで動いているサービスとプロファイルがあります。フッターにはブランチ、モデル、プランが表示されています" width="1000" />
+  <img src="docs/media/session.png" alt="1つのレイアウトに並んだ4つの Claude Code セッション。それぞれ専用の git ワークツリーで動いています。サイドバーには各ワークツリーがブランチ名で並び、その下にセッションがあります。フッターにはブランチ、モデル、コンテキスト使用量、プランの使用量が表示されています" width="1000" />
   <!-- sponsor-logos: company logos go here, between the screenshot and Features -->
 </div>
 

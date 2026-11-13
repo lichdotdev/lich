@@ -13,7 +13,7 @@
     Claude Code, Codex, opencode или тот агент, которым вы уже пользуетесь: у каждого свой worktree, и всё в одном окне.
   </p>
   <h3><a href="#установка">Скачать lich</a> · <a href="https://lichdotdev.github.io/lich/index.ru.html">lichdotdev.github.io/lich</a></h3>
-  <img src="docs/media/session.png" alt="Четыре сессии Claude Code рядом на одном экране, каждая в своём git worktree. В боковой панели видны их ветки и значок diff, а внизу запущенные сервисы проекта и профиль; на нижней панели ветка, модель и подписка" width="1000" />
+  <img src="docs/media/session.png" alt="Четыре сессии Claude Code рядом в одной раскладке, каждая в своём git worktree. В боковой панели каждый worktree показан по ветке, под ним его сессия; на нижней панели ветка, модель, занятый контекст и расход подписки" width="1000" />
   <!-- sponsor-logos: company logos go here, between the screenshot and Features -->
 </div>
 

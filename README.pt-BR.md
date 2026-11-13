@@ -13,7 +13,7 @@
     Claude Code, Codex, opencode ou o agente que você já usa, cada um na própria worktree, todos na mesma janela.
   </p>
   <h3><a href="#instalação">Baixar o lich</a> · <a href="https://lichdotdev.github.io/lich/index.pt-BR.html">lichdotdev.github.io/lich</a></h3>
-  <img src="docs/media/session.png" alt="Quatro sessões do Claude Code lado a lado num split, cada uma na sua git worktree. A barra lateral lista as sessões com a branch e o selo de diff e, no pé, os serviços rodando no projeto e o profile; o rodapé mostra a branch, o modelo e o plano" width="1000" />
+  <img src="docs/media/session.png" alt="Quatro sessões do Claude Code lado a lado num layout, cada uma na sua git worktree. A barra lateral lista cada worktree pela branch, com a sessão logo abaixo; o rodapé mostra a branch, o modelo, o contexto usado e o uso do plano" width="1000" />
   <!-- sponsor-logos: company logos go here, between the screenshot and Features -->
 </div>
 

@@ -13,7 +13,7 @@
     Claude Code、Codex、opencode，或者你已经在用的智能体，各自在独立的 worktree 里，全都在同一个窗口中。
   </p>
   <h3><a href="#安装">下载 lich</a> · <a href="https://lichdotdev.github.io/lich/index.zh-CN.html">lichdotdev.github.io/lich</a></h3>
-  <img src="docs/media/session.png" alt="同一分屏里并排的四个 Claude Code 会话，各自在独立的 git worktree 里；侧栏列出每个会话的分支和 diff 标记，底部是项目正在运行的服务和当前 profile；底栏显示分支、模型和套餐" width="1000" />
+  <img src="docs/media/session.png" alt="同一布局里并排的四个 Claude Code 会话，各自在独立的 git worktree 里；侧栏按分支列出每个 worktree，会话排在其下；底栏显示分支、模型、已用上下文和套餐用量" width="1000" />
   <!-- sponsor-logos: company logos go here, between the screenshot and Features -->
 </div>
 
