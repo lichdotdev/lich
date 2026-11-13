@@ -345,10 +345,14 @@ func extensionStatusText(status string) string {
 	return i18n.T("settings.extensionsSettings.status.stopped")
 }
 
-// extensionIcon is the first surface's Lucide glyph, the puzzle for none.
-func (p *extensionsSettings) extensionIcon(e backend.Extension) *icons.Icon {
+// extensionIcon is the first surface's own icon, else its Lucide glyph, the
+// puzzle for none.
+func (p *extensionsSettings) extensionIcon(e backend.Extension) icons.Glyph {
 	name := ""
 	if len(e.Surfaces) > 0 {
+		if img := p.store.surfaceImages()[extensionKey{e.ID, e.Surfaces[0].ID}]; img != nil {
+			return img
+		}
 		name = e.Surfaces[0].Icon
 	}
 	if p.icons == nil {

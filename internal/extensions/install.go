@@ -269,6 +269,9 @@ func (s *Service) checkStage(stage, id string) (extension.Manifest, error) {
 	if _, err := readLocales(stage, m); err != nil {
 		return m, fmt.Errorf("the extension's %s are not valid: %w", exti18n.LocalesDir, err)
 	}
+	if _, err := readIcons(stage, m); err != nil {
+		return m, fmt.Errorf("the extension's %s is not valid: %w", extension.ManifestFile, err)
+	}
 	if err := os.Chmod(exe, 0o755); err != nil {
 		return m, fmt.Errorf("make the executable runnable: %w", err)
 	}

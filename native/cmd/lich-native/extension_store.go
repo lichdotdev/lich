@@ -1,15 +1,19 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"image/png"
 	"log"
+	"maps"
 	"slices"
 	"sync"
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/extension"
 	"github.com/lichdotdev/lich/native/backend"
+	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
 // extensionKey names one surface of one extension.
@@ -23,6 +27,8 @@ type extensionStore struct {
 	mu      sync.Mutex
 	list    []backend.Extension
 	renders map[extensionKey]extension.RenderData
+	// images is each surface's own icon, decoded once per status.
+	images map[extensionKey]*icons.Bitmap
 }
 
 func (s *extensionStore) load(ctx context.Context, client *backend.Client) error {
@@ -33,6 +39,9 @@ func (s *extensionStore) load(ctx context.Context, client *backend.Client) error
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.list = all
+	for _, e := range all {
+		s.setImages(e)
+	}
 	return nil
 }
 
@@ -41,6 +50,7 @@ func (s *extensionStore) load(ctx context.Context, client *backend.Client) error
 func (s *extensionStore) setStatus(e backend.Extension) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	s.setImages(e)
 	if i := slices.IndexFunc(s.list, func(x backend.Extension) bool { return x.ID == e.ID }); i >= 0 {
 		s.list[i] = e
 		return
@@ -67,6 +77,31 @@ func (s *extensionStore) remove(id string) {
 			delete(s.renders, k)
 		}
 	}
+	s.setImages(backend.Extension{ID: id})
+}
+
+// setImages replaces e's surface images with the icons it sends. One that
+// does not decode is left out, and its surface draws the icon it names.
+// Called with mu held.
+func (s *extensionStore) setImages(e backend.Extension) {
+	maps.DeleteFunc(s.images, func(k extensionKey, _ *icons.Bitmap) bool { return k.ext == e.ID })
+	for surface, data := range e.Icons {
+		img, err := png.Decode(bytes.NewReader(data))
+		if err != nil {
+			log.Printf("extension %s: icon of %s: %v", e.ID, surface, err)
+			continue
+		}
+		if s.images == nil {
+			s.images = map[extensionKey]*icons.Bitmap{}
+		}
+		s.images[extensionKey{e.ID, surface}] = icons.Picture(img)
+	}
+}
+
+func (s *extensionStore) surfaceImages() map[extensionKey]*icons.Bitmap {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return maps.Clone(s.images)
 }
 
 func (s *extensionStore) setRender(id string, r extension.RenderData) {

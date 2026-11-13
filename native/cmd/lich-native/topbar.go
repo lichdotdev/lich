@@ -148,7 +148,9 @@ type topbarFrame struct {
 	// extensions is every extension, whose surfaces get a button each, and
 	// extension the surface on screen, zero for none.
 	extensions []backend.Extension
-	extension  extensionKey
+	// surfaceImages is the surfaces' own icons, drawn in place of the names.
+	surfaceImages map[extensionKey]*icons.Bitmap
+	extension     extensionKey
 }
 
 // islandSpan is one island under the tab strip: its left and right edges in

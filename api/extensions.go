@@ -116,6 +116,9 @@ type Extension struct {
 	Release  string                   `json:"release,omitempty"`
 	Latest   string                   `json:"latest,omitempty"`
 	Text     map[string]ExtensionText `json:"text,omitempty"`
+	// Icons is the PNG each surface's iconFile names, by surface id, drawn in
+	// place of its Icon.
+	Icons map[string][]byte `json:"icons,omitempty"`
 	// Permissions is what the manifest lists, the extension.Permission names
 	// its calls and subscriptions may use.
 	Permissions []string `json:"permissions"`

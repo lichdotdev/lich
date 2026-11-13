@@ -96,12 +96,12 @@ const barDisabledOpacity = 0.5
 // A nil Click draws it disabled.
 type BarIconButtonStyle struct {
 	Click *widget.Clickable
-	Icon  *icons.Icon
+	Icon  icons.Glyph
 	On    bool
 	theme *Theme
 }
 
-func (th *Theme) BarIconButton(click *widget.Clickable, ic *icons.Icon, on bool) BarIconButtonStyle {
+func (th *Theme) BarIconButton(click *widget.Clickable, ic icons.Glyph, on bool) BarIconButtonStyle {
 	return BarIconButtonStyle{Click: click, Icon: ic, On: on, theme: th}
 }
 

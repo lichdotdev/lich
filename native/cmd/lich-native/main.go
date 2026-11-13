@@ -902,7 +902,7 @@ func (u *window) topbarFrame(gtx C, v stageView, edge int) topbarFrame {
 		f.active, f.settings = "", true
 	}
 	f.pulls = u.pulls.open && !v.home
-	f.extensions = u.model.extensions.all()
+	f.extensions, f.surfaceImages = u.model.extensions.all(), u.model.extensions.surfaceImages()
 	switch {
 	case f.settings:
 	case u.extension.open:

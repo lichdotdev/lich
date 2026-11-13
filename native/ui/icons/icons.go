@@ -45,6 +45,11 @@ const viewBox = 24
 // icon, as lucide-react draws it by default.
 const lucideStroke = 2
 
+// Glyph is an Icon or a Bitmap.
+type Glyph interface {
+	Layout(gtx layout.Context, size unit.Dp, c color.NRGBA) layout.Dimensions
+}
+
 // Icon is a parsed icon, drawn at any size in any color.
 type Icon struct {
 	shapes []shape
