@@ -1,3 +1,13 @@
+## [0.90.1] - 2026-11-12
+
+### Added
+
+- Em uma extensão, um card que uma nova renderização coloca em outra lista do mesmo grupo (um quadro recarregado depois que outra pessoa o moveu) desliza até lá a partir de onde estava, como já acontecia dentro de uma mesma lista. Um card que você mesmo solta, e os cards que aparecem ou somem, não são animados.
+
+### Fixed
+
+- Em uma extensão, soltar um card arrastado em uma lista ordenável não o pressiona mais: um toque que passou do limite de arraste é um arraste, e só um clique simples chega ao handler do próprio card.
+
 ## [0.90.0] - 2026-11-12
 
 ### Added

@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.90.1] - 2026-11-12
+
 ### Added
 
 - In an extension, a card that a new render puts in another list of its group (a board reloaded after someone else moved it) slides there from where it was, as it already did within one list. A card you drop yourself, and cards that appear or go, are not animated.
@@ -6697,7 +6699,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   CPU, costing ~40ms per frame in a full-size window. Under Xwayland typing is
   stall-free at full frame rate.
 
-[Unreleased]: https://github.com/lichdotdev/lich/compare/v0.90.0...HEAD
+[Unreleased]: https://github.com/lichdotdev/lich/compare/v0.90.1...HEAD
+[0.90.1]: https://github.com/lichdotdev/lich/compare/v0.90.0...v0.90.1
 [0.90.0]: https://github.com/lichdotdev/lich/compare/v0.89.0...v0.90.0
 [0.89.0]: https://github.com/lichdotdev/lich/compare/v0.88.0...v0.89.0
 [0.88.0]: https://github.com/lichdotdev/lich/compare/v0.87.0...v0.88.0

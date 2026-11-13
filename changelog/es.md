@@ -1,3 +1,13 @@
+## [0.90.1] - 2026-11-12
+
+### Added
+
+- En una extensión, una tarjeta que un nuevo renderizado coloca en otra lista de su grupo (un tablero recargado después de que otra persona la moviera) se desliza hasta allí desde donde estaba, como ya hacía dentro de una misma lista. Una tarjeta que sueltas tú, y las que aparecen o desaparecen, no se animan.
+
+### Fixed
+
+- En una extensión, soltar una tarjeta arrastrada en una lista ordenable ya no la pulsa: una pulsación que superó el umbral de arrastre es un arrastre, y solo un clic simple llega al manejador de la propia tarjeta.
+
 ## [0.90.0] - 2026-11-12
 
 ### Added
