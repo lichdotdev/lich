@@ -92,10 +92,13 @@ func resizes(t *testing.T, p *chromePage, ctx context.Context) int {
 }
 
 // waitFrameSize waits for the frames to settle at w x h: the ones before can
-// predate the last layout.
+// predate the last layout. A relaunch comes first for some, which took 2.3 s
+// at the median on the macos-latest runner and 12 s once in 150, when the
+// runner was slow to launch the browser at all (Chrome 156, measured
+// 2026-11-13): the wait is a page call's, not ten seconds.
 func waitFrameSize(t *testing.T, frames <-chan string, w, h int) {
 	t.Helper()
-	deadline := time.After(10 * time.Second)
+	deadline := time.After(pageWait)
 	last := "none"
 	for {
 		select {
