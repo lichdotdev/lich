@@ -28,6 +28,7 @@ func Themes(d *rpc.Handler, s *themes.Service) {
 	rpc.Handle(d, api.ThemesImport, s.Import)
 	rpc.Handle(d, api.ThemesInstallFromGit, s.InstallFromGit)
 	rpc.Handle(d, api.ThemesUpdateFromGit, s.UpdateFromGit)
+	rpc.Handle(d, api.ThemesCheckUpdates, s.CheckUpdates)
 	rpc.Handle(d, api.ThemesRemove, s.Remove)
 	rpc.Handle(d, api.ThemesSaveTemplate, s.SaveTemplate)
 	rpc.Handle(d, api.ThemesSelection, s.Selection)

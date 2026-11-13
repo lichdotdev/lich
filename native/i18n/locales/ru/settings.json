@@ -92,7 +92,11 @@
       "many": "{count} тем",
       "other": "{count} темы"
     },
-    "updateHint": "Проверить, нет ли в репозитории новой версии",
+    "updateTo": "Обновить до v{version}",
+    "updateAvailable": "доступна v{version}",
+    "checkUpdates": "Проверить обновления",
+    "checkFailed": "Не удалось проверить обновления тем: {error}",
+    "allUpToDate": "Все темы актуальны",
     "removeNamed": "Удалить {name}"
   },
   "brokenThemeList": {

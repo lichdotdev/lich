@@ -66,11 +66,12 @@ func themeCardOf(cards map[string]*themeCard, id string) *themeCard {
 }
 
 // themeCardSpec is what one card shows. Only a custom theme has actions,
-// and only one from a repository can be updated.
+// and only one whose pack has a newer version can be updated.
 type themeCardSpec struct {
 	id, name, caption string
 	selected          bool
-	custom, fromRepo  bool
+	custom            bool
+	latest            string // the pack's newer version, "" for none
 	updating          string // the theme an update is running for, "" for none
 	preview           func(gtx C, th *ui.Theme, size image.Point) D
 }
@@ -133,7 +134,7 @@ func cardBody(gtx C, th *ui.Theme, name, caption string, selected bool, preview 
 // cardActions is the absolute right-1 top-1 box of icon buttons.
 func (p *themePicker) cardActions(gtx C, th *ui.Theme, c *themeCard, s themeCardSpec, cardWidth int) {
 	n := 1
-	if s.fromRepo {
+	if s.latest != "" {
 		n = 2
 	}
 	btn, pad, gap := gtx.Dp(cardActionBtn), gtx.Dp(cardActionPad), gtx.Dp(cardActionPad)
@@ -146,13 +147,13 @@ func (p *themePicker) cardActions(gtx C, th *ui.Theme, c *themeCard, s themeCard
 	ui.Fill(box, bg, ui.RadiusMD)
 	on := th.On(bg)
 	x := pad
-	if s.fromRepo {
+	if s.latest != "" {
 		var turn float32
 		if s.updating == s.id {
 			turn = spinAngle(gtx)
 		}
 		t := op.Offset(image.Pt(x, pad)).Push(gtx.Ops)
-		tip := on.Tooltip(p.root, &c.updateTip, i18n.T("settings.themePicker.updateHint"))
+		tip := on.Tooltip(p.root, &c.updateTip, i18n.T("settings.themePicker.updateTo", i18n.Args{"version": s.latest}))
 		tip.Layout(gtx, func(gtx C) D {
 			if s.updating != "" {
 				return on.CardIconDisabled(gtx, icRefresh, cardActionBtn, turn)

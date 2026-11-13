@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"image"
+	"slices"
 	"strings"
 	"sync"
 
@@ -63,6 +64,7 @@ type themePicker struct {
 
 	open         bool
 	trigger      widget.Clickable
+	check        widget.Clickable
 	strip        widget.List
 	importCard   themeCard
 	systemCard   themeCard
@@ -190,7 +192,7 @@ func (p *themePicker) stripLayout(gtx C, th *ui.Theme, v appearanceView) D {
 	cards := p.cardWidgets(th, v)
 	columns := (len(cards) + themeStripRows - 1) / themeStripRows
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(th.Text(ui.TextXS, themeCount(len(v.themes))).Muted().Layout),
+		layout.Rigid(func(gtx C) D { return p.stripHeader(gtx, th, v) }),
 		ui.VGap(2),
 		layout.Rigid(func(gtx C) D {
 			return th.ScrollArea(&p.strip).Layout(gtx, columns, func(gtx C, col int) D {
@@ -198,6 +200,30 @@ func (p *themePicker) stripLayout(gtx C, th *ui.Theme, v appearanceView) D {
 			})
 		}),
 		layout.Rigid(func(gtx C) D { return p.brokenList(gtx, th, v.broken) }),
+	)
+}
+
+// stripHeader is the count line, with Check for updates at its end while a
+// theme from a repository is installed.
+func (p *themePicker) stripHeader(gtx C, th *ui.Theme, v appearanceView) D {
+	count := layout.Rigid(th.Text(ui.TextXS, themeCount(len(v.themes))).Muted().Layout)
+	if !slices.ContainsFunc(v.themes, func(e themeEntry) bool { return e.def.Source != nil }) {
+		return layout.Flex{Alignment: layout.Middle}.Layout(gtx, count)
+	}
+	checking := p.snapshot().checking
+	if p.check.Clicked(gtx) && !checking {
+		p.checkUpdates()
+	}
+	ink := th.Foreground
+	if checking {
+		ink = th.MutedForeground
+	}
+	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+		count,
+		layout.Flexed(1, layout.Spacer{}.Layout),
+		layout.Rigid(func(gtx C) D {
+			return th.GhostTextButton(gtx, &p.check, i18n.T("settings.themePicker.checkUpdates"), ink)
+		}),
 	)
 }
 
@@ -248,8 +274,13 @@ func (p *themePicker) cardWidgets(th *ui.Theme, v appearanceView) []layout.Widge
 		if e.def.ID == pair {
 			caption = pairCaption(e.def.Scheme)
 		}
+		latest := ""
+		if e.def.Latest != nil {
+			latest = e.def.Latest.Version
+			caption = i18n.T("settings.themePicker.updateAvailable", i18n.Args{"version": latest})
+		}
 		spec := themeCardSpec{id: e.def.ID, name: e.def.Name, caption: caption,
-			selected: v.selected == e.def.ID, custom: e.def.Origin == themeOriginCustom, fromRepo: e.def.Source != nil,
+			selected: v.selected == e.def.ID, custom: e.def.Origin == themeOriginCustom, latest: latest,
 			updating: busy.updating, preview: func(gtx C, th *ui.Theme, size image.Point) D {
 				return themeMiniature(gtx, th, e.palette, size, true)
 			}}

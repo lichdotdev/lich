@@ -35,13 +35,12 @@ const domSettle = 1500 * time.Millisecond
 const closeWait = 5 * time.Second
 
 // launchWait bounds how long a starting Chrome may take to print its DevTools
-// URL. chromedp's default of 20s is shorter than a cold start: on a GitHub
-// Ubuntu runner the first launch of the suite passed 20s, the second took 6s
-// and the third 1s, each before Chrome's own sandbox check, so the time goes to
-// loading the browser off a cold disk, which a slow machine pays too. It bounds
-// the dial of that URL as well: chromedp's 10s ran out on the first launch of
-// the suite, after Chrome took about 31s to print it (GitHub Ubuntu runner,
-// 2026-11-13).
+// URL, and then to answer on it. chromedp's defaults of 20s and 10s are shorter
+// than a cold start: on a GitHub Ubuntu runner the first launch of the suite
+// passed 20s, the second took 6s and the third 1s, each before Chrome's own
+// sandbox check, so the time goes to loading the browser off a cold disk, which
+// a slow machine pays too. A first launch that printed its URL after 31s was
+// still not answering on it 10s later (2026-11-13).
 const launchWait = 60 * time.Second
 
 // chromeLaunch starts a Chromium-family browser via CDP. ExecPath is

@@ -29,6 +29,15 @@
     "install": "安装",
     "viewRelease": "查看发布说明"
   },
+  "themeUpdateGate": {
+    "available": "主题包 {pack} v{version} 可用",
+    "several": {
+      "one": "{count} 个主题包有新版本",
+      "other": "{count} 个主题包有新版本"
+    },
+    "update": "更新",
+    "openSettings": "打开设置"
+  },
   "emptySessions": {
     "title": "没有打开的会话",
     "description": "打开一个会话，开始在此项目中工作。",

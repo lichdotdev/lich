@@ -12,6 +12,7 @@ type (
 	ThemeSelection    = api.ThemeSelection
 	SyntaxStyle       = api.SyntaxStyle
 	ThemeSource       = api.ThemeSource
+	ThemeLatest       = api.ThemeLatest
 	BrokenTheme       = api.BrokenTheme
 	ThemeImportResult = api.ThemeImportResult
 	ThemeGitResult    = api.ThemeGitResult
@@ -87,4 +88,11 @@ func (c *Client) PickFile(ctx context.Context, title string) (string, error) {
 // cancelled one.
 func (c *Client) PickSaveFile(ctx context.Context, title, defaultName string) (string, error) {
 	return callMethod(ctx, c, api.ProjectPickSaveFile, api.PickSaveFileOptions{Title: title, DefaultName: defaultName})
+}
+
+// CheckThemeUpdates looks for a newer version of every installed theme pack;
+// what it finds arrives as Theme.Latest, announced by api.ThemeUpdatesEvent.
+func (c *Client) CheckThemeUpdates(ctx context.Context) error {
+	_, err := callMethod(ctx, c, api.ThemesCheckUpdates, api.None{})
+	return err
 }

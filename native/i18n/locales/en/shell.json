@@ -29,6 +29,15 @@
     "install": "Install",
     "viewRelease": "View release"
   },
+  "themeUpdateGate": {
+    "available": "Theme pack {pack} v{version} is available",
+    "several": {
+      "one": "{count} theme pack has a new version",
+      "other": "{count} theme packs have a new version"
+    },
+    "update": "Update",
+    "openSettings": "Open Settings"
+  },
   "emptySessions": {
     "title": "No session open",
     "description": "Open a session to start working in this project.",

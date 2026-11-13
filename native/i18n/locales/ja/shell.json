@@ -29,6 +29,15 @@
     "install": "インストール",
     "viewRelease": "リリースを見る"
   },
+  "themeUpdateGate": {
+    "available": "テーマパック {pack} v{version} が利用可能です",
+    "several": {
+      "one": "{count} 個のテーマパックに新しいバージョンがあります",
+      "other": "{count} 個のテーマパックに新しいバージョンがあります"
+    },
+    "update": "更新",
+    "openSettings": "設定を開く"
+  },
   "emptySessions": {
     "title": "開いているセッションはありません",
     "description": "セッションを開いて、このプロジェクトで作業を始めましょう。",

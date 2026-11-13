@@ -138,6 +138,16 @@ The stored theme records where it came from:
 "source": { "url": "https://github.com/you/lich-themes.git", "version": "1.2.0" }
 ```
 
+lich looks for a newer version on its own, when it starts and every six hours:
+it clones each repository once, whatever number of its themes are installed,
+and compares the manifest's `version` with the installed one. A newer version
+shows on the pack's cards in Settings › Appearance, with **Update to vX** among
+a card's actions, and raises a toast once per version: **Update** installs it,
+**Later** puts that version off. Several packs at once share one toast that
+opens Settings. **Check for updates**, over the cards, looks now. lich never
+installs an update by itself, and a theme imported as a single file has nothing
+to check.
+
 Updating re-clones that URL and installs the pack again when the manifest
 carries a newer version; an equal or older one is reported as up to date. A
 theme the new pack no longer carries — its file removed or renamed — is kept
@@ -180,8 +190,8 @@ pushed anywhere: **Import**, paste the directory, **Install**. Once it is on a
 host, the clone URL is what other people paste.
 
 Shipping a change: edit the themes, bump `version` in the manifest, commit and
-push. An install still on the old version takes it with **Update**; forget the
-bump and lich reports the pack as already up to date.
+push. An install still on the old version is offered it within six hours, or at
+once with **Check for updates**; forget the bump and nothing is offered.
 
 ## Syntax Highlighting
 
