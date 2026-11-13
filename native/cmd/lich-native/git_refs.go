@@ -153,7 +153,8 @@ func (g *gitPanel) refRow(gtx C, th *ui.Theme, r *gitRowState, row gitTreeRow, s
 func (g *gitPanel) refRowBody(gtx C, th *ui.Theme, r *gitRowState, row gitTreeRow, session *sessionView, more layout.Widget) D {
 	renaming := g.editing != nil && !g.editing.create && g.editing.from.ref == row.ref
 	for r.click.Clicked(gtx) {
-		if renaming {
+		// The ⋯ sits inside the row, so its click reaches the row too.
+		if renaming || r.more.Hovered() {
 			continue
 		}
 		if g.filter.ref == row.ref {
