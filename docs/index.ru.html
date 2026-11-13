@@ -267,6 +267,32 @@
     </div>
   </section>
 
+  <section class="block wrap" id="extensions">
+    <div class="cmp-head">
+      <h2>Соберите то, чего вам не хватает в lich</h2>
+      <p>Расширение работает в окне lich как ваш собственный инструмент. Оно рисует теми же компонентами, из которых сделан сам lich, и управляет им через те же инструменты, что и ваши агенты.</p>
+    </div>
+    <div class="exts">
+      <div class="ext">
+        <h3>Что умеет расширение</h3>
+        <ul>
+          <li><b>Вести ваши сессии.</b> Открывает сессию в worktree, даёт ей задачу и забирает ответ.</li>
+          <li><b>Следить за ними.</b> Сразу узнаёт, когда сессия начала работу, закончила или ждёт вас.</li>
+          <li><b>Вести ваши сервисы.</b> Запускает, останавливает и перезапускает их и читает их вывод.</li>
+          <li><b>Читать рабочую копию.</b> Её ветку, изменения и pull request.</li>
+          <li><b>Сообщать вам.</b> Показывает уведомление на рабочем столе, файл в доке или страницу в браузере сессии.</li>
+          <li><b>Иметь свои экраны.</b> Кнопка в верхней панели, свои сочетания клавиш, списки с перетаскиванием и данные, которые переживают обновление.</li>
+        </ul>
+      </div>
+      <div class="ext">
+        <h3>Начните с Notes</h3>
+        <p>LichNotes опубликован как пример: его можно прочитать, установить и переделать. Он показывает Markdown-заметки из папки, фильтрует их по мере ввода и открывает редактор рядом с живым предпросмотром.</p>
+        <div class="shot app mini" aria-hidden="true"><div class="mdlg"><h4>Install LichNotes 0.1.1?</h4><p class="mono">From github.com/lichdotdev/lich-notes</p><p>It will run on your computer as you, with access to your files and accounts. Install it only if you trust who made it.</p><div class="dft"><span class="btn-g">Cancel</span><span class="btn-p">Install</span></div></div></div>
+        <p>Расширение устанавливается в настройках из репозитория на GitHub или из папки. Прежде чем что-либо запустится, lich скажет, что оно сможет делать. <a href="https://github.com/lichdotdev/lich/blob/main/docs/extensions.md">Напишите своё</a> на Go SDK.</p>
+      </div>
+    </div>
+  </section>
+
   <section class="block wrap" id="compare">
     <div class="cmp-head">
       <h2>Построен вокруг агентов, а не вокруг редактора</h2>

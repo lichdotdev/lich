@@ -851,6 +851,18 @@ section.block { padding-block: 5.5rem; }
 }
 .glow .agent::before, .glow .feat::before, .glow .agent::after, .glow .feat::after { opacity: 1; }
 
+.exts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
+.ext { min-width: 0; padding: 1.6rem 1.8rem; border-radius: 1rem; background: var(--island); }
+.ext h3 { margin: 0 0 1rem; font-size: 1.05rem; letter-spacing: -.01em; font-weight: 600; }
+.ext p, .ext li { margin: 0; color: var(--muted); font-size: .92rem; }
+.ext ul { display: grid; gap: .8rem; margin: 0; padding: 0; list-style: none; }
+.ext li b { color: var(--fg); font-weight: 500; }
+.ext > p a { color: var(--fg); }
+.ext .app.mini.shot { height: auto; margin-block: 1.4rem; border-radius: .8rem; }
+.ext .mdlg p { font-size: 12px; }
+.ext .mdlg p + p { margin-top: 8px; }
+@media (max-width: 760px) { .exts { grid-template-columns: minmax(0, 1fr); } }
+
 /* Compare: lich against editors and agent wrappers, one capability per row. */
 .cmp-head { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem 4rem; align-items: end; margin-bottom: 2.5rem; }
 .cmp-head h2 { margin: 0; max-width: 14ch; }
