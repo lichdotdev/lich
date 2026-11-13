@@ -155,7 +155,13 @@ main { overflow-x: clip; }
   mask: radial-gradient(160px circle at var(--mx, 50%) var(--my, 50%), #000, transparent);
 }
 .hero.lit::after { opacity: 1; }
-.hero { text-align: center; padding-block: 5.5rem 3rem; }
+.hero { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); column-gap: 4rem; align-items: start; padding-block: 4.5rem 2rem; }
+.hero .chip { grid-column: 1 / -1; justify-self: start; }
+.hero h1 { grid-column: 1 / -1; margin-inline: 0; max-width: 22ch; font-size: clamp(2.4rem, 5vw, 4.2rem); }
+.hero-side { margin-top: 1.8rem; }
+.facts { display: grid; gap: .35rem; margin: 1.1rem 0 0; padding: 0; list-style: none; color: var(--muted); font-size: .95rem; }
+.facts li::before { content: ""; display: inline-block; width: .45rem; height: .45rem; margin-right: .6rem; border-radius: 50%; background: var(--pass); vertical-align: .1em; }
+@media (max-width: 900px) { .hero { grid-template-columns: minmax(0, 1fr); } }
 .chip {
   display: inline-flex; align-items: center; gap: .5rem;
   padding: .3rem .8rem; border-radius: 99px; background: var(--island);
@@ -179,9 +185,9 @@ h1 .caret {
 }
 h1.busy:not(.done) .caret { animation: none; }
 @keyframes caret { 50% { opacity: 0; } }
-.lede { margin: 1.4rem auto 0; max-width: 40rem; font-size: 1.2rem; color: var(--muted); text-wrap: pretty; }
+.lede { margin: 1.8rem 0 0; max-width: 40rem; font-size: 1.2rem; color: var(--muted); text-wrap: pretty; }
 .lede b { color: var(--fg); font-weight: 500; }
-.cta { display: flex; justify-content: center; flex-wrap: wrap; gap: .6rem; margin-top: 2.2rem; }
+.cta { display: flex; flex-wrap: wrap; gap: .6rem; }
 .under { margin-top: 1rem; font-size: .85rem; color: var(--faint); }
 .under a { color: var(--muted); }
 
@@ -754,6 +760,16 @@ h1.busy:not(.done) .caret { animation: none; }
 .cap { display: none; }
 .cap p { margin: 1.1rem auto 0; max-width: 46rem; text-align: center; color: var(--muted); }
 .cap p b { color: var(--fg); font-weight: 500; }
+/* Beside the window only where it keeps its sidebar: narrower, the steps go back on top of it. */
+@media (min-width: 1200px) {
+  .tour { display: grid; grid-template-columns: 15rem minmax(0, 1fr); grid-template-rows: auto 1fr; column-gap: 1.25rem; align-items: start; }
+  .tour .seg { flex-direction: column; flex-wrap: nowrap; width: auto; margin: 0; counter-reset: step; }
+  .tour .seg label::before { content: counter(step); counter-increment: step; margin-right: .7rem; font-family: var(--mono); font-size: .75rem; color: var(--faint); }
+  .tour #wall { grid-column: 2; grid-row: 1 / span 2; }
+  .tour .cap { grid-column: 1; grid-row: 2; }
+  .tour .cap p { margin: 1.25rem .5rem 0; text-align: left; font-size: .95rem; }
+  .tour .cap p b { display: block; margin-bottom: .35rem; font-size: 1.05rem; }
+}
 #t1:checked ~ .seg [for="t1"], #t2:checked ~ .seg [for="t2"], #t3:checked ~ .seg [for="t3"], #t4:checked ~ .seg [for="t4"], #t5:checked ~ .seg [for="t5"], #t6:checked ~ .seg [for="t6"], #t7:checked ~ .seg [for="t7"] {
   background: var(--raised); color: var(--fg);
 }
