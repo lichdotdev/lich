@@ -1,6 +1,6 @@
 {
   "commandPalette": {
-    "placeholder": "Ve a una sesión, un proyecto o algo que se dijo, o escribe > para ver acciones…",
+    "placeholder": "Busca, o escribe > para ver acciones",
     "forgetFailed": "No se pudo olvidar {label}: {error}",
     "resumeFailed": "No se pudo reanudar {label}: {error}",
     "actionUnavailable": "{label} no está disponible aquí",

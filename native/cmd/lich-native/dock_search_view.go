@@ -112,7 +112,7 @@ func (c *codeTab) hitsView(gtx C, th *ui.Theme, data searchResult, groups []sear
 		switch {
 		case r.group == nil:
 			return layout.Inset{Left: ui.Space(3), Right: ui.Space(3), Top: ui.Space(2), Bottom: ui.Space(1)}.Layout(gtx,
-				th.Text(text2XS, summary).Leading(text2XSLeading).Muted().Layout)
+				th.Text(ui.Text2XS, summary).Leading(text2XSLeading).Muted().Layout)
 		case r.hit < 0:
 			return hitGroupHeader(gtx, th, *r.group)
 		}

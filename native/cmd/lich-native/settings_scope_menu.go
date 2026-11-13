@@ -136,7 +136,7 @@ func (s *settingsScreen) scopeRow(gtx C, th *ui.Theme, id string, lead func(gtx 
 				if changes == "" {
 					return D{}
 				}
-				return layout.Inset{Left: ui.Space(2)}.Layout(gtx, th.Text(navSmall, changes).In(th.ToneWait).Layout)
+				return layout.Inset{Left: ui.Space(2)}.Layout(gtx, th.Text(ui.Text2XS, changes).In(th.ToneWait).Layout)
 			}),
 			layout.Rigid(func(gtx C) D {
 				if id != s.scope {

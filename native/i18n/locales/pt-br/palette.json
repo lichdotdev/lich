@@ -1,6 +1,6 @@
 {
   "commandPalette": {
-    "placeholder": "Vá para uma sessão, um projeto ou algo que foi dito, ou digite > para ações…",
+    "placeholder": "Busque, ou digite > para ações",
     "forgetFailed": "Não foi possível esquecer {label}: {error}",
     "resumeFailed": "Não foi possível retomar {label}: {error}",
     "actionUnavailable": "{label} não está disponível aqui",

@@ -192,7 +192,7 @@ func (v *blobView) layout(gtx C, th *ui.Theme) D {
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D { return img.draw(gtx, th) }),
 		ui.VGap(1),
-		layout.Rigid(th.Text(text2XS, img.caption()).Mono().Muted().Leading(text2XSLeading).Layout),
+		layout.Rigid(th.Text(ui.Text2XS, img.caption()).Mono().Muted().Leading(text2XSLeading).Layout),
 	)
 }
 

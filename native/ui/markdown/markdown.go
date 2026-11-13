@@ -25,7 +25,7 @@ type (
 const (
 	BodySize        = unit.Sp(15)
 	markdownH1      = unit.Sp(20)
-	markdownH2      = unit.Sp(19)
+	markdownH2      = unit.Sp(18)
 	LineHeightScale = 1.5
 	// markdownHeadingLineHeightScale is GitHub's line-height for headings,
 	// which keeps an h1 or h2's rule close to its text.

@@ -121,7 +121,7 @@ func (s *settingsScreen) grantRow(gtx C, th *ui.Theme, e settingEntry, r setting
 	r.globalValue = grantLabel(m.globals[e.key])
 	r.sample = func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-			layout.Rigid(func(gtx C) D { return th.Text(rowDescSize, desc).Muted().Leading(20).Wrapped().Layout(gtx) }),
+			layout.Rigid(func(gtx C) D { return th.Text(settingsDescSize, desc).Muted().Leading(20).Wrapped().Layout(gtx) }),
 			ui.VGap(1),
 			layout.Rigid(func(gtx C) D { return th.Text(ui.TextXS, detail).Muted().Mono().Leading(18).Wrapped().Layout(gtx) }),
 		)

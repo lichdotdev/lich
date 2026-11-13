@@ -85,7 +85,7 @@ func (o *shortcutsOverlay) body(gtx C, th *ui.Theme, groups []shortcutGroup) D {
 // shortcutsHeading is the group's px-3 pt-3 pb-1 uppercase label.
 func shortcutsHeading(th *ui.Theme, title string) layout.Widget {
 	h := th.SectionHeading(title)
-	h.Size, h.Weight, h.Inset = text2XS, font.SemiBold, layout.Inset{Left: hotkeyLinePadX, Right: hotkeyLinePadX, Top: ui.Space(3), Bottom: ui.Space(1)}
+	h.Size, h.Weight, h.Inset = ui.Text2XS, font.SemiBold, layout.Inset{Left: hotkeyLinePadX, Right: hotkeyLinePadX, Top: ui.Space(3), Bottom: ui.Space(1)}
 	return h.Layout
 }
 
