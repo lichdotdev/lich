@@ -152,13 +152,19 @@ func TestChromeStillDrawsNoNewFrameAndMatchesTheFrames(t *testing.T) {
 	}
 }
 
-// quietFrames waits until the page sends no frame for a second and returns
-// its last one and that one's size.
+// firstFrameWait bounds the wait for a screencast's first frame. Chrome on
+// Linux sends it about 15 ms after the start; on the macos-latest runner it
+// took 22 ms to 2 s (Chrome 156, 20 runs, measured 2026-11-13).
+const firstFrameWait = 10 * time.Second
+
+// quietFrames waits for the first frame, then until the page sends no frame
+// for a second, and returns its last one and that one's size.
 func quietFrames(t *testing.T, frames <-chan string) (string, image.Config) {
 	t.Helper()
 	var last string
 	var size image.Config
-	deadline := time.After(10 * time.Second)
+	quiet := firstFrameWait
+	deadline := time.After(firstFrameWait + 10*time.Second)
 	for {
 		select {
 		case last = <-frames:
@@ -169,7 +175,8 @@ func quietFrames(t *testing.T, frames <-chan string) (string, image.Config) {
 			if size, err = jpeg.DecodeConfig(bytes.NewReader(raw)); err != nil {
 				t.Fatal(err)
 			}
-		case <-time.After(time.Second):
+			quiet = time.Second
+		case <-time.After(quiet):
 			if last == "" {
 				t.Fatal("no frame came")
 			}
