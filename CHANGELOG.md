@@ -18,9 +18,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **A card dragged in the sidebar is filed into a folder when you let it go anywhere over it.** It used to need the folder's name; the same holds with the sidebar collapsed.
 - **What's new lists each entry as a title with a short text under it.** Nothing folds open any more, and the header no longer counts the entries.
 - **The agent's cursor over its browser page is a new arrow.** It is the one of Bibata Modern (GPL-3.0, by Abdulkaiz Khatri); its color, its badge and the way it moves are unchanged.
+- **The Pulls list's header fits on one line.** The Open menu sits inside the filter field, and the filters and New pull request share its line.
 
 ### Fixed
 
+- **A row under the pointer in Pulls and in an extension's panel lights across its whole width.** It was a rounded box set in from the sides, with its corners showing against the lines between rows.
 - **Dragging over text in a session's browser page now selects it.** The page saw the drag and selected nothing, so there was nothing to copy.
 - **A page in a session's browser now knows it has a mouse.** Effects a site turns on only for a pointer that can hover, like a glow that follows the cursor, work in the pane.
 - **The note about all of them, at the bottom of the browser's notes tray, takes typing again after you draw or pick on the page.**

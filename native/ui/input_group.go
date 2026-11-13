@@ -39,10 +39,15 @@ type InputGroupStyle struct {
 	Placeholder string
 	Start, End  InputGroupAddon
 	Width       unit.Dp // 0 is w-full
-	Disabled    bool
-	Invalid     bool
-	multiline   bool
-	theme       *Theme
+	Height      unit.Dp // 0 is h-9; the dense fields are Space(7) and Space(8)
+	TextSize    unit.Sp // 0 is text-sm; the dense fields use TextXS
+	// Clear, when set, is a ghost X at the end while the field has text, as
+	// on Input.
+	Clear     *widget.Clickable
+	Disabled  bool
+	Invalid   bool
+	multiline bool
+	theme     *Theme
 }
 
 // InputGroup is an InputGroupInput: a one-line control, h-9.
@@ -70,14 +75,29 @@ func (s InputGroupStyle) Layout(gtx C) D {
 	s.Editor.SingleLine = !s.multiline
 	gtx.Constraints.Max.X = inputWidth(gtx, s.Width)
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
+	if s.Clear != nil && s.Clear.Clicked(gtx) {
+		clearEditor(gtx, s.Editor)
+	}
+	if s.Clear != nil && s.Editor.Len() > 0 {
+		b := s.Inner().InputGroupButton(s.Clear, "")
+		b.Icon, b.Size, b.Disabled = inputClearIcon, SizeIconXS, s.Disabled
+		s.End = InputGroupAddon{Items: append(s.End.Items[:len(s.End.Items):len(s.End.Items)], b.Layout), Button: true}
+	}
 	st := inputState{invalid: s.Invalid, disabled: s.Disabled}
 	return inputFrame(gtx, s.theme, s.Editor, st, false, s.row)
 }
 
 func (s InputGroupStyle) row(gtx C) D {
 	gtx.Constraints.Min.Y = 0
-	h := gtx.Dp(inputHeight)
-	field := inputText{theme: s.theme, editor: s.Editor, placeholder: s.Placeholder, size: TextSM,
+	height, size := s.Height, s.TextSize
+	if height == 0 {
+		height = inputHeight
+	}
+	if size == 0 {
+		size = TextSM
+	}
+	h := gtx.Dp(height)
+	field := inputText{theme: s.theme, editor: s.Editor, placeholder: s.Placeholder, size: size,
 		font: font.Font{Typeface: s.theme.Sans}, padLeft: inputPadX, padRight: inputPadX, padY: inputPadY, single: !s.multiline}
 	if s.multiline {
 		field.padY, field.minHeight = textareaPadY, textareaMinHeight
