@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"testing"
 	"time"
+
+	"github.com/lichdotdev/lich/api"
 )
 
 var reportClock = time.Date(2026, 10, 4, 20, 0, 0, 0, time.UTC)
@@ -48,8 +50,8 @@ func TestAReportStandsInForTheProbe(t *testing.T) {
 	got := claudeOf(svc.plans("s1"))
 
 	want := []Window{
-		{Label: "Session", Seconds: sessionWindow, Percent: 14, ResetsAt: "2026-10-05T00:30:00.000Z"},
-		{Label: "Weekly", Seconds: weeklyWindow, Percent: 80, ResetsAt: "2026-10-05T15:00:00.000Z"},
+		{Kind: api.QuotaWindowSession, Seconds: sessionWindow, Percent: 14, ResetsAt: "2026-10-05T00:30:00.000Z"},
+		{Kind: api.QuotaWindowWeekly, Seconds: weeklyWindow, Percent: 80, ResetsAt: "2026-10-05T15:00:00.000Z"},
 	}
 	if got.Status != StatusOK || got.NoAccount != NoAccountTokenLogin {
 		t.Fatalf("plan = %+v, want an ok token-login reading", got)
@@ -98,7 +100,7 @@ func TestAReportPastItsResetIsMeasuredAgain(t *testing.T) {
 // reset: nothing says when it stops being true, so it is held as long as a
 // fetched reading would be.
 func TestAReportWithoutAResetLastsOneCacheWindow(t *testing.T) {
-	report := claudeReport{windows: []Window{{Label: "Session", Percent: 3}}, at: reportClock}
+	report := claudeReport{windows: []Window{{Kind: api.QuotaWindowSession, Percent: 3}}, at: reportClock}
 
 	if report.stale(reportClock.Add(cacheTTL - time.Second)) {
 		t.Error("stale inside the cache window")

@@ -9,6 +9,8 @@ import (
 	"reflect"
 	"testing"
 	"time"
+
+	"github.com/lichdotdev/lich/api"
 )
 
 // credsDir writes a Claude credentials file into a fresh directory and returns
@@ -128,8 +130,8 @@ func TestATokenOnlySessionIsMeasuredByTheProbe(t *testing.T) {
 		t.Fatalf("status = %q, want %q", got.Status, StatusOK)
 	}
 	want := []Window{
-		{Label: "Session", Seconds: 18000, Percent: 5, ResetsAt: "2026-09-13T16:51:56Z"},
-		{Label: "Weekly", Seconds: 604800, Percent: 1, ResetsAt: "2026-09-13T16:51:56Z"},
+		{Kind: api.QuotaWindowSession, Seconds: 18000, Percent: 5, ResetsAt: "2026-09-13T16:51:56Z"},
+		{Kind: api.QuotaWindowWeekly, Seconds: 604800, Percent: 1, ResetsAt: "2026-09-13T16:51:56Z"},
 	}
 	if len(got.Windows) != 2 || got.Windows[0] != want[0] || got.Windows[1] != want[1] {
 		t.Errorf("windows = %+v, want %+v", got.Windows, want)
@@ -169,7 +171,7 @@ func TestTheProbeReadsWhicheverWindowsTheHeadersCarry(t *testing.T) {
 		Read: true,
 	})
 
-	want := Window{Label: "Session", Seconds: 18000, Percent: 40}
+	want := Window{Kind: api.QuotaWindowSession, Seconds: 18000, Percent: 40}
 	if len(got.Windows) != 1 || got.Windows[0] != want {
 		t.Errorf("windows = %+v, want only %+v", got.Windows, want)
 	}

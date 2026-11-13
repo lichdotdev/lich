@@ -3,6 +3,8 @@ package quota
 import (
 	"testing"
 	"time"
+
+	"github.com/lichdotdev/lich/api"
 )
 
 // paceNow is the clock every case here is written against; markAhead takes it
@@ -102,13 +104,13 @@ func TestPaceMarksEveryWindowOfEveryPlan(t *testing.T) {
 	plans := []Plan{{
 		Provider: "claude",
 		Windows: []Window{
-			{Label: "Session", Seconds: 18000, Percent: 90, ResetsAt: resetIn(3600)},
-			{Label: "Weekly", Seconds: 604800, Percent: 66, ResetsAt: resetIn(302400)},
+			{Kind: api.QuotaWindowSession, Seconds: 18000, Percent: 90, ResetsAt: resetIn(3600)},
+			{Kind: api.QuotaWindowWeekly, Seconds: 604800, Percent: 66, ResetsAt: resetIn(302400)},
 		},
 	}, {
 		Provider: "codex",
 		Windows: []Window{
-			{Label: "Weekly", Seconds: 604800, Percent: 40, ResetsAt: resetIn(302400)},
+			{Kind: api.QuotaWindowWeekly, Seconds: 604800, Percent: 40, ResetsAt: resetIn(302400)},
 		},
 	}}
 	pace(plans, paceNow)

@@ -10,6 +10,8 @@ import (
 	"slices"
 	"testing"
 	"time"
+
+	"github.com/lichdotdev/lich/api"
 )
 
 // opencodeUsageBody is the Go usage route's answer in the shape the opencode
@@ -56,9 +58,9 @@ func TestOpencodeReadsTheGoSubscription(t *testing.T) {
 		t.Fatalf("plan = %+v, want an ok Go reading", got)
 	}
 	want := []Window{
-		{Label: "Session", Seconds: sessionWindow, Percent: 30, ResetsAt: "2026-10-08T17:00:00.000Z"},
-		{Label: "Weekly", Seconds: weeklyWindow, Percent: 51, ResetsAt: "2026-10-12T00:00:00.000Z"},
-		{Label: "Monthly", Seconds: monthlyWindow, Percent: 100, ResetsAt: "2026-11-01T00:00:00.000Z"},
+		{Kind: api.QuotaWindowSession, Seconds: sessionWindow, Percent: 30, ResetsAt: "2026-10-08T17:00:00.000Z"},
+		{Kind: api.QuotaWindowWeekly, Seconds: weeklyWindow, Percent: 51, ResetsAt: "2026-10-12T00:00:00.000Z"},
+		{Kind: api.QuotaWindowMonthly, Seconds: monthlyWindow, Percent: 100, ResetsAt: "2026-11-01T00:00:00.000Z"},
 	}
 	if !slices.Equal(got.Windows, want) {
 		t.Errorf("windows = %+v, want %+v", got.Windows, want)

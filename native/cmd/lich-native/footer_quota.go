@@ -265,13 +265,19 @@ func hottestWindow(plan backend.QuotaPlan) (backend.QuotaWindow, bool) {
 	return hottest, true
 }
 
-// footerWindow picks the window the strip shows: a locked window stays visible
-// even when another is fuller. False unless the reading is ok.
+// footerWindow picks the window the strip shows: the session one, since a week
+// at 80% would otherwise hide the session about to run out, and the longer
+// windows and a model's own cap are the tooltip's. A locked window still wins,
+// as no session room can be spent past it; a plan with no session window shows
+// its fullest. False unless the reading is ok.
 func footerWindow(plan backend.QuotaPlan) (backend.QuotaWindow, bool) {
 	if plan.Status != "ok" {
 		return backend.QuotaWindow{}, false
 	}
 	if i := slices.IndexFunc(plan.Windows, func(w backend.QuotaWindow) bool { return w.LockedReason != "" }); i >= 0 {
+		return plan.Windows[i], true
+	}
+	if i := slices.IndexFunc(plan.Windows, func(w backend.QuotaWindow) bool { return w.Seconds == sessionWindowSeconds }); i >= 0 {
 		return plan.Windows[i], true
 	}
 	return hottestWindow(plan)
@@ -311,7 +317,7 @@ func quotaGauges(plan backend.QuotaPlan, now time.Time) []quotaGauge {
 	rows := make([]quotaGauge, 0, len(plan.Windows))
 	for _, w := range plan.Windows {
 		g := quotaGauge{
-			Label: joinNonEmpty(" · ", w.Label, formatWindow(w.Seconds)), Reading: fmt.Sprintf("%d%%", w.Percent),
+			Label: joinNonEmpty(" · ", windowLabel(w), formatWindow(w.Seconds)), Reading: fmt.Sprintf("%d%%", w.Percent),
 			Left: timeLeft(w.ResetsAt, now), Percent: w.Percent, Locked: w.LockedReason, Ahead: w.Ahead,
 			Tone: toneOf(float64(w.Percent)),
 		}
@@ -321,6 +327,29 @@ func quotaGauges(plan backend.QuotaPlan, now time.Time) []quotaGauge {
 		rows = append(rows, g)
 	}
 	return rows
+}
+
+// windowLabel names a window in the interface language: lich's own name for a
+// window it names, the provider's verbatim for the rest (a model's weekly cap,
+// an Antigravity group).
+func windowLabel(w backend.QuotaWindow) string {
+	switch w.Kind {
+	case api.QuotaWindowSession:
+		return i18n.T("env.quota.window.session")
+	case api.QuotaWindowWeekly:
+		return i18n.T("env.quota.window.weekly")
+	case api.QuotaWindowMonthly:
+		return i18n.T("env.quota.window.monthly")
+	case api.QuotaWindowUsage:
+		return i18n.T("env.quota.window.usage")
+	case api.QuotaWindowCursorModels:
+		return i18n.T("env.quota.window.cursorModels")
+	case api.QuotaWindowOtherModels:
+		return i18n.T("env.quota.window.otherModels")
+	case api.QuotaWindowOnDemand:
+		return i18n.T("env.quota.window.onDemand")
+	}
+	return w.Label
 }
 
 // accountLine is the account a gauge was read against. A token login has a

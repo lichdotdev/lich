@@ -2310,7 +2310,8 @@ ReviewComment {
 }
 
 QuotaWindow {
-	label string
+	kind,omitempty string
+	label,omitempty string
 	seconds int
 	percent int
 	resetsAt,omitempty string

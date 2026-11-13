@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/providers"
 )
 
@@ -85,9 +86,9 @@ func TestCursorReadsTheBillingCycle(t *testing.T) {
 	month := 30 * dailyWindow
 	reset := "2026-10-25T15:55:17Z"
 	want := []Window{
-		{Label: "Monthly", Seconds: month, Percent: 40, ResetsAt: reset},
-		{Label: "Cursor models", Seconds: month, Percent: 12, ResetsAt: reset},
-		{Label: "Other models", Seconds: month, Percent: 55, ResetsAt: reset},
+		{Kind: api.QuotaWindowMonthly, Seconds: month, Percent: 40, ResetsAt: reset},
+		{Kind: api.QuotaWindowCursorModels, Seconds: month, Percent: 12, ResetsAt: reset},
+		{Kind: api.QuotaWindowOtherModels, Seconds: month, Percent: 55, ResetsAt: reset},
 	}
 	if !slices.Equal(got.Windows, want) {
 		t.Errorf("windows = %+v, want %+v", got.Windows, want)
@@ -187,16 +188,16 @@ func TestCursorWindows(t *testing.T) {
 		"team billed": {withPools(cycle, &cursorPool{Enabled: &no, TotalPercentUsed: pct(0)}, nil),
 			nil},
 		"used over limit": {withPools(cycle, &cursorPool{Used: pct(50), Limit: pct(200)}, nil),
-			[]string{"Monthly 25"}},
+			[]string{"monthly 25"}},
 		"on-demand": {withPools(cycle, nil, &cursorPool{Enabled: &yes, Used: pct(3), Limit: pct(10)}),
-			[]string{"On-demand 30"}},
+			[]string{"onDemand 30"}},
 		"on-demand off": {withPools(cycle, nil, &cursorPool{Enabled: &no, TotalPercentUsed: pct(9)}),
 			nil},
 		"no limit": {withPools(cycle, &cursorPool{Used: pct(5), Limit: pct(0)}, nil), nil},
 	} {
 		var got []string
 		for _, w := range tc.usage.windows() {
-			got = append(got, fmt.Sprintf("%s %d", w.Label, w.Percent))
+			got = append(got, fmt.Sprintf("%s %d", w.Kind, w.Percent))
 		}
 		if !slices.Equal(got, tc.want) {
 			t.Errorf("%s: windows = %q, want %q", name, got, tc.want)

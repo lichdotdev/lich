@@ -100,7 +100,7 @@ func (u opencodeUsage) windows() []Window {
 			continue
 		}
 		out = append(out, Window{
-			Label:    codexLabel(m.seconds),
+			Kind:     codexKind(m.seconds),
 			Seconds:  m.seconds,
 			Percent:  percent(*m.meter.Percent),
 			ResetsAt: m.meter.ResetsAt,

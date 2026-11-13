@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/providers"
 )
 
@@ -217,11 +218,11 @@ func probeWindows(h http.Header) []Window {
 	out := make([]Window, 0, 2)
 	for _, claim := range []struct {
 		abbrev  string
-		label   string
+		kind    string
 		seconds int
 	}{
-		{"5h", "Session", sessionWindow},
-		{"7d", "Weekly", weeklyWindow},
+		{"5h", api.QuotaWindowSession, sessionWindow},
+		{"7d", api.QuotaWindowWeekly, weeklyWindow},
 	} {
 		used, err := strconv.ParseFloat(h.Get(claudeClaimPrefix+claim.abbrev+"-utilization"), 64)
 		if err != nil {
@@ -229,7 +230,7 @@ func probeWindows(h http.Header) []Window {
 		}
 		reset, _ := strconv.ParseInt(h.Get(claudeClaimPrefix+claim.abbrev+"-reset"), 10, 64)
 		out = append(out, Window{
-			Label:    claim.label,
+			Kind:     claim.kind,
 			Seconds:  claim.seconds,
 			Percent:  percent(used * 100),
 			ResetsAt: unixTimestamp(reset),
@@ -249,35 +250,32 @@ func (u claudeUsage) windows() []Window {
 		if limit.Percent == nil {
 			continue
 		}
-		label, seconds := limit.window()
-		if label == "" {
+		w, ok := limit.window()
+		if !ok {
 			continue
 		}
-		out = append(out, Window{
-			Label:        label,
-			Seconds:      seconds,
-			Percent:      percent(*limit.Percent),
-			ResetsAt:     timestamp(limit.ResetsAt),
-			Active:       limit.IsActive,
-			LockedReason: u.lockedReason(limit.Kind),
-		})
+		w.Percent = percent(*limit.Percent)
+		w.ResetsAt = timestamp(limit.ResetsAt)
+		w.Active = limit.IsActive
+		w.LockedReason = u.lockedReason(limit.Kind)
+		out = append(out, w)
 	}
 	if len(out) > 0 {
 		return out
 	}
 	for _, w := range []struct {
 		window  *claudeWindow
-		label   string
+		kind    string
 		seconds int
 	}{
-		{u.FiveHour, "Session", sessionWindow},
-		{u.SevenDay, "Weekly", weeklyWindow},
+		{u.FiveHour, api.QuotaWindowSession, sessionWindow},
+		{u.SevenDay, api.QuotaWindowWeekly, weeklyWindow},
 	} {
 		if w.window == nil {
 			continue
 		}
 		out = append(out, Window{
-			Label:        w.label,
+			Kind:         w.kind,
 			Seconds:      w.seconds,
 			Percent:      percent(w.window.Utilization),
 			ResetsAt:     timestamp(w.window.ResetsAt),
@@ -305,23 +303,23 @@ func (u claudeUsage) lockedReason(kind string) string {
 	return ""
 }
 
-// window names one limit entry and gives its length. An empty label is an entry
-// lich does not draw: a kind it has no name for, or a model-scoped cap the API
-// did not name. A new kind is therefore silently skipped rather than rendered
-// as its wire spelling.
-func (l claudeLimit) window() (string, int) {
+// window names one limit entry and gives its length. False is an entry lich
+// does not draw: a kind it has no name for, or a model-scoped cap the API did
+// not name. A new kind is therefore silently skipped rather than rendered as its
+// wire spelling.
+func (l claudeLimit) window() (Window, bool) {
 	switch l.Kind {
 	case "session":
-		return "Session", sessionWindow
+		return Window{Kind: api.QuotaWindowSession, Seconds: sessionWindow}, true
 	case "weekly_all":
-		return "Weekly", weeklyWindow
+		return Window{Kind: api.QuotaWindowWeekly, Seconds: weeklyWindow}, true
 	case "weekly_scoped":
-		if l.Scope == nil || l.Scope.Model == nil {
-			return "", 0
+		if l.Scope == nil || l.Scope.Model == nil || l.Scope.Model.DisplayName == "" {
+			return Window{}, false
 		}
-		return l.Scope.Model.DisplayName, weeklyWindow
+		return Window{Label: l.Scope.Model.DisplayName, Seconds: weeklyWindow}, true
 	default:
-		return "", 0
+		return Window{}, false
 	}
 }
 
