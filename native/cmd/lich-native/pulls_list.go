@@ -2,11 +2,9 @@ package main
 
 import (
 	"fmt"
-	"image"
 	"image/color"
 	"math"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"gioui.org/font"
@@ -44,21 +42,15 @@ func (s pullsState) none() string {
 	return i18n.T("pulls.pullsList.none.open")
 }
 
-// indexLayout is the index: the heading with the field, the state menu and
-// New, the counted quick filters, then a row per pull request.
+// indexLayout is the index: one header line with the field (the state menu
+// inside it), the counted quick filters and New, then a row per pull request.
 func (p *pullsScreen) indexLayout(gtx C, th *ui.Theme, list pullsRead[[]backend.PRSummary], act *pullsAction) D {
 	if p.create.Clicked(gtx) {
 		act.create = true
 	}
 	counts := filterCounts(list.val, p.query.Text())
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(func(gtx C) D { return p.indexHeader(gtx, th) }),
-		layout.Rigid(func(gtx C) D {
-			tabs := p.filterTabs(th, counts)
-			return layout.Inset{Left: pullsPadX, Right: pullsPadX, Bottom: ui.Space(2)}.Layout(gtx, func(gtx C) D {
-				return p.tour.Anchor(gtx, tourPullsFilter, func(gtx C) D { return tabs.Layout(gtx) })
-			})
-		}),
+		layout.Rigid(func(gtx C) D { return p.indexHeader(gtx, th, counts) }),
 		layout.Rigid(th.Separator),
 		layout.Flexed(1, func(gtx C) D {
 			// Read after the filter tabs took their click.
@@ -67,27 +59,22 @@ func (p *pullsScreen) indexLayout(gtx C, th *ui.Theme, list pullsRead[[]backend.
 	)
 }
 
-// indexSearchWidth is the index's filter field, wide enough for its hint.
-var indexSearchWidth = unit.Dp(320)
+// indexSearchWidth is the index's field with the state menu in it, wide
+// enough for its hint.
+var indexSearchWidth = unit.Dp(420)
 
-// indexHeader is the index's title, then at the right the field, the state
-// menu and New.
-func (p *pullsScreen) indexHeader(gtx C, th *ui.Theme) D {
-	field := th.Input(&p.query, i18n.T("pulls.pullsList.searchHint"))
-	field.Leading, field.Height, field.TextSize, field.Clear = icPullSearch, ui.Space(8), ui.TextXS, &p.clearQuery
-	return layout.Inset{Left: pullsPadX, Right: pullsPadX, Top: ui.Space(4), Bottom: ui.Space(3)}.Layout(gtx, func(gtx C) D {
+// indexHeader is the field, then at the right the quick filters and New.
+func (p *pullsScreen) indexHeader(gtx C, th *ui.Theme, counts [pullsFilterCount]int) D {
+	tabs := p.filterTabs(th, counts)
+	return layout.UniformInset(pullsToolbarPad).Layout(gtx, func(gtx C) D {
 		gtx.Constraints.Min.X = gtx.Constraints.Max.X
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-			layout.Rigid(th.Text(pullsTitleSize, i18n.T("tabs.projectTabs.pullRequests")).Weight(font.SemiBold).Layout),
-			layout.Flexed(1, func(gtx C) D { return D{Size: image.Pt(gtx.Constraints.Max.X, 0)} }),
+			layout.Flexed(1, func(gtx C) D { return p.searchField(gtx, th) }),
+			ui.Gap(2),
 			layout.Rigid(func(gtx C) D {
-				w := min(gtx.Dp(indexSearchWidth), gtx.Constraints.Max.X)
-				gtx.Constraints.Min.X, gtx.Constraints.Max.X = w, w
-				return field.Layout(gtx)
+				return p.tour.Anchor(gtx, tourPullsFilter, func(gtx C) D { return tabs.Layout(gtx) })
 			}),
-			ui.Gap(3),
-			layout.Rigid(func(gtx C) D { return p.stateRow(gtx, th) }),
-			ui.Gap(3),
+			ui.Gap(2),
 			layout.Rigid(func(gtx C) D {
 				b := th.Button(&p.create, i18n.T("pulls.pullsNav.create"))
 				b.Icon, b.Variant, b.Size = icPullOut, ui.VariantOutline, ui.SizeSM
@@ -95,6 +82,22 @@ func (p *pullsScreen) indexHeader(gtx C, th *ui.Theme) D {
 			}),
 		)
 	})
+}
+
+// searchField is the filter field, the state menu leading it. It holds the
+// line's free width, so the filters and New sit at the right edge, and gives
+// it up first when the line is narrow.
+func (p *pullsScreen) searchField(gtx C, th *ui.Theme) D {
+	field := th.InputGroup(&p.query, i18n.T("pulls.pullsList.searchHint"))
+	field.Width, field.Height, field.TextSize, field.Clear = indexSearchWidth, ui.Space(8), ui.TextXS, &p.clearQuery
+	inner := field.Inner()
+	field.Start = ui.InputGroupAddon{Button: true, Items: []layout.Widget{
+		func(gtx C) D { return p.stateButton(gtx, inner) },
+		inner.InputGroupIcon(icPullSearch),
+	}}
+	d := field.Layout(gtx)
+	d.Size.X = gtx.Constraints.Max.X
+	return d
 }
 
 func (p *pullsScreen) filterTabs(th *ui.Theme, counts [pullsFilterCount]int) ui.TabsStyle {
@@ -126,27 +129,15 @@ func filterCountColor(th *ui.Theme, f pullsFilter, n int) color.NRGBA {
 	return th.MutedForeground
 }
 
-// stateRow is the uppercase state beside the field, a menu of the states the
-// index can list.
-func (p *pullsScreen) stateRow(gtx C, th *ui.Theme) D {
+// stateButton is the state the index lists, a menu of the states it can list.
+func (p *pullsScreen) stateButton(gtx C, th *ui.Theme) D {
 	entries := make([]ui.MenuEntry, len(pullsStates))
 	for i, s := range pullsStates {
 		entries[i] = ui.MenuEntry{Kind: ui.MenuRadioItem, Label: s.label(), Checked: s == p.state, OnClick: func() { p.state = s }}
 	}
-	menu := th.DropdownMenu(p.root, &p.stateMenu, entries)
-	return menu.Layout(gtx, func(gtx C) D {
-		return p.stateClick.Layout(gtx, func(gtx C) D {
-			fg := th.MutedForeground
-			if p.stateClick.Hovered() {
-				fg = th.Foreground
-			}
-			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-				layout.Rigid(th.Text(ui.TextXS, strings.ToUpper(p.state.label())).In(fg).Layout),
-				ui.Gap(1),
-				layout.Rigid(func(gtx C) D { return icPullDown.Layout(gtx, ui.Space(3), fg) }),
-			)
-		})
-	})
+	b := th.InputGroupButton(&p.stateClick, p.state.label())
+	b.Icon = icPullDown
+	return th.DropdownMenu(p.root, &p.stateMenu, entries).Layout(gtx, b.Layout)
 }
 
 func (p *pullsScreen) rowList(gtx C, th *ui.Theme, list pullsRead[[]backend.PRSummary], rows []backend.PRSummary) D {
@@ -182,7 +173,8 @@ var (
 
 // row is one pull request across the index: "#N title" over who, when and
 // its branch, then its checks, verdict and checkout in columns. The cursor's
-// row is filled once the keyboard moved it.
+// row is filled once the keyboard moved it, square and seam to seam like the
+// seams themselves: a rounded fill inset from them shows its corners.
 func (p *pullsScreen) row(gtx C, th *ui.Theme, pr backend.PRSummary, now time.Time) D {
 	click := p.rowClicks[pr.Number]
 	if click == nil {
@@ -201,11 +193,13 @@ func (p *pullsScreen) row(gtx C, th *ui.Theme, pr backend.PRSummary, now time.Ti
 		}
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
-				return layout.Inset{Left: pullsRowEdge, Right: pullsRowEdge}.Layout(gtx, func(gtx C) D {
-					return layout.Background{}.Layout(gtx,
-						func(gtx C) D { return ui.Fill(gtx, bg, ui.RadiusMD) },
-						func(gtx C) D { return rowContent(gtx, th.On(bg), pr, checkoutName(checkout), now) })
-				})
+				return layout.Background{}.Layout(gtx,
+					func(gtx C) D { return ui.Fill(gtx, bg, 0) },
+					func(gtx C) D {
+						return layout.Inset{Left: pullsRowEdge, Right: pullsRowEdge}.Layout(gtx, func(gtx C) D {
+							return rowContent(gtx, th.On(bg), pr, checkoutName(checkout), now)
+						})
+					})
 			}),
 			layout.Rigid(th.Separator),
 		)

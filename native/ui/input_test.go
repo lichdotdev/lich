@@ -296,3 +296,23 @@ func TestPressInPaddingFocusesTheEditor(t *testing.T) {
 }
 
 func inputPointF32(p image.Point) f32.Point { return f32.Pt(float32(p.X), float32(p.Y)) }
+
+func TestInputGroupClearEmptiesTheDenseField(t *testing.T) {
+	th, ed, clear := testTheme(), new(widget.Editor), new(widget.Clickable)
+	ed.SetText("skipo")
+	g := th.InputGroup(ed, "Filter")
+	g.Height, g.TextSize, g.Clear = Space(8), TextXS, clear
+	if got := inputSize(g.Layout, 240, 1000); got != image.Pt(240, 32) {
+		t.Fatalf("got %v, want 240x32", got)
+	}
+	rig := newInputRig(t, 240, 32, func(gtx layout.Context) layout.Dimensions { return g.Layout(gtx) })
+	rig.frame()
+	at := inputPointF32(image.Pt(rig.margin+240-14, rig.margin+16))
+	for _, k := range []pointer.Kind{pointer.Press, pointer.Release} {
+		rig.router.Queue(pointer.Event{Kind: k, Source: pointer.Mouse, Buttons: pointer.ButtonPrimary, Position: at})
+	}
+	rig.frame()
+	if ed.Text() != "" {
+		t.Errorf("the X left %q in the field", ed.Text())
+	}
+}

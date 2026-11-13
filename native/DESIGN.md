@@ -183,7 +183,8 @@ own width pushes the rows' right edge in, and their hover lands farther from the
 
 The geometry is shared; the look is not. Every screen lays out on the island's edge, its rows' padding and
 the sidebar's hover shape, and keeps what makes it itself: the Pulls list keeps its seams between rows, the
-Settings pane its reading column. Matching a screen to the sidebar means its spacing, never its decoration.
+Settings pane its reading column. Seams change the hover: a Pulls row and a `PanelRow` light square across the
+whole width, like the seams, since a rounded fill set in between them shows its corners against the lines. Matching a screen to the sidebar means its spacing, never its decoration.
 
 ### Header and strips
 

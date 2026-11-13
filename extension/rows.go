@@ -105,7 +105,8 @@ type NavRowProps struct {
 }
 
 // PanelRowProps draws its children as one row inset Edge from the panel's
-// sides. Only a Live row lights under the pointer.
+// sides. Only a Live row lights under the pointer, across the panel's whole
+// width.
 type PanelRowProps struct {
 	Live    bool    `json:"live,omitempty"`
 	Edge    float64 `json:"edge,omitempty"`
