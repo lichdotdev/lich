@@ -13,7 +13,7 @@
     Claude Code, Codex, opencode or the agent you already use, each in its own worktree, all in one window.
   </p>
   <h3><a href="#install">Download lich</a> · <a href="https://lichdotdev.github.io/lich/">lichdotdev.github.io/lich</a></h3>
-  <img src="docs/media/session.png" alt="Four Claude Code sessions side by side on one wall, each in its own git worktree. The sidebar lists them with their branch and diff badge, with the project's running services and the profile at its foot, and the footer shows the branch, the model and the plan" width="1000" />
+  <img src="docs/media/session.png" alt="Four Claude Code sessions side by side in one layout, each in its own git worktree. The sidebar lists each worktree by its branch with its session under it, and the footer shows the branch, the model, the context used and the plan usage" width="1000" />
   <!-- sponsor-logos: company logos go here, between the screenshot and Features -->
 </div>
 

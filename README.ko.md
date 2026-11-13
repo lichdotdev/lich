@@ -13,7 +13,7 @@
     Claude Code, Codex, opencode 등 이미 쓰고 있는 에이전트를 각자 자기 worktree에서, 모두 한 창에서 실행하세요.
   </p>
   <h3><a href="#설치">lich 다운로드</a> · <a href="https://lichdotdev.github.io/lich/index.ko.html">lichdotdev.github.io/lich</a></h3>
-  <img src="docs/media/session.png" alt="분할 화면 하나에 나란히 띄운 Claude Code 세션 4개와 각 세션의 git worktree. 사이드바에는 세션별 브랜치와 diff 배지, 맨 아래에 프로젝트에서 실행 중인 서비스와 프로필이 있고, 하단 바에는 브랜치와 모델, 플랜이 보입니다" width="1000" />
+  <img src="docs/media/session.png" alt="레이아웃 하나에 나란히 띄운 Claude Code 세션 4개와 각 세션의 git worktree. 사이드바에는 worktree가 브랜치 이름으로 나열되고 그 아래에 세션이 있으며, 하단 바에는 브랜치와 모델, 컨텍스트 사용량, 플랜 사용량이 보입니다" width="1000" />
   <!-- sponsor-logos: company logos go here, between the screenshot and Features -->
 </div>
 
