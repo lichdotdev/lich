@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/lichdotdev/lich/api"
+	"github.com/lichdotdev/lich/internal/events"
 	"github.com/lichdotdev/lich/internal/gitutil"
 	"github.com/lichdotdev/lich/internal/semver"
 	"github.com/lichdotdev/lich/internal/winexec"
@@ -93,6 +94,7 @@ func (s *Service) UpdateFromGit(_ context.Context, opts api.UpdateThemeOptions) 
 	if err := s.adoptPackVersion(opts.ID, result.Version); err != nil {
 		slog.Warn("themes: stamp theme the pack no longer carries", "id", opts.ID, "err", err)
 	}
+	events.Send(s.emit, api.ThemeUpdatesEvent, api.None{})
 	return result, nil
 }
 

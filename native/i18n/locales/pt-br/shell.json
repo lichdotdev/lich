@@ -29,6 +29,15 @@
     "install": "Instalar",
     "viewRelease": "Ver versão"
   },
+  "themeUpdateGate": {
+    "available": "O pacote de temas {pack} v{version} está disponível",
+    "several": {
+      "one": "{count} pacote de temas tem versão nova",
+      "other": "{count} pacotes de temas têm versão nova"
+    },
+    "update": "Atualizar",
+    "openSettings": "Abrir Configurações"
+  },
   "emptySessions": {
     "title": "Nenhuma sessão aberta",
     "description": "Abra uma sessão para começar a trabalhar neste projeto.",

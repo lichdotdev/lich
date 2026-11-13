@@ -86,7 +86,11 @@
       "one": "{count} 個のテーマ",
       "other": "{count} 個のテーマ"
     },
-    "updateHint": "リポジトリに新しいバージョンがあるか確認します",
+    "updateTo": "v{version} に更新",
+    "updateAvailable": "v{version} が利用可能",
+    "checkUpdates": "更新を確認",
+    "checkFailed": "テーマの更新を確認できませんでした: {error}",
+    "allUpToDate": "テーマはすべて最新です",
     "removeNamed": "{name} を削除"
   },
   "brokenThemeList": {

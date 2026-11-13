@@ -1436,6 +1436,15 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   font picker for the first time is not affected.
   A Chinese, Japanese or Korean font downloaded while a terminal is open leaves the characters that terminal already
   drew as empty boxes empty until lich restarts or its font or font size changes.
+- **A theme pack's update is found by cloning it, and only while lich runs** (`internal/themes/update.go`,
+  `CheckUpdates`): at start and every six hours each repository an installed theme came from is cloned
+  shallowly, once per URL, and its manifest's version compared with the installed one. Nothing is cached on
+  disk, so a restart forgets what the last check found until the next one answers, and a repository that
+  cannot be reached (offline, a private one whose credentials need a prompt) keeps the last answer of this run
+  and is only logged; **Check for updates** shows the error. A pack whose newer version this lich refuses
+  (`minLichVersion`, an invalid theme) is not offered at all. Later is remembered per pack version in
+  `lich.themeUpdatesDismissed`, and the card keeps offering the update. A theme imported as a single file has
+  no repository and is never checked.
 - **Following the OS's light or dark is polled on macOS**: a theme's `pair` and `lich theme switch` reach the
   window through the backend's `theme-selection` event. Following the OS
   reads the freedesktop appearance portal on Linux and `AppsUseLightTheme` in the registry on Windows, both

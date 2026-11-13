@@ -83,7 +83,11 @@
     "count": {
       "other": "테마 {count}개"
     },
-    "updateHint": "저장소에서 새 버전 확인",
+    "updateTo": "v{version} 버전으로 업데이트",
+    "updateAvailable": "v{version} 사용 가능",
+    "checkUpdates": "업데이트 확인",
+    "checkFailed": "테마 업데이트를 확인하지 못했습니다: {error}",
+    "allUpToDate": "테마가 모두 최신 버전입니다",
     "removeNamed": "{name} 삭제"
   },
   "brokenThemeList": {

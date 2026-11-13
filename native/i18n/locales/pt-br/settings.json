@@ -86,7 +86,11 @@
       "one": "{count} tema",
       "other": "{count} temas"
     },
-    "updateHint": "Verificar no repositório se há uma versão mais nova",
+    "updateTo": "Atualizar para a v{version}",
+    "updateAvailable": "v{version} disponível",
+    "checkUpdates": "Buscar atualizações",
+    "checkFailed": "Não foi possível buscar atualizações de temas: {error}",
+    "allUpToDate": "Seus temas estão atualizados",
     "removeNamed": "Remover {name}"
   },
   "brokenThemeList": {
