@@ -21,10 +21,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - The agent's cursor over its browser page is a new arrow, the one of Bibata Modern (GPL-3.0, by Abdulkaiz Khatri), in place of the arrow lich drew before. Its color, its badge and the way it moves are unchanged. Applies to every provider.
 
-- The Pulls list's header is one line: the state menu (Open, Closed, Merged, Approved) sits inside the filter field, and the All, Ready, Drafts and Failing filters take only the width of their text, beside New pull request. The "Pull requests" title above the list is gone; the project's tab already names the screen. A row under the pointer, in the Pulls list, its panels and an extension's panel rows, now lights square across its whole width instead of a rounded box set in from the sides.
+- **The Pulls list's header fits on one line.** The Open menu sits inside the filter field, and the filters and New pull request share its line.
 
 ### Fixed
 
+- **A row under the pointer in Pulls and in an extension's panel lights across its whole width.** It was a rounded box set in from the sides, with its corners showing against the lines between rows.
 - Dragging over text in a session's browser page now selects it: the page saw the drag and selected nothing, so there was nothing to copy. Applies to every provider.
 - A page in a session's browser now knows it has a mouse: effects a site turns on only for a pointer that can hover, like a glow that follows the cursor, work in the pane as they do in a browser window. Applies to every provider.
 - A selected, hovered or colored row coming into the sidebar's tree no longer shows a lit stub of its highlight under the row above: the highlight left of the row's ring now fades in with the rest of it.
