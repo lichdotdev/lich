@@ -343,7 +343,7 @@ func (s *Service) Remove(ctx context.Context, opts api.ExtensionIDOptions) (api.
 			return api.None{}, ctx.Err()
 		}
 	}
-	if err := os.RemoveAll(x.root); err != nil {
+	if err := afterExit(func() error { return os.RemoveAll(x.root) }); err != nil {
 		return api.None{}, fmt.Errorf("delete %s: %w; delete it by hand", x.root, err)
 	}
 	s.mu.Lock()
