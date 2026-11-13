@@ -71,6 +71,9 @@ func drawSortableList(r *Renderer, gtx C, th *ui.Theme, n extension.Node, id str
 	if d, ok := s.Update(gtx); ok {
 		r.dropped(p, n.Key, g, keys, d)
 	}
+	if s.Moved() && (r.drag.down || r.drag.released) {
+		r.drag.sorted = true
+	}
 	// A grouped item goes sideways to the other lists, so it may leave.
 	list := ui.SortList{Gap: unit.Dp(p.Gap), Horizontal: p.Horizontal, Within: p.Within, Leaves: p.Leaves || g != nil}
 	inAir := ""
@@ -138,12 +141,12 @@ func lightRoom(gtx C, th *ui.Theme, room image.Point) {
 func (r *Renderer) dropped(p extension.SortableListProps, from string, g *groupState, keys []string, d ui.SortDrop) {
 	if !d.Carried {
 		if order, moved := reorder(keys, d); moved {
-			r.fire(p.OnReorder, extension.EventData{Order: order})
+			r.emit(p.OnReorder, extension.EventData{Order: order})
 		}
 		return
 	}
 	if t, ok := g.targets[d.Over]; ok {
-		r.fire(t.onMove, extension.EventData{Key: d.ID, Index: t.index, From: from})
+		r.emit(t.onMove, extension.EventData{Key: d.ID, Index: t.index, From: from})
 	}
 }
 
@@ -230,11 +233,14 @@ type dragPointer struct {
 	down      bool
 	// released is the pointer let go this frame.
 	released bool
+	// sorted is a press, drawn this frame, that became a drag of a sortable
+	// item, held until the frame after the pointer goes up.
+	sorted bool
 }
 
 func (r *Renderer) readPointer(gtx C) {
 	d := &r.drag
-	d.released = false
+	d.released, d.sorted = false, false
 	for {
 		ev, ok := gtx.Event(pointer.Filter{Target: d, Kinds: pointer.Press | pointer.Drag | pointer.Release | pointer.Cancel})
 		if !ok {

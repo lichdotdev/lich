@@ -130,7 +130,16 @@ func (r *Renderer) children(th *ui.Theme, n extension.Node, id string) []layout.
 }
 
 // fire sends e to the extension under h; a node with no handler sends nothing.
+// A press that became a drag in a sortable list fires nothing: it is no click.
 func (r *Renderer) fire(h extension.Handler, e extension.EventData) {
+	if r.drag.sorted {
+		return
+	}
+	r.emit(h, e)
+}
+
+// emit is fire for what the drag itself sends.
+func (r *Renderer) emit(h extension.Handler, e extension.EventData) {
 	if h == "" {
 		return
 	}

@@ -58,8 +58,10 @@ type Sortable struct {
 	kbOver   string
 	focused  string
 	drop     SortDrop
-	dropped  bool
-	list     sortList
+	// moved is whether the last pointer press turned into a drag.
+	moved   bool
+	dropped bool
+	list    sortList
 }
 
 // SortDrop is dnd-kit's DragEndEvent: ID was dropped over Over. Carried means
@@ -118,6 +120,11 @@ func (s *Sortable) Update(gtx C) (SortDrop, bool) {
 
 // Dragging is the item in the air, "" when none is.
 func (s *Sortable) Dragging() string { return s.active }
+
+// Moved reports whether the last pointer press turned into a drag, whether it
+// is still in the air or already let go: a gesture that was a drag is no click
+// on whatever sits under it.
+func (s *Sortable) Moved() bool { return s.moved }
 
 // Focused reports whether item id has the keyboard focus, for its ring.
 func (s *Sortable) Focused(id string) bool { return s.focused == id }
@@ -328,7 +335,7 @@ func (s *Sortable) pointer(gtx C, t *sortTarget, e pointer.Event) {
 		if !e.Buttons.Contain(pointer.ButtonPrimary) || s.active != "" {
 			return
 		}
-		s.pressed, s.press, s.delta = t.id, s.list.atRest(t.id, e.Position), f32.Point{}
+		s.pressed, s.press, s.delta, s.moved = t.id, s.list.atRest(t.id, e.Position), f32.Point{}, false
 		gtx.Execute(key.FocusCmd{Tag: t})
 	case pointer.Drag:
 		if s.pressed != t.id {
@@ -337,7 +344,7 @@ func (s *Sortable) pointer(gtx C, t *sortTarget, e pointer.Event) {
 		s.delta = s.list.atRest(t.id, e.Position).Sub(s.press)
 		travel := float32(gtx.Dp(sortActivation))
 		if s.active == "" && s.delta.X*s.delta.X+s.delta.Y*s.delta.Y >= travel*travel {
-			s.active, s.keyboard = t.id, false
+			s.active, s.keyboard, s.moved = t.id, false, true
 			if s.Carry != nil {
 				s.Carry.carrying, s.Carry.source = t.id, s
 			}

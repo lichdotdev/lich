@@ -272,3 +272,53 @@ func TestALitListInAScrollEndsWithItsViewport(t *testing.T) {
 		t.Errorf("move = %+v, want the end of the list for a drop at the viewport's end", e)
 	}
 }
+
+// pressable is a card that opens on a press, as a board's card does.
+func pressable(k string) extension.Node {
+	return extension.NavRow.New(extension.NavRowProps{Height: 30, OnPress: extension.Handler("open:" + k)}, label(k)).WithKey(k)
+}
+
+func pressableBoard() extension.Node {
+	column := func(key string, cards ...string) extension.Node {
+		kids := make([]extension.Node, len(cards))
+		for i, c := range cards {
+			kids[i] = pressable(c)
+		}
+		return extension.Box.New(extension.BoxProps{Width: 150}, extension.SortableList.New(extension.SortableListProps{Group: "board",
+			OnReorder: extension.Handler("reorder:" + key), OnMove: extension.Handler("move:" + key)}, kids...).WithKey(key))
+	}
+	return extension.Box.New(extension.BoxProps{Direction: extension.DirectionRow, Gap: 20}, column("todo", "a", "b", "c"), column("done", "x", "y"))
+}
+
+func TestADragIsNotAClickOnTheCard(t *testing.T) {
+	cases := []struct {
+		name     string
+		from, to f32.Point
+		want     extension.Handler
+	}{
+		{"into another list", f32.Pt(75, 15), f32.Pt(245, 40), "move:done"},
+		{"within the list", f32.Pt(75, 15), f32.Pt(75, 75), "reorder:todo"},
+		{"over its own slot", f32.Pt(75, 15), f32.Pt(75, 25), ""},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			g := newRig(t, pressableBoard())
+			g.drag(tc.from, tc.to)
+			if got := g.fired("open:a"); len(got) != 0 {
+				t.Errorf("the dragged card opened: %+v", got)
+			}
+			if tc.want != "" {
+				g.once(tc.want)
+			}
+		})
+	}
+}
+
+func TestAClickOnACardStillPressesIt(t *testing.T) {
+	g := newRig(t, pressableBoard())
+	g.click(pointer.ButtonPrimary, 75, 15)
+	g.once("open:a")
+	if len(g.got) != 1 {
+		t.Errorf("events = %+v, want only the press", g.got)
+	}
+}
