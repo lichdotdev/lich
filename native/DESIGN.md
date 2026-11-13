@@ -48,11 +48,10 @@ under it.
 
 Never a hex or OKLCH value in a widget: always a `Theme` token. Themes are JSON (`docs/themes.md`).
 
-Four colors are literals on purpose, each named in a constant that says why: a toast's description is
+Three colors are literals on purpose, each named in a constant that says why: a toast's description is
 sonner's own gray (`ui/toast_body.go`), the browser notes' tag and halo sit on the website and keep one
-look on every page (`browser_notes_view.go`), Windows' close button hovers in the system's red
-(`caption.go`), and the release notes' Fixed dot is sky (`notesSky`), a group's accent apart from the
-app's tones. A fifth needs the same kind of reason.
+look on every page (`browser_notes_view.go`), and Windows' close button hovers in the system's red
+(`caption.go`). A fourth needs the same kind of reason.
 
 | Token | Role |
 | --- | --- |

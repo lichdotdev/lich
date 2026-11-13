@@ -38,7 +38,6 @@ var (
 	icNotesOpened    = icons.Lucide("chevron-down")
 	icNotesClosed    = icons.Lucide("chevron-right")
 	icNotesChangelog = icons.Lucide("arrow-up-right")
-	notesSky         = color.NRGBA{R: 0x00, G: 0xa6, B: 0xf4, A: 0xff} // Tailwind sky-500, the "Fixed" dot
 	notesGroupDot    = unit.Dp(8)
 )
 
@@ -145,8 +144,6 @@ func noteDot(th *ui.Theme, label string) color.NRGBA {
 		return th.TonePass
 	case "changed":
 		return th.ToneWait
-	case "fixed":
-		return notesSky
 	}
 	return th.MutedForeground
 }
