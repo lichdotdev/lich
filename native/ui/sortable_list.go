@@ -62,6 +62,7 @@ type sortList struct {
 	horizontal    bool
 	press         f32.Point
 	slots         map[string]*sortSlot
+	arrivals      map[string]*sortArrival
 	snap          func(a, o int) int
 	// away is the item in the air carried out across the list's side this
 	// frame, which then makes room nowhere.
@@ -74,6 +75,39 @@ type sortSlot struct {
 	index int
 	y     float32
 	shift tween
+}
+
+// sortArrival is an item that came from another place: it is drawn from where
+// the window had it, `from`, and slides to its slot over sortSettle.
+type sortArrival struct {
+	from f32.Point
+	t    tween
+}
+
+// Arrive makes item id, which this frame's List has for the first time, slide
+// into its slot from the window position from, where another list had it
+// drawn. Call it before List; an item that is not in the list is forgotten.
+func (s *Sortable) Arrive(id string, from f32.Point) {
+	g := &s.list
+	if g.arrivals == nil {
+		g.arrivals = map[string]*sortArrival{}
+	}
+	a := &sortArrival{from: from}
+	a.t.seed(1)
+	g.arrivals[id] = a
+}
+
+// Slot is where item id sits in the window as of the last frame, "at rest": its
+// list's origin and the item's slot along the axis. ok is false before the
+// list has been drawn once, or when id is not in it.
+func (s *Sortable) Slot(gtx C, id string) (f32.Point, bool) {
+	g := &s.list
+	j := slices.Index(g.ids, id)
+	origin, ok := gtx.Source.Origin(&s.list)
+	if j < 0 || !ok {
+		return f32.Point{}, false
+	}
+	return origin.Add(g.onAxis(float32(g.tops[j]))), true
 }
 
 // List lays ids out as a sortable list: item(gtx, i) draws ids[i] and lays
@@ -242,8 +276,27 @@ func (s *Sortable) offset(gtx C, j, a int) float32 {
 }
 
 func (s *Sortable) place(gtx C, j int, off float32, call op.CallOp) {
-	defer op.Affine(f32.Affine2D{}.Offset(s.list.onAxis(float32(s.list.tops[j]) + off))).Push(gtx.Ops).Pop()
+	at := s.list.onAxis(float32(s.list.tops[j]) + off).Add(s.arrival(gtx, j))
+	defer op.Affine(f32.Affine2D{}.Offset(at)).Push(gtx.Ops).Pop()
 	call.Add(gtx.Ops)
+}
+
+// arrival is how far item j still is from its slot, the way it came from
+// another list: the window position it was drawn at, less where its slot is.
+func (s *Sortable) arrival(gtx C, j int) f32.Point {
+	g := &s.list
+	a, ok := g.arrivals[g.ids[j]]
+	if !ok {
+		return f32.Point{}
+	}
+	origin, found := gtx.Source.Origin(&s.list)
+	v := a.t.at(gtx, 0, sortSettle, ease)
+	if !found || v == 0 {
+		delete(g.arrivals, g.ids[j])
+		return f32.Point{}
+	}
+	slot := origin.Add(g.onAxis(float32(g.tops[j])))
+	return a.from.Sub(slot).Mul(v)
 }
 
 // lifted draws the item in the air over everything, unclipped, and lets the
@@ -273,6 +326,11 @@ func (s *Sortable) prune(ids []string) {
 	for id := range s.list.slots {
 		if !slices.Contains(ids, id) {
 			delete(s.list.slots, id)
+		}
+	}
+	for id := range s.list.arrivals {
+		if !slices.Contains(ids, id) {
+			delete(s.list.arrivals, id)
 		}
 	}
 }

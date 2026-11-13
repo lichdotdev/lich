@@ -3,6 +3,7 @@ package extrender
 import (
 	"slices"
 	"testing"
+	"time"
 
 	"gioui.org/f32"
 	"gioui.org/io/pointer"
@@ -320,5 +321,69 @@ func TestAClickOnACardStillPressesIt(t *testing.T) {
 	g.once("open:a")
 	if len(g.got) != 1 {
 		t.Errorf("events = %+v, want only the press", g.got)
+	}
+}
+
+// filledBoard is two columns of filled cards, "todo" at x 0..150 and "done" at
+// 170..320, so a probe of a pixel tells whether a card is there.
+func filledBoard(todo, done []string) extension.Node {
+	column := func(key string, cards []string) extension.Node {
+		kids := make([]extension.Node, len(cards))
+		for i, c := range cards {
+			kids[i] = extension.Box.New(extension.BoxProps{Height: 30, Background: "accent"}, label(c)).WithKey(c)
+		}
+		return extension.Box.New(extension.BoxProps{Width: 150}, extension.SortableList.New(extension.SortableListProps{
+			Group: "board", OnMove: extension.Handler("move:" + key)}, kids...).WithKey(key))
+	}
+	return extension.Box.New(extension.BoxProps{Direction: extension.DirectionRow, Gap: 20}, column("todo", todo), column("done", done))
+}
+
+// A card a render puts in another list of the group slides there from where it
+// was, as it does inside one list; one the user dropped there does not.
+func TestACardAnotherRenderMovesSlidesToItsList(t *testing.T) {
+	// The slot "a" takes at the end of "done", clear of the cards that step aside.
+	probe := func(g *rig) [4]uint8 { c := g.shot().RGBAAt(310, 75); return [4]uint8{c.R, c.G, c.B, c.A} }
+	moved := func() extension.Node { return filledBoard([]string{"b", "c"}, []string{"x", "y", "a"}) }
+	rest := func() extension.Node { return filledBoard([]string{"a", "b", "c"}, []string{"x", "y"}) }
+
+	g := newRig(t, moved())
+	settled := probe(g)
+	g = newRig(t, rest())
+	// The router knows where a list sits only from the second frame.
+	g.wait(time.Millisecond)
+	g.tree = moved()
+	g.wait(time.Millisecond)
+	if got := probe(g); got == settled {
+		t.Errorf("the card is at its new slot in the frame its list changed, %v: it should still be near where it was", got)
+	}
+	g.wait(time.Second)
+	if got := probe(g); got != settled {
+		t.Errorf("the card is %v a second on, want it settled in its slot (%v)", got, settled)
+	}
+}
+
+func TestACardTheUserDroppedDoesNotSlide(t *testing.T) {
+	g := newRig(t, filledBoard([]string{"a", "b", "c"}, []string{"x", "y"}))
+	g.drag(f32.Pt(75, 15), f32.Pt(245, 200))
+	g.once("move:done")
+	settled := newRig(t, filledBoard([]string{"b", "c"}, []string{"x", "y", "a"}))
+	want := settled.shot().RGBAAt(310, 75)
+	g.tree = filledBoard([]string{"b", "c"}, []string{"x", "y", "a"})
+	g.wait(time.Millisecond)
+	if got := g.shot().RGBAAt(310, 75); got != want {
+		t.Errorf("the dropped card is %v in the frame the extension applied the move, want it in its slot at once (%v)", got, want)
+	}
+}
+
+func TestACardOnlyRenderedBeforeDoesNotSlide(t *testing.T) {
+	// "a" leaves the board for a render and comes back in another list: it is new there.
+	g := newRig(t, filledBoard([]string{"a", "b", "c"}, []string{"x", "y"}))
+	g.tree = filledBoard([]string{"b", "c"}, []string{"x", "y"})
+	g.wait(time.Millisecond)
+	g.tree = filledBoard([]string{"b", "c"}, []string{"x", "y", "a"})
+	g.wait(time.Millisecond)
+	settled := newRig(t, filledBoard([]string{"b", "c"}, []string{"x", "y", "a"})).shot().RGBAAt(310, 75)
+	if got := g.shot().RGBAAt(310, 75); got != settled {
+		t.Errorf("a card that was not on the board last frame slides in, %v want %v", got, settled)
 	}
 }
