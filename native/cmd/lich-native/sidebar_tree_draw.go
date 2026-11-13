@@ -380,7 +380,7 @@ func (s *sidebar) nestedCheckout(gtx C, th *ui.Theme, r sessionRow, b blockView,
 		return tooltip.Layout(gtx, func(gtx C) D {
 			return hover.Layout(gtx, func(gtx C) D {
 				return layout.Background{}.Layout(gtx,
-					func(gtx C) D { return ui.Fill(gtx, cardLayer(th, "", false, hovered), ui.RadiusMD) },
+					func(gtx C) D { return treeRowFill(gtx, cardLayer(th, "", false, hovered), p) },
 					func(gtx C) D { return withLinks(gtx, th, p.sessionRowLinks, line) },
 				)
 			})
@@ -438,7 +438,7 @@ func (s *sidebar) checkoutHeader(gtx C, th *ui.Theme, b blockView, st *blockStat
 				return st.more.Layout(gtx, func(gtx C) D {
 					fill := cardLayer(th, "", false, st.more.Hovered() || more.Opened())
 					return layout.Background{}.Layout(gtx,
-						func(gtx C) D { return ui.Fill(gtx, fill, ui.RadiusMD) },
+						func(gtx C) D { return treeRowFill(gtx, fill, p) },
 						func(gtx C) D { return withLinks(gtx, th, p.sessionRowLinks, line) },
 					)
 				})

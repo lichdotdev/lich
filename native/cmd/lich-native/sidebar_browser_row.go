@@ -140,7 +140,7 @@ func (s *sidebar) browserRow(gtx C, th *ui.Theme, r sessionRow, b blockView, act
 		return tooltip.Layout(gtx, func(gtx C) D {
 			return hover.Layout(gtx, func(gtx C) D {
 				return layout.Background{}.Layout(gtx,
-					func(gtx C) D { return ui.Fill(gtx, cardLayer(th, "", active && web.focused, hovered), ui.RadiusMD) },
+					func(gtx C) D { return treeRowFill(gtx, cardLayer(th, "", active && web.focused, hovered), p) },
 					func(gtx C) D { return withLinks(gtx, th, p.sessionRowLinks, line) },
 				)
 			})

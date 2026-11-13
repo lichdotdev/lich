@@ -111,7 +111,7 @@ func (s *sidebar) card(gtx C, th *ui.Theme, sv *sessionView, active bool, folder
 func (s *sidebar) cardFace(gtx C, th *ui.Theme, sv *sessionView, click, prChip *widget.Clickable, more layout.Widget, moreOpen bool, fill color.NRGBA) D {
 	return click.Layout(gtx, func(gtx C) D {
 		return layout.Background{}.Layout(gtx,
-			func(gtx C) D { return ui.Fill(gtx, fill, ui.RadiusMD) },
+			func(gtx C) D { return treeRowFill(gtx, fill, sv.place) },
 			func(gtx C) D {
 				return withLinks(gtx, th, sv.place.sessionRowLinks, func(gtx C) D {
 					return s.cardBody(gtx, th, sv, prChip, more, click.Hovered() || moreOpen)
