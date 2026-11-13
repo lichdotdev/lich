@@ -44,16 +44,18 @@ type QuotaPlan struct {
 // QuotaWindow is one metered window of a plan: how much of it is spent, how long it
 // runs, and when it starts over.
 //
-// Label is the window's name as the provider frames it ("Session", "Weekly"), or
-// the display name of the model a scoped window belongs to. Seconds is its
-// length, so the window can print the metered window it is looking at; 0 when the
-// provider does not report one. ResetsAt is RFC 3339, empty when unreported.
+// Kind names a window lich names itself, one of the QuotaWindow* kinds, which the
+// window translates. Label is the provider's own name for the rest (the model a
+// scoped weekly cap belongs to, an Antigravity group), shown verbatim; empty when
+// Kind is set. Seconds is its length, so the window can print the metered window
+// it is looking at; 0 when the provider does not report one. ResetsAt is RFC 3339, empty when unreported.
 // Active is the provider's own verdict on which window is the binding one, when
 // it reports one at all. LockedReason is non-empty only when the provider says
 // this window cannot be spent past regardless of its percentage. Ahead is
 // lich's own reading of the rate rather than the provider's — see pace.go.
 type QuotaWindow struct {
-	Label        string `json:"label"`
+	Kind         string `json:"kind,omitempty"`
+	Label        string `json:"label,omitempty"`
 	Seconds      int    `json:"seconds"`
 	Percent      int    `json:"percent"`
 	ResetsAt     string `json:"resetsAt,omitempty"`
@@ -61,3 +63,13 @@ type QuotaWindow struct {
 	LockedReason string `json:"lockedReason,omitempty"`
 	Ahead        bool   `json:"ahead,omitempty"`
 }
+
+const (
+	QuotaWindowSession      = "session"
+	QuotaWindowWeekly       = "weekly"
+	QuotaWindowMonthly      = "monthly"
+	QuotaWindowUsage        = "usage"
+	QuotaWindowCursorModels = "cursorModels"
+	QuotaWindowOtherModels  = "otherModels"
+	QuotaWindowOnDemand     = "onDemand"
+)

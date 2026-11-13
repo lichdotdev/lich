@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/lichdotdev/lich/api"
 )
 
 // claudeCredsJSON is the shape Claude Code writes, trimmed to what lich reads.
@@ -120,8 +122,8 @@ func TestClaudePlanReadsLimits(t *testing.T) {
 		t.Errorf("plan = %q, want %q", got.Plan, "Max 5x")
 	}
 	want := []Window{
-		{Label: "Session", Seconds: 18000, Percent: 2, ResetsAt: "2026-08-17T23:20:00.153182+00:00"},
-		{Label: "Weekly", Seconds: 604800, Percent: 41, ResetsAt: "2026-08-24T15:00:00+00:00"},
+		{Kind: api.QuotaWindowSession, Seconds: 18000, Percent: 2, ResetsAt: "2026-08-17T23:20:00.153182+00:00"},
+		{Kind: api.QuotaWindowWeekly, Seconds: 604800, Percent: 41, ResetsAt: "2026-08-24T15:00:00+00:00"},
 		{Label: "Fable", Seconds: 604800, Percent: 11},
 	}
 	if len(got.Windows) != len(want) {
@@ -169,8 +171,8 @@ func TestClaudeFallsBackToTheOriginalWindowPair(t *testing.T) {
 	got := newService(url, "", time.Now()).claudePlan(lichEnv())
 
 	want := []Window{
-		{Label: "Session", Seconds: 18000, Percent: 63, ResetsAt: "2026-08-17T23:20:00Z", LockedReason: "past_limit"},
-		{Label: "Weekly", Seconds: 604800, Percent: 7, ResetsAt: "2026-08-24T15:00:00Z"},
+		{Kind: api.QuotaWindowSession, Seconds: 18000, Percent: 63, ResetsAt: "2026-08-17T23:20:00Z", LockedReason: "past_limit"},
+		{Kind: api.QuotaWindowWeekly, Seconds: 604800, Percent: 7, ResetsAt: "2026-08-24T15:00:00Z"},
 	}
 	if len(got.Windows) != 2 || got.Windows[0] != want[0] || got.Windows[1] != want[1] {
 		t.Errorf("windows = %+v, want %+v", got.Windows, want)
@@ -190,7 +192,7 @@ func TestClaudeSkipsEntriesItCannotDraw(t *testing.T) {
 
 	got := newService(url, "", time.Now()).claudePlan(lichEnv())
 
-	if len(got.Windows) != 1 || got.Windows[0].Label != "Session" {
+	if len(got.Windows) != 1 || got.Windows[0].Kind != api.QuotaWindowSession {
 		t.Fatalf("windows = %+v, want only the session window", got.Windows)
 	}
 }
@@ -212,8 +214,8 @@ func TestClaudeReadsIsActiveAndLockedReason(t *testing.T) {
 	got := newService(url, "", time.Now()).claudePlan(lichEnv())
 
 	want := []Window{
-		{Label: "Session", Seconds: sessionWindow, Percent: 12, ResetsAt: "2026-08-30T20:29:59Z", LockedReason: "past_limit"},
-		{Label: "Weekly", Seconds: weeklyWindow, Percent: 32, ResetsAt: "2026-08-31T15:00:00Z", Active: true},
+		{Kind: api.QuotaWindowSession, Seconds: sessionWindow, Percent: 12, ResetsAt: "2026-08-30T20:29:59Z", LockedReason: "past_limit"},
+		{Kind: api.QuotaWindowWeekly, Seconds: weeklyWindow, Percent: 32, ResetsAt: "2026-08-31T15:00:00Z", Active: true},
 		{Label: "Fable", Seconds: weeklyWindow, Percent: 7, ResetsAt: "2026-08-31T14:59:59Z"},
 	}
 	if len(got.Windows) != len(want) {
@@ -303,7 +305,7 @@ func TestCodexPlanNamesWindowsByDuration(t *testing.T) {
 	if got.Status != StatusOK || got.Plan != "Free" {
 		t.Fatalf("plan = %+v, want an ok Free plan", got)
 	}
-	want := Window{Label: "Monthly", Seconds: 2592000, Percent: 26, ResetsAt: "2026-09-13T16:51:56Z"}
+	want := Window{Kind: api.QuotaWindowMonthly, Seconds: 2592000, Percent: 26, ResetsAt: "2026-09-13T16:51:56Z"}
 	if len(got.Windows) != 1 || got.Windows[0] != want {
 		t.Errorf("windows = %+v, want %+v", got.Windows, want)
 	}
@@ -319,8 +321,8 @@ func TestCodexReadsBothWindows(t *testing.T) {
 	got := newService("", url, time.Now()).codexPlan(lichEnv())
 
 	want := []Window{
-		{Label: "Session", Seconds: 18000, Percent: 12},
-		{Label: "Weekly", Seconds: 604800, Percent: 89, ResetsAt: "2026-09-13T16:51:56Z"},
+		{Kind: api.QuotaWindowSession, Seconds: 18000, Percent: 12},
+		{Kind: api.QuotaWindowWeekly, Seconds: 604800, Percent: 89, ResetsAt: "2026-09-13T16:51:56Z"},
 	}
 	if len(got.Windows) != 2 || got.Windows[0] != want[0] || got.Windows[1] != want[1] {
 		t.Errorf("windows = %+v, want %+v", got.Windows, want)
@@ -336,23 +338,23 @@ func TestCodexWithoutRateLimitBlockFails(t *testing.T) {
 	}
 }
 
-func TestCodexLabel(t *testing.T) {
+func TestCodexKind(t *testing.T) {
 	tests := []struct {
 		seconds int
 		want    string
 	}{
-		{seconds: 0, want: "Usage"},
-		{seconds: -1, want: "Usage"},
-		{seconds: 18000, want: "Session"},
-		{seconds: 86399, want: "Session"},
-		{seconds: 86400, want: "Weekly"},
-		{seconds: 604800, want: "Weekly"},
-		{seconds: 604801, want: "Monthly"},
-		{seconds: 2592000, want: "Monthly"},
+		{seconds: 0, want: api.QuotaWindowUsage},
+		{seconds: -1, want: api.QuotaWindowUsage},
+		{seconds: 18000, want: api.QuotaWindowSession},
+		{seconds: 86399, want: api.QuotaWindowSession},
+		{seconds: 86400, want: api.QuotaWindowWeekly},
+		{seconds: 604800, want: api.QuotaWindowWeekly},
+		{seconds: 604801, want: api.QuotaWindowMonthly},
+		{seconds: 2592000, want: api.QuotaWindowMonthly},
 	}
 	for _, tt := range tests {
-		if got := codexLabel(tt.seconds); got != tt.want {
-			t.Errorf("codexLabel(%d) = %q, want %q", tt.seconds, got, tt.want)
+		if got := codexKind(tt.seconds); got != tt.want {
+			t.Errorf("codexKind(%d) = %q, want %q", tt.seconds, got, tt.want)
 		}
 	}
 }

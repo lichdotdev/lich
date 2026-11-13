@@ -4,6 +4,7 @@ import (
 	"slices"
 	"time"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/providers"
 )
 
@@ -20,11 +21,11 @@ type ReportedLimit struct {
 // same two the probe reads off the response headers. A gateway's spend_limit
 // meters no plan and is left out.
 var reportedKinds = map[string]struct {
-	label   string
+	kind    string
 	seconds int
 }{
-	"five_hour": {"Session", sessionWindow},
-	"seven_day": {"Weekly", weeklyWindow},
+	"five_hour": {api.QuotaWindowSession, sessionWindow},
+	"seven_day": {api.QuotaWindowWeekly, weeklyWindow},
 }
 
 // claudeReport is the last reading a session on one account reported.
@@ -120,7 +121,7 @@ func reportedWindows(limits []ReportedLimit) []Window {
 			continue
 		}
 		out = append(out, Window{
-			Label:    kind.label,
+			Kind:     kind.kind,
 			Seconds:  kind.seconds,
 			Percent:  percent(l.PercentUsed),
 			ResetsAt: timestamp(l.ResetsAt),

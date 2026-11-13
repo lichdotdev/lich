@@ -212,6 +212,18 @@ func TestPlanReadout(t *testing.T) {
 	if r.Text != "5h 82%" || r.Tone != toneWait || r.Title != "Claude" {
 		t.Errorf("got %+v", r)
 	}
+	r, _ = planReadout(quotaPlan(
+		backend.QuotaWindow{Kind: api.QuotaWindowSession, Seconds: 18000, Percent: 11},
+		backend.QuotaWindow{Kind: api.QuotaWindowWeekly, Seconds: 604800, Percent: 86},
+		backend.QuotaWindow{Label: "Fable", Seconds: 604800, Percent: 100},
+	))
+	if r.Text != "5h 11%" {
+		t.Errorf("the strip shows the session, never a fuller weekly or model window: %+v", r)
+	}
+	r, _ = planReadout(quotaPlan(backend.QuotaWindow{Kind: api.QuotaWindowMonthly, Seconds: 2592000, Percent: 40}))
+	if r.Text != "30d 40%" {
+		t.Errorf("a plan with no session window shows its fullest: %+v", r)
+	}
 	signedOut := quotaPlan(backend.QuotaWindow{Label: "Session", Percent: 1})
 	signedOut.Status = "signed-out"
 	if _, ok := planReadout(signedOut); ok {
@@ -234,15 +246,22 @@ func TestPlanFor(t *testing.T) {
 func TestQuotaGauges(t *testing.T) {
 	now := time.Date(2026, 8, 17, 12, 0, 0, 0, time.UTC)
 	plan := quotaPlan(
-		backend.QuotaWindow{Label: "Session", Seconds: 18000, Percent: 42, ResetsAt: "2026-08-17T16:12:00Z"},
-		backend.QuotaWindow{Label: "Weekly", Seconds: 604800, Percent: 85, Ahead: true, LockedReason: "x"},
+		backend.QuotaWindow{Kind: api.QuotaWindowSession, Seconds: 18000, Percent: 42, ResetsAt: "2026-08-17T16:12:00Z"},
+		backend.QuotaWindow{Kind: api.QuotaWindowWeekly, Seconds: 604800, Percent: 85, Ahead: true, LockedReason: "x"},
+		backend.QuotaWindow{Label: "Fable", Seconds: 604800, Percent: 10},
 	)
 	want := []quotaGauge{
 		{Label: "Session · 5h", Reading: "42%", Left: "4h 12m", Percent: 42},
 		{Label: "Weekly · 7d", Reading: "Locked", Percent: 85, Locked: "x", Ahead: true, Tone: toneWait},
+		{Label: "Fable · 7d", Reading: "10%", Percent: 10},
 	}
 	if got := quotaGauges(plan, now); !reflect.DeepEqual(got, want) {
 		t.Errorf("got %+v\nwant %+v", got, want)
+	}
+	i18n.SetCurrent(i18n.PtBR)
+	defer i18n.SetCurrent(i18n.EN)
+	if got := quotaGauges(plan, now); got[1].Label != "Semanal · 7d" || got[2].Label != "Fable · 7d" {
+		t.Errorf("lich's window names follow the interface language, a provider's stay verbatim: %+v", got)
 	}
 }
 

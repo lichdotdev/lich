@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/providers"
 )
 
@@ -133,24 +134,24 @@ func (u cursorUsage) windows() []Window {
 		return nil
 	}
 	seconds, resetsAt := u.cycle()
-	window := func(label string, used float64) Window {
-		return Window{Label: label, Seconds: seconds, Percent: percent(used), ResetsAt: resetsAt}
+	window := func(kind string, used float64) Window {
+		return Window{Kind: kind, Seconds: seconds, Percent: percent(used), ResetsAt: resetsAt}
 	}
 	var out []Window
 	if pool := u.IndividualUsage.Plan; pool != nil && (pool.Enabled == nil || *pool.Enabled) {
 		if used, ok := pool.spent(pool.TotalPercentUsed); ok {
-			out = append(out, window("Monthly", used))
+			out = append(out, window(api.QuotaWindowMonthly, used))
 		}
 		if pool.AutoPercentUsed != nil {
-			out = append(out, window("Cursor models", *pool.AutoPercentUsed))
+			out = append(out, window(api.QuotaWindowCursorModels, *pool.AutoPercentUsed))
 		}
 		if pool.APIPercentUsed != nil {
-			out = append(out, window("Other models", *pool.APIPercentUsed))
+			out = append(out, window(api.QuotaWindowOtherModels, *pool.APIPercentUsed))
 		}
 	}
 	if pool := u.IndividualUsage.OnDemand; pool != nil && pool.Enabled != nil && *pool.Enabled {
 		if used, ok := pool.spent(pool.TotalPercentUsed); ok {
-			out = append(out, window("On-demand", used))
+			out = append(out, window(api.QuotaWindowOnDemand, used))
 		}
 	}
 	return out

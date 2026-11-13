@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **A card dragged in the sidebar is filed into a folder when you let it go anywhere over it.** It used to need the folder's name; the same holds with the sidebar collapsed.
 - **What's new lists each entry as a title with a short text under it.** Nothing folds open any more, and the header no longer counts the entries.
 - **The agent's cursor over its browser page is a new arrow.** It is the one of Bibata Modern (GPL-3.0, by Abdulkaiz Khatri); its color, its badge and the way it moves are unchanged.
+- **The plan usage in the footer shows your current session.** A fuller weekly limit or a model's own limit, like Fable's, no longer takes its place; hover it to see every limit. A locked limit still shows.
 - **The Pulls list's header fits on one line.** The Open menu sits inside the filter field, and the filters and New pull request share its line.
 
 ### Fixed
@@ -30,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **A page in a session's browser now knows it has a mouse.** Effects a site turns on only for a pointer that can hover, like a glow that follows the cursor, work in the pane.
 - **The note about all of them, at the bottom of the browser's notes tray, takes typing again after you draw or pick on the page.**
 - **A row coming into the sidebar's tree no longer shows a lit stub of its highlight under the row above.**
+- **The plan usage tooltip names its limits in your language.** Session, Weekly and the rest read in English whatever the interface language was.
 - **A session's browser no longer fails to open on a slow first start.** Chrome was given ten seconds to answer once it was up, which a cold disk or a busy machine can pass.
 - **In the Git panel, the ⋯ of a branch now only opens its menu.** The click also selected the branch, which emptied the panel for a moment and closed the menu.
 

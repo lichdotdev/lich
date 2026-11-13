@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/providers"
 )
 
@@ -92,7 +93,7 @@ func (u codexUsage) windows() []Window {
 			continue
 		}
 		out = append(out, Window{
-			Label:    codexLabel(w.Seconds),
+			Kind:     codexKind(w.Seconds),
 			Seconds:  w.Seconds,
 			Percent:  percent(w.UsedPercent),
 			ResetsAt: unixTimestamp(w.ResetAt),
@@ -101,19 +102,19 @@ func (u codexUsage) windows() []Window {
 	return out
 }
 
-// codexLabel names a window by how long it runs, never by where it sat in the
+// codexKind names a window by how long it runs, never by where it sat in the
 // payload: the first window is the five-hour one on a paid plan and a monthly
 // one on the free tier, and a plan change must not silently relabel a gauge.
-func codexLabel(seconds int) string {
+func codexKind(seconds int) string {
 	switch {
 	case seconds <= 0:
-		return "Usage"
+		return api.QuotaWindowUsage
 	case seconds < dailyWindow:
-		return "Session"
+		return api.QuotaWindowSession
 	case seconds <= weeklyWindow:
-		return "Weekly"
+		return api.QuotaWindowWeekly
 	default:
-		return "Monthly"
+		return api.QuotaWindowMonthly
 	}
 }
 
