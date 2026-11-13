@@ -154,6 +154,10 @@ func TestUpdateReplacesTheInstalledVersionAndKeepsItsData(t *testing.T) {
 		last := r.lastStatus()
 		return last.Status == statusRunning && last.Version == newerVersion
 	})
+	wantUpdates := []api.ExtensionUpdate{{ID: testID, Latest: newerTag}, {ID: testID}}
+	if got := r.updatesSeen(); !reflect.DeepEqual(got, wantUpdates) {
+		t.Fatalf("updates = %+v, want the offer and then its end: %+v", got, wantUpdates)
+	}
 	entries, err := os.ReadDir(dir)
 	if err != nil || len(entries) != 1 || entries[0].Name() != testID {
 		t.Fatalf("extensions dir = %v, %v; want only %s", entries, err, testID)

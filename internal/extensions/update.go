@@ -173,7 +173,10 @@ func (s *Service) replace(ctx context.Context, st stagedInstall) (api.Extension,
 		s.relaunch(old)
 		return api.Extension{}, fmt.Errorf("move the update into %s: %w", old.root, err)
 	}
-	return s.swap(old), nil
+	fresh := s.swap(old)
+	// The window's offer of this release is answered.
+	events.Send(s.emit, api.ExtensionUpdateEvent, api.ExtensionUpdate{ID: fresh.ID})
+	return fresh, nil
 }
 
 // swap reads the directory an update just filled and starts it in old's place
