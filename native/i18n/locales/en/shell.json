@@ -84,32 +84,6 @@
       "removed": "Removed",
       "fixed": "Fixed",
       "security": "Security"
-    },
-    "counts": {
-      "added": {
-        "one": "{count} added",
-        "other": "{count} added"
-      },
-      "changed": {
-        "one": "{count} changed",
-        "other": "{count} changed"
-      },
-      "deprecated": {
-        "one": "{count} deprecated",
-        "other": "{count} deprecated"
-      },
-      "removed": {
-        "one": "{count} removed",
-        "other": "{count} removed"
-      },
-      "fixed": {
-        "one": "{count} fixed",
-        "other": "{count} fixed"
-      },
-      "security": {
-        "one": "{count} security",
-        "other": "{count} security"
-      }
     }
   },
   "planQuota": {

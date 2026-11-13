@@ -84,32 +84,6 @@
       "removed": "제거",
       "fixed": "수정",
       "security": "보안"
-    },
-    "counts": {
-      "added": {
-        "one": "{count}개 추가",
-        "other": "{count}개 추가"
-      },
-      "changed": {
-        "one": "{count}개 변경",
-        "other": "{count}개 변경"
-      },
-      "deprecated": {
-        "one": "{count}개 지원 중단",
-        "other": "{count}개 지원 중단"
-      },
-      "removed": {
-        "one": "{count}개 제거",
-        "other": "{count}개 제거"
-      },
-      "fixed": {
-        "one": "{count}개 수정",
-        "other": "{count}개 수정"
-      },
-      "security": {
-        "one": "{count}개 보안",
-        "other": "{count}개 보안"
-      }
     }
   },
   "planQuota": {

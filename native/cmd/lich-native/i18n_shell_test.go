@@ -150,14 +150,10 @@ func TestShellMessagesWithPlaceholdersAndPluralsInPortuguese(t *testing.T) {
 }
 
 func TestPatchNotesGroupsAreNamedInTheInterfaceLanguage(t *testing.T) {
-	groups := []backend.PatchNotesGroup{{Label: "Added", Items: []string{"a"}}, {Label: "Fixed", Items: []string{"a", "b"}}}
-	if got := notesCounts(groups); got != "1 added"+notesCountSep+"2 fixed" {
-		t.Errorf("English counts %q", got)
+	if got := notesGroupLabel("Fixed"); got != "Fixed" {
+		t.Errorf("English label %q", got)
 	}
 	inPortuguese(t)
-	if got := notesCounts(groups); got != "1 novidade"+notesCountSep+"2 correções" {
-		t.Errorf("pt-BR counts %q", got)
-	}
 	if got := notesGroupLabel("Fixed"); got != "Correções" {
 		t.Errorf("pt-BR label %q", got)
 	}

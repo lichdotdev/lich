@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-	"image"
 	"image/color"
 	"regexp"
 	"strings"
@@ -23,11 +21,9 @@ import (
 const (
 	notesLeadCh     = 22 // max-w-[22ch] on the headline
 	notesLeadBodyCh = 56
-	notesItemBodyCh = 60
 	notesBodyHeight = 60 // max-h-[60vh], as a percentage of what the panel is given
 	notesSpaceEm    = 0.27
 	notesCodeEm     = 0.85 // text-[0.85em] on a code span
-	notesCountSep   = " · "
 )
 
 var (
@@ -35,8 +31,6 @@ var (
 	icNotesWarning   = icons.Lucide("triangle-alert")
 	icNotesCaution   = icons.Lucide("octagon-alert")
 	icNotesNote      = icons.Lucide("info")
-	icNotesOpened    = icons.Lucide("chevron-down")
-	icNotesClosed    = icons.Lucide("chevron-right")
 	icNotesChangelog = icons.Lucide("arrow-up-right")
 	notesGroupDot    = unit.Dp(8)
 )
@@ -112,16 +106,31 @@ func inlineWords(text string) [][]inlineRun {
 }
 
 // splitLeadIn splits an item into the bold sentence it opens with and the
-// paragraph behind it.
+// paragraph behind it. An item with no bold opening gives its first sentence.
 func splitLeadIn(item string) (headline, body string) {
 	if !strings.HasPrefix(item, "**") {
-		return item, ""
+		return splitFirstSentence(item)
 	}
 	end := strings.Index(item[2:], "**")
 	if end < 0 {
 		return item, ""
 	}
 	return strings.TrimSpace(item[2 : 2+end]), strings.TrimSpace(item[2+end+2:])
+}
+
+// splitFirstSentence cuts at the first full stop followed by a space that is
+// outside a code span, where a file name carries one.
+func splitFirstSentence(item string) (headline, body string) {
+	inCode := false
+	for i := 0; i < len(item)-1; i++ {
+		switch {
+		case item[i] == '`':
+			inCode = !inCode
+		case item[i] == '.' && item[i+1] == ' ' && !inCode:
+			return item[:i+1], strings.TrimSpace(item[i+1:])
+		}
+	}
+	return item, ""
 }
 
 // layoutHighlights makes the first important block the headline and every
@@ -199,10 +208,7 @@ func cappedBy(w layout.Widget, size unit.Sp, ch int) layout.Widget {
 	}
 }
 
-type notesItemKey struct{ group, item int }
-
-// patchNotesView is the What's new dialog's state: its widgets and which
-// items are open.
+// patchNotesView is the What's new dialog's state.
 type patchNotesView struct {
 	open bool
 	// startup is the popup PatchNotesGate opened at start: it shows with
@@ -211,21 +217,9 @@ type patchNotesView struct {
 	dialog           ui.DialogState
 	list             widget.List
 	gotIt, changelog widget.Clickable
-	rows             map[notesItemKey]*widget.Clickable
-	expanded         map[notesItemKey]bool
 }
 
-func (v *patchNotesView) show() { v.open, v.expanded = true, nil }
-
-func (v *patchNotesView) row(k notesItemKey) *widget.Clickable {
-	if v.rows == nil {
-		v.rows = map[notesItemKey]*widget.Clickable{}
-	}
-	if v.rows[k] == nil {
-		v.rows[k] = new(widget.Clickable)
-	}
-	return v.rows[k]
-}
+func (v *patchNotesView) show() { v.open = true }
 
 // layoutPatchNotesDialog is PatchNotesDialog over the window, with the
 // window's constraints as every dialog.
@@ -249,7 +243,7 @@ func (s *settingsScreen) layoutPatchNotesDialog(gtx C, th *ui.Theme) {
 	on := th.On(th.Popover)
 	got := on.Button(&v.gotIt, i18n.T("shell.patchNotesDialog.gotIt"))
 	got.Size = ui.SizeSM
-	dlg := th.Dialog(&v.dialog, open, i18n.T("shell.patchNotesDialog.title", i18n.Args{"version": "v" + notes.Version}), notesCounts(notes.Groups))
+	dlg := th.Dialog(&v.dialog, open, i18n.T("shell.patchNotesDialog.title", i18n.Args{"version": "v" + notes.Version}), "")
 	dlg.MaxWidth, dlg.HideClose = ui.DialogWidthXL, true
 	dlg.Body = func(gtx C) D { return v.body(gtx, on, notes) }
 	dlg.Actions = []layout.Widget{func(gtx C) D {
@@ -300,7 +294,7 @@ func (v *patchNotesView) changelogLink(gtx C, th *ui.Theme) D {
 	})
 }
 
-// body is the release: the counts, the headline, the callouts and the groups,
+// body is the release: the headline, the callouts and the groups,
 // in a scroll area capped at a share of the panel.
 func (v *patchNotesView) body(gtx C, th *ui.Theme, notes *backend.PatchNotes) D {
 	var rows []layout.Widget
@@ -313,22 +307,13 @@ func (v *patchNotesView) body(gtx C, th *ui.Theme, notes *backend.PatchNotes) D 
 	}
 	for g, group := range notes.Groups {
 		rows = append(rows, notesGroupHeading(th, group.Label, g > 0 || len(callouts) > 0))
-		for i, item := range group.Items {
-			rows = append(rows, v.item(th, notesItemKey{g, i}, item))
+		for _, item := range group.Items {
+			rows = append(rows, notesItem(th, item))
 		}
 	}
 	v.list.Axis = layout.Vertical
 	gtx.Constraints.Max.Y = gtx.Constraints.Max.Y * notesBodyHeight / 100
 	return th.ScrollArea(&v.list).Layout(gtx, len(rows), func(gtx C, i int) D { return rows[i](gtx) })
-}
-
-// notesCounts is the line of "3 added" counts the header ends on.
-func notesCounts(groups []backend.PatchNotesGroup) string {
-	parts := make([]string, len(groups))
-	for i, g := range groups {
-		parts[i] = notesGroupCount(g.Label, len(g.Items))
-	}
-	return strings.Join(parts, notesCountSep)
 }
 
 // notesLead is the headline: the largest type the app uses and nothing else.
@@ -418,102 +403,40 @@ func notesGroupLabel(label string) string {
 	return label
 }
 
-// notesGroupCount is notesGroupLabel's "3 added", for the header.
-func notesGroupCount(label string, items int) string {
-	count := i18n.Args{"count": items}
-	switch strings.ToLower(label) {
-	case "added":
-		return i18n.T("shell.patchNotesDialog.counts.added", count)
-	case "changed":
-		return i18n.T("shell.patchNotesDialog.counts.changed", count)
-	case "deprecated":
-		return i18n.T("shell.patchNotesDialog.counts.deprecated", count)
-	case "removed":
-		return i18n.T("shell.patchNotesDialog.counts.removed", count)
-	case "fixed":
-		return i18n.T("shell.patchNotesDialog.counts.fixed", count)
-	case "security":
-		return i18n.T("shell.patchNotesDialog.counts.security", count)
-	}
-	return fmt.Sprintf("%d %s", items, strings.ToLower(label))
-}
-
-// notesGroupHeading is a group's divider and its dot and label.
-func notesGroupHeading(th *ui.Theme, label string, divider bool) layout.Widget {
+// notesGroupHeading is a group's dot and label, set off from what is above it.
+func notesGroupHeading(th *ui.Theme, label string, gap bool) layout.Widget {
 	heading := th.SectionHeading(notesGroupLabel(label))
 	heading.Weight = font.SemiBold
 	return func(gtx C) D {
 		children := []layout.FlexChild{}
-		if divider {
-			children = append(children, ui.VGap(1), layout.Rigid(th.Separator))
+		if gap {
+			children = append(children, ui.VGap(4.5))
 		}
-		children = append(children, ui.VGap(3.5), layout.Rigid(func(gtx C) D {
+		children = append(children, layout.Rigid(func(gtx C) D {
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 				layout.Rigid(func(gtx C) D { return ui.Dot(gtx, noteDot(th, label), notesGroupDot) }),
 				ui.Gap(1.5),
 				layout.Rigid(heading.Layout),
 			)
-		}), ui.VGap(1.5))
+		}), ui.VGap(1))
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
 	}
 }
 
-// item is one changelog entry: its bold lead-in, with the paragraph behind
-// it opening on click. An entry without one is its own row.
-func (v *patchNotesView) item(th *ui.Theme, k notesItemKey, text string) layout.Widget {
+// notesItem is one changelog entry: its opening sentence as the title and the
+// paragraph behind it, muted, under it.
+func notesItem(th *ui.Theme, text string) layout.Widget {
 	headline, body := splitLeadIn(text)
-	title := richText(th, headline, richStyle{size: settingsDescSize, leading: 18, ink: th.Foreground, weight: font.Medium})
-	chevronSlot := unit.Dp(14)
-	line := func(gtx C, chevron *icons.Icon) D {
-		return layout.Inset{Top: ui.Space(1.5), Bottom: ui.Space(1.5)}.Layout(gtx, func(gtx C) D {
-			return layout.Flex{Alignment: layout.Start}.Layout(gtx,
-				layout.Rigid(func(gtx C) D {
-					if chevron == nil {
-						return D{Size: image.Pt(gtx.Dp(chevronSlot), 0)}
-					}
-					return layout.Inset{Top: ui.Space(0.5)}.Layout(gtx, func(gtx C) D { return chevron.Layout(gtx, chevronSlot, th.MutedForeground) })
-				}),
-				ui.Gap(2),
-				layout.Flexed(1, title),
-			)
-		})
+	children := []layout.FlexChild{
+		layout.Rigid(richText(th, headline, richStyle{size: settingsDescSize, leading: 18, ink: th.Foreground, weight: font.Medium})),
 	}
-	if body == "" {
-		return func(gtx C) D { return line(gtx, nil) }
+	if body != "" {
+		children = append(children, ui.VGap(0.5),
+			layout.Rigid(richText(th, body, richStyle{size: settingsDescSize, leading: 20, ink: th.MutedForeground})))
 	}
-	click := v.row(k)
-	paragraph := cappedBy(richText(th, body, richStyle{size: settingsDescSize, leading: 21, ink: th.MutedForeground}), settingsDescSize, notesItemBodyCh)
 	return func(gtx C) D {
-		if click.Clicked(gtx) {
-			if v.expanded == nil {
-				v.expanded = map[notesItemKey]bool{}
-			}
-			v.expanded[k] = !v.expanded[k]
-		}
-		open := v.expanded[k]
-		chevron := icNotesClosed
-		if open {
-			chevron = icNotesOpened
-		}
-		children := []layout.FlexChild{layout.Rigid(func(gtx C) D {
-			return click.Layout(gtx, func(gtx C) D {
-				macro := op.Record(gtx.Ops)
-				d := line(gtx, chevron)
-				call := macro.Stop()
-				if click.Hovered() {
-					hover := gtx
-					hover.Constraints = layout.Exact(d.Size)
-					ui.Fill(hover, th.Over(ui.Alpha(th.Accent, ghostHoverFill)), ui.RadiusMD)
-				}
-				call.Add(gtx.Ops)
-				return d
-			})
-		})}
-		if open {
-			children = append(children, layout.Rigid(func(gtx C) D {
-				return layout.Inset{Left: ui.Space(5.5), Bottom: ui.Space(2)}.Layout(gtx, paragraph)
-			}))
-		}
-		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
+		return layout.Inset{Top: ui.Space(1.75), Bottom: ui.Space(1.75)}.Layout(gtx, func(gtx C) D {
+			return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
+		})
 	}
 }
