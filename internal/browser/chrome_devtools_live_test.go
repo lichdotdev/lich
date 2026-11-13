@@ -152,9 +152,12 @@ func TestChromeDevToolsDrawsInThePaneWhileTheAgentDrivesThePage(t *testing.T) {
 		t.Fatal(err)
 	}
 	from := len(out.named(frameEvents))
-	time.Sleep(time.Second)
-	if page, _ := framesOf(out, from, pane[0].ID); page == 0 {
-		t.Fatal("no frame of the page once its tab was selected again")
+	deadline := time.Now().Add(firstFrameWait)
+	for page, _ := framesOf(out, from, pane[0].ID); page == 0; page, _ = framesOf(out, from, pane[0].ID) {
+		if time.Now().After(deadline) {
+			t.Fatal("no frame of the page once its tab was selected again")
+		}
+		time.Sleep(50 * time.Millisecond)
 	}
 	if err := s.TabNav(api.BrowserTabOptions{ID: "s", Action: api.TabClose, Tab: dt.ID}); err != nil {
 		t.Fatal(err)

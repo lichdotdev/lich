@@ -92,10 +92,13 @@ func resizes(t *testing.T, p *chromePage, ctx context.Context) int {
 }
 
 // waitFrameSize waits for the frames to settle at w x h: the ones before can
-// predate the last layout.
+// predate the last layout. A relaunch comes first for some, which took 2.3 s
+// at the median on the macos-latest runner and 12 s once in 150, when the
+// runner was slow to launch the browser at all (Chrome 156, measured
+// 2026-11-13): the wait is a page call's, not ten seconds.
 func waitFrameSize(t *testing.T, frames <-chan string, w, h int) {
 	t.Helper()
-	deadline := time.After(10 * time.Second)
+	deadline := time.After(pageWait)
 	last := "none"
 	for {
 		select {
@@ -152,13 +155,19 @@ func TestChromeStillDrawsNoNewFrameAndMatchesTheFrames(t *testing.T) {
 	}
 }
 
-// quietFrames waits until the page sends no frame for a second and returns
-// its last one and that one's size.
+// firstFrameWait bounds the wait for a screencast's first frame. Chrome on
+// Linux sends it about 15 ms after the start; on the macos-latest runner it
+// took 22 ms to 2 s (Chrome 156, 20 runs, measured 2026-11-13).
+const firstFrameWait = 10 * time.Second
+
+// quietFrames waits for the first frame, then until the page sends no frame
+// for a second, and returns its last one and that one's size.
 func quietFrames(t *testing.T, frames <-chan string) (string, image.Config) {
 	t.Helper()
 	var last string
 	var size image.Config
-	deadline := time.After(10 * time.Second)
+	quiet := firstFrameWait
+	deadline := time.After(firstFrameWait + 10*time.Second)
 	for {
 		select {
 		case last = <-frames:
@@ -169,7 +178,8 @@ func quietFrames(t *testing.T, frames <-chan string) (string, image.Config) {
 			if size, err = jpeg.DecodeConfig(bytes.NewReader(raw)); err != nil {
 				t.Fatal(err)
 			}
-		case <-time.After(time.Second):
+			quiet = time.Second
+		case <-time.After(quiet):
 			if last == "" {
 				t.Fatal("no frame came")
 			}
