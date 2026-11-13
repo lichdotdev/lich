@@ -19,7 +19,6 @@ const (
 	countBadgeSize  = unit.Dp(18)
 	countBadgePadX  = unit.Dp(5)
 	countBadgeFill  = float32(0.2)
-	countBadgeText  = unit.Sp(11)
 	abbrBadgeSize   = unit.Dp(20)
 	abbrBadgeText   = unit.Sp(9) // text-[0.5625rem]
 	outlineBadgeRim = 0.5
@@ -31,7 +30,7 @@ func (th *Theme) CountBadge(gtx C, n int) D {
 	if n == 0 {
 		return D{}
 	}
-	label := th.Text(countBadgeText, strconv.Itoa(n)).In(th.ToneWait).Weight(font.SemiBold)
+	label := th.Text(Text2XS, strconv.Itoa(n)).In(th.ToneWait).Weight(font.SemiBold)
 	gtx.Constraints.Min = image.Point{}
 	ink := inkBounds(gtx, th, label)
 	size := image.Pt(max(ink.Dx()+gtx.Dp(countBadgePadX)*2, gtx.Dp(countBadgeSize)), gtx.Dp(countBadgeSize))

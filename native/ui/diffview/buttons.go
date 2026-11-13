@@ -18,10 +18,9 @@ import (
 
 var icRevertBlock = icons.Lucide("undo-2")
 
-// The buttons drawn inside a diff, expand and revert: 0.6875rem text, 0.375rem
+// The buttons drawn inside a diff, expand and revert: ui.Text2XS text, 0.375rem
 // horizontal padding, a 0.25rem radius, a 0.75rem icon.
 const (
-	affordanceText   = unit.Sp(11)
 	expandLeading    = unit.Sp(13.2) // line-height: 1.2
 	revertLeading    = unit.Sp(14.3) // line-height: 1.3
 	affordancePadX   = unit.Dp(6)
@@ -76,7 +75,7 @@ func (a *Buttons) Expand(g godemirror.Gap, onClick func()) layout.Widget {
 		if c.Hovered() {
 			fg, bg = th.AccentForeground, th.Accent
 		}
-		return a.button(gtx, c, bg, color.NRGBA{}, th.Text(affordanceText, text).Leading(expandLeading).In(fg).Layout)
+		return a.button(gtx, c, bg, color.NRGBA{}, th.Text(ui.Text2XS, text).Leading(expandLeading).In(fg).Layout)
 	}
 }
 
@@ -96,7 +95,7 @@ func (a *Buttons) Revert(chunk godemirror.Chunk, onClick func()) layout.Widget {
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 				layout.Rigid(func(gtx C) D { return icRevertBlock.Layout(gtx, affordanceIcon, th.Foreground) }),
 				layout.Rigid(layout.Spacer{Width: affordanceGap}.Layout),
-				layout.Rigid(th.Text(affordanceText, a.labels.Revert()).Leading(revertLeading).Layout),
+				layout.Rigid(th.Text(ui.Text2XS, a.labels.Revert()).Leading(revertLeading).Layout),
 			)
 		})
 	}

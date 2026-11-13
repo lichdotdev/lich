@@ -8,7 +8,6 @@ import (
 
 	"gioui.org/font"
 	"gioui.org/layout"
-	"gioui.org/unit"
 
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
@@ -109,7 +108,7 @@ func (g *gitPanel) headRow(gtx C, th *ui.Theme, view gitLogView) D {
 func (g *gitPanel) treeRow(gtx C, th *ui.Theme, row gitTreeRow, in gitPanelInput) D {
 	if row.group {
 		return layout.Inset{Left: ui.Space(2.5), Top: ui.Space(2), Bottom: ui.Space(0.5)}.Layout(gtx,
-			th.Text(gitGroupLabelSize, strings.ToUpper(row.label)).Muted().Layout)
+			th.Text(ui.Text2XS, strings.ToUpper(row.label)).Muted().Layout)
 	}
 	var session *sessionView
 	if sv, ok := in.sessions[row.branch]; ok && row.branch != "" {
@@ -125,9 +124,6 @@ func (g *gitPanel) treeRow(gtx C, th *ui.Theme, row gitTreeRow, in gitPanelInput
 		layout.Rigid(func(gtx C) D { return g.newBranchRow(gtx, th) }),
 	)
 }
-
-// gitGroupLabelSize is text2XS, the size of a group's uppercase label.
-const gitGroupLabelSize = unit.Sp(10.5)
 
 const shortHashLen = 8
 

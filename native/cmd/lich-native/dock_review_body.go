@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"gioui.org/layout"
-	"gioui.org/unit"
 
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
@@ -137,12 +136,11 @@ func (p *reviewPanel) cardItem(gtx C, i int, heights map[string]cardSpan) D {
 }
 
 func (p *reviewPanel) squeezedNote(gtx C, th *ui.Theme) D {
-	small := unit.Sp(11)
 	return layout.Inset{Left: ui.Space(3), Right: ui.Space(3), Top: ui.Space(2), Bottom: ui.Space(0.5)}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Rigid(func(gtx C) D { return icSplit.Layout(gtx, ui.Space(3.5), th.MutedForeground) }),
 			ui.Gap(1.5),
-			layout.Rigid(th.Text(small, i18n.T("diff.reviewPanel.squeezed")).Muted().Layout),
+			layout.Rigid(th.Text(ui.Text2XS, i18n.T("diff.reviewPanel.squeezed")).Muted().Layout),
 		)
 	})
 }

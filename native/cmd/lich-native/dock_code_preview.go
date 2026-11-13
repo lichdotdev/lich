@@ -197,7 +197,7 @@ func (p *preview) headerRow(gtx C, th *ui.Theme, root *ui.Root) D {
 	if isMarkdown(p.rel) {
 		children = append(children, layout.Rigid(func(gtx C) D { return p.markdownToggle(gtx, th, root) }), ui.Gap(1.5))
 	}
-	children = append(children, layout.Rigid(th.Text(text2XS, strings.ToUpper(i18n.T("dock.filesPanel.readOnly"))).Leading(text2XSLeading).Muted().Layout))
+	children = append(children, layout.Rigid(th.Text(ui.Text2XS, strings.ToUpper(i18n.T("dock.filesPanel.readOnly"))).Leading(text2XSLeading).Muted().Layout))
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
 }
 

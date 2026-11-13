@@ -1,6 +1,6 @@
 {
   "commandPalette": {
-    "placeholder": "Сессия, проект или фраза из разговора. Введите > для действий…",
+    "placeholder": "Поиск. Введите > для действий",
     "forgetFailed": "Не удалось забыть {label}: {error}",
     "resumeFailed": "Не удалось возобновить {label}: {error}",
     "actionUnavailable": "{label} здесь недоступно",

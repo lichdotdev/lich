@@ -155,8 +155,10 @@ func (th *Theme) Over(c color.NRGBA) color.NRGBA {
 // Space is Tailwind's spacing scale: p-2.5 is Space(2.5).
 func Space(n float32) unit.Dp { return unit.Dp(4 * n) }
 
-// Tailwind's type scale (text-xs, text-sm, text-base).
+// Tailwind's type scale (text-xs, text-sm, text-base), and Text2XS under it:
+// a group's uppercase label, a caption, a count.
 const (
+	Text2XS  unit.Sp = 10.5
 	TextXS   unit.Sp = 12
 	TextSM   unit.Sp = 14
 	TextBase unit.Sp = 16

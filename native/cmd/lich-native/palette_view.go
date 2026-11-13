@@ -319,10 +319,10 @@ func (p *commandPalette) heading(gtx C, th *ui.Theme, g paletteGroup) D {
 	}
 	return layout.Inset{Left: ui.Space(3), Right: ui.Space(3), Top: ui.Space(3), Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
 		children := []layout.FlexChild{
-			layout.Flexed(1, th.Text(text2XS, strings.ToUpper(g.label)).Muted().Weight(font.SemiBold).Leading(text2XSLeading).Layout),
+			layout.Flexed(1, th.Text(ui.Text2XS, strings.ToUpper(g.label)).Muted().Weight(font.SemiBold).Leading(text2XSLeading).Layout),
 		}
 		if trailing != "" {
-			children = append(children, layout.Rigid(th.Text(text2XS, trailing).Mono().Muted().Leading(text2XSLeading).Layout))
+			children = append(children, layout.Rigid(th.Text(ui.Text2XS, trailing).Mono().Muted().Leading(text2XSLeading).Layout))
 		}
 		return layout.Flex{Alignment: layout.Baseline}.Layout(gtx, children...)
 	})

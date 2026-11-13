@@ -117,7 +117,7 @@ func (g *gitPanel) detailFiles(gtx C, th *ui.Theme, c backend.GitCommitDetail) D
 						// Two sizes on one line: under the row's Exact height they would not share a baseline.
 						gtx.Constraints.Min = image.Point{}
 						return layout.Flex{Alignment: layout.Baseline}.Layout(gtx,
-							layout.Rigid(th.Text(gitGroupLabelSize, strings.ToUpper(i18n.T("git.panel.files"))).Muted().Layout),
+							layout.Rigid(th.Text(ui.Text2XS, strings.ToUpper(i18n.T("git.panel.files"))).Muted().Layout),
 							ui.Gap(1.5),
 							layout.Rigid(th.Text(ui.TextXS, strconv.Itoa(len(c.Files))).Mono().Muted().Layout),
 						)

@@ -283,7 +283,7 @@ func artifactAge(gtx C, th *ui.Theme, modified int64) D {
 // end, in the node column's start.
 func artifactGroupLabel(gtx C, th *ui.Theme, text string) D {
 	heading := th.SectionHeading(text)
-	heading.Size, heading.Weight, heading.Leading = text2XS, font.SemiBold, text2XSLeading
+	heading.Size, heading.Weight, heading.Leading = ui.Text2XS, font.SemiBold, text2XSLeading
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 	return layout.Inset{Top: ui.Space(2.5), Bottom: ui.Space(1), Left: ui.Space(3.5), Right: ui.Space(1.5)}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,

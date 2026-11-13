@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"gioui.org/layout"
-	"gioui.org/unit"
 
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
@@ -18,7 +17,6 @@ var (
 	planLabelW   = ui.Space(28)
 	planReadingW = ui.Space(10)
 	planLeftW    = ui.Space(16)
-	planHeadSize = unit.Sp(11) // text-2xs
 )
 
 // planBlock is PlanUsageSetting: what is left of the provider's subscription,
@@ -75,7 +73,7 @@ func planSignedOutLine(gtx C, th *ui.Theme, command string) D {
 // which keeps it from floating above the rows as a line of its own.
 func planHead(gtx C, th *ui.Theme, plan string) D {
 	muted := func(text string) layout.Widget {
-		return th.Text(planHeadSize, strings.ToUpper(text)).Muted().Layout
+		return th.Text(ui.Text2XS, strings.ToUpper(text)).Muted().Layout
 	}
 	return planRow(
 		th.Text(ui.TextXS, plan).Muted().Layout,

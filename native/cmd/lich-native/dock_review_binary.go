@@ -127,7 +127,7 @@ func sideColumn(gtx C, th *ui.Theme, v *blobView, label string, tone color.NRGBA
 					return ui.Fill(gtx, tone, ui.Space(0.75))
 				}),
 				ui.Gap(1.5),
-				layout.Rigid(th.Text(text2XS, strings.ToUpper(label)).Leading(text2XSLeading).Muted().Layout),
+				layout.Rigid(th.Text(ui.Text2XS, strings.ToUpper(label)).Leading(text2XSLeading).Muted().Layout),
 			)
 		}),
 		ui.VGap(1),

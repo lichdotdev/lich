@@ -89,7 +89,7 @@ func (l *findList) layout(gtx C, th *ui.Theme, view *godemirror.View) D {
 	return th.ScrollArea(&l.list).Layout(gtx, len(lines)+1, func(gtx C, i int) D {
 		if i == 0 {
 			return layout.Inset{Left: ui.Space(3), Right: ui.Space(3), Top: ui.Space(2), Bottom: ui.Space(1)}.Layout(gtx,
-				th.Text(text2XS, summary).Leading(text2XSLeading).Muted().Layout)
+				th.Text(ui.Text2XS, summary).Leading(text2XSLeading).Muted().Layout)
 		}
 		return l.row(gtx, th, view, i-1, lines[i-1], i-1 == current)
 	})
