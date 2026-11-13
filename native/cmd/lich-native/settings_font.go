@@ -114,12 +114,12 @@ func (f *fontPicker) sample(th *ui.Theme, family string) layout.Widget {
 	return func(gtx C) D {
 		fs, err := f.shaperFor(family)
 		if err != nil {
-			return th.Text(rowDescSize, i18n.T("settings.fontSetting.sample")).Muted().Layout(gtx)
+			return th.Text(settingsDescSize, i18n.T("settings.fontSetting.sample")).Muted().Layout(gtx)
 		}
 		macro := op.Record(gtx.Ops)
 		paint.ColorOp{Color: th.MutedForeground}.Add(gtx.Ops)
 		ink := macro.Stop()
-		return widget.Label{MaxLines: 1}.Layout(gtx, fs.shaper, fs.face, rowDescSize, i18n.T("settings.fontSetting.sample"), ink)
+		return widget.Label{MaxLines: 1}.Layout(gtx, fs.shaper, fs.face, settingsDescSize, i18n.T("settings.fontSetting.sample"), ink)
 	}
 }
 

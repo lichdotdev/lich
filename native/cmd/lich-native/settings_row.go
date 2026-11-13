@@ -34,7 +34,6 @@ var (
 	rowGap       = ui.Space(6)
 	rowTextMinW  = ui.Space(40)
 	rowNoteSize  = ui.TextXS
-	rowDescSize  = unit.Sp(13)
 	icRowFolder  = icons.Lucide("folder")
 	icRowReset   = icons.Lucide("undo-2")
 )
@@ -141,7 +140,7 @@ func (r settingRow) control(gtx C, th, text *ui.Theme, control func(gtx C, th *u
 
 // text is the title, the description and the scope line under them.
 func (r settingRow) text(gtx C, th *ui.Theme) D {
-	desc := th.Text(rowDescSize, r.description).Muted().Leading(20)
+	desc := th.Text(settingsDescSize, r.description).Muted().Leading(20)
 	desc.MaxLines = 0
 	descLayout := desc.Layout
 	if r.sample != nil {

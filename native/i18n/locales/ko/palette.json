@@ -1,6 +1,6 @@
 {
   "commandPalette": {
-    "placeholder": "세션, 프로젝트, 대화 내용으로 이동하거나 >를 입력해 작업 실행…",
+    "placeholder": "검색하거나 >를 입력해 작업 실행",
     "forgetFailed": "목록에서 {label} 항목을 지우지 못했습니다: {error}",
     "resumeFailed": "{label} 세션을 재개하지 못했습니다: {error}",
     "actionUnavailable": "여기서는 {label} 작업을 사용할 수 없습니다",

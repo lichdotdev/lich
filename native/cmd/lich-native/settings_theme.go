@@ -29,7 +29,6 @@ var (
 	themeCardPreview   = ui.Space(22)
 	themeCardPad       = ui.Space(1)
 	themeCardGap       = ui.Space(3)
-	themeCaptionSize   = unit.Sp(11)
 	icTriangleAlert    = icons.Lucide("triangle-alert")
 )
 
@@ -283,7 +282,7 @@ func (p *themePicker) brokenList(gtx C, th *ui.Theme, broken []backend.BrokenThe
 				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 					layout.Rigid(func(gtx C) D { return icTriangleAlert.Layout(gtx, ui.Space(3.5), th.MutedForeground) }),
 					ui.Gap(1.5),
-					layout.Rigid(th.Text(text2XS, strings.ToUpper(i18n.T("settings.brokenThemeList.heading", i18n.Args{"count": len(broken)}))).Leading(text2XSLeading).Muted().Weight(font.Medium).Layout),
+					layout.Rigid(th.Text(ui.Text2XS, strings.ToUpper(i18n.T("settings.brokenThemeList.heading", i18n.Args{"count": len(broken)}))).Leading(text2XSLeading).Muted().Weight(font.Medium).Layout),
 				)
 			})
 		}),

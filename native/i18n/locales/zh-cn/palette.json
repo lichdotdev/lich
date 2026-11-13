@@ -1,6 +1,6 @@
 {
   "commandPalette": {
-    "placeholder": "跳转到会话、项目或说过的话，输入 > 执行操作…",
+    "placeholder": "搜索，或输入 > 执行操作",
     "forgetFailed": "无法忘记 {label}：{error}",
     "resumeFailed": "无法恢复 {label}：{error}",
     "actionUnavailable": "{label} 在此处不可用",

@@ -16,12 +16,8 @@ import (
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
-// text2XS is 0.65625rem, the uppercase label that heads a group of rows; it
-// sets no line height, so a 16px line is taken for the row.
-const (
-	text2XS        unit.Sp = 10.5
-	text2XSLeading unit.Sp = 16
-)
+// ui.Text2XS sets no line height, so a 16px line is taken for the row.
+const text2XSLeading unit.Sp = 16
 
 // The header's tints: the title's opacity, the count's, the drop target's
 // fill and a refusing header's opacity.
@@ -213,9 +209,9 @@ func (s *sidebar) titleContent(gtx C, th *ui.Theme, b blockView, hovered, refuse
 			})
 		})
 	}), ui.Gap(1.5)}
-	kids = append(kids, layout.Rigid(th.Text(text2XS, strings.ToUpper(b.title)).Leading(text2XSLeading).In(fg).Weight(font.SemiBold).Layout))
+	kids = append(kids, layout.Rigid(th.Text(ui.Text2XS, strings.ToUpper(b.title)).Leading(text2XSLeading).In(fg).Weight(font.SemiBold).Layout))
 	if b.kind == blockFolder {
-		count := th.Text(text2XS, strconv.Itoa(len(b.sessions))).Leading(text2XSLeading).In(fade(th.MutedForeground, headerCountOpacity)).Weight(font.Medium)
+		count := th.Text(ui.Text2XS, strconv.Itoa(len(b.sessions))).Leading(text2XSLeading).In(fade(th.MutedForeground, headerCountOpacity)).Weight(font.Medium)
 		kids = append(kids, ui.Gap(1.5), layout.Rigid(count.Layout))
 	}
 	if dot, ok := markColor(th, b); ok {
@@ -248,7 +244,7 @@ func markColor(th *ui.Theme, b blockView) (color.NRGBA, bool) {
 func (s *sidebar) folderRenameField(gtx C, th *ui.Theme, b blockView, st *blockState, act *sidebarAction) D {
 	return layout.Inset{Left: -ui.Space(1)}.Layout(gtx, func(gtx C) D {
 		return layout.Inset{Left: ui.Space(1), Right: ui.Space(1), Top: ui.Space(0.5), Bottom: ui.Space(0.5)}.Layout(gtx, func(gtx C) D {
-			d, res := th.InlineEdit(&st.rename, text2XS).Weight(font.SemiBold).Layout(gtx)
+			d, res := th.InlineEdit(&st.rename, ui.Text2XS).Weight(font.SemiBold).Layout(gtx)
 			if res.Outcome == ui.InlineEditCommitted {
 				act.folder = folderRename{from: b.folder, to: res.Value}
 			}

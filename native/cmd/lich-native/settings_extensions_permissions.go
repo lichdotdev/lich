@@ -46,7 +46,7 @@ func installWarning(gtx C, th *ui.Theme, permissions []string) D {
 func permissionList(gtx C, th *ui.Theme, permissions []string) D {
 	label := strings.ToUpper(i18n.T("settings.extensionsSettings.permissionsLabel"))
 	children := []layout.FlexChild{
-		layout.Rigid(th.Text(text2XS, label).Weight(font.SemiBold).Leading(text2XSLeading).Muted().Layout),
+		layout.Rigid(th.Text(ui.Text2XS, label).Weight(font.SemiBold).Leading(text2XSLeading).Muted().Layout),
 	}
 	for _, p := range permissions {
 		children = append(children, ui.VGap(1), layout.Rigid(th.Text(ui.TextSM, permissionText(p)).In(permissionTone(th, p)).Wrapped().Layout))

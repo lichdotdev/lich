@@ -36,8 +36,9 @@ under it.
 - Every length is `ui.Space(n)`, Tailwind's spacing scale (`Space(2.5)` is `p-2.5`, 10dp). A `unit.Dp`
   literal is for a measure off the scale (a 1px border, a ring's radius, a mockup's odd value), named in a
   constant.
-- Text sizes are `ui.TextXS` (12), `ui.TextSM` (14) and `ui.TextBase` (16). A size off the scale is a named
-  `unit.Sp` constant beside the screen that uses it (`pullsTitleSize`, `settingsTitle`, `text2XS`).
+- Text sizes are `ui.Text2XS` (10.5), `ui.TextXS` (12), `ui.TextSM` (14) and `ui.TextBase` (16). A size off
+  the scale is a named `unit.Sp` constant beside the screen that uses it (`pullsTitleSize`, `settingsTitle`),
+  declared once: a second constant of the same value for the same role is a bug.
 - Radius is `ui.RadiusSM` (4), `ui.RadiusMD` (6), `ui.RadiusLG` (8); dialogs alone use 12. Controls and
   rows are `RadiusMD`; islands and the folder tray are `RadiusLG`.
 - A screen's geometry lives in one `var` block at the top of its file, each value named and, when it comes
@@ -46,6 +47,12 @@ under it.
 ### Color
 
 Never a hex or OKLCH value in a widget: always a `Theme` token. Themes are JSON (`docs/themes.md`).
+
+Four colors are literals on purpose, each named in a constant that says why: a toast's description is
+sonner's own gray (`ui/toast_body.go`), the browser notes' tag and halo sit on the website and keep one
+look on every page (`browser_notes_view.go`), Windows' close button hovers in the system's red
+(`caption.go`), and the release notes' Fixed dot is sky (`notesSky`), a group's accent apart from the
+app's tones. A fifth needs the same kind of reason.
 
 | Token | Role |
 | --- | --- |
@@ -88,7 +95,7 @@ their text with the tone itself.
 ### Typography
 
 - **Onest** for all interface text, **the system monospace** for code, paths, diffs, counts and dense meta.
-- Body is `TextSM`, meta and paths `TextXS`, a group's uppercase label `text2XS` (10.5) semibold; headings
+- Body is `TextSM`, meta and paths `TextXS`, a group's uppercase label `Text2XS` semibold; headings
   named per screen.
 - Markdown prose is 15sp: larger than interface body text for sustained reading, while leaving more room for
   long descriptions than `TextBase`.

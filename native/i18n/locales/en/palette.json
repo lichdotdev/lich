@@ -1,6 +1,6 @@
 {
   "commandPalette": {
-    "placeholder": "Jump to a session, project or something said, or type > for actions…",
+    "placeholder": "Search, or type > for actions",
     "forgetFailed": "Could not forget {label}: {error}",
     "resumeFailed": "Could not resume {label}: {error}",
     "actionUnavailable": "{label} is not available here",

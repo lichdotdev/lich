@@ -29,8 +29,6 @@ var (
 	navBadgeSize   = unit.Dp(18)
 	navBadgePadX   = unit.Dp(5)
 	navBadgeFill   = float32(0.2)
-	navSmall       = unit.Sp(11)
-	navHitPath     = unit.Sp(10.5)
 	icScopeGlobal  = icons.Lucide("globe")
 	icScopeChevron = icons.Lucide("chevrons-up-down")
 	icScopeCheck   = icons.Lucide("check")
@@ -231,7 +229,7 @@ func (s *settingsScreen) results(gtx C, th *ui.Theme, hits []settingHit) D {
 	count := i18n.T("settings.settings.resultCount", i18n.Args{"count": len(hits)})
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			return layout.Inset{Left: ui.Space(3), Bottom: ui.Space(0.5)}.Layout(gtx, th.Text(navHitPath, strings.ToUpper(count)).Muted().Mono().Layout)
+			return layout.Inset{Left: ui.Space(3), Bottom: ui.Space(0.5)}.Layout(gtx, th.Text(ui.Text2XS, strings.ToUpper(count)).Muted().Mono().Layout)
 		}),
 		layout.Flexed(1, func(gtx C) D {
 			return n.list.Layout(gtx, len(hits), func(gtx C, i int) D {
@@ -259,7 +257,7 @@ func (s *settingsScreen) hitRow(gtx C, th *ui.Theme, i int, h settingHit) D {
 				return layout.Inset{Left: navRowPadX, Right: navRowPadX, Top: ui.Space(1.5), Bottom: ui.Space(1.5)}.Layout(gtx, func(gtx C) D {
 					children := []layout.FlexChild{}
 					if p := h.path(); p != "" {
-						children = append(children, layout.Rigid(on.Text(navHitPath, p).Muted().Mono().Layout))
+						children = append(children, layout.Rigid(on.Text(ui.Text2XS, p).Muted().Mono().Layout))
 					}
 					children = append(children, layout.Rigid(on.Text(ui.TextSM, h.title).Leading(19).Layout))
 					return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)

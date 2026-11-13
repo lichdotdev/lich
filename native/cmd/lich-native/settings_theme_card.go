@@ -124,7 +124,7 @@ func cardBody(gtx C, th *ui.Theme, name, caption string, selected bool, preview 
 			return layout.Flex{Alignment: layout.Baseline}.Layout(gtx,
 				layout.Rigid(th.Text(ui.TextXS, name).Weight(font.Medium).Layout),
 				ui.Gap(1.5),
-				layout.Flexed(1, th.Text(themeCaptionSize, caption).Muted().Layout),
+				layout.Flexed(1, th.Text(ui.Text2XS, caption).Muted().Layout),
 			)
 		}),
 	)

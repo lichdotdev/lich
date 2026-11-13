@@ -31,7 +31,6 @@ const (
 )
 
 var (
-	notesSmall       = unit.Sp(13) // text-[0.8125rem]
 	notesLeadSize    = unit.Sp(24)
 	icNotesWarning   = icons.Lucide("triangle-alert")
 	icNotesCaution   = icons.Lucide("octagon-alert")
@@ -297,7 +296,7 @@ func (v *patchNotesView) changelogLink(gtx C, th *ui.Theme) D {
 			ink = th.Foreground
 		}
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-			layout.Rigid(th.Text(notesSmall, i18n.T("shell.patchNotesDialog.viewChangelog")).In(ink).Layout),
+			layout.Rigid(th.Text(settingsDescSize, i18n.T("shell.patchNotesDialog.viewChangelog")).In(ink).Layout),
 			ui.Gap(1),
 			layout.Rigid(func(gtx C) D { return icNotesChangelog.Layout(gtx, unit.Dp(14), ink) }),
 		)
@@ -374,7 +373,7 @@ func notesCallout(th *ui.Theme, h backend.PatchNotesHighlight) layout.Widget {
 	if danger {
 		fill = th.Over(ui.Alpha(th.Destructive, 0.1))
 	}
-	text := richText(th, h.Text, richStyle{size: notesSmall, leading: 21, ink: th.MutedForeground})
+	text := richText(th, h.Text, richStyle{size: settingsDescSize, leading: 21, ink: th.MutedForeground})
 	return func(gtx C) D {
 		return layout.Inset{Bottom: ui.Space(2)}.Layout(gtx, func(gtx C) D {
 			gtx.Constraints.Min.X = gtx.Constraints.Max.X
@@ -466,7 +465,7 @@ func notesGroupHeading(th *ui.Theme, label string, divider bool) layout.Widget {
 // it opening on click. An entry without one is its own row.
 func (v *patchNotesView) item(th *ui.Theme, k notesItemKey, text string) layout.Widget {
 	headline, body := splitLeadIn(text)
-	title := richText(th, headline, richStyle{size: notesSmall, leading: 18, ink: th.Foreground, weight: font.Medium})
+	title := richText(th, headline, richStyle{size: settingsDescSize, leading: 18, ink: th.Foreground, weight: font.Medium})
 	chevronSlot := unit.Dp(14)
 	line := func(gtx C, chevron *icons.Icon) D {
 		return layout.Inset{Top: ui.Space(1.5), Bottom: ui.Space(1.5)}.Layout(gtx, func(gtx C) D {
@@ -486,7 +485,7 @@ func (v *patchNotesView) item(th *ui.Theme, k notesItemKey, text string) layout.
 		return func(gtx C) D { return line(gtx, nil) }
 	}
 	click := v.row(k)
-	paragraph := cappedBy(richText(th, body, richStyle{size: notesSmall, leading: 21, ink: th.MutedForeground}), notesSmall, notesItemBodyCh)
+	paragraph := cappedBy(richText(th, body, richStyle{size: settingsDescSize, leading: 21, ink: th.MutedForeground}), settingsDescSize, notesItemBodyCh)
 	return func(gtx C) D {
 		if click.Clicked(gtx) {
 			if v.expanded == nil {
