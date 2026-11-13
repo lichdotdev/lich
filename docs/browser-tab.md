@@ -115,20 +115,34 @@ can read any field's value, so page info's rule ends where the agent asks.
 
 ## Notes on the page
 
-The crosshair on the pane's toolbar stops the pointer reaching the page: the
-element under it is outlined, the outline sliding to the next element in 160
-ms as the pointer moves, and a click opens a note on it. Notes wait in a
-tray floating over the bottom of the page, which never resizes for it, each
-element pinned where it stands, and Send types them into the session's prompt
-as one message: each element's label, page, a
+A bar floats over the bottom of the page with two tools, Select and Draw; the
+one that is on stops the pointer reaching the page, and a click on it, or Esc,
+turns it off. The bar's arrow folds it into a tab on the page's edge, which a
+click unfolds; folded or not is kept for every page.
+
+With Select on, the element under the pointer is outlined, the outline sliding
+to the next element in 160 ms as the pointer moves, and a click opens a note on
+it. With Draw on, a drag draws a stroke in the color picked beside the tools,
+over white so it reads on a page of its own color; Ctrl+Z takes the last one
+back, and the eraser after the colors takes off, whole, each stroke it is
+clicked on or dragged over (a stroke is one drag). The strokes stand on what the pane shows: the wheel does not scroll the
+page while there are any, and a page navigated away from loses them.
+
+What waits turns the bar into a tray, which never resizes the page, each noted
+element pinned where it stands, and Send types it into the session's prompt as
+one message: each element's label, page, a
 selector `browser_click` takes, its React component when the page is a
-development build, its markup without any field's value, and the note. A note
+development build, its markup without any field's value, and the note; then,
+for a sketch, the path of a PNG, the frame the pane showed with the strokes on
+it, its longest side at most 1280 pixels. The window draws that picture and
+stores it among the session's dropped files (`internal/drop`), which a confined
+session reads and which go when the session does. A note
 opened from the tray or its pin scrolls its element into view first, unless it
 already shows whole. An element inside a list, sidebar or dialog that scrolls
 is outlined only where that box shows it, and one the box hides has no pin. The
 page only answers what is where (`browser.ElementAt`, `browser.Locate`); the
-outline, the pins and the note are the window's, so nothing is injected into
-the page.
+outline, the pins, the strokes and the note are the window's, so nothing is
+injected into the page.
 
 ## Console errors
 
@@ -242,7 +256,7 @@ The toolbar's DevTools button opens Chrome's own DevTools for the front tab
 as one more tab of the pane, right after the tab it inspects, and selects it;
 with one open, the button is lit and only selects it. While the DevTools tab is
 selected the pane draws DevTools in the page's place and sends it the pointer,
-the keys and the pane's size; the notes button is gone, and back, forward,
+the keys and the pane's size; the notes bar is gone, and back, forward,
 reload and the address still act on the page. Closing the page tab closes its
 DevTools.
 

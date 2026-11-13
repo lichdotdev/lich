@@ -36,7 +36,10 @@
     "keepOpen": "열어 두기",
     "closeIdle": "닫기",
     "showFolder": "폴더 열기",
-    "pick": "페이지에 메모 남기기",
+    "toolSelect": "선택",
+    "toolDraw": "그리기",
+    "eraser": "지우개",
+    "foldNotes": "접기",
     "pickHint": "요소를 클릭해 메모를 남기세요",
     "zoom": "페이지 확대/축소",
     "zoomReset": "100%로 재설정",
@@ -49,6 +52,11 @@
       "other": "메모 {count}개"
     },
     "notesFor": "{label}에게",
+    "notesAndSketch": {
+      "other": "메모 {count}개와 스케치"
+    },
+    "sketch": "스케치",
+    "sketchRow": "스케치",
     "clearNotes": "지우기",
     "sendNotes": "보내기",
     "noNote": "메모 없음",

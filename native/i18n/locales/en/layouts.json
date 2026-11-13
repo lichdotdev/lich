@@ -38,7 +38,10 @@
     "keepOpen": "Keep open",
     "closeIdle": "Close",
     "showFolder": "Open folder",
-    "pick": "Leave notes on the page",
+    "toolSelect": "Select",
+    "toolDraw": "Draw",
+    "eraser": "Eraser",
+    "foldNotes": "Collapse",
     "pickHint": "Click an element to leave a note",
     "zoom": "Page zoom",
     "zoomReset": "Reset to 100%",
@@ -52,6 +55,12 @@
       "other": "{count} notes"
     },
     "notesFor": "for {label}",
+    "notesAndSketch": {
+      "one": "{count} note and a sketch",
+      "other": "{count} notes and a sketch"
+    },
+    "sketch": "A sketch",
+    "sketchRow": "Sketch",
     "clearNotes": "Clear",
     "sendNotes": "Send",
     "noNote": "No note",

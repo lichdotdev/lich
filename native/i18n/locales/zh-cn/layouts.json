@@ -36,7 +36,10 @@
     "keepOpen": "保持打开",
     "closeIdle": "关闭",
     "showFolder": "打开文件夹",
-    "pick": "在页面上留下备注",
+    "toolSelect": "选择",
+    "toolDraw": "绘制",
+    "eraser": "橡皮擦",
+    "foldNotes": "收起",
     "pickHint": "点击一个元素来留下备注",
     "zoom": "页面缩放",
     "zoomReset": "重置为 100%",
@@ -49,6 +52,11 @@
       "other": "{count} 条备注"
     },
     "notesFor": "发给 {label}",
+    "notesAndSketch": {
+      "other": "{count} 条备注和一张草图"
+    },
+    "sketch": "一张草图",
+    "sketchRow": "草图",
     "clearNotes": "清除",
     "sendNotes": "发送",
     "noNote": "无备注",

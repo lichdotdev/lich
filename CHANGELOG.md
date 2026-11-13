@@ -7,7 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- You can draw on a page in a session's browser for the agent to see. Draw, on the bar over the bottom of the page, turns the pointer into a pencil: drag to circle or point at something, in any of the card colors. Ctrl+Z takes back the last stroke, and the eraser beside the colors removes any stroke you click or drag it over. Send hands the agent a screenshot of the page with your drawing on it, alone or after your notes in the same message. The page does not scroll while a drawing is on it, and navigating away drops it. Applies to every provider; an agent whose model reads no images gets the file's path and cannot look at it.
+
 ### Changed
+
+- The tools for leaving notes on a page moved from the browser's toolbar onto the page: a bar over its bottom holds Select, which was the crosshair, and Draw, each by name. A click turns a tool on, and a click on it again, or Esc, turns it off. The bar's arrow folds it into a small tab on the page's edge when it is in the way, and a click on the tab brings it back. Ctrl+Shift+E (Cmd+Shift+E on macOS) still turns Select on and off.
 
 - The command palette's field now reads "Search, or type > for actions" instead of listing everything it finds. Small labels across the window (a group's label, a theme's caption, a count badge, the buttons inside a diff) share one size, 10.5, where some were 11, and a second-level heading in Markdown is 18 instead of 19, so it no longer reads as a first-level one. In What's new, the Fixed group's dot is gray like Removed's, no longer a blue the window uses nowhere else.
 

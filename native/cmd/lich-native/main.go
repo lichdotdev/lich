@@ -193,6 +193,9 @@ type window struct {
 	islandAt image.Point
 	// layoutStage is the panes' state while a layout is on screen.
 	layoutStage layoutStage
+	// notesBar is the notes bar's state every page pane shares
+	// (browser_notes_dock.go).
+	notesBar notesBarPrefs
 	// browserPanes are the page panes' widgets, by session (browser_pane.go).
 	browserPanes map[string]*browserPaneUI
 	// browserView is the window's size as the backend last heard it, the size
@@ -505,6 +508,9 @@ func (u *window) connect() error {
 		return err
 	}
 	if u.pulls.view.tree.widthRem, err = loadTreeWidth(u.ctx, u.client); err != nil {
+		return err
+	}
+	if u.notesBar.folded, err = loadNotesFolded(u.ctx, u.client); err != nil {
 		return err
 	}
 	if err := u.loadSettings(); err != nil {

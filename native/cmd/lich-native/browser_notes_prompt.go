@@ -12,6 +12,21 @@ import (
 // its markup, and the person's note; closing, the note about all of them, ends
 // it.
 func notesMessage(notes []*browserNote, closing string) string {
+	return endedWith(append(noteLines(notes), i18n.Prompt("prompts.browserNotes.selectors")), closing)
+}
+
+// sketchedMessage is notesMessage with the sketch: its picture at path,
+// after the notes when there are any, and alone, naming the page at url, when
+// there are none.
+func sketchedMessage(notes []*browserNote, path, url, closing string) string {
+	if len(notes) == 0 {
+		return endedWith([]string{i18n.Prompt("prompts.browserNotes.sketchOnly", i18n.Args{"url": url, "path": path})}, closing)
+	}
+	lines := append(noteLines(notes), i18n.Prompt("prompts.browserNotes.sketch", i18n.Args{"path": path}), i18n.Prompt("prompts.browserNotes.selectors"))
+	return endedWith(lines, closing)
+}
+
+func noteLines(notes []*browserNote) []string {
 	lines := []string{i18n.Prompt("prompts.browserNotes.head", i18n.Args{"count": len(notes)})}
 	for i, n := range notes {
 		el := n.el
@@ -29,7 +44,10 @@ func notesMessage(notes []*browserNote, closing string) string {
 			lines = append(lines, "   "+i18n.Prompt("prompts.browserNotes.note", i18n.Args{"note": strings.ReplaceAll(text, "\n", " ")}))
 		}
 	}
-	lines = append(lines, i18n.Prompt("prompts.browserNotes.selectors"))
+	return lines
+}
+
+func endedWith(lines []string, closing string) string {
 	if closing = strings.TrimSpace(closing); closing != "" {
 		lines = append(lines, "", closing)
 	}

@@ -55,29 +55,39 @@ var (
 // does not scroll the page under them.
 var noteScrollRange = pointer.ScrollRange{Min: -1 << 20, Max: 1 << 20}
 
-// notesTrayHeight is the tray's height for its notes and closing note; no
-// notes hides it. The tray floats over the page instead of taking room from
+// notesTrayHeight is the tray's height for its notes, its sketch and closing
+// note; with nothing waiting there is no tray. The tray floats over the page instead of taking room from
 // it: a page that shrank under each new note relaid itself out and blinked.
 func notesTrayHeight(gtx C, n *browserNotes) int {
-	if len(n.list) == 0 {
+	if !n.pending() {
 		return 0
 	}
-	return gtx.Dp(noteTrayHead) + 2*gtx.Dp(noteTrayPad) + min(len(n.list), noteRowsShown)*gtx.Dp(noteRowHeight) + n.closingHeight + 2*gtx.Dp(noteTrayPad)
+	return gtx.Dp(noteTrayHead) + 2*gtx.Dp(noteTrayPad) + min(n.trayRows(), noteRowsShown)*gtx.Dp(noteRowHeight) + n.closingHeight + 2*gtx.Dp(noteTrayPad)
+}
+
+// trayRows is the tray's rows: a note each, and the sketch last.
+func (n *browserNotes) trayRows() int {
+	if len(n.strokes) > 0 {
+		return len(n.list) + 1
+	}
+	return len(n.list)
 }
 
 func withAlpha(c color.NRGBA, a uint8) color.NRGBA { c.A = a; return c }
 
-// notesOverlay draws, over the page, the outline of the element under the
-// pointer with its name, every noted element's outline and pin, and the
-// open note.
+// notesOverlay draws, over the page, the sketch, the outline of the element
+// under the pointer with its name, every noted element's outline and pin, and
+// the open note.
 func (u *window) notesOverlay(gtx C, p *browserPaneUI, session, pageURL string) {
 	n := &p.notes
 	u.takeFound(gtx, p, session)
-	if !n.picking && len(n.list) == 0 {
+	n.keepSketchOn(pageURLOf(pageURL))
+	if !n.picking && !n.pending() {
 		return
 	}
 	defer clip.Rect{Max: gtx.Constraints.Max}.Push(gtx.Ops).Pop()
 	scale := u.pageScale(gtx)
+	paintSketch(gtx, n.strokes, scale)
 	lit := -1
 	for i, note := range n.list {
 		if note.row.Hovered() || (n.open && n.editing == i) {
@@ -251,9 +261,7 @@ func (u *window) notePopover(gtx C, p *browserPaneUI, scale float32) {
 	d := u.notePopoverBody(body, n)
 	call := macro.Stop()
 	room := gtx.Constraints.Max
-	if t := notesTrayHeight(gtx, n); t > 0 {
-		room.Y -= t + gtx.Dp(gutter)
-	}
+	room.Y -= n.docked
 	el := cssRect(n.draftBox(), scale)
 	at := notePopoverAt(el, d.Size, room, gtx.Dp(ui.Space(3)))
 	defer op.Offset(at).Push(gtx.Ops).Pop()
@@ -376,16 +384,20 @@ func (u *window) notePopoverButtons(gtx C, th *ui.Theme, n *browserNotes) D {
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx, buttons...)
 }
 
-// notesTray is the notes waiting, floating over the page's bottom, inset
-// from the pane's edges by the gutter the island keeps around its panes: a
-// row each, a closing note about all of them, Clear and Send. Enter in the
+// notesTray is what waits, floating over the page's bottom, inset from the
+// pane's edges by the gutter the island keeps around its panes: the tools, a
+// row a note and one for the sketch, a closing note about all of them, Clear
+// and Send. Enter in the
 // closing note sends, Shift+Enter is a new line.
 func (u *window) notesTray(gtx C, p *browserPaneUI, session string) {
 	n := &p.notes
 	th := u.theme
 	if n.clear.Clicked(gtx) {
-		n.list, n.open, n.failure = nil, false, ""
+		n.list, n.strokes, n.open, n.failure = nil, nil, false, ""
 		n.closing.SetText("")
+	}
+	if n.dropSketch.Clicked(gtx) {
+		n.strokes = nil
 	}
 	n.closing.Submit = true
 	send := n.send.Clicked(gtx)
@@ -398,7 +410,7 @@ func (u *window) notesTray(gtx C, p *browserPaneUI, session string) {
 			send = true
 		}
 	}
-	if send && len(n.list) > 0 {
+	if send && n.pending() {
 		u.sendNotes(p, session)
 	}
 	for i := len(n.list) - 1; i >= 0; i-- {
@@ -413,13 +425,14 @@ func (u *window) notesTray(gtx C, p *browserPaneUI, session string) {
 	}
 	height := notesTrayHeight(gtx, n)
 	if height == 0 {
-		n.trayShown = time.Time{}
+		n.trayShown, n.docked = time.Time{}, 0
 		return
 	}
 	if n.trayShown.IsZero() {
 		n.trayShown = gtx.Now
 	}
 	edge := gtx.Dp(gutter)
+	n.docked = height + edge
 	page := gtx.Constraints.Max
 	size := image.Pt(max(page.X-2*edge, 0), height)
 	defer op.Offset(image.Pt(edge, page.Y-height-edge)).Push(gtx.Ops).Pop()
@@ -441,7 +454,12 @@ func (u *window) notesTray(gtx C, p *browserPaneUI, session string) {
 			layout.Rigid(func(gtx C) D { return u.notesTrayHead(gtx, n, session) }),
 			layout.Rigid(layout.Spacer{Height: noteTrayPad}.Layout),
 			layout.Flexed(1, func(gtx C) D {
-				return n.rows.Layout(gtx, len(n.list), func(gtx C, i int) D { return u.noteRow(gtx, n, i) })
+				return n.rows.Layout(gtx, n.trayRows(), func(gtx C, i int) D {
+					if i == len(n.list) {
+						return u.sketchRow(gtx, n)
+					}
+					return u.noteRow(gtx, n, i)
+				})
 			}),
 			layout.Rigid(layout.Spacer{Height: noteTrayPad}.Layout),
 			layout.Rigid(func(gtx C) D {
@@ -464,27 +482,56 @@ func (u *window) notesTrayHead(gtx C, n *browserNotes, session string) D {
 	th := u.theme
 	gtx.Constraints.Min.Y = gtx.Dp(noteTrayHead)
 	gtx.Constraints.Max.Y = gtx.Constraints.Min.Y
-	return layout.Inset{Left: ui.Space(1.5)}.Layout(gtx, func(gtx C) D {
+	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+		layout.Rigid(func(gtx C) D { return u.noteTools(gtx, n) }),
+		ui.Gap(2.5),
+		layout.Rigid(th.Text(ui.TextXS, waitingLabel(n)).Weight(font.SemiBold).Layout),
+		ui.Gap(1.5),
+		layout.Flexed(1, func(gtx C) D {
+			if n.failure != "" {
+				return th.Text(ui.TextXS, n.failure).In(th.Destructive).Layout(gtx)
+			}
+			return th.Text(ui.TextXS, i18n.T("layouts.browser.notesFor", i18n.Args{"label": u.model.sessionLabel(session)})).Muted().Layout(gtx)
+		}),
+		ui.Gap(2),
+		layout.Rigid(func(gtx C) D {
+			clear := th.Button(&n.clear, i18n.T("layouts.browser.clearNotes"))
+			clear.Variant, clear.Size = ui.VariantGhost, ui.SizeSM
+			return clear.Layout(gtx)
+		}),
+		ui.Gap(1.5),
+		layout.Rigid(func(gtx C) D {
+			send := th.Button(&n.send, i18n.T("layouts.browser.sendNotes"))
+			send.Icon, send.Size = icBatchSend, ui.SizeSM
+			return send.Layout(gtx)
+		}),
+	)
+}
+
+// waitingLabel counts what the tray holds: the notes, the notes and the
+// sketch, or the sketch alone.
+func waitingLabel(n *browserNotes) string {
+	switch {
+	case len(n.strokes) == 0:
+		return i18n.T("layouts.browser.notes", i18n.Args{"count": len(n.list)})
+	case len(n.list) == 0:
+		return i18n.T("layouts.browser.sketch")
+	}
+	return i18n.T("layouts.browser.notesAndSketch", i18n.Args{"count": len(n.list)})
+}
+
+// sketchRow is the sketch in the tray, after the notes: its × takes the
+// strokes off the page.
+func (u *window) sketchRow(gtx C, n *browserNotes) D {
+	th := u.theme
+	gtx.Constraints = layout.Exact(image.Pt(gtx.Constraints.Max.X, gtx.Dp(noteRowHeight)))
+	return layout.Inset{Left: ui.Space(1.5), Right: ui.Space(0.5)}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-			layout.Rigid(th.Text(ui.TextXS, i18n.T("layouts.browser.notes", i18n.Args{"count": len(n.list)})).Weight(font.SemiBold).Layout),
-			ui.Gap(1.5),
-			layout.Flexed(1, func(gtx C) D {
-				if n.failure != "" {
-					return th.Text(ui.TextXS, n.failure).In(th.Destructive).Layout(gtx)
-				}
-				return th.Text(ui.TextXS, i18n.T("layouts.browser.notesFor", i18n.Args{"label": u.model.sessionLabel(session)})).Muted().Layout(gtx)
-			}),
+			layout.Rigid(func(gtx C) D { return icBrowserDraw.Layout(gtx, ui.Space(3.5), notePick) }),
 			ui.Gap(2),
+			layout.Flexed(1, th.Text(ui.TextXS, i18n.T("layouts.browser.sketchRow")).Layout),
 			layout.Rigid(func(gtx C) D {
-				clear := th.Button(&n.clear, i18n.T("layouts.browser.clearNotes"))
-				clear.Variant, clear.Size = ui.VariantGhost, ui.SizeSM
-				return clear.Layout(gtx)
-			}),
-			ui.Gap(1.5),
-			layout.Rigid(func(gtx C) D {
-				send := th.Button(&n.send, i18n.T("layouts.browser.sendNotes"))
-				send.Icon, send.Size = icBatchSend, ui.SizeSM
-				return send.Layout(gtx)
+				return th.CornerButton(&n.dropSketch, icNoteRemove, false).Layout(gtx)
 			}),
 		)
 	})

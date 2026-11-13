@@ -163,7 +163,7 @@ func (u *window) browserPaneAt(gtx C, v stageView, session string, r image.Recta
 	_, inspecting := devtoolsOf(st.Tabs)
 	if !inspecting {
 		u.notesOverlay(page, p, session, st.URL)
-		u.notesTray(page, p, session)
+		u.notesDock(page, p, session)
 	}
 	u.dialogCardAt(page, p, session, head+bar)
 	off.Pop()
@@ -220,9 +220,9 @@ func (u *window) browserHeader(gtx C, p *browserPaneUI, session string, st api.B
 	})
 }
 
-// browserToolbar is back, forward, reload, the address, the zoom, the notes,
-// DevTools and Open in window. On DevTools, the notes are gone and the rest
-// acts on the page.
+// browserToolbar is back, forward, reload, the address, the zoom, DevTools
+// and Open in window. On DevTools, the notes' tools go off and the rest acts
+// on the page.
 func (u *window) browserToolbar(gtx C, p *browserPaneUI, session string, st api.BrowserState) {
 	th := u.theme
 	nav := func(action string) {
@@ -238,11 +238,9 @@ func (u *window) browserToolbar(gtx C, p *browserPaneUI, session string, st api.
 		nav("reload")
 	}
 	devtools, inspecting := devtoolsOf(st.Tabs)
-	if p.notes.pick.Click.Clicked(gtx) {
-		p.notes.setPicking(!p.notes.picking)
-	}
-	if inspecting && p.notes.picking {
+	if inspecting && (p.notes.picking || p.notes.drawing) {
 		p.notes.setPicking(false)
+		p.notes.setDrawing(false)
 	}
 	if p.devtools.Click.Clicked(gtx) {
 		u.openDevTools(session)
@@ -286,18 +284,6 @@ func (u *window) browserToolbar(gtx C, p *browserPaneUI, session string, st api.
 			layout.Flexed(1, func(gtx C) D { return u.spot(gtx, tourBrowserAddr, field.Layout) }),
 			ui.Gap(1.5),
 			layout.Rigid(func(gtx C) D { return u.browserZoomControl(gtx, &p.pageZoom) }),
-			layout.Rigid(func(gtx C) D {
-				if !p.notes.picking {
-					return D{}
-				}
-				return layout.Inset{Right: ui.Space(1.5)}.Layout(gtx, th.Text(ui.TextXS, i18n.T("layouts.browser.pickHint")).In(notePick).Layout)
-			}),
-			layout.Rigid(func(gtx C) D {
-				if inspecting {
-					return D{}
-				}
-				return u.spot(gtx, tourBrowserPick, th.IconAction(&u.root, &p.notes.pick, icBrowserPick, i18n.T("layouts.browser.pick"), p.notes.picking).Layout)
-			}),
 			layout.Rigid(func(gtx C) D {
 				return th.IconAction(&u.root, &p.devtools, icDevTools, i18n.T("layouts.browser.openDevTools"), devtools).Layout(gtx)
 			}),
@@ -388,6 +374,7 @@ func (u *window) browserInput(gtx C, p *browserPaneUI, session string, scale flo
 		key.Filter{Focus: &p.tag, Name: "+", Required: key.ModShortcut, Optional: key.ModShift},
 		key.Filter{Focus: &p.tag, Name: "0", Required: key.ModShortcut},
 		key.Filter{Focus: &p.tag, Name: "E", Required: key.ModShortcut | key.ModShift},
+		key.Filter{Focus: &p.tag, Name: "Z", Required: key.ModShortcut},
 		key.Filter{Focus: &p.tag, Name: key.NameReturn, Required: key.ModShortcut},
 		key.Filter{Focus: &p.tag, Name: key.NameEnter, Required: key.ModShortcut},
 		transfer.TargetFilter{Target: &p.tag, Type: "application/text"})
@@ -442,6 +429,15 @@ func (u *window) browserPointer(gtx C, p *browserPaneUI, session string, scale f
 	m := api.BrowserMouseOptions{ID: session, X: float64(e.Position.X / scale), Y: float64(e.Position.Y / scale), Modifiers: cdpModifiers(e.Modifiers)}
 	if p.notes.picking && e.Kind != pointer.Scroll {
 		u.notesPointer(gtx, p, session, m.X, m.Y, e)
+		return
+	}
+	if p.notes.drawing && e.Kind != pointer.Scroll {
+		u.sketchPointer(gtx, p, session, m.X, m.Y, e)
+		return
+	}
+	if e.Kind == pointer.Scroll && len(p.notes.strokes) > 0 {
+		// The strokes stand on what the pane shows: a page that scrolled
+		// under them would leave them pointing at something else.
 		return
 	}
 	if e.Kind == pointer.Scroll && (len(p.notes.list) > 0 || p.notes.open) {

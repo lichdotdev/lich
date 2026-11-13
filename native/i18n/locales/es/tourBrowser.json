@@ -23,7 +23,7 @@
   "pick": {
     "title": "Señala en la página",
     "body": "En lugar de describir dónde está algo, deja una nota justo encima.",
-    "hint": "Haz clic en Dejar notas en la página para continuar"
+    "hint": "Haz clic en Seleccionar para continuar"
   },
   "note": {
     "title": "Deja una nota",
