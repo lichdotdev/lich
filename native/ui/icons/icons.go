@@ -13,9 +13,11 @@
 //   - Devicons (devicon.dev via devicons-react 1.5.0, MIT): the language marks
 //     the file tree draws, rendered to PNG by devicon/gen.sh since they are
 //     multi-colored.
+//   - Bibata (github.com/ful1e5/Bibata_Cursor, GPL-3.0): the arrow of Bibata
+//     Modern, the agent's pointer over its browser page.
 //
 // Each set's license sits beside it (lucide/LICENSE, lobe/LICENSE,
-// sonner/LICENSE, devicon/LICENSE) and must travel with any copy, the binary's third-party
+// sonner/LICENSE, devicon/LICENSE, bibata/LICENSE) and must travel with any copy, the binary's third-party
 // notices included.
 package icons
 

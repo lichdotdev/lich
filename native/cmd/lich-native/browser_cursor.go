@@ -19,11 +19,11 @@ import (
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
-// The agent's pointer over its page: lich's own arrow, in the session's card
+// The agent's pointer over its page: Bibata Modern's arrow, in the session's card
 // color or the theme's primary, outlined in primary-foreground so it reads
 // over any page, with a badge naming what it is doing. It glides to each click,
 // dips, rings, and fades once the agent goes quiet. Timings from the approved
-// mockups (2026-10-26, the badge's 2026-11-11).
+// mockups (2026-10-26, the badge's 2026-11-11, the arrow's 2026-11-13).
 const (
 	cursorGlide = 280 * time.Millisecond
 	cursorDip   = 170 * time.Millisecond
@@ -273,28 +273,14 @@ func progress(d, span time.Duration) float32 {
 	return float32(min(max(float64(d)/float64(span), 0), 1))
 }
 
-// cursorArrow is lich's arrow in a 24-unit box, its tip at cursorTip: rounder
-// and heavier than the system's, so it is not taken for the person's own.
-var cursorArrow = []f32.Point{
-	f32.Pt(4.2, 2.6), f32.Pt(19.4, 10.4), f32.Pt(20.6, 11), f32.Pt(19.3, 11.6),
-	f32.Pt(13.2, 13.6), f32.Pt(10.6, 19.6), f32.Pt(10, 20.9), f32.Pt(9.4, 19.6),
-}
+// cursorArrow is Bibata Modern's arrow, drawn cursorArrowSize units across.
+var cursorArrow = icons.BibataArrow()
 
-var cursorTip = f32.Pt(4, 3)
+const cursorArrowSize = 24
 
-func arrowPath(ops *op.Ops, unit float32) clip.PathSpec {
-	p := func(i int) f32.Point { return cursorArrow[i].Sub(cursorTip).Mul(unit) }
-	var path clip.Path
-	path.Begin(ops)
-	path.MoveTo(p(0))
-	path.LineTo(p(1))
-	path.QuadTo(p(2), p(3))
-	path.LineTo(p(4))
-	path.LineTo(p(5))
-	path.QuadTo(p(6), p(7))
-	path.Close()
-	return path.End()
-}
+// cursorTip is the arrow's hotspot, the point of its fill, in the arrow's own
+// units.
+var cursorTip = f32.Pt(52.5, 27)
 
 // drawAgentCursor draws c over its pane, in tint with outline around it, the
 // badge naming its action beside the provider's icon. It asks for the frames
@@ -324,12 +310,14 @@ func (u *window) drawAgentCursor(gtx C, c *agentCursor, tint, outline color.NRGB
 		s -= cursorDipScale * float32(math.Sin(math.Pi*float64(progress(landed, dipFor))))
 	}
 	unit := float32(gtx.Dp(1))
-	place := op.Affine(f32.Affine2D{}.Scale(f32.Point{}, f32.Pt(s, s)).Offset(at)).Push(gtx.Ops)
+	scale := unit * cursorArrowSize / icons.BibataArrowBox
+	arrow := cursorArrow.Outline(scale)
+	place := op.Affine(f32.Affine2D{}.Offset(cursorTip.Mul(-scale)).Scale(f32.Point{}, f32.Pt(s, s)).Offset(at)).Push(gtx.Ops)
 	shadow := op.Offset(image.Pt(0, gtx.Dp(1))).Push(gtx.Ops)
-	paint.FillShape(gtx.Ops, cursorShadow, clip.Outline{Path: arrowPath(gtx.Ops, unit)}.Op())
+	paint.FillShape(gtx.Ops, cursorShadow, clip.Outline{Path: arrow}.Op())
 	shadow.Pop()
-	paint.FillShape(gtx.Ops, tint, clip.Outline{Path: arrowPath(gtx.Ops, unit)}.Op())
-	paint.FillShape(gtx.Ops, outline, clip.Stroke{Path: arrowPath(gtx.Ops, unit), Width: 1.6 * unit}.Op())
+	paint.FillShape(gtx.Ops, tint, clip.Outline{Path: arrow}.Op())
+	paint.FillShape(gtx.Ops, outline, clip.Stroke{Path: arrow, Width: 1.6 * unit}.Op())
 	place.Pop()
 	if verb, shown := cursorVerb(c.action), c.badgeAlpha(now); verb != "" && shown > 0 {
 		badge := op.Offset(image.Pt(int(at.X)+gtx.Dp(12), int(at.Y)+gtx.Dp(15))).Push(gtx.Ops)
