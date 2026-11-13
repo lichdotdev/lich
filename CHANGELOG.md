@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- You can draw on a page in a session's browser for the agent to see. Draw, on the bar over the bottom of the page, turns the pointer into a pencil: drag to circle or point at something, in any of the card colors. Ctrl+Z takes back the last stroke, and the eraser beside the colors removes any stroke you click or drag it over. Send hands the agent a screenshot of the page with your drawing on it, alone or after your notes in the same message. The page does not scroll while a drawing is on it, and navigating away drops it. Applies to every provider; an agent whose model reads no images gets the file's path and cannot look at it.
+- You can draw on a page in a session's browser for the agent to see. Draw, on the bar over the bottom of the page, turns the pointer into a pencil: drag to circle or point at something, in any of the card colors. The eraser beside the colors removes whole strokes: the ones you drag it over go faint, and they go when you let go. Ctrl+Z takes back the last stroke or the last erasing. Send hands the agent a screenshot of the page with your drawing on it, alone or after your notes in the same message. The page does not scroll while a drawing is on it, and navigating away drops it. Applies to every provider; an agent whose model reads no images gets the file's path and cannot look at it.
 
 ### Changed
 

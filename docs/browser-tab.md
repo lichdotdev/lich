@@ -122,10 +122,12 @@ click unfolds; folded or not is kept for every page.
 
 With Select on, the element under the pointer is outlined, the outline sliding
 to the next element in 160 ms as the pointer moves, and a click opens a note on
-it. With Draw on, a drag draws a stroke in the color picked beside the tools,
-over white so it reads on a page of its own color; Ctrl+Z takes the last one
-back, and the eraser after the colors takes off, whole, each stroke it is
-clicked on or dragged over (a stroke is one drag). The strokes stand on what the pane shows: the wheel does not scroll the
+it. With Draw on, a drag draws a stroke in the color picked beside the tools.
+The eraser after the colors
+leaves a trail that fades behind the pointer; each stroke the trail touches, or
+a click lands on, goes faint, whole (a stroke is one drag), and they go when
+the button lets go. Ctrl+Z takes back the last stroke drawn or the last
+erasing. The strokes stand on what the pane shows: the wheel does not scroll the
 page while there are any, and a page navigated away from loses them.
 
 What waits turns the bar into a tray, which never resizes the page, each noted

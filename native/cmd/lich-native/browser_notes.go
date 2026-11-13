@@ -8,6 +8,7 @@ import (
 	"slices"
 	"time"
 
+	"gioui.org/f32"
 	"gioui.org/io/key"
 	"gioui.org/io/pointer"
 	"gioui.org/layout"
@@ -69,9 +70,17 @@ type browserNotes struct {
 	drawing, stroking, erasing bool
 	strokes                    []sketchStroke
 	sketchURL                  string
+	// sketchPast is the sketch before each stroke drawn and each erasing, for
+	// Ctrl+Z.
+	sketchPast [][]sketchStroke
+	// The eraser's drag (browser_sketch_eraser.go): where the pointer is,
+	// whether it is over the page, and the trail it leaves.
+	rubAt    f32.Point
+	rubOver  bool
+	rubTrail []rubPoint
 	// The bar's widgets (browser_notes_dock.go). dock is its tag for the
 	// pointer, and docked how tall it stood last frame, off the page's bottom.
-	selectTool, drawTool, unfold, dropSketch widget.Clickable
+	selectTool, drawTool, unfold, sketchGone widget.Clickable
 	fold, eraser                             ui.IconActionState
 	inks                                     []widget.Clickable
 	dock                                     int
@@ -322,7 +331,7 @@ func (u *window) takeFound(gtx C, p *browserPaneUI, session string) {
 			n.applyBoxes(l)
 		case sent := <-n.sent:
 			n.delivered(sent.notes)
-			n.strokes = n.strokes[min(sent.strokes, len(n.strokes)):]
+			n.strokes, n.sketchPast = n.strokes[min(sent.strokes, len(n.strokes)):], nil
 			if n.closing.Text() == sent.closing {
 				n.closing.SetText("")
 			}
@@ -409,8 +418,8 @@ func (u *window) notesKey(p *browserPaneUI, session string, e key.Event) bool {
 		}
 	case e.Name == key.NameEscape && n.drawing:
 		n.setDrawing(false)
-	case e.Name == "Z" && e.Modifiers == key.ModShortcut && n.drawing && len(n.strokes) > 0:
-		n.undoStroke()
+	case e.Name == "Z" && e.Modifiers == key.ModShortcut && n.drawing && len(n.sketchPast) > 0:
+		n.undoSketch()
 	case (e.Name == key.NameReturn || e.Name == key.NameEnter) && e.Modifiers == key.ModShortcut && n.pending():
 		u.sendNotes(p, session)
 	default:

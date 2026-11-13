@@ -27,22 +27,14 @@ import (
 // like the notes' outlines, and reach the agent with the notes as a picture:
 // the frame the pane shows with the strokes on it.
 
-var (
-	icBrowserDraw  = icons.Lucide("pencil")
-	icBrowserErase = icons.Lucide("eraser")
-)
+var icBrowserDraw = icons.Lucide("pencil")
 
 const (
-	// sketchLine and sketchHalo are a stroke and the white under it, which
-	// keeps it readable on a page of its own color, in the page's CSS pixels.
+	// sketchLine is a stroke's width in the page's CSS pixels.
 	sketchLine = 3
-	sketchHalo = 7
 	// sketchStep is how far, in CSS pixels, the pointer moves before a
 	// stroke takes another point.
 	sketchStep = 1.5
-	// sketchEraseReach is how near a stroke, in CSS pixels, the eraser takes
-	// it: wider than the stroke, since a mouse rarely lands on a 3 pixel line.
-	sketchEraseReach = 8
 	// sketchMax is the longest side of the picture a sketch sends: the size of
 	// the screenshots the agent takes itself (shotMax, internal/browser).
 	sketchMax = 1280
@@ -60,6 +52,9 @@ const defaultInk = "red"
 type sketchStroke struct {
 	ink    color.NRGBA
 	points []f32.Point
+	// doomed is a stroke the eraser touched in the drag under way: drawn
+	// faint, and gone when the button lets go.
+	doomed bool
 }
 
 // setDrawing turns the pencil on or off; on takes the pick's place.
@@ -68,13 +63,34 @@ func (n *browserNotes) setDrawing(on bool) {
 		n.setPicking(false)
 	}
 	n.drawing, n.stroking, n.erasing = on, false, false
+	n.spare()
 }
 
 // pending is whether anything waits to be sent: a note or a sketch.
 func (n *browserNotes) pending() bool { return len(n.list) > 0 || len(n.strokes) > 0 }
 
+// checkpoint keeps the sketch as it stands for undoSketch to bring back.
+func (n *browserNotes) checkpoint() {
+	n.sketchPast = append(n.sketchPast, slices.Clone(n.strokes))
+}
+
+// undoSketch takes back the last thing done to the sketch, a stroke drawn or
+// strokes erased.
+func (n *browserNotes) undoSketch() {
+	if last := len(n.sketchPast) - 1; last >= 0 {
+		n.strokes, n.sketchPast = n.sketchPast[last], n.sketchPast[:last]
+	}
+	n.stroking = false
+}
+
+// dropSketch takes the whole sketch off, with nothing to bring back.
+func (n *browserNotes) dropSketch() {
+	n.strokes, n.sketchPast, n.sketchURL, n.stroking, n.rubTrail = nil, nil, "", false, nil
+}
+
 // startStroke begins a stroke of ink at p.
 func (n *browserNotes) startStroke(p f32.Point, ink color.NRGBA) {
+	n.checkpoint()
 	n.strokes = append(n.strokes, sketchStroke{ink: ink, points: []f32.Point{p}})
 	n.stroking = true
 }
@@ -96,40 +112,9 @@ func (n *browserNotes) extendStroke(p f32.Point) {
 // nothing and leaves none.
 func (n *browserNotes) endStroke() {
 	if n.stroking && len(n.strokes) > 0 && len(n.strokes[len(n.strokes)-1].points) < 2 {
-		n.undoStroke()
+		n.undoSketch()
 	}
 	n.stroking = false
-}
-
-func (n *browserNotes) undoStroke() {
-	if len(n.strokes) > 0 {
-		n.strokes = n.strokes[:len(n.strokes)-1]
-	}
-	n.stroking = false
-}
-
-// eraseAt takes off every stroke that passes within sketchEraseReach of p,
-// whole: a stroke is one drag, and the eraser never cuts one in two.
-func (n *browserNotes) eraseAt(p f32.Point) {
-	n.strokes = slices.DeleteFunc(n.strokes, func(s sketchStroke) bool {
-		for i := 1; i < len(s.points); i++ {
-			if segmentDistance(p, s.points[i-1], s.points[i]) <= sketchEraseReach {
-				return true
-			}
-		}
-		return false
-	})
-}
-
-// segmentDistance is how far p stands from the segment a-b.
-func segmentDistance(p, a, b f32.Point) float64 {
-	d, ap := b.Sub(a), p.Sub(a)
-	t := float32(0)
-	if l := d.X*d.X + d.Y*d.Y; l > 0 {
-		t = min(max((ap.X*d.X+ap.Y*d.Y)/l, 0), 1)
-	}
-	near := a.Add(d.Mul(t))
-	return math.Hypot(float64(p.X-near.X), float64(p.Y-near.Y))
 }
 
 // keepSketchOn drops the strokes once the pane shows another page than url,
@@ -141,46 +126,44 @@ func (n *browserNotes) keepSketchOn(url string) {
 	case n.sketchURL == "":
 		n.sketchURL = url
 	case n.sketchURL != url:
-		n.strokes, n.sketchURL, n.stroking = nil, "", false
+		n.dropSketch()
 	}
 }
 
 // sketchPointer handles the pointer while drawing: a drag of the primary
-// button is a stroke, or with the eraser on takes off the strokes it passes
-// over, as a click does. Nothing reaches the page.
+// button is a stroke, or the eraser's when it is on. Nothing reaches the page.
 func (u *window) sketchPointer(gtx C, p *browserPaneUI, session string, x, y float64, e pointer.Event) {
 	n := &p.notes
 	at := f32.Pt(float32(x), float32(y))
+	if n.erasing {
+		n.rubPointer(gtx, at, e)
+	}
 	switch e.Kind {
 	case pointer.Press:
 		gtx.Execute(key.FocusCmd{Tag: &p.tag})
 		u.layoutStage.focus = browserPaneOf(session)
-		switch {
-		case !e.Buttons.Contain(pointer.ButtonPrimary):
-		case n.erasing:
-			n.stroking = true
-			n.eraseAt(at)
-		default:
+		if !n.erasing && e.Buttons.Contain(pointer.ButtonPrimary) {
 			n.startStroke(at, cardColors[u.notesBar.inkName()])
 		}
 	case pointer.Drag:
-		if n.erasing && n.stroking {
-			n.eraseAt(at)
-		} else {
+		if !n.erasing {
 			n.extendStroke(at)
 		}
 	case pointer.Release, pointer.Cancel:
-		n.endStroke()
+		if !n.erasing {
+			n.endStroke()
+		}
 	}
 }
 
-// paintSketch draws the strokes over the page, every halo under every line.
+// paintSketch draws the strokes over the page, a doomed one faint.
 func paintSketch(gtx C, strokes []sketchStroke, scale float32) {
 	for _, s := range strokes {
-		paint.FillShape(gtx.Ops, noteHalo, clip.Stroke{Path: strokePath(gtx.Ops, s.points, scale), Width: sketchHalo * scale}.Op())
-	}
-	for _, s := range strokes {
-		paint.FillShape(gtx.Ops, s.ink, clip.Stroke{Path: strokePath(gtx.Ops, s.points, scale), Width: sketchLine * scale}.Op())
+		ink := s.ink
+		if s.doomed {
+			ink.A = uint8(float32(ink.A) * sketchDoomedOpacity)
+		}
+		paint.FillShape(gtx.Ops, ink, clip.Stroke{Path: strokePath(gtx.Ops, s.points, scale), Width: sketchLine * scale}.Op())
 	}
 }
 
@@ -204,22 +187,19 @@ func sketchPicture(frame image.Image, strokes []sketchStroke, viewW int) *image.
 	xdraw.ApproxBiLinear.Scale(dst, dst.Bounds(), frame, b, xdraw.Src, nil)
 	css := float32(dst.Bounds().Dx()) / float32(max(viewW, 1))
 	for _, s := range strokes {
-		inkStroke(dst, s.points, css, sketchHalo, noteHalo)
-	}
-	for _, s := range strokes {
-		inkStroke(dst, s.points, css, sketchLine, s.ink)
+		inkStroke(dst, s.points, css, s.ink)
 	}
 	return dst
 }
 
-// inkStroke fills the stroke through points, width CSS pixels wide with
-// round ends and joins, as one shape: a disc at each point and a quad between
+// inkStroke fills the stroke through points, sketchLine wide with round ends
+// and joins, as one shape: a disc at each point and a quad between
 // two. Every piece winds the same way, so where they overlap they add up to
 // full cover instead of cancelling out.
-func inkStroke(dst *image.RGBA, points []f32.Point, css, width float32, c color.Color) {
+func inkStroke(dst *image.RGBA, points []f32.Point, css float32, c color.Color) {
 	size := dst.Bounds().Size()
 	r := vector.NewRasterizer(size.X, size.Y)
-	half := width * css / 2
+	half := sketchLine * css / 2
 	for i, p := range points {
 		p = p.Mul(css)
 		for side := range sketchDiscSides {

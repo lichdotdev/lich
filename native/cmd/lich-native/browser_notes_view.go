@@ -88,6 +88,7 @@ func (u *window) notesOverlay(gtx C, p *browserPaneUI, session, pageURL string) 
 	defer clip.Rect{Max: gtx.Constraints.Max}.Push(gtx.Ops).Pop()
 	scale := u.pageScale(gtx)
 	paintSketch(gtx, n.strokes, scale)
+	n.paintEraser(gtx, scale)
 	lit := -1
 	for i, note := range n.list {
 		if note.row.Hovered() || (n.open && n.editing == i) {
@@ -393,11 +394,12 @@ func (u *window) notesTray(gtx C, p *browserPaneUI, session string) {
 	n := &p.notes
 	th := u.theme
 	if n.clear.Clicked(gtx) {
-		n.list, n.strokes, n.open, n.failure = nil, nil, false, ""
+		n.list, n.open, n.failure = nil, false, ""
+		n.dropSketch()
 		n.closing.SetText("")
 	}
-	if n.dropSketch.Clicked(gtx) {
-		n.strokes = nil
+	if n.sketchGone.Clicked(gtx) {
+		n.dropSketch()
 	}
 	n.closing.Submit = true
 	send := n.send.Clicked(gtx)
@@ -531,7 +533,7 @@ func (u *window) sketchRow(gtx C, n *browserNotes) D {
 			ui.Gap(2),
 			layout.Flexed(1, th.Text(ui.TextXS, i18n.T("layouts.browser.sketchRow")).Layout),
 			layout.Rigid(func(gtx C) D {
-				return th.CornerButton(&n.dropSketch, icNoteRemove, false).Layout(gtx)
+				return th.CornerButton(&n.sketchGone, icNoteRemove, false).Layout(gtx)
 			}),
 		)
 	})

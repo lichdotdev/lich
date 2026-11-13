@@ -30,8 +30,8 @@ func TestASketchPictureIsTheFrameWithTheStrokesOnItAtScreenshotSize(t *testing.T
 			t.Errorf("pixel %v on the stroke is %v, want the ink %v", p, c, red)
 		}
 	}
-	if c := got.RGBAAt(150, 102); c.R < 150 || c.G < 150 || c.B < 150 {
-		t.Errorf("pixel beside the stroke is %v, want the white halo over the page", c)
+	if c := got.RGBAAt(150, 103); c != (color.RGBA{A: 255}) {
+		t.Errorf("pixel beside the stroke is %v, want the frame's black", c)
 	}
 	if c := got.RGBAAt(600, 400); c != (color.RGBA{A: 255}) {
 		t.Errorf("pixel away from the stroke is %v, want the frame's black", c)
@@ -85,7 +85,7 @@ func TestAPressThatNeverMovedLeavesNoStroke(t *testing.T) {
 	if len(n.strokes) != 1 || len(n.strokes[0].points) != 2 {
 		t.Fatalf("strokes after a drag and a move with no button: %+v", n.strokes)
 	}
-	n.undoStroke()
+	n.undoSketch()
 	if n.pending() {
 		t.Fatal("the undone stroke still waits")
 	}
@@ -119,7 +119,7 @@ func TestThePencilAndThePickTakeEachOthersPlace(t *testing.T) {
 	}
 }
 
-func TestTheEraserTakesWholeStrokesItPassesNearAndLeavesTheRest(t *testing.T) {
+func TestTheEraserDoomsWholeStrokesItPassesNearAndTakesThemOnRelease(t *testing.T) {
 	n := newBrowserNotes()
 	black := color.NRGBA{A: 255}
 	n.strokes = []sketchStroke{
@@ -127,19 +127,68 @@ func TestTheEraserTakesWholeStrokesItPassesNearAndLeavesTheRest(t *testing.T) {
 		{ink: black, points: []f32.Point{{X: 10, Y: 60}, {X: 110, Y: 60}}},
 		{ink: black, points: []f32.Point{{X: 60, Y: 0}, {X: 60, Y: 12}}},
 	}
-	n.eraseAt(f32.Pt(200, 200))
-	if len(n.strokes) != 3 {
-		t.Fatalf("erasing away from every stroke left %d of 3", len(n.strokes))
+	// Away from every stroke, then past the second one's end by more than
+	// the reach: neither is on a stroke.
+	n.doomAt(f32.Pt(200, 200))
+	n.doomAt(f32.Pt(125, 60))
+	n.erase()
+	if len(n.strokes) != 3 || len(n.sketchPast) != 0 {
+		t.Fatalf("erasing beside the strokes left %d of 3 and %d steps to undo", len(n.strokes), len(n.sketchPast))
 	}
-	// 6 pixels under the first stroke's middle, on the third's end: both go,
-	// by their whole length; the second, 44 pixels away, stays.
-	n.eraseAt(f32.Pt(60, 16))
+	// 6 pixels under the first stroke's middle, on the third's end: both are
+	// doomed by their whole length and still there until the release.
+	n.doomAt(f32.Pt(60, 16))
+	if len(n.strokes) != 3 || !n.strokes[0].doomed || n.strokes[1].doomed || !n.strokes[2].doomed {
+		t.Fatalf("strokes mid-drag: %+v", n.strokes)
+	}
+	n.erase()
 	if len(n.strokes) != 1 || n.strokes[0].points[0].Y != 60 {
-		t.Fatalf("strokes left: %+v, want only the one at y=60", n.strokes)
+		t.Fatalf("strokes after the release: %+v, want only the one at y=60", n.strokes)
 	}
-	// Past a stroke's end by more than the reach is not on it.
-	n.eraseAt(f32.Pt(125, 60))
-	if len(n.strokes) != 1 {
-		t.Fatal("the eraser took a stroke it stood beyond the end of")
+}
+
+func TestUndoBringsBackWhatTheEraserTookThenTakesBackTheStroke(t *testing.T) {
+	n := newBrowserNotes()
+	n.startStroke(f32.Pt(10, 10), color.NRGBA{A: 255})
+	n.extendStroke(f32.Pt(110, 10))
+	n.endStroke()
+	n.doomAt(f32.Pt(60, 10))
+	n.erase()
+	if len(n.strokes) != 0 {
+		t.Fatal("the eraser left the stroke it was released on")
+	}
+	n.undoSketch()
+	if len(n.strokes) != 1 || n.strokes[0].doomed {
+		t.Fatalf("undo after the eraser: %+v, want the stroke back and not doomed", n.strokes)
+	}
+	n.undoSketch()
+	if len(n.strokes) != 0 {
+		t.Fatal("a second undo left the stroke drawn")
+	}
+}
+
+func TestAnEraserDragThatEndsWithoutAReleaseSparesItsStrokes(t *testing.T) {
+	n := newBrowserNotes()
+	n.strokes = []sketchStroke{{points: []f32.Point{{X: 10, Y: 10}, {X: 110, Y: 10}}}}
+	n.setDrawing(true)
+	n.doomAt(f32.Pt(60, 10))
+	n.setDrawing(false)
+	if len(n.strokes) != 1 || n.strokes[0].doomed {
+		t.Fatalf("strokes after the tool went off mid-drag: %+v", n.strokes)
+	}
+}
+
+func TestTheEraserTrailIsARibbonAsWideAsEachPointAsks(t *testing.T) {
+	// Running right, then turning down: each side stands half[i] off its
+	// point, square to the way the trail runs through it.
+	left, right := trailEdges([]f32.Point{{X: 0, Y: 10}, {X: 10, Y: 10}, {X: 20, Y: 10}, {X: 20, Y: 20}}, []float32{1, 2, 3, 4})
+	if left[0] != f32.Pt(0, 11) || right[0] != f32.Pt(0, 9) {
+		t.Errorf("first point's sides: %v and %v, want 1 below and above it", left[0], right[0])
+	}
+	if left[1] != f32.Pt(10, 12) || right[1] != f32.Pt(10, 8) {
+		t.Errorf("second point's sides: %v and %v, want 2 below and above it", left[1], right[1])
+	}
+	if left[3] != f32.Pt(16, 20) || right[3] != f32.Pt(24, 20) {
+		t.Errorf("last point's sides: %v and %v, want 4 left and right of it", left[3], right[3])
 	}
 }
