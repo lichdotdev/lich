@@ -80,6 +80,7 @@ func TestCreateLaysTheProfileOutAgainstPersonal(t *testing.T) {
 	personal := machine(t)
 	home := filepath.Dir(personal)
 	mustWrite(t, filepath.Join(personal, "settings.json"), `{"model":"opus"}`)
+	mustWrite(t, filepath.Join(personal, "CLAUDE.md"), "rules")
 	mustMkdir(t, filepath.Join(personal, "agents"))
 	mustWrite(t, filepath.Join(personal, ".credentials.json"), `{"secret":true}`)
 	mustWrite(t, filepath.Join(home, ".claude.json"), globalConfig)
@@ -103,13 +104,21 @@ func TestCreateLaysTheProfileOutAgainstPersonal(t *testing.T) {
 	if cache := filepath.Join(p.Dir, "plugins", "cache"); profilestore.IsLink(cache) || !isDir(cache) {
 		t.Error("the plugin cache is not a directory of the profile's own")
 	}
-	if slices.Contains(p.Copied, "settings.json") {
+	if slices.Contains(p.Copied, "CLAUDE.md") {
 		// A Windows without Developer Mode: the documented fallback is a copy.
-		if _, err := os.Stat(filepath.Join(p.Dir, "settings.json")); err != nil {
-			t.Errorf("settings.json neither linked nor copied: %v", err)
+		if _, err := os.Stat(filepath.Join(p.Dir, "CLAUDE.md")); err != nil {
+			t.Errorf("CLAUDE.md neither linked nor copied: %v", err)
 		}
 	} else {
-		assertWritesThrough(t, filepath.Join(p.Dir, "settings.json"), filepath.Join(personal, "settings.json"))
+		assertWritesThrough(t, filepath.Join(p.Dir, "CLAUDE.md"), filepath.Join(personal, "CLAUDE.md"))
+	}
+	settings := filepath.Join(p.Dir, "settings.json")
+	if profilestore.IsLink(settings) {
+		t.Error("settings.json is linked to Personal's")
+	}
+	var own map[string]string
+	if readJSON(t, settings, &own); own["model"] != "opus" {
+		t.Errorf("a new profile's settings %v, want Personal's model", own)
 	}
 
 	var global map[string]any
@@ -294,16 +303,11 @@ func TestEnsureSharedLinksWhatPersonalGainedLater(t *testing.T) {
 		t.Fatal(err)
 	}
 	mustWrite(t, filepath.Join(personal, "CLAUDE.md"), "rules")
-	mustWrite(t, filepath.Join(p.Dir, "settings.json"), `{"own":true}`)
-	mustWrite(t, filepath.Join(personal, "settings.json"), `{}`)
 	if err := EnsureShared(p.Slug); err != nil {
 		t.Fatal(err)
 	}
 	if !profilestore.IsLink(filepath.Join(p.Dir, "CLAUDE.md")) {
 		t.Error("CLAUDE.md created after the profile was not linked")
-	}
-	if data, _ := os.ReadFile(filepath.Join(p.Dir, "settings.json")); string(data) != `{"own":true}` {
-		t.Errorf("the profile's own settings.json was replaced: %s", data)
 	}
 	if err := EnsureShared(Personal); err != nil {
 		t.Errorf("Personal: %v", err)

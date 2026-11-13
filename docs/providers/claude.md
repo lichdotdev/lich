@@ -85,14 +85,20 @@ login the dialog starts is `claude auth login --claudeai`, which opens the brows
 on a localhost port of its own (measured on 2.1.296); the address it prints, which redirects to a page that shows
 a code, and the field that takes the code are for a browser that cannot reach this machine.
 
-Shared through links (`internal/claudeprofile/profile.go`, `internal/profilestore/layout.go`): `settings.json`,
-`CLAUDE.md`, `agents/`, `commands/`, `skills/`, `hooks/` and the marketplace clones (`plugins/marketplaces`) point
-at Personal's, and Claude Code writes through a link to its target (measured on 2.1.296). The plugin set itself
+Shared through links (`internal/claudeprofile/profile.go`, `internal/profilestore/layout.go`): `CLAUDE.md`,
+`agents/`, `commands/`, `skills/`, `hooks/` and the marketplace clones (`plugins/marketplaces`) point at
+Personal's, and Claude Code writes through a link to its target (measured on 2.1.296). The plugin set itself
 (`installed_plugins.json`, `known_marketplaces.json`) is per profile, because an organization account may forbid
 plugins Personal runs. An entry Personal gains after a profile was made is linked at that profile's next spawn. On
-Windows the directories are junctions, but a file link needs Developer Mode: without it `settings.json` and
-`CLAUDE.md` are copies, named on the profile (`copied`), and they drift from Personal's on the first edit to
-either. A hard link was measured and drifts just the same, Claude Code replacing the file on write. The global
+Windows the directories are junctions, but a file link needs Developer Mode: without it `CLAUDE.md` is a copy,
+named on the profile (`copied`), and it drifts from Personal's on the first edit to either.
+
+`settings.json` is the profile's own file, rebuilt from Personal's before every spawn
+(`internal/claudeprofile/settings.go`), because `/model` and `/effort` write an account's defaults there and
+`claude plugin marketplace add` and `claude plugin install` its plugin set (`model`, `effortLevel`,
+`modelSettings`, `extraKnownMarketplaces`, `enabledPlugins`; measured on 2.1.325). Those keys are the profile's;
+every other key is Personal's, so a change to it made inside a profile is gone at the next spawn. A profile made
+when the file was a link becomes its own at its next spawn, keeping the values it ran on. A hard link was measured and drifts just the same, Claude Code replacing the file on write. The global
 `.claude.json` is a copy everywhere, minus the account and its caches, since Claude Code replaces it through a
 rename that would turn a link into a file anyway.
 

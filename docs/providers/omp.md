@@ -66,10 +66,13 @@ under `~/.omp/profiles/<slug>/` (`agent/` with `agent.db`, `sessions/`, `blobs/`
 `logs/`, `run/` and `plugins/`), which is omp's location and not lich's: lich's own part is a name in a sidecar
 under its config dir. A profile made with `omp --profile x` outside lich is not listed, but its slug is taken, and
 `default` is reserved because omp reads `OMP_PROFILE=default` as the default profile. A profile links Personal's
-`config.yml`, `models.yml`, `mcp.json`, `ssh.json`, `AGENTS.md`, `SYSTEM.md`, `RULES.md`, `PERSONALITY.md` and the
+`models.yml`, `mcp.json`, `ssh.json`, `AGENTS.md`, `SYSTEM.md`, `RULES.md`, `PERSONALITY.md` and the
 `agents`, `commands`, `extensions`, `hooks`, `modules`, `prompts`, `rules`, `skills`, `themes` and `tools`
-directories (measured on 18.8.9: a linked `skills/` resolves in the profile and an unlinked profile sees none, and
-omp writes `config.yml` through the link and leaves it in place), so the lich extension and MCP registration
+directories (measured on 18.8.9: a linked `skills/` resolves in the profile and an unlinked profile sees none).
+Its `config.yml` (or `config.yaml`, whichever omp finds first) is a file of its own, rebuilt from Personal's
+before every spawn (`config.go`): omp writes through a link (measured), and `/model` saves the account's
+default there, as `modelRoles` with its thinking level (`default: anthropic/claude-haiku-5-5:high`, measured)
+and `defaultThinkingLevel` (read in the source), the two top-level keys the profile keeps as its own. So the lich extension and MCP registration
 written into Personal's agent directory are the profile's too, and oh-my-pi needs no plugin pass per profile. Not
 linked: `agent.db` (the logins), `sessions/`, `blobs/`, omp's databases (`models.db` is about 7 MB and is built
 again by each profile) and the plugins `omp plugin install` puts beside `agent/`, so an omp plugin is per profile,

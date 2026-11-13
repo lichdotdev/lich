@@ -58,10 +58,14 @@ func TestCreateLaysTheProfileOutUnderOmpsOwnProfiles(t *testing.T) {
 	if want := filepath.Join(home, ".omp", "profiles", "work", "agent"); p.Dir != want {
 		t.Fatalf("Dir = %s, want %s", p.Dir, want)
 	}
-	for _, name := range []string{"config.yml", "mcp.json", "extensions"} {
+	for _, name := range []string{"mcp.json", "extensions"} {
 		if !profilestore.IsLink(filepath.Join(p.Dir, name)) {
 			t.Errorf("%s is not linked to Personal's", name)
 		}
+	}
+	config := filepath.Join(p.Dir, "config.yml")
+	if data, _ := os.ReadFile(config); profilestore.IsLink(config) || string(data) != "theme: {dark: nord}\n" {
+		t.Errorf("config.yml = %q, want a file of the profile's own with Personal's settings", data)
 	}
 	for _, name := range []string{"agent.db", "sessions"} {
 		if _, err := os.Lstat(filepath.Join(p.Dir, name)); err == nil {

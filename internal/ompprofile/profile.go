@@ -44,13 +44,14 @@ const agentSubdir = "agent"
 
 // store is what makes oh-my-pi's profiles oh-my-pi's. The shared entries are
 // the user-level content omp reads from the agent directory (measured on
-// 18.8.9: config.yml, models.yml, mcp.json, the markdown prompt files and the
-// directories it discovers skills, rules, commands, prompts, extensions, hooks,
-// tools, themes and modules from), linked so an edit made under one login is
-// there under all of them. omp writes config.yml through a link and leaves the
-// link in place (measured). Not shared: agent.db with the logins, sessions/,
-// blobs/, its caches, and the plugins directory beside agent/, which is the
-// profile's own set of `omp plugin install`.
+// 18.8.9: models.yml, mcp.json, the markdown prompt files and the directories
+// it discovers skills, rules, commands, prompts, extensions, hooks, tools,
+// themes and modules from), linked so an edit made under one login is there
+// under all of them. config.yml is not linked but rebuilt from Personal's
+// (syncConfig), since it holds an account's own default models. Not shared:
+// agent.db with the logins, sessions/, blobs/, its caches, and the plugins
+// directory beside agent/, which is the profile's own set of `omp plugin
+// install`.
 var store = profilestore.Spec{
 	Provider:    "omp",
 	Label:       "oh-my-pi",
@@ -58,7 +59,7 @@ var store = profilestore.Spec{
 	PersonalDir: PersonalDir,
 	DirOf:       dirOf,
 	SharedFiles: []string{
-		"config.yml", "config.yaml", "models.yml", "mcp.json", ".mcp.json", "ssh.json",
+		"models.yml", "mcp.json", ".mcp.json", "ssh.json",
 		"AGENTS.md", "SYSTEM.md", "SYSTEM_TEMPLATE.md", "RULES.md", "PERSONALITY.md",
 	},
 	Shared: []string{
@@ -70,6 +71,7 @@ var store = profilestore.Spec{
 	// "default" is omp's name for the default profile: OMP_PROFILE=default
 	// selects ~/.omp/agent, which would put a login meant for a profile there.
 	Reserved: []string{"default"},
+	Sync:     syncConfig,
 }
 
 // Root is where lich keeps its oh-my-pi profile sidecars. The profiles'
