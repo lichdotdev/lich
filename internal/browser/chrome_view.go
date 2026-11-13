@@ -425,9 +425,13 @@ func (p *chromePage) Mouse(ctx context.Context, m api.BrowserMouseOptions) error
 		ev = ev.WithDeltaX(m.DX).WithDeltaY(m.DY)
 	case input.MousePressed, input.MouseReleased:
 		ev = ev.WithButton(input.MouseButton(m.Button)).WithClickCount(int64(max(m.Clicks, 1)))
+	case input.MouseMoved:
+		// Blink extends a text selection only on a move that names the left
+		// button; buttons alone reaches the page's listeners and selects nothing.
+		ev = ev.WithButton(input.MouseButton(m.Button))
 	}
 	if kind != input.MouseReleased {
-		// buttons is what a drag reads: which button is still held as it moves.
+		// buttons is what a page's own drag reads: which button is still held as it moves.
 		ev = ev.WithButtons(mouseButtons[m.Button])
 	}
 	return p.runShown(ctx, ev)
