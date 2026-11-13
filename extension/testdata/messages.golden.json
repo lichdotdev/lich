@@ -17,6 +17,15 @@
   },
   {
     "v": 1,
+    "kind": "context",
+    "data": {
+      "session": "session",
+      "project": "project",
+      "path": "path"
+    }
+  },
+  {
+    "v": 1,
     "kind": "event",
     "data": {
       "handler": "handler",
@@ -38,6 +47,15 @@
     "data": {
       "surface": "surface",
       "key": "key"
+    }
+  },
+  {
+    "v": 1,
+    "kind": "footer",
+    "data": {
+      "surface": "surface",
+      "path": "path",
+      "text": "text"
     }
   },
   {
@@ -67,6 +85,7 @@
     "kind": "render",
     "data": {
       "surface": "surface",
+      "path": "path",
       "root": {
         "type": "separator",
         "props": {}

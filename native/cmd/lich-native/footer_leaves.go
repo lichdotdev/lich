@@ -132,7 +132,7 @@ func toneColor(th *ui.Theme, t usageTone) color.NRGBA {
 
 // glyphText is a size-3.5 glyph then text, gap-1.5: the inside of most
 // readouts and wide buttons.
-func glyphText(ic *icons.Icon, text string) footerContent {
+func glyphText(ic icons.Glyph, text string) footerContent {
 	return func(gtx C, th *ui.Theme, fg color.NRGBA) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Rigid(func(gtx C) D { return ic.Layout(gtx, footerGlyph, fg) }),
@@ -144,7 +144,7 @@ func glyphText(ic *icons.Icon, text string) footerContent {
 
 // branchContent is glyphText for a name that can outgrow the control: it is cut
 // with an ellipsis.
-func branchContent(ic *icons.Icon, text string) footerContent {
+func branchContent(ic icons.Glyph, text string) footerContent {
 	return func(gtx C, th *ui.Theme, fg color.NRGBA) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Rigid(func(gtx C) D { return ic.Layout(gtx, footerGlyph, fg) }),
@@ -187,7 +187,7 @@ type footerWidgets struct {
 }
 
 // iconOnly is a square button's size-4 glyph.
-func iconOnly(ic *icons.Icon) footerContent {
+func iconOnly(ic icons.Glyph) footerContent {
 	return func(gtx C, th *ui.Theme, fg color.NRGBA) D { return ic.Layout(gtx, footerIconGlyph, fg) }
 }
 

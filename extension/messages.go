@@ -10,19 +10,45 @@ var (
 	OpenExternal = kind[OpenExternalData]("openExternal")
 	Clipboard    = kind[ClipboardData]("clipboard")
 	Focus        = kind[FocusData]("focus")
+	Footer       = kind[FooterData]("footer")
 
 	FireEvent     = kind[EventData]("event")
 	SurfaceOpened = kind[SurfaceData]("surface.opened")
 	SurfaceClosed = kind[SurfaceData]("surface.closed")
 	Language      = kind[LanguageData]("language")
+	Context       = kind[ContextData]("context")
 )
 
 // RenderData replaces what a surface shows. Shortcuts are live while the
-// surface is on screen.
+// surface is on screen. Path, for a dock or panel surface, is the checkout the
+// tree was drawn for, as ContextData named it: the window draws it only while
+// that checkout is the active one, and a placeholder until the tree for the
+// active one arrives. An empty Path is drawn for every checkout.
 type RenderData struct {
 	Surface   string     `json:"surface"`
+	Path      string     `json:"path,omitempty"`
 	Root      Node       `json:"root"`
 	Shortcuts []Shortcut `json:"shortcuts,omitempty"`
+}
+
+// FooterData sets the text of a dock or panel surface's footer item for the
+// checkout at Path, a path ContextData named: the window shows it while that
+// checkout is the active one. An empty Path sets it for every checkout without
+// a text of its own, and an empty Text clears it, leaving the item its icon.
+type FooterData struct {
+	Surface string `json:"surface"`
+	Path    string `json:"path,omitempty"`
+	Text    string `json:"text,omitempty"`
+}
+
+// ContextData is what the window has active, sent to an extension with a dock
+// or panel surface when it changes, when it starts, and when a window
+// attaches. Path is the active session's checkout, or the project's own
+// folder with no session, and is what FooterData and RenderData key on.
+type ContextData struct {
+	Session string `json:"session,omitempty"`
+	Project string `json:"project,omitempty"`
+	Path    string `json:"path,omitempty"`
 }
 
 // Shortcut calls Handler when Keys is pressed, spelled as "r", "shift+g" or

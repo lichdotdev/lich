@@ -304,7 +304,7 @@ func (s *Service) find(id string) *installed {
 func (x *installed) view() api.Extension {
 	surfaces := make([]api.ExtensionSurface, 0, len(x.manifest.Surfaces))
 	for _, surface := range x.manifest.Surfaces {
-		surfaces = append(surfaces, api.ExtensionSurface{ID: surface.ID, Title: surface.Title, Icon: string(surface.Icon)})
+		surfaces = append(surfaces, api.ExtensionSurface{ID: surface.ID, Title: surface.Title, Icon: string(surface.Icon), Place: string(surface.Place)})
 	}
 	return api.Extension{
 		ID: x.id, Name: cmp.Or(x.manifest.Name, x.id), Version: x.manifest.Version,

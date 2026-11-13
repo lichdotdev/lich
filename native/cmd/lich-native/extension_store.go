@@ -29,6 +29,13 @@ type extensionStore struct {
 	renders map[extensionKey]extension.RenderData
 	// images is each surface's own icon, decoded once per status.
 	images map[extensionKey]*icons.Bitmap
+	// footers is each placed surface's footer text by checkout, kept by
+	// extension-message until the extension fails or goes.
+	footers map[extensionKey]map[string]string
+	// paths is every checkout the extensions were told was active: a footer
+	// text for another is dropped, which bounds what one can make the window
+	// hold.
+	paths map[string]bool
 }
 
 func (s *extensionStore) load(ctx context.Context, client *backend.Client) error {
@@ -51,6 +58,9 @@ func (s *extensionStore) setStatus(e backend.Extension) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.setImages(e)
+	if e.Status == api.ExtensionFailed || e.Status == api.ExtensionInvalid {
+		s.dropFooters(e.ID)
+	}
 	if i := slices.IndexFunc(s.list, func(x backend.Extension) bool { return x.ID == e.ID }); i >= 0 {
 		s.list[i] = e
 		return
@@ -77,7 +87,66 @@ func (s *extensionStore) remove(id string) {
 			delete(s.renders, k)
 		}
 	}
+	s.dropFooters(id)
 	s.setImages(backend.Extension{ID: id})
+}
+
+// dropFooters forgets extension id's footer texts. Called with mu held.
+func (s *extensionStore) dropFooters(id string) {
+	maps.DeleteFunc(s.footers, func(k extensionKey, _ map[string]string) bool { return k.ext == id })
+}
+
+// sawPath records a checkout the extensions were told was active.
+func (s *extensionStore) sawPath(path string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.paths == nil {
+		s.paths = map[string]bool{}
+	}
+	s.paths[path] = true
+}
+
+// setFooter keeps a footer text of extension id, for every checkout or for
+// one it was told was active; an empty text clears it.
+func (s *extensionStore) setFooter(id string, f extension.FooterData) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if f.Path != "" && !s.paths[f.Path] {
+		return
+	}
+	k := extensionKey{id, f.Surface}
+	if f.Text == "" {
+		delete(s.footers[k], f.Path)
+		return
+	}
+	if s.footers == nil {
+		s.footers = map[extensionKey]map[string]string{}
+	}
+	if s.footers[k] == nil {
+		s.footers[k] = map[string]string{}
+	}
+	s.footers[k][f.Path] = f.Text
+}
+
+// footer is surface k's text for the checkout at path, else its text for
+// every checkout.
+func (s *extensionStore) footer(k extensionKey, path string) string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if text, ok := s.footers[k][path]; ok {
+		return text
+	}
+	return s.footers[k][""]
+}
+
+// hasPlaced is whether extension id has a surface in the dock or a panel.
+func (s *extensionStore) hasPlaced(id string) bool {
+	e, ok := s.byID(id)
+	return ok && hasPlaced(e)
+}
+
+func hasPlaced(e backend.Extension) bool {
+	return slices.ContainsFunc(e.Surfaces, func(s backend.ExtensionSurface) bool { return s.Place != string(extension.PlaceScreen) })
 }
 
 // setImages replaces e's surface images with the icons it sends. One that
@@ -137,8 +206,8 @@ func (s *extensionStore) render(k extensionKey) (extension.RenderData, bool) {
 }
 
 // extensionEvent applies extension-status, extension-update,
-// extension-removed and extension-message. A render lands in the store; every other message is the
-// window's to act on.
+// extension-removed and extension-message. A render and a footer text land in
+// the store; every other message is the window's to act on.
 func (m *model) extensionEvent(ev backend.Event) {
 	switch ev.Name {
 	case api.ExtensionStatusEvent.Name:
@@ -176,6 +245,10 @@ func (m *model) extensionEvent(ev backend.Event) {
 	}
 	if r, ok := msg.Data.(extension.RenderData); ok {
 		m.extensions.setRender(in.ExtensionID, r)
+		return
+	}
+	if f, ok := msg.Data.(extension.FooterData); ok {
+		m.extensions.setFooter(in.ExtensionID, f)
 		return
 	}
 	if m.extensionMessage != nil {

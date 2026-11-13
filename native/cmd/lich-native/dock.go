@@ -32,6 +32,7 @@ import (
 	"strings"
 
 	"gioui.org/layout"
+	"gioui.org/op"
 	"gioui.org/op/clip"
 	"gioui.org/unit"
 
@@ -70,7 +71,16 @@ const (
 	dockCode
 	dockReview
 	dockArtifacts
+	// dockExtension is an extension's dock surface, the one dock.ext names.
+	dockExtension
 )
+
+// dockBuiltinTabs is how many tabs lich's own are, before the extensions'.
+const dockBuiltinTabs = int(dockArtifacts)
+
+// dockHeaderSpare is what the header needs past its tabs and actions: its two
+// insets and two gaps, and a gap's room between the tabs and the actions.
+var dockHeaderSpare = ui.Space(8)
 
 // toggled returns the tab after asking for to: asking for the tab on screen
 // closes the dock.
@@ -94,6 +104,8 @@ type dockInput struct {
 	isGit     bool
 	light     bool
 	code      godemirror.Theme
+	// placed is the extensions' dock surfaces, a tab each after lich's.
+	placed []placedSurface
 }
 
 type reviewTab interface {
@@ -125,10 +137,38 @@ type dock struct {
 	code       *codeTab
 	review     reviewTab
 	artifacts  *artifactsTab
+	// ext is the extension surface of the dockExtension tab, drawn by
+	// extensions; extAct is what its failed state asked for this frame.
+	ext        extensionKey
+	extensions *extensionScreen
+	extAct     extensionAction
+	// minRem is the width the header's tabs and actions need, measured on the
+	// last frame: the dock is never narrower, so every tab keeps its name.
+	minRem float64
 }
 
-func newDock(code *codeTab, review reviewTab, artifacts *artifactsTab) *dock {
-	return &dock{tour: new(driver.Tour), widthRem: dockDefaultRem, resize: ui.ResizeHandle{Edge: ui.PanelEdgeLeft}, code: code, review: review, artifacts: artifacts}
+func newDock(code *codeTab, review reviewTab, artifacts *artifactsTab, extensions *extensionScreen) *dock {
+	return &dock{tour: new(driver.Tour), widthRem: dockDefaultRem, minRem: dockMinRem, resize: ui.ResizeHandle{Edge: ui.PanelEdgeLeft}, code: code, review: review, artifacts: artifacts, extensions: extensions}
+}
+
+// showsExtension is whether the dock is open on surface k.
+func (d *dock) showsExtension(k extensionKey) bool { return d.tab == dockExtension && d.ext == k }
+
+// toggleExtension opens the dock on surface k, and closes it while it shows k.
+func (d *dock) toggleExtension(k extensionKey) {
+	if d.showsExtension(k) {
+		d.tab = dockClosed
+		return
+	}
+	d.tab, d.ext = dockExtension, k
+}
+
+// takeExtensionAction is what the extension tab's failed state asked for,
+// once.
+func (d *dock) takeExtensionAction() extensionAction {
+	act := d.extAct
+	d.extAct = extensionAction{}
+	return act
 }
 
 // holdsKeys reports whether a field of the dock has focus. The terminal asks
@@ -142,13 +182,15 @@ func (d *dock) holdsKeys(gtx C) bool {
 		return d.review.holdsKeys(gtx)
 	case dockArtifacts:
 		return d.artifacts.holdsKeys()
+	case dockExtension:
+		return d.extensions.holdsKeys(gtx, d.ext)
 	}
 	return false
 }
 
 // width is the dock's width beside the terminal, open or not.
 func (d *dock) width(gtx C) int {
-	return gtx.Dp(unit.Dp(d.widthRem * remDp))
+	return gtx.Dp(unit.Dp(max(d.widthRem, d.minRem) * remDp))
 }
 
 // layout draws the dock in gtx.Constraints.Max: its column beside the
@@ -161,8 +203,13 @@ func (d *dock) layout(gtx C, th *ui.Theme, root *ui.Root, in dockInput) (saveWid
 	if d.tab != dockReview {
 		d.review.hidden()
 	}
+	if d.tab == dockExtension {
+		if _, ok := findPlaced(in.placed, d.ext); !ok {
+			d.tab = dockClosed
+		}
+	}
 	if !d.fullscreen {
-		w, released := d.resize.Update(gtx, unit.Dp(d.widthRem*remDp), dockMinRem*remDp, dockMaxRem*remDp)
+		w, released := d.resize.Update(gtx, unit.Dp(max(d.widthRem, d.minRem)*remDp), unit.Dp(d.minRem*remDp), dockMaxRem*remDp)
 		d.widthRem, saveWidth = float64(w)/remDp, released
 	}
 	size := gtx.Constraints.Max
@@ -194,6 +241,9 @@ func (d *dock) body(gtx C, th *ui.Theme, root *ui.Root, in dockInput) error {
 	case dockArtifacts:
 		d.artifacts.layout(gtx, th, root, in.sessionID)
 		return nil
+	case dockExtension:
+		d.extAct = d.extensions.placed(gtx, th, placeDock, d.ext)
+		return nil
 	}
 	return d.code.layout(gtx, th, root, in)
 }
@@ -201,7 +251,7 @@ func (d *dock) body(gtx C, th *ui.Theme, root *ui.Root, in dockInput) error {
 // header is the h-10 strip: the ghost tabs, then at its right the Review
 // tab's actions, full screen and close.
 func (d *dock) header(gtx C, th *ui.Theme, root *ui.Root, in dockInput) D {
-	d.tabs.Selected = int(d.tab) - 1
+	d.tabs.Selected = d.selectedTab(in.placed)
 	changed := in.isGit && in.git.Files > 0
 	review := ui.TabsTrigger{Text: i18n.T("dock.rightDock.tabReview"), Icon: icDockReview}
 	if changed {
@@ -211,19 +261,24 @@ func (d *dock) header(gtx C, th *ui.Theme, root *ui.Root, in dockInput) D {
 	if n := d.artifacts.count(in.sessionID); n > 0 {
 		artifacts.Trailing = th.Text(ui.TextXS, strconv.Itoa(n)).Mono().Muted().Layout
 	}
-	tabs := th.Tabs(&d.tabs, ui.TabsTrigger{Text: i18n.T("dock.rightDock.tabCode"), Icon: icDockCode}, review, artifacts)
+	triggers := []ui.TabsTrigger{{Text: i18n.T("dock.rightDock.tabCode"), Icon: icDockCode}, review, artifacts}
+	for _, p := range in.placed {
+		triggers = append(triggers, ui.TabsTrigger{Text: p.title, Icon: p.glyph})
+	}
+	tabs := th.Tabs(&d.tabs, triggers...)
 	tabs.Variant = ui.TabsVariantGhost
+	actions := 0
 	fullIcon, fullLabel := icDockMaximize, i18n.T("dock.rightDock.fullScreen")
 	if d.fullscreen {
 		fullIcon, fullLabel = icDockMinimize, i18n.T("dock.rightDock.exitFullScreen")
 	}
 	gtx.Constraints = layout.Exact(image.Pt(gtx.Constraints.Max.X, gtx.Dp(dockHeaderHeight)))
-	return layout.Inset{Left: ui.Space(2), Right: ui.Space(2)}.Layout(gtx, func(gtx C) D {
+	dims := layout.Inset{Left: ui.Space(2), Right: ui.Space(2)}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
 				dims := tabs.Layout(gtx)
 				if d.tabs.Changed() {
-					d.tab = dockTab(d.tabs.Selected + 1)
+					d.pickTab(d.tabs.Selected, in.placed)
 				}
 				return dims
 			}),
@@ -232,14 +287,61 @@ func (d *dock) header(gtx C, th *ui.Theme, root *ui.Root, in dockInput) D {
 				if d.tab != dockReview || !changed {
 					return D{}
 				}
-				return d.review.layoutActions(gtx, th)
+				dims := d.review.layoutActions(gtx, th)
+				actions += dims.Size.X
+				return dims
 			}),
 			ui.Gap(1),
-			layout.Rigid(func(gtx C) D { return th.IconAction(root, &d.full, fullIcon, fullLabel, false).Layout(gtx) }),
+			layout.Rigid(func(gtx C) D {
+				dims := th.IconAction(root, &d.full, fullIcon, fullLabel, false).Layout(gtx)
+				actions += dims.Size.X
+				return dims
+			}),
 			ui.Gap(1),
-			layout.Rigid(func(gtx C) D { return d.closeButton(gtx, th, root) }),
+			layout.Rigid(func(gtx C) D {
+				dims := d.closeButton(gtx, th, root)
+				actions += dims.Size.X
+				return dims
+			}),
 		)
 	})
+	d.fitTabs(gtx, tabs.NaturalWidth(gtx)+actions+gtx.Dp(dockHeaderSpare))
+	return dims
+}
+
+// fitTabs keeps the dock at least as wide as the header needs, px wide, and
+// redraws when that changes.
+func (d *dock) fitTabs(gtx C, px int) {
+	need := max(dockMinRem, float64(gtx.Metric.PxToDp(px))/remDp)
+	if need != d.minRem {
+		d.minRem = need
+		gtx.Execute(op.InvalidateCmd{})
+	}
+}
+
+// selectedTab is the index of the tab on screen among lich's and then the
+// extensions'.
+func (d *dock) selectedTab(placed []placedSurface) int {
+	if d.tab != dockExtension {
+		return int(d.tab) - 1
+	}
+	for i, p := range placed {
+		if p.key == d.ext {
+			return dockBuiltinTabs + i
+		}
+	}
+	return -1
+}
+
+// pickTab opens the tab at index, as selectedTab counts them.
+func (d *dock) pickTab(index int, placed []placedSurface) {
+	if index < dockBuiltinTabs {
+		d.tab = dockTab(index + 1)
+		return
+	}
+	if i := index - dockBuiltinTabs; i < len(placed) {
+		d.tab, d.ext = dockExtension, placed[i].key
+	}
 }
 
 // act runs the header's clicks before the stage row reads whether the dock

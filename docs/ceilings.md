@@ -1265,8 +1265,20 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   lines its stdin queue holds, is dropped and logged.
 - **A message sent while no window is attached is dropped** (`internal/events`): an extension's lines ride
   `/events` like every event, with no queue and no replay, and the extension is not told. A window that attaches
-  later sees nothing until the extension renders again. One slow window stalls that extension's stdout rather than
+  later sees nothing until the extension renders again, and no footer text until the extension answers the
+  `context` that window sends it. One slow window stalls that extension's stdout rather than
   queueing, and a write stalled past 5 seconds drops the `/events` socket for every session.
+- **A dock or panel surface tells its extension the active session, with no permission**
+  (`native/cmd/lich-native/extension_places.go`, `activeContext`): an extension with one hears `context`, the
+  session's id, its project's and its checkout's path, on every switch of the active session, whether the surface
+  is open or not, though it may list no `sessions:read`. That is what the surface is drawn for.
+- **A dock or panel surface's footer texts and trees live in the window, by checkout**
+  (`native/cmd/lich-native/extension_store.go`): a footer text is kept only for a checkout `context` named, and
+  goes when the extension fails, is removed, or the window restarts. A tree drawn for another checkout than the
+  active one shows a placeholder, and an extension that never draws one for the new checkout leaves it there.
+- **The dock is never narrower than its tabs** (`native/cmd/lich-native/dock.go`, `fitTabs`): each extension with a
+  dock surface adds a tab with its icon and title, so with several the dock cannot be dragged narrow and the
+  terminal beside it loses the columns.
 - **`render` is coalesced, at 30 a second per surface** (`internal/extensions/throttle.go`): the first goes out at
   once, and while the interval has not passed only the newest is kept and sent when it ends, so a loop of renders
   costs the window a frame rate and the newest tree always arrives. The older ones in between never reach the

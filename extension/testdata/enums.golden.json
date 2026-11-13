@@ -55,6 +55,11 @@
     "left",
     "right"
   ],
+  "place": [
+    "",
+    "dock",
+    "panel"
+  ],
   "side": [
     "top",
     "bottom",

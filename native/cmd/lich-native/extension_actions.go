@@ -4,6 +4,7 @@ import (
 	"flag"
 	"strings"
 
+	"github.com/lichdotdev/lich/extension"
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
@@ -15,6 +16,21 @@ var flagExtension = flag.String("extension", "", "open this extension surface at
 func (u *window) extensionShot() {
 	if id, surface, ok := strings.Cut(*flagExtension, "/"); ok {
 		u.toggleExtension(extensionKey{id, surface})
+	}
+}
+
+// openTabSurface opens the surface -tab names as ext:<extension>/<surface>,
+// in the dock or the panel its manifest puts it in.
+func (u *window) openTabSurface() {
+	k, ok := extensionItemKey(*flagTab)
+	if !ok {
+		return
+	}
+	switch p, _ := findPlaced(placedSurfaces(u.model.extensions.all(), nil), k); p.place {
+	case extension.PlaceDock:
+		u.dock.toggleExtension(k)
+	case extension.PlacePanel:
+		u.extPanel.toggle(k)
 	}
 }
 
