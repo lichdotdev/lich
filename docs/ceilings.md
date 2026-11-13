@@ -1587,6 +1587,13 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   fixed one, so an absolutely positioned element that escapes such an ancestor is cut anyway, and one a
   sibling covers keeps its pin. Notes not sent yet
   live in the window: closing it, or the browser, loses them.
+- **A sketch on the page is a picture of what the pane showed, and only an agent that reads images sees it**
+  (`native/cmd/lich-native/browser_sketch.go`): the strokes are in the pane's coordinates, not the page's, so
+  the wheel is held while there are any, a navigation drops them, and a pane resized under them leaves them
+  where they were while the page reflows. The picture is the last frame the window received with the strokes
+  drawn on it, so a page that animates is caught wherever it was when Send was pressed. It reaches every
+  provider the same way, as a PNG's path in the message; what the agent makes of a path is its harness's, and
+  one whose model reads no images gets the notes and a file it cannot look at. One sketch a message.
 
 - **On macOS, a JavaScript dialog a page opens before its first paint leaves the pane black behind the dialog's
   card** (`internal/browser/chrome_view.go`): headless Chrome there paints a page some time after its load, and

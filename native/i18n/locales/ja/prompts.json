@@ -32,6 +32,8 @@
     },
     "item": "{index}. {url} の {label}",
     "note": "メモ: {note}",
+    "sketch": "ページ上にスケッチも描かれています。スケッチ入りのスクリーンショット: {path}",
+    "sketchOnly": "[lich] ブラウザタブのページ ({url}) にスケッチが描かれました。スケッチ入りのスクリーンショット: {path}",
     "selectors": "上の各セレクタは browser_click と browser_type の selector としてそのまま使えます。"
   },
   "schedule": {

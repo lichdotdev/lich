@@ -38,7 +38,10 @@
     "keepOpen": "Manter aberto",
     "closeIdle": "Fechar",
     "showFolder": "Abrir pasta",
-    "pick": "Deixar notas na página",
+    "toolSelect": "Selecionar",
+    "toolDraw": "Desenhar",
+    "eraser": "Borracha",
+    "foldNotes": "Recolher",
     "pickHint": "Clique num elemento para deixar uma nota",
     "zoom": "Zoom da página",
     "zoomReset": "Voltar a 100%",
@@ -52,6 +55,12 @@
       "other": "{count} notas"
     },
     "notesFor": "para {label}",
+    "notesAndSketch": {
+      "one": "{count} nota e um desenho",
+      "other": "{count} notas e um desenho"
+    },
+    "sketch": "Um desenho",
+    "sketchRow": "Desenho",
     "clearNotes": "Limpar",
     "sendNotes": "Enviar",
     "noNote": "Sem nota",

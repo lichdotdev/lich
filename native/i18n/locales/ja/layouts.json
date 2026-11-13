@@ -36,7 +36,10 @@
     "keepOpen": "開いたままにする",
     "closeIdle": "閉じる",
     "showFolder": "フォルダーを開く",
-    "pick": "ページにメモを残す",
+    "toolSelect": "選択",
+    "toolDraw": "描画",
+    "eraser": "消しゴム",
+    "foldNotes": "折りたたむ",
     "pickHint": "要素をクリックしてメモを残す",
     "zoom": "ページのズーム",
     "zoomReset": "100% に戻す",
@@ -49,6 +52,11 @@
       "other": "メモ {count} 件"
     },
     "notesFor": "{label} へ",
+    "notesAndSketch": {
+      "other": "メモ {count} 件とスケッチ"
+    },
+    "sketch": "スケッチ",
+    "sketchRow": "スケッチ",
     "clearNotes": "クリア",
     "sendNotes": "送信",
     "noNote": "メモなし",

@@ -30,6 +30,8 @@
     },
     "item": "{index}. {url}의 {label}",
     "note": "메모: {note}",
+    "sketch": "페이지 위에 스케치도 그려졌습니다. 스케치가 들어간 스크린샷: {path}",
+    "sketchOnly": "[lich] 브라우저 탭의 페이지({url}) 위에 스케치가 그려졌습니다. 스케치가 들어간 스크린샷: {path}",
     "selectors": "위의 각 셀렉터는 browser_click과 browser_type의 selector로 그대로 쓸 수 있습니다."
   },
   "schedule": {

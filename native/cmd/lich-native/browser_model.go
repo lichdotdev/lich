@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"image"
+	"image/draw"
 	"image/png"
 	"log"
 	"slices"
@@ -25,7 +26,9 @@ import (
 
 // browserFrame is a tab's last screencast frame, ready to draw.
 type browserFrame struct {
-	img  paint.ImageOp
+	img paint.ImageOp
+	// src is the pixels img draws, for the picture a sketch sends.
+	src  *image.RGBA
 	size image.Point
 	// seq orders the frames of a page: decoders finish out of order, and the
 	// highest of a page's tabs is the one fronted last.
@@ -219,7 +222,14 @@ func (m *model) applyBrowserFrame(owner string, ev backend.Event, seq uint64) er
 	if err != nil {
 		return fmt.Errorf("%s: %w", ev.Name, err)
 	}
-	frame := browserFrame{img: paint.NewImageOp(img), size: img.Bounds().Size(), seq: seq}
+	// NewImageOp copies anything but an RGBA: converting here instead keeps
+	// one copy of the pixels for the pane and for src.
+	rgba, ok := img.(*image.RGBA)
+	if !ok {
+		rgba = image.NewRGBA(img.Bounds())
+		draw.Draw(rgba, rgba.Bounds(), img, img.Bounds().Min, draw.Src)
+	}
+	frame := browserFrame{img: paint.NewImageOp(rgba), src: rgba, size: rgba.Bounds().Size(), seq: seq}
 	m.mu.Lock()
 	m.storeTabFrameLocked(owner, f.Tab, frame)
 	m.mu.Unlock()

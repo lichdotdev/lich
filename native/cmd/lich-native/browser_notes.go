@@ -8,6 +8,7 @@ import (
 	"slices"
 	"time"
 
+	"gioui.org/f32"
 	"gioui.org/io/key"
 	"gioui.org/io/pointer"
 	"gioui.org/layout"
@@ -21,14 +22,15 @@ import (
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
-// Notes on the page: with the pane's pick on, the pointer stops reaching the
+// Notes on the page: with the bar's Select on, the pointer stops reaching the
 // page; the element under it is outlined and a click opens a note on it.
-// Notes collect in a tray under the page, each element pinned where it now
-// stands, and reach the session's agent as one message. The page only reports
+// Notes collect in a tray over the page's bottom, each element pinned where it
+// now stands, and reach the session's agent as one message, with the sketch
+// (browser_sketch.go) when there is one. The page only reports
 // what is where: the outline, the pins and the note are the pane's.
 
 var (
-	icBrowserPick = icons.Lucide("crosshair")
+	icBrowserPick = icons.Lucide("square-dashed-mouse-pointer")
 	icNoteRemove  = icons.Lucide("x")
 )
 
@@ -61,7 +63,28 @@ type browserNote struct {
 // browserNotes is one pane's pick and its notes.
 type browserNotes struct {
 	picking bool
-	pick    ui.IconActionState
+	// drawing is the pencil, on instead of the pick; stroking is a drag of it
+	// under way. strokes are the sketch, drawn on the page at sketchURL.
+	// erasing is the pencil turned eraser: a press or a drag takes strokes
+	// off instead of drawing one.
+	drawing, stroking, erasing bool
+	strokes                    []sketchStroke
+	sketchURL                  string
+	// sketchPast is the sketch before each stroke drawn and each erasing, for
+	// Ctrl+Z.
+	sketchPast [][]sketchStroke
+	// The eraser's drag (browser_sketch_eraser.go): where the pointer is,
+	// whether it is over the page, and the trail it leaves.
+	rubAt    f32.Point
+	rubOver  bool
+	rubTrail []rubPoint
+	// The bar's widgets (browser_notes_dock.go). dock is its tag for the
+	// pointer, and docked how tall it stood last frame, off the page's bottom.
+	selectTool, drawTool, unfold, sketchGone widget.Clickable
+	fold, eraser                             ui.IconActionState
+	inks                                     []widget.Clickable
+	dock                                     int
+	docked                                   int
 	// hover is the element under the pointer while picking; its outline
 	// glides from hoverFrom, where it stood at hoverAt.
 	hover     api.BrowserElement
@@ -100,9 +123,11 @@ type browserNotes struct {
 	followUntil time.Time
 }
 
-// sentNotes is what a send took: the notes and the closing note.
+// sentNotes is what a send took: the notes, how many strokes of the sketch,
+// and the closing note.
 type sentNotes struct {
 	notes   []*browserNote
+	strokes int
 	closing string
 }
 
@@ -122,7 +147,7 @@ type locatedNotes struct {
 }
 
 func newBrowserNotes() browserNotes {
-	n := browserNotes{found: make(chan foundElement, 4), located: make(chan locatedNotes, 1), sent: make(chan sentNotes, 4), failed: make(chan string, 1)}
+	n := browserNotes{found: make(chan foundElement, 4), located: make(chan locatedNotes, 1), sent: make(chan sentNotes, 4), failed: make(chan string, 1), inks: make([]widget.Clickable, len(cardColorNames))}
 	n.rows.Axis = layout.Vertical
 	return n
 }
@@ -148,7 +173,9 @@ func offer[T any](ch chan T, v T) {
 func (n *browserNotes) setPicking(on bool) {
 	n.picking = on
 	n.hover = api.BrowserElement{}
-	if !on {
+	if on {
+		n.drawing, n.stroking = false, false
+	} else {
 		n.open = false
 	}
 }
@@ -304,6 +331,7 @@ func (u *window) takeFound(gtx C, p *browserPaneUI, session string) {
 			n.applyBoxes(l)
 		case sent := <-n.sent:
 			n.delivered(sent.notes)
+			n.strokes, n.sketchPast = n.strokes[min(sent.strokes, len(n.strokes)):], nil
 			if n.closing.Text() == sent.closing {
 				n.closing.SetText("")
 			}
@@ -370,9 +398,10 @@ func (u *window) notesPointer(gtx C, p *browserPaneUI, session string, x, y floa
 	}
 }
 
-// notesKey takes the keys of the pick from the page: Ctrl+Shift+E (Cmd on
-// macOS) turns it on and off, Esc closes the note or stops the pick, and
-// Ctrl+Enter sends the notes. It reports whether it took e.
+// notesKey takes the keys of the pick and the pencil from the page:
+// Ctrl+Shift+E (Cmd on macOS) turns the pick on and off, Esc closes the note
+// or stops the tool, Ctrl+Z takes back the last stroke and Ctrl+Enter sends
+// what waits. It reports whether it took e.
 func (u *window) notesKey(p *browserPaneUI, session string, e key.Event) bool {
 	if e.State != key.Press {
 		return false
@@ -387,7 +416,11 @@ func (u *window) notesKey(p *browserPaneUI, session string, e key.Event) bool {
 		} else {
 			n.setPicking(false)
 		}
-	case (e.Name == key.NameReturn || e.Name == key.NameEnter) && e.Modifiers == key.ModShortcut && len(n.list) > 0:
+	case e.Name == key.NameEscape && n.drawing:
+		n.setDrawing(false)
+	case e.Name == "Z" && e.Modifiers == key.ModShortcut && n.drawing && len(n.sketchPast) > 0:
+		n.undoSketch()
+	case (e.Name == key.NameReturn || e.Name == key.NameEnter) && e.Modifiers == key.ModShortcut && n.pending():
 		u.sendNotes(p, session)
 	default:
 		return false
@@ -395,24 +428,41 @@ func (u *window) notesKey(p *browserPaneUI, session string, e key.Event) bool {
 	return true
 }
 
-// sendNotes types the notes and the closing note into the session's prompt as
-// one message. They leave the tray only once it is there: a send that fails keeps them, to send
-// again, and says why in the tray rather than in a toast over the page.
+// sendNotes types the notes, the sketch's picture and the closing note into
+// the session's prompt as one message. They leave the tray only once it is
+// there: a send that fails keeps them, to send again, and says why in the tray
+// rather than in a toast over the page.
 func (u *window) sendNotes(p *browserPaneUI, session string) {
 	n := &p.notes
-	sent := sentNotes{notes: n.sending(), closing: n.closing.Text()}
-	message := notesMessage(sent.notes, sent.closing)
+	sent := sentNotes{notes: n.sending(), strokes: len(n.strokes), closing: n.closing.Text()}
+	_, frame, _ := u.model.browserView(session)
+	sketch := sentSketch{strokes: slices.Clone(n.strokes), frame: frame.src, viewW: p.view.W, url: n.sketchURL}
 	n.setPicking(false)
+	n.setDrawing(false)
 	label := u.model.sessionLabel(session)
 	n.failure = ""
 	go func() {
-		if err := u.client.Submit(u.ctx, session, message); err != nil {
+		err := u.submitNotes(session, sent, sketch)
+		if err != nil {
 			offer(n.failed, i18n.T("layouts.browser.notesFailed", i18n.Args{"label": label, "error": backend.ErrorText(err)}))
 		} else {
 			offer(n.sent, sent)
 		}
 		u.model.invalidate()
 	}()
+}
+
+// submitNotes uploads the sketch, when there is one, and submits the message
+// naming it.
+func (u *window) submitNotes(session string, sent sentNotes, sketch sentSketch) error {
+	if len(sketch.strokes) == 0 {
+		return u.client.Submit(u.ctx, session, notesMessage(sent.notes, sent.closing))
+	}
+	path, err := u.uploadSketch(session, sketch)
+	if err != nil {
+		return err
+	}
+	return u.client.Submit(u.ctx, session, sketchedMessage(sent.notes, path, sketch.url, sent.closing))
 }
 
 // sending is the notes a send takes: those in the tray now.

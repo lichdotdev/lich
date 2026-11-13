@@ -29,7 +29,7 @@ var browserTour = []tourStep{
 	// A new browser shows no page, and notes need one.
 	{anchor: tourBrowserAddr, side: driver.Bottom, until: (*window).tourBrowserHasPage,
 		text: tourText{"tourBrowser.address.title", "tourBrowser.address.body", "tourBrowser.address.hint"}},
-	{anchor: tourBrowserPick, side: driver.Bottom, until: (*window).tourBrowserPicking,
+	{anchor: tourBrowserPick, side: driver.Top, until: (*window).tourBrowserPicking,
 		text: tourText{"tourBrowser.pick.title", "tourBrowser.pick.body", "tourBrowser.pick.hint"}},
 	{anchor: tourBrowserPage, side: driver.Left, until: (*window).tourBrowserNoted,
 		text: tourText{"tourBrowser.note.title", "tourBrowser.note.body", "tourBrowser.note.hint"}},

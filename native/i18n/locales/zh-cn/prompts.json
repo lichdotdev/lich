@@ -32,6 +32,8 @@
     },
     "item": "{index}. {url} 上的 {label}",
     "note": "备注: {note}",
+    "sketch": "对方还在页面上画了草图。带有草图的截图: {path}",
+    "sketchOnly": "[lich] 对方在你浏览器标签页的页面 {url} 上画了草图。带有草图的截图: {path}",
     "selectors": "上面每个选择器都可以直接作为 browser_click 和 browser_type 的 selector 使用。"
   },
   "schedule": {

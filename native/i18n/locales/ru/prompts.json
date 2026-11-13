@@ -41,6 +41,8 @@
     },
     "item": "{index}. {label} на {url}",
     "note": "Заметка: {note}",
+    "sketch": "Человек также рисовал на странице. Снимок экрана с рисунком: {path}",
+    "sketchOnly": "[lich] Человек рисовал на странице во вкладке браузера, {url}. Снимок экрана с рисунком: {path}",
     "selectors": "Каждый селектор выше подходит как selector для browser_click и browser_type."
   },
   "schedule": {
