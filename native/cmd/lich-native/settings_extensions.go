@@ -42,6 +42,7 @@ var (
 	icExtensionMore    = icons.Lucide("ellipsis")
 	icExtensionRestart = icons.Lucide("rotate-ccw")
 	icExtensionRemove  = icons.Lucide("trash-2")
+	icExtensionCheck   = icons.Lucide("refresh-cw")
 )
 
 // extensionError is the section's last error and the place it came from: an
@@ -66,6 +67,11 @@ type extensionTasks struct {
 	asking     bool
 	preview    backend.ExtensionInstallPreview
 	askingFrom string
+	// replacing is the installed extension the preview updates, nil for a
+	// new install.
+	replacing *backend.Extension
+	// checking is whether Check for updates runs.
+	checking bool
 	// removal is the extension the remove confirmation names.
 	removal *backend.Extension
 }
@@ -81,6 +87,7 @@ func (t extensionTasks) errorAt(at string) string {
 type extensionRowState struct {
 	hover          gesture.Hover
 	restart, more  widget.Clickable
+	update         widget.Clickable
 	menu, context  ui.MenuState
 	moreTip, state ui.Tooltip
 }
@@ -92,6 +99,7 @@ type extensionsSettings struct {
 
 	url                     widget.Editor
 	choose, install, folder widget.Clickable
+	check                   widget.Clickable
 	rows                    map[string]*extensionRowState
 	icons                   map[string]*icons.Icon
 
@@ -172,7 +180,7 @@ func (s *settingsScreen) prepareInstall(from, src string) {
 				t.err = extensionError{from, backend.ErrorText(err)}
 				return
 			}
-			t.asking, t.preview, t.askingFrom = true, preview, from
+			t.asking, t.preview, t.askingFrom, t.replacing = true, preview, from, nil
 		})
 		s.invalidate()
 	}()

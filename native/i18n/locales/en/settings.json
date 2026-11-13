@@ -683,6 +683,17 @@
       "failed": "Failed",
       "invalid": "Invalid",
       "stopped": "Stopped"
-    }
+    },
+    "update": "Update",
+    "updateTo": "Update to {version}",
+    "updating": "Updating…",
+    "updateTitle": "Update {name} to {version}?",
+    "updated": "{name} updated to {version}",
+    "updateFailed": "Couldn't update {name}",
+    "checkUpdates": "Check for updates",
+    "checkingUpdates": "Checking…",
+    "checkFailed": "Couldn't check for extension updates",
+    "upToDate": "Your extensions are up to date",
+    "permissionNew": "New in this version"
   }
 }

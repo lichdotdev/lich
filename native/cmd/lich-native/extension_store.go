@@ -48,6 +48,15 @@ func (s *extensionStore) setStatus(e backend.Extension) {
 	s.list = append(s.list, e)
 }
 
+// setLatest records the newer release of extension id, "" for none.
+func (s *extensionStore) setLatest(id, latest string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if i := slices.IndexFunc(s.list, func(x backend.Extension) bool { return x.ID == id }); i >= 0 {
+		s.list[i].Latest = latest
+	}
+}
+
 // remove drops extension id and its surfaces' renders.
 func (s *extensionStore) remove(id string) {
 	s.mu.Lock()
@@ -92,8 +101,8 @@ func (s *extensionStore) render(k extensionKey) (extension.RenderData, bool) {
 	return r, ok
 }
 
-// extensionEvent applies extension-status, extension-removed and
-// extension-message. A render lands in the store; every other message is the
+// extensionEvent applies extension-status, extension-update,
+// extension-removed and extension-message. A render lands in the store; every other message is the
 // window's to act on.
 func (m *model) extensionEvent(ev backend.Event) {
 	switch ev.Name {
@@ -103,6 +112,14 @@ func (m *model) extensionEvent(ev backend.Event) {
 			m.extensions.setStatus(e)
 			if e.Status == api.ExtensionRunning && was.Status != api.ExtensionRunning && m.extensionStarted != nil {
 				m.extensionStarted(e.ID)
+			}
+		}
+		return
+	case api.ExtensionUpdateEvent.Name:
+		if e, err := backend.Decode(ev, api.ExtensionUpdateEvent); err == nil {
+			m.extensions.setLatest(e.ID, e.Latest)
+			if m.extensionUpdate != nil {
+				m.extensionUpdate(e.ID)
 			}
 		}
 		return

@@ -2,6 +2,7 @@ package main
 
 import (
 	"image/color"
+	"slices"
 	"strings"
 
 	"gioui.org/font"
@@ -28,8 +29,8 @@ func previewSourceLine(p backend.ExtensionInstallPreview) string {
 }
 
 // installWarning is the confirmation's body: that it runs as you, then what
-// else it can do.
-func installWarning(gtx C, th *ui.Theme, permissions []string) D {
+// else it can do, the permissions in added marked as new.
+func installWarning(gtx C, th *ui.Theme, permissions, added []string) D {
 	warning := th.Text(ui.TextSM, i18n.T("settings.extensionsSettings.installWarning")).Muted().Wrapped()
 	if len(permissions) == 0 {
 		return warning.Layout(gtx)
@@ -37,21 +38,48 @@ func installWarning(gtx C, th *ui.Theme, permissions []string) D {
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(warning.Layout),
 		ui.VGap(4),
-		layout.Rigid(func(gtx C) D { return permissionList(gtx, th, permissions) }),
+		layout.Rigid(func(gtx C) D { return permissionList(gtx, th, permissions, added) }),
 	)
 }
 
+// newPermissions is what wanted lists that granted does not.
+func newPermissions(granted, wanted []string) []string {
+	var added []string
+	for _, p := range wanted {
+		if !slices.Contains(granted, p) {
+			added = append(added, p)
+		}
+	}
+	return added
+}
+
 // permissionList is the uppercase label over one line per permission, the
-// ones that act in the wait tone.
-func permissionList(gtx C, th *ui.Theme, permissions []string) D {
+// ones that act in the wait tone and the ones in added marked as new.
+func permissionList(gtx C, th *ui.Theme, permissions, added []string) D {
 	label := strings.ToUpper(i18n.T("settings.extensionsSettings.permissionsLabel"))
 	children := []layout.FlexChild{
 		layout.Rigid(th.Text(ui.Text2XS, label).Weight(font.SemiBold).Leading(text2XSLeading).Muted().Layout),
 	}
 	for _, p := range permissions {
-		children = append(children, ui.VGap(1), layout.Rigid(th.Text(ui.TextSM, permissionText(p)).In(permissionTone(th, p)).Wrapped().Layout))
+		line := th.Text(ui.TextSM, permissionText(p)).In(permissionTone(th, p)).Wrapped().Layout
+		if slices.Contains(added, p) {
+			line = markedNew(th, line)
+		}
+		children = append(children, ui.VGap(1), layout.Rigid(line))
 	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
+}
+
+// markedNew is a permission's line with the mark of one the installed
+// version does not have.
+func markedNew(th *ui.Theme, line layout.Widget) layout.Widget {
+	mark := th.Text(ui.TextXS, i18n.T("settings.extensionsSettings.permissionNew")).Muted()
+	return func(gtx C) D {
+		return layout.Flex{Alignment: layout.Baseline}.Layout(gtx, layout.Flexed(1, func(gtx C) D {
+			gtx.Constraints.Min.X = 0
+			return line(gtx)
+		}), ui.Gap(2), layout.Rigid(mark.Layout))
+	}
 }
 
 func permissionTone(th *ui.Theme, p string) color.NRGBA {

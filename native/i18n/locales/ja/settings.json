@@ -683,6 +683,17 @@
       "failed": "失敗",
       "invalid": "無効",
       "stopped": "停止"
-    }
+    },
+    "update": "更新",
+    "updateTo": "{version} に更新",
+    "updating": "更新中…",
+    "updateTitle": "{name} を {version} に更新しますか？",
+    "updated": "{name} を {version} に更新しました",
+    "updateFailed": "{name} を更新できませんでした",
+    "checkUpdates": "アップデートを確認",
+    "checkingUpdates": "確認中…",
+    "checkFailed": "拡張機能のアップデートを確認できませんでした",
+    "upToDate": "拡張機能はすべて最新です",
+    "permissionNew": "このバージョンで追加"
   }
 }

@@ -120,7 +120,10 @@ type installed struct {
 	// mu: Service.mu
 	status  string
 	errText string
-	queue   chan []byte
+	// latest is the tag of a release newer than the one installed, "" while
+	// none is known.
+	latest string
+	queue  chan []byte
 	// subscribed is the events the running process asked for, by name.
 	subscribed map[string]bool
 	// tickets is the pending sends this extension may collect. They outlive a
@@ -304,7 +307,7 @@ func (x *installed) view() api.Extension {
 	return api.Extension{
 		ID: x.id, Name: cmp.Or(x.manifest.Name, x.id), Version: x.manifest.Version,
 		Status: x.status, Error: x.errText, Dir: x.root, Surfaces: surfaces,
-		Source: x.source.URL, Release: x.source.Release, Text: x.text, Permissions: permissionNames(x.manifest),
+		Source: x.source.URL, Release: x.source.Release, Latest: x.latest, Text: x.text, Permissions: permissionNames(x.manifest),
 	}
 }
 

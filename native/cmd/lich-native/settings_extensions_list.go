@@ -2,6 +2,7 @@ package main
 
 import (
 	"image/color"
+	"slices"
 	"strconv"
 
 	"gioui.org/font"
@@ -44,11 +45,32 @@ func (s *settingsScreen) extensionsPaneRows(th *ui.Theme) []layout.Widget {
 		})
 	}
 	count := i18n.T("settings.extensionsSettings.installedCount", i18n.Args{"n": strconv.Itoa(len(list))})
-	rows = append(rows, groupHeading(th, count, false))
+	heading := groupHeading(th, count, false)
+	if slices.ContainsFunc(list, func(e backend.Extension) bool { return e.Release != "" }) {
+		heading = s.extensionsHeading(th, heading)
+	}
+	rows = append(rows, heading)
 	for _, e := range list {
 		rows = append(rows, func(gtx C) D { return s.extensionRow(gtx, th, e) })
 	}
 	return rows
+}
+
+// extensionsHeading is the Installed heading with Check for updates on its
+// right, which only a list holding an extension from GitHub gets.
+func (s *settingsScreen) extensionsHeading(th *ui.Theme, heading layout.Widget) layout.Widget {
+	return func(gtx C) D {
+		p := &s.extensions
+		if p.check.Clicked(gtx) {
+			s.checkExtensionUpdates()
+		}
+		check := th.Button(&p.check, i18n.T("settings.extensionsSettings.checkUpdates"))
+		check.Variant, check.Size, check.Icon = ui.VariantGhost, ui.SizeSM, icExtensionCheck
+		if p.snapshot().checking {
+			check.Text, check.Disabled = i18n.T("settings.extensionsSettings.checkingUpdates"), true
+		}
+		return layout.Flex{Alignment: layout.End}.Layout(gtx, layout.Flexed(1, heading), layout.Rigid(check.Layout))
+	}
 }
 
 // extensionsEmpty is the list's empty state, muted, the size of a row's text.
@@ -67,6 +89,11 @@ func (s *settingsScreen) extensionRow(gtx C, th *ui.Theme, e backend.Extension) 
 	r := p.row(e.ID)
 	if r.restart.Clicked(gtx) {
 		s.restartExtension(e.ID)
+	}
+	if r.update.Clicked(gtx) {
+		s.updateExtension(e)
+		// The dialogs were laid out before the row took the click.
+		gtx.Execute(op.InvalidateCmd{})
 	}
 	entries := func() []ui.MenuEntry { return s.extensionMenu(e) }
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
@@ -101,6 +128,9 @@ func (s *settingsScreen) extensionRowBody(gtx C, th *ui.Theme, e backend.Extensi
 			b.Variant, b.Size = ui.VariantOutline, ui.SizeSM
 			children = append(children, layout.Rigid(b.Layout), ui.Gap(1))
 		}
+		if e.Latest != "" {
+			children = append(children, layout.Rigid(s.extensions.updateButton(on, e, r)), ui.Gap(1))
+		}
 		children = append(children, layout.Rigid(func(gtx C) D { return s.extensionMore(gtx, on, e, r, entries()) }))
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
 	})
@@ -115,6 +145,18 @@ func (s *settingsScreen) extensionRowBody(gtx C, th *ui.Theme, e backend.Extensi
 	}
 	call.Add(gtx.Ops)
 	return d
+}
+
+// updateButton is Update to the newer release, busy while this row's update
+// runs and off while any install does.
+func (p *extensionsSettings) updateButton(th *ui.Theme, e backend.Extension, r *extensionRowState) layout.Widget {
+	b := th.Button(&r.update, i18n.T("settings.extensionsSettings.updateTo", i18n.Args{"version": e.Latest}))
+	installing := p.snapshot().installing
+	if installing == errAtRow(e.ID) {
+		b.Text = i18n.T("settings.extensionsSettings.updating")
+	}
+	b.Variant, b.Size, b.Disabled = ui.VariantOutline, ui.SizeSM, installing != ""
+	return b.Layout
 }
 
 // extensionDetails is the name and version over the source line.
@@ -158,7 +200,7 @@ func statusTip(gtx C, th *ui.Theme, e backend.Extension) D {
 		if e.Error != "" {
 			children = append(children, ui.VGap(3))
 		}
-		children = append(children, layout.Rigid(func(gtx C) D { return permissionList(gtx, th, e.Permissions) }))
+		children = append(children, layout.Rigid(func(gtx C) D { return permissionList(gtx, th, e.Permissions, nil) }))
 	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
 }

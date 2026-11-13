@@ -201,5 +201,10 @@
     "restart": "Reiniciar",
     "openFolder": "Abrir carpeta",
     "restartFailed": "No se pudo reiniciar {name}: {error}"
+  },
+  "extensionUpdateGate": {
+    "available": "{name} {version} está disponible",
+    "availableMany": "Actualizaciones de extensiones disponibles: {n}",
+    "review": "Revisar"
   }
 }

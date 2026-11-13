@@ -96,6 +96,12 @@ func (s *Service) stageAs(id string, src source, fill func(stage string) error) 
 	if err := s.checkFree(id); err != nil {
 		return api.ExtensionInstallPreview{}, err
 	}
+	return s.stage(id, src, nil, fill)
+}
+
+// stage is stageAs for an id that may be installed: replaces is the extension
+// CommitInstall swaps the staged copy for, nil for a new install.
+func (s *Service) stage(id string, src source, replaces *installed, fill func(stage string) error) (api.ExtensionInstallPreview, error) {
 	if err := os.MkdirAll(s.dir, 0o755); err != nil {
 		return api.ExtensionInstallPreview{}, fmt.Errorf("create the extensions directory: %w", err)
 	}
@@ -109,7 +115,7 @@ func (s *Service) stageAs(id string, src source, fill func(stage string) error) 
 		_ = os.RemoveAll(work)
 		return api.ExtensionInstallPreview{}, err
 	}
-	token, err := s.hold(id, work)
+	token, err := s.hold(id, work, replaces)
 	if err != nil {
 		_ = os.RemoveAll(work)
 		return api.ExtensionInstallPreview{}, err

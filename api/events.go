@@ -314,6 +314,10 @@ var (
 	// ExtensionStatusEvent carries an extension once its state has changed.
 	ExtensionStatusEvent = defineEvent[Extension]("extension-status")
 
+	// ExtensionUpdateEvent carries what a look for a newer release of an
+	// extension found, once that differs from what the window was last told.
+	ExtensionUpdateEvent = defineEvent[ExtensionUpdate]("extension-update")
+
 	// ExtensionRemovedEvent names an extension once its directory is gone, for
 	// the window to drop it.
 	ExtensionRemovedEvent = defineEvent[ExtensionIDOptions]("extension-removed")

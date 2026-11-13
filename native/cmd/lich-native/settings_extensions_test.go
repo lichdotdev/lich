@@ -309,7 +309,7 @@ func TestNoPermissionsDrawsNoList(t *testing.T) {
 	th := shapingTheme()
 	height := func(perms []string) int {
 		gtx := layout.Context{Ops: new(op.Ops), Constraints: layout.Constraints{Max: image.Pt(600, 2000)}}
-		return installWarning(gtx, th, perms).Size.Y
+		return installWarning(gtx, th, perms, nil).Size.Y
 	}
 	none, one, two := height(nil), height([]string{"projects:read"}), height([]string{"projects:read", "sessions:write"})
 	if !(none < one && one < two) {
@@ -470,5 +470,95 @@ func TestTheListIsAHeadingOverOneRowEachOrTheEmptyState(t *testing.T) {
 	}
 	if empty != 5 {
 		t.Errorf("rows = %d with none, want the description, two install rows, the heading and the empty state", empty)
+	}
+}
+
+// updateBackend answers an update's calls: PrepareUpdate with preview, the
+// commit with nothing worth reading.
+func updateBackend(preview backend.ExtensionInstallPreview, found []backend.Extension) (*extensionBackend, *rpcStub) {
+	b := &extensionBackend{}
+	return b, &rpcStub{answer: func(method string, _ []json.RawMessage) (any, int) {
+		b.mu.Lock()
+		defer b.mu.Unlock()
+		b.calls = append(b.calls, method)
+		switch method {
+		case api.ExtensionsPrepareUpdate.Name:
+			return preview, http.StatusOK
+		case api.ExtensionsCheckUpdates.Name:
+			return found, http.StatusOK
+		}
+		return backend.Extension{ID: "x"}, http.StatusOK
+	}}
+}
+
+func updatingScreen(t *testing.T, stub *rpcStub, installed backend.Extension) *settingsScreen {
+	t.Helper()
+	s := newSettingsScreen(t.Context(), stub.client(t), new(ui.Root), func() {})
+	s.theme = &themePicker{toaster: new(ui.Toaster)}
+	s.extensions.store = &extensionStore{list: []backend.Extension{installed}}
+	return s
+}
+
+func TestUpdateInstallsAtOnceWhenItAsksForNothingNew(t *testing.T) {
+	installed := backend.Extension{ID: "x", Name: "X", Release: "v1.0.0", Latest: "v1.1.0", Permissions: []string{"sessions:read", "notify"}}
+	preview := backend.ExtensionInstallPreview{Token: "tok", ID: "x", Release: "v1.1.0", Permissions: []string{"notify"}}
+	b, stub := updateBackend(preview, nil)
+	s := updatingScreen(t, stub, installed)
+
+	s.updateExtension(installed)
+	waitFor(t, "the commit", func() bool { return slices.Contains(b.called(), api.ExtensionsCommitInstall.Name) })
+	waitFor(t, "the update done", func() bool { return s.extensions.snapshot().installing == "" })
+	if s.extensions.snapshot().asking {
+		t.Error("an update that asks for nothing new opened the confirmation")
+	}
+	if e, _ := s.extensions.store.byID("x"); e.Latest != "" {
+		t.Errorf("the row still offers %q after the update", e.Latest)
+	}
+}
+
+func TestUpdateAsksFirstWhenItWantsANewPermission(t *testing.T) {
+	installed := backend.Extension{ID: "x", Name: "X", Release: "v1.0.0", Latest: "v1.1.0", Permissions: []string{"notify"}}
+	preview := backend.ExtensionInstallPreview{Token: "tok", ID: "x", Release: "v1.1.0", Permissions: []string{"notify", "sessions:write"}}
+	b, stub := updateBackend(preview, nil)
+	s := updatingScreen(t, stub, installed)
+
+	s.updateExtension(installed)
+	waitFor(t, "the confirmation", func() bool { return s.extensions.snapshot().asking })
+	tasks := s.extensions.snapshot()
+	if tasks.replacing == nil || tasks.replacing.ID != "x" || tasks.installing != "" {
+		t.Fatalf("tasks = %+v, want the confirmation open on the update of x", tasks)
+	}
+	if slices.Contains(b.called(), api.ExtensionsCommitInstall.Name) {
+		t.Fatal("the update was installed before its new permission was confirmed")
+	}
+	if got := newPermissions(installed.Permissions, preview.Permissions); !slices.Equal(got, []string{"sessions:write"}) {
+		t.Errorf("newPermissions() = %v, want only sessions:write", got)
+	}
+	s.commitUpdate(installed, preview)
+	if !slices.Contains(b.called(), api.ExtensionsCommitInstall.Name) || s.extensions.snapshot().asking {
+		t.Errorf("after the confirmation: calls %v, asking %v", b.called(), s.extensions.snapshot().asking)
+	}
+}
+
+func TestCheckForUpdatesFillsTheRows(t *testing.T) {
+	installed := backend.Extension{ID: "x", Release: "v1.0.0"}
+	found := installed
+	found.Latest = "v1.1.0"
+	_, stub := updateBackend(backend.ExtensionInstallPreview{}, []backend.Extension{found})
+	s := updatingScreen(t, stub, installed)
+
+	s.checkExtensionUpdates()
+	waitFor(t, "the newer release on the row", func() bool { e, _ := s.extensions.store.byID("x"); return e.Latest == "v1.1.0" })
+	waitFor(t, "the check done", func() bool { return !s.extensions.snapshot().checking })
+}
+
+func TestAnUpdateEventReachesTheStoreAndTheWindow(t *testing.T) {
+	var m model
+	var heard []string
+	m.extensionUpdate = func(id string) { heard = append(heard, id) }
+	m.extensionEvent(extensionEv(t, api.ExtensionStatusEvent.Name, backend.Extension{ID: "a", Release: "v1.0.0"}))
+	m.extensionEvent(extensionEv(t, api.ExtensionUpdateEvent.Name, api.ExtensionUpdate{ID: "a", Latest: "v1.1.0"}))
+	if e, _ := m.extensions.byID("a"); e.Latest != "v1.1.0" || !slices.Equal(heard, []string{"a"}) {
+		t.Fatalf("store has %q, window heard %v; want v1.1.0 and a", e.Latest, heard)
 	}
 }

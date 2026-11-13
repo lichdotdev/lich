@@ -127,6 +127,7 @@ type recorder struct {
 	messages []api.ExtensionMessage
 	arrived  []time.Time
 	removed  []string
+	updates  []api.ExtensionUpdate
 }
 
 func (r *recorder) emit(name string, data any) {
@@ -149,6 +150,11 @@ func (r *recorder) emit(name string, data any) {
 			panic("removal under " + name)
 		}
 		r.removed = append(r.removed, v.ID)
+	case api.ExtensionUpdate:
+		if name != api.ExtensionUpdateEvent.Name {
+			panic("update under " + name)
+		}
+		r.updates = append(r.updates, v)
 	}
 }
 
