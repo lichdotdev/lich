@@ -140,7 +140,7 @@ func (s *Service) replace(ctx context.Context, st stagedInstall) (api.Extension,
 	old, stranded := st.replaces, false
 	defer func() {
 		if !stranded {
-			_ = os.RemoveAll(st.work)
+			_ = afterExit(func() error { return os.RemoveAll(st.work) })
 		}
 	}()
 	old.restartMu.Lock()
@@ -161,7 +161,7 @@ func (s *Service) replace(ctx context.Context, st stagedInstall) (api.Extension,
 		}
 	}
 	kept := filepath.Join(st.work, replacedDir)
-	if err := renameExited(old.root, kept); err != nil {
+	if err := afterExit(func() error { return os.Rename(old.root, kept) }); err != nil {
 		s.relaunch(old)
 		return api.Extension{}, fmt.Errorf("move the installed version out of %s: %w", old.root, err)
 	}
