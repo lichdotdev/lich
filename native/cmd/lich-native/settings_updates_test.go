@@ -13,6 +13,9 @@ func TestSplitLeadInTakesTheBoldSentence(t *testing.T) {
 	for _, tc := range []struct{ in, headline, body string }{
 		{"**Faster start.** It opens in half the time.", "Faster start.", "It opens in half the time."},
 		{"No bold at all", "No bold at all", ""},
+		{"First sentence. The rest. Of it.", "First sentence.", "The rest. Of it."},
+		{"See `lich-native.log` for it. Then retry.", "See `lich-native.log` for it.", "Then retry."},
+		{"Reads `a. b` whole", "Reads `a. b` whole", ""},
 		{"**Unclosed lead-in", "**Unclosed lead-in", ""},
 		{"**Only a lead-in**", "Only a lead-in", ""},
 	} {
