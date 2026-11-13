@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **The note about all of them, at the bottom of the browser's notes tray, takes typing again after you draw or pick on the page.**
 - **A row coming into the sidebar's tree no longer shows a lit stub of its highlight under the row above.**
 - **A session's browser no longer fails to open on a slow first start.** Chrome was given ten seconds to answer once it was up, which a cold disk or a busy machine can pass.
+- **In the Git panel, the ⋯ of a branch now only opens its menu.** The click also selected the branch, which emptied the panel for a moment and closed the menu.
 
 ## [0.90.1] - 2026-11-12
 
