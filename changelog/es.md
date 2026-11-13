@@ -7,6 +7,7 @@
 ### Fixed
 
 - En una extensión, soltar una tarjeta arrastrada en una lista ordenable ya no la pulsa: una pulsación que superó el umbral de arrastre es un arrastre, y solo un clic simple llega al manejador de la propia tarjeta.
+- Una extensión con el máximo de llamadas en curso que vuelve a llamar en cuanto lee un resultado ya no es rechazada: la llamada terminada libera su lugar antes de que se envíe el resultado.
 
 ## [0.90.0] - 2026-11-12
 

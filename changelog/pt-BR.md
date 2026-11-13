@@ -7,6 +7,7 @@
 ### Fixed
 
 - Em uma extensão, soltar um card arrastado em uma lista ordenável não o pressiona mais: um toque que passou do limite de arraste é um arraste, e só um clique simples chega ao handler do próprio card.
+- Uma extensão com o máximo de chamadas em andamento, que chama de novo no instante em que lê um resultado, não é mais recusada: a chamada concluída libera a vaga antes de o resultado ser enviado.
 
 ## [0.90.0] - 2026-11-12
 

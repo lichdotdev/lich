@@ -140,8 +140,11 @@ func (s *Service) call(x *installed, call extension.CallData) {
 	s.mu.Unlock()
 	go func() {
 		defer s.wg.Done()
-		defer func() { <-x.inFlight }()
-		s.answer(x, s.run(x, r, call))
+		msg := s.run(x, r, call)
+		// Freed before the answer: an extension at the limit that calls again
+		// the moment it reads a result must find the slot.
+		<-x.inFlight
+		s.answer(x, msg)
 	}()
 }
 

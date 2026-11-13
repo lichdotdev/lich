@@ -69,8 +69,8 @@ func TestChromeRelaunchDrawsThePaneAtTheWindowsNewScale(t *testing.T) {
 	if err := s.Resize("s", Viewport{W: 400, H: 300, Scale: 1.5}); err != nil {
 		t.Fatal(err)
 	}
-	s.SetDefaultView(Viewport{W: 800, H: 533, Scale: 1.5}, 1.5)
 	waitFrameSize(t, frames, 400, 300)
+	s.SetDefaultView(Viewport{W: 800, H: 533, Scale: 1.5}, 1.5)
 	waitFrameSize(t, frames, 600, 450)
 
 	tabs, err := s.Tabs(h.ID)

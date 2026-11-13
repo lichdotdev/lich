@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - In an extension, letting go of a card dragged in a sortable list no longer presses it: a press that moved past the drag threshold is a drag, and only a plain click reaches the card's own handler.
+- An extension with as many calls running as it may have, calling again the moment it reads a result, is no longer refused: the finished call frees its place before its result is sent.
 
 ## [0.90.0] - 2026-11-12
 
