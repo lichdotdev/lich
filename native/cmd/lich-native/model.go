@@ -135,6 +135,9 @@ type model struct {
 	extensionMessage func(id string, msg extension.Message)
 	// extensionStarted hears an extension that went to running.
 	extensionStarted func(id string)
+	// extensionUpdate hears that the newer release known of an extension
+	// changed.
+	extensionUpdate func(id string)
 	// console is the service whose console is on screen in place of the
 	// active session, "" for none.
 	console string
@@ -392,7 +395,7 @@ func (m *model) follow(ctx context.Context, events <-chan backend.Event) {
 			if a, err := backend.Decode(ev, api.ArtifactsEvent); err == nil {
 				m.artifacts.apply(a)
 			}
-		case api.ExtensionStatusEvent.Name, api.ExtensionRemovedEvent.Name, api.ExtensionMessageEvent.Name:
+		case api.ExtensionStatusEvent.Name, api.ExtensionUpdateEvent.Name, api.ExtensionRemovedEvent.Name, api.ExtensionMessageEvent.Name:
 			m.extensionEvent(ev)
 		case api.ServiceRevealEvent.Name:
 			if r, err := backend.Decode(ev, api.ServiceRevealEvent); err == nil && m.serviceReveal != nil {

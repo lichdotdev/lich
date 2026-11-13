@@ -149,6 +149,8 @@ type window struct {
 	extOutbox *extensionOutbox
 	// extLanguage tells extensions the interface language.
 	extLanguage extensionLanguage
+	// extUpdates offers the extensions' newer releases.
+	extUpdates extensionUpdateGate
 	// closeWorktree is the closed toast's question before removing a worktree.
 	closeWorktree closeWorktreeConfirm
 	// closeAllConfirm is Close all sessions' question when a turn is in flight.
@@ -286,6 +288,7 @@ func run(w *app.Window, rt backend.Runtime) error {
 		u.extLanguage.started(id)
 		u.extension.started(id)
 	}
+	u.model.extensionUpdate = func(string) { go u.offerExtensionUpdates() }
 	u.model.prChanged = u.prChanged
 	u.model.themeSelection = u.appearance.applySelection
 	u.model.themeUpdates = u.themeUpdatesChanged
@@ -468,6 +471,9 @@ func (u *window) connect() error {
 	if err := u.model.extensions.load(u.ctx, u.client); err != nil {
 		u.logErr("read the extensions", err)
 	}
+	// The backend's first look for updates may have ended before this window
+	// listened for its events.
+	go u.offerExtensionUpdates()
 	// A stored value this build cannot read starts the window with no
 	// layouts and says so; the next split stores over it.
 	if err := u.model.loadLayouts(u.ctx); err != nil {

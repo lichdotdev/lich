@@ -65,6 +65,7 @@ cursorprofile.LoginCommand(ProfileSlugOptions) string
 cursorprofile.Profiles(None) []ProfileInfo
 cursorprofile.UpdateProfile(UpdateProfileOptions) Profile
 drop.Attach(AttachDropOptions) DropAttachment
+extensions.CheckUpdates(None) []Extension
 extensions.CommitInstall(ExtensionInstallTokenOptions) Extension
 extensions.DeleteData(ExtensionIDOptions) None
 extensions.Dir(None) string
@@ -72,6 +73,7 @@ extensions.DiscardInstall(ExtensionInstallTokenOptions) None
 extensions.List(None) []Extension
 extensions.PrepareFromDir(ExtensionDirInstallOptions) ExtensionInstallPreview
 extensions.PrepareFromGit(ExtensionGitInstallOptions) ExtensionInstallPreview
+extensions.PrepareUpdate(ExtensionIDOptions) ExtensionInstallPreview
 extensions.Remove(ExtensionIDOptions) None
 extensions.Restart(ExtensionIDOptions) None
 extensions.Send(ExtensionSendOptions) None
@@ -293,6 +295,7 @@ event codex-profile-login ProfileLogin
 event extension-message ExtensionMessage
 event extension-removed ExtensionIDOptions
 event extension-status Extension
+event extension-update ExtensionUpdate
 event lich-plugin-profiles PluginProfiles
 event plugin-incompatible PluginIncompatible
 event profile-changed ProfileChanged
@@ -630,10 +633,6 @@ AttachDropOptions {
 	confined bool
 }
 
-ExtensionInstallTokenOptions {
-	token string
-}
-
 Extension {
 	id string
 	name string
@@ -644,8 +643,13 @@ Extension {
 	surfaces []ExtensionSurface
 	source,omitempty string
 	release,omitempty string
+	latest,omitempty string
 	text,omitempty map[string]ExtensionText
 	permissions []string
+}
+
+ExtensionInstallTokenOptions {
+	token string
 }
 
 ExtensionIDOptions {
@@ -1916,6 +1920,11 @@ ProfileLogin {
 ExtensionMessage {
 	extensionId string
 	message json
+}
+
+ExtensionUpdate {
+	id string
+	latest string
 }
 
 PluginProfiles {

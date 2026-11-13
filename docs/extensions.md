@@ -275,9 +275,9 @@ fmt.Println(answer.Label, "says:", answer.Answer)
 An extension that saves something, a token or its settings, keeps it in its data directory:
 `<config dir>/lich/extension-data/<id>` (`extension-data-dev` under `LICH_DEV`). lich creates it, readable only by
 the user, before every start and passes its absolute path in `LICH_EXTENSION_DATA`, named in Go as
-`extension.DataDirEnv`. Never write into the extension's own directory: an update is a remove and an install, and
-the install replaces that directory whole. The data directory survives both, so the next install of the same id
-finds what the last one saved. It goes only when the person ticks "Also delete what it saved" while removing the
+`extension.DataDirEnv`. Never write into the extension's own directory: an update replaces that directory whole,
+and so does a remove and an install. The data directory survives both, so the next version of the same id finds
+what the last one saved. It goes only when the person ticks "Also delete what it saved" while removing the
 extension.
 
 ```go
@@ -398,8 +398,27 @@ token to `extensions.CommitInstall`, which moves the copy into place and starts 
 is deleted after 15 minutes, or when lich next starts. The installed extension's status in Settings lists the same
 permission lines on hover.
 
-An id that is already installed is refused, at both steps; to update, remove the extension and install it again.
-The remove keeps its [data directory](#keeping-data), so the new install picks up what the old one saved.
+An id that is already installed is refused, at both steps.
+
+## Updating
+
+lich asks GitHub for the latest release of every extension installed from a repository when it starts and every
+six hours after, and on `extensions.CheckUpdates`. A latest release whose tag is a later version than the one
+installed is an update: the extension's `latest` carries the tag, and `extension-update` tells the window when that
+changes. Tags are compared as `MAJOR.MINOR.PATCH`, with or without a leading `v`, so tag releases that way: a
+repository whose tags are not versions is never offered as an update.
+
+`extensions.PrepareUpdate` stages that release exactly as an install does, same checks, and returns the same
+preview under a token, while the installed version keeps running. `extensions.CommitInstall` with that token stops
+the installed version, moves its directory aside, moves the staged copy into its place and starts it; if the move
+fails the old directory goes back and starts again. The [data directory](#keeping-data) is not touched. An update
+has to ship the same id as the extension it replaces.
+
+The window offers an update in a toast, once per release: Later puts that release off for good, and the row in
+Settings > Extensions keeps its Update button either way. An update whose manifest lists only permissions the
+installed version already has is installed on the click. One that lists a new permission opens the install
+confirmation first, with the new lines marked. One installed from a folder or placed by hand has no
+release to compare, and is updated by removing it and installing it again.
 
 ## Publishing a release
 

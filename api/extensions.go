@@ -21,6 +21,14 @@ var (
 	ExtensionsCommitInstall = define[ExtensionInstallTokenOptions, Extension]("extensions.CommitInstall")
 	// ExtensionsDiscardInstall deletes a staged extension.
 	ExtensionsDiscardInstall = define[ExtensionInstallTokenOptions, None]("extensions.DiscardInstall")
+	// ExtensionsCheckUpdates looks for a newer release of every extension
+	// installed from GitHub and answers with the list as it then stands; what
+	// changed also arrives as ExtensionUpdateEvent.
+	ExtensionsCheckUpdates = define[None, []Extension]("extensions.CheckUpdates")
+	// ExtensionsPrepareUpdate stages the latest release of an installed
+	// extension's repository, as PrepareFromGit does; CommitInstall then puts
+	// it in place of the installed version, which runs until then.
+	ExtensionsPrepareUpdate = define[ExtensionIDOptions, ExtensionInstallPreview]("extensions.PrepareUpdate")
 	// ExtensionsRemove stops an extension and deletes its directory. Its data
 	// directory is kept.
 	ExtensionsRemove = define[ExtensionIDOptions, None]("extensions.Remove")
@@ -94,7 +102,8 @@ type ExtensionText struct {
 // extension's own words; Text holds their translations, by the tag of each
 // folder of the extension's locales. Source is the repository or folder it
 // was installed from and Release the repository's tag, both empty for one
-// placed by hand.
+// placed by hand. Latest is the tag of a newer release, empty while lich
+// knows of none.
 type Extension struct {
 	ID       string                   `json:"id"`
 	Name     string                   `json:"name"`
@@ -105,10 +114,18 @@ type Extension struct {
 	Surfaces []ExtensionSurface       `json:"surfaces"`
 	Source   string                   `json:"source,omitempty"`
 	Release  string                   `json:"release,omitempty"`
+	Latest   string                   `json:"latest,omitempty"`
 	Text     map[string]ExtensionText `json:"text,omitempty"`
 	// Permissions is what the manifest lists, the extension.Permission names
 	// its calls and subscriptions may use.
 	Permissions []string `json:"permissions"`
+}
+
+// ExtensionUpdate is the newer release lich found for extension ID, or an
+// empty Latest once there is none.
+type ExtensionUpdate struct {
+	ID     string `json:"id"`
+	Latest string `json:"latest"`
 }
 
 // ExtensionSendOptions writes Message, one line of the extension contract, to

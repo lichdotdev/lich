@@ -699,6 +699,17 @@
       "failed": "Сбой",
       "invalid": "Недействительно",
       "stopped": "Остановлено"
-    }
+    },
+    "update": "Обновить",
+    "updateTo": "Обновить до {version}",
+    "updating": "Обновление…",
+    "updateTitle": "Обновить {name} до {version}?",
+    "updated": "{name}: установлена версия {version}",
+    "updateFailed": "Не удалось обновить {name}",
+    "checkUpdates": "Проверить обновления",
+    "checkingUpdates": "Проверка…",
+    "checkFailed": "Не удалось проверить обновления расширений",
+    "upToDate": "Все расширения обновлены",
+    "permissionNew": "Новое в этой версии"
   }
 }

@@ -210,5 +210,10 @@
     "restart": "重启",
     "openFolder": "打开文件夹",
     "restartFailed": "无法重启 {name}：{error}"
+  },
+  "extensionUpdateGate": {
+    "available": "{name} {version} 可用",
+    "availableMany": "有 {n} 个扩展更新可用",
+    "review": "查看"
   }
 }

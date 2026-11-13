@@ -218,5 +218,10 @@
     "restart": "Перезапустить",
     "openFolder": "Открыть папку",
     "restartFailed": "Не удалось перезапустить {name}: {error}"
+  },
+  "extensionUpdateGate": {
+    "available": "Доступно обновление: {name} {version}",
+    "availableMany": "Доступно обновлений расширений: {n}",
+    "review": "Посмотреть"
   }
 }

@@ -116,6 +116,11 @@ func sumLine(name string, data []byte) string {
 // no release.
 func releaseServer(t *testing.T, assets map[string][]byte) *httptest.Server {
 	t.Helper()
+	return releaseServerAt(t, testTag, assets)
+}
+
+func releaseServerAt(t *testing.T, tag string, assets map[string][]byte) *httptest.Server {
+	t.Helper()
 	mux := http.NewServeMux()
 	srv := httptest.NewServer(mux)
 	t.Cleanup(srv.Close)
@@ -124,7 +129,7 @@ func releaseServer(t *testing.T, assets map[string][]byte) *httptest.Server {
 			http.NotFound(w, nil)
 			return
 		}
-		rel := release{Tag: testTag}
+		rel := release{Tag: tag}
 		for name := range assets {
 			rel.Assets = append(rel.Assets, asset{Name: name, URL: srv.URL + "/dl/" + name})
 		}

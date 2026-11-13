@@ -681,6 +681,17 @@
       "failed": "실패",
       "invalid": "유효하지 않음",
       "stopped": "중지됨"
-    }
+    },
+    "update": "업데이트",
+    "updateTo": "{version} 버전으로 업데이트",
+    "updating": "업데이트 중…",
+    "updateTitle": "{name} 확장 프로그램을 {version} 버전으로 업데이트할까요?",
+    "updated": "{name} 확장 프로그램을 {version} 버전으로 업데이트했습니다",
+    "updateFailed": "{name} 확장 프로그램을 업데이트하지 못했습니다",
+    "checkUpdates": "업데이트 확인",
+    "checkingUpdates": "확인 중…",
+    "checkFailed": "확장 프로그램 업데이트를 확인하지 못했습니다",
+    "upToDate": "확장 프로그램이 모두 최신 버전입니다",
+    "permissionNew": "이 버전에서 추가됨"
   }
 }

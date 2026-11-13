@@ -686,6 +686,17 @@
       "failed": "失败",
       "invalid": "无效",
       "stopped": "已停止"
-    }
+    },
+    "update": "更新",
+    "updateTo": "更新到 {version}",
+    "updating": "正在更新…",
+    "updateTitle": "将 {name} 更新到 {version}？",
+    "updated": "已将 {name} 更新到 {version}",
+    "updateFailed": "无法更新 {name}",
+    "checkUpdates": "检查更新",
+    "checkingUpdates": "正在检查…",
+    "checkFailed": "无法检查扩展更新",
+    "upToDate": "扩展均为最新版本",
+    "permissionNew": "此版本新增"
   }
 }

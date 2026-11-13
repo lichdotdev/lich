@@ -687,6 +687,17 @@
       "failed": "Falhou",
       "invalid": "Inválida",
       "stopped": "Parada"
-    }
+    },
+    "update": "Atualizar",
+    "updateTo": "Atualizar para {version}",
+    "updating": "Atualizando…",
+    "updateTitle": "Atualizar {name} para {version}?",
+    "updated": "{name} atualizada para {version}",
+    "updateFailed": "Não foi possível atualizar {name}",
+    "checkUpdates": "Buscar atualizações",
+    "checkingUpdates": "Buscando…",
+    "checkFailed": "Não foi possível buscar atualizações das extensões",
+    "upToDate": "Suas extensões estão atualizadas",
+    "permissionNew": "Nova nesta versão"
   }
 }

@@ -210,5 +210,10 @@
     "restart": "Restart",
     "openFolder": "Open folder",
     "restartFailed": "Could not restart {name}: {error}"
+  },
+  "extensionUpdateGate": {
+    "available": "{name} {version} is available",
+    "availableMany": "Extension updates available: {n}",
+    "review": "Review"
   }
 }

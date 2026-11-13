@@ -1151,8 +1151,12 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   which proves the download arrived whole, not who built it or what it does. Whoever controls the repository
   controls what runs. Only `https://github.com/<owner>/<repo>` is accepted, only its latest release that is neither
   a draft nor a pre-release, only the archive named for this OS and architecture (`docs/extensions.md`), and only
-  public repositories: the GitHub API is read without a token, so its unauthenticated rate limit applies. There is
-  no update: remove the extension and install it again. A prepared install waits in an `.installing-*` directory
+  public repositories: the GitHub API is read without a token, so its unauthenticated rate limit applies. An update
+  is the same download under the same checks, offered when the latest release's tag is a later
+  `MAJOR.MINOR.PATCH` version than the one installed (`internal/extensions/update.go`): an extension whose tags are
+  not versions is never offered one. lich looks at start and every six hours (`updateCheckEvery`), one
+  request per extension, and never updates on its own. An extension installed from a folder or placed by hand has
+  no release, so no update: remove it and install it again. A prepared install waits in an `.installing-*` directory
   that discovery skips until its confirmation is answered, for at most 15 minutes (`internal/extensions/staged.go`,
   `stagedTTL`): a person who takes longer gets an error naming the expired install and starts again. A download
   lich is killed in the middle of stays on disk until lich next starts, which deletes every `.installing-*`

@@ -61,6 +61,18 @@ func (c *Client) DiscardExtensionInstall(ctx context.Context, token string) erro
 	return err
 }
 
+// CheckExtensionUpdates looks for newer releases now and returns every
+// extension with what it found.
+func (c *Client) CheckExtensionUpdates(ctx context.Context) ([]Extension, error) {
+	return callMethod(ctx, c, api.ExtensionsCheckUpdates, api.None{})
+}
+
+// PrepareExtensionUpdate stages the newer release of extension id; nothing
+// changes until CommitExtensionInstall.
+func (c *Client) PrepareExtensionUpdate(ctx context.Context, id string) (ExtensionInstallPreview, error) {
+	return callMethod(ctx, c, api.ExtensionsPrepareUpdate, api.ExtensionIDOptions{ID: id})
+}
+
 // RemoveExtension stops extension id and deletes its directory.
 func (c *Client) RemoveExtension(ctx context.Context, id string) error {
 	_, err := callMethod(ctx, c, api.ExtensionsRemove, api.ExtensionIDOptions{ID: id})

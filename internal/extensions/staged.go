@@ -26,16 +26,18 @@ const (
 
 var errNoStaged = errors.New("this install is no longer waiting: it was installed, cancelled or expired; start it again")
 
-// stagedInstall is a prepared install: work holds id's checked copy.
+// stagedInstall is a prepared install: work holds id's checked copy, and
+// replaces is the installed extension an update takes the place of.
 type stagedInstall struct {
-	id    string
-	work  string
-	timer *time.Timer
+	id       string
+	work     string
+	replaces *installed
+	timer    *time.Timer
 }
 
 // hold records work as staged under a new token, deleted after stagedTTL
 // unless CommitInstall or DiscardInstall takes it first.
-func (s *Service) hold(id, work string) (string, error) {
+func (s *Service) hold(id, work string, replaces *installed) (string, error) {
 	raw := make([]byte, tokenBytes)
 	if _, err := rand.Read(raw); err != nil {
 		return "", fmt.Errorf("name the staged install: %w", err)
@@ -47,7 +49,7 @@ func (s *Service) hold(id, work string) (string, error) {
 		s.staged = map[string]stagedInstall{}
 	}
 	timer := time.AfterFunc(s.timing.stagedTTL, func() { s.expire(token) })
-	s.staged[token] = stagedInstall{id: id, work: work, timer: timer}
+	s.staged[token] = stagedInstall{id: id, work: work, replaces: replaces, timer: timer}
 	return token, nil
 }
 
@@ -83,15 +85,18 @@ func (s *Service) expire(token string) {
 }
 
 // CommitInstall moves the staged copy into the extensions directory and
-// starts it.
-func (s *Service) CommitInstall(_ context.Context, opts api.ExtensionInstallTokenOptions) (api.Extension, error) {
+// starts it, in place of the installed version when it is an update.
+func (s *Service) CommitInstall(ctx context.Context, opts api.ExtensionInstallTokenOptions) (api.Extension, error) {
 	st, ok := s.take(opts.Token)
 	if !ok {
 		return api.Extension{}, errNoStaged
 	}
-	defer func() { _ = os.RemoveAll(st.work) }()
 	s.installMu.Lock()
 	defer s.installMu.Unlock()
+	if st.replaces != nil {
+		return s.replace(ctx, st)
+	}
+	defer func() { _ = os.RemoveAll(st.work) }()
 	// Another install of the id may have committed since this one was staged.
 	if err := s.checkFree(st.id); err != nil {
 		return api.Extension{}, err

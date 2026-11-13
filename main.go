@@ -175,6 +175,7 @@ func app() {
 	boot := func() {
 		bootServices()
 		exts.Boot()
+		exts.WatchUpdates()
 	}
 	run(term, configDir, coord, boot, startWindow(sys, noWindow), closeWindow(hub))
 }

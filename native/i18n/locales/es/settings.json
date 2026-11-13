@@ -687,6 +687,17 @@
       "failed": "Falló",
       "invalid": "No válida",
       "stopped": "Detenida"
-    }
+    },
+    "update": "Actualizar",
+    "updateTo": "Actualizar a {version}",
+    "updating": "Actualizando…",
+    "updateTitle": "¿Actualizar {name} a {version}?",
+    "updated": "{name} se actualizó a {version}",
+    "updateFailed": "No se pudo actualizar {name}",
+    "checkUpdates": "Buscar actualizaciones",
+    "checkingUpdates": "Buscando…",
+    "checkFailed": "No se pudieron buscar actualizaciones de las extensiones",
+    "upToDate": "Tus extensiones están al día",
+    "permissionNew": "Nuevo en esta versión"
   }
 }

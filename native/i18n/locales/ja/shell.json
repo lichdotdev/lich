@@ -210,5 +210,10 @@
     "restart": "再起動",
     "openFolder": "フォルダーを開く",
     "restartFailed": "{name} を再起動できませんでした: {error}"
+  },
+  "extensionUpdateGate": {
+    "available": "{name} {version} が利用可能です",
+    "availableMany": "拡張機能のアップデート: {n} 件",
+    "review": "確認する"
   }
 }
