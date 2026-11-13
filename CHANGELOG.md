@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- A page in a session's browser now knows it has a mouse: effects a site turns on only for a pointer that can hover, like a glow that follows the cursor, work in the pane as they do in a browser window. Applies to every provider.
+
 ## [0.90.1] - 2026-11-12
 
 ### Added

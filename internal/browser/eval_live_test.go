@@ -94,3 +94,19 @@ func liveEvalService(t *testing.T) (*Service, string) {
 	})
 	return s, srv.URL + "/"
 }
+
+func TestChromePageSeesTheMouseThePaneGivesIt(t *testing.T) {
+	s, url := liveEvalService(t)
+	if _, err := s.Open("s", url); err != nil {
+		t.Fatal(err)
+	}
+	for _, query := range []string{"(hover: hover)", "(any-hover: hover)", "(pointer: fine)", "(any-pointer: fine)"} {
+		got, err := s.Eval(t.Context(), api.BrowserEvalOptions{ID: "s", Script: fmt.Sprintf("matchMedia(%q).matches", query)})
+		if err != nil {
+			t.Fatalf("%s: %v", query, err)
+		}
+		if got != "true" {
+			t.Errorf("%s: %s, want true", query, got)
+		}
+	}
+}

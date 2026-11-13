@@ -62,7 +62,8 @@ func chromeLaunch(dir string, headed bool, scale float64) (Page, error) {
 	if headed {
 		opts = append(opts, chromedp.Flag("headless", false))
 	} else {
-		opts = append(opts, chromedp.Flag("force-device-scale-factor", strconv.FormatFloat(scale, 'f', -1, 64)))
+		opts = append(opts, chromedp.Flag("force-device-scale-factor", strconv.FormatFloat(scale, 'f', -1, 64)),
+			chromedp.Flag("blink-settings", mousePointer))
 	}
 	allocCtx, allocCancel := chromedp.NewExecAllocator(context.Background(), opts...)
 	ctx, cancel := chromedp.NewContext(allocCtx)
@@ -112,6 +113,12 @@ func launchScale(scale float64) float64 {
 // the bytes.
 const disabledFeatures = "site-per-process,Translate,BlinkGenPropertyTrees," +
 	"OptimizationGuideModelDownloading,OptimizationTargetPrediction"
+
+// mousePointer tells the page it has a mouse. Headless Chrome finds no input
+// device and answers (hover: none) and (pointer: none), so a page that asks
+// before wiring its hover effects ignored the pointer the pane passes it. The
+// values are Blink's HoverType and PointerType bits: 2 is hover, 4 is fine.
+const mousePointer = "primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4"
 
 type chromePage struct {
 	ctx         context.Context
