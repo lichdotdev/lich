@@ -104,6 +104,9 @@ type model struct {
 	// themeSelection hears the stored theme selection change
 	// (ThemeSelectionEvent).
 	themeSelection func(backend.ThemeSelection)
+	// themeUpdates hears the newer versions known for the installed theme
+	// packs change (ThemeUpdatesEvent).
+	themeUpdates func()
 	// exited hears a session's process end.
 	exited func(id string, e sessionExit)
 	// duplicate hears a session report a conversation another open card
@@ -436,6 +439,10 @@ func (m *model) follow(ctx context.Context, events <-chan backend.Event) {
 		case api.ThemeSelectionEvent.Name:
 			if sel, err := backend.Decode(ev, api.ThemeSelectionEvent); err == nil && m.themeSelection != nil {
 				m.themeSelection(sel)
+			}
+		case api.ThemeUpdatesEvent.Name:
+			if m.themeUpdates != nil {
+				m.themeUpdates()
 			}
 		case api.PullRequestChangedEvent.Name:
 			if m.prChanged != nil {

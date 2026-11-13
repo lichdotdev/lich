@@ -10,9 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **Draw on a page in a session's browser for the agent to see.** Draw, on the bar over the bottom of the page, turns the pointer into a pencil; the eraser removes whole strokes and Ctrl+Z takes the last one back. Send hands the agent a screenshot of the page with your drawing on it.
+- **lich tells you when a theme pack you installed has a new version.** A toast offers Update or Later, and the pack's cards in Settings › Appearance show the version with an Update action. Check for updates, over the cards, looks right away.
 
 ### Changed
 
+- **A theme's Update button shows only when its pack has a new version.** It used to sit on every theme from a repository and look for one when clicked; Check for updates, over the cards, does that now.
 - **The tools for leaving notes on a page moved from the browser's toolbar onto the page.** A bar over its bottom holds Select, which was the crosshair, and Draw; its arrow folds it into a tab on the page's edge. Ctrl+Shift+E (Cmd+Shift+E on macOS) still turns Select on and off.
 - **Small labels across the window share one size.** The command palette's field reads "Search, or type > for actions", a second-level heading in Markdown no longer reads as a first-level one, and the Fixed dot in What's new is gray like Removed's.
 - **A card dragged in the sidebar is filed into a folder when you let it go anywhere over it.** It used to need the folder's name; the same holds with the sidebar collapsed.

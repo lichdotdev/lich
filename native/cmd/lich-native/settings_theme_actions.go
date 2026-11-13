@@ -27,6 +27,7 @@ type packConflict struct {
 type themeTasks struct {
 	importing  bool   // a clone or a file import is running
 	updating   string // the theme an update is running for
+	checking   bool   // a check for newer pack versions is running
 	importOpen bool
 	focusURL   bool // the import dialog's field takes the focus next frame
 	removal    *themeRef
@@ -160,6 +161,23 @@ func (p *themePicker) updateTheme(id string) {
 		default:
 			p.success(i18n.T("settings.appearanceSettings.updated", i18n.Args{"pack": res.Pack, "version": res.Version}))
 			p.reloadThemes()
+		}
+	}()
+}
+
+// checkUpdates asks the backend to look for newer pack versions now. What
+// it finds reaches the cards through the themes; finding nothing says so.
+func (p *themePicker) checkUpdates() {
+	p.with(func(t *themeTasks) { t.checking = true })
+	go func() {
+		defer p.with(func(t *themeTasks) { t.checking = false })
+		if err := p.client.CheckThemeUpdates(p.ctx); err != nil {
+			p.fail(i18n.T("settings.themePicker.checkFailed", failedWith(err)))
+			return
+		}
+		p.reloadThemes()
+		if len(pendingThemeUpdates(p.look.view().themes)) == 0 {
+			p.success(i18n.T("settings.themePicker.allUpToDate"))
 		}
 	}()
 }

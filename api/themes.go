@@ -11,6 +11,7 @@ var (
 	ThemesImport          = define[ImportThemeOptions, ThemeImportResult]("themes.Import")
 	ThemesInstallFromGit  = define[InstallThemesOptions, ThemeGitResult]("themes.InstallFromGit")
 	ThemesUpdateFromGit   = define[UpdateThemeOptions, ThemeGitResult]("themes.UpdateFromGit")
+	ThemesCheckUpdates    = define[None, None]("themes.CheckUpdates")
 	ThemesRemove          = define[RemoveThemeOptions, None]("themes.Remove")
 	ThemesSaveTemplate    = define[SaveThemeTemplateOptions, None]("themes.SaveTemplate")
 	ThemesSelection       = define[None, ThemeSelection]("themes.Selection")
@@ -36,6 +37,15 @@ type Theme struct {
 	// which the window draws while the OS asks for that scheme and the user
 	// turned on following it.
 	Pair string `json:"pair,omitempty"`
+	// Latest is set by lich, never by a file: the newer version of this
+	// theme's pack the last update check found, nil when there is none.
+	Latest *ThemeLatest `json:"latest,omitempty"`
+}
+
+// ThemeLatest is a version of a theme pack newer than the installed one.
+type ThemeLatest struct {
+	Pack    string `json:"pack"`
+	Version string `json:"version"`
 }
 
 // BrokenTheme is a stored custom theme this lich cannot load. It is listed

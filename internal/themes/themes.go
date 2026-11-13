@@ -13,6 +13,7 @@ import (
 	"slices"
 	"sort"
 	"strings"
+	"sync"
 	"unicode/utf8"
 
 	"github.com/lichdotdev/lich/api"
@@ -77,6 +78,13 @@ type Service struct {
 	initErr     error
 	settings    Settings
 	emit        func(name string, data any)
+
+	// checking serializes CheckUpdates, so the timer and a click never clone
+	// the same repositories at once.
+	checking sync.Mutex
+	mu       sync.Mutex
+	// latest is the newest version the last check read, by repository URL.
+	latest map[string]api.ThemeLatest
 }
 
 // New returns a theme service rooted under lich's config directory, checking
@@ -89,7 +97,7 @@ func New(lichVersion string, settings Settings, emit func(name string, data any)
 
 // NewInDir returns a theme service rooted at dir. It is used by tests.
 func NewInDir(dir string) *Service {
-	return &Service{dir: dir}
+	return &Service{dir: dir, emit: func(string, any) {}}
 }
 
 func defaultDir() (string, error) {
@@ -117,6 +125,7 @@ func (s *Service) List(_ context.Context, _ api.None) ([]Theme, error) {
 	for _, theme := range bundledThemes {
 		out = append(out, cloneTheme(theme))
 	}
+	s.markLatest(custom)
 	out = append(out, custom...)
 	return out, nil
 }
@@ -214,6 +223,8 @@ func decodeStored(data []byte) (Theme, error) {
 		return Theme{}, fmt.Errorf("parse theme JSON: %w", err)
 	}
 	theme.Origin = OriginCustom
+	// Latest is what a check found, never what a file says.
+	theme.Latest = nil
 	fillMissingAppTokens(&theme)
 	if err := validateCustom(theme); err != nil {
 		return Theme{}, err

@@ -181,14 +181,15 @@ type window struct {
 	win         *app.Window
 	closer      closePrompt
 	// notifier is the desktop channel; optIn its one-time question.
-	notifier   *notifier
-	optIn      notifyOptIn
-	gitMissing gitMissing
-	setup      providerSetup
-	tour       windowTour
-	plugin     pluginGate
-	appUpdate  appUpdateGate
-	drop       terminalDrop
+	notifier    *notifier
+	optIn       notifyOptIn
+	gitMissing  gitMissing
+	setup       providerSetup
+	tour        windowTour
+	plugin      pluginGate
+	appUpdate   appUpdateGate
+	themeUpdate themeUpdateGate
+	drop        terminalDrop
 	// islandAt is the island's top-left in window pixels, where body put it.
 	islandAt image.Point
 	// layoutStage is the panes' state while a layout is on screen.
@@ -287,6 +288,7 @@ func run(w *app.Window, rt backend.Runtime) error {
 	}
 	u.model.prChanged = u.prChanged
 	u.model.themeSelection = u.appearance.applySelection
+	u.model.themeUpdates = u.themeUpdatesChanged
 	u.model.exited = u.sessionExited
 	u.model.serviceReveal = u.revealService
 	u.model.duplicate = u.warnDuplicate
@@ -576,6 +578,7 @@ func (u *window) connect() error {
 	}
 	go u.settings.startupPatchNotes()
 	go u.pollAppUpdate()
+	go u.promptThemeUpdates()
 	return nil
 }
 

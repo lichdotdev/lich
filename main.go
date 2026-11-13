@@ -579,7 +579,9 @@ func registerServices(db *store.Service, term *terminal.Service, svcs *services.
 		Notify: sys.Notify, ShowCode: proj.ShowCode, OpenURL: brows.OpenURL, Attached: hub.Attached,
 	})
 	hub.Observe(exts.Observe)
-	routes.Themes(dispatcher, themes.New(version, db, hub.Emit))
+	themeSvc := themes.New(version, db, hub.Emit)
+	routes.Themes(dispatcher, themeSvc)
+	go themeSvc.WatchUpdates(context.Background())
 	// The tray is what a lich with its window closed shows of itself; it comes
 	// up once the window hands it its words (tray.SetLabels).
 	trayIcon := tray.New(trayIcons(), func() { showWindow(sys, "from the tray") }, coord.Quit)

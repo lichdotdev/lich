@@ -86,7 +86,11 @@
       "one": "{count} 个主题",
       "other": "{count} 个主题"
     },
-    "updateHint": "检查仓库中是否有更新的版本",
+    "updateTo": "更新到 v{version}",
+    "updateAvailable": "v{version} 可用",
+    "checkUpdates": "检查更新",
+    "checkFailed": "无法检查主题更新：{error}",
+    "allUpToDate": "主题均为最新版本",
     "removeNamed": "移除 {name}"
   },
   "brokenThemeList": {

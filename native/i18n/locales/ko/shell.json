@@ -29,6 +29,15 @@
     "install": "설치",
     "viewRelease": "릴리스 보기"
   },
+  "themeUpdateGate": {
+    "available": "{pack} 테마 팩 v{version} 버전을 사용할 수 있습니다",
+    "several": {
+      "one": "테마 팩 {count}개에 새 버전이 있습니다",
+      "other": "테마 팩 {count}개에 새 버전이 있습니다"
+    },
+    "update": "업데이트",
+    "openSettings": "설정 열기"
+  },
   "emptySessions": {
     "title": "열린 세션이 없습니다",
     "description": "이 프로젝트에서 작업을 시작하려면 세션을 여세요.",

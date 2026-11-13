@@ -86,7 +86,11 @@
       "one": "{count} theme",
       "other": "{count} themes"
     },
-    "updateHint": "Check the repository for a newer version",
+    "updateTo": "Update to v{version}",
+    "updateAvailable": "v{version} available",
+    "checkUpdates": "Check for updates",
+    "checkFailed": "Couldn't check for theme updates: {error}",
+    "allUpToDate": "Your themes are up to date",
     "removeNamed": "Remove {name}"
   },
   "brokenThemeList": {

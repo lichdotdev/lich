@@ -293,6 +293,11 @@ var (
 	// to it is stored.
 	ThemeSelectionEvent = defineEvent[ThemeSelection]("theme-selection")
 
+	// ThemeUpdatesEvent is pushed on /events once the newer versions known for
+	// the installed theme packs changed: a check found or lost one, or an
+	// update installed one. Theme.Latest carries them.
+	ThemeUpdatesEvent = defineEvent[None]("theme-updates")
+
 	// PullRequestChangedEvent is what a pull request write through lich reports
 	// once GitHub took it, so every window's pull request store reads it again
 	// instead of the screen that made the change telling the others.
