@@ -378,7 +378,7 @@ func (u *window) browserInput(gtx C, p *browserPaneUI, session string, scale flo
 		key.Filter{Focus: &p.tag, Name: key.NameReturn, Required: key.ModShortcut},
 		key.Filter{Focus: &p.tag, Name: key.NameEnter, Required: key.ModShortcut},
 		transfer.TargetFilter{Target: &p.tag, Type: "application/text"})
-	if focused && !gtx.Focused(&p.url) && !gtx.Focused(&p.tag) && !gtx.Focused(&p.notes.editor) && !gtx.Focused(&p.dialog.field) {
+	if focused && !gtx.Focused(&p.url) && !gtx.Focused(&p.tag) && !gtx.Focused(&p.notes.editor) && !gtx.Focused(&p.notes.closing) && !gtx.Focused(&p.dialog.field) {
 		gtx.Execute(key.FocusCmd{Tag: &p.tag})
 	}
 	writeCopied(gtx, p)

@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Dragging over text in a session's browser page now selects it.** The page saw the drag and selected nothing, so there was nothing to copy.
 - **A page in a session's browser now knows it has a mouse.** Effects a site turns on only for a pointer that can hover, like a glow that follows the cursor, work in the pane.
+- **The note about all of them, at the bottom of the browser's notes tray, takes typing again after you draw or pick on the page.**
 - **A row coming into the sidebar's tree no longer shows a lit stub of its highlight under the row above.**
 
 ## [0.90.1] - 2026-11-12
