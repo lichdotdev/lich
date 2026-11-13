@@ -38,7 +38,10 @@ const closeWait = 5 * time.Second
 // URL. chromedp's default of 20s is shorter than a cold start: on a GitHub
 // Ubuntu runner the first launch of the suite passed 20s, the second took 6s
 // and the third 1s, each before Chrome's own sandbox check, so the time goes to
-// loading the browser off a cold disk, which a slow machine pays too.
+// loading the browser off a cold disk, which a slow machine pays too. It bounds
+// the dial of that URL as well: chromedp's 10s ran out on the first launch of
+// the suite, after Chrome took about 31s to print it (GitHub Ubuntu runner,
+// 2026-11-13).
 const launchWait = 60 * time.Second
 
 // chromeLaunch starts a Chromium-family browser via CDP. ExecPath is
@@ -66,7 +69,7 @@ func chromeLaunch(dir string, headed bool, scale float64) (Page, error) {
 			chromedp.Flag("blink-settings", mousePointer))
 	}
 	allocCtx, allocCancel := chromedp.NewExecAllocator(context.Background(), opts...)
-	ctx, cancel := chromedp.NewContext(allocCtx)
+	ctx, cancel := chromedp.NewContext(allocCtx, chromedp.WithBrowserOption(chromedp.WithDialTimeout(launchWait)))
 	if err := chromedp.Run(ctx, interceptFiles); err != nil {
 		cancel()
 		allocCancel()
