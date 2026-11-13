@@ -167,6 +167,8 @@ func arrayMove(ids []string, id, over string) []string {
 
 // block draws one block: the header, then its rows. A block dragged by its
 // header wears the sidebar's fill, so it covers the blocks it passes over.
+// While a card is carried, a block that takes it is a drop target as a whole,
+// its rows included, not by its header alone.
 func (s *sidebar) block(gtx C, th *ui.Theme, b blockView, f blockFrame) D {
 	st := s.blockState(b)
 	dragEnded := s.dropCards(gtx, st, b, f)
@@ -193,6 +195,9 @@ func (s *sidebar) block(gtx C, th *ui.Theme, b blockView, f blockFrame) D {
 		body = func(gtx C) D { return dropTray(gtx, th, b.color, inner) }
 	case b.kind == blockFolder && (!b.collapsed || st.tree.hasRows()):
 		body = func(gtx C) D { return folderTray(gtx, th, b.color, inner) }
+	}
+	if takes, _ := s.headerDrop(b, f.view); takes {
+		return s.carry.Target(gtx, b.key, body)
 	}
 	if s.sort.Dragging() != b.key {
 		return body(gtx)

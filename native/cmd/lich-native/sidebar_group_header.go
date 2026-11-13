@@ -50,15 +50,11 @@ var (
 
 // groupHeader is a block's header: the title (or the folder's rename field) and the …,
 // and under them the note a rename onto another folder earns. While a card is
-// carried, a header that takes it is a drop target; every other one fades.
+// carried, a header whose block refuses it fades.
 func (s *sidebar) groupHeader(gtx C, th *ui.Theme, b blockView, st *blockState, f blockFrame) D {
-	takes, refuses := s.headerDrop(b, f.view)
+	_, refuses := s.headerDrop(b, f.view)
 	if b.kind == blockCheckout {
-		row := func(gtx C) D { return s.checkoutHeader(gtx, th, b, st, f) }
-		if !takes {
-			return row(gtx)
-		}
-		return s.carry.Target(gtx, b.key, row)
+		return s.checkoutHeader(gtx, th, b, st, f)
 	}
 	if st.toggle.Clicked(gtx) && !f.headerDragEnded {
 		f.act.fold = b.key
@@ -69,10 +65,7 @@ func (s *sidebar) groupHeader(gtx C, th *ui.Theme, b blockView, st *blockState, 
 			layout.Rigid(func(gtx C) D { return s.mergeNote(gtx, th, b, st, f.view.folders) }),
 		)
 	}
-	if !takes {
-		return row(gtx)
-	}
-	return s.carry.Target(gtx, b.key, row)
+	return row(gtx)
 }
 
 // headerDrop is how the header answers the card in the air: whether it takes

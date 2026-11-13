@@ -66,9 +66,9 @@ func (r *sidebarRail) sort(block string) *railSort {
 	return st
 }
 
-// group draws a block's rows: its head, a drop target while a card it takes
-// is carried, then its rows sorting. A block a card would go to wears the
-// open sidebar's lit tray.
+// group draws a block's rows: its head, then its rows sorting, the two a drop
+// target as a whole while a card it takes is carried. A block a card would go
+// to wears the open sidebar's lit tray.
 func (r *sidebarRail) group(gtx C, th *ui.Theme, s *sidebar, g railGroup, b blockView, known bool, active string, act *sidebarAction) D {
 	st := r.sort(g.block)
 	ended := known && r.dropRail(gtx, s, st, b, act)
@@ -88,7 +88,7 @@ func (r *sidebarRail) group(gtx C, th *ui.Theme, s *sidebar, g railGroup, b bloc
 	body := func(gtx C) D {
 		children := make([]layout.FlexChild, 0, len(lead)-gap+1)
 		for _, it := range lead[gap:] {
-			children = append(children, layout.Rigid(func(gtx C) D { return r.head(gtx, th, s, it, b, known, active, act) }))
+			children = append(children, layout.Rigid(func(gtx C) D { return r.item(gtx, th, s, it, active, act) }))
 		}
 		children = append(children, layout.Rigid(func(gtx C) D { return r.rows(gtx, th, s, st, b, lead[gap:], rows, active, act) }))
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
@@ -102,28 +102,20 @@ func (r *sidebarRail) group(gtx C, th *ui.Theme, s *sidebar, g railGroup, b bloc
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
 		}),
 		layout.Rigid(func(gtx C) D {
+			tray := body
 			if lit {
-				return dropTray(gtx, th, b.color, body)
+				tray = func(gtx C) D { return dropTray(gtx, th, b.color, body) }
 			}
-			return body(gtx)
+			if takes, _ := s.headerDrop(b, r.view); known && takes {
+				return s.carry.Target(gtx, b.key, tray)
+			}
+			return tray(gtx)
 		}),
 	)
 	if ended {
 		act.activate = ""
 	}
 	return d
-}
-
-// head draws a block's head, a target for a card it would take.
-func (r *sidebarRail) head(gtx C, th *ui.Theme, s *sidebar, it railItem, b blockView, known bool, active string, act *sidebarAction) D {
-	row := func(gtx C) D { return r.item(gtx, th, s, it, active, act) }
-	if !known {
-		return row(gtx)
-	}
-	if takes, _ := s.headerDrop(b, r.view); !takes {
-		return row(gtx)
-	}
-	return s.carry.Target(gtx, b.key, row)
 }
 
 // rows lays out a block's rows as a sortable list: each card picks up, the
