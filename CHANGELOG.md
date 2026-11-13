@@ -9,26 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- You can draw on a page in a session's browser for the agent to see. Draw, on the bar over the bottom of the page, turns the pointer into a pencil: drag to circle or point at something, in any of the card colors. The eraser beside the colors removes whole strokes: the ones you drag it over go faint, and they go when you let go. Ctrl+Z takes back the last stroke or the last erasing. Send hands the agent a screenshot of the page with your drawing on it, alone or after your notes in the same message. The page does not scroll while a drawing is on it, and navigating away drops it. Applies to every provider; an agent whose model reads no images gets the file's path and cannot look at it.
+- **Draw on a page in a session's browser for the agent to see.** Draw, on the bar over the bottom of the page, turns the pointer into a pencil; the eraser removes whole strokes and Ctrl+Z takes the last one back. Send hands the agent a screenshot of the page with your drawing on it.
 
 ### Changed
 
-- The tools for leaving notes on a page moved from the browser's toolbar onto the page: a bar over its bottom holds Select, which was the crosshair, and Draw, each by name. A click turns a tool on, and a click on it again, or Esc, turns it off. The bar's arrow folds it into a small tab on the page's edge when it is in the way, and a click on the tab brings it back. Ctrl+Shift+E (Cmd+Shift+E on macOS) still turns Select on and off.
-
-- The command palette's field now reads "Search, or type > for actions" instead of listing everything it finds. Small labels across the window (a group's label, a theme's caption, a count badge, the buttons inside a diff) share one size, 10.5, where some were 11, and a second-level heading in Markdown is 18 instead of 19, so it no longer reads as a first-level one. In What's new, the Fixed group's dot is gray like Removed's, no longer a blue the window uses nowhere else.
-
-- A card dragged in the sidebar is filed into a folder when you let it go anywhere over that folder, its sessions included, not only over its name. Moving a card from an "In progress" folder to a "Done" one is one drag to wherever "Done" sits. The same holds with the sidebar collapsed. Applies to every provider.
-
-- The agent's cursor over its browser page is a new arrow, the one of Bibata Modern (GPL-3.0, by Abdulkaiz Khatri), in place of the arrow lich drew before. Its color, its badge and the way it moves are unchanged. Applies to every provider.
-
+- **The tools for leaving notes on a page moved from the browser's toolbar onto the page.** A bar over its bottom holds Select, which was the crosshair, and Draw; its arrow folds it into a tab on the page's edge. Ctrl+Shift+E (Cmd+Shift+E on macOS) still turns Select on and off.
+- **Small labels across the window share one size.** The command palette's field reads "Search, or type > for actions", a second-level heading in Markdown no longer reads as a first-level one, and the Fixed dot in What's new is gray like Removed's.
+- **A card dragged in the sidebar is filed into a folder when you let it go anywhere over it.** It used to need the folder's name; the same holds with the sidebar collapsed.
+- **What's new lists each entry as a title with a short text under it.** Nothing folds open any more, and the header no longer counts the entries.
+- **The agent's cursor over its browser page is a new arrow.** It is the one of Bibata Modern (GPL-3.0, by Abdulkaiz Khatri); its color, its badge and the way it moves are unchanged.
 - **The Pulls list's header fits on one line.** The Open menu sits inside the filter field, and the filters and New pull request share its line.
 
 ### Fixed
 
 - **A row under the pointer in Pulls and in an extension's panel lights across its whole width.** It was a rounded box set in from the sides, with its corners showing against the lines between rows.
-- Dragging over text in a session's browser page now selects it: the page saw the drag and selected nothing, so there was nothing to copy. Applies to every provider.
-- A page in a session's browser now knows it has a mouse: effects a site turns on only for a pointer that can hover, like a glow that follows the cursor, work in the pane as they do in a browser window. Applies to every provider.
-- A selected, hovered or colored row coming into the sidebar's tree no longer shows a lit stub of its highlight under the row above: the highlight left of the row's ring now fades in with the rest of it.
+- **Dragging over text in a session's browser page now selects it.** The page saw the drag and selected nothing, so there was nothing to copy.
+- **A page in a session's browser now knows it has a mouse.** Effects a site turns on only for a pointer that can hover, like a glow that follows the cursor, work in the pane.
+- **A row coming into the sidebar's tree no longer shows a lit stub of its highlight under the row above.**
 
 ## [0.90.1] - 2026-11-12
 

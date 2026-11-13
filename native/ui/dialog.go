@@ -246,11 +246,14 @@ func (d DialogStyle) content(gtx C) D {
 
 // header is DialogHeader (flex-col gap-2) over DialogTitle (leading-none
 // font-medium) and DialogDescription (text-sm text-muted-foreground); both
-// wrap.
+// wrap, and a dialog with no description is its title alone.
 func (d DialogStyle) header(gtx C) D {
 	title := d.theme.Text(TextSM, d.Title).Weight(font.Medium).Leading(TextSM)
 	description := d.theme.Text(TextSM, d.Description).Muted()
 	title.MaxLines, description.MaxLines = 0, 0
+	if d.Description == "" {
+		return title.Layout(gtx)
+	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(title.Layout),
 		VGap(2),

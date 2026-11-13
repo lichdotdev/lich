@@ -73,6 +73,9 @@ lives in the code, `docs/` and `CHANGELOG.md` — never restate any of it here.
   draws? Take a `-shot` and look at it; the maintainer's review in a real window is the one to trust.
 - Shipped anything a user can see? Its `CHANGELOG.md` `[Unreleased]` entry lands in the same PR — the release notes
   are read from there, so an entry written later is an entry that missed its release.
+  An entry opens with one bold sentence saying what changed for the person using lich, the title the What's new
+  dialog lists, then at most two plain sentences: where it is and what to do. Mechanics and edge cases go to
+  `docs/`; name a provider only when it is left out.
 - Touched an OS seam or a `_test.go` build tag? Run the same cross-compile loop CI runs:
   `for os in linux darwin windows; do GOOS=$os go build ./... && GOOS=$os go vet ./...; done`
   Cross-compiling only proves it builds; the backend suite runs on real Windows and macOS runners on every PR,
