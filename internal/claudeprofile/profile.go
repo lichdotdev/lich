@@ -42,7 +42,9 @@ var store = profilestore.Spec{
 	HomeVar:     "CLAUDE_CONFIG_DIR",
 	PersonalDir: PersonalDir,
 	// Claude Code writes through a link to its target (measured on 2.1.296).
-	SharedFiles: []string{"settings.json", "CLAUDE.md"},
+	// settings.json is not linked: it holds an account's own default model
+	// (syncSettings).
+	SharedFiles: []string{"CLAUDE.md"},
 	Shared:      []string{"agents", "commands", "skills", "hooks"},
 	// Personal's marketplace clones, so a profile does not clone every
 	// marketplace again. The two state files beside them stay per profile: an
@@ -59,7 +61,14 @@ var store = profilestore.Spec{
 	},
 	PersonalPath: personalPath,
 	Seed:         seed,
-	Sync:         layoutPluginCache,
+	Sync:         syncProfile,
+}
+
+func syncProfile(personal, dir string) error {
+	if err := syncSettings(personal, dir); err != nil {
+		return err
+	}
+	return layoutPluginCache(personal, dir)
 }
 
 // Root is where lich keeps its Claude profiles.

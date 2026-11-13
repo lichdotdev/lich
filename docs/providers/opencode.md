@@ -84,7 +84,8 @@ be split. A profile is a data home of its own (`XDG_DATA_HOME` pointed at `<lich
 dir>/profiles/opencode/<slug>/`, `internal/xdgprofile`, `internal/profilestore/linkhome.go`) made of links to every
 entry of yours but `opencode/`, which is the profile's. The config under `~/.config/opencode` (plugins, agents, MCP
 servers, lich's plugin) is not under the data home and is every profile's, and `XDG_STATE_HOME` is not moved, so
-opencode's locks are every profile's too. `OPENCODE_DB`, `OPENCODE_AUTH_CONTENT`, `OPENCODE_CONSOLE_TOKEN` and
+opencode's locks are every profile's too, and so is `model.json`, the models picked last, whose first a new
+session opens on (measured on 1.19.4). `OPENCODE_DB`, `OPENCODE_AUTH_CONTENT`, `OPENCODE_CONSOLE_TOKEN` and
 `OPENCODE_API_KEY` are dropped from a profile's spawn; the provider API-key variables are not.
 
 The same holds on macOS and Windows: the 1.18.35 bundle, read on 2026-10-17 and never run there, resolves its data as

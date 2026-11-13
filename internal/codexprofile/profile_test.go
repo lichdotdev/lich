@@ -190,15 +190,15 @@ func TestEnsureSharedLinksWhatPersonalGainedLater(t *testing.T) {
 		t.Fatal(err)
 	}
 	mustWrite(t, filepath.Join(personal, "AGENTS.md"), "rules")
-	mustWrite(t, filepath.Join(p.Dir, "config.toml"), "model = \"mine\"\n\n[plugins.\"own@m\"]\nenabled = true\n")
-	mustWrite(t, filepath.Join(personal, "config.toml"), "model = \"shared\"\n")
+	mustWrite(t, filepath.Join(p.Dir, "config.toml"), "approval_policy = \"mine\"\n\n[plugins.\"own@m\"]\nenabled = true\n")
+	mustWrite(t, filepath.Join(personal, "config.toml"), "approval_policy = \"shared\"\n")
 	if err := EnsureShared(p.Slug); err != nil {
 		t.Fatal(err)
 	}
 	if !profilestore.IsLink(filepath.Join(p.Dir, "AGENTS.md")) {
 		t.Error("AGENTS.md created after the profile was not linked")
 	}
-	want := "model = \"shared\"\n\n[plugins.\"own@m\"]\nenabled = true\n"
+	want := "approval_policy = \"shared\"\n\n[plugins.\"own@m\"]\nenabled = true\n"
 	if data, _ := os.ReadFile(filepath.Join(p.Dir, "config.toml")); string(data) != want {
 		t.Errorf("config.toml after a spawn = %q, want Personal's settings and the profile's plugins %q", data, want)
 	}

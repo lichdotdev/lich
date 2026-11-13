@@ -3,6 +3,7 @@ package codexprofile
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/lichdotdev/lich/internal/profilestore"
@@ -39,8 +40,10 @@ func spawnWith(t *testing.T, personal, own string) string {
 	return string(data)
 }
 
-func TestAProfileKeepsItsPluginSetAndTakesPersonalsSettings(t *testing.T) {
+func TestAProfileKeepsItsPluginSetAndModelAndTakesPersonalsSettings(t *testing.T) {
 	personal := `model = "gpt-5"
+model_reasoning_effort = "high"
+approval_policy = "never"
 
 [mcp_servers.lich]
 command = "lich"
@@ -56,6 +59,8 @@ enabled = true
 goals = true
 `
 	own := `model = "o3"
+model_reasoning_effort = "low"
+approval_policy = "on-request"
 
 [features]
 goals = false
@@ -68,7 +73,9 @@ ref = "v1"
 [plugins."tool@work"]
 enabled = false
 `
-	want := `model = "gpt-5"
+	want := `model = "o3"
+model_reasoning_effort = "low"
+approval_policy = "never"
 
 [mcp_servers.lich]
 command = "lich"
@@ -204,5 +211,27 @@ func TestAProfileThatLinkedPersonalsConfigGetsItsOwn(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(personal, "plugins", "cache", "m", "home", "file")); err != nil {
 		t.Errorf("Personal's plugin cache lost a file: %v", err)
+	}
+}
+
+func TestPersonalsModelNoLongerReachesAProfile(t *testing.T) {
+	personal := machine(t)
+	shared := filepath.Join(personal, "config.toml")
+	mustWrite(t, shared, "model = \"gpt-5\"\nmodel_reasoning_effort = \"high\"\nnotify = [\n  \"model = x\",\n]\n")
+	p, err := Create("Work")
+	if err != nil {
+		t.Fatal(err)
+	}
+	config := filepath.Join(p.Dir, "config.toml")
+	if data, _ := os.ReadFile(config); !strings.HasPrefix(string(data), "model = \"gpt-5\"\nmodel_reasoning_effort = \"high\"\n") {
+		t.Errorf("a new profile's config.toml = %q, want Personal's model and effort", data)
+	}
+	mustWrite(t, shared, "model = \"o3\"\nnotify = [\n  \"model = x\",\n]\n")
+	if err := EnsureShared(p.Slug); err != nil {
+		t.Fatal(err)
+	}
+	want := "model = \"gpt-5\"\nmodel_reasoning_effort = \"high\"\nnotify = [\n  \"model = x\",\n]\n"
+	if data, _ := os.ReadFile(config); string(data) != want {
+		t.Errorf("config.toml = %q, want %q", data, want)
 	}
 }

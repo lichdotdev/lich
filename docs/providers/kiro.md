@@ -103,7 +103,8 @@ Linux only. Kiro (2.21.0, measured 2026-10-12 in throwaway homes) keeps its logi
 `$XDG_DATA_HOME/kiro-cli/data.sqlite3` (`auth_kv`, beside its history and state tables; issue #766), and the TUI it
 runs (`bun`, `node`, `tui.js`, a few hundred MB) in the same folder. `KIRO_HOME` moves `~/.kiro` (settings, agents,
 steering, skills and the conversations, `sessions/cli/<uuid>.json` with the `.jsonl` beside it), which no profile
-moves, so a conversation is every profile's. So a profile is a data home of its own (`XDG_DATA_HOME` pointed at
+moves, so a conversation is every profile's, and so is the default model (`chat.defaultModel` in
+`settings/cli.json`, measured on 2.21.0). So a profile is a data home of its own (`XDG_DATA_HOME` pointed at
 `<lich config dir>/profiles/kiro/<slug>/`, `internal/xdgprofile`, `internal/profilestore/linkhome.go`) made of links
 to every entry of yours, `kiro-cli/` linked entry by entry so the TUI bundle is not downloaded again, except
 `data.sqlite3` (with its `-wal`, `-shm` and `-journal`) and `.refresh.lock`, which are the profile's. `KIRO_API_KEY`

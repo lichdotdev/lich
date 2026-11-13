@@ -83,7 +83,9 @@ plugin set (`[plugins."<key>"]`, `[marketplaces.<name>]`) in the same `config.to
 reads no second user file it could be split into: a `managed_config.toml` in `CODEX_HOME` is ignored, the other
 layers are `/etc/codex` and a project's `.codex/config.toml`, and `-c` would hide the plugin set from Codex's own
 writes (measured on 0.162.1). So a profile's `config.toml` is a file of its own, and before every spawn lich
-writes it again (`config.go`) as Personal's tables minus Personal's plugin set, then the profile's plugin set,
+writes it again (`config.go`) as Personal's top-level keys but the profile's own `model` and
+`model_reasoning_effort`, the account's default that `/model` saves there (measured on 0.162.1), then Personal's tables minus Personal's
+plugin set, then the profile's plugin set,
 then the project trust (`[projects.*]`), hook trust (`[hooks.state.*]`) and dismissed notices (`[notice]`) the
 profile was given and Personal was not. The cut is by table header and copies tables as they are written; plugin
 or marketplace keys Personal writes as dotted keys above its first table (Codex never does) are every profile's.

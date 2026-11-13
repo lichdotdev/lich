@@ -47,7 +47,7 @@ func PluginStore(dir string) string {
 	return filepath.Join(filepath.Dir(dir), pluginStoreName)
 }
 
-// layoutPluginCache is the Sync of a Claude profile: it gives the profile a
+// layoutPluginCache is part of the Sync of a Claude profile: it gives the profile a
 // cache of its own, moving one that still links to Personal's, and turns each
 // version the profile names into a link into the store. A version it does not
 // name stays as Claude Code left it, for its sweep to decide.

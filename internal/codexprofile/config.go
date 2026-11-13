@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -57,10 +58,16 @@ func classify(path []string) tableClass {
 	return fromPersonal
 }
 
+// profileKeys are the top-level keys of config.toml a profile keeps as its
+// own: the default model and reasoning effort `/model` saves (measured on
+// 0.162.1), which belong to an account.
+var profileKeys = []string{"model", "model_reasoning_effort"}
+
 // syncConfig rebuilds a profile's config.toml from Personal's and its own
 // (composeConfig), the Sync of the profile store. A config.toml that is still a
 // link to Personal's, from a profile made when the whole file was shared, is
 // taken as holding nothing of the profile's, and its download links go with it.
+// One with no file of its own yet starts on Personal's model and effort.
 func syncConfig(personal, dir string) error {
 	shared, err := readOptional(filepath.Join(personal, configFile))
 	if err != nil {
@@ -74,6 +81,10 @@ func syncConfig(personal, dir string) error {
 		}
 	} else if own, err = readOptional(path); err != nil {
 		return err
+	}
+	if own == nil {
+		_, owned := splitRoot(splitTables(shared)[0].text)
+		own = []byte(owned)
 	}
 	out := composeConfig(shared, own)
 	if bytes.Equal(out, own) && !profilestore.IsLink(path) {
@@ -106,18 +117,24 @@ func readOptional(path string) ([]byte, error) {
 	return data, nil
 }
 
-// composeConfig is a profile's config.toml: Personal's tables but its plugin
+// composeConfig is a profile's config.toml: the profile's own top-level keys
+// (profileKeys) and Personal's other ones, Personal's tables but its plugin
 // set, then the profile's plugin set and the answers only the profile has given
-// (classify). Tables are copied as they are written, comments included; the
-// profile's top-level keys are dropped, since those are Personal's.
+// (classify). Tables are copied as they are written, comments included.
 func composeConfig(personal, profile []byte) []byte {
 	var out bytes.Buffer
 	given := map[string]bool{}
-	for _, t := range splitTables(personal) {
+	_, owned := splitRoot(splitTables(profile)[0].text)
+	for i, t := range splitTables(personal) {
 		if classify(t.path) == fromProfile {
 			continue
 		}
 		given[t.key()] = true
+		if i == 0 {
+			shared, _ := splitRoot(t.text)
+			writeTable(&out, owned+shared)
+			continue
+		}
 		writeTable(&out, t.text)
 	}
 	for _, t := range splitTables(profile) {
@@ -144,6 +161,31 @@ func writeTable(out *bytes.Buffer, text string) {
 	if !strings.HasSuffix(text, "\n") {
 		out.WriteByte('\n')
 	}
+}
+
+// splitRoot cuts the keys above a document's first header into the lines of
+// profileKeys and the rest, each as written.
+func splitRoot(text string) (shared, owned string) {
+	var rest, own strings.Builder
+	var scan scanState
+	inOwn := false
+	for _, line := range strings.SplitAfter(text, "\n") {
+		if scan.atTopLevel() {
+			inOwn = isProfileKey(line)
+		}
+		if inOwn {
+			own.WriteString(line)
+		} else {
+			rest.WriteString(line)
+		}
+		scan.feed(line)
+	}
+	return rest.String(), own.String()
+}
+
+func isProfileKey(line string) bool {
+	key, rest, ok := parseKey(strings.TrimLeft(line, " \t"))
+	return ok && strings.HasPrefix(strings.TrimLeft(rest, " \t"), "=") && slices.Contains(profileKeys, key)
 }
 
 // table is one table of a TOML document as written: its header line and every

@@ -799,14 +799,11 @@ work when nobody knows it and that the call site never shows. The mechanism and 
 - **A profile that links to your own directories shares their writes, and keeps what a tool creates inside it**
   (`internal/profilestore/linkhome.go`, `layout.go`, `internal/claudeprofile/profile.go`, `internal/ompprofile`):
   Claude Code, oh-my-pi, opencode, Cursor CLI and Kiro CLI profiles link Personal's own content, and a tool writes
-  through a link into its target. So `claude plugin install` run in a profile writes `enabledPlugins` into the
-  one shared `settings.json`, and a plugin a work account installed reads as enabled in Personal, where it is not
-  installed; `/config` changes in any profile change them all. An entry the profile already holds, link or
-  file, is never replaced: whatever a tool creates inside a profile is the profile's from then on, and an entry
-  you make later with the same name is not linked there. A Claude Code `settings.json` written there first stays
-  the profile's, an oh-my-pi profile with an `extensions/` of its own does not get lich's extension through it and
-  its sessions report nothing, and a Kiro update that replaces `tui.js` by a rename inside a profile leaves that
-  profile its own copy, which no later update in yours reaches. On Windows a file link needs Developer Mode:
+  through a link into its target. An entry the profile already holds, link or file, is never replaced: whatever a
+  tool creates inside a profile is the profile's from then on, and an entry you make later with the same name is
+  not linked there. An oh-my-pi profile with an `extensions/` of its own does not get lich's extension through it
+  and its sessions report nothing, and a Kiro update that replaces `tui.js` by a rename inside a profile leaves
+  that profile its own copy, which no later update in yours reaches. On Windows a file link needs Developer Mode:
   without it Claude Code's, oh-my-pi's and Codex's linked files are copies that drift on the first edit, and an
   opencode, Cursor CLI or Kiro CLI profile leaves the file out until the first spawn after Developer Mode is on.
   A sandboxed session gets the profile bound writable, and its links reach only what the sandbox already exposes
@@ -867,11 +864,32 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   toast of the native window, in the CLI's own words, and is tried again at the next start or update. A Claude
   Code profile's pass removes the marketplace clone it links to Personal's and clones it back, so a Personal
   session starting during a pass can find the clone missing for the seconds that takes.
-- **A setting changed inside a Codex profile does not last** (`internal/codexprofile/config.go`; the layout is
-  `docs/providers/codex.md`, Profiles): the profile's `config.toml` is rebuilt from Personal's before every spawn,
-  so a `/model`, `features enable` or MCP server added inside a profile is gone at its next session, a setting
-  Personal removes leaves every profile then, and a trust answer only Personal withdrew stays in the profiles
-  that gave it.
+- **A setting changed inside a Claude Code profile does not last, past its model, effort and plugins**
+  (`internal/claudeprofile/settings.go`): the profile's `settings.json` is rebuilt from Personal's before every
+  spawn, keeping only the profile's own `model`, `effortLevel`, `modelSettings`, `enabledPlugins` and
+  `extraKnownMarketplaces`. So a hook or permission added through `/config` inside a profile is gone at its next
+  session, a change to Personal's reaches a running profile session only once it is spawned again, and a
+  `settings.json` a profile held as its own before this rule (made before Personal had one, or replaced by hand)
+  lost its other keys at its first spawn. A Personal with no `settings.json` leaves the profile's alone, and one
+  that is not JSON fails the spawn, naming the file. A profile that still linked to Personal's file keeps the
+  model, effort and plugins it ran on, which are Personal's at that moment.
+- **A setting changed inside an oh-my-pi profile does not last, past its models** (`internal/ompprofile/config.go`):
+  the profile's `config.yml` is rebuilt from Personal's before every spawn, keeping only the profile's own
+  `modelRoles` and `defaultThinkingLevel` blocks. The cut is by top-level key at the start of a line, the block
+  style omp writes: a comment above one of those keys stays with the block before it, and a flow collection
+  continued at the start of a line is cut there. Otherwise as for Claude Code above, a missing `config.yml` in
+  Personal leaving the profile's alone.
+- **A setting changed inside a Codex profile does not last, past its model** (`internal/codexprofile/config.go`;
+  the layout is `docs/providers/codex.md`, Profiles): the profile's `config.toml` is rebuilt from Personal's
+  before every spawn, keeping the profile's own top-level `model` and `model_reasoning_effort`, so a `features
+  enable` or MCP server added inside a profile is gone at its next session, a setting Personal removes leaves
+  every profile then, and a trust answer only Personal withdrew stays in the profiles that gave it.
+- **opencode and Kiro CLI keep one default model for every profile** (`internal/xdgprofile`): opencode opens a
+  session on the model picked last, recorded in `model.json` under `XDG_STATE_HOME` (measured on 1.19.4), and
+  Kiro CLI keeps `chat.defaultModel` in `~/.kiro/settings/cli.json` (measured on 2.21.0), and no profile moves
+  either directory. So a default model chosen under one profile is every profile's. Moving them would take along
+  what sits beside the model: opencode's prompt history, interface settings and locks, and Kiro's settings,
+  agents, skills and conversations.
 
 ## Sandbox
 
