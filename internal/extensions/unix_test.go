@@ -26,6 +26,20 @@ func TestSymlinkOutOfTheDirectoryIsInvalid(t *testing.T) {
 	}
 }
 
+func TestIconFileSymlinkOutOfTheDirectoryIsInvalid(t *testing.T) {
+	dir := t.TempDir()
+	outside := filepath.Join(t.TempDir(), "logo.png")
+	writeFile(t, outside, string(pngOf(t, 4, 4)))
+	root := install(t, dir, "ext", modeEcho, withIconFile("logo.png"))
+	if err := os.Symlink(outside, filepath.Join(root, "logo.png")); err != nil {
+		t.Fatal(err)
+	}
+	found := discover(dir, "1.2.3")
+	if len(found) != 1 || !strings.Contains(found[0].errText, "iconFile") || !strings.Contains(found[0].errText, "resolves outside") {
+		t.Fatalf("discover = %+v", found[0])
+	}
+}
+
 func TestSymlinkInsideTheDirectoryIsFollowed(t *testing.T) {
 	dir := t.TempDir()
 	root := install(t, dir, "ext", modeEcho, func(m *extension.Manifest) { m.Executable = "link" })

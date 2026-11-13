@@ -107,11 +107,13 @@ type installed struct {
 	exe      string
 	manifest extension.Manifest
 	text     map[string]api.ExtensionText
-	source   source
-	invalid  error
-	stderr   logBudget
-	refused  logBudget
-	renders  renderGate
+	// icons is each surface's iconFile, by surface id.
+	icons   map[string][]byte
+	source  source
+	invalid error
+	stderr  logBudget
+	refused logBudget
+	renders renderGate
 	// restartMu serialises Restart calls on this extension.
 	restartMu sync.Mutex
 	// inFlight holds a token for each call running, up to maxCallsInFlight.
@@ -307,7 +309,7 @@ func (x *installed) view() api.Extension {
 	return api.Extension{
 		ID: x.id, Name: cmp.Or(x.manifest.Name, x.id), Version: x.manifest.Version,
 		Status: x.status, Error: x.errText, Dir: x.root, Surfaces: surfaces,
-		Source: x.source.URL, Release: x.source.Release, Latest: x.latest, Text: x.text, Permissions: permissionNames(x.manifest),
+		Source: x.source.URL, Release: x.source.Release, Latest: x.latest, Text: x.text, Icons: x.icons, Permissions: permissionNames(x.manifest),
 	}
 }
 

@@ -28,8 +28,12 @@ type Manifest struct {
 }
 
 // Surface is a full screen the extension draws, opened from the top bar.
+// IconFile is a PNG relative to the manifest's directory, drawn in place of
+// Icon in its own colors, or in the theme's when every visible pixel is
+// black; Icon is still what a lich older than IconFile draws.
 type Surface struct {
-	ID    string `json:"id"`
-	Title string `json:"title"`
-	Icon  Icon   `json:"icon,omitempty"`
+	ID       string `json:"id"`
+	Title    string `json:"title"`
+	Icon     Icon   `json:"icon,omitempty"`
+	IconFile string `json:"iconFile,omitempty"`
 }

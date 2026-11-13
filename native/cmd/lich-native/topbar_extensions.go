@@ -18,6 +18,8 @@ var icExtension = icons.Lucide("puzzle")
 type surfaceButton struct {
 	key                 extensionKey
 	title, icon, status string
+	// image, when set, is drawn in place of icon.
+	image *icons.Bitmap
 }
 
 // surfaceButtons is a button per surface of every extension that is not
@@ -53,6 +55,7 @@ func surfaceDot(th *ui.Theme, status string) (color.NRGBA, bool) {
 func (t *topbar) extensionButtons(th *ui.Theme, f topbarFrame, act *topbarAction) []layout.FlexChild {
 	var kids []layout.FlexChild
 	for _, b := range surfaceButtons(f.extensions) {
+		b.image = f.surfaceImages[b.key]
 		kids = append(kids, layout.Rigid(func(gtx C) D { return t.surfaceButton(gtx, th, b, f.extension == b.key, act) }), ui.Gap(1))
 	}
 	return kids
@@ -64,11 +67,15 @@ func (t *topbar) surfaceButton(gtx C, th *ui.Theme, b surfaceButton, open bool, 
 	if click.Clicked(gtx) {
 		act.extension = b.key
 	}
+	var ic icons.Glyph = t.surfaceIcon(b.icon)
+	if b.image != nil {
+		ic = b.image
+	}
 	tip := th.Tooltip(t.root, t.hint("extension:"+b.key.ext+"/"+b.key.surface), b.title)
 	tip.Side = ui.SideBottom
 	return tip.Layout(gtx, func(gtx C) D {
 		return layout.Stack{}.Layout(gtx,
-			layout.Stacked(th.BarIconButton(click, t.surfaceIcon(b.icon), open).Layout),
+			layout.Stacked(th.BarIconButton(click, ic, open).Layout),
 			layout.Expanded(func(gtx C) D {
 				if c, ok := surfaceDot(th, b.status); ok {
 					return th.CornerDot(gtx, c)

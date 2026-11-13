@@ -35,7 +35,7 @@ release tag, or the folder, it came from. Do not ship a file by that name.
   "version": "0.1.0",
   "minLichVersion": "0.90.0",
   "executable": "hello",
-  "surfaces": [{ "id": "main", "title": "Hello", "icon": "hand" }],
+  "surfaces": [{ "id": "main", "title": "Hello", "icon": "hand", "iconFile": "assets/logo.png" }],
   "permissions": ["sessions:read"]
 }
 ```
@@ -47,6 +47,12 @@ release tag, or the folder, it came from. Do not ship a file by that name.
 - `executable` is a path relative to the directory and must resolve inside it, symlinks included, to a regular
   file. On Windows name the `.exe`.
 - Surface ids are non-empty and unique. A surface is opened from the window's top bar.
+- A surface's `icon` names a glyph from the sets the window draws: a Lucide name, `lobe:name` or `devicon:name`.
+  `iconFile`, when set, is the extension's own picture, drawn in place of `icon` on the top bar and in Settings ›
+  Extensions: a PNG of at most 256 KB and 512 × 512 pixels, centered on a square, under the same path rules as
+  `executable`. It keeps its own colors; one whose every visible pixel is black is a silhouette, drawn in the
+  theme's colors as `icon` is, so export a black one to have it follow the theme. Keep `icon` set beside it: a
+  lich older than `iconFile` draws that one.
 - `permissions` lists what the extension's [calls](#calling-lich) use, each one of `extension.Permissions`. A name
   this lich does not know makes the manifest invalid.
 

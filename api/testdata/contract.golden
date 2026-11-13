@@ -645,6 +645,7 @@ Extension {
 	release,omitempty string
 	latest,omitempty string
 	text,omitempty map[string]ExtensionText
+	icons,omitempty map[string]base64
 	permissions []string
 }
 

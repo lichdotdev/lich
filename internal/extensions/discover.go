@@ -76,6 +76,9 @@ func load(root, dirName, lichVersion string) *installed {
 	if x.invalid == nil {
 		x.text, x.invalid = readLocales(root, x.manifest)
 	}
+	if x.invalid == nil {
+		x.icons, x.invalid = readIcons(root, x.manifest)
+	}
 	if x.invalid != nil {
 		x.status, x.errText = statusInvalid, x.invalid.Error()
 		slog.Warn("extensions: invalid", "extension", dirName, "err", x.invalid)
@@ -162,15 +165,21 @@ func checkSurfaces(surfaces []extension.Surface) error {
 	return nil
 }
 
-// resolveExecutable returns the real path of the manifest's executable. The
-// lexical check alone would let a symlink inside the directory point out of it.
+// resolveExecutable returns the real path of the manifest's executable.
 func resolveExecutable(root, relative string) (string, error) {
 	if relative == "" {
 		return "", errors.New("executable is required")
 	}
+	return resolveInside(root, "executable", relative)
+}
+
+// resolveInside returns the real path of the regular file a manifest field
+// names. The lexical check alone would let a symlink inside the directory
+// point out of it.
+func resolveInside(root, field, relative string) (string, error) {
 	local := filepath.FromSlash(relative)
 	if !filepath.IsLocal(local) {
-		return "", fmt.Errorf("executable %q must stay inside the extension's directory", relative)
+		return "", fmt.Errorf("%s %q must stay inside the extension's directory", field, relative)
 	}
 	realRoot, err := filepath.EvalSymlinks(root)
 	if err != nil {
@@ -178,17 +187,17 @@ func resolveExecutable(root, relative string) (string, error) {
 	}
 	real, err := filepath.EvalSymlinks(filepath.Join(realRoot, local))
 	if err != nil {
-		return "", fmt.Errorf("executable %q: %w", relative, err)
+		return "", fmt.Errorf("%s %q: %w", field, relative, err)
 	}
 	if inside, err := filepath.Rel(realRoot, real); err != nil || !filepath.IsLocal(inside) {
-		return "", fmt.Errorf("executable %q resolves outside the extension's directory", relative)
+		return "", fmt.Errorf("%s %q resolves outside the extension's directory", field, relative)
 	}
 	info, err := os.Stat(real)
 	if err != nil {
-		return "", fmt.Errorf("executable %q: %w", relative, err)
+		return "", fmt.Errorf("%s %q: %w", field, relative, err)
 	}
 	if !info.Mode().IsRegular() {
-		return "", fmt.Errorf("executable %q is not a regular file", relative)
+		return "", fmt.Errorf("%s %q is not a regular file", field, relative)
 	}
 	return real, nil
 }
