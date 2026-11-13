@@ -42,7 +42,7 @@ require (
 // window without watching motion), input.Source.Origin (where a widget sat in
 // the last frame), a double click window of 400 ms, and the
 // flip model on Windows. Every patch of ours lands on that branch.
-replace gioui.org => github.com/lichdotdev/gio v0.0.0-20261113001221-0ffe194a757a
+replace gioui.org => github.com/lichdotdev/gio v0.0.0-20261113004735-692889d18625
 
 replace github.com/lichdotdev/lich => ../
 
