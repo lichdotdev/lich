@@ -36,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **An extension can live in the dock or in a panel over the footer as well as on a full screen.** Its item joins the footer, where a click opens it beside the session you are in; move or hide the item in Settings › Appearance › Footer. Extension authors set `place` on a surface, see `docs/extensions.md`.
 - **An extension can show its own logo on the top bar.** Its manifest names a PNG with `iconFile`, shown there and in Settings › Extensions in its own colors, or in the theme's when the PNG is all black; see the manifest in `docs/extensions.md`.
 - **lich tells you when a theme pack you installed has a new version.** A toast offers Update or Later, and the pack's cards in Settings › Appearance show the version with an Update action. Check for updates, over the cards, looks right away.
+- **Pi is a provider in its own right, separate from oh-my-pi.** lich installs its extension for session state, file refreshes, MCP tools and the current model in the session footer, and can resume or fork its conversations.
 
 ### Changed
 

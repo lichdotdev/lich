@@ -66,15 +66,16 @@ func (f *footerUsage) get(id string) (sessionUsage, bool) {
 	return u, ok
 }
 
-// apply takes session-usage reports, and the session-agent and idle
-// session-status events that void the prior provider's report. It reports
-// whether ev was one of the three; session-agent and session-status are not
-// consumed, so the caller still hands them to the card stores.
+// apply takes usage and model reports, and the session-agent and idle
+// session-status events that void the prior provider's report. Session-agent
+// and session-status are not consumed, so the caller still hands them to cards.
 func (f *footerUsage) apply(ev backend.Event) (bool, error) {
 	var id string
 	switch ev.Name {
 	case api.SessionUsageEvent.Name:
 		return true, f.applyUsage(ev.Data)
+	case api.SessionModelEvent.Name:
+		return true, f.applyModel(ev)
 	case api.SessionAgentEvent.Name:
 		// Every spawn announces its agent, "" included, so any agent report
 		// means the prior provider's numbers no longer describe this session.
@@ -97,6 +98,37 @@ func (f *footerUsage) apply(ev backend.Event) (bool, error) {
 	f.heard[id] = true
 	f.mu.Unlock()
 	return true, nil
+}
+
+func (f *footerUsage) applyModel(ev backend.Event) error {
+	model, err := backend.Decode(ev, api.SessionModelEvent)
+	if err != nil {
+		return err
+	}
+	if model.ID == "" || model.Model == "" {
+		return nil
+	}
+	f.mu.Lock()
+	u := f.usage[model.ID]
+	u.Model = model.Model
+	f.usage[model.ID] = u
+	f.heard[model.ID] = true
+	f.mu.Unlock()
+	return nil
+}
+
+func (f *footerUsage) seedModel(id, model string) {
+	if id == "" || model == "" {
+		return
+	}
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if f.heard[id] {
+		return
+	}
+	u := f.usage[id]
+	u.Model = model
+	f.usage[id] = u
 }
 
 func (f *footerUsage) applyUsage(data json.RawMessage) error {

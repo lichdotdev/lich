@@ -12,7 +12,7 @@ import (
 )
 
 func TestParseVersionReadsEachProvidersSpelling(t *testing.T) {
-	// What the eight print for --version, measured on the versions named.
+	// What the nine print for --version, measured on the versions named.
 	cases := map[string]string{
 		"2.1.299 (Claude Code)\n": "2.1.299",
 		"codex-cli 0.162.1\n":     "0.162.1",
@@ -22,6 +22,7 @@ func TestParseVersionReadsEachProvidersSpelling(t *testing.T) {
 		"crush version v0.98.1\n": "0.98.1",
 		"2026.10.01-e373342\n":    "2026.10.01-e373342",
 		"kiro-cli 2.21.0\n":       "2.21.0",
+		"pi 1.5.2\n":              "1.5.2",
 		"\nWARNING: no helper under /tmp/x\ncodex-cli 0.147.0\n": "0.147.0",
 		"usage: whatever\n": "",
 	}

@@ -26,6 +26,12 @@ type SessionTitle struct {
 	Label string `json:"label"`
 }
 
+// SessionModel is the model currently selected inside a running provider.
+type SessionModel struct {
+	ID    string `json:"id"`
+	Model string `json:"model"`
+}
+
 // SessionTouched is the payload of SessionTouchedEvent: the session whose files
 // likely changed.
 type SessionTouched struct {

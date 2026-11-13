@@ -21,7 +21,9 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   plugin on disk at spawn to be the one that process runs, so a session whose provider came up without the hooks
   (the plugin reinstalled while it started) stays unready until the delivery runs out: on Claude Code and Cursor
   CLI only in a folder not trusted yet, on oh-my-pi and Kiro CLI always. Codex, Antigravity, Crush and opencode
-  report nothing before their first turn, so a quiet screen is still all lich has for them.
+  report nothing before their first turn, so a quiet screen is still all lich has for them. Pi reports session
+  initialization, but lich does not hold it on that signal because it has not established whether any startup
+  prompt is still ahead.
 - **A handoff leaves two sessions in one checkout** (`internal/spawn/handoff.go`, `internal/cli/handoff.go`):
   `handoff_session` and `lich handoff` never close the caller, so until the user does, both agents can edit the
   same files; the caller is only told to stop. The note is the caller's own account of its work, checked against
@@ -92,7 +94,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   else, a read turn included. A provider that cannot raise a state cannot be filtered into it: Crush
   reports no turn at all and always sits under Idle; Antigravity, oh-my-pi, Kiro CLI and Cursor CLI raise no
   permission event, so they never reach Waiting (a Kiro or Cursor session blocked on a confirmation counts as
-  Running).
+  Running). Pi likewise cannot report Waiting or Compaction, and only reports Idle on a normal quit.
   There is no error chip: no provider reports one, and a process that exited is known only to its terminal,
   not to a store the sidebar reads. The chips are not persisted, like the query.
 - **Next waiting session reads the same ring** (`waitingTarget`, `native/cmd/lich-native/hotkeys_dispatch.go`):
@@ -154,7 +156,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
 - **Only a Claude Code session whose mod polls can be driven, asked, or report for itself** (`spawn.Control`,
   `spawn.Ask`, `internal/terminal/modcontrol.go`, `modusage.go`, `modstatus.go`; each contract in `docs/hooks/`,
   mod-control, mod-usage, mod-status and session-state, has its own Known ceilings): mods are a Claude Code
-  feature, from 2.1.280 and only with the lich-plugin mod loaded, 0.15.0 or newer. The other seven providers, and
+  feature, from 2.1.280 and only with the lich-plugin mod loaded, 0.15.0 or newer. The other eight providers, and
   a Claude Code session without the mod, have nothing that runs inside them and polls. So `lich control` and
   `lich ask` refuse them by provider before anything is queued (no other CLI exposes a fork of its own
   conversation to anything running inside it), their readout stays the one lich derives, their errands show only
@@ -271,6 +273,11 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   equal once both are shortened (`formatModel`), or the birth model is the family alias of the running id
   (`opus` against `claude-opus-5-5`, a `[1m]` suffix dropped). Any other alias the CLI accepts (`default`,
   `opusplan`) reads as a change, and so does a `/model` the user typed, which is intended.
+- **The footer's current-model readout has four sources** (`native/cmd/lich-native/footer_usage.go`): Claude Code,
+  Codex and Kiro CLI report it from their conversation data; Pi reports its selected model from the extension on
+  startup and each `model_select`, including after a model switch inside Pi. Other providers do not have a live
+  model readout there, and Pi's value lasts only for the running process; a later resume reports its own current
+  selection again (docs/hooks/session-model.md; docs/providers/pi.md; Provider support table, README).
 - **Hands-on time on a Crush card misses every turn that calls no tool**
   (`internal/terminal/handson.go`, `noteOutput`): the figure beside the cost counts the gap between consecutive
   signs of life in a session — any hook report naming it, a keystroke at its PTY, or its own output while a turn
@@ -343,7 +350,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   (`internal/relay/observe.go`, `compactReminderLocked`; docs/hooks/session-state.md): a relayed task is a turn of
   the worker's conversation, and a compaction may summarise its ticket away. With two errands open an answer that
   names none is refused, so the worker cannot answer either. The mod's `session.compact` is the only compaction
-  lich hears (`compacting`), so on the other seven providers, and on Claude Code without the mod, the ticket can
+  lich hears (`compacting`), so on the other eight providers, and on Claude Code without the mod, the ticket can
   still be lost. The reminder is typed when the compaction's closing report arrives: after a mid-turn
   auto-compaction that report is `busy`, and the reminder queues behind the running turn, so an errand that turn
   ends unanswered is reminded after it is already closed, where only a late answer by its ticket still lands.
@@ -378,7 +385,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   is not drawn on the card: a delivery held there answers to its sender, through the ticket. What stays open is the provider that takes keystrokes through anything other than this PTY, which is
   invisible to every part of this.
 - **`lich insert` pastes and leaves it, so what the person sees is the provider's own paste handling**
-  (`internal/relay/insert.go`, `internal/terminal` `AtPrompt`): it types a bracketed paste at the PTY of all eight
+  (`internal/relay/insert.go`, `internal/terminal` `AtPrompt`): it types a bracketed paste at the PTY of all nine
   providers alike, a Claude Code session with the mod included, and presses nothing. The same gaps as a typed
   delivery apply and are not closed here. On Windows (ConPTY) the paste markers are dropped, so a multi-line
   selection reaches the TUI as typed characters and each provider's burst heuristic decides whether a newline
@@ -424,7 +431,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   a paste ends from timing alone. A target that repaints on a timer of its own never goes quiet and gets its Enter
   at `defaultSettleLimit` regardless, which is the case this cannot tell from a paste still arriving.
 - **A relayed message reaches a Claude Code session through its mod, and every other session by typing**
-  (`internal/relay`, `deliver` and `handOff`; `terminal.SubmitPrompt`): the other seven providers have no mod
+  (`internal/relay`, `deliver` and `handOff`; `terminal.SubmitPrompt`): the other eight providers have no mod
   system, so a task, a result note and a scheduled prompt are typed at them with every trap the typed-delivery bullets above
   describe. A Claude Code session is typed at too while no mod polls from it: lich-plugin older than 0.14.0, mods
   off, a folder not trusted yet, or a session so new its mod has not polled. A session whose mod polls is handed
@@ -491,7 +498,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   `LICH_SUBAGENT_CARDS=off`; under one every worker keeps its subagents native. A nested card's report climbs
   back through each worker above it, and each answers only once its own outcomes are in, so a card stopped deep
   in the tree reaches its asker as a stop, not as silence. Closing a worker leaves the cards it opened running,
-  as it leaves its own. The other seven
+  as it leaves its own. The other eight
   providers have no mod system, so nothing can take a subagent call from them, and their subagents stay inside their CLI. On Claude
   Code too, a typed agent (Explore, Plan, a plugin's), a workflow step, another plugin's spawn, a remote one and the
   subagents of a worker two levels down stay native, and the worker is reached with `send_to_session` or `lich send`, never with
@@ -520,7 +527,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   line typed there.
 - **The chain limit follows a message only through the errand it was sent on** (`internal/relay/chain.go`): a
   message is one deeper than the deepest relayed task its sender still owes an answer to, and the fifth in a chain is
-  refused. That is read off the relay's own tickets, so it is the same on all eight providers. A session that replies
+  refused. That is read off the relay's own tickets, so it is the same on all nine providers. A session that replies
   to its task before passing it on, or whose turn ended and closed the errand unanswered, owes nothing and starts
   the chain over, and so does a turn that worked, on the ping-pong breaker's rule and with its gaps (Crush is never
   counted). A turn the user started while an errand is still owed keeps that errand's depth.
@@ -758,6 +765,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   before the pin or by hand, is caught at startup from its installed version, and again by the `X-Lich-Plugin`
   header its hooks send (docs/hooks/README.md) once a session reports. A report whose payload lich refuses never
   reaches that check, so a plugin old enough to send one only shows up in the startup prompt and the log.
+- **Pi reports state through an extension shipped by lich, and its session data stays out of History** (`internal/agentplugin/pi.go`, `internal/terminal/transcript.go`): the extension is bundled in the lich binary because Pi uses a different extension API from the companion plugin; it must be passed at spawn, and an update reaches Pi only after the lich plugin install updates it. Pi exposes no supported transcript reader here, so History search, context/cost readouts and outside-session discovery remain absent (docs/providers/pi.md; Provider support table, README). It also has no permission-wait or compaction event, and only a normal quit reports idle.
 - **One opencode module serves both generations, from the directory both read** (`internal/agentplugin/opencode.go`):
   lich writes it to `~/.config/opencode/plugins/`, the only global plugin directory opencode 2 reads, and
   removes the copy an older lich left in `plugin/` when it carries lich's marker, since 1.x reads both and would
@@ -885,8 +893,8 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   `--version` runs in lich's working directory with lich's environment, not in a session's checkout. A
   version-manager shim that picks its tool per directory (mise, asdf) can answer one version there and start
   another in a project that pins its own, and the "Also on PATH" list compares those same per-lich answers.
-  All eight providers print a version (measured on Claude Code 2.1.299, Codex 0.162.1, Antigravity 1.3.5,
-  opencode 1.18.35, oh-my-pi 18.8.9, Crush 0.98.1, Cursor CLI 2026.10.01, Kiro CLI 2.21.0); a CLI whose
+  All nine providers print a version (measured on Claude Code 2.1.299, Codex 0.162.1, Antigravity 1.3.5,
+  opencode 1.18.35, oh-my-pi 18.8.9, Crush 0.98.1, Cursor CLI 2026.10.01, Kiro CLI 2.21.0, Pi 1.5.2); a CLI whose
   `--version` hangs past 10 s or prints no version shows its path alone.
 - **The binary setting still answers for Personal**: a profile's session runs the configured Claude Code
   binary, so a wrapper that exports its own `CLAUDE_CONFIG_DIR` or a token still wins over the profile, and the
@@ -964,7 +972,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   confined worker reports to the unconfined session that opened it. `spawn.Close` refuses `force` from the
   sandbox: the checkout it would remove is outside it and the uncommitted work there exists nowhere else. The
   cost is the deliberate one: a confined session cannot delegate to an unconfined one, only to sessions it
-  opens (which are confined) or that were already confined. The eight providers
+  opens (which are confined) or that were already confined. The nine providers
   are untouched by the scoping: every hook and `lich mcp` reads `LICH_TOKEN` from the environment
   (`docs/hooks/`), none reads `runtime.json`. The window's own flows run on the launch token and lose
   nothing. A method that reads a host path it was *handed* would copy anything into reach of the sandbox,

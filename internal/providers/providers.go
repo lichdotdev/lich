@@ -1,8 +1,9 @@
 // Package providers is the registry of AI coding CLI harnesses lich can run in
 // a session (Claude Code, Codex, Antigravity, opencode, oh-my-pi, Crush, Cursor
-// CLI, Kiro CLI). A provider id doubles as the session kind that spawns it; the terminal
-// resolves the id to a binary, and the settings store keys per-provider
-// overrides on it. Detection reads that override and then scans PATH.
+// CLI, Kiro CLI and Pi). A provider id doubles as the session kind that spawns
+// it; the terminal resolves the id to a binary, and the settings store keys
+// per-provider overrides on it. Detection reads that override and then scans
+// PATH.
 package providers
 
 import (
@@ -11,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/lichdotdev/lich/api"
@@ -28,6 +30,7 @@ const (
 	Crush       = "crush"
 	Cursor      = "cursor"
 	Kiro        = "kiro"
+	Pi          = "pi"
 )
 
 // Provider is a known harness: a stable id, a display name, the executable
@@ -47,12 +50,12 @@ type Provider struct {
 
 // Registry is every provider lich knows about, in display order. Claude Code is
 // first: it is the default, and the plugin's home. Every one of them resumes a
-// conversation by id (terminal.resumeArgs); all but Cursor CLI also have the
-// companion plugin installed into them (agentplugin.supported) — Cursor runs it
-// anyway, because it executes every Claude Code hook on the machine, which
-// docs/providers/cursor.md names along with what that costs. What still differs
-// per provider is spelled at each of those tables, and AcceptsMCPServer below
-// is the one split this file owns.
+// conversation by id (terminal.resumeArgs); all but Cursor CLI have a lich
+// client installed (agentplugin.supported), with Pi's extension bundled by
+// lich. Cursor runs the companion plugin anyway, because it executes every
+// Claude Code hook on the machine, which docs/providers/cursor.md names along
+// with what that costs. What still differs per provider is spelled at each of
+// those tables, and AcceptsMCPServer below is the one split this file owns.
 var Registry = []Provider{
 	{ID: Claude, Name: "Claude Code", Binaries: []string{"claude"}, Docs: "https://code.claude.com/docs/en/setup"},
 	{ID: Codex, Name: "Codex", Binaries: []string{"codex"}, Docs: "https://learn.chatgpt.com/docs/codex/cli"},
@@ -62,6 +65,7 @@ var Registry = []Provider{
 	{ID: Crush, Name: "Crush", Binaries: []string{"crush"}, Docs: "https://github.com/charmbracelet/crush"},
 	{ID: Cursor, Name: "Cursor CLI", Binaries: []string{"cursor-agent"}, Docs: "https://cursor.com/docs/cli/installation"},
 	{ID: Kiro, Name: "Kiro CLI", Binaries: []string{"kiro-cli"}, Docs: "https://kiro.dev/docs/cli/installation/"},
+	{ID: Pi, Name: "Pi", Binaries: []string{"pi"}, Docs: "https://pi.dev/docs/"},
 }
 
 // KiroAgentName is the agent profile lich installs into Kiro CLI and spawns it
@@ -82,6 +86,38 @@ func KiroAgentPath() (string, error) {
 		return "", fmt.Errorf("resolve home directory: %w", err)
 	}
 	return filepath.Join(KiroHome(home), "agents", KiroAgentName+".json"), nil
+}
+
+// PiAgentDir resolves Pi's config/state root from the override used by the CLI.
+func PiAgentDir(home, cwd string) string {
+	if dir := expandHome(os.Getenv("PI_CODING_AGENT_DIR"), home, cwd); dir != "" {
+		return dir
+	}
+	return filepath.Join(home, ".pi", "agent")
+}
+
+// PiSessionDir resolves Pi's session root, which can move independently.
+func PiSessionDir(home, cwd string) string {
+	if dir := expandHome(os.Getenv("PI_CODING_AGENT_SESSION_DIR"), home, cwd); dir != "" {
+		return dir
+	}
+	return filepath.Join(PiAgentDir(home, cwd), "sessions")
+}
+
+func expandHome(path, home, cwd string) string {
+	if path == "~" {
+		return home
+	}
+	if strings.HasPrefix(path, "~/") || strings.HasPrefix(path, "~\\") {
+		return filepath.Join(home, filepath.FromSlash(strings.TrimLeft(path[2:], `/\\`)))
+	}
+	if filepath.IsAbs(path) {
+		return path
+	}
+	if path != "" && cwd != "" {
+		return filepath.Join(cwd, path)
+	}
+	return ""
 }
 
 // Known reports whether id names a registered provider. It guards a provider id
@@ -117,11 +153,12 @@ func AcceptsMCPServer(id string) bool {
 // untouched — so lich can offer to carry a session's conversation into a new
 // checkout instead of only reopening it where it was.
 //
-// Three of the eight spell it themselves and lich forks through no other route:
+// Four of the nine spell it themselves and lich forks through no other route:
 // Claude Code's `--fork-session` rides its `--resume`, Codex swaps its `resume`
 // subcommand for `fork`, and opencode's `--fork` rides its `--session`
-// (measured on 2.1.261, 0.151.0 and 1.18.23). The other five keep no such verb
-// — oh-my-pi, Crush, Cursor CLI, Kiro CLI and Antigravity offer resume alone —
+// and Pi's `--fork` adds to `--session` (measured on 2.1.261, 0.151.0, 1.18.23
+// and Pi 1.5.2). The other five keep no such verb — oh-my-pi, Crush, Cursor CLI,
+// Kiro CLI and Antigravity offer resume alone —
 // and lich will not forge one: the copy would have to be written into that
 // harness's own private store (two SQLite schemas with triggers, a blob store
 // keyed on the md5 of the checkout, two JSONL formats carrying the id and cwd
@@ -129,7 +166,7 @@ func AcceptsMCPServer(id string) bool {
 // radius of getting one wrong is the user's real history. The card says so at
 // the dead menu item rather than dropping it (SessionForkItem).
 func SupportsFork(id string) bool {
-	return id == Claude || id == Codex || id == OpenCode
+	return id == Claude || id == Codex || id == OpenCode || id == Pi
 }
 
 // DefaultBinary returns a provider's preferred executable name, or "" for an

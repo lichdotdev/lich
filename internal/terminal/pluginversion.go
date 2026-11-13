@@ -22,6 +22,7 @@ type hookBody interface {
 func (r hookRequest) session() string    { return r.SessionID }
 func (r startRequest) session() string   { return r.SessionID }
 func (r titleRequest) session() string   { return r.SessionID }
+func (r modelRequest) session() string   { return r.SessionID }
 func (r touchedRequest) session() string { return r.SessionID }
 func (r modAckRequest) session() string  { return r.SessionID }
 

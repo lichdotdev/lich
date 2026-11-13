@@ -18,7 +18,7 @@ import (
 	"github.com/lichdotdev/lich/internal/winexec"
 )
 
-// versionTimeout bounds one `--version`. The slowest of the eight measured
+// versionTimeout bounds one `--version`. The slowest of the nine measured
 // under 0.7s warm (oh-my-pi and Cursor CLI, both booting a JS runtime); a cold
 // cache or a version-manager shim resolving first can take several times that.
 const versionTimeout = 10 * time.Second

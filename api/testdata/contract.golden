@@ -327,6 +327,7 @@ event session-focus SessionFocus
 event session-inbox SessionInbox
 event session-limit SessionLimit
 event session-mcp SessionMCP
+event session-model SessionModel
 event session-opened OpenedSession
 event session-profile SessionProfile
 event session-profile-offer SessionProfileOffer
@@ -1850,6 +1851,7 @@ TurnState {
 	detail,omitempty string
 	reason,omitempty string
 	since,omitempty int64
+	model,omitempty string
 	usage,omitempty *SessionUsage
 	cwd,omitempty string
 	host,omitempty string
@@ -2084,6 +2086,11 @@ SessionLimit {
 SessionMCP {
 	id string
 	servers []string
+}
+
+SessionModel {
+	id string
+	model string
 }
 
 SessionProfile {

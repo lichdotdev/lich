@@ -15,6 +15,7 @@ import (
 var handsOnRung = map[string]string{
 	"claude": "turn", "codex": "turn", "antigravity": "turn", "opencode": "turn",
 	"omp": "turn", "crush": "tool", "cursor": "turn", "kiro": "turn",
+	"pi": "turn",
 }
 
 // handsOn reads the active session's hands-on time, re-read on every turn of

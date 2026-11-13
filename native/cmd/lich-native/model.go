@@ -335,6 +335,7 @@ func (m *model) hydrateTurnStates(ctx context.Context) error {
 	}
 	m.mu.Unlock()
 	for _, ts := range states {
+		m.usage.seedModel(ts.ID, ts.Model)
 		if ts.Usage == nil {
 			continue
 		}
@@ -382,7 +383,7 @@ func (m *model) follow(ctx context.Context, events <-chan backend.Event) {
 		}
 		m.quota.apply(ev)
 		switch ev.Name {
-		case api.SessionUsageEvent.Name:
+		case api.SessionUsageEvent.Name, api.SessionModelEvent.Name:
 			// Taken by the usage store above; only the redraw is left.
 		case api.SessionStatusEvent.Name:
 			if err := m.applyStatus(ctx, ev); err != nil {

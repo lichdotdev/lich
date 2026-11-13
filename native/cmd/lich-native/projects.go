@@ -70,7 +70,13 @@ func loadPinnedProjects(ctx context.Context, c *backend.Client) (map[string]bool
 	pinned := make(map[string]bool)
 	if raw != "" {
 		if err := json.Unmarshal([]byte(raw), &pinned); err != nil {
-			return nil, err
+			var ids []string
+			if listErr := json.Unmarshal([]byte(raw), &ids); listErr != nil {
+				return nil, err
+			}
+			for _, id := range ids {
+				pinned[id] = true
+			}
 		}
 	}
 	return pinned, nil

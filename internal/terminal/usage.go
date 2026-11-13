@@ -269,7 +269,7 @@ func (s *Service) sessionCost(id string, src usageSource) (float64, costMiss, bo
 // it does not move again afterwards.
 //
 // Only the rung lich prices itself is offset, and that is the whole of the
-// difference between the three providers that fork. Claude Code's copy is a
+// difference between the three cost readers that fork. Claude Code's copy is a
 // transcript of its own carrying every assistant line of the parent's, and a
 // forked Codex rollout copies the parent's token_count records and carries its
 // running total forward — so lich's own scan counts that stretch twice (measured

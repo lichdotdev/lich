@@ -1,7 +1,7 @@
 // Package agentplugin manages the lich companion plugin inside the provider
 // CLIs that can run it: whether it is installed, whether a newer release
-// exists, and installing or updating it. Six of the registry's seven ship the
-// same plugin from the same repository; what differs per provider — the
+// exists, and installing or updating it. The marketplace providers ship the
+// same plugin from the same repository; Pi's extension is bundled here. What differs per provider — the
 // subcommands, where the installed version is read from, and whether there is a
 // CLI at all — lives in claude.go, codex.go, antigravity.go, opencode.go,
 // omp.go and crush.go.
@@ -13,9 +13,9 @@
 //   - Antigravity, opencode, oh-my-pi and Crush have lich write the files the
 //     release published: a customization directory under Antigravity's global
 //     `config/plugins/`, a module into opencode's plugin directory, another into
-//     oh-my-pi's extensions directory, and hook scripts plus a delimited block
-//     of `hook add` lines into Crush's crushrc. opencode, oh-my-pi, Crush and
-//     Kiro also get the plugin's theme skill in their skills directory
+//     oh-my-pi's extensions directory, hook scripts plus a delimited block of
+//     `hook add` lines into Crush's crushrc, and Pi's extension file. opencode,
+//     oh-my-pi, Crush, Kiro and Pi also get the theme skill in their skills directory
 //     (skill.go). Each carries the version it installed — a marker line, or a
 //     field in a manifest lich owns outright — which is the only record of what
 //     is installed where the harness keeps none. Antigravity does have a plugin CLI; antigravity.go says why it is
@@ -88,7 +88,7 @@ const (
 var supported = []string{
 	providers.Claude, providers.Codex, providers.Antigravity,
 	providers.OpenCode, providers.OMP, providers.Crush, providers.Cursor,
-	providers.Kiro,
+	providers.Kiro, providers.Pi,
 }
 
 // BinResolver supplies the binary to shell out to for a provider. The store
@@ -181,6 +181,13 @@ const toolsMinVersion = "0.9.0"
 // True for the three lich registers at spawn, and for the ones that get them
 // with the plugin, once the installed one is new enough.
 func (s *Service) HasTools(provider string) bool {
+	if provider == providers.Pi {
+		if !s.available(provider) || s.lichBin() == "" {
+			return false
+		}
+		version, installed := s.installedVersion(provider)
+		return installed && !semver.Less(version, toolsMinVersion)
+	}
 	if providers.AcceptsMCPServer(provider) {
 		return true
 	}
@@ -197,11 +204,9 @@ func (s *Service) HasTools(provider string) bool {
 // registersServerAtInstall reports whether a provider's tools come from the MCP
 // server the install writes into its config, rather than from the plugin itself.
 //
-// It is what stops HasTools promising tools the install could not register: all
-// three write the lich binary's own path, and all three leave the registration
-// out when it cannot be resolved (crushrcBlock, mcpDocument,
-// antigravityRegisterMCP) — so a session there has the plugin's reports and no
-// tool list, and must be told the command line instead.
+// It is what stops HasTools promising tools the install could not register:
+// each of these five writes the lich binary's own path and leaves registration
+// out when it cannot be resolved, so the session must be told the command line.
 func registersServerAtInstall(provider string) bool {
 	return provider == providers.Crush || provider == providers.OMP ||
 		provider == providers.Antigravity || provider == providers.Cursor ||
@@ -266,6 +271,8 @@ func (s *Service) Install(_ context.Context, opts api.PluginProviderOptions) (ap
 		return api.None{}, s.cursorInstall()
 	case providers.Kiro:
 		return api.None{}, s.kiroInstall()
+	case providers.Pi:
+		return api.None{}, s.piInstall()
 	}
 	return api.None{}, fmt.Errorf("no lich plugin for provider %q", opts.Provider)
 }
@@ -315,6 +322,8 @@ func (s *Service) installedVersion(provider string) (string, bool) {
 		return s.cursorInstalledVersion()
 	case providers.Kiro:
 		return s.kiroInstalledVersion()
+	case providers.Pi:
+		return s.piInstalledVersion()
 	}
 	return "", false
 }

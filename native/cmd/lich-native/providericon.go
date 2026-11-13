@@ -14,6 +14,7 @@ var providerIcons = map[string]*icons.Icon{
 	"cursor":      icons.Lobe("cursor"),
 	"crush":       icons.Lucide("sparkles"),
 	"kiro":        icons.Lucide("ghost"),
+	"pi":          icons.Lobe("pi"),
 	"shell":       icons.Lucide("terminal"),
 }
 

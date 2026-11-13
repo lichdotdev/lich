@@ -143,6 +143,7 @@ type TurnState struct {
 	Detail string        `json:"detail,omitempty"`
 	Reason string        `json:"reason,omitempty"`
 	Since  int64         `json:"since,omitempty"`
+	Model  string        `json:"model,omitempty"`
 	Usage  *SessionUsage `json:"usage,omitempty"`
 	Cwd    string        `json:"cwd,omitempty"`
 	Host   string        `json:"host,omitempty"`

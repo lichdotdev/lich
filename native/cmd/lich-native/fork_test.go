@@ -26,9 +26,9 @@ func TestForkLabelTakesTheNextFreeNumberOfItsBase(t *testing.T) {
 	}
 }
 
-func TestOnlyTheThreeProvidersThatBranchAConversationFork(t *testing.T) {
+func TestOnlyTheFourProvidersThatBranchAConversationFork(t *testing.T) {
 	for kind, want := range map[string]bool{
-		"claude": true, "codex": true, "opencode": true,
+		"claude": true, "codex": true, "opencode": true, "pi": true,
 		"omp": false, "crush": false, "cursor": false, "kiro": false, "antigravity": false, "shell": false,
 	} {
 		if got := canFork(kind); got != want {

@@ -131,61 +131,62 @@ what lich can read back out of it, since each CLI records different things.
 <details>
 <summary>See what each agent supports</summary>
 
-| What you get | Claude Code | Codex | Antigravity | opencode | oh-my-pi | Crush | Cursor CLI | Kiro CLI |
-| --- | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: |
-| Context window in the footer | yes | yes | no | no | no | no | no | yes |
-| How much of the last turn came from the prompt cache, in the footer | yes | yes | no | in the cost tooltip | in the cost tooltip | no | no | no |
-| The card's tooltip names the model running, and the one it opened on if it changed | yes | yes | no | no | no | no | no | yes |
-| Cost in the footer | yes | yes | no | yes | yes | yes | no | credits |
-| A conversation branched inside the agent's own terminal is billed once for the history it copies | yes, unless the cost is the one Claude Code measured itself | no | no cost readout | yes | yes, except a turn saved without a response id | cannot branch | no cost readout | no cost readout |
-| How much of your plan is left | yes | yes | yes | OpenCode Go only | no | no | yes | no |
-| A turn your plan's usage limit stopped picks up again once the limit resets | yes | yes | no | its own retries | its own retries | no | no | no |
-| When another of your profiles still has quota, a notice offers to continue there at once | yes | yes | no | no | no | no | no | no |
-| When handing off, an agent can suggest one of your profiles for its successor, and a notice lets you choose to move it | yes | yes | no | no | yes | no | Linux and Windows | Linux only |
-| Spinner while a turn runs, ring when it ends | yes | yes | yes | yes | yes | no | yes | yes |
-| The card names itself after the conversation | yes | after your first prompt | after your first prompt | yes | yes, from the second turn | no | yes, once the first turn ends | after your first prompt, once the first turn ends |
-| A pull request the agent opens shows on its card when the turn ends | yes | yes | yes | yes | yes | no, once the window regains focus | yes | yes |
-| Repaints in the new look when you switch lich between a light and a dark theme | yes | no | no | yes | yes | no | yes | no |
-| Bell when the agent is blocked on you | yes | yes | no | yes | no | no | no | no |
-| Ctrl+Shift+Y jumps to the next session waiting on you | yes | yes | no | yes | no | no | no | no |
-| A program in the agent's terminal can set the card (OSC 7501) while the agent runs | no | no | no | no | no | yes | no | no |
-| Back at a shell without prompt marks after you quit the agent, a program can set the card again | yes | no | no | no | no | yes | yes | no |
-| The tray lists the sessions waiting on you and the ones working, and its icon takes a dot | yes | yes | working only | yes | working only | no | working only | working only |
-| The card says when the conversation is being compacted | yes | no | no | no | no | no | no | no |
-| After a compaction, the agent is reminded of the tasks other sessions sent it that still wait on its answer | yes | no | no | no | no | no | no | no |
-| Sidebar filter by state: Waiting, Running, Unread | yes | yes | no Waiting | yes | no Waiting | no, always Idle | no Waiting | no Waiting |
-| Run by your agent inside another session (`claude -p`, `cursor-agent -p`), it stays out of that session's card | yes | yes | yes | yes | yes | yes | yes | no |
-| Besides the tools for reaching your other sessions, the agent is told when to use them (hand work to a session on its own worktree) | yes | yes, unless your `config.toml` sets `developer_instructions` | yes | yes | yes | yes | not measured | yes |
-| Machine kept out of idle sleep while a turn runs | yes | yes | yes | yes | yes | no | yes | yes |
-| Sessions trading messages with no work in between, two of them or round a loop of several, are stopped | yes | yes | yes | yes | yes | no | yes | yes |
-| Review tab's **Last turn**, with the agent's recap | yes | yes | yes | yes | yes | no | yes | yes |
-| Search the conversation from the palette | yes | yes | yes | yes | yes | yes | no | yes |
-| Resume a conversation started outside lich, from the palette's History tab | yes | yes | yes | yes | yes | Linux; macOS and Windows untested | yes | yes |
-| A long paste can land as editable text instead of a folded placeholder (Settings › Providers, off by default) | yes | no | no | yes | not measured | no, it becomes a `paste_N.txt` attachment | no | yes |
-| Fork a conversation into a new worktree, or in its own checkout | yes | yes | no | yes | no | no | no | no |
-| A fork hangs from its source session in the sidebar's tree | yes | yes | no | yes | no | no | no | no |
-| Warned when you resume, from the agent's own app, a conversation another card has open | yes | on your next prompt | on your next prompt, untested | no | yes | at its next tool call | no | yes |
-| Open a session at a chosen reasoning effort | yes | yes | yes | no | yes | no | in the model name | yes |
-| Open a session with ultracode on | yes | no | no | no | no | no | no | no |
-| Several accounts side by side as profiles, each with its own full login, and a session moved to another account carrying on in the same card (Settings › Providers) | yes, with its own plugins, default model and effort in each profile and Personal's other settings shared by all of them | yes, with its own plugins, default model and effort in each profile and Personal's other settings shared by all of them | no | yes, logged in from a terminal card; a session cannot move to another profile, since its conversations sit in the database that holds the login; the model picked last is every profile's default | yes, logged in from a terminal card, with its own default models in each profile and its other settings shared by every profile | not measured | Linux and Windows (on macOS its login is in the Keychain), logged in from a terminal card, with `mcp.json`, hooks and skills shared by every profile | Linux only (macOS keeps its login in the Keychain, and on Windows nothing moves it), logged in from a terminal card, with its conversations and default model shared by every profile |
-| A folder you trusted in your main account opens without the "trust this folder?" question in every other profile | yes | yes | no profiles | asks nothing | asks nothing | not measured | yes | asks nothing |
-| A sandboxed session opens without the "trust this folder?" question | yes | yes | yes | asks nothing | asks nothing | yes, and it no longer asks to initialize the project | yes | asks nothing |
-| A worktree of a folder you trusted opens without the "trust this folder?" question | yes | yes | yes | asks nothing | asks nothing | yes, and it no longer asks to initialize the project | yes | asks nothing |
-| Drive a running session from `lich control` or an agent: prompt, stop, model, effort, slash command | yes | no | no | no | no | no | no | no |
-| A message from another session arrives without being typed into the terminal | yes | no | no | no | no | no | no | no |
-| A subagent the agent starts runs as a lich session with its own card, in the asking session's checkout, hands its full report back and closes once done; its own subagents get cards too, one level down | yes | no | no | no | no | no | no | no |
-| Ask a running session a side question without stopping it (`lich ask`) | yes | no | no | no | no | no | no | no |
-| Context, cost and plan usage as the CLI measured them itself | yes | no | no | no | no | no | no | no |
-| The terminal's status line shows who the session owes an answer, who it is waiting on, and answers ready to collect | yes | no | no | no | no | no | no | no |
-| Delegate privately from a subagent or workflow step | yes | yes | yes | yes | yes | yes | yes | yes |
-| A resumed session keeps the model and effort it was on | model only | yes | no | model | yes | no | model | model; effort untested |
-| A result still waits for you after you interrupt a wait for it | yes | yes | yes | yes | no | yes | yes | yes |
-| A task you hand another session reports back "unanswered" as soon as that agent ends its turn without replying | yes | yes | yes | yes | yes | no, waits for the deadline | yes | yes |
-| lich's own messages to the agent (handed tasks, results ready, notices) in the prompt language you pick | yes | yes | yes | yes | yes | yes | yes | yes |
-| Told at spawn, in the prompt language, to fan work out as lich sessions rather than hidden subagents | yes | no | no | no | yes | no | no | no |
-| The session card opens a browser its agent drives, beside the session's terminal | yes | yes | yes | yes | yes | yes | yes | yes |
-| A page the agent makes to show you (a report, a diagram, a mockup) opens in that browser from a folder of the session's own, outside the checkout, kept as long as the session | yes, though Claude Code may still publish it to claude.ai with its own Artifact tool | yes | yes | yes | yes | yes | yes | yes |
-| A skill for writing a lich extension that runs only when you call it (`/lich:extension`) | yes | yes, as `$lich:extension` | yes, but the agent sees it every turn: Antigravity cannot keep a skill for manual use | yes, as `/lich-extension` (opencode 1) or from `/skills` (opencode 2) | yes, as `/skill:lich-extension` | yes, from the command palette | yes, but the agent sees it every turn: Cursor shows the agent every skill a plugin ships | no: Kiro cannot keep a skill out of the agent's context |
+| What you get | Claude Code | Codex | Antigravity | opencode | oh-my-pi | Crush | Cursor CLI | Kiro CLI | Pi |
+| --- | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: |
+| Context window in the footer | yes | yes | no | no | no | no | no | yes | no |
+| Current model in the session footer | yes | yes | no | no | no | no | no | yes | yes |
+| How much of the last turn came from the prompt cache, in the footer | yes | yes | no | in the cost tooltip | in the cost tooltip | no | no | no | no |
+| The card's tooltip names the model running, and the one it opened on if it changed | yes | yes | no | no | no | no | no | yes | no |
+| Cost in the footer | yes | yes | no | yes | yes | yes | no | credits | no |
+| A conversation branched inside the agent's own terminal is billed once for the history it copies | yes, unless the cost is the one Claude Code measured itself | no | no cost readout | yes | yes, except a turn saved without a response id | cannot branch | no cost readout | no cost readout | no cost readout |
+| How much of your plan is left | yes | yes | yes | OpenCode Go only | no | no | yes | no | no |
+| A turn your plan's usage limit stopped picks up again once the limit resets | yes | yes | no | its own retries | its own retries | no | no | no | no |
+| When another of your profiles still has quota, a notice offers to continue there at once | yes | yes | no | no | no | no | no | no | no |
+| When handing off, an agent can suggest one of your profiles for its successor, and a notice lets you choose to move it | yes | yes | no | no | yes | no | Linux and Windows | Linux only | no |
+| Spinner while a turn runs, ring when it ends | yes | yes | yes | yes | yes | no | yes | yes | yes |
+| The card names itself after the conversation | yes | after your first prompt | after your first prompt | yes | yes, from the second turn | no | yes, once the first turn ends | after your first prompt, once the first turn ends | no |
+| A pull request the agent opens shows on its card when the turn ends | yes | yes | yes | yes | yes | no, once the window regains focus | yes | yes | yes |
+| Repaints in the new look when you switch lich between a light and a dark theme | yes | no | no | yes | yes | no | yes | no | no |
+| Bell when the agent is blocked on you | yes | yes | no | yes | no | no | no | no | no |
+| Ctrl+Shift+Y jumps to the next session waiting on you | yes | yes | no | yes | no | no | no | no | no |
+| A program in the agent's terminal can set the card (OSC 7501) while the agent runs | no | no | no | no | no | yes | no | no | no |
+| Back at a shell without prompt marks after you quit the agent, a program can set the card again | yes | no | no | no | no | yes | yes | no | no |
+| The tray lists the sessions waiting on you and the ones working, and its icon takes a dot | yes | yes | working only | yes | working only | no | working only | working only | working only |
+| The card says when the conversation is being compacted | yes | no | no | no | no | no | no | no | no |
+| After a compaction, the agent is reminded of the tasks other sessions sent it that still wait on its answer | yes | no | no | no | no | no | no | no | no |
+| Sidebar filter by state: Waiting, Running, Unread | yes | yes | no Waiting | yes | no Waiting | no, always Idle | no Waiting | no Waiting | no Waiting |
+| Run by your agent inside another session (`claude -p`, `cursor-agent -p`), it stays out of that session's card | yes | yes | yes | yes | yes | yes | yes | no | no |
+| Besides the tools for reaching your other sessions, the agent is told when to use them (hand work to a session on its own worktree) | yes | yes, unless your `config.toml` sets `developer_instructions` | yes | yes | yes | yes | not measured | yes | yes |
+| Machine kept out of idle sleep while a turn runs | yes | yes | yes | yes | yes | no | yes | yes | yes |
+| Sessions trading messages with no work in between, two of them or round a loop of several, are stopped | yes | yes | yes | yes | yes | no | yes | yes | yes |
+| Review tab's **Last turn**, with the agent's recap | yes | yes | yes | yes | yes | no | yes | yes | no |
+| Search the conversation from the palette | yes | yes | yes | yes | yes | yes | no | yes | no |
+| Resume a conversation started outside lich, from the palette's History tab | yes | yes | yes | yes | yes | Linux; macOS and Windows untested | yes | yes | no |
+| A long paste can land as editable text instead of a folded placeholder (Settings › Providers, off by default) | yes | no | no | yes | not measured | no, it becomes a `paste_N.txt` attachment | no | yes | no |
+| Fork a conversation into a new worktree, or in its own checkout | yes | yes | no | yes | no | no | no | no | yes |
+| A fork hangs from its source session in the sidebar's tree | yes | yes | no | yes | no | no | no | no | yes |
+| Warned when you resume, from the agent's own app, a conversation another card has open | yes | on your next prompt | on your next prompt, untested | no | yes | at its next tool call | no | yes | no |
+| Open a session at a chosen reasoning effort | yes | yes | yes | no | yes | no | in the model name | yes | yes |
+| Open a session with ultracode on | yes | no | no | no | no | no | no | no | no |
+| Several accounts side by side as profiles, each with its own full login, and a session moved to another account carrying on in the same card (Settings › Providers) | yes, with its own plugins, default model and effort in each profile and Personal's other settings shared by all of them | yes, with its own plugins, default model and effort in each profile and Personal's other settings shared by all of them | no | yes, logged in from a terminal card; a session cannot move to another profile, since its conversations sit in the database that holds the login; the model picked last is every profile's default | yes, logged in from a terminal card, with its own default models in each profile and its other settings shared by every profile | not measured | Linux and Windows (on macOS its login is in the Keychain), logged in from a terminal card, with `mcp.json`, hooks and skills shared by every profile | Linux only (macOS keeps its login in the Keychain, and on Windows nothing moves it), logged in from a terminal card, with its conversations and default model shared by every profile | no |
+| A folder you trusted in your main account opens without the "trust this folder?" question in every other profile | yes | yes | no profiles | asks nothing | asks nothing | not measured | yes | asks nothing | no |
+| A sandboxed session opens without the "trust this folder?" question | yes | yes | yes | asks nothing | asks nothing | yes, and it no longer asks to initialize the project | yes | asks nothing | no |
+| A worktree of a folder you trusted opens without the "trust this folder?" question | yes | yes | yes | asks nothing | asks nothing | yes, and it no longer asks to initialize the project | yes | asks nothing | no |
+| Drive a running session from `lich control` or an agent: prompt, stop, model, effort, slash command | yes | no | no | no | no | no | no | no | no |
+| A message from another session arrives without being typed into the terminal | yes | no | no | no | no | no | no | no | no |
+| A subagent the agent starts runs as a lich session with its own card, in the asking session's checkout, hands its full report back and closes once done; its own subagents get cards too, one level down | yes | no | no | no | no | no | no | no | no |
+| Ask a running session a side question without stopping it (`lich ask`) | yes | no | no | no | no | no | no | no | no |
+| Context, cost and plan usage as the CLI measured them itself | yes | no | no | no | no | no | no | no | no |
+| The terminal's status line shows who the session owes an answer, who it is waiting on, and answers ready to collect | yes | no | no | no | no | no | no | no | no |
+| Delegate privately from a subagent or workflow step | yes | yes | yes | yes | yes | yes | yes | yes | yes |
+| A resumed session keeps the model and effort it was on | model only | yes | no | model | yes | no | model | model; effort untested | not measured |
+| A result still waits for you after you interrupt a wait for it | yes | yes | yes | yes | no | yes | yes | yes | yes |
+| A task you hand another session reports back "unanswered" as soon as that agent ends its turn without replying | yes | yes | yes | yes | yes | no, waits for the deadline | yes | yes | yes |
+| lich's own messages to the agent (handed tasks, results ready, notices) in the prompt language you pick | yes | yes | yes | yes | yes | yes | yes | yes | yes |
+| Told at spawn, in the prompt language, to fan work out as lich sessions rather than hidden subagents | yes | no | no | no | yes | no | no | no | yes |
+| The session card opens a browser its agent drives, beside the session's terminal | yes | yes | yes | yes | yes | yes | yes | yes | yes |
+| A page the agent makes to show you (a report, a diagram, a mockup) opens in that browser from a folder of the session's own, outside the checkout, kept as long as the session | yes, though Claude Code may still publish it to claude.ai with its own Artifact tool | yes | yes | yes | yes | yes | yes | yes | yes |
+| A skill for writing a lich extension that runs only when you call it (`/lich:extension`) | yes | yes, as `$lich:extension` | yes, but the agent sees it every turn: Antigravity cannot keep a skill for manual use | yes, as `/lich-extension` (opencode 1) or from `/skills` (opencode 2) | yes, as `/skill:lich-extension` | yes, from the command palette | yes, but the agent sees it every turn: Cursor shows the agent every skill a plugin ships | no: Kiro cannot keep a skill out of the agent's context | no |
 
 </details>
 

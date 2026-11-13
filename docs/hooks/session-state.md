@@ -79,21 +79,25 @@ inside a turn, the card's tool line keeps naming the call that started it.
 
 ## Event → state mapping
 
-| Claude Code hook   | Codex hook          | Antigravity hook | opencode event           | oh-my-pi event | Crush hook | Cursor CLI hook    | Kiro CLI hook      | state     |
-|--------------------|---------------------|------------------|--------------------------|----------------|------------|--------------------|--------------------|-----------|
-| `UserPromptSubmit` | `UserPromptSubmit`  | `PreInvocation`  | `session.status` (`busy`) | `input`        | —          | `UserPromptSubmit` | `userPromptSubmit` | `busy`    |
-| `PreToolUse`       | `PreToolUse`        | `PreToolUse`     | `tool.execute.before`    | `tool_call`    | —          | `PreToolUse`       | `preToolUse`       | `busy` + `tool` |
-| `PostToolUse`      | `PostToolUse`       | —                | `tool.execute.after`     | `turn_start`   | —          | `PostToolUse`      | `postToolUse`      | `busy`    |
-| `Notification`     | `PermissionRequest` | —                | any `*.asked`            | —              | —          | —                  | —                  | `waiting` + `reason` |
-| `Stop`, `StopFailure` | `Stop`              | `Stop`           | `session.status` (`idle`) | `session_stop` | —          | `Stop`             | `stop`             | `done`    |
-| `SessionEnd`       | —                   | —                | —                        | —              | —          | `SessionEnd`       | —                  | `idle`    |
-| mod `session.compact` | —                | —                | —                        | —              | —          | —                  | —                  | `compacting` |
+| Claude Code hook   | Codex hook          | Antigravity hook | opencode event           | oh-my-pi event | Crush hook | Cursor CLI hook    | Kiro CLI hook      | Pi event | state     |
+|--------------------|---------------------|------------------|--------------------------|----------------|------------|--------------------|--------------------|----------|-----------|
+| `UserPromptSubmit` | `UserPromptSubmit`  | `PreInvocation`  | `session.status` (`busy`) | `input`        | —          | `UserPromptSubmit` | `userPromptSubmit` | `agent_start` | `busy`    |
+| `PreToolUse`       | `PreToolUse`        | `PreToolUse`     | `tool.execute.before`    | `tool_call`    | —          | `PreToolUse`       | `preToolUse`       | `tool_execution_start` | `busy` + `tool` |
+| `PostToolUse`      | `PostToolUse`       | —                | `tool.execute.after`     | `turn_start`   | —          | `PostToolUse`      | `postToolUse`      | — | `busy`    |
+| `Notification`     | `PermissionRequest` | —                | any `*.asked`            | —              | —          | —                  | —                  | — | `waiting` + `reason` |
+| `Stop`, `StopFailure` | `Stop`              | `Stop`           | `session.status` (`idle`) | `session_stop` | —          | `Stop`             | `stop`             | `agent_settled` | `done`    |
+| `SessionEnd`       | —                   | —                | —                        | —              | —          | `SessionEnd`       | —                  | `session_shutdown` (`quit`) | `idle`    |
+| mod `session.compact` | —                | —                | —                        | —              | —          | —                  | —                  | — | `compacting` |
 
 **Kiro closes four of the six rows and neither of the other two.** It has no
 permission event, so a Kiro session waiting on a confirmation reads as `busy`
 rather than `waiting` — the card says it is working, which is true, and does not
 say what it is waiting for. It has no session-end event either, so the card keeps
 the provider's mark until the PTY itself goes (docs/providers/kiro.md).
+
+Pi reports turn start, settlement, and tool start. It has no permission or
+compaction event, and only a quit reports idle; the other shutdown reasons leave
+the provider mark until the PTY exits (docs/providers/pi.md).
 
 Kiro is also the one harness that reads a hook's **stdout back into the
 conversation as context** — that is what its hooks are for. Every report script

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"slices"
 	"time"
 
@@ -34,7 +35,7 @@ import (
 //
 // opts.Fork turns that resume into a branch: the provider copies the conversation
 // into a new one of its own and leaves the original alone, so the card that ran
-// it stays where it is with its history intact. Only the three kinds
+// it stays where it is with its history intact. Only the four kinds
 // providers.SupportsFork names can do it, and only alongside a resume id — the
 // conversation being branched is the one that id points at. The copy's own id
 // is the provider's to assign, and reaches lich through this session's
@@ -162,6 +163,14 @@ func (s *Service) spawnSession(opts api.StartOptions, profileDir, name string, o
 	}
 	route, lang := subagentRoute(opts.Kind, profileDir, depth, cardsOn), s.promptLanguage()
 	env = briefingEnv(env, opts.Kind, route, lang)
+	piExtensionArgs, piTools := piExtensionForSpawn(opts.Kind, mcpBin)
+	piExtensionDir := ""
+	if len(piExtensionArgs) > 0 {
+		path, err := agentplugin.PiExtensionPath()
+		if err == nil {
+			piExtensionDir = filepath.Dir(path)
+		}
+	}
 	model := s.store.SessionModel(opts.ID)
 	if oc2 {
 		if env, err = opencode2ModelEnv(env, model, opts.Resume); err != nil {
@@ -183,9 +192,9 @@ func (s *Service) spawnSession(opts api.StartOptions, profileDir, name string, o
 	inheritAntigravityTrust(opts.Kind, opts.Cwd, inSandbox)
 	spec := ptySpec{
 		bin: resolveCommand(opts.Kind, s.store.ProviderBin(opts.Kind, opts.ProjectID), userShell()),
-		args: slices.Concat(confinedTrustArgs(opts.Kind, opts.Cwd, inSandbox), codexBriefingArgs(opts.Kind, opts.Resume, route, lang), opencode2Args(oc2, providerArgs(
+		args: slices.Concat(confinedTrustArgs(opts.Kind, opts.Cwd, inSandbox), codexBriefingArgs(opts.Kind, opts.Resume, route, lang), piExtensionArgs, opencode2Args(oc2, providerArgs(
 			opts.Kind, name, opts.Resume, model, s.store.SessionEffort(opts.ID), mcpBin,
-			kiroPluginAgent(opts.Kind), opts.Fork, skipPermissions, ultracode, route, lang,
+			kiroPluginAgent(opts.Kind), opts.Fork, skipPermissions, ultracode, route, lang, piTools,
 		))),
 		dir:  opts.Cwd,
 		env:  env,
@@ -199,7 +208,7 @@ func (s *Service) spawnSession(opts api.StartOptions, profileDir, name string, o
 		return nil, "", err
 	}
 	creds := s.sandboxCredentials(opts.ProjectID, opts.Cwd, inSandbox)
-	reads := []string{sessionDropDir(s.dropDir, filesKey, inSandbox), s.shellIntegrationDir}
+	reads := []string{sessionDropDir(s.dropDir, filesKey, inSandbox), s.shellIntegrationDir, piExtensionDir}
 	spec, skippedLinks := wrapSandbox(spec, opts.Kind, userHome(), reads, []string{artifacts}, profileDir, inSandbox, creds)
 	header, err := encodeFrame(opts.ID, nil)
 	if err != nil {
@@ -242,6 +251,18 @@ func (s *Service) spawnSession(opts api.StartOptions, profileDir, name string, o
 	s.spawns.Store(opts.ID, spawn{kind: opts.Kind, cwd: opts.Cwd, projectID: opts.ProjectID, profile: profileSlug(opts.Kind, profileDir)})
 	go s.stream(opts.ID, sess)
 	return sess, opts.Cwd, nil
+}
+
+func piExtensionForSpawn(kind, mcpBin string) ([]string, bool) {
+	if kind != providers.Pi || !agentplugin.PiExtensionInstalled() {
+		return nil, false
+	}
+	path, err := agentplugin.PiExtensionPath()
+	if err != nil {
+		slog.Warn("terminal: resolve Pi extension", "error", err)
+		return nil, false
+	}
+	return []string{"--extension", path}, mcpBin != ""
 }
 
 // providerKind resolves which provider mark a session-start report puts on a

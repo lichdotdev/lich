@@ -297,8 +297,8 @@ DevTools.
 ## Providers
 
 Claude Code, Codex and opencode receive the tools at spawn. Antigravity,
-oh-my-pi, Crush, Cursor CLI and Kiro receive them from the lich MCP server the
-plugin registers. Downloads and dialogs reach all eight the same way: in the
+oh-my-pi, Crush, Cursor CLI, Kiro and Pi receive them from the lich MCP server their
+plugin or extension registers. Downloads and dialogs reach all nine the same way: in the
 answer of the same tools, and `browser_dialog` for all of them. Tabs too:
-`browser_tabs` and `browser_tab` reach all eight. DevTools changes none of
-the agent's tools, so it is the same on all eight.
+`browser_tabs` and `browser_tab` reach all nine. DevTools changes none of
+the agent's tools, so it is the same on all nine.

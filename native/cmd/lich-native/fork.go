@@ -13,7 +13,7 @@ import (
 // branches a conversation (`claude --fork-session`, `codex fork`,
 // `opencode --fork`). The other five only resume, and lich forges no fork for
 // them (docs/ceilings.md).
-var forkableKinds = []string{"claude", "codex", "opencode"}
+var forkableKinds = []string{"claude", "codex", "opencode", "pi"}
 
 func canFork(kind string) bool { return slices.Contains(forkableKinds, kind) }
 

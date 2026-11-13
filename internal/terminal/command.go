@@ -50,7 +50,7 @@ const (
 	kiroResumeFlag        = "--resume-id"
 )
 
-// How the three providers that can branch a conversation spell it
+// How the four providers that can branch a conversation spell it
 // (providers.SupportsFork). Two of them add a flag to the resume they already
 // take; Codex replaces the subcommand, because its `fork` and `resume` are
 // siblings with the same argument shape — `codex fork <SESSION_ID>` (0.151.0).
@@ -124,6 +124,7 @@ var modelFlags = map[string]string{
 	providers.OMP:         "--model",
 	providers.Cursor:      "--model",
 	providers.Kiro:        "--model",
+	providers.Pi:          "--model",
 }
 
 // SupportsModel reports whether a provider can be told which model to run when
@@ -151,6 +152,7 @@ var effortFlags = map[string]string{
 	providers.Antigravity: "--effort",
 	providers.OMP:         "--thinking",
 	providers.Kiro:        "--effort",
+	providers.Pi:          "--thinking",
 }
 
 const codexEffortKey = "model_reasoning_effort"
@@ -218,6 +220,7 @@ func SupportsUltracode(kind string) bool {
 var briefingFlags = map[string]string{
 	providers.Claude: "--append-system-prompt",
 	providers.OMP:    "--append-system-prompt",
+	providers.Pi:     "--append-system-prompt",
 }
 
 // How each provider is handed an MCP server on its command line: Claude Code
@@ -320,7 +323,7 @@ func flagValue(value string) (string, bool) {
 // it comes before every flag.
 func providerArgs(
 	kind, name, resume, model, effort, lichBin, agent string, fork, skipPermissions, ultracode bool,
-	route relay.SubagentRoute, lang prompt.Lang,
+	route relay.SubagentRoute, lang prompt.Lang, hasPiTools bool,
 ) []string {
 	mcp := mcpArgs(kind, lichBin)
 	args := append([]string{}, subcommandArgs(kind)...)
@@ -331,7 +334,7 @@ func providerArgs(
 	args = append(args, modelArgs(kind, model, resume)...)
 	args = append(args, effortArgs(kind, effort, resume)...)
 	args = append(args, ultracodeArgs(kind, ultracode)...)
-	args = append(args, briefingArgs(kind, route, lang)...)
+	args = append(args, briefingArgs(kind, route, lang, hasPiTools)...)
 	if kind == providers.Codex {
 		return append(mcp, args...)
 	}
@@ -425,12 +428,13 @@ func ultracodeArgs(kind string, on bool) []string {
 // briefing is worded for what this spawn actually registered: a provider handed
 // lich's MCP server is pointed at the tools, everyone else at the command line
 // (relay.SpawnBriefing).
-func briefingArgs(kind string, route relay.SubagentRoute, lang prompt.Lang) []string {
+func briefingArgs(kind string, route relay.SubagentRoute, lang prompt.Lang, hasPiTools bool) []string {
 	flag, ok := briefingFlags[kind]
 	if !ok {
 		return nil
 	}
-	return []string{flag, relay.SpawnBriefing(lang, providers.AcceptsMCPServer(kind), route)}
+	hasTools := providers.AcceptsMCPServer(kind) || (kind == providers.Pi && hasPiTools)
+	return []string{flag, relay.SpawnBriefing(lang, hasTools, route)}
 }
 
 // codexBriefingArgs hands a new Codex conversation the briefing as a config
@@ -623,6 +627,11 @@ func resumeArgs(kind, resume string, fork bool) []string {
 		return []string{cursorResumeFlag, resume}
 	case providers.Kiro:
 		return []string{kiroResumeFlag, resume}
+	case providers.Pi:
+		if fork {
+			return []string{"--fork", resume}
+		}
+		return []string{sessionResumeFlag, resume}
 	}
 	return nil
 }

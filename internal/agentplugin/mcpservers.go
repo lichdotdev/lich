@@ -45,7 +45,10 @@ const opencodeProjectDir = ".opencode"
 // lich is registered wherever it spawns a session. profileDir is the profile
 // the session runs in, "" for Personal.
 func MCPServers(provider, cwd, profileDir string) []string {
-	names := map[string]bool{relay.MCPServerName: true}
+	names := map[string]bool{}
+	if provider != providers.Pi || PiExtensionInstalled() {
+		names[relay.MCPServerName] = true
+	}
 	for _, name := range registeredServers(provider, cwd, profileDir) {
 		names[name] = true
 	}

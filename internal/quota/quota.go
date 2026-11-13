@@ -3,7 +3,7 @@
 // spent. It is not what a session cost — that is internal/pricing — and not how
 // full a context window is — that is internal/terminal's usage readout.
 //
-// Five of the eight providers are read here. Claude Code, Codex and Cursor CLI
+// Five of the nine providers are read here. Claude Code, Codex and Cursor CLI
 // each poll an undocumented endpoint with the token their own CLI already wrote
 // to disk; opencode reads its Go subscription with the API key `opencode auth
 // login` stored for it. Antigravity keeps its Google login in the OS keyring

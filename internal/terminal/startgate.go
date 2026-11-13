@@ -17,8 +17,9 @@ import (
 // nothing and report at start. Codex 0.161.0 reports on its first turn, even in
 // a trusted folder sitting at its prompt; Antigravity on its first turn too,
 // Crush on its first tool call, opencode when its first conversation is
-// created. None of those four tells lich anything before work is given to it,
-// and holding them for a report would leave them unable to take any.
+// created. Pi reports at session initialization but that event has not been
+// measured against a fresh startup question, so lich does not hold it. None of
+// those five is held for a report that may arrive only after work is given.
 var startsAtPrompt = map[string]bool{
 	providers.Claude: true,
 	providers.Cursor: true,

@@ -85,6 +85,10 @@ var (
 	// tokens}), emitted after a turn ends. Global like the other session events.
 	SessionUsageEvent = defineEvent[SessionUsage]("session-usage")
 
+	// SessionModelEvent carries the current model id reported by a provider
+	// extension ({id, model}), including changes made inside the provider.
+	SessionModelEvent = defineEvent[SessionModel]("session-model")
+
 	// SessionTitleEvent carries a session's new name ({id, label}), so every card
 	// takes it without a reload: the auto-applied ai-title, and a rename the store
 	// has written, whoever asked (the window, `lich rename` or the MCP tool). One

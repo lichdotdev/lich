@@ -47,6 +47,9 @@ func (*Service) resumeAvailable(kind, providerSessionID, cwd string) bool {
 	case providers.OMP:
 		_, ok := ompTranscriptPath(providerSessionID)
 		return ok
+	case providers.Pi:
+		_, ok := piTranscriptPath(providerSessionID, cwd)
+		return ok
 	case providers.OpenCode:
 		_, _, ok := opencodeOwner(providerSessionID)
 		return ok

@@ -118,6 +118,25 @@ func TestPinnedProjectsPersistAsGlobalSetting(t *testing.T) {
 	}
 }
 
+func TestLoadPinnedProjectsAcceptsLegacyList(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/rpc/store.GetSetting" {
+			t.Errorf("unexpected call %s", r.URL.Path)
+			return
+		}
+		_ = json.NewEncoder(w).Encode(`["a","c"]`)
+	}))
+	defer srv.Close()
+
+	got, err := loadPinnedProjects(context.Background(), clientOf(srv))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 2 || !got["a"] || !got["c"] {
+		t.Errorf("loaded pinned projects %v, want a and c", got)
+	}
+}
+
 func TestCloseProjectMovesToItsNeighbour(t *testing.T) {
 	cases := []struct {
 		name, active, close string

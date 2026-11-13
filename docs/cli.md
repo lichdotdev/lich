@@ -453,7 +453,7 @@ It answers to "auth-fix" and to "auth-fix-9f8e". Its agent may still be starting
   same spelling, but only narrows with it: opening a project is something only
   `open` does.
 - `--kind` is what the session runs: any provider id (`claude`, `codex`,
-  `antigravity`, `opencode`, `omp`, `crush`, `cursor`, `kiro`) or `shell`. The default is the caller's own
+  `antigravity`, `opencode`, `omp`, `crush`, `cursor`, `kiro`, `pi`) or `shell`. The default is the caller's own
   provider, so an agent opening a worker gets another of itself; a caller that
   is not a session at all gets Claude Code.
 - `--worktree` is the **branch name** of a git worktree, created off `--base`
@@ -1380,10 +1380,11 @@ told without a file (`providers.AcceptsMCPServer`):
 | oh-my-pi | a `lich` entry merged into `mcp.json` beside the extension the plugin install writes | with the plugin |
 | Cursor CLI | a `lich` entry merged into `~/.cursor/mcp.json` by the install — its `mcp` subcommand only lists, enables and disables what is already there | with the plugin |
 | Kiro CLI | a `kiro-cli mcp add --agent lich` the plugin install runs, so the entry lands in the agent lich owns rather than in the user's global `mcp.json` | with the plugin |
+| Pi | `pi.registerMcpServer` in the installed lich extension, using `LICH_BIN` | with the extension |
 
 Only the first three can be told without a file, which is what makes their
-registration per-session and secret-free. The rest arrive with the plugin
-instead (Settings › lich plugin), because that install already writes into
+registration per-session and secret-free. The rest arrive with the plugin or
+extension instead (Settings › lich plugin), because that install already writes into
 those harnesses' own directories — so the server is registered where the hooks
 are, removed by the same uninstall, and absent for anyone who never installed
 it.

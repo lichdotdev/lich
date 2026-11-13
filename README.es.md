@@ -135,61 +135,60 @@ distinto.
 <details>
 <summary>Ver qué admite cada agente</summary>
 
-| Lo que obtienes | Claude Code | Codex | Antigravity | opencode | oh-my-pi | Crush | Cursor CLI | Kiro CLI |
-| --- | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: |
-| Ventana de contexto en el pie de ventana | sí | sí | no | no | no | no | no | sí |
-| Cuánto del último turno salió de la caché de prompts, en el pie de ventana | sí | sí | no | en el tooltip del costo | en el tooltip del costo | no | no | no |
-| El tooltip de la tarjeta nombra el modelo en uso, y con cuál se abrió si cambió | sí | sí | no | no | no | no | no | sí |
-| Costo en el pie de ventana | sí | sí | no | sí | sí | sí | no | créditos |
-| Una conversación bifurcada dentro de la propia terminal del agente cobra una sola vez el historial que copia | sí, salvo cuando el costo es el que midió el propio Claude Code | no | sin lectura de costo | sí | sí, salvo un turno guardado sin id de respuesta | no se puede bifurcar | sin lectura de costo | sin lectura de costo |
-| Cuánto queda de tu plan | sí | sí | sí | solo OpenCode Go | no | no | sí | no |
-| Un turno que el límite de uso de tu plan detuvo se reanuda cuando el límite se restablece | sí | sí | no | sus propios reintentos | sus propios reintentos | no | no | no |
-| Si otro de tus perfiles aún tiene cuota, un aviso ofrece continuar allí al momento | sí | sí | no | no | no | no | no | no |
-| Al traspasar su trabajo, un agente puede sugerir uno de tus perfiles para su sucesora, y un aviso te deja decidir si moverla | sí | sí | no | no | sí | no | Linux y Windows | solo Linux |
-| Spinner mientras corre un turno, anillo cuando termina | sí | sí | sí | sí | sí | no | sí | sí |
-| La tarjeta toma el nombre de la conversación | sí | por tu primer prompt | por tu primer prompt | sí | sí, desde el segundo turno | no | sí, cuando termina el primer turno | por tu primer prompt, cuando termina el primer turno |
-| Un pull request que abre el agente aparece en su tarjeta al terminar el turno | sí | sí | sí | sí | sí | no, cuando la ventana recupera el foco | sí | sí |
-| Se repinta con el aspecto nuevo al cambiar lich entre un tema claro y uno oscuro | sí | no | no | sí | sí | no | sí | no |
-| Campana cuando el agente está bloqueado esperándote | sí | sí | no | sí | no | no | no | no |
-| Ctrl+Shift+Y salta a la siguiente sesión que te espera | sí | sí | no | sí | no | no | no | no |
-| Un programa en la terminal del agente puede fijar la tarjeta (OSC 7501) mientras el agente corre | no | no | no | no | no | sí | no | no |
-| De vuelta en un shell sin marcas de prompt tras salir del agente, un programa puede volver a fijar la tarjeta | sí | no | no | no | no | sí | sí | no |
-| La bandeja lista las sesiones que te esperan y las que trabajan, y su icono lleva un punto | sí | sí | solo las que trabajan | sí | solo las que trabajan | no | solo las que trabajan | solo las que trabajan |
-| La tarjeta avisa cuando la conversación se está compactando | sí | no | no | no | no | no | no | no |
-| Tras una compactación, al agente se le recuerdan las tareas que otras sesiones le enviaron y que siguen esperando su respuesta | sí | no | no | no | no | no | no | no |
-| Filtro de la barra lateral por estado: En espera, En ejecución, Sin leer | sí | sí | no En espera | sí | no En espera | no, siempre Inactiva | no En espera | no En espera |
-| Si tu agente lo ejecuta dentro de otra sesión (`claude -p`, `cursor-agent -p`), no aparece en la tarjeta de esa sesión | sí | sí | sí | sí | sí | sí | sí | no |
-| Además de las herramientas para llegar a tus otras sesiones, al agente se le indica cuándo usarlas (pasar trabajo a una sesión en su propio worktree) | sí | sí, salvo que tu `config.toml` defina `developer_instructions` | sí | sí | sí | sí | no medido | sí |
-| La máquina no entra en reposo mientras corre un turno | sí | sí | sí | sí | sí | no | sí | sí |
-| Las sesiones que se pasan mensajes sin trabajar entre ellos, dos o en un ciclo de varias, se detienen | sí | sí | sí | sí | sí | no | sí | sí |
-| **Último turno** de la pestaña Revisión, con el resumen del agente | sí | sí | sí | sí | sí | no | sí | sí |
-| Buscar en la conversación desde la paleta | sí | sí | sí | sí | sí | sí | no | sí |
-| Reanudar una conversación iniciada fuera de lich, desde la pestaña Historial de la paleta | sí | sí | sí | sí | sí | Linux; macOS y Windows sin probar | sí | sí |
-| Un pegado largo puede llegar como texto editable en vez de un marcador plegado (Ajustes › Proveedores, desactivado por defecto) | sí | no | no | sí | no medido | no, se convierte en un adjunto `paste_N.txt` | no | sí |
-| Bifurcar una conversación en un nuevo worktree, o en su propio checkout | sí | sí | no | sí | no | no | no | no |
-| Una bifurcación cuelga de su sesión de origen en el árbol de la barra lateral | sí | sí | no | sí | no | no | no | no |
-| Aviso cuando retomas, desde la propia app del agente, una conversación que otra tarjeta tiene abierta | sí | en tu próximo prompt | en tu próximo prompt, sin probar | no | sí | en su próxima llamada a una herramienta | no | sí |
-| Abrir una sesión con un esfuerzo de razonamiento elegido | sí | sí | sí | no | sí | no | en el nombre del modelo | sí |
-| Abrir una sesión con ultracode activado | sí | no | no | no | no | no | no | no |
-| Varias cuentas lado a lado como perfiles, cada una con su propio inicio de sesión completo, y una sesión movida a otra cuenta que sigue en la misma tarjeta (Ajustes › Proveedores) | sí, con sus propios plugins, modelo y esfuerzo por defecto en cada perfil y el resto de los ajustes de Personal compartidos por todos | sí, con sus propios plugins, modelo y esfuerzo por defecto en cada perfil y el resto de los ajustes de Personal compartidos por todos | no | sí, con sesión iniciada desde una tarjeta de terminal; una sesión no puede pasar a otro perfil, porque sus conversaciones están en la base de datos que guarda el inicio de sesión; el último modelo elegido es el predeterminado de todos los perfiles | sí, con sesión iniciada desde una tarjeta de terminal, con sus propios modelos por defecto en cada perfil y el resto de sus ajustes compartidos por todos los perfiles | no medido | Linux y Windows (en macOS su inicio de sesión está en el Llavero), con sesión iniciada desde una tarjeta de terminal, con `mcp.json`, hooks y skills compartidos por todos los perfiles | solo Linux (macOS guarda su inicio de sesión en el Llavero y en Windows nada lo mueve), con sesión iniciada desde una tarjeta de terminal, con sus conversaciones y su modelo por defecto compartidos por todos los perfiles |
-| Una carpeta en la que confiaste en tu cuenta principal se abre sin la pregunta "trust this folder?" en todos los demás perfiles | sí | sí | sin perfiles | no pregunta nada | no pregunta nada | no medido | sí | no pregunta nada |
-| Una sesión en sandbox se abre sin la pregunta "trust this folder?" | sí | sí | sí | no pregunta nada | no pregunta nada | sí, y ya no pregunta si inicializar el proyecto | sí | no pregunta nada |
-| Un worktree de una carpeta en la que confiaste se abre sin la pregunta "trust this folder?" | sí | sí | sí | no pregunta nada | no pregunta nada | sí, y ya no pregunta si inicializar el proyecto | sí | no pregunta nada |
-| Dirigir una sesión en ejecución desde `lich control` o un agente: prompt, detener, modelo, esfuerzo, slash command | sí | no | no | no | no | no | no | no |
-| Un mensaje de otra sesión llega sin escribirse en la terminal | sí | no | no | no | no | no | no | no |
-| Un subagente que inicia el agente se ejecuta como una sesión de lich con su propia tarjeta, en el checkout de la sesión que lo pidió, entrega su informe completo y se cierra al terminar; sus propios subagentes también reciben tarjeta, un nivel más abajo | sí | no | no | no | no | no | no | no |
-| Hacer una pregunta lateral a una sesión en ejecución sin detenerla (`lich ask`) | sí | no | no | no | no | no | no | no |
-| Contexto, costo y uso del plan tal como los midió el propio CLI | sí | no | no | no | no | no | no | no |
-| La línea de estado de la terminal muestra a quién le debe una respuesta la sesión, de quién espera una y qué respuestas están listas para recoger | sí | no | no | no | no | no | no | no |
-| Delegar en privado desde un subagente o un paso de workflow | sí | sí | sí | sí | sí | sí | sí | sí |
-| Una sesión reanudada conserva el modelo y el esfuerzo que tenía | solo el modelo | sí | no | modelo | sí | no | modelo | modelo; esfuerzo sin probar |
-| Un resultado te sigue esperando después de interrumpir la espera | sí | sí | sí | sí | no | sí | sí | sí |
-| Una tarea que entregas a otra sesión informa "sin respuesta" en cuanto ese agente termina su turno sin responder | sí | sí | sí | sí | sí | no, espera al plazo | sí | sí |
-| Los mensajes propios de lich al agente (tareas entregadas, resultados listos, avisos) en el idioma de prompt que elijas | sí | sí | sí | sí | sí | sí | sí | sí |
-| Se le indica al iniciarse, en el idioma de prompt, que reparta el trabajo como sesiones de lich en vez de subagentes ocultos | sí | no | no | no | sí | no | no | no |
-| La tarjeta de la sesión abre un navegador que el agente conduce, junto al terminal de la sesión | sí | sí | sí | sí | sí | sí | sí | sí |
-| Una página que el agente hace para mostrarte (un informe, un diagrama, un mockup) se abre en ese navegador desde una carpeta propia de la sesión, fuera del checkout, que dura lo que dure la sesión | sí, aunque Claude Code puede seguir publicándola en claude.ai con su propia herramienta Artifact | sí | sí | sí | sí | sí | sí | sí |
-| Una skill para escribir una extensión de lich, que solo corre cuando la llamas (`/lich:extension`) | sí | sí, como `$lich:extension` | sí, pero el agente la ve en cada turno: Antigravity no puede reservar una skill para uso manual | sí, como `/lich-extension` (opencode 1) o desde `/skills` (opencode 2) | sí, como `/skill:lich-extension` | sí, desde la paleta de comandos | sí, pero el agente la ve en cada turno: Cursor le muestra al agente toda skill de un plugin | no: Kiro no puede sacar una skill del contexto del agente |
+| Lo que obtienes | Claude Code | Codex | Antigravity | opencode | oh-my-pi | Crush | Cursor CLI | Kiro CLI | Pi |
+| --- | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: |
+| Ventana de contexto en el pie de ventana | sí | sí | no | no | no | no | no | sí | no |
+| Modelo actual en el pie de sesión | sí | sí | no | no | no | no | no | sí | sí |
+| Cuánto del último turno salió de la caché de prompts, en el pie de ventana | sí | sí | no | en el tooltip del costo | en el tooltip del costo | no | no | no | no |
+| El tooltip de la tarjeta nombra el modelo en uso, y con cuál se abrió si cambió | sí | sí | no | no | no | no | no | sí | no |
+| Costo en el pie de ventana | sí | sí | no | sí | sí | sí | no | créditos | no |
+| Cuánto queda de tu plan | sí | sí | sí | solo OpenCode Go | no | no | sí | no | no |
+| Un turno que el límite de uso de tu plan detuvo se reanuda cuando el límite se restablece | sí | sí | no | sus propios reintentos | sus propios reintentos | no | no | no | no |
+| Si otro de tus perfiles aún tiene cuota, un aviso ofrece continuar allí al momento | sí | sí | no | no | no | no | no | no | no |
+| Al traspasar su trabajo, un agente puede sugerir uno de tus perfiles para su sucesora, y un aviso te deja decidir si moverla | sí | sí | no | no | sí | no | Linux y Windows | solo Linux | no |
+| Spinner mientras corre un turno, anillo cuando termina | sí | sí | sí | sí | sí | no | sí | sí | sí |
+| La tarjeta toma el nombre de la conversación | sí | por tu primer prompt | por tu primer prompt | sí | sí, desde el segundo turno | no | sí, cuando termina el primer turno | por tu primer prompt, cuando termina el primer turno | no |
+| Un pull request que abre el agente aparece en su tarjeta al terminar el turno | sí | sí | sí | sí | sí | no, cuando la ventana recupera el foco | sí | sí | sí |
+| Se repinta con el aspecto nuevo al cambiar lich entre un tema claro y uno oscuro | sí | no | no | sí | sí | no | sí | no | no |
+| Campana cuando el agente está bloqueado esperándote | sí | sí | no | sí | no | no | no | no | no |
+| Ctrl+Shift+Y salta a la siguiente sesión que te espera | sí | sí | no | sí | no | no | no | no | no |
+| Un programa en la terminal del agente puede fijar la tarjeta (OSC 7501) mientras el agente corre | no | no | no | no | no | sí | no | no | no |
+| De vuelta en un shell sin marcas de prompt tras salir del agente, un programa puede volver a fijar la tarjeta | sí | no | no | no | no | sí | sí | no | no |
+| La bandeja lista las sesiones que te esperan y las que trabajan, y su icono lleva un punto | sí | sí | solo las que trabajan | sí | solo las que trabajan | no | solo las que trabajan | solo las que trabajan | solo en ejecución |
+| La tarjeta avisa cuando la conversación se está compactando | sí | no | no | no | no | no | no | no | no |
+| Tras una compactación, al agente se le recuerdan las tareas que otras sesiones le enviaron y que siguen esperando su respuesta | sí | no | no | no | no | no | no | no | no |
+| Filtro de la barra lateral por estado: En espera, En ejecución, Sin leer | sí | sí | no En espera | sí | no En espera | no, siempre Inactiva | no En espera | no En espera | sin Waiting |
+| Si tu agente lo ejecuta dentro de otra sesión (`claude -p`, `cursor-agent -p`), no aparece en la tarjeta de esa sesión | sí | sí | sí | sí | sí | sí | sí | no | no |
+| Además de las herramientas para llegar a tus otras sesiones, al agente se le indica cuándo usarlas (pasar trabajo a una sesión en su propio worktree) | sí | sí, salvo que tu `config.toml` defina `developer_instructions` | sí | sí | sí | sí | no medido | sí | sí |
+| La máquina no entra en reposo mientras corre un turno | sí | sí | sí | sí | sí | no | sí | sí | sí |
+| Las sesiones que se pasan mensajes sin trabajar entre ellos, dos o en un ciclo de varias, se detienen | sí | sí | sí | sí | sí | no | sí | sí | sí |
+| **Último turno** de la pestaña Revisión, con el resumen del agente | sí | sí | sí | sí | sí | no | sí | sí | no |
+| Buscar en la conversación desde la paleta | sí | sí | sí | sí | sí | sí | no | sí | no |
+| Reanudar una conversación iniciada fuera de lich, desde la pestaña Historial de la paleta | sí | sí | sí | sí | sí | Linux; macOS y Windows sin probar | sí | sí | no |
+| Un pegado largo puede llegar como texto editable en vez de un marcador plegado (Ajustes › Proveedores, desactivado por defecto) | sí | no | no | sí | no medido | no, se convierte en un adjunto `paste_N.txt` | no | sí | no |
+| Bifurcar una conversación en un nuevo worktree, o en su propio checkout | sí | sí | no | sí | no | no | no | no | sí |
+| Una bifurcación cuelga de su sesión de origen en el árbol de la barra lateral | sí | sí | no | sí | no | no | no | no | sí |
+| Aviso cuando retomas, desde la propia app del agente, una conversación que otra tarjeta tiene abierta | sí | en tu próximo prompt | en tu próximo prompt, sin probar | no | sí | en su próxima llamada a una herramienta | no | sí | no |
+| Abrir una sesión con un esfuerzo de razonamiento elegido | sí | sí | sí | no | sí | no | en el nombre del modelo | sí | sí |
+| Abrir una sesión con ultracode activado | sí | no | no | no | no | no | no | no | no |
+| Varias cuentas lado a lado como perfiles, cada una con su propio inicio de sesión completo, y una sesión movida a otra cuenta que sigue en la misma tarjeta (Ajustes › Proveedores) | sí | sí, con sus propios plugins en cada perfil y los ajustes de Personal compartidos por todos | no | sí, con sesión iniciada desde una tarjeta de terminal; una sesión no puede pasar a otro perfil, porque sus conversaciones están en la base de datos que guarda el inicio de sesión | sí, con sesión iniciada desde una tarjeta de terminal, con sus ajustes compartidos por todos los perfiles | no medido | Linux y Windows (en macOS su inicio de sesión está en el Llavero), con sesión iniciada desde una tarjeta de terminal, con `mcp.json`, hooks y skills compartidos por todos los perfiles | solo Linux (macOS guarda su inicio de sesión en el Llavero y en Windows nada lo mueve), con sesión iniciada desde una tarjeta de terminal, con sus conversaciones compartidas por todos los perfiles | no |
+| Una carpeta en la que confiaste en tu cuenta principal se abre sin la pregunta "trust this folder?" en todos los demás perfiles | sí | sí | sin perfiles | no pregunta nada | no pregunta nada | no medido | sí | no pregunta nada | no |
+| Una sesión en sandbox se abre sin la pregunta "trust this folder?" | sí | sí | sí | no pregunta nada | no pregunta nada | sí, y ya no pregunta si inicializar el proyecto | sí | no pregunta nada | no |
+| Un worktree de una carpeta en la que confiaste se abre sin la pregunta "trust this folder?" | sí | sí | sí | no pregunta nada | no pregunta nada | sí, y ya no pregunta si inicializar el proyecto | sí | no pregunta nada | no |
+| Dirigir una sesión en ejecución desde `lich control` o un agente: prompt, detener, modelo, esfuerzo, slash command | sí | no | no | no | no | no | no | no | no |
+| Un mensaje de otra sesión llega sin escribirse en la terminal | sí | no | no | no | no | no | no | no | no |
+| Un subagente que inicia el agente se ejecuta como una sesión de lich con su propia tarjeta, en el checkout de la sesión que lo pidió, entrega su informe completo y se cierra al terminar; sus propios subagentes también reciben tarjeta, un nivel más abajo | sí | no | no | no | no | no | no | no | no |
+| Hacer una pregunta lateral a una sesión en ejecución sin detenerla (`lich ask`) | sí | no | no | no | no | no | no | no | no |
+| Contexto, costo y uso del plan tal como los midió el propio CLI | sí | no | no | no | no | no | no | no | no |
+| La línea de estado de la terminal muestra a quién le debe una respuesta la sesión, de quién espera una y qué respuestas están listas para recoger | sí | no | no | no | no | no | no | no | no |
+| Delegar en privado desde un subagente o un paso de workflow | sí | sí | sí | sí | sí | sí | sí | sí | sí |
+| Una sesión reanudada conserva el modelo y el esfuerzo que tenía | solo el modelo | sí | no | modelo | sí | no | modelo | modelo; esfuerzo sin probar | no medido |
+| Un resultado te sigue esperando después de interrumpir la espera | sí | sí | sí | sí | no | sí | sí | sí | sí |
+| Una tarea que entregas a otra sesión informa "sin respuesta" en cuanto ese agente termina su turno sin responder | sí | sí | sí | sí | sí | no, espera al plazo | sí | sí | sí |
+| Los mensajes propios de lich al agente (tareas entregadas, resultados listos, avisos) en el idioma de prompt que elijas | sí | sí | sí | sí | sí | sí | sí | sí | sí |
+| Se le indica al iniciarse, en el idioma de prompt, que reparta el trabajo como sesiones de lich en vez de subagentes ocultos | sí | no | no | no | sí | no | no | no | sí |
+| La tarjeta de la sesión abre un navegador que el agente conduce, junto al terminal de la sesión | sí | sí | sí | sí | sí | sí | sí | sí | sí |
+| Una página que el agente hace para mostrarte (un informe, un diagrama, un mockup) se abre en ese navegador desde una carpeta propia de la sesión, fuera del checkout, que dura lo que dure la sesión | sí, aunque Claude Code puede seguir publicándola en claude.ai con su propia herramienta Artifact | sí | sí | sí | sí | sí | sí | sí | sí |
 
 </details>
 

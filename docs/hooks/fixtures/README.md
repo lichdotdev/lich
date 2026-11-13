@@ -18,6 +18,7 @@ whichever side moved first.
 | `session-state.jsonl`  | [session-state.md](../session-state.md)      | `/hook`            |
 | `session-start.jsonl`  | [session-start.md](../session-start.md)      | `/session-start`   |
 | `session-title.jsonl`  | [session-title.md](../session-title.md)      | `/session-title`   |
+| `session-model.jsonl`  | [session-model.md](../session-model.md)      | `/session-model`   |
 | `session-touched.jsonl`| [session-touched.md](../session-touched.md)  | `/session-touched` |
 | `mod-control.jsonl`    | [mod-control.md](../mod-control.md)          | `/mod/acks`        |
 | `mod-commands.json`    | [mod-control.md](../mod-control.md)          | `/mod/commands`    |
