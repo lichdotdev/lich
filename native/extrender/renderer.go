@@ -56,6 +56,8 @@ type Renderer struct {
 	// scrollRoom is, on each axis, how far the viewport of the scroll being
 	// drawn runs on from the start of the child being drawn; 0 outside one.
 	scrollRoom image.Point
+	// frame counts the frames drawn.
+	frame int
 }
 
 // New returns a renderer that hands every event to send. root is the window's
@@ -66,6 +68,7 @@ func New(root *ui.Root, send func(extension.EventData)) *Renderer {
 
 // Layout draws tree filling gtx.
 func (r *Renderer) Layout(gtx C, th *ui.Theme, tree extension.Node) D {
+	r.frame++
 	clear(r.seen)
 	r.dialogs = r.dialogs[:0]
 	r.readPointer(gtx)
@@ -78,9 +81,11 @@ func (r *Renderer) Layout(gtx C, th *ui.Theme, tree extension.Node) D {
 	}
 	area.Pop()
 	r.releaseStranded(gtx)
-	for id := range r.state {
+	for id, v := range r.state {
 		if !r.seen[id] {
 			delete(r.state, id)
+		} else if g, ok := v.(*groupState); ok {
+			g.forgetUndrawn(r.frame)
 		}
 	}
 	r.focus = ""
@@ -130,7 +135,16 @@ func (r *Renderer) children(th *ui.Theme, n extension.Node, id string) []layout.
 }
 
 // fire sends e to the extension under h; a node with no handler sends nothing.
+// A press that became a drag in a sortable list fires nothing: it is no click.
 func (r *Renderer) fire(h extension.Handler, e extension.EventData) {
+	if r.drag.sorted {
+		return
+	}
+	r.emit(h, e)
+}
+
+// emit is fire for what the drag itself sends.
+func (r *Renderer) emit(h extension.Handler, e extension.EventData) {
 	if h == "" {
 		return
 	}

@@ -23,6 +23,19 @@ const groupPrefix = "group:"
 type groupState struct {
 	carry   ui.SortCarry
 	targets map[string]moveTarget
+	// placed is where each item was drawn in the window, in which list and in
+	// which frame: an item that turns up in another list the next frame came
+	// from there.
+	placed map[string]placement
+	// landed is the list each item the user dropped is going to, so the move
+	// the extension then renders does not slide it from where it was picked up.
+	landed map[string]string
+}
+
+type placement struct {
+	list  string
+	at    f32.Point
+	frame int
 }
 
 type moveTarget struct {
@@ -52,6 +65,8 @@ func (r *Renderer) group(name string) *groupState {
 	g := stateOf[groupState](r, groupPrefix+name)
 	if g.targets == nil {
 		g.targets = map[string]moveTarget{}
+		g.placed = map[string]placement{}
+		g.landed = map[string]string{}
 	}
 	return g
 }
@@ -71,11 +86,17 @@ func drawSortableList(r *Renderer, gtx C, th *ui.Theme, n extension.Node, id str
 	if d, ok := s.Update(gtx); ok {
 		r.dropped(p, n.Key, g, keys, d)
 	}
+	if s.Moved() && (r.drag.down || r.drag.released) {
+		r.drag.sorted = true
+	}
 	// A grouped item goes sideways to the other lists, so it may leave.
 	list := ui.SortList{Gap: unit.Dp(p.Gap), Horizontal: p.Horizontal, Within: p.Within, Leaves: p.Leaves || g != nil}
 	inAir := ""
 	if g != nil && r.drag.down {
 		inAir = s.Dragging()
+	}
+	if g != nil {
+		r.arrive(g, s, id, keys)
 	}
 	items := listItems{calls: make([]op.CallOp, len(keys)), sizes: make([]image.Point, len(keys))}
 	rec := op.Record(gtx.Ops)
@@ -95,6 +116,7 @@ func drawSortableList(r *Renderer, gtx C, th *ui.Theme, n extension.Node, id str
 		drawn.Add(gtx.Ops)
 		return d
 	}
+	r.place(gtx, g, s, id, keys)
 	takes := g.carry.Carrying() != "" && !slices.Contains(keys, g.carry.Carrying())
 	if t, ok := g.landing(); takes && ok && t.list == id {
 		lightRoom(gtx, th, r.dropRoom(gtx, p, d.Size))
@@ -107,6 +129,40 @@ func drawSortableList(r *Renderer, gtx C, th *ui.Theme, n extension.Node, id str
 		r.layTargets(gtx, g, id, p, items, tops, d.Size)
 	}
 	return d
+}
+
+// arrive slides an item that came from another list of the group into its
+// slot here: the one the user dropped was already moved by the drop, and one
+// not drawn the frame before is new, not moved.
+func (r *Renderer) arrive(g *groupState, s *ui.Sortable, id string, keys []string) {
+	for _, k := range keys {
+		prev, ok := g.placed[k]
+		landed := g.landed[k] == id
+		if landed {
+			delete(g.landed, k)
+		}
+		if ok && prev.list != id && prev.frame == r.frame-1 && !landed {
+			s.Arrive(k, prev.at)
+		}
+	}
+}
+
+// place records where this list drew its items, for the next frame's arrivals.
+func (r *Renderer) place(gtx C, g *groupState, s *ui.Sortable, id string, keys []string) {
+	for _, k := range keys {
+		if at, ok := s.Slot(gtx, k); ok {
+			g.placed[k] = placement{list: id, at: at, frame: r.frame}
+		}
+	}
+}
+
+// forgetUndrawn drops what the group knows of an item no list drew this frame.
+func (g *groupState) forgetUndrawn(frame int) {
+	for k, p := range g.placed {
+		if p.frame != frame {
+			delete(g.placed, k)
+		}
+	}
 }
 
 // dropRoom is the room a list takes a drop over: its breadth, by all the
@@ -138,12 +194,13 @@ func lightRoom(gtx C, th *ui.Theme, room image.Point) {
 func (r *Renderer) dropped(p extension.SortableListProps, from string, g *groupState, keys []string, d ui.SortDrop) {
 	if !d.Carried {
 		if order, moved := reorder(keys, d); moved {
-			r.fire(p.OnReorder, extension.EventData{Order: order})
+			r.emit(p.OnReorder, extension.EventData{Order: order})
 		}
 		return
 	}
 	if t, ok := g.targets[d.Over]; ok {
-		r.fire(t.onMove, extension.EventData{Key: d.ID, Index: t.index, From: from})
+		g.landed[d.ID] = t.list
+		r.emit(t.onMove, extension.EventData{Key: d.ID, Index: t.index, From: from})
 	}
 }
 
@@ -230,11 +287,14 @@ type dragPointer struct {
 	down      bool
 	// released is the pointer let go this frame.
 	released bool
+	// sorted is a press, drawn this frame, that became a drag of a sortable
+	// item, held until the frame after the pointer goes up.
+	sorted bool
 }
 
 func (r *Renderer) readPointer(gtx C) {
 	d := &r.drag
-	d.released = false
+	d.released, d.sorted = false, false
 	for {
 		ev, ok := gtx.Event(pointer.Filter{Target: d, Kinds: pointer.Press | pointer.Drag | pointer.Release | pointer.Cancel})
 		if !ok {

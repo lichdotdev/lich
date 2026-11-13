@@ -39,9 +39,10 @@ require (
 // frames redrawn in part (an op diff into a framebuffer the renderer keeps,
 // opted into with GIO_DAMAGE=on, which is also the only time a frame's
 // operations are diffed), pointer.Event.WindowPosition (a widget's place in the
-// window without watching motion), a double click window of 400 ms, and the
+// window without watching motion), input.Source.Origin (where a widget sat in
+// the last frame), a double click window of 400 ms, and the
 // flip model on Windows. Every patch of ours lands on that branch.
-replace gioui.org => github.com/lichdotdev/gio v0.0.0-20261112203107-8e32f3143c92
+replace gioui.org => github.com/lichdotdev/gio v0.0.0-20261113004735-692889d18625
 
 replace github.com/lichdotdev/lich => ../
 
