@@ -161,7 +161,7 @@ func (s *Service) replace(ctx context.Context, st stagedInstall) (api.Extension,
 		}
 	}
 	kept := filepath.Join(st.work, replacedDir)
-	if err := os.Rename(old.root, kept); err != nil {
+	if err := renameExited(old.root, kept); err != nil {
 		s.relaunch(old)
 		return api.Extension{}, fmt.Errorf("move the installed version out of %s: %w", old.root, err)
 	}
