@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - The command palette's field now reads "Search, or type > for actions" instead of listing everything it finds. Small labels across the window (a group's label, a theme's caption, a count badge, the buttons inside a diff) share one size, 10.5, where some were 11, and a second-level heading in Markdown is 18 instead of 19, so it no longer reads as a first-level one. In What's new, the Fixed group's dot is gray like Removed's, no longer a blue the window uses nowhere else.
 
+- The agent's cursor over its browser page is a new arrow, the one of Bibata Modern (GPL-3.0, by Abdulkaiz Khatri), in place of the arrow lich drew before. Its color, its badge and the way it moves are unchanged. Applies to every provider.
+
 ### Fixed
 
 - A page in a session's browser now knows it has a mouse: effects a site turns on only for a pointer that can hover, like a glow that follows the cursor, work in the pane as they do in a browser window. Applies to every provider.
