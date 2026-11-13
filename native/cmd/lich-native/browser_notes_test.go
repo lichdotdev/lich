@@ -1,11 +1,18 @@
 package main
 
 import (
+	"image"
 	"testing"
 	"time"
 
+	"gioui.org/font"
+	"gioui.org/font/gofont"
+	"gioui.org/io/input"
+	"gioui.org/io/key"
 	"gioui.org/layout"
 	"gioui.org/op"
+	"gioui.org/text"
+	"gioui.org/unit"
 
 	"github.com/lichdotdev/lich/api"
 )
@@ -179,5 +186,28 @@ func TestTheHoverOutlineGlidesToTheNextElement(t *testing.T) {
 	n.setHover(api.BrowserElement{Label: "c", Selector: "c", Box: c}, t1.Add(noteHoverGlide))
 	if got := n.hoverBox(t1.Add(noteHoverGlide * 3 / 2)); got != c {
 		t.Fatalf("the probe answering c again restarted the glide: outline at %+v, want c %+v", got, c)
+	}
+}
+
+func TestTheClosingNoteKeepsTheKeysOfAFocusedPane(t *testing.T) {
+	u := &window{}
+	p := &browserPaneUI{copied: make(chan string, 1), notes: newBrowserNotes()}
+	var router input.Router
+	shaper := text.NewShaper(text.WithCollection(gofont.Collection()))
+	frame := func(before func(C)) {
+		ops := new(op.Ops)
+		gtx := layout.Context{Ops: ops, Source: router.Source(), Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}, Constraints: layout.Exact(image.Pt(600, 400))}
+		if before != nil {
+			before(gtx)
+		}
+		u.browserInput(gtx, p, "s", 1, true)
+		p.notes.closing.Layout(gtx, shaper, font.Font{}, 12, op.CallOp{}, op.CallOp{})
+		router.Frame(ops)
+	}
+	frame(nil)
+	frame(func(gtx C) { gtx.Execute(key.FocusCmd{Tag: &p.notes.closing}) })
+	frame(nil)
+	if !router.Source().Focused(&p.notes.closing) {
+		t.Fatal("the pane took the keys from the closing note")
 	}
 }

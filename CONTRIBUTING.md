@@ -58,6 +58,9 @@ Then:
 - **Shipping something a user can see?** Add its `CHANGELOG.md` `[Unreleased]`
   entry in the same pull request. Release notes are read from that file, so an
   entry written later is an entry that missed its release.
+  Open it with one bold sentence saying what changed for the person using
+  lich, then at most two plain sentences: where it is and what to do. Edge
+  cases belong in `docs/`.
 - **Touched OS-specific code or a `_test.go` build tag?** Run the cross-compile
   loop — CI runs the backend suite on real Windows and macOS runners for every
   pull request, so that is where the answer comes from; this only saves you a
