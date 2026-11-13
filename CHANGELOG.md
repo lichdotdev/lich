@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - A page in a session's browser now knows it has a mouse: effects a site turns on only for a pointer that can hover, like a glow that follows the cursor, work in the pane as they do in a browser window. Applies to every provider.
+- A selected, hovered or colored row coming into the sidebar's tree no longer shows a lit stub of its highlight under the row above: the highlight left of the row's ring now fades in with the rest of it.
 
 ## [0.90.1] - 2026-11-12
 

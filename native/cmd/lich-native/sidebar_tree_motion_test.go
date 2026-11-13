@@ -1,11 +1,21 @@
 package main
 
 import (
+	"image"
 	"slices"
 	"testing"
 	"time"
 
+	"gioui.org/font/gofont"
+	"gioui.org/gpu/headless"
+	"gioui.org/layout"
+	"gioui.org/op"
+	"gioui.org/op/paint"
+	"gioui.org/text"
+	"gioui.org/unit"
+
 	"github.com/lichdotdev/lich/native/backend"
+	"github.com/lichdotdev/lich/native/ui"
 )
 
 func motionRows(sessions []sessionView, folded ...string) []sessionRow {
@@ -228,5 +238,38 @@ func TestTreeMotionClosesAFoldedBlocksRowsFromItsTop(t *testing.T) {
 	}
 	if !m.update(end, foldedRows(open, motionRows(sessions))) || m.runs[0].closing {
 		t.Errorf("runs = %+v, want the rows opening as the block unfolds", m.runs)
+	}
+}
+
+// The selected card's fill came in whole left of its ring while the rest of
+// it faded in: a lit stub under the row above.
+func TestAnEnteringCardsFillComesInWholeAcrossItsRing(t *testing.T) {
+	const width, height = 200, 32
+	win, err := headless.NewWindow(width, height)
+	if err != nil {
+		t.Skipf("no headless GPU: %v", err)
+	}
+	defer win.Release()
+	s := newSidebar(&ui.Root{})
+	th := &ui.Theme{Palette: ui.Dark, Shaper: text.NewShaper(text.WithCollection(gofont.Collection())), Surface: ui.Dark.Sidebar}
+	motion := rowMotion{height: 1, entry: treeEntry{ring: 1, glyph: 1, body: 1}}
+	r := sessionRow{motion: &motion}
+	sv := sessionView{Session: backend.Session{ID: "s1"}, place: r.place(true)}
+	ops := new(op.Ops)
+	gtx := layout.Context{Ops: ops, Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}, Constraints: layout.Exact(image.Pt(width, height))}
+	paint.Fill(ops, th.Sidebar)
+	moveRow(gtx, r, func(gtx C) D {
+		d, _ := s.card(gtx, th, &sv, true, nil)
+		return d
+	})
+	if err := win.Frame(ops); err != nil {
+		t.Fatal(err)
+	}
+	img := image.NewRGBA(image.Rect(0, 0, width, height))
+	if err := win.Screenshot(img); err != nil {
+		t.Fatal(err)
+	}
+	if left, right := img.RGBAAt(3, height/2), img.RGBAAt(width/2, height/2); left != right {
+		t.Errorf("fill left of the ring %v, past it %v: want one fill while the body is still out", left, right)
 	}
 }

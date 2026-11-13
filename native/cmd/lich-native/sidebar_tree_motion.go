@@ -2,6 +2,7 @@ package main
 
 import (
 	"image"
+	"image/color"
 	"slices"
 	"time"
 
@@ -311,7 +312,7 @@ func moveRow(gtx C, r sessionRow, w layout.Widget) D {
 		rec := op.Record(gtx.Ops)
 		d := w(gtx)
 		call := rec.Stop()
-		split := int(treeColumn(gtx, r.depth) + float32(gtx.Dp(sessionTreeRingR)))
+		split := bodySplit(gtx, r.depth)
 		left := clip.Rect{Max: image.Pt(split, d.Size.Y)}.Push(gtx.Ops)
 		call.Add(gtx.Ops)
 		left.Pop()
@@ -322,4 +323,23 @@ func moveRow(gtx C, r sessionRow, w layout.Widget) D {
 		right.Pop()
 		return d
 	})
+}
+
+// bodySplit is the x where a row's body starts, past its ring.
+func bodySplit(gtx C, depth int) int {
+	return int(treeColumn(gtx, depth) + float32(gtx.Dp(sessionTreeRingR)))
+}
+
+// treeRowFill is a row's fill under its links. moveRow fades only what is past
+// the ring, so the share of the fill before it fades here.
+func treeRowFill(gtx C, fill color.NRGBA, p treePlace) D {
+	if p.entry.body == 0 {
+		return ui.Fill(gtx, fill, ui.RadiusMD)
+	}
+	size, split := gtx.Constraints.Min, bodySplit(gtx, p.depth)
+	left := clip.Rect{Max: image.Pt(split, size.Y)}.Push(gtx.Ops)
+	ui.Fill(gtx, ui.Alpha(fill, 1-p.entry.body), ui.RadiusMD)
+	left.Pop()
+	defer clip.Rect{Min: image.Pt(split, 0), Max: size}.Push(gtx.Ops).Pop()
+	return ui.Fill(gtx, fill, ui.RadiusMD)
 }
