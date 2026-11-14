@@ -25,7 +25,7 @@ func stageFrames(t *testing.T, tab dockTab) (*window, *frameRig) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	u.dock = newDock(code, review, newArtifactsTab(new(artifactStore)))
+	u.dock = newDock(code, review, newArtifactsTab(new(artifactStore)), nil)
 	u.dock.tab = tab
 	r.draw = func(gtx C, th *ui.Theme) {
 		u.theme = th

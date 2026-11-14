@@ -7,6 +7,7 @@ import (
 	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/api"
+	"github.com/lichdotdev/lich/extension"
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/ui"
 	"github.com/lichdotdev/lich/native/ui/icons"
@@ -22,9 +23,9 @@ type surfaceButton struct {
 	image *icons.Bitmap
 }
 
-// surfaceButtons is a button per surface of every extension that is not
-// invalid, in the list's order: an invalid one never started, so it has
-// nothing to show.
+// surfaceButtons is a button per full screen surface of every extension that
+// is not invalid, in the list's order: an invalid one never started, so it has
+// nothing to show. A dock or panel surface opens from the footer instead.
 func surfaceButtons(list []backend.Extension) []surfaceButton {
 	var out []surfaceButton
 	for _, e := range list {
@@ -32,6 +33,9 @@ func surfaceButtons(list []backend.Extension) []surfaceButton {
 			continue
 		}
 		for _, s := range e.Surfaces {
+			if s.Place != string(extension.PlaceScreen) {
+				continue
+			}
 			out = append(out, surfaceButton{key: extensionKey{e.ID, s.ID}, title: surfaceTitle(e, s), icon: s.Icon, status: e.Status})
 		}
 	}
@@ -67,7 +71,7 @@ func (t *topbar) surfaceButton(gtx C, th *ui.Theme, b surfaceButton, open bool, 
 	if click.Clicked(gtx) {
 		act.extension = b.key
 	}
-	var ic icons.Glyph = t.surfaceIcon(b.icon)
+	var ic icons.Glyph = surfaceGlyph(b.icon)
 	if b.image != nil {
 		ic = b.image
 	}
@@ -96,21 +100,4 @@ func (t *topbar) surfaceClick(k extensionKey) *widget.Clickable {
 		t.surfaceClicks[k] = c
 	}
 	return c
-}
-
-// surfaceIcon is the Lucide glyph a surface names, the puzzle for none or one
-// the set lacks, parsed once per name.
-func (t *topbar) surfaceIcon(name string) *icons.Icon {
-	if t.surfaceIcons == nil {
-		t.surfaceIcons = map[string]*icons.Icon{}
-	}
-	ic, ok := t.surfaceIcons[name]
-	if !ok {
-		ic, ok = icons.LookupLucide(name)
-		if !ok {
-			ic = icExtension
-		}
-		t.surfaceIcons[name] = ic
-	}
-	return ic
 }

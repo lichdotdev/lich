@@ -10,7 +10,8 @@
       "id": "id",
       "title": "title",
       "icon": "icon",
-      "iconFile": "iconFile"
+      "iconFile": "iconFile",
+      "place": "place"
     }
   ],
   "permissions": [

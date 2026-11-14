@@ -74,10 +74,9 @@ type topbar struct {
 	confirm  closeConfirm
 	controls captionControls
 
-	// surfaceClicks and surfaceIcons are the extension surfaces' buttons
+	// surfaceClicks are the extension surfaces' buttons
 	// (topbar_extensions.go).
 	surfaceClicks map[extensionKey]*widget.Clickable
-	surfaceIcons  map[string]*icons.Icon
 
 	// shift is how far right of the terminal island's edge the strip starts:
 	// past the window's own buttons on the left when the sidebar is too

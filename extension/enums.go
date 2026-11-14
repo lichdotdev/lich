@@ -145,6 +145,7 @@ func EnumValues() map[string][]string {
 		"anchor":          values(AnchorTopLeft, AnchorTop, AnchorTopRight, AnchorLeft, AnchorCenter, AnchorRight, AnchorBottomLeft, AnchorBottom, AnchorBottomRight),
 		"imageFit":        values(ImageContain, ImageCover, ImageFill, ImageScaleDown, ImageUnscaled),
 		"diffSide":        values(DiffOld, DiffNew),
+		"place":           values(PlaceScreen, PlaceDock, PlacePanel),
 	}
 }
 

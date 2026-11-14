@@ -151,6 +151,8 @@ func checkMinLichVersion(minimum, lichVersion string) error {
 	return nil
 }
 
+var places = []extension.Place{extension.PlaceScreen, extension.PlaceDock, extension.PlacePanel}
+
 func checkSurfaces(surfaces []extension.Surface) error {
 	seen := make(map[string]bool, len(surfaces))
 	for _, surface := range surfaces {
@@ -161,6 +163,9 @@ func checkSurfaces(surfaces []extension.Surface) error {
 			return fmt.Errorf("surface id %q is declared twice", surface.ID)
 		}
 		seen[surface.ID] = true
+		if !slices.Contains(places, surface.Place) {
+			return fmt.Errorf("surface %q has place %q; a surface is a full screen with none, or %q or %q", surface.ID, surface.Place, extension.PlaceDock, extension.PlacePanel)
+		}
 	}
 	return nil
 }

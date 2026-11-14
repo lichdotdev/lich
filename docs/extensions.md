@@ -35,7 +35,10 @@ release tag, or the folder, it came from. Do not ship a file by that name.
   "version": "0.1.0",
   "minLichVersion": "0.90.0",
   "executable": "hello",
-  "surfaces": [{ "id": "main", "title": "Hello", "icon": "hand", "iconFile": "assets/logo.png" }],
+  "surfaces": [
+    { "id": "main", "title": "Hello", "icon": "hand", "iconFile": "assets/logo.png" },
+    { "id": "issue", "title": "Issue", "icon": "ticket", "place": "dock" }
+  ],
   "permissions": ["sessions:read"]
 }
 ```
@@ -46,7 +49,10 @@ release tag, or the folder, it came from. Do not ship a file by that name.
 - `minLichVersion`, when set, is `MAJOR.MINOR.PATCH`; an older lich lists the extension as invalid.
 - `executable` is a path relative to the directory and must resolve inside it, symlinks included, to a regular
   file. On Windows name the `.exe`.
-- Surface ids are non-empty and unique. A surface is opened from the window's top bar.
+- Surface ids are non-empty and unique. A surface's `place` says where it lives: none for a full screen opened
+  from the window's top bar, `dock` for a tab of the dock beside the terminal, `panel` for a panel rising from the
+  footer in the Git panel's place (see [Dock and panel surfaces](#dock-and-panel-surfaces)). A lich older than
+  `place` shows every surface as a full screen.
 - A surface's `icon` names a glyph from the sets the window draws: a Lucide name, `lobe:name` or `devicon:name`.
   `iconFile`, when set, is the extension's own picture, drawn in place of `icon` on the top bar and in Settings ›
   Extensions: a PNG of at most 256 KB and 512 × 512 pixels, centered on a square, under the same path rules as
@@ -66,10 +72,11 @@ the JSON of each are in [`extension/`](../extension/), and `extension/testdata/`
 component and message. Import `github.com/lichdotdev/lich/extension` rather than writing the JSON by hand.
 
 - From the extension: `render` (a surface's tree and shortcuts), `toast`, `toast.dismiss`, `openExternal`,
-  `clipboard`, `focus` and `call` (see [Calling lich](#calling-lich)).
+  `clipboard`, `focus`, `footer` (see [Dock and panel surfaces](#dock-and-panel-surfaces)) and `call` (see
+  [Calling lich](#calling-lich)).
 - From lich: `surface.opened`, `surface.closed`, `event` (a handler the tree named fired), `language` (see
-  Translating an extension), `result` (the answer to a `call`) and `lich.event` (an event the extension subscribed
-  to).
+  Translating an extension), `context` (see Dock and panel surfaces), `result` (the answer to a `call`) and
+  `lich.event` (an event the extension subscribed to).
 
 Stderr goes to lich's log.
 
@@ -134,6 +141,37 @@ board := extension.Box.New(extension.BoxProps{Direction: extension.DirectionRow,
 // on the event "move:done": take e.Key out of the column e.From, insert it in
 // done at e.Index, and render again.
 ```
+
+### Dock and panel surfaces
+
+A `dock` or `panel` surface opens from an item of the window's footer, the way Code and Review open the dock and
+the branch opens the Git panel. lich puts each new item at the end of the footer's left side; the person can move
+it or hide it in Settings › Appearance › Footer, and a hidden one stays hidden across updates. A dock surface is a
+tab after lich's own, with its icon and title, and the dock is never narrower than its tabs. A panel surface takes
+the Git panel's place over the footer, one panel at a time, each with the height the person dragged it to.
+
+Both follow the session the window has active. lich sends `context` to an extension with such a surface when the
+active session changes, when the extension starts and when a window attaches, whether the surface is open or not:
+
+```json
+{"v":1,"kind":"context","data":{"session":"…","project":"…","path":"/home/me/repo/.worktrees/fix-upload"}}
+```
+
+`path` is the active session's checkout, or the project's own folder with no session, and it is the key for both
+things the extension sends about it:
+
+- `footer` sets the item's text for that checkout: `{"surface":"issue","path":"…","text":"LICH-123"}`. The footer
+  shows the text of the active checkout, else the one sent with no `path`, else the icon alone. An empty `text`
+  clears it, and a text over 80 characters is refused. A text for a checkout lich never named in `context` is
+  dropped, and lich forgets every text when the extension fails or is removed.
+- `render` with `path` is a tree drawn for that checkout. While another checkout is active, the window shows a
+  placeholder until the tree for that one arrives, never the tree of the session before. A `render` with no
+  `path` is drawn for every checkout.
+
+Answer `context` with the footer text and, when the surface is open, a render for the new path. A message sent
+before a window attached is lost (see [ceilings](ceilings.md)), and `context` is what tells the extension one did:
+send footer texts in answer to it, not once at start. In the dock or a panel only a chord with ctrl fires a
+shortcut, and only while a field of the surface holds the keyboard: the terminal beside it keeps every other key.
 
 ## Calling lich
 
@@ -374,12 +412,13 @@ title := cat.In(lang.Tag(), "board.count", i18n.Args{"count": len(cards)})
   from lich to the extension, and `openExternal` with a URL that is not http or https are dropped and logged. The
   extension is not told.
 - `render` is coalesced to 30 a second per surface; the newest tree always arrives.
+- A `footer` text over 80 characters is refused.
 - At most 8 calls run at once per extension, each for at most 2 minutes, and a call needs the permission its
   method names in the manifest. A `result` or `lich.event` lich cannot queue because the extension stopped reading
   its stdin is dropped and logged.
 - Any exit lich did not ask for is a crash, exit 0 included. lich restarts after 1 second, doubling up to 30, and
   gives up after 5 crashes in a row each within 30 seconds of its start. A process that starts while its surface
-  is on screen is sent `surface.opened` for it again, since it never saw the first one.
+  is on screen is sent `context` and `surface.opened` for it again, since it never saw the first ones.
 - To stop an extension lich closes its stdin and kills it 3 seconds later. Exit when stdin ends.
 - An extension runs unsandboxed, as the user. See the Extensions section of [ceilings](ceilings.md).
 

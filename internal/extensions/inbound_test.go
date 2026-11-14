@@ -94,6 +94,7 @@ func TestRefusedKinds(t *testing.T) {
 		encodeLine(t, extension.FireEvent.New(extension.EventData{Handler: "x"})),
 		encodeLine(t, extension.SurfaceOpened.New(extension.SurfaceData{Surface: "main"})),
 		encodeLine(t, extension.SurfaceClosed.New(extension.SurfaceData{Surface: "main"})),
+		encodeLine(t, extension.Context.New(extension.ContextData{Path: "/p"})),
 	} {
 		_, err := vetLine(line)
 		if err == nil || !strings.Contains(err.Error(), "may not send") {
@@ -110,10 +111,25 @@ func TestAcceptedKinds(t *testing.T) {
 		extension.OpenExternal.New(extension.OpenExternalData{URL: "https://example.com/a?b=c"}),
 		extension.Clipboard.New(extension.ClipboardData{Text: "t"}),
 		extension.Focus.New(extension.FocusData{Surface: "main", Key: "search"}),
+		extension.Footer.New(extension.FooterData{Surface: "issue", Path: "/p", Text: strings.Repeat("é", maxFooterText)}),
 	} {
 		if _, err := vetLine(encodeLine(t, msg)); err != nil {
 			t.Errorf("%s: %v", msg.Kind, err)
 		}
+	}
+}
+
+func TestAFooterTextPastTheLimitIsRefused(t *testing.T) {
+	long := extension.Footer.New(extension.FooterData{Surface: "issue", Text: strings.Repeat("a", maxFooterText+1)})
+	if _, err := vetLine(encodeLine(t, long)); err == nil || !strings.Contains(err.Error(), "footer text") {
+		t.Errorf("err = %v, want the footer text refused", err)
+	}
+}
+
+func TestEncodeOutboundCarriesTheContext(t *testing.T) {
+	line, err := encodeOutbound(encodeLine(t, extension.Context.New(extension.ContextData{Session: "s", Project: "p", Path: "/w"})))
+	if err != nil || !bytes.Contains(line, []byte(`"path":"/w"`)) {
+		t.Errorf("line %q, err %v", line, err)
 	}
 }
 

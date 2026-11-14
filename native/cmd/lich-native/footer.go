@@ -11,6 +11,7 @@ import (
 	"gioui.org/op"
 	driver "github.com/lichdotdev/gio-driver"
 
+	"github.com/lichdotdev/lich/extension"
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
@@ -62,9 +63,16 @@ type footer struct {
 	// customize opens Settings on the Footer row.
 	customize func()
 	// dock is what Browse code and Review changes open, on their tab.
-	dock    *dock
-	git     *gitPanel
+	dock *dock
+	git  *gitPanel
+	// panel is what an extension's panel item opens.
+	panel   *extensionPanel
 	toaster *ui.Toaster
+	// extensions is the store the extension items read.
+	extensions *extensionStore
+	// loaded is the saved layout read, before which no extension item is
+	// adopted into it.
+	loaded bool
 }
 
 func newFooter(ctx context.Context, client *backend.Client, root *ui.Root, usage *footerUsage, quota *planQuota, invalidate func()) *footer {
@@ -90,7 +98,7 @@ func (f *footer) start() error {
 		return err
 	}
 	f.mu.Lock()
-	f.layout = l
+	f.layout, f.loaded = l, true
 	f.mu.Unlock()
 	go f.handsOn.run(f.ctx)
 	return nil
@@ -131,11 +139,32 @@ func (f *footer) input(m *model, now time.Time) footerInput {
 		in.path = p.Path
 	}
 	in.git, in.isGit = m.gitStatus(in.path)
+	f.readExtensions(&in)
 	in.usage, in.hasUsage = f.usage.get(in.sessionID)
 	f.follow(in)
 	in.plans = f.quota.plans(in.sessionID)
 	in.handsOn, in.handsOnErr = f.handsOn.read()
 	return in
+}
+
+// readExtensions reads the extensions' placed surfaces and their items' text
+// for the active checkout, and adopts an item the footer never offered.
+func (f *footer) readExtensions(in *footerInput) {
+	if f.extensions == nil {
+		return
+	}
+	in.placed = placedSurfaces(f.extensions.all(), f.extensions.surfaceImages())
+	ids := make([]string, len(in.placed))
+	for i, p := range in.placed {
+		ids[i] = extensionItemID(p.key)
+		in.extItems = append(in.extItems, footerExtItem{placedSurface: p, id: ids[i], text: f.extensions.footer(p.key, in.contextPath())})
+	}
+	f.mu.Lock()
+	l, ready := f.layout, f.loaded && !f.saving
+	f.mu.Unlock()
+	if next, fresh := l.adopt(ids); fresh && ready {
+		f.change(next)
+	}
 }
 
 // follow polls plan and hands-on time only for a session whose footer shows
@@ -228,6 +257,17 @@ func (f *footer) act(gtx C, in footerInput) {
 	f.w("files").pressed = f.dock.tab == dockCode
 	f.w("changes").pressed = f.dock.tab == dockReview
 	f.w("artifacts").pressed = f.dock.tab == dockArtifacts
+	for _, it := range in.extItems {
+		w := f.w(it.id)
+		if it.place == extension.PlaceDock {
+			if w.click.Clicked(gtx) {
+				f.dock.toggleExtension(it.key)
+			}
+			w.pressed = f.dock.showsExtension(it.key)
+			continue
+		}
+		w.pressed = f.panel.shows(it.key)
+	}
 	if f.git != nil {
 		f.w("checkout").pressed = f.git.open && in.inRepository()
 	}
@@ -245,6 +285,11 @@ func (f *footer) act(gtx C, in footerInput) {
 func (f *footer) actGit(gtx C) {
 	if f.w("checkout").click.Clicked(gtx) {
 		f.git.open = !f.git.open
+	}
+	for _, it := range f.shown.extItems {
+		if it.place == extension.PlacePanel && f.w(it.id).click.Clicked(gtx) {
+			f.panel.toggle(it.key)
+		}
 	}
 }
 
@@ -269,6 +314,13 @@ func (f *footer) w(id string) *footerWidgets {
 // slot draws one item, a control or a reading.
 func (f *footer) slot(gtx C, th *ui.Theme, s footerSlot, in footerInput) D {
 	w := f.w(s.ID)
+	if it, ok := in.extItem(s.ID); ok {
+		if it.text == "" {
+			return footerButton(gtx, th, f.root, w, s.Hint, false, false, iconOnly(it.glyph))
+		}
+		gtx.Constraints.Max.X = min(gtx.Constraints.Max.X, gtx.Dp(checkoutMaxWidth))
+		return footerButton(gtx, th, f.root, w, s.Hint, true, false, branchContent(it.glyph, it.text))
+	}
 	switch s.ID {
 	case "attach":
 		return footerButton(gtx, th, f.root, w, i18n.T("shell.footerBar.attachFile"), false, in.sessionID == "", iconOnly(icAttach))
