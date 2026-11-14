@@ -569,3 +569,7 @@ while it holds none. When the catalog cannot be read, lich installs as it does a
 extension whose repository is revoked is stopped when lich next reads the catalog, listed with the reason
 (`removed from the lich catalog: <reason>`), and never started again, nor updated; Remove still works and keeps its
 data. An install of a revoked repository is refused with the reason.
+
+Settings › Extensions shows the catalog lich holds, and reads it when lich holds none. Its covers, screenshots and
+icons go through lich, which fetches only an address the catalog names and holds each to the listing's limit. The
+reason a repository was revoked is shown as the catalog wrote it, in English, in every interface language.

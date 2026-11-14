@@ -134,21 +134,26 @@ func (p *extensionsSettings) dirControl(gtx C, th *ui.Theme, installing string) 
 	return choose.Layout(gtx)
 }
 
-// layoutExtensionDialogs draws the install, update and remove confirmations. The
+// layoutExtensionDialogs draws the catalog's detail and the install, update
+// and remove confirmations. The
 // window lays it out with its own constraints, before the content, as every
 // dialog is.
 func (s *settingsScreen) layoutExtensionDialogs(gtx C, th *ui.Theme) {
 	p := &s.extensions
 	t := p.snapshot()
+	if t.asking {
+		p.grid.detail.id = ""
+	}
+	s.layoutCatalogDetail(gtx, th, t)
 	install := extensionConfirm{state: &p.installDialog, slot: 0, open: t.asking,
 		title: installTitle(t.preview), action: i18n.T("settings.extensionsSettings.install"),
-		desc: i18n.T("settings.extensionsSettings.installSource", i18n.Args{"source": previewSourceLine(t.preview)}),
-		body: func(gtx C) D { return installWarning(gtx, th.On(th.Popover), t.preview.Permissions, nil) }}
+		desc: previewSource(t.preview),
+		body: func(gtx C) D { return previewWarning(gtx, th.On(th.Popover), t.preview, nil) }}
 	if e := t.replacing; e != nil {
 		added := newPermissions(e.Permissions, t.preview.Permissions)
 		install.title = i18n.T("settings.extensionsSettings.updateTitle", i18n.Args{"name": extensionName(*e), "version": t.preview.Release})
 		install.action = i18n.T("settings.extensionsSettings.update")
-		install.body = func(gtx C) D { return installWarning(gtx, th.On(th.Popover), t.preview.Permissions, added) }
+		install.body = func(gtx C) D { return previewWarning(gtx, th.On(th.Popover), t.preview, added) }
 	}
 	if pressed, closed := p.confirmDialog(gtx, th, install); pressed && t.replacing != nil {
 		go s.commitUpdate(*t.replacing, t.preview)

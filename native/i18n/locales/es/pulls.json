@@ -77,7 +77,6 @@
     "hiddenTitle": "{account} no puede ver este repositorio",
     "hiddenDescription": "GitHub respondió como si no existiera. Elige otra cuenta.",
     "continue": "Continuar",
-    "tryAgain": "Reintentar",
     "later": "Puedes cambiarla después en Ajustes › Control de versiones.",
     "saveFailed": "No se pudo guardar la cuenta: {error}"
   },

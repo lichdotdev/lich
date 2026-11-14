@@ -327,6 +327,10 @@ var (
 	// the window to drop it.
 	ExtensionRemovedEvent = defineEvent[ExtensionIDOptions]("extension-removed")
 
+	// ExtensionCatalogEvent carries the lich catalog once the backend holds a
+	// copy that differs from the one before.
+	ExtensionCatalogEvent = defineEvent[ExtensionCatalog]("extension-catalog")
+
 	// ExtensionMessageEvent carries a line an extension wrote, after lich
 	// accepted it. With no window attached it is dropped, like every event.
 	ExtensionMessageEvent = defineEvent[ExtensionMessage]("extension-message")

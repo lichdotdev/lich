@@ -155,7 +155,8 @@ func (s *Service) PrepareUpdate(_ context.Context, opts api.ExtensionIDOptions) 
 		return api.ExtensionInstallPreview{}, err
 	}
 	src := source{URL: x.source.URL, Release: rel.Tag}
-	return s.stage(id, src, x, func(stage string) error { return s.unpack(rel, archive, pinned, id, stage) })
+	preview, err := s.stage(id, src, x, func(stage string) error { return s.unpack(rel, archive, pinned, id, stage) })
+	return published(preview, owner, entry), err
 }
 
 // newerRelease is the release an update of x installs, refused when it is no

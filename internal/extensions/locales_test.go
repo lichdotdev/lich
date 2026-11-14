@@ -27,6 +27,7 @@ func TestTheManifestsStringsComeFromEachCatalog(t *testing.T) {
 	dir := t.TempDir()
 	root := install(t, dir, testID, modeEcho)
 	writeCatalog(t, root, "en", `{"manifest": {"name": "Fake", "surfaces": {"main": {"title": "Main"}}}}`)
+	writeCatalog(t, root, "es", `{"manifest": {"description": "Una de prueba"}}`)
 	writeCatalog(t, root, "pt-br", `{"manifest": {"name": "Falso", "surfaces": {"main": {"title": "Principal"}, "gone": {"title": "x"}}}}`)
 	writeCatalog(t, root, "ja", `{"manifest": {"surfaces": {"main": {"title": "メイン"}}}, "extra": "y"}`)
 	writeCatalog(t, root, "ko", `{"manifest": {"name": {"one": "a", "other": "b"}}}`)
@@ -40,6 +41,9 @@ func TestTheManifestsStringsComeFromEachCatalog(t *testing.T) {
 	}
 	if got := text["ja"]; got.Name != "" || got.Surfaces["main"] != "メイン" {
 		t.Errorf("ja = %+v, want only its own title", got)
+	}
+	if got := text["es"]; got.Description != "Una de prueba" || got.Name != "" {
+		t.Errorf("es = %+v, want only its own description", got)
 	}
 	if _, ok := text["ko"]; ok || text["en"].Name != "Fake" {
 		t.Errorf("text = %+v, want no ko (a plural name) and the English name", text)

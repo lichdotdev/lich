@@ -652,6 +652,8 @@
     "installTitle": "{name} {version} をインストールしますか？",
     "installTitleNoVersion": "{name} をインストールしますか？",
     "installSource": "提供元: {source}",
+    "installSourcePublisher": "提供元: {source}、公開者: {publisher}",
+    "installListed": "lich カタログに掲載されています。カタログは各リリースを機械的にチェックしますが、コードを人が確認することはありません。",
     "installWarning": "このコンピューター上でユーザーの権限で動作し、ファイルやアカウントにアクセスできます。作成者を信頼できる場合にのみインストールしてください。",
     "permissionsLabel": "さらにできること",
     "permission": {
@@ -672,9 +674,6 @@
     "remove": "削除",
     "removeMenuItem": "削除…",
     "restart": "再起動",
-    "emptyTitle": "拡張機能はまだありません",
-    "emptyDescription": "拡張機能は lich に独自の画面を追加します。GitHub リポジトリまたはフォルダーからインストールできます。",
-    "installed": "インストール済み",
     "installedCount": "インストール済み · {n}",
     "rowOptions": "{name} のオプション",
     "installRow": "拡張機能をインストール",
@@ -698,6 +697,30 @@
     "checkingUpdates": "確認中…",
     "checkFailed": "拡張機能のアップデートを確認できませんでした",
     "upToDate": "拡張機能はすべて最新です",
-    "permissionNew": "このバージョンで追加"
+    "permissionNew": "このバージョンで追加",
+    "otherSources": "その他の入手先",
+    "removedFromCatalog": "lich カタログから削除されました: {reason}",
+    "catalog": {
+      "title": "カタログ",
+      "all": "すべて",
+      "search": "カタログを検索",
+      "sortRecent": "最近の更新順",
+      "sortStars": "スター順",
+      "sortName": "名前順",
+      "official": "公式",
+      "notFor": "{os} 非対応",
+      "installed": "インストール済み",
+      "installedVersion": "インストール済み · {version}",
+      "version": "バージョン",
+      "released": "公開日",
+      "license": "ライセンス",
+      "permissions": "権限",
+      "platforms": "プラットフォーム",
+      "runsAsYou": "このコンピューター上でユーザーの権限で動作し、ファイルやアカウントにアクセスできます。",
+      "readme": "GitHub の README",
+      "noBuild": "{platform} 向けのビルドはありません。",
+      "readFailed": "lich カタログを読み込めませんでした。GitHub の URL からのインストールは引き続き使えます。",
+      "noMatch": "一致する拡張機能はありません。"
+    }
   }
 }

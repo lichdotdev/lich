@@ -459,17 +459,19 @@ func TestARowActionsErrorLandsUnderThatRow(t *testing.T) {
 	}
 }
 
-func TestTheListIsAHeadingOverOneRowEachOrTheEmptyState(t *testing.T) {
+// The contract changed: with nothing installed the Installed group gives way
+// to the catalog under it, and the install rows moved under Other sources.
+func TestTheListIsAHeadingOverOneRowEachOrNothing(t *testing.T) {
 	s := extensionsScreen(t, &extensionBackend{})
 	th := testTheme()
 	empty := len(s.extensionsPaneRows(th))
 	s.extensions.store.setStatus(backend.Extension{ID: "a"})
 	s.extensions.store.setStatus(backend.Extension{ID: "b"})
-	if got := len(s.extensionsPaneRows(th)); got != empty+1 {
-		t.Errorf("rows = %d with two extensions, want %d: the empty state gives way to a row each", got, empty+1)
+	if got := len(s.extensionsPaneRows(th)); got != empty+3 {
+		t.Errorf("rows = %d with two extensions, want %d: the heading and a row each", got, empty+3)
 	}
-	if empty != 5 {
-		t.Errorf("rows = %d with none, want the description, two install rows, the heading and the empty state", empty)
+	if empty != 4 {
+		t.Errorf("rows = %d with none, want the description, the Other sources heading and two install rows", empty)
 	}
 }
 

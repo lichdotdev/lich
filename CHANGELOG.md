@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Browse and install extensions from the lich catalog without leaving lich.** Settings › Extensions lists them under what you have installed, by category, with search and three orders; a card opens its screenshots, its permissions and the systems it runs on, with Install. Installed extensions show their description, and one the catalog takes down says why.
 - **The plugin's `extension` skill, which walks you through writing a lich extension, reaches every agent lich installs the plugin into.** It runs only when you call it, `/lich:extension` in Claude Code, except on Antigravity and Cursor CLI, where the agent can reach it on its own too; Kiro CLI goes without it.
 - **An extension hears why lich refused a line it wrote.** lich answers each refused line with a `refused` message naming its kind, its surface and the reason, which the Go SDK delivers on `Messages()`; see What lich enforces in `docs/extensions.md`.
 - **TIFF images in a diff show a preview.** A `.tif` or `.tiff` file opens as a picture in the Review and the Code tab, the way PNG and WebP do.
