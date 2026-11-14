@@ -31,12 +31,12 @@ type fetches struct {
 }
 
 // track keeps ev when it is a fetch or XHR beginning or a request ending, and
-// says whether it was a request's event.
-func (f *fetches) track(ev any, at time.Time) bool {
+// says whether it was a request's event. heard is when lich got ev.
+func (f *fetches) track(ev any, heard time.Time) bool {
 	switch e := ev.(type) {
 	case *network.EventRequestWillBeSent:
 		if e.Type == network.ResourceTypeFetch || e.Type == network.ResourceTypeXHR {
-			f.begin(e.RequestID, at)
+			f.begin(e.RequestID, sentAt(e, heard))
 		}
 	case *network.EventLoadingFinished:
 		f.end(e.RequestID)
@@ -46,6 +46,16 @@ func (f *fetches) track(ev any, at time.Time) bool {
 		return false
 	}
 	return true
+}
+
+// sentAt is when Chrome sent the request, heard when it does not say. On a
+// busy machine the event reaches lich after an action that began later than
+// the request, and a fetch from before the action must not hold it.
+func sentAt(e *network.EventRequestWillBeSent, heard time.Time) time.Time {
+	if e.WallTime == nil {
+		return heard
+	}
+	return e.WallTime.Time()
 }
 
 // begin keeps the first time a request is heard: a redirect sends it again.
