@@ -124,13 +124,10 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   without answering waits out its ticket (`internal/relay/observe.go`, `turnCandidates`): its database does mark
   the end (`finish.reason` other than `tool_use` in `.crush/crush.db`), but the conversation id reaches lich only
   on the first tool call, so a turn that calls no tool has nothing to read, and the asker hears nothing until the
-  ticket's deadline. A pull request a Crush session opens reaches its card only when the window regains focus
-  (`native/cmd/lich-native/gitstate.go` `recheckMissingPR`, `cardstate.go` `setFocused`): `gh pr create` moves
-  neither branch nor HEAD, so a card showing no pull request asks gh again when its session's turn ends. A Crush
-  card is never named after its conversation either: Crush files a title in that same database, and nothing tells
-  lich when to read it (`docs/hooks/session-title.md`). The day Crush ships `Stop`, the existing
-  `report-state.sh done` closes the first two, and a read like Kiro's and Cursor's (`internal/terminal`,
-  `title_filed.go`) the third.
+  ticket's deadline. A Crush card is never named after its conversation either: Crush files a title in that same
+  database, and nothing tells lich when to read it (`docs/hooks/session-title.md`). The day Crush ships `Stop`,
+  the existing `report-state.sh done` closes the first, and a read like Kiro's and Cursor's (`internal/terminal`,
+  `title_filed.go`) the second.
 - **A CLI run as a tool inside a session is told apart by conversation id, and Kiro has none to tell by**
   (`internal/terminal/nested.go`, docs/hooks/session-state.md "Nested agent CLIs"): a `claude -p` the agent runs
   inherits the card's `LICH_*` env and reports as it. A state report naming another conversation is dropped, and a
