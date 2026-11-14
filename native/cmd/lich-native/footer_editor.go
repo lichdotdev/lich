@@ -2,6 +2,7 @@ package main
 
 import (
 	"image/color"
+	"slices"
 
 	"gioui.org/layout"
 	"gioui.org/widget"
@@ -80,12 +81,12 @@ func (f *footer) editorBody(gtx C, th *ui.Theme, l footerLayout, disabled bool, 
 	}
 	sides := func(gtx C) D {
 		return layout.Flex{}.Layout(gtx,
-			layout.Flexed(1, f.zone(th, footerLeft, l.Left, in)),
+			layout.Flexed(1, f.zone(th, footerLeft, drawnItems(l.Left, in), in)),
 			ui.Gap(3),
-			layout.Flexed(1, f.zone(th, footerRight, l.Right, in)),
+			layout.Flexed(1, f.zone(th, footerRight, drawnItems(l.Right, in), in)),
 		)
 	}
-	return ui.Stack(4, sides, f.zone(th, footerAvailable, availableItems(l), in))(gtx)
+	return ui.Stack(4, sides, f.zone(th, footerAvailable, availableItems(l, in), in))(gtx)
 }
 
 // drop applies a drag that landed.
@@ -133,15 +134,30 @@ func (f *footer) commit(next footerLayout) error {
 	return saveFooterLayout(f.ctx, f.client, next)
 }
 
-// availableItems is every item in neither side, in FOOTER_ITEMS order.
-func availableItems(l footerLayout) []string {
+// availableItems is every item in neither side, in FOOTER_ITEMS order, then
+// the extensions' in theirs.
+func availableItems(l footerLayout, in footerInput) []string {
 	var out []string
 	for _, item := range footerItems {
 		if !l.has(item.ID) {
 			out = append(out, item.ID)
 		}
 	}
+	for _, it := range in.extItems {
+		if !l.has(it.id) {
+			out = append(out, it.id)
+		}
+	}
 	return out
+}
+
+// drawnItems is items without the extension items no extension draws now.
+func drawnItems(items []string, in footerInput) []string {
+	return slices.DeleteFunc(slices.Clone(items), func(id string) bool {
+		_, ext := extensionItemKey(id)
+		_, drawn := in.extItem(id)
+		return ext && !drawn
+	})
 }
 
 // zone is a heading over the drop area.
@@ -253,7 +269,11 @@ func chipBox(gtx C, th *ui.Theme, ring, bg, fg color.NRGBA, id string, in footer
 // itemReading is the glyph and example the item shows, except the model, which
 // shows the active session's own provider and model once it has reported them.
 func itemReading(gtx C, th *ui.Theme, id string, fg color.NRGBA, in footerInput) D {
-	ic, size, text := footerItemIcons[id], ui.Space(3), footerExample(id)
+	var ic icons.Glyph = footerItemIcons[id]
+	size, text := ui.Space(3), footerExample(id)
+	if it, ok := in.extItem(id); ok {
+		ic, text = it.glyph, it.label()
+	}
 	model, _, hasModel := sessionModelText(in.usage)
 	if id == "model" && in.hasUsage && hasModel && in.provider != "" {
 		ic, size, text = providerIcon(in.provider), 14, model
@@ -304,6 +324,7 @@ func previewSides(gtx C, th *ui.Theme, l footerLayout, in footerInput) D {
 		return layout.W.Layout(gtx, th.Text(ui.TextXS, i18n.T("settings.footerLayoutEditor.previewEmpty")).Muted().Layout)
 	}
 	side := func(items []string, justify ui.Justify) layout.Widget {
+		items = drawnItems(items, in)
 		return func(gtx C) D {
 			kids := make([]ui.WrapChild, len(items))
 			for i, id := range items {

@@ -204,7 +204,7 @@ func TestEditorRestoreDefault(t *testing.T) {
 }
 
 func TestAvailableItemsAreTheUnplacedInCatalogOrder(t *testing.T) {
-	got := availableItems(defaultFooterLayout())
+	got := availableItems(defaultFooterLayout(), footerInput{})
 	if want := []string{"path", "cost", "clock"}; !reflect.DeepEqual(got, want) {
 		t.Errorf("available %v, want %v", got, want)
 	}

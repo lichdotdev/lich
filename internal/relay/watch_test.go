@@ -45,6 +45,13 @@ func (r *watchRow) SetSessionSchedule(_ string, at int64, prompt string) error {
 	return nil
 }
 
+func (r *watchRow) SetLichSchedule(_ string, at int64, prompt string) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.sess.ScheduledAt, r.sess.ScheduledPrompt, r.sess.ScheduledBy = at, prompt, api.ScheduledByLich
+	return nil
+}
+
 func (r *watchRow) SetAgentSchedule(_ string, at int64, prompt string) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()

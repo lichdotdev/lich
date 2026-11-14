@@ -83,11 +83,13 @@ const (
 	ExtensionStopped    = "stopped"
 )
 
-// ExtensionSurface is a full screen an extension declares.
+// ExtensionSurface is a screen an extension declares, and Place where it
+// lives: "" for a full screen, "dock" or "panel" (extension.Place).
 type ExtensionSurface struct {
 	ID    string `json:"id"`
 	Title string `json:"title"`
 	Icon  string `json:"icon,omitempty"`
+	Place string `json:"place,omitempty"`
 }
 
 // ExtensionText is an extension's name and surface titles, by surface id, in

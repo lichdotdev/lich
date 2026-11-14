@@ -9,8 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **TIFF images in a diff show a preview.** A `.tif` or `.tiff` file opens as a picture in the Review and the Code tab, the way PNG and WebP do.
 - **lich tells you when an extension has a new version, and updates it in place.** A toast offers the update, and Settings › Extensions shows Update on the extension's row, with Check for updates over the list. What the extension saved is kept, and lich asks first when the new version wants a permission the installed one does not have.
 - **Draw on a page in a session's browser for the agent to see.** Draw, on the bar over the bottom of the page, turns the pointer into a pencil; the eraser removes whole strokes and Ctrl+Z takes the last one back. Send hands the agent a screenshot of the page with your drawing on it.
+- **An extension can live in the dock or in a panel over the footer, not only as a full screen.** Its item joins the footer, where a click opens it beside the session you are in; move or hide the item in Settings › Appearance › Footer. Extension authors set `place` on a surface, see `docs/extensions.md`.
 - **An extension can show its own logo on the top bar.** Its manifest names a PNG with `iconFile`, shown there and in Settings › Extensions in its own colors, or in the theme's when the PNG is all black; see the manifest in `docs/extensions.md`.
 - **lich tells you when a theme pack you installed has a new version.** A toast offers Update or Later, and the pack's cards in Settings › Appearance show the version with an Update action. Check for updates, over the cards, looks right away.
 
@@ -28,6 +30,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **Undo on a deleted branch brings back the branch it tracked.** The toast's Undo used to make the branch again without its upstream, so pull and push stopped knowing where to go.
+- **A Windows user who moved Downloads now finds a session's browser downloads there.** They used to land in `%USERPROFILE%\Downloads` instead.
+- **A prompt you schedule is no longer dropped for reading like lich's own continuation.** After a usage limit, lich parks a prompt to pick the turn back up at the reset, and a prompt of yours with the same words used to be deleted when the next turn started; lich now knows which prompts are its own.
 - **Changing the default model in one account no longer changes it in your other accounts.** Each profile keeps its own model and effort, while the rest of its settings still come from Personal. opencode and Kiro CLI still share one default model across profiles.
 - **A row under the pointer in Pulls and in an extension's panel lights across its whole width.** It was a rounded box set in from the sides, with its corners showing against the lines between rows.
 - **Dragging over text in a session's browser page now selects it.** The page saw the drag and selected nothing, so there was nothing to copy.

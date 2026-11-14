@@ -69,6 +69,7 @@ func TestValidationFailures(t *testing.T) {
 		{"executable is the directory", func(m *extension.Manifest) { m.Executable = "." }, "regular file"},
 		{"surface without id", func(m *extension.Manifest) { m.Surfaces = []extension.Surface{{Title: "x"}} }, "needs an id"},
 		{"surface twice", func(m *extension.Manifest) { m.Surfaces = []extension.Surface{{ID: "a"}, {ID: "a"}} }, "twice"},
+		{"surface in no known place", func(m *extension.Manifest) { m.Surfaces = []extension.Surface{{ID: "a", Place: "sidebar"}} }, `place "sidebar"`},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

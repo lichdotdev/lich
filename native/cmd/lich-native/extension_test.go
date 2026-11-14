@@ -118,11 +118,10 @@ func TestTheSurfaceDotShowsRestartingAndFailed(t *testing.T) {
 }
 
 func TestASurfaceIconTheSetLacksIsThePuzzle(t *testing.T) {
-	tb := newTopbar(nil)
-	if tb.surfaceIcon("") != icExtension || tb.surfaceIcon("no-such-icon") != icExtension {
+	if surfaceGlyph("") != icExtension || surfaceGlyph("no-such-icon") != icExtension {
 		t.Error("a missing or unknown icon should draw the puzzle")
 	}
-	if ic := tb.surfaceIcon("rocket"); ic == nil || ic == icExtension {
+	if ic := surfaceGlyph("rocket"); ic == nil || ic == icExtension {
 		t.Error("a known icon should draw itself")
 	}
 }
@@ -163,6 +162,8 @@ func (l *sentLog) send(id string, msg extension.Message) {
 		line += " " + d.Surface
 	case extension.EventData:
 		line += " " + string(d.Handler)
+	case extension.ContextData:
+		line += " " + d.Path
 	}
 	l.sent = append(l.sent, line)
 }

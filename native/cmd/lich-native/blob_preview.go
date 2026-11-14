@@ -24,6 +24,7 @@ import (
 	xdraw "golang.org/x/image/draw"
 
 	_ "golang.org/x/image/bmp"
+	_ "golang.org/x/image/tiff"
 	_ "golang.org/x/image/webp"
 
 	"github.com/lichdotdev/lich/native/backend"
@@ -58,7 +59,7 @@ const (
 
 // imageExtensions are the formats this binary decodes, the same ones
 // internal/project.previewTypes serves.
-var imageExtensions = map[string]bool{".png": true, ".jpg": true, ".jpeg": true, ".gif": true, ".webp": true, ".bmp": true}
+var imageExtensions = map[string]bool{".png": true, ".jpg": true, ".jpeg": true, ".gif": true, ".webp": true, ".bmp": true, ".tif": true, ".tiff": true}
 
 func previewKindOf(rel string) blobKind {
 	ext := strings.ToLower(path.Ext(rel))

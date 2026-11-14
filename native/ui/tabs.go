@@ -38,7 +38,7 @@ const (
 // optional trailing widget (the dock's diff stat).
 type TabsTrigger struct {
 	Text     string
-	Icon     *icons.Icon
+	Icon     icons.Glyph
 	Trailing layout.Widget
 	Disabled bool
 }

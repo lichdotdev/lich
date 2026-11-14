@@ -27,7 +27,7 @@ type Manifest struct {
 	Permissions []Permission `json:"permissions,omitempty"`
 }
 
-// Surface is a full screen the extension draws, opened from the top bar.
+// Surface is a screen the extension draws, living where Place says.
 // IconFile is a PNG relative to the manifest's directory, drawn in place of
 // Icon in its own colors, or in the theme's when every visible pixel is
 // black; Icon is still what a lich older than IconFile draws.
@@ -36,4 +36,18 @@ type Surface struct {
 	Title    string `json:"title"`
 	Icon     Icon   `json:"icon,omitempty"`
 	IconFile string `json:"iconFile,omitempty"`
+	Place    Place  `json:"place,omitempty"`
 }
+
+// Place is where a surface lives. Empty is a full screen opened from the top
+// bar. A dock surface is a tab of the dock beside the terminal and a panel
+// one rises from the footer; both open from an item of the footer and follow
+// the active session (see ContextData). A lich older than Place shows every
+// surface as a full screen.
+type Place string
+
+const (
+	PlaceScreen Place = ""
+	PlaceDock   Place = "dock"
+	PlacePanel  Place = "panel"
+)

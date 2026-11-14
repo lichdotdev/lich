@@ -54,9 +54,8 @@ type Catalog struct {
 	MergeNotice          string
 	MergeSummary         string
 	LateNotice           string
-	// ResumePrompt is stored in the sessions table as a parked prompt, so a row
-	// written in one language has to be recognised in every other: match it
-	// with relay's isResumePrompt, never with ==.
+	// ResumePrompt is stored in the sessions table as a parked prompt, marked
+	// as lich's (store SetLichSchedule); never recognise it by comparing text.
 	ResumePrompt string
 	// The line in front of a watch's prompt, naming what was met. %[1]d is the
 	// pull request; %[2]s, where it appears, the commit.

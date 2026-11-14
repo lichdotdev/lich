@@ -294,13 +294,11 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   only as `StopFailure`, which an older lich-plugin does not report. Codex raises no hook for it, so an open
   Codex turn is read off its rollout every 30 seconds, and the limit is *inferred*: a turn completing with
   nothing said right after a window shows 100% spent (measured on `codex exec` 0.144.5, never on the TUI); a
-  change to that shape stops the read without a word. The continuation is a scheduled prompt told apart from a
-  person's by its exact text, so someone parking those same words has them dropped on the session's next turn.
-  Nothing is parked for a reset already past or more than 24 hours out (Claude Code's own auto-continue gives up
-  at the same horizon), nor over a prompt already parked there. Any turn starting before it is due drops it,
-  which is also what keeps it from landing behind Claude Code's own `autoContinueAtUsageLimit`, a setting the
-  server enables per account, which is why the prompt is due two minutes after the reset rather than at it. The
-  window draws neither the limit nor the parked prompt on the card.
+  change to that shape stops the read without a word. Nothing is parked for a reset already past or more than 24
+  hours out (Claude Code's own auto-continue gives up at the same horizon), nor over a prompt already parked
+  there. Any turn starting before it is due drops it, which is also what keeps it from landing behind Claude
+  Code's own `autoContinueAtUsageLimit`, a setting the server enables per account, which is why the prompt is due
+  two minutes after the reset rather than at it. The window draws neither the limit nor the parked prompt on the card.
 - **A session a usage limit stopped is offered another profile only on Claude Code and Codex, and only one whose
   plan reads** (`internal/terminal/limit_switch.go`, `internal/quota` `HasQuotaLeft`): the wait for the reset runs
   as ever, and when another logged-in profile of the same provider reads with every window under 100%, a toast
@@ -643,7 +641,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   git diffs it as text, and the window has no SVG renderer. One side
   is capped at `maxPreviewBytes` (20 MiB) and held whole in memory, and a Git LFS file shows the pointer's
   text diff, never the image. The window decodes in Go (`native/cmd/lich-native/blob_preview.go`) and `/blob` serves only what it
-  decodes: PNG, JPEG, GIF (its first frame only), WebP and BMP, so AVIF, ICO, HEIC, TIFF and PSD show the
+  decodes: PNG, JPEG, GIF (its first frame only), WebP, BMP and TIFF, so AVIF, ICO, HEIC and PSD show the
   no-preview state. It refuses an
   image whose header claims more than 40 MP before decoding it, holds it scaled to 2048 px on its longest
   side (no zoom), and never draws a PDF: Open in default app (`system.OpenFile`) reaches only a file in the
@@ -1262,8 +1260,20 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   lines its stdin queue holds, is dropped and logged.
 - **A message sent while no window is attached is dropped** (`internal/events`): an extension's lines ride
   `/events` like every event, with no queue and no replay, and the extension is not told. A window that attaches
-  later sees nothing until the extension renders again. One slow window stalls that extension's stdout rather than
+  later sees nothing until the extension renders again, and no footer text until the extension answers the
+  `context` that window sends it. One slow window stalls that extension's stdout rather than
   queueing, and a write stalled past 5 seconds drops the `/events` socket for every session.
+- **A dock or panel surface tells its extension the active session, with no permission**
+  (`native/cmd/lich-native/extension_places.go`, `activeContext`): an extension with one hears `context`, the
+  session's id, its project's and its checkout's path, on every switch of the active session, whether the surface
+  is open or not, though it may list no `sessions:read`. That is what the surface is drawn for.
+- **A dock or panel surface's footer texts and trees live in the window, by checkout**
+  (`native/cmd/lich-native/extension_store.go`): a footer text is kept only for a checkout `context` named, and
+  goes when the extension fails, is removed, or the window restarts. A tree drawn for another checkout than the
+  active one shows a placeholder, and an extension that never draws one for the new checkout leaves it there.
+- **The dock is never narrower than its tabs** (`native/cmd/lich-native/dock.go`, `fitTabs`): each extension with a
+  dock surface adds a tab with its icon and title, so with several the dock cannot be dragged narrow and the
+  terminal beside it loses the columns.
 - **`render` is coalesced, at 30 a second per surface** (`internal/extensions/throttle.go`): the first goes out at
   once, and while the interval has not passed only the newest is kept and sent when it ends, so a loop of renders
   costs the window a frame rate and the newest tree always arrives. The older ones in between never reach the
@@ -1630,8 +1640,8 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   one an agent's click opens, shows the page behind it. Linux and Windows paint before the load returns.
 
 - **A session browser's downloads go straight to the user's Downloads folder** (`internal/browser/downloads.go`,
-  `session_downloads.go`, `docs/browser-tab.md`): `XDG_DOWNLOAD_DIR` on Linux, `~/Downloads` on macOS and Windows,
-  even for a Windows user who moved that known folder. Chrome writes each one under its download id into a staging
+  `session_downloads.go`, `docs/browser-tab.md`): `XDG_DOWNLOAD_DIR` on Linux, `~/Downloads` on macOS, the Downloads
+  known folder on Windows. Chrome writes each one under its download id into a staging
   folder in the session's profile, and only a download a page announced moves to Downloads, once complete. The
   download behaviour is the whole browser's, so what Chrome downloads on its own, with no page (4 KB to 33 MB files
   on the macOS and Windows runners), lands in staging, is never moved and goes with the profile when the browser
@@ -1699,8 +1709,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   Antigravity read lich's MCP instructions instead, composed at spawn too (`LICH_PROMPT_LANG`), and Cursor CLI's
   is unmeasured (the bullet above on Codex and Kiro CLI, under Relay). MCP tool
   descriptions, `--help` and error returns stay English in every language. A usage-limit continuation parked
-  before the setting changed keeps the language it was parked in: the row stores the text, so
-  `isResumePrompt` matches it in every locale.
+  before the setting changed keeps the language it was parked in.
 - **Some interface text stays English in every language**: the exit marker written into a terminal's scrollback
   (`exitMarker`, `native/cmd/lich-native/terminal_exit.go`), because it is data in the replay and not a label;
   the `Session N` label a session gets when nothing names it (`internal/spawn/spawn.go`), because

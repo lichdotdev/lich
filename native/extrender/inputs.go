@@ -65,6 +65,23 @@ func (s *editorState) events(r *Renderer, gtx C, onChange, onSubmit extension.Ha
 	}
 }
 
+// keyHolder is a node's state that can hold the keyboard.
+type keyHolder interface{ holdsKeys(gtx C) bool }
+
+func (s *editorState) holdsKeys(gtx C) bool { return gtx.Focused(&s.editor) }
+
+func (s *inlineEditState) holdsKeys(C) bool { return s.edit.Active() }
+
+// Typing is whether a field of the surface holds the keyboard.
+func (r *Renderer) Typing(gtx C) bool {
+	for _, v := range r.state {
+		if h, ok := v.(keyHolder); ok && h.holdsKeys(gtx) {
+			return true
+		}
+	}
+	return false
+}
+
 type inputState struct {
 	editorState
 	clear widget.Clickable

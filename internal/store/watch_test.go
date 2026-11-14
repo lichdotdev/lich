@@ -38,7 +38,8 @@ func TestScheduledByNamesWhoParkedThePrompt(t *testing.T) {
 	}{
 		{func() error { return svc.SetAgentSchedule("s1", 1700000000, "mine") }, api.ScheduledByAgent},
 		{func() error { return svc.SetSessionSchedule("s1", 1700000000, "theirs") }, ""},
-		{func() error { return svc.SetSessionSchedule("s1", 1700000000, prompt.For(prompt.Spanish).ResumePrompt) }, api.ScheduledByLich},
+		{func() error { return svc.SetLichSchedule("s1", 1700000000, prompt.For(prompt.Spanish).ResumePrompt) }, api.ScheduledByLich},
+		{func() error { return svc.SetSessionSchedule("s1", 1700000000, prompt.For(prompt.Spanish).ResumePrompt) }, ""},
 	} {
 		if err := c.write(); err != nil {
 			t.Fatal(err)
