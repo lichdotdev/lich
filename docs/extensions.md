@@ -83,8 +83,9 @@ component and message. Import `github.com/lichdotdev/lich/extension` rather than
   `clipboard`, `focus`, `footer` (see [Dock and panel surfaces](#dock-and-panel-surfaces)) and `call` (see
   [Calling lich](#calling-lich)).
 - From lich: `surface.opened`, `surface.closed`, `event` (a handler the tree named fired), `language` (see
-  Translating an extension), `context` (see Dock and panel surfaces), `result` (the answer to a `call`) and
-  `lich.event` (an event the extension subscribed to).
+  Translating an extension), `context` (see Dock and panel surfaces), `result` (the answer to a `call`),
+  `lich.event` (an event the extension subscribed to) and `refused` (a line lich would not take, see
+  [What lich enforces](#what-lich-enforces)).
 
 Stderr goes to lich's log.
 
@@ -417,10 +418,12 @@ title := cat.In(lang.Tag(), "board.count", i18n.Args{"count": len(cards)})
 ## What lich enforces
 
 - A line over 3 MiB, JSON nested over 512 levels, a tree over 5000 nodes or 64 deep, a kind that only travels
-  from lich to the extension, and `openExternal` with a URL that is not http or https are dropped and logged. The
-  extension is not told.
+  from lich to the extension, `openExternal` with a URL that is not http or https, and a `footer` text over 80
+  characters are refused: lich ignores the line, logs it and sends `refused`, with the line's `kind` and `surface`
+  when it could read them (a line over 3 MiB has neither) and a `reason` in English. lich tells at most 100
+  refusals a minute; past that it only counts them, and the first `refused` after that minute carries the count
+  as `dropped`. An extension that answers `refused` with a bad line is held to the same 100.
 - `render` is coalesced to 30 a second per surface; the newest tree always arrives.
-- A `footer` text over 80 characters is refused.
 - At most 8 calls run at once per extension, each for at most 2 minutes, and a call needs the permission its
   method names in the manifest. A `result` or `lich.event` lich cannot queue because the extension stopped reading
   its stdin is dropped and logged.

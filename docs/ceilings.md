@@ -1218,12 +1218,13 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   what runs: editing the folder afterwards changes nothing until the extension is removed and installed again,
   so to develop in place symlink the folder into the extensions directory instead. Its source is the folder's
   path, with no release, and nothing checks who wrote what is in it.
-- **What an extension writes is input, and what fails the checks is dropped without telling it**
-  (`internal/extensions/inbound.go`): a line over 3 MiB, JSON nested over 512 levels, a tree over 5000 nodes or 64
-  deep, a kind that only travels from lich to the extension, and `openExternal` with anything but an http or https
-  URL are refused and written to lich's log, and the process goes on. Its log is budgeted at 100 lines a minute
-  each for stderr and for refusals, so past that a refusal leaves no trace beyond the count of lines dropped. The
-  surface a `render` names is not checked against the manifest.
+- **What an extension writes is input** (`internal/extensions/inbound.go`): a line over 3 MiB, JSON nested over 512
+  levels, a tree over 5000 nodes or 64 deep, a kind that only travels from lich to the extension, and
+  `openExternal` with anything but an http or https URL are refused and written to lich's log, and the process
+  goes on. Its log is budgeted at 100 lines a minute each for stderr and for refusals, so past that a refusal
+  leaves no trace beyond the count of lines dropped. That count reaches the extension only with its next
+  `refused`, so one that goes quiet after a burst never hears it. The surface a `render` names is not checked
+  against the manifest.
 - **lich translates only an extension's name and surface titles** (`internal/extensions/locales.go`,
   `extension/i18n`): it reads them from the extension's own catalogs (`locales/<tag>/extension.json`), falling
   back to English and then to the manifest. Toasts and every string in a tree are the extension's to translate:

@@ -40,6 +40,7 @@ const (
 	modeLanguage   = "language"
 	modeAPI        = "api"
 	modeParent     = "parent"
+	modeRefusals   = "refusals"
 
 	// fakeEnv set to fakeChild makes the test binary a process that only waits.
 	fakeChild = "child"
@@ -88,6 +89,9 @@ func fakeExtension() {
 		fmt.Println(toastLine("language " + os.Getenv(extension.LanguageEnv)))
 	case modeAPI:
 		apiExtension()
+		return
+	case modeRefusals:
+		refusalsExtension()
 		return
 	case modeStderr:
 		fmt.Fprintln(os.Stderr, strings.Repeat("x", maxLogLineBytes+1))

@@ -115,7 +115,7 @@ func (s *Service) start(ctx context.Context, x *installed) (*process, error) {
 	ownGroup(cmd)
 	cmd.Stdout = newFramer(maxLineBytes,
 		func(line []byte) { s.handleLine(x, line) },
-		func() { x.refused.note(x.id, msgRefused, fmt.Sprintf("line over %d bytes", maxLineBytes)) })
+		func() { s.refuse(x, nil, fmt.Sprintf("line over %d bytes", maxLineBytes)) })
 	cmd.Stderr = newFramer(maxLogLineBytes,
 		func(line []byte) { x.stderr.note(x.id, msgStderr, string(line)) },
 		func() {
