@@ -3,6 +3,7 @@ package browser
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/lichdotdev/lich/api"
 )
@@ -48,10 +49,11 @@ func (s *Service) Read(_ context.Context, opts api.BrowserInfoOptions) (api.Brow
 // ClickAt clicks in this session's browser.
 func (s *Service) ClickAt(_ context.Context, opts api.BrowserClickOptions) (api.BrowserPageInfo, error) {
 	defer s.agentTurn(opts.ID)()
+	since := time.Now()
 	if err := s.Click(opts.ID, targetOf(opts.BrowserTarget)); err != nil {
 		return s.heldOr(opts.ID, err)
 	}
-	return s.pageAfter(opts.ID)
+	return s.pageAfter(opts.ID, since)
 }
 
 // TypeText types into this session's browser.
@@ -63,19 +65,21 @@ func (s *Service) TypeText(_ context.Context, opts api.BrowserTypeOptions) (api.
 // PressKey presses one named key in this session's browser.
 func (s *Service) PressKey(_ context.Context, opts api.BrowserPressOptions) (api.BrowserPageInfo, error) {
 	defer s.agentTurn(opts.ID)()
+	since := time.Now()
 	if err := s.Press(opts.ID, opts.Key, targetOf(opts.BrowserTarget)); err != nil {
 		return s.heldOr(opts.ID, err)
 	}
-	return s.pageAfter(opts.ID)
+	return s.pageAfter(opts.ID, since)
 }
 
-// pageAfter is the page an action left, read once a navigation it started has
-// its document. A read that fails keeps the browser: the action itself went
-// through, and the page may be between two documents.
-func (s *Service) pageAfter(id string) (api.BrowserPageInfo, error) {
+// pageAfter is the page an action begun at since left, read once a navigation
+// it started has its document and what it fetched has rendered. A read that
+// fails keeps the browser: the action itself went through, and the page may
+// be between two documents.
+func (s *Service) pageAfter(id string, since time.Time) (api.BrowserPageInfo, error) {
 	var info PageInfo
 	sess, err := s.onPage(id, pageWait, func(p Page, ctx context.Context) error {
-		if err := p.Settle(ctx); err != nil {
+		if err := p.Settle(ctx, since); err != nil {
 			return err
 		}
 		var err error
@@ -179,10 +183,11 @@ func (s *Service) ListTabs(_ context.Context, opts api.SessionIDOptions) ([]api.
 // the page then in front.
 func (s *Service) ActOnTab(_ context.Context, opts api.BrowserTabOptions) (api.BrowserPageInfo, error) {
 	defer s.agentTurn(opts.ID)()
+	since := time.Now()
 	if err := s.TabAct(opts); err != nil {
 		return s.heldOr(opts.ID, err)
 	}
-	return s.pageAfter(opts.ID)
+	return s.pageAfter(opts.ID, since)
 }
 
 // CloseOne tears down this session's browser.

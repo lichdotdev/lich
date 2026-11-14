@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"math"
 	"sync"
+	"time"
 
 	"github.com/chromedp/cdproto/browser"
 	"github.com/chromedp/cdproto/debugger"
@@ -55,6 +56,9 @@ func (p *chromePage) listenTab(t *tab) {
 	// that opens next holds.
 	var started string
 	chromedp.ListenTarget(t.ctx, func(ev any) {
+		if t.fetches.track(ev, time.Now()) {
+			return
+		}
 		switch e := ev.(type) {
 		case *page.EventFrameStartedNavigating:
 			if string(e.FrameID) == string(t.id) {

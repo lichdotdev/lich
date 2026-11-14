@@ -113,6 +113,16 @@ the agent's script in the front tab (`browser.Eval`) and answers with its
 value, a string as it is and anything else as JSON, cut at 2000 characters; it
 can read any field's value, so page info's rule ends where the agent asks.
 
+A click, a key, a tab action or a dialog answer answers with the page once it
+settled (`internal/browser/settle.go`): a navigation it started has its
+document, the fetch and XHR requests that began since it did have landed, and
+the document then went 100 ms without a change, all within 3 seconds, the
+bounds chrome-devtools-mcp's own wait uses. A request from before the action,
+a long poll, holds nothing, and neither does a change a timer makes later,
+which `wait_for` is for. A reload, the agent's or the toolbar's, bypasses the
+cache, and the checkout's and the artifact folder's listeners send their files
+with `Cache-Control: no-cache`, so an edited stylesheet shows on the next load.
+
 ## Notes on the page
 
 A bar floats over the bottom of the page with two tools, Select and Draw; the

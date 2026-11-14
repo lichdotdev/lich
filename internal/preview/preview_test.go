@@ -68,6 +68,25 @@ func TestURLServesAPathInsideTheCheckout(t *testing.T) {
 	}
 }
 
+// A file the agent is editing: a stylesheet kept by Chrome's heuristic, a
+// tenth of its age since it changed, would hide the edit on the next load.
+func TestServedFileIsRevalidatedOnEveryLoad(t *testing.T) {
+	s := newTestService(t)
+	dir := checkout(t)
+	u, err := s.URL(dir, 24001, filepath.Join(dir, "site", "index.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp, err := http.Get(u)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = resp.Body.Close()
+	if got := resp.Header.Get("Cache-Control"); got != "no-cache" {
+		t.Fatalf("Cache-Control = %q, want no-cache", got)
+	}
+}
+
 func TestURLReusesOneListenerPerCheckout(t *testing.T) {
 	s := newTestService(t)
 	dir := checkout(t)

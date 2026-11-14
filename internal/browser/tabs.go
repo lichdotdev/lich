@@ -28,6 +28,7 @@ type tab struct {
 	url, title string
 	// devtools is the pane's DevTools for this tab, nil for none.
 	devtools *devtools
+	fetches  fetches
 }
 
 // devtools is Chrome's own DevTools front-end inspecting one tab, a target

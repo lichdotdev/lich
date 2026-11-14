@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **An agent's click in a session's browser answers with what the click loaded.** A click, a key, a tab or a dialog answer waits for the requests it started and for the page to stop changing, up to 3 seconds, so the agent no longer reads the page again to see the result.
 - **Restart on an extension reads its folder again.** An edited manifest takes effect on Restart, and one that no longer validates shows invalid with its reason instead of starting. Fix it on disk and Restart starts it, with no restart of lich.
 - **A theme's Update button shows only when its pack has a new version.** It used to sit on every theme from a repository and look for one when clicked; Check for updates, over the cards, does that now.
 - **The tools for leaving notes on a page moved from the browser's toolbar onto the page.** A bar over its bottom holds Select, which was the crosshair, and Draw; its arrow folds it into a tab on the page's edge. Ctrl+Shift+E (Cmd+Shift+E on macOS) still turns Select on and off.
@@ -35,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Reload in a session's browser shows the stylesheet or script you just changed.** It took them from Chrome's cache, and the pages lich serves from your checkout and the artifact folder are now checked again on every load.
 - **Minimizing a session's browser page keeps where its divider was.** Show on the browser's row in the sidebar puts the page back with the terminal and the page sharing the screen as you left them; closing the browser forgets it.
 - **Ctrl+click on a `path:line` opens a file git ignores.** A path in a session's terminal that sat in `.gitignore`, a build output or a log, answered "not found" though it was there; it opens in the Code tab now. A path outside the session's checkout is still refused.
 - **The Git panel's Author menu lists everyone who wrote the history.** It named only the authors of the commits already scrolled in; it now shows the most active ones, from the whole history.
