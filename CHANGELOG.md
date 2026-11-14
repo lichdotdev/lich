@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Ctrl+click on a `path:line` opens a file git ignores.** A path in a session's terminal that sat in `.gitignore`, a build output or a log, answered "not found" though it was there; it opens in the Code tab now. A path outside the session's checkout is still refused.
 - **The Git panel's Author menu lists everyone who wrote the history.** It named only the authors of the commits already scrolled in; it now shows the most active ones, from the whole history.
 - **Undo on a deleted branch brings back the branch it tracked.** The toast's Undo used to make the branch again without its upstream, so pull and push stopped knowing where to go.
 - **A Windows user who moved Downloads now finds a session's browser downloads there.** They used to land in `%USERPROFILE%\Downloads` instead.
