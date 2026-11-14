@@ -141,6 +141,10 @@ func (m *model) applyBrowserState(st api.BrowserState) {
 	if !m.browserShowableLocked(st.Owner) {
 		m.dropPageLocked(st.Owner)
 	}
+	if _, remembered := m.minimized[st.Owner]; remembered && !st.Open {
+		delete(m.minimized, st.Owner)
+		m.savePagesLocked()
+	}
 	m.mu.Unlock()
 	if st.Open && st.ByAgent && !known && m.browserOpened != nil {
 		m.browserOpened(st)

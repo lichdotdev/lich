@@ -1547,8 +1547,8 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   cookie, since chromedp cannot show a headless process in place. A half-filled form or sessionStorage is
   lost on that move. The page is drawn beside its session's terminal and is a pane of no stored layout
   (`native/cmd/lich-native/pages.go`): it sits after the terminal, at its right or under it, and cannot be
-  dragged anywhere else or dropped on. Minimize on its header hides it and leaves the Chromium running;
-  minimizing forgets where the divider was. A running browser is a row of the sidebar's tree under its
+  dragged anywhere else or dropped on. Minimize on its header hides it and leaves the Chromium running.
+  A running browser is a row of the sidebar's tree under its
   session (`sidebar_browser_row.go`), named by the page's host and muted while minimized or in a window of its
   own, so the name does not say which of the two; the tooltip does. The row is no session: it files nowhere,
   a drag leaves it where it was, a folded mother hides it behind a globe on her own row, and the collapsed

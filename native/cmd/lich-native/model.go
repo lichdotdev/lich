@@ -150,6 +150,8 @@ type model struct {
 	shownLayout string
 	// pages are the pages shown beside their sessions' terminals (pages.go).
 	pages pageViews
+	// minimized are the dividers of the pages minimized, by session.
+	minimized pageViews
 	// browsers are the session browsers (browser_model.go); browserOpened
 	// hears one the agent started, and browserIdle one the backend starts or
 	// stops asking about (State.Idle).
@@ -176,7 +178,7 @@ func newModel(client *backend.Client, invalidate func()) *model {
 		providers:     newProviderBook(client, invalidate),
 		closed:        newClosedProjects(client, invalidate),
 		browsers:      newBrowserStore(),
-		pages:         pageViews{}}
+		pages:         pageViews{}, minimized: pageViews{}}
 }
 
 func (m *model) reload(ctx context.Context) error {

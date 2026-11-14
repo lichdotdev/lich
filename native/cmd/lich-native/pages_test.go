@@ -93,6 +93,32 @@ func TestMinimizeTakesThePageOffScreenAndLeavesTheBrowserRunning(t *testing.T) {
 	}
 }
 
+func TestMinimizeKeepsTheDividerAndAClosedBrowserForgetsIt(t *testing.T) {
+	m, _ := newLayoutsModel(t)
+	ctx := context.Background()
+	send(m, api.BrowserStateEvent.Name, api.BrowserState{Owner: "orch", Open: true})
+	m.showPage(ctx, "orch")
+	m.setRatio(soloLayoutPrefix+"orch", []bool{}, 0.3)
+	m.minimizePage("orch")
+	m.showPage(ctx, "orch")
+	m.mu.Lock()
+	got := m.pages["orch"].Ratio
+	m.mu.Unlock()
+	if got != 0.3 {
+		t.Fatalf("divider at %v after minimize and show, want the moved 0.3", got)
+	}
+	m.minimizePage("orch")
+	send(m, api.BrowserStateEvent.Name, api.BrowserState{Owner: "orch", Open: false})
+	send(m, api.BrowserStateEvent.Name, api.BrowserState{Owner: "orch", Open: true})
+	m.showPage(ctx, "orch")
+	m.mu.Lock()
+	got = m.pages["orch"].Ratio
+	m.mu.Unlock()
+	if got != 0.5 {
+		t.Fatalf("divider at %v after the browser closed, want the default 0.5", got)
+	}
+}
+
 func TestUnsplitOfASessionAloneMinimizesItsPage(t *testing.T) {
 	m, _ := newLayoutsModel(t)
 	ctx := context.Background()
