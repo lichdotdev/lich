@@ -121,22 +121,35 @@ func releaseServer(t *testing.T, assets map[string][]byte) *httptest.Server {
 
 func releaseServerAt(t *testing.T, tag string, assets map[string][]byte) *httptest.Server {
 	t.Helper()
+	if assets == nil {
+		return releasesServer(t, tag, nil)
+	}
+	return releasesServer(t, tag, map[string]map[string][]byte{tag: assets})
+}
+
+// releasesServer publishes each release in byTag, latest being the one GitHub
+// calls the latest; a nil map is a repository with no release.
+func releasesServer(t *testing.T, latest string, byTag map[string]map[string][]byte) *httptest.Server {
+	t.Helper()
 	mux := http.NewServeMux()
 	srv := httptest.NewServer(mux)
 	t.Cleanup(srv.Close)
-	mux.HandleFunc("/repos/someone/fake-ext/releases/latest", func(w http.ResponseWriter, _ *http.Request) {
-		if assets == nil {
+	serve := func(w http.ResponseWriter, tag string) {
+		assets, ok := byTag[tag]
+		if !ok {
 			http.NotFound(w, nil)
 			return
 		}
 		rel := release{Tag: tag}
 		for name := range assets {
-			rel.Assets = append(rel.Assets, asset{Name: name, URL: srv.URL + "/dl/" + name})
+			rel.Assets = append(rel.Assets, asset{Name: name, URL: srv.URL + "/dl/" + tag + "/" + name})
 		}
 		_ = json.NewEncoder(w).Encode(rel)
-	})
-	mux.HandleFunc("/dl/{name}", func(w http.ResponseWriter, r *http.Request) {
-		body, ok := assets[r.PathValue("name")]
+	}
+	mux.HandleFunc("/repos/someone/fake-ext/releases/latest", func(w http.ResponseWriter, _ *http.Request) { serve(w, latest) })
+	mux.HandleFunc("/repos/someone/fake-ext/releases/tags/{tag}", func(w http.ResponseWriter, r *http.Request) { serve(w, r.PathValue("tag")) })
+	mux.HandleFunc("/dl/{tag}/{name}", func(w http.ResponseWriter, r *http.Request) {
+		body, ok := byTag[r.PathValue("tag")][r.PathValue("name")]
 		if !ok {
 			http.NotFound(w, r)
 			return

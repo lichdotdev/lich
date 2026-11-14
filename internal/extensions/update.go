@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/lichdotdev/lich/api"
+	"github.com/lichdotdev/lich/extension"
 	"github.com/lichdotdev/lich/internal/events"
 	"github.com/lichdotdev/lich/internal/semver"
 )
@@ -59,10 +60,15 @@ func (s *Service) checkUpdates() error {
 	s.mu.Lock()
 	all := slices.Clone(s.all)
 	s.mu.Unlock()
+	cat := s.catalog.Load()
 	var errs []error
 	for _, x := range all {
 		owner, repo, err := parseRepo(x.source.URL)
 		if err != nil || x.source.Release == "" {
+			continue
+		}
+		if entry := listing(cat, x.source.URL); entry != nil {
+			s.setLatest(x, listedNewer(x.source.Release, entry))
 			continue
 		}
 		rel, err := s.latestRelease(owner, repo)
@@ -82,6 +88,16 @@ func (s *Service) checkUpdates() error {
 func newerThan(installed, tag string) string {
 	if semver.Less(installed, tag) {
 		return tag
+	}
+	return ""
+}
+
+// listedNewer is the catalog's tag when the version it lists is later than
+// the release installed: a listed repository updates to what the catalog
+// lists, never past it.
+func listedNewer(installed string, entry *extension.CatalogEntry) string {
+	if semver.Less(installed, entry.Version) {
+		return entry.Tag
 	}
 	return ""
 }
@@ -114,14 +130,10 @@ func (s *Service) PrepareUpdate(_ context.Context, opts api.ExtensionIDOptions) 
 	}
 	s.installMu.Lock()
 	defer s.installMu.Unlock()
-	rel, err := s.latestRelease(owner, repo)
+	entry := listing(s.catalogNow(), x.source.URL)
+	rel, err := s.newerRelease(x, owner, repo, entry)
 	if err != nil {
 		return api.ExtensionInstallPreview{}, err
-	}
-	latest := newerThan(x.source.Release, rel.Tag)
-	s.setLatest(x, latest)
-	if latest == "" {
-		return api.ExtensionInstallPreview{}, fmt.Errorf("extension %q is at %s and its repository's latest release, %s, is not a newer version", opts.ID, x.source.Release, rel.Tag)
 	}
 	id, archive, err := pickAsset(rel, s.goos, s.goarch)
 	if err != nil {
@@ -130,8 +142,36 @@ func (s *Service) PrepareUpdate(_ context.Context, opts api.ExtensionIDOptions) 
 	if id != x.id {
 		return api.ExtensionInstallPreview{}, fmt.Errorf("release %s ships extension %q, not %q: remove this one and install the repository again", rel.Tag, id, x.id)
 	}
+	pinned, err := s.pinnedSum(entry)
+	if err != nil {
+		return api.ExtensionInstallPreview{}, err
+	}
 	src := source{URL: x.source.URL, Release: rel.Tag}
-	return s.stage(id, src, x, func(stage string) error { return s.unpack(rel, archive, id, stage) })
+	return s.stage(id, src, x, func(stage string) error { return s.unpack(rel, archive, pinned, id, stage) })
+}
+
+// newerRelease is the release an update of x installs, refused when it is no
+// later than the one installed: the catalog's for a listed repository, read
+// from GitHub only once it is known to be newer, and the latest for another.
+func (s *Service) newerRelease(x *installed, owner, repo string, entry *extension.CatalogEntry) (release, error) {
+	if entry != nil {
+		latest := listedNewer(x.source.Release, entry)
+		s.setLatest(x, latest)
+		if latest == "" {
+			return release{}, fmt.Errorf("extension %q is at %s and the lich catalog lists %s, which is not a newer version", x.id, x.source.Release, entry.Version)
+		}
+		return s.taggedRelease(owner, repo, entry.Tag)
+	}
+	rel, err := s.latestRelease(owner, repo)
+	if err != nil {
+		return release{}, err
+	}
+	latest := newerThan(x.source.Release, rel.Tag)
+	s.setLatest(x, latest)
+	if latest == "" {
+		return release{}, fmt.Errorf("extension %q is at %s and its repository's latest release, %s, is not a newer version", x.id, x.source.Release, rel.Tag)
+	}
+	return rel, nil
 }
 
 // replace swaps old's directory for the staged copy in st and starts it. The

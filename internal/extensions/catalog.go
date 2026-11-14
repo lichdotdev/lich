@@ -7,6 +7,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"strings"
 
 	"github.com/lichdotdev/lich/extension"
 )
@@ -90,4 +91,18 @@ func (s *Service) fetchCatalog(etag string) (*extension.Catalog, string, error) 
 		return nil, "", fmt.Errorf("format %d is not one this lich reads (up to %d)", cat.FormatVersion, extension.CatalogFormat)
 	}
 	return &cat, resp.Header.Get("ETag"), nil
+}
+
+// listing is the entry the catalog lists repoURL under, nil when it lists
+// none. GitHub's owner and repository names ignore case, and so does this.
+func listing(cat *extension.Catalog, repoURL string) *extension.CatalogEntry {
+	if cat == nil {
+		return nil
+	}
+	for i := range cat.Extensions {
+		if strings.EqualFold(cat.Extensions[i].Repo, repoURL) {
+			return &cat.Extensions[i]
+		}
+	}
+	return nil
 }
