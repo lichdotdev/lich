@@ -12,7 +12,8 @@ import (
 
 // Every method calls its service with no From: an extension is no session,
 // so it reaches lich as `lich` run outside one does, and names the project
-// it means.
+// it means. What it sends carries the extension's identity, so the target is
+// told who relayed it.
 
 func (s *Service) listProjects(ctx context.Context, _ *installed, _ extension.NoParams) ([]extension.Project, error) {
 	projects, err := s.lich.Projects(ctx, api.None{})
@@ -73,6 +74,7 @@ func (s *Service) openSession(ctx context.Context, x *installed, params extensio
 	}
 	result, err := s.lich.Send(ctx, api.SendOptions{
 		Target: opened.Label, Project: opened.Project, Prompt: params.Prompt, WaitSeconds: handOverWaitSeconds,
+		ExtensionID: x.id, ExtensionName: s.promptName(x),
 	})
 	if err != nil {
 		out.TaskError = err.Error()
@@ -86,11 +88,23 @@ func (s *Service) openSession(ctx context.Context, x *installed, params extensio
 func (s *Service) sendToSession(ctx context.Context, x *installed, params extension.SendParams) (extension.SendResult, error) {
 	result, err := s.lich.Send(ctx, api.SendOptions{
 		Target: params.Session, Project: params.Project, Prompt: params.Prompt, WaitSeconds: clampWait(params.WaitSeconds),
+		ExtensionID: x.id, ExtensionName: s.promptName(x),
 	})
 	if err != nil {
 		return extension.SendResult{}, err
 	}
 	return s.held(x, result), nil
+}
+
+// promptName is x's name in the prompt language, its manifest's when that
+// language has no translation of it.
+func (s *Service) promptName(x *installed) string {
+	if s.lich.PromptLang != nil {
+		if name := x.text[string(s.lich.PromptLang())].Name; name != "" {
+			return name
+		}
+	}
+	return x.manifest.Name
 }
 
 // clampWait is send_to_session's and wait_for_answer's cap on holding the

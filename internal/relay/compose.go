@@ -112,10 +112,20 @@ const (
 // home — the reply path only exists because this text describes it, so the
 // agent needs no prior knowledge of the feature.
 func compose(lang prompt.Lang, sender, ticketID, task string, hasTools bool) string {
+	return composeFrom(lang, origin(lang, sender), ticketID, task, hasTools)
+}
+
+// composeFrom is compose with the origin line already worded.
+func composeFrom(lang prompt.Lang, from, ticketID, task string, hasTools bool) string {
 	return fmt.Sprintf(
 		prompt.For(lang).RelayMessage,
-		origin(lang, sender), task, replyInstruction(lang, hasTools, ticketID),
+		from, task, replyInstruction(lang, hasTools, ticketID),
 	)
+}
+
+// originExtension is the origin line of a message an extension sent.
+func originExtension(lang prompt.Lang, id, name string) string {
+	return fmt.Sprintf(prompt.For(lang).OriginExtension, name, id)
 }
 
 // composeForWorker is the task handed to a worker whose mod answers for it
