@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
+	"strings"
 
 	"github.com/lichdotdev/lich/internal/semver"
 )
@@ -33,8 +35,10 @@ var themeSkill = pluginSkill{
 	files: []string{skillManifest, "template.json", "validate.mjs"},
 }
 
-// extensionSkill is manual only: its frontmatter keeps it out of the agent's
-// context on opencode, oh-my-pi and Crush. Kiro has no such setting, so
+// extensionSkill is manual only where the harness can say so: its
+// frontmatter keeps it out of the agent's context on oh-my-pi, Crush and
+// opencode 2, and opencode 1 gets it without a description, the one thing
+// that version reads (installOpencodeSkills). Kiro has no such setting, so
 // Kiro's install leaves it out rather than make every Kiro user pay for it
 // (docs/ceilings.md).
 var extensionSkill = pluginSkill{
@@ -55,6 +59,38 @@ func (s *Service) installSkills(version, skillsDir string) error {
 		return nil
 	}
 	return s.installSkill(version, skillsDir, extensionSkill)
+}
+
+// installOpencodeSkills is installSkills for opencode. opencode 1 lists every
+// skill that has a description to the agent and ignores the frontmatter that
+// hides one, so the extension skill's copy goes without its description:
+// opencode 1 then leaves it out, and opencode 2, which honours the
+// frontmatter, behaves the same either way.
+func (s *Service) installOpencodeSkills(version, skillsDir string) error {
+	if err := s.installSkills(version, skillsDir); err != nil {
+		return err
+	}
+	if semver.Less(version, ExtensionSkillRelease) {
+		return nil
+	}
+	return dropDescription(filepath.Join(skillsDir, extensionSkill.name, skillManifest))
+}
+
+// dropDescription removes the description line from the frontmatter of the
+// SKILL.md at path.
+func dropDescription(path string) error {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return fmt.Errorf("read %s: %w", path, err)
+	}
+	lines := strings.SplitAfter(string(data), "\n")
+	for i := 1; i < len(lines) && lines[0] == "---\n" && lines[i] != "---\n"; i++ {
+		if strings.HasPrefix(lines[i], "description:") {
+			lines = slices.Delete(lines, i, i+1)
+			break
+		}
+	}
+	return writeFile(path, []byte(strings.Join(lines, "")), 0o644)
 }
 
 // installSkill writes the release's skill into skillsDir, renamed to its name

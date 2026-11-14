@@ -184,3 +184,48 @@ func TestKiroInstallLeavesTheExtensionSkillOut(t *testing.T) {
 		t.Errorf("Kiro got the extension skill (stat: %v), which it cannot keep manual only", err)
 	}
 }
+
+// opencode 1 lists every skill with a description to the agent, whatever its
+// frontmatter says, so its copy of the extension skill has none.
+func TestOpencodeInstallDropsTheExtensionSkillsDescription(t *testing.T) {
+	config := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", config)
+	s, _ := fileServerAt(t, ExtensionSkillRelease, map[string]string{
+		taggedAt(ExtensionSkillRelease, opencodeSource): "export const P = async () => ({})\n",
+	})
+
+	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.OpenCode}); err != nil {
+		t.Fatalf("Install: %v", err)
+	}
+	skills := filepath.Join(config, "opencode", "skills")
+	manifest, err := os.ReadFile(filepath.Join(skills, extensionSkill.name, skillManifest))
+	if err != nil {
+		t.Fatalf("read the extension skill: %v", err)
+	}
+	if strings.Contains(string(manifest), "\ndescription:") {
+		t.Errorf("opencode's copy keeps its description, which opencode 1 lists to the agent:\n%s", manifest)
+	}
+	if !strings.HasPrefix(string(manifest), "---\nname: "+extensionSkill.name+"\ndisable-model-invocation: true\n") {
+		t.Errorf("opencode's copy lost its name or what hides it from opencode 2:\n%s", manifest)
+	}
+	theme, err := os.ReadFile(filepath.Join(skills, themeSkill.name, skillManifest))
+	if err != nil || !strings.Contains(string(theme), "\ndescription:") {
+		t.Errorf("the theme skill lost its description (err %v):\n%s", err, theme)
+	}
+}
+
+func TestDropDescriptionTouchesOnlyTheFrontmatter(t *testing.T) {
+	path := filepath.Join(t.TempDir(), skillManifest)
+	body := "---\nname: x\ndescription: Hide me.\nuser-invocable: true\n---\n\ndescription: stays in the body\n"
+	if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := dropDescription(path); err != nil {
+		t.Fatalf("dropDescription: %v", err)
+	}
+	got, _ := os.ReadFile(path)
+	want := "---\nname: x\nuser-invocable: true\n---\n\ndescription: stays in the body\n"
+	if string(got) != want {
+		t.Errorf("got\n%s\nwant\n%s", got, want)
+	}
+}

@@ -182,7 +182,7 @@ tarball、清除隔离标记，以及从旧的 Homebrew formula 升级，见 [IN
 | 启动时用提示词语言告诉智能体，要把工作分派成 lich 会话，而不是看不见的子智能体 | 有 | 无 | 无 | 无 | 有 | 无 | 无 | 无 |
 | 会话卡片在会话的终端旁打开一个由智能体操作的浏览器 | 有 | 有 | 有 | 有 | 有 | 有 | 有 | 有 |
 | 智能体为给你看而做的页面（报告、图表、样稿）从会话自己的、位于检出之外的文件夹在那个浏览器中打开，并随会话一直保留 | 有，但 Claude Code 仍可能用它自己的 Artifact 工具发布到 claude.ai | 有 | 有 | 有 | 有 | 有 | 有 | 有 |
-| 编写 lich 扩展的技能，只在你调用时运行（`/lich:extension`） | 有 | 有，用 `$extension` | 有，但 Antigravity 无法把技能设为仅手动调用，智能体每一轮都能看到 | 有，用 `/lich-extension` | 有，用 `/skill:lich-extension` | 有，从命令面板 | 有，来自 Claude Code 的安装 | 无：Kiro 无法把技能移出智能体的上下文 |
+| 编写 lich 扩展的技能，只在你调用时运行（`/lich:extension`） | 有 | 有，用 `$lich:extension` | 有，但 Antigravity 无法把技能设为仅手动调用，智能体每一轮都能看到 | 有，opencode 1 用 `/lich-extension`，opencode 2 从 `/skills` 调用 | 有，用 `/skill:lich-extension` | 有，从命令面板 | 有，但 Cursor 会把插件的所有技能都给智能体看，智能体每一轮都能看到 | 无：Kiro 无法把技能移出智能体的上下文 |
 
 </details>
 
