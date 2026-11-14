@@ -31,12 +31,43 @@ func TestGitBranchLifecycle(t *testing.T) {
 		t.Errorf("on %q after checkout", currentBranch(git))
 	}
 	git("checkout", "main")
-	hash, err := s.GitDeleteBranch(ctx, api.GitBranchOptions{Path: repo, Name: "feat/y"})
-	if err != nil || hash != strings.TrimSpace(git("rev-parse", "main")) {
-		t.Fatalf("delete = %q, %v", hash, err)
+	got, err := s.GitDeleteBranch(ctx, api.GitBranchOptions{Path: repo, Name: "feat/y"})
+	if err != nil || got.Hash != strings.TrimSpace(git("rev-parse", "main")) {
+		t.Fatalf("delete = %+v, %v", got, err)
 	}
-	if _, err := s.GitCreateBranch(ctx, api.GitCreateBranchOptions{Path: repo, Name: "feat/y", From: hash}); err != nil {
+	if _, err := s.GitCreateBranch(ctx, api.GitCreateBranchOptions{Path: repo, Name: "feat/y", From: got.Hash}); err != nil {
 		t.Fatalf("undo by recreating at the hash: %v", err)
+	}
+}
+
+func TestGitDeleteBranchUndoBringsBackTheUpstream(t *testing.T) {
+	repo, git := initRepo(t)
+	addLocalOrigin(t, git)
+	git("push", "origin", "HEAD:refs/heads/feat/up")
+	git("fetch", "origin")
+	git("branch", "--track", "feat/up", "origin/feat/up")
+	git("config", "branch.feat/up.pushRemote", "origin")
+	s, ctx := new(Service), context.Background()
+	got, err := s.GitDeleteBranch(ctx, api.GitBranchOptions{Path: repo, Name: "feat/up"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.GitCreateBranch(ctx, api.GitCreateBranchOptions{Path: repo, Name: "feat/up", From: got.Hash, Upstream: got.Upstream}); err != nil {
+		t.Fatal(err)
+	}
+	for key, want := range map[string]string{"remote": "origin", "merge": "refs/heads/feat/up", "pushRemote": "origin"} {
+		if v := strings.TrimSpace(git("config", "branch.feat/up."+key)); v != want {
+			t.Errorf("branch.feat/up.%s = %q after undo, want %q", key, v, want)
+		}
+	}
+}
+
+func TestGitDeleteBranchWithoutUpstreamLeavesNoneToRestore(t *testing.T) {
+	repo, git := initRepo(t)
+	git("branch", "plain")
+	got, err := new(Service).GitDeleteBranch(context.Background(), api.GitBranchOptions{Path: repo, Name: "plain"})
+	if err != nil || got.Upstream != (api.GitUpstream{}) {
+		t.Fatalf("delete = %+v, %v; want no upstream", got, err)
 	}
 }
 
