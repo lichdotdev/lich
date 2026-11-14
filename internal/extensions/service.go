@@ -260,13 +260,10 @@ func (s *Service) Send(_ context.Context, opts api.ExtensionSendOptions) (api.No
 // shows invalid with its reason instead of starting. The id is the directory
 // name, so a manifest whose id changed on disk is invalid like any other.
 func (s *Service) Restart(ctx context.Context, opts api.ExtensionIDOptions) (api.None, error) {
-	s.mu.Lock()
-	x := s.find(opts.ID)
-	s.mu.Unlock()
-	if x == nil {
-		return api.None{}, fmt.Errorf("no extension %q", opts.ID)
+	x, err := s.lockForRestart(opts.ID)
+	if err != nil {
+		return api.None{}, err
 	}
-	x.restartMu.Lock()
 	defer x.restartMu.Unlock()
 	s.mu.Lock()
 	stop, done := x.stop, x.done
@@ -300,6 +297,28 @@ func (s *Service) Restart(ctx context.Context, opts api.ExtensionIDOptions) (api
 	s.mu.Unlock()
 	events.Send(s.emit, api.ExtensionStatusEvent, view)
 	return api.None{}, fmt.Errorf("extension %q is invalid and cannot start: %w", opts.ID, fresh.invalid)
+}
+
+// lockForRestart returns the extension with id with its restartMu held. A
+// Restart that waited on another is left holding the extension that one
+// replaced, so it looks again until the lock it got is the current one's.
+func (s *Service) lockForRestart(id string) (*installed, error) {
+	for {
+		s.mu.Lock()
+		x := s.find(id)
+		s.mu.Unlock()
+		if x == nil {
+			return nil, fmt.Errorf("no extension %q", id)
+		}
+		x.restartMu.Lock()
+		s.mu.Lock()
+		current := s.find(id) == x
+		s.mu.Unlock()
+		if current {
+			return x, nil
+		}
+		x.restartMu.Unlock()
+	}
 }
 
 // find returns the extension with id, or nil. Called with mu held.

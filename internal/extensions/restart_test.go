@@ -213,6 +213,33 @@ func TestRestartRefusesAnIDChangedOnDisk(t *testing.T) {
 	}
 }
 
+func TestConcurrentRestartsBothSucceedAndTheExtensionRunsOnce(t *testing.T) {
+	dir := t.TempDir()
+	root := install(t, dir, "ext", modeEcho)
+	s, r := boot(t, dir)
+	waitUntil(t, "the first run", func() bool { return runCount(root) == 1 && r.lastStatus().Status == api.ExtensionRunning })
+
+	errs := make(chan error, 2)
+	for range 2 {
+		go func() { errs <- restart(s, "ext") }()
+	}
+	for range 2 {
+		if err := <-errs; err != nil {
+			t.Errorf("Restart = %v", err)
+		}
+	}
+	// The second Restart can stop the run the first started before it execs, so
+	// the run count is 2 or 3. What matters is that one process is left answering.
+	waitUntil(t, "the extension to run again", func() bool { return r.lastStatus().Status == api.ExtensionRunning && runCount(root) >= 2 })
+	if _, err := s.Send(context.Background(), sendOptions(t, "ext", extension.SurfaceOpened.New(extension.SurfaceData{Surface: "main"}))); err != nil {
+		t.Fatal(err)
+	}
+	waitUntil(t, "the echo", func() bool { return slices.Contains(r.titles(t), "got surface.opened") })
+	if got := listed(t, s, "ext").Status; got != api.ExtensionRunning {
+		t.Errorf("status %q, want running", got)
+	}
+}
+
 func TestListShowsTheExtensionsAbsoluteDirectory(t *testing.T) {
 	dir := t.TempDir()
 	root := install(t, dir, "ext", modeEcho)
