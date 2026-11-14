@@ -1630,8 +1630,8 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   one an agent's click opens, shows the page behind it. Linux and Windows paint before the load returns.
 
 - **A session browser's downloads go straight to the user's Downloads folder** (`internal/browser/downloads.go`,
-  `session_downloads.go`, `docs/browser-tab.md`): `XDG_DOWNLOAD_DIR` on Linux, `~/Downloads` on macOS and Windows,
-  even for a Windows user who moved that known folder. Chrome writes each one under its download id into a staging
+  `session_downloads.go`, `docs/browser-tab.md`): `XDG_DOWNLOAD_DIR` on Linux, `~/Downloads` on macOS, the Downloads
+  known folder on Windows. Chrome writes each one under its download id into a staging
   folder in the session's profile, and only a download a page announced moves to Downloads, once complete. The
   download behaviour is the whole browser's, so what Chrome downloads on its own, with no page (4 KB to 33 MB files
   on the macOS and Windows runners), lands in staging, is never moved and goes with the profile when the browser

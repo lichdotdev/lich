@@ -1,4 +1,4 @@
-//go:build !linux
+//go:build !linux && !windows
 
 package browser
 
@@ -7,10 +7,7 @@ import (
 	"path/filepath"
 )
 
-// downloadDir is ~/Downloads, where macOS keeps it and Windows puts it by
-// default.
-// shortcut: a Windows user who moved the Downloads known folder still gets
-// %USERPROFILE%\Downloads; read SHGetKnownFolderPath if someone asks.
+// downloadDir is ~/Downloads, where macOS keeps it.
 func downloadDir() (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {

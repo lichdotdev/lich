@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **A Windows user who moved Downloads now finds a session's browser downloads there.** They used to land in `%USERPROFILE%\Downloads`, not in the folder you moved it to.
 - **Changing the default model in one account no longer changes it in your other accounts.** Each profile keeps its own model and effort, while the rest of its settings still come from Personal. opencode and Kiro CLI still share one default model across profiles.
 - **A row under the pointer in Pulls and in an extension's panel lights across its whole width.** It was a rounded box set in from the sides, with its corners showing against the lines between rows.
 - **Dragging over text in a session's browser page now selects it.** The page saw the drag and selected nothing, so there was nothing to copy.
