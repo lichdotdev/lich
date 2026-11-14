@@ -11,7 +11,8 @@
   "action": {
     "cancel": "キャンセル",
     "create": "作成",
-    "previewMarkdown": "Markdown をプレビュー"
+    "previewMarkdown": "Markdown をプレビュー",
+    "tryAgain": "再試行"
   },
   "checkAgainButton": {
     "check": "再確認",

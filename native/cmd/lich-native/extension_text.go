@@ -15,6 +15,12 @@ func extensionName(e backend.Extension) string {
 	return extensionText(e, func(t backend.ExtensionText) string { return t.Name }, e.Name)
 }
 
+// extensionDescription is its description the way extensionName reads the
+// name.
+func extensionDescription(e backend.Extension) string {
+	return extensionText(e, func(t backend.ExtensionText) string { return t.Description }, e.Description)
+}
+
 // surfaceTitle is surface s's title the way extensionName reads the name.
 func surfaceTitle(e backend.Extension, s backend.ExtensionSurface) string {
 	return extensionText(e, func(t backend.ExtensionText) string { return t.Surfaces[s.ID] }, s.Title)

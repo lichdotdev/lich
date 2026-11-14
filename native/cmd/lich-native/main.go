@@ -335,6 +335,7 @@ func run(w *app.Window, rt backend.Runtime) error {
 	u.settings.services.store = &u.model.services
 	u.settings.services.home = u.model.homeProject
 	u.settings.extensions.store = &u.model.extensions
+	u.settings.extensions.catalog = u.model.catalog
 	u.settings.promptUpdate = u.promptAppUpdate
 	u.footer = newFooter(ctx, client, &u.root, u.model.usage, u.model.quota, invalidate)
 	u.footer.tour = &u.tour.Tour

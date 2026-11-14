@@ -76,7 +76,6 @@
     "hiddenTitle": "{account} 계정은 이 저장소를 볼 수 없습니다",
     "hiddenDescription": "GitHub가 저장소가 없는 것처럼 응답했습니다. 다른 계정을 고르세요.",
     "continue": "계속",
-    "tryAgain": "다시 시도",
     "later": "나중에 설정 › 버전 관리에서 바꿀 수 있습니다.",
     "saveFailed": "계정을 저장하지 못했습니다: {error}"
   },

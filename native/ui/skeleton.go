@@ -93,9 +93,13 @@ func (th *Theme) SkeletonBar(width, line, height unit.Dp) SkeletonBarStyle {
 	return SkeletonBarStyle{Width: width, Line: line, Height: height, theme: th}
 }
 
+// Layout centres the bar in pixels: rounding each half of an odd leftover on
+// its own would make the line a pixel taller than the text's.
 func (b SkeletonBarStyle) Layout(gtx C) D {
-	pad := (b.Line - b.Height) / 2
-	return layout.Inset{Top: pad, Bottom: pad}.Layout(gtx, b.theme.Skeleton(b.Width, b.Height).Layout)
+	line := gtx.Dp(b.Line)
+	defer op.Offset(image.Pt(0, (line-gtx.Dp(b.Height))/2)).Push(gtx.Ops).Pop()
+	d := b.theme.Skeleton(b.Width, b.Height).Layout(gtx)
+	return D{Size: image.Pt(d.Size.X, line)}
 }
 
 // SkeletonTextStyle is a bar of Width standing for a line of text at Size: as

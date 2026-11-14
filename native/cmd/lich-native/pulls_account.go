@@ -85,7 +85,7 @@ func (p *pullsScreen) accountGateLayout(gtx C, th *ui.Theme, st backend.GitHubAc
 		_, login := splitAccount(st.Account)
 		title = i18n.T("pulls.pullsAccount.hiddenTitle", i18n.Args{"account": login})
 		description = i18n.T("pulls.pullsAccount.hiddenDescription")
-		button = i18n.T("pulls.pullsAccount.tryAgain")
+		button = i18n.T("common.action.tryAgain")
 	}
 	actions := func(gtx C) D {
 		b := th.Button(&a.confirm, button)

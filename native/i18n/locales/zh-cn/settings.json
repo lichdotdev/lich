@@ -651,6 +651,8 @@
     "installTitle": "安装 {name} {version}？",
     "installTitleNoVersion": "安装 {name}？",
     "installSource": "来自 {source}",
+    "installSourcePublisher": "来自 {source}，发布者 {publisher}",
+    "installListed": "已列入 lich 目录，目录会自动检查每个版本。没有人审查它的代码。",
     "installWarning": "它将以你的身份在你的电脑上运行，可以访问你的文件和账户。只有在你信任其作者时才安装。",
     "permissionsLabel": "它还可以",
     "permission": {
@@ -671,9 +673,6 @@
     "remove": "移除",
     "removeMenuItem": "移除…",
     "restart": "重启",
-    "emptyTitle": "还没有扩展",
-    "emptyDescription": "扩展会给 lich 添加一个自己的界面。可从扩展的 GitHub 仓库或文件夹安装。",
-    "installed": "已安装",
     "installedCount": "已安装 · {n}",
     "rowOptions": "{name} 的选项",
     "installRow": "安装扩展",
@@ -697,6 +696,31 @@
     "checkingUpdates": "正在检查…",
     "checkFailed": "无法检查扩展更新",
     "upToDate": "扩展均为最新版本",
-    "permissionNew": "此版本新增"
+    "permissionNew": "此版本新增",
+    "otherSources": "其他来源",
+    "removedFromCatalog": "已从 lich 目录中下架：{reason}",
+    "catalog": {
+      "heading": "目录 · {n}",
+      "title": "目录",
+      "all": "全部",
+      "search": "搜索目录",
+      "sortRecent": "最近更新",
+      "sortStars": "星标数",
+      "sortName": "名称",
+      "official": "官方",
+      "notFor": "不支持 {os}",
+      "installed": "已安装",
+      "installedVersion": "已安装 · {version}",
+      "version": "版本",
+      "released": "发布日期",
+      "license": "许可证",
+      "permissions": "权限",
+      "platforms": "平台",
+      "runsAsYou": "它将以你的身份在你的电脑上运行，可以访问你的文件和账户。",
+      "readme": "GitHub 上的 README",
+      "noBuild": "没有适用于 {platform} 的构建。",
+      "readFailed": "无法读取 lich 目录。仍可通过 GitHub URL 安装。",
+      "noMatch": "没有匹配的扩展。"
+    }
   }
 }

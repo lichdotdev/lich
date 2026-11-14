@@ -26,11 +26,14 @@ const (
 )
 
 // The install rows, the places an install starts from and its error lands
-// under. errAtFolder is the title line's Open folder.
+// under. errAtFolder is the title line's Open folder; installFromCatalog is
+// the catalog's detail, its error under the catalog's heading once the detail
+// is closed.
 const (
-	installFromGit = "git"
-	installFromDir = "dir"
-	errAtFolder    = "folder"
+	installFromGit     = "git"
+	installFromDir     = "dir"
+	installFromCatalog = "catalog"
+	errAtFolder        = "folder"
 )
 
 // extensionPlaceholder is the URL field's example, a URL and no prose.
@@ -87,15 +90,17 @@ func (t extensionTasks) errorAt(at string) string {
 type extensionRowState struct {
 	hover          gesture.Hover
 	restart, more  widget.Clickable
-	update         widget.Clickable
+	update, remove widget.Clickable
 	menu, context  ui.MenuState
 	moreTip, state ui.Tooltip
 }
 
 // extensionsSettings is Settings › Extensions: Open folder on the title line,
-// the two install rows, then every extension the store holds.
+// every extension the store holds, the catalog, then the two install rows.
 type extensionsSettings struct {
-	store *extensionStore
+	store   *extensionStore
+	catalog *catalogStore
+	grid    catalogGrid
 
 	url                     widget.Editor
 	choose, install, folder widget.Clickable
@@ -355,6 +360,11 @@ func (p *extensionsSettings) extensionIcon(e backend.Extension) icons.Glyph {
 		}
 		name = e.Surfaces[0].Icon
 	}
+	return p.glyph(name)
+}
+
+// glyph is the Lucide icon name names, the puzzle for none it knows.
+func (p *extensionsSettings) glyph(name string) *icons.Icon {
 	if p.icons == nil {
 		p.icons = map[string]*icons.Icon{}
 	}

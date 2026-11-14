@@ -71,9 +71,10 @@ type DialogStyle struct {
 	// HideClose drops the corner ×, showCloseButton={false}.
 	HideClose bool
 	// Raw, when set, is the whole panel: no padding, header or footer, no ×.
-	// Top then places the panel that share of the window's height from the
-	// top instead of centering it, and Scrim is its backdrop's opacity (0 is
-	// the dialog's own bg-black/10). It is common/PickerDialog's popup.
+	// Top, when set, then places the panel that share of the window's height
+	// from the top instead of centering it, and Scrim is its backdrop's
+	// opacity (0 is the dialog's own bg-black/10). It is common/PickerDialog's
+	// popup.
 	Raw   layout.Widget
 	Top   float32
 	Scrim float64
@@ -182,7 +183,7 @@ func (d DialogStyle) overlay(gtx C, amount float32) {
 	panel := macro.Stop()
 
 	origin := window.Sub(size).Div(2)
-	if d.Raw != nil {
+	if d.Raw != nil && d.Top > 0 {
 		origin.Y = int(d.Top * float32(window.Y))
 	}
 	center := f32.Pt(float32(origin.X+size.X/2), float32(origin.Y+size.Y/2))

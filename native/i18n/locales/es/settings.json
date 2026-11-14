@@ -652,6 +652,8 @@
     "installTitle": "¿Instalar {name} {version}?",
     "installTitleNoVersion": "¿Instalar {name}?",
     "installSource": "De {source}",
+    "installSourcePublisher": "De {source}, publicada por {publisher}",
+    "installListed": "Está en el catálogo de lich, que comprueba cada versión de forma automática. Nadie revisa su código.",
     "installWarning": "Se ejecutará en tu equipo como tú, con acceso a tus archivos y cuentas. Instálala solo si confías en quien la hizo.",
     "permissionsLabel": "También puede",
     "permission": {
@@ -672,9 +674,6 @@
     "remove": "Quitar",
     "removeMenuItem": "Quitar…",
     "restart": "Reiniciar",
-    "emptyTitle": "Aún no hay extensiones",
-    "emptyDescription": "Una extensión añade su propia pantalla a lich. Instala una desde su repositorio de GitHub o desde una carpeta.",
-    "installed": "Instaladas",
     "installedCount": "Instaladas · {n}",
     "rowOptions": "Opciones de {name}",
     "installRow": "Instalar una extensión",
@@ -698,6 +697,31 @@
     "checkingUpdates": "Buscando…",
     "checkFailed": "No se pudieron buscar actualizaciones de las extensiones",
     "upToDate": "Tus extensiones están al día",
-    "permissionNew": "Nuevo en esta versión"
+    "permissionNew": "Nuevo en esta versión",
+    "otherSources": "Otras fuentes",
+    "removedFromCatalog": "Retirada del catálogo de lich: {reason}",
+    "catalog": {
+      "heading": "Catálogo · {n}",
+      "title": "Catálogo",
+      "all": "Todas",
+      "search": "Buscar en el catálogo",
+      "sortRecent": "Actualizadas recientemente",
+      "sortStars": "Estrellas",
+      "sortName": "Nombre",
+      "official": "Oficial",
+      "notFor": "No disponible en {os}",
+      "installed": "Instalada",
+      "installedVersion": "Instalada · {version}",
+      "version": "Versión",
+      "released": "Publicada",
+      "license": "Licencia",
+      "permissions": "Permisos",
+      "platforms": "Plataformas",
+      "runsAsYou": "Se ejecutará en tu equipo como tú, con acceso a tus archivos y cuentas.",
+      "readme": "README en GitHub",
+      "noBuild": "No hay compilación para {platform}.",
+      "readFailed": "No se pudo leer el catálogo de lich. Instalar desde una URL de GitHub sigue funcionando.",
+      "noMatch": "Ninguna extensión coincide."
+    }
   }
 }

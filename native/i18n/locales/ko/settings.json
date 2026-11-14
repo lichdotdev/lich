@@ -646,6 +646,8 @@
     "installTitle": "{name} {version} 확장 프로그램을 설치할까요?",
     "installTitleNoVersion": "{name} 확장 프로그램을 설치할까요?",
     "installSource": "출처: {source}",
+    "installSourcePublisher": "출처: {source}, 게시자: {publisher}",
+    "installListed": "lich 카탈로그에 등록되어 있습니다. 카탈로그는 각 릴리스를 자동으로 검사하지만, 코드를 사람이 검토하지는 않습니다.",
     "installWarning": "이 컴퓨터에서 사용자 권한으로 실행되며, 파일과 계정에 접근할 수 있습니다. 만든 사람을 신뢰할 때만 설치하세요.",
     "permissionsLabel": "추가로 할 수 있는 일",
     "permission": {
@@ -666,9 +668,6 @@
     "remove": "제거",
     "removeMenuItem": "제거…",
     "restart": "다시 시작",
-    "emptyTitle": "아직 확장 프로그램이 없습니다",
-    "emptyDescription": "확장 프로그램은 lich에 자체 화면을 추가합니다. GitHub 저장소나 폴더에서 설치하세요.",
-    "installed": "설치됨",
     "installedCount": "설치됨 · {n}",
     "rowOptions": "{name} 옵션",
     "installRow": "확장 프로그램 설치",
@@ -692,6 +691,31 @@
     "checkingUpdates": "확인 중…",
     "checkFailed": "확장 프로그램 업데이트를 확인하지 못했습니다",
     "upToDate": "확장 프로그램이 모두 최신 버전입니다",
-    "permissionNew": "이 버전에서 추가됨"
+    "permissionNew": "이 버전에서 추가됨",
+    "otherSources": "기타 설치 방법",
+    "removedFromCatalog": "lich 카탈로그에서 삭제됨: {reason}",
+    "catalog": {
+      "heading": "카탈로그 · {n}",
+      "title": "카탈로그",
+      "all": "전체",
+      "search": "카탈로그 검색",
+      "sortRecent": "최근 업데이트순",
+      "sortStars": "스타순",
+      "sortName": "이름순",
+      "official": "공식",
+      "notFor": "{os} 미지원",
+      "installed": "설치됨",
+      "installedVersion": "설치됨 · {version}",
+      "version": "버전",
+      "released": "출시일",
+      "license": "라이선스",
+      "permissions": "권한",
+      "platforms": "플랫폼",
+      "runsAsYou": "이 컴퓨터에서 사용자 권한으로 실행되며, 파일과 계정에 접근할 수 있습니다.",
+      "readme": "GitHub의 README",
+      "noBuild": "{platform}용 빌드가 없습니다.",
+      "readFailed": "lich 카탈로그를 읽지 못했습니다. GitHub URL로 설치하는 방법은 계속 쓸 수 있습니다.",
+      "noMatch": "일치하는 확장 프로그램이 없습니다."
+    }
   }
 }

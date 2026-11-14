@@ -28,18 +28,43 @@ func previewSourceLine(p backend.ExtensionInstallPreview) string {
 	return extensionSourceLine(backend.Extension{Source: p.Source, Release: p.Release})
 }
 
+// previewSource is the confirmation's description: where the staged
+// extension comes from and, from GitHub, who publishes it.
+func previewSource(p backend.ExtensionInstallPreview) string {
+	if p.Publisher == "" {
+		return i18n.T("settings.extensionsSettings.installSource", i18n.Args{"source": previewSourceLine(p)})
+	}
+	return i18n.T("settings.extensionsSettings.installSourcePublisher", i18n.Args{"source": previewSourceLine(p), "publisher": p.Publisher})
+}
+
+// previewWarning is installWarning, with the catalog's word on a listed
+// release under its first paragraph.
+func previewWarning(gtx C, th *ui.Theme, p backend.ExtensionInstallPreview, added []string) D {
+	if !p.Listed {
+		return installWarning(gtx, th, p.Permissions, added)
+	}
+	return installBody(gtx, th, []string{i18n.T("settings.extensionsSettings.installListed")}, p.Permissions, added)
+}
+
 // installWarning is the confirmation's body: that it runs as you, then what
 // else it can do, the permissions in added marked as new.
 func installWarning(gtx C, th *ui.Theme, permissions, added []string) D {
-	warning := th.Text(ui.TextSM, i18n.T("settings.extensionsSettings.installWarning")).Muted().Wrapped()
-	if len(permissions) == 0 {
-		return warning.Layout(gtx)
+	return installBody(gtx, th, nil, permissions, added)
+}
+
+// installBody is the warning, then each note, then the permission list, a
+// paragraph's space apart.
+func installBody(gtx C, th *ui.Theme, notes, permissions, added []string) D {
+	children := []layout.FlexChild{
+		layout.Rigid(th.Text(ui.TextSM, i18n.T("settings.extensionsSettings.installWarning")).Muted().Wrapped().Layout),
 	}
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(warning.Layout),
-		ui.VGap(4),
-		layout.Rigid(func(gtx C) D { return permissionList(gtx, th, permissions, added) }),
-	)
+	for _, note := range notes {
+		children = append(children, ui.VGap(4), layout.Rigid(th.Text(ui.TextSM, note).Muted().Wrapped().Layout))
+	}
+	if len(permissions) > 0 {
+		children = append(children, ui.VGap(4), layout.Rigid(func(gtx C) D { return permissionList(gtx, th, permissions, added) }))
+	}
+	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
 }
 
 // newPermissions is what wanted lists that granted does not.

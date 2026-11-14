@@ -11,7 +11,8 @@
   "action": {
     "cancel": "Cancelar",
     "create": "Crear",
-    "previewMarkdown": "Vista previa de Markdown"
+    "previewMarkdown": "Vista previa de Markdown",
+    "tryAgain": "Reintentar"
   },
   "checkAgainButton": {
     "check": "Comprobar de nuevo",
