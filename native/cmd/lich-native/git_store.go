@@ -71,6 +71,7 @@ type gitStore struct {
 	loading bool
 	detail  gitLoaded[backend.GitCommitDetail]
 	diff    gitLoaded[string]
+	authors gitLoaded[[]string]
 }
 
 // follow points the store at path and filter, starting over when either
@@ -242,6 +243,25 @@ func (s *gitStore) commit(path, hash string) gitLoaded[backend.GitCommitDetail] 
 	return gitFetch(s, &s.detail, path+"\x00"+hash, func(ctx context.Context) (backend.GitCommitDetail, error) {
 		return s.client.GitCommit(ctx, path, hash)
 	})
+}
+
+// authorsOf is who wrote the whole history on screen, read again when a ref
+// moves. The authors of the commits loaded stand in until that answers, and
+// when it fails, as it does on a history too large to read in time.
+func (s *gitStore) authorsOf(view gitLogView) []string {
+	s.mu.Lock()
+	path, ref := s.path, s.filter.ref
+	s.mu.Unlock()
+	if !view.loaded {
+		return gitAuthors(view.commits)
+	}
+	read := gitFetch(s, &s.authors, path+"\x00"+ref+"\x00"+view.refs.Stamp, func(ctx context.Context) ([]string, error) {
+		return s.client.GitAuthors(ctx, path, ref)
+	})
+	if read.err != "" || !(read.loaded || read.prev) {
+		return gitAuthors(view.commits)
+	}
+	return gitTopAuthors(read.val)
 }
 
 func (s *gitStore) fileDiff(path string, k gitDiffKey) gitLoaded[string] {

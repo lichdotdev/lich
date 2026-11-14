@@ -2,11 +2,13 @@ package project
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"maps"
 	"regexp"
 	"slices"
 	"strconv"
@@ -125,6 +127,35 @@ func gitLogArgs(opts api.GitLogOptions, limit int, exact string) []string {
 		args = append(args, "--", opts.File)
 	}
 	return args
+}
+
+// GitAuthors lists who wrote the history, the one with most commits first, by
+// the names GitLog prints and its Author filter matches.
+func (s *Service) GitAuthors(ctx context.Context, opts api.GitAuthorsOptions) ([]string, error) {
+	if _, ok := gitQuiet(opts.Path, "rev-parse", "--verify", "--quiet", "HEAD"); !ok && opts.Ref == "" {
+		return []string{}, nil
+	}
+	args := slices.Concat([]string{"log"}, gitPlainOutput, []string{"--format=%an"})
+	if opts.Ref != "" {
+		args = append(args, "--end-of-options", opts.Ref)
+	} else {
+		args = append(args, allHistory...)
+	}
+	out, err := gitRead(ctx, opts.Path, args...)
+	if err != nil {
+		return nil, err
+	}
+	commits := map[string]int{}
+	for line := range strings.SplitSeq(out, "\n") {
+		if line != "" {
+			commits[displayText([]byte(line))]++
+		}
+	}
+	authors := slices.Collect(maps.Keys(commits))
+	slices.SortFunc(authors, func(a, b string) int {
+		return cmp.Or(commits[b]-commits[a], strings.Compare(a, b))
+	})
+	return authors, nil
 }
 
 func parseGitLog(out string) ([]api.GitCommit, error) {

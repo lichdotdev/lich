@@ -50,6 +50,7 @@ func projectBranches(d *rpc.Handler, s *project.Service) {
 	rpc.Handle(d, api.ProjectBranchRules, s.BranchRules)
 	rpc.Handle(d, api.ProjectListBranches, s.ListBranches)
 	rpc.Handle(d, api.ProjectGitLog, s.GitLog)
+	rpc.Handle(d, api.ProjectGitAuthors, s.GitAuthors)
 	rpc.Handle(d, api.ProjectGitRefs, s.GitRefs)
 	rpc.Handle(d, api.ProjectGitCommit, s.GitCommit)
 	rpc.Handle(d, api.ProjectGitCommitDiff, s.GitCommitDiff)
