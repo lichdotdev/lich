@@ -1528,7 +1528,11 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   window does not close the session. A headless browser no pane shows and no one used for five minutes is
   only asked about, in a toast, and closes only on Close: an unanswered one holds its Chromium until the
   person answers or closes the card, and with the window closed nobody is asked; one a pane shows, or a
-  window, never is. It loads only http, https and about:blank. Page info never
+  window, never is. It loads only http, https and about:blank. An action's page answer waits for the fetch
+  and XHR requests the action began, then for the document to go 100 ms without a change, at most 3 seconds
+  (`internal/browser/settle.go`): a page whose script changes the DOM all the time makes every click and key
+  3 seconds long, and a change a timer makes after the page went quiet is not waited for, so the agent reads
+  it with `wait_for`. Page info never
   includes a form's value, though `browser_eval` reads whatever the agent asks for. Screenshots are files, their
   longest side at most 1280 pixels, so a wide pane's is smaller than the page and x and y are read off it. An
   annotated screenshot draws its index labels into the page itself, so the person's pane shows them for the

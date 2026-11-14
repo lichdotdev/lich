@@ -3,6 +3,7 @@ package browser
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/chromedp/cdproto/network"
 	"github.com/chromedp/cdproto/page"
@@ -106,8 +107,10 @@ type Page interface {
 	// document's and not only the viewport's.
 	HasText(ctx context.Context, text string) (bool, error)
 	// Settle waits until a navigation the last action may have started has
-	// its document, bounded by domSettle.
-	Settle(ctx context.Context) error
+	// its document, bounded by domSettle, and then until the fetches that
+	// began since have landed and the page stopped changing, bounded by
+	// quietMax.
+	Settle(ctx context.Context, since time.Time) error
 	// Click returns where it clicked, in CSS pixels.
 	Click(ctx context.Context, t Target) (x, y float64, err error)
 	Type(ctx context.Context, text string, clear bool, t Target) error

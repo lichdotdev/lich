@@ -57,8 +57,9 @@ var browserTools = []mcpTool{
 		Name: "browser_click",
 		Description: "Click by index from the last page read, by CSS selector (either scrolls into view first), " +
 			"or at x and y in the last browser_screenshot's image. A real mouse event. Answers with the " +
-			"page as browser_info reads it, once a navigation the click started has its document, with " +
-			"the same downloaded:, console error: and dialog open: lines.",
+			"page as browser_info reads it, once a navigation the click started has its document and " +
+			"what it fetched has rendered (up to 3 seconds), with the same downloaded:, console error: " +
+			"and dialog open: lines.",
 		Schema: schema(map[string]any{
 			"index":    property("integer", "Index from the last browser_info."),
 			"selector": property("string", "CSS selector."),
@@ -163,7 +164,7 @@ var browserTools = []mcpTool{
 	},
 	{
 		Name:        "browser_reload",
-		Description: "Reload this session's current page.",
+		Description: "Reload this session's current page, bypassing the cache.",
 		Schema:      schema(map[string]any{}),
 		Run: func(ctx context.Context, c *client, _ mcpArgs) (string, error) {
 			return mcpBrowserID(ctx, c, api.BrowserReload)

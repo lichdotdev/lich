@@ -210,6 +210,9 @@ func rootHandler(dir string) http.Handler {
 			return
 		}
 		defer func() { _ = root.Close() }()
+		// The files are the agent's to edit, and with only a Last-Modified
+		// Chrome reuses one for a tenth of its age without asking.
+		w.Header().Set("Cache-Control", "no-cache")
 		http.FileServerFS(root.FS()).ServeHTTP(w, r)
 	})
 }

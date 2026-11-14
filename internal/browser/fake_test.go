@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/chromedp/cdproto/network"
 	"github.com/chromedp/cdproto/page"
@@ -136,7 +137,7 @@ func (p *fakePage) Navigate(_ context.Context, url string) error {
 	return nil
 }
 
-func (p *fakePage) Settle(context.Context) error {
+func (p *fakePage) Settle(context.Context, time.Time) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	p.settles++

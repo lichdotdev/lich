@@ -306,18 +306,12 @@ var errNavAborted = errors.New("page load error " + abortedText)
 // replace the document: until then the old one reads as complete.
 const navGrace = 150 * time.Millisecond
 
-func (p *chromePage) Settle(ctx context.Context) error {
+func (p *chromePage) Settle(ctx context.Context, since time.Time) error {
 	p.awaitLeave(ctx)
-	return p.run(ctx, settleAfter(func(ctx context.Context) error {
-		t := time.NewTimer(navGrace)
-		defer t.Stop()
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case <-t.C:
-			return nil
-		}
-	}))
+	if err := p.run(ctx, settleAfter(func(ctx context.Context) error { return sleepCtx(ctx, navGrace) })); err != nil {
+		return err
+	}
+	return p.run(ctx, settleQuiet(p.tabs.frontTab(), since))
 }
 
 func (p *chromePage) IndexNext() int {
@@ -461,7 +455,9 @@ func (p *chromePage) Screenshot(ctx context.Context, dest string) (w, h int, err
 
 func (p *chromePage) Reload(ctx context.Context) error {
 	return p.run(ctx, settleAfter(func(ctx context.Context) error {
-		return page.Reload().Do(ctx)
+		// A reload is to see a change, and Chrome takes a script or stylesheet
+		// served with only a Last-Modified from its cache for a tenth of its age.
+		return page.Reload().WithIgnoreCache(true).Do(ctx)
 	}))
 }
 
@@ -506,15 +502,8 @@ func settleAfter(goThere func(context.Context) error) chromedp.Action {
 			if time.Now().After(deadline) {
 				return nil
 			}
-			if err := ctx.Err(); err != nil {
+			if err := sleepCtx(ctx, settlePoll); err != nil {
 				return err
-			}
-			t := time.NewTimer(40 * time.Millisecond)
-			select {
-			case <-ctx.Done():
-				t.Stop()
-				return ctx.Err()
-			case <-t.C:
 			}
 		}
 	})

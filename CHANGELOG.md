@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **An agent's click in a session's browser answers with what the click loaded.** A click, a key, a tab or a dialog answer waits for the requests it started and for the page to stop changing, up to 3 seconds, so the agent no longer reads the page again to see the result.
 - **A theme's Update button shows only when its pack has a new version.** It used to sit on every theme from a repository and look for one when clicked; Check for updates, over the cards, does that now.
 - **The tools for leaving notes on a page moved from the browser's toolbar onto the page.** A bar over its bottom holds Select, which was the crosshair, and Draw; its arrow folds it into a tab on the page's edge. Ctrl+Shift+E (Cmd+Shift+E on macOS) still turns Select on and off.
 - **Small labels across the window share one size.** The command palette's field reads "Search, or type > for actions", a second-level heading in Markdown no longer reads as a first-level one, and the Fixed dot in What's new is gray like Removed's.
@@ -29,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Reload in a session's browser shows the stylesheet or script you just changed.** It took them from Chrome's cache, and the pages lich serves from your checkout and the artifact folder are now checked again on every load.
 - **A Windows user who moved Downloads now finds a session's browser downloads there.** They used to land in `%USERPROFILE%\Downloads` instead.
 - **A prompt you schedule is no longer dropped for reading like lich's own continuation.** After a usage limit, lich parks a prompt to pick the turn back up at the reset, and a prompt of yours with the same words used to be deleted when the next turn started; lich now knows which prompts are its own.
 - **Changing the default model in one account no longer changes it in your other accounts.** Each profile keeps its own model and effort, while the rest of its settings still come from Personal. opencode and Kiro CLI still share one default model across profiles.

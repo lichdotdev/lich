@@ -43,6 +43,7 @@ func (s *Service) dialogSink(sess *session) func(*api.BrowserDialog) {
 // as it stands after.
 func (s *Service) AnswerDialog(_ context.Context, opts api.BrowserDialogOptions) (api.BrowserPageInfo, error) {
 	defer s.agentTurn(opts.ID)()
+	since := time.Now()
 	sess, d, err := s.openDialog(opts.ID)
 	if err != nil {
 		return api.BrowserPageInfo{}, err
@@ -55,7 +56,7 @@ func (s *Service) AnswerDialog(_ context.Context, opts api.BrowserDialogOptions)
 	if err := s.answerDialog(sess, d, opts); err != nil {
 		return api.BrowserPageInfo{}, err
 	}
-	return s.pageAfter(opts.ID)
+	return s.pageAfter(opts.ID, since)
 }
 
 // Answer is the person answering the page's open dialog in the pane. The
