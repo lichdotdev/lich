@@ -682,6 +682,10 @@ func TestOperationsOnClosedStoreReturnErrors(t *testing.T) {
 	assertErr("SetSetting", err)
 	assertErr("SetWorktreePort", svc.SetWorktreePort("/wt/foo", 5173))
 	assertErr("SaveCostLedger", svc.SaveCostLedger("s1", "t1", 10, "m1", 0.5))
+	assertErr("SaveCostResponses", svc.SaveCostResponses("s1", "t1", []string{"m1"}))
+	if _, err := svc.CountedElsewhere("s1", "t1", "m1"); err == nil {
+		t.Error("CountedElsewhere on closed store = nil error, want error")
+	}
 	if _, _, _, err := svc.CostLedger("s1", "t1"); err == nil {
 		t.Error("CostLedger on closed store = nil error, want error")
 	}
@@ -1049,7 +1053,7 @@ func TestOpenDropsTheTerminalThemeSetting(t *testing.T) {
 	_, _ = before.SetSetting(t.Context(), api.SetSettingOptions{Key: "appearance.terminalTheme", ProjectID: "p1", Value: "emerald"})
 	_, _ = before.SetSetting(t.Context(), api.SetSettingOptions{Key: "appearance.theme", Value: "rose-pine"})
 	_ = before.Close()
-	seedDB(t, path, `ALTER TABLE sessions DROP COLUMN files_id; ALTER TABLE sessions DROP COLUMN scheduled_by; ALTER TABLE sessions DROP COLUMN watch_on; ALTER TABLE sessions DROP COLUMN watch_prompt; ALTER TABLE sessions DROP COLUMN watch_by; ALTER TABLE sessions DROP COLUMN watch_runs; ALTER TABLE sessions DROP COLUMN watch_pr; ALTER TABLE sessions DROP COLUMN watch_seen; ALTER TABLE sessions DROP COLUMN effort; ALTER TABLE sessions DROP COLUMN ultracode; ALTER TABLE sessions DROP COLUMN subagent; ALTER TABLE session_costs DROP COLUMN reported; ALTER TABLE sessions DROP COLUMN color; ALTER TABLE sessions DROP COLUMN profile; ALTER TABLE sessions DROP COLUMN forked; DROP TABLE provider_session_tombstones; DROP TRIGGER sessions_tombstone_ad; DROP TRIGGER sessions_tombstone_ai; DROP TRIGGER sessions_tombstone_au; DROP TABLE project_services; DROP TABLE thread_fixes; PRAGMA user_version = 0`)
+	seedDB(t, path, `ALTER TABLE sessions DROP COLUMN files_id; ALTER TABLE sessions DROP COLUMN scheduled_by; ALTER TABLE sessions DROP COLUMN watch_on; ALTER TABLE sessions DROP COLUMN watch_prompt; ALTER TABLE sessions DROP COLUMN watch_by; ALTER TABLE sessions DROP COLUMN watch_runs; ALTER TABLE sessions DROP COLUMN watch_pr; ALTER TABLE sessions DROP COLUMN watch_seen; ALTER TABLE sessions DROP COLUMN effort; ALTER TABLE sessions DROP COLUMN ultracode; ALTER TABLE sessions DROP COLUMN subagent; ALTER TABLE session_costs DROP COLUMN reported; ALTER TABLE sessions DROP COLUMN color; ALTER TABLE sessions DROP COLUMN profile; ALTER TABLE sessions DROP COLUMN forked; DROP TABLE provider_session_tombstones; DROP TRIGGER sessions_tombstone_ad; DROP TRIGGER sessions_tombstone_ai; DROP TRIGGER sessions_tombstone_au; DROP TABLE project_services; DROP TABLE thread_fixes; DROP TABLE session_cost_responses; PRAGMA user_version = 0`)
 
 	after, err := open(path)
 	if err != nil {

@@ -216,11 +216,15 @@ work when nobody knows it and that the call site never shows. The mechanism and 
 
 ## Transcripts, cost and plan usage
 
-- **The cost readout bills per `(session, transcript)`** (`internal/pricing`, `internal/terminal/usage_cost.go`): a
-  conversation forked inside the PTY bills its copied history twice — lich's own resume continues the same
-  transcript and is unaffected — and each sub-agent's own transcript is counted in, so one unreadable or
-  unpriceable sub-agent withholds the whole session's number. A Claude Code session whose mod reports a cost
-  is not scanned at all: the report replaces the transcript, sub-agents included. A withheld number is marked `$—` on the footer
+- **The cost readout bills per `(session, transcript)`** (`internal/pricing`, `internal/terminal/usage_cost.go`):
+  each sub-agent's own transcript is counted in, so one unreadable or unpriceable sub-agent withholds the whole
+  session's number. A conversation branched inside the PTY bills each response once by the provider's id for it
+  (`billedResponses`), so the copy is billed again wherever the figure carries no such id: a Codex rollout,
+  priced from the running total a fork carries forward (measured on 0.153.4) rather than its per-response
+  records; an oh-my-pi turn written without a `responseId` (40 of 1,585 measured); and a Claude Code session
+  whose mod reports a cost, which is not scanned at all: the report replaces the transcript, sub-agents included. That once is per session, because a fork lich spawns is
+  netted by its fork offset instead (`SaveForkCostOffset`): skipping a response billed in another session would
+  take that history off twice. A withheld number is marked `$—` on the footer
   only when the reason is standing (`costMiss.spoken` in `internal/terminal/usage_cost.go`): a transcript that
   merely could not be read this turn says nothing and keeps the last figure, so a reader cannot tell that
   absence from a session still on its first turn.

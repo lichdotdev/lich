@@ -54,6 +54,39 @@ type costLedger struct {
 	cost        float64
 }
 
+// billedResponses is how one transcript's scan bills each response once per
+// session, by the id the provider gives it. A conversation branched inside the
+// session's terminal is a transcript of its own that opens with a copy of its
+// parent's responses, ids and token counts included (measured on Claude Code
+// 2.1.302; oh-my-pi 18.8.9's /fork writes its turns back the same way), and the
+// session runs on in it. A response another of the session's transcripts billed
+// is skipped here.
+//
+// It is per session on purpose: a fork lich spawns is a session of its own, and
+// its fork offset already nets the copied history (SaveForkCostOffset).
+type billedResponses struct {
+	// elsewhere reports whether another transcript of the session billed a
+	// response already (store.CountedElsewhere).
+	elsewhere func(responseID string) (bool, error)
+	// ids are the responses this scan billed, for the caller to record.
+	ids []string
+}
+
+// copied reports whether a response is one another transcript has billed. One
+// with no id cannot be recognised, so it is never a copy.
+func (b *billedResponses) copied(responseID string) (bool, error) {
+	if responseID == "" {
+		return false, nil
+	}
+	return b.elsewhere(responseID)
+}
+
+func (b *billedResponses) bill(responseID string) {
+	if responseID != "" {
+		b.ids = append(b.ids, responseID)
+	}
+}
+
 // costLine is the one transcript line the cost scan cares about: an assistant
 // message with the token counters a provider bills. Unlike the context read,
 // nothing here is filtered out for belonging to a sub-agent: its tokens are
@@ -78,7 +111,9 @@ type costLine struct {
 // lookup that missed schedules the price refresh that may unblock it, so the
 // next turn resumes from the same line — this heals itself or stays absent, and
 // never guesses.
-func scanTranscriptCost(path string, from costLedger, rates rateSource) (costLedger, costMiss, bool) {
+func scanTranscriptCost(
+	path string, from costLedger, rates rateSource, billed *billedResponses,
+) (costLedger, costMiss, bool) {
 	f, err := os.Open(path)
 	if err != nil {
 		return from, costMissUnread, false
@@ -98,7 +133,7 @@ func scanTranscriptCost(path string, from costLedger, rates rateSource) (costLed
 	if _, err := f.Seek(from.offset, io.SeekStart); err != nil {
 		return from, costMissUnread, false
 	}
-	ledger, miss := accumulate(bufio.NewReader(f), from, rates)
+	ledger, miss := accumulate(bufio.NewReader(f), from, rates, billed)
 	return ledger, miss, true
 }
 
@@ -110,7 +145,9 @@ func scanTranscriptCost(path string, from costLedger, rates rateSource) (costLed
 // somewhere in the middle, and a total that stops in the middle of a transcript
 // is a money number that is simply too small — the caller shows nothing and the
 // next turn resumes from the same offset.
-func accumulate(r *bufio.Reader, ledger costLedger, rates rateSource) (costLedger, costMiss) {
+func accumulate(
+	r *bufio.Reader, ledger costLedger, rates rateSource, billed *billedResponses,
+) (costLedger, costMiss) {
 	for {
 		line, err := r.ReadBytes('\n')
 		if err != nil {
@@ -130,6 +167,17 @@ func accumulate(r *bufio.Reader, ledger costLedger, rates rateSource) (costLedge
 			ledger.offset += int64(len(line))
 			continue
 		}
+		copied, err := billed.copied(entry.messageID)
+		if err != nil {
+			return ledger, costMissUnread
+		}
+		if copied {
+			// The id still moves, so the rest of the copied message's lines read
+			// as repeats.
+			ledger.lastMessage = entry.messageID
+			ledger.offset += int64(len(line))
+			continue
+		}
 		rate, priced := rates.Rate(entry.model)
 		if !priced {
 			return ledger, costMissUnpriced
@@ -143,6 +191,7 @@ func accumulate(r *bufio.Reader, ledger costLedger, rates rateSource) (costLedge
 		ledger.cost += cost
 		ledger.lastMessage = entry.messageID
 		ledger.offset += int64(len(line))
+		billed.bill(entry.messageID)
 	}
 }
 
