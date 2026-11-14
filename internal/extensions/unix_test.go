@@ -3,9 +3,11 @@
 package extensions
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"testing"
 
 	"github.com/lichdotdev/lich/api"
@@ -91,4 +93,14 @@ func TestAFileThatCannotStartFailsWithoutRetrying(t *testing.T) {
 	if got := r.statusNames(); len(got) != 1 {
 		t.Errorf("statuses = %v, want only failed", got)
 	}
+}
+
+// processGone is false for a zombie too, which init reaps soon after.
+func processGone(t *testing.T, pid int) bool {
+	t.Helper()
+	err := syscall.Kill(pid, 0)
+	if err != nil && !errors.Is(err, syscall.ESRCH) {
+		t.Fatal(err)
+	}
+	return err != nil
 }
