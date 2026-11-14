@@ -122,7 +122,7 @@ project.GitCheckout(GitCheckoutOptions) None
 project.GitCommit(GitCommitOptions) GitCommitDetail
 project.GitCommitDiff(GitCommitDiffOptions) string
 project.GitCreateBranch(GitCreateBranchOptions) None
-project.GitDeleteBranch(GitBranchOptions) string
+project.GitDeleteBranch(GitBranchOptions) GitDeletedBranch
 project.GitHubAccountOf(PathOptions) GitHubAccountState
 project.GitHubAccounts(None) []string
 project.GitLog(GitLogOptions) GitLogPage
@@ -864,6 +864,12 @@ GitCreateBranchOptions {
 	path string
 	name string
 	from string
+	upstream GitUpstream
+}
+
+GitDeletedBranch {
+	hash string
+	upstream GitUpstream
 }
 
 GitHubAccountState {
@@ -2209,6 +2215,12 @@ GitCommitFile {
 	added int
 	deleted int
 	binary,omitempty bool
+}
+
+GitUpstream {
+	remote,omitempty string
+	merge,omitempty string
+	pushRemote,omitempty string
 }
 
 GitCommit {

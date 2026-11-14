@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Undo on a deleted branch brings back the branch it tracked.** The toast's Undo used to make the branch again without its upstream, so pull and push stopped knowing where to go.
 - **A Windows user who moved Downloads now finds a session's browser downloads there.** They used to land in `%USERPROFILE%\Downloads` instead.
 - **A prompt you schedule is no longer dropped for reading like lich's own continuation.** After a usage limit, lich parks a prompt to pick the turn back up at the reset, and a prompt of yours with the same words used to be deleted when the next turn started; lich now knows which prompts are its own.
 - **Changing the default model in one account no longer changes it in your other accounts.** Each profile keeps its own model and effort, while the rest of its settings still come from Personal. opencode and Kiro CLI still share one default model across profiles.

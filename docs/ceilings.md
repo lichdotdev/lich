@@ -586,7 +586,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   the ref poll (`gitLogPoll`, only while the panel is open) triggers. The Author menu lists only authors of the
   commits already loaded, and the graph clips past `gitMaxLanes`.
 - **A branch delete's Undo is a new branch at the old commit** (`internal/project/gitbranch.go`): the toast's Undo
-  makes the branch again where it pointed, without its upstream setting or its reflog, and only for as long as the
+  makes the branch again where it pointed, without its reflog, and only for as long as the
   toast is up. The dialog asks first only when commits would be on no branch, remote branch or tag
   (`GitBranchOnly`); a branch whose commits are on a remote is deleted at once, even when that remote branch is the
   only copy left. A checkout in a checkout with a session confirms, then switches under the agent with whatever it
