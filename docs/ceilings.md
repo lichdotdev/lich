@@ -1075,11 +1075,10 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   state at the ring head (DEC private modes with their XTSAVE values and DECSTR's reset, kitty keyboard stacks,
   modifyOtherKeys, each screen's cursor style with its blink, OSC 4/10/11/12 colors and the same colors through OSC
   21), then the sequence the head cut in two. What it does not track is lost the old way: the screen's contents
-  under an alternate screen still active (the primary screen starts blank), the cursor position, the title, insert
-  and newline mode, OSC 5 and 13 to 19 colors, scroll margins (libghostty resets them on a resize, which the bytes
-  do not show) and charsets (it restores them with the saved cursor), and a sequence the head cuts that cannot be
-  replayed from its middle, which is skipped: an OSC longer than 8 KB (an OSC 52 copy) or a DCS or APC string (a
-  kitty image chunk). A service's output (`lich service`, `read_service_output`, the console of a stopped one) is
+  under an alternate screen still active (the primary screen starts blank), the cursor position, the title, scroll
+  margins (libghostty resets them on a resize, which the bytes do not show) and charsets (it restores them with the
+  saved cursor), and a sequence the head cuts that cannot be replayed from its middle, which is skipped: an OSC
+  longer than 8 KB (an OSC 52 copy) or a DCS or APC string (a kitty image chunk). A service's output (`lich service`, `read_service_output`, the console of a stopped one) is
   the tail alone, with no preamble: it is read as text.
 - **Images are Kitty graphics sent in the stream, and only placed ones** (`native/gioterm/kitty.go`): a terminal
   takes images sent inline (`t=d`), PNG or raw pixels, up to `imageStorageLimit` (64 MB decoded per terminal;
