@@ -199,6 +199,65 @@ func TestCreateSeedsFromPersonalsMovedPlugins(t *testing.T) {
 	}
 }
 
+func TestEnsureSharedRelinksMarketplacesPersonalMovedAway(t *testing.T) {
+	machine(t)
+	p, err := Create("Work")
+	if err != nil {
+		t.Fatal(err)
+	}
+	moved := t.TempDir()
+	t.Setenv("CLAUDE_CODE_PLUGIN_CACHE_DIR", moved)
+	if err := EnsureShared(p.Slug); err != nil {
+		t.Fatal(err)
+	}
+	mustWrite(t, filepath.Join(moved, "marketplaces", "probe"), "moved")
+	link := filepath.Join(p.Dir, "plugins", "marketplaces")
+	if got, err := os.ReadFile(filepath.Join(link, "probe")); err != nil || string(got) != "moved" {
+		t.Errorf("read through the marketplaces link: %q, %v; want the moved marketplaces", got, err)
+	}
+}
+
+func TestEnsureSharedLeavesMarketplacesTheUserPlaced(t *testing.T) {
+	machine(t)
+	own, err := Create("Own")
+	if err != nil {
+		t.Fatal(err)
+	}
+	elsewhere, err := Create("Elsewhere")
+	if err != nil {
+		t.Fatal(err)
+	}
+	ownClones := filepath.Join(own.Dir, "plugins", "marketplaces")
+	if err := os.Remove(ownClones); err != nil {
+		t.Fatal(err)
+	}
+	mustWrite(t, filepath.Join(ownClones, "mine"), "own")
+	otherClones := filepath.Join(elsewhere.Dir, "plugins", "marketplaces")
+	if err := os.Remove(otherClones); err != nil {
+		t.Fatal(err)
+	}
+	target := t.TempDir()
+	mustWrite(t, filepath.Join(target, "mine"), "elsewhere")
+	if err := profilestore.LinkDir(target, otherClones); err != nil {
+		t.Fatal(err)
+	}
+
+	t.Setenv("CLAUDE_CODE_PLUGIN_CACHE_DIR", t.TempDir())
+	for _, p := range []Profile{own, elsewhere} {
+		if err := EnsureShared(p.Slug); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if profilestore.IsLink(ownClones) {
+		t.Error("a directory of the profile's own was replaced by a link")
+	}
+	for path, want := range map[string]string{ownClones: "own", otherClones: "elsewhere"} {
+		if got, err := os.ReadFile(filepath.Join(path, "mine")); err != nil || string(got) != want {
+			t.Errorf("%s: %q, %v; want %q", path, got, err, want)
+		}
+	}
+}
+
 func TestSlugsAreFreeAndNeverPersonal(t *testing.T) {
 	machine(t)
 	cases := []struct{ name, want string }{
