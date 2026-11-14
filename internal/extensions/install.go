@@ -130,7 +130,7 @@ func (s *Service) fillStage(stage, id string, src source, fill func(stage string
 	if err := fill(stage); err != nil {
 		return extension.Manifest{}, err
 	}
-	m, err := s.checkStage(stage, id)
+	m, err := checkStage(stage, id, s.lichVersion)
 	if err != nil {
 		return extension.Manifest{}, err
 	}
@@ -258,8 +258,8 @@ func parseChecksum(data, name string) string {
 // checkStage runs discovery's validation on the unpacked directory and makes
 // the executable runnable: tar modes are the author's, and lich does not trust
 // them to be right.
-func (s *Service) checkStage(stage, id string) (extension.Manifest, error) {
-	m, exe, err := readManifest(stage, id, s.lichVersion)
+func checkStage(stage, id, lichVersion string) (extension.Manifest, error) {
+	m, exe, err := readManifest(stage, id, lichVersion)
 	if err != nil && m.ID != "" && m.ID != id {
 		return m, fmt.Errorf("the manifest's id %q differs from the release asset's %q: ask the extension's author to make them match", m.ID, id)
 	}
