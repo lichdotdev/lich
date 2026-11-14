@@ -4,6 +4,7 @@
 // data-locale, falling back to English.
 (function () {
   var CATALOG = "https://raw.githubusercontent.com/lichdotdev/extensions/main/catalog.json";
+  var REPORT = "https://github.com/lichdotdev/extensions/issues/new?template=report.yml&extension=";
   // A glyph is a Lucide name (docs/extensions.md, the manifest's surface icon); lobe: and devicon: names fall back to
   // the extension's initial.
   var LUCIDE = "https://cdn.jsdelivr.net/npm/lucide-static@0.460.0/icons/";
@@ -124,7 +125,8 @@
       '<h3 class="rel-group">' + escape(t.platforms) + '</h3><div class="caps xd-plats">' + plats + "</div>" +
       '<div class="xd-install"><button class="btn primary small" type="button" data-repo="' + escape(e.repo) + '">' + escape(t.copy) + "</button>" +
       "<span>" + escape(t.then) + "</span>" +
-      '<a class="rel-more" href="' + escape(e.repo) + '#readme">' + escape(t.readme) + " →</a></div>";
+      '<a class="rel-more" href="' + escape(e.repo) + '#readme">' + escape(t.readme) + " →</a>" +
+      '<a class="rel-more" href="' + REPORT + encodeURIComponent(e.repo.replace("https://github.com/", "")) + '">' + escape(t.report) + " →</a></div>";
   }
   body.addEventListener("click", function (ev) {
     var b = ev.target.closest("[data-repo]");
