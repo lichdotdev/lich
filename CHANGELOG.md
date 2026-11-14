@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Ctrl+click on a `path:line` opens a file git ignores.** A path in a session's terminal that sat in `.gitignore`, a build output or a log, answered "not found" though it was there; it opens in the Code tab now. A path outside the session's checkout is still refused.
 - **A prompt you schedule is no longer dropped for reading like lich's own continuation.** After a usage limit, lich parks a prompt to pick the turn back up at the reset, and a prompt of yours with the same words used to be deleted when the next turn started; lich now knows which prompts are its own.
 - **Changing the default model in one account no longer changes it in your other accounts.** Each profile keeps its own model and effort, while the rest of its settings still come from Personal. opencode and Kiro CLI still share one default model across profiles.
 - **A row under the pointer in Pulls and in an extension's panel lights across its whole width.** It was a rounded box set in from the sides, with its corners showing against the lines between rows.

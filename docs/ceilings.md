@@ -1690,8 +1690,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
 - **Showing code is one file, read-only, in the session's own checkout.** `show_code` and a Ctrl+click on a
   `path:line` open the dock's Code tab, and a new one replaces the file on screen, with no history to go back
   through, and an agent's comment under the lines goes with it. A path outside the session's checkout (a dependency's sources, the JDK, another worktree) is refused.
-  The tool validates the file against the disk, but a click searches the checkout's listing, so a file git
-  ignores reads as not found even when it exists. The terminal underlines by the text alone, because the
+  The terminal underlines by the text alone, because the
   hover runs every frame and cannot touch the disk: a `path:line` naming nothing still underlines, and the
   click answers with a toast, as it does for a host written like `example.com:443`. Only a soft-wrapped path is
   joined. Claude Code and Kiro CLI, measured at 44 columns, break a path wider than the terminal with a real
