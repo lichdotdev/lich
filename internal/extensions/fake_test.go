@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -25,6 +27,7 @@ const (
 	runsFile   = "runs"
 	scriptFile = "script"
 	eofFile    = "eof"
+	childFile  = "child"
 
 	modeEcho       = "echo"
 	modeCrash      = "crash"
@@ -35,11 +38,19 @@ const (
 	modeDataDir    = "data-dir"
 	modeLanguage   = "language"
 	modeAPI        = "api"
+	modeParent     = "parent"
+
+	// fakeEnv set to fakeChild makes the test binary a process that only waits.
+	fakeChild = "child"
 
 	readyTitle = "ready"
 )
 
 func TestMain(m *testing.M) {
+	if os.Getenv(fakeEnv) == fakeChild {
+		time.Sleep(time.Hour)
+		return
+	}
 	if os.Getenv(fakeEnv) != "" {
 		fakeExtension()
 		return
@@ -58,6 +69,10 @@ func fakeExtension() {
 			os.Exit(3)
 		}
 	case modeStubborn:
+		fmt.Println(toastLine(readyTitle))
+		time.Sleep(time.Hour)
+	case modeParent:
+		startChild()
 		fmt.Println(toastLine(readyTitle))
 		time.Sleep(time.Hour)
 	case modeScript:
@@ -95,6 +110,23 @@ func echo() {
 		fmt.Println(toastLine("got " + msg.Kind))
 	}
 	_ = os.WriteFile(eofFile, nil, 0o644)
+}
+
+// startChild starts a process that outlives this one unless something ends it,
+// and leaves its pid in childFile.
+func startChild() {
+	self, err := os.Executable()
+	if err != nil {
+		os.Exit(6)
+	}
+	child := exec.Command(self)
+	child.Env = append(os.Environ(), fakeEnv+"="+fakeChild)
+	if err := child.Start(); err != nil {
+		os.Exit(6)
+	}
+	if err := os.WriteFile(childFile, []byte(strconv.Itoa(child.Process.Pid)), 0o644); err != nil {
+		os.Exit(6)
+	}
 }
 
 func toastLine(title string) string {

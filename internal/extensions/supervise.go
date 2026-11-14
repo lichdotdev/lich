@@ -91,15 +91,18 @@ func (s *Service) detachQueue(x *installed) {
 
 // process is one run of an extension.
 type process struct {
+	id         string
 	cmd        *exec.Cmd
+	tree       tree
 	stopWriter func()
 }
 
 // start launches x. Stdout and stderr are writers rather than pipes read here
 // so cmd.Wait, bounded by WaitDelay, deals with a descendant that keeps them
 // open after the process exits. cmd.Cancel closes stdin and WaitDelay is the
-// kill after it, which is the whole stop sequence. A failure to start is
-// returned, not retried: a missing or non-executable file stays that way.
+// kill after it; what the extension started ends once it is gone. A failure to
+// start is returned, not retried: a missing or non-executable file stays that
+// way.
 func (s *Service) start(ctx context.Context, x *installed) (*process, error) {
 	data := filepath.Join(s.dataDir, x.id)
 	if err := os.MkdirAll(data, 0o700); err != nil {
@@ -109,6 +112,7 @@ func (s *Service) start(ctx context.Context, x *installed) (*process, error) {
 	cmd.Dir = x.root
 	cmd.Env = append(slices.Clip(s.env), extension.DataDirEnv+"="+data, extension.LanguageEnv+"="+s.startLanguage())
 	winexec.Hide(cmd)
+	ownGroup(cmd)
 	cmd.Stdout = newFramer(maxLineBytes,
 		func(line []byte) { s.handleLine(x, line) },
 		func() { x.refused.note(x.id, msgRefused, fmt.Sprintf("line over %d bytes", maxLineBytes)) })
@@ -132,16 +136,23 @@ func (s *Service) start(ctx context.Context, x *installed) (*process, error) {
 	if err := cmd.Start(); err != nil {
 		return nil, fmt.Errorf("could not start: %w", err)
 	}
+	tree, err := adopt(cmd.Process)
+	if err != nil {
+		slog.Warn("extensions: what it starts can outlive it", "extension", x.id, "err", err)
+	}
 	go writeLoop(stdin, queue, quit, x.id)
 	s.mu.Lock()
 	x.queue = queue
 	s.mu.Unlock()
-	return &process{cmd: cmd, stopWriter: stopWriter}, nil
+	return &process{id: x.id, cmd: cmd, tree: tree, stopWriter: stopWriter}, nil
 }
 
 func (p *process) wait() error {
 	err := p.cmd.Wait()
 	p.stopWriter()
+	if endErr := p.tree.end(); endErr != nil {
+		slog.Warn("extensions: end what it started", "extension", p.id, "err", endErr)
+	}
 	return err
 }
 

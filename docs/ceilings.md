@@ -1286,10 +1286,13 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   It restarts after 1 second, doubling, capped at 30, and lich gives up after 5 crashes in a row, each within 30
   seconds of its start: the extension shows failed until lich launches again. A file that cannot be executed at
   all fails at once, with no retries.
-- **Stopping reaches the extension's own process only** (`internal/extensions/supervise.go`): stdin closes, 3
-  seconds later the process is killed, and whatever it started is left running. If lich itself is killed, stdin
-  ending is the only signal an extension gets. During an in-place restart the outgoing lich stops its extensions
-  while its successor starts them, so two copies can overlap for up to that grace.
+- **Stopping gives an extension 3 seconds after stdin closes** (`internal/extensions/supervise.go`, `tree_*.go`):
+  then its process group (Unix) or job object (Windows) is killed, and what it started goes too as soon as the
+  extension itself is gone. A process that moves to a group of its own, or on Windows one started on the
+  extension's behalf by another process or in the instant before lich puts the extension in its job, is not
+  reached. If lich itself is killed on Linux or macOS, stdin ending is the only signal an extension gets and
+  nothing it started is killed. During an in-place restart the outgoing lich stops its extensions while its
+  successor starts them, so two copies can overlap for up to that grace.
 
 ## Window, sidebar and settings
 
