@@ -43,7 +43,7 @@ func (s *Service) opencodeInstall() error {
 	if err != nil {
 		return err
 	}
-	if err := s.installSkills(version, filepath.Join(filepath.Dir(dir), "skills")); err != nil {
+	if err := s.installOpencodeSkills(version, filepath.Join(filepath.Dir(dir), "skills")); err != nil {
 		return err
 	}
 	if err := os.MkdirAll(dir, 0o755); err != nil {

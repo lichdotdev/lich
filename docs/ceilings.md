@@ -732,14 +732,17 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   report every event twice. A copy there without the marker is someone else's and stays, with the same double
   report. 1.x runs the module through its default export's `server()` (measured on 1.18.23 and 1.19.4) and 2.x
   through its `setup()`; an opencode older than 1.18.23 is not measured with that export.
-- **The `extension` skill stays out of Kiro CLI, and on Antigravity the agent sees it every turn**
+- **The `extension` skill stays out of Kiro CLI, and on Antigravity and Cursor CLI the agent sees it every turn**
   (`internal/agentplugin/skill.go`): the plugin's `extension` skill is manual only, kept out of the agent's context
-  by its frontmatter on Claude Code, Cursor CLI, opencode, oh-my-pi and Crush and by `agents/openai.yaml` on Codex,
-  because few people write an extension and everyone else would pay for its description on every turn. Kiro CLI has
-  no such setting, so lich's Kiro install copies only the theme skill, and a Kiro user writes an extension from
-  `docs/extensions.md`. Antigravity has none either but reads the plugin's `skills/` itself, so there the skill is
-  listed to the agent like any other and the agent may load it on its own. lich copies it into opencode, oh-my-pi
-  and Crush from plugin 0.21.1 on, the first release that ships it (`ExtensionSkillRelease`).
+  by its frontmatter on Claude Code, oh-my-pi, Crush and opencode 2 and by `agents/openai.yaml` on Codex, because
+  few people write an extension and everyone else would pay for its description on every turn. opencode 1 ignores
+  that frontmatter and lists every skill that has a description, so lich's opencode copy goes without one
+  (`installOpencodeSkills`); opencode 2 hides it either way. Kiro CLI has no such setting, so lich's Kiro install
+  copies only the theme skill, and a Kiro user writes an extension from `docs/extensions.md`. Antigravity and
+  Cursor CLI have none either and read the skill from the plugin themselves (Cursor through Claude Code's
+  install, listing every skill a plugin ships), so there it is listed to the agent like any other and the agent
+  may load it on its own. lich copies it into opencode, oh-my-pi and Crush from plugin 0.21.1 on, the first
+  release that ships it (`ExtensionSkillRelease`).
 - **A `lich` upgraded under a running lich is refused by a call the backend does not have**
   (`internal/rpc/rpc.go`): a package manager replaces the binary without restarting the backend it is serving,
   so the new CLI, and the `lich mcp` of every session opened after the upgrade, speaks to an older backend until
