@@ -1160,8 +1160,8 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   started when the backend boots. There is no prompt and no signature, the manifest's permissions bound only what
   it asks lich for (below), and the sandbox of `internal/sandbox` does not apply, so an extension can read and do
   whatever the user can. The
-  directory is read once per launch: an extension added or edited by hand takes a restart of lich, while one
-  installed or removed through `extensions.CommitInstall` and `extensions.Remove` is started or stopped at once.
+  directory is read once per launch: an extension added by hand takes a restart of lich, while one installed or
+  removed through `extensions.CommitInstall` and `extensions.Remove` is started or stopped at once.
 - **Installing runs code from the internet as the user, vouched for only by its own release**
   (`internal/extensions/install.go`): the archive is checked against the `checksums.txt` the same release carries,
   which proves the download arrived whole, not who built it or what it does. Whoever controls the repository
@@ -1285,8 +1285,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   `openExternal`, clipboard) are not limited: a loop of those still reaches the window line by line, and a process
   that exits drops the render it had pending.
 - **Restart is the way back from failed** (`Service.Restart`, `extensions.Restart`): it stops a running extension
-  as lich stops it on exit, starts it again and starts its crash count over. It does not re-read the directory, so
-  an edited manifest or a newly invalid one takes a restart of lich, and an invalid extension is refused.
+  as lich stops it on exit, starts it again and starts its crash count over.
 - **Any exit lich did not ask for counts as a crash** (`internal/extensions/supervise.go`), a clean exit 0 included.
   It restarts after 1 second, doubling, capped at 30, and lich gives up after 5 crashes in a row, each within 30
   seconds of its start: the extension shows failed until lich launches again. A file that cannot be executed at
