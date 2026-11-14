@@ -821,14 +821,12 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   so `claude --continue` there points at a conversation it no longer holds. A session born in a profile deleted
   since is refused at spawn with "claude profile no longer exists", including its resume: the conversation was
   deleted with the profile.
-- **A Claude Code profile's plugin versions live in a store lich never empties**
-  (`internal/claudeprofile/plugincache.go`; the layout is `docs/providers/claude.md`, Profiles): each version a
-  profile names is moved into `plugin_cache/` beside the profiles and linked back, which is what keeps Claude
-  Code's 14-day orphan sweep from deleting a plugin only one profile has. Versions no profile names any more stay
-  in the store, since a session started before an update may still run one; deleting `plugin_cache/` with every
-  Claude Code closed only costs the downloads. A profile made before `CLAUDE_CODE_PLUGIN_CACHE_DIR` was set keeps
-  the marketplace link it was made with and clones each marketplace again into a directory Personal no longer
-  reads, until that link is removed.
+- **A Claude Code profile's plugin versions live in a store lich sweeps only at its start**
+  (`internal/claudeprofile/plugincache.go`, `pluginsweep.go`; the layout is `docs/providers/claude.md`, Profiles):
+  each version a profile names is moved into `plugin_cache/` beside the profiles and linked back, which is what
+  keeps Claude Code's 14-day orphan sweep from deleting a plugin only one profile has. A version no profile names
+  any more stays until the next lich start, and one a `claude` run outside lich with a profile's directory is
+  using is kept only by the in-use marker Claude Code writes for it.
 - **A profile's directory never moves, and lich's config dir decides where it is**: on macOS Claude Code keeps a
   login in the Keychain under a service named after a hash of the config directory string
   (`internal/quota/claude_storage.go`), so a renamed profile keeps its slug and directory and changes only its

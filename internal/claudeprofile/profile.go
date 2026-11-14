@@ -68,6 +68,9 @@ func syncProfile(personal, dir string) error {
 	if err := syncSettings(personal, dir); err != nil {
 		return err
 	}
+	if err := relinkMarketplaces(personal, dir); err != nil {
+		return err
+	}
 	return layoutPluginCache(personal, dir)
 }
 
