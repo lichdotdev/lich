@@ -65,6 +65,8 @@ cursorprofile.LoginCommand(ProfileSlugOptions) string
 cursorprofile.Profiles(None) []ProfileInfo
 cursorprofile.UpdateProfile(UpdateProfileOptions) Profile
 drop.Attach(AttachDropOptions) DropAttachment
+extensions.Catalog(None) ExtensionCatalog
+extensions.CatalogImage(ExtensionCatalogImageOptions) base64
 extensions.CheckUpdates(None) []Extension
 extensions.CommitInstall(ExtensionInstallTokenOptions) Extension
 extensions.DeleteData(ExtensionIDOptions) None
@@ -293,6 +295,7 @@ event browser-state BrowserState
 event browser:frame:<id> BrowserFrame
 event claude-profile-login ProfileLogin
 event codex-profile-login ProfileLogin
+event extension-catalog ExtensionCatalog
 event extension-message ExtensionMessage
 event extension-removed ExtensionIDOptions
 event extension-status Extension
@@ -634,9 +637,19 @@ AttachDropOptions {
 	confined bool
 }
 
+ExtensionCatalog {
+	catalog extension.Catalog
+	platform string
+}
+
+ExtensionCatalogImageOptions {
+	url string
+}
+
 Extension {
 	id string
 	name string
+	description,omitempty string
 	version string
 	status string
 	error,omitempty string
@@ -645,6 +658,7 @@ Extension {
 	source,omitempty string
 	release,omitempty string
 	latest,omitempty string
+	revoked,omitempty string
 	text,omitempty map[string]ExtensionText
 	icons,omitempty map[string]base64
 	permissions []string
@@ -669,6 +683,8 @@ ExtensionInstallPreview {
 	version string
 	source string
 	release,omitempty string
+	publisher,omitempty string
+	listed,omitempty bool
 	permissions []string
 }
 
@@ -2184,6 +2200,7 @@ ExtensionSurface {
 
 ExtensionText {
 	name,omitempty string
+	description,omitempty string
 	surfaces,omitempty map[string]string
 }
 

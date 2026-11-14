@@ -101,7 +101,21 @@ func (s *Service) PrepareFromGit(_ context.Context, opts api.ExtensionGitInstall
 		return api.ExtensionInstallPreview{}, err
 	}
 	src := source{URL: url, Release: rel.Tag}
-	return s.stageAs(id, src, func(stage string) error { return s.unpack(rel, archive, pinned, id, stage) })
+	preview, err := s.stageAs(id, src, func(stage string) error { return s.unpack(rel, archive, pinned, id, stage) })
+	return published(preview, owner, entry), err
+}
+
+// published names who publishes a staged release and whether the catalog
+// lists it.
+func published(p api.ExtensionInstallPreview, owner string, entry *extension.CatalogEntry) api.ExtensionInstallPreview {
+	if p.Token == "" {
+		return p
+	}
+	p.Publisher, p.Listed = owner, entry != nil
+	if entry != nil {
+		p.Publisher = cmp.Or(entry.Publisher, owner)
+	}
+	return p
 }
 
 // stageAs has fill lay the extension out in a fresh stage directory and checks
