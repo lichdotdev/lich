@@ -459,7 +459,9 @@ lich asks GitHub for the latest release of every extension installed from a repo
 six hours after, and on `extensions.CheckUpdates`. A latest release whose tag is a later version than the one
 installed is an update: the extension's `latest` carries the tag, and `extension-update` tells the window when that
 changes. Tags are compared as `MAJOR.MINOR.PATCH`, with or without a leading `v`, so tag releases that way: a
-repository whose tags are not versions is never offered as an update.
+repository whose tags are not versions is never offered as an update. A repository the
+[catalog](#what-lich-does-with-a-listed-repository) lists is compared with the catalog's `version` instead, with no
+request to GitHub, and its `latest` is the catalog's `tag`.
 
 `extensions.PrepareUpdate` stages that release exactly as an install does, same checks, and returns the same
 preview under a token, while the installed version keeps running. `extensions.CommitInstall` with that token stops
@@ -557,7 +559,10 @@ named in `revoked`.
 ### What lich does with a listed repository
 
 An install or update from a repository the catalog lists takes the catalog's `tag`, not GitHub's latest release, and
-refuses an archive whose sha256 differs from the catalog's, on top of the release's `checksums.txt`. A newer release
-reaches lich once the catalog lists it. When the catalog cannot be read, lich installs as it does an unlisted
-repository. An installed extension whose repository is revoked is stopped when lich next reads the catalog,
-listed with the reason, and never started again; Remove still works and keeps its data.
+refuses an archive whose sha256 differs from the catalog's, on top of the release's `checksums.txt`; a platform the
+entry has no `builds` hash for is refused, naming it. A newer release reaches lich once the catalog lists it. lich
+reads the catalog when it starts and every six hours after, with the update check, and before an install or update
+while it holds none. When the catalog cannot be read, lich installs as it does an unlisted repository. An installed
+extension whose repository is revoked is stopped when lich next reads the catalog, listed with the reason
+(`removed from the lich catalog: <reason>`), and never started again, nor updated; Remove still works and keeps its
+data. An install of a revoked repository is refused with the reason.
