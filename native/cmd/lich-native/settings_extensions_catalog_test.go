@@ -243,6 +243,17 @@ func TestInstallInTheDetailStagesTheListedRepositoryAndLeadsToTheConfirmation(t 
 	}
 }
 
+func TestTheDetailWaitsForTheCatalogInsteadOfClosing(t *testing.T) {
+	s := extensionsScreen(t, &extensionBackend{})
+	s.extensions.catalog = &catalogStore{reading: true}
+	s.extensions.grid.detail.show("notes")
+	gtx := layout.Context{Ops: new(op.Ops), Constraints: layout.Exact(image.Pt(1280, 800))}
+	s.layoutExtensionDialogs(gtx, shapingTheme())
+	if s.extensions.grid.detail.id != "notes" {
+		t.Error("a detail opened before the catalog arrived closed itself")
+	}
+}
+
 func TestAFailedInstallFromTheDetailSaysWhyInIt(t *testing.T) {
 	s := catalogScreen(t, &extensionBackend{fail: "no build for linux_amd64"}, testCatalog())
 	p := &s.extensions

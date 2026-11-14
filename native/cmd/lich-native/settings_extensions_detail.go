@@ -22,8 +22,8 @@ import (
 
 // The detail, the site's dialog in the window's (settings-catalog, frame 3).
 var (
-	detailPad        = ui.Space(6)   // .xd .sb padding 24px 24px 8px
-	detailBodyBelow  = ui.Space(2)   //
+	detailPad        = ui.Space(6) // .xd .sb padding 24px 24px 8px
+	detailBodyBelow  = ui.Space(2)
 	detailMargin     = ui.Space(16)  // max-height calc(100% - 64px)
 	detailIconSize   = ui.Space(14)  // .xd-icon 56px
 	detailIconRadius = unit.Dp(10)   // .xd-icon rounded 10px
@@ -73,7 +73,7 @@ func (d *catalogDetail) show(id string) {
 
 // detailEntry is the listing shown, while the catalog still lists it.
 func detailEntry(cat *backend.ExtensionCatalog, id string) (extension.CatalogEntry, bool) {
-	if cat == nil || id == "" {
+	if id == "" {
 		return extension.CatalogEntry{}, false
 	}
 	i := slices.IndexFunc(cat.Catalog.Extensions, func(e extension.CatalogEntry) bool { return e.ID == id })
@@ -92,6 +92,9 @@ func (s *settingsScreen) layoutCatalogDetail(gtx C, th *ui.Theme, t extensionTas
 		return
 	}
 	cat, _ := p.catalog.read()
+	if cat == nil {
+		return
+	}
 	e, ok := detailEntry(cat, d.shown)
 	if !ok {
 		d.id = ""

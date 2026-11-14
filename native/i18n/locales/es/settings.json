@@ -701,7 +701,6 @@
     "otherSources": "Otras fuentes",
     "removedFromCatalog": "Retirada del catálogo de lich: {reason}",
     "catalog": {
-      "heading": "Catálogo · {n}",
       "title": "Catálogo",
       "all": "Todas",
       "search": "Buscar en el catálogo",

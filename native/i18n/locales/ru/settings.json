@@ -713,7 +713,6 @@
     "otherSources": "Другие источники",
     "removedFromCatalog": "Удалено из каталога lich: {reason}",
     "catalog": {
-      "heading": "Каталог · {n}",
       "title": "Каталог",
       "all": "Все",
       "search": "Поиск по каталогу",

@@ -695,7 +695,6 @@
     "otherSources": "기타 설치 방법",
     "removedFromCatalog": "lich 카탈로그에서 삭제됨: {reason}",
     "catalog": {
-      "heading": "카탈로그 · {n}",
       "title": "카탈로그",
       "all": "전체",
       "search": "카탈로그 검색",

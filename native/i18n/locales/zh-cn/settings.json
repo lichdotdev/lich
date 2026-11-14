@@ -700,7 +700,6 @@
     "otherSources": "其他来源",
     "removedFromCatalog": "已从 lich 目录中下架：{reason}",
     "catalog": {
-      "heading": "目录 · {n}",
       "title": "目录",
       "all": "全部",
       "search": "搜索目录",

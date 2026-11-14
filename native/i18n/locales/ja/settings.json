@@ -701,7 +701,6 @@
     "otherSources": "その他の入手先",
     "removedFromCatalog": "lich カタログから削除されました: {reason}",
     "catalog": {
-      "heading": "カタログ · {n}",
       "title": "カタログ",
       "all": "すべて",
       "search": "カタログを検索",

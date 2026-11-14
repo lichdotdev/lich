@@ -557,6 +557,7 @@ func (u *window) connect() error {
 		u.settings.theme.open = *flagSettingsThemes
 		u.settings.updates.patch.open = *flagPatchNotes
 		u.settings.nav.query.SetText(*flagSettingsQuery)
+		u.catalogShot()
 		if *flagProfileDialog != "" {
 			if err := u.settings.showProfileDialog(*flagProfileDialog); err != nil {
 				return err

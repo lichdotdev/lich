@@ -27,7 +27,7 @@ Elements are defined by space, hover and islands, not by enclosure.
 
 A change that adds a border, a pill, a second line or a nested surface is probably wrong. Reach for spacing,
 a hover state or the tooltip first. The folder tray is the one nested surface, and the reason is written
-under it.
+under it. The extension catalog is the one screen of cards, and the reason is written under it.
 
 ## Foundations
 
@@ -225,6 +225,20 @@ measure, so nothing moves when the content arrives:
 
 A test pins the skeleton row's height to the loaded row's. A generic block of bars is a bug, and so is a
 skeleton that only looks close: compare it with a shot of the loaded screen at the same size.
+
+### The extension catalog: cards and a detail dialog
+
+Settings › Extensions draws the catalog as the site's extensions page does: a grid of cards, two to a line,
+each a `Card` fill at `RadiusLG` with a 16:10 cover, and a click opens the listing in a dialog instead of
+under its card. Both break rules above on purpose. The catalog is a shop window: the cover and the
+screenshots are what someone chooses by, a row has no room for a picture, and an inline detail would push
+the rest of the grid out of sight while it is read. The site and the window drawing it the same way also
+teaches it once. Keep the exception to the catalog: a list of things you have, the installed extensions
+under the same title included, stays rows, and an action anchored on a row still opens beside it.
+
+A card's text never changes its height: the name is one line and the description always holds its two, so
+every card on a line stands as tall as the next and the skeleton matches them (a test pins it). The tokens,
+the text sizes and the buttons are the window's.
 
 ### Fixed headings
 

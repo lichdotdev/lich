@@ -108,7 +108,8 @@ func (s *settingsScreen) catalogRows(th *ui.Theme, installed []backend.Extension
 		g.tabs.Selected = 0
 	}
 	g.filter.category, g.filter.query = counts[g.tabs.Selected].id, g.query.Text()
-	heading := groupHeading(th, i18n.T("settings.extensionsSettings.catalog.heading", i18n.Args{"n": strconv.Itoa(len(cat.Catalog.Extensions))}), first)
+	// The heading carries no count: All, under it, already says how many.
+	heading := groupHeading(th, title, first)
 	rows := []layout.Widget{func(gtx C) D {
 		errText := ""
 		if g.detail.id == "" {
@@ -192,7 +193,12 @@ func (s *settingsScreen) catalogStrip(th *ui.Theme, counts []catalogCount) layou
 		tabs.Variant = ui.TabsVariantGhost
 		d := layout.Inset{Bottom: catalogStripGap}.Layout(gtx, func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-				layout.Rigid(func(gtx C) D { return tabs.Layout(gtx) }),
+				layout.Rigid(func(gtx C) D {
+					// No minimum: a ghost list given one shares it out, and the
+					// categories keep their own widths as the site's do.
+					gtx.Constraints.Min.X = 0
+					return tabs.Layout(gtx)
+				}),
 				ui.VGap(2),
 				layout.Rigid(func(gtx C) D { return s.catalogSearchLine(gtx, th) }),
 			)
@@ -306,7 +312,7 @@ func publisherLine(gtx C, th *ui.Theme, e extension.CatalogEntry) D {
 	children := []layout.FlexChild{layout.Rigid(th.Text(ui.TextXS, e.Publisher).Mono().Muted().Truncated().Layout)}
 	if e.Official {
 		children = append(children, ui.Gap(2),
-			layout.Rigid(func(gtx C) D { return icCatalogOfficial.Layout(gtx, ui.Space(3), th.TonePass) }),
+			layout.Rigid(func(gtx C) D { return icCatalogOfficial.Layout(gtx, ui.Space(3), th.MutedForeground) }),
 			ui.Gap(1),
 			layout.Rigid(th.Text(ui.TextXS, i18n.T("settings.extensionsSettings.catalog.official")).Muted().Layout),
 		)
