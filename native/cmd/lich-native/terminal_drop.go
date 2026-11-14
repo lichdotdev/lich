@@ -130,55 +130,85 @@ func under(root, path string) bool {
 	return rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator))
 }
 
-// terminalDrop follows a file drag across the window. rect is the terminal's
-// last drawn bounds in window pixels, empty while no terminal is on screen,
+// terminalDrop follows a file drag across the window. rects are the
+// terminals' last drawn bounds in window pixels, one per session on screen,
 // so a drag over the sidebar or the footer neither lights nor lands.
 type terminalDrop struct {
-	mu   sync.Mutex
-	rect image.Rectangle
+	mu    sync.Mutex
+	rects map[string]image.Rectangle
 	// files is whether the drag in progress offers text/uri-list: text
 	// dragged from another app carries none and the terminal leaves it
 	// alone. Only DropEnter lists the types, so it is kept for the moves.
 	files bool
-	over  bool
+	// over is the session whose terminal the drag is over, "" for none.
+	over string
 }
 
-// setRect records where the terminal was drawn this frame.
-func (d *terminalDrop) setRect(r image.Rectangle) {
+// reset forgets the terminals drawn last frame, before this one adds its own.
+func (d *terminalDrop) reset() {
 	d.mu.Lock()
-	d.rect = r
+	clear(d.rects)
 	d.mu.Unlock()
 }
 
-// hinting reports whether a file drag is over the terminal.
-func (d *terminalDrop) hinting() bool {
+// add records where session's terminal was drawn this frame.
+func (d *terminalDrop) add(session string, r image.Rectangle) {
+	d.mu.Lock()
+	if d.rects == nil {
+		d.rects = map[string]image.Rectangle{}
+	}
+	d.rects[session] = r
+	d.mu.Unlock()
+}
+
+// hinting reports whether a file drag is over session's terminal.
+func (d *terminalDrop) hinting(session string) bool {
+	over := d.overSession()
+	return over != "" && over == session
+}
+
+func (d *terminalDrop) overSession() string {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	return d.over
 }
 
-// handle follows one drag event and answers the paths of a drop that landed
-// on the terminal, nil for anything else.
-func (d *terminalDrop) handle(e app.DropEvent) []string {
+// handle follows one drag event and answers the session and paths of a drop
+// that landed on a terminal, nil paths for anything else.
+func (d *terminalDrop) handle(e app.DropEvent) (string, []string) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	switch e.Kind {
 	case app.DropEnter:
 		d.files = slices.Contains(e.Types, uriListMIME)
-		d.over = d.files && d.inside(e)
+		d.over = d.under(e)
 	case app.DropMove:
-		d.over = d.files && d.inside(e)
+		d.over = d.under(e)
 	case app.DropLeave:
-		d.files, d.over = false, false
+		d.files, d.over = false, ""
 	case app.DropDrop:
-		d.files, d.over = false, false
-		if e.Type == uriListMIME && d.inside(e) {
-			return parseURIList(string(e.Data))
+		d.files, d.over = false, ""
+		if session := d.at(e); e.Type == uriListMIME && session != "" {
+			return session, parseURIList(string(e.Data))
 		}
 	}
-	return nil
+	return "", nil
 }
 
-func (d *terminalDrop) inside(e app.DropEvent) bool {
-	return e.Position.Round().In(d.rect)
+// under is the session a drag offering files is over.
+func (d *terminalDrop) under(e app.DropEvent) string {
+	if !d.files {
+		return ""
+	}
+	return d.at(e)
+}
+
+func (d *terminalDrop) at(e app.DropEvent) string {
+	p := e.Position.Round()
+	for session, r := range d.rects {
+		if p.In(r) {
+			return session
+		}
+	}
+	return ""
 }

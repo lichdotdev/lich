@@ -831,7 +831,7 @@ func (u *window) island(gtx C, v stageView, termWidth, termHeight int) error {
 		nw = 0
 	}
 	defer clip.RRect{Rect: image.Rectangle{Max: size}, NW: nw, NE: r, SE: r, SW: r}.Push(gtx.Ops).Pop()
-	u.drop.setRect(image.Rectangle{})
+	u.drop.reset()
 	fill := u.islandColor(v)
 	paint.Fill(gtx.Ops, fill)
 	if u.homeOpen.Clicked(gtx) {
@@ -878,8 +878,8 @@ func (u *window) island(gtx C, v stageView, termWidth, termHeight int) error {
 	}
 	u.paneDropZones(gtx, v.active.ID, image.Rectangle{Max: size}, image.Rectangle{Max: size}.Add(u.islandAt), true)
 	if u.terms.has(v.active.ID) {
-		u.drop.setRect(image.Rectangle{Min: u.islandAt, Max: u.islandAt.Add(size)})
-		if u.drop.hinting() || *flagDropHint {
+		u.drop.add(v.active.ID, image.Rectangle{Min: u.islandAt, Max: u.islandAt.Add(size)})
+		if u.drop.hinting(v.active.ID) || *flagDropHint {
 			dropHintFor(u.theme.On(fill), v.active.Label, v.active.sandbox.Confined).Layout(gtx)
 		}
 	}

@@ -54,7 +54,7 @@ func drop(x, y float32, list string) app.DropEvent {
 
 func TestTerminalDropHintsOnlyOverTheTerminal(t *testing.T) {
 	var d terminalDrop
-	d.setRect(image.Rect(100, 50, 500, 400))
+	d.add("s", image.Rect(100, 50, 500, 400))
 	steps := []struct {
 		e    app.DropEvent
 		want bool
@@ -69,29 +69,44 @@ func TestTerminalDropHintsOnlyOverTheTerminal(t *testing.T) {
 	}
 	for i, s := range steps {
 		d.handle(s.e)
-		if d.hinting() != s.want {
-			t.Fatalf("step %d: hinting %v, want %v", i, d.hinting(), s.want)
+		if d.hinting("s") != s.want {
+			t.Fatalf("step %d: hinting %v, want %v", i, d.hinting("s"), s.want)
 		}
 	}
 }
 
 func TestTerminalDropLandsOnlyOnTheTerminal(t *testing.T) {
 	var d terminalDrop
-	d.setRect(image.Rect(100, 50, 500, 400))
+	d.add("s", image.Rect(100, 50, 500, 400))
 	list := "file:///tmp/a.png\r\n"
 	d.handle(enter(20, 20, uriListMIME))
-	if got := d.handle(drop(20, 20, list)); got != nil {
+	if _, got := d.handle(drop(20, 20, list)); got != nil {
 		t.Fatalf("drop on the sidebar gave %q", got)
 	}
 	d.handle(enter(200, 200, uriListMIME))
-	got := d.handle(drop(200, 200, list))
-	if !reflect.DeepEqual(got, []string{filepath.FromSlash("/tmp/a.png")}) || d.hinting() {
-		t.Fatalf("drop on the terminal gave %q, hinting %v", got, d.hinting())
+	_, got := d.handle(drop(200, 200, list))
+	if !reflect.DeepEqual(got, []string{filepath.FromSlash("/tmp/a.png")}) || d.hinting("s") {
+		t.Fatalf("drop on the terminal gave %q, hinting %v", got, d.hinting("s"))
 	}
-	d.setRect(image.Rectangle{})
+	d.reset()
 	d.handle(enter(200, 200, uriListMIME))
-	if got := d.handle(drop(200, 200, list)); got != nil {
+	if _, got := d.handle(drop(200, 200, list)); got != nil {
 		t.Fatalf("drop with no terminal on screen gave %q", got)
+	}
+}
+
+func TestTerminalDropLandsOnThePaneUnderThePointer(t *testing.T) {
+	var d terminalDrop
+	d.add("focused", image.Rect(100, 50, 500, 400))
+	d.add("background", image.Rect(510, 50, 900, 400))
+	d.handle(enter(200, 200, uriListMIME))
+	d.handle(move(700, 200))
+	if d.hinting("focused") || !d.hinting("background") {
+		t.Fatalf("hinting focused %v background %v, want the background pane only", d.hinting("focused"), d.hinting("background"))
+	}
+	session, got := d.handle(drop(700, 200, "file:///tmp/a.png\r\n"))
+	if session != "background" || !reflect.DeepEqual(got, []string{filepath.FromSlash("/tmp/a.png")}) {
+		t.Fatalf("drop on the background pane went to %q with %q", session, got)
 	}
 }
 
