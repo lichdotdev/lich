@@ -82,6 +82,16 @@
   },
   {
     "v": 1,
+    "kind": "refused",
+    "data": {
+      "kind": "kind",
+      "surface": "surface",
+      "reason": "reason",
+      "dropped": 1
+    }
+  },
+  {
+    "v": 1,
     "kind": "render",
     "data": {
       "surface": "surface",

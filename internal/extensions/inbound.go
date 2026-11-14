@@ -68,12 +68,12 @@ var toExtension = map[string]bool{
 	extension.Context.Name:       true,
 }
 
-// handleLine vets one line of stdout. A bad line is refused and logged, and
-// the extension goes on: one bug in it should not cost the user its screen.
+// handleLine vets one line of stdout. A bad line is refused, and the extension
+// goes on: one bug in it should not cost the user its screen.
 func (s *Service) handleLine(x *installed, line []byte) {
 	msg, encoded, err := vetMessage(line)
 	if err != nil {
-		x.refused.note(x.id, msgRefused, err.Error())
+		s.refuse(x, line, err.Error())
 		return
 	}
 	if call, ok := msg.Data.(extension.CallData); ok {
@@ -85,6 +85,33 @@ func (s *Service) handleLine(x *installed, line []byte) {
 		return
 	}
 	s.deliver(x, encoded)
+}
+
+// refuse logs a refused line and tells the extension why, both within the
+// refusals' budget: an extension that answers each refusal with another bad
+// line is held to it rather than looping.
+func (s *Service) refuse(x *installed, line []byte, reason string) {
+	reason = clip(reason)
+	dropped, told := x.refused.note(x.id, msgRefused, reason)
+	if !told {
+		return
+	}
+	kind, surface := peek(line)
+	s.answer(x, extension.Refused.New(extension.RefusedData{Kind: kind, Surface: surface, Reason: reason, Dropped: dropped}))
+}
+
+// peek reads the kind and surface a refused line names.
+func peek(line []byte) (kind, surface string) {
+	var head struct {
+		Kind string `json:"kind"`
+		Data struct {
+			Surface string `json:"surface"`
+		} `json:"data"`
+	}
+	// A field of the wrong type fails this after the fields that fit were
+	// read, and those are all a refusal can still name.
+	_ = json.Unmarshal(line, &head)
+	return head.Kind, head.Data.Surface
 }
 
 func vetLine(line []byte) (json.RawMessage, error) {
@@ -288,22 +315,31 @@ type logBudget struct {
 	dropped int
 }
 
-func (b *logBudget) note(id, msg, text string) {
-	if len(text) > maxLogLineBytes {
-		text = text[:maxLogLineBytes]
-	}
+// note logs text unless the window's budget is spent, and says whether it did
+// and, on the first line of a window, how many the window before dropped.
+func (b *logBudget) note(id, msg, text string) (dropped int, logged bool) {
+	text = clip(text)
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	if now := time.Now(); now.Sub(b.opened) >= logWindow {
 		if b.dropped > 0 {
 			slog.Warn(msg, "extension", id, "droppedLines", b.dropped)
 		}
+		dropped = b.dropped
 		b.opened, b.used, b.dropped = now, 0, 0
 	}
 	if b.used >= maxLogLines {
 		b.dropped++
-		return
+		return 0, false
 	}
 	b.used++
 	slog.Warn(msg, "extension", id, "text", text)
+	return dropped, true
+}
+
+func clip(text string) string {
+	if len(text) > maxLogLineBytes {
+		return text[:maxLogLineBytes]
+	}
+	return text
 }
