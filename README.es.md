@@ -141,6 +141,7 @@ distinto.
 | Cuánto del último turno salió de la caché de prompts, en el pie de ventana | sí | sí | no | en el tooltip del costo | en el tooltip del costo | no | no | no |
 | El tooltip de la tarjeta nombra el modelo en uso, y con cuál se abrió si cambió | sí | sí | no | no | no | no | no | sí |
 | Costo en el pie de ventana | sí | sí | no | sí | sí | sí | no | créditos |
+| Una conversación bifurcada dentro de la propia terminal del agente cobra una sola vez el historial que copia | sí, salvo cuando el costo es el que midió el propio Claude Code | no | sin lectura de costo | sí | sí, salvo un turno guardado sin id de respuesta | no se puede bifurcar | sin lectura de costo | sin lectura de costo |
 | Cuánto queda de tu plan | sí | sí | sí | solo OpenCode Go | no | no | sí | no |
 | Un turno que el límite de uso de tu plan detuvo se reanuda cuando el límite se restablece | sí | sí | no | sus propios reintentos | sus propios reintentos | no | no | no |
 | Si otro de tus perfiles aún tiene cuota, un aviso ofrece continuar allí al momento | sí | sí | no | no | no | no | no | no |

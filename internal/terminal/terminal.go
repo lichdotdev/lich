@@ -161,6 +161,8 @@ type Store interface {
 	CostReadout() bool
 	CostLedger(sessionID, transcriptID string) (int64, string, float64, error)
 	SaveCostLedger(sessionID, transcriptID string, offset int64, lastMessage string, cost float64) error
+	CountedElsewhere(sessionID, transcriptID, responseID string) (bool, error)
+	SaveCostResponses(sessionID, transcriptID string, responseIDs []string) error
 	ReplaceConversationCost(sessionID, conversationID string, cost float64) error
 	SessionCost(sessionID string) (float64, error)
 	SaveForkCostOffset(sessionID, forkedFrom string) error

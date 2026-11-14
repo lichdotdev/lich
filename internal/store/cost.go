@@ -110,6 +110,51 @@ func (s *Service) ReplaceConversationCost(sessionID, conversationID string, cost
 	return nil
 }
 
+// CountedElsewhere reports whether a provider response was already billed into
+// a session by one of its transcripts other than transcriptID. A response its
+// own transcript billed is not elsewhere: a ledger rebuilt from zero counts its
+// own responses again.
+func (s *Service) CountedElsewhere(sessionID, transcriptID, responseID string) (bool, error) {
+	var counted bool
+	err := s.db.QueryRow(
+		`SELECT EXISTS (SELECT 1 FROM session_cost_responses
+		                 WHERE session_id = ? AND response_id = ? AND transcript_id <> ?)`,
+		sessionID, responseID, transcriptID,
+	).Scan(&counted)
+	if err != nil {
+		return false, fmt.Errorf("read billed response for %q: %w", sessionID, err)
+	}
+	return counted, nil
+}
+
+// SaveCostResponses records the provider responses one transcript's scan
+// billed. A response already on record keeps the transcript that billed it
+// first. Like SaveCostLedger it writes nothing for a session whose row is
+// already gone.
+func (s *Service) SaveCostResponses(sessionID, transcriptID string, responseIDs []string) error {
+	if len(responseIDs) == 0 {
+		return nil
+	}
+	tx, err := s.db.Begin()
+	if err != nil {
+		return fmt.Errorf("save billed responses for %q: %w", sessionID, err)
+	}
+	defer func() { _ = tx.Rollback() }()
+	for _, responseID := range responseIDs {
+		if _, err := tx.Exec(
+			`INSERT OR IGNORE INTO session_cost_responses (session_id, response_id, transcript_id)
+			 SELECT ?, ?, ? WHERE EXISTS (SELECT 1 FROM sessions WHERE id = ?)`,
+			sessionID, responseID, transcriptID, sessionID,
+		); err != nil {
+			return fmt.Errorf("save billed responses for %q: %w", sessionID, err)
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("save billed responses for %q: %w", sessionID, err)
+	}
+	return nil
+}
+
 // costRow is one session_costs row, carried across the delete/reinsert a
 // parked session's resume performs (see ReopenWorktreeSession).
 type costRow struct {
@@ -158,6 +203,47 @@ func restoreCostLedgers(tx *sql.Tx, sessionID string, ledgers []costRow) error {
 			sessionID, row.transcriptID, row.offset, row.lastMessage, row.cost, row.updatedAt, row.reported,
 		); err != nil {
 			return fmt.Errorf("restore cost ledger for %q: %w", sessionID, err)
+		}
+	}
+	return nil
+}
+
+// billedResponse is one session_cost_responses row, carried across a resume
+// with the ledgers it backs.
+type billedResponse struct {
+	responseID   string
+	transcriptID string
+}
+
+// costResponses reads every response a session has billed.
+func costResponses(tx *sql.Tx, sessionID string) ([]billedResponse, error) {
+	rows, err := tx.Query(
+		`SELECT response_id, transcript_id FROM session_cost_responses WHERE session_id = ?`, sessionID,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("read billed responses for %q: %w", sessionID, err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	var billed []billedResponse
+	for rows.Next() {
+		var row billedResponse
+		if err := rows.Scan(&row.responseID, &row.transcriptID); err != nil {
+			return nil, fmt.Errorf("scan billed response for %q: %w", sessionID, err)
+		}
+		billed = append(billed, row)
+	}
+	return billed, rows.Err()
+}
+
+// restoreCostResponses re-keys billed responses onto a session id.
+func restoreCostResponses(tx *sql.Tx, sessionID string, billed []billedResponse) error {
+	for _, row := range billed {
+		if _, err := tx.Exec(
+			`INSERT INTO session_cost_responses (session_id, response_id, transcript_id) VALUES (?, ?, ?)`,
+			sessionID, row.responseID, row.transcriptID,
+		); err != nil {
+			return fmt.Errorf("restore billed response for %q: %w", sessionID, err)
 		}
 	}
 	return nil

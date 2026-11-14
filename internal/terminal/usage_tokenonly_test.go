@@ -37,6 +37,16 @@ func ompAssistant(id, model string, cost float64) string {
 	)
 }
 
+// ompResponse is ompAssistant with the provider's id for the response on it,
+// which a fork copies along with the turn.
+func ompResponse(id, responseID string, cost float64) string {
+	return fmt.Sprintf(
+		`{"type":"message","id":%q,"message":{"role":"assistant","provider":"rig","model":"rig/one",`+
+			`"responseId":%q,"usage":{"input":1000,"output":500,"cost":{"input":0,"output":0,"total":%v}}}}`,
+		id, responseID, cost,
+	)
+}
+
 // writeOMPSession plants an oh-my-pi conversation under a throwaway agent
 // directory, in the sessions/<encoded-cwd>/<timestamp>_<id>.jsonl layout
 // ompTranscriptPath globs for.
@@ -151,7 +161,7 @@ func TestOMPCostSumsTheTurnsOMPPriced(t *testing.T) {
 		t.Fatal("ompTranscriptPath: want the planted session file")
 	}
 
-	cost, miss, ok := ompTranscriptCost(path)
+	cost, miss, ok := ompTranscriptCost(path, billedAlone())
 
 	if !ok || miss != costMissNone {
 		t.Fatalf("ompTranscriptCost ok = %v, miss = %q", ok, miss)
@@ -171,7 +181,7 @@ func TestOMPCostWithholdsAnUnpricedTurn(t *testing.T) {
 	)
 	path, _ := ompTranscriptPath("omp-1")
 
-	cost, miss, ok := ompTranscriptCost(path)
+	cost, miss, ok := ompTranscriptCost(path, billedAlone())
 
 	if ok {
 		t.Errorf("ompTranscriptCost = %v, want a miss", cost)
@@ -192,7 +202,7 @@ func TestOMPCostSkipsWhatIsNotABilledTurn(t *testing.T) {
 	)
 	path, _ := ompTranscriptPath("omp-1")
 
-	cost, miss, ok := ompTranscriptCost(path)
+	cost, miss, ok := ompTranscriptCost(path, billedAlone())
 
 	if !ok || miss != costMissNone {
 		t.Fatalf("ompTranscriptCost ok = %v, miss = %q", ok, miss)
@@ -217,7 +227,7 @@ func TestOMPCostIgnoresALineStillBeingWritten(t *testing.T) {
 	}
 	_ = f.Close()
 
-	cost, _, ok := ompTranscriptCost(path)
+	cost, _, ok := ompTranscriptCost(path, billedAlone())
 
 	if !ok || !nearly(cost, 0.4) {
 		t.Errorf("cost = %v (ok %v), want 0.4 — the half-written line waits for its newline", cost, ok)
@@ -228,7 +238,7 @@ func TestOMPCostIgnoresALineStillBeingWritten(t *testing.T) {
 // contract as every other transcript read.
 func TestOMPCostOnAMissingFile(t *testing.T) {
 	t.Parallel()
-	cost, miss, ok := ompTranscriptCost(filepath.Join(t.TempDir(), "nope.jsonl"))
+	cost, miss, ok := ompTranscriptCost(filepath.Join(t.TempDir(), "nope.jsonl"), billedAlone())
 	if ok {
 		t.Errorf("ompTranscriptCost = %v, want a miss", cost)
 	}
@@ -372,6 +382,40 @@ func TestTheCostOnlyRungReportsWithoutAWindow(t *testing.T) {
 				t.Errorf("context fields = %+v, want zeroed — no window was reported", got)
 			}
 		})
+	}
+}
+
+// TestAnOMPForkInsideTheSessionBillsItsCopiedTurnsOnce: omp's /fork writes
+// the session's turns into a file of its own, responseId and cost included,
+// and the card runs on in it. A turn with no responseId cannot be told from a
+// new one, so it is billed again.
+func TestAnOMPForkInsideTheSessionBillsItsCopiedTurnsOnce(t *testing.T) {
+	store := newCostStore("omp-parent")
+	writeOMPSession(t, "omp-parent",
+		`{"type":"session","id":"omp-parent"}`,
+		ompResponse("a1", "resp_1", 0.25), ompAssistant("a2", "rig/one", 0.125))
+	svc := New(store, nil, events.New())
+	svc.prices = testRate
+	if _, ok := svc.sessionUsage("s1"); !ok {
+		t.Fatal("sessionUsage: want ok on the parent")
+	}
+
+	writeOMPSession(t, "omp-fork",
+		`{"type":"session","id":"omp-fork","parentSession":"omp-parent"}`,
+		ompResponse("a1", "resp_1", 0.25), ompAssistant("a2", "rig/one", 0.125),
+		ompResponse("a3", "resp_3", 0.5))
+	store.providerSession = "omp-fork"
+	svc = New(store, nil, events.New())
+	svc.prices = testRate
+
+	got, ok := svc.sessionUsage("s1")
+
+	if !ok || got.CostUSD == nil {
+		t.Fatal("sessionUsage: want a cost on the fork")
+	}
+	if !nearly(*got.CostUSD, 1.0) {
+		t.Errorf("CostUSD = %v, want 1.0 — the parent's 0.375, the fork's 0.5, and the id-less 0.125 again",
+			*got.CostUSD)
 	}
 }
 

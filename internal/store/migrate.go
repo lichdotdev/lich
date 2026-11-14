@@ -31,6 +31,7 @@ var migrations = []func(*sql.Tx) error{
 	addSessionWatch,
 	addSessionFilesID,
 	markLichContinuations,
+	addCostResponses,
 }
 
 // addSessionEffort is version 2: the reasoning effort a session was opened at,
@@ -231,6 +232,22 @@ func markLichContinuations(tx *sql.Tx) error {
 		}
 	}
 	return nil
+}
+
+// addCostResponses is version 16: the provider responses a session's cost has
+// billed, and the transcript that billed each (SaveCostResponses). A
+// conversation branched inside the session's terminal copies its parent's
+// responses into a transcript of its own, and the session runs on in it: the
+// per-transcript ledger alone would bill that copy a second time.
+func addCostResponses(tx *sql.Tx) error {
+	_, err := tx.Exec(`
+CREATE TABLE session_cost_responses (
+    session_id    TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
+    response_id   TEXT NOT NULL,
+    transcript_id TEXT NOT NULL,
+    PRIMARY KEY (session_id, response_id)
+) WITHOUT ROWID`)
+	return err
 }
 
 // migrate brings db up to len(migrations), one transaction per step, each step

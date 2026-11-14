@@ -169,6 +169,91 @@ func TestAResumedSessionKeepsWhatItSpent(t *testing.T) {
 	}
 }
 
+// TestABilledResponseIsElsewhereOnlyForAnotherTranscript is what lets a branch
+// made inside a session's terminal skip the history it copied: a response one
+// transcript billed is a copy to every other transcript of the session, and
+// never to the one that billed it, nor to another session.
+func TestABilledResponseIsElsewhereOnlyForAnotherTranscript(t *testing.T) {
+	svc := newCostSession(t)
+	if err := svc.SaveCostResponses("s1", "uuid-parent", []string{"m1", "m2"}); err != nil {
+		t.Fatalf("SaveCostResponses: %v", err)
+	}
+	// The branch billing the same response later does not take it over.
+	if err := svc.SaveCostResponses("s1", "uuid-branch", []string{"m2", "m3"}); err != nil {
+		t.Fatalf("SaveCostResponses (branch): %v", err)
+	}
+
+	for _, tc := range []struct {
+		session, transcript, response string
+		want                          bool
+	}{
+		{"s1", "uuid-branch", "m1", true},
+		{"s1", "uuid-branch", "m2", true},
+		{"s1", "uuid-parent", "m2", false},
+		{"s1", "uuid-parent", "m3", true},
+		{"s1", "uuid-branch", "m3", false},
+		{"s2", "uuid-branch", "m1", false},
+	} {
+		got, err := svc.CountedElsewhere(tc.session, tc.transcript, tc.response)
+		if err != nil {
+			t.Fatalf("CountedElsewhere: %v", err)
+		}
+		if got != tc.want {
+			t.Errorf("CountedElsewhere(%s, %s, %s) = %v, want %v",
+				tc.session, tc.transcript, tc.response, got, tc.want)
+		}
+	}
+}
+
+// TestBilledResponsesOfAGoneSessionAreNotWritten: a session closed while its
+// last turn was being counted is the race SaveCostLedger shrugs off, not a
+// foreign-key failure.
+func TestBilledResponsesOfAGoneSessionAreNotWritten(t *testing.T) {
+	svc := newCostSession(t)
+
+	if err := svc.SaveCostResponses("gone", "uuid-a", []string{"m1"}); err != nil {
+		t.Fatalf("SaveCostResponses: %v", err)
+	}
+
+	var rows int
+	if err := svc.db.QueryRow(`SELECT COUNT(*) FROM session_cost_responses`).Scan(&rows); err != nil {
+		t.Fatalf("count: %v", err)
+	}
+	if rows != 0 {
+		t.Errorf("rows = %d, want nothing written for a session with no row", rows)
+	}
+}
+
+// TestAResumedSessionKeepsWhatItBilled: a parked session's resume re-keys it,
+// and a branch made after the resume must still find the responses its parent
+// billed before the park.
+func TestAResumedSessionKeepsWhatItBilled(t *testing.T) {
+	svc := newTestStore(t)
+	if _, err := svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"}); err != nil {
+		t.Fatalf("AddProject: %v", err)
+	}
+	if _, err := svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s1", Label: "Session 1", Kind: "claude", Path: "/tmp/alpha-wt", NextSeq: 2}); err != nil {
+		t.Fatalf("AddSession: %v", err)
+	}
+	if err := svc.SaveCostResponses("s1", "uuid-a", []string{"m1"}); err != nil {
+		t.Fatalf("SaveCostResponses: %v", err)
+	}
+	if _, err := svc.CloseSession(t.Context(), api.ParkSessionOptions{ProjectID: "p1", SessionID: "s1"}); err != nil {
+		t.Fatalf("CloseSession: %v", err)
+	}
+	if _, err := svc.ReopenWorktreeSession(t.Context(), api.ReopenWorktreeSessionOptions{ProjectID: "p1", Path: "/tmp/alpha-wt", NewSessionID: "s2"}); err != nil {
+		t.Fatalf("ReopenWorktreeSession: %v", err)
+	}
+
+	copied, err := svc.CountedElsewhere("s2", "uuid-b", "m1")
+	if err != nil {
+		t.Fatalf("CountedElsewhere: %v", err)
+	}
+	if !copied {
+		t.Error("CountedElsewhere = false, want the response billed before the park carried onto the resumed session")
+	}
+}
+
 // TestCostReadoutIsOffUntilAskedFor is the feature's premise at the setting
 // layer: the number only means something on API billing, so it is off for
 // everyone who never turned it on, and anything but "true" reads as off.

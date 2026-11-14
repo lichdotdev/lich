@@ -271,12 +271,12 @@ PRAGMA user_version = 2;`)
 // A continuation parked before the mark existed has only its words to be known
 // by: the step that adds the mark reads them, in whatever language they were
 // parked, and leaves a person's prompt and an agent's alone.
-func TestOpenMarksAContinuationParkedBeforeTheMarkExisted(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "unmarked.db")
-	svc, err := open(path)
+func TestTheMarkStepMarksAContinuationParkedBeforeTheMarkExisted(t *testing.T) {
+	svc, err := open(filepath.Join(t.TempDir(), "unmarked.db"))
 	if err != nil {
 		t.Fatalf("open store: %v", err)
 	}
+	defer svc.Close()
 	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
 	parked := map[string]string{
 		"en": prompt.For(prompt.English).ResumePrompt,
@@ -293,14 +293,17 @@ func TestOpenMarksAContinuationParkedBeforeTheMarkExisted(t *testing.T) {
 	if err := svc.SetAgentSchedule("a", 1700000000, parked["en"]); err != nil {
 		t.Fatal(err)
 	}
-	svc.Close()
-	seedDB(t, path, `PRAGMA user_version = `+strconv.Itoa(len(migrations)-1))
-
-	svc, err = open(path)
+	tx, err := svc.db.Begin()
 	if err != nil {
-		t.Fatalf("reopen store: %v", err)
+		t.Fatal(err)
 	}
-	defer svc.Close()
+	if err := markLichContinuations(tx); err != nil {
+		t.Fatalf("markLichContinuations: %v", err)
+	}
+	if err := tx.Commit(); err != nil {
+		t.Fatal(err)
+	}
+
 	projects, err := svc.LoadState(t.Context(), api.None{})
 	if err != nil {
 		t.Fatal(err)
