@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Restart on an extension reads its folder again.** An edited manifest takes effect on Restart, and one that no longer validates shows invalid with its reason instead of starting. Fix it on disk and Restart starts it, with no restart of lich.
 - **A theme's Update button shows only when its pack has a new version.** It used to sit on every theme from a repository and look for one when clicked; Check for updates, over the cards, does that now.
 - **The tools for leaving notes on a page moved from the browser's toolbar onto the page.** A bar over its bottom holds Select, which was the crosshair, and Draw; its arrow folds it into a tab on the page's edge. Ctrl+Shift+E (Cmd+Shift+E on macOS) still turns Select on and off.
 - **Small labels across the window share one size.** The command palette's field reads "Search, or type > for actions", a second-level heading in Markdown no longer reads as a first-level one, and the Fixed dot in What's new is gray like Removed's.
