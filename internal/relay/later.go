@@ -72,7 +72,7 @@ func (s *Service) deliverDue() {
 			}
 			// Learned here as well as when parked: a continuation parked before
 			// a restart is still lich's to drop when its session moves on.
-			if isResumePrompt(sess.ScheduledPrompt) {
+			if parkedByLich(sess) {
 				s.markResume(sess.ID)
 			}
 			if sess.ScheduledAt > now {

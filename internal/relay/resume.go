@@ -18,11 +18,11 @@ import (
 // the way every scheduled prompt is. The terminal service finds the limit and
 // its reset (internal/terminal, limit.go); this file decides whether to park.
 
-// isResumePrompt is how a parked prompt is told apart as lich's continuation
-// (prompt.Catalog.ResumePrompt).
-// ponytail: matched by text, a person who parks these exact words has them
-// dropped on the session's next turn; a column on the row if that ever matters.
-func isResumePrompt(parked string) bool { return prompt.IsResume(parked) }
+// parkedByLich is whether the prompt on sess's row is lich's continuation, by
+// the mark the row carries and never by its words: a person may park the same.
+func parkedByLich(sess store.Session) bool {
+	return sess.ScheduledPrompt != "" && sess.ScheduledBy == api.ScheduledByLich
+}
 
 // resumeGrace is how long after the reset the prompt is due. Claude Code's own
 // autoContinueAtUsageLimit, where the server enables it, resumes at the reset
@@ -52,7 +52,7 @@ func (s *Service) ParkResume(id string, resetsAt int64) {
 	}
 	due := reset.Add(resumeGrace).Unix()
 	resumePrompt := prompt.For(s.lang()).ResumePrompt
-	if err := s.sessions.SetSessionSchedule(id, due, resumePrompt); err != nil {
+	if err := s.sessions.SetLichSchedule(id, due, resumePrompt); err != nil {
 		slog.Warn("relay: park resume", "session", sess.Label, "err", err)
 		return
 	}
@@ -69,12 +69,12 @@ func (s *Service) ParkResume(id string, resetsAt int64) {
 // own time.
 func (s *Service) ResumeNow(id string) {
 	sess, ok := s.sessionRow(id)
-	if !ok || (sess.ScheduledPrompt != "" && !isResumePrompt(sess.ScheduledPrompt)) {
+	if !ok || (sess.ScheduledPrompt != "" && !parkedByLich(sess)) {
 		return
 	}
 	due := s.now().Unix()
 	resumePrompt := prompt.For(s.lang()).ResumePrompt
-	if err := s.sessions.SetSessionSchedule(id, due, resumePrompt); err != nil {
+	if err := s.sessions.SetLichSchedule(id, due, resumePrompt); err != nil {
 		slog.Warn("relay: resume now", "session", sess.Label, "err", err)
 		return
 	}
@@ -90,7 +90,7 @@ func (s *Service) ResumeNow(id string) {
 // place since is theirs and stays.
 func (s *Service) dropResume(id string) {
 	sess, ok := s.sessionRow(id)
-	if !ok || !isResumePrompt(sess.ScheduledPrompt) {
+	if !ok || !parkedByLich(sess) {
 		return
 	}
 	if err := s.sessions.SetSessionSchedule(id, 0, ""); err != nil {

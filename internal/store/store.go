@@ -28,7 +28,6 @@ import (
 	_ "modernc.org/sqlite"
 
 	"github.com/lichdotdev/lich/api"
-	"github.com/lichdotdev/lich/internal/prompt"
 )
 
 // schema is the version-1 shape, applied once by the first migration
@@ -632,9 +631,6 @@ func (s *Service) sessionsOf(projectID string) ([]Session, error) {
 		}
 		sess.MCPServers = decodeStrings(servers)
 		sess.SandboxSkippedLinks = decodeStrings(links)
-		if prompt.IsResume(sess.ScheduledPrompt) {
-			sess.ScheduledBy = api.ScheduledByLich
-		}
 		sessions = append(sessions, sess)
 	}
 	if err := rows.Err(); err != nil {

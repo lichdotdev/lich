@@ -5,6 +5,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/lichdotdev/lich/api"
 )
 
 // parkWriter records every scheduled-prompt write, parks included.
@@ -78,7 +80,7 @@ func TestATurnStartingDropsTheParkedContinuation(t *testing.T) {
 	t.Parallel()
 	writer := &parkWriter{}
 	events := &fakeEvents{}
-	svc := newRelay(scheduledWith(5000, resumePrompt, writer.set), newFakeTerminal("s1"), events)
+	svc := newRelay(lichsContinuation(scheduledWith(5000, resumePrompt, writer.set)), newFakeTerminal("s1"), events)
 	svc.now = at(1000)
 	svc.deliverDue()
 
@@ -105,6 +107,13 @@ func TestATurnStartingLeavesThePersonsPromptAlone(t *testing.T) {
 	if got := writer.all(); len(got) != 0 {
 		t.Fatalf("writes = %+v, want the person's prompt kept", got)
 	}
+}
+
+// lichsContinuation is sessions with the prompt on its row marked as parked by
+// lich, the way SetLichSchedule leaves it.
+func lichsContinuation(sessions fakeSessions) fakeSessions {
+	sessions.projects[0].Sessions[0].ScheduledBy = api.ScheduledByLich
+	return sessions
 }
 
 func scheduledWith(at int64, prompt string, set func(string, int64, string) error) fakeSessions {
@@ -173,6 +182,23 @@ func TestResumeNowLeavesAPersonsPromptAlone(t *testing.T) {
 	svc.now = at(1000)
 
 	svc.ResumeNow("s1")
+
+	if got := writer.all(); len(got) != 0 {
+		t.Fatalf("writes = %+v, want the person's prompt kept", got)
+	}
+}
+
+// A person who parks the continuation's own words has parked a prompt of their
+// own: the row carries no mark from lich, so the next turn leaves it alone.
+func TestATurnStartingKeepsAPersonsPromptThatReadsLikeTheContinuation(t *testing.T) {
+	t.Parallel()
+	writer := &parkWriter{}
+	svc := newRelay(scheduledWith(5000, resumePrompt, writer.set), newFakeTerminal("s1"), &fakeEvents{})
+	svc.now = at(1000)
+	svc.deliverDue()
+
+	svc.Observe("s1", stateBusy)
+	svc.dropResume("s1")
 
 	if got := writer.all(); len(got) != 0 {
 		t.Fatalf("writes = %+v, want the person's prompt kept", got)
