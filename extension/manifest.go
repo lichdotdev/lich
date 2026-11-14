@@ -13,11 +13,14 @@ const DataDirEnv = "LICH_EXTENSION_DATA"
 const ManifestFormat = 1
 
 // Manifest declares an extension to lich. Executable is relative to the
-// manifest's directory and must stay inside it.
+// manifest's directory and must stay inside it. Description is one line of at
+// most MaxDescription characters; lich runs an extension without one, and
+// the catalog does not list it.
 type Manifest struct {
 	FormatVersion  int       `json:"formatVersion"`
 	ID             string    `json:"id"`
 	Name           string    `json:"name"`
+	Description    string    `json:"description,omitempty"`
 	Version        string    `json:"version"`
 	MinLichVersion string    `json:"minLichVersion,omitempty"`
 	Executable     string    `json:"executable"`
