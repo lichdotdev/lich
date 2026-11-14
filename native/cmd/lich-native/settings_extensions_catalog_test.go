@@ -190,11 +190,11 @@ func catalogScreen(t *testing.T, b *extensionBackend, cat backend.ExtensionCatal
 	return s
 }
 
-func TestTheCatalogGroupIsTheHeadingTheStripAndALinePerTwoCards(t *testing.T) {
+func TestTheCatalogGroupIsTheHeadingTheStripAndTheGrid(t *testing.T) {
 	th := testTheme()
 	s := catalogScreen(t, &extensionBackend{}, testCatalog())
-	if got := len(s.catalogRows(th, nil, true)); got != 4 {
-		t.Errorf("rows = %d, want the heading, the strip and two lines for three cards", got)
+	if got := len(s.catalogRows(th, nil, true)); got != 3 {
+		t.Errorf("rows = %d, want the heading, the strip and the grid", got)
 	}
 	s.extensions.grid.query.SetText("zzz")
 	if got := len(s.catalogRows(th, nil, true)); got != 3 {
@@ -207,6 +207,15 @@ func TestTheCatalogGroupIsTheHeadingTheStripAndALinePerTwoCards(t *testing.T) {
 	s.extensions.catalog = &catalogStore{err: "no such host"}
 	if got := len(s.catalogRows(th, nil, true)); got != 2 {
 		t.Errorf("rows = %d after a failed read, want the heading and why", got)
+	}
+}
+
+func TestTheGridTakesAsManyColumnsAsTheWidthHolds(t *testing.T) {
+	gtx := layout.Context{Ops: new(op.Ops)}
+	for _, c := range []struct{ width, want int }{{200, 1}, {400, 1}, {600, 2}, {700, 2}, {1000, 3}, {1330, 4}} {
+		if got := catalogColumns(gtx, c.width); got != c.want {
+			t.Errorf("%dpx holds %d columns, want %d", c.width, got, c.want)
+		}
 	}
 }
 

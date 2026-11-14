@@ -228,7 +228,9 @@ skeleton that only looks close: compare it with a shot of the loaded screen at t
 
 ### The extension catalog: cards and a detail dialog
 
-Settings › Extensions draws the catalog as the site's extensions page does: a grid of cards, two to a line,
+Settings › Extensions draws the catalog as the site's extensions page does: a grid of cards, as many to a
+line as keep each 260 to 360px wide (two in the pane at the window's default size; a wider pane takes columns,
+never a bigger cover),
 each a `Card` fill at `RadiusLG` with a 16:10 cover, and a click opens the listing in a dialog instead of
 under its card. Both break rules above on purpose. The catalog is a shop window: the cover and the
 screenshots are what someone chooses by, a row has no room for a picture, and an inline detail would push

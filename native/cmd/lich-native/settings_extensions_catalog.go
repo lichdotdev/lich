@@ -21,9 +21,12 @@ import (
 )
 
 // The catalog's grid, from the approved mockup (settings-catalog, frame 1):
-// the site's cards, two to a line.
+// the site's cards, as many to a line as keep each between catalogCardMin and
+// catalogCardMax wide, two in the pane at the window's default size.
 var (
 	catalogCardGap   = ui.Space(3)   // .cards gap-3
+	catalogCardMin   = ui.Space(65)  // a card's narrowest, before a line drops a column
+	catalogCardMax   = ui.Space(90)  // its widest, past which a line takes a column more
 	catalogGlyphSize = ui.Space(11)  // .cover .i, 44px
 	catalogTextTop   = ui.Space(3.5) // .ctxt padding 14px 16px 16px
 	catalogTextX     = ui.Space(4)
@@ -123,32 +126,44 @@ func (s *settingsScreen) catalogRows(th *ui.Theme, installed []backend.Extension
 			return layout.Inset{Left: rowPadX, Top: catalogBodyPad}.Layout(gtx, th.Text(ui.TextSM, i18n.T("settings.extensionsSettings.catalog.noMatch")).Muted().Layout)
 		})
 	}
-	for i := 0; i < len(entries); i += 2 {
-		pair := entries[i:min(i+2, len(entries))]
-		rows = append(rows, func(gtx C) D {
-			return catalogPair(gtx, func(gtx C, j int) D {
-				_, has := installedAs(installed, pair[j].ID)
-				return s.catalogCard(gtx, th, cat, pair[j], has)
-			}, len(pair))
+	return append(rows, func(gtx C) D {
+		return catalogCards(gtx, len(entries), func(gtx C, i int) D {
+			_, has := installedAs(installed, entries[i].ID)
+			return s.catalogCard(gtx, th, cat, entries[i], has)
 		})
-	}
-	return rows
+	})
 }
 
-// catalogPair lays n cards (one or two) side by side, each half the line,
-// with the grid's gap under them.
-func catalogPair(gtx C, card func(gtx C, j int) D, n int) D {
-	return layout.Inset{Bottom: catalogCardGap}.Layout(gtx, func(gtx C) D {
-		cell := func(j int) layout.FlexChild {
-			return layout.Flexed(1, func(gtx C) D {
-				if j >= n {
-					return D{Size: image.Pt(gtx.Constraints.Min.X, 0)}
-				}
-				return card(gtx, j)
-			})
+// catalogColumns is how many cards a line width px wide holds: enough that
+// none is wider than catalogCardMax, unless that would make one narrower than
+// catalogCardMin; one at the least. A wide pane takes columns, never a bigger
+// cover.
+func catalogColumns(gtx C, width int) int {
+	gap := gtx.Dp(catalogCardGap)
+	enough := (width + gap + gtx.Dp(catalogCardMax)) / (gtx.Dp(catalogCardMax) + gap)
+	room := (width + gap) / (gtx.Dp(catalogCardMin) + gap)
+	return max(1, min(enough, room))
+}
+
+// catalogCards lays n cards in lines of as many as the width holds, each an
+// equal share of its line, the grid's gap between and under them.
+func catalogCards(gtx C, n int, card func(gtx C, i int) D) D {
+	width, gap := gtx.Constraints.Max.X, gtx.Dp(catalogCardGap)
+	cols := catalogColumns(gtx, width)
+	w := (width - (cols-1)*gap) / cols
+	y := 0
+	for first := 0; first < n; first += cols {
+		line := 0
+		for i := first; i < min(first+cols, n); i++ {
+			c := gtx
+			c.Constraints = layout.Constraints{Min: image.Pt(w, 0), Max: image.Pt(w, gtx.Constraints.Max.Y)}
+			at := op.Offset(image.Pt((i-first)*(w+gap), y)).Push(gtx.Ops)
+			line = max(line, card(c, i).Size.Y)
+			at.Pop()
 		}
-		return layout.Flex{}.Layout(gtx, cell(0), layout.Rigid(layout.Spacer{Width: catalogCardGap}.Layout), cell(1))
-	})
+		y += line + gap
+	}
+	return D{Size: image.Pt(width, y)}
 }
 
 // catalogRetryHeading is the group's heading with Try again on its right.
@@ -360,12 +375,13 @@ func catalogMeta(gtx C, th *ui.Theme, cat *backend.ExtensionCatalog, e extension
 	)
 }
 
-// catalogSkeletonRow is a line of two cards while the catalog is read: the
+// catalogSkeletonRow is a line of cards while the catalog is read: the
 // cover's ground and a bar where each line of text lands, in the loaded
 // card's measures.
 func catalogSkeletonRow(th *ui.Theme) layout.Widget {
 	return func(gtx C) D {
-		return catalogPair(gtx, func(gtx C, _ int) D { return catalogSkeletonCard(gtx, th) }, 2)
+		cols := catalogColumns(gtx, gtx.Constraints.Max.X)
+		return catalogCards(gtx, cols, func(gtx C, _ int) D { return catalogSkeletonCard(gtx, th) })
 	}
 }
 
