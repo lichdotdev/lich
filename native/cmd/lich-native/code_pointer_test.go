@@ -163,19 +163,20 @@ func TestClickOpensAnIgnoredFileTheListingLacks(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 	c := clientOf(srv)
+	checkout := t.TempDir()
 	cases := []struct {
 		path string
 		want []string
 	}{
 		{"build/out.log", []string{"build/out.log"}},
-		{"/repo/build/out.log", []string{"build/out.log"}},
+		{filepath.Join(checkout, "build", "out.log"), []string{"build/out.log"}},
 		{"build/missing.log", nil},
 		{"../outside.log", nil},
-		{"/elsewhere/out.log", nil},
+		{filepath.Join(filepath.Dir(checkout), "elsewhere", "out.log"), nil},
 		{"a.go", []string{"a.go"}},
 	}
 	for _, tc := range cases {
-		got, err := checkoutMatches(context.Background(), c, "/repo", gioterm.CodeRef{Path: tc.path, Line: 3})
+		got, err := checkoutMatches(context.Background(), c, checkout, gioterm.CodeRef{Path: tc.path, Line: 3})
 		if err != nil || !slices.Equal(got, tc.want) {
 			t.Errorf("%s: got %v, %v; want %v", tc.path, got, err, tc.want)
 		}
