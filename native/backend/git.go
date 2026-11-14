@@ -26,6 +26,10 @@ func (c *Client) GitLog(ctx context.Context, opts GitLogOptions) (GitLogPage, er
 	return callMethod(ctx, c, api.ProjectGitLog, opts)
 }
 
+func (c *Client) GitAuthors(ctx context.Context, path, ref string) ([]string, error) {
+	return callMethod(ctx, c, api.ProjectGitAuthors, api.GitAuthorsOptions{Path: path, Ref: ref})
+}
+
 func (c *Client) GitRefs(ctx context.Context, path string) (GitRefs, error) {
 	return callMethod(ctx, c, api.ProjectGitRefs, api.PathOptions{Path: path})
 }

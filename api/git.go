@@ -2,6 +2,7 @@ package api
 
 var (
 	ProjectGitLog        = define[GitLogOptions, GitLogPage]("project.GitLog")
+	ProjectGitAuthors    = define[GitAuthorsOptions, []string]("project.GitAuthors")
 	ProjectGitRefs       = define[PathOptions, GitRefs]("project.GitRefs")
 	ProjectGitCommit     = define[GitCommitOptions, GitCommitDetail]("project.GitCommit")
 	ProjectGitCommitDiff = define[GitCommitDiffOptions, string]("project.GitCommitDiff")
@@ -44,6 +45,13 @@ type GitLogOptions struct {
 	File   string `json:"file,omitempty"`
 	Skip   int    `json:"skip,omitempty"`
 	Limit  int    `json:"limit"`
+}
+
+// GitAuthorsOptions names the history GitAuthors reads, Ref empty for the same
+// everything GitLogOptions reads.
+type GitAuthorsOptions struct {
+	Path string `json:"path"`
+	Ref  string `json:"ref,omitempty"`
 }
 
 // GitCommit is one row of the history.

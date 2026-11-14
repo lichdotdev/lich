@@ -587,8 +587,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   --date-order --skip=N`, and ordering walks the whole history first, so on a very large repository without a
   commit-graph each page costs seconds and one over `gitLogBudget` (30s) fails with a message rather than a partial
   list. `--skip` also means a commit landing while you scroll can repeat or hide a row until the next read, which
-  the ref poll (`gitLogPoll`, only while the panel is open) triggers. The Author menu lists only authors of the
-  commits already loaded, and the graph clips past `gitMaxLanes`.
+  the ref poll (`gitLogPoll`, only while the panel is open) triggers. The graph clips past `gitMaxLanes`.
 - **A branch delete's Undo is a new branch at the old commit** (`internal/project/gitbranch.go`): the toast's Undo
   makes the branch again where it pointed, without its reflog, and only for as long as the
   toast is up. The dialog asks first only when commits would be on no branch, remote branch or tag

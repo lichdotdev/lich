@@ -259,3 +259,43 @@ func TestParseGitLogRejectsATornRecord(t *testing.T) {
 		t.Error("a record with too few fields must fail")
 	}
 }
+
+func TestGitAuthorsListsAuthorsBeyondTheFirstPage(t *testing.T) {
+	repo, git := initRepo(t)
+	os.WriteFile(filepath.Join(repo, "b.txt"), []byte("b"), 0o644)
+	git("add", "-A")
+	git("commit", "--author=Bob Old <bob@example.com>", "-m", "by bob")
+	for _, m := range []string{"one", "two"} {
+		commitTo(t, repo, git, "f.txt", m, m)
+	}
+	s := new(Service)
+	first, err := s.GitLog(context.Background(), api.GitLogOptions{Path: repo, Limit: 2})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, c := range first.Commits {
+		if c.Author == "Bob Old" {
+			t.Fatalf("Bob is on the first page, the test proves nothing: %+v", first.Commits)
+		}
+	}
+	authors, err := s.GitAuthors(context.Background(), api.GitAuthorsOptions{Path: repo})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Contains(authors, "Bob Old") || !slices.Contains(authors, first.Commits[0].Author) || len(authors) != 2 {
+		t.Errorf("authors = %v, want Bob Old and %q once each", authors, first.Commits[0].Author)
+	}
+	if authors[0] != first.Commits[0].Author {
+		t.Errorf("authors = %v, want the one with most commits first", authors)
+	}
+}
+
+func TestGitAuthorsOfARepositoryWithoutCommits(t *testing.T) {
+	repo, git := initRepo(t)
+	git("checkout", "--orphan", "fresh")
+	git("update-ref", "-d", "refs/heads/main")
+	authors, err := new(Service).GitAuthors(context.Background(), api.GitAuthorsOptions{Path: repo})
+	if err != nil || len(authors) != 0 {
+		t.Errorf("authors = %v, %v", authors, err)
+	}
+}

@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **The Git panel's Author menu lists everyone who wrote the history.** It named only the authors of the commits already scrolled in; it now shows the most active ones, from the whole history.
 - **Undo on a deleted branch brings back the branch it tracked.** The toast's Undo used to make the branch again without its upstream, so pull and push stopped knowing where to go.
 - **A Windows user who moved Downloads now finds a session's browser downloads there.** They used to land in `%USERPROFILE%\Downloads` instead.
 - **Claude Code profiles no longer keep every plugin version they ever ran on disk.** At start lich deletes the versions no profile uses any more, and a profile made before `CLAUDE_CODE_PLUGIN_CACHE_DIR` was set stops cloning each marketplace a second time.
