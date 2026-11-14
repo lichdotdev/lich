@@ -1393,8 +1393,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   cannot be folded, a checkout row has no menu, a folder is not drawn, and no card is lit, the panes showing
   which session has the focus. The collapsed sidebar still lists the focused pane's project. A split
   is refused, with a toast, when a pane would drop under 480dp (51 columns at the default 13sp, measured with
-  Claude Code and Codex): a larger terminal font fits fewer columns in the same floor. Only the focused pane
-  takes a dropped file; a file dropped on a pane in the background goes nowhere. A pinned card cannot be dragged onto a pane: the
+  Claude Code and Codex): a larger terminal font fits fewer columns in the same floor. A pinned card cannot be dragged onto a pane: the
   pinned block shares no carry with the panes, so its card never leaves the sidebar. The panes' drop zones are
   not SortCarry targets (`layouts_drag.go`): a new drop target over the stage belongs there, not in the carry.
   A pane entering or leaving moves only its frame and its neighbours' (`stage_motion.go`): each terminal is

@@ -30,20 +30,22 @@ func attachToSplit() (before, after string) {
 }
 
 // onDrag follows one OS file drag over the window, and pastes what lands on
-// the terminal at the active session's prompt.
+// a terminal at its session's prompt, focusing its pane as a click would.
 func (u *window) onDrag(e app.DropEvent, invalidate func()) {
-	was := u.drop.hinting()
-	paths := u.drop.handle(e)
-	if u.drop.hinting() != was {
+	was := u.drop.overSession()
+	id, paths := u.drop.handle(e)
+	if u.drop.overSession() != was {
 		invalidate()
 	}
 	if len(paths) == 0 {
 		return
 	}
-	sv, ok := u.model.activeSession()
+	sv, ok := u.model.sessionViewOf(id)
 	if !ok {
 		return
 	}
+	u.model.focusPane(u.ctx, id)
+	invalidate()
 	target := dropTarget{sessionID: sv.ID, checkout: sv.path, confined: sv.sandbox.Confined}
 	go u.dropFiles(target, paths)
 }
