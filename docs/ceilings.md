@@ -1211,10 +1211,9 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   extension says it does with it. The permissions bound only the calls: the process itself is
   unsandboxed. Every provider is reached exactly as those MCP tools reach it, with their gaps (the Provider support
   table: a session whose provider reports no state lists an empty state and sends no `session.status`).
-- **What an extension opens or sends is recorded as coming from no session** (`internal/extensions/methods.go`):
-  lich records who asked only as the origin session of a new session, and an extension is none, so a session it
-  opens has no origin on its card, and the prompt it sends arrives introduced as relayed by the lich command line,
-  as `lich send` outside a session does. Nothing records which extension did it.
+- **A session an extension opens has no origin on its card** (`internal/extensions/methods.go`):
+  lich records who asked only as the origin session of a new session, and an extension is none, so nothing on the
+  card or the row says which extension opened it.
 - **An extension collects a pending send only by its ticket, and only its own** (`internal/extensions/methods.go`):
   a send from no session goes to no inbox and no note announces its answer, so `sessions.answer` with the ticket
   is the one way to it, each wait at most 90 seconds. The relay redeems a ticket for any caller, so the extension

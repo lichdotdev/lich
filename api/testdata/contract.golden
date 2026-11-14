@@ -1240,6 +1240,8 @@ SendOptions {
 	project string
 	prompt string
 	waitSeconds int
+	extensionId,omitempty string
+	extensionName,omitempty string
 }
 
 SendResult {

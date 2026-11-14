@@ -22,11 +22,12 @@ var ko = Catalog{
 		"세션을 열고 작업까지 넘깁니다.",
 	BriefingArtifacts: " 사용자에게 보여 주려고 만드는 페이지(보고서, 다이어그램, 목업)는 체크아웃이 아니라 환경 변수 LICH_ARTIFACT_DIR가 가리키는 폴더에 두고, %s을(를) 써서 이 세션의 터미널 옆 브라우저에 여세요. 다른 곳에 게시하는 것은 사용자가 요청할 때만 하세요.",
 
-	RelayMessage:  "[lich] %[1]s이며, 당신의 프롬프트에서 온 것이 아닙니다.\n\n%[2]s\n\n%[3]s",
-	OriginCLI:     "lich 명령줄이 전달한 메시지",
-	OriginSession: "세션 %q에서 온 메시지",
-	ReplyCommand:  "  \"$LICH_BIN\" reply %s \"<답변>\"",
-	ReplyRouteCLI: "답이 준비되면 다음을 실행해 돌려보내세요:\n%s",
+	RelayMessage:    "[lich] %[1]s이며, 당신의 프롬프트에서 온 것이 아닙니다.\n\n%[2]s\n\n%[3]s",
+	OriginCLI:       "lich 명령줄이 전달한 메시지",
+	OriginSession:   "세션 %q에서 온 메시지",
+	OriginExtension: "확장 프로그램 %[1]q(%[2]s)에서 전달한 메시지",
+	ReplyCommand:    "  \"$LICH_BIN\" reply %s \"<답변>\"",
+	ReplyRouteCLI:   "답이 준비되면 다음을 실행해 돌려보내세요:\n%s",
 	ReplyRouteTools: "답이 준비되면 lich 도구 `%[1]s`(티켓 %[2]s)로 돌려보내거나, " +
 		"다음을 실행하세요:\n%[3]s",
 	ReplyOnlyWayBack: "그 티켓이 유일한 회신 경로입니다. 요청한 쪽은 그 티켓에 묶여 다른 것은 아무것도 읽지 " +

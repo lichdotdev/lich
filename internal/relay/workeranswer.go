@@ -22,6 +22,10 @@ func (s *Service) taskMessage(id string, t *ticket, kind string) string {
 		s.mu.Unlock()
 		return composeForWorker(s.lang(), t.sender, t.prompt)
 	}
+	if t.extensionID != "" {
+		lang := s.lang()
+		return composeFrom(lang, originExtension(lang, t.extensionID, t.extensionName), id, t.prompt, s.offersTools(kind))
+	}
 	return compose(s.lang(), t.sender, id, t.prompt, s.offersTools(kind))
 }
 
