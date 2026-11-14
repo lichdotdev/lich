@@ -31,6 +31,7 @@ type Catalog struct {
 	RelayMessage      string
 	OriginCLI         string
 	OriginSession     string
+	OriginExtension   string
 	ReplyCommand      string
 	ReplyRouteCLI     string
 	ReplyRouteTools   string

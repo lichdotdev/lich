@@ -239,7 +239,11 @@ func (s *Service) sessionCost(id string, src usageSource) (float64, costMiss, bo
 				return 0, miss, false
 			}
 		}
-	case providers.Codex, providers.OMP, providers.OpenCode, providers.Crush:
+	case providers.OMP:
+		if miss, ok := s.countOMP(id, src); !ok {
+			return 0, miss, false
+		}
+	case providers.Codex, providers.OpenCode, providers.Crush:
 		cost, miss, ok := s.wholeCost(src)
 		if !ok {
 			return 0, miss, false
@@ -309,8 +313,6 @@ func (s *Service) wholeCost(src usageSource) (float64, costMiss, bool) {
 	switch src.kind {
 	case providers.Codex:
 		return codexTranscriptCost(src.path, s.prices)
-	case providers.OMP:
-		return ompTranscriptCost(src.path)
 	}
 	cost, ok := sessionDBCost(src.path, queriesFor(src).cost, src.id)
 	if !ok {
@@ -332,6 +334,40 @@ func (s *Service) saveWholeCost(id, transcriptID string, cost float64) (costMiss
 	return costMissNone, true
 }
 
+// countOMP prices an oh-my-pi conversation whole, as saveWholeCost files the
+// rest, less the turns another of the session's transcripts already billed.
+func (s *Service) countOMP(id string, src usageSource) (costMiss, bool) {
+	billed := s.billedIn(id, src.id)
+	cost, miss, ok := ompTranscriptCost(src.path, billed)
+	if !ok {
+		return miss, false
+	}
+	if miss, ok := s.saveBilled(id, src.id, billed); !ok {
+		return miss, false
+	}
+	return s.saveWholeCost(id, src.id, cost)
+}
+
+// billedIn is what one transcript's scan asks of the responses session id has
+// billed (billedResponses).
+func (s *Service) billedIn(id, transcriptID string) *billedResponses {
+	return &billedResponses{elsewhere: func(responseID string) (bool, error) {
+		return s.store.CountedElsewhere(id, transcriptID, responseID)
+	}}
+}
+
+// saveBilled records the responses a scan billed. Called before the ledger is
+// saved: a ledger that then fails to save rescans those responses as this
+// transcript's own, while one saved without them would let a later copy bill
+// them again.
+func (s *Service) saveBilled(id, transcriptID string, billed *billedResponses) (costMiss, bool) {
+	if err := s.store.SaveCostResponses(id, transcriptID, billed.ids); err != nil {
+		slog.Warn("terminal: save billed responses", "session", id, "err", err)
+		return costMissUnread, false
+	}
+	return costMissNone, true
+}
+
 // countTranscript folds one transcript into the session's ledger, resuming from
 // where the last turn stopped and saving how far this one got. false is "this
 // file has no total to contribute yet" — it could not be read, its accounting
@@ -348,8 +384,12 @@ func (s *Service) countTranscript(id, transcriptID, path string) (costMiss, bool
 		return costMissUnread, false
 	}
 	from := costLedger{offset: offset, lastMessage: lastMessage, cost: cost}
-	ledger, miss, ok := scanTranscriptCost(path, from, s.prices)
+	billed := s.billedIn(id, transcriptID)
+	ledger, miss, ok := scanTranscriptCost(path, from, s.prices, billed)
 	if !ok {
+		return miss, false
+	}
+	if miss, ok := s.saveBilled(id, transcriptID, billed); !ok {
 		return miss, false
 	}
 	if ledger != from {

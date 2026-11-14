@@ -10,7 +10,8 @@
   },
   "action": {
     "cancel": "キャンセル",
-    "create": "作成"
+    "create": "作成",
+    "previewMarkdown": "Markdown をプレビュー"
   },
   "checkAgainButton": {
     "check": "再確認",

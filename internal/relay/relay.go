@@ -238,11 +238,16 @@ type Result = api.SendResult
 // on: a session renamed, or closed altogether, would otherwise leave a mark
 // nothing can clear.
 type ticket struct {
-	fromID   string
-	sender   string
-	targetID string
-	target   string
-	created  time.Time
+	fromID string
+	sender string
+	// extensionID and extensionName are the extension that sent it, when one
+	// did: its message is introduced as the extension's rather than as the
+	// command line's.
+	extensionID   string
+	extensionName string
+	targetID      string
+	target        string
+	created       time.Time
 	// delivered is when the message started going into the target's PTY — zero
 	// while the ticket is still waiting for the target's prompt. Turn
 	// accounting reads it to tell an undelivered message apart from a live one;
@@ -626,20 +631,22 @@ func (s *Service) send(ctx context.Context, opts SendOptions, mode errandMode) (
 		return Result{}, err
 	}
 	t := &ticket{
-		fromID:      fromID,
-		sender:      sender,
-		targetID:    dest.ID,
-		target:      dest.Peer.Label,
-		created:     s.now(),
-		asked:       askedExcerpt(prompt),
-		prompt:      prompt + warning,
-		depth:       depth,
-		private:     mode == errandPrivate,
-		subagent:    mode == errandSubagent,
-		done:        make(chan struct{}),
-		stalled:     make(chan struct{}),
-		unread:      make(chan struct{}),
-		undelivered: make(chan struct{}),
+		fromID:        fromID,
+		sender:        sender,
+		extensionID:   opts.ExtensionID,
+		extensionName: opts.ExtensionName,
+		targetID:      dest.ID,
+		target:        dest.Peer.Label,
+		created:       s.now(),
+		asked:         askedExcerpt(prompt),
+		prompt:        prompt + warning,
+		depth:         depth,
+		private:       mode == errandPrivate,
+		subagent:      mode == errandSubagent,
+		done:          make(chan struct{}),
+		stalled:       make(chan struct{}),
+		unread:        make(chan struct{}),
+		undelivered:   make(chan struct{}),
 	}
 	s.mu.Lock()
 	expired, senders := s.sweep()

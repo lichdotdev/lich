@@ -20,6 +20,12 @@ Each extension is one directory under lich's config directory:
 `%AppData%` on Windows. A development build of lich (`LICH_DEV` set) reads `extensions-dev` instead. The directory
 name is the extension's id. A symlinked directory works too, the way to develop an extension in place.
 
+`extensions.Restart` reads the directory again, so an edited `manifest.json` is what runs after it. One that no
+longer validates shows invalid with its reason and does not start; fix it and call Restart again, which Settings >
+Extensions offers in the menu of a row that is not running. A directory added by hand is found when lich starts.
+Changing `id` does not rename the extension, it makes the manifest invalid, since the id must equal the directory
+name.
+
 lich writes one file of its own into a directory it installed: `.lich-source.json`, recording the repository and
 release tag, or the folder, it came from. Do not ship a file by that name.
 

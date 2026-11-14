@@ -14,6 +14,7 @@ import (
 	"log/slog"
 	"net/http"
 	"runtime"
+	"slices"
 	"sync"
 	"time"
 
@@ -254,18 +255,15 @@ func (s *Service) Send(_ context.Context, opts api.ExtensionSendOptions) (api.No
 
 // Restart starts an extension again, which is the only way back from failed,
 // and starts its count of quick crashes over. One that is running or waiting
-// to restart is stopped first, as lich stops it on exit.
+// to restart is stopped first, as lich stops it on exit. The directory is read
+// again, so an edited manifest is what runs and one that no longer validates
+// shows invalid with its reason instead of starting. The id is the directory
+// name, so a manifest whose id changed on disk is invalid like any other.
 func (s *Service) Restart(ctx context.Context, opts api.ExtensionIDOptions) (api.None, error) {
-	s.mu.Lock()
-	x := s.find(opts.ID)
-	s.mu.Unlock()
-	if x == nil {
-		return api.None{}, fmt.Errorf("no extension %q", opts.ID)
+	x, err := s.lockForRestart(opts.ID)
+	if err != nil {
+		return api.None{}, err
 	}
-	if x.invalid != nil {
-		return api.None{}, fmt.Errorf("extension %q is invalid and cannot start: %w", opts.ID, x.invalid)
-	}
-	x.restartMu.Lock()
 	defer x.restartMu.Unlock()
 	s.mu.Lock()
 	stop, done := x.stop, x.done
@@ -278,16 +276,49 @@ func (s *Service) Restart(ctx context.Context, opts api.ExtensionIDOptions) (api
 			return api.None{}, ctx.Err()
 		}
 	}
+	fresh := load(x.root, x.id, s.lichVersion)
 	s.mu.Lock()
-	defer s.mu.Unlock()
 	if s.ctx.Err() != nil {
+		s.mu.Unlock()
 		return api.None{}, errors.New("lich is shutting down")
 	}
 	if s.find(opts.ID) != x {
+		s.mu.Unlock()
 		return api.None{}, fmt.Errorf("extension %q was removed", opts.ID)
 	}
-	s.launch(x)
-	return api.None{}, nil
+	fresh.tickets, fresh.notified, fresh.latest = x.tickets, x.notified, x.latest
+	s.all[slices.Index(s.all, x)] = fresh
+	if fresh.invalid == nil {
+		s.launch(fresh)
+		s.mu.Unlock()
+		return api.None{}, nil
+	}
+	view := fresh.view()
+	s.mu.Unlock()
+	events.Send(s.emit, api.ExtensionStatusEvent, view)
+	return api.None{}, fmt.Errorf("extension %q is invalid and cannot start: %w", opts.ID, fresh.invalid)
+}
+
+// lockForRestart returns the extension with id with its restartMu held. A
+// Restart that waited on another is left holding the extension that one
+// replaced, so it looks again until the lock it got is the current one's.
+func (s *Service) lockForRestart(id string) (*installed, error) {
+	for {
+		s.mu.Lock()
+		x := s.find(id)
+		s.mu.Unlock()
+		if x == nil {
+			return nil, fmt.Errorf("no extension %q", id)
+		}
+		x.restartMu.Lock()
+		s.mu.Lock()
+		current := s.find(id) == x
+		s.mu.Unlock()
+		if current {
+			return x, nil
+		}
+		x.restartMu.Unlock()
+	}
 }
 
 // find returns the extension with id, or nil. Called with mu held.

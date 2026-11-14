@@ -21,11 +21,12 @@ var zhCN = Catalog{
 		"这条命令会打开会话并同时把任务交给它。",
 	BriefingArtifacts: "你为用户制作、供其查看的页面（报告、图表、样稿）放进环境变量 LICH_ARTIFACT_DIR 指向的文件夹，绝不放进检出，并用 %s 在本会话终端旁边的浏览器中打开；只有在用户要求时，才发布到别处。",
 
-	RelayMessage:  "[lich] %[1]s，并非来自你自己的提示词。\n\n%[2]s\n\n%[3]s",
-	OriginCLI:     "由 lich 命令行转发的消息",
-	OriginSession: "来自会话 %q 的消息",
-	ReplyCommand:  "  \"$LICH_BIN\" reply %s \"<你的回答>\"",
-	ReplyRouteCLI: "有了答案后，运行以下命令发回：\n%s",
+	RelayMessage:    "[lich] %[1]s，并非来自你自己的提示词。\n\n%[2]s\n\n%[3]s",
+	OriginCLI:       "由 lich 命令行转发的消息",
+	OriginSession:   "来自会话 %q 的消息",
+	OriginExtension: "由扩展 %[1]q（%[2]s）转发的消息",
+	ReplyCommand:    "  \"$LICH_BIN\" reply %s \"<你的回答>\"",
+	ReplyRouteCLI:   "有了答案后，运行以下命令发回：\n%s",
 	ReplyRouteTools: "有了答案后，用 lich 工具 `%[1]s`（工单 %[2]s）发回，" +
 		"或运行：\n%[3]s",
 	ReplyOnlyWayBack: "这张工单是唯一的回路：提问的一方正阻塞在它上面，不会读取任何其他内容。" +

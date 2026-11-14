@@ -117,12 +117,13 @@ project.EditReviewBody(PRReviewBodyOptions) None
 project.EditReviewComment(PRCommentBodyOptions) None
 project.Exists(PathOptions) bool
 project.FileLines(FileLinesOptions) []string
+project.GitAuthors(GitAuthorsOptions) []string
 project.GitBranchOnly(GitBranchOptions) int
 project.GitCheckout(GitCheckoutOptions) None
 project.GitCommit(GitCommitOptions) GitCommitDetail
 project.GitCommitDiff(GitCommitDiffOptions) string
 project.GitCreateBranch(GitCreateBranchOptions) None
-project.GitDeleteBranch(GitBranchOptions) string
+project.GitDeleteBranch(GitBranchOptions) GitDeletedBranch
 project.GitHubAccountOf(PathOptions) GitHubAccountState
 project.GitHubAccounts(None) []string
 project.GitLog(GitLogOptions) GitLogPage
@@ -827,6 +828,11 @@ FileLinesOptions {
 	to int
 }
 
+GitAuthorsOptions {
+	path string
+	ref,omitempty string
+}
+
 GitBranchOptions {
 	path string
 	name string
@@ -864,6 +870,12 @@ GitCreateBranchOptions {
 	path string
 	name string
 	from string
+	upstream GitUpstream
+}
+
+GitDeletedBranch {
+	hash string
+	upstream GitUpstream
 }
 
 GitHubAccountState {
@@ -1234,6 +1246,8 @@ SendOptions {
 	project string
 	prompt string
 	waitSeconds int
+	extensionId,omitempty string
+	extensionName,omitempty string
 }
 
 SendResult {
@@ -2209,6 +2223,12 @@ GitCommitFile {
 	added int
 	deleted int
 	binary,omitempty bool
+}
+
+GitUpstream {
+	remote,omitempty string
+	merge,omitempty string
+	pushRemote,omitempty string
 }
 
 GitCommit {

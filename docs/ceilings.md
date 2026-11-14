@@ -216,11 +216,15 @@ work when nobody knows it and that the call site never shows. The mechanism and 
 
 ## Transcripts, cost and plan usage
 
-- **The cost readout bills per `(session, transcript)`** (`internal/pricing`, `internal/terminal/usage_cost.go`): a
-  conversation forked inside the PTY bills its copied history twice — lich's own resume continues the same
-  transcript and is unaffected — and each sub-agent's own transcript is counted in, so one unreadable or
-  unpriceable sub-agent withholds the whole session's number. A Claude Code session whose mod reports a cost
-  is not scanned at all: the report replaces the transcript, sub-agents included. A withheld number is marked `$—` on the footer
+- **The cost readout bills per `(session, transcript)`** (`internal/pricing`, `internal/terminal/usage_cost.go`):
+  each sub-agent's own transcript is counted in, so one unreadable or unpriceable sub-agent withholds the whole
+  session's number. A conversation branched inside the PTY bills each response once by the provider's id for it
+  (`billedResponses`), so the copy is billed again wherever the figure carries no such id: a Codex rollout,
+  priced from the running total a fork carries forward (measured on 0.153.4) rather than its per-response
+  records; an oh-my-pi turn written without a `responseId` (40 of 1,585 measured); and a Claude Code session
+  whose mod reports a cost, which is not scanned at all: the report replaces the transcript, sub-agents included. That once is per session, because a fork lich spawns is
+  netted by its fork offset instead (`SaveForkCostOffset`): skipping a response billed in another session would
+  take that history off twice. A withheld number is marked `$—` on the footer
   only when the reason is standing (`costMiss.spoken` in `internal/terminal/usage_cost.go`): a transcript that
   merely could not be read this turn says nothing and keeps the last figure, so a reader cannot tell that
   absence from a session still on its first turn.
@@ -583,10 +587,9 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   --date-order --skip=N`, and ordering walks the whole history first, so on a very large repository without a
   commit-graph each page costs seconds and one over `gitLogBudget` (30s) fails with a message rather than a partial
   list. `--skip` also means a commit landing while you scroll can repeat or hide a row until the next read, which
-  the ref poll (`gitLogPoll`, only while the panel is open) triggers. The Author menu lists only authors of the
-  commits already loaded, and the graph clips past `gitMaxLanes`.
+  the ref poll (`gitLogPoll`, only while the panel is open) triggers. The graph clips past `gitMaxLanes`.
 - **A branch delete's Undo is a new branch at the old commit** (`internal/project/gitbranch.go`): the toast's Undo
-  makes the branch again where it pointed, without its upstream setting or its reflog, and only for as long as the
+  makes the branch again where it pointed, without its reflog, and only for as long as the
   toast is up. The dialog asks first only when commits would be on no branch, remote branch or tag
   (`GitBranchOnly`); a branch whose commits are on a remote is deleted at once, even when that remote branch is the
   only copy left. A checkout in a checkout with a session confirms, then switches under the agent with whatever it
@@ -821,14 +824,12 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   so `claude --continue` there points at a conversation it no longer holds. A session born in a profile deleted
   since is refused at spawn with "claude profile no longer exists", including its resume: the conversation was
   deleted with the profile.
-- **A Claude Code profile's plugin versions live in a store lich never empties**
-  (`internal/claudeprofile/plugincache.go`; the layout is `docs/providers/claude.md`, Profiles): each version a
-  profile names is moved into `plugin_cache/` beside the profiles and linked back, which is what keeps Claude
-  Code's 14-day orphan sweep from deleting a plugin only one profile has. Versions no profile names any more stay
-  in the store, since a session started before an update may still run one; deleting `plugin_cache/` with every
-  Claude Code closed only costs the downloads. A profile made before `CLAUDE_CODE_PLUGIN_CACHE_DIR` was set keeps
-  the marketplace link it was made with and clones each marketplace again into a directory Personal no longer
-  reads, until that link is removed.
+- **A Claude Code profile's plugin versions live in a store lich sweeps only at its start**
+  (`internal/claudeprofile/plugincache.go`, `pluginsweep.go`; the layout is `docs/providers/claude.md`, Profiles):
+  each version a profile names is moved into `plugin_cache/` beside the profiles and linked back, which is what
+  keeps Claude Code's 14-day orphan sweep from deleting a plugin only one profile has. A version no profile names
+  any more stays until the next lich start, and one a `claude` run outside lich with a profile's directory is
+  using is kept only by the in-use marker Claude Code writes for it.
 - **A profile's directory never moves, and lich's config dir decides where it is**: on macOS Claude Code keeps a
   login in the Keychain under a service named after a hash of the config directory string
   (`internal/quota/claude_storage.go`), so a renamed profile keeps its slug and directory and changes only its
@@ -1071,11 +1072,10 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   state at the ring head (DEC private modes with their XTSAVE values and DECSTR's reset, kitty keyboard stacks,
   modifyOtherKeys, each screen's cursor style with its blink, OSC 4/10/11/12 colors and the same colors through OSC
   21), then the sequence the head cut in two. What it does not track is lost the old way: the screen's contents
-  under an alternate screen still active (the primary screen starts blank), the cursor position, the title, insert
-  and newline mode, OSC 5 and 13 to 19 colors, scroll margins (libghostty resets them on a resize, which the bytes
-  do not show) and charsets (it restores them with the saved cursor), and a sequence the head cuts that cannot be
-  replayed from its middle, which is skipped: an OSC longer than 8 KB (an OSC 52 copy) or a DCS or APC string (a
-  kitty image chunk). A service's output (`lich service`, `read_service_output`, the console of a stopped one) is
+  under an alternate screen still active (the primary screen starts blank), the cursor position, the title, scroll
+  margins (libghostty resets them on a resize, which the bytes do not show) and charsets (it restores them with the
+  saved cursor), and a sequence the head cuts that cannot be replayed from its middle, which is skipped: an OSC
+  longer than 8 KB (an OSC 52 copy) or a DCS or APC string (a kitty image chunk). A service's output (`lich service`, `read_service_output`, the console of a stopped one) is
   the tail alone, with no preamble: it is read as text.
 - **Images are Kitty graphics sent in the stream, and only placed ones** (`native/gioterm/kitty.go`): a terminal
   takes images sent inline (`t=d`), PNG or raw pixels, up to `imageStorageLimit` (64 MB decoded per terminal;
@@ -1157,8 +1157,8 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   started when the backend boots. There is no prompt and no signature, the manifest's permissions bound only what
   it asks lich for (below), and the sandbox of `internal/sandbox` does not apply, so an extension can read and do
   whatever the user can. The
-  directory is read once per launch: an extension added or edited by hand takes a restart of lich, while one
-  installed or removed through `extensions.CommitInstall` and `extensions.Remove` is started or stopped at once.
+  directory is read once per launch: an extension added by hand takes a restart of lich, while one installed or
+  removed through `extensions.CommitInstall` and `extensions.Remove` is started or stopped at once.
 - **Installing runs code from the internet as the user, vouched for only by its own release**
   (`internal/extensions/install.go`): the archive is checked against the `checksums.txt` the same release carries,
   which proves the download arrived whole, not who built it or what it does. Whoever controls the repository
@@ -1210,10 +1210,9 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   extension says it does with it. The permissions bound only the calls: the process itself is
   unsandboxed. Every provider is reached exactly as those MCP tools reach it, with their gaps (the Provider support
   table: a session whose provider reports no state lists an empty state and sends no `session.status`).
-- **What an extension opens or sends is recorded as coming from no session** (`internal/extensions/methods.go`):
-  lich records who asked only as the origin session of a new session, and an extension is none, so a session it
-  opens has no origin on its card, and the prompt it sends arrives introduced as relayed by the lich command line,
-  as `lich send` outside a session does. Nothing records which extension did it.
+- **A session an extension opens has no origin on its card** (`internal/extensions/methods.go`):
+  lich records who asked only as the origin session of a new session, and an extension is none, so nothing on the
+  card or the row says which extension opened it.
 - **An extension collects a pending send only by its ticket, and only its own** (`internal/extensions/methods.go`):
   a send from no session goes to no inbox and no note announces its answer, so `sessions.answer` with the ticket
   is the one way to it, each wait at most 90 seconds. The relay redeems a ticket for any caller, so the extension
@@ -1282,8 +1281,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   `openExternal`, clipboard) are not limited: a loop of those still reaches the window line by line, and a process
   that exits drops the render it had pending.
 - **Restart is the way back from failed** (`Service.Restart`, `extensions.Restart`): it stops a running extension
-  as lich stops it on exit, starts it again and starts its crash count over. It does not re-read the directory, so
-  an edited manifest or a newly invalid one takes a restart of lich, and an invalid extension is refused.
+  as lich stops it on exit, starts it again and starts its crash count over.
 - **Any exit lich did not ask for counts as a crash** (`internal/extensions/supervise.go`), a clean exit 0 included.
   It restarts after 1 second, doubling, capped at 30, and lich gives up after 5 crashes in a row, each within 30
   seconds of its start: the extension shows failed until lich launches again. A file that cannot be executed at
@@ -1640,8 +1638,8 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   one an agent's click opens, shows the page behind it. Linux and Windows paint before the load returns.
 
 - **A session browser's downloads go straight to the user's Downloads folder** (`internal/browser/downloads.go`,
-  `session_downloads.go`, `docs/browser-tab.md`): `XDG_DOWNLOAD_DIR` on Linux, `~/Downloads` on macOS and Windows,
-  even for a Windows user who moved that known folder. Chrome writes each one under its download id into a staging
+  `session_downloads.go`, `docs/browser-tab.md`): `XDG_DOWNLOAD_DIR` on Linux, `~/Downloads` on macOS, the Downloads
+  known folder on Windows. Chrome writes each one under its download id into a staging
   folder in the session's profile, and only a download a page announced moves to Downloads, once complete. The
   download behaviour is the whole browser's, so what Chrome downloads on its own, with no page (4 KB to 33 MB files
   on the macOS and Windows runners), lands in staging, is never moved and goes with the profile when the browser

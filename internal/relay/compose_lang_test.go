@@ -112,3 +112,32 @@ func TestSpawnBriefingSendsPagesToTheArtifactFolder(t *testing.T) {
 		}
 	}
 }
+
+func TestAnExtensionsMessageIsIntroducedAsRelayedByIt(t *testing.T) {
+	t.Parallel()
+	for _, lang := range prompt.Langs {
+		term := newFakeTerminal("s2")
+		svc := newRelay(workspace(), term, nil)
+		svc.SetPromptLanguage(func() prompt.Lang { return lang })
+
+		go func() { _, _ = svc.Reply(t.Context(), ReplyOptions{Ticket: waitForTicket(svc), Answer: "ok"}) }()
+		if _, err := svc.Send(context.Background(), SendOptions{
+			Target: "docs", Prompt: "hello", WaitSeconds: 30, ExtensionID: "notes", ExtensionName: "Lich Notes",
+		}); err != nil {
+			t.Fatalf("%s: Send: %v", lang, err)
+		}
+
+		typed := term.written("s2")
+		if !strings.Contains(typed, `"Lich Notes"`) || !strings.Contains(typed, "notes") || strings.Contains(typed, prompt.For(lang).OriginCLI) {
+			t.Errorf("%s: the message does not name the extension in place of the command line:\n%s", lang, typed)
+		}
+	}
+}
+
+func TestAnExtensionsMessageInEnglishReadsAsRelayedByTheExtension(t *testing.T) {
+	t.Parallel()
+	got := originExtension(prompt.English, "notes", "Lich Notes")
+	if want := `Message relayed by the extension "Lich Notes" (notes)`; got != want {
+		t.Errorf("got %q, want %q", got, want)
+	}
+}

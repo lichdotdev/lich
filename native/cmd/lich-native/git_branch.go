@@ -12,6 +12,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
@@ -217,9 +218,9 @@ func (g *gitPanel) askDelete(row gitTreeRow) {
 }
 
 // deleteBranch deletes, off the UI goroutine, and offers to make the branch
-// again at the commit it pointed at.
+// again at the commit it pointed at, with the upstream it tracked.
 func (g *gitPanel) deleteBranch(path, name string, only int) {
-	hash, err := g.store.client.GitDeleteBranch(g.store.ctx, path, name)
+	deleted, err := g.store.client.GitDeleteBranch(g.store.ctx, path, name)
 	if err != nil {
 		g.notify(ui.Toast{Variant: ui.ToastError, Title: i18n.T("git.branch.deleteFailed", i18n.Args{"name": name}), Description: backend.ErrorText(err)})
 		return
@@ -228,7 +229,7 @@ func (g *gitPanel) deleteBranch(path, name string, only int) {
 	toast := ui.Toast{Title: i18n.T("git.branch.deleted", i18n.Args{"name": name}), Duration: revertUndoFor,
 		Action: &ui.ToastButton{Label: i18n.T("git.branch.undo"), OnClick: func() {
 			g.runBranchOp(i18n.T("git.branch.undoFailed", i18n.Args{"name": name}), func(ctx context.Context, c *backend.Client, _ string) error {
-				return c.GitCreateBranch(ctx, path, name, hash)
+				return c.GitCreateBranch(ctx, path, name, deleted.Hash, deleted.Upstream)
 			}, nil)
 		}}}
 	if only > 0 {
@@ -270,7 +271,7 @@ func (g *gitPanel) newBranchRow(gtx C, th *ui.Theme) D {
 					g.editing = nil
 					name, from := res.Value, e.from.ref
 					g.runBranchOp(i18n.T("git.branch.createFailed", i18n.Args{"name": name}), func(ctx context.Context, c *backend.Client, path string) error {
-						return c.GitCreateBranch(ctx, path, name, from)
+						return c.GitCreateBranch(ctx, path, name, from, api.GitUpstream{})
 					}, nil)
 				case ui.InlineEditCancelled:
 					g.editing = nil
