@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -240,4 +241,25 @@ func TestStatusEventIsWhatListShows(t *testing.T) {
 	if !bytes.Equal(listed, emitted) {
 		t.Errorf("event %s, list %s", emitted, listed)
 	}
+}
+
+func TestShutdownEndsWhatTheExtensionStarted(t *testing.T) {
+	dir := t.TempDir()
+	root := install(t, dir, "ext", modeParent)
+	s, r := boot(t, dir, func(c *timing) { c.stopGrace = 100 * time.Millisecond })
+	waitUntil(t, "the extension to be up", func() bool { return slices.Contains(r.titles(t), readyTitle) })
+	raw, err := os.ReadFile(filepath.Join(root, childFile))
+	if err != nil {
+		t.Fatal(err)
+	}
+	pid, err := strconv.Atoi(string(raw))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if processGone(t, pid) {
+		t.Fatal("the child was gone before Shutdown")
+	}
+
+	s.Shutdown()
+	waitUntil(t, "the child to end", func() bool { return processGone(t, pid) })
 }

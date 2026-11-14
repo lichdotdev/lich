@@ -140,6 +140,7 @@ o lich consegue ler de volta, porque cada CLI registra coisas diferentes.
 | Quanto do último turno veio do cache de prompt, no rodapé | sim | sim | não | no tooltip de custo | no tooltip de custo | não | não | não |
 | O tooltip do card mostra o modelo em uso, e com qual abriu se ele mudou | sim | sim | não | não | não | não | não | sim |
 | Custo no rodapé | sim | sim | não | sim | sim | sim | não | créditos |
+| Uma conversa com fork feito dentro do próprio terminal do agente cobra uma vez só o histórico que copia | sim, a não ser quando o custo é o que o próprio Claude Code mediu | não | sem leitura de custo | sim | sim, menos um turno gravado sem id de resposta | não faz fork | sem leitura de custo | sem leitura de custo |
 | Quanto ainda resta do seu plano | sim | sim | sim | só OpenCode Go | não | não | sim | não |
 | Um turno interrompido pelo limite de uso do plano continua quando o limite renova | sim | sim | não | retenta sozinho | retenta sozinho | não | não | não |
 | Se outro perfil seu ainda tem cota, um aviso oferece continuar nele na hora | sim | sim | não | não | não | não | não | não |
@@ -187,6 +188,7 @@ o lich consegue ler de volta, porque cada CLI registra coisas diferentes.
 | Instruído na criação, no idioma de prompt, a distribuir o trabalho em sessões do lich em vez de subagentes ocultos | sim | não | não | não | sim | não | não | não |
 | O card da sessão abre um navegador que o agente dirige, ao lado do terminal da sessão | sim | sim | sim | sim | sim | sim | sim | sim |
 | Uma página que o agente faz para te mostrar (um relatório, um diagrama, um mockup) abre nesse navegador a partir de uma pasta própria da sessão, fora do checkout, mantida enquanto a sessão existir | sim, mas o Claude Code ainda pode publicá-la no claude.ai com a própria ferramenta Artifact | sim | sim | sim | sim | sim | sim | sim |
+| Uma skill para escrever uma extensão do lich, que só roda quando você chama (`/lich:extension`) | sim | sim, como `$extension` | sim, mas o agente a vê em todo turno: o Antigravity não consegue deixar uma skill só para uso manual | sim, como `/lich-extension` | sim, como `/skill:lich-extension` | sim, pela paleta de comandos | sim, pela instalação do Claude Code | não: o Kiro não consegue tirar uma skill do contexto do agente |
 
 </details>
 

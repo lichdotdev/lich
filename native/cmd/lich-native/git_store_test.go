@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"slices"
 	"testing"
 	"time"
 )
@@ -29,5 +30,25 @@ func TestGitFetchKeepsTheLastAnswerWhileTheNextLoads(t *testing.T) {
 	}
 	if !got.prev || got.val != "first" {
 		t.Errorf("while b loads: prev %v, val %q; want the last answer, %q", got.prev, got.val, "first")
+	}
+}
+
+// The Author menu names who wrote the whole history, not only the commits
+// paged in.
+func TestAuthorsOfReadsTheHistoryBeyondTheLoadedPage(t *testing.T) {
+	landed := make(chan struct{}, 8)
+	s := &gitStore{ctx: t.Context(), client: gitRefsBackend(t), invalidate: func() { landed <- struct{}{} }}
+	s.follow("/repo", gitLogFilter{})
+	want := []string{"me", "someone only the second page holds"}
+	deadline := time.After(5 * time.Second)
+	for {
+		if got := s.authorsOf(s.snapshot()); slices.Equal(got, want) {
+			return
+		}
+		select {
+		case <-landed:
+		case <-deadline:
+			t.Fatalf("authors = %v, want %v", s.authorsOf(s.snapshot()), want)
+		}
 	}
 }

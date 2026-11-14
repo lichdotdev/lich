@@ -47,8 +47,8 @@ func NewConn(r io.Reader, w io.Writer) *Conn {
 }
 
 // Messages delivers every message from lich other than a call's result, in
-// the order lich sent them: event, surface.opened, surface.closed and
-// lich.event. It is closed once lich closes the connection and everything
+// the order lich sent them: event, surface.opened, surface.closed, lich.event
+// and refused. It is closed once lich closes the connection and everything
 // before that was delivered, which is the extension's cue to exit. Messages
 // wait for the reader without holding up results, so a handler may call lich
 // and wait for the answer on the goroutine reading this channel.

@@ -159,3 +159,34 @@ func isClone(location, personalPlugins string) bool {
 	}
 	return filepath.Base(parent) == "marketplaces" && filepath.Base(filepath.Dir(parent)) == "plugins"
 }
+
+// relinkMarketplaces points a profile made before pluginsDirVar was set, whose
+// clones link to the plugins directory under Personal's config dir, at the one
+// the variable names, which Personal reads now: otherwise the profile clones
+// each marketplace again where Personal no longer looks. A directory of the
+// profile's own, or a link elsewhere, is the user's and stays.
+func relinkMarketplaces(personal, dir string) error {
+	path := filepath.Join(dir, "plugins", "marketplaces")
+	stale := filepath.Join(personal, "plugins", "marketplaces")
+	want := filepath.Join(personalPluginsDir(personal), "marketplaces")
+	if want == stale || !profilestore.IsLink(path) {
+		return nil
+	}
+	target, err := os.Readlink(path)
+	if err != nil {
+		return fmt.Errorf("read link %s: %w", path, err)
+	}
+	if filepath.Clean(target) != stale {
+		return nil
+	}
+	if err := os.MkdirAll(want, 0o755); err != nil {
+		return fmt.Errorf("create %s: %w", want, err)
+	}
+	if err := os.Remove(path); err != nil {
+		return fmt.Errorf("unlink %s: %w", path, err)
+	}
+	if err := profilestore.LinkDir(want, path); err != nil {
+		return fmt.Errorf("link %s: %w", path, err)
+	}
+	return nil
+}

@@ -7,6 +7,7 @@ import (
 
 	"gioui.org/font"
 	"gioui.org/io/clipboard"
+	"gioui.org/io/key"
 	"gioui.org/layout"
 	"gioui.org/widget"
 
@@ -18,26 +19,26 @@ import (
 
 var icPullEdit = icons.Lucide("pencil")
 
-// pullsDescriptionMaxHeight is max-h-80: a long description scrolls inside
-// the field and keeps Save on screen.
-var pullsDescriptionMaxHeight = ui.Space(80)
+// editBusy is the busy key of a save, the title and the description sent
+// one after the other.
+const editBusy = "edit"
 
-// editState is the title and description edits, each open on one pull request
-// at a time: the URL it was opened on, so switching PRs never carries a draft
-// over.
+// editState is the edit of a pull request's title and description together,
+// open on one pull request at a time: the URL it was opened on, so switching
+// PRs never carries a draft over.
 type editState struct {
-	titleURL  string
-	title     ui.InlineEdit
-	titleOpen ui.IconActionState
-
-	bodyURL    string
+	url        string
+	title      widget.Editor
 	body       widget.Editor
-	bodySize   ui.TextareaResize
 	bodyBar    widget.Scrollbar
-	bodyMore   widget.Clickable
-	bodyMenu   ui.MenuState
-	bodySave   widget.Clickable
-	bodyCancel widget.Clickable
+	previewing bool
+
+	open    ui.IconActionState
+	preview ui.IconActionState
+	save    widget.Clickable
+	cancel  widget.Clickable
+	more    widget.Clickable
+	menu    ui.MenuState
 
 	// heldTitle and heldBody are what was sent, shown until a read caught up.
 	heldTitle, heldBody heldEdit
@@ -82,29 +83,78 @@ func (s *editState) shown(d backend.PRDetail, read pullsRead[*backend.PRDetail],
 	return d
 }
 
-// titleEditing reports whether the title field is open on d.
-func (s *editState) titleEditing(d backend.PRDetail) bool {
-	return s.title.Active() && s.titleURL == d.URL
+// editing reports whether the edit is open on d.
+func (s *editState) editing(d backend.PRDetail) bool { return s.url != "" && s.url == d.URL }
+
+// start opens the edit on d's title and description as they stand, the caret
+// at the title's end.
+func (s *editState) start(d backend.PRDetail) {
+	s.url, s.previewing = d.URL, false
+	s.title.SetText(d.Title)
+	s.title.SetCaret(s.title.Len(), s.title.Len())
+	s.body.SetText(d.Body)
 }
 
-// pullTitle is the number and the title, or the field renaming it, with the
-// pencil that opens the field right after the title's last word. Enter or
-// leaving the field saves, Escape cancels, as a session card's rename.
+func (s *editState) close() { s.url = "" }
+
+// changes is what saving sends: the title when it became something else than
+// blank, as the session card's rename keeps a blank one, and the description
+// when it changed at all, emptied included.
+func (s *editState) changes(d backend.PRDetail) (title string, body *string) {
+	if t := strings.TrimSpace(s.title.Text()); t != "" && t != d.Title {
+		title = t
+	}
+	if b := s.body.Text(); b != d.Body {
+		body = &b
+	}
+	return title, body
+}
+
+// submit hands what changed to act, held on screen until a read has it; with
+// nothing changed the edit just closes.
+func (s *editState) submit(d backend.PRDetail, now time.Time, act *pullsAction) {
+	title, body := s.changes(d)
+	if title == "" && body == nil {
+		s.close()
+		return
+	}
+	if title != "" {
+		act.title = title
+		s.heldTitle.hold(d.URL, title, now)
+	}
+	if body != nil {
+		act.body = body
+		s.heldBody.hold(d.URL, *body, now)
+	}
+}
+
+// editClicks carries out the pencil's, Cancel's and Save's clicks. The title
+// row reads them before it lays out the actions, so the frame that took one
+// already draws the header it leads to.
+func (v *pullView) editClicks(gtx C, d backend.PRDetail, act *pullsAction) {
+	s := &v.edit
+	if s.open.Click.Clicked(gtx) {
+		s.start(d)
+		v.showTab(d, tabOverview)
+		gtx.Execute(keyFocus(&s.title))
+	}
+	busy := v.busyNow() == editBusy
+	if s.cancel.Clicked(gtx) && !busy {
+		s.close()
+	}
+	if s.save.Clicked(gtx) && !busy {
+		s.submit(d, gtx.Now, act)
+	}
+}
+
+// pullTitle is the title with the pencil that opens the edit right after its
+// last word, or the field editing it.
 func (v *pullView) pullTitle(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDetail, act *pullsAction) D {
 	s := &v.edit
-	if s.titleOpen.Click.Clicked(gtx) {
-		s.titleURL = d.URL
-		s.title.Start(d.Title)
-	}
 	return layout.Flex{}.Layout(gtx,
 		layout.Flexed(1, func(gtx C) D {
-			if s.titleEditing(d) {
-				dims, res := th.InlineEdit(&s.title, pullsTitleSize).Weight(font.SemiBold).Layout(gtx)
-				if res.Outcome == ui.InlineEditCommitted {
-					act.title = res.Value
-					s.heldTitle.hold(d.URL, res.Value, gtx.Now)
-				}
-				return dims
+			if s.editing(d) {
+				return v.titleField(gtx, th, d, act)
 			}
 			return layout.Flex{}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
@@ -115,126 +165,174 @@ func (v *pullView) pullTitle(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDe
 				}),
 				ui.Gap(1),
 				layout.Rigid(func(gtx C) D {
-					return th.IconAction(p.root, &s.titleOpen, icPullEdit, i18n.T("pulls.pullRequestView.editTitle"), false).Layout(gtx)
+					return th.IconAction(p.root, &s.open, icPullEdit, i18n.T("pulls.pullRequestView.edit"), false).Layout(gtx)
 				}),
 			)
 		}),
 	)
 }
 
+// titleField is the title being edited. Enter and Tab go on to the
+// description, Ctrl+Enter saves; Escape does nothing, so a stray one never
+// throws a long description away.
+func (v *pullView) titleField(gtx C, th *ui.Theme, d backend.PRDetail, act *pullsAction) D {
+	s := &v.edit
+	busy := v.busyNow() == editBusy
+	if ctrlEnter(gtx, &s.title) && !busy {
+		s.submit(d, gtx.Now, act)
+	}
+	// Editor.Layout drains its own events, so the Enter has to be read first.
+	s.title.Submit = true
+	next := false
+	for {
+		ev, ok := s.title.Update(gtx)
+		if !ok {
+			break
+		}
+		if _, submit := ev.(widget.SubmitEvent); submit {
+			next = true
+		}
+	}
+	if _, tab := gtx.Event(key.Filter{Focus: &s.title, Name: key.NameTab}); tab {
+		next = true
+	}
+	if next {
+		s.previewing = false
+		v.showTab(d, tabOverview)
+		gtx.Execute(keyFocus(&s.body))
+	}
+	in := th.Input(&s.title, "")
+	in.TextSize, in.Disabled = pullsTitleSize, busy
+	return in.Layout(gtx)
+}
+
+// editActions is Cancel and Save in the place of the header's actions while
+// the edit is open: the header never scrolls, so Save stays on screen however
+// long the description.
+func (v *pullView) editActions(gtx C, th *ui.Theme) D {
+	s := &v.edit
+	busy := v.busyNow() == editBusy
+	cancel := th.Button(&s.cancel, i18n.T("common.action.cancel"))
+	cancel.Variant, cancel.Size, cancel.Disabled = ui.VariantOutline, ui.SizeSM, busy
+	label := i18n.T("pulls.pullsOverview.save")
+	if busy {
+		label = i18n.T("pulls.pullsOverview.saving")
+	}
+	save := th.Button(&s.save, label)
+	save.Size, save.Disabled = ui.SizeSM, busy
+	return ui.Wrap{GapX: ui.Space(2), GapY: ui.Space(2), Justify: ui.JustifyEnd}.Layout(gtx,
+		ui.WrapItem(cancel.Layout), ui.WrapItem(save.Layout))
+}
+
 // descriptionHeading is the Description heading, with the ⋯ that copies the
-// description or turns it into a field while it is not one already.
+// description, or while it is edited the toggle that previews it.
 func (v *pullView) descriptionHeading(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDetail) D {
 	s := &v.edit
-	// Cancel is the field's, drawn under the heading: taken here, the
-	// heading and the field both read it.
-	if s.bodyCancel.Clicked(gtx) && v.busyNow() != "body" {
-		s.bodyURL = ""
-	}
 	heading := th.SectionHeading(i18n.T("pulls.pullsOverview.description")).Layout
-	if s.bodyURL == d.URL {
-		return heading(gtx)
+	if s.editing(d) {
+		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+			layout.Flexed(1, heading),
+			layout.Rigid(func(gtx C) D { return v.previewToggle(gtx, th, p) }),
+		)
 	}
 	var copied string
 	entries := []ui.MenuEntry{
 		{Label: i18n.T("pulls.pullsOverview.copyLink"), OnClick: func() { copied = d.URL }},
 		{Label: i18n.T("pulls.pullsOverview.copyMarkdown"), Disabled: strings.TrimSpace(d.Body) == "", OnClick: func() { copied = d.Body }},
-		{Kind: ui.MenuSeparator},
-		{Label: i18n.T("pulls.pullsOverview.editDescription"), OnClick: func() {
-			s.bodyURL = d.URL
-			s.body.SetText(d.Body)
-		}},
 	}
-	b := th.Button(&s.bodyMore, "")
+	b := th.Button(&s.more, "")
 	b.Icon, b.Variant, b.Size = icPullMore, ui.VariantGhost, ui.SizeIconXS
 	dims := layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 		layout.Flexed(1, heading),
 		layout.Rigid(func(gtx C) D {
 			return v.withTip(gtx, th, p, "description", i18n.T("pulls.reviewThread.more"), func(gtx C) D {
-				return th.DropdownMenu(p.root, &s.bodyMenu, entries).Layout(gtx, b.Layout)
+				return th.DropdownMenu(p.root, &s.menu, entries).Layout(gtx, b.Layout)
 			})
 		}),
 	)
 	if copied != "" {
 		gtx.Execute(clipboard.WriteCmd{Type: "application/text", Data: io.NopCloser(strings.NewReader(copied))})
 	}
-	if s.bodyURL == d.URL {
-		gtx.Execute(keyFocus(&s.body))
-	}
 	return dims
 }
 
-// descriptionField is the description being edited, raw Markdown, saved with
-// Save or Ctrl+Enter. It stays open, saying so, until GitHub took it.
-func (v *pullView) descriptionField(gtx C, th *ui.Theme, d backend.PRDetail, act *pullsAction) D {
+// previewToggle swaps the description's editor for its Markdown rendered and
+// back, as a Markdown file's card does in the Review.
+func (v *pullView) previewToggle(gtx C, th *ui.Theme, p *pullsScreen) D {
 	s := &v.edit
-	busy := v.busyNow() == "body"
-	if (s.bodySave.Clicked(gtx) || ctrlEnter(gtx, &s.body)) && !busy {
-		body := s.body.Text()
-		act.body = &body
-		s.heldBody.hold(d.URL, body, gtx.Now)
+	if s.preview.Click.Clicked(gtx) {
+		s.previewing = !s.previewing
+		if !s.previewing {
+			gtx.Execute(keyFocus(&s.body))
+		}
 	}
-	cancel := th.Button(&s.bodyCancel, i18n.T("common.action.cancel"))
-	cancel.Variant, cancel.Size, cancel.Disabled = ui.VariantOutline, ui.SizeSM, busy
-	label := i18n.T("pulls.pullsOverview.save")
-	if busy {
-		label = i18n.T("pulls.pullsOverview.saving")
+	label := i18n.T("common.action.previewMarkdown")
+	if s.previewing {
+		label = i18n.T("pulls.pullRequestView.edit")
 	}
-	save := th.Button(&s.bodySave, label)
-	save.Size, save.Disabled = ui.SizeSM, busy
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(func(gtx C) D {
-			ta := th.Textarea(&s.body, i18n.T("pulls.pullsOverview.descriptionPlaceholder"))
-			ta.Resize, ta.Disabled = &s.bodySize, busy
-			ta.MaxHeight, ta.Scrollbar = pullsDescriptionMaxHeight, &s.bodyBar
-			return ta.Layout(gtx)
-		}),
-		ui.VGap(2),
-		layout.Rigid(func(gtx C) D {
-			return layout.Flex{}.Layout(gtx, layout.Rigid(cancel.Layout), ui.Gap(2), layout.Rigid(save.Layout))
-		}),
-	)
+	return th.IconAction(p.root, &s.preview, icMarkdownPreview, label, s.previewing).Layout(gtx)
 }
 
-// applyEdit carries the title and description edits to GitHub off the frame;
-// the re-read comes back as PRChangedEvent.
+// descriptionEditor is the description being edited, raw Markdown, height
+// tall: it scrolls inside rather than growing the page, so the caret never
+// leaves the screen. Ctrl+Enter saves.
+func (v *pullView) descriptionEditor(gtx C, th *ui.Theme, d backend.PRDetail, act *pullsAction, height int) D {
+	s := &v.edit
+	busy := v.busyNow() == editBusy
+	if ctrlEnter(gtx, &s.body) && !busy {
+		s.submit(d, gtx.Now, act)
+	}
+	gtx.Constraints.Max.Y = height
+	h := gtx.Metric.PxToDp(height)
+	ta := th.Textarea(&s.body, i18n.T("pulls.pullsOverview.descriptionPlaceholder"))
+	ta.Mono, ta.Disabled, ta.Scrollbar = true, busy, &s.bodyBar
+	ta.MinHeight, ta.MaxHeight = h, h
+	return ta.Layout(gtx)
+}
+
+// applyEdit carries the edit to GitHub off the frame, the title first: the
+// first refusal stops it and leaves the edit open on what is still to send,
+// and the re-read comes back as PRChangedEvent.
 func (u *window) applyEdit(path string, number int, act pullsAction) {
+	if act.title == "" && act.body == nil {
+		return
+	}
 	v := &u.pulls.view
-	if act.title != "" {
-		title := act.title
-		go u.prWrite("title", func(err error) string {
-			return i18n.T("pulls.pullRequestView.renameFailed", i18n.Args{"error": backend.ErrorText(err)})
-		}, func() error {
+	// Set before the write starts, so the next frame already shows Save busy.
+	v.setBusy(editBusy)
+	title, body := act.title, act.body
+	failedBody := false
+	failed := func(err error) string {
+		if failedBody {
+			return i18n.T("pulls.pullsOverview.editFailed", i18n.Args{"error": backend.ErrorText(err)})
+		}
+		return i18n.T("pulls.pullRequestView.renameFailed", i18n.Args{"error": backend.ErrorText(err)})
+	}
+	go u.prWrite(editBusy, failed, func() error {
+		if title != "" {
 			if err := u.client.EditPullRequestTitle(u.ctx, path, number, title); err != nil {
 				v.onFrame(v.edit.heldTitle.release)
+				if body != nil {
+					v.onFrame(v.edit.heldBody.release)
+				}
 				return err
 			}
-			return nil
-		})
-	}
-	if act.body != nil {
-		body := *act.body
-		go u.prWrite("body", func(err error) string {
-			return i18n.T("pulls.pullsOverview.editFailed", i18n.Args{"error": backend.ErrorText(err)})
-		}, func() error {
-			if err := u.client.EditPullRequestBody(u.ctx, path, number, body); err != nil {
+		}
+		if body != nil {
+			if err := u.client.EditPullRequestBody(u.ctx, path, number, *body); err != nil {
+				failedBody = true
 				v.onFrame(v.edit.heldBody.release)
 				return err
 			}
-			v.onFrame(func() { v.edit.bodyURL = "" })
-			return nil
-		})
-	}
+		}
+		v.onFrame(v.edit.close)
+		return nil
+	})
 }
 
-// openForShot opens the edit -pulls-edit names (title, description) on d.
+// openForShot opens the edit on d for -pulls-edit, previewing the
+// description when it says preview.
 func (s *editState) openForShot(what string, d backend.PRDetail) {
-	switch what {
-	case "title":
-		s.titleURL = d.URL
-		s.title.Start(d.Title)
-	case "description":
-		s.bodyURL = d.URL
-		s.body.SetText(d.Body)
-	}
+	s.start(d)
+	s.previewing = what == "preview"
 }

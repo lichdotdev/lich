@@ -24,6 +24,8 @@ func gitRefsBackend(t *testing.T) *backend.Client {
 		case "project.GitRefs":
 			out = backend.GitRefs{Head: "aaaaaaaaaaaa", Stamp: "1", Refs: []backend.GitRef{
 				{Name: "main", Kind: backend.GitRefLocal, Head: true}, {Name: "feature", Kind: backend.GitRefLocal}}}
+		case "project.GitAuthors":
+			out = []string{"me", "someone only the second page holds"}
 		case "project.GitLog":
 			out = backend.GitLogPage{Commits: []backend.GitCommit{{Hash: "aaaaaaaaaaaa", Author: "me", Subject: "first"}}}
 		}

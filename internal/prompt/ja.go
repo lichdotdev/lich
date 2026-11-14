@@ -24,11 +24,12 @@ var ja = Catalog{
 		"このコマンド一つでセッションを開き、タスクを渡します。",
 	BriefingArtifacts: "ユーザーに見せるために作るページ（レポート、図、モックアップ）は、チェックアウトではなく、環境変数 LICH_ARTIFACT_DIR が示すフォルダに置き、%s でこのセッションのターミナルの隣のブラウザに開いてください。ほかの場所への公開は、ユーザーが求めたときだけにしてください。",
 
-	RelayMessage:  "[lich] %[1]s（あなた自身のプロンプトからのものではありません）。\n\n%[2]s\n\n%[3]s",
-	OriginCLI:     "lich コマンドラインが中継したメッセージ",
-	OriginSession: "セッション %q からのメッセージ",
-	ReplyCommand:  "  \"$LICH_BIN\" reply %s \"<あなたの回答>\"",
-	ReplyRouteCLI: "回答ができたら、次のコマンドを実行して返してください：\n%s",
+	RelayMessage:    "[lich] %[1]s（あなた自身のプロンプトからのものではありません）。\n\n%[2]s\n\n%[3]s",
+	OriginCLI:       "lich コマンドラインが中継したメッセージ",
+	OriginSession:   "セッション %q からのメッセージ",
+	OriginExtension: "拡張機能 %[1]q（%[2]s）が中継したメッセージ",
+	ReplyCommand:    "  \"$LICH_BIN\" reply %s \"<あなたの回答>\"",
+	ReplyRouteCLI:   "回答ができたら、次のコマンドを実行して返してください：\n%s",
 	ReplyRouteTools: "回答ができたら、lich ツール `%[1]s`（チケット %[2]s）で返すか、" +
 		"次のコマンドを実行してください：\n%[3]s",
 	ReplyOnlyWayBack: "このチケットが唯一の返信経路です。依頼した側はこのチケットを待って止まっており、" +

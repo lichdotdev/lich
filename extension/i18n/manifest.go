@@ -4,8 +4,9 @@ package i18n
 // "extension" (locales/<tag>/extension.json). A key a catalog lacks reads the
 // manifest's own text.
 const (
-	ManifestNameKey = "extension.manifest.name"
-	surfacesKey     = "extension.manifest.surfaces."
+	ManifestNameKey        = "extension.manifest.name"
+	ManifestDescriptionKey = "extension.manifest.description"
+	surfacesKey            = "extension.manifest.surfaces."
 )
 
 // SurfaceTitleKey is the key of surface id's title.

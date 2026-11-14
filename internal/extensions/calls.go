@@ -10,6 +10,7 @@ import (
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/extension"
+	"github.com/lichdotdev/lich/internal/prompt"
 )
 
 const (
@@ -61,6 +62,9 @@ type Lich struct {
 	// Attached is whether a window is connected to show what ShowCode and
 	// OpenURL do.
 	Attached func() bool
+	// PromptLang is the language an extension's name is worded in for the
+	// agents it sends to.
+	PromptLang func() prompt.Lang
 }
 
 // SetLich wires the services calls reach, before Boot.

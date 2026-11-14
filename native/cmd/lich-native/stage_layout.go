@@ -208,12 +208,10 @@ func (u *window) paneAt(gtx C, v stageView, id string, r image.Rectangle, severa
 	body.Constraints = layout.Exact(image.Pt(size.X, max(size.Y-head, 0)))
 	off := op.Offset(image.Pt(0, head)).Push(gtx.Ops)
 	err := u.content(body, sv, focused && u.terminalTakesKeys(gtx))
-	if focused {
-		u.paneDrop(body, on, sv, r.Min.Add(image.Pt(0, head)))
-	}
 	if several && !focused {
 		paint.FillShape(gtx.Ops, ui.Alpha(u.theme.Background, paneDim), clip.Rect{Max: body.Constraints.Max}.Op())
 	}
+	u.paneDrop(body, on, sv, r.Min.Add(image.Pt(0, head)))
 	off.Pop()
 	u.paneFocusTarget(gtx, id)
 	area.Pop()
@@ -226,15 +224,15 @@ func (u *window) paneAt(gtx C, v stageView, id string, r image.Rectangle, severa
 	return err
 }
 
-// paneDrop takes a file dragged over the focused pane's terminal, at at in
-// the island, which is where the active session's prompt is.
+// paneDrop takes a file dragged over the pane's terminal, at at in the
+// island.
 func (u *window) paneDrop(gtx C, th *ui.Theme, sv sessionView, at image.Point) {
 	if !u.terms.has(sv.ID) {
 		return
 	}
 	corner := u.islandAt.Add(at)
-	u.drop.setRect(image.Rectangle{Min: corner, Max: corner.Add(gtx.Constraints.Max)})
-	if u.drop.hinting() || *flagDropHint {
+	u.drop.add(sv.ID, image.Rectangle{Min: corner, Max: corner.Add(gtx.Constraints.Max)})
+	if u.drop.hinting(sv.ID) || *flagDropHint {
 		dropHintFor(th, sv.Label, sv.sandbox.Confined).Layout(gtx)
 	}
 }

@@ -51,7 +51,6 @@
     "addAsContext": "파일을 컨텍스트로 추가",
     "discard": "변경 사항 버리기",
     "viewed": "확인함",
-    "previewMarkdown": "Markdown 미리보기",
     "showDiff": "diff 보기"
   },
   "reviewPanel": {

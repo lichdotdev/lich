@@ -129,7 +129,6 @@
     "nobodyYet": "Пока никого",
     "copyLink": "Копировать ссылку",
     "copyMarkdown": "Копировать Markdown",
-    "editDescription": "Изменить",
     "save": "Сохранить",
     "saving": "Сохранение…",
     "descriptionPlaceholder": "Опишите изменение. Поддерживается Markdown.",
@@ -279,7 +278,7 @@
       "conversation": "Обсуждение",
       "checks": "Проверки"
     },
-    "editTitle": "Переименовать pull request",
+    "edit": "Изменить",
     "renameFailed": "Не удалось переименовать pull request: {error}"
   },
   "pullsActions": {

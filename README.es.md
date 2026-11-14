@@ -141,6 +141,7 @@ distinto.
 | Cuánto del último turno salió de la caché de prompts, en el pie de ventana | sí | sí | no | en el tooltip del costo | en el tooltip del costo | no | no | no |
 | El tooltip de la tarjeta nombra el modelo en uso, y con cuál se abrió si cambió | sí | sí | no | no | no | no | no | sí |
 | Costo en el pie de ventana | sí | sí | no | sí | sí | sí | no | créditos |
+| Una conversación bifurcada dentro de la propia terminal del agente cobra una sola vez el historial que copia | sí, salvo cuando el costo es el que midió el propio Claude Code | no | sin lectura de costo | sí | sí, salvo un turno guardado sin id de respuesta | no se puede bifurcar | sin lectura de costo | sin lectura de costo |
 | Cuánto queda de tu plan | sí | sí | sí | solo OpenCode Go | no | no | sí | no |
 | Un turno que el límite de uso de tu plan detuvo se reanuda cuando el límite se restablece | sí | sí | no | sus propios reintentos | sus propios reintentos | no | no | no |
 | Si otro de tus perfiles aún tiene cuota, un aviso ofrece continuar allí al momento | sí | sí | no | no | no | no | no | no |
@@ -188,6 +189,7 @@ distinto.
 | Se le indica al iniciarse, en el idioma de prompt, que reparta el trabajo como sesiones de lich en vez de subagentes ocultos | sí | no | no | no | sí | no | no | no |
 | La tarjeta de la sesión abre un navegador que el agente conduce, junto al terminal de la sesión | sí | sí | sí | sí | sí | sí | sí | sí |
 | Una página que el agente hace para mostrarte (un informe, un diagrama, un mockup) se abre en ese navegador desde una carpeta propia de la sesión, fuera del checkout, que dura lo que dure la sesión | sí, aunque Claude Code puede seguir publicándola en claude.ai con su propia herramienta Artifact | sí | sí | sí | sí | sí | sí | sí |
+| Una skill para escribir una extensión de lich, que solo corre cuando la llamas (`/lich:extension`) | sí | sí, como `$extension` | sí, pero el agente la ve en cada turno: Antigravity no puede reservar una skill para uso manual | sí, como `/lich-extension` | sí, como `/skill:lich-extension` | sí, desde la paleta de comandos | sí, desde la instalación de Claude Code | no: Kiro no puede sacar una skill del contexto del agente |
 
 </details>
 

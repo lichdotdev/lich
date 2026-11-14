@@ -20,6 +20,10 @@ import (
 // pagesKey is the backend setting the shown pages persist under.
 const pagesKey = "lich.native.pages"
 
+// minimizedKey is the backend setting the dividers of minimized pages persist
+// under.
+const minimizedKey = "lich.native.pages.minimized"
+
 // soloLayoutPrefix starts the id of the layout a session alone makes with
 // its page, which names its divider and is no stored layout's.
 const soloLayoutPrefix = "solo:"
@@ -90,9 +94,17 @@ func (m *model) loadPages(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	raw, err = m.client.GetSetting(ctx, minimizedKey, "")
+	if err != nil {
+		return err
+	}
+	rest, err := parsePages(raw)
+	if err != nil {
+		return err
+	}
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	m.pages = pv
+	m.pages, m.minimized = pv, rest
 	m.prunePagesLocked(m.liveLocked)
 	return nil
 }
@@ -101,10 +113,12 @@ func (m *model) loadPages(ctx context.Context) error {
 // m.mu.
 func (m *model) prunePagesLocked(keep func(session string) bool) {
 	pruned := false
-	for session := range m.pages {
-		if !keep(session) {
-			delete(m.pages, session)
-			pruned = true
+	for _, views := range []pageViews{m.pages, m.minimized} {
+		for session := range views {
+			if !keep(session) {
+				delete(views, session)
+				pruned = true
+			}
 		}
 	}
 	if pruned {
@@ -115,14 +129,21 @@ func (m *model) prunePagesLocked(keep func(session string) bool) {
 // savePagesLocked stores the pages as they are now, off the caller, who
 // holds m.mu.
 func (m *model) savePagesLocked() {
-	b, err := json.Marshal(m.pages)
+	shown, err := json.Marshal(m.pages)
+	if err != nil {
+		log.Printf("save pages: %v", err)
+		return
+	}
+	rest, err := json.Marshal(m.minimized)
 	if err != nil {
 		log.Printf("save pages: %v", err)
 		return
 	}
 	go func() {
-		if err := m.client.SetSetting(context.Background(), pagesKey, "", string(b)); err != nil {
-			log.Printf("save pages: %v", err)
+		for key, b := range map[string][]byte{pagesKey: shown, minimizedKey: rest} {
+			if err := m.client.SetSetting(context.Background(), key, "", string(b)); err != nil {
+				log.Printf("save pages: %v", err)
+			}
 		}
 	}()
 }
@@ -144,7 +165,12 @@ func (m *model) showPage(ctx context.Context, session string) bool {
 		return false
 	}
 	if m.pages[session] == nil {
-		m.pages[session] = &pageView{Axis: splitRow, Ratio: 0.5}
+		view := m.minimized[session]
+		if view == nil {
+			view = &pageView{Axis: splitRow, Ratio: 0.5}
+		}
+		delete(m.minimized, session)
+		m.pages[session] = view
 		m.savePagesLocked()
 	}
 	m.mu.Unlock()
@@ -153,8 +179,8 @@ func (m *model) showPage(ctx context.Context, session string) bool {
 }
 
 // minimizePage takes session's page off the screen and leaves its browser
-// running, for the agent and for showPage to bring back. It reports whether
-// there was one.
+// running, for the agent and for showPage to bring back where its divider
+// was. It reports whether there was one.
 func (m *model) minimizePage(session string) bool {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -165,6 +191,7 @@ func (m *model) dropPageLocked(session string) bool {
 	if m.pages[session] == nil {
 		return false
 	}
+	m.minimized[session] = &pageView{Axis: m.pages[session].Axis, Ratio: m.pages[session].Ratio}
 	delete(m.pages, session)
 	m.savePagesLocked()
 	return true

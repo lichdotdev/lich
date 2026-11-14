@@ -137,6 +137,7 @@ what lich can read back out of it, since each CLI records different things.
 | How much of the last turn came from the prompt cache, in the footer | yes | yes | no | in the cost tooltip | in the cost tooltip | no | no | no |
 | The card's tooltip names the model running, and the one it opened on if it changed | yes | yes | no | no | no | no | no | yes |
 | Cost in the footer | yes | yes | no | yes | yes | yes | no | credits |
+| A conversation branched inside the agent's own terminal is billed once for the history it copies | yes, unless the cost is the one Claude Code measured itself | no | no cost readout | yes | yes, except a turn saved without a response id | cannot branch | no cost readout | no cost readout |
 | How much of your plan is left | yes | yes | yes | OpenCode Go only | no | no | yes | no |
 | A turn your plan's usage limit stopped picks up again once the limit resets | yes | yes | no | its own retries | its own retries | no | no | no |
 | When another of your profiles still has quota, a notice offers to continue there at once | yes | yes | no | no | no | no | no | no |
@@ -184,6 +185,7 @@ what lich can read back out of it, since each CLI records different things.
 | Told at spawn, in the prompt language, to fan work out as lich sessions rather than hidden subagents | yes | no | no | no | yes | no | no | no |
 | The session card opens a browser its agent drives, beside the session's terminal | yes | yes | yes | yes | yes | yes | yes | yes |
 | A page the agent makes to show you (a report, a diagram, a mockup) opens in that browser from a folder of the session's own, outside the checkout, kept as long as the session | yes, though Claude Code may still publish it to claude.ai with its own Artifact tool | yes | yes | yes | yes | yes | yes | yes |
+| A skill for writing a lich extension that runs only when you call it (`/lich:extension`) | yes | yes, as `$extension` | yes, but the agent sees it every turn: Antigravity cannot keep a skill for manual use | yes, as `/lich-extension` | yes, as `/skill:lich-extension` | yes, from the command palette | yes, from the Claude Code install | no: Kiro cannot keep a skill out of the agent's context |
 
 </details>
 

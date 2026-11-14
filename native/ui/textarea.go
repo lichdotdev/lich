@@ -41,6 +41,7 @@ type TextareaStyle struct {
 	Scrollbar   *widget.Scrollbar
 	Placeholder string
 	Width       unit.Dp // 0 is w-full
+	Mono        bool
 	Disabled    bool
 	Invalid     bool
 	theme       *Theme
@@ -64,6 +65,9 @@ func (s TextareaStyle) Layout(gtx C) D {
 	field := inputText{theme: s.theme, editor: s.Editor, placeholder: s.Placeholder, size: TextSM,
 		font: font.Font{Typeface: s.theme.Sans}, padLeft: inputPadX, padRight: inputPadX, padY: textareaPadY,
 		minHeight: max(textareaMinHeight, min(s.MinHeight, gtx.Metric.PxToDp(gtx.Constraints.Max.Y)))}
+	if s.Mono {
+		field.font.Typeface = s.theme.Mono
+	}
 	r := s.Resize
 	if r != nil {
 		floor := max(gtx.Dp(textareaMinHeight), gtx.Constraints.Min.Y)

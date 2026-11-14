@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -273,8 +274,10 @@ func TestBadLinesAreRefusedWithoutKillingTheExtension(t *testing.T) {
 	writeFile(t, filepath.Join(root, scriptFile), script.String())
 	s, r := boot(t, dir)
 
-	waitUntil(t, "the last good line", func() bool { return slices.Contains(r.titles(t), "last") })
-	if got, want := r.titles(t), []string{"first", "last"}; !slices.Equal(got, want) {
+	// The echo answers each of the five refusals lich writes back.
+	want := []string{"first", "last", "got refused", "got refused", "got refused", "got refused", "got refused"}
+	waitUntil(t, "every echo", func() bool { return len(r.titles(t)) >= len(want) })
+	if got := r.titles(t); !slices.Equal(got, want) {
 		t.Errorf("delivered %q, want %q", got, want)
 	}
 	if runCount(root) != 1 {
@@ -330,5 +333,71 @@ func TestEncodeOutboundRefusals(t *testing.T) {
 		if _, err := encodeOutbound(json.RawMessage(raw)); err == nil {
 			t.Errorf("%q was accepted", raw)
 		}
+	}
+}
+
+// refusalsExtension writes its script, then answers each refusal it hears
+// through the SDK with a toast naming the refused kind and surface.
+func refusalsExtension() {
+	script, err := os.ReadFile(scriptFile)
+	if err != nil {
+		os.Exit(4)
+	}
+	_, _ = os.Stdout.Write(script)
+	conn := extension.NewConn(os.Stdin, os.Stdout)
+	for msg := range conn.Messages() {
+		if r, ok := msg.Data.(extension.RefusedData); ok {
+			title := fmt.Sprintf("refused %s|%s|%t", r.Kind, r.Surface, r.Reason != "")
+			_ = conn.Send(extension.ShowToast.New(extension.ToastData{Title: title}))
+		}
+	}
+}
+
+func TestEachRefusedLineIsToldToTheExtension(t *testing.T) {
+	dir := t.TempDir()
+	root := install(t, dir, "ext", modeRefusals)
+	var script bytes.Buffer
+	for _, line := range [][]byte{
+		bytes.Repeat([]byte("x"), maxLineBytes+1),
+		encodeLine(t, render(chain(maxTreeDepth+1, wrappers["children"]))),
+		encodeLine(t, extension.FireEvent.New(extension.EventData{Handler: "x"})),
+		encodeLine(t, extension.OpenExternal.New(extension.OpenExternalData{URL: "file:///etc/passwd"})),
+	} {
+		script.Write(line)
+		script.WriteByte('\n')
+	}
+	writeFile(t, filepath.Join(root, scriptFile), script.String())
+	_, r := boot(t, dir)
+
+	want := []string{"refused ||true", "refused render|main|true", "refused event||true", "refused openExternal||true"}
+	waitUntil(t, "every refusal", func() bool { return len(r.titles(t)) >= len(want) })
+	if got := r.titles(t); !slices.Equal(got, want) {
+		t.Errorf("the extension heard %q, want %q", got, want)
+	}
+}
+
+func TestRefusalsStopPastTheBudgetAndTheNextCountsTheRest(t *testing.T) {
+	s := &Service{}
+	x := &installed{id: "ext", queue: make(chan []byte, 2*maxLogLines)}
+	const over = 5
+	for range maxLogLines + over {
+		s.handleLine(x, []byte(`{"kind":"bogus"}`))
+	}
+	if got := len(x.queue); got != maxLogLines {
+		t.Fatalf("%d refusals told, want the budget's %d", got, maxLogLines)
+	}
+	for range maxLogLines {
+		<-x.queue
+	}
+
+	x.refused.opened = x.refused.opened.Add(-logWindow)
+	s.handleLine(x, []byte(`{"kind":"bogus"}`))
+	var msg extension.Message
+	if err := json.Unmarshal(<-x.queue, &msg); err != nil {
+		t.Fatal(err)
+	}
+	got, ok := msg.Data.(extension.RefusedData)
+	if !ok || got.Kind != "bogus" || got.Dropped != over {
+		t.Errorf("first refusal of the next minute = %+v, want kind bogus and %d dropped", msg.Data, over)
 	}
 }

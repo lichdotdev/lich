@@ -20,6 +20,12 @@ Each extension is one directory under lich's config directory:
 `%AppData%` on Windows. A development build of lich (`LICH_DEV` set) reads `extensions-dev` instead. The directory
 name is the extension's id. A symlinked directory works too, the way to develop an extension in place.
 
+`extensions.Restart` reads the directory again, so an edited `manifest.json` is what runs after it. One that no
+longer validates shows invalid with its reason and does not start; fix it and call Restart again, which Settings >
+Extensions offers in the menu of a row that is not running. A directory added by hand is found when lich starts.
+Changing `id` does not rename the extension, it makes the manifest invalid, since the id must equal the directory
+name.
+
 lich writes one file of its own into a directory it installed: `.lich-source.json`, recording the repository and
 release tag, or the folder, it came from. Do not ship a file by that name.
 
@@ -49,6 +55,8 @@ release tag, or the folder, it came from. Do not ship a file by that name.
 - `minLichVersion`, when set, is `MAJOR.MINOR.PATCH`; an older lich lists the extension as invalid.
 - `executable` is a path relative to the directory and must resolve inside it, symlinks included, to a regular
   file. On Windows name the `.exe`.
+- `description`, when set, is one line of at most 160 characters saying what the extension does for the person
+  using it. lich runs an extension without one; the [catalog](#listing-in-the-catalog) does not list it.
 - Surface ids are non-empty and unique. A surface's `place` says where it lives: none for a full screen opened
   from the window's top bar, `dock` for a tab of the dock beside the terminal, `panel` for a panel rising from the
   footer in the Git panel's place (see [Dock and panel surfaces](#dock-and-panel-surfaces)). A lich older than
@@ -75,8 +83,9 @@ component and message. Import `github.com/lichdotdev/lich/extension` rather than
   `clipboard`, `focus`, `footer` (see [Dock and panel surfaces](#dock-and-panel-surfaces)) and `call` (see
   [Calling lich](#calling-lich)).
 - From lich: `surface.opened`, `surface.closed`, `event` (a handler the tree named fired), `language` (see
-  Translating an extension), `context` (see Dock and panel surfaces), `result` (the answer to a `call`) and
-  `lich.event` (an event the extension subscribed to).
+  Translating an extension), `context` (see Dock and panel surfaces), `result` (the answer to a `call`),
+  `lich.event` (an event the extension subscribed to) and `refused` (a line lich would not take, see
+  [What lich enforces](#what-lich-enforces)).
 
 Stderr goes to lich's log.
 
@@ -409,10 +418,12 @@ title := cat.In(lang.Tag(), "board.count", i18n.Args{"count": len(cards)})
 ## What lich enforces
 
 - A line over 3 MiB, JSON nested over 512 levels, a tree over 5000 nodes or 64 deep, a kind that only travels
-  from lich to the extension, and `openExternal` with a URL that is not http or https are dropped and logged. The
-  extension is not told.
+  from lich to the extension, `openExternal` with a URL that is not http or https, and a `footer` text over 80
+  characters are refused: lich ignores the line, logs it and sends `refused`, with the line's `kind` and `surface`
+  when it could read them (a line over 3 MiB has neither) and a `reason` in English. lich tells at most 100
+  refusals a minute; past that it only counts them, and the first `refused` after that minute carries the count
+  as `dropped`. An extension that answers `refused` with a bad line is held to the same 100.
 - `render` is coalesced to 30 a second per surface; the newest tree always arrives.
-- A `footer` text over 80 characters is refused.
 - At most 8 calls run at once per extension, each for at most 2 minutes, and a call needs the permission its
   method names in the manifest. A `result` or `lich.event` lich cannot queue because the extension stopped reading
   its stdin is dropped and logged.
@@ -451,7 +462,9 @@ lich asks GitHub for the latest release of every extension installed from a repo
 six hours after, and on `extensions.CheckUpdates`. A latest release whose tag is a later version than the one
 installed is an update: the extension's `latest` carries the tag, and `extension-update` tells the window when that
 changes. Tags are compared as `MAJOR.MINOR.PATCH`, with or without a leading `v`, so tag releases that way: a
-repository whose tags are not versions is never offered as an update.
+repository whose tags are not versions is never offered as an update. A repository the
+[catalog](#what-lich-does-with-a-listed-repository) lists is compared with the catalog's `version` instead, with no
+request to GitHub, and its `latest` is the catalog's `tag`.
 
 `extensions.PrepareUpdate` stages that release exactly as an install does, same checks, and returns the same
 preview under a token, while the installed version keeps running. `extensions.CommitInstall` with that token stops
@@ -480,3 +493,79 @@ lich downloads the archive for the machine it runs on and `checksums.txt`, refus
 match, unpacks it, validates the manifest as it does at startup and marks the executable runnable, then asks as
 [above](#installing) before it starts it. An
 archive is at most 256 MiB compressed, 1 GiB and 1000 entries unpacked.
+
+## Listing in the catalog
+
+The catalog is the list of extensions the site and lich's Settings show. It lives in
+[`lichdotdev/extensions`](https://github.com/lichdotdev/extensions), whose build reads every listed repository's
+latest release and publishes the result as `catalog.json`, the `extension.Catalog` type in
+[`extension/catalog.go`](../extension/catalog.go), at
+`https://raw.githubusercontent.com/lichdotdev/extensions/main/catalog.json`.
+
+Before asking, check every archive the way lich will: `lich extension check dist/<id>_linux_amd64.tar.gz` runs the
+install's checks on an archive or an extension's folder without installing anything, and exits non-zero naming
+what fails.
+
+A repository is listed when:
+
+- It is public on GitHub, neither a fork nor archived, and its latest release is tagged `MAJOR.MINOR.PATCH` (with
+  or without a leading `v`) and published as [above](#publishing-a-release). A platform without an archive is
+  listed as unavailable there.
+- Every archive passes `lich extension check`, and the manifest sets `description`.
+- Its `id` is not listed from another repository. An `id` starting with `lich` is kept for `lichdotdev`.
+
+To ask, open a pull request on `lichdotdev/extensions` adding `"<owner>/<repo>"` to `extensions.json`. Its checks
+run on your latest release and say what fails. A maintainer approves the first listing; after that each new release
+is picked up within an hour, by the same checks and no person.
+
+### What the catalog shows
+
+The name and description come from the manifest, translated from `manifest.name` and `manifest.description` in
+`locales/<tag>/extension.json`. The rest comes from `listing/`, a folder at the root of the repository, read at the
+commit the release tag points to, never from the archive:
+
+```
+listing/
+  listing.json
+  cover.png
+  screenshots/board.png
+```
+
+```json
+{
+  "categories": ["issues", "git"],
+  "cover": "cover.png",
+  "screenshots": [{ "file": "screenshots/board.png", "alt": "Board with issues grouped by state" }]
+}
+```
+
+- `categories` names one or two of the catalog's: `agents` (driving and watching sessions), `git` (git and pull
+  requests), `issues` (issue trackers and boards), `notes` (notes and documents), `services` (dev servers and logs)
+  and `tools` (anything else). A new category is a pull request on the catalog, with its name in every language
+  lich ships.
+- `cover` is optional: PNG or JPEG, at most 1 MiB, 16:10, from 1600 × 1000 to 3200 × 2000 pixels.
+- `screenshots` is optional, at most 6: PNG or JPEG, at most 2 MiB each, 16:10, at least 1280 × 800 pixels. `alt`
+  is required, at most 200 characters: it is what a screen reader reads instead of the picture.
+- Paths are relative to `listing/` and stay inside it.
+
+A repository without `listing/listing.json` is listed under `tools`, with no cover or screenshots. The stars shown
+are the repository's on GitHub.
+
+### What the catalog holds to
+
+The first time the catalog sees a version it records the sha256 of each archive, and that record never changes: an
+archive replaced afterwards holds the extension at the last version that matched, with the reason in the entry's
+`held`. So does a repository whose GitHub id changed, renamed, transferred or deleted and created again, until a
+maintainer confirms it. A repository taken down for malware, deception or infringement leaves the list and is
+named in `revoked`.
+
+### What lich does with a listed repository
+
+An install or update from a repository the catalog lists takes the catalog's `tag`, not GitHub's latest release, and
+refuses an archive whose sha256 differs from the catalog's, on top of the release's `checksums.txt`; a platform the
+entry has no `builds` hash for is refused, naming it. A newer release reaches lich once the catalog lists it. lich
+reads the catalog when it starts and every six hours after, with the update check, and before an install or update
+while it holds none. When the catalog cannot be read, lich installs as it does an unlisted repository. An installed
+extension whose repository is revoked is stopped when lich next reads the catalog, listed with the reason
+(`removed from the lich catalog: <reason>`), and never started again, nor updated; Remove still works and keeps its
+data. An install of a revoked repository is refused with the reason.

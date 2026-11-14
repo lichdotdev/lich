@@ -288,6 +288,13 @@ var commands = []command{
 			"workspace database, the window, the providers — and say whether it\n" +
 			"would start here. Exits non-zero when something would stop it.",
 	},
+	{
+		name: "extension",
+		args: "check <path>",
+		about: "Run the checks an install runs on an extension's folder or on a release\n" +
+			"archive, <id>_<goos>_<goarch>.tar.gz, installing nothing. Exits non-zero\n" +
+			"naming what fails. Needs no lich running and no network.",
+	},
 }
 
 const helpHeader = "lich talks to the sessions open in the running lich window.\n\n"

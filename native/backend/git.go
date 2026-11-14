@@ -26,6 +26,10 @@ func (c *Client) GitLog(ctx context.Context, opts GitLogOptions) (GitLogPage, er
 	return callMethod(ctx, c, api.ProjectGitLog, opts)
 }
 
+func (c *Client) GitAuthors(ctx context.Context, path, ref string) ([]string, error) {
+	return callMethod(ctx, c, api.ProjectGitAuthors, api.GitAuthorsOptions{Path: path, Ref: ref})
+}
+
 func (c *Client) GitRefs(ctx context.Context, path string) (GitRefs, error) {
 	return callMethod(ctx, c, api.ProjectGitRefs, api.PathOptions{Path: path})
 }
@@ -43,8 +47,8 @@ func (c *Client) GitCheckout(ctx context.Context, path, branch string, remote bo
 	return err
 }
 
-func (c *Client) GitCreateBranch(ctx context.Context, path, name, from string) error {
-	_, err := callMethod(ctx, c, api.ProjectGitCreateBranch, api.GitCreateBranchOptions{Path: path, Name: name, From: from})
+func (c *Client) GitCreateBranch(ctx context.Context, path, name, from string, upstream api.GitUpstream) error {
+	_, err := callMethod(ctx, c, api.ProjectGitCreateBranch, api.GitCreateBranchOptions{Path: path, Name: name, From: from, Upstream: upstream})
 	return err
 }
 
@@ -58,7 +62,7 @@ func (c *Client) GitBranchOnly(ctx context.Context, path, name string) (int, err
 	return callMethod(ctx, c, api.ProjectGitBranchOnly, api.GitBranchOptions{Path: path, Name: name})
 }
 
-// GitDeleteBranch returns the commit the branch pointed at, to make it again.
-func (c *Client) GitDeleteBranch(ctx context.Context, path, name string) (string, error) {
+// GitDeleteBranch returns the commit and upstream the branch had, to make it again.
+func (c *Client) GitDeleteBranch(ctx context.Context, path, name string) (api.GitDeletedBranch, error) {
 	return callMethod(ctx, c, api.ProjectGitDeleteBranch, api.GitBranchOptions{Path: path, Name: name})
 }

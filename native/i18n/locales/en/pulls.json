@@ -125,7 +125,6 @@
     "nobodyYet": "Nobody yet",
     "copyLink": "Copy link",
     "copyMarkdown": "Copy Markdown",
-    "editDescription": "Edit",
     "save": "Save",
     "saving": "Saving…",
     "descriptionPlaceholder": "Describe the change. Markdown works.",
@@ -263,7 +262,7 @@
       "conversation": "Conversation",
       "checks": "Checks"
     },
-    "editTitle": "Rename pull request",
+    "edit": "Edit",
     "renameFailed": "Couldn't rename the pull request: {error}"
   },
   "pullsActions": {

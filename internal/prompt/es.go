@@ -24,11 +24,12 @@ var es = Catalog{
 		"sesión y le entrega la tarea en un solo comando.",
 	BriefingArtifacts: " Una página que haces para que el usuario la vea (un informe, un diagrama, un mockup) va en la carpeta que indica la variable de entorno LICH_ARTIFACT_DIR, nunca en el checkout, y se abre con %s en el navegador junto al terminal de esta sesión; publícala en otro lugar solo cuando el usuario lo pida.",
 
-	RelayMessage:  "[lich] %[1]s, no de tu propio prompt.\n\n%[2]s\n\n%[3]s",
-	OriginCLI:     "Mensaje retransmitido por la línea de comandos de lich",
-	OriginSession: "Mensaje de la sesión %q",
-	ReplyCommand:  "  \"$LICH_BIN\" reply %s \"<tu respuesta>\"",
-	ReplyRouteCLI: "Cuando tengas una respuesta, devuélvela ejecutando:\n%s",
+	RelayMessage:    "[lich] %[1]s, no de tu propio prompt.\n\n%[2]s\n\n%[3]s",
+	OriginCLI:       "Mensaje retransmitido por la línea de comandos de lich",
+	OriginSession:   "Mensaje de la sesión %q",
+	OriginExtension: "Mensaje retransmitido por la extensión %[1]q (%[2]s)",
+	ReplyCommand:    "  \"$LICH_BIN\" reply %s \"<tu respuesta>\"",
+	ReplyRouteCLI:   "Cuando tengas una respuesta, devuélvela ejecutando:\n%s",
 	ReplyRouteTools: "Cuando tengas una respuesta, devuélvela con la herramienta de lich `%[1]s` " +
 		"(ticket %[2]s), o ejecutando:\n%[3]s",
 	ReplyOnlyWayBack: "Ese ticket es el único camino de vuelta: quien preguntó está bloqueado en él y " +

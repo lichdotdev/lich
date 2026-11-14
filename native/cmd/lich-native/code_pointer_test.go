@@ -1,8 +1,14 @@
 package main
 
 import (
+	"context"
+	"encoding/json"
+	"io"
+	"net/http"
+	"net/http/httptest"
 	"path/filepath"
 	"slices"
+	"strings"
 	"testing"
 
 	"github.com/lichdotdev/lich/native/fonts"
@@ -135,5 +141,44 @@ func TestOpenLinesSelectsARangeAndOpenAtForgetsIt(t *testing.T) {
 	p.openAt("a.go", 4)
 	if p.endLine != 0 {
 		t.Fatalf("endLine %d survived a plain open", p.endLine)
+	}
+}
+
+// A file git ignores is not in the listing, and the click still opens it.
+func TestClickOpensAnIgnoredFileTheListingLacks(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/rpc/project.Tree":
+			_ = json.NewEncoder(w).Encode(fileListing{Files: []string{"a.go"}})
+		case "/rpc/project.ReadFile":
+			body, _ := io.ReadAll(r.Body)
+			if !strings.Contains(string(body), `"build/out.log"`) {
+				http.Error(w, `{"error":"no such file"}`, http.StatusBadRequest)
+				return
+			}
+			_ = json.NewEncoder(w).Encode("text")
+		default:
+			t.Errorf("unexpected call %s", r.URL.Path)
+		}
+	}))
+	t.Cleanup(srv.Close)
+	c := clientOf(srv)
+	checkout := t.TempDir()
+	cases := []struct {
+		path string
+		want []string
+	}{
+		{"build/out.log", []string{"build/out.log"}},
+		{filepath.Join(checkout, "build", "out.log"), []string{"build/out.log"}},
+		{"build/missing.log", nil},
+		{"../outside.log", nil},
+		{filepath.Join(filepath.Dir(checkout), "elsewhere", "out.log"), nil},
+		{"a.go", []string{"a.go"}},
+	}
+	for _, tc := range cases {
+		got, err := checkoutMatches(context.Background(), c, checkout, gioterm.CodeRef{Path: tc.path, Line: 3})
+		if err != nil || !slices.Equal(got, tc.want) {
+			t.Errorf("%s: got %v, %v; want %v", tc.path, got, err, tc.want)
+		}
 	}
 }

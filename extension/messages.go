@@ -17,6 +17,7 @@ var (
 	SurfaceClosed = kind[SurfaceData]("surface.closed")
 	Language      = kind[LanguageData]("language")
 	Context       = kind[ContextData]("context")
+	Refused       = kind[RefusedData]("refused")
 )
 
 // RenderData replaces what a surface shows. Shortcuts are live while the
@@ -49,6 +50,19 @@ type ContextData struct {
 	Session string `json:"session,omitempty"`
 	Project string `json:"project,omitempty"`
 	Path    string `json:"path,omitempty"`
+}
+
+// RefusedData is lich turning down a line the extension wrote, which it then
+// ignored. Kind is the line's kind and Surface the surface it named, each empty
+// when lich could not read it, as for a line over the size limit. Reason is in
+// English, for a log, and Kind is what to branch on. lich tells at most 100
+// refusals a minute; Dropped, on the first one after a minute past that, is how
+// many it refused without telling.
+type RefusedData struct {
+	Kind    string `json:"kind,omitempty"`
+	Surface string `json:"surface,omitempty"`
+	Reason  string `json:"reason"`
+	Dropped int    `json:"dropped,omitempty"`
 }
 
 // Shortcut calls Handler when Keys is pressed, spelled as "r", "shift+g" or

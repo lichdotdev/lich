@@ -13,6 +13,8 @@ Two commands are about lich itself rather than about the sessions: `lich doctor`
 says whether lich would start on this machine and what would stop it, and
 `lich rage` collects a bug report from the same facts plus the logs. Both are
 the surface for the failure where there is no window to ask through.
+`lich extension check` is for extension authors: it runs an install's checks on
+a build before it is published.
 
 Agents mostly do not run it as a command. lich registers the same operations as
 **MCP tools** for the providers that can be told at spawn, so they are in the
@@ -48,8 +50,9 @@ channel of their own: anything that can run a shell command can answer.
 
 Every command that addresses a session reads the coordinates lich already
 injects into each PTY (see the hooks [README](hooks/README.md)) and posts to the
-same loopback listener the window uses. `lich doctor` and `lich rage` are the
-exceptions: they read the machine, not a running lich.
+same loopback listener the window uses. `lich doctor`, `lich rage` and
+`lich extension check` are the exceptions: they read the machine, not a running
+lich.
 
 | Var               | Purpose                                          |
 |-------------------|--------------------------------------------------|
@@ -1330,6 +1333,31 @@ on `PATH`, and every confined session dies on its error. The spawn is bounded at
 two seconds and killed, so a kernel that blocks the request cannot hang the
 report. It never turns a session confined or unconfined: `internal/sandbox`
 answers that at spawn time, and this only says what the answer would be worth.
+
+### `lich extension check <path>`
+
+Runs the checks an install runs, on an extension's folder or on a release
+archive named `<id>_<goos>_<goarch>.tar.gz`, and installs nothing:
+
+```
+$ lich extension check dist/hello_linux_amd64.tar.gz
+dist/hello_linux_amd64.tar.gz passes: hello 0.1.0
+```
+
+The archive's rules (gzip and tar, regular files and directories only, nothing
+leaving the folder, at most 256 MiB compressed, 1 GiB and 1000 entries
+unpacked), the manifest's validation, the executable, every `iconFile`, the
+`locales/` catalogs and, for an archive, that the manifest's `id` equals the one
+in the name. A folder is copied under the same bounds and refuses a link
+anywhere in it, as an install from a folder does. An archive for another OS or
+architecture is checked all the same. `minLichVersion` is checked for its form
+only, since the lich that checks is not the one that installs.
+
+A failure exits 1 with `lich: <path> fails: <what>` on stderr. A manifest with
+no `description` passes, exit 0, with a warning on stderr: lich runs it, and
+the [catalog](extensions.md#listing-in-the-catalog) does not list it. It needs
+no running lich and no network, and works on a copy under the temporary
+directory that it deletes.
 
 ## Registration
 

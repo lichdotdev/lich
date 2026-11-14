@@ -127,6 +127,13 @@ func TestModeStatePreamble(t *testing.T) {
 		{"OSC aborted by CAN", "\x1b]11;red\x18", ""},
 		{"OSC aborted by SUB", "\x1b]11;red\x1a", ""},
 		{"OSC skips C0", "\x1b]11;r\x0ed\x07", "\x1b]11;rd\x1b\\"},
+		{"insert mode", "\x1b[4h", "\x1b[4h"},
+		{"newline mode", "\x1b[20h", "\x1b[20h"},
+		{"insert and newline in one", "\x1b[20;4h", "\x1b[4h\x1b[20h"},
+		{"insert and newline reset", "\x1b[4;20h\x1b[4;20l", ""},
+		{"DECSTR resets insert and keeps newline", "\x1b[4;20h\x1b[!p", "\x1b[20h"},
+		{"RIS resets insert and newline", "\x1b[4;20h\x1bc", ""},
+		{"DEC private 4 is not insert", "\x1b[?4h", "\x1b[?4h"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -207,6 +214,8 @@ func TestReplayRebuildsTheHead(t *testing.T) {
 		{"head inside a UTF-8 character", "xé" + "abc", "abc", 4},
 		{"overflowed CSI aborted by CAN", "\x1b[" + strings.Repeat("1", rawCap+100) + "\x18live", "live", 7},
 		{"string aborted by CAN", "\x1bPqqqqqq\x18live", "live", 6},
+		{"insert and newline evicted", "\x1b[4;20h" + "0123456789", "\x1b[4h\x1b[20h0123456789", 10},
+		{"DECSTR in the evicted part", "\x1b[4;20h\x1b[!p" + "0123456789", "\x1b[20h0123456789", 10},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

@@ -27,6 +27,8 @@ type modeState struct {
 	kitty       [2]kittyStack // primary, alternate
 	cursorStyle [2]int        // DECSCUSR per screen, 0 for the default
 	modifyOther bool          // modifyOtherKeys 2
+	insert      bool          // IRM
+	newline     bool          // LNM
 	palette     map[int]string
 	dynamic     [3]string // OSC 10, 11, 12
 }
@@ -86,6 +88,12 @@ const (
 	modeKeypad        = 66 // DECNKM: ESC = and ESC > set the same libghostty-vt flag
 	modeAlt           = 1047
 	modeAltSaveCursor = 1049
+)
+
+// ANSI modes the scanner keeps; libghostty-vt's others are not replayed.
+const (
+	ansiInsert  = 4
+	ansiNewline = 20
 )
 
 // OSC numbers the scanner follows.
@@ -391,6 +399,10 @@ func (s *modeState) csiApply(prefix, final byte, p []int) {
 		for _, n := range p {
 			s.setMode(n, final == 'h')
 		}
+	case prefix == 0 && (final == 'h' || final == 'l'):
+		for _, n := range p {
+			s.setANSIMode(n, final == 'h')
+		}
 	case prefix == '?' && final == 's':
 		for _, n := range p {
 			s.saveMode(n)
@@ -407,6 +419,15 @@ func (s *modeState) csiApply(prefix, final byte, p []int) {
 		s.modifyOther = false
 	case final == 'u':
 		s.kittyKeyboard(prefix, p)
+	}
+}
+
+func (s *modeState) setANSIMode(n int, set bool) {
+	switch n {
+	case ansiInsert:
+		s.insert = set
+	case ansiNewline:
+		s.newline = set
 	}
 }
 
@@ -503,6 +524,7 @@ func (s *modeState) softReset() {
 	}
 	s.applyCursorStyle(0)
 	s.modifyOther = false
+	s.insert = false // and leaves LNM, as libghostty-vt does
 	clear(s.palette)
 }
 
@@ -586,6 +608,12 @@ func (s *modeState) preamble() []byte {
 	}
 	if s.modifyOther {
 		b.WriteString("\x1b[>4;2m")
+	}
+	if s.insert {
+		fmt.Fprintf(&b, "\x1b[%dh", ansiInsert)
+	}
+	if s.newline {
+		fmt.Fprintf(&b, "\x1b[%dh", ansiNewline)
 	}
 	s.replayColors(&b)
 	s.replayPartial(&b)

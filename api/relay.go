@@ -169,6 +169,11 @@ type SendOptions struct {
 	Project     string `json:"project"`
 	Prompt      string `json:"prompt"`
 	WaitSeconds int    `json:"waitSeconds"`
+	// ExtensionID and ExtensionName say the call is an extension's, by its id
+	// and its name in the prompt language, so the prompt the target receives is
+	// introduced as relayed by it. A call from a session leaves them empty.
+	ExtensionID   string `json:"extensionId,omitempty"`
+	ExtensionName string `json:"extensionName,omitempty"`
 }
 
 // SendResult is what a caller gets back from Send or Wait. Answer is empty unless
