@@ -9,7 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **The plugin's `extension` skill, which walks you through writing a lich extension, reaches every agent lich installs the plugin into.** It runs only when you call it, `/lich:extension` in Claude Code; Kiro CLI goes without it.
 - **TIFF images in a diff show a preview.** A `.tif` or `.tiff` file opens as a picture in the Review and the Code tab, the way PNG and WebP do.
+- **An extension from a repository in the lich catalog installs at the version the catalog checked.** Installing or updating it takes the release the catalog lists and refuses an archive that differs from the one it recorded, and an extension the catalog takes down is stopped and stays stopped. Extension authors check a build with `lich extension check`, see `docs/extensions.md`.
 - **lich tells you when an extension has a new version, and updates it in place.** A toast offers the update, and Settings › Extensions shows Update on the extension's row, with Check for updates over the list. What the extension saved is kept, and lich asks first when the new version wants a permission the installed one does not have.
 - **Draw on a page in a session's browser for the agent to see.** Draw, on the bar over the bottom of the page, turns the pointer into a pencil; the eraser removes whole strokes and Ctrl+Z takes the last one back. Send hands the agent a screenshot of the page with your drawing on it.
 - **An extension can live in the dock or in a panel over the footer, not only as a full screen.** Its item joins the footer, where a click opens it beside the session you are in; move or hide the item in Settings › Appearance › Footer. Extension authors set `place` on a surface, see `docs/extensions.md`.
@@ -33,6 +35,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **Minimizing a session's browser page keeps where its divider was.** Show on the browser's row in the sidebar puts the page back with the terminal and the page sharing the screen as you left them; closing the browser forgets it.
+- **Ctrl+click on a `path:line` opens a file git ignores.** A path in a session's terminal that sat in `.gitignore`, a build output or a log, answered "not found" though it was there; it opens in the Code tab now. A path outside the session's checkout is still refused.
+- **The Git panel's Author menu lists everyone who wrote the history.** It named only the authors of the commits already scrolled in; it now shows the most active ones, from the whole history.
 - **Undo on a deleted branch brings back the branch it tracked.** The toast's Undo used to make the branch again without its upstream, so pull and push stopped knowing where to go.
 - **A Windows user who moved Downloads now finds a session's browser downloads there.** They used to land in `%USERPROFILE%\Downloads` instead.
 - **Claude Code profiles no longer keep every plugin version they ever ran on disk.** At start lich deletes the versions no profile uses any more, and a profile made before `CLAUDE_CODE_PLUGIN_CACHE_DIR` was set stops cloning each marketplace a second time.

@@ -4,6 +4,7 @@ package main
 // (show_code) or by a Ctrl+click on a path:line in its terminal.
 
 import (
+	"context"
 	"path"
 	"path/filepath"
 	"slices"
@@ -11,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/lichdotdev/lich/api"
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/gioterm"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
@@ -102,21 +104,41 @@ func (m *model) sessionOnScreen(id string) bool {
 }
 
 // followCodeRef finds what a clicked path:line names, off the frame: the
-// listing is a git call.
+// listing is a git call and the fallback reads the disk.
 func (u *window) followCodeRef(session string, ref gioterm.CodeRef) {
 	go func() {
 		var matches []string
 		if view, ok := u.model.sessionViewOf(session); ok {
-			listing, err := u.client.Tree(u.ctx, view.path)
-			if err != nil {
+			var err error
+			if matches, err = checkoutMatches(u.ctx, u.client, view.path, ref); err != nil {
 				u.logErr("list the checkout", err)
 				u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("dock.filesPanel.readFailed")})
 				return
 			}
-			matches = codeRefMatches(listing.Files, view.path, ref)
 		}
 		u.showCodeMatches(session, ref, matches)
 	}()
+}
+
+// checkoutMatches searches the listing, then asks the backend about the path
+// itself: the listing leaves out what git ignores, and the backend refuses a
+// path outside the checkout.
+func checkoutMatches(ctx context.Context, c *backend.Client, checkout string, ref gioterm.CodeRef) ([]string, error) {
+	listing, err := c.Tree(ctx, checkout)
+	if err != nil {
+		return nil, err
+	}
+	if matches := codeRefMatches(listing.Files, checkout, ref); len(matches) > 0 {
+		return matches, nil
+	}
+	rel, ok := codeRefRel(checkout, ref.Path)
+	if !ok {
+		return nil, nil
+	}
+	if _, err := c.ReadFile(ctx, checkout, rel); err != nil {
+		return nil, nil
+	}
+	return []string{rel}, nil
 }
 
 func (u *window) showCodeMatches(session string, ref gioterm.CodeRef, matches []string) {

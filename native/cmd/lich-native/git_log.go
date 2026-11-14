@@ -81,24 +81,30 @@ func (g *gitPanel) filterBar(gtx C, th *ui.Theme, view gitLogView) D {
 	})
 }
 
-// gitAuthors are the authors of the commits loaded, the only ones the window
-// can name without walking the whole history.
+// gitAuthors are the authors of the commits loaded, newest first.
 func gitAuthors(commits []backend.GitCommit) []string {
 	seen := map[string]bool{}
+	var names []string
 	for _, c := range commits {
-		seen[c.Author] = true
+		if !seen[c.Author] {
+			seen[c.Author] = true
+			names = append(names, c.Author)
+		}
 	}
-	names := make([]string, 0, len(seen))
-	for name := range seen {
-		names = append(names, name)
-	}
+	return gitTopAuthors(names)
+}
+
+// gitTopAuthors keeps the first gitMaxAuthors of names, which come with the
+// most active first, and lists them alphabetically.
+func gitTopAuthors(names []string) []string {
+	names = slices.Clone(names[:min(len(names), gitMaxAuthors)])
 	slices.Sort(names)
-	return names[:min(len(names), gitMaxAuthors)]
+	return names
 }
 
 func (g *gitPanel) authorFilter(gtx C, th *ui.Theme, view gitLogView) D {
 	entries := []ui.MenuEntry{{Kind: ui.MenuRadioItem, Label: i18n.T("git.panel.authorAny"), Checked: g.filter.author == "", OnClick: func() { g.filter.author = "" }}}
-	for _, name := range gitAuthors(view.commits) {
+	for _, name := range g.store.authorsOf(view) {
 		entries = append(entries, ui.MenuEntry{Kind: ui.MenuRadioItem, Label: name, Checked: g.filter.author == name, OnClick: func() { g.filter.author = name }})
 	}
 	label := i18n.T("git.panel.author")

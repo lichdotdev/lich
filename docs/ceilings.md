@@ -587,8 +587,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   --date-order --skip=N`, and ordering walks the whole history first, so on a very large repository without a
   commit-graph each page costs seconds and one over `gitLogBudget` (30s) fails with a message rather than a partial
   list. `--skip` also means a commit landing while you scroll can repeat or hide a row until the next read, which
-  the ref poll (`gitLogPoll`, only while the panel is open) triggers. The Author menu lists only authors of the
-  commits already loaded, and the graph clips past `gitMaxLanes`.
+  the ref poll (`gitLogPoll`, only while the panel is open) triggers. The graph clips past `gitMaxLanes`.
 - **A branch delete's Undo is a new branch at the old commit** (`internal/project/gitbranch.go`): the toast's Undo
   makes the branch again where it pointed, without its reflog, and only for as long as the
   toast is up. The dialog asks first only when commits would be on no branch, remote branch or tag
@@ -733,6 +732,14 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   report every event twice. A copy there without the marker is someone else's and stays, with the same double
   report. 1.x runs the module through its default export's `server()` (measured on 1.18.23 and 1.19.4) and 2.x
   through its `setup()`; an opencode older than 1.18.23 is not measured with that export.
+- **The `extension` skill stays out of Kiro CLI, and on Antigravity the agent sees it every turn**
+  (`internal/agentplugin/skill.go`): the plugin's `extension` skill is manual only, kept out of the agent's context
+  by its frontmatter on Claude Code, Cursor CLI, opencode, oh-my-pi and Crush and by `agents/openai.yaml` on Codex,
+  because few people write an extension and everyone else would pay for its description on every turn. Kiro CLI has
+  no such setting, so lich's Kiro install copies only the theme skill, and a Kiro user writes an extension from
+  `docs/extensions.md`. Antigravity has none either but reads the plugin's `skills/` itself, so there the skill is
+  listed to the agent like any other and the agent may load it on its own. lich copies it into opencode, oh-my-pi
+  and Crush from plugin 0.21.1 on, the first release that ships it (`ExtensionSkillRelease`).
 - **A `lich` upgraded under a running lich is refused by a call the backend does not have**
   (`internal/rpc/rpc.go`): a package manager replaces the binary without restarting the backend it is serving,
   so the new CLI, and the `lich mcp` of every session opened after the upgrade, speaks to an older backend until
@@ -1164,18 +1171,41 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   (`internal/extensions/install.go`): the archive is checked against the `checksums.txt` the same release carries,
   which proves the download arrived whole, not who built it or what it does. Whoever controls the repository
   controls what runs. Only `https://github.com/<owner>/<repo>` is accepted, only its latest release that is neither
-  a draft nor a pre-release, only the archive named for this OS and architecture (`docs/extensions.md`), and only
+  a draft nor a pre-release (the catalog's tag, for a repository it lists), only the archive named for this OS and
+  architecture (`docs/extensions.md`), and only
   public repositories: the GitHub API is read without a token, so its unauthenticated rate limit applies. An update
   is the same download under the same checks, offered when the latest release's tag is a later
   `MAJOR.MINOR.PATCH` version than the one installed (`internal/extensions/update.go`): an extension whose tags are
   not versions is never offered one. lich looks at start and every six hours (`updateCheckEvery`), one
-  request per extension, and never updates on its own. An extension installed from a folder or placed by hand has
+  request per extension the catalog does not list (a listed one is compared with the catalog's `version`), and
+  never updates on its own. An extension installed from a folder or placed by hand has
   no release, so no update: remove it and install it again. A prepared install waits in an `.installing-*` directory
   that discovery skips until its confirmation is answered, for at most 15 minutes (`internal/extensions/staged.go`,
   `stagedTTL`): a person who takes longer gets an error naming the expired install and starts again. A download
   lich is killed in the middle of stays on disk until lich next starts, which deletes every `.installing-*`
   directory. Remove deletes the directory, or only the
   link when it is a symlink, and what the extension wrote elsewhere stays.
+- **Listed in the catalog is not reviewed** (`internal/extensions/catalog.go`): a listing says the release passed
+  `lich extension check` and a maintainer approved the repository once. Nobody reads its code, and the binary runs
+  unsandboxed as the user like any other. The sha256 the catalog recorded stops an archive replaced after the
+  catalog saw it, not a malicious new release: the author's next release is picked up by the same checks and no
+  person.
+- **A catalog lich cannot read is no catalog** (`internal/extensions/catalog.go`): `catalog.json` is read at start,
+  on the six-hour update tick and before an install or update while none is held, at most 4 MiB
+  (`maxCatalogBytes`), with `If-None-Match`. A failed read, a body that is not a catalog and a `formatVersion`
+  newer than `extension.CatalogFormat` are logged and keep the last good copy; with none, a listed repository
+  installs and updates as an unlisted one does, from GitHub's latest release checked against its `checksums.txt`
+  only. The copy lives in memory, so each launch starts with none.
+- **Revocation reaches only a lich that reads the catalog, and matches by repository URL**
+  (`internal/extensions/catalog.go`, `revoke`): at the next read, an installed extension whose recorded source URL
+  equals a `revoked` repository, case aside, is stopped, marked in its `.lich-source.json` so it stays stopped
+  across restarts with no catalog, and listed invalid with the reason. `repoId` is not compared, since an install
+  records no id. What escapes: a lich that never reads the catalog (offline, blocked, or older than it); an
+  extension installed from a folder or placed by hand, which records no repository; one installed under a URL
+  the repository was renamed or transferred away from, which GitHub redirects but no longer matches; and the
+  extension itself, which runs as the user and can rewrite its own record. Remove still works and keeps the data,
+  and the mark goes with the directory, so installing the repository again is refused only while the catalog in
+  memory names it.
 - **An extension's data directory outlives it, and nothing bounds its size** (`internal/extensions`):
   `<config dir>/lich/extension-data/<id>` is created before each start and handed over in `LICH_EXTENSION_DATA`.
   Remove keeps it, so a reinstall of the same id finds it, and so does any other extension later installed under
@@ -1689,8 +1719,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
 - **Showing code is one file, read-only, in the session's own checkout.** `show_code` and a Ctrl+click on a
   `path:line` open the dock's Code tab, and a new one replaces the file on screen, with no history to go back
   through, and an agent's comment under the lines goes with it. A path outside the session's checkout (a dependency's sources, the JDK, another worktree) is refused.
-  The tool validates the file against the disk, but a click searches the checkout's listing, so a file git
-  ignores reads as not found even when it exists. The terminal underlines by the text alone, because the
+  The terminal underlines by the text alone, because the
   hover runs every frame and cannot touch the disk: a `path:line` naming nothing still underlines, and the
   click answers with a toast, as it does for a host written like `example.com:443`. Only a soft-wrapped path is
   joined. Claude Code and Kiro CLI, measured at 44 columns, break a path wider than the terminal with a real

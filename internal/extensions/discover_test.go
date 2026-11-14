@@ -67,6 +67,9 @@ func TestValidationFailures(t *testing.T) {
 		{"executable absolute", func(m *extension.Manifest) { m.Executable = filepath.Join(t.TempDir(), "ext") }, "must stay inside"},
 		{"executable missing", func(m *extension.Manifest) { m.Executable = "nope" }, "nope"},
 		{"executable is the directory", func(m *extension.Manifest) { m.Executable = "." }, "regular file"},
+		{"description too long", func(m *extension.Manifest) { m.Description = strings.Repeat("é", extension.MaxDescription+1) }, "more than the 160"},
+		{"description on two lines", func(m *extension.Manifest) { m.Description = "One\ntwo" }, "one line"},
+		{"description with a tab", func(m *extension.Manifest) { m.Description = "One\ttwo" }, "control characters"},
 		{"surface without id", func(m *extension.Manifest) { m.Surfaces = []extension.Surface{{Title: "x"}} }, "needs an id"},
 		{"surface twice", func(m *extension.Manifest) { m.Surfaces = []extension.Surface{{ID: "a"}, {ID: "a"}} }, "twice"},
 		{"surface in no known place", func(m *extension.Manifest) { m.Surfaces = []extension.Surface{{ID: "a", Place: "sidebar"}} }, `place "sidebar"`},
@@ -86,6 +89,14 @@ func TestValidationFailures(t *testing.T) {
 				t.Error("an invalid extension ran")
 			}
 		})
+	}
+}
+
+func TestADescriptionAtTheLimitIsValid(t *testing.T) {
+	dir := t.TempDir()
+	install(t, dir, "ext", modeEcho, func(m *extension.Manifest) { m.Description = strings.Repeat("é", extension.MaxDescription) })
+	if found := discover(dir, "1.2.3"); len(found) != 1 || found[0].invalid != nil {
+		t.Fatalf("discover = %+v, want one valid extension", found)
 	}
 }
 

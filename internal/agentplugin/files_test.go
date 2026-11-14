@@ -18,6 +18,7 @@ import (
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/providers"
 	"github.com/lichdotdev/lich/internal/relay"
+	"github.com/lichdotdev/lich/internal/semver"
 )
 
 // The harnesses lich installs by writing files rather than by calling a CLI.
@@ -30,10 +31,17 @@ const testVersion = "0.13.0"
 // fileServer serves the plugin repository's files at a tag and records the
 // paths asked for. A path with no body 404s, which is how a test says "this
 // release does not carry that file". Every release carries the theme skill
-// (themeSkillRelease) unless the test serves its own copy of a file.
+// (skillsRelease) unless the test serves its own copy of a file.
 func fileServer(t *testing.T, files map[string]string) (*Service, func() []string) {
 	t.Helper()
-	served := themeSkillRelease()
+	return fileServerAt(t, testVersion, files)
+}
+
+// fileServerAt is fileServer for a release other than testVersion: version is
+// the newest release it lists and the skills it serves are that release's.
+func fileServerAt(t *testing.T, version string, files map[string]string) (*Service, func() []string) {
+	t.Helper()
+	served := skillsRelease(version)
 	maps.Copy(served, files)
 	files = served
 	var asked []string
@@ -49,7 +57,7 @@ func fileServer(t *testing.T, files map[string]string) (*Service, func() []strin
 	t.Cleanup(srv.Close)
 
 	release := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		_, _ = io.WriteString(w, `[{"tag_name":"v`+testVersion+`"}]`)
+		_, _ = io.WriteString(w, `[{"tag_name":"v`+version+`"}]`)
 	}))
 	t.Cleanup(release.Close)
 
@@ -63,13 +71,17 @@ func fileServer(t *testing.T, files map[string]string) (*Service, func() []strin
 	}, func() []string { return asked }
 }
 
-// themeSkillRelease is the theme skill as a release serves it.
-func themeSkillRelease() map[string]string {
+// skillsRelease is the skills version serves: the theme skill, and the
+// extension skill from ExtensionSkillRelease on.
+func skillsRelease(version string) map[string]string {
 	files := map[string]string{}
-	for _, name := range themeSkillFiles {
-		files[tagged(themeSkillSource+"/"+name)] = name + " body\n"
+	for _, name := range themeSkill.files {
+		files[taggedAt(version, themeSkill.source+"/"+name)] = name + " body\n"
 	}
-	files[tagged(themeSkillSource+"/"+skillManifest)] = "---\nname: theme\ndescription: Write a lich theme.\n---\n\n# lich themes\n"
+	files[taggedAt(version, themeSkill.source+"/"+skillManifest)] = "---\nname: theme\ndescription: Write a lich theme.\n---\n\n# lich themes\n"
+	if !semver.Less(version, ExtensionSkillRelease) {
+		files[taggedAt(version, extensionSkill.source+"/"+skillManifest)] = "---\nname: extension\ndescription: Write a lich extension.\ndisable-model-invocation: true\nuser-invocable: true\n---\n\n# lich extensions\n"
+	}
 	return files
 }
 
@@ -78,8 +90,8 @@ func themeSkillRelease() map[string]string {
 func assertFetchedWithSkill(t *testing.T, got []string, module string) {
 	t.Helper()
 	want := []string{tagged(module)}
-	for _, name := range themeSkillFiles {
-		want = append(want, tagged(themeSkillSource+"/"+name))
+	for _, name := range themeSkill.files {
+		want = append(want, tagged(themeSkill.source+"/"+name))
 	}
 	if !slices.Equal(slices.Sorted(slices.Values(got)), slices.Sorted(slices.Values(want))) {
 		t.Errorf("fetched %v, want the module and the theme skill, %v", got, want)
@@ -88,6 +100,9 @@ func assertFetchedWithSkill(t *testing.T, got []string, module string) {
 
 // tagged is the URL path a release file is served at.
 func tagged(path string) string { return "/v" + testVersion + "/" + path }
+
+// taggedAt is the URL path version serves a release file at.
+func taggedAt(version, path string) string { return "/v" + version + "/" + path }
 
 // A body lich cannot trust is refused rather than trimmed to fit: what it
 // fetches is written where a harness loads and runs it, under a marker line

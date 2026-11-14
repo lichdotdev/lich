@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -281,6 +282,7 @@ func boot(t *testing.T, dir string, adjust ...func(*timing)) (*Service, *recorde
 	for _, change := range adjust {
 		change(&s.timing)
 	}
+	s.catalogURL = (&fakeCatalog{status: http.StatusNotFound}).serve(t)
 	t.Cleanup(s.Shutdown)
 	s.Boot()
 	return s, r
