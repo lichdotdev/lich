@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **TIFF images in a diff show a preview.** A `.tif` or `.tiff` file opens as a picture in the Review and the Code tab, the way PNG and WebP do.
 - **lich tells you when an extension has a new version, and updates it in place.** A toast offers the update, and Settings › Extensions shows Update on the extension's row, with Check for updates over the list. What the extension saved is kept, and lich asks first when the new version wants a permission the installed one does not have.
 - **Draw on a page in a session's browser for the agent to see.** Draw, on the bar over the bottom of the page, turns the pointer into a pencil; the eraser removes whole strokes and Ctrl+Z takes the last one back. Send hands the agent a screenshot of the page with your drawing on it.
 - **An extension can live in the dock or in a panel over the footer, not only as a full screen.** Its item joins the footer, where a click opens it beside the session you are in; move or hide the item in Settings › Appearance › Footer. Extension authors set `place` on a surface, see `docs/extensions.md`.
