@@ -168,6 +168,9 @@ type Sessions interface {
 	// session (see deliverDue), and parks or drops the continuation of a turn a
 	// usage limit ended (resume.go), and takes the person's own (schedule.go).
 	SetSessionSchedule(sessionID string, at int64, prompt string) error
+	// SetLichSchedule is SetSessionSchedule for the continuation lich parks
+	// (resume.go): the row remembers it is lich's.
+	SetLichSchedule(sessionID string, at int64, prompt string) error
 	// SetAgentSchedule is SetSessionSchedule for a prompt an agent parked on its
 	// own session.
 	SetAgentSchedule(sessionID string, at int64, prompt string) error

@@ -67,14 +67,14 @@ func TestEveryNoticeRendersInEveryLanguage(t *testing.T) {
 }
 
 // A parked continuation is stored as text, so a row written in one language
-// must still be recognised, and dropped, once the setting is another.
+// must still be dropped once the setting is another.
 func TestAParkedContinuationIsRecognisedInEveryLanguage(t *testing.T) {
 	t.Parallel()
 	for _, stored := range prompt.Langs {
 		for _, setting := range prompt.Langs {
 			writer := &parkWriter{}
 			row := prompt.For(stored).ResumePrompt
-			svc := newRelay(scheduledWith(5000, row, writer.set), newFakeTerminal("s1"), &fakeEvents{})
+			svc := newRelay(lichsContinuation(scheduledWith(5000, row, writer.set)), newFakeTerminal("s1"), &fakeEvents{})
 			svc.SetPromptLanguage(func() prompt.Lang { return setting })
 			svc.now = at(1000)
 

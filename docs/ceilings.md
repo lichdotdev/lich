@@ -294,13 +294,11 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   only as `StopFailure`, which an older lich-plugin does not report. Codex raises no hook for it, so an open
   Codex turn is read off its rollout every 30 seconds, and the limit is *inferred*: a turn completing with
   nothing said right after a window shows 100% spent (measured on `codex exec` 0.144.5, never on the TUI); a
-  change to that shape stops the read without a word. The continuation is a scheduled prompt told apart from a
-  person's by its exact text, so someone parking those same words has them dropped on the session's next turn.
-  Nothing is parked for a reset already past or more than 24 hours out (Claude Code's own auto-continue gives up
-  at the same horizon), nor over a prompt already parked there. Any turn starting before it is due drops it,
-  which is also what keeps it from landing behind Claude Code's own `autoContinueAtUsageLimit`, a setting the
-  server enables per account, which is why the prompt is due two minutes after the reset rather than at it. The
-  window draws neither the limit nor the parked prompt on the card.
+  change to that shape stops the read without a word. Nothing is parked for a reset already past or more than 24
+  hours out (Claude Code's own auto-continue gives up at the same horizon), nor over a prompt already parked
+  there. Any turn starting before it is due drops it, which is also what keeps it from landing behind Claude
+  Code's own `autoContinueAtUsageLimit`, a setting the server enables per account, which is why the prompt is due
+  two minutes after the reset rather than at it. The window draws neither the limit nor the parked prompt on the card.
 - **A session a usage limit stopped is offered another profile only on Claude Code and Codex, and only one whose
   plan reads** (`internal/terminal/limit_switch.go`, `internal/quota` `HasQuotaLeft`): the wait for the reset runs
   as ever, and when another logged-in profile of the same provider reads with every window under 100%, a toast
@@ -1711,8 +1709,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   Antigravity read lich's MCP instructions instead, composed at spawn too (`LICH_PROMPT_LANG`), and Cursor CLI's
   is unmeasured (the bullet above on Codex and Kiro CLI, under Relay). MCP tool
   descriptions, `--help` and error returns stay English in every language. A usage-limit continuation parked
-  before the setting changed keeps the language it was parked in: the row stores the text, so
-  `isResumePrompt` matches it in every locale.
+  before the setting changed keeps the language it was parked in.
 - **Some interface text stays English in every language**: the exit marker written into a terminal's scrollback
   (`exitMarker`, `native/cmd/lich-native/terminal_exit.go`), because it is data in the replay and not a label;
   the `Session N` label a session gets when nothing names it (`internal/spawn/spawn.go`), because
