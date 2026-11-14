@@ -6,6 +6,8 @@ import (
 	"image/png"
 	"strings"
 	"testing"
+
+	"golang.org/x/image/tiff"
 )
 
 func TestPreviewKindOf(t *testing.T) {
@@ -14,6 +16,8 @@ func TestPreviewKindOf(t *testing.T) {
 		"a/photo.jpeg":      blobImage,
 		"anim.gif":          blobImage,
 		"pic.webp":          blobImage,
+		"scan.TIFF":         blobImage,
+		"scan.tif":          blobImage,
 		"spec.pdf":          blobPDF,
 		"favicon.ico":       blobNone, // served by /blob, not decoded here
 		"logo.svg":          blobNone,
@@ -34,6 +38,21 @@ func encodePNG(t *testing.T, w, h int) []byte {
 		t.Fatal(err)
 	}
 	return buf.Bytes()
+}
+
+func TestDecodePreviewReadsATIFF(t *testing.T) {
+	var buf bytes.Buffer
+	if err := tiff.Encode(&buf, image.NewNRGBA(image.Rect(0, 0, 3, 2)), nil); err != nil {
+		t.Fatal(err)
+	}
+	img, err := decodePreview(buf.Bytes())
+	if err != nil {
+		t.Fatalf("decodePreview: %v", err)
+	}
+	want := "3 × 2 · TIFF · " + formatBlobSize(buf.Len())
+	if got := img.caption(); got != want {
+		t.Errorf("caption = %q, want %q", got, want)
+	}
 }
 
 func TestDecodePreviewCaptionsTheFile(t *testing.T) {

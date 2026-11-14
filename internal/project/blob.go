@@ -31,6 +31,8 @@ var previewTypes = map[string]string{
 	".jpeg": "image/jpeg",
 	".jpg":  "image/jpeg",
 	".png":  "image/png",
+	".tif":  "image/tiff",
+	".tiff": "image/tiff",
 	".webp": "image/webp",
 }
 

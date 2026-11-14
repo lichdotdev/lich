@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"github.com/lichdotdev/lich/api"
+	"image"
 	"io/fs"
 	"net/http"
 	"net/http/httptest"
@@ -11,6 +12,8 @@ import (
 	"slices"
 	"strings"
 	"testing"
+
+	"golang.org/x/image/tiff"
 )
 
 // pngBytes is a PNG signature followed by a NUL, which is what makes git and
@@ -274,6 +277,25 @@ func serveBlob(t *testing.T, method string, query url.Values, header http.Header
 	rec := httptest.NewRecorder()
 	New(nil).ServeBlob(rec, req)
 	return rec
+}
+
+func TestBlobTIFFIsServedAsTIFF(t *testing.T) {
+	t.Parallel()
+	repo, _ := initRepo(t)
+	var buf bytes.Buffer
+	if err := tiff.Encode(&buf, image.NewNRGBA(image.Rect(0, 0, 2, 2)), nil); err != nil {
+		t.Fatal(err)
+	}
+	for _, rel := range []string{"scan.tif", "scan.TIFF"} {
+		write(t, repo, rel, buf.String())
+		blob, err := New(nil).Blob(repo, rel, "")
+		if err != nil {
+			t.Fatalf("Blob(%s): %v", rel, err)
+		}
+		if !bytes.Equal(blob.Data, buf.Bytes()) || blob.ContentType != "image/tiff" {
+			t.Errorf("Blob(%s) = %d bytes as %q, want the file as image/tiff", rel, len(blob.Data), blob.ContentType)
+		}
+	}
 }
 
 func TestServeBlob(t *testing.T) {

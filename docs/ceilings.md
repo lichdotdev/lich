@@ -643,7 +643,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   git diffs it as text, and the window has no SVG renderer. One side
   is capped at `maxPreviewBytes` (20 MiB) and held whole in memory, and a Git LFS file shows the pointer's
   text diff, never the image. The window decodes in Go (`native/cmd/lich-native/blob_preview.go`) and `/blob` serves only what it
-  decodes: PNG, JPEG, GIF (its first frame only), WebP and BMP, so AVIF, ICO, HEIC, TIFF and PSD show the
+  decodes: PNG, JPEG, GIF (its first frame only), WebP, BMP and TIFF, so AVIF, ICO, HEIC and PSD show the
   no-preview state. It refuses an
   image whose header claims more than 40 MP before decoding it, holds it scaled to 2048 px on its longest
   side (no zoom), and never draws a PDF: Open in default app (`system.OpenFile`) reaches only a file in the
