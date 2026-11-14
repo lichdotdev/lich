@@ -457,7 +457,7 @@ func (s *Service) costRows(project, provider string, since int64) ([]*projectRow
 		}
 		row := byName[name]
 		if row == nil {
-			row = &projectRow{CostTotal: CostTotal{Project: name}}
+			row = &projectRow{Project: name}
 			byName[name] = row
 			order = append(order, row)
 		}

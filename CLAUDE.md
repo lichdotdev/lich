@@ -67,8 +67,10 @@ lives in the code, `docs/` and `CHANGELOG.md` — never restate any of it here.
   Never start two gate steps at once. The directory stays short: `go test` hands GOTMPDIR to the tests as
   their TMPDIR, and a deeper one pushes the sandbox suite's Unix sockets past the 108-byte path limit.
 - `gofmt -l .` clean (fix with `gofmt -w .`) and `go vet ./...` clean.
+- `go fix -diff ./...` prints nothing (fix with `go fix ./...`). It only sees the files of the OS it runs
+  for; CI runs it for all three, so an OS-only file is fixed with `GOOS=<os> go fix ./...`.
 - `go test ./...` green.
-- From `native/`, `gofmt -l .`, `go vet ./...` and `go test ./...` clean, with `PKG_CONFIG_PATH` pointing at a
+- From `native/`, `gofmt -l .`, `go vet ./...`, `go fix -diff ./...` and `go test ./...` clean, with `PKG_CONFIG_PATH` pointing at a
   libghostty-vt built from the commit in `native/GHOSTTY_COMMIT` (`native/slice.sh` says how). Changed what it
   draws? Take a `-shot` and look at it; the maintainer's review in a real window is the one to trust.
 - Shipped anything a user can see? Its `CHANGELOG.md` `[Unreleased]` entry lands in the same PR — the release notes

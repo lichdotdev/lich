@@ -37,10 +37,12 @@ cap() { systemd-run --user --scope --quiet -p MemoryMax=6G -p MemorySwapMax=2G -
 cd "$W" && pwd &&
   test -z "$(gofmt -l .)" &&
   cap go vet ./... &&
+  cap go fix -diff ./... &&
   cap go test ./... &&
 cd "$W/native" && pwd &&
   test -z "$(gofmt -l .)" &&
   cap go vet ./... &&
+  cap go fix -diff ./... &&
   cap go test ./... &&
   echo GATE GREEN
 ```

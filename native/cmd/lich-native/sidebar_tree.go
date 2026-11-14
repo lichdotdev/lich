@@ -202,8 +202,8 @@ func (t *tree) walk(sv sessionView, depth int, lanes []bool, tail, hideGit bool,
 	}
 	seen[sv.ID] = true
 	all := t.descendants(sv.ID, maps.Clone(seen))
-	row := sessionRow{kind: rowCard, key: sv.ID, sv: sv, depth: depth, lanes: lanes, tail: tail, kids: len(all), hideGit: hideGit}
-	row.folded = len(all) > 0 && t.folded(sv.ID)
+	row := sessionRow{kind: rowCard, key: sv.ID, sv: sv, depth: depth, lanes: lanes, tail: tail, kids: len(all), hideGit: hideGit,
+		folded: len(all) > 0 && t.folded(sv.ID)}
 	if row.folded {
 		row.mark = treeMark(all)
 	}

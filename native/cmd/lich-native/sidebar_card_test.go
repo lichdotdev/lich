@@ -24,7 +24,7 @@ func cardBodyHeight(sv sessionView, hovered bool) int {
 }
 
 func TestCardIsOneLineInEveryState(t *testing.T) {
-	idle := sessionView{Session: backend.Session{ID: "s1", Label: "Docs"}, shown: "/home/me/repo", git: backend.DiffStats{Branch: "main"}}
+	idle := sessionView{ID: "s1", Label: "Docs", shown: "/home/me/repo", git: backend.DiffStats{Branch: "main"}}
 	rest := cardBodyHeight(idle, false)
 	busy := idle
 	busy.status, busy.tool = statusBusy, sessionTool{Name: "Bash", Detail: "go test ./..."}

@@ -297,9 +297,7 @@ func (s *Service) backfill() {
 	if !s.backfilling.CompareAndSwap(false, true) {
 		return
 	}
-	s.backfillDone.Add(1)
-	go func() {
-		defer s.backfillDone.Done()
+	s.backfillDone.Go(func() {
 		defer s.backfilling.Store(false)
 		for {
 			sessionID, ok := s.nextUnindexed()
@@ -313,7 +311,7 @@ func (s *Service) backfill() {
 			case <-time.After(backfillRate):
 			}
 		}
-	}()
+	})
 }
 
 // nextUnindexed names the parked session the backfill should read next: the most

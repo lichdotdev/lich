@@ -164,8 +164,7 @@ func (e *RemoteError) Error() string {
 // ErrorText is what a person reads for err: the backend's sentence when the
 // backend refused, err as it is otherwise.
 func ErrorText(err error) string {
-	var remote *RemoteError
-	if errors.As(err, &remote) {
+	if remote, ok := errors.AsType[*RemoteError](err); ok {
 		return remote.Message
 	}
 	return err.Error()

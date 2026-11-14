@@ -5,6 +5,7 @@ import (
 	"image"
 	"image/color"
 	"math"
+	"slices"
 	"strconv"
 	"time"
 
@@ -415,8 +416,8 @@ func (u *window) notesTray(gtx C, p *browserPaneUI, session string) {
 	if send && n.pending() {
 		u.sendNotes(p, session)
 	}
-	for i := len(n.list) - 1; i >= 0; i-- {
-		note := n.list[i]
+	for i, note := range slices.Backward(n.list) {
+
 		if note.remove.Clicked(gtx) {
 			n.drop(i)
 			continue

@@ -163,7 +163,7 @@ func TestAppearanceRowsAreFoundBySearch(t *testing.T) {
 
 // The ceiling colours the cost readout: amber from 80%, red from 95%.
 func TestCostSlotColoursAgainstTheCeiling(t *testing.T) {
-	in := footerInput{cost: true, hasUsage: true, usage: sessionUsage{CostUSD: cost(8.5)}, budget: 10}
+	in := footerInput{cost: true, hasUsage: true, usage: sessionUsage{CostUSD: new(8.5)}, budget: 10}
 	if s, ok := footerSlotOf("cost", in); !ok || s.Readout.Tone != toneWait {
 		t.Errorf("85%% of the ceiling: %+v", s.Readout)
 	}

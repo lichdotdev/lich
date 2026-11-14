@@ -190,7 +190,7 @@ func (c *todoCursors) read(id string, src usageSource) (todoList, bool) {
 func lastTodo(lines []byte, read todoReader) (todoList, bool) {
 	var last todoList
 	var found bool
-	for _, line := range strings.Split(string(lines), "\n") {
+	for line := range strings.SplitSeq(string(lines), "\n") {
 		if list, ok := read([]byte(line)); ok {
 			last, found = list, true
 		}

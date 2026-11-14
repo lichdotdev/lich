@@ -283,8 +283,8 @@ func (c *fileCard) ensureView(p *reviewPanel) *diffview.View {
 	if c.view != nil || c.viewFail {
 		return c.view
 	}
-	opts := diffview.Options{Buttons: c.afford}
-	opts.Expand = func(g godemirror.Gap) { p.expand(c, c.gen, g) }
+	opts := diffview.Options{Buttons: c.afford,
+		Expand: func(g godemirror.Gap) { p.expand(c, c.gen, g) }}
 	if c.git.status != statusRenamed && p.pr == nil {
 		opts.Revert = func(ch godemirror.Chunk) { p.revert(c.git.path, lichdiff.RevertLines(ch)) }
 	}

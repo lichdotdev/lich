@@ -143,8 +143,8 @@ func TestFlushRestoresTimeAfterAStoreFailure(t *testing.T) {
 	t.Parallel()
 	clock := newFakeClock()
 	store := &failingHandsOnStore{
-		stubBins: stubBins{handsOn: map[string]int64{}},
-		err:      errors.New("busy"),
+		handsOn: map[string]int64{},
+		err:     errors.New("busy"),
 	}
 	svc := newQuietService(store, clock)
 	svc.beatHandsOn("s1", 0)

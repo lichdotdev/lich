@@ -204,7 +204,7 @@ func TestLayoutTailDrawsTailUnderExactConstraints(t *testing.T) {
 	}
 	ellipsis := layoutAt(th.Text(TextXS, "…").Layout, 0, w).Size.X
 	inked := 0
-	for y := 0; y < h; y++ {
+	for y := range h {
 		for x := ellipsis + 2; x < w; x++ {
 			if img.RGBAAt(x, y).A > 0 {
 				inked++

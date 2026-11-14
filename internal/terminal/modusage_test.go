@@ -20,10 +20,6 @@ func reportOf(conversation string, window int) usageReport {
 	return usageReport{SessionID: "s1", ConversationID: conversation, Context: reportedContext{Window: window}}
 }
 
-func intOf(v int) *int { return &v }
-
-func usdOf(v float64) *float64 { return &v }
-
 // TestAReportedCostReplacesTheTranscriptScan is the point of the contract: the
 // scan undercounts (requests no transcript records), so a conversation Claude
 // Code has priced itself is shown at its own figure, sub-agents included, and a
@@ -39,7 +35,7 @@ func TestAReportedCostReplacesTheTranscriptScan(t *testing.T) {
 	}
 
 	report := reportOf("uuid-cost", 200_000)
-	report.CostUSD = usdOf(2.5)
+	report.CostUSD = new(2.5)
 	svc.usageReports.set(report)
 
 	for range 2 {
@@ -61,7 +57,7 @@ func TestAReportAboutAnotherConversationIsNotApplied(t *testing.T) {
 	svc := New(newCostStore("uuid-cost"), nil, events.New())
 	svc.prices = testRate
 	report := reportOf("uuid-before-clear", 200_000)
-	report.CostUSD = usdOf(9)
+	report.CostUSD = new(float64(9))
 	svc.usageReports.set(report)
 
 	got, ok := svc.sessionUsage("s1")
@@ -84,7 +80,7 @@ func TestTheReportedWindowReplacesTheGuess(t *testing.T) {
 	writeTranscript(t, "uuid-abc", assistantLine(modelOpus, 2, 43590, 0)+"\n")
 	svc := New(stubBins{providerSession: "uuid-abc"}, nil, events.New())
 	report := reportOf("uuid-abc", 200_000)
-	report.Context.Tokens, report.Context.Percent = intOf(43592), intOf(22)
+	report.Context.Tokens, report.Context.Percent = new(43592), new(22)
 	svc.usageReports.set(report)
 
 	got, ok := svc.sessionUsage("s1")
@@ -105,7 +101,7 @@ func TestTranscriptTokensNewerThanTheReportKeepMoving(t *testing.T) {
 	writeTranscript(t, "uuid-abc", assistantLine(modelOpus, 2, 99998, 0)+"\n")
 	svc := New(stubBins{providerSession: "uuid-abc"}, nil, events.New())
 	report := reportOf("uuid-abc", 200_000)
-	report.Context.Tokens, report.Context.Percent = intOf(43592), intOf(22)
+	report.Context.Tokens, report.Context.Percent = new(43592), new(22)
 	svc.usageReports.set(report)
 
 	got, _ := svc.sessionUsage("s1")

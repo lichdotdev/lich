@@ -3,6 +3,7 @@
 package filetree
 
 import (
+	"maps"
 	"slices"
 	"strings"
 )
@@ -92,9 +93,7 @@ type Delta struct{ Added, Deleted int }
 // tree counts only what the filter left.
 func WithDirStats(tree []*Node, files map[string]Delta) map[string]Delta {
 	out := make(map[string]Delta, len(files))
-	for k, v := range files {
-		out[k] = v
-	}
+	maps.Copy(out, files)
 	var walk func(n *Node) (Delta, bool)
 	walk = func(n *Node) (Delta, bool) {
 		if !n.Dir {

@@ -5,7 +5,6 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -100,7 +99,7 @@ func TestBlockOptionsByKindAndFilter(t *testing.T) {
 
 func TestTakesCard(t *testing.T) {
 	card := func(folder, path string) sessionView {
-		return sessionView{Session: backend.Session{ID: "c", Folder: folder, Path: path}}
+		return sessionView{ID: "c", Folder: folder, Path: path}
 	}
 	apps := blockView{kind: blockFolder, folder: "Apps"}
 	root := blockView{kind: blockCheckout}
@@ -183,8 +182,8 @@ func TestFilterToggleAndEscape(t *testing.T) {
 }
 
 func TestTakeCardKeepsTheFramesWrites(t *testing.T) {
-	act := sidebarAction{sidebarWrites: sidebarWrites{fold: "k", saveOpen: true}}
-	act.takeCard(sidebarAction{activate: "s1", pin: "s1", pinTo: true, sidebarWrites: sidebarWrites{file: fileRequest{ids: []string{"s1"}, folder: "Apps"}}})
+	act := sidebarAction{fold: "k", saveOpen: true}
+	act.takeCard(sidebarAction{activate: "s1", pin: "s1", pinTo: true, file: fileRequest{ids: []string{"s1"}, folder: "Apps"}})
 	act.takeCard(sidebarAction{})
 	if act.activate != "s1" || act.pin != "s1" || !act.pinTo || act.fold != "k" || !act.saveOpen || act.file.folder != "Apps" {
 		t.Errorf("act = %+v", act)

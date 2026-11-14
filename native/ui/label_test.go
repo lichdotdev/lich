@@ -41,8 +41,8 @@ func labelInk(t *testing.T, l FormLabelStyle) color.RGBA {
 	img := tabsRender(t, ops)
 	var ink color.RGBA
 	far := -1
-	for y := 0; y < 30; y++ {
-		for x := 0; x < 200; x++ {
+	for y := range 30 {
+		for x := range 200 {
 			p := img.RGBAAt(x, y)
 			if d := int(p.R) - int(Dark.Background.R); d > far {
 				far, ink = d, p
@@ -82,7 +82,7 @@ func TestCenteredLabelSitsInTheMiddleOfItsWidth(t *testing.T) {
 		})
 		img := tabsRender(t, ops)
 		left, right = -1, -1
-		for y := 0; y < 24; y++ {
+		for y := range 24 {
 			for x := 0; x < tabsTestSize.X; x++ {
 				if img.RGBAAt(x, y).R > Dark.Background.R+40 {
 					if left < 0 || x < left {

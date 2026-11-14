@@ -37,7 +37,7 @@ const maxDropUpload = 32 << 20
 // machine's file and is skipped with the rest.
 func parseURIList(data string) []string {
 	var paths []string
-	for _, line := range strings.Split(data, "\n") {
+	for line := range strings.SplitSeq(data, "\n") {
 		line = strings.TrimSpace(line)
 		if line == "" || strings.HasPrefix(line, "#") {
 			continue

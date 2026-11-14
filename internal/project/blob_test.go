@@ -6,6 +6,7 @@ import (
 	"github.com/lichdotdev/lich/api"
 	"image"
 	"io/fs"
+	"maps"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -271,9 +272,7 @@ func TestBlobSizeLimit(t *testing.T) {
 func serveBlob(t *testing.T, method string, query url.Values, header http.Header) *httptest.ResponseRecorder {
 	t.Helper()
 	req := httptest.NewRequest(method, "/blob?"+query.Encode(), nil)
-	for key, values := range header {
-		req.Header[key] = values
-	}
+	maps.Copy(req.Header, header)
 	rec := httptest.NewRecorder()
 	New(nil).ServeBlob(rec, req)
 	return rec

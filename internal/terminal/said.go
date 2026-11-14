@@ -192,7 +192,7 @@ func readLines(f *os.File, start, size int64) ([]byte, int64) {
 func lastSaid(lines []byte, read turnReader) (string, bool) {
 	var last string
 	var found bool
-	for _, line := range strings.Split(string(lines), "\n") {
+	for line := range strings.SplitSeq(string(lines), "\n") {
 		// A line the reader rejects is a tool call, a meta line, or one a seed
 		// tail cut in half, and nothing here distinguishes them.
 		if t, ok := read([]byte(line)); ok && t.role == roleAssistant {

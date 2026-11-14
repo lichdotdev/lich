@@ -20,7 +20,7 @@ func TestAnActionLeavesOutTheElementListTheAgentHeardLast(t *testing.T) {
 	p.info = PageInfo{Interactive: list(Interactive{})}
 	click := func() api.BrowserPageInfo {
 		t.Helper()
-		info, err := s.ClickAt(t.Context(), api.BrowserClickOptions{ID: "s", BrowserTarget: api.BrowserTarget{Selector: "#b"}})
+		info, err := s.ClickAt(t.Context(), api.BrowserClickOptions{ID: "s", Selector: "#b"})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -59,7 +59,7 @@ func TestAnEmptyListIsNeverCalledTheSame(t *testing.T) {
 		t.Fatal(err)
 	}
 	for range 2 {
-		info, err := s.ClickAt(t.Context(), api.BrowserClickOptions{ID: "s", BrowserTarget: api.BrowserTarget{Selector: "#b"}})
+		info, err := s.ClickAt(t.Context(), api.BrowserClickOptions{ID: "s", Selector: "#b"})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -77,7 +77,7 @@ func TestAnAnnotatedScreenshotTellsNoList(t *testing.T) {
 	p := launch.pages[0]
 	click := func() api.BrowserPageInfo {
 		t.Helper()
-		info, err := s.ClickAt(t.Context(), api.BrowserClickOptions{ID: "s", BrowserTarget: api.BrowserTarget{Selector: "#b"}})
+		info, err := s.ClickAt(t.Context(), api.BrowserClickOptions{ID: "s", Selector: "#b"})
 		if err != nil {
 			t.Fatal(err)
 		}

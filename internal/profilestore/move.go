@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"slices"
 )
 
 // ErrNoConversation is MoveConversation finding the conversation in no
@@ -144,8 +145,8 @@ func copyTree(from, to string) error {
 		return err
 	}
 	// After the walk: a read-only directory would refuse its own children.
-	for i := len(dirs) - 1; i >= 0; i-- {
-		if err := os.Chmod(dirs[i].path, dirs[i].perm); err != nil {
+	for _, dir := range slices.Backward(dirs) {
+		if err := os.Chmod(dir.path, dir.perm); err != nil {
 			return err
 		}
 	}

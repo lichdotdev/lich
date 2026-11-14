@@ -897,11 +897,11 @@ func checkoutLabel(path, projectPath, projectID string) string {
 	unix := strings.ReplaceAll(path, `\`, "/")
 	root := "/" + projectID + "/"
 	// The first match: a worktree may itself be named after the project id.
-	at := strings.Index(unix, root)
-	if at < 0 {
+	_, after, ok := strings.Cut(unix, root)
+	if !ok {
 		return baseName(path)
 	}
-	return unix[at+len(root):]
+	return after
 }
 
 // baseName is the last segment under either separator, ignoring a trailing

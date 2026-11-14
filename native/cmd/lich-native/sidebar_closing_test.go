@@ -13,14 +13,13 @@ import (
 	"gioui.org/op"
 	"gioui.org/text"
 	"gioui.org/unit"
-	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
 func views(list ...string) []sessionView {
 	out := make([]sessionView, 0, len(list))
 	for _, id := range list {
-		out = append(out, sessionView{Session: backend.Session{ID: id}})
+		out = append(out, sessionView{ID: id})
 	}
 	return out
 }
@@ -186,7 +185,7 @@ func blocksOf(project string, blocks [][]string) sidebarView {
 	for i, ids := range blocks {
 		b := blockView{key: string(rune('A' + i)), kind: blockCheckout}
 		for _, id := range ids {
-			b.sessions = append(b.sessions, sessionView{Session: backend.Session{ID: id}, projectID: project})
+			b.sessions = append(b.sessions, sessionView{ID: id, projectID: project})
 		}
 		v.blocks = append(v.blocks, b)
 	}
@@ -308,9 +307,9 @@ func folderOf(paths ...string) sidebarView {
 	v := sidebarView{project: "p"}
 	b := blockView{key: folderKey("Later"), kind: blockFolder, folder: "Later", title: "Later", byCheckout: true}
 	for i, path := range paths {
-		b.sessions = append(b.sessions, sessionView{Session: backend.Session{ID: fmt.Sprint("s", i), Folder: "Later"}, projectID: "p", path: path})
+		b.sessions = append(b.sessions, sessionView{ID: fmt.Sprint("s", i), Folder: "Later", projectID: "p", path: path})
 	}
-	other := blockView{key: "/repo", kind: blockCheckout, under: "/repo", sessions: []sessionView{{Session: backend.Session{ID: "root"}, projectID: "p", path: "/repo"}}}
+	other := blockView{key: "/repo", kind: blockCheckout, under: "/repo", sessions: []sessionView{{ID: "root", projectID: "p", path: "/repo"}}}
 	v.blocks = []blockView{other, b}
 	return v
 }

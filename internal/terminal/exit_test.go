@@ -13,8 +13,8 @@ func TestExitPayloadReportsOnlyAnObservedStatus(t *testing.T) {
 		code int
 		want *int
 	}{
-		{"clean exit", 0, ptr(0)},
-		{"failure", 3, ptr(3)},
+		{"clean exit", 0, new(0)},
+		{"failure", 3, new(3)},
 		{"no status", -1, nil},
 	}
 	for _, tt := range tests {
@@ -35,5 +35,3 @@ func TestExitPayloadReportsOnlyAnObservedStatus(t *testing.T) {
 		})
 	}
 }
-
-func ptr(v int) *int { return &v }

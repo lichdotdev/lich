@@ -2,6 +2,7 @@ package ui
 
 import (
 	"image"
+	"slices"
 	"time"
 
 	"gioui.org/f32"
@@ -185,8 +186,8 @@ func (s ToasterStyle) frame(gtx C) []func() {
 	}
 	off := op.Offset(at).Push(gtx.Ops)
 	entries := t.stack.entries
-	for i := len(entries) - 1; i >= 0; i-- {
-		s.paint(gtx, entries[i])
+	for _, e := range slices.Backward(entries) {
+		s.paint(gtx, e)
 	}
 	s.areas(gtx)
 	off.Pop()
@@ -368,8 +369,7 @@ func (s ToasterStyle) areas(gtx C) {
 	defer clip.Rect(zone).Push(gtx.Ops).Pop()
 	event.Op(gtx.Ops, t)
 	entries := t.stack.entries
-	for i := len(entries) - 1; i >= 0; i-- {
-		e := entries[i]
+	for _, e := range slices.Backward(entries) {
 		if !e.view.canHit {
 			continue
 		}

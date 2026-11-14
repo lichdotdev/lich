@@ -572,10 +572,7 @@ func withPageDeadline(pageCtx, waitCtx context.Context) (context.Context, contex
 	timeout := pageWait
 	if waitCtx != nil {
 		if d, ok := waitCtx.Deadline(); ok {
-			timeout = time.Until(d)
-			if timeout < 0 {
-				timeout = 0
-			}
+			timeout = max(time.Until(d), 0)
 		}
 	}
 	return context.WithTimeout(pageCtx, timeout)

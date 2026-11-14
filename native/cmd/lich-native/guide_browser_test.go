@@ -58,7 +58,7 @@ func TestBrowserGuideFollowsTheShownCardsMenu(t *testing.T) {
 
 func TestTourBrowserSpotMarksOnlyTheBrowserEntry(t *testing.T) {
 	var act sidebarAction
-	entries := cardMenu(&sessionView{Session: backend.Session{ID: "a"}}, nil, &act, func() {}, func() {})
+	entries := cardMenu(&sessionView{ID: "a"}, nil, &act, func() {}, func() {})
 	tourBrowserSpot(entries, nil)
 	spots := 0
 	for _, e := range entries {

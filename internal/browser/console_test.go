@@ -43,7 +43,7 @@ func TestClickAndPressAnswerWithTheConsoleErrorsTheyCaused(t *testing.T) {
 	}
 	p := launch.pages[0]
 	p.onClick = func() { p.onConsoleError("from click") }
-	clicked, err := s.ClickAt(t.Context(), api.BrowserClickOptions{ID: "s", BrowserTarget: api.BrowserTarget{Selector: "#b"}})
+	clicked, err := s.ClickAt(t.Context(), api.BrowserClickOptions{ID: "s", Selector: "#b"})
 	if err != nil {
 		t.Fatal(err)
 	}

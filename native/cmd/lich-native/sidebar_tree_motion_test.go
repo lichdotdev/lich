@@ -14,7 +14,6 @@ import (
 	"gioui.org/text"
 	"gioui.org/unit"
 
-	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -156,7 +155,7 @@ func TestTreeMotionPutsANewRowsNameInBeforeItsRing(t *testing.T) {
 
 func TestBlockPresenceHoldsALeavingCheckoutForItsTreeMotion(t *testing.T) {
 	checkout := func(key string) blockView {
-		return blockView{key: key, kind: blockCheckout, under: key, sessions: []sessionView{{Session: backend.Session{ID: key + "-s"}, path: key}}}
+		return blockView{key: key, kind: blockCheckout, under: key, sessions: []sessionView{{ID: key + "-s", path: key}}}
 	}
 	var p blockPresence
 	now := time.Unix(100, 0)
@@ -173,7 +172,7 @@ func TestBlockPresenceHoldsALeavingCheckoutForItsTreeMotion(t *testing.T) {
 	if arrived[1].move == nil || arrived[1].move.leaving {
 		t.Errorf("a new checkout = %+v, want it coming in by the tree's motion", arrived[1])
 	}
-	folder := blockView{key: folderKey("Later"), kind: blockFolder, byCheckout: true, sessions: []sessionView{{Session: backend.Session{ID: "f"}, path: "/f"}}}
+	folder := blockView{key: folderKey("Later"), kind: blockFolder, byCheckout: true, sessions: []sessionView{{ID: "f", path: "/f"}}}
 	withFolder := p.shown(end, "p", []blockView{checkout("/a"), checkout("/c"), folder})
 	if withFolder[2].move == nil || withFolder[2].move.leaving {
 		t.Errorf("a new folder = %+v, want it coming in by the tree's motion", withFolder[2])
@@ -254,7 +253,7 @@ func TestAnEnteringCardsFillComesInWholeAcrossItsRing(t *testing.T) {
 	th := &ui.Theme{Palette: ui.Dark, Shaper: text.NewShaper(text.WithCollection(gofont.Collection())), Surface: ui.Dark.Sidebar}
 	motion := rowMotion{height: 1, entry: treeEntry{ring: 1, glyph: 1, body: 1}}
 	r := sessionRow{motion: &motion}
-	sv := sessionView{Session: backend.Session{ID: "s1"}, place: r.place(true)}
+	sv := sessionView{ID: "s1", place: r.place(true)}
 	ops := new(op.Ops)
 	gtx := layout.Context{Ops: ops, Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}, Constraints: layout.Exact(image.Pt(width, height))}
 	paint.Fill(ops, th.Sidebar)

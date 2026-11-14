@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 
@@ -130,7 +131,7 @@ func trimJobLog(raw []byte, lines int) []api.StepLog {
 			steps = append(steps, tailStep(name, body, lines))
 		}
 	}
-	for _, line := range strings.Split(text, "\n") {
+	for line := range strings.SplitSeq(text, "\n") {
 		step, text := splitLogLine(line)
 		if step != name || body == nil {
 			flush()
@@ -179,8 +180,8 @@ func tailStep(name string, body []string, lines int) api.StepLog {
 // error through that error; all of body when it holds no error.
 func failingStep(body []string) (start, end int) {
 	end = len(body)
-	for i := len(body) - 1; i >= 0; i-- {
-		if strings.HasPrefix(body[i], errorMarker) {
+	for i, b := range slices.Backward(body) {
+		if strings.HasPrefix(b, errorMarker) {
 			end = i + 1
 			break
 		}

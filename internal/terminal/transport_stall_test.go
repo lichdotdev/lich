@@ -55,7 +55,7 @@ func TestStalledSessionDoesNotBlockAnother(t *testing.T) {
 	go func() {
 		defer close(loud)
 		frame := frameFor(t, "loud", string(make([]byte, stallFrameBytes)))
-		for i := 0; i < stallFrames; i++ {
+		for range stallFrames {
 			tr.send(frame)
 			accepted.Add(1)
 		}

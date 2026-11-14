@@ -56,7 +56,7 @@ func TestChromeNamesTheConsoleErrorsOnceInTheNextPageAnswer(t *testing.T) {
 	if !hasError(loaded, "load failed: 42") || !hasError(loaded, "/missing.png") || hasError(loaded, "warning") {
 		t.Fatalf("the page answer named %q, want the error and the missing image, no warning", loaded)
 	}
-	clicked, err := s.ClickAt(t.Context(), api.BrowserClickOptions{ID: "s", BrowserTarget: api.BrowserTarget{Selector: "#throw"}})
+	clicked, err := s.ClickAt(t.Context(), api.BrowserClickOptions{ID: "s", Selector: "#throw"})
 	if err != nil {
 		t.Fatal(err)
 	}

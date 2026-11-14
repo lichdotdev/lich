@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 	"runtime/pprof"
+	"slices"
 	"sort"
 	"strings"
 	"sync/atomic"
@@ -353,7 +354,7 @@ func (m *metrics) summary(s *session) {
 
 func percentile(ds []time.Duration, p int) time.Duration {
 	s := append([]time.Duration(nil), ds...)
-	sort.Slice(s, func(i, j int) bool { return s[i] < s[j] })
+	slices.Sort(s)
 	return s[min(len(s)*p/100, len(s)-1)]
 }
 

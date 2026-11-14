@@ -288,7 +288,7 @@ func treeSnap(b blockView, keys []string) func(a, o int) int {
 		if a < o {
 			toward = -1
 		}
-		for d := 0; d < len(keys); d++ {
+		for d := range keys {
 			for _, c := range []int{o + toward*d, o - toward*d} {
 				if c >= 0 && c < len(keys) && legal(a, c) {
 					return c

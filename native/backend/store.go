@@ -46,7 +46,7 @@ func (c *Client) MarkForked(ctx context.Context, sessionID string) error {
 // with the row. The sandbox answer is always "": the native window has no
 // confinement step, so the provider's rung decides.
 func (c *Client) AddSessionInFolder(ctx context.Context, projectID, sessionID, label, kind, path string, nextSeq int, folder string) error {
-	_, err := callMethod(ctx, c, api.StoreAddSessionInFolder, api.AddSessionInFolderOptions{AddSessionOptions: api.AddSessionOptions{ProjectID: projectID, SessionID: sessionID, Label: label, Kind: kind, Path: path, NextSeq: nextSeq}, Folder: folder})
+	_, err := callMethod(ctx, c, api.StoreAddSessionInFolder, api.AddSessionInFolderOptions{ProjectID: projectID, SessionID: sessionID, Label: label, Kind: kind, Path: path, NextSeq: nextSeq, Folder: folder})
 	return err
 }
 

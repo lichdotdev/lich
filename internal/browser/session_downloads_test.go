@@ -21,7 +21,7 @@ func TestClickReportsTheFileItDownloadedAndTellsTheWindowOnce(t *testing.T) {
 		p.onDownload("g1", api.BrowserDownload{Path: "/dl/report.csv", State: api.DownloadInProgress})
 		p.onDownload("g1", api.BrowserDownload{Path: "/dl/report.csv", Bytes: 12, State: api.DownloadCompleted})
 	}
-	info, err := s.ClickAt(t.Context(), api.BrowserClickOptions{ID: "s", BrowserTarget: api.BrowserTarget{Selector: "#dl"}})
+	info, err := s.ClickAt(t.Context(), api.BrowserClickOptions{ID: "s", Selector: "#dl"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -55,7 +55,7 @@ func TestClickWaitsForTheDownloadItStartedToFinish(t *testing.T) {
 			p.onDownload("g1", api.BrowserDownload{Path: "/dl/a.zip", Bytes: 5, State: api.DownloadCompleted})
 		}()
 	}
-	info, err := s.ClickAt(t.Context(), api.BrowserClickOptions{ID: "s", BrowserTarget: api.BrowserTarget{Selector: "#dl"}})
+	info, err := s.ClickAt(t.Context(), api.BrowserClickOptions{ID: "s", Selector: "#dl"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -100,7 +100,7 @@ func TestAnActionAfterAnActionWaitsOutTheBrowsersStartup(t *testing.T) {
 		t.Fatal(err)
 	}
 	p := launch.pages[0]
-	target := api.BrowserClickOptions{ID: "s", BrowserTarget: api.BrowserTarget{Selector: "#dl"}}
+	target := api.BrowserClickOptions{ID: "s", Selector: "#dl"}
 	if _, err := s.ClickAt(t.Context(), target); err != nil {
 		t.Fatal(err)
 	}
@@ -130,7 +130,7 @@ func TestAnActionAfterAClickThatChangedThePageIsNotHeld(t *testing.T) {
 		p.title = "changed"
 		p.mu.Unlock()
 	}
-	target := api.BrowserClickOptions{ID: "s", BrowserTarget: api.BrowserTarget{Selector: "#dl"}}
+	target := api.BrowserClickOptions{ID: "s", Selector: "#dl"}
 	start := time.Now()
 	for range 2 {
 		if _, err := s.ClickAt(t.Context(), target); err != nil {
@@ -149,7 +149,7 @@ func TestAReloadThatLandsReleasesTheHoldOnTheNextAction(t *testing.T) {
 		t.Fatal(err)
 	}
 	p := launch.pages[0]
-	target := api.BrowserClickOptions{ID: "s", BrowserTarget: api.BrowserTarget{Selector: "#dl"}}
+	target := api.BrowserClickOptions{ID: "s", Selector: "#dl"}
 	if _, err := s.ClickAt(t.Context(), target); err != nil {
 		t.Fatal(err)
 	}
@@ -181,7 +181,7 @@ func TestAReloadInFlightHoldsAnActionPastTheStartupUntilItsDocument(t *testing.T
 		t.Fatal(err)
 	}
 	p := launch.pages[0]
-	target := api.BrowserClickOptions{ID: "s", BrowserTarget: api.BrowserTarget{Selector: "#dl"}}
+	target := api.BrowserClickOptions{ID: "s", Selector: "#dl"}
 	if _, err := s.ClickAt(t.Context(), target); err != nil {
 		t.Fatal(err)
 	}
@@ -209,7 +209,7 @@ func TestAReloadThatNeverLandsHoldsAnActionOnlyForReloadWait(t *testing.T) {
 		t.Fatal(err)
 	}
 	p := launch.pages[0]
-	target := api.BrowserClickOptions{ID: "s", BrowserTarget: api.BrowserTarget{Selector: "#dl"}}
+	target := api.BrowserClickOptions{ID: "s", Selector: "#dl"}
 	if _, err := s.ClickAt(t.Context(), target); err != nil {
 		t.Fatal(err)
 	}

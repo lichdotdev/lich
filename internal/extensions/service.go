@@ -201,12 +201,10 @@ func (s *Service) launch(x *installed) {
 	ctx, stop := context.WithCancel(s.ctx)
 	done := make(chan struct{})
 	x.stop, x.done = stop, done
-	s.wg.Add(1)
-	go func() {
-		defer s.wg.Done()
+	s.wg.Go(func() {
 		defer close(done)
 		s.supervise(ctx, x)
-	}()
+	})
 }
 
 // Shutdown stops every extension: stdin closes, each gets its grace, and what

@@ -33,7 +33,7 @@ func TestEveryInsertOfAnAgentSessionIsRefusedByTheGate(t *testing.T) {
 			return err
 		},
 		"AddSessionInFolder": func(id string) error {
-			_, err := svc.AddSessionInFolder(t.Context(), api.AddSessionInFolderOptions{AddSessionOptions: api.AddSessionOptions{ProjectID: "p1", SessionID: id, Label: id, Kind: "claude", NextSeq: 3}, Folder: "f"})
+			_, err := svc.AddSessionInFolder(t.Context(), api.AddSessionInFolderOptions{ProjectID: "p1", SessionID: id, Label: id, Kind: "claude", NextSeq: 3, Folder: "f"})
 			return err
 		},
 		"AddSessionFrom": func(id string) error {

@@ -439,7 +439,7 @@ func TestNewSessionRefusedSaysWhy(t *testing.T) {
 func TestARefusedReplacementKeepsTheCardItWouldReplace(t *testing.T) {
 	u, b := newGateWindow(t)
 	b.failing.Store("store.AddSessionInFolder", true)
-	u.startNewInProjectProfile(sessionView{Session: backend.Session{ID: "old", Kind: "claude"}})
+	u.startNewInProjectProfile(sessionView{ID: "old", Kind: "claude"})
 	b.await(t, "store.AddSessionInFolder")
 	select {
 	case call := <-b.calls:

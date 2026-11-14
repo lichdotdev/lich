@@ -34,7 +34,7 @@ func downloadDir() (string, error) {
 // userDirsDownload reads XDG_DOWNLOAD_DIR out of a user-dirs.dirs, whose
 // values are "$HOME/…" or an absolute path; "" when it names neither.
 func userDirsDownload(text, home string) string {
-	for _, line := range strings.Split(text, "\n") {
+	for line := range strings.SplitSeq(text, "\n") {
 		v, ok := strings.CutPrefix(strings.TrimSpace(line), "XDG_DOWNLOAD_DIR=")
 		if !ok {
 			continue

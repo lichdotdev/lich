@@ -74,7 +74,7 @@ func (s *Service) AgentName(id string) string {
 // that was never renamed answers to anyway.
 func claudeAgentName(tail []byte) string {
 	name := ""
-	for _, line := range bytes.Split(tail, []byte("\n")) {
+	for line := range bytes.SplitSeq(tail, []byte("\n")) {
 		if !bytes.Contains(line, agentNameRecord) && !bytes.Contains(line, customTitleRecord) {
 			continue
 		}
