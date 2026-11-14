@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.91.0] - 2026-11-14
+
 ### Added
 
 - **Browse and install extensions from the lich catalog without leaving lich.** Settings › Extensions lists them under what you have installed, by category, with search and three orders; a card opens its screenshots, its permissions and the systems it runs on, with Install. Installed extensions show their description, and one the catalog takes down says why.
@@ -16,14 +18,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **An extension from a repository in the lich catalog installs at the version the catalog checked.** Installing or updating it takes the release the catalog lists and refuses an archive that differs from the one it recorded, and an extension the catalog takes down is stopped and stays stopped. Extension authors check a build with `lich extension check`, see `docs/extensions.md`.
 - **lich tells you when an extension has a new version, and updates it in place.** A toast offers the update, and Settings › Extensions shows Update on the extension's row, with Check for updates over the list. What the extension saved is kept, and lich asks first when the new version wants a permission the installed one does not have.
 - **Draw on a page in a session's browser for the agent to see.** Draw, on the bar over the bottom of the page, turns the pointer into a pencil; the eraser removes whole strokes and Ctrl+Z takes the last one back. Send hands the agent a screenshot of the page with your drawing on it.
-- **An extension can live in the dock or in a panel over the footer, not only as a full screen.** Its item joins the footer, where a click opens it beside the session you are in; move or hide the item in Settings › Appearance › Footer. Extension authors set `place` on a surface, see `docs/extensions.md`.
+- **An extension can live in the dock or in a panel over the footer as well as on a full screen.** Its item joins the footer, where a click opens it beside the session you are in; move or hide the item in Settings › Appearance › Footer. Extension authors set `place` on a surface, see `docs/extensions.md`.
 - **An extension can show its own logo on the top bar.** Its manifest names a PNG with `iconFile`, shown there and in Settings › Extensions in its own colors, or in the theme's when the PNG is all black; see the manifest in `docs/extensions.md`.
 - **lich tells you when a theme pack you installed has a new version.** A toast offers Update or Later, and the pack's cards in Settings › Appearance show the version with an Update action. Check for updates, over the cards, looks right away.
 
 ### Changed
 
 - **An agent's click in a session's browser answers with what the click loaded.** A click, a key, a tab or a dialog answer waits for the requests it started and for the page to stop changing, up to 3 seconds, so the agent no longer reads the page again to see the result.
-- **Restart on an extension reads its folder again.** An edited manifest takes effect on Restart, and one that no longer validates shows invalid with its reason instead of starting. Fix it on disk and Restart starts it, with no restart of lich.
+- **Restart on an extension reads its folder again.** An edited manifest takes effect on Restart, and one that no longer validates shows invalid with its reason instead of starting. Fix it on disk and Restart starts it while lich keeps running.
 - **A theme's Update button shows only when its pack has a new version.** It used to sit on every theme from a repository and look for one when clicked; Check for updates, over the cards, does that now.
 - **The tools for leaving notes on a page moved from the browser's toolbar onto the page.** A bar over its bottom holds Select, which was the crosshair, and Draw; its arrow folds it into a tab on the page's edge. Ctrl+Shift+E (Cmd+Shift+E on macOS) still turns Select on and off.
 - **Small labels across the window share one size.** The command palette's field reads "Search, or type > for actions", a second-level heading in Markdown no longer reads as a first-level one, and the Fixed dot in What's new is gray like Removed's.
@@ -6751,7 +6753,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   CPU, costing ~40ms per frame in a full-size window. Under Xwayland typing is
   stall-free at full frame rate.
 
-[Unreleased]: https://github.com/lichdotdev/lich/compare/v0.90.1...HEAD
+[Unreleased]: https://github.com/lichdotdev/lich/compare/v0.91.0...HEAD
+[0.91.0]: https://github.com/lichdotdev/lich/compare/v0.90.1...v0.91.0
 [0.90.1]: https://github.com/lichdotdev/lich/compare/v0.90.0...v0.90.1
 [0.90.0]: https://github.com/lichdotdev/lich/compare/v0.89.0...v0.90.0
 [0.89.0]: https://github.com/lichdotdev/lich/compare/v0.88.0...v0.89.0

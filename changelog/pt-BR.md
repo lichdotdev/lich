@@ -1,3 +1,56 @@
+## [0.91.0] - 2026-11-14
+
+### Added
+
+- **Navegue pelo catálogo de extensões do lich e instale sem sair do lich.** Configurações › Extensões lista as extensões abaixo das que você já instalou, por categoria, com busca e três ordenações; um card abre as capturas de tela, as permissões e os sistemas em que a extensão roda, com Instalar. As extensões instaladas mostram a descrição, e uma que o catálogo retira diz o motivo.
+- **A skill `extension` do plugin, que guia você na escrita de uma extensão do lich, chega a todo agente em que o lich instala o plugin.** Ela só roda quando você a chama, `/lich:extension` no Claude Code, exceto no Antigravity e no Cursor CLI, onde o agente também pode chamá-la sozinho; o Kiro CLI fica sem ela.
+- **Uma extensão fica sabendo por que o lich recusou uma linha que ela escreveu.** O lich responde a cada linha recusada com uma mensagem `refused` que informa o tipo, a superfície e o motivo, e que o SDK Go entrega em `Messages()`; veja What lich enforces em `docs/extensions.md`.
+- **Imagens TIFF em um diff mostram uma prévia.** Um arquivo `.tif` ou `.tiff` abre como imagem em Revisão e na aba Código, do mesmo jeito que PNG e WebP.
+- **Uma extensão de um repositório do catálogo do lich é instalada na versão que o catálogo verificou.** Instalar ou atualizar pega a release que o catálogo lista e recusa um arquivo diferente do que ele registrou, e uma extensão que o catálogo retira é parada e continua parada. Quem escreve extensões confere um build com `lich extension check`, veja `docs/extensions.md`.
+- **O lich avisa quando uma extensão tem uma versão nova e a atualiza no lugar.** Um toast oferece a atualização, e Configurações › Extensões mostra Atualizar na linha da extensão, com Buscar atualizações acima da lista. O que a extensão salvou é mantido, e o lich pergunta antes quando a versão nova quer uma permissão que a instalada não tem.
+- **Desenhe sobre uma página no navegador de uma sessão para o agente ver.** Desenhar, na barra sobre a parte de baixo da página, transforma o ponteiro em um lápis; a borracha remove traços inteiros e Ctrl+Z desfaz o último. Enviar entrega ao agente uma captura de tela da página com o seu desenho.
+- **Uma extensão pode ficar no dock ou em um painel sobre o rodapé, além da tela cheia.** O item dela entra no rodapé, onde um clique a abre ao lado da sessão em que você está; mova ou oculte o item em Configurações › Aparência › Rodapé. Quem escreve extensões define `place` em uma superfície, veja `docs/extensions.md`.
+- **Uma extensão pode mostrar o próprio logo na barra superior.** O manifesto dela aponta um PNG com `iconFile`, exibido ali e em Configurações › Extensões nas cores dele, ou nas do tema quando o PNG é todo preto; veja o manifesto em `docs/extensions.md`.
+- **O lich avisa quando um pacote de temas que você instalou tem uma versão nova.** Um toast oferece Atualizar ou Depois, e os cards do pacote em Configurações › Aparência mostram a versão com uma ação Atualizar. Buscar atualizações, acima dos cards, confere na hora.
+
+### Changed
+
+- **O clique de um agente no navegador de uma sessão responde com o que o clique carregou.** A resposta a um clique, uma tecla, uma aba ou um diálogo espera as requisições que ele iniciou e a página parar de mudar, por até 3 segundos, então o agente não precisa mais ler a página de novo para ver o resultado.
+- **Reiniciar em uma extensão lê a pasta dela de novo.** Um manifesto editado vale ao Reiniciar, e um que não valida mais aparece como inválido com o motivo em vez de iniciar. Corrija no disco e Reiniciar o inicia com o lich rodando.
+- **O botão Atualizar de um tema só aparece quando o pacote dele tem uma versão nova.** Ele ficava em todo tema vindo de um repositório e procurava uma ao ser clicado; agora quem faz isso é Buscar atualizações, acima dos cards.
+- **As ferramentas para deixar notas em uma página saíram da barra de ferramentas do navegador e foram para a página.** Uma barra sobre a parte de baixo dela reúne Selecionar, que era a mira, e Desenhar; a seta dela a recolhe em uma aba na borda da página. Ctrl+Shift+E (Cmd+Shift+E no macOS) continua ligando e desligando Selecionar.
+- **Os rótulos pequenos da janela passam a ter um só tamanho.** O campo da paleta de comandos diz "Busque, ou digite > para ações", um título de segundo nível em Markdown não parece mais um de primeiro nível, e o ponto de Correções em Novidades é cinza como o de Removido.
+- **Um card arrastado na barra lateral é arquivado em uma pasta quando você o solta em qualquer ponto dela.** Antes era preciso soltá-lo sobre o nome da pasta; vale também com a barra lateral recolhida.
+- **Novidades lista cada entrada como um título com um texto curto embaixo.** Nada mais se abre ao clicar, e o cabeçalho não conta mais as entradas.
+- **O cursor do agente sobre a página do navegador dele é uma nova seta.** É a do Bibata Modern (GPL-3.0, de Abdulkaiz Khatri); a cor, o selo e o jeito de se mover não mudam.
+- **O uso do plano no rodapé mostra a sua sessão atual.** Um limite semanal mais cheio ou o limite próprio de um modelo, como o do Fable, não toma mais o lugar dela; passe o mouse para ver todos os limites. Um limite bloqueado continua aparecendo.
+- **Um prompt que uma extensão envia a uma sessão diz qual extensão o enviou.** O agente que o recebe lê "Mensagem repassada pela extensão", com o nome da extensão, em vez da linha de comando do lich.
+- **O cabeçalho da lista de Pull requests cabe em uma linha.** O menu Aberto fica dentro do campo de filtro, e os filtros e Novo pull request dividem a linha dele.
+- **O título e a descrição de um pull request são editados juntos, em um editor tão alto quanto a coluna da descrição.** O lápis ao lado do título abre os dois, com um só Salvar no cabeçalho; o botão de livro sobre a descrição a mostra renderizada.
+
+### Fixed
+
+- **Recarregar no navegador de uma sessão mostra a folha de estilo ou o script que você acabou de mudar.** Eles vinham do cache do Chrome, e as páginas que o lich serve do seu checkout e da pasta de artefatos agora são conferidas de novo a cada carregamento.
+- **Minimizar a página do navegador de uma sessão mantém onde estava o divisor dela.** Mostrar na linha do navegador na barra lateral devolve a página com o terminal e a página dividindo a tela como você deixou; fechar o navegador a esquece.
+- **Ctrl+clique em um `path:line` abre um arquivo que o git ignora.** Um caminho no terminal de uma sessão que estava no `.gitignore`, uma saída de build ou um log, respondia "não encontrado" mesmo existindo; agora ele abre na aba Código. Um caminho fora do checkout da sessão continua recusado.
+- **O menu Autor do painel Git lista todo mundo que escreveu o histórico.** Ele nomeava só os autores dos commits já rolados na tela; agora mostra os mais ativos, de todo o histórico.
+- **Parar uma extensão também encerra os processos que ela iniciou.** Eles continuavam rodando depois que a extensão era parada, caía ou saía junto com o lich; no Windows agora eles terminam mesmo quando o próprio lich é morto.
+- **Um arquivo solto em um painel de um layout cai na sessão desse painel.** Antes ia só para o painel em foco, e para lugar nenhum quando solto em outro; agora o painel em que você solta também recebe o foco.
+- **Desfazer em uma branch excluída traz de volta a branch que ela acompanhava.** O Desfazer do toast recriava a branch sem o upstream, e pull e push deixavam de saber para onde ir.
+- **Quem no Windows mudou a pasta Downloads agora encontra lá os downloads do navegador de uma sessão.** Antes eles iam para `%USERPROFILE%\Downloads`.
+- **Os perfis do Claude Code não guardam mais em disco toda versão de plugin que já rodaram.** Na inicialização o lich apaga as versões que nenhum perfil usa mais, e um perfil criado antes de `CLAUDE_CODE_PLUGIN_CACHE_DIR` ser definido deixa de clonar cada marketplace uma segunda vez.
+- **Um prompt que você agenda não é mais descartado por parecer a continuação do próprio lich.** Depois de um limite de uso, o lich deixa um prompt guardado para retomar o turno na renovação, e um prompt seu com as mesmas palavras era apagado quando o turno seguinte começava; agora o lich sabe quais prompts são dele.
+- **Uma conversa que você bifurca no terminal de uma sessão não cobra de novo o histórico que copiou.** O rodapé e `lich cost` somam só o que a própria bifurcação gasta. O Codex ainda conta a cópia de novo, e o mesmo vale para uma sessão do Claude Code cujo custo o próprio Claude Code mede.
+- **Mudar o modelo padrão em uma conta não o muda mais nas suas outras contas.** Cada perfil guarda o próprio modelo e esforço, enquanto o resto das configurações dele ainda vem do Pessoal. O opencode e o Kiro CLI ainda compartilham um só modelo padrão entre os perfis.
+- **Uma linha sob o ponteiro em Pull requests e no painel de uma extensão acende em toda a largura.** Era uma caixa arredondada afastada das laterais, com os cantos aparecendo contra as divisórias entre as linhas.
+- **Arrastar sobre o texto na página do navegador de uma sessão agora o seleciona.** A página via o arraste e não selecionava nada, então não havia o que copiar.
+- **Uma página no navegador de uma sessão agora sabe que tem um mouse.** Efeitos que um site liga só para um ponteiro que pode passar por cima, como um brilho que segue o cursor, funcionam no painel.
+- **A nota sobre todas elas, no fim da bandeja de notas do navegador, volta a aceitar digitação depois que você desenha ou seleciona na página.**
+- **Uma linha que entra na árvore da barra lateral não mostra mais um pedaço aceso do destaque sob a linha de cima.**
+- **A dica do uso do plano nomeia os limites no seu idioma.** Sessão, Semanal e os demais apareciam em inglês, qualquer que fosse o idioma da interface.
+- **O navegador de uma sessão não falha mais ao abrir em uma primeira inicialização lenta.** O Chrome tinha dez segundos para responder depois de no ar, e um disco frio ou uma máquina ocupada podem passar disso.
+- **No painel Git, o ⋯ de uma branch agora só abre o menu dela.** O clique também selecionava a branch, o que esvaziava o painel por um instante e fechava o menu.
+
 ## [0.90.1] - 2026-11-12
 
 ### Added
