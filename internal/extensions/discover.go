@@ -81,6 +81,9 @@ func load(root, dirName, lichVersion string) *installed {
 	if x.invalid == nil {
 		x.icons, x.invalid = readIcons(root, x.manifest)
 	}
+	if x.source.Revoked != "" {
+		x.invalid = revokedError(x.source.Revoked)
+	}
 	if x.invalid != nil {
 		x.status, x.errText = statusInvalid, x.invalid.Error()
 		slog.Warn("extensions: invalid", "extension", dirName, "err", x.invalid)

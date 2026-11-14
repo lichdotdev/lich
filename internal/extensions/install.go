@@ -52,10 +52,14 @@ var repoPattern = regexp.MustCompile(`^https://github\.com/([A-Za-z0-9-]+)/([A-Z
 
 var errNotGitHub = errors.New("only GitHub repositories are supported: paste https://github.com/<owner>/<repo>")
 
-// source is what sourceFile holds.
+// source is what sourceFile holds. Revoked is the reason the catalog gave
+// for taking the repository down, kept here so the extension stays stopped
+// when the catalog cannot be read: lich writes this file after unpacking, so
+// one an archive ships is replaced.
 type source struct {
 	URL     string `json:"url"`
 	Release string `json:"release"`
+	Revoked string `json:"revoked,omitempty"`
 }
 
 type release struct {
@@ -79,7 +83,11 @@ func (s *Service) PrepareFromGit(_ context.Context, opts api.ExtensionGitInstall
 	s.installMu.Lock()
 	defer s.installMu.Unlock()
 	url := "https://github.com/" + owner + "/" + repo
-	entry := listing(s.catalogNow(), url)
+	cat := s.catalogNow()
+	if reason := revokedReason(cat, url); reason != "" {
+		return api.ExtensionInstallPreview{}, fmt.Errorf("%s/%s was %s; lich does not install it", owner, repo, revokedError(reason))
+	}
+	entry := listing(cat, url)
 	rel, err := s.releaseFor(owner, repo, entry)
 	if err != nil {
 		return api.ExtensionInstallPreview{}, err
@@ -354,6 +362,7 @@ func (s *Service) place(id, stage string) (api.Extension, error) {
 		return api.Extension{}, fmt.Errorf("move the extension into %s: %w", root, err)
 	}
 	x := load(root, id, s.lichVersion)
+	s.revokeLoaded(x)
 	s.all = append(s.all, x)
 	if x.invalid == nil {
 		s.launch(x)

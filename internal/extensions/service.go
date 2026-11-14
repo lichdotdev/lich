@@ -295,6 +295,7 @@ func (s *Service) Restart(ctx context.Context, opts api.ExtensionIDOptions) (api
 		return api.None{}, fmt.Errorf("extension %q was removed", opts.ID)
 	}
 	fresh.tickets, fresh.notified, fresh.latest = x.tickets, x.notified, x.latest
+	s.revokeLoaded(fresh)
 	s.all[slices.Index(s.all, x)] = fresh
 	if fresh.invalid == nil {
 		s.launch(fresh)

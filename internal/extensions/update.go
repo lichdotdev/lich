@@ -1,6 +1,7 @@
 package extensions
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
@@ -58,7 +59,7 @@ func (s *Service) CheckUpdates(ctx context.Context, _ api.None) ([]api.Extension
 
 func (s *Service) checkUpdates() error {
 	s.mu.Lock()
-	all := slices.Clone(s.all)
+	all := slices.DeleteFunc(slices.Clone(s.all), func(x *installed) bool { return x.source.Revoked != "" })
 	s.mu.Unlock()
 	cat := s.catalog.Load()
 	var errs []error
@@ -130,7 +131,14 @@ func (s *Service) PrepareUpdate(_ context.Context, opts api.ExtensionIDOptions) 
 	}
 	s.installMu.Lock()
 	defer s.installMu.Unlock()
-	entry := listing(s.catalogNow(), x.source.URL)
+	cat := s.catalogNow()
+	s.mu.Lock()
+	reason := cmp.Or(x.source.Revoked, revokedReason(cat, x.source.URL))
+	s.mu.Unlock()
+	if reason != "" {
+		return api.ExtensionInstallPreview{}, fmt.Errorf("extension %q was %s; lich does not update it", opts.ID, revokedError(reason))
+	}
+	entry := listing(cat, x.source.URL)
 	rel, err := s.newerRelease(x, owner, repo, entry)
 	if err != nil {
 		return api.ExtensionInstallPreview{}, err
@@ -226,6 +234,7 @@ func (s *Service) swap(old *installed) api.Extension {
 	fresh := load(old.root, old.id, s.lichVersion)
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	s.revokeLoaded(fresh)
 	fresh.tickets = old.tickets
 	s.all[slices.Index(s.all, old)] = fresh
 	if s.ctx.Err() == nil && fresh.invalid == nil {
