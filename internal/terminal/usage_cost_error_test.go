@@ -39,7 +39,7 @@ func TestAFailedReadIsNotACompleteScan(t *testing.T) {
 	body := costLineJSON("m1", modelOpus, 100, 0, 0, 0) + "\n"
 	r := &haltingReader{body: []byte(body), err: errors.New("input/output error")}
 
-	ledger, miss := accumulate(bufio.NewReader(r), costLedger{}, testRate)
+	ledger, miss := accumulate(bufio.NewReader(r), costLedger{}, testRate, billedAlone())
 
 	if miss != costMissUnread {
 		t.Errorf("miss = %q, want %q: a read error is not the end of the file", miss, costMissUnread)
@@ -56,7 +56,7 @@ func TestReachingTheEndIsACompleteScan(t *testing.T) {
 	body := costLineJSON("m1", modelOpus, 100, 0, 0, 0) + "\n"
 	r := &haltingReader{body: []byte(body), err: io.EOF}
 
-	if _, miss := accumulate(bufio.NewReader(r), costLedger{}, testRate); miss != costMissNone {
+	if _, miss := accumulate(bufio.NewReader(r), costLedger{}, testRate, billedAlone()); miss != costMissNone {
 		t.Errorf("miss = %q, want none: the scan reached the end of the file", miss)
 	}
 }

@@ -214,6 +214,7 @@ func (v *pullView) withToolbar(gtx C, th *ui.Theme, p *pullsScreen, heading, w l
 }
 
 func (v *pullView) titleRow(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDetail, act *pullsAction) D {
+	v.editClicks(gtx, d, act)
 	actions, size := v.recordActions(gtx, th, p, d, act)
 	if size.Y > gtx.Dp(ui.Space(8)) || gtx.Constraints.Max.X-size.X < gtx.Dp(pullsTitleMinWidth) {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,

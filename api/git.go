@@ -11,7 +11,7 @@ var (
 	ProjectGitCreateBranch = define[GitCreateBranchOptions, None]("project.GitCreateBranch")
 	ProjectGitRenameBranch = define[GitRenameBranchOptions, None]("project.GitRenameBranch")
 	ProjectGitBranchOnly   = define[GitBranchOptions, int]("project.GitBranchOnly")
-	ProjectGitDeleteBranch = define[GitBranchOptions, string]("project.GitDeleteBranch")
+	ProjectGitDeleteBranch = define[GitBranchOptions, GitDeletedBranch]("project.GitDeleteBranch")
 )
 
 // A GitRef's Kind, read from its full name: a remote branch called origin/x and
@@ -133,6 +133,23 @@ type GitCreateBranchOptions struct {
 	Path string `json:"path"`
 	Name string `json:"name"`
 	From string `json:"from"`
+	// Upstream is written to the new branch's config, to make a deleted one again.
+	Upstream GitUpstream `json:"upstream,omitzero"`
+}
+
+// GitUpstream is a branch's branch.<name>.remote, .merge and .pushRemote
+// settings, each "" when unset.
+type GitUpstream struct {
+	Remote     string `json:"remote,omitempty"`
+	Merge      string `json:"merge,omitempty"`
+	PushRemote string `json:"pushRemote,omitempty"`
+}
+
+// GitDeletedBranch is what a delete returns to make the branch again: the
+// commit it pointed at and the upstream it tracked.
+type GitDeletedBranch struct {
+	Hash     string      `json:"hash"`
+	Upstream GitUpstream `json:"upstream,omitzero"`
 }
 
 // GitRenameBranchOptions renames local branch Name to NewName.

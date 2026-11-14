@@ -13,6 +13,7 @@ import (
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/extension"
+	"github.com/lichdotdev/lich/internal/prompt"
 )
 
 var allPermissions = extension.Permissions
@@ -228,7 +229,7 @@ func TestOpenSessionHandsItsPromptOverAsOpenSessionDoes(t *testing.T) {
 	if f.opens[0] != (api.OpenSessionOptions{Project: "lich", Kind: "codex", Worktree: "feat"}) {
 		t.Errorf("opened with %+v", f.opens[0])
 	}
-	wantSend := api.SendOptions{Target: "feat", Project: "lich", Prompt: "fix it", WaitSeconds: handOverWaitSeconds}
+	wantSend := api.SendOptions{Target: "feat", Project: "lich", Prompt: "fix it", WaitSeconds: handOverWaitSeconds, ExtensionID: "ext"}
 	if f.sends[0] != wantSend {
 		t.Errorf("handed over with %+v, want %+v", f.sends[0], wantSend)
 	}
@@ -259,7 +260,7 @@ func TestSendClampsItsWaitAsSendToSessionDoes(t *testing.T) {
 		if err != nil || got.Status != "answered" || got.Target != "api-3" {
 			t.Errorf("got %+v, %v", got, err)
 		}
-		if f.sends[0] != (api.SendOptions{Target: "api-3", Project: "lich", Prompt: "hi", WaitSeconds: want}) {
+		if f.sends[0] != (api.SendOptions{Target: "api-3", Project: "lich", Prompt: "hi", WaitSeconds: want, ExtensionID: "ext"}) {
 			t.Errorf("asked %d: sent %+v", asked, f.sends[0])
 		}
 	}
@@ -391,5 +392,34 @@ func TestTheSDKTalksToTheBackend(t *testing.T) {
 	waitUntil(t, want, func() bool { return strings.Join(r.titles(t), "|") == want })
 	if got := r.lastStatus().Permissions; len(got) != 2 || got[0] != "sessions:read" {
 		t.Errorf("the extension reports permissions %v", got)
+	}
+}
+
+func TestWhatAnExtensionSendsNamesTheExtensionInThePromptLanguage(t *testing.T) {
+	f := &fakeLich{}
+	s, x := apiService(t, f, allPermissions...)
+	x.manifest.Name = "Notes"
+	x.text = map[string]api.ExtensionText{"pt-BR": {Name: "Notas"}}
+	lang := prompt.English
+	l := f.lich()
+	l.PromptLang = func() prompt.Lang { return lang }
+	s.SetLich(l)
+
+	send := func() api.SendOptions {
+		if _, err := call(t, s, x, extension.SendToSession, extension.SendParams{Session: "api-3", Prompt: "hi"}); err != nil {
+			t.Fatal(err)
+		}
+		return f.sends[len(f.sends)-1]
+	}
+	if got := send(); got.ExtensionID != "ext" || got.ExtensionName != "Notes" {
+		t.Errorf("English send carries %q %q, want ext Notes", got.ExtensionID, got.ExtensionName)
+	}
+	lang = prompt.PortugueseBR
+	if got := send(); got.ExtensionName != "Notas" {
+		t.Errorf("pt-BR send carries name %q, want its translation", got.ExtensionName)
+	}
+	lang = prompt.Japanese
+	if got := send(); got.ExtensionName != "Notes" {
+		t.Errorf("a language the extension lacks carries name %q, want the manifest's", got.ExtensionName)
 	}
 }

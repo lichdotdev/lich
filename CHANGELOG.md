@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Restart on an extension reads its folder again.** An edited manifest takes effect on Restart, and one that no longer validates shows invalid with its reason instead of starting. Fix it on disk and Restart starts it, with no restart of lich.
 - **A theme's Update button shows only when its pack has a new version.** It used to sit on every theme from a repository and look for one when clicked; Check for updates, over the cards, does that now.
 - **The tools for leaving notes on a page moved from the browser's toolbar onto the page.** A bar over its bottom holds Select, which was the crosshair, and Draw; its arrow folds it into a tab on the page's edge. Ctrl+Shift+E (Cmd+Shift+E on macOS) still turns Select on and off.
 - **Small labels across the window share one size.** The command palette's field reads "Search, or type > for actions", a second-level heading in Markdown no longer reads as a first-level one, and the Fixed dot in What's new is gray like Removed's.
@@ -25,13 +26,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **What's new lists each entry as a title with a short text under it.** Nothing folds open any more, and the header no longer counts the entries.
 - **The agent's cursor over its browser page is a new arrow.** It is the one of Bibata Modern (GPL-3.0, by Abdulkaiz Khatri); its color, its badge and the way it moves are unchanged.
 - **The plan usage in the footer shows your current session.** A fuller weekly limit or a model's own limit, like Fable's, no longer takes its place; hover it to see every limit. A locked limit still shows.
+- **A prompt an extension sends to a session says which extension sent it.** The agent that receives it reads "Message relayed by the extension", with the extension's name, instead of the lich command line.
 - **The Pulls list's header fits on one line.** The Open menu sits inside the filter field, and the filters and New pull request share its line.
+- **A pull request's title and description are edited together, in an editor as tall as the description's column.** The pencil beside the title opens both, with one Save in the header; the book button over the description shows it rendered.
 
 ### Fixed
 
 - **The Git panel's Author menu lists everyone who wrote the history.** It named only the authors of the commits already scrolled in; it now shows the most active ones, from the whole history.
+- **Undo on a deleted branch brings back the branch it tracked.** The toast's Undo used to make the branch again without its upstream, so pull and push stopped knowing where to go.
 - **A Windows user who moved Downloads now finds a session's browser downloads there.** They used to land in `%USERPROFILE%\Downloads` instead.
+- **Claude Code profiles no longer keep every plugin version they ever ran on disk.** At start lich deletes the versions no profile uses any more, and a profile made before `CLAUDE_CODE_PLUGIN_CACHE_DIR` was set stops cloning each marketplace a second time.
 - **A prompt you schedule is no longer dropped for reading like lich's own continuation.** After a usage limit, lich parks a prompt to pick the turn back up at the reset, and a prompt of yours with the same words used to be deleted when the next turn started; lich now knows which prompts are its own.
+- **A conversation you branch inside a session's terminal no longer bills the history it copied a second time.** The footer and `lich cost` add only what the branch itself spends. Codex still counts the copy again, and so does a Claude Code session whose cost Claude Code measures itself.
 - **Changing the default model in one account no longer changes it in your other accounts.** Each profile keeps its own model and effort, while the rest of its settings still come from Personal. opencode and Kiro CLI still share one default model across profiles.
 - **A row under the pointer in Pulls and in an extension's panel lights across its whole width.** It was a rounded box set in from the sides, with its corners showing against the lines between rows.
 - **Dragging over text in a session's browser page now selects it.** The page saw the drag and selected nothing, so there was nothing to copy.

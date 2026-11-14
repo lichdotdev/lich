@@ -117,7 +117,10 @@ Code's orphan sweep, run at every session start, marks each cached version its o
 and deleting nothing through it, and `plugin update`, `uninstall` and a reinstall over a link leave the store's
 copy alone (all measured on 2.1.299, a plugin running from a linked version included). A version Claude Code
 downloads stays a plain directory of the profile, which its own record protects, until the next spawn links it.
-Personal's cache is Personal's alone and is left as it is, so a version both use is on disk twice. A profile made
+Personal's cache is Personal's alone and is left as it is, so a version both use is on disk twice. At start,
+before any session spawns, lich deletes each version in the store that no profile, Personal included, names and
+that no running Claude Code marks in use (`.in_use-links/` in the profile's plugins directory, or `.in_use/` in
+the version, read in 2.1.325), with each profile's link to it; a link inside the store is never followed. A profile made
 when the whole cache was a link to Personal's is moved at its next spawn or lich start: each version it names is
 copied from Personal's into the store, and one Personal's sweep already deleted stays missing. `.in_use` markers
 of every profile running a version land in the store's copy, which a confined session reaches because the store
@@ -128,9 +131,9 @@ moves Claude Code's whole `plugins/` directory, installed set, marketplaces and 
 (measured on 2.1.300), so a profile's spawn, login and plugin install drop it and a profile's plugins stay inside
 its own directory; Personal keeps it, and lich reads Personal's installed set where it points
 (`claudeprofile.PluginsDir`). A new profile seeds its marketplaces from, and links its clones to, Personal's
-plugins directory where the variable points. A profile made before the variable was set keeps the
-`plugins/marketplaces` link it was made with, and clones each marketplace again into a directory Personal no
-longer reads; removing that link has the next spawn link it where the variable points.
+plugins directory where the variable points. A profile made before the variable was set, whose
+`plugins/marketplaces` still links under Personal's config dir, is linked where the variable points at its next
+spawn; a directory of its own or a link elsewhere stays.
 
 The lich plugin follows Personal's (`internal/agentplugin/profiles.go`): `claude plugin install` installs into a
 logged-out home (measured on 2.1.296), so every profile gets it, logged in or not. The pass lays each profile out

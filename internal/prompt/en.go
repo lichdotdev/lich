@@ -25,11 +25,12 @@ var en = Catalog{
 		"session and hands it the task in one command.",
 	BriefingArtifacts: " A page you make for the user to look at (a report, a diagram, a mockup) goes in the folder the LICH_ARTIFACT_DIR environment variable names, never in the checkout, and opens with %s in the browser beside the terminal of this session; publish it anywhere else only when the user asks.",
 
-	RelayMessage:  "[lich] %[1]s, not from your own prompt.\n\n%[2]s\n\n%[3]s",
-	OriginCLI:     "Message relayed by the lich command line",
-	OriginSession: "Message from session %q",
-	ReplyCommand:  "  \"$LICH_BIN\" reply %s \"<your answer>\"",
-	ReplyRouteCLI: "When you have an answer, send it back by running:\n%s",
+	RelayMessage:    "[lich] %[1]s, not from your own prompt.\n\n%[2]s\n\n%[3]s",
+	OriginCLI:       "Message relayed by the lich command line",
+	OriginSession:   "Message from session %q",
+	OriginExtension: "Message relayed by the extension %[1]q (%[2]s)",
+	ReplyCommand:    "  \"$LICH_BIN\" reply %s \"<your answer>\"",
+	ReplyRouteCLI:   "When you have an answer, send it back by running:\n%s",
 	ReplyRouteTools: "When you have an answer, send it back with the lich tool `%[1]s` (ticket %[2]s), " +
 		"or by running:\n%[3]s",
 	ReplyOnlyWayBack: "That ticket is the only way back: whoever asked is blocked on it and " +

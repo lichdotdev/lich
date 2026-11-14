@@ -17,8 +17,12 @@ import (
 
 // actions is the header's buttons, left to right: the hand-off a failing or
 // conflicting pull request offers, Send open threads, the session, the pending review while one
-// is written, Merge, and ⋯ with Approve, Refresh and Open on GitHub.
+// is written, Merge, and ⋯ with Approve, Refresh and Open on GitHub. While the
+// title and description are edited they are Cancel and Save.
 func (v *pullView) actions(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDetail, act *pullsAction) D {
+	if v.edit.editing(d) {
+		return v.editActions(gtx, th)
+	}
 	busy := v.busyNow()
 	blocked := ""
 	if d.IsCrossRepository && !d.MaintainerCanModify {
@@ -287,7 +291,8 @@ var (
 
 // overview is the description beside the pull request's facts.
 func (v *pullView) overview(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDetail, act *pullsAction) D {
-	rows := v.overviewRows(th, d, act)
+	// Stacked under the facts, the editor is as tall as the panel.
+	rows := v.overviewRows(th, d, act, gtx.Constraints.Max.Y)
 	heading := func(gtx C) D {
 		return layout.Inset{Left: pullsPadX, Right: pullsPadX, Top: ui.Space(4)}.Layout(gtx, func(gtx C) D {
 			return v.descriptionHeading(gtx, th, p, d)
@@ -307,7 +312,14 @@ func (v *pullView) overview(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDet
 				return layout.Inset{Top: ui.Space(1), Bottom: overviewHeadingBottom}.Layout(gtx, heading)
 			}),
 			layout.Rigid(th.Separator),
-			layout.Flexed(1, func(gtx C) D { return v.panelList(gtx, th, rows) }),
+			layout.Flexed(1, func(gtx C) D {
+				if v.edit.editing(d) && !v.edit.previewing {
+					return layout.Inset{Top: ui.Space(1), Bottom: pullsPadX}.Layout(gtx, func(gtx C) D {
+						return proseColumn(gtx, func(gtx C) D { return v.descriptionEditor(gtx, th, d, act, gtx.Constraints.Max.Y) })
+					})
+				}
+				return v.panelList(gtx, th, rows)
+			}),
 		)
 	}
 	return layout.Flex{}.Layout(gtx,
@@ -363,22 +375,32 @@ func (v *pullView) checkoutFact(th *ui.Theme, p *pullsScreen, d backend.PRDetail
 	return out
 }
 
-// overviewRows is the description, held to a reading width; its heading
-// spans the column.
-func (v *pullView) overviewRows(th *ui.Theme, d backend.PRDetail, act *pullsAction) []layout.Widget {
-	body := strings.TrimSpace(d.Body)
+// overviewRows is the description, held to a reading width, or its draft
+// while it is edited: the editor editorHeight tall, or the draft rendered. Its
+// heading spans the column.
+func (v *pullView) overviewRows(th *ui.Theme, d backend.PRDetail, act *pullsAction, editorHeight int) []layout.Widget {
 	return []layout.Widget{func(gtx C) D {
-		gtx.Constraints.Max.X = min(gtx.Constraints.Max.X, gtx.Dp(overviewProseWidth+2*pullsPadX))
-		return layout.Inset{Left: pullsPadX, Right: pullsPadX, Top: ui.Space(2)}.Layout(gtx, func(gtx C) D {
-			if v.edit.bodyURL == d.URL {
-				return v.descriptionField(gtx, th, d, act)
+		return proseColumn(gtx, func(gtx C) D {
+			body := d.Body
+			if s := &v.edit; s.editing(d) {
+				if !s.previewing {
+					return v.descriptionEditor(gtx, th, d, act, editorHeight)
+				}
+				body = s.body.Text()
 			}
-			if body == "" {
+			if strings.TrimSpace(body) == "" {
 				return th.Text(ui.TextSM, i18n.T("pulls.pullsOverview.noDescription")).Muted().Layout(gtx)
 			}
-			return v.md.Layout(gtx, th, "body:"+d.URL, body, act.open)
+			return v.md.Layout(gtx, th, "body:"+d.URL, strings.TrimSpace(body), act.open)
 		})
 	}}
+}
+
+// proseColumn is the description's column: the reading width, inset as the
+// Overview's rows.
+func proseColumn(gtx C, w layout.Widget) D {
+	gtx.Constraints.Max.X = min(gtx.Constraints.Max.X, gtx.Dp(overviewProseWidth+2*pullsPadX))
+	return layout.Inset{Left: pullsPadX, Right: pullsPadX, Top: ui.Space(2)}.Layout(gtx, w)
 }
 
 // reviewVerdict is what a review state says its author did, ok false for a

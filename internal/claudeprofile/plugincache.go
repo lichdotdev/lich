@@ -37,6 +37,10 @@ const pluginStoreName = "plugin_cache"
 // version the profile does not name, so Claude Code's sweep deletes it.
 const replacedSuffix = ".lich-replaced"
 
+// versionDepth is the levels of a version under a cache: marketplace, plugin,
+// version.
+const versionDepth = 3
+
 // pluginStoreMu serializes the store's writes: two profiles spawning at once
 // may adopt the same version.
 var pluginStoreMu sync.Mutex
@@ -54,7 +58,7 @@ func PluginStore(dir string) string {
 func layoutPluginCache(_, dir string) error {
 	store := PluginStore(dir)
 	cache := filepath.Join(dir, "plugins", "cache")
-	versions, err := installedVersions(dir, cache)
+	versions, err := installedVersions(filepath.Join(dir, "plugins"))
 	if err != nil {
 		return err
 	}
@@ -75,10 +79,11 @@ func layoutPluginCache(_, dir string) error {
 	return nil
 }
 
-// installedVersions is every marketplace/plugin/version under cache the
-// profile's installed_plugins.json names.
-func installedVersions(dir, cache string) ([]string, error) {
-	path := filepath.Join(dir, "plugins", "installed_plugins.json")
+// installedVersions is every marketplace/plugin/version under the cache of the
+// plugins directory that its installed_plugins.json names.
+func installedVersions(plugins string) ([]string, error) {
+	cache := filepath.Join(plugins, "cache")
+	path := filepath.Join(plugins, "installed_plugins.json")
 	data, err := os.ReadFile(path)
 	if os.IsNotExist(err) {
 		return nil, nil
@@ -98,7 +103,7 @@ func installedVersions(dir, cache string) ([]string, error) {
 	for _, installs := range doc.Plugins {
 		for _, install := range installs {
 			rel, err := filepath.Rel(cache, filepath.FromSlash(install.InstallPath))
-			if err != nil || !filepath.IsLocal(rel) || len(strings.Split(rel, string(filepath.Separator))) != 3 {
+			if err != nil || !filepath.IsLocal(rel) || len(strings.Split(rel, string(filepath.Separator))) != versionDepth {
 				continue
 			}
 			versions = append(versions, rel)

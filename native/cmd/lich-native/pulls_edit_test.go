@@ -53,3 +53,45 @@ func TestHeldEditReleasedOnceCaughtUp(t *testing.T) {
 		t.Errorf("after catching up shows %q, want the read", got)
 	}
 }
+
+func TestEditSendsOnlyWhatChanged(t *testing.T) {
+	d := backend.PRDetail{URL: "u", Title: "Fix the thing", Body: "The body."}
+	cases := []struct {
+		name, title, body string
+		wantTitle         string
+		wantBody          *string
+	}{
+		{"nothing changed", "Fix the thing", "The body.", "", nil},
+		{"the title only", "Fix it", "The body.", "Fix it", nil},
+		{"the title padded, not changed", "  Fix the thing ", "The body.", "", nil},
+		{"a blank title keeps the old one", " ", "The body.", "", nil},
+		{"the description emptied", "Fix the thing", "", "", new("")},
+		{"both", "Fix it", "More.", "Fix it", new("More.")},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			var s editState
+			s.start(d)
+			s.title.SetText(c.title)
+			s.body.SetText(c.body)
+			title, body := s.changes(d)
+			if title != c.wantTitle {
+				t.Errorf("title = %q, want %q", title, c.wantTitle)
+			}
+			if (body == nil) != (c.wantBody == nil) || body != nil && *body != *c.wantBody {
+				t.Errorf("body = %v, want %v", body, c.wantBody)
+			}
+		})
+	}
+}
+
+func TestEditSaveWithNothingChangedJustCloses(t *testing.T) {
+	d := backend.PRDetail{URL: "u", Title: "Fix the thing", Body: "The body."}
+	var s editState
+	s.start(d)
+	var act pullsAction
+	s.submit(d, time.Now(), &act)
+	if s.editing(d) || act.title != "" || act.body != nil {
+		t.Errorf("editing = %v, act = %+v; want closed with nothing sent", s.editing(d), act)
+	}
+}

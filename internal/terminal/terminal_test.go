@@ -66,6 +66,9 @@ type stubBins struct {
 	inherited map[string]bool
 	costOn    bool
 	ledgers   map[string]stubLedger
+	// The transcript that billed each response, keyed by session and response,
+	// the shape store.SaveCostResponses writes.
+	responses map[string]string
 	ports     map[string]int
 	// Whole seconds per session, the shape store.AddHandsOn accumulates into.
 	// Nil until a test cares: the flush only ever writes for a session the
@@ -87,6 +90,8 @@ type stubBins struct {
 	// total that cannot be summed, and a fork's offset that cannot be recorded.
 	// A single error field would let a test claim the path it never reached.
 	ledgerErr, saveLedgerErr, sessionCostErr, forkOffsetErr error
+	// The billed responses failing to be read, or to be recorded.
+	countedErr, saveResponsesErr error
 	// The Claude Code profile every session row reads back, and the failure of
 	// that read; movedProfiles records SetSessionProfile per session once a test
 	// makes it, and then answers for that session.
@@ -114,6 +119,7 @@ func newCostStore(providerSession string) stubBins {
 		providerSession: providerSession,
 		costOn:          true,
 		ledgers:         make(map[string]stubLedger),
+		responses:       make(map[string]string),
 	}
 }
 
@@ -236,6 +242,29 @@ func (s stubBins) SaveCostLedger(
 		return s.saveLedgerErr
 	}
 	s.ledgers[sessionID+"\x00"+transcriptID] = stubLedger{offset, lastMessage, cost}
+	return nil
+}
+
+func (s stubBins) CountedElsewhere(sessionID, transcriptID, responseID string) (bool, error) {
+	if s.countedErr != nil {
+		return false, s.countedErr
+	}
+	owner, ok := s.responses[sessionID+"\x00"+responseID]
+	return ok && owner != transcriptID, nil
+}
+
+// SaveCostResponses keeps the first transcript to bill a response, as the
+// store's INSERT OR IGNORE does. A stub with no map records nothing.
+func (s stubBins) SaveCostResponses(sessionID, transcriptID string, responseIDs []string) error {
+	if s.saveResponsesErr != nil {
+		return s.saveResponsesErr
+	}
+	for _, responseID := range responseIDs {
+		key := sessionID + "\x00" + responseID
+		if _, ok := s.responses[key]; !ok && s.responses != nil {
+			s.responses[key] = transcriptID
+		}
+	}
 	return nil
 }
 

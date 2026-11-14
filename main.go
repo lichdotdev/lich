@@ -371,6 +371,11 @@ func registerServices(db *store.Service, term *terminal.Service, svcs *services.
 	// reaches every Claude Code and Codex profile, and a start brings in the
 	// ones left behind or logged in before they got it.
 	plugins.SetEmit(hub.Emit)
+	// Before the pass and before any spawn, so no session of this lich runs a
+	// version the sweep takes (claudeprofile.SweepPluginStore).
+	if err := claudeprofile.SweepPluginStore(); err != nil {
+		slog.Warn("sweep the Claude Code plugin store", "err", err)
+	}
 	go plugins.SyncProfiles()
 	// Every Claude Code profile gets the lich plugin once it is logged in, run as
 	// that profile so its account's plugin policy applies; a profile with a
@@ -577,7 +582,7 @@ func registerServices(db *store.Service, term *terminal.Service, svcs *services.
 		Services: svcs.List, StartService: svcs.Start, StopService: svcs.Stop, RestartService: svcs.Restart,
 		Output: svcs.Output, LiveOutput: svcs.LiveOutput,
 		Diff: proj.Diff, BaseStatus: proj.BaseStatus, Upstream: proj.UpstreamCounts, PullRequest: proj.OpenPullRequest,
-		Notify: sys.Notify, ShowCode: proj.ShowCode, OpenURL: brows.OpenURL, Attached: hub.Attached,
+		Notify: sys.Notify, ShowCode: proj.ShowCode, OpenURL: brows.OpenURL, Attached: hub.Attached, PromptLang: db.PromptLanguage,
 	})
 	hub.Observe(exts.Observe)
 	themeSvc := themes.New(version, db, hub.Emit)

@@ -25,6 +25,12 @@ func (f fixedRates) Rate(model string) (pricing.Rate, bool) {
 	return rate, ok
 }
 
+// billedAlone is a scan whose session has no other transcript: nothing it reads
+// was billed elsewhere.
+func billedAlone() *billedResponses {
+	return &billedResponses{elsewhere: func(string) (bool, error) { return false, nil }}
+}
+
 // testRate is round enough to read totals off by eye: 1 unit of anything is
 // $0.001, except output at $0.01 and the hour-long cache write at $0.002 — the
 // two cache writes are deliberately different, so a total billed at one rate for
@@ -85,7 +91,7 @@ func TestCostSumsEveryAssistantLine(t *testing.T) {
 			`{"type":"user","message":{"content":"hi"}}`+"\n"+
 			costLineJSON("m2", modelOpus, 200, 20, 0, 0)+"\n")
 
-	ledger, miss, ok := scanTranscriptCost(path, costLedger{}, testRate)
+	ledger, miss, ok := scanTranscriptCost(path, costLedger{}, testRate, billedAlone())
 
 	if !ok || miss != costMissNone {
 		t.Fatalf("scan: ok=%v miss=%q, want ok and no miss", ok, miss)
@@ -105,7 +111,7 @@ func TestCostResumesWhereItStopped(t *testing.T) {
 	first := costLineJSON("m1", modelOpus, 100, 0, 0, 0) + "\n"
 	path := writeFile(t, first)
 
-	ledger, _, _ := scanTranscriptCost(path, costLedger{}, testRate)
+	ledger, _, _ := scanTranscriptCost(path, costLedger{}, testRate, billedAlone())
 	if ledger.offset != int64(len(first)) {
 		t.Fatalf("offset = %d, want %d (the whole first line)", ledger.offset, len(first))
 	}
@@ -114,7 +120,7 @@ func TestCostResumesWhereItStopped(t *testing.T) {
 	if err := os.WriteFile(path, []byte(first+appended), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	next, _, _ := scanTranscriptCost(path, ledger, testRate)
+	next, _, _ := scanTranscriptCost(path, ledger, testRate, billedAlone())
 
 	if !nearly(next.cost, 0.2) {
 		t.Errorf("cost = %v, want 0.2 — the resumed scan must add, not recount", next.cost)
@@ -129,7 +135,7 @@ func TestAPartialLineIsLeftForTheNextScan(t *testing.T) {
 	whole := costLineJSON("m1", modelOpus, 100, 0, 0, 0) + "\n"
 	path := writeFile(t, whole+`{"type":"assistant","message":{"id":"m2"`)
 
-	ledger, miss, ok := scanTranscriptCost(path, costLedger{}, testRate)
+	ledger, miss, ok := scanTranscriptCost(path, costLedger{}, testRate, billedAlone())
 
 	if !ok || miss != costMissNone {
 		t.Fatalf("scan: ok=%v miss=%q, want ok and no miss", ok, miss)
@@ -150,7 +156,7 @@ func TestOneMessageWrittenTwiceIsBilledOnce(t *testing.T) {
 	line := costLineJSON("m1", modelOpus, 100, 0, 0, 0)
 	path := writeFile(t, line+"\n"+line+"\n")
 
-	ledger, _, _ := scanTranscriptCost(path, costLedger{}, testRate)
+	ledger, _, _ := scanTranscriptCost(path, costLedger{}, testRate, billedAlone())
 
 	if !nearly(ledger.cost, 0.1) {
 		t.Errorf("cost = %v, want 0.1 — the repeated message must be billed once", ledger.cost)
@@ -165,11 +171,11 @@ func TestTheDedupSurvivesAScanBoundary(t *testing.T) {
 	line := costLineJSON("m1", modelOpus, 100, 0, 0, 0)
 	path := writeFile(t, line+"\n")
 
-	ledger, _, _ := scanTranscriptCost(path, costLedger{}, testRate)
+	ledger, _, _ := scanTranscriptCost(path, costLedger{}, testRate, billedAlone())
 	if err := os.WriteFile(path, []byte(line+"\n"+line+"\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	next, _, _ := scanTranscriptCost(path, ledger, testRate)
+	next, _, _ := scanTranscriptCost(path, ledger, testRate, billedAlone())
 
 	if !nearly(next.cost, 0.1) {
 		t.Errorf("cost = %v, want 0.1 — the repeat crossed a scan and was billed again", next.cost)
@@ -187,7 +193,7 @@ func TestAnUnpricedModelStopsTheCount(t *testing.T) {
 			costLineJSON("m2", "model-from-the-future", 900, 0, 0, 0)+"\n"+
 			costLineJSON("m3", modelOpus, 100, 0, 0, 0)+"\n")
 
-	ledger, miss, ok := scanTranscriptCost(path, costLedger{}, testRate)
+	ledger, miss, ok := scanTranscriptCost(path, costLedger{}, testRate, billedAlone())
 
 	if !ok {
 		t.Fatal("scan: want ok")
@@ -203,7 +209,7 @@ func TestAnUnpricedModelStopsTheCount(t *testing.T) {
 	// The price lands (the miss scheduled the refresh) and the same line is
 	// picked up from where the scan stopped.
 	taught := fixedRates{modelOpus: testRate[modelOpus], "model-from-the-future": {Input: 0.001}}
-	next, miss, _ := scanTranscriptCost(path, ledger, taught)
+	next, miss, _ := scanTranscriptCost(path, ledger, taught, billedAlone())
 	if miss != costMissNone {
 		t.Errorf("miss = %q after the price landed, want none", miss)
 	}
@@ -221,7 +227,7 @@ func TestASyntheticLineIsNotAModelToPrice(t *testing.T) {
 		costLineJSON("m1", "<synthetic>", 0, 0, 0, 0)+"\n"+
 			costLineJSON("m2", modelOpus, 100, 0, 0, 0)+"\n")
 
-	ledger, miss, ok := scanTranscriptCost(path, costLedger{}, testRate)
+	ledger, miss, ok := scanTranscriptCost(path, costLedger{}, testRate, billedAlone())
 
 	if !ok || miss != costMissNone {
 		t.Fatalf("scan: ok=%v miss=%q, want ok and no miss", ok, miss)
@@ -257,7 +263,7 @@ func TestACacheWriteIsPricedByHowLongItIsKept(t *testing.T) {
 			if tc.hour < 0 {
 				line = costLineJSON("m1", modelOpus, 0, 0, 0, tc.cacheCreate)
 			}
-			ledger, miss, ok := scanTranscriptCost(writeFile(t, line+"\n"), costLedger{}, testRate)
+			ledger, miss, ok := scanTranscriptCost(writeFile(t, line+"\n"), costLedger{}, testRate, billedAlone())
 
 			if !ok || miss != costMissNone {
 				t.Fatalf("scan: ok=%v miss=%q, want ok and no miss", ok, miss)
@@ -278,7 +284,7 @@ func TestAnUnpricedCacheLifetimeStopsTheCount(t *testing.T) {
 	fiveMinuteOnly := fixedRates{modelOpus: {Input: 0.001, Output: 0.01, CacheRead: 0.001, CacheWrite: 0.001}}
 	path := writeFile(t, cacheLineJSON("m1", modelOpus, 1000, 1000)+"\n")
 
-	ledger, miss, ok := scanTranscriptCost(path, costLedger{}, fiveMinuteOnly)
+	ledger, miss, ok := scanTranscriptCost(path, costLedger{}, fiveMinuteOnly, billedAlone())
 
 	if !ok {
 		t.Fatal("scan: want ok")
@@ -304,7 +310,7 @@ func TestASubAgentsTokensAreBilled(t *testing.T) {
 		`","usage":{"input_tokens":100,"output_tokens":0,"cache_read_input_tokens":0,"cache_creation_input_tokens":0}}}`
 	path := writeFile(t, costLineJSON("m1", modelOpus, 100, 0, 0, 0)+"\n"+sidechain+"\n")
 
-	ledger, _, _ := scanTranscriptCost(path, costLedger{}, testRate)
+	ledger, _, _ := scanTranscriptCost(path, costLedger{}, testRate, billedAlone())
 
 	if !nearly(ledger.cost, 0.2) {
 		t.Errorf("cost = %v, want 0.2 — a sub-agent's tokens are billed too", ledger.cost)
@@ -317,13 +323,13 @@ func TestASubAgentsTokensAreBilled(t *testing.T) {
 func TestAReplacedTranscriptIsRecounted(t *testing.T) {
 	t.Parallel()
 	path := writeFile(t, costLineJSON("m1", modelOpus, 500, 0, 0, 0)+"\n")
-	ledger, _, _ := scanTranscriptCost(path, costLedger{}, testRate)
+	ledger, _, _ := scanTranscriptCost(path, costLedger{}, testRate, billedAlone())
 
 	shorter := costLineJSON("m9", modelOpus, 10, 0, 0, 0) + "\n"
 	if err := os.WriteFile(path, []byte(shorter), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	next, _, ok := scanTranscriptCost(path, ledger, testRate)
+	next, _, ok := scanTranscriptCost(path, ledger, testRate, billedAlone())
 
 	if !ok {
 		t.Fatal("scan: want ok")
@@ -337,7 +343,7 @@ func TestAReplacedTranscriptIsRecounted(t *testing.T) {
 // never break" contract as the context gauge.
 func TestAnUnreadableTranscriptIsAMiss(t *testing.T) {
 	t.Parallel()
-	if _, _, ok := scanTranscriptCost(filepath.Join(t.TempDir(), "nope.jsonl"), costLedger{}, testRate); ok {
+	if _, _, ok := scanTranscriptCost(filepath.Join(t.TempDir(), "nope.jsonl"), costLedger{}, testRate, billedAlone()); ok {
 		t.Error("scan: want a miss for a transcript that does not exist")
 	}
 }
