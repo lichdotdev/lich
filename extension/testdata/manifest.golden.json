@@ -2,6 +2,7 @@
   "formatVersion": 1,
   "id": "id",
   "name": "name",
+  "description": "description",
   "version": "version",
   "minLichVersion": "minLichVersion",
   "executable": "executable",
