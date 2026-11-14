@@ -19,11 +19,11 @@ import (
 var (
 	extensionRowPadY  = ui.Space(2.5)
 	extensionIconSize = ui.Space(4)
-	extensionEmptyPad = ui.Space(1)
 )
 
 // extensionsPaneRows is the pane under its title line: the description, the
-// install rows, then the Installed heading over the list or its empty state.
+// Installed heading over the list when there is one, the catalog, then the
+// install rows under Other sources.
 func (s *settingsScreen) extensionsPaneRows(th *ui.Theme) []layout.Widget {
 	p := &s.extensions
 	rows := []layout.Widget{func(gtx C) D {
@@ -34,22 +34,28 @@ func (s *settingsScreen) extensionsPaneRows(th *ui.Theme) []layout.Widget {
 			return l.Layout(gtx)
 		})
 	}}
-	rows = append(rows, s.extensionsInstallRows(th)...)
-	if p.store == nil {
-		return rows
+	var list []backend.Extension
+	if p.store != nil {
+		list = p.store.all()
 	}
-	list := p.store.all()
-	if len(list) == 0 {
-		return append(rows, groupHeading(th, i18n.T("settings.extensionsSettings.installed"), false), func(gtx C) D {
-			return layout.Inset{Left: rowPadX, Top: extensionEmptyPad}.Layout(gtx, func(gtx C) D { return extensionsEmpty(gtx, th) })
-		})
+	if len(list) > 0 {
+		rows = append(rows, s.installedRows(th, list)...)
 	}
+	if p.catalog != nil {
+		rows = append(rows, s.catalogRows(th, list, len(list) == 0)...)
+	}
+	rows = append(rows, groupHeading(th, i18n.T("settings.extensionsSettings.otherSources"), false))
+	return append(rows, s.extensionsInstallRows(th)...)
+}
+
+// installedRows is the Installed heading over a row per extension.
+func (s *settingsScreen) installedRows(th *ui.Theme, list []backend.Extension) []layout.Widget {
 	count := i18n.T("settings.extensionsSettings.installedCount", i18n.Args{"n": strconv.Itoa(len(list))})
-	heading := groupHeading(th, count, false)
+	heading := groupHeading(th, count, true)
 	if slices.ContainsFunc(list, func(e backend.Extension) bool { return e.Release != "" }) {
 		heading = s.extensionsHeading(th, heading)
 	}
-	rows = append(rows, heading)
+	rows := []layout.Widget{heading}
 	for _, e := range list {
 		rows = append(rows, func(gtx C) D { return s.extensionRow(gtx, th, e) })
 	}
@@ -73,15 +79,6 @@ func (s *settingsScreen) extensionsHeading(th *ui.Theme, heading layout.Widget) 
 	}
 }
 
-// extensionsEmpty is the list's empty state, muted, the size of a row's text.
-func extensionsEmpty(gtx C, th *ui.Theme) D {
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(th.Text(ui.TextSM, i18n.T("settings.extensionsSettings.emptyTitle")).Muted().Layout),
-		ui.VGap(0.5),
-		layout.Rigid(th.Text(ui.TextXS, i18n.T("settings.extensionsSettings.emptyDescription")).Muted().Wrapped().Layout),
-	)
-}
-
 // extensionRow is one extension: hover fills it, the right press and the ⋯
 // open its menu, and an error from its menu lands on a line under it.
 func (s *settingsScreen) extensionRow(gtx C, th *ui.Theme, e backend.Extension) D {
@@ -93,6 +90,10 @@ func (s *settingsScreen) extensionRow(gtx C, th *ui.Theme, e backend.Extension) 
 	if r.update.Clicked(gtx) {
 		s.updateExtension(e)
 		// The dialogs were laid out before the row took the click.
+		gtx.Execute(op.InvalidateCmd{})
+	}
+	if r.remove.Clicked(gtx) {
+		p.askRemove(e)
 		gtx.Execute(op.InvalidateCmd{})
 	}
 	entries := func() []ui.MenuEntry { return s.extensionMenu(e) }
@@ -123,7 +124,12 @@ func (s *settingsScreen) extensionRowBody(gtx C, th *ui.Theme, e backend.Extensi
 			layout.Rigid(func(gtx C) D { return s.extensionStatus(gtx, on, e, r) }),
 			ui.Gap(3),
 		}
-		if e.Status == api.ExtensionFailed {
+		switch {
+		case e.Revoked != "":
+			b := on.Button(&r.remove, i18n.T("settings.extensionsSettings.removeMenuItem"))
+			b.Variant, b.Size = ui.VariantOutline, ui.SizeSM
+			children = append(children, layout.Rigid(b.Layout), ui.Gap(1))
+		case e.Status == api.ExtensionFailed:
 			b := on.Button(&r.restart, i18n.T("settings.extensionsSettings.restart"))
 			b.Variant, b.Size = ui.VariantOutline, ui.SizeSM
 			children = append(children, layout.Rigid(b.Layout), ui.Gap(1))
@@ -159,7 +165,7 @@ func (p *extensionsSettings) updateButton(th *ui.Theme, e backend.Extension, r *
 	return b.Layout
 }
 
-// extensionDetails is the name and version over the source line.
+// extensionDetails is the name and version over the second line.
 func extensionDetails(gtx C, th *ui.Theme, e backend.Extension) D {
 	name := []layout.FlexChild{layout.Rigid(th.Text(ui.TextSM, extensionName(e)).Weight(font.Medium).Layout)}
 	if e.Version != "" {
@@ -168,39 +174,77 @@ func extensionDetails(gtx C, th *ui.Theme, e backend.Extension) D {
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D { return layout.Flex{Alignment: layout.Baseline}.Layout(gtx, name...) }),
 		ui.VGap(0.5),
-		layout.Rigid(th.Text(ui.TextXS, extensionSourceLine(e)).Mono().Muted().Truncated().Layout),
+		layout.Rigid(extensionSecondLine(th, e).Truncated().Layout),
 	)
 }
 
-// extensionStatus is the dot and its word, the error and the permissions one
-// hover away.
+// extensionSecondLine is why the catalog took a revoked extension down, else
+// its description, else where it came from: the manifest asks a description
+// only of a listed one.
+func extensionSecondLine(th *ui.Theme, e backend.Extension) ui.LabelStyle {
+	if e.Revoked != "" {
+		return th.Text(ui.TextXS, i18n.T("settings.extensionsSettings.removedFromCatalog", i18n.Args{"reason": e.Revoked})).In(th.Destructive)
+	}
+	if desc := extensionDescription(e); desc != "" {
+		return th.Text(ui.TextXS, desc).Muted()
+	}
+	return th.Text(ui.TextXS, extensionSourceLine(e)).Mono().Muted()
+}
+
+// rowStatus is the status a row shows: a revoked extension is stopped for
+// good, its reason already on the row's second line.
+func rowStatus(e backend.Extension) string {
+	if e.Revoked != "" {
+		return api.ExtensionStopped
+	}
+	return e.Status
+}
+
+// extensionStatus is the dot and its word, the source, the error and the
+// permissions one hover away.
 func (s *settingsScreen) extensionStatus(gtx C, th *ui.Theme, e backend.Extension, r *extensionRowState) D {
-	word := th.Text(ui.TextXS, extensionStatusText(e.Status)).In(extensionStatusTone(th, e.Status))
-	status := func(gtx C) D {
+	status := rowStatus(e)
+	word := th.Text(ui.TextXS, extensionStatusText(status)).In(extensionStatusTone(th, status))
+	line := func(gtx C) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-			layout.Rigid(func(gtx C) D { return extensionDot(gtx, th, e.Status) }),
+			layout.Rigid(func(gtx C) D { return extensionDot(gtx, th, status) }),
 			ui.Gap(1.5),
 			layout.Rigid(word.Layout),
 		)
 	}
-	if e.Error == "" && len(e.Permissions) == 0 {
-		return status(gtx)
+	if extensionSourceLine(e) == "" && tipError(e) == "" && len(e.Permissions) == 0 {
+		return line(gtx)
 	}
-	return th.TooltipCard(s.root, &r.state, func(gtx C) D { return statusTip(gtx, th.On(th.Popover), e) }).Layout(gtx, status)
+	return th.TooltipCard(s.root, &r.state, func(gtx C) D { return statusTip(gtx, th.On(th.Popover), e) }).Layout(gtx, line)
 }
 
-// statusTip is the status's tooltip: the error, then what the extension can
-// do, in the confirmation's words.
+// tipError is the error the tooltip shows: none for a revoked extension,
+// whose row already says why.
+func tipError(e backend.Extension) string {
+	if e.Revoked != "" {
+		return ""
+	}
+	return e.Error
+}
+
+// statusTip is the status's tooltip: where the extension came from, the
+// error, then what it can do, in the confirmation's words.
 func statusTip(gtx C, th *ui.Theme, e backend.Extension) D {
 	var children []layout.FlexChild
-	if e.Error != "" {
-		children = append(children, layout.Rigid(th.Text(ui.TextXS, e.Error).Mono().Wrapped().Layout))
-	}
-	if len(e.Permissions) > 0 {
-		if e.Error != "" {
+	add := func(w layout.Widget) {
+		if len(children) > 0 {
 			children = append(children, ui.VGap(3))
 		}
-		children = append(children, layout.Rigid(func(gtx C) D { return permissionList(gtx, th, e.Permissions, nil) }))
+		children = append(children, layout.Rigid(w))
+	}
+	if src := extensionSourceLine(e); src != "" {
+		add(th.Text(ui.TextXS, src).Mono().Muted().Wrapped().Layout)
+	}
+	if err := tipError(e); err != "" {
+		add(th.Text(ui.TextXS, err).Mono().Wrapped().Layout)
+	}
+	if len(e.Permissions) > 0 {
+		add(func(gtx C) D { return permissionList(gtx, th, e.Permissions, nil) })
 	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
 }
@@ -242,11 +286,11 @@ func (s *settingsScreen) extensionMore(gtx C, th *ui.Theme, e backend.Extension,
 	})
 }
 
-// extensionMenu is a row's menu: Restart for one not running, its folder,
-// then Remove…, which asks first.
+// extensionMenu is a row's menu: Restart for one not running and not
+// revoked, its folder, then Remove…, which asks first.
 func (s *settingsScreen) extensionMenu(e backend.Extension) []ui.MenuEntry {
 	var entries []ui.MenuEntry
-	if e.Status != api.ExtensionRunning {
+	if e.Status != api.ExtensionRunning && e.Revoked == "" {
 		entries = append(entries, ui.MenuEntry{Label: i18n.T("settings.extensionsSettings.restart"), Icon: icExtensionRestart, OnClick: func() { s.restartExtension(e.ID) }})
 	}
 	return append(entries,

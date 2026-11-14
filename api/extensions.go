@@ -1,6 +1,10 @@
 package api
 
-import "encoding/json"
+import (
+	"encoding/json"
+
+	"github.com/lichdotdev/lich/extension"
+)
 
 var (
 	ExtensionsList = define[None, []Extension]("extensions.List")
@@ -35,7 +39,26 @@ var (
 	// ExtensionsDeleteData deletes the data directory of an extension that is
 	// not installed, and refuses one that is.
 	ExtensionsDeleteData = define[ExtensionIDOptions, None]("extensions.DeleteData")
+	// ExtensionsCatalog is the lich catalog the backend holds, read first when
+	// it holds none: it fails only when it has no copy and cannot read one. A
+	// copy read later arrives as ExtensionCatalogEvent.
+	ExtensionsCatalog = define[None, ExtensionCatalog]("extensions.Catalog")
+	// ExtensionsCatalogImage reads an icon, cover or screenshot the catalog
+	// held names, and nothing else.
+	ExtensionsCatalogImage = define[ExtensionCatalogImageOptions, []byte]("extensions.CatalogImage")
 )
+
+// ExtensionCatalog is catalog.json as the backend holds it. Platform is this
+// lich's <goos>_<goarch>, the key of an entry's Builds an install takes.
+type ExtensionCatalog struct {
+	Catalog  extension.Catalog `json:"catalog"`
+	Platform string            `json:"platform"`
+}
+
+// ExtensionCatalogImageOptions names an image by the URL the catalog gives.
+type ExtensionCatalogImageOptions struct {
+	URL string `json:"url"`
+}
 
 // ExtensionGitInstallOptions names the repository to install from:
 // https://github.com/<owner>/<repo>, with or without .git.
@@ -58,6 +81,8 @@ type ExtensionInstallTokenOptions struct {
 // ExtensionInstallPreview is a staged install: what the person is asked to
 // confirm, read from the staged copy's manifest. Token names the copy for
 // CommitInstall or DiscardInstall, and expires when neither comes in time.
+// Publisher is the repository's owner, empty for a folder; Listed is whether
+// the release is the one the lich catalog lists, pinned to its hashes.
 type ExtensionInstallPreview struct {
 	Token       string   `json:"token"`
 	ID          string   `json:"id"`
@@ -65,6 +90,8 @@ type ExtensionInstallPreview struct {
 	Version     string   `json:"version"`
 	Source      string   `json:"source"`
 	Release     string   `json:"release,omitempty"`
+	Publisher   string   `json:"publisher,omitempty"`
+	Listed      bool     `json:"listed,omitempty"`
 	Permissions []string `json:"permissions"`
 }
 
@@ -92,32 +119,37 @@ type ExtensionSurface struct {
 	Place string `json:"place,omitempty"`
 }
 
-// ExtensionText is an extension's name and surface titles, by surface id, in
-// one language of its catalogs. What it leaves out reads the manifest's.
+// ExtensionText is an extension's name, description and surface titles, by
+// surface id, in one language of its catalogs. What it leaves out reads the
+// manifest's.
 type ExtensionText struct {
-	Name     string            `json:"name,omitempty"`
-	Surfaces map[string]string `json:"surfaces,omitempty"`
+	Name        string            `json:"name,omitempty"`
+	Description string            `json:"description,omitempty"`
+	Surfaces    map[string]string `json:"surfaces,omitempty"`
 }
 
 // Extension is one directory under lich's extensions directory and where its
-// process is. Name and Surfaces come from its manifest, so they are the
-// extension's own words; Text holds their translations, by the tag of each
-// folder of the extension's locales. Source is the repository or folder it
-// was installed from and Release the repository's tag, both empty for one
+// process is. Name, Description and Surfaces come from its manifest, so they
+// are the extension's own words; Text holds their translations, by the tag of
+// each folder of the extension's locales. Source is the repository or folder
+// it was installed from and Release the repository's tag, both empty for one
 // placed by hand. Latest is the tag of a newer release, empty while lich
-// knows of none.
+// knows of none. Revoked is why the lich catalog took its repository down,
+// which keeps it stopped for good.
 type Extension struct {
-	ID       string                   `json:"id"`
-	Name     string                   `json:"name"`
-	Version  string                   `json:"version"`
-	Status   string                   `json:"status"`
-	Error    string                   `json:"error,omitempty"`
-	Dir      string                   `json:"dir"`
-	Surfaces []ExtensionSurface       `json:"surfaces"`
-	Source   string                   `json:"source,omitempty"`
-	Release  string                   `json:"release,omitempty"`
-	Latest   string                   `json:"latest,omitempty"`
-	Text     map[string]ExtensionText `json:"text,omitempty"`
+	ID          string                   `json:"id"`
+	Name        string                   `json:"name"`
+	Description string                   `json:"description,omitempty"`
+	Version     string                   `json:"version"`
+	Status      string                   `json:"status"`
+	Error       string                   `json:"error,omitempty"`
+	Dir         string                   `json:"dir"`
+	Surfaces    []ExtensionSurface       `json:"surfaces"`
+	Source      string                   `json:"source,omitempty"`
+	Release     string                   `json:"release,omitempty"`
+	Latest      string                   `json:"latest,omitempty"`
+	Revoked     string                   `json:"revoked,omitempty"`
+	Text        map[string]ExtensionText `json:"text,omitempty"`
 	// Icons is the PNG each surface's iconFile names, by surface id, drawn in
 	// place of its Icon.
 	Icons map[string][]byte `json:"icons,omitempty"`

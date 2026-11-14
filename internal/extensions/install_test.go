@@ -214,7 +214,7 @@ func TestPrepareFromGitStagesAndCommitStartsTheLatestRelease(t *testing.T) {
 	if err != nil {
 		t.Fatalf("PrepareFromGit() = %v", err)
 	}
-	want := api.ExtensionInstallPreview{Token: preview.Token, ID: testID, Name: "Fake " + testID, Version: "1.0.0", Source: testRepo, Release: testTag, Permissions: []string{}}
+	want := api.ExtensionInstallPreview{Token: preview.Token, ID: testID, Name: "Fake " + testID, Version: "1.0.0", Source: testRepo, Release: testTag, Publisher: "someone", Permissions: []string{}}
 	if preview.Token == "" || !reflect.DeepEqual(preview, want) {
 		t.Fatalf("PrepareFromGit() = %+v, want %+v with a token", preview, want)
 	}

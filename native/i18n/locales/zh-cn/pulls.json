@@ -77,7 +77,6 @@
     "hiddenTitle": "{account} 看不到此仓库",
     "hiddenDescription": "GitHub 返回的结果是仓库不存在。请换一个账号。",
     "continue": "继续",
-    "tryAgain": "重试",
     "later": "之后可以在设置 › 版本控制中更改。",
     "saveFailed": "无法保存账号：{error}"
   },

@@ -11,7 +11,8 @@
   "action": {
     "cancel": "Cancel",
     "create": "Create",
-    "previewMarkdown": "Preview Markdown"
+    "previewMarkdown": "Preview Markdown",
+    "tryAgain": "Try again"
   },
   "checkAgainButton": {
     "check": "Check again",

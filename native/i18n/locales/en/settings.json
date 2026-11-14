@@ -652,6 +652,8 @@
     "installTitle": "Install {name} {version}?",
     "installTitleNoVersion": "Install {name}?",
     "installSource": "From {source}",
+    "installSourcePublisher": "From {source}, published by {publisher}",
+    "installListed": "Listed in the lich catalog, which checks each release by machine. Nobody reviews its code.",
     "installWarning": "It will run on your computer as you, with access to your files and accounts. Install it only if you trust who made it.",
     "permissionsLabel": "It can also",
     "permission": {
@@ -672,9 +674,6 @@
     "remove": "Remove",
     "removeMenuItem": "Remove…",
     "restart": "Restart",
-    "emptyTitle": "No extensions yet",
-    "emptyDescription": "An extension adds its own screen to lich. Install one from its GitHub repository or from a folder.",
-    "installed": "Installed",
     "installedCount": "Installed · {n}",
     "rowOptions": "Options for {name}",
     "installRow": "Install an extension",
@@ -698,6 +697,30 @@
     "checkingUpdates": "Checking…",
     "checkFailed": "Couldn't check for extension updates",
     "upToDate": "Your extensions are up to date",
-    "permissionNew": "New in this version"
+    "permissionNew": "New in this version",
+    "otherSources": "Other sources",
+    "removedFromCatalog": "Removed from the lich catalog: {reason}",
+    "catalog": {
+      "title": "Catalog",
+      "all": "All",
+      "search": "Search the catalog",
+      "sortRecent": "Recently updated",
+      "sortStars": "Stars",
+      "sortName": "Name",
+      "official": "Official",
+      "notFor": "Not for {os}",
+      "installed": "Installed",
+      "installedVersion": "Installed · {version}",
+      "version": "Version",
+      "released": "Released",
+      "license": "License",
+      "permissions": "Permissions",
+      "platforms": "Platforms",
+      "runsAsYou": "It will run on your computer as you, with access to your files and accounts.",
+      "readme": "README on GitHub",
+      "noBuild": "There is no build for {platform}.",
+      "readFailed": "Couldn't read the lich catalog. Installing from a GitHub URL still works.",
+      "noMatch": "No extension matches."
+    }
   }
 }

@@ -130,6 +130,8 @@ type model struct {
 	artifacts artifactStore
 	// extensions is every extension, its state and its surfaces' renders.
 	extensions extensionStore
+	// catalog is the lich catalog and the images it names.
+	catalog *catalogStore
 	// extensionMessage hears a message an extension sent the window, a
 	// render aside.
 	extensionMessage func(id string, msg extension.Message)
@@ -177,6 +179,7 @@ func newModel(client *backend.Client, invalidate func()) *model {
 		xdgProfiles:   xdgProfileBooks(client, invalidate, quota),
 		providers:     newProviderBook(client, invalidate),
 		closed:        newClosedProjects(client, invalidate),
+		catalog:       newCatalogStore(client, invalidate),
 		browsers:      newBrowserStore(),
 		pages:         pageViews{}, minimized: pageViews{}}
 }
@@ -399,6 +402,10 @@ func (m *model) follow(ctx context.Context, events <-chan backend.Event) {
 			}
 		case api.ExtensionStatusEvent.Name, api.ExtensionUpdateEvent.Name, api.ExtensionRemovedEvent.Name, api.ExtensionMessageEvent.Name:
 			m.extensionEvent(ev)
+		case api.ExtensionCatalogEvent.Name:
+			if c, err := backend.Decode(ev, api.ExtensionCatalogEvent); err == nil {
+				m.catalog.set(c)
+			}
 		case api.ServiceRevealEvent.Name:
 			if r, err := backend.Decode(ev, api.ServiceRevealEvent); err == nil && m.serviceReveal != nil {
 				m.serviceReveal(r.ID)

@@ -347,7 +347,7 @@ func (x *installed) view() api.Extension {
 		surfaces = append(surfaces, api.ExtensionSurface{ID: surface.ID, Title: surface.Title, Icon: string(surface.Icon), Place: string(surface.Place)})
 	}
 	return api.Extension{
-		ID: x.id, Name: cmp.Or(x.manifest.Name, x.id), Version: x.manifest.Version,
+		ID: x.id, Name: cmp.Or(x.manifest.Name, x.id), Description: x.manifest.Description, Version: x.manifest.Version, Revoked: x.source.Revoked,
 		Status: x.status, Error: x.errText, Dir: x.root, Surfaces: surfaces,
 		Source: x.source.URL, Release: x.source.Release, Latest: x.latest, Text: x.text, Icons: x.icons, Permissions: permissionNames(x.manifest),
 	}

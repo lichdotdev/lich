@@ -20,4 +20,6 @@ func Extensions(d *rpc.Handler, s *extensions.Service) {
 	rpc.Handle(d, api.ExtensionsPrepareUpdate, s.PrepareUpdate)
 	rpc.Handle(d, api.ExtensionsRemove, s.Remove)
 	rpc.Handle(d, api.ExtensionsDeleteData, s.DeleteData)
+	rpc.Handle(d, api.ExtensionsCatalog, s.Catalog)
+	rpc.Handle(d, api.ExtensionsCatalogImage, s.CatalogImage)
 }

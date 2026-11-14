@@ -664,6 +664,8 @@
     "installTitle": "Установить {name} {version}?",
     "installTitleNoVersion": "Установить {name}?",
     "installSource": "Источник: {source}",
+    "installSourcePublisher": "Источник: {source}, издатель: {publisher}",
+    "installListed": "Есть в каталоге lich, который автоматически проверяет каждый релиз. Код никто не просматривает.",
     "installWarning": "Расширение будет работать на вашем компьютере от вашего имени, с доступом к вашим файлам и аккаунтам. Устанавливайте его, только если доверяете автору.",
     "permissionsLabel": "Оно также может",
     "permission": {
@@ -684,9 +686,6 @@
     "remove": "Удалить",
     "removeMenuItem": "Удалить…",
     "restart": "Перезапустить",
-    "emptyTitle": "Расширений пока нет",
-    "emptyDescription": "Расширение добавляет в lich собственный экран. Установите его из репозитория GitHub или из папки.",
-    "installed": "Установленные",
     "installedCount": "Установленные · {n}",
     "rowOptions": "Параметры {name}",
     "installRow": "Установить расширение",
@@ -710,6 +709,30 @@
     "checkingUpdates": "Проверка…",
     "checkFailed": "Не удалось проверить обновления расширений",
     "upToDate": "Все расширения обновлены",
-    "permissionNew": "Новое в этой версии"
+    "permissionNew": "Новое в этой версии",
+    "otherSources": "Другие источники",
+    "removedFromCatalog": "Удалено из каталога lich: {reason}",
+    "catalog": {
+      "title": "Каталог",
+      "all": "Все",
+      "search": "Поиск по каталогу",
+      "sortRecent": "По дате обновления",
+      "sortStars": "По звёздам",
+      "sortName": "По названию",
+      "official": "Официальное",
+      "notFor": "Нет для {os}",
+      "installed": "Установлено",
+      "installedVersion": "Установлено · {version}",
+      "version": "Версия",
+      "released": "Выпущено",
+      "license": "Лицензия",
+      "permissions": "Разрешения",
+      "platforms": "Платформы",
+      "runsAsYou": "Расширение будет работать на вашем компьютере от вашего имени, с доступом к вашим файлам и аккаунтам.",
+      "readme": "README на GitHub",
+      "noBuild": "Сборки для {platform} нет.",
+      "readFailed": "Не удалось прочитать каталог lich. Установка по URL с GitHub по-прежнему работает.",
+      "noMatch": "Ничего не найдено."
+    }
   }
 }

@@ -13,7 +13,8 @@
   "action": {
     "cancel": "Отмена",
     "create": "Создать",
-    "previewMarkdown": "Предпросмотр Markdown"
+    "previewMarkdown": "Предпросмотр Markdown",
+    "tryAgain": "Повторить"
   },
   "checkAgainButton": {
     "check": "Проверить снова",

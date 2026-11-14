@@ -16,7 +16,20 @@ type (
 	ExtensionMessage = api.ExtensionMessage
 	// ExtensionInstallPreview is a staged install waiting for its confirmation.
 	ExtensionInstallPreview = api.ExtensionInstallPreview
+	ExtensionCatalog        = api.ExtensionCatalog
 )
+
+// ExtensionCatalog is the lich catalog the backend holds, read first when it
+// holds none.
+func (c *Client) ExtensionCatalog(ctx context.Context) (ExtensionCatalog, error) {
+	return callMethod(ctx, c, api.ExtensionsCatalog, api.None{})
+}
+
+// ExtensionCatalogImage reads an image the catalog names, through the
+// backend.
+func (c *Client) ExtensionCatalogImage(ctx context.Context, url string) ([]byte, error) {
+	return callMethod(ctx, c, api.ExtensionsCatalogImage, api.ExtensionCatalogImageOptions{URL: url})
+}
 
 // Extensions is every extension under lich's extensions directory.
 func (c *Client) Extensions(ctx context.Context) ([]Extension, error) {

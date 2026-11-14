@@ -77,7 +77,6 @@
     "hiddenTitle": "{account} can't see this repository",
     "hiddenDescription": "GitHub answered as if it didn't exist. Pick another account.",
     "continue": "Continue",
-    "tryAgain": "Try again",
     "later": "You can change it later in Settings › Version Control.",
     "saveFailed": "Couldn't save the account: {error}"
   },

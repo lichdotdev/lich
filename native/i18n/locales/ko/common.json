@@ -10,7 +10,8 @@
   "action": {
     "cancel": "취소",
     "create": "만들기",
-    "previewMarkdown": "Markdown 미리보기"
+    "previewMarkdown": "Markdown 미리보기",
+    "tryAgain": "다시 시도"
   },
   "checkAgainButton": {
     "check": "다시 확인",

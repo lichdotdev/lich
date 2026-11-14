@@ -77,7 +77,6 @@
     "hiddenTitle": "{account} はこのリポジトリを見られません",
     "hiddenDescription": "GitHub は存在しないかのように応答しました。別のアカウントを選んでください。",
     "continue": "続ける",
-    "tryAgain": "再試行",
     "later": "設定 › バージョン管理であとから変更できます。",
     "saveFailed": "アカウントを保存できませんでした: {error}"
   },

@@ -104,13 +104,13 @@ func (b *catalogBudget) checkFolder(dir, rel string) error {
 	return nil
 }
 
-// manifestText is the name and surface titles each catalog translates,
-// leaving the fallback to English and the manifest to the window, which
-// knows the language it shows.
+// manifestText is the name, description and surface titles each catalog
+// translates, leaving the fallback to English and the manifest to the
+// window, which knows the language it shows.
 func manifestText(b *exti18n.Bundle, m extension.Manifest) map[string]api.ExtensionText {
 	var out map[string]api.ExtensionText
 	for _, tag := range b.Tags() {
-		t := api.ExtensionText{Name: ownText(b, tag, exti18n.ManifestNameKey)}
+		t := api.ExtensionText{Name: ownText(b, tag, exti18n.ManifestNameKey), Description: ownText(b, tag, exti18n.ManifestDescriptionKey)}
 		for _, s := range m.Surfaces {
 			if title := ownText(b, tag, exti18n.SurfaceTitleKey(s.ID)); title != "" {
 				if t.Surfaces == nil {
@@ -119,7 +119,7 @@ func manifestText(b *exti18n.Bundle, m extension.Manifest) map[string]api.Extens
 				t.Surfaces[s.ID] = title
 			}
 		}
-		if t.Name == "" && t.Surfaces == nil {
+		if t.Name == "" && t.Description == "" && t.Surfaces == nil {
 			continue
 		}
 		if out == nil {
