@@ -12,7 +12,8 @@
   },
   "action": {
     "cancel": "Отмена",
-    "create": "Создать"
+    "create": "Создать",
+    "previewMarkdown": "Предпросмотр Markdown"
   },
   "checkAgainButton": {
     "check": "Проверить снова",

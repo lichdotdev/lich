@@ -23,7 +23,7 @@ type codeMarkdown struct {
 }
 
 func (p *preview) markdownToggle(gtx C, th *ui.Theme, root *ui.Root) D {
-	label := i18n.T("diff.fileDiff.previewMarkdown")
+	label := i18n.T("common.action.previewMarkdown")
 	if p.md.rendering {
 		label = i18n.T("dock.filesPanel.showSource")
 	}

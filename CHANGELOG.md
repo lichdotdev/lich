@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **The agent's cursor over its browser page is a new arrow.** It is the one of Bibata Modern (GPL-3.0, by Abdulkaiz Khatri); its color, its badge and the way it moves are unchanged.
 - **The plan usage in the footer shows your current session.** A fuller weekly limit or a model's own limit, like Fable's, no longer takes its place; hover it to see every limit. A locked limit still shows.
 - **The Pulls list's header fits on one line.** The Open menu sits inside the filter field, and the filters and New pull request share its line.
+- **A pull request's title and description are edited together, in an editor as tall as the description's column.** The pencil beside the title opens both, with one Save in the header; the book button over the description shows it rendered.
 
 ### Fixed
 
