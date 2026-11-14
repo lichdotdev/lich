@@ -125,7 +125,6 @@
     "nobodyYet": "まだいません",
     "copyLink": "リンクをコピー",
     "copyMarkdown": "Markdown をコピー",
-    "editDescription": "編集",
     "save": "保存",
     "saving": "保存中…",
     "descriptionPlaceholder": "変更内容を説明してください。Markdown が使えます。",
@@ -262,7 +261,7 @@
       "conversation": "会話",
       "checks": "チェック"
     },
-    "editTitle": "プルリクエストの名前を変更",
+    "edit": "編集",
     "renameFailed": "プルリクエストの名前を変更できませんでした: {error}"
   },
   "pullsActions": {

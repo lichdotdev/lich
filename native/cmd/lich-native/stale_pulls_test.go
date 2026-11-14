@@ -231,20 +231,41 @@ func TestPullsDeleteDialogWarnsTheThreadGoesAndCancelCloses(t *testing.T) {
 	}
 }
 
-func TestPullsDescriptionCancelInTheFrameThatTookTheClick(t *testing.T) {
+func TestPullsPencilEditsTitleAndDescriptionAndCancelClosesBoth(t *testing.T) {
 	u, r := pullsDetailShown(t)
-	r.click(t, r.controlOf(t, strings.ToUpper(i18n.T("pulls.pullsOverview.description"))))
-	r.settle(t)
-	// A menu row's clickable is its whole panel, so at would land between rows.
-	for _, n := range r.nodes() {
-		if n.Desc.Label == i18n.T("pulls.pullsOverview.editDescription") {
-			r.click(t, centre(image.Rectangle{Min: n.Desc.Bounds.Min, Max: n.Desc.Bounds.Min.Add(image.Pt(8, 8))}))
-			break
-		}
+	r.click(t, r.controlOf(t, "Fix the thing"))
+	s := &u.pulls.view.edit
+	if got := s.title.Text(); got != "Fix the thing" {
+		t.Errorf("title field = %q, want the title as it stands", got)
+	}
+	if got := s.body.Text(); got != "The body." {
+		t.Errorf("description field = %q, want the description as it stands", got)
+	}
+	if !r.shows(i18n.T("pulls.pullsOverview.save")) {
+		t.Fatalf("no Save in the header:\n%s", r.drawn())
 	}
 	r.clickLabel(t, i18n.T("common.action.cancel"))
-	if u.pulls.view.edit.bodyURL != "" {
+	if s.url != "" {
 		t.Fatal("the click missed Cancel")
+	}
+}
+
+func TestPullsEditEnterGoesToTheDescriptionAndEscapeStays(t *testing.T) {
+	u, r := pullsDetailShown(t)
+	r.click(t, r.controlOf(t, "Fix the thing"))
+	s := &u.pulls.view.edit
+	press := func(name key.Name) {
+		r.router.Queue(key.Event{Name: name, State: key.Press}, key.Event{Name: name, State: key.Release})
+		r.frame()
+		r.frame()
+	}
+	press(key.NameReturn)
+	if !r.router.Source().Focused(&s.body) {
+		t.Fatal("Enter in the title left the description unfocused")
+	}
+	press(key.NameEscape)
+	if s.url == "" || u.pulls.selected != 7 {
+		t.Fatal("Escape closed the edit or left the pull request")
 	}
 }
 

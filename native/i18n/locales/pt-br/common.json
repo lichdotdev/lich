@@ -10,7 +10,8 @@
   },
   "action": {
     "cancel": "Cancelar",
-    "create": "Criar"
+    "create": "Criar",
+    "previewMarkdown": "Pré-visualizar Markdown"
   },
   "checkAgainButton": {
     "check": "Verificar novamente",

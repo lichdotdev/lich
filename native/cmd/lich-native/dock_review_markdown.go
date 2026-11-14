@@ -54,7 +54,7 @@ func addedText(f patchFile) string {
 }
 
 func (c *fileCard) previewToggle(gtx C, th *ui.Theme, p *reviewPanel) D {
-	label := i18n.T("diff.fileDiff.previewMarkdown")
+	label := i18n.T("common.action.previewMarkdown")
 	if c.previewing {
 		label = i18n.T("diff.fileDiff.showDiff")
 	}

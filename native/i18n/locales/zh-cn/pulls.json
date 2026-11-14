@@ -125,7 +125,6 @@
     "nobodyYet": "暂无",
     "copyLink": "复制链接",
     "copyMarkdown": "复制 Markdown",
-    "editDescription": "编辑",
     "save": "保存",
     "saving": "正在保存…",
     "descriptionPlaceholder": "描述这项更改，支持 Markdown。",
@@ -262,7 +261,7 @@
       "conversation": "对话",
       "checks": "检查"
     },
-    "editTitle": "重命名拉取请求",
+    "edit": "编辑",
     "renameFailed": "无法重命名拉取请求：{error}"
   },
   "pullsActions": {

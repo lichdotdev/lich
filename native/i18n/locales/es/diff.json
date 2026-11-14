@@ -53,7 +53,6 @@
     "addAsContext": "Añadir archivo como contexto",
     "discard": "Descartar cambios",
     "viewed": "Visto",
-    "previewMarkdown": "Vista previa de Markdown",
     "showDiff": "Mostrar diff"
   },
   "reviewPanel": {
