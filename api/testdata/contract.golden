@@ -2165,6 +2165,7 @@ ExtensionSurface {
 	id string
 	title string
 	icon,omitempty string
+	place,omitempty string
 }
 
 ExtensionText {

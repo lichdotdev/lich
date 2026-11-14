@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"sync"
 	"time"
+	"unicode/utf8"
 
 	"github.com/lichdotdev/lich/extension"
 )
@@ -30,6 +31,9 @@ const (
 	// most 4 levels (node, props, entries, entry, lead) and the rest is room
 	// for the message envelope and submenus.
 	maxJSONNesting = 8 * maxTreeDepth
+	// maxFooterText bounds a footer item's text, which the footer shapes on
+	// every frame it is on screen.
+	maxFooterText = 80
 
 	// maxLogLineBytes bounds one stderr line, or a refusal's reason, in lich's log.
 	maxLogLineBytes = 4 << 10
@@ -51,6 +55,7 @@ var fromExtension = map[string]bool{
 	extension.OpenExternal.Name: true,
 	extension.Clipboard.Name:    true,
 	extension.Focus.Name:        true,
+	extension.Footer.Name:       true,
 	extension.CallMethod.Name:   true,
 }
 
@@ -60,6 +65,7 @@ var toExtension = map[string]bool{
 	extension.SurfaceOpened.Name: true,
 	extension.SurfaceClosed.Name: true,
 	extension.Language.Name:      true,
+	extension.Context.Name:       true,
 }
 
 // handleLine vets one line of stdout. A bad line is refused and logged, and
@@ -104,6 +110,9 @@ func vetMessage(line []byte) (extension.Message, json.RawMessage, error) {
 		if err := checkExternalURL(open.URL); err != nil {
 			return msg, nil, err
 		}
+	}
+	if f, ok := msg.Data.(extension.FooterData); ok && utf8.RuneCountInString(f.Text) > maxFooterText {
+		return msg, nil, fmt.Errorf("footer text is %d characters, the limit is %d", utf8.RuneCountInString(f.Text), maxFooterText)
 	}
 	if err := (&treeWalk{}).visit(reflect.ValueOf(msg.Data), 0); err != nil {
 		return msg, nil, err

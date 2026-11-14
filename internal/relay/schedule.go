@@ -89,7 +89,7 @@ func (s *Service) armWatch(sess store.Session, t trigger, by string) error {
 	}
 	// lich's own continuation stays: it is the turn the limit cut short, not
 	// the trigger being replaced.
-	if sess.ScheduledPrompt == "" || isResumePrompt(sess.ScheduledPrompt) {
+	if sess.ScheduledPrompt == "" || parkedByLich(sess) {
 		return nil
 	}
 	return s.writeSchedule(sess.ID, 0, "", "")

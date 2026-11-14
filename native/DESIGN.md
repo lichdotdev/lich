@@ -358,7 +358,8 @@ at once, whatever its row is still doing.
 
 - **The bundled themes stay achromatic.** A colored palette is a custom theme, not a widget's color.
 - **The layout**: top tabs, left sidebar, terminal, right dock, footer, and the Git panel rising from the footer
-  across the terminal and the dock. It takes height, never width: fewer terminal rows repaint, while fewer columns
+  across the terminal and the dock. An extension's panel takes the Git panel's place, one panel at a time, and its
+  dock surface is a tab of the dock. It takes height, never width: fewer terminal rows repaint, while fewer columns
   would rewrap what the agent printed.
 - **Pinned project tabs** stay at the left of the top strip, grouped before unpinned tabs with one hairline
   between the groups; they carry a pin glyph and close from their context menu only.

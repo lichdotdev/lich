@@ -4,6 +4,9 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+
+	"github.com/lichdotdev/lich/api"
+	"github.com/lichdotdev/lich/internal/prompt"
 )
 
 // migrations take a database from one schema version to the next: a database
@@ -27,6 +30,7 @@ var migrations = []func(*sql.Tx) error{
 	addThreadFixes,
 	addSessionWatch,
 	addSessionFilesID,
+	markLichContinuations,
 }
 
 // addSessionEffort is version 2: the reasoning effort a session was opened at,
@@ -211,6 +215,22 @@ func addSessionWatch(tx *sql.Tx) error {
 func addSessionFilesID(tx *sql.Tx) error {
 	_, err := tx.Exec(`ALTER TABLE sessions ADD COLUMN files_id TEXT NOT NULL DEFAULT ''`)
 	return err
+}
+
+// markLichContinuations is version 15: a parked prompt records who parked it
+// (scheduled_by), and lich's continuation of a turn a usage limit ended used to
+// be told from a person's by its words alone. A continuation parked before this
+// step is marked from them, in every language it could have been parked in.
+func markLichContinuations(tx *sql.Tx) error {
+	for _, lang := range prompt.Langs {
+		if _, err := tx.Exec(
+			`UPDATE sessions SET scheduled_by = ? WHERE scheduled_by = '' AND scheduled_prompt = ?`,
+			api.ScheduledByLich, prompt.For(lang).ResumePrompt,
+		); err != nil {
+			return fmt.Errorf("mark lich continuations: %w", err)
+		}
+	}
+	return nil
 }
 
 // migrate brings db up to len(migrations), one transaction per step, each step

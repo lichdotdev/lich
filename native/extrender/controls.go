@@ -349,7 +349,11 @@ func drawTabs(r *Renderer, gtx C, th *ui.Theme, n extension.Node, id string) D {
 	}
 	triggers := make([]ui.TabsTrigger, len(p.Triggers))
 	for i, tr := range p.Triggers {
-		triggers[i] = ui.TabsTrigger{Text: tr.Text, Icon: r.icon(tr.Icon), Disabled: tr.Disabled}
+		triggers[i] = ui.TabsTrigger{Text: tr.Text, Disabled: tr.Disabled}
+		// A nil *icons.Icon in the Glyph would be an icon to draw.
+		if ic := r.icon(tr.Icon); ic != nil {
+			triggers[i].Icon = ic
+		}
 		if tr.Trailing != nil {
 			triggers[i].Trailing = r.extra(th, *tr.Trailing, id+"/trailing/"+strconv.Itoa(i))
 		}

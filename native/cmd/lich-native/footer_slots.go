@@ -30,6 +30,35 @@ type footerInput struct {
 	// delegates counts the sessions the active one opened, while it is in no
 	// layout: in one, its pane header offers them instead.
 	delegates int
+	// placed is every extension surface of the dock and the panels, and
+	// extItems their footer items with the text for the active checkout.
+	placed   []placedSurface
+	extItems []footerExtItem
+}
+
+// footerExtItem is a placed surface's footer item.
+type footerExtItem struct {
+	placedSurface
+	id, text string
+}
+
+// extItem is the item with id, false for one no extension draws now.
+func (in footerInput) extItem(id string) (footerExtItem, bool) {
+	for _, it := range in.extItems {
+		if it.id == id {
+			return it, true
+		}
+	}
+	return footerExtItem{}, false
+}
+
+// contextPath is the checkout the placed surfaces follow, as activeContext
+// reads it.
+func (in footerInput) contextPath() string {
+	if in.sessionID != "" {
+		return in.checkout
+	}
+	return in.path
 }
 
 // footerSlot is one item the strip draws, with what it shows; an item whose
@@ -62,6 +91,11 @@ func (in footerInput) inRepository() bool {
 
 func footerSlotOf(id string, in footerInput) (footerSlot, bool) {
 	s := footerSlot{ID: id}
+	if _, ok := extensionItemKey(id); ok {
+		it, ok := in.extItem(id)
+		s.Text, s.Hint = it.text, it.label()
+		return s, ok
+	}
 	switch id {
 	case "attach":
 		return s, true

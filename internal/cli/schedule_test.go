@@ -42,6 +42,8 @@ func TestScheduledTextStatesTheLimit(t *testing.T) {
 }
 
 // Nothing the wire tests drive parks a prompt or arms a watch.
+func (wiredSessions) SetLichSchedule(string, int64, string) error { return nil }
+
 func (wiredSessions) SetAgentSchedule(string, int64, string) error { return nil }
 
 func (wiredSessions) SetSessionWatch(string, api.SessionWatch) error { return nil }

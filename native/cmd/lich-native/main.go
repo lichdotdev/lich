@@ -33,6 +33,7 @@ import (
 
 	"github.com/lichdotdev/godemirror"
 	"github.com/lichdotdev/lich/api"
+	"github.com/lichdotdev/lich/extension"
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/fonts"
 	"github.com/lichdotdev/lich/native/gioterm"
@@ -50,7 +51,7 @@ var (
 	flagSize     = flag.Float64("size", 13, "terminal font size in sp")
 	flagShot     = flag.String("shot", "", "write a PNG of the frame drawn -shot-after into the run")
 	flagAfter    = flag.Duration("shot-after", 3*time.Second, "when to take -shot")
-	flagTab      = flag.String("tab", "terminal", "what opens at start beside the terminal: terminal (nothing), the dock on code, review or artifacts, or git for the Git panel")
+	flagTab      = flag.String("tab", "terminal", "what opens at start beside the terminal: terminal (nothing), the dock on code, review or artifacts, git for the Git panel, or ext:<extension>/<surface> for an extension's dock or panel surface")
 	flagWindow   = flag.String("window", "1400x900", "the window's size in dp, WxH, for -shot")
 	flagDropHint = flag.Bool("drop-hint", false, "draw the file-drop hint over the terminal as if a drag were over it, for -shot")
 )
@@ -146,7 +147,12 @@ type window struct {
 	// extension is an extension's surface, drawn over the stage while open,
 	// and extOutbox what the window sends extensions, in order.
 	extension *extensionScreen
-	extOutbox *extensionOutbox
+	// extPanel is an extension's panel surface over the footer, in the Git
+	// panel's place; gitWasOpen is the Git panel's open on the frame before,
+	// which onePanel reads to tell which of the two a click just opened.
+	extPanel   *extensionPanel
+	gitWasOpen bool
+	extOutbox  *extensionOutbox
 	// extLanguage tells extensions the interface language.
 	extLanguage extensionLanguage
 	// extUpdates offers the extensions' newer releases.
@@ -282,6 +288,7 @@ func run(w *app.Window, rt backend.Runtime) error {
 	u.pulls.tour = &u.tour.Tour
 	u.extOutbox = newExtensionOutbox()
 	u.extension = newExtensionScreen(&u.model.extensions, &u.root, u.extOutbox.send)
+	u.extPanel = newExtensionPanel(&u.root, u.extension)
 	u.model.extensionMessage = u.extensionMessage
 	u.extLanguage.send = u.extOutbox.send
 	u.model.extensionStarted = func(id string) {
@@ -345,7 +352,7 @@ func run(w *app.Window, rt backend.Runtime) error {
 	if err != nil {
 		return err
 	}
-	u.dock = newDock(code, u.review, u.newArtifactsTab())
+	u.dock = newDock(code, u.review, u.newArtifactsTab(), u.extension)
 	u.dock.tour = &u.tour.Tour
 	u.review.tour = &u.tour.Tour
 	u.model.diffTouched = u.review.feed.touched
@@ -370,6 +377,8 @@ func run(w *app.Window, rt backend.Runtime) error {
 	u.git = newGitPanel(u.ctx, client, &u.root, invalidate, notify, *flagFont, unit.Sp(*flagSize))
 	u.git.openSession = u.focusSession
 	u.footer.git = u.git
+	u.footer.panel = u.extPanel
+	u.footer.extensions = &u.model.extensions
 	u.git.open = *flagTab == "git"
 	u.footer.openPullRequest = u.openPR
 	u.footer.writePaste = u.terms.writePaste
@@ -471,6 +480,7 @@ func (u *window) connect() error {
 	if err := u.model.extensions.load(u.ctx, u.client); err != nil {
 		u.logErr("read the extensions", err)
 	}
+	u.openTabSurface()
 	// The backend's first look for updates may have ended before this window
 	// listened for its events.
 	go u.offerExtensionUpdates()
@@ -507,6 +517,9 @@ func (u *window) connect() error {
 		return err
 	}
 	if u.git.heightRem, err = loadGitHeight(u.ctx, u.client); err != nil {
+		return err
+	}
+	if u.extPanel.heights, err = loadPanelHeights(u.ctx, u.client); err != nil {
 		return err
 	}
 	if err = u.git.loadColumns(u.ctx, u.client); err != nil {
@@ -614,6 +627,7 @@ func (u *window) layout(gtx C) error {
 	var top topbarAction
 	var contentErr error
 	v := u.stageView(gtx.Now)
+	u.extension.follow(activeContext(v))
 	u.frameTour(gtx)
 	content := func(gtx C) D {
 		u.layoutCodeMenu(gtx)
@@ -662,6 +676,7 @@ func (u *window) layout(gtx C) error {
 		return D{Size: gtx.Constraints.Max}
 	}
 	u.root.Layout(gtx, func(gtx C) D { return u.tour.Layout(gtx, content) })
+	u.extension.settle()
 	pointerArea.Pop()
 	u.endStrandedDrag(gtx)
 	u.apply(act)
@@ -744,6 +759,8 @@ func (u *window) body(gtx C, v stageView) (int, sidebarAction, error) {
 	}).Size.X
 	var err error
 	u.actGit(gtx)
+	onePanel(u.git, u.extPanel, u.gitWasOpen)
+	u.gitWasOpen = u.git.open
 	u.islandAt = image.Pt(edge, bar)
 	u.stage(gtx, edge, func(gtx C) D {
 		return layout.Inset{Right: gutter}.Layout(gtx, func(gtx C) D {
@@ -758,6 +775,12 @@ func (u *window) body(gtx C, v stageView) (int, sidebarAction, error) {
 					if u.git.covers {
 						u.dock.islands = []islandSpan{{x1: gtx.Constraints.Max.X, color: u.theme.Sidebar}}
 						u.layoutGit(gtx, v)
+						return D{Size: gtx.Constraints.Max}
+					}
+					if u.extPanel != nil && u.extPanel.covers {
+						u.dock.islands = []islandSpan{{x1: gtx.Constraints.Max.X, color: u.theme.Sidebar}}
+						u.layoutExtPanelCovering(gtx, v)
+						u.applyExtension(u.extPanel.takeAction())
 						return D{Size: gtx.Constraints.Max}
 					}
 					if u.extension.open {
@@ -777,6 +800,11 @@ func (u *window) body(gtx C, v stageView) (int, sidebarAction, error) {
 					return D{Size: gtx.Constraints.Max}
 				}),
 				layout.Rigid(func(gtx C) D { return u.gitPanelRow(gtx, v) }),
+				layout.Rigid(func(gtx C) D {
+					d := u.extPanelRow(gtx, v)
+					u.applyExtension(u.extPanel.takeAction())
+					return d
+				}),
 				layout.Rigid(func(gtx C) D {
 					d := u.footer.layoutBar(gtx, u.theme, v.in)
 					u.footerHeight = d.Size.Y
@@ -931,7 +959,7 @@ func (u *window) stageRow(gtx C, v stageView) error {
 		d.slide.snap(open)
 	}
 	share := d.slide.at(gtx, open)
-	u.terms.refitNow = d.slide.began || d.slide.landed || u.sidebar.morph.holdsStage() || u.git.moved()
+	u.terms.refitNow = d.slide.began || d.slide.landed || u.sidebar.morph.holdsStage() || u.git.moved() || u.extPanel.moved()
 	defer func() { u.terms.refitNow = false }()
 	size := gtx.Constraints.Max
 	// The session's terminal takes the width the dock's slide and the
@@ -942,7 +970,7 @@ func (u *window) stageRow(gtx C, v stageView) error {
 		termWidth -= d.width(gtx) + gtx.Dp(gutter)
 	}
 	termWidth = max(termWidth, 0)
-	termHeight := max(size.Y-u.git.pending(), 0)
+	termHeight := max(size.Y-u.git.pending()-u.extPanel.pending(), 0)
 	if share == 0 {
 		d.islands = nil
 		return u.island(gtx, v, termWidth, termHeight)
@@ -973,8 +1001,9 @@ func (u *window) stageRow(gtx C, v stageView) error {
 	}
 	defer op.Offset(image.Pt(at, 0)).Push(gtx.Ops).Pop()
 	gtx.Constraints = layout.Exact(image.Pt(w, size.Y))
-	in := dockInput{sessionID: v.in.sessionID, inject: u.terms.injector(v.in.sessionID), submit: u.terms.submitter(v.in.sessionID), checkout: v.in.path, git: v.in.git, isGit: v.in.isGit, light: u.light, code: u.code}
+	in := dockInput{sessionID: v.in.sessionID, inject: u.terms.injector(v.in.sessionID), submit: u.terms.submitter(v.in.sessionID), checkout: v.in.path, git: v.in.git, isGit: v.in.isGit, light: u.light, code: u.code, placed: placedIn(v.in.placed, extension.PlaceDock)}
 	save, err := d.layout(gtx, u.theme, &u.root, in)
+	u.applyExtension(d.takeExtensionAction())
 	if save {
 		rem := u.dock.widthRem
 		go func() { u.logErr("dock width", saveDockWidth(u.ctx, u.client, rem)) }()
@@ -1032,6 +1061,7 @@ func (u *window) gitPanelRow(gtx C, v stageView) D {
 func (u *window) actGit(gtx C) {
 	u.footer.actGit(gtx)
 	u.git.act(gtx)
+	u.extPanel.actHeader(gtx)
 }
 
 // gitFooterHeight is the footer strip's one-line height, what an expanding
@@ -1096,7 +1126,7 @@ func (u *window) lostNotice(gtx C) D {
 // terminalTakesKeys is whether the terminal on screen takes the keyboard back
 // this frame: not while a field or a dialog over it is typing.
 func (u *window) terminalTakesKeys(gtx C) bool {
-	typing := u.sidebar.holdsKeys() || u.footer.holdsKeys() || u.dock.holdsKeys(gtx) || u.git.holdsKeys(gtx) || u.topbar.holdsKeys()
+	typing := u.sidebar.holdsKeys() || u.footer.holdsKeys() || u.dock.holdsKeys(gtx) || u.git.holdsKeys(gtx) || u.extPanel.holdsKeys(gtx) || u.topbar.holdsKeys()
 	return !typing && !u.palette.open && !u.worktree.open && !u.comments.isEditing()
 }
 

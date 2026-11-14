@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"github.com/lichdotdev/lich/api"
+	"github.com/lichdotdev/lich/internal/prompt"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -264,5 +265,50 @@ PRAGMA user_version = 2;`)
 	}
 	if len(got) != 1 || len(got[0].Sessions) != 1 || got[0].Sessions[0].Folder != "Design system" {
 		t.Fatalf("state = %+v, want the session still filed under Design system", got)
+	}
+}
+
+// A continuation parked before the mark existed has only its words to be known
+// by: the step that adds the mark reads them, in whatever language they were
+// parked, and leaves a person's prompt and an agent's alone.
+func TestOpenMarksAContinuationParkedBeforeTheMarkExisted(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "unmarked.db")
+	svc, err := open(path)
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	parked := map[string]string{
+		"en": prompt.For(prompt.English).ResumePrompt,
+		"es": prompt.For(prompt.Spanish).ResumePrompt,
+		"p":  "ship the release notes",
+		"a":  "agent's own",
+	}
+	for id, text := range parked {
+		_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: id, Label: id, Kind: "claude", NextSeq: 2})
+		if err := svc.SetSessionSchedule(id, 1700000000, text); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := svc.SetAgentSchedule("a", 1700000000, parked["en"]); err != nil {
+		t.Fatal(err)
+	}
+	svc.Close()
+	seedDB(t, path, `PRAGMA user_version = `+strconv.Itoa(len(migrations)-1))
+
+	svc, err = open(path)
+	if err != nil {
+		t.Fatalf("reopen store: %v", err)
+	}
+	defer svc.Close()
+	projects, err := svc.LoadState(t.Context(), api.None{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := map[string]string{"en": api.ScheduledByLich, "es": api.ScheduledByLich, "p": "", "a": api.ScheduledByAgent}
+	for _, sess := range projects[0].Sessions {
+		if sess.ScheduledBy != want[sess.ID] {
+			t.Errorf("%s: ScheduledBy = %q, want %q", sess.ID, sess.ScheduledBy, want[sess.ID])
+		}
 	}
 }

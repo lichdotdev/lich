@@ -81,6 +81,13 @@ func (s *Service) SetSessionSchedule(sessionID string, at int64, prompt string) 
 	return s.setSchedule(sessionID, at, prompt, "")
 }
 
+// SetLichSchedule is SetSessionSchedule for lich's own continuation of a turn a
+// usage limit ended: the row records it was lich that parked it, which is how
+// it is told apart from a person's prompt, whatever the words.
+func (s *Service) SetLichSchedule(sessionID string, at int64, prompt string) error {
+	return s.setSchedule(sessionID, at, prompt, api.ScheduledByLich)
+}
+
 // SetAgentSchedule is SetSessionSchedule for a prompt the session's own agent
 // parked, which is what lets the person's outrank it.
 func (s *Service) SetAgentSchedule(sessionID string, at int64, prompt string) error {

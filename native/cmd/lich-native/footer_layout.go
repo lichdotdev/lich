@@ -47,6 +47,9 @@ const footerLayoutKey = "footer.layout"
 type footerLayout struct {
 	Left  []string `json:"left"`
 	Right []string `json:"right"`
+	// Seen is every extension item the footer has offered: one it has not
+	// joins the left side on its own, and one moved out stays out.
+	Seen []string `json:"seen,omitempty"`
 }
 
 // footerVisibility is the pre-layout set of switches, which only seed a layout
@@ -64,7 +67,13 @@ func defaultFooterLayout() footerLayout {
 	}
 }
 
+// isFooterItem is whether id names a built-in item or an extension's. An
+// extension item can name a surface not installed now: it keeps its place
+// and shows again when its extension does.
 func isFooterItem(id string) bool {
+	if _, ok := extensionItemKey(id); ok {
+		return true
+	}
 	return slices.ContainsFunc(footerItems, func(item footerItem) bool { return item.ID == id })
 }
 
@@ -72,11 +81,33 @@ func (l footerLayout) has(id string) bool {
 	return slices.Contains(l.Left, id) || slices.Contains(l.Right, id)
 }
 
+// adopt puts each extension item of ids the footer never offered at the end
+// of the left side, and reports false when there was none.
+func (l footerLayout) adopt(ids []string) (footerLayout, bool) {
+	var fresh []string
+	for _, id := range ids {
+		if !slices.Contains(l.Seen, id) {
+			fresh = append(fresh, id)
+		}
+	}
+	if len(fresh) == 0 {
+		return l, false
+	}
+	next := footerLayout{Left: slices.Clone(l.Left), Right: l.Right, Seen: append(slices.Clone(l.Seen), fresh...)}
+	for _, id := range fresh {
+		if !l.has(id) {
+			next.Left = append(next.Left, id)
+		}
+	}
+	return next, true
+}
+
 // parseFooterLayout reads a saved layout. A saved empty side is intentional;
 // unknown or repeated items are dropped so a reload cannot clone a control.
 func parseFooterLayout(raw string) (footerLayout, bool) {
 	var value struct {
 		Left, Right *[]json.RawMessage
+		Seen        []string
 	}
 	if json.Unmarshal([]byte(raw), &value) != nil || value.Left == nil || value.Right == nil {
 		return footerLayout{}, false
@@ -94,7 +125,8 @@ func parseFooterLayout(raw string) (footerLayout, bool) {
 		}
 		return out
 	}
-	return footerLayout{Left: clean(*value.Left), Right: clean(*value.Right)}, true
+	seenItems := slices.DeleteFunc(value.Seen, func(id string) bool { _, ok := extensionItemKey(id); return !ok })
+	return footerLayout{Left: clean(*value.Left), Right: clean(*value.Right), Seen: seenItems}, true
 }
 
 // resolveFooterLayout is the layout to draw: the saved one, or one seeded
@@ -149,7 +181,7 @@ func moveFooterItem(l footerLayout, id, over string) (footerLayout, bool) {
 	without := func(items []string) []string {
 		return slices.DeleteFunc(slices.Clone(items), func(item string) bool { return item == id })
 	}
-	next := footerLayout{Left: without(l.Left), Right: without(l.Right)}
+	next := footerLayout{Left: without(l.Left), Right: without(l.Right), Seen: l.Seen}
 	switch side {
 	case footerLeft:
 		next.Left = insertAt(next.Left, slices.Index(l.Left, over), id)
@@ -187,7 +219,7 @@ func loadFooterLayout(ctx context.Context, c *backend.Client, cost bool) (footer
 }
 
 func saveFooterLayout(ctx context.Context, c *backend.Client, l footerLayout) error {
-	data, err := json.Marshal(footerLayout{Left: nonNil(l.Left), Right: nonNil(l.Right)})
+	data, err := json.Marshal(footerLayout{Left: nonNil(l.Left), Right: nonNil(l.Right), Seen: l.Seen})
 	if err != nil {
 		return err
 	}
