@@ -11,6 +11,8 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/lichdotdev/lich/extension"
 	"github.com/lichdotdev/lich/internal/semver"
@@ -79,6 +81,9 @@ func load(root, dirName, lichVersion string) *installed {
 	if x.invalid == nil {
 		x.icons, x.invalid = readIcons(root, x.manifest)
 	}
+	if x.source.Revoked != "" {
+		x.invalid = revokedError(x.source.Revoked)
+	}
 	if x.invalid != nil {
 		x.status, x.errText = statusInvalid, x.invalid.Error()
 		slog.Warn("extensions: invalid", "extension", dirName, "err", x.invalid)
@@ -122,10 +127,25 @@ func validate(m extension.Manifest, dirName, lichVersion string) error {
 	if err := checkMinLichVersion(m.MinLichVersion, lichVersion); err != nil {
 		return err
 	}
+	if err := checkDescription(m.Description); err != nil {
+		return err
+	}
 	if err := checkSurfaces(m.Surfaces); err != nil {
 		return err
 	}
 	return checkPermissions(m.Permissions)
+}
+
+// checkDescription holds description to one line the catalog can show:
+// a newline or a tab is a control character too.
+func checkDescription(description string) error {
+	if n := utf8.RuneCountInString(description); n > extension.MaxDescription {
+		return fmt.Errorf("description is %d characters long, more than the %d allowed", n, extension.MaxDescription)
+	}
+	if strings.ContainsFunc(description, unicode.IsControl) {
+		return errors.New("description must be one line with no control characters")
+	}
+	return nil
 }
 
 func checkPermissions(permissions []extension.Permission) error {

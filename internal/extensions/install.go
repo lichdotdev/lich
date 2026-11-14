@@ -13,6 +13,7 @@ import (
 	"io/fs"
 	"log/slog"
 	"net/http"
+	neturl "net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -51,10 +52,14 @@ var repoPattern = regexp.MustCompile(`^https://github\.com/([A-Za-z0-9-]+)/([A-Z
 
 var errNotGitHub = errors.New("only GitHub repositories are supported: paste https://github.com/<owner>/<repo>")
 
-// source is what sourceFile holds.
+// source is what sourceFile holds. Revoked is the reason the catalog gave
+// for taking the repository down, kept here so the extension stays stopped
+// when the catalog cannot be read: lich writes this file after unpacking, so
+// one an archive ships is replaced.
 type source struct {
 	URL     string `json:"url"`
 	Release string `json:"release"`
+	Revoked string `json:"revoked,omitempty"`
 }
 
 type release struct {
@@ -67,9 +72,9 @@ type asset struct {
 	URL  string `json:"browser_download_url"`
 }
 
-// PrepareFromGit downloads the latest release of a GitHub repository's
-// extension for this platform, verifies and unpacks it, and stages it for
-// CommitInstall.
+// PrepareFromGit downloads a GitHub repository's extension for this
+// platform, verifies and unpacks it, and stages it for CommitInstall: the
+// release the catalog lists for a listed repository, the latest for another.
 func (s *Service) PrepareFromGit(_ context.Context, opts api.ExtensionGitInstallOptions) (api.ExtensionInstallPreview, error) {
 	owner, repo, err := parseRepo(opts.URL)
 	if err != nil {
@@ -77,7 +82,13 @@ func (s *Service) PrepareFromGit(_ context.Context, opts api.ExtensionGitInstall
 	}
 	s.installMu.Lock()
 	defer s.installMu.Unlock()
-	rel, err := s.latestRelease(owner, repo)
+	url := "https://github.com/" + owner + "/" + repo
+	cat := s.catalogNow()
+	if reason := revokedReason(cat, url); reason != "" {
+		return api.ExtensionInstallPreview{}, fmt.Errorf("%s/%s was %s; lich does not install it", owner, repo, revokedError(reason))
+	}
+	entry := listing(cat, url)
+	rel, err := s.releaseFor(owner, repo, entry)
 	if err != nil {
 		return api.ExtensionInstallPreview{}, err
 	}
@@ -85,8 +96,12 @@ func (s *Service) PrepareFromGit(_ context.Context, opts api.ExtensionGitInstall
 	if err != nil {
 		return api.ExtensionInstallPreview{}, err
 	}
-	src := source{URL: "https://github.com/" + owner + "/" + repo, Release: rel.Tag}
-	return s.stageAs(id, src, func(stage string) error { return s.unpack(rel, archive, id, stage) })
+	pinned, err := s.pinnedSum(entry)
+	if err != nil {
+		return api.ExtensionInstallPreview{}, err
+	}
+	src := source{URL: url, Release: rel.Tag}
+	return s.stageAs(id, src, func(stage string) error { return s.unpack(rel, archive, pinned, id, stage) })
 }
 
 // stageAs has fill lay the extension out in a fresh stage directory and checks
@@ -130,7 +145,7 @@ func (s *Service) fillStage(stage, id string, src source, fill func(stage string
 	if err := fill(stage); err != nil {
 		return extension.Manifest{}, err
 	}
-	m, err := s.checkStage(stage, id)
+	m, err := checkStage(stage, id, s.lichVersion)
 	if err != nil {
 		return extension.Manifest{}, err
 	}
@@ -145,15 +160,34 @@ func parseRepo(url string) (owner, repo string, err error) {
 	return m[1], m[2], nil
 }
 
+// releaseFor is the release the catalog lists for a listed repository, and
+// GitHub's latest for any other.
+func (s *Service) releaseFor(owner, repo string, entry *extension.CatalogEntry) (release, error) {
+	if entry == nil {
+		return s.latestRelease(owner, repo)
+	}
+	return s.taggedRelease(owner, repo, entry.Tag)
+}
+
 func (s *Service) latestRelease(owner, repo string) (release, error) {
+	missing := fmt.Errorf("%s/%s has no published release, or is not a public repository: check the URL, or ask its author to publish a release", owner, repo)
+	return s.readRelease(owner, repo, "latest", "the latest release", missing)
+}
+
+func (s *Service) taggedRelease(owner, repo, tag string) (release, error) {
+	missing := fmt.Errorf("%s/%s has no release %s, the one the lich catalog lists: try again later, or tell the extension's author", owner, repo, tag)
+	return s.readRelease(owner, repo, "tags/"+neturl.PathEscape(tag), "release "+tag, missing)
+}
+
+func (s *Service) readRelease(owner, repo, which, what string, missing error) (release, error) {
 	var body bytes.Buffer
-	url := s.releaseAPI + owner + "/" + repo + "/releases/latest"
+	url := s.releaseAPI + owner + "/" + repo + "/releases/" + which
 	status, err := fetch(s.metadata, url, ghrelease.ListLimit, &body)
 	if status == http.StatusNotFound {
-		return release{}, fmt.Errorf("%s/%s has no published release, or is not a public repository: check the URL, or ask its author to publish a release", owner, repo)
+		return release{}, missing
 	}
 	if err != nil {
-		return release{}, fmt.Errorf("look up the latest release of %s/%s: %w; try again later", owner, repo, err)
+		return release{}, fmt.Errorf("look up %s of %s/%s: %w; try again later", what, owner, repo, err)
 	}
 	var rel release
 	if err := json.Unmarshal(body.Bytes(), &rel); err != nil || rel.Tag == "" {
@@ -195,9 +229,22 @@ func (s *Service) checkFree(id string) error {
 	return nil
 }
 
+// pinnedSum is the sha256 the catalog recorded for this platform's archive
+// of a listed repository, nil for an unlisted one.
+func (s *Service) pinnedSum(entry *extension.CatalogEntry) ([]byte, error) {
+	if entry == nil {
+		return nil, nil
+	}
+	sum, err := hex.DecodeString(entry.Builds[s.goos+"_"+s.goarch])
+	if err != nil || len(sum) != sha256.Size {
+		return nil, fmt.Errorf("the lich catalog lists no build of %s %s for %s/%s: it does not install here yet", entry.ID, entry.Version, s.goos, s.goarch)
+	}
+	return sum, nil
+}
+
 // unpack downloads the archive into stage after checking it against the
-// release's checksums.
-func (s *Service) unpack(rel release, archive asset, id, stage string) error {
+// release's checksums and, for a listed repository, the sha256 pinned.
+func (s *Service) unpack(rel release, archive asset, pinned []byte, id, stage string) error {
 	want, err := s.checksum(rel, archive.Name)
 	if err != nil {
 		return err
@@ -213,6 +260,9 @@ func (s *Service) unpack(rel release, archive asset, id, stage string) error {
 	}
 	if !bytes.Equal(hash.Sum(nil), want) {
 		return fmt.Errorf("%s does not match its checksum in %s: the download is corrupt or was tampered with; do not install it, and tell the extension's author", archive.Name, checksumsAsset)
+	}
+	if pinned != nil && !bytes.Equal(hash.Sum(nil), pinned) {
+		return fmt.Errorf("%s of release %s differs from the archive the lich catalog recorded: it was replaced since; do not install it, and tell the extension's author", archive.Name, rel.Tag)
 	}
 	if _, err := file.Seek(0, io.SeekStart); err != nil {
 		return fmt.Errorf("read the download back: %w", err)
@@ -258,8 +308,8 @@ func parseChecksum(data, name string) string {
 // checkStage runs discovery's validation on the unpacked directory and makes
 // the executable runnable: tar modes are the author's, and lich does not trust
 // them to be right.
-func (s *Service) checkStage(stage, id string) (extension.Manifest, error) {
-	m, exe, err := readManifest(stage, id, s.lichVersion)
+func checkStage(stage, id, lichVersion string) (extension.Manifest, error) {
+	m, exe, err := readManifest(stage, id, lichVersion)
 	if err != nil && m.ID != "" && m.ID != id {
 		return m, fmt.Errorf("the manifest's id %q differs from the release asset's %q: ask the extension's author to make them match", m.ID, id)
 	}
@@ -312,6 +362,7 @@ func (s *Service) place(id, stage string) (api.Extension, error) {
 		return api.Extension{}, fmt.Errorf("move the extension into %s: %w", root, err)
 	}
 	x := load(root, id, s.lichVersion)
+	s.revokeLoaded(x)
 	s.all = append(s.all, x)
 	if x.invalid == nil {
 		s.launch(x)

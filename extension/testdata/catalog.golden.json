@@ -1,0 +1,62 @@
+{
+  "formatVersion": 1,
+  "generated": "generated",
+  "categories": [
+    {
+      "id": "id",
+      "names": {
+        "names": "names"
+      }
+    }
+  ],
+  "extensions": [
+    {
+      "id": "id",
+      "name": "name",
+      "description": "description",
+      "translations": {
+        "translations": {
+          "name": "name",
+          "description": "description"
+        }
+      },
+      "publisher": "publisher",
+      "official": true,
+      "stars": 1,
+      "repo": "repo",
+      "repoId": 1,
+      "license": "license",
+      "version": "version",
+      "tag": "tag",
+      "commit": "commit",
+      "released": "released",
+      "categories": [
+        "categories"
+      ],
+      "minLichVersion": "minLichVersion",
+      "permissions": [
+        "permissions"
+      ],
+      "glyph": "glyph",
+      "icon": "icon",
+      "cover": "cover",
+      "screenshots": [
+        {
+          "url": "url",
+          "alt": "alt"
+        }
+      ],
+      "builds": {
+        "builds": "builds"
+      },
+      "held": "held"
+    }
+  ],
+  "revoked": [
+    {
+      "repo": "repo",
+      "repoId": 1,
+      "reason": "reason"
+    }
+  ]
+}

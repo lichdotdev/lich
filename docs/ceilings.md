@@ -1163,18 +1163,41 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   (`internal/extensions/install.go`): the archive is checked against the `checksums.txt` the same release carries,
   which proves the download arrived whole, not who built it or what it does. Whoever controls the repository
   controls what runs. Only `https://github.com/<owner>/<repo>` is accepted, only its latest release that is neither
-  a draft nor a pre-release, only the archive named for this OS and architecture (`docs/extensions.md`), and only
+  a draft nor a pre-release (the catalog's tag, for a repository it lists), only the archive named for this OS and
+  architecture (`docs/extensions.md`), and only
   public repositories: the GitHub API is read without a token, so its unauthenticated rate limit applies. An update
   is the same download under the same checks, offered when the latest release's tag is a later
   `MAJOR.MINOR.PATCH` version than the one installed (`internal/extensions/update.go`): an extension whose tags are
   not versions is never offered one. lich looks at start and every six hours (`updateCheckEvery`), one
-  request per extension, and never updates on its own. An extension installed from a folder or placed by hand has
+  request per extension the catalog does not list (a listed one is compared with the catalog's `version`), and
+  never updates on its own. An extension installed from a folder or placed by hand has
   no release, so no update: remove it and install it again. A prepared install waits in an `.installing-*` directory
   that discovery skips until its confirmation is answered, for at most 15 minutes (`internal/extensions/staged.go`,
   `stagedTTL`): a person who takes longer gets an error naming the expired install and starts again. A download
   lich is killed in the middle of stays on disk until lich next starts, which deletes every `.installing-*`
   directory. Remove deletes the directory, or only the
   link when it is a symlink, and what the extension wrote elsewhere stays.
+- **Listed in the catalog is not reviewed** (`internal/extensions/catalog.go`): a listing says the release passed
+  `lich extension check` and a maintainer approved the repository once. Nobody reads its code, and the binary runs
+  unsandboxed as the user like any other. The sha256 the catalog recorded stops an archive replaced after the
+  catalog saw it, not a malicious new release: the author's next release is picked up by the same checks and no
+  person.
+- **A catalog lich cannot read is no catalog** (`internal/extensions/catalog.go`): `catalog.json` is read at start,
+  on the six-hour update tick and before an install or update while none is held, at most 4 MiB
+  (`maxCatalogBytes`), with `If-None-Match`. A failed read, a body that is not a catalog and a `formatVersion`
+  newer than `extension.CatalogFormat` are logged and keep the last good copy; with none, a listed repository
+  installs and updates as an unlisted one does, from GitHub's latest release checked against its `checksums.txt`
+  only. The copy lives in memory, so each launch starts with none.
+- **Revocation reaches only a lich that reads the catalog, and matches by repository URL**
+  (`internal/extensions/catalog.go`, `revoke`): at the next read, an installed extension whose recorded source URL
+  equals a `revoked` repository, case aside, is stopped, marked in its `.lich-source.json` so it stays stopped
+  across restarts with no catalog, and listed invalid with the reason. `repoId` is not compared, since an install
+  records no id. What escapes: a lich that never reads the catalog (offline, blocked, or older than it); an
+  extension installed from a folder or placed by hand, which records no repository; one installed under a URL
+  the repository was renamed or transferred away from, which GitHub redirects but no longer matches; and the
+  extension itself, which runs as the user and can rewrite its own record. Remove still works and keeps the data,
+  and the mark goes with the directory, so installing the repository again is refused only while the catalog in
+  memory names it.
 - **An extension's data directory outlives it, and nothing bounds its size** (`internal/extensions`):
   `<config dir>/lich/extension-data/<id>` is created before each start and handed over in `LICH_EXTENSION_DATA`.
   Remove keeps it, so a reinstall of the same id finds it, and so does any other extension later installed under

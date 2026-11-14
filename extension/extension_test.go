@@ -129,6 +129,14 @@ func TestManifestMatchesGolden(t *testing.T) {
 	checkGolden(t, "manifest.golden.json", filled(declarationOf[Manifest]()))
 }
 
+func TestCatalogMatchesGolden(t *testing.T) {
+	checkGolden(t, "catalog.golden.json", filled(declarationOf[Catalog]()))
+}
+
+func TestListingMatchesGolden(t *testing.T) {
+	checkGolden(t, "listing.golden.json", filled(declarationOf[Listing]()))
+}
+
 func TestEveryComponentRoundTrips(t *testing.T) {
 	for _, want := range everyComponent() {
 		raw, err := json.Marshal(want)
