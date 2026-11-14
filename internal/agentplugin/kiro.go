@@ -117,7 +117,7 @@ func (s *Service) kiroInstall() error {
 	}
 	// The skills directory is the agents directory's sibling under KiroHome,
 	// the one the agent's resources point at (kiroAgentFile).
-	if err := s.installThemeSkill(version, filepath.Join(filepath.Dir(filepath.Dir(path)), "skills")); err != nil {
+	if err := s.installSkill(version, filepath.Join(filepath.Dir(filepath.Dir(path)), "skills"), themeSkill); err != nil {
 		return err
 	}
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {

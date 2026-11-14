@@ -109,7 +109,7 @@ func (s *Service) crushInstall() error {
 	if err != nil {
 		return err
 	}
-	if err := s.installThemeSkill(version, skills); err != nil {
+	if err := s.installSkills(version, skills); err != nil {
 		return err
 	}
 	return s.writeCrushrc(version, dir, s.lichBin())
