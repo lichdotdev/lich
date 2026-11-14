@@ -25,13 +25,14 @@ const (
 	replacedDir = "replaced"
 )
 
-// WatchUpdates looks for newer releases now and every updateCheckEvery, until
-// Shutdown.
+// WatchUpdates reads the catalog and looks for newer releases now and every
+// updateCheckEvery, until Shutdown.
 func (s *Service) WatchUpdates() {
 	go func() {
 		ticker := time.NewTicker(updateCheckEvery)
 		defer ticker.Stop()
 		for {
+			s.refreshCatalog()
 			if err := s.checkUpdates(); err != nil {
 				slog.Warn("extensions: look for updates", "err", err)
 			}

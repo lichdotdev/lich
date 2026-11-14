@@ -16,6 +16,7 @@ import (
 	"runtime"
 	"slices"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/lichdotdev/lich/api"
@@ -82,6 +83,13 @@ type Service struct {
 	releaseAPI string
 	goos       string
 	goarch     string
+	catalogURL string
+	// catalog is the last good copy of catalog.json, nil until one is read.
+	catalog atomic.Pointer[extension.Catalog]
+	// catalogMu serialises the reads of the catalog and guards catalogTag,
+	// the ETag of the copy held.
+	catalogMu  sync.Mutex
+	catalogTag string
 	// installMu serialises installs, so two of one id never race to its
 	// directory.
 	installMu sync.Mutex
@@ -152,7 +160,7 @@ func New(dir, dataDir, lichVersion string, env []string, emit func(name string, 
 			killWait: killWait, callTimeout: callTimeout, stagedTTL: stagedTTL,
 		},
 		metadata: &http.Client{Timeout: metadataTimeout}, download: &http.Client{Timeout: downloadTimeout},
-		releaseAPI: releaseAPI, goos: runtime.GOOS, goarch: runtime.GOARCH,
+		releaseAPI: releaseAPI, catalogURL: catalogURL, goos: runtime.GOOS, goarch: runtime.GOARCH,
 	}
 	s.calls = s.routes()
 	return s
