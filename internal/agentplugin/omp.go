@@ -53,7 +53,7 @@ func (s *Service) ompInstall() error {
 	if err != nil {
 		return err
 	}
-	if err := s.installThemeSkill(version, filepath.Join(dir, "skills")); err != nil {
+	if err := s.installSkills(version, filepath.Join(dir, "skills")); err != nil {
 		return err
 	}
 	extensions := filepath.Join(dir, ompExtensionsDir)

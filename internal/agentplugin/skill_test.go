@@ -1,6 +1,8 @@
 package agentplugin
 
 import (
+	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -16,18 +18,18 @@ import (
 // assertThemeSkill checks the skill sits whole in skillsDir, renamed.
 func assertThemeSkill(t *testing.T, skillsDir string) {
 	t.Helper()
-	dir := filepath.Join(skillsDir, themeSkillName)
+	dir := filepath.Join(skillsDir, themeSkill.name)
 	manifest, err := os.ReadFile(filepath.Join(dir, skillManifest))
 	if err != nil {
 		t.Fatalf("read the installed skill: %v", err)
 	}
-	if !strings.HasPrefix(string(manifest), "---\nname: "+themeSkillName+"\n") {
-		t.Errorf("SKILL.md is not named %q, the directory it sits in:\n%s", themeSkillName, manifest)
+	if !strings.HasPrefix(string(manifest), "---\nname: "+themeSkill.name+"\n") {
+		t.Errorf("SKILL.md is not named %q, the directory it sits in:\n%s", themeSkill.name, manifest)
 	}
 	if !strings.Contains(string(manifest), "# lich themes") {
 		t.Errorf("SKILL.md lost the release's body:\n%s", manifest)
 	}
-	for _, name := range themeSkillFiles[1:] {
+	for _, name := range themeSkill.files[1:] {
 		if _, err := os.Stat(filepath.Join(dir, name)); err != nil {
 			t.Errorf("the skill's %s is missing: %v", name, err)
 		}
@@ -106,8 +108,8 @@ func TestKiroInstallWritesTheThemeSkill(t *testing.T) {
 func TestInstallWithoutTheThemeSkillLeavesNothingInstalled(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
 	s, _ := fileServer(t, map[string]string{
-		tagged(opencodeSource):                          "export const P = async () => ({})\n",
-		tagged(themeSkillSource + "/" + "validate.mjs"): "",
+		tagged(opencodeSource):                           "export const P = async () => ({})\n",
+		tagged(themeSkill.source + "/" + "validate.mjs"): "",
 	})
 
 	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.OpenCode}); err == nil {
@@ -115,5 +117,70 @@ func TestInstallWithoutTheThemeSkillLeavesNothingInstalled(t *testing.T) {
 	}
 	if version, ok := s.installedVersion(providers.OpenCode); ok {
 		t.Errorf("installedVersion = %q after a failed install, want nothing installed", version)
+	}
+}
+
+// retag moves the files a test serves at testVersion to version.
+func retag(files map[string]string, version string) map[string]string {
+	out := make(map[string]string, len(files))
+	for path, body := range files {
+		out[taggedAt(version, strings.TrimPrefix(path, tagged("")))] = body
+	}
+	return out
+}
+
+func TestInstallSkillsAddsTheManualExtensionSkillFromItsRelease(t *testing.T) {
+	s, _ := fileServerAt(t, ExtensionSkillRelease, nil)
+	dir := t.TempDir()
+
+	if err := s.installSkills(ExtensionSkillRelease, dir); err != nil {
+		t.Fatalf("installSkills: %v", err)
+	}
+	assertThemeSkill(t, dir)
+	manifest, err := os.ReadFile(filepath.Join(dir, extensionSkill.name, skillManifest))
+	if err != nil {
+		t.Fatalf("read the extension skill: %v", err)
+	}
+	if !strings.HasPrefix(string(manifest), "---\nname: "+extensionSkill.name+"\n") {
+		t.Errorf("SKILL.md is not named %q, the directory it sits in:\n%s", extensionSkill.name, manifest)
+	}
+	if !strings.Contains(string(manifest), "disable-model-invocation: true\nuser-invocable: true\n") {
+		t.Errorf("SKILL.md lost what keeps it manual only:\n%s", manifest)
+	}
+}
+
+func TestInstallSkillsFromAnOlderReleaseAsksForNoExtensionSkill(t *testing.T) {
+	s, asked := fileServer(t, nil)
+
+	if err := s.installSkills(testVersion, t.TempDir()); err != nil {
+		t.Fatalf("installSkills: %v", err)
+	}
+	for _, path := range asked() {
+		if strings.Contains(path, extensionSkill.source) {
+			t.Errorf("asked %s of release %s, which predates the extension skill", path, testVersion)
+		}
+	}
+}
+
+// Kiro cannot keep a skill out of the agent's context, so the extension skill
+// would cost every Kiro user its description on every turn.
+func TestKiroInstallLeavesTheExtensionSkillOut(t *testing.T) {
+	s, _ := fileServerAt(t, ExtensionSkillRelease, retag(kiroFiles(), ExtensionSkillRelease))
+	self, err := os.Executable()
+	if err != nil {
+		t.Fatalf("resolve test binary: %v", err)
+	}
+	t.Setenv(fakeCLIGuard, "1")
+	t.Setenv(fakeCLILog, filepath.Join(t.TempDir(), "cli.log"))
+	s.bins = stubBin(self)
+	_, home := kiroTestHome(t)
+
+	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.Kiro}); err != nil {
+		t.Fatalf("Install: %v", err)
+	}
+	skills := filepath.Join(providers.KiroHome(home), "skills")
+	assertThemeSkill(t, skills)
+	if _, err := os.Stat(filepath.Join(skills, extensionSkill.name)); !errors.Is(err, fs.ErrNotExist) {
+		t.Errorf("Kiro got the extension skill (stat: %v), which it cannot keep manual only", err)
 	}
 }

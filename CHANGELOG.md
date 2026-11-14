@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **The plugin's `extension` skill, which walks you through writing a lich extension, reaches every agent lich installs the plugin into.** It runs only when you call it, `/lich:extension` in Claude Code; Kiro CLI goes without it.
 - **TIFF images in a diff show a preview.** A `.tif` or `.tiff` file opens as a picture in the Review and the Code tab, the way PNG and WebP do.
 - **An extension from a repository in the lich catalog installs at the version the catalog checked.** Installing or updating it takes the release the catalog lists and refuses an archive that differs from the one it recorded, and an extension the catalog takes down is stopped and stays stopped. Extension authors check a build with `lich extension check`, see `docs/extensions.md`.
 - **lich tells you when an extension has a new version, and updates it in place.** A toast offers the update, and Settings › Extensions shows Update on the extension's row, with Check for updates over the list. What the extension saved is kept, and lich asks first when the new version wants a permission the installed one does not have.
