@@ -106,7 +106,6 @@
     "abortFailed": "Não deu para abortar o merge",
     "inConflict": "Em conflito",
     "markResolved": "Marcar como resolvido",
-    "markersLeft": "O arquivo ainda tem marcadores de conflito",
     "markFailed": "Não deu para marcar {name} como resolvido",
     "into": "Fazer merge em {branch}",
     "previewConflicts": {
@@ -127,5 +126,24 @@
       "other": "{count} arquivos não commitados na worktree dela ficaram de fora"
     },
     "undoFailed": "Não deu para desfazer o merge"
+  },
+  "resolve": {
+    "open": "Resolver",
+    "left": {
+      "one": "{name} · falta {count} conflito",
+      "other": "{name} · faltam {count} conflitos"
+    },
+    "prev": "Conflito anterior",
+    "next": "Próximo conflito",
+    "accept": "Aceitar {branch}",
+    "close": "Voltar às mudanças",
+    "thisCheckout": "esta checkout",
+    "result": "Resultado",
+    "incoming": "chegando",
+    "take": "Usar as linhas de {branch}",
+    "dismiss": "Deixar de fora as linhas de {branch}",
+    "apply": "Aplicar",
+    "applyFailed": "Não deu para salvar {name}",
+    "openFailed": "Não deu para abrir {name} no resolvedor"
   }
 }

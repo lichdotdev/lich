@@ -58,6 +58,8 @@ func projectBranches(d *rpc.Handler, s *project.Service) {
 	rpc.Handle(d, api.ProjectGitMergePreview, s.GitMergePreview)
 	rpc.Handle(d, api.ProjectGitMerge, s.GitMerge)
 	rpc.Handle(d, api.ProjectGitMergeUndo, s.GitMergeUndo)
+	rpc.Handle(d, api.ProjectGitConflict, s.GitConflict)
+	rpc.Handle(d, api.ProjectGitResolveFile, s.GitResolveFile)
 	rpc.Handle(d, api.ProjectGitMergeAbort, s.GitMergeAbort)
 	rpc.Handle(d, api.ProjectGitMergeCommit, s.GitMergeCommit)
 	rpc.Handle(d, api.ProjectGitMarkResolved, s.GitMarkResolved)

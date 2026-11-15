@@ -94,3 +94,12 @@ func (c *Client) GitMergeUndo(ctx context.Context, path, before, after string) e
 	_, err := callMethod(ctx, c, api.ProjectGitMergeUndo, api.GitMergeUndoOptions{Path: path, Before: before, After: after})
 	return err
 }
+
+func (c *Client) GitConflict(ctx context.Context, path, rel string) (api.GitConflict, error) {
+	return callMethod(ctx, c, api.ProjectGitConflict, api.CheckoutFileOptions{Path: path, Rel: rel})
+}
+
+func (c *Client) GitResolveFile(ctx context.Context, path, rel, content string) error {
+	_, err := callMethod(ctx, c, api.ProjectGitResolveFile, api.GitResolveFileOptions{Path: path, Rel: rel, Content: content})
+	return err
+}

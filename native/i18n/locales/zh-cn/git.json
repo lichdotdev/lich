@@ -106,7 +106,6 @@
     "abortFailed": "无法中止合并",
     "inConflict": "有冲突",
     "markResolved": "标记为已解决",
-    "markersLeft": "文件中仍有冲突标记",
     "markFailed": "无法将 {name} 标记为已解决",
     "into": "合并到 {branch}",
     "previewConflicts": {
@@ -127,5 +126,24 @@
       "other": "其工作树中 {count} 个未提交的文件没有带过来"
     },
     "undoFailed": "无法撤销合并"
+  },
+  "resolve": {
+    "open": "解决",
+    "left": {
+      "one": "{name} · 还剩 {count} 处冲突",
+      "other": "{name} · 还剩 {count} 处冲突"
+    },
+    "prev": "上一处冲突",
+    "next": "下一处冲突",
+    "accept": "采用 {branch}",
+    "close": "返回更改列表",
+    "thisCheckout": "当前检出",
+    "result": "结果",
+    "incoming": "传入",
+    "take": "使用 {branch} 的行",
+    "dismiss": "不使用 {branch} 的行",
+    "apply": "应用",
+    "applyFailed": "无法保存 {name}",
+    "openFailed": "无法在解决器中打开 {name}"
   }
 }
