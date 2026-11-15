@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -280,7 +281,7 @@ func TestDiff(t *testing.T) {
 		t.Errorf("Diff(new directory) = %+v, want {Files:5 Added:7 Deleted:1}", got)
 	}
 
-	if got := svc.diff(t.TempDir()); got != (DiffStats{}) {
+	if got := svc.diff(t.TempDir()); !reflect.DeepEqual(got, DiffStats{}) {
 		t.Errorf("Diff(non-repo) = %+v, want zero", got)
 	}
 }

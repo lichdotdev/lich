@@ -129,6 +129,9 @@ project.GitDeleteBranch(GitBranchOptions) GitDeletedBranch
 project.GitHubAccountOf(PathOptions) GitHubAccountState
 project.GitHubAccounts(None) []string
 project.GitLog(GitLogOptions) GitLogPage
+project.GitMarkResolved(CheckoutFileOptions) None
+project.GitMergeAbort(PathOptions) None
+project.GitMergeCommit(PathOptions) None
 project.GitRefs(PathOptions) GitRefs
 project.GitRenameBranch(GitRenameBranchOptions) None
 project.Home(None) *OpenedProject
@@ -809,6 +812,8 @@ DiffStats {
 	deleted int
 	head string
 	branch string
+	merging,omitempty string
+	conflicted,omitempty []string
 }
 
 CheckoutFileOptions {

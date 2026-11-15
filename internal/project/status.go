@@ -18,6 +18,9 @@ type workTreeStatus struct {
 	base      string   // what a diff runs against: "HEAD", or the empty tree
 	files     int      // dirty entries: changed, renamed, unmerged, untracked
 	untracked []string // untracked paths, relative to the path that was read
+	// conflicted is the unmerged paths, relative to the repository root as git
+	// diff names them, which is how the review panel matches them.
+	conflicted []string
 }
 
 // readWorkTree runs the single status call and parses it. A path git will not
@@ -95,8 +98,14 @@ func parseWorkTree(out string) workTreeStatus {
 			// here, or one renamed file would count as two dirty ones.
 			i++
 			status.files++
-		case '1', 'u':
+		case '1':
 			status.files++
+		case 'u':
+			status.files++
+			// u <XY> <sub> <m1> <m2> <m3> <mW> <h1> <h2> <h3> <path>
+			if fields := strings.SplitN(record, " ", 11); len(fields) == 11 {
+				status.conflicted = append(status.conflicted, fields[10])
+			}
 		case '?':
 			status.files++
 			if _, path, ok := strings.Cut(record, " "); ok {

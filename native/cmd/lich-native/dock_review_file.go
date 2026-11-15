@@ -43,17 +43,21 @@ type fileCard struct {
 	gen    int
 	filled map[int]int
 
-	view         *diffview.View
-	bin          *binaryPreview
-	md           *markdownPreview
-	previewing   bool
-	viewFail     bool
+	view       *diffview.View
+	bin        *binaryPreview
+	md         *markdownPreview
+	previewing bool
+	viewFail   bool
+	// reverts is whether view was built with its revert buttons.
+	reverts      bool
 	afford       *diffview.Buttons
 	blocks       diffview.Blocks
 	headerHeight int
 
 	toggle          widget.Clickable
 	attach, discard ui.IconActionState
+	resolve         widget.Clickable
+	resolveTip      ui.Tooltip
 	preview         ui.IconActionState
 	menu            ui.MenuState
 	composer        commentComposer
@@ -123,8 +127,11 @@ func (c *fileCard) layout(gtx C, p *reviewPanel) D {
 	if c.preview.Click.Clicked(gtx) {
 		c.previewing, c.open = !c.previewing, true
 	}
-	if c.discard.Click.Clicked(gtx) {
+	if c.discard.Click.Clicked(gtx) && p.reverts(c.git.path) {
 		p.pendingDiscard = &c.git
+	}
+	if c.resolve.Clicked(gtx) {
+		p.markResolved(c.git.path)
 	}
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
@@ -164,7 +171,8 @@ func (c *fileCard) headerRow(gtx C, th *ui.Theme, p *reviewPanel) D {
 	children := []layout.FlexChild{
 		layout.Flexed(1, func(gtx C) D { return c.toggle.Layout(gtx, func(gtx C) D { return c.title(gtx, th, p.light) }) }),
 	}
-	if !c.git.binary {
+	conflicted := p.conflicted(c.git.path)
+	if !c.git.binary && !conflicted {
 		children = append(children, ui.Gap(2), layout.Rigid(func(gtx C) D {
 			if c.onlyWhitespace() {
 				return th.Text(ui.TextXS, i18n.T("diff.fileDiff.whitespaceOnly")).Muted().Layout(gtx)
@@ -181,9 +189,12 @@ func (c *fileCard) headerRow(gtx C, th *ui.Theme, p *reviewPanel) D {
 		attachGap, layout.Rigid(func(gtx C) D {
 			return th.IconAction(p.root, &c.attach, icAttach, i18n.T("diff.fileDiff.addAsContext"), false).Layout(gtx)
 		}))
-	if p.pr != nil {
+	switch {
+	case p.pr != nil:
 		children = append(children, ui.Gap(2), layout.Rigid(func(gtx C) D { return c.viewedTick(gtx, th, p) }))
-	} else {
+	case conflicted:
+		children = append(children, c.conflictActions(th, p)...)
+	case p.reverts(c.git.path):
 		children = append(children, ui.Gap(1), layout.Rigid(func(gtx C) D {
 			return th.IconAction(p.root, &c.discard, icDiscard, i18n.T("diff.fileDiff.discard"), false).Layout(gtx)
 		}))
@@ -276,18 +287,24 @@ func (c *fileCard) diff(gtx C, p *reviewPanel, view *diffview.View) D {
 	return dims
 }
 
-// ensureView builds the card's editor on first need. A rename gets no revert:
-// its old side lives under another path, which the one-file revert cannot
-// reach; Discard still reverts the pair.
+// ensureView builds the card's editor on first need, and again when a merge
+// starting or ending takes its revert away or gives it back. A rename gets no
+// revert: its old side lives under another path, which the one-file revert
+// cannot reach; Discard still reverts the pair.
 func (c *fileCard) ensureView(p *reviewPanel) *diffview.View {
+	reverts := c.git.status != statusRenamed && p.reverts(c.git.path)
+	if c.view != nil && c.reverts != reverts {
+		c.view, c.gen, c.filled = nil, c.gen+1, map[int]int{}
+	}
 	if c.view != nil || c.viewFail {
 		return c.view
 	}
 	opts := diffview.Options{Buttons: c.afford,
 		Expand: func(g godemirror.Gap) { p.expand(c, c.gen, g) }}
-	if c.git.status != statusRenamed && p.pr == nil {
+	if reverts {
 		opts.Revert = func(ch godemirror.Chunk) { p.revert(c.git.path, lichdiff.RevertLines(ch)) }
 	}
+	c.reverts = reverts
 	view, err := diffview.New(p.family, p.size, opts)
 	if err != nil {
 		c.viewFail = true
@@ -341,7 +358,7 @@ func (c *fileCard) menuEntries(p *reviewPanel) []ui.MenuEntry {
 	if p.pr != nil {
 		return append(entries, reviewCommentEntries(lines, p.pr.own, func() { c.composer.openReview(path, lines) })...)
 	}
-	if c.git.status == statusRenamed {
+	if c.git.status == statusRenamed || !p.reverts(path) {
 		return entries
 	}
 	revert := i18n.T("diff.injectMenu.revertSelected")

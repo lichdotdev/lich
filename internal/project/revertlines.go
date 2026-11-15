@@ -44,6 +44,9 @@ func (s *Service) RevertLines(_ context.Context, opts api.RevertLinesOptions) (R
 	if len(opts.Lines) == 0 {
 		return RevertResult{}, errors.New("no changed lines to revert")
 	}
+	if err := refuseMidMerge(opts.Path, opts.Rel); err != nil {
+		return RevertResult{}, err
+	}
 	base := readWorkTree(opts.Path).base
 	tracked, err := isTracked(opts.Path, opts.Rel)
 	if err != nil {

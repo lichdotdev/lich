@@ -12,6 +12,10 @@ var (
 	ProjectGitRenameBranch = define[GitRenameBranchOptions, None]("project.GitRenameBranch")
 	ProjectGitBranchOnly   = define[GitBranchOptions, int]("project.GitBranchOnly")
 	ProjectGitDeleteBranch = define[GitBranchOptions, GitDeletedBranch]("project.GitDeleteBranch")
+
+	ProjectGitMergeAbort   = define[PathOptions, None]("project.GitMergeAbort")
+	ProjectGitMergeCommit  = define[PathOptions, None]("project.GitMergeCommit")
+	ProjectGitMarkResolved = define[CheckoutFileOptions, None]("project.GitMarkResolved")
 )
 
 // A GitRef's Kind, read from its full name: a remote branch called origin/x and

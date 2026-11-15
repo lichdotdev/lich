@@ -395,6 +395,11 @@ type DiffStats struct {
 	Deleted int    `json:"deleted"`
 	Head    string `json:"head"`
 	Branch  string `json:"branch"`
+	// Merging names what a merge in progress brings in, "" when none.
+	// Conflicted is the unmerged paths, repository-relative, during a merge,
+	// a rebase or a cherry-pick alike.
+	Merging    string   `json:"merging,omitempty"`
+	Conflicted []string `json:"conflicted,omitempty"`
 }
 
 // PRDetail is the full view of a branch's open pull request — richer than the

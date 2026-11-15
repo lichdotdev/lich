@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **A merge in progress shows wherever its checkout does, and ends from the Review.** The sidebar and the footer flag the merge and count the files in conflict; the Review lists them first, with Mark resolved, and holds Commit merge and Abort merge over the files. Reverting is off until the merge ends, so a revert cannot drop what the merge brought in.
+
 ## [0.91.0] - 2026-11-14
 
 ### Added
