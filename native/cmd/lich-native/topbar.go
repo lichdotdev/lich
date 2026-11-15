@@ -38,6 +38,7 @@ var (
 var (
 	icLichMark     = icons.LichMark()
 	icBell         = icons.Lucide("bell")
+	icInbox        = icons.Lucide("inbox")
 	icPullRequests = icons.Lucide("git-pull-request-arrow")
 	icSettings     = icons.Lucide("settings")
 	icMainMenu     = icons.Lucide("menu")
