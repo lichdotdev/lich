@@ -102,6 +102,25 @@
     "inConflict": "충돌",
     "markResolved": "해결됨으로 표시",
     "markersLeft": "파일에 아직 충돌 표시가 있습니다",
-    "markFailed": "{name}을(를) 해결됨으로 표시하지 못했습니다"
+    "markFailed": "{name}을(를) 해결됨으로 표시하지 못했습니다",
+    "into": "{branch}에 병합",
+    "previewConflicts": {
+      "one": "충돌 {count}개",
+      "other": "충돌 {count}개"
+    },
+    "previewClean": "충돌 없음",
+    "dirtyHere": "여기에 커밋되지 않은 변경 사항이 있습니다",
+    "running": "병합 진행 중",
+    "upToDate": "이미 병합됨",
+    "failed": "{name}을(를) 병합하지 못했습니다",
+    "stopped": {
+      "one": "충돌 {count}개로 병합이 멈췄습니다",
+      "other": "충돌 {count}개로 병합이 멈췄습니다"
+    },
+    "leftBehind": {
+      "one": "해당 워크트리의 커밋되지 않은 파일 {count}개는 포함되지 않았습니다",
+      "other": "해당 워크트리의 커밋되지 않은 파일 {count}개는 포함되지 않았습니다"
+    },
+    "undoFailed": "병합을 되돌리지 못했습니다"
   }
 }

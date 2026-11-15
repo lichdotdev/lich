@@ -27,6 +27,7 @@ const (
 	gitActNewBranch
 	gitActRename
 	gitActDelete
+	gitActMerge
 )
 
 // gitBlocked is why a menu entry is there but cannot be chosen.
@@ -36,6 +37,9 @@ const (
 	gitFree gitBlocked = iota
 	gitOnBranch
 	gitInWorktree
+	gitDirtyHere
+	gitMergeRunning
+	gitMerged
 )
 
 type gitMenuItem struct {
@@ -92,12 +96,20 @@ type branchOps struct {
 	notify      func(ui.Toast)
 	invalidate  func()
 	openSession func(projectID, id string)
-	editing     *gitEdit
+	// wrote hears a checkout a merge changed, for the git store the sidebar,
+	// footer and Review read; showReview opens the Review, where a stopped
+	// merge ends.
+	wrote      func(checkout string)
+	showReview func()
+	editing    *gitEdit
 	// menuOpen is whether a row's menu was open in the last frame, which
 	// keeps the terminal off its keys.
 	menuOpen bool
 
 	mu sync.Mutex
+	// previews is what merging each ref into previewHead would bring.
+	previews    map[string]mergePreview
+	previewHead string
 	// asked is a delete whose count came back from the backend, for the next
 	// frame to put up.
 	asked *gitConfirm
@@ -125,8 +137,15 @@ func gitActLabel(act gitBranchAct, session string) string {
 }
 
 func gitBlockedText(b gitBlocked) string {
-	if b == gitOnBranch {
+	switch b {
+	case gitOnBranch:
 		return i18n.T("git.branch.onBranch")
+	case gitDirtyHere:
+		return i18n.T("git.merge.dirtyHere")
+	case gitMergeRunning:
+		return i18n.T("git.merge.running")
+	case gitMerged:
+		return i18n.T("git.merge.upToDate")
 	}
 	return i18n.T("git.branch.inWorktree")
 }
@@ -135,7 +154,18 @@ func (g *gitPanel) branchEntries(row gitTreeRow, in gitPanelInput) []ui.MenuEntr
 	sv, hasSession := in.sessions[row.branch]
 	hasSession = hasSession && row.branch != ""
 	var out []ui.MenuEntry
-	for _, it := range gitBranchMenu(row, hasSession) {
+	items := gitBranchMenu(row, hasSession)
+	// Merge comes after the entry that opens the branch, when there is one.
+	mergeAt := 0
+	if a := items[0].act; a == gitActCheckout || a == gitActCheckoutRemote || a == gitActOpenSession {
+		mergeAt = 1
+	}
+	for i, it := range items {
+		if i == mergeAt {
+			if e, ok := g.mergeEntry(row, in); ok {
+				out = append(out, e)
+			}
+		}
 		if it.act == gitActDelete && len(out) > 0 {
 			out = append(out, ui.MenuEntry{Kind: ui.MenuSeparator})
 		}

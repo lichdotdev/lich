@@ -70,6 +70,10 @@ type gitPanelInput struct {
 	// changes the branch under its agent.
 	here *sessionView
 	code godemirror.Theme
+	// cur is path's status; status reads any checkout's, the one a merged
+	// branch is checked out in included.
+	cur    backend.DiffStats
+	status func(path string) (backend.DiffStats, bool)
 }
 
 // gitRowState is a list row's clickable and its tooltip.

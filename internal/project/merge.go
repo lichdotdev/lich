@@ -1,11 +1,14 @@
 package project
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -52,13 +55,17 @@ func mergingFrom(path string) string {
 
 // mergeSource reads the merged name off the message git prepared ("Merge
 // branch 'x'", "Merge remote-tracking branch 'origin/x'", "Merge tag 'v1'"),
-// whose first quoted name is the first one merged. A message written with -m
-// names nothing, and the commit's short hash stands in.
+// whose first quoted name is the first one merged. A merge asked for by full
+// ref name spells it that way in the message, so the ref prefix goes. A
+// message written with -m names nothing, and the commit's short hash stands in.
 func mergeSource(msg, head string) string {
 	first, _, _ := strings.Cut(msg, "\n")
 	if rest, ok := strings.CutPrefix(first, "Merge "); ok {
 		if _, quoted, ok := strings.Cut(rest, "'"); ok {
 			if name, _, ok := strings.Cut(quoted, "'"); ok && name != "" {
+				for _, prefix := range []string{"refs/heads/", "refs/remotes/", "refs/tags/"} {
+					name = strings.TrimPrefix(name, prefix)
+				}
 				return name
 			}
 		}
@@ -111,4 +118,85 @@ func refuseMidMerge(path, rel string) error {
 		return errors.New("A merge is in progress here. Abort it to go back, or resolve the conflict.")
 	}
 	return nil
+}
+
+// commitOf resolves ref to the commit it names, refusing what git would read
+// as an option.
+func commitOf(path, ref string) (string, error) {
+	if ref == "" || strings.HasPrefix(ref, "-") {
+		return "", fmt.Errorf("%q is not a branch or commit to merge.", ref)
+	}
+	out, err := runGit(path, "rev-parse", "--verify", "--quiet", ref+"^{commit}")
+	return strings.TrimSpace(out), err
+}
+
+// GitMergePreview reads, without touching the checkout, what merging opts.Ref
+// would bring. The conflicts come from merge-tree, so a git older than 2.38
+// answers with an error rather than a guess.
+func (s *Service) GitMergePreview(_ context.Context, opts api.GitMergeOptions) (api.GitMergePreview, error) {
+	if _, err := commitOf(opts.Path, opts.Ref); err != nil {
+		return api.GitMergePreview{}, err
+	}
+	out, err := readGit(opts.Path, "rev-list", "--count", "HEAD.."+opts.Ref)
+	if err != nil {
+		return api.GitMergePreview{}, err
+	}
+	commits, err := strconv.Atoi(strings.TrimSpace(out))
+	if err != nil {
+		return api.GitMergePreview{}, fmt.Errorf("read the commit count: %w", err)
+	}
+	if commits == 0 {
+		return api.GitMergePreview{}, nil
+	}
+	conflicts, ok := mergeConflicts(opts.Path, "HEAD", opts.Ref)
+	if !ok {
+		return api.GitMergePreview{}, errors.New("Predicting the conflicts needs git 2.38 or newer.")
+	}
+	return api.GitMergePreview{Commits: commits, Conflicts: conflicts}, nil
+}
+
+// GitMerge merges opts.Ref into the checkout. It refuses a checkout with
+// uncommitted changes, so Abort always goes back to where the merge started,
+// and a merge already running. A merge that stops on conflicts is an
+// outcome, not an error: it answers with the files.
+func (s *Service) GitMerge(_ context.Context, opts api.GitMergeOptions) (api.GitMergeResult, error) {
+	if _, err := commitOf(opts.Path, opts.Ref); err != nil {
+		return api.GitMergeResult{}, err
+	}
+	status := readWorkTree(opts.Path)
+	switch {
+	case mergingFrom(opts.Path) != "":
+		return api.GitMergeResult{}, errors.New("A merge is already in progress here.")
+	case status.files > 0:
+		return api.GitMergeResult{}, errors.New("This checkout has uncommitted changes. Commit or stash them before merging.")
+	}
+	result := api.GitMergeResult{Before: status.head}
+	args := []string{"merge", "--no-edit", opts.Ref}
+	cmd := command("git", append([]string{"-C", opts.Path}, args...)...)
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		// Read before logging: a conflict is the merge working, not a failure.
+		if conflicts := readWorkTree(opts.Path).conflicted; len(conflicts) > 0 {
+			result.Conflicts = conflicts
+			return result, nil
+		}
+		return api.GitMergeResult{}, gitFailure(args, stderr.String(), err)
+	}
+	result.After = readWorkTree(opts.Path).head
+	return result, nil
+}
+
+// GitMergeUndo takes a merge back for as long as nothing has moved HEAD past
+// it: reset --keep refuses to touch an edit made since.
+func (s *Service) GitMergeUndo(_ context.Context, opts api.GitMergeUndoOptions) (api.None, error) {
+	before, err := commitOf(opts.Path, opts.Before)
+	if err != nil {
+		return api.None{}, err
+	}
+	if head := readWorkTree(opts.Path).head; head == "" || head != opts.After {
+		return api.None{}, errors.New("The branch has moved since the merge, so it cannot be undone from here.")
+	}
+	_, err = runGit(opts.Path, "reset", "--keep", before)
+	return api.None{}, err
 }

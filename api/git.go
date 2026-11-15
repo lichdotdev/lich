@@ -13,6 +13,9 @@ var (
 	ProjectGitBranchOnly   = define[GitBranchOptions, int]("project.GitBranchOnly")
 	ProjectGitDeleteBranch = define[GitBranchOptions, GitDeletedBranch]("project.GitDeleteBranch")
 
+	ProjectGitMergePreview = define[GitMergeOptions, GitMergePreview]("project.GitMergePreview")
+	ProjectGitMerge        = define[GitMergeOptions, GitMergeResult]("project.GitMerge")
+	ProjectGitMergeUndo    = define[GitMergeUndoOptions, None]("project.GitMergeUndo")
 	ProjectGitMergeAbort   = define[PathOptions, None]("project.GitMergeAbort")
 	ProjectGitMergeCommit  = define[PathOptions, None]("project.GitMergeCommit")
 	ProjectGitMarkResolved = define[CheckoutFileOptions, None]("project.GitMarkResolved")
@@ -147,6 +150,35 @@ type GitUpstream struct {
 	Remote     string `json:"remote,omitempty"`
 	Merge      string `json:"merge,omitempty"`
 	PushRemote string `json:"pushRemote,omitempty"`
+}
+
+// GitMergeOptions names Ref, a branch or commit, to merge into the checkout at
+// Path.
+type GitMergeOptions struct {
+	Path string `json:"path"`
+	Ref  string `json:"ref"`
+}
+
+// GitMergePreview is what merging Ref would bring: its commits HEAD lacks, and
+// the files it would conflict on.
+type GitMergePreview struct {
+	Commits   int      `json:"commits"`
+	Conflicts []string `json:"conflicts,omitempty"`
+}
+
+// GitMergeResult is a merge's outcome: the commit HEAD left and the one it
+// reached, or, when it stopped, the files in conflict and no After.
+type GitMergeResult struct {
+	Before    string   `json:"before"`
+	After     string   `json:"after,omitempty"`
+	Conflicts []string `json:"conflicts,omitempty"`
+}
+
+// GitMergeUndoOptions takes the checkout at Path back from After to Before.
+type GitMergeUndoOptions struct {
+	Path   string `json:"path"`
+	Before string `json:"before"`
+	After  string `json:"after"`
 }
 
 // GitDeletedBranch is what a delete returns to make the branch again: the

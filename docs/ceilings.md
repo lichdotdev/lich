@@ -657,6 +657,15 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   a path the one-file diff cannot see. The Undo is the reversed patch the window keeps for as long as the toast
   is on screen (`revertUndoFor`, `native/cmd/lich-native/dock_review.go`); nothing on disk records it after that. And a revert does exactly the lines it
   names: reverting part of a block can leave code that no longer compiles, which is the reader's call to make.
+- **Merge into waits for a clean checkout, and its Undo lasts as long as the toast**
+  (`internal/project/merge.go` `GitMerge`, `native/cmd/lich-native/git_merge.go`): the entry is disabled while the
+  checkout has any uncommitted change, untracked files included, so Abort always lands where the merge started; git
+  itself would merge over edits it does not touch. What the entry says ahead of the click comes from
+  `git merge-tree`, read once per ref and HEAD when its menu opens, so a git older than 2.38 shows no prediction and
+  the merge still runs. The Undo is `git reset --keep` to the commit the merge left, offered only while the toast is
+  up and refused once HEAD moved past the merge. Merge brings commits only: a branch whose worktree has uncommitted
+  files says so in the toast, and only when the window reads that worktree's status, which it does for a checkout
+  on screen.
 - **A merge is read from the files git leaves, and only a merge has an end in the Review**
   (`internal/project/merge.go`, `native/cmd/lich-native/dock_review_merge.go`): git status does not say a merge is
   running, so the poll reads `MERGE_HEAD` in the checkout's git directory, which it asks git for once per path and

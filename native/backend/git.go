@@ -81,3 +81,16 @@ func (c *Client) GitMarkResolved(ctx context.Context, path, rel string) error {
 	_, err := callMethod(ctx, c, api.ProjectGitMarkResolved, api.CheckoutFileOptions{Path: path, Rel: rel})
 	return err
 }
+
+func (c *Client) GitMergePreview(ctx context.Context, path, ref string) (api.GitMergePreview, error) {
+	return callMethod(ctx, c, api.ProjectGitMergePreview, api.GitMergeOptions{Path: path, Ref: ref})
+}
+
+func (c *Client) GitMerge(ctx context.Context, path, ref string) (api.GitMergeResult, error) {
+	return callMethod(ctx, c, api.ProjectGitMerge, api.GitMergeOptions{Path: path, Ref: ref})
+}
+
+func (c *Client) GitMergeUndo(ctx context.Context, path, before, after string) error {
+	_, err := callMethod(ctx, c, api.ProjectGitMergeUndo, api.GitMergeUndoOptions{Path: path, Before: before, After: after})
+	return err
+}

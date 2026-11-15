@@ -43,6 +43,7 @@ var gitFailures = []toolFailure{
 	{"permission denied (publickey)", "The remote refused the connection — check its ssh key or credentials."},
 	{"does not appear to be a git repository", "That remote could not be reached."},
 	{"did not match any file", "git does not track that file."},
+	{"please tell me who you are", "git does not know who you are. Set user.name and user.email with `git config`, then try again."},
 	{"unknown revision", "git does not know that branch or commit."},
 	{"permission denied", "The filesystem refused the change."},
 }
