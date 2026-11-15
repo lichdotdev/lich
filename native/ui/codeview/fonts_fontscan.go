@@ -24,6 +24,15 @@ func NewEditor(family string, size unit.Sp) (*godemirror.View, error) {
 	return godemirror.NewFromFonts(files, size)
 }
 
+// NewTextEditor is NewEditor's editable counterpart.
+func NewTextEditor(family string, size unit.Sp) (*godemirror.Editor, error) {
+	files, err := codeFonts(family)
+	if err != nil {
+		return nil, err
+	}
+	return godemirror.NewEditorFromFonts(files, size)
+}
+
 func NewDiffEditor(family string, size unit.Sp, opts godemirror.DiffOptions) (*godemirror.DiffView, error) {
 	files, err := codeFonts(family)
 	if err != nil {

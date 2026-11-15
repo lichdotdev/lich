@@ -67,6 +67,12 @@ func (p *reviewPanel) layoutActions(gtx C, th *ui.Theme) D {
 
 // panelBody is PanelBody: the reason there is nothing to show, or the files.
 func (p *reviewPanel) panelBody(gtx C, th *ui.Theme) {
+	if r := p.resolvers[p.resolving]; r != nil {
+		if r.layout(gtx, th, p) {
+			p.resolving = ""
+		}
+		return
+	}
 	switch r := p.shown; {
 	case r == nil:
 		th.Notice(i18n.T("diff.reviewPanel.loading")).Layout(gtx)

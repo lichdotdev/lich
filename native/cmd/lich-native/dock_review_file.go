@@ -57,7 +57,6 @@ type fileCard struct {
 	toggle          widget.Clickable
 	attach, discard ui.IconActionState
 	resolve         widget.Clickable
-	resolveTip      ui.Tooltip
 	preview         ui.IconActionState
 	menu            ui.MenuState
 	composer        commentComposer
@@ -131,7 +130,11 @@ func (c *fileCard) layout(gtx C, p *reviewPanel) D {
 		p.pendingDiscard = &c.git
 	}
 	if c.resolve.Clicked(gtx) {
-		p.markResolved(c.git.path)
+		if hasConflictMarkers(c.gitText) {
+			p.openResolver(c.git.path)
+		} else {
+			p.markResolved(c.git.path)
+		}
 	}
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,

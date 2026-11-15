@@ -106,7 +106,6 @@
     "abortFailed": "Could not abort the merge",
     "inConflict": "In conflict",
     "markResolved": "Mark resolved",
-    "markersLeft": "The file still has conflict markers",
     "markFailed": "Could not mark {name} resolved",
     "into": "Merge into {branch}",
     "previewConflicts": {
@@ -127,5 +126,24 @@
       "other": "{count} uncommitted files in its worktree did not come"
     },
     "undoFailed": "Could not undo the merge"
+  },
+  "resolve": {
+    "open": "Resolve",
+    "left": {
+      "one": "{name} · {count} conflict left",
+      "other": "{name} · {count} conflicts left"
+    },
+    "prev": "Previous conflict",
+    "next": "Next conflict",
+    "accept": "Accept {branch}",
+    "close": "Back to the changes",
+    "thisCheckout": "this checkout",
+    "result": "Result",
+    "incoming": "incoming",
+    "take": "Take the lines of {branch}",
+    "dismiss": "Leave the lines of {branch} out",
+    "apply": "Apply",
+    "applyFailed": "Could not save {name}",
+    "openFailed": "Could not open {name} in the resolver"
   }
 }

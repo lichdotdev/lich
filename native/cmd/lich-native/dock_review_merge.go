@@ -177,17 +177,16 @@ func (p *reviewPanel) markResolved(rel string) {
 // the markers are still in.
 func (c *fileCard) conflictActions(th *ui.Theme, p *reviewPanel) []layout.FlexChild {
 	state := th.Text(ui.TextXS, i18n.T("git.merge.inConflict")).In(th.ToneWait)
-	markers := hasConflictMarkers(c.gitText)
-	mark := th.Button(&c.resolve, i18n.T("git.merge.markResolved"))
-	mark.Size, mark.Variant, mark.Disabled = ui.SizeXS, ui.VariantOutline, markers
-	why := ""
-	if markers {
-		why = i18n.T("git.merge.markersLeft")
+	label := i18n.T("git.merge.markResolved")
+	if hasConflictMarkers(c.gitText) {
+		label = i18n.T("git.resolve.open")
 	}
+	act := th.Button(&c.resolve, label)
+	act.Size, act.Variant = ui.SizeXS, ui.VariantOutline
 	return []layout.FlexChild{
 		ui.Gap(2),
 		layout.Rigid(func(gtx C) D { return ui.IconLine(gtx, icConflict, state.Color, layout.Rigid(state.Layout)) }),
 		ui.Gap(2),
-		layout.Rigid(func(gtx C) D { return th.Tooltip(p.root, &c.resolveTip, why).Layout(gtx, mark.Layout) }),
+		layout.Rigid(act.Layout),
 	}
 }

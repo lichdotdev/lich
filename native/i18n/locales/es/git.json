@@ -106,7 +106,6 @@
     "abortFailed": "No se pudo abortar la fusión",
     "inConflict": "En conflicto",
     "markResolved": "Marcar como resuelto",
-    "markersLeft": "El archivo aún tiene marcadores de conflicto",
     "markFailed": "No se pudo marcar {name} como resuelto",
     "into": "Fusionar en {branch}",
     "previewConflicts": {
@@ -127,5 +126,24 @@
       "other": "{count} archivos sin confirmar en su worktree no se incluyeron"
     },
     "undoFailed": "No se pudo deshacer la fusión"
+  },
+  "resolve": {
+    "open": "Resolver",
+    "left": {
+      "one": "{name} · queda {count} conflicto",
+      "other": "{name} · quedan {count} conflictos"
+    },
+    "prev": "Conflicto anterior",
+    "next": "Siguiente conflicto",
+    "accept": "Aceptar {branch}",
+    "close": "Volver a los cambios",
+    "thisCheckout": "este checkout",
+    "result": "Resultado",
+    "incoming": "entrante",
+    "take": "Usar las líneas de {branch}",
+    "dismiss": "Dejar fuera las líneas de {branch}",
+    "apply": "Aplicar",
+    "applyFailed": "No se pudo guardar {name}",
+    "openFailed": "No se pudo abrir {name} en el resolutor"
   }
 }

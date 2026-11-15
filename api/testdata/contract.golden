@@ -124,6 +124,7 @@ project.GitBranchOnly(GitBranchOptions) int
 project.GitCheckout(GitCheckoutOptions) None
 project.GitCommit(GitCommitOptions) GitCommitDetail
 project.GitCommitDiff(GitCommitDiffOptions) string
+project.GitConflict(CheckoutFileOptions) GitConflict
 project.GitCreateBranch(GitCreateBranchOptions) None
 project.GitDeleteBranch(GitBranchOptions) GitDeletedBranch
 project.GitHubAccountOf(PathOptions) GitHubAccountState
@@ -137,6 +138,7 @@ project.GitMergePreview(GitMergeOptions) GitMergePreview
 project.GitMergeUndo(GitMergeUndoOptions) None
 project.GitRefs(PathOptions) GitRefs
 project.GitRenameBranch(GitRenameBranchOptions) None
+project.GitResolveFile(GitResolveFileOptions) None
 project.Home(None) *OpenedProject
 project.Issue(NumberOptions) Issue
 project.ListBranches(PathOptions) Branches
@@ -890,6 +892,13 @@ GitCommitDiffOptions {
 	oldFile,omitempty string
 }
 
+GitConflict {
+	base string
+	ours string
+	theirs string
+	chunks []GitConflictChunk
+}
+
 GitCreateBranchOptions {
 	path string
 	name string
@@ -956,6 +965,12 @@ GitRenameBranchOptions {
 	path string
 	name string
 	newName string
+}
+
+GitResolveFileOptions {
+	path string
+	rel string
+	content string
 }
 
 OpenedProject {
@@ -2272,6 +2287,13 @@ GitCommitFile {
 	binary,omitempty bool
 }
 
+GitConflictChunk {
+	kind string
+	base GitLines
+	ours GitLines
+	theirs GitLines
+}
+
 GitUpstream {
 	remote,omitempty string
 	merge,omitempty string
@@ -2466,6 +2488,11 @@ StepLog {
 	step,omitempty string
 	lines []string
 	cut,omitempty int
+}
+
+GitLines {
+	from int
+	to int
 }
 
 PRThreadComment {

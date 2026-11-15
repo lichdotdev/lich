@@ -73,6 +73,11 @@ type reviewPanel struct {
 	// progress, and which files are conflicted.
 	git   backend.DiffStats
 	merge mergeStrip
+	// resolvers are the conflicted files opened in the resolver, kept while
+	// closed so nothing typed into a result is lost; resolving is the one on
+	// screen, "" for the file list.
+	resolvers map[string]*conflictResolver
+	resolving string
 
 	feed     diffFeed
 	split    bool
@@ -99,6 +104,10 @@ type reviewPanel struct {
 
 	mu      sync.Mutex
 	answers []gapAnswer
+	// built is a resolver made off the UI goroutine, and resolvedRel a file
+	// whose resolution was saved, for the next frame to take.
+	built       *conflictResolver
+	resolvedRel string
 
 	// pr makes this the Pulls screen's Files tab rather than the dock's
 	// Review tab; nil for the dock.
@@ -201,6 +210,7 @@ func (p *reviewPanel) composing() bool {
 func (p *reviewPanel) layoutBody(gtx C, th *ui.Theme, in dockInput) error {
 	p.th, p.light, p.code, p.target, p.checkout = th, in.light, in.code, in.checkout, in.checkout
 	p.git = in.git
+	p.takeResolvers()
 	p.inject, p.submit = in.inject, in.submit
 	p.feed.follow(in.checkout)
 	p.takeRead(in.checkout, p.feed.latest())

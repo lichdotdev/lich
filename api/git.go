@@ -16,6 +16,8 @@ var (
 	ProjectGitMergePreview = define[GitMergeOptions, GitMergePreview]("project.GitMergePreview")
 	ProjectGitMerge        = define[GitMergeOptions, GitMergeResult]("project.GitMerge")
 	ProjectGitMergeUndo    = define[GitMergeUndoOptions, None]("project.GitMergeUndo")
+	ProjectGitConflict     = define[CheckoutFileOptions, GitConflict]("project.GitConflict")
+	ProjectGitResolveFile  = define[GitResolveFileOptions, None]("project.GitResolveFile")
 	ProjectGitMergeAbort   = define[PathOptions, None]("project.GitMergeAbort")
 	ProjectGitMergeCommit  = define[PathOptions, None]("project.GitMergeCommit")
 	ProjectGitMarkResolved = define[CheckoutFileOptions, None]("project.GitMarkResolved")
@@ -179,6 +181,47 @@ type GitMergeUndoOptions struct {
 	Path   string `json:"path"`
 	Before string `json:"before"`
 	After  string `json:"after"`
+}
+
+// A GitConflictChunk's Kind: which side changed the base there.
+const (
+	GitChunkOurs     = "ours"
+	GitChunkTheirs   = "theirs"
+	GitChunkBoth     = "both" // both sides made the same change
+	GitChunkConflict = "conflict"
+)
+
+// GitLines is a run of lines, From included and To not, counted from 0; an
+// empty run is the point between two lines.
+type GitLines struct {
+	From int `json:"from"`
+	To   int `json:"to"`
+}
+
+// GitConflictChunk is one place where a side changed the base, and the lines
+// it spans in each of the three versions.
+type GitConflictChunk struct {
+	Kind   string   `json:"kind"`
+	Base   GitLines `json:"base"`
+	Ours   GitLines `json:"ours"`
+	Theirs GitLines `json:"theirs"`
+}
+
+// GitConflict is a conflicted file's three versions as the index holds them,
+// and the chunks where they differ, in order.
+type GitConflict struct {
+	Base   string             `json:"base"`
+	Ours   string             `json:"ours"`
+	Theirs string             `json:"theirs"`
+	Chunks []GitConflictChunk `json:"chunks"`
+}
+
+// GitResolveFileOptions writes Content as the resolution of conflicted file Rel
+// in the checkout at Path.
+type GitResolveFileOptions struct {
+	Path    string `json:"path"`
+	Rel     string `json:"rel"`
+	Content string `json:"content"`
 }
 
 // GitDeletedBranch is what a delete returns to make the branch again: the

@@ -106,7 +106,6 @@
     "abortFailed": "マージを中止できませんでした",
     "inConflict": "コンフリクト中",
     "markResolved": "解決済みにする",
-    "markersLeft": "ファイルにまだコンフリクトマーカーがあります",
     "markFailed": "{name} を解決済みにできませんでした",
     "into": "{branch} にマージ",
     "previewConflicts": {
@@ -127,5 +126,24 @@
       "other": "そのワークツリーの未コミットのファイル {count} 個は含まれていません"
     },
     "undoFailed": "マージを元に戻せませんでした"
+  },
+  "resolve": {
+    "open": "解決",
+    "left": {
+      "one": "{name} · 残りのコンフリクト {count} 件",
+      "other": "{name} · 残りのコンフリクト {count} 件"
+    },
+    "prev": "前のコンフリクト",
+    "next": "次のコンフリクト",
+    "accept": "{branch} を採用",
+    "close": "変更一覧に戻る",
+    "thisCheckout": "このチェックアウト",
+    "result": "結果",
+    "incoming": "取り込み側",
+    "take": "{branch} の行を使う",
+    "dismiss": "{branch} の行を使わない",
+    "apply": "適用",
+    "applyFailed": "{name} を保存できませんでした",
+    "openFailed": "{name} をリゾルバーで開けませんでした"
   }
 }

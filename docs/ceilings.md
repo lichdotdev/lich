@@ -657,6 +657,17 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   a path the one-file diff cannot see. The Undo is the reversed patch the window keeps for as long as the toast
   is on screen (`revertUndoFor`, `native/cmd/lich-native/dock_review.go`); nothing on disk records it after that. And a revert does exactly the lines it
   names: reverting part of a block can leave code that no longer compiles, which is the reader's call to make.
+- **The resolver lines chunks up from git's own diffs, and only text files open in it**
+  (`internal/project/conflict.go`, `native/cmd/lich-native/dock_review_resolver*.go`): the three versions are the
+  index's stages 1 to 3, and the chunks come from `git diff -U0` of the base against each side, joined where the
+  two touch on the base. git's merge refines a conflict more than that, so a chunk here can be wider than the
+  markers git wrote, and a chunk git merged on its own can show as one side's change. A file deleted on one side,
+  a binary one or one not in UTF-8 refuses to open, since the resolver writes back the text it shows; the
+  terminal or an agent resolves those. A conflict is done once its lines are no longer the base's, a side
+  taken or typed over, or both sides dismissed; Apply writes the result and stages it. The panes keep level by
+  following the one scrolled, line for line through the chunks, so a long chunk on one side scrolls past while
+  the other side's short one holds, and a side shorter than the result stops at its own end while the result scrolls on; there are no connectors drawn between them. What is typed into a result
+  stays while the resolver is closed and the file is still in conflict, and is lost with the window.
 - **Merge into waits for a clean checkout, and its Undo lasts as long as the toast**
   (`internal/project/merge.go` `GitMerge`, `native/cmd/lich-native/git_merge.go`): the entry is disabled while the
   checkout has any uncommitted change, untracked files included, so Abort always lands where the merge started; git
