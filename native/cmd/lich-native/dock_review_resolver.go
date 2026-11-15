@@ -9,6 +9,7 @@ import (
 	"image"
 	"slices"
 	"strings"
+	"unicode/utf8"
 
 	"gioui.org/font"
 	"gioui.org/layout"
@@ -33,11 +34,13 @@ var (
 	icNextChunk = icons.Lucide("chevron-down")
 )
 
-// resolverGutter is the width between two panes, room for a chunk's two
-// buttons side by side; resolverResultShare is how much wider than a side the
-// result is.
+// resolverGutter is the width between two panes: resolverButtons of it, on
+// the side pane's edge, holds a chunk's two buttons on a level stretch of its
+// band, and the rest is where the band bends to the result.
+// resolverResultShare is how much wider than a side the result is.
 const (
-	resolverGutter      = unit.Dp(56)
+	resolverGutter      = unit.Dp(88)
+	resolverButtons     = unit.Dp(56)
 	resolverResultShare = 1.15
 )
 
@@ -61,13 +64,19 @@ type conflictResolver struct {
 	oursBtn, theirsBtn []chunkButtons
 	all                [2]ui.IconActionState // accept ours, accept theirs
 	prev, next, close  ui.IconActionState
-	apply              widget.Clickable
+	apply, changes     widget.Clickable
 	applyTip           ui.Tooltip
 	// scrolled is the pane the user scrolled, -1 for none, and wanted the
 	// position this window set on each pane, so the echo is not followed.
 	scrolled int
 	wanted   [3]int
 	decoKey  string
+	// dismissals are the sides left out, in the order they were; depth is
+	// the result's undo depth as last seen, and focused whether the result
+	// was given the keys on opening.
+	dismissals []dismissal
+	depth      int
+	focused    bool
 	// sideKey is what each side pane was tinted with, and paneHeight the
 	// panes' height in the last frame.
 	sideKey    map[bool]string
@@ -130,16 +139,26 @@ func (r *conflictResolver) layout(gtx C, th *ui.Theme, p *reviewPanel) (closed b
 func (r *conflictResolver) actions(gtx C, p *reviewPanel) bool {
 	doc := r.doc()
 	var changes []godemirror.ChangeSpec
+	acted := !r.focused
+	r.focused = true
 	for i := range r.model.chunks {
-		ch := &r.model.chunks[i]
 		if r.oursBtn[i].take.Click.Clicked(gtx) {
 			changes = append(changes, r.model.take(i, true, doc))
 		}
 		if r.theirsBtn[i].take.Click.Clicked(gtx) {
 			changes = append(changes, r.model.take(i, false, doc))
 		}
-		ch.oursOff = ch.oursOff || r.oursBtn[i].dismiss.Click.Clicked(gtx)
-		ch.theirsOff = ch.theirsOff || r.theirsBtn[i].dismiss.Click.Clicked(gtx)
+		if r.oursBtn[i].dismiss.Click.Clicked(gtx) {
+			r.dismiss(i, true)
+			acted = true
+		}
+		if r.theirsBtn[i].dismiss.Click.Clicked(gtx) {
+			r.dismiss(i, false)
+			acted = true
+		}
+	}
+	if r.changes.Clicked(gtx) {
+		changes = r.takeChanges(doc)
 	}
 	for side, ours := range []bool{true, false} {
 		if r.all[side].Click.Clicked(gtx) {
@@ -147,16 +166,24 @@ func (r *conflictResolver) actions(gtx C, p *reviewPanel) bool {
 		}
 	}
 	if len(changes) > 0 {
+		r.dropUndone()
 		_ = r.result.Dispatch(godemirror.TransactionSpec{Changes: changes, UserEvent: "input.resolve",
 			IsolateHistory: godemirror.IsolateFull})
+		r.depth, acted = r.result.UndoDepth(), true
 	}
+	// The keys go to the result as the resolver opens and after each of its
+	// buttons, so Ctrl+Z takes back the last one without a click first.
+	if acted {
+		r.result.Focus(gtx)
+	}
+	r.syncDismissals()
 	if r.prev.Click.Clicked(gtx) {
 		r.goTo(gtx, -1)
 	}
 	if r.next.Click.Clicked(gtx) {
 		r.goTo(gtx, 1)
 	}
-	if r.apply.Clicked(gtx) && r.model.unresolved(doc) == 0 {
+	if left, _ := r.model.unresolved(doc); r.apply.Clicked(gtx) && left == 0 {
 		p.saveResolution(r)
 	}
 	return r.close.Click.Clicked(gtx)
@@ -165,31 +192,34 @@ func (r *conflictResolver) actions(gtx C, p *reviewPanel) bool {
 // takeAll takes a side in every conflict still open.
 func (r *conflictResolver) takeAll(ours bool, doc string) []godemirror.ChangeSpec {
 	var changes []godemirror.ChangeSpec
-	for i := range r.model.chunks {
-		if !r.model.resolved(i, doc) {
+	for i, ch := range r.model.chunks {
+		if ch.Kind == api.GitChunkConflict && !r.model.resolved(i, doc) {
 			changes = append(changes, r.model.take(i, ours, doc))
 		}
 	}
 	return changes
 }
 
-// goTo scrolls the result to the next conflict still open after, or before,
-// the one at its top.
+// takeChanges takes every pending change that is no conflict, from the side
+// that made it.
+func (r *conflictResolver) takeChanges(doc string) []godemirror.ChangeSpec {
+	var changes []godemirror.ChangeSpec
+	for i, ch := range r.model.chunks {
+		if ch.Kind != api.GitChunkConflict && !r.model.resolved(i, doc) {
+			changes = append(changes, r.model.take(i, ch.Kind != api.GitChunkTheirs, doc))
+		}
+	}
+	return changes
+}
+
+// goTo puts the result's cursor on the next pending chunk after it, or the
+// last one before it, and brings it into view; the other panes follow.
 func (r *conflictResolver) goTo(gtx C, dir int) {
-	doc, top := r.doc(), r.result.LineBlockAtHeight(r.result.ScrollTop()).From
-	order := r.model.chunks
-	for k := range order {
-		i := k
-		if dir < 0 {
-			i = len(order) - 1 - k
-		}
-		ch := order[i]
-		ahead := dir > 0 && ch.from > top || dir < 0 && ch.from < top
-		if ahead && !r.model.resolved(i, doc) {
-			y, _ := r.result.LineBlockAt(ch.from)
-			r.result.SetScrollTop(max(y-gtx.Constraints.Max.Y/3, 0))
-			return
-		}
+	state := r.result.State()
+	if i, ok := r.model.neighbor(state.Selection().Main().Head(), dir, state.Doc()); ok {
+		at := r.model.chunks[i].from
+		_ = r.result.Dispatch(godemirror.TransactionSpec{Selection: godemirror.SingleSelection(at, at), ScrollIntoView: true})
+		r.result.Focus(gtx)
 	}
 }
 
@@ -199,7 +229,71 @@ func (r *conflictResolver) updated(u godemirror.Update, th *ui.Theme) {
 	if u.DocChanged() {
 		r.model.remap(u.Changes)
 	}
+	for _, t := range u.Transactions {
+		if t.DocChanged() && !t.IsUserEvent("undo") && !t.IsUserEvent("redo") {
+			r.dropUndone()
+		}
+	}
+	r.depth = r.result.UndoDepth()
+	r.syncDismissals()
 	r.redecorate(th)
+}
+
+// dismissal is a side of a chunk left out with ✕, and the undo depth the
+// result stood at once it was.
+type dismissal struct {
+	depth, chunk int
+	ours         bool
+}
+
+// dismiss leaves a side of a chunk out. The result's history is the one
+// undo there is, and it holds only changes to the text, so the dismissal
+// rides one that changes nothing: Ctrl+Z steps back over it as over a side
+// taken.
+// shortcut: a text of no characters has nothing to rewrite, and a dismissal
+// there is not undone; godemirror's history would need effects, as CodeMirror's has.
+func (r *conflictResolver) dismiss(i int, ours bool) {
+	r.dropUndone()
+	doc, ch := r.doc(), r.model.chunks[i]
+	from, to := ch.from, ch.to
+	if from == to && doc != "" {
+		_, size := utf8.DecodeRuneInString(doc)
+		from, to = 0, size
+	}
+	depth := 0
+	if from < to {
+		_ = r.result.Dispatch(godemirror.TransactionSpec{Changes: []godemirror.ChangeSpec{{From: from, To: to, Insert: doc[from:to]}},
+			UserEvent: "input.resolve", IsolateHistory: godemirror.IsolateFull})
+		depth = r.result.UndoDepth()
+		r.depth = depth
+	}
+	r.dismissals = append(r.dismissals, dismissal{depth: depth, chunk: i, ours: ours})
+	r.syncDismissals()
+}
+
+// dropUndone forgets the dismissals an undo stepped back over, as a new
+// change is about to drop the redo they could have come back by.
+func (r *conflictResolver) dropUndone() {
+	r.dismissals = slices.DeleteFunc(r.dismissals, func(d dismissal) bool { return d.depth > r.depth })
+}
+
+// syncDismissals sets each chunk's dismissed sides to the dismissals the
+// result's history still stands past.
+func (r *conflictResolver) syncDismissals() {
+	depth := r.result.UndoDepth()
+	for i := range r.model.chunks {
+		r.model.chunks[i].oursOff, r.model.chunks[i].theirsOff = false, false
+	}
+	for _, d := range r.dismissals {
+		if d.depth > depth {
+			continue
+		}
+		ch := &r.model.chunks[d.chunk]
+		// The same change on both sides is left out from either.
+		both := ch.Kind == api.GitChunkBoth
+		ch.oursOff = ch.oursOff || d.ours || both
+		ch.theirsOff = ch.theirsOff || !d.ours || both
+	}
 }
 
 // redecorate tints the result's chunks when what they show changed: an
@@ -213,10 +307,17 @@ func (r *conflictResolver) redecorate(th *ui.Theme) {
 }
 
 func (r *conflictResolver) header(gtx C, th *ui.Theme, p *reviewPanel) D {
-	left := r.model.unresolved(r.doc())
+	left, pending := r.model.unresolved(r.doc())
 	title := th.Text(ui.TextSM, i18n.T("git.resolve.left", i18n.Args{"name": r.rel, "count": left})).Weight(font.Medium)
 	if left > 0 {
 		title = title.In(th.ToneWait)
+	}
+	// Shown only while there is one to apply.
+	var changes []layout.FlexChild
+	if pending > 0 {
+		b := th.Button(&r.changes, i18n.T("git.resolve.applyChanges", i18n.Args{"count": pending}))
+		b.Size, b.Variant = ui.SizeSM, ui.VariantOutline
+		changes = []layout.FlexChild{layout.Rigid(b.Layout), ui.Gap(2)}
 	}
 	icon := func(s *ui.IconActionState, ic *icons.Icon, label string) layout.FlexChild {
 		return layout.Rigid(func(gtx C) D { return th.IconAction(p.root, s, ic, label, false).Layout(gtx) })
@@ -229,14 +330,17 @@ func (r *conflictResolver) header(gtx C, th *ui.Theme, p *reviewPanel) D {
 		})
 	}
 	return layout.Inset{Left: ui.Space(3), Right: ui.Space(2), Top: ui.Space(1.5), Bottom: ui.Space(1.5)}.Layout(gtx, func(gtx C) D {
-		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+		row := []layout.FlexChild{
 			layout.Flexed(1, para(title).Layout),
 			icon(&r.prev, icPrevChunk, i18n.T("git.resolve.prev")), ui.Gap(1),
 			icon(&r.next, icNextChunk, i18n.T("git.resolve.next")), ui.Gap(2),
+		}
+		row = append(append(row, changes...),
 			accept(&r.all[0], branchOrHead(p.git.Branch)), ui.Gap(2),
 			accept(&r.all[1], p.git.Merging), ui.Gap(2),
 			icon(&r.close, icDockClose, i18n.T("git.resolve.close")),
 		)
+		return layout.Flex{Alignment: layout.Middle}.Layout(gtx, row...)
 	})
 }
 
@@ -283,7 +387,7 @@ func (r *conflictResolver) row(gtx C, in layout.Inset, left, mid, right, gutterL
 }
 
 func (r *conflictResolver) footer(gtx C, th *ui.Theme, p *reviewPanel) D {
-	left := r.model.unresolved(r.doc())
+	left, _ := r.model.unresolved(r.doc())
 	why := ""
 	if left > 0 {
 		why = i18n.T("git.merge.commitBlocked")

@@ -663,10 +663,10 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   two touch on the base. git's merge refines a conflict more than that, so a chunk here can be wider than the
   markers git wrote, and a chunk git merged on its own can show as one side's change. A file deleted on one side,
   a binary one or one not in UTF-8 refuses to open, since the resolver writes back the text it shows; the
-  terminal or an agent resolves those. A conflict is done once its lines are no longer the base's, a side
+  terminal or an agent resolves those. The result opens as the base, nothing taken, and Apply waits on the conflicts alone: a change only one side made and never taken is left out of the file without a word. A side left out with ✕ is undone by the result's own Ctrl+Z, riding a change that rewrites the same text, so a file with no text at all cannot undo one. A conflict is done once its lines are no longer the base's, a side
   taken or typed over, or both sides dismissed; Apply writes the result and stages it. The panes keep level by
   following the one scrolled, line for line through the chunks, so a long chunk on one side scrolls past while
-  the other side's short one holds, and a side shorter than the result stops at its own end while the result scrolls on; there are no connectors drawn between them. What is typed into a result
+  the other side's short one holds, and a side shorter than the result stops at its own end while the result scrolls on. A band in a gutter joins a chunk in that side to the same chunk in the result, only for a chunk that side changed, and whether or not it is on screen in both. What is typed into a result
   stays while the resolver is closed and the file is still in conflict, and is lost with the window.
 - **Merge into waits for a clean checkout, and its Undo lasts as long as the toast**
   (`internal/project/merge.go` `GitMerge`, `native/cmd/lich-native/git_merge.go`): the entry is disabled while the

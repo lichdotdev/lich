@@ -44,9 +44,8 @@ func joinLines(lines []string, r api.GitLines) string {
 	return strings.Join(lines[r.From:r.To], "")
 }
 
-// newResolveModel lays the result out: the base, with each chunk only one
-// side changed (or both alike) already taken from that side, and each
-// conflict holding the base's lines until the user decides.
+// newResolveModel lays the result out as the base: nothing is taken until the
+// user takes it, a change only one side made included.
 func newResolveModel(c api.GitConflict) (*resolveModel, string) {
 	m := &resolveModel{base: splitLines(c.Base), ours: splitLines(c.Ours), theirs: splitLines(c.Theirs)}
 	var doc strings.Builder
@@ -54,26 +53,16 @@ func newResolveModel(c api.GitConflict) (*resolveModel, string) {
 	for _, ch := range c.Chunks {
 		doc.WriteString(joinLines(m.base, api.GitLines{From: at, To: ch.Base.From}))
 		rc := resolveChunk{GitConflictChunk: ch, from: doc.Len()}
-		doc.WriteString(m.initial(ch))
+		doc.WriteString(joinLines(m.base, ch.Base))
 		rc.to, at = doc.Len(), ch.Base.To
 		m.chunks = append(m.chunks, rc)
 	}
 	doc.WriteString(joinLines(m.base, api.GitLines{From: at, To: len(m.base)}))
 	out := doc.String()
-	if !strings.HasSuffix(c.Ours, "\n") && strings.HasSuffix(out, "\n") {
+	if !strings.HasSuffix(c.Base, "\n") {
 		out = strings.TrimSuffix(out, "\n")
 	}
 	return m, out
-}
-
-func (m *resolveModel) initial(ch api.GitConflictChunk) string {
-	switch ch.Kind {
-	case api.GitChunkOurs, api.GitChunkBoth:
-		return joinLines(m.ours, ch.Ours)
-	case api.GitChunkTheirs:
-		return joinLines(m.theirs, ch.Theirs)
-	}
-	return joinLines(m.base, ch.Base)
 }
 
 func (m *resolveModel) sideText(i int, ours bool) string {
@@ -93,25 +82,64 @@ func (m *resolveModel) applied(i int, ours bool, doc string) bool {
 	return strings.Contains(cur, side)
 }
 
-// resolved is whether a chunk needs nothing more: one no conflict made, one
-// whose lines are no longer the base's (a side taken, or typed over), or one
-// whose two sides were both dismissed, keeping the base.
-func (m *resolveModel) resolved(i int, doc string) bool {
+// chunkState is how far the user has taken a chunk.
+type chunkState uint8
+
+const (
+	// chunkPending holds the base's lines, undecided.
+	chunkPending chunkState = iota
+	// chunkApplied no longer holds them: a side taken, or typed over.
+	chunkApplied
+	// chunkDismissed keeps them on purpose, every side that changed them
+	// left out.
+	chunkDismissed
+)
+
+func (m *resolveModel) state(i int, doc string) chunkState {
 	ch := m.chunks[i]
-	if ch.Kind != api.GitChunkConflict {
-		return true
+	switch {
+	case doc[ch.from:ch.to] != joinLines(m.base, ch.Base):
+		return chunkApplied
+	case (ch.oursOff || ch.Kind == api.GitChunkTheirs) && (ch.theirsOff || ch.Kind == api.GitChunkOurs):
+		return chunkDismissed
 	}
-	return doc[ch.from:ch.to] != joinLines(m.base, ch.Base) || ch.oursOff && ch.theirsOff
+	return chunkPending
 }
 
-func (m *resolveModel) unresolved(doc string) int {
-	n := 0
-	for i := range m.chunks {
-		if !m.resolved(i, doc) {
-			n++
+// resolved is whether a chunk needs nothing more.
+func (m *resolveModel) resolved(i int, doc string) bool { return m.state(i, doc) != chunkPending }
+
+// unresolved counts the conflicts still open, which Apply waits on, and
+// changes the changes only one side made that are neither taken nor left out.
+func (m *resolveModel) unresolved(doc string) (conflicts, changes int) {
+	for i, ch := range m.chunks {
+		switch {
+		case m.resolved(i, doc):
+		case ch.Kind == api.GitChunkConflict:
+			conflicts++
+		default:
+			changes++
 		}
 	}
-	return n
+	return conflicts, changes
+}
+
+// neighbor is the pending chunk nearest pos on one side of it: the first
+// that starts after it, or with dir below zero the last that starts before.
+func (m *resolveModel) neighbor(pos, dir int, doc string) (int, bool) {
+	found, ok := 0, false
+	for i, ch := range m.chunks {
+		if m.resolved(i, doc) {
+			continue
+		}
+		switch {
+		case dir > 0 && ch.from > pos:
+			return i, true
+		case dir < 0 && ch.from < pos:
+			found, ok = i, true
+		}
+	}
+	return found, ok
 }
 
 // take writes a side into a chunk: in place of the base's lines while they

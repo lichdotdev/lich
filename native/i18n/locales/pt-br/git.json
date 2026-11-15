@@ -133,8 +133,8 @@
       "one": "{name} · falta {count} conflito",
       "other": "{name} · faltam {count} conflitos"
     },
-    "prev": "Conflito anterior",
-    "next": "Próximo conflito",
+    "prev": "Mudança anterior",
+    "next": "Próxima mudança",
     "accept": "Aceitar {branch}",
     "close": "Voltar às mudanças",
     "thisCheckout": "esta checkout",
@@ -144,6 +144,10 @@
     "dismiss": "Deixar de fora as linhas de {branch}",
     "apply": "Aplicar",
     "applyFailed": "Não deu para salvar {name}",
-    "openFailed": "Não deu para abrir {name} no resolvedor"
+    "openFailed": "Não deu para abrir {name} no resolvedor",
+    "applyChanges": {
+      "one": "Aplicar {count} mudança",
+      "other": "Aplicar {count} mudanças"
+    }
   }
 }
