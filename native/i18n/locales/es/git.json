@@ -88,5 +88,25 @@
     "renameFailed": "No se pudo renombrar {name}",
     "deleteFailed": "No se pudo eliminar {name}",
     "undoFailed": "No se pudo recuperar {name}"
+  },
+  "merge": {
+    "merging": "Fusionando {source} en {branch}",
+    "footer": "{branch} · fusionando {source}",
+    "conflicts": {
+      "one": "{count} archivo en conflicto",
+      "other": "{count} archivos en conflicto"
+    },
+    "commit": "Confirmar fusión",
+    "commitBlocked": "Resuelve todos los conflictos primero",
+    "abort": "Abortar fusión",
+    "abortAsk": "¿Descartar la fusión y lo ya resuelto?",
+    "keep": "Seguir fusionando",
+    "merged": "{source} fusionado en {branch}",
+    "commitFailed": "No se pudo confirmar la fusión",
+    "abortFailed": "No se pudo abortar la fusión",
+    "inConflict": "En conflicto",
+    "markResolved": "Marcar como resuelto",
+    "markersLeft": "El archivo aún tiene marcadores de conflicto",
+    "markFailed": "No se pudo marcar {name} como resuelto"
   }
 }

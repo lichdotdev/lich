@@ -83,5 +83,25 @@
     "renameFailed": "{name} 브랜치 이름을 바꾸지 못했습니다",
     "deleteFailed": "{name} 브랜치를 삭제하지 못했습니다",
     "undoFailed": "{name} 브랜치를 되살리지 못했습니다"
+  },
+  "merge": {
+    "merging": "{source}을(를) {branch}에 병합 중",
+    "footer": "{branch} · {source} 병합 중",
+    "conflicts": {
+      "one": "충돌 파일 {count}개",
+      "other": "충돌 파일 {count}개"
+    },
+    "commit": "병합 커밋",
+    "commitBlocked": "먼저 모든 충돌을 해결하세요",
+    "abort": "병합 중단",
+    "abortAsk": "병합과 지금까지 해결한 내용을 버릴까요?",
+    "keep": "병합 계속",
+    "merged": "{source}을(를) {branch}에 병합했습니다",
+    "commitFailed": "병합을 커밋하지 못했습니다",
+    "abortFailed": "병합을 중단하지 못했습니다",
+    "inConflict": "충돌",
+    "markResolved": "해결됨으로 표시",
+    "markersLeft": "파일에 아직 충돌 표시가 있습니다",
+    "markFailed": "{name}을(를) 해결됨으로 표시하지 못했습니다"
   }
 }

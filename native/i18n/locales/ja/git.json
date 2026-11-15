@@ -88,5 +88,25 @@
     "renameFailed": "{name} の名前を変更できませんでした",
     "deleteFailed": "{name} を削除できませんでした",
     "undoFailed": "{name} を復元できませんでした"
+  },
+  "merge": {
+    "merging": "{source} を {branch} にマージ中",
+    "footer": "{branch} · {source} をマージ中",
+    "conflicts": {
+      "one": "{count} 個のファイルがコンフリクト中",
+      "other": "{count} 個のファイルがコンフリクト中"
+    },
+    "commit": "マージをコミット",
+    "commitBlocked": "先にすべてのコンフリクトを解決してください",
+    "abort": "マージを中止",
+    "abortAsk": "マージと解決済みの内容を破棄しますか?",
+    "keep": "マージを続ける",
+    "merged": "{source} を {branch} にマージしました",
+    "commitFailed": "マージをコミットできませんでした",
+    "abortFailed": "マージを中止できませんでした",
+    "inConflict": "コンフリクト中",
+    "markResolved": "解決済みにする",
+    "markersLeft": "ファイルにまだコンフリクトマーカーがあります",
+    "markFailed": "{name} を解決済みにできませんでした"
   }
 }

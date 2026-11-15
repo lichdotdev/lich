@@ -19,6 +19,9 @@ func (s *Service) DiscardFile(_ context.Context, opts api.CheckoutFileOptions) (
 	if err := relpath.Validate(opts.Rel); err != nil {
 		return api.None{}, err
 	}
+	if err := refuseMidMerge(opts.Path, opts.Rel); err != nil {
+		return api.None{}, err
+	}
 	// Quiet: "HEAD does not know this file" is the answer that routes to the
 	// new-file branch below, not a failure worth a log line per discard.
 	if _, known := gitQuiet(opts.Path, "cat-file", "-e", "HEAD:"+opts.Rel); known {

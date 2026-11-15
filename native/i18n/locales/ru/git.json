@@ -102,5 +102,27 @@
     "renameFailed": "Не удалось переименовать {name}",
     "deleteFailed": "Не удалось удалить {name}",
     "undoFailed": "Не удалось вернуть {name}"
+  },
+  "merge": {
+    "merging": "Слияние {source} в {branch}",
+    "footer": "{branch} · слияние {source}",
+    "conflicts": {
+      "one": "Конфликт в {count} файле",
+      "few": "Конфликты в {count} файлах",
+      "many": "Конфликты в {count} файлах",
+      "other": "Конфликты в {count} файлах"
+    },
+    "commit": "Завершить слияние",
+    "commitBlocked": "Сначала разрешите все конфликты",
+    "abort": "Отменить слияние",
+    "abortAsk": "Отменить слияние и всё, что уже разрешено?",
+    "keep": "Продолжить слияние",
+    "merged": "{source} слит в {branch}",
+    "commitFailed": "Не удалось завершить слияние",
+    "abortFailed": "Не удалось отменить слияние",
+    "inConflict": "Конфликт",
+    "markResolved": "Отметить как разрешённый",
+    "markersLeft": "В файле ещё есть маркеры конфликта",
+    "markFailed": "Не удалось отметить {name} как разрешённый"
   }
 }

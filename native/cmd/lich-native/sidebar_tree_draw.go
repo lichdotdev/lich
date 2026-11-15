@@ -255,7 +255,7 @@ func checkoutLine(th *ui.Theme, f checkoutFacts, p treePlace, open bool, node fu
 			row = append(row, ui.Gap(1.5), layout.Rigid(th.Text(ui.TextXS, "#"+strconv.Itoa(f.pr.Number)).Muted().Layout))
 		}
 		if f.git.Files > 0 {
-			row = append(row, ui.Gap(1.5), layout.Rigid(func(gtx C) D { return th.DiffStat(f.git.Added, f.git.Deleted).Layout(gtx) }))
+			row = append(row, ui.Gap(1.5), layout.Rigid(changesBadge(th, f.git)))
 		}
 		row = append(row, ui.Gap(1), layout.Rigid(func(gtx C) D {
 			size := gtx.Dp(cardSlotSize)
@@ -329,6 +329,7 @@ func checkoutTooltip(th *ui.Theme, path string, f checkoutFacts) layout.Widget {
 	}
 	sections = append(sections, para(th.Text(ui.TextXS, path).Muted().Mono()).Layout)
 	sections = append(sections, baseSections(th, f.base)...)
+	sections = append(sections, mergeSections(th, f.git)...)
 	if f.git.Files > 0 {
 		sections = append(sections, func(gtx C) D { return th.DiffStat(f.git.Added, f.git.Deleted).Layout(gtx) })
 	}

@@ -4,9 +4,26 @@ import (
 	"context"
 	"log"
 	"slices"
+	"strconv"
+
+	"gioui.org/layout"
 
 	"github.com/lichdotdev/lich/native/backend"
+	"github.com/lichdotdev/lich/native/i18n"
+	"github.com/lichdotdev/lich/native/ui"
 )
+
+// changesBadge is a checkout's changes as a row shows them: its conflicts
+// while there are any, else +a -d.
+func changesBadge(th *ui.Theme, git backend.DiffStats) layout.Widget {
+	if n := len(git.Conflicted); n > 0 {
+		line := th.Text(ui.TextXS, strconv.Itoa(n)).In(th.ToneWait)
+		return func(gtx C) D {
+			return ui.IconLine(gtx, icConflict, line.Color, layout.Rigid(line.Layout))
+		}
+	}
+	return th.DiffStat(git.Added, git.Deleted).Layout
+}
 
 // baseStanding is what a card draws of a base status: how many files would
 // conflict with the base, else how many commits it is behind. The zero value
@@ -21,6 +38,36 @@ func sameBase(a, b *backend.BaseStatus) bool {
 		return a == b
 	}
 	return a.Base == b.Base && a.Behind == b.Behind && slices.Equal(a.Conflicts, b.Conflicts)
+}
+
+// mergeSections is a checkout's merge in progress and its conflicted files,
+// for a tooltip.
+func mergeSections(th *ui.Theme, git backend.DiffStats) []layout.Widget {
+	var out []layout.Widget
+	if git.Merging != "" {
+		out = append(out, para(th.Text(ui.TextXS, mergingText(git)).Muted()).Layout)
+	}
+	if n := len(git.Conflicted); n > 0 {
+		line := th.Text(ui.TextXS, i18n.T("git.merge.conflicts", i18n.Args{"count": n})).In(th.ToneWait)
+		out = append(out,
+			func(gtx C) D { return ui.IconLine(gtx, icConflict, line.Color, layout.Flexed(1, line.Layout)) },
+			conflictPaths(th, git.Conflicted),
+		)
+	}
+	return out
+}
+
+func mergingText(git backend.DiffStats) string {
+	branch := git.Branch
+	if branch == "" {
+		branch = "HEAD"
+	}
+	return i18n.T("git.merge.merging", i18n.Args{"source": git.Merging, "branch": branch})
+}
+
+func sameDiff(a, b backend.DiffStats) bool {
+	return a.Files == b.Files && a.Added == b.Added && a.Deleted == b.Deleted && a.Head == b.Head &&
+		a.Branch == b.Branch && a.Merging == b.Merging && slices.Equal(a.Conflicted, b.Conflicted)
 }
 
 func standingOf(b *backend.BaseStatus) baseStanding {
@@ -57,7 +104,7 @@ func (m *model) refreshPath(ctx context.Context, path string) {
 		return
 	}
 	m.mu.Lock()
-	changed := m.git[path] != d || !sameBase(m.base[path], b)
+	changed := !sameDiff(m.git[path], d) || !sameBase(m.base[path], b)
 	m.git[path], m.base[path] = d, b
 	prev, looked := m.prs[path]
 	ask := !looked || prev.branch != d.Branch || prev.head != d.Head

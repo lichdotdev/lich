@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/lichdotdev/lich/native/backend"
+	"github.com/lichdotdev/lich/native/i18n"
 )
 
 // footerInput is everything FooterBar reads about what is on screen: the
@@ -109,6 +110,9 @@ func footerSlotOf(id string, in footerInput) (footerSlot, bool) {
 		return s, in.pr != nil
 	case "checkout":
 		s.Text = branchText(in.path, in.git.Branch)
+		if in.git.Merging != "" {
+			s.Text = i18n.T("git.merge.footer", i18n.Args{"branch": s.Text, "source": in.git.Merging})
+		}
 		s.Hint = s.Text
 		return s, in.path != ""
 	case "path":

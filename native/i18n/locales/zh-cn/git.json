@@ -88,5 +88,25 @@
     "renameFailed": "无法重命名 {name}",
     "deleteFailed": "无法删除 {name}",
     "undoFailed": "无法恢复 {name}"
+  },
+  "merge": {
+    "merging": "正在将 {source} 合并到 {branch}",
+    "footer": "{branch} · 正在合并 {source}",
+    "conflicts": {
+      "one": "{count} 个文件有冲突",
+      "other": "{count} 个文件有冲突"
+    },
+    "commit": "提交合并",
+    "commitBlocked": "请先解决所有冲突",
+    "abort": "中止合并",
+    "abortAsk": "放弃这次合并和已解决的内容?",
+    "keep": "继续合并",
+    "merged": "已将 {source} 合并到 {branch}",
+    "commitFailed": "无法提交合并",
+    "abortFailed": "无法中止合并",
+    "inConflict": "有冲突",
+    "markResolved": "标记为已解决",
+    "markersLeft": "文件中仍有冲突标记",
+    "markFailed": "无法将 {name} 标记为已解决"
   }
 }

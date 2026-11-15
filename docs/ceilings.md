@@ -657,6 +657,18 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   a path the one-file diff cannot see. The Undo is the reversed patch the window keeps for as long as the toast
   is on screen (`revertUndoFor`, `native/cmd/lich-native/dock_review.go`); nothing on disk records it after that. And a revert does exactly the lines it
   names: reverting part of a block can leave code that no longer compiles, which is the reader's call to make.
+- **A merge is read from the files git leaves, and only a merge has an end in the Review**
+  (`internal/project/merge.go`, `native/cmd/lich-native/dock_review_merge.go`): git status does not say a merge is
+  running, so the poll reads `MERGE_HEAD` in the checkout's git directory, which it asks git for once per path and
+  keeps. What is coming in is the first quoted name of `MERGE_MSG`, git's own English wording; a message written
+  with `-m` names nothing and the commit's short hash stands in. A rebase, a cherry-pick or a stash pop that stops
+  on a conflict shows its conflicted files in the sidebar, the footer and the Review, with Mark resolved, but no
+  strip: Commit merge and Abort merge would run the wrong command there, so the way out is the terminal or an
+  agent. Mid-merge the Review offers no revert on any file, and the backend refuses one: going back to HEAD would
+  drop what the merge brought in with nothing saying so, and Abort is the way back. Mark resolved waits for the
+  diff to stop adding git's markers, which a file whose own text has a line of exactly seven `=` holds back too;
+  Commit merge runs `git commit --no-edit`, so a commit hook or a signing key that asks for a passphrase fails it
+  with the generic message, and the terminal finishes it.
 - **A Markdown preview shows the file's new version, never the change** (`native/cmd/lich-native/dock_review_markdown.go`):
   the Review card's preview renders the whole file as the Pulls screen renders a PR body, with nothing marking
   what was added or removed, no line to hang a review comment on and no selection to inject. It reads the

@@ -205,7 +205,7 @@ func changesContent(git backend.DiffStats) footerContent {
 			ui.Gap(1.5),
 			layout.Rigid(th.Text(ui.TextXS, "·").In(th.Over(ui.Alpha(fg, separatorOpacity))).Layout),
 			ui.Gap(1.5),
-			layout.Rigid(func(gtx C) D { return th.DiffStat(git.Added, git.Deleted).Layout(gtx) }),
+			layout.Rigid(changesBadge(th, git)),
 		)
 	}
 }

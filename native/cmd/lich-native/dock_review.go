@@ -69,6 +69,10 @@ type reviewPanel struct {
 	submit   func(string, func(error)) bool
 	shown    *diffRead
 	splitOK  bool
+	// git is the checkout's status from the window's store: the merge in
+	// progress, and which files are conflicted.
+	git   backend.DiffStats
+	merge mergeStrip
 
 	feed     diffFeed
 	split    bool
@@ -196,6 +200,7 @@ func (p *reviewPanel) composing() bool {
 // working-tree diff, and the comment batch at its foot.
 func (p *reviewPanel) layoutBody(gtx C, th *ui.Theme, in dockInput) error {
 	p.th, p.light, p.code, p.target, p.checkout = th, in.light, in.code, in.checkout, in.checkout
+	p.git = in.git
 	p.inject, p.submit = in.inject, in.submit
 	p.feed.follow(in.checkout)
 	p.takeRead(in.checkout, p.feed.latest())
@@ -206,6 +211,7 @@ func (p *reviewPanel) layoutBody(gtx C, th *ui.Theme, in dockInput) error {
 // bodyWithBatch is the files over the comment batch at their foot.
 func (p *reviewPanel) bodyWithBatch(gtx C, th *ui.Theme) error {
 	layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+		layout.Rigid(func(gtx C) D { return p.layoutMerge(gtx, th) }),
 		layout.Flexed(1, func(gtx C) D {
 			gtx.Constraints.Min = gtx.Constraints.Max
 			p.panelBody(gtx, th)
@@ -242,6 +248,9 @@ func (p *reviewPanel) takeRead(checkout string, read *diffRead) {
 			continue
 		}
 		p.cards[f.path] = newFileCard(p, f, p.hiding, p.bulk)
+	}
+	if p.pr == nil {
+		conflictsFirst(p.order, p.git.Conflicted)
 	}
 	for path := range p.cards {
 		if !seen[path] {

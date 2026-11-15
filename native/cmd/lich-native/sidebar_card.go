@@ -182,7 +182,7 @@ func (s *sidebar) cardBody(gtx C, th *ui.Theme, sv *sessionView, prChip *widget.
 		row = append(row, ui.Gap(1.5), layout.Rigid(func(gtx C) D { return s.prBadge(gtx, th, prChip, sv.pr.Number) }))
 	}
 	if sv.git.Files > 0 {
-		row = append(row, ui.Gap(1.5), layout.Rigid(func(gtx C) D { return th.DiffStat(sv.git.Added, sv.git.Deleted).Layout(gtx) }))
+		row = append(row, ui.Gap(1.5), layout.Rigid(changesBadge(th, sv.git)))
 	}
 	return s.cardLine(gtx, th, sv, more, hovered, row)
 }

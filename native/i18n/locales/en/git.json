@@ -88,5 +88,25 @@
     "renameFailed": "Could not rename {name}",
     "deleteFailed": "Could not delete {name}",
     "undoFailed": "Could not bring back {name}"
+  },
+  "merge": {
+    "merging": "Merging {source} into {branch}",
+    "footer": "{branch} · merging {source}",
+    "conflicts": {
+      "one": "{count} file in conflict",
+      "other": "{count} files in conflict"
+    },
+    "commit": "Commit merge",
+    "commitBlocked": "Resolve every conflict first",
+    "abort": "Abort merge",
+    "abortAsk": "Throw away the merge and what was resolved?",
+    "keep": "Keep merging",
+    "merged": "Merged {source} into {branch}",
+    "commitFailed": "Could not commit the merge",
+    "abortFailed": "Could not abort the merge",
+    "inConflict": "In conflict",
+    "markResolved": "Mark resolved",
+    "markersLeft": "The file still has conflict markers",
+    "markFailed": "Could not mark {name} resolved"
   }
 }

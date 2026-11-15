@@ -88,5 +88,25 @@
     "renameFailed": "Não foi possível renomear {name}",
     "deleteFailed": "Não foi possível excluir {name}",
     "undoFailed": "Não foi possível trazer {name} de volta"
+  },
+  "merge": {
+    "merging": "Fazendo merge de {source} em {branch}",
+    "footer": "{branch} · merge de {source}",
+    "conflicts": {
+      "one": "{count} arquivo em conflito",
+      "other": "{count} arquivos em conflito"
+    },
+    "commit": "Commitar merge",
+    "commitBlocked": "Resolva todos os conflitos antes",
+    "abort": "Abortar merge",
+    "abortAsk": "Descartar o merge e o que já foi resolvido?",
+    "keep": "Continuar o merge",
+    "merged": "Merge de {source} em {branch} concluído",
+    "commitFailed": "Não deu para commitar o merge",
+    "abortFailed": "Não deu para abortar o merge",
+    "inConflict": "Em conflito",
+    "markResolved": "Marcar como resolvido",
+    "markersLeft": "O arquivo ainda tem marcadores de conflito",
+    "markFailed": "Não deu para marcar {name} como resolvido"
   }
 }

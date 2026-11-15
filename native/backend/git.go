@@ -66,3 +66,18 @@ func (c *Client) GitBranchOnly(ctx context.Context, path, name string) (int, err
 func (c *Client) GitDeleteBranch(ctx context.Context, path, name string) (api.GitDeletedBranch, error) {
 	return callMethod(ctx, c, api.ProjectGitDeleteBranch, api.GitBranchOptions{Path: path, Name: name})
 }
+
+func (c *Client) GitMergeAbort(ctx context.Context, path string) error {
+	_, err := callMethod(ctx, c, api.ProjectGitMergeAbort, api.PathOptions{Path: path})
+	return err
+}
+
+func (c *Client) GitMergeCommit(ctx context.Context, path string) error {
+	_, err := callMethod(ctx, c, api.ProjectGitMergeCommit, api.PathOptions{Path: path})
+	return err
+}
+
+func (c *Client) GitMarkResolved(ctx context.Context, path, rel string) error {
+	_, err := callMethod(ctx, c, api.ProjectGitMarkResolved, api.CheckoutFileOptions{Path: path, Rel: rel})
+	return err
+}

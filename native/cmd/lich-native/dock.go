@@ -255,7 +255,7 @@ func (d *dock) header(gtx C, th *ui.Theme, root *ui.Root, in dockInput) D {
 	changed := in.isGit && in.git.Files > 0
 	review := ui.TabsTrigger{Text: i18n.T("dock.rightDock.tabReview"), Icon: icDockReview}
 	if changed {
-		review.Trailing = func(gtx C) D { return th.DiffStat(in.git.Added, in.git.Deleted).Layout(gtx) }
+		review.Trailing = changesBadge(th, in.git)
 	}
 	artifacts := ui.TabsTrigger{Text: i18n.T("dock.rightDock.tabArtifacts"), Icon: icDockArtifacts}
 	if n := d.artifacts.count(in.sessionID); n > 0 {
