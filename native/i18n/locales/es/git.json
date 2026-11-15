@@ -107,6 +107,25 @@
     "inConflict": "En conflicto",
     "markResolved": "Marcar como resuelto",
     "markersLeft": "El archivo aún tiene marcadores de conflicto",
-    "markFailed": "No se pudo marcar {name} como resuelto"
+    "markFailed": "No se pudo marcar {name} como resuelto",
+    "into": "Fusionar en {branch}",
+    "previewConflicts": {
+      "one": "{count} conflicto",
+      "other": "{count} conflictos"
+    },
+    "previewClean": "sin conflictos",
+    "dirtyHere": "cambios sin confirmar aquí",
+    "running": "hay una fusión en curso",
+    "upToDate": "ya fusionada",
+    "failed": "No se pudo fusionar {name}",
+    "stopped": {
+      "one": "La fusión se detuvo en {count} conflicto",
+      "other": "La fusión se detuvo en {count} conflictos"
+    },
+    "leftBehind": {
+      "one": "{count} archivo sin confirmar en su worktree no se incluyó",
+      "other": "{count} archivos sin confirmar en su worktree no se incluyeron"
+    },
+    "undoFailed": "No se pudo deshacer la fusión"
   }
 }

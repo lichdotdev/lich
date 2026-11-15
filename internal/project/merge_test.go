@@ -67,6 +67,8 @@ func TestMergeSource(t *testing.T) {
 		{"Merge remote-tracking branch 'origin/main'\n", "origin/main"},
 		{"Merge branches 'a' and 'b'\n", "a"},
 		{"Merge tag 'v1.2'\n", "v1.2"},
+		{"Merge branch 'refs/heads/fix-post-title'\n", "fix-post-title"},
+		{"Merge remote-tracking branch 'refs/remotes/origin/main'\n", "origin/main"},
 		{"bring the fixes over\n", "0123456"},
 		{"", "0123456"},
 		{"Merge branch ''\n", "0123456"},
@@ -97,10 +99,7 @@ func TestGitMergeAbort(t *testing.T) {
 
 // Not parallel: the commit reads its identity from the environment.
 func TestGitMergeCommitAfterResolving(t *testing.T) {
-	for _, kv := range testGitIdentity {
-		k, v, _ := strings.Cut(kv, "=")
-		t.Setenv(k, v)
-	}
+	setIdentity(t)
 	repo, git := conflictedMerge(t)
 	s := New(nil)
 	if _, err := s.GitMergeCommit(t.Context(), api.PathOptions{Path: repo}); err == nil {
@@ -160,5 +159,112 @@ func TestRevertRefusedMidMerge(t *testing.T) {
 	}
 	if _, err := s.RevertLines(t.Context(), api.RevertLinesOptions{Path: repo, Rel: "b.txt", Lines: []api.RevertLine{{Side: "new", Line: 1, Text: "new"}}}); err == nil {
 		t.Error("RevertLines ran mid-merge")
+	}
+}
+
+// sideBranch commits a change to name on branch side and goes back to main.
+func sideBranch(t *testing.T, repo string, git func(args ...string) string, name, body string) {
+	t.Helper()
+	git("switch", "-c", "side")
+	if err := os.WriteFile(filepath.Join(repo, name), []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	git("add", name)
+	git("commit", "-m", "side")
+	git("switch", "main")
+}
+
+func setIdentity(t *testing.T) {
+	for _, kv := range testGitIdentity {
+		k, v, _ := strings.Cut(kv, "=")
+		t.Setenv(k, v)
+	}
+}
+
+func TestGitMergePreview(t *testing.T) {
+	t.Parallel()
+	repo, git := initRepo(t)
+	sideBranch(t, repo, git, "a.txt", "side\n")
+	s := New(nil)
+	got, err := s.GitMergePreview(t.Context(), api.GitMergeOptions{Path: repo, Ref: "side"})
+	if err != nil || got.Commits != 1 || got.Conflicts != nil {
+		t.Fatalf("clean preview = %+v, %v; want 1 commit and no conflict", got, err)
+	}
+	if err := os.WriteFile(filepath.Join(repo, "a.txt"), []byte("main\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	git("commit", "-am", "main")
+	got, err = s.GitMergePreview(t.Context(), api.GitMergeOptions{Path: repo, Ref: "side"})
+	if err != nil || !slices.Equal(got.Conflicts, []string{"a.txt"}) {
+		t.Errorf("conflicting preview = %+v, %v; want a.txt", got, err)
+	}
+	if got, err := s.GitMergePreview(t.Context(), api.GitMergeOptions{Path: repo, Ref: "main"}); err != nil || got.Commits != 0 {
+		t.Errorf("preview of HEAD itself = %+v, %v; want nothing to bring", got, err)
+	}
+	for _, ref := range []string{"", "--help", "nope"} {
+		if _, err := s.GitMergePreview(t.Context(), api.GitMergeOptions{Path: repo, Ref: ref}); err == nil {
+			t.Errorf("preview of %q succeeded", ref)
+		}
+	}
+}
+
+// Not parallel: the merge commit reads its identity from the environment.
+func TestGitMergeCleanAndUndo(t *testing.T) {
+	setIdentity(t)
+	repo, git := initRepo(t)
+	sideBranch(t, repo, git, "b.txt", "new\n")
+	if err := os.WriteFile(filepath.Join(repo, "c.txt"), []byte("c\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	git("add", "c.txt")
+	git("commit", "-m", "main")
+	s := New(nil)
+	got, err := s.GitMerge(t.Context(), api.GitMergeOptions{Path: repo, Ref: "side"})
+	if err != nil || got.After == "" || got.Conflicts != nil {
+		t.Fatalf("GitMerge = %+v, %v; want a clean merge", got, err)
+	}
+	if parents := strings.Fields(git("log", "-1", "--format=%P")); len(parents) != 2 {
+		t.Errorf("HEAD has %d parents, want a merge commit", len(parents))
+	}
+	if _, err := s.GitMergeUndo(t.Context(), api.GitMergeUndoOptions{Path: repo, Before: got.Before, After: got.After}); err != nil {
+		t.Fatalf("GitMergeUndo: %v", err)
+	}
+	if head := git("rev-parse", "HEAD"); head != got.Before {
+		t.Errorf("HEAD after undo = %s, want %s", head, got.Before)
+	}
+	if _, err := s.GitMergeUndo(t.Context(), api.GitMergeUndoOptions{Path: repo, Before: got.Before, After: got.After}); err == nil {
+		t.Error("undid a merge HEAD no longer stands on")
+	}
+}
+
+func TestGitMergeStopsOnConflict(t *testing.T) {
+	setIdentity(t)
+	repo, git := initRepo(t)
+	sideBranch(t, repo, git, "a.txt", "side\n")
+	if err := os.WriteFile(filepath.Join(repo, "a.txt"), []byte("main\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	git("commit", "-am", "main")
+	got, err := New(nil).GitMerge(t.Context(), api.GitMergeOptions{Path: repo, Ref: "side"})
+	if err != nil || got.After != "" || !slices.Equal(got.Conflicts, []string{"a.txt"}) {
+		t.Fatalf("GitMerge = %+v, %v; want stopped on a.txt", got, err)
+	}
+	if from := mergingFrom(repo); from != "side" {
+		t.Errorf("mergingFrom = %q, want side", from)
+	}
+	if _, err := New(nil).GitMerge(t.Context(), api.GitMergeOptions{Path: repo, Ref: "side"}); err == nil {
+		t.Error("started a second merge over a running one")
+	}
+}
+
+func TestGitMergeRefusesADirtyCheckout(t *testing.T) {
+	t.Parallel()
+	repo, git := initRepo(t)
+	sideBranch(t, repo, git, "b.txt", "new\n")
+	if err := os.WriteFile(filepath.Join(repo, "a.txt"), []byte("edited\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := New(nil).GitMerge(t.Context(), api.GitMergeOptions{Path: repo, Ref: "side"}); err == nil {
+		t.Error("merged into a checkout with uncommitted changes")
 	}
 }

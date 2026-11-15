@@ -107,6 +107,25 @@
     "inConflict": "有冲突",
     "markResolved": "标记为已解决",
     "markersLeft": "文件中仍有冲突标记",
-    "markFailed": "无法将 {name} 标记为已解决"
+    "markFailed": "无法将 {name} 标记为已解决",
+    "into": "合并到 {branch}",
+    "previewConflicts": {
+      "one": "{count} 处冲突",
+      "other": "{count} 处冲突"
+    },
+    "previewClean": "无冲突",
+    "dirtyHere": "这里有未提交的更改",
+    "running": "正在合并",
+    "upToDate": "已合并",
+    "failed": "无法合并 {name}",
+    "stopped": {
+      "one": "合并因 {count} 处冲突而停止",
+      "other": "合并因 {count} 处冲突而停止"
+    },
+    "leftBehind": {
+      "one": "其工作树中 {count} 个未提交的文件没有带过来",
+      "other": "其工作树中 {count} 个未提交的文件没有带过来"
+    },
+    "undoFailed": "无法撤销合并"
   }
 }

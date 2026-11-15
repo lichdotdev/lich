@@ -107,6 +107,25 @@
     "inConflict": "In conflict",
     "markResolved": "Mark resolved",
     "markersLeft": "The file still has conflict markers",
-    "markFailed": "Could not mark {name} resolved"
+    "markFailed": "Could not mark {name} resolved",
+    "into": "Merge into {branch}",
+    "previewConflicts": {
+      "one": "{count} conflict",
+      "other": "{count} conflicts"
+    },
+    "previewClean": "clean",
+    "dirtyHere": "uncommitted changes here",
+    "running": "a merge is in progress",
+    "upToDate": "already merged",
+    "failed": "Could not merge {name}",
+    "stopped": {
+      "one": "The merge stopped on {count} conflict",
+      "other": "The merge stopped on {count} conflicts"
+    },
+    "leftBehind": {
+      "one": "{count} uncommitted file in its worktree did not come",
+      "other": "{count} uncommitted files in its worktree did not come"
+    },
+    "undoFailed": "Could not undo the merge"
   }
 }

@@ -21,6 +21,12 @@ func TestGitMessage(t *testing.T) {
 			"This folder is not a git repository.",
 		},
 		{
+			"a merge with no identity configured",
+			"Committer identity unknown\n\n*** Please tell me who you are.\n\nRun\n\n  git config --global user.email \"you@example.com\"",
+			errTest,
+			"git does not know who you are. Set user.name and user.email with `git config`, then try again.",
+		},
+		{
 			"a branch that is taken",
 			"fatal: a branch named 'fix/poll' already exists",
 			errTest,

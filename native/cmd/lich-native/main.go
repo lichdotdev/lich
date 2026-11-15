@@ -377,6 +377,8 @@ func run(w *app.Window, rt backend.Runtime) error {
 	u.footer.dock = u.dock
 	u.git = newGitPanel(u.ctx, client, &u.root, invalidate, notify, *flagFont, unit.Sp(*flagSize))
 	u.git.openSession = u.focusSession
+	u.git.wrote = u.review.wrote
+	u.git.showReview = func() { u.dock.tab = dockReview }
 	u.footer.git = u.git
 	u.footer.panel = u.extPanel
 	u.footer.extensions = &u.model.extensions
@@ -1076,7 +1078,8 @@ func (u *window) gitShown(v stageView) bool {
 }
 
 func (u *window) layoutGit(gtx C, v stageView) {
-	in := gitPanelInput{path: v.in.path, sessions: u.model.branchSessions(gtx.Now), code: u.code}
+	in := gitPanelInput{path: v.in.path, sessions: u.model.branchSessions(gtx.Now), code: u.code, status: u.model.gitStatus}
+	in.cur, _ = u.model.gitStatus(v.in.path)
 	if sv, ok := u.model.sessionIn(v.in.path, gtx.Now); ok {
 		in.here = &sv
 	}

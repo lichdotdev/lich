@@ -107,6 +107,25 @@
     "inConflict": "コンフリクト中",
     "markResolved": "解決済みにする",
     "markersLeft": "ファイルにまだコンフリクトマーカーがあります",
-    "markFailed": "{name} を解決済みにできませんでした"
+    "markFailed": "{name} を解決済みにできませんでした",
+    "into": "{branch} にマージ",
+    "previewConflicts": {
+      "one": "コンフリクト {count} 件",
+      "other": "コンフリクト {count} 件"
+    },
+    "previewClean": "コンフリクトなし",
+    "dirtyHere": "ここに未コミットの変更があります",
+    "running": "マージ中です",
+    "upToDate": "マージ済み",
+    "failed": "{name} をマージできませんでした",
+    "stopped": {
+      "one": "マージは {count} 件のコンフリクトで止まりました",
+      "other": "マージは {count} 件のコンフリクトで止まりました"
+    },
+    "leftBehind": {
+      "one": "そのワークツリーの未コミットのファイル {count} 個は含まれていません",
+      "other": "そのワークツリーの未コミットのファイル {count} 個は含まれていません"
+    },
+    "undoFailed": "マージを元に戻せませんでした"
   }
 }

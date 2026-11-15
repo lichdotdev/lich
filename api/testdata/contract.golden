@@ -130,8 +130,11 @@ project.GitHubAccountOf(PathOptions) GitHubAccountState
 project.GitHubAccounts(None) []string
 project.GitLog(GitLogOptions) GitLogPage
 project.GitMarkResolved(CheckoutFileOptions) None
+project.GitMerge(GitMergeOptions) GitMergeResult
 project.GitMergeAbort(PathOptions) None
 project.GitMergeCommit(PathOptions) None
+project.GitMergePreview(GitMergeOptions) GitMergePreview
+project.GitMergeUndo(GitMergeUndoOptions) None
 project.GitRefs(PathOptions) GitRefs
 project.GitRenameBranch(GitRenameBranchOptions) None
 project.Home(None) *OpenedProject
@@ -919,6 +922,28 @@ GitLogOptions {
 GitLogPage {
 	commits []GitCommit
 	more bool
+}
+
+GitMergeOptions {
+	path string
+	ref string
+}
+
+GitMergeResult {
+	before string
+	after,omitempty string
+	conflicts,omitempty []string
+}
+
+GitMergePreview {
+	commits int
+	conflicts,omitempty []string
+}
+
+GitMergeUndoOptions {
+	path string
+	before string
+	after string
 }
 
 GitRefs {

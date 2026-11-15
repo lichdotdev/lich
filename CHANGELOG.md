@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Merge a branch into the one you are on from the Git panel.** Its menu has Merge into, which says before you click whether it would conflict; a clean merge shows the command it ran with an Undo, and one that stops on a conflict takes you to the Review. It waits until the checkout has no uncommitted changes.
 - **A merge in progress shows wherever its checkout does, and ends from the Review.** The sidebar and the footer flag the merge and count the files in conflict; the Review lists them first, with Mark resolved, and holds Commit merge and Abort merge over the files. Reverting is off until the merge ends, so a revert cannot drop what the merge brought in.
 
 ## [0.91.0] - 2026-11-14

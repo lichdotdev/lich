@@ -107,6 +107,25 @@
     "inConflict": "Em conflito",
     "markResolved": "Marcar como resolvido",
     "markersLeft": "O arquivo ainda tem marcadores de conflito",
-    "markFailed": "Não deu para marcar {name} como resolvido"
+    "markFailed": "Não deu para marcar {name} como resolvido",
+    "into": "Fazer merge em {branch}",
+    "previewConflicts": {
+      "one": "{count} conflito",
+      "other": "{count} conflitos"
+    },
+    "previewClean": "sem conflito",
+    "dirtyHere": "mudanças não commitadas aqui",
+    "running": "há um merge em andamento",
+    "upToDate": "já incorporada",
+    "failed": "Não deu para fazer merge de {name}",
+    "stopped": {
+      "one": "O merge parou em {count} conflito",
+      "other": "O merge parou em {count} conflitos"
+    },
+    "leftBehind": {
+      "one": "{count} arquivo não commitado na worktree dela ficou de fora",
+      "other": "{count} arquivos não commitados na worktree dela ficaram de fora"
+    },
+    "undoFailed": "Não deu para desfazer o merge"
   }
 }
