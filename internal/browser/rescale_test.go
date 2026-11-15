@@ -154,7 +154,7 @@ func TestRelaunchWaitsForTheAgentsActionToEnd(t *testing.T) {
 	clicked := make(chan error, 1)
 	one := 1
 	go func() {
-		_, err := s.ClickAt(t.Context(), api.BrowserClickOptions{ID: "s", BrowserTarget: api.BrowserTarget{Index: &one}})
+		_, err := s.ClickAt(t.Context(), api.BrowserClickOptions{ID: "s", Index: &one})
 		clicked <- err
 	}()
 	time.Sleep(s.rescaleWait)

@@ -126,7 +126,7 @@ type gitPanel struct {
 
 func newGitPanel(ctx context.Context, client *backend.Client, root *ui.Root, invalidate func(), notify func(ui.Toast), family string, size unit.Sp) *gitPanel {
 	g := &gitPanel{root: root, family: family, size: size, heightRem: gitDefaultRem,
-		branchOps:  branchOps{notify: notify, invalidate: invalidate},
+		notify: notify, invalidate: invalidate,
 		resize:     ui.ResizeHandle{Edge: ui.PanelEdgeTop},
 		treeCol:    gitColumn{key: gitTreeWidthKey, rem: 12.5, minRem: 9, maxRem: 32, resize: ui.ResizeHandle{Edge: ui.PanelEdgeRight}},
 		detailCol:  gitColumn{key: gitDetailWidthKey, rem: 16.25, minRem: 12, maxRem: 40, resize: ui.ResizeHandle{Edge: ui.PanelEdgeLeft}},

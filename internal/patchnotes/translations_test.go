@@ -58,7 +58,7 @@ func readRepoFile(t *testing.T, name string) string {
 
 func versionHeadings(changelog string) []string {
 	var out []string
-	for _, line := range strings.Split(changelog, "\n") {
+	for line := range strings.SplitSeq(changelog, "\n") {
 		if strings.HasPrefix(line, "## [") {
 			out = append(out, strings.TrimSpace(line))
 		}

@@ -214,7 +214,7 @@ func TestRestoreChoiceIsWhatTheGateUsesNext(t *testing.T) {
 		if restoreChoice(rung.value) != rung.value {
 			t.Errorf("%q is not a value the gate reads back as itself", rung.value)
 		}
-		probe := &storeProbe{fakeProbe: fakeProbe{available: true}, store: map[string]string{restoreKey("codex"): rung.value}}
+		probe := &storeProbe{available: true, store: map[string]string{restoreKey("codex"): rung.value}}
 		if got := spawnDecision(context.Background(), probe, "/repo", session); got != want[rung.value] {
 			t.Errorf("%s decides %d, want %d", rung.value, got, want[rung.value])
 		}

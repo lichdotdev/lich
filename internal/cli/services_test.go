@@ -88,8 +88,8 @@ func (f *fakeServices) live(_ context.Context, o api.ServiceIDOptions) ([]byte, 
 func wiredServices(t *testing.T) (func(string) string, *fakeServices) {
 	t.Helper()
 	f := &fakeServices{saved: []api.Service{
-		{ServiceConfig: api.ServiceConfig{ID: "w1", ProjectID: "p1", Name: "Web", Command: "pnpm dev", StartWithLich: true}, State: api.ServiceStopped},
-		{ServiceConfig: api.ServiceConfig{ID: "o1", ProjectID: "p9", Name: "web", Command: "other"}, State: api.ServiceStopped},
+		{ID: "w1", ProjectID: "p1", Name: "Web", Command: "pnpm dev", StartWithLich: true, State: api.ServiceStopped},
+		{ID: "o1", ProjectID: "p9", Name: "web", Command: "other", State: api.ServiceStopped},
 	}}
 	d := rpc.New()
 	routes.Spawn(d, spawn.New(&spawnStore{}, &spawnGit{}, &spawnTerminal{}, nil))

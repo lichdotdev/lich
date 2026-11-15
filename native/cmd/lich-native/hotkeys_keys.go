@@ -1,6 +1,7 @@
 package main
 
 import (
+	"slices"
 	"strings"
 	"unicode/utf8"
 
@@ -55,10 +56,8 @@ func webKey(name key.Name) string {
 		return web
 	}
 	for _, k := range namedKeys {
-		for _, g := range k.gio {
-			if g == name {
-				return k.web
-			}
+		if slices.Contains(k.gio, name) {
+			return k.web
 		}
 	}
 	return string(name)

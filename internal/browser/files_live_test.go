@@ -50,7 +50,7 @@ func TestChromeAFileInputFillsWithWhatThePersonPicks(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, c := range []struct{ id, title string }{{"one", "one a.png"}, {"many", "many a.png,b.png"}} {
-		if _, err := s.ClickAt(t.Context(), api.BrowserClickOptions{ID: "s", BrowserTarget: api.BrowserTarget{Selector: "#" + c.id}}); err != nil {
+		if _, err := s.ClickAt(t.Context(), api.BrowserClickOptions{ID: "s", Selector: "#" + c.id}); err != nil {
 			t.Fatal(err)
 		}
 		var title string

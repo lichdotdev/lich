@@ -30,9 +30,9 @@ func (f *fakeLich) wire(l *Lich) {
 	m := &f.more
 	exit := 0
 	services := []api.Service{
-		{ServiceConfig: api.ServiceConfig{ID: "w", ProjectID: "p1", Name: "web", Command: "npm run dev"}, State: api.ServiceRunning, StartedAt: 5},
-		{ServiceConfig: api.ServiceConfig{ID: "d", ProjectID: "p1", Name: "db", Command: "sleep 30"}, State: api.ServiceStopped, ExitCode: &exit},
-		{ServiceConfig: api.ServiceConfig{ID: "o", ProjectID: "p2", Name: "other"}, State: api.ServiceStopped},
+		{ID: "w", ProjectID: "p1", Name: "web", Command: "npm run dev", State: api.ServiceRunning, StartedAt: 5},
+		{ID: "d", ProjectID: "p1", Name: "db", Command: "sleep 30", State: api.ServiceStopped, ExitCode: &exit},
+		{ID: "o", ProjectID: "p2", Name: "other", State: api.ServiceStopped},
 	}
 	act := func(verb string) serviceAct {
 		return func(_ context.Context, opts api.ServiceIDOptions) (api.None, error) {
@@ -246,7 +246,7 @@ func TestServiceStatusFiresWhenAStateMoves(t *testing.T) {
 	}
 	code := 2
 	svc := func(id, state string, exit *int) api.Service {
-		return api.Service{ServiceConfig: api.ServiceConfig{ID: id, ProjectID: "p1", Name: id}, State: state, ExitCode: exit}
+		return api.Service{ID: id, ProjectID: "p1", Name: id, State: state, ExitCode: exit}
 	}
 	s.Observe(api.ServicesEvent.Name, []api.Service{svc("new", api.ServiceStopped, nil), svc("up", api.ServiceRunning, nil)})
 	s.Observe(api.ServicesEvent.Name, []api.Service{svc("new", api.ServiceStopped, nil), svc("up", api.ServiceRunning, nil)})

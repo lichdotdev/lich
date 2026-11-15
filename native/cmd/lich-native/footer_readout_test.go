@@ -66,8 +66,6 @@ func TestToneFollowsTheUsageScale(t *testing.T) {
 	}
 }
 
-func cost(usd float64) *float64 { return &usd }
-
 func TestCostReadout(t *testing.T) {
 	if _, ok := costReadout(sessionUsage{}, 0); ok {
 		t.Error("no figure and no reason drew a readout")
@@ -76,17 +74,17 @@ func TestCostReadout(t *testing.T) {
 	if !ok || miss.Text != "$—" || miss.Label != "Cost unavailable" || miss.Detail[0] != "This conversation switched models, so lich cannot price it." {
 		t.Errorf("cost miss: %+v, %v", miss, ok)
 	}
-	r, _ := costReadout(sessionUsage{CostUSD: cost(9)}, 10)
+	r, _ := costReadout(sessionUsage{CostUSD: new(float64(9))}, 10)
 	if r.Text != "$9.00" || r.Tone != toneWait || r.Detail[0] != "$9.00 of $10.00 budget" || len(r.Detail) != 2 {
 		t.Errorf("against a budget: %+v", r)
 	}
-	if r, _ := costReadout(sessionUsage{CostUSD: cost(9)}, 0); r.Tone != toneMuted || len(r.Detail) != 1 {
+	if r, _ := costReadout(sessionUsage{CostUSD: new(float64(9))}, 0); r.Tone != toneMuted || len(r.Detail) != 1 {
 		t.Errorf("no budget: %+v", r)
 	}
 }
 
 func TestContextReadout(t *testing.T) {
-	if _, ok := contextReadout(sessionUsage{Percent: 0, CostUSD: cost(1)}); ok {
+	if _, ok := contextReadout(sessionUsage{Percent: 0, CostUSD: new(float64(1))}); ok {
 		t.Error("a cost-only report drew a context ring")
 	}
 	r, ok := contextReadout(sessionUsage{Percent: 96, Tokens: 192000, Window: 200000})
@@ -119,7 +117,7 @@ func TestFormatModel(t *testing.T) {
 }
 
 func TestSessionModelText(t *testing.T) {
-	if _, _, ok := sessionModelText(sessionUsage{CostUSD: cost(1)}); ok {
+	if _, _, ok := sessionModelText(sessionUsage{CostUSD: new(float64(1))}); ok {
 		t.Error("a report with no model filled the slot")
 	}
 	text, hint, ok := sessionModelText(sessionUsage{Model: "claude-opus-4-8", Effort: "high"})

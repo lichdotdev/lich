@@ -1943,7 +1943,7 @@ func TestErrandOrderSurvivesAClockThatCannotTellThemApart(t *testing.T) {
 
 	// Run it more than once: one pass can pick the right entry out of a map by
 	// luck, and luck is the thing being tested away.
-	for i := 0; i < 50; i++ {
+	for range 50 {
 		svc.tickets = map[string]*ticket{
 			"second": {fromID: "s3", targetID: "s2", delivered: tick, deliverySeq: 2, sawBusy: true},
 			"first":  {fromID: "s1", targetID: "s2", delivered: tick, deliverySeq: 1, sawBusy: true},

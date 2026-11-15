@@ -110,8 +110,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	result, err := route(r.Context(), body)
-	var bad badArguments
-	if errors.As(err, &bad) {
+	if _, ok := errors.AsType[badArguments](err); ok {
 		slog.Warn("rpc: bad arguments", "method", name, "err", err)
 		writeError(w, http.StatusBadRequest, err.Error())
 		return

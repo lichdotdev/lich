@@ -250,8 +250,8 @@ func (w *treeWalk) visitStruct(v reflect.Value, depth int) error {
 			return fmt.Errorf("tree over %d nodes", maxTreeNodes)
 		}
 	}
-	for i := range v.NumField() {
-		if err := w.visit(v.Field(i), depth); err != nil {
+	for _, field := range v.Fields() {
+		if err := w.visit(field, depth); err != nil {
 			return err
 		}
 	}

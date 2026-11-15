@@ -58,8 +58,8 @@ type blockFrame struct {
 // their headers. Each block opens and closes in its own motion, which holds
 // the gap below it, so a block closing takes its gap along.
 func (s *sidebar) blockList(gtx C, th *ui.Theme, view sidebarView, active string, act *sidebarAction) D {
-	f := blockFrame{view: view, active: active, filtering: s.header.filter().narrows(), act: act}
-	f.settled = s.motion.last != nil && s.motion.project == view.project
+	f := blockFrame{view: view, active: active, filtering: s.header.filter().narrows(), act: act,
+		settled: s.motion.last != nil && s.motion.project == view.project}
 	var pinned *blockView
 	var movable []blockView
 	shown := s.motion.shown(gtx.Now, view.project, view.blocks)

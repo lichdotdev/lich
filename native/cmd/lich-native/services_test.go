@@ -12,7 +12,7 @@ import (
 )
 
 func svc(id, project, state string) backend.Service {
-	return backend.Service{ServiceConfig: api.ServiceConfig{ID: id, ProjectID: project, Name: id}, State: state, Terminal: "service-" + id}
+	return backend.Service{ID: id, ProjectID: project, Name: id, State: state, Terminal: "service-" + id}
 }
 
 func TestServicesStoreReadsWhatTheEventSent(t *testing.T) {

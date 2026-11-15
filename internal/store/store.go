@@ -508,13 +508,14 @@ const recentLimit = 25
 // is case-insensitive for ASCII in SQLite, which is what makes this a search
 // and not a prefix test.
 func closedProjectMatch(term string) (string, []any) {
-	where := "WHERE is_open = 0"
+	var where strings.Builder
+	where.WriteString("WHERE is_open = 0")
 	args := []any{}
-	for _, word := range strings.Fields(term) {
-		where += " AND (name || ' ' || path) LIKE ? ESCAPE '" + likeEscape + "'"
+	for word := range strings.FieldsSeq(term) {
+		where.WriteString(" AND (name || ' ' || path) LIKE ? ESCAPE '" + likeEscape + "'")
 		args = append(args, "%"+escapeLike(word)+"%")
 	}
-	return where, args
+	return where.String(), args
 }
 
 // RecentProjects returns the closed projects matching opts.Term, the last one closed

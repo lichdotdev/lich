@@ -51,7 +51,7 @@ func (c *Composition) replace(r key.Range, text string) {
 
 func (c *Composition) settle(tag event.Tag, execute func(input.Command)) string {
 	if c.composing {
-		execute(key.SnippetCmd{Tag: tag, Snippet: key.Snippet{Range: key.Range{End: len(c.text)}, Text: string(c.text)}})
+		execute(key.SnippetCmd{Tag: tag, End: len(c.text), Text: string(c.text)})
 		execute(key.SelectionCmd{Tag: tag, Range: c.selection})
 		c.mirrored = true
 		return ""

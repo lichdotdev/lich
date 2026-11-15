@@ -53,7 +53,7 @@ func copyUntracked(src, dst string) error {
 	if err != nil {
 		return err
 	}
-	for _, rel := range strings.Split(out, "\x00") {
+	for rel := range strings.SplitSeq(out, "\x00") {
 		if rel == "" {
 			continue
 		}

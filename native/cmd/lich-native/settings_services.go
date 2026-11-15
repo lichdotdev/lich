@@ -104,7 +104,7 @@ func (s *settingsScreen) servicesPaneRows(th *ui.Theme) []layout.Widget {
 	}
 	if p.editing == newServiceRow {
 		rows = append(rows, func(gtx C) D {
-			return s.serviceForm(gtx, th, backend.Service{ServiceConfig: api.ServiceConfig{ProjectID: projectID}})
+			return s.serviceForm(gtx, th, backend.Service{ProjectID: projectID})
 		})
 		return rows
 	}

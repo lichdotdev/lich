@@ -318,7 +318,7 @@ func TestAgentClickAnswersWithThePageItLeft(t *testing.T) {
 	p := launch.pages[0]
 	p.info = PageInfo{URL: "https://example.com/next", Title: "Next", Interactive: []Interactive{{Index: 0, Tag: "a", Text: "Home"}}}
 	idx := 0
-	info, err := s.ClickAt(t.Context(), api.BrowserClickOptions{ID: "s", BrowserTarget: api.BrowserTarget{Index: &idx}})
+	info, err := s.ClickAt(t.Context(), api.BrowserClickOptions{ID: "s", Index: &idx})
 	if err != nil {
 		t.Fatal(err)
 	}

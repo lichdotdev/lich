@@ -19,13 +19,11 @@ func TestMergeBaseMemoAsksOncePerKey(t *testing.T) {
 	}
 	var wg sync.WaitGroup
 	for range 5 {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			if oid, err := m.get(context.Background(), "pr@head1", fetch); err != nil || oid != "abc1234" {
 				t.Errorf("get = %q, %v; want abc1234", oid, err)
 			}
-		}()
+		})
 	}
 	close(release)
 	wg.Wait()

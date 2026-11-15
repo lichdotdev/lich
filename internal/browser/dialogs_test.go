@@ -18,7 +18,7 @@ func TestAClickThatOpensADialogAnswersWithTheDialogAndTellsTheWindow(t *testing.
 	}
 	p := launch.pages[0]
 	p.onClick = func() { p.openDialog(confirmDelete) }
-	info, err := s.ClickAt(t.Context(), api.BrowserClickOptions{ID: "s", BrowserTarget: api.BrowserTarget{Selector: "#del"}})
+	info, err := s.ClickAt(t.Context(), api.BrowserClickOptions{ID: "s", Selector: "#del"})
 	if err != nil {
 		t.Fatal(err)
 	}

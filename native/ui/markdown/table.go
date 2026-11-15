@@ -133,7 +133,7 @@ func longestWord(gtx C, th *ui.Theme, cell *markdownCell) int {
 	var scratch richtext.InteractiveText
 	widest := 0
 	for _, span := range cell.spans {
-		for _, word := range strings.Fields(span.Content) {
+		for word := range strings.FieldsSeq(span.Content) {
 			alone := span.DeepCopy()
 			alone.Content = word
 			widest = max(widest, measureSpans(gtx, th, &scratch, []richtext.SpanStyle{alone}))

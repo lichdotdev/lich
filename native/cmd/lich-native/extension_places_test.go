@@ -201,7 +201,7 @@ func TestASavedLayoutKeepsExtensionItemsAndWhatItSaw(t *testing.T) {
 }
 
 func TestTheEditorListsOnlyTheExtensionItemsDrawnNow(t *testing.T) {
-	in := footerInput{extItems: []footerExtItem{{placedSurface: placedSurface{key: issueKey, title: "Issue", name: "Tracker"}, id: extensionItemID(issueKey)}}}
+	in := footerInput{extItems: []footerExtItem{{key: issueKey, title: "Issue", name: "Tracker", id: extensionItemID(issueKey)}}}
 	gone := extensionItemID(extensionKey{"gone", "x"})
 	if got := drawnItems([]string{"attach", gone, extensionItemID(issueKey)}, in); !slices.Equal(got, []string{"attach", extensionItemID(issueKey)}) {
 		t.Errorf("drawn items %v", got)

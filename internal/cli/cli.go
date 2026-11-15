@@ -288,8 +288,7 @@ func (c *client) run(fn func([]string) error, args []string) int {
 	if err == nil || errors.Is(err, errHelpShown) {
 		return 0
 	}
-	var status exitStatus
-	if errors.As(err, &status) {
+	if status, ok := errors.AsType[exitStatus](err); ok {
 		return int(status)
 	}
 	fmt.Fprintf(c.stderr, "lich: %v\n", err)

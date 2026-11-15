@@ -69,8 +69,8 @@ func (m providersMachine) skipLevel(kind string) string {
 
 func providerFrom(d backend.DetectedProvider, enabled bool) providerInfo {
 	return providerInfo{
-		launchProvider: launchProvider{id: d.ID, name: d.Name, installed: d.Installed, enabled: enabled},
-		binary:         d.Binary, source: d.Source, docs: d.Docs,
+		id: d.ID, name: d.Name, installed: d.Installed, enabled: enabled,
+		binary: d.Binary, source: d.Source, docs: d.Docs,
 	}
 }
 

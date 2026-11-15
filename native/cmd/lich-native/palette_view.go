@@ -15,7 +15,6 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 
-	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
 	"github.com/lichdotdev/lich/native/ui/icons"
@@ -564,6 +563,6 @@ func paletteSmall(on *ui.Theme, s string) layout.Widget {
 }
 
 func paletteRingOf(on *ui.Theme, ring paletteRing, kind, status string, unread bool, agent string) layout.Widget {
-	sv := &sessionView{Session: backend.Session{Kind: kind}, status: status, unread: unread, agent: agent}
+	sv := &sessionView{Kind: kind, status: status, unread: unread, agent: agent}
 	return func(gtx C) D { return ring(gtx, on, sv) }
 }

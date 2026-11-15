@@ -8,7 +8,7 @@ import (
 )
 
 func treeSession(id, origin, path string) sessionView {
-	return sessionView{Session: backend.Session{ID: id, OriginSessionID: origin}, path: path}
+	return sessionView{ID: id, OriginSessionID: origin, path: path}
 }
 
 func rowShape(rows []sessionRow) []string {

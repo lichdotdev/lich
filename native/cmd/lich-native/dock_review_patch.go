@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 	"unicode"
@@ -309,12 +310,7 @@ func squeeze(s string) string {
 func isChangeLine(l string) bool { return l != "" && (l[0] == '+' || l[0] == '-') }
 
 func hasChange(lines []string) bool {
-	for _, l := range lines {
-		if isChangeLine(l) {
-			return true
-		}
-	}
-	return false
+	return slices.ContainsFunc(lines, isChangeLine)
 }
 
 // discardTargets are the paths a discard reverts: the file, and for a rename

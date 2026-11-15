@@ -33,7 +33,7 @@ func TestCompositionCommitsDeadKeyAccent(t *testing.T) {
 	if typed != "" {
 		t.Fatalf("the dead key typed %q before it composed", typed)
 	}
-	want := key.Snippet{Range: key.Range{End: 1}, Text: "˜"}
+	want := key.Snippet{End: 1, Text: "˜"}
 	if !holdsSnippet(cmds, want) {
 		t.Fatalf("the composition was not mirrored to Gio as %v: %v", want, cmds)
 	}

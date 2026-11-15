@@ -236,8 +236,7 @@ func TestTheWindowRaisesDismissesAndCopiesForAnExtension(t *testing.T) {
 
 func TestTheOutboxDeliversInTheOrderItWasSent(t *testing.T) {
 	o := newExtensionOutbox()
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	got := make(chan string, 8)
 	go o.run(ctx, func(_ context.Context, id string, msg extension.Message) error {
 		got <- msg.Data.(extension.EventData).Text

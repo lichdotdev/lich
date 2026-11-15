@@ -3,6 +3,7 @@ package extension
 import (
 	"encoding/json"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -51,12 +52,7 @@ func TestEveryPermissionIsKnown(t *testing.T) {
 }
 
 func permissionKnown(p Permission) bool {
-	for _, known := range Permissions {
-		if known == p {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(Permissions, p)
 }
 
 func roundTrip(t *testing.T, msg Message) Message {

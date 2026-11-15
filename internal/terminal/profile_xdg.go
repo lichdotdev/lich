@@ -41,7 +41,7 @@ func xdgStates(kind string, personal func() (string, bool)) []xdgprofile.State {
 	if !ok {
 		return nil
 	}
-	return []xdgprofile.State{{Profile: profilestore.Profile{Slug: profilestore.Personal, Personal: true}, Dir: dir}}
+	return []xdgprofile.State{{Slug: profilestore.Personal, Personal: true, Dir: dir}}
 }
 
 // opencodeDataDir is Personal's opencode data directory, the one

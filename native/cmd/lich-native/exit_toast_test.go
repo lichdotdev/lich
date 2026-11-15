@@ -35,7 +35,7 @@ func exitToastOf(sv sessionView, e sessionExit) (ui.Toast, *[]string) {
 }
 
 func TestExitToastOffersTheCardsConversationBack(t *testing.T) {
-	sv := sessionView{Session: backend.Session{ID: "s1", Label: "eager-pine", Kind: "claude", ProviderSessionID: conversation}, profileName: "Sankhya"}
+	sv := sessionView{ID: "s1", Label: "eager-pine", Kind: "claude", ProviderSessionID: conversation, profileName: "Sankhya"}
 	toast, asked := exitToastOf(sv, code(1))
 	if toast.ID != "exit:s1" || toast.Variant != ui.ToastError || toast.Duration != ui.ToastForever {
 		t.Fatalf("toast %q variant %v duration %v, want exit:s1, error, forever", toast.ID, toast.Variant, toast.Duration)
@@ -56,7 +56,7 @@ func TestExitToastOffersTheCardsConversationBack(t *testing.T) {
 }
 
 func TestExitToastOnTheDefaultProfileNamesNoProfile(t *testing.T) {
-	sv := sessionView{Session: backend.Session{ID: "s1", Label: "Erro Cassul", Kind: "codex", ProviderSessionID: conversation}}
+	sv := sessionView{ID: "s1", Label: "Erro Cassul", Kind: "codex", ProviderSessionID: conversation}
 	toast, _ := exitToastOf(sv, code(0))
 	if toast.Variant != ui.ToastInfo || toast.Title != "Erro Cassul ended" || toast.Description != "Resume opens ba9884b8… again." {
 		t.Fatalf("variant %v title %q description %q", toast.Variant, toast.Title, toast.Description)
@@ -84,7 +84,7 @@ func TestExitToastWithoutAConversationOffersRestart(t *testing.T) {
 
 func TestEveryResumableProviderOffersResume(t *testing.T) {
 	for _, kind := range resumableKinds {
-		sv := sessionView{Session: backend.Session{ID: "s1", Kind: kind, ProviderSessionID: conversation}}
+		sv := sessionView{ID: "s1", Kind: kind, ProviderSessionID: conversation}
 		if _, _, a := toastButtons(exitToast(sv, code(0), func(string) {}, func() {})); a != "Resume" {
 			t.Errorf("%s: action %q, want Resume", kind, a)
 		}
@@ -148,7 +148,7 @@ func TestRestartStartsTheConversationAsked(t *testing.T) {
 		u.terms.invalidate = func() {}
 		u.terms.byID["s1"] = &termView{id: "s1", vt: vt}
 		u.terms.exited("s1", code(1))
-		sv := sessionView{Session: backend.Session{ID: "s1", Kind: "claude", ProviderSessionID: conversation}, projectID: "p", path: "/repo"}
+		sv := sessionView{ID: "s1", Kind: "claude", ProviderSessionID: conversation, projectID: "p", path: "/repo"}
 		if !u.terms.restart(u.ctx, sv, resume) {
 			t.Fatal("restart reported a failure")
 		}

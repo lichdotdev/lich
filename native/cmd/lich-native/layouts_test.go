@@ -180,8 +180,8 @@ func TestMoveTakesThePaneOutAndSplitsTheTarget(t *testing.T) {
 		{"swap", "a", "c", edgeCenter, "row(row(c,b),a)"},
 	}
 	for _, c := range cases {
-		tab := layoutTab{}
-		tab.Root = &paneNode{Axis: splitRow, Ratio: 0.5, First: &paneNode{Axis: splitRow, Ratio: 0.5, First: &paneNode{Session: "a"}, Second: &paneNode{Session: "b"}}, Second: &paneNode{Session: "c"}}
+		tab := layoutTab{
+			Root: &paneNode{Axis: splitRow, Ratio: 0.5, First: &paneNode{Axis: splitRow, Ratio: 0.5, First: &paneNode{Session: "a"}, Second: &paneNode{Session: "b"}}, Second: &paneNode{Session: "c"}}}
 		if !tab.move(c.source, c.target, c.edge) {
 			t.Fatalf("%s: move refused", c.name)
 		}

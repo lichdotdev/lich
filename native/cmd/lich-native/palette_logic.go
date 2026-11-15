@@ -254,7 +254,7 @@ func rankSessions(sessions []paletteSession, turns map[string]string) []paletteS
 // the history search splits a query into words.
 func querySegments(text, query string) []ui.MarkedSegment {
 	segs := []ui.MarkedSegment{{Text: text}}
-	for _, token := range strings.Fields(query) {
+	for token := range strings.FieldsSeq(query) {
 		var next []ui.MarkedSegment
 		for _, s := range segs {
 			if s.Marked {

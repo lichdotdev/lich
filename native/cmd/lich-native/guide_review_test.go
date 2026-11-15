@@ -8,8 +8,8 @@ import (
 
 func TestReviewGuideNeedsAnAgentWithChanges(t *testing.T) {
 	session := func(kind string, files int) sessionView {
-		sv := sessionView{git: backend.DiffStats{Files: files}}
-		sv.Kind = kind
+		sv := sessionView{git: backend.DiffStats{Files: files},
+			Kind: kind}
 		return sv
 	}
 	cases := []struct {

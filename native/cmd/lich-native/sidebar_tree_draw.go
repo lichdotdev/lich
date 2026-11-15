@@ -57,9 +57,9 @@ type sessionRowLinks struct {
 
 func (r sessionRow) place(tree bool) treePlace {
 	p := treePlace{
-		tree:            tree,
-		sessionRowLinks: sessionRowLinks{depth: r.depth, lanes: r.lanes, tail: r.tail, stub: r.stub},
-		kids:            r.kids, folded: r.folded, mark: r.mark, hideGit: r.hideGit,
+		tree:  tree,
+		depth: r.depth, lanes: r.lanes, tail: r.tail, stub: r.stub,
+		kids: r.kids, folded: r.folded, mark: r.mark, hideGit: r.hideGit,
 	}
 	if r.motion != nil {
 		p.sweep, p.entry = &r.motion.sweep, r.motion.entry
@@ -404,7 +404,7 @@ func (s *sidebar) menuState(states map[string]*ui.MenuState, key string) *ui.Men
 func (s *sidebar) checkoutHeader(gtx C, th *ui.Theme, b blockView, st *blockState, f blockFrame) D {
 	facts := b.facts[b.under]
 	// The stub waits for the ring it leaves while the block moves.
-	p := treePlace{tree: true, sessionRowLinks: sessionRowLinks{stub: !b.collapsed && len(b.sessions) > 0 && (b.head == nil || b.head.entry.ring == 0)}}
+	p := treePlace{tree: true, stub: !b.collapsed && len(b.sessions) > 0 && (b.head == nil || b.head.entry.ring == 0)}
 	if b.head != nil {
 		p.entry = b.head.entry
 	}

@@ -28,7 +28,7 @@ func entry(t *testing.T, entries []ui.MenuEntry, label string) ui.MenuEntry {
 func TestCardMenu(t *testing.T) {
 	var act sidebarAction
 	renamed := false
-	sv := &sessionView{Session: backend.Session{ID: "s1", Kind: "claude", Color: "teal"}, shown: "/repo"}
+	sv := &sessionView{ID: "s1", Kind: "claude", Color: "teal", shown: "/repo"}
 	menu := cardMenu(sv, nil, &act, func() { renamed = true }, func() {})
 
 	if want := []string{"Rename", "Pin", "Color", "Move to folder", "Browser", "Open in", "Pull request", "Schedule prompt…", "", "Close session"}; !slices.Equal(labels(menu), want) {
@@ -62,7 +62,7 @@ func TestCardMenu(t *testing.T) {
 func TestCardMenuFilesIntoAnotherFolderOrOutOfItsOwn(t *testing.T) {
 	var act sidebarAction
 	asked := false
-	sv := &sessionView{Session: backend.Session{ID: "s1", Folder: "Apps"}}
+	sv := &sessionView{ID: "s1", Folder: "Apps"}
 	sub := entry(t, cardMenu(sv, []string{"Docs"}, &act, func() {}, func() { asked = true }), "Move to folder").Sub
 	if want := []string{"Docs", "Take out of Apps", "", "New folder…"}; !slices.Equal(labels(sub), want) {
 		t.Fatalf("submenu %v, want %v", labels(sub), want)
@@ -89,7 +89,7 @@ func TestCardMenuFilesIntoAnotherFolderOrOutOfItsOwn(t *testing.T) {
 
 func TestCardMenuForkEntry(t *testing.T) {
 	var act sidebarAction
-	sv := &sessionView{Session: backend.Session{ID: "s1", Kind: "claude", ProviderSessionID: "conv-1"}}
+	sv := &sessionView{ID: "s1", Kind: "claude", ProviderSessionID: "conv-1"}
 	fork := entry(t, cardMenu(sv, nil, &act, func() {}, func() {}), "Fork")
 	if fork.Kind != ui.MenuSubTrigger || !slices.Equal(labels(fork.Sub), []string{"Here", "Worktree…"}) {
 		t.Fatalf("fork entry %+v, want a submenu of Here and Worktree…", labels(fork.Sub))
@@ -134,7 +134,7 @@ func TestTheCardsPullRequestOpensWhereItBelongs(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			sv := &sessionView{Session: backend.Session{ID: "s1"}, path: "/wt/feat", shown: c.shown, pr: pr}
+			sv := &sessionView{ID: "s1", path: "/wt/feat", shown: c.shown, pr: pr}
 			var act sidebarAction
 			pullRequestItem(sv, &act).OnClick()
 			if act.activate != "s1" || act.openPR != c.number || act.openPRURL != c.url {
@@ -146,7 +146,7 @@ func TestTheCardsPullRequestOpensWhereItBelongs(t *testing.T) {
 
 func TestCardMenuTakesASessionOutOfItsSplit(t *testing.T) {
 	var act sidebarAction
-	sv := &sessionView{Session: backend.Session{ID: "s1", Kind: "claude"}, split: "layout-1"}
+	sv := &sessionView{ID: "s1", Kind: "claude", split: "layout-1"}
 	entry(t, cardMenu(sv, nil, &act, nil, func() {}), "Take out of the layout").OnClick()
 	if act.unsplit != "s1" {
 		t.Fatalf("act %+v, want s1 taken out", act)
@@ -159,7 +159,7 @@ func TestCardMenuTakesASessionOutOfItsSplit(t *testing.T) {
 
 func TestACardInALayoutsOwnSidebarIsFiledNowhere(t *testing.T) {
 	var act sidebarAction
-	sv := &sessionView{Session: backend.Session{ID: "s1", Kind: "claude"}, split: "layout-1", guest: true}
+	sv := &sessionView{ID: "s1", Kind: "claude", split: "layout-1", guest: true}
 	if got := labels(cardMenu(sv, []string{"Work"}, &act, nil, func() {})); slices.Contains(got, "Move to folder") {
 		t.Fatalf("menu %v offers a folder of a project the list does not show", got)
 	}

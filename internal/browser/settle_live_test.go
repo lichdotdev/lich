@@ -48,7 +48,7 @@ func settleService(t *testing.T, body string, rest http.HandlerFunc) *Service {
 func clickGo(t *testing.T, s *Service) (api.BrowserPageInfo, time.Duration) {
 	t.Helper()
 	start := time.Now()
-	info, err := s.ClickAt(t.Context(), api.BrowserClickOptions{ID: "s", BrowserTarget: api.BrowserTarget{Selector: "#go"}})
+	info, err := s.ClickAt(t.Context(), api.BrowserClickOptions{ID: "s", Selector: "#go"})
 	if err != nil {
 		t.Fatal(err)
 	}

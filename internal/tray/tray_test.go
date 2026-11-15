@@ -42,7 +42,7 @@ func TestServicesRunningFillsTheCount(t *testing.T) {
 }
 
 func TestServiceTitleNamesTheProject(t *testing.T) {
-	v := api.Service{ServiceConfig: api.ServiceConfig{Name: "db"}, ProjectName: "billing"}
+	v := api.Service{Name: "db", ProjectName: "billing"}
 	if got := serviceTitle(v); got != "db · billing" {
 		t.Errorf("serviceTitle = %q", got)
 	}
@@ -59,7 +59,7 @@ func TestServiceSlotsActOnWhatTheyShowed(t *testing.T) {
 	}
 	var running []api.Service
 	for i := range serviceSlots + 2 {
-		running = append(running, api.Service{ServiceConfig: api.ServiceConfig{ID: string(rune('a' + i))}})
+		running = append(running, api.Service{ID: string(rune('a' + i))})
 	}
 	var stopped []string
 	stopAll := 0

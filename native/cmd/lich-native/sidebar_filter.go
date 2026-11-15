@@ -57,7 +57,7 @@ func phaseOf(status string, unread bool) sessionPhase {
 // haystack, case-insensitively.
 func matchesQuery(haystack, query string) bool {
 	hay := strings.ToLower(haystack)
-	for _, token := range strings.Fields(strings.ToLower(query)) {
+	for token := range strings.FieldsSeq(strings.ToLower(query)) {
 		if !strings.Contains(hay, token) {
 			return false
 		}

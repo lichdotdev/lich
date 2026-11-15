@@ -25,22 +25,20 @@ func writePNG(t *testing.T, path string, w, h int, fill func(x, y int) color.Col
 	mustWrite(t, path, buf.String())
 }
 
-func ptr(s string) *string { return &s }
-
 func TestUpdateSetsAndClearsColorWithoutTouchingTheName(t *testing.T) {
 	s := toy(machine(t))
 	p, err := s.Create("Work")
 	if err != nil {
 		t.Fatal(err)
 	}
-	got, err := s.Update(p.Slug, Update{Color: ptr("teal")})
+	got, err := s.Update(p.Slug, Update{Color: new("teal")})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if got.Color != "teal" || got.Name != "Work" {
 		t.Errorf("after setting a color: %+v", got)
 	}
-	if got, _ = s.Update(p.Slug, Update{Color: ptr("")}); got.Color != "" {
+	if got, _ = s.Update(p.Slug, Update{Color: new("")}); got.Color != "" {
 		t.Errorf("after clearing the color: %+v", got)
 	}
 }
@@ -50,7 +48,7 @@ func TestUpdateOnPersonalKeepsWhatItDidNotChange(t *testing.T) {
 	if _, err := s.Update(Personal, Update{Name: "Home"}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := s.Update("", Update{Color: ptr("blue")}); err != nil {
+	if _, err := s.Update("", Update{Color: new("blue")}); err != nil {
 		t.Fatal(err)
 	}
 	got, err := s.Update(Personal, Update{Name: "Mine"})
@@ -97,7 +95,7 @@ func TestUpdateStoresTheImageAsACenteredSquare(t *testing.T) {
 	if !bytes.Equal(list[1].Image, got.Image) {
 		t.Error("List does not carry the image Update stored")
 	}
-	if got, _ = s.Update(p.Slug, Update{Image: ptr("")}); got.Image != nil {
+	if got, _ = s.Update(p.Slug, Update{Image: new("")}); got.Image != nil {
 		t.Error("an empty Image did not remove the image")
 	}
 }

@@ -53,7 +53,7 @@ func TestInstallInClaudeProfileRunsAsTheProfile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, line := range strings.Split(strings.TrimSpace(string(data)), "\n") {
+	for line := range strings.SplitSeq(strings.TrimSpace(string(data)), "\n") {
 		if line != dir+"|" {
 			t.Errorf("a call ran as %q, want %q", line, dir+"|")
 		}

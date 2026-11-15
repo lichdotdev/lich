@@ -30,7 +30,7 @@ func records(t *testing.T, path string) []Record {
 		t.Fatal(err)
 	}
 	var out []Record
-	for _, line := range strings.Split(strings.TrimSpace(string(data)), "\n") {
+	for line := range strings.SplitSeq(strings.TrimSpace(string(data)), "\n") {
 		var r Record
 		if err := json.Unmarshal([]byte(line), &r); err != nil {
 			t.Fatalf("%q: %v", line, err)

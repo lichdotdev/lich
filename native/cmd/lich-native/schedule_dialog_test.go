@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/lichdotdev/lich/api"
-	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -33,7 +32,7 @@ func TestScheduleEchoSaysWhereTheTimeLands(t *testing.T) {
 
 func TestScheduleDialogKeepsWhatThePersonWrote(t *testing.T) {
 	var d scheduleDialog
-	d.show(sessionView{Session: backend.Session{ID: "s1"}})
+	d.show(sessionView{ID: "s1"})
 
 	d.pick(api.WatchChecksFailed)
 	if got := d.prompt.Text(); got != schedulePromptFor(api.WatchChecksFailed) {
@@ -52,10 +51,9 @@ func TestScheduleDialogKeepsWhatThePersonWrote(t *testing.T) {
 
 func TestScheduleDialogOpensOnTheWatchFirst(t *testing.T) {
 	var d scheduleDialog
-	d.show(sessionView{Session: backend.Session{
+	d.show(sessionView{
 		ID: "s1", ScheduledAt: 5000, ScheduledPrompt: "continue", ScheduledBy: api.ScheduledByLich,
-		Watch: api.SessionWatch{On: api.WatchReview, Prompt: "address it", By: api.ScheduledByAgent},
-	}})
+		Watch: api.SessionWatch{On: api.WatchReview, Prompt: "address it", By: api.ScheduledByAgent}})
 	if d.kind != api.WatchReview || d.prompt.Text() != "address it" || d.by != api.ScheduledByAgent || !d.armed {
 		t.Fatalf("dialog = kind %q prompt %q by %q armed %v", d.kind, d.prompt.Text(), d.by, d.armed)
 	}
@@ -64,7 +62,7 @@ func TestScheduleDialogOpensOnTheWatchFirst(t *testing.T) {
 func TestScheduleOptionsNeedAPromptAndAReadableTime(t *testing.T) {
 	now := time.Date(2026, 11, 8, 16, 0, 0, 0, time.UTC)
 	var d scheduleDialog
-	d.show(sessionView{Session: backend.Session{ID: "s1"}})
+	d.show(sessionView{ID: "s1"})
 	d.when.SetText("2h")
 	if _, ok := d.sendOptions(now); ok {
 		t.Fatal("sendable with no prompt")
@@ -129,7 +127,7 @@ func TestTheDialogOpensWithTheFieldFocused(t *testing.T) {
 		d.layout(context.Background(), gtx, th, nil, func(ui.Toast) {})
 	})
 	rig.frame()
-	d.show(sessionView{Session: backend.Session{ID: "s1"}})
+	d.show(sessionView{ID: "s1"})
 	for range 3 {
 		rig.frame()
 		rig.now = rig.now.Add(50 * time.Millisecond)

@@ -63,7 +63,7 @@ func TestChromeDownloadsLandInDownloadsAndThePageStays(t *testing.T) {
 			if _, err := s.Go(t.Context(), api.BrowserOpenOptions{ID: "s", URL: page}); err != nil {
 				t.Fatal(err)
 			}
-			info, err := s.ClickAt(t.Context(), api.BrowserClickOptions{ID: "s", BrowserTarget: api.BrowserTarget{Selector: "#" + id}})
+			info, err := s.ClickAt(t.Context(), api.BrowserClickOptions{ID: "s", Selector: "#" + id})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -185,7 +185,7 @@ func TestChromeClickAfterADownloadClickLandsOnTheReloadedPage(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, id := range []string{"dl", "mark"} {
-		if _, err := s.ClickAt(t.Context(), api.BrowserClickOptions{ID: "s", BrowserTarget: api.BrowserTarget{Selector: "#" + id}}); err != nil {
+		if _, err := s.ClickAt(t.Context(), api.BrowserClickOptions{ID: "s", Selector: "#" + id}); err != nil {
 			t.Fatal(err)
 		}
 	}

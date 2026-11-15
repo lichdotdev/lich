@@ -52,7 +52,7 @@ func plantKiroSession(t *testing.T, providerSessionID, body string) {
 func TestKiroTitlePublishedOnStop(t *testing.T) {
 	const id = "kiro-uuid"
 	plantKiroSession(t, id, `{"session_id":"`+id+`","title":"Port the PTY seam to Windows"}`)
-	store := &titleStore{stubBins: stubBins{providerSession: id}, titles: make(chan string, 1)}
+	store := &titleStore{providerSession: id, titles: make(chan string, 1)}
 	svc := New(store, nil, events.New())
 	svc.spawns.Store("s1", spawn{kind: providers.Kiro})
 
@@ -74,7 +74,7 @@ func TestKiroTitlePublishedOnStop(t *testing.T) {
 func TestKiroTitleNotReadMidTurn(t *testing.T) {
 	const id = "kiro-uuid"
 	plantKiroSession(t, id, `{"session_id":"`+id+`","title":"Port the PTY seam to Windows"}`)
-	store := &titleStore{stubBins: stubBins{providerSession: id}, titles: make(chan string, 1)}
+	store := &titleStore{providerSession: id, titles: make(chan string, 1)}
 	svc := New(store, nil, events.New())
 	svc.spawns.Store("s1", spawn{kind: providers.Kiro})
 
@@ -147,7 +147,7 @@ func plantCursorChat(t *testing.T, providerSessionID, meta string) string {
 func TestCursorTitlePublishedOnStop(t *testing.T) {
 	const id = "bec68d79-a208-4e40-8d2f-f8f8964da216"
 	cwd := plantCursorChat(t, id, `{"hasConversation":true,"title":"Pong Game"}`)
-	store := &titleStore{stubBins: stubBins{providerSession: id}, titles: make(chan string, 1)}
+	store := &titleStore{providerSession: id, titles: make(chan string, 1)}
 	svc := New(store, nil, events.New())
 	svc.spawns.Store("s1", spawn{kind: providers.Cursor, cwd: cwd})
 

@@ -28,7 +28,7 @@ func TestWriteQueueBlocksOnlyOnceFull(t *testing.T) {
 	filled := make(chan struct{})
 	go func() {
 		defer close(filled)
-		for i := 0; i < writeQueueDepth; i++ {
+		for range writeQueueDepth {
 			q.push(frameFor(t, "sess", "x"))
 		}
 	}()

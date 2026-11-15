@@ -207,8 +207,8 @@ func TestPaletteTabCountsAndWraps(t *testing.T) {
 func TestPaletteMessagesCarryTheirSessionAndSurviveAClose(t *testing.T) {
 	all := paletteSessionsOf(paletteWorkspace())
 	rows := paletteMessagesOf([]backend.TranscriptMatch{{ID: "s3", Snippet: "wire the auth middleware", Count: 2}}, all)
-	want := paletteMessage{paletteSession: paletteSession{sessionID: "s3", projectID: "p2", projectName: "revu",
-		label: "Wire revu auth middleware", kind: "claude", path: "/home/u/try/revu"}, snippet: "wire the auth middleware", count: 2}
+	want := paletteMessage{sessionID: "s3", projectID: "p2", projectName: "revu",
+		label: "Wire revu auth middleware", kind: "claude", path: "/home/u/try/revu", snippet: "wire the auth middleware", count: 2}
 	if len(rows) != 1 || rows[0] != want {
 		t.Errorf("rows = %+v, want %+v", rows, want)
 	}

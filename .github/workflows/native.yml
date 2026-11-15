@@ -86,6 +86,9 @@ jobs:
       - name: go vet
         run: go vet ./...
 
+      - name: go fix
+        run: go fix -diff ./...
+
       # The render tests skip where no GPU answers, which on a laptop is a
       # shrug and here would be a gate that checks nothing: a skip fails the job.
       # -noreset: each headless window holds the only X connection and drops it
@@ -284,6 +287,9 @@ jobs:
 
       - name: go vet
         run: go vet ./...
+
+      - name: go fix
+        run: go fix -diff ./...
 
       # The render tests skip where no GPU answers; the Linux job is the one
       # that fails on a skip, this one lists them.

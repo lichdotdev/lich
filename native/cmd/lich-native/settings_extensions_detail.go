@@ -67,8 +67,8 @@ type catalogDetail struct {
 
 func (d *catalogDetail) show(id string) {
 	d.id, d.shown = id, id
-	d.body = widget.List{List: layout.List{Axis: layout.Vertical}}
-	d.shots = widget.List{List: layout.List{Axis: layout.Horizontal}}
+	d.body = widget.List{Axis: layout.Vertical}
+	d.shots = widget.List{Axis: layout.Horizontal}
 }
 
 // detailEntry is the listing shown, while the catalog still lists it.

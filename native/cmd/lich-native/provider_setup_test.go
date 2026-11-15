@@ -3,8 +3,8 @@ package main
 import "testing"
 
 func TestDecideProviderSetup(t *testing.T) {
-	claude := providerInfo{launchProvider: launchProvider{id: "claude", enabled: true}}
-	codex := providerInfo{launchProvider: launchProvider{id: "codex", installed: true}}
+	claude := providerInfo{id: "claude", enabled: true}
+	codex := providerInfo{id: "codex", installed: true}
 	cases := []struct {
 		name      string
 		m         providersMachine

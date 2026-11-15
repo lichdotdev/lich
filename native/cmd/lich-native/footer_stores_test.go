@@ -75,7 +75,7 @@ func TestFooterUsageCost(t *testing.T) {
 		wantCost *float64
 		wantMiss string
 	}{
-		{`,"costUsd":1.25`, cost(1.25), ""},
+		{`,"costUsd":1.25`, new(1.25), ""},
 		{``, nil, ""},
 		{`,"costUsd":"1.25"`, nil, ""}, // unusable reads as absent
 		{`,"costMiss":"mixed-models"`, nil, "mixed-models"},
@@ -453,8 +453,7 @@ func TestHandsOnRereadsOnTheMinuteAndReportsFailure(t *testing.T) {
 		}
 		return tick
 	}
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	go r.h.run(ctx)
 	r.answer["s1"] = 60
 	r.h.follow("s1")

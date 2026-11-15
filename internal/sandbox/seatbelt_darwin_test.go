@@ -85,7 +85,7 @@ func TestProfileOmitsEmptyRules(t *testing.T) {
 	if strings.Contains(profile, "(allow file-read*)") {
 		t.Errorf("an empty rule reached the policy:\n%s", profile)
 	}
-	for _, line := range strings.Split(profile, "\n") {
+	for line := range strings.SplitSeq(profile, "\n") {
 		if strings.HasSuffix(line, "*") {
 			t.Errorf("rule %q names no path:\n%s", line, profile)
 		}

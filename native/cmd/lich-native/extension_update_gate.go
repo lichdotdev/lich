@@ -76,13 +76,13 @@ func (u *window) offerExtensionUpdates() {
 // extensionUpdateToast offers one extension's update in place, and several
 // as the way to their rows in Settings.
 func (u *window) extensionUpdateToast(pending []backend.Extension) ui.Toast {
-	t := ui.Toast{ID: extensionUpdateToastID, Duration: ui.ToastForever}
-	t.Cancel = &ui.ToastButton{Label: i18n.T("shell.appUpdateGate.later"), OnClick: func() {
-		u.extUpdates.settle(pending...)
-		for _, e := range pending {
-			u.writePref(extensionUpdateDismissedKey+e.ID, e.Latest)
-		}
-	}}
+	t := ui.Toast{ID: extensionUpdateToastID, Duration: ui.ToastForever,
+		Cancel: &ui.ToastButton{Label: i18n.T("shell.appUpdateGate.later"), OnClick: func() {
+			u.extUpdates.settle(pending...)
+			for _, e := range pending {
+				u.writePref(extensionUpdateDismissedKey+e.ID, e.Latest)
+			}
+		}}}
 	if len(pending) > 1 {
 		t.Title = i18n.T("shell.extensionUpdateGate.availableMany", i18n.Args{"n": strconv.Itoa(len(pending))})
 		t.Action = &ui.ToastButton{Label: i18n.T("shell.extensionUpdateGate.review"), OnClick: func() {

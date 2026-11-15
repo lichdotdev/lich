@@ -54,7 +54,7 @@ func TestChromeADialogWaitsForTheAgentsAnswer(t *testing.T) {
 	} {
 		t.Run(c.id, func(t *testing.T) {
 			start := time.Now()
-			info, err := s.ClickAt(t.Context(), api.BrowserClickOptions{ID: "s", BrowserTarget: api.BrowserTarget{Selector: "#" + c.id}})
+			info, err := s.ClickAt(t.Context(), api.BrowserClickOptions{ID: "s", Selector: "#" + c.id})
 			if err != nil {
 				t.Fatalf("click after %s: %v", time.Since(start), err)
 			}

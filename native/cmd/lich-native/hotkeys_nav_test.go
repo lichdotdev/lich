@@ -1,5 +1,7 @@
 package main
 
+import "slices"
+
 import "testing"
 
 func cardsOf(ids ...string) []hotkeyCard {
@@ -69,12 +71,7 @@ func TestNextShownCardStepsOverTheCardsOfAFoldedBlock(t *testing.T) {
 
 func waitingOn(ids ...string) func(string) bool {
 	return func(id string) bool {
-		for _, w := range ids {
-			if w == id {
-				return true
-			}
-		}
-		return false
+		return slices.Contains(ids, id)
 	}
 }
 
