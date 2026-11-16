@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Resolve a merge conflict side by side in the Review.** Resolve, on a conflicted file, opens your version and the incoming one either side of the result: take a side's lines with its arrow, take both to keep them stacked, or edit the result by hand, then Apply.
 - **Merge a branch into the one you are on from the Git panel.** Its menu has Merge into, which says before you click whether it would conflict; a clean merge shows the command it ran with an Undo, and one that stops on a conflict takes you to the Review. It waits until the checkout has no uncommitted changes.
 - **A merge in progress shows wherever its checkout does, and ends from the Review.** The sidebar and the footer flag the merge and count the files in conflict; the Review lists them first, with Mark resolved, and holds Commit merge and Abort merge over the files. Reverting is off until the merge ends, so a revert cannot drop what the merge brought in.
+- **Pi is a provider in its own right, separate from oh-my-pi.** lich installs its extension for session state, file refreshes, MCP tools and the current model in the session footer, and can resume or fork its conversations.
 
 ### Changed
 
@@ -36,8 +37,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **An extension can live in the dock or in a panel over the footer as well as on a full screen.** Its item joins the footer, where a click opens it beside the session you are in; move or hide the item in Settings › Appearance › Footer. Extension authors set `place` on a surface, see `docs/extensions.md`.
 - **An extension can show its own logo on the top bar.** Its manifest names a PNG with `iconFile`, shown there and in Settings › Extensions in its own colors, or in the theme's when the PNG is all black; see the manifest in `docs/extensions.md`.
 - **lich tells you when a theme pack you installed has a new version.** A toast offers Update or Later, and the pack's cards in Settings › Appearance show the version with an Update action. Check for updates, over the cards, looks right away.
-- **Pi is a provider in its own right, separate from oh-my-pi.** lich installs its extension for session state, file refreshes, MCP tools and the current model in the session footer, and can resume or fork its conversations.
-
 ### Changed
 
 - **An agent's click in a session's browser answers with what the click loaded.** A click, a key, a tab or a dialog answer waits for the requests it started and for the page to stop changing, up to 3 seconds, so the agent no longer reads the page again to see the result.
