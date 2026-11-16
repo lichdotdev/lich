@@ -1,3 +1,21 @@
+## [0.92.0] - 2026-11-16
+
+### Added
+
+- **O resolvedor de conflitos liga cada mudança entre os painéis.** Uma faixa na calha vai de uma mudança na sua versão ou na que está chegando até a mesma mudança no resultado, na cor dela, para você acompanhá-la quando os painéis não estão alinhados.
+- **Resolva um conflito de merge lado a lado na Revisão.** Resolver, em um arquivo com conflito, abre a sua versão e a que está chegando dos dois lados do resultado: pegue as linhas de um lado com a seta dele, pegue os dois para mantê-los empilhados, ou edite o resultado à mão e depois Aplicar.
+- **Faça merge de uma branch na que você está usando a partir do painel Git.** O menu dela tem Fazer merge em, que diz antes do clique se haveria conflito; um merge limpo mostra o comando que rodou com um Desfazer, e um que para em um conflito leva você à Revisão. Ele espera até o checkout não ter mudanças não commitadas.
+- **Um merge em andamento aparece em todo lugar onde o checkout aparece, e termina pela Revisão.** A barra lateral e o rodapé sinalizam o merge e contam os arquivos em conflito; a Revisão os lista primeiro, com Marcar como resolvido, e mantém Commitar merge e Abortar merge acima dos arquivos. Reverter fica desligado até o merge terminar, para que um revert não descarte o que o merge trouxe.
+
+### Changed
+
+- **O menu de notificações mostra uma caixa de entrada quando não há nada esperando.** O sino da barra superior o abre.
+- **Configurações › Extensões abre no catálogo.** O que você instalou fica na aba Instaladas ao lado, com um ponto quando alguma tem atualização ou falhou. Instalar de uma URL do GitHub ou de uma pasta é Instalar de…, na linha do título.
+
+### Fixed
+
+- **Nunca, em Pular pedidos de permissão, diz o que o lich faz.** Ele dizia "Toda edição e todo comando esperam por você", o que cabe à configuração do próprio agente decidir. Está em Configurações › Provedores e na escolha do agente na primeira execução.
+
 ## [0.91.0] - 2026-11-14
 
 ### Added
