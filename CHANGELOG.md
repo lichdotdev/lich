@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **The notifications menu shows an inbox when there is nothing waiting.** The bell on the top bar opens it.
 
+### Fixed
+
+- **Never, under Skip permission prompts, says what lich does.** It read "Every edit and command waits for you", which the agent's own settings decide, not lich. It is in Settings › Providers and in the first-run agent choice.
+
 ## [0.91.0] - 2026-11-14
 
 ### Added
@@ -50,7 +54,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- **Never, under Skip permission prompts, says what lich does.** It read "Every edit and command waits for you", which the agent's own settings decide, not lich. It is in Settings › Providers and in the first-run agent choice.
 - **Reload in a session's browser shows the stylesheet or script you just changed.** It took them from Chrome's cache, and the pages lich serves from your checkout and the artifact folder are now checked again on every load.
 - **Minimizing a session's browser page keeps where its divider was.** Show on the browser's row in the sidebar puts the page back with the terminal and the page sharing the screen as you left them; closing the browser forgets it.
 - **Ctrl+click on a `path:line` opens a file git ignores.** A path in a session's terminal that sat in `.gitignore`, a build output or a log, answered "not found" though it was there; it opens in the Code tab now. A path outside the session's checkout is still refused.
