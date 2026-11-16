@@ -204,7 +204,7 @@
     "skip": {
       "never": {
         "label": "Nunca",
-        "consequence": "Toda edição e todo comando esperam por você, em qualquer checkout."
+        "consequence": "O lich não passa nenhuma flag, em nenhum checkout. O agente pergunta conforme a configuração dele."
       },
       "worktrees": {
         "label": "Só worktrees",

@@ -200,7 +200,7 @@
     "skip": {
       "never": {
         "label": "안 함",
-        "consequence": "모든 체크아웃에서 수정과 명령마다 확인을 기다립니다."
+        "consequence": "어떤 체크아웃에서도 lich는 플래그를 붙이지 않습니다. 에이전트는 자체 설정대로 확인을 요청합니다."
       },
       "worktrees": {
         "label": "worktree에서만",
