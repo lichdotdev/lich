@@ -4,6 +4,7 @@ import (
 	"image"
 	"image/color"
 	"reflect"
+	"strings"
 	"testing"
 
 	"gioui.org/font/gofont"
@@ -36,17 +37,82 @@ func conflictFixture() api.GitConflict {
 	}
 }
 
+// The result opens as the base, nothing taken: a change only one side made
+// waits to be applied like a conflict does (it used to be taken on open).
 func TestResolveModelStartsFromTheBase(t *testing.T) {
 	t.Parallel()
 	m, doc := newResolveModel(conflictFixture())
-	if want := "start\na\nb\nc\nd\nend\n"; doc != want {
-		t.Fatalf("doc = %q, want %q", doc, want)
+	if want := "a\nb\nc\nd\n"; doc != want {
+		t.Fatalf("doc = %q, want the base %q", doc, want)
 	}
 	if got := doc[m.chunks[1].from:m.chunks[1].to]; got != "c\n" {
 		t.Errorf("conflict holds %q, want the base's c", got)
 	}
-	if m.unresolved(doc) != 1 || !m.resolved(0, doc) || !m.resolved(2, doc) {
-		t.Errorf("only the conflict should be open")
+	if conflicts, changes := m.unresolved(doc); conflicts != 1 || changes != 2 {
+		t.Errorf("unresolved = %d conflicts, %d changes; want 1 and 2", conflicts, changes)
+	}
+}
+
+func TestResolveModelOneSidedChange(t *testing.T) {
+	t.Parallel()
+	m, doc := newResolveModel(conflictFixture())
+	if m.state(0, doc) != chunkPending {
+		t.Fatal("a change only ours made is taken before the user takes it")
+	}
+	c := m.take(0, true, doc)
+	taken := doc[:c.From] + c.Insert + doc[c.To:]
+	if !strings.HasPrefix(taken, "start\na\n") {
+		t.Errorf("after taking ours' line the result starts %q", taken)
+	}
+	m.chunks[2].theirsOff = true
+	if m.state(2, doc) != chunkDismissed {
+		t.Error("a change only theirs made is not left out by its own dismiss")
+	}
+	m.chunks[0].theirsOff = true
+	if m.state(0, doc) != chunkPending {
+		t.Error("the side that did not make a change dismissed it")
+	}
+}
+
+func TestTakeChangesLeavesConflictsAlone(t *testing.T) {
+	t.Parallel()
+	m, doc := newResolveModel(conflictFixture())
+	r := &conflictResolver{model: m}
+	got := r.takeChanges(doc)
+	if len(got) != 2 || got[0].Insert != "start\n" || got[1].Insert != "end\n" {
+		t.Errorf("takeChanges = %+v, want ours' start and theirs' end", got)
+	}
+	if all := r.takeAll(true, doc); len(all) != 1 || all[0].Insert != "OURS\n" {
+		t.Errorf("takeAll = %+v, want the conflict alone", all)
+	}
+}
+
+func TestWordSpan(t *testing.T) {
+	t.Parallel()
+	fill := color.NRGBA{A: 255}
+	cases := []struct {
+		line     string
+		others   []string
+		from, to int
+	}{
+		{`TITLE = "a"` + "\n", []string{`TITLE = "post"` + "\n"}, 9, 10},
+		{`TITLE = "a"`, []string{`TITLE = "post"`, `TITLE = "untitled"`}, 9, 10},
+		{`x = 10`, []string{`x = 50`, `y = 10`}, 0, 5}, // from the first difference of any to the last
+		{`same`, []string{`same`}, 0, 0},
+		{`abc`, []string{`xyz`}, 0, 0}, // the whole line differs
+		{`é = 1`, []string{`é = 2`}, 4, 5},
+	}
+	for _, c := range cases {
+		got := wordSpan(c.line, c.others, fill)
+		if c.from == c.to {
+			if got != nil {
+				t.Errorf("wordSpan(%q) = %+v, want none", c.line, got)
+			}
+			continue
+		}
+		if len(got) != 1 || got[0].From != c.from || got[0].To != c.to {
+			t.Errorf("wordSpan(%q) = %+v, want %d..%d", c.line, got, c.from, c.to)
+		}
 	}
 }
 
@@ -202,8 +268,10 @@ func TestSideTintsFollowTheResult(t *testing.T) {
 	th := &ui.Theme{Palette: ui.Dark, Surface: ui.Dark.Sidebar}
 	wait := ui.MixOKLab(th.Surface, th.ToneWait, resolverTint)
 	pass := ui.MixOKLab(th.Surface, th.TonePass, resolverTint)
+	// A change of its own is neutral until taken, now that none is on open.
+	neutral := ui.MixOKLab(th.Surface, th.MutedForeground, resolverTint)
 	ours := r.sideDecorations(th, true, doc)
-	if ours[3].Background != wait || ours[0].Background != pass || ours[1].Background != (color.NRGBA{}) {
+	if ours[3].Background != wait || ours[0].Background != neutral || ours[1].Background != (color.NRGBA{}) {
 		t.Fatalf("open conflict: line 3 %v, own change %v, untouched %v", ours[3].Background, ours[0].Background, ours[1].Background)
 	}
 	c := m.take(1, true, doc)
@@ -211,5 +279,105 @@ func TestSideTintsFollowTheResult(t *testing.T) {
 	m.chunks[1].to = c.From + len(c.Insert)
 	if got := r.sideDecorations(th, false, doc)[2].Background; got != pass {
 		t.Errorf("settled conflict on the incoming side = %v, want the passing tint", got)
+	}
+}
+
+func TestRunSpan(t *testing.T) {
+	t.Parallel()
+	block := func(line int) (int, int) { return line * 20, line*20 + 20 }
+	cases := []struct {
+		run         api.GitLines
+		count       int
+		top, bottom int
+	}{
+		{api.GitLines{From: 2, To: 4}, 10, 40, 80},
+		{api.GitLines{From: 3, To: 3}, 10, 60, 60},     // the seam before line 3
+		{api.GitLines{From: 10, To: 10}, 10, 200, 200}, // past the last line
+		{api.GitLines{From: 8, To: 12}, 10, 160, 200},  // clipped to the pane
+		{api.GitLines{From: 0, To: 1}, 0, 0, 0},
+	}
+	for _, c := range cases {
+		if top, bottom := runSpan(c.run, c.count, block); top != c.top || bottom != c.bottom {
+			t.Errorf("runSpan(%+v, %d) = %d, %d; want %d, %d", c.run, c.count, top, bottom, c.top, c.bottom)
+		}
+	}
+}
+
+func TestBandOnSide(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		kind         string
+		ours, theirs bool
+	}{
+		{api.GitChunkOurs, true, false},
+		{api.GitChunkTheirs, false, true},
+		{api.GitChunkBoth, true, true},
+		{api.GitChunkConflict, true, true},
+	}
+	for _, c := range cases {
+		if bandOnSide(c.kind, true) != c.ours || bandOnSide(c.kind, false) != c.theirs {
+			t.Errorf("%s: bands to ours %v, theirs %v; want %v, %v", c.kind, bandOnSide(c.kind, true), bandOnSide(c.kind, false), c.ours, c.theirs)
+		}
+	}
+}
+
+// TestDismissIsUndone: ✕ steps back with the result's own undo, and comes
+// back with its redo, until a new change drops that redo.
+func TestDismissIsUndone(t *testing.T) {
+	r, err := newConflictResolver("f.txt", conflictFixture(), fonts.SystemMono, 13)
+	if err != nil {
+		t.Skipf("no editor font: %v", err)
+	}
+	dismissed := func() bool { return r.model.chunks[1].oursOff }
+	r.dismiss(1, true)
+	if !dismissed() {
+		t.Fatal("✕ did not leave the side out")
+	}
+	if !r.result.Undo() {
+		t.Fatal("nothing to undo after ✕")
+	}
+	r.syncDismissals()
+	if dismissed() {
+		t.Fatal("undo did not bring the side back")
+	}
+	r.result.Redo()
+	r.syncDismissals()
+	if !dismissed() {
+		t.Fatal("redo did not leave the side out again")
+	}
+	r.result.Undo()
+	r.depth = r.result.UndoDepth()
+	r.dismiss(2, false)
+	r.result.Undo()
+	r.result.Undo()
+	r.result.Redo()
+	r.syncDismissals()
+	if dismissed() || !r.model.chunks[2].theirsOff {
+		t.Errorf("after a new ✕ the undone one came back: ours off %v, theirs off %v", dismissed(), r.model.chunks[2].theirsOff)
+	}
+	if r.doc() != "a\nb\nc\nd\n" {
+		t.Errorf("dismissing changed the text: %q", r.doc())
+	}
+}
+
+func TestNeighborWalksThePendingChunks(t *testing.T) {
+	t.Parallel()
+	m, doc := newResolveModel(conflictFixture())
+	// Chunks start at 0 (ours' line), 4 (the conflict) and 8 (theirs' line).
+	steps := []struct {
+		pos, dir, want int
+		ok             bool
+	}{
+		{0, 1, 1, true}, {4, 1, 2, true}, {8, 1, 0, false},
+		{8, -1, 1, true}, {4, -1, 0, true}, {0, -1, 0, false},
+	}
+	for _, s := range steps {
+		if got, ok := m.neighbor(s.pos, s.dir, doc); ok != s.ok || ok && got != s.want {
+			t.Errorf("neighbor(%d, %d) = %d, %v; want %d, %v", s.pos, s.dir, got, ok, s.want, s.ok)
+		}
+	}
+	m.chunks[1].oursOff, m.chunks[1].theirsOff = true, true
+	if got, ok := m.neighbor(0, 1, doc); !ok || got != 2 {
+		t.Errorf("neighbor skips nothing settled: got %d, %v; want 2", got, ok)
 	}
 }

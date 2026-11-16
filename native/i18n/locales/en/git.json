@@ -133,8 +133,8 @@
       "one": "{name} · {count} conflict left",
       "other": "{name} · {count} conflicts left"
     },
-    "prev": "Previous conflict",
-    "next": "Next conflict",
+    "prev": "Previous change",
+    "next": "Next change",
     "accept": "Accept {branch}",
     "close": "Back to the changes",
     "thisCheckout": "this checkout",
@@ -144,6 +144,10 @@
     "dismiss": "Leave the lines of {branch} out",
     "apply": "Apply",
     "applyFailed": "Could not save {name}",
-    "openFailed": "Could not open {name} in the resolver"
+    "openFailed": "Could not open {name} in the resolver",
+    "applyChanges": {
+      "one": "Apply {count} change",
+      "other": "Apply {count} changes"
+    }
   }
 }

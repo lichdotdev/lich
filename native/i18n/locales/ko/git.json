@@ -128,8 +128,8 @@
       "one": "{name} · 남은 충돌 {count}개",
       "other": "{name} · 남은 충돌 {count}개"
     },
-    "prev": "이전 충돌",
-    "next": "다음 충돌",
+    "prev": "이전 변경",
+    "next": "다음 변경",
     "accept": "{branch} 수락",
     "close": "변경 사항으로 돌아가기",
     "thisCheckout": "현재 체크아웃",
@@ -139,6 +139,10 @@
     "dismiss": "{branch}의 줄 제외",
     "apply": "적용",
     "applyFailed": "{name}을(를) 저장하지 못했습니다",
-    "openFailed": "{name}을(를) 해결 도구에서 열지 못했습니다"
+    "openFailed": "{name}을(를) 해결 도구에서 열지 못했습니다",
+    "applyChanges": {
+      "one": "변경 {count}개 적용",
+      "other": "변경 {count}개 적용"
+    }
   }
 }

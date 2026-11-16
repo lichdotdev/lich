@@ -133,8 +133,8 @@
       "one": "{name} · 残りのコンフリクト {count} 件",
       "other": "{name} · 残りのコンフリクト {count} 件"
     },
-    "prev": "前のコンフリクト",
-    "next": "次のコンフリクト",
+    "prev": "前の変更",
+    "next": "次の変更",
     "accept": "{branch} を採用",
     "close": "変更一覧に戻る",
     "thisCheckout": "このチェックアウト",
@@ -144,6 +144,10 @@
     "dismiss": "{branch} の行を使わない",
     "apply": "適用",
     "applyFailed": "{name} を保存できませんでした",
-    "openFailed": "{name} をリゾルバーで開けませんでした"
+    "openFailed": "{name} をリゾルバーで開けませんでした",
+    "applyChanges": {
+      "one": "{count} 件の変更を適用",
+      "other": "{count} 件の変更を適用"
+    }
   }
 }
