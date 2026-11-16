@@ -25,6 +25,7 @@ var (
 	detailPad        = ui.Space(6) // .xd .sb padding 24px 24px 8px
 	detailBodyBelow  = ui.Space(2)
 	detailMargin     = ui.Space(16)  // max-height calc(100% - 64px)
+	detailMinWidth   = unit.Dp(736)  // .xd width 46rem
 	detailIconSize   = ui.Space(14)  // .xd-icon 56px
 	detailIconRadius = unit.Dp(10)   // .xd-icon rounded 10px
 	detailIconGlyph  = ui.Space(7)   // .xd-icon .i 28px
@@ -49,6 +50,10 @@ const (
 	// detailShotShare is how much of the body's width one screenshot takes,
 	// so the next one shows at the edge: grid-auto-columns 88%.
 	detailShotShare = 0.88
+	// detailHeightShare sizes the detail by the window's height, the side an
+	// ultrawide runs out of: the screenshot stands about 0.55 of the width
+	// tall, so it takes about 45% of the window and the facts stay in view.
+	detailHeightShare = 0.82
 )
 
 var (
@@ -108,13 +113,18 @@ func (s *settingsScreen) layoutCatalogDetail(gtx C, th *ui.Theme, t extensionTas
 	}
 	s.detailClicks(gtx, d, e, installed)
 	dlg := th.Dialog(&d.state, d.id != "", "", "")
-	dlg.MaxWidth, dlg.Root = ui.DialogWidthXL, s.root
+	dlg.MaxWidth, dlg.Root = detailWidth(gtx), s.root
 	dlg.Raw = func(gtx C) D {
 		return s.detailPanel(gtx, th.On(th.Popover), cat, e, installed, t)
 	}
 	if dlg.Layout(gtx) {
 		d.id = ""
 	}
+}
+
+// detailWidth is the detail's width in this window, never under the site's.
+func detailWidth(gtx C) unit.Dp {
+	return max(detailMinWidth, gtx.Metric.PxToDp(gtx.Constraints.Max.Y)*detailHeightShare)
 }
 
 // detailClicks acts on the detail's buttons: Install stages the listed

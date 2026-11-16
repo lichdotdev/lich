@@ -70,18 +70,24 @@ func (s *settingsScreen) extensionRow(gtx C, th *ui.Theme, e backend.Extension) 
 		p.askRemove(e)
 		gtx.Execute(op.InvalidateCmd{})
 	}
+	listed := p.listed(e.ID)
+	if r.open.Clicked(gtx) && listed {
+		p.grid.detail.show(e.ID)
+		gtx.Execute(op.InvalidateCmd{})
+	}
 	entries := func() []ui.MenuEntry { return s.extensionMenu(e) }
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 	row := func(gtx C) D {
 		return th.ContextMenuLazy(s.root, &r.context, entries).Layout(gtx, func(gtx C) D {
-			return s.extensionRowBody(gtx, th, e, r, entries)
+			return s.extensionRowBody(gtx, th, e, r, entries, listed)
 		})
 	}
 	return withErrorLine(gtx, th, p.snapshot().errorAt(errAtRow(e.ID)), rowPadX, row)
 }
 
-// extensionRowBody is the row's line on its hover fill.
-func (s *settingsScreen) extensionRowBody(gtx C, th *ui.Theme, e backend.Extension, r *extensionRowState, entries func() []ui.MenuEntry) D {
+// extensionRowBody is the row's line on its hover fill. A press on the row
+// outside its buttons opens the catalog's detail while the catalog lists it.
+func (s *settingsScreen) extensionRowBody(gtx C, th *ui.Theme, e backend.Extension, r *extensionRowState, entries func() []ui.MenuEntry, listed bool) D {
 	hovered := r.hover.Update(gtx.Source) || r.menu.Opened() || r.context.Opened()
 	bg := th.Surface
 	if hovered {
@@ -118,13 +124,30 @@ func (s *settingsScreen) extensionRowBody(gtx C, th *ui.Theme, e backend.Extensi
 	area := clip.Rect{Max: d.Size}.Push(gtx.Ops)
 	r.hover.Add(gtx.Ops)
 	area.Pop()
+	box := gtx
+	box.Constraints = layout.Exact(d.Size)
 	if hovered {
-		box := gtx
-		box.Constraints = layout.Exact(d.Size)
 		ui.Fill(box, bg, ui.RadiusMD)
+	}
+	if listed {
+		r.open.Layout(box, func(gtx C) D { return D{Size: gtx.Constraints.Min} })
 	}
 	call.Add(gtx.Ops)
 	return d
+}
+
+// listed is whether the catalog lists id, whose installed row then opens the
+// same detail as its card.
+func (p *extensionsSettings) listed(id string) bool {
+	if p.catalog == nil {
+		return false
+	}
+	cat, _ := p.catalog.read()
+	if cat == nil {
+		return false
+	}
+	_, ok := detailEntry(cat, id)
+	return ok
 }
 
 // updateButton is Update to the newer release, busy while this row's update

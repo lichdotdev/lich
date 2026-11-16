@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Click an installed extension to see its catalog page.** In Settings › Extensions › Installed, a row the catalog lists opens the same detail its card does, with Update when there is a newer release.
+
+### Changed
+
+- **An extension's detail grows with the window.** On a tall or ultrawide screen the dialog and its screenshots take more of it.
+
 ### Fixed
 
 - **Changing the advisor model, fast mode, thinking or ultracode in one Claude Code account no longer changes it in your other accounts.** Each profile now keeps these alongside its own default model and effort, as well as whether to switch models when safeguards flag a message.

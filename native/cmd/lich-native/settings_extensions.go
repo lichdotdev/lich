@@ -92,6 +92,7 @@ type extensionRowState struct {
 	hover          gesture.Hover
 	restart, more  widget.Clickable
 	update, remove widget.Clickable
+	open           widget.Clickable
 	menu, context  ui.MenuState
 	moreTip, state ui.Tooltip
 }

@@ -248,6 +248,11 @@ A card's text never changes its height: the name is one line and the description
 every card on a line stands as tall as the next and the skeleton matches them (a test pins it). The tokens,
 the text sizes and the buttons are the window's.
 
+The detail is sized by the window's height, not a dialog width: a screenshot at 16:10 across it takes about
+45% of the window, so a tall or ultrawide window gets a wider detail. It is never narrower than the site's
+736. An installed extension the catalog lists opens the same detail from its
+row on the Installed tab.
+
 ### Fixed headings
 
 A heading that stays put while the content under it scrolls (the Overview's Description) sits on a

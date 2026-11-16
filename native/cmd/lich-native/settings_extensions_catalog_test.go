@@ -5,13 +5,18 @@ import (
 	"encoding/json"
 	"image"
 	"image/png"
+	"math"
 	"net/http"
 	"slices"
 	"sync"
 	"testing"
 
+	"gioui.org/f32"
+	"gioui.org/io/input"
+	"gioui.org/io/pointer"
 	"gioui.org/layout"
 	"gioui.org/op"
+	"gioui.org/unit"
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/extension"
@@ -357,5 +362,66 @@ func TestTheStatusTooltipStartsWithWhereItCameFrom(t *testing.T) {
 	revoked := backend.Extension{Revoked: "x", Error: "removed from the lich catalog: x", Permissions: perms}
 	if height(revoked) != height(backend.Extension{Permissions: perms}) {
 		t.Error("a revoked extension's tooltip repeats the reason its row shows")
+	}
+}
+
+// pressRow lays an installed row out 600 wide, presses it x from its left
+// edge, halfway down, and lays it out again, as two frames of a window would.
+func pressRow(s *settingsScreen, e backend.Extension, x float32) {
+	th := shapingTheme()
+	th.Surface = th.Background
+	router := new(input.Router)
+	frame := func() {
+		gtx := layout.Context{Ops: new(op.Ops), Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}, Constraints: layout.Constraints{Max: image.Pt(600, 200)}, Source: router.Source()}
+		s.extensionRow(gtx, th, e)
+		router.Frame(gtx.Ops)
+	}
+	frame()
+	at := f32.Pt(x, 26)
+	router.Queue(
+		pointer.Event{Kind: pointer.Press, Source: pointer.Mouse, Buttons: pointer.ButtonPrimary, Position: at},
+		pointer.Event{Kind: pointer.Release, Source: pointer.Mouse, Position: at},
+	)
+	frame()
+}
+
+func TestAnInstalledRowOpensItsListingsDetail(t *testing.T) {
+	for _, c := range []struct {
+		name string
+		id   string
+		x    float32
+		want string
+		menu bool
+	}{
+		{"a listed extension", "notes", 100, "notes", false},
+		{"one the catalog does not list", "local", 100, "", false},
+		{"a press on its ⋯", "notes", 575, "", true},
+	} {
+		s := catalogScreen(t, &extensionBackend{}, testCatalog())
+		e := backend.Extension{ID: c.id, Name: c.id, Status: api.ExtensionRunning}
+		s.extensions.store.setStatus(e)
+		pressRow(s, e, c.x)
+		if got, menu := s.extensions.grid.detail.id, s.extensions.row(c.id).menu.Opened(); got != c.want || menu != c.menu {
+			t.Errorf("%s: detail %q and menu %v, want %q and %v", c.name, got, menu, c.want, c.menu)
+		}
+	}
+}
+
+func TestTheDetailWidensWithTheWindowsHeight(t *testing.T) {
+	for _, c := range []struct {
+		name   string
+		pxPer  float32
+		height int
+		want   unit.Dp
+	}{
+		{"a short window keeps the site's", 1, 800, 736},
+		{"the default window", 1, 900, 738},
+		{"an ultrawide", 1, 1440, 1180.8},
+		{"an ultrawide at 2x", 2, 2880, 1180.8},
+	} {
+		gtx := layout.Context{Metric: unit.Metric{PxPerDp: c.pxPer, PxPerSp: c.pxPer}, Constraints: layout.Exact(image.Pt(3440, c.height))}
+		if got := detailWidth(gtx); math.Abs(float64(got-c.want)) > 0.01 {
+			t.Errorf("%s: width %v, want %v", c.name, got, c.want)
+		}
 	}
 }
