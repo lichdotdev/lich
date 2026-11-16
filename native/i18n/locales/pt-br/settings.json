@@ -674,7 +674,8 @@
     "remove": "Remover",
     "removeMenuItem": "Remover…",
     "restart": "Reiniciar",
-    "installedCount": "Instaladas · {n}",
+    "installedTab": "Instaladas",
+    "installedEmpty": "Nenhuma instalada ainda.",
     "rowOptions": "Opções de {name}",
     "installRow": "Instalar uma extensão",
     "installSearchWords": "extensões adicionar instalar plugin mod github repositório release pasta",
@@ -698,7 +699,7 @@
     "checkFailed": "Não foi possível buscar atualizações das extensões",
     "upToDate": "Suas extensões estão atualizadas",
     "permissionNew": "Nova nesta versão",
-    "otherSources": "Outras origens",
+    "installFrom": "Instalar de…",
     "removedFromCatalog": "Removida do catálogo do lich: {reason}",
     "catalog": {
       "title": "Catálogo",

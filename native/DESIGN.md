@@ -236,7 +236,13 @@ under its card. Both break rules above on purpose. The catalog is a shop window:
 screenshots are what someone chooses by, a row has no room for a picture, and an inline detail would push
 the rest of the grid out of sight while it is read. The site and the window drawing it the same way also
 teaches it once. Keep the exception to the catalog: a list of things you have, the installed extensions
-under the same title included, stays rows, and an action anchored on a row still opens beside it.
+on the tab beside it included, stays rows, and an action anchored on a row still opens beside it.
+
+The catalog is what the screen opens on, every time. What is not the catalog stays off its page: the
+installed extensions are a second tab, on a line of `TabsVariantLine` tabs over a `th.Separator`, with the
+actions that belong to one tab at the right of that line and only while it shows; a rare way in (a GitHub
+URL, a folder) is a `DropdownPanel` off a named button on the title line. A tab out of sight says what waits
+on it with a count and a dot in a semantic tone, never by opening itself.
 
 A card's text never changes its height: the name is one line and the description always holds its two, so
 every card on a line stands as tall as the next and the skeleton matches them (a test pins it). The tokens,

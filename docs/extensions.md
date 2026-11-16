@@ -435,7 +435,8 @@ title := cat.In(lang.Tag(), "board.count", i18n.Args{"count": len(cards)})
 
 ## Installing
 
-A person installs an extension from lich's Settings in one of two ways:
+A person installs an extension the catalog does not list from **Install from…** in Settings › Extensions, in one
+of two ways:
 
 - **From a folder** on disk holding `manifest.json` and the executable at its root. lich copies it into a staging
   directory under the extensions directory (at most 1 GiB and 1000 entries, no symlinks anywhere in it), validates

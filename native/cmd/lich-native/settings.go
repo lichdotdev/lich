@@ -168,6 +168,7 @@ func (s *settingsScreen) snapshot() scopedValues {
 
 func (s *settingsScreen) openSection(id string) {
 	s.section = id
+	s.extensions.view.Selected = extensionsViewCatalog
 	go func() {
 		if err := s.client.SetSetting(s.ctx, settingsSectionKey, "", id); err != nil {
 			log.Printf("settings: save section: %v", err)
@@ -178,6 +179,9 @@ func (s *settingsScreen) openSection(id string) {
 // choose opens a search result's section and lights its row.
 func (s *settingsScreen) choose(gtx C, h settingHit) {
 	s.openSection(h.section)
+	if h.section == sectionExtensions && h.title == i18n.T("settings.extensionsSettings.listRow") {
+		s.extensions.view.Selected = extensionsViewInstalled
+	}
 	s.providers.open = h.providerID
 	s.lit, s.litUntil, s.scrollTo = h.title, gtx.Now.Add(settingsLitFor), -1
 	for i, e := range sectionByID(h.section).rows {
