@@ -4,6 +4,7 @@ import (
 	"image"
 	"strconv"
 
+	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/widget"
 
@@ -179,7 +180,10 @@ func (b *bellMenu) content(gtx C, th *ui.Theme, items []notification) D {
 		children = append(children, layout.Rigid(func(gtx C) D {
 			return layout.Inset{Top: ui.Space(6), Bottom: ui.Space(6)}.Layout(gtx, func(gtx C) D {
 				gtx.Constraints.Min.X = gtx.Constraints.Max.X
-				return layout.Center.Layout(gtx, th.Text(ui.TextXS, i18n.T("tabs.notificationsButton.caughtUp")).Muted().Layout)
+				empty := th.EmptyState(icInbox, i18n.T("tabs.notificationsButton.caughtUp"), "", nil)
+				empty.IconSize, empty.IconGap = ui.Space(6), 2
+				empty.TitleSize, empty.TitleLeading, empty.TitleWeight = ui.TextXS, 0, font.Normal
+				return empty.Layout(gtx)
 			})
 		}))
 	}
