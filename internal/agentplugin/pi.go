@@ -52,7 +52,7 @@ func (s *Service) piInstall() error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return fmt.Errorf("create %s: %w", filepath.Dir(path), err)
 	}
-	if err := s.installThemeSkill(version, filepath.Join(filepath.Dir(path), "skills")); err != nil {
+	if err := s.installSkill(version, filepath.Join(filepath.Dir(path), "skills"), themeSkill); err != nil {
 		return err
 	}
 	return writeFile(path, body, 0o644)
