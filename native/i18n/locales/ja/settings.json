@@ -674,7 +674,8 @@
     "remove": "削除",
     "removeMenuItem": "削除…",
     "restart": "再起動",
-    "installedCount": "インストール済み · {n}",
+    "installedTab": "インストール済み",
+    "installedEmpty": "まだ何もインストールされていません。",
     "rowOptions": "{name} のオプション",
     "installRow": "拡張機能をインストール",
     "installSearchWords": "拡張機能 追加 インストール プラグイン mod github リポジトリ リリース フォルダー",
@@ -698,7 +699,7 @@
     "checkFailed": "拡張機能のアップデートを確認できませんでした",
     "upToDate": "拡張機能はすべて最新です",
     "permissionNew": "このバージョンで追加",
-    "otherSources": "その他の入手先",
+    "installFrom": "他の場所からインストール…",
     "removedFromCatalog": "lich カタログから削除されました: {reason}",
     "catalog": {
       "title": "カタログ",

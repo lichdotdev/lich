@@ -3,10 +3,12 @@ package main
 import (
 	"encoding/json"
 	"image"
+	"image/color"
 	"net/http"
 	"slices"
 	"sync"
 	"testing"
+	"time"
 
 	"gioui.org/font/gofont"
 	"gioui.org/layout"
@@ -459,19 +461,66 @@ func TestARowActionsErrorLandsUnderThatRow(t *testing.T) {
 	}
 }
 
-// The contract changed: with nothing installed the Installed group gives way
-// to the catalog under it, and the install rows moved under Other sources.
-func TestTheListIsAHeadingOverOneRowEachOrNothing(t *testing.T) {
+// The contract changed: the pane opens on the catalog and the installed
+// extensions are a tab of their own; the install rows left the pane for the
+// Install from… panel.
+func TestTheInstalledViewIsARowEachOrOneLineSayingThereIsNone(t *testing.T) {
 	s := extensionsScreen(t, &extensionBackend{})
 	th := testTheme()
-	empty := len(s.extensionsPaneRows(th))
+	const head = 2 // the description and the tabs
 	s.extensions.store.setStatus(backend.Extension{ID: "a"})
 	s.extensions.store.setStatus(backend.Extension{ID: "b"})
-	if got := len(s.extensionsPaneRows(th)); got != empty+3 {
-		t.Errorf("rows = %d with two extensions, want %d: the heading and a row each", got, empty+3)
+	if got := len(s.extensionsPaneRows(th)); got != head {
+		t.Errorf("rows = %d on the catalog with no catalog store, want %d: the installed stay on their tab", got, head)
 	}
-	if empty != 4 {
-		t.Errorf("rows = %d with none, want the description, the Other sources heading and two install rows", empty)
+	s.extensions.view.Selected = extensionsViewInstalled
+	if got := len(s.extensionsPaneRows(th)); got != head+2 {
+		t.Errorf("rows = %d with two extensions, want %d: a row each", got, head+2)
+	}
+	s.extensions.store = new(extensionStore)
+	if got := len(s.extensionsPaneRows(th)); got != head+1 {
+		t.Errorf("rows = %d with none, want %d: the line saying so", got, head+1)
+	}
+}
+
+func TestTheSectionOpensOnTheCatalogAndTheListsSearchResultOnInstalled(t *testing.T) {
+	s := extensionsScreen(t, &extensionBackend{})
+	gtx := layout.Context{Now: time.Now()}
+	s.choose(gtx, settingHit{section: sectionExtensions, title: "Installed extensions"})
+	if s.extensions.view.Selected != extensionsViewInstalled {
+		t.Error("the Installed extensions result did not open the Installed tab")
+	}
+	s.openSection(sectionExtensions)
+	if s.extensions.view.Selected != extensionsViewCatalog {
+		t.Error("opening the section kept the Installed tab")
+	}
+	s.extensions.view.Selected = extensionsViewInstalled
+	s.choose(gtx, settingHit{section: sectionExtensions, title: "Install an extension"})
+	if s.extensions.view.Selected != extensionsViewCatalog {
+		t.Error("the Install an extension result did not open the catalog")
+	}
+}
+
+func TestTheInstalledTabsDotSaysWhatWaitsThere(t *testing.T) {
+	th := testTheme()
+	quiet := backend.Extension{ID: "a", Status: api.ExtensionRunning}
+	update := backend.Extension{ID: "b", Status: api.ExtensionRunning, Latest: "v2"}
+	for _, c := range []struct {
+		name string
+		list []backend.Extension
+		tone color.NRGBA
+		ok   bool
+	}{
+		{"nothing waits", []backend.Extension{quiet}, color.NRGBA{}, false},
+		{"an update", []backend.Extension{quiet, update}, th.ToneWait, true},
+		{"a failure over an update", []backend.Extension{update, {ID: "c", Status: api.ExtensionFailed}}, th.Destructive, true},
+		{"an invalid one", []backend.Extension{{ID: "c", Status: api.ExtensionInvalid}}, th.Destructive, true},
+		{"one taken out of the catalog", []backend.Extension{{ID: "c", Revoked: "malware"}}, th.Destructive, true},
+	} {
+		tone, ok := installedAttention(th, c.list)
+		if ok != c.ok || (ok && tone != c.tone) {
+			t.Errorf("%s: tone %v, shown %v; want %v, %v", c.name, tone, ok, c.tone, c.ok)
+		}
 	}
 }
 

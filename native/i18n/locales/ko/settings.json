@@ -668,7 +668,8 @@
     "remove": "제거",
     "removeMenuItem": "제거…",
     "restart": "다시 시작",
-    "installedCount": "설치됨 · {n}",
+    "installedTab": "설치됨",
+    "installedEmpty": "아직 설치한 확장 프로그램이 없습니다.",
     "rowOptions": "{name} 옵션",
     "installRow": "확장 프로그램 설치",
     "installSearchWords": "확장 프로그램 추가 설치 플러그인 mod github 저장소 릴리스 폴더",
@@ -692,7 +693,7 @@
     "checkFailed": "확장 프로그램 업데이트를 확인하지 못했습니다",
     "upToDate": "확장 프로그램이 모두 최신 버전입니다",
     "permissionNew": "이 버전에서 추가됨",
-    "otherSources": "기타 설치 방법",
+    "installFrom": "다른 곳에서 설치…",
     "removedFromCatalog": "lich 카탈로그에서 삭제됨: {reason}",
     "catalog": {
       "title": "카탈로그",

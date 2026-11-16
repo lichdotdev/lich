@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **The notifications menu shows an inbox when there is nothing waiting.** The bell on the top bar opens it.
+- **Settings › Extensions opens on the catalog.** What you have installed is the Installed tab beside it, with a dot when one has an update or failed. Installing from a GitHub URL or a folder is Install from…, on the title line.
 
 ### Fixed
 

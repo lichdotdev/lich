@@ -18,17 +18,17 @@ import (
 
 const sectionExtensions = "extensions"
 
-// extensionsInstallKey and extensionsListKey name the section's two rows for
-// the search; nothing is stored under them.
+// extensionsInstallKey and extensionsListKey name the section's two search
+// results; nothing is stored under them.
 const (
 	extensionsInstallKey = "extensions.install"
 	extensionsListKey    = "extensions.list"
 )
 
-// The install rows, the places an install starts from and its error lands
-// under. errAtFolder is the title line's Open folder; installFromCatalog is
-// the catalog's detail, its error under the catalog's heading once the detail
-// is closed.
+// The places an install starts from and its error lands under: the two
+// sources of the Install from… panel, and the catalog's detail, its error
+// under the catalog's strip once the detail is closed. errAtFolder is the
+// Installed view's Open folder.
 const (
 	installFromGit     = "git"
 	installFromDir     = "dir"
@@ -46,6 +46,7 @@ var (
 	icExtensionRestart = icons.Lucide("rotate-ccw")
 	icExtensionRemove  = icons.Lucide("trash-2")
 	icExtensionCheck   = icons.Lucide("refresh-cw")
+	icExtensionAdd     = icons.Lucide("plus")
 )
 
 // extensionError is the section's last error and the place it came from: an
@@ -95,12 +96,16 @@ type extensionRowState struct {
 	moreTip, state ui.Tooltip
 }
 
-// extensionsSettings is Settings › Extensions: Open folder on the title line,
-// every extension the store holds, the catalog, then the two install rows.
+// extensionsSettings is Settings › Extensions: Install from… on the title
+// line, then the catalog or, on its own tab, every extension the store holds.
 type extensionsSettings struct {
 	store   *extensionStore
 	catalog *catalogStore
 	grid    catalogGrid
+	// view is the tab showing, extensionsViewCatalog each time the section opens.
+	view         ui.TabsState
+	installFrom  widget.Clickable
+	installPanel ui.DropdownPanelState
 
 	url                     widget.Editor
 	choose, install, folder widget.Clickable

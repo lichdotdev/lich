@@ -673,7 +673,8 @@
     "remove": "移除",
     "removeMenuItem": "移除…",
     "restart": "重启",
-    "installedCount": "已安装 · {n}",
+    "installedTab": "已安装",
+    "installedEmpty": "尚未安装任何扩展。",
     "rowOptions": "{name} 的选项",
     "installRow": "安装扩展",
     "installSearchWords": "扩展 添加 安装 插件 mod github 仓库 版本 文件夹",
@@ -697,7 +698,7 @@
     "checkFailed": "无法检查扩展更新",
     "upToDate": "扩展均为最新版本",
     "permissionNew": "此版本新增",
-    "otherSources": "其他来源",
+    "installFrom": "从其他来源安装…",
     "removedFromCatalog": "已从 lich 目录中下架：{reason}",
     "catalog": {
       "title": "目录",

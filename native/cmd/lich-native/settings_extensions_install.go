@@ -16,26 +16,32 @@ var (
 	extensionFieldH     = ui.Space(8)
 	extensionErrorPad   = ui.Space(3)
 	extensionTitleBelow = ui.Space(4)
+	// The Install from… panel, from the approved mockup (extensions-screen,
+	// frame 3): 400px wide, 12px around its two sources.
+	extensionInstallPanelW   = ui.Space(100)
+	extensionInstallPanelPad = ui.Space(2)
+	extensionSourceGap       = ui.Space(3)
 )
 
-// extensionsTitle is the section's title line, Open folder on its right, and
-// the line under it when Open folder failed.
+// extensionsTitle is the section's title line, Install from… on its right.
+// The panel gives way to the confirmation once a source is staged.
 func (s *settingsScreen) extensionsTitle(th *ui.Theme, label string) layout.Widget {
 	return func(gtx C) D {
 		p := &s.extensions
-		if p.folder.Clicked(gtx) {
-			go s.openExtensionsFolder()
+		if p.snapshot().asking {
+			p.installPanel.Close()
 		}
-		open := th.Button(&p.folder, i18n.T("settings.extensionsSettings.openFolder"))
-		open.Variant, open.Size, open.Icon = ui.VariantGhost, ui.SizeSM, icExtensionsFolder
-		line := func(gtx C) D {
+		pop := th.DropdownPanel(s.root, &p.installPanel, extensionInstallPanelW, func(gtx C, th *ui.Theme) D {
+			return layout.UniformInset(extensionInstallPanelPad).Layout(gtx, func(gtx C) D { return s.installSources(gtx, th) })
+		})
+		pop.AlignEnd = true
+		open := th.Button(&p.installFrom, i18n.T("settings.extensionsSettings.installFrom"))
+		open.Variant, open.Size, open.Icon, open.Lit = ui.VariantOutline, ui.SizeSM, icExtensionAdd, p.installPanel.Opened()
+		return layout.Inset{Bottom: extensionTitleBelow}.Layout(gtx, func(gtx C) D {
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 				layout.Flexed(1, th.Text(settingsTitle, label).Weight(font.SemiBold).Leading(32).Layout),
-				layout.Rigid(open.Layout),
+				layout.Rigid(func(gtx C) D { return pop.Layout(gtx, open.Layout) }),
 			)
-		}
-		return layout.Inset{Bottom: extensionTitleBelow}.Layout(gtx, func(gtx C) D {
-			return withErrorLine(gtx, th, p.snapshot().errorAt(errAtFolder), 0, line)
 		})
 	}
 }
@@ -54,33 +60,56 @@ func withErrorLine(gtx C, th *ui.Theme, text string, padX unit.Dp, w layout.Widg
 	)
 }
 
-// extensionsInstallRows are the two install rows: from GitHub, from a folder.
-func (s *settingsScreen) extensionsInstallRows(th *ui.Theme) []layout.Widget {
+// installSources is the Install from… panel: from GitHub over from a folder,
+// each with why it failed under it.
+func (s *settingsScreen) installSources(gtx C, th *ui.Theme) D {
 	p := &s.extensions
-	git := settingRow{title: i18n.T("settings.extensionsSettings.fromGit"), description: i18n.T("settings.extensionsSettings.gitDescription")}
-	dir := settingRow{title: i18n.T("settings.extensionsSettings.fromDir"), description: i18n.T("settings.extensionsSettings.dirDescription")}
-	return []layout.Widget{
-		func(gtx C) D {
-			if p.urlEvents(gtx) || p.install.Clicked(gtx) {
-				s.prepareInstall(installFromGit, p.url.Text())
-				// The dialogs were laid out before the row took the click.
-				gtx.Execute(op.InvalidateCmd{})
-			}
-			t := p.snapshot()
-			return withErrorLine(gtx, th, t.errorAt(installFromGit), rowPadX, func(gtx C) D {
-				return git.layout(gtx, th, true, func(gtx C, th *ui.Theme) D { return p.gitControl(gtx, th, t.installing) })
-			})
-		},
-		func(gtx C) D {
-			t := p.snapshot()
-			if p.choose.Clicked(gtx) && t.installing == "" {
-				s.pickExtensionDir()
-			}
-			return withErrorLine(gtx, th, t.errorAt(installFromDir), rowPadX, func(gtx C) D {
-				return dir.layout(gtx, th, false, func(gtx C, th *ui.Theme) D { return p.dirControl(gtx, th, t.installing) })
-			})
-		},
+	if p.urlEvents(gtx) || p.install.Clicked(gtx) {
+		s.prepareInstall(installFromGit, p.url.Text())
+		// The dialogs were laid out before the panel took the click.
+		gtx.Execute(op.InvalidateCmd{})
 	}
+	t := p.snapshot()
+	if p.choose.Clicked(gtx) && t.installing == "" {
+		s.pickExtensionDir()
+	}
+	git := installSource{title: i18n.T("settings.extensionsSettings.fromGit"), description: i18n.T("settings.extensionsSettings.gitDescription"),
+		err: t.errorAt(installFromGit), control: func(gtx C) D { return p.gitControl(gtx, th, t.installing) }}
+	dir := installSource{title: i18n.T("settings.extensionsSettings.fromDir"), description: i18n.T("settings.extensionsSettings.dirDescription"),
+		err: t.errorAt(installFromDir), control: func(gtx C) D { return p.dirControl(gtx, th, t.installing) }}
+	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+		layout.Rigid(func(gtx C) D { return git.layout(gtx, th) }),
+		layout.Rigid(func(gtx C) D {
+			return layout.Inset{Top: extensionSourceGap, Bottom: extensionSourceGap}.Layout(gtx, th.Separator)
+		}),
+		layout.Rigid(func(gtx C) D { return dir.layout(gtx, th) }),
+	)
+}
+
+// installSource is one way in of the Install from… panel.
+type installSource struct {
+	title, description, err string
+	control                 layout.Widget
+}
+
+func (r installSource) layout(gtx C, th *ui.Theme) D {
+	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+		layout.Rigid(th.Text(ui.TextSM, r.title).Weight(font.Medium).Layout),
+		ui.VGap(0.5),
+		layout.Rigid(th.Text(ui.TextXS, r.description).Muted().Wrapped().Layout),
+		ui.VGap(2),
+		layout.Rigid(func(gtx C) D {
+			// The panel hands its width down as a minimum; a button keeps its own.
+			gtx.Constraints.Min.X = 0
+			return r.control(gtx)
+		}),
+		layout.Rigid(func(gtx C) D {
+			if r.err == "" {
+				return D{}
+			}
+			return layout.Inset{Top: ui.Space(2)}.Layout(gtx, th.Text(ui.TextXS, r.err).In(th.Destructive).Wrapped().Layout)
+		}),
+	)
 }
 
 // urlEvents reports Enter in the URL field, and drops the GitHub row's error

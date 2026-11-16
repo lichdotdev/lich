@@ -190,23 +190,25 @@ func catalogScreen(t *testing.T, b *extensionBackend, cat backend.ExtensionCatal
 	return s
 }
 
-func TestTheCatalogGroupIsTheHeadingTheStripAndTheGrid(t *testing.T) {
+// The contract changed: the Catalog tab names the view, so it has no heading
+// of its own.
+func TestTheCatalogViewIsTheStripAndTheGrid(t *testing.T) {
 	th := testTheme()
 	s := catalogScreen(t, &extensionBackend{}, testCatalog())
-	if got := len(s.catalogRows(th, nil, true)); got != 3 {
-		t.Errorf("rows = %d, want the heading, the strip and the grid", got)
+	if got := len(s.catalogRows(th, nil)); got != 2 {
+		t.Errorf("rows = %d, want the strip and the grid", got)
 	}
 	s.extensions.grid.query.SetText("zzz")
-	if got := len(s.catalogRows(th, nil, true)); got != 3 {
-		t.Errorf("rows = %d for no match, want the heading, the strip and the sentence", got)
+	if got := len(s.catalogRows(th, nil)); got != 2 {
+		t.Errorf("rows = %d for no match, want the strip and the sentence", got)
 	}
 	s.extensions.catalog = &catalogStore{reading: true}
-	if got := len(s.catalogRows(th, nil, true)); got != 2 {
-		t.Errorf("rows = %d while reading, want the heading and the skeleton", got)
+	if got := len(s.catalogRows(th, nil)); got != 1 {
+		t.Errorf("rows = %d while reading, want the skeleton", got)
 	}
 	s.extensions.catalog = &catalogStore{err: "no such host"}
-	if got := len(s.catalogRows(th, nil, true)); got != 2 {
-		t.Errorf("rows = %d after a failed read, want the heading and why", got)
+	if got := len(s.catalogRows(th, nil)); got != 1 {
+		t.Errorf("rows = %d after a failed read, want why", got)
 	}
 }
 

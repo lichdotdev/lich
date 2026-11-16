@@ -2,8 +2,6 @@ package main
 
 import (
 	"image/color"
-	"slices"
-	"strconv"
 
 	"gioui.org/font"
 	"gioui.org/layout"
@@ -22,61 +20,37 @@ var (
 )
 
 // extensionsPaneRows is the pane under its title line: the description, the
-// Installed heading over the list when there is one, the catalog, then the
-// install rows under Other sources.
+// tabs, then the view the selected one names.
 func (s *settingsScreen) extensionsPaneRows(th *ui.Theme) []layout.Widget {
 	p := &s.extensions
-	rows := []layout.Widget{func(gtx C) D {
-		return layout.Inset{Top: -ui.Space(2), Bottom: ui.Space(4)}.Layout(gtx, func(gtx C) D {
-			gtx.Constraints.Max.X = min(gtx.Constraints.Max.X, gtx.Sp(settingsDescSize)*settingsDescCh*6/10)
-			l := th.Text(settingsDescSize, i18n.T("settings.extensionsSettings.description")).Muted().Leading(20)
-			l.MaxLines = 0
-			return l.Layout(gtx)
-		})
-	}}
 	var list []backend.Extension
 	if p.store != nil {
 		list = p.store.all()
 	}
-	if len(list) > 0 {
-		rows = append(rows, s.installedRows(th, list)...)
+	rows := []layout.Widget{func(gtx C) D {
+		return layout.Inset{Top: -ui.Space(2), Bottom: ui.Space(2)}.Layout(gtx, th.Text(settingsDescSize, i18n.T("settings.extensionsSettings.description")).Muted().Leading(20).Wrapped().Layout)
+	}, s.extensionsViews(th, list)}
+	if p.view.Selected == extensionsViewInstalled {
+		return append(rows, s.installedRows(th, list)...)
 	}
 	if p.catalog != nil {
-		rows = append(rows, s.catalogRows(th, list, len(list) == 0)...)
-	}
-	rows = append(rows, groupHeading(th, i18n.T("settings.extensionsSettings.otherSources"), false))
-	return append(rows, s.extensionsInstallRows(th)...)
-}
-
-// installedRows is the Installed heading over a row per extension.
-func (s *settingsScreen) installedRows(th *ui.Theme, list []backend.Extension) []layout.Widget {
-	count := i18n.T("settings.extensionsSettings.installedCount", i18n.Args{"n": strconv.Itoa(len(list))})
-	heading := groupHeading(th, count, true)
-	if slices.ContainsFunc(list, func(e backend.Extension) bool { return e.Release != "" }) {
-		heading = s.extensionsHeading(th, heading)
-	}
-	rows := []layout.Widget{heading}
-	for _, e := range list {
-		rows = append(rows, func(gtx C) D { return s.extensionRow(gtx, th, e) })
+		rows = append(rows, s.catalogRows(th, list)...)
 	}
 	return rows
 }
 
-// extensionsHeading is the Installed heading with Check for updates on its
-// right, which only a list holding an extension from GitHub gets.
-func (s *settingsScreen) extensionsHeading(th *ui.Theme, heading layout.Widget) layout.Widget {
-	return func(gtx C) D {
-		p := &s.extensions
-		if p.check.Clicked(gtx) {
-			s.checkExtensionUpdates()
-		}
-		check := th.Button(&p.check, i18n.T("settings.extensionsSettings.checkUpdates"))
-		check.Variant, check.Size, check.Icon = ui.VariantGhost, ui.SizeSM, icExtensionCheck
-		if p.snapshot().checking {
-			check.Text, check.Disabled = i18n.T("settings.extensionsSettings.checkingUpdates"), true
-		}
-		return layout.Flex{Alignment: layout.End}.Layout(gtx, layout.Flexed(1, heading), layout.Rigid(check.Layout))
+// installedRows is a row per extension, or the line saying there is none.
+func (s *settingsScreen) installedRows(th *ui.Theme, list []backend.Extension) []layout.Widget {
+	if len(list) == 0 {
+		return []layout.Widget{func(gtx C) D {
+			return layout.Inset{Left: rowPadX}.Layout(gtx, th.Text(ui.TextSM, i18n.T("settings.extensionsSettings.installedEmpty")).Muted().Layout)
+		}}
 	}
+	rows := make([]layout.Widget, len(list))
+	for i, e := range list {
+		rows[i] = func(gtx C) D { return s.extensionRow(gtx, th, e) }
+	}
+	return rows
 }
 
 // extensionRow is one extension: hover fills it, the right press and the ⋯

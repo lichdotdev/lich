@@ -686,7 +686,8 @@
     "remove": "Удалить",
     "removeMenuItem": "Удалить…",
     "restart": "Перезапустить",
-    "installedCount": "Установленные · {n}",
+    "installedTab": "Установленные",
+    "installedEmpty": "Пока ничего не установлено.",
     "rowOptions": "Параметры {name}",
     "installRow": "Установить расширение",
     "installSearchWords": "расширения добавить установить плагин mod github репозиторий релиз папка",
@@ -710,7 +711,7 @@
     "checkFailed": "Не удалось проверить обновления расширений",
     "upToDate": "Все расширения обновлены",
     "permissionNew": "Новое в этой версии",
-    "otherSources": "Другие источники",
+    "installFrom": "Установить из…",
     "removedFromCatalog": "Удалено из каталога lich: {reason}",
     "catalog": {
       "title": "Каталог",

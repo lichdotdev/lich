@@ -92,18 +92,16 @@ func (g *catalogGrid) card(id string) *widget.Clickable {
 	return c
 }
 
-// catalogRows is the catalog group: its heading, then the filter strip over
-// the grid, a skeleton while the catalog is read, or why it could not be.
-// first is the group opening the pane, with nothing installed above it.
-func (s *settingsScreen) catalogRows(th *ui.Theme, installed []backend.Extension, first bool) []layout.Widget {
+// catalogRows is the Catalog view: the filter strip over the grid, a skeleton
+// while the catalog is read, or why it could not be.
+func (s *settingsScreen) catalogRows(th *ui.Theme, installed []backend.Extension) []layout.Widget {
 	p := &s.extensions
 	cat, err := p.catalog.read()
-	title := i18n.T("settings.extensionsSettings.catalog.title")
 	switch {
 	case cat == nil && err != "":
-		return []layout.Widget{s.catalogRetryHeading(th, groupHeading(th, title, first)), catalogReadFailed(th, err)}
+		return []layout.Widget{s.catalogReadFailed(th, err)}
 	case cat == nil:
-		return []layout.Widget{groupHeading(th, title, first), catalogSkeletonRow(th)}
+		return []layout.Widget{catalogSkeletonRow(th)}
 	}
 	counts := catalogCounts(cat.Catalog)
 	g := &p.grid
@@ -111,15 +109,14 @@ func (s *settingsScreen) catalogRows(th *ui.Theme, installed []backend.Extension
 		g.tabs.Selected = 0
 	}
 	g.filter.category, g.filter.query = counts[g.tabs.Selected].id, g.query.Text()
-	// The heading carries no count: All, under it, already says how many.
-	heading := groupHeading(th, title, first)
+	strip := s.catalogStrip(th, counts)
 	rows := []layout.Widget{func(gtx C) D {
 		errText := ""
 		if g.detail.id == "" {
 			errText = p.snapshot().errorAt(installFromCatalog)
 		}
-		return withErrorLine(gtx, th, errText, rowPadX, heading)
-	}, s.catalogStrip(th, counts)}
+		return withErrorLine(gtx, th, errText, rowPadX, strip)
+	}}
 	entries := g.filter.entries(cat.Catalog)
 	if len(entries) == 0 {
 		return append(rows, func(gtx C) D {
@@ -166,8 +163,9 @@ func catalogCards(gtx C, n int, card func(gtx C, i int) D) D {
 	return D{Size: image.Pt(width, y)}
 }
 
-// catalogRetryHeading is the group's heading with Try again on its right.
-func (s *settingsScreen) catalogRetryHeading(th *ui.Theme, heading layout.Widget) layout.Widget {
+// catalogReadFailed says the catalog could not be read and that a GitHub
+// URL still installs, over the backend's words, Try again on its right.
+func (s *settingsScreen) catalogReadFailed(th *ui.Theme, err string) layout.Widget {
 	return func(gtx C) D {
 		p := &s.extensions
 		if p.grid.retry.Clicked(gtx) {
@@ -175,19 +173,17 @@ func (s *settingsScreen) catalogRetryHeading(th *ui.Theme, heading layout.Widget
 		}
 		b := th.Button(&p.grid.retry, i18n.T("common.action.tryAgain"))
 		b.Variant, b.Size, b.Icon = ui.VariantGhost, ui.SizeSM, icCatalogRetry
-		return layout.Flex{Alignment: layout.End}.Layout(gtx, layout.Flexed(1, heading), layout.Rigid(b.Layout))
-	}
-}
-
-// catalogReadFailed says the catalog could not be read and that a GitHub
-// URL still installs, over the backend's words.
-func catalogReadFailed(th *ui.Theme, err string) layout.Widget {
-	return func(gtx C) D {
-		return layout.Inset{Left: rowPadX, Right: rowPadX, Top: catalogBodyPad}.Layout(gtx, func(gtx C) D {
-			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-				layout.Rigid(th.Text(ui.TextSM, i18n.T("settings.extensionsSettings.catalog.readFailed")).Muted().Wrapped().Layout),
-				ui.VGap(0.5),
-				layout.Rigid(th.Text(ui.TextXS, err).Mono().Muted().Wrapped().Layout),
+		return layout.Inset{Left: rowPadX}.Layout(gtx, func(gtx C) D {
+			return layout.Flex{}.Layout(gtx,
+				layout.Flexed(1, func(gtx C) D {
+					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+						layout.Rigid(th.Text(ui.TextSM, i18n.T("settings.extensionsSettings.catalog.readFailed")).Muted().Wrapped().Layout),
+						ui.VGap(0.5),
+						layout.Rigid(th.Text(ui.TextXS, err).Mono().Muted().Wrapped().Layout),
+					)
+				}),
+				ui.Gap(3),
+				layout.Rigid(b.Layout),
 			)
 		})
 	}

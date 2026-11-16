@@ -674,7 +674,8 @@
     "remove": "Remove",
     "removeMenuItem": "Remove…",
     "restart": "Restart",
-    "installedCount": "Installed · {n}",
+    "installedTab": "Installed",
+    "installedEmpty": "Nothing installed yet.",
     "rowOptions": "Options for {name}",
     "installRow": "Install an extension",
     "installSearchWords": "extensions add install plugin mod github repository release folder",
@@ -698,7 +699,7 @@
     "checkFailed": "Couldn't check for extension updates",
     "upToDate": "Your extensions are up to date",
     "permissionNew": "New in this version",
-    "otherSources": "Other sources",
+    "installFrom": "Install from…",
     "removedFromCatalog": "Removed from the lich catalog: {reason}",
     "catalog": {
       "title": "Catalog",

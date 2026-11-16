@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-var flagSettingsCatalog = flag.String("settings-catalog", "", "with -settings extensions, at start, for -shot: detail:<id> opens a listing's detail, install:<repository URL> stages it to its confirmation, filter:<tab>:<query> picks the nth category and types the query")
+var flagSettingsCatalog = flag.String("settings-catalog", "", "with -settings extensions, at start, for -shot: detail:<id> opens a listing's detail, install:<repository URL> stages it to its confirmation, filter:<tab>:<query> picks the nth category and types the query, installed opens the Installed tab")
 
 // catalogShot is -settings-catalog.
 func (u *window) catalogShot() {
@@ -17,6 +17,8 @@ func (u *window) catalogShot() {
 		g.detail.show(arg)
 	case "install":
 		u.settings.prepareInstall(installFromCatalog, arg)
+	case "installed":
+		u.settings.extensions.view.Selected = extensionsViewInstalled
 	case "filter":
 		tab, query, _ := strings.Cut(arg, ":")
 		g.tabs.Selected, _ = strconv.Atoi(tab)
