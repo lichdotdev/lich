@@ -72,15 +72,15 @@ func TestAProfileKeepsItsOwnModelModes(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// What `/advisor`, `/fast`, the thinking toggle and the safeguards prompt
-	// run in the profile leave there.
+	// What `/advisor`, `/fast`, the thinking toggle, the safeguards prompt and
+	// the ultracode setting run in the profile leave there.
 	mustWrite(t, filepath.Join(p.Dir, "settings.json"), `{
 	  "advisorModel": "sonnet", "fastMode": true, "fastModePerSessionOptIn": true,
-	  "alwaysThinkingEnabled": false, "switchModelsOnFlag": true
+	  "alwaysThinkingEnabled": false, "switchModelsOnFlag": true, "ultracode": true
 	}`)
 	mustWrite(t, filepath.Join(personal, "settings.json"), `{
 	  "advisorModel": "fable", "fastMode": false, "fastModePerSessionOptIn": false,
-	  "alwaysThinkingEnabled": true, "switchModelsOnFlag": false
+	  "alwaysThinkingEnabled": true, "switchModelsOnFlag": false, "ultracode": false
 	}`)
 
 	if err := EnsureShared(p.Slug); err != nil {
@@ -89,7 +89,7 @@ func TestAProfileKeepsItsOwnModelModes(t *testing.T) {
 	got := readSettingsFile(t, filepath.Join(p.Dir, "settings.json"))
 	want := map[string]any{
 		"advisorModel": "sonnet", "fastMode": true, "fastModePerSessionOptIn": true,
-		"alwaysThinkingEnabled": false, "switchModelsOnFlag": true,
+		"alwaysThinkingEnabled": false, "switchModelsOnFlag": true, "ultracode": true,
 	}
 	for key, value := range want {
 		if got[key] != value {

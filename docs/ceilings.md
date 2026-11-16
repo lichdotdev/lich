@@ -906,7 +906,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
 - **A setting changed inside a Claude Code profile does not last, past its model choices and plugins**
   (`internal/claudeprofile/settings.go`): the profile's `settings.json` is rebuilt from Personal's before every
   spawn, keeping only the profile's own `model`, `effortLevel`, `modelSettings`, `advisorModel`, `fastMode`,
-  `fastModePerSessionOptIn`, `alwaysThinkingEnabled`, `switchModelsOnFlag`, `enabledPlugins` and
+  `fastModePerSessionOptIn`, `alwaysThinkingEnabled`, `switchModelsOnFlag`, `ultracode`, `enabledPlugins` and
   `extraKnownMarketplaces`. So a hook or permission added through `/config` inside a profile is gone at its next
   session, a change to Personal's reaches a running profile session only once it is spawned again, and a
   `settings.json` a profile held as its own before this rule (made before Personal had one, or replaced by hand)
