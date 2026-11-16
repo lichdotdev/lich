@@ -204,7 +204,7 @@
     "skip": {
       "never": {
         "label": "从不",
-        "consequence": "在每个检出中，每次编辑和每条命令都会等待你确认。"
+        "consequence": "lich 在任何检出中都不添加参数。代理按其自身的设置决定是否询问。"
       },
       "worktrees": {
         "label": "仅工作树",

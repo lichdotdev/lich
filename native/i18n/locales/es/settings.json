@@ -204,7 +204,7 @@
     "skip": {
       "never": {
         "label": "Nunca",
-        "consequence": "Cada edición y cada comando esperan tu confirmación, en todos los checkouts."
+        "consequence": "lich no añade ninguna opción, en ningún checkout. El agente pregunta según su propia configuración."
       },
       "worktrees": {
         "label": "Solo worktrees",
