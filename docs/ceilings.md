@@ -903,15 +903,16 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   toast of the native window, in the CLI's own words, and is tried again at the next start or update. A Claude
   Code profile's pass removes the marketplace clone it links to Personal's and clones it back, so a Personal
   session starting during a pass can find the clone missing for the seconds that takes.
-- **A setting changed inside a Claude Code profile does not last, past its model, effort and plugins**
+- **A setting changed inside a Claude Code profile does not last, past its model choices and plugins**
   (`internal/claudeprofile/settings.go`): the profile's `settings.json` is rebuilt from Personal's before every
-  spawn, keeping only the profile's own `model`, `effortLevel`, `modelSettings`, `enabledPlugins` and
+  spawn, keeping only the profile's own `model`, `effortLevel`, `modelSettings`, `advisorModel`, `fastMode`,
+  `fastModePerSessionOptIn`, `alwaysThinkingEnabled`, `switchModelsOnFlag`, `enabledPlugins` and
   `extraKnownMarketplaces`. So a hook or permission added through `/config` inside a profile is gone at its next
   session, a change to Personal's reaches a running profile session only once it is spawned again, and a
   `settings.json` a profile held as its own before this rule (made before Personal had one, or replaced by hand)
   lost its other keys at its first spawn. A Personal with no `settings.json` leaves the profile's alone, and one
   that is not JSON fails the spawn, naming the file. A profile that still linked to Personal's file keeps the
-  model, effort and plugins it ran on, which are Personal's at that moment.
+  model choices and plugins it ran on, which are Personal's at that moment.
 - **A setting changed inside an oh-my-pi profile does not last, past its models** (`internal/ompprofile/config.go`):
   the profile's `config.yml` is rebuilt from Personal's before every spawn, keeping only the profile's own
   `modelRoles` and `defaultThinkingLevel` blocks. The cut is by top-level key at the start of a line, the block

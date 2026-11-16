@@ -18,10 +18,15 @@ import (
 const settingsFile = "settings.json"
 
 // profileKeys are the top-level keys of settings.json a profile keeps as its
-// own: the default model and effort, which belong to an account, and the plugin
-// set, since an organization account may forbid plugins Personal runs. Every
-// other key is Personal's.
-var profileKeys = []string{"model", "effortLevel", "modelSettings", "enabledPlugins", "extraKnownMarketplaces"}
+// own: the model choices, which belong to an account since each plan offers its
+// own models and modes (default model and effort, the advisor's model, fast
+// mode, thinking, switching models when safeguards flag a message), and the
+// plugin set, since an organization account may forbid plugins Personal runs.
+// Every other key is Personal's.
+var profileKeys = []string{
+	"model", "effortLevel", "modelSettings", "advisorModel", "fastMode", "fastModePerSessionOptIn",
+	"alwaysThinkingEnabled", "switchModelsOnFlag", "enabledPlugins", "extraKnownMarketplaces",
+}
 
 // syncSettings rebuilds a profile's settings.json from Personal's and the
 // profile's own keys (profileKeys), part of the Sync of the profile store. A
