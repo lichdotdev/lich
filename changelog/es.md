@@ -1,3 +1,21 @@
+## [0.92.0] - 2026-11-16
+
+### Added
+
+- **El resolutor de conflictos enlaza cada cambio entre sus paneles.** Una banda en el margen va desde un cambio de tu versión o de la entrante hasta el mismo cambio en el resultado, con su color, para que puedas seguirlo cuando los paneles no están a la misma altura.
+- **Resuelve un conflicto de fusión en paralelo en Revisión.** Resolver, en un archivo en conflicto, abre tu versión y la entrante a ambos lados del resultado: toma las líneas de un lado con su flecha, toma ambos para dejarlos apilados, o edita el resultado a mano, y luego Aplicar.
+- **Fusiona una rama en la que estás desde el panel de Git.** Su menú tiene Fusionar en, que dice antes de que hagas clic si habría conflicto; una fusión limpia muestra el comando que ejecutó con un Deshacer, y una que se detiene por un conflicto te lleva a Revisión. Espera hasta que el checkout no tenga cambios sin confirmar.
+- **Una fusión en curso se muestra allí donde se muestra su checkout, y termina desde Revisión.** La barra lateral y el pie marcan la fusión y cuentan los archivos en conflicto; Revisión los lista primero, con Marcar como resuelto, y tiene Confirmar fusión y Abortar fusión sobre los archivos. Revertir queda desactivado hasta que la fusión termine, para que un revert no descarte lo que trajo la fusión.
+
+### Changed
+
+- **El menú de notificaciones muestra una bandeja de entrada cuando no hay nada pendiente.** La campana de la barra superior lo abre.
+- **Ajustes › Extensiones se abre en el catálogo.** Lo que tienes instalado es la pestaña Instaladas a su lado, con un punto cuando una tiene una actualización o falló. Instalar desde una URL de GitHub o una carpeta es Instalar desde…, en la línea del título.
+
+### Fixed
+
+- **Nunca, en Omitir las peticiones de permiso, dice lo que hace lich.** Decía "Cada edición y cada comando esperan tu confirmación", algo que corresponde decidir a los ajustes propios del agente. Está en Ajustes › Proveedores y en la elección de agente del primer arranque.
+
 ## [0.91.0] - 2026-11-14
 
 ### Added

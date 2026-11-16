@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.92.0] - 2026-11-16
+
 ### Added
 
 - **The conflict resolver links each change across its panes.** A band in the gutter runs from a change in your version or the incoming one to the same change in the result, in its color, so you can follow it when the panes are not level.
@@ -21,7 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- **Never, under Skip permission prompts, says what lich does.** It read "Every edit and command waits for you", which the agent's own settings decide, not lich. It is in Settings › Providers and in the first-run agent choice.
+- **Never, under Skip permission prompts, says what lich does.** It read "Every edit and command waits for you", which is for the agent's own settings to decide. It is in Settings › Providers and in the first-run agent choice.
 
 ## [0.91.0] - 2026-11-14
 
@@ -6769,7 +6771,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   CPU, costing ~40ms per frame in a full-size window. Under Xwayland typing is
   stall-free at full frame rate.
 
-[Unreleased]: https://github.com/lichdotdev/lich/compare/v0.91.0...HEAD
+[Unreleased]: https://github.com/lichdotdev/lich/compare/v0.92.0...HEAD
+[0.92.0]: https://github.com/lichdotdev/lich/compare/v0.91.0...v0.92.0
 [0.91.0]: https://github.com/lichdotdev/lich/compare/v0.90.1...v0.91.0
 [0.90.1]: https://github.com/lichdotdev/lich/compare/v0.90.0...v0.90.1
 [0.90.0]: https://github.com/lichdotdev/lich/compare/v0.89.0...v0.90.0
