@@ -176,8 +176,8 @@ func TestATaskToASessionWithAModIsHandedToItNotTyped(t *testing.T) {
 }
 
 // A session just spawned is at its prompt a moment before its mod first polls.
-// A task typed into that moment lands before Claude Code takes input and stays
-// on the prompt unsent, so it waits for the poll and goes to the mod.
+// A task typed into that moment was left on the prompt with its Enter lost, so
+// it waits for the poll and goes to the mod.
 func TestATaskWaitsForTheFirstPollOfAModOnItsWay(t *testing.T) {
 	t.Parallel()
 	term := newFakeTerminal("s1", "s2")

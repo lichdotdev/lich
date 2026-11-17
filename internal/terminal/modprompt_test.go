@@ -196,6 +196,7 @@ func TestModAttachingUntilTheModPollsOrIsDue(t *testing.T) {
 		{"not polled yet", dueIn(time.Minute, false), true},
 		{"polled", dueIn(time.Minute, true), false},
 		{"due and never polled", dueIn(-time.Second, false), false},
+		{"started after it was due", startedAfterDue(t), true},
 		{"loads no mod", newModService(t, events.New(), 10*time.Millisecond), false},
 		{"no transport", &Service{}, false},
 	}
@@ -206,4 +207,14 @@ func TestModAttachingUntilTheModPollsOrIsDue(t *testing.T) {
 			}
 		})
 	}
+}
+
+// startedAfterDue is a session whose session-start came after its spawn's wait
+// for the mod ran out, as one held on a trust question does.
+func startedAfterDue(t *testing.T) *Service {
+	svc := newModService(t, events.New(), 10*time.Millisecond)
+	runModSession(svc, "s1")
+	svc.holdForStart("s1", svc.sessions["s1"], true, time.Now().Add(-time.Second))
+	svc.markStarted("s1")
+	return svc
 }

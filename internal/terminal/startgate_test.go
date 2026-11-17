@@ -216,3 +216,29 @@ func TestStartDoesNotHoldACursorSessionInAFolderItTrusts(t *testing.T) {
 		t.Error("a settled Cursor CLI session in a trusted folder was held for a start report")
 	}
 }
+
+// Start expects a mod only in a Claude Code session whose plugin is installed.
+func TestStartExpectsAModOnlyFromClaudeCodeWithThePlugin(t *testing.T) {
+	tests := []struct {
+		kind      string
+		installed bool
+		want      bool
+	}{
+		{providers.Claude, true, true},
+		{providers.Claude, false, false},
+		{providers.Cursor, true, false},
+	}
+	for _, tc := range tests {
+		svc := New(stubBins{bin: echoBin(t)}, nil, events.New())
+		svc.SetStartReports(func(string) bool { return tc.installed })
+		if _, err := svc.Start(t.Context(), api.StartOptions{ID: "s1", ProjectID: "p1", Cwd: t.TempDir(), Kind: tc.kind, Cols: 80, Rows: 24}); err != nil {
+			t.Fatalf("start: %v", err)
+		}
+		if got := svc.ModAttaching("s1"); got != tc.want {
+			t.Errorf("%s with the plugin installed %v: ModAttaching = %v, want %v", tc.kind, tc.installed, got, tc.want)
+		}
+		if _, err := svc.Close(t.Context(), api.SessionIDOptions{ID: "s1"}); err != nil {
+			t.Fatalf("close: %v", err)
+		}
+	}
+}

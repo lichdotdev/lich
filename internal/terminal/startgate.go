@@ -27,14 +27,19 @@ var startsAtPrompt = map[string]bool{
 	providers.Kiro:   true,
 }
 
-// modFirstPoll is how long after its spawn a Claude Code session that loads
-// lich's mod waits for that mod's first poll before a message is typed at it
-// instead. Measured on Claude Code 2.1.326, the poll comes 0.6 s after
-// session-start on a fresh session (2.3 s from spawn) and 1.6 s after it on a
-// resumed 16 MB transcript (5.2 s); the margin is for a loaded machine opening
-// several cards at once. Past it, a session whose mod never polled (mods off, a
-// Claude Code older than modFirstClaudeCode) is typed at as before.
-const modFirstPoll = 20 * time.Second
+// How long a Claude Code session that loads lich's mod waits for that mod's
+// first poll before a message is typed at it instead: modFirstPoll from its
+// spawn, and at least modPollAfterStart from its session-start, which a trust
+// question can hold back past the first. Measured on Claude Code 2.1.326, the
+// poll comes 0.6 s after session-start on a fresh session (2.3 s from spawn)
+// and 1.6 s after it on a resumed 16 MB transcript (5.2 s); the margins are for
+// a loaded machine opening several cards at once. Past them, a session whose
+// mod never polled (mods off, a Claude Code older than modFirstClaudeCode) is
+// typed at as before.
+const (
+	modFirstPoll      = 20 * time.Second
+	modPollAfterStart = 10 * time.Second
+)
 
 // SetStartReports wires the question of whether a provider's sessions run
 // lich's hooks at all. Without them no session-start ever arrives, so a session
@@ -113,7 +118,12 @@ func (s *Service) holdForStart(id string, sess *session, awaits bool, modDue tim
 func (s *Service) markStarted(id string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if sess, ok := s.sessions[id]; ok {
-		sess.started = true
+	sess, ok := s.sessions[id]
+	if !ok {
+		return
+	}
+	sess.started = true
+	if afterStart := time.Now().Add(modPollAfterStart); !sess.modDue.IsZero() && sess.modDue.Before(afterStart) {
+		sess.modDue = afterStart
 	}
 }
