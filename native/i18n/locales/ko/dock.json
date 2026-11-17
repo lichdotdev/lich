@@ -49,7 +49,8 @@
     "openInBrowser": "브라우저에서 열기",
     "attachToPrompt": "프롬프트에 첨부",
     "copyPath": "경로 복사",
-    "showInFileManager": "파일 관리자에서 보기"
+    "showInFileManager": "파일 관리자에서 보기",
+    "backToList": "아티팩트 목록으로 돌아가기"
   },
   "showCode": {
     "pointed": "{session}에서 {file} 파일을 가리켰습니다",

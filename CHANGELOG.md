@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **An extension's detail grows with the window.** On a tall or ultrawide screen the dialog and its screenshots take more of it.
+- **A Markdown artifact opens rendered, in the Artifacts tab.** Clicking a `.md` file in the dock's Artifacts tab shows it formatted, as the Code tab's Markdown preview does, instead of its source in the browser.
 
 ### Fixed
 
