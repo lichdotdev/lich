@@ -190,7 +190,8 @@ func TestTheHoverOutlineGlidesToTheNextElement(t *testing.T) {
 }
 
 func TestTheClosingNoteKeepsTheKeysOfAFocusedPane(t *testing.T) {
-	u := &window{}
+	u := &window{sidebar: &sidebar{}, footer: &footer{}, dock: &dock{}, git: &gitPanel{}, topbar: &topbar{},
+		palette: &commandPalette{}, worktree: &worktreeDialog{}}
 	p := &browserPaneUI{copied: make(chan string, 1), notes: newBrowserNotes()}
 	var router input.Router
 	shaper := text.NewShaper(text.WithCollection(gofont.Collection()))
@@ -209,5 +210,36 @@ func TestTheClosingNoteKeepsTheKeysOfAFocusedPane(t *testing.T) {
 	frame(nil)
 	if !router.Source().Focused(&p.notes.closing) {
 		t.Fatal("the pane took the keys from the closing note")
+	}
+}
+
+func TestAnOpenPaletteKeepsTheKeysFromAFocusedPane(t *testing.T) {
+	u := &window{sidebar: &sidebar{}, footer: &footer{}, dock: &dock{}, git: &gitPanel{}, topbar: &topbar{},
+		palette: &commandPalette{open: true}, worktree: &worktreeDialog{}}
+	p := &browserPaneUI{copied: make(chan string, 1), notes: newBrowserNotes()}
+	var router input.Router
+	shaper := text.NewShaper(text.WithCollection(gofont.Collection()))
+	frame := func() {
+		ops := new(op.Ops)
+		gtx := layout.Context{Ops: ops, Source: router.Source(), Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}, Constraints: layout.Exact(image.Pt(600, 400))}
+		// The palette is laid out before the content under it, as layoutPalette is.
+		if !gtx.Focused(&u.palette.query) {
+			gtx.Execute(key.FocusCmd{Tag: &u.palette.query})
+		}
+		u.palette.query.Layout(gtx, shaper, font.Font{}, 12, op.CallOp{}, op.CallOp{})
+		u.browserInput(gtx, p, "s", 1, true)
+		router.Frame(ops)
+	}
+	frame()
+	for _, r := range "abc" {
+		// What Gio's window does for a typed key: replace the selection the
+		// router last heard, then put the caret after the text.
+		sel := router.EditorState().Selection.Range
+		at := min(sel.Start, sel.End) + 1
+		router.Queue(key.EditEvent{Range: sel, Text: string(r)}, key.SelectionEvent{Start: at, End: at})
+		frame()
+	}
+	if got := u.palette.query.Text(); got != "abc" {
+		t.Fatalf("typing abc into the palette over a focused pane left %q", got)
 	}
 }
