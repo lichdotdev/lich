@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **A message to a Claude Code session that just opened is no longer left unsent on its prompt.** lich now waits for the session's lich-plugin to connect and hands the message over through it, instead of typing it into a session still starting up.
 - **Changing the advisor model, fast mode, thinking or ultracode in one Claude Code account no longer changes it in your other accounts.** Each profile now keeps these alongside its own default model and effort, as well as whether to switch models when safeguards flag a message.
 - **Typing in the command palette opened over a browser page no longer piles every letter at the start.** The page took the keyboard back on each frame; now the palette, and any field over the page, keeps it until it closes.
 

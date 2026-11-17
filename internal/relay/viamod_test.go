@@ -56,6 +56,21 @@ func (f *fakeTerminal) ModAttached(id string) bool {
 	return mod != nil && len(mod.prompts) < len(mod.receipts)
 }
 
+func (f *fakeTerminal) ModAttaching(id string) bool {
+	f.mu.Lock()
+	attaching := f.attaching[id]
+	f.mu.Unlock()
+	return attaching && !f.ModAttached(id)
+}
+
+// expectMod makes a session one whose mod may still make its first poll, or,
+// with false, one whose wait for that poll ran out.
+func (f *fakeTerminal) expectMod(id string, attaching bool) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.attaching[id] = attaching
+}
+
 // attachMod gives a session a mod that answers its prompts with receipts, in
 // order.
 func (f *fakeTerminal) attachMod(id string, receipts ...PromptReceipt) {
@@ -158,6 +173,57 @@ func TestATaskToASessionWithAModIsHandedToItNotTyped(t *testing.T) {
 		t.Errorf("the task was handed as a notification %+v, want an ordinary prompt", notes[0])
 	}
 	assertNotTyped(t, term, "s2")
+}
+
+// A session just spawned is at its prompt a moment before its mod first polls.
+// A task typed into that moment lands before Claude Code takes input and stays
+// on the prompt unsent, so it waits for the poll and goes to the mod.
+func TestATaskWaitsForTheFirstPollOfAModOnItsWay(t *testing.T) {
+	t.Parallel()
+	term := newFakeTerminal("s1", "s2")
+	term.expectMod("s2", true)
+	svc := viaMod(term, nil)
+
+	done := make(chan Result, 1)
+	go func() {
+		got, _ := svc.Send(context.Background(), SendOptions{From: "s1", Target: "docs", Prompt: "run the tests", WaitSeconds: 5})
+		done <- got
+	}()
+	time.Sleep(2 * readyPoll)
+	assertNotTyped(t, term, "s2")
+
+	term.attachMod("s2", ackedOK)
+	if !awaitPrompts(term, "s2", 1) {
+		t.Fatal("the task never reached the mod once it polled")
+	}
+	assertNotTyped(t, term, "s2")
+	if _, err := svc.Reply(t.Context(), ReplyOptions{Ticket: waitForTicket(svc), Answer: "all green"}); err != nil {
+		t.Fatalf("Reply: %v", err)
+	}
+	<-done
+}
+
+// A session whose mod never polls (mods off, a Claude Code too old to run
+// them) is typed at once the wait for it runs out.
+func TestATaskIsTypedOnceAModThatNeverPolledIsNoLongerExpected(t *testing.T) {
+	t.Parallel()
+	term := newFakeTerminal("s1", "s2")
+	term.expectMod("s2", true)
+	svc := viaMod(term, nil)
+
+	done := make(chan Result, 1)
+	go func() {
+		got, _ := svc.Send(context.Background(), SendOptions{From: "s1", Target: "docs", Prompt: "run the tests", WaitSeconds: 5})
+		done <- got
+	}()
+	time.Sleep(2 * readyPoll)
+	assertNotTyped(t, term, "s2")
+
+	term.expectMod("s2", false)
+	<-done
+	if !strings.Contains(term.written("s2"), "run the tests") {
+		t.Errorf("writes = %q, want the task typed", term.writesTo("s2"))
+	}
 }
 
 // A prompt no poll collected never runs, so typing it keeps delivery at most

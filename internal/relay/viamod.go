@@ -59,7 +59,12 @@ const defaultModAckWait = 10 * time.Second
 
 // takesDelivery is whether a message can go to a session now: its prompt is
 // free, or its mod takes the message without touching what its user is typing.
+// A session whose mod has yet to poll takes nothing: typed there, the message
+// lands before Claude Code takes input and stays on its prompt unsent.
 func (s *Service) takesDelivery(id string) (bool, error) {
+	if s.term.ModAttaching(id) {
+		return false, nil
+	}
 	ready, err := s.term.Ready(context.Background(), api.SessionIDOptions{ID: id})
 	if err != nil {
 		return false, err

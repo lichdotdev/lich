@@ -13,7 +13,10 @@ each one went.
 It also carries lich's relay to a Claude Code session: a task sent with
 `lich send` or `send_to_session`, the note that results are ready and a
 scheduled prompt arrive as a `prompt` when the mod is attached, and are typed at
-the PTY otherwise. The other contracts keep reporting the session's state, and a
+the PTY otherwise. A session lich expects a mod in (Claude Code with lich-plugin
+installed in its profile) is not typed at until its mod polls or 20 seconds
+from its spawn pass: the mod polls only after Claude Code's own session start,
+and a message typed before that stays on the prompt unsent. The other contracts keep reporting the session's state, and a
 prompt sent here surfaces in Claude Code as a message from the plugin rather
 than as text typed at the PTY.
 

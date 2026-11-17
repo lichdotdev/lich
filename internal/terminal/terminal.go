@@ -109,6 +109,9 @@ type session struct {
 	// service's mu. See startgate.go.
 	awaitsStart bool
 	started     bool
+	// modDue is when this session's mod should have polled, zero for a
+	// session that loads none. Guarded by the service's mu. See ModAttaching.
+	modDue time.Time
 	// service is set on a PTY StartService spawned, nil on a session's.
 	service *ServiceCommand
 	// progScan, prog and progReplies read and answer OSC 7501 off this PTY's

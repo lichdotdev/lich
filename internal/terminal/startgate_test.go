@@ -53,7 +53,7 @@ func TestReadyHoldsASessionWhoseQuietWasAlreadyLatched(t *testing.T) {
 		t.Fatal("a settled session was not ready")
 	}
 
-	svc.holdForStart("s1", sess, true)
+	svc.holdForStart("s1", sess, true, time.Time{})
 
 	if svc.ready("s1") {
 		t.Error("a latched quiet let work through before the provider reported start")
@@ -139,7 +139,7 @@ func TestHoldForStartIgnoresASessionThatWasReplaced(t *testing.T) {
 	old := quietSession(svc, "s1", false)
 	quietSession(svc, "s1", false)
 
-	svc.holdForStart("s1", old, true)
+	svc.holdForStart("s1", old, true, time.Time{})
 
 	if !svc.ready("s1") {
 		t.Error("a hold meant for the replaced session landed on its successor")

@@ -175,3 +175,35 @@ func TestSubmitPromptCarriesItsNotification(t *testing.T) {
 		t.Fatalf("the mod was handed %+v, want the report as a notification %+v", cmd, want)
 	}
 }
+
+func TestModAttachingUntilTheModPollsOrIsDue(t *testing.T) {
+	t.Parallel()
+	// dueIn runs a session whose mod is due that far from now, polled or not.
+	dueIn := func(in time.Duration, polled bool) *Service {
+		svc := newModService(t, events.New(), 10*time.Millisecond)
+		runModSession(svc, "s1")
+		svc.holdForStart("s1", svc.sessions["s1"], false, time.Now().Add(in))
+		if polled {
+			pollMod(t, svc.ws, "s1")
+		}
+		return svc
+	}
+	tests := []struct {
+		name string
+		svc  *Service
+		want bool
+	}{
+		{"not polled yet", dueIn(time.Minute, false), true},
+		{"polled", dueIn(time.Minute, true), false},
+		{"due and never polled", dueIn(-time.Second, false), false},
+		{"loads no mod", newModService(t, events.New(), 10*time.Millisecond), false},
+		{"no transport", &Service{}, false},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := tc.svc.ModAttaching("s1"); got != tc.want {
+				t.Fatalf("ModAttaching = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}

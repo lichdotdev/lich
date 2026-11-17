@@ -84,6 +84,9 @@ type fakeTerminal struct {
 	// answering is whether that session's mod answers its subagent errands
 	// itself (see workeranswer_test.go).
 	answering map[string]bool
+	// attaching is whether that session's mod may still make its first poll
+	// (see viamod_test.go).
+	attaching map[string]bool
 }
 
 func newFakeTerminal(live ...string) *fakeTerminal {
@@ -93,7 +96,7 @@ func newFakeTerminal(live ...string) *fakeTerminal {
 		noisy: map[string]int{}, drained: map[string]int{},
 		names: map[string]string{}, statuses: map[string]api.SessionStatus{},
 		holding: map[string]bool{}, inHold: map[string][]string{},
-		mods: map[string]*fakeMod{}, answering: map[string]bool{},
+		mods: map[string]*fakeMod{}, answering: map[string]bool{}, attaching: map[string]bool{},
 	}
 	for _, id := range live {
 		t.live[id] = true
