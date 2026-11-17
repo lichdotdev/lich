@@ -269,3 +269,16 @@ func targetOpen(t *testing.T, p *chromePage, id target.ID) bool {
 	}
 	return slices.ContainsFunc(infos, func(i *target.Info) bool { return i.TargetID == id })
 }
+
+func TestChromeDevToolsPastItsDeadlineNamesTheStepItWasOn(t *testing.T) {
+	s, _, _ := devtoolsService(t, "/")
+	ctx, cancel := context.WithDeadline(context.Background(), time.Now())
+	defer cancel()
+	err := s.current("s").page.(*chromePage).DevTools(ctx)
+	if !errors.Is(err, context.DeadlineExceeded) || !strings.HasPrefix(err.Error(), "open the DevTools window: ") {
+		t.Fatalf("DevTools = %v, want the step named over context.DeadlineExceeded", err)
+	}
+	if d := s.current("s").page.(*chromePage).tabs.shown(); d != nil {
+		t.Fatal("a DevTools that never opened is shown in the pane")
+	}
+}
