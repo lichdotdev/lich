@@ -83,6 +83,8 @@ var zhCN = Catalog{
 	CheckLogCut:     "（此步骤之前的 %[1]d 行未显示：可用 lines 或 lich check-log --lines N 查看更多）",
 	CheckLogNoLog:   "这不是 GitHub Actions 作业：它的日志只在上面的链接里。",
 
+	ThreadMarked: "已标记。拉取请求的 head 包含这个提交后，lich 会解决该讨论串，并以这个提交回复。",
+
 	CopyNotice:         "[lich] %s 的副本；原文件无法从本会话访问，修改只会保留在副本中。",
 	ArtifactCopyNotice: "[lich] 来自会话 %[2]q 的 %[1]s 的副本；编辑只保留在副本中。",
 

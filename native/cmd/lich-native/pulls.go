@@ -99,8 +99,9 @@ type pullsScreen struct {
 	sessionsIn func(projectID, path string) []string
 	// sessionLabel names a session.
 	sessionLabel func(id string) string
-	// waiting is whether a review thread waits for the push that resolves it.
-	waiting func(threadID string) bool
+	// threadState is whether a review thread was handed to a session, and
+	// whether its agent marked it fixed.
+	threadState func(threadID string) (sent, fixed bool)
 	// onAccount has the pull request badges ask gh again once the gate
 	// stored a project's account.
 	onAccount func()

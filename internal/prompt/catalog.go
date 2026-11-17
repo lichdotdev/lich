@@ -76,6 +76,9 @@ type Catalog struct {
 	CheckLogCut     string // %[1]d is the lines left out
 	CheckLogNoLog   string
 
+	// mark_thread_fixed's answer.
+	ThreadMarked string
+
 	// internal/drop: the line under a copied file's path.
 	CopyNotice string
 	// internal/artifact: the line under a copied artifact's path. %[1]s is its

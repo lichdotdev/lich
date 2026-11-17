@@ -246,7 +246,7 @@ func (v *pullView) threadBox(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDe
 			return layout.UniformInset(ui.Space(3)).Layout(gtx, func(gtx C) D {
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
-						return foldClick.Layout(gtx, func(gtx C) D { return threadHeader(gtx, on, t, fold.Value, p.threadWaiting(t.ID)) })
+						return foldClick.Layout(gtx, func(gtx C) D { return threadHeader(gtx, on, t, fold.Value, p.threadSentLabel(t.ID)) })
 					}),
 					layout.Rigid(func(gtx C) D {
 						if !fold.Value {
@@ -259,7 +259,7 @@ func (v *pullView) threadBox(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDe
 		})
 }
 
-func threadHeader(gtx C, th *ui.Theme, t backend.PRReviewThread, open, waiting bool) D {
+func threadHeader(gtx C, th *ui.Theme, t backend.PRReviewThread, open bool, sent string) D {
 	chevron := icPullRight
 	if open {
 		chevron = icPullDown
@@ -279,8 +279,8 @@ func threadHeader(gtx C, th *ui.Theme, t backend.PRReviewThread, open, waiting b
 	if t.IsOutdated {
 		children = append(children, ui.Gap(2), layout.Rigid(th.Text(ui.TextXS, i18n.T("pulls.pullsConversation.outdated")).In(th.ToneWait).Layout))
 	}
-	if waiting && !t.IsResolved {
-		children = append(children, ui.Gap(2), layout.Rigid(th.Text(ui.TextXS, i18n.T("pulls.threadSend.waiting")).Muted().Layout))
+	if sent != "" && !t.IsResolved {
+		children = append(children, ui.Gap(2), layout.Rigid(th.Text(ui.TextXS, sent).Muted().Layout))
 	}
 	if t.IsResolved {
 		children = append(children, ui.Gap(2), layout.Rigid(func(gtx C) D {
@@ -427,7 +427,7 @@ func (v *pullView) toSessionButton(gtx C, th *ui.Theme, p *pullsScreen, d backen
 }
 
 // sendOpenThreads is Send open threads, beside the hand-off in the header:
-// every open thread not yet waiting, in one prompt; nil when there is none.
+// every open thread not yet sent, in one prompt; nil when there is none.
 func (v *pullView) sendOpenThreads(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDetail, busy string, act *pullsAction) layout.Widget {
 	threads := p.sendableThreads(p.store.conversation(p.project.Path, d.Number).val)
 	if !canSendThreads(d) || len(threads) == 0 {

@@ -209,7 +209,8 @@
       "one": "Enviar {count} hilo abierto a la sesión",
       "other": "Enviar {count} hilos abiertos a la sesión"
     },
-    "waiting": "Enviado · esperando un push",
+    "waiting": "Corregido · esperando un push",
+    "handed": "Enviado a la sesión",
     "sent": {
       "one": "Hilo enviado a {name}",
       "other": "{count} hilos enviados a {name}"

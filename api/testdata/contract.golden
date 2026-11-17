@@ -144,6 +144,7 @@ project.Issue(NumberOptions) Issue
 project.ListBranches(PathOptions) Branches
 project.ListCheckouts(PathOptions) []Worktree
 project.ListPullRequests(ListPullRequestsOptions) []PRSummary
+project.MarkThreadFixed(MarkThreadFixedOptions) None
 project.MergePullRequest(MergePullRequestOptions) None
 project.Missing(PathsOptions) []string
 project.Open(None) *OpenedProject
@@ -1016,6 +1017,11 @@ PRSummary {
 	threads ThreadTally
 }
 
+MarkThreadFixedOptions {
+	threadId string
+	commit string
+}
+
 MergePullRequestOptions {
 	path string
 	number int
@@ -1160,7 +1166,7 @@ ThreadFix {
 	path string
 	number int
 	commentId int64
-	head string
+	commit,omitempty string
 }
 
 FileListing {

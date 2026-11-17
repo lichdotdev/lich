@@ -18,9 +18,10 @@
   "reviewThread": {
     "head": "Thread de revisão no pull request #{number} ({branch}), {path}:{lines}:",
     "headOutdated": "Thread de revisão no pull request #{number} ({branch}), {path}:{lines} (desatualizada, confira o código atual):",
+    "id": "Id da thread: {id}",
     "ask": {
-      "one": "Resolva e faça commit da correção. O lich responde e resolve a thread no GitHub quando a correção chegar por push, então não faça isso.",
-      "other": "Resolva todas e faça commit das correções. O lich responde e resolve as threads no GitHub quando as correções chegarem por push, então não faça isso."
+      "one": "Se ela pede uma mudança, faça, faça commit e chame mark_thread_fixed com o id da thread e o commit: o lich resolve a thread e responde no GitHub quando esse commit chegar por push. Se ela faz uma pergunta ou levanta um ponto para discutir com o time, não mude nada: traga para mim com a sua opinião. Nunca responda nem resolva a thread no GitHub você mesmo.",
+      "other": "Passe por cada thread. A que pede uma mudança: faça, faça commit e chame mark_thread_fixed com o id dessa thread e o commit, e o lich resolve a thread e responde no GitHub quando esse commit chegar por push. A que faz uma pergunta ou levanta um ponto para discutir com o time: não mude nada por ela e traga para mim com a sua opinião. Nunca responda nem resolva uma thread no GitHub você mesmo."
     }
   },
   "issue": {

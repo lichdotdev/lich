@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **An extension's detail grows with the window.** On a tall or ultrawide screen the dialog and its screenshots take more of it.
 - **A Markdown artifact opens rendered, in the Artifacts tab.** Clicking a `.md` file in the dock's Artifacts tab shows it formatted, as the Code tab's Markdown preview does, instead of its source in the browser.
+- **Review threads sent to a session are resolved only when the agent fixed them.** A question or a point for the team comes back to you in the session instead of getting "Fixing this" on GitHub. A thread the agent fixed is resolved, with a reply naming its commit, once that commit is pushed.
 
 ### Fixed
 

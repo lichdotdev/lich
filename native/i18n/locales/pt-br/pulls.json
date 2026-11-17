@@ -209,7 +209,8 @@
       "one": "Enviar {count} thread aberta para a sessão",
       "other": "Enviar {count} threads abertas para a sessão"
     },
-    "waiting": "Enviada · aguardando um push",
+    "waiting": "Corrigida · aguardando um push",
+    "handed": "Enviada à sessão",
     "sent": {
       "one": "Thread enviada para {name}",
       "other": "{count} threads enviadas para {name}"
