@@ -3,6 +3,7 @@ package terminal
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/lichdotdev/lich/internal/relay"
 )
@@ -42,6 +43,19 @@ func (s *Service) SubmitPrompt(id, text string, note *relay.Notification) (relay
 // within the attach window, which is what SubmitPrompt queues for.
 func (s *Service) ModAttached(id string) bool {
 	return s.ws != nil && s.live(id) && s.ws.mods.attached(id)
+}
+
+// ModAttaching is whether session id loads lich's mod and its first poll may
+// still be coming.
+func (s *Service) ModAttaching(id string) bool {
+	if s.ws == nil {
+		return false
+	}
+	s.mu.Lock()
+	sess, ok := s.sessions[id]
+	due := ok && time.Now().Before(sess.modDue)
+	s.mu.Unlock()
+	return due && !s.ws.mods.attached(id)
 }
 
 func (q *modQueue) collected(w *modWaiter) bool {

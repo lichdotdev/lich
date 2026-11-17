@@ -177,6 +177,10 @@ work when nobody knows it and that the call site never shows. The mechanism and 
     and the model-scoped caps a report does not carry.
   - An errand sent privately (a subagent or workflow step inside the session) never shows on the status line,
     since the session's own collect never reaches it.
+  - A message to a Claude Code session with lich-plugin installed waits for its mod's first poll, up to 20 seconds
+    from the spawn and 10 from its session-start (`modFirstPoll`, `internal/terminal/startgate.go`): typed before
+    that poll, it was left on the prompt with its Enter lost (2.1.326). A session with mods off, or a Claude Code
+    older than 2.1.280, gets its first message that much later.
 - **A program's own status (OSC 7501) is a second source, and the hook outranks it** (`internal/terminal/progwire.go`):
   from the first hook state the window hears until a hook reports `idle` or the shell starts a prompt (OSC 133 A),
   the program's records are kept and the card is the hook's. Only Claude Code and Cursor CLI report `idle`, so

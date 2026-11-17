@@ -84,7 +84,12 @@ func (s *Service) Start(_ context.Context, opts api.StartOptions) (api.None, err
 	inheritClaudeTrust(opts.Kind, opts.Cwd, profileDir)
 	inheritCursorTrust(opts.Kind, opts.Cwd)
 	markCrushInitialized(opts.Kind, opts.Cwd)
-	awaits := s.awaitsStart(opts.Kind, profileDir) && !trustAnswered(opts.Kind, opts.Cwd, profileDir)
+	reports := s.awaitsStart(opts.Kind, profileDir)
+	awaits := reports && !trustAnswered(opts.Kind, opts.Cwd, profileDir)
+	var modDue time.Time
+	if reports && opts.Kind == providers.Claude {
+		modDue = time.Now().Add(modFirstPoll)
+	}
 	sess, cwd, err := s.spawnSession(opts, profileDir, name, oc2)
 	if err != nil || sess == nil {
 		return api.None{}, err
@@ -93,7 +98,7 @@ func (s *Service) Start(_ context.Context, opts api.StartOptions) (api.None, err
 	// may run the provider's CLI and the spawn holds s.mu. The gap is far
 	// shorter than readySettle, and Ready asks for the report before it
 	// trusts a quiet it latched, so nothing gets through it.
-	s.holdForStart(opts.ID, sess, awaits)
+	s.holdForStart(opts.ID, sess, awaits, modDue)
 	// Emitted outside s.mu: Emit blocks on a stalled /events client, which
 	// would freeze every session's I/O. Both are unconditional so a respawn
 	// overwrites whatever the previous PTY left in the window's stores.
