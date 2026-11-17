@@ -123,6 +123,7 @@ func TestMarkThreadFixedRefusals(t *testing.T) {
 		"a thread never sent from the Pulls screen": {ThreadID: "PRRT_9", Commit: fix},
 		"a commit the checkout does not hold":       {ThreadID: "PRRT_1", Commit: "0123456789abcdef"},
 		"an option in place of a commit":            {ThreadID: "PRRT_1", Commit: "--all"},
+		"a name instead of a sha":                   {ThreadID: "PRRT_1", Commit: "HEAD"},
 		"no commit":                                 {ThreadID: "PRRT_1"},
 	} {
 		t.Run(name, func(t *testing.T) {

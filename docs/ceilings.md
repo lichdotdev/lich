@@ -702,6 +702,8 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   commit that fixes a thread, and lich resolves the thread once the pull request's head holds that commit,
   replying with its short sha; a question or a point for the team is never marked, and stays open for the
   person. lich trusts the agent's word: a commit marked for a thread it did not fix resolves it all the same.
+  A session with no lich MCP tools (Crush, oh-my-pi, Antigravity, Cursor CLI or Kiro CLI whose plugin install
+  could not register lich's server) cannot mark, so its threads stay sent and are resolved by hand.
   Only a thread sent from the Pulls screen can be marked. The head is checked against the commit in the pull
   request's checkout, so a head pushed from elsewhere and never fetched leaves the thread waiting, and a
   marked commit amended, rebased or squashed away never lands and waits until the pull request closes. The

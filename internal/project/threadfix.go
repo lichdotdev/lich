@@ -112,10 +112,11 @@ func (s *Service) MarkThreadFixed(_ context.Context, opts api.MarkThreadFixedOpt
 	return api.None{}, nil
 }
 
-// fixCommit is the full sha of commit in dir's repository. An option-shaped
-// commit is refused before git sees it.
+// fixCommit is the full sha of commit in dir's repository. Only a sha is
+// taken: a name such as HEAD would be read in dir, which need not be the
+// checkout the agent committed in.
 func fixCommit(dir, commit string) (string, error) {
-	if commit != "" && !strings.HasPrefix(commit, "-") {
+	if hexPrefix.MatchString(commit) {
 		if out, ok := gitQuiet(dir, "rev-parse", "--verify", "--quiet", commit+"^{commit}"); ok {
 			return strings.TrimSpace(out), nil
 		}

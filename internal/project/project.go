@@ -57,7 +57,7 @@ type Service struct {
 	sessionCheckout func(id string) string
 	// emit reports a pull request write (prchanged.go); nil reports nothing.
 	emit func(name string, data any)
-	// fixes keeps the review threads waiting for a push (threadfix.go); nil
+	// fixes keeps the review threads handed to a session (threadfix.go); nil
 	// keeps nothing.
 	fixes threadFixStore
 	// prs is the pull request watch's last reads (branchpr.go). Zero value
