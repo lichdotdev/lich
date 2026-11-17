@@ -1,0 +1,26 @@
+name: devtools-flake (temporary diagnostic, removed before merge)
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  measure:
+    runs-on: macos-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      - name: Alone, 20 runs
+        continue-on-error: true
+        run: go test -run '^TestChromeDevToolsDrawsInThePaneWhileTheAgentDrivesThePage$' -count=20 -v -timeout 40m ./internal/browser 2>&1 | grep -E 'DBG|^--- |^(ok|FAIL)|_test.go:'
+      - name: Whole package beside the suite, 3 runs
+        continue-on-error: true
+        run: |
+          go test ./... >/dev/null 2>&1 &
+          go test -count=3 -v -timeout 40m ./internal/browser 2>&1 | grep -E 'DBG|^--- FAIL|^(ok|FAIL)|_test.go:|TestChromeDevTools'
+          wait

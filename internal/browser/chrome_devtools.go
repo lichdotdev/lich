@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
+	"os"
 	"strconv"
+	"time"
 
 	"github.com/chromedp/cdproto/cdp"
 	"github.com/chromedp/cdproto/debugger"
@@ -27,13 +29,17 @@ localStorage.setItem('disable-paused-state-overlay', 'true')`
 // DevTools shows the front tab's DevTools in the pane, opening it first when
 // the tab has none.
 func (p *chromePage) DevTools(ctx context.Context) error {
+	fmt.Fprintf(os.Stderr, "DBG DevTools start\n")
 	front := p.tabs.frontTab()
 	if p.tabs.inspectedBy(front) == nil {
 		if err := p.openDevTools(ctx, front); err != nil {
 			return err
 		}
 	}
-	return p.present(func() { p.tabs.inspect(front) })
+	tp := time.Now()
+	err := p.present(func() { p.tabs.inspect(front) })
+	fmt.Fprintf(os.Stderr, "DBG present %v err=%v\n", time.Since(tp), err)
+	return err
 }
 
 // openDevTools loads the browser's own DevTools front-end for t, served on
@@ -43,7 +49,9 @@ func (p *chromePage) DevTools(ctx context.Context) error {
 // watches t's debugger before the front-end attaches, so it hears the first
 // pause.
 func (p *chromePage) openDevTools(ctx context.Context, t *tab) error {
+	t0 := time.Now()
 	d, err := p.newDevTools(ctx)
+	fmt.Fprintf(os.Stderr, "DBG newDevTools %v err=%v\n", time.Since(t0), err)
 	if err != nil {
 		return err
 	}
@@ -53,9 +61,13 @@ func (p *chromePage) openDevTools(ctx context.Context, t *tab) error {
 		return errNoTab
 	}
 	front := fmt.Sprintf("%[1]s/devtools/inspector.html?ws=127.0.0.1:%[2]s/devtools/page/%[3]s", devtoolsOrigin(p.port), p.port, t.id)
+	t1 := time.Now()
 	err = runOn(t.ctx, ctx, watchPauses)
+	fmt.Fprintf(os.Stderr, "DBG watchPauses %v err=%v\n", time.Since(t1), err)
 	if err == nil {
+		t2 := time.Now()
 		err = runOn(d.ctx, ctx, loadDevTools(front))
+		fmt.Fprintf(os.Stderr, "DBG loadDevTools %v err=%v\n", time.Since(t2), err)
 	}
 	if err != nil {
 		p.closeDevTools(t)
@@ -75,7 +87,9 @@ func loadDevTools(url string) chromedp.Action {
 		var err error
 		for range devtoolsLoads {
 			var errorText string
+			tn := time.Now()
 			_, _, errorText, _, err = page.Navigate(url).Do(ctx)
+			fmt.Fprintf(os.Stderr, "DBG   navigate %v errorText=%q err=%v\n", time.Since(tn), errorText, err)
 			if err != nil || errorText == "" {
 				return err
 			}
@@ -219,9 +233,14 @@ func (p *chromePage) present(change func()) error {
 	err := p.castPastDialog(func() error {
 		casting := p.casting
 		// Run even when the stop fails, or the change would never be shown.
+		ts := time.Now()
 		stopped := p.stopCast(nil)
+		fmt.Fprintf(os.Stderr, "DBG   stopCast %v err=%v\n", time.Since(ts), stopped)
 		change()
-		return errors.Join(stopped, p.showFront(casting))
+		tf := time.Now()
+		shown := p.showFront(casting)
+		fmt.Fprintf(os.Stderr, "DBG   showFront %v err=%v\n", time.Since(tf), shown)
+		return errors.Join(stopped, shown)
 	})
 	p.tabsChanged()
 	p.reportInfo()
