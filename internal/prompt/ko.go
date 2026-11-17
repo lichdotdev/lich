@@ -86,6 +86,8 @@ var ko = Catalog{
 	CheckLogCut:     "(이 단계의 앞선 %[1]d줄은 생략했습니다. lines 또는 lich check-log --lines N으로 더 볼 수 있습니다)",
 	CheckLogNoLog:   "GitHub Actions 작업이 아닙니다. 로그는 위 링크에만 있습니다.",
 
+	ThreadMarked: "표시했습니다. 풀 리퀘스트의 head에 이 커밋이 들어가면 lich가 스레드를 해결하고 이 커밋으로 답글을 답니다.",
+
 	CopyNotice:         "[lich] %s의 사본입니다. 이 세션에서는 원본에 접근할 수 없으며, 수정 사항은 사본에만 남습니다.",
 	ArtifactCopyNotice: "[lich] 세션 %[2]q의 %[1]s 사본입니다. 편집은 사본에만 남습니다.",
 

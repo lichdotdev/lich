@@ -18,9 +18,10 @@
   "reviewThread": {
     "head": "pull request #{number} ({branch}) 的审查讨论，{path}:{lines}：",
     "headOutdated": "pull request #{number} ({branch}) 的审查讨论，{path}:{lines}（已过时，请对照当前代码）：",
+    "id": "讨论 id：{id}",
     "ask": {
-      "one": "请处理并提交修复。修复 push 后，lich 会在 GitHub 上回复该讨论并标记为已解决，所以你不要这样做。",
-      "other": "请逐一处理并提交修复。修复 push 后，lich 会在 GitHub 上回复这些讨论并标记为已解决，所以你不要这样做。"
+      "one": "如果它要求修改，就修改、提交，然后用讨论 id 和提交调用 mark_thread_fixed：这个提交 push 后，lich 会在 GitHub 上把讨论标记为已解决并回复。如果它是提问，或是需要和团队讨论的问题，就什么都不要改：把它连同你的看法带给我。永远不要自己在 GitHub 上回复或解决讨论。",
+      "other": "逐一查看每个讨论。要求修改的：修改、提交，然后用这个讨论的 id 和提交调用 mark_thread_fixed，这个提交 push 后，lich 会在 GitHub 上把讨论标记为已解决并回复。提问或需要和团队讨论的：不要为它改任何东西，把它连同你的看法带给我。永远不要自己在 GitHub 上回复或解决讨论。"
     }
   },
   "issue": {

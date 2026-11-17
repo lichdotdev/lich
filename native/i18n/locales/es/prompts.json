@@ -18,9 +18,10 @@
   "reviewThread": {
     "head": "Hilo de revisión en el pull request #{number} ({branch}), {path}:{lines}:",
     "headOutdated": "Hilo de revisión en el pull request #{number} ({branch}), {path}:{lines} (desactualizado, revisa el código actual):",
+    "id": "Id del hilo: {id}",
     "ask": {
-      "one": "Resuélvelo y haz commit de la corrección. lich responde y resuelve el hilo en GitHub cuando la corrección llegue con un push, así que no lo hagas tú.",
-      "other": "Resuélvelos y haz commit de las correcciones. lich responde y resuelve los hilos en GitHub cuando las correcciones lleguen con un push, así que no lo hagas tú."
+      "one": "Si pide un cambio, hazlo, haz commit y llama a mark_thread_fixed con el id del hilo y el commit: lich resuelve el hilo y responde en GitHub cuando ese commit llegue con un push. Si hace una pregunta o plantea algo para discutir con el equipo, no cambies nada: tráemelo con tu opinión. Nunca respondas ni resuelvas el hilo en GitHub tú mismo.",
+      "other": "Revisa cada hilo. El que pide un cambio: hazlo, haz commit y llama a mark_thread_fixed con el id de ese hilo y el commit, y lich resuelve el hilo y responde en GitHub cuando ese commit llegue con un push. El que hace una pregunta o plantea algo para discutir con el equipo: no cambies nada por él y tráemelo con tu opinión. Nunca respondas ni resuelvas un hilo en GitHub tú mismo."
     }
   },
   "issue": {

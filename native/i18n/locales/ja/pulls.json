@@ -208,7 +208,8 @@
       "one": "未解決のスレッド {count} 件をセッションに送る",
       "other": "未解決のスレッド {count} 件をセッションに送る"
     },
-    "waiting": "送信済み · push 待ち",
+    "waiting": "修正済み · push 待ち",
+    "handed": "セッションに送信済み",
     "sent": {
       "one": "スレッドを {name} に送りました",
       "other": "スレッド {count} 件を {name} に送りました"

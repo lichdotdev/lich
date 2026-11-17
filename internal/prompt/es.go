@@ -90,6 +90,8 @@ var es = Catalog{
 	CheckLogCut:     "(%[1]d líneas anteriores de este paso no se muestran: pide más con lines, o lich check-log --lines N)",
 	CheckLogNoLog:   "No es un job de GitHub Actions: su log solo está en el enlace de arriba.",
 
+	ThreadMarked: "Marcado. lich resuelve el hilo y responde con este commit en cuanto el head del pull request lo contenga.",
+
 	CopyNotice:         "[lich] copia de %s; el original no es accesible desde esta sesión, las ediciones se quedan en la copia.",
 	ArtifactCopyNotice: "[lich] copia de %[1]s de la sesión %[2]q; las ediciones quedan en la copia.",
 

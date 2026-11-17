@@ -16,9 +16,10 @@
   "reviewThread": {
     "head": "pull request #{number} ({branch})의 리뷰 스레드, {path}:{lines}:",
     "headOutdated": "pull request #{number} ({branch})의 리뷰 스레드, {path}:{lines} (오래된 코멘트이니 현재 코드를 확인하세요):",
+    "id": "스레드 id: {id}",
     "ask": {
-      "one": "처리하고 수정 사항을 커밋하세요. 수정이 push되면 lich가 GitHub에서 스레드에 답글을 달고 해결 처리하므로 직접 하지 마세요.",
-      "other": "모두 처리하고 수정 사항을 커밋하세요. 수정이 push되면 lich가 GitHub에서 각 스레드에 답글을 달고 해결 처리하므로 직접 하지 마세요."
+      "one": "변경을 요청하는 스레드라면 변경하고 커밋한 뒤 스레드 id와 커밋으로 mark_thread_fixed를 호출하세요. 그 커밋이 push되면 lich가 GitHub에서 스레드를 해결 처리하고 답글을 답니다. 질문이거나 팀과 논의할 사항이라면 아무것도 바꾸지 말고 당신의 의견과 함께 저에게 가져오세요. GitHub에서 스레드에 직접 답글을 달거나 해결 처리하지 마세요.",
+      "other": "스레드를 하나씩 살펴보세요. 변경을 요청하는 스레드는 변경하고 커밋한 뒤 그 스레드의 id와 커밋으로 mark_thread_fixed를 호출하세요. 그 커밋이 push되면 lich가 GitHub에서 스레드를 해결 처리하고 답글을 답니다. 질문이거나 팀과 논의할 사항인 스레드는 아무것도 바꾸지 말고 당신의 의견과 함께 저에게 가져오세요. GitHub에서 스레드에 직접 답글을 달거나 해결 처리하지 마세요."
     }
   },
   "issue": {

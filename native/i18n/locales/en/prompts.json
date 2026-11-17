@@ -18,9 +18,10 @@
   "reviewThread": {
     "head": "Review thread on pull request #{number} ({branch}), {path}:{lines}:",
     "headOutdated": "Review thread on pull request #{number} ({branch}), {path}:{lines} (outdated, check the current code):",
+    "id": "Thread id: {id}",
     "ask": {
-      "one": "Address it and commit the fix. lich replies to and resolves the thread on GitHub once the fix is pushed, so don't.",
-      "other": "Address them and commit the fixes. lich replies to and resolves the threads on GitHub once the fixes are pushed, so don't."
+      "one": "If it asks for a change, make it, commit it and call mark_thread_fixed with the thread id and the commit: lich resolves the thread and replies on GitHub once that commit is pushed. If it asks a question or raises a point for the team, change nothing: bring it to me with your view. Never reply to or resolve the thread on GitHub yourself.",
+      "other": "Go through each thread. One that asks for a change: make it, commit it and call mark_thread_fixed with that thread's id and the commit, and lich resolves the thread and replies on GitHub once that commit is pushed. One that asks a question or raises a point for the team: change nothing for it, and bring it to me with your view. Never reply to or resolve a thread on GitHub yourself."
     }
   },
   "issue": {

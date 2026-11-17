@@ -104,5 +104,6 @@ func projectPullRequestWrites(d *rpc.Handler, s *project.Service) {
 	rpc.Handle(d, api.ProjectReplyToReviewThread, s.ReplyToReviewThread)
 	rpc.Handle(d, api.ProjectResolveReviewThread, s.ResolveReviewThread)
 	rpc.Handle(d, api.ProjectAwaitThreadFix, s.AwaitThreadFix)
+	rpc.Handle(d, api.ProjectMarkThreadFixed, s.MarkThreadFixed)
 	rpc.Handle(d, api.ProjectThreadFixes, s.ThreadFixes)
 }

@@ -276,6 +276,7 @@ func TestMCPListsEveryTool(t *testing.T) {
 		"browser_tab":         {"action"},
 		"show_code":           {"path"},
 		"read_check_log":      {},
+		"mark_thread_fixed":   {"thread_id", "commit"},
 	}
 	// The read-only ones, which a client may auto-allow. wait_for_answer is
 	// not among them: collecting drains the inbox.

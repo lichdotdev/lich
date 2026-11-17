@@ -697,14 +697,20 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   not hold it, under ReadFile's size cap. A relative image
   shows its alt text (the renderer fetches nothing) and raw HTML is left out. A new version of the file puts
   the card back on its diff, as it reopens or folds a card by its size.
-- **Any push resolves a thread sent to a session** (`internal/project/threadfix.go`): Send to session on the
-  Pulls screen replies on the thread at once and resolves it when the pull request's head first moves after the
-  send, replying with that head's short sha. lich cannot tell the commit that fixed the thread from one that did
-  not, so an unrelated push resolves it too, and a fix that never gets pushed leaves it waiting. The head is read
-  once a minute per waiting pull request, so the resolve lands up to a minute after the push. A pull request
-  that closes, or a checkout that is gone, drops its threads without a word on GitHub. A thread whose resolve
-  GitHub keeps refusing (deleted since) is retried every minute until its pull request closes. The replies are
-  written in English, whatever the interface and prompt languages: the reviewer reading them is someone else.
+- **A thread sent to a session is resolved only on the commit its agent names** (`internal/project/threadfix.go`):
+  Send to session on the Pulls screen says nothing on GitHub. The agent calls `mark_thread_fixed` with the
+  commit that fixes a thread, and lich resolves the thread once the pull request's head holds that commit,
+  replying with its short sha; a question or a point for the team is never marked, and stays open for the
+  person. lich trusts the agent's word: a commit marked for a thread it did not fix resolves it all the same.
+  Only a thread sent from the Pulls screen can be marked. The head is checked against the commit in the pull
+  request's checkout, so a head pushed from elsewhere and never fetched leaves the thread waiting, and a
+  marked commit amended, rebased or squashed away never lands and waits until the pull request closes. The
+  pull requests with a marked thread are read once a minute, so the resolve lands up to a minute after the
+  push; one with only unmarked threads is read once per launch, which drops them once it has closed. A thread
+  sent before this release keeps its "Fixing this" reply and waits unmarked. A pull request that closes, or a
+  checkout that is gone, drops its threads without a word on GitHub. A thread whose resolve GitHub keeps
+  refusing (deleted since) is retried every minute until its pull request closes. The reply is written in
+  English, whatever the interface and prompt languages: the reviewer reading it is someone else.
 
 ## Persistence and history
 

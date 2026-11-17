@@ -283,7 +283,7 @@ func run(w *app.Window, rt backend.Runtime) error {
 		return ids
 	}
 	u.pulls.sessionLabel = u.model.sessionLabel
-	u.pulls.waiting = u.model.threadFixes.has
+	u.pulls.threadState = u.model.threadFixes.state
 	u.pulls.onAccount = u.model.accountChanged
 	u.pulls.tour = &u.tour.Tour
 	u.extOutbox = newExtensionOutbox()

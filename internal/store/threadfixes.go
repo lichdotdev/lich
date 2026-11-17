@@ -6,10 +6,10 @@ import (
 	"github.com/lichdotdev/lich/api"
 )
 
-// ThreadFixes returns every review thread waiting for its fix, in the order
+// ThreadFixes returns every review thread handed to a session, in the order
 // they were sent.
 func (s *Service) ThreadFixes() ([]api.ThreadFix, error) {
-	rows, err := s.db.Query(`SELECT thread_id, path, number, comment_id, head FROM thread_fixes ORDER BY rowid`)
+	rows, err := s.db.Query(`SELECT thread_id, path, number, comment_id, commit_sha FROM thread_fixes ORDER BY rowid`)
 	if err != nil {
 		return nil, fmt.Errorf("query thread fixes: %w", err)
 	}
@@ -17,7 +17,7 @@ func (s *Service) ThreadFixes() ([]api.ThreadFix, error) {
 	var out []api.ThreadFix
 	for rows.Next() {
 		var f api.ThreadFix
-		if err := rows.Scan(&f.ThreadID, &f.Path, &f.Number, &f.CommentID, &f.Head); err != nil {
+		if err := rows.Scan(&f.ThreadID, &f.Path, &f.Number, &f.CommentID, &f.Commit); err != nil {
 			return nil, fmt.Errorf("scan thread fix: %w", err)
 		}
 		out = append(out, f)
@@ -25,14 +25,14 @@ func (s *Service) ThreadFixes() ([]api.ThreadFix, error) {
 	return out, rows.Err()
 }
 
-// SaveThreadFix records f, replacing what an earlier send of the same thread
-// recorded: the thread waits on the head it was last sent at.
+// SaveThreadFix records f, replacing what an earlier send or mark of the same
+// thread recorded.
 func (s *Service) SaveThreadFix(f api.ThreadFix) error {
 	_, err := s.db.Exec(
-		`INSERT INTO thread_fixes (thread_id, path, number, comment_id, head) VALUES (?, ?, ?, ?, ?)
+		`INSERT INTO thread_fixes (thread_id, path, number, comment_id, commit_sha) VALUES (?, ?, ?, ?, ?)
 		 ON CONFLICT (thread_id) DO UPDATE SET
-		     path = excluded.path, number = excluded.number, comment_id = excluded.comment_id, head = excluded.head`,
-		f.ThreadID, f.Path, f.Number, f.CommentID, f.Head,
+		     path = excluded.path, number = excluded.number, comment_id = excluded.comment_id, commit_sha = excluded.commit_sha`,
+		f.ThreadID, f.Path, f.Number, f.CommentID, f.Commit,
 	)
 	if err != nil {
 		return fmt.Errorf("save thread fix: %w", err)

@@ -90,6 +90,8 @@ var ja = Catalog{
 	CheckLogCut:     "(このステップの前の %[1]d 行は省略しています。lines か lich check-log --lines N で増やせます)",
 	CheckLogNoLog:   "GitHub Actions のジョブではありません。ログは上のリンク先にしかありません。",
 
+	ThreadMarked: "記録しました。プルリクエストの head にこのコミットが含まれた時点で、lich がスレッドを解決し、このコミットを添えて返信します。",
+
 	CopyNotice:         "[lich] %s のコピーです。元のファイルはこのセッションからは届かないため、編集はコピーにだけ残ります。",
 	ArtifactCopyNotice: "[lich] セッション %[2]q の %[1]s のコピーです。編集はコピーにだけ残ります。",
 

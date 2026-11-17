@@ -1163,6 +1163,7 @@ at lich.
 | `ask_session` | Experimental. `session`, `question`, optional `project`. `lich ask`: the answer is the result, and every way it ends without one is an error. |
 | `list_worktrees` | optional `project` — the checkouts, as JSON. |
 | `show_code` | `path` (relative to the session's checkout, or absolute inside it), optional `line`, `end_line` and `comment` (plain text under the lines, up to 360 characters): shows the file in the code panel beside the session. A missing file, a path outside the checkout or a line past the end is an error. |
+| `mark_thread_fixed` | `thread_id`, `commit`: marks a review thread the Pulls screen sent to the session as fixed by that commit. lich resolves the thread and replies with the commit once the pull request's head holds it. A thread never sent from the Pulls screen, or a commit the repository does not hold, is an error. |
 | `list_folders` | optional `project`: the folders and the sessions in each, as JSON. `lich folders`. |
 | `file_session` | `folder` (`""` takes the session out), optional `session` (omitted files the caller's own) and `project`. `lich file`. |
 | `rename_folder` | `folder`, `to` (`""` takes the folder apart), optional `project`. `lich rename-folder`. |

@@ -208,7 +208,8 @@
       "one": "将 {count} 个未解决的讨论串发送到会话",
       "other": "将 {count} 个未解决的讨论串发送到会话"
     },
-    "waiting": "已发送 · 等待 push",
+    "waiting": "已修复 · 等待 push",
+    "handed": "已发送到会话",
     "sent": {
       "one": "已将讨论串发送给 {name}",
       "other": "已将 {count} 个讨论串发送给 {name}"

@@ -209,7 +209,8 @@
       "one": "Send {count} open thread to session",
       "other": "Send {count} open threads to session"
     },
-    "waiting": "Sent · waiting for a push",
+    "waiting": "Fixed · waiting for a push",
+    "handed": "Sent to session",
     "sent": {
       "one": "Sent the thread to {name}",
       "other": "Sent {count} threads to {name}"

@@ -32,6 +32,7 @@ var migrations = []func(*sql.Tx) error{
 	addSessionFilesID,
 	markLichContinuations,
 	addCostResponses,
+	markThreadFixCommits,
 }
 
 // addSessionEffort is version 2: the reasoning effort a session was opened at,
@@ -247,6 +248,18 @@ CREATE TABLE session_cost_responses (
     transcript_id TEXT NOT NULL,
     PRIMARY KEY (session_id, response_id)
 ) WITHOUT ROWID`)
+	return err
+}
+
+// markThreadFixCommits is version 17: a thread handed to a session waits for
+// the commit its agent marks as the fix (project.MarkThreadFixed) rather than
+// for any push. A thread sent before it keeps waiting with no commit, so no
+// push resolves it on a fix nobody named.
+func markThreadFixCommits(tx *sql.Tx) error {
+	if _, err := tx.Exec(`ALTER TABLE thread_fixes DROP COLUMN head`); err != nil {
+		return err
+	}
+	_, err := tx.Exec(`ALTER TABLE thread_fixes ADD COLUMN commit_sha TEXT NOT NULL DEFAULT ''`)
 	return err
 }
 
