@@ -49,7 +49,8 @@
     "openInBrowser": "ブラウザーで開く",
     "attachToPrompt": "プロンプトに添付",
     "copyPath": "パスをコピー",
-    "showInFileManager": "ファイルマネージャーで表示"
+    "showInFileManager": "ファイルマネージャーで表示",
+    "backToList": "アーティファクト一覧に戻る"
   },
   "showCode": {
     "pointed": "{session} が {file} を示しました",

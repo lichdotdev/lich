@@ -15,6 +15,7 @@ func (u *window) newArtifactsTab() *artifactsTab {
 	t.open = u.openArtifact
 	t.attach = u.attachArtifact
 	t.reveal = u.revealFolder
+	t.reader = newArtifactReader(u.client, func(toast ui.Toast) { u.toaster.Show(toast) }, u.model.invalidate)
 	return t
 }
 
