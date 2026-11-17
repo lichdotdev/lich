@@ -205,9 +205,49 @@ func (u *window) noteTools(gtx C, n *browserNotes) D {
 			if !n.drawing {
 				return D{}
 			}
-			return layout.Inset{Left: ui.Space(1.5)}.Layout(gtx, func(gtx C) D { return u.inkSwatches(gtx, n) })
+			return layout.Inset{Left: ui.Space(1)}.Layout(gtx, func(gtx C) D { return u.sketchModePicker(gtx, n) })
+		}),
+		layout.Rigid(func(gtx C) D {
+			if !n.drawing {
+				return D{}
+			}
+			return layout.Inset{Left: ui.Space(1)}.Layout(gtx, func(gtx C) D { return u.inkSwatches(gtx, n) })
 		}),
 	)
+}
+
+func (u *window) sketchModePicker(gtx C, n *browserNotes) D {
+	labels := [...]string{
+		sketchFree:      i18n.T("layouts.browser.sketchFree"),
+		sketchRectangle: i18n.T("layouts.browser.sketchRectangle"),
+		sketchEllipse:   i18n.T("layouts.browser.sketchEllipse"),
+		sketchArrow:     i18n.T("layouts.browser.sketchArrow"),
+	}
+	var entries [len(labels)]ui.MenuEntry
+	for i, label := range labels {
+		mode := sketchMode(i)
+		entries[i] = ui.MenuEntry{Label: label, Icon: sketchModeIcon(mode), OnClick: func() {
+			n.drawMode, n.erasing = mode, false
+		}}
+	}
+	trigger := u.theme.Button(&n.shapeMenuTrigger, "")
+	trigger.Icon, trigger.Size, trigger.Variant = sketchModeIcon(n.drawMode), ui.SizeIconSM, ui.VariantOutline
+	menu := u.theme.DropdownMenu(&u.root, &n.shapeMenuMenu, entries[:])
+	hint := u.theme.Tooltip(&u.root, &n.shapeMenuHint, i18n.T("layouts.browser.sketchTool"))
+	return menu.Layout(gtx, func(gtx C) D { return hint.Layout(gtx, trigger.Layout) })
+}
+
+func sketchModeIcon(mode sketchMode) *icons.Icon {
+	switch mode {
+	case sketchRectangle:
+		return icons.Lucide("rectangle-horizontal")
+	case sketchEllipse:
+		return icons.Lucide("circle")
+	case sketchArrow:
+		return icons.Lucide("arrow-up-right")
+	default:
+		return icBrowserDraw
+	}
 }
 
 // inkSwatches are the pencil's colors, the card palette, the chosen one

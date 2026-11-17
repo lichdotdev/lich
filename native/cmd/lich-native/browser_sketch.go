@@ -41,16 +41,29 @@ const (
 	// sketchName is the picture's file name in the session's dropped files.
 	sketchName = "sketch.png"
 	// sketchDiscSides is how many sides approximate a stroke's round end.
-	sketchDiscSides = 16
+	sketchDiscSides    = 16
+	sketchEllipseSides = 64
+	sketchArrowHead    = 18
+	sketchArrowSpread  = 0.55
 )
 
 // defaultInk is the pencil's color until the person picks another.
 const defaultInk = "red"
 
+type sketchMode uint8
+
+const (
+	sketchFree sketchMode = iota
+	sketchRectangle
+	sketchEllipse
+	sketchArrow
+)
+
 // sketchStroke is one drag: its color and its points, in CSS pixels of the
 // page's viewport.
 type sketchStroke struct {
 	ink    color.NRGBA
+	mode   sketchMode
 	points []f32.Point
 	// doomed is a stroke the eraser touched in the drag under way: drawn
 	// faint, and gone when the button lets go.
@@ -91,17 +104,20 @@ func (n *browserNotes) dropSketch() {
 // startStroke begins a stroke of ink at p.
 func (n *browserNotes) startStroke(p f32.Point, ink color.NRGBA) {
 	n.checkpoint()
-	n.strokes = append(n.strokes, sketchStroke{ink: ink, points: []f32.Point{p}})
+	n.strokes = append(n.strokes, sketchStroke{ink: ink, mode: n.drawMode, points: []f32.Point{p}})
 	n.stroking = true
 }
 
-// extendStroke takes p into the stroke being drawn, once the pointer moved
-// sketchStep from its last point.
+// extendStroke samples freehand strokes and moves the endpoint of shapes.
 func (n *browserNotes) extendStroke(p f32.Point) {
 	if !n.stroking || len(n.strokes) == 0 {
 		return
 	}
 	s := &n.strokes[len(n.strokes)-1]
+	if s.mode != sketchFree && len(s.points) == 2 {
+		s.points[1] = p
+		return
+	}
 	last := s.points[len(s.points)-1]
 	if math.Hypot(float64(p.X-last.X), float64(p.Y-last.Y)) >= sketchStep {
 		s.points = append(s.points, p)
@@ -111,10 +127,14 @@ func (n *browserNotes) extendStroke(p f32.Point) {
 // endStroke closes the stroke being drawn; a press that never moved drew
 // nothing and leaves none.
 func (n *browserNotes) endStroke() {
-	if n.stroking && len(n.strokes) > 0 && len(n.strokes[len(n.strokes)-1].points) < 2 {
+	if n.stroking && len(n.strokes) > 0 && !n.strokes[len(n.strokes)-1].visible() {
 		n.undoSketch()
 	}
 	n.stroking = false
+}
+
+func (s sketchStroke) visible() bool {
+	return len(s.points) >= 2 && (s.mode == sketchFree || s.points[0] != s.points[1])
 }
 
 // keepSketchOn drops the strokes once the pane shows another page than url,
@@ -149,9 +169,14 @@ func (u *window) sketchPointer(gtx C, p *browserPaneUI, session string, x, y flo
 		if !n.erasing {
 			n.extendStroke(at)
 		}
-	case pointer.Release, pointer.Cancel:
+	case pointer.Release:
 		if !n.erasing {
+			n.extendStroke(at)
 			n.endStroke()
+		}
+	case pointer.Cancel:
+		if n.stroking && !n.erasing {
+			n.undoSketch()
 		}
 	}
 }
@@ -163,8 +188,46 @@ func paintSketch(gtx C, strokes []sketchStroke, scale float32) {
 		if s.doomed {
 			ink.A = uint8(float32(ink.A) * sketchDoomedOpacity)
 		}
-		paint.FillShape(gtx.Ops, ink, clip.Stroke{Path: strokePath(gtx.Ops, s.points, scale), Width: sketchLine * scale}.Op())
+		for _, points := range strokeSegments(s) {
+			paint.FillShape(gtx.Ops, ink, clip.Stroke{Path: strokePath(gtx.Ops, points, scale), Width: sketchLine * scale}.Op())
+		}
 	}
+}
+
+func strokeSegments(s sketchStroke) [][]f32.Point {
+	if !s.visible() {
+		return nil
+	}
+	if s.mode == sketchFree {
+		return [][]f32.Point{s.points}
+	}
+	start, end := s.points[0], s.points[1]
+	switch s.mode {
+	case sketchRectangle:
+		return [][]f32.Point{{start, f32.Pt(end.X, start.Y), end, f32.Pt(start.X, end.Y), start}}
+	case sketchEllipse:
+		return [][]f32.Point{sketchEllipsePoints(start, end)}
+	case sketchArrow:
+		d := end.Sub(start)
+		length := float32(math.Hypot(float64(d.X), float64(d.Y)))
+		head := min(sketchArrowHead, length/3)
+		unit := d.Mul(1 / length)
+		base := end.Sub(unit.Mul(head))
+		normal := f32.Pt(-unit.Y, unit.X).Mul(head * sketchArrowSpread)
+		return [][]f32.Point{{start, end}, {base.Add(normal), end, base.Sub(normal)}}
+	}
+	return [][]f32.Point{s.points}
+}
+
+func sketchEllipsePoints(start, end f32.Point) []f32.Point {
+	center, radii := start.Add(end).Mul(0.5), end.Sub(start).Mul(0.5)
+	points := make([]f32.Point, sketchEllipseSides+1)
+	for i := range sketchEllipseSides {
+		sin, cos := math.Sincos(2 * math.Pi * float64(i) / sketchEllipseSides)
+		points[i] = center.Add(f32.Pt(float32(cos)*radii.X, float32(sin)*radii.Y))
+	}
+	points[sketchEllipseSides] = points[0]
+	return points
 }
 
 func strokePath(ops *op.Ops, points []f32.Point, scale float32) clip.PathSpec {
@@ -187,7 +250,9 @@ func sketchPicture(frame image.Image, strokes []sketchStroke, viewW int) *image.
 	xdraw.ApproxBiLinear.Scale(dst, dst.Bounds(), frame, b, xdraw.Src, nil)
 	css := float32(dst.Bounds().Dx()) / float32(max(viewW, 1))
 	for _, s := range strokes {
-		inkStroke(dst, s.points, css, s.ink)
+		for _, points := range strokeSegments(s) {
+			inkStroke(dst, points, css, s.ink)
+		}
 	}
 	return dst
 }

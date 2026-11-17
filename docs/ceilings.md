@@ -1492,7 +1492,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   (`Coordinator.Do`).
 - **A window that cannot start is a dialog, never a fallback**: a `lich-native` missing beside `lich` (and not
   pinned by `LICH_NATIVE`), or one that exits at startup, on a missing system library say, ends in the error
-  dialog with the reason and the log path. With no session running lich then quits; with one, it keeps serving
+  dialog with the reason and the native and backend log paths. With no session running lich then quits; with one, it keeps serving
   it, and the tray, launching again or `lich quit` is the way back.
 - **A backend holds one window at a time** (`lich native`, `docs/native-window.md`): `/events` and `/ws` hold one
   client, and a new one replaces the old with no close frame, so two windows cannot share a backend: the window

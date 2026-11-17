@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Draw rectangles, ellipses and arrows on a browser page.** Turn on Draw, choose a shape from the outlined tool button, and drag to place it.
 - **Click an installed extension to see its catalog page.** In Settings › Extensions › Installed, a row the catalog lists opens the same detail its card does, with Update when there is a newer release.
 
 ### Changed
@@ -19,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **The window startup error now points to the native window log.** That log contains the window process's error when it exits before opening.
 - **Changing the advisor model, fast mode, thinking or ultracode in one Claude Code account no longer changes it in your other accounts.** Each profile now keeps these alongside its own default model and effort, as well as whether to switch models when safeguards flag a message.
 - **Typing in the command palette opened over a browser page no longer piles every letter at the start.** The page took the keyboard back on each frame; now the palette, and any field over the page, keeps it until it closes.
 

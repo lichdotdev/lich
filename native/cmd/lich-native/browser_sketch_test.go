@@ -11,6 +11,50 @@ import (
 	"github.com/lichdotdev/lich/api"
 )
 
+func TestStrokeSegmentsFollowTheDragBounds(t *testing.T) {
+	start, end := f32.Pt(90, 20), f32.Pt(10, 60)
+	rectangle := strokeSegments(sketchStroke{mode: sketchRectangle, points: []f32.Point{start, end}})
+	if len(rectangle) != 1 || len(rectangle[0]) != 5 || rectangle[0][0] != start || rectangle[0][1] != f32.Pt(10, 20) || rectangle[0][2] != end || rectangle[0][4] != start {
+		t.Fatalf("rectangle points = %v", rectangle)
+	}
+	ellipse := strokeSegments(sketchStroke{mode: sketchEllipse, points: []f32.Point{start, end}})[0]
+	for i, want := range []f32.Point{f32.Pt(10, 40), f32.Pt(50, 60), f32.Pt(90, 40), f32.Pt(50, 20), f32.Pt(10, 40)} {
+		if got := ellipse[i*sketchEllipseSides/4]; got != want {
+			t.Errorf("ellipse extremum %d = %v, want %v", i, got, want)
+		}
+	}
+	arrow := strokeSegments(sketchStroke{mode: sketchArrow, points: []f32.Point{start, end}})
+	if len(arrow) != 2 || len(arrow[0]) != 2 || len(arrow[1]) != 3 || arrow[0][0] != start || arrow[0][1] != end || arrow[1][1] != end {
+		t.Fatalf("arrow points = %v", arrow)
+	}
+}
+
+func TestShapeDragKeepsItsAnchorAndErasesAtTheOutline(t *testing.T) {
+	n := newBrowserNotes()
+	n.drawMode = sketchRectangle
+	start := f32.Pt(10, 20)
+	n.startStroke(start, color.NRGBA{A: 255})
+	n.extendStroke(f32.Pt(150, 90))
+	n.extendStroke(start)
+	n.endStroke()
+	if n.pending() {
+		t.Fatal("a drag back to the start left a shape")
+	}
+	n.startStroke(start, color.NRGBA{A: 255})
+	n.extendStroke(f32.Pt(150, 90))
+	n.extendStroke(f32.Pt(110, 80))
+	n.endStroke()
+	n.doomAt(f32.Pt(60, 50))
+	if n.strokes[0].doomed {
+		t.Fatal("erasing inside the rectangle touched its diagonal")
+	}
+	n.doomAt(f32.Pt(110, 50))
+	n.erase()
+	if n.pending() {
+		t.Fatal("erasing on the final outline left the rectangle")
+	}
+}
+
 func TestASketchPictureIsTheFrameWithTheStrokesOnItAtScreenshotSize(t *testing.T) {
 	frame := image.NewRGBA(image.Rect(0, 0, 2560, 1600))
 	draw.Draw(frame, frame.Bounds(), image.NewUniform(color.Black), image.Point{}, draw.Src)
@@ -109,13 +153,18 @@ func TestTheSketchGoesWithThePageItWasDrawnOn(t *testing.T) {
 func TestThePencilAndThePickTakeEachOthersPlace(t *testing.T) {
 	n := newBrowserNotes()
 	n.setPicking(true)
+	n.drawMode = sketchArrow
 	n.setDrawing(true)
 	if n.picking || !n.drawing {
 		t.Fatalf("after Draw: picking %v, drawing %v", n.picking, n.drawing)
 	}
+	n.startStroke(f32.Pt(10, 10), color.NRGBA{A: 255})
+	if got := n.strokes[0].mode; got != sketchArrow {
+		t.Fatalf("stroke mode = %d, want arrow", got)
+	}
 	n.setPicking(true)
-	if !n.picking || n.drawing {
-		t.Fatalf("after Select: picking %v, drawing %v", n.picking, n.drawing)
+	if !n.picking || n.drawing || n.erasing {
+		t.Fatalf("after Select: picking %v, drawing %v, erasing %v", n.picking, n.drawing, n.erasing)
 	}
 }
 

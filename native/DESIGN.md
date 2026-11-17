@@ -133,6 +133,9 @@ the rest, `VariantDestructive` for what cannot be undone. A disabled button says
 
 Buttons do not move when pressed; only their color changes.
 
+In the browser's drawing toolbar, the shape picker uses the outline variant so
+the current tool reads as a button that can switch tools.
+
 ### What goes where
 
 - **The action a state calls for is a button, in reach.** When something is wrong and lich can hand it to an

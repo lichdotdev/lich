@@ -718,7 +718,8 @@ func windowFailed(configDir string, live func() (int, error), quit func() error)
 			text += "lich is still running with its sessions: launch it again to reopen the window, " +
 				"or run `lich quit` to end it.\n\n"
 		}
-		text += "Log: " + logging.Path(filepath.Join(configDir, "lich"))
+		logDir := filepath.Join(configDir, "lich")
+		text += fmt.Sprintf("Logs:\n%s\n%s", logging.NativePath(logDir), logging.Path(logDir))
 		go func() {
 			_ = zenity.Error(text, zenity.Title("lich"))
 			if running {
