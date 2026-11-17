@@ -1666,6 +1666,9 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   a parked session's pages show again only once it is resumed. Attach to prompt copies a page of another session
   into the active one's folder (a folder page with everything in it), read through an `os.Root` so a link inside
   the source cannot copy a file from elsewhere; edits to either copy never reach the other.
+  A `.md` row opens rendered in the tab itself (`native/cmd/lich-native/dock_artifacts_reader.go`), with the Code
+  tab's Markdown renderer; `browser_open` on the same file still loads its source in the browser, since the
+  renderer only draws in the window.
 - **`browser_eval` hands the agent whatever the page holds, form values and passwords included**
   (`internal/browser/eval.go`): page info never reads a field's value, but a script asks for what it wants, and
   its answer lands in the session's transcript. It runs in the page's own world, so it changes what the user

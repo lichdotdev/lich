@@ -93,3 +93,24 @@ func TestArtifactMenuLeadsWithOpenOnItsOwnSessionAndAttachOnAnother(t *testing.T
 		t.Errorf("other session: %v", other)
 	}
 }
+
+func TestArtifactMarkdownOpensInTheTabAndAPageInTheBrowser(t *testing.T) {
+	tab := newArtifactsTab(new(artifactStore))
+	var browser []string
+	tab.open = func(_, _, name string) { browser = append(browser, name) }
+	tab.actions("s", "s", backend.Artifact{Name: "notes.md", Path: "/art/notes.md"}).open()
+	if len(browser) != 0 || tab.reader.path != "/art/notes.md" {
+		t.Errorf("markdown went to the browser %v, reader on %q", browser, tab.reader.path)
+	}
+	tab.actions("s", "s", backend.Artifact{Name: "report.html", Path: "/art/report.html"}).open()
+	if !reflect.DeepEqual(browser, []string{"report.html"}) {
+		t.Errorf("page opened in the browser: %v", browser)
+	}
+}
+
+func TestArtifactMenuOffersAMarkdownPreviewInPlaceOfTheBrowser(t *testing.T) {
+	got := menuLabels(artifactMenu(true, artifactActions{path: "/art/notes.md"}))
+	if want := []string{"Preview Markdown", "Attach to prompt", "---", "Copy path", "Show in file manager"}; !reflect.DeepEqual(got, want) {
+		t.Errorf("markdown menu: %v", got)
+	}
+}

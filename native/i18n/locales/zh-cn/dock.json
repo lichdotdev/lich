@@ -49,7 +49,8 @@
     "openInBrowser": "在浏览器中打开",
     "attachToPrompt": "附加到提示词",
     "copyPath": "复制路径",
-    "showInFileManager": "在文件管理器中显示"
+    "showInFileManager": "在文件管理器中显示",
+    "backToList": "返回产物列表"
   },
   "showCode": {
     "pointed": "{session} 指向了 {file}",

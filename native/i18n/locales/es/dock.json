@@ -50,7 +50,8 @@
     "openInBrowser": "Abrir en el navegador",
     "attachToPrompt": "Adjuntar al prompt",
     "copyPath": "Copiar ruta",
-    "showInFileManager": "Mostrar en el gestor de archivos"
+    "showInFileManager": "Mostrar en el gestor de archivos",
+    "backToList": "Volver a los artefactos"
   },
   "showCode": {
     "pointed": "{session} señaló {file}",

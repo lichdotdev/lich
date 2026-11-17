@@ -50,7 +50,8 @@
     "openInBrowser": "Abrir no navegador",
     "attachToPrompt": "Anexar ao prompt",
     "copyPath": "Copiar caminho",
-    "showInFileManager": "Mostrar no gerenciador de arquivos"
+    "showInFileManager": "Mostrar no gerenciador de arquivos",
+    "backToList": "Voltar aos artifacts"
   },
   "showCode": {
     "pointed": "{session} apontou para {file}",

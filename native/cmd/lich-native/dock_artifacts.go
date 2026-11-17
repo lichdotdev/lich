@@ -50,6 +50,7 @@ type artifactsTab struct {
 	open   func(session, from, name string)
 	attach func(target, from, name string)
 	reveal func(dir string)
+	reader *artifactReader
 
 	list     widget.List
 	rows     map[string]*artifactRowState
@@ -64,7 +65,7 @@ type artifactRowState struct {
 }
 
 func newArtifactsTab(store *artifactStore) *artifactsTab {
-	t := &artifactsTab{store: store, rows: map[string]*artifactRowState{}, presence: map[string]*ui.Presence{}}
+	t := &artifactsTab{store: store, reader: new(artifactReader), rows: map[string]*artifactRowState{}, presence: map[string]*ui.Presence{}}
 	t.list.Axis = layout.Vertical
 	return t
 }
@@ -110,6 +111,9 @@ func (t *artifactsTab) motion(owner string) *ui.Presence {
 }
 
 func (t *artifactsTab) layout(gtx C, th *ui.Theme, root *ui.Root, active string) D {
+	if t.reader.isOpenFor(active) {
+		return t.reader.layout(gtx, th, root, t.store)
+	}
 	own, others := t.groups(active)
 	if len(own) == 0 && len(others) == 0 {
 		return th.Notice(i18n.T("dock.artifacts.empty")).Layout(gtx)
@@ -161,7 +165,7 @@ func (t *artifactsTab) files(gtx C, th *ui.Theme, root *ui.Root, active, owner s
 
 // fileRow is one artifact: its glyph in the node column, its name with the
 // unread dot, how long ago it was written, and the corner slot's ⋯. A click
-// opens it in the active session's browser.
+// opens it in the active session's browser, or a Markdown file in the tab.
 func (t *artifactsTab) fileRow(gtx C, th *ui.Theme, root *ui.Root, active, owner string, f backend.Artifact) D {
 	r := t.row(owner + "\x00" + f.Name)
 	do := t.actions(active, owner, f)
@@ -207,15 +211,22 @@ func (t *artifactsTab) fileRow(gtx C, th *ui.Theme, root *ui.Root, active, owner
 	})
 }
 
-// artifactActions is what a row's click and menu entries do.
+// artifactActions is what a row's click and menu entries do to the file at
+// path.
 type artifactActions struct {
+	path                       string
 	open, attach, copy, reveal func()
 }
 
 func (t *artifactsTab) actions(active, owner string, f backend.Artifact) artifactActions {
 	return artifactActions{
+		path: f.Path,
 		open: func() {
 			t.store.markRead(owner, f.Name)
+			if isMarkdown(f.Path) {
+				t.reader.openAt(active, owner, f)
+				return
+			}
 			t.open(active, owner, f.Name)
 		},
 		attach: func() { t.attach(active, owner, f.Name) },
@@ -229,6 +240,9 @@ func (t *artifactsTab) actions(active, owner string, f backend.Artifact) artifac
 // prompt leads.
 func artifactMenu(own bool, do artifactActions) []ui.MenuEntry {
 	open := ui.MenuEntry{Label: i18n.T("dock.artifacts.openInBrowser"), Icon: icBrowser, OnClick: do.open}
+	if isMarkdown(do.path) {
+		open = ui.MenuEntry{Label: i18n.T("common.action.previewMarkdown"), Icon: icMarkdownPreview, OnClick: do.open}
+	}
 	attach := ui.MenuEntry{Label: i18n.T("dock.artifacts.attachToPrompt"), Icon: icArtifactAttach, OnClick: do.attach}
 	first, second := open, attach
 	if !own {
