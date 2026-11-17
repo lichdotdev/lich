@@ -168,7 +168,7 @@ var handoffTools = []mcpTool{
 				"What would trip the successor up: traps found, approaches ruled out, and why."),
 			"kind": property("string",
 				"What the successor runs: claude, codex, antigravity, opencode, omp, crush, "+
-					"cursor or kiro. Defaults to the same agent you are."),
+					"cursor, kiro, or pi. Defaults to the same agent you are."),
 			"model": property("string",
 				"Model the successor's provider runs, spelled as its --model flag takes it. "+
 					"Defaults to yours when the provider is yours."),

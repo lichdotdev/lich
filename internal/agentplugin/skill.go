@@ -14,7 +14,7 @@ import (
 // The plugin's skills, for the harnesses that do not load them from the
 // plugin itself. Claude Code, Codex and Antigravity read skills/ out of the
 // installed plugin, and Cursor loads Claude Code's installed plugins whole;
-// opencode, oh-my-pi, Crush and Kiro only read a skills directory of their own,
+// opencode, oh-my-pi, Pi, Crush and Kiro only read a skills directory of their own,
 // so their install copies the skills there.
 
 const skillManifest = "SKILL.md"

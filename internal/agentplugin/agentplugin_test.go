@@ -338,6 +338,7 @@ func TestStatusListsEveryHarness(t *testing.T) {
 		providers.Claude, providers.Codex, providers.Antigravity,
 		providers.OpenCode, providers.OMP, providers.Crush, providers.Cursor,
 		providers.Kiro,
+		providers.Pi,
 	}
 	if !slices.Equal(got, want) {
 		t.Fatalf("Status() covers %v, want %v", got, want)

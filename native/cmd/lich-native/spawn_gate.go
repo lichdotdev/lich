@@ -30,7 +30,7 @@ const (
 )
 
 // resumableKinds are the providers whose resume lich wires.
-var resumableKinds = []string{"claude", "codex", "antigravity", "omp", "opencode", "crush", "cursor", "kiro"}
+var resumableKinds = []string{"claude", "codex", "antigravity", "omp", "opencode", "crush", "cursor", "kiro", "pi"}
 
 // spawnProbe is the backend reads the gate asks, *backend.Client in the
 // window and a fake in tests.

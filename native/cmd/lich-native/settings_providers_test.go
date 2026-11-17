@@ -37,15 +37,16 @@ func TestSkipLadderRoundTripsAndOnlyClimbingAsks(t *testing.T) {
 }
 
 func TestEveryProviderHasASkipFlagAndResumes(t *testing.T) {
+	withoutSkip := map[string]bool{"pi": true}
 	for _, kind := range providerKinds() {
-		if !hasSkipFlag(kind) {
+		if !hasSkipFlag(kind) && !withoutSkip[kind] {
 			t.Errorf("%s has no skip flag", kind)
 		}
 		if !canResume(kind) {
 			t.Errorf("%s cannot resume", kind)
 		}
 	}
-	if len(skipFlags) != len(providerKinds()) {
+	if len(skipFlags)+len(withoutSkip) != len(providerKinds()) {
 		t.Errorf("%d flags for %d providers", len(skipFlags), len(providerKinds()))
 	}
 }

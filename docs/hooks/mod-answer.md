@@ -163,7 +163,7 @@ after a usage limit, since that continuation is the turn that answers.
 
 ## Known ceilings
 
-- **Claude Code only.** The other seven harnesses have no mod system; their
+- **Claude Code only.** The other eight harnesses have no mod system; their
   workers are handed the ticket and answer with `reply_to_session` or
   `lich reply`.
 - **An aborted turn answers nothing.** The errand stays open while the worker

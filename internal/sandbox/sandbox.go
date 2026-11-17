@@ -84,8 +84,8 @@ type Spec struct {
 //
 // A provider missing from here confines to a home with no credentials in it,
 // which is a session that opens and cannot log in. The registry is the
-// checklist, so all eight are listed.
-func stateDirs(providerID, home string) []string {
+// checklist, so all nine are listed.
+func stateDirs(providerID, home string, cwd ...string) []string {
 	switch providerID {
 	case providers.Claude:
 		// The JSON file beside the directory holds the account, so a session
@@ -110,6 +110,18 @@ func stateDirs(providerID, home string) []string {
 		return []string{filepath.Join(home, ".gemini")}
 	case providers.OMP:
 		return []string{ompAgentDir(home)}
+	case providers.Pi:
+		workingDir := ""
+		if len(cwd) > 0 {
+			workingDir = cwd[0]
+		}
+		agentDir := providers.PiAgentDir(home, workingDir)
+		sessionDir := providers.PiSessionDir(home, workingDir)
+		dirs := []string{agentDir}
+		if rel, err := filepath.Rel(agentDir, sessionDir); err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+			dirs = append(dirs, sessionDir)
+		}
+		return dirs
 	case providers.OpenCode:
 		// opencode is xdg-basedir on every platform, and splits config from the
 		// session store it writes conversations into.
@@ -256,7 +268,7 @@ var readableToolchain = []string{
 // without Rust has no ~/.cargo, and that is not an error.
 func Describe(providerID, home, cwd, gitCommon string, extraRead []string, sshAgent bool) Spec {
 	spec := Spec{Home: home, Cwd: cwd, GitCommon: gitCommon}
-	write := append(stateDirs(providerID, home), under(home, writableCaches)...)
+	write := append(stateDirs(providerID, home, cwd), under(home, writableCaches)...)
 	read := append(under(home, readableToolchain), displaySockets(home)...)
 	if sshAgent {
 		read = append(read, AgentSocket(), knownHosts(home))

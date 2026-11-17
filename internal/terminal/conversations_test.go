@@ -255,7 +255,14 @@ func TestCrushConversations(t *testing.T) {
 // lich runs and cannot list is a gap somebody has to have chosen.
 func TestConversationsReadsEveryProvider(t *testing.T) {
 	conversationHome(t)
-	for _, kind := range []string{"claude", "codex", "antigravity", "opencode", "omp", "crush", "cursor", "kiro"} {
+	noReader := map[string]bool{"pi": true}
+	for _, kind := range []string{"claude", "codex", "antigravity", "opencode", "omp", "crush", "cursor", "kiro", "pi"} {
+		if noReader[kind] {
+			if _, ok := conversationReaders[kind]; ok {
+				t.Errorf("%s unexpectedly has a conversation reader", kind)
+			}
+			continue
+		}
 		if _, ok := conversationReaders[kind]; !ok {
 			t.Errorf("no conversation reader for %s", kind)
 		}

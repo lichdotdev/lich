@@ -65,6 +65,9 @@ var hookContracts = []hookContract{
 	{"session-title.jsonl", "/session-title", func(b []byte) (any, error) {
 		return parseSessionTitle(b)
 	}},
+	{"session-model.jsonl", "/session-model", func(b []byte) (any, error) {
+		return parseSessionModel(b)
+	}},
 	{"session-touched.jsonl", "/session-touched", func(b []byte) (any, error) {
 		return parseSessionTouched(b)
 	}},

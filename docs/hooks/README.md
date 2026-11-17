@@ -1,12 +1,12 @@
 # Hook contracts
 
 lich observes and drives provider sessions through **hooks**. Each hook runs
-inside a session (shipped by the companion plugin
-[`lichdotdev/lich-plugin`](https://github.com/lichdotdev/lich-plugin), which installs
-on Claude Code, Codex, Antigravity, opencode, oh-my-pi, Crush and Kiro CLI) and
-talks to lich over a shared local transport. On Claude Code, Codex, Antigravity,
-Crush and Kiro CLI it is a small script the harness runs; opencode and oh-my-pi load a JavaScript
-module instead, which is a difference in packaging, not in what a report is.
+inside a session and talks to lich over a shared local transport. The companion
+plugin [`lichdotdev/lich-plugin`](https://github.com/lichdotdev/lich-plugin)
+installs clients for Claude Code, Codex, Antigravity, opencode, oh-my-pi, Crush
+and Kiro CLI. Pi's JavaScript extension is shipped by lich and passed to Pi at
+spawn. On Claude Code, Codex, Antigravity, Crush and Kiro CLI the client is a
+small script; opencode, oh-my-pi and Pi load a JavaScript module or extension.
 
 The contracts are provider-agnostic: lich injects the same variables into every
 PTY it spawns, so what changes per provider is only which of its lifecycle
@@ -15,9 +15,8 @@ harness. **Cursor CLI's column is the one nobody installs**: lich installs no
 plugin there, and the CLI executes every Claude Code hook on the machine — the
 user's own and each installed plugin's — so those columns fire from the Claude
 Code install or not at all, and a machine without that install has a Cursor
-session that reports nothing. Of the nine that install registers, Cursor's TUI
-delivers all but `Notification` (measured 2026.10.01), so a Cursor session never
-reports `waiting`. Reports
+session that reports nothing. Cursor's TUI delivers all but `Notification`
+(measured 2026.10.01), so a Cursor session never reports `waiting`. Reports
 also arrive naming `claude`, the argument Claude Code's own registration passes;
 lich answers from the kind it spawned instead (`terminal.providerKind`).
 [`../providers/cursor.md`](../providers/cursor.md) carries what all of that
@@ -37,9 +36,10 @@ Define the contract here first, then implement both sides against it.
 
 Prose alone could not hold that line across two repositories — a renamed field
 went red in neither. [`fixtures/`](fixtures/) is every contract as bytes, one
-case per line, and both sides assert against the same lines: lich in
-`internal/terminal/fixtures_test.go`, the plugin in its own suite. A payload
-that moves now fails on whichever side moved first.
+case per line, and the server plus companion plugin assert against the same
+lines: lich in `internal/terminal/fixtures_test.go`, the plugin in its own
+suite. Pi's extension is bundled here and follows the same payloads. A payload
+that moves now fails on whichever tested side moved first.
 
 ## Shared transport
 
@@ -170,6 +170,8 @@ no lich release ships yet, which they read at the commit that merged it.
   against the lich session for later features.
 - [session-title.md](session-title.md) — Claude's auto-generated `ai-title`,
   applied as the session card's label.
+- [session-model.md](session-model.md) — the live model id, shown in the
+  session footer.
 - [session-touched.md](session-touched.md) — a session changed files, so its
   git status refreshes immediately instead of on the next poll.
 - [mod-control.md](mod-control.md): lich drives (`lich control`,

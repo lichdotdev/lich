@@ -188,6 +188,25 @@ func ompTranscriptPath(providerSessionID string) (string, bool) {
 	return path, ok
 }
 
+// piTranscriptPath locates a Pi session by id in the cwd-keyed session store.
+func piTranscriptPath(providerSessionID, cwd string) (string, bool) {
+	if providerSessionID == "" || filepath.Base(providerSessionID) != providerSessionID || strings.ContainsAny(providerSessionID, `*?[\\`) || cwd == "" {
+		return "", false
+	}
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", false
+	}
+	base := providers.PiSessionDir(home, cwd)
+	abs, err := filepath.Abs(cwd)
+	if err != nil {
+		return "", false
+	}
+	encoded := "--" + strings.TrimLeft(abs, string(filepath.Separator)) + "--"
+	encoded = strings.NewReplacer("/", "-", `\`, "-", ":", "-").Replace(encoded)
+	return globTranscript(base, encoded, "*_"+providerSessionID+".jsonl")
+}
+
 // ompAgentDir is Personal's oh-my-pi agent directory, or false when there is no
 // home to hang it off.
 func ompAgentDir() (string, bool) {

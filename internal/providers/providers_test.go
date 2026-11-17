@@ -18,6 +18,7 @@ func TestDefaultBinary(t *testing.T) {
 		OMP:         "omp",
 		Crush:       "crush",
 		Cursor:      "cursor-agent",
+		Pi:          "pi",
 		"nope":      "",
 		"":          "",
 	}
@@ -114,7 +115,7 @@ func TestKnown(t *testing.T) {
 // TestEveryProviderDocumentsItsInstall pins the field the "not found on PATH"
 // rows link to. A blank one there is a row that names a missing agent and offers
 // nothing, which is the dead end the field exists to close — so provider number
-// eight fails here until it brings its page.
+// nine fails here until it brings its page.
 func TestEveryProviderDocumentsItsInstall(t *testing.T) {
 	for _, p := range Registry {
 		if !strings.HasPrefix(p.Docs, "https://") {
@@ -138,7 +139,7 @@ func TestDetectCarriesTheDocs(t *testing.T) {
 	}
 }
 
-// TestSupportsFork pins the three providers that can branch a conversation and,
+// TestSupportsFork pins the four providers that can branch a conversation and,
 // more importantly, the five that cannot: a false turning true here is a fork
 // flag reaching a CLI with no verb for it, which kills the spawn before the
 // session exists. Every id is listed rather than looped over the Registry, so a
@@ -148,6 +149,7 @@ func TestSupportsFork(t *testing.T) {
 		Claude:      true,
 		Codex:       true,
 		OpenCode:    true,
+		Pi:          true,
 		Antigravity: false,
 		OMP:         false,
 		Crush:       false,
@@ -183,6 +185,7 @@ func TestCostSourceOfNamesEveryRung(t *testing.T) {
 		Antigravity: CostSourceNone,
 		Cursor:      CostSourceNone,
 		Kiro:        CostSourceNone,
+		Pi:          CostSourceNone,
 	}
 	for _, p := range Registry {
 		rung, named := want[p.ID]

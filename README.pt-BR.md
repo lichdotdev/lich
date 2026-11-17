@@ -134,61 +134,60 @@ o lich consegue ler de volta, porque cada CLI registra coisas diferentes.
 <details>
 <summary>Veja o que cada agente suporta</summary>
 
-| Recurso | Claude Code | Codex | Antigravity | opencode | oh-my-pi | Crush | Cursor CLI | Kiro CLI |
-| --- | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: |
-| Janela de contexto no rodapé | sim | sim | não | não | não | não | não | sim |
-| Quanto do último turno veio do cache de prompt, no rodapé | sim | sim | não | no tooltip de custo | no tooltip de custo | não | não | não |
-| O tooltip do card mostra o modelo em uso, e com qual abriu se ele mudou | sim | sim | não | não | não | não | não | sim |
-| Custo no rodapé | sim | sim | não | sim | sim | sim | não | créditos |
-| Uma conversa com fork feito dentro do próprio terminal do agente cobra uma vez só o histórico que copia | sim, a não ser quando o custo é o que o próprio Claude Code mediu | não | sem leitura de custo | sim | sim, menos um turno gravado sem id de resposta | não faz fork | sem leitura de custo | sem leitura de custo |
-| Quanto ainda resta do seu plano | sim | sim | sim | só OpenCode Go | não | não | sim | não |
-| Um turno interrompido pelo limite de uso do plano continua quando o limite renova | sim | sim | não | retenta sozinho | retenta sozinho | não | não | não |
-| Se outro perfil seu ainda tem cota, um aviso oferece continuar nele na hora | sim | sim | não | não | não | não | não | não |
-| Ao passar o trabalho, um agente pode sugerir um perfil seu para a sucessora, e um aviso deixa você decidir se ela muda | sim | sim | não | não | sim | não | Linux e Windows | só Linux |
-| Spinner enquanto o turno roda, anel quando termina | sim | sim | sim | sim | sim | não | sim | sim |
-| O card ganha o nome da conversa | sim | pelo seu primeiro prompt | pelo seu primeiro prompt | sim | sim, a partir do segundo turno | não | sim, quando o primeiro turno termina | pelo seu primeiro prompt, quando o primeiro turno termina |
-| Um pull request aberto pelo agente aparece no card quando o turno termina | sim | sim | sim | sim | sim | não, só quando a janela volta ao foco | sim | sim |
-| Se redesenha com o novo visual quando você troca o lich entre tema claro e escuro | sim | não | não | sim | sim | não | sim | não |
-| Sino quando o agente depende de você para continuar | sim | sim | não | sim | não | não | não | não |
-| Ctrl+Shift+Y pula para a próxima sessão esperando por você | sim | sim | não | sim | não | não | não | não |
-| Um programa no terminal do agente pode definir o card (OSC 7501) enquanto o agente roda | não | não | não | não | não | sim | não | não |
-| De volta a um shell sem marcas de prompt depois de sair do agente, um programa pode definir o card de novo | sim | não | não | não | não | sim | sim | não |
-| A bandeja lista as sessões esperando por você e as que estão trabalhando, e o ícone ganha um ponto | sim | sim | só as que trabalham | sim | só as que trabalham | não | só as que trabalham | só as que trabalham |
-| O card avisa quando a conversa está sendo compactada | sim | não | não | não | não | não | não | não |
-| Depois de uma compactação, o agente é lembrado das tarefas que outras sessões mandaram e que ainda esperam a resposta dele | sim | não | não | não | não | não | não | não |
-| Filtro da barra lateral por estado: Aguardando, Rodando, Não lidas | sim | sim | sem Aguardando | sim | sem Aguardando | não, sempre Ociosas | sem Aguardando | sem Aguardando |
-| Rodado pelo seu agente dentro de outra sessão (`claude -p`, `cursor-agent -p`), não aparece no card dessa sessão | sim | sim | sim | sim | sim | sim | sim | não |
-| Além das ferramentas para falar com as suas outras sessões, o agente é avisado de quando usá-las (passar trabalho para uma sessão na própria worktree) | sim | sim, a não ser que o seu `config.toml` defina `developer_instructions` | sim | sim | sim | sim | não medido | sim |
-| Impede a máquina de suspender por inatividade enquanto um turno roda | sim | sim | sim | sim | sim | não | sim | sim |
-| Sessões trocando mensagens sem trabalho entre elas, duas ou num ciclo de várias, são paradas | sim | sim | sim | sim | sim | não | sim | sim |
-| **Último turno** na aba Revisão, com o resumo do agente | sim | sim | sim | sim | sim | não | sim | sim |
-| Buscar na conversa pela paleta | sim | sim | sim | sim | sim | sim | não | sim |
-| Retomar, pela aba Histórico da paleta, uma conversa iniciada fora do lich | sim | sim | sim | sim | sim | Linux; macOS e Windows sem teste | sim | sim |
-| Um paste longo pode entrar como texto editável em vez de um placeholder recolhido (Configurações › Provedores, desligado por padrão) | sim | não | não | sim | não medido | não, vira o anexo `paste_N.txt` | não | sim |
-| Fazer fork de uma conversa para uma nova worktree, ou no mesmo checkout | sim | sim | não | sim | não | não | não | não |
-| Um fork fica pendurado na sessão de origem, na árvore da barra lateral | sim | sim | não | sim | não | não | não | não |
-| Aviso quando você retoma, pelo app do próprio agente, uma conversa que já está aberta em outro card | sim | no seu próximo prompt | no seu próximo prompt, sem teste | não | sim | na próxima chamada de tool | não | sim |
-| Abrir uma sessão com o esforço de raciocínio escolhido | sim | sim | sim | não | sim | não | no nome do modelo | sim |
-| Abrir uma sessão com ultracode ligado | sim | não | não | não | não | não | não | não |
-| Várias contas lado a lado como perfis, cada uma com login completo próprio, e uma sessão que muda de conta continua no mesmo card (Configurações › Provedores) | sim, com plugins, modelo e esforço padrão próprios em cada perfil e as demais configurações do Pessoal compartilhadas por todos | sim, com plugins, modelo e esforço padrão próprios em cada perfil e as demais configurações do Pessoal compartilhadas por todos | não | sim, com login feito num card de terminal; a sessão não muda de perfil, porque as conversas ficam no mesmo banco que guarda o login; o último modelo escolhido vira o padrão de todos os perfis | sim, com login feito num card de terminal, modelos padrão próprios em cada perfil e as demais configurações compartilhadas por todos os perfis | não medido | Linux e Windows (no macOS o login fica no Keychain), com login feito num card de terminal e `mcp.json`, hooks e skills compartilhados por todos os perfis | só Linux (o macOS guarda o login no Keychain, e no Windows nada consegue mudá-lo de lugar), com login feito num card de terminal e as conversas e o modelo padrão compartilhados por todos os perfis |
-| Uma pasta que você marcou como confiável na conta principal abre sem a pergunta "trust this folder?" em todos os outros perfis | sim | sim | sem perfis | não pergunta nada | não pergunta nada | não medido | sim | não pergunta nada |
-| Uma sessão na sandbox abre sem a pergunta "trust this folder?" | sim | sim | sim | não pergunta nada | não pergunta nada | sim, e não pede mais para inicializar o projeto | sim | não pergunta nada |
-| Uma worktree de uma pasta confiável abre sem a pergunta "trust this folder?" | sim | sim | sim | não pergunta nada | não pergunta nada | sim, e não pede mais para inicializar o projeto | sim | não pergunta nada |
-| Controlar uma sessão em execução por `lich control` ou por um agente: prompt, parar, modelo, esforço, slash command | sim | não | não | não | não | não | não | não |
-| Uma mensagem de outra sessão chega sem ser digitada no terminal | sim | não | não | não | não | não | não | não |
-| Um subagente iniciado pelo agente roda como sessão do lich com card próprio, no checkout da sessão que pediu, entrega o relatório completo e fecha ao terminar; os subagentes dele também ganham card, um nível abaixo | sim | não | não | não | não | não | não | não |
-| Fazer uma pergunta paralela a uma sessão em execução sem interromper (`lich ask`) | sim | não | não | não | não | não | não | não |
-| Contexto, custo e uso do plano medidos pela própria CLI | sim | não | não | não | não | não | não | não |
-| A status line do terminal mostra a quem a sessão deve resposta, de quem ela está esperando e as respostas prontas para coletar | sim | não | não | não | não | não | não | não |
-| Delegar em privado a partir de um subagente ou etapa de workflow | sim | sim | sim | sim | sim | sim | sim | sim |
-| Uma sessão retomada mantém o modelo e o esforço que estava usando | só o modelo | sim | não | modelo | sim | não | modelo | modelo; esforço sem teste |
-| Um resultado continua esperando por você mesmo se você interromper a espera | sim | sim | sim | sim | não | sim | sim | sim |
-| Uma tarefa passada para outra sessão volta como "sem resposta" assim que aquele agente encerra o turno sem responder | sim | sim | sim | sim | sim | não, espera o prazo | sim | sim |
-| As mensagens do próprio lich para o agente (tarefas delegadas, resultados prontos, avisos) no idioma de prompt que você escolher | sim | sim | sim | sim | sim | sim | sim | sim |
-| Instruído na criação, no idioma de prompt, a distribuir o trabalho em sessões do lich em vez de subagentes ocultos | sim | não | não | não | sim | não | não | não |
-| O card da sessão abre um navegador que o agente dirige, ao lado do terminal da sessão | sim | sim | sim | sim | sim | sim | sim | sim |
-| Uma página que o agente faz para te mostrar (um relatório, um diagrama, um mockup) abre nesse navegador a partir de uma pasta própria da sessão, fora do checkout, mantida enquanto a sessão existir | sim, mas o Claude Code ainda pode publicá-la no claude.ai com a própria ferramenta Artifact | sim | sim | sim | sim | sim | sim | sim |
-| Uma skill para escrever uma extensão do lich, que só roda quando você chama (`/lich:extension`) | sim | sim, como `$lich:extension` | sim, mas o agente a vê em todo turno: o Antigravity não consegue deixar uma skill só para uso manual | sim, como `/lich-extension` (opencode 1) ou pelo `/skills` (opencode 2) | sim, como `/skill:lich-extension` | sim, pela paleta de comandos | sim, mas o agente a vê em todo turno: o Cursor mostra ao agente toda skill de um plugin | não: o Kiro não consegue tirar uma skill do contexto do agente |
+| Recurso | Claude Code | Codex | Antigravity | opencode | oh-my-pi | Crush | Cursor CLI | Kiro CLI | Pi |
+| --- | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: |
+| Janela de contexto no rodapé | sim | sim | não | não | não | não | não | sim | não |
+| Modelo atual no rodapé da sessão | sim | sim | não | não | não | não | não | sim | sim |
+| Quanto do último turno veio do cache de prompt, no rodapé | sim | sim | não | no tooltip de custo | no tooltip de custo | não | não | não | não |
+| O tooltip do card mostra o modelo em uso, e com qual abriu se ele mudou | sim | sim | não | não | não | não | não | sim | não |
+| Custo no rodapé | sim | sim | não | sim | sim | sim | não | créditos | não |
+| Quanto ainda resta do seu plano | sim | sim | sim | só OpenCode Go | não | não | sim | não | não |
+| Um turno interrompido pelo limite de uso do plano continua quando o limite renova | sim | sim | não | retenta sozinho | retenta sozinho | não | não | não | não |
+| Se outro perfil seu ainda tem cota, um aviso oferece continuar nele na hora | sim | sim | não | não | não | não | não | não | não |
+| Ao passar o trabalho, um agente pode sugerir um perfil seu para a sucessora, e um aviso deixa você decidir se ela muda | sim | sim | não | não | sim | não | Linux e Windows | só Linux | não |
+| Spinner enquanto o turno roda, anel quando termina | sim | sim | sim | sim | sim | não | sim | sim | sim |
+| O card ganha o nome da conversa | sim | pelo seu primeiro prompt | pelo seu primeiro prompt | sim | sim, a partir do segundo turno | não | sim, quando o primeiro turno termina | pelo seu primeiro prompt, quando o primeiro turno termina | não |
+| Um pull request aberto pelo agente aparece no card quando o turno termina | sim | sim | sim | sim | sim | não, só quando a janela volta ao foco | sim | sim | sim |
+| Se redesenha com o novo visual quando você troca o lich entre tema claro e escuro | sim | não | não | sim | sim | não | sim | não | não |
+| Sino quando o agente depende de você para continuar | sim | sim | não | sim | não | não | não | não | não |
+| Ctrl+Shift+Y pula para a próxima sessão esperando por você | sim | sim | não | sim | não | não | não | não | não |
+| Um programa no terminal do agente pode definir o card (OSC 7501) enquanto o agente roda | não | não | não | não | não | sim | não | não | não |
+| De volta a um shell sem marcas de prompt depois de sair do agente, um programa pode definir o card de novo | sim | não | não | não | não | sim | sim | não | não |
+| A bandeja lista as sessões esperando por você e as que estão trabalhando, e o ícone ganha um ponto | sim | sim | só as que trabalham | sim | só as que trabalham | não | só as que trabalham | só as que trabalham | somente em execução |
+| O card avisa quando a conversa está sendo compactada | sim | não | não | não | não | não | não | não | não |
+| Depois de uma compactação, o agente é lembrado das tarefas que outras sessões mandaram e que ainda esperam a resposta dele | sim | não | não | não | não | não | não | não | não |
+| Filtro da barra lateral por estado: Aguardando, Rodando, Não lidas | sim | sim | sem Aguardando | sim | sem Aguardando | não, sempre Ociosas | sem Aguardando | sem Aguardando | sem Waiting |
+| Rodado pelo seu agente dentro de outra sessão (`claude -p`, `cursor-agent -p`), não aparece no card dessa sessão | sim | sim | sim | sim | sim | sim | sim | não | não |
+| Além das ferramentas para falar com as suas outras sessões, o agente é avisado de quando usá-las (passar trabalho para uma sessão na própria worktree) | sim | sim, a não ser que o seu `config.toml` defina `developer_instructions` | sim | sim | sim | sim | não medido | sim | sim |
+| Impede a máquina de suspender por inatividade enquanto um turno roda | sim | sim | sim | sim | sim | não | sim | sim | sim |
+| Sessões trocando mensagens sem trabalho entre elas, duas ou num ciclo de várias, são paradas | sim | sim | sim | sim | sim | não | sim | sim | sim |
+| **Último turno** na aba Revisão, com o resumo do agente | sim | sim | sim | sim | sim | não | sim | sim | não |
+| Buscar na conversa pela paleta | sim | sim | sim | sim | sim | sim | não | sim | não |
+| Retomar, pela aba Histórico da paleta, uma conversa iniciada fora do lich | sim | sim | sim | sim | sim | Linux; macOS e Windows sem teste | sim | sim | não |
+| Um paste longo pode entrar como texto editável em vez de um placeholder recolhido (Configurações › Provedores, desligado por padrão) | sim | não | não | sim | não medido | não, vira o anexo `paste_N.txt` | não | sim | não |
+| Fazer fork de uma conversa para uma nova worktree, ou no mesmo checkout | sim | sim | não | sim | não | não | não | não | sim |
+| Um fork fica pendurado na sessão de origem, na árvore da barra lateral | sim | sim | não | sim | não | não | não | não | sim |
+| Aviso quando você retoma, pelo app do próprio agente, uma conversa que já está aberta em outro card | sim | no seu próximo prompt | no seu próximo prompt, sem teste | não | sim | na próxima chamada de tool | não | sim | não |
+| Abrir uma sessão com o esforço de raciocínio escolhido | sim | sim | sim | não | sim | não | no nome do modelo | sim | sim |
+| Abrir uma sessão com ultracode ligado | sim | não | não | não | não | não | não | não | não |
+| Várias contas lado a lado como perfis, cada uma com login completo próprio, e uma sessão que muda de conta continua no mesmo card (Configurações › Provedores) | sim | sim, com plugins próprios em cada perfil e as configurações do Pessoal compartilhadas por todos | não | sim, com login feito num card de terminal; a sessão não muda de perfil, porque as conversas ficam no mesmo banco que guarda o login | sim, com login feito num card de terminal e configurações compartilhadas por todos os perfis | não medido | Linux e Windows (no macOS o login fica no Keychain), com login feito num card de terminal e `mcp.json`, hooks e skills compartilhados por todos os perfis | só Linux (o macOS guarda o login no Keychain, e no Windows nada consegue mudá-lo de lugar), com login feito num card de terminal e as conversas compartilhadas por todos os perfis | não |
+| Uma pasta que você marcou como confiável na conta principal abre sem a pergunta "trust this folder?" em todos os outros perfis | sim | sim | sem perfis | não pergunta nada | não pergunta nada | não medido | sim | não pergunta nada | não |
+| Uma sessão na sandbox abre sem a pergunta "trust this folder?" | sim | sim | sim | não pergunta nada | não pergunta nada | sim, e não pede mais para inicializar o projeto | sim | não pergunta nada | não |
+| Uma worktree de uma pasta confiável abre sem a pergunta "trust this folder?" | sim | sim | sim | não pergunta nada | não pergunta nada | sim, e não pede mais para inicializar o projeto | sim | não pergunta nada | não |
+| Controlar uma sessão em execução por `lich control` ou por um agente: prompt, parar, modelo, esforço, slash command | sim | não | não | não | não | não | não | não | não |
+| Uma mensagem de outra sessão chega sem ser digitada no terminal | sim | não | não | não | não | não | não | não | não |
+| Um subagente iniciado pelo agente roda como sessão do lich com card próprio, no checkout da sessão que pediu, entrega o relatório completo e fecha ao terminar; os subagentes dele também ganham card, um nível abaixo | sim | não | não | não | não | não | não | não | não |
+| Fazer uma pergunta paralela a uma sessão em execução sem interromper (`lich ask`) | sim | não | não | não | não | não | não | não | não |
+| Contexto, custo e uso do plano medidos pela própria CLI | sim | não | não | não | não | não | não | não | não |
+| A status line do terminal mostra a quem a sessão deve resposta, de quem ela está esperando e as respostas prontas para coletar | sim | não | não | não | não | não | não | não | não |
+| Delegar em privado a partir de um subagente ou etapa de workflow | sim | sim | sim | sim | sim | sim | sim | sim | sim |
+| Uma sessão retomada mantém o modelo e o esforço que estava usando | só o modelo | sim | não | modelo | sim | não | modelo | modelo; esforço sem teste | não medido |
+| Um resultado continua esperando por você mesmo se você interromper a espera | sim | sim | sim | sim | não | sim | sim | sim | sim |
+| Uma tarefa passada para outra sessão volta como "sem resposta" assim que aquele agente encerra o turno sem responder | sim | sim | sim | sim | sim | não, espera o prazo | sim | sim | sim |
+| As mensagens do próprio lich para o agente (tarefas delegadas, resultados prontos, avisos) no idioma de prompt que você escolher | sim | sim | sim | sim | sim | sim | sim | sim | sim |
+| Instruído na criação, no idioma de prompt, a distribuir o trabalho em sessões do lich em vez de subagentes ocultos | sim | não | não | não | sim | não | não | não | sim |
+| O card da sessão abre um navegador que o agente dirige, ao lado do terminal da sessão | sim | sim | sim | sim | sim | sim | sim | sim | sim |
+| Uma página que o agente faz para te mostrar (um relatório, um diagrama, um mockup) abre nesse navegador a partir de uma pasta própria da sessão, fora do checkout, mantida enquanto a sessão existir | sim, mas o Claude Code ainda pode publicá-la no claude.ai com a própria ferramenta Artifact | sim | sim | sim | sim | sim | sim | sim | sim |
 
 </details>
 

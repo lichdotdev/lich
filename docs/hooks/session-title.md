@@ -28,9 +28,9 @@ Both sides test against the payloads in
 
 ## Event → action mapping
 
-| Claude Code hook          | Codex hook                | Antigravity hook          | opencode event    | oh-my-pi event                | Crush hook | Cursor CLI hook | Kiro CLI hook | action                                           |
-|---------------------------|---------------------------|---------------------------|-------------------|-------------------------------|------------|-----------------|---------------|--------------------------------------------------|
-| `PostToolUse` + `Stop`    | `PostToolUse` + `Stop`    | `PreInvocation` + `Stop`  | `session.updated` | `session_stop` + `turn_start` | —          | `Stop`‡         | `stop`†        | set the session label to `title` (if still auto) |
+| Claude Code hook          | Codex hook                | Antigravity hook          | opencode event    | oh-my-pi event                | Crush hook | Cursor CLI hook | Kiro CLI hook | Pi event | action                                           |
+|---------------------------|---------------------------|---------------------------|-------------------|-------------------------------|------------|-----------------|---------------|----------|--------------------------------------------------|
+| `PostToolUse` + `Stop`    | `PostToolUse` + `Stop`    | `PreInvocation` + `Stop`  | `session.updated` | `session_stop` + `turn_start` | —          | `Stop`‡         | `stop`†        | `session_info_changed` | set the session label to `title` (if still auto) |
 
 † **Kiro registers no title report, and lich reads its title instead.** The
 report is a *script that reads a transcript path off the hook's own stdin*, and

@@ -25,7 +25,7 @@ Content-Type: application/json
   non-empty.
 - `provider` — which CLI is reporting, as a provider id from
   `internal/providers.Registry` (`claude`, `codex`, `antigravity`, `opencode`,
-  `omp`, `crush`, `cursor`, `kiro`).
+  `omp`, `crush`, `cursor`, `kiro`, `pi`).
   Optional: absent means `claude`, the only provider that reported before the
   field existed. An id outside the registry is rejected, like an unknown state
   on `/hook` — lich ships its side of a contract first, so a provider it has no
@@ -34,17 +34,16 @@ Content-Type: application/json
 Responses: `204` ok · `401` invalid token · `400` invalid body · `500` lich
 failed to persist.
 
-Both sides test against the payloads in
+The server and companion-plugin fixtures cover the payloads in
 [`fixtures/session-start.jsonl`](fixtures/session-start.jsonl), including the
-defaulted `provider`.
+defaulted `provider`. Pi's extension is bundled in this repository and uses the
+same payload contract.
 
 ## Event → action mapping
 
-| Claude Code hook | Codex hook     | Antigravity hook | opencode event     | oh-my-pi event  | Crush hook    | Cursor CLI hook | Kiro CLI hook | action                                    |
-|------------------|----------------|------------------|--------------------|-----------------|---------------|-----------------|---------------|-------------------------------------------|
-| `SessionStart`   | `SessionStart` | `PreInvocation`  | `session.created`  | `session_start` | `PreToolUse`  | `SessionStart`  | `agentSpawn`  | store `provider_session_id` on the lich   |
-|                  |                |                  |                    |                 |               |                 |               | session row, and mark the card as running |
-|                  |                |                  |                    |                 |               |                 |               | `provider` (the `session-agent` app event)|
+| Claude Code hook | Codex hook     | Antigravity hook | opencode event     | oh-my-pi event  | Crush hook    | Cursor CLI hook | Kiro CLI hook | Pi event | action                                    |
+|------------------|----------------|------------------|--------------------|-----------------|---------------|-----------------|---------------|----------|-------------------------------------------|
+| `SessionStart`   | `SessionStart` | `PreInvocation`  | `session.created`  | `session_start` | `PreToolUse`  | `SessionStart`  | `agentSpawn`  | `session_start` | store the id, mark the card running and emit its provider event |
 
 For Claude Code, Cursor CLI, oh-my-pi and Kiro CLI the report is also
 what makes a session ready for work: lich holds anything it would type at the
@@ -79,7 +78,10 @@ other field it carries. opencode raises `session.created` when the conversation
 is created, before the first turn, so it lands as early as `SessionStart` does; oh-my-pi's
 `session_start` fires before the first turn too, and the id is read off the
 session manager the event hands the extension — omp puts nothing about the
-session in the environment. **Crush has only
+session in the environment. Pi's `session_start` similarly exposes its session
+header to the extension before the first prompt; unlike the four above, lich
+does not hold typed work for Pi because this event does not prove that a startup
+question has been answered. **Crush has only
 `PreToolUse`**, whose payload carries the same `session_id` every other harness
 reports on stdin — so a Crush session announces itself when it first reaches for
 a tool, and a conversation that answers without one never announces itself at
@@ -89,7 +91,7 @@ cares when the id arrived, only which conversation it names.
 **Kiro's `agentSpawn` fires once per session, before the first prompt**, and its
 payload carries `session_id` — the same id `kiro-cli --resume-id` takes, and the
 one it prints as "Resume with:" when the session ends (measured on 2.21.0). It
-is the earliest report of the eight and needs no repeat.
+is the earliest report for Kiro and needs no repeat.
 
 One thing about it is Kiro's alone: **the id is on the payload only in the
 interactive TUI**, which is what lich spawns. The same hook under
@@ -147,7 +149,7 @@ scripted run would have said this contract could not be closed.
   provider-agnostic, but each CLI spells resume its own way (`claude --resume
   <id>`, `codex resume <id>`, `agy --conversation <id>`, `omp -r <id>`,
   `opencode --session <id>`, `crush --session <id>`, `cursor-agent --resume <id>`,
-  `kiro-cli --resume-id <id>`), so both `resumeArgs` (`internal/terminal/command.go`) and
+  `kiro-cli --resume-id <id>`, Pi `--session <id>`), so both `resumeArgs` (`internal/terminal/command.go`) and
   `resumableKinds` (`native/cmd/lich-native/spawn_gate.go`) list the kinds that
   have one. A shell session that had a provider CLI run inside it by hand carries
   an id and is still never offered a resume — the shell cannot reopen it.
@@ -155,8 +157,12 @@ scripted run would have said this contract could not be closed.
   `ResumeAvailable` (`internal/terminal/resume.go`) globs
   `~/.claude/projects/*/<id>.jsonl` for Claude Code,
   `~/.codex/sessions/*/*/*/rollout-*-<id>.jsonl` for Codex and
-  `~/.omp/agent/sessions/*/*_<id>.jsonl` for oh-my-pi (`CLAUDE_CONFIG_DIR`,
-  `CODEX_HOME` and `OMP_PROFILE`/`PI_CODING_AGENT_DIR` override the roots; a
+  `~/.omp/agent/sessions/*/*_<id>.jsonl` for oh-my-pi (`OMP_PROFILE` or
+  `PI_CODING_AGENT_DIR` override its root) and
+  `~/.pi/agent/sessions/<encoded-cwd>/*_<id>.jsonl` for Pi
+  (`PI_CODING_AGENT_DIR` moves its agent root and `PI_CODING_AGENT_SESSION_DIR`
+  can move sessions separately; Pi also needs the session cwd to locate its directory).
+  `CLAUDE_CONFIG_DIR` and `CODEX_HOME` override their roots; a
   named omp profile wins over the explicit override, which is the order
   `omp config path` applies). Antigravity files its conversation as SQLite
   instead, one database per conversation, so the proof is the file itself:

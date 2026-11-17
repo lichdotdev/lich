@@ -68,7 +68,7 @@ func TestAgentKeysLineSaysNothingLoaded(t *testing.T) {
 
 func TestEveryProviderRungIsScopedAndCounted(t *testing.T) {
 	keys := scopedKeys()
-	for _, kind := range []string{"claude", "codex", "antigravity", "opencode", "omp", "crush", "cursor", "kiro"} {
+	for _, kind := range []string{"claude", "codex", "antigravity", "opencode", "omp", "crush", "cursor", "kiro", "pi"} {
 		if !slices.Contains(keys, "provider."+kind+".sandbox") {
 			t.Errorf("%s's rung is not read per project", kind)
 		}

@@ -8,11 +8,13 @@ package terminal
 import (
 	"context"
 	"encoding/base64"
+	"errors"
 	"log/slog"
 	"net/http"
 	"os"
 	"slices"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -21,6 +23,7 @@ import (
 	"github.com/lichdotdev/lich/internal/events"
 	"github.com/lichdotdev/lich/internal/pricing"
 	"github.com/lichdotdev/lich/internal/prompt"
+	"github.com/lichdotdev/lich/internal/providers"
 	"github.com/lichdotdev/lich/internal/quota"
 )
 
@@ -109,6 +112,8 @@ type session struct {
 	// service's mu. See startgate.go.
 	awaitsStart bool
 	started     bool
+	// model is the current provider model reported from inside the PTY.
+	model string
 	// service is set on a PTY StartService spawned, nil on a session's.
 	service *ServiceCommand
 	// progScan, prog and progReplies read and answer OSC 7501 off this PTY's
@@ -391,6 +396,7 @@ func New(store Store, env []string, hub *events.Hub) *Service {
 		// The transport is built before the service that owns the bridge, so the
 		// path output takes when the socket cannot carry it is wired here.
 		ws.setFallback(s.emitData)
+		ws.setSessionModel(s.onSessionModel)
 		ws.plugins.setOnIncompatible(func(id, version string) {
 			events.Send(s.hub.Emit, api.PluginIncompatibleEvent, pluginEvent{ID: id, Version: version})
 		})
@@ -436,6 +442,13 @@ func (s *Service) onHookState(req hookRequest) {
 	s.beatHandsOn(req.SessionID, 0)
 	if !s.fromBoundConversation(req.SessionID, req.ProviderSessionID) {
 		return
+	}
+	if req.State == statusIdle && s.kindOf(req.SessionID) == providers.Pi {
+		s.mu.Lock()
+		if sess := s.sessions[req.SessionID]; sess != nil {
+			sess.model = ""
+		}
+		s.mu.Unlock()
 	}
 	// Dropped before the turn log and the relay see it: one ending told
 	// twice is still one turn.
@@ -560,6 +573,30 @@ func (s *Service) onSessionStart(sessionID, providerSessionID, provider string) 
 	// Claude's mark one turn in. What a hook says is a claim; what lich
 	// spawned is a fact.
 	events.Send(s.hub.Emit, api.SessionAgentEvent, agentEvent{ID: sessionID, Agent: s.providerKind(sessionID, provider)})
+	return nil
+}
+
+func (s *Service) onSessionModel(sessionID, model string) error {
+	if s.store.SessionKind(sessionID) != providers.Pi {
+		return nil
+	}
+	model = strings.TrimSpace(model)
+	if model == "" || len(model) > 256 || strings.ContainsAny(model, "\x00\r\n") {
+		return errors.New("invalid session model")
+	}
+	s.mu.Lock()
+	sess := s.sessions[sessionID]
+	if sess == nil {
+		s.mu.Unlock()
+		return nil
+	}
+	if sess.model == model {
+		s.mu.Unlock()
+		return nil
+	}
+	sess.model = model
+	s.mu.Unlock()
+	events.Send(s.hub.Emit, api.SessionModelEvent, api.SessionModel{ID: sessionID, Model: model})
 	return nil
 }
 

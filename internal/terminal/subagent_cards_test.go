@@ -99,8 +99,8 @@ func TestSubagentRouteWithoutTheCardPlugin(t *testing.T) {
 // through its own Agent tool; every other spawn keeps the line against it.
 func TestBriefingFollowsSubagentCards(t *testing.T) {
 	t.Parallel()
-	cards := providerArgs(providers.Claude, "", "", "", "", "/usr/bin/lich", "", false, false, false, relay.RouteCards, prompt.English)
-	plain := providerArgs(providers.Claude, "", "", "", "", "/usr/bin/lich", "", false, false, false, relay.RouteSessions, prompt.English)
+	cards := providerArgs(providers.Claude, "", "", "", "", "/usr/bin/lich", "", false, false, false, relay.RouteCards, prompt.English, false)
+	plain := providerArgs(providers.Claude, "", "", "", "", "/usr/bin/lich", "", false, false, false, relay.RouteSessions, prompt.English, false)
 	briefing := func(args []string) string {
 		at := slices.Index(args, "--append-system-prompt")
 		if at < 0 || at+1 >= len(args) {

@@ -87,9 +87,11 @@ func (s *Service) TurnStates(_ context.Context, _ api.None) ([]TurnState, error)
 func (s *Service) turnStates() []TurnState {
 	s.mu.Lock()
 	ids := make([]string, 0, len(s.sessions))
+	models := make(map[string]string, len(s.sessions))
 	for id, sess := range s.sessions {
 		if sess.service == nil {
 			ids = append(ids, id)
+			models[id] = sess.model
 		}
 	}
 	s.mu.Unlock()
@@ -97,7 +99,7 @@ func (s *Service) turnStates() []TurnState {
 
 	out := make([]TurnState, 0, len(ids))
 	for _, id := range ids {
-		ts := TurnState{ID: id}
+		ts := TurnState{ID: id, Model: models[id]}
 		if st, ok := s.statuses.of(id); ok {
 			ts.State, ts.Tool, ts.Detail, ts.Reason = st.event.State, st.event.Tool, st.event.Detail, st.event.Reason
 			ts.Since = st.since
@@ -108,7 +110,7 @@ func (s *Service) turnStates() []TurnState {
 		if c, ok := s.cwds.of(id); ok {
 			ts.Cwd, ts.Host = c.Cwd, c.Host
 		}
-		if ts.State != "" || ts.Usage != nil || ts.Cwd != "" || ts.Host != "" {
+		if ts.State != "" || ts.Model != "" || ts.Usage != nil || ts.Cwd != "" || ts.Host != "" {
 			out = append(out, ts)
 		}
 	}

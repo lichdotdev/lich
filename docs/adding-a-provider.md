@@ -1,13 +1,15 @@
 # Adding a provider
 
 A **provider** is an agent CLI lich can run inside a session's PTY. There are
-eight (`internal/providers.Registry`), and adding a ninth means landing in
+nine (`internal/providers.Registry`), and adding a tenth means landing in
 about a dozen files across two repositories. This is the map — written after
 Antigravity, so it names what that change actually touched rather than what it
 should have. Cursor CLI came later and needed no plugin install at all — it runs
 every Claude Code hook on the machine, which is a shape the plugin table below
 does not have; [`providers/cursor.md`](providers/cursor.md) carries what that
-buys and what it costs.
+buys and what it costs. Pi uses an extension bundled with lich and passed at
+spawn rather than a client fetched from the companion plugin repository;
+[`providers/pi.md`](providers/pi.md) records its limits.
 
 Two rules govern the whole exercise, and both are in
 [`../CLAUDE.md`](../CLAUDE.md):
@@ -106,9 +108,11 @@ somebody else's flag.
 
 ## The plugin
 
-The companion repository (`lichdotdev/lich-plugin`) owns the client side of every
-[hook contract](hooks/README.md), and lich cannot see it break. Move the
-contract first — the tables in `docs/hooks/` — then both sides.
+The companion repository (`lichdotdev/lich-plugin`) owns the client side of its
+[hook contracts](hooks/README.md), and lich cannot see it break. Pi is the
+exception: its extension lives here because Pi uses an extension API, not the
+companion plugin's shell-hook packaging. Move the contract first — the tables
+in `docs/hooks/` — then the client implementation.
 
 What a harness needs from the plugin is one of two shapes, decided by the
 harness and not by lich:
@@ -119,7 +123,7 @@ harness and not by lich:
   Crush, Kiro CLI).
 - **It loads a module.** Then it gets a single-file client of its own
   (`opencode/lich.js`, `omp/lich.js`) posting the same payloads to the same
-  endpoints.
+  endpoints. Pi is passed an extension from lich's own bundle instead.
 
 Register only the reports that harness can actually close. A `busy` with no
 end-of-turn event behind it pins a spinner to the card until the next turn — a

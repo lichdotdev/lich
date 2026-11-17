@@ -137,6 +137,7 @@ type transport struct {
 	status      func(req hookRequest)
 	linkSession func(sessionID, providerSessionID, provider string) error
 	setTitle    func(sessionID, title string) error
+	setModel    func(sessionID, model string) error
 	touched     func(sessionID string)
 	// restart, when set, relaunches lich and closes this window; POST /restart
 	// triggers it (install.sh calls it after replacing the binary on disk).
@@ -217,6 +218,7 @@ func newTransport(
 	mux.HandleFunc("/hook", t.hook)
 	mux.HandleFunc("/session-start", t.sessionStart)
 	mux.HandleFunc("/session-title", t.sessionTitle)
+	mux.HandleFunc("/session-model", t.sessionModel)
 	mux.HandleFunc("/session-touched", t.sessionTouched)
 	mux.HandleFunc("/restart", t.restartApp)
 	mux.HandleFunc("/mod/commands", t.modCommands)
@@ -339,6 +341,12 @@ func (t *transport) setRestart(fn func() error) {
 func (t *transport) setFallback(fn func(id string, data []byte)) {
 	t.mu.Lock()
 	t.fallback = fn
+	t.mu.Unlock()
+}
+
+func (t *transport) setSessionModel(fn func(sessionID, model string) error) {
+	t.mu.Lock()
+	t.setModel = fn
 	t.mu.Unlock()
 }
 
@@ -698,6 +706,38 @@ type touchedRequest struct {
 // via the touched callback, which nudges an immediate git-status refresh. It is
 // a best-effort latency optimization over the window's steady poll, so a
 // failure is harmless — the poll still catches the change.
+type modelRequest struct {
+	SessionID string `json:"session_id"`
+	Model     string `json:"model"`
+}
+
+func (t *transport) sessionModel(w http.ResponseWriter, r *http.Request) {
+	servePost(t, w, r, parseSessionModel, func(req modelRequest) error {
+		t.mu.Lock()
+		set := t.setModel
+		t.mu.Unlock()
+		if set != nil {
+			return set(req.SessionID, req.Model)
+		}
+		return nil
+	})
+}
+
+func parseSessionModel(body []byte) (modelRequest, error) {
+	var req modelRequest
+	if err := json.Unmarshal(body, &req); err != nil {
+		return modelRequest{}, fmt.Errorf("invalid session-model body: %w", err)
+	}
+	if req.SessionID == "" {
+		return modelRequest{}, errors.New("session-model missing session_id")
+	}
+	req.Model = strings.TrimSpace(req.Model)
+	if req.Model == "" || len(req.Model) > 256 || strings.ContainsAny(req.Model, "\x00\r\n") {
+		return modelRequest{}, errors.New("session-model has invalid model")
+	}
+	return req, nil
+}
+
 func (t *transport) sessionTouched(w http.ResponseWriter, r *http.Request) {
 	servePost(t, w, r, parseSessionTouched, func(req touchedRequest) error {
 		if t.touched != nil {

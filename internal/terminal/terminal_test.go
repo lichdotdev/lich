@@ -1333,7 +1333,7 @@ func TestProviderArgsRegistersTheMCPServer(t *testing.T) {
 	t.Parallel()
 	const bin = "/usr/bin/lich"
 
-	claude := providerArgs(providers.Claude, "", "", "", "", bin, "", false, false, false, relay.RouteSessions, prompt.English)
+	claude := providerArgs(providers.Claude, "", "", "", "", bin, "", false, false, false, relay.RouteSessions, prompt.English, false)
 	at := slices.Index(claude, "--mcp-config")
 	if at < 0 || at+1 >= len(claude) {
 		t.Fatalf("claude args = %v", claude)
@@ -1358,7 +1358,7 @@ func TestProviderArgsRegistersTheMCPServer(t *testing.T) {
 		t.Errorf("a secret reached the argv, which /proc exposes: %q", claude[at+1])
 	}
 
-	codex := providerArgs(providers.Codex, "", "", "", "", bin, "", false, false, false, relay.RouteSessions, prompt.English)
+	codex := providerArgs(providers.Codex, "", "", "", "", bin, "", false, false, false, relay.RouteSessions, prompt.English, false)
 	want := []string{
 		"-c", `mcp_servers.lich.command="/usr/bin/lich"`,
 		"-c", `mcp_servers.lich.args=["mcp"]`,
@@ -1374,7 +1374,7 @@ func TestProviderArgsRegistersTheMCPServer(t *testing.T) {
 // must precede.
 func TestProviderArgsOrdersEachProvidersConstraint(t *testing.T) {
 	t.Parallel()
-	claude := providerArgs(providers.Claude, "lich-4f2a", "conv-1", "", "", "/usr/bin/lich", "", false, true, false, relay.RouteSessions, prompt.English)
+	claude := providerArgs(providers.Claude, "lich-4f2a", "conv-1", "", "", "/usr/bin/lich", "", false, true, false, relay.RouteSessions, prompt.English, false)
 	if claude[len(claude)-2] != "--mcp-config" {
 		t.Errorf("--mcp-config is not last, so it eats what follows: %v", claude)
 	}
@@ -1386,7 +1386,7 @@ func TestProviderArgsOrdersEachProvidersConstraint(t *testing.T) {
 
 	// A resuming session is not named (nameArgs), so --name is pinned on the
 	// spawn that carries it: a session being born.
-	born := providerArgs(providers.Claude, "lich-4f2a", "", "", "", "/usr/bin/lich", "", false, true, false, relay.RouteSessions, prompt.English)
+	born := providerArgs(providers.Claude, "lich-4f2a", "", "", "", "/usr/bin/lich", "", false, true, false, relay.RouteSessions, prompt.English, false)
 	if born[len(born)-2] != "--mcp-config" {
 		t.Errorf("--mcp-config is not last, so it eats what follows: %v", born)
 	}
@@ -1394,7 +1394,7 @@ func TestProviderArgsOrdersEachProvidersConstraint(t *testing.T) {
 		t.Errorf("claude args lost --name: %v", born)
 	}
 
-	codex := providerArgs(providers.Codex, "", "conv-1", "", "", "/usr/bin/lich", "", false, false, false, relay.RouteSessions, prompt.English)
+	codex := providerArgs(providers.Codex, "", "conv-1", "", "", "/usr/bin/lich", "", false, false, false, relay.RouteSessions, prompt.English, false)
 	resume := slices.Index(codex, "resume")
 	if resume < 0 {
 		t.Fatalf("codex args lost the resume subcommand: %v", codex)
@@ -1434,7 +1434,7 @@ func TestModelAndEffortAreBirthValues(t *testing.T) {
 			t.Errorf("%s at birth = %v, want %v", tc.kind, born, tc.born)
 		}
 		for _, fork := range []bool{false, true} {
-			args := providerArgs(tc.kind, "", "conv-1", tc.model, tc.effort, "", "", fork, false, false, relay.RouteSessions, prompt.English)
+			args := providerArgs(tc.kind, "", "conv-1", tc.model, tc.effort, "", "", fork, false, false, relay.RouteSessions, prompt.English, false)
 			for _, flag := range tc.born {
 				if slices.Contains(args, flag) {
 					t.Errorf("%s resume (fork=%v) = %v, carries birth value %q", tc.kind, fork, args, flag)
@@ -1467,7 +1467,7 @@ func TestProviderArgsWithoutARegistration(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			args := providerArgs(tt.kind, "", "", "", "", tt.bin, "", false, false, false, relay.RouteSessions, prompt.English)
+			args := providerArgs(tt.kind, "", "", "", "", tt.bin, "", false, false, false, relay.RouteSessions, prompt.English, false)
 			if tt.bare && len(args) != 0 {
 				t.Errorf("args = %v, want none", args)
 			}
@@ -1493,7 +1493,7 @@ func TestTheBriefingGoesToTheProvidersThatTakeOne(t *testing.T) {
 	}
 	for kind, want := range briefed {
 		t.Run(kind, func(t *testing.T) {
-			args := providerArgs(kind, "", "", "", "", "/usr/bin/lich", "", false, false, false, relay.RouteSessions, prompt.English)
+			args := providerArgs(kind, "", "", "", "", "/usr/bin/lich", "", false, false, false, relay.RouteSessions, prompt.English, false)
 			flag := slices.Index(args, "--append-system-prompt")
 			if flag < 0 || flag+1 >= len(args) {
 				t.Fatalf("args = %v, want a briefing", args)
@@ -1506,7 +1506,7 @@ func TestTheBriefingGoesToTheProvidersThatTakeOne(t *testing.T) {
 
 	for _, kind := range []string{providers.Codex, providers.OpenCode, providers.Crush, KindShell} {
 		t.Run(kind+" takes none", func(t *testing.T) {
-			args := providerArgs(kind, "", "", "", "", "/usr/bin/lich", "", false, false, false, relay.RouteSessions, prompt.English)
+			args := providerArgs(kind, "", "", "", "", "/usr/bin/lich", "", false, false, false, relay.RouteSessions, prompt.English, false)
 			if slices.Contains(args, "--append-system-prompt") {
 				t.Errorf("args = %v, want no briefing: %s has no flag that appends one", args, kind)
 			}

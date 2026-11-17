@@ -608,7 +608,7 @@ var mcpTools = append([]mcpTool{
 					"Defaults to your own project."),
 			"kind": property("string",
 				"What the session runs: claude, codex, antigravity, opencode, omp, crush, "+
-					"cursor, kiro, or shell. Defaults to the same agent you are."),
+					"cursor, kiro, pi, or shell. Defaults to the same agent you are."),
 			"worktree": property("string",
 				"Branch name for a git worktree to root the session in. A branch that already "+
 					"exists is checked out as it stands; one that does not is created. Omit to "+
