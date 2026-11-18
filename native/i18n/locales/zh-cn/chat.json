@@ -1,0 +1,25 @@
+{
+  "switch": {
+    "gui": "GUI",
+    "tui": "TUI",
+    "working": "等智能体结束本轮后再切换",
+    "pending": "正在切换…",
+    "failed": "无法切换视图"
+  },
+  "view": {
+    "failed": "聊天请求失败",
+    "thought": "思考",
+    "worked": {
+      "other": "工作了 {duration} · {count} 个工具"
+    },
+    "toolFailed": "失败",
+    "answered": "{tool} · {choice}",
+    "working": "工作中…",
+    "waiting": "等待你的回复"
+  },
+  "composer": {
+    "placeholder": "给 {provider} 发消息…",
+    "send": "发送",
+    "stop": "停止"
+  }
+}

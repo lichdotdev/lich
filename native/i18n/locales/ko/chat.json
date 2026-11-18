@@ -1,0 +1,25 @@
+{
+  "switch": {
+    "gui": "GUI",
+    "tui": "TUI",
+    "working": "에이전트의 턴이 끝나면 전환할 수 있습니다",
+    "pending": "전환 중…",
+    "failed": "보기를 전환하지 못했습니다"
+  },
+  "view": {
+    "failed": "채팅 요청이 실패했습니다",
+    "thought": "생각",
+    "worked": {
+      "other": "{duration} 작업 · 도구 {count}개"
+    },
+    "toolFailed": "실패",
+    "answered": "{tool} · {choice}",
+    "working": "작업 중…",
+    "waiting": "응답을 기다리는 중"
+  },
+  "composer": {
+    "placeholder": "{provider}에게 메시지…",
+    "send": "보내기",
+    "stop": "중지"
+  }
+}

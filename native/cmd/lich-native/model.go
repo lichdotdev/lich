@@ -128,6 +128,12 @@ type model struct {
 	threadFixes threadFixStore
 	// artifacts is every open session's artifact list.
 	artifacts artifactStore
+	// chat is every chat session's conversation (chat_store.go). toTerminal
+	// hears a session leaving its chat before the store says so, and toChat
+	// one that reached it.
+	chat       chatStore
+	toTerminal func(ctx context.Context, id string)
+	toChat     func(id string)
 	// extensions is every extension, its state and its surfaces' renders.
 	extensions extensionStore
 	// catalog is the lich catalog and the images it names.
@@ -423,6 +429,8 @@ func (m *model) follow(ctx context.Context, events <-chan backend.Event) {
 		case api.SessionScheduleEvent.Name, api.SessionScheduleByEvent.Name, api.SessionWatchEvent.Name,
 			api.SessionWatchStoppedEvent.Name, api.ScheduleForfeitedEvent.Name:
 			m.scheduleEvent(ev)
+		case api.ChatItemEvent.Name, api.ChatTurnEvent.Name, api.SessionViewEvent.Name:
+			m.chatEvent(ctx, ev)
 		case api.SessionConversationEvent.Name:
 			if c, err := backend.Decode(ev, api.SessionConversationEvent); err == nil {
 				m.setConversation(c.ID, c.ProviderSessionID)

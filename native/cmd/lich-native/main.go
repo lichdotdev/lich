@@ -121,6 +121,7 @@ type window struct {
 	settings *settingsScreen
 	gate     *spawnGate
 	resume   resumeDialog
+	chats    chatScreens
 	th       *material.Theme
 	theme    *ui.Theme
 	root     ui.Root
@@ -301,6 +302,7 @@ func run(w *app.Window, rt backend.Runtime) error {
 	u.model.themeSelection = u.appearance.applySelection
 	u.model.themeUpdates = u.themeUpdatesChanged
 	u.model.exited = u.sessionExited
+	u.model.toTerminal, u.model.toChat = u.leaveChat, u.enterChat
 	u.model.serviceReveal = u.revealService
 	u.model.duplicate = u.warnDuplicate
 	u.model.profileOffer = u.offerProfile
@@ -480,6 +482,10 @@ func (u *window) connect() error {
 	if err := u.model.artifacts.load(u.ctx, u.client); err != nil {
 		u.logErr("read the session artifacts", err)
 	}
+	if err := u.model.chat.loadKinds(u.ctx, u.client); err != nil {
+		u.logErr("read the chat providers", err)
+	}
+	u.model.loadChats(u.ctx)
 	if err := u.model.extensions.load(u.ctx, u.client); err != nil {
 		u.logErr("read the extensions", err)
 	}

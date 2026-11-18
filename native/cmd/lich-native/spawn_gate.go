@@ -187,6 +187,29 @@ func (g *spawnGate) unseen(ctx context.Context, s sessionView) (resume string, o
 	return "", false
 }
 
+// leaveChat releases s's next spawn into the conversation its chat left,
+// with no prompt: the person asked for the terminal. A conversation the
+// provider can no longer reopen starts fresh, and says so.
+func (g *spawnGate) leaveChat(ctx context.Context, s sessionView) {
+	resume := ""
+	if resumable(s.Session) {
+		available, err := g.probe.ResumeAvailable(ctx, s.Kind, s.ProviderSessionID, s.path)
+		logGateErr("resume check", err)
+		if available || err != nil {
+			resume = s.ProviderSessionID
+		} else {
+			g.notify(ui.Toast{Title: i18n.T("session.spawnGate.conversationGone")})
+		}
+	}
+	g.mu.Lock()
+	if g.asking != nil && g.asking.ID == s.ID {
+		g.asking = nil
+	}
+	g.releaseLocked(s.ID, resume)
+	g.mu.Unlock()
+	g.invalidate()
+}
+
 func (g *spawnGate) releaseLocked(id, resume string) {
 	if g.released == nil {
 		g.released = map[string]string{}
