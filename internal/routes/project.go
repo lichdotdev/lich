@@ -30,6 +30,7 @@ func projectFiles(d *rpc.Handler, s *project.Service) {
 	rpc.Handle(d, api.ProjectSearch, s.Search)
 	rpc.Handle(d, api.ProjectReadFile, s.ReadFile)
 	rpc.Handle(d, api.ProjectReadFileAt, s.ReadFileAt)
+	rpc.Handle(d, api.ProjectWriteFile, s.WriteFile)
 	rpc.Handle(d, api.ProjectFileLines, s.FileLines)
 }
 
