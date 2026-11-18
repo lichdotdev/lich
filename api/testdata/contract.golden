@@ -1642,7 +1642,6 @@ AdoptExternalSessionOptions {
 	kind string
 	path string
 	providerSessionId string
-	view,omitempty string
 	label string
 }
 
@@ -1755,6 +1754,7 @@ Session {
 	unread bool
 	mcpServers []string
 	sandboxSkippedLinks []string
+	view,omitempty string
 }
 
 ReopenWorktreeSessionOptions {
