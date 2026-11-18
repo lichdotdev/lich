@@ -41,6 +41,12 @@ func TestSessionViewRidesTheRowAndItsResume(t *testing.T) {
 	if restored.View != api.ViewChat || svc.SessionView("s2") != api.ViewChat {
 		t.Errorf("resumed view = %q / %q, want %q", restored.View, svc.SessionView("s2"), api.ViewChat)
 	}
+	if project, kind, cwd, err := svc.SessionSpawn("s2"); err != nil || project != "p1" || kind != "claude" || cwd != "/tmp/alpha" {
+		t.Errorf("SessionSpawn = %q %q %q %v, want the project's checkout", project, kind, cwd, err)
+	}
+	if _, _, _, err := svc.SessionSpawn("missing"); err == nil {
+		t.Error("SessionSpawn of a missing row succeeded")
+	}
 	if got := svc.SessionView("missing"); got != "" {
 		t.Errorf("SessionView of a missing row = %q, want \"\"", got)
 	}

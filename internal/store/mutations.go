@@ -927,6 +927,19 @@ func (s *Service) SessionSandbox(sessionID string) string {
 	return sandbox.String
 }
 
+// SessionSpawn is where session sessionID runs: its project, its provider and
+// its checkout, the project's own when the row names none.
+func (s *Service) SessionSpawn(sessionID string) (projectID, kind, cwd string, err error) {
+	err = s.db.QueryRow(
+		`SELECT s.project_id, s.kind, CASE s.path WHEN '' THEN p.path ELSE s.path END
+		   FROM sessions s JOIN projects p ON p.id = s.project_id WHERE s.id = ?`, sessionID,
+	).Scan(&projectID, &kind, &cwd)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", "", "", fmt.Errorf("session %q not found", sessionID)
+	}
+	return projectID, kind, cwd, err
+}
+
 // SetSessionView records how session sessionID is drawn, api.ViewChat or
 // api.ViewTerminal.
 func (s *Service) SetSessionView(sessionID, view string) error {

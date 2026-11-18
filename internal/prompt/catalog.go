@@ -136,4 +136,8 @@ type Catalog struct {
 	// PageDialogWaitsCLI is PageDialogWaits for `lich browser`, which names
 	// its own verb instead of the MCP tool.
 	PageDialogWaitsCLI string
+
+	// internal/chat: what a chat's agent is told when the person answers its
+	// permission question no.
+	ChatPermissionDenied string
 }
