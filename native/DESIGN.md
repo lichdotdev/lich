@@ -33,8 +33,8 @@ Elements are defined by space, hover and islands, not by enclosure.
 
 Inside an island, a change that adds a border, a pill, a second line or a nested surface is probably wrong. Reach for spacing,
 a hover state or the tooltip first. The folder tray is the one nested surface, and the reason is written
-under it; the dock's tab pill reuses its fill, for the same reason. The footer's balloons are the one pill on
-`Sidebar`: they float over the terminal and need a ground of their own to read on it. The extension catalog is
+under it; the dock's tab pill reuses its fill, for the same reason. The footer's balloons and the chat's GUI | TUI
+switch are the pills on `Sidebar`: they float over the terminal and need a ground of their own to read on it. The extension catalog is
 the one screen of cards, and the reason is written under it.
 
 ## Foundations
@@ -241,6 +241,35 @@ either. A project with no session keeps them, since its branch is the click into
 
 The Git panel and an extension's panel rise from the stage's foot over the band: while one is up the balloons
 are not drawn and the terminal takes the band back, in the one resize the panel's slide already makes.
+
+### The chat view
+
+A session whose view is chat draws its conversation in place of the terminal, on the same island and in a
+layout's pane alike (`chat_view.go`, `chat_items.go`). It is a reading column, centred, at most 720px wide with
+`Space(6)` inside its edges (`chatColumnMax`, `chatColumnPadX`), its rows `Space(3.5)` apart; the list stays
+pinned to its end while items arrive, until the person scrolls up.
+
+- **The person's message** is a box in `Accent`, `RadiusLG`, against the column's right edge, at most 78% of
+  it. It breaks "rows, not cards" on purpose: a turn starts where a message does, and the eye finds it by the
+  box faster than by a rule.
+- **The agent's text** is Markdown at the prose size (`ui/markdown`); a thought is a muted fold, closed.
+- **A turn's tool calls** fold into one muted line, "Worked for 12s · 3 tools", where the first of them came.
+  Open, each call is a 28px row: its name in medium, what it acted on in mono, how it ended at the right (the
+  output's first line, `Destructive` for a failure, a spinner while it runs), and its diff under it as a
+  thread's hunk is drawn.
+- **A permission** is a box on `Sidebar`, `RadiusMD`, `Space(3)` padding (see Boxes inside a screen): the tool,
+  its diff, and a `SizeSM` button per answer the provider offers, the first allow filled. Enter takes the first
+  allow and Esc the first reject. Answered, it shrinks to a muted line naming the answer.
+- **A notice** is a muted line; the turn in flight ends the column with a spinner and "Working…", or
+  "Waiting for you" in `ToneWait` while a permission waits.
+- **The composer** stands at the column's foot, above the balloons' band the island already keeps: a textarea
+  (Enter sends, Shift+Enter breaks the line) over Send, or Stop while the agent works.
+
+The GUI | TUI switch floats in the top-right corner of the session's panel, `balloonInset` from its edges, over
+the terminal or the chat (`chat_switch.go`): the segmented control on a `Sidebar` fill, the view on screen in
+`Accent`. It is the second pill on `Sidebar` after the balloons, for their reason: it floats over a terminal and
+needs a ground to read on. Only a provider `chat.Kinds` lists gets it, never a plain terminal. While the agent
+works, or a switch is on its way, it takes no click and says why in a tooltip.
 
 ### Toasts
 
