@@ -61,6 +61,7 @@ func (r *sidebarRail) layout(gtx C, th *ui.Theme, s *sidebar, m *model, active s
 	gtx.Constraints = layout.Exact(size)
 	ui.Fill(gtx, th.Sidebar, ui.RadiusLG)
 	th = th.On(th.Sidebar)
+	defer ui.InsetBorder(gtx, size, gtx.Dp(ui.RadiusLG), th.Over(th.Border))
 	s.header.clicks(gtx)
 	r.view = m.sidebarBlocks(s.header.filter())
 	blocks := r.view.blocks

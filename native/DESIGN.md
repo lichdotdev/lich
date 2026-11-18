@@ -13,10 +13,14 @@ Elements are defined by space, hover and islands, not by enclosure.
 
 - **Rows, not cards.** A list item is one line with no border and no fill of its own. Hover and selection
   paint it; at rest it paints nothing.
-- **Panels are islands.** The window's regions (sidebar, stage, dock) are rounded surfaces floating on
-  `Canvas`, separated by the `gutter` (6px, `cmd/lich-native/main.go`) instead of a hairline. The top bar
-  and the footer sit on the canvas itself, unboxed.
-- **Hairlines are seams inside an island.** `th.Separator` splits a panel's own parts (a screen's header
+- **Panels are islands.** The window's regions (sidebar, rail, stage, dock, the Git and extension panels,
+  Settings' two columns, Pulls, and the sidebar's and dock's peeks) are rounded surfaces floating on `Canvas`, separated by the `gutter`
+  (6px, `cmd/lich-native/main.go`) instead of a rule between them. Each carries a 1px hairline in `Border`
+  just inside its `RadiusLG` edge (`ui.InsetBorder`, `ui.IslandBorder`): the one outline in the window that
+  wraps a surface rather than a field. The active project tab that has grown out of its island takes the
+  line with it, up its sides and round its fillets, and the island's top edge is left open under it
+  (`topbar.tabGap`). The top bar and the footer sit on the canvas itself, unboxed.
+- **Hairlines are seams inside an island, and its edge.** `th.Separator` splits a panel's own parts (a screen's header
   from its body, two panes, a folder header from its rule). It never wraps a list item, a badge or a button
   at rest. Inputs are the one exception: a field needs an edge to read as editable.
 - **Badges are text and glyph**, never a filled pill: a pull request is its icon and `#N`, a diff is `+a -d`
@@ -25,7 +29,7 @@ Elements are defined by space, hover and islands, not by enclosure.
 - **What does not fit the line goes to the tooltip.** A row carries what you scan for; the rest (path,
   model, the tool a turn runs, how long) is one hover away, never a second line.
 
-A change that adds a border, a pill, a second line or a nested surface is probably wrong. Reach for spacing,
+Inside an island, a change that adds a border, a pill, a second line or a nested surface is probably wrong. Reach for spacing,
 a hover state or the tooltip first. The folder tray is the one nested surface, and the reason is written
 under it. The extension catalog is the one screen of cards, and the reason is written under it.
 
@@ -60,7 +64,7 @@ look on every page (`browser_notes_view.go`), and Windows' close button hovers i
 | `Sidebar`, `Card`, `Popover` | islands and raised parts: sidebar, dock, a thread or comment box, menus, dialogs |
 | `Accent` | hover and selection fill |
 | `MutedForeground` | secondary text, icons at rest, paths, meta, the tree's links and neutral rings |
-| `Border` | seams and input edges |
+| `Border` | seams, input edges and the island hairline |
 | `Primary` | the one high-emphasis button of a view |
 | `Foreground` | primary text |
 
@@ -335,7 +339,7 @@ alone, no tray.
 
 ### The rail
 
-The collapsed sidebar is an island like the open one (`sidebar_rail.go`): `Sidebar`, `RadiusLG`, its content
+The collapsed sidebar is an island like the open one (`sidebar_rail.go`): `Sidebar`, `RadiusLG`, the same `Border` hairline, its content
 on the 8px edge around a column as wide as a row is tall (34), so it is 50px wide and every node centres
 where it does in the open sidebar. Expand sits in a row of the open header's height
 (36), where collapse sits in the open sidebar; new session, Services and the profile sit in its footer, so

@@ -797,6 +797,7 @@ func (u *window) body(gtx C, v stageView) (int, sidebarAction, error) {
 						if x, ok := u.topbar.islandSquare(gtx, topbarFrame{tabs: v.strip, active: v.stripActive, islands: u.pulls.spans}); ok {
 							u.pulls.squareX = x
 						}
+						u.pulls.gap = u.tabGap(gtx, v, u.pulls.spans, 0)
 						u.applyPulls(u.pulls.layout(gtx, u.theme))
 						return D{Size: gtx.Constraints.Max}
 					}
@@ -847,6 +848,8 @@ func (u *window) island(gtx C, v stageView, termWidth, termHeight int) error {
 	u.drop.reset()
 	fill := u.islandColor(v)
 	paint.Fill(gtx.Ops, fill)
+	on := u.theme.On(fill)
+	defer ui.IslandBorder(gtx, size, nw, r, u.tabGap(gtx, v, u.dock.islands, 0), on.Over(on.Border))
 	if u.homeOpen.Clicked(gtx) {
 		go u.pickProject()
 	}
@@ -1022,6 +1025,7 @@ func (u *window) stageRow(gtx C, v stageView) error {
 	}
 	defer op.Offset(image.Pt(at, 0)).Push(gtx.Ops).Pop()
 	gtx.Constraints = layout.Exact(image.Pt(w, size.Y))
+	d.gap = u.tabGap(gtx, v, d.islands, at)
 	return u.layoutDock(gtx, v)
 }
 
