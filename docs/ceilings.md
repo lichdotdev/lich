@@ -1351,8 +1351,8 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   goes when the extension fails, is removed, or the window restarts. A tree drawn for another checkout than the
   active one shows a placeholder, and an extension that never draws one for the new checkout leaves it there.
 - **The dock is never narrower than its tabs** (`native/cmd/lich-native/dock.go`, `fitTabs`): each extension with a
-  dock surface adds a tab with its icon and title, so with several the dock cannot be dragged narrow and the
-  terminal beside it loses the columns.
+  dock surface adds an icon button, 28px and a 2px gap, to the pill at the dock's foot, so with enough of them the
+  dock cannot be dragged narrow and the terminal beside it loses the columns. The title is only in the tooltip.
 - **`render` is coalesced, at 30 a second per surface** (`internal/extensions/throttle.go`): the first goes out at
   once, and while the interval has not passed only the newest is kept and sent when it ends, so a loop of renders
   costs the window a frame rate and the newest tree always arrives. The older ones in between never reach the

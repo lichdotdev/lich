@@ -3,8 +3,8 @@ package main
 // The right dock: the panel at the terminal's right that the
 // footer's Browse code, Review changes and Artifacts buttons open, on its
 // Code, its Review or its Artifacts tab. It owns the chrome around both bodies: the drag-resizable width
-// (one, persisted, for every tab), full screen, the tab bar and the close
-// button.
+// (one, persisted, for every tab), full screen, the pill of icon tabs at its
+// foot and the close button.
 //
 // The Review tab is a body the dock hands the frame to, through reviewTab:
 //
@@ -15,7 +15,7 @@ package main
 //		holdsKeys(gtx C) bool                               // a field of its own has focus
 //	}
 //
-// layoutActions is drawn at the header's right, before full screen, only while
+// layoutActions is drawn at the header's right, before collapse, only while
 // the Review tab is on and the checkout has changes. th is the header's: the
 // actions sit on the sidebar surface. holdsKeys keeps the terminal, which takes
 // focus every frame it is not told otherwise, off a field of the body; the
@@ -64,8 +64,8 @@ const (
 	dockMinRem       = 20
 	dockMaxRem       = 60
 	dockDefaultRem   = 28
-	// dockHeaderHeight holds the 28dp tabs 8dp from the top and from the
-	// Separator under it, the inset the sidebar's header keeps.
+	// dockHeaderHeight is the strip the actions sit in, 8dp from the top and
+	// from the Separator under it, the inset the sidebar's header keeps.
 	dockHeaderHeight = unit.Dp(44)
 )
 
@@ -83,8 +83,8 @@ const (
 // dockBuiltinTabs is how many tabs lich's own are, before the extensions'.
 const dockBuiltinTabs = int(dockArtifacts)
 
-// dockHeaderSpare is what the header needs past its tabs and actions: its two
-// insets and two gaps, and a gap's room between the tabs and the actions.
+// dockHeaderSpare is what the header needs past its actions: its two insets
+// and gaps, and a gap's room to their left.
 var dockHeaderSpare = ui.Space(8)
 
 // toggled returns the tab after asking for to: asking for the tab on screen
@@ -139,7 +139,6 @@ type dock struct {
 	widthRem   float64
 	fullscreen bool
 	resize     ui.ResizeHandle
-	tabs       ui.TabsState
 	full       ui.IconActionState
 	close      ui.IconActionState
 	collapse   ui.IconActionState
@@ -156,8 +155,15 @@ type dock struct {
 	ext        extensionKey
 	extensions *extensionScreen
 	extAct     extensionAction
-	// minRem is the width the header's tabs and actions need, measured on the
-	// last frame: the dock is never narrower, so every tab keeps its name.
+	// tabButtons are the pill's buttons, one per tab; placed the extension
+	// tabs they were drawn for, which actTabs picks from.
+	tabButtons []*dockTabButton
+	placed     []placedSurface
+	// actionsWidth and tabBarWidth are the header's actions and the pill with
+	// its insets, which fitTabs reads once both are laid out.
+	actionsWidth, tabBarWidth int
+	// minRem is the width the header's actions and the pill need, measured on
+	// the last frame: the dock is never narrower, so every tab stays in reach.
 	minRem float64
 }
 
@@ -257,7 +263,9 @@ func (d *dock) layout(gtx C, th *ui.Theme, root *ui.Root, in dockInput) (saveWid
 				return D{Size: gtx.Constraints.Max}
 			})
 		}),
+		layout.Rigid(func(gtx C) D { return d.tabBar(gtx, on, root, in) }),
 	)
+	d.fitTabs(gtx, max(d.actionsWidth+gtx.Dp(dockHeaderSpare), d.tabBarWidth))
 	if !d.fullscreen {
 		d.resize.Layout(gtx, on)
 	}
@@ -278,25 +286,10 @@ func (d *dock) body(gtx C, th *ui.Theme, root *ui.Root, in dockInput) error {
 	return d.code.layout(gtx, th, root, in)
 }
 
-// header is the h-10 strip: the ghost tabs, then at its right the Review
-// tab's actions, full screen and close.
+// header is the h-10 strip: at its right the Review tab's actions, collapse,
+// full screen and close. The tabs are the pill at the dock's foot.
 func (d *dock) header(gtx C, th *ui.Theme, root *ui.Root, in dockInput) D {
-	d.tabs.Selected = d.selectedTab(in.placed)
 	changed := in.isGit && in.git.Files > 0
-	review := ui.TabsTrigger{Text: i18n.T("dock.rightDock.tabReview"), Icon: icDockReview}
-	if changed {
-		review.Trailing = changesBadge(th, in.git)
-	}
-	artifacts := ui.TabsTrigger{Text: i18n.T("dock.rightDock.tabArtifacts"), Icon: icDockArtifacts}
-	if n := d.artifacts.count(in.sessionID); n > 0 {
-		artifacts.Trailing = th.Text(ui.TextXS, strconv.Itoa(n)).Mono().Muted().Layout
-	}
-	triggers := []ui.TabsTrigger{{Text: i18n.T("dock.rightDock.tabCode"), Icon: icDockCode}, review, artifacts}
-	for _, p := range in.placed {
-		triggers = append(triggers, ui.TabsTrigger{Text: p.title, Icon: p.glyph})
-	}
-	tabs := th.Tabs(&d.tabs, triggers...)
-	tabs.Variant = ui.TabsVariantGhost
 	actions := 0
 	fullIcon, fullLabel := icDockMaximize, i18n.T("dock.rightDock.fullScreen")
 	if d.fullscreen {
@@ -305,13 +298,6 @@ func (d *dock) header(gtx C, th *ui.Theme, root *ui.Root, in dockInput) D {
 	gtx.Constraints = layout.Exact(image.Pt(gtx.Constraints.Max.X, gtx.Dp(dockHeaderHeight)))
 	dims := layout.Inset{Left: ui.Space(2), Right: ui.Space(2)}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-			layout.Rigid(func(gtx C) D {
-				dims := tabs.Layout(gtx)
-				if d.tabs.Changed() {
-					d.pickTab(d.tabs.Selected, in.placed)
-				}
-				return dims
-			}),
 			layout.Flexed(1, func(gtx C) D { return D{Size: image.Pt(gtx.Constraints.Min.X, 0)} }),
 			layout.Rigid(func(gtx C) D {
 				if d.tab != dockReview || !changed {
@@ -348,12 +334,12 @@ func (d *dock) header(gtx C, th *ui.Theme, root *ui.Root, in dockInput) D {
 			}),
 		)
 	})
-	d.fitTabs(gtx, tabs.NaturalWidth(gtx)+actions+gtx.Dp(dockHeaderSpare))
+	d.actionsWidth = actions
 	return dims
 }
 
-// fitTabs keeps the dock at least as wide as the header needs, px wide, and
-// redraws when that changes.
+// fitTabs keeps the dock at least as wide as its header's actions and the
+// pill of tabs need, px wide, and redraws when that changes.
 func (d *dock) fitTabs(gtx C, px int) {
 	need := max(dockMinRem, float64(gtx.Metric.PxToDp(px))/remDp)
 	if need != d.minRem {
@@ -387,9 +373,10 @@ func (d *dock) pickTab(index int, placed []placedSurface) {
 	}
 }
 
-// act runs the header's clicks before the stage row reads whether the dock
+// act runs the header's and the pill's clicks before the stage row reads whether the dock
 // is open and how wide, so the frame shows their outcome.
 func (d *dock) act(gtx C) {
+	d.actTabs(gtx)
 	for d.full.Click.Clicked(gtx) {
 		d.fullscreen = !d.fullscreen
 	}

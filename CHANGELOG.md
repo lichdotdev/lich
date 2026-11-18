@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **Panels now have a faint 1px edge.** The sidebar, the stage, the dock and the Git and extension panels are outlined in the theme's `border` color, so they read apart from the window background in light and dark themes alike. Rows, cards, buttons and badges stay unboxed.
+- **The dock's tabs are icons at its foot.** Code, Review, Artifacts and an extension's tabs now sit in a row of icons at the bottom of the dock; hover one for its name. A dot on the icon marks a tab with changes or files.
 - **An extension's detail grows with the window.** On a tall or ultrawide screen the dialog and its screenshots take more of it.
 - **A Markdown artifact opens rendered, in the Artifacts tab.** Clicking a `.md` file in the dock's Artifacts tab shows it formatted, as the Code tab's Markdown preview does, instead of its source in the browser.
 - **Review threads sent to a session are resolved only when the agent fixed them.** A question or a point for the team comes back to you in the session instead of getting "Fixing this" on GitHub. A thread the agent fixed is resolved, with a reply naming its commit, once that commit is pushed.

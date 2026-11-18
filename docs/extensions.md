@@ -156,8 +156,8 @@ board := extension.Box.New(extension.BoxProps{Direction: extension.DirectionRow,
 A `dock` or `panel` surface opens from an item of the window's footer, the way Code and Review open the dock and
 the branch opens the Git panel. lich puts each new item at the end of the footer's left side; the person can move
 it or hide it in Settings › Appearance › Footer, and a hidden one stays hidden across updates. A dock surface is a
-tab after lich's own, with its icon and title, and the dock is never narrower than its tabs. A panel surface takes
-the Git panel's place over the footer, one panel at a time, each with the height the person dragged it to.
+tab after lich's own, an icon button in the row at the dock's foot with the title in its tooltip, and the dock is
+never narrower than that row. A panel surface takes the Git panel's place over the footer, one panel at a time, each with the height the person dragged it to.
 
 Both follow the session the window has active. lich sends `context` to an extension with such a surface when the
 active session changes, when the extension starts and when a window attaches, whether the surface is open or not:
