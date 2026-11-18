@@ -14,6 +14,7 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/gioterm"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
@@ -388,9 +389,14 @@ func (u *window) applyLayoutStage() {
 	}
 }
 
-// content shows session s's terminal over gtx's area, keys typing into it
-// when it takes them.
+// content shows session s's terminal or its chat over gtx's area, keys
+// typing into it when it takes them, under the GUI | TUI selector.
 func (u *window) content(gtx C, s sessionView, keys bool) error {
+	defer u.chatSwitch(gtx, s)
+	if s.View == api.ViewChat {
+		u.chatScreen(gtx, s, keys)
+		return nil
+	}
 	resume, ok := "", u.terms.has(s.ID)
 	if !ok {
 		resume, ok = u.gate.release(u.ctx, s)

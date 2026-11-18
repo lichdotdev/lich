@@ -1,0 +1,27 @@
+{
+  "switch": {
+    "gui": "GUI",
+    "tui": "TUI",
+    "working": "Переключить можно, когда агент закончит ход",
+    "pending": "Переключаем…",
+    "failed": "Не удалось переключить вид"
+  },
+  "view": {
+    "failed": "Запрос к чату не выполнен",
+    "thought": "Рассуждение",
+    "worked": {
+      "one": "Работал {duration} · {count} инструмент",
+      "few": "Работал {duration} · {count} инструмента",
+      "many": "Работал {duration} · {count} инструментов",
+      "other": "Работал {duration} · {count} инструмента"
+    },
+    "toolFailed": "ошибка",
+    "answered": "{tool} · {choice}",
+    "working": "Работает…"
+  },
+  "composer": {
+    "placeholder": "Сообщение для {provider}…",
+    "send": "Отправить",
+    "stop": "Остановить"
+  }
+}

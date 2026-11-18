@@ -1,0 +1,25 @@
+{
+  "switch": {
+    "gui": "GUI",
+    "tui": "TUI",
+    "working": "Switch once the agent finishes its turn",
+    "pending": "Switching…",
+    "failed": "Could not switch the view"
+  },
+  "view": {
+    "failed": "The chat request failed",
+    "thought": "Thought",
+    "worked": {
+      "one": "Worked for {duration} · {count} tool",
+      "other": "Worked for {duration} · {count} tools"
+    },
+    "toolFailed": "failed",
+    "answered": "{tool} · {choice}",
+    "working": "Working…"
+  },
+  "composer": {
+    "placeholder": "Message {provider}…",
+    "send": "Send",
+    "stop": "Stop"
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "switch": {
+    "gui": "GUI",
+    "tui": "TUI",
+    "working": "Cambia cuando el agente termine su turno",
+    "pending": "Cambiando…",
+    "failed": "No se pudo cambiar la vista"
+  },
+  "view": {
+    "failed": "La petición al chat falló",
+    "thought": "Razonamiento",
+    "worked": {
+      "one": "Trabajó {duration} · {count} herramienta",
+      "other": "Trabajó {duration} · {count} herramientas"
+    },
+    "toolFailed": "falló",
+    "answered": "{tool} · {choice}",
+    "working": "Trabajando…"
+  },
+  "composer": {
+    "placeholder": "Mensaje para {provider}…",
+    "send": "Enviar",
+    "stop": "Detener"
+  }
+}
