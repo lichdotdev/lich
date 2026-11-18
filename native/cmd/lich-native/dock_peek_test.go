@@ -90,6 +90,16 @@ func TestDockExpandFromThePeekPutsItBackOnTheStage(t *testing.T) {
 	}
 }
 
+func TestCollapsedDockStaysAtTheEdgeWhenTheWindowOpens(t *testing.T) {
+	u, r := stageFrames(t, dockClosed)
+	u.dock.collapsed = true
+	u.dock.restore(dockReview)
+	r.settle(t)
+	if u.dock.visible() {
+		t.Error("the stored tab brought the collapsed dock out at start")
+	}
+}
+
 func TestBalloonBringsTheCollapsedDockOutAndNeverClosesIt(t *testing.T) {
 	d := &dock{collapsed: true}
 	d.show(dockReview)

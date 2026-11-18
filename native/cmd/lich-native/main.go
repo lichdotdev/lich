@@ -126,8 +126,10 @@ type window struct {
 	root     ui.Root
 	toaster  ui.Toaster
 	// toastFloor is how high off the window's bottom the toasts stand a
-	// gutter over this frame: the stage's foot, or the balloons' top.
-	toastFloor int
+	// gutter over this frame: the stage's foot, or the balloons' top;
+	// toastRight is the right balloon's right edge they end at, 0 for the
+	// window's.
+	toastFloor, toastRight int
 	// caption is where the topbar draws the window's buttons, swapped whole
 	// when the desktop's layout changes; chrome what the window manager last
 	// said about the window.
@@ -532,13 +534,14 @@ func (u *window) connect() error {
 	if u.dock.collapsed, err = loadDockCollapsed(u.ctx, u.client); err != nil {
 		return err
 	}
-	if u.dock.tab, u.dock.ext, err = loadDockTab(u.ctx, u.client); err != nil {
+	tab, err := loadDockTab(u.ctx, u.client)
+	if err != nil {
 		return err
 	}
 	if t, ok := map[string]dockTab{"code": dockCode, "review": dockReview, "artifacts": dockArtifacts}[*flagTab]; ok {
-		u.dock.tab = t
+		tab = t
 	}
-	u.dock.saved, u.dock.savedExt = u.dock.tab, u.dock.ext
+	u.dock.restore(tab)
 	if u.pulls.view.tree.widthRem, err = loadTreeWidth(u.ctx, u.client); err != nil {
 		return err
 	}
@@ -768,7 +771,7 @@ func (u *window) body(gtx C, v stageView) (int, sidebarAction, error) {
 		return d
 	}).Size.X
 	var err error
-	u.toastFloor = gtx.Dp(gutter)
+	u.toastFloor, u.toastRight = gtx.Dp(gutter), 0
 	u.footer.frame(gtx, v.in)
 	u.actGit(gtx)
 	onePanel(u.git, u.extPanel, u.gitWasOpen)
@@ -974,8 +977,8 @@ func (u *window) stageRow(gtx C, v stageView) error {
 		collapsed := d.collapsed
 		go func() { u.logErr("dock collapsed", saveDockCollapsed(u.ctx, u.client, collapsed)) }()
 	}
-	if t, k, ok := d.tabToSave(); ok {
-		go func() { u.logErr("dock tab", saveDockTab(u.ctx, u.client, t, k)) }()
+	if t, ok := d.tabToSave(); ok {
+		go func() { u.logErr("dock tab", saveDockTab(u.ctx, u.client, t)) }()
 	}
 	if d.tab != dockClosed && !v.home {
 		d.shown = d.tab

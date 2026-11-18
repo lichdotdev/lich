@@ -141,7 +141,6 @@ type dock struct {
 	saveCollapsed bool
 	// saved is the tab last stored, which a change of tab is told from.
 	saved     dockTab
-	savedExt  extensionKey
 	peek      dockPeek
 	code      *codeTab
 	review    reviewTab
@@ -399,45 +398,42 @@ func saveDockCollapsed(ctx context.Context, c *backend.Client, collapsed bool) e
 	return c.SetSetting(ctx, dockCollapsedKey, "", strconv.FormatBool(collapsed))
 }
 
+// dockTabNames are the tabs stored by name. An extension's tab is not stored:
+// its surface is placed only once the extensions report in, after the first
+// frames, and a dock that fell back to Review meanwhile would store that.
 var dockTabNames = map[dockTab]string{dockCode: "code", dockReview: "review", dockArtifacts: "artifacts"}
 
-// parseDockTab reads a stored tab: one of lich's by name, an extension's
-// surface by its footer item id. Anything else, unset included, is Review.
-func parseDockTab(raw string) (dockTab, extensionKey) {
-	if k, ok := extensionItemKey(raw); ok {
-		return dockExtension, k
-	}
+// parseDockTab reads a stored tab; anything else, unset included, is Review.
+func parseDockTab(raw string) dockTab {
 	for t, name := range dockTabNames {
 		if name == raw {
-			return t, extensionKey{}
+			return t
 		}
 	}
-	return dockReview, extensionKey{}
+	return dockReview
 }
 
-func formatDockTab(t dockTab, k extensionKey) string {
-	if t == dockExtension {
-		return extensionItemID(k)
-	}
-	return dockTabNames[t]
-}
-
-func loadDockTab(ctx context.Context, c *backend.Client) (dockTab, extensionKey, error) {
+func loadDockTab(ctx context.Context, c *backend.Client) (dockTab, error) {
 	raw, err := c.GetSetting(ctx, dockTabKey, "")
-	t, k := parseDockTab(raw)
-	return t, k, err
+	return parseDockTab(raw), err
 }
 
-func saveDockTab(ctx context.Context, c *backend.Client, t dockTab, k extensionKey) error {
-	return c.SetSetting(ctx, dockTabKey, "", formatDockTab(t, k))
+func saveDockTab(ctx context.Context, c *backend.Client, t dockTab) error {
+	return c.SetSetting(ctx, dockTabKey, "", dockTabNames[t])
 }
 
-// tabToSave reports the tab on screen once it differs from the one stored,
+// restore opens the dock on t as the window starts, stored and seen by the
+// peek already, so a collapsed dock stays at the edge.
+func (d *dock) restore(t dockTab) {
+	d.tab, d.saved, d.peek.tab = t, t, t
+}
+
+// tabToSave reports lich's tab on screen once it differs from the one stored,
 // and takes it as stored.
-func (d *dock) tabToSave() (dockTab, extensionKey, bool) {
-	if d.tab == dockClosed || (d.tab == d.saved && (d.tab != dockExtension || d.ext == d.savedExt)) {
-		return 0, extensionKey{}, false
+func (d *dock) tabToSave() (dockTab, bool) {
+	if dockTabNames[d.tab] == "" || d.tab == d.saved {
+		return 0, false
 	}
-	d.saved, d.savedExt = d.tab, d.ext
-	return d.tab, d.ext, true
+	d.saved = d.tab
+	return d.tab, true
 }

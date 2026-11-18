@@ -235,19 +235,15 @@ func (f *footer) act(gtx C, in footerInput) {
 	}
 }
 
-// press lights the items whose dock tab or panel is up, read as the balloons
-// are drawn, after every click of the frame moved them.
+// press lights the items whose dock tab is up, read as the balloons are drawn,
+// after every click of the frame moved them. The branch and a panel's item
+// need no light: the balloons are not drawn while their panel is up.
 func (f *footer) press(in footerInput) {
 	f.w("changes").pressed = f.dock.showing(dockReview)
 	for _, it := range in.extItems {
 		if it.place == extension.PlaceDock {
 			f.w(it.id).pressed = f.dock.showsExtension(it.key) && f.dock.visible()
-			continue
 		}
-		f.w(it.id).pressed = f.panel.shows(it.key)
-	}
-	if f.git != nil {
-		f.w("checkout").pressed = f.git.open && in.inRepository()
 	}
 }
 

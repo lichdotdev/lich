@@ -73,14 +73,16 @@ func (u *window) panelShown(v stageView) bool {
 	return shown
 }
 
-// drawBalloons lays the balloons over the foot of gtx's area when the stage
-// carries them, and lifts the toasts over them.
+// drawBalloons lays the balloons over the foot of gtx's area, the island at
+// islandAt, when the stage carries them, and stands the toasts over the right
+// one.
 func (u *window) drawBalloons(gtx C, v stageView) {
 	if !u.balloonsShown(v) {
 		return
 	}
 	u.footer.layoutBalloons(gtx, u.theme)
 	u.toastFloor = gtx.Dp(gutter) + gtx.Dp(balloonInset) + gtx.Dp(balloonItemHeight) + 2*gtx.Dp(balloonPad)
+	u.toastRight = u.islandAt.X + gtx.Constraints.Max.X - gtx.Dp(balloonInset)
 }
 
 // layoutBalloons draws the layout's left side in a balloon at the bottom-left

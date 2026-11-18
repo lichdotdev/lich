@@ -3,47 +3,45 @@ package main
 import "testing"
 
 func TestDockTabReadsBackWhatWasStoredAndFallsBackToReview(t *testing.T) {
-	for _, c := range []struct {
-		tab dockTab
-		ext extensionKey
-	}{{dockCode, extensionKey{}}, {dockReview, extensionKey{}}, {dockArtifacts, extensionKey{}}, {dockExtension, extensionKey{"tracker", "board"}}} {
-		if tab, ext := parseDockTab(formatDockTab(c.tab, c.ext)); tab != c.tab || ext != c.ext {
-			t.Errorf("%v %v read back as %v %v", c.tab, c.ext, tab, ext)
+	for tab, name := range dockTabNames {
+		if got := parseDockTab(name); got != tab {
+			t.Errorf("%q read back as %v, want %v", name, got, tab)
 		}
 	}
-	for _, raw := range []string{"", "closed", "ext:", "terminal"} {
-		if tab, _ := parseDockTab(raw); tab != dockReview {
-			t.Errorf("parseDockTab(%q) = %v, want Review", raw, tab)
+	for _, raw := range []string{"", "closed", "ext:tracker/board", "terminal"} {
+		if got := parseDockTab(raw); got != dockReview {
+			t.Errorf("parseDockTab(%q) = %v, want Review", raw, got)
 		}
 	}
 }
 
 func TestDockTabIsStoredOnceItChanges(t *testing.T) {
 	f, client := newSidebarBackend(t)
-	if tab, _, err := loadDockTab(t.Context(), client); err != nil || tab != dockReview {
+	if tab, err := loadDockTab(t.Context(), client); err != nil || tab != dockReview {
 		t.Fatalf("unset reads %v, %v; want Review", tab, err)
 	}
-	d := &dock{tab: dockReview, saved: dockReview}
-	if _, _, ok := d.tabToSave(); ok {
+	d := new(dock)
+	d.restore(dockReview)
+	if _, ok := d.tabToSave(); ok {
 		t.Error("the tab it opened on was stored again")
 	}
 	d.show(dockCode)
-	tab, ext, ok := d.tabToSave()
+	tab, ok := d.tabToSave()
 	if !ok || tab != dockCode {
 		t.Fatalf("a change to Code asked to store %v, %v", tab, ok)
 	}
-	if err := saveDockTab(t.Context(), client, tab, ext); err != nil {
+	if err := saveDockTab(t.Context(), client, tab); err != nil {
 		t.Fatal(err)
 	}
 	if got := f.settings[dockTabKey+"@"]; got != "code" {
 		t.Errorf("stored %q under %s", got, dockTabKey)
 	}
-	if _, _, ok := d.tabToSave(); ok {
+	if _, ok := d.tabToSave(); ok {
 		t.Error("an unchanged tab asked to be stored twice")
 	}
 	d.showExtension(extensionKey{"tracker", "board"})
-	if tab, ext, ok := d.tabToSave(); !ok || tab != dockExtension || ext.surface != "board" {
-		t.Errorf("an extension's tab asked to store %v %v, %v", tab, ext, ok)
+	if tab, ok := d.tabToSave(); ok {
+		t.Errorf("an extension's tab asked to be stored as %v", tab)
 	}
 }
 

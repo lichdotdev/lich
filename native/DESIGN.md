@@ -28,7 +28,8 @@ Elements are defined by space, hover and islands, not by enclosure.
 
 A change that adds a border, a pill, a second line or a nested surface is probably wrong. Reach for spacing,
 a hover state or the tooltip first. The folder tray is the one nested surface, and the reason is written
-under it. The extension catalog is the one screen of cards, and the reason is written under it.
+under it. The footer's balloons are the one pill: they float over the terminal and need a ground of their
+own to read on it. The extension catalog is the one screen of cards, and the reason is written under it.
 
 ## Foundations
 
@@ -227,8 +228,8 @@ are not drawn and the terminal takes the band back, in the one resize the panel'
 
 ### Toasts
 
-The window has one toast stack, in the bottom-right corner, the `gutter` over the balloons, or over the
-stage's foot where there are none (`layoutToasts`). It grows upward, and a toast comes in and leaves by the bottom edge. A
+The window has one toast stack, in the bottom-right corner: the `gutter` over the right balloon and ending
+at its right edge, or over the stage's foot at the window's edge where there are none (`layoutToasts`). It grows upward, and a toast comes in and leaves by the bottom edge. A
 screen keeps its actions at the right of its header, so nothing the window raises stands in the top-right
 corner; a question that waits for an answer goes on the same stack as a passing note, not in a corner of its
 own.
@@ -384,8 +385,9 @@ window across that edge still counts as on it until it comes back onto the stage
 `peekCloseDelay` (300ms) after the pointer left it, never while a menu, a field or a drag in it is in use. Only
 the rail's tree brings the sidebar out: over expand or the footer's buttons it would cover the button on its way
 to a click. The button that collapses a panel keeps it open from the peek, in place, with no morph or slide. The
-dock never closes: it is docked or collapsed, and opens on the tab it was last on (`lich.dock.tab`, Review
-until one is stored). A tab opened from a balloon brings a collapsed dock out until the pointer has been in it.
+dock never closes: it is docked or collapsed, and opens on the tab of lich's it was last on (`lich.dock.tab`,
+Review until one is stored; an extension's tab is not stored, as its surface is placed only after the first
+frames). A tab opened from a balloon brings a collapsed dock out until the pointer has been in it.
 
 ## Motion
 
