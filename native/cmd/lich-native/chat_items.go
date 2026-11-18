@@ -28,7 +28,7 @@ func (u *window) chatRow(gtx C, th *ui.Theme, p *chatPane, sv sessionView, r cha
 	case chatRowWork:
 		return chatWork(gtx, th, p.fold("work:"+strconv.Itoa(r.turn)), r)
 	case chatRowLive:
-		return chatLive(gtx, th, r.waiting)
+		return chatLive(gtx, th)
 	}
 	it := r.item
 	switch it.Kind {
@@ -45,7 +45,7 @@ func (u *window) chatRow(gtx C, th *ui.Theme, p *chatPane, sv sessionView, r cha
 		}
 		return chatPermission(gtx, th, p, it)
 	}
-	return th.Text(ui.TextSM, it.Text).Muted().Wrapped().Layout(gtx)
+	return th.Text(ui.TextSM, expandTabs(it.Text)).Muted().Wrapped().Layout(gtx)
 }
 
 // update takes the fold's click before what it opens is laid out.
@@ -82,7 +82,7 @@ func chatThought(gtx C, th *ui.Theme, f *chatFold, text string) D {
 			if !f.open {
 				return D{}
 			}
-			return layout.Inset{Top: ui.Space(1.5), Left: ui.Space(5)}.Layout(gtx, th.Text(ui.TextSM, text).Muted().Wrapped().Layout)
+			return layout.Inset{Top: ui.Space(1.5), Left: ui.Space(5)}.Layout(gtx, th.Text(ui.TextSM, expandTabs(text)).Muted().Wrapped().Layout)
 		}),
 	)
 }
@@ -147,8 +147,11 @@ func chatToolOutcome(gtx C, th *ui.Theme, t *backend.ChatToolCall) D {
 // cleanLine is the first line of s, tabs expanded: a row has room for one.
 func cleanLine(s string) string {
 	s, _, _ = strings.Cut(strings.TrimSpace(s), "\n")
-	return strings.ReplaceAll(s, "\t", hunkTab)
+	return expandTabs(s)
 }
+
+// expandTabs is s with its tabs as spaces: the fonts have no glyph for one.
+func expandTabs(s string) string { return strings.ReplaceAll(s, "\t", hunkTab) }
 
 // chatDiff is a tool's whole diff on the window's background, each added or
 // removed line in its tone, as a thread's hunk is (hunkTail).
@@ -220,16 +223,11 @@ func chatPermission(gtx C, th *ui.Theme, p *chatPane, it backend.ChatItem) D {
 		})
 }
 
-// chatLive is the turn in flight: the agent at work, or waiting on the
-// person's answer.
-func chatLive(gtx C, th *ui.Theme, waiting bool) D {
-	fg, label := th.MutedForeground, i18n.T("chat.view.working")
-	if waiting {
-		fg, label = th.ToneWait, i18n.T("chat.view.waiting")
-	}
+// chatLive is the turn in flight.
+func chatLive(gtx C, th *ui.Theme) D {
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-		layout.Rigid(func(gtx C) D { return th.Spinner(gtx, ui.Space(3.5), fg) }),
+		layout.Rigid(func(gtx C) D { return th.Spinner(gtx, ui.Space(3.5), th.MutedForeground) }),
 		ui.Gap(2),
-		layout.Rigid(th.Text(ui.TextSM, label).In(fg).Layout),
+		layout.Rigid(th.Text(ui.TextSM, i18n.T("chat.view.working")).Muted().Layout),
 	)
 }

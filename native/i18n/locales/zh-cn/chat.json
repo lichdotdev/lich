@@ -14,8 +14,7 @@
     },
     "toolFailed": "失败",
     "answered": "{tool} · {choice}",
-    "working": "工作中…",
-    "waiting": "等待你的回复"
+    "working": "工作中…"
   },
   "composer": {
     "placeholder": "给 {provider} 发消息…",

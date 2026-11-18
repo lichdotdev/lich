@@ -15,8 +15,7 @@
     },
     "toolFailed": "failed",
     "answered": "{tool} · {choice}",
-    "working": "Working…",
-    "waiting": "Waiting for you"
+    "working": "Working…"
   },
   "composer": {
     "placeholder": "Message {provider}…",

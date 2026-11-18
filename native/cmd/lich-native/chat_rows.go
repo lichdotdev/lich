@@ -13,7 +13,7 @@ type chatRowKind uint8
 const (
 	chatRowItem chatRowKind = iota // one item as it is
 	chatRowWork                    // a turn's tool calls, folded into one line
-	chatRowLive                    // the turn in flight
+	chatRowLive                    // the turn in flight, unless a permission says it waits
 )
 
 // chatRow is one line of the chat view.
@@ -25,8 +25,6 @@ type chatRow struct {
 	turn  int
 	tools []backend.ChatItem
 	took  time.Duration
-	// waiting is a live row's: a permission waits on the person.
-	waiting bool
 }
 
 type chatTurnSpan struct {
@@ -36,7 +34,7 @@ type chatTurnSpan struct {
 
 // chatRows lays items out as the view draws them: each turn's tool calls
 // folded into one work row where its first one was, and while running, a
-// live row last. A turn has run from its first item to its last, or to now
+// live row last, which a waiting permission's box stands in for. A turn has run from its first item to its last, or to now
 // while it is the one in flight: the history carries no durations.
 func chatRows(items []backend.ChatItem, running bool, now time.Time) []chatRow {
 	spans := map[int]*chatTurnSpan{}
@@ -71,8 +69,8 @@ func chatRows(items []backend.ChatItem, running bool, now time.Time) []chatRow {
 		}
 		rows = append(rows, chatRow{kind: chatRowWork, turn: it.Turn, tools: sp.tools, took: time.Duration(max(end-sp.start, 0)) * time.Millisecond})
 	}
-	if running {
-		rows = append(rows, chatRow{kind: chatRowLive, waiting: permissionWaiting(items) != nil})
+	if running && permissionWaiting(items) == nil {
+		rows = append(rows, chatRow{kind: chatRowLive})
 	}
 	return rows
 }
@@ -88,12 +86,12 @@ func permissionWaiting(items []backend.ChatItem) *backend.ChatItem {
 	return nil
 }
 
-// permitOption is the first of p's options whose kind is one of kinds, ""
-// for none: Enter takes the first allow, Esc the first reject.
+// permitOption is p's option of the first of kinds it offers, "" for none:
+// Enter allows once before always, Esc rejects.
 func permitOption(p *backend.ChatPermission, kinds ...string) string {
-	for _, o := range p.Options {
-		if slices.Contains(kinds, o.Kind) {
-			return o.ID
+	for _, k := range kinds {
+		if i := slices.IndexFunc(p.Options, func(o api.ChatPermitOption) bool { return o.Kind == k }); i >= 0 {
+			return p.Options[i].ID
 		}
 	}
 	return ""
@@ -109,10 +107,9 @@ const (
 )
 
 // chatWorking is whether session sv's agent is in a turn: a chat's turn in
-// flight, or the status a terminal's hooks report. Waiting on the person is
-// still the middle of a turn, which a switch would end.
+// flight, or the status a terminal's hooks report.
 func chatWorking(sv sessionView, running bool) bool {
-	return running || spins(sv.status) || sv.status == statusWaiting
+	return running || spins(sv.status)
 }
 
 // chatSwitchState is whether sv gets the selector, and what keeps it from a

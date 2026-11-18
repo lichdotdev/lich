@@ -88,6 +88,8 @@ func (u *window) switchView(id, view string) {
 			return
 		}
 		u.model.chat.switched(id)
+		// The terminal may have ended on the way; its toast was held for the switch.
+		u.raiseExit(id)
 		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("chat.switch.failed"), Description: backend.ErrorText(err)})
 		u.model.invalidate()
 	}()

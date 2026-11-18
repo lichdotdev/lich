@@ -15,8 +15,7 @@
     },
     "toolFailed": "falhou",
     "answered": "{tool} · {choice}",
-    "working": "Trabalhando…",
-    "waiting": "Esperando você"
+    "working": "Trabalhando…"
   },
   "composer": {
     "placeholder": "Mensagem para {provider}…",

@@ -14,8 +14,7 @@
     },
     "toolFailed": "실패",
     "answered": "{tool} · {choice}",
-    "working": "작업 중…",
-    "waiting": "응답을 기다리는 중"
+    "working": "작업 중…"
   },
   "composer": {
     "placeholder": "{provider}에게 메시지…",

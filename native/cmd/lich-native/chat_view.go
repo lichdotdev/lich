@@ -7,6 +7,7 @@ import (
 
 	"gioui.org/io/key"
 	"gioui.org/layout"
+	"gioui.org/op"
 	"gioui.org/unit"
 	"gioui.org/widget"
 
@@ -57,7 +58,6 @@ type chatAnswer struct{ item, option string }
 func newChatPane() *chatPane {
 	p := &chatPane{}
 	p.list.Axis = layout.Vertical
-	p.list.ScrollToEnd = true
 	p.editor.Submit = true
 	p.md = markdown.Cache{}
 	p.folds = map[string]*chatFold{}
@@ -95,13 +95,21 @@ func (u *window) chatScreen(gtx C, sv sessionView, keys bool) {
 	th := u.theme.On(u.theme.Background)
 	layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Flexed(1, func(gtx C) D {
-			return th.ThinScrollArea(&p.list).Layout(gtx, len(rows), func(gtx C, i int) D {
+			d := th.ThinScrollArea(&p.list).Layout(gtx, len(rows), func(gtx C, i int) D {
 				top := chatRowGap
 				if i == 0 {
 					top = chatTopPad
 				}
 				return chatColumn(gtx, top, 0, func(gtx C) D { return u.chatRow(gtx, th, p, sv, rows[i]) })
 			})
+			// A conversation shorter than the view starts at its top; once it
+			// outgrows the view, where nobody could have scrolled it, it goes to
+			// its end and stays there until scrolled up.
+			if over := p.list.Position.Length > gtx.Constraints.Max.Y; over != p.list.ScrollToEnd {
+				p.list.ScrollToEnd, p.list.Position.BeforeEnd = over, false
+				gtx.Execute(op.InvalidateCmd{})
+			}
+			return d
 		}),
 		layout.Rigid(func(gtx C) D {
 			return chatColumn(gtx, chatComposerPad, chatComposerPad, func(gtx C) D { return u.chatComposer(gtx, th, p, sv, working) })
@@ -121,7 +129,8 @@ func chatColumn(gtx C, top, bottom unit.Dp, w layout.Widget) D {
 }
 
 // chatActs runs the view's keys and clicks before it is drawn: Enter sends,
-// or answers a waiting permission with its first allow; Esc rejects it.
+// and on an empty editor answers a waiting permission with its allow, Esc
+// with its reject.
 func (u *window) chatActs(gtx C, p *chatPane, sv sessionView, keys, working bool, waiting *backend.ChatItem) {
 	p.mu.Lock()
 	if p.unsent != "" && p.editor.Len() == 0 {
@@ -131,6 +140,9 @@ func (u *window) chatActs(gtx C, p *chatPane, sv sessionView, keys, working bool
 	p.mu.Unlock()
 	if keys && !gtx.Focused(&p.editor) {
 		gtx.Execute(key.FocusCmd{Tag: &p.editor})
+	}
+	if p.editor.Len() > 0 {
+		waiting = nil
 	}
 	for {
 		ev, ok := gtx.Event(key.Filter{Focus: &p.editor, Name: key.NameEscape})
@@ -246,7 +258,7 @@ func chatUser(gtx C, th *ui.Theme, text string) D {
 			func(gtx C) D { return ui.Fill(gtx, th.Accent, ui.RadiusLG) },
 			func(gtx C) D {
 				return layout.Inset{Top: ui.Space(2), Bottom: ui.Space(2), Left: ui.Space(3), Right: ui.Space(3)}.Layout(gtx,
-					on.Text(ui.TextSM, text).Wrapped().Layout)
+					on.Text(ui.TextSM, expandTabs(text)).Wrapped().Layout)
 			})
 	})
 }

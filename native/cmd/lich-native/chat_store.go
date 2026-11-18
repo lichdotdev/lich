@@ -76,6 +76,14 @@ func (s *chatStore) turn(t api.ChatTurn) {
 	s.running[t.SessionID] = t.Running
 }
 
+// holds reports whether session id's conversation was read or heard.
+func (s *chatStore) holds(id string) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	_, ok := s.items[id]
+	return ok
+}
+
 func (s *chatStore) of(id string) []backend.ChatItem {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -160,14 +168,16 @@ func (m *model) applyView(ctx context.Context, v api.SessionView) {
 	}
 }
 
-// loadChats reads the conversation of every open session drawn as a chat,
-// after /events attached and before follow applies it.
+// loadChats reads the conversation of every open session drawn as a chat
+// the store does not hold yet: when the window attaches, and when a reload
+// brings a session back (a reopen, a project opened). It runs with the event
+// stream held behind it, as history needs.
 func (m *model) loadChats(ctx context.Context) {
 	m.mu.Lock()
 	var ids []string
 	for _, p := range m.projects {
 		for _, s := range p.Sessions {
-			if s.View == api.ViewChat {
+			if s.View == api.ViewChat && !m.chat.holds(s.ID) {
 				ids = append(ids, s.ID)
 			}
 		}

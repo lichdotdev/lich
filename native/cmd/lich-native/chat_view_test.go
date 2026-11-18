@@ -12,6 +12,8 @@ import (
 	"testing"
 	"time"
 
+	"gioui.org/io/key"
+
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
@@ -154,5 +156,88 @@ func TestAToolFoldOpensInTheFrameThatTookTheClick(t *testing.T) {
 	r.clickLabel(t, worked)
 	if !r.shows("4 results") {
 		t.Errorf("the fold did not open:\n%s", r.drawn())
+	}
+}
+
+func permissionFrames(t *testing.T) (*window, *frameRig, *chatBackend) {
+	t.Helper()
+	u, r, f := chatFrames(t, api.ViewChat)
+	u.model.chat.history("s1", []backend.ChatItem{
+		{ID: "u1", Kind: api.ItemUser, Turn: 1, Text: "fix it"},
+		{ID: "p1", Kind: api.ItemPermission, Turn: 1, Permission: &backend.ChatPermission{
+			Tool: backend.ChatToolCall{Name: "Edit", Title: "src/total.ts", State: api.ToolPending},
+			Options: []api.ChatPermitOption{
+				{ID: "always", Label: "Always allow", Kind: api.PermitAllowAlways},
+				{ID: "yes", Label: "Allow", Kind: api.PermitAllowOnce},
+				{ID: "no", Label: "Deny", Kind: api.PermitRejectOnce},
+			},
+		}},
+	})
+	u.model.chat.turn(api.ChatTurn{SessionID: "s1", Running: true})
+	r.frame()
+	r.frame()
+	return u, r, f
+}
+
+func (r *frameRig) press(name key.Name) {
+	r.router.Queue(key.Event{Name: name, State: key.Press}, key.Event{Name: name, State: key.Release})
+	r.frame()
+}
+
+func TestEnterAllowsOnceAndEscRejectsAWaitingPermission(t *testing.T) {
+	for name, want := range map[key.Name]string{key.NameReturn: `"optionId":"yes"`, key.NameEscape: `"optionId":"no"`} {
+		_, r, f := permissionFrames(t)
+		r.press(name)
+		if body := f.waitCall(t, api.ChatAnswer.Name); !strings.Contains(body, want) {
+			t.Errorf("%s answered %s, want %s", name, body, want)
+		}
+	}
+}
+
+func TestEnterOverADraftAnswersNothing(t *testing.T) {
+	u, r, f := permissionFrames(t)
+	u.chats.pane("s1").editor.SetText("wait, use cents")
+	r.press(key.NameReturn)
+	time.Sleep(50 * time.Millisecond)
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if len(f.calls) != 0 {
+		t.Errorf("Enter over a draft called %v", f.calls)
+	}
+}
+
+func userTurns(n int) []backend.ChatItem {
+	var items []backend.ChatItem
+	for i := range n {
+		items = append(items, backend.ChatItem{ID: "u" + strconv.Itoa(i), Kind: api.ItemUser, Turn: i + 1, Text: "q" + strconv.Itoa(i)})
+	}
+	return items
+}
+
+func labelTop(t *testing.T, r *frameRig, label string) int {
+	t.Helper()
+	for _, n := range r.nodes() {
+		if n.Desc.Label == label {
+			return n.Desc.Bounds.Min.Y
+		}
+	}
+	return -1
+}
+
+// A short conversation starts at the top; a long one shows its end, and keeps
+// it as items arrive.
+func TestTheChatStartsAtItsTopAndFollowsItsEnd(t *testing.T) {
+	u, r, _ := chatFrames(t, api.ViewChat)
+	u.model.chat.history("s1", userTurns(2))
+	r.settle(t)
+	if y := labelTop(t, r, "q0"); y < 0 || y > rigWindow.Y/4 {
+		t.Errorf("a short conversation's first message at y=%d, want near the top", y)
+	}
+	u.model.chat.history("s1", userTurns(60))
+	r.settle(t)
+	u.model.chat.apply(api.ChatItemUpdate{SessionID: "s1", Item: backend.ChatItem{ID: "late", Kind: api.ItemUser, Turn: 61, Text: "last one"}})
+	r.settle(t)
+	if labelTop(t, r, "last one") < 0 {
+		t.Errorf("the newest message is off screen:\n%s", r.drawn())
 	}
 }

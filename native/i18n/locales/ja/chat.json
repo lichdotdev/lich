@@ -14,8 +14,7 @@
     },
     "toolFailed": "失敗",
     "answered": "{tool} · {choice}",
-    "working": "作業中…",
-    "waiting": "あなたの返答待ち"
+    "working": "作業中…"
   },
   "composer": {
     "placeholder": "{provider}へのメッセージ…",

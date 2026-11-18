@@ -260,8 +260,8 @@ pinned to its end while items arrive, until the person scrolls up.
 - **A permission** is a box on `Sidebar`, `RadiusMD`, `Space(3)` padding (see Boxes inside a screen): the tool,
   its diff, and a `SizeSM` button per answer the provider offers, the first allow filled. Enter takes the first
   allow and Esc the first reject. Answered, it shrinks to a muted line naming the answer.
-- **A notice** is a muted line; the turn in flight ends the column with a spinner and "Working…", or
-  "Waiting for you" in `ToneWait` while a permission waits.
+- **A notice** is a muted line; the turn in flight ends the column with a spinner and "Working…", left out
+  while a permission waits: its box already says so.
 - **The composer** stands at the column's foot, above the balloons' band the island already keeps: a textarea
   (Enter sends, Shift+Enter breaks the line) over Send, or Stop while the agent works.
 

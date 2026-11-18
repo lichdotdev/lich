@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -172,17 +173,23 @@ func TestChatRowsFoldEachTurnsToolsWhereItsFirstWas(t *testing.T) {
 	}
 }
 
-func TestChatRowsLiveWaitsOnAnUnansweredPermission(t *testing.T) {
+// A waiting permission's box says the turn waits on the person; a live row
+// under it would say it again.
+func TestChatRowsLiveRowGivesWayToAWaitingPermission(t *testing.T) {
 	perm := func(chosen string) backend.ChatItem {
 		return backend.ChatItem{ID: "p", Kind: api.ItemPermission, Permission: &backend.ChatPermission{Chosen: chosen}}
 	}
-	if rows := chatRows([]backend.ChatItem{perm("")}, true, time.Time{}); !rows[len(rows)-1].waiting {
-		t.Error("an open permission is not waited on")
+	last := func(items []backend.ChatItem, running bool) chatRowKind {
+		rows := chatRows(items, running, time.Time{})
+		return rows[len(rows)-1].kind
 	}
-	if rows := chatRows([]backend.ChatItem{perm("allow")}, true, time.Time{}); rows[len(rows)-1].waiting {
-		t.Error("an answered permission is still waited on")
+	if last([]backend.ChatItem{perm("")}, true) == chatRowLive {
+		t.Error("a live row under a waiting permission")
 	}
-	if rows := chatRows([]backend.ChatItem{perm("")}, false, time.Time{}); rows[len(rows)-1].kind == chatRowLive {
+	if last([]backend.ChatItem{perm("allow")}, true) != chatRowLive {
+		t.Error("no live row once the permission was answered")
+	}
+	if last([]backend.ChatItem{perm("allow")}, false) == chatRowLive {
 		t.Error("a live row with no turn running")
 	}
 }
@@ -191,8 +198,11 @@ func TestPermitOptionTakesTheFirstOfTheKinds(t *testing.T) {
 	p := &backend.ChatPermission{Options: []api.ChatPermitOption{
 		{ID: "always", Kind: api.PermitAllowAlways}, {ID: "once", Kind: api.PermitAllowOnce}, {ID: "no", Kind: api.PermitRejectOnce},
 	}}
-	if got := permitOption(p, api.PermitAllowOnce, api.PermitAllowAlways); got != "always" {
-		t.Errorf("allow = %q, want the first allow listed", got)
+	if got := permitOption(p, api.PermitAllowOnce, api.PermitAllowAlways); got != "once" {
+		t.Errorf("allow = %q, want once before always", got)
+	}
+	if got := permitOption(&backend.ChatPermission{Options: p.Options[:1]}, api.PermitAllowOnce, api.PermitAllowAlways); got != "always" {
+		t.Errorf("allow with no once = %q, want always", got)
 	}
 	if got := permitOption(p, api.PermitRejectOnce); got != "no" {
 		t.Errorf("reject = %q", got)
@@ -218,7 +228,7 @@ func TestChatSwitchState(t *testing.T) {
 		{"idle agent", true, agent(statusDone), false, false, true, switchFree},
 		{"busy agent", true, agent(statusBusy), false, false, true, switchWorking},
 		{"compacting", true, agent(statusCompacting), false, false, true, switchWorking},
-		{"waiting on the person", true, agent(statusWaiting), false, false, true, switchWorking},
+		{"waiting between turns", true, agent(statusWaiting), false, false, true, switchFree},
 		{"chat turn running", true, agent(""), true, false, true, switchWorking},
 		{"switch on its way", true, agent(statusBusy), false, true, true, switchPending},
 	}
@@ -255,6 +265,51 @@ func TestLeavingAChatResumesItsConversationWithNoPrompt(t *testing.T) {
 		}
 		if g.prompt() != nil {
 			t.Errorf("%s: asked", c.name)
+		}
+	}
+}
+
+func TestAChatEventThroughTheStreamReachesTheStore(t *testing.T) {
+	m := chatModel(api.ViewChat)
+	events := make(chan backend.Event, 2)
+	events <- chatEventOf(t, api.ChatItemEvent, api.ChatItemUpdate{SessionID: "s1", Item: backend.ChatItem{ID: "1", Text: "hi"}})
+	events <- chatEventOf(t, api.ChatTurnEvent, api.ChatTurn{SessionID: "s1", Running: true})
+	close(events)
+	m.follow(context.Background(), events)
+	if got := chatIDs(m.chat.of("s1")); !reflect.DeepEqual(got, []string{"1:hi"}) || !m.chat.isRunning("s1") {
+		t.Errorf("items %v running %v", got, m.chat.isRunning("s1"))
+	}
+}
+
+// A reload brings back sessions in a chat (a reopen, a project opened): only
+// those the store never read are read.
+func TestLoadChatsReadsOnlyChatsTheStoreDoesNotHold(t *testing.T) {
+	f, client := newChatBackend(t)
+	m := chatModel(api.ViewChat, api.ViewTerminal, api.ViewChat)
+	m.client = client
+	m.chat.history("s1", nil)
+	m.loadChats(context.Background())
+	if body := f.waitCall(t, api.ChatHistory.Name); !strings.Contains(body, `"id":"s3"`) {
+		t.Errorf("read %s, want s3", body)
+	}
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if len(f.calls) != 1 {
+		t.Errorf("calls %v, want s3's history alone", f.calls)
+	}
+}
+
+func TestATerminalStoppedForTheChatRaisesNoExitToast(t *testing.T) {
+	for _, chat := range []bool{false, true} {
+		u := exitedWindow(t)
+		if chat {
+			u.model.projects[0].Sessions[0].View = api.ViewChat
+		} else {
+			u.model.chat.beginSwitch("s1", api.ViewChat)
+		}
+		u.sessionExited("s1", code(0))
+		if u.toaster.Live("exit:s1") {
+			t.Errorf("chat %v: an exit toast for a terminal the chat stopped", chat)
 		}
 	}
 }

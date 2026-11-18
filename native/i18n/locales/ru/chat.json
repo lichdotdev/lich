@@ -17,8 +17,7 @@
     },
     "toolFailed": "ошибка",
     "answered": "{tool} · {choice}",
-    "working": "Работает…",
-    "waiting": "Ждёт вашего ответа"
+    "working": "Работает…"
   },
   "composer": {
     "placeholder": "Сообщение для {provider}…",
