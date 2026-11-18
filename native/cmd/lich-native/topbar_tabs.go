@@ -133,7 +133,7 @@ func (t *topbar) strip(gtx C, th *ui.Theme, f topbarFrame, act *topbarAction) D 
 			layout.Rigid(func(gtx C) D { return t.openButton(gtx, th, act) }),
 		)
 	})
-	t.fillets(gtx, f, w)
+	t.fillets(gtx, th, f, w)
 	clipped.Pop()
 	return D{Size: size}
 }
@@ -234,6 +234,9 @@ func (t *topbar) tabFace(gtx C, th *ui.Theme, f topbarFrame, i int, st *tabState
 	case active:
 		s, k := t.mergeShare(gtx, f)
 		bg, shape = ui.Over(th.Over(ui.Alpha(th.Foreground, tabDetachedFill)), ui.Alpha(s.color, k)), mergingTab(gtx, size, r, k)
+		if k == 1 {
+			defer ui.TabBorder(gtx, size, r, ui.Over(s.color, th.Border))
+		}
 	case hovered:
 		bg = th.Over(ui.Alpha(th.Foreground, tabHoverFill))
 	}
@@ -344,7 +347,7 @@ func tabTooltip(th *ui.Theme, tab projectTab) layout.Widget {
 // flush with the island's left edge has no left fillet: the island's corner
 // is square there instead (islandSquare). None is drawn while a tab is in
 // the air (mergeSpan).
-func (t *topbar) fillets(gtx C, f topbarFrame, w int) {
+func (t *topbar) fillets(gtx C, th *ui.Theme, f topbarFrame, w int) {
 	s, k := t.mergeShare(gtx, f)
 	r := int(k * float32(gtx.Dp(tabRadius)))
 	if r == 0 {
@@ -352,10 +355,35 @@ func (t *topbar) fillets(gtx C, f topbarFrame, w int) {
 	}
 	left := t.activeIndex(f)*w - t.list.Position.Offset
 	bottom := gtx.Constraints.Max.Y
+	line := ui.Over(s.color, th.Border)
 	if left != s.x0 {
 		ui.Fillet(gtx, image.Pt(left-r, bottom-r), r, false, s.color)
+		if k == 1 {
+			ui.FilletBorder(gtx, image.Pt(left-r, bottom-r), r, false, line)
+		}
 	}
 	ui.Fillet(gtx, image.Pt(left+w, bottom-r), r, true, s.color)
+	if k == 1 {
+		ui.FilletBorder(gtx, image.Pt(left+w, bottom-r), r, true, line)
+	}
+}
+
+// tabGap is the run of its top edge, in its own x, that the island at x0
+// leaves unstroked for the active tab grown out of it, fillets included. ok is
+// false when the tab sits on another island or has not finished growing in,
+// and the island's whole edge is stroked.
+func (t *topbar) tabGap(gtx C, f topbarFrame, x0 int) (gap ui.EdgeGap, ok bool) {
+	s, merged := t.mergeSpan(gtx, f)
+	if !merged || len(f.islands) > 0 && s.x0 != x0 || t.mergedFor == f.active && t.merge.shown < 1 {
+		return ui.EdgeGap{}, false
+	}
+	r := gtx.Dp(tabRadius)
+	left := t.activeIndex(f)*t.tabW - t.list.Position.Offset - s.x0
+	gap = ui.EdgeGap{From: left, To: left + t.tabW + r}
+	if left > 0 {
+		gap.From -= r
+	}
+	return gap, true
 }
 
 // mergeShare is how far the active tab has grown into the island it merges
@@ -463,4 +491,14 @@ func (t *topbar) hoverSquare(gtx C, f topbarFrame) (x0 int, ok bool) {
 	}
 	left := -t.list.Position.Offset
 	return x0, left == x0 && left+t.tabW+gtx.Dp(tabRadius) <= x1
+}
+
+// tabGap is gap for the island at x0, the stage's view of tabGap; nil when
+// the tab leaves the island's edge whole.
+func (u *window) tabGap(gtx C, v stageView, islands []islandSpan, x0 int) *ui.EdgeGap {
+	gap, ok := u.topbar.tabGap(gtx, topbarFrame{tabs: v.strip, active: v.stripActive, islands: islands}, x0)
+	if !ok {
+		return nil
+	}
+	return &gap
 }

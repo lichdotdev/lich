@@ -246,7 +246,9 @@ func (s *settingsScreen) layout(gtx C, th *ui.Theme, projects []settingsProject)
 func (s *settingsScreen) island(gtx C, th *ui.Theme, bg color.NRGBA, w func(gtx C, th *ui.Theme) D) D {
 	gtx.Constraints.Min = gtx.Constraints.Max
 	ui.Fill(gtx, bg, ui.RadiusLG)
-	return w(gtx, th.On(bg))
+	on := th.On(bg)
+	defer ui.InsetBorder(gtx, gtx.Constraints.Max, gtx.Dp(ui.RadiusLG), on.Over(on.Border))
+	return w(gtx, on)
 }
 
 // paneLayout is the open section: the project pill in a project's scope, the

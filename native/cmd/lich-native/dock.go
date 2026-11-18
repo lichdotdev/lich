@@ -129,6 +129,9 @@ type dock struct {
 	// in the project tab strip's coordinates. The strip uses them to detach
 	// its active tab when a resize makes it cross an island edge.
 	islands []islandSpan
+	// gap is the run of the dock's top edge the active tab takes, nil when
+	// the tab sits on another island; set by the window before each layout.
+	gap *ui.EdgeGap
 	// shown is the tab the dock last opened on, which it keeps drawing while
 	// it slides out.
 	shown      dockTab
@@ -242,6 +245,8 @@ func (d *dock) layout(gtx C, th *ui.Theme, root *ui.Root, in dockInput) (saveWid
 	defer clip.UniformRRect(image.Rectangle{Max: size}, gtx.Dp(ui.RadiusLG)).Push(gtx.Ops).Pop()
 	ui.Fill(gtx, th.Sidebar, 0)
 	on := th.On(th.Sidebar)
+	rr := gtx.Dp(ui.RadiusLG)
+	defer ui.IslandBorder(gtx, size, rr, rr, d.gap, on.Over(on.Border))
 	layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D { return d.header(gtx, on, root, in) }),
 		layout.Rigid(on.Separator),

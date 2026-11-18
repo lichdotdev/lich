@@ -206,6 +206,7 @@ func (g *gitPanel) layout(gtx C, th *ui.Theme, in gitPanelInput) {
 	defer clip.UniformRRect(image.Rectangle{Max: size}, gtx.Dp(ui.RadiusLG)).Push(gtx.Ops).Pop()
 	ui.Fill(gtx, th.Sidebar, 0)
 	on := th.On(th.Sidebar)
+	defer ui.InsetBorder(gtx, size, gtx.Dp(ui.RadiusLG), on.Over(on.Border))
 	layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D { return g.header(gtx, on) }),
 		layout.Rigid(on.Separator),

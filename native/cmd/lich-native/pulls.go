@@ -67,6 +67,9 @@ type pullsScreen struct {
 	// the top-left corner of, -1 for none: that island drops the rounding for
 	// the tab to grow out of, as the stage's island does.
 	squareX int
+	// gap is the run of the island's top edge the active tab takes, nil when
+	// it sits on none.
+	gap *ui.EdgeGap
 	// spans are the islands as the last layout placed them, for the tab
 	// strip to merge the active tab into the one it sits over.
 	spans    []islandSpan
@@ -208,7 +211,7 @@ func (p *pullsScreen) layout(gtx C, th *ui.Theme) pullsAction {
 		p.view.navClicks(gtx, p, p.visible(rows.val))
 	}
 	p.spans = append(p.spans[:0], islandSpan{x0: 0, x1: gtx.Constraints.Max.X, color: th.Background})
-	pullsIsland(gtx, th, th.Background, p.squareX == 0, func(gtx C, th *ui.Theme) D {
+	pullsIsland(gtx, th, th.Background, p.squareX == 0, p.gap, func(gtx C, th *ui.Theme) D {
 		account := p.store.account(p.project.Path)
 		if !account.loaded {
 			return p.awaitAccount(gtx, th, &act)
@@ -258,7 +261,7 @@ func (p *pullsScreen) backToIndex() {
 
 // pullsIsland is a rounded-lg box of bg the size of gtx, its top-left corner
 // square when the active tab grows out of it.
-func pullsIsland(gtx C, th *ui.Theme, bg color.NRGBA, squareNW bool, w func(gtx C, th *ui.Theme) D) D {
+func pullsIsland(gtx C, th *ui.Theme, bg color.NRGBA, squareNW bool, gap *ui.EdgeGap, w func(gtx C, th *ui.Theme) D) D {
 	gtx.Constraints.Min = gtx.Constraints.Max
 	r := gtx.Dp(ui.RadiusLG)
 	nw := r
@@ -266,7 +269,9 @@ func pullsIsland(gtx C, th *ui.Theme, bg color.NRGBA, squareNW bool, w func(gtx 
 		nw = 0
 	}
 	paint.FillShape(gtx.Ops, bg, clip.RRect{Rect: image.Rectangle{Max: gtx.Constraints.Max}, NW: nw, NE: r, SE: r, SW: r}.Op(gtx.Ops))
-	return w(gtx, th.On(bg))
+	on := th.On(bg)
+	defer ui.IslandBorder(gtx, gtx.Constraints.Max, nw, r, gap, on.Over(on.Border))
+	return w(gtx, on)
 }
 
 // checkedOut is the checkout holding branch, ok false when none does.
