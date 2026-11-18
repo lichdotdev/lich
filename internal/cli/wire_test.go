@@ -76,7 +76,8 @@ func (*wiredTerminal) SubmitPrompt(string, string, *relay.Notification) (relay.H
 	return relay.HandedPrompt{}, relay.ErrNoMod
 }
 
-func (*wiredTerminal) ModAttached(string) bool { return false }
+func (*wiredTerminal) ModAttached(string) bool  { return false }
+func (*wiredTerminal) ModAttaching(string) bool { return false }
 
 func (*wiredTerminal) ModAnswers(string) bool { return false }
 

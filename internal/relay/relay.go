@@ -221,6 +221,9 @@ type Terminal interface {
 	// ModAttached is whether a Claude Code mod polls from that session, which
 	// takes a prompt without touching the line its user is typing.
 	ModAttached(id string) bool
+	// ModAttaching is whether that session loads a mod whose first poll may
+	// still be coming.
+	ModAttaching(id string) bool
 	// ModAnswers is whether that session's mod answers a subagent errand with
 	// its turn's final message (docs/hooks/mod-answer.md).
 	ModAnswers(id string) bool
