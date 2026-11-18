@@ -226,13 +226,14 @@ func TestTheDockTabsCountLichsThenTheExtensions(t *testing.T) {
 	if d.tab != dockReview || d.selectedTab(placed) != 1 {
 		t.Errorf("picked %v", d.tab)
 	}
-	d.toggleExtension(issueKey)
+	d.showExtension(issueKey)
 	if !d.showsExtension(issueKey) {
 		t.Error("the item did not open its tab")
 	}
-	d.toggleExtension(issueKey)
-	if d.tab != dockClosed {
-		t.Error("the item did not close its own tab")
+	// The dock never closes: the item's second click leaves its tab up.
+	d.showExtension(issueKey)
+	if !d.showsExtension(issueKey) {
+		t.Errorf("the item's second click left the dock on %v", d.tab)
 	}
 }
 
@@ -294,15 +295,19 @@ func panelFrames(t *testing.T) (*window, *frameRig) {
 	r.draw = func(gtx C, th *ui.Theme) {
 		u.theme = th
 		u.root.Layout(gtx, func(gtx C) D {
+			u.footer.frame(gtx, v.in)
 			u.actGit(gtx)
 			onePanel(u.git, u.extPanel, u.gitWasOpen)
 			u.gitWasOpen = u.git.open
-			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+			dims := layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Flexed(1, func(gtx C) D { return D{Size: gtx.Constraints.Max} }),
 				layout.Rigid(func(gtx C) D { return u.gitPanelRow(gtx, v) }),
 				layout.Rigid(func(gtx C) D { return u.extPanelRow(gtx, v) }),
-				layout.Rigid(func(gtx C) D { return u.footer.layoutBar(gtx, th, v.in) }),
 			)
+			// Over the panels, where they hold still while one slides: the
+			// window hides them under a panel, which this rig does not.
+			u.footer.layoutBalloons(gtx, th)
+			return dims
 		})
 	}
 	return u, r

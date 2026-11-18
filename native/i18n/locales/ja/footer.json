@@ -3,14 +3,8 @@
     "attach": {
       "example": "ファイルを添付"
     },
-    "files": {
-      "example": "ファイル"
-    },
     "model": {
       "example": "モデル"
-    },
-    "artifacts": {
-      "example": "アーティファクト"
     }
   },
   "footerEditor": {

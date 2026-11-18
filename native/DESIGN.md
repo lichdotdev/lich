@@ -15,11 +15,13 @@ Elements are defined by space, hover and islands, not by enclosure.
   paint it; at rest it paints nothing.
 - **Panels are islands.** The window's regions (sidebar, rail, stage, dock, the Git and extension panels,
   Settings' two columns, Pulls, and the sidebar's and dock's peeks) are rounded surfaces floating on `Canvas`, separated by the `gutter`
-  (6px, `cmd/lich-native/main.go`) instead of a rule between them. Each carries a 1px hairline in `Border`
+  (6px, `cmd/lich-native/main.go`) instead of a rule between them, the stage and the dock running down to the
+  window's foot as the sidebar does. Each carries a 1px hairline in `Border`
   just inside its `RadiusLG` edge (`ui.InsetBorder`, `ui.IslandBorder`): the one outline in the window that
   wraps a surface rather than a field. The active project tab that has grown out of its island takes the
   line with it, up its sides and round its fillets, and the island's top edge is left open under it
-  (`topbar.tabGap`). The top bar and the footer sit on the canvas itself, unboxed.
+  (`topbar.tabGap`). The top bar sits on the canvas itself, unboxed; the footer is two balloons over the
+  stage (see below).
 - **Hairlines are seams inside an island, and its edge.** `th.Separator` splits a panel's own parts (a screen's header
   from its body, two panes, a folder header from its rule). It never wraps a list item, a badge or a button
   at rest. Inputs are the one exception: a field needs an edge to read as editable.
@@ -31,7 +33,9 @@ Elements are defined by space, hover and islands, not by enclosure.
 
 Inside an island, a change that adds a border, a pill, a second line or a nested surface is probably wrong. Reach for spacing,
 a hover state or the tooltip first. The folder tray is the one nested surface, and the reason is written
-under it; the dock's tab pill reuses its fill, for the same reason. The extension catalog is the one screen of cards, and the reason is written under it.
+under it; the dock's tab pill reuses its fill, for the same reason. The footer's balloons are the one pill on
+`Sidebar`: they float over the terminal and need a ground of their own to read on it. The extension catalog is
+the one screen of cards, and the reason is written under it.
 
 ## Foundations
 
@@ -211,14 +215,37 @@ The dock's tabs (Code, Review, Artifacts and an extension's surfaces) are a pill
 floating at its foot, centred, with the tab's name in a tooltip. The pill is `RadiusLG` on a faint `Accent` tray
 (`folderTrayAlpha`; a `Sidebar` pill would vanish on the dock, which is `Sidebar` itself), `Space(1)` of padding, `Space(2)` off the dock's edges; the tab on screen is the
 `Accent` fill, the others light on hover. The body stops above the strip, so nothing is covered. The header keeps
-only actions at its right (Review's, collapse, full screen, ×). A tab that holds something (Review with
+only actions at its right (Review's, collapse, full screen). A tab that holds something (Review with
 changes, Artifacts with files) wears a 5px dot on its icon, never a count or a pill. The dock is never narrower
 than the pill.
 
+### The footer's balloons
+
+The footer is no strip: the two sides the footer editor arranges float as two balloons over the foot of the
+stage, the left side in its bottom-left corner and the right side in its bottom-right (`footer_balloons.go`).
+A balloon is a pill on `Sidebar` at `RadiusLG`, `Space(0.5)` around the footer's 32px items so their
+`RadiusMD` hover sits concentric in it, and it stands on the island's 8px edge from the sides and the foot.
+Each is one line: the right side is measured first, the left takes what is left, and an item that does not fit
+is left out with the ones after it, never wrapped onto a second line. A side with nothing to show draws no pill.
+
+The balloons never cover the agent's prompt. A terminal under them gives up a band at its foot
+(`balloonBand`, the balloon and the 8px edge above and below it), so the PTY has fewer rows and the
+balloons stand in the room it left; the grid only loses whole rows. The band follows the session's kind, not the
+agent live in its PTY, so the grid is resized once, not each time an agent starts or ends. In a layout the
+balloons stand at the foot of the stage, reading the focused pane's session, and every pane stands above the
+band, which the layout keeps however the focus moves.
+
+A plain terminal (a `shell` session), a service's console and Home carry no balloons and no band: the terminal
+takes the island's full height. Settings, Pulls and an extension's screen cover the stage and carry none
+either. A project with no session keeps them, since its branch is the click into the Git panel.
+
+The Git panel and an extension's panel rise from the stage's foot over the band: while one is up the balloons
+are not drawn and the terminal takes the band back, in the one resize the panel's slide already makes.
+
 ### Toasts
 
-The window has one toast stack, in the bottom-right corner, the `gutter` over the footer however many rows
-the footer wraps to (`layoutToasts`). It grows upward, and a toast comes in and leaves by the bottom edge. A
+The window has one toast stack, in the bottom-right corner: the `gutter` over the right balloon and ending
+at its right edge, or over the stage's foot at the window's edge where there are none (`layoutToasts`). It grows upward, and a toast comes in and leaves by the bottom edge. A
 screen keeps its actions at the right of its header, so nothing the window raises stands in the top-right
 corner; a question that waits for an answer goes on the same stack as a passing note, not in a corner of its
 own.
@@ -374,8 +401,9 @@ window across that edge still counts as on it until it comes back onto the stage
 `peekCloseDelay` (300ms) after the pointer left it, never while a menu, a field or a drag in it is in use. Only
 the rail's tree brings the sidebar out: over expand or the footer's buttons it would cover the button on its way
 to a click. The button that collapses a panel keeps it open from the peek, in place, with no morph or slide. The
-dock's × still closes it outright; a tab opened from the footer brings a collapsed dock out until the pointer has
-been in it.
+dock never closes: it is docked or collapsed, and opens on the tab of lich's it was last on (`lich.dock.tab`,
+Review until one is stored; an extension's tab is not stored, as its surface is placed only after the first
+frames). A tab opened from a balloon brings a collapsed dock out until the pointer has been in it.
 
 ## Motion
 
@@ -409,15 +437,16 @@ at once, whatever its row is still doing.
   the redraw request, and the motion freezes on its first frame.
 - **A click shows in the frame that took it.** Gio draws one frame per event, so a click read after the
   thing it changes was laid out leaves the old state on screen until the mouse moves. Read the click before
-  that layout, as `actGit` does for the Git panel, whose row comes before the footer button that opens it.
+  that layout, as `actGit` does for the Git panel, whose row comes before the balloon that opens it.
   A control that opens, closes or resizes something laid out elsewhere gets a `frameRig.click` test
   (`stale_*_test.go`), which fails on exactly this.
 
 ## Fixed by decision: do not "fix" these
 
 - **The bundled themes stay achromatic.** A colored palette is a custom theme, not a widget's color.
-- **The layout**: top tabs, left sidebar, terminal, right dock, footer, and the Git panel rising from the footer
-  across the terminal and the dock. An extension's panel takes the Git panel's place, one panel at a time, and its
+- **The layout**: top tabs, left sidebar, terminal, right dock always there (docked or collapsed), the footer's
+  balloons over the stage's foot, and the Git panel rising from the stage's foot across the terminal and the
+  dock. An extension's panel takes the Git panel's place, one panel at a time, and its
   dock surface is a tab of the dock. It takes height, never width: fewer terminal rows repaint, while fewer columns
   would rewrap what the agent printed.
 - **Pinned project tabs** stay at the left of the top strip, grouped before unpinned tabs with one hairline

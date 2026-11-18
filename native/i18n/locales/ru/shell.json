@@ -51,11 +51,9 @@
   },
   "footerBar": {
     "attachFile": "Прикрепить файл",
-    "browseCode": "Обзор кода",
     "reviewChanges": "Просмотр изменений",
     "viewPullRequest": "Открыть pull request",
-    "pullRequest": "PR #{number}",
-    "showArtifacts": "Показать артефакты"
+    "pullRequest": "PR #{number}"
   },
   "footerSession": {
     "contextWindow": "Контекстное окно",

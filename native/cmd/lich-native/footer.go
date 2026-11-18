@@ -20,15 +20,15 @@ import (
 
 var (
 	icAttach   = icons.Lucide("paperclip")
-	icCode     = icons.Lucide("code")
 	icDiff     = icons.Lucide("diff")
 	icFileText = icons.Lucide("file-text")
 	icFolder   = icons.Lucide("folder")
 	icTimer    = icons.Lucide("timer")
 )
 
-// footer is the status strip under the stage, following the active session,
-// laid out as the user arranged it.
+// footer is what the user arranged in the footer editor, following the active
+// session: its left side and its right side float as two balloons at the foot
+// of the stage (footer_balloons.go).
 type footer struct {
 	// tour is the window's guided tour, which points at the footer's chips.
 	tour       *driver.Tour
@@ -55,14 +55,15 @@ type footer struct {
 	watching string // the session whose plan is polled
 	unwatch  func()
 	widgets  map[string]*footerWidgets
-	menu     ui.MenuState
-	editor   footerEditor
-	// shown is what the strip read last frame, which the editor's chips and
-	// preview read the model from.
+	// menus are the left and the right balloon's right-click menus.
+	menus  [2]ui.MenuState
+	editor footerEditor
+	// shown is what the balloons read this frame, which the editor's chips
+	// and preview read the model from.
 	shown footerInput
 	// customize opens Settings on the Footer row.
 	customize func()
-	// dock is what Browse code and Review changes open, on their tab.
+	// dock is what Review changes opens, on its tab.
 	dock *dock
 	git  *gitPanel
 	// panel is what an extension's panel item opens.
@@ -116,8 +117,8 @@ func (f *footer) setBudget(budget float64) {
 	f.mu.Unlock()
 }
 
-// holdsKeys reports whether the menu wants the keyboard.
-func (f *footer) holdsKeys() bool { return f.menu.Opened() }
+// holdsKeys reports whether a balloon's menu wants the keyboard.
+func (f *footer) holdsKeys() bool { return f.menus[0].Opened() || f.menus[1].Opened() }
 
 // input reads what the strip shows: the active session, else the project's
 // own checkout. It points the polls at what the layout draws.
@@ -193,31 +194,14 @@ func (f *footer) follow(in footerInput) {
 	}
 }
 
-// layoutBar draws the strip: wrapping items spread between the two sides, the
-// right one pushed to the end. A right press on it opens the menu that leads
-// to Settings › Appearance › Footer.
-func (f *footer) layoutBar(gtx C, th *ui.Theme, in footerInput) D {
+// frame runs the balloons' clicks and keeps what they read, before anything
+// the clicks open is laid out. It runs every frame, balloons drawn or not: the
+// footer editor reads what it keeps.
+func (f *footer) frame(gtx C, in footerInput) {
 	f.act(gtx, in)
 	f.shown = in
-	l, _ := f.snapshot()
 	// The clock and every countdown read on the minute.
 	gtx.Execute(op.InvalidateCmd{At: in.now.Add(untilNextMinute(in.now))})
-	entries := []ui.MenuEntry{{
-		Label:   i18n.T("footer.footerMenu.customize"),
-		OnClick: func() { f.customize() },
-	}}
-	return th.ContextMenu(f.root, &f.menu, entries).Layout(gtx, func(gtx C) D {
-		gtx.Constraints.Min.X = gtx.Constraints.Max.X
-		pad := ui.Space(1.5)
-		return layout.Inset{Top: pad, Bottom: pad}.Layout(gtx, func(gtx C) D {
-			// The minimum height counts the padding, and Inset leaves Min as it finds it.
-			gtx.Constraints.Min.Y = gtx.Dp(ui.Space(11)) - 2*gtx.Dp(pad)
-			return ui.Wrap{GapX: ui.Space(4), GapY: ui.Space(1), Justify: ui.JustifyBetween}.Layout(gtx,
-				ui.WrapItem(f.side(th, withDelegates(footerSlots(l.Left, in), in), in, ui.JustifyStart)),
-				ui.WrapMLAuto(f.side(th, footerSlots(l.Right, in), in, ui.JustifyEnd)),
-			)
-		})
-	})
 }
 
 // withDelegates ends the left side with the delegates item while the
@@ -230,46 +214,18 @@ func withDelegates(left []footerSlot, in footerInput) []footerSlot {
 	return append(left, footerSlot{ID: "delegates", Text: i18n.T("layouts.delegates.showBeside", i18n.Args{"count": in.delegates})})
 }
 
-func (f *footer) side(th *ui.Theme, slots []footerSlot, in footerInput, justify ui.Justify) layout.Widget {
-	return func(gtx C) D {
-		kids := make([]ui.WrapChild, len(slots))
-		for i, s := range slots {
-			kids[i] = ui.WrapItem(func(gtx C) D { return f.slot(gtx, th, s, in) })
-		}
-		return ui.Wrap{GapX: ui.Space(1), GapY: ui.Space(1), Justify: justify}.Layout(gtx, kids...)
-	}
-}
-
-// act carries out the clicks of the frame, before the strip is laid out.
+// act carries out the clicks of the frame, before the balloons are laid out.
 func (f *footer) act(gtx C, in footerInput) {
 	if f.w("attach").click.Clicked(gtx) && in.sessionID != "" {
 		go f.attach(in)
 	}
-	if f.w("files").click.Clicked(gtx) {
-		f.dock.toggle(dockCode)
-	}
 	if f.w("changes").click.Clicked(gtx) {
-		f.dock.toggle(dockReview)
+		f.dock.show(dockReview)
 	}
-	if f.w("artifacts").click.Clicked(gtx) {
-		f.dock.toggle(dockArtifacts)
-	}
-	f.w("files").pressed = f.dock.showing(dockCode)
-	f.w("changes").pressed = f.dock.showing(dockReview)
-	f.w("artifacts").pressed = f.dock.showing(dockArtifacts)
 	for _, it := range in.extItems {
-		w := f.w(it.id)
-		if it.place == extension.PlaceDock {
-			if w.click.Clicked(gtx) {
-				f.dock.toggleExtension(it.key)
-			}
-			w.pressed = f.dock.showsExtension(it.key) && f.dock.visible()
-			continue
+		if it.place == extension.PlaceDock && f.w(it.id).click.Clicked(gtx) {
+			f.dock.showExtension(it.key)
 		}
-		w.pressed = f.panel.shows(it.key)
-	}
-	if f.git != nil {
-		f.w("checkout").pressed = f.git.open && in.inRepository()
 	}
 	if f.w("pr").click.Clicked(gtx) && in.pr != nil && f.openPullRequest != nil {
 		f.openPullRequest(prTarget(in.pr, in.path, in.checkout))
@@ -279,8 +235,20 @@ func (f *footer) act(gtx C, in footerInput) {
 	}
 }
 
+// press lights the items whose dock tab is up, read as the balloons are drawn,
+// after every click of the frame moved them. The branch and a panel's item
+// need no light: the balloons are not drawn while their panel is up.
+func (f *footer) press(in footerInput) {
+	f.w("changes").pressed = f.dock.showing(dockReview)
+	for _, it := range in.extItems {
+		if it.place == extension.PlaceDock {
+			f.w(it.id).pressed = f.dock.showsExtension(it.key) && f.dock.visible()
+		}
+	}
+}
+
 // actGit runs the branch's click before the frame lays the Git panel out: the
-// panel's row comes before the footer, and a click read there would open it
+// panel's row comes before the balloons, and a click read there would open it
 // only on the next event.
 func (f *footer) actGit(gtx C) {
 	if f.w("checkout").click.Clicked(gtx) {
@@ -324,14 +292,10 @@ func (f *footer) slot(gtx C, th *ui.Theme, s footerSlot, in footerInput) D {
 	switch s.ID {
 	case "attach":
 		return footerButton(gtx, th, f.root, w, i18n.T("shell.footerBar.attachFile"), false, in.sessionID == "", iconOnly(icAttach))
-	case "files":
-		return footerButton(gtx, th, f.root, w, i18n.T("shell.footerBar.browseCode"), false, false, iconOnly(icCode))
 	case "changes":
 		return f.tour.Anchor(gtx, tourReviewChip, func(gtx C) D {
 			return footerButton(gtx, th, f.root, w, i18n.T("shell.footerBar.reviewChanges"), true, false, changesContent(in.git))
 		})
-	case "artifacts":
-		return footerButton(gtx, th, f.root, w, i18n.T("shell.footerBar.showArtifacts"), false, false, iconOnly(icDockArtifacts))
 	case "pr":
 		return footerButton(gtx, th, f.root, w, i18n.T("shell.footerBar.viewPullRequest"), true, false, glyphText(icPR, i18n.T("shell.footerBar.pullRequest", i18n.Args{"number": in.pr.Number})))
 	case "checkout", "path":

@@ -13,7 +13,7 @@ import (
 )
 
 // collapseButton is the dock header's collapse, left of full screen.
-var collapseButton = image.Rect(rigWindow.X-92, 0, rigWindow.X-64, 48)
+var collapseButton = image.Rect(rigWindow.X-72, 0, rigWindow.X-36, 48)
 
 func TestDockCollapseTakesItOffTheStageInTheFrameAfterTheClick(t *testing.T) {
 	u, r := stageFrames(t, dockReview)
@@ -81,7 +81,7 @@ func TestDockExpandFromThePeekPutsItBackOnTheStage(t *testing.T) {
 	r.hover(edgePoint)
 	r.now = r.now.Add(peekOpenDelay)
 	r.waitFor(t, "No uncommitted changes")
-	r.click(t, r.smallestClickIn(t, image.Rect(rigWindow.X-92-6, 0, rigWindow.X-64-6, 48)))
+	r.click(t, r.smallestClickIn(t, image.Rect(rigWindow.X-72-6, 0, rigWindow.X-36-6, 48)))
 	if u.dock.collapsed {
 		t.Fatal("the click missed expand")
 	}
@@ -90,25 +90,35 @@ func TestDockExpandFromThePeekPutsItBackOnTheStage(t *testing.T) {
 	}
 }
 
-func TestFooterBringsTheCollapsedDockOutAndClosesIt(t *testing.T) {
+func TestCollapsedDockStaysAtTheEdgeWhenTheWindowOpens(t *testing.T) {
+	u, r := stageFrames(t, dockClosed)
+	u.dock.collapsed = true
+	u.dock.restore(dockReview)
+	r.settle(t)
+	if u.dock.visible() {
+		t.Error("the stored tab brought the collapsed dock out at start")
+	}
+}
+
+func TestBalloonBringsTheCollapsedDockOutAndNeverClosesIt(t *testing.T) {
 	d := &dock{collapsed: true}
-	d.toggle(dockReview)
+	d.show(dockReview)
 	if !d.showing(dockReview) {
-		t.Fatal("the footer's Review did not bring the collapsed dock out")
+		t.Fatal("the balloon's Review did not bring the collapsed dock out")
 	}
-	d.toggle(dockCode)
+	d.show(dockCode)
 	if !d.showing(dockCode) {
-		t.Fatal("Code from the footer did not switch the dock that is out")
+		t.Fatal("Code did not switch the dock that is out")
 	}
-	d.toggle(dockCode)
-	if d.tab != dockClosed {
+	d.show(dockCode)
+	if !d.showing(dockCode) {
 		t.Fatalf("Code again left the dock on %v", d.tab)
 	}
 }
 
-func TestFooterBringsOutTheCollapsedDockItsTabIsHiddenIn(t *testing.T) {
+func TestBalloonBringsOutTheCollapsedDockItsTabIsHiddenIn(t *testing.T) {
 	d := &dock{collapsed: true, tab: dockReview}
-	d.toggle(dockReview)
+	d.show(dockReview)
 	if d.tab != dockReview || !d.visible() {
 		t.Fatalf("Review on the hidden Review tab closed it: on %v, visible %v", d.tab, d.visible())
 	}

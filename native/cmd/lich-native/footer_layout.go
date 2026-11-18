@@ -8,7 +8,7 @@ import (
 	"github.com/lichdotdev/lich/native/backend"
 )
 
-// footerItem is one control of the footer strip.
+// footerItem is one control of the footer's balloons.
 type footerItem struct {
 	ID string
 	// Example is the reading the editor previews, ExampleKey its catalog key
@@ -19,9 +19,7 @@ type footerItem struct {
 
 var footerItems = []footerItem{
 	{ID: "attach", ExampleKey: "footer.item.attach.example"},
-	{ID: "files", ExampleKey: "footer.item.files.example"},
 	{ID: "changes", Example: "3 · +10 −2"},
-	{ID: "artifacts", ExampleKey: "footer.item.artifacts.example"},
 	{ID: "pr", Example: "PR #123"},
 	{ID: "checkout", Example: "feature/toolbar"},
 	{ID: "path", Example: "~/project"},
@@ -62,7 +60,7 @@ var defaultFooterVisibility = footerVisibility{Model: true, Plan: true, HandsOn:
 
 func defaultFooterLayout() footerLayout {
 	return footerLayout{
-		Left:  []string{"attach", "files", "changes", "artifacts", "pr"},
+		Left:  []string{"attach", "changes", "pr"},
 		Right: []string{"checkout", "model", "context", "plan", "handsOn"},
 	}
 }
@@ -103,7 +101,9 @@ func (l footerLayout) adopt(ids []string) (footerLayout, bool) {
 }
 
 // parseFooterLayout reads a saved layout. A saved empty side is intentional;
-// unknown or repeated items are dropped so a reload cannot clone a control.
+// unknown or repeated items are dropped so a reload cannot clone a control,
+// and so are the Code and Artifacts buttons a layout saved before the dock
+// took them still names.
 func parseFooterLayout(raw string) (footerLayout, bool) {
 	var value struct {
 		Left, Right *[]json.RawMessage

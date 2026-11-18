@@ -48,7 +48,7 @@ func TestFooterShowsEveryItemOnceTheSessionHasReportedIt(t *testing.T) {
 func TestFooterWithoutASessionShowsOnlyTheCheckoutAndTheClock(t *testing.T) {
 	in := footerInput{path: "/home/me/repo", now: time.Now()}
 	got := slotIDs(footerSlots(allItems(), in))
-	want := []string{"attach", "files", "checkout", "path", "clock"}
+	want := []string{"attach", "checkout", "path", "clock"}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("slots %v, want %v", got, want)
 	}
@@ -152,7 +152,7 @@ func TestEditorDropAppliesAndSavesTheLayout(t *testing.T) {
 	r.f.drop(ui.SortDrop{ID: "clock", Over: "attach"})
 	r.settle(t)
 	want := footerLayout{
-		Left:  []string{"clock", "attach", "files", "changes", "artifacts", "pr"},
+		Left:  []string{"clock", "attach", "changes", "pr"},
 		Right: []string{"checkout", "model", "context", "plan", "handsOn"},
 	}
 	if l, _ := r.f.snapshot(); !reflect.DeepEqual(l, want) {

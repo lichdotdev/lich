@@ -35,11 +35,13 @@ type dockTabButton struct {
 }
 
 // dockTabSpec is a tab as the pill draws it; mark puts a dot on its icon
-// while the tab holds something (changes, artifacts).
+// while the tab holds something (changes, artifacts), in ToneWait while
+// waiting is set: Review over a checkout with conflicts.
 type dockTabSpec struct {
-	glyph icons.Glyph
-	label string
-	mark  bool
+	glyph   icons.Glyph
+	label   string
+	mark    bool
+	waiting bool
 }
 
 // tabSpecs are lich's tabs and then the extensions', in the order selectedTab
@@ -47,7 +49,7 @@ type dockTabSpec struct {
 func (d *dock) tabSpecs(in dockInput) []dockTabSpec {
 	specs := []dockTabSpec{
 		{glyph: icDockCode, label: i18n.T("dock.rightDock.tabCode")},
-		{glyph: icDockReview, label: i18n.T("dock.rightDock.tabReview"), mark: in.isGit && in.git.Files > 0},
+		{glyph: icDockReview, label: i18n.T("dock.rightDock.tabReview"), mark: in.isGit && in.git.Files > 0, waiting: in.isGit && len(in.git.Conflicted) > 0},
 		{glyph: icDockArtifacts, label: i18n.T("dock.rightDock.tabArtifacts"), mark: d.artifacts.count(in.sessionID) > 0},
 	}
 	for _, p := range in.placed {
@@ -115,7 +117,11 @@ func dockTabButtonLayout(gtx C, th *ui.Theme, root *ui.Root, b *dockTabButton, s
 		layout.Stacked(func(gtx C) D {
 			return layout.Inset{Top: dockTabMarkOffset, Right: dockTabMarkOffset}.Layout(gtx, func(gtx C) D {
 				side := gtx.Dp(dockTabMark)
-				paint.FillShape(gtx.Ops, th.Foreground, clip.Ellipse{Max: image.Pt(side, side)}.Op(gtx.Ops))
+				tone := th.Foreground
+				if s.waiting {
+					tone = th.ToneWait
+				}
+				paint.FillShape(gtx.Ops, tone, clip.Ellipse{Max: image.Pt(side, side)}.Op(gtx.Ops))
 				return D{Size: image.Pt(side, side)}
 			})
 		}),

@@ -11,6 +11,7 @@ import (
 	"gioui.org/io/input"
 	"gioui.org/io/pointer"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
 )
 
@@ -66,5 +67,18 @@ func TestDockTabButtonNamesItsTabInATooltip(t *testing.T) {
 	r.settle(t)
 	if !r.shows(name) {
 		t.Errorf("no tooltip %q over the Review button:\n%s", name, r.drawn())
+	}
+}
+
+func TestDockReviewTabWaitsOverConflicts(t *testing.T) {
+	d := &dock{artifacts: newArtifactsTab(new(artifactStore))}
+	in := dockInput{isGit: true, git: backend.DiffStats{Files: 1, Conflicted: []string{"a.go"}}}
+	review := d.tabSpecs(in)[1]
+	if !review.mark || !review.waiting {
+		t.Fatalf("Review over a conflict: mark %v, waiting %v; want both", review.mark, review.waiting)
+	}
+	in.git.Conflicted = nil
+	if d.tabSpecs(in)[1].waiting {
+		t.Error("Review without conflicts still waits")
 	}
 }
