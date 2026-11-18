@@ -132,7 +132,10 @@ click unfolds; folded or not is kept for every page.
 
 With Select on, the element under the pointer is outlined, the outline sliding
 to the next element in 160 ms as the pointer moves, and a click opens a note on
-it. With Draw on, a drag draws a stroke in the color picked beside the tools.
+it. With Draw on, use the outlined tool picker to switch from freehand to a
+rectangle, ellipse or arrow. Drag from one corner to the opposite corner to
+size a rectangle or ellipse, or from the tail to the tip to place an arrow.
+The shape follows the pointer until release and uses the selected ink color.
 The eraser after the colors
 leaves a trail that fades behind the pointer; each stroke the trail touches, or
 a click lands on, goes faint, whole (a stroke is one drag), and they go when

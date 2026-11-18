@@ -43,7 +43,7 @@ func (s *Service) dialogSink(sess *session) func(*api.BrowserDialog) {
 // as it stands after.
 func (s *Service) AnswerDialog(_ context.Context, opts api.BrowserDialogOptions) (api.BrowserPageInfo, error) {
 	defer s.agentTurn(opts.ID)()
-	since := time.Now()
+	since := browserTime{wall: time.Now()}
 	sess, d, err := s.openDialog(opts.ID)
 	if err != nil {
 		return api.BrowserPageInfo{}, err

@@ -6,7 +6,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/chromedp/cdproto/cdp"
 	"github.com/chromedp/cdproto/network"
+	"github.com/chromedp/cdproto/performance"
 	"github.com/chromedp/cdproto/runtime"
 	"github.com/chromedp/chromedp"
 )
@@ -23,11 +25,26 @@ const (
 // settlePoll is how often a settle looks at the page again.
 const settlePoll = 40 * time.Millisecond
 
-// fetches are a tab's fetch and XHR requests in flight, by when lich heard
-// each begin.
+// Reading the clock must give up promptly if Chrome is busy or held.
+const actionClockWait = 500 * time.Millisecond
+
+type browserTime struct {
+	wall  time.Time
+	ticks time.Duration
+}
+
+// Using Chrome's ticks on both sides keeps system clock changes out of the comparison.
+func (at browserTime) before(other browserTime) bool {
+	if at.ticks != 0 && other.ticks != 0 {
+		return at.ticks < other.ticks
+	}
+	return at.wall.Before(other.wall)
+}
+
+// fetches are a tab's fetch and XHR requests in flight, by when they began.
 type fetches struct {
 	mu sync.Mutex
-	at map[network.RequestID]time.Time
+	at map[network.RequestID]browserTime
 }
 
 // track keeps ev when it is a fetch or XHR beginning or a request ending, and
@@ -36,7 +53,7 @@ func (f *fetches) track(ev any, heard time.Time) bool {
 	switch e := ev.(type) {
 	case *network.EventRequestWillBeSent:
 		if e.Type == network.ResourceTypeFetch || e.Type == network.ResourceTypeXHR {
-			f.begin(e.RequestID, sentAt(e, heard))
+			f.begin(e.RequestID, requestTime(e, heard))
 		}
 	case *network.EventLoadingFinished:
 		f.end(e.RequestID)
@@ -48,22 +65,23 @@ func (f *fetches) track(ev any, heard time.Time) bool {
 	return true
 }
 
-// sentAt is when Chrome sent the request, heard when it does not say. On a
-// busy machine the event reaches lich after an action that began later than
-// the request, and a fetch from before the action must not hold it.
-func sentAt(e *network.EventRequestWillBeSent, heard time.Time) time.Time {
-	if e.WallTime == nil {
-		return heard
+func requestTime(e *network.EventRequestWillBeSent, heard time.Time) browserTime {
+	at := browserTime{wall: heard}
+	if e.WallTime != nil {
+		at.wall = e.WallTime.Time()
 	}
-	return e.WallTime.Time()
+	if e.Timestamp != nil {
+		at.ticks = e.Timestamp.Time().Sub(*cdp.MonotonicTimeEpoch)
+	}
+	return at
 }
 
-// begin keeps the first time a request is heard: a redirect sends it again.
-func (f *fetches) begin(id network.RequestID, at time.Time) {
+// begin keeps the first time of a request: a redirect sends it again.
+func (f *fetches) begin(id network.RequestID, at browserTime) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	if f.at == nil {
-		f.at = map[network.RequestID]time.Time{}
+		f.at = map[network.RequestID]browserTime{}
 	}
 	if _, ok := f.at[id]; !ok {
 		f.at[id] = at
@@ -78,15 +96,36 @@ func (f *fetches) end(id network.RequestID) {
 
 // since says whether one that began at or after t is still in flight. One
 // from before, a long poll, never holds an action that did not start it.
-func (f *fetches) since(t time.Time) bool {
+func (f *fetches) since(start browserTime) bool {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	for _, at := range f.at {
-		if !at.Before(t) {
+		if !at.before(start) {
 			return true
 		}
 	}
 	return false
+}
+
+func (p *chromePage) ActionTime(ctx context.Context) (time.Duration, error) {
+	var ticks time.Duration
+	err := p.run(ctx, performance.Enable(), chromedp.ActionFunc(func(ctx context.Context) error {
+		metrics, err := performance.GetMetrics().Do(ctx)
+		if err != nil {
+			return err
+		}
+		for _, metric := range metrics {
+			if metric.Name == "Timestamp" {
+				ticks = time.Duration(metric.Value * float64(time.Second))
+				return nil
+			}
+		}
+		return fmt.Errorf("browser clock is unavailable")
+	}))
+	if err != nil {
+		return 0, err
+	}
+	return ticks, nil
 }
 
 // quietScript resolves true once the document has gone quiet ms without a
@@ -103,7 +142,7 @@ const quietScript = `((quiet, max) => new Promise(done => {
 // settleQuiet waits, up to quietMax, until the fetches t began since have
 // landed and its document then goes quietFor without a change. A fetch that
 // change starts is waited for too.
-func settleQuiet(t *tab, since time.Time) chromedp.Action {
+func settleQuiet(t *tab, since browserTime) chromedp.Action {
 	return chromedp.ActionFunc(func(ctx context.Context) error {
 		deadline := time.Now().Add(quietMax)
 		for time.Now().Before(deadline) {

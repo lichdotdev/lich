@@ -3,6 +3,7 @@ package browser
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"time"
 
 	"github.com/lichdotdev/lich/api"
@@ -49,7 +50,7 @@ func (s *Service) Read(_ context.Context, opts api.BrowserInfoOptions) (api.Brow
 // ClickAt clicks in this session's browser.
 func (s *Service) ClickAt(_ context.Context, opts api.BrowserClickOptions) (api.BrowserPageInfo, error) {
 	defer s.agentTurn(opts.ID)()
-	since := time.Now()
+	since := s.actionTime(opts.ID)
 	if err := s.Click(opts.ID, targetOf(opts.BrowserTarget)); err != nil {
 		return s.heldOr(opts.ID, err)
 	}
@@ -65,7 +66,7 @@ func (s *Service) TypeText(_ context.Context, opts api.BrowserTypeOptions) (api.
 // PressKey presses one named key in this session's browser.
 func (s *Service) PressKey(_ context.Context, opts api.BrowserPressOptions) (api.BrowserPageInfo, error) {
 	defer s.agentTurn(opts.ID)()
-	since := time.Now()
+	since := s.actionTime(opts.ID)
 	if err := s.Press(opts.ID, opts.Key, targetOf(opts.BrowserTarget)); err != nil {
 		return s.heldOr(opts.ID, err)
 	}
@@ -76,7 +77,7 @@ func (s *Service) PressKey(_ context.Context, opts api.BrowserPressOptions) (api
 // it started has its document and what it fetched has rendered. A read that
 // fails keeps the browser: the action itself went through, and the page may
 // be between two documents.
-func (s *Service) pageAfter(id string, since time.Time) (api.BrowserPageInfo, error) {
+func (s *Service) pageAfter(id string, since browserTime) (api.BrowserPageInfo, error) {
 	var info PageInfo
 	sess, err := s.onPage(id, pageWait, func(p Page, ctx context.Context) error {
 		if err := p.Settle(ctx, since); err != nil {
@@ -98,6 +99,21 @@ func (s *Service) pageAfter(id string, since time.Time) (api.BrowserPageInfo, er
 	info.ConsoleErrors, info.ConsoleErrorsMore = s.consoleUntold(sess)
 	info.Dialogs = s.answeredUntold(sess)
 	return infoAPI(info), nil
+}
+
+func (s *Service) actionTime(id string) browserTime {
+	at := browserTime{wall: time.Now()}
+	sess, err := s.live(id)
+	if err != nil {
+		return at
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), actionClockWait)
+	defer cancel()
+	at.ticks, err = sess.page.ActionTime(ctx)
+	if err != nil && !errors.Is(err, errDialogOpen) && !errors.Is(err, errPaused) {
+		slog.Debug("browser: read the clock before an action", "err", err)
+	}
+	return at
 }
 
 // heldOr is the page an action that opened a dialog left, which it answers
@@ -183,7 +199,7 @@ func (s *Service) ListTabs(_ context.Context, opts api.SessionIDOptions) ([]api.
 // the page then in front.
 func (s *Service) ActOnTab(_ context.Context, opts api.BrowserTabOptions) (api.BrowserPageInfo, error) {
 	defer s.agentTurn(opts.ID)()
-	since := time.Now()
+	since := s.actionTime(opts.ID)
 	if err := s.TabAct(opts); err != nil {
 		return s.heldOr(opts.ID, err)
 	}

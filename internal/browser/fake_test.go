@@ -137,12 +137,14 @@ func (p *fakePage) Navigate(_ context.Context, url string) error {
 	return nil
 }
 
-func (p *fakePage) Settle(context.Context, time.Time) error {
+func (p *fakePage) Settle(context.Context, browserTime) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	p.settles++
 	return nil
 }
+
+func (p *fakePage) ActionTime(context.Context) (time.Duration, error) { return 0, nil }
 
 func (p *fakePage) Info(_ context.Context, within string) (PageInfo, error) {
 	p.mu.Lock()

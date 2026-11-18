@@ -81,10 +81,19 @@ func (n *browserNotes) rubPointer(gtx C, at f32.Point, e pointer.Event) {
 func (n *browserNotes) doomAt(p f32.Point) {
 	for i := range n.strokes {
 		s := &n.strokes[i]
-		for j := 1; j < len(s.points) && !s.doomed; j++ {
-			s.doomed = segmentDistance(p, s.points[j-1], s.points[j]) <= sketchEraseReach
+		s.doomed = s.doomed || strokeTouches(*s, p)
+	}
+}
+
+func strokeTouches(s sketchStroke, p f32.Point) bool {
+	for _, points := range strokeSegments(s) {
+		for i := 1; i < len(points); i++ {
+			if segmentDistance(p, points[i-1], points[i]) <= sketchEraseReach {
+				return true
+			}
 		}
 	}
+	return false
 }
 
 // erase takes the doomed strokes off, for undoSketch to bring back.

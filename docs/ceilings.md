@@ -1496,7 +1496,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   (`Coordinator.Do`).
 - **A window that cannot start is a dialog, never a fallback**: a `lich-native` missing beside `lich` (and not
   pinned by `LICH_NATIVE`), or one that exits at startup, on a missing system library say, ends in the error
-  dialog with the reason and the log path. With no session running lich then quits; with one, it keeps serving
+  dialog with the reason and the native and backend log paths. With no session running lich then quits; with one, it keeps serving
   it, and the tray, launching again or `lich quit` is the way back.
 - **A backend holds one window at a time** (`lich native`, `docs/native-window.md`): `/events` and `/ws` hold one
   client, and a new one replaces the old with no close frame, so two windows cannot share a backend: the window
@@ -1612,7 +1612,8 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   and XHR requests the action began, then for the document to go 100 ms without a change, at most 3 seconds
   (`internal/browser/settle.go`): a page whose script changes the DOM all the time makes every click and key
   3 seconds long, and a change a timer makes after the page went quiet is not waited for, so the agent reads
-  it with `wait_for`. Page info never
+  it with `wait_for`. Request ordering uses Chrome's monotonic clock. A dialog answer or an unavailable clock
+  reading falls back to wall time. Page info never
   includes a form's value, though `browser_eval` reads whatever the agent asks for. Screenshots are files, their
   longest side at most 1280 pixels, so a wide pane's is smaller than the page and x and y are read off it. An
   annotated screenshot draws its index labels into the page itself, so the person's pane shows them for the

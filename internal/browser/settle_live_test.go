@@ -55,14 +55,39 @@ func clickGo(t *testing.T, s *Service) (api.BrowserPageInfo, time.Duration) {
 	return info, time.Since(start)
 }
 
-func TestChromeClickAnswersOnceTheFetchItStartedHasRendered(t *testing.T) {
-	s := settleService(t, `<button id="go" style="font-size:30px"
+func slowFetchService(t *testing.T) *Service {
+	t.Helper()
+	return settleService(t, `<button id="go" style="font-size:30px"
 onclick="fetch('/slow').then(r => r.text()).then(t => { out.textContent = 'loaded ' + t })">go</button>
 <div id="out">nothing</div>`, func(w http.ResponseWriter, r *http.Request) {
 		time.Sleep(300 * time.Millisecond)
 		fmt.Fprint(w, "done")
 	})
+
+}
+
+func TestChromeClickAnswersOnceTheFetchItStartedHasRendered(t *testing.T) {
+	s := slowFetchService(t)
 	info, _ := clickGo(t, s)
+	if !strings.Contains(info.Text, "loaded done") {
+		t.Fatalf("the click answered %q, want the page the fetch it started rendered", info.Text)
+	}
+}
+
+func TestChromeClickWaitsForAFetchWhenTheWallClocksDisagree(t *testing.T) {
+	s := slowFetchService(t)
+	since := s.actionTime("s")
+	if since.ticks == 0 {
+		t.Fatal("Chrome did not provide the action's timestamp")
+	}
+	since.wall = since.wall.Add(time.Hour)
+	if err := s.Click("s", Target{Selector: "#go"}); err != nil {
+		t.Fatal(err)
+	}
+	info, err := s.pageAfter("s", since)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if !strings.Contains(info.Text, "loaded done") {
 		t.Fatalf("the click answered %q, want the page the fetch it started rendered", info.Text)
 	}
