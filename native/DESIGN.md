@@ -27,7 +27,7 @@ Elements are defined by space, hover and islands, not by enclosure.
 
 A change that adds a border, a pill, a second line or a nested surface is probably wrong. Reach for spacing,
 a hover state or the tooltip first. The folder tray is the one nested surface, and the reason is written
-under it. The extension catalog is the one screen of cards, and the reason is written under it.
+under it; the dock's tab pill reuses its fill, for the same reason. The extension catalog is the one screen of cards, and the reason is written under it.
 
 ## Foundations
 
@@ -200,6 +200,16 @@ Each header line is a flex row: what the screen is about on the left, flexing; i
 their own line above the title rather than squeezing it.
 
 A `th.Separator` closes the header off from the body.
+
+### The dock's tabs
+
+The dock's tabs (Code, Review, Artifacts and an extension's surfaces) are a pill of icon-only `BarIconButton`s
+floating at its foot, centred, with the tab's name in a tooltip. The pill is `RadiusLG` on a faint `Accent` tray
+(`folderTrayAlpha`; a `Sidebar` pill would vanish on the dock, which is `Sidebar` itself), `Space(1)` of padding, `Space(2)` off the dock's edges; the tab on screen is the
+`Accent` fill, the others light on hover. The body stops above the strip, so nothing is covered. The header keeps
+only actions at its right (Review's, collapse, full screen, ×). A tab that holds something (Review with
+changes, Artifacts with files) wears a 5px dot on its icon, never a count or a pill. The dock is never narrower
+than the pill.
 
 ### Toasts
 
