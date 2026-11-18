@@ -28,7 +28,7 @@ func (u *window) openTabSurface() {
 	}
 	switch p, _ := findPlaced(placedSurfaces(u.model.extensions.all(), nil), k); p.place {
 	case extension.PlaceDock:
-		u.dock.toggleExtension(k)
+		u.dock.showExtension(k)
 	case extension.PlacePanel:
 		u.extPanel.toggle(k)
 	}

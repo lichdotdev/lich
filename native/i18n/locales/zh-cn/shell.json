@@ -49,11 +49,9 @@
   },
   "footerBar": {
     "attachFile": "附加文件",
-    "browseCode": "浏览代码",
     "reviewChanges": "审查更改",
     "viewPullRequest": "查看拉取请求",
-    "pullRequest": "PR #{number}",
-    "showArtifacts": "显示产物"
+    "pullRequest": "PR #{number}"
   },
   "footerSession": {
     "contextWindow": "上下文窗口",

@@ -49,11 +49,9 @@
   },
   "footerBar": {
     "attachFile": "Anexar arquivo",
-    "browseCode": "Navegar pelo código",
     "reviewChanges": "Revisar alterações",
     "viewPullRequest": "Ver pull request",
-    "pullRequest": "PR #{number}",
-    "showArtifacts": "Mostrar artifacts"
+    "pullRequest": "PR #{number}"
   },
   "footerSession": {
     "contextWindow": "Janela de contexto",

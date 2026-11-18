@@ -4,6 +4,8 @@ import (
 	"image"
 	"testing"
 
+	"gioui.org/io/input"
+
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -28,6 +30,8 @@ func stageFrames(t *testing.T, tab dockTab) (*window, *frameRig) {
 	}
 	u.dock = newDock(code, review, newArtifactsTab(new(artifactStore)), nil)
 	u.dock.tab = tab
+	u.footer = newFooter(u.ctx, client, &u.root, newFooterUsage(), newPlanQuota(quotaReader(client), r.invalidate), r.invalidate)
+	u.footer.dock = u.dock
 	r.draw = func(gtx C, th *ui.Theme) {
 		u.theme = th
 		u.root.Layout(gtx, func(gtx C) D {
@@ -40,19 +44,28 @@ func stageFrames(t *testing.T, tab dockTab) (*window, *frameRig) {
 	return u, r
 }
 
-func TestDockCloseHidesItInTheFrameAfterTheClick(t *testing.T) {
-	u, r := stageFrames(t, dockReview)
+// The dock never closes: its header's right end is collapse and full screen,
+// with no × after them.
+func TestDockHeaderEndsOnCollapseAndFullScreen(t *testing.T) {
+	_, r := stageFrames(t, dockReview)
 	r.waitFor(t, "No uncommitted changes")
-	r.click(t, r.smallestClickIn(t, image.Rect(rigWindow.X-36, 0, rigWindow.X, 48)))
-	if u.dock.tab != dockClosed {
-		t.Fatalf("the click missed the ×: dock on %v", u.dock.tab)
+	actions := image.Rect(rigWindow.X-120, 0, rigWindow.X, 48)
+	// A control with a tooltip is two nodes on the same bounds.
+	controls := map[image.Rectangle]bool{}
+	for _, node := range r.nodes() {
+		if node.Desc.Gestures&input.ClickGesture != 0 && node.Desc.Bounds.In(actions) {
+			controls[node.Desc.Bounds] = true
+		}
+	}
+	if len(controls) != 2 {
+		t.Errorf("%d controls at the header's right end, want collapse and full screen", len(controls))
 	}
 }
 
 func TestDockFullScreenFillsTheRowInTheFrameAfterTheClick(t *testing.T) {
 	u, r := stageFrames(t, dockReview)
 	r.waitFor(t, "No uncommitted changes")
-	r.click(t, r.smallestClickIn(t, image.Rect(rigWindow.X-64, 0, rigWindow.X-36, 48)))
+	r.click(t, r.smallestClickIn(t, image.Rect(rigWindow.X-36, 0, rigWindow.X, 48)))
 	if !u.dock.fullscreen {
 		t.Fatal("the click missed full screen")
 	}

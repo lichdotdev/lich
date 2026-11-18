@@ -49,11 +49,9 @@
   },
   "footerBar": {
     "attachFile": "ファイルを添付",
-    "browseCode": "コードを閲覧",
     "reviewChanges": "変更をレビュー",
     "viewPullRequest": "プルリクエストを見る",
-    "pullRequest": "PR #{number}",
-    "showArtifacts": "アーティファクトを表示"
+    "pullRequest": "PR #{number}"
   },
   "footerSession": {
     "contextWindow": "コンテキストウィンドウ",

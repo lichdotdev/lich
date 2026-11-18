@@ -3,14 +3,8 @@
     "attach": {
       "example": "파일 첨부"
     },
-    "files": {
-      "example": "파일"
-    },
     "model": {
       "example": "모델"
-    },
-    "artifacts": {
-      "example": "아티팩트"
     }
   },
   "footerEditor": {

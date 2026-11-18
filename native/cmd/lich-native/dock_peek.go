@@ -24,7 +24,7 @@ type dockPeek struct {
 	// out of the window, it is no longer on its way to the dock.
 	stage hoverArea
 	// tab is the tab the dock was on last frame: a tab opened from anywhere
-	// (the footer, a hotkey, a path's Ctrl+click) brings a collapsed dock out.
+	// (a balloon, a hotkey, a path's Ctrl+click) brings a collapsed dock out.
 	tab dockTab
 }
 
@@ -90,7 +90,7 @@ func (d *dock) setCollapsed(collapsed bool) {
 	d.peek.slide.snap(false)
 }
 
-// show opens the dock on t from anywhere but its own tabs: the footer, a
+// show opens the dock on t from anywhere but its own tabs: a balloon, a
 // hotkey, a path's Ctrl+click, the Git panel. A collapsed dock comes out.
 func (d *dock) show(t dockTab) {
 	d.tab = t

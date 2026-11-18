@@ -60,7 +60,7 @@ func (f *fakeSettings) get(key string) string {
 }
 
 var sampleLayout = footerLayout{
-	Left:  []string{"attach", "files", "changes"},
+	Left:  []string{"attach", "pr", "changes"},
 	Right: []string{"model", "context", "plan"},
 }
 
@@ -78,8 +78,11 @@ func TestParseFooterLayoutKeepsEmptySidesDropsUnknownAndDuplicates(t *testing.T)
 		want footerLayout
 	}{
 		{`{"left":[],"right":[]}`, footerLayout{Left: []string{}, Right: []string{}}},
-		{`{"left":["model","future",2,"model"],"right":["model","cost","files"]}`,
-			footerLayout{Left: []string{"model"}, Right: []string{"cost", "files"}}},
+		{`{"left":["model","future",2,"model"],"right":["model","cost","pr"]}`,
+			footerLayout{Left: []string{"model"}, Right: []string{"cost", "pr"}}},
+		// Code and Artifacts left the footer for the dock.
+		{`{"left":["attach","files","changes","artifacts"],"right":["artifacts","model"]}`,
+			footerLayout{Left: []string{"attach", "changes"}, Right: []string{"model"}}},
 		// The removed Settings item is discarded from either side.
 		{`{"left":["settings","attach"],"right":["model","settings"]}`,
 			footerLayout{Left: []string{"attach"}, Right: []string{"model"}}},
@@ -126,10 +129,10 @@ func TestMoveFooterItemLeavesTheSourceAlone(t *testing.T) {
 		id, over string
 		want     footerLayout
 	}{
-		{"attach", "changes", footerLayout{Left: []string{"files", "changes", "attach"}, Right: sampleLayout.Right}},
+		{"attach", "changes", footerLayout{Left: []string{"pr", "changes", "attach"}, Right: sampleLayout.Right}},
 		{"context", "model", footerLayout{Left: sampleLayout.Left, Right: []string{"context", "model", "plan"}}},
-		{"model", "files", footerLayout{Left: []string{"attach", "model", "files", "changes"}, Right: []string{"context", "plan"}}},
-		{"model", "left", footerLayout{Left: []string{"attach", "files", "changes", "model"}, Right: []string{"context", "plan"}}},
+		{"model", "pr", footerLayout{Left: []string{"attach", "model", "pr", "changes"}, Right: []string{"context", "plan"}}},
+		{"model", "left", footerLayout{Left: []string{"attach", "pr", "changes", "model"}, Right: []string{"context", "plan"}}},
 		{"clock", "right", footerLayout{Left: sampleLayout.Left, Right: []string{"model", "context", "plan", "clock"}}},
 		{"model", "available", footerLayout{Left: sampleLayout.Left, Right: []string{"context", "plan"}}},
 		{"model", "clock", footerLayout{Left: sampleLayout.Left, Right: []string{"context", "plan"}}},

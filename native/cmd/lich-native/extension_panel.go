@@ -23,7 +23,7 @@ import (
 const extPanelHeightsKey = "lich.extension.panels"
 
 // extensionPanel is an extension's panel surface in the Git panel's place,
-// over the footer that opens it: one panel at a time, each with its own
+// opened from its footer item: one panel at a time, each with its own
 // height. It reads the active session as the dock does.
 type extensionPanel struct {
 	root       *ui.Root
@@ -202,7 +202,7 @@ func (u *window) extPanelShown(v stageView, placed []placedSurface) (placedSurfa
 	return surface, ok
 }
 
-// onePanel leaves one panel over the footer when a click opened the other
+// onePanel leaves one panel at the stage's foot when a click opened the other
 // beside it: the one just opened takes the place of the one there, without a
 // slide down and up. gitWas is whether the Git panel was open on the frame
 // before.
@@ -221,7 +221,7 @@ func onePanel(g *gitPanel, p *extensionPanel, gitWas bool) {
 	g.slide.snap(true)
 }
 
-// extPanelRow is the extension panel between the stage and the footer, as
+// extPanelRow is the extension panel at the stage's foot, as
 // gitPanelRow lays the Git panel.
 func (u *window) extPanelRow(gtx C, v stageView) D {
 	p := u.extPanel
@@ -252,7 +252,7 @@ func (u *window) extPanelRow(gtx C, v stageView) D {
 		p.covers = true
 		return D{}
 	}
-	full := max(maxY-gtx.Dp(gitFooterHeight)-gtx.Dp(gutter), h)
+	full := max(maxY-gtx.Dp(gutter), h)
 	slot := int(open * float32(h+gtx.Dp(gutter)+int(grow*float32(full-h))))
 	if shown {
 		p.pendingPx = h + gtx.Dp(gutter) - slot

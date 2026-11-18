@@ -1,10 +1,11 @@
 package main
 
-// The right dock: the panel at the terminal's right that the
-// footer's Browse code, Review changes and Artifacts buttons open, on its
-// Code, its Review or its Artifacts tab. It owns the chrome around both bodies: the drag-resizable width
-// (one, persisted, for every tab), full screen, the tab bar and the close
-// button.
+// The right dock: the panel at the terminal's right, on its Code, its Review
+// or its Artifacts tab, and the tab it was last on when the window opens. It
+// never closes: it stands beside the terminal or, collapsed, comes out from
+// the window's edge. It owns the chrome around the bodies: the drag-resizable
+// width (one, persisted, for every tab), full screen, collapse and the tab
+// bar.
 //
 // The Review tab is a body the dock hands the frame to, through reviewTab:
 //
@@ -61,9 +62,11 @@ const (
 	// dockCollapsedKey stores whether the dock comes out from the window's
 	// edge rather than standing beside the terminal.
 	dockCollapsedKey = "lich.dock.collapsed"
-	dockMinRem       = 20
-	dockMaxRem       = 60
-	dockDefaultRem   = 28
+	// dockTabKey stores the tab the dock opens on.
+	dockTabKey     = "lich.dock.tab"
+	dockMinRem     = 20
+	dockMaxRem     = 60
+	dockDefaultRem = 28
 	// dockHeaderHeight holds the 28dp tabs 8dp from the top and from the
 	// Separator under it, the inset the sidebar's header keeps.
 	dockHeaderHeight = unit.Dp(44)
@@ -71,6 +74,8 @@ const (
 
 type dockTab uint8
 
+// dockClosed is no tab, before the stored one is read. The dock itself never
+// closes.
 const (
 	dockClosed dockTab = iota
 	dockCode
@@ -86,15 +91,6 @@ const dockBuiltinTabs = int(dockArtifacts)
 // dockHeaderSpare is what the header needs past its tabs and actions: its two
 // insets and two gaps, and a gap's room between the tabs and the actions.
 var dockHeaderSpare = ui.Space(8)
-
-// toggled returns the tab after asking for to: asking for the tab on screen
-// closes the dock.
-func (t dockTab) toggled(to dockTab) dockTab {
-	if t == to {
-		return dockClosed
-	}
-	return to
-}
 
 // dockInput is what the dock reads of the active session each frame. checkout
 // is where the session works now (useActiveSession's path), which is what both
@@ -138,16 +134,18 @@ type dock struct {
 	resize     ui.ResizeHandle
 	tabs       ui.TabsState
 	full       ui.IconActionState
-	close      ui.IconActionState
 	collapse   ui.IconActionState
 	// collapsed is the dock off the stage, out over it from the window's
 	// right edge (peek); saveCollapsed is a click on collapse to store.
 	collapsed     bool
 	saveCollapsed bool
-	peek          dockPeek
-	code          *codeTab
-	review        reviewTab
-	artifacts     *artifactsTab
+	// saved is the tab last stored, which a change of tab is told from.
+	saved     dockTab
+	savedExt  extensionKey
+	peek      dockPeek
+	code      *codeTab
+	review    reviewTab
+	artifacts *artifactsTab
 	// ext is the extension surface of the dockExtension tab, drawn by
 	// extensions; extAct is what its failed state asked for this frame.
 	ext        extensionKey
@@ -165,24 +163,10 @@ func newDock(code *codeTab, review reviewTab, artifacts *artifactsTab, extension
 // showsExtension is whether the dock is open on surface k.
 func (d *dock) showsExtension(k extensionKey) bool { return d.tab == dockExtension && d.ext == k }
 
-// toggleExtension opens the dock on surface k, and closes it while it shows k.
-func (d *dock) toggleExtension(k extensionKey) {
-	if d.showsExtension(k) && d.visible() {
-		d.tab = dockClosed
-		return
-	}
+// showExtension opens the dock on surface k. A collapsed dock comes out.
+func (d *dock) showExtension(k extensionKey) {
 	d.tab, d.ext = dockExtension, k
 	d.bringOut()
-}
-
-// toggle opens the dock on t, and closes it while it shows t. A collapsed
-// dock out of sight comes out on t instead.
-func (d *dock) toggle(t dockTab) {
-	if !d.visible() {
-		d.show(t)
-		return
-	}
-	d.tab = d.tab.toggled(t)
 }
 
 // showing is whether the dock is on screen on t.
@@ -230,7 +214,7 @@ func (d *dock) layout(gtx C, th *ui.Theme, root *ui.Root, in dockInput) (saveWid
 	}
 	if d.tab == dockExtension {
 		if _, ok := findPlaced(in.placed, d.ext); !ok {
-			d.tab = dockClosed
+			d.tab = dockReview
 		}
 	}
 	if !d.fullscreen {
@@ -274,7 +258,7 @@ func (d *dock) body(gtx C, th *ui.Theme, root *ui.Root, in dockInput) error {
 }
 
 // header is the h-10 strip: the ghost tabs, then at its right the Review
-// tab's actions, full screen and close.
+// tab's actions, collapse and full screen.
 func (d *dock) header(gtx C, th *ui.Theme, root *ui.Root, in dockInput) D {
 	d.tabs.Selected = d.selectedTab(in.placed)
 	changed := in.isGit && in.git.Files > 0
@@ -335,12 +319,6 @@ func (d *dock) header(gtx C, th *ui.Theme, root *ui.Root, in dockInput) D {
 				actions += dims.Size.X
 				return dims
 			}),
-			ui.Gap(1),
-			layout.Rigid(func(gtx C) D {
-				dims := d.closeButton(gtx, th, root)
-				actions += dims.Size.X
-				return dims
-			}),
 		)
 	})
 	d.fitTabs(gtx, tabs.NaturalWidth(gtx)+actions+gtx.Dp(dockHeaderSpare))
@@ -388,21 +366,9 @@ func (d *dock) act(gtx C) {
 	for d.full.Click.Clicked(gtx) {
 		d.fullscreen = !d.fullscreen
 	}
-	for d.close.Click.Clicked(gtx) {
-		d.tab = dockClosed
-	}
 	for d.collapse.Click.Clicked(gtx) {
 		d.setCollapsed(!d.collapsed)
 	}
-}
-
-// closeButton is the dock's ghost ×: a 1rem glyph, where an iconAction would
-// draw its icon at 0.875rem.
-func (d *dock) closeButton(gtx C, th *ui.Theme, root *ui.Root) D {
-	b := th.Button(&d.close.Click, "")
-	b.Icon, b.Variant, b.Size = icDockClose, ui.VariantGhost, ui.SizeIconXS
-	tip := th.Tooltip(root, &d.close.Tip, i18n.T("dock.rightDock.closePanel"))
-	return tip.Layout(gtx, b.Layout)
 }
 
 // parseDockWidth parses a stored width within the dock's bounds: garbage,
@@ -431,4 +397,47 @@ func loadDockCollapsed(ctx context.Context, c *backend.Client) (bool, error) {
 
 func saveDockCollapsed(ctx context.Context, c *backend.Client, collapsed bool) error {
 	return c.SetSetting(ctx, dockCollapsedKey, "", strconv.FormatBool(collapsed))
+}
+
+var dockTabNames = map[dockTab]string{dockCode: "code", dockReview: "review", dockArtifacts: "artifacts"}
+
+// parseDockTab reads a stored tab: one of lich's by name, an extension's
+// surface by its footer item id. Anything else, unset included, is Review.
+func parseDockTab(raw string) (dockTab, extensionKey) {
+	if k, ok := extensionItemKey(raw); ok {
+		return dockExtension, k
+	}
+	for t, name := range dockTabNames {
+		if name == raw {
+			return t, extensionKey{}
+		}
+	}
+	return dockReview, extensionKey{}
+}
+
+func formatDockTab(t dockTab, k extensionKey) string {
+	if t == dockExtension {
+		return extensionItemID(k)
+	}
+	return dockTabNames[t]
+}
+
+func loadDockTab(ctx context.Context, c *backend.Client) (dockTab, extensionKey, error) {
+	raw, err := c.GetSetting(ctx, dockTabKey, "")
+	t, k := parseDockTab(raw)
+	return t, k, err
+}
+
+func saveDockTab(ctx context.Context, c *backend.Client, t dockTab, k extensionKey) error {
+	return c.SetSetting(ctx, dockTabKey, "", formatDockTab(t, k))
+}
+
+// tabToSave reports the tab on screen once it differs from the one stored,
+// and takes it as stored.
+func (d *dock) tabToSave() (dockTab, extensionKey, bool) {
+	if d.tab == dockClosed || (d.tab == d.saved && (d.tab != dockExtension || d.ext == d.savedExt)) {
+		return 0, extensionKey{}, false
+	}
+	d.saved, d.savedExt = d.tab, d.ext
+	return d.tab, d.ext, true
 }

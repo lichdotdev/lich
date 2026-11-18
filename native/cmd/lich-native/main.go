@@ -50,7 +50,7 @@ var (
 	flagSize     = flag.Float64("size", 13, "terminal font size in sp")
 	flagShot     = flag.String("shot", "", "write a PNG of the frame drawn -shot-after into the run")
 	flagAfter    = flag.Duration("shot-after", 3*time.Second, "when to take -shot")
-	flagTab      = flag.String("tab", "terminal", "what opens at start beside the terminal: terminal (nothing), the dock on code, review or artifacts, git for the Git panel, or ext:<extension>/<surface> for an extension's dock or panel surface")
+	flagTab      = flag.String("tab", "terminal", "what opens at start beside the terminal: terminal (the dock on its stored tab), the dock on code, review or artifacts, git for the Git panel, or ext:<extension>/<surface> for an extension's dock or panel surface")
 	flagWindow   = flag.String("window", "1400x900", "the window's size in dp, WxH, for -shot")
 	flagDropHint = flag.Bool("drop-hint", false, "draw the file-drop hint over the terminal as if a drag were over it, for -shot")
 )
@@ -125,9 +125,9 @@ type window struct {
 	theme    *ui.Theme
 	root     ui.Root
 	toaster  ui.Toaster
-	// footerHeight is the footer bar's height this frame, which the toasts
-	// stand over.
-	footerHeight int
+	// toastFloor is how high off the window's bottom the toasts stand a
+	// gutter over this frame: the stage's foot, or the balloons' top.
+	toastFloor int
 	// caption is where the topbar draws the window's buttons, swapped whole
 	// when the desktop's layout changes; chrome what the window manager last
 	// said about the window.
@@ -146,7 +146,7 @@ type window struct {
 	// extension is an extension's surface, drawn over the stage while open,
 	// and extOutbox what the window sends extensions, in order.
 	extension *extensionScreen
-	// extPanel is an extension's panel surface over the footer, in the Git
+	// extPanel is an extension's panel surface at the stage's foot, in the Git
 	// panel's place; gitWasOpen is the Git panel's open on the frame before,
 	// which onePanel reads to tell which of the two a click just opened.
 	extPanel   *extensionPanel
@@ -372,7 +372,6 @@ func run(w *app.Window, rt backend.Runtime) error {
 	u.model.projectClosed = u.projectClosed
 	u.model.pluginProfiles = u.pluginProfilesFailed
 	u.settings.theme = newThemePicker(ctx, client, u.appearance, &u.toaster, &u.root)
-	u.dock.tab = map[string]dockTab{"code": dockCode, "review": dockReview, "artifacts": dockArtifacts}[*flagTab]
 	u.footer.dock = u.dock
 	u.git = newGitPanel(u.ctx, client, &u.root, invalidate, notify, *flagFont, unit.Sp(*flagSize))
 	u.git.openSession = u.focusSession
@@ -533,6 +532,13 @@ func (u *window) connect() error {
 	if u.dock.collapsed, err = loadDockCollapsed(u.ctx, u.client); err != nil {
 		return err
 	}
+	if u.dock.tab, u.dock.ext, err = loadDockTab(u.ctx, u.client); err != nil {
+		return err
+	}
+	if t, ok := map[string]dockTab{"code": dockCode, "review": dockReview, "artifacts": dockArtifacts}[*flagTab]; ok {
+		u.dock.tab = t
+	}
+	u.dock.saved, u.dock.savedExt = u.dock.tab, u.dock.ext
 	if u.pulls.view.tree.widthRem, err = loadTreeWidth(u.ctx, u.client); err != nil {
 		return err
 	}
@@ -762,12 +768,14 @@ func (u *window) body(gtx C, v stageView) (int, sidebarAction, error) {
 		return d
 	}).Size.X
 	var err error
+	u.toastFloor = gtx.Dp(gutter)
+	u.footer.frame(gtx, v.in)
 	u.actGit(gtx)
 	onePanel(u.git, u.extPanel, u.gitWasOpen)
 	u.gitWasOpen = u.git.open
 	u.islandAt = image.Pt(edge, bar)
 	u.stage(gtx, edge, func(gtx C) D {
-		return layout.Inset{Right: gutter}.Layout(gtx, func(gtx C) D {
+		return layout.Inset{Right: gutter, Bottom: gutter}.Layout(gtx, func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Flexed(1, func(gtx C) D {
 					if u.settings.open {
@@ -809,11 +817,6 @@ func (u *window) body(gtx C, v stageView) (int, sidebarAction, error) {
 					u.applyExtension(u.extPanel.takeAction())
 					return d
 				}),
-				layout.Rigid(func(gtx C) D {
-					d := u.footer.layoutBar(gtx, u.theme, v.in)
-					u.footerHeight = d.Size.Y
-					return d
-				}),
 			)
 		})
 	})
@@ -830,11 +833,12 @@ func sidebarActive(v stageView) string {
 }
 
 // island is the stage's rounded box: Home, the empty notice, the diff or
-// the terminal, in the color the active tab merges with. Its top-left corner
-// is square while that tab sits on it. A lone session's terminal is laid out
-// termWidth wide, which a dock slide or a sidebar morph sets to where the box
-// is going: wider, the box clips it; narrower, its fill shows past it. The Git
-// panel's slide sets termHeight the same way.
+// the terminal, in the color the active tab merges with, under the footer's
+// balloons. Its top-left corner is square while that tab sits on it. A lone
+// session's terminal is laid out termWidth wide, which a dock slide or a
+// sidebar morph sets to where the box is going: wider, the box clips it;
+// narrower, its fill shows past it. The Git panel's slide sets termHeight the
+// same way.
 func (u *window) island(gtx C, v stageView, termWidth, termHeight int) error {
 	size := gtx.Constraints.Max
 	gtx.Constraints.Min = size
@@ -844,6 +848,7 @@ func (u *window) island(gtx C, v stageView, termWidth, termHeight int) error {
 		nw = 0
 	}
 	defer clip.RRect{Rect: image.Rectangle{Max: size}, NW: nw, NE: r, SE: r, SW: r}.Push(gtx.Ops).Pop()
+	defer u.drawBalloons(gtx, v)
 	u.drop.reset()
 	fill := u.islandColor(v)
 	paint.Fill(gtx.Ops, fill)
@@ -958,9 +963,9 @@ func (u *window) topbarFrame(gtx C, v stageView, edge int) topbarFrame {
 	return f
 }
 
-// stageRow is the row above the footer: the island and, to its right, the dock,
-// which covers the whole row in full screen. Home has no dock: a project-less
-// screen has no checkout to show.
+// stageRow is the island and, to its right, the dock, which covers the whole
+// row in full screen. Home has no dock: a project-less screen has no checkout
+// to show.
 func (u *window) stageRow(gtx C, v stageView) error {
 	d := u.dock
 	d.act(gtx)
@@ -968,6 +973,9 @@ func (u *window) stageRow(gtx C, v stageView) error {
 		d.saveCollapsed = false
 		collapsed := d.collapsed
 		go func() { u.logErr("dock collapsed", saveDockCollapsed(u.ctx, u.client, collapsed)) }()
+	}
+	if t, k, ok := d.tabToSave(); ok {
+		go func() { u.logErr("dock tab", saveDockTab(u.ctx, u.client, t, k)) }()
 	}
 	if d.tab != dockClosed && !v.home {
 		d.shown = d.tab
@@ -988,7 +996,7 @@ func (u *window) stageRow(gtx C, v stageView) error {
 		termWidth -= d.width(gtx) + gtx.Dp(gutter)
 	}
 	termWidth = max(termWidth, 0)
-	termHeight := max(size.Y-u.git.pending()-u.extPanel.pending(), 0)
+	termHeight := max(size.Y-u.git.pending()-u.extPanel.pending()-u.ptyBand(gtx, v), 0)
 	if share == 0 {
 		d.islands = nil
 		if err := u.island(gtx, v, termWidth, termHeight); err != nil {
@@ -1025,10 +1033,11 @@ func (u *window) stageRow(gtx C, v stageView) error {
 	return u.layoutDock(gtx, v)
 }
 
-// gitPanelRow is the Git panel between the stage and the footer, when it is
-// open and there is a repository for it to read.
+// gitPanelRow is the Git panel at the stage's foot, when it is open and there
+// is a repository for it to read.
 //
-// It slides up from the footer as the dock slides in from the side, and grows
+// It slides up from the foot over the balloons' band, as the dock slides in
+// from the side, and grows
 // over the stage to expand. pendingPx is what the stage still has to give up
 // once the slide lands: the terminal is laid out at that size from the first
 // frame, so the agent redraws once rather than on every frame of the slide.
@@ -1052,7 +1061,7 @@ func (u *window) gitPanelRow(gtx C, v stageView) D {
 		g.covers = true
 		return D{}
 	}
-	full := max(maxY-gtx.Dp(gitFooterHeight)-gtx.Dp(gutter), h)
+	full := max(maxY-gtx.Dp(gutter), h)
 	slot := int(open * float32(h+gtx.Dp(gutter)+int(grow*float32(full-h))))
 	if shown {
 		g.pendingPx = h + gtx.Dp(gutter) - slot
@@ -1060,7 +1069,7 @@ func (u *window) gitPanelRow(gtx C, v stageView) D {
 		g.pendingPx = -slot
 	}
 	// Laid out at the height it is heading for and slid up from under the
-	// footer, so its rows move rather than squeeze.
+	// stage's foot, so its rows move rather than squeeze.
 	size := image.Pt(gtx.Constraints.Max.X, h+int(grow*float32(full-h)))
 	defer clip.Rect{Max: image.Pt(size.X, slot)}.Push(gtx.Ops).Pop()
 	defer op.Offset(image.Pt(0, slot-size.Y)).Push(gtx.Ops).Pop()
@@ -1077,10 +1086,6 @@ func (u *window) actGit(gtx C) {
 	u.git.act(gtx)
 	u.extPanel.actHeader(gtx)
 }
-
-// gitFooterHeight is the footer strip's one-line height, what an expanding
-// panel stops short of.
-const gitFooterHeight = unit.Dp(44)
 
 // gitShown is whether the Git panel has a repository to read and room to draw.
 func (u *window) gitShown(v stageView) bool {

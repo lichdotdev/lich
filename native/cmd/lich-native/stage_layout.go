@@ -110,6 +110,9 @@ func (u *window) layoutIsland(gtx C, v stageView) error {
 	}
 	u.terms.onScreen(onScreenOf(root)...)
 	in := image.Rectangle{Max: gtx.Constraints.Max}.Inset(gtx.Dp(gutter))
+	if band := u.ptyBand(gtx, v); band > 0 {
+		in.Max.Y = max(in.Min.Y, gtx.Constraints.Max.Y-band)
+	}
 	drawn := layoutTab{Root: root}
 	st.motion.begin(gtx.Now, lt.Zoomed, drawn.panes())
 	err := u.paneTree(gtx, v, root, "", in, len(lt.panes()) > 1)

@@ -1,7 +1,7 @@
 package main
 
-// The Git panel: the region between the stage and the footer, opened from the
-// footer, that reads the repository of the active session. Log, the only tab
+// The Git panel: the region at the stage's foot, opened from the branch's
+// balloon, that reads the repository of the active session. Log, the only tab
 // for now, is the branch tree, the history and the selected commit's detail.
 
 import (
