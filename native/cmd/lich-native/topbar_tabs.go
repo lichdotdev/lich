@@ -112,7 +112,8 @@ func (t *topbar) strip(gtx C, th *ui.Theme, f topbarFrame, act *topbarAction) D 
 	if t.shift > 0 {
 		filletRoom = gtx.Dp(tabRadius)
 	}
-	clipped := clip.Rect{Min: image.Pt(-filletRoom, 0), Max: size}.Push(gtx.Ops)
+	// One line past the band, where the fillets' hairline meets the island's.
+	clipped := clip.Rect{Min: image.Pt(-filletRoom, 0), Max: size.Add(image.Pt(0, gtx.Dp(1)))}.Push(gtx.Ops)
 	// Sized to its tabs, the list leaves the strip's empty run to the band
 	// under it, which drags the window.
 	content := gtx
@@ -235,7 +236,8 @@ func (t *topbar) tabFace(gtx C, th *ui.Theme, f topbarFrame, i int, st *tabState
 		s, k := t.mergeShare(gtx, f)
 		bg, shape = ui.Over(th.Over(ui.Alpha(th.Foreground, tabDetachedFill)), ui.Alpha(s.color, k)), mergingTab(gtx, size, r, k)
 		if k == 1 {
-			defer ui.TabBorder(gtx, size, r, ui.Over(s.color, th.Border))
+			flush := t.activeIndex(f)*size.X-t.list.Position.Offset == s.x0
+			defer ui.TabBorder(gtx, size, r, flush, ui.Over(s.color, th.Border))
 		}
 	case hovered:
 		bg = th.Over(ui.Alpha(th.Foreground, tabHoverFill))
