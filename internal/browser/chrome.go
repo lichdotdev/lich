@@ -306,7 +306,7 @@ var errNavAborted = errors.New("page load error " + abortedText)
 // replace the document: until then the old one reads as complete.
 const navGrace = 150 * time.Millisecond
 
-func (p *chromePage) Settle(ctx context.Context, since time.Time) error {
+func (p *chromePage) Settle(ctx context.Context, since browserTime) error {
 	p.awaitLeave(ctx)
 	if err := p.run(ctx, settleAfter(func(ctx context.Context) error { return sleepCtx(ctx, navGrace) })); err != nil {
 		return err

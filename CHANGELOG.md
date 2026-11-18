@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Clicks in the session browser keep waiting for their requests when the system clock changes.**
 - **The window startup error now points to the native window log.** That log contains the window process's error when it exits before opening.
 - **A message to a Claude Code session that just opened is no longer left unsent on its prompt.**
 - **Changing the advisor model, fast mode, thinking or ultracode in one Claude Code account no longer changes it in your other accounts.** Each profile now keeps these alongside its own default model and effort, as well as whether to switch models when safeguards flag a message.

@@ -110,7 +110,9 @@ type Page interface {
 	// its document, bounded by domSettle, and then until the fetches that
 	// began since have landed and the page stopped changing, bounded by
 	// quietMax.
-	Settle(ctx context.Context, since time.Time) error
+	Settle(ctx context.Context, since browserTime) error
+	// ActionTime reads the same monotonic clock as Chrome's request events.
+	ActionTime(ctx context.Context) (time.Duration, error)
 	// Click returns where it clicked, in CSS pixels.
 	Click(ctx context.Context, t Target) (x, y float64, err error)
 	Type(ctx context.Context, text string, clear bool, t Target) error

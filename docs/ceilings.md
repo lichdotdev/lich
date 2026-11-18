@@ -1612,7 +1612,8 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   and XHR requests the action began, then for the document to go 100 ms without a change, at most 3 seconds
   (`internal/browser/settle.go`): a page whose script changes the DOM all the time makes every click and key
   3 seconds long, and a change a timer makes after the page went quiet is not waited for, so the agent reads
-  it with `wait_for`. Page info never
+  it with `wait_for`. Request ordering uses Chrome's monotonic clock. A dialog answer or an unavailable clock
+  reading falls back to wall time. Page info never
   includes a form's value, though `browser_eval` reads whatever the agent asks for. Screenshots are files, their
   longest side at most 1280 pixels, so a wide pane's is smaller than the page and x and y are read off it. An
   annotated screenshot draws its index labels into the page itself, so the person's pane shows them for the
