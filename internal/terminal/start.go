@@ -11,6 +11,7 @@ import (
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/agentplugin"
 	"github.com/lichdotdev/lich/internal/artifact"
+	"github.com/lichdotdev/lich/internal/prompt"
 	"github.com/lichdotdev/lich/internal/providers"
 	"github.com/lichdotdev/lich/internal/relay"
 
@@ -50,6 +51,9 @@ func (s *Service) Start(_ context.Context, opts api.StartOptions) (api.None, err
 	// Refused before the spawn rather than dropped in resumeArgs: a fork the
 	// provider cannot spell would reopen the parent's own conversation, and two
 	// cards on one conversation is exactly what a fork promises not to do.
+	if s.store.SessionView(opts.ID) == api.ViewChat || s.spawnOf(opts.ID).chat {
+		return api.None{}, ErrChatView
+	}
 	if opts.Fork && !providers.SupportsFork(opts.Kind) {
 		return api.None{}, fmt.Errorf("%s cannot fork a conversation — it only resumes one", opts.Kind)
 	}
@@ -135,77 +139,11 @@ func (s *Service) spawnSession(opts api.StartOptions, profileDir, name string, o
 		opts.Cwd = home
 	}
 
-	// The MCP registration is withheld without a transport for the same reason
-	// the hook coordinates are: the server it points at would have nothing to
-	// talk to, so the session would carry tools that can only fail.
-	mcpBin := ""
-	if s.ws != nil {
-		mcpBin = lichBin()
-	}
-	skipPermissions := s.store.SkipPermissions(opts.Kind, opts.ProjectID, opts.Cwd)
-	ultracode := s.store.Ultracode(opts.Kind) || s.store.SessionUltracode(opts.ID)
-	depth := s.store.SessionSubagentDepth(opts.ID)
-	cardsOn := s.subagentCardsOn(opts.Kind, profileDir, depth)
-	// The model and effort are read from the row rather than passed in, so every
-	// spawn that starts a conversation of its own gets them: the window's first
-	// view and a restart. A resume leaves them to the provider (modelArgs).
-	unfold := pasteUnfoldEnv
-	if oc2 {
-		unfold = opencode2PasteUnfoldEnv
-	}
-	env, err := unfold(
-		subagentEnv(s.sessionEnv(opts.ID, opts.ProjectID, opts.Cwd), opts.Kind, depth, cardsOn), opts.Kind, s.store.PasteUnfold(opts.Kind),
-	)
+	l, err := s.prepareSpawnLocked(opts, profileDir, name, oc2, ptyArgs)
 	if err != nil {
 		return nil, "", err
 	}
-	env = mcpEnv(env, opts.Kind, mcpBin)
-	filesKey := s.store.SessionFilesKey(opts.ID)
-	artifacts := sessionArtifactDir(s.artifactDir, filesKey)
-	if artifacts != "" {
-		env = append(env, artifact.EnvVar+"="+artifacts)
-	}
-	route, lang := subagentRoute(opts.Kind, profileDir, depth, cardsOn), s.promptLanguage()
-	env = briefingEnv(env, opts.Kind, route, lang)
-	model := s.store.SessionModel(opts.ID)
-	if oc2 {
-		if env, err = opencode2ModelEnv(env, model, opts.Resume); err != nil {
-			return nil, "", err
-		}
-		model = ""
-	}
-	// The configured binary still runs, so a wrapper exporting a
-	// CLAUDE_CONFIG_DIR (or CODEX_HOME) of its own wins over the profile.
-	if profileDir != "" {
-		env = profileEnv(opts.Kind, env, profileDir)
-	}
-	// Decided before the argv, which carries the trust flags a confined spawn
-	// is given (confinedTrustArgs).
-	inSandbox := confined(s.store, opts.ID, opts.Kind, opts.ProjectID, opts.Cwd)
-	// Here rather than beside the other trust writes in Start, before the lock,
-	// because it depends on the sandbox verdict; it reads one small file and
-	// asks git once, and only for an Antigravity spawn.
-	inheritAntigravityTrust(opts.Kind, opts.Cwd, inSandbox)
-	spec := ptySpec{
-		bin: resolveCommand(opts.Kind, s.store.ProviderBin(opts.Kind, opts.ProjectID), userShell()),
-		args: slices.Concat(confinedTrustArgs(opts.Kind, opts.Cwd, inSandbox), codexBriefingArgs(opts.Kind, opts.Resume, route, lang), opencode2Args(oc2, providerArgs(
-			opts.Kind, name, opts.Resume, model, s.store.SessionEffort(opts.ID), mcpBin,
-			kiroPluginAgent(opts.Kind), opts.Fork, skipPermissions, ultracode, route, lang,
-		))),
-		dir:  opts.Cwd,
-		env:  env,
-		cols: opts.Cols,
-		rows: opts.Rows,
-	}
-	spec = withShellIntegration(spec, opts.Kind, s.shellIntegrationDir)
-	spec = s.withAccountToken(spec, opts.Cwd, inSandbox)
-	spec, err = s.withScopedToken(spec, opts.ID, inSandbox)
-	if err != nil {
-		return nil, "", err
-	}
-	creds := s.sandboxCredentials(opts.ProjectID, opts.Cwd, inSandbox)
-	reads := []string{sessionDropDir(s.dropDir, filesKey, inSandbox), s.shellIntegrationDir}
-	spec, skippedLinks := wrapSandbox(spec, opts.Kind, userHome(), reads, []string{artifacts}, profileDir, inSandbox, creds)
+	spec := l.spec
 	header, err := encodeFrame(opts.ID, nil)
 	if err != nil {
 		return nil, "", fmt.Errorf("start %q: %w", opts.ID, err)
@@ -238,8 +176,9 @@ func (s *Service) spawnSession(opts api.StartOptions, profileDir, name string, o
 		// becomes ready once: quiet is the signal, and silence from the start
 		// is quiet too.
 		lastOut:      time.Now(),
-		confined:     inSandbox,
-		sandboxLinks: skippedLinks,
+		confined:     l.confined,
+		sandboxLinks: l.links,
+		reaped:       make(chan struct{}),
 	}
 	s.sessions[opts.ID] = sess
 	// Outside mu's protection by design (see Service.spawns), and stored with the
@@ -247,6 +186,111 @@ func (s *Service) spawnSession(opts api.StartOptions, profileDir, name string, o
 	s.spawns.Store(opts.ID, spawn{kind: opts.Kind, cwd: opts.Cwd, projectID: opts.ProjectID, profile: profileSlug(opts.Kind, profileDir)})
 	go s.stream(opts.ID, sess)
 	return sess, opts.Cwd, nil
+}
+
+// spawnLaunch is a spawn worked out and not yet started: the process to run,
+// whether it runs confined, and the home paths its sandbox skipped for being
+// symlinks.
+type spawnLaunch struct {
+	spec     ptySpec
+	confined bool
+	links    []string
+}
+
+// spawnArgs is everything a spawn's argv is decided from.
+type spawnArgs struct {
+	kind, cwd, name, resume, model, effort, lichBin, agent string
+	fork, skipPermissions, ultracode, oc2, confined        bool
+	route                                                  relay.SubagentRoute
+	lang                                                   prompt.Lang
+}
+
+// ptyArgs is the argv of a session's terminal.
+func ptyArgs(a spawnArgs) []string {
+	return slices.Concat(confinedTrustArgs(a.kind, a.cwd, a.confined), codexBriefingArgs(a.kind, a.resume, a.route, a.lang), opencode2Args(a.oc2, providerArgs(
+		a.kind, a.name, a.resume, a.model, a.effort, a.lichBin, a.agent, a.fork, a.skipPermissions, a.ultracode, a.route, a.lang,
+	)))
+}
+
+// prepareSpawnLocked works out everything one spawn of session opts.ID runs
+// with but its argv, which argv decides: the environment, the profile, the
+// tokens and the sandbox are the same whichever mode the provider runs in.
+// opts.Cwd is already resolved. Called with s.mu held, which guards s.env.
+func (s *Service) prepareSpawnLocked(opts api.StartOptions, profileDir, name string, oc2 bool, argv func(spawnArgs) []string) (spawnLaunch, error) {
+	// The MCP registration is withheld without a transport for the same reason
+	// the hook coordinates are: the server it points at would have nothing to
+	// talk to, so the session would carry tools that can only fail.
+	mcpBin := ""
+	if s.ws != nil {
+		mcpBin = lichBin()
+	}
+	skipPermissions := s.store.SkipPermissions(opts.Kind, opts.ProjectID, opts.Cwd)
+	ultracode := s.store.Ultracode(opts.Kind) || s.store.SessionUltracode(opts.ID)
+	depth := s.store.SessionSubagentDepth(opts.ID)
+	cardsOn := s.subagentCardsOn(opts.Kind, profileDir, depth)
+	// The model and effort are read from the row rather than passed in, so every
+	// spawn that starts a conversation of its own gets them: the window's first
+	// view and a restart. A resume leaves them to the provider (modelArgs).
+	unfold := pasteUnfoldEnv
+	if oc2 {
+		unfold = opencode2PasteUnfoldEnv
+	}
+	env, err := unfold(
+		subagentEnv(s.sessionEnv(opts.ID, opts.ProjectID, opts.Cwd), opts.Kind, depth, cardsOn), opts.Kind, s.store.PasteUnfold(opts.Kind),
+	)
+	if err != nil {
+		return spawnLaunch{}, err
+	}
+	env = mcpEnv(env, opts.Kind, mcpBin)
+	filesKey := s.store.SessionFilesKey(opts.ID)
+	artifacts := sessionArtifactDir(s.artifactDir, filesKey)
+	if artifacts != "" {
+		env = append(env, artifact.EnvVar+"="+artifacts)
+	}
+	route, lang := subagentRoute(opts.Kind, profileDir, depth, cardsOn), s.promptLanguage()
+	env = briefingEnv(env, opts.Kind, route, lang)
+	model := s.store.SessionModel(opts.ID)
+	if oc2 {
+		if env, err = opencode2ModelEnv(env, model, opts.Resume); err != nil {
+			return spawnLaunch{}, err
+		}
+		model = ""
+	}
+	// The configured binary still runs, so a wrapper exporting a
+	// CLAUDE_CONFIG_DIR (or CODEX_HOME) of its own wins over the profile.
+	if profileDir != "" {
+		env = profileEnv(opts.Kind, env, profileDir)
+	}
+	// Decided before the argv, which carries the trust flags a confined spawn
+	// is given (confinedTrustArgs).
+	inSandbox := confined(s.store, opts.ID, opts.Kind, opts.ProjectID, opts.Cwd)
+	// Here rather than beside the other trust writes in Start, before the lock,
+	// because it depends on the sandbox verdict; it reads one small file and
+	// asks git once, and only for an Antigravity spawn.
+	inheritAntigravityTrust(opts.Kind, opts.Cwd, inSandbox)
+	spec := ptySpec{
+		bin: resolveCommand(opts.Kind, s.store.ProviderBin(opts.Kind, opts.ProjectID), userShell()),
+		args: argv(spawnArgs{
+			kind: opts.Kind, cwd: opts.Cwd, name: name, resume: opts.Resume, model: model,
+			effort: s.store.SessionEffort(opts.ID), lichBin: mcpBin, agent: kiroPluginAgent(opts.Kind),
+			fork: opts.Fork, skipPermissions: skipPermissions, ultracode: ultracode, oc2: oc2,
+			confined: inSandbox, route: route, lang: lang,
+		}),
+		dir:  opts.Cwd,
+		env:  env,
+		cols: opts.Cols,
+		rows: opts.Rows,
+	}
+	spec = withShellIntegration(spec, opts.Kind, s.shellIntegrationDir)
+	spec = s.withAccountToken(spec, opts.Cwd, inSandbox)
+	spec, err = s.withScopedToken(spec, opts.ID, inSandbox)
+	if err != nil {
+		return spawnLaunch{}, err
+	}
+	creds := s.sandboxCredentials(opts.ProjectID, opts.Cwd, inSandbox)
+	reads := []string{sessionDropDir(s.dropDir, filesKey, inSandbox), s.shellIntegrationDir}
+	spec, skippedLinks := wrapSandbox(spec, opts.Kind, userHome(), reads, []string{artifacts}, profileDir, inSandbox, creds)
+	return spawnLaunch{spec: spec, confined: inSandbox, links: skippedLinks}, nil
 }
 
 // providerKind resolves which provider mark a session-start report puts on a
@@ -270,6 +314,9 @@ type spawn struct {
 	cwd       string
 	projectID string
 	profile   string
+	// chat is whether the session runs as a chat (StartChat) rather than in
+	// its terminal.
+	chat bool
 }
 
 // spawnOf is how a live session's PTY was started, or the zero spawn once it is

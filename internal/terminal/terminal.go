@@ -68,9 +68,12 @@ type mcpEvent = api.SessionMCP
 // window attaching to the session can reseed its scrollback. outbox carries
 // the coalesced output to the window off the PTY read path.
 type session struct {
-	pty    ptyHandle
-	out    *coalescer
-	done   chan struct{}
+	pty  ptyHandle
+	out  *coalescer
+	done chan struct{}
+	// reaped closes once stream has waited the child out, which is what
+	// StopTerminal waits on; nil on a PTY nobody waits for (StartService).
+	reaped chan struct{}
 	replay *replayBuffer
 	outbox *outbox
 	// feed holds a PTY read between its append to replay and its write to
@@ -149,6 +152,7 @@ type Store interface {
 	SessionUltracode(sessionID string) bool
 	SessionSubagentDepth(sessionID string) int
 	SessionFilesKey(sessionID string) string
+	SessionView(sessionID string) string
 	InheritUltracode(sessionID, forkedFrom string) error
 	InheritSubagent(sessionID, forkedFrom string) error
 	SessionSandbox(sessionID string) string
@@ -430,6 +434,16 @@ func (s *Service) onInput(id string, data []byte) {
 // onHookState is the transport's state-report callback, one per hook a
 // session's provider fires.
 func (s *Service) onHookState(req hookRequest) {
+	if s.spawnOf(req.SessionID).chat {
+		s.beatHandsOn(req.SessionID, 0)
+		return
+	}
+	s.applyState(req)
+}
+
+// applyState is one state report of session req.SessionID, from its hooks or
+// from its chat (ReportChatState).
+func (s *Service) applyState(req hookRequest) {
 	// Ahead of every filter below, because a beat is not about what the
 	// card can draw: any hook naming a session is proof that session was
 	// being worked, whatever endpoint it arrived on and whether or not

@@ -35,6 +35,9 @@ func (s *Service) stream(id string, sess *session) {
 		}
 	}
 	code, _ := p.Wait()
+	if sess.reaped != nil {
+		close(sess.reaped)
+	}
 	// Release the PTY handle: on a natural child exit nobody else closes it
 	// (Close only reaps sessions still in the map), and after a user-driven
 	// Close this is the second one — a no-op each seam has to make safe, since
