@@ -75,6 +75,19 @@ func (p *panelPeek) update(now time.Time, staying bool) time.Time {
 	return time.Time{}
 }
 
+// openNow brings the panel out at now without waiting for the pointer to
+// rest. A pointer already gone on past the trigger gets the full delay to
+// reach the panel.
+func (p *panelPeek) openNow(now time.Time) {
+	if p.muted || p.shown {
+		return
+	}
+	p.shown = true
+	if !p.over {
+		p.since = now
+	}
+}
+
 // hold brings the panel out until the pointer has been in it: at once if it
 // is in it already.
 func (p *panelPeek) hold() { p.shown, p.held, p.muted = true, !p.over, false }

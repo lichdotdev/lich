@@ -4,6 +4,7 @@ import (
 	"image"
 
 	"gioui.org/io/event"
+	"gioui.org/io/pointer"
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/op/clip"
@@ -17,11 +18,51 @@ import (
 type dockPeek struct {
 	panelPeek
 	slide dockSlide
-	edge  hoverArea
+	edge  windowEdge
 	panel hoverArea
+	// stage is the pointer on the stage beside the dock: back there from
+	// out of the window, it is no longer on its way to the dock.
+	stage hoverArea
 	// tab is the tab the dock was on last frame: a tab opened from anywhere
 	// (the footer, a hotkey, a path's Ctrl+click) brings a collapsed dock out.
 	tab dockTab
+}
+
+// windowEdge is the strip at the window's right edge that brings the
+// collapsed dock out the moment the pointer touches it. out is the pointer
+// gone out of the window across it, which counts as still on it.
+type windowEdge struct {
+	over, out bool
+	strip     image.Rectangle
+}
+
+// read takes the strip's events, and reports whether the pointer touched it
+// since the last frame, even if it went on past it within the same frame.
+func (e *windowEdge) read(gtx C) (touched bool) {
+	for {
+		ev, ok := gtx.Event(pointer.Filter{Target: e, Kinds: pointer.Enter | pointer.Leave | pointer.Cancel})
+		if !ok {
+			return touched
+		}
+		pe, ok := ev.(pointer.Event)
+		if !ok {
+			continue
+		}
+		e.over = pe.Kind == pointer.Enter
+		touched = touched || e.over
+		// Out of the window, the pointer's last place is still on the strip;
+		// onto the stage or the dock, it is left of it.
+		e.out = pe.Kind == pointer.Leave && pe.Position.X >= float32(e.strip.Min.X)
+	}
+}
+
+// watch lays the strip over r, letting every event through to what is under
+// it.
+func (e *windowEdge) watch(gtx C, r image.Rectangle) {
+	e.strip = r
+	defer pointer.PassOp{}.Push(gtx.Ops).Pop()
+	defer clip.Rect(r).Push(gtx.Ops).Pop()
+	event.Op(gtx.Ops, e)
 }
 
 // visible is whether the dock is on screen: beside the terminal, full screen,
@@ -68,7 +109,7 @@ func (u *window) dockPeek(gtx C, v stageView) error {
 	d := u.dock
 	p := &d.peek
 	if d.tab == dockClosed || v.home || !d.collapsed || d.fullscreen {
-		p.panelPeek, p.edge, p.panel, p.tab = panelPeek{}, hoverArea{}, hoverArea{}, d.tab
+		p.panelPeek, p.edge, p.panel, p.stage, p.tab = panelPeek{}, windowEdge{}, hoverArea{}, hoverArea{}, d.tab
 		p.slide.snap(false)
 		return nil
 	}
@@ -76,14 +117,24 @@ func (u *window) dockPeek(gtx C, v stageView) error {
 		d.bringOut()
 	}
 	p.tab = d.tab
-	p.edge.read(gtx)
+	touched := p.edge.read(gtx)
 	p.panel.read(gtx)
-	p.point(gtx.Now, p.edge.over || p.panel.over)
+	p.stage.read(gtx)
+	if p.stage.over || p.panel.over {
+		p.edge.out = false
+	}
+	p.point(gtx.Now, p.edge.over || p.edge.out || p.panel.over)
+	if touched || p.edge.over || p.edge.out {
+		// The window's edge is a place you throw the pointer at, not one it
+		// crosses on its way: it brings the dock out at once.
+		p.openNow(gtx.Now)
+	}
 	_, commenting := u.comments.edited()
 	if wake := p.update(gtx.Now, d.holdsKeys(gtx) || d.resize.Dragging() || commenting); !wake.IsZero() {
 		gtx.Execute(op.InvalidateCmd{At: wake})
 	}
 	size := gtx.Constraints.Max
+	p.stage.watch(gtx, image.Rectangle{Max: size})
 	// The edge is the gutter between the stage and the window's right edge,
 	// where the pointer lands when it is thrown to the side.
 	p.edge.watch(gtx, image.Rect(size.X, 0, size.X+gtx.Dp(gutter), size.Y))

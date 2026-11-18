@@ -107,3 +107,14 @@ func TestPeekDismissedStaysInUntilThePointerLeaves(t *testing.T) {
 		t.Fatal("did not come out again once the pointer left and came back")
 	}
 }
+
+func TestPeekOpenedAtOnceGivesAPointerPastItTheFullDelay(t *testing.T) {
+	var p panelPeek
+	p.openNow(peekAt(time.Minute))
+	if p.update(peekAt(time.Minute+peekCloseDelay-time.Millisecond), false); !p.shown {
+		t.Fatal("went back before a pointer that flicked past the edge could reach it")
+	}
+	if p.update(peekAt(time.Minute+peekCloseDelay), false); p.shown {
+		t.Fatal("still out once the pointer stayed away for the delay")
+	}
+}

@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **Draw rectangles, ellipses and arrows on a browser page.** Turn on Draw, choose a shape from the outlined tool button, and drag to place it.
-- **The collapsed sidebar and dock come out when you point at them.** Rest the pointer on the sidebar's rail, or on the window's right edge with the dock collapsed by its new collapse button, and the panel opens over the terminal without resizing it; it goes back when the pointer leaves.
+- **The collapsed sidebar and dock come out when you point at them.** Rest the pointer on the sidebar's rail, or touch the window's right edge with the dock collapsed by its new collapse button, and the panel opens over the terminal without resizing it; it goes back when the pointer leaves.
 - **Click an installed extension to see its catalog page.** In Settings › Extensions › Installed, a row the catalog lists opens the same detail its card does, with Update when there is a newer release.
 
 ### Changed

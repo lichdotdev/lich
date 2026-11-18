@@ -353,7 +353,10 @@ the footer; it outlives the panel, and the button stays lit with a dot while it 
 A collapsed panel comes out over the stage when the pointer rests on it (`panel_peek.go`): the sidebar from its
 rail's tree, the dock from the window's right gutter once its collapse button took it off the stage. It is the
 open panel, drawn over the terminal at the place it stands when open, so the terminal keeps its width and
-nothing the agent printed rewraps. It comes out after `peekOpenDelay` (150ms) of rest and goes back
+nothing the agent printed rewraps. The sidebar comes out after `peekOpenDelay` (150ms) of rest on the rail; the
+dock comes out the moment the pointer touches the window's edge, even a flick that goes on past it within one frame,
+since the edge is somewhere you throw the pointer, not something it crosses on its way. A pointer gone out of the
+window across that edge still counts as on it until it comes back onto the stage. A panel goes back
 `peekCloseDelay` (300ms) after the pointer left it, never while a menu, a field or a drag in it is in use. Only
 the rail's tree brings the sidebar out: over expand or the footer's buttons it would cover the button on its way
 to a click. The button that collapses a panel keeps it open from the peek, in place, with no morph or slide. The

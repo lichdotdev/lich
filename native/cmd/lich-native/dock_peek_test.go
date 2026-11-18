@@ -3,8 +3,10 @@ package main
 import (
 	"image"
 	"testing"
+	"time"
 
 	"gioui.org/f32"
+	"gioui.org/io/pointer"
 	"gioui.org/layout"
 
 	"github.com/lichdotdev/lich/native/ui"
@@ -50,9 +52,9 @@ func peekDockFrames(t *testing.T) (*window, *frameRig) {
 	return u, r
 }
 
-// windowEdge is a point in the window's right gutter, where a pointer thrown
+// edgePoint is a point in the window's right gutter, where a pointer thrown
 // to the side lands.
-var windowEdge = f32.Pt(float32(rigWindow.X-2), 300)
+var edgePoint = f32.Pt(float32(rigWindow.X-2), 300)
 
 func TestCollapsedDockComesOutFromTheWindowEdge(t *testing.T) {
 	u, r := peekDockFrames(t)
@@ -60,12 +62,11 @@ func TestCollapsedDockComesOutFromTheWindowEdge(t *testing.T) {
 	if u.dock.visible() {
 		t.Fatal("out before the pointer came to the edge")
 	}
-	r.hover(windowEdge)
-	r.now = r.now.Add(peekOpenDelay)
-	r.waitFor(t, "No uncommitted changes")
+	r.hover(edgePoint)
 	if !u.dock.peek.shown {
-		t.Fatal("still in once the pointer rested on the window's edge")
+		t.Fatal("still in the moment the pointer touched the window's edge")
 	}
+	r.waitFor(t, "No uncommitted changes")
 	r.hover(f32.Pt(100, 300))
 	r.now = r.now.Add(peekCloseDelay)
 	r.settle(t)
@@ -77,7 +78,7 @@ func TestCollapsedDockComesOutFromTheWindowEdge(t *testing.T) {
 func TestDockExpandFromThePeekPutsItBackOnTheStage(t *testing.T) {
 	u, r := peekDockFrames(t)
 	r.settle(t)
-	r.hover(windowEdge)
+	r.hover(edgePoint)
 	r.now = r.now.Add(peekOpenDelay)
 	r.waitFor(t, "No uncommitted changes")
 	r.click(t, r.smallestClickIn(t, image.Rect(rigWindow.X-92-6, 0, rigWindow.X-64-6, 48)))
@@ -133,5 +134,39 @@ func TestDockShownFromElsewhereComesOutOnTheTabItIsHiddenIn(t *testing.T) {
 	r.waitFor(t, "No uncommitted changes")
 	if !u.dock.peek.shown {
 		t.Fatal("a path opened in the hidden Code tab left the collapsed dock in")
+	}
+}
+
+func TestDockComesOutForAPointerThatOnlyCrossesTheEdge(t *testing.T) {
+	u, r := peekDockFrames(t)
+	r.settle(t)
+	// Both moves land in one frame, as a flick past the edge does.
+	r.router.Queue(
+		pointer.Event{Kind: pointer.Move, Source: pointer.Mouse, Position: edgePoint},
+		pointer.Event{Kind: pointer.Move, Source: pointer.Mouse, Position: f32.Pt(900, 300)},
+	)
+	r.frame()
+	r.frame()
+	if !u.dock.peek.shown {
+		t.Fatal("a pointer that crossed the edge brought nothing out")
+	}
+}
+
+func TestDockStaysOutWhileThePointerIsOutOfTheWindowPastTheEdge(t *testing.T) {
+	u, r := peekDockFrames(t)
+	r.settle(t)
+	r.hover(edgePoint)
+	r.router.Queue(pointer.Event{Kind: pointer.Leave, Source: pointer.Mouse, Position: edgePoint})
+	r.frame()
+	r.now = r.now.Add(time.Minute)
+	r.settle(t)
+	if !u.dock.peek.shown {
+		t.Fatal("went back while the pointer was out of the window past the edge")
+	}
+	r.hover(f32.Pt(100, 300))
+	r.now = r.now.Add(peekCloseDelay)
+	r.settle(t)
+	if u.dock.peek.shown {
+		t.Fatal("still out once the pointer came back onto the stage")
 	}
 }
