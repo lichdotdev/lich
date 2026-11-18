@@ -377,7 +377,7 @@ func run(w *app.Window, rt backend.Runtime) error {
 	u.git = newGitPanel(u.ctx, client, &u.root, invalidate, notify, *flagFont, unit.Sp(*flagSize))
 	u.git.openSession = u.focusSession
 	u.git.wrote = u.review.wrote
-	u.git.showReview = func() { u.dock.tab = dockReview }
+	u.git.showReview = func() { u.dock.show(dockReview) }
 	u.footer.git = u.git
 	u.footer.panel = u.extPanel
 	u.footer.extensions = &u.model.extensions

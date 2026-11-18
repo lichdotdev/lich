@@ -91,7 +91,7 @@ func (u *window) openCode(t codeTarget) {
 	if !u.model.sessionOnScreen(t.session) {
 		u.focusSession(view.projectID, t.session)
 	}
-	u.dock.tab = dockCode
+	u.dock.show(dockCode)
 	note := agentNote{text: t.comment, kind: view.Kind, author: u.model.providerName(view.Kind)}
 	u.dock.code.showLines(view.path, t.rel, t.line, t.end, note)
 }

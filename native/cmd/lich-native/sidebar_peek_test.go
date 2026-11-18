@@ -5,14 +5,18 @@ import (
 	"testing"
 
 	"gioui.org/f32"
+	"gioui.org/io/event"
+	"gioui.org/io/pointer"
+	"gioui.org/op/clip"
 
 	"github.com/lichdotdev/lich/native/ui"
 )
 
 // peekFrames is the collapsed sidebar on a wide window, with its peek drawn
 // over the rest as the window draws it; acted is the last session a peek
-// click activated.
-func peekFrames(t *testing.T) (s *sidebar, r *frameRig, acted *string) {
+// click activated. stage, when set, is laid out under the peek, as the
+// window lays the stage out before it.
+func peekFrames(t *testing.T, stage func(C)) (s *sidebar, r *frameRig, acted *string) {
 	t.Helper()
 	m := modelOn("a")
 	root := new(ui.Root)
@@ -22,6 +26,9 @@ func peekFrames(t *testing.T) (s *sidebar, r *frameRig, acted *string) {
 	r = newFrameRig(image.Pt(800, 600), func(gtx C, th *ui.Theme) {
 		root.Layout(gtx, func(gtx C) D {
 			s.layout(gtx, th, m, "a1")
+			if stage != nil {
+				stage(gtx)
+			}
 			if a := s.peekLayout(gtx, th, m, "a1", image.Point{}); a.activate != "" {
 				*acted = a.activate
 			}
@@ -30,6 +37,9 @@ func peekFrames(t *testing.T) (s *sidebar, r *frameRig, acted *string) {
 	})
 	return s, r, acted
 }
+
+// railWidthPx is the rail's width in the rig, at a pixel a dp.
+const railWidthPx = 50
 
 // railTree is a point on the rail's tree, under its header row.
 var railTree = f32.Pt(25, 90)
@@ -43,7 +53,7 @@ func rest(t *testing.T, r *frameRig, p f32.Point) {
 }
 
 func TestRailBringsTheSidebarOutOnceThePointerRestsOnItsTree(t *testing.T) {
-	s, r, _ := peekFrames(t)
+	s, r, _ := peekFrames(t, nil)
 	r.settle(t)
 	r.hover(railTree)
 	if s.peek.shown {
@@ -60,7 +70,7 @@ func TestRailBringsTheSidebarOutOnceThePointerRestsOnItsTree(t *testing.T) {
 }
 
 func TestRailExpandButtonBringsNothingOut(t *testing.T) {
-	s, r, _ := peekFrames(t)
+	s, r, _ := peekFrames(t, nil)
 	r.settle(t)
 	rest(t, r, f32.Pt(25, 25))
 	if s.peek.shown {
@@ -69,7 +79,7 @@ func TestRailExpandButtonBringsNothingOut(t *testing.T) {
 }
 
 func TestPeekGoesBackOnceThePointerLeaves(t *testing.T) {
-	s, r, _ := peekFrames(t)
+	s, r, _ := peekFrames(t, nil)
 	r.settle(t)
 	rest(t, r, railTree)
 	r.hover(f32.Pt(700, 300))
@@ -81,7 +91,7 @@ func TestPeekGoesBackOnceThePointerLeaves(t *testing.T) {
 }
 
 func TestPeekStaysOutWhileThePointerIsOnIt(t *testing.T) {
-	s, r, _ := peekFrames(t)
+	s, r, _ := peekFrames(t, nil)
 	r.settle(t)
 	rest(t, r, railTree)
 	r.hover(f32.Pt(200, 300))
@@ -93,7 +103,7 @@ func TestPeekStaysOutWhileThePointerIsOnIt(t *testing.T) {
 }
 
 func TestPeekCollapseButtonKeepsTheSidebarOpen(t *testing.T) {
-	s, r, _ := peekFrames(t)
+	s, r, _ := peekFrames(t, nil)
 	r.settle(t)
 	rest(t, r, railTree)
 	w := int(s.widthRem * remDp)
@@ -103,5 +113,48 @@ func TestPeekCollapseButtonKeepsTheSidebarOpen(t *testing.T) {
 	}
 	if s.morph.active() {
 		t.Error("kept open with a morph, though the panel already stands where it lands")
+	}
+}
+
+func TestPeekSessionClickActivatesItAndSendsThePanelBack(t *testing.T) {
+	s, r, acted := peekFrames(t, nil)
+	r.settle(t)
+	rest(t, r, railTree)
+	r.click(t, r.at(t, "A two"))
+	if *acted != "a2" {
+		t.Fatalf("activated %q, want a2", *acted)
+	}
+	if s.peek.shown {
+		t.Error("still out after a session was picked in it")
+	}
+}
+
+func TestPeekKeepsItsClicksFromTheTerminalUnderIt(t *testing.T) {
+	presses := new(int)
+	// The terminal stands right of the rail, under where the panel comes out.
+	terminal := func(gtx C) {
+		area := clip.Rect{Min: image.Pt(railWidthPx, 0), Max: gtx.Constraints.Max}.Push(gtx.Ops)
+		event.Op(gtx.Ops, presses)
+		area.Pop()
+		for {
+			ev, ok := gtx.Event(pointer.Filter{Target: presses, Kinds: pointer.Press})
+			if !ok {
+				break
+			}
+			if _, ok := ev.(pointer.Event); ok {
+				*presses++
+			}
+		}
+	}
+	s, r, _ := peekFrames(t, terminal)
+	r.settle(t)
+	rest(t, r, railTree)
+	r.click(t, f32.Pt(150, 450))
+	if *presses != 0 || !s.peek.shown {
+		t.Fatalf("a click on the panel reached the terminal %d times; out %v", *presses, s.peek.shown)
+	}
+	r.click(t, f32.Pt(600, 450))
+	if *presses != 1 {
+		t.Fatalf("a click beside the panel reached the terminal %d times, want 1", *presses)
 	}
 }

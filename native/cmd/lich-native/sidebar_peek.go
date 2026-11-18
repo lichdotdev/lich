@@ -8,7 +8,9 @@ import (
 	"gioui.org/op"
 	"gioui.org/op/clip"
 
+	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
+	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
 // sidebarPeek is the collapsed sidebar brought out: the pointer resting on
@@ -57,6 +59,10 @@ func (s *sidebar) peekLayout(gtx C, th *ui.Theme, m *model, active string, at im
 	area := clip.UniformRRect(image.Rectangle{Max: size}, gtx.Dp(ui.RadiusLG)).Push(gtx.Ops)
 	event.Op(gtx.Ops, &p.panel)
 	gtx.Constraints = layout.Exact(size)
+	if share < 1 {
+		// A moving panel takes no input; the slide asked for its frames.
+		gtx = gtx.Disabled()
+	}
 	_, act := s.panel(gtx, th, m, active)
 	area.Pop()
 	if act.activate != "" || act.launch.kind != "" || act.worktree {
@@ -68,7 +74,32 @@ func (s *sidebar) peekLayout(gtx C, th *ui.Theme, m *model, active string, at im
 // peekInUse is whether something in the sidebar is in use, which keeps it out
 // after the pointer has left: a menu, a field, a dialog, a drag.
 func (s *sidebar) peekInUse() bool {
-	return s.holdsKeys() || s.carry.Carrying() != "" || s.sort.Dragging() != ""
+	if s.holdsKeys() || s.carry.Carrying() != "" || s.sort.Dragging() != "" {
+		return true
+	}
+	for _, m := range s.moreMenus {
+		if m.Opened() {
+			return true
+		}
+	}
+	return false
+}
+
+// collapseToggle runs the header's collapse button and says how to draw it.
+// Out over the stage the sidebar is collapsed already, and the same button
+// keeps it open instead.
+func (s *sidebar) collapseToggle(gtx C, act *sidebarAction) (*icons.Icon, string) {
+	if s.header.collapse.Clicked(gtx) {
+		if s.open {
+			s.setOpen(gtx, false, act)
+		} else {
+			s.pinPeek(gtx, act)
+		}
+	}
+	if !s.open {
+		return icExpand, i18n.T("sidebar.sidebarRail.expand")
+	}
+	return icCollapse, i18n.T("sidebar.sessionSidebar.collapse")
 }
 
 // pinPeek keeps the sidebar that is out open, in place: no morph, since the

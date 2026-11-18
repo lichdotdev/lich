@@ -125,3 +125,13 @@ func TestDockCollapsedIsStored(t *testing.T) {
 		t.Fatalf("stored collapsed reads %v, %v", got, err)
 	}
 }
+
+func TestDockShownFromElsewhereComesOutOnTheTabItIsHiddenIn(t *testing.T) {
+	u, r := peekDockFrames(t)
+	r.settle(t)
+	u.dock.show(dockReview)
+	r.waitFor(t, "No uncommitted changes")
+	if !u.dock.peek.shown {
+		t.Fatal("a path opened in the hidden Code tab left the collapsed dock in")
+	}
+}

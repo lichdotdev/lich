@@ -179,8 +179,7 @@ func (d *dock) toggleExtension(k extensionKey) {
 // dock out of sight comes out on t instead.
 func (d *dock) toggle(t dockTab) {
 	if !d.visible() {
-		d.tab = t
-		d.bringOut()
+		d.show(t)
 		return
 	}
 	d.tab = d.tab.toggled(t)

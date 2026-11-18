@@ -49,6 +49,13 @@ func (d *dock) setCollapsed(collapsed bool) {
 	d.peek.slide.snap(false)
 }
 
+// show opens the dock on t from anywhere but its own tabs: the footer, a
+// hotkey, a path's Ctrl+click, the Git panel. A collapsed dock comes out.
+func (d *dock) show(t dockTab) {
+	d.tab = t
+	d.bringOut()
+}
+
 // docked is whether the dock stands beside the terminal this frame, or
 // covers it in full screen.
 func (d *dock) docked(home bool) bool {
@@ -72,7 +79,8 @@ func (u *window) dockPeek(gtx C, v stageView) error {
 	p.edge.read(gtx)
 	p.panel.read(gtx)
 	p.point(gtx.Now, p.edge.over || p.panel.over)
-	if wake := p.update(gtx.Now, d.holdsKeys(gtx) || d.resize.Dragging()); !wake.IsZero() {
+	_, commenting := u.comments.edited()
+	if wake := p.update(gtx.Now, d.holdsKeys(gtx) || d.resize.Dragging() || commenting); !wake.IsZero() {
 		gtx.Execute(op.InvalidateCmd{At: wake})
 	}
 	size := gtx.Constraints.Max
@@ -91,6 +99,10 @@ func (u *window) dockPeek(gtx C, v stageView) error {
 	area := clip.UniformRRect(image.Rectangle{Max: image.Pt(w, size.Y)}, gtx.Dp(ui.RadiusLG)).Push(gtx.Ops)
 	event.Op(gtx.Ops, &p.panel)
 	gtx.Constraints = layout.Exact(image.Pt(w, size.Y))
+	if share < 1 {
+		// A moving panel takes no input; the slide asked for its frames.
+		gtx = gtx.Disabled()
+	}
 	err := u.layoutDock(gtx, v)
 	area.Pop()
 	return err

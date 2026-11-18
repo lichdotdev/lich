@@ -306,7 +306,7 @@ func (u *window) hotkeyDock(C) {
 // hotkeySearch opens the Code tab on its text search with the field focused.
 func (u *window) hotkeySearch(C) {
 	u.settings.hide()
-	u.dock.tab = dockCode
+	u.dock.show(dockCode)
 	u.dock.code.requestSearch()
 }
 
