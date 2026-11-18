@@ -216,7 +216,8 @@ floating at its foot, centred, with the tab's name in a tooltip. The pill is `Ra
 (`folderTrayAlpha`; a `Sidebar` pill would vanish on the dock, which is `Sidebar` itself), `Space(1)` of padding, `Space(2)` off the dock's edges; the tab on screen is the
 `Accent` fill, the others light on hover. The body stops above the strip, so nothing is covered. The header keeps
 only actions at its right (Review's, collapse, full screen). A tab that holds something (Review with
-changes, Artifacts with files) wears a 5px dot on its icon, never a count or a pill. The dock is never narrower
+changes, Artifacts with files) wears a 5px dot on its icon, never a count or a pill: `Foreground`, or `ToneWait`
+on Review over a checkout with conflicts. The dock is never narrower
 than the pill.
 
 ### The footer's balloons
