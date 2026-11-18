@@ -130,7 +130,10 @@ type AdoptExternalSessionOptions struct {
 	Kind              string `json:"kind"`
 	Path              string `json:"path"`
 	ProviderSessionID string `json:"providerSessionId"`
-	Label             string `json:"label"`
+	// View is how the session is drawn, ViewChat or ViewTerminal; "" reads
+	// as the terminal, what every session was before chats.
+	View  string `json:"view,omitempty"`
+	Label string `json:"label"`
 }
 
 // ReorderSessionsOptions is the full card order of project ProjectID.

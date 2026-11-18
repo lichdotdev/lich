@@ -40,6 +40,12 @@ browser.TabNav(BrowserTabOptions) None
 browser.Tabs(SessionIDOptions) []BrowserTab
 browser.Text(BrowserTextOptions) None
 browser.Type(BrowserTypeOptions) None
+chat.Answer(ChatAnswerOptions) None
+chat.Cancel(SessionIDOptions) None
+chat.History(SessionIDOptions) []ChatItem
+chat.Kinds(None) []string
+chat.Prompt(ChatPromptOptions) None
+chat.SetView(ChatViewOptions) None
 claudeprofile.CancelLogin(ProfileSlugOptions) None
 claudeprofile.CreateProfile(CreateProfileOptions) Profile
 claudeprofile.DeleteProfile(ProfileSlugOptions) None
@@ -302,6 +308,8 @@ event browser-agent BrowserAgentAct
 event browser-download BrowserDownload
 event browser-state BrowserState
 event browser:frame:<id> BrowserFrame
+event chat-item ChatItemUpdate
+event chat-turn ChatTurn
 event claude-profile-login ProfileLogin
 event codex-profile-login ProfileLogin
 event extension-catalog ExtensionCatalog
@@ -342,6 +350,7 @@ event session-title SessionTitle
 event session-todo SessionTodo
 event session-touched SessionTouched
 event session-usage SessionUsage
+event session-view SessionView
 event session-watch SessionWatchChange
 event session-watch-stopped SessionWatchStopped
 event sessions-colored SessionsColored
@@ -580,6 +589,32 @@ BrowserTypeOptions {
 	text string
 	clear bool
 	...BrowserTarget
+}
+
+ChatAnswerOptions {
+	id string
+	itemId string
+	optionId string
+}
+
+ChatItem {
+	id string
+	kind string
+	turn int
+	text,omitempty string
+	tool,omitempty *ChatToolCall
+	permission,omitempty *ChatPermission
+	at int64
+}
+
+ChatPromptOptions {
+	id string
+	text string
+}
+
+ChatViewOptions {
+	id string
+	view string
 }
 
 ProfileSlugOptions {
@@ -1607,6 +1642,7 @@ AdoptExternalSessionOptions {
 	kind string
 	path string
 	providerSessionId string
+	view,omitempty string
 	label string
 }
 
@@ -1987,6 +2023,18 @@ BrowserFrame {
 	data string
 }
 
+ChatItemUpdate {
+	sessionId string
+	item ChatItem
+}
+
+ChatTurn {
+	sessionId string
+	running bool
+	stopReason,omitempty string
+	durationMs,omitempty int64
+}
+
 ProfileLogin {
 	profile string
 	output,omitempty string
@@ -2175,6 +2223,11 @@ SessionUsage {
 	cache,omitempty *SessionCache
 }
 
+SessionView {
+	id string
+	view string
+}
+
 SessionWatchChange {
 	id string
 	watch SessionWatch
@@ -2234,6 +2287,20 @@ BrowserTarget {
 	selector,omitempty string
 	x,omitempty *float64
 	y,omitempty *float64
+}
+
+ChatToolCall {
+	name string
+	title,omitempty string
+	state string
+	output,omitempty string
+	diff,omitempty string
+}
+
+ChatPermission {
+	tool ChatToolCall
+	options []ChatPermitOption
+	chosen,omitempty string
 }
 
 ProfileUpdate {
@@ -2488,6 +2555,12 @@ SessionCache {
 	read int
 	write int
 	uncached int
+}
+
+ChatPermitOption {
+	id string
+	label string
+	kind string
 }
 
 StepLog {
