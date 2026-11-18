@@ -227,6 +227,7 @@ A balloon is a pill on `Sidebar` at `RadiusLG`, `Space(0.5)` around the footer's
 `RadiusMD` hover sits concentric in it, and it stands on the island's 8px edge from the sides and the foot.
 Each is one line: the right side is measured first, the left takes what is left, and an item that does not fit
 is left out with the ones after it, never wrapped onto a second line. A side with nothing to show draws no pill.
+A balloon is not an island and carries no `Border` hairline: the `Sidebar` ground already sets it off the terminal.
 
 The balloons never cover the agent's prompt. A terminal under them gives up a band at its foot
 (`balloonBand`, the balloon and the 8px edge above and below it), so the PTY has fewer rows and the
