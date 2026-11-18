@@ -5,6 +5,8 @@
     "exitFullScreen": "Sair da tela cheia",
     "fullScreen": "Tela cheia",
     "closePanel": "Fechar painel",
+    "collapsePanel": "Recolher painel",
+    "expandPanel": "Expandir painel",
     "tabArtifacts": "Artifacts"
   },
   "searchResults": {

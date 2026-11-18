@@ -5,6 +5,8 @@
     "exitFullScreen": "退出全屏",
     "fullScreen": "全屏",
     "closePanel": "关闭面板",
+    "collapsePanel": "折叠面板",
+    "expandPanel": "展开面板",
     "tabArtifacts": "产物"
   },
   "searchResults": {

@@ -60,6 +60,7 @@ type sidebar struct {
 	schedule scheduleDialog
 	rail     sidebarRail
 	morph    sidebarMorph
+	peek     sidebarPeek
 	profile  profileFooter
 	services servicesFooter
 	// launchProviders is this frame's m.launchProviders(), what every launch

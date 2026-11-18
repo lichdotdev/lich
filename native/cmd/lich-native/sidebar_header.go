@@ -139,8 +139,18 @@ func pressed(gtx C, tag event.Tag) bool {
 // headerRow is New Session, the filter toggle and the collapse button.
 func (s *sidebar) headerRow(gtx C, th *ui.Theme, m *model, act *sidebarAction) D {
 	h := &s.header
+	// Out over the stage the sidebar is collapsed, and the same button keeps
+	// it open instead.
+	toggle, toggleLabel := icCollapse, i18n.T("sidebar.sessionSidebar.collapse")
+	if !s.open {
+		toggle, toggleLabel = icExpand, i18n.T("sidebar.sidebarRail.expand")
+	}
 	if h.collapse.Clicked(gtx) {
-		s.setOpen(gtx, false, act)
+		if s.open {
+			s.setOpen(gtx, false, act)
+		} else {
+			s.pinPeek(gtx, act)
+		}
 	}
 	entries := append(launchEntries(s.launchProviders, i18n.T("sidebar.sessionLaunchMenuItems.terminal"), func(kind string) { act.launch = launchRequest{kind: kind} }),
 		ui.MenuEntry{Label: i18n.T("sidebar.sessionLaunchMenuItems.worktree"), Icon: icWtBranch, OnClick: func() { act.worktree = true },
@@ -165,7 +175,7 @@ func (s *sidebar) headerRow(gtx C, th *ui.Theme, m *model, act *sidebarAction) D
 		ui.Gap(1),
 		square("filter", i18n.T("sidebar.sessionSidebar.filter"), sideButton{click: &h.search, icon: icSearch, on: h.open}),
 		ui.Gap(1),
-		square("collapse", i18n.T("sidebar.sessionSidebar.collapse"), sideButton{click: &h.collapse, icon: icCollapse, morph: &s.morph, glyph: glyphToggle}),
+		square("collapse", toggleLabel, sideButton{click: &h.collapse, icon: toggle, morph: &s.morph, glyph: glyphToggle}),
 	)
 }
 

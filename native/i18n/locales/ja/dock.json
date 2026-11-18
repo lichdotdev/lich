@@ -5,6 +5,8 @@
     "exitFullScreen": "全画面表示を終了",
     "fullScreen": "全画面表示",
     "closePanel": "パネルを閉じる",
+    "collapsePanel": "パネルを折りたたむ",
+    "expandPanel": "パネルを展開",
     "tabArtifacts": "アーティファクト"
   },
   "searchResults": {

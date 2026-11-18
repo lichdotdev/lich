@@ -50,15 +50,20 @@ var (
 	icDockMaximize = icons.Lucide("maximize-2")
 	icDockMinimize = icons.Lucide("minimize-2")
 	icDockClose    = icons.Lucide("x")
+	icDockCollapse = icons.Lucide("panel-right-close")
+	icDockExpand   = icons.Lucide("panel-right")
 )
 
 // The dock's width key, a backend setting, and its bounds in rem: wide enough for a diff line at the
 // review's 12px font, short of eating the terminal whole.
 const (
-	dockWidthKey   = "lich.dock.width"
-	dockMinRem     = 20
-	dockMaxRem     = 60
-	dockDefaultRem = 28
+	dockWidthKey = "lich.dock.width"
+	// dockCollapsedKey stores whether the dock comes out from the window's
+	// edge rather than standing beside the terminal.
+	dockCollapsedKey = "lich.dock.collapsed"
+	dockMinRem       = 20
+	dockMaxRem       = 60
+	dockDefaultRem   = 28
 	// dockHeaderHeight holds the 28dp tabs 8dp from the top and from the
 	// Separator under it, the inset the sidebar's header keeps.
 	dockHeaderHeight = unit.Dp(44)
@@ -134,9 +139,15 @@ type dock struct {
 	tabs       ui.TabsState
 	full       ui.IconActionState
 	close      ui.IconActionState
-	code       *codeTab
-	review     reviewTab
-	artifacts  *artifactsTab
+	collapse   ui.IconActionState
+	// collapsed is the dock off the stage, out over it from the window's
+	// right edge (peek); saveCollapsed is a click on collapse to store.
+	collapsed     bool
+	saveCollapsed bool
+	peek          dockPeek
+	code          *codeTab
+	review        reviewTab
+	artifacts     *artifactsTab
 	// ext is the extension surface of the dockExtension tab, drawn by
 	// extensions; extAct is what its failed state asked for this frame.
 	ext        extensionKey
@@ -156,12 +167,27 @@ func (d *dock) showsExtension(k extensionKey) bool { return d.tab == dockExtensi
 
 // toggleExtension opens the dock on surface k, and closes it while it shows k.
 func (d *dock) toggleExtension(k extensionKey) {
-	if d.showsExtension(k) {
+	if d.showsExtension(k) && d.visible() {
 		d.tab = dockClosed
 		return
 	}
 	d.tab, d.ext = dockExtension, k
+	d.bringOut()
 }
+
+// toggle opens the dock on t, and closes it while it shows t. A collapsed
+// dock out of sight comes out on t instead.
+func (d *dock) toggle(t dockTab) {
+	if !d.visible() {
+		d.tab = t
+		d.bringOut()
+		return
+	}
+	d.tab = d.tab.toggled(t)
+}
+
+// showing is whether the dock is on screen on t.
+func (d *dock) showing(t dockTab) bool { return d.tab == t && d.visible() }
 
 // takeExtensionAction is what the extension tab's failed state asked for,
 // once.
@@ -293,6 +319,19 @@ func (d *dock) header(gtx C, th *ui.Theme, root *ui.Root, in dockInput) D {
 			}),
 			ui.Gap(1),
 			layout.Rigid(func(gtx C) D {
+				if d.fullscreen {
+					return D{}
+				}
+				icon, label := icDockCollapse, i18n.T("dock.rightDock.collapsePanel")
+				if d.collapsed {
+					icon, label = icDockExpand, i18n.T("dock.rightDock.expandPanel")
+				}
+				dims := th.IconAction(root, &d.collapse, icon, label, false).Layout(gtx)
+				actions += dims.Size.X
+				return dims
+			}),
+			ui.Gap(1),
+			layout.Rigid(func(gtx C) D {
 				dims := th.IconAction(root, &d.full, fullIcon, fullLabel, false).Layout(gtx)
 				actions += dims.Size.X
 				return dims
@@ -353,6 +392,9 @@ func (d *dock) act(gtx C) {
 	for d.close.Click.Clicked(gtx) {
 		d.tab = dockClosed
 	}
+	for d.collapse.Click.Clicked(gtx) {
+		d.setCollapsed(!d.collapsed)
+	}
 }
 
 // closeButton is the dock's ghost ×: a 1rem glyph, where an iconAction would
@@ -381,4 +423,13 @@ func loadDockWidth(ctx context.Context, c *backend.Client) (float64, error) {
 
 func saveDockWidth(ctx context.Context, c *backend.Client, rem float64) error {
 	return c.SetSetting(ctx, dockWidthKey, "", strconv.FormatFloat(rem, 'f', -1, 64))
+}
+
+func loadDockCollapsed(ctx context.Context, c *backend.Client) (bool, error) {
+	raw, err := c.GetSetting(ctx, dockCollapsedKey, "")
+	return parseBoolSetting(raw, false), err
+}
+
+func saveDockCollapsed(ctx context.Context, c *backend.Client, collapsed bool) error {
+	return c.SetSetting(ctx, dockCollapsedKey, "", strconv.FormatBool(collapsed))
 }

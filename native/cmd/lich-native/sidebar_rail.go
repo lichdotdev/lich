@@ -73,7 +73,13 @@ func (r *sidebarRail) layout(gtx C, th *ui.Theme, s *sidebar, m *model, active s
 				return layout.Center.Layout(gtx, r.button(th, s, &r.expand, icExpand, i18n.T("sidebar.sidebarRail.expand"), glyphToggle))
 			}),
 			ui.VGap(2),
-			layout.Flexed(1, func(gtx C) D { return r.sessions(gtx, th, s, blocks, active, &act) }),
+			layout.Flexed(1, func(gtx C) D {
+				d := r.sessions(gtx, th, s, blocks, active, &act)
+				// Only the tree brings the sidebar out: the panel would cover
+				// expand and the footer's buttons on their way to a click.
+				s.watchRail(gtx, gtx.Constraints.Max)
+				return d
+			}),
 			layout.Rigid(func(gtx C) D { return r.footer(gtx, th, s, m, &act) }),
 		)
 	})

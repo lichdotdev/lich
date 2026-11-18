@@ -5,6 +5,8 @@
     "exitFullScreen": "Salir de pantalla completa",
     "fullScreen": "Pantalla completa",
     "closePanel": "Cerrar panel",
+    "collapsePanel": "Contraer panel",
+    "expandPanel": "Expandir panel",
     "tabArtifacts": "Artefactos"
   },
   "searchResults": {

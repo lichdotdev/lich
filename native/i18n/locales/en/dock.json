@@ -5,6 +5,8 @@
     "exitFullScreen": "Exit full screen",
     "fullScreen": "Full screen",
     "closePanel": "Close panel",
+    "collapsePanel": "Collapse panel",
+    "expandPanel": "Expand panel",
     "tabArtifacts": "Artifacts"
   },
   "searchResults": {

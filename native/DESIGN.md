@@ -348,6 +348,18 @@ only its node. A session's ring is lit by a 32px square, `Accent` while active. 
 in the open sidebar, and the filter is the open one's field and chips in a panel off the search button in
 the footer; it outlives the panel, and the button stays lit with a dot while it narrows the tree.
 
+### The peek
+
+A collapsed panel comes out over the stage when the pointer rests on it (`panel_peek.go`): the sidebar from its
+rail's tree, the dock from the window's right gutter once its collapse button took it off the stage. It is the
+open panel, drawn over the terminal at the place it stands when open, so the terminal keeps its width and
+nothing the agent printed rewraps. It comes out after `peekOpenDelay` (150ms) of rest and goes back
+`peekCloseDelay` (300ms) after the pointer left it, never while a menu, a field or a drag in it is in use. Only
+the rail's tree brings the sidebar out: over expand or the footer's buttons it would cover the button on its way
+to a click. The button that collapses a panel keeps it open from the peek, in place, with no morph or slide. The
+dock's × still closes it outright; a tab opened from the footer brings a collapsed dock out until the pointer has
+been in it.
+
 ## Motion
 
 Motion says where something came from and where it went. It never holds anything up: a session's pane opens

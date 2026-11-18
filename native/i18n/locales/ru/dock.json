@@ -5,6 +5,8 @@
     "exitFullScreen": "Выйти из полноэкранного режима",
     "fullScreen": "Во весь экран",
     "closePanel": "Закрыть панель",
+    "collapsePanel": "Свернуть панель",
+    "expandPanel": "Развернуть панель",
     "tabArtifacts": "Артефакты"
   },
   "searchResults": {

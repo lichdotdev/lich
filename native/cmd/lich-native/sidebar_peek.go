@@ -1,0 +1,81 @@
+package main
+
+import (
+	"image"
+
+	"gioui.org/io/event"
+	"gioui.org/layout"
+	"gioui.org/op"
+	"gioui.org/op/clip"
+
+	"github.com/lichdotdev/lich/native/ui"
+)
+
+// sidebarPeek is the collapsed sidebar brought out: the pointer resting on
+// the rail draws the open sidebar over the stage, which keeps its width, so
+// the terminal is not resized and nothing the agent printed rewraps.
+type sidebarPeek struct {
+	panelPeek
+	slide dockSlide
+	rail  hoverArea
+	panel hoverArea
+}
+
+// watchRail lays the rail's hover area over the rail just drawn.
+func (s *sidebar) watchRail(gtx C, size image.Point) {
+	s.peek.rail.read(gtx)
+	s.peek.rail.watch(gtx, image.Rectangle{Max: size})
+}
+
+// peekLayout draws the open sidebar over the stage while the collapsed one is
+// out, its corner at the rail's, at, and as tall as the rail.
+func (s *sidebar) peekLayout(gtx C, th *ui.Theme, m *model, active string, at image.Point) sidebarAction {
+	p := &s.peek
+	if s.open || s.morph.active() {
+		// A collapse lands under the pointer, which has to leave the rail
+		// before the panel can come back out.
+		p.panelPeek, p.rail, p.panel = panelPeek{muted: !s.open, since: gtx.Now}, hoverArea{}, hoverArea{}
+		p.slide.snap(false)
+		return sidebarAction{}
+	}
+	p.panel.read(gtx)
+	p.point(gtx.Now, p.rail.over || p.panel.over)
+	if wake := p.update(gtx.Now, s.peekInUse()); !wake.IsZero() {
+		gtx.Execute(op.InvalidateCmd{At: wake})
+	}
+	share := p.slide.at(gtx, p.shown)
+	if share == 0 {
+		return sidebarAction{}
+	}
+	size := image.Pt(s.boxWidth(gtx, true), max(gtx.Constraints.Max.Y-at.Y-gtx.Dp(gutter), 0))
+	defer op.Offset(at).Push(gtx.Ops).Pop()
+	// It slides out from under the rail's left edge.
+	defer clip.Rect{Max: size}.Push(gtx.Ops).Pop()
+	defer op.Offset(image.Pt(int((share-1)*float32(size.X)), 0)).Push(gtx.Ops).Pop()
+	// The panel's own area takes the pointer from the terminal under it, and
+	// reads it over every row it draws.
+	area := clip.UniformRRect(image.Rectangle{Max: size}, gtx.Dp(ui.RadiusLG)).Push(gtx.Ops)
+	event.Op(gtx.Ops, &p.panel)
+	gtx.Constraints = layout.Exact(size)
+	_, act := s.panel(gtx, th, m, active)
+	area.Pop()
+	if act.activate != "" || act.launch.kind != "" || act.worktree {
+		p.dismiss()
+	}
+	return act
+}
+
+// peekInUse is whether something in the sidebar is in use, which keeps it out
+// after the pointer has left: a menu, a field, a dialog, a drag.
+func (s *sidebar) peekInUse() bool {
+	return s.holdsKeys() || s.carry.Carrying() != "" || s.sort.Dragging() != ""
+}
+
+// pinPeek keeps the sidebar that is out open, in place: no morph, since the
+// panel is already where the open sidebar sits. The click is read after the
+// rail and the stage were laid out, so the stage makes room on the next
+// frame, asked for now.
+func (s *sidebar) pinPeek(gtx C, act *sidebarAction) {
+	s.open, act.saveOpen = true, true
+	gtx.Execute(op.InvalidateCmd{})
+}

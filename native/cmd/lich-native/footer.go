@@ -246,24 +246,24 @@ func (f *footer) act(gtx C, in footerInput) {
 		go f.attach(in)
 	}
 	if f.w("files").click.Clicked(gtx) {
-		f.dock.tab = f.dock.tab.toggled(dockCode)
+		f.dock.toggle(dockCode)
 	}
 	if f.w("changes").click.Clicked(gtx) {
-		f.dock.tab = f.dock.tab.toggled(dockReview)
+		f.dock.toggle(dockReview)
 	}
 	if f.w("artifacts").click.Clicked(gtx) {
-		f.dock.tab = f.dock.tab.toggled(dockArtifacts)
+		f.dock.toggle(dockArtifacts)
 	}
-	f.w("files").pressed = f.dock.tab == dockCode
-	f.w("changes").pressed = f.dock.tab == dockReview
-	f.w("artifacts").pressed = f.dock.tab == dockArtifacts
+	f.w("files").pressed = f.dock.showing(dockCode)
+	f.w("changes").pressed = f.dock.showing(dockReview)
+	f.w("artifacts").pressed = f.dock.showing(dockArtifacts)
 	for _, it := range in.extItems {
 		w := f.w(it.id)
 		if it.place == extension.PlaceDock {
 			if w.click.Clicked(gtx) {
 				f.dock.toggleExtension(it.key)
 			}
-			w.pressed = f.dock.showsExtension(it.key)
+			w.pressed = f.dock.showsExtension(it.key) && f.dock.visible()
 			continue
 		}
 		w.pressed = f.panel.shows(it.key)

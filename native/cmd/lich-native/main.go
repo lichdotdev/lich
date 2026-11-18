@@ -33,7 +33,6 @@ import (
 
 	"github.com/lichdotdev/godemirror"
 	"github.com/lichdotdev/lich/api"
-	"github.com/lichdotdev/lich/extension"
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/fonts"
 	"github.com/lichdotdev/lich/native/gioterm"
@@ -531,6 +530,9 @@ func (u *window) connect() error {
 	if u.dock.widthRem, err = loadDockWidth(u.ctx, u.client); err != nil {
 		return err
 	}
+	if u.dock.collapsed, err = loadDockCollapsed(u.ctx, u.client); err != nil {
+		return err
+	}
 	if u.pulls.view.tree.widthRem, err = loadTreeWidth(u.ctx, u.client); err != nil {
 		return err
 	}
@@ -627,7 +629,7 @@ func (u *window) layout(gtx C) error {
 	u.readDragPointer(gtx)
 	pointerArea := clip.Rect{Max: gtx.Constraints.Max}.Push(gtx.Ops)
 	event.Op(gtx.Ops, &u.layoutStage.pointer.tag)
-	var act sidebarAction
+	var act, peekAct sidebarAction
 	var top topbarAction
 	var contentErr error
 	v := u.stageView(gtx.Now)
@@ -672,6 +674,7 @@ func (u *window) layout(gtx C) error {
 		u.layoutMoveConfirm(gtx, u.theme)
 		var edge int
 		edge, act, contentErr = u.body(gtx, v)
+		peekAct = u.sidebar.peekLayout(gtx, u.theme, u.model, sidebarActive(v), image.Pt(gtx.Dp(gutter), gtx.Dp(topbarHeight)))
 		u.sidebar.flight(gtx, u.theme, u.model)
 		top = u.topbar.layout(gtx, u.theme, u.topbarFrame(gtx, v, edge))
 		u.drawCarried(gtx)
@@ -684,6 +687,7 @@ func (u *window) layout(gtx C) error {
 	pointerArea.Pop()
 	u.endStrandedDrag(gtx)
 	u.apply(act)
+	u.apply(peekAct)
 	u.applyTopbar(top)
 	u.applyLayoutStage()
 	u.settleBrowserPanes()
@@ -753,11 +757,7 @@ func (u *window) body(gtx C, v stageView) (int, sidebarAction, error) {
 	column := gtx
 	column.Constraints.Min = image.Point{}
 	edge := layout.Inset{Left: gutter, Right: gutter, Bottom: gutter}.Layout(column, func(gtx C) D {
-		active := v.active.ID
-		if v.hasConsole {
-			active = ""
-		}
-		d, a := u.sidebar.layout(gtx, u.theme, u.model, active)
+		d, a := u.sidebar.layout(gtx, u.theme, u.model, sidebarActive(v))
 		act = a
 		return d
 	}).Size.X
@@ -818,6 +818,15 @@ func (u *window) body(gtx C, v stageView) (int, sidebarAction, error) {
 		})
 	})
 	return edge, act, err
+}
+
+// sidebarActive is the session the sidebar lights: none while a service's
+// console is on screen.
+func sidebarActive(v stageView) string {
+	if v.hasConsole {
+		return ""
+	}
+	return v.active.ID
 }
 
 // island is the stage's rounded box: Home, the empty notice, the diff or
@@ -955,10 +964,15 @@ func (u *window) topbarFrame(gtx C, v stageView, edge int) topbarFrame {
 func (u *window) stageRow(gtx C, v stageView) error {
 	d := u.dock
 	d.act(gtx)
-	open := d.tab != dockClosed && !v.home
-	if open {
+	if d.saveCollapsed {
+		d.saveCollapsed = false
+		collapsed := d.collapsed
+		go func() { u.logErr("dock collapsed", saveDockCollapsed(u.ctx, u.client, collapsed)) }()
+	}
+	if d.tab != dockClosed && !v.home {
 		d.shown = d.tab
 	}
+	open := d.docked(v.home)
 	if d.fullscreen {
 		d.slide.snap(open)
 	}
@@ -977,7 +991,10 @@ func (u *window) stageRow(gtx C, v stageView) error {
 	termHeight := max(size.Y-u.git.pending()-u.extPanel.pending(), 0)
 	if share == 0 {
 		d.islands = nil
-		return u.island(gtx, v, termWidth, termHeight)
+		if err := u.island(gtx, v, termWidth, termHeight); err != nil {
+			return err
+		}
+		return u.dockPeek(gtx, v)
 	}
 	at, w, slot := 0, size.X, 0
 	if !d.fullscreen {
@@ -1005,14 +1022,7 @@ func (u *window) stageRow(gtx C, v stageView) error {
 	}
 	defer op.Offset(image.Pt(at, 0)).Push(gtx.Ops).Pop()
 	gtx.Constraints = layout.Exact(image.Pt(w, size.Y))
-	in := dockInput{sessionID: v.in.sessionID, inject: u.terms.injector(v.in.sessionID), submit: u.terms.submitter(v.in.sessionID), checkout: v.in.path, git: v.in.git, isGit: v.in.isGit, light: u.light, code: u.code, placed: placedIn(v.in.placed, extension.PlaceDock)}
-	save, err := d.layout(gtx, u.theme, &u.root, in)
-	u.applyExtension(d.takeExtensionAction())
-	if save {
-		rem := u.dock.widthRem
-		go func() { u.logErr("dock width", saveDockWidth(u.ctx, u.client, rem)) }()
-	}
-	return err
+	return u.layoutDock(gtx, v)
 }
 
 // gitPanelRow is the Git panel between the stage and the footer, when it is

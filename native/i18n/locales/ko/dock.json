@@ -5,6 +5,8 @@
     "exitFullScreen": "전체 화면 종료",
     "fullScreen": "전체 화면",
     "closePanel": "패널 닫기",
+    "collapsePanel": "패널 접기",
+    "expandPanel": "패널 펼치기",
     "tabArtifacts": "아티팩트"
   },
   "searchResults": {
