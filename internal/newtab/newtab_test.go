@@ -81,7 +81,7 @@ func TestPageListsWhatLichKnows(t *testing.T) {
 	s.Visit("s1", "https://example.com/docs", "Docs")
 	body := get(s.Handler(), api.NewTabPrefix+"s1").Body.String()
 	for _, want := range []string{
-		"Running in this project", "web", "pnpm dev", `href="http://localhost:24796"`, "this worktree&#39;s port",
+		"Running in this project", "web", "pnpm dev", `href="http://localhost:24796"`, `>localhost:24796<`, "this worktree&#39;s port",
 		"Artifacts of this session", `href="http://127.0.0.1:26100/report.html"`, `datetime="2023-11-14T22:13:20Z"`,
 		"Recent", `href="https://example.com/docs"`, "Docs", "example.com/docs",
 	} {
@@ -141,8 +141,12 @@ func TestPageEscapesEverythingTheAgentWrites(t *testing.T) {
 	if strings.Contains(body, `href="javascript:`) {
 		t.Fatalf("a javascript: URL got through:\n%s", body)
 	}
-	if csp := rec.Header().Get("Content-Security-Policy"); !strings.Contains(csp, "default-src 'none'") || !strings.Contains(csp, "nonce-") {
+	csp := rec.Header().Get("Content-Security-Policy")
+	if !strings.Contains(csp, "default-src 'none'") || !strings.Contains(csp, "nonce-") {
 		t.Fatalf("CSP = %q", csp)
+	}
+	if strings.Contains(csp, "form-action") {
+		t.Fatalf("CSP = %q: form-action would block the redirect the address field loads by", csp)
 	}
 	if rec.Header().Get("Cache-Control") != "no-store" {
 		t.Fatal("the page may be cached")

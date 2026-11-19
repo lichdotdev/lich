@@ -95,3 +95,15 @@ func TestTheNewTabLookFollowsTheInterfaceLanguage(t *testing.T) {
 		}
 	}
 }
+
+func TestTheAddressFollowsAPageThatChangedUnderAnUntouchedEdit(t *testing.T) {
+	if !movedUnderEdit("https://a.test/", "about:blank", "https://a.test/") {
+		t.Fatal("the new tab did not take the field")
+	}
+	if movedUnderEdit("https://a.test/", "about:blank", "typed") {
+		t.Fatal("a typed address was replaced")
+	}
+	if movedUnderEdit("https://a.test/", "https://a.test/", "https://a.test/") {
+		t.Fatal("an unchanged page took the field")
+	}
+}

@@ -79,7 +79,7 @@ type view struct {
 	Cols, Rows             int
 	Pixels                 []pixel
 	Services               []serviceRow
-	Worktree               string
+	Worktree, WorktreeHost string
 	Artifacts              []artifactRow
 	Recent                 []recentRow
 }
@@ -88,8 +88,10 @@ func (s *Service) page(w http.ResponseWriter, session, project, projectID string
 	v := s.view(session, project, projectID)
 	v.Error = failed
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	// No form-action: Chrome applies it to the redirect /go answers with, which
+	// leaves for the address the person typed.
 	w.Header().Set("Content-Security-Policy",
-		"default-src 'none'; style-src 'unsafe-inline'; script-src 'nonce-"+v.Nonce+"'; form-action 'self'; base-uri 'none'")
+		"default-src 'none'; style-src 'unsafe-inline'; script-src 'nonce-"+v.Nonce+"'; base-uri 'none'")
 	if err := pageTemplate.Execute(w, v); err != nil {
 		http.Error(w, "page failed", http.StatusInternalServerError)
 	}
@@ -107,7 +109,8 @@ func (s *Service) view(session, project, projectID string) view {
 		}
 	}
 	if port := s.src.WorktreePort(session); port != 0 && s.src.Listening(port) {
-		v.Worktree = "http://" + net.JoinHostPort("localhost", strconv.Itoa(port))
+		v.WorktreeHost = net.JoinHostPort("localhost", strconv.Itoa(port))
+		v.Worktree = "http://" + v.WorktreeHost
 	}
 	artifacts := s.src.Artifacts(session)
 	for _, a := range artifacts[:min(maxArtifacts, len(artifacts))] {

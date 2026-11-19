@@ -62,8 +62,10 @@ type browserPaneUI struct {
 	// shownURL is the page's URL the field last showed: a navigation
 	// replaces the field's text unless the person is editing it; editing is
 	// the field holding the focus, showing the whole address.
-	shownURL    string
-	editing     bool
+	shownURL string
+	editing  bool
+	// editedFrom is the page's URL the field held when its edit began.
+	editedFrom  string
 	tag         int
 	composition gioterm.Composition
 	// view is the size the backend lays the page out at; zero until the
@@ -293,8 +295,8 @@ func (u *window) syncAddress(gtx C, p *browserPaneUI, raw string) {
 	case typing && !focused:
 		p.url.SetText(text)
 	case focused:
-		if !p.editing {
-			p.editing = true
+		if !p.editing || movedUnderEdit(p.editedFrom, raw, p.url.Text()) {
+			p.editing, p.editedFrom = true, raw
 			p.url.SetText(displayURL(raw))
 			p.url.SetCaret(p.url.Len(), 0)
 		}
@@ -310,6 +312,13 @@ func (u *window) syncAddress(gtx C, p *browserPaneUI, raw string) {
 			p.url.SetText(shortURL(raw))
 		}
 	}
+}
+
+// movedUnderEdit is whether the page changed since an edit of the address
+// began, and the field still holds what it began with: the new tab the + just
+// opened, whose address nobody typed, takes the field along.
+func movedUnderEdit(editedFrom, raw, text string) bool {
+	return raw != editedFrom && text == displayURL(editedFrom)
 }
 
 // addressPill is field on the accent fill, with no border.

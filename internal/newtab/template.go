@@ -22,7 +22,7 @@ main{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:26px}
 form{display:flex}
 input{flex:1;height:42px;border-radius:9px;background:var(--card);color:var(--fg);border:0;box-shadow:inset 0 0 0 1px var(--border);padding:0 14px;font:inherit;font-size:15px}
 input::placeholder{color:var(--muted)}
-input:focus{outline:2px solid var(--muted);outline-offset:-1px}
+input:focus{outline:0;box-shadow:inset 0 0 0 1px var(--muted)}
 .err{color:var(--muted);font-size:12.5px;margin-top:-18px}
 h2{font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
 .row{min-height:34px;display:flex;align-items:center;gap:10px;padding:0 8px;border-radius:6px;font-size:13.5px;color:inherit;text-decoration:none;overflow:hidden}
@@ -41,7 +41,7 @@ a.row:hover,a.row:focus-visible{background:var(--accent);outline:0}
 {{if .Error}}<p class="err" role="alert">{{.Text.AddressError}}</p>{{end}}
 {{if or .Services .Worktree}}<section><h2>{{.Text.Running}}</h2>
 {{range .Services}}<div class="row"><i class="dot"></i><span class="name">{{.Name}}</span><span class="u">{{.Command}}</span><span class="r">{{$.Text.Service}}</span></div>
-{{end}}{{if .Worktree}}<a class="row" href="{{.Worktree}}"><i class="dot"></i><span class="u">{{.Worktree}}</span><span class="r">{{.Text.Worktree}}</span></a>
+{{end}}{{if .Worktree}}<a class="row" href="{{.Worktree}}"><i class="dot"></i><span class="u">{{.WorktreeHost}}</span><span class="r">{{.Text.Worktree}}</span></a>
 {{end}}</section>{{end}}
 {{if .Artifacts}}<section><h2>{{.Text.Artifacts}}</h2>
 {{range .Artifacts}}<a class="row" href="{{.URL}}"><span class="name">{{.Name}}</span><time class="r" datetime="{{.Stamp}}">{{.Day}}</time></a>
