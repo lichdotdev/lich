@@ -70,6 +70,8 @@ type chatView struct {
 	seen   map[string]chatRow
 	// stamps are the tooltips of the time under each message, by item id.
 	stamps map[string]*ui.Tooltip
+	// copies are the copy buttons of the messages, by item id.
+	copies map[string]*chatCopy
 	folds  map[string]*chatFold
 	// optionMenus are the menus of the option chips, by category.
 	optionMenus map[string]*ui.MenuState

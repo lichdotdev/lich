@@ -330,6 +330,11 @@ view stays pinned to its end while items arrive, until the person scrolls up. Th
   which opens the Git panel as its balloon did, and at the right the footer's changes item (files and diff),
   which opens Review. Attach, changes and the branch show only when the user's footer layout has them, and
   only for the session the footer follows; another chat pane of a layout has the provider's chips and Send alone.
+- **Copy** is an icon-only button that shows only while the pointer is over a message, on the line of its time and
+  beside it: at the left of the time for the person's message, so it sits at the right, at the right of the time
+  for an answer, so it sits at the left. It copies the item's whole text, an answer's Markdown source, through the
+  window's clipboard path, and becomes a check for 1.5s with "Copied" in its tooltip. The line is as tall with it as
+  without (`chatCopySlot`), so it pushes nothing; the button is a little larger than the line and reaches past it.
 - **A message's time** is a `TextXS` muted line, the window's short clock ("14:32") under a tooltip that holds
   the footer clock's full date: under the person's box at the right edge, under an answer's text at the left.
   Between two turns that start on different days a muted, centred line names the later day: Today, Yesterday,
