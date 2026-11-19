@@ -5,7 +5,6 @@ import (
 	"hash/fnv"
 	"image"
 	"image/color"
-	"math"
 	"slices"
 	"strconv"
 	"strings"
@@ -25,7 +24,6 @@ import (
 )
 
 var (
-	icChatMark   = icons.LichMark()
 	icChatFail   = icons.Lucide("x")
 	icChatSend   = icons.Lucide("arrow-up")
 	icChatStop   = icons.Lucide("square")
@@ -445,13 +443,6 @@ func chatPermission(gtx C, th *ui.Theme, p *chatPane, it backend.ChatItem) D {
 		})
 }
 
-// chatPulseLap is how long the live mark takes to dim and come back, and
-// chatPulseLow how dim it gets.
-const (
-	chatPulseLap = 1600 * time.Millisecond
-	chatPulseLow = 0.35
-)
-
 // chatVerbSep splits the catalog's list of verbs, which each language writes
 // at its own length.
 const chatVerbSep = "|"
@@ -466,14 +457,11 @@ func chatVerb(session string, turn int) string {
 	return verbs[int(h.Sum32()%uint32(len(verbs)))]
 }
 
-// chatLive is the turn in flight: lich's mark breathing, then a verb of the
-// turn shimmering with the time it has run.
+// chatLive is the turn in flight: a flame, then a verb of the turn shimmering
+// with the time it has run.
 func chatLive(gtx C, th *ui.Theme, session string, r chatRow) D {
-	th.Loop(gtx)
-	phase := float32(gtx.Now.UnixNano()%int64(chatPulseLap)) / float32(chatPulseLap)
-	level := chatPulseLow + (1-chatPulseLow)*(1+float32(math.Cos(2*math.Pi*float64(phase))))/2
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-		layout.Rigid(func(gtx C) D { return icChatMark.Layout(gtx, ui.Space(4), ui.Alpha(th.MutedForeground, level)) }),
+		layout.Rigid(func(gtx C) D { return chatFlame(gtx, th) }),
 		ui.Gap(2),
 		layout.Rigid(func(gtx C) D {
 			// A turn with no start to count from has no clock.
