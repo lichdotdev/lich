@@ -244,11 +244,15 @@ func (c *chatSession) sendNext(text string) {
 	}
 }
 
-// setNext keeps text for the turn after this one.
-func (c *chatSession) setNext(text string) {
+// holdForNext keeps text for the turn after the one running, and reports
+// false when none runs.
+func (c *chatSession) holdForNext(text string) bool {
 	c.mu.Lock()
-	c.next = text
-	c.mu.Unlock()
+	defer c.mu.Unlock()
+	if c.running {
+		c.next = text
+	}
+	return c.running
 }
 
 // dismissPermissions answers no to every question still waiting, which a

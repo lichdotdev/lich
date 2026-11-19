@@ -126,7 +126,7 @@ func elicitContent(asks []acpAsk, r api.ChatQReplied) map[string]any {
 		switch {
 		case len(a.choices) == 0:
 			content[a.key] = ans.Other
-		case a.multi:
+		case a.multi && len(picked) > 0:
 			content[a.key] = picked
 		case len(picked) > 0:
 			content[a.key] = picked[0]

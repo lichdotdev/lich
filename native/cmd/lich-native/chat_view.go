@@ -257,6 +257,7 @@ func (u *window) chatActs(gtx C, p *chatPane, sv sessionView, keys, working bool
 	}
 	p.unsent = ""
 	p.mu.Unlock()
+	p.dropQuizzes(asking)
 	if asking != nil {
 		u.questionActs(gtx, p, sv, asking)
 	}

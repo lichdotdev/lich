@@ -218,3 +218,42 @@ func TestAStepWithNoHeaderIsItsNumber(t *testing.T) {
 		t.Errorf("the steps are not numbered:\n%s", r.drawn())
 	}
 }
+
+// An id that comes back for another question, as an ACP server numbering its
+// requests again after a restart does, gets a card of its own.
+func TestAnIDThatComesBackIsANewCard(t *testing.T) {
+	u, r, f := questionFrames(t, nil, askFruit)
+	r.click(t, r.at(t, "Pear"))
+	f.waitCall(t, api.ChatReply.Name)
+	u.model.chat.history("s1", []backend.ChatItem{
+		{ID: "u1", Kind: api.ItemUser, Turn: 1, Text: "set it up"},
+		{ID: "q1", Kind: api.ItemQuestion, Turn: 1, Question: &backend.ChatQuestion{Questions: []api.ChatAsk{askFruit},
+			Reply: &api.ChatQReplied{Answers: []api.ChatAskAnswer{{Picked: []string{"Pear"}}}}}},
+	})
+	r.frames(5) // the turn still runs: the flame never goes still
+	u.model.chat.history("s1", []backend.ChatItem{
+		{ID: "u2", Kind: api.ItemUser, Turn: 1, Text: "again"},
+		{ID: "q1", Kind: api.ItemQuestion, Turn: 1, Question: &backend.ChatQuestion{Questions: []api.ChatAsk{askFruit}}},
+	})
+	r.frames(5) // the turn still runs: the flame never goes still
+	r.press("1")
+	for deadline := time.Now().Add(5 * time.Second); ; time.Sleep(time.Millisecond) {
+		f.mu.Lock()
+		var replies []string
+		for _, c := range f.calls {
+			if strings.HasPrefix(c, api.ChatReply.Name+" ") {
+				replies = append(replies, c)
+			}
+		}
+		f.mu.Unlock()
+		if len(replies) == 2 {
+			if !strings.Contains(replies[1], `"picked":["Apple"]`) {
+				t.Errorf("the new card replied %s", replies[1])
+			}
+			return
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("the new card did not reply: %v", replies)
+		}
+	}
+}

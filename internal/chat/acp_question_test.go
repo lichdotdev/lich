@@ -82,3 +82,13 @@ func TestACPMessagePastAQuestion(t *testing.T) {
 		t.Errorf("the message shows %d times, want once", users)
 	}
 }
+
+// TestElicitContentLeavesOutAnEmptyPick: a multiple choice answered with its
+// own words alone sends no array, which the schema would refuse as null.
+func TestElicitContentLeavesOutAnEmptyPick(t *testing.T) {
+	asks := []acpAsk{{key: "q1", other: "q1_other", choices: []acpChoice{{Const: "r", Title: "Red"}}, multi: true}}
+	got := elicitContent(asks, api.ChatQReplied{Answers: []api.ChatAskAnswer{{Other: "teal"}}})
+	if _, ok := got["q1"]; ok || got["q1_other"] != "teal" {
+		t.Errorf("content = %v, want q1_other alone", got)
+	}
+}

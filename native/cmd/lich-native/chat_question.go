@@ -42,7 +42,7 @@ func (v *chatView) quiz(id string, asks []api.ChatAsk) *chatQuiz {
 		v.quizzes = map[string]*chatQuiz{}
 	}
 	q, ok := v.quizzes[id]
-	if !ok {
+	if !ok || !q.fits(asks) {
 		q = &chatQuiz{answers: make([]api.ChatAskAnswer, len(asks)), done: make([]bool, len(asks)),
 			marks: make([][]widget.Bool, len(asks)), rows: make([][]widget.Clickable, len(asks)),
 			others: make([]widget.Editor, len(asks)), steps: make([]widget.Clickable, len(asks))}
@@ -55,6 +55,33 @@ func (v *chatView) quiz(id string, asks []api.ChatAsk) *chatQuiz {
 		v.quizzes[id] = q
 	}
 	return q
+}
+
+// fits is whether q was made for asks: an id the backend numbers per process
+// can come back for another question.
+func (q *chatQuiz) fits(asks []api.ChatAsk) bool {
+	if len(q.rows) != len(asks) {
+		return false
+	}
+	for i, a := range asks {
+		if len(q.rows[i]) != len(a.Options) {
+			return false
+		}
+	}
+	return true
+}
+
+// dropQuizzes forgets every card but the waiting one's, so an id that comes
+// back for a new question starts afresh and takes the keys again.
+func (v *chatView) dropQuizzes(asking *backend.ChatItem) {
+	for id := range v.quizzes {
+		if asking == nil || id != asking.ID {
+			delete(v.quizzes, id)
+		}
+	}
+	if asking == nil {
+		v.asked = ""
+	}
 }
 
 // questionWaiting is the question item still unanswered, the last one, nil

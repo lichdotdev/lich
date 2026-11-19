@@ -227,10 +227,14 @@ func (d *acpDriver) prompt(text string) error {
 }
 
 // follow stops the turn and sends the message once it ended: ACP takes no
-// message during a turn.
+// message during a turn. The decline may already have ended it (oh-my-pi ends
+// its turn on one), and then the message goes now.
 func (d *acpDriver) follow(text string) error {
-	d.c.setNext(text)
-	return d.cancel()
+	if d.c.holdForNext(text) {
+		return d.cancel()
+	}
+	go d.c.sendNext(text)
+	return nil
 }
 
 func (d *acpDriver) cancel() error {

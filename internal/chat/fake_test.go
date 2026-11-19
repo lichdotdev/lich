@@ -358,8 +358,8 @@ var fakeElicitSchema = map[string]any{"type": "object", "properties": map[string
 }}
 
 // acpElicit asks the fake's questions and writes back what came; with write it
-// then waits for the cancel a message sent past them brings, and ends the turn
-// itself (true).
+// ends the turn on the decline, as oh-my-pi does, before the cancel a message
+// sent past them brings (true).
 func (f *fake) acpElicit(id any, text string) bool {
 	mode := "form"
 	if text == "question-url" {
@@ -373,8 +373,6 @@ func (f *fake) acpElicit(id any, text string) bool {
 	f.update(chunk("agent_message_chunk", "elicit:"+string(out)))
 	if text != "question-then-write" {
 		return false
-	}
-	for m := f.next(); m != nil && str(m, "method") != "session/cancel"; m = f.next() {
 	}
 	f.result(id, map[string]any{"stopReason": "cancelled"})
 	return true
