@@ -115,7 +115,7 @@ func (s *sidebar) holdsKeys() bool {
 			return true
 		}
 	}
-	if s.header.newMenu.Opened() || s.profile.menu.Opened() || s.services.holdsKeys() || s.rail.holdsKeys() {
+	if s.header.newMenu.Opened() || s.profile.panel.Opened() || s.services.holdsKeys() || s.rail.holdsKeys() {
 		return true
 	}
 	for _, b := range s.blocks {
@@ -149,6 +149,7 @@ type sidebarAction struct {
 	color, colorTo      string // session id, and its new tint ("" for the theme)
 	continueIn          continueRequest
 	profilePick         profilePick
+	useReset            resetRequest
 	worktree            bool // the + menu asked for a worktree session
 	// The session to fork, in its own checkout or into a new worktree.
 	forkHere, forkWorktree string

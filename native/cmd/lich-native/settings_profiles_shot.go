@@ -107,9 +107,9 @@ func shotUsagePlan(kind string) backend.QuotaPlan {
 		},
 		Extra: &backend.QuotaExtra{Used: 1250, Limit: new(int64(5000)), Currency: "USD", Decimals: 2},
 		Resets: []backend.QuotaReset{
-			{Kind: api.QuotaResetFull, Left: 1, EndsAt: in(21 * 24 * time.Hour)},
-			{Label: "Fable", Left: 1, EndsAt: in(110 * 24 * time.Hour)},
-			{Label: "Fable", Left: 1, EndsAt: in(110 * 24 * time.Hour), Held: true},
+			{ID: "full", Kind: api.QuotaResetFull, Clears: []string{"session", "weekly", "model"}, Left: 1, EndsAt: in(21 * 24 * time.Hour)},
+			{ID: "fable-1", Label: "Fable", Clears: []string{"session", "model"}, Left: 1, EndsAt: in(110 * 24 * time.Hour)},
+			{ID: "fable-2", Label: "Fable", Clears: []string{"session", "model"}, Left: 1, EndsAt: in(110 * 24 * time.Hour), Held: true},
 		},
 	}
 	if kind == codexKind {

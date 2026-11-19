@@ -191,6 +191,7 @@ providers.Version(BinaryOptions) string
 quota.CodexProfilePlan(ProfilePlanOptions) QuotaPlan
 quota.Plans(QuotaPlansOptions) []QuotaPlan
 quota.ProfilePlan(ProfilePlanOptions) QuotaPlan
+quota.UseReset(UseResetOptions) UseResetResult
 relay.AnnounceMerge(AnnounceMergeOptions) None
 relay.Collect(CollectOptions) CollectedResults
 relay.CollectNow(CollectNowOptions) CollectedResults
@@ -1289,6 +1290,16 @@ QuotaPlan {
 
 QuotaPlansOptions {
 	sessionId string
+}
+
+UseResetOptions {
+	profile string
+	grantId string
+}
+
+UseResetResult {
+	status string
+	cooldownUntil,omitempty string
 }
 
 AnnounceMergeOptions {
@@ -2547,6 +2558,8 @@ QuotaExtra {
 }
 
 QuotaReset {
+	id string
+	clears,omitempty []string
 	kind,omitempty string
 	label,omitempty string
 	left int
