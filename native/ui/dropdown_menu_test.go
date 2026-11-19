@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"gioui.org/f32"
 	"gioui.org/io/key"
 	"gioui.org/io/pointer"
 	"gioui.org/layout"
@@ -245,4 +246,115 @@ func TestDropdownSubmenuFlippedLeftSitsBesideItsParent(t *testing.T) {
 	if top := s.levels[1].rows[0].Min.Y; top != parent.Min.Y-3+4 {
 		t.Errorf("submenu's first row at y %d, want %d: alignOffset -3 from the trigger row plus p-1", top, parent.Min.Y-3+4)
 	}
+}
+
+// openPanel opens a DropdownPanel of the given content in a window h tall,
+// its trigger at triggerAt.
+func openPanel(t *testing.T, h int, above bool, content func(gtx C, th *Theme) D) (*menuRig, *DropdownPanelState, func()) {
+	t.Helper()
+	g, th := &menuRig{size: image.Pt(400, h)}, testTheme()
+	var s DropdownPanelState
+	frame := func() {
+		g.frame(func(gtx C, trigger layout.Widget) D {
+			p := th.DropdownPanel(&g.root, &s, dropdownWidth, content)
+			if above {
+				p = p.Above()
+			}
+			return p.Layout(gtx, trigger)
+		})
+	}
+	frame()
+	g.click(pointer.ButtonPrimary, triggerAt.Add(image.Pt(10, 10)))
+	frame()
+	frame()
+	if !s.Opened() {
+		t.Fatal("press on the trigger did not open the panel")
+	}
+	return g, &s, frame
+}
+
+// A panel that asks for more than the room on the side it opens on is laid
+// out in that room and cut to it: it is no taller than the room, and what it
+// asks for beyond that scrolls. It does not move over its trigger.
+func TestDropdownPanelIsCutToTheRoomOnItsSide(t *testing.T) {
+	var gotMax int
+	// Below the trigger (30..60) of a 100px window: 100 less the trigger's
+	// bottom, its 4px gap and the 5px window padding is 31px of room.
+	g, s, frame := openPanel(t, 100, false, func(gtx C, th *Theme) D {
+		// The first sight of it each frame, before it is put in a scroll area.
+		if gotMax == 0 || gtx.Constraints.Max.Y < gotMax {
+			gotMax = gtx.Constraints.Max.Y
+		}
+		return D{Size: image.Pt(gtx.Constraints.Max.X, 500)}
+	})
+	if gotMax != 31-8 {
+		t.Errorf("the content was given %dpx, want the room less the panel's padding (23)", gotMax)
+	}
+	g.click(pointer.ButtonPrimary, image.Pt(triggerAt.X+10, dropdownTop+30))
+	frame()
+	if !s.Opened() {
+		t.Error("a press inside the cut panel closed it")
+	}
+	g.click(pointer.ButtonPrimary, image.Pt(triggerAt.X+10, dropdownTop+34))
+	frame()
+	if s.Opened() {
+		t.Error("the panel runs past the room it was cut to: a press below it did not close it")
+	}
+}
+
+// Content that keeps to the height it is given is not wrapped in a scroll
+// area, and a panel that opens above stands its bottom edge a gap over the
+// trigger.
+func TestDropdownPanelAboveStandsAGapOverItsTrigger(t *testing.T) {
+	g, s, frame := openPanel(t, 400, true, func(gtx C, th *Theme) D {
+		return D{Size: image.Pt(gtx.Constraints.Max.X, 20)}
+	})
+	// The trigger is high in the window, with no room over it: the panel
+	// takes the room below, and does not cover the trigger.
+	g.click(pointer.ButtonPrimary, triggerAt.Add(image.Pt(10, 10)))
+	frame()
+	if s.Opened() {
+		t.Error("a press on the trigger reached the panel: it covers the trigger")
+	}
+}
+
+// A menu with more rows than the room has is cut to the room, and the wheel
+// scrolls its rows under the pointer.
+func TestDropdownMenuTallerThanTheRoomScrolls(t *testing.T) {
+	var c chosen
+	var entries []MenuEntry
+	for _, name := range []string{"R0", "R1", "R2", "R3", "R4", "R5", "R6", "R7", "R8", "R9", "R10", "R11"} {
+		entries = append(entries, c.item(name))
+	}
+	g, s, th := &menuRig{size: image.Pt(400, 200)}, new(MenuState), testTheme()
+	frame := func() {
+		g.frame(func(gtx C, trigger layout.Widget) D { return th.DropdownMenu(&g.root, s, entries).Layout(gtx, trigger) })
+	}
+	frame()
+	g.click(pointer.ButtonPrimary, triggerAt.Add(image.Pt(10, 10)))
+	frame()
+	frame()
+	// The room under the trigger is 200-64-5 = 131px: three rows and a bit.
+	g.click(pointer.ButtonPrimary, image.Pt(triggerAt.X+20, dropdownTop+131-2))
+	frame()
+	if !s.Opened() {
+		t.Fatal("a press on the last pixel of the cut menu closed it")
+	}
+	g.click(pointer.ButtonPrimary, image.Pt(triggerAt.X+20, dropdownTop+131+3))
+	frame()
+	if s.Opened() {
+		t.Fatal("the menu runs past the room it was cut to")
+	}
+	// Open it again, wheel two rows, and the first row in view is the third.
+	g.click(pointer.ButtonPrimary, triggerAt.Add(image.Pt(10, 10)))
+	frame()
+	frame()
+	g.hover(image.Pt(triggerAt.X+20, dropdownTop+20))
+	frame()
+	g.router.Queue(pointer.Event{Kind: pointer.Scroll, Source: pointer.Mouse, Position: f32.Pt(float32(triggerAt.X+20), float32(dropdownTop+20)), Scroll: f32.Pt(0, 2*dropdownRow)})
+	frame()
+	frame()
+	g.click(pointer.ButtonPrimary, dropdownRowCenter(0))
+	frame()
+	c.only(t, "R2")
 }

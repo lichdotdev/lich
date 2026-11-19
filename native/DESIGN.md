@@ -158,6 +158,15 @@ the current tool reads as a button that can switch tools.
 - A menu never opens or ends on a separator, and never shows two in a row.
 - A submenu stands `menuSubGap` (4px) off its parent's edge, level with the row that opens it, and never
   over the parent. At the window's edge it flips to the parent's other side, the same gap away.
+- **A popup never covers its anchor** (`popupPlace.box`, `popupPlace.limit`, base-ui's flip with its
+  `--available-height`). A menu, a dropdown panel or a tooltip takes its preferred side when it fits whole,
+  the opposite when that fits, else whichever has the more room; one that fits on neither is cut to that
+  room along the side's axis (its height above or below, its width beside), never shifted over the anchor,
+  and its content scrolls inside: a menu's rows with the wheel and the keyboard's highlight, a panel's content
+  in the scroll area the kit gives it. A panel's content is laid out with the height it may take as its
+  maximum (`DropdownPanelStyle.MaxHeight` caps it lower), so a panel with a fixed part, as the model panel's
+  search and effort, keeps it and scrolls the rest itself. `Above()` makes a panel prefer the room over its
+  trigger.
 
 ### Tooltips
 
@@ -321,7 +330,8 @@ view stays pinned to its end while items arrive, until the person scrolls up. Th
   the model in force muted beside it, and a row per level under a signal glyph of five bars that rise with the
   level, the lit ones in `Foreground` and the rest muted, a check on the current. Choosing a model leaves the
   panel open for the effort; choosing an effort closes it. A provider with only one of the two has that
-  column alone. A category the provider does not offer has no chip. A
+  column alone. The panel opens above the chip, a gap over it, and holds at 420px or the room above, whichever is
+  less: the search and the effort stay put and the models scroll under the search. A category the provider does not offer has no chip. A
   dangerous choice (`Danger`, Claude Code's bypass mode) wears a bolt in `ToneWait` while it is active. At the
   right end, Send, a `Primary` icon button (arrow up), or Stop, an outline one (square), each named by a
   tooltip and no word; while the agent works the chips take no click and a tooltip says why. What does not

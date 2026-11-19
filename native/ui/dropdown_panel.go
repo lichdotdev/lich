@@ -10,6 +10,7 @@ import (
 	"gioui.org/op"
 	"gioui.org/op/clip"
 	"gioui.org/unit"
+	"gioui.org/widget"
 )
 
 // DropdownPanelState is a DropdownPanel's open state, owned by the caller like a
@@ -22,7 +23,15 @@ type DropdownPanelState struct {
 	trigger  struct{ _ byte }
 	backdrop popupBackdrop
 	panel    menuLevel // only its shown time, for the animate-in
+	// scroll holds the content of a panel taller than the room it has, when the
+	// content did not keep to the height it was given.
+	scroll widget.List
+	box    image.Rectangle
 }
+
+// Box is where the panel last stood, in window coordinates: empty until it has
+// been drawn.
+func (s *DropdownPanelState) Box() image.Rectangle { return s.box }
 
 // Opened reports whether the panel is showing.
 func (s *DropdownPanelState) Opened() bool { return s.open }
@@ -42,8 +51,16 @@ type DropdownPanelStyle struct {
 	// AlignEnd lines the panel's right edge up with the trigger's
 	// (align="end"); the default is its left edge.
 	AlignEnd bool
-	theme    *Theme
+	// MaxHeight caps the panel's height, 0 for the room it has alone. Either
+	// way Content is laid out with the height it may take as its maximum, and
+	// scrolls inside it if it asks for more.
+	MaxHeight unit.Dp
+	above     bool
+	theme     *Theme
 }
+
+// Above makes the panel prefer the room above its trigger to the room below.
+func (p DropdownPanelStyle) Above() DropdownPanelStyle { p.above = true; return p }
 
 func (th *Theme) DropdownPanel(root *Root, state *DropdownPanelState, width unit.Dp, content func(gtx C, th *Theme) D) DropdownPanelStyle {
 	return DropdownPanelStyle{Root: root, State: state, Width: width, Content: content, theme: th}
@@ -100,18 +117,31 @@ func (p DropdownPanelStyle) overlay(gtx C) {
 	}
 	core := menuCore{th: p.theme}
 	on := p.theme.On(p.theme.Popover)
-	macro := op.Record(gtx.Ops)
-	size := p.panel(gtx, core, on)
-	if !s.open {
-		// A row closed the panel while it was drawn, open, in this frame.
-		gtx.Execute(op.InvalidateCmd{})
+	place := dropdownGeometry.root
+	if p.above {
+		place.side = SideTop
 	}
-	call := macro.Stop()
+	window := image.Rectangle{Max: p.Root.window}
+	maxH := p.Root.window.Y
+	if p.MaxHeight > 0 {
+		maxH = min(maxH, gtx.Dp(p.MaxHeight))
+	}
+	size, call := p.measure(gtx, core, on, maxH)
 	anchor := s.anchor
 	if p.AlignEnd {
 		anchor.Min.X = anchor.Max.X - size.X
 	}
-	box, side := dropdownGeometry.root.box(gtx, anchor, size, image.Rectangle{Max: p.Root.window})
+	// A panel taller than the room on its side is laid out again in what the
+	// room is, so its content holds to it, never moved over the trigger.
+	if lim := place.limit(gtx, anchor, size, window); size.Y > lim.Y {
+		size, call = p.measure(gtx, core, on, min(maxH, lim.Y))
+	}
+	anchor = s.anchor
+	if p.AlignEnd {
+		anchor.Min.X = anchor.Max.X - size.X
+	}
+	box, side := place.box(gtx, anchor, size, window)
+	s.box = box
 	area := clip.Rect(box).Push(gtx.Ops)
 	event.Op(gtx.Ops, &s.panel)
 	area.Pop()
@@ -120,15 +150,35 @@ func (p DropdownPanelStyle) overlay(gtx C) {
 	call.Add(gtx.Ops)
 }
 
-// panel draws the surface and the content in it, and answers its size.
-func (p DropdownPanelStyle) panel(gtx C, core menuCore, on *Theme) image.Point {
+// measure records the panel, no taller than maxH, and answers its size.
+func (p DropdownPanelStyle) measure(gtx C, core menuCore, on *Theme, maxH int) (image.Point, op.CallOp) {
+	s := p.State
+	macro := op.Record(gtx.Ops)
+	size := p.panel(gtx, core, on, maxH)
+	if !s.open {
+		// A row closed the panel while it was drawn, open, in this frame.
+		gtx.Execute(op.InvalidateCmd{})
+	}
+	return size, macro.Stop()
+}
+
+// panel draws the surface and the content in it, and answers its size. The
+// content gets maxH less the padding as its height; one that is taller anyway
+// is put in a scroll area.
+func (p DropdownPanelStyle) panel(gtx C, core menuCore, on *Theme, maxH int) image.Point {
 	pad := gtx.Dp(menuPanelPad)
 	inner := gtx
 	inner.Constraints = layout.Exact(image.Pt(gtx.Dp(p.Width)-2*pad, 0))
-	inner.Constraints.Max.Y = p.Root.window.Y
+	inner.Constraints.Max.Y = max(maxH-2*pad, 0)
 	macro := op.Record(gtx.Ops)
 	d := p.Content(inner, on)
 	content := macro.Stop()
+	if d.Size.Y > inner.Constraints.Max.Y {
+		p.State.scroll.Axis = layout.Vertical
+		macro = op.Record(gtx.Ops)
+		d = on.ThinScrollArea(&p.State.scroll).Layout(inner, 1, func(gtx C, _ int) D { return p.Content(gtx, on) })
+		content = macro.Stop()
+	}
 	size := image.Pt(gtx.Dp(p.Width), d.Size.Y+2*pad)
 	core.drawSurface(gtx, size)
 	defer op.Offset(image.Pt(pad, pad)).Push(gtx.Ops).Pop()

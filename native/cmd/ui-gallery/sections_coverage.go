@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"image"
 	"image/color"
 	"slices"
@@ -32,8 +33,8 @@ type coverageState struct {
 
 	tips        [2]ui.Tooltip
 	tipTriggers [2]widget.Clickable
-	panels      [2]ui.DropdownPanelState
-	panelTrig   [2]widget.Clickable
+	panels      [3]ui.DropdownPanelState
+	panelTrig   [3]widget.Clickable
 	menu        ui.MenuState
 	radio       string
 	menuLast    string
@@ -289,6 +290,18 @@ func (g *gallery) popupVariantsSection(gtx C, th *ui.Theme) D {
 		p.AlignEnd = align
 		return func(gtx C) D { return p.Layout(gtx, trigger.Layout) }
 	}
+	tall := func(gtx C) D {
+		trigger := th.Button(&c.panelTrig[2], "Fifty rows")
+		trigger.Variant, trigger.Icon = ui.VariantOutline, g.icon("chevron-down")
+		p := th.DropdownPanel(&g.root, &c.panels[2], ui.Space(60), func(gtx C, th *ui.Theme) D {
+			rows := make([]layout.Widget, 50)
+			for i := range rows {
+				rows[i] = th.Text(ui.TextSM, fmt.Sprintf("Row %d", i+1)).Layout
+			}
+			return ui.Stack(2, rows...)(gtx)
+		})
+		return p.Layout(gtx, trigger.Layout)
+	}
 	spread := func(left, right layout.Widget) layout.Widget {
 		return func(gtx C) D {
 			return layout.Flex{}.Layout(gtx,
@@ -306,6 +319,8 @@ func (g *gallery) popupVariantsSection(gtx C, th *ui.Theme) D {
 		},
 		caption(th, "DropdownPanel: left edge aligned, then AlignEnd"),
 		spread(panel(0, false, "Align start"), panel(1, true, "Align end")),
+		caption(th, "DropdownPanel taller than the room: cut to it, scrolling, never over its trigger"),
+		tall,
 	)(gtx)
 }
 

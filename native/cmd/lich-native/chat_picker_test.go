@@ -2,10 +2,13 @@ package main
 
 import (
 	"fmt"
+	"image"
 	"strings"
 	"testing"
 
+	"gioui.org/f32"
 	"gioui.org/io/key"
+	"gioui.org/io/pointer"
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
@@ -200,5 +203,93 @@ func TestAProviderWithNoEffortHasOneColumnAndNoEffortProviderNoSearch(t *testing
 	r2.settle(t)
 	if r2.shows(i18n.T("chat.model.search", i18n.Args{"provider": "claude"})) || !r2.shows("High") {
 		t.Errorf("an effort-only panel:\n%s", r2.drawn())
+	}
+}
+
+// sixtyModels is a provider with sixty models, the first in force.
+func sixtyModels() []backend.ChatOption {
+	var choices []backend.ChatChoice
+	for i := range 60 {
+		choices = append(choices, backend.ChatChoice{ID: fmt.Sprintf("m%d", i), Label: fmt.Sprintf("Model %d", i+1)})
+	}
+	return []backend.ChatOption{{ID: "model", Category: api.OptionModel, Current: "m0", Choices: choices}, manyModels()[1]}
+}
+
+// panelEdges is where the open panel stands: its top and its bottom.
+func panelEdges(t *testing.T, u *window) (top, bottom int) {
+	t.Helper()
+	box := u.chats.pane("s1").picker.panel.Box()
+	if box.Empty() {
+		t.Fatal("the panel has not been drawn")
+	}
+	return box.Min.Y, box.Max.Y
+}
+
+func chipTop(t *testing.T, r *frameRig, label string) int {
+	t.Helper()
+	for _, n := range r.nodes() {
+		if n.Desc.Label == label {
+			return n.Desc.Bounds.Min.Y
+		}
+	}
+	t.Fatalf("no chip %q", label)
+	return 0
+}
+
+func TestAPanelOfSixtyModelsIsCappedScrollsAndStandsAboveItsChip(t *testing.T) {
+	u, r, _ := chatFrames(t, api.ViewChat)
+	u.model.chat.setOptions("s1", sixtyModels())
+	r.settle(t)
+	chip := "Model 1 · Medium"
+	r.pressLabel(t, chip)
+	r.settle(t)
+	// The list's scrollbar settles its thumb a frame after the content grows.
+	r.pressLabel(t, i18n.T("chat.model.showMore"))
+	r.settle(t)
+	top, bottom := panelEdges(t, u)
+	if h := bottom - top; h > 421 || h < 400 {
+		t.Errorf("the panel is %dpx tall, want it held at 420", h)
+	}
+	if gap := chipTop(t, r, chip) - bottom; gap < 4 {
+		t.Errorf("the panel ends %dpx over the chip, want a gap of at least 4: it covers its own button", gap)
+	}
+	if r.shows("Model 60") {
+		t.Fatal("the last of sixty models is in view without scrolling")
+	}
+	// The search and the effort stay where they are while the models scroll.
+	search := i18n.T("chat.model.search", i18n.Args{"provider": "claude"})
+	searchAt := labelTop(t, r, search)
+	r.router.Queue(pointer.Event{Kind: pointer.Scroll, Source: pointer.Mouse, Position: f32.Pt(300, float32(top+100)), Scroll: f32.Pt(0, 100000)})
+	r.frame()
+	r.settle(t)
+	if !r.shows("Model 60") {
+		t.Errorf("the list did not scroll to its end:\n%s", r.drawn())
+	}
+	if labelTop(t, r, search) != searchAt || !r.shows(i18n.T("chat.option.effort")) {
+		t.Error("the search or the effort moved with the list")
+	}
+	// The chip is not under the panel: a press on it reaches the backdrop and
+	// closes the panel.
+	r.queueClick(f32.Pt(236, float32(chipTop(t, r, chip)+16))) // the editor takes the focus back a frame later
+	r.frame()
+	r.settle(t)
+	if r.shows(i18n.T("chat.option.effort")) {
+		t.Error("a press on the chip did not close the panel: it was under it")
+	}
+}
+
+func TestAPanelWithLittleRoomAboveIsCutToItAndNeverCoversItsChip(t *testing.T) {
+	u, r, _ := chatFramesIn(t, api.ViewChat, image.Pt(1200, 460), busySession())
+	u.model.chat.setOptions("s1", manyModels())
+	r.settle(t)
+	chip := "Model 2 · Medium"
+	r.clickLabel(t, chip)
+	r.settle(t)
+	top, bottom := panelEdges(t, u)
+	if gap := chipTop(t, r, chip) - bottom; gap < 4 {
+		t.Errorf("the panel ends %dpx over the chip: it covers it", gap)
+	}
+	if top < 4 {
+		t.Errorf("the panel starts at y=%d, out of the window", top)
 	}
 }
