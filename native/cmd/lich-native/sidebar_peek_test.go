@@ -180,9 +180,6 @@ func TestPeekTakesTheStagesRoomAndGivesItBack(t *testing.T) {
 	if reserve <= rail || reserve >= panel {
 		t.Fatalf("on its way back the stage leaves %dpx, want between the rail's %d and the panel's %d", reserve, rail, panel)
 	}
-	if end := reserve + s.stageOverhang(gtx); end != rail {
-		t.Errorf("on its way back the terminal is laid out beside %dpx, want the rail's %d it lands on", end, rail)
-	}
 	r.settle(t)
 	if got := s.stageReserve(gtx); got != rail {
 		t.Errorf("the stage leaves %dpx once the sidebar went back, want the rail's %d", got, rail)

@@ -204,6 +204,9 @@ type window struct {
 	drop        terminalDrop
 	// islandAt is the island's top-left in window pixels, where body put it.
 	islandAt image.Point
+	// termWidth is the width the session's terminal was last laid out at
+	// while no slide moved the stage's edge.
+	termWidth int
 	// layoutStage is the panes' state while a layout is on screen.
 	layoutStage layoutStage
 	// notesBar is the notes bar's state every page pane shares
@@ -874,9 +877,9 @@ func sidebarActive(v stageView) string {
 // island is the stage's rounded box: Home, the empty notice, the diff or
 // the terminal, in the color the active tab merges with, under the footer's
 // balloons. Its top-left corner is square while that tab sits on it. A lone
-// session's terminal is laid out termWidth wide, which a dock slide, a
-// sidebar morph or the sidebar's peek sets to where the box is going: wider, the box clips it;
-// narrower, its fill shows past it. The Git panel's slide sets termHeight the
+// session's terminal is laid out termWidth wide, which a sidebar morph sets
+// to where the box is going and a dock's or a peek's slide to where the box
+// came from: wider, the box clips it; narrower, its fill shows past it. The Git panel's slide sets termHeight the
 // same way.
 func (u *window) island(gtx C, v stageView, termWidth, termHeight int) error {
 	size := gtx.Constraints.Max
@@ -1031,17 +1034,24 @@ func (u *window) stageRow(gtx C, v stageView) error {
 		d.slide.snap(open)
 	}
 	share := d.slide.at(gtx, open)
-	u.terms.refitNow = d.slide.began || d.slide.landed || u.sidebar.holdsStage() || u.git.moved() || u.extPanel.moved()
+	u.terms.refitNow = d.slide.landed || u.sidebar.holdsStage() || u.git.moved() || u.extPanel.moved()
 	defer func() { u.terms.refitNow = false }()
 	size := gtx.Constraints.Max
-	// The session's terminal takes the width the dock's slide and the
-	// sidebar's morph or peek end at from their first frame, so the agent
-	// redraws for it while they are still moving.
+	// The session's terminal takes the width the sidebar's morph ends at
+	// from its first frame. While the dock's or the peek's slide moves the
+	// stage's edge, it keeps its grid, clipped by the island or short of its
+	// edge, and follows once the slide lands: a resize reaches the agent,
+	// which redraws everything it printed, too slow for the slide's frames.
 	termWidth := size.X - u.sidebar.stageOverhang(gtx)
 	if open && !d.fullscreen {
 		termWidth -= d.width(gtx) + gtx.Dp(gutter)
 	}
 	termWidth = max(termWidth, 0)
+	if (d.slide.moving() || u.sidebar.peek.slide.moving()) && u.termWidth > 0 {
+		termWidth = u.termWidth
+	} else {
+		u.termWidth = termWidth
+	}
 	termHeight := max(size.Y-u.git.pending()-u.extPanel.pending()-u.ptyBand(gtx, v)-u.sessionBand(gtx, v), 0)
 	if share == 0 {
 		d.islands = nil
