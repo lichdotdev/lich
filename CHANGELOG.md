@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **The browser's controls are lighter and its tabs are always in view.** The pages' tabs sit on top with a button for a new one, the address is a filled pill that shows the host and path and the whole URL when you edit it, and the page is a rounded card. Open in a window moved to the browser's menu in the sidebar.
+- **A pane in a split no longer wears a frame when it has the focus.** The focused pane's name is brighter than the others'.
 - **Panels now have a faint 1px edge.** The sidebar, the stage, the dock and the Git and extension panels are outlined in the theme's `border` color, so they read apart from the window background in light and dark themes alike. Rows, cards, buttons and badges stay unboxed.
 - **The dock's tabs are icons at its foot.** Code, Review, Artifacts and an extension's tabs now sit in a row of icons at the bottom of the dock; hover one for its name. A dot on the icon marks a tab with changes or files.
 - **The footer floats as two balloons over the foot of the stage, and the dock no longer closes.** The terminal keeps a few rows clear under the agent's prompt for them, and over it a strip names the provider and the session, so nothing covers the agent's banner; a plain terminal has neither. Code and Artifacts open from the dock's tabs; the dock stays docked or collapsed and opens on the tab you used last.

@@ -132,7 +132,7 @@ func (u *window) paneTree(gtx C, v stageView, n *paneNode, path string, r image.
 	if n.leaf() {
 		return u.paneLeaf(gtx, n.Session, r, func() error {
 			if owner, page := browserOwner(n.Session); page {
-				u.browserPaneAt(gtx, v, owner, r, several)
+				u.browserPaneAt(gtx, v, owner, r)
 				return nil
 			}
 			return u.paneAt(gtx, v, n.Session, r, several)
@@ -181,7 +181,7 @@ func pathSteps(path string) []bool {
 }
 
 // paneAt draws session id's pane in r: its header, its terminal, and with
-// more than one pane the focus ring or the fade.
+// more than one pane the fade of the unfocused ones.
 func (u *window) paneAt(gtx C, v stageView, id string, r image.Rectangle, several bool) error {
 	sv, ok := v.panes[id]
 	if !ok {
@@ -220,11 +220,7 @@ func (u *window) paneAt(gtx C, v stageView, id string, r image.Rectangle, severa
 	u.paneFocusTarget(gtx, id)
 	area.Pop()
 	u.paneDropZones(gtx, id, image.Rectangle{Max: size}, r.Add(u.islandAt), false)
-	border, width := on.Over(on.Border), float32(gtx.Dp(1))
-	if several && focused {
-		border, width = u.theme.Ring, float32(gtx.Dp(1.5))
-	}
-	paint.FillShape(gtx.Ops, border, clip.Stroke{Path: shape.Path(gtx.Ops), Width: width}.Op())
+	paint.FillShape(gtx.Ops, on.Over(on.Border), clip.Stroke{Path: shape.Path(gtx.Ops), Width: float32(gtx.Dp(1))}.Op())
 	return err
 }
 

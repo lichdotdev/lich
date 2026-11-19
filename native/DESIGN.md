@@ -409,6 +409,24 @@ agent works, or a switch is on its way, it takes no click and says why in a tool
 A split's pane has its header already, so it gets no strip: the selector, same size, stands at the right of the
 header between the name and the zoom button, and the pane's terminal keeps every row.
 
+### The session's browser
+
+A page pane (`browser_pane.go`, `browser_tabs.go`) is three rows on the pane's fill, no seam between them.
+
+- **Tabs** on the top row, the page's tabs always, even one, then the new-tab button, and the pane's expand,
+  minimize and close at the right. A tab is a neutral 12px square where a favicon would go (the backend sends
+  none) and the page's title in `TextXS`; the front tab is filled `Accent`, its title `Foreground` in the focused
+  pane and `MutedForeground` in the others. A tab behind has no fill until hovered. There is no pane title and
+  no globe.
+- **The toolbar** is back, forward and reload as icons in `MutedForeground`, the address, then the zoom (its
+  percentage shows only off 100%) and DevTools. The address is a pill, `Accent` fill, `RadiusMD`, no border, in
+  the interface font: at rest the page's host and path with no scheme (`shortURL`), while edited the whole URL,
+  selected; on a blank page the placeholder. What a button says lives in its tooltip: the Select tool's is
+  "Click an element to leave a note". Open in a window is not here: it is an item of the browser row's menu in
+  the sidebar.
+- **The page** is a card inset `Space(2)` from the pane's left, right and bottom, `RadiusLG`, its edge the 1px
+  `Border` hairline. The notes bar floats over it, as before.
+
 ### The editor
 
 A file opened from the Code tab, a `path:line` in a terminal or an
@@ -542,7 +560,8 @@ Every row is one line, 34dp tall: `Space(1.5)` above and below a 22px node. Rows
   layout's own sidebar draws none: every card there is in it.
 - **A layout's sidebar**: the layout's name where New Session stands, then its sessions under each
   project's name in `TextXS` `MutedForeground`, in the same tree of checkout, session and browser rows, with their motion. No
-  card there wears the active fill: the focused pane's ring says which session has the keys.
+  card there wears the active fill: the focused pane's header says which session has the keys, its name in
+  `Foreground` and the others' in `MutedForeground`. A pane wears no frame for focus, only its 1px hairline.
 - **A pane's motion**: a pane new to the stage grows out of the edge it was split on in 200ms ease-out, and
   one that leaves shrinks back into it in 180ms ease-in, the neighbours giving and taking the room over the
   same time. A zoom, a divider and a change of tab move at once.

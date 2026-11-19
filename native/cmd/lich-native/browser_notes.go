@@ -82,6 +82,7 @@ type browserNotes struct {
 	// The bar's widgets (browser_notes_dock.go). dock is its tag for the
 	// pointer, and docked how tall it stood last frame, off the page's bottom.
 	selectTool, drawTool, unfold, sketchGone widget.Clickable
+	selectHint                               ui.Tooltip
 	shapeMenuTrigger                         widget.Clickable
 	shapeMenuMenu                            ui.MenuState
 	shapeMenuHint                            ui.Tooltip

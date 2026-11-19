@@ -165,19 +165,13 @@ func (u *window) notesChip(gtx C, n *browserNotes, lift int, radius unit.Dp, bod
 	return d.Size.Y + lift
 }
 
-// notesPill is the bar with nothing waiting: the tools, what the one that is
-// on asks for, and the arrow that folds it.
+// notesPill is the bar with nothing waiting: the tools and the arrow that
+// folds it.
 func (u *window) notesPill(gtx C, n *browserNotes) D {
 	th := u.theme
 	return layout.UniformInset(notesPillPad).Layout(gtx, func(gtx C) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Rigid(func(gtx C) D { return u.noteTools(gtx, n) }),
-			layout.Rigid(func(gtx C) D {
-				if !n.picking {
-					return D{}
-				}
-				return layout.Inset{Left: ui.Space(2.5), Right: ui.Space(1.5)}.Layout(gtx, th.Text(ui.TextXS, i18n.T("layouts.browser.pickHint")).In(notePick).Layout)
-			}),
 			ui.Gap(1),
 			layout.Rigid(th.IconAction(&u.root, &n.fold, icNotesFold, i18n.T("layouts.browser.foldNotes"), false).Layout),
 		)
@@ -197,7 +191,10 @@ func (u *window) noteTools(gtx C, n *browserNotes) D {
 	}
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			return u.spot(gtx, tourBrowserPick, tool(&n.selectTool, icBrowserPick, i18n.T("layouts.browser.toolSelect"), n.picking))
+			hint := u.theme.Tooltip(&u.root, &n.selectHint, i18n.T("layouts.browser.pickHint"))
+			return u.spot(gtx, tourBrowserPick, func(gtx C) D {
+				return hint.Layout(gtx, tool(&n.selectTool, icBrowserPick, i18n.T("layouts.browser.toolSelect"), n.picking))
+			})
 		}),
 		ui.Gap(0.5),
 		layout.Rigid(tool(&n.drawTool, icBrowserDraw, i18n.T("layouts.browser.toolDraw"), n.drawing)),
