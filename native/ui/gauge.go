@@ -117,3 +117,37 @@ func (r GaugeRowStyle) Layout(gtx C) D {
 		FixedColumn(r.LeftW, AlignEnd(r.Left)),
 	)
 }
+
+// segmentedGap is the room between a SegmentedBar's segments.
+var segmentedGap = Space(0.5)
+
+// SegmentsLit is how many of count segments a percent fills: rounded to the
+// nearest, and at least one for any share at all.
+func SegmentsLit(percent, count int) int {
+	percent = min(max(percent, 0), 100)
+	lit := (percent*count + 50) / 100
+	if percent > 0 && lit == 0 {
+		return 1
+	}
+	return lit
+}
+
+// SegmentedBar is a gauge of count rounded segments across the width, the
+// first SegmentsLit of them in tone and the others on the track color.
+func (th *Theme) SegmentedBar(gtx C, percent, count int, tone color.NRGBA) D {
+	h := gtx.Dp(Space(1.5))
+	gap := gtx.Dp(segmentedGap)
+	width := gtx.Constraints.Max.X
+	seg := max((width-gap*(count-1))/count, 1)
+	lit := SegmentsLit(percent, count)
+	track := th.Over(th.Border)
+	for i := range count {
+		c := track
+		if i < lit {
+			c = tone
+		}
+		x := i * (seg + gap)
+		paint.FillShape(gtx.Ops, c, clip.UniformRRect(image.Rectangle{Min: image.Pt(x, 0), Max: image.Pt(x+seg, h)}, h/2).Op(gtx.Ops))
+	}
+	return D{Size: image.Pt(count*seg+(count-1)*gap, h)}
+}

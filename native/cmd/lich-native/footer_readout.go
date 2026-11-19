@@ -47,10 +47,9 @@ func contextReadout(u sessionUsage) (footerReadout, bool) {
 		return footerReadout{}, false
 	}
 	return footerReadout{
-		Label:  i18n.T("shell.footerSession.contextWindow"),
-		Text:   fmt.Sprintf("%d%%", u.Percent),
-		Detail: []string{i18n.T("shell.footerSession.contextTokens", i18n.Args{"tokens": groupThousands(u.Tokens), "window": groupThousands(u.Window)})},
-		Tone:   toneOf(float64(u.Percent)),
+		Label: i18n.T("shell.footerSession.context"),
+		Text:  fmt.Sprintf("%d%%", u.Percent),
+		Tone:  toneOf(float64(u.Percent)),
 	}, true
 }
 

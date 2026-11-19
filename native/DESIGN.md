@@ -246,6 +246,16 @@ extension's screen cover the stage and carry none either. A project with no sess
 The Git panel and an extension's panel rise from the stage's foot over the band: while one is up the balloons
 are not drawn and the terminal takes the band back, in the one resize the panel's slide already makes.
 
+### The context tooltip
+
+The context ring's tooltip is one component for the balloon and the chat's composer (`footer_context.go`): a
+card with "Context" at the left and the share used at the right in medium, a bar of twenty rounded segments
+(`SegmentedBar`) whose lit ones are `Foreground` up to 70%, `ToneWait` up to 90% and `Destructive` past it, then
+lines of a muted label at the left and its value at the right: Tokens (compact, "585.7K", the window muted after
+it), Model window, Cache with its hit rate and Session cost, each only when the report has it. Numbers are
+compact with the locale's decimal mark. There is no line for compactions or for what is left before one: lich
+keeps no count of the first and no provider tells it the threshold of the second.
+
 ### The chat view
 
 A session whose view is chat draws its conversation in place of the terminal, on the same island and in a
@@ -290,6 +300,8 @@ the list stays pinned to its end while items arrive, until the person scrolls up
   and leading of the messages (15sp at 1.5), `Space(4)` in from the left and `Space(3.5)` down from the top.
   Inside the box stand only the provider's controls, one line under the text: the footer's attach as a "+",
   the model with its effort in one chip ("Opus 5.5 · high") and the mode, each a ghost chip with a chevron.
+  After them the footer's context ring with its percentage, the same readout as the terminal's balloon, when the
+  session reports a window.
   The mode's menu lists the provider's choices, the current one checked, and picking one sets it
   (`ChatSetOption`). The model chip opens one panel upward, in two columns with a hairline between
   (`chat_picker.go`): at the left a search that has the focus, which filters the models as it is typed, then

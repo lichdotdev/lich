@@ -319,7 +319,7 @@ func (u *window) chatComposer(gtx C, th *ui.Theme, p *chatPane, sv sessionView, 
 			ta := th.Textarea(&p.editor, i18n.T("chat.composer.placeholder", i18n.Args{"provider": name}))
 			ta.MaxHeight, ta.MinHeight, ta.Radius = chatComposerMax, chatComposerMin, ui.RadiusLG
 			ta.Size, ta.Leading, ta.PadX, ta.PadY = markdown.BodySize, markdown.BodySize*markdown.LineHeightScale, chatComposerPadX, chatComposerPadY
-			ta.Foot = u.chatChips(th, p, sv, working, ft.attach)
+			ta.Foot = u.chatChips(th, p, sv, working, ft)
 			return ta.Layout(gtx)
 		}),
 		layout.Rigid(func(gtx C) D { return u.chatCrumbs(gtx, th, sv, ft) }),

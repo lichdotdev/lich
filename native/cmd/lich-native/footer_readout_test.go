@@ -88,7 +88,7 @@ func TestContextReadout(t *testing.T) {
 		t.Error("a cost-only report drew a context ring")
 	}
 	r, ok := contextReadout(sessionUsage{Percent: 96, Tokens: 192000, Window: 200000})
-	if !ok || r.Text != "96%" || r.Tone != toneDestructive || r.Detail[0] != "192,000 / 200,000 tokens" {
+	if !ok || r.Text != "96%" || r.Tone != toneDestructive || r.Label != "Context" {
 		t.Errorf("got %+v, %v", r, ok)
 	}
 }
