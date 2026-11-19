@@ -107,7 +107,7 @@ func (u *window) chatStampRow(gtx C, th *ui.Theme, p *chatPane, c *chatCopy, it 
 	gtx.Constraints.Min.Y = gtx.Dp(chatCopySlot)
 	row := []layout.FlexChild{layout.Rigid(func(gtx C) D { return u.chatStamp(gtx, th, p, it) })}
 	if over {
-		button := layout.Rigid(func(gtx C) D { return c.button(gtx, th, &u.root, it.Text) })
+		button := layout.Rigid(func(gtx C) D { return c.button(gtx, th, it.Text) })
 		if copyFirst {
 			row = append([]layout.FlexChild{button, ui.Gap(1)}, row...)
 		} else {

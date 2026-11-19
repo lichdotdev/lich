@@ -14,7 +14,6 @@ import (
 	"gioui.org/op/clip"
 	"gioui.org/widget"
 
-	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -34,7 +33,6 @@ const chatCopiedFor = 1500 * time.Millisecond
 // frames.
 type chatCopy struct {
 	click    widget.Clickable
-	tip      ui.Tooltip
 	hovered  bool
 	copiedAt time.Time
 }
@@ -77,33 +75,35 @@ func (c *chatCopy) hover(gtx C, w func(gtx C, over bool) D) D {
 	return d
 }
 
-// button is the icon-only copy button: Copy until pressed, then a check for
-// chatCopiedFor, its tooltip saying so, putting text on the clipboard as the
+// done is whether the check is still showing at now.
+func (c *chatCopy) done(now time.Time) bool {
+	return !c.copiedAt.IsZero() && now.Sub(c.copiedAt) < chatCopiedFor
+}
+
+// button is the icon-only copy button, with no tooltip: the copy glyph until
+// pressed, then a check for chatCopiedFor, putting text on the clipboard as the
 // window does everywhere. It takes the room of the line it stands on.
-func (c *chatCopy) button(gtx C, th *ui.Theme, root *ui.Root, text string) D {
+func (c *chatCopy) button(gtx C, th *ui.Theme, text string) D {
 	if c.click.Clicked(gtx) {
 		gtx.Execute(clipboard.WriteCmd{Type: "application/text", Data: io.NopCloser(strings.NewReader(text))})
 		c.copiedAt = gtx.Now
 	}
-	done := !c.copiedAt.IsZero() && gtx.Now.Sub(c.copiedAt) < chatCopiedFor
-	label, glyph := i18n.T("chat.copy.copy"), icChatCopy
-	if done {
+	glyph := icChatCopy
+	if c.done(gtx.Now) {
 		gtx.Execute(op.InvalidateCmd{At: c.copiedAt.Add(chatCopiedFor)})
-		label, glyph = i18n.T("chat.copy.copied"), icCheck
+		glyph = icCheck
 	}
 	slot, hit := gtx.Dp(chatCopySlot), gtx.Dp(chatCopyHit)
-	d := th.Tooltip(root, &c.tip, label).Layout(gtx, func(gtx C) D {
-		off := op.Offset(image.Pt(0, (slot-hit)/2)).Push(gtx.Ops)
-		defer off.Pop()
-		gtx.Constraints = layout.Exact(image.Pt(hit, hit))
-		return c.click.Layout(gtx, func(gtx C) D {
-			fg := th.MutedForeground
-			if c.click.Hovered() {
-				ui.Fill(gtx, th.Accent, ui.RadiusSM)
-				fg = th.AccentForeground
-			}
-			return layout.Center.Layout(gtx, func(gtx C) D { return glyph.Layout(gtx, ui.Space(3), fg) })
-		})
+	off := op.Offset(image.Pt(0, (slot-hit)/2)).Push(gtx.Ops)
+	defer off.Pop()
+	gtx.Constraints = layout.Exact(image.Pt(hit, hit))
+	d := c.click.Layout(gtx, func(gtx C) D {
+		fg := th.MutedForeground
+		if c.click.Hovered() {
+			ui.Fill(gtx, th.Accent, ui.RadiusSM)
+			fg = th.AccentForeground
+		}
+		return layout.Center.Layout(gtx, func(gtx C) D { return glyph.Layout(gtx, ui.Space(3), fg) })
 	})
 	return D{Size: image.Pt(d.Size.X, slot)}
 }

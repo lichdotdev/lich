@@ -58,9 +58,5 @@
     "search": "Buscar modelos do {provider}…",
     "showMore": "Mostrar mais",
     "default": "Padrão"
-  },
-  "copy": {
-    "copy": "Copiar",
-    "copied": "Copiado"
   }
 }

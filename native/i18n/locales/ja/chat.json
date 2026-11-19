@@ -54,9 +54,5 @@
     "search": "{provider}のモデルを検索…",
     "showMore": "さらに表示",
     "default": "デフォルト"
-  },
-  "copy": {
-    "copy": "コピー",
-    "copied": "コピーしました"
   }
 }
