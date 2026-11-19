@@ -5,6 +5,7 @@ package webview
 import (
 	"errors"
 	"image"
+	"image/color"
 
 	"gioui.org/app"
 )
@@ -14,6 +15,9 @@ func PrepareWindow() {}
 
 // SetParent records the window pages go in; nothing holds a page here yet.
 func SetParent(app.ViewEvent) {}
+
+// SetGround does nothing: no page sits in the window here.
+func SetGround(color.NRGBA) {}
 
 // KeyboardToWindow does nothing: no page takes the keyboard here.
 func KeyboardToWindow() {}

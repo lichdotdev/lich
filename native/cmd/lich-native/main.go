@@ -464,6 +464,7 @@ func run(w *app.Window, rt backend.Runtime) error {
 			}
 			frame.HandOff()
 			e.Frame(gtx.Ops)
+			u.placeNativePages(e.Source)
 			frame.End()
 			frames.Add(1)
 		}

@@ -97,6 +97,21 @@ void lich_webview_main(void) { gtk_main(); }
 static LichPage *keyed;
 static unsigned long app;
 
+// ground is the color behind the page, which X paints where a page window
+// leaves the app's: the app's own drawing never covers what a child window
+// hid, so a page that shrank left black there until the app's next frame.
+static unsigned long ground;
+
+void lich_webview_set_ground(unsigned long color) {
+	ground = color;
+	if (!app) {
+		return;
+	}
+	Display *x = gdk_x11_display_get_xdisplay(gdk_display_get_default());
+	XSetWindowBackground(x, app, ground);
+	XFlush(x);
+}
+
 void lich_webview_keyboard_to_window(void) {
 	if (!app) {
 		return;
@@ -150,8 +165,11 @@ static void load_changed(WebKitWebView *view, WebKitLoadEvent step, gpointer pag
 LichPage *lich_webview_open(unsigned long parent, const char *url, uintptr_t owner) {
 	GdkDisplay *display = gdk_display_get_default();
 	Display *x = gdk_x11_display_get_xdisplay(display);
-	app = parent;
-	Window child = XCreateSimpleWindow(x, parent, 0, 0, 1, 1, 0, 0, 0);
+	if (app != parent) {
+		app = parent;
+		XSetWindowBackground(x, app, ground);
+	}
+	Window child = XCreateSimpleWindow(x, parent, 0, 0, 1, 1, 0, 0, ground);
 	GdkWindow *window = gdk_x11_window_foreign_new_for_display(display, child);
 
 	GtkWidget *holder = gtk_window_new(GTK_WINDOW_TOPLEVEL);

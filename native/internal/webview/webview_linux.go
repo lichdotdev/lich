@@ -14,6 +14,7 @@ import "C"
 import (
 	"errors"
 	"image"
+	"image/color"
 	"runtime"
 	"runtime/cgo"
 	"sync"
@@ -180,4 +181,17 @@ func KeyboardToWindow() {
 		return
 	}
 	onGTK(func() { C.lich_webview_keyboard_to_window() })
+}
+
+var ground color.NRGBA
+
+// SetGround is the color behind the pages, shown where a page leaves the
+// window until the window's next frame: the pane's own background.
+func SetGround(c color.NRGBA) {
+	if c == ground || !gtkUp.Load() {
+		return
+	}
+	ground = c
+	pixel := C.ulong(0xff)<<24 | C.ulong(c.R)<<16 | C.ulong(c.G)<<8 | C.ulong(c.B)
+	onGTK(func() { C.lich_webview_set_ground(pixel) })
 }

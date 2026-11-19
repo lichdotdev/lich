@@ -5,8 +5,8 @@ import (
 	"log"
 
 	"gioui.org/io/event"
+	"gioui.org/io/input"
 	"gioui.org/io/pointer"
-	"gioui.org/op"
 	"gioui.org/op/clip"
 
 	"github.com/lichdotdev/lich/native/internal/webview"
@@ -34,18 +34,24 @@ func (u *window) placeNativePage(gtx C, p *browserPaneUI, session, url string) b
 			p.native.Navigate(url)
 		}
 	}
-	// Origin is where the page area sat in the last frame: a move shows a
-	// frame late, so a frame that moves the page asks for one more.
-	origin, ok := gtx.Source.Origin(&p.tag)
-	if !ok {
-		gtx.Execute(op.InvalidateCmd{})
-		return true
-	}
-	at := origin.Round()
-	if p.native.Place(image.Rectangle{Min: at, Max: at.Add(gtx.Constraints.Max)}) {
-		gtx.Execute(op.InvalidateCmd{})
-	}
+	p.nativeSize = gtx.Constraints.Max
+	webview.SetGround(u.theme.Background)
 	return true
+}
+
+// placeNativePages moves each shown page over its pane's page area where the
+// frame just handed to the window drew it: placed during layout from the
+// frame before, a page trailed a sliding pane by a frame.
+func (u *window) placeNativePages(src input.Source) {
+	for _, p := range u.browserPanes {
+		if p.native == nil || !p.wasOnScreen {
+			continue
+		}
+		if origin, ok := src.Origin(&p.tag); ok {
+			at := origin.Round()
+			p.native.Place(image.Rectangle{Min: at, Max: at.Add(p.nativeSize)})
+		}
+	}
 }
 
 // putNativePageAway hides the page of a pane no longer drawn, and ends it
