@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -36,7 +37,7 @@ func TestATurnsChangesReadAsItsFiles(t *testing.T) {
 	}
 }
 
-func TestEachFinishedTurnThatTheMessageOpenedEndsInADoneRow(t *testing.T) {
+func TestOnlyTheLastFinishedTurnEndsInADoneRow(t *testing.T) {
 	items := []backend.ChatItem{
 		{ID: "n0", Kind: api.ItemNotice, Turn: 0, Text: "resumed"},
 		{ID: "u1", Kind: api.ItemUser, Turn: 1, At: 1000},
@@ -44,7 +45,7 @@ func TestEachFinishedTurnThatTheMessageOpenedEndsInADoneRow(t *testing.T) {
 		{ID: "u2", Kind: api.ItemUser, Turn: 2, At: 3000},
 		{ID: "a2", Kind: api.ItemAgent, Turn: 2, At: 4000},
 	}
-	done := func(running bool) (turns []int) {
+	done := func(items []backend.ChatItem, running bool) (turns []int) {
 		for _, r := range chatRows(items, running, time.UnixMilli(5000)) {
 			if r.kind == chatRowDone {
 				turns = append(turns, r.turn)
@@ -52,15 +53,26 @@ func TestEachFinishedTurnThatTheMessageOpenedEndsInADoneRow(t *testing.T) {
 		}
 		return turns
 	}
-	if got := done(false); len(got) != 2 || got[0] != 1 || got[1] != 2 {
-		t.Errorf("done rows %v, want turns 1 and 2: the notice before the first message has none", got)
-	}
-	if got := done(true); len(got) != 1 || got[0] != 1 {
-		t.Errorf("done rows %v while turn 2 runs, want turn 1 alone", got)
+	if got := done(items, false); len(got) != 1 || got[0] != 2 {
+		t.Errorf("done rows %v for a conversation of two finished turns, want turn 2 alone", got)
 	}
 	rows := chatRows(items, false, time.UnixMilli(5000))
 	if last := rows[len(rows)-1]; last.kind != chatRowDone || chatRowKey(last) != "done:2" {
 		t.Errorf("the conversation ends in %+v, want turn 2's done row", last)
+	}
+	if got := done(items, true); got != nil {
+		t.Errorf("done rows %v while turn 2 runs, want none: the live row stands there", got)
+	}
+	// The person's next message takes the line away: turn 3 has begun.
+	next := append(items[:5:5], backend.ChatItem{ID: "u3", Kind: api.ItemUser, Turn: 3, At: 6000})
+	if got := done(next, true); got != nil {
+		t.Errorf("done rows %v once turn 3 began, want none", got)
+	}
+	if got := done(items[:1], false); got != nil {
+		t.Errorf("done rows %v for a conversation no message opened", got)
+	}
+	if got := done(nil, false); got != nil {
+		t.Errorf("done rows %v for an empty conversation", got)
 	}
 }
 
@@ -149,5 +161,35 @@ func TestTheDoneLineOfATurnReadBackWithTheHistoryIsDoneAlone(t *testing.T) {
 	r.settle(t)
 	if !r.shows("Done") || r.shows("no changes") {
 		t.Errorf("a turn nobody reported the end of:\n%s", r.drawn())
+	}
+}
+
+func TestAHistoryOfSeveralTurnsClosesOnlyTheLast(t *testing.T) {
+	u, r := stampFrames(t)
+	u.model.chat.history("s1", []backend.ChatItem{
+		{ID: "u1", Kind: api.ItemUser, Turn: 1, At: novDay(18, 17, 50), Text: "one"},
+		{ID: "a1", Kind: api.ItemAgent, Turn: 1, At: novDay(18, 17, 51), Text: "first"},
+		{ID: "u2", Kind: api.ItemUser, Turn: 2, At: novDay(18, 17, 58), Text: "two"},
+		{ID: "a2", Kind: api.ItemAgent, Turn: 2, At: novDay(18, 17, 59), Text: "second"},
+	})
+	r.settle(t)
+	if n := strings.Count(r.drawn(), `"Done"`); n != 1 {
+		t.Errorf("%d done lines over two turns read back, want the last turn's alone:\n%s", n, r.drawn())
+	}
+}
+
+func TestTheNextMessageTakesTheDoneLineAway(t *testing.T) {
+	u, r := endedTurn(t, api.ChatTurn{StopReason: "end_turn", Changes: &api.ChatTurnChanges{Files: 3, Added: 12, Removed: 4}})
+	if !r.shows("Done") {
+		t.Fatalf("no done line before the message:\n%s", r.drawn())
+	}
+	u.model.chat.turn(api.ChatTurn{SessionID: "s1", Running: true})
+	u.model.chat.apply(api.ChatItemUpdate{SessionID: "s1", Item: backend.ChatItem{ID: "u2", Kind: api.ItemUser, Turn: 2, At: novDay(18, 18, 0), Text: "next"}})
+	for range 60 {
+		r.now = r.now.Add(frameStep)
+		r.frame()
+	}
+	if r.shows("Done") || r.shows("3 files") {
+		t.Errorf("the line is still there once the next message was sent:\n%s", r.drawn())
 	}
 }
