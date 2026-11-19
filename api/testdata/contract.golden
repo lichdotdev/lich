@@ -593,6 +593,7 @@ BrowserTab {
 	front,omitempty bool
 	devtools,omitempty bool
 	paused,omitempty bool
+	loading,omitempty bool
 }
 
 BrowserTextOptions {

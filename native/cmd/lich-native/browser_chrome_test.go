@@ -2,7 +2,9 @@ package main
 
 import (
 	"image"
+	"strings"
 	"testing"
+	"time"
 
 	"gioui.org/f32"
 	"gioui.org/layout"
@@ -103,4 +105,40 @@ func TestBlankPageShowsTheAddressPlaceholder(t *testing.T) {
 	if !rig.shows("Search or enter address") {
 		t.Fatalf("a blank page's address shows no placeholder:\n%s", rig.drawn())
 	}
+}
+
+// A loading tab turns a spinner where its mark sits, and its title stays put.
+func TestALoadingTabSpinsInItsMarksPlace(t *testing.T) {
+	tab := api.BrowserTab{ID: "a", Title: "Alpha", Front: true}
+	_, _, loaded := chromeRig(t, api.BrowserState{Open: true, Tabs: []api.BrowserTab{tab}})
+	tab.Loading = true
+	_, _, loading := chromeRig(t, api.BrowserState{Open: true, Tabs: []api.BrowserTab{tab}})
+	still, _ := loaded.frame()
+	spun, _ := loading.frame()
+	if paintOf(still) == paintOf(spun) {
+		t.Fatal("a loading tab draws as a loaded one")
+	}
+	if a, b := titleBounds(t, loaded), titleBounds(t, loading); a != b {
+		t.Fatalf("the title moved while the tab loads: %v, loaded %v", b, a)
+	}
+	loaded.now, loading.now = loaded.now.Add(250*time.Millisecond), loading.now.Add(250*time.Millisecond)
+	if again, _ := loaded.frame(); paintOf(again) != paintOf(still) {
+		t.Fatal("a loaded tab's mark moves")
+	}
+	if again, _ := loading.frame(); paintOf(again) == paintOf(spun) {
+		t.Fatal("a loading tab's spinner does not turn")
+	}
+}
+
+func paintOf(drawn string) string { return strings.SplitN(drawn, "\n", 2)[0] }
+
+func titleBounds(t *testing.T, rig *frameRig) image.Rectangle {
+	t.Helper()
+	for _, n := range rig.nodes() {
+		if n.Desc.Label == "Alpha" {
+			return n.Desc.Bounds
+		}
+	}
+	t.Fatalf("no tab titled Alpha:\n%s", rig.drawn())
+	return image.Rectangle{}
 }

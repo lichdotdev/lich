@@ -474,7 +474,8 @@ to the chrome takes the same gap rather than a number of its own.
 
 - **Tabs** on the top row, the page's tabs always, even one, then the new-tab button, and the pane's expand,
   minimize and close at the right. A tab is a neutral 12px square where a favicon would go (the backend sends
-  none) and the page's title in `TextXS`; the front tab is filled `Accent`, its title `Foreground` in the focused
+  none) and the page's title in `TextXS`; while the tab's page loads (`BrowserTab.Loading`) the kit's
+  `Spinner` takes the square's place, same 12px, in the title's color; the front tab is filled `Accent`, its title `Foreground` in the focused
   pane and `MutedForeground` in the others. A tab behind has no fill until hovered. There is no pane title and
   no globe.
 - **The toolbar** is back, forward and reload as icons in `MutedForeground`, the address, then the zoom (its

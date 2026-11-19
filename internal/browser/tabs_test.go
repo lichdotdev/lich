@@ -237,3 +237,30 @@ func TestAgentTabsLeaveDevToolsOutAndKeepTheirOrder(t *testing.T) {
 		t.Fatalf("agentTabs = %+v, want %+v", got, want)
 	}
 }
+
+func TestTabStackListsATabLoadingUntilItStops(t *testing.T) {
+	s := stackOf(nil, nil)
+	root := s.byID("root")
+	if !s.setLoading(root, true) || !s.list()[0].Loading {
+		t.Fatalf("a tab that started loading is not listed loading: %+v", s.list())
+	}
+	if s.setLoading(root, true) {
+		t.Fatal("a second start says the tab changed")
+	}
+	if !s.setLoading(root, false) || s.list()[0].Loading {
+		t.Fatalf("a tab that stopped loading is still listed loading: %+v", s.list())
+	}
+}
+
+func TestTabStackSeedsLoadingOnlyWithoutALoadEventSince(t *testing.T) {
+	s := stackOf(nil, nil)
+	root := s.byID("root")
+	seen := s.loadEvents(root)
+	s.setLoading(root, false)
+	if s.seedLoading(root, seen) || s.list()[0].Loading {
+		t.Fatal("a seed overruled a load event that came after it looked")
+	}
+	if !s.seedLoading(root, s.loadEvents(root)) || !s.list()[0].Loading {
+		t.Fatal("a seed with no load event since did not mark the tab loading")
+	}
+}

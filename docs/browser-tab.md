@@ -47,7 +47,12 @@ clicked.
   then brings that window forward.
 
 `browser-state` tells the window when a browser starts, closes, moves to a
-window or loads another page; `browser.Running` is what a window reads when
+window or loads another page, and each tab's `loading` from Chrome's
+`frameStartedLoading` to its `frameStoppedLoading` of the tab's main frame,
+which also ends a load that failed, never committed (a 204) or only moved
+within the page. A tab the page opens can start loading before lich attaches
+to it, so once attached its `document.readyState` seeds `loading` unless a
+load event came first; `browser.Running` is what a window reads when
 it attaches. A browser no pane shows and no one used for five minutes is
 never closed on its own: its state turns `idle`, the window asks with a toast,
 and Close (`browser.Close`) or Keep open (`browser.Keep`, five more minutes)

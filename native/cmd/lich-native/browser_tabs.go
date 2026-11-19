@@ -124,9 +124,12 @@ func (u *window) tabLayout(gtx C, p *browserPaneUI, tab api.BrowserTab, pick, cl
 	right := gtx.Dp(ui.Space(1.5))
 	box := image.Rect(size.X-right-side, (size.Y-side)/2, size.X-right, (size.Y+side)/2)
 	left := gtx.Dp(ui.Space(2.5))
-	if tab.DevTools {
+	switch {
+	case tab.DevTools:
 		left += u.devtoolsGlyph(gtx, p, tab, left, fg)
-	} else {
+	case tab.Loading:
+		left += tabSpinner(gtx, th, left, fg)
+	default:
 		left += tabMark(gtx, left, fg)
 	}
 	label := gtx
@@ -150,6 +153,16 @@ func tabMark(gtx C, x int, fg color.NRGBA) int {
 	side := gtx.Dp(ui.Space(3))
 	r := image.Rect(x, (gtx.Constraints.Max.Y-side)/2, x+side, (gtx.Constraints.Max.Y+side)/2)
 	paint.FillShape(gtx.Ops, ui.Alpha(fg, tabMarkAlpha), clip.UniformRRect(r, gtx.Dp(tabMarkRadius)).Op(gtx.Ops))
+	return side + gtx.Dp(ui.Space(1.5))
+}
+
+// tabSpinner draws the spinner a loading page's tab wears in its mark's
+// place, at x, and returns the width the mark takes.
+func tabSpinner(gtx C, th *ui.Theme, x int, fg color.NRGBA) int {
+	side := gtx.Dp(ui.Space(3))
+	off := op.Offset(image.Pt(x, (gtx.Constraints.Max.Y-side)/2)).Push(gtx.Ops)
+	th.Spinner(gtx, ui.Space(3), fg)
+	off.Pop()
 	return side + gtx.Dp(ui.Space(1.5))
 }
 

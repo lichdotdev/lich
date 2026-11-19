@@ -26,6 +26,10 @@ type tab struct {
 	// when this one closes; nil for one the person or the agent opened.
 	opener     *tab
 	url, title string
+	loading    bool
+	// loadEvents counts the tab's load events, which seedLoading reads to
+	// tell whether one came while it looked.
+	loadEvents int
 	// devtools is the pane's DevTools for this tab, nil for none.
 	devtools *devtools
 	fetches  fetches
@@ -155,6 +159,37 @@ func (s *tabStack) setPaused(t *tab, paused bool) bool {
 	return true
 }
 
+// setLoading records whether t's page is loading, and says whether that
+// changed.
+func (s *tabStack) setLoading(t *tab, loading bool) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	t.loadEvents++
+	if t.loading == loading {
+		return false
+	}
+	t.loading = loading
+	return true
+}
+
+func (s *tabStack) loadEvents(t *tab) int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return t.loadEvents
+}
+
+// seedLoading marks t loading unless a load event came since it had seen
+// of them, and says whether that changed it.
+func (s *tabStack) seedLoading(t *tab, seen int) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if t.loadEvents != seen || t.loading {
+		return false
+	}
+	t.loading = true
+	return true
+}
+
 func (s *tabStack) anyPaused() bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -247,7 +282,7 @@ func (s *tabStack) list() []api.BrowserTab {
 	out := make([]api.BrowserTab, 0, len(s.open))
 	for _, t := range s.open {
 		front := t == s.front
-		out = append(out, api.BrowserTab{ID: string(t.id), URL: t.url, Title: t.title, Front: front && !s.inspecting})
+		out = append(out, api.BrowserTab{ID: string(t.id), URL: t.url, Title: t.title, Front: front && !s.inspecting, Loading: t.loading})
 		if d := t.devtools; d != nil {
 			out = append(out, api.BrowserTab{ID: string(d.id), DevTools: true, Paused: d.paused, Front: front && s.inspecting})
 		}

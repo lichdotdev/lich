@@ -82,10 +82,24 @@ func (p *chromePage) bringIn(id target.ID, url string, opener *tab, openedBy tar
 	p.tabs.add(t)
 	if p.tabs.frontTab() != opener || openedBy != opener.id {
 		p.tabsChanged()
+	} else if err := p.toFront(t); err != nil && p.Alive() {
+		slog.Warn("browser: bring a new tab to the front", "url", url, "err", err)
+	}
+	p.seedLoading(t)
+}
+
+// seedLoading marks t loading when its page had not finished loading once
+// lich attached to it: its start event came before the attach, which a tab
+// the page opened misses about half the time (Chromium 157, measured
+// 2026-11-19). A load event that came meanwhile has the last word.
+func (p *chromePage) seedLoading(t *tab) {
+	seen := p.tabs.loadEvents(t)
+	var state string
+	if err := runOn(t.ctx, nil, chromedp.Evaluate(`document.readyState`, &state)); err != nil {
 		return
 	}
-	if err := p.toFront(t); err != nil && p.Alive() {
-		slog.Warn("browser: bring a new tab to the front", "url", url, "err", err)
+	if state != "complete" && p.tabs.seedLoading(t, seen) {
+		p.tabsChanged()
 	}
 }
 
@@ -224,6 +238,14 @@ func (p *chromePage) closeTarget(id target.ID) {
 	})
 	if err := p.runFree(nil, closeTab); err != nil {
 		slog.Warn("browser: close a tab the page opened", "err", err)
+	}
+}
+
+// tabLoading records that t's page started or stopped loading, for its main
+// frame only: a frame inside the page loads on its own.
+func (p *chromePage) tabLoading(t *tab, frame cdp.FrameID, loading bool) {
+	if string(frame) == string(t.id) && p.tabs.setLoading(t, loading) {
+		p.tabsChanged()
 	}
 }
 

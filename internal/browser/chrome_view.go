@@ -77,6 +77,12 @@ func (p *chromePage) listenTab(t *tab) {
 			if e.Frame.ParentID == "" {
 				p.leaveLanded(t)
 			}
+		case *page.EventFrameStartedLoading:
+			p.tabLoading(t, e.FrameID, true)
+			return
+		case *page.EventFrameStoppedLoading:
+			p.tabLoading(t, e.FrameID, false)
+			return
 		case *debugger.EventPaused:
 			p.debuggerPaused(t, true)
 			return

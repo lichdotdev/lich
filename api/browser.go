@@ -158,6 +158,10 @@ type BrowserTab struct {
 	Front    bool `json:"front,omitempty"`
 	DevTools bool `json:"devtools,omitempty"`
 	Paused   bool `json:"paused,omitempty"`
+	// Loading is the tab's page loading, from its navigation's start until the
+	// page and its resources finished or failed: whatever engine draws the
+	// page sets it from its own main-frame load events.
+	Loading bool `json:"loading,omitempty"`
 }
 
 // Tab actions: open a blank tab in front, bring Tab to the front, close Tab.
