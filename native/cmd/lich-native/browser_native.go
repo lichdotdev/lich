@@ -81,6 +81,9 @@ func (u *window) coverPages(r image.Rectangle) {
 // for a frame where a sliding layer had just moved onto the page, a band on 20
 // of 288 frames over 4 slides, and none made before (Xvfb, 60 fps, 2026-11-19).
 func (u *window) cutNativePages() {
+	for _, b := range u.floatingBoxes() {
+		u.coverPages(b)
+	}
 	for _, p := range u.browserPanes {
 		if p.native == nil || !p.wasOnScreen {
 			continue
@@ -106,7 +109,7 @@ func pageCuts(r image.Rectangle, own, covers []image.Rectangle) []image.Rectangl
 // floatingBoxes are where the collapsed sidebar and dock float over the
 // stage this frame, in window pixels. A page is a window of the system's
 // that nothing the window draws covers, so these are what a page under them
-// has to cut out of itself, once internal/webview can (placeNativePages).
+// has to cut out of itself (cutNativePages).
 func (u *window) floatingBoxes() []image.Rectangle {
 	var boxes []image.Rectangle
 	for _, b := range []image.Rectangle{u.sidebar.peek.box, u.dock.peek.box} {
