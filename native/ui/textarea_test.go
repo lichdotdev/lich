@@ -252,3 +252,25 @@ func TestASteadyTextareaFramesTheSameFocusedOrNot(t *testing.T) {
 		}
 	}
 }
+
+func TestClassifyEditSeparatesTypingDeletingAndTheRest(t *testing.T) {
+	for name, c := range map[string]struct {
+		old  editState
+		text string
+		want editKind
+	}{
+		"a character typed at the caret": {editState{"ab", 2, 2}, "abc", editType},
+		"typed in the middle":            {editState{"ac", 1, 1}, "abc", editType},
+		"a character typed elsewhere":    {editState{"ab", 0, 0}, "abc", editOther},
+		"a newline":                      {editState{"ab", 2, 2}, "ab\n", editOther},
+		"a backspace":                    {editState{"abc", 3, 3}, "ab", editDelete},
+		"a delete forward":               {editState{"abc", 0, 0}, "bc", editDelete},
+		"a paste":                        {editState{"ab", 2, 2}, "abxyz", editOther},
+		"a replaced selection":           {editState{"abc", 3, 0}, "x", editOther},
+		"a cut":                          {editState{"abcd", 4, 1}, "a", editOther},
+	} {
+		if got := classifyEdit(c.old, c.text); got != c.want {
+			t.Errorf("%s: kind %d, want %d", name, got, c.want)
+		}
+	}
+}

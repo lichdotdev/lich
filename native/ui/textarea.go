@@ -58,7 +58,9 @@ type TextareaStyle struct {
 	// Steady draws the frame the same focused and not, with no ring and the
 	// resting border: the blinking caret is what says the keyboard is there.
 	Steady bool
-	theme  *Theme
+	// History, when set, gives the field Ctrl+Z, Cmd+Z, and redo.
+	History *EditHistory
+	theme   *Theme
 }
 
 // Textarea is a default textarea over editor.
@@ -71,6 +73,9 @@ func (s TextareaStyle) Layout(gtx C) D {
 		gtx = gtx.Disabled()
 	}
 	s.Editor.SingleLine = false
+	if s.History != nil {
+		s.History.Handle(gtx, s.Editor)
+	}
 	gtx.Constraints.Max.X = inputWidth(gtx, s.Width)
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 	if s.MaxHeight > 0 {
@@ -101,6 +106,9 @@ func (s TextareaStyle) Layout(gtx C) D {
 	}
 	st := inputState{invalid: s.Invalid, disabled: s.Disabled, radius: s.Radius, steady: s.Steady}
 	d := inputFrame(gtx, s.theme, s.Editor, st, false, func(gtx C) D { return s.body(gtx, field) })
+	if s.History != nil {
+		s.History.observe(gtx.Now, s.Editor)
+	}
 	if s.Scrollbar != nil {
 		s.layoutScrollbar(gtx, d.Size)
 	}
