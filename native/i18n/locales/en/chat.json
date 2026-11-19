@@ -26,12 +26,17 @@
     "model": "Model",
     "effort": "Effort",
     "mode": "Mode",
-    "busy": "Wait for the turn to end to change this."
+    "busy": "Wait for the turn to end to change this.",
+    "modelEffort": "Model and effort"
   },
   "choice": {
     "manual": "Manual",
     "plan": "Plan",
     "auto": "Auto",
     "yolo": "YOLO"
+  },
+  "day": {
+    "today": "Today",
+    "yesterday": "Yesterday"
   }
 }

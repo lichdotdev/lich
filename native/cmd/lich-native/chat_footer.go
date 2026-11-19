@@ -22,13 +22,12 @@ var (
 	icDanger = icons.Lucide("zap")
 )
 
-// optionPrefix marks a chip slot that is one of the session's options, whose
-// category follows it.
-const optionPrefix = "option:"
-
-// chatOptionCategories are the options the composer offers, in the order
-// their chips stand.
-var chatOptionCategories = []string{api.OptionModel, api.OptionEffort, api.OptionMode}
+// The chips inside the box are the provider's: the attach "+", the model with
+// its effort, the mode. A slot with one of these ids is drawn by chatChips.
+const (
+	chipModel = "option:model"
+	chipMode  = "option:mode"
+)
 
 var (
 	// chatFootPad is the composer's inset around its chips, so their
@@ -43,62 +42,69 @@ var (
 // chatCrumbGap is the space either side of the line's slash, in ui.Space units.
 const chatCrumbGap = 2
 
-// optionSlots are the chips of the options session id's provider offers: a
-// category it does not offer has none.
+// optionSlots are the chips of the options session id's provider offers: the
+// model's, which also holds the effort, and the mode's. A category it does not
+// offer has none.
 func (c *chatStore) optionSlots(id string) []footerSlot {
 	var out []footerSlot
-	for _, cat := range chatOptionCategories {
-		if _, ok := c.optionOf(id, cat); ok {
-			out = append(out, footerSlot{ID: optionPrefix + cat})
-		}
+	_, model := c.optionOf(id, api.OptionModel)
+	_, effort := c.optionOf(id, api.OptionEffort)
+	if model || effort {
+		out = append(out, footerSlot{ID: chipModel})
+	}
+	if _, ok := c.optionOf(id, api.OptionMode); ok {
+		out = append(out, footerSlot{ID: chipMode})
 	}
 	return out
 }
 
-// chatFootSlots splits the footer's items for a chat into the chips of the
-// composer, the layout's left side, then the session's option chips, then its
-// right side, and the items that stand in the line under it, the checkout and
-// the path. The model reading gives way to the model's chip when the provider
-// offers one.
-func chatFootSlots(l footerLayout, in footerInput, options []footerSlot) (chips []footerSlot, checkout, path *footerSlot) {
-	offersModel := slices.ContainsFunc(options, func(s footerSlot) bool { return s.ID == optionPrefix+api.OptionModel })
-	left := withDelegates(footerSlots(l.Left, in), in)
-	all := append(slices.Clone(left), options...)
-	all = append(all, footerSlots(l.Right, in)...)
-	for i := range all {
-		switch id := all[i].ID; {
-		case id == "checkout":
-			checkout = &all[i]
-		case id == "path":
-			path = &all[i]
-		case id == "model" && offersModel:
-		default:
-			chips = append(chips, all[i])
-		}
-	}
-	return chips, checkout, path
+// chatFooter is the footer's items a chat shows of the user's layout: the
+// attach "+" inside the box, the checkout and the changes under it. The rest
+// of the footer is not drawn in a chat.
+type chatFooter struct {
+	attach, changes, checkout *footerSlot
 }
 
-// chatChips is the foot of the composer's box: the chips on the left, on one
-// line, then Send or Stop at the right. A chip that does not fit is left out
-// with the ones after it.
-func (u *window) chatChips(th *ui.Theme, p *chatPane, sv sessionView, working bool, chips []footerSlot) func(gtx C) D {
+func chatFootSlots(l footerLayout, in footerInput) chatFooter {
+	var f chatFooter
+	for _, s := range footerSlots(append(slices.Clone(l.Left), l.Right...), in) {
+		switch s.ID {
+		case "attach":
+			f.attach = &s
+		case "changes":
+			f.changes = &s
+		case "checkout":
+			f.checkout = &s
+		}
+	}
+	return f
+}
+
+// chatChips is the foot of the composer's box: the attach "+" when the footer
+// has it, then the provider's chips, on one line, and Send or Stop at the
+// right. A chip that does not fit is left out with the ones after it.
+func (u *window) chatChips(th *ui.Theme, p *chatPane, sv sessionView, working bool, attach *footerSlot) func(gtx C) D {
 	f, in := u.footer, u.footer.shown
+	var chips []footerSlot
+	if attach != nil {
+		chips = append(chips, *attach)
+	}
+	chips = append(chips, u.model.chat.optionSlots(sv.ID)...)
 	return func(gtx C) D {
 		pad, gap, itemH := gtx.Dp(chatFootPad), gtx.Dp(balloonGap), gtx.Dp(balloonItemHeight)
 		width := gtx.Constraints.Max.X
 		gtx.Constraints.Min = image.Point{}
 		m := op.Record(gtx.Ops)
-		action := chatAction(gtx, th, p, working)
+		action := u.chatAction(gtx, th, p, working)
 		actionCall := m.Stop()
 		draw := func(gtx C, s footerSlot) D {
-			if cat, ok := strings.CutPrefix(s.ID, optionPrefix); ok {
-				return u.optionChip(gtx, th, p, sv, cat, working)
-			}
-			if s.ID == "attach" {
+			switch s.ID {
+			case "attach":
 				return f.attachButton(gtx, th, in, icPlus)
+			case chipModel:
+				return u.modelChip(gtx, th, p, sv, working)
 			}
-			return f.slot(gtx, th, s, in)
+			return u.modeChip(gtx, th, p, sv, working)
 		}
 		items, _ := f.fit(gtx, chips, width-2*pad-action.Size.X-gap, gap, itemH, draw)
 		h := max(itemH, action.Size.Y)
@@ -114,51 +120,52 @@ func (u *window) chatChips(th *ui.Theme, p *chatPane, sv sessionView, working bo
 	}
 }
 
-// chatAction is Send, or Stop while the agent works.
-func chatAction(gtx C, th *ui.Theme, p *chatPane, working bool) D {
+// chatAction is Send, or Stop while the agent works: an icon under a tooltip
+// that names it.
+func (u *window) chatAction(gtx C, th *ui.Theme, p *chatPane, working bool) D {
 	if working {
-		b := th.Button(&p.stop, i18n.T("chat.composer.stop"))
-		b.Variant, b.Size, b.Icon = ui.VariantOutline, ui.SizeSM, icChatStop
-		return b.Layout(gtx)
+		b := th.Button(&p.stop, "")
+		b.Variant, b.Size, b.Icon = ui.VariantOutline, ui.SizeIconSM, icChatStop
+		return th.Tooltip(&u.root, &p.stopTip, i18n.T("chat.composer.stop")).Layout(gtx, b.Layout)
 	}
-	b := th.Button(&p.send, i18n.T("chat.composer.send"))
-	b.Size, b.Icon = ui.SizeSM, icChatSend
-	return b.Layout(gtx)
+	b := th.Button(&p.send, "")
+	b.Size, b.Icon = ui.SizeIconSM, icChatSend
+	return th.Tooltip(&u.root, &p.sendTip, i18n.T("chat.composer.send")).Layout(gtx, b.Layout)
 }
 
-// chatCrumbs is the line under the composer's box, with no fill: the
-// project, a slash and the branch, which opens the Git panel as its balloon
-// does, then the path where the layout has it.
-func (u *window) chatCrumbs(gtx C, th *ui.Theme, sv sessionView, checkout, path *footerSlot) D {
+// chatCrumbs is the line under the composer's box, with no fill: at the left
+// the project, a slash and the branch, which opens the Git panel as its
+// balloon does, and at the right the changes item, which opens Review.
+func (u *window) chatCrumbs(gtx C, th *ui.Theme, sv sessionView, ft chatFooter) D {
 	f, in := u.footer, u.footer.shown
-	var row []layout.FlexChild
-	sep := func() {
-		row = append(row, ui.Gap(chatCrumbGap), layout.Rigid(th.Text(ui.TextXS, "/").In(th.Over(ui.Alpha(th.MutedForeground, separatorOpacity))).Layout), ui.Gap(chatCrumbGap))
+	if ft.checkout == nil && ft.changes == nil {
+		return D{}
 	}
-	if checkout != nil {
+	var left []layout.FlexChild
+	if ft.checkout != nil {
 		names, _ := u.model.projectNamesAndPaths()
 		if name := names[sv.projectID]; name != "" {
-			row = append(row, layout.Rigid(func(gtx C) D { return crumbText(gtx, th, icFolder, name) }))
-			sep()
+			left = append(left, layout.Rigid(func(gtx C) D { return crumbText(gtx, th, icFolder, name) }),
+				ui.Gap(chatCrumbGap), layout.Rigid(th.Text(ui.TextXS, "/").In(th.Over(ui.Alpha(th.MutedForeground, separatorOpacity))).Layout), ui.Gap(chatCrumbGap))
 		}
 		ic := icFolder
 		if in.git.Branch != "" {
 			ic = icBranch
 		}
 		link := f.git != nil && in.inRepository()
-		row = append(row, layout.Rigid(func(gtx C) D { return f.crumb(gtx, th, "checkout", ic, *checkout, link) }))
-	}
-	if path != nil {
-		if checkout != nil {
-			row = append(row, ui.Gap(chatCrumbGap))
-		}
-		row = append(row, layout.Rigid(func(gtx C) D { return f.crumb(gtx, th, "path", icFolder, *path, false) }))
-	}
-	if len(row) == 0 {
-		return D{}
+		left = append(left, layout.Rigid(func(gtx C) D { return f.crumb(gtx, th, "checkout", ic, *ft.checkout, link) }))
 	}
 	return layout.Inset{Top: chatCrumbsTop, Left: chatFootPad, Right: chatFootPad}.Layout(gtx, func(gtx C) D {
-		return layout.Flex{Alignment: layout.Middle}.Layout(gtx, row...)
+		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+			layout.Rigid(func(gtx C) D { return layout.Flex{Alignment: layout.Middle}.Layout(gtx, left...) }),
+			layout.Flexed(1, func(gtx C) D { return D{Size: image.Pt(gtx.Constraints.Max.X, 0)} }),
+			layout.Rigid(func(gtx C) D {
+				if ft.changes == nil {
+					return D{}
+				}
+				return f.slot(gtx, th, *ft.changes, in)
+			}),
+		)
 	})
 }
 
@@ -195,35 +202,74 @@ func crumbText(gtx C, th *ui.Theme, ic icons.Glyph, text string) D {
 	)
 }
 
-// optionChip is the chip of session sv's option in category cat: the choice in
-// force, and a menu of the others that sets one. While the agent works it
-// takes no click and says why.
-func (u *window) optionChip(gtx C, th *ui.Theme, p *chatPane, sv sessionView, cat string, working bool) D {
-	opt, ok := u.model.chat.optionOf(sv.ID, cat)
+// modelChip is the chip of the model and its effort: the two choices in
+// force, and one menu holding both categories that sets either. While the
+// agent works it takes no click and says why.
+func (u *window) modelChip(gtx C, th *ui.Theme, p *chatPane, sv sessionView, working bool) D {
+	var opts []backend.ChatOption
+	var names []string
+	for _, cat := range []string{api.OptionModel, api.OptionEffort} {
+		if o, ok := u.model.chat.optionOf(sv.ID, cat); ok {
+			cur, _ := currentChoice(o)
+			opts, names = append(opts, o), append(names, choiceLabel(cur))
+		}
+	}
+	if len(opts) == 0 {
+		return D{}
+	}
+	var glyph icons.Glyph = icEffort
+	title := optionTitle(opts[0])
+	if opts[0].Category == api.OptionModel {
+		glyph = providerIcon(sv.Kind)
+	}
+	if len(opts) == 2 {
+		title = i18n.T("chat.option.modelEffort")
+	}
+	return u.optionChip(gtx, th, p, chipModel, title, working, optionContent(glyph, strings.Join(names, " · "), false), func() []ui.MenuEntry {
+		var entries []ui.MenuEntry
+		for i, o := range opts {
+			if i > 0 {
+				entries = append(entries, ui.MenuEntry{Kind: ui.MenuSeparator})
+			}
+			if len(opts) > 1 {
+				entries = append(entries, ui.MenuEntry{Kind: ui.MenuLabel, Label: optionTitle(o)})
+			}
+			entries = append(entries, u.optionEntries(sv.ID, o)...)
+		}
+		return entries
+	})
+}
+
+// modeChip is the chip of the mode in force, with a bolt in ToneWait while
+// it is a dangerous one.
+func (u *window) modeChip(gtx C, th *ui.Theme, p *chatPane, sv sessionView, working bool) D {
+	opt, ok := u.model.chat.optionOf(sv.ID, api.OptionMode)
 	if !ok {
 		return D{}
 	}
 	cur, _ := currentChoice(opt)
-	var glyph icons.Glyph = icEffort
-	switch {
-	case cat == api.OptionModel:
-		glyph = providerIcon(sv.Kind)
-	case cat == api.OptionMode:
-		glyph = icMode
-	}
+	var glyph icons.Glyph = icMode
 	if cur.Danger {
 		glyph = icDanger
 	}
-	content := optionContent(glyph, choiceLabel(cur), cur.Danger)
-	w := u.footer.w(optionPrefix + cat)
+	return u.optionChip(gtx, th, p, chipMode, optionTitle(opt), working, optionContent(glyph, choiceLabel(cur), cur.Danger), func() []ui.MenuEntry {
+		return u.optionEntries(sv.ID, opt)
+	})
+}
+
+// optionChip draws content as a chip under a tooltip naming it, opening a menu
+// of entries on a click; disabled, with the reason as its tooltip, while the
+// agent works.
+func (u *window) optionChip(gtx C, th *ui.Theme, p *chatPane, id, title string, working bool, content footerContent, entries func() []ui.MenuEntry) D {
+	w := u.footer.w(id)
 	if working {
-		return th.Tooltip(u.footer.root, &w.tip, i18n.T("chat.option.busy")).Layout(gtx, func(gtx C) D {
+		return th.Tooltip(&u.root, &w.tip, i18n.T("chat.option.busy")).Layout(gtx, func(gtx C) D {
 			return buttonFace(gtx, th, true, false, true, content)
 		})
 	}
-	menu := p.optionMenu(cat)
-	return th.Tooltip(u.footer.root, &w.tip, optionTitle(opt)).Layout(gtx, func(gtx C) D {
-		return th.DropdownMenu(u.footer.root, menu, u.optionEntries(sv.ID, opt)).Layout(gtx, func(gtx C) D {
+	menu := p.optionMenu(id)
+	return th.Tooltip(&u.root, &w.tip, title).Layout(gtx, func(gtx C) D {
+		return th.DropdownMenu(&u.root, menu, entries()).Layout(gtx, func(gtx C) D {
 			return buttonFace(gtx, th, true, menu.Opened(), false, content)
 		})
 	})

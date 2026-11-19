@@ -267,18 +267,23 @@ pinned to its end while items arrive, until the person scrolls up.
 - **A notice** is a muted line; the turn in flight ends the column with a spinner and "Working…", left out
   while a permission waits: its box already says so.
 - **The composer** stands at the column's foot: a textarea (Enter sends, Shift+Enter breaks the line) in a
-  `RadiusLG` box, and the footer's items inside the box under the text. The chips are the footer layout's
-  left side, then its right (`footerSlots`, the same readings and clicks as the balloons, attach drawn as a
-  "+"), ghost and muted, on one line: Send, or Stop while the agent works, takes the right end first and what
-  does not fit in the rest is left out with the items after it, never wrapped. The session's model, effort and mode are
-  chips of their own after the left side, each the choice in force with a chevron: a click opens a menu of the
-  provider's choices, the current one checked, and picking one sets it (`ChatSetOption`). A category the
-  provider does not offer has no chip, and the footer's model reading gives way to the model chip. A
-  dangerous choice (`Danger`, Claude Code's bypass mode) wears a bolt in `ToneWait` while it is active. While
-  the agent works the chips take no click and a tooltip says why. The checkout and the path are no chips: under the box, outside it and with no fill, a
-  `TextXS` muted line reads project, a slash and the branch, then the path, and the branch opens the Git panel
-  as its balloon did. Only the session the footer follows carries the items; another chat pane of a layout has
-  the box and Send alone.
+  `RadiusLG` box, three lines of text tall at least, growing with the text to a ceiling and scrolling past it.
+  Inside the box stand only the provider's controls, one line under the text: the footer's attach as a "+",
+  the model with its effort in one chip ("Opus 5.5 · High", its menu holding both categories under their
+  names), and the mode, each a ghost chip with a chevron whose menu lists the provider's choices, the current
+  one checked and picking one sets it (`ChatSetOption`). A category the provider does not offer has no chip. A
+  dangerous choice (`Danger`, Claude Code's bypass mode) wears a bolt in `ToneWait` while it is active. At the
+  right end, Send, a `Primary` icon button (arrow up), or Stop, an outline one (square), each named by a
+  tooltip and no word; while the agent works the chips take no click and a tooltip says why. What does not
+  fit is left out with the items after it, never wrapped. The rest of the footer stays out of a chat. Under
+  the box, outside it with no fill, one line: at the left a `TextXS` muted project, a slash and the branch,
+  which opens the Git panel as its balloon did, and at the right the footer's changes item (files and diff),
+  which opens Review. Attach, changes and the branch show only when the user's footer layout has them, and
+  only for the session the footer follows; another chat pane of a layout has the provider's chips and Send alone.
+- **A message's time** is a `TextXS` muted line, the window's short clock ("14:32") under a tooltip that holds
+  the footer clock's full date: under the person's box at the right edge, under an answer's text at the left.
+  Between two turns that start on different days a muted, centred line names the later day: Today, Yesterday,
+  else its date, with the year when it is not this one. A message with no time draws none.
 
 ### The session's strip
 

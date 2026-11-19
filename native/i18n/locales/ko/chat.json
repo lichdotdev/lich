@@ -25,12 +25,17 @@
     "model": "모델",
     "effort": "추론 강도",
     "mode": "모드",
-    "busy": "턴이 끝난 뒤에 바꿀 수 있습니다."
+    "busy": "턴이 끝난 뒤에 바꿀 수 있습니다.",
+    "modelEffort": "모델 및 추론 강도"
   },
   "choice": {
     "manual": "수동",
     "plan": "계획",
     "auto": "자동",
     "yolo": "YOLO"
+  },
+  "day": {
+    "today": "오늘",
+    "yesterday": "어제"
   }
 }

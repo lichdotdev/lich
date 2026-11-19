@@ -26,12 +26,17 @@
     "model": "Modelo",
     "effort": "Esforço",
     "mode": "Modo",
-    "busy": "Espere o turno terminar para mudar isto."
+    "busy": "Espere o turno terminar para mudar isto.",
+    "modelEffort": "Modelo e esforço"
   },
   "choice": {
     "manual": "Manual",
     "plan": "Plano",
     "auto": "Auto",
     "yolo": "YOLO"
+  },
+  "day": {
+    "today": "Hoje",
+    "yesterday": "Ontem"
   }
 }
