@@ -104,6 +104,14 @@
     "extraUsage": "추가 사용량",
     "extraOf": "{used} / {limit}",
     "extraNoLimit": "{used} · 한도 없음",
+    "resets": "초기화",
+    "resetsLeft": {
+      "one": "{count}회 남음",
+      "other": "{count}회 남음"
+    },
+    "resetFull": "전체",
+    "resetUntil": "{month} {day}일까지",
+    "shortMonths": "1월,2월,3월,4월,5월,6월,7월,8월,9월,10월,11월,12월",
     "resetCredits": "초기화 크레딧",
     "resetCreditsAvailable": {
       "one": "{count}개 사용 가능",

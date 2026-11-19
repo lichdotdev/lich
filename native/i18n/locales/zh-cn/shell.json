@@ -104,6 +104,14 @@
     "extraUsage": "额外用量",
     "extraOf": "{used} / {limit}",
     "extraNoLimit": "{used} · 不限额",
+    "resets": "重置",
+    "resetsLeft": {
+      "one": "剩余 {count} 次",
+      "other": "剩余 {count} 次"
+    },
+    "resetFull": "完整",
+    "resetUntil": "有效期至 {month}{day}日",
+    "shortMonths": "1月,2月,3月,4月,5月,6月,7月,8月,9月,10月,11月,12月",
     "resetCredits": "重置额度",
     "resetCreditsAvailable": {
       "one": "{count} 次可用",

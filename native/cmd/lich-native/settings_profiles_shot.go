@@ -106,9 +106,14 @@ func shotUsagePlan(kind string) backend.QuotaPlan {
 			{Kind: api.QuotaWindowSession, Seconds: 5 * hour, Percent: 25, ResetsAt: in(4*time.Hour + 12*time.Minute)},
 		},
 		Extra: &backend.QuotaExtra{Used: 1250, Limit: new(int64(5000)), Currency: "USD", Decimals: 2},
+		Resets: []backend.QuotaReset{
+			{Kind: api.QuotaResetFull, Left: 1, EndsAt: in(21 * 24 * time.Hour)},
+			{Label: "Fable", Left: 1, EndsAt: in(110 * 24 * time.Hour)},
+			{Label: "Fable", Left: 1, EndsAt: in(110 * 24 * time.Hour), Held: true},
+		},
 	}
 	if kind == codexKind {
-		plan.Name, plan.Plan, plan.Extra, plan.ResetCredits = "Codex", "Plus", nil, 1
+		plan.Name, plan.Plan, plan.Extra, plan.Resets, plan.ResetCredits = "Codex", "Plus", nil, nil, 1
 	}
 	return plan
 }

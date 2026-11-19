@@ -217,3 +217,68 @@ func TestTheProfileFooterOpensNothingBeforeTheFirstReading(t *testing.T) {
 	hoverProfile(t, r)
 	wantAbsent(t, r, "Session · 5h", "Plan usage could not be read.")
 }
+
+// endsOn is a grant's end at noon, local time, on that day: the day the tooltip
+// reads is the local one whatever zone the test runs in.
+func endsOn(month time.Month, day int) string {
+	return time.Date(2026, month, day, 12, 0, 0, 0, time.Local).UTC().Format(time.RFC3339)
+}
+
+func resetsPlan() backend.QuotaPlan {
+	plan := usagePlan()
+	plan.Resets = []backend.QuotaReset{
+		{Kind: api.QuotaResetFull, Left: 1, EndsAt: endsOn(time.December, 10)},
+		{Label: "Fable", Left: 2, EndsAt: endsOn(time.March, 9)},
+		{Label: "Paused grant", Left: 1, EndsAt: endsOn(time.January, 2), Held: true},
+	}
+	return plan
+}
+
+func TestTheResetsBlockCountsEveryResetLeftAndListsEachGrant(t *testing.T) {
+	r := tipFrames(t, resetsPlan())
+	wantShown(t, r, "Resets", "4 left", "Full", "×1", " until Dec 10", "Fable", "×2", " until Mar 9", "Paused grant", " until Jan 2")
+}
+
+func TestTheResetsBlockHidesWhatIsNotLive(t *testing.T) {
+	plan := resetsPlan()
+	plan.Resets = []backend.QuotaReset{
+		{Kind: api.QuotaResetFull, Left: 0, EndsAt: endsOn(time.December, 10)},
+		{Label: "Fable", Left: 2, EndsAt: "1969-12-31T00:00:00Z"},
+		{Label: "No end", Left: 1},
+	}
+	wantAbsent(t, tipFrames(t, plan), "Resets", "Fable")
+	plan.Resets = nil
+	wantAbsent(t, tipFrames(t, plan), "Resets")
+
+	plan = resetsPlan()
+	plan.Resets = plan.Resets[:1]
+	wantShown(t, tipFrames(t, plan), "1 left")
+	wantAbsent(t, tipFrames(t, plan), "Fable")
+}
+
+func TestAHeldGrantIsMutedAndAnActiveOneIsNot(t *testing.T) {
+	live := liveResets(resetsPlan().Resets, epoch)
+	if len(live) != 3 || live[0].Held || live[1].Held || !live[2].Held {
+		t.Fatalf("grants %+v, want only the last held", live)
+	}
+}
+
+func TestTheResetsBlockFollowsTheInterfaceLanguage(t *testing.T) {
+	i18n.SetCurrent(i18n.PtBR)
+	defer i18n.SetCurrent(i18n.EN)
+	wantShown(t, tipFrames(t, resetsPlan()), "4 restantes", "Completo", " até 10 de dez", " até 9 de mar")
+	if got := resetName(backend.QuotaReset{Label: "Fable"}); got != "Fable" {
+		t.Errorf("a provider's name stays verbatim: %q", got)
+	}
+}
+
+func TestSameQuotaSeesTheResetGrants(t *testing.T) {
+	a, b := []backend.QuotaPlan{resetsPlan()}, []backend.QuotaPlan{resetsPlan()}
+	if !sameQuota(a, b) {
+		t.Fatal("equal grants differ")
+	}
+	b[0].Resets[1].Left = 1
+	if sameQuota(a, b) {
+		t.Error("a grant spent went unseen")
+	}
+}

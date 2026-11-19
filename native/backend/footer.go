@@ -12,6 +12,8 @@ type QuotaPlan = api.QuotaPlan
 
 type QuotaExtra = api.QuotaExtra
 
+type QuotaReset = api.QuotaReset
+
 type Attachment = api.DropAttachment
 
 // QuotaPlans reads every metered plan for the account sessionID spends; ""
