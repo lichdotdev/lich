@@ -2,6 +2,7 @@ package main
 
 import (
 	"image"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -66,11 +67,7 @@ type chatView struct {
 	// rows brings the conversation's rows in, and seen is the row each key
 	// last was, for one that is playing its exit.
 	rows ui.Presence
-	// lead is the room the last frame put above a conversation shorter than
-	// the view, once there was a frame to measure it by.
-	lead   int
-	leaded bool
-	seen   map[string]chatRow
+	seen map[string]chatRow
 	// stamps are the tooltips of the time under each message, by item id.
 	stamps map[string]*ui.Tooltip
 	// copies are the copy buttons of the messages, by item id.
@@ -143,7 +140,10 @@ func (v *chatView) enter(now time.Time, rows []chatRow, read bool) []string {
 	if !read {
 		return keys
 	}
-	return v.rows.Update(now, keys)
+	shown := v.rows.Update(now, keys)
+	// The closing line plays no exit: while it fades, the turn that took it
+	// away is drawn under it, and it would stand beside that turn's live line.
+	return slices.DeleteFunc(shown, func(k string) bool { return strings.HasPrefix(k, "done:") && v.rows.Leaving(k) })
 }
 
 func (v *chatView) fold(key string) *chatFold {
@@ -178,14 +178,6 @@ func (u *window) chatScreen(gtx C, sv sessionView, keys bool) {
 		layout.Flexed(1, func(gtx C) D {
 			shown := p.enter(gtx.Now, rows, u.model.chat.holds(sv.ID))
 			atEnd := !p.list.Position.BeforeEnd
-			// A conversation shorter than the view rests on the composer: what
-			// the view has over, which is what its content left, goes above it.
-			// The content is the list's length less the room of the last frame;
-			// the first frame, which has no length yet, has none.
-			lead := 0
-			if p.leaded && len(shown) > 0 {
-				lead = max(gtx.Constraints.Max.Y-(p.list.Position.Length-p.lead), 0)
-			}
 			drawList := func(lead int) (D, op.CallOp) {
 				m := op.Record(gtx.Ops)
 				d := th.ThinScrollArea(&p.list).Layout(gtx, len(shown), func(gtx C, i int) D {
@@ -203,20 +195,17 @@ func (u *window) chatScreen(gtx C, sv sessionView, keys bool) {
 				})
 				return d, m.Stop()
 			}
-			d, call := drawList(lead)
-			// The lead of the last frame is stale when a row grew in this one:
-			// the rows would overshoot the view for a frame and the list draw its
-			// scrollbar over content that fits. Measure again with the room the
-			// rows take now, and draw that. A row that starts its entry in the
-			// measure itself is taller in the first than in the next, so the
-			// second can still be off: once more settles it.
-			for range 2 {
-				fit := max(gtx.Constraints.Max.Y-(p.list.Position.Length-lead), 0)
-				if len(shown) == 0 || fit == lead {
-					break
+			// A conversation shorter than the view rests on the composer: what
+			// the view has over, which is what its content leaves, goes above it.
+			// The list is laid out with none first, because that is the one
+			// measure that lays every row out and so tells their length, and
+			// again with the room it left, which is what is drawn.
+			d, call := drawList(0)
+			lead := 0
+			if len(shown) > 0 {
+				if lead = max(gtx.Constraints.Max.Y-p.list.Position.Length, 0); lead > 0 {
+					d, call = drawList(lead)
 				}
-				lead = fit
-				d, call = drawList(lead)
 			}
 			call.Add(gtx.Ops)
 			// A row that comes in at no height at the list's end makes Gio
@@ -225,12 +214,6 @@ func (u *window) chatScreen(gtx C, sv sessionView, keys bool) {
 			// rows move.
 			if atEnd && p.rows.Moving() {
 				p.list.Position.BeforeEnd = false
-			}
-			p.lead, p.leaded = lead, true
-			// Content that changed in this frame leaves its room to the next:
-			// ask for it rather than leave the rows where they were put.
-			if len(shown) > 0 && lead != max(gtx.Constraints.Max.Y-(p.list.Position.Length-lead), 0) {
-				gtx.Execute(op.InvalidateCmd{})
 			}
 			// Once the conversation outgrows the view, where nobody could have
 			// scrolled it, it goes to its end and stays there until scrolled up.
