@@ -427,11 +427,18 @@ A page pane (`browser_pane.go`, `browser_tabs.go`) is three rows on the pane's f
 - **The toolbar** is back, forward and reload as icons in `MutedForeground`, the address, then the zoom (its
   percentage shows only off 100%) and DevTools. The address is a pill, `Accent` fill, `RadiusMD`, no border, in
   the interface font: at rest the page's host and path with no scheme (`shortURL`), while edited the whole URL,
-  selected; on a blank page the placeholder. What a button says lives in its tooltip: the Select tool's is
+  selected; on a blank page and on the new-tab page the placeholder. What a button says lives in its tooltip: the Select tool's is
   "Click an element to leave a note". Open in a window is not here: it is an item of the browser row's menu in
   the sidebar.
 - **The page** is a card inset `Space(2)` from the pane's left, right and bottom, `RadiusLG`, its edge the 1px
-  `Border` hairline. The notes bar floats over it, as before.
+  `Border` hairline. The notes bar floats over it, as before, except on the new-tab page.
+- **The new-tab page** is the backend's HTML, drawn with the window's tokens sent over `browser.NewTabPage`
+  (`browser_newtab.go`): `Background` for the page, `Card` for the address field, `Accent` for a hovered row,
+  `Border` for the field's edge and `MutedForeground` for the section labels, the commands and the ages. One
+  column, 560px wide, centered: the chat's first flame frame (`chatFlameFrames[0]`, on `chatFlameColor`) beside
+  "lich · project" in `MutedForeground`, the address field (42px, `RadiusMD`-ish 9px, an inset `Border`), then
+  the sections, each a 10.5px uppercase `MutedForeground` label over 34px rows with no fill until hovered. The
+  tab is named New tab, the toolbar's address is empty, and there is no Select and Draw bar.
 
 ### The editor
 

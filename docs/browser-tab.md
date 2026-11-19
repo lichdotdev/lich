@@ -36,7 +36,7 @@ clicked.
 ## One browser per card
 
 - the card's Browser item → its page beside its terminal, starting a headless
-  browser at `about:blank` when there is none. A pane with no room for both
+  browser on the new-tab page when there is none. A pane with no room for both
   refuses with a toast, as a split does.
 - the agent's `browser_open` first → a headless browser, and a toast in the
   bottom-right corner whose Open shows that same page beside the terminal
@@ -257,7 +257,7 @@ there are more.
   from the page's own `window.close()` or a ×, brings its opener back as it
   was, its script's state and login intact; a tab nobody opened gives way to
   the one beside it. The last tab cannot be closed.
-- The + opens a blank tab in front with the address field focused.
+- The + opens the new-tab page in front with the address field focused.
 - The agent lists them with `browser_tabs` (`lich browser tabs`), by index,
   and opens, selects or closes one with `browser_tab` (`lich browser tab new
   [url] | select <i> | close <i>`), which answers with the page then in front.
@@ -266,6 +266,54 @@ there are more.
 - A tab opened behind the front one shares its renderer when it keeps its
   opener, so a dialog there holds the front tab too: it reaches the pane and
   the agent at once, and the answer goes to the tab that opened it.
+
+## The new-tab page
+
+A new tab, from the pane's +, and the first page of a browser the window
+opened with no address (the card's Browser item, the pane attaching) load
+lich's own page, `internal/newtab`, instead of `about:blank`. The agent's own
+`browser_open` and `browser_tab new` with no URL keep `about:blank`: nobody
+looks at a page the agent has not asked for. A browser opened in a window of its
+own (`OpenVisible`) shows the page's internal URL in Chrome's own address bar.
+
+- **Where it is served.** One listener of its own, on `127.0.0.1` from port
+  27000 (`internal/preview`, `NewTabURL`), behind the same Host check as the
+  checkout's and the artifact folder's, at `/new-tab/<session>`. It is not on
+  the artifact origin: a page the agent wrote could then `fetch` the project's
+  services and recent pages. A session lich does not know is a 404, and every
+  response is `no-store` under a CSP that allows one nonce'd script. Like the
+  other two listeners it has no token: the loopback bind and the Host check are
+  all there is, and what it shows is no more than the Artifacts tab and the
+  Services list show.
+- **What it lists**, each section gone when empty. Running in this project: the
+  project's services that are running, by name and command (`api.Service` holds
+  no URL or port, so a service row is not a link), and the checkout's
+  `LICH_WORKTREE_PORT`, a link to `localhost:<port>` only while something
+  listens on it. Artifacts of this session: the session's artifact folder, the
+  list the Artifacts tab shows, newest first and cut at eight, each loaded from
+  the artifact folder's listener; its age is formatted by the page's own script
+  in the interface language. Recent: the last eight web pages the session's
+  browser came to, newest first, each once, kept under the setting
+  `browser.recent.<files key>` in the settings table (`store`) and dropped with
+  the session's row (`SetSessionGone`), so they outlive a restart and a resume.
+  `about:blank`, other schemes and the new-tab page are never kept.
+- **The address field** is a form that GETs `/new-tab/<session>/go`, which
+  answers a redirect to what `api.TypedURL` makes of the text, resolved by
+  `browser.ResolveURL`: the rule of the toolbar's address, so a path inside the
+  checkout loads from its listener and a blocked URL brings the page back with a
+  line saying so. There is no web search.
+- **Theme and words** are the window's: it sends them with `browser.NewTabPage`
+  whenever its resolved theme (a followed system scheme, a theme's pair) or its
+  interface language changes, and the page is drawn with the last it got, so a
+  tab already open keeps its look until it is opened again. The CSS colors are
+  checked as hex and the language as a tag before they reach the page. The flame
+  is the chat's first frame on the chat's own tokens. The font is Onest when it is
+  installed and the system's otherwise; the window's copy is not reachable from
+  the backend.
+- **What the window does with it.** `BrowserState.NewTab` and `BrowserTab.NewTab`
+  mark the page by its origin, never by a path another site could share. The
+  address shows its placeholder instead of the URL, the tab and the sidebar row
+  read as a blank tab, and the Select and Draw bar is off the page, as on DevTools.
 
 ## DevTools
 

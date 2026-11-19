@@ -1711,6 +1711,17 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   Ubuntu 23.10 and later AppArmor refuses it the user namespace unless the browser ships an AppArmor profile,
   as the distribution's Chrome, Edge and Brave do: one unpacked from a tarball fails to start with "No usable
   sandbox!", which the agent reads as the browser's error.
+- **The new-tab page is the backend's page in the window's colors and words, as of the last time the window sent
+  them** (`internal/newtab`, `docs/browser-tab.md`): a tab already open keeps its look until it is opened again, and
+  before the window has sent any it is the dark theme in English. It has a listener of its own from port 27000,
+  protected like the other preview listeners by a loopback bind and a Host check and no token. A service row is
+  never a link: `api.Service` holds a command and no URL or port, and lich does not parse one out of a command or
+  its output. The checkout's port is listed only while something answers on it, found by a connect when the page
+  renders. Recent pages are the last eight web pages of the session's browser, kept in the settings table under
+  `browser.recent.<files key>` and dropped with the session's row, with whatever title Chrome had when the page
+  was last seen. A browser opened in a window of its own shows the page's internal URL in Chrome's address bar,
+  and the agent's own open and new tab with no URL stay `about:blank`. A note waiting in the tray is hidden while
+  the new-tab page is in front, and comes back with the page it belongs to.
 - **The pane's DevTools is Chrome's front-end drawn as frames** (`internal/browser/chrome_devtools.go`,
   `docs/browser-tab.md`): a target lich creates in a headless window of its own, loading the browser's own
   DevTools from its debugging port, screencast like a page. It has no device toolbar (it emulates on the
