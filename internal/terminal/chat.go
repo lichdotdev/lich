@@ -61,20 +61,49 @@ var ErrChatView = errors.New("this session is drawn as a chat; switch it to the 
 // flags than its TUI, so only the ones its own `acp --help` lists are passed
 // (measured on Kiro 2.21.0 and Antigravity 1.5.3; opencode, oh-my-pi and Cursor
 // take none of lich's): an unknown flag kills the spawn before the session
-// exists. What a flag cannot carry, the protocol sets (chatBirth).
-func chatArgs(a spawnArgs) []string {
+// exists. What a flag cannot carry, the protocol sets (chatBirth). l is what a
+// chat restarted for a setting its protocol cannot change carries.
+func chatArgs(a spawnArgs, l ChatLaunch) []string {
 	switch a.kind {
 	case providers.Claude:
-		return slices.Concat(claudeChatArgs, providerArgs(
+		return slices.Concat(claudeChatArgs, claudeLaunchArgs(l), providerArgs(
 			a.kind, a.name, a.resume, a.model, a.effort, a.lichBin, a.agent, false, a.skipPermissions, a.ultracode, a.route, a.lang,
 		))
 	case providers.Kiro:
+		model := modelArgs(a.kind, a.model, a.resume)
+		if l.Model != "" {
+			model = modelArgs(a.kind, l.Model, "")
+		}
 		return slices.Concat([]string{acpSubcmd}, agentArgs(a.kind, a.agent), skipPermissionArgs(a.kind, a.skipPermissions),
-			modelArgs(a.kind, a.model, a.resume), effortArgs(a.kind, a.effort, a.resume))
+			model, effortArgs(a.kind, a.effort, a.resume))
 	case providers.Antigravity:
 		return slices.Concat([]string{acpSubcmd}, skipPermissionArgs(a.kind, a.skipPermissions))
 	}
 	return []string{acpSubcmd}
+}
+
+// claudeAllowBypassFlag lets a Claude Code chat be set to bypassPermissions
+// over the protocol without starting in it: set_permission_mode refuses that
+// mode to a process launched without it or --dangerously-skip-permissions
+// (`bypass_not_launched`, measured on 2.1.327).
+const claudeAllowBypassFlag = "--allow-dangerously-skip-permissions"
+
+func claudeLaunchArgs(l ChatLaunch) []string {
+	if !l.AllowBypass {
+		return nil
+	}
+	return []string{claudeAllowBypassFlag}
+}
+
+// ChatLaunch is what a chat's process has to be started with for a setting
+// its protocol cannot change in flight: Claude Code's bypassPermissions, which
+// needs AllowBypass, and Kiro's model, whose session/set_model never answers
+// and leaves the model as it was (measured on 2.21.0) while `acp --model`
+// holds on a session/load. Model is passed on a resume too, unlike a birth
+// model: it is the person's choice of a moment ago.
+type ChatLaunch struct {
+	Model       string
+	AllowBypass bool
 }
 
 // ChatBirth is what a chat's argv could not carry, for the protocol to set:
@@ -137,9 +166,9 @@ func (p *ChatProcess) Close() {
 }
 
 // StartChat spawns session opts.ID's provider as a chat, rooted where its
-// terminal would be and with everything its terminal would carry. Refused while
-// the session's terminal runs.
-func (s *Service) StartChat(_ context.Context, opts api.StartOptions) (*ChatProcess, error) {
+// terminal would be and with everything its terminal would carry, plus what
+// launch adds. Refused while the session's terminal runs.
+func (s *Service) StartChat(_ context.Context, opts api.StartOptions, launch ChatLaunch) (*ChatProcess, error) {
 	if !providers.Known(opts.Kind) {
 		return nil, fmt.Errorf("%q has no chat", opts.Kind)
 	}
@@ -158,7 +187,7 @@ func (s *Service) StartChat(_ context.Context, opts api.StartOptions) (*ChatProc
 	}
 	inheritClaudeTrust(opts.Kind, opts.Cwd, profileDir)
 	inheritCursorTrust(opts.Kind, opts.Cwd)
-	p, l, err := s.spawnChat(opts, profileDir, name, oc2)
+	p, l, err := s.spawnChat(opts, launch, profileDir, name, oc2)
 	if err != nil {
 		return nil, err
 	}
@@ -171,7 +200,7 @@ func (s *Service) StartChat(_ context.Context, opts api.StartOptions) (*ChatProc
 }
 
 // spawnChat is the locked half of StartChat, spawnSession's counterpart.
-func (s *Service) spawnChat(opts api.StartOptions, profileDir, name string, oc2 bool) (*ChatProcess, spawnLaunch, error) {
+func (s *Service) spawnChat(opts api.StartOptions, launch ChatLaunch, profileDir, name string, oc2 bool) (*ChatProcess, spawnLaunch, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if _, running := s.sessions[opts.ID]; running {
@@ -185,7 +214,7 @@ func (s *Service) spawnChat(opts api.StartOptions, profileDir, name string, oc2 
 		}
 		opts.Cwd = home
 	}
-	l, err := s.prepareSpawnLocked(opts, profileDir, name, oc2, chatArgs)
+	l, err := s.prepareSpawnLocked(opts, profileDir, name, oc2, func(a spawnArgs) []string { return chatArgs(a, launch) })
 	if err != nil {
 		return nil, spawnLaunch{}, err
 	}

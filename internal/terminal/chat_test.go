@@ -39,14 +39,25 @@ func TestChatArgsPassOnlyWhatEachModeTakes(t *testing.T) {
 	for _, tc := range cases {
 		a := base
 		a.kind = tc.kind
-		if got := chatArgs(a); !slices.Equal(got, tc.want) {
+		if got := chatArgs(a, ChatLaunch{}); !slices.Equal(got, tc.want) {
 			t.Errorf("chatArgs(%s) = %v, want %v", tc.kind, got, tc.want)
 		}
 	}
 
 	a := base
-	a.kind, a.resume = providers.Claude, "conv-1"
-	got := chatArgs(a)
+	a.kind, a.resume = providers.Kiro, "conv-1"
+	if got := chatArgs(a, ChatLaunch{Model: "m2"}); !slices.Contains(got, "m2") || slices.Contains(got, "m1") {
+		t.Errorf("kiro relaunch argv = %v, want the launch model on a resume", got)
+	}
+	if got := chatArgs(a, ChatLaunch{}); slices.Contains(got, "--model") {
+		t.Errorf("kiro resume argv = %v, want no birth model", got)
+	}
+
+	a.kind = providers.Claude
+	if got := chatArgs(a, ChatLaunch{AllowBypass: true}); !slices.Contains(got, claudeAllowBypassFlag) {
+		t.Errorf("claude relaunch argv = %v, want %s", got, claudeAllowBypassFlag)
+	}
+	got := chatArgs(a, ChatLaunch{})
 	if !slices.Equal(got[:len(claudeChatArgs)], claudeChatArgs) {
 		t.Errorf("claude chat argv = %v, want the stream-json flags first", got)
 	}
@@ -95,7 +106,7 @@ func chatEchoBin(t *testing.T) string {
 // for as long as it runs, and Close ends it.
 func TestStartChatRunsTheProviderOnPipes(t *testing.T) {
 	svc := New(stubBins{bin: chatEchoBin(t)}, nil, events.New())
-	p, err := svc.StartChat(t.Context(), api.StartOptions{ID: "s1", ProjectID: "p1", Cwd: t.TempDir(), Kind: providers.OMP})
+	p, err := svc.StartChat(t.Context(), api.StartOptions{ID: "s1", ProjectID: "p1", Cwd: t.TempDir(), Kind: providers.OMP}, ChatLaunch{})
 	if err != nil {
 		t.Fatalf("StartChat: %v", err)
 	}
@@ -135,7 +146,7 @@ func TestChatAndTerminalNeverRunTogether(t *testing.T) {
 		t.Errorf("Start of a chat-view session = %v, want ErrChatView", err)
 	}
 
-	p, err := svc.StartChat(t.Context(), api.StartOptions{ID: "s1", Cwd: t.TempDir(), Kind: providers.OMP})
+	p, err := svc.StartChat(t.Context(), api.StartOptions{ID: "s1", Cwd: t.TempDir(), Kind: providers.OMP}, ChatLaunch{})
 	if err != nil {
 		t.Fatalf("StartChat: %v", err)
 	}
@@ -145,10 +156,10 @@ func TestChatAndTerminalNeverRunTogether(t *testing.T) {
 	}
 
 	svc.sessions["s2"] = spawnSession(t)
-	if _, err := svc.StartChat(t.Context(), api.StartOptions{ID: "s2", Cwd: t.TempDir(), Kind: providers.OMP}); err == nil {
+	if _, err := svc.StartChat(t.Context(), api.StartOptions{ID: "s2", Cwd: t.TempDir(), Kind: providers.OMP}, ChatLaunch{}); err == nil {
 		t.Error("StartChat beside a running terminal succeeded")
 	}
-	if _, err := svc.StartChat(t.Context(), api.StartOptions{ID: "s3", Kind: KindShell}); err == nil {
+	if _, err := svc.StartChat(t.Context(), api.StartOptions{ID: "s3", Kind: KindShell}, ChatLaunch{}); err == nil {
 		t.Error("StartChat of a shell succeeded")
 	}
 }
