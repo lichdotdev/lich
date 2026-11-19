@@ -150,6 +150,18 @@ type ChatTurn struct {
 	Running    bool   `json:"running"`
 	StopReason string `json:"stopReason,omitempty"`
 	DurationMs int64  `json:"durationMs,omitempty"`
+	// Changes is what the turn changed in the session's checkout, on its end
+	// alone; nil where lich could not read the checkout.
+	Changes *ChatTurnChanges `json:"changes,omitempty"`
+}
+
+// ChatTurnChanges is the checkout's diff against HEAD at a turn's end less the
+// one at its start: what the turn changed by any means, a tool or a shell
+// command alike, and whatever else changed the checkout meanwhile.
+type ChatTurnChanges struct {
+	Files   int `json:"files"`
+	Added   int `json:"added"`
+	Removed int `json:"removed"`
 }
 
 // SessionView is the payload of SessionViewEvent.
