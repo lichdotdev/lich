@@ -140,7 +140,7 @@ func TestAPermissionButtonAnswersWithItsOption(t *testing.T) {
 			Options: []api.ChatPermitOption{{ID: "yes", Label: "Allow", Kind: api.PermitAllowOnce}, {ID: "no", Label: "Deny", Kind: api.PermitRejectOnce}},
 		}},
 	})
-	r.frame()
+	r.settle(t) // the rows come to rest on the composer in a frame or two
 	r.click(t, r.at(t, "Deny"))
 	if body := f.waitCall(t, api.ChatAnswer.Name); !strings.Contains(body, `"itemId":"p1"`) || !strings.Contains(body, `"optionId":"no"`) {
 		t.Errorf("answered %s", body)
@@ -238,14 +238,22 @@ func labelTop(t *testing.T, r *frameRig, label string) int {
 	return -1
 }
 
-// A short conversation starts at the top; a long one shows its end, and keeps
-// it as items arrive.
-func TestTheChatStartsAtItsTopAndFollowsItsEnd(t *testing.T) {
+// A short conversation rests on the composer and new messages push the old
+// ones up, as in a messaging app; a long one shows its end, and keeps it as
+// items arrive. (Before, a short conversation started at the top.)
+func TestTheChatRestsOnTheComposerAndFollowsItsEnd(t *testing.T) {
 	u, r, _ := chatFrames(t, api.ViewChat)
 	u.model.chat.history("s1", userTurns(2))
 	r.settle(t)
-	if y := labelTop(t, r, "q0"); y < 0 || y > rigWindow.Y/4 {
-		t.Errorf("a short conversation's first message at y=%d, want near the top", y)
+	composer := labelTop(t, r, "Ask claude about this project")
+	last, first := labelTop(t, r, "q1"), labelTop(t, r, "q0")
+	if last < 0 || composer-last > 150 || first >= last {
+		t.Errorf("a short conversation's messages at y=%d and y=%d, the composer at y=%d: want them down on it", first, last, composer)
+	}
+	u.model.chat.apply(api.ChatItemUpdate{SessionID: "s1", Item: backend.ChatItem{ID: "q2", Kind: api.ItemUser, Turn: 3, Text: "q2"}})
+	r.settle(t)
+	if again, fresh := labelTop(t, r, "q1"), labelTop(t, r, "q2"); again >= last || fresh <= again || composer-fresh > 150 {
+		t.Errorf("after a new message q1 at y=%d (was %d) and q2 at y=%d: want the new one at the bottom and the old pushed up", again, last, fresh)
 	}
 	u.model.chat.history("s1", userTurns(60))
 	r.settle(t)
