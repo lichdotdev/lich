@@ -130,7 +130,11 @@
     "ceilingTitle": "支出の上限",
     "ceilingSearchWords": "コスト 予算 ドル usd",
     "ceilingDescription": "セッションの API コストがこの金額に近づくと警告します。80% で黄色、95% で赤になります。空欄なら上限なしです。",
-    "ceilingPlaceholder": "上限なし"
+    "ceilingPlaceholder": "上限なし",
+    "shownCount": {
+      "one": "{count} 件を表示",
+      "other": "{count} 件を表示"
+    }
   },
   "footerLayoutEditor": {
     "zone": {
@@ -155,7 +159,8 @@
     "needsInputTitle": "セッションが入力待ちになったら通知する",
     "needsInputDescription": "権限の確認や質問でセッションが止まり、lich 以外のウィンドウを使っているときに、デスクトップ通知を表示します。lich を使っている間は変わらず、カードのベルとトーストで知らせます。",
     "finishedTitle": "セッションの作業が終わったら通知する",
-    "finishedDescription": "セッションが確認事項を残さずにターンを終え、lich 以外のウィンドウを使っているときに、デスクトップ通知を表示します。上の設定とは別に動作するので、プロンプトごとの通知は受け取らずに、席を外していた長い実行の完了だけを知ることができます。トーストは表示されません。lich の中ではカードとプロジェクトタブで分かるためです。"
+    "finishedDescription": "セッションが確認事項を残さずにターンを終え、lich 以外のウィンドウを使っているときに、デスクトップ通知を表示します。上の設定とは別に動作するので、プロンプトごとの通知は受け取らずに、席を外していた長い実行の完了だけを知ることができます。トーストは表示されません。lich の中ではカードとプロジェクトタブで分かるためです。",
+    "onCount": "{count} 件中 {on} 件がオン"
   },
   "hotkeysSettings": {
     "alsoBound": "{actions} にも割り当てられています",
@@ -404,7 +409,8 @@
     "sectionGeneral": "一般",
     "sectionEditor": "エディター",
     "hideWhitespaceTitle": "差分で空白の変更を隠す",
-    "hideWhitespaceSearchWords": "空白 スペース インデント レビュー 無視"
+    "hideWhitespaceSearchWords": "空白 スペース インデント レビュー 無視",
+    "interfaceGroup": "インターフェース"
   },
   "settingsNav": {
     "scopeLabel": "スコープ",
@@ -414,7 +420,9 @@
       "one": "{count} 件の変更",
       "other": "{count} 件の変更"
     },
-    "scopeNote": "プロジェクトで変更できる設定だけが有効になっています。それ以外はどこでも共通です。"
+    "scopeNote": "プロジェクトで変更できる設定だけが有効になっています。それ以外はどこでも共通です。",
+    "groupAgents": "エージェント",
+    "groupWorkspace": "ワークスペース"
   },
   "settingsRow": {
     "overriddenIn": "上書きしているプロジェクト",

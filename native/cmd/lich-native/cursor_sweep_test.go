@@ -31,7 +31,7 @@ func handScreens() map[string]func(*testing.T) *frameRig {
 	for name, tab := range map[string]dockTab{"review": dockReview, "code tab": dockCode, "artifacts": dockArtifacts} {
 		screens["dock "+name] = func(t *testing.T) *frameRig { _, r := stageFrames(t, tab); return r }
 	}
-	for _, section := range []string{sectionGeneral, sectionHotkeys, sectionProviders, sectionSandbox, sectionVersionControl, sectionEditor, sectionUpdates, sectionHelp, sectionServices, sectionExtensions} {
+	for _, section := range []string{sectionGeneral, "general/window", "general/notifications", "general/terminal", sectionHotkeys, sectionProviders, sectionSandbox, sectionVersionControl, sectionEditor, sectionUpdates, sectionHelp, sectionServices, sectionExtensions} {
 		screens["settings "+section] = func(t *testing.T) *frameRig { _, r := settingsFrames(t, section); return r }
 	}
 	return screens
@@ -82,11 +82,11 @@ func TestEveryClickableShowsTheHand(t *testing.T) {
 // no Clickable, so only the tooltip over it takes presses (and passes them
 // on), and the arrow is right. Keyed by screen and bounds.
 var disabledAtRest = map[string]bool{
-	"dock review(10,758)-(42,790)":         true, // Attach, with no session
-	"dock code tab(10,758)-(42,790)":       true,
-	"dock artifacts(10,758)-(42,790)":      true,
-	"git(895,758)-(978,790)":               true, // the pull request, with none
-	"settings editor(1000,162)-(1036,198)": true, // the font stepper's minus, at its minimum
+	"dock review(10,758)-(42,790)":       true, // Attach, with no session
+	"dock code tab(10,758)-(42,790)":     true,
+	"dock artifacts(10,758)-(42,790)":    true,
+	"git(895,758)-(978,790)":             true, // the pull request, with none
+	"settings editor(941,162)-(977,198)": true, // the font stepper's minus, at its minimum
 }
 
 // trackWidth is the widest a scrollbar's track or a resize edge is, in px.

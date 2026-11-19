@@ -62,6 +62,7 @@ type settingsScreen struct {
 
 	open     bool
 	section  string
+	page     string // the page of a split section, "" for its first
 	scope    string // a project id, "" for Global
 	projects []settingsProject
 
@@ -115,7 +116,7 @@ func newSettingsScreen(ctx context.Context, c *backend.Client, root *ui.Root, in
 // load reads the remembered section before the first open.
 func (s *settingsScreen) load() error {
 	raw, err := s.client.GetSetting(s.ctx, settingsSectionKey, "")
-	s.section = parseSettingsSection(raw)
+	s.section, s.page = parseSettingsSection(raw), settingsPageOf(raw)
 	return err
 }
 
@@ -166,25 +167,18 @@ func (s *settingsScreen) snapshot() scopedValues {
 	return values
 }
 
-func (s *settingsScreen) openSection(id string) {
-	s.section = id
-	s.extensions.view.Selected = extensionsViewCatalog
-	go func() {
-		if err := s.client.SetSetting(s.ctx, settingsSectionKey, "", id); err != nil {
-			log.Printf("settings: save section: %v", err)
-		}
-	}()
-}
+func (s *settingsScreen) openSection(id string) { s.openPage(id, "") }
 
-// choose opens a search result's section and lights its row.
+// choose opens a search result's section on the page that holds its row, and
+// lights the row.
 func (s *settingsScreen) choose(gtx C, h settingHit) {
-	s.openSection(h.section)
+	s.openPage(h.section, sectionByID(h.section).pageOfRow(h.title))
 	if h.section == sectionExtensions && h.title == i18n.T("settings.extensionsSettings.listRow") {
 		s.extensions.view.Selected = extensionsViewInstalled
 	}
 	s.providers.open = h.providerID
 	s.lit, s.litUntil, s.scrollTo = h.title, gtx.Now.Add(settingsLitFor), -1
-	for i, e := range sectionByID(h.section).rows {
+	for i, e := range s.shown().rows {
 		if e.titleText() == h.title {
 			s.scrollTo = i
 		}
@@ -255,10 +249,10 @@ func (s *settingsScreen) island(gtx C, th *ui.Theme, bg color.NRGBA, w func(gtx 
 // title, the description, and the rows, the × in the top-right corner.
 func (s *settingsScreen) paneLayout(gtx C, th *ui.Theme, values scopedValues) D {
 	s.providerPaneClicks(gtx)
-	rows := s.paneRows(sectionByID(s.section), th, values)
+	rows := s.paneRows(s.shown(), th, values)
 	d := layout.Inset{Left: settingsPanePadX, Top: settingsPanePadY, Bottom: settingsPanePadY}.Layout(gtx, func(gtx C) D {
 		return paneScroll(th, &s.pane).Layout(gtx, len(rows), func(gtx C, i int) D {
-			return layout.Inset{Right: settingsPanePadX}.Layout(gtx, rows[i])
+			return layout.Inset{Right: settingsPanePadX}.Layout(gtx, func(gtx C) D { return s.readingColumn(gtx, rows[i]) })
 		})
 	})
 	inset := gtx.Dp(settingsCloseInset)
@@ -292,9 +286,7 @@ func (s *settingsScreen) paneRows(sec settingsSection, th *ui.Theme, values scop
 	} else if sec.id == sectionExtensions {
 		rows = append(rows, s.extensionsTitle(th, sec.label()))
 	} else {
-		rows = append(rows, func(gtx C) D {
-			return layout.Inset{Bottom: ui.Space(4)}.Layout(gtx, th.Text(settingsTitle, sec.label()).Weight(font.SemiBold).Leading(32).Layout)
-		})
+		rows = append(rows, s.pageTitle(th, sec))
 	}
 	if sec.id == sectionServices {
 		return append(rows, s.servicesPaneRows(th)...)

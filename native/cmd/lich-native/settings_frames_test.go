@@ -6,7 +6,8 @@ import (
 	"github.com/lichdotdev/lich/native/ui"
 )
 
-// settingsFrames is the Settings screen open on section, over a fake
+// settingsFrames is the Settings screen open on section, a "section/page"
+// one opening that page, over a fake
 // backend with Claude Code and Codex installed and on, framed the way the
 // window frames it: its dialogs first, then the screen.
 func settingsFrames(t *testing.T, section string) (*settingsScreen, *frameRig) {
@@ -22,7 +23,7 @@ func settingsFrames(t *testing.T, section string) (*settingsScreen, *frameRig) {
 	}
 	s.theme = &themePicker{toaster: new(ui.Toaster)}
 	s.notify = newNotifier(t.Context(), client, nil, r.invalidate)
-	s.open, s.section = true, section
+	s.open, s.section, s.page = true, parseSettingsSection(section), settingsPageOf(section)
 	r.draw = func(gtx C, th *ui.Theme) {
 		root.Layout(gtx, func(gtx C) D {
 			s.layoutPatchNotesDialog(gtx, th)

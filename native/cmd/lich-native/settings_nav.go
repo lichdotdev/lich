@@ -1,11 +1,15 @@
 package main
 
 import (
+	"image"
+	"runtime"
 	"strings"
 
+	"gioui.org/font"
 	"gioui.org/io/event"
 	"gioui.org/io/key"
 	"gioui.org/layout"
+	"gioui.org/op"
 	"gioui.org/unit"
 	"gioui.org/widget"
 
@@ -48,13 +52,50 @@ type settingsNav struct {
 	rows       map[string]*ui.Clickable
 	hits       []ui.Clickable
 	list       widget.List
+	sections   widget.List
 	closeTip   ui.Tooltip
 	scopeTip   ui.Tooltip
 }
 
 func (n *settingsNav) init() {
 	n.scopeRows, n.rows = map[string]*ui.Clickable{}, map[string]*ui.Clickable{}
-	n.list.Axis = layout.Vertical
+	n.list.Axis, n.sections.Axis = layout.Vertical, layout.Vertical
+}
+
+// navEntry is one nav row: a section, or one page of a split one, cut down
+// to that page so its badge and dimming read as the section's do.
+type navEntry struct {
+	sec     settingsSection
+	section string
+	page    string
+}
+
+func (e navEntry) key() string { return e.section + pageSeparator + e.page }
+
+// navEntries are the nav's rows in order, the footer's or the body's.
+func navEntries(footer bool) []navEntry {
+	var entries []navEntry
+	for _, sec := range settingsSections {
+		if sec.footer != footer {
+			continue
+		}
+		if len(sec.pages) == 0 {
+			entries = append(entries, navEntry{sec: sec, section: sec.id})
+		}
+		for _, p := range sec.pages {
+			entries = append(entries, navEntry{sec: sec.only(p), section: sec.id, page: p.id})
+		}
+	}
+	return entries
+}
+
+// on reports whether e is the entry the pane shows.
+func (s *settingsScreen) on(e navEntry) bool {
+	if e.section != s.section {
+		return false
+	}
+	p, split := sectionByID(s.section).page(s.page)
+	return !split || p.id == e.page
 }
 
 // navLayout is the nav island: py-3 px-2, the scope selector, the search
@@ -66,6 +107,7 @@ func (s *settingsScreen) navLayout(gtx C, th *ui.Theme, values scopedValues) D {
 		n.searched, n.cursor = q, 0
 	}
 	s.searchKeys(gtx, hits)
+	s.focusSearchKey(gtx)
 	return layout.Inset{Top: ui.Space(2), Left: ui.Space(2), Right: ui.Space(2), Bottom: ui.Space(2)}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
@@ -77,7 +119,11 @@ func (s *settingsScreen) navLayout(gtx C, th *ui.Theme, values scopedValues) D {
 				return layout.Inset{Bottom: ui.Space(1.5)}.Layout(gtx, func(gtx C) D {
 					field := th.Input(&n.query, i18n.T("settings.settings.search"))
 					field.Leading, field.LeadingSize, field.Height, field.TextSize, field.Clear = icNavSearch, unit.Dp(15), ui.Space(8), 13, &n.clear
-					return field.Layout(gtx)
+					d := field.Layout(gtx)
+					if n.query.Len() == 0 {
+						searchKeyHint(gtx, th, d.Size)
+					}
+					return d
 				})
 			}),
 			layout.Flexed(1, func(gtx C) D {
@@ -89,6 +135,34 @@ func (s *settingsScreen) navLayout(gtx C, th *ui.Theme, values scopedValues) D {
 			layout.Rigid(func(gtx C) D { return s.navFooter(gtx, th, values) }),
 		)
 	})
+}
+
+// searchShortcut is the chord that puts the cursor in the search field, only
+// while Settings is open.
+var searchShortcut = combo{Mod: true, Key: "F"}
+
+// focusSearchKey moves the focus to the search field on searchShortcut.
+func (s *settingsScreen) focusSearchKey(gtx C) {
+	for {
+		ev, ok := gtx.Event(key.Filter{Name: key.Name(searchShortcut.Key), Required: key.ModShortcut})
+		if !ok {
+			return
+		}
+		if e, isKey := ev.(key.Event); isKey && e.State == key.Press {
+			gtx.Execute(key.FocusCmd{Tag: &s.nav.query})
+		}
+	}
+}
+
+// searchKeyHint is searchShortcut's key cap at the right end of the empty
+// search field, whose size is size.
+func searchKeyHint(gtx C, th *ui.Theme, size image.Point) {
+	macro := op.Record(gtx.Ops)
+	gtx.Constraints.Min = image.Point{}
+	d := th.KeyCap(formatCombo(searchShortcut, runtime.GOOS == "darwin")).Layout(gtx)
+	call := macro.Stop()
+	defer op.Offset(image.Pt(size.X-gtx.Dp(ui.Space(2))-d.Size.X, (size.Y-d.Size.Y)/2)).Push(gtx.Ops).Pop()
+	call.Add(gtx.Ops)
 }
 
 // searchKeys is onSearchKey: the arrows move through the results, Enter
@@ -132,26 +206,55 @@ func (s *settingsScreen) searchKey(gtx C, name key.Name, hits []settingHit, curs
 	return cursor
 }
 
-// sectionList is the nav's sections, the scope note under them in a
-// project's scope.
+// sectionList is the nav's entries under their headings, the scope note
+// under them in a project's scope; the footer's entries have no heading.
 func (s *settingsScreen) sectionList(gtx C, th *ui.Theme, values scopedValues, footer bool) D {
-	var children []layout.FlexChild
-	for _, sec := range settingsSections {
-		if sec.footer != footer {
-			continue
+	var children []layout.Widget
+	heading := ""
+	for _, e := range navEntries(footer) {
+		if g := e.sec.navGroupKey; g != heading {
+			children = append(children, navHeading(th, i18n.T(g), heading == ""))
+			heading = g
 		}
-		children = append(children, layout.Rigid(func(gtx C) D { return s.sectionRow(gtx, th, sec, values) }), ui.VGap(0.5))
+		children = append(children, func(gtx C) D {
+			return layout.Inset{Bottom: ui.Space(0.5)}.Layout(gtx, func(gtx C) D { return s.sectionRow(gtx, th, e, values) })
+		})
 	}
 	if !footer && s.scope != "" {
-		children = append(children, layout.Rigid(func(gtx C) D {
+		children = append(children, func(gtx C) D {
 			return layout.Inset{Top: ui.Space(2.5), Left: ui.Space(2.5), Right: ui.Space(2.5)}.Layout(gtx, func(gtx C) D {
 				l := th.Text(ui.TextXS, i18n.T("settings.settingsNav.scopeNote")).Muted().Leading(17.4)
 				l.MaxLines = 0
 				return l.Layout(gtx)
 			})
-		}))
+		})
 	}
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
+	if footer {
+		flex := make([]layout.FlexChild, len(children))
+		for i, c := range children {
+			flex[i] = layout.Rigid(c)
+		}
+		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, flex...)
+	}
+	return th.ThinScrollArea(&s.nav.sections).Layout(gtx, len(children), func(gtx C, i int) D { return children[i](gtx) })
+}
+
+// navHeading is a group's label over its entries: small, muted and
+// uppercase, a hairline running from it to the nav's edge.
+func navHeading(th *ui.Theme, label string, first bool) layout.Widget {
+	inset := layout.Inset{Left: navRowPadX, Right: navRowPadX, Top: ui.Space(2.5), Bottom: ui.Space(1)}
+	if first {
+		inset.Top = ui.Space(0.5)
+	}
+	return func(gtx C) D {
+		return inset.Layout(gtx, func(gtx C) D {
+			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+				layout.Rigid(th.Text(ui.Text2XS, strings.ToUpper(label)).Muted().Weight(font.SemiBold).Layout),
+				ui.Gap(2),
+				layout.Flexed(1, th.Separator),
+			)
+		})
+	}
 }
 
 // navFooter is the footer group: a separator, then Updates and Help.
@@ -166,12 +269,12 @@ func (s *settingsScreen) navFooter(gtx C, th *ui.Theme, values scopedValues) D {
 // navClicks opens the section whose row was clicked before any row is
 // drawn: a row handling its own click would leave the rows above it lit.
 func (s *settingsScreen) navClicks(gtx C) {
-	for _, sec := range settingsSections {
-		if !clickableOf(s.nav.rows, sec.id).Clicked(gtx) {
+	for _, e := range append(navEntries(false), navEntries(true)...) {
+		if !clickableOf(s.nav.rows, e.key()).Clicked(gtx) {
 			continue
 		}
-		s.openSection(sec.id)
-		if sec.id == sectionProviders {
+		s.openPage(e.section, e.page)
+		if e.section == sectionProviders {
 			s.providers.open = ""
 		}
 	}
@@ -179,15 +282,16 @@ func (s *settingsScreen) navClicks(gtx C) {
 
 // sectionRow is one nav row: the icon, the label and the override count,
 // dimmed in a project's scope when the section has nothing a project sets.
-func (s *settingsScreen) sectionRow(gtx C, th *ui.Theme, sec settingsSection, values scopedValues) D {
-	click := clickableOf(s.nav.rows, sec.id)
+func (s *settingsScreen) sectionRow(gtx C, th *ui.Theme, e navEntry, values scopedValues) D {
+	sec := e.sec
+	click := clickableOf(s.nav.rows, e.key())
 	where := ""
 	if p, ok := s.providerScreen(); ok && sec.id == sectionProviders && sec.id == s.section {
 		where = p.name
 	}
 	badge := sectionBadge(sec, s.scope, s.projects, values)
 	dim := s.scope != "" && !sec.projectScoped()
-	return th.NavRow(gtx, click, sec.id == s.section, navRowHeight, navRowPadX, func(gtx C, th *ui.Theme) D {
+	return th.NavRow(gtx, click, s.on(e), navRowHeight, navRowPadX, func(gtx C, th *ui.Theme) D {
 		fg, icon := th.Foreground, th.MutedForeground
 		if dim {
 			fg = th.Over(ui.Alpha(th.MutedForeground, navDimOpacity))

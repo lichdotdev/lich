@@ -8,21 +8,16 @@ import (
 	"github.com/lichdotdev/lich/native/ui"
 )
 
-// footerRow is Settings › Appearance › Footer: the row with Restore default,
-// and the editor and preview always open under it, as FooterSettings keeps
-// them. A project's scope shows the row dimmed with no control: the layout
-// is global.
+// footerRow is Settings › Appearance › Footer: the editor and preview always
+// open, as FooterSettings keeps them, under the page's title, which holds the
+// description and Restore default. A project's scope shows the row dimmed
+// with no control: the layout is global.
 func (s *settingsScreen) footerRow(gtx C, th *ui.Theme, r settingRow, first bool) D {
-	r.description, _ = s.footer.editorState()
 	if r.kind == rowGlobalOnly {
+		r.description, _ = s.footer.editorState()
 		return r.layout(gtx, th, first, nil)
 	}
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(func(gtx C) D { return r.layout(gtx, th, first, s.footer.restoreButton) }),
-		layout.Rigid(func(gtx C) D {
-			return layout.Inset{Bottom: rowPadY}.Layout(gtx, func(gtx C) D { return s.footer.editorPanel(gtx, th) })
-		}),
-	)
+	return layout.Inset{Bottom: rowPadY}.Layout(gtx, func(gtx C) D { return s.footer.editorPanel(gtx, th) })
 }
 
 // reveal opens Settings on section with the row titled title scrolled into
@@ -40,7 +35,7 @@ var (
 	flagPalette          = flag.Bool("palette", false, "open the command palette at start, for -shot")
 	flagPaletteQuery     = flag.String("palette-query", "", "type this into the command palette at start, for -shot with -palette (\">\" lists actions)")
 	flagPaletteTab       = flag.String("palette-tab", "", "open the command palette on this tab (Sessions, Projects, Messages, History), for -shot with -palette")
-	flagSettings         = flag.String("settings", "", "open Settings on this section at start, for -shot")
+	flagSettings         = flag.String("settings", "", "open Settings on this section, or section/page (general/window), at start, for -shot")
 	flagSettingsQuery    = flag.String("settings-query", "", "type this into the Settings search at start, for -shot with -settings")
 	flagPatchNotes       = flag.Bool("patch-notes", false, "open the patch notes dialog with Settings at start, for -shot with -settings updates")
 	flagSettingsScope    = flag.String("settings-scope", "", "open Settings in this open project's scope (its id), for -shot with -settings")

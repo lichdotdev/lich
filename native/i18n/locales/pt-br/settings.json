@@ -130,7 +130,11 @@
     "ceilingTitle": "Teto de gasto",
     "ceilingSearchWords": "custo orçamento limite usd dólar",
     "ceilingDescription": "Avisa quando o custo de API da sessão se aproxima desse valor: âmbar em 80%, vermelho em 95%. Deixe vazio para não ter teto.",
-    "ceilingPlaceholder": "Sem teto"
+    "ceilingPlaceholder": "Sem teto",
+    "shownCount": {
+      "one": "{count} visível",
+      "other": "{count} visíveis"
+    }
   },
   "footerLayoutEditor": {
     "zone": {
@@ -155,7 +159,8 @@
     "needsInputTitle": "Me notificar quando uma sessão precisar de resposta",
     "needsInputDescription": "Mostra uma notificação do sistema quando uma sessão está parada esperando você (um pedido de permissão, uma pergunta) e a janela do lich não é aquela em que você está. Com você no lich, nada muda: quem avisa são o sino do card e o toast.",
     "finishedTitle": "Me notificar quando uma sessão terminar o trabalho",
-    "finishedDescription": "Mostra uma notificação do sistema quando uma sessão termina o turno sem nada mais a perguntar, e a janela do lich não é aquela em que você está. Funciona independente da configuração acima, então você pode ser avisado de uma execução longa da qual se afastou sem ser avisado a cada pedido de resposta. Não vem com toast, porque dentro do lich o card e a aba do projeto já mostram isso."
+    "finishedDescription": "Mostra uma notificação do sistema quando uma sessão termina o turno sem nada mais a perguntar, e a janela do lich não é aquela em que você está. Funciona independente da configuração acima, então você pode ser avisado de uma execução longa da qual se afastou sem ser avisado a cada pedido de resposta. Não vem com toast, porque dentro do lich o card e a aba do projeto já mostram isso.",
+    "onCount": "{on} de {count} ativadas"
   },
   "hotkeysSettings": {
     "alsoBound": "Também atribuído a {actions}",
@@ -404,7 +409,8 @@
     "sectionGeneral": "Geral",
     "sectionEditor": "Editor",
     "hideWhitespaceTitle": "Ocultar espaços em branco nos diffs",
-    "hideWhitespaceSearchWords": "espaço indentação revisão ignorar"
+    "hideWhitespaceSearchWords": "espaço indentação revisão ignorar",
+    "interfaceGroup": "Interface"
   },
   "settingsNav": {
     "scopeLabel": "Escopo",
@@ -414,7 +420,9 @@
       "one": "{count} mudança",
       "other": "{count} mudanças"
     },
-    "scopeNote": "Só as configurações que um projeto pode mudar ficam ativas. As demais são iguais em todo lugar."
+    "scopeNote": "Só as configurações que um projeto pode mudar ficam ativas. As demais são iguais em todo lugar.",
+    "groupAgents": "Agentes",
+    "groupWorkspace": "Espaço de trabalho"
   },
   "settingsRow": {
     "overriddenIn": "Substituído em",

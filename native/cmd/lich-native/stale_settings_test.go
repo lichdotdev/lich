@@ -9,7 +9,7 @@ import (
 func TestNotificationSwitchesTurnInTheFrameThatTookTheClick(t *testing.T) {
 	for _, title := range []string{"settings.notificationsSettings.needsInputTitle", "settings.notificationsSettings.finishedTitle"} {
 		t.Run(title, func(t *testing.T) {
-			_, r := settingsFrames(t, sectionGeneral)
+			_, r := settingsFrames(t, sectionGeneral+pageSeparator+"notifications")
 			r.settle(t)
 			r.click(t, r.controlOf(t, i18n.T(title)))
 		})

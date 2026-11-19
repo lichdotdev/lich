@@ -130,7 +130,11 @@
     "ceilingTitle": "花费上限",
     "ceilingSearchWords": "费用 预算 美元 usd",
     "ceilingDescription": "会话的 API 费用接近此金额时发出警告：80% 为琥珀色，95% 为红色。留空表示不设上限。",
-    "ceilingPlaceholder": "无上限"
+    "ceilingPlaceholder": "无上限",
+    "shownCount": {
+      "one": "显示 {count} 项",
+      "other": "显示 {count} 项"
+    }
   },
   "footerLayoutEditor": {
     "zone": {
@@ -155,7 +159,8 @@
     "needsInputTitle": "会话需要输入时通知我",
     "needsInputDescription": "会话在等你处理（权限确认、提问），而你当前不在 lich 窗口时，弹出桌面通知。在 lich 窗口内一切照旧：由卡片上的铃铛和提示消息提醒你。",
     "finishedTitle": "会话完成工作时通知我",
-    "finishedDescription": "会话结束一轮且没有要问你的事，而你当前不在 lich 窗口时，弹出桌面通知。它与上一项设置互不影响，因此你可以只在离开期间的长任务结束时收到通知，而不必每次提示都被打扰。不会附带提示消息：在 lich 内，卡片和项目标签页已经会显示。"
+    "finishedDescription": "会话结束一轮且没有要问你的事，而你当前不在 lich 窗口时，弹出桌面通知。它与上一项设置互不影响，因此你可以只在离开期间的长任务结束时收到通知，而不必每次提示都被打扰。不会附带提示消息：在 lich 内，卡片和项目标签页已经会显示。",
+    "onCount": "已开启 {on}/{count}"
   },
   "hotkeysSettings": {
     "alsoBound": "同时绑定到 {actions}",
@@ -404,7 +409,8 @@
     "sectionGeneral": "常规",
     "sectionEditor": "编辑器",
     "hideWhitespaceTitle": "在差异中隐藏空白",
-    "hideWhitespaceSearchWords": "空格 缩进 审查 忽略"
+    "hideWhitespaceSearchWords": "空格 缩进 审查 忽略",
+    "interfaceGroup": "界面"
   },
   "settingsNav": {
     "scopeLabel": "范围",
@@ -414,7 +420,9 @@
       "one": "{count} 项更改",
       "other": "{count} 项更改"
     },
-    "scopeNote": "只有项目可以单独更改的设置可用，其余设置全局统一。"
+    "scopeNote": "只有项目可以单独更改的设置可用，其余设置全局统一。",
+    "groupAgents": "智能体",
+    "groupWorkspace": "工作区"
   },
   "settingsRow": {
     "overriddenIn": "已在以下项目覆盖",

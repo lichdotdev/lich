@@ -48,6 +48,9 @@ type settingRow struct {
 	globalValue        string        // rowChanged's "Global: <value>"
 	reset              *ui.Clickable // rowChanged's Use Global
 	lit                float32       // the search's flash, 0 to 1
+	// detail is a line under the description saying what the control's
+	// value does.
+	detail string
 	// sample is drawn in the description's place when set, for a
 	// description that is not text in the interface's font.
 	sample layout.Widget
@@ -148,6 +151,11 @@ func (r settingRow) text(gtx C, th *ui.Theme) D {
 	children := []layout.FlexChild{layout.Rigid(th.Text(ui.TextSM, r.title).Weight(font.Medium).Layout)}
 	if r.description != "" || r.sample != nil {
 		children = append(children, ui.VGap(0.5), layout.Rigid(descLayout))
+	}
+	if r.detail != "" {
+		detail := th.Text(rowNoteSize, r.detail).Muted()
+		detail.MaxLines = 0
+		children = append(children, ui.VGap(1.5), layout.Rigid(detail.Layout))
 	}
 	if note := r.note(th); note != nil {
 		children = append(children, ui.VGap(1), layout.Rigid(note))

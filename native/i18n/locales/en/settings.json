@@ -130,7 +130,11 @@
     "ceilingTitle": "Spend ceiling",
     "ceilingSearchWords": "cost budget usd",
     "ceilingDescription": "Warn as the session's API cost nears this amount: amber at 80%, red at 95%. Empty for none.",
-    "ceilingPlaceholder": "No ceiling"
+    "ceilingPlaceholder": "No ceiling",
+    "shownCount": {
+      "one": "{count} shown",
+      "other": "{count} shown"
+    }
   },
   "footerLayoutEditor": {
     "zone": {
@@ -155,7 +159,8 @@
     "needsInputTitle": "Notify me when a session needs input",
     "needsInputDescription": "Raise a desktop notification when a session is blocked on you (a permission prompt, a question) and the lich window is not the one you are in. While you are in lich nothing changes: the card's bell and the toast do the telling.",
     "finishedTitle": "Notify me when a session finishes working",
-    "finishedDescription": "Raise a desktop notification when a session ends its turn with nothing left to ask you, and the lich window is not the one you are in. It works independently of the setting above, so you can hear about a long run you walked away from without hearing about every prompt. No toast comes with it: inside lich, the card and its project tab already say so."
+    "finishedDescription": "Raise a desktop notification when a session ends its turn with nothing left to ask you, and the lich window is not the one you are in. It works independently of the setting above, so you can hear about a long run you walked away from without hearing about every prompt. No toast comes with it: inside lich, the card and its project tab already say so.",
+    "onCount": "{on} of {count} on"
   },
   "hotkeysSettings": {
     "alsoBound": "Also bound to {actions}",
@@ -404,7 +409,8 @@
     "sectionGeneral": "General",
     "sectionEditor": "Editor",
     "hideWhitespaceTitle": "Hide whitespace in diffs",
-    "hideWhitespaceSearchWords": "space indentation review ignore"
+    "hideWhitespaceSearchWords": "space indentation review ignore",
+    "interfaceGroup": "Interface"
   },
   "settingsNav": {
     "scopeLabel": "Scope",
@@ -414,7 +420,9 @@
       "one": "{count} change",
       "other": "{count} changes"
     },
-    "scopeNote": "Only the settings a project can change are on. The rest are the same everywhere."
+    "scopeNote": "Only the settings a project can change are on. The rest are the same everywhere.",
+    "groupAgents": "Agents",
+    "groupWorkspace": "Workspace"
   },
   "settingsRow": {
     "overriddenIn": "Overridden in",

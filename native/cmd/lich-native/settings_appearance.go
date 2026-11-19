@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"strings"
 
-	"gioui.org/layout"
 	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/i18n"
@@ -210,8 +209,8 @@ func budgetText(budget float64) string {
 	return strconv.FormatFloat(budget, 'f', -1, 64)
 }
 
-// closeBlock is CloseSetting, a SettingBlock: the title and description,
-// the three answers under them, and what the chosen one does.
+// closeBlock is CloseSetting: the title and description, what the chosen
+// answer does under them, and the three answers at the row's right.
 func (s *settingsScreen) closeBlock(gtx C, th *ui.Theme, r settingRow, first bool) D {
 	r.description = i18n.T("settings.closeSetting.description")
 	if r.kind == rowGlobalOnly {
@@ -232,19 +231,13 @@ func (s *settingsScreen) closeBlock(gtx C, th *ui.Theme, r settingRow, first boo
 			consequence = i18n.T(c.consequenceKey)
 		}
 	}
-	under := func(gtx C, th *ui.Theme) D {
-		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-			layout.Rigid(th.ToggleGroup(g, items...).Layout),
-			ui.VGap(2),
-			layout.Rigid(th.Text(ui.TextXS, consequence).Muted().Layout),
-		)
-	}
-	return r.layoutBlock(gtx, th, first, under)
+	r.detail = consequence
+	return r.layout(gtx, th, first, func(gtx C, th *ui.Theme) D { return th.ToggleGroup(g, items...).Layout(gtx) })
 }
 
-// windowButtonsBlock is the window buttons setting, a SettingBlock: the title
-// and description, the three answers under them, and what the chosen one
-// does.
+// windowButtonsBlock is the window buttons setting: the title and
+// description, what the chosen answer does under them, and the three answers
+// at the row's right.
 func (s *settingsScreen) windowButtonsBlock(gtx C, th *ui.Theme, r settingRow, first bool) D {
 	r.description = i18n.T("settings.windowButtonsSetting.description")
 	if r.kind == rowGlobalOnly {
@@ -265,14 +258,8 @@ func (s *settingsScreen) windowButtonsBlock(gtx C, th *ui.Theme, r settingRow, f
 			consequence = i18n.T(c.consequenceKey)
 		}
 	}
-	under := func(gtx C, th *ui.Theme) D {
-		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-			layout.Rigid(th.ToggleGroup(g, items...).Layout),
-			ui.VGap(2),
-			layout.Rigid(th.Text(ui.TextXS, consequence).Muted().Layout),
-		)
-	}
-	return r.layoutBlock(gtx, th, first, under)
+	r.detail = consequence
+	return r.layout(gtx, th, first, func(gtx C, th *ui.Theme) D { return th.ToggleGroup(g, items...).Layout(gtx) })
 }
 
 // rowApplies drops a row that has nothing to set: the spend ceiling while

@@ -585,7 +585,7 @@ func (u *window) connect() error {
 	}
 	u.notifier.asking = *flagNotifyOptIn
 	if *flagSettings != "" {
-		u.settings.openSection(parseSettingsSection(*flagSettings))
+		u.settings.openPage(parseSettingsSection(*flagSettings), settingsPageOf(*flagSettings))
 		tabs, _ := u.model.projectTabs()
 		u.settings.show(*flagSettingsScope, settingsProjectsOf(tabs))
 		u.settings.providers.open = *flagSettingsProvider

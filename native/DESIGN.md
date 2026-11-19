@@ -544,6 +544,31 @@ A reading pane, a column of prose and settings rows under a title, is the one pl
 edge: the Settings pane sits at `settingsPanePadX` / `settingsPanePadY` (40px / 32px), its close button in
 the corner at `settingsCloseInset` (14px). Every other screen body follows its rows (see the island's edge).
 
+### Settings
+
+The nav sorts its entries under group labels, General, Appearance, Agents and Workspace: `Text2XS`, semibold,
+muted and uppercase, with a hairline from the label to the nav's edge (`navHeading`). Updates and Help stay in the
+foot under a separator, with no label.
+
+A section whose rows fall into groups gives each group an entry and a page of its own (`settingsSection.pages`):
+General is Language, Window, Notifications and Terminal; Appearance is Interface, Terminal and Footer. The entry
+is named after the group, the page's title is that name, and the page draws no group heading under it. A section
+with a structure of its own (Providers, Sandbox, Extensions, Services, Version Control, Hotkeys, Updates, Help)
+stays one entry. A search result's path names the section and the group, so a hit on one of the two Terminal
+pages says which one.
+
+The pane's content sits in a reading column centred at `settingsColumn` (760px), the title included; the
+extension catalog keeps the pane's width, since its grid takes columns as the pane grows. A page title has no
+subtitle. A count beside it, in muted mono, appears only on Notifications (switches on) and Footer (items
+shown).
+
+Every row keeps its control at its right, a segmented control included; what the chosen answer does is a line
+under the description (`settingRow.detail`), never under the control. The control drops under the text only
+when the row is too narrow for both.
+
+Ctrl+F (Cmd+F on macOS) focuses the search field while Settings is open, and its key cap sits at the field's
+right end while the field is empty. It is Settings' own key, not a window hotkey, and not in the Hotkeys table.
+
 ### Loading
 
 A skeleton is the loaded screen with a bar where each piece of text will land, faithful to it in every

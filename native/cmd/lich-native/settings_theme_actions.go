@@ -227,7 +227,7 @@ var flagThemePicker = flag.String("theme-picker", "", "open Settings › Appeara
 
 // showThemePicker is -theme-picker.
 func (u *window) showThemePicker(mode string) error {
-	u.settings.section = sectionAppearance
+	u.settings.section, u.settings.page = sectionAppearance, ""
 	u.settings.show("", nil)
 	p := u.settings.theme
 	p.open = true

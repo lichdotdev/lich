@@ -69,57 +69,92 @@ type settingsSection struct {
 	id       string
 	labelKey string
 	icon     *icons.Icon
-	footer   bool
+	// navGroupKey names the nav heading the section sits under, "" for the
+	// footer's sections.
+	navGroupKey string
+	footer      bool
+	// pages split the section into nav entries of their own, one per group
+	// of its rows; a section without them is one entry.
+	pages    []settingsPage
 	rows     []settingEntry
 	unported []settingEntry
 }
 
 func (s settingsSection) label() string { return i18n.T(s.labelKey) }
 
+// The nav's headings over its sections.
+const (
+	navGroupGeneral    = "settings.settingsIndex.sectionGeneral"
+	navGroupAppearance = "settings.settings.section.appearance"
+	navGroupAgents     = "settings.settingsNav.groupAgents"
+	navGroupWorkspace  = "settings.settingsNav.groupWorkspace"
+)
+
+// The groups General and Appearance split into, each a page.
+const (
+	groupLanguage      = "settings.language.group"
+	groupWindow        = "settings.windowSetting.title"
+	groupNotifications = "settings.settings.section.notifications"
+	groupTerminal      = "settings.settingsGeneral.terminalGroup"
+	groupInterface     = "settings.settingsIndex.interfaceGroup"
+	groupFooter        = "settings.footerSettings.title"
+)
+
+var icTerminalPage = icons.Lucide("square-terminal")
+
 // settingsSections is the nav in order.
 var settingsSections = []settingsSection{
-	{id: sectionGeneral, labelKey: "settings.settingsIndex.sectionGeneral", icon: icons.Lucide("settings-2"), rows: []settingEntry{
-		{titleKey: "settings.language.uiTitle", alsoKey: "settings.language.uiSearchWords", key: uiLanguageKey, groupKey: "settings.language.group"},
-		{titleKey: "settings.language.promptTitle", alsoKey: "settings.language.promptSearchWords", key: promptLanguageKey, groupKey: "settings.language.group"},
-		{titleKey: "settings.closeSetting.title", alsoKey: "settings.closeSetting.searchWords", key: closeActionKey, groupKey: "settings.windowSetting.title"},
-		{titleKey: "settings.windowButtonsSetting.title", alsoKey: "settings.windowButtonsSetting.searchWords", key: windowButtonsKey, groupKey: "settings.windowSetting.title"},
-		{titleKey: "settings.notificationsSettings.needsInputTitle", alsoKey: "settings.settingsGeneral.notifySearchWords", key: desktopNotifyKey, groupKey: "settings.settings.section.notifications"},
-		{titleKey: "settings.notificationsSettings.finishedTitle", alsoKey: "settings.settingsGeneral.notifySearchWords", key: finishedNotifyKey, groupKey: "settings.settings.section.notifications"},
-		{titleKey: "settings.appearanceSettings.copyOnSelectTitle", alsoKey: "settings.appearanceSettings.copyOnSelectSearchWords", key: copyOnSelectKey, groupKey: "settings.settingsGeneral.terminalGroup"},
+	{id: sectionGeneral, labelKey: "settings.settingsIndex.sectionGeneral", icon: icons.Lucide("settings-2"), navGroupKey: navGroupGeneral, pages: []settingsPage{
+		{id: "language", groupKey: groupLanguage, icon: icons.Lucide("languages")},
+		{id: "window", groupKey: groupWindow, icon: icons.Lucide("app-window")},
+		{id: "notifications", groupKey: groupNotifications, icon: icons.Lucide("bell")},
+		{id: "terminal", groupKey: groupTerminal, icon: icTerminalPage},
+	}, rows: []settingEntry{
+		{titleKey: "settings.language.uiTitle", alsoKey: "settings.language.uiSearchWords", key: uiLanguageKey, groupKey: groupLanguage},
+		{titleKey: "settings.language.promptTitle", alsoKey: "settings.language.promptSearchWords", key: promptLanguageKey, groupKey: groupLanguage},
+		{titleKey: "settings.closeSetting.title", alsoKey: "settings.closeSetting.searchWords", key: closeActionKey, groupKey: groupWindow},
+		{titleKey: "settings.windowButtonsSetting.title", alsoKey: "settings.windowButtonsSetting.searchWords", key: windowButtonsKey, groupKey: groupWindow},
+		{titleKey: "settings.notificationsSettings.needsInputTitle", alsoKey: "settings.settingsGeneral.notifySearchWords", key: desktopNotifyKey, groupKey: groupNotifications},
+		{titleKey: "settings.notificationsSettings.finishedTitle", alsoKey: "settings.settingsGeneral.notifySearchWords", key: finishedNotifyKey, groupKey: groupNotifications},
+		{titleKey: "settings.appearanceSettings.copyOnSelectTitle", alsoKey: "settings.appearanceSettings.copyOnSelectSearchWords", key: copyOnSelectKey, groupKey: groupTerminal},
 	}},
-	{id: sectionAppearance, labelKey: "settings.settings.section.appearance", icon: icons.Lucide("palette"), rows: []settingEntry{
-		{titleKey: "settings.themePicker.title", alsoKey: "settings.themePicker.searchWords", key: themeSettingKey},
-		{titleKey: "settings.appearanceSettings.zoomTitle", key: zoomKey},
-		{titleKey: "settings.settingsAppearance.uiFontTitle", alsoKey: "settings.settingsAppearance.uiFontSearchWords", key: uiFontKey},
-		{titleKey: "settings.fontSetting.title", alsoKey: "settings.fontSetting.searchWords", key: terminalFontKey},
-		{titleKey: "settings.appearanceSettings.textSizeTitle", key: terminalFontSizeKey},
-		{titleKey: "settings.footerSettings.title", alsoKey: "settings.footerSettings.searchWords", key: footerLayoutKey},
-		{titleKey: "settings.footerSettings.ceilingTitle", alsoKey: "settings.footerSettings.ceilingSearchWords", key: costBudgetKey},
+	{id: sectionHotkeys, labelKey: "settings.settings.section.hotkeys", icon: icons.Lucide("keyboard"), navGroupKey: navGroupGeneral, rows: hotkeyEntries()},
+	{id: sectionAppearance, labelKey: "settings.settings.section.appearance", icon: icons.Lucide("palette"), navGroupKey: navGroupAppearance, pages: []settingsPage{
+		{id: "interface", groupKey: groupInterface, icon: icons.Lucide("palette")},
+		{id: "terminal", groupKey: groupTerminal, icon: icTerminalPage},
+		{id: "footer", groupKey: groupFooter, icon: icons.Lucide("panel-bottom")},
+	}, rows: []settingEntry{
+		{titleKey: "settings.themePicker.title", alsoKey: "settings.themePicker.searchWords", key: themeSettingKey, groupKey: groupInterface},
+		{titleKey: "settings.appearanceSettings.zoomTitle", key: zoomKey, groupKey: groupInterface},
+		{titleKey: "settings.settingsAppearance.uiFontTitle", alsoKey: "settings.settingsAppearance.uiFontSearchWords", key: uiFontKey, groupKey: groupInterface},
+		{titleKey: "settings.fontSetting.title", alsoKey: "settings.fontSetting.searchWords", key: terminalFontKey, groupKey: groupTerminal},
+		{titleKey: "settings.appearanceSettings.textSizeTitle", key: terminalFontSizeKey, groupKey: groupTerminal},
+		{titleKey: "settings.footerSettings.title", alsoKey: "settings.footerSettings.searchWords", key: footerLayoutKey, groupKey: groupFooter},
+		{titleKey: "settings.footerSettings.ceilingTitle", alsoKey: "settings.footerSettings.ceilingSearchWords", key: costBudgetKey, groupKey: groupFooter},
 	}},
-	{id: sectionHotkeys, labelKey: "settings.settings.section.hotkeys", icon: icons.Lucide("keyboard"), rows: hotkeyEntries()},
-	{id: sectionProviders, labelKey: "settings.settings.section.providers", icon: icons.Lucide("blocks"),
-		rows: providerEntries(), unported: providerBinEntries()},
-	{id: sectionSandbox, labelKey: "settings.settings.section.sandbox", icon: icons.Lucide("shield-check"), rows: []settingEntry{
-		{titleKey: "settings.sandboxSettings.confinedTitle", alsoKey: "settings.sandboxSettings.confinedSearchWords", key: sandboxLadderKey},
-		{titleKey: "settings.sandboxSettings.sshTitle", alsoKey: "settings.sandboxSettings.sshSearchWords", key: sshAgentKey, scope: scopeOverridable, groupKey: "settings.sandboxSettings.carryTitle"},
-		{titleKey: "settings.sandboxSettings.ghTitle", alsoKey: "settings.sandboxSettings.ghSearchWords", key: ghTokenKey, scope: scopeOverridable, groupKey: "settings.sandboxSettings.carryTitle"},
-	}, unported: sandboxRungEntries()},
-	{id: sectionVersionControl, labelKey: "settings.settings.section.versionControl", icon: icons.Lucide("git-branch"), rows: []settingEntry{
-		{titleKey: "settings.vcsToolsSetting.title", alsoKey: "settings.vcsToolsSetting.searchWords", key: vcsToolsKey},
-		{titleKey: "settings.versionControlSettings.account", alsoKey: "settings.versionControlSettings.accountSearchWords", key: vcsAccountKey, scope: scopeProjectOnly},
-	}},
-	{id: sectionServices, labelKey: "settings.settings.section.services", icon: icons.Lucide("server"), rows: []settingEntry{
-		{titleKey: "settings.servicesSettings.title", alsoKey: "settings.servicesSettings.searchWords", key: servicesKey, scope: scopeProjectOnly},
-	}},
-	{id: sectionExtensions, labelKey: "settings.settings.section.extensions", icon: icons.Lucide("puzzle"), rows: []settingEntry{
-		{titleKey: "settings.extensionsSettings.installRow", alsoKey: "settings.extensionsSettings.installSearchWords", key: extensionsInstallKey},
-		{titleKey: "settings.extensionsSettings.listRow", alsoKey: "settings.extensionsSettings.listSearchWords", key: extensionsListKey},
-	}},
-	{id: sectionEditor, labelKey: "settings.settingsIndex.sectionEditor", icon: icons.Lucide("code"), rows: []settingEntry{
+	{id: sectionEditor, labelKey: "settings.settingsIndex.sectionEditor", icon: icons.Lucide("code"), navGroupKey: navGroupAppearance, rows: []settingEntry{
 		{titleKey: "settings.settingsAppearance.editorFontTitle", alsoKey: "settings.settingsAppearance.editorFontSearchWords", key: editorFontKey},
 		{titleKey: "settings.settingsAppearance.editorSizeTitle", alsoKey: "settings.settingsAppearance.editorSizeSearchWords", key: editorFontSizeKey},
 		{titleKey: "settings.settingsIndex.hideWhitespaceTitle", alsoKey: "settings.settingsIndex.hideWhitespaceSearchWords", key: hideWhitespaceKey},
 		{titleKey: "settings.diffLayoutSetting.title", alsoKey: "settings.diffLayoutSetting.searchWords", key: diffLayoutKey},
+	}},
+	{id: sectionProviders, labelKey: "settings.settings.section.providers", icon: icons.Lucide("blocks"), navGroupKey: navGroupAgents,
+		rows: providerEntries(), unported: providerBinEntries()},
+	{id: sectionSandbox, labelKey: "settings.settings.section.sandbox", icon: icons.Lucide("shield-check"), navGroupKey: navGroupAgents, rows: []settingEntry{
+		{titleKey: "settings.sandboxSettings.confinedTitle", alsoKey: "settings.sandboxSettings.confinedSearchWords", key: sandboxLadderKey},
+		{titleKey: "settings.sandboxSettings.sshTitle", alsoKey: "settings.sandboxSettings.sshSearchWords", key: sshAgentKey, scope: scopeOverridable, groupKey: "settings.sandboxSettings.carryTitle"},
+		{titleKey: "settings.sandboxSettings.ghTitle", alsoKey: "settings.sandboxSettings.ghSearchWords", key: ghTokenKey, scope: scopeOverridable, groupKey: "settings.sandboxSettings.carryTitle"},
+	}, unported: sandboxRungEntries()},
+	{id: sectionVersionControl, labelKey: "settings.settings.section.versionControl", icon: icons.Lucide("git-branch"), navGroupKey: navGroupWorkspace, rows: []settingEntry{
+		{titleKey: "settings.vcsToolsSetting.title", alsoKey: "settings.vcsToolsSetting.searchWords", key: vcsToolsKey},
+		{titleKey: "settings.versionControlSettings.account", alsoKey: "settings.versionControlSettings.accountSearchWords", key: vcsAccountKey, scope: scopeProjectOnly},
+	}},
+	{id: sectionServices, labelKey: "settings.settings.section.services", icon: icons.Lucide("server"), navGroupKey: navGroupWorkspace, rows: []settingEntry{
+		{titleKey: "settings.servicesSettings.title", alsoKey: "settings.servicesSettings.searchWords", key: servicesKey, scope: scopeProjectOnly},
+	}},
+	{id: sectionExtensions, labelKey: "settings.settings.section.extensions", icon: icons.Lucide("puzzle"), navGroupKey: navGroupWorkspace, rows: []settingEntry{
+		{titleKey: "settings.extensionsSettings.installRow", alsoKey: "settings.extensionsSettings.installSearchWords", key: extensionsInstallKey},
+		{titleKey: "settings.extensionsSettings.listRow", alsoKey: "settings.extensionsSettings.listSearchWords", key: extensionsListKey},
 	}},
 	{id: sectionUpdates, labelKey: "settings.settings.section.updates", icon: icons.Lucide("download"), footer: true, rows: []settingEntry{
 		{titleKey: "settings.updatesSettings.applicationTitle", alsoKey: "settings.updatesSettings.applicationSearchWords", key: updatesAppKey},
@@ -145,11 +180,12 @@ func sectionByID(id string) settingsSection {
 	return settingsSections[0]
 }
 
-// parseSettingsSection reads a section id: one this build has no section for
-// opens the default.
+// parseSettingsSection reads a section id, or the section of a "section/page"
+// one: one this build has no section for opens the default.
 func parseSettingsSection(raw string) string {
-	if slices.ContainsFunc(settingsSections, func(s settingsSection) bool { return s.id == raw }) {
-		return raw
+	id, _, _ := strings.Cut(raw, pageSeparator)
+	if slices.ContainsFunc(settingsSections, func(s settingsSection) bool { return s.id == id }) {
+		return id
 	}
 	return defaultSection
 }
@@ -187,8 +223,8 @@ func (h settingHit) path() string {
 	return label
 }
 
-// searchSettings searches the rows and the sections: a title that starts with
-// the query beats one that contains it, and both beat a match on the also
+// searchSettings searches the rows and the sections: a title that is the
+// query beats one that starts with it, which beats one that contains it, and both beat a match on the also
 // words, a row's group among them; ties keep the nav's order. providers are
 // the enabled ones: a block of a provider's screen is a result once per
 // provider, named after it, and none at all without any.
@@ -205,6 +241,8 @@ func searchSettings(query string, providers ...launchProvider) []settingHit {
 	consider := func(hit settingHit, also string) {
 		t := strings.ToLower(hit.title)
 		switch {
+		case t == needle:
+			found = append(found, scored{hit, -1})
 		case strings.HasPrefix(t, needle):
 			found = append(found, scored{hit, 0})
 		case strings.Contains(t, needle):

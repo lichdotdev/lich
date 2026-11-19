@@ -126,7 +126,10 @@
     "ceilingTitle": "지출 한도",
     "ceilingSearchWords": "비용 예산 달러 usd",
     "ceilingDescription": "세션의 API 비용이 이 금액에 가까워지면 경고합니다. 80%에서 호박색, 95%에서 빨간색입니다. 비워 두면 한도가 없습니다.",
-    "ceilingPlaceholder": "한도 없음"
+    "ceilingPlaceholder": "한도 없음",
+    "shownCount": {
+      "other": "{count}개 표시"
+    }
   },
   "footerLayoutEditor": {
     "zone": {
@@ -151,7 +154,8 @@
     "needsInputTitle": "세션이 입력을 기다릴 때 알림",
     "needsInputDescription": "세션이 권한 확인이나 질문으로 응답을 기다리는데 지금 보고 있는 창이 lich가 아니면 데스크톱 알림을 띄웁니다. lich를 보고 있을 때는 그대로입니다. 카드의 종 아이콘과 토스트로 알 수 있습니다.",
     "finishedTitle": "세션이 작업을 마쳤을 때 알림",
-    "finishedDescription": "세션이 더 물어볼 것 없이 턴을 마쳤는데 지금 보고 있는 창이 lich가 아니면 데스크톱 알림을 띄웁니다. 위 설정과 따로 동작하므로, 프롬프트마다 알림을 받지 않고도 자리를 비운 사이 끝난 긴 작업은 알 수 있습니다. 토스트는 뜨지 않습니다. lich 안에서는 카드와 프로젝트 탭에 이미 표시됩니다."
+    "finishedDescription": "세션이 더 물어볼 것 없이 턴을 마쳤는데 지금 보고 있는 창이 lich가 아니면 데스크톱 알림을 띄웁니다. 위 설정과 따로 동작하므로, 프롬프트마다 알림을 받지 않고도 자리를 비운 사이 끝난 긴 작업은 알 수 있습니다. 토스트는 뜨지 않습니다. lich 안에서는 카드와 프로젝트 탭에 이미 표시됩니다.",
+    "onCount": "{count}개 중 {on}개 켜짐"
   },
   "hotkeysSettings": {
     "alsoBound": "{actions}에도 지정됨",
@@ -400,7 +404,8 @@
     "sectionGeneral": "일반",
     "sectionEditor": "에디터",
     "hideWhitespaceTitle": "diff에서 공백 숨기기",
-    "hideWhitespaceSearchWords": "공백 들여쓰기 리뷰 무시 whitespace"
+    "hideWhitespaceSearchWords": "공백 들여쓰기 리뷰 무시 whitespace",
+    "interfaceGroup": "인터페이스"
   },
   "settingsNav": {
     "scopeLabel": "범위",
@@ -409,7 +414,9 @@
     "changes": {
       "other": "변경 {count}개"
     },
-    "scopeNote": "프로젝트가 바꿀 수 있는 설정만 켜져 있습니다. 나머지는 어디서나 같습니다."
+    "scopeNote": "프로젝트가 바꿀 수 있는 설정만 켜져 있습니다. 나머지는 어디서나 같습니다.",
+    "groupAgents": "에이전트",
+    "groupWorkspace": "작업 공간"
   },
   "settingsRow": {
     "overriddenIn": "재정의된 곳",

@@ -106,7 +106,7 @@ func (u *window) dismissThemeUpdates(pending []themePackUpdate) {
 // showThemeUpdates opens Settings › Appearance with the theme strip open,
 // where each pack's update is.
 func (u *window) showThemeUpdates() {
-	u.settings.section = sectionAppearance
+	u.settings.section, u.settings.page = sectionAppearance, ""
 	u.settings.show("", nil)
 	u.settings.theme.open = true
 }

@@ -130,7 +130,11 @@
     "ceilingTitle": "Tope de gasto",
     "ceilingSearchWords": "costo presupuesto usd cost budget",
     "ceilingDescription": "Avisa cuando el costo de API de la sesión se acerca a este monto, en ámbar al 80% y en rojo al 95%. Déjalo vacío para no poner tope.",
-    "ceilingPlaceholder": "Sin tope"
+    "ceilingPlaceholder": "Sin tope",
+    "shownCount": {
+      "one": "{count} visible",
+      "other": "{count} visibles"
+    }
   },
   "footerLayoutEditor": {
     "zone": {
@@ -155,7 +159,8 @@
     "needsInputTitle": "Avisarme cuando una sesión necesite una respuesta",
     "needsInputDescription": "Muestra una notificación de escritorio cuando una sesión está bloqueada esperándote (una petición de permiso, una pregunta) y no estás en la ventana de lich. Mientras estás en lich no cambia nada, porque ya avisan la campana de la tarjeta y el aviso emergente.",
     "finishedTitle": "Avisarme cuando una sesión termine de trabajar",
-    "finishedDescription": "Muestra una notificación de escritorio cuando una sesión termina su turno sin nada más que preguntarte y no estás en la ventana de lich. Funciona aparte del ajuste anterior, así que puedes enterarte del final de una ejecución larga que dejaste corriendo sin recibir un aviso por cada petición. No muestra aviso emergente, porque dentro de lich la tarjeta y la pestaña de su proyecto ya lo indican."
+    "finishedDescription": "Muestra una notificación de escritorio cuando una sesión termina su turno sin nada más que preguntarte y no estás en la ventana de lich. Funciona aparte del ajuste anterior, así que puedes enterarte del final de una ejecución larga que dejaste corriendo sin recibir un aviso por cada petición. No muestra aviso emergente, porque dentro de lich la tarjeta y la pestaña de su proyecto ya lo indican.",
+    "onCount": "{on} de {count} activadas"
   },
   "hotkeysSettings": {
     "alsoBound": "También asignado a {actions}",
@@ -404,7 +409,8 @@
     "sectionGeneral": "General",
     "sectionEditor": "Editor",
     "hideWhitespaceTitle": "Ocultar espacios en blanco en los diffs",
-    "hideWhitespaceSearchWords": "espacio sangría revisión ignorar"
+    "hideWhitespaceSearchWords": "espacio sangría revisión ignorar",
+    "interfaceGroup": "Interfaz"
   },
   "settingsNav": {
     "scopeLabel": "Ámbito",
@@ -414,7 +420,9 @@
       "one": "{count} cambio",
       "other": "{count} cambios"
     },
-    "scopeNote": "Solo están activos los ajustes que un proyecto puede cambiar. El resto es igual en todas partes."
+    "scopeNote": "Solo están activos los ajustes que un proyecto puede cambiar. El resto es igual en todas partes.",
+    "groupAgents": "Agentes",
+    "groupWorkspace": "Espacio de trabajo"
   },
   "settingsRow": {
     "overriddenIn": "Cambiado en",
