@@ -25,12 +25,17 @@
     "model": "模型",
     "effort": "思考强度",
     "mode": "模式",
-    "busy": "请等本轮结束后再更改。"
+    "busy": "请等本轮结束后再更改。",
+    "modelEffort": "模型与思考强度"
   },
   "choice": {
     "manual": "手动",
     "plan": "计划",
     "auto": "自动",
     "yolo": "YOLO"
+  },
+  "day": {
+    "today": "今天",
+    "yesterday": "昨天"
   }
 }

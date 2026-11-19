@@ -31,15 +31,21 @@ var (
 	// mockup A's max-w-[78%].
 	chatUserShare   = float32(0.78)
 	chatComposerMax = ui.Space(48)
+	// chatComposerMin is the text's floor, three lines of text-sm leading-5
+	// and the field's py-2.
+	chatComposerMin = ui.Space(19)
 	chatComposerPad = ui.Space(2)
 )
 
 // chatView is one session's chat, kept across frames.
 type chatView struct {
-	list       widget.List
-	editor     widget.Editor
-	send, stop widget.Clickable
-	folds      map[string]*chatFold
+	list             widget.List
+	editor           widget.Editor
+	send, stop       widget.Clickable
+	sendTip, stopTip ui.Tooltip
+	// stamps are the tooltips of the time under each message, by item id.
+	stamps map[string]*ui.Tooltip
+	folds  map[string]*chatFold
 	// optionMenus are the menus of the option chips, by category.
 	optionMenus map[string]*ui.MenuState
 	answers     map[chatAnswer]*widget.Clickable
@@ -77,6 +83,18 @@ func (v *chatView) optionMenu(category string) *ui.MenuState {
 		v.optionMenus[category] = m
 	}
 	return m
+}
+
+func (v *chatView) stamp(id string) *ui.Tooltip {
+	t, ok := v.stamps[id]
+	if !ok {
+		if v.stamps == nil {
+			v.stamps = map[string]*ui.Tooltip{}
+		}
+		t = new(ui.Tooltip)
+		v.stamps[id] = t
+	}
+	return t
 }
 
 func (v *chatView) fold(key string) *chatFold {
@@ -231,29 +249,28 @@ func (u *window) chatFailed(err error) {
 	u.model.invalidate()
 }
 
-// chatComposer is the message field with the footer's chips and Send, or
-// Stop while a turn runs, inside its box, and the project and branch under it.
-// Only the session the footer follows carries the footer's items: another
-// pane of a layout has just the field and Send.
+// chatComposer is the message field with the provider's chips and Send, or
+// Stop while a turn runs, inside its box, and the project and branch with the
+// changes under it. Only the session the footer follows carries the footer's
+// items: another pane of a layout has the provider's chips and Send.
 func (u *window) chatComposer(gtx C, th *ui.Theme, p *chatPane, sv sessionView, working bool) D {
 	name := sv.Kind
 	if info, ok := u.model.providers.find(sv.Kind); ok && info.name != "" {
 		name = info.name
 	}
-	chips := u.model.chat.optionSlots(sv.ID)
-	var checkout, path *footerSlot
+	var ft chatFooter
 	if u.footer.shown.sessionID == sv.ID {
 		l, _ := u.footer.snapshot()
-		chips, checkout, path = chatFootSlots(l, u.footer.shown, chips)
+		ft = chatFootSlots(l, u.footer.shown)
 	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			ta := th.Textarea(&p.editor, i18n.T("chat.composer.placeholder", i18n.Args{"provider": name}))
-			ta.MaxHeight, ta.Radius = chatComposerMax, ui.RadiusLG
-			ta.Foot = u.chatChips(th, p, sv, working, chips)
+			ta.MaxHeight, ta.MinHeight, ta.Radius = chatComposerMax, chatComposerMin, ui.RadiusLG
+			ta.Foot = u.chatChips(th, p, sv, working, ft.attach)
 			return ta.Layout(gtx)
 		}),
-		layout.Rigid(func(gtx C) D { return u.chatCrumbs(gtx, th, sv, checkout, path) }),
+		layout.Rigid(func(gtx C) D { return u.chatCrumbs(gtx, th, sv, ft) }),
 	)
 }
 

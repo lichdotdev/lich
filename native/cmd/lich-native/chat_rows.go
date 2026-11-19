@@ -14,12 +14,15 @@ const (
 	chatRowItem chatRowKind = iota // one item as it is
 	chatRowWork                    // a turn's tool calls, folded into one line
 	chatRowLive                    // the turn in flight, unless a permission says it waits
+	chatRowDay                     // the day a turn starts on, when it is not the day of the turn before
 )
 
 // chatRow is one line of the chat view.
 type chatRow struct {
 	kind chatRowKind
 	item backend.ChatItem // chatRowItem
+	// day is a day row's moment, unix ms: when the turn it starts began.
+	day int64
 	// turn, tools and took are a work row's: its tool calls and how long the
 	// turn has run.
 	turn  int
@@ -30,6 +33,10 @@ type chatRow struct {
 type chatTurnSpan struct {
 	start, end int64
 	tools      []backend.ChatItem
+	// began is the first time any item of the turn carries, 0 for none: a
+	// conversation read back from the provider may leave the person's message
+	// without one, and its answer still tells the day.
+	began int64
 }
 
 // chatRows lays items out as the view draws them: each turn's tool calls
@@ -46,6 +53,9 @@ func chatRows(items []backend.ChatItem, running bool, now time.Time) []chatRow {
 			spans[it.Turn] = sp
 		}
 		sp.start, sp.end = min(sp.start, it.At), max(sp.end, it.At)
+		if it.At > 0 && (sp.began == 0 || it.At < sp.began) {
+			sp.began = it.At
+		}
 		if it.Kind == api.ItemTool {
 			sp.tools = append(sp.tools, it)
 		}
@@ -53,7 +63,15 @@ func chatRows(items []backend.ChatItem, running bool, now time.Time) []chatRow {
 	}
 	var rows []chatRow
 	folded := map[int]bool{}
+	var turnDay time.Time
 	for _, it := range items {
+		if began := spans[it.Turn].began; it.Kind == api.ItemUser && began > 0 {
+			day := time.UnixMilli(began).In(now.Location())
+			if !turnDay.IsZero() && !sameDay(turnDay, day) {
+				rows = append(rows, chatRow{kind: chatRowDay, day: began})
+			}
+			turnDay = day
+		}
 		if it.Kind != api.ItemTool {
 			rows = append(rows, chatRow{kind: chatRowItem, item: it})
 			continue
@@ -73,6 +91,12 @@ func chatRows(items []backend.ChatItem, running bool, now time.Time) []chatRow {
 		rows = append(rows, chatRow{kind: chatRowLive})
 	}
 	return rows
+}
+
+func sameDay(a, b time.Time) bool {
+	ay, am, ad := a.Date()
+	by, bm, bd := b.Date()
+	return ay == by && am == bm && ad == bd
 }
 
 // permissionWaiting is the permission item still unanswered, the last one,

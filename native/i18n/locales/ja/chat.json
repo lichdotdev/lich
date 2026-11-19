@@ -25,12 +25,17 @@
     "model": "モデル",
     "effort": "エフォート",
     "mode": "モード",
-    "busy": "変更するにはターンの終了を待ってください。"
+    "busy": "変更するにはターンの終了を待ってください。",
+    "modelEffort": "モデルとエフォート"
   },
   "choice": {
     "manual": "手動",
     "plan": "プラン",
     "auto": "自動",
     "yolo": "YOLO"
+  },
+  "day": {
+    "today": "今日",
+    "yesterday": "昨日"
   }
 }

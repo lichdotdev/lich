@@ -4,6 +4,10 @@ import (
 	"image"
 	"strings"
 	"testing"
+	"time"
+
+	"gioui.org/f32"
+	"gioui.org/io/pointer"
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
@@ -41,37 +45,98 @@ func centreY(t *testing.T, r *frameRig, label string) float32 {
 	return r.at(t, label).Y
 }
 
-func TestTheComposerCarriesTheFootersChipsAndSendOnOneLine(t *testing.T) {
-	_, r, _ := chatFrames(t, api.ViewChat)
+// boxFoot is where the composer's Send or Stop stands: the right end of the
+// box's foot, in the chat rigs' window.
+var boxFoot = image.Rect(840, 700, 940, 752)
+
+func TestTheComposerHoldsOnlyTheProvidersControlsInItsBox(t *testing.T) {
+	u, r, _ := chatFrames(t, api.ViewChat)
+	u.model.chat.setOptions("s1", chatOptions())
 	r.settle(t)
-	line := centreY(t, r, "PR #7")
-	prev := r.at(t, "PR #7").X
-	for _, label := range []string{"42%", "5h 28%", "10m", i18n.T("chat.composer.send")} {
-		p := r.at(t, label)
-		if p.Y < line-8 || p.Y > line+8 {
-			t.Errorf("%q at y=%v, want the chips' line (y=%v)", label, p.Y, line)
-		}
-		if p.X <= prev {
-			t.Errorf("%q at x=%v, want it after the item before it (x=%v): the left side, the right side, then Send", label, p.X, prev)
-		}
-		prev = p.X
+	plus := r.smallestClickIn(t, image.Rect(266, 700, 310, 752))
+	model, mode := r.at(t, "Haiku 5.5 · Medium"), r.at(t, i18n.T("chat.choice.manual"))
+	send := r.smallestClickIn(t, boxFoot)
+	if !(plus.X < model.X && model.X < mode.X && mode.X < send.X) {
+		t.Errorf("x of + %v, model %v, mode %v, Send %v: want them in that order", plus.X, model.X, mode.X, send.X)
 	}
-	if branch := centreY(t, r, "main"); branch <= line+8 {
-		t.Errorf("the branch at y=%v, want it on its own line under the box (chips at y=%v)", branch, line)
+	for _, y := range []float32{model.Y, mode.Y, send.Y} {
+		if y < plus.Y-8 || y > plus.Y+8 {
+			t.Errorf("a control at y=%v, off the box foot's line (y=%v)", y, plus.Y)
+		}
 	}
-	if r.shows("Settings") {
-		t.Error("the composer drew something past the footer's items")
+	for _, label := range []string{"PR #7", "42%", "5h 28%", "10m", "opus 4.8"} {
+		if r.shows(label) {
+			t.Errorf("%q drawn in a chat: the footer's other items stay out of it", label)
+		}
+	}
+	if r.shows(i18n.T("chat.composer.send")) {
+		t.Error("Send carries its word: it is an icon with a tooltip")
 	}
 }
 
-func labelLeft(t *testing.T, r *frameRig, label string) int {
-	t.Helper()
-	for _, n := range r.nodes() {
-		if n.Desc.Label == label {
-			return n.Desc.Bounds.Min.X
+func TestSendAndStopAreIconsThatNameThemselvesInATooltip(t *testing.T) {
+	u, r, f := chatFrames(t, api.ViewChat)
+	u.model.chat.history("s1", []backend.ChatItem{{ID: "u1", Kind: api.ItemUser, Turn: 1, Text: "go"}})
+	r.settle(t)
+	hover := func(label string) {
+		r.router.Queue(pointer.Event{Kind: pointer.Move, Source: pointer.Mouse, Position: r.smallestClickIn(t, boxFoot)})
+		r.frame()
+		r.now = r.now.Add(time.Second)
+		r.frame()
+		r.settle(t)
+		if !r.shows(label) {
+			t.Errorf("no tooltip %q over the button:\n%s", label, r.drawn())
 		}
 	}
-	return -1
+	hover(i18n.T("chat.composer.send"))
+	u.model.chat.turn(api.ChatTurn{SessionID: "s1", Running: true})
+	r.settle(t)
+	hover(i18n.T("chat.composer.stop"))
+	r.click(t, r.smallestClickIn(t, boxFoot))
+	f.waitCall(t, api.ChatCancel.Name)
+}
+
+func TestTheComposerGrowsFromThreeLinesToACeiling(t *testing.T) {
+	u, r, _ := chatFrames(t, api.ViewChat)
+	r.settle(t)
+	height := func() int {
+		for _, n := range r.nodes() {
+			if b := n.Desc.Bounds; n.Desc.Gestures != 0 && b.Dx() == 672 && b.Min.Y > 200 {
+				return b.Dy()
+			}
+		}
+		t.Fatalf("no composer:\n%s", r.drawn())
+		return 0
+	}
+	empty := height()
+	if empty < 3*20+16+32 {
+		t.Errorf("empty box %dpx tall, want three lines of text, its padding and the foot", empty)
+	}
+	p := u.chats.pane("s1")
+	p.editor.SetText(strings.Repeat("line\n", 3))
+	r.settle(t)
+	grown := height()
+	p.editor.SetText(strings.Repeat("line\n", 80))
+	r.settle(t)
+	if capped := height(); !(empty < grown && grown < capped && capped <= 192) {
+		t.Errorf("heights %d empty, %d at 4 lines, %d at 80: want growth to the 192 ceiling", empty, grown, capped)
+	}
+}
+
+func TestTheChangesItemStandsAtTheRightOfTheLineUnderTheBox(t *testing.T) {
+	u, r, _ := chatFrames(t, api.ViewChat)
+	r.settle(t)
+	branch, changes := r.at(t, "main"), r.at(t, "2")
+	if changes.X < float32(rigWindow.X/2) || branch.X > changes.X {
+		t.Errorf("branch at x=%v, changes at x=%v: want the branch at the left, the changes at the right", branch.X, changes.X)
+	}
+	if d := changes.Y - branch.Y; d < -20 || d > 20 || changes.Y < float32(boxFoot.Max.Y) {
+		t.Errorf("branch at y=%v, changes at y=%v: want them on the line under the box", branch.Y, changes.Y)
+	}
+	r.click(t, changes)
+	if !u.footer.dock.showing(dockReview) {
+		t.Error("the changes item did not open Review")
+	}
 }
 
 func TestTheBranchUnderTheComposerOpensTheGitPanel(t *testing.T) {
@@ -101,56 +166,6 @@ func TestTheProjectLeadsTheBranchUnderTheComposer(t *testing.T) {
 	}
 }
 
-func TestAStopTakesSendsPlaceWhileTheAgentWorks(t *testing.T) {
-	u, r, _ := chatFrames(t, api.ViewChat)
-	r.settle(t)
-	send := r.at(t, i18n.T("chat.composer.send"))
-	u.model.chat.turn(api.ChatTurn{SessionID: "s1", Running: true})
-	r.settle(t)
-	stop := r.at(t, i18n.T("chat.composer.stop"))
-	if r.shows(i18n.T("chat.composer.send")) {
-		t.Error("Send stayed while the agent worked")
-	}
-	if d := stop.Y - send.Y; d < -8 || d > 8 || stop.X < send.X-40 {
-		t.Errorf("Stop at %v, Send was at %v: want it in the same corner of the box", stop, send)
-	}
-}
-
-func TestANarrowComposerLeavesOutWhatDoesNotFitRatherThanWrap(t *testing.T) {
-	_, r, _ := chatFramesIn(t, api.ViewChat, image.Pt(420, 800), busySession())
-	r.settle(t)
-	if !r.shows(i18n.T("chat.composer.send")) || !r.shows("PR #7") {
-		t.Fatalf("the narrow composer lost Send or the first chips:\n%s", r.drawn())
-	}
-	if r.shows("10m") {
-		t.Errorf("the last chip fits where it should have been cut:\n%s", r.drawn())
-	}
-	line := centreY(t, r, "PR #7")
-	for _, label := range []string{i18n.T("chat.composer.send"), "42%"} {
-		if !r.shows(label) {
-			continue
-		}
-		if y := centreY(t, r, label); y < line-8 || y > line+8 {
-			t.Errorf("%q wrapped to y=%v, the chips' line is y=%v", label, y, line)
-		}
-	}
-}
-
-func TestAnotherPaneOfALayoutHasNoFooterItems(t *testing.T) {
-	in := busySession()
-	in.sessionID = "s2"
-	_, r, _ := chatFramesIn(t, api.ViewChat, rigWindow, in)
-	r.settle(t)
-	if !r.shows(i18n.T("chat.composer.send")) {
-		t.Fatal("the pane lost Send")
-	}
-	for _, label := range []string{"PR #7", "42%", "main"} {
-		if r.shows(label) {
-			t.Errorf("%q drawn in a pane the footer does not follow", label)
-		}
-	}
-}
-
 func chatOptions() []backend.ChatOption {
 	return []backend.ChatOption{
 		{ID: "model", Category: api.OptionModel, Current: "haiku", Choices: []backend.ChatChoice{{ID: "haiku", Label: "Haiku 5.5"}, {ID: "opus", Label: "Opus 5.5"}}},
@@ -176,6 +191,22 @@ func TestTheOptionsEventReplacesASessionsOptions(t *testing.T) {
 	}
 }
 
+func TestAChoiceSentByIdAloneIsNamedForTheIdsLichKnows(t *testing.T) {
+	for id, want := range map[string]string{
+		"default": i18n.T("chat.choice.manual"), "manual": i18n.T("chat.choice.manual"),
+		"plan": i18n.T("chat.choice.plan"), "auto": i18n.T("chat.choice.auto"),
+		"bypassPermissions": i18n.T("chat.choice.yolo"), "yolo": i18n.T("chat.choice.yolo"),
+		"somethingNew": "somethingNew",
+	} {
+		if got := choiceLabel(backend.ChatChoice{ID: id}); got != want {
+			t.Errorf("%s is %q, want %q", id, got, want)
+		}
+	}
+	if got := choiceLabel(backend.ChatChoice{ID: "default", Label: "Ask first"}); got != "Ask first" {
+		t.Errorf("the provider's label lost to ours: %q", got)
+	}
+}
+
 func TestAnOptionWithNoChoiceOffersNoChip(t *testing.T) {
 	m := chatModel(api.ViewChat)
 	m.chat.setOptions("s1", []backend.ChatOption{{ID: "model", Category: api.OptionModel, Current: "x"}})
@@ -184,39 +215,60 @@ func TestAnOptionWithNoChoiceOffersNoChip(t *testing.T) {
 	}
 }
 
-func TestTheComposerShowsAChipForEachOptionTheProviderOffers(t *testing.T) {
+func TestAProviderOffersAChipOnlyForTheCategoriesItHas(t *testing.T) {
 	u, r, _ := chatFrames(t, api.ViewChat)
-	u.model.chat.setOptions("s1", chatOptions()[:2])
-	r.settle(t)
-	for _, label := range []string{"Haiku 5.5", "Medium"} {
-		if !r.shows(label) {
-			t.Errorf("no chip for %q:\n%s", label, r.drawn())
+	cases := []struct {
+		name    string
+		options []backend.ChatOption
+		shown   []string
+		absent  []string
+	}{
+		{"model and effort share a chip", chatOptions()[:2], []string{"Haiku 5.5 · Medium"}, []string{i18n.T("chat.choice.manual")}},
+		{"a model alone", chatOptions()[:1], []string{"Haiku 5.5"}, []string{"Haiku 5.5 · Medium", "Medium"}},
+		{"an effort alone", chatOptions()[1:2], []string{"Medium"}, []string{"Haiku 5.5"}},
+		{"a mode alone", chatOptions()[2:], []string{i18n.T("chat.choice.manual")}, []string{"Haiku 5.5", "Medium"}},
+	}
+	for _, c := range cases {
+		u.model.chat.setOptions("s1", c.options)
+		r.settle(t)
+		for _, label := range c.shown {
+			if !r.shows(label) {
+				t.Errorf("%s: no chip %q:\n%s", c.name, label, r.drawn())
+			}
 		}
-	}
-	if r.shows(i18n.T("chat.choice.manual")) {
-		t.Error("a provider with no mode drew a mode chip")
-	}
-	if r.shows("opus 4.8") {
-		t.Error("the model reading stayed beside the model chip")
-	}
-	u.model.chat.setOptions("s1", chatOptions()[1:])
-	r.settle(t)
-	if r.shows("Haiku 5.5") || !r.shows("opus 4.8") {
-		t.Errorf("a provider with no model chip lost the model reading:\n%s", r.drawn())
+		for _, label := range c.absent {
+			if r.shows(label) {
+				t.Errorf("%s: drew %q", c.name, label)
+			}
+		}
 	}
 }
 
-func TestAnOptionChipOpensItsMenuAndChoosingSetsIt(t *testing.T) {
+func TestTheModelChipsMenuHoldsModelAndEffortAndSetsEither(t *testing.T) {
 	u, r, f := chatFrames(t, api.ViewChat)
 	u.model.chat.setOptions("s1", chatOptions())
 	r.settle(t)
-	r.clickLabel(t, "Haiku 5.5")
-	if !r.shows("Opus 5.5") {
-		t.Fatalf("the model menu did not open:\n%s", r.drawn())
+	r.clickLabel(t, "Haiku 5.5 · Medium")
+	for _, label := range []string{i18n.T("chat.option.model"), i18n.T("chat.option.effort"), "Opus 5.5", "Low"} {
+		if !r.shows(label) {
+			t.Fatalf("the menu lacks %q:\n%s", label, r.drawn())
+		}
 	}
-	r.clickLabel(t, "Opus 5.5")
+	pickEntry(t, r, "Low")
 	body := f.waitCall(t, api.ChatSetOption.Name)
-	if !strings.Contains(body, `"optionId":"model"`) || !strings.Contains(body, `"value":"opus"`) || !strings.Contains(body, `"id":"s1"`) {
+	if !strings.Contains(body, `"optionId":"effort"`) || !strings.Contains(body, `"value":"low"`) || !strings.Contains(body, `"id":"s1"`) {
+		t.Errorf("set %s", body)
+	}
+}
+
+func TestChoosingAModelSetsIt(t *testing.T) {
+	u, r, f := chatFrames(t, api.ViewChat)
+	u.model.chat.setOptions("s1", chatOptions())
+	r.settle(t)
+	r.clickLabel(t, "Haiku 5.5 · Medium")
+	pickEntry(t, r, "Opus 5.5")
+	body := f.waitCall(t, api.ChatSetOption.Name)
+	if !strings.Contains(body, `"optionId":"model"`) || !strings.Contains(body, `"value":"opus"`) {
 		t.Errorf("set %s", body)
 	}
 }
@@ -241,7 +293,7 @@ func TestTheOptionChipsTakeNoClickWhileTheAgentWorks(t *testing.T) {
 	u.model.chat.setOptions("s1", chatOptions())
 	u.model.chat.turn(api.ChatTurn{SessionID: "s1", Running: true})
 	r.settle(t)
-	r.clickLabel(t, "Haiku 5.5")
+	r.clickLabel(t, "Haiku 5.5 · Medium")
 	if r.shows("Opus 5.5") {
 		t.Error("the menu opened during a turn")
 	}
@@ -252,18 +304,42 @@ func TestTheOptionChipsTakeNoClickWhileTheAgentWorks(t *testing.T) {
 	}
 }
 
-func TestAChoiceSentByIdAloneIsNamedForTheIdsLichKnows(t *testing.T) {
-	for id, want := range map[string]string{
-		"default": i18n.T("chat.choice.manual"), "manual": i18n.T("chat.choice.manual"),
-		"plan": i18n.T("chat.choice.plan"), "auto": i18n.T("chat.choice.auto"),
-		"bypassPermissions": i18n.T("chat.choice.yolo"), "yolo": i18n.T("chat.choice.yolo"),
-		"somethingNew": "somethingNew",
-	} {
-		if got := choiceLabel(backend.ChatChoice{ID: id}); got != want {
-			t.Errorf("%s is %q, want %q", id, got, want)
+func TestAnotherPaneOfALayoutHasTheProvidersChipsAndNoFooterItems(t *testing.T) {
+	in := busySession()
+	in.sessionID = "s2"
+	u, r, _ := chatFramesIn(t, api.ViewChat, rigWindow, in)
+	u.model.chat.setOptions("s1", chatOptions())
+	r.settle(t)
+	if !r.shows("Haiku 5.5 · Medium") || !r.shows(i18n.T("chat.choice.manual")) {
+		t.Fatalf("the pane lost the provider's chips:\n%s", r.drawn())
+	}
+	for _, label := range []string{"main", "2"} {
+		if r.shows(label) {
+			t.Errorf("%q drawn in a pane the footer does not follow", label)
 		}
 	}
-	if got := choiceLabel(backend.ChatChoice{ID: "default", Label: "Ask first"}); got != "Ask first" {
-		t.Errorf("the provider's label lost to ours: %q", got)
+}
+
+func labelLeft(t *testing.T, r *frameRig, label string) int {
+	t.Helper()
+	for _, n := range r.nodes() {
+		if n.Desc.Label == label {
+			return n.Desc.Bounds.Min.X
+		}
 	}
+	return -1
+}
+
+// pickEntry clicks the menu row whose text starts at label's glyph: a menu is
+// one clickable, so the point at() finds for a row is the panel's centre.
+func pickEntry(t *testing.T, r *frameRig, label string) {
+	t.Helper()
+	for _, n := range r.nodes() {
+		if n.Desc.Label == label {
+			min := n.Desc.Bounds.Min
+			r.click(t, f32.Pt(float32(min.X+4), float32(min.Y+8)))
+			return
+		}
+	}
+	t.Fatalf("no menu row %q:\n%s", label, r.drawn())
 }

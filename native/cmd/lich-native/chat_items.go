@@ -3,6 +3,7 @@ package main
 import (
 	"strconv"
 	"strings"
+	"time"
 
 	"gioui.org/font"
 	"gioui.org/layout"
@@ -23,20 +24,36 @@ var (
 	chatToolRow = ui.Space(7)
 )
 
+// chatClock is the short time under a message, the 24-hour layout the window's
+// other clocks (the Git graph, a stopped console) use.
+const chatClock = "15:04"
+
 func (u *window) chatRow(gtx C, th *ui.Theme, p *chatPane, sv sessionView, r chatRow) D {
 	switch r.kind {
 	case chatRowWork:
 		return chatWork(gtx, th, p.fold("work:"+strconv.Itoa(r.turn)), r)
 	case chatRowLive:
 		return chatLive(gtx, th)
+	case chatRowDay:
+		return layout.Center.Layout(gtx, th.Text(ui.TextXS, dayLabel(time.UnixMilli(r.day).In(gtx.Now.Location()), gtx.Now)).Muted().Layout)
 	}
 	it := r.item
 	switch it.Kind {
 	case api.ItemUser:
-		return chatUser(gtx, th, it.Text)
+		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+			layout.Rigid(func(gtx C) D { return chatUser(gtx, th, it.Text) }),
+			ui.VGap(1),
+			layout.Rigid(func(gtx C) D { return layout.E.Layout(gtx, func(gtx C) D { return u.chatStamp(gtx, th, p, it) }) }),
+		)
 	case api.ItemAgent:
 		notify := func(t ui.Toast) { u.toaster.Show(t) }
-		return p.md.Layout(gtx, th, it.ID, it.Text, func(url string) { openLink(u.client, notify, url) })
+		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+			layout.Rigid(func(gtx C) D {
+				return p.md.Layout(gtx, th, it.ID, it.Text, func(url string) { openLink(u.client, notify, url) })
+			}),
+			ui.VGap(1),
+			layout.Rigid(func(gtx C) D { return layout.W.Layout(gtx, func(gtx C) D { return u.chatStamp(gtx, th, p, it) }) }),
+		)
 	case api.ItemThought:
 		return chatThought(gtx, th, p.fold(it.ID), it.Text)
 	case api.ItemPermission:
@@ -46,6 +63,30 @@ func (u *window) chatRow(gtx C, th *ui.Theme, p *chatPane, sv sessionView, r cha
 		return chatPermission(gtx, th, p, it)
 	}
 	return th.Text(ui.TextSM, expandTabs(it.Text)).Muted().Wrapped().Layout(gtx)
+}
+
+// chatStamp is the time an item began, in the window's short clock, muted,
+// with the whole date in a tooltip. An item with no time draws nothing.
+func (u *window) chatStamp(gtx C, th *ui.Theme, p *chatPane, it backend.ChatItem) D {
+	if it.At <= 0 {
+		return D{}
+	}
+	t := time.UnixMilli(it.At).In(gtx.Now.Location())
+	return th.Tooltip(&u.root, p.stamp(it.ID), clockText(t)).Layout(gtx, th.Text(ui.TextXS, t.Format(chatClock)).Muted().Layout)
+}
+
+// dayLabel names a day against now: Today, Yesterday, else its date, with the
+// year when it is not this one.
+func dayLabel(t, now time.Time) string {
+	switch {
+	case sameDay(t, now):
+		return i18n.T("chat.day.today")
+	case sameDay(t, now.AddDate(0, 0, -1)):
+		return i18n.T("chat.day.yesterday")
+	case t.Year() == now.Year():
+		return t.Format("Jan 2")
+	}
+	return t.Format("Jan 2, 2006")
 }
 
 // update takes the fold's click before what it opens is laid out.

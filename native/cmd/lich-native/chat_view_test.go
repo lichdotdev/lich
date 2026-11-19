@@ -152,7 +152,7 @@ func TestStopCancelsTheTurnInFlight(t *testing.T) {
 	u.model.chat.history("s1", []backend.ChatItem{{ID: "u1", Kind: api.ItemUser, Turn: 1, Text: "go"}})
 	u.model.chat.turn(api.ChatTurn{SessionID: "s1", Running: true})
 	r.frame()
-	r.click(t, r.at(t, i18n.T("chat.composer.stop")))
+	r.click(t, r.smallestClickIn(t, boxFoot))
 	if body := f.waitCall(t, api.ChatCancel.Name); !strings.Contains(body, `"id":"s1"`) {
 		t.Errorf("cancelled %s", body)
 	}
