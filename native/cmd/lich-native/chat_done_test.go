@@ -193,3 +193,25 @@ func TestTheNextMessageTakesTheDoneLineAway(t *testing.T) {
 		t.Errorf("the line is still there once the next message was sent:\n%s", r.drawn())
 	}
 }
+
+// The line does not play an exit: the turn that begins takes it away in the
+// frame it is heard, or it would stand beside the live line for a moment.
+func TestTheDoneLineLeavesInTheFrameTheNextTurnBegins(t *testing.T) {
+	for name, begin := range map[string]func(u *window){
+		"the turn is heard first": func(u *window) { u.model.chat.turn(api.ChatTurn{SessionID: "s1", Running: true}) },
+		"the message is heard first": func(u *window) {
+			u.model.chat.apply(api.ChatItemUpdate{SessionID: "s1", Item: backend.ChatItem{ID: "u2", Kind: api.ItemUser, Turn: 2, At: novDay(18, 18, 0), Text: "next"}})
+		},
+	} {
+		u, r := endedTurn(t, api.ChatTurn{StopReason: "end_turn", Changes: &api.ChatTurnChanges{Files: 3, Added: 12, Removed: 4}})
+		if !r.shows("Done") {
+			t.Fatalf("%s: no done line before the next turn:\n%s", name, r.drawn())
+		}
+		begin(u)
+		r.now = r.now.Add(frameStep)
+		r.frame()
+		if r.shows("Done") || r.shows("3 files") {
+			t.Errorf("%s: the line is drawn in the frame the next turn began:\n%s", name, r.drawn())
+		}
+	}
+}
