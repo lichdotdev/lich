@@ -2371,7 +2371,6 @@ BrowserNewTabText {
 	address string
 	addressError string
 	running string
-	service string
 	worktree string
 	artifacts string
 	recent string

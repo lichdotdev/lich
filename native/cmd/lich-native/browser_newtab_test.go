@@ -1,6 +1,7 @@
 package main
 
 import (
+	"image/color"
 	"regexp"
 	"strings"
 	"testing"
@@ -89,7 +90,7 @@ func TestTheNewTabLookFollowsTheInterfaceLanguage(t *testing.T) {
 	if en.Text == pt.Text || pt.Text.Recent != "Recentes" {
 		t.Fatalf("text = %+v", pt.Text)
 	}
-	for _, s := range []string{pt.Text.Title, pt.Text.Address, pt.Text.AddressError, pt.Text.Running, pt.Text.Service, pt.Text.Worktree, pt.Text.Artifacts, pt.Text.Recent} {
+	for _, s := range []string{pt.Text.Title, pt.Text.Address, pt.Text.AddressError, pt.Text.Running, pt.Text.Worktree, pt.Text.Artifacts, pt.Text.Recent} {
 		if s == "" || strings.Contains(s, "layouts.browser") {
 			t.Errorf("text %q is unresolved", s)
 		}
@@ -105,5 +106,21 @@ func TestTheAddressFollowsAPageThatChangedUnderAnUntouchedEdit(t *testing.T) {
 	}
 	if movedUnderEdit("https://a.test/", "https://a.test/", "https://a.test/") {
 		t.Fatal("an unchanged page took the field")
+	}
+}
+
+// A custom theme may make a token translucent, which a page cannot be told in
+// a hex color without its alpha.
+func TestTranslucentTokensAreComposedOnTheBackground(t *testing.T) {
+	th := &ui.Theme{Palette: ui.Dark}
+	th.Background = color.NRGBA{R: 0, G: 0, B: 0, A: 255}
+	th.Accent = color.NRGBA{R: 255, G: 255, B: 255, A: 128}
+	th.Card = color.NRGBA{R: 255, G: 255, B: 255, A: 0}
+	look := newTabLook(th)
+	if look.Colors.Accent == "#ffffff" || look.Colors.Accent != cssHex(ui.Over(th.Background, th.Accent)) {
+		t.Errorf("accent = %s, want it over the background", look.Colors.Accent)
+	}
+	if look.Colors.Card != "#000000" {
+		t.Errorf("a clear card = %s, want the background", look.Colors.Card)
 	}
 }

@@ -29,8 +29,8 @@ var Fallback = api.BrowserNewTabPageOptions{
 		Core: "#fafafa", Body: "#d4d4d8", Edge: "#a1a1aa", Base: "#27272a",
 	},
 	Text: api.BrowserNewTabText{
-		Title: "New tab", Address: "Search or enter address", AddressError: "That address cannot be opened.",
-		Running: "Running in this project", Service: "Service", Worktree: "this worktree's port",
+		Title: "New tab", Address: "Enter an address, or pick below", AddressError: "That address cannot be opened.",
+		Running: "Running in this project", Worktree: "Worktree port",
 		Artifacts: "Artifacts of this session", Recent: "Recent",
 	},
 }

@@ -24,7 +24,6 @@
     "newTabAddress": "输入网址，或从下方选择",
     "newTabAddressError": "无法打开该网址。",
     "newTabRunning": "此项目中正在运行",
-    "newTabService": "服务",
     "newTabWorktree": "工作树端口",
     "newTabArtifacts": "本会话的产物",
     "newTabRecent": "最近",

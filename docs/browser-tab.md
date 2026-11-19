@@ -283,8 +283,9 @@ own (`OpenVisible`) shows the page's internal URL in Chrome's own address bar.
   services and recent pages. A session lich does not know is a 404, and every
   response is `no-store` under a CSP that allows one nonce'd script. Like the
   other two listeners it has no token: the loopback bind and the Host check are
-  all there is, and what it shows is no more than the Artifacts tab and the
-  Services list show.
+  all there is. Anything on the machine that knows a session's id can read its
+  page, another session's agent included, and the page carries the project's
+  services, the artifact names and the pages the browser visited.
 - **What it lists**, each section gone when empty. Running in this project: the
   project's services that are running, by name and command (`api.Service` holds
   no URL or port, so a service row is not a link), and the checkout's

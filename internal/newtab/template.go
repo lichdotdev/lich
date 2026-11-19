@@ -40,7 +40,7 @@ a.row:hover,a.row:focus-visible{background:var(--accent);outline:0}
 <form action="{{.Action}}" method="get"><input name="q" type="text" placeholder="{{.Text.Address}}" aria-label="{{.Text.Address}}" autocomplete="off" spellcheck="false" autofocus></form>
 {{if .Error}}<p class="err" role="alert">{{.Text.AddressError}}</p>{{end}}
 {{if or .Services .Worktree}}<section><h2>{{.Text.Running}}</h2>
-{{range .Services}}<div class="row"><i class="dot"></i><span class="name">{{.Name}}</span><span class="u">{{.Command}}</span><span class="r">{{$.Text.Service}}</span></div>
+{{range .Services}}<div class="row"><i class="dot"></i><span class="name">{{.Name}}</span><span class="u">{{.Command}}</span></div>
 {{end}}{{if .Worktree}}<a class="row" href="{{.Worktree}}"><i class="dot"></i><span class="u">{{.WorktreeHost}}</span><span class="r">{{.Text.Worktree}}</span></a>
 {{end}}</section>{{end}}
 {{if .Artifacts}}<section><h2>{{.Text.Artifacts}}</h2>

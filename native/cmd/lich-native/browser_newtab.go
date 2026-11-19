@@ -35,7 +35,7 @@ func notesOnPage(st api.BrowserState) bool {
 	return !inspecting && !st.NewTab
 }
 
-// cssHex is c as the CSS hex color the new-tab page is drawn with.
+// cssHex is the opaque c as the CSS hex color the new-tab page is drawn with.
 func cssHex(c color.NRGBA) string {
 	return fmt.Sprintf("#%02x%02x%02x", c.R, c.G, c.B)
 }
@@ -46,16 +46,19 @@ func cssHex(c color.NRGBA) string {
 // flame is the chat's first frame, on the chat's own tokens.
 func newTabLook(th *ui.Theme) api.BrowserNewTabPageOptions {
 	bg := th.Background
+	// The page paints opaque colors on the background, as a translucent token
+	// of a custom theme looks there.
+	css := func(c color.NRGBA) string { return cssHex(ui.Over(bg, c)) }
 	flame := func(symbol byte) string {
 		c, _ := chatFlameColor(th, symbol)
-		return cssHex(c)
+		return css(c)
 	}
 	return api.BrowserNewTabPageOptions{
 		Lang: string(i18n.Current()),
 		Colors: api.BrowserNewTabColors{
-			Background: cssHex(bg), Card: cssHex(th.Card), Foreground: cssHex(th.Foreground),
-			Muted: cssHex(th.MutedForeground), Border: cssHex(ui.Over(bg, th.Border)),
-			Accent: cssHex(th.Accent), Pass: cssHex(th.TonePass),
+			Background: cssHex(bg), Card: css(th.Card), Foreground: css(th.Foreground),
+			Muted: css(th.MutedForeground), Border: css(th.Border),
+			Accent: css(th.Accent), Pass: css(th.TonePass),
 		},
 		Flame: api.BrowserNewTabFlame{Rows: chatFlameFrames[0], Core: flame('4'), Body: flame('2'), Edge: flame('3'), Base: flame('1')},
 		Text: api.BrowserNewTabText{
@@ -63,7 +66,6 @@ func newTabLook(th *ui.Theme) api.BrowserNewTabPageOptions {
 			Address:      i18n.T("layouts.browser.newTabAddress"),
 			AddressError: i18n.T("layouts.browser.newTabAddressError"),
 			Running:      i18n.T("layouts.browser.newTabRunning"),
-			Service:      i18n.T("layouts.browser.newTabService"),
 			Worktree:     i18n.T("layouts.browser.newTabWorktree"),
 			Artifacts:    i18n.T("layouts.browser.newTabArtifacts"),
 			Recent:       i18n.T("layouts.browser.newTabRecent"),

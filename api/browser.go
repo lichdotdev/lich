@@ -495,7 +495,6 @@ type BrowserNewTabText struct {
 	Address      string `json:"address"`
 	AddressError string `json:"addressError"`
 	Running      string `json:"running"`
-	Service      string `json:"service"`
 	Worktree     string `json:"worktree"`
 	Artifacts    string `json:"artifacts"`
 	Recent       string `json:"recent"`

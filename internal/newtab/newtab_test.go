@@ -52,7 +52,7 @@ func get(h http.Handler, target string) *httptest.ResponseRecorder {
 
 func TestPageOfAnEmptySessionShowsOnlyTheAddressField(t *testing.T) {
 	body := get(New(newFixture().src).Handler(), api.NewTabPrefix+"s1").Body.String()
-	for _, want := range []string{"lich · todo-api", `placeholder="Search or enter address"`, `action="/new-tab/s1/go"`, "<title>New tab</title>"} {
+	for _, want := range []string{"lich · todo-api", `placeholder="Enter an address, or pick below"`, `action="/new-tab/s1/go"`, "<title>New tab</title>"} {
 		if !strings.Contains(body, want) {
 			t.Errorf("page lacks %q", want)
 		}
@@ -81,7 +81,7 @@ func TestPageListsWhatLichKnows(t *testing.T) {
 	s.Visit("s1", "https://example.com/docs", "Docs")
 	body := get(s.Handler(), api.NewTabPrefix+"s1").Body.String()
 	for _, want := range []string{
-		"Running in this project", "web", "pnpm dev", `href="http://localhost:24796"`, `>localhost:24796<`, "this worktree&#39;s port",
+		"Running in this project", "web", "pnpm dev", `href="http://localhost:24796"`, `>localhost:24796<`, "Worktree port",
 		"Artifacts of this session", `href="http://127.0.0.1:26100/report.html"`, `datetime="2023-11-14T22:13:20Z"`,
 		"Recent", `href="https://example.com/docs"`, "Docs", "example.com/docs",
 	} {

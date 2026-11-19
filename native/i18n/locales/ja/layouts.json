@@ -24,7 +24,6 @@
     "newTabAddress": "アドレスを入力するか、下から選択",
     "newTabAddressError": "このアドレスは開けません。",
     "newTabRunning": "このプロジェクトで実行中",
-    "newTabService": "サービス",
     "newTabWorktree": "ワークツリーのポート",
     "newTabArtifacts": "このセッションのアーティファクト",
     "newTabRecent": "最近",

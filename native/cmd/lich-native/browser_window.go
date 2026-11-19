@@ -64,7 +64,7 @@ func (u *window) offerBrowser(st api.BrowserState) {
 	u.toaster.Show(ui.Toast{
 		ID:          "browser:" + session,
 		Title:       i18n.T("layouts.browser.opened", i18n.Args{"label": label}),
-		Description: displayURL(st.URL),
+		Description: displayURL(pageURL(st)),
 		Icon:        icBrowser,
 		Cancel:      &ui.ToastButton{Label: i18n.T("layouts.browser.dismiss")},
 		Action:      &ui.ToastButton{Label: i18n.T("layouts.browser.open"), OnClick: func() { u.openBrowser(session) }},
@@ -101,7 +101,7 @@ func idleBrowserToast(st api.BrowserState, label, project string, keep, closeIt 
 		Action:    &ui.ToastButton{Label: i18n.T("layouts.browser.closeIdle"), OnClick: closeIt},
 		OnDismiss: keep,
 	}
-	if url := displayURL(st.URL); url != "" {
+	if url := displayURL(pageURL(st)); url != "" {
 		t.Lines = append(t.Lines, ui.ToastLine{Text: url})
 	}
 	if project != "" {

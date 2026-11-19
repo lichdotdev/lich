@@ -26,7 +26,6 @@
     "newTabAddress": "Digite um endereço ou escolha abaixo",
     "newTabAddressError": "Não é possível abrir esse endereço.",
     "newTabRunning": "Em execução neste projeto",
-    "newTabService": "Serviço",
     "newTabWorktree": "Porta da worktree",
     "newTabArtifacts": "Artifacts desta sessão",
     "newTabRecent": "Recentes",

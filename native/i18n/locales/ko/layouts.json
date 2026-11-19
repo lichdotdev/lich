@@ -24,7 +24,6 @@
     "newTabAddress": "주소를 입력하거나 아래에서 선택하세요",
     "newTabAddressError": "이 주소를 열 수 없습니다.",
     "newTabRunning": "이 프로젝트에서 실행 중",
-    "newTabService": "서비스",
     "newTabWorktree": "worktree 포트",
     "newTabArtifacts": "이 세션의 아티팩트",
     "newTabRecent": "최근",
