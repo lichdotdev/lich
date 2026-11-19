@@ -144,6 +144,7 @@ func TestALiveStepAsksForFramesAndAFinishedOneDoesNot(t *testing.T) {
 	}
 	_, r := lifeFrames(t, items, true)
 	r.frame()
+	r.frame() // the first frames settle the conversation onto the composer
 	if at, _ := r.router.WakeupTime(); at.IsZero() || !at.After(r.now) || at.After(r.now.Add(time.Second)) {
 		t.Errorf("the thought being thought asked for its next frame at %v, want within the second", at)
 	}

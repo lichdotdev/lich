@@ -59,7 +59,11 @@ type chatView struct {
 	// rows brings the conversation's rows in, and seen is the row each key
 	// last was, for one that is playing its exit.
 	rows ui.Presence
-	seen map[string]chatRow
+	// lead is the room the last frame put above a conversation shorter than
+	// the view, once there was a frame to measure it by.
+	lead   int
+	leaded bool
+	seen   map[string]chatRow
 	// stamps are the tooltips of the time under each message, by item id.
 	stamps map[string]*ui.Tooltip
 	folds  map[string]*chatFold
@@ -165,10 +169,18 @@ func (u *window) chatScreen(gtx C, sv sessionView, keys bool) {
 		layout.Flexed(1, func(gtx C) D {
 			shown := p.enter(gtx.Now, rows, u.model.chat.holds(sv.ID))
 			atEnd := !p.list.Position.BeforeEnd
+			// A conversation shorter than the view rests on the composer: what
+			// the view has over, which is what its content left, goes above it.
+			// The content is the list's length less the room of the last frame;
+			// the first frame, which has no length yet, has none.
+			lead := 0
+			if p.leaded && len(shown) > 0 {
+				lead = max(gtx.Constraints.Max.Y-(p.list.Position.Length-p.lead), 0)
+			}
 			d := th.ThinScrollArea(&p.list).Layout(gtx, len(shown), func(gtx C, i int) D {
 				top := chatRowGap
 				if i == 0 {
-					top = chatTopPad
+					top = chatTopPad + gtx.Metric.PxToDp(lead)
 				}
 				key := shown[i]
 				return p.rows.Layout(gtx, key, func(gtx C) D {
@@ -182,10 +194,15 @@ func (u *window) chatScreen(gtx C, sv sessionView, keys bool) {
 			if atEnd && p.rows.Moving() {
 				p.list.Position.BeforeEnd = false
 			}
-			// A conversation shorter than the view starts at its top; once it
-			// outgrows the view, where nobody could have scrolled it, it goes to
-			// its end and stays there until scrolled up.
-			if over := p.list.Position.Length > gtx.Constraints.Max.Y; over != p.list.ScrollToEnd {
+			p.lead, p.leaded = lead, true
+			// Content that changed in this frame leaves its room to the next:
+			// ask for it rather than leave the rows where they were put.
+			if len(shown) > 0 && lead != max(gtx.Constraints.Max.Y-(p.list.Position.Length-lead), 0) {
+				gtx.Execute(op.InvalidateCmd{})
+			}
+			// Once the conversation outgrows the view, where nobody could have
+			// scrolled it, it goes to its end and stays there until scrolled up.
+			if over := p.list.Position.Length-lead > gtx.Constraints.Max.Y; over != p.list.ScrollToEnd {
 				p.list.ScrollToEnd, p.list.Position.BeforeEnd = over, false
 				gtx.Execute(op.InvalidateCmd{})
 			}
