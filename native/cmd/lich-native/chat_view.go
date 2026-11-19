@@ -172,7 +172,7 @@ func (u *window) chatScreen(gtx C, sv sessionView, keys bool) {
 	items := u.model.chat.of(sv.ID)
 	working := chatWorking(sv, u.model.chat.isRunning(sv.ID))
 	u.chatActs(gtx, p, sv, keys, working, permissionWaiting(items))
-	rows := chatRowsWith(items, working, gtx.Now, func(turn int) bool { _, ok := u.model.chat.changesOf(sv.ID, turn); return ok })
+	rows := chatRows(items, working, gtx.Now)
 	th := u.theme.On(u.theme.Background)
 	layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Flexed(1, func(gtx C) D {
@@ -207,12 +207,16 @@ func (u *window) chatScreen(gtx C, sv sessionView, keys bool) {
 			// The lead of the last frame is stale when a row grew in this one:
 			// the rows would overshoot the view for a frame and the list draw its
 			// scrollbar over content that fits. Measure again with the room the
-			// rows take now, and draw that.
-			if len(shown) > 0 {
-				if fit := max(gtx.Constraints.Max.Y-(p.list.Position.Length-lead), 0); fit != lead {
-					lead = fit
-					d, call = drawList(lead)
+			// rows take now, and draw that. A row that starts its entry in the
+			// measure itself is taller in the first than in the next, so the
+			// second can still be off: once more settles it.
+			for range 2 {
+				fit := max(gtx.Constraints.Max.Y-(p.list.Position.Length-lead), 0)
+				if len(shown) == 0 || fit == lead {
+					break
 				}
+				lead = fit
+				d, call = drawList(lead)
 			}
 			call.Add(gtx.Ops)
 			// A row that comes in at no height at the list's end makes Gio

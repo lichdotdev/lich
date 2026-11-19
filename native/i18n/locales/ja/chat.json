@@ -23,7 +23,11 @@
       "other": "{duration}作業 · ツール{count}件 · {time}"
     }
   },
-  "changes": {
+  "done": {
+    "done": "完了",
+    "stopped": "停止",
+    "failed": "失敗",
+    "noChanges": "変更なし",
     "files": {
       "other": "{count} 個のファイル"
     }

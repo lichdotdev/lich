@@ -59,7 +59,7 @@ func (u *window) chatRow(gtx C, th *ui.Theme, p *chatPane, sv sessionView, r cha
 	case chatRowLive:
 		return chatLive(gtx, th)
 	case chatRowDone:
-		return u.chatChanges(gtx, th, p, sv, r)
+		return u.chatDone(gtx, th, p, sv, r)
 	case chatRowDay:
 		return layout.Center.Layout(gtx, th.Text(ui.TextXS, dayLabel(time.UnixMilli(r.day).In(gtx.Now.Location()), gtx.Now)).Muted().Layout)
 	}

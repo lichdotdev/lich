@@ -26,7 +26,11 @@
       "other": "Worked for {duration} · {count} tools · {time}"
     }
   },
-  "changes": {
+  "done": {
+    "done": "Done",
+    "stopped": "Stopped",
+    "failed": "Failed",
+    "noChanges": "no changes",
     "files": {
       "one": "{count} file",
       "other": "{count} files"

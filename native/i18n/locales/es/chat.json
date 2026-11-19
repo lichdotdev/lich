@@ -26,7 +26,11 @@
       "other": "Trabajó {duration} · {count} herramientas · {time}"
     }
   },
-  "changes": {
+  "done": {
+    "done": "Hecho",
+    "stopped": "Detenido",
+    "failed": "Falló",
+    "noChanges": "sin cambios",
     "files": {
       "one": "{count} archivo",
       "other": "{count} archivos"

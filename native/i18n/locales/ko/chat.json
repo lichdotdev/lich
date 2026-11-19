@@ -23,7 +23,11 @@
       "other": "{duration} 작업 · 도구 {count}개 · {time}"
     }
   },
-  "changes": {
+  "done": {
+    "done": "완료",
+    "stopped": "중지됨",
+    "failed": "실패",
+    "noChanges": "변경 사항 없음",
     "files": {
       "other": "파일 {count}개"
     }

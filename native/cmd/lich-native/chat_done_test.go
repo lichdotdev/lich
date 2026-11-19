@@ -9,6 +9,20 @@ import (
 	"github.com/lichdotdev/lich/native/i18n"
 )
 
+func TestADoneLineNamesHowTheTurnEnded(t *testing.T) {
+	for reason, want := range map[string]string{
+		"end_turn":   "Done",
+		"cancelled":  "Stopped",
+		"error":      "Failed",
+		"max_tokens": "Done",
+		"":           "Done",
+	} {
+		if got := chatDoneWord(reason); got != want {
+			t.Errorf("a turn that stopped for %q reads %q, want %q", reason, got, want)
+		}
+	}
+}
+
 func TestATurnsChangesReadAsItsFiles(t *testing.T) {
 	for count, want := range map[int]string{1: "1 file", 3: "3 files"} {
 		if got := chatChangesText(api.ChatTurnChanges{Files: count}); got != want {
@@ -22,7 +36,7 @@ func TestATurnsChangesReadAsItsFiles(t *testing.T) {
 	}
 }
 
-func TestOnlyAFinishedTurnThatChangedTheCheckoutGetsAChangesRow(t *testing.T) {
+func TestEachFinishedTurnThatTheMessageOpenedEndsInADoneRow(t *testing.T) {
 	items := []backend.ChatItem{
 		{ID: "n0", Kind: api.ItemNotice, Turn: 0, Text: "resumed"},
 		{ID: "u1", Kind: api.ItemUser, Turn: 1, At: 1000},
@@ -30,56 +44,44 @@ func TestOnlyAFinishedTurnThatChangedTheCheckoutGetsAChangesRow(t *testing.T) {
 		{ID: "u2", Kind: api.ItemUser, Turn: 2, At: 3000},
 		{ID: "a2", Kind: api.ItemAgent, Turn: 2, At: 4000},
 	}
-	changed := func(turn int) bool { return turn != 2 }
-	turns := func(running bool, changed func(int) bool) (got []int) {
-		for _, r := range chatRowsWith(items, running, time.UnixMilli(5000), changed) {
+	done := func(running bool) (turns []int) {
+		for _, r := range chatRows(items, running, time.UnixMilli(5000)) {
 			if r.kind == chatRowDone {
-				got = append(got, r.turn)
+				turns = append(turns, r.turn)
 			}
 		}
-		return got
+		return turns
 	}
-	if got := turns(false, changed); len(got) != 1 || got[0] != 1 {
-		t.Errorf("changes rows %v, want turn 1 alone: turn 2 changed nothing and the notice opened no turn", got)
+	if got := done(false); len(got) != 2 || got[0] != 1 || got[1] != 2 {
+		t.Errorf("done rows %v, want turns 1 and 2: the notice before the first message has none", got)
 	}
-	if got := turns(false, func(int) bool { return true }); len(got) != 2 {
-		t.Errorf("changes rows %v, want turns 1 and 2", got)
+	if got := done(true); len(got) != 1 || got[0] != 1 {
+		t.Errorf("done rows %v while turn 2 runs, want turn 1 alone", got)
 	}
-	if got := turns(true, func(int) bool { return true }); len(got) != 1 || got[0] != 1 {
-		t.Errorf("changes rows %v while turn 2 runs, want turn 1 alone", got)
-	}
-	if got := turns(false, nil); got != nil {
-		t.Errorf("changes rows %v for a view that knows no changes", got)
-	}
-	rows := chatRowsWith(items, false, time.UnixMilli(5000), func(int) bool { return true })
-	if last := rows[len(rows)-1]; last.kind != chatRowDone || chatRowKey(last) != "changes:2" {
-		t.Errorf("the conversation ends in %+v, want turn 2's changes row", last)
+	rows := chatRows(items, false, time.UnixMilli(5000))
+	if last := rows[len(rows)-1]; last.kind != chatRowDone || chatRowKey(last) != "done:2" {
+		t.Errorf("the conversation ends in %+v, want turn 2's done row", last)
 	}
 }
 
-func TestTheStoreTiesATurnsChangesToTheTurnItClosed(t *testing.T) {
+func TestTheStoreTiesATurnEndToTheTurnItClosed(t *testing.T) {
 	var s chatStore
 	s.history("s1", []backend.ChatItem{{ID: "u1", Kind: api.ItemUser, Turn: 1}, {ID: "u2", Kind: api.ItemUser, Turn: 2}})
 	s.turn(api.ChatTurn{SessionID: "s1", Running: true})
-	s.turn(api.ChatTurn{SessionID: "s1", StopReason: "end_turn", Changes: &api.ChatTurnChanges{Files: 2, Added: 5}})
-	if c, ok := s.changesOf("s1", 2); !ok || c.Files != 2 || c.Added != 5 {
-		t.Errorf("turn 2 changed %+v, %v, want the event's count", c, ok)
+	s.turn(api.ChatTurn{SessionID: "s1", StopReason: "cancelled", Changes: &api.ChatTurnChanges{Files: 1}})
+	if end, ok := s.endOf("s1", 2); !ok || end.StopReason != "cancelled" || end.Changes.Files != 1 {
+		t.Errorf("turn 2 ended %+v, %v, want the event's end", end, ok)
 	}
-	if _, ok := s.changesOf("s1", 1); ok {
-		t.Error("turn 1, which no event closed, has a count")
-	}
-	s.turn(api.ChatTurn{SessionID: "s1", StopReason: "end_turn", Changes: &api.ChatTurnChanges{}})
-	s.turn(api.ChatTurn{SessionID: "s1", StopReason: "end_turn"})
-	if c, _ := s.changesOf("s1", 2); c.Files != 2 {
-		t.Errorf("a turn that ended with no count or none changed erased turn 2's: %+v", c)
+	if _, ok := s.endOf("s1", 1); ok {
+		t.Error("turn 1, which no event closed, has an end")
 	}
 	s.history("s1", []backend.ChatItem{{ID: "u1", Kind: api.ItemUser, Turn: 1}})
-	if _, ok := s.changesOf("s1", 2); ok {
-		t.Error("a count outlived the history read over it")
+	if _, ok := s.endOf("s1", 2); ok {
+		t.Error("an end outlived the history read over it")
 	}
-	s.turn(api.ChatTurn{SessionID: "other", StopReason: "end_turn", Changes: &api.ChatTurnChanges{Files: 1}})
-	if _, ok := s.changesOf("other", 0); ok {
-		t.Error("a conversation the window never heard has a count")
+	s.turn(api.ChatTurn{SessionID: "other", StopReason: "end_turn"})
+	if _, ok := s.endOf("other", 0); ok {
+		t.Error("a conversation the window never heard has an end")
 	}
 }
 
@@ -98,16 +100,11 @@ func endedTurn(t *testing.T, end api.ChatTurn) (*window, *frameRig) {
 	return u, r
 }
 
-func TestAFinishedTurnShowsWhatItChangedAndTheCountOpensReview(t *testing.T) {
+func TestTheDoneLineShowsWhatTheTurnChangedAndTheCountOpensReview(t *testing.T) {
 	u, r := endedTurn(t, api.ChatTurn{StopReason: "end_turn", Changes: &api.ChatTurnChanges{Files: 3, Added: 12, Removed: 4}})
-	for _, label := range []string{"3 files", "+12", "\u22124"} {
+	for _, label := range []string{"Done", "3 files", "+12", "\u22124"} {
 		if !r.shows(label) {
 			t.Fatalf("no %q:\n%s", label, r.drawn())
-		}
-	}
-	for _, word := range []string{"Done", "Stopped", "Failed"} {
-		if r.shows(word) {
-			t.Errorf("the line says %q: it carries the changes alone", word)
 		}
 	}
 	r.clickLabel(t, "3 files")
@@ -116,13 +113,41 @@ func TestAFinishedTurnShowsWhatItChangedAndTheCountOpensReview(t *testing.T) {
 	}
 }
 
-func TestATurnThatChangedNothingOrCouldNotBeReadHasNoLine(t *testing.T) {
-	for name, changes := range map[string]*api.ChatTurnChanges{"nothing": {}, "unread": nil} {
-		_, r := endedTurn(t, api.ChatTurn{StopReason: "end_turn", Changes: changes})
-		for _, label := range []string{"0 files", "1 file", "no changes"} {
-			if r.shows(label) {
-				t.Errorf("%s: a line says %q:\n%s", name, label, r.drawn())
-			}
+func TestTheDoneLineOfATurnThatChangedNothingIsNotAClick(t *testing.T) {
+	u, r := endedTurn(t, api.ChatTurn{StopReason: "end_turn", Changes: &api.ChatTurnChanges{}})
+	if !r.shows("Done") || !r.shows("no changes") {
+		t.Fatalf("want Done, no changes:\n%s", r.drawn())
+	}
+	r.clickLabel(t, "no changes")
+	if u.dock.tab == dockReview {
+		t.Error("\"no changes\" opened Review")
+	}
+}
+
+func TestTheDoneLineOfAStoppedAndAFailedTurn(t *testing.T) {
+	for reason, want := range map[string]string{"cancelled": "Stopped", "error": "Failed"} {
+		_, r := endedTurn(t, api.ChatTurn{StopReason: reason, Changes: &api.ChatTurnChanges{Files: 1, Added: 1}})
+		if !r.shows(want) || r.shows("Done") || !r.shows("1 file") {
+			t.Errorf("a turn that stopped for %q:\n%s", reason, r.drawn())
 		}
+	}
+}
+
+func TestTheDoneLineWithoutACountIsItsWordAlone(t *testing.T) {
+	_, r := endedTurn(t, api.ChatTurn{StopReason: "end_turn"})
+	if !r.shows("Done") || r.shows("no changes") || r.shows("0 files") {
+		t.Errorf("a turn whose checkout could not be read:\n%s", r.drawn())
+	}
+}
+
+func TestTheDoneLineOfATurnReadBackWithTheHistoryIsDoneAlone(t *testing.T) {
+	u, r := stampFrames(t)
+	u.model.chat.history("s1", []backend.ChatItem{
+		{ID: "u1", Kind: api.ItemUser, Turn: 1, At: novDay(18, 17, 58), Text: "go"},
+		{ID: "a1", Kind: api.ItemAgent, Turn: 1, At: novDay(18, 17, 59), Text: "did it"},
+	})
+	r.settle(t)
+	if !r.shows("Done") || r.shows("no changes") {
+		t.Errorf("a turn nobody reported the end of:\n%s", r.drawn())
 	}
 }

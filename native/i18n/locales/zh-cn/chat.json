@@ -23,7 +23,11 @@
       "other": "工作了 {duration} · {count} 个工具 · {time}"
     }
   },
-  "changes": {
+  "done": {
+    "done": "完成",
+    "stopped": "已停止",
+    "failed": "失败",
+    "noChanges": "没有更改",
     "files": {
       "other": "{count} 个文件"
     }

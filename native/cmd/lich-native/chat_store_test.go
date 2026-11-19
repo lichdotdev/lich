@@ -158,17 +158,19 @@ func TestChatRowsFoldEachTurnsToolsWhereItsFirstWas(t *testing.T) {
 			got = append(got, r.item.ID)
 		case chatRowWork:
 			got = append(got, "work")
+		case chatRowDone:
+			got = append(got, "done")
 		case chatRowLive:
 			got = append(got, "live")
 		}
 	}
-	if want := []string{"u1", "a1", "work", "a2", "a3", "u2", "work", "live"}; !reflect.DeepEqual(got, want) {
+	if want := []string{"u1", "a1", "work", "a2", "a3", "done", "u2", "work", "live"}; !reflect.DeepEqual(got, want) {
 		t.Fatalf("rows = %v, want %v", got, want)
 	}
 	if w := rows[2]; len(w.tools) != 2 || w.took != 12*time.Second {
 		t.Errorf("turn 1: %d tools in %v, want 2 in 12s", len(w.tools), w.took)
 	}
-	if w := rows[6]; len(w.tools) != 1 || w.took != 30*time.Second {
+	if w := rows[7]; len(w.tools) != 1 || w.took != 30*time.Second {
 		t.Errorf("turn 2 in flight: %d tools in %v, want 1 in 30s to now", len(w.tools), w.took)
 	}
 }
