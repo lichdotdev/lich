@@ -377,7 +377,9 @@ draws none while it grows in, because the room above the rows is measured in the
   the box, outside it with no fill, one line: at the left a `TextXS` muted project, a slash and the branch,
   which opens the Git panel as its balloon did, and at the right the footer's changes item (files and diff),
   which opens Review. Attach, changes and the branch show only when the user's footer layout has them, and
-  only for the session the footer follows; another chat pane of a layout has the provider's chips and Send alone.
+  in every pane, each for its own session (its checkout, branch and changes, with or without the focus, but only the
+  followed pane's items take a click); the attach "+" and the context ring are the followed session's alone, so another
+  chat pane of a layout has the provider's chips and Send.
 - **Copy** is an icon-only button that shows only while the pointer is over a message, on the line of its time and
   beside it: at the left of the time for the person's message, so it sits at the right, at the right of the time
   for an answer, so it sits at the left. It copies the item's whole text, an answer's Markdown source, through the

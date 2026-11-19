@@ -148,6 +148,19 @@ func (f *footer) input(m *model, now time.Time) footerInput {
 	return in
 }
 
+// sessionInput reads what the line under a chat's box shows of session sv, a
+// pane the footer does not follow: its checkout, its branch and its changes,
+// which are its own with or without the focus. The rest of the footer's data is
+// the followed session's alone.
+func (f *footer) sessionInput(m *model, sv sessionView, now time.Time) footerInput {
+	in := footerInput{now: now, sessionID: sv.ID, provider: sv.agent, path: sv.shown, checkout: sv.path, host: sv.host, pr: sv.pr}
+	if in.provider == "" {
+		in.provider = sv.Kind
+	}
+	in.git, in.isGit = m.gitStatus(in.path)
+	return in
+}
+
 // readExtensions reads the extensions' placed surfaces and their items' text
 // for the active checkout, and adopts an item the footer never offered.
 func (f *footer) readExtensions(in *footerInput) {
@@ -281,7 +294,7 @@ func (f *footer) w(id string) *footerWidgets {
 
 // slot draws one item, a control or a reading.
 func (f *footer) slot(gtx C, th *ui.Theme, s footerSlot, in footerInput) D {
-	w := f.w(s.ID)
+	w := f.w(s.ID + s.Pane)
 	if it, ok := in.extItem(s.ID); ok {
 		if it.text == "" {
 			return footerButton(gtx, th, f.root, w, s.Hint, false, false, iconOnly(it.glyph))
@@ -293,9 +306,13 @@ func (f *footer) slot(gtx C, th *ui.Theme, s footerSlot, in footerInput) D {
 	case "attach":
 		return f.attachButton(gtx, th, in, icAttach)
 	case "changes":
-		return f.tour.Anchor(gtx, tourReviewChip, func(gtx C) D {
+		chip := func(gtx C) D {
 			return footerButton(gtx, th, f.root, w, i18n.T("shell.footerBar.reviewChanges"), true, false, changesContent(in.git))
-		})
+		}
+		if s.Pane != "" {
+			return chip(gtx)
+		}
+		return f.tour.Anchor(gtx, tourReviewChip, chip)
 	case "pr":
 		return footerButton(gtx, th, f.root, w, i18n.T("shell.footerBar.viewPullRequest"), true, false, glyphText(icPR, i18n.T("shell.footerBar.pullRequest", i18n.Args{"number": in.pr.Number})))
 	case "checkout", "path":

@@ -144,10 +144,23 @@ func (u *window) chatAction(gtx C, th *ui.Theme, p *chatPane, working bool) D {
 // chatCrumbs is the line under the composer's box, with no fill: at the left
 // the project, a slash and the branch, which opens the Git panel as its
 // balloon does, and at the right the changes item, which opens Review.
-func (u *window) chatCrumbs(gtx C, th *ui.Theme, sv sessionView, ft chatFooter) D {
-	f, in := u.footer, u.footer.shown
+func (u *window) chatCrumbs(gtx C, th *ui.Theme, sv sessionView, in footerInput, ft chatFooter) D {
+	f := u.footer
 	if ft.checkout == nil && ft.changes == nil {
 		return D{}
+	}
+	// The footer's clicks (the Git panel, Review) act on the session it
+	// follows. Another pane's items are the same text under widgets of their
+	// own, which take no click, so that pane cannot open the other's panel.
+	followed := sv.ID == f.shown.sessionID
+	suffix := ""
+	if !followed {
+		suffix = "@" + sv.ID
+		for _, s := range []*footerSlot{ft.checkout, ft.changes} {
+			if s != nil {
+				s.Pane = suffix
+			}
+		}
 	}
 	var left []layout.FlexChild
 	if ft.checkout != nil {
@@ -160,8 +173,8 @@ func (u *window) chatCrumbs(gtx C, th *ui.Theme, sv sessionView, ft chatFooter) 
 		if in.git.Branch != "" {
 			ic = icBranch
 		}
-		link := f.git != nil && in.inRepository()
-		left = append(left, layout.Rigid(func(gtx C) D { return f.crumb(gtx, th, "checkout", ic, *ft.checkout, link) }))
+		link := followed && f.git != nil && in.inRepository()
+		left = append(left, layout.Rigid(func(gtx C) D { return f.crumb(gtx, th, "checkout"+suffix, ic, *ft.checkout, link) }))
 	}
 	return layout.Inset{Top: chatCrumbsTop, Left: chatFootPad, Right: chatFootPad}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,

@@ -278,7 +278,7 @@ func TestTheOptionChipsTakeNoClickWhileTheAgentWorks(t *testing.T) {
 	}
 }
 
-func TestAnotherPaneOfALayoutHasTheProvidersChipsAndNoFooterItems(t *testing.T) {
+func TestAnotherPaneOfALayoutHasTheProvidersChipsAndNotTheFootersAttachOrRing(t *testing.T) {
 	in := busySession()
 	in.sessionID = "s2"
 	u, r, _ := chatFramesIn(t, api.ViewChat, rigWindow, in)
@@ -287,9 +287,32 @@ func TestAnotherPaneOfALayoutHasTheProvidersChipsAndNoFooterItems(t *testing.T) 
 	if !r.shows("Haiku 5.5 · Medium") || !r.shows(i18n.T("chat.choice.manual")) {
 		t.Fatalf("the pane lost the provider's chips:\n%s", r.drawn())
 	}
-	for _, label := range []string{"main", "2"} {
+	for _, label := range []string{"42%", "5h 28%", "10m"} {
 		if r.shows(label) {
 			t.Errorf("%q drawn in a pane the footer does not follow", label)
+		}
+	}
+}
+
+// Each pane of a layout has the line under its box for its own session,
+// whether the footer follows it or not.
+func TestEachPaneOfALayoutShowsItsOwnBranchAndChanges(t *testing.T) {
+	in := busySession()
+	in.sessionID = "s2" // the footer follows the other pane
+	u, r, _ := chatFramesIn(t, api.ViewChat, rigWindow, in)
+	u.model.projects[0].Path = "/home/me/other"
+	u.model.mu.Lock()
+	u.model.git["/home/me/other"] = backend.DiffStats{Branch: "feature-x", Files: 3}
+	u.model.mu.Unlock()
+	r.settle(t)
+	for _, label := range []string{"feature-x", "3"} {
+		if !r.shows(label) {
+			t.Errorf("no %q under the pane's box, which is the session's own:\n%s", label, r.drawn())
+		}
+	}
+	for _, label := range []string{"main", "2"} {
+		if r.shows(label) {
+			t.Errorf("%q is the followed session's, drawn in another pane", label)
 		}
 	}
 }

@@ -118,6 +118,12 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   that `initialize` does not list stays as the id. An ACP server says neither on a message: an item takes the
   current model and effort when it begins, and what `session/load` replays names nothing, so a resumed ACP chat's
   old answers carry no model. The header then shows less, never the model the chat is set to now.
+- **A chat recognises Claude Code's own lines in a conversation by their exact text** (`internal/chat/local_command.go`,
+  `claude.go`): `[Request interrupted by user]` and its `for tool use` form, a local command's `<command-name>`,
+  `<command-message>`, `<command-args>` and `<local-command-stdout>` lines (one muted notice, "/model haiku ·
+  Set model to haiku"), and the answer `No response requested.` written after one are Claude Code's, not the
+  person's or the agent's, and are left out or made a notice. Any other tag, `<local-command-stderr>` among them, or
+  text that only contains one of these, stays as written. Only Claude Code writes them; an ACP server has no such lines.
 - **A chat offers only the model, effort and mode its provider offers, and two of them restart its process**
   (`internal/chat/options.go`, `claude_options.go`, `acp_options.go`): Claude Code's come from its `initialize`
   (the models, each with its efforts and whether it has an auto mode) and from the permission modes its `--help`

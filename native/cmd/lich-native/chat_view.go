@@ -334,17 +334,24 @@ func (u *window) chatFailed(err error) {
 
 // chatComposer is the message field with the provider's chips and Send, or
 // Stop while a turn runs, inside its box, and the project and branch with the
-// changes under it. Only the session the footer follows carries the footer's
-// items: another pane of a layout has the provider's chips and Send.
+// changes under it. Every pane has its own line; only the session the footer
+// follows has the attach "+" and the context ring.
 func (u *window) chatComposer(gtx C, th *ui.Theme, p *chatPane, sv sessionView, working bool) D {
 	name := sv.Kind
 	if info, ok := u.model.providers.find(sv.Kind); ok && info.name != "" {
 		name = info.name
 	}
-	var ft chatFooter
-	if u.footer.shown.sessionID == sv.ID {
-		l, _ := u.footer.snapshot()
-		ft = chatFootSlots(l, u.footer.shown)
+	// The line under the box is the session's own, followed by the footer or
+	// not. The attach "+" and the context ring belong to the followed one.
+	in := u.footer.shown
+	followed := in.sessionID == sv.ID
+	if !followed {
+		in = u.footer.sessionInput(u.model, sv, in.now)
+	}
+	l, _ := u.footer.snapshot()
+	ft := chatFootSlots(l, in)
+	if !followed {
+		ft.attach, ft.context = nil, nil
 	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
@@ -354,7 +361,7 @@ func (u *window) chatComposer(gtx C, th *ui.Theme, p *chatPane, sv sessionView, 
 			ta.Foot = u.chatChips(th, p, sv, working, ft)
 			return ta.Layout(gtx)
 		}),
-		layout.Rigid(func(gtx C) D { return u.chatCrumbs(gtx, th, sv, ft) }),
+		layout.Rigid(func(gtx C) D { return u.chatCrumbs(gtx, th, sv, in, ft) }),
 	)
 }
 
