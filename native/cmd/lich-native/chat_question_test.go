@@ -1,10 +1,12 @@
 package main
 
 import (
+	"image"
 	"strings"
 	"testing"
 	"time"
 
+	"gioui.org/f32"
 	"gioui.org/io/key"
 
 	"github.com/lichdotdev/lich/api"
@@ -255,5 +257,28 @@ func TestAnIDThatComesBackIsANewCard(t *testing.T) {
 		if time.Now().After(deadline) {
 			t.Fatalf("the new card did not reply: %v", replies)
 		}
+	}
+}
+
+// The box of an option is the row's own target: a click on it marks the
+// option once, as a click on its label does.
+func TestClickingTheBoxMarksTheOptionOnce(t *testing.T) {
+	u, r, _ := questionFrames(t, nil, askColors)
+	p := u.chats.pane("s1")
+	var box image.Point
+	for _, n := range r.nodes() {
+		if n.Desc.Label == "Red" {
+			// The box stands left of the label: the row's 10dp gap and half
+			// its 16dp size, at 1px per dp.
+			box = image.Pt(n.Desc.Bounds.Min.X-18, n.Desc.Bounds.Min.Y+7)
+		}
+	}
+	r.click(t, f32.Pt(float32(box.X), float32(box.Y)))
+	if !p.quizzes["q1"].marks[0][0].Value {
+		t.Fatalf("a click on the box at %v left Red unmarked:\n%s", box, r.drawn())
+	}
+	r.click(t, r.at(t, "Red"))
+	if p.quizzes["q1"].marks[0][0].Value {
+		t.Error("a click on the label after the box did not unmark Red")
 	}
 }
