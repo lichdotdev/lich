@@ -4,10 +4,13 @@ import (
 	"image"
 	"image/color"
 	"slices"
+	"strconv"
 	"strings"
 
+	"gioui.org/io/pointer"
 	"gioui.org/layout"
 	"gioui.org/op"
+	"gioui.org/op/clip"
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
@@ -17,9 +20,10 @@ import (
 )
 
 var (
-	icEffort = icons.Lucide("brain")
-	icMode   = icons.Lucide("shield-check")
-	icDanger = icons.Lucide("zap")
+	icEffort   = icons.Lucide("brain")
+	icFileDiff = icons.Lucide("file-diff")
+	icMode     = icons.Lucide("shield-check")
+	icDanger   = icons.Lucide("zap")
 )
 
 // The chips inside the box are the provider's: the attach "+", the model with
@@ -146,6 +150,10 @@ func (u *window) chatAction(gtx C, th *ui.Theme, p *chatPane, working bool) D {
 // balloon does, and at the right the changes item, which opens Review.
 func (u *window) chatCrumbs(gtx C, th *ui.Theme, sv sessionView, in footerInput, ft chatFooter) D {
 	f := u.footer
+	// The changes are there when there are some.
+	if in.git.Files == 0 {
+		ft.changes = nil
+	}
 	if ft.checkout == nil && ft.changes == nil {
 		return D{}
 	}
@@ -184,7 +192,7 @@ func (u *window) chatCrumbs(gtx C, th *ui.Theme, sv sessionView, in footerInput,
 				if ft.changes == nil {
 					return D{}
 				}
-				return f.slot(gtx, th, *ft.changes, in)
+				return f.crumbChanges(gtx, th, *ft.changes, in.git, followed)
 			}),
 		)
 	})
@@ -211,6 +219,45 @@ func (f *footer) crumb(gtx C, th *ui.Theme, id string, ic icons.Glyph, s footerS
 	}
 	return f.tour.Anchor(gtx, worktreesBranch, func(gtx C) D {
 		return th.Tooltip(f.root, &w.tip, s.Hint).Layout(gtx, func(gtx C) D { return w.click.Layout(gtx, body) })
+	})
+}
+
+// crumbChanges is the changes at the right of the line, in the style of the
+// left: a small diff glyph, the file count and the line counts in TextXS, with
+// no fill at rest and the kit's hover fill under the pointer. Its click opens
+// Review, for the session the footer follows. It is never drawn pressed, as the Review button of the footer is
+// while the dock shows Review: on this line a lit item reads as a button
+// switched on for no reason.
+func (f *footer) crumbChanges(gtx C, th *ui.Theme, s footerSlot, git backend.DiffStats, followed bool) D {
+	w := f.w(s.ID + s.Pane)
+	return th.Tooltip(f.root, &w.tip, i18n.T("shell.footerBar.reviewChanges")).Layout(gtx, func(gtx C) D {
+		return w.click.Layout(gtx, func(gtx C) D {
+			var bg color.NRGBA
+			if w.click.Hovered() {
+				bg = th.Over(ui.Alpha(th.Accent, ui.GhostHoverFill))
+			}
+			return layout.Background{}.Layout(gtx,
+				func(gtx C) D {
+					if followed {
+						area := clip.Rect{Max: gtx.Constraints.Min}.Push(gtx.Ops)
+						pointer.CursorPointer.Add(gtx.Ops)
+						area.Pop()
+					}
+					return ui.FillIf(gtx, bg, ui.RadiusMD)
+				},
+				func(gtx C) D {
+					return layout.Inset{Left: ui.Space(1.5), Right: ui.Space(1.5)}.Layout(gtx, func(gtx C) D {
+						return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+							layout.Rigid(func(gtx C) D { return icFileDiff.Layout(gtx, chatCrumbGlyph, th.MutedForeground) }),
+							ui.Gap(1.5),
+							layout.Rigid(th.Text(ui.TextXS, strconv.Itoa(git.Files)).Muted().Layout),
+							ui.Gap(1.5),
+							layout.Rigid(th.DiffStat(git.Added, git.Deleted).Layout),
+						)
+					})
+				},
+			)
+		})
 	})
 }
 

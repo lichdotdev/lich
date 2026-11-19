@@ -47,13 +47,13 @@ func centreY(t *testing.T, r *frameRig, label string) float32 {
 
 // boxFoot is where the composer's Send or Stop stands: the right end of the
 // box's foot, in the chat rigs' window.
-var boxFoot = image.Rect(1000, 700, 1100, 752)
+var boxFoot = image.Rect(1000, 720, 1100, 770)
 
 func TestTheComposerHoldsOnlyTheProvidersControlsInItsBox(t *testing.T) {
 	u, r, _ := chatFrames(t, api.ViewChat)
 	u.model.chat.setOptions("s1", chatOptions())
 	r.settle(t)
-	plus := r.smallestClickIn(t, image.Rect(120, 700, 170, 752))
+	plus := r.smallestClickIn(t, image.Rect(120, 720, 170, 770))
 	model, mode := r.at(t, "Haiku 5.5 · Medium"), r.at(t, i18n.T("chat.choice.manual"))
 	send := r.smallestClickIn(t, boxFoot)
 	if !(plus.X < model.X && model.X < mode.X && mode.X < send.X) {
@@ -339,4 +339,43 @@ func pickEntry(t *testing.T, r *frameRig, label string) {
 		}
 	}
 	t.Fatalf("no menu row %q:\n%s", label, r.drawn())
+}
+
+func TestTheChangesItemIsThereOnlyWhenThereAreChanges(t *testing.T) {
+	in := busySession()
+	in.git.Files = 0
+	_, r, _ := chatFramesIn(t, api.ViewChat, rigWindow, in)
+	r.settle(t)
+	if !r.shows("main") {
+		t.Fatalf("the branch is gone with the changes:\n%s", r.drawn())
+	}
+	for _, label := range []string{"0", "+0", "-0", i18n.T("shell.footerBar.reviewChanges")} {
+		if r.shows(label) {
+			t.Errorf("%q drawn for a checkout with no changes", label)
+		}
+	}
+	_, r, _ = chatFramesIn(t, api.ViewChat, rigWindow, busySession())
+	r.settle(t)
+	if !r.shows("2") {
+		t.Errorf("no file count for a checkout with changes:\n%s", r.drawn())
+	}
+}
+
+// The item is quiet: nothing under it at rest, the kit's hover fill under the
+// pointer, and never the lit fill the footer's button wears while Review is up.
+func TestTheChangesItemHasNoFillAtRestAndNeverTheLitOne(t *testing.T) {
+	u, r, _ := chatFrames(t, api.ViewChat)
+	r.settle(t)
+	rest := r.drawn()
+	u.footer.w("changes").pressed = true
+	u.footer.dock.show(dockReview)
+	r.settle(t)
+	if r.drawn() != rest {
+		t.Error("the item changed with Review open: it must not be drawn pressed")
+	}
+	r.hover(r.at(t, "2"))
+	r.settle(t)
+	if r.drawn() == rest {
+		t.Error("the item has no hover fill")
+	}
 }
