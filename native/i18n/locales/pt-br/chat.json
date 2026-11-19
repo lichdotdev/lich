@@ -15,7 +15,7 @@
     },
     "toolFailed": "falhou",
     "answered": "{tool} · {choice}",
-    "working": "Trabalhando…",
+    "verbs": "Conjurando|Invocando|Canalizando|Destilando|Vislumbrando|Inscrevendo|Tecendo|Erguendo",
     "thinking": "Pensando",
     "toolCalls": {
       "one": "{count} chamada de ferramenta",

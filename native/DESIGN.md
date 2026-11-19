@@ -319,7 +319,7 @@ draws none while it grows in, because the room above the rows is measured in the
 - **A permission** is a box on `Sidebar`, `RadiusMD`, `Space(3)` padding (see Boxes inside a screen): the tool,
   its diff, and a `SizeSM` button per answer the provider offers, the first allow filled. Enter takes the first
   allow and Esc the first reject. Answered, it shrinks to a muted line naming the answer.
-- **A notice** is a muted line; the turn in flight ends the column with a spinner and "Working…", left out
+- **A notice** is a muted line; the turn in flight ends the column with lich's own mark breathing (opacity between 0.35 and 1 over 1.6s, still when the window is) and a verb of the turn, shimmering like "Thinking" with the time it has run beside it; the verb is picked from the language's own list (`chat.view.verbs`, `|`-separated, each language writes its own length) by the session and the turn, so it holds for the whole turn; left out
   while a permission waits: its box already says so.
 - **The composer** stands at the column's foot: a textarea (Enter sends, Shift+Enter breaks the line) in a
   `RadiusLG` box, three lines of text tall at least, growing with the text to a ceiling and scrolling past it.
