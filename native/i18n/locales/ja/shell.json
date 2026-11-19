@@ -104,6 +104,14 @@
     "extraUsage": "追加使用量",
     "extraOf": "{used} / {limit}",
     "extraNoLimit": "{used} · 上限なし",
+    "resets": "リセット",
+    "resetsLeft": {
+      "one": "残り {count} 回",
+      "other": "残り {count} 回"
+    },
+    "resetFull": "フル",
+    "resetUntil": "{month}{day}日まで",
+    "shortMonths": "1月,2月,3月,4月,5月,6月,7月,8月,9月,10月,11月,12月",
     "resetCredits": "リセットクレジット",
     "resetCreditsAvailable": {
       "one": "{count} 件利用可能",

@@ -275,7 +275,12 @@ medium, the bar in the same tones as the context's (70%, 90%), then muted `Reset
 pace so far empties a weekly window before it resets, `Runs out in 1d 9h` in `ToneWait`. A locked window reads
 "Locked" with its bar and the provider's reason in `Destructive`. After the windows, `Extra usage` with the amount
 against the cap at the right ("$12.50 of $50.00", "$141.57 · no limit") and a bar only when there is a cap, and a
-`Reset credits` line like a context row ("1 available"), each only when the account has them. The account's email
+`Reset credits` line like a context row ("1 available"), each only when the account has them. Claude Code's limit
+resets come as a `Resets` block, its title with "N left" (every reset of every live grant) at the right and a line per
+grant: its name at the left ("Full" when it clears the weekly window, the model's name for a model's own cap, the
+provider's text otherwise), "×2" and a muted "until Dec 10" at the right, in the interface language's month. A grant
+that cannot be spent now (paused, or not usable) is muted whole; with no live grant the block is not drawn. It shows
+and never spends: using one cannot be undone. The account's email
 closes the plan quota's tooltip, under a separator. The profile tooltip heads the blocks with the plan ("Claude Code ·
 Max 5x"); for any provider but Claude Code and Codex it is a single muted line saying usage is not measured per profile, and while the first reading is in flight there
 is no tooltip at all, rather than one that says nothing. Amounts follow the locale (`money.go`): its separators, the

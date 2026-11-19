@@ -104,6 +104,14 @@
     "extraUsage": "Uso extra",
     "extraOf": "{used} de {limit}",
     "extraNoLimit": "{used} · sem limite",
+    "resets": "Resets",
+    "resetsLeft": {
+      "one": "{count} restante",
+      "other": "{count} restantes"
+    },
+    "resetFull": "Completo",
+    "resetUntil": "até {day} de {month}",
+    "shortMonths": "jan,fev,mar,abr,mai,jun,jul,ago,set,out,nov,dez",
     "resetCredits": "Créditos de reset",
     "resetCreditsAvailable": {
       "one": "{count} disponível",
