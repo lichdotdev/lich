@@ -10,7 +10,7 @@ import (
 	"github.com/lichdotdev/lich/native/ui"
 )
 
-func TestEveryFlameFrameIsAGridOfFourteenBySeventeenOfKnownSymbols(t *testing.T) {
+func TestEveryFlameFrameIsAGridOfElevenByFourteenOfKnownSymbols(t *testing.T) {
 	if len(chatFlameFrames) != 16 {
 		t.Fatalf("%d frames, want 16", len(chatFlameFrames))
 	}
@@ -30,9 +30,9 @@ func TestEveryFlameFrameIsAGridOfFourteenBySeventeenOfKnownSymbols(t *testing.T)
 func TestTheFlamesCoreIsTheSameInEveryFrame(t *testing.T) {
 	for i, frame := range chatFlameFrames {
 		rows := strings.Split(frame, " | ")
-		for y := 13; y <= 15; y++ {
-			if rows[y][6:8] != "44" {
-				t.Errorf("frame %d: columns 6 and 7 of row %d are %q, want the core", i, y, rows[y][6:8])
+		for y := 10; y <= 12; y++ {
+			if rows[y][5] != '4' {
+				t.Errorf("frame %d: column 5 of row %d is %q, want the core", i, y, rows[y][5])
 			}
 		}
 	}
