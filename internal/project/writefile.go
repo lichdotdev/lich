@@ -19,8 +19,7 @@ import (
 func (s *Service) WriteFile(_ context.Context, opts api.WriteFileOptions) (api.None, error) {
 	full, err := relpath.Resolve(opts.Path, opts.Rel)
 	if err != nil {
-		var pathErr *os.PathError
-		if errors.As(err, &pathErr) {
+		if pathErr, ok := errors.AsType[*os.PathError](err); ok {
 			return api.None{}, fmt.Errorf("stat %s: %w", opts.Rel, pathErr.Err)
 		}
 		return api.None{}, err

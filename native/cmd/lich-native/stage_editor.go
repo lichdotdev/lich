@@ -137,7 +137,7 @@ func (f *fileEditor) read() {
 		if l.ed, err = codeview.NewTextEditor(family, size); err != nil {
 			return l, err
 		}
-		l.diff, err = codeview.NewDiffEditor(family, size, godemirror.DiffOptions{HighlightChanges: true, StyleTags: codeview.StyleTags})
+		l.diff, err = codeview.NewDiffEditor(family, size, godemirror.DiffOptions{HighlightChanges: true, StyleTags: codeview.StyleTags, Collapse: &diskDiffContext})
 		return l, err
 	})
 }

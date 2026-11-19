@@ -135,14 +135,21 @@ func (f *fileEditor) diskBanner(gtx C, th *ui.Theme) D {
 	)
 }
 
+// diskDiffContext keeps the warning's diff to the changes: git's three lines
+// of context around each, and a run of unchanged lines left out once it is
+// longer than that.
+var diskDiffContext = godemirror.Collapse{Margin: 3, MinSize: 4}
+
 // editorBannerTint is how much of the wait tone the warning's strip takes.
 const editorBannerTint = 0.14
 
 func (f *fileEditor) bannerRow(gtx C, th *ui.Theme) D {
 	keep := th.Button(&f.disk.keep, i18n.T("dock.editor.keepMine"))
 	keep.Size, keep.Variant = ui.SizeSM, ui.VariantOutline
+	// Save is the view's one Primary; the two ways out of the warning weigh
+	// the same.
 	reload := th.Button(&f.disk.reload, i18n.T("dock.editor.reload"))
-	reload.Size = ui.SizeSM
+	reload.Size, reload.Variant = ui.SizeSM, ui.VariantSecondary
 	return layout.Inset{Left: ui.Space(3), Right: ui.Space(2), Top: ui.Space(1.5), Bottom: ui.Space(1.5)}.Layout(gtx, func(gtx C) D {
 		gtx.Constraints.Min.X = gtx.Constraints.Max.X
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
