@@ -54,15 +54,18 @@
     "pullRequest": "PR #{number}"
   },
   "footerSession": {
-    "contextWindow": "Janela de contexto",
-    "contextTokens": "{tokens} / {window} tokens",
     "cacheHit": "Cache: {percent}% de acerto",
     "costUnavailable": "Custo indisponível",
     "sessionCost": "Custo da sessão",
     "costOfBudget": "{cost} de {budget} de orçamento",
     "costNote": "Custo da API nas conversas desta sessão. As cobranças da assinatura podem ser diferentes.",
     "handsOnTime": "Tempo de interação",
-    "handsOnFailed": "Não foi possível ler o tempo de interação."
+    "handsOnFailed": "Não foi possível ler o tempo de interação.",
+    "context": "Contexto",
+    "tokens": "Tokens",
+    "modelWindow": "Janela do modelo",
+    "cache": "Cache",
+    "cacheHitShort": "{percent}% de acerto"
   },
   "gitMissingGate": {
     "title": "O git não está instalado",

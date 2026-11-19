@@ -64,7 +64,10 @@ func TestTheComposerHoldsOnlyTheProvidersControlsInItsBox(t *testing.T) {
 			t.Errorf("a control at y=%v, off the box foot's line (y=%v)", y, plus.Y)
 		}
 	}
-	for _, label := range []string{"PR #7", "42%", "5h 28%", "10m", "opus 4.8"} {
+	if ring := r.at(t, "42%"); ring.X <= mode.X || ring.X >= send.X || ring.Y < plus.Y-8 || ring.Y > plus.Y+8 {
+		t.Errorf("the context ring at %v: want it on the box foot's line after the mode (x=%v) and before Send (x=%v)", ring, mode.X, send.X)
+	}
+	for _, label := range []string{"PR #7", "5h 28%", "10m", "opus 4.8"} {
 		if r.shows(label) {
 			t.Errorf("%q drawn in a chat: the footer's other items stay out of it", label)
 		}

@@ -54,15 +54,18 @@
     "pullRequest": "PR #{number}"
   },
   "footerSession": {
-    "contextWindow": "コンテキストウィンドウ",
-    "contextTokens": "{tokens} / {window} トークン",
     "cacheHit": "キャッシュ: ヒット率 {percent}%",
     "costUnavailable": "コストは取得できません",
     "sessionCost": "セッションのコスト",
     "costOfBudget": "予算 {budget} のうち {cost}",
     "costNote": "このセッションの会話全体の API コストです。サブスクリプションの料金とは異なる場合があります。",
     "handsOnTime": "作業時間",
-    "handsOnFailed": "作業時間を取得できませんでした。"
+    "handsOnFailed": "作業時間を取得できませんでした。",
+    "context": "コンテキスト",
+    "tokens": "トークン",
+    "modelWindow": "モデルのウィンドウ",
+    "cache": "キャッシュ",
+    "cacheHitShort": "ヒット率 {percent}%"
   },
   "gitMissingGate": {
     "title": "git がインストールされていません",

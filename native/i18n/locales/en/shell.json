@@ -54,15 +54,18 @@
     "pullRequest": "PR #{number}"
   },
   "footerSession": {
-    "contextWindow": "Context window",
-    "contextTokens": "{tokens} / {window} tokens",
     "cacheHit": "Cache: {percent}% hit",
     "costUnavailable": "Cost unavailable",
     "sessionCost": "Session cost",
     "costOfBudget": "{cost} of {budget} budget",
     "costNote": "API cost across this session's conversations. Subscription charges may differ.",
     "handsOnTime": "Hands-on time",
-    "handsOnFailed": "Could not read hands-on time."
+    "handsOnFailed": "Could not read hands-on time.",
+    "context": "Context",
+    "tokens": "Tokens",
+    "modelWindow": "Model window",
+    "cache": "Cache",
+    "cacheHitShort": "{percent}% hit"
   },
   "gitMissingGate": {
     "title": "git is not installed",

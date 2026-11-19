@@ -54,15 +54,18 @@
     "pullRequest": "PR #{number}"
   },
   "footerSession": {
-    "contextWindow": "上下文窗口",
-    "contextTokens": "{tokens} / {window} 个 token",
     "cacheHit": "缓存：命中率 {percent}%",
     "costUnavailable": "费用不可用",
     "sessionCost": "会话费用",
     "costOfBudget": "{cost} / 预算 {budget}",
     "costNote": "此会话各对话的 API 费用。订阅收费可能不同。",
     "handsOnTime": "实际操作时长",
-    "handsOnFailed": "无法读取实际操作时长。"
+    "handsOnFailed": "无法读取实际操作时长。",
+    "context": "上下文",
+    "tokens": "Token",
+    "modelWindow": "模型窗口",
+    "cache": "缓存",
+    "cacheHitShort": "命中 {percent}%"
   },
   "gitMissingGate": {
     "title": "未安装 git",

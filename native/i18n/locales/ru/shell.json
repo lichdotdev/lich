@@ -56,15 +56,18 @@
     "pullRequest": "PR #{number}"
   },
   "footerSession": {
-    "contextWindow": "Контекстное окно",
-    "contextTokens": "{tokens} / {window} токенов",
     "cacheHit": "Кэш: {percent}% попаданий",
     "costUnavailable": "Стоимость недоступна",
     "sessionCost": "Стоимость сессии",
     "costOfBudget": "{cost} из бюджета {budget}",
     "costNote": "Стоимость API по всем разговорам этой сессии. Списания по подписке могут отличаться.",
     "handsOnTime": "Время за работой",
-    "handsOnFailed": "Не удалось прочитать время за работой."
+    "handsOnFailed": "Не удалось прочитать время за работой.",
+    "context": "Контекст",
+    "tokens": "Токены",
+    "modelWindow": "Окно модели",
+    "cache": "Кэш",
+    "cacheHitShort": "{percent}% попаданий"
   },
   "gitMissingGate": {
     "title": "git не установлен",

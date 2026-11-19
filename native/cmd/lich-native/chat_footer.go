@@ -59,10 +59,11 @@ func (c *chatStore) optionSlots(id string) []footerSlot {
 }
 
 // chatFooter is the footer's items a chat shows of the user's layout: the
-// attach "+" inside the box, the checkout and the changes under it. The rest
+// attach "+" and the context ring inside the box, the checkout and the changes
+// under it. The rest
 // of the footer is not drawn in a chat.
 type chatFooter struct {
-	attach, changes, checkout *footerSlot
+	attach, changes, checkout, context *footerSlot
 }
 
 func chatFootSlots(l footerLayout, in footerInput) chatFooter {
@@ -75,6 +76,8 @@ func chatFootSlots(l footerLayout, in footerInput) chatFooter {
 			f.changes = &s
 		case "checkout":
 			f.checkout = &s
+		case "context":
+			f.context = &s
 		}
 	}
 	return f
@@ -83,13 +86,16 @@ func chatFootSlots(l footerLayout, in footerInput) chatFooter {
 // chatChips is the foot of the composer's box: the attach "+" when the footer
 // has it, then the provider's chips, on one line, and Send or Stop at the
 // right. A chip that does not fit is left out with the ones after it.
-func (u *window) chatChips(th *ui.Theme, p *chatPane, sv sessionView, working bool, attach *footerSlot) func(gtx C) D {
+func (u *window) chatChips(th *ui.Theme, p *chatPane, sv sessionView, working bool, ft chatFooter) func(gtx C) D {
 	f, in := u.footer, u.footer.shown
 	var chips []footerSlot
-	if attach != nil {
-		chips = append(chips, *attach)
+	if ft.attach != nil {
+		chips = append(chips, *ft.attach)
 	}
 	chips = append(chips, u.model.chat.optionSlots(sv.ID)...)
+	if ft.context != nil {
+		chips = append(chips, *ft.context)
+	}
 	return func(gtx C) D {
 		pad, gap, itemH := gtx.Dp(chatFootPad), gtx.Dp(balloonGap), gtx.Dp(balloonItemHeight)
 		width := gtx.Constraints.Max.X
@@ -103,8 +109,10 @@ func (u *window) chatChips(th *ui.Theme, p *chatPane, sv sessionView, working bo
 				return f.attachButton(gtx, th, in, icPlus)
 			case chipModel:
 				return u.modelChip(gtx, th, p, sv, working)
+			case chipMode:
+				return u.modeChip(gtx, th, p, sv, working)
 			}
-			return u.modeChip(gtx, th, p, sv, working)
+			return f.slot(gtx, th, s, in)
 		}
 		items, _ := f.fit(gtx, chips, width-2*pad-action.Size.X-gap, gap, itemH, draw)
 		h := max(itemH, action.Size.Y)
