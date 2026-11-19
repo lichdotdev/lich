@@ -731,5 +731,12 @@
       "readFailed": "Não foi possível ler o catálogo do lich. Instalar por uma URL do GitHub continua funcionando.",
       "noMatch": "Nenhuma extensão encontrada."
     }
+  },
+  "sessionViewSetting": {
+    "title": "Novas sessões abrem como",
+    "description": "Uma sessão nova começa como chat ou no terminal do agente. Um provedor sem chat abre o terminal de qualquer jeito, e GUI | TUI troca qualquer sessão depois.",
+    "chat": "Chat",
+    "terminal": "Terminal",
+    "searchWords": "gui tui vista chat terminal padrão nova sessão abrir"
   }
 }

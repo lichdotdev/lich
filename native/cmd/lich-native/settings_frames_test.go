@@ -12,6 +12,14 @@ import (
 // window frames it: its dialogs first, then the screen.
 func settingsFrames(t *testing.T, section string) (*settingsScreen, *frameRig) {
 	t.Helper()
+	s, r, _ := settingsFramesOn(t, section)
+	return s, r
+}
+
+// settingsFramesOn is settingsFrames with the fake backend it draws over, for
+// a test that reads what a row stored.
+func settingsFramesOn(t *testing.T, section string) (*settingsScreen, *frameRig, *sidebarBackend) {
+	t.Helper()
 	r := newFrameRig(rigWindow, nil)
 	f, client := newSidebarBackend(t)
 	twoInstalled(f)
@@ -33,5 +41,5 @@ func settingsFrames(t *testing.T, section string) (*settingsScreen, *frameRig) {
 			return D{Size: gtx.Constraints.Max}
 		})
 	}
-	return s, r
+	return s, r, f
 }

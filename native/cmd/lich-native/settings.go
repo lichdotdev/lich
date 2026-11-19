@@ -85,17 +85,19 @@ type settingsScreen struct {
 	// revealing is the row reveal asked for, lit on the next frame.
 	revealing *settingHit
 
-	general    generalSwitches
-	languages  languageMenus
-	notify     *notifier
-	sandbox    sandboxSettings
-	vcs        vcsSettings
-	help       helpSettings
-	hotkeys    hotkeyEditor
-	updates    updatesSettings
-	providers  providerSettings
-	services   servicesSettings
-	extensions extensionsSettings
+	general   generalSwitches
+	languages languageMenus
+	notify    *notifier
+	sandbox   sandboxSettings
+	vcs       vcsSettings
+	help      helpSettings
+	hotkeys   hotkeyEditor
+	updates   updatesSettings
+	providers providerSettings
+	// sessionView is the view new sessions open in, on the Providers page.
+	sessionView sessionViewSetting
+	services    servicesSettings
+	extensions  extensionsSettings
 }
 
 func newSettingsScreen(ctx context.Context, c *backend.Client, root *ui.Root, invalidate func()) *settingsScreen {
@@ -436,6 +438,9 @@ func (u *window) loadSettings() error {
 	}
 	u.git.detail.split = prefs.split()
 	if err := u.settings.loadHotkeys(); err != nil {
+		return err
+	}
+	if err := u.settings.loadSessionView(); err != nil {
 		return err
 	}
 	return u.settings.load()

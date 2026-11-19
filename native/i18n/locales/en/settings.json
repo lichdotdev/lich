@@ -731,5 +731,12 @@
       "readFailed": "Couldn't read the lich catalog. Installing from a GitHub URL still works.",
       "noMatch": "No extension matches."
     }
+  },
+  "sessionViewSetting": {
+    "title": "New sessions open as",
+    "description": "A new session starts as a chat, or in its agent's terminal. A provider without a chat opens its terminal either way, and GUI | TUI switches any session later.",
+    "chat": "Chat",
+    "terminal": "Terminal",
+    "searchWords": "gui tui view chat terminal default new session open"
   }
 }

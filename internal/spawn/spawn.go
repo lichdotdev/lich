@@ -136,6 +136,8 @@ type Service struct {
 	worktrees Worktrees
 	term      Terminal
 	events    Events
+	// chat, when set, starts a session born drawn as a chat. See SetChat.
+	chat Chat
 	// open serializes Open. Every RPC call arrives on its own goroutine, and
 	// Open reads the project's label counter and writes it back — two of them at
 	// once read the same number and hand both sessions the same label, which is
@@ -145,6 +147,22 @@ type Service struct {
 
 func New(sessions Sessions, worktrees Worktrees, term Terminal, events Events) *Service {
 	return &Service{sessions: sessions, worktrees: worktrees, term: term, events: events}
+}
+
+// Chat is the chat service (internal/chat) as a spawn needs it: a session the
+// store drew as a chat at its birth has no terminal to start.
+type Chat interface {
+	// Drawn is whether session id is drawn as a chat.
+	Drawn(id string) bool
+	// Open starts session id's chat and returns once its conversation is
+	// open, so a task sent right after is queued, not lost.
+	Open(ctx context.Context, id string) error
+}
+
+// SetChat wires the chat service. Without it every session starts its
+// terminal, which is what every test that does not wire it gets.
+func (s *Service) SetChat(c Chat) {
+	s.chat = c
 }
 
 type OpenOptions = api.OpenSessionOptions
@@ -308,7 +326,11 @@ func (s *Service) openSession(ctx context.Context, req request) (Session, error)
 	}
 	callerErr := s.fileCaller(target, callerToFile, folder)
 	markErr := s.markSubagent(id, label, req)
-	if _, err := s.term.Start(context.Background(), api.StartOptions{ID: id, ProjectID: target.ID, Cwd: cwd, Kind: kind, Cols: startCols, Rows: startRows}); err != nil {
+	if s.chat != nil && s.chat.Drawn(id) {
+		if err := s.chat.Open(context.Background(), id); err != nil {
+			return Session{}, fmt.Errorf("session %q was created but its chat did not start: %w", label, err)
+		}
+	} else if _, err := s.term.Start(context.Background(), api.StartOptions{ID: id, ProjectID: target.ID, Cwd: cwd, Kind: kind, Cols: startCols, Rows: startRows}); err != nil {
 		return Session{}, fmt.Errorf("session %q was created but its terminal did not start: %w", label, err)
 	}
 	if err := errors.Join(callerErr, overrideErr, colorErr, markErr); err != nil {

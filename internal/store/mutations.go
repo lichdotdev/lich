@@ -165,11 +165,14 @@ func (s *Service) addSession(
 	// The profile is a birth value like the model: the project's setting moving
 	// later does not move a session that already has a conversation.
 	profile := s.bornProfile(kind, projectID)
+	// With the row for the sandbox's reason: the first spawn reads it, a chat's
+	// or a terminal's.
+	view := s.bornView(kind)
 	return s.tx(func(tx *sql.Tx) error {
 		if _, err := tx.Exec(
-			`INSERT INTO sessions (id, project_id, label, kind, path, origin_session_id, origin_label, sandbox, folder, profile, position)
-			 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, `+nextSessionPosition+`)`,
-			sessionID, projectID, label, kind, path, originID, originLabel, sandbox, folder, profile, projectID,
+			`INSERT INTO sessions (id, project_id, label, kind, path, origin_session_id, origin_label, sandbox, folder, profile, view, position)
+			 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, `+nextSessionPosition+`)`,
+			sessionID, projectID, label, kind, path, originID, originLabel, sandbox, folder, profile, view, projectID,
 		); err != nil {
 			return fmt.Errorf("insert session %q: %w", sessionID, err)
 		}
@@ -862,8 +865,10 @@ func (s *Service) InheritSubagent(sessionID, forkedFrom string) error {
 
 // MarkForked records that opts.ID was born branching its origin's
 // conversation, written by the window that opens the fork along with the row.
+// A fork is drawn as its terminal whatever SessionViewKey says: its first start
+// branches the conversation, which only the terminal's resume flag does.
 func (s *Service) MarkForked(_ context.Context, opts api.SessionIDOptions) (api.None, error) {
-	if _, err := s.db.Exec(`UPDATE sessions SET forked = 1 WHERE id = ?`, opts.ID); err != nil {
+	if _, err := s.db.Exec(`UPDATE sessions SET forked = 1, view = '' WHERE id = ?`, opts.ID); err != nil {
 		return api.None{}, fmt.Errorf("mark %q forked: %w", opts.ID, err)
 	}
 	return api.None{}, nil

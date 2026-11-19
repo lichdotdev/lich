@@ -724,5 +724,12 @@
       "readFailed": "lich 카탈로그를 읽지 못했습니다. GitHub URL로 설치하는 방법은 계속 쓸 수 있습니다.",
       "noMatch": "일치하는 확장 프로그램이 없습니다."
     }
+  },
+  "sessionViewSetting": {
+    "title": "새 세션 열기 방식",
+    "description": "새 세션은 채팅으로 시작하거나 에이전트의 터미널에서 시작합니다. 채팅이 없는 프로바이더는 어느 쪽이든 터미널로 열리며, 나중에 GUI | TUI로 어떤 세션이든 바꿀 수 있습니다.",
+    "chat": "채팅",
+    "terminal": "터미널",
+    "searchWords": "gui tui 보기 채팅 터미널 기본 새 세션"
   }
 }

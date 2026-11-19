@@ -5,6 +5,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/relay"
 )
 
@@ -32,6 +33,9 @@ func (s *Service) claimWhenFree(ctx context.Context, id string) (func(), error) 
 		}
 	}
 }
+
+// Drawn is whether session id is drawn as a chat (spawn.Chat).
+func (s *Service) Drawn(id string) bool { return s.store.SessionView(id) == api.ViewChat }
 
 // Open starts session id's chat on its conversation, unless it runs already,
 // and returns once the conversation is open.

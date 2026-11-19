@@ -82,3 +82,25 @@ func TestASubmittedHandoffReachesAChat(t *testing.T) {
 	}
 	r.eventually("the agent to read the handoff", func() bool { return strings.Contains(r.fakeLog(), "handed-off-3") })
 }
+
+// A session born drawn as a chat opens straight into it, and a task sent the
+// moment Open returns reaches its agent.
+func TestABornChatTakesItsFirstTask(t *testing.T) {
+	r := newRig(t, providers.Claude)
+	r.db.SetChatKinds(func(kind string) bool { return kind == providers.Claude })
+	if _, err := r.db.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s2", Label: "Born", Kind: providers.Claude, NextSeq: 3}); err != nil {
+		t.Fatal(err)
+	}
+	if !r.svc.Drawn("s2") {
+		t.Fatal("the new session was not born drawn as a chat")
+	}
+	t.Cleanup(func() { r.svc.End("s2") })
+	if err := r.svc.Open(t.Context(), "s2"); err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	rl := relay.New(r.db, r.term, nil)
+	if _, err := rl.Send(t.Context(), relay.SendOptions{Target: "Born", Prompt: "first-task-9", WaitSeconds: 1}); err != nil {
+		t.Fatalf("Send: %v", err)
+	}
+	r.eventually("the agent to read its first task", func() bool { return strings.Contains(r.fakeLog(), "first-task-9") })
+}

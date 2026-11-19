@@ -95,8 +95,9 @@ func (s *settingsScreen) providerPaneClicks(gtx C) {
 	}
 }
 
-// providerListRows are the list: the default provider, the enabled providers
-// each a row that opens its screen, and the fold of the ones that are off.
+// providerListRows are the list: the default provider, the view new sessions
+// open in, the enabled providers each a row that opens its screen, and the
+// fold of the ones that are off.
 func (s *settingsScreen) providerListRows(th *ui.Theme, values scopedValues, m providersMachine, base int) []layout.Widget {
 	pr := &s.providers
 	enabled := m.enabled()
@@ -114,7 +115,9 @@ func (s *settingsScreen) providerListRows(th *ui.Theme, values scopedValues, m p
 	var rows []layout.Widget
 	if len(enabled) > 0 {
 		s.scrollToBlock(i18n.T("settings.providersPane.defaultTitle"), base+len(rows))
-		rows = append(rows, func(gtx C) D { return s.providerDefaultRow(gtx, th, values, m, true) },
+		rows = append(rows, func(gtx C) D { return s.providerDefaultRow(gtx, th, values, m, true) })
+		s.scrollToBlock(sessionViewEntry.titleText(), base+len(rows))
+		rows = append(rows, func(gtx C) D { return s.sessionViewRow(gtx, th, values, false) },
 			func(gtx C) D {
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx, layout.Rigid(th.Separator), ui.VGap(4))
 			})

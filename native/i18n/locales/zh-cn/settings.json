@@ -730,5 +730,12 @@
       "readFailed": "无法读取 lich 目录。仍可通过 GitHub URL 安装。",
       "noMatch": "没有匹配的扩展。"
     }
+  },
+  "sessionViewSetting": {
+    "title": "新会话打开方式",
+    "description": "新会话以聊天开始，或在智能体的终端中开始。没有聊天的提供商无论如何都在终端中打开，之后可用 GUI | TUI 切换任意会话。",
+    "chat": "聊天",
+    "terminal": "终端",
+    "searchWords": "gui tui 视图 聊天 终端 默认 新会话 打开"
   }
 }

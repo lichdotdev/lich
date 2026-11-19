@@ -125,6 +125,7 @@ func kindsWhere(has func(kind string) bool) []string {
 func providerEntries() []settingEntry {
 	entries := []settingEntry{
 		{titleKey: "settings.providersPane.defaultTitle", alsoKey: "settings.providersPane.defaultSearchWords", key: providerDefaultKey, scope: scopeOverridable},
+		sessionViewEntry,
 		{titleKey: "settings.settingsProfiles.title", alsoKey: claudeProfileProvider.words.searchAlsoKey, key: claudeProfileKey, scope: scopeOverridable, perProvider: true, onlyFor: []string{claudeKind}},
 		{titleKey: "settings.settingsProfiles.profilesTitle", alsoKey: claudeProfileProvider.words.profilesAlsoKey, perProvider: true, onlyFor: []string{claudeKind}},
 		{titleKey: "settings.settingsProfiles.title", alsoKey: codexProfileProvider.words.searchAlsoKey, key: codexProfileKey, scope: scopeOverridable, perProvider: true, onlyFor: []string{codexKind}},

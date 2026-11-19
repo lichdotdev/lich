@@ -429,6 +429,8 @@ func registerServices(db *store.Service, term *terminal.Service, chats *chat.Ser
 	}
 	updates := appupdate.New(version, coord.Install, hub.Emit)
 	db.SetSessionGate(updates.RequiredUpdate)
+	// A new session is drawn as a chat where its provider has one.
+	db.SetChatKinds(func(kind string) bool { return slices.Contains(chat.Kinds, kind) })
 	routes.AppUpdate(dispatcher, updates)
 	routes.PatchNotes(dispatcher, patchnotes.New(version, changelog, changelogTranslations))
 	routes.Store(dispatcher, db)
@@ -585,6 +587,9 @@ func registerServices(db *store.Service, term *terminal.Service, chats *chat.Ser
 	// Its caller is not the window either: opening a session for an agent starts
 	// the PTY here rather than waiting for someone to click the card.
 	spawner := spawn.New(db, proj, term, hub)
+	// A session the store drew as a chat at its birth starts its chat, not a
+	// terminal.
+	spawner.SetChat(chats)
 	// A subagent worker in its caller's checkout closes once it reported and
 	// its turn ended, the way a native subagent ends with its result.
 	rl.SetWorkerFinished(spawner.CloseFinishedWorker)

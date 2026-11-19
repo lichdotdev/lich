@@ -234,6 +234,9 @@ type Service struct {
 	db *sql.DB
 	// sessionGate, when set, may refuse a new session. See SetSessionGate.
 	sessionGate func() error
+	// chatKinds, when set, says which providers can be drawn as a chat. See
+	// SetChatKinds.
+	chatKinds func(kind string) bool
 	// sessionGone, when set, is told the files key of every session whose row
 	// is deleted for good. See SetSessionGone.
 	sessionGone func(filesKey string)
