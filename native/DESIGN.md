@@ -380,7 +380,7 @@ header between the name and the zoom button, and the pane's terminal keeps every
 
 ### The editor
 
-Draft, to be validated in a real window. A file opened from the Code tab, a `path:line` in a terminal or an
+A file opened from the Code tab, a `path:line` in a terminal or an
 agent's `show_code` takes the whole stage, in place of the session, as a service's console does
 (`stage_editor*.go`). The dock stays beside it, its Code tab the tree and the search.
 
