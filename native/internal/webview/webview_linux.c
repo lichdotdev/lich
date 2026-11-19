@@ -21,14 +21,20 @@ static int has_dri3(void) {
 }
 
 int lich_webview_init(void) {
+	// Under NVIDIA's PRIME offload (prime-run) WebKit's DMA-BUF buffers and the
+	// GL that shows them land on different GPUs and the page stays black, while
+	// turning DMA-BUF off copies every frame through the X server. Pages draw on
+	// the display's GPU instead; the window has already chosen its own.
+	unsetenv("__NV_PRIME_RENDER_OFFLOAD");
+	unsetenv("__GLX_VENDOR_LIBRARY_NAME");
+	unsetenv("__VK_LAYER_NV_optimus");
 	gdk_set_allowed_backends("x11");
 	if (!gtk_init_check(NULL, NULL)) {
 		return 0;
 	}
 	// WebKit's DMA-BUF renderer leaves pages black on an X server without
-	// DRI3, such as Xvfb, and under NVIDIA's PRIME offload, where the buffers
-	// and the GL that shows them sit on different GPUs.
-	if (!has_dri3() || getenv("__NV_PRIME_RENDER_OFFLOAD")) {
+	// DRI3, such as Xvfb.
+	if (!has_dri3()) {
 		setenv("WEBKIT_DISABLE_DMABUF_RENDERER", "1", 0);
 	}
 	return 1;
