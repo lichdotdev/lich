@@ -291,7 +291,7 @@ func (f *footer) slot(gtx C, th *ui.Theme, s footerSlot, in footerInput) D {
 	}
 	switch s.ID {
 	case "attach":
-		return footerButton(gtx, th, f.root, w, i18n.T("shell.footerBar.attachFile"), false, in.sessionID == "", iconOnly(icAttach))
+		return f.attachButton(gtx, th, in, icAttach)
 	case "changes":
 		return f.tour.Anchor(gtx, tourReviewChip, func(gtx C) D {
 			return footerButton(gtx, th, f.root, w, i18n.T("shell.footerBar.reviewChanges"), true, false, changesContent(in.git))
@@ -322,6 +322,11 @@ func (f *footer) slot(gtx C, th *ui.Theme, s footerSlot, in footerInput) D {
 		return layout.Inset{Left: ui.Space(2), Right: ui.Space(2)}.Layout(gtx, th.Text(ui.TextXS, s.Text).Muted().Layout)
 	}
 	return f.readout(gtx, th, w, s, in)
+}
+
+// attachButton is the attach item drawn with glyph.
+func (f *footer) attachButton(gtx C, th *ui.Theme, in footerInput, glyph icons.Glyph) D {
+	return footerButton(gtx, th, f.root, f.w("attach"), i18n.T("shell.footerBar.attachFile"), false, in.sessionID == "", iconOnly(glyph))
 }
 
 // readout draws the readings that carry a tooltip.

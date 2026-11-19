@@ -20,5 +20,17 @@
     "placeholder": "{provider}에게 메시지…",
     "send": "보내기",
     "stop": "중지"
+  },
+  "option": {
+    "model": "모델",
+    "effort": "추론 강도",
+    "mode": "모드",
+    "busy": "턴이 끝난 뒤에 바꿀 수 있습니다."
+  },
+  "choice": {
+    "manual": "수동",
+    "plan": "계획",
+    "auto": "자동",
+    "yolo": "YOLO"
   }
 }

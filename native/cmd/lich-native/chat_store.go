@@ -18,6 +18,7 @@ type chatStore struct {
 	kinds     []string
 	items     map[string][]backend.ChatItem
 	running   map[string]bool
+	options   map[string][]backend.ChatOption
 	switching map[string]string
 }
 
@@ -74,6 +75,29 @@ func (s *chatStore) turn(t api.ChatTurn) {
 		s.running = map[string]bool{}
 	}
 	s.running[t.SessionID] = t.Running
+}
+
+// setOptions takes session id's options whole, as ChatOptions or the options
+// event left them.
+func (s *chatStore) setOptions(id string, options []backend.ChatOption) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.options == nil {
+		s.options = map[string][]backend.ChatOption{}
+	}
+	s.options[id] = slices.Clone(options)
+}
+
+// optionOf is the option of session id in category that offers a choice,
+// false when its provider offers none.
+func (s *chatStore) optionOf(id, category string) (backend.ChatOption, bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	i := slices.IndexFunc(s.options[id], func(o backend.ChatOption) bool { return o.Category == category && len(o.Choices) > 0 })
+	if i < 0 {
+		return backend.ChatOption{}, false
+	}
+	return s.options[id][i], true
 }
 
 // holds reports whether session id's conversation was read or heard.
@@ -140,6 +164,10 @@ func (m *model) chatEvent(ctx context.Context, ev backend.Event) {
 		if t, err := backend.Decode(ev, api.ChatTurnEvent); err == nil {
 			m.chat.turn(t)
 		}
+	case api.ChatOptionsEvent.Name:
+		if u, err := backend.Decode(ev, api.ChatOptionsEvent); err == nil {
+			m.chat.setOptions(u.SessionID, u.Options)
+		}
 	case api.SessionViewEvent.Name:
 		if v, err := backend.Decode(ev, api.SessionViewEvent); err == nil {
 			m.applyView(ctx, v)
@@ -198,4 +226,10 @@ func (m *model) loadChat(ctx context.Context, id string) {
 		return
 	}
 	m.chat.history(id, items)
+	options, err := m.client.ChatOptions(ctx, id)
+	if err != nil {
+		log.Printf("chat options of %s: %v", id, err)
+		return
+	}
+	m.chat.setOptions(id, options)
 }

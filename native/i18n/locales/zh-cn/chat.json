@@ -20,5 +20,17 @@
     "placeholder": "给 {provider} 发消息…",
     "send": "发送",
     "stop": "停止"
+  },
+  "option": {
+    "model": "模型",
+    "effort": "思考强度",
+    "mode": "模式",
+    "busy": "请等本轮结束后再更改。"
+  },
+  "choice": {
+    "manual": "手动",
+    "plan": "计划",
+    "auto": "自动",
+    "yolo": "YOLO"
   }
 }

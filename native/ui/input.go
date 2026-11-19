@@ -50,7 +50,11 @@ const (
 )
 
 // inputState is what the aria and :focus-visible classes of an input select on.
-type inputState struct{ focused, invalid, disabled, bare bool }
+type inputState struct {
+	focused, invalid, disabled, bare bool
+	// radius is the frame's corner, RadiusMD when 0.
+	radius unit.Dp
+}
 
 // inputPaint is the box's three layers, opaque, or transparent where a layer
 // is not drawn.
@@ -335,6 +339,9 @@ func inputFrame(gtx C, th *Theme, editor *widget.Editor, st inputState, borderle
 	st.focused = gtx.Focused(editor)
 	col := inputPaintFor(th, st, borderless)
 	radius := gtx.Dp(RadiusMD)
+	if st.radius > 0 {
+		radius = gtx.Dp(st.radius)
+	}
 	if col.ring.A != 0 {
 		inputStroke(gtx, d.Size, radius, float32(gtx.Dp(inputRingWidth)), true, col.ring)
 	}
