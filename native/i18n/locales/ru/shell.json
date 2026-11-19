@@ -106,6 +106,16 @@
     "extraUsage": "Дополнительное использование",
     "extraOf": "{used} из {limit}",
     "extraNoLimit": "{used} · без лимита",
+    "resets": "Сбросы",
+    "resetsLeft": {
+      "one": "Осталось {count}",
+      "few": "Осталось {count}",
+      "many": "Осталось {count}",
+      "other": "Осталось {count}"
+    },
+    "resetFull": "Полный",
+    "resetUntil": "до {day} {month}",
+    "shortMonths": "янв.,февр.,март,апр.,мая,июня,июля,авг.,сент.,окт.,нояб.,дек.",
     "resetCredits": "Кредиты сброса",
     "resetCreditsAvailable": {
       "one": "{count} доступен",

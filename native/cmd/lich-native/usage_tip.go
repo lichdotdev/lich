@@ -2,7 +2,9 @@ package main
 
 import (
 	"cmp"
+	"fmt"
 	"slices"
+	"strings"
 	"time"
 
 	"gioui.org/layout"
@@ -44,6 +46,9 @@ func usageBlocks(th *ui.Theme, plan backend.QuotaPlan, now time.Time) []layout.W
 	}
 	if plan.Extra != nil {
 		blocks = append(blocks, extraBlock(th, *plan.Extra, i18n.Current()))
+	}
+	if resets := liveResets(plan.Resets, now); len(resets) > 0 {
+		blocks = append(blocks, resetsBlock(th, resets, now))
 	}
 	if plan.ResetCredits > 0 {
 		blocks = append(blocks, tipRow(th, contextRow{
@@ -102,4 +107,67 @@ func extraBlock(th *ui.Theme, e backend.QuotaExtra, l i18n.Locale) layout.Widget
 		parts = append(parts, func(gtx C) D { return th.SegmentedBar(gtx, percent, contextSegments, contextBarColor(th, percent)) })
 	}
 	return ui.Stack(usageLineGap, parts...)
+}
+
+// liveResets are the grants with resets left that have not lapsed at now. The
+// backend leaves out what had lapsed when it read, and a reading is up to five
+// minutes old.
+func liveResets(resets []backend.QuotaReset, now time.Time) []backend.QuotaReset {
+	return slices.DeleteFunc(slices.Clone(resets), func(r backend.QuotaReset) bool {
+		ends, err := time.Parse(time.RFC3339, r.EndsAt)
+		return r.Left <= 0 || err != nil || !ends.After(now)
+	})
+}
+
+// resetsBlock is the limit resets the account can spend: how many are left over
+// all grants at the right of the title, then a line per grant. It only shows
+// them: spending one cannot be undone, and nothing here does it.
+func resetsBlock(th *ui.Theme, resets []backend.QuotaReset, now time.Time) layout.Widget {
+	total := 0
+	for _, r := range resets {
+		total += r.Left
+	}
+	parts := []layout.Widget{tipHead(th, i18n.T("shell.planQuota.resets"), i18n.T("shell.planQuota.resetsLeft", i18n.Args{"count": total}))}
+	for _, r := range resets {
+		parts = append(parts, resetRow(th, r))
+	}
+	return ui.Stack(usageLineGap, parts...)
+}
+
+// resetName is the grant's name in the interface language: lich's own for a
+// grant that clears the whole week, the provider's verbatim for the rest.
+func resetName(r backend.QuotaReset) string {
+	if r.Kind == api.QuotaResetFull {
+		return i18n.T("shell.planQuota.resetFull")
+	}
+	return r.Label
+}
+
+// resetRow is a grant: its name at the left, "×2 until Dec 10" at the right. A
+// grant that cannot be spent now is muted whole.
+func resetRow(th *ui.Theme, r backend.QuotaReset) layout.Widget {
+	text := func(s string) ui.LabelStyle {
+		if r.Held {
+			return th.Text(ui.TextXS, s).Muted()
+		}
+		return th.Text(ui.TextXS, s)
+	}
+	until, _ := time.Parse(time.RFC3339, r.EndsAt)
+	return func(gtx C) D {
+		gtx.Constraints.Min.X = gtx.Constraints.Max.X
+		return layout.Flex{Alignment: layout.Baseline}.Layout(gtx,
+			layout.Rigid(text(resetName(r)).Layout),
+			layout.Flexed(1, func(gtx C) D { return D{Size: gtx.Constraints.Min} }),
+			layout.Rigid(text(fmt.Sprintf("×%d", r.Left)).Layout),
+			layout.Rigid(th.Text(ui.TextXS, " "+shortUntil(until)).Muted().Layout),
+		)
+	}
+}
+
+// shortUntil is "until Dec 10" for the day t falls on in the machine's own
+// time zone, with the month spelled in the interface language.
+func shortUntil(t time.Time) string {
+	t = t.In(time.Local)
+	months := strings.Split(i18n.T("shell.planQuota.shortMonths"), ",")
+	return i18n.T("shell.planQuota.resetUntil", i18n.Args{"month": months[int(t.Month())-1], "day": t.Day()})
 }

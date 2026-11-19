@@ -230,7 +230,7 @@ func (q *planQuota) refresh(key string, e *quotaEntry) {
 func sameQuota(a, b []backend.QuotaPlan) bool {
 	return slices.EqualFunc(a, b, func(p, o backend.QuotaPlan) bool {
 		return p.Provider == o.Provider && p.Status == o.Status && p.Plan == o.Plan && p.Account == o.Account &&
-			p.ResetCredits == o.ResetCredits && sameExtra(p.Extra, o.Extra) &&
+			p.ResetCredits == o.ResetCredits && sameExtra(p.Extra, o.Extra) && slices.Equal(p.Resets, o.Resets) &&
 			slices.EqualFunc(p.Windows, o.Windows, func(w, v backend.QuotaWindow) bool {
 				return w.Label == v.Label && w.Percent == v.Percent && w.Seconds == v.Seconds && w.ResetsAt == v.ResetsAt &&
 					w.RunsOutAt == v.RunsOutAt

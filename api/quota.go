@@ -43,7 +43,24 @@ type QuotaPlan struct {
 	// the account reset on demand; 0 is none or not reported.
 	Extra        *QuotaExtra `json:"extra,omitempty"`
 	ResetCredits int         `json:"resetCredits,omitempty"`
-	Status       string      `json:"status"`
+	// Resets are the limit resets Claude Code lets the account spend: one entry
+	// per grant still good, empty when the account is not offered any.
+	Resets []QuotaReset `json:"resets,omitempty"`
+	Status string       `json:"status"`
+}
+
+// QuotaReset is one grant of limit resets. Kind names a grant lich names itself
+// (QuotaResetFull), which the window translates; Label is the provider's own
+// name for the rest, shown verbatim (a model a grant is scoped to, or the
+// grant's own text); empty when Kind is set. Left is how many resets remain,
+// EndsAt when the grant lapses, RFC 3339. Held is a grant that cannot be spent
+// now: paused, or not usable at the moment.
+type QuotaReset struct {
+	Kind   string `json:"kind,omitempty"`
+	Label  string `json:"label,omitempty"`
+	Left   int    `json:"left"`
+	EndsAt string `json:"endsAt"`
+	Held   bool   `json:"held,omitempty"`
 }
 
 // QuotaExtra is the spend past a plan's windows, in the currency's minor units
@@ -90,3 +107,7 @@ const (
 	QuotaWindowOtherModels  = "otherModels"
 	QuotaWindowOnDemand     = "onDemand"
 )
+
+// QuotaResetFull is a grant that clears the weekly window too, not only a
+// scoped one.
+const QuotaResetFull = "full"

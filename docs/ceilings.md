@@ -405,6 +405,17 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   currency symbol is known for five currencies; any other shows its ISO code. Codex's payload also carries an
   `applicable_available_count` beside the count lich reads, which says how many credits fit the window in hand;
   lich reads and shows the first.
+- **Claude Code's limit resets are listed, never spent, and appear only while the server believes lich is the CLI**
+  (`internal/quota/claude.go`, `resets`; the usage tooltip): the grants come in the usage route's `cedar_ember`
+  block, which the server fills only for the user agent the CLI itself sends and a version it still supports. The
+  agent lich sends is therefore `claude-cli/2.1.328 (external, cli)`, a spelling that has to be bumped when the
+  server raises its floor: until it is, `eligible` reads false (`ineligible_reason: "cli_version"`) and the block
+  silently disappears while the windows keep reading. Only Claude Code has grants, and a `claude setup-token` login
+  has none (its windows come off headers). A grant is named for what it clears: "Full" for the weekly window, the
+  model of the plan's scoped weekly cap for a model-scoped one (the server's own label when the plan has no such
+  cap); the "N left" counts held grants too. Nothing in the window spends a reset, because it cannot be undone. The
+  request does not send `skip_spend=1` as the CLI does: measured live, it removes the `extra_usage` block
+  altogether, and with it the extra spend the tooltip shows.
 - **Measuring a token-only Claude Code login costs a request against the very plan it measures**
   (`internal/quota/claude.go`): the usage route refuses a `claude setup-token` token, so the gauge reads that
   account the way Claude Code reads it for itself, with one message (`docs/providers/claude.md`, Account).
