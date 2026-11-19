@@ -66,6 +66,9 @@ type claudeLine struct {
 	Result   string   `json:"result"`
 	Errors   []string `json:"errors"`
 	Terminal string   `json:"terminal_reason"`
+	// the tool's own reading of its result, live and in the transcript
+	ToolResult  json.RawMessage `json:"tool_use_result"`
+	SavedResult json.RawMessage `json:"toolUseResult"`
 	// transcript
 	Sidechain bool   `json:"isSidechain"`
 	Meta      bool   `json:"isMeta"`
@@ -272,6 +275,15 @@ func readClaudeAssistant(c *chatSession, d *claudeDriver, line claudeLine, histo
 				c.conv.put(api.ChatItem{ID: id, Kind: api.ItemThought, Text: b.Thinking, At: stamp(line.Timestamp), Model: model, Effort: effort}, true)
 			}
 		case "tool_use":
+			if b.Name == claudeQuestionTool {
+				q, _ := readClaudeQuestion(b.Input)
+				c.conv.update(b.ID, api.ItemQuestion, true, func(it *api.ChatItem) {
+					if it.Question == nil {
+						it.Question, it.At, it.Model, it.Effort = &q, stamp(line.Timestamp), model, effort
+					}
+				})
+				continue
+			}
 			tool := claudeTool(b.Name, b.Input)
 			tool.State = api.ToolRunning
 			c.conv.put(api.ChatItem{ID: b.ID, Kind: api.ItemTool, Tool: &tool, At: stamp(line.Timestamp), Model: model, Effort: effort}, true)
@@ -307,8 +319,15 @@ func readClaudeUser(c *chatSession, line claudeLine, history bool) {
 	if json.Unmarshal(line.Message.Content, &blocks) != nil {
 		return
 	}
+	result := line.ToolResult
+	if len(result) == 0 {
+		result = line.SavedResult
+	}
 	for _, b := range blocks {
+		it, _ := c.conv.get(b.ToolUseID)
 		switch {
+		case b.Type == "tool_result" && it.Kind == api.ItemQuestion && it.Question != nil:
+			readClaudeQuestionResult(c, it, b, result)
 		case b.Type == "tool_result":
 			c.conv.update(b.ToolUseID, api.ItemTool, true, func(it *api.ChatItem) {
 				if it.Tool == nil {
@@ -372,7 +391,7 @@ type claudeAsk struct {
 }
 
 // request answers what Claude Code asks of lich: can_use_tool becomes a
-// permission item, and anything else is refused, which is what the protocol
+// permission item, or a question item for AskUserQuestion, and anything else is refused, which is what the protocol
 // expects of a client that does not serve it.
 func (d *claudeDriver) request(id string, raw json.RawMessage) {
 	var ask claudeAsk
@@ -383,16 +402,20 @@ func (d *claudeDriver) request(id string, raw json.RawMessage) {
 		}})
 		return
 	}
-	options := []api.ChatPermitOption{{ID: api.PermitAllowOnce, Kind: api.PermitAllowOnce}}
-	if len(ask.Suggestions) > 0 {
-		options = append(options, api.ChatPermitOption{ID: api.PermitAllowAlways, Kind: api.PermitAllowAlways})
-	}
-	options = append(options, api.ChatPermitOption{ID: api.PermitRejectOnce, Kind: api.PermitRejectOnce})
 	respond := func(behavior map[string]any) error {
 		return d.c.out.send(map[string]any{"type": "control_response", "response": map[string]any{
 			"subtype": "success", "request_id": id, "response": behavior,
 		}})
 	}
+	if ask.Tool == claudeQuestionTool {
+		d.askQuestion(ask, respond)
+		return
+	}
+	options := []api.ChatPermitOption{{ID: api.PermitAllowOnce, Kind: api.PermitAllowOnce}}
+	if len(ask.Suggestions) > 0 {
+		options = append(options, api.ChatPermitOption{ID: api.PermitAllowAlways, Kind: api.PermitAllowAlways})
+	}
+	options = append(options, api.ChatPermitOption{ID: api.PermitRejectOnce, Kind: api.PermitRejectOnce})
 	deny := func() error {
 		return respond(map[string]any{"behavior": "deny", "message": prompt.For(d.lang).ChatPermissionDenied})
 	}

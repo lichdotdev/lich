@@ -82,11 +82,12 @@ type chatSession struct {
 	since   time.Time
 	// before is the checkout as the turn in flight found it, nil where it
 	// could not be read.
-	before *project.Lines
-	perms  map[string]permission
-	exited chan struct{}
-	bound  string
-	opts   []api.ChatOption
+	before    *project.Lines
+	perms     map[string]permission
+	questions map[string]question
+	exited    chan struct{}
+	bound     string
+	opts      []api.ChatOption
 }
 
 // wire writes one JSON value per line to a provider's stdin.
@@ -210,6 +211,7 @@ func (c *chatSession) endTurn(reason string) {
 // dismissPermissions answers no to every question still waiting, which a
 // cancel does first: ACP has the agent wait on the answer before it stops.
 func (c *chatSession) dismissPermissions() {
+	c.declineQuestions()
 	c.mu.Lock()
 	perms := c.perms
 	c.perms = map[string]permission{}

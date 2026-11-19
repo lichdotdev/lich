@@ -135,6 +135,8 @@ func (f *fake) claudeTurn(run *fakeClaude, text string) {
 		reply := f.next()
 		msg("m4", map[string]any{"type": "text", "text": str(reply, "response", "response", "behavior")})
 		f.claudeResult(false, "completed", "")
+	case "question", "question-then-write":
+		f.claudeQuestion(msg, text == "question-then-write")
 	case "slow":
 		msg("m5", map[string]any{"type": "text", "text": "counting"})
 		if m := f.next(); str(m, "request", "subtype") == "interrupt" {
@@ -297,6 +299,44 @@ func (f *fake) claudeEdit(commit bool) {
 	if commit {
 		_ = exec.Command("git", "add", "-A").Run()
 		_ = exec.Command("git", "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-m", "turn").Run()
+	}
+	f.claudeResult(false, "completed", "")
+}
+
+// fakeQuestions is what the fake asks with AskUserQuestion: a single choice
+// with a preview, a multiple choice and a free-text question.
+var fakeQuestions = map[string]any{"questions": []any{
+	map[string]any{"question": "Which fruit?", "header": "Fruit", "multiSelect": false, "options": []any{
+		map[string]any{"label": "Apple", "description": "red"}, map[string]any{"label": "Pear", "preview": "pear()"},
+	}},
+	map[string]any{"question": "Which colors?", "header": "Colors", "multiSelect": true, "options": []any{
+		map[string]any{"label": "Red"}, map[string]any{"label": "Green"}, map[string]any{"label": "Blue"},
+	}},
+	map[string]any{"question": "Anything else?", "header": "Notes", "options": []any{}},
+}}
+
+// claudeQuestion asks AskUserQuestion the way Claude Code does (measured on
+// 2.1.328): the tool_use first, then its can_use_tool. It writes back what the
+// answer allowed or denied and, with write, the message that followed a deny.
+func (f *fake) claudeQuestion(msg func(string, map[string]any), write bool) {
+	msg("mq", map[string]any{"type": "tool_use", "id": "toolu_q", "name": "AskUserQuestion", "input": fakeQuestions})
+	f.send(map[string]any{"type": "control_request", "request_id": "r3", "request": map[string]any{
+		"subtype": "can_use_tool", "tool_name": "AskUserQuestion", "input": fakeQuestions, "tool_use_id": "toolu_q", "requires_user_interaction": true,
+	}})
+	reply := f.next()
+	response, _ := reply["response"].(map[string]any)
+	behavior, _ := response["response"].(map[string]any)
+	if str(behavior, "behavior") == "allow" {
+		updated, _ := behavior["updatedInput"].(map[string]any)
+		f.send(map[string]any{"type": "user", "message": map[string]any{"content": []any{map[string]any{"type": "tool_result", "tool_use_id": "toolu_q", "content": "answered"}}}, "tool_use_result": updated})
+		answers, _ := json.Marshal(updated["answers"])
+		msg("mq2", map[string]any{"type": "text", "text": "answers:" + string(answers)})
+	} else {
+		f.send(map[string]any{"type": "user", "message": map[string]any{"content": []any{map[string]any{"type": "tool_result", "tool_use_id": "toolu_q", "is_error": true, "content": str(behavior, "message")}}}})
+		msg("mq2", map[string]any{"type": "text", "text": "declined"})
+	}
+	if write {
+		msg("mq3", map[string]any{"type": "text", "text": "then:" + str(f.next(), "message", "content")})
 	}
 	f.claudeResult(false, "completed", "")
 }

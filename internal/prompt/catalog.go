@@ -140,4 +140,8 @@ type Catalog struct {
 	// internal/chat: what a chat's agent is told when the person answers its
 	// permission question no.
 	ChatPermissionDenied string
+	// ChatQuestionDeclined is what it is told when the person answers none of
+	// its questions: they pressed Esc or wrote a message instead, which
+	// follows as its own.
+	ChatQuestionDeclined string
 }
