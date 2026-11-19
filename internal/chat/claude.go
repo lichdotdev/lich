@@ -280,15 +280,25 @@ func readClaudeAssistant(c *chatSession, d *claudeDriver, line claudeLine, histo
 	}
 }
 
-// claudeInterrupted is the user line Claude Code writes when a turn is
-// interrupted (measured on 2.1.327): a marker, not something the person said.
-const claudeInterrupted = "[Request interrupted by user]"
+// The user lines Claude Code writes when a turn is interrupted, the second
+// when it was a tool call that was (measured on 2.1.327): markers, not
+// something the person said.
+const (
+	claudeInterrupted        = "[Request interrupted by user]"
+	claudeInterruptedForTool = "[Request interrupted by user for tool use]"
+)
+
+// isInterruptMarker is whether text is one of Claude Code's interrupt markers,
+// by equality: a message that merely mentions one is the person's.
+func isInterruptMarker(text string) bool {
+	return text == claudeInterrupted || text == claudeInterruptedForTool
+}
 
 func readClaudeUser(c *chatSession, line claudeLine, history bool) {
 	var text string
 	if json.Unmarshal(line.Message.Content, &text) == nil {
 		// Live, the person's message is already an item: lich wrote it.
-		if history {
+		if history && !isInterruptMarker(text) {
 			c.conv.userMessage(text)
 		}
 		return
@@ -310,7 +320,7 @@ func readClaudeUser(c *chatSession, line claudeLine, history bool) {
 				}
 				it.Tool.Output = shorten(blockText(b.Content))
 			})
-		case b.Type == "text" && history && b.Text != claudeInterrupted:
+		case b.Type == "text" && history && !isInterruptMarker(b.Text):
 			c.conv.userMessage(b.Text)
 		}
 	}
