@@ -214,11 +214,15 @@ func readClaudeMessage(c *chatSession, line claudeLine, history bool) {
 // stream reads a partial message: text and thinking as they arrive.
 func (d *claudeDriver) stream(line claudeLine) {
 	id := fmt.Sprintf("%s/%d", line.MessageID, line.Event.Index)
+	delta := line.Event.Delta
+	// A redacted thinking block streams empty deltas (measured on 2.1.327),
+	// which would draw an empty thought.
 	switch {
-	case line.Event.Type == "content_block_delta" && line.Event.Delta.Type == "text_delta":
-		d.c.conv.update(id, api.ItemAgent, false, func(it *api.ChatItem) { it.Text += line.Event.Delta.Text })
-	case line.Event.Type == "content_block_delta" && line.Event.Delta.Type == "thinking_delta":
-		d.c.conv.update(id, api.ItemThought, false, func(it *api.ChatItem) { it.Text += line.Event.Delta.Thinking })
+	case line.Event.Type != "content_block_delta":
+	case delta.Type == "text_delta" && delta.Text != "":
+		d.c.conv.update(id, api.ItemAgent, false, func(it *api.ChatItem) { it.Text += delta.Text })
+	case delta.Type == "thinking_delta" && delta.Thinking != "":
+		d.c.conv.update(id, api.ItemThought, false, func(it *api.ChatItem) { it.Text += delta.Thinking })
 	}
 }
 

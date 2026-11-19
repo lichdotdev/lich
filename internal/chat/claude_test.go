@@ -57,6 +57,11 @@ func TestClaudeSwitchRoundTrip(t *testing.T) {
 	if it := r.mustItem(api.ItemAgent, "Oi!"); it.Text != "Oi!" || it.Turn != 2 {
 		t.Errorf("answer = %+v, want the whole text in turn 2", it)
 	}
+	for _, it := range r.history() {
+		if it.Kind == api.ItemThought && it.Text == "" {
+			t.Error("a redacted thinking block became an empty thought")
+		}
+	}
 	if got := r.term.Status("s1").State; got != stateDone {
 		t.Errorf("card state = %q, want done", got)
 	}

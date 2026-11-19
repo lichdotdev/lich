@@ -104,6 +104,8 @@ func (f *fake) claudeTurn(text string) {
 	}
 	switch text {
 	case "hi":
+		f.send(map[string]any{"type": "stream_event", "api_message_id": "m0", "event": map[string]any{"type": "content_block_delta", "index": 0, "delta": map[string]any{"type": "thinking_delta", "thinking": ""}}})
+		msg("m0", map[string]any{"type": "thinking", "thinking": ""})
 		for _, part := range []string{"O", "i", "!"} {
 			f.send(map[string]any{"type": "stream_event", "api_message_id": "m1", "event": map[string]any{"type": "content_block_delta", "index": 0, "delta": map[string]any{"type": "text_delta", "text": part}}})
 		}
