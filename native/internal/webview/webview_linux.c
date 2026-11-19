@@ -25,9 +25,10 @@ int lich_webview_init(void) {
 	if (!gtk_init_check(NULL, NULL)) {
 		return 0;
 	}
-	// WebKit's DMA-BUF renderer leaves pages blank on an X server without
-	// DRI3, such as Xvfb.
-	if (!has_dri3()) {
+	// WebKit's DMA-BUF renderer leaves pages black on an X server without
+	// DRI3, such as Xvfb, and under NVIDIA's PRIME offload, where the buffers
+	// and the GL that shows them sit on different GPUs.
+	if (!has_dri3() || getenv("__NV_PRIME_RENDER_OFFLOAD")) {
 		setenv("WEBKIT_DISABLE_DMABUF_RENDERER", "1", 0);
 	}
 	return 1;
