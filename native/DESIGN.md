@@ -339,9 +339,12 @@ draws none while it grows in, because the room above the rows is measured in the
   tree does. A row is its tool's glyph (a Lucide mark by tool name, Claude Code's own names and ACP's kinds,
   one generic wrench for the rest), its name in medium, what it acted on in mono, then at the right the time it
   ran in muted mono and how it ended: nothing while it runs, then a check in `TonePass` or a cross in
-  `Destructive` with the output's first line. A call whose end nobody reported (most histories) shows no time.
-  Its diff stands under it as a thread's hunk is drawn. The calls still running stand under the line even folded,
-  each until it ends, so a call shows the moment it starts.
+  `Destructive` with the output's first line. A time that stands still reads in milliseconds under a second
+  ("476ms"), the line's "Worked for" too; a call whose end nobody reported (most histories) shows no time. Its
+  diff stands under it as a thread's hunk is drawn. Folded, the line keeps the calls still running under it, so a
+  call shows the moment it starts, and with none running its last call, still, until the next one starts. Only
+  the turn in flight is alive: a call an ended turn left running (interrupted) stops with it, its time up to the
+  turn's end, or none where nobody saw it.
 - **A turn's closing line** stands once, after the last item of the conversation's last turn, when that turn
   has ended: the provider's avatar as the tool-call line opens a turn with, "Done" in `TextSM` medium
   `Foreground`, then muted "· no changes" or "· 3 files" and the lines the turn added in `TonePass` and removed

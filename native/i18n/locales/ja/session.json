@@ -40,6 +40,7 @@
   },
   "age": {
     "second": "{count}秒",
+    "millisecond": "{count}ミリ秒",
     "minute": "{count}分",
     "hour": "{count}時間",
     "ago": {

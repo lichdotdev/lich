@@ -112,7 +112,8 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   it at once; that each of Antigravity, opencode, oh-my-pi, Cursor CLI and Kiro CLI sends it before the end was not
   measured, and one that reports a call only once finished shows it ended, with no running time. The time a call
   took is its result's time in a Claude Code transcript, and otherwise the moment lich first saw it ended live: a
-  conversation read back from Codex or an ACP server carries no end, so its calls show no time.
+  conversation read back from Codex or an ACP server carries no end, so its calls show no time. A call the
+  provider left running when its turn ended (interrupted) ends at the turn's end, live; read back, it has no end.
 - **A new session is born as a chat only where its provider is in `chat.Kinds`, and a fork never is**
   (`internal/store/sessionview.go`, `internal/spawn`): the store writes the view with the row, a chat unless the
   global `session.view` (Settings › Providers › New sessions open as) asks for the terminal, so the window, the

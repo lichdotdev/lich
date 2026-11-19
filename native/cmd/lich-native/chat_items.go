@@ -240,16 +240,16 @@ func chatThought(gtx C, th *ui.Theme, f *chatFold, it backend.ChatItem, live boo
 
 // chatWork is a turn's tool calls folded into one line, opening on a line per
 // call under a connector. While a call runs the line shimmers, with the
-// number of calls and the time the turn has run, and the calls still running
-// stand under it even folded; once it is over it says how long the turn took,
-// how many calls it made and when it ended.
+// number of calls and the time the turn has run; once it is over it says how
+// long the turn took, how many calls it made and when it ended. Folded, it
+// keeps the calls still running under it, or else its last call.
 func (u *window) chatWork(gtx C, th *ui.Theme, f *chatFold, sv sessionView, r chatRow) D {
 	f.update(gtx)
 	label := func(gtx C, fg color.NRGBA) D {
 		if r.live {
 			return chatLiveLabel(gtx, th, i18n.T("chat.view.toolCalls", i18n.Args{"count": len(r.tools)}), fg, gtx.Now.Add(-r.took))
 		}
-		args := i18n.Args{"duration": chatElapsed(r.took), "count": len(r.tools)}
+		args := i18n.Args{"duration": chatTook(r.took), "count": len(r.tools)}
 		key := "chat.view.worked"
 		if r.ended > 0 {
 			key, args["time"] = "chat.view.workedAt", time.UnixMilli(r.ended).In(gtx.Now.Location()).Format(chatClock)
@@ -271,10 +271,7 @@ func (u *window) chatWork(gtx C, th *ui.Theme, f *chatFold, sv sessionView, r ch
 	children := []layout.FlexChild{layout.Rigid(func(gtx C) D { return layout.Flex{Alignment: layout.Middle}.Layout(gtx, line...) })}
 	shown := r.tools
 	if !f.open {
-		shown = nil
-		if r.live {
-			shown = slices.DeleteFunc(slices.Clone(r.tools), func(it backend.ChatItem) bool { return !callRunning(it) })
-		}
+		shown = chatFoldedCalls(r)
 	}
 	if len(shown) > 0 {
 		children = append(children, ui.VGap(1))
@@ -286,6 +283,15 @@ func (u *window) chatWork(gtx C, th *ui.Theme, f *chatFold, sv sessionView, r ch
 		}))
 	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
+}
+
+// chatFoldedCalls is what a folded group keeps in view: the calls running in
+// its live turn, or else its last call, standing still until the next starts.
+func chatFoldedCalls(r chatRow) []backend.ChatItem {
+	if r.live {
+		return slices.DeleteFunc(slices.Clone(r.tools), func(it backend.ChatItem) bool { return !callRunning(it) })
+	}
+	return r.tools[len(r.tools)-1:]
 }
 
 // chatHairline is a 1px rule in Border across the room it is given.
@@ -381,7 +387,11 @@ func chatToolTime(gtx C, th *ui.Theme, it backend.ChatItem, running bool) D {
 	default:
 		return D{}
 	}
-	return layout.Inset{Left: ui.Space(2.5)}.Layout(gtx, th.Text(ui.TextXS, chatElapsed(took)).Mono().Muted().Layout)
+	text := chatTook(took)
+	if running {
+		text = chatElapsed(took)
+	}
+	return layout.Inset{Left: ui.Space(2.5)}.Layout(gtx, th.Text(ui.TextXS, text).Mono().Muted().Layout)
 }
 
 // chatToolOutcome is how a call ended: nothing while it runs, then a check in
@@ -637,6 +647,15 @@ func chatElapsed(d time.Duration) string {
 		return unit("session.age.minute", int(d/time.Minute)) + " " + unit("session.age.second", int(d%time.Minute/time.Second))
 	}
 	return unit("session.age.hour", int(d/time.Hour)) + " " + unit("session.age.minute", int(d%time.Hour/time.Minute))
+}
+
+// chatTook is a time that stands still: chatElapsed's, in milliseconds under a
+// second, where a counter would read 0s.
+func chatTook(d time.Duration) string {
+	if d < time.Second {
+		return i18n.T("session.age.millisecond", i18n.Args{"count": int(max(d, 0) / time.Millisecond)})
+	}
+	return chatElapsed(d)
 }
 
 // chatTick asks for the frame at which the time since start reads differently,
