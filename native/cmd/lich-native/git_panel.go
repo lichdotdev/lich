@@ -78,9 +78,9 @@ type gitPanelInput struct {
 
 // gitRowState is a list row's clickable and its tooltip.
 type gitRowState struct {
-	click         widget.Clickable
+	click         ui.Clickable
 	tip, moreTip  ui.Tooltip
-	more          widget.Clickable
+	more          ui.Clickable
 	menu, context ui.MenuState
 }
 
@@ -114,7 +114,7 @@ type gitPanel struct {
 	typedAt               time.Time
 	sinceDays             int
 	authorMenu, dateMenu  ui.MenuState
-	author, date          widget.Clickable
+	author, date          ui.Clickable
 
 	treeField widget.Editor
 	tree      widget.List

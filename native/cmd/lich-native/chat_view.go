@@ -61,7 +61,7 @@ var (
 type chatView struct {
 	list             widget.List
 	editor           widget.Editor
-	send, stop       widget.Clickable
+	send, stop       ui.Clickable
 	sendTip, stopTip ui.Tooltip
 	picker           modelPicker
 	// rows brings the conversation's rows in, and seen is the row each key
@@ -75,7 +75,7 @@ type chatView struct {
 	folds  map[string]*chatFold
 	// optionMenus are the menus of the option chips, by category.
 	optionMenus map[string]*ui.MenuState
-	answers     map[chatAnswer]*widget.Clickable
+	answers     map[chatAnswer]*ui.Clickable
 	md          markdown.Cache
 	// unsent is a message the backend refused, handed back to an empty
 	// editor on the next frame.
@@ -84,7 +84,7 @@ type chatView struct {
 }
 
 type chatFold struct {
-	click widget.Clickable
+	click ui.Clickable
 	open  bool
 }
 
@@ -96,7 +96,7 @@ func newChatPane() *chatPane {
 	p.editor.Submit = true
 	p.md = markdown.Cache{}
 	p.folds = map[string]*chatFold{}
-	p.answers = map[chatAnswer]*widget.Clickable{}
+	p.answers = map[chatAnswer]*ui.Clickable{}
 	return p
 }
 
@@ -155,11 +155,11 @@ func (v *chatView) fold(key string) *chatFold {
 	return f
 }
 
-func (v *chatView) answer(item, option string) *widget.Clickable {
+func (v *chatView) answer(item, option string) *ui.Clickable {
 	k := chatAnswer{item, option}
 	c, ok := v.answers[k]
 	if !ok {
-		c = new(widget.Clickable)
+		c = new(ui.Clickable)
 		v.answers[k] = c
 	}
 	return c
@@ -356,7 +356,7 @@ func (u *window) chatComposer(gtx C, th *ui.Theme, p *chatPane, sv sessionView, 
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			ta := th.Textarea(&p.editor, i18n.T("chat.composer.placeholder", i18n.Args{"provider": name}))
-			ta.MaxHeight, ta.MinHeight, ta.Radius = chatComposerMax, chatComposerMin, ui.RadiusLG
+			ta.MaxHeight, ta.MinHeight, ta.Radius, ta.Steady = chatComposerMax, chatComposerMin, ui.RadiusLG, true
 			ta.Size, ta.Leading, ta.PadX, ta.PadY = markdown.BodySize, markdown.BodySize*markdown.LineHeightScale, chatComposerPadX, chatComposerPadY
 			ta.Foot = u.chatChips(th, p, sv, working, ft)
 			return ta.Layout(gtx)

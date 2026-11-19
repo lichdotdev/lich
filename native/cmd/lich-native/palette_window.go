@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"gioui.org/io/key"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
@@ -124,7 +123,7 @@ func (u *window) paletteFrame(gtx C, p *commandPalette) paletteView {
 		p.typed, p.typedTab, p.cursor, p.reveal = query, p.tab, 0, true
 	}
 	if len(p.rows) < len(v.rows) {
-		p.rows = make([]widget.Clickable, len(v.rows))
+		p.rows = make([]ui.Clickable, len(v.rows))
 	}
 	for i := range v.rows {
 		click := &p.rows[i]

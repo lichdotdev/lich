@@ -298,7 +298,7 @@ func TestPressInPaddingFocusesTheEditor(t *testing.T) {
 func inputPointF32(p image.Point) f32.Point { return f32.Pt(float32(p.X), float32(p.Y)) }
 
 func TestInputGroupClearEmptiesTheDenseField(t *testing.T) {
-	th, ed, clear := testTheme(), new(widget.Editor), new(widget.Clickable)
+	th, ed, clear := testTheme(), new(widget.Editor), new(Clickable)
 	ed.SetText("skipo")
 	g := th.InputGroup(ed, "Filter")
 	g.Height, g.TextSize, g.Clear = Space(8), TextXS, clear

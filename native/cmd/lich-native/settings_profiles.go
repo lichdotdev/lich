@@ -73,14 +73,14 @@ type profileFlow struct {
 	dialog  ui.DialogState
 	name    widget.Editor
 	code    widget.Editor
-	checks  map[string]*widget.Bool
+	checks  map[string]*ui.Bool
 	focus   bool
 	source  ui.DropdownPanelState
-	options map[string]*widget.Clickable
+	options map[string]*ui.Clickable
 	list    widget.List
 
-	cancel, confirm, done              widget.Clickable
-	submitCode, openURL, copyURL, term widget.Clickable
+	cancel, confirm, done              ui.Clickable
+	submitCode, openURL, copyURL, term ui.Clickable
 }
 
 func (f *profileFlow) view() flowData {
@@ -118,19 +118,19 @@ type profileSettings struct {
 	// asked is whether the book was read again on this visit.
 	asked    bool
 	advanced bool
-	fold     widget.Clickable
+	fold     ui.Clickable
 	binary   profileBinaryLinks
 	picker   ui.DropdownPanelState
-	options  map[string]*widget.Clickable
+	options  map[string]*ui.Clickable
 	rows     map[string]*profileRowState
-	add      widget.Clickable
+	add      ui.Clickable
 	flow     profileFlow
 }
 
 type profileRowState struct {
 	tip   ui.Tooltip
-	login widget.Clickable
-	more  widget.Clickable
+	login ui.Clickable
+	more  ui.Clickable
 	menu  ui.MenuState
 }
 

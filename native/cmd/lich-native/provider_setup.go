@@ -51,8 +51,8 @@ type providerSetup struct {
 	done             bool
 	dialog           ui.DialogState
 	list             widget.List
-	cont             widget.Clickable
-	docs             map[string]*widget.Clickable
+	cont             ui.Clickable
+	docs             map[string]*ui.Clickable
 }
 
 // open decides once; the first time a provider is installed, at the
@@ -133,7 +133,7 @@ func (g *providerSetup) providers(gtx C, th *ui.Theme, s *settingsScreen) D {
 // docsGrid is every provider lich knows, each opening its install page.
 func (g *providerSetup) docsGrid(gtx C, th *ui.Theme, s *settingsScreen) D {
 	if g.docs == nil {
-		g.docs = map[string]*widget.Clickable{}
+		g.docs = map[string]*ui.Clickable{}
 	}
 	list := s.providers.snapshot().list
 	var rows []layout.FlexChild
@@ -142,7 +142,7 @@ func (g *providerSetup) docsGrid(gtx C, th *ui.Theme, s *settingsScreen) D {
 		for _, p := range list[i:min(i+setupDocsColumns, len(list))] {
 			click := g.docs[p.id]
 			if click == nil {
-				click = new(widget.Clickable)
+				click = new(ui.Clickable)
 				g.docs[p.id] = click
 			}
 			if click.Clicked(gtx) {

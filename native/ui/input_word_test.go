@@ -68,7 +68,7 @@ func TestShortcutAltDeleteTakesTheSelectionFirst(t *testing.T) {
 }
 
 func TestInputClearButton(t *testing.T) {
-	th, ed, clr := testTheme(), new(widget.Editor), new(widget.Clickable)
+	th, ed, clr := testTheme(), new(widget.Editor), new(Clickable)
 	in := th.Input(ed, "Filter")
 	in.Clear = clr
 	rig := focusedInputRig(t, in, "skipo", 5)
@@ -94,7 +94,7 @@ func TestInputClearButton(t *testing.T) {
 
 // Without text there is nothing to clear: the press lands on the field.
 func TestInputClearButtonHidesWhenEmpty(t *testing.T) {
-	th, ed, clr := testTheme(), new(widget.Editor), new(widget.Clickable)
+	th, ed, clr := testTheme(), new(widget.Editor), new(Clickable)
 	in := th.Input(ed, "Filter")
 	in.Clear = clr
 	rig := newInputRig(t, 160, 36, in.Layout)

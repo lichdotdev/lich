@@ -50,7 +50,7 @@ var dialogActions = map[string]bool{"accept": true, "dismiss": true}
 // agent's cursor to press.
 type dialogCard struct {
 	shown      *api.BrowserDialog
-	ok, cancel widget.Clickable
+	ok, cancel ui.Clickable
 	field      widget.Editor
 	focusField bool
 	okAt, noAt image.Rectangle

@@ -20,7 +20,6 @@ import (
 	"gioui.org/op"
 	"gioui.org/text"
 	"gioui.org/unit"
-	"gioui.org/widget"
 	"github.com/coder/websocket"
 
 	"github.com/lichdotdev/lich/api"
@@ -179,12 +178,12 @@ func (d *dialogDriver) open() {
 const maxFocusStops = 16
 
 // press walks the focus to button with Tab and presses it with Space.
-func (d *dialogDriver) press(t *testing.T, button *widget.Clickable) {
+func (d *dialogDriver) press(t *testing.T, button *ui.Clickable) {
 	t.Helper()
 	for range maxFocusStops {
 		d.router.MoveFocus(key.FocusForward)
 		d.frame()
-		if d.router.Source().Focused(button) {
+		if d.router.Source().Focused(&button.Clickable) {
 			d.router.Queue(key.Event{Name: key.NameSpace, State: key.Press}, key.Event{Name: key.NameSpace, State: key.Release})
 			d.frame()
 			return

@@ -22,11 +22,11 @@ var (
 // planDetails is the plan quota's tooltip body: the usage blocks, and the
 // account the reading was taken against.
 func planDetails(th *ui.Theme, plan backend.QuotaPlan, now time.Time) layout.Widget {
-	return usageStack(planRows(th, plan, now))
+	return usageStack(planRows(th, plan, now, nil))
 }
 
-func planRows(th *ui.Theme, plan backend.QuotaPlan, now time.Time) []layout.Widget {
-	rows := usageBlocks(th, plan, now)
+func planRows(th *ui.Theme, plan backend.QuotaPlan, now time.Time, use *resetUse) []layout.Widget {
+	rows := usageBlocks(th, plan, now, use)
 	if account := accountLine(plan); account != "" {
 		rows = append(rows, accountRow(th, account))
 	}

@@ -7,7 +7,6 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/unit"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
@@ -22,11 +21,11 @@ const railServicesWidth unit.Dp = 256
 // shows: the project's services, as a panel of the same rows, and the
 // profile, as the same menu.
 type railFooter struct {
-	services      widget.Clickable
+	services      ui.Clickable
 	servicesPanel ui.DropdownPanelState
-	profile       widget.Clickable
+	profile       ui.Clickable
 	profileMenu   ui.MenuState
-	search        widget.Clickable
+	search        ui.Clickable
 	searchPanel   ui.DropdownPanelState
 }
 

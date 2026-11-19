@@ -2,7 +2,6 @@ package extrender
 
 import (
 	"gioui.org/unit"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/extension"
 	"github.com/lichdotdev/lich/native/ui"
@@ -57,7 +56,7 @@ func drawIconAction(r *Renderer, gtx C, th *ui.Theme, n extension.Node, id strin
 // kit's corner button has no disabled look, so it is only made inert.
 func drawCornerButton(r *Renderer, gtx C, th *ui.Theme, n extension.Node, id string) D {
 	p := props[extension.IconToggleProps](n)
-	click := stateOf[widget.Clickable](r, id)
+	click := stateOf[ui.Clickable](r, id)
 	if p.OnPress == "" {
 		gtx = gtx.Disabled()
 	}
@@ -71,9 +70,9 @@ func drawCornerButton(r *Renderer, gtx C, th *ui.Theme, n extension.Node, id str
 // it draws a disabled one.
 func drawBarIconButton(r *Renderer, gtx C, th *ui.Theme, n extension.Node, id string) D {
 	p := props[extension.IconToggleProps](n)
-	var click *widget.Clickable
+	var click *ui.Clickable
 	if p.OnPress != "" {
-		click = stateOf[widget.Clickable](r, id)
+		click = stateOf[ui.Clickable](r, id)
 		if click.Clicked(gtx) {
 			r.fire(p.OnPress, extension.EventData{})
 		}
@@ -103,7 +102,7 @@ func drawKeyCap(_ *Renderer, gtx C, th *ui.Theme, n extension.Node, _ string) D 
 
 func drawPopoverRow(r *Renderer, gtx C, th *ui.Theme, n extension.Node, id string) D {
 	p := props[extension.PopoverRowProps](n)
-	click := stateOf[widget.Clickable](r, id)
+	click := stateOf[ui.Clickable](r, id)
 	if click.Clicked(gtx) {
 		r.fire(p.OnPress, extension.EventData{})
 	}

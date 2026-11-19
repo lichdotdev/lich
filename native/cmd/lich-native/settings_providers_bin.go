@@ -29,7 +29,7 @@ var binGlyphSize = ui.Space(3.5)
 // field.
 type binInput struct {
 	editor  widget.Editor
-	browse  widget.Clickable
+	browse  ui.Clickable
 	started bool
 	// provider, scope and text are what the field was last made equal to.
 	provider, scope, text string

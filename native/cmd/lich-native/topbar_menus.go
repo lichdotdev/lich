@@ -6,7 +6,6 @@ import (
 
 	"gioui.org/font"
 	"gioui.org/layout"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
@@ -31,9 +30,9 @@ var (
 // above the directory picker. With none to offer the "+" is the picker.
 type openMenu struct {
 	popover ui.DropdownPanelState
-	plus    widget.Clickable
-	folder  widget.Clickable
-	rows    []widget.Clickable
+	plus    ui.Clickable
+	folder  ui.Clickable
+	rows    []ui.Clickable
 
 	// closed is the window's store of closed projects, shared with the
 	// command palette.
@@ -68,7 +67,7 @@ func (t *topbar) openButtonFace(gtx C, th *ui.Theme, act *topbarAction) D {
 		return tip.Layout(gtx, func(gtx C) D { return th.BarIconButton(&o.plus, icPlus, false).Layout(gtx) })
 	}
 	if len(o.rows) < len(recents) {
-		o.rows = make([]widget.Clickable, len(recents))
+		o.rows = make([]ui.Clickable, len(recents))
 	}
 	for i := range recents {
 		if o.rows[i].Clicked(gtx) {
@@ -110,7 +109,7 @@ func (o *openMenu) content(gtx C, th *ui.Theme, recents []backend.RecentProject,
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
 }
 
-func recentRow(gtx C, th *ui.Theme, click *widget.Clickable, r backend.RecentProject, gone bool) D {
+func recentRow(gtx C, th *ui.Theme, click *ui.Clickable, r backend.RecentProject, gone bool) D {
 	return th.PopoverRow(click, func(gtx C, th *ui.Theme) D {
 		ic := icFolderPlain
 		if gone {
@@ -132,15 +131,15 @@ func recentRow(gtx C, th *ui.Theme, click *widget.Clickable, r backend.RecentPro
 // waiting on the user or holding an unread finished turn.
 type bellMenu struct {
 	popover ui.DropdownPanelState
-	trigger widget.Clickable
-	rows    map[string]*widget.Clickable
-	dismiss map[string]*widget.Clickable
+	trigger ui.Clickable
+	rows    map[string]*ui.Clickable
+	dismiss map[string]*ui.Clickable
 }
 
 func (t *topbar) bellButton(gtx C, th *ui.Theme, items []notification, act *topbarAction) D {
 	b := &t.bell
 	if b.rows == nil {
-		b.rows, b.dismiss = map[string]*widget.Clickable{}, map[string]*widget.Clickable{}
+		b.rows, b.dismiss = map[string]*ui.Clickable{}, map[string]*ui.Clickable{}
 	}
 	for _, item := range items {
 		dismissed := clickableOf(b.dismiss, item.ID).Clicked(gtx)
@@ -217,10 +216,10 @@ func (b *bellMenu) row(gtx C, th *ui.Theme, item notification) D {
 	}).Layout(gtx)
 }
 
-func clickableOf(m map[string]*widget.Clickable, id string) *widget.Clickable {
+func clickableOf(m map[string]*ui.Clickable, id string) *ui.Clickable {
 	c, ok := m[id]
 	if !ok {
-		c = new(widget.Clickable)
+		c = new(ui.Clickable)
 		m[id] = c
 	}
 	return c

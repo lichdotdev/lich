@@ -47,13 +47,13 @@ func centreY(t *testing.T, r *frameRig, label string) float32 {
 
 // boxFoot is where the composer's Send or Stop stands: the right end of the
 // box's foot, in the chat rigs' window.
-var boxFoot = image.Rect(1000, 700, 1100, 752)
+var boxFoot = image.Rect(1000, 720, 1100, 770)
 
 func TestTheComposerHoldsOnlyTheProvidersControlsInItsBox(t *testing.T) {
 	u, r, _ := chatFrames(t, api.ViewChat)
 	u.model.chat.setOptions("s1", chatOptions())
 	r.settle(t)
-	plus := r.smallestClickIn(t, image.Rect(120, 700, 170, 752))
+	plus := r.smallestClickIn(t, image.Rect(120, 720, 170, 770))
 	model, mode := r.at(t, "Haiku 5.5 · Medium"), r.at(t, i18n.T("chat.choice.manual"))
 	send := r.smallestClickIn(t, boxFoot)
 	if !(plus.X < model.X && model.X < mode.X && mode.X < send.X) {
@@ -339,4 +339,105 @@ func pickEntry(t *testing.T, r *frameRig, label string) {
 		}
 	}
 	t.Fatalf("no menu row %q:\n%s", label, r.drawn())
+}
+
+func TestTheChangesItemIsThereOnlyWhenThereAreChanges(t *testing.T) {
+	in := busySession()
+	in.git.Files = 0
+	_, r, _ := chatFramesIn(t, api.ViewChat, rigWindow, in)
+	r.settle(t)
+	if !r.shows("main") {
+		t.Fatalf("the branch is gone with the changes:\n%s", r.drawn())
+	}
+	for _, label := range []string{"0", "+0", "-0", i18n.T("shell.footerBar.reviewChanges")} {
+		if r.shows(label) {
+			t.Errorf("%q drawn for a checkout with no changes", label)
+		}
+	}
+	_, r, _ = chatFramesIn(t, api.ViewChat, rigWindow, busySession())
+	r.settle(t)
+	if !r.shows("2") {
+		t.Errorf("no file count for a checkout with changes:\n%s", r.drawn())
+	}
+}
+
+// The item is quiet: nothing under it at rest, the kit's hover fill under the
+// pointer, and never the lit fill the footer's button wears while Review is up.
+func TestTheChangesItemHasNoFillAtRestAndNeverTheLitOne(t *testing.T) {
+	u, r, _ := chatFrames(t, api.ViewChat)
+	r.settle(t)
+	rest := r.drawn()
+	u.footer.w("changes").pressed = true
+	u.footer.dock.show(dockReview)
+	r.settle(t)
+	if r.drawn() != rest {
+		t.Error("the item changed with Review open: it must not be drawn pressed")
+	}
+	r.hover(r.at(t, "2"))
+	r.settle(t)
+	if r.drawn() == rest {
+		t.Error("the item has no hover fill")
+	}
+}
+
+// The line under the box has chatCrumbsPad over it, between the box and the
+// line, and under it, between the line and the bottom edge of the island, over
+// the composer's own pad.
+func TestTheLineUnderTheBoxHasSpace2OnBothSides(t *testing.T) {
+	_, r, _ := chatFrames(t, api.ViewChat)
+	r.settle(t)
+	if chatCrumbsPad != 8 {
+		t.Errorf("the room around the line is %v, want Space(2), 8dp", chatCrumbsPad)
+	}
+	top := labelTop(t, r, "main")
+	boxBottom := -1
+	for _, n := range r.nodes() {
+		if b := n.Desc.Bounds; n.Desc.Gestures != 0 && b.Dx() == 960 && b.Min.Y > 200 {
+			boxBottom = b.Max.Y
+		}
+	}
+	if boxBottom < 0 {
+		t.Fatalf("no composer box:\n%s", r.drawn())
+	}
+	const lineHeight = 16 // a TextXS line
+	if got := top - boxBottom; got != int(chatCrumbsPad) {
+		t.Errorf("the line starts %dpx under the box, want %v", got, chatCrumbsPad)
+	}
+	if got, want := rigWindow.Y-top, lineHeight+int(chatCrumbsPad)+int(chatComposerPad); got != want {
+		t.Errorf("the line's top is %dpx from the bottom edge, want its %dpx height, %v under it and the composer's %v pad", got, lineHeight, chatCrumbsPad, chatComposerPad)
+	}
+}
+
+// The hover fill of the changes item stands chatChangesPad round its text, and
+// takes none of the line: the text keeps the place it has chatFootPad in from the
+// box's edge, as the left side's does, and the fill reaches the edge.
+func TestTheChangesItemsFillGrowsOutwardFromItsText(t *testing.T) {
+	_, r, _ := chatFrames(t, api.ViewChat)
+	r.settle(t)
+	if chatChangesPadX != 6 || chatChangesPadY != 4 {
+		t.Errorf("padding %v by %v, want Space(1.5) by Space(1)", chatChangesPadX, chatChangesPadY)
+	}
+	var box, item image.Rectangle
+	label := image.Pt(labelLeft(t, r, "2"), labelTop(t, r, "2")+4)
+	for _, n := range r.nodes() {
+		b := n.Desc.Bounds
+		switch {
+		case n.Desc.Gestures != 0 && b.Dx() == 960 && b.Min.Y > 200:
+			box = b
+		case n.Desc.Gestures != 0 && label.In(b) && b.Dy() < 60 && (item.Empty() || b.Dx() > item.Dx()):
+			item = b
+		}
+	}
+	if box.Empty() || item.Empty() {
+		t.Fatalf("no box or item (%v, %v):\n%s", box, item, r.drawn())
+	}
+	if item.Dy() != 16+2*int(chatChangesPadY) {
+		t.Errorf("the item is %dpx tall, want the line's 16 and %vpx round it", item.Dy(), chatChangesPadY)
+	}
+	if item.Max.X != box.Max.X {
+		t.Errorf("the item ends at x=%d, the box at x=%d: the fill should reach the edge, the text %v in", item.Max.X, box.Max.X, chatFootPad)
+	}
+	if text := labelTop(t, r, "2"); text-item.Min.Y != int(chatChangesPadY) {
+		t.Errorf("the text is %dpx under the fill's top, want %v", text-item.Min.Y, chatChangesPadY)
+	}
 }

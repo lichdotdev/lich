@@ -60,7 +60,7 @@ type artifactsTab struct {
 }
 
 type artifactRowState struct {
-	click, more   widget.Clickable
+	click, more   ui.Clickable
 	context, menu ui.MenuState
 	tip           ui.Tooltip
 }

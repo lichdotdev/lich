@@ -178,10 +178,12 @@ type Service struct {
 	http *http.Client
 	// claudeURL, codexURL, probeURL, profileURL, cursorURL and opencodeURL are
 	// the endpoints, fields so tests drive the parsers against a local server.
-	claudeURL   string
-	codexURL    string
-	probeURL    string
-	profileURL  string
+	claudeURL  string
+	codexURL   string
+	probeURL   string
+	profileURL string
+	// resetURL spends a reset, with %s for the organization.
+	resetURL    string
 	cursorURL   string
 	opencodeURL string
 
@@ -191,6 +193,15 @@ type Service struct {
 	// agyTurns latches once agy answered the usage command with a model turn,
 	// guarded by mu: asking again would spend quota on every reading.
 	agyTurns bool
+
+	// claudeBin names the installed Claude Code binary and claudeVersion, when
+	// set, answers its version outright, a field so tests need no CLI. Both are
+	// read only for the usage agent (usageAgent).
+	claudeBin     func() string
+	claudeVersion func() string
+	// attempts holds the request id of each spend not yet answered, by profile
+	// and grant, guarded by mu (UseReset).
+	attempts map[string]attempt
 
 	// enabled reports whether the user turned a provider on; nil is all on.
 	enabled func(provider string) bool
@@ -234,6 +245,7 @@ func New() *Service {
 		codexURL:       codexUsageURL,
 		probeURL:       claudeProbeURL,
 		profileURL:     claudeProfileURL,
+		resetURL:       claudeResetURL,
 		cursorURL:      cursorUsageURL,
 		opencodeURL:    opencodeUsageURL,
 		runAgy:         runAgy,

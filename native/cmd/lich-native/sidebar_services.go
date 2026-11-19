@@ -62,22 +62,22 @@ type serviceRequest struct {
 // counts what runs; open, a short list of the project's services above it.
 type servicesFooter struct {
 	open     bool
-	header   widget.Clickable
-	all      widget.Clickable
+	header   ui.Clickable
+	all      ui.Clickable
 	allTip   ui.Tooltip
-	add      widget.Clickable
+	add      ui.Clickable
 	list     widget.List
-	rows     map[string]*widget.Clickable
-	starts   map[string]*widget.Clickable
-	stops    map[string]*widget.Clickable
-	restarts map[string]*widget.Clickable
+	rows     map[string]*ui.Clickable
+	starts   map[string]*ui.Clickable
+	stops    map[string]*ui.Clickable
+	restarts map[string]*ui.Clickable
 	menus    map[string]*ui.MenuState
 }
 
 func newServicesFooter() servicesFooter {
 	f := servicesFooter{
-		rows: map[string]*widget.Clickable{}, starts: map[string]*widget.Clickable{}, stops: map[string]*widget.Clickable{},
-		restarts: map[string]*widget.Clickable{}, menus: map[string]*ui.MenuState{},
+		rows: map[string]*ui.Clickable{}, starts: map[string]*ui.Clickable{}, stops: map[string]*ui.Clickable{},
+		restarts: map[string]*ui.Clickable{}, menus: map[string]*ui.MenuState{},
 	}
 	f.list.Axis = layout.Vertical
 	return f
@@ -298,7 +298,7 @@ func (f *servicesFooter) row(gtx C, th *ui.Theme, root *ui.Root, v backend.Servi
 
 // serviceRowButtons are the hover actions of a row: Restart and Stop while it
 // runs, Start otherwise; none while it is on its way out.
-func serviceRowButtons(gtx C, th *ui.Theme, v backend.Service, start, stop, restart *widget.Clickable) D {
+func serviceRowButtons(gtx C, th *ui.Theme, v backend.Service, start, stop, restart *ui.Clickable) D {
 	switch v.State {
 	case api.ServiceRunning:
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,

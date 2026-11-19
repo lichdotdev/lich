@@ -4,7 +4,6 @@ import (
 	"image/color"
 
 	"gioui.org/layout"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/extension"
@@ -90,13 +89,13 @@ func (t *topbar) surfaceButton(gtx C, th *ui.Theme, b surfaceButton, open bool, 
 	})
 }
 
-func (t *topbar) surfaceClick(k extensionKey) *widget.Clickable {
+func (t *topbar) surfaceClick(k extensionKey) *ui.Clickable {
 	if t.surfaceClicks == nil {
-		t.surfaceClicks = map[extensionKey]*widget.Clickable{}
+		t.surfaceClicks = map[extensionKey]*ui.Clickable{}
 	}
 	c, ok := t.surfaceClicks[k]
 	if !ok {
-		c = new(widget.Clickable)
+		c = new(ui.Clickable)
 		t.surfaceClicks[k] = c
 	}
 	return c

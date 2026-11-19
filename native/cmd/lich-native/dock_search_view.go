@@ -20,7 +20,7 @@ import (
 // which take focus for the arrow keys.
 type hitList struct {
 	list   widget.List
-	clicks []widget.Clickable
+	clicks []ui.Clickable
 	hits   int // hits drawn last frame
 	rowOf  []int
 }
@@ -134,7 +134,7 @@ func (c *codeTab) searchRows(groups []searchGroup) []searchRow {
 		}
 	}
 	for len(h.clicks) < h.hits {
-		h.clicks = append(h.clicks, widget.Clickable{})
+		h.clicks = append(h.clicks, ui.Clickable{})
 	}
 	return rows
 }
@@ -159,7 +159,7 @@ func (c *codeTab) hitInput(gtx C, groups []searchGroup) {
 			c.open(hit.Path, hit.Line)
 		}
 		for {
-			ev, ok := gtx.Event(key.Filter{Focus: &h.clicks[i], Name: key.NameDownArrow}, key.Filter{Focus: &h.clicks[i], Name: key.NameUpArrow})
+			ev, ok := gtx.Event(key.Filter{Focus: &h.clicks[i].Clickable, Name: key.NameDownArrow}, key.Filter{Focus: &h.clicks[i].Clickable, Name: key.NameUpArrow})
 			if !ok {
 				break
 			}

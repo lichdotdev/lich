@@ -12,7 +12,6 @@ import (
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
 	"gioui.org/unit"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/i18n"
@@ -42,7 +41,7 @@ var (
 // browserTabsUI is one pane's tab widgets, by Chrome's tab id, and where each
 // was last drawn, in the header's coordinates, for the agent's cursor.
 type browserTabsUI struct {
-	pick, close map[string]*widget.Clickable
+	pick, close map[string]*ui.Clickable
 	newTab      ui.IconActionState
 	closeTip    map[string]*ui.Tooltip
 	// pausedTip is a DevTools tab's, on its glyph while its page is paused.
@@ -51,14 +50,14 @@ type browserTabsUI struct {
 	newAt       image.Rectangle
 }
 
-func (t *browserTabsUI) widgets(id string) (pick, closer *widget.Clickable, tip *ui.Tooltip) {
+func (t *browserTabsUI) widgets(id string) (pick, closer *ui.Clickable, tip *ui.Tooltip) {
 	if t.pick == nil {
-		t.pick, t.close, t.closeTip = map[string]*widget.Clickable{}, map[string]*widget.Clickable{}, map[string]*ui.Tooltip{}
+		t.pick, t.close, t.closeTip = map[string]*ui.Clickable{}, map[string]*ui.Clickable{}, map[string]*ui.Tooltip{}
 		t.pausedTip = map[string]*ui.Tooltip{}
 		t.at, t.closeAt = map[string]image.Rectangle{}, map[string]image.Rectangle{}
 	}
 	if t.pick[id] == nil {
-		t.pick[id], t.close[id], t.closeTip[id] = new(widget.Clickable), new(widget.Clickable), new(ui.Tooltip)
+		t.pick[id], t.close[id], t.closeTip[id] = new(ui.Clickable), new(ui.Clickable), new(ui.Tooltip)
 		t.pausedTip[id] = new(ui.Tooltip)
 	}
 	return t.pick[id], t.close[id], t.closeTip[id]
@@ -104,7 +103,7 @@ func (u *window) browserTabs(gtx C, p *browserPaneUI, session string, st api.Bro
 // button's box, in the tab's coordinates. The front tab is filled, and its
 // title reads as the pane's focus: Foreground in the focused pane,
 // MutedForeground in the others.
-func (u *window) tabLayout(gtx C, p *browserPaneUI, tab api.BrowserTab, pick, closer *widget.Clickable, tip *ui.Tooltip, focused bool) image.Rectangle {
+func (u *window) tabLayout(gtx C, p *browserPaneUI, tab api.BrowserTab, pick, closer *ui.Clickable, tip *ui.Tooltip, focused bool) image.Rectangle {
 	th := u.theme
 	size := gtx.Constraints.Max
 	fg := th.MutedForeground

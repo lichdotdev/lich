@@ -5,10 +5,10 @@ package lichdiff
 
 import (
 	"fmt"
+	"github.com/lichdotdev/lich/native/ui"
 	"image"
 	"image/color"
 
-	"gioui.org/io/pointer"
 	"gioui.org/layout"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
@@ -75,8 +75,8 @@ func RevertLines(c godemirror.Chunk) []backend.RevertLine {
 type buttons struct {
 	th     *material.Theme
 	undo   *widget.Icon
-	expand map[int]*widget.Clickable
-	revert map[int]*widget.Clickable
+	expand map[int]*ui.Clickable
+	revert map[int]*ui.Clickable
 }
 
 func newButtons(th *material.Theme) (*buttons, error) {
@@ -87,16 +87,16 @@ func newButtons(th *material.Theme) (*buttons, error) {
 	return &buttons{
 		th:     th,
 		undo:   undo,
-		expand: map[int]*widget.Clickable{},
-		revert: map[int]*widget.Clickable{},
+		expand: map[int]*ui.Clickable{},
+		revert: map[int]*ui.Clickable{},
 	}, nil
 }
 
-func clickable(m map[int]*widget.Clickable, key int) *widget.Clickable {
+func clickable(m map[int]*ui.Clickable, key int) *ui.Clickable {
 	if c, ok := m[key]; ok {
 		return c
 	}
-	c := new(widget.Clickable)
+	c := new(ui.Clickable)
 	m[key] = c
 	return c
 }
@@ -159,7 +159,7 @@ func (b *buttons) label(gtx layout.Context, text string, fg color.NRGBA) layout.
 
 // button lays content out padded on a rounded background with an optional
 // border, as the target of c, with the hand cursor.
-func (b *buttons) button(gtx layout.Context, c *widget.Clickable, bg, edge color.NRGBA, content layout.Widget) layout.Dimensions {
+func (b *buttons) button(gtx layout.Context, c *ui.Clickable, bg, edge color.NRGBA, content layout.Widget) layout.Dimensions {
 	return c.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
 		gtx.Constraints.Min = image.Point{}
 		return layout.Background{}.Layout(gtx,
@@ -173,8 +173,6 @@ func (b *buttons) button(gtx layout.Context, c *widget.Clickable, bg, edge color
 				} else if bg.A != 0 {
 					paint.FillShape(gtx.Ops, bg, shape.Op(gtx.Ops))
 				}
-				defer clip.Rect(image.Rectangle{Max: size}).Push(gtx.Ops).Pop()
-				pointer.CursorPointer.Add(gtx.Ops)
 				return layout.Dimensions{Size: size}
 			},
 			func(gtx layout.Context) layout.Dimensions {

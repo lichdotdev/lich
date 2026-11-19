@@ -275,7 +275,7 @@ func (s *settingsScreen) copySource(gtx C, th *ui.Theme, f *profileFlow, d flowD
 
 func (s *settingsScreen) sourceOption(gtx C, th *ui.Theme, f *profileFlow, p backend.Profile, chosen bool) D {
 	if f.options == nil {
-		f.options = map[string]*widget.Clickable{}
+		f.options = map[string]*ui.Clickable{}
 	}
 	click := clickableOf(f.options, p.Slug)
 	if click.Clicked(gtx) {
@@ -336,8 +336,7 @@ func (s *settingsScreen) checklist(gtx C, th *ui.Theme, f *profileFlow, d flowDa
 
 // lockedPlugin is the lich plugin's row: ticked and not to be unticked.
 func lockedPlugin(gtx C, th *ui.Theme) D {
-	on := widget.Bool{Value: true}
-	box := th.Checkbox(&on)
+	box := th.Checkbox(ui.BoolOf(true))
 	box.Disabled = true
 	return layout.Inset{Top: ui.Space(1), Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
@@ -352,7 +351,7 @@ func lockedPlugin(gtx C, th *ui.Theme) D {
 
 func (s *settingsScreen) pluginList(gtx C, th *ui.Theme, f *profileFlow, plugins []backend.ProfilePlugin) D {
 	if f.checks == nil {
-		f.checks = map[string]*widget.Bool{}
+		f.checks = map[string]*ui.Bool{}
 	}
 	f.list.Axis = layout.Vertical
 	gtx.Constraints.Max.Y = min(gtx.Constraints.Max.Y, gtx.Dp(dialogListMax))
@@ -360,14 +359,14 @@ func (s *settingsScreen) pluginList(gtx C, th *ui.Theme, f *profileFlow, plugins
 		p := plugins[i]
 		box := f.checks[p.Key]
 		if box == nil {
-			box = &widget.Bool{Value: true}
+			box = ui.BoolOf(true)
 			f.checks[p.Key] = box
 		}
 		return pluginRow(gtx, th, p, box)
 	})
 }
 
-func pluginRow(gtx C, th *ui.Theme, p backend.ProfilePlugin, box *widget.Bool) D {
+func pluginRow(gtx C, th *ui.Theme, p backend.ProfilePlugin, box *ui.Bool) D {
 	return layout.Inset{Top: ui.Space(1), Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Rigid(th.Checkbox(box).Layout),

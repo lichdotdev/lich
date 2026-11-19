@@ -88,8 +88,10 @@ func newService(claudeURL, codexURL string, now time.Time) *Service {
 		codexURL:    codexURL,
 		probeURL:    claudeURL,
 		claudeLogin: readClaudeFile,
-		now:         func() time.Time { return now },
-		cache:       make(map[string]reading),
+		// No CLI is asked for its version: the usage agent claims the fallback.
+		claudeVersion: func() string { return "" },
+		now:           func() time.Time { return now },
+		cache:         make(map[string]reading),
 	}
 }
 

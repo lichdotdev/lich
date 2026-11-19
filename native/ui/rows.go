@@ -8,7 +8,6 @@ import (
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
 	"gioui.org/unit"
-	"gioui.org/widget"
 )
 
 // GhostHoverFill is the opacity of the fill under a hovered ghost row or
@@ -18,7 +17,7 @@ const GhostHoverFill = 0.5
 // NavRow is a list row of the given height and side padding, the width it is
 // given: Accent while on, a ghost fill under the pointer. content draws on the
 // row's own surface.
-func (th *Theme) NavRow(gtx C, click *widget.Clickable, on bool, height, padX unit.Dp, content func(gtx C, th *Theme) D) D {
+func (th *Theme) NavRow(gtx C, click *Clickable, on bool, height, padX unit.Dp, content func(gtx C, th *Theme) D) D {
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 	return click.Layout(gtx, func(gtx C) D {
 		bg := th.Surface
@@ -45,7 +44,7 @@ func (th *Theme) NavRow(gtx C, click *widget.Clickable, on bool, height, padX un
 // fill under the pointer only while live, square and the row's whole width:
 // a rounded fill set in from the sides shows its corners against the seams a
 // panel draws between rows. content draws on the row's own surface.
-func (th *Theme) PanelRow(gtx C, click *widget.Clickable, live bool, edge, padX unit.Dp, content func(gtx C, th *Theme) D) D {
+func (th *Theme) PanelRow(gtx C, click *Clickable, live bool, edge, padX unit.Dp, content func(gtx C, th *Theme) D) D {
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 	return click.Layout(gtx, func(gtx C) D {
 		bg := th.Surface

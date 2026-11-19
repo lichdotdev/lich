@@ -8,7 +8,6 @@ import (
 	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/unit"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
@@ -78,12 +77,12 @@ func (s *settingsScreen) rungRow(gtx C, th *ui.Theme, m sandboxMachine, p launch
 	})
 }
 
-func (s *sandboxSettings) rungEnum(providerID string) *widget.Enum {
+func (s *sandboxSettings) rungEnum(providerID string) *ui.Enum {
 	if s.rungs == nil {
-		s.rungs = map[string]*widget.Enum{}
+		s.rungs = map[string]*ui.Enum{}
 	}
 	if s.rungs[providerID] == nil {
-		s.rungs[providerID] = new(widget.Enum)
+		s.rungs[providerID] = new(ui.Enum)
 	}
 	return s.rungs[providerID]
 }

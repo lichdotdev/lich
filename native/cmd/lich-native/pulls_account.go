@@ -7,7 +7,6 @@ import (
 	"sync"
 
 	"gioui.org/layout"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
@@ -57,8 +56,8 @@ type accountPicker struct {
 	saveErr string
 
 	panel   ui.DropdownPanelState
-	options map[string]*widget.Clickable
-	confirm widget.Clickable
+	options map[string]*ui.Clickable
+	confirm ui.Clickable
 }
 
 // accountGateLayout draws the gate over the whole island, ok false when the
@@ -126,7 +125,7 @@ func (p *pullsScreen) accountPicker(gtx C, th *ui.Theme, st backend.GitHubAccoun
 // stores it.
 func (a *accountPicker) option(gtx C, th *ui.Theme, value, label string, chosen bool) D {
 	if a.options == nil {
-		a.options = map[string]*widget.Clickable{}
+		a.options = map[string]*ui.Clickable{}
 	}
 	click := clickableOf(a.options, value)
 	if click.Clicked(gtx) {

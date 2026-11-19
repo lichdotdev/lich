@@ -6,7 +6,6 @@ import (
 	"gioui.org/layout"
 	"gioui.org/text"
 	"gioui.org/unit"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/extension"
 	"github.com/lichdotdev/lich/native/ui"
@@ -157,8 +156,8 @@ func drawTinyChip(r *Renderer, gtx C, th *ui.Theme, n extension.Node, _ string) 
 
 // pressed is the clickable under id, firing h for each press since the last
 // frame.
-func (r *Renderer) pressed(gtx C, id string, h extension.Handler) *widget.Clickable {
-	click := stateOf[widget.Clickable](r, id)
+func (r *Renderer) pressed(gtx C, id string, h extension.Handler) *ui.Clickable {
+	click := stateOf[ui.Clickable](r, id)
 	for click.Clicked(gtx) {
 		r.fire(h, extension.EventData{})
 	}
@@ -200,7 +199,7 @@ func drawStat(r *Renderer, gtx C, th *ui.Theme, n extension.Node, id string) D {
 // checkState is the row's box, showing the extension's Checked until the
 // person flips it, then their choice until the extension sends another.
 type checkState struct {
-	box  widget.Bool
+	box  ui.Bool
 	prop bool
 	set  bool
 }
@@ -285,7 +284,7 @@ func drawCardIconButton(r *Renderer, gtx C, th *ui.Theme, n extension.Node, id s
 }
 
 type ghostIconState struct {
-	click widget.Clickable
+	click ui.Clickable
 	tip   ui.Tooltip
 }
 

@@ -11,7 +11,6 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/unit"
-	"gioui.org/widget"
 )
 
 // Dropdown geometry at 1px per dp: the panel opens 4px below the trigger,
@@ -148,7 +147,7 @@ func TestDropdownSubmenuOpensOnHover(t *testing.T) {
 func TestDropdownPanelRowClosingItAsksForTheNextFrame(t *testing.T) {
 	g, th := &menuRig{size: image.Pt(400, 400)}, testTheme()
 	var s DropdownPanelState
-	var row widget.Clickable
+	var row Clickable
 	now := time.Unix(0, 0)
 	frame := func() (redraw bool) {
 		g.ops.Reset()

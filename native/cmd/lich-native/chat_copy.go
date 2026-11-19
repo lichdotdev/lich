@@ -12,7 +12,6 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/op/clip"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/ui"
 )
@@ -32,7 +31,7 @@ const chatCopiedFor = 1500 * time.Millisecond
 // chatCopy is one message's copy button and the pointer over it, kept across
 // frames.
 type chatCopy struct {
-	click    widget.Clickable
+	click    ui.Clickable
 	hovered  bool
 	copiedAt time.Time
 }

@@ -15,7 +15,7 @@ import (
 
 var (
 	flagProfileDialog = flag.String("settings-profile-dialog", "", "open the profile dialog of the provider -settings-provider names (Claude Code by default) at start, for -shot: new, rename, delete, copy, login or result")
-	flagProfileUsage  = flag.String("profile-usage", "", "seed Continue in's five-hour readings as slug=percent,…, for -shot; slug=full seeds a whole plan for the usage tooltip and holds it against the backend's own reading")
+	flagProfileUsage  = flag.String("profile-usage", "", "seed Continue in's five-hour readings as slug=percent,…, for -shot; slug=full seeds a whole plan for the usage panel and holds it against the backend's own reading")
 	flagCardMenu      = flag.String("card-menu", "", "open a card's menu at start as <session id>@<x>,<y>:<row>[,<row>…], for -shot")
 )
 
@@ -93,7 +93,7 @@ func (b *profileBook) seedProfilePlans(spec string) error {
 	return nil
 }
 
-// shotUsagePlan is a plan with everything the usage tooltip can show: three
+// shotUsagePlan is a plan with everything the usage panel can show: three
 // windows out of order, a weekly one on course to run out, and the one extra
 // each provider alone reports.
 func shotUsagePlan(kind string) backend.QuotaPlan {
@@ -107,9 +107,9 @@ func shotUsagePlan(kind string) backend.QuotaPlan {
 		},
 		Extra: &backend.QuotaExtra{Used: 1250, Limit: new(int64(5000)), Currency: "USD", Decimals: 2},
 		Resets: []backend.QuotaReset{
-			{Kind: api.QuotaResetFull, Left: 1, EndsAt: in(21 * 24 * time.Hour)},
-			{Label: "Fable", Left: 1, EndsAt: in(110 * 24 * time.Hour)},
-			{Label: "Fable", Left: 1, EndsAt: in(110 * 24 * time.Hour), Held: true},
+			{ID: "full", Kind: api.QuotaResetFull, Clears: []string{"session", "weekly", "model"}, Left: 1, EndsAt: in(21 * 24 * time.Hour)},
+			{ID: "fable-1", Label: "Fable", Clears: []string{"session", "model"}, Left: 1, EndsAt: in(110 * 24 * time.Hour)},
+			{ID: "fable-2", Label: "Fable", Clears: []string{"session", "model"}, Left: 1, EndsAt: in(110 * 24 * time.Hour), Held: true},
 		},
 	}
 	if kind == codexKind {
