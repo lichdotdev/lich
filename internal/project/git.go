@@ -110,7 +110,12 @@ func readGit(dir string, args ...string) (string, error) {
 // which calls belong here and which do not. Both kinds are reads, so it runs
 // them as readOnlyGit.
 func gitQuiet(dir string, args ...string) (string, bool) {
-	out, err := command("git", slices.Concat([]string{"-C", dir}, readOnlyGit, args)...).Output()
+	return gitQuietContext(context.Background(), dir, args...)
+}
+
+// gitQuietContext is gitQuiet for a read that must not outlive ctx.
+func gitQuietContext(ctx context.Context, dir string, args ...string) (string, bool) {
+	out, err := commandContext(ctx, "git", slices.Concat([]string{"-C", dir}, readOnlyGit, args)...).Output()
 	if err != nil {
 		return "", false
 	}

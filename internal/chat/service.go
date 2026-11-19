@@ -263,6 +263,7 @@ func (s *Service) Prompt(ctx context.Context, opts api.ChatPromptOptions) (api.N
 		return api.None{}, err
 	}
 	c.conv.userMessage(opts.Text)
+	c.markStart()
 	if err := c.drv.prompt(opts.Text); err != nil {
 		c.conv.notice(err.Error())
 		c.endTurn(stopError)
