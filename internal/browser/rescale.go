@@ -87,7 +87,7 @@ func (s *Service) stale(owner string) (*session, bool) {
 	s.mu.Lock()
 	defer s.unlock()
 	sess := s.liveByOwner(owner)
-	if sess == nil || sess.headed || sess.window == s.window {
+	if sess == nil || sess.headed || sess.windowDraws || sess.window == s.window {
 		return nil, false
 	}
 	if sess.scale == launchScale(s.defaultView.Scale) {

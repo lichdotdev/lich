@@ -443,6 +443,7 @@ BrowserViewOptions {
 	w int
 	h int
 	scale float64
+	drawn,omitempty bool
 }
 
 BrowserHandle {

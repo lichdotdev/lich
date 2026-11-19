@@ -59,7 +59,10 @@ window sends `browser.NativeLoad` from WebKit's `load-changed` of the main
 frame: `loading` from its start until it finished, failed or was cancelled,
 shown on the front tab beside Chrome's own, and, for a load the page started
 itself, the URL it committed to, which the backend loads in the agent's page
-too, so URL and title arrive on `browser-state` as for any load. A browser no pane shows and no one used for five minutes is
+too, so URL and title arrive on `browser-state` as for any load. That pane
+attaches with `drawn` (`browser.Attach`): Chrome lays the agent's page out at
+the pane's size and sends no frames, which the window would decode and redraw
+for nothing, and is never relaunched to draw at the window's scale. A browser no pane shows and no one used for five minutes is
 never closed on its own: its state turns `idle`, the window asks with a toast,
 and Close (`browser.Close`) or Keep open (`browser.Keep`, five more minutes)
 answers. Unanswered, it stays open and is not asked about again; any use

@@ -97,6 +97,9 @@ type session struct {
 	// reaper asked the window whether to close it, and nobody has answered or
 	// used it since.
 	byAgent, watching, asked bool
+	// windowDraws: the pane that shows it draws the page in a web view of its
+	// own, so it gets no frames and is laid out at the pane's size only.
+	windowDraws bool
 	// attaches counts the panes that started drawing it, each on a window
 	// that may hold none of its frames.
 	attaches uint64

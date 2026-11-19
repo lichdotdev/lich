@@ -249,7 +249,11 @@ func (s *Service) RunningStates(_ context.Context, _ api.None) ([]api.BrowserSta
 
 // AttachView shows this session's page in a pane.
 func (s *Service) AttachView(_ context.Context, opts api.BrowserViewOptions) (api.BrowserHandle, error) {
-	h, err := s.Attach(opts.ID, viewportOf(opts))
+	attach := s.Attach
+	if opts.Drawn {
+		attach = s.AttachDrawn
+	}
+	h, err := attach(opts.ID, viewportOf(opts))
 	return handleAPI(h), err
 }
 

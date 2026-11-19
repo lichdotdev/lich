@@ -237,6 +237,9 @@ type BrowserViewOptions struct {
 	W     int     `json:"w"`
 	H     int     `json:"h"`
 	Scale float64 `json:"scale"`
+	// Drawn is the window drawing the page itself, in a web view of its own:
+	// the backend lays its page out at W x H for the agent and sends no frames.
+	Drawn bool `json:"drawn,omitempty"`
 }
 
 // BrowserDefaultViewOptions is the window's size: W and H in CSS pixels, Scale

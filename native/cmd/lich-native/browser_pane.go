@@ -356,7 +356,9 @@ func (u *window) addressPill(field ui.InputStyle) layout.Widget {
 func (u *window) browserPage(gtx C, p *browserPaneUI, session, url string, frame browserFrame, focused bool) {
 	size := gtx.Constraints.Max
 	scale := u.pageScale(gtx)
-	want := api.BrowserViewOptions{ID: session, W: int(float32(size.X) / scale), H: int(float32(size.Y) / scale), Scale: float64(scale)}
+	paint.FillShape(gtx.Ops, u.theme.Background, clip.Rect{Max: size}.Op())
+	native := u.placeNativePage(gtx, p, session, url)
+	want := api.BrowserViewOptions{ID: session, W: int(float32(size.X) / scale), H: int(float32(size.Y) / scale), Scale: float64(scale), Drawn: native}
 	if want.W > 0 && want.H > 0 && want != p.view {
 		attach := p.view.ID == ""
 		p.view = want
@@ -366,8 +368,7 @@ func (u *window) browserPage(gtx C, p *browserPaneUI, session, url string, frame
 			u.browserPane(session).queue.push(browserCall{resize: true, send: func(ctx context.Context) error { return u.client.ResizeBrowser(ctx, want) }})
 		}
 	}
-	paint.FillShape(gtx.Ops, u.theme.Background, clip.Rect{Max: size}.Op())
-	if u.placeNativePage(gtx, p, session, url) {
+	if native {
 		defer clip.Rect{Max: size}.Push(gtx.Ops).Pop()
 		event.Op(gtx.Ops, &p.tag)
 		return

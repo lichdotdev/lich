@@ -28,6 +28,17 @@ var errInWindow = errors.New("this browser is open in its own window")
 // one on the new-tab page when there is none. The page the agent left stays as it
 // is: the pane only starts watching it.
 func (s *Service) Attach(owner string, v Viewport) (Handle, error) {
+	return s.attach(owner, v, false)
+}
+
+// AttachDrawn shows this session's browser in a pane that draws the page in a
+// web view of its own: the page is laid out at v for the agent, and no frames
+// are sent.
+func (s *Service) AttachDrawn(owner string, v Viewport) (Handle, error) {
+	return s.attach(owner, v, true)
+}
+
+func (s *Service) attach(owner string, v Viewport, windowDraws bool) (Handle, error) {
 	if owner == "" {
 		return Handle{}, errNoOwner
 	}
@@ -54,11 +65,16 @@ func (s *Service) Attach(owner string, v Viewport) (Handle, error) {
 	s.mu.Lock()
 	sess.attaches++
 	s.mu.Unlock()
-	if err := runPage(func(ctx context.Context) error { return sess.page.Screencast(ctx, v) }); err != nil {
+	if err := runPage(func(ctx context.Context) error {
+		if windowDraws {
+			return sess.page.Resize(ctx, v)
+		}
+		return sess.page.Screencast(ctx, v)
+	}); err != nil {
 		return Handle{}, s.failed(sess, err)
 	}
 	s.mu.Lock()
-	sess.watching, sess.view = true, v
+	sess.watching, sess.view, sess.windowDraws = true, v, windowDraws
 	s.mu.Unlock()
 	return s.handleOf(sess), nil
 }
@@ -82,7 +98,7 @@ func (s *Service) Detach(owner string) error {
 		return err
 	}
 	s.mu.Lock()
-	sess.watching = false
+	sess.watching, sess.windowDraws = false, false
 	s.mu.Unlock()
 	return nil
 }
@@ -97,12 +113,13 @@ func (s *Service) Resize(owner string, v Viewport) error {
 	}
 	s.mu.Lock()
 	watching, headed := sess.watching, sess.headed
+	cast := watching && !sess.windowDraws
 	s.mu.Unlock()
 	if headed {
 		return nil
 	}
 	_, err = s.steer(owner, inputWait, func(p Page, ctx context.Context) error {
-		if watching {
+		if cast {
 			return p.Screencast(ctx, v)
 		}
 		return p.Resize(ctx, v)

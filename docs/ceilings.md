@@ -1795,7 +1795,9 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   Chrome, so a link the person follows there is loaded again in Chrome by the URL WebKit committed to. A form
   the person posts is fetched again as a plain GET, and a page that only changes its URL in place (`pushState`, a
   hash) is never told to the backend, since WebKit's `load-changed` fires on loads only. The tab's spinner runs until both
-  pages finished. macOS and Windows draw the screencast yet, where Chrome's own load events cover the tab.
+  pages finished. The agent's Chrome keeps running the page the person sees, without frames: a video plays in
+  both, so its decoding is paid twice. macOS and Windows draw the screencast yet, where Chrome's own load events
+  cover the tab.
 - **The new-tab page is the backend's page in the window's colors and words, as of the last time the window sent
   them** (`internal/newtab`, `docs/browser-tab.md`): a tab already open keeps its look until it is opened again, and
   before the window has sent any it is the dark theme in English. It has a listener of its own from port 27000,
