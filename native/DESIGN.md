@@ -286,7 +286,9 @@ view stays pinned to its end while items arrive, until the person scrolls up. Th
   a fill of that color mixed 22% into the surface, then the provider's name in medium, then muted
   "· model · effort" when the session's options say them. A thought is a muted fold, closed, with the
   sparkles before its label.
-- **A turn's tool calls** fold into one muted line where the first of them came. Finished, it reads
+- **A turn's tool calls** fold into one muted line where the first of them came, with a 1px `Border` hairline
+  running from its label to the column's edge. When the line opens the turn (no answer before it) it starts with
+  the provider's avatar, and the answer's header that follows leaves the avatar out, keeping name and model. Finished, it reads
   "Worked for 41s · 6 tools · 09:15": how long the turn took, how many calls, when it ended (without the time
   when the history has none). Open, each call is a 28px row hung under the line by a connector, a 1px
   `Border` line under the fold's chevron with a stub into the row, ending at the last row as the sidebar's

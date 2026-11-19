@@ -25,8 +25,11 @@ type chatRow struct {
 	item backend.ChatItem // chatRowItem
 	// day is a day row's moment, unix ms: when the turn it starts began.
 	day int64
-	// lead marks the first answer of a turn, which opens with who speaks.
-	lead bool
+	// lead marks the first answer of a turn, which opens with who speaks. When
+	// a work row came before it in the turn, the avatar is on that row and
+	// bare says the answer's header leaves it out; avatar marks the work row
+	// that carries it.
+	lead, bare, avatar bool
 	// live marks the row's item as alive: the thought being thought, the
 	// answer being written, a turn's tool calls while one of them runs.
 	live bool
@@ -86,6 +89,8 @@ func chatRowsWith(items []backend.ChatItem, running bool, now time.Time, changed
 	}
 	folded := map[int]bool{}
 	led := map[int]bool{}
+	// opener is what first speaks in a turn, "work" or "agent".
+	opener := map[int]string{}
 	var turnDay time.Time
 	// The item being produced is the conversation's last, while it runs.
 	liveID := ""
@@ -107,6 +112,10 @@ func chatRowsWith(items []backend.ChatItem, running bool, now time.Time, changed
 			r := chatRow{kind: chatRowItem, item: it, live: it.ID == liveID && (it.Kind == api.ItemAgent || it.Kind == api.ItemThought)}
 			if it.Kind == api.ItemAgent && !led[it.Turn] {
 				led[it.Turn], r.lead = true, true
+				r.bare = opener[it.Turn] == "work"
+				if opener[it.Turn] == "" {
+					opener[it.Turn] = "agent"
+				}
 			}
 			rows = append(rows, r)
 			continue
@@ -120,8 +129,12 @@ func chatRowsWith(items []backend.ChatItem, running bool, now time.Time, changed
 		if running && it.Turn == last {
 			end = now.UnixMilli()
 		}
-		rows = append(rows, chatRow{kind: chatRowWork, turn: it.Turn, tools: sp.tools, ended: sp.end, live: running && toolRunning(sp.tools),
-			took: time.Duration(max(end-sp.start, 0)) * time.Millisecond})
+		work := chatRow{kind: chatRowWork, avatar: opener[it.Turn] == "", turn: it.Turn, tools: sp.tools, ended: sp.end, live: running && toolRunning(sp.tools),
+			took: time.Duration(max(end-sp.start, 0)) * time.Millisecond}
+		if opener[it.Turn] == "" {
+			opener[it.Turn] = "work"
+		}
+		rows = append(rows, work)
 	}
 	if !running && len(items) > 0 {
 		closing(items[len(items)-1].Turn)

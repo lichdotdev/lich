@@ -55,7 +55,7 @@ const chatClock = "15:04"
 func (u *window) chatRow(gtx C, th *ui.Theme, p *chatPane, sv sessionView, r chatRow) D {
 	switch r.kind {
 	case chatRowWork:
-		return chatWork(gtx, th, p.fold("work:"+strconv.Itoa(r.turn)), r)
+		return u.chatWork(gtx, th, p.fold("work:"+strconv.Itoa(r.turn)), sv, r)
 	case chatRowLive:
 		return chatLive(gtx, th)
 	case chatRowDone:
@@ -235,7 +235,7 @@ func chatThought(gtx C, th *ui.Theme, f *chatFold, it backend.ChatItem, live boo
 // call under a connector. While a call runs the line shimmers, with the
 // number of calls and the time the turn has run; once it is over it says how
 // long the turn took, how many calls it made and when it ended.
-func chatWork(gtx C, th *ui.Theme, f *chatFold, r chatRow) D {
+func (u *window) chatWork(gtx C, th *ui.Theme, f *chatFold, sv sessionView, r chatRow) D {
 	f.update(gtx)
 	label := func(gtx C, fg color.NRGBA) D {
 		if r.live {
@@ -248,7 +248,19 @@ func chatWork(gtx C, th *ui.Theme, f *chatFold, r chatRow) D {
 		}
 		return th.Text(ui.TextSM, i18n.T(key, args)).In(fg).Layout(gtx)
 	}
-	children := []layout.FlexChild{layout.Rigid(func(gtx C) D { return chatFoldLine(gtx, th, f, nil, label) })}
+	// The line carries who works when it opens the turn, and a hairline runs
+	// from it to the column's edge.
+	var line []layout.FlexChild
+	if r.avatar {
+		tint, mark, _ := u.agentLook(sv.ID)
+		line = append(line, layout.Rigid(func(gtx C) D { return chatAvatar(gtx, th, tint, mark) }), ui.Gap(2))
+	}
+	line = append(line,
+		layout.Rigid(func(gtx C) D { return chatFoldLine(gtx, th, f, nil, label) }),
+		ui.Gap(3),
+		layout.Flexed(1, func(gtx C) D { return chatHairline(gtx, th) }),
+	)
+	children := []layout.FlexChild{layout.Rigid(func(gtx C) D { return layout.Flex{Alignment: layout.Middle}.Layout(gtx, line...) })}
 	if f.open {
 		children = append(children, ui.VGap(1))
 		for i, it := range r.tools {
@@ -259,6 +271,13 @@ func chatWork(gtx C, th *ui.Theme, f *chatFold, r chatRow) D {
 		}
 	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
+}
+
+// chatHairline is a 1px rule in Border across the room it is given.
+func chatHairline(gtx C, th *ui.Theme) D {
+	size := image.Pt(gtx.Constraints.Max.X, gtx.Dp(1))
+	paint.FillShape(gtx.Ops, th.Over(th.Border), clip.Rect{Max: size}.Op())
+	return D{Size: size}
 }
 
 // chatBranch lays w to the right of a connector from the fold's line: a thin
@@ -440,7 +459,7 @@ func (u *window) chatAgent(gtx C, th *ui.Theme, p *chatPane, sv sessionView, r c
 	notify := func(t ui.Toast) { u.toaster.Show(t) }
 	var children []layout.FlexChild
 	if r.lead {
-		children = append(children, layout.Rigid(func(gtx C) D { return u.chatWho(gtx, th, sv) }), ui.VGap(1.5))
+		children = append(children, layout.Rigid(func(gtx C) D { return u.chatWho(gtx, th, sv, r.bare) }), ui.VGap(1.5))
 	}
 	c := p.copyOf(it.ID)
 	return c.hover(gtx, func(gtx C, over bool) D {
@@ -460,7 +479,7 @@ func (u *window) chatAgent(gtx C, th *ui.Theme, p *chatPane, sv sessionView, r c
 // chatWho is who speaks: the provider's mark in the color of the session's
 // card, on a fill of that color mixed into the surface, its name, and muted the
 // model and effort in force when the session's options say them.
-func (u *window) chatWho(gtx C, th *ui.Theme, sv sessionView) D {
+func (u *window) chatWho(gtx C, th *ui.Theme, sv sessionView, bare bool) D {
 	tint, mark, _ := u.agentLook(sv.ID)
 	name := sv.Kind
 	if info, ok := u.model.providers.find(sv.Kind); ok && info.name != "" {
@@ -473,11 +492,11 @@ func (u *window) chatWho(gtx C, th *ui.Theme, sv sessionView) D {
 			running = append(running, choiceLabel(cur))
 		}
 	}
-	row := []layout.FlexChild{
-		layout.Rigid(func(gtx C) D { return chatAvatar(gtx, th, tint, mark) }),
-		ui.Gap(2),
-		layout.Rigid(th.Text(ui.TextSM, name).Weight(font.Medium).Layout),
+	var row []layout.FlexChild
+	if !bare {
+		row = append(row, layout.Rigid(func(gtx C) D { return chatAvatar(gtx, th, tint, mark) }), ui.Gap(2))
 	}
+	row = append(row, layout.Rigid(th.Text(ui.TextSM, name).Weight(font.Medium).Layout))
 	if len(running) > 0 {
 		row = append(row, ui.Gap(2), layout.Rigid(th.Text(ui.TextSM, "· "+strings.Join(running, " · ")).Muted().Layout))
 	}
