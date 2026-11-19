@@ -48,9 +48,9 @@ const (
 	chatFlameBody = 0.55
 )
 
-// chatFlamePixel is one sprite pixel's side: 1dp, a whole number of device
-// pixels at the scales a window runs at.
-const chatFlamePixel unit.Dp = 1
+// chatFlamePixel is one sprite pixel's side: 1.5dp, which is two device pixels
+// at 1x and three at 2x, a whole number at the scales a window runs at.
+const chatFlamePixel unit.Dp = 1.5
 
 // chatFlameFrame is the frame showing at now, and when the next one starts.
 func chatFlameFrame(now time.Time) (frame int, next time.Time) {
