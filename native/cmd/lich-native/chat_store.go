@@ -18,6 +18,7 @@ type chatStore struct {
 	kinds     []string
 	items     map[string][]backend.ChatItem
 	running   map[string]bool
+	changes   map[string]map[int]api.ChatTurnChanges
 	options   map[string][]backend.ChatOption
 	switching map[string]string
 }
@@ -51,6 +52,9 @@ func (s *chatStore) history(id string, items []backend.ChatItem) {
 		s.items = map[string][]backend.ChatItem{}
 	}
 	s.items[id] = slices.Clone(items)
+	// The turns' numbers are the conversation's own, and a history read back
+	// may number them anew: a count kept from before would sit under another turn.
+	delete(s.changes, id)
 }
 
 // apply replaces the item with the update's id, or appends it.
@@ -75,6 +79,32 @@ func (s *chatStore) turn(t api.ChatTurn) {
 		s.running = map[string]bool{}
 	}
 	s.running[t.SessionID] = t.Running
+	if t.Running || t.Changes == nil || t.Changes.Files == 0 {
+		return
+	}
+	// The event does not name its turn: it is the last one the conversation
+	// holds, whose items were all heard before the end.
+	list := s.items[t.SessionID]
+	if len(list) == 0 {
+		return
+	}
+	if s.changes == nil {
+		s.changes = map[string]map[int]api.ChatTurnChanges{}
+	}
+	if s.changes[t.SessionID] == nil {
+		s.changes[t.SessionID] = map[int]api.ChatTurnChanges{}
+	}
+	s.changes[t.SessionID][list[len(list)-1].Turn] = *t.Changes
+}
+
+// changesOf is what session id's turn changed in the checkout, as its end event
+// said, false for a turn that changed nothing, whose checkout lich could not
+// read, or that was read back with the history, which no event closed.
+func (s *chatStore) changesOf(id string, turn int) (api.ChatTurnChanges, bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	c, ok := s.changes[id][turn]
+	return c, ok
 }
 
 // setOptions takes session id's options whole, as ChatOptions or the options

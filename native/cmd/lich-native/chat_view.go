@@ -159,7 +159,7 @@ func (u *window) chatScreen(gtx C, sv sessionView, keys bool) {
 	items := u.model.chat.of(sv.ID)
 	working := chatWorking(sv, u.model.chat.isRunning(sv.ID))
 	u.chatActs(gtx, p, sv, keys, working, permissionWaiting(items))
-	rows := chatRows(items, working, gtx.Now)
+	rows := chatRowsWith(items, working, gtx.Now, func(turn int) bool { _, ok := u.model.chat.changesOf(sv.ID, turn); return ok })
 	th := u.theme.On(u.theme.Background)
 	layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Flexed(1, func(gtx C) D {

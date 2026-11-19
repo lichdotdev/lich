@@ -32,6 +32,14 @@
       "other": "Работал {duration} · {count} инструмента · {time}"
     }
   },
+  "changes": {
+    "files": {
+      "one": "{count} файл",
+      "few": "{count} файла",
+      "many": "{count} файлов",
+      "other": "{count} файла"
+    }
+  },
   "composer": {
     "placeholder": "Спросите {provider} об этом проекте",
     "send": "Отправить",
