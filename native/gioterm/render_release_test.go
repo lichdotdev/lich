@@ -52,6 +52,12 @@ func TestReleasedRendererRepaintsTheSameFrame(t *testing.T) {
 // paint and how many rows r redrew.
 func drawFrame(t *testing.T, r Renderer, vt *Terminal) ([32]byte, int) {
 	t.Helper()
+	return drawFocused(t, r, vt, true)
+}
+
+// drawFocused is drawFrame for a terminal that has the keyboard or not.
+func drawFocused(t *testing.T, r Renderer, vt *Terminal, focused bool) ([32]byte, int) {
+	t.Helper()
 	var ops op.Ops
 	gtx := layout.Context{Ops: &ops, Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}, Constraints: layout.Exact(image.Pt(800, 600))}
 	if err := r.Measure(gtx); err != nil {
@@ -61,7 +67,7 @@ func drawFrame(t *testing.T, r Renderer, vt *Terminal) ([32]byte, int) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	redrawn, err := r.Draw(gtx, s)
+	redrawn, err := r.Draw(gtx, s.Focus(focused))
 	if err != nil {
 		t.Fatal(err)
 	}

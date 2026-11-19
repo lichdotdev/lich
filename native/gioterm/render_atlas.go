@@ -137,7 +137,8 @@ func (a *atlasRenderer) draw(gtx layout.Context, sn snap, cells []cell, dirty []
 	return redrawn, nil
 }
 
-// cursorCell is the cell under the cursor, drawn inverted on top of the grid.
+// cursorCell is the cell under the cursor, drawn inverted on top of the grid,
+// or just its outline while unfocused, when glyph is not needed.
 type cursorCell struct {
 	st    cellStyle
 	glyph tintEntry
@@ -162,6 +163,9 @@ func (a *atlasRenderer) prepare(sn snap, cells []cell, dirty []uint8) (*cursorCe
 	}
 	c := cells[sn.cursorY*sn.cols+sn.cursorX]
 	st := cursorStyleOf(c, sn)
+	if sn.unfocused {
+		return &cursorCell{st: st}, nil
+	}
 	e, err := a.entry(c, st)
 	if err != nil {
 		return nil, err
@@ -298,6 +302,13 @@ func (a *atlasRenderer) drawGlyph(ops *op.Ops, e tintEntry, x, y int) {
 
 func (a *atlasRenderer) drawCursor(ops *op.Ops, sn snap, cur *cursorCell) {
 	x, y := sn.cursorX*a.r.CellW(), sn.cursorY*a.r.CellH()
-	paint.FillShape(ops, rgba(cur.st.bg), clip.Rect(image.Rect(x, y, x+a.r.CellW(), y+a.r.CellH())).Op())
+	cell := image.Rect(x, y, x+a.r.CellW(), y+a.r.CellH())
+	if sn.unfocused {
+		for _, e := range cursorOutline(cell) {
+			paint.FillShape(ops, rgba(cur.st.bg), clip.Rect(e).Op())
+		}
+		return
+	}
+	paint.FillShape(ops, rgba(cur.st.bg), clip.Rect(cell).Op())
 	a.drawGlyph(ops, cur.glyph, x, y)
 }

@@ -409,6 +409,10 @@ agent works, or a switch is on its way, it takes no click and says why in a tool
 A split's pane has its header already, so it gets no strip: the selector, same size, stands at the right of the
 header between the name and the zoom button, and the pane's terminal keeps every row.
 
+A terminal that does not have the keyboard (a split's other panes, any pane while a field or dialog is typing, every
+terminal while the window is out of focus) draws its cursor as a 1px outline in the cursor's color; the one that has it
+draws the block.
+
 ### The session's browser
 
 A page pane (`browser_pane.go`, `browser_tabs.go`) is three rows on the pane's fill, no seam between them.

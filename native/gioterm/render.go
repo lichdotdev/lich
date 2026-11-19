@@ -113,6 +113,17 @@ func cursorStyleOf(c cell, sn snap) cellStyle {
 	return st
 }
 
+// cursorOutline is the four 1px edges of cell r, the cursor of a terminal
+// that does not have the keyboard.
+func cursorOutline(r image.Rectangle) [4]image.Rectangle {
+	return [4]image.Rectangle{
+		{Min: r.Min, Max: image.Pt(r.Max.X, r.Min.Y+1)},
+		{Min: image.Pt(r.Min.X, r.Max.Y-1), Max: r.Max},
+		{Min: image.Pt(r.Min.X, r.Min.Y+1), Max: image.Pt(r.Min.X+1, r.Max.Y-1)},
+		{Min: image.Pt(r.Max.X-1, r.Min.Y+1), Max: image.Pt(r.Max.X, r.Max.Y-1)},
+	}
+}
+
 // paintBackgrounds fills each run of cells whose background differs from the
 // terminal's, one rectangle per run.
 func paintBackgrounds(ops *op.Ops, row []cell, sn snap, cellW, cellH int) {
