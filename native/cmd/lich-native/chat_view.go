@@ -77,6 +77,10 @@ type chatView struct {
 	optionMenus map[string]*ui.MenuState
 	answers     map[chatAnswer]*widget.Clickable
 	md          markdown.Cache
+	// quizzes are the waiting questions' cards, by item id, and asked the
+	// last one the keys were handed to.
+	quizzes map[string]*chatQuiz
+	asked   string
 	// unsent is a message the backend refused, handed back to an empty
 	// editor on the next frame.
 	mu     sync.Mutex
@@ -171,7 +175,7 @@ func (u *window) chatScreen(gtx C, sv sessionView, keys bool) {
 	p := u.chats.pane(sv.ID)
 	items := u.model.chat.of(sv.ID)
 	working := chatWorking(sv, u.model.chat.isRunning(sv.ID))
-	u.chatActs(gtx, p, sv, keys, working, permissionWaiting(items))
+	u.chatActs(gtx, p, sv, keys, working, permissionWaiting(items), questionWaiting(items))
 	rows := chatRows(items, working, gtx.Now)
 	th := u.theme.On(u.theme.Background)
 	layout.Flex{Axis: layout.Vertical}.Layout(gtx,
@@ -244,16 +248,24 @@ func chatColumn(gtx C, top, bottom, inset unit.Dp, w layout.Widget) D {
 
 // chatActs runs the view's keys and clicks before it is drawn: Enter sends,
 // and on an empty editor answers a waiting permission with its allow, Esc
-// with its reject.
-func (u *window) chatActs(gtx C, p *chatPane, sv sessionView, keys, working bool, waiting *backend.ChatItem) {
+// with its reject. A waiting question takes the keys to its card, and a
+// message sent past it declines it.
+func (u *window) chatActs(gtx C, p *chatPane, sv sessionView, keys, working bool, waiting, asking *backend.ChatItem) {
 	p.mu.Lock()
 	if p.unsent != "" && p.editor.Len() == 0 {
 		p.editor.SetText(p.unsent)
 	}
 	p.unsent = ""
 	p.mu.Unlock()
+	if asking != nil {
+		u.questionActs(gtx, p, sv, asking)
+	}
 	// The model panel's search holds the keys while the panel is open.
-	if keys && !p.picker.panel.Opened() && !gtx.Focused(&p.editor) {
+	switch {
+	case !keys || p.picker.panel.Opened():
+	case asking != nil:
+		p.focusQuestion(gtx, asking, p.quiz(asking.ID, asking.Question.Questions))
+	case !gtx.Focused(&p.editor):
 		gtx.Execute(key.FocusCmd{Tag: &p.editor})
 	}
 	if p.editor.Len() > 0 {
@@ -279,7 +291,7 @@ func (u *window) chatActs(gtx C, p *chatPane, sv sessionView, keys, working bool
 		switch {
 		case waiting != nil:
 			u.answerChat(sv.ID, waiting.ID, permitOption(waiting.Permission, api.PermitAllowOnce, api.PermitAllowAlways))
-		case !working:
+		case !working || asking != nil:
 			u.sendChat(p, sv.ID)
 		}
 	}

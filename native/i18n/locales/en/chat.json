@@ -62,5 +62,19 @@
     "search": "Search {provider}'s models…",
     "showMore": "Show more",
     "default": "Default"
+  },
+  "question": {
+    "multi": "multiple",
+    "step": "{n} of {total}",
+    "sendAll": "Send all",
+    "freeHint": "Enter sends · Esc declines",
+    "marked": {
+      "one": "{count} marked",
+      "other": "{count} marked"
+    },
+    "write": "Other… write your own answer",
+    "declined": "Not answered",
+    "label": "{header}:",
+    "own": "“{text}”"
   }
 }

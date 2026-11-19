@@ -70,5 +70,21 @@
     "search": "Поиск моделей {provider}…",
     "showMore": "Показать ещё",
     "default": "По умолчанию"
+  },
+  "question": {
+    "multi": "несколько",
+    "step": "{n} из {total}",
+    "sendAll": "Отправить всё",
+    "freeHint": "Enter отправляет · Esc отказывает",
+    "marked": {
+      "one": "Отмечен {count}",
+      "few": "Отмечено {count}",
+      "many": "Отмечено {count}",
+      "other": "Отмечено {count}"
+    },
+    "write": "Другое… напишите свой ответ",
+    "declined": "Без ответа",
+    "label": "{header}:",
+    "own": "«{text}»"
   }
 }

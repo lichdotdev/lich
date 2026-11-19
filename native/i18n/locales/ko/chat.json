@@ -58,5 +58,18 @@
     "search": "{provider} 모델 검색…",
     "showMore": "더 보기",
     "default": "기본값"
+  },
+  "question": {
+    "multi": "여러 개",
+    "step": "{n} / {total}",
+    "sendAll": "모두 보내기",
+    "freeHint": "Enter 보내기 · Esc 거절",
+    "marked": {
+      "other": "{count}개 선택"
+    },
+    "write": "기타… 직접 답 쓰기",
+    "declined": "답하지 않음",
+    "label": "{header}:",
+    "own": "“{text}”"
   }
 }
