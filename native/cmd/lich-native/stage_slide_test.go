@@ -12,6 +12,7 @@ import (
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/gioterm"
+	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -187,3 +188,63 @@ func TestSidebarPeekSlidesTheStageEdgeAndReflowsTheTerminalOnceItLands(t *testin
 		t.Errorf("back: %d columns once the sidebar went in, want the %d it had before", c, wide)
 	}
 }
+
+// labelX is where the first thing drawn with label starts.
+func labelX(t *testing.T, r *frameRig, label string) int {
+	t.Helper()
+	for _, n := range r.nodes() {
+		if n.Desc.Label == label {
+			return n.Desc.Bounds.Min.X
+		}
+	}
+	t.Fatalf("nothing drawn as %q:\n%s", label, r.drawn())
+	return 0
+}
+
+func TestDockPeekCarriesTheChatWithTheStageEdgeOnEveryFrame(t *testing.T) {
+	u, r := peekDockFrames(t)
+	u.palette, u.worktree = new(commandPalette), new(worktreeDialog)
+	u.git = newGitPanel(u.ctx, u.client, &u.root, r.invalidate, func(ui.Toast) {}, "monospace", 12)
+	u.terms.client = u.client
+	u.model = chatModel(api.ViewChat)
+	u.model.invalidate = r.invalidate
+	u.model.chat.kinds = []string{"claude"}
+	sv, _ := u.model.sessionViewOf("s1")
+	v := stageView{hasActive: true, active: sv}
+	r.draw = func(gtx C, th *ui.Theme) {
+		u.theme = th
+		u.root.Layout(gtx, func(gtx C) D {
+			row := gtx
+			row.Constraints = layout.Exact(image.Pt(gtx.Constraints.Max.X-gtx.Dp(gutter), gtx.Constraints.Max.Y))
+			if err := u.stageRow(row, v); err != nil {
+				t.Fatal(err)
+			}
+			return D{Size: gtx.Constraints.Max}
+		})
+	}
+	r.settle(t)
+	tui := i18n.T("chat.switch.tui")
+	// The switch sits at the strip's right end, inset from the island's.
+	inset := rigWindow.X - gtx1(gutter) - labelX(t, r, tui)
+	r.router.Queue(pointer.Event{Kind: pointer.Move, Source: pointer.Mouse, Position: edgePoint})
+	frames := 0
+	for range 100 {
+		r.frame()
+		if u.dock.slide.landed {
+			break
+		}
+		if u.dock.slide.moving() {
+			frames++
+			if end, x := u.dock.islands[0].x1, labelX(t, r, tui); x != end-inset {
+				t.Errorf("frame %d of the slide: the chat's switch starts at %d, want %d, %d inside the stage's edge at %d", frames-1, x, end-inset, inset, end)
+			}
+		}
+		r.now = r.now.Add(frameStep)
+	}
+	if frames < 5 {
+		t.Fatalf("the dock slid over %d frames, want one a frame of 180ms", frames)
+	}
+}
+
+// gtx1 is d in the rig's pixels, a pixel a dp.
+func gtx1(d unit.Dp) int { return layout.Context{Metric: unit.Metric{PxPerDp: 1}}.Dp(d) }

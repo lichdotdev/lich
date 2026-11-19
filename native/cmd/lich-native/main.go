@@ -877,9 +877,10 @@ func sidebarActive(v stageView) string {
 // island is the stage's rounded box: Home, the empty notice, the diff or
 // the terminal, in the color the active tab merges with, under the footer's
 // balloons. Its top-left corner is square while that tab sits on it. A lone
-// session's terminal is laid out termWidth wide, which a sidebar morph sets
-// to where the box is going and a dock's or a peek's slide to where the box
-// came from: wider, the box clips it; narrower, its fill shows past it. The Git panel's slide sets termHeight the
+// session is laid out termWidth wide, which a sidebar morph sets to where
+// the box is going and a dock's or a peek's slide, for a terminal, to where
+// the box came from: wider, the box clips it; narrower, its fill shows past
+// it. The Git panel's slide sets termHeight the
 // same way.
 func (u *window) island(gtx C, v stageView, termWidth, termHeight int) error {
 	size := gtx.Constraints.Max
@@ -1037,30 +1038,37 @@ func (u *window) stageRow(gtx C, v stageView) error {
 	u.terms.refitNow = d.slide.landed || u.sidebar.holdsStage() || u.git.moved() || u.extPanel.moved()
 	defer func() { u.terms.refitNow = false }()
 	size := gtx.Constraints.Max
-	// The session's terminal takes the width the sidebar's morph ends at
-	// from its first frame. While the dock's or the peek's slide moves the
-	// stage's edge, it keeps its grid, clipped by the island or short of its
-	// edge, and follows once the slide lands: a resize reaches the agent,
-	// which redraws everything it printed, too slow for the slide's frames.
+	slot := 0
+	if !d.fullscreen {
+		slot = int(share * float32(d.width(gtx)+gtx.Dp(gutter)))
+	}
+	// The session takes the width the sidebar's morph ends at from its
+	// first frame. While the dock's or the peek's slide moves the stage's
+	// edge, the chat follows the island on every frame, and a terminal keeps
+	// its grid, clipped by the island or short of its edge, until the slide
+	// lands: a resize reaches the agent, which redraws everything it printed,
+	// too slow for the slide's frames.
 	termWidth := size.X - u.sidebar.stageOverhang(gtx)
 	if open && !d.fullscreen {
 		termWidth -= d.width(gtx) + gtx.Dp(gutter)
 	}
 	termWidth = max(termWidth, 0)
-	if (d.slide.moving() || u.sidebar.peek.slide.moving()) && u.termWidth > 0 {
-		termWidth = u.termWidth
-	} else {
+	switch {
+	case !d.slide.moving() && !u.sidebar.peek.slide.moving():
 		u.termWidth = termWidth
+	case v.active.View == api.ViewChat || u.termWidth == 0:
+		termWidth = max(size.X-slot, 0)
+	default:
+		termWidth = u.termWidth
 	}
 	termHeight := max(size.Y-u.git.pending()-u.extPanel.pending()-u.ptyBand(gtx, v)-u.sessionBand(gtx, v), 0)
 	if share == 0 {
 		d.islands = nil
 		return u.island(gtx, v, termWidth, termHeight)
 	}
-	at, w, slot := 0, size.X, 0
+	at, w := 0, size.X
 	if !d.fullscreen {
 		w = d.width(gtx)
-		slot = int(share * float32(w+gtx.Dp(gutter)))
 		at = size.X - slot + gtx.Dp(gutter)
 		mainEnd := max(size.X-slot, 0)
 		d.islands = []islandSpan{
