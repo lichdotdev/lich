@@ -380,18 +380,30 @@ func TestTheChangesItemHasNoFillAtRestAndNeverTheLitOne(t *testing.T) {
 	}
 }
 
-// The line under the box keeps chatCrumbsBottom between it and the bottom edge
-// of the island, over the composer's own pad, and the room between the box and
-// the line is the one it had.
-func TestTheLineUnderTheBoxKeepsItsDistanceFromTheIslandsEdge(t *testing.T) {
+// The line under the box has chatCrumbsPad over it, between the box and the
+// line, and under it, between the line and the bottom edge of the island, over
+// the composer's own pad.
+func TestTheLineUnderTheBoxHasSpace2OnBothSides(t *testing.T) {
 	_, r, _ := chatFrames(t, api.ViewChat)
 	r.settle(t)
-	top := labelTop(t, r, "main")
-	const lineHeight = 16 // a TextXS line
-	if got, want := rigWindow.Y-top, lineHeight+int(chatCrumbsBottom)+int(chatComposerPad); got != want {
-		t.Errorf("the line's top is %dpx from the bottom edge, want its %dpx height, %v under it and the composer's %v pad", got, lineHeight, chatCrumbsBottom, chatComposerPad)
+	if chatCrumbsPad != 8 {
+		t.Errorf("the room around the line is %v, want Space(2), 8dp", chatCrumbsPad)
 	}
-	if chatCrumbsBottom != 8 {
-		t.Errorf("the room under the line is %v, want Space(2), 8dp", chatCrumbsBottom)
+	top := labelTop(t, r, "main")
+	boxBottom := -1
+	for _, n := range r.nodes() {
+		if b := n.Desc.Bounds; n.Desc.Gestures != 0 && b.Dx() == 960 && b.Min.Y > 200 {
+			boxBottom = b.Max.Y
+		}
+	}
+	if boxBottom < 0 {
+		t.Fatalf("no composer box:\n%s", r.drawn())
+	}
+	const lineHeight = 16 // a TextXS line
+	if got := top - boxBottom; got != int(chatCrumbsPad) {
+		t.Errorf("the line starts %dpx under the box, want %v", got, chatCrumbsPad)
+	}
+	if got, want := rigWindow.Y-top, lineHeight+int(chatCrumbsPad)+int(chatComposerPad); got != want {
+		t.Errorf("the line's top is %dpx from the bottom edge, want its %dpx height, %v under it and the composer's %v pad", got, lineHeight, chatCrumbsPad, chatComposerPad)
 	}
 }
