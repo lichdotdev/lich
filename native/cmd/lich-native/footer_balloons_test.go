@@ -112,9 +112,6 @@ func TestANarrowStageLeavesOutWhatDoesNotFitRatherThanWrap(t *testing.T) {
 
 func TestChangesBalloonOpensTheReviewTabInTheFrameThatTookTheClick(t *testing.T) {
 	u, r := stageFrames(t, dockReview)
-	r.waitFor(t, "No uncommitted changes")
-	u.dock.tab = dockCode
-	r.settle(t)
 	in := busySession()
 	in.sessionID = ""
 	r.draw = func(gtx C, th *ui.Theme) {
@@ -127,6 +124,11 @@ func TestChangesBalloonOpensTheReviewTabInTheFrameThatTookTheClick(t *testing.T)
 			return D{Size: gtx.Constraints.Max}
 		})
 	}
+	// The checkout under test is read before the tab goes: the click then
+	// finds Review's diff on hand, not a read that lands after the frame.
+	r.waitFor(t, "No uncommitted changes")
+	u.dock.tab = dockCode
+	r.settle(t)
 	if !r.shows("Filter by name") {
 		t.Fatalf("the Code tab is not on screen:\n%s", r.drawn())
 	}
