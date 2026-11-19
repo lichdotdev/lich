@@ -89,9 +89,14 @@ work when nobody knows it and that the call site never shows. The mechanism and 
 - **A session runs its chat or its terminal, never both, and only the providers in `chat.Kinds` have a chat**
   (`internal/chat`, `internal/terminal/chat.go`): the structured modes keep no lock on a conversation, so two
   processes on one would write one transcript from two histories; a switch stops one side, waits for it to exit
-  and resumes the other, and refuses while a turn runs. Codex and Crush have no chat: Codex's structured mode is
-  its own app-server protocol and Crush's is an HTTP server, where every other provider speaks Claude Code's
-  stream-json or ACP over stdio. Cursor CLI's ACP server was measured only up to its login, so its chat is wired
+  and resumes the other, and refuses while a turn runs. Crush has no chat: its structured mode is an HTTP server,
+  where every other provider speaks over stdio, Claude Code's stream-json, Codex's app-server (`codex_*.go`) or ACP.
+  A Codex chat's thread is the rollout `codex resume <id>` opens, both ways (measured on 0.170.0: a thread the
+  app-server opened took a turn in the TUI, and one the TUI wrote reopened in the app-server); `codex exec resume`
+  of an older Codex refuses these threads (`paginated_threads is not supported yet`), and lich never runs it. A
+  Codex resume that fails leaves a notice and opens a new thread. app-server takes the terminal's `-c` overrides
+  (trust, briefing, lich's MCP server) and no other flag of lich's, so a checkout that skips permissions opens the
+  thread on the never-ask, no-sandbox policy over the protocol. Cursor CLI's ACP server was measured only up to its login, so its chat is wired
   and unverified. A resume is checked after the switch: an ACP load that fails or replays nothing (Kiro was
   measured opening a new conversation in silence) and a Claude Code `system/init` naming another id each leave a
   notice, but Claude Code names its conversation only once the first message is sent, so until then the only
@@ -130,13 +135,16 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   read back from the provider's history shows its turns as done with none. A session opened in a subdirectory
   counts only that subdirectory. Every provider with a chat reads it the same way.
 - **An answer names the model and effort that wrote it only as far as its provider says** (`ChatItem.Model`,
-  `Effort`; `internal/chat/claude.go`, `claude_options.go`, `acp_options.go`): Claude Code puts `message.model` on
+  `Effort`; `internal/chat/claude.go`, `claude_options.go`, `acp_options.go`, `codex_items.go`): Claude Code puts `message.model` on
   every message, live and in the transcript, which lich names with the display name of the `initialize` model that
   resolves to it (an alias other than `default` first); the effort is the one the process runs on when the message
   arrives, and the transcript keeps none, so a resumed conversation's answers name a model and no effort. An id
   that `initialize` does not list stays as the id. An ACP server says neither on a message: an item takes the
   current model and effort when it begins, and what `session/load` replays names nothing, so a resumed ACP chat's
-  old answers carry no model. The header then shows less, never the model the chat is set to now.
+  old answers carry no model. Codex says neither on an item either: a live one takes the model and effort its
+  turn started on, and a resumed thread's answers take those of the `turn_context` the rollout wrote for their
+  turn, so they name both; an id `model/list` does not list stays as the id. The header then shows less, never
+  the model the chat is set to now.
 - **A chat recognises Claude Code's own lines in a conversation by their exact text** (`internal/chat/local_command.go`,
   `claude.go`): `[Request interrupted by user]` and its `for tool use` form, a local command's `<command-name>`,
   `<command-message>`, `<command-args>` and `<local-command-stdout>` lines (one muted notice, "/model haiku ·
@@ -144,7 +152,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   person's or the agent's, and are left out or made a notice. Any other tag, `<local-command-stderr>` among them, or
   text that only contains one of these, stays as written. Only Claude Code writes them; an ACP server has no such lines.
 - **A chat offers only the model, effort and mode its provider offers, and two of them restart its process**
-  (`internal/chat/options.go`, `claude_options.go`, `acp_options.go`): Claude Code's come from its `initialize`
+  (`internal/chat/options.go`, `claude_options.go`, `acp_options.go`, `codex_options.go`): Claude Code's come from its `initialize`
   (the models, each with its efforts and whether it has an auto mode) and from the permission modes its `--help`
   lists, `bypassPermissions` marked as dangerous; an ACP server's from its `configOptions`, or its older `modes`
   and `models` where it has no option of that category. Labels are the provider's words where it has some; Claude
@@ -152,7 +160,15 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   set over the protocol but two, which resume the conversation in a process started for them and are refused
   while a turn runs: Claude Code's `bypassPermissions`, refused to a process launched without
   `--allow-dangerously-skip-permissions`, and Kiro CLI's model, whose `session/set_model` never answers and
-  changes nothing (2.21.0) while `acp --model` holds on a load. No ACP server offers a mode that runs every tool
+  changes nothing (2.21.0) while `acp --model` holds on a load. Codex's model and effort come from `model/list`
+  (hidden models left out, the efforts each model lists), its modes are its three built-in permission profiles
+  (`:read-only` and `:workspace` asking before what the sandbox does not allow, `:danger-full-access` never
+  asking, marked as dangerous), named by the window by id; each is sent with the next `turn/start` and holds for
+  the turns after it, so a change made during a turn applies from the next message. The mode shown is read off
+  the thread's sandbox alone: a config.toml approval policy other than the profile's (`untrusted`) shows as the
+  mode of its sandbox until a mode is picked, and an external sandbox shows as none. A config.toml model that
+  `model/list` leaves out (one the account cannot run) stays the current choice, with no effort offered. No ACP
+  server offers a mode that runs every tool
   without asking, so their chat has none; the checkout's skip-permissions setting still answers every question
   yes (above). Kiro CLI offers no effort over ACP, opencode one only for a model that has one, and what Cursor
   CLI offers was not measured past its login. The model and effort picked become the session's own, which a new
@@ -163,7 +179,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   birth-value bullet), so there Claude Code's effort, and Antigravity's model and effort, come back on the
   provider's default.
 - **A chat draws the agent's questions only where the provider hands them to the client** (`internal/chat/question.go`,
-  `claude_question.go`, `acp_question.go`): every request is read into Claude Code's AskUserQuestion shape. Claude
+  `claude_question.go`, `acp_question.go`, `codex_question.go`): every request is read into Claude Code's AskUserQuestion shape. Claude
   Code asks through `can_use_tool` for `AskUserQuestion`, even in `bypassPermissions` (2.1.328), and takes the
   answers in the allowed input, several picks and the person's own words joined by ", ", or a deny with a word to
   the agent from the prompt catalog. Antigravity (1.5.3) and oh-my-pi (18.8.9) ask over ACP's `elicitation/create`
@@ -177,10 +193,15 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   and answers on `POST /question/{id}/reply`, the person's own words as one more label, or `/reject`. The port is
   picked free and then handed over, so another process can take it in between; the chat then says it could not
   read the question, and the turn waits until the person stops it. opencode 2's ACP server was not measured and
-  runs without any of it, so its agent asks in plain text. Kiro CLI (2.21.0) has no question tool and asks in
-  plain text; Cursor CLI was not measured past its login. Nothing answers a
+  runs without any of it, so its agent asks in plain text. Codex (0.170.0) asks through `item/tool/requestUserInput`, answered by
+  each question's id with the labels picked and the person's own words, and an MCP server's form through
+  `mcpServer/elicitation/request`, read as an ACP form is; a URL or other form dialect is declined. Neither was
+  seen live: both are implemented from the schema `codex app-server generate-ts` writes. Its command, patch and
+  extra-permission approvals are permission cards, a permission granted as asked for the turn or the session;
+  one Codex resolves itself (a turn interrupted under it) stops asking, and a request lich does not serve (a
+  dynamic tool call) is refused as an unknown method. Kiro CLI (2.21.0) has no question tool and asks in plain text; Cursor CLI was not measured past its login. Nothing answers a
   question on the person's behalf, a checkout that skips permissions included. A message sent while questions wait
-  declines them and goes to the agent: Claude Code takes it in the turn running; ACP takes no message during a
+  declines them and goes to the agent: Claude Code takes it in the turn running, and so does Codex (`turn/steer`); ACP takes no message during a
   turn, so lich stops the turn and sends it once the turn ended. A question the process never got an answer to, read
   back from a transcript, shows as not answered. The window learns a turn is running from its start event, so one
   opened mid-turn knows it only from a question still waiting.

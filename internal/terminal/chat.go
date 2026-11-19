@@ -43,8 +43,11 @@ var claudeChatArgs = []string{
 // chat speaks it.
 const acpSubcmd = "acp"
 
+// codexAppServerSubcmd starts Codex's app-server on stdio, its own protocol.
+const codexAppServerSubcmd = "app-server"
+
 // chatCloseGrace is how long a chat process is given to leave once its stdin
-// closes, which is how both protocols are told to end, before it is killed.
+// closes, which is how every protocol is told to end, before it is killed.
 const chatCloseGrace = 3 * time.Second
 
 // chatDrain is how long the reader is left to empty the pipe after the process
@@ -79,6 +82,12 @@ func chatArgs(a spawnArgs, l ChatLaunch) []string {
 			model, effortArgs(a.kind, a.effort, a.resume))
 	case providers.Antigravity:
 		return slices.Concat([]string{acpSubcmd}, skipPermissionArgs(a.kind, a.skipPermissions))
+	case providers.Codex:
+		// The `-c` overrides are global options and go before the subcommand;
+		// app-server takes neither --model nor the skip-permissions flag, which
+		// the protocol sets (0.170.0).
+		return slices.Concat(confinedTrustArgs(a.kind, a.cwd, a.confined), codexBriefingArgs(a.kind, a.resume, a.route, a.lang),
+			mcpArgs(a.kind, a.lichBin), []string{codexAppServerSubcmd})
 	}
 	if srv := openCodeServer(a.kind, a.oc2, l); srv != nil {
 		return []string{acpSubcmd, openCodePortFlag, strconv.Itoa(srv.Port)}
@@ -183,7 +192,7 @@ func (p *ChatProcess) Done() <-chan struct{} { return p.done }
 // why one that died did.
 func (p *ChatProcess) Stderr() string { return p.stderr.String() }
 
-// Close ends the process the way both protocols are told to end, by closing
+// Close ends the process the way every protocol is told to end, by closing
 // its stdin, and kills it if it has not left within chatCloseGrace. It returns
 // once the process is gone.
 func (p *ChatProcess) Close() {

@@ -394,6 +394,23 @@ func chatDiff(gtx C, th *ui.Theme, diff string) D {
 		})
 }
 
+// permitLabel is the provider's words for a permission's answer, or, for one
+// it sends by kind alone (Claude Code, Codex), lich's.
+func permitLabel(o api.ChatPermitOption) string {
+	if o.Label != "" {
+		return o.Label
+	}
+	switch o.Kind {
+	case api.PermitAllowOnce:
+		return i18n.T("chat.permit.allowOnce")
+	case api.PermitAllowAlways:
+		return i18n.T("chat.permit.allowAlways")
+	case api.PermitRejectOnce:
+		return i18n.T("chat.permit.rejectOnce")
+	}
+	return o.ID
+}
+
 // chatPermission is the agent asking before a tool runs: a box with the
 // tool, its diff and a button per answer the provider offers, the first
 // allow filled. Answered, it is a muted line with the answer.
@@ -404,7 +421,7 @@ func chatPermission(gtx C, th *ui.Theme, p *chatPane, it backend.ChatItem) D {
 		choice := perm.Chosen
 		for _, o := range perm.Options {
 			if o.ID == perm.Chosen {
-				choice = o.Label
+				choice = permitLabel(o)
 			}
 		}
 		return th.Text(ui.TextXS, i18n.T("chat.view.answered", i18n.Args{"tool": tool, "choice": choice})).Muted().Layout(gtx)
@@ -416,7 +433,7 @@ func chatPermission(gtx C, th *ui.Theme, p *chatPane, it backend.ChatItem) D {
 		if i > 0 {
 			buttons = append(buttons, ui.Gap(1.5))
 		}
-		b := box.Button(p.answer(it.ID, o.ID), o.Label)
+		b := box.Button(p.answer(it.ID, o.ID), permitLabel(o))
 		b.Size, b.Variant = ui.SizeSM, ui.VariantOutline
 		if o.ID == primary {
 			b.Variant = ui.VariantDefault

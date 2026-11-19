@@ -48,11 +48,18 @@
     "busy": "Espera a que termine el turno para cambiarlo.",
     "modelEffort": "Modelo y esfuerzo"
   },
+  "permit": {
+    "allowOnce": "Permitir",
+    "allowAlways": "Permitir siempre",
+    "rejectOnce": "Denegar"
+  },
   "choice": {
     "manual": "Manual",
     "plan": "Plan",
     "auto": "Auto",
-    "yolo": "YOLO"
+    "yolo": "YOLO",
+    "readOnly": "Solo lectura",
+    "workspace": "Espacio de trabajo"
   },
   "day": {
     "today": "Hoy",

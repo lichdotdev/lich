@@ -94,3 +94,24 @@ func (c *chatSession) declineUnanswered() {
 		}
 	}
 }
+
+// withdraw closes item itemID, a permission or a question the provider
+// stopped waiting on, without answering it.
+func (c *chatSession) withdraw(itemID string) {
+	c.mu.Lock()
+	_, perm := c.perms[itemID]
+	_, asked := c.questions[itemID]
+	delete(c.perms, itemID)
+	delete(c.questions, itemID)
+	c.mu.Unlock()
+	switch {
+	case perm:
+		c.conv.update(itemID, api.ItemPermission, true, func(it *api.ChatItem) {
+			if it.Permission != nil {
+				it.Permission.Tool.State = api.ToolFailed
+			}
+		})
+	case asked:
+		c.replied(itemID, api.ChatQReplied{Declined: true})
+	}
+}

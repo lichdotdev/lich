@@ -20,8 +20,8 @@ var (
 )
 
 // toolIcons is the glyph of each tool the chat knows, by its name lowered:
-// Claude Code's own names and the kinds ACP gives a call. A tool it does not
-// know wears icToolOther.
+// Claude Code's own names, the kinds ACP gives a call and Codex's. A tool it
+// does not know wears icToolOther.
 var toolIcons = map[string]*icons.Icon{
 	"read":         icToolRead,
 	"notebookread": icToolRead,
@@ -29,6 +29,7 @@ var toolIcons = map[string]*icons.Icon{
 	"multiedit":    icToolEdit,
 	"write":        icToolEdit,
 	"notebookedit": icToolEdit,
+	"apply_patch":  icToolEdit,
 	"delete":       icons.Lucide("trash-2"),
 	"move":         icons.Lucide("arrow-right-left"),
 	"search":       icToolFind,

@@ -429,8 +429,12 @@ func choiceLabel(c backend.ChatChoice) string {
 		return i18n.T("chat.choice.plan")
 	case "auto":
 		return i18n.T("chat.choice.auto")
-	case "bypasspermissions", "yolo":
+	case "bypasspermissions", "yolo", ":danger-full-access":
 		return i18n.T("chat.choice.yolo")
+	case ":read-only":
+		return i18n.T("chat.choice.readOnly")
+	case ":workspace":
+		return i18n.T("chat.choice.workspace")
 	}
 	return c.ID
 }

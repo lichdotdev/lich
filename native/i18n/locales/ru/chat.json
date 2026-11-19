@@ -56,11 +56,18 @@
     "busy": "Изменить можно после завершения хода.",
     "modelEffort": "Модель и глубина рассуждений"
   },
+  "permit": {
+    "allowOnce": "Разрешить",
+    "allowAlways": "Всегда разрешать",
+    "rejectOnce": "Запретить"
+  },
   "choice": {
     "manual": "Ручной",
     "plan": "План",
     "auto": "Авто",
-    "yolo": "YOLO"
+    "yolo": "YOLO",
+    "readOnly": "Только чтение",
+    "workspace": "Рабочая область"
   },
   "day": {
     "today": "Сегодня",

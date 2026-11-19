@@ -44,11 +44,18 @@
     "busy": "턴이 끝난 뒤에 바꿀 수 있습니다.",
     "modelEffort": "모델 및 추론 강도"
   },
+  "permit": {
+    "allowOnce": "허용",
+    "allowAlways": "항상 허용",
+    "rejectOnce": "거부"
+  },
   "choice": {
     "manual": "수동",
     "plan": "계획",
     "auto": "자동",
-    "yolo": "YOLO"
+    "yolo": "YOLO",
+    "readOnly": "읽기 전용",
+    "workspace": "작업 공간"
   },
   "day": {
     "today": "오늘",

@@ -1,6 +1,6 @@
 // Package chat runs a session as a chat (api/chat.go): its provider's CLI in
-// the CLI's structured mode, Claude Code's stream-json or the Agent Client
-// Protocol, read into items the window draws. A session runs either its chat or
+// the CLI's structured mode, Claude Code's stream-json, Codex's app-server or
+// the Agent Client Protocol, read into items the window draws. A session runs either its chat or
 // its terminal, never both, and switching between them resumes the same
 // conversation on the other side.
 package chat
@@ -21,11 +21,10 @@ import (
 	"github.com/lichdotdev/lich/internal/terminal"
 )
 
-// Kinds is the providers whose sessions can be drawn as a chat. Codex is out:
-// its structured mode is its own app-server protocol. Crush is out: its server
-// speaks HTTP, not stdio. Cursor's ACP server is in unmeasured, behind a login
-// (docs/ceilings.md).
-var Kinds = []string{providers.Claude, providers.OpenCode, providers.OMP, providers.Antigravity, providers.Kiro, providers.Cursor}
+// Kinds is the providers whose sessions can be drawn as a chat. Crush is out:
+// its server speaks HTTP, not stdio. Cursor's ACP server is in unmeasured,
+// behind a login (docs/ceilings.md).
+var Kinds = []string{providers.Claude, providers.OpenCode, providers.OMP, providers.Antigravity, providers.Kiro, providers.Cursor, providers.Codex}
 
 // openTimeout bounds a chat's handshake and the conversation it opens, which
 // for a long resumed one is the whole replay.
@@ -193,9 +192,12 @@ func (s *Service) start(ctx context.Context, id, projectID, kind, cwd string, ca
 	c.conv = newConversation(func(it api.ChatItem) {
 		events.Send(s.hub.Emit, api.ChatItemEvent, api.ChatItemUpdate{SessionID: id, Item: it})
 	})
-	if kind == providers.Claude {
+	switch kind {
+	case providers.Claude:
 		c.drv = newClaudeDriver(c, s.lang())
-	} else {
+	case providers.Codex:
+		c.drv = newCodexDriver(c)
+	default:
 		c.drv = newACPDriver(c, launch.Server)
 	}
 	if lost {

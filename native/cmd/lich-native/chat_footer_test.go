@@ -199,7 +199,8 @@ func TestAChoiceSentByIdAloneIsNamedForTheIdsLichKnows(t *testing.T) {
 		"default": i18n.T("chat.choice.manual"), "manual": i18n.T("chat.choice.manual"),
 		"plan": i18n.T("chat.choice.plan"), "auto": i18n.T("chat.choice.auto"),
 		"bypassPermissions": i18n.T("chat.choice.yolo"), "yolo": i18n.T("chat.choice.yolo"),
-		"somethingNew": "somethingNew",
+		":read-only": i18n.T("chat.choice.readOnly"), ":workspace": i18n.T("chat.choice.workspace"),
+		":danger-full-access": i18n.T("chat.choice.yolo"), "somethingNew": "somethingNew",
 	} {
 		if got := choiceLabel(backend.ChatChoice{ID: id}); got != want {
 			t.Errorf("%s is %q, want %q", id, got, want)
