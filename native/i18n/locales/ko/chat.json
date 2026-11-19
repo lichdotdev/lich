@@ -23,6 +23,11 @@
       "other": "{duration} 작업 · 도구 {count}개 · {time}"
     }
   },
+  "changes": {
+    "files": {
+      "other": "파일 {count}개"
+    }
+  },
   "composer": {
     "placeholder": "이 프로젝트에 대해 {provider}에게 물어보세요",
     "send": "보내기",

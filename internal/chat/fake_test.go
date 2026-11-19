@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"slices"
 	"strings"
 	"time"
@@ -142,6 +143,10 @@ func (f *fake) claudeTurn(text string) {
 	case "plan":
 		f.send(map[string]any{"type": "system", "subtype": "status", "permissionMode": "plan"})
 		f.claudeResult(false, "completed", "")
+	case "write":
+		f.claudeEdit(false)
+	case "commit":
+		f.claudeEdit(true)
 	case "die":
 		fmt.Fprintln(os.Stderr, "boom")
 		os.Exit(3)
@@ -272,4 +277,19 @@ func (f *fake) acpTurn(id any, text string) {
 		time.Sleep(time.Hour)
 	}
 	f.result(id, map[string]any{"stopReason": "end_turn"})
+}
+
+// claudeEdit changes the checkout the way a shell command would, behind the
+// chat's back: a line appended to a.txt and a three-line b.txt, committed
+// when asked.
+func (f *fake) claudeEdit(commit bool) {
+	a, _ := os.OpenFile("a.txt", os.O_APPEND|os.O_WRONLY, 0o644)
+	_, _ = a.WriteString("y\n")
+	_ = a.Close()
+	_ = os.WriteFile("b.txt", []byte("1\n2\n3\n"), 0o644)
+	if commit {
+		_ = exec.Command("git", "add", "-A").Run()
+		_ = exec.Command("git", "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-m", "turn").Run()
+	}
+	f.claudeResult(false, "completed", "")
 }

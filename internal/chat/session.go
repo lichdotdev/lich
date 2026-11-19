@@ -14,6 +14,7 @@ import (
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/events"
+	"github.com/lichdotdev/lich/internal/project"
 	"github.com/lichdotdev/lich/internal/terminal"
 )
 
@@ -79,10 +80,13 @@ type chatSession struct {
 	mu      sync.Mutex
 	running bool
 	since   time.Time
-	perms   map[string]permission
-	exited  chan struct{}
-	bound   string
-	opts    []api.ChatOption
+	// before is the checkout as the turn in flight found it, nil where it
+	// could not be read.
+	before *project.Lines
+	perms  map[string]permission
+	exited chan struct{}
+	bound  string
+	opts   []api.ChatOption
 }
 
 // wire writes one JSON value per line to a provider's stdin.
@@ -160,16 +164,35 @@ func (c *chatSession) beginTurn() error {
 		c.mu.Unlock()
 		return errTurnRunning
 	}
-	c.running, c.since = true, time.Now()
+	c.running, c.since, c.before = true, time.Now(), nil
 	c.mu.Unlock()
 	events.Send(c.svc.hub.Emit, api.ChatTurnEvent, api.ChatTurn{SessionID: c.id, Running: true})
 	c.svc.term.ReportChatState(c.id, stateBusy, "", "")
 	return nil
 }
 
+// markStart reads the checkout the turn begins on. It runs before the message
+// goes out, or the agent's first edit could land in the reading.
+func (c *chatSession) markStart() {
+	before := c.readLines()
+	c.mu.Lock()
+	c.before = before
+	c.mu.Unlock()
+}
+
 // endTurn closes the turn in flight, answering no to whatever it still asks.
 // A turn ends once: the provider's end and a process's death can both report it.
 func (c *chatSession) endTurn(reason string) {
+	c.mu.Lock()
+	if !c.running {
+		c.mu.Unlock()
+		return
+	}
+	before := c.before
+	c.mu.Unlock()
+	// Read while the turn still counts as running: a message sent once it
+	// does not would open the next turn under this one's end event.
+	changes := turnChanges(before, c.readLines())
 	c.mu.Lock()
 	if !c.running {
 		c.mu.Unlock()
@@ -181,7 +204,7 @@ func (c *chatSession) endTurn(reason string) {
 	c.dismissPermissions()
 	c.conv.flush()
 	c.svc.term.ReportChatState(c.id, stateDone, "", "")
-	events.Send(c.svc.hub.Emit, api.ChatTurnEvent, api.ChatTurn{SessionID: c.id, StopReason: reason, DurationMs: took})
+	events.Send(c.svc.hub.Emit, api.ChatTurnEvent, api.ChatTurn{SessionID: c.id, StopReason: reason, DurationMs: took, Changes: changes})
 }
 
 // dismissPermissions answers no to every question still waiting, which a

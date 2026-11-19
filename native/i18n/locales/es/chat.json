@@ -26,6 +26,12 @@
       "other": "Trabajó {duration} · {count} herramientas · {time}"
     }
   },
+  "changes": {
+    "files": {
+      "one": "{count} archivo",
+      "other": "{count} archivos"
+    }
+  },
   "composer": {
     "placeholder": "Pregúntale a {provider} sobre este proyecto",
     "send": "Enviar",

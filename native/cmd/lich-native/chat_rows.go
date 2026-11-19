@@ -16,6 +16,7 @@ const (
 	chatRowWork                    // a turn's tool calls, folded into one line
 	chatRowLive                    // the turn in flight, unless a permission says it waits
 	chatRowDay                     // the day a turn starts on, when it is not the day of the turn before
+	chatRowDone                    // what a finished turn changed in the checkout
 )
 
 // chatRow is one line of the chat view.
@@ -52,7 +53,14 @@ type chatTurnSpan struct {
 // live row last, which a waiting permission's box stands in for. A turn has run from its first item to its last, or to now
 // while it is the one in flight: the history carries no durations.
 func chatRows(items []backend.ChatItem, running bool, now time.Time) []chatRow {
+	return chatRowsWith(items, running, now, nil)
+}
+
+// chatRowsWith is chatRows with, after each finished turn that changed the
+// checkout (changed says which), the row that tells how much.
+func chatRowsWith(items []backend.ChatItem, running bool, now time.Time, changed func(turn int) bool) []chatRow {
 	spans := map[int]*chatTurnSpan{}
+	asked := map[int]bool{}
 	last := 0
 	for _, it := range items {
 		sp := spans[it.Turn]
@@ -67,9 +75,15 @@ func chatRows(items []backend.ChatItem, running bool, now time.Time) []chatRow {
 		if it.Kind == api.ItemTool {
 			sp.tools = append(sp.tools, it)
 		}
+		asked[it.Turn] = asked[it.Turn] || it.Kind == api.ItemUser
 		last = max(last, it.Turn)
 	}
 	var rows []chatRow
+	closing := func(turn int) {
+		if asked[turn] && changed != nil && changed(turn) {
+			rows = append(rows, chatRow{kind: chatRowDone, turn: turn})
+		}
+	}
 	folded := map[int]bool{}
 	led := map[int]bool{}
 	var turnDay time.Time
@@ -78,7 +92,10 @@ func chatRows(items []backend.ChatItem, running bool, now time.Time) []chatRow {
 	if running && len(items) > 0 {
 		liveID = items[len(items)-1].ID
 	}
-	for _, it := range items {
+	for i, it := range items {
+		if i > 0 && items[i-1].Turn != it.Turn {
+			closing(items[i-1].Turn)
+		}
 		if began := spans[it.Turn].began; it.Kind == api.ItemUser && began > 0 {
 			day := time.UnixMilli(began).In(now.Location())
 			if !turnDay.IsZero() && !sameDay(turnDay, day) {
@@ -106,6 +123,9 @@ func chatRows(items []backend.ChatItem, running bool, now time.Time) []chatRow {
 		rows = append(rows, chatRow{kind: chatRowWork, turn: it.Turn, tools: sp.tools, ended: sp.end, live: running && toolRunning(sp.tools),
 			took: time.Duration(max(end-sp.start, 0)) * time.Millisecond})
 	}
+	if !running && len(items) > 0 {
+		closing(items[len(items)-1].Turn)
+	}
 	if running && permissionWaiting(items) == nil {
 		rows = append(rows, chatRow{kind: chatRowLive})
 	}
@@ -127,6 +147,8 @@ func chatRowKey(r chatRow) string {
 		return "work:" + strconv.Itoa(r.turn)
 	case chatRowDay:
 		return "day:" + strconv.Itoa(r.turn)
+	case chatRowDone:
+		return "changes:" + strconv.Itoa(r.turn)
 	case chatRowLive:
 		return "live"
 	}

@@ -100,6 +100,16 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   yes itself where the checkout skips permissions and the server has no flag for it. lich serves no ACP client
   method (`fs/*`, `terminal/*`): a file the agent asked lich to write would land outside the sandbox. The text of
   lich's own notices is English, like backend error text.
+- **A chat turn's count of changes is a difference of two numstat readings, not a record of what the agent did**
+  (`internal/chat/changes.go`, `internal/project/lines.go`): lich reads `git diff --numstat HEAD` and the untracked
+  files before the message goes out and again when the turn ends, and counts the files whose numbers differ. It
+  therefore counts whatever else changed the checkout in between (a person's edit, a build), and misses an edit
+  that leaves a file's added and removed counts as they were (a line rewritten in a file already changed by as many
+  lines), and a binary file that stays binary. A turn that moved HEAD (the agent committed) has no count, since the
+  two readings are against different commits; so does a checkout that is not a repository, or whose reading takes
+  more than five seconds. The window then shows the turn's end without a count. The count is not kept: a chat
+  read back from the provider's history shows its turns as done with none. A session opened in a subdirectory
+  counts only that subdirectory. Every provider with a chat reads it the same way.
 - **A chat offers only the model, effort and mode its provider offers, and two of them restart its process**
   (`internal/chat/options.go`, `claude_options.go`, `acp_options.go`): Claude Code's come from its `initialize`
   (the models, each with its efforts and whether it has an auto mode) and from the permission modes its `--help`
