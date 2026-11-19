@@ -43,9 +43,10 @@ require (
 // the last frame), a double click window of 400 ms, the flip model on
 // Windows, app.PreferX11 with focus kept while a child X11 window holds the
 // keyboard (the web view's page), and Vulkan before EGL on X11 (NVIDIA's EGL
-// hangs under XWayland) with a present on a stale surface dropping the frame
-// rather than closing the window. Every patch of ours lands on that branch.
-replace gioui.org => github.com/lichdotdev/gio v0.0.0-20261119171152-c60f0dbb820f
+// hangs under XWayland) with a present on a stale surface or a lost device
+// dropping the frame rather than the window. Every patch of ours lands on that
+// branch.
+replace gioui.org => github.com/lichdotdev/gio v0.0.0-20261119203633-c739f5fbd1c6
 
 replace github.com/lichdotdev/lich => ../
 
