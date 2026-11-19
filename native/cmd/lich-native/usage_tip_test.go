@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"image"
 	"testing"
 	"time"
@@ -112,33 +113,32 @@ func TestALockedWindowSaysSoAndKeepsItsReason(t *testing.T) {
 	wantShown(t, tipFrames(t, plan), "Locked", "Session limit reached")
 }
 
-func TestTheProfileTooltipSaysWhyThereIsNoUsage(t *testing.T) {
+func TestTheProfilePanelSaysWhyThereIsNoUsage(t *testing.T) {
 	draw := func(f profileFocus, plan backend.QuotaPlan, loaded bool) *frameRig {
 		r := newFrameRig(image.Pt(400, 300), func(gtx C, th *ui.Theme) {
-			if body := profileUsageTip(th.On(th.Popover), f, plan, loaded, gtx.Now); body != nil {
-				body(gtx)
+			if rows := profileUsageRows(th.On(th.Popover), f, plan, loaded, gtx.Now, nil); len(rows) > 0 {
+				ui.Stack(usageBlockGap, rows...)(gtx)
 			}
 		})
 		r.settle(t)
 		return r
 	}
-	claude := profileFocus{book: &profileBook{provider: claudeProfileProvider}}
+	claude := profileFocus{kind: claudeKind, book: &profileBook{provider: claudeProfileProvider}}
 	omp := profileFocus{book: &profileBook{provider: ompProfileProvider}}
-
 	cursor := profileFocus{book: &profileBook{provider: cursorProfileProvider}}
 
 	wantShown(t, draw(omp, backend.QuotaPlan{}, false), "Usage is not measured per profile for oh-my-pi.")
-	// Cursor CLI has a plan, but lich reads it for the machine's login alone: another profile's tooltip never draws it.
+	// Cursor CLI has a plan, but lich reads it for the machine's login alone: another profile's panel never draws it.
 	wantShown(t, draw(cursor, usagePlan(), true), "Usage is not measured per profile for Cursor CLI.")
 	wantAbsent(t, draw(cursor, usagePlan(), true), "Session · 5h")
 	wantShown(t, draw(claude, backend.QuotaPlan{Status: "signed-out"}, true), "Signed out.")
 	wantShown(t, draw(claude, backend.QuotaPlan{Status: "error"}, true), "Plan usage could not be read.")
 	wantShown(t, draw(claude, backend.QuotaPlan{Status: "unknown"}, true), "Plan usage could not be read.")
-	if body := profileUsageTip(new(ui.Theme), claude, backend.QuotaPlan{}, false, epoch); body != nil {
-		t.Error("a reading still in flight opened a tooltip")
+	if rows := profileUsageRows(new(ui.Theme), claude, backend.QuotaPlan{}, false, epoch, nil); rows != nil {
+		t.Error("a reading still in flight drew rows")
 	}
-	if body := profileUsageTip(new(ui.Theme), claude, usagePlan(), true, epoch); body == nil {
-		t.Error("a read plan has no tooltip")
+	if rows := profileUsageRows(new(ui.Theme), claude, usagePlan(), true, epoch, nil); len(rows) == 0 {
+		t.Error("a read plan has no rows")
 	}
 }
 
@@ -174,20 +174,25 @@ func TestSameQuotaSeesTheExtraSpendTheCreditsAndTheProjection(t *testing.T) {
 }
 
 // profileFrames is the sidebar with the profile footer in it, over a Claude
-// plan seeded for the machine's login.
-func profileFrames(t *testing.T) (*model, *frameRig) {
+// plan seeded for the machine's login. The action of the last frame that had
+// one is kept.
+func profileFrames(t *testing.T) (*model, *frameRig, *sidebarAction) {
 	t.Helper()
 	_, m, _ := profileFooterRig(t)
 	root := new(ui.Root)
 	s := newSidebar(root)
 	s.open = true
-	r := newFrameRig(image.Pt(400, 700), func(gtx C, th *ui.Theme) {
+	act := new(sidebarAction)
+	r := newFrameRig(image.Pt(400, 900), func(gtx C, th *ui.Theme) {
 		root.Layout(gtx, func(gtx C) D {
-			s.layout(gtx, th, m, active(m))
+			_, a := s.layout(gtx, th, m, active(m))
+			if a.profilePick.key != "" || a.useReset.grantID != "" {
+				*act = a
+			}
 			return D{Size: gtx.Constraints.Max}
 		})
 	})
-	return m, r
+	return m, r, act
 }
 
 func hoverProfile(t *testing.T, r *frameRig) {
@@ -200,22 +205,172 @@ func hoverProfile(t *testing.T, r *frameRig) {
 	r.settle(t)
 }
 
-func TestHoveringTheProfileFooterShowsItsAccountsUsage(t *testing.T) {
-	m, r := profileFrames(t)
-	plan := usagePlan()
-	plan.Extra = &backend.QuotaExtra{Used: 1250, Limit: new(int64(5000)), Currency: "USD", Decimals: 2}
-	m.quota.seed("", []backend.QuotaPlan{plan})
+func openProfilePanel(t *testing.T, r *frameRig) {
+	t.Helper()
+	r.clickLabel(t, "Personal")
 	r.settle(t)
-	wantAbsent(t, r, "Session · 5h")
-	hoverProfile(t, r)
-	wantShown(t, r, "Claude Code · Max 5x", "Session · 5h", "Weekly · 7d", "Extra usage", "$12.50 of $50.00", "dev@example.com")
 }
 
-func TestTheProfileFooterOpensNothingBeforeTheFirstReading(t *testing.T) {
-	_, r := profileFrames(t)
+func seedUsage(m *model, plan backend.QuotaPlan) { m.quota.seed("", []backend.QuotaPlan{plan}) }
+
+func TestHoveringTheProfileFooterOpensNothing(t *testing.T) {
+	m, r, _ := profileFrames(t)
+	seedUsage(m, usagePlan())
 	r.settle(t)
 	hoverProfile(t, r)
+	wantAbsent(t, r, "Session · 5h", "Claude Code · Max 5x")
+}
+
+func TestClickingTheProfileFooterOpensTheUsageOverTheProfiles(t *testing.T) {
+	m, r, _ := profileFrames(t)
+	plan := usagePlan()
+	plan.Extra = &backend.QuotaExtra{Used: 1250, Limit: new(int64(5000)), Currency: "USD", Decimals: 2}
+	seedUsage(m, plan)
+	r.settle(t)
+	wantAbsent(t, r, "Session · 5h")
+	openProfilePanel(t, r)
+	wantShown(t, r, "Claude Code · Max 5x", "Session · 5h", "Weekly · 7d", "Extra usage", "$12.50 of $50.00", "dev@example.com", "Work")
+	if usage, work := r.at(t, "Session · 5h").Y, r.at(t, "Work").Y; usage >= work {
+		t.Errorf("the usage sits at %v and the profiles at %v, want the usage on top", usage, work)
+	}
+}
+
+func TestTheProfilePanelStillSwitchesProfiles(t *testing.T) {
+	m, r, act := profileFrames(t)
+	seedUsage(m, usagePlan())
+	openProfilePanel(t, r)
+	r.clickLabel(t, "Work")
+	if act.profilePick.key != claudeProfileKey || act.profilePick.value != "work" {
+		t.Fatalf("pick %+v, want Claude's profile set to work", act.profilePick)
+	}
+	r.settle(t)
+	wantAbsent(t, r, "Session · 5h")
+}
+
+func TestTheProfilePanelOpensWithTheProfilesBeforeTheFirstReading(t *testing.T) {
+	_, r, _ := profileFrames(t)
+	r.settle(t)
+	openProfilePanel(t, r)
+	wantShown(t, r, "Work")
 	wantAbsent(t, r, "Session · 5h", "Plan usage could not be read.")
+}
+
+func clickablePlan() backend.QuotaPlan {
+	plan := usagePlan()
+	plan.Resets = []backend.QuotaReset{
+		{ID: "g-full", Kind: api.QuotaResetFull, Clears: []string{"session", "weekly", "model"}, Left: 1, EndsAt: endsOn(time.December, 10)},
+		{ID: "g-held", Label: "Paused grant", Left: 1, EndsAt: endsOn(time.January, 2), Held: true},
+	}
+	return plan
+}
+
+func TestAHeldGrantHasNoUseButtonAndAnActiveOneAsksFirst(t *testing.T) {
+	m, r, act := profileFrames(t)
+	seedUsage(m, clickablePlan())
+	openProfilePanel(t, r)
+	r.settle(t)
+	if n := countLabel(r, "Use"); n != 1 {
+		t.Fatalf("%d Use buttons, want one (the held grant has none):\n%s", n, r.drawn())
+	}
+	r.clickLabel(t, "Use")
+	r.settle(t)
+	wantShown(t, r, "Use one Full reset?", "Clears the session and weekly limits.", "Cancel", "Use")
+	if act.useReset.grantID != "" {
+		t.Fatal("the first click spent a reset")
+	}
+	r.clickLabel(t, "Cancel")
+	r.settle(t)
+	wantAbsent(t, r, "Use one Full reset?")
+	wantShown(t, r, "Use")
+}
+
+func TestConfirmingSendsTheSpendOfThatGrantForThatProfile(t *testing.T) {
+	m, r, act := profileFrames(t)
+	seedUsage(m, clickablePlan())
+	openProfilePanel(t, r)
+	r.clickLabel(t, "Use")
+	r.settle(t)
+	r.clickLabel(t, "Use")
+	if got := act.useReset; got.grantID != "g-full" || got.profile != "personal" || got.key != "" {
+		t.Fatalf("request %+v, want g-full for personal", got)
+	}
+}
+
+func TestACodexPanelOffersNoUse(t *testing.T) {
+	codex := profileFocus{kind: codexKind, book: &profileBook{provider: codexProfileProvider}}
+	plan := clickablePlan()
+	plan.Provider = "codex"
+	r := newFrameRig(image.Pt(400, 700), func(gtx C, th *ui.Theme) {
+		ui.Stack(usageBlockGap, profileUsageRows(th.On(th.Popover), codex, plan, true, gtx.Now, new(resetUse))...)(gtx)
+	})
+	r.settle(t)
+	wantShown(t, r, "Resets")
+	wantAbsent(t, r, "Use")
+}
+
+func countLabel(r *frameRig, label string) int {
+	n := 0
+	for _, node := range r.nodes() {
+		if node.Desc.Label == label {
+			n++
+		}
+	}
+	return n
+}
+
+func TestFlattenEntriesOpensEachSubmenuUnderALabel(t *testing.T) {
+	sub := []ui.MenuEntry{{Label: "Work"}}
+	nested := []ui.MenuEntry{{Kind: ui.MenuSubTrigger, Label: "Codex", Sub: sub}}
+	got := flattenEntries([]ui.MenuEntry{{Label: "Personal"}, {Kind: ui.MenuSubTrigger, Label: "Other providers", Sub: nested}})
+	var labels []string
+	for _, e := range got {
+		labels = append(labels, e.Label)
+	}
+	if len(got) != 3 || labels[0] != "Personal" || labels[1] != "Codex" || labels[2] != "Work" || got[1].Kind != ui.MenuLabel {
+		t.Errorf("flattened to %v, want Personal, a Codex label and Work, with no label for Other providers", labels)
+	}
+}
+
+func TestEveryAnswerToASpendHasItsOwnToast(t *testing.T) {
+	now := epoch
+	cases := []struct {
+		name    string
+		res     api.UseResetResult
+		err     error
+		variant ui.ToastVariant
+		title   string
+	}{
+		{"reset", api.UseResetResult{Status: api.UseResetReset}, nil, ui.ToastSuccess, "Limit reset"},
+		{"already used", api.UseResetResult{Status: api.UseResetAlreadyUsed}, nil, ui.ToastSuccess, "Limit reset"},
+		{"not limited", api.UseResetResult{Status: api.UseResetNotLimited}, nil, ui.ToastInfo, "Nothing to reset"},
+		{"ineligible", api.UseResetResult{Status: api.UseResetIneligible}, nil, ui.ToastWarning, "Claude is not offering this reset right now"},
+		{"cooldown with a time", api.UseResetResult{Status: api.UseResetCooldown, CooldownUntil: resetAfter(12 * time.Minute)}, nil, ui.ToastWarning, "Resets are cooling down. Try again in 12m."},
+		{"cooldown without", api.UseResetResult{Status: api.UseResetCooldown}, nil, ui.ToastWarning, "Resets are cooling down. Try again later."},
+		{"error", api.UseResetResult{}, errors.New("sign in to Claude Code again to use resets"), ui.ToastError, "Could not use the reset: sign in to Claude Code again to use resets"},
+	}
+	for _, c := range cases {
+		got := useResetToast(c.res, c.err, now)
+		if got.Variant != c.variant || got.Title != c.title {
+			t.Errorf("%s: toast %v %q, want %v %q", c.name, got.Variant, got.Title, c.variant, c.title)
+		}
+	}
+}
+
+func TestWhatAResetClearsIsSaidInWords(t *testing.T) {
+	cases := []struct {
+		r    backend.QuotaReset
+		want string
+	}{
+		{backend.QuotaReset{Clears: []string{"session", "weekly", "model"}}, "Clears the session and weekly limits."},
+		{backend.QuotaReset{Label: "Fable", Clears: []string{"session", "model"}}, "Clears the session limit and the weekly limit of Fable."},
+		{backend.QuotaReset{Clears: []string{"session"}}, "Clears the session limit."},
+		{backend.QuotaReset{}, ""},
+	}
+	for _, c := range cases {
+		if got := resetClears(c.r); got != c.want {
+			t.Errorf("%+v: %q, want %q", c.r.Clears, got, c.want)
+		}
+	}
 }
 
 // endsOn is a grant's end at noon, local time, on that day: the day the tooltip

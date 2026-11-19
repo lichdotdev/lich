@@ -24,11 +24,13 @@ const (
 	// token. Sent as anything else it rate-limits within a few requests; the
 	// patch version is not checked, so a recent one stays good.
 	claudeUserAgent = "claude-code/2.1.183"
-	// claudeUsageUserAgent is what the CLI itself sends to the usage route, and
-	// the only spelling for which the server offers reset grants: another one
-	// answers eligible=false (ineligible_reason "surface"), and a version older
-	// than the server's floor answers "cli_version" (2.1.183 does).
-	claudeUsageUserAgent = "claude-cli/2.1.328 (external, cli)"
+	// claudeFallbackVersion is the CLI version the usage agent claims when the
+	// installed one cannot be read. The agent is what the CLI itself sends to
+	// the usage route, and the only spelling for which the server offers reset
+	// grants: another one answers eligible=false (ineligible_reason "surface"),
+	// and a version older than the server's floor answers "cli_version" (2.1.183
+	// does).
+	claudeFallbackVersion = "2.1.328"
 	// claudeAPIVersion is the dated API contract the probe request is written
 	// against; the usage route above needs none.
 	claudeAPIVersion = "2023-06-01"
@@ -120,6 +122,7 @@ type claudeGrants struct {
 }
 
 type claudeGrant struct {
+	ID        string   `json:"id"`
 	Label     string   `json:"label"`
 	Left      int      `json:"resets_left"`
 	EndsAt    string   `json:"ends_at"`
@@ -130,6 +133,7 @@ type claudeGrant struct {
 
 // The windows a grant says it clears, as the wire spells them.
 const (
+	clearsSession     = "five_hour"
 	clearsWeekly      = "seven_day"
 	clearsModelWeekly = "seven_day_overage_included"
 )
@@ -148,7 +152,7 @@ func (u claudeUsage) resets(now time.Time) []api.QuotaReset {
 		if ends, err := time.Parse(time.RFC3339, g.EndsAt); g.Left <= 0 || err != nil || !ends.After(now) {
 			continue
 		}
-		r := api.QuotaReset{Left: g.Left, EndsAt: g.EndsAt, Held: g.Paused || !g.UsableNow}
+		r := api.QuotaReset{ID: g.ID, Clears: g.clears(), Left: g.Left, EndsAt: g.EndsAt, Held: g.Paused || !g.UsableNow}
 		switch {
 		case slices.Contains(g.Clears, clearsWeekly):
 			r.Kind = api.QuotaResetFull
@@ -161,6 +165,20 @@ func (u claudeUsage) resets(now time.Time) []api.QuotaReset {
 	}
 	return out
 }
+
+// clears names the limits the grant resets, in lich's own words.
+func (g claudeGrant) clears() []string {
+	var out []string
+	for wire, name := range map[string]string{clearsSession: api.QuotaClearsSession, clearsWeekly: api.QuotaClearsWeekly, clearsModelWeekly: api.QuotaClearsModel} {
+		if slices.Contains(g.Clears, wire) {
+			out = append(out, name)
+		}
+	}
+	slices.SortFunc(out, func(a, b string) int { return slices.Index(clearsOrder, a) - slices.Index(clearsOrder, b) })
+	return out
+}
+
+var clearsOrder = []string{api.QuotaClearsSession, api.QuotaClearsWeekly, api.QuotaClearsModel}
 
 // scopedModel is the model the plan's weekly cap is scoped to, "" when there is
 // none.
@@ -255,7 +273,7 @@ func (s *Service) claudePlan(a Account) Plan {
 	var usage claudeUsage
 	authOK, err := s.readJSON(s.claudeURL, creds.OAuth.AccessToken, map[string]string{
 		"anthropic-beta": claudeBetaHeader,
-		"User-Agent":     claudeUsageUserAgent,
+		"User-Agent":     s.usageAgent(),
 	}, &usage)
 	if !authOK {
 		return signedOut(p)

@@ -143,6 +143,7 @@ o lich consegue ler de volta, porque cada CLI registra coisas diferentes.
 | Uma conversa com fork feito dentro do próprio terminal do agente cobra uma vez só o histórico que copia | sim, a não ser quando o custo é o que o próprio Claude Code mediu | não | sem leitura de custo | sim | sim, menos um turno gravado sem id de resposta | não faz fork | sem leitura de custo | sem leitura de custo |
 | Quanto ainda resta do seu plano | sim | sim | sim | só OpenCode Go | não | não | sim | não |
 | O que você gastou além do plano e o teto disso, no tooltip de uso | sim | não | não | não | não | não | não | não |
+| Usar um reset de limite que o seu plano dá, pelo painel do perfil na barra lateral | sim | não | não | não | não | não | não | não |
 | Os resets sob demanda que a sua conta tem, no tooltip de uso | não | sim | não | não | não | não | não | não |
 | Um turno interrompido pelo limite de uso do plano continua quando o limite renova | sim | sim | não | retenta sozinho | retenta sozinho | não | não | não |
 | Se outro perfil seu ainda tem cota, um aviso oferece continuar nele na hora | sim | sim | não | não | não | não | não | não |

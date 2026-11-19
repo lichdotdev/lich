@@ -3,6 +3,7 @@ package quota
 import (
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -16,9 +17,9 @@ const scopedLimits = `"limits":[
 	{"kind":"session","percent":2,"resets_at":"2026-11-19T17:50:00+00:00"},
 	{"kind":"weekly_scoped","percent":6,"resets_at":"2026-11-23T15:00:00+00:00","scope":{"model":{"display_name":"Fable"}}}]`
 
-const grantFull = `{"label":"One full limit reset (November 2026)","resets_left":1,"ends_at":"2026-12-10T22:00:00+00:00",
+const grantFull = `{"id":"full-reset-2611","label":"One full limit reset (November 2026)","resets_left":1,"ends_at":"2026-12-10T22:00:00+00:00",
 	"clears":["five_hour","seven_day","seven_day_overage_included"],"paused":false,"usable_now":true}`
-const grantFable = `{"label":"New model launch: one more Fable reset","resets_left":2,"ends_at":"2027-03-09T07:59:00+00:00",
+const grantFable = `{"id":"fable-reset-1","label":"New model launch: one more Fable reset","resets_left":2,"ends_at":"2027-03-09T07:59:00+00:00",
 	"clears":["five_hour","seven_day_overage_included"],"paused":false,"usable_now":true}`
 
 func resetsOf(t *testing.T, cedar string) []api.QuotaReset {
@@ -36,17 +37,12 @@ func TestClaudeGrantsAreNamedByWhatTheyClear(t *testing.T) {
 	got := resetsOf(t, `{"eligible":true,"grants":[`+grantFull+`,`+grantFable+`,
 		{"label":"Something new","resets_left":1,"ends_at":"2026-12-01T00:00:00+00:00","clears":["five_hour"],"usable_now":true}]}`)
 	want := []api.QuotaReset{
-		{Kind: api.QuotaResetFull, Left: 1, EndsAt: "2026-12-10T22:00:00+00:00"},
-		{Label: "Fable", Left: 2, EndsAt: "2027-03-09T07:59:00+00:00"},
-		{Label: "Something new", Left: 1, EndsAt: "2026-12-01T00:00:00+00:00"},
+		{ID: "full-reset-2611", Kind: api.QuotaResetFull, Clears: []string{"session", "weekly", "model"}, Left: 1, EndsAt: "2026-12-10T22:00:00+00:00"},
+		{ID: "fable-reset-1", Label: "Fable", Clears: []string{"session", "model"}, Left: 2, EndsAt: "2027-03-09T07:59:00+00:00"},
+		{Label: "Something new", Clears: []string{"session"}, Left: 1, EndsAt: "2026-12-01T00:00:00+00:00"},
 	}
-	if len(got) != len(want) {
+	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("resets = %+v, want %+v", got, want)
-	}
-	for i := range want {
-		if got[i] != want[i] {
-			t.Errorf("reset %d = %+v, want %+v", i, got[i], want[i])
-		}
 	}
 }
 
@@ -98,8 +94,9 @@ func TestClaudeAsksForGrantsInTheSameRequestAsTheWindows(t *testing.T) {
 	s := New()
 	s.claudeURL, s.profileURL = server.URL+"?"+strings.SplitN(claudeUsageURL, "?", 2)[1], ""
 	s.claudeLogin = readClaudeFile
+	s.claudeVersion = func() string { return "" }
 	s.claudePlan(lichEnv())
-	if calls != 1 || query != "cedar_ember=1" || agent != claudeUsageUserAgent {
+	if calls != 1 || query != "cedar_ember=1" || agent != "claude-cli/"+claudeFallbackVersion+" (external, cli)" {
 		t.Errorf("calls = %d, query = %q, agent = %q", calls, query, agent)
 	}
 }

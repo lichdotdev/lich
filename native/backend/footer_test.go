@@ -79,6 +79,25 @@ func TestQuotaPlansDecodesWindows(t *testing.T) {
 	}
 }
 
+func TestQuotaUseResetSendsTheProfileAndGrantAndDecodesTheOutcome(t *testing.T) {
+	var method string
+	var args []json.RawMessage
+	c := fakeBackend(t, func(m string, a []json.RawMessage) (any, int) {
+		method, args = m, a
+		return json.RawMessage(`{"status":"cooldown","cooldownUntil":"2026-11-20T10:00:00Z"}`), http.StatusOK
+	})
+	got, err := c.QuotaUseReset(context.Background(), "work", "full-reset-2611")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if method != "quota.UseReset" || len(args) != 1 || string(args[0]) != `{"profile":"work","grantId":"full-reset-2611"}` {
+		t.Errorf("sent %s %s", method, args)
+	}
+	if got.Status != "cooldown" || got.CooldownUntil != "2026-11-20T10:00:00Z" {
+		t.Errorf("got %+v", got)
+	}
+}
+
 func TestHandsOnAndAttachDecode(t *testing.T) {
 	c := fakeBackend(t, func(method string, _ []json.RawMessage) (any, int) {
 		if method == "terminal.HandsOn" {

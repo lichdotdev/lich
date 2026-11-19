@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	// usageBlockGap is the room between two blocks of the usage tooltip, more
+	// usageBlockGap is the room between two blocks of the usage panel, more
 	// than the one inside a block so each reads as a unit.
 	usageBlockGap = 3
 	usageLineGap  = 1.5
@@ -34,9 +34,10 @@ func windowRank(w backend.QuotaWindow) int {
 	return 2
 }
 
-// usageBlocks are the plan's tooltip blocks: a bar per window, then the extra
-// spend and the reset credits when the account has them.
-func usageBlocks(th *ui.Theme, plan backend.QuotaPlan, now time.Time) []layout.Widget {
+// usageBlocks are the plan's blocks: a bar per window, then the extra spend,
+// the limit resets and the reset credits when the account has them. use is the
+// panel's way to spend a reset, nil where nothing can be spent (a tooltip).
+func usageBlocks(th *ui.Theme, plan backend.QuotaPlan, now time.Time, use *resetUse) []layout.Widget {
 	plan.Windows = slices.SortedStableFunc(slices.Values(plan.Windows), func(a, b backend.QuotaWindow) int {
 		return cmp.Compare(windowRank(a), windowRank(b))
 	})
@@ -48,7 +49,7 @@ func usageBlocks(th *ui.Theme, plan backend.QuotaPlan, now time.Time) []layout.W
 		blocks = append(blocks, extraBlock(th, *plan.Extra, i18n.Current()))
 	}
 	if resets := liveResets(plan.Resets, now); len(resets) > 0 {
-		blocks = append(blocks, resetsBlock(th, resets, now))
+		blocks = append(blocks, resetsBlock(th, resets, use))
 	}
 	if plan.ResetCredits > 0 {
 		blocks = append(blocks, tipRow(th, contextRow{
@@ -120,16 +121,16 @@ func liveResets(resets []backend.QuotaReset, now time.Time) []backend.QuotaReset
 }
 
 // resetsBlock is the limit resets the account can spend: how many are left over
-// all grants at the right of the title, then a line per grant. It only shows
-// them: spending one cannot be undone, and nothing here does it.
-func resetsBlock(th *ui.Theme, resets []backend.QuotaReset, now time.Time) layout.Widget {
+// all grants at the right of the title, then a line per grant, each with its Use
+// where there is a way to spend (use) and the grant can be spent.
+func resetsBlock(th *ui.Theme, resets []backend.QuotaReset, use *resetUse) layout.Widget {
 	total := 0
 	for _, r := range resets {
 		total += r.Left
 	}
 	parts := []layout.Widget{tipHead(th, i18n.T("shell.planQuota.resets"), i18n.T("shell.planQuota.resetsLeft", i18n.Args{"count": total}))}
 	for _, r := range resets {
-		parts = append(parts, resetRow(th, r))
+		parts = append(parts, resetRow(th, r, use))
 	}
 	return ui.Stack(usageLineGap, parts...)
 }
@@ -145,7 +146,7 @@ func resetName(r backend.QuotaReset) string {
 
 // resetRow is a grant: its name at the left, "×2 until Dec 10" at the right. A
 // grant that cannot be spent now is muted whole.
-func resetRow(th *ui.Theme, r backend.QuotaReset) layout.Widget {
+func resetRow(th *ui.Theme, r backend.QuotaReset, use *resetUse) layout.Widget {
 	text := func(s string) ui.LabelStyle {
 		if r.Held {
 			return th.Text(ui.TextXS, s).Muted()
@@ -153,14 +154,22 @@ func resetRow(th *ui.Theme, r backend.QuotaReset) layout.Widget {
 		return th.Text(ui.TextXS, s)
 	}
 	until, _ := time.Parse(time.RFC3339, r.EndsAt)
+	spendable := use != nil && !r.Held && r.ID != ""
 	return func(gtx C) D {
+		if spendable && use.pending == r.ID {
+			return use.confirmation(th, r)(gtx)
+		}
 		gtx.Constraints.Min.X = gtx.Constraints.Max.X
-		return layout.Flex{Alignment: layout.Baseline}.Layout(gtx,
+		children := []layout.FlexChild{
 			layout.Rigid(text(resetName(r)).Layout),
 			layout.Flexed(1, func(gtx C) D { return D{Size: gtx.Constraints.Min} }),
 			layout.Rigid(text(fmt.Sprintf("×%d", r.Left)).Layout),
 			layout.Rigid(th.Text(ui.TextXS, " "+shortUntil(until)).Muted().Layout),
-		)
+		}
+		if spendable {
+			children = append(children, ui.Gap(2), layout.Rigid(use.button(gtx, th, r.ID)))
+		}
+		return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
 	}
 }
 

@@ -265,26 +265,40 @@ it), Model window, Cache with its hit rate and Session cost, each only when the 
 compact with the locale's decimal mark. There is no line for compactions or for what is left before one: lich
 keeps no count of the first and no provider tells it the threshold of the second.
 
-### The usage tooltip
+### The usage menu
 
-The tooltip over the profile at the sidebar's foot, and the plan quota's own in the footer, are one component
-(`usage_tip.go`) built from the context tooltip's pieces (`tipHead`, `tipRow`, `contextBarColor`, the bar of twenty
-segments, the width). A block per window, in the order session, weekly, then a model's own cap: the window's name
-(lich's own for a window it names, with its length: "Session · 5h") at the left and the share spent at the right in
-medium, the bar in the same tones as the context's (70%, 90%), then muted `Resets in 4h 12m` and, only when the
-pace so far empties a weekly window before it resets, `Runs out in 1d 9h` in `ToneWait`. A locked window reads
-"Locked" with its bar and the provider's reason in `Destructive`. After the windows, `Extra usage` with the amount
-against the cap at the right ("$12.50 of $50.00", "$141.57 · no limit") and a bar only when there is a cap, and a
-`Reset credits` line like a context row ("1 available"), each only when the account has them. Claude Code's limit
-resets come as a `Resets` block, its title with "N left" (every reset of every live grant) at the right and a line per
-grant: its name at the left ("Full" when it clears the weekly window, the model's name for a model's own cap, the
-provider's text otherwise), "×2" and a muted "until Dec 10" at the right, in the interface language's month. A grant
-that cannot be spent now (paused, or not usable) is muted whole; with no live grant the block is not drawn. It shows
-and never spends: using one cannot be undone. The account's email
-closes the plan quota's tooltip, under a separator. The profile tooltip heads the blocks with the plan ("Claude Code ·
-Max 5x"); for any provider but Claude Code and Codex it is a single muted line saying usage is not measured per profile, and while the first reading is in flight there
-is no tooltip at all, rather than one that says nothing. Amounts follow the locale (`money.go`): its separators, the
-symbol before or after, the sign outside the symbol, the ISO code where there is no symbol.
+The profile at the sidebar's foot opens a panel on a click (`DropdownPanel`, rising above the row, scrolling when
+the window is short); hovering it draws nothing. The top of the panel is the usage of the shown profile's account, the
+plan quota's tooltip in the footer draws the same blocks (`usage_tip.go`), built from the context tooltip's pieces
+(`tipHead`, `tipRow`, `contextBarColor`, the bar of twenty segments). Under the plan's name ("Claude Code · Max 5x"),
+a block per window, in the order session, weekly, then a model's own cap: the window's name (lich's own for a window
+it names, with its length: "Session · 5h") at the left and the share spent at the right in medium, the bar in the
+same tones as the context's (70%, 90%), then muted `Resets in 4h 12m` and, only when the pace so far empties a
+weekly window before it resets, `Runs out in 1d 9h` in `ToneWait`. A locked window reads "Locked" with its bar and
+the provider's reason in `Destructive`. After the windows, `Extra usage` with the amount against the cap at the right
+("$12.50 of $50.00", "$141.57 · no limit") and a bar only when there is a cap, then a `Reset credits` line like a
+context row ("1 available") for Codex, each only when the account has them. Amounts follow the locale (`money.go`):
+its separators, the symbol before or after, the sign outside the symbol, the ISO code where there is no symbol. The
+account's email sits under the plan's name. The chosen login carries no usage note in the list below: its blocks are above.
+
+Claude Code's limit resets are a `Resets` block of their own: its title with "N left" (every reset of every live
+grant) at the right, and a line per grant. The line is its name at the left ("Full" when it clears the weekly window,
+the model's name for a model's own cap, the provider's text otherwise), "×2" and a muted "until Dec 10" (the month in
+the interface language) at the right, and a `Use` button, an outline `SizeXS` one, when the grant can be spent now. A
+grant that cannot (paused, or not usable) is muted whole and has no button; with no live grant the block is not drawn.
+Use never spends on the first click: it replaces its row, in place and never in a dialog, with the question ("Use one
+Full reset?"), a muted line saying what it clears ("Clears the session and weekly limits.") and, at the right,
+`Cancel` (outline) and `Use` (`Destructive`: a reset does not come back). Cancel gives the row back; Use sends the
+spend, and the answer comes as a toast and an immediate re-read of the usage. While one is out every Use is disabled.
+The panel closing drops a confirmation left open.
+
+Under the usage, a separator, then what the footer's menu always held: the logins to switch to, each with its avatar
+and its five-hour usage and the chosen one checked, "Use Global" while the project sets its own, and the other
+providers' logins, each provider a label (its glyph and name) over its rows: the submenu of the old menu, opened in
+place. Choosing a row runs it and closes the panel. A provider with no per-profile reading (anything but Claude Code
+and Codex) shows a single muted line in place of the usage, saying usage is not measured per profile; while the first
+reading is in flight there is no usage section at all, rather than one that says nothing. The rail's profile button
+keeps the old menu.
 
 ### The chat view
 
