@@ -277,7 +277,7 @@ pace so far empties a weekly window before it resets, `Runs out in 1d 9h` in `To
 against the cap at the right ("$12.50 of $50.00", "$141.57 · no limit") and a bar only when there is a cap, and a
 `Reset credits` line like a context row ("1 available"), each only when the account has them. The account's email
 closes the plan quota's tooltip, under a separator. The profile tooltip heads the blocks with the plan ("Claude Code ·
-Max 5x"); for a provider that reports no plan it is a single muted line, and while the first reading is in flight there
+Max 5x"); for any provider but Claude Code and Codex it is a single muted line saying usage is not measured per profile, and while the first reading is in flight there
 is no tooltip at all, rather than one that says nothing. Amounts follow the locale (`money.go`): its separators, the
 symbol before or after, the sign outside the symbol, the ISO code where there is no symbol.
 

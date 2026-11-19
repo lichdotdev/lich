@@ -109,7 +109,7 @@
       "one": "{count} available",
       "other": "{count} available"
     },
-    "noUsage": "{provider} reports no plan usage.",
+    "noUsage": "Usage is not measured per profile for {provider}.",
     "unreadable": "Plan usage could not be read."
   },
   "providerSetupDialog": {

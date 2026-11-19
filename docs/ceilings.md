@@ -378,7 +378,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   percent spent on the first day of its cycle is deliberately unprojected, because just after a reset the rate is
   one request divided by almost nothing. Only the weekly window is projected, so the five-hour one and Codex's
   monthly free-tier window carry nothing however they are spent. The verdict is derived from the window's own
-  reset time, which is the next reset and never the start — the start is that time rolled back whole windows —
+  reset time, which is the next reset and never the start (the start is that time rolled back whole windows),
   so a provider that stops reporting a reset time silently drops the projection rather than the gauge. It is
   computed when a reading is taken and so is up to the five-minute cache old; "% left at reset" is not shown.
 - **Extra usage is Claude Code's alone, and Codex's reset credits are Codex's alone** (`internal/quota/claude.go`,
@@ -387,11 +387,14 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   `rate_limit_reset_credits.available_count` (how many on-demand window resets the account holds) are read from
   the payloads lich already polls and shown as one more block of the tooltip, only when the account has them on:
   an `extra_usage` that is disabled, and a count of zero, draw nothing. No other provider's route reports either,
-  so the other six show their windows alone. A `claude setup-token` login reads its windows off response headers
-  (above), which carry neither, so its tooltip never has the extra-usage block. The extra block's shape was
+  so the other six show their windows alone. The tooltip over the profile footer reads per-profile plans only for Claude Code
+  and Codex: Cursor CLI's and opencode's plans are read for the machine's login alone, so on their profiles (and on
+  oh-my-pi's and Kiro CLI's, which have none) it says usage is not measured per profile rather than draw another
+  account's numbers. A `claude setup-token` login reads its windows off response headers
+  (see the bullet below), which carry neither, so its tooltip never has the extra-usage block. The extra block's shape was
   written against the field names and a disabled account's nulls: an enabled one has not been seen in a live
   payload, so a currency or unit the route does not spell the documented way would draw a wrong amount. The
-  currency symbol is known for seven currencies; any other shows its ISO code. Codex's payload also carries an
+  currency symbol is known for five currencies; any other shows its ISO code. Codex's payload also carries an
   `applicable_available_count` beside the count lich reads, which says how many credits fit the window in hand;
   lich reads and shows the first.
 - **Measuring a token-only Claude Code login costs a request against the very plan it measures**

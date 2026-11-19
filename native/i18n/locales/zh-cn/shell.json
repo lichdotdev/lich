@@ -109,7 +109,7 @@
       "one": "{count} 次可用",
       "other": "{count} 次可用"
     },
-    "noUsage": "{provider} 不提供套餐用量。",
+    "noUsage": "{provider} 不按配置文件统计用量。",
     "unreadable": "无法读取套餐用量。"
   },
   "providerSetupDialog": {

@@ -109,7 +109,7 @@
       "one": "{count} disponible",
       "other": "{count} disponibles"
     },
-    "noUsage": "{provider} no informa el uso del plan.",
+    "noUsage": "El uso por perfil no se mide para {provider}.",
     "unreadable": "No se pudo leer el uso del plan."
   },
   "providerSetupDialog": {

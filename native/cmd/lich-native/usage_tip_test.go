@@ -125,7 +125,12 @@ func TestTheProfileTooltipSaysWhyThereIsNoUsage(t *testing.T) {
 	claude := profileFocus{book: &profileBook{provider: claudeProfileProvider}}
 	omp := profileFocus{book: &profileBook{provider: ompProfileProvider}}
 
-	wantShown(t, draw(omp, backend.QuotaPlan{}, false), "oh-my-pi reports no plan usage.")
+	cursor := profileFocus{book: &profileBook{provider: cursorProfileProvider}}
+
+	wantShown(t, draw(omp, backend.QuotaPlan{}, false), "Usage is not measured per profile for oh-my-pi.")
+	// Cursor CLI has a plan, but lich reads it for the machine's login alone: another profile's tooltip never draws it.
+	wantShown(t, draw(cursor, usagePlan(), true), "Usage is not measured per profile for Cursor CLI.")
+	wantAbsent(t, draw(cursor, usagePlan(), true), "Session · 5h")
 	wantShown(t, draw(claude, backend.QuotaPlan{Status: "signed-out"}, true), "Signed out.")
 	wantShown(t, draw(claude, backend.QuotaPlan{Status: "error"}, true), "Plan usage could not be read.")
 	wantShown(t, draw(claude, backend.QuotaPlan{Status: "unknown"}, true), "Plan usage could not be read.")

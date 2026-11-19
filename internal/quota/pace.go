@@ -9,7 +9,7 @@ import "time"
 //
 // paceGrace is how long after a reset no window is projected. Just after one,
 // the elapsed time is near zero, so the rate is one request divided by almost
-// nothing and every reading projects an exhaustion — a false positive, not a
+// nothing and every reading projects an exhaustion, a false positive and not a
 // warning. An `elapsed == 0` guard does not cover this: a reading taken an hour
 // into a fresh window has a small elapsed, not a zero one. The 24 hours are
 // calibration measured by the claude-swap project (`src/claude_swap/pace.py`,
@@ -21,7 +21,7 @@ const paceGrace = 24 * time.Hour
 // reach 100% before it resets. Pure: `now` is a parameter so the verdict is
 // testable and no reading depends on a clock read somewhere else.
 //
-// Only the weekly window is projected — the account-wide one and the
+// Only the weekly window is projected: the account-wide one and the
 // model-scoped caps alike, which are weekly too. The five-hour window is left
 // out on purpose: it turns over too fast for a rate to mean anything, since the
 // first spend in a fresh window projects an exhaustion almost by definition,

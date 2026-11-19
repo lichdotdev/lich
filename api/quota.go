@@ -68,8 +68,8 @@ type QuotaExtra struct {
 // it reports one at all. LockedReason is non-empty only when the provider says
 // this window cannot be spent past regardless of its percentage. RunsOutAt is
 // lich's own reading of the rate rather than the provider's, RFC 3339 and set
-// only when spending at the pace so far empties the window before ResetsAt —
-// see pace.go.
+// only when spending at the pace so far empties the window before ResetsAt (see
+// pace.go).
 type QuotaWindow struct {
 	Kind         string `json:"kind,omitempty"`
 	Label        string `json:"label,omitempty"`

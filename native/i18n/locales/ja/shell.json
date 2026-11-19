@@ -109,7 +109,7 @@
       "one": "{count} 件利用可能",
       "other": "{count} 件利用可能"
     },
-    "noUsage": "{provider} はプランの使用量を提供していません。",
+    "noUsage": "{provider} ではプロファイルごとの使用量は計測していません。",
     "unreadable": "プランの使用量を読み取れませんでした。"
   },
   "providerSetupDialog": {

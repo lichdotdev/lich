@@ -109,9 +109,11 @@ func (m *model) profilePlan(f profileFocus) (backend.QuotaPlan, bool) {
 }
 
 // profileUsageTip is the tooltip over the footer: the usage of the account new
-// sessions are born in, the same blocks the plan quota's tooltip draws. A
-// provider that reports no plan says so in a line; nil while the first reading
-// is in flight, so nothing opens over an empty answer.
+// sessions are born in, the same blocks the plan quota's tooltip draws. Only
+// Claude Code and Codex are read per profile: any other provider, with a plan of
+// its own or none, says so in a line rather than draw the machine's reading under
+// a profile that may be another account. Nil while the first reading is in
+// flight, so nothing opens over an empty answer.
 func profileUsageTip(th *ui.Theme, f profileFocus, plan backend.QuotaPlan, loaded bool, now time.Time) layout.Widget {
 	note := func(text string) layout.Widget {
 		return usageStack([]layout.Widget{para(th.Text(ui.TextXS, text).Muted()).Layout})
