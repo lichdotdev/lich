@@ -26,6 +26,7 @@ browser.Locate(BrowserLocateOptions) []BrowserRect
 browser.Mouse(BrowserMouseOptions) None
 browser.Nav(BrowserNavOptions) None
 browser.Navigate(BrowserOpenOptions) BrowserHandle
+browser.NewTabPage(BrowserNewTabPageOptions) None
 browser.Open(BrowserOpenOptions) BrowserHandle
 browser.Press(BrowserPressOptions) BrowserPageInfo
 browser.Reload(SessionIDOptions) None
@@ -541,6 +542,13 @@ BrowserOpenOptions {
 	url string
 }
 
+BrowserNewTabPageOptions {
+	lang string
+	colors BrowserNewTabColors
+	flame BrowserNewTabFlame
+	text BrowserNewTabText
+}
+
 BrowserPressOptions {
 	id string
 	key string
@@ -554,6 +562,7 @@ BrowserState {
 	byAgent bool
 	url string
 	title string
+	newTab,omitempty bool
 	dialog,omitempty *BrowserDialog
 	tabs,omitempty []BrowserTab
 	idle,omitempty bool
@@ -581,6 +590,7 @@ BrowserTab {
 	id string
 	url string
 	title string
+	newTab,omitempty bool
 	front,omitempty bool
 	devtools,omitempty bool
 	paused,omitempty bool
@@ -2347,6 +2357,34 @@ BrowserTarget {
 	selector,omitempty string
 	x,omitempty *float64
 	y,omitempty *float64
+}
+
+BrowserNewTabColors {
+	background string
+	card string
+	foreground string
+	muted string
+	border string
+	accent string
+	pass string
+}
+
+BrowserNewTabFlame {
+	rows string
+	core string
+	body string
+	edge string
+	base string
+}
+
+BrowserNewTabText {
+	title string
+	address string
+	addressError string
+	running string
+	worktree string
+	artifacts string
+	recent string
 }
 
 ChatToolCall {

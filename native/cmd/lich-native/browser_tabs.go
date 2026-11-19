@@ -35,7 +35,7 @@ var (
 	browserTabMin    = ui.Space(16)
 	browserTabHeight = ui.Space(6)
 	// tabsInset is the header's gap before the first tab.
-	tabsInset = ui.Space(2)
+	tabsInset = browserChromeGap
 )
 
 // browserTabsUI is one pane's tab widgets, by Chrome's tab id, and where each
@@ -79,21 +79,24 @@ func (u *window) browserTabs(gtx C, p *browserPaneUI, session string, st api.Bro
 	w = min(max(w, gtx.Dp(browserTabMin)), gtx.Dp(browserTabMax))
 	h := gtx.Dp(browserTabHeight)
 	y := (gtx.Constraints.Max.Y - h) / 2
+	// The rects below are in the header's coordinates, under its top gap.
+	top := gtx.Dp(browserChromeGap)
 	defer clip.Rect{Max: gtx.Constraints.Max}.Push(gtx.Ops).Pop()
 	x := 0
 	for _, tab := range st.Tabs {
 		pick, closer, tip := t.widgets(tab.ID)
-		t.at[tab.ID] = image.Rect(x, y, x+w, y+h)
+		t.at[tab.ID] = image.Rect(x, y+top, x+w, y+top+h)
 		off := op.Offset(image.Pt(x, y)).Push(gtx.Ops)
 		tgtx := gtx
 		tgtx.Constraints = layout.Exact(image.Pt(w, h))
 		closeAt := u.tabLayout(tgtx, p, tab, pick, closer, tip, focused)
-		t.closeAt[tab.ID] = closeAt.Add(image.Pt(x, y))
+		t.closeAt[tab.ID] = closeAt.Add(image.Pt(x, y+top))
 		off.Pop()
 		x += w + gap
 	}
-	t.newAt = image.Rect(x, y, x+plus, y+plus)
-	off := op.Offset(image.Pt(x, (gtx.Constraints.Max.Y-plus)/2)).Push(gtx.Ops)
+	ny := (gtx.Constraints.Max.Y - plus) / 2
+	t.newAt = image.Rect(x, ny+top, x+plus, ny+top+plus)
+	off := op.Offset(image.Pt(x, ny)).Push(gtx.Ops)
 	th.IconAction(&u.root, &t.newTab, icTabNew, i18n.T("layouts.browser.newTab"), p.tabFlash(gtx, "new")).Layout(gtx)
 	off.Pop()
 	return D{Size: gtx.Constraints.Max}
@@ -168,11 +171,13 @@ func (u *window) devtoolsGlyph(gtx C, p *browserPaneUI, tab api.BrowserTab, x in
 }
 
 // tabLabel names a tab by its title, else its address, else as a blank one;
-// a DevTools tab as DevTools.
+// a DevTools tab as DevTools, and lich's new-tab page as a blank one.
 func tabLabel(tab api.BrowserTab) string {
 	switch {
 	case tab.DevTools:
 		return i18n.T("layouts.browser.devtools")
+	case tab.NewTab:
+		return i18n.T("layouts.browser.blankTab")
 	case tab.Title != "":
 		return tab.Title
 	case tab.URL != "" && tab.URL != "about:blank":

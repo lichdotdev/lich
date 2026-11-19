@@ -7,7 +7,6 @@ import (
 	"image/color"
 	"log"
 	"net/url"
-	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
@@ -63,8 +62,10 @@ type browserPaneUI struct {
 	// shownURL is the page's URL the field last showed: a navigation
 	// replaces the field's text unless the person is editing it; editing is
 	// the field holding the focus, showing the whole address.
-	shownURL    string
-	editing     bool
+	shownURL string
+	editing  bool
+	// editedFrom is the page's URL the field held when its edit began.
+	editedFrom  string
 	tag         int
 	composition gioterm.Composition
 	// view is the size the backend lays the page out at; zero until the
@@ -123,8 +124,24 @@ func (u *window) sendBrowser(session, what string, call func(context.Context) er
 	}})
 }
 
-// browserPageInset is the gap the page's card keeps from the pane's edges.
-var browserPageInset = ui.Space(2)
+// browserChromeGap is the one gap of a page pane's chrome: from the pane's top
+// edge to the tabs, from the tabs to the toolbar, from the toolbar to the
+// page's card, and from the card to the pane's sides and foot.
+var browserChromeGap = ui.Space(2)
+
+// browserAddressHeight is the address pill's height.
+var browserAddressHeight = ui.Space(7)
+
+// browserChrome is where a page pane of size lays out: head is the tabs' row
+// with the gap over it, bar the toolbar's row with a gap above and below its
+// pill, and card the page.
+func browserChrome(gtx C, size image.Point) (head, bar int, card image.Rectangle) {
+	gap := gtx.Dp(browserChromeGap)
+	head = gap + gtx.Dp(browserTabHeight)
+	bar = gap + gtx.Dp(browserAddressHeight) + gap
+	card = image.Rect(gap, head+bar, max(size.X-gap, gap), max(size.Y-gap, head+bar))
+	return head, bar, card
+}
 
 // browserPaneAt draws session's page pane in r, the way paneAt draws a
 // session's: the tabs, the toolbar, and the page as a card.
@@ -142,8 +159,7 @@ func (u *window) browserPaneAt(gtx C, v stageView, session string, r image.Recta
 	shape := clip.UniformRRect(image.Rectangle{Max: size}, gtx.Dp(paneRadius))
 	paint.FillShape(gtx.Ops, th.Background, shape.Op(gtx.Ops))
 	area := shape.Push(gtx.Ops)
-	head, bar, inset := gtx.Dp(paneHeader), gtx.Dp(ui.Space(9)), gtx.Dp(browserPageInset)
-	card := image.Rect(inset, head+bar, max(size.X-inset, inset), max(size.Y-inset, head+bar))
+	head, bar, card := browserChrome(gtx, size)
 	u.playAgentCursor(gtx, p, marks, head, bar, card)
 	p.dialog.sync(st.Dialog, p.answering(gtx.Now))
 	header := gtx
@@ -167,7 +183,7 @@ func (u *window) browserPaneAt(gtx C, v stageView, session string, r image.Recta
 	// DevTools in the page's place: the notes and the agent's cursor are the
 	// page's.
 	_, inspecting := devtoolsOf(st.Tabs)
-	if !inspecting {
+	if notesOnPage(st) {
 		u.notesOverlay(page, p, session, st.URL)
 		u.notesDock(page, p, session)
 	}
@@ -199,7 +215,7 @@ func (u *window) browserHeader(gtx C, p *browserPaneUI, session string, st api.B
 		session := paneSession(pane)
 		u.sendBrowser(session, "close", func(ctx context.Context) error { return u.client.CloseBrowser(ctx, session) })
 	}
-	layout.Inset{Left: tabsInset, Right: ui.Space(2)}.Layout(gtx, func(gtx C) D {
+	layout.Inset{Left: browserChromeGap, Right: browserChromeGap, Top: browserChromeGap}.Layout(gtx, func(gtx C) D {
 		gtx.Constraints.Min.Y = gtx.Constraints.Max.Y
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Flexed(1, func(gtx C) D { return u.browserTabs(gtx, p, session, st, focused) }),
@@ -239,8 +255,8 @@ func (u *window) browserToolbar(gtx C, p *browserPaneUI, session string, st api.
 	if p.reload.Click.Clicked(gtx) {
 		nav("reload")
 	}
-	devtools, inspecting := devtoolsOf(st.Tabs)
-	if inspecting && (p.notes.picking || p.notes.drawing) {
+	devtools, _ := devtoolsOf(st.Tabs)
+	if !notesOnPage(st) && (p.notes.picking || p.notes.drawing) {
 		p.notes.setPicking(false)
 		p.notes.setDrawing(false)
 	}
@@ -258,10 +274,10 @@ func (u *window) browserToolbar(gtx C, p *browserPaneUI, session string, st api.
 			gtx.Execute(key.FocusCmd{Tag: &p.tag})
 		}
 	}
-	u.syncAddress(gtx, p, st.URL)
+	u.syncAddress(gtx, p, pageURL(st))
 	p.url.Submit = true
 	field := th.Input(&p.url, i18n.T("layouts.browser.address"))
-	field.Height, field.TextSize, field.Bare = ui.Space(7), ui.TextXS, true
+	field.Height, field.TextSize, field.Bare = browserAddressHeight, ui.TextXS, true
 	layout.Inset{Left: ui.Space(1.5), Right: ui.Space(1.5)}.Layout(gtx, func(gtx C) D {
 		gtx.Constraints.Min.Y = gtx.Constraints.Max.Y
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
@@ -294,8 +310,8 @@ func (u *window) syncAddress(gtx C, p *browserPaneUI, raw string) {
 	case typing && !focused:
 		p.url.SetText(text)
 	case focused:
-		if !p.editing {
-			p.editing = true
+		if !p.editing || movedUnderEdit(p.editedFrom, raw, p.url.Text()) {
+			p.editing, p.editedFrom = true, raw
 			p.url.SetText(displayURL(raw))
 			p.url.SetCaret(p.url.Len(), 0)
 		}
@@ -311,6 +327,13 @@ func (u *window) syncAddress(gtx C, p *browserPaneUI, raw string) {
 			p.url.SetText(shortURL(raw))
 		}
 	}
+}
+
+// movedUnderEdit is whether the page changed since an edit of the address
+// began, and the field still holds what it began with: the new tab the + just
+// opened, whose address nobody typed, takes the field along.
+func movedUnderEdit(editedFrom, raw, text string) bool {
+	return raw != editedFrom && text == displayURL(editedFrom)
 }
 
 // addressPill is field on the accent fill, with no border.
@@ -539,44 +562,9 @@ func shortURL(raw string) string {
 	return u.Host + strings.TrimSuffix(u.EscapedPath(), "/")
 }
 
-// typedURL is what the address field's text loads: a URL or an absolute path
-// as typed, and a bare host (localhost:3000, example.com) over http for a
-// local one and https for any other. The backend serves a path from the
-// session's checkout (internal/preview).
-func typedURL(text string) string {
-	switch {
-	case text == "":
-		return "about:blank"
-	case hasScheme(text), filepath.IsAbs(text):
-		return text
-	case isLocalHost(text):
-		return "http://" + text
-	}
-	return "https://" + text
-}
-
-func hasScheme(text string) bool {
-	for i, c := range text {
-		switch {
-		case c == ':':
-			return i > 0 && len(text) > i+2 && text[i+1:i+3] == "//"
-		case !('a' <= c && c <= 'z' || 'A' <= c && c <= 'Z' || i > 0 && ('0' <= c && c <= '9' || c == '+' || c == '-' || c == '.')):
-			return false
-		}
-	}
-	return false
-}
-
-func isLocalHost(text string) bool {
-	host := text
-	for i, c := range text {
-		if c == ':' || c == '/' {
-			host = text[:i]
-			break
-		}
-	}
-	return host == "localhost" || host == "127.0.0.1" || host == "[::1]" || strings.HasSuffix(host, ".localhost")
-}
+// typedURL is what the address field's text loads (api.TypedURL, which the
+// new-tab page's own field loads by too).
+func typedURL(text string) string { return api.TypedURL(text) }
 
 // agentLook is how session's agent cursor is drawn: in its card color, or the
 // theme's primary for a card without one, with the icon of the provider that

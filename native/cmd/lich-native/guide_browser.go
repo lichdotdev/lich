@@ -78,7 +78,7 @@ func (u *window) tourBrowserOpen() bool {
 // not the blank one it opens on.
 func (u *window) tourBrowserHasPage() bool {
 	st, ok := u.model.browserState(u.model.shownSession())
-	return ok && displayURL(st.URL) != ""
+	return ok && displayURL(pageURL(st)) != ""
 }
 
 // tourBrowserNotes is the active session's notes, nil before its pane drew;
