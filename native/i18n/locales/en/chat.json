@@ -21,5 +21,17 @@
     "placeholder": "Message {provider}…",
     "send": "Send",
     "stop": "Stop"
+  },
+  "option": {
+    "model": "Model",
+    "effort": "Effort",
+    "mode": "Mode",
+    "busy": "Wait for the turn to end to change this."
+  },
+  "choice": {
+    "manual": "Manual",
+    "plan": "Plan",
+    "auto": "Auto",
+    "yolo": "YOLO"
   }
 }

@@ -40,8 +40,10 @@ type chatView struct {
 	editor     widget.Editor
 	send, stop widget.Clickable
 	folds      map[string]*chatFold
-	answers    map[chatAnswer]*widget.Clickable
-	md         markdown.Cache
+	// optionMenus are the menus of the option chips, by category.
+	optionMenus map[string]*ui.MenuState
+	answers     map[chatAnswer]*widget.Clickable
+	md          markdown.Cache
 	// unsent is a message the backend refused, handed back to an empty
 	// editor on the next frame.
 	mu     sync.Mutex
@@ -63,6 +65,18 @@ func newChatPane() *chatPane {
 	p.folds = map[string]*chatFold{}
 	p.answers = map[chatAnswer]*widget.Clickable{}
 	return p
+}
+
+func (v *chatView) optionMenu(category string) *ui.MenuState {
+	m, ok := v.optionMenus[category]
+	if !ok {
+		if v.optionMenus == nil {
+			v.optionMenus = map[string]*ui.MenuState{}
+		}
+		m = new(ui.MenuState)
+		v.optionMenus[category] = m
+	}
+	return m
 }
 
 func (v *chatView) fold(key string) *chatFold {
@@ -226,17 +240,17 @@ func (u *window) chatComposer(gtx C, th *ui.Theme, p *chatPane, sv sessionView, 
 	if info, ok := u.model.providers.find(sv.Kind); ok && info.name != "" {
 		name = info.name
 	}
-	var chips []footerSlot
+	chips := u.model.chat.optionSlots(sv.ID)
 	var checkout, path *footerSlot
 	if u.footer.shown.sessionID == sv.ID {
 		l, _ := u.footer.snapshot()
-		chips, checkout, path = chatFootSlots(l, u.footer.shown)
+		chips, checkout, path = chatFootSlots(l, u.footer.shown, chips)
 	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			ta := th.Textarea(&p.editor, i18n.T("chat.composer.placeholder", i18n.Args{"provider": name}))
 			ta.MaxHeight, ta.Radius = chatComposerMax, ui.RadiusLG
-			ta.Foot = u.chatChips(th, p, working, chips)
+			ta.Foot = u.chatChips(th, p, sv, working, chips)
 			return ta.Layout(gtx)
 		}),
 		layout.Rigid(func(gtx C) D { return u.chatCrumbs(gtx, th, sv, checkout, path) }),

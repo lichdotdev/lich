@@ -2,9 +2,11 @@ package main
 
 import (
 	"image"
+	"strings"
 	"testing"
 
 	"github.com/lichdotdev/lich/api"
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
 )
 
@@ -146,5 +148,122 @@ func TestAnotherPaneOfALayoutHasNoFooterItems(t *testing.T) {
 		if r.shows(label) {
 			t.Errorf("%q drawn in a pane the footer does not follow", label)
 		}
+	}
+}
+
+func chatOptions() []backend.ChatOption {
+	return []backend.ChatOption{
+		{ID: "model", Category: api.OptionModel, Current: "haiku", Choices: []backend.ChatChoice{{ID: "haiku", Label: "Haiku 5.5"}, {ID: "opus", Label: "Opus 5.5"}}},
+		{ID: "effort", Category: api.OptionEffort, Current: "medium", Choices: []backend.ChatChoice{{ID: "low", Label: "Low"}, {ID: "medium", Label: "Medium"}}},
+		{ID: "mode", Category: api.OptionMode, Current: "default", Choices: []backend.ChatChoice{
+			{ID: "default"}, {ID: "plan", Label: "Plan mode"}, {ID: "bypassPermissions", Danger: true},
+		}},
+	}
+}
+
+func TestTheOptionsEventReplacesASessionsOptions(t *testing.T) {
+	m := chatModel(api.ViewChat)
+	m.chatEvent(t.Context(), chatEventOf(t, api.ChatOptionsEvent, api.ChatOptionsUpdate{SessionID: "s1", Options: chatOptions()}))
+	if o, ok := m.chat.optionOf("s1", api.OptionEffort); !ok || o.Current != "medium" {
+		t.Fatalf("effort = %+v, %v", o, ok)
+	}
+	m.chatEvent(t.Context(), chatEventOf(t, api.ChatOptionsEvent, api.ChatOptionsUpdate{SessionID: "s1", Options: chatOptions()[:1]}))
+	if _, ok := m.chat.optionOf("s1", api.OptionEffort); ok {
+		t.Error("an option the new list leaves out stayed")
+	}
+	if _, ok := m.chat.optionOf("s2", api.OptionModel); ok {
+		t.Error("another session read the options")
+	}
+}
+
+func TestAnOptionWithNoChoiceOffersNoChip(t *testing.T) {
+	m := chatModel(api.ViewChat)
+	m.chat.setOptions("s1", []backend.ChatOption{{ID: "model", Category: api.OptionModel, Current: "x"}})
+	if got := m.chat.optionSlots("s1"); len(got) != 0 {
+		t.Errorf("slots %v for an option with nothing to choose", got)
+	}
+}
+
+func TestTheComposerShowsAChipForEachOptionTheProviderOffers(t *testing.T) {
+	u, r, _ := chatFrames(t, api.ViewChat)
+	u.model.chat.setOptions("s1", chatOptions()[:2])
+	r.settle(t)
+	for _, label := range []string{"Haiku 5.5", "Medium"} {
+		if !r.shows(label) {
+			t.Errorf("no chip for %q:\n%s", label, r.drawn())
+		}
+	}
+	if r.shows(i18n.T("chat.choice.manual")) {
+		t.Error("a provider with no mode drew a mode chip")
+	}
+	if r.shows("opus 4.8") {
+		t.Error("the model reading stayed beside the model chip")
+	}
+	u.model.chat.setOptions("s1", chatOptions()[1:])
+	r.settle(t)
+	if r.shows("Haiku 5.5") || !r.shows("opus 4.8") {
+		t.Errorf("a provider with no model chip lost the model reading:\n%s", r.drawn())
+	}
+}
+
+func TestAnOptionChipOpensItsMenuAndChoosingSetsIt(t *testing.T) {
+	u, r, f := chatFrames(t, api.ViewChat)
+	u.model.chat.setOptions("s1", chatOptions())
+	r.settle(t)
+	r.clickLabel(t, "Haiku 5.5")
+	if !r.shows("Opus 5.5") {
+		t.Fatalf("the model menu did not open:\n%s", r.drawn())
+	}
+	r.clickLabel(t, "Opus 5.5")
+	body := f.waitCall(t, api.ChatSetOption.Name)
+	if !strings.Contains(body, `"optionId":"model"`) || !strings.Contains(body, `"value":"opus"`) || !strings.Contains(body, `"id":"s1"`) {
+		t.Errorf("set %s", body)
+	}
+}
+
+func TestADangerousModeShowsAsYoloAndIsMarkedInTheMenu(t *testing.T) {
+	u, r, _ := chatFrames(t, api.ViewChat)
+	opts := chatOptions()
+	opts[2].Current = "bypassPermissions"
+	u.model.chat.setOptions("s1", opts)
+	r.settle(t)
+	if !r.shows(i18n.T("chat.choice.yolo")) {
+		t.Fatalf("the active dangerous mode is not named:\n%s", r.drawn())
+	}
+	r.clickLabel(t, i18n.T("chat.choice.yolo"))
+	if !r.shows("Plan mode") || !r.shows(i18n.T("chat.choice.manual")) {
+		t.Errorf("the mode menu lost a choice:\n%s", r.drawn())
+	}
+}
+
+func TestTheOptionChipsTakeNoClickWhileTheAgentWorks(t *testing.T) {
+	u, r, f := chatFrames(t, api.ViewChat)
+	u.model.chat.setOptions("s1", chatOptions())
+	u.model.chat.turn(api.ChatTurn{SessionID: "s1", Running: true})
+	r.settle(t)
+	r.clickLabel(t, "Haiku 5.5")
+	if r.shows("Opus 5.5") {
+		t.Error("the menu opened during a turn")
+	}
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if len(f.calls) != 0 {
+		t.Errorf("called %v", f.calls)
+	}
+}
+
+func TestAChoiceSentByIdAloneIsNamedForTheIdsLichKnows(t *testing.T) {
+	for id, want := range map[string]string{
+		"default": i18n.T("chat.choice.manual"), "manual": i18n.T("chat.choice.manual"),
+		"plan": i18n.T("chat.choice.plan"), "auto": i18n.T("chat.choice.auto"),
+		"bypassPermissions": i18n.T("chat.choice.yolo"), "yolo": i18n.T("chat.choice.yolo"),
+		"somethingNew": "somethingNew",
+	} {
+		if got := choiceLabel(backend.ChatChoice{ID: id}); got != want {
+			t.Errorf("%s is %q, want %q", id, got, want)
+		}
+	}
+	if got := choiceLabel(backend.ChatChoice{ID: "default", Label: "Ask first"}); got != "Ask first" {
+		t.Errorf("the provider's label lost to ours: %q", got)
 	}
 }

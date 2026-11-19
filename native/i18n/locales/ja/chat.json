@@ -20,5 +20,17 @@
     "placeholder": "{provider}へのメッセージ…",
     "send": "送信",
     "stop": "停止"
+  },
+  "option": {
+    "model": "モデル",
+    "effort": "エフォート",
+    "mode": "モード",
+    "busy": "変更するにはターンの終了を待ってください。"
+  },
+  "choice": {
+    "manual": "手動",
+    "plan": "プラン",
+    "auto": "自動",
+    "yolo": "YOLO"
   }
 }

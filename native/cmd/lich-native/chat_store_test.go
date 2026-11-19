@@ -294,8 +294,10 @@ func TestLoadChatsReadsOnlyChatsTheStoreDoesNotHold(t *testing.T) {
 	}
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	if len(f.calls) != 1 {
-		t.Errorf("calls %v, want s3's history alone", f.calls)
+	// A chat's options are read with its history, since the contract gave a
+	// chat options the window shows.
+	if len(f.calls) != 2 || !strings.HasPrefix(f.calls[1], "chat.Options ") || !strings.Contains(f.calls[1], `"id":"s3"`) {
+		t.Errorf("calls %v, want s3's history and options alone", f.calls)
 	}
 }
 

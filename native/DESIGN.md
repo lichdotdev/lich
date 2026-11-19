@@ -270,8 +270,12 @@ pinned to its end while items arrive, until the person scrolls up.
   `RadiusLG` box, and the footer's items inside the box under the text. The chips are the footer layout's
   left side, then its right (`footerSlots`, the same readings and clicks as the balloons, attach drawn as a
   "+"), ghost and muted, on one line: Send, or Stop while the agent works, takes the right end first and what
-  does not fit in the rest is left out with the items after it, never wrapped. Model and effort are a reading
-  here, not a menu. The checkout and the path are no chips: under the box, outside it and with no fill, a
+  does not fit in the rest is left out with the items after it, never wrapped. The session's model, effort and mode are
+  chips of their own after the left side, each the choice in force with a chevron: a click opens a menu of the
+  provider's choices, the current one checked, and picking one sets it (`ChatSetOption`). A category the
+  provider does not offer has no chip, and the footer's model reading gives way to the model chip. A
+  dangerous choice (`Danger`, Claude Code's bypass mode) wears a bolt in `ToneWait` while it is active. While
+  the agent works the chips take no click and a tooltip says why. The checkout and the path are no chips: under the box, outside it and with no fill, a
   `TextXS` muted line reads project, a slash and the branch, then the path, and the branch opens the Git panel
   as its balloon did. Only the session the footer follows carries the items; another chat pane of a layout has
   the box and Send alone.
