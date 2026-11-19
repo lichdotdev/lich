@@ -35,7 +35,7 @@ func (u *window) chatRow(gtx C, th *ui.Theme, p *chatPane, sv sessionView, r cha
 	case chatRowLive:
 		return chatLive(gtx, th)
 	case chatRowDay:
-		return layout.Center.Layout(gtx, th.Text(ui.TextXS, dayLabel(time.UnixMilli(r.item.At).In(gtx.Now.Location()), gtx.Now)).Muted().Layout)
+		return layout.Center.Layout(gtx, th.Text(ui.TextXS, dayLabel(time.UnixMilli(r.day).In(gtx.Now.Location()), gtx.Now)).Muted().Layout)
 	}
 	it := r.item
 	switch it.Kind {

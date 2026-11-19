@@ -20,7 +20,9 @@ const (
 // chatRow is one line of the chat view.
 type chatRow struct {
 	kind chatRowKind
-	item backend.ChatItem // chatRowItem; a day row's first message
+	item backend.ChatItem // chatRowItem
+	// day is a day row's moment, unix ms: when the turn it starts began.
+	day int64
 	// turn, tools and took are a work row's: its tool calls and how long the
 	// turn has run.
 	turn  int
@@ -31,6 +33,10 @@ type chatRow struct {
 type chatTurnSpan struct {
 	start, end int64
 	tools      []backend.ChatItem
+	// began is the first time any item of the turn carries, 0 for none: a
+	// conversation read back from the provider may leave the person's message
+	// without one, and its answer still tells the day.
+	began int64
 }
 
 // chatRows lays items out as the view draws them: each turn's tool calls
@@ -47,6 +53,9 @@ func chatRows(items []backend.ChatItem, running bool, now time.Time) []chatRow {
 			spans[it.Turn] = sp
 		}
 		sp.start, sp.end = min(sp.start, it.At), max(sp.end, it.At)
+		if it.At > 0 && (sp.began == 0 || it.At < sp.began) {
+			sp.began = it.At
+		}
 		if it.Kind == api.ItemTool {
 			sp.tools = append(sp.tools, it)
 		}
@@ -56,10 +65,10 @@ func chatRows(items []backend.ChatItem, running bool, now time.Time) []chatRow {
 	folded := map[int]bool{}
 	var turnDay time.Time
 	for _, it := range items {
-		if it.Kind == api.ItemUser && it.At > 0 {
-			day := time.UnixMilli(it.At).In(now.Location())
+		if began := spans[it.Turn].began; it.Kind == api.ItemUser && began > 0 {
+			day := time.UnixMilli(began).In(now.Location())
 			if !turnDay.IsZero() && !sameDay(turnDay, day) {
-				rows = append(rows, chatRow{kind: chatRowDay, item: it})
+				rows = append(rows, chatRow{kind: chatRowDay, day: began})
 			}
 			turnDay = day
 		}

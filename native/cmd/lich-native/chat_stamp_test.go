@@ -36,14 +36,14 @@ func TestADayRowSeparatesTurnsOfDifferentDays(t *testing.T) {
 		{ID: "u2", Kind: api.ItemUser, Turn: 2, At: novDay(18, 0, 10)},
 		{ID: "u3", Kind: api.ItemUser, Turn: 3, At: novDay(18, 9, 0)},
 	}
-	var days []string
+	var days []int64
 	for _, r := range chatRows(items, false, time.Time{}) {
 		if r.kind == chatRowDay {
-			days = append(days, r.item.ID)
+			days = append(days, r.day)
 		}
 	}
-	if len(days) != 1 || days[0] != "u2" {
-		t.Errorf("day rows before %v, want the one turn that starts a new day (u2): an answer crossing midnight and a first turn have none", days)
+	if len(days) != 1 || days[0] != novDay(18, 0, 10) {
+		t.Errorf("day rows %v, want the one before the turn that starts a new day: an answer crossing midnight and a first turn have none", days)
 	}
 }
 
@@ -124,5 +124,24 @@ func TestADaySeparatorIsCenteredBetweenTurns(t *testing.T) {
 	}
 	if y1, ys, y2 := labelTop(t, r, "first"), labelTop(t, r, label), labelTop(t, r, "second"); !(y1 < ys && ys < y2) {
 		t.Errorf("first at y=%d, separator at y=%d, second at y=%d: want it between", y1, ys, y2)
+	}
+}
+
+// A conversation read back from the provider can leave the person's message
+// without a time; its answer tells the day.
+func TestATurnWithNoMessageTimeTakesItsDayFromItsAnswer(t *testing.T) {
+	items := []backend.ChatItem{
+		{ID: "u1", Kind: api.ItemUser, Turn: 1},
+		{ID: "a1", Kind: api.ItemAgent, Turn: 1, At: novDay(17, 21, 52)},
+		{ID: "u2", Kind: api.ItemUser, Turn: 2, At: novDay(18, 5, 3)},
+	}
+	var days int
+	for _, r := range chatRows(items, false, time.Time{}) {
+		if r.kind == chatRowDay {
+			days++
+		}
+	}
+	if days != 1 {
+		t.Errorf("%d day rows, want 1 between the turns", days)
 	}
 }
