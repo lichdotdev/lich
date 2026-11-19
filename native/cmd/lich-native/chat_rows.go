@@ -2,6 +2,7 @@ package main
 
 import (
 	"slices"
+	"strconv"
 	"time"
 
 	"github.com/lichdotdev/lich/api"
@@ -23,6 +24,13 @@ type chatRow struct {
 	item backend.ChatItem // chatRowItem
 	// day is a day row's moment, unix ms: when the turn it starts began.
 	day int64
+	// lead marks the first answer of a turn, which opens with who speaks.
+	lead bool
+	// live marks the row's item as alive: the thought being thought, the
+	// answer being written, a turn's tool calls while one of them runs.
+	live bool
+	// ended is when a work row's turn last did something, unix ms.
+	ended int64
 	// turn, tools and took are a work row's: its tool calls and how long the
 	// turn has run.
 	turn  int
@@ -63,17 +71,27 @@ func chatRows(items []backend.ChatItem, running bool, now time.Time) []chatRow {
 	}
 	var rows []chatRow
 	folded := map[int]bool{}
+	led := map[int]bool{}
 	var turnDay time.Time
+	// The item being produced is the conversation's last, while it runs.
+	liveID := ""
+	if running && len(items) > 0 {
+		liveID = items[len(items)-1].ID
+	}
 	for _, it := range items {
 		if began := spans[it.Turn].began; it.Kind == api.ItemUser && began > 0 {
 			day := time.UnixMilli(began).In(now.Location())
 			if !turnDay.IsZero() && !sameDay(turnDay, day) {
-				rows = append(rows, chatRow{kind: chatRowDay, day: began})
+				rows = append(rows, chatRow{kind: chatRowDay, day: began, turn: it.Turn})
 			}
 			turnDay = day
 		}
 		if it.Kind != api.ItemTool {
-			rows = append(rows, chatRow{kind: chatRowItem, item: it})
+			r := chatRow{kind: chatRowItem, item: it, live: it.ID == liveID && (it.Kind == api.ItemAgent || it.Kind == api.ItemThought)}
+			if it.Kind == api.ItemAgent && !led[it.Turn] {
+				led[it.Turn], r.lead = true, true
+			}
+			rows = append(rows, r)
 			continue
 		}
 		if folded[it.Turn] {
@@ -85,12 +103,34 @@ func chatRows(items []backend.ChatItem, running bool, now time.Time) []chatRow {
 		if running && it.Turn == last {
 			end = now.UnixMilli()
 		}
-		rows = append(rows, chatRow{kind: chatRowWork, turn: it.Turn, tools: sp.tools, took: time.Duration(max(end-sp.start, 0)) * time.Millisecond})
+		rows = append(rows, chatRow{kind: chatRowWork, turn: it.Turn, tools: sp.tools, ended: sp.end, live: running && toolRunning(sp.tools),
+			took: time.Duration(max(end-sp.start, 0)) * time.Millisecond})
 	}
 	if running && permissionWaiting(items) == nil {
 		rows = append(rows, chatRow{kind: chatRowLive})
 	}
 	return rows
+}
+
+// toolRunning is whether any of calls has not ended.
+func toolRunning(calls []backend.ChatItem) bool {
+	return slices.ContainsFunc(calls, func(it backend.ChatItem) bool {
+		return it.Tool != nil && (it.Tool.State == api.ToolPending || it.Tool.State == api.ToolRunning)
+	})
+}
+
+// chatRowKey names a row for its entry: an item by its id, the others by the
+// turn they belong to.
+func chatRowKey(r chatRow) string {
+	switch r.kind {
+	case chatRowWork:
+		return "work:" + strconv.Itoa(r.turn)
+	case chatRowDay:
+		return "day:" + strconv.Itoa(r.turn)
+	case chatRowLive:
+		return "live"
+	}
+	return r.item.ID
 }
 
 func sameDay(a, b time.Time) bool {

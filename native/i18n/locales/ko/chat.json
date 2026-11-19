@@ -14,7 +14,14 @@
     },
     "toolFailed": "실패",
     "answered": "{tool} · {choice}",
-    "working": "작업 중…"
+    "working": "작업 중…",
+    "thinking": "생각 중",
+    "toolCalls": {
+      "other": "도구 호출 {count}개"
+    },
+    "workedAt": {
+      "other": "{duration} 작업 · 도구 {count}개 · {time}"
+    }
   },
   "composer": {
     "placeholder": "{provider}에게 메시지…",

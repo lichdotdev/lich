@@ -15,7 +15,16 @@
     },
     "toolFailed": "falló",
     "answered": "{tool} · {choice}",
-    "working": "Trabajando…"
+    "working": "Trabajando…",
+    "thinking": "Pensando",
+    "toolCalls": {
+      "one": "{count} llamada a herramienta",
+      "other": "{count} llamadas a herramientas"
+    },
+    "workedAt": {
+      "one": "Trabajó {duration} · {count} herramienta · {time}",
+      "other": "Trabajó {duration} · {count} herramientas · {time}"
+    }
   },
   "composer": {
     "placeholder": "Mensaje para {provider}…",

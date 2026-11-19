@@ -121,6 +121,17 @@ func (p *Presence) Leaving(key string) bool {
 	return ok && it.leaving
 }
 
+// Moving reports whether an item is still entering or leaving, so a list that
+// holds them can tell a row changing size from the person scrolling.
+func (p *Presence) Moving() bool {
+	for _, it := range p.items {
+		if it.leaving || it.motion.from != it.motion.to {
+			return true
+		}
+	}
+	return false
+}
+
 // Settle puts key's item at rest, its entry played: an item another motion
 // brings in, which Layout would otherwise grow in again once that motion
 // hands it back.

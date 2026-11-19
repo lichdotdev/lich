@@ -4,6 +4,7 @@ import (
 	"image"
 	"strings"
 	"sync"
+	"time"
 
 	"gioui.org/io/key"
 	"gioui.org/layout"
@@ -43,6 +44,10 @@ type chatView struct {
 	editor           widget.Editor
 	send, stop       widget.Clickable
 	sendTip, stopTip ui.Tooltip
+	// rows brings the conversation's rows in, and seen is the row each key
+	// last was, for one that is playing its exit.
+	rows ui.Presence
+	seen map[string]chatRow
 	// stamps are the tooltips of the time under each message, by item id.
 	stamps map[string]*ui.Tooltip
 	folds  map[string]*chatFold
@@ -97,6 +102,25 @@ func (v *chatView) stamp(id string) *ui.Tooltip {
 	return t
 }
 
+// enter takes the conversation's rows into the presence that animates them,
+// and answers the keys to draw, in order: the rows, and those that left a
+// moment ago. Until the conversation has been read the rows are drawn as they
+// are, so a history arriving later does not play as a hundred arrivals.
+func (v *chatView) enter(now time.Time, rows []chatRow, read bool) []string {
+	if v.seen == nil {
+		v.seen = map[string]chatRow{}
+	}
+	keys := make([]string, len(rows))
+	for i, r := range rows {
+		keys[i] = chatRowKey(r)
+		v.seen[keys[i]] = r
+	}
+	if !read {
+		return keys
+	}
+	return v.rows.Update(now, keys)
+}
+
 func (v *chatView) fold(key string) *chatFold {
 	f, ok := v.folds[key]
 	if !ok {
@@ -127,13 +151,25 @@ func (u *window) chatScreen(gtx C, sv sessionView, keys bool) {
 	th := u.theme.On(u.theme.Background)
 	layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Flexed(1, func(gtx C) D {
-			d := th.ThinScrollArea(&p.list).Layout(gtx, len(rows), func(gtx C, i int) D {
+			shown := p.enter(gtx.Now, rows, u.model.chat.holds(sv.ID))
+			atEnd := !p.list.Position.BeforeEnd
+			d := th.ThinScrollArea(&p.list).Layout(gtx, len(shown), func(gtx C, i int) D {
 				top := chatRowGap
 				if i == 0 {
 					top = chatTopPad
 				}
-				return chatColumn(gtx, top, 0, func(gtx C) D { return u.chatRow(gtx, th, p, sv, rows[i]) })
+				key := shown[i]
+				return p.rows.Layout(gtx, key, func(gtx C) D {
+					return chatColumn(gtx, top, 0, func(gtx C) D { return u.chatRow(gtx, th, p, sv, p.seen[key]) })
+				})
 			})
+			// A row that comes in at no height at the list's end makes Gio
+			// count the list as scrolled up, and it would no longer follow the end
+			// as the row grows: a list that was at its end stays there while its
+			// rows move.
+			if atEnd && p.rows.Moving() {
+				p.list.Position.BeforeEnd = false
+			}
 			// A conversation shorter than the view starts at its top; once it
 			// outgrows the view, where nobody could have scrolled it, it goes to
 			// its end and stays there until scrolled up.
