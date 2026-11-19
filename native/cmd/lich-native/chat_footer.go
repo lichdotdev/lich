@@ -43,6 +43,11 @@ var (
 	// under the footer's, on a TextXS line.
 	chatCrumbsPad  = ui.Space(2)
 	chatCrumbGlyph = ui.Space(3)
+	// chatChangesPadX and chatChangesPadY are the room the changes item's hover
+	// fill keeps round its text: a ghost button's, which the line's left side has
+	// none of to follow. The fill grows outward; the text does not move.
+	chatChangesPadX = ui.Space(1.5)
+	chatChangesPadY = ui.Space(1)
 )
 
 // chatCrumbGap is the space either side of the line's slash, in ui.Space units.
@@ -233,7 +238,13 @@ func (f *footer) crumb(gtx C, th *ui.Theme, id string, ic icons.Glyph, s footerS
 func (f *footer) crumbChanges(gtx C, th *ui.Theme, s footerSlot, git backend.DiffStats, followed bool) D {
 	w := f.w(s.ID + s.Pane)
 	return th.Tooltip(f.root, &w.tip, i18n.T("shell.footerBar.reviewChanges")).Layout(gtx, func(gtx C) D {
-		return w.click.Layout(gtx, func(gtx C) D {
+		// The hover fill grows outward from the text: the item takes the room
+		// of its text alone, so the text stands where the left side's does,
+		// chatFootPad in from the box's edge.
+		padX, padY := gtx.Dp(chatChangesPadX), gtx.Dp(chatChangesPadY)
+		m := op.Record(gtx.Ops)
+		out := op.Offset(image.Pt(-padX, -padY)).Push(gtx.Ops)
+		d := w.click.Layout(gtx, func(gtx C) D {
 			var bg color.NRGBA
 			if w.click.Hovered() {
 				bg = th.Over(ui.Alpha(th.Accent, ui.GhostHoverFill))
@@ -248,7 +259,7 @@ func (f *footer) crumbChanges(gtx C, th *ui.Theme, s footerSlot, git backend.Dif
 					return ui.FillIf(gtx, bg, ui.RadiusMD)
 				},
 				func(gtx C) D {
-					return layout.Inset{Left: ui.Space(1.5), Right: ui.Space(1.5)}.Layout(gtx, func(gtx C) D {
+					return layout.Inset{Left: chatChangesPadX, Right: chatChangesPadX, Top: chatChangesPadY, Bottom: chatChangesPadY}.Layout(gtx, func(gtx C) D {
 						return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 							layout.Rigid(func(gtx C) D { return icFileDiff.Layout(gtx, chatCrumbGlyph, th.MutedForeground) }),
 							ui.Gap(1.5),
@@ -260,6 +271,10 @@ func (f *footer) crumbChanges(gtx C, th *ui.Theme, s footerSlot, git backend.Dif
 				},
 			)
 		})
+		out.Pop()
+		call := m.Stop()
+		call.Add(gtx.Ops)
+		return D{Size: image.Pt(d.Size.X-2*padX, d.Size.Y-2*padY), Baseline: d.Baseline - padY}
 	})
 }
 

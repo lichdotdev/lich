@@ -393,7 +393,9 @@ draws none while it grows in, because the room above the rows is measured in the
   which opens the Git panel as its balloon did, and at the right the changes, only while there are some
   (files above 0): in the left's style, a small file-diff glyph, the file count and `+added -deleted` (`TonePass`,
   `Destructive`) in `TextXS`, on the same line and height, no fill at rest and the kit's hover fill under the
-  pointer, which opens Review. It is never drawn pressed, as the footer's button is while the dock shows Review:
+  pointer, which stands `Space(1.5)` by `Space(1)` (`chatChangesPadX`, `chatChangesPadY`) round the text and grows
+  outward from it: the item takes the room of its text alone, so the text ends `chatFootPad` in from the box's
+  right edge, as the left side starts, and the fill reaches the edge. A click opens Review. It is never drawn pressed, as the footer's button is while the dock shows Review:
   on this line a lit item reads as a button switched on for no reason. Attach, changes and the branch show only when the user's footer layout has them, and
   in every pane, each for its own session (its checkout, branch and changes, with or without the focus, but only the
   followed pane's items take a click); the attach "+" and the context ring are the followed session's alone, so another

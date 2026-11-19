@@ -407,3 +407,37 @@ func TestTheLineUnderTheBoxHasSpace2OnBothSides(t *testing.T) {
 		t.Errorf("the line's top is %dpx from the bottom edge, want its %dpx height, %v under it and the composer's %v pad", got, lineHeight, chatCrumbsPad, chatComposerPad)
 	}
 }
+
+// The hover fill of the changes item stands chatChangesPad round its text, and
+// takes none of the line: the text keeps the place it has chatFootPad in from the
+// box's edge, as the left side's does, and the fill reaches the edge.
+func TestTheChangesItemsFillGrowsOutwardFromItsText(t *testing.T) {
+	_, r, _ := chatFrames(t, api.ViewChat)
+	r.settle(t)
+	if chatChangesPadX != 6 || chatChangesPadY != 4 {
+		t.Errorf("padding %v by %v, want Space(1.5) by Space(1)", chatChangesPadX, chatChangesPadY)
+	}
+	var box, item image.Rectangle
+	label := image.Pt(labelLeft(t, r, "2"), labelTop(t, r, "2")+4)
+	for _, n := range r.nodes() {
+		b := n.Desc.Bounds
+		switch {
+		case n.Desc.Gestures != 0 && b.Dx() == 960 && b.Min.Y > 200:
+			box = b
+		case n.Desc.Gestures != 0 && label.In(b) && b.Dy() < 60 && (item.Empty() || b.Dx() > item.Dx()):
+			item = b
+		}
+	}
+	if box.Empty() || item.Empty() {
+		t.Fatalf("no box or item (%v, %v):\n%s", box, item, r.drawn())
+	}
+	if item.Dy() != 16+2*int(chatChangesPadY) {
+		t.Errorf("the item is %dpx tall, want the line's 16 and %vpx round it", item.Dy(), chatChangesPadY)
+	}
+	if item.Max.X != box.Max.X {
+		t.Errorf("the item ends at x=%d, the box at x=%d: the fill should reach the edge, the text %v in", item.Max.X, box.Max.X, chatFootPad)
+	}
+	if text := labelTop(t, r, "2"); text-item.Min.Y != int(chatChangesPadY) {
+		t.Errorf("the text is %dpx under the fill's top, want %v", text-item.Min.Y, chatChangesPadY)
+	}
+}
