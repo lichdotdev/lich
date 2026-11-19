@@ -160,6 +160,10 @@ func (d *claudeDriver) prompt(text string) error {
 	return d.c.out.send(map[string]any{"type": "user", "message": map[string]any{"role": "user", "content": text}})
 }
 
+// follow writes the message during the turn: Claude Code takes it into the
+// turn running, after the denied question (measured on 2.1.328).
+func (d *claudeDriver) follow(text string) error { return d.prompt(text) }
+
 func (d *claudeDriver) cancel() error {
 	d.mu.Lock()
 	d.interrupted = true

@@ -208,3 +208,13 @@ func TestNoLiveOrDoneRowWhileAQuestionWaits(t *testing.T) {
 		}
 	}
 }
+
+// An ask with no header, as Antigravity sends them, names its step by its
+// number.
+func TestAStepWithNoHeaderIsItsNumber(t *testing.T) {
+	plain := func(a api.ChatAsk) api.ChatAsk { a.Header = ""; return a }
+	_, r, _ := questionFrames(t, nil, plain(askFruit), plain(askColors))
+	if !r.shows("1") || !r.shows("2") {
+		t.Errorf("the steps are not numbered:\n%s", r.drawn())
+	}
+}

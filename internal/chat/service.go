@@ -260,22 +260,16 @@ func (s *Service) Prompt(ctx context.Context, opts api.ChatPromptOptions) (api.N
 		return api.None{}, errBusy
 	}
 	// A message written while the agent waits on its questions answers none
-	// of them and reaches it in the same turn (measured on 2.1.328).
+	// of them, and goes to the agent after.
 	if c.declineQuestions() {
 		c.conv.userMessage(opts.Text)
-		return api.None{}, c.drv.prompt(opts.Text)
+		return api.None{}, c.drv.follow(opts.Text)
 	}
 	if err := c.beginTurn(); err != nil {
 		return api.None{}, err
 	}
 	c.conv.userMessage(opts.Text)
-	c.markStart()
-	if err := c.drv.prompt(opts.Text); err != nil {
-		c.conv.notice(err.Error())
-		c.endTurn(stopError)
-		return api.None{}, err
-	}
-	return api.None{}, nil
+	return api.None{}, c.send(opts.Text)
 }
 
 // Cancel answers api.ChatCancel.

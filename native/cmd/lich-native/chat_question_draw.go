@@ -66,6 +66,9 @@ func chatQuestionHead(gtx C, th *ui.Theme, q *chatQuiz, asks []api.ChatAsk) D {
 		steps = append(steps, layout.Rigid(func(gtx C) D {
 			return q.steps[i].Layout(gtx, func(gtx C) D {
 				label := a.Header
+				if label == "" {
+					label = strconv.Itoa(i + 1)
+				}
 				if q.done[i] {
 					label = "✓ " + label
 				}

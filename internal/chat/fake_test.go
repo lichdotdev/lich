@@ -272,6 +272,10 @@ func (f *fake) acpTurn(id any, text string) {
 	case "err":
 		f.send(map[string]any{"jsonrpc": "2.0", "id": id, "error": map[string]any{"code": -32603, "message": "Model access is disabled"}})
 		return
+	case "question", "question-then-write", "question-url":
+		if f.acpElicit(id, text) {
+			return
+		}
 	case "fs":
 		f.send(map[string]any{"jsonrpc": "2.0", "id": 99, "method": "fs/write_text_file", "params": map[string]any{"path": "/x", "content": "y"}})
 		reply := f.next()
@@ -339,4 +343,39 @@ func (f *fake) claudeQuestion(msg func(string, map[string]any), write bool) {
 		msg("mq3", map[string]any{"type": "text", "text": "then:" + str(f.next(), "message", "content")})
 	}
 	f.claudeResult(false, "completed", "")
+}
+
+// fakeElicitSchema is what the fake asks over elicitation/create, in the
+// shapes oh-my-pi and Antigravity were measured sending: a single choice with
+// its other property, a multiple choice with Antigravity's other suffix, and a
+// question with no choices.
+var fakeElicitSchema = map[string]any{"type": "object", "properties": map[string]any{
+	"q0":        map[string]any{"type": "string", "title": "Which fruit?", "description": "Fruit", "oneOf": []any{map[string]any{"const": "1", "title": "Apple"}, map[string]any{"const": "2", "title": "Pear"}}},
+	"q0__other": map[string]any{"type": "string", "title": "Other (type your own)"},
+	"q1":        map[string]any{"type": "array", "title": "Which colors?", "items": map[string]any{"anyOf": []any{map[string]any{"const": "r", "title": "Red"}, map[string]any{"const": "b", "title": "Blue"}}}},
+	"q1_other":  map[string]any{"type": "string", "title": "Other"},
+	"q2":        map[string]any{"type": "string", "title": "Anything else?"},
+}}
+
+// acpElicit asks the fake's questions and writes back what came; with write it
+// then waits for the cancel a message sent past them brings, and ends the turn
+// itself (true).
+func (f *fake) acpElicit(id any, text string) bool {
+	mode := "form"
+	if text == "question-url" {
+		mode = "url"
+	}
+	f.send(map[string]any{"jsonrpc": "2.0", "id": 8, "method": "elicitation/create", "params": map[string]any{
+		"sessionId": "s", "mode": mode, "message": "Answer 3 questions", "requestedSchema": fakeElicitSchema,
+	}})
+	reply := f.next()
+	out, _ := json.Marshal(reply["result"])
+	f.update(chunk("agent_message_chunk", "elicit:"+string(out)))
+	if text != "question-then-write" {
+		return false
+	}
+	for m := f.next(); m != nil && str(m, "method") != "session/cancel"; m = f.next() {
+	}
+	f.result(id, map[string]any{"stopReason": "cancelled"})
+	return true
 }
