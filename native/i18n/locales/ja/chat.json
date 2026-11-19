@@ -48,7 +48,9 @@
     "manual": "手動",
     "plan": "プラン",
     "auto": "自動",
-    "yolo": "YOLO"
+    "yolo": "YOLO",
+    "readOnly": "読み取り専用",
+    "workspace": "ワークスペース"
   },
   "day": {
     "today": "今日",

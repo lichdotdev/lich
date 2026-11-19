@@ -48,7 +48,9 @@
     "manual": "手动",
     "plan": "计划",
     "auto": "自动",
-    "yolo": "YOLO"
+    "yolo": "YOLO",
+    "readOnly": "只读",
+    "workspace": "工作区"
   },
   "day": {
     "today": "今天",

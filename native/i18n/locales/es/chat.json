@@ -52,7 +52,9 @@
     "manual": "Manual",
     "plan": "Plan",
     "auto": "Auto",
-    "yolo": "YOLO"
+    "yolo": "YOLO",
+    "readOnly": "Solo lectura",
+    "workspace": "Espacio de trabajo"
   },
   "day": {
     "today": "Hoy",

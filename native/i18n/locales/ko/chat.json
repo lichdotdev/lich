@@ -48,7 +48,9 @@
     "manual": "수동",
     "plan": "계획",
     "auto": "자동",
-    "yolo": "YOLO"
+    "yolo": "YOLO",
+    "readOnly": "읽기 전용",
+    "workspace": "작업 공간"
   },
   "day": {
     "today": "오늘",

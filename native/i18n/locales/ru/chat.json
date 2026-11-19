@@ -60,7 +60,9 @@
     "manual": "Ручной",
     "plan": "План",
     "auto": "Авто",
-    "yolo": "YOLO"
+    "yolo": "YOLO",
+    "readOnly": "Только чтение",
+    "workspace": "Рабочая область"
   },
   "day": {
     "today": "Сегодня",

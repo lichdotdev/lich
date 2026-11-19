@@ -107,8 +107,8 @@ func (it codexItem) tool() (api.ChatToolCall, bool) {
 	case "fileChange":
 		return codexPatch(it.Changes), true
 	case "mcpToolCall":
-		t := api.ChatToolCall{Name: "mcp__" + it.Server + "__" + it.Tool, Title: argsTitle(it.Args)}
-		t.Output = shorten(mcpResultText(it.Result))
+		t := api.ChatToolCall{Name: "mcp__" + it.Server + "__" + it.Tool, Title: argsTitle(it.Args),
+			Output: shorten(mcpResultText(it.Result))}
 		if it.Error != nil {
 			t.Output = shorten(it.Error.Message)
 		}
