@@ -16,7 +16,8 @@ import (
 // The provider a chat test talks to is this test binary run again with
 // fakeEnv set (TestMain): it speaks Claude Code's stream-json when spawned with
 // -p and ACP when spawned with acp, and answers each message by its text with
-// one scripted turn, the shapes measured against the real CLIs.
+// one scripted turn, the shapes measured against the real CLIs; spawned with
+// app-server it speaks Codex's (fake_codex_test.go).
 const fakeEnv = "LICH_CHAT_FAKE"
 
 // fakeLogEnv names a file the fake appends every line it reads to, for a test
@@ -36,6 +37,10 @@ func runFake(args []string) {
 	}
 	if slices.Contains(args, "acp") {
 		f.acp(args)
+		return
+	}
+	if slices.Contains(args, "app-server") {
+		f.codex()
 		return
 	}
 	f.claude(args)

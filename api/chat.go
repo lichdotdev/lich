@@ -2,7 +2,8 @@ package api
 
 // A session's chat is the same conversation as its terminal, drawn by the
 // window instead of by the provider's TUI: lich runs the provider's CLI in its
-// structured mode (Claude Code's stream-json, ACP for the others that speak it)
+// structured mode (Claude Code's stream-json, Codex's app-server, ACP for the
+// others that speak it)
 // and reports what it does as items. Switching a session between the two stops
 // one process and resumes the conversation in the other, one at a time.
 

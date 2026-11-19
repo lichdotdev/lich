@@ -17,6 +17,7 @@ import (
 	"github.com/lichdotdev/lich/internal/events"
 	"github.com/lichdotdev/lich/internal/prompt"
 	"github.com/lichdotdev/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/relay"
 )
 
 // TestChatArgsPassOnlyWhatEachModeTakes pins the chat argv per provider: Claude
@@ -66,6 +67,28 @@ func TestChatArgsPassOnlyWhatEachModeTakes(t *testing.T) {
 	}
 }
 
+// TestCodexChatArgsAreGlobalOverridesThenAppServer: Codex's chat takes the
+// terminal's `-c` overrides (trust, briefing, lich's MCP server) before the
+// subcommand, and no flag app-server lacks.
+func TestCodexChatArgsAreGlobalOverridesThenAppServer(t *testing.T) {
+	t.Parallel()
+	a := spawnArgs{kind: providers.Codex, cwd: "/w", model: "m1", effort: "high", skipPermissions: true, confined: true, lichBin: "/bin/lich", lang: prompt.English}
+	got := chatArgs(a, ChatLaunch{})
+	if got[len(got)-1] != codexAppServerSubcmd || slices.Contains(got, "--model") || slices.Contains(got, skipPermissionFlags[providers.Codex]) {
+		t.Errorf("codex chat argv = %v", got)
+	}
+	joined := strings.Join(got, " ")
+	for _, want := range []string{`trust_level="trusted"`, codexInstructionsKey + "=", "mcp_servers." + relay.MCPServerName + ".command"} {
+		if !strings.Contains(joined, want) {
+			t.Errorf("codex chat argv = %v, want %s", got, want)
+		}
+	}
+	a.resume = "conv-1"
+	if got := strings.Join(chatArgs(a, ChatLaunch{}), " "); strings.Contains(got, codexInstructionsKey) || strings.Contains(got, "conv-1") {
+		t.Errorf("codex resume argv = %v, want neither the briefing nor the id, which the protocol carries", got)
+	}
+}
+
 // TestChatBirthCarriesWhatTheArgvCannot: the model and effort reach the
 // protocol only where no flag carried them, and only at birth; skip-permissions
 // becomes lich answering yes where the ACP server has no flag for it.
@@ -79,6 +102,7 @@ func TestChatBirthCarriesWhatTheArgvCannot(t *testing.T) {
 		{providers.OMP, "", ChatBirth{Model: "m1", Effort: "low", AutoApprove: true}},
 		{providers.OMP, "conv", ChatBirth{AutoApprove: true}},
 		{providers.Antigravity, "", ChatBirth{Model: "m1", Effort: "low"}},
+		{providers.Codex, "", ChatBirth{Model: "m1", Effort: "low", AutoApprove: true}},
 		{providers.Claude, "", ChatBirth{}},
 		{providers.Kiro, "", ChatBirth{}},
 	}

@@ -14,7 +14,7 @@ import (
 // TestSetViewRefuses every switch the session cannot make.
 func TestSetViewRefuses(t *testing.T) {
 	r := newRig(t, providers.OMP)
-	if kinds, _ := r.svc.Kinds(t.Context(), api.None{}); !slices.Contains(kinds, providers.OMP) || slices.Contains(kinds, providers.Codex) {
+	if kinds, _ := r.svc.Kinds(t.Context(), api.None{}); !slices.Contains(kinds, providers.OMP) || slices.Contains(kinds, providers.Crush) {
 		t.Errorf("Kinds = %v", kinds)
 	}
 	if err := r.setView("sideways"); err == nil {
@@ -41,9 +41,9 @@ func TestSetViewRefuses(t *testing.T) {
 	}
 	release()
 
-	_, _ = r.db.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "codex", Label: "C", Kind: providers.Codex, NextSeq: 3})
-	if _, err := r.svc.SetView(t.Context(), api.ChatViewOptions{ID: "codex", View: api.ViewChat}); err == nil {
-		t.Error("a Codex session became a chat")
+	_, _ = r.db.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "crush", Label: "C", Kind: providers.Crush, NextSeq: 3})
+	if _, err := r.svc.SetView(t.Context(), api.ChatViewOptions{ID: "crush", View: api.ViewChat}); err == nil {
+		t.Error("a Crush session became a chat")
 	}
 
 	if err := r.setView(api.ViewChat); err != nil {
