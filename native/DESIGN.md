@@ -270,12 +270,14 @@ keeps no count of the first and no provider tells it the threshold of the second
 A session whose view is chat draws its conversation in place of the terminal, on the same island and in a
 layout's pane alike (`chat_view.go`, `chat_items.go`). The composer's box takes the pane's width less `Space(6)`
 each side, up to 960px (`chatPadX`, `chatBoxMax`): wide enough for a long line of code, and no wider than a
-paragraph can be read in. The conversation is a column on the same axis, `Space(1.5)` (6px, `chatTextInset`)
+paragraph can be read in. The conversation is a column on the same axis, `Space(4)` (16px, `chatTextInset`)
 narrower each side, so its text lines up inside the box and not with its border. Its rows are `Space(3.5)` apart.
 A conversation shorter than the view rests on the composer, its newest message at the bottom and the older
 ones above, and a new one comes in under them and pushes them up, as in a messaging app; one taller than the
-view stays pinned to its end while items arrive, until the person scrolls up. The list ends `Space(4)`
-(16px, `chatComposerGap`) above the composer's box in both cases, so the last message and its time never touch it.
+view stays pinned to its end while items arrive, until the person scrolls up. The list ends `Space(6)`
+(24px, `chatComposerGap`) above the composer's box in both cases, so the last message and its time never touch it.
+The list's scrollbar shows only while the rows outgrow the view: a message sent into a conversation that fits
+draws none while it grows in, because the room above the rows is measured in the frame that draws them.
 
 - **The person's message** is a box in `Accent`, `RadiusLG`, against the column's right edge, at most 78% of
   it. It breaks "rows, not cards" on purpose: a turn starts where a message does, and the eye finds it by the

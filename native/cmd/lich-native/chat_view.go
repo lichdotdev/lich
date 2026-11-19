@@ -27,9 +27,8 @@ var (
 	chatPadX   = ui.Space(6)
 	chatBoxMax = unit.Dp(960)
 	// chatTextInset is how far the conversation sits inside the composer's
-	// edges, so its text lines up inside the box rather than with its border;
-	// the user asked for 4 to 8px.
-	chatTextInset = ui.Space(1.5)
+	// edges, so its text lines up inside the box rather than with its border.
+	chatTextInset = ui.Space(4)
 	chatRowGap    = ui.Space(3.5)
 	// chatTopPad keeps the first row clear of the selector floating over the
 	// column's top-right corner.
@@ -45,7 +44,7 @@ var (
 	// chatComposerGap is the room between the end of the conversation and the
 	// top of the composer's box: the last message, and its time under it, never
 	// touch the box, whether the list rests on it or is pinned to its end.
-	chatComposerGap = ui.Space(4)
+	chatComposerGap = ui.Space(6)
 	// chatComposerPadX and chatComposerPadY are the room the text and its
 	// placeholder keep from the box's left and top, a body line's worth, so a
 	// question has air around it.
@@ -183,16 +182,32 @@ func (u *window) chatScreen(gtx C, sv sessionView, keys bool) {
 			if p.leaded && len(shown) > 0 {
 				lead = max(gtx.Constraints.Max.Y-(p.list.Position.Length-p.lead), 0)
 			}
-			d := th.ThinScrollArea(&p.list).Layout(gtx, len(shown), func(gtx C, i int) D {
-				top := chatRowGap
-				if i == 0 {
-					top = chatTopPad + gtx.Metric.PxToDp(lead)
-				}
-				key := shown[i]
-				return p.rows.Layout(gtx, key, func(gtx C) D {
-					return chatColumn(gtx, top, 0, chatTextInset, func(gtx C) D { return u.chatRow(gtx, th, p, sv, p.seen[key]) })
+			drawList := func(lead int) (D, op.CallOp) {
+				m := op.Record(gtx.Ops)
+				d := th.ThinScrollArea(&p.list).Layout(gtx, len(shown), func(gtx C, i int) D {
+					top := chatRowGap
+					if i == 0 {
+						top = chatTopPad + gtx.Metric.PxToDp(lead)
+					}
+					key := shown[i]
+					return p.rows.Layout(gtx, key, func(gtx C) D {
+						return chatColumn(gtx, top, 0, chatTextInset, func(gtx C) D { return u.chatRow(gtx, th, p, sv, p.seen[key]) })
+					})
 				})
-			})
+				return d, m.Stop()
+			}
+			d, call := drawList(lead)
+			// The lead of the last frame is stale when a row grew in this one:
+			// the rows would overshoot the view for a frame and the list draw its
+			// scrollbar over content that fits. Measure again with the room the
+			// rows take now, and draw that.
+			if len(shown) > 0 {
+				if fit := max(gtx.Constraints.Max.Y-(p.list.Position.Length-lead), 0); fit != lead {
+					lead = fit
+					d, call = drawList(lead)
+				}
+			}
+			call.Add(gtx.Ops)
 			// A row that comes in at no height at the list's end makes Gio
 			// count the list as scrolled up, and it would no longer follow the end
 			// as the row grows: a list that was at its end stays there while its
