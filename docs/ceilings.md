@@ -1778,8 +1778,8 @@ work when nobody knows it and that the call site never shows. The mechanism and 
 - **Showing code is one file per checkout, in the session's own checkout.** `show_code`, a Ctrl+click on a
   `path:line` and a file picked in the Code tab open the checkout's stage editor, and a new file replaces the one
   on screen, with no history to go back through, and an agent's comment on the lines goes with it. A file with
-  unsaved changes asks Save, Discard or Cancel first; an agent's `show_code` never asks, it only offers the lines
-  in a toast while the editor is on the stage. A path outside the session's checkout (a dependency's sources, the JDK, another worktree) is refused.
+  unsaved changes asks Save, Discard or Cancel first; an agent's `show_code` never asks: while the editor is on the stage, or
+  holds unsaved changes to another file, it only offers the lines in a toast. A path outside the session's checkout (a dependency's sources, the JDK, another worktree) is refused.
   The terminal underlines by the text alone, because the
   hover runs every frame and cannot touch the disk: a `path:line` naming nothing still underlines, and the
   click answers with a toast, as it does for a host written like `example.com:443`. Only a soft-wrapped path is
