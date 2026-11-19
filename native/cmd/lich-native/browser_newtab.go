@@ -42,17 +42,12 @@ func cssHex(c color.NRGBA) string {
 
 // newTabLook is the new-tab page's theme and words as the window draws them:
 // the page is the backend's, but only the window knows the theme it resolved
-// (a followed system scheme, a theme's pair) and the interface language. The
-// flame is the chat's first frame, on the chat's own tokens.
+// (a followed system scheme, a theme's pair) and the interface language..
 func newTabLook(th *ui.Theme) api.BrowserNewTabPageOptions {
 	bg := th.Background
 	// The page paints opaque colors on the background, as a translucent token
 	// of a custom theme looks there.
 	css := func(c color.NRGBA) string { return cssHex(ui.Over(bg, c)) }
-	flame := func(symbol byte) string {
-		c, _ := chatFlameColor(th, symbol)
-		return css(c)
-	}
 	return api.BrowserNewTabPageOptions{
 		Lang: string(i18n.Current()),
 		Colors: api.BrowserNewTabColors{
@@ -60,7 +55,6 @@ func newTabLook(th *ui.Theme) api.BrowserNewTabPageOptions {
 			Muted: css(th.MutedForeground), Border: css(th.Border),
 			Accent: css(th.Accent), Pass: css(th.TonePass),
 		},
-		Flame: api.BrowserNewTabFlame{Rows: chatFlameFrames[0], Core: flame('4'), Body: flame('2'), Edge: flame('3'), Base: flame('1')},
 		Text: api.BrowserNewTabText{
 			Title:        i18n.T("layouts.browser.blankTab"),
 			Address:      i18n.T("layouts.browser.newTabAddress"),

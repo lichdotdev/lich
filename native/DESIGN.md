@@ -482,9 +482,8 @@ to the chrome takes the same gap rather than a number of its own.
 - **The new-tab page** is the backend's HTML, drawn with the window's tokens sent over `browser.NewTabPage`
   (`browser_newtab.go`): `Background` for the page, `Card` for the address field, `Accent` for a hovered row,
   `Border` for the field's edge and `MutedForeground` for the section labels, the commands and the ages. One
-  column, 560px wide, centered: the chat's first flame frame (`chatFlameFrames[0]`, on `chatFlameColor`) beside
-  "lich · project" in `MutedForeground`, the address field (42px, `RadiusMD`-ish 9px, an inset `Border`), then
-  the sections, each a 10.5px uppercase `MutedForeground` label over 34px rows with no fill until hovered. The
+  column, 560px wide, centered, with nothing over it: the address field (42px, 9px radius, an inset `Border`) 104px
+  under the page's top, then the sections, each a 10.5px uppercase `MutedForeground` label over 34px rows with no fill until hovered. The
   tab is named New tab, the toolbar's address is empty, and there is no Select and Draw bar.
 
 ### The editor

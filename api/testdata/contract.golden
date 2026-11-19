@@ -545,7 +545,6 @@ BrowserOpenOptions {
 BrowserNewTabPageOptions {
 	lang string
 	colors BrowserNewTabColors
-	flame BrowserNewTabFlame
 	text BrowserNewTabText
 }
 
@@ -2367,14 +2366,6 @@ BrowserNewTabColors {
 	border string
 	accent string
 	pass string
-}
-
-BrowserNewTabFlame {
-	rows string
-	core string
-	body string
-	edge string
-	base string
 }
 
 BrowserNewTabText {

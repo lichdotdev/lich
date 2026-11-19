@@ -12,13 +12,10 @@ var pageTemplate = template.Must(template.New("newtab").Parse(`<!doctype html>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{.Text.Title}}</title>
 <style>
-:root{--bg:{{.Colors.Background}};--card:{{.Colors.Card}};--fg:{{.Colors.Foreground}};--muted:{{.Colors.Muted}};--border:{{.Colors.Border}};--accent:{{.Colors.Accent}};--pass:{{.Colors.Pass}};--core:{{.Flame.Core}};--body:{{.Flame.Body}};--edge:{{.Flame.Edge}};--base:{{.Flame.Base}};color-scheme:dark light}
+:root{--bg:{{.Colors.Background}};--card:{{.Colors.Card}};--fg:{{.Colors.Foreground}};--muted:{{.Colors.Muted}};--border:{{.Colors.Border}};--accent:{{.Colors.Accent}};--pass:{{.Colors.Pass}};color-scheme:dark light}
 *{box-sizing:border-box;margin:0}
-body{background:var(--bg);color:var(--fg);font:14px/1.45 Onest,system-ui,sans-serif;padding:56px 16px}
+body{background:var(--bg);color:var(--fg);font:14px/1.45 Onest,system-ui,sans-serif;padding:104px 16px 56px}
 main{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:26px}
-.brand{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:13px}
-.brand svg{width:18px;height:22px;shape-rendering:crispEdges}
-.f4{fill:var(--core)}.f2{fill:var(--body)}.f3{fill:var(--edge)}.f1{fill:var(--base)}
 form{display:flex}
 input{flex:1;height:42px;border-radius:9px;background:var(--card);color:var(--fg);border:0;box-shadow:inset 0 0 0 1px var(--border);padding:0 14px;font:inherit;font-size:15px}
 input::placeholder{color:var(--muted)}
@@ -36,7 +33,6 @@ a.row:hover,a.row:focus-visible{background:var(--accent);outline:0}
 </style>
 </head>
 <body><main>
-<div class="brand"><svg viewBox="0 0 {{.Cols}} {{.Rows}}" aria-hidden="true">{{range .Pixels}}<rect class="f{{.Symbol}}" x="{{.X}}" y="{{.Y}}" width="1" height="1"/>{{end}}</svg>lich · {{.Project}}</div>
 <form action="{{.Action}}" method="get"><input name="q" type="text" placeholder="{{.Text.Address}}" aria-label="{{.Text.Address}}" autocomplete="off" spellcheck="false" autofocus></form>
 {{if .Error}}<p class="err" role="alert">{{.Text.AddressError}}</p>{{end}}
 {{if or .Services .Worktree}}<section><h2>{{.Text.Running}}</h2>

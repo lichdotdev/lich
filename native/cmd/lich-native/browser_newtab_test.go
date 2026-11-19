@@ -60,17 +60,14 @@ func TestTheNewTabLookIsTheThemesAndTheLanguages(t *testing.T) {
 	hex := regexp.MustCompile(`^#[0-9a-f]{6}$`)
 	for _, p := range []ui.Palette{ui.Dark, ui.Light} {
 		look := newTabLook(&ui.Theme{Palette: p})
-		c, f := look.Colors, look.Flame
-		for _, v := range []string{c.Background, c.Card, c.Foreground, c.Muted, c.Border, c.Accent, c.Pass, f.Core, f.Body, f.Edge, f.Base} {
+		c := look.Colors
+		for _, v := range []string{c.Background, c.Card, c.Foreground, c.Muted, c.Border, c.Accent, c.Pass} {
 			if !hex.MatchString(v) {
 				t.Errorf("%q is no opaque hex color", v)
 			}
 		}
 		if c.Background != cssHex(p.Background) || c.Muted != cssHex(p.MutedForeground) {
 			t.Errorf("colors = %+v, not the palette's", c)
-		}
-		if f.Rows != chatFlameFrames[0] {
-			t.Errorf("the flame is not the chat's first frame")
 		}
 	}
 	if newTabLook(&ui.Theme{Palette: ui.Dark}).Colors == newTabLook(&ui.Theme{Palette: ui.Light}).Colors {
