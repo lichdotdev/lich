@@ -71,3 +71,32 @@ func TestTheComposerAsksInTheInterfaceFontAtTheBodySize(t *testing.T) {
 		t.Errorf("the placeholder starts %dpx in from the box's edge, want 16", in)
 	}
 }
+
+// The conversation ends 16px above the composer's box, resting on it or pinned
+// to its end.
+func TestTheConversationEndsSixteenPixelsAboveTheBox(t *testing.T) {
+	u, r := stampFrames(t)
+	at := novDay(18, 14, 35)
+	gap := func() int {
+		stamp := clockFor(r, at)
+		for _, n := range r.nodes() {
+			if n.Desc.Label == stamp {
+				return composerBox(t, r).Min.Y - (n.Desc.Bounds.Min.Y + 16)
+			}
+		}
+		t.Fatalf("no time %q:\n%s", stamp, r.drawn())
+		return 0
+	}
+	u.model.chat.history("s1", []backend.ChatItem{{ID: "a1", Kind: api.ItemAgent, Turn: 1, At: at, Text: "short"}})
+	r.settle(t)
+	if g := gap(); g != 16 {
+		t.Errorf("a short conversation ends %dpx above the box, want 16", g)
+	}
+	items := userTurns(60)
+	items = append(items, backend.ChatItem{ID: "a2", Kind: api.ItemAgent, Turn: 61, At: at, Text: "last"})
+	u.model.chat.history("s1", items)
+	r.settle(t)
+	if g := gap(); g != 16 {
+		t.Errorf("a long conversation, pinned, ends %dpx above the box, want 16", g)
+	}
+}
