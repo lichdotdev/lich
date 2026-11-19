@@ -151,9 +151,15 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   in form mode once the client declares it: lich reads the schema's properties in name order, folds `<key>__other`
   and `<key>_other` into the question they belong to as its own words, and answers with each choice's `const`; a
   form that is not one, or a mode other than form, is declined. opencode (1.19.4) leaves its `question` tool out
-  of an ACP session unless `OPENCODE_ENABLE_QUESTION_TOOL` is set, so its agent asks in plain text; with that
-  variable in the person's environment the tool waits on opencode's own screen, never reaches the client, and the
-  turn waits until the person stops it. Kiro CLI (2.21.0) has no question tool and asks in plain text; Cursor CLI was not measured past its login. Nothing answers a
+  of an ACP session and, switched on, hands its questions to no ACP client: they wait on the HTTP server `opencode
+  acp` runs beside the protocol. lich starts an opencode chat with `OPENCODE_ENABLE_QUESTION_TOOL=1`, `--port` on a
+  free loopback port and `OPENCODE_SERVER_PASSWORD` set to a password of its own (without one that server answers
+  any process on the machine), finds the request behind the `question` tool call on `GET /question` by its call id,
+  and answers on `POST /question/{id}/reply`, the person's own words as one more label, or `/reject`. The port is
+  picked free and then handed over, so another process can take it in between; the chat then says it could not
+  read the question, and the turn waits until the person stops it. opencode 2's ACP server was not measured and
+  runs without any of it, so its agent asks in plain text. Kiro CLI (2.21.0) has no question tool and asks in
+  plain text; Cursor CLI was not measured past its login. Nothing answers a
   question on the person's behalf, a checkout that skips permissions included. A message sent while questions wait
   declines them and goes to the agent: Claude Code takes it in the turn running; ACP takes no message during a
   turn, so lich stops the turn and sends it once the turn ended. A question the process never got an answer to, read
