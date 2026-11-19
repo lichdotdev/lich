@@ -81,6 +81,8 @@ type chatView struct {
 	// last one the keys were handed to.
 	quizzes map[string]*chatQuiz
 	asked   string
+	// undo is the composer's undo and redo, forgotten when a message is sent.
+	undo ui.EditHistory
 	// unsent is a message the backend refused, handed back to an empty
 	// editor on the next frame.
 	mu     sync.Mutex
@@ -254,6 +256,7 @@ func (u *window) chatActs(gtx C, p *chatPane, sv sessionView, keys, working bool
 	p.mu.Lock()
 	if p.unsent != "" && p.editor.Len() == 0 {
 		p.editor.SetText(p.unsent)
+		p.undo.Reset()
 	}
 	p.unsent = ""
 	p.mu.Unlock()
@@ -281,6 +284,7 @@ func (u *window) chatActs(gtx C, p *chatPane, sv sessionView, keys, working bool
 			u.answerChat(sv.ID, waiting.ID, permitOption(waiting.Permission, api.PermitRejectOnce))
 		}
 	}
+	p.undo.Handle(gtx, &p.editor)
 	for {
 		ev, ok := p.editor.Update(gtx)
 		if !ok {
@@ -318,6 +322,7 @@ func (u *window) sendChat(p *chatPane, id string) {
 		return
 	}
 	p.editor.SetText("")
+	p.undo.Reset()
 	go func() {
 		err := u.client.ChatPrompt(u.ctx, id, text)
 		if err == nil {
@@ -369,7 +374,7 @@ func (u *window) chatComposer(gtx C, th *ui.Theme, p *chatPane, sv sessionView, 
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			ta := th.Textarea(&p.editor, i18n.T("chat.composer.placeholder", i18n.Args{"provider": name}))
-			ta.MaxHeight, ta.MinHeight, ta.Radius, ta.Steady = chatComposerMax, chatComposerMin, ui.RadiusLG, true
+			ta.MaxHeight, ta.MinHeight, ta.Radius, ta.Steady, ta.History = chatComposerMax, chatComposerMin, ui.RadiusLG, true, &p.undo
 			ta.Size, ta.Leading, ta.PadX, ta.PadY = markdown.BodySize, markdown.BodySize*markdown.LineHeightScale, chatComposerPadX, chatComposerPadY
 			ta.Foot = u.chatChips(th, p, sv, working, ft)
 			return ta.Layout(gtx)

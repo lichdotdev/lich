@@ -418,6 +418,12 @@ draws none while it grows in, because the room above the rows is measured in the
   in every pane, each for its own session (its checkout, branch and changes, with or without the focus, but only the
   followed pane's items take a click); the attach "+" and the context ring are the followed session's alone, so another
   chat pane of a layout has the provider's chips and Send.
+  Ctrl+Z (Cmd+Z on macOS) undoes the last step of the text, bringing back the caret and selection it started from,
+  and Ctrl+Shift+Z or Ctrl+Y redoes it (`ui.EditHistory`, which takes the keys from Gio's editor: its own undo is one
+  keystroke a step and cannot be cleared). A run of characters typed or deleted side by side, less than a second
+  apart, is one step; a paste, a cut or a replaced selection is a step of its own. Sending a message, or a refused
+  one coming back, forgets the history. Only the focused composer takes the keys: the terminal's Ctrl+Z is still
+  the agent's suspend, and the sketch, the browser pane and the resolver keep theirs under their own focus.
   The box has no focus ring: its 1px border is the same with the keyboard and without (`TextareaStyle.Steady`; the
   kit's inputs keep their `ring-3`). The blinking caret already says where the keyboard is, and in a chat the
   composer is nearly always the focused thing, so a ring around the biggest box on the screen only reads as a
