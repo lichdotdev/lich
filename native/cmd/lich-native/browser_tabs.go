@@ -6,11 +6,12 @@ import (
 	"image/color"
 
 	"gioui.org/f32"
-	"gioui.org/font"
 	"gioui.org/io/key"
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/op/clip"
+	"gioui.org/op/paint"
+	"gioui.org/unit"
 	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/api"
@@ -21,8 +22,12 @@ import (
 
 var icTabNew = icons.Lucide("plus")
 
-// A browser's tabs on its pane's header: with one tab, the pane's name and a
-// new-tab button; with more, the tabs take the name's place.
+const (
+	tabMarkAlpha  = 0.4
+	tabMarkRadius = unit.Dp(3)
+)
+
+// A browser's tabs on its pane's header, one or more, then a new-tab button.
 
 // Tab sizes: a tab shrinks to share the header, down to browserTabMin, and never
 // grows past browserTabMax.
@@ -30,6 +35,8 @@ var (
 	browserTabMax    = ui.Space(50)
 	browserTabMin    = ui.Space(16)
 	browserTabHeight = ui.Space(6)
+	// tabsInset is the header's gap before the first tab.
+	tabsInset = ui.Space(2)
 )
 
 // browserTabsUI is one pane's tab widgets, by Chrome's tab id, and where each
@@ -57,24 +64,19 @@ func (t *browserTabsUI) widgets(id string) (pick, closer *widget.Clickable, tip 
 	return t.pick[id], t.close[id], t.closeTip[id]
 }
 
-// tabsOrigin is where the tabs start on the header: past its inset, the
-// browser icon and the gap after it, as browserHeader lays them out.
-func tabsOrigin(gtx C) int {
-	return gtx.Dp(ui.Space(2.5)) + gtx.Dp(ui.Space(3.5)) + gtx.Dp(ui.Space(2))
-}
+// tabsOrigin is where the tabs start on the header: past its inset, as
+// browserHeader lays them out.
+func tabsOrigin(gtx C) int { return gtx.Dp(tabsInset) }
 
-// browserTabs is the header's middle: the tabs, or the pane's name, then the
-// new-tab button. It handles their clicks first.
+// browserTabs is the header's middle: the tabs, then the new-tab button. It
+// handles their clicks first.
 func (u *window) browserTabs(gtx C, p *browserPaneUI, session string, st api.BrowserState, focused bool) D {
 	u.tabClicks(gtx, p, session, st.Tabs)
-	if len(st.Tabs) < 2 {
-		return u.paneNameAndNewTab(gtx, p, focused)
-	}
 	th := u.theme
 	t := &p.tabs
 	plus := gtx.Dp(ui.Space(6))
 	gap := gtx.Dp(ui.Space(0.5))
-	w := (gtx.Constraints.Max.X - plus - gap*len(st.Tabs)) / len(st.Tabs)
+	w := (gtx.Constraints.Max.X - plus - gap*len(st.Tabs)) / max(len(st.Tabs), 1)
 	w = min(max(w, gtx.Dp(browserTabMin)), gtx.Dp(browserTabMax))
 	h := gtx.Dp(browserTabHeight)
 	y := (gtx.Constraints.Max.Y - h) / 2
@@ -86,7 +88,7 @@ func (u *window) browserTabs(gtx C, p *browserPaneUI, session string, st api.Bro
 		off := op.Offset(image.Pt(x, y)).Push(gtx.Ops)
 		tgtx := gtx
 		tgtx.Constraints = layout.Exact(image.Pt(w, h))
-		closeAt := u.tabLayout(tgtx, p, tab, pick, closer, tip)
+		closeAt := u.tabLayout(tgtx, p, tab, pick, closer, tip, focused)
 		t.closeAt[tab.ID] = closeAt.Add(image.Pt(x, y))
 		off.Pop()
 		x += w + gap
@@ -98,40 +100,20 @@ func (u *window) browserTabs(gtx C, p *browserPaneUI, session string, st api.Bro
 	return D{Size: gtx.Constraints.Max}
 }
 
-// paneNameAndNewTab is the header's middle with one tab: the pane's name, as
-// before tabs, and the new-tab button after it.
-func (u *window) paneNameAndNewTab(gtx C, p *browserPaneUI, focused bool) D {
-	th := u.theme
-	fg, weight := th.MutedForeground, font.Normal
-	if focused {
-		fg, weight = th.Foreground, font.Medium
-	}
-	name := th.Text(ui.TextXS, i18n.T("layouts.browser.title")).In(fg).Weight(weight)
-	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-		layout.Rigid(func(gtx C) D {
-			d := name.Layout(gtx)
-			side, x := gtx.Dp(ui.Space(6)), d.Size.X+gtx.Dp(ui.Space(1))
-			y := (gtx.Constraints.Max.Y - side) / 2
-			p.tabs.newAt = image.Rect(x, y, x+side, y+side)
-			return d
-		}),
-		ui.Gap(1),
-		layout.Rigid(func(gtx C) D {
-			return th.IconAction(&u.root, &p.tabs.newTab, icTabNew, i18n.T("layouts.browser.newTab"), p.tabFlash(gtx, "new")).Layout(gtx)
-		}),
-	)
-}
-
 // tabLayout draws one tab over gtx's exact size and returns its close
-// button's box, in the tab's coordinates.
-func (u *window) tabLayout(gtx C, p *browserPaneUI, tab api.BrowserTab, pick, closer *widget.Clickable, tip *ui.Tooltip) image.Rectangle {
+// button's box, in the tab's coordinates. The front tab is filled, and its
+// title reads as the pane's focus: Foreground in the focused pane,
+// MutedForeground in the others.
+func (u *window) tabLayout(gtx C, p *browserPaneUI, tab api.BrowserTab, pick, closer *widget.Clickable, tip *ui.Tooltip, focused bool) image.Rectangle {
 	th := u.theme
 	size := gtx.Constraints.Max
 	fg := th.MutedForeground
 	switch {
 	case tab.Front || p.tabFlash(gtx, tab.ID):
 		ui.Fill(gtx, th.Accent, ui.RadiusMD)
-		fg = th.Foreground
+		if focused {
+			fg = th.Foreground
+		}
 	case pick.Hovered():
 		ui.Fill(gtx, th.Over(ui.Alpha(th.Accent, 0.6)), ui.RadiusMD)
 	}
@@ -142,6 +124,8 @@ func (u *window) tabLayout(gtx C, p *browserPaneUI, tab api.BrowserTab, pick, cl
 	left := gtx.Dp(ui.Space(2.5))
 	if tab.DevTools {
 		left += u.devtoolsGlyph(gtx, p, tab, left, fg)
+	} else {
+		left += tabMark(gtx, left, fg)
 	}
 	label := gtx
 	label.Constraints = layout.Exact(image.Pt(max(box.Min.X-left-gtx.Dp(ui.Space(1)), 0), size.Y))
@@ -155,6 +139,16 @@ func (u *window) tabLayout(gtx C, p *browserPaneUI, tab api.BrowserTab, pick, cl
 	})
 	off.Pop()
 	return box
+}
+
+// tabMark draws the neutral square a page's tab wears where its favicon
+// would go, at x, and returns the width it takes with the gap after it. The
+// backend sends no favicons.
+func tabMark(gtx C, x int, fg color.NRGBA) int {
+	side := gtx.Dp(ui.Space(3))
+	r := image.Rect(x, (gtx.Constraints.Max.Y-side)/2, x+side, (gtx.Constraints.Max.Y+side)/2)
+	paint.FillShape(gtx.Ops, ui.Alpha(fg, tabMarkAlpha), clip.UniformRRect(r, gtx.Dp(tabMarkRadius)).Op(gtx.Ops))
+	return side + gtx.Dp(ui.Space(1.5))
 }
 
 // devtoolsGlyph draws a DevTools tab's glyph at x in fg, the one that tells it

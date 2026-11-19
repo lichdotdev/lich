@@ -65,7 +65,8 @@ layout holds the session. So the session is in one place with its page, the
 page follows it in and out of every split, and closing a layout's tab hides
 or closes no browser.
 
-The pane's header carries the two ways out, which are the person's to pick:
+The pane's header is the page's tabs, always on show, with a new-tab button,
+and carries the two ways out, which are the person's to pick:
 
 - **Minimize** takes the page off the screen and leaves the browser running,
   for the agent to keep using. The card's Browser item brings it back on the
@@ -76,7 +77,8 @@ The pane's header carries the two ways out, which are the person's to pick:
 For as long as the Chromium runs, the sidebar's tree shows it as a row under
 its session, the globe in a ring and the page's host: a minimized browser is
 seen there, its name muted. A click on the row shows the page, and its menu
-holds Show or Minimize, Open in a window and Close the browser.
+holds Show or Minimize, Open in a window (the toolbar has no button for it) and Close
+the browser.
 
 An earlier build gave each page a locked layout tab holding only the session
 and its page. The same session then showed in two tabs, that one and its
