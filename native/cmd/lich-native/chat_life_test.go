@@ -201,9 +201,14 @@ func TestAnOpenGroupLinksItsCallsAndShowsHowEachEnded(t *testing.T) {
 			t.Errorf("no %q:\n%s", label, r.drawn())
 		}
 	}
-	line := labelLeft(t, r, i18n.T("chat.view.workedAt", i18n.Args{"duration": chatElapsed(time.Minute), "count": 2, "time": clockFor(r, novDay(18, 17, 59))}))
-	if tool := labelLeft(t, r, "Read"); tool-line < 24 {
-		t.Errorf("a call's name at x=%d, the group's line at x=%d: the calls hang under it, past the connector", tool, line)
+	// The group's line opens the turn, so it starts with the avatar at the
+	// column's edge and the calls hang under it, past the connector.
+	edge := composerBox(t, r).Min.X + 6
+	if tool := labelLeft(t, r, "Read"); tool-edge < 24 {
+		t.Errorf("a call's name at x=%d, the column's edge at x=%d: the calls hang under the line, past the connector", tool, edge)
+	}
+	if line := labelLeft(t, r, i18n.T("chat.view.workedAt", i18n.Args{"duration": chatElapsed(time.Minute), "count": 2, "time": clockFor(r, novDay(18, 17, 59))})); line-edge < 20 {
+		t.Errorf("the group's line starts at x=%d: the avatar is not before it (column edge %d)", line, edge)
 	}
 }
 
@@ -285,5 +290,33 @@ func TestAListAtItsEndFollowsRowsThatComeIn(t *testing.T) {
 	play(30)
 	if later := labelTop(t, r, "fresh"); later < 0 || later >= first {
 		t.Errorf("the message at y=%d, then y=%d after a row came in under it: the list stopped following its end", first, later)
+	}
+}
+
+// Whichever of the group's line and the first answer opens a turn carries the
+// avatar; the other leaves it out.
+func TestTheAvatarIsOnTheLineThatOpensTheTurn(t *testing.T) {
+	tool := backend.ChatItem{ID: "k1", Kind: api.ItemTool, Turn: 1, Tool: &backend.ChatToolCall{Name: "Read", State: api.ToolDone}}
+	answer := backend.ChatItem{ID: "a1", Kind: api.ItemAgent, Turn: 1}
+	flags := func(items ...backend.ChatItem) (work, agent chatRow) {
+		for _, r := range chatRows(items, false, time.Time{}) {
+			switch r.kind {
+			case chatRowWork:
+				work = r
+			case chatRowItem:
+				if r.item.Kind == api.ItemAgent {
+					agent = r
+				}
+			}
+		}
+		return work, agent
+	}
+	work, agent := flags(tool, answer)
+	if !work.avatar || !agent.bare || !agent.lead {
+		t.Errorf("work first: line avatar %v, answer bare %v lead %v; want the line to carry it and the answer's header to leave it out", work.avatar, agent.bare, agent.lead)
+	}
+	work, agent = flags(answer, tool)
+	if work.avatar || agent.bare || !agent.lead {
+		t.Errorf("answer first: line avatar %v, answer bare %v; want the answer's header to carry it", work.avatar, agent.bare)
 	}
 }

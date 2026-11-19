@@ -271,7 +271,8 @@ A session whose view is chat draws its conversation in place of the terminal, on
 layout's pane alike (`chat_view.go`, `chat_items.go`). The composer's box takes the pane's width less `Space(6)`
 each side, up to 960px (`chatPadX`, `chatBoxMax`): wide enough for a long line of code, and no wider than a
 paragraph can be read in. The conversation is a column on the same axis, `Space(4)` (16px, `chatTextInset`)
-narrower each side, so its text lines up inside the box and not with its border. Its rows are `Space(3.5)` apart.
+narrower each side, so its text lines up inside the box and not with its border. Its rows are `Space(3.5)` apart, and a turn starts after `Space(9)` (`chatTurnGap`), in the person's
+message or the day line over it, so turns read as groups.
 A conversation shorter than the view rests on the composer, its newest message at the bottom and the older
 ones above, and a new one comes in under them and pushes them up, as in a messaging app; one taller than the
 view stays pinned to its end while items arrive, until the person scrolls up. The list ends `Space(6)`
@@ -282,13 +283,17 @@ draws none while it grows in, because the room above the rows is measured in the
 - **The person's message** is a box in `Accent`, `RadiusLG`, against the column's right edge, at most 78% of
   it. It breaks "rows, not cards" on purpose: a turn starts where a message does, and the eye finds it by the
   box faster than by a rule.
-- **The agent's text** is Markdown at the prose size (`ui/markdown`). The first answer of each turn opens
+- **The agent's text** is Markdown at the prose size (`ui/markdown`). A link is underlined, in its color; a link to github.com, a path
+  in code (a folder when it ends in a slash, else a file) wears a 13px mark before it, GitHub's, a folder's or a file's
+  (`decor.go`). Anything else in code is plain. The first answer of each turn opens
   with who speaks: the provider's mark at 20px on a `RadiusMD` square, in the session's card color (the
   agent cursor's color, `Primary` for a card with none; the window keeps no brand color per provider) over
   a fill of that color mixed 22% into the surface, then the provider's name in medium, then muted
   "· model · effort" when the session's options say them. A thought is a muted fold, closed, with the
   sparkles before its label.
-- **A turn's tool calls** fold into one muted line where the first of them came. Finished, it reads
+- **A turn's tool calls** fold into one muted line where the first of them came, with a 1px `Border` hairline
+  running from its label to the column's edge. When the line opens the turn (no answer before it) it starts with
+  the provider's avatar, and the answer's header that follows leaves the avatar out, keeping name and model. Finished, it reads
   "Worked for 41s · 6 tools · 09:15": how long the turn took, how many calls, when it ended (without the time
   when the history has none). Open, each call is a 28px row hung under the line by a connector, a 1px
   `Border` line under the fold's chevron with a stub into the row, ending at the last row as the sidebar's
@@ -348,7 +353,10 @@ draws none while it grows in, because the room above the rows is measured in the
   window's clipboard path, and becomes a check for 1.5s. It has no tooltip: the glyph says it. The line is as tall with it as
   without (`chatCopySlot`), so it pushes nothing; the button is a little larger than the line and reaches past it.
 - **A message's time** is a `TextXS` muted line, the window's short clock ("14:32") under a tooltip that holds
-  the footer clock's full date: under the person's box at the right edge, under an answer's text at the left.
+  the footer clock's full date: under the person's box at the right edge, always, led by its day when that is
+  not today ("Nov 17 · 23:05", the year too past this one); under an answer's text at the
+  left, its foot, only while the pointer is over the answer (with the copy button beside it; the line is there at
+  rest, empty, so nothing moves).
   Between two turns that start on different days a muted, centred line names the later day: Today, Yesterday,
   else its date, with the year when it is not this one. A message with no time draws none.
 

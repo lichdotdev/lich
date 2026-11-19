@@ -53,28 +53,38 @@ func overMessage(r *frameRig, stamp string, t *testing.T) {
 	r.frame()
 }
 
+// overAnswer brings the pointer onto the answer, by its header, which an
+// answer's foot is shown under.
+func overAnswer(r *frameRig, t *testing.T) {
+	t.Helper()
+	x, y := labelLeft(t, r, "claude"), labelTop(t, r, "claude")
+	r.router.Queue(pointer.Event{Kind: pointer.Move, Source: pointer.Mouse, Position: f32.Pt(float32(x+4), float32(y+4))})
+	r.frame()
+	r.frame()
+}
+
 func TestTheCopyButtonShowsOnlyWhileThePointerIsOverTheMessage(t *testing.T) {
 	_, r, user, agent := copyFrames(t)
-	userTop, agentTop := labelTop(t, r, user), labelTop(t, r, agent)
-	if clickablesIn(r, copyArea(t, r, user, true)) != 0 || clickablesIn(r, copyArea(t, r, agent, false)) != 0 {
-		t.Fatal("a copy button at rest")
+	userTop, box := labelTop(t, r, user), composerBox(t, r)
+	if clickablesIn(r, copyArea(t, r, user, true)) != 0 || r.shows(agent) {
+		t.Fatal("a copy button, or an answer's time, at rest")
 	}
 	overMessage(r, user, t)
 	if clickablesIn(r, copyArea(t, r, user, true)) == 0 {
 		t.Errorf("no copy button left of the person's time while the pointer is over it:\n%s", r.drawn())
 	}
-	overMessage(r, agent, t)
-	if clickablesIn(r, copyArea(t, r, agent, false)) == 0 {
-		t.Error("no copy button right of an answer's time while the pointer is over it")
+	overAnswer(r, t)
+	if !r.shows(agent) || clickablesIn(r, copyArea(t, r, agent, false)) == 0 {
+		t.Error("no time and no copy button under an answer while the pointer is over it")
 	}
-	if labelTop(t, r, user) != userTop || labelTop(t, r, agent) != agentTop {
-		t.Error("the copy button pushed the layout")
+	if labelTop(t, r, user) != userTop || composerBox(t, r) != box {
+		t.Error("the answer's foot pushed the layout")
 	}
 	r.router.Queue(pointer.Event{Kind: pointer.Move, Source: pointer.Mouse, Position: f32.Pt(5, 5)})
 	r.frame()
 	r.frame()
-	if clickablesIn(r, copyArea(t, r, agent, false)) != 0 {
-		t.Error("the copy button stayed after the pointer left")
+	if r.shows(agent) {
+		t.Error("the answer's foot stayed after the pointer left")
 	}
 }
 
@@ -95,7 +105,7 @@ func TestTheCopyButtonCopiesTheWholeTextOfItsMessage(t *testing.T) {
 	if got := clipboardText(t, r); got != "fix **it**" {
 		t.Errorf("the person's message copied %q", got)
 	}
-	overMessage(r, agent, t)
+	overAnswer(r, t)
 	r.queueClick(r.smallestClickIn(t, copyArea(t, r, agent, false)))
 	r.frame()
 	if got := clipboardText(t, r); got != "Done: `x` and **y**" {
