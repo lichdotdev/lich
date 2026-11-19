@@ -14,7 +14,9 @@ import (
 
 	"github.com/lichdotdev/godemirror"
 	"github.com/lichdotdev/lich/api"
+	"github.com/lichdotdev/lich/native/fonts"
 	"github.com/lichdotdev/lich/native/ui"
+	"github.com/lichdotdev/lich/native/ui/codeview"
 )
 
 const blameHash = "1234567890abcdef1234567890abcdef12345678"
@@ -65,18 +67,45 @@ func TestBlameAgeRunsToMonthsAndYears(t *testing.T) {
 
 func TestALongBlameIsCutToTheRoomPastTheLine(t *testing.T) {
 	th := &ui.Theme{Palette: ui.Dark, Shaper: text.NewShaper(text.WithCollection(gofont.Collection()))}
-	f := &fileEditor{th: th, size: 10}
-	f.blame.text, f.blame.cells = "omartelo, 5d ago · "+strings.Repeat("feat: YouTrack board, issues, card screen ", 6), 40
-	draw := func(width int) D {
-		gtx := layout.Context{Ops: new(op.Ops), Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}, Constraints: layout.Constraints{Max: image.Pt(width, 20)}}
-		return f.blameWidget(gtx)
+	f := &fileEditor{th: th}
+	f.blame.text, f.blame.cells = "omartelo, 5d ago · "+strings.Repeat("feat: YouTrack board, issues, card screen ", 6), 30
+	g := godemirror.Geometry{GutterWidth: 40, TextX: 44, CellWidth: 8}
+	draw := func(code int) D {
+		gtx := layout.Context{Ops: new(op.Ops), Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}, Constraints: layout.Constraints{Max: image.Pt(code, 20)}}
+		return f.blameLabel(gtx, g)
 	}
-	room := blameRoom(600, 40, 10*codeCellEm)
-	if d := draw(600); d.Size.X == 0 || d.Size.X > room {
-		t.Fatalf("drawn %dpx wide, want cut to the %dpx past the line", d.Size.X, room)
+	// The editor draws the blame a cell past the line's 30 cells, at
+	// 44+31*8 = 292 from its left edge; with the gutter's 40 the code area
+	// of 600 ends at 640.
+	if room := blameRoom(600, 30, g); room != 348 {
+		t.Fatalf("room %d, want 640-292", room)
+	}
+	if d := draw(600); d.Size.X == 0 || d.Size.X > 348 {
+		t.Fatalf("drawn %dpx wide, want cut to the 348px past the line", d.Size.X)
 	}
 	if d := draw(300); d.Size.X != 0 {
 		t.Fatalf("drawn %dpx wide with no room past the line, want nothing", d.Size.X)
+	}
+}
+
+func TestTheGutterRuleIsTheGuttersLastColumn(t *testing.T) {
+	ed, err := codeview.NewTextEditor(fonts.SystemMono, 13)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := ed.SetState(godemirror.EditorStateConfig{Doc: strings.Repeat("x\n", 120)}); err != nil {
+		t.Fatal(err)
+	}
+	gtx := layout.Context{Ops: new(op.Ops), Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}, Constraints: layout.Exact(image.Pt(400, 300))}
+	if _, err := ed.Layout(gtx); err != nil {
+		t.Fatal(err)
+	}
+	g := ed.Geometry()
+	if g.GutterWidth == 0 {
+		t.Fatal("the editor laid out no gutter")
+	}
+	if got, want := gutterRule(g, 300), image.Rect(g.GutterWidth-1, 0, g.GutterWidth, 300); got != want {
+		t.Fatalf("rule %v, want %v: 1px on the gutter's right edge, the code area's height", got, want)
 	}
 }
 

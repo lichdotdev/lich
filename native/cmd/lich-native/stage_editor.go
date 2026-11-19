@@ -8,10 +8,14 @@ package main
 import (
 	"context"
 	"fmt"
+	"image"
 	"strconv"
 	"time"
+	"unicode/utf8"
 
 	"gioui.org/layout"
+	"gioui.org/op/clip"
+	"gioui.org/op/paint"
 	"gioui.org/unit"
 	"gioui.org/widget"
 
@@ -244,7 +248,7 @@ func (f *fileEditor) redecorate(th *ui.Theme, now time.Time) {
 		return
 	}
 	f.decoKey = key
-	f.blame.text, f.blame.hash, f.blame.cells = text, hash, codeCells(st.Lines(), cursor.Text)
+	f.blame.text, f.blame.hash, f.blame.cells = text, hash, utf8.RuneCountInString(cursor.Text)
 	var deco godemirror.Decorations
 	for _, i := range f.lines.marks {
 		if i < st.Lines() {
@@ -322,6 +326,9 @@ func (f *fileEditor) body(gtx C, th *ui.Theme) (D, error) {
 		f.ed.Theme = f.env.code
 		d, err := f.ed.Layout(gtx)
 		viewErr = err
+		if err == nil {
+			paint.FillShape(gtx.Ops, th.Over(th.Border), clip.Rect(gutterRule(f.ed.Geometry(), d.Size.Y)).Op())
+		}
 		return d
 	})
 	return dims, viewErr
@@ -363,4 +370,10 @@ func (f *fileEditor) setFont(family string, size unit.Sp) {
 	f.ed, f.diff = nil, nil
 	f.opens++
 	f.land = true
+}
+
+// gutterRule is the 1px line between the line numbers and the code: the
+// gutter's last column, down the whole code area.
+func gutterRule(g godemirror.Geometry, height int) image.Rectangle {
+	return image.Rect(g.GutterWidth-1, 0, g.GutterWidth, height)
 }

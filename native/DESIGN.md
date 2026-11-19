@@ -314,6 +314,9 @@ agent's `show_code` takes the whole stage, in place of the session, as a service
   the disk's: between an edit and its save, or while a failed save or a disk change waits. There are no Undo or
   Save buttons: the editor saves itself (`autoSaveDelay`, 1 s after the last edit, and at once when it is left),
   and Ctrl+Z and Ctrl+S stay on the keyboard.
+- A 1px rule in `Border` (`th.Over(th.Border)` on the editor's fill) runs down the whole code area on the
+  gutter's last column (`Geometry().GutterWidth-1`), between the line numbers and the code, the usual half cell
+  before the text. The `ToneWait` mark of a changed line stays in the gutter cell, left of it.
 - The code is on the island's own fill. A line the user changed since the file was read or saved wears a
   `ToneWait` strip down its gutter cell, and a run of deleted lines marks the line that took their place.
 - The cursor's line, and no other, ends in its blame, `blameGap` (32) past the code: "author, age · summary"
