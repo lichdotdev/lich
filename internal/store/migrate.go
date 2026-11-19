@@ -34,6 +34,7 @@ var migrations = []func(*sql.Tx) error{
 	addCostResponses,
 	markThreadFixCommits,
 	addSessionView,
+	addSessionChatMode,
 }
 
 // addSessionEffort is version 2: the reasoning effort a session was opened at,
@@ -268,6 +269,13 @@ func markThreadFixCommits(tx *sql.Tx) error {
 // as a chat (SetSessionView), "" for the terminal every session was before.
 func addSessionView(tx *sql.Tx) error {
 	_, err := tx.Exec(`ALTER TABLE sessions ADD COLUMN view TEXT NOT NULL DEFAULT ''`)
+	return err
+}
+
+// addSessionChatMode is version 19: the mode the person picked in a session's
+// chat (SetSessionChatMode), "" for the provider's own.
+func addSessionChatMode(tx *sql.Tx) error {
+	_, err := tx.Exec(`ALTER TABLE sessions ADD COLUMN chat_mode TEXT NOT NULL DEFAULT ''`)
 	return err
 }
 

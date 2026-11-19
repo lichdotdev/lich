@@ -38,7 +38,8 @@ var (
 	// changes, whoever changed it.
 	ChatOptionsEvent = defineEvent[ChatOptionsUpdate]("chat-options")
 	// SessionViewEvent carries a session's view once the switch is done: the
-	// new process is up, not merely asked for.
+	// new process is up, not merely asked for. A chat resumed in a new process
+	// for an option sends it too, and its history is read again.
 	SessionViewEvent = defineEvent[SessionView]("session-view")
 )
 

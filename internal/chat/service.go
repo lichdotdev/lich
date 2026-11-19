@@ -114,7 +114,7 @@ func (s *Service) toChat(ctx context.Context, id string) error {
 	if err := s.term.StopTerminal(id); err != nil {
 		return err
 	}
-	if _, err := s.start(ctx, id, projectID, kind, cwd); err != nil {
+	if _, err := s.start(ctx, id, projectID, kind, cwd, s.storedCarry(id)); err != nil {
 		return errors.Join(err, s.resumeTerminal(id, projectID, kind, cwd))
 	}
 	return s.store.SetSessionView(id, api.ViewChat)
@@ -167,8 +167,9 @@ func (s *Service) forget(c *chatSession) {
 	}
 }
 
-// start spawns session id's chat on its conversation and opens it.
-func (s *Service) start(ctx context.Context, id, projectID, kind, cwd string) (*chatSession, error) {
+// start spawns session id's chat on its conversation and opens it on the
+// settings carry names.
+func (s *Service) start(ctx context.Context, id, projectID, kind, cwd string, carry map[string]string) (*chatSession, error) {
 	resume, err := s.store.ProviderSession(id)
 	if err != nil {
 		return nil, err
@@ -177,7 +178,7 @@ func (s *Service) start(ctx context.Context, id, projectID, kind, cwd string) (*
 	if lost {
 		resume = ""
 	}
-	proc, err := s.term.StartChat(ctx, api.StartOptions{ID: id, ProjectID: projectID, Cwd: cwd, Kind: kind, Resume: resume})
+	proc, err := s.term.StartChat(ctx, api.StartOptions{ID: id, ProjectID: projectID, Cwd: cwd, Kind: kind, Resume: resume}, launchFor(kind, carry))
 	if err != nil {
 		return nil, err
 	}
@@ -211,6 +212,7 @@ func (s *Service) start(ctx context.Context, id, projectID, kind, cwd string) (*
 		return nil, err
 	}
 	c.bind(opened, "")
+	c.applyCarry(openCtx, carry)
 	return c, nil
 }
 
@@ -236,7 +238,7 @@ func (s *Service) ensure(ctx context.Context, id string) (*chatSession, error) {
 	if err != nil {
 		return nil, err
 	}
-	return s.start(ctx, id, projectID, kind, cwd)
+	return s.start(ctx, id, projectID, kind, cwd, s.storedCarry(id))
 }
 
 // History answers api.ChatHistory.

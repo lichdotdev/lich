@@ -187,6 +187,7 @@ what lich can read back out of it, since each CLI records different things.
 | A page the agent makes to show you (a report, a diagram, a mockup) opens in that browser from a folder of the session's own, outside the checkout, kept as long as the session | yes, though Claude Code may still publish it to claude.ai with its own Artifact tool | yes | yes | yes | yes | yes | yes | yes |
 | A skill for writing a lich extension that runs only when you call it (`/lich:extension`) | yes | yes, as `$lich:extension` | yes, but the agent sees it every turn: Antigravity cannot keep a skill for manual use | yes, as `/lich-extension` (opencode 1) or from `/skills` (opencode 2) | yes, as `/skill:lich-extension` | yes, from the command palette | yes, but the agent sees it every turn: Cursor shows the agent every skill a plugin ships | no: Kiro cannot keep a skill out of the agent's context |
 | The session can be drawn as a chat instead of its terminal, switching back and forth on the same conversation | yes | no | yes | yes | yes | no | not verified | yes |
+| In the chat, pick the model, effort and mode the agent offers | yes, including a mode that runs every tool without asking | no | yes | yes | yes | no | not verified | model and mode, no effort |
 
 </details>
 

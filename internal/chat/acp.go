@@ -32,6 +32,7 @@ type acpDriver struct {
 	runs    int
 	// replayed counts the items session/load reproduced.
 	replayed int
+	settings acpSettings
 }
 
 type acpMessage struct {
@@ -126,13 +127,14 @@ func (d *acpDriver) open(ctx context.Context, resume string) (string, error) {
 func (d *acpDriver) load(ctx context.Context, id string) bool {
 	d.c.conv.setQuiet(true)
 	d.setSession(id)
-	_, err := d.call(ctx, "session/load", map[string]any{"sessionId": id, "cwd": d.c.cwd, "mcpServers": []any{}})
+	raw, err := d.call(ctx, "session/load", map[string]any{"sessionId": id, "cwd": d.c.cwd, "mcpServers": []any{}})
 	d.endRun()
 	d.c.conv.setQuiet(false)
 	if err != nil {
 		d.c.conv.notice("The conversation did not come back: " + err.Error())
 		return false
 	}
+	d.readSession(raw)
 	d.mu.Lock()
 	replayed := d.replayed
 	d.mu.Unlock()
@@ -150,50 +152,31 @@ func (d *acpDriver) create(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("the agent did not open a conversation: %w", err)
 	}
 	var created struct {
-		ID      string `json:"sessionId"`
-		Options []struct {
-			ID string `json:"id"`
-		} `json:"configOptions"`
+		ID string `json:"sessionId"`
 	}
 	if err := json.Unmarshal(raw, &created); err != nil || created.ID == "" {
 		return "", fmt.Errorf("the agent opened a conversation with no id")
 	}
 	d.setSession(created.ID)
-	has := map[string]bool{}
-	for _, o := range created.Options {
-		has[o.ID] = true
-	}
-	d.birth(ctx, created.ID, has)
+	d.readSession(raw)
+	d.birth(ctx, api.OptionModel, d.c.proc.Birth.Model)
+	d.birth(ctx, api.OptionEffort, d.c.proc.Birth.Effort)
 	return created.ID, nil
 }
 
-// effortOptions are the config options ACP servers name the reasoning effort
-// with: oh-my-pi's and Antigravity's.
-var effortOptions = []string{"thinking", "thought_level"}
-
-func (d *acpDriver) birth(ctx context.Context, id string, has map[string]bool) {
-	birth := d.c.proc.Birth
-	if birth.Model != "" {
-		var err error
-		if has["model"] {
-			_, err = d.call(ctx, "session/set_config_option", map[string]any{"sessionId": id, "configId": "model", "value": birth.Model})
-		} else {
-			_, err = d.call(ctx, "session/set_model", map[string]any{"sessionId": id, "modelId": birth.Model})
-		}
-		if err != nil {
-			d.c.conv.notice("The model " + birth.Model + " was not set: " + err.Error())
-		}
-	}
-	if birth.Effort == "" {
+// birth sets the option of category to the value the session was born with,
+// which the argv could not carry.
+func (d *acpDriver) birth(ctx context.Context, category, value string) {
+	if value == "" {
 		return
 	}
-	for _, option := range effortOptions {
-		if has[option] {
-			if _, err := d.call(ctx, "session/set_config_option", map[string]any{"sessionId": id, "configId": option, "value": birth.Effort}); err != nil {
-				d.c.conv.notice("The effort " + birth.Effort + " was not set: " + err.Error())
-			}
-			return
-		}
+	o, ok := d.c.optionOf(category)
+	if !ok {
+		d.c.conv.notice(fmt.Sprintf("The %s %s was not set: the agent offers no choice of it.", category, value))
+		return
+	}
+	if err := d.setOption(ctx, o, value); err != nil {
+		d.c.conv.notice(fmt.Sprintf("The %s %s was not set: %v", category, value, err))
 	}
 }
 
@@ -331,6 +314,7 @@ type acpContent struct {
 // list of blocks for a tool call (acpToolCall.Body).
 type acpUpdate struct {
 	Kind string `json:"sessionUpdate"`
+	Mode string `json:"currentModeId"`
 	acpToolCall
 }
 
@@ -358,6 +342,10 @@ func (d *acpDriver) update(params json.RawMessage) {
 		}
 	case "tool_call", "tool_call_update":
 		d.tool(u.acpToolCall)
+	case "config_option_update":
+		d.configChanged(p.Update)
+	case "current_mode_update":
+		d.modeChanged(u.Mode)
 	}
 }
 

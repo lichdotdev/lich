@@ -34,7 +34,7 @@ func runFake(args []string) {
 		fmt.Fprintf(f.log, "argv %s\n", strings.Join(args, " "))
 	}
 	if slices.Contains(args, "acp") {
-		f.acp()
+		f.acp(args)
 		return
 	}
 	f.claude(args)
@@ -85,12 +85,13 @@ func (f *fake) claude(args []string) {
 			session = "claude-other"
 		}
 	}
+	run := newFakeClaude(args)
 	for m := f.next(); m != nil; m = f.next() {
 		switch str(m, "type") {
 		case "control_request":
-			f.send(map[string]any{"type": "control_response", "response": map[string]any{"subtype": "success", "request_id": str(m, "request_id"), "response": map[string]any{}}})
+			f.claudeControl(run, m)
 		case "user":
-			f.send(map[string]any{"type": "system", "subtype": "init", "session_id": session})
+			f.send(map[string]any{"type": "system", "subtype": "init", "session_id": session, "model": run.model, "permissionMode": run.mode})
 			f.claudeTurn(str(m, "message", "content"))
 		}
 	}
@@ -138,13 +139,17 @@ func (f *fake) claudeTurn(text string) {
 		f.send(map[string]any{"type": "control_request", "request_id": "r2", "request": map[string]any{"subtype": "hook_callback"}})
 		f.next()
 		f.claudeResult(false, "completed", "")
+	case "plan":
+		f.send(map[string]any{"type": "system", "subtype": "status", "permissionMode": "plan"})
+		f.claudeResult(false, "completed", "")
 	case "die":
 		fmt.Fprintln(os.Stderr, "boom")
 		os.Exit(3)
 	}
 }
 
-func (f *fake) acp() {
+func (f *fake) acp(args []string) {
+	opts := newFakeACP(args)
 	for m := f.next(); m != nil; m = f.next() {
 		id, method := m["id"], str(m, "method")
 		params, _ := m["params"].(map[string]any)
@@ -152,11 +157,11 @@ func (f *fake) acp() {
 		case "initialize":
 			f.result(id, map[string]any{"agentCapabilities": map[string]any{"loadSession": os.Getenv("LICH_CHAT_FAKE_NOLOAD") == ""}})
 		case "session/new":
-			f.result(id, map[string]any{"sessionId": "ses-new", "configOptions": []any{map[string]any{"id": "model"}, map[string]any{"id": "thinking"}}})
-		case "session/set_config_option", "session/set_model":
-			f.result(id, map[string]any{})
+			f.result(id, opts.session(map[string]any{"sessionId": "ses-new"}))
+		case "session/set_config_option", "session/set_model", "session/set_mode":
+			f.acpSet(opts, id, method, params)
 		case "session/load":
-			f.acpLoad(id, str(params, "sessionId"))
+			f.acpLoad(id, str(params, "sessionId"), opts)
 		case "session/prompt":
 			blocks, _ := params["prompt"].([]any)
 			first, _ := blocks[0].(map[string]any)
@@ -177,7 +182,7 @@ func chunk(kind, text string) map[string]any {
 	return map[string]any{"sessionUpdate": kind, "content": map[string]any{"type": "text", "text": text}}
 }
 
-func (f *fake) acpLoad(id any, session string) {
+func (f *fake) acpLoad(id any, session string, opts *fakeACP) {
 	switch session {
 	case "gone":
 		f.send(map[string]any{"jsonrpc": "2.0", "id": id, "error": map[string]any{"code": -32002, "message": "session not found"}})
@@ -188,7 +193,7 @@ func (f *fake) acpLoad(id any, session string) {
 		f.update(chunk("agent_message_chunk", "ok"))
 		f.update(map[string]any{"sessionUpdate": "tool_call", "toolCallId": "t0", "title": "Reading a", "kind": "read", "status": "completed"})
 	}
-	f.result(id, nil)
+	f.result(id, opts.session(map[string]any{}))
 }
 
 func (f *fake) acpTurn(id any, text string) {
@@ -258,6 +263,8 @@ func (f *fake) acpTurn(id any, text string) {
 		reply := f.next()
 		errObj, _ := reply["error"].(map[string]any)
 		f.update(chunk("agent_message_chunk", fmt.Sprint(errObj["code"])))
+	case "mode":
+		f.update(map[string]any{"sessionUpdate": "current_mode_update", "currentModeId": "plan"})
 	case "die":
 		fmt.Fprintln(os.Stderr, "acp boom")
 		os.Exit(3)

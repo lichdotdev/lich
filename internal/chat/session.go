@@ -51,6 +51,9 @@ type driver interface {
 	handle(line []byte)
 	// stopped is told the provider's stdout ended.
 	stopped()
+	// setOption sets option o to value, errRelaunch when only a new process
+	// can. What the chat can be set to reaches it through setOptions.
+	setOption(ctx context.Context, o api.ChatOption, value string) error
 }
 
 // permission is a question the agent asked and nobody has answered yet.
@@ -79,6 +82,7 @@ type chatSession struct {
 	perms   map[string]permission
 	exited  chan struct{}
 	bound   string
+	opts    []api.ChatOption
 }
 
 // wire writes one JSON value per line to a provider's stdin.
