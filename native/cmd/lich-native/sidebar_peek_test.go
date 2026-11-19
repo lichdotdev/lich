@@ -16,8 +16,8 @@ import (
 
 // peekFrames is the collapsed sidebar on a wide window, with its peek drawn
 // over the rest as the window draws it; acted is the last session a peek
-// click activated. stage, when set, is laid out under the peek, as the
-// window lays the stage out before it.
+// click activated. stage, when set, is laid out before the peek, under
+// where it comes out.
 func peekFrames(t *testing.T, stage func(C)) (s *sidebar, r *frameRig, acted *string) {
 	t.Helper()
 	m := modelOn("a")
@@ -186,5 +186,19 @@ func TestPeekTakesTheStagesRoomAndGivesItBack(t *testing.T) {
 	r.settle(t)
 	if got := s.stageReserve(gtx); got != rail {
 		t.Errorf("the stage leaves %dpx once the sidebar went back, want the rail's %d", got, rail)
+	}
+}
+
+func TestSidebarOpenedWhileOutStaysWhereItIs(t *testing.T) {
+	s, r, _ := peekFrames(t, nil)
+	r.settle(t)
+	rest(t, r, railTree)
+	var act sidebarAction
+	s.setOpen(layout.Context{}, true, &act)
+	if !s.open || !act.saveOpen {
+		t.Fatal("the sidebar out did not open")
+	}
+	if s.morph.active() {
+		t.Error("opened with a morph from the rail, though it already stands where it opens")
 	}
 }

@@ -258,8 +258,13 @@ func (s *sidebar) shape(gtx C, th *ui.Theme, m *model, active string, open bool)
 	return s.panel(gtx, th, m, active)
 }
 
-// setOpen switches the sidebar, stores the choice and morphs to it.
+// setOpen switches the sidebar, stores the choice and morphs to it. Out
+// from the rail, it is already where it opens, and stays there.
 func (s *sidebar) setOpen(gtx C, open bool, act *sidebarAction) {
+	if open && s.peek.shown {
+		s.pinPeek(gtx, act)
+		return
+	}
 	s.open, act.saveOpen = open, true
 	s.morph.begin(gtx)
 }

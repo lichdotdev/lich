@@ -873,8 +873,8 @@ func sidebarActive(v stageView) string {
 // island is the stage's rounded box: Home, the empty notice, the diff or
 // the terminal, in the color the active tab merges with, under the footer's
 // balloons. Its top-left corner is square while that tab sits on it. A lone
-// session's terminal is laid out termWidth wide, which a dock slide or a
-// sidebar morph sets to where the box is going: wider, the box clips it;
+// session's terminal is laid out termWidth wide, which a dock slide, a
+// sidebar morph or the sidebar's peek sets to where the box is going: wider, the box clips it;
 // narrower, its fill shows past it. The Git panel's slide sets termHeight the
 // same way.
 func (u *window) island(gtx C, v stageView, termWidth, termHeight int) error {
@@ -1034,8 +1034,8 @@ func (u *window) stageRow(gtx C, v stageView) error {
 	defer func() { u.terms.refitNow = false }()
 	size := gtx.Constraints.Max
 	// The session's terminal takes the width the dock's slide and the
-	// sidebar's morph end at from their first frame, so the agent redraws for
-	// it while they are still moving.
+	// sidebar's morph or peek end at from their first frame, so the agent
+	// redraws for it while they are still moving.
 	termWidth := size.X - u.sidebar.stageOverhang(gtx)
 	if open && !d.fullscreen {
 		termWidth -= d.width(gtx) + gtx.Dp(gutter)
