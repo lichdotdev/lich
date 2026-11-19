@@ -114,7 +114,7 @@ func sessionIDs(p backend.Project) []string {
 func (m *model) showHome() {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	m.home, m.shownLayout = true, ""
+	m.home, m.shownLayout, m.editorOn = true, "", ""
 	if p := m.projectByID(m.homeID); p != nil {
 		m.active = p.ActiveSessionID
 	}

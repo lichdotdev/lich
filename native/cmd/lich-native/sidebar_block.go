@@ -339,6 +339,15 @@ func (s *sidebar) blockRow(gtx C, th *ui.Theme, st *blockState, b blockView, r s
 		}
 		return st.presence.Layout(gtx, r.key, row)
 	}
+	if r.kind == rowEditor {
+		row := func(gtx C) D {
+			return layout.Inset{Bottom: cardGap}.Layout(gtx, func(gtx C) D { return s.editorRow(gtx, th, r, b, f.act, tree, dragEnded) })
+		}
+		if r.motion != nil {
+			return moveRow(gtx, r, row)
+		}
+		return st.presence.Layout(gtx, r.key, row)
+	}
 	sv := r.sv
 	sv.place = r.place(tree)
 	sv.place.onTray = b.kind == blockFolder && b.color != "" && sv.Color == b.color

@@ -53,6 +53,9 @@ type blockView struct {
 	// checkouts' facts, keyed by path: the header's and every checkout a
 	// child runs in apart from its mother.
 	facts map[string]checkoutFacts
+	// editors are the editor nodes the block hangs under its checkouts, by
+	// checkout (hangEditors).
+	editors map[string]editorNode
 	// move is a checkout block or a folder coming in or leaving by the tree's
 	// motion, and head its header's share of it this frame; nil at rest.
 	move *blockMove
@@ -107,7 +110,34 @@ func (m *model) sidebarBlocks(f sidebarFilter) sidebarView {
 	for _, b := range blocks {
 		v.blocks = append(v.blocks, m.dressBlock(p, b, pending, now))
 	}
+	m.hangEditors(v.blocks)
 	return v
+}
+
+// hangEditors gives each checkout's editor node to the blocks that draw it:
+// the checkout's own block when it has one, else every block whose tree
+// draws a row for the checkout, so the node is never out of reach. Callers
+// hold m.mu.
+func (m *model) hangEditors(blocks []blockView) {
+	homes := map[string]bool{}
+	for _, b := range blocks {
+		if b.under != "" {
+			homes[b.under] = true
+		}
+	}
+	for i := range blocks {
+		b := &blocks[i]
+		for path := range b.facts {
+			n, ok := m.editorOf(path)
+			if !ok || (homes[path] && b.under != path) {
+				continue
+			}
+			if b.editors == nil {
+				b.editors = map[string]editorNode{}
+			}
+			b.editors[path] = n
+		}
+	}
 }
 
 // dressBlock reads one block into its view. Callers hold m.mu.
