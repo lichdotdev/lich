@@ -319,8 +319,12 @@ draws none while it grows in, because the room above the rows is measured in the
 - **A permission** is a box on `Sidebar`, `RadiusMD`, `Space(3)` padding (see Boxes inside a screen): the tool,
   its diff, and a `SizeSM` button per answer the provider offers, the first allow filled. Enter takes the first
   allow and Esc the first reject. Answered, it shrinks to a muted line naming the answer.
-- **A notice** is a muted line; the turn in flight ends the column with lich's own mark breathing (opacity between 0.35 and 1 over 1.6s, still when the window is) and a verb of the turn, shimmering like "Thinking" with the time it has run beside it; the verb is picked from the language's own list (`chat.view.verbs`, `|`-separated, each language writes its own length) by the session and the turn, so it holds for the whole turn; left out
+- **A notice** is a muted line; the turn in flight ends the column with a pixel flame (`chat_flame.go`: a 9x11 sprite of 1.5dp pixels, drawn as rectangles, in 8 frames of 120ms; a window without focus looks in at `StillFrame` instead) and a verb of the turn, shimmering like "Thinking" with the time it has run beside it; the verb is picked from the language's own list (`chat.view.verbs`, `|`-separated, each language writes its own length) by the session and the turn, so it holds for the whole turn; left out
   while a permission waits: its box already says so.
+  The flame's colors are tokens, never a fixed hue: the core is `Foreground`, the body a mix of `MutedForeground` toward
+  `Foreground` (0.55), the edge `MutedForeground`, and the base and the sparks leaving it `Accent`. A gray theme
+  draws a gray flame and a colored one colors it on its own. It does not use `ToneWait`: the turn running is not the
+  turn waiting on the person, and that tone already says the second.
 - **The composer** stands at the column's foot: a textarea (Enter sends, Shift+Enter breaks the line) in a
   `RadiusLG` box, three lines of text tall at least, growing with the text to a ceiling and scrolling past it.
   Its text and its placeholder, "Ask {provider} about this project", are in the interface font at the body size
