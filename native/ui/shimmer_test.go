@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"gioui.org/font"
 	"gioui.org/io/input"
 )
 
@@ -90,5 +91,52 @@ func TestTheShimmerLeavesTheTextBehindItAtItsBase(t *testing.T) {
 	behind, band := brightest(img, 0, width/3), brightest(img, width*5/8, width*7/8)
 	if band < behind+40 {
 		t.Errorf("brightest red %d behind the band and %d in it: the band left the text lit", behind, band)
+	}
+}
+
+// ink is how much light the render holds: the sum of its red channel.
+func ink(img *image.RGBA) (sum int) {
+	for i := 0; i < len(img.Pix); i += 4 {
+		sum += int(img.Pix[i])
+	}
+	return sum
+}
+
+// A shimmering text is as heavy as a plain one of its color wherever the band
+// is not: the glyphs are painted once, not once per layer of the material,
+// which thickens every antialiased edge.
+func TestAShimmeringTextWeighsWhatAPlainOneDoes(t *testing.T) {
+	th := testTheme()
+	now := time.Unix(160, 0) // the band is off the text, left of it
+	render := func(shimmer bool) int {
+		ops := tabsFrame(new(input.Router), now, func(gtx C) D {
+			l := th.Text(TextSM, "Weaving").In(th.MutedForeground)
+			if shimmer {
+				l = l.Shimmer()
+			}
+			return l.Layout(gtx)
+		})
+		return ink(tabsRender(t, ops))
+	}
+	plain, shimmering := render(false), render(true)
+	if plain == 0 {
+		t.Fatal("nothing drawn")
+	}
+	if diff := float64(shimmering-plain) / float64(plain); diff > 0.02 || diff < -0.02 {
+		t.Errorf("shimmering text holds %d of light against %d for a plain one (%+.1f%%): it is drawn heavier", shimmering, plain, diff*100)
+	}
+}
+
+// Shimmering changes a text's light, not its face: the same weight and size
+// as the plain text beside it.
+func TestShimmeringKeepsTheFaceOfThePlainText(t *testing.T) {
+	th := testTheme()
+	plain := th.Text(TextSM, "Worked for 4s").Muted()
+	shimmering := th.Text(TextSM, "Weaving").Muted().Shimmer()
+	if shimmering.Font != plain.Font || shimmering.Size != plain.Size {
+		t.Errorf("shimmering text is %v at %v, the plain one %v at %v", shimmering.Font, shimmering.Size, plain.Font, plain.Size)
+	}
+	if shimmering.Font.Weight != font.Normal {
+		t.Errorf("shimmering text weighs %v, want Normal", shimmering.Font.Weight)
 	}
 }

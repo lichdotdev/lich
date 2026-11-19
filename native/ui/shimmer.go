@@ -8,6 +8,7 @@ import (
 	"gioui.org/f32"
 	"gioui.org/layout"
 	"gioui.org/op"
+	"gioui.org/op/clip"
 	"gioui.org/op/paint"
 )
 
@@ -39,25 +40,35 @@ func shimmerAt(now time.Time, width int) (centre, band int) {
 	return int(-float32(band) + phase*float32(width+2*band)), band
 }
 
+// shimmerReach is how far, in pixels, the material's regions reach: past any
+// text.
+const shimmerReach = 1 << 15
+
 // shimmerMaterial is the text material of a shimmering label of base color
 // over size: the base color, and across it a band that is light at its
 // centre, which moves with gtx.Now.
+//
+// Each pixel of the text is painted once. Whatever paints over a glyph's
+// coverage adds that coverage again at its antialiased edges, so layers stacked
+// on one another (the base, then the band over it) make the text heavier than
+// a plain one. The band is instead two regions side by side, a ramp from the
+// base up to the light on the left of its centre and one back down on the
+// right, each clamped to its end colors beyond its ramp. The label paints the
+// material once more after it, so the material ends on a transparent source,
+// which paints nothing.
 func (th *Theme) shimmerMaterial(gtx layout.Context, base color.NRGBA, size image.Point) op.CallOp {
 	th.Loop(gtx)
 	centre, band := shimmerAt(gtx.Now, size.X)
 	light := MixOKLab(base, th.Foreground, shimmerLight)
-	m := op.Record(gtx.Ops)
-	paint.ColorOp{Color: base}.Add(gtx.Ops)
-	paint.PaintOp{}.Add(gtx.Ops)
-	// The light ramps in up to the centre and stays; the base ramps back in
-	// from the centre and stays. Each ramp is clamped by its own end colors, so
-	// the band needs no clip of its own to stay inside the text.
 	half := band / 2
-	ramp := func(from, to int, c color.NRGBA) {
-		paint.LinearGradientOp{Stop1: f32.Pt(float32(from), 0), Stop2: f32.Pt(float32(to), 0), Color1: Alpha(c, 0), Color2: c}.Add(gtx.Ops)
+	m := op.Record(gtx.Ops)
+	region := func(from, to int, c1, c2 color.NRGBA, x1, x2 int) {
+		defer clip.Rect{Min: image.Pt(from, -shimmerReach), Max: image.Pt(to, shimmerReach)}.Push(gtx.Ops).Pop()
+		paint.LinearGradientOp{Stop1: f32.Pt(float32(x1), 0), Stop2: f32.Pt(float32(x2), 0), Color1: c1, Color2: c2}.Add(gtx.Ops)
 		paint.PaintOp{}.Add(gtx.Ops)
 	}
-	ramp(centre-half, centre, light)
-	ramp(centre, centre+half, base)
+	region(-shimmerReach, centre, base, light, centre-half, centre)
+	region(centre, shimmerReach, light, base, centre, centre+half)
+	paint.ColorOp{}.Add(gtx.Ops)
 	return m.Stop()
 }
