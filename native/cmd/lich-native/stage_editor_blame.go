@@ -52,7 +52,7 @@ type editorBlame struct {
 
 // readBlame asks for the file's blame while it is the disk's text.
 func (f *fileEditor) readBlame() {
-	if f.kind != blobNone || f.loaded != f.opens {
+	if f.kind != blobNone || f.loaded != f.opens || f.dir != "" {
 		return
 	}
 	key := f.fileKey() + "\x00" + strconv.Itoa(f.blame.gen)

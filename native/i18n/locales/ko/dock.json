@@ -33,8 +33,7 @@
     "openInBrowser": "브라우저에서 열기",
     "attachToPrompt": "프롬프트에 첨부",
     "copyPath": "경로 복사",
-    "showInFileManager": "파일 관리자에서 보기",
-    "backToList": "아티팩트 목록으로 돌아가기"
+    "showInFileManager": "파일 관리자에서 보기"
   },
   "showCode": {
     "pointed": "{session}에서 {file} 파일을 가리켰습니다",
@@ -56,6 +55,7 @@
     "saveFailed": "{name}을(를) 저장하지 못했습니다",
     "noteOn": "{author} · {lines}행",
     "blame": "{author}, {age} · {summary}",
-    "blameUncommitted": "나 · 커밋하지 않은 변경 사항"
+    "blameUncommitted": "나 · 커밋하지 않은 변경 사항",
+    "artifactReadOnly": "에이전트 파일 · 읽기 전용"
   }
 }

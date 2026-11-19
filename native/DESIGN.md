@@ -408,6 +408,11 @@ agent's `show_code` takes the whole stage, in place of the session, as a service
   most `diskBannerDiff` (240) tall so the code stays in sight.
 - Another file or Close asks nothing: the text is saved first. Only a failed save or an undecided disk change
   asks, in a dialog: Cancel (outline), Discard (destructive), Save (`Primary`).
+- A Markdown file an agent left in the session's artifact folder (the dock's Artifacts tab) opens in the same
+  editor, on the stage and already rendered, read only: the header carries a `TextXS` `MutedForeground` note after the
+  name ("From the agent · read only"), nothing is saved and the unsaved dot never lights, the source view takes
+  no edits, and the context menu that hands lines to a session is left out. Its node in the tree is the file's name
+  like any other, closed from the same menu.
 - In the tree the editor is a node of its checkout, the last row under it: the file glyph in a neutral ring and
   the file's name in mono, the unsaved dot after the name, lit as an active session is while the editor is on the
   stage. Its only action is Close, in its menu and its `⋯`; there is no ✕ on the row. In the rail it is the glyph

@@ -200,5 +200,8 @@ func (f *fileEditor) title(gtx C, th *ui.Theme) D {
 	if f.dirty {
 		children = append(children, ui.Gap(2), layout.Rigid(func(gtx C) D { return ui.Dot(gtx, th.ToneWait, editorDirtyDot) }))
 	}
+	if f.dir != "" {
+		children = append(children, ui.Gap(3), layout.Rigid(th.Text(ui.TextXS, i18n.T("dock.editor.artifactReadOnly")).Muted().Layout))
+	}
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
 }

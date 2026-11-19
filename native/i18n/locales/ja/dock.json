@@ -33,8 +33,7 @@
     "openInBrowser": "ブラウザーで開く",
     "attachToPrompt": "プロンプトに添付",
     "copyPath": "パスをコピー",
-    "showInFileManager": "ファイルマネージャーで表示",
-    "backToList": "アーティファクト一覧に戻る"
+    "showInFileManager": "ファイルマネージャーで表示"
   },
   "showCode": {
     "pointed": "{session} が {file} を示しました",
@@ -56,6 +55,7 @@
     "saveFailed": "{name} を保存できませんでした",
     "noteOn": "{author}({lines} 行目について)",
     "blame": "{author}、{age} · {summary}",
-    "blameUncommitted": "自分 · 未コミットの変更"
+    "blameUncommitted": "自分 · 未コミットの変更",
+    "artifactReadOnly": "エージェントから · 読み取り専用"
   }
 }

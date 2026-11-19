@@ -94,17 +94,18 @@ func TestArtifactMenuLeadsWithOpenOnItsOwnSessionAndAttachOnAnother(t *testing.T
 	}
 }
 
-func TestArtifactMarkdownOpensInTheTabAndAPageInTheBrowser(t *testing.T) {
+func TestArtifactMarkdownOpensOnTheStageAndAPageInTheBrowser(t *testing.T) {
 	tab := newArtifactsTab(new(artifactStore))
-	var browser []string
+	var browser, stage []string
 	tab.open = func(_, _, name string) { browser = append(browser, name) }
+	tab.stage = func(_ string, f backend.Artifact) { stage = append(stage, f.Path) }
 	tab.actions("s", "s", backend.Artifact{Name: "notes.md", Path: "/art/notes.md"}).open()
-	if len(browser) != 0 || tab.reader.path != "/art/notes.md" {
-		t.Errorf("markdown went to the browser %v, reader on %q", browser, tab.reader.path)
+	if len(browser) != 0 || !reflect.DeepEqual(stage, []string{"/art/notes.md"}) {
+		t.Errorf("markdown went to the browser %v, stage %v", browser, stage)
 	}
 	tab.actions("s", "s", backend.Artifact{Name: "report.html", Path: "/art/report.html"}).open()
-	if !reflect.DeepEqual(browser, []string{"report.html"}) {
-		t.Errorf("page opened in the browser: %v", browser)
+	if !reflect.DeepEqual(browser, []string{"report.html"}) || len(stage) != 1 {
+		t.Errorf("page opened in the browser: %v, stage %v", browser, stage)
 	}
 }
 
