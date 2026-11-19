@@ -194,7 +194,7 @@ distinto.
 | Una skill para escribir una extensión de lich, que solo corre cuando la llamas (`/lich:extension`) | sí | sí, como `$lich:extension` | sí, pero el agente la ve en cada turno: Antigravity no puede reservar una skill para uso manual | sí, como `/lich-extension` (opencode 1) o desde `/skills` (opencode 2) | sí, como `/skill:lich-extension` | sí, desde la paleta de comandos | sí, pero el agente la ve en cada turno: Cursor le muestra al agente toda skill de un plugin | no: Kiro no puede sacar una skill del contexto del agente |
 | La sesión puede mostrarse como chat en lugar de su terminal, alternando entre ambos en la misma conversación | sí | no | sí | sí | sí | no | sin verificar | sí |
 | En el chat, elegir el modelo, el esfuerzo y el modo que ofrece el agente | sí, incluido un modo que ejecuta todas las herramientas sin preguntar | no | sí | sí | sí | no | sin verificar | modelo y modo, sin esfuerzo |
-| En el chat, las preguntas del agente llegan en una tarjeta que respondes con un clic o una tecla | sí | no | sí | no: la herramienta de preguntas de opencode espera su propia pantalla, así que el turno se queda parado hasta que lo detengas | sí | no | sin verificar | no: Kiro pregunta en texto |
+| En el chat, las preguntas del agente llegan en una tarjeta que respondes con un clic o una tecla | sí | no | sí | no: opencode deja su herramienta de preguntas fuera de ACP, así que el agente pregunta en texto | sí | no | sin verificar | no: Kiro pregunta en texto |
 
 </details>
 

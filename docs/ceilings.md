@@ -144,9 +144,10 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   the agent from the prompt catalog. Antigravity (1.5.3) and oh-my-pi (18.8.9) ask over ACP's `elicitation/create`
   in form mode once the client declares it: lich reads the schema's properties in name order, folds `<key>__other`
   and `<key>_other` into the question they belong to as its own words, and answers with each choice's `const`; a
-  form that is not one, or a mode other than form, is declined. opencode's `question` tool (1.19.4) waits on
-  opencode's own screen and never reaches an ACP client, so its turn waits until the person stops it; Kiro CLI
-  (2.21.0) has no question tool and asks in plain text; Cursor CLI was not measured past its login. Nothing answers a
+  form that is not one, or a mode other than form, is declined. opencode (1.19.4) leaves its `question` tool out
+  of an ACP session unless `OPENCODE_ENABLE_QUESTION_TOOL` is set, so its agent asks in plain text; with that
+  variable in the person's environment the tool waits on opencode's own screen, never reaches the client, and the
+  turn waits until the person stops it. Kiro CLI (2.21.0) has no question tool and asks in plain text; Cursor CLI was not measured past its login. Nothing answers a
   question on the person's behalf, a checkout that skips permissions included. A message sent while questions wait
   declines them and goes to the agent: Claude Code takes it in the turn running; ACP takes no message during a
   turn, so lich stops the turn and sends it once the turn ended. A question the process never got an answer to, read
