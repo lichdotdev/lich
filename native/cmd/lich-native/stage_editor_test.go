@@ -8,6 +8,10 @@ import (
 	"testing"
 	"time"
 
+	"gioui.org/layout"
+	"gioui.org/op"
+	"gioui.org/unit"
+
 	"github.com/lichdotdev/godemirror"
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/fonts"
@@ -55,16 +59,22 @@ func loadedEditor(t *testing.T, srv *httptest.Server, text string) *fileEditor {
 	return f
 }
 
-// typeAt inserts text at pos as the user would. The editor reports it at
-// the end of its next layout, which the tests here do not run, so the
-// report's effect is taken at once.
+// typeAt inserts text at pos as the user would, then lays the editor out
+// once: it reports the edit to OnUpdate at the end of its layout.
 func typeAt(t *testing.T, f *fileEditor, pos int, text string) {
 	t.Helper()
 	if err := f.ed.Dispatch(godemirror.TransactionSpec{Changes: []godemirror.ChangeSpec{{From: pos, To: pos, Insert: text}}, UserEvent: "input.type"}); err != nil {
 		t.Fatal(err)
 	}
-	f.gen++
-	f.setDirty(f.ed.State().Doc() != f.base)
+	layOut(t, f)
+}
+
+func layOut(t *testing.T, f *fileEditor) {
+	t.Helper()
+	gtx := layout.Context{Ops: new(op.Ops), Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}, Constraints: layout.Exact(image.Pt(400, 300)), Now: time.Unix(0, 0)}
+	if _, err := f.ed.Layout(gtx); err != nil {
+		t.Fatal(err)
+	}
 }
 
 func TestEditingMarksTheEditorUnsavedAndUndoingClearsIt(t *testing.T) {
@@ -77,7 +87,7 @@ func TestEditingMarksTheEditorUnsavedAndUndoingClearsIt(t *testing.T) {
 		t.Fatalf("dirty %v, heard %d after an edit; want unsaved, told once", f.dirty, heard)
 	}
 	f.ed.Undo()
-	f.setDirty(f.ed.State().Doc() != f.base)
+	layOut(t, f)
 	if f.dirty {
 		t.Fatal("the editor stayed unsaved once the edit was undone")
 	}
@@ -197,5 +207,14 @@ func TestAnotherFileOverUnsavedChangesAsksFirst(t *testing.T) {
 	case <-got:
 	case <-time.After(5 * time.Second):
 		t.Fatal("Save in the question wrote nothing")
+	}
+	// The editor is not laid out here, as when it is off the stage: the
+	// question's own frames land the save and run what waited on it.
+	for deadline := time.Now().Add(5 * time.Second); ran != 3 && time.Now().Before(deadline); {
+		r.frame()
+		time.Sleep(time.Millisecond)
+	}
+	if ran != 3 || f.dirty {
+		t.Fatalf("after Save ran %d dirty %v; want what was asked for done once the save landed", ran, f.dirty)
 	}
 }

@@ -57,7 +57,7 @@ func (u *window) tellShowCode(s api.ShowCode) {
 // terminal. From anywhere else, the stage editor included, it only offers
 // them: taking the screen would pull them off what they are typing into.
 func (u *window) agentPointed(t codeTarget) {
-	if !u.settings.open && u.model.sessionOnScreen(t.session) && u.model.editorShown() == "" {
+	if !u.settings.open && u.model.sessionOnScreen(t.session) && u.model.editorShown() == "" && !u.editorWouldAsk(t) {
 		u.openCode(t)
 		return
 	}

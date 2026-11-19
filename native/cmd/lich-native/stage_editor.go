@@ -102,7 +102,8 @@ func (f *fileEditor) open(rel string, line, end int, note agentNote) {
 		f.opens++
 		f.md.rendering = false
 		f.composer.close()
-		f.disk = diskWatch{read: remote[string]{invalidate: f.invalidate}}
+		f.disk.read.stop()
+		f.disk.seen, f.disk.theirs = "", nil
 		f.setDirty(false)
 	} else {
 		// An agent that edits a file and points at it again has to show

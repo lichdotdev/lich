@@ -21,10 +21,14 @@ import (
 )
 
 // editorSaving is the save in flight, which lands on the frame after it.
+// UI goroutine fields: next is a save asked for while one was in flight, run
+// once it lands so it writes the text as it is then, with what waits on it.
 type editorSaving struct {
-	mu   sync.Mutex
-	busy bool
-	done *editorSaved
+	mu     sync.Mutex
+	busy   bool
+	done   *editorSaved
+	next   bool
+	nextDo func()
 }
 
 // editorSaved is a save that came back: the text it wrote, of which open,
@@ -71,6 +75,7 @@ func (f *fileEditor) startSave(then func()) {
 	f.saving.mu.Lock()
 	if f.saving.busy {
 		f.saving.mu.Unlock()
+		f.saving.next, f.saving.nextDo = true, then
 		return
 	}
 	f.saving.busy = true
@@ -97,12 +102,17 @@ func (f *fileEditor) takeSave() {
 	if s == nil {
 		return
 	}
+	next, nextDo := f.saving.next, f.saving.nextDo
+	f.saving.next, f.saving.nextDo = false, nil
 	if s.err != nil {
 		f.env.notify(ui.Toast{Variant: ui.ToastError, Title: i18n.T("dock.editor.saveFailed", i18n.Args{"name": path.Base(f.rel)}), Description: backend.ErrorText(s.err)})
 		return
 	}
 	if s.opens != f.opens {
 		return
+	}
+	if next {
+		f.startSave(nextDo)
 	}
 	f.base, f.disk.seen, f.disk.theirs = s.doc, s.doc, nil
 	f.gen++

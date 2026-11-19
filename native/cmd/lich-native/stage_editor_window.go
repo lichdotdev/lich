@@ -114,6 +114,11 @@ func (s *stageEditors) unlessUnsaved(f *fileEditor, then func()) {
 // layoutAsk draws the question while it is open and runs the answer.
 func (s *stageEditors) layoutAsk(gtx C, th *ui.Theme, root *ui.Root) {
 	s.takeTouched()
+	// A save asked for from the question lands here when its editor is off
+	// the stage, and what waited on it runs.
+	for _, f := range s.byCheckout {
+		f.takeSave()
+	}
 	a := &s.ask
 	if !a.open && !a.state.Animating(gtx) {
 		return
@@ -151,7 +156,8 @@ func (s *stageEditors) layoutAsk(gtx C, th *ui.Theme, root *ui.Root) {
 func (u *window) openInEditor(checkout, rel string, line, end int, note agentNote) {
 	if slices.Contains(u.model.gitOf(checkout).Conflicted, rel) {
 		u.dock.show(dockReview)
-		u.review.openResolver(rel)
+		u.review.resolveNext = rel
+		u.model.invalidate()
 		return
 	}
 	f := u.editors.of(checkout)
@@ -215,4 +221,15 @@ func (u *window) editorIsland(gtx C, v stageView) error {
 		inject = u.terms.injector(id)
 	}
 	return f.layout(gtx, th, editorEnv{root: &u.root, code: code, inject: inject, comments: &u.comments, notify: func(t ui.Toast) { u.toaster.Show(t) }})
+}
+
+// editorWouldAsk is whether opening t would ask about unsaved changes to
+// another file of its checkout: an agent never raises that question.
+func (u *window) editorWouldAsk(t codeTarget) bool {
+	view, ok := u.model.sessionViewOf(t.session)
+	if !ok {
+		return false
+	}
+	f, ok := u.editors.byCheckout[view.path]
+	return ok && f.dirty && f.rel != t.rel
 }

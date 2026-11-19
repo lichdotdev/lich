@@ -666,7 +666,7 @@
       "servicesWrite": "Iniciar, parar e reiniciar os serviços dos seus projetos",
       "gitRead": "Ver a branch, as mudanças e o pull request de cada checkout",
       "notify": "Mostrar notificações na área de trabalho",
-      "window": "Mostrar arquivos no dock e abrir páginas no navegador de uma sessão"
+      "window": "Mostrar arquivos no editor e abrir páginas no navegador de uma sessão"
     },
     "removeTitle": "Remover {name}?",
     "removeDescription": "O lich para a extensão e apaga o programa. O que ela salvou fica, então ao instalar de novo ela continua de onde parou.",

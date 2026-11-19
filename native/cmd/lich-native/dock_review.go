@@ -60,15 +60,18 @@ type reviewPanel struct {
 	// The frame's: theme, palette, checkout and its latest read. target keys
 	// the comment batch, a pull request's page when its branch has no
 	// checkout; checkout is always a clone the files are read from.
-	th       *ui.Theme
-	light    bool
-	code     godemirror.Theme
-	target   string
-	checkout string
-	inject   func(string) bool
-	submit   func(string, func(error)) bool
-	shown    *diffRead
-	splitOK  bool
+	th     *ui.Theme
+	light  bool
+	code   godemirror.Theme
+	target string
+	// resolveNext is a conflicted file to open in the resolver on the next
+	// layout, once target is the checkout it belongs to.
+	resolveNext string
+	checkout    string
+	inject      func(string) bool
+	submit      func(string, func(error)) bool
+	shown       *diffRead
+	splitOK     bool
 	// git is the checkout's status from the window's store: the merge in
 	// progress, and which files are conflicted.
 	git   backend.DiffStats
@@ -211,6 +214,10 @@ func (p *reviewPanel) layoutBody(gtx C, th *ui.Theme, in dockInput) error {
 	p.th, p.light, p.code, p.target, p.checkout = th, in.light, in.code, in.checkout, in.checkout
 	p.git = in.git
 	p.takeResolvers()
+	if rel := p.resolveNext; rel != "" {
+		p.resolveNext = ""
+		p.openResolver(rel)
+	}
 	p.inject, p.submit = in.inject, in.submit
 	p.feed.follow(in.checkout)
 	p.takeRead(in.checkout, p.feed.latest())
