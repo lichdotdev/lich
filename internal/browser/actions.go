@@ -238,9 +238,18 @@ func (s *Service) Navigate(id, rawURL string) (Handle, error) {
 	return s.handleOf(sess), nil
 }
 
-// goTo is the agent loading u in sess's page. A download leaves the page
-// where it was, so its URL is not remembered as the page's.
+// goTo is the agent loading u in sess's page.
 func (s *Service) goTo(sess *session, u string) error {
+	if err := s.loadURL(sess, u); err != nil {
+		return err
+	}
+	s.agentActed(sess, api.BrowserAgentAct{Action: "navigate", URL: u})
+	return nil
+}
+
+// loadURL loads u in sess's page. A download leaves the page where it was, so
+// its URL is not remembered as the page's.
+func (s *Service) loadURL(sess *session, u string) error {
 	var download bool
 	if err := runPage(func(ctx context.Context) error {
 		var err error
@@ -254,7 +263,6 @@ func (s *Service) goTo(sess *session, u string) error {
 	} else {
 		s.remember(sess, u, "")
 	}
-	s.agentActed(sess, api.BrowserAgentAct{Action: "navigate", URL: u})
 	return nil
 }
 

@@ -53,7 +53,13 @@ which also ends a load that failed, never committed (a 204) or only moved
 within the page. A tab the page opens can start loading before lich attaches
 to it, so once attached its `document.readyState` seeds `loading` unless a
 load event came first; `browser.Running` is what a window reads when
-it attaches. A browser no pane shows and no one used for five minutes is
+it attaches. Where the window draws the page itself (a WebKitGTK view on X11,
+`native/internal/webview`), Chrome never sees the person's loads in it, so the
+window sends `browser.NativeLoad` from WebKit's `load-changed` of the main
+frame: `loading` from its start until it finished, failed or was cancelled,
+shown on the front tab beside Chrome's own, and, for a load the page started
+itself, the URL it committed to, which the backend loads in the agent's page
+too, so URL and title arrive on `browser-state` as for any load. A browser no pane shows and no one used for five minutes is
 never closed on its own: its state turns `idle`, the window asks with a toast,
 and Close (`browser.Close`) or Keep open (`browser.Keep`, five more minutes)
 answers. Unanswered, it stays open and is not asked about again; any use

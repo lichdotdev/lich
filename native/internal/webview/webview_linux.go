@@ -91,10 +91,15 @@ type Page struct {
 	page   *C.LichPage
 	placed image.Rectangle
 	shown  bool
+	loads  loads
+	// onLoad hears the page's loads, on the GTK thread.
+	onLoad func(Load)
+	self   cgo.Handle
 }
 
-// Open makes a page showing url, out of sight until it is placed.
-func Open(url string) (*Page, error) {
+// Open makes a page showing url, out of sight until it is placed. onLoad
+// hears its main frame's loads, on a thread of its own.
+func Open(url string, onLoad func(Load)) (*Page, error) {
 	into := parent.Load()
 	if into == 0 {
 		return nil, errNoWindow
@@ -102,13 +107,29 @@ func Open(url string) (*Page, error) {
 	if err := startGTK(); err != nil {
 		return nil, err
 	}
-	p := &Page{}
+	p := &Page{onLoad: onLoad}
+	p.self = cgo.NewHandle(p)
+	p.loads.ask(url)
 	onGTK(func() {
 		u := C.CString(url)
 		defer C.free(unsafe.Pointer(u))
-		p.page = C.lich_webview_open(C.ulong(into), u)
+		p.page = C.lich_webview_open(C.ulong(into), u, C.uintptr_t(p.self))
 	})
 	return p, nil
+}
+
+//export lichWebviewLoad
+func lichWebviewLoad(owner C.uintptr_t, step C.int, uri *C.char) {
+	p := cgo.Handle(owner).Value().(*Page)
+	if l, ok := p.loads.step(int(step), C.GoString(uri)); ok {
+		p.onLoad(l)
+	}
+}
+
+// URL is where the page is: the last URL the window asked for, or where a
+// load the page started itself landed.
+func (p *Page) URL() string {
+	return p.loads.url()
 }
 
 // Place shows the page over r, in the window's pixels, and says whether that
@@ -135,6 +156,7 @@ func (p *Page) Hide() {
 
 // Navigate loads url in the page.
 func (p *Page) Navigate(url string) {
+	p.loads.ask(url)
 	onGTK(func() {
 		u := C.CString(url)
 		defer C.free(unsafe.Pointer(u))
@@ -144,7 +166,10 @@ func (p *Page) Navigate(url string) {
 
 // Close ends the page.
 func (p *Page) Close() {
-	onGTK(func() { C.lich_webview_close(p.page) })
+	onGTK(func() {
+		C.lich_webview_close(p.page)
+		p.self.Delete()
+	})
 }
 
 // KeyboardToWindow gives the keyboard back to the window, from a page that

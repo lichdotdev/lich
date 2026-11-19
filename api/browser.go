@@ -56,6 +56,9 @@ var (
 	// BrowserTabNav is the person opening, selecting or closing a tab in the
 	// pane, the window's side of BrowserTabAction.
 	BrowserTabNav = define[BrowserTabOptions, None]("browser.TabNav")
+	// BrowserNativeLoad is a main-frame load event of the page the window
+	// draws itself in place of the screencast, for the session's front tab.
+	BrowserNativeLoad = define[BrowserNativeLoadOptions, None]("browser.NativeLoad")
 	// BrowserDevTools is the person opening Chrome's DevTools for the front
 	// tab in the pane, as a tab of its own, or selecting it when it is open.
 	// The agent never sees that tab.
@@ -300,6 +303,17 @@ type BrowserHandle struct {
 	Owner     string            `json:"owner"`
 	Headed    bool              `json:"headed"`
 	Downloads []BrowserDownload `json:"downloads,omitempty"`
+}
+
+// BrowserNativeLoadOptions is session ID's front tab as the window's own page
+// sees it: Loading from its main frame's load start until that load
+// finished, failed or was cancelled, and URL, set only for a load the page
+// started itself (a link the person followed, a form, back or forward),
+// where it landed after any redirect.
+type BrowserNativeLoadOptions struct {
+	ID      string `json:"id"`
+	Loading bool   `json:"loading"`
+	URL     string `json:"url,omitempty"`
 }
 
 // BrowserOpenOptions loads a URL in the session's browser, creating a headless

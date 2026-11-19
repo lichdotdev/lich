@@ -1790,6 +1790,12 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   Ubuntu 23.10 and later AppArmor refuses it the user namespace unless the browser ships an AppArmor profile,
   as the distribution's Chrome, Edge and Brave do: one unpacked from a tarball fails to start with "No usable
   sandbox!", which the agent reads as the browser's error.
+- **A load in the page the window draws itself reaches the agent's page by its URL only**
+  (`native/internal/webview`, `browser.NativeLoad`): on X11 the pane shows a WebKitGTK page and the agent drives
+  Chrome, so a link the person follows there is loaded again in Chrome by the URL WebKit committed to. A form
+  the person posts is fetched again as a plain GET, and a page that only changes its URL in place (`pushState`, a
+  hash) is never told to the backend, since WebKit's `load-changed` fires on loads only. The tab's spinner runs until both
+  pages finished. macOS and Windows draw the screencast yet, where Chrome's own load events cover the tab.
 - **The new-tab page is the backend's page in the window's colors and words, as of the last time the window sent
   them** (`internal/newtab`, `docs/browser-tab.md`): a tab already open keeps its look until it is opened again, and
   before the window has sent any it is the dark theme in English. It has a listener of its own from port 27000,

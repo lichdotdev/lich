@@ -136,8 +136,11 @@ type session struct {
 	// tabs are the page's as the agent lists them; paneTabs as the pane does,
 	// with its DevTools tabs.
 	tabs, paneTabs []api.BrowserTab
-	page           Page
-	lastUsed       time.Time
+	// nativeLoading is the front tab loading in the page the window draws
+	// itself (browser.NativeLoad), which Chrome's own events never see.
+	nativeLoading bool
+	page          Page
+	lastUsed      time.Time
 	// isNewTab is the service's, nil when there is no new-tab page.
 	isNewTab func(raw string) bool
 }

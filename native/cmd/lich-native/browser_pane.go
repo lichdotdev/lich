@@ -367,7 +367,7 @@ func (u *window) browserPage(gtx C, p *browserPaneUI, session, url string, frame
 		}
 	}
 	paint.FillShape(gtx.Ops, u.theme.Background, clip.Rect{Max: size}.Op())
-	if u.placeNativePage(gtx, p, url) {
+	if u.placeNativePage(gtx, p, session, url) {
 		defer clip.Rect{Max: size}.Push(gtx.Ops).Pop()
 		event.Op(gtx.Ops, &p.tag)
 		return

@@ -24,6 +24,7 @@ browser.Key(BrowserKeyOptions) None
 browser.List(SessionIDOptions) []BrowserHandle
 browser.Locate(BrowserLocateOptions) []BrowserRect
 browser.Mouse(BrowserMouseOptions) None
+browser.NativeLoad(BrowserNativeLoadOptions) None
 browser.Nav(BrowserNavOptions) None
 browser.Navigate(BrowserOpenOptions) BrowserHandle
 browser.NewTabPage(BrowserNewTabPageOptions) None
@@ -529,6 +530,12 @@ BrowserMouseOptions {
 	dx,omitempty float64
 	dy,omitempty float64
 	modifiers,omitempty int
+}
+
+BrowserNativeLoadOptions {
+	id string
+	loading bool
+	url,omitempty string
 }
 
 BrowserNavOptions {

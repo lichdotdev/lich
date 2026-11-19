@@ -9,12 +9,13 @@ typedef struct {
 	GdkWindow *window;
 	GtkWidget *holder;
 	GtkWidget *view;
+	uintptr_t owner;
 } LichPage;
 
 void lich_webview_invoke(uintptr_t handle);
 int lich_webview_init(void);
 void lich_webview_main(void);
-LichPage *lich_webview_open(unsigned long parent, const char *url);
+LichPage *lich_webview_open(unsigned long parent, const char *url, uintptr_t owner);
 void lich_webview_place(LichPage *page, int x, int y, int width, int height);
 void lich_webview_hide(LichPage *page);
 void lich_webview_navigate(LichPage *page, const char *url);

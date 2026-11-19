@@ -6,6 +6,7 @@
 #include <string.h>
 
 extern void lichWebviewRun(uintptr_t handle);
+extern void lichWebviewLoad(uintptr_t owner, int step, char *uri);
 
 static gboolean run(gpointer data) {
 	lichWebviewRun((uintptr_t)data);
@@ -96,7 +97,11 @@ static void adopt(GtkWidget *widget, gpointer window) {
 	gtk_widget_register_window(widget, GDK_WINDOW(window));
 }
 
-LichPage *lich_webview_open(unsigned long parent, const char *url) {
+static void load_changed(WebKitWebView *view, WebKitLoadEvent step, gpointer page) {
+	lichWebviewLoad(((LichPage *)page)->owner, step, (char *)webkit_web_view_get_uri(view));
+}
+
+LichPage *lich_webview_open(unsigned long parent, const char *url, uintptr_t owner) {
 	GdkDisplay *display = gdk_display_get_default();
 	Display *x = gdk_x11_display_get_xdisplay(display);
 	app = parent;
@@ -113,9 +118,11 @@ LichPage *lich_webview_open(unsigned long parent, const char *url) {
 	g_object_unref(context);
 	gtk_container_add(GTK_CONTAINER(holder), view);
 	gtk_widget_show_all(holder);
-	webkit_web_view_load_uri(WEBKIT_WEB_VIEW(view), url);
 
 	LichPage *page = calloc(1, sizeof(LichPage));
+	page->owner = owner;
+	g_signal_connect(view, "load-changed", G_CALLBACK(load_changed), page);
+	webkit_web_view_load_uri(WEBKIT_WEB_VIEW(view), url);
 	page->x = x;
 	page->child = child;
 	page->window = window;

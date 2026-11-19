@@ -23,9 +23,10 @@ type Page struct{}
 
 // Open says this system shows no page of its own yet, so the window draws
 // the screencast instead.
-func Open(string) (*Page, error) { return nil, errors.ErrUnsupported }
+func Open(string, func(Load)) (*Page, error) { return nil, errors.ErrUnsupported }
 
 func (*Page) Place(image.Rectangle) bool { return false }
+func (*Page) URL() string                { return "" }
 func (*Page) Hide()                      {}
 func (*Page) Navigate(string)            {}
 func (*Page) Close()                     {}

@@ -2,6 +2,7 @@ package main
 
 import (
 	"image"
+	"log"
 
 	"gioui.org/io/event"
 	"gioui.org/io/pointer"
@@ -14,20 +15,24 @@ import (
 // placeNativePage shows the session's page in a web view the window holds
 // itself, over the pane's page area, and says whether it does: where the
 // system gives the window none, the pane draws the screencast.
-func (u *window) placeNativePage(gtx C, p *browserPaneUI, url string) bool {
+func (u *window) placeNativePage(gtx C, p *browserPaneUI, session, url string) bool {
 	if url == "" {
 		url = "about:blank"
 	}
 	if p.native == nil {
-		page, err := webview.Open(url)
+		page, err := webview.Open(url, func(l webview.Load) { go u.nativeLoaded(session, l) })
 		if err != nil {
 			return false
 		}
 		p.native, p.nativeURL = page, url
 	}
+	// A page the person took elsewhere is followed by the backend, whose
+	// URL then arrives where the page already is.
 	if url != p.nativeURL {
-		p.native.Navigate(url)
 		p.nativeURL = url
+		if url != p.native.URL() {
+			p.native.Navigate(url)
+		}
 	}
 	// Origin is where the page area sat in the last frame: a move shows a
 	// frame late, so a frame that moves the page asks for one more.
@@ -71,4 +76,12 @@ func keyboardFromPages(gtx C) {
 	defer clip.Rect{Max: gtx.Constraints.Max}.Push(gtx.Ops).Pop()
 	defer pointer.PassOp{}.Push(gtx.Ops).Pop()
 	event.Op(gtx.Ops, windowPress)
+}
+
+// nativeLoaded tells the backend about a load of session's own page, which
+// shows it on the tab and follows a page the person took elsewhere.
+func (u *window) nativeLoaded(session string, l webview.Load) {
+	if err := u.client.NativeLoadBrowser(u.ctx, session, l.Loading, l.URL); err != nil {
+		log.Printf("browser of %s: page load: %v", session, err)
+	}
 }

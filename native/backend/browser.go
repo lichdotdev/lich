@@ -39,6 +39,13 @@ func (c *Client) AttachBrowser(ctx context.Context, v api.BrowserViewOptions) er
 }
 
 // DetachBrowser stops the frames of session id's page.
+// NativeLoadBrowser hands the backend a load event of the page the window
+// draws itself for session id's front tab.
+func (c *Client) NativeLoadBrowser(ctx context.Context, id string, loading bool, url string) error {
+	_, err := callMethod(ctx, c, api.BrowserNativeLoad, api.BrowserNativeLoadOptions{ID: id, Loading: loading, URL: url})
+	return err
+}
+
 func (c *Client) DetachBrowser(ctx context.Context, id string) error {
 	_, err := callMethod(ctx, c, api.BrowserDetach, api.SessionIDOptions{ID: id})
 	return err
