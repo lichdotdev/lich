@@ -5,19 +5,18 @@ import (
 
 	"gioui.org/io/event"
 	"gioui.org/io/pointer"
-	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/op/clip"
 
 	"github.com/lichdotdev/lich/extension"
-	"github.com/lichdotdev/lich/native/ui"
 )
 
-// dockPeek is the collapsed dock brought out over the stage from the window's
-// right edge. Like the sidebar's, it keeps the terminal at its width.
+// dockPeek is the collapsed dock brought out from the window's right edge. It
+// stands where the open dock stands and pushes the island in as that one does:
+// a page in the island is a window of the system's, which nothing the window
+// draws can cover.
 type dockPeek struct {
 	panelPeek
-	slide dockSlide
 	edge  windowEdge
 	panel hoverArea
 	// stage is the pointer on the stage beside the dock: back there from
@@ -66,7 +65,7 @@ func (e *windowEdge) watch(gtx C, r image.Rectangle) {
 }
 
 // visible is whether the dock is on screen: beside the terminal, full screen,
-// or out over the stage.
+// or out from the edge.
 func (d *dock) visible() bool {
 	return d.tab != dockClosed && (!d.collapsed || d.fullscreen || d.peek.shown)
 }
@@ -79,15 +78,10 @@ func (d *dock) bringOut() {
 }
 
 // setCollapsed takes the dock off the stage, or puts it back. Put back from
-// out over the stage, it is already where it stands, so it lands without a
-// slide.
+// out at the edge, it already stands where it lands.
 func (d *dock) setCollapsed(collapsed bool) {
 	d.collapsed, d.saveCollapsed, d.peek.tab = collapsed, true, d.tab
-	if !collapsed && d.peek.slide.shown > 0 {
-		d.slide.snap(true)
-	}
 	d.peek.panelPeek = panelPeek{}
-	d.peek.slide.snap(false)
 }
 
 // show opens the dock on t from anywhere but its own tabs: a balloon, a
@@ -97,21 +91,18 @@ func (d *dock) show(t dockTab) {
 	d.bringOut()
 }
 
-// docked is whether the dock stands beside the terminal this frame, or
-// covers it in full screen.
-func (d *dock) docked(home bool) bool {
-	return d.tab != dockClosed && !home && (!d.collapsed || d.fullscreen)
-}
+// docked is whether the dock stands beside the terminal this frame, out from
+// the edge or not, or covers it in full screen.
+func (d *dock) docked(home bool) bool { return !home && d.visible() }
 
-// dockPeek draws the collapsed dock out over the stage row, whose size
-// gtx holds, while it has a tab to show.
-func (u *window) dockPeek(gtx C, v stageView) error {
+// dockPeek decides from the pointer whether the collapsed dock is out this
+// frame, and says whether the row is to watch for it (dockPeek.watch).
+func (u *window) dockPeek(gtx C, v stageView) bool {
 	d := u.dock
 	p := &d.peek
 	if d.tab == dockClosed || v.home || !d.collapsed || d.fullscreen {
 		p.panelPeek, p.edge, p.panel, p.stage, p.tab = panelPeek{}, windowEdge{}, hoverArea{}, hoverArea{}, d.tab
-		p.slide.snap(false)
-		return nil
+		return false
 	}
 	if d.tab != p.tab {
 		d.bringOut()
@@ -133,31 +124,17 @@ func (u *window) dockPeek(gtx C, v stageView) error {
 	if wake := p.update(gtx.Now, d.holdsKeys(gtx) || d.resize.Dragging() || commenting); !wake.IsZero() {
 		gtx.Execute(op.InvalidateCmd{At: wake})
 	}
+	return true
+}
+
+// watch lays the hover areas over the stage row just drawn, whose size gtx
+// holds, so they hear the pointer over everything in it.
+func (p *dockPeek) watch(gtx C) {
 	size := gtx.Constraints.Max
 	p.stage.watch(gtx, image.Rectangle{Max: size})
 	// The edge is the gutter between the stage and the window's right edge,
 	// where the pointer lands when it is thrown to the side.
 	p.edge.watch(gtx, image.Rect(size.X, 0, size.X+gtx.Dp(gutter), size.Y))
-	share := p.slide.at(gtx, p.shown)
-	if share == 0 {
-		return nil
-	}
-	w := d.width(gtx)
-	defer clip.Rect{Max: size}.Push(gtx.Ops).Pop()
-	defer op.Offset(image.Pt(size.X-int(share*float32(w)), 0)).Push(gtx.Ops).Pop()
-	// The panel's own area takes the pointer from the terminal under it, and
-	// reads it over everything the dock draws.
-	area := clip.UniformRRect(image.Rectangle{Max: image.Pt(w, size.Y)}, gtx.Dp(ui.RadiusLG)).Push(gtx.Ops)
-	event.Op(gtx.Ops, &p.panel)
-	gtx.Constraints = layout.Exact(image.Pt(w, size.Y))
-	if share < 1 {
-		// A moving panel takes no input; the slide asked for its frames.
-		gtx = gtx.Disabled()
-	}
-	u.dock.gap = nil
-	err := u.layoutDock(gtx, v)
-	area.Pop()
-	return err
 }
 
 // layoutDock lays the dock out in gtx.Constraints.Max and keeps what it

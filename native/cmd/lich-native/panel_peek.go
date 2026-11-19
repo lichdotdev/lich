@@ -17,7 +17,7 @@ const (
 	peekCloseDelay = 300 * time.Millisecond
 )
 
-// panelPeek is whether a collapsed panel is out over the stage. The pointer
+// panelPeek is whether a collapsed panel is out. The pointer
 // over the trigger or the panel itself is one fact, over; since is when it
 // last changed.
 type panelPeek struct {

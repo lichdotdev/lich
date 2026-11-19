@@ -137,8 +137,9 @@ type dock struct {
 	resize     ui.ResizeHandle
 	full       ui.IconActionState
 	collapse   ui.IconActionState
-	// collapsed is the dock off the stage, out over it from the window's
-	// right edge (peek); saveCollapsed is a click on collapse to store.
+	// collapsed is the dock off the stage, brought back out from the
+	// window's right edge (peek); saveCollapsed is a click on collapse to
+	// store.
 	collapsed     bool
 	saveCollapsed bool
 	// saved is the tab last stored, which a change of tab is told from.
