@@ -15,7 +15,7 @@
     },
     "toolFailed": "failed",
     "answered": "{tool} · {choice}",
-    "working": "Working…",
+    "verbs": "Conjuring|Summoning|Channeling|Brewing|Scrying|Inscribing|Weaving|Raising",
     "thinking": "Thinking",
     "toolCalls": {
       "one": "{count} tool call",

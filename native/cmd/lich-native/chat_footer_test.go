@@ -86,14 +86,14 @@ func TestSendAndStopAreIconsThatNameThemselvesInATooltip(t *testing.T) {
 		r.frame()
 		r.now = r.now.Add(time.Second)
 		r.frame()
-		r.settle(t)
+		r.frames(3)
 		if !r.shows(label) {
 			t.Errorf("no tooltip %q over the button:\n%s", label, r.drawn())
 		}
 	}
 	hover(i18n.T("chat.composer.send"))
 	u.model.chat.turn(api.ChatTurn{SessionID: "s1", Running: true})
-	r.settle(t)
+	r.frames(3)
 	hover(i18n.T("chat.composer.stop"))
 	r.click(t, r.smallestClickIn(t, boxFoot))
 	f.waitCall(t, api.ChatCancel.Name)
@@ -266,8 +266,8 @@ func TestTheOptionChipsTakeNoClickWhileTheAgentWorks(t *testing.T) {
 	u, r, f := chatFrames(t, api.ViewChat)
 	u.model.chat.setOptions("s1", chatOptions())
 	u.model.chat.turn(api.ChatTurn{SessionID: "s1", Running: true})
-	r.settle(t)
-	r.clickLabel(t, "Haiku 5.5 · Medium")
+	r.frames(3)
+	r.click(t, r.at(t, "Haiku 5.5 · Medium"))
 	if r.shows("Opus 5.5") {
 		t.Error("the menu opened during a turn")
 	}

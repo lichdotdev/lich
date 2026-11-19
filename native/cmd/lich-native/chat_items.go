@@ -1,8 +1,11 @@
 package main
 
 import (
+	"fmt"
+	"hash/fnv"
 	"image"
 	"image/color"
+	"math"
 	"slices"
 	"strconv"
 	"strings"
@@ -22,6 +25,7 @@ import (
 )
 
 var (
+	icChatMark   = icons.LichMark()
 	icChatFail   = icons.Lucide("x")
 	icChatSend   = icons.Lucide("arrow-up")
 	icChatStop   = icons.Lucide("square")
@@ -57,7 +61,7 @@ func (u *window) chatRow(gtx C, th *ui.Theme, p *chatPane, sv sessionView, r cha
 	case chatRowWork:
 		return u.chatWork(gtx, th, p.fold("work:"+strconv.Itoa(r.turn)), sv, r)
 	case chatRowLive:
-		return chatLive(gtx, th)
+		return chatLive(gtx, th, sv.ID, r)
 	case chatRowDone:
 		return u.chatDone(gtx, th, p, sv, r)
 	case chatRowDay:
@@ -441,12 +445,44 @@ func chatPermission(gtx C, th *ui.Theme, p *chatPane, it backend.ChatItem) D {
 		})
 }
 
-// chatLive is the turn in flight.
-func chatLive(gtx C, th *ui.Theme) D {
+// chatPulseLap is how long the live mark takes to dim and come back, and
+// chatPulseLow how dim it gets.
+const (
+	chatPulseLap = 1600 * time.Millisecond
+	chatPulseLow = 0.35
+)
+
+// chatVerbSep splits the catalog's list of verbs, which each language writes
+// at its own length.
+const chatVerbSep = "|"
+
+// chatVerb is the verb a turn is named by while it runs: one of the language's
+// own, picked by the session and the turn, so it holds for the whole turn and
+// is the same on every frame.
+func chatVerb(session string, turn int) string {
+	verbs := strings.Split(i18n.T("chat.view.verbs"), chatVerbSep)
+	h := fnv.New32a()
+	fmt.Fprintf(h, "%s:%d", session, turn)
+	return verbs[int(h.Sum32()%uint32(len(verbs)))]
+}
+
+// chatLive is the turn in flight: lich's mark breathing, then a verb of the
+// turn shimmering with the time it has run.
+func chatLive(gtx C, th *ui.Theme, session string, r chatRow) D {
+	th.Loop(gtx)
+	phase := float32(gtx.Now.UnixNano()%int64(chatPulseLap)) / float32(chatPulseLap)
+	level := chatPulseLow + (1-chatPulseLow)*(1+float32(math.Cos(2*math.Pi*float64(phase))))/2
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-		layout.Rigid(func(gtx C) D { return th.Spinner(gtx, ui.Space(3.5), th.MutedForeground) }),
+		layout.Rigid(func(gtx C) D { return icChatMark.Layout(gtx, ui.Space(4), ui.Alpha(th.MutedForeground, level)) }),
 		ui.Gap(2),
-		layout.Rigid(th.Text(ui.TextSM, i18n.T("chat.view.working")).Muted().Layout),
+		layout.Rigid(func(gtx C) D {
+			// A turn with no start to count from has no clock.
+			var since time.Time
+			if r.took > 0 {
+				since = gtx.Now.Add(-r.took)
+			}
+			return chatLiveLabel(gtx, th, chatVerb(session, r.turn), th.MutedForeground, since)
+		}),
 	)
 }
 

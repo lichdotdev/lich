@@ -2,6 +2,7 @@ package main
 
 import (
 	"image"
+	"strings"
 	"testing"
 	"time"
 
@@ -318,5 +319,55 @@ func TestTheAvatarIsOnTheLineThatOpensTheTurn(t *testing.T) {
 	work, agent = flags(answer, tool)
 	if work.avatar || agent.bare || !agent.lead {
 		t.Errorf("answer first: line avatar %v, answer bare %v; want the answer's header to carry it", work.avatar, agent.bare)
+	}
+}
+
+func TestEveryLanguageHasVerbsForALiveTurn(t *testing.T) {
+	for _, l := range i18n.Locales {
+		verbs := strings.Split(i18n.In(l, "chat.view.verbs"), chatVerbSep)
+		if len(verbs) < 2 {
+			t.Errorf("%s has %d verbs, want a list to pick from", l, len(verbs))
+		}
+		for _, v := range verbs {
+			if strings.TrimSpace(v) == "" || v != strings.TrimSpace(v) {
+				t.Errorf("%s has the verb %q", l, v)
+			}
+		}
+	}
+}
+
+func TestATurnKeepsItsVerbAndTurnsDifferInTheirs(t *testing.T) {
+	first := chatVerb("s1", 1)
+	for range 50 {
+		if got := chatVerb("s1", 1); got != first {
+			t.Fatalf("the turn's verb moved from %q to %q", first, got)
+		}
+	}
+	seen := map[string]bool{}
+	for turn := range 40 {
+		seen[chatVerb("s1", turn)] = true
+	}
+	if len(seen) < 4 {
+		t.Errorf("40 turns used %d verbs, want the list spread", len(seen))
+	}
+}
+
+func TestALiveTurnShowsItsVerbWithTheTimeItRunAndNothingMovesOnceItEnds(t *testing.T) {
+	items := []backend.ChatItem{{ID: "u1", Kind: api.ItemUser, Turn: 1, At: novDay(18, 17, 59), Text: "go"}}
+	_, r := lifeFrames(t, items, true)
+	r.frame()
+	if verb := chatVerb("s1", 1); !r.shows(verb) {
+		t.Errorf("no %q:\n%s", verb, r.drawn())
+	}
+	if r.shows(i18n.T("chat.view.verbs")) {
+		t.Error("the whole list is drawn")
+	}
+	if at, _ := r.router.WakeupTime(); at.IsZero() {
+		t.Error("a live turn asked for no next frame")
+	}
+	_, r = lifeFrames(t, items, false)
+	r.settle(t)
+	if r.shows(chatVerb("s1", 1)) {
+		t.Error("a turn that is over still names itself")
 	}
 }

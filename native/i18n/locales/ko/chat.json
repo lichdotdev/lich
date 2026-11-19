@@ -14,7 +14,7 @@
     },
     "toolFailed": "실패",
     "answered": "{tool} · {choice}",
-    "working": "작업 중…",
+    "verbs": "주문 외우는 중|소환하는 중|마력을 모으는 중|달이는 중|들여다보는 중|새기는 중|엮는 중|일으키는 중",
     "thinking": "생각 중",
     "toolCalls": {
       "other": "도구 호출 {count}개"

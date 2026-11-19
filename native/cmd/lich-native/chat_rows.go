@@ -36,7 +36,7 @@ type chatRow struct {
 	// ended is when a work row's turn last did something, unix ms.
 	ended int64
 	// turn, tools and took are a work row's: its tool calls and how long the
-	// turn has run.
+	// turn has run; a live row has the turn and how long it has run.
 	turn  int
 	tools []backend.ChatItem
 	took  time.Duration
@@ -136,7 +136,11 @@ func chatRows(items []backend.ChatItem, running bool, now time.Time) []chatRow {
 		closing(items[len(items)-1].Turn)
 	}
 	if running && permissionWaiting(items) == nil {
-		rows = append(rows, chatRow{kind: chatRowLive})
+		live := chatRow{kind: chatRowLive, turn: last}
+		if sp := spans[last]; sp != nil && sp.start > 0 && !now.IsZero() {
+			live.took = time.Duration(max(now.UnixMilli()-sp.start, 0)) * time.Millisecond
+		}
+		rows = append(rows, live)
 	}
 	return rows
 }

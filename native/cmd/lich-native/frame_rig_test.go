@@ -96,6 +96,15 @@ func (r *frameRig) settle(t *testing.T) string {
 	return ""
 }
 
+// frames lays the screen out n times, a second apart: for a screen that
+// never goes still, a turn in flight whose mark and verb keep moving.
+func (r *frameRig) frames(n int) {
+	for range n {
+		r.now = r.now.Add(time.Second)
+		r.frame()
+	}
+}
+
 // waitFor frames the screen until something is drawn with label, for a
 // screen that reads its backend off the frame, then lets it settle.
 func (r *frameRig) waitFor(t *testing.T, label string) {

@@ -14,7 +14,7 @@
     },
     "toolFailed": "失败",
     "answered": "{tool} · {choice}",
-    "working": "工作中…",
+    "verbs": "施法中|召唤中|引导魔力中|熬制中|占卜中|铭刻中|编织中|唤醒中",
     "thinking": "思考中",
     "toolCalls": {
       "other": "{count} 次工具调用"
