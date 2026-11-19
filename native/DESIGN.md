@@ -284,7 +284,7 @@ account's email sits under the plan's name. The chosen login carries no usage no
 Claude Code's limit resets are a `Resets` block of their own: its title with "N left" (every reset of every live
 grant) at the right, and a line per grant. The line is its name at the left ("Full" when it clears the weekly window,
 the model's name for a model's own cap, the provider's text otherwise), "×2" and a muted "until Dec 10" (the month in
-the interface language) at the right, and a `Use` button, an outline `SizeXS` one, when the grant can be spent now. A
+the interface language) at the right, and a `Use` button, a ghost `SizeXS` one (no outline or fill at rest), when the grant can be spent now. A
 grant that cannot (paused, or not usable) is muted whole and has no button; with no live grant the block is not drawn.
 Use never spends on the first click: it replaces its row, in place and never in a dialog, with the question ("Use one
 Full reset?"), a muted line saying what it clears ("Clears the session and weekly limits.") and, at the right,
