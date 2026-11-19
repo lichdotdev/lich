@@ -14,7 +14,14 @@
     },
     "toolFailed": "失败",
     "answered": "{tool} · {choice}",
-    "working": "工作中…"
+    "working": "工作中…",
+    "thinking": "思考中",
+    "toolCalls": {
+      "other": "{count} 次工具调用"
+    },
+    "workedAt": {
+      "other": "工作了 {duration} · {count} 个工具 · {time}"
+    }
   },
   "composer": {
     "placeholder": "给 {provider} 发消息…",

@@ -256,11 +256,27 @@ pinned to its end while items arrive, until the person scrolls up.
 - **The person's message** is a box in `Accent`, `RadiusLG`, against the column's right edge, at most 78% of
   it. It breaks "rows, not cards" on purpose: a turn starts where a message does, and the eye finds it by the
   box faster than by a rule.
-- **The agent's text** is Markdown at the prose size (`ui/markdown`); a thought is a muted fold, closed.
-- **A turn's tool calls** fold into one muted line, "Worked for 12s · 3 tools", where the first of them came.
-  Open, each call is a 28px row: its name in medium, what it acted on in mono, how it ended at the right (the
-  output's first line, `Destructive` for a failure, a spinner while it runs), and its diff under it as a
-  thread's hunk is drawn.
+- **The agent's text** is Markdown at the prose size (`ui/markdown`). The first answer of each turn opens
+  with who speaks: the provider's mark at 20px on a `RadiusMD` square, in the session's card color (the
+  agent cursor's color, `Primary` for a card with none; the window keeps no brand color per provider) over
+  a fill of that color mixed 22% into the surface, then the provider's name in medium, then muted
+  "· model · effort" when the session's options say them. A thought is a muted fold, closed, with the
+  sparkles before its label.
+- **A turn's tool calls** fold into one muted line where the first of them came. Finished, it reads
+  "Worked for 41s · 6 tools · 09:15": how long the turn took, how many calls, when it ended (without the time
+  when the history has none). Open, each call is a 28px row hung under the line by a connector, a 1px
+  `Border` line under the fold's chevron with a stub into the row, ending at the last row as the sidebar's
+  tree does. A row is its tool's glyph (a Lucide mark by tool name, Claude Code's own names and ACP's kinds,
+  one generic wrench for the rest), its name in medium, what it acted on in mono, and how it ended at the
+  right: a spinner in `ToneWait` while it runs, then a check in `TonePass` or a cross in `Destructive`
+  with the output's first line. Its diff stands under it as a thread's hunk is drawn.
+- **What is alive moves.** The text of a live step shimmers: a light band crosses it from left to right once
+  every 1.6s (`Label.Shimmer`, looping frames only while it is drawn), and the time it has run counts beside
+  it, "6s", "1m 12s", redrawn each second and not each frame. That is "Thinking" for the thought being
+  thought, "2 tool calls" for the turn's line while a call runs, and the name of the call that runs. The
+  answer being written ends in a caret that blinks every half second. A row new to the conversation enters
+  with `ui.Presence`, growing in from the top; the conversation read when the pane opens, or after it, does
+  not play as arrivals. A list at its end stays at its end while rows grow in.
 - **A permission** is a box on `Sidebar`, `RadiusMD`, `Space(3)` padding (see Boxes inside a screen): the tool,
   its diff, and a `SizeSM` button per answer the provider offers, the first allow filled. Enter takes the first
   allow and Esc the first reject. Answered, it shrinks to a muted line naming the answer.

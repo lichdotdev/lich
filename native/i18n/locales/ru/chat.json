@@ -17,7 +17,20 @@
     },
     "toolFailed": "ошибка",
     "answered": "{tool} · {choice}",
-    "working": "Работает…"
+    "working": "Работает…",
+    "thinking": "Думает",
+    "toolCalls": {
+      "one": "{count} вызов инструмента",
+      "few": "{count} вызова инструмента",
+      "many": "{count} вызовов инструмента",
+      "other": "{count} вызова инструмента"
+    },
+    "workedAt": {
+      "one": "Работал {duration} · {count} инструмент · {time}",
+      "few": "Работал {duration} · {count} инструмента · {time}",
+      "many": "Работал {duration} · {count} инструментов · {time}",
+      "other": "Работал {duration} · {count} инструмента · {time}"
+    }
   },
   "composer": {
     "placeholder": "Сообщение для {provider}…",

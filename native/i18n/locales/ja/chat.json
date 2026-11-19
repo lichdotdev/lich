@@ -14,7 +14,14 @@
     },
     "toolFailed": "失敗",
     "answered": "{tool} · {choice}",
-    "working": "作業中…"
+    "working": "作業中…",
+    "thinking": "思考中",
+    "toolCalls": {
+      "other": "ツール呼び出し{count}件"
+    },
+    "workedAt": {
+      "other": "{duration}作業 · ツール{count}件 · {time}"
+    }
   },
   "composer": {
     "placeholder": "{provider}へのメッセージ…",
