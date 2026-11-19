@@ -1,8 +1,6 @@
 package main
 
 import (
-	"gioui.org/widget"
-
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -10,9 +8,9 @@ import (
 // primitives keep none of their own.
 type contentState struct {
 	iconActions [2]ui.IconActionState
-	corners     [2]widget.Clickable
-	bars        [3]widget.Clickable
-	popoverRows [2]widget.Clickable
+	corners     [2]ui.Clickable
+	bars        [3]ui.Clickable
+	popoverRows [2]ui.Clickable
 }
 
 // panelPadX is the side padding a screen hands PanelNotice: the Pulls body's

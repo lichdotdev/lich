@@ -76,7 +76,7 @@ func (e MenuEntry) actionable() bool {
 }
 
 // MenuState is a menu's open state, owned by the caller like a
-// widget.Clickable.
+// Clickable.
 type MenuState struct {
 	open     bool
 	focus    bool
@@ -600,6 +600,7 @@ func (m menuCore) layoutPanel(gtx C, lv *menuLevel, entries []MenuEntry, minWidt
 			lv.rows = append(lv.rows, seen)
 		}
 		r.draw(gtx, rect)
+		menuHand(gtx, entries[i], rect)
 		if spot := entries[i].Spot; spot != nil {
 			at := op.Offset(rect.Min).Push(gtx.Ops)
 			spot(gtx, func(C) D { return D{Size: rect.Size()} })
@@ -608,6 +609,15 @@ func (m menuCore) layoutPanel(gtx C, lv *menuLevel, entries []MenuEntry, minWidt
 		y += r.height
 	}
 	return size
+}
+
+// menuHand puts the hand over an entry a click can choose.
+func menuHand(gtx C, e MenuEntry, rect image.Rectangle) {
+	if !e.actionable() {
+		return
+	}
+	defer clip.Rect(rect).Push(gtx.Ops).Pop()
+	HandCursor(gtx)
 }
 
 // menuScrollRange is how far one wheel event may move a panel.

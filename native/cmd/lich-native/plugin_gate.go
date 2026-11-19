@@ -9,7 +9,6 @@ import (
 
 	"gioui.org/font"
 	"gioui.org/layout"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
@@ -91,10 +90,10 @@ type pluginGate struct {
 	offer      []backend.PluginStatus
 	installing bool
 
-	picked                   map[string]*widget.Bool
-	rows                     map[string]*widget.Clickable
+	picked                   map[string]*ui.Bool
+	rows                     map[string]*ui.Clickable
 	dialog                   ui.DialogState
-	dontAsk, notNow, install widget.Clickable
+	dontAsk, notNow, install ui.Clickable
 }
 
 // pollPluginGate starts the check once the provider book has a stored default.
@@ -215,12 +214,12 @@ func (u *window) layoutPluginGate(gtx C, th *ui.Theme) {
 		offer = nil
 	}
 	if g.picked == nil {
-		g.picked, g.rows = map[string]*widget.Bool{}, map[string]*widget.Clickable{}
+		g.picked, g.rows = map[string]*ui.Bool{}, map[string]*ui.Clickable{}
 	}
 	var picked []string
 	for _, p := range offer {
 		if g.picked[p.Provider] == nil {
-			g.picked[p.Provider], g.rows[p.Provider] = &widget.Bool{Value: true}, new(widget.Clickable)
+			g.picked[p.Provider], g.rows[p.Provider] = ui.BoolOf(true), new(ui.Clickable)
 		}
 		if g.rows[p.Provider].Clicked(gtx) && !installing {
 			g.picked[p.Provider].Value = !g.picked[p.Provider].Value

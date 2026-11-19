@@ -507,6 +507,7 @@ func registerServices(db *store.Service, term *terminal.Service, chats *chat.Ser
 		}
 		return on
 	})
+	plans.SetBinary(func() string { return db.ProviderBin(providers.Claude, "") })
 	term.SetRateLimitReports(plans.ReportClaude)
 	routes.Quota(dispatcher, plans)
 	codexProfiles.SetAccount(func(slug string) (string, string) {

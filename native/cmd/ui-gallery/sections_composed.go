@@ -17,10 +17,10 @@ import (
 // composedState is the live state of the components the product composes
 // from the kit's primitives.
 type composedState struct {
-	emptyActions [4]widget.Clickable
+	emptyActions [4]ui.Clickable
 	sample       *ui.AvatarImage
 
-	skeletonButton widget.Clickable
+	skeletonButton ui.Clickable
 
 	picture *ui.ImageData
 

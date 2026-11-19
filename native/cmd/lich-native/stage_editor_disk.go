@@ -13,7 +13,6 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/unit"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/godemirror"
 	"github.com/lichdotdev/lich/native/i18n"
@@ -38,7 +37,7 @@ type diskWatch struct {
 	// theirs is the disk's text since the editor read the file, while the
 	// user holds changes of their own; nil while there is none.
 	theirs       *string
-	reload, keep widget.Clickable
+	reload, keep ui.Clickable
 }
 
 // recheck reads the file again on the next frame: a session wrote, the

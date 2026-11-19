@@ -8,14 +8,13 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/unit"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/ui"
 )
 
 // marksState is the live state of the marks section: the bell the dot sits on.
 type marksState struct {
-	bell widget.Clickable
+	bell ui.Clickable
 }
 
 // sized fixes w's box, for a widget that fills what it is given.

@@ -14,7 +14,6 @@ import (
 	"gioui.org/op"
 	"gioui.org/op/paint"
 	"gioui.org/unit"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/godemirror"
 
@@ -98,7 +97,7 @@ type extensionScreen struct {
 }
 
 // failedButtons are a surface's failed state's two ways on.
-type failedButtons struct{ restart, folder widget.Clickable }
+type failedButtons struct{ restart, folder ui.Clickable }
 
 type extensionFocus struct {
 	at  extensionKey

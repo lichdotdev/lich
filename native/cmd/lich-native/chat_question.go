@@ -12,6 +12,7 @@ import (
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
+	"github.com/lichdotdev/lich/native/ui"
 )
 
 // chatQuiz is the window's side of a question item while it waits: the ask on
@@ -24,11 +25,11 @@ type chatQuiz struct {
 	hot     int
 	answers []api.ChatAskAnswer
 	done    []bool
-	marks   [][]widget.Bool
-	rows    [][]widget.Clickable
+	marks   [][]ui.Bool
+	rows    [][]ui.Clickable
 	others  []widget.Editor
-	steps   []widget.Clickable
-	send    widget.Clickable
+	steps   []ui.Clickable
+	send    ui.Clickable
 	// moved asks for the focus to follow the step.
 	moved bool
 	// sent holds the card back from a second reply while the first is on its
@@ -44,11 +45,11 @@ func (v *chatView) quiz(id string, asks []api.ChatAsk) *chatQuiz {
 	q, ok := v.quizzes[id]
 	if !ok || !q.fits(asks) {
 		q = &chatQuiz{answers: make([]api.ChatAskAnswer, len(asks)), done: make([]bool, len(asks)),
-			marks: make([][]widget.Bool, len(asks)), rows: make([][]widget.Clickable, len(asks)),
-			others: make([]widget.Editor, len(asks)), steps: make([]widget.Clickable, len(asks))}
+			marks: make([][]ui.Bool, len(asks)), rows: make([][]ui.Clickable, len(asks)),
+			others: make([]widget.Editor, len(asks)), steps: make([]ui.Clickable, len(asks))}
 		for i, a := range asks {
-			q.marks[i] = make([]widget.Bool, len(a.Options))
-			q.rows[i] = make([]widget.Clickable, len(a.Options))
+			q.marks[i] = make([]ui.Bool, len(a.Options))
+			q.rows[i] = make([]ui.Clickable, len(a.Options))
 			q.others[i].Submit = true
 			q.others[i].SingleLine = len(a.Options) > 0
 		}

@@ -6,7 +6,6 @@ import (
 	"gioui.org/op"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
@@ -20,17 +19,17 @@ var (
 // toggleCheckboxFill is dark:bg-input/30.
 const toggleCheckboxFill = 0.3
 
-// CheckboxStyle draws a shadcn Checkbox around a caller-owned widget.Bool.
+// CheckboxStyle draws a shadcn Checkbox around a caller-owned Bool.
 // shadow-xs is not drawn: a 5% black shadow is below what the dark canvas
 // can show.
 type CheckboxStyle struct {
-	Checked  *widget.Bool
+	Checked  *Bool
 	Disabled bool
 	theme    *Theme
 }
 
 // Checkbox is an unchecked, enabled checkbox.
-func (th *Theme) Checkbox(checked *widget.Bool) CheckboxStyle {
+func (th *Theme) Checkbox(checked *Bool) CheckboxStyle {
 	return CheckboxStyle{Checked: checked, theme: th}
 }
 
@@ -48,7 +47,7 @@ func (c CheckboxStyle) draw(gtx C) D {
 	px := gtx.Dp(toggleCheckboxSize)
 	size := image.Pt(px, px)
 	checked := c.Checked.Value
-	focused := !c.Disabled && gtx.Focused(c.Checked)
+	focused := !c.Disabled && c.Checked.Focused(gtx)
 
 	// The fill runs under the border, which lands on it.
 	bg := th.Over(Alpha(p.Input, toggleCheckboxFill))

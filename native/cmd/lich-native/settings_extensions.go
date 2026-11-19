@@ -90,9 +90,9 @@ func (t extensionTasks) errorAt(at string) string {
 // extensionRowState is one installed row's hover, its menu and its controls.
 type extensionRowState struct {
 	hover          gesture.Hover
-	restart, more  widget.Clickable
-	update, remove widget.Clickable
-	open           widget.Clickable
+	restart, more  ui.Clickable
+	update, remove ui.Clickable
+	open           ui.Clickable
 	menu, context  ui.MenuState
 	moreTip, state ui.Tooltip
 }
@@ -105,20 +105,20 @@ type extensionsSettings struct {
 	grid    catalogGrid
 	// view is the tab showing, extensionsViewCatalog each time the section opens.
 	view         ui.TabsState
-	installFrom  widget.Clickable
+	installFrom  ui.Clickable
 	installPanel ui.DropdownPanelState
 
 	url                     widget.Editor
-	choose, install, folder widget.Clickable
-	check                   widget.Clickable
+	choose, install, folder ui.Clickable
+	check                   ui.Clickable
 	rows                    map[string]*extensionRowState
 	icons                   map[string]*icons.Icon
 
 	installDialog, removeDialog ui.DialogState
-	cancel, confirm             [2]widget.Clickable
+	cancel, confirm             [2]ui.Clickable
 	// deleteData is the remove confirmation's box, unticked each time it opens.
-	deleteData      widget.Bool
-	deleteDataLabel widget.Clickable
+	deleteData      ui.Bool
+	deleteDataLabel ui.Clickable
 
 	mu    sync.Mutex
 	tasks extensionTasks

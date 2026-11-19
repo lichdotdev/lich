@@ -86,12 +86,12 @@ type pullsScreen struct {
 	keyed  bool
 
 	query      widget.Editor
-	clearQuery widget.Clickable
+	clearQuery ui.Clickable
 	stateMenu  ui.MenuState
-	stateClick widget.Clickable
-	create     widget.Clickable
+	stateClick ui.Clickable
+	create     ui.Clickable
 	rows       widget.List
-	rowClicks  map[int]*widget.Clickable
+	rowClicks  map[int]*ui.Clickable
 
 	view    pullView
 	account accountPicker
@@ -142,7 +142,7 @@ func (p *pullsScreen) prCheckout(d backend.PRDetail) string {
 }
 
 func newPullsScreen(store *pullsStore, root *ui.Root) *pullsScreen {
-	p := &pullsScreen{store: store, root: root, state: pullsOpen, rowClicks: map[int]*widget.Clickable{}, tour: new(driver.Tour)}
+	p := &pullsScreen{store: store, root: root, state: pullsOpen, rowClicks: map[int]*ui.Clickable{}, tour: new(driver.Tour)}
 	p.rows.Axis = layout.Vertical
 	p.view.init()
 	p.view.root = root

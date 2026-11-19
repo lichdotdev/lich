@@ -6,7 +6,6 @@ import (
 
 	"gioui.org/io/event"
 	"gioui.org/io/key"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
@@ -30,7 +29,7 @@ type hotkeyEditor struct {
 
 // hotkeyRow is one action's controls.
 type hotkeyRow struct {
-	hover, capture, unassign, reset widget.Clickable
+	hover, capture, unassign, reset ui.Clickable
 	unassignTip, resetTip           ui.Tooltip
 	tag                             bool // the capture button's key event tag
 	// held is whether the capture button has had the focus since the

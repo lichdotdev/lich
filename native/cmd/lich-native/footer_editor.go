@@ -5,7 +5,6 @@ import (
 	"slices"
 
 	"gioui.org/layout"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
@@ -33,7 +32,7 @@ const placeholderOpacity = 0.3
 // layout editor and the preview under it.
 type footerEditor struct {
 	sortable ui.Sortable
-	restore  widget.Clickable
+	restore  ui.Clickable
 }
 
 // editorState is the row's description, and whether the editor takes no

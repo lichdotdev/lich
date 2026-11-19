@@ -8,7 +8,6 @@ import (
 	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/op"
-	"gioui.org/widget"
 	"gioui.org/x/richtext"
 	"github.com/yuin/goldmark/ast"
 	extast "github.com/yuin/goldmark/extension/ast"
@@ -24,7 +23,7 @@ type markdownListItem struct {
 	marker markdownCell
 	// task is a task list item's box, drawn in the marker's place; nil
 	// for any other item.
-	task   *widget.Bool
+	task   *ui.Bool
 	blocks []markdownBlock
 }
 
@@ -41,7 +40,7 @@ func renderList(th *ui.Theme, source []byte, list *ast.List, fg color.NRGBA) *ma
 			Font: font.Font{Typeface: th.Sans}, Size: BodySize, Color: fg, Content: marker,
 		}}}}
 		if box := taskCheckBox(item); box != nil {
-			entry.task = &widget.Bool{Value: box.IsChecked}
+			entry.task = ui.BoolOf(box.IsChecked)
 		}
 		for child := item.FirstChild(); child != nil; child = child.NextSibling() {
 			if block, ok := renderBlock(th, source, child, fg); ok {

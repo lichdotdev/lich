@@ -38,12 +38,12 @@ type servicesSettings struct {
 	editing  string // a service id, newServiceRow, or "" for none
 	name     widget.Editor
 	command  widget.Editor
-	withLich widget.Bool
-	save     widget.Clickable
-	cancel   widget.Clickable
-	add      widget.Clickable
-	edits    map[string]*widget.Clickable
-	deletes  map[string]*widget.Clickable
+	withLich ui.Bool
+	save     ui.Clickable
+	cancel   ui.Clickable
+	add      ui.Clickable
+	edits    map[string]*ui.Clickable
+	deletes  map[string]*ui.Clickable
 
 	mu     sync.Mutex
 	saving bool
@@ -81,7 +81,7 @@ func (p *servicesSettings) setErr(text string) {
 func (s *settingsScreen) servicesPaneRows(th *ui.Theme) []layout.Widget {
 	p := &s.services
 	if p.edits == nil {
-		p.edits, p.deletes = map[string]*widget.Clickable{}, map[string]*widget.Clickable{}
+		p.edits, p.deletes = map[string]*ui.Clickable{}, map[string]*ui.Clickable{}
 	}
 	desc := i18n.T("settings.servicesSettings.description")
 	if s.scope == "" {

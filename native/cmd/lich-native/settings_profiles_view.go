@@ -5,7 +5,6 @@ import (
 
 	"gioui.org/font"
 	"gioui.org/layout"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
@@ -101,7 +100,7 @@ func (s *settingsScreen) profilePicker(gtx C, th *ui.Theme, c *profileSettings, 
 // checked when chosen.
 func (s *settingsScreen) profileOption(gtx C, th *ui.Theme, c *profileSettings, p backend.Profile, chosen bool) D {
 	if c.options == nil {
-		c.options = map[string]*widget.Clickable{}
+		c.options = map[string]*ui.Clickable{}
 	}
 	click := clickableOf(c.options, p.Slug)
 	if click.Clicked(gtx) {

@@ -58,7 +58,7 @@ func layoutAt(w layout.Widget, minX, maxX int) layout.Dimensions {
 }
 
 func TestButtonSizes(t *testing.T) {
-	th, click, ic := testTheme(), new(widget.Clickable), icons.Lucide("plus")
+	th, click, ic := testTheme(), new(Clickable), icons.Lucide("plus")
 	cases := []struct {
 		size Size
 		h    int
@@ -78,7 +78,7 @@ func TestButtonSizes(t *testing.T) {
 }
 
 func TestButtonFillsMinimumWidth(t *testing.T) {
-	b := testTheme().Button(new(widget.Clickable), "Shell")
+	b := testTheme().Button(new(Clickable), "Shell")
 	if d := layoutAt(b.Layout, 200, 200); d.Size.X != 200 {
 		t.Errorf("w-full: got width %d, want 200", d.Size.X)
 	}
@@ -87,7 +87,7 @@ func TestButtonFillsMinimumWidth(t *testing.T) {
 // w-full inside a flex gives a minimum below the maximum: the padding is part
 // of that width, not on top of it.
 func TestButtonMinimumWidthBelowMaximumIsTheWidth(t *testing.T) {
-	b := testTheme().Button(new(widget.Clickable), "Shell")
+	b := testTheme().Button(new(Clickable), "Shell")
 	if d := layoutAt(b.Layout, 200, 500); d.Size.X != 200 {
 		t.Errorf("got width %d under a 200 minimum, want 200", d.Size.X)
 	}
@@ -112,7 +112,7 @@ func TestButtonVariantFillsAreTheBrowsersColors(t *testing.T) {
 		{"default disabled:opacity-50", VariantDefault, false, true, color.NRGBA{R: 122, G: 122, B: 124, A: 255}},
 	}
 	for _, tc := range cases {
-		b := th.Button(new(widget.Clickable), "Shell")
+		b := th.Button(new(Clickable), "Shell")
 		b.Variant, b.Disabled = tc.variant, tc.disabled
 		img := toggleRender(t, image.Pt(80, 36), time.Time{}, func(gtx C) D { return b.draw(gtx, tc.hovered) })
 		if !toggleIs(img, image.Pt(4, 18), tc.want) {
@@ -124,7 +124,7 @@ func TestButtonVariantFillsAreTheBrowsersColors(t *testing.T) {
 // border-input is on the page, not on the fill: bg-clip-padding stops the fill
 // short of it. A whole pixel row, not half of two.
 func TestButtonOutlineBorderIsInputOverThePage(t *testing.T) {
-	b := testTheme().Button(new(widget.Clickable), "Shell")
+	b := testTheme().Button(new(Clickable), "Shell")
 	b.Variant = VariantOutline
 	img := toggleRender(t, image.Pt(80, 36), time.Time{}, func(gtx C) D { return b.draw(gtx, false) })
 	want := color.NRGBA{R: 52, G: 52, B: 53, A: 255}

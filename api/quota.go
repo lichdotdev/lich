@@ -4,6 +4,33 @@ var (
 	QuotaPlans            = define[QuotaPlansOptions, []QuotaPlan]("quota.Plans")
 	QuotaProfilePlan      = define[ProfilePlanOptions, QuotaPlan]("quota.ProfilePlan")
 	QuotaCodexProfilePlan = define[ProfilePlanOptions, QuotaPlan]("quota.CodexProfilePlan")
+	QuotaUseReset         = define[UseResetOptions, UseResetResult]("quota.UseReset")
+)
+
+// UseResetOptions names the Claude Code profile ("personal" for the machine's
+// own) and the grant of limit resets (QuotaReset.ID) to spend one of.
+type UseResetOptions struct {
+	Profile string `json:"profile"`
+	GrantID string `json:"grantId"`
+}
+
+// UseResetResult is how the provider answered, one of the UseReset* statuses.
+// CooldownUntil is RFC 3339 and only set with UseResetCooldown, when the
+// provider said when to try again.
+type UseResetResult struct {
+	Status        string `json:"status"`
+	CooldownUntil string `json:"cooldownUntil,omitempty"`
+}
+
+// What a spend can come back as. Reset and AlreadyUsed both mean the limit is
+// cleared (the second is the same request answered twice); the rest cleared
+// nothing.
+const (
+	UseResetReset       = "reset"
+	UseResetAlreadyUsed = "already_used"
+	UseResetNotLimited  = "not_limited"
+	UseResetIneligible  = "ineligible"
+	UseResetCooldown    = "cooldown"
 )
 
 // QuotaPlansOptions names the session whose account's plans are read; ""
@@ -49,18 +76,22 @@ type QuotaPlan struct {
 	Status string       `json:"status"`
 }
 
-// QuotaReset is one grant of limit resets. Kind names a grant lich names itself
+// QuotaReset is one grant of limit resets. ID is the provider's own, what a
+// spend names. Clears says which limits a reset of it clears, as the
+// QuotaClears* names. Kind names a grant lich names itself
 // (QuotaResetFull), which the window translates; Label is the provider's own
 // name for the rest, shown verbatim (a model a grant is scoped to, or the
 // grant's own text); empty when Kind is set. Left is how many resets remain,
 // EndsAt when the grant lapses, RFC 3339. Held is a grant that cannot be spent
 // now: paused, or not usable at the moment.
 type QuotaReset struct {
-	Kind   string `json:"kind,omitempty"`
-	Label  string `json:"label,omitempty"`
-	Left   int    `json:"left"`
-	EndsAt string `json:"endsAt"`
-	Held   bool   `json:"held,omitempty"`
+	ID     string   `json:"id"`
+	Clears []string `json:"clears,omitempty"`
+	Kind   string   `json:"kind,omitempty"`
+	Label  string   `json:"label,omitempty"`
+	Left   int      `json:"left"`
+	EndsAt string   `json:"endsAt"`
+	Held   bool     `json:"held,omitempty"`
 }
 
 // QuotaExtra is the spend past a plan's windows, in the currency's minor units
@@ -111,3 +142,11 @@ const (
 // QuotaResetFull is a grant that clears the weekly window too, not only a
 // scoped one.
 const QuotaResetFull = "full"
+
+// The limits a reset can clear: the five-hour window, the weekly one and the
+// weekly cap of a model.
+const (
+	QuotaClearsSession = "session"
+	QuotaClearsWeekly  = "weekly"
+	QuotaClearsModel   = "model"
+)

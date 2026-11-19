@@ -36,7 +36,7 @@ var (
 // brokenRowState is one broken theme's row: its hover and its Remove.
 type brokenRowState struct {
 	hover  gesture.Hover
-	remove widget.Clickable
+	remove ui.Clickable
 }
 
 func brokenRowOf(rows map[string]*brokenRowState, id string) *brokenRowState {
@@ -63,8 +63,8 @@ type themePicker struct {
 	root    *ui.Root
 
 	open         bool
-	trigger      widget.Clickable
-	check        widget.Clickable
+	trigger      ui.Clickable
+	check        ui.Clickable
 	strip        widget.List
 	importCard   themeCard
 	systemCard   themeCard

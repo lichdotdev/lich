@@ -8,7 +8,6 @@ import (
 	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/op"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
@@ -168,7 +167,7 @@ func (s *settingsScreen) providerPicker(gtx C, th *ui.Theme, m providersMachine,
 func (s *settingsScreen) providerOption(gtx C, th *ui.Theme, p providerInfo, chosen bool) D {
 	pr := &s.providers
 	if pr.options == nil {
-		pr.options = map[string]*widget.Clickable{}
+		pr.options = map[string]*ui.Clickable{}
 	}
 	click := clickableOf(pr.options, p.id)
 	if click.Clicked(gtx) {
@@ -564,7 +563,7 @@ func (s *settingsScreen) restoreBlock(gtx C, th *ui.Theme, values scopedValues, 
 // ladderBlock is a global-only choice of one rung: the segmented control, and
 // under it what the chosen rung means. read answers the chosen rung after the
 // click is chosen, so a rung written straight through draws where it went.
-func (s *settingsScreen) ladderBlock(gtx C, th *ui.Theme, r settingRow, first bool, enum *widget.Enum,
+func (s *settingsScreen) ladderBlock(gtx C, th *ui.Theme, r settingRow, first bool, enum *ui.Enum,
 	rungs []ladderRung, read func(providersMachine) string, choose func(next string)) D {
 	if r.kind == rowGlobalOnly {
 		return r.layout(gtx, th, first, nil)

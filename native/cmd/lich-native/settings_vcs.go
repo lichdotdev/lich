@@ -5,7 +5,6 @@ import (
 	"sync"
 
 	"gioui.org/layout"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
@@ -62,10 +61,10 @@ type vcsSettings struct {
 	checking    bool
 	recheckErr  string
 
-	recheck widget.Clickable
-	install map[string]*widget.Clickable
+	recheck ui.Clickable
+	install map[string]*ui.Clickable
 	picker  ui.DropdownPanelState
-	options map[string]*widget.Clickable
+	options map[string]*ui.Clickable
 }
 
 // revalidate has the next draw read everything again.
@@ -222,7 +221,7 @@ func (s *settingsScreen) vcsToolRow(gtx C, th *ui.Theme, t vcsTool) D {
 	c, known := v.check(t.bin)
 	gone := known && c.Failed()
 	if v.install == nil {
-		v.install = map[string]*widget.Clickable{}
+		v.install = map[string]*ui.Clickable{}
 	}
 	install := clickableOf(v.install, t.bin)
 	if install.Clicked(gtx) {

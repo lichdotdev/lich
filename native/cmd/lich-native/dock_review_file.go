@@ -8,7 +8,6 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/unit"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/godemirror"
 	"github.com/lichdotdev/lich/native/i18n"
@@ -54,9 +53,9 @@ type fileCard struct {
 	blocks       diffview.Blocks
 	headerHeight int
 
-	toggle          widget.Clickable
+	toggle          ui.Clickable
 	attach, discard ui.IconActionState
-	resolve         widget.Clickable
+	resolve         ui.Clickable
 	preview         ui.IconActionState
 	menu            ui.MenuState
 	composer        commentComposer

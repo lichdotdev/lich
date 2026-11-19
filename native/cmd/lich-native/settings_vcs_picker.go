@@ -7,7 +7,6 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
@@ -159,7 +158,7 @@ func (s *settingsScreen) vcsPicker(gtx C, th *ui.Theme, project, stored string, 
 func (s *settingsScreen) vcsOption(gtx C, th *ui.Theme, project, value, label string, chosen bool) D {
 	v := &s.vcs
 	if v.options == nil {
-		v.options = map[string]*widget.Clickable{}
+		v.options = map[string]*ui.Clickable{}
 	}
 	click := clickableOf(v.options, value)
 	if click.Clicked(gtx) {

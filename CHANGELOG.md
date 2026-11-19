@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Hover the profile at the foot of the sidebar to see what its account has spent.** The tooltip shows each window the provider reports as a bar with its reset, says "Runs out in 1d 9h" when a weekly window is on course to run out first, and adds Claude Code's spend past the plan and its limit resets, and Codex's reset credits, where the account has them. The plan usage tooltip in the footer shows the same blocks.
+- **Click the profile at the foot of the sidebar to see what its account has spent, and use a limit reset from there.** The panel shows each window the provider reports as a bar with its reset, says "Runs out in 1d 9h" when a weekly window is on course to run out first, and adds Claude Code's spend past the plan and its limit resets, with a Use button that asks before it spends one, and Codex's reset credits, where the account has them. The profiles you switch between sit under it, and the plan usage tooltip in the footer shows the same blocks.
 - **Talk to an agent in a chat instead of its terminal.** The GUI | TUI switch, at the right of the strip over a session's terminal or of a split pane's header, moves the conversation between the two, once the agent is between turns. The chat shows who speaks, a shimmer and a running clock on what the agent is doing and its tool calls hung under their turn, asks for permissions inline, takes the agent's questions in a card where it stopped (a click on a choice answers, Esc declines, a message sent instead declines them) and shows when each message was sent and ends the last turn with a line that says how it ended and how many files and lines it changed, a click away from Review; a searchable model and effort picker and a mode menu sit in the message box, with the branch and the changes count under it. Links are underlined, and a path or a github.com link in an answer wears a file, folder or GitHub mark.
 - **Draw rectangles, ellipses and arrows on a browser page.** Turn on Draw, choose a shape from the outlined tool button, and drag to place it.
 - **The collapsed sidebar and dock come out when you point at them.** Rest the pointer on the sidebar's rail, or touch the window's right edge with the dock collapsed by its new collapse button, and the panel opens over the terminal without resizing it; it goes back when the pointer leaves.
@@ -34,6 +34,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Everything you can click shows the hand.** Buttons, tabs, rows, menu items, checkboxes, switches and links now change the pointer on hover; a disabled control keeps the arrow.
+- **Only the terminal that takes your keys draws a full cursor.** In a split the other panes, and every terminal while the window is out of focus, show the cursor as an outline.
 - **Clicks in the session browser keep waiting for their requests when the system clock changes.**
 - **The window startup error now points to the native window log.** That log contains the window process's error when it exits before opening.
 - **A message to a Claude Code session that just opened is no longer left unsent on its prompt.**

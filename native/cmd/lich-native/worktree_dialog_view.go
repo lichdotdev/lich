@@ -11,7 +11,6 @@ import (
 	"gioui.org/io/key"
 	"gioui.org/layout"
 	"gioui.org/unit"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
@@ -333,7 +332,7 @@ func (d *worktreeDialog) branchRow(gtx C, th *ui.Theme, ctx context.Context, r w
 			th.Text(ui.TextXS, r.heading).Muted().Weight(font.SemiBold).Layout)
 	}
 	if d.rows == nil {
-		d.rows = map[string]*widget.Clickable{}
+		d.rows = map[string]*ui.Clickable{}
 	}
 	click := clickableOf(d.rows, r.value)
 	if click.Clicked(gtx) {

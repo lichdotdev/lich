@@ -28,7 +28,10 @@ type claudeDriver struct {
 	// blocks counts the assistant lines each message id has written: Claude
 	// Code writes one line per content block, in order, so the nth line is
 	// block n, the index its stream events used.
-	blocks      map[string]int
+	blocks map[string]int
+	// held is the start of an answer's text that could still be claudeNoResponse,
+	// kept from the window until it is not.
+	held        map[string]string
 	interrupted bool
 	run         claudeRunning
 }
@@ -42,7 +45,7 @@ type claudeControl struct {
 }
 
 func newClaudeDriver(c *chatSession, lang prompt.Lang) *claudeDriver {
-	return &claudeDriver{c: c, lang: lang, calls: map[string]chan claudeControl{}, blocks: map[string]int{}}
+	return &claudeDriver{c: c, lang: lang, calls: map[string]chan claudeControl{}, blocks: map[string]int{}, held: map[string]string{}}
 }
 
 // claudeLine is every field lich reads off one line Claude Code writes, of any
@@ -245,8 +248,12 @@ func (d *claudeDriver) stream(line claudeLine) {
 	switch {
 	case line.Event.Type != "content_block_delta":
 	case delta.Type == "text_delta" && delta.Text != "":
+		text, held := d.hold(id, delta.Text)
+		if held {
+			return
+		}
 		model, effort := d.producer("", false)
-		d.c.conv.update(id, api.ItemAgent, false, func(it *api.ChatItem) { it.Text += delta.Text; attribute(it, model, effort) })
+		d.c.conv.update(id, api.ItemAgent, false, func(it *api.ChatItem) { it.Text += text; attribute(it, model, effort) })
 	case delta.Type == "thinking_delta" && delta.Thinking != "":
 		model, effort := d.producer("", false)
 		d.c.conv.update(id, api.ItemThought, false, func(it *api.ChatItem) {
@@ -273,6 +280,10 @@ func readClaudeAssistant(c *chatSession, d *claudeDriver, line claudeLine, histo
 		id := fmt.Sprintf("%s/%d", line.Message.ID, index)
 		switch b.Type {
 		case "text":
+			if b.Text == claudeNoResponse {
+				d.drop(id)
+				continue
+			}
 			c.conv.put(api.ChatItem{ID: id, Kind: api.ItemAgent, Text: b.Text, At: stamp(line.Timestamp), Model: model, Effort: effort}, true)
 		case "thinking":
 			if b.Thinking != "" {
@@ -313,6 +324,9 @@ func isInterruptMarker(text string) bool {
 func readClaudeUser(c *chatSession, line claudeLine, history bool) {
 	var text string
 	if json.Unmarshal(line.Message.Content, &text) == nil {
+		if localCommand(c, text) {
+			return
+		}
 		// Live, the person's message is already an item: lich wrote it.
 		if history && !isInterruptMarker(text) {
 			c.conv.userMessage(text)
@@ -343,6 +357,7 @@ func readClaudeUser(c *chatSession, line claudeLine, history bool) {
 				}
 				it.Tool.Output = shorten(blockText(b.Content))
 			})
+		case b.Type == "text" && localCommand(c, b.Text):
 		case b.Type == "text" && history && !isInterruptMarker(b.Text):
 			c.conv.userMessage(b.Text)
 		}
@@ -462,4 +477,33 @@ func claudeTool(name string, raw json.RawMessage) api.ChatToolCall {
 		tool.Diff = unifiedDiff(path, "", content)
 	}
 	return tool
+}
+
+// hold keeps the first words of an answer from the window while they could be
+// the whole of claudeNoResponse, which a stream gives a few characters at a
+// time. It returns what to add to the item, and true while to wait.
+func (d *claudeDriver) hold(id, delta string) (string, bool) {
+	if _, begun := d.c.conv.get(id); begun {
+		return delta, false
+	}
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	text := d.held[id] + delta
+	if strings.HasPrefix(claudeNoResponse, text) {
+		d.held[id] = text
+		return "", true
+	}
+	delete(d.held, id)
+	return text, false
+}
+
+// drop forgets what a held answer collected: the message turned out to be
+// claudeNoResponse.
+func (d *claudeDriver) drop(id string) {
+	if d == nil {
+		return
+	}
+	d.mu.Lock()
+	delete(d.held, id)
+	d.mu.Unlock()
 }

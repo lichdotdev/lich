@@ -7,13 +7,12 @@ import (
 
 	"gioui.org/io/pointer"
 	"gioui.org/layout"
-	"gioui.org/widget"
 )
 
 // A hovered panel row lights its whole width, corners included: a rounded
 // fill set in from the sides showed its corners against a panel's seams.
 func TestPanelRowHoverFillsTheWholeRow(t *testing.T) {
-	th, click := testTheme(), new(widget.Clickable)
+	th, click := testTheme(), new(Clickable)
 	const w, h = 200, 40
 	rig := newInputRig(t, w, h, func(gtx layout.Context) layout.Dimensions {
 		return th.PanelRow(gtx, click, true, Space(2), Space(1.5), func(gtx C, _ *Theme) D { return D{Size: image.Pt(0, h-16)} })

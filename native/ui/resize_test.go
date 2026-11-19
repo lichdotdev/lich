@@ -9,7 +9,6 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/unit"
-	"gioui.org/widget"
 )
 
 // resizeRig is a panel whose width the handle on its edge drives, laid out
@@ -128,7 +127,7 @@ func TestResizeHandleIgnoresAPressOffTheStrip(t *testing.T) {
 
 func TestChipClickKeepsTheFocusWhereItWas(t *testing.T) {
 	var r motionRig
-	var click widget.Clickable
+	var click Clickable
 	clicked, th := false, testTheme()
 	chip := func(gtx C) D {
 		clicked = clicked || click.Clicked(gtx)
@@ -137,7 +136,7 @@ func TestChipClickKeepsTheFocusWhereItWas(t *testing.T) {
 	r.frame(chip)
 	r.click(image.Pt(5, 5))
 	r.frame(chip)
-	focused := layout.Context{Source: r.router.Source()}.Focused(&click)
+	focused := click.Focused(layout.Context{Source: r.router.Source()})
 	if !clicked || focused {
 		t.Errorf("click: clicked %v focused %v, want a click and no focus", clicked, focused)
 	}

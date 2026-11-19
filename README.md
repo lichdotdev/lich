@@ -140,6 +140,7 @@ what lich can read back out of it, since each CLI records different things.
 | A conversation branched inside the agent's own terminal is billed once for the history it copies | yes, unless the cost is the one Claude Code measured itself | no | no cost readout | yes | yes, except a turn saved without a response id | cannot branch | no cost readout | no cost readout |
 | How much of your plan is left | yes | yes | yes | OpenCode Go only | no | no | yes | no |
 | What you have spent past your plan, and its cap, in the usage tooltip | yes | no | no | no | no | no | no | no |
+| Use a limit reset your plan grants, from the profile panel in the sidebar | yes | no | no | no | no | no | no | no |
 | The on-demand resets your account holds, in the usage tooltip | no | yes | no | no | no | no | no | no |
 | A turn your plan's usage limit stopped picks up again once the limit resets | yes | yes | no | its own retries | its own retries | no | no | no |
 | When another of your profiles still has quota, a notice offers to continue there at once | yes | yes | no | no | no | no | no | no |

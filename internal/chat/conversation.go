@@ -25,6 +25,9 @@ type conversation struct {
 	index   map[string]int
 	turn    int
 	notices int
+	// command is the notice of the last local command, which its output
+	// completes if it comes next; any other item ends it.
+	command string
 	// quiet holds the window's copy back while a resumed conversation is
 	// replayed: those items are the history, which the window asks for once.
 	quiet bool
@@ -101,6 +104,7 @@ func (c *conversation) put(item api.ChatItem, final bool) {
 		c.items[i] = item
 	} else {
 		item.Turn = c.turn
+		c.command = ""
 		if item.At == 0 {
 			item.At = c.now().UnixMilli()
 		}
@@ -187,4 +191,33 @@ func attribute(it *api.ChatItem, model, effort string) {
 	if it.Model == "" && it.Effort == "" {
 		it.Model, it.Effort = model, effort
 	}
+}
+
+// commandNotice adds the line of a local command the agent's CLI ran.
+func (c *conversation) commandNotice(cmd string) {
+	c.mu.Lock()
+	c.notices++
+	id := "notice-" + strconv.Itoa(c.notices)
+	c.mu.Unlock()
+	c.put(api.ChatItem{ID: id, Kind: api.ItemNotice, Text: cmd}, true)
+	c.mu.Lock()
+	c.command = id
+	c.mu.Unlock()
+}
+
+// commandOutput puts what a local command printed on the command's own line,
+// or on a line of its own when no command came before it.
+func (c *conversation) commandOutput(out string) {
+	c.mu.Lock()
+	id := c.command
+	c.command = ""
+	c.mu.Unlock()
+	if out == "" {
+		return
+	}
+	if id == "" {
+		c.notice(out)
+		return
+	}
+	c.update(id, api.ItemNotice, true, func(it *api.ChatItem) { it.Text += " · " + out })
 }

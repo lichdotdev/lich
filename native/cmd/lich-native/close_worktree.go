@@ -6,7 +6,6 @@ import (
 	"sync"
 
 	"gioui.org/layout"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
@@ -60,7 +59,7 @@ type closeWorktreeConfirm struct {
 	project         backend.Project
 	path            string
 	adopted, dirty  bool
-	cancel, confirm widget.Clickable
+	cancel, confirm ui.Clickable
 }
 
 func (c *closeWorktreeConfirm) ask(project backend.Project, path string, adopted, dirty bool) {

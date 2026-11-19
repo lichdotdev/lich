@@ -7,8 +7,6 @@ import (
 	"strings"
 	"sync"
 
-	"gioui.org/widget"
-
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
@@ -144,15 +142,15 @@ type sandboxSettings struct {
 	mu      sync.Mutex
 	machine sandboxMachine
 
-	rungs   map[string]*widget.Enum
+	rungs   map[string]*ui.Enum
 	ssh, gh ui.SwitchState
 	// change is the loosening the dialog asks about while asking; it stays
 	// after an answer so the closing dialog keeps its text.
 	change  rungChange
 	asking  bool
 	dialog  ui.DialogState
-	cancel  widget.Clickable
-	confirm widget.Clickable
+	cancel  ui.Clickable
+	confirm ui.Clickable
 }
 
 // rungChange is a loosening waiting on its confirmation.

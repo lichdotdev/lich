@@ -11,7 +11,6 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/unit"
-	"gioui.org/widget"
 )
 
 // motionRig lays one widget out per frame on a clock it owns.
@@ -42,7 +41,7 @@ func (r *motionRig) click(p image.Point) {
 
 // clickBox is a 100x80 clickable that counts its clicks.
 type clickBox struct {
-	click  widget.Clickable
+	click  Clickable
 	clicks int
 }
 

@@ -103,7 +103,7 @@ type reviewPanel struct {
 	pendingDiscard *patchFile
 	discardShown   patchFile
 	dialog         ui.DialogState
-	confirm, back  widget.Clickable
+	confirm, back  ui.Clickable
 
 	mu      sync.Mutex
 	answers []gapAnswer
@@ -129,7 +129,7 @@ type prFiles struct {
 	// viewed is each ticked file's diff text when it was ticked: a commit
 	// that changes the file unticks it, one that does not leaves it.
 	viewed map[string]string
-	ticks  map[string]*widget.Bool
+	ticks  map[string]*ui.Bool
 	// toReview files a line comment into the PR's pending review.
 	toReview func(path, lines, body string)
 	// own is the account's own pull request, which takes no line comment.

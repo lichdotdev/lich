@@ -37,13 +37,13 @@ type threadResolve struct {
 // submitState is the review dialog: the verdict it sends, open while set.
 type submitState struct {
 	menu    ui.MenuState
-	click   widget.Clickable
+	click   ui.Clickable
 	verdict string
 	dialog  ui.DialogState
 	summary widget.Editor
 	fit     ui.TextareaResize
-	send    widget.Clickable
-	cancel  widget.Clickable
+	send    ui.Clickable
+	cancel  ui.Clickable
 }
 
 // reviewVerdicts are the verdicts a review can carry: GitHub refuses the

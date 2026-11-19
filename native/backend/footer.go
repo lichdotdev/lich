@@ -16,6 +16,12 @@ type QuotaReset = api.QuotaReset
 
 type Attachment = api.DropAttachment
 
+// QuotaUseReset spends one reset of a grant of the Claude Code profile's
+// account (internal/quota UseReset).
+func (c *Client) QuotaUseReset(ctx context.Context, profile, grantID string) (api.UseResetResult, error) {
+	return callMethod(ctx, c, api.QuotaUseReset, api.UseResetOptions{Profile: profile, GrantID: grantID})
+}
+
 // QuotaPlans reads every metered plan for the account sessionID spends; ""
 // reads the machine's own login. The backend serves it from a five-minute
 // cache.

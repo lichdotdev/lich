@@ -5,7 +5,6 @@ import (
 
 	"gioui.org/layout"
 	"gioui.org/unit"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
@@ -19,8 +18,8 @@ const optInWidth unit.Dp = 512
 // notifyOptIn is NotificationsOptIn's dialog state.
 type notifyOptIn struct {
 	dialog ui.DialogState
-	no     widget.Clickable
-	yes    widget.Clickable
+	no     ui.Clickable
+	yes    ui.Clickable
 }
 
 // layoutNotifyOptIn draws NotificationsOptIn while the notifier asks: either

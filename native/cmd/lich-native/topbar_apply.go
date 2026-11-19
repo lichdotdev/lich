@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"gioui.org/layout"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
@@ -19,8 +18,8 @@ type closeConfirm struct {
 	id      string
 	name    string
 	running int
-	cancel  widget.Clickable
-	confirm widget.Clickable
+	cancel  ui.Clickable
+	confirm ui.Clickable
 }
 
 // layoutConfirm draws the dialog and answers the project its button closes,

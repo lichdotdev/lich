@@ -4,10 +4,13 @@ import (
 	"image"
 	"image/color"
 	"slices"
+	"strconv"
 	"strings"
 
+	"gioui.org/io/pointer"
 	"gioui.org/layout"
 	"gioui.org/op"
+	"gioui.org/op/clip"
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
@@ -17,9 +20,10 @@ import (
 )
 
 var (
-	icEffort = icons.Lucide("brain")
-	icMode   = icons.Lucide("shield-check")
-	icDanger = icons.Lucide("zap")
+	icEffort   = icons.Lucide("brain")
+	icFileDiff = icons.Lucide("file-diff")
+	icMode     = icons.Lucide("shield-check")
+	icDanger   = icons.Lucide("zap")
 )
 
 // The chips inside the box are the provider's: the attach "+", the model with
@@ -33,10 +37,17 @@ var (
 	// chatFootPad is the composer's inset around its chips, so their
 	// RadiusMD hover sits concentric in the box's RadiusLG.
 	chatFootPad = ui.Space(1.5)
-	// chatCrumbsTop and chatCrumbGlyph size the line under the box: a TextXS
-	// line with glyphs a step under the footer's.
-	chatCrumbsTop  = ui.Space(1.5)
+	// chatCrumbsPad is the room over the line, between the box and it, and
+	// under it, between it and the pane's island's bottom edge (over the
+	// composer's own pad). chatCrumbGlyph sizes the line's glyphs, a step
+	// under the footer's, on a TextXS line.
+	chatCrumbsPad  = ui.Space(2)
 	chatCrumbGlyph = ui.Space(3)
+	// chatChangesPadX and chatChangesPadY are the room the changes item's hover
+	// fill keeps round its text: a ghost button's, which the line's left side has
+	// none of to follow. The fill grows outward; the text does not move.
+	chatChangesPadX = ui.Space(1.5)
+	chatChangesPadY = ui.Space(1)
 )
 
 // chatCrumbGap is the space either side of the line's slash, in ui.Space units.
@@ -144,10 +155,27 @@ func (u *window) chatAction(gtx C, th *ui.Theme, p *chatPane, working bool) D {
 // chatCrumbs is the line under the composer's box, with no fill: at the left
 // the project, a slash and the branch, which opens the Git panel as its
 // balloon does, and at the right the changes item, which opens Review.
-func (u *window) chatCrumbs(gtx C, th *ui.Theme, sv sessionView, ft chatFooter) D {
-	f, in := u.footer, u.footer.shown
+func (u *window) chatCrumbs(gtx C, th *ui.Theme, sv sessionView, in footerInput, ft chatFooter) D {
+	f := u.footer
+	// The changes are there when there are some.
+	if in.git.Files == 0 {
+		ft.changes = nil
+	}
 	if ft.checkout == nil && ft.changes == nil {
 		return D{}
+	}
+	// The footer's clicks (the Git panel, Review) act on the session it
+	// follows. Another pane's items are the same text under widgets of their
+	// own, which take no click, so that pane cannot open the other's panel.
+	followed := sv.ID == f.shown.sessionID
+	suffix := ""
+	if !followed {
+		suffix = "@" + sv.ID
+		for _, s := range []*footerSlot{ft.checkout, ft.changes} {
+			if s != nil {
+				s.Pane = suffix
+			}
+		}
 	}
 	var left []layout.FlexChild
 	if ft.checkout != nil {
@@ -160,10 +188,10 @@ func (u *window) chatCrumbs(gtx C, th *ui.Theme, sv sessionView, ft chatFooter) 
 		if in.git.Branch != "" {
 			ic = icBranch
 		}
-		link := f.git != nil && in.inRepository()
-		left = append(left, layout.Rigid(func(gtx C) D { return f.crumb(gtx, th, "checkout", ic, *ft.checkout, link) }))
+		link := followed && f.git != nil && in.inRepository()
+		left = append(left, layout.Rigid(func(gtx C) D { return f.crumb(gtx, th, "checkout"+suffix, ic, *ft.checkout, link) }))
 	}
-	return layout.Inset{Top: chatCrumbsTop, Left: chatFootPad, Right: chatFootPad}.Layout(gtx, func(gtx C) D {
+	return layout.Inset{Top: chatCrumbsPad, Bottom: chatCrumbsPad, Left: chatFootPad, Right: chatFootPad}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Rigid(func(gtx C) D { return layout.Flex{Alignment: layout.Middle}.Layout(gtx, left...) }),
 			layout.Flexed(1, func(gtx C) D { return D{Size: image.Pt(gtx.Constraints.Max.X, 0)} }),
@@ -171,7 +199,7 @@ func (u *window) chatCrumbs(gtx C, th *ui.Theme, sv sessionView, ft chatFooter) 
 				if ft.changes == nil {
 					return D{}
 				}
-				return f.slot(gtx, th, *ft.changes, in)
+				return f.crumbChanges(gtx, th, *ft.changes, in.git, followed)
 			}),
 		)
 	})
@@ -198,6 +226,55 @@ func (f *footer) crumb(gtx C, th *ui.Theme, id string, ic icons.Glyph, s footerS
 	}
 	return f.tour.Anchor(gtx, worktreesBranch, func(gtx C) D {
 		return th.Tooltip(f.root, &w.tip, s.Hint).Layout(gtx, func(gtx C) D { return w.click.Layout(gtx, body) })
+	})
+}
+
+// crumbChanges is the changes at the right of the line, in the style of the
+// left: a small diff glyph, the file count and the line counts in TextXS, with
+// no fill at rest and the kit's hover fill under the pointer. Its click opens
+// Review, for the session the footer follows. It is never drawn pressed, as the Review button of the footer is
+// while the dock shows Review: on this line a lit item reads as a button
+// switched on for no reason.
+func (f *footer) crumbChanges(gtx C, th *ui.Theme, s footerSlot, git backend.DiffStats, followed bool) D {
+	w := f.w(s.ID + s.Pane)
+	return th.Tooltip(f.root, &w.tip, i18n.T("shell.footerBar.reviewChanges")).Layout(gtx, func(gtx C) D {
+		// The hover fill grows outward from the text: the item takes the room
+		// of its text alone, so the text stands where the left side's does,
+		// chatFootPad in from the box's edge.
+		padX, padY := gtx.Dp(chatChangesPadX), gtx.Dp(chatChangesPadY)
+		m := op.Record(gtx.Ops)
+		out := op.Offset(image.Pt(-padX, -padY)).Push(gtx.Ops)
+		d := w.click.Layout(gtx, func(gtx C) D {
+			var bg color.NRGBA
+			if w.click.Hovered() {
+				bg = th.Over(ui.Alpha(th.Accent, ui.GhostHoverFill))
+			}
+			return layout.Background{}.Layout(gtx,
+				func(gtx C) D {
+					if followed {
+						area := clip.Rect{Max: gtx.Constraints.Min}.Push(gtx.Ops)
+						pointer.CursorPointer.Add(gtx.Ops)
+						area.Pop()
+					}
+					return ui.FillIf(gtx, bg, ui.RadiusMD)
+				},
+				func(gtx C) D {
+					return layout.Inset{Left: chatChangesPadX, Right: chatChangesPadX, Top: chatChangesPadY, Bottom: chatChangesPadY}.Layout(gtx, func(gtx C) D {
+						return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+							layout.Rigid(func(gtx C) D { return icFileDiff.Layout(gtx, chatCrumbGlyph, th.MutedForeground) }),
+							ui.Gap(1.5),
+							layout.Rigid(th.Text(ui.TextXS, strconv.Itoa(git.Files)).Muted().Layout),
+							ui.Gap(1.5),
+							layout.Rigid(th.DiffStat(git.Added, git.Deleted).Layout),
+						)
+					})
+				},
+			)
+		})
+		out.Pop()
+		call := m.Stop()
+		call.Add(gtx.Ops)
+		return D{Size: image.Pt(d.Size.X-2*padX, d.Size.Y-2*padY), Baseline: d.Baseline - padY}
 	})
 }
 

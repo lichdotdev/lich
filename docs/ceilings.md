@@ -118,6 +118,12 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   that `initialize` does not list stays as the id. An ACP server says neither on a message: an item takes the
   current model and effort when it begins, and what `session/load` replays names nothing, so a resumed ACP chat's
   old answers carry no model. The header then shows less, never the model the chat is set to now.
+- **A chat recognises Claude Code's own lines in a conversation by their exact text** (`internal/chat/local_command.go`,
+  `claude.go`): `[Request interrupted by user]` and its `for tool use` form, a local command's `<command-name>`,
+  `<command-message>`, `<command-args>` and `<local-command-stdout>` lines (one muted notice, "/model haiku ·
+  Set model to haiku"), and the answer `No response requested.` written after one are Claude Code's, not the
+  person's or the agent's, and are left out or made a notice. Any other tag, `<local-command-stderr>` among them, or
+  text that only contains one of these, stays as written. Only Claude Code writes them; an ACP server has no such lines.
 - **A chat offers only the model, effort and mode its provider offers, and two of them restart its process**
   (`internal/chat/options.go`, `claude_options.go`, `acp_options.go`): Claude Code's come from its `initialize`
   (the models, each with its efforts and whether it has an auto mode) and from the permission modes its `--help`
@@ -406,32 +412,47 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   so a provider that stops reporting a reset time silently drops the projection rather than the gauge. It is
   computed when a reading is taken and so is up to the five-minute cache old; "% left at reset" is not shown.
 - **Extra usage is Claude Code's alone, and Codex's reset credits are Codex's alone** (`internal/quota/claude.go`,
-  `codex.go`; the usage tooltip, `native/cmd/lich-native/usage_tip.go`): the Claude usage route's `extra_usage`
+  `codex.go`; the usage panel and tooltip, `native/cmd/lich-native/usage_tip.go`): the Claude usage route's `extra_usage`
   block (pay-as-you-go spend past the plan, with its monthly cap) and the Codex route's
   `rate_limit_reset_credits.available_count` (how many on-demand window resets the account holds) are read from
-  the payloads lich already polls and shown as one more block of the tooltip, only when the account has them on:
+  the payloads lich already polls and shown as one more block of the usage panel, only when the account has them on:
   an `extra_usage` that is disabled, and a count of zero, draw nothing. No other provider's route reports either,
-  so the other six show their windows alone. The tooltip over the profile footer reads per-profile plans only for Claude Code
+  so the other six show their windows alone. The usage panel of the profile footer reads per-profile plans only for Claude Code
   and Codex: Cursor CLI's and opencode's plans are read for the machine's login alone, so on their profiles (and on
   oh-my-pi's and Kiro CLI's, which have none) it says usage is not measured per profile rather than draw another
   account's numbers. A `claude setup-token` login reads its windows off response headers
-  (see the bullet below), which carry neither, so its tooltip never has the extra-usage block. The extra block's shape was
+  (see the bullet below), which carry neither, so its panel never has the extra-usage block. The extra block's shape was
   written against the field names and a disabled account's nulls: an enabled one has not been seen in a live
   payload, so a currency or unit the route does not spell the documented way would draw a wrong amount. The
   currency symbol is known for five currencies; any other shows its ISO code. Codex's payload also carries an
   `applicable_available_count` beside the count lich reads, which says how many credits fit the window in hand;
   lich reads and shows the first.
-- **Claude Code's limit resets are listed, never spent, and appear only while the server believes lich is the CLI**
-  (`internal/quota/claude.go`, `resets`; the usage tooltip): the grants come in the usage route's `cedar_ember`
-  block, which the server fills only for the user agent the CLI itself sends and a version it still supports. The
-  agent lich sends is therefore `claude-cli/2.1.328 (external, cli)`, a spelling that has to be bumped when the
-  server raises its floor: until it is, `eligible` reads false (`ineligible_reason: "cli_version"`) and the block
-  silently disappears while the windows keep reading. Only Claude Code has grants, and a `claude setup-token` login
+- **Claude Code's limit resets appear only while the server believes lich is the CLI, and spending one is
+  irreversible** (`internal/quota/claude.go`, `resets`, and `resets.go`, `UseReset`; the usage panel): the grants
+  come in the usage route's `cedar_ember` block, which the server fills only for the user agent the CLI itself
+  sends and a version it still supports. The agent lich sends is `claude-cli/<version> (external, cli)` with the
+  version of the `claude` binary installed (`claude --version`, cached by path, size and modification time, one
+  probe per install), and `claude-cli/2.1.328 (external, cli)` when none can be read. A machine whose `claude` is
+  older than the server's floor reads `eligible: false` (`ineligible_reason: "cli_version"`) and the block silently
+  disappears while the windows keep reading; the same version is sent when spending. Spending is the `Use` button of
+  a grant, after an inline confirmation: `POST /api/organizations/<organization>/reset_rate_limits` with the grant,
+  the program `cedar_ember` and a request id. The organization is read from the account's own `.claude.json`
+  (`oauthAccount.organizationUuid`, in `CLAUDE_CONFIG_DIR` when the profile has one, else `~/.claude.json`), so an
+  account that never started Claude Code has none and the spend says so rather than guess. The request id of an
+  attempt is kept in the backend until the provider answers, so a retry after an error carries the id of the attempt
+  that may have gone through and the server counts one spend, not two; a restart of lich forgets it. The answer
+  decoding (`status` or `result`: `reset`, `already_used`, `not_limited`, `ineligible`, `cooldown`, and a
+  `cooldown_until`) is written from the statuses the Claude CLI's own messages name, never from a spend: no reset was
+  spent to measure the body, so a different shape reads as an error that says Claude did not say whether it went
+  through. The token is only read: a 401 or 403 is "sign in to Claude Code again", never a refresh. A reset that went
+  through drops the cached reading so the next one sees the limit cleared. The button exists on the sidebar footer's
+  panel only; the rail's profile button keeps the old menu. Any caller that holds the lich token can call
+  `quota.UseReset`, a session's own `lich` CLI included, as with every RPC method: nothing scopes a method to the
+  window. Only Claude Code has grants, and a `claude setup-token` login
   has none (its windows come off headers). A grant is named for what it clears: "Full" for the weekly window, the
   model of the plan's scoped weekly cap for a model-scoped one (the server's own label when the plan has no such
-  cap); the "N left" counts held grants too. Nothing in the window spends a reset, because it cannot be undone. The
-  request does not send `skip_spend=1` as the CLI does: measured live, it removes the `extra_usage` block
-  altogether, and with it the extra spend the tooltip shows.
+  cap); the "N left" counts held grants too. The request does not send `skip_spend=1` as the CLI does: measured live, it removes the `extra_usage` block
+  altogether, and with it the extra spend the panel shows.
 - **Measuring a token-only Claude Code login costs a request against the very plan it measures**
   (`internal/quota/claude.go`): the usage route refuses a `claude setup-token` token, so the gauge reads that
   account the way Claude Code reads it for itself, with one message (`docs/providers/claude.md`, Account).

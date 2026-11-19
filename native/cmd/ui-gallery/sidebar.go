@@ -16,7 +16,6 @@ import (
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
 	"gioui.org/unit"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/ui"
 	"github.com/lichdotdev/lich/native/ui/icons"
@@ -59,8 +58,8 @@ type sideBlock struct {
 	folder   bool
 	cards    []string
 	open     bool
-	toggle   widget.Clickable
-	add      widget.Clickable
+	toggle   ui.Clickable
+	add      ui.Clickable
 	fold     ui.Collapse
 	cardSort ui.Sortable
 	presence ui.Presence
@@ -73,15 +72,15 @@ type sidebar struct {
 	carry   ui.SortCarry
 	width   unit.Dp
 	resize  ui.ResizeHandle
-	chips   [5]widget.Clickable
+	chips   [5]ui.Clickable
 	picked  map[int]bool
-	closers map[string]*widget.Clickable
+	closers map[string]*ui.Clickable
 	made    int
 	icon    func(string) *icons.Icon
 }
 
 func newSidebar(icon func(string) *icons.Icon) *sidebar {
-	s := &sidebar{width: sideStartWide, picked: map[int]bool{1: true}, closers: map[string]*widget.Clickable{}, icon: icon}
+	s := &sidebar{width: sideStartWide, picked: map[int]bool{1: true}, closers: map[string]*ui.Clickable{}, icon: icon}
 	s.blocks = []*sideBlock{
 		{id: "root", name: "lich", cards: []string{"Claude · native ui", "Codex · tests"}, open: true},
 		{id: "wt", name: "feature/toolbar", cards: []string{"Claude · footer", "Shell"}, open: true},
@@ -308,7 +307,7 @@ func (s *sidebar) node(gtx C, th *ui.Theme, glyph string, fg color.NRGBA) D {
 func (s *sidebar) card(gtx C, th *ui.Theme, b *sideBlock, id string, last bool) D {
 	closer := s.closers[id]
 	if closer == nil {
-		closer = new(widget.Clickable)
+		closer = new(ui.Clickable)
 		s.closers[id] = closer
 	}
 	if closer.Clicked(gtx) {
@@ -324,7 +323,7 @@ func (s *sidebar) card(gtx C, th *ui.Theme, b *sideBlock, id string, last bool) 
 	})
 }
 
-func (s *sidebar) cardRow(gtx C, th *ui.Theme, closer *widget.Clickable, id string, hangs, last, lifted bool) D {
+func (s *sidebar) cardRow(gtx C, th *ui.Theme, closer *ui.Clickable, id string, hangs, last, lifted bool) D {
 	bg := color.NRGBA{}
 	if lifted || closer.Hovered() {
 		bg = th.Over(ui.Alpha(th.Accent, sideHoverFill))

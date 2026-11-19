@@ -141,6 +141,8 @@ the rest, `VariantDestructive` for what cannot be undone. A disabled button says
 
 Buttons do not move when pressed; only their color changes.
 
+Anything that answers a click shows the hand (`ui.Clickable`, `ui.Bool` and `ui.Enum` do it by themselves, a hand-drawn click area calls `ui.HandCursor`); editable text shows the text cursor; a disabled control keeps the arrow.
+
 In the browser's drawing toolbar, the shape picker uses the outline variant so
 the current tool reads as a button that can switch tools.
 
@@ -265,26 +267,40 @@ it), Model window, Cache with its hit rate and Session cost, each only when the 
 compact with the locale's decimal mark. There is no line for compactions or for what is left before one: lich
 keeps no count of the first and no provider tells it the threshold of the second.
 
-### The usage tooltip
+### The usage menu
 
-The tooltip over the profile at the sidebar's foot, and the plan quota's own in the footer, are one component
-(`usage_tip.go`) built from the context tooltip's pieces (`tipHead`, `tipRow`, `contextBarColor`, the bar of twenty
-segments, the width). A block per window, in the order session, weekly, then a model's own cap: the window's name
-(lich's own for a window it names, with its length: "Session · 5h") at the left and the share spent at the right in
-medium, the bar in the same tones as the context's (70%, 90%), then muted `Resets in 4h 12m` and, only when the
-pace so far empties a weekly window before it resets, `Runs out in 1d 9h` in `ToneWait`. A locked window reads
-"Locked" with its bar and the provider's reason in `Destructive`. After the windows, `Extra usage` with the amount
-against the cap at the right ("$12.50 of $50.00", "$141.57 · no limit") and a bar only when there is a cap, and a
-`Reset credits` line like a context row ("1 available"), each only when the account has them. Claude Code's limit
-resets come as a `Resets` block, its title with "N left" (every reset of every live grant) at the right and a line per
-grant: its name at the left ("Full" when it clears the weekly window, the model's name for a model's own cap, the
-provider's text otherwise), "×2" and a muted "until Dec 10" at the right, in the interface language's month. A grant
-that cannot be spent now (paused, or not usable) is muted whole; with no live grant the block is not drawn. It shows
-and never spends: using one cannot be undone. The account's email
-closes the plan quota's tooltip, under a separator. The profile tooltip heads the blocks with the plan ("Claude Code ·
-Max 5x"); for any provider but Claude Code and Codex it is a single muted line saying usage is not measured per profile, and while the first reading is in flight there
-is no tooltip at all, rather than one that says nothing. Amounts follow the locale (`money.go`): its separators, the
-symbol before or after, the sign outside the symbol, the ISO code where there is no symbol.
+The profile at the sidebar's foot opens a panel on a click (`DropdownPanel`, rising above the row, scrolling when
+the window is short); hovering it draws nothing. The top of the panel is the usage of the shown profile's account, the
+plan quota's tooltip in the footer draws the same blocks (`usage_tip.go`), built from the context tooltip's pieces
+(`tipHead`, `tipRow`, `contextBarColor`, the bar of twenty segments). Under the plan's name ("Claude Code · Max 5x"),
+a block per window, in the order session, weekly, then a model's own cap: the window's name (lich's own for a window
+it names, with its length: "Session · 5h") at the left and the share spent at the right in medium, the bar in the
+same tones as the context's (70%, 90%), then muted `Resets in 4h 12m` and, only when the pace so far empties a
+weekly window before it resets, `Runs out in 1d 9h` in `ToneWait`. A locked window reads "Locked" with its bar and
+the provider's reason in `Destructive`. After the windows, `Extra usage` with the amount against the cap at the right
+("$12.50 of $50.00", "$141.57 · no limit") and a bar only when there is a cap, then a `Reset credits` line like a
+context row ("1 available") for Codex, each only when the account has them. Amounts follow the locale (`money.go`):
+its separators, the symbol before or after, the sign outside the symbol, the ISO code where there is no symbol. The
+account's email sits under the plan's name. The chosen login carries no usage note in the list below: its blocks are above.
+
+Claude Code's limit resets are a `Resets` block of their own: its title with "N left" (every reset of every live
+grant) at the right, and a line per grant. The line is its name at the left ("Full" when it clears the weekly window,
+the model's name for a model's own cap, the provider's text otherwise), "×2" and a muted "until Dec 10" (the month in
+the interface language) at the right, and a `Use` button, a ghost `SizeXS` one (no outline or fill at rest), when the grant can be spent now. A
+grant that cannot (paused, or not usable) is muted whole and has no button; with no live grant the block is not drawn.
+Use never spends on the first click: it replaces its row, in place and never in a dialog, with the question ("Use one
+Full reset?"), a muted line saying what it clears ("Clears the session and weekly limits.") and, at the right,
+`Cancel` (outline) and `Use` (`Destructive`: a reset does not come back). Cancel gives the row back; Use sends the
+spend, and the answer comes as a toast and an immediate re-read of the usage. While one is out every Use is disabled.
+The panel closing drops a confirmation left open.
+
+Under the usage, a separator, then what the footer's menu always held: the logins to switch to, each with its avatar
+and its five-hour usage and the chosen one checked, "Use Global" while the project sets its own, and the other
+providers' logins, each provider a label (its glyph and name) over its rows: the submenu of the old menu, opened in
+place. Choosing a row runs it and closes the panel. A provider with no per-profile reading (anything but Claude Code
+and Codex) shows a single muted line in place of the usage, saying usage is not measured per profile; while the first
+reading is in flight there is no usage section at all, rather than one that says nothing. The rail's profile button
+keeps the old menu.
 
 ### The chat view
 
@@ -390,10 +406,22 @@ draws none while it grows in, because the room above the rows is measured in the
   right end, Send, a `Primary` icon button (arrow up), or Stop, an outline one (square), each named by a
   tooltip and no word; while the agent works the chips take no click and a tooltip says why. What does not
   fit is left out with the items after it, never wrapped. The rest of the footer stays out of a chat. Under
-  the box, outside it with no fill, one line: at the left a `TextXS` muted project, a slash and the branch,
-  which opens the Git panel as its balloon did, and at the right the footer's changes item (files and diff),
-  which opens Review. Attach, changes and the branch show only when the user's footer layout has them, and
-  only for the session the footer follows; another chat pane of a layout has the provider's chips and Send alone.
+  the box, outside it with no fill, one line, `Space(2)` (`chatCrumbsPad`) under the box and `Space(2)` clear of the island's
+  bottom edge, over the composer's own pad, in a lone session and in each pane of a split: at the left a `TextXS` muted project, a slash and the branch,
+  which opens the Git panel as its balloon did, and at the right the changes, only while there are some
+  (files above 0): in the left's style, a small file-diff glyph, the file count and `+added -deleted` (`TonePass`,
+  `Destructive`) in `TextXS`, on the same line and height, no fill at rest and the kit's hover fill under the
+  pointer, which stands `Space(1.5)` by `Space(1)` (`chatChangesPadX`, `chatChangesPadY`) round the text and grows
+  outward from it: the item takes the room of its text alone, so the text ends `chatFootPad` in from the box's
+  right edge, as the left side starts, and the fill reaches the edge. A click opens Review. It is never drawn pressed, as the footer's button is while the dock shows Review:
+  on this line a lit item reads as a button switched on for no reason. Attach, changes and the branch show only when the user's footer layout has them, and
+  in every pane, each for its own session (its checkout, branch and changes, with or without the focus, but only the
+  followed pane's items take a click); the attach "+" and the context ring are the followed session's alone, so another
+  chat pane of a layout has the provider's chips and Send.
+  The box has no focus ring: its 1px border is the same with the keyboard and without (`TextareaStyle.Steady`; the
+  kit's inputs keep their `ring-3`). The blinking caret already says where the keyboard is, and in a chat the
+  composer is nearly always the focused thing, so a ring around the biggest box on the screen only reads as a
+  loud frame that never goes away.
 - **Copy** is an icon-only button that shows only while the pointer is over a message, on the line of its time and
   beside it: at the left of the time for the person's message, so it sits at the right, at the right of the time
   for an answer, so it sits at the left. It copies the item's whole text, an answer's Markdown source, through the
@@ -424,6 +452,10 @@ agent works, or a switch is on its way, it takes no click and says why in a tool
 
 A split's pane has its header already, so it gets no strip: the selector, same size, stands at the right of the
 header between the name and the zoom button, and the pane's terminal keeps every row.
+
+A terminal that does not have the keyboard (a split's other panes, any pane while a field or dialog is typing, every
+terminal while the window is out of focus) draws its cursor as a 1px outline in the cursor's color; the one that has it
+draws the block.
 
 ### The session's browser
 

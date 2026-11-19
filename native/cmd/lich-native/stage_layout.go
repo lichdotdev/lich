@@ -12,7 +12,6 @@ import (
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
 	"gioui.org/unit"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/gioterm"
@@ -45,7 +44,7 @@ var (
 
 // paneUI is one pane's widgets, kept across frames by session id.
 type paneUI struct {
-	zoom, unsplit, chip, delegates    widget.Clickable
+	zoom, unsplit, chip, delegates    ui.Clickable
 	zoomTip, unsplitTip, delegatesTip ui.Tooltip
 }
 

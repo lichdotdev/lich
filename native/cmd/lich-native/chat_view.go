@@ -61,7 +61,7 @@ var (
 type chatView struct {
 	list             widget.List
 	editor           widget.Editor
-	send, stop       widget.Clickable
+	send, stop       ui.Clickable
 	sendTip, stopTip ui.Tooltip
 	picker           modelPicker
 	// rows brings the conversation's rows in, and seen is the row each key
@@ -75,7 +75,7 @@ type chatView struct {
 	folds  map[string]*chatFold
 	// optionMenus are the menus of the option chips, by category.
 	optionMenus map[string]*ui.MenuState
-	answers     map[chatAnswer]*widget.Clickable
+	answers     map[chatAnswer]*ui.Clickable
 	md          markdown.Cache
 	// quizzes are the waiting questions' cards, by item id, and asked the
 	// last one the keys were handed to.
@@ -88,7 +88,7 @@ type chatView struct {
 }
 
 type chatFold struct {
-	click widget.Clickable
+	click ui.Clickable
 	open  bool
 }
 
@@ -100,7 +100,7 @@ func newChatPane() *chatPane {
 	p.editor.Submit = true
 	p.md = markdown.Cache{}
 	p.folds = map[string]*chatFold{}
-	p.answers = map[chatAnswer]*widget.Clickable{}
+	p.answers = map[chatAnswer]*ui.Clickable{}
 	return p
 }
 
@@ -159,11 +159,11 @@ func (v *chatView) fold(key string) *chatFold {
 	return f
 }
 
-func (v *chatView) answer(item, option string) *widget.Clickable {
+func (v *chatView) answer(item, option string) *ui.Clickable {
 	k := chatAnswer{item, option}
 	c, ok := v.answers[k]
 	if !ok {
-		c = new(widget.Clickable)
+		c = new(ui.Clickable)
 		v.answers[k] = c
 	}
 	return c
@@ -347,27 +347,34 @@ func (u *window) chatFailed(err error) {
 
 // chatComposer is the message field with the provider's chips and Send, or
 // Stop while a turn runs, inside its box, and the project and branch with the
-// changes under it. Only the session the footer follows carries the footer's
-// items: another pane of a layout has the provider's chips and Send.
+// changes under it. Every pane has its own line; only the session the footer
+// follows has the attach "+" and the context ring.
 func (u *window) chatComposer(gtx C, th *ui.Theme, p *chatPane, sv sessionView, working bool) D {
 	name := sv.Kind
 	if info, ok := u.model.providers.find(sv.Kind); ok && info.name != "" {
 		name = info.name
 	}
-	var ft chatFooter
-	if u.footer.shown.sessionID == sv.ID {
-		l, _ := u.footer.snapshot()
-		ft = chatFootSlots(l, u.footer.shown)
+	// The line under the box is the session's own, followed by the footer or
+	// not. The attach "+" and the context ring belong to the followed one.
+	in := u.footer.shown
+	followed := in.sessionID == sv.ID
+	if !followed {
+		in = u.footer.sessionInput(u.model, sv, in.now)
+	}
+	l, _ := u.footer.snapshot()
+	ft := chatFootSlots(l, in)
+	if !followed {
+		ft.attach, ft.context = nil, nil
 	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			ta := th.Textarea(&p.editor, i18n.T("chat.composer.placeholder", i18n.Args{"provider": name}))
-			ta.MaxHeight, ta.MinHeight, ta.Radius = chatComposerMax, chatComposerMin, ui.RadiusLG
+			ta.MaxHeight, ta.MinHeight, ta.Radius, ta.Steady = chatComposerMax, chatComposerMin, ui.RadiusLG, true
 			ta.Size, ta.Leading, ta.PadX, ta.PadY = markdown.BodySize, markdown.BodySize*markdown.LineHeightScale, chatComposerPadX, chatComposerPadY
 			ta.Foot = u.chatChips(th, p, sv, working, ft)
 			return ta.Layout(gtx)
 		}),
-		layout.Rigid(func(gtx C) D { return u.chatCrumbs(gtx, th, sv, ft) }),
+		layout.Rigid(func(gtx C) D { return u.chatCrumbs(gtx, th, sv, in, ft) }),
 	)
 }
 

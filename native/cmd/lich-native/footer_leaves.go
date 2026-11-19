@@ -7,7 +7,6 @@ import (
 	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/unit"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/ui"
@@ -183,7 +182,7 @@ func footerSpan(gtx C, th *ui.Theme, root *ui.Root, tip *ui.Tooltip, hint string
 
 // footerWidgets is one footer control's state.
 type footerWidgets struct {
-	click widget.Clickable
+	click ui.Clickable
 	tip   ui.Tooltip
 	// pressed is aria-pressed: the button's panel is open, so it keeps the
 	// fill it shows hovered.

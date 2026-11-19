@@ -57,7 +57,7 @@ type browserPaneUI struct {
 	back, forward, reload          ui.IconActionState
 	devtools                       ui.IconActionState
 	pageZoom                       browserZoomState
-	zoom, minimize, close          widget.Clickable
+	zoom, minimize, close          ui.Clickable
 	zoomTip, minimizeTip, closeTip ui.Tooltip
 	url                            widget.Editor
 	// shownURL is the page's URL the field last showed: a navigation

@@ -3,8 +3,6 @@ package main
 import (
 	"context"
 
-	"gioui.org/widget"
-
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
@@ -127,7 +125,7 @@ func (c *chatScreens) pane(id string) *chatPane {
 
 // chatPane is one session's chat view and selector, kept across frames.
 type chatPane struct {
-	view      widget.Enum
+	view      ui.Enum
 	switchTip ui.Tooltip
 	chatView
 }

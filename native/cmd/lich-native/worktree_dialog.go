@@ -46,11 +46,11 @@ type worktreeDialog struct {
 	picker      ui.DropdownPanelState
 	pickerOpen  bool
 	list        widget.List
-	rows        map[string]*widget.Clickable
-	carry       widget.Bool
-	confined    widget.Bool
-	cancel      widget.Clickable
-	create      widget.Clickable
+	rows        map[string]*ui.Clickable
+	carry       ui.Bool
+	confined    ui.Bool
+	cancel      ui.Clickable
+	create      ui.Clickable
 
 	project  backend.Project
 	kind     string

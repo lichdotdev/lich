@@ -123,6 +123,20 @@ func (f *fake) claudeTurn(run *fakeClaude, text string) {
 		f.send(map[string]any{"type": "user", "message": map[string]any{"content": []any{map[string]any{"type": "tool_result", "tool_use_id": "toolu_1", "content": []any{map[string]any{"type": "text", "text": "edited"}}}}}})
 		f.send(map[string]any{"type": "user", "message": map[string]any{"content": []any{map[string]any{"type": "tool_result", "tool_use_id": "toolu_sub", "is_error": true, "content": "nope"}}}})
 		f.claudeResult(false, "completed", "")
+	case "local":
+		// A local command, and the synthetic answer Claude Code writes after
+		// it, streamed a few characters at a time.
+		f.send(map[string]any{"type": "user", "message": map[string]any{"content": "<command-name>/model</command-name>\n<command-message>model</command-message>\n<command-args>haiku</command-args>"}})
+		f.send(map[string]any{"type": "user", "message": map[string]any{"content": "<local-command-stdout>Set model to haiku (claude-haiku-5-5)</local-command-stdout>"}})
+		for _, part := range []string{"No resp", "onse requ", "ested."} {
+			f.send(map[string]any{"type": "stream_event", "api_message_id": "m6", "event": map[string]any{"type": "content_block_delta", "index": 0, "delta": map[string]any{"type": "text_delta", "text": part}}})
+		}
+		msg("m6", map[string]any{"type": "text", "text": "No response requested."})
+		for _, part := range []string{"No ", "way"} {
+			f.send(map[string]any{"type": "stream_event", "api_message_id": "m7", "event": map[string]any{"type": "content_block_delta", "index": 0, "delta": map[string]any{"type": "text_delta", "text": part}}})
+		}
+		msg("m7", map[string]any{"type": "text", "text": "No way"})
+		f.claudeResult(false, "completed", "")
 	case "interrupted":
 		// What Claude Code writes into the user's turn when it is interrupted:
 		// as text, as a block, and for a tool call.

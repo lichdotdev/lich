@@ -84,7 +84,7 @@ func (r *Renderer) Typing(gtx C) bool {
 
 type inputState struct {
 	editorState
-	clear widget.Clickable
+	clear ui.Clickable
 }
 
 func drawInput(r *Renderer, gtx C, th *ui.Theme, n extension.Node, id string) D {

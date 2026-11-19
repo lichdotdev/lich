@@ -61,4 +61,5 @@ func Quota(d *rpc.Handler, s *quota.Service) {
 	rpc.Handle(d, api.QuotaPlans, s.Plans)
 	rpc.Handle(d, api.QuotaProfilePlan, s.ProfilePlan)
 	rpc.Handle(d, api.QuotaCodexProfilePlan, s.CodexProfilePlan)
+	rpc.Handle(d, api.QuotaUseReset, s.UseReset)
 }

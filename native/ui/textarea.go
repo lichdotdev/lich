@@ -55,7 +55,10 @@ type TextareaStyle struct {
 	Mono        bool
 	Disabled    bool
 	Invalid     bool
-	theme       *Theme
+	// Steady draws the frame the same focused and not, with no ring and the
+	// resting border: the blinking caret is what says the keyboard is there.
+	Steady bool
+	theme  *Theme
 }
 
 // Textarea is a default textarea over editor.
@@ -96,7 +99,7 @@ func (s TextareaStyle) Layout(gtx C) D {
 			field.minHeight = unit.Dp(float32(h) / gtx.Metric.PxPerDp)
 		}
 	}
-	st := inputState{invalid: s.Invalid, disabled: s.Disabled, radius: s.Radius}
+	st := inputState{invalid: s.Invalid, disabled: s.Disabled, radius: s.Radius, steady: s.Steady}
 	d := inputFrame(gtx, s.theme, s.Editor, st, false, func(gtx C) D { return s.body(gtx, field) })
 	if s.Scrollbar != nil {
 		s.layoutScrollbar(gtx, d.Size)

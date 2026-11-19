@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"gioui.org/io/key"
 	"gioui.org/io/pointer"
 	"gioui.org/layout"
 	"gioui.org/widget"
@@ -211,5 +212,43 @@ func TestTextareaTakesItsOwnTypeAndRoom(t *testing.T) {
 	// first 15 or so taller, within a pixel or two of rounding.
 	if plain != 3*20+16 || roomy < 3*22+2*14 || roomy > 3*23+2*14+2 {
 		t.Errorf("heights %d and %d, want %d and about %d", plain, roomy, 3*20+16, 3*22+2*14+2)
+	}
+}
+
+// edgesDiffer is whether a and b differ anywhere outside the box's inside, 8px
+// in from its edge: the frame, its border and the ring band round it, not the
+// text and its caret.
+func edgesDiffer(a, b *image.RGBA, box image.Rectangle) bool {
+	inner := box.Inset(8)
+	for y := box.Min.Y - 6; y < box.Max.Y+6; y++ {
+		for x := box.Min.X - 6; x < box.Max.X+6; x++ {
+			if image.Pt(x, y).In(inner) {
+				continue
+			}
+			if a.RGBAAt(x, y) != b.RGBAAt(x, y) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// A steady textarea draws its frame the same with the keyboard and without:
+// the border of rest and no ring, the caret alone saying where the keyboard
+// is. A plain one wears the focus ring.
+func TestASteadyTextareaFramesTheSameFocusedOrNot(t *testing.T) {
+	for _, steady := range []bool{true, false} {
+		th, ed := testTheme(), new(widget.Editor)
+		ta := th.Textarea(ed, "Ask")
+		ta.Steady = steady
+		rig := newInputRig(t, 200, 80, ta.Layout)
+		box := image.Rectangle{Min: image.Pt(rig.margin, rig.margin), Max: image.Pt(rig.margin+200, rig.margin+80)}
+		rest := rig.frame()
+		rig.router.Source().Execute(key.FocusCmd{Tag: ed})
+		rig.frame()
+		focused := rig.frame()
+		if differ := edgesDiffer(rest, focused, box); differ == steady {
+			t.Errorf("steady %v: the frame differs with the focus: %v", steady, differ)
+		}
 	}
 }

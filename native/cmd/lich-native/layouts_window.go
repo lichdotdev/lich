@@ -2,7 +2,6 @@ package main
 
 import (
 	"gioui.org/layout"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
@@ -88,8 +87,8 @@ type moveConfirm struct {
 	delegates    []string
 	away         int
 	under        bool // the delegates go under the slot's pane (delegateRoom)
-	cancel       widget.Clickable
-	confirm      widget.Clickable
+	cancel       ui.Clickable
+	confirm      ui.Clickable
 }
 
 func (u *window) askMove(r besideRequest, id, from string) {
