@@ -65,6 +65,20 @@ func (u *window) placeNativePages(src input.Source) {
 	}
 }
 
+// floatingBoxes are where the collapsed sidebar and dock float over the
+// stage this frame, in window pixels. A page is a window of the system's
+// that nothing the window draws covers, so these are what a page under them
+// has to cut out of itself, once internal/webview can (placeNativePages).
+func (u *window) floatingBoxes() []image.Rectangle {
+	var boxes []image.Rectangle
+	for _, b := range []image.Rectangle{u.sidebar.peek.box, u.dock.peek.box} {
+		if !b.Empty() {
+			boxes = append(boxes, b)
+		}
+	}
+	return boxes
+}
+
 // putNativePageAway hides the page of a pane no longer drawn, and ends it
 // once the session's browser is closed.
 func (u *window) putNativePageAway(session string, p *browserPaneUI) {

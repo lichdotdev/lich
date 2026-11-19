@@ -45,6 +45,15 @@ func (s *dockSlide) at(gtx C, open bool) float32 {
 // sliding is whether the last frame caught the slide between its ends.
 func (s *dockSlide) sliding() bool { return s.shown > 0 && s.shown < 1 }
 
+// moving is whether the last frame was short of where the slide is headed,
+// the frame it began in included.
+func (s *dockSlide) moving() bool {
+	if s.open {
+		return s.shown < 1
+	}
+	return s.shown > 0
+}
+
 // snap ends any slide at open, for the full-screen dock, which covers the
 // terminal rather than sliding beside it.
 func (s *dockSlide) snap(open bool) {
