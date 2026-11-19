@@ -2,6 +2,7 @@ package relay
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/lichdotdev/lich/api"
 	"log/slog"
@@ -27,6 +28,11 @@ func (s *Service) deliver(sessionID, message string, note *Notification) error {
 func (s *Service) typeIn(sessionID, message string) error {
 	if err := s.awaitFree(sessionID); err != nil {
 		return err
+	}
+	// A chat is ready with no terminal behind it, and a write there would
+	// return having typed nothing.
+	if live, err := s.term.Live(context.Background(), api.SessionIDOptions{ID: sessionID}); err != nil || !live {
+		return errors.Join(err, fmt.Errorf("session has no terminal to type at"))
 	}
 	// From here to the Enter, the prompt is this message's. Anything typed at it
 	// in between would be submitted as part of the message, so it is held and
@@ -123,7 +129,7 @@ func (s *Service) awaitReady(dest candidate, deadline time.Time) error {
 		if err != nil || takes {
 			return err
 		}
-		live, err := s.term.Live(context.Background(), api.SessionIDOptions{ID: dest.ID})
+		live, err := s.term.Reachable(context.Background(), api.SessionIDOptions{ID: dest.ID})
 		if err != nil {
 			return err
 		}

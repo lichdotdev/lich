@@ -48,9 +48,12 @@ type Service struct {
 	switching map[string]bool
 }
 
-// New is a chat service running its providers through term.
+// New is a chat service running its providers through term, and the way the
+// relay's prompts reach a session term runs as a chat.
 func New(term *terminal.Service, db *store.Service, hub *events.Hub, lang func() prompt.Lang) *Service {
-	return &Service{term: term, store: db, hub: hub, lang: lang, sessions: map[string]*chatSession{}, switching: map[string]bool{}}
+	s := &Service{term: term, store: db, hub: hub, lang: lang, sessions: map[string]*chatSession{}, switching: map[string]bool{}}
+	term.SetChat(s)
+	return s
 }
 
 // Kinds answers api.ChatKinds.
@@ -214,6 +217,9 @@ func (s *Service) start(ctx context.Context, id, projectID, kind, cwd string, ca
 	}
 	c.bind(opened, "")
 	c.applyCarry(openCtx, carry)
+	c.mu.Lock()
+	c.opened = true
+	c.mu.Unlock()
 	return c, nil
 }
 
@@ -227,13 +233,16 @@ func (s *Service) ensure(ctx context.Context, id string) (*chatSession, error) {
 	if s.store.SessionView(id) != api.ViewChat {
 		return nil, errors.New("this session is drawn as its terminal, not as a chat")
 	}
-	release, err := s.claim(id)
+	release, err := s.claimWhenFree(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 	defer release()
 	if c := s.running(id); c != nil {
 		return c, nil
+	}
+	if s.store.SessionView(id) != api.ViewChat {
+		return nil, errors.New("this session is drawn as its terminal, not as a chat")
 	}
 	projectID, kind, cwd, err := s.store.SessionSpawn(id)
 	if err != nil {

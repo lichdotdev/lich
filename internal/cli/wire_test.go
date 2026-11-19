@@ -54,6 +54,10 @@ func (*wiredTerminal) Live(_ context.Context, opts api.SessionIDOptions) (bool, 
 	return true, nil
 }
 
+func (*wiredTerminal) Reachable(_ context.Context, opts api.SessionIDOptions) (bool, error) {
+	return true, nil
+}
+
 func (*wiredTerminal) Ready(_ context.Context, opts api.SessionIDOptions) (bool, error) {
 	return true, nil
 }

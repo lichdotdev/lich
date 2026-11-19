@@ -19,6 +19,9 @@ import (
 // The wait is a closure because the ack can land before anyone waits on it,
 // and only the waiter queued with the prompt keeps it (modQueue.await).
 func (s *Service) SubmitPrompt(id, text string, note *relay.Notification) (relay.HandedPrompt, error) {
+	if sink := s.chatSink(id); sink != nil {
+		return sink.Take(id, text)
+	}
 	if s.ws == nil {
 		return relay.HandedPrompt{}, relay.ErrNoMod
 	}
@@ -39,15 +42,27 @@ func (s *Service) SubmitPrompt(id, text string, note *relay.Notification) (relay
 	}, nil
 }
 
-// ModAttached is whether a Claude Code mod polled from running session id
-// within the attach window, which is what SubmitPrompt queues for.
+// ModAttached is whether SubmitPrompt reaches session id's agent without
+// touching its prompt: a Claude Code mod polled from its terminal within the
+// attach window, or its chat has opened its conversation.
 func (s *Service) ModAttached(id string) bool {
+	if sink := s.chatSink(id); sink != nil {
+		return sink.Opened(id)
+	}
+	return s.modAttached(id)
+}
+
+// modAttached is ModAttached for the terminal's mod alone.
+func (s *Service) modAttached(id string) bool {
 	return s.ws != nil && s.live(id) && s.ws.mods.attached(id)
 }
 
 // ModAttaching is whether session id loads lich's mod and its first poll may
-// still be coming.
+// still be coming, or runs a chat still opening its conversation.
 func (s *Service) ModAttaching(id string) bool {
+	if sink := s.chatSink(id); sink != nil {
+		return !sink.Opened(id)
+	}
 	if s.ws == nil {
 		return false
 	}

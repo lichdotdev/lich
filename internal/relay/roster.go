@@ -39,7 +39,7 @@ func (s *Service) roster(fromID string) ([]candidate, error) {
 			if sess.ID == fromID {
 				continue
 			}
-			live, err := s.term.Live(context.Background(), api.SessionIDOptions{ID: sess.ID})
+			live, err := s.term.Reachable(context.Background(), api.SessionIDOptions{ID: sess.ID})
 			if err != nil {
 				return nil, err
 			}

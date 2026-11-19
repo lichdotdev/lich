@@ -231,6 +231,9 @@ type Service struct {
 	// quotaLeft, when set, answers whether a profile can take a turn now
 	// (limit_switch.go). Guarded by mu like onState.
 	quotaLeft func(kind, slug string) bool
+	// chat, when set, is the chat service the relay's prompts reach a session
+	// drawn as a chat through (chatprompt.go).
+	chat ChatSink
 	// resumeNow, when set, sends the continuation of a session the person moved
 	// off a limit (limit_switch.go). Guarded by mu like onState.
 	resumeNow func(id string)

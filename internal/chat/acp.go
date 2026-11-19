@@ -239,7 +239,7 @@ func (d *acpDriver) follow(text string) error {
 	if d.c.holdForNext(text) {
 		return d.cancel()
 	}
-	go d.c.sendNext(text)
+	go d.c.sendNext(pending{text: text})
 	return nil
 }
 

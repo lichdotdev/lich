@@ -218,8 +218,12 @@ func (s *Service) noteOutput(id string, sess *session, chunk []byte) {
 	}
 }
 
-// Ready answers ready over RPC.
+// Ready answers ready over RPC, and for a chat whether it has opened its
+// conversation: a chat takes a message during a turn too, queued behind it.
 func (s *Service) Ready(_ context.Context, opts api.SessionIDOptions) (bool, error) {
+	if sink := s.chatSink(opts.ID); sink != nil {
+		return sink.Opened(opts.ID), nil
+	}
 	return s.ready(opts.ID), nil
 }
 

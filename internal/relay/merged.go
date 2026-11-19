@@ -104,7 +104,7 @@ func (s *Service) runsAgent(id, kind string) bool {
 	if !providers.Known(kind) {
 		return false
 	}
-	live, err := s.term.Live(context.Background(), api.SessionIDOptions{ID: id})
+	live, err := s.term.Reachable(context.Background(), api.SessionIDOptions{ID: id})
 	if err != nil {
 		slog.Warn("relay: read whether a session runs, leaving it out of the merge notice", "session", id, "err", err)
 		return false

@@ -37,7 +37,7 @@ func (s *Service) Submit(ctx context.Context, opts api.SubmitOptions) (api.None,
 	if err := scope.Target(ctx, sess.Label, sess.Sandbox == store.SessionConfined); err != nil {
 		return api.None{}, err
 	}
-	live, err := s.term.Live(ctx, api.SessionIDOptions{ID: opts.SessionID})
+	live, err := s.term.Reachable(ctx, api.SessionIDOptions{ID: opts.SessionID})
 	if err != nil {
 		return api.None{}, err
 	}

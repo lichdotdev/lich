@@ -91,9 +91,20 @@ type chatSession struct {
 	exited    chan struct{}
 	bound     string
 	opts      []api.ChatOption
-	// next is a message for the turn after this one, which a provider that
-	// takes none during a turn is sent once the turn ends.
-	next string
+	// next are the messages for the turns after this one, oldest first: one a
+	// provider that takes none during a turn is sent once the turn ends, and
+	// those the relay delivered while it ran.
+	next []pending
+	// opened is set once the conversation is open, before which a message
+	// would land mid-handshake.
+	opened bool
+}
+
+// pending is a message waiting for a turn of its own. began, when set, closes
+// once that turn starts.
+type pending struct {
+	text  string
+	began chan struct{}
 }
 
 // wire writes one JSON value per line to a provider's stdin.
@@ -213,11 +224,14 @@ func (c *chatSession) endTurn(reason string) {
 	c.svc.term.ReportChatState(c.id, stateDone, "", "")
 	events.Send(c.svc.hub.Emit, api.ChatTurnEvent, api.ChatTurn{SessionID: c.id, StopReason: reason, DurationMs: took, Changes: changes})
 	c.mu.Lock()
-	next := c.next
-	c.next = ""
+	var next *pending
+	if len(c.next) > 0 {
+		next = &c.next[0]
+		c.next = c.next[1:]
+	}
 	c.mu.Unlock()
-	if next != "" {
-		go c.sendNext(next)
+	if next != nil {
+		go c.sendNext(*next)
 	}
 }
 
@@ -234,12 +248,15 @@ func (c *chatSession) send(text string) error {
 
 // sendNext opens the turn for a message already shown, which waited for the
 // last turn to end.
-func (c *chatSession) sendNext(text string) {
+func (c *chatSession) sendNext(p pending) {
 	if err := c.beginTurn(); err != nil {
 		slog.Warn("chat: send the next message", "session", c.id, "err", err)
 		return
 	}
-	if err := c.send(text); err != nil {
+	if p.began != nil {
+		close(p.began)
+	}
+	if err := c.send(p.text); err != nil {
 		slog.Warn("chat: send the next message", "session", c.id, "err", err)
 	}
 }
@@ -247,10 +264,15 @@ func (c *chatSession) sendNext(text string) {
 // holdForNext keeps text for the turn after the one running, and reports
 // false when none runs.
 func (c *chatSession) holdForNext(text string) bool {
+	return c.hold(pending{text: text})
+}
+
+// hold queues p behind the turn running, and reports false when none runs.
+func (c *chatSession) hold(p pending) bool {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if c.running {
-		c.next = text
+		c.next = append(c.next, p)
 	}
 	return c.running
 }

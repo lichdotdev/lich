@@ -1,0 +1,101 @@
+package chat
+
+import (
+	"context"
+	"errors"
+	"time"
+
+	"github.com/lichdotdev/lich/internal/relay"
+)
+
+// claimPoll is how often a start waits on a switch or another start of the
+// same session to let go of it.
+const claimPoll = 50 * time.Millisecond
+
+// errNoChat is a message for a session whose chat is not running, or is
+// still opening its conversation.
+var errNoChat = errors.New("this session's chat is not running or not open yet")
+
+// claimWhenFree is claim, waiting out a switch or start already holding id
+// rather than failing: the window opening a session's chat and the spawn that
+// just created it both start it at once.
+func (s *Service) claimWhenFree(ctx context.Context, id string) (func(), error) {
+	for {
+		release, err := s.claim(id)
+		if err == nil {
+			return release, nil
+		}
+		select {
+		case <-ctx.Done():
+			return nil, err
+		case <-time.After(claimPoll):
+		}
+	}
+}
+
+// Open starts session id's chat on its conversation, unless it runs already,
+// and returns once the conversation is open.
+func (s *Service) Open(ctx context.Context, id string) error {
+	_, err := s.ensure(ctx, id)
+	return err
+}
+
+// Opened is whether session id's chat runs and has opened its conversation
+// (terminal.ChatSink).
+func (s *Service) Opened(id string) bool {
+	c := s.running(id)
+	if c == nil {
+		return false
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.opened
+}
+
+// Take sends text as session id's next message: now when no turn runs, after
+// the turns before it otherwise (terminal.ChatSink). Its receipt is acked when
+// the turn carrying it starts, as a mod's is.
+func (s *Service) Take(id, text string) (relay.HandedPrompt, error) {
+	c := s.running(id)
+	if c == nil || !s.Opened(id) {
+		return relay.HandedPrompt{}, errNoChat
+	}
+	c.conv.userMessage(text)
+	began, err := c.take(text)
+	if err != nil {
+		return relay.HandedPrompt{}, err
+	}
+	return relay.HandedPrompt{
+		Await: func(ctx context.Context) relay.PromptReceipt {
+			select {
+			case <-began:
+				return relay.PromptReceipt{State: relay.PromptAcked, OK: true}
+			case <-c.exited:
+				return relay.PromptReceipt{State: relay.PromptEnded}
+			case <-ctx.Done():
+				return relay.PromptReceipt{State: relay.PromptDelivered}
+			}
+		},
+		Collected: func() bool { return true },
+	}, nil
+}
+
+// take sends text in a turn of its own, or after the agent's waiting
+// questions, and answers a channel that closes once the turn carrying it has
+// started.
+func (c *chatSession) take(text string) (<-chan struct{}, error) {
+	started := make(chan struct{})
+	close(started)
+	if c.declineQuestions() {
+		return started, c.drv.follow(text)
+	}
+	for {
+		if err := c.beginTurn(); err == nil {
+			return started, c.send(text)
+		}
+		began := make(chan struct{})
+		if c.hold(pending{text: text, began: began}) {
+			return began, nil
+		}
+	}
+}

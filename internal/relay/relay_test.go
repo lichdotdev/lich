@@ -139,6 +139,11 @@ func (f *fakeTerminal) Live(_ context.Context, opts api.SessionIDOptions) (bool,
 	return f.live[opts.ID], nil
 }
 
+// Reachable is Live: every fake session runs a terminal.
+func (f *fakeTerminal) Reachable(ctx context.Context, opts api.SessionIDOptions) (bool, error) {
+	return f.Live(ctx, opts)
+}
+
 // Ready defaults to "as ready as it is live": most tests are about delivery and
 // answers, not about an agent that is still starting, nor about a prompt its
 // own user is typing at. The ones that are set starting or typing.

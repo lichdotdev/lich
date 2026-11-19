@@ -192,6 +192,10 @@ type Events interface {
 // whether its agent is at a prompt, and how to type at it. The terminal service implements it.
 type Terminal interface {
 	Live(_ context.Context, opts api.SessionIDOptions) (bool, error)
+	// Reachable is Live or a chat running: whether a message can reach the
+	// session at all. Live stays the question before a typed write, which a
+	// chat cannot take.
+	Reachable(_ context.Context, opts api.SessionIDOptions) (bool, error)
 	Ready(_ context.Context, opts api.SessionIDOptions) (bool, error)
 	// AtPrompt is Ready without minding what the person has typed there: the
 	// question for a write that does not send (Insert).
@@ -927,7 +931,7 @@ func (s *Service) workerHolds(subagent bool, targetID string) bool {
 	if !subagent {
 		return false
 	}
-	live, err := s.term.Live(context.Background(), api.SessionIDOptions{ID: targetID})
+	live, err := s.term.Reachable(context.Background(), api.SessionIDOptions{ID: targetID})
 	if err != nil {
 		slog.Warn("relay: read whether a worker still runs", "session", targetID, "err", err)
 		return true
