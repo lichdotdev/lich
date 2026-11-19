@@ -33,8 +33,8 @@ Elements are defined by space, hover and islands, not by enclosure.
 
 Inside an island, a change that adds a border, a pill, a second line or a nested surface is probably wrong. Reach for spacing,
 a hover state or the tooltip first. The folder tray is the one nested surface, and the reason is written
-under it; the dock's tab pill reuses its fill, for the same reason. The footer's balloons and the chat's GUI | TUI
-switch are the pills on `Sidebar`: they float over the terminal and need a ground of their own to read on it. The extension catalog is
+under it; the dock's tab pill reuses its fill, for the same reason. The footer's balloons are the pills on `Sidebar`:
+they float over the terminal and need a ground of their own to read on it. The extension catalog is
 the one screen of cards, and the reason is written under it.
 
 ## Foundations
@@ -267,11 +267,23 @@ pinned to its end while items arrive, until the person scrolls up.
 - **The composer** stands at the column's foot, above the balloons' band the island already keeps: a textarea
   (Enter sends, Shift+Enter breaks the line) over Send, or Stop while the agent works.
 
-The GUI | TUI switch floats in the top-right corner of the session's panel, `balloonInset` from its edges, over
-the terminal or the chat (`chat_switch.go`): the segmented control on a `Sidebar` fill, the view on screen in
-`Accent`. It is the second pill on `Sidebar` after the balloons, for their reason: it floats over a terminal and
-needs a ground to read on. Only a provider `chat.Kinds` lists gets it, never a plain terminal. While the agent
-works, or a switch is on its way, it takes no click and says why in a tooltip.
+### The session's strip
+
+The balloons' mirror: an agent session's terminal, or its chat, gives up a band at its top
+(`sessionBandHeight`, `session_band.go`): the selector and `balloonInset` over and under it, so the PTY has fewer
+rows and nothing floats over the agent's banner. It follows the session's kind like the foot's band, so the grid
+is resized once, and the Git panel rising from the foot does not take it back. A plain terminal, a service's
+console, Home and a split carry none. The chat starts under it.
+
+The strip has no ground. At its left the provider as the window names it, then the session's label: `TextSM`,
+the provider in `MutedForeground` and the label in `Foreground`, cut with an ellipsis when the room is short. At
+its right the GUI | TUI selector (`chat_switch.go`), which takes its room first: the segmented control in its
+`Border` track, items h-5 with a `Text2XS` label and a size-3 icon, the view on screen in `Accent`. Only a
+provider `chat.Kinds` lists gets the selector, so a Codex or Crush session's strip is the name alone. While the
+agent works, or a switch is on its way, it takes no click and says why in a tooltip.
+
+A split's pane has its header already, so it gets no strip: the selector, same size, stands at the right of the
+header between the name and the zoom button, and the pane's terminal keeps every row.
 
 ### The editor
 

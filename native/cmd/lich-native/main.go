@@ -907,8 +907,8 @@ func (u *window) island(gtx C, v stageView, termWidth, termHeight int) error {
 	u.spot(gtx, tourStage, func(C) D { return D{Size: size} })
 	u.layoutStage.metric = gtx.Metric
 	u.terms.onScreen(v.active.ID)
-	term := gtx
-	term.Constraints = layout.Exact(image.Pt(termWidth, termHeight))
+	term, band := gtx, u.sessionBand(gtx, v)
+	term.Constraints = layout.Exact(image.Pt(termWidth, termHeight+band))
 	// A session alone has no pane, but the panes it came from or goes to
 	// move against its place, so it stands in the run as one (paneMotion).
 	motion, alone := &u.layoutStage.motion, image.Rectangle{Max: size}.Inset(gtx.Dp(gutter))
@@ -918,7 +918,7 @@ func (u *window) island(gtx C, v stageView, termWidth, termHeight int) error {
 		reveal = clip.Rect(frame)
 	}
 	area := reveal.Push(gtx.Ops)
-	err := u.content(term, v.active, u.terminalTakesKeys(gtx))
+	err := u.bandedSession(term, v.active, band, fill, u.terminalTakesKeys(gtx))
 	area.Pop()
 	u.endPaneMotion(gtx)
 	if err != nil {
@@ -1026,7 +1026,7 @@ func (u *window) stageRow(gtx C, v stageView) error {
 		termWidth -= d.width(gtx) + gtx.Dp(gutter)
 	}
 	termWidth = max(termWidth, 0)
-	termHeight := max(size.Y-u.git.pending()-u.extPanel.pending()-u.ptyBand(gtx, v), 0)
+	termHeight := max(size.Y-u.git.pending()-u.extPanel.pending()-u.ptyBand(gtx, v)-u.sessionBand(gtx, v), 0)
 	if share == 0 {
 		d.islands = nil
 		if err := u.island(gtx, v, termWidth, termHeight); err != nil {

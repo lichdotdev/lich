@@ -61,7 +61,7 @@ func (f *chatBackend) waitCall(t *testing.T, method string) string {
 }
 
 // chatFrames is session s1, a Claude Code session in view, drawn through
-// content as the island draws it.
+// bandedSession as the island draws it, under its strip.
 func chatFrames(t *testing.T, view string) (*window, *frameRig, *chatBackend) {
 	t.Helper()
 	r := newFrameRig(rigWindow, nil)
@@ -73,7 +73,8 @@ func chatFrames(t *testing.T, view string) (*window, *frameRig, *chatBackend) {
 		u.theme = th
 		u.root.Layout(gtx, func(gtx C) D {
 			sv, _ := u.model.sessionViewOf("s1")
-			if err := u.content(gtx, sv, true); err != nil {
+			band := u.sessionBand(gtx, stageView{active: sv, hasActive: true})
+			if err := u.bandedSession(gtx, sv, band, th.Background, true); err != nil {
 				t.Fatal(err)
 			}
 			return D{Size: gtx.Constraints.Max}
