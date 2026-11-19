@@ -2,7 +2,7 @@
 // and type scale named after Tailwind's, and shadcn-style primitives whose
 // variants carry shadcn's names.
 //
-// Gio is immediate mode: widget state (a widget.Clickable) belongs to the
+// Gio is immediate mode: widget state (a Clickable) belongs to the
 // caller, and a primitive only draws it.
 package ui
 

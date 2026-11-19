@@ -13,7 +13,6 @@ import (
 	"strings"
 
 	"gioui.org/layout"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
@@ -24,7 +23,7 @@ import (
 type binaryPreview struct {
 	before, after *blobView
 	exits         fileExits
-	github        widget.Clickable
+	github        ui.Clickable
 }
 
 // previewsImage reports whether the card draws its file's image: a format

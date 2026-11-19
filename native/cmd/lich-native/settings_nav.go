@@ -39,21 +39,21 @@ var (
 // field and the rows under it.
 type settingsNav struct {
 	scopeMenu  ui.DropdownPanelState
-	scopeHover widget.Clickable
-	scopeRows  map[string]*widget.Clickable
+	scopeHover ui.Clickable
+	scopeRows  map[string]*ui.Clickable
 	query      widget.Editor
-	clear      widget.Clickable
+	clear      ui.Clickable
 	cursor     int
 	searched   string // the query the cursor was placed for
-	rows       map[string]*widget.Clickable
-	hits       []widget.Clickable
+	rows       map[string]*ui.Clickable
+	hits       []ui.Clickable
 	list       widget.List
 	closeTip   ui.Tooltip
 	scopeTip   ui.Tooltip
 }
 
 func (n *settingsNav) init() {
-	n.scopeRows, n.rows = map[string]*widget.Clickable{}, map[string]*widget.Clickable{}
+	n.scopeRows, n.rows = map[string]*ui.Clickable{}, map[string]*ui.Clickable{}
 	n.list.Axis = layout.Vertical
 }
 
@@ -218,7 +218,7 @@ func (s *settingsScreen) results(gtx C, th *ui.Theme, hits []settingHit) D {
 		})
 	}
 	if len(n.hits) < len(hits) {
-		n.hits = make([]widget.Clickable, len(hits))
+		n.hits = make([]ui.Clickable, len(hits))
 	}
 	for i := range hits {
 		if n.hits[i].Clicked(gtx) {

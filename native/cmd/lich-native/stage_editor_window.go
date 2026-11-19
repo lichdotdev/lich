@@ -15,7 +15,6 @@ import (
 
 	"gioui.org/layout"
 	"gioui.org/unit"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
@@ -48,7 +47,7 @@ type unsavedAsk struct {
 	editor                *fileEditor
 	then                  func()
 	state                 ui.DialogState
-	save, discard, cancel widget.Clickable
+	save, discard, cancel ui.Clickable
 }
 
 // of is checkout's editor, made the first time.

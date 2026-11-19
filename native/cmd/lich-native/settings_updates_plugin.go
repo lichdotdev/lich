@@ -6,7 +6,6 @@ import (
 
 	"gioui.org/layout"
 	"gioui.org/unit"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
@@ -29,8 +28,8 @@ var pluginHints = map[string]string{
 
 // pluginControls are the plugin block's buttons: one action per provider row.
 type pluginControls struct {
-	check, updateAll widget.Clickable
-	actions          map[string]*widget.Clickable
+	check, updateAll ui.Clickable
+	actions          map[string]*ui.Clickable
 }
 
 // pluginVersionText is what a row says about the plugin in that CLI.
@@ -164,7 +163,7 @@ func (u *updatesSettings) pluginBlock(gtx C, th *ui.Theme, s *settingsScreen, r 
 	statuses, busy, failed, checked := u.plugins, u.busy, u.pluginsFailed, u.checked
 	u.mu.Unlock()
 	if c.actions == nil {
-		c.actions = map[string]*widget.Clickable{}
+		c.actions = map[string]*ui.Clickable{}
 	}
 	for _, st := range statuses {
 		if clickableOf(c.actions, st.Provider).Clicked(gtx) {

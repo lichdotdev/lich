@@ -13,7 +13,6 @@ import (
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
 	"gioui.org/unit"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
@@ -263,7 +262,7 @@ func (p *commandPalette) body(gtx C, th *ui.Theme, v *paletteView, ring paletteR
 		return p.empty(gtx, th, v)
 	}
 	if len(p.rows) < len(v.rows) {
-		p.rows = make([]widget.Clickable, len(v.rows))
+		p.rows = make([]ui.Clickable, len(v.rows))
 	}
 	items := paletteItems(v)
 	p.keepInView(items, v)

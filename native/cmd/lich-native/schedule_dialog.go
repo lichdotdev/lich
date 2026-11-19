@@ -47,8 +47,8 @@ type scheduleDialog struct {
 	open, focus, armed          bool
 	dialog                      ui.DialogState
 	when, prompt                widget.Editor
-	options                     [4]widget.Clickable
-	cancel, save, remove        widget.Clickable
+	options                     [4]ui.Clickable
+	cancel, save, remove        ui.Clickable
 }
 
 // show opens the dialog on what sv holds: its watch when it has one, as the

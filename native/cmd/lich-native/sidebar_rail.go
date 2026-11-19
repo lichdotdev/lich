@@ -32,10 +32,10 @@ type sidebarRail struct {
 	// and last the rows it last drew, which a row leaving is drawn from.
 	motion treeMotion
 	last   map[string]railItem
-	expand widget.Clickable
-	add    widget.Clickable
+	expand ui.Clickable
+	add    ui.Clickable
 	list   widget.List
-	cards  map[string]*widget.Clickable
+	cards  map[string]*ui.Clickable
 	tips   map[string]*ui.Tooltip
 	menus  map[string]*ui.MenuState
 	// view is the frame's sidebar view, whose blocks and folders a node's
@@ -88,7 +88,7 @@ func (r *sidebarRail) layout(gtx C, th *ui.Theme, s *sidebar, m *model, active s
 }
 
 // button is one of the rail's buttons under its hint.
-func (r *sidebarRail) button(th *ui.Theme, s *sidebar, click *widget.Clickable, ic *icons.Icon, hint, glyph string) layout.Widget {
+func (r *sidebarRail) button(th *ui.Theme, s *sidebar, click *ui.Clickable, ic *icons.Icon, hint, glyph string) layout.Widget {
 	return func(gtx C) D {
 		tip := th.Tooltip(s.root, s.hint("rail:"+hint), hint)
 		tip.Side = ui.SideRight

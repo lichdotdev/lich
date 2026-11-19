@@ -5,27 +5,26 @@ import (
 
 	"gioui.org/layout"
 	"gioui.org/unit"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/ui"
 )
 
 // rowsState is the live state of the text lines, list rows and faces.
 type rowsState struct {
-	links      [3]widget.Clickable
-	checks     [2]widget.Bool
-	busyButton widget.Clickable
-	navRows    [3]widget.Clickable
+	links      [3]ui.Clickable
+	checks     [2]ui.Bool
+	busyButton ui.Clickable
+	navRows    [3]ui.Clickable
 	navOn      int
-	panelRows  [2]widget.Clickable
-	ghostTexts [2]widget.Clickable
-	cardIcons  [2]widget.Clickable
+	panelRows  [2]ui.Clickable
+	ghostTexts [2]ui.Clickable
+	cardIcons  [2]ui.Clickable
 	cardTurn   float32
-	iconBtns   [2]widget.Clickable
+	iconBtns   [2]ui.Clickable
 	iconTips   [2]ui.Tooltip
-	trigger    widget.Clickable
+	trigger    ui.Clickable
 	triggerOn  bool
-	faceOn     [2]widget.Clickable
+	faceOn     [2]ui.Clickable
 }
 
 // Measures the product hands the rows; the values are the ones lich-native uses.

@@ -86,6 +86,7 @@ func (m menuCore) layoutGrid(gtx C, lv *menuLevel, entries []MenuEntry, cols int
 		rect := image.Rectangle{Min: at, Max: at.Add(cell)}
 		lv.rows = append(lv.rows, rect)
 		c.draw(gtx, rect)
+		menuHand(gtx, entries[i], rect)
 	}
 	return size
 }

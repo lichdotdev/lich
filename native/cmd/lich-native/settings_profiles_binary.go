@@ -3,7 +3,6 @@ package main
 import (
 	"gioui.org/layout"
 	"gioui.org/unit"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
@@ -11,7 +10,7 @@ import (
 
 // profileBinaryLinks are the ways out of the Profile row's binary warning.
 type profileBinaryLinks struct {
-	show, clear widget.Clickable
+	show, clear ui.Clickable
 }
 
 // profileBinaryWarning is what the Profile row says under its description
@@ -59,7 +58,7 @@ func (s *settingsScreen) profileBinaryWarning(gtx C, c *profileSettings, values 
 	}
 }
 
-func profileBinaryLink(th *ui.Theme, click *widget.Clickable, label string) layout.Widget {
+func profileBinaryLink(th *ui.Theme, click *ui.Clickable, label string) layout.Widget {
 	b := th.Button(click, label)
 	b.Size, b.Variant = ui.SizeXS, ui.VariantOutline
 	return b.Layout

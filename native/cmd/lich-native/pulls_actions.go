@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"gioui.org/layout"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
@@ -431,8 +430,8 @@ type removeConfirm struct {
 	project backend.Project
 	path    string
 	running int
-	cancel  widget.Clickable
-	confirm widget.Clickable
+	cancel  ui.Clickable
+	confirm ui.Clickable
 }
 
 func (c *removeConfirm) ask(project backend.Project, path string, running int) {

@@ -9,7 +9,6 @@ import (
 	"gioui.org/io/system"
 	"gioui.org/layout"
 	"gioui.org/unit"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
@@ -152,7 +151,7 @@ var (
 
 // captionControls are the window's buttons in the topbar.
 type captionControls struct {
-	clicks [captionButtons]widget.Clickable
+	clicks [captionButtons]ui.Clickable
 	hints  [captionButtons]ui.Tooltip
 }
 
@@ -215,7 +214,7 @@ func (c *captionControls) button(gtx C, th *ui.Theme, style captionStyle, b capt
 }
 
 // windowsButton is a 46-wide caption button the band's full height.
-func windowsButton(gtx C, th *ui.Theme, click *widget.Clickable, b captionButton, chrome windowChrome) D {
+func windowsButton(gtx C, th *ui.Theme, click *ui.Clickable, b captionButton, chrome windowChrome) D {
 	gtx.Constraints = layout.Exact(image.Pt(gtx.Dp(windowsButtonWidth), gtx.Constraints.Max.Y))
 	fg := th.Foreground
 	switch {
@@ -231,7 +230,7 @@ func windowsButton(gtx C, th *ui.Theme, click *widget.Clickable, b captionButton
 }
 
 // gnomeButtonFace is libadwaita's round button: a faint disc at rest.
-func gnomeButtonFace(gtx C, th *ui.Theme, click *widget.Clickable, b captionButton, chrome windowChrome) D {
+func gnomeButtonFace(gtx C, th *ui.Theme, click *ui.Clickable, b captionButton, chrome windowChrome) D {
 	size := gtx.Dp(gnomeButton)
 	gtx.Constraints = layout.Exact(image.Pt(size, size))
 	fill := float32(gnomeRestFill)
@@ -243,7 +242,7 @@ func gnomeButtonFace(gtx C, th *ui.Theme, click *widget.Clickable, b captionButt
 }
 
 // kdeButtonFace is Breeze's bare glyph; Close gets the red disc on hover.
-func kdeButtonFace(gtx C, th *ui.Theme, click *widget.Clickable, b captionButton, chrome windowChrome) D {
+func kdeButtonFace(gtx C, th *ui.Theme, click *ui.Clickable, b captionButton, chrome windowChrome) D {
 	size := gtx.Dp(kdeButton)
 	gtx.Constraints = layout.Exact(image.Pt(size, size))
 	fg := th.Foreground

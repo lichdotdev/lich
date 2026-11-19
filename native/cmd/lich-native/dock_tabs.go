@@ -6,7 +6,6 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
@@ -30,7 +29,7 @@ var (
 
 // dockTabButton is one tab's clickable and tooltip.
 type dockTabButton struct {
-	click widget.Clickable
+	click ui.Clickable
 	tip   ui.Tooltip
 }
 

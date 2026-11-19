@@ -5,7 +5,6 @@ import (
 
 	"gioui.org/font"
 	"gioui.org/layout"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
@@ -18,14 +17,14 @@ import (
 // only the buttons remember: a dismiss is not a choice anyone made.
 type resumeDialog struct {
 	dialog   ui.DialogState
-	remember widget.Bool
+	remember ui.Bool
 	// shown is the session last asked about, kept so the closing fade still
 	// reads it; a new one unticks the box.
 	shown         backend.Session
 	provider      string
-	rememberLabel widget.Clickable
-	startNew      widget.Clickable
-	resume        widget.Clickable
+	rememberLabel ui.Clickable
+	startNew      ui.Clickable
+	resume        ui.Clickable
 }
 
 // layout draws the prompt the gate raised, if any, and hands it the answer.

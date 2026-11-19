@@ -70,7 +70,7 @@ func (th *Theme) DropdownPanel(root *Root, state *DropdownPanelState, width unit
 // trigger opens and a press outside it or Escape closes.
 func (p DropdownPanelStyle) Layout(gtx C, trigger layout.Widget) D {
 	s := p.State
-	dims := menuLayoutTrigger(gtx, &s.trigger, trigger)
+	dims := menuLayoutTrigger(gtx, &s.trigger, func(gtx C) D { return hand(gtx, trigger) })
 	if at, ok := menuTriggerPress(gtx, &s.trigger, pointer.ButtonPrimary); ok && !s.open {
 		origin := p.Root.origin(at)
 		s.open, s.focus, s.origin = true, true, origin

@@ -68,21 +68,21 @@ type panelAt struct {
 // pullView is PullRequestView: the toolbar, the title, the status line, the
 // tabs and the open tab's panel.
 type pullView struct {
-	session, handoff, moreClick              widget.Clickable
+	session, handoff, moreClick              ui.Clickable
 	moreMenu                                 ui.MenuState
-	mergeClick                               widget.Clickable
+	mergeClick                               ui.Clickable
 	mergeMenu                                ui.MenuState
-	back, indexLink, prev, next, switchClick widget.Clickable
+	back, indexLink, prev, next, switchClick ui.Clickable
 	switchMenu                               ui.MenuState
 	tips                                     map[string]*ui.Tooltip
 	tabs                                     ui.TabsState
 	panel                                    widget.List
 	panelAt                                  panelAt
-	checksStat                               widget.Clickable
-	reviewStat                               widget.Clickable
-	commitOpen                               map[string]*widget.Bool
-	commitClicks                             map[string]*widget.Clickable
-	checkClicks                              map[string]*widget.Clickable
+	checksStat                               ui.Clickable
+	reviewStat                               ui.Clickable
+	commitOpen                               map[string]*ui.Bool
+	commitClicks                             map[string]*ui.Clickable
+	checkClicks                              map[string]*ui.Clickable
 	conflictsPanel                           ui.DropdownPanelState
 	conflictsRows                            widget.List
 	// files is the Files tab, the dock's Review cards in pull request mode;
@@ -144,9 +144,9 @@ func (v *pullView) init() {
 	v.panel.Axis = layout.Vertical
 	v.conflictsRows.Axis = layout.Vertical
 	v.tips = map[string]*ui.Tooltip{}
-	v.commitOpen = map[string]*widget.Bool{}
-	v.commitClicks = map[string]*widget.Clickable{}
-	v.checkClicks = map[string]*widget.Clickable{}
+	v.commitOpen = map[string]*ui.Bool{}
+	v.commitClicks = map[string]*ui.Clickable{}
+	v.checkClicks = map[string]*ui.Clickable{}
 	v.viewed = map[string]map[string]string{}
 	v.pending = map[string]*pendingReview{}
 	v.talk.init()
@@ -317,7 +317,7 @@ func (v *pullView) switcher(gtx C, th *ui.Theme, p *pullsScreen, rows []backend.
 
 // stepper is "N of M" between previous and next, along the index's filter.
 func (v *pullView) stepper(gtx C, th *ui.Theme, p *pullsScreen, at, total int) D {
-	arrow := func(click *widget.Clickable, ic *icons.Icon, key, tip string, disabled bool) layout.Widget {
+	arrow := func(click *ui.Clickable, ic *icons.Icon, key, tip string, disabled bool) layout.Widget {
 		return func(gtx C) D {
 			b := th.Button(click, "")
 			b.Icon, b.Variant, b.Size, b.Disabled = ic, ui.VariantGhost, ui.SizeIconSM, disabled

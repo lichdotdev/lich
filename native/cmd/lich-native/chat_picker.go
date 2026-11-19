@@ -55,9 +55,9 @@ type modelPicker struct {
 	expanded bool
 	fresh    bool
 	cursor   int
-	rows     []widget.Clickable
-	efforts  []widget.Clickable
-	more     widget.Clickable
+	rows     []ui.Clickable
+	efforts  []ui.Clickable
+	more     ui.Clickable
 	// list scrolls the models; moved says the keyboard just moved the cursor,
 	// which is to be kept in view.
 	list  widget.List
@@ -223,7 +223,7 @@ func (u *window) modelColumn(gtx C, th *ui.Theme, pk *modelPicker, sv sessionVie
 	shown, folded := pickerVisible(model.Choices, term, pk.expanded)
 	pk.cursor = min(pk.cursor, max(len(shown)-1, 0))
 	for len(pk.rows) < len(model.Choices) {
-		pk.rows = append(pk.rows, widget.Clickable{})
+		pk.rows = append(pk.rows, ui.Clickable{})
 	}
 	for pos, i := range shown {
 		if pk.rows[pos].Clicked(gtx) {
@@ -294,7 +294,7 @@ func (u *window) modelColumn(gtx C, th *ui.Theme, pk *modelPicker, sv sessionVie
 // a row per level under a signal glyph that rises with it.
 func (u *window) effortColumn(gtx C, th *ui.Theme, pk *modelPicker, sv sessionView, effort, model backend.ChatOption) D {
 	for len(pk.efforts) < len(effort.Choices) {
-		pk.efforts = append(pk.efforts, widget.Clickable{})
+		pk.efforts = append(pk.efforts, ui.Clickable{})
 	}
 	for i, c := range effort.Choices {
 		if pk.efforts[i].Clicked(gtx) {
@@ -334,7 +334,7 @@ func (u *window) effortColumn(gtx C, th *ui.Theme, pk *modelPicker, sv sessionVi
 
 // pickerRow is a row of the panel: pickerRowH tall, Accent under the pointer
 // or the keyboard's cursor.
-func pickerRow(gtx C, th *ui.Theme, click *widget.Clickable, cursor bool, content func(gtx C, th *ui.Theme) D) D {
+func pickerRow(gtx C, th *ui.Theme, click *ui.Clickable, cursor bool, content func(gtx C, th *ui.Theme) D) D {
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 	return click.Layout(gtx, func(gtx C) D {
 		bg := th.Surface

@@ -215,6 +215,7 @@ func captureButton(gtx C, th *ui.Theme, r *hotkeyRow, c combo, recording, confli
 		call.Add(gtx.Ops)
 		defer clip.Rect{Max: size}.Push(gtx.Ops).Pop()
 		event.Op(gtx.Ops, &r.tag)
+		ui.HandCursor(gtx)
 		return D{Size: size}
 	})
 }

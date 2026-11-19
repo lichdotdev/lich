@@ -7,7 +7,6 @@ import (
 	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/unit"
-	"gioui.org/widget"
 	"gioui.org/widget/material"
 
 	"github.com/lichdotdev/lich/native/backend"
@@ -487,7 +486,7 @@ func (v *pullView) commitRows(gtx C, th *ui.Theme, d backend.PRDetail) []layout.
 
 // commitRow is a commit's headline, who and when, the chevron when it has a
 // body to open, and its short oid.
-func commitRow(gtx C, th *ui.Theme, c backend.PRCommit, click *widget.Clickable, hasBody, open bool, now time.Time) D {
+func commitRow(gtx C, th *ui.Theme, c backend.PRCommit, click *ui.Clickable, hasBody, open bool, now time.Time) D {
 	return th.PanelRow(gtx, click, hasBody, pullsRowEdge, pullsRowPadX, func(gtx C, th *ui.Theme) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Flexed(1, func(gtx C) D {
@@ -560,10 +559,10 @@ func (v *pullView) checkRows(gtx C, th *ui.Theme, d backend.PRDetail, act *pulls
 	return rows
 }
 
-func boolOf(m map[string]*widget.Bool, id string) *widget.Bool {
+func boolOf(m map[string]*ui.Bool, id string) *ui.Bool {
 	b, ok := m[id]
 	if !ok {
-		b = new(widget.Bool)
+		b = new(ui.Bool)
 		m[id] = b
 	}
 	return b

@@ -6,7 +6,6 @@ import (
 	"sync"
 
 	"gioui.org/layout"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
@@ -37,7 +36,7 @@ type helpSettings struct {
 	diagnostics *backend.Diagnostics
 	asked       bool
 
-	bug, reveal, repo widget.Clickable
+	bug, reveal, repo ui.Clickable
 }
 
 func (h *helpSettings) read(s *settingsScreen) *backend.Diagnostics {

@@ -5,19 +5,17 @@ import (
 	"image/color"
 	"testing"
 	"time"
-
-	"gioui.org/widget"
 )
 
 func TestCheckboxIsSixteenSquare(t *testing.T) {
-	cb := testTheme().Checkbox(new(widget.Bool))
+	cb := testTheme().Checkbox(new(Bool))
 	if d := layoutAt(cb.Layout, 0, 500); d.Size != image.Pt(16, 16) {
 		t.Errorf("got %v, want 16x16 (size-4)", d.Size)
 	}
 }
 
 func TestCheckboxClickFlipsChecked(t *testing.T) {
-	checked := new(widget.Bool)
+	checked := new(Bool)
 	rig := newToggleRig(image.Pt(20, 20), testTheme().Checkbox(checked).Layout)
 	rig.click(image.Pt(8, 8))
 	if !checked.Value {
@@ -42,7 +40,7 @@ func TestCheckboxPointerAreaReachesPastTheBox(t *testing.T) {
 		{"9px below the box", image.Pt(8, 16+9), false},
 	}
 	for _, tc := range cases {
-		checked := new(widget.Bool)
+		checked := new(Bool)
 		rig := newToggleRig(image.Pt(30, 30), testTheme().Checkbox(checked).Layout)
 		rig.click(tc.at)
 		if checked.Value != tc.hit {
@@ -52,7 +50,7 @@ func TestCheckboxPointerAreaReachesPastTheBox(t *testing.T) {
 }
 
 func TestCheckboxPointerAreaLeavesTheLayoutAlone(t *testing.T) {
-	cb := testTheme().Checkbox(new(widget.Bool))
+	cb := testTheme().Checkbox(new(Bool))
 	rig := newToggleRig(image.Pt(30, 30), cb.Layout)
 	if d := rig.frame(); d.Size != image.Pt(16, 16) {
 		t.Errorf("got %v, want the box's own 16x16", d.Size)
@@ -60,7 +58,7 @@ func TestCheckboxPointerAreaLeavesTheLayoutAlone(t *testing.T) {
 }
 
 func TestCheckboxDisabledIgnoresClicks(t *testing.T) {
-	checked := new(widget.Bool)
+	checked := new(Bool)
 	cb := testTheme().Checkbox(checked)
 	cb.Disabled = true
 	rig := newToggleRig(image.Pt(20, 20), cb.Layout)
@@ -75,7 +73,7 @@ func TestCheckboxCheckedFillsWithPrimary(t *testing.T) {
 	// Left of the tick's short stroke and inside the border: bare fill.
 	inside := image.Pt(3, 13)
 	draw := func(checked bool) *image.RGBA {
-		cb := th.Checkbox(&widget.Bool{Value: checked})
+		cb := th.Checkbox(BoolOf(checked))
 		return toggleRender(t, image.Pt(16, 16), time.Time{}, cb.Layout)
 	}
 	if img := draw(true); !toggleIs(img, inside, th.Primary) {
@@ -91,7 +89,7 @@ func TestCheckboxCheckedFillsWithPrimary(t *testing.T) {
 // alpha Gio would blend in linear light.
 func TestCheckboxDisabledFadesOntoThePage(t *testing.T) {
 	th := testTheme()
-	cb := th.Checkbox(&widget.Bool{Value: true})
+	cb := th.Checkbox(BoolOf(true))
 	cb.Disabled = true
 	img := toggleRender(t, image.Pt(16, 16), time.Time{}, cb.Layout)
 	if want := (color.NRGBA{R: 122, G: 122, B: 124, A: 255}); !toggleIs(img, image.Pt(3, 13), want) {

@@ -4,12 +4,10 @@ import (
 	"image"
 	"image/color"
 
-	"gioui.org/io/pointer"
 	"gioui.org/layout"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
 	"gioui.org/unit"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/godemirror"
 	"github.com/lichdotdev/lich/native/ui"
@@ -42,19 +40,19 @@ type Labels struct {
 type Buttons struct {
 	labels Labels
 	theme  *ui.Theme
-	expand map[int]*widget.Clickable
-	revert map[int]*widget.Clickable
+	expand map[int]*ui.Clickable
+	revert map[int]*ui.Clickable
 }
 
 // NewButtons builds the Buttons Options takes.
 func NewButtons(labels Labels) *Buttons {
-	return &Buttons{labels: labels, expand: map[int]*widget.Clickable{}, revert: map[int]*widget.Clickable{}}
+	return &Buttons{labels: labels, expand: map[int]*ui.Clickable{}, revert: map[int]*ui.Clickable{}}
 }
 
-func clickable(m map[int]*widget.Clickable, key int) *widget.Clickable {
+func clickable(m map[int]*ui.Clickable, key int) *ui.Clickable {
 	c, ok := m[key]
 	if !ok {
-		c = new(widget.Clickable)
+		c = new(ui.Clickable)
 		m[key] = c
 	}
 	return c
@@ -103,7 +101,7 @@ func (a *Buttons) Revert(chunk godemirror.Chunk, onClick func()) layout.Widget {
 
 // button lays content out padded on a rounded background with an optional
 // 1px border, as c's target, with the hand cursor.
-func (a *Buttons) button(gtx C, c *widget.Clickable, bg, edge color.NRGBA, content layout.Widget) D {
+func (a *Buttons) button(gtx C, c *ui.Clickable, bg, edge color.NRGBA, content layout.Widget) D {
 	return c.Layout(gtx, func(gtx C) D {
 		gtx.Constraints.Min = image.Point{}
 		return layout.Background{}.Layout(gtx,
@@ -116,8 +114,6 @@ func (a *Buttons) button(gtx C, c *widget.Clickable, bg, edge color.NRGBA, conte
 				} else if bg.A != 0 {
 					paint.FillShape(gtx.Ops, bg, clip.UniformRRect(image.Rectangle{Max: size}, r).Op(gtx.Ops))
 				}
-				defer clip.Rect(image.Rectangle{Max: size}).Push(gtx.Ops).Pop()
-				pointer.CursorPointer.Add(gtx.Ops)
 				return D{Size: size}
 			},
 			func(gtx C) D {

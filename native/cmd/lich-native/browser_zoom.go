@@ -7,7 +7,6 @@ import (
 
 	"gioui.org/layout"
 	"gioui.org/unit"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
@@ -28,7 +27,7 @@ var zoomValueMinWidth = ui.Space(10)
 type browserZoomState struct {
 	button         ui.IconActionState
 	panel          ui.DropdownPanelState
-	out, in, reset widget.Clickable
+	out, in, reset ui.Clickable
 	outTip, inTip  ui.Tooltip
 }
 
@@ -70,7 +69,7 @@ func (u *window) browserZoomControl(gtx C, z *browserZoomState) D {
 // then Reset to 100% with its chord.
 func (u *window) browserZoomPanel(gtx C, th *ui.Theme, z *browserZoomState) D {
 	isMac := runtime.GOOS == "darwin"
-	step := func(click *widget.Clickable, tip *ui.Tooltip, ic *icons.Icon, label, key string, disabled bool) layout.Widget {
+	step := func(click *ui.Clickable, tip *ui.Tooltip, ic *icons.Icon, label, key string, disabled bool) layout.Widget {
 		b := th.Button(click, "")
 		b.Icon, b.Variant, b.Size, b.Disabled = ic, ui.VariantGhost, ui.SizeIconXS, disabled
 		return func(gtx C) D {

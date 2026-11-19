@@ -117,7 +117,7 @@ type InputStyle struct {
 	// Clear, when set, is a ghost X at the right edge while the field has
 	// text: pressing it empties the field, as an undo step, and leaves the
 	// focus in it.
-	Clear    *widget.Clickable
+	Clear    *Clickable
 	Disabled bool
 	Invalid  bool
 	theme    *Theme

@@ -4,7 +4,6 @@ import (
 	"image"
 
 	"gioui.org/layout"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
@@ -17,7 +16,7 @@ var stepperValueMinWidth = ui.Space(16)
 
 // stepperState is one Stepper's widget state.
 type stepperState struct {
-	dec, value, inc          widget.Clickable
+	dec, value, inc          ui.Clickable
 	decTip, valueTip, incTip ui.Tooltip
 }
 
@@ -44,7 +43,7 @@ func (st *stepperState) layout(gtx C, th *ui.Theme, root *ui.Root, s stepperSpec
 	if st.value.Clicked(gtx) && custom {
 		s.onChange(s.fallback)
 	}
-	icon := func(click *widget.Clickable, tip *ui.Tooltip, ic *icons.Icon, label string, disabled bool) layout.Widget {
+	icon := func(click *ui.Clickable, tip *ui.Tooltip, ic *icons.Icon, label string, disabled bool) layout.Widget {
 		b := th.Button(click, "")
 		b.Icon, b.Variant, b.Size, b.Disabled = ic, ui.VariantOutline, ui.SizeIcon, disabled
 		return func(gtx C) D { return th.Tooltip(root, tip, label).Layout(gtx, b.Layout) }

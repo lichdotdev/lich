@@ -6,7 +6,6 @@ import (
 	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/unit"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
@@ -74,7 +73,7 @@ func (th *Theme) fade(c color.NRGBA) color.NRGBA {
 // its natural width, or the minimum constraint when wider (w-full), and
 // centers its content either way.
 type ButtonStyle struct {
-	Click    *widget.Clickable
+	Click    *Clickable
 	Text     string
 	Icon     *icons.Icon // leading, optional
 	Variant  Variant
@@ -87,7 +86,7 @@ type ButtonStyle struct {
 }
 
 // Button is a default-variant, default-size button.
-func (th *Theme) Button(click *widget.Clickable, text string) ButtonStyle {
+func (th *Theme) Button(click *Clickable, text string) ButtonStyle {
 	return ButtonStyle{Click: click, Text: text, theme: th}
 }
 

@@ -230,7 +230,7 @@ func drawBusyRing(r *Renderer, gtx C, th *ui.Theme, n extension.Node, _ string) 
 
 func drawChip(r *Renderer, gtx C, th *ui.Theme, n extension.Node, id string) D {
 	p := props[extension.ChipProps](n)
-	click := stateOf[widget.Clickable](r, id)
+	click := stateOf[ui.Clickable](r, id)
 	if click.Clicked(gtx) {
 		r.fire(p.OnPress, extension.EventData{})
 	}
@@ -238,7 +238,7 @@ func drawChip(r *Renderer, gtx C, th *ui.Theme, n extension.Node, id string) D {
 }
 
 type boolState struct {
-	value widget.Bool
+	value ui.Bool
 	sent  synced[bool]
 }
 
@@ -294,7 +294,7 @@ func drawToggle(r *Renderer, gtx C, th *ui.Theme, n extension.Node, id string) D
 }
 
 type enumState struct {
-	value widget.Enum
+	value ui.Enum
 	sent  synced[string]
 }
 

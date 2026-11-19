@@ -8,14 +8,13 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/unit"
-	"gioui.org/widget"
 	"gioui.org/widget/material"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
 // blockState is one block's widget state, kept per project and block.
 type blockState struct {
-	toggle   widget.Clickable
+	toggle   ui.Clickable
 	cards    ui.Sortable
 	presence ui.Presence
 	tree     treeMotion
@@ -23,7 +22,7 @@ type blockState struct {
 	closing  closingCards
 	options  ui.MenuState
 	context  ui.MenuState // the header's right click, the …'s entries
-	more     widget.Clickable
+	more     ui.Clickable
 	rename   ui.InlineEdit
 	drawn    bool // laid out this frame, else pruned
 }

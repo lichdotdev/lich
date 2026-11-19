@@ -10,7 +10,6 @@ import (
 	"gioui.org/op"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
@@ -50,9 +49,9 @@ var (
 
 // themeCard is one card's widget state.
 type themeCard struct {
-	click                widget.Clickable
+	click                ui.Clickable
 	tip                  ui.Tooltip
-	update, remove       widget.Clickable
+	update, remove       ui.Clickable
 	updateTip, removeTip ui.Tooltip
 }
 

@@ -9,14 +9,13 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/unit"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
 // GhostTextButton is a text-xs medium label in ink, Space(6) high, with a
 // muted fill under the pointer.
-func (th *Theme) GhostTextButton(gtx C, click *widget.Clickable, label string, ink color.NRGBA) D {
+func (th *Theme) GhostTextButton(gtx C, click *Clickable, label string, ink color.NRGBA) D {
 	return click.Layout(gtx, func(gtx C) D {
 		macro := op.Record(gtx.Ops)
 		gtx.Constraints.Min = image.Pt(0, gtx.Dp(Space(6)))
@@ -36,7 +35,7 @@ func (th *Theme) GhostTextButton(gtx C, click *widget.Clickable, label string, i
 
 // CardIconButton is a size-3 glyph turned by turn radians, in a square of
 // side with a muted fill under the pointer.
-func (th *Theme) CardIconButton(gtx C, click *widget.Clickable, ic *icons.Icon, side unit.Dp, turn float32) D {
+func (th *Theme) CardIconButton(gtx C, click *Clickable, ic *icons.Icon, side unit.Dp, turn float32) D {
 	return click.Layout(gtx, func(gtx C) D { return th.cardIcon(gtx, click, ic, side, turn) })
 }
 
@@ -46,7 +45,7 @@ func (th *Theme) CardIconDisabled(gtx C, ic *icons.Icon, side unit.Dp, turn floa
 }
 
 // cardIcon draws CardIconButton, dimmed and without a hover when click is nil.
-func (th *Theme) cardIcon(gtx C, click *widget.Clickable, ic *icons.Icon, side unit.Dp, turn float32) D {
+func (th *Theme) cardIcon(gtx C, click *Clickable, ic *icons.Icon, side unit.Dp, turn float32) D {
 	size := gtx.Dp(side)
 	gtx.Constraints = layout.Exact(image.Pt(size, size))
 	ink := th.Foreground
@@ -65,7 +64,7 @@ func (th *Theme) cardIcon(gtx C, click *widget.Clickable, ic *icons.Icon, side u
 }
 
 // GhostIconButton is a ghost icon button of SizeIcon with hint in a tooltip.
-func (th *Theme) GhostIconButton(gtx C, root *Root, click *widget.Clickable, tip *Tooltip, ic *icons.Icon, hint string, disabled bool) D {
+func (th *Theme) GhostIconButton(gtx C, root *Root, click *Clickable, tip *Tooltip, ic *icons.Icon, hint string, disabled bool) D {
 	b := th.Button(click, "")
 	b.Icon, b.Variant, b.Size, b.Disabled = ic, VariantGhost, SizeIcon, disabled
 	return th.Tooltip(root, tip, hint).Layout(gtx, b.Layout)

@@ -6,8 +6,6 @@ import (
 	"strings"
 	"sync"
 
-	"gioui.org/widget"
-
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
@@ -389,9 +387,9 @@ func providerTags(kind, projectDefault, skip string) []string {
 
 // providerState is one provider row's widgets.
 type providerState struct {
-	open   widget.Clickable
+	open   ui.Clickable
 	toggle ui.SwitchState
-	docs   widget.Clickable
+	docs   ui.Clickable
 }
 
 // providerSettings is the Providers pane's state: the verdicts it has asked
@@ -421,10 +419,10 @@ type providerSettings struct {
 	// unwatch stops each plan reading the open pane follows, by quota key.
 	unwatch map[string]func()
 
-	addToggle, recheck, back, docs widget.Clickable
+	addToggle, recheck, back, docs ui.Clickable
 	rows                           map[string]*providerState
 	picker                         ui.DropdownPanelState
-	options                        map[string]*widget.Clickable
+	options                        map[string]*ui.Clickable
 
 	bin binInput
 
@@ -433,7 +431,7 @@ type providerSettings struct {
 	claude, codex, omp profileSettings
 	xdg                map[string]*profileSettings
 
-	skip, restore  widget.Enum
+	skip, restore  ui.Enum
 	ultra, agents  ui.SwitchState
 	unfold, header ui.SwitchState
 
@@ -442,8 +440,8 @@ type providerSettings struct {
 	change  skipChange
 	asking  bool
 	dialog  ui.DialogState
-	cancel  widget.Clickable
-	confirm widget.Clickable
+	cancel  ui.Clickable
+	confirm ui.Clickable
 }
 
 // skipChange is a climb waiting on its confirmation.

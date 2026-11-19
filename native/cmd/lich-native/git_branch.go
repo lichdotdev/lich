@@ -10,7 +10,6 @@ import (
 	"sync"
 
 	"gioui.org/layout"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
@@ -117,7 +116,7 @@ type branchOps struct {
 	confirm      *gitConfirm
 	confirmShown gitConfirm
 	dialog       ui.DialogState
-	ok, cancel   widget.Clickable
+	ok, cancel   ui.Clickable
 }
 
 func gitActLabel(act gitBranchAct, session string) string {

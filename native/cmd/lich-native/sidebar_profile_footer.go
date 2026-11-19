@@ -6,7 +6,6 @@ import (
 
 	"gioui.org/layout"
 	"gioui.org/unit"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
@@ -21,8 +20,8 @@ var icProfileFooter = icons.Lucide("chevrons-up-down")
 // usage of its account over the menu that changes it.
 type profileFooter struct {
 	panel ui.DropdownPanelState
-	hover widget.Clickable // the row's hover; the panel takes the press
-	rows  map[string]*widget.Clickable
+	hover ui.Clickable // the row's hover; the panel takes the press
+	rows  map[string]*ui.Clickable
 	reset resetUse
 }
 

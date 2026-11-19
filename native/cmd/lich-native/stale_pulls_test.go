@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"gioui.org/io/key"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
@@ -61,7 +60,7 @@ func pullsFramesHeld(t *testing.T, hold chan struct{}) (*window, *frameRig) {
 		t.Fatal(err)
 	}
 	u.pulls.view.files = files
-	u.pulls.view.files.pr = &prFiles{ticks: map[string]*widget.Bool{}}
+	u.pulls.view.files.pr = &prFiles{ticks: map[string]*ui.Bool{}}
 	u.pulls.show(backend.Project{ID: "p", Path: "/repo"}, "main", 0)
 	r.draw = func(gtx C, th *ui.Theme) {
 		u.theme = th

@@ -12,7 +12,6 @@ import (
 	"gioui.org/op"
 	"gioui.org/op/clip"
 	"gioui.org/unit"
-	"gioui.org/widget"
 )
 
 func TestPopupPlace(t *testing.T) {
@@ -53,7 +52,7 @@ func TestPopupBackdropBlocksAndReportsOutsidePress(t *testing.T) {
 	var (
 		router   input.Router
 		ops      op.Ops
-		under    widget.Clickable
+		under    Clickable
 		backdrop popupBackdrop
 		popup    struct{ _ byte }
 	)
