@@ -14,7 +14,7 @@ type chatRowKind uint8
 const (
 	chatRowItem chatRowKind = iota // one item as it is
 	chatRowWork                    // a turn's tool calls, folded into one line
-	chatRowLive                    // the turn in flight, unless a permission says it waits
+	chatRowLive                    // the turn in flight, unless a permission or a question says it waits
 	chatRowDay                     // the day a turn starts on, when it is not the day of the turn before
 	chatRowDone                    // the line that closes a finished turn
 )
@@ -53,7 +53,7 @@ type chatTurnSpan struct {
 
 // chatRows lays items out as the view draws them: each turn's tool calls
 // folded into one work row where its first one was, and while running, a
-// live row last, which a waiting permission's box stands in for. A turn has run from its first item to its last, or to now
+// live row last, which a waiting permission's or question's box stands in for. A turn has run from its first item to its last, or to now
 // while it is the one in flight: the history carries no durations.
 func chatRows(items []backend.ChatItem, running bool, now time.Time) []chatRow {
 	spans := map[int]*chatTurnSpan{}
@@ -123,11 +123,12 @@ func chatRows(items []backend.ChatItem, running bool, now time.Time) []chatRow {
 		rows = append(rows, work)
 	}
 	// The conversation's last turn, once it has ended, closes with a line of
-	// its own; the person's next message takes it away.
-	if !running && len(items) > 0 && asked[last] {
+	// its own; the person's next message takes it away. A question still
+	// waiting holds the turn open, whatever a window opened mid-turn heard.
+	if !running && len(items) > 0 && asked[last] && questionWaiting(items) == nil {
 		rows = append(rows, chatRow{kind: chatRowDone, turn: last})
 	}
-	if running && permissionWaiting(items) == nil {
+	if running && permissionWaiting(items) == nil && questionWaiting(items) == nil {
 		live := chatRow{kind: chatRowLive, turn: last}
 		if sp := spans[last]; sp != nil && sp.start > 0 && !now.IsZero() {
 			live.took = time.Duration(max(now.UnixMilli()-sp.start, 0)) * time.Millisecond

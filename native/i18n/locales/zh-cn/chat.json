@@ -58,5 +58,18 @@
     "search": "搜索 {provider} 的模型…",
     "showMore": "显示更多",
     "default": "默认"
+  },
+  "question": {
+    "multi": "多选",
+    "step": "{n} / {total}",
+    "sendAll": "全部发送",
+    "freeHint": "Enter 发送 · Esc 拒绝",
+    "marked": {
+      "other": "已选 {count} 项"
+    },
+    "write": "其他… 写下你的回答",
+    "declined": "未回答",
+    "label": "{header}：",
+    "own": "“{text}”"
   }
 }

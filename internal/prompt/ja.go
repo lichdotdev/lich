@@ -185,4 +185,5 @@ var ja = Catalog{
 	PageDialogWaits:      "このダイアログに応答するまでページは何も実行しません。browser_dialog を呼び出してください。",
 	PageDialogWaitsCLI:   "このダイアログに応答するまでページは何も実行しません。lich browser dialog accept|dismiss を実行してください。",
 	ChatPermissionDenied: "ユーザーがこのツール呼び出しを拒否しました。",
+	ChatQuestionDeclined: "ユーザーはこれらの質問に回答しませんでした。回答を推測せず、回答なしで進めるか、もう一度質問してください。",
 }

@@ -46,6 +46,9 @@ type driver interface {
 	open(ctx context.Context, resume string) (string, error)
 	// prompt sends the person's message. The turn ends through endTurn.
 	prompt(text string) error
+	// follow sends the message the person wrote while the agent waited on
+	// questions, which were just declined, in the turn still running.
+	follow(text string) error
 	// cancel asks the provider to stop the turn in flight.
 	cancel() error
 	// handle reads one line the provider wrote.
@@ -82,11 +85,15 @@ type chatSession struct {
 	since   time.Time
 	// before is the checkout as the turn in flight found it, nil where it
 	// could not be read.
-	before *project.Lines
-	perms  map[string]permission
-	exited chan struct{}
-	bound  string
-	opts   []api.ChatOption
+	before    *project.Lines
+	perms     map[string]permission
+	questions map[string]question
+	exited    chan struct{}
+	bound     string
+	opts      []api.ChatOption
+	// next is a message for the turn after this one, which a provider that
+	// takes none during a turn is sent once the turn ends.
+	next string
 }
 
 // wire writes one JSON value per line to a provider's stdin.
@@ -205,11 +212,53 @@ func (c *chatSession) endTurn(reason string) {
 	c.conv.flush()
 	c.svc.term.ReportChatState(c.id, stateDone, "", "")
 	events.Send(c.svc.hub.Emit, api.ChatTurnEvent, api.ChatTurn{SessionID: c.id, StopReason: reason, DurationMs: took, Changes: changes})
+	c.mu.Lock()
+	next := c.next
+	c.next = ""
+	c.mu.Unlock()
+	if next != "" {
+		go c.sendNext(next)
+	}
+}
+
+// send hands text to the agent in the turn just begun.
+func (c *chatSession) send(text string) error {
+	c.markStart()
+	if err := c.drv.prompt(text); err != nil {
+		c.conv.notice(err.Error())
+		c.endTurn(stopError)
+		return err
+	}
+	return nil
+}
+
+// sendNext opens the turn for a message already shown, which waited for the
+// last turn to end.
+func (c *chatSession) sendNext(text string) {
+	if err := c.beginTurn(); err != nil {
+		slog.Warn("chat: send the next message", "session", c.id, "err", err)
+		return
+	}
+	if err := c.send(text); err != nil {
+		slog.Warn("chat: send the next message", "session", c.id, "err", err)
+	}
+}
+
+// holdForNext keeps text for the turn after the one running, and reports
+// false when none runs.
+func (c *chatSession) holdForNext(text string) bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.running {
+		c.next = text
+	}
+	return c.running
 }
 
 // dismissPermissions answers no to every question still waiting, which a
 // cancel does first: ACP has the agent wait on the answer before it stops.
 func (c *chatSession) dismissPermissions() {
+	c.declineQuestions()
 	c.mu.Lock()
 	perms := c.perms
 	c.perms = map[string]permission{}

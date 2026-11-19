@@ -184,7 +184,7 @@ func (s *Service) start(ctx context.Context, id, projectID, kind, cwd string, ca
 	}
 	c := &chatSession{
 		svc: s, id: id, kind: kind, projectID: projectID, cwd: cwd, proc: proc,
-		out: &wire{w: proc.Stdin}, perms: map[string]permission{}, exited: make(chan struct{}),
+		out: &wire{w: proc.Stdin}, perms: map[string]permission{}, questions: map[string]question{}, exited: make(chan struct{}),
 	}
 	c.conv = newConversation(func(it api.ChatItem) {
 		events.Send(s.hub.Emit, api.ChatItemEvent, api.ChatItemUpdate{SessionID: id, Item: it})
@@ -259,17 +259,17 @@ func (s *Service) Prompt(ctx context.Context, opts api.ChatPromptOptions) (api.N
 	if s.term.TurnOpen(opts.ID) && !c.turnRunning() {
 		return api.None{}, errBusy
 	}
+	// A message written while the agent waits on its questions answers none
+	// of them, and goes to the agent after.
+	if c.declineQuestions() {
+		c.conv.userMessage(opts.Text)
+		return api.None{}, c.drv.follow(opts.Text)
+	}
 	if err := c.beginTurn(); err != nil {
 		return api.None{}, err
 	}
 	c.conv.userMessage(opts.Text)
-	c.markStart()
-	if err := c.drv.prompt(opts.Text); err != nil {
-		c.conv.notice(err.Error())
-		c.endTurn(stopError)
-		return api.None{}, err
-	}
-	return api.None{}, nil
+	return api.None{}, c.send(opts.Text)
 }
 
 // Cancel answers api.ChatCancel.
@@ -289,6 +289,15 @@ func (s *Service) Answer(_ context.Context, opts api.ChatAnswerOptions) (api.Non
 		return api.None{}, fmt.Errorf("session %q has no chat running", opts.ID)
 	}
 	return api.None{}, c.answer(opts.ItemID, opts.OptionID)
+}
+
+// Reply answers api.ChatReply.
+func (s *Service) Reply(_ context.Context, opts api.ChatReplyOptions) (api.None, error) {
+	c := s.running(opts.ID)
+	if c == nil {
+		return api.None{}, fmt.Errorf("session %q has no chat running", opts.ID)
+	}
+	return api.None{}, c.reply(opts.ItemID, opts.Reply)
 }
 
 // End stops session id's chat, for a card that closed.

@@ -87,6 +87,11 @@ func (u *window) chatRow(gtx C, th *ui.Theme, p *chatPane, sv sessionView, r cha
 			return D{}
 		}
 		return chatPermission(gtx, th, p, it)
+	case api.ItemQuestion:
+		if it.Question == nil {
+			return D{}
+		}
+		return chatQuestion(gtx, th, p, it)
 	}
 	return th.Text(ui.TextSM, expandTabs(it.Text)).Muted().Wrapped().Layout(gtx)
 }

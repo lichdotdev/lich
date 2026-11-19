@@ -10,6 +10,10 @@ type (
 	ChatItem       = api.ChatItem
 	ChatToolCall   = api.ChatToolCall
 	ChatPermission = api.ChatPermission
+	ChatQuestion   = api.ChatQuestion
+	ChatAsk        = api.ChatAsk
+	ChatQReplied   = api.ChatQReplied
+	ChatAskAnswer  = api.ChatAskAnswer
 	ChatTurn       = api.ChatTurn
 	ChatOption     = api.ChatOption
 	ChatChoice     = api.ChatChoice
@@ -47,6 +51,12 @@ func (c *Client) ChatCancel(ctx context.Context, id string) error {
 // ChatAnswer answers permission item itemID of session id with optionID.
 func (c *Client) ChatAnswer(ctx context.Context, id, itemID, optionID string) error {
 	_, err := callMethod(ctx, c, api.ChatAnswer, api.ChatAnswerOptions{ID: id, ItemID: itemID, OptionID: optionID})
+	return err
+}
+
+// ChatReply answers question item itemID of session id, or declines it.
+func (c *Client) ChatReply(ctx context.Context, id, itemID string, reply ChatQReplied) error {
+	_, err := callMethod(ctx, c, api.ChatReply, api.ChatReplyOptions{ID: id, ItemID: itemID, Reply: reply})
 	return err
 }
 

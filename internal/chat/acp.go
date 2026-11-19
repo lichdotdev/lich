@@ -98,10 +98,14 @@ func (d *acpDriver) notify(method string, params any) error {
 func (d *acpDriver) open(ctx context.Context, resume string) (string, error) {
 	raw, err := d.call(ctx, "initialize", map[string]any{
 		"protocolVersion": 1,
-		// lich serves neither: a file the agent asked lich to write would be
-		// written outside the session's sandbox.
-		"clientCapabilities": map[string]any{"fs": map[string]bool{"readTextFile": false, "writeTextFile": false}, "terminal": false},
-		"clientInfo":         map[string]string{"name": "lich", "version": "1"},
+		// lich serves neither fs nor terminal: a file the agent asked lich to
+		// write would be written outside the session's sandbox. A form
+		// elicitation is the agent's question to the person (acp_question.go).
+		"clientCapabilities": map[string]any{
+			"fs":       map[string]bool{"readTextFile": false, "writeTextFile": false},
+			"terminal": false, "elicitation": map[string]any{"form": map[string]any{}},
+		},
+		"clientInfo": map[string]string{"name": "lich", "version": "1"},
 	})
 	if err != nil {
 		return "", fmt.Errorf("the agent did not start its chat: %w", err)
@@ -222,6 +226,17 @@ func (d *acpDriver) prompt(text string) error {
 	return nil
 }
 
+// follow stops the turn and sends the message once it ended: ACP takes no
+// message during a turn. The decline may already have ended it (oh-my-pi ends
+// its turn on one), and then the message goes now.
+func (d *acpDriver) follow(text string) error {
+	if d.c.holdForNext(text) {
+		return d.cancel()
+	}
+	go d.c.sendNext(text)
+	return nil
+}
+
 func (d *acpDriver) cancel() error {
 	return d.notify("session/cancel", map[string]string{"sessionId": d.sessionID()})
 }
@@ -269,8 +284,13 @@ func (d *acpDriver) reply(m acpMessage) {
 }
 
 // request answers what the agent asks of lich: a permission becomes an item,
-// anything else is refused as a method lich does not serve.
+// an elicitation a question item, and anything else is refused as a method
+// lich does not serve.
 func (d *acpDriver) request(m acpMessage) {
+	if m.Method == acpElicit {
+		d.elicit(m)
+		return
+	}
 	if m.Method != "session/request_permission" {
 		_ = d.c.out.send(map[string]any{"jsonrpc": "2.0", "id": m.ID, "error": map[string]any{"code": -32601, "message": "method not found"}})
 		return

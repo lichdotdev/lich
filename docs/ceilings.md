@@ -143,6 +143,22 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   another model than the turn's (2.1.327). A terminal resumed after the chat is passed none of them (the
   birth-value bullet), so there Claude Code's effort, and Antigravity's model and effort, come back on the
   provider's default.
+- **A chat draws the agent's questions only where the provider hands them to the client** (`internal/chat/question.go`,
+  `claude_question.go`, `acp_question.go`): every request is read into Claude Code's AskUserQuestion shape. Claude
+  Code asks through `can_use_tool` for `AskUserQuestion`, even in `bypassPermissions` (2.1.328), and takes the
+  answers in the allowed input, several picks and the person's own words joined by ", ", or a deny with a word to
+  the agent from the prompt catalog. Antigravity (1.5.3) and oh-my-pi (18.8.9) ask over ACP's `elicitation/create`
+  in form mode once the client declares it: lich reads the schema's properties in name order, folds `<key>__other`
+  and `<key>_other` into the question they belong to as its own words, and answers with each choice's `const`; a
+  form that is not one, or a mode other than form, is declined. opencode (1.19.4) leaves its `question` tool out
+  of an ACP session unless `OPENCODE_ENABLE_QUESTION_TOOL` is set, so its agent asks in plain text; with that
+  variable in the person's environment the tool waits on opencode's own screen, never reaches the client, and the
+  turn waits until the person stops it. Kiro CLI (2.21.0) has no question tool and asks in plain text; Cursor CLI was not measured past its login. Nothing answers a
+  question on the person's behalf, a checkout that skips permissions included. A message sent while questions wait
+  declines them and goes to the agent: Claude Code takes it in the turn running; ACP takes no message during a
+  turn, so lich stops the turn and sends it once the turn ended. A question the process never got an answer to, read
+  back from a transcript, shows as not answered. The window learns a turn is running from its start event, so one
+  opened mid-turn knows it only from a question still waiting.
 
 ## Session state and hooks
 

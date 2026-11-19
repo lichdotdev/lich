@@ -37,6 +37,7 @@ func readClaudeHistory(c *chatSession, id string) {
 			}
 		}
 		if err != nil {
+			c.declineUnanswered()
 			return
 		}
 	}

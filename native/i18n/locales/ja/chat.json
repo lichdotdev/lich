@@ -58,5 +58,18 @@
     "search": "{provider}のモデルを検索…",
     "showMore": "さらに表示",
     "default": "デフォルト"
+  },
+  "question": {
+    "multi": "複数選択",
+    "step": "{n} / {total}",
+    "sendAll": "すべて送信",
+    "freeHint": "Enter で送信 · Esc で断る",
+    "marked": {
+      "other": "{count} 件選択"
+    },
+    "write": "その他… 自分で回答を書く",
+    "declined": "未回答",
+    "label": "{header}:",
+    "own": "「{text}」"
   }
 }
