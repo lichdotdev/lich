@@ -39,8 +39,11 @@ var (
 	chatFootPad = ui.Space(1.5)
 	// chatCrumbsTop and chatCrumbGlyph size the line under the box: a TextXS
 	// line with glyphs a step under the footer's.
-	chatCrumbsTop  = ui.Space(1.5)
-	chatCrumbGlyph = ui.Space(3)
+	chatCrumbsTop = ui.Space(1.5)
+	// chatCrumbsBottom is the room under the line, between it and the bottom
+	// edge of the pane's island, over the composer's own pad.
+	chatCrumbsBottom = ui.Space(2)
+	chatCrumbGlyph   = ui.Space(3)
 )
 
 // chatCrumbGap is the space either side of the line's slash, in ui.Space units.
@@ -184,7 +187,7 @@ func (u *window) chatCrumbs(gtx C, th *ui.Theme, sv sessionView, in footerInput,
 		link := followed && f.git != nil && in.inRepository()
 		left = append(left, layout.Rigid(func(gtx C) D { return f.crumb(gtx, th, "checkout"+suffix, ic, *ft.checkout, link) }))
 	}
-	return layout.Inset{Top: chatCrumbsTop, Left: chatFootPad, Right: chatFootPad}.Layout(gtx, func(gtx C) D {
+	return layout.Inset{Top: chatCrumbsTop, Bottom: chatCrumbsBottom, Left: chatFootPad, Right: chatFootPad}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Rigid(func(gtx C) D { return layout.Flex{Alignment: layout.Middle}.Layout(gtx, left...) }),
 			layout.Flexed(1, func(gtx C) D { return D{Size: image.Pt(gtx.Constraints.Max.X, 0)} }),

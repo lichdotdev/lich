@@ -379,3 +379,19 @@ func TestTheChangesItemHasNoFillAtRestAndNeverTheLitOne(t *testing.T) {
 		t.Error("the item has no hover fill")
 	}
 }
+
+// The line under the box keeps chatCrumbsBottom between it and the bottom edge
+// of the island, over the composer's own pad, and the room between the box and
+// the line is the one it had.
+func TestTheLineUnderTheBoxKeepsItsDistanceFromTheIslandsEdge(t *testing.T) {
+	_, r, _ := chatFrames(t, api.ViewChat)
+	r.settle(t)
+	top := labelTop(t, r, "main")
+	const lineHeight = 16 // a TextXS line
+	if got, want := rigWindow.Y-top, lineHeight+int(chatCrumbsBottom)+int(chatComposerPad); got != want {
+		t.Errorf("the line's top is %dpx from the bottom edge, want its %dpx height, %v under it and the composer's %v pad", got, lineHeight, chatCrumbsBottom, chatComposerPad)
+	}
+	if chatCrumbsBottom != 8 {
+		t.Errorf("the room under the line is %v, want Space(2), 8dp", chatCrumbsBottom)
+	}
+}
