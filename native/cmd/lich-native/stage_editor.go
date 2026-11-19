@@ -41,6 +41,10 @@ type fileEditor struct {
 	family     string
 	size       unit.Sp
 	checkout   string
+	// dir is the folder outside the checkout the open file is read from, for
+	// an agent's artifact, which the editor only shows: "" for a checkout's
+	// file.
+	dir string
 	// onDirty hears the editor start or stop holding unsaved changes, and
 	// onSaved a save that landed.
 	onDirty, onSaved func()
@@ -109,10 +113,23 @@ func newFileEditor(client *backend.Client, invalidate func(), family string, siz
 // open shows rel, on lines line to end. Another file starts over: the caller
 // has asked about the changes this one holds.
 func (f *fileEditor) open(rel string, line, end int, note agentNote) {
-	if rel != f.rel {
-		f.rel, f.kind = rel, previewKindOf(rel)
+	f.openFrom("", rel, line, end, note)
+}
+
+// openArtifact shows the agent's file name of dir, read only, rendered when
+// it is Markdown.
+func (f *fileEditor) openArtifact(dir, name string) {
+	f.openFrom(dir, name, 0, 0, agentNote{})
+}
+
+// holds is whether the editor shows rel of dir ("" for the checkout).
+func (f *fileEditor) holds(dir, rel string) bool { return f.rel == rel && f.dir == dir }
+
+func (f *fileEditor) openFrom(dir, rel string, line, end int, note agentNote) {
+	if !f.holds(dir, rel) {
+		f.dir, f.rel, f.kind = dir, rel, previewKindOf(rel)
 		f.opens++
-		f.md.rendering = false
+		f.md.rendering = dir != "" && isMarkdown(rel)
 		f.composer.close()
 		f.disk.read.stop()
 		f.disk.seen, f.disk.theirs = "", nil
@@ -125,8 +142,16 @@ func (f *fileEditor) open(rel string, line, end int, note agentNote) {
 	f.line, f.endLine, f.note, f.land, f.focus = line, end, note, true, true
 }
 
+// root is the folder rel is read from.
+func (f *fileEditor) root() string {
+	if f.dir != "" {
+		return f.dir
+	}
+	return f.checkout
+}
+
 func (f *fileEditor) fileKey() string {
-	return f.checkout + "\x00" + f.rel + "\x00" + strconv.Itoa(f.opens)
+	return f.root() + "\x00" + f.rel + "\x00" + strconv.Itoa(f.opens)
 }
 
 // read asks for the file's bytes: an image's, or the text and, the first
@@ -134,15 +159,15 @@ func (f *fileEditor) fileKey() string {
 func (f *fileEditor) read() {
 	switch f.kind {
 	case blobImage:
-		f.image.want(f.client, f.checkout, f.rel, "", strconv.Itoa(f.opens))
+		f.image.want(f.client, f.root(), f.rel, "", strconv.Itoa(f.opens))
 		return
 	case blobPDF:
 		return
 	}
-	key, client, checkout, rel := f.fileKey(), f.client, f.checkout, f.rel
+	key, client, root, rel := f.fileKey(), f.client, f.root(), f.rel
 	build, family, size := f.ed == nil, f.family, f.size
 	f.file.want(key, key, func(ctx context.Context) (editorLoad, error) {
-		text, err := client.ReadFile(ctx, checkout, rel)
+		text, err := client.ReadFile(ctx, root, rel)
 		if err != nil || !build {
 			return editorLoad{text: text}, err
 		}
@@ -215,6 +240,14 @@ func (f *fileEditor) updated(u godemirror.Update) {
 	if !u.DocChanged() {
 		return
 	}
+	if f.dir != "" {
+		// An agent's file is not the checkout's to write: typing in its
+		// source changes nothing.
+		if u.State.Doc() != f.base {
+			f.reloadFrom(f.base)
+		}
+		return
+	}
 	f.gen++
 	f.editedAt = f.now()
 	f.setDirty(u.State.Doc() != f.base)
@@ -239,7 +272,7 @@ func (f *fileEditor) redecorate(th *ui.Theme, now time.Time) {
 	}
 	cursor := st.LineAt(st.Selection().Main().Head())
 	text, hash := "", ""
-	if b, loading, err := f.blame.read.get(); !loading && err == nil {
+	if b, loading, err := f.blame.read.get(); f.dir == "" && !loading && err == nil {
 		text, hash = blameLine(b, f.lines.kept, cursor.Number-1, now)
 		f.blame.commit = b.Commits[hash]
 	}
@@ -263,7 +296,7 @@ func (f *fileEditor) redecorate(th *ui.Theme, now time.Time) {
 
 func (f *fileEditor) layout(gtx C, th *ui.Theme, env editorEnv) error {
 	f.env, f.th = env, th
-	f.exits.update(gtx, f.client, env.notify, f.checkout, f.rel)
+	f.exits.update(gtx, f.client, env.notify, f.root(), f.rel)
 	f.read()
 	if err := f.take(); err != nil {
 		return err
@@ -296,7 +329,7 @@ func (f *fileEditor) layout(gtx C, th *ui.Theme, env editorEnv) error {
 
 // editable is a text file in the editor, which Undo and Save act on.
 func (f *fileEditor) editable() bool {
-	return f.kind == blobNone && f.ed != nil && f.loaded == f.opens && !f.md.rendering
+	return f.kind == blobNone && f.ed != nil && f.loaded == f.opens && !f.md.rendering && f.dir == ""
 }
 
 func (f *fileEditor) body(gtx C, th *ui.Theme) (D, error) {
@@ -318,10 +351,8 @@ func (f *fileEditor) body(gtx C, th *ui.Theme) (D, error) {
 	case loading || f.loaded != f.opens:
 		return th.Notice(i18n.T("dock.filesPanel.loading")).Layout(gtx), nil
 	}
-	lines := f.selectedLines()
-	entries := injectEntries(f.rel, lines, f.env.inject, func() { f.composer.open(f.rel, lines) })
 	var viewErr error
-	dims := th.ContextMenu(f.env.root, &f.menu, entries).Layout(gtx, func(gtx C) D {
+	code := func(gtx C) D {
 		gtx.Constraints.Min = gtx.Constraints.Max
 		f.ed.Theme = f.env.code
 		d, err := f.ed.Layout(gtx)
@@ -330,7 +361,14 @@ func (f *fileEditor) body(gtx C, th *ui.Theme) (D, error) {
 			paint.FillShape(gtx.Ops, th.Over(th.Border), clip.Rect(gutterRule(f.ed.Geometry(), d.Size.Y)).Op())
 		}
 		return d
-	})
+	}
+	if f.dir != "" {
+		// Its lines are not the checkout's, so there is no reference to hand a session.
+		return code(gtx), viewErr
+	}
+	lines := f.selectedLines()
+	entries := injectEntries(f.rel, lines, f.env.inject, func() { f.composer.open(f.rel, lines) })
+	dims := th.ContextMenu(f.env.root, &f.menu, entries).Layout(gtx, code)
 	return dims, viewErr
 }
 

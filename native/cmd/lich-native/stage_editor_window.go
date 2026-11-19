@@ -9,6 +9,7 @@ package main
 
 import (
 	"path"
+	"path/filepath"
 	"slices"
 	"sync"
 
@@ -184,16 +185,34 @@ func (u *window) openInEditor(checkout, rel string, line, end int, note agentNot
 		u.model.invalidate()
 		return
 	}
+	u.stageFile(checkout, "", rel, func(f *fileEditor) { f.open(rel, line, end, note) })
+}
+
+// openArtifactInEditor puts the agent's Markdown file f of session's folder
+// on the stage in session's checkout editor, read only.
+func (u *window) openArtifactInEditor(session string, f backend.Artifact) {
+	view, ok := u.model.sessionViewOf(session)
+	if !ok {
+		return
+	}
+	dir, name := filepath.Dir(f.Path), filepath.Base(f.Path)
+	u.stageFile(view.path, dir, name, func(e *fileEditor) { e.openArtifact(dir, name) })
+}
+
+// stageFile puts rel on the stage in checkout's editor: dir is where an
+// artifact lives, "" for the checkout's own file. open points the editor at
+// it, once the file it held is saved.
+func (u *window) stageFile(checkout, dir, rel string, open func(*fileEditor)) {
 	f := u.editors.of(checkout)
 	show := func() {
-		f.open(rel, line, end, note)
+		open(f)
 		u.model.openEditor(checkout, rel)
 		u.settings.hide()
 		u.pulls.hide()
 		u.extension.hide()
 		u.model.invalidate()
 	}
-	if f.rel == rel {
+	if f.holds(dir, rel) {
 		show()
 		return
 	}

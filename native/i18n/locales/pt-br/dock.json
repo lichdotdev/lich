@@ -33,8 +33,7 @@
     "openInBrowser": "Abrir no navegador",
     "attachToPrompt": "Anexar ao prompt",
     "copyPath": "Copiar caminho",
-    "showInFileManager": "Mostrar no gerenciador de arquivos",
-    "backToList": "Voltar aos artifacts"
+    "showInFileManager": "Mostrar no gerenciador de arquivos"
   },
   "showCode": {
     "pointed": "{session} apontou para {file}",
@@ -56,6 +55,7 @@
     "saveFailed": "Não foi possível salvar {name}",
     "noteOn": "{author} sobre as linhas {lines}",
     "blame": "{author}, {age} · {summary}",
-    "blameUncommitted": "Você · Alterações não commitadas"
+    "blameUncommitted": "Você · Alterações não commitadas",
+    "artifactReadOnly": "Do agente · somente leitura"
   }
 }

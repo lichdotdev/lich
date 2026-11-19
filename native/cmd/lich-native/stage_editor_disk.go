@@ -57,8 +57,8 @@ func (f *fileEditor) watchDisk(gtx C) {
 	tick := gtx.Now.Truncate(editorDiskTick)
 	gtx.Execute(op.InvalidateCmd{At: tick.Add(editorDiskTick)})
 	key := fmt.Sprintf("%s\x00%d\x00%d", f.fileKey(), tick.Unix(), f.disk.nudge)
-	client, checkout, rel := f.client, f.checkout, f.rel
-	f.disk.read.want(key, f.fileKey(), func(ctx context.Context) (string, error) { return client.ReadFile(ctx, checkout, rel) })
+	client, root, rel := f.client, f.root(), f.rel
+	f.disk.read.want(key, f.fileKey(), func(ctx context.Context) (string, error) { return client.ReadFile(ctx, root, rel) })
 	if f.disk.reload.Clicked(gtx) && f.disk.theirs != nil {
 		f.reloadFrom(*f.disk.theirs)
 	}

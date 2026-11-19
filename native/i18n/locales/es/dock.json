@@ -33,8 +33,7 @@
     "openInBrowser": "Abrir en el navegador",
     "attachToPrompt": "Adjuntar al prompt",
     "copyPath": "Copiar ruta",
-    "showInFileManager": "Mostrar en el gestor de archivos",
-    "backToList": "Volver a los artefactos"
+    "showInFileManager": "Mostrar en el gestor de archivos"
   },
   "showCode": {
     "pointed": "{session} señaló {file}",
@@ -56,6 +55,7 @@
     "saveFailed": "No se pudo guardar {name}",
     "noteOn": "{author} sobre las líneas {lines}",
     "blame": "{author}, {age} · {summary}",
-    "blameUncommitted": "Tú · Cambios sin confirmar"
+    "blameUncommitted": "Tú · Cambios sin confirmar",
+    "artifactReadOnly": "Del agente · solo lectura"
   }
 }

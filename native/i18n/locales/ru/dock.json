@@ -33,8 +33,7 @@
     "openInBrowser": "Открыть в браузере",
     "attachToPrompt": "Прикрепить к промпту",
     "copyPath": "Скопировать путь",
-    "showInFileManager": "Показать в файловом менеджере",
-    "backToList": "Назад к артефактам"
+    "showInFileManager": "Показать в файловом менеджере"
   },
   "showCode": {
     "pointed": "{session} указывает на {file}",
@@ -58,6 +57,7 @@
     "saveFailed": "Не удалось сохранить {name}",
     "noteOn": "{author} о строках {lines}",
     "blame": "{author}, {age} · {summary}",
-    "blameUncommitted": "Вы · Незакоммиченные изменения"
+    "blameUncommitted": "Вы · Незакоммиченные изменения",
+    "artifactReadOnly": "От агента · только чтение"
   }
 }

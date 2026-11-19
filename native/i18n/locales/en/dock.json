@@ -33,8 +33,7 @@
     "openInBrowser": "Open in browser",
     "attachToPrompt": "Attach to prompt",
     "copyPath": "Copy path",
-    "showInFileManager": "Show in file manager",
-    "backToList": "Back to artifacts"
+    "showInFileManager": "Show in file manager"
   },
   "showCode": {
     "pointed": "{session} pointed at {file}",
@@ -56,6 +55,7 @@
     "saveFailed": "Could not save {name}",
     "noteOn": "{author} on lines {lines}",
     "blame": "{author}, {age} · {summary}",
-    "blameUncommitted": "You · Uncommitted changes"
+    "blameUncommitted": "You · Uncommitted changes",
+    "artifactReadOnly": "From the agent · read only"
   }
 }
