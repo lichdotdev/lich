@@ -143,6 +143,8 @@ distinto.
 | Costo en el pie de ventana | sí | sí | no | sí | sí | sí | no | créditos |
 | Una conversación bifurcada dentro de la propia terminal del agente cobra una sola vez el historial que copia | sí, salvo cuando el costo es el que midió el propio Claude Code | no | sin lectura de costo | sí | sí, salvo un turno guardado sin id de respuesta | no se puede bifurcar | sin lectura de costo | sin lectura de costo |
 | Cuánto queda de tu plan | sí | sí | sí | solo OpenCode Go | no | no | sí | no |
+| Lo que has gastado más allá de tu plan y su tope, en el tooltip de uso | sí | no | no | no | no | no | no | no |
+| Los restablecimientos a demanda que tiene tu cuenta, en el tooltip de uso | no | sí | no | no | no | no | no | no |
 | Un turno que el límite de uso de tu plan detuvo se reanuda cuando el límite se restablece | sí | sí | no | sus propios reintentos | sus propios reintentos | no | no | no |
 | Si otro de tus perfiles aún tiene cuota, un aviso ofrece continuar allí al momento | sí | sí | no | no | no | no | no | no |
 | Al traspasar su trabajo, un agente puede sugerir uno de tus perfiles para su sucesora, y un aviso te deja decidir si moverla | sí | sí | no | no | sí | no | Linux y Windows | solo Linux |

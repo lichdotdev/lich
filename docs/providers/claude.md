@@ -71,6 +71,11 @@ server: the model quoted a marker that lived only there).
 The plan gauge names the account a session spends (`internal/quota`, `Plan.Account`): lich answers Claude
 Code's profile route with the credentials token. The usage route is the one Claude Code's own CLI polls.
 
+The same payload carries `extra_usage`, the pay-as-you-go spend past the plan: `is_enabled`, `monthly_limit` (null for no
+cap) and `used_credits` in minor units, either of which may arrive as a float (`14157.0`), plus `currency` and
+`decimal_places`. lich decodes it only when `is_enabled` is true, into `QuotaPlan.Extra`, and the usage tooltip shows it
+as one more block. An account with it off reports every amount null.
+
 A long-lived OAuth token (`claude setup-token`) carries `user:inference` alone, so the usage route answers it 403
 and the gauge sends one `max_tokens: 1` message for the rate-limit headers on the response
 (`internal/quota/claude.go`). That request carries Claude Code's system prompt verbatim because the API rejects an

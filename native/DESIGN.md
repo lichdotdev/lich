@@ -265,6 +265,22 @@ it), Model window, Cache with its hit rate and Session cost, each only when the 
 compact with the locale's decimal mark. There is no line for compactions or for what is left before one: lich
 keeps no count of the first and no provider tells it the threshold of the second.
 
+### The usage tooltip
+
+The tooltip over the profile at the sidebar's foot, and the plan quota's own in the footer, are one component
+(`usage_tip.go`) built from the context tooltip's pieces (`tipHead`, `tipRow`, `contextBarColor`, the bar of twenty
+segments, the width). A block per window, in the order session, weekly, then a model's own cap: the window's name
+(lich's own for a window it names, with its length: "Session · 5h") at the left and the share spent at the right in
+medium, the bar in the same tones as the context's (70%, 90%), then muted `Resets in 4h 12m` and, only when the
+pace so far empties a weekly window before it resets, `Runs out in 1d 9h` in `ToneWait`. A locked window reads
+"Locked" with its bar and the provider's reason in `Destructive`. After the windows, `Extra usage` with the amount
+against the cap at the right ("$12.50 of $50.00", "$141.57 · no limit") and a bar only when there is a cap, and a
+`Reset credits` line like a context row ("1 available"), each only when the account has them. The account's email
+closes the plan quota's tooltip, under a separator. The profile tooltip heads the blocks with the plan ("Claude Code ·
+Max 5x"); for any provider but Claude Code and Codex it is a single muted line saying usage is not measured per profile, and while the first reading is in flight there
+is no tooltip at all, rather than one that says nothing. Amounts follow the locale (`money.go`): its separators, the
+symbol before or after, the sign outside the symbol, the ISO code where there is no symbol.
+
 ### The chat view
 
 A session whose view is chat draws its conversation in place of the terminal, on the same island and in a

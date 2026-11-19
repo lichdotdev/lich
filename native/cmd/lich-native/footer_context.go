@@ -100,40 +100,52 @@ func contextRows(u sessionUsage, l i18n.Locale) []contextRow {
 	return rows
 }
 
+// contextBarColor is the color of the bar's lit segments at percent: the
+// foreground up to contextWaitAbove, then the wait and destructive tones.
+func contextBarColor(th *ui.Theme, percent int) color.NRGBA {
+	if t := contextBarTone(percent); t != toneMuted {
+		return toneColor(th, t)
+	}
+	return th.Foreground
+}
+
+// tipHead is a tooltip block's title with its reading at the right, both medium.
+func tipHead(th *ui.Theme, title, reading string) layout.Widget {
+	return func(gtx C) D {
+		gtx.Constraints.Min.X = gtx.Constraints.Max.X
+		return layout.Flex{Alignment: layout.Baseline}.Layout(gtx,
+			layout.Rigid(th.Text(ui.TextXS, title).Weight(font.Medium).Layout),
+			layout.Flexed(1, func(gtx C) D { return D{Size: gtx.Constraints.Min} }),
+			layout.Rigid(th.Text(ui.TextXS, reading).Weight(font.Medium).Layout),
+		)
+	}
+}
+
+// tipRow is a tooltip line: the label muted at the left, the value at the
+// right with its muted rest after it.
+func tipRow(th *ui.Theme, r contextRow) layout.Widget {
+	return func(gtx C) D {
+		gtx.Constraints.Min.X = gtx.Constraints.Max.X
+		value := []layout.FlexChild{layout.Rigid(th.Text(ui.TextXS, r.value).Layout)}
+		if r.rest != "" {
+			value = append(value, layout.Rigid(th.Text(ui.TextXS, r.rest).Muted().Layout))
+		}
+		return layout.Flex{Alignment: layout.Baseline}.Layout(gtx,
+			layout.Rigid(th.Text(ui.TextXS, r.label).Muted().Layout),
+			layout.Flexed(1, func(gtx C) D { return D{Size: gtx.Constraints.Min} }),
+			layout.Rigid(func(gtx C) D { return layout.Flex{Alignment: layout.Baseline}.Layout(gtx, value...) }),
+		)
+	}
+}
+
 // contextTip is the body of the context tooltip: its title with the share used
 // at the right, the segmented bar in the tone of how full it is, then a line
 // per reading.
 func contextTip(th *ui.Theme, u sessionUsage) layout.Widget {
-	l := i18n.Current()
-	head := func(gtx C) D {
-		gtx.Constraints.Min.X = gtx.Constraints.Max.X
-		return layout.Flex{Alignment: layout.Baseline}.Layout(gtx,
-			layout.Rigid(th.Text(ui.TextXS, i18n.T("shell.footerSession.context")).Weight(font.Medium).Layout),
-			layout.Flexed(1, func(gtx C) D { return D{Size: gtx.Constraints.Min} }),
-			layout.Rigid(th.Text(ui.TextXS, fmt.Sprintf("%d%%", u.Percent)).Weight(font.Medium).Layout),
-		)
-	}
-	bar := func(gtx C) D {
-		tone := th.Foreground
-		if t := contextBarTone(u.Percent); t != toneMuted {
-			tone = toneColor(th, t)
-		}
-		return th.SegmentedBar(gtx, u.Percent, contextSegments, tone)
-	}
-	widgets := []layout.Widget{head, bar}
-	for _, r := range contextRows(u, l) {
-		widgets = append(widgets, func(gtx C) D {
-			gtx.Constraints.Min.X = gtx.Constraints.Max.X
-			value := []layout.FlexChild{layout.Rigid(th.Text(ui.TextXS, r.value).Layout)}
-			if r.rest != "" {
-				value = append(value, layout.Rigid(th.Text(ui.TextXS, r.rest).Muted().Layout))
-			}
-			return layout.Flex{Alignment: layout.Baseline}.Layout(gtx,
-				layout.Rigid(th.Text(ui.TextXS, r.label).Muted().Layout),
-				layout.Flexed(1, func(gtx C) D { return D{Size: gtx.Constraints.Min} }),
-				layout.Rigid(func(gtx C) D { return layout.Flex{Alignment: layout.Baseline}.Layout(gtx, value...) }),
-			)
-		})
+	bar := func(gtx C) D { return th.SegmentedBar(gtx, u.Percent, contextSegments, contextBarColor(th, u.Percent)) }
+	widgets := []layout.Widget{tipHead(th, i18n.T("shell.footerSession.context"), fmt.Sprintf("%d%%", u.Percent)), bar}
+	for _, r := range contextRows(u, i18n.Current()) {
+		widgets = append(widgets, tipRow(th, r))
 	}
 	return func(gtx C) D {
 		gtx.Constraints.Min.X = min(gtx.Dp(contextTipWide), gtx.Constraints.Max.X)

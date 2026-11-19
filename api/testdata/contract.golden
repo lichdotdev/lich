@@ -1279,6 +1279,8 @@ QuotaPlan {
 	account,omitempty string
 	noAccount,omitempty string
 	windows,omitempty []QuotaWindow
+	extra,omitempty *QuotaExtra
+	resetCredits,omitempty int
 	status string
 }
 
@@ -2531,7 +2533,14 @@ QuotaWindow {
 	resetsAt,omitempty string
 	active,omitempty bool
 	lockedReason,omitempty string
-	ahead,omitempty bool
+	runsOutAt,omitempty string
+}
+
+QuotaExtra {
+	used int64
+	limit,omitempty *int64
+	currency,omitempty string
+	decimals int
 }
 
 ServiceConfig {

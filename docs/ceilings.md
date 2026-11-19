@@ -368,17 +368,35 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   prompt a person parked there stays and goes out at its own time, so that click moves the session and sends
   nothing. The other six providers record no limit lich can read (above), so none of them is offered anything;
   opencode's conversations could not move between profiles anyway. Nothing crosses providers.
-- **The pace marker is borrowed calibration, and it is silent far more often than it is wrong**
-  (`internal/quota/pace.go`): the two numbers that decide when a weekly window is marked as spending ahead —
-  fifteen percentage points past the elapsed share, and no marking at all in the first twenty-four hours after
-  a reset — are the claude-swap project's measurements (`src/claude_swap/pace.py`, its issue #125), not lich's
-  own. Nothing here has been tuned against a lich user's accounts. The consequence to know before debugging a
-  marker that "never appears": a window ninety percent spent on the first day of its cycle is deliberately
-  unmarked, because just after a reset the elapsed share is near zero and almost any use at all would read as
-  far ahead. Only the weekly window is paced, so the five-hour one and Codex's monthly free-tier window carry
-  no marker however they are spent. The verdict is derived from the window's own reset time, which is the next
-  reset and never the start — the start is that time rolled back whole windows — so a provider that stops
-  reporting a reset time silently drops the marker rather than the gauge.
+- **The runs-out projection is a straight line over borrowed calibration, and it is silent far more often than it
+  is wrong** (`internal/quota/pace.go`): a weekly window that, spent at its average rate so far, would reach 100%
+  before it resets carries a time ("Runs out in 1d 9h"); every other window carries nothing. The line is the
+  whole cycle's average, not the last hours' rate, so a burst reads as a rate and a quiet day pulls it back. The
+  twenty-four hour grace after a reset, in which nothing is projected, is the claude-swap project's measurement
+  (`src/claude_swap/pace.py`, its issue #125), not lich's own, and nothing here has been tuned against a lich
+  user's accounts. The consequence to know before debugging a projection that "never appears": a window ninety
+  percent spent on the first day of its cycle is deliberately unprojected, because just after a reset the rate is
+  one request divided by almost nothing. Only the weekly window is projected, so the five-hour one and Codex's
+  monthly free-tier window carry nothing however they are spent. The verdict is derived from the window's own
+  reset time, which is the next reset and never the start (the start is that time rolled back whole windows),
+  so a provider that stops reporting a reset time silently drops the projection rather than the gauge. It is
+  computed when a reading is taken and so is up to the five-minute cache old; "% left at reset" is not shown.
+- **Extra usage is Claude Code's alone, and Codex's reset credits are Codex's alone** (`internal/quota/claude.go`,
+  `codex.go`; the usage tooltip, `native/cmd/lich-native/usage_tip.go`): the Claude usage route's `extra_usage`
+  block (pay-as-you-go spend past the plan, with its monthly cap) and the Codex route's
+  `rate_limit_reset_credits.available_count` (how many on-demand window resets the account holds) are read from
+  the payloads lich already polls and shown as one more block of the tooltip, only when the account has them on:
+  an `extra_usage` that is disabled, and a count of zero, draw nothing. No other provider's route reports either,
+  so the other six show their windows alone. The tooltip over the profile footer reads per-profile plans only for Claude Code
+  and Codex: Cursor CLI's and opencode's plans are read for the machine's login alone, so on their profiles (and on
+  oh-my-pi's and Kiro CLI's, which have none) it says usage is not measured per profile rather than draw another
+  account's numbers. A `claude setup-token` login reads its windows off response headers
+  (see the bullet below), which carry neither, so its tooltip never has the extra-usage block. The extra block's shape was
+  written against the field names and a disabled account's nulls: an enabled one has not been seen in a live
+  payload, so a currency or unit the route does not spell the documented way would draw a wrong amount. The
+  currency symbol is known for five currencies; any other shows its ISO code. Codex's payload also carries an
+  `applicable_available_count` beside the count lich reads, which says how many credits fit the window in hand;
+  lich reads and shows the first.
 - **Measuring a token-only Claude Code login costs a request against the very plan it measures**
   (`internal/quota/claude.go`): the usage route refuses a `claude setup-token` token, so the gauge reads that
   account the way Claude Code reads it for itself, with one message (`docs/providers/claude.md`, Account).

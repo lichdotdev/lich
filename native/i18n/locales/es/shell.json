@@ -98,7 +98,19 @@
   },
   "planQuota": {
     "planUsage": "Uso del plan",
-    "locked": "Bloqueado"
+    "locked": "Bloqueado",
+    "runsOut": "Se agota en {time}",
+    "resetsIn": "Se restablece en {time}",
+    "extraUsage": "Uso extra",
+    "extraOf": "{used} de {limit}",
+    "extraNoLimit": "{used} · sin límite",
+    "resetCredits": "Créditos de restablecimiento",
+    "resetCreditsAvailable": {
+      "one": "{count} disponible",
+      "other": "{count} disponibles"
+    },
+    "noUsage": "El uso por perfil no se mide para {provider}.",
+    "unreadable": "No se pudo leer el uso del plan."
   },
   "providerSetupDialog": {
     "chooseTitle": "Elige tus agentes",

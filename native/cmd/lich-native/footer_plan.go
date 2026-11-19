@@ -13,68 +13,24 @@ import (
 
 var (
 	icGauge     = icons.Lucide("gauge")
-	icAhead     = icons.Lucide("trending-up")
 	planMinWide = ui.Space(52)
 	accountSize = ui.TextXS - 1
 	// accountLeading is a 4/3 line height, at 11px.
 	accountLeading unit.Sp = 14.67
 )
 
-// planDetails is the plan quota's tooltip body: a stacked gauge per window, its
-// lock reason under it, and the account the reading was taken against.
-//
-// ponytail: the pace mark and the Locked reading carry no tooltip of their
-// own here: a tooltip's content takes no hover in this window. The lock
-// reason is spelled out under its gauge either way.
+// planDetails is the plan quota's tooltip body: the usage blocks, and the
+// account the reading was taken against.
 func planDetails(th *ui.Theme, plan backend.QuotaPlan, now time.Time) layout.Widget {
-	var rows []layout.Widget
-	for _, g := range quotaGauges(plan, now) {
-		rows = append(rows, quotaGaugeRow(th, g))
-	}
+	return usageStack(planRows(th, plan, now))
+}
+
+func planRows(th *ui.Theme, plan backend.QuotaPlan, now time.Time) []layout.Widget {
+	rows := usageBlocks(th, plan, now)
 	if account := accountLine(plan); account != "" {
 		rows = append(rows, accountRow(th, account))
 	}
-	return func(gtx C) D {
-		gtx.Constraints.Min.X = min(gtx.Dp(planMinWide), gtx.Constraints.Max.X)
-		return ui.Stack(2.5, rows...)(gtx)
-	}
-}
-
-// quotaGaugeRow is one gauge stacked, in the window's tone: the label (and pace
-// mark) over the bar, the reading and time left on the right.
-func quotaGaugeRow(th *ui.Theme, g quotaGauge) layout.Widget {
-	tone := toneColor(th, g.Tone)
-	reading := g.Reading
-	if g.Left != "" {
-		reading += " · " + g.Left
-	}
-	head := func(gtx C) D {
-		gtx.Constraints.Min.X = gtx.Constraints.Max.X
-		return layout.Flex{Alignment: layout.Baseline, Spacing: layout.SpaceBetween}.Layout(gtx,
-			layout.Flexed(1, func(gtx C) D { return gaugeLabel(gtx, th, g) }),
-			ui.Gap(3),
-			layout.Rigid(th.Text(ui.TextXS, reading).In(tone).Layout),
-		)
-	}
-	rows := []layout.Widget{head, func(gtx C) D { return th.GaugeBar(gtx, g.Percent, tone) }}
-	gauge := func(gtx C) D { return ui.Stack(1, rows...)(gtx) }
-	if g.Locked == "" {
-		return gauge
-	}
-	reason := para(th.Text(ui.TextXS, g.Locked).In(th.Destructive)).Layout
-	return func(gtx C) D { return ui.Stack(1, gauge, reason)(gtx) }
-}
-
-func gaugeLabel(gtx C, th *ui.Theme, g quotaGauge) D {
-	children := []layout.FlexChild{layout.Flexed(1, th.Text(ui.TextXS, g.Label).Muted().Layout)}
-	if g.Ahead {
-		children = []layout.FlexChild{
-			layout.Rigid(th.Text(ui.TextXS, g.Label).Muted().Layout),
-			ui.Gap(1),
-			layout.Rigid(func(gtx C) D { return icAhead.Layout(gtx, ui.Space(3), th.MutedForeground) }),
-		}
-	}
-	return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
+	return rows
 }
 
 // accountRow is the monospace line naming the account, under a separator.
