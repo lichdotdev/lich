@@ -32,7 +32,11 @@
       "other": "Работал {duration} · {count} инструмента · {time}"
     }
   },
-  "changes": {
+  "done": {
+    "done": "Готово",
+    "stopped": "Остановлено",
+    "failed": "Сбой",
+    "noChanges": "без изменений",
     "files": {
       "one": "{count} файл",
       "few": "{count} файла",

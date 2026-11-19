@@ -16,7 +16,7 @@ const (
 	chatRowWork                    // a turn's tool calls, folded into one line
 	chatRowLive                    // the turn in flight, unless a permission says it waits
 	chatRowDay                     // the day a turn starts on, when it is not the day of the turn before
-	chatRowDone                    // what a finished turn changed in the checkout
+	chatRowDone                    // the line that closes a finished turn
 )
 
 // chatRow is one line of the chat view.
@@ -56,12 +56,6 @@ type chatTurnSpan struct {
 // live row last, which a waiting permission's box stands in for. A turn has run from its first item to its last, or to now
 // while it is the one in flight: the history carries no durations.
 func chatRows(items []backend.ChatItem, running bool, now time.Time) []chatRow {
-	return chatRowsWith(items, running, now, nil)
-}
-
-// chatRowsWith is chatRows with, after each finished turn that changed the
-// checkout (changed says which), the row that tells how much.
-func chatRowsWith(items []backend.ChatItem, running bool, now time.Time, changed func(turn int) bool) []chatRow {
 	spans := map[int]*chatTurnSpan{}
 	asked := map[int]bool{}
 	last := 0
@@ -82,8 +76,10 @@ func chatRowsWith(items []backend.ChatItem, running bool, now time.Time, changed
 		last = max(last, it.Turn)
 	}
 	var rows []chatRow
+	// A finished turn that began with the person's message ends in a line of
+	// its own, after its last item.
 	closing := func(turn int) {
-		if asked[turn] && changed != nil && changed(turn) {
+		if asked[turn] {
 			rows = append(rows, chatRow{kind: chatRowDone, turn: turn})
 		}
 	}
@@ -161,7 +157,7 @@ func chatRowKey(r chatRow) string {
 	case chatRowDay:
 		return "day:" + strconv.Itoa(r.turn)
 	case chatRowDone:
-		return "changes:" + strconv.Itoa(r.turn)
+		return "done:" + strconv.Itoa(r.turn)
 	case chatRowLive:
 		return "live"
 	}
