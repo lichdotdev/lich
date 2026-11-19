@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"slices"
+	"strconv"
 	"sync"
 	"time"
 
@@ -79,6 +80,9 @@ func chatArgs(a spawnArgs, l ChatLaunch) []string {
 	case providers.Antigravity:
 		return slices.Concat([]string{acpSubcmd}, skipPermissionArgs(a.kind, a.skipPermissions))
 	}
+	if srv := openCodeServer(a.kind, a.oc2, l); srv != nil {
+		return []string{acpSubcmd, openCodePortFlag, strconv.Itoa(srv.Port)}
+	}
 	return []string{acpSubcmd}
 }
 
@@ -104,6 +108,35 @@ func claudeLaunchArgs(l ChatLaunch) []string {
 type ChatLaunch struct {
 	Model       string
 	AllowBypass bool
+	// Server is what opencode's own HTTP server listens with, which the chat
+	// answers the agent's questions through: opencode hands its question tool
+	// to no ACP client.
+	Server *OpenCodeServer
+}
+
+// OpenCodeServer is the port and the password of the HTTP server `opencode
+// acp` runs beside the protocol, and the variables that switch on its question
+// tool and its basic auth (measured on 1.19.4: the tool is left out of an ACP
+// session unless OPENCODE_ENABLE_QUESTION_TOOL is set, and without
+// OPENCODE_SERVER_PASSWORD the server answers anyone on the machine).
+type OpenCodeServer struct {
+	Port     int
+	Password string
+}
+
+const (
+	openCodeQuestionEnv = "OPENCODE_ENABLE_QUESTION_TOOL"
+	openCodePasswordEnv = "OPENCODE_SERVER_PASSWORD"
+	openCodePortFlag    = "--port"
+)
+
+// openCodeServer is the server an opencode chat runs with, nil for any other
+// spawn. opencode 2's ACP server was not measured, so it runs as it did.
+func openCodeServer(kind string, oc2 bool, l ChatLaunch) *OpenCodeServer {
+	if kind != providers.OpenCode || oc2 {
+		return nil
+	}
+	return l.Server
 }
 
 // ChatBirth is what a chat's argv could not carry, for the protocol to set:
@@ -217,6 +250,9 @@ func (s *Service) spawnChat(opts api.StartOptions, launch ChatLaunch, profileDir
 	l, err := s.prepareSpawnLocked(opts, profileDir, name, oc2, func(a spawnArgs) []string { return chatArgs(a, launch) })
 	if err != nil {
 		return nil, spawnLaunch{}, err
+	}
+	if srv := openCodeServer(opts.Kind, oc2, launch); srv != nil {
+		l.spec.env = append(l.spec.env, openCodeQuestionEnv+"=1", openCodePasswordEnv+"="+srv.Password)
 	}
 	started := spawn{kind: opts.Kind, cwd: opts.Cwd, projectID: opts.ProjectID, profile: profileSlug(opts.Kind, profileDir), chat: true}
 	// Dropped before Done closes, so whoever waited the process out can start

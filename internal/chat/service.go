@@ -178,7 +178,8 @@ func (s *Service) start(ctx context.Context, id, projectID, kind, cwd string, ca
 	if lost {
 		resume = ""
 	}
-	proc, err := s.term.StartChat(ctx, api.StartOptions{ID: id, ProjectID: projectID, Cwd: cwd, Kind: kind, Resume: resume}, launchFor(kind, carry))
+	launch := launchFor(kind, carry)
+	proc, err := s.term.StartChat(ctx, api.StartOptions{ID: id, ProjectID: projectID, Cwd: cwd, Kind: kind, Resume: resume}, launch)
 	if err != nil {
 		return nil, err
 	}
@@ -192,7 +193,7 @@ func (s *Service) start(ctx context.Context, id, projectID, kind, cwd string, ca
 	if kind == providers.Claude {
 		c.drv = newClaudeDriver(c, s.lang())
 	} else {
-		c.drv = newACPDriver(c)
+		c.drv = newACPDriver(c, launch.Server)
 	}
 	if lost {
 		c.conv.notice("The conversation did not come back: the agent no longer has it, so a new one starts.")

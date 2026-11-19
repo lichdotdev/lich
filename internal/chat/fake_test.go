@@ -24,12 +24,15 @@ const fakeEnv = "LICH_CHAT_FAKE"
 const fakeLogEnv = "LICH_CHAT_FAKE_LOG"
 
 type fake struct {
-	in  *bufio.Reader
-	log *os.File
+	in   *bufio.Reader
+	log  *os.File
+	args []string
+	// asks counts the fake's opencode questions, which name their tool calls.
+	asks int
 }
 
 func runFake(args []string) {
-	f := &fake{in: bufio.NewReader(os.Stdin)}
+	f := &fake{in: bufio.NewReader(os.Stdin), args: args}
 	if path := os.Getenv(fakeLogEnv); path != "" {
 		f.log, _ = os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600)
 		fmt.Fprintf(f.log, "argv %s\n", strings.Join(args, " "))
@@ -286,6 +289,8 @@ func (f *fake) acpTurn(id any, text string) {
 	case "err":
 		f.send(map[string]any{"jsonrpc": "2.0", "id": id, "error": map[string]any{"code": -32603, "message": "Model access is disabled"}})
 		return
+	case "octool":
+		f.openCodeQuestion()
 	case "question", "question-then-write", "question-url":
 		if f.acpElicit(id, text) {
 			return

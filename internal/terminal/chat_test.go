@@ -222,3 +222,22 @@ func TestTailBufferKeepsTheEnd(t *testing.T) {
 		t.Errorf("tail = %q, want %q", got, "cdef")
 	}
 }
+
+// TestOpenCodeChatRunsItsServerOnLichsPort: an opencode 1 chat's server
+// listens where the chat looks for its questions; opencode 2, unmeasured, and
+// every other provider run as before.
+func TestOpenCodeChatRunsItsServerOnLichsPort(t *testing.T) {
+	t.Parallel()
+	l := ChatLaunch{Server: &OpenCodeServer{Port: 41234, Password: "p"}}
+	a := spawnArgs{kind: providers.OpenCode}
+	if got := chatArgs(a, l); !slices.Equal(got, []string{"acp", "--port", "41234"}) {
+		t.Errorf("opencode chat argv = %v", got)
+	}
+	a.oc2 = true
+	if got := chatArgs(a, l); !slices.Equal(got, []string{"acp"}) {
+		t.Errorf("opencode 2 chat argv = %v, want it unchanged", got)
+	}
+	if openCodeServer(providers.OMP, false, l) != nil {
+		t.Error("another provider was given opencode's server")
+	}
+}

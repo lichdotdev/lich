@@ -116,6 +116,8 @@ func launchFor(kind string, carry map[string]string) terminal.ChatLaunch {
 		return terminal.ChatLaunch{AllowBypass: carry[api.OptionMode] == claudeBypass}
 	case providers.Kiro:
 		return terminal.ChatLaunch{Model: carry[api.OptionModel]}
+	case providers.OpenCode:
+		return terminal.ChatLaunch{Server: newOpenCodeServer()}
 	}
 	return terminal.ChatLaunch{}
 }

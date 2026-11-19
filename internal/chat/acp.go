@@ -11,6 +11,7 @@ import (
 	"sync"
 
 	"github.com/lichdotdev/lich/api"
+	"github.com/lichdotdev/lich/internal/terminal"
 )
 
 // acpDriver speaks the Agent Client Protocol: JSON-RPC 2.0, one message per
@@ -19,10 +20,15 @@ import (
 // initialize and nothing after it, behind a login.
 type acpDriver struct {
 	c *chatSession
+	// server is opencode's own HTTP server, nil for every other agent
+	// (opencode_question.go).
+	server *terminal.OpenCodeServer
 
-	mu      sync.Mutex
-	next    int64
-	calls   map[string]chan acpReply
+	mu    sync.Mutex
+	next  int64
+	calls map[string]chan acpReply
+	// asked holds the opencode question tool calls already put to the person.
+	asked   map[string]bool
 	session string
 	// run is the item the provider's streamed text is going into, and runKind
 	// what that item is: a chunk of another kind, or a tool call, starts a new
@@ -57,8 +63,8 @@ type acpReply struct {
 
 var errExited = errors.New("the agent's process exited")
 
-func newACPDriver(c *chatSession) *acpDriver {
-	return &acpDriver{c: c, calls: map[string]chan acpReply{}}
+func newACPDriver(c *chatSession, server *terminal.OpenCodeServer) *acpDriver {
+	return &acpDriver{c: c, server: server, calls: map[string]chan acpReply{}, asked: map[string]bool{}}
 }
 
 // call sends a request and waits for its response.
@@ -362,6 +368,7 @@ func (d *acpDriver) update(params json.RawMessage) {
 		}
 	case "tool_call", "tool_call_update":
 		d.tool(u.acpToolCall)
+		d.openCodeQuestion(u.acpToolCall)
 	case "config_option_update":
 		d.configChanged(p.Update)
 	case "current_mode_update":
