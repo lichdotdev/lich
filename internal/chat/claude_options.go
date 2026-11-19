@@ -14,8 +14,9 @@ import (
 // the permission mode is initialize's and every system/status' afterwards.
 // set_model and set_permission_mode change them in flight, and so does
 // apply_flag_settings for the effort, in this process only: the user's
-// settings files are left as they were. A resume brings the model back from
-// the conversation and neither the effort nor the mode.
+// settings files are left as they were. A resume brings back the mode and the
+// model of the conversation's last turn, not the effort, and after a turn in
+// plan mode it came back on another model than the turn's.
 
 // claudeModes are the permission modes `claude --help` lists, under the ids
 // the protocol answers with: the flag's `manual` is the protocol's `default`.

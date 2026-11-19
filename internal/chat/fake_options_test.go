@@ -68,6 +68,7 @@ func (f *fake) claudeControl(run *fakeClaude, m map[string]any) {
 			f.send(map[string]any{"type": "control_response", "response": map[string]any{"subtype": "error", "request_id": id, "error": "not launched with it", "error_code": "bypass_not_launched"}})
 			return
 		}
+		// The real CLI takes dontAsk; the fake refuses it to have a refusal.
 		if mode == "dontAsk" {
 			f.send(map[string]any{"type": "control_response", "response": map[string]any{"subtype": "error", "request_id": id, "error": "dontAsk is off here"}})
 			return

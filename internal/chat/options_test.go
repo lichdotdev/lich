@@ -3,6 +3,8 @@
 package chat
 
 import (
+	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
@@ -157,6 +159,9 @@ func TestClaudeBypassRelaunches(t *testing.T) {
 	if err := r.setView(api.ViewChat); err != nil {
 		t.Fatalf("SetView: %v", err)
 	}
+	r.prompt("hi")
+	r.turnEnd(0)
+	r.writeClaudeTranscript("claude-new", `{"type":"user","message":{"content":"hi"}}`)
 	r.mustSet(claudeModelOption, "haiku")
 	r.mustSet(claudeEffortOption, "low")
 
@@ -171,8 +176,11 @@ func TestClaudeBypassRelaunches(t *testing.T) {
 	if r.svc.running("s1") == first {
 		t.Fatal("the chat was not relaunched")
 	}
-	if !strings.Contains(r.fakeLog(), "--allow-dangerously-skip-permissions") {
-		t.Errorf("relaunch argv lacks the bypass flag: %q", r.fakeLog())
+	if log := r.fakeLog(); !strings.Contains(log, "--allow-dangerously-skip-permissions") || !strings.Contains(log, "--resume claude-new") {
+		t.Errorf("relaunch argv lacks the bypass flag or the conversation: %q", log)
+	}
+	if _, lost := r.item(api.ItemNotice, "did not come back"); lost {
+		t.Error("the relaunch lost the conversation")
 	}
 	r.current(api.OptionMode, claudeBypass)
 	r.current(api.OptionModel, "haiku")
@@ -291,11 +299,44 @@ func TestKiroModelRelaunches(t *testing.T) {
 	if err := r.setView(api.ViewChat); err != nil {
 		t.Fatalf("SetView: %v", err)
 	}
+	dir := filepath.Join(r.home, ".kiro", "sessions", "cli")
+	_ = os.MkdirAll(dir, 0o755)
+	if err := os.WriteFile(filepath.Join(dir, "ses-new.json"), []byte("{}"), 0o600); err != nil {
+		t.Fatal(err)
+	}
 	r.mustSet(acpModesOption, "plan")
 	r.mustSet(acpModelsOption, "m2")
 	r.current(api.OptionModel, "m2")
 	r.current(api.OptionMode, "plan")
-	if log := r.fakeLog(); !strings.Contains(log, "--model m2") || strings.Contains(log, `"session/set_model"`) {
+	log := r.fakeLog()
+	if !strings.Contains(log, "--model m2") || strings.Contains(log, `"session/set_model"`) {
 		t.Errorf("fake log = %q, want a relaunch with --model and no set_model", log)
+	}
+	if !strings.Contains(log, `"session/load","params":{"cwd"`) || !strings.Contains(log, `"sessionId":"ses-new"}`) {
+		t.Errorf("fake log = %q, want the relaunch to load the conversation", log)
+	}
+	for _, lost := range []string{"did not come back", "came back empty"} {
+		if _, ok := r.item(api.ItemNotice, lost); ok {
+			t.Errorf("the relaunch lost the conversation: %q", lost)
+		}
+	}
+}
+
+// TestClaudeSkipPermissionsOpensOnBypass: a checkout that skips permissions
+// starts the chat on bypassPermissions, and leaving it and coming back needs
+// no new process.
+func TestClaudeSkipPermissionsOpensOnBypass(t *testing.T) {
+	r := newRig(t, providers.Claude)
+	_, _ = r.db.SetSetting(t.Context(), api.SetSettingOptions{Key: "provider.claude.skip-permissions", Value: "true"})
+	if err := r.setView(api.ViewChat); err != nil {
+		t.Fatalf("SetView: %v", err)
+	}
+	r.current(api.OptionMode, claudeBypass)
+	first := r.svc.running("s1")
+	r.mustSet(claudeModeOption, "default")
+	r.mustSet(claudeModeOption, claudeBypass)
+	r.current(api.OptionMode, claudeBypass)
+	if r.svc.running("s1") != first {
+		t.Error("a process launched skipping permissions was relaunched for bypassPermissions")
 	}
 }

@@ -952,8 +952,8 @@ func (s *Service) SetSessionView(sessionID, view string) error {
 
 // SetSessionChatMode records the mode the person picked in session sessionID's
 // chat (api.OptionMode), which every later chat of it opens on: Claude Code
-// resumes on the user's default mode, and a plan dropped by a silent respawn
-// would let the agent edit.
+// resumes on the mode of the last turn, not one picked after it, oh-my-pi on
+// its default, and a plan dropped by a silent respawn would let the agent edit.
 func (s *Service) SetSessionChatMode(sessionID, mode string) error {
 	if _, err := s.db.Exec(`UPDATE sessions SET chat_mode = ? WHERE id = ?`, mode, sessionID); err != nil {
 		return fmt.Errorf("set session chat mode: %w", err)

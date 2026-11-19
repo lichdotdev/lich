@@ -68,16 +68,23 @@ func (s *Service) relaunch(ctx context.Context, c *chatSession, category, value 
 		return err
 	}
 	defer release()
+	if s.running(c.id) != c {
+		return errors.New("the chat restarted meanwhile; set it again")
+	}
 	if c.turnRunning() || s.term.TurnOpen(c.id) {
 		return errBusy
 	}
 	carry := c.currents()
 	carry[category] = value
 	c.stop()
-	if _, err := s.start(ctx, c.id, c.projectID, c.kind, c.cwd, carry); err != nil {
+	next, err := s.start(ctx, c.id, c.projectID, c.kind, c.cwd, carry)
+	if err != nil {
 		return err
 	}
 	events.Send(s.hub.Emit, api.SessionViewEvent, api.SessionView{ID: c.id, View: api.ViewChat})
+	if o, ok := next.optionOf(category); !ok || o.Current != value {
+		return fmt.Errorf("the agent came back on %s %q, not %q", category, o.Current, value)
+	}
 	return nil
 }
 
@@ -95,8 +102,9 @@ func (s *Service) remember(id, category, value string) error {
 }
 
 // storedCarry is what a chat that is not a relaunch opens on: the mode the
-// person last picked in it, which Claude Code would otherwise resume without.
-// The model and effort are the provider's to bring back with the conversation.
+// person last picked in it, which Claude Code resumes only as of the last turn
+// and oh-my-pi not at all. The model and effort are the provider's to bring
+// back with the conversation, as a terminal's resume leaves them.
 func (s *Service) storedCarry(id string) map[string]string {
 	return map[string]string{api.OptionMode: s.store.SessionChatMode(id)}
 }
