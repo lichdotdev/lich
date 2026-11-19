@@ -93,7 +93,7 @@ func (f *fake) claude(args []string) {
 			f.claudeControl(run, m)
 		case "user":
 			f.send(map[string]any{"type": "system", "subtype": "init", "session_id": session, "model": run.model, "permissionMode": run.mode})
-			f.claudeTurn(str(m, "message", "content"))
+			f.claudeTurn(run, str(m, "message", "content"))
 		}
 	}
 }
@@ -102,9 +102,9 @@ func (f *fake) claudeResult(isError bool, terminal, text string) {
 	f.send(map[string]any{"type": "result", "subtype": "success", "is_error": isError, "terminal_reason": terminal, "result": text})
 }
 
-func (f *fake) claudeTurn(text string) {
+func (f *fake) claudeTurn(run *fakeClaude, text string) {
 	msg := func(id string, block map[string]any) {
-		f.send(map[string]any{"type": "assistant", "parent_tool_use_id": nil, "message": map[string]any{"id": id, "content": []any{block}}})
+		f.send(map[string]any{"type": "assistant", "parent_tool_use_id": nil, "message": map[string]any{"id": id, "model": run.model, "content": []any{block}}})
 	}
 	switch text {
 	case "hi":
@@ -122,6 +122,13 @@ func (f *fake) claudeTurn(text string) {
 		f.send(map[string]any{"type": "assistant", "parent_tool_use_id": "toolu_sub", "message": map[string]any{"id": "m9", "content": []any{map[string]any{"type": "text", "text": "subagent"}}}})
 		f.send(map[string]any{"type": "user", "message": map[string]any{"content": []any{map[string]any{"type": "tool_result", "tool_use_id": "toolu_1", "content": []any{map[string]any{"type": "text", "text": "edited"}}}}}})
 		f.send(map[string]any{"type": "user", "message": map[string]any{"content": []any{map[string]any{"type": "tool_result", "tool_use_id": "toolu_sub", "is_error": true, "content": "nope"}}}})
+		f.claudeResult(false, "completed", "")
+	case "interrupted":
+		// What Claude Code writes into the user's turn when it is interrupted:
+		// as text, as a block, and for a tool call.
+		f.send(map[string]any{"type": "user", "message": map[string]any{"content": "[Request interrupted by user]"}})
+		f.send(map[string]any{"type": "user", "message": map[string]any{"content": []any{map[string]any{"type": "text", "text": "[Request interrupted by user for tool use]"}}}})
+		msg("m5", map[string]any{"type": "text", "text": "stopped"})
 		f.claudeResult(false, "completed", "")
 	case "perm":
 		f.send(map[string]any{"type": "control_request", "request_id": "r1", "request": map[string]any{"subtype": "can_use_tool", "tool_name": "Write", "input": map[string]any{"file_path": "n.txt", "content": "ok"}, "permission_suggestions": []any{map[string]any{"type": "setMode"}}, "tool_use_id": "toolu_w"}})

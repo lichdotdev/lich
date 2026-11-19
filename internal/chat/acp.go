@@ -373,7 +373,11 @@ func (d *acpDriver) chunk(kind string, content acpContent) {
 		d.mu.Unlock()
 		return
 	}
-	d.c.conv.update(id, kind, false, func(it *api.ChatItem) { it.Text += content.Text })
+	model, effort := d.producer()
+	d.c.conv.update(id, kind, false, func(it *api.ChatItem) {
+		it.Text += content.Text
+		attribute(it, model, effort)
+	})
 }
 
 // endRun closes the streamed item, so the next chunk starts a new one.
@@ -390,6 +394,7 @@ func (d *acpDriver) tool(t acpToolCall) {
 	d.mu.Unlock()
 	id := "tool-" + t.ID
 	_, known := d.c.conv.get(id)
+	model, effort := d.producer()
 	d.c.conv.update(id, api.ItemTool, t.Status == "completed" || t.Status == "failed", func(it *api.ChatItem) {
 		var prev api.ChatToolCall
 		if it.Tool != nil {
@@ -397,6 +402,7 @@ func (d *acpDriver) tool(t acpToolCall) {
 		}
 		next := t.call(prev)
 		it.Tool = &next
+		attribute(it, model, effort)
 	})
 	if !known {
 		if it, ok := d.c.conv.get(id); ok {

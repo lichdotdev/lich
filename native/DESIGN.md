@@ -310,7 +310,9 @@ draws none while it grows in, because the room above the rows is measured in the
   with who speaks: the provider's mark at 20px on a `RadiusMD` square, in the session's card color (the
   agent cursor's color, `Primary` for a card with none; the window keeps no brand color per provider) over
   a fill of that color mixed 22% into the surface, then the provider's name in medium, then muted
-  "· model · effort" when the session's options say them. A thought is a muted fold, closed, with the
+  "· model · effort" as the answer's own item says them (`ChatItem.Model`, `Effort`: what wrote it, not what the
+  chat is set to now; the options are never read for it, so changing the model leaves old answers as they were; an
+  empty effort leaves it out, and with neither the header is the name alone). A thought is a muted fold, closed, with the
   sparkles before its label.
 - **A turn's tool calls** fold into one muted line where the first of them came, with a 1px `Border` hairline
   running from its label to the column's edge. When the line opens the turn (no answer before it) it starts with

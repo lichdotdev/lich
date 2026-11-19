@@ -110,6 +110,14 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   more than five seconds. The window then shows the turn's end without a count. The count is not kept: a chat
   read back from the provider's history shows its turns as done with none. A session opened in a subdirectory
   counts only that subdirectory. Every provider with a chat reads it the same way.
+- **An answer names the model and effort that wrote it only as far as its provider says** (`ChatItem.Model`,
+  `Effort`; `internal/chat/claude.go`, `claude_options.go`, `acp_options.go`): Claude Code puts `message.model` on
+  every message, live and in the transcript, which lich names with the display name of the `initialize` model that
+  resolves to it (an alias other than `default` first); the effort is the one the process runs on when the message
+  arrives, and the transcript keeps none, so a resumed conversation's answers name a model and no effort. An id
+  that `initialize` does not list stays as the id. An ACP server says neither on a message: an item takes the
+  current model and effort when it begins, and what `session/load` replays names nothing, so a resumed ACP chat's
+  old answers carry no model. The header then shows less, never the model the chat is set to now.
 - **A chat offers only the model, effort and mode its provider offers, and two of them restart its process**
   (`internal/chat/options.go`, `claude_options.go`, `acp_options.go`): Claude Code's come from its `initialize`
   (the models, each with its efforts and whether it has an auto mode) and from the permission modes its `--help`

@@ -213,10 +213,10 @@ func TestAnOpenGroupLinksItsCallsAndShowsHowEachEnded(t *testing.T) {
 	}
 }
 
-func TestTheFirstAnswerOfATurnIsIntroducedOnceWithTheModelInForce(t *testing.T) {
+func TestTheFirstAnswerOfATurnIsIntroducedOnceWithTheModelThatWroteIt(t *testing.T) {
 	u, r := lifeFrames(t, []backend.ChatItem{
 		{ID: "u1", Kind: api.ItemUser, Turn: 1, At: novDay(18, 17, 58), Text: "go"},
-		{ID: "a1", Kind: api.ItemAgent, Turn: 1, At: novDay(18, 17, 58), Text: "one"},
+		{ID: "a1", Kind: api.ItemAgent, Turn: 1, At: novDay(18, 17, 58), Text: "one", Model: "Haiku 5.5", Effort: "Medium"},
 		{ID: "k1", Kind: api.ItemTool, Turn: 1, At: novDay(18, 17, 58), Tool: &backend.ChatToolCall{Name: "Read", State: api.ToolDone}},
 		{ID: "a2", Kind: api.ItemAgent, Turn: 1, At: novDay(18, 17, 59), Text: "two"},
 	}, false)
@@ -369,5 +369,54 @@ func TestALiveTurnShowsItsVerbWithTheTimeItRunAndNothingMovesOnceItEnds(t *testi
 	r.settle(t)
 	if r.shows(chatVerb("s1", 1)) {
 		t.Error("a turn that is over still names itself")
+	}
+}
+
+// An answer names the model that wrote it. Setting the chat to another model
+// afterwards changes the composer and the answers to come, not the ones
+// written.
+func TestChangingTheModelLeavesTheNamesOfOldAnswersAlone(t *testing.T) {
+	u, r := lifeFrames(t, []backend.ChatItem{
+		{ID: "u1", Kind: api.ItemUser, Turn: 1, At: novDay(18, 17, 58), Text: "go"},
+		{ID: "a1", Kind: api.ItemAgent, Turn: 1, At: novDay(18, 17, 58), Text: "one", Model: "Haiku 5.5", Effort: "medium"},
+	}, false)
+	u.model.chat.setOptions("s1", chatOptions())
+	r.settle(t)
+	if !r.shows("· Haiku 5.5 · medium") {
+		t.Fatalf("the answer does not name its model:\n%s", r.drawn())
+	}
+	switched := chatOptions()
+	switched[0].Current, switched[1].Current = "opus", "low"
+	u.model.chat.setOptions("s1", switched)
+	r.settle(t)
+	if !r.shows("· Haiku 5.5 · medium") || r.shows("· Opus 5.5") || r.shows("· Opus 5.5 · Low") {
+		t.Errorf("the answer follows the model the chat is set to now:\n%s", r.drawn())
+	}
+}
+
+func TestAnAnswerNamesWhatItsItemKnows(t *testing.T) {
+	for name, c := range map[string]struct {
+		model, effort, want string
+		absent              []string
+	}{
+		"both":       {"Haiku 5.5", "medium", "· Haiku 5.5 · medium", nil},
+		"model only": {"Haiku 5.5", "", "· Haiku 5.5", []string{"· Haiku 5.5 · "}},
+		"neither":    {"", "", "", []string{"· Haiku 5.5", "· Opus 5.5", "· Medium"}},
+	} {
+		u, r := lifeFrames(t, []backend.ChatItem{
+			{ID: "u1", Kind: api.ItemUser, Turn: 1, At: novDay(18, 17, 58), Text: "go"},
+			{ID: "a1", Kind: api.ItemAgent, Turn: 1, At: novDay(18, 17, 58), Text: "one", Model: c.model, Effort: c.effort},
+		}, false)
+		// The chat is set to a model, which a header must not borrow.
+		u.model.chat.setOptions("s1", chatOptions())
+		r.settle(t)
+		if c.want != "" && !r.shows(c.want) {
+			t.Errorf("%s: no %q:\n%s", name, c.want, r.drawn())
+		}
+		for _, a := range c.absent {
+			if r.shows(a) {
+				t.Errorf("%s: %q is drawn:\n%s", name, a, r.drawn())
+			}
+		}
 	}
 }
