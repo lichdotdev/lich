@@ -264,6 +264,44 @@ func TestARunningCallShimmersAndCountsAndAnEndedOneStandsStill(t *testing.T) {
 	}
 }
 
+// The band crosses a running call's name and its target, and an ended call's
+// row stays as it was drawn.
+func TestTheBandCrossesARunningCallsNameAndTarget(t *testing.T) {
+	// time.Unix(1000, 0) starts a lap, the band left of the text; half a lap
+	// on it stands over the middle of each word, within the same second.
+	start := time.Unix(1000, 0)
+	size := image.Pt(400, 40)
+	// visibleShift is a change of a channel the eye catches, past rounding.
+	const visibleShift = 24
+	call := func(state string) backend.ChatItem {
+		return backend.ChatItem{ID: "k1", Kind: api.ItemTool, At: start.Add(-2 * time.Second).UnixMilli(),
+			Tool: &backend.ChatToolCall{Name: "Bash", Title: "go test ./internal/...", State: state, Ended: start.Add(-time.Second).UnixMilli()}}
+	}
+	for _, tc := range []struct {
+		state string
+		moves bool
+	}{{api.ToolRunning, true}, {api.ToolDone, false}} {
+		it := call(tc.state)
+		r := newFrameRig(size, func(gtx C, th *ui.Theme) { chatTool(gtx, th, it, true) })
+		r.now = start
+		r.frame()
+		before := renderRig(t, r)
+		r.now = start.Add(ui.ShimmerLap / 2)
+		r.frame()
+		after := renderRig(t, r)
+		// A label's bounds run to the row's end, so the name's stop where the
+		// target's start.
+		target := labelBox(t, r, "go test ./internal/...")
+		name := labelBox(t, r, "Bash")
+		name.Max.X = target.Min.X
+		for label, box := range map[string]image.Rectangle{"Bash": name, "go test ./internal/...": target} {
+			if shift := inkShift(before, after, box); (shift >= visibleShift) != tc.moves {
+				t.Errorf("%s call: %q shifted by %d between the two frames, moving = %v, want %v", tc.state, label, shift, shift >= visibleShift, tc.moves)
+			}
+		}
+	}
+}
+
 // A turn ran until its last call ended, past the last item that began.
 func TestAGroupTookUntilItsLastCallEnded(t *testing.T) {
 	start := novDay(18, 17, 58)

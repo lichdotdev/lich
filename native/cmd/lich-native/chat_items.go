@@ -335,14 +335,21 @@ func chatTool(gtx C, th *ui.Theme, it backend.ChatItem, live bool) D {
 			name := th.Text(ui.TextXS, t.Name).Weight(font.Medium)
 			target := th.Text(ui.TextXS, cleanLine(t.Title)).Mono().Muted()
 			if running {
-				name, target = name.Shimmer(), target.Shimmer()
+				// The band lights toward Foreground, so the name runs muted to show it.
+				name, target = name.Muted().Shimmer(), target.Shimmer()
 			}
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 				layout.Rigid(func(gtx C) D { return toolIcon(t.Name).Layout(gtx, ui.Space(3.5), th.MutedForeground) }),
 				ui.Gap(2),
 				layout.Rigid(name.Layout),
 				ui.Gap(2.5),
-				layout.Flexed(1, target.Layout),
+				layout.Flexed(1, func(gtx C) D {
+					// The text's own width, not the room's: the band sweeps the words.
+					gtx.Constraints.Min.X = 0
+					d := target.Layout(gtx)
+					d.Size.X = gtx.Constraints.Max.X
+					return d
+				}),
 				layout.Rigid(func(gtx C) D { return chatToolTime(gtx, th, it, running) }),
 				layout.Rigid(func(gtx C) D { return chatToolOutcome(gtx, th, t) }),
 			)

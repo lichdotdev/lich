@@ -356,7 +356,8 @@ draws none while it grows in, because the room above the rows is measured in the
   every 1.6s (`Label.Shimmer`, looping frames only while it is drawn), and the time it has run counts beside
   it, "6s", "1m 12s", redrawn each second and not each frame. That is "Thinking" for the thought being
   thought, "2 tool calls" for the turn's line while a call runs, and the name and target of each call that runs,
-  its time counting from when it was asked for, a wait on a permission included. The
+  its time counting from when it was asked for, a wait on a permission included. A running call's name is muted
+  under the band, which lights toward `Foreground` and would not show on it; ended, it is `Foreground` again. The
   answer being written ends in a caret that blinks every half second. A row new to the conversation enters
   with `ui.Presence`, growing in from the top; the conversation read when the pane opens, or after it, does
   not play as arrivals. A list at its end stays at its end while rows grow in.
