@@ -21,6 +21,7 @@ import (
 	"github.com/lichdotdev/lich/internal/appupdate"
 	"github.com/lichdotdev/lich/internal/artifact"
 	"github.com/lichdotdev/lich/internal/browser"
+	"github.com/lichdotdev/lich/internal/chat"
 	"github.com/lichdotdev/lich/internal/claudeprofile"
 	"github.com/lichdotdev/lich/internal/cli"
 	"github.com/lichdotdev/lich/internal/codexprofile"
@@ -157,6 +158,10 @@ func app() {
 	// session was worked in this run is still in memory until something writes
 	// it (internal/terminal.handsOn).
 	defer term.FlushHandsOn()
+	// Deferred after the hands-on flush, so it runs first: a chat's process
+	// is lich's child, as a terminal's is.
+	chats := chat.New(term, db, hub, db.PromptLanguage)
+	defer chats.Shutdown()
 	coord := newCoordinator()
 	svcs := services.New(db, term, hub.Emit)
 	// Deferred after the hands-on flush, so it runs first: a service's process
@@ -165,7 +170,7 @@ func app() {
 	exts := extensions.New(extensions.Dir(configDir), extensions.DataDir(configDir), version, env, hub.Emit)
 	exts.SetLanguage(db.InterfaceLanguage)
 	defer exts.Shutdown()
-	sys, closeBrowsers := registerServices(db, term, svcs, exts, hub, configDir, logPath, env, launchEnv, coord)
+	sys, closeBrowsers := registerServices(db, term, chats, svcs, exts, hub, configDir, logPath, env, launchEnv, coord)
 	defer closeBrowsers()
 
 	coord.SetWindowOpen(hub.Attached)
@@ -242,7 +247,7 @@ func resolveEnv() (launchEnv, env []string) {
 // in the order main built them: a service that hands another one a callback has
 // to exist first. It is lifted out of main only for its length; nothing here
 // runs anywhere else.
-func registerServices(db *store.Service, term *terminal.Service, svcs *services.Service, exts *extensions.Service, hub *events.Hub,
+func registerServices(db *store.Service, term *terminal.Service, chats *chat.Service, svcs *services.Service, exts *extensions.Service, hub *events.Hub,
 	configDir, logPath string, env, launchEnv []string, coord *restart.Coordinator) (*system.Service, func()) {
 	// One Chromium per session, closed with the card and with the process.
 	// Never the lich window: this is a second browser the agent drives.
@@ -360,6 +365,7 @@ func registerServices(db *store.Service, term *terminal.Service, svcs *services.
 		return proj.PickFile(context.Background(), api.PickFileOptions{Title: title})
 	})
 	routes.Terminal(dispatcher, term)
+	routes.Chat(dispatcher, chats)
 	routes.Browser(dispatcher, brows)
 	routes.Drop(dispatcher, drops)
 	routes.Artifact(dispatcher, arts)
@@ -525,7 +531,10 @@ func registerServices(db *store.Service, term *terminal.Service, svcs *services.
 	term.SetSessionClosed(func(id, closerID string) {
 		rl.SessionClosed(id, closerID)
 	})
-	term.SetCardClosed(func(id string) { closeSessionBrowser(brows, id) })
+	term.SetCardClosed(func(id string) {
+		closeSessionBrowser(brows, id)
+		chats.End(id)
+	})
 	term.SetSessionExited(func(id string) {
 		rl.SessionExited(id)
 		closeSessionBrowser(brows, id)

@@ -217,6 +217,9 @@ func (s *Service) ContinueIn(ctx context.Context, opts api.ContinueInOptions) (a
 		return api.None{}, errors.New("this session has no conversation to continue yet")
 	}
 	started := s.spawnOf(opts.ID)
+	if started.chat {
+		return api.None{}, errors.New("switch this session to its terminal before moving it to another profile")
+	}
 	kind := sessionKind(started.kind, s.store.SessionKind(opts.ID))
 	if !hasProfiles(kind) {
 		return api.None{}, fmt.Errorf("a %s session has no profiles to continue in", kind)

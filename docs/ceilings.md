@@ -84,6 +84,20 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   machine, is what the sandbox confines; on Cursor CLI and Antigravity skipping it writes the trust down, so a
   folder once opened confined stays trusted outside the sandbox too. Whether Codex's trust and Cursor CLI's
   `--trust` loosen anything beyond the question was not measured.
+- **A session runs its chat or its terminal, never both, and a chat leaves out two providers**
+  (`internal/chat`, `internal/terminal/chat.go`): the structured modes keep no lock on a conversation, so two
+  processes on one would write one transcript from two histories; a switch stops one side, waits for it to exit
+  and resumes the other, and refuses while a turn runs. Codex and Crush have no chat: Codex's structured mode is
+  its own app-server protocol and Crush's is an HTTP server, where every other provider speaks Claude Code's
+  stream-json or ACP over stdio. Cursor CLI's ACP server was measured only up to its login, so its chat is wired
+  and unverified. A resume is checked after the switch: an ACP load that fails or replays nothing (Kiro was
+  measured opening a new conversation in silence) and a Claude Code `system/init` naming another id each leave a
+  notice, but Claude Code names its conversation only once the first message is sent, so until then the only
+  check is that the transcript exists. An ACP server takes far fewer flags than its terminal: lich passes only
+  what each `acp --help` lists, sets the birth model and effort over the protocol, and answers every permission
+  yes itself where the checkout skips permissions and the server has no flag for it. lich serves no ACP client
+  method (`fs/*`, `terminal/*`): a file the agent asked lich to write would land outside the sandbox. The text of
+  lich's own notices is English, like backend error text.
 
 ## Session state and hooks
 

@@ -37,6 +37,7 @@ import (
 // value receivers can still write to it; a test that exercises cost builds one
 // with newCostStore.
 type stubBins struct {
+	views             map[string]string
 	bin               string
 	projectPath       string
 	providerSession   string
@@ -131,6 +132,7 @@ func (s stubBins) SessionEffort(_ string) string       { return s.effort }
 func (s stubBins) Ultracode(_ string) bool             { return s.ultracode }
 func (s stubBins) SubagentCards(_ string) bool         { return !s.subagentCardsOff }
 func (s stubBins) PasteUnfold(_ string) bool           { return s.pasteUnfold }
+func (s stubBins) SessionView(id string) string        { return s.views[id] }
 func (s stubBins) SessionFilesKey(id string) string {
 	if key, ok := s.filesKeys[id]; ok {
 		return key

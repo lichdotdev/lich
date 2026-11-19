@@ -190,6 +190,7 @@ distinto.
 | La tarjeta de la sesión abre un navegador que el agente conduce, junto al terminal de la sesión | sí | sí | sí | sí | sí | sí | sí | sí |
 | Una página que el agente hace para mostrarte (un informe, un diagrama, un mockup) se abre en ese navegador desde una carpeta propia de la sesión, fuera del checkout, que dura lo que dure la sesión | sí, aunque Claude Code puede seguir publicándola en claude.ai con su propia herramienta Artifact | sí | sí | sí | sí | sí | sí | sí |
 | Una skill para escribir una extensión de lich, que solo corre cuando la llamas (`/lich:extension`) | sí | sí, como `$lich:extension` | sí, pero el agente la ve en cada turno: Antigravity no puede reservar una skill para uso manual | sí, como `/lich-extension` (opencode 1) o desde `/skills` (opencode 2) | sí, como `/skill:lich-extension` | sí, desde la paleta de comandos | sí, pero el agente la ve en cada turno: Cursor le muestra al agente toda skill de un plugin | no: Kiro no puede sacar una skill del contexto del agente |
+| La sesión puede mostrarse como chat en lugar de su terminal, alternando entre ambos en la misma conversación | sí | no | sí | sí | sí | no | sin verificar | sí |
 
 </details>
 
