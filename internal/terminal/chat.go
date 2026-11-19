@@ -189,27 +189,24 @@ func (s *Service) spawnChat(opts api.StartOptions, profileDir, name string, oc2 
 	if err != nil {
 		return nil, spawnLaunch{}, err
 	}
-	p, err := startChatProcess(l.spec)
+	started := spawn{kind: opts.Kind, cwd: opts.Cwd, projectID: opts.ProjectID, profile: profileSlug(opts.Kind, profileDir), chat: true}
+	// Dropped before Done closes, so whoever waited the process out can start
+	// the terminal at once; only this process's own entry, in case one started
+	// after it under the same id. The turn is left to the chat to close: it
+	// reports the end a dead process took with it.
+	s.spawns.Store(opts.ID, started)
+	p, err := startChatProcess(l.spec, func() { s.spawns.CompareAndDelete(opts.ID, started) })
 	if err != nil {
+		s.spawns.CompareAndDelete(opts.ID, started)
 		return nil, spawnLaunch{}, fmt.Errorf("failed to start the chat of %q: %w", opts.ID, err)
 	}
 	p.Birth = s.chatBirth(opts)
-	started := spawn{kind: opts.Kind, cwd: opts.Cwd, projectID: opts.ProjectID, profile: profileSlug(opts.Kind, profileDir), chat: true}
-	s.spawns.Store(opts.ID, started)
-	go func() {
-		<-p.done
-		// Only this process's own entry: a terminal started after it under the
-		// same id has registered its own.
-		if s.spawns.CompareAndDelete(opts.ID, started) {
-			s.forgetTurn(opts.ID)
-		}
-	}()
 	return p, l, nil
 }
 
 // startChatProcess runs spec on pipes. The pipes are the OS's own rather than
 // exec's copying goroutines, so Wait never races the reader for stdout.
-func startChatProcess(spec ptySpec) (*ChatProcess, error) {
+func startChatProcess(spec ptySpec, exited func()) (*ChatProcess, error) {
 	path, err := exec.LookPath(spec.bin)
 	if err != nil {
 		return nil, err
@@ -242,6 +239,7 @@ func startChatProcess(spec ptySpec) (*ChatProcess, error) {
 	p := &ChatProcess{Stdin: inW, Stdout: outR, cmd: cmd, stderr: stderr, done: make(chan struct{})}
 	go func() {
 		_ = cmd.Wait()
+		exited()
 		close(p.done)
 		time.AfterFunc(chatDrain, func() { _ = outR.Close() })
 	}()

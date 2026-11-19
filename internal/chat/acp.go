@@ -64,11 +64,12 @@ func newACPDriver(c *chatSession) *acpDriver {
 func (d *acpDriver) call(ctx context.Context, method string, params any) (json.RawMessage, error) {
 	d.mu.Lock()
 	d.next++
-	id := strconv.FormatInt(d.next, 10)
+	n := d.next
+	id := strconv.FormatInt(n, 10)
 	reply := make(chan acpReply, 1)
 	d.calls[id] = reply
 	d.mu.Unlock()
-	if err := d.c.out.send(map[string]any{"jsonrpc": "2.0", "id": d.next, "method": method, "params": params}); err != nil {
+	if err := d.c.out.send(map[string]any{"jsonrpc": "2.0", "id": n, "method": method, "params": params}); err != nil {
 		return nil, err
 	}
 	select {

@@ -1,3 +1,8 @@
+// The suite runs the fake provider through the test binary and isolates
+// lich's store and every provider's home by $HOME and $XDG_CONFIG_HOME, which
+// Windows does not read; the conversation and diff tests run everywhere.
+//go:build !windows
+
 package chat
 
 import (

@@ -145,11 +145,13 @@ func (d *claudeDriver) prompt(text string) error {
 func (d *claudeDriver) cancel() error {
 	d.mu.Lock()
 	d.interrupted = true
+	d.next++
+	id := "lich-" + strconv.Itoa(d.next)
 	d.mu.Unlock()
-	ctx, done := context.WithTimeout(context.Background(), callTimeout)
-	defer done()
-	_, err := d.control(ctx, map[string]any{"subtype": "interrupt"})
-	return err
+	// Sent without waiting for its response: the spike saw an interrupt
+	// answered once and left unanswered once (2.1.327), and the turn's result
+	// is what says it stopped.
+	return d.c.out.send(map[string]any{"type": "control_request", "request_id": id, "request": map[string]any{"subtype": "interrupt"}})
 }
 
 func (d *claudeDriver) stopped() {
@@ -256,6 +258,10 @@ func readClaudeAssistant(c *chatSession, d *claudeDriver, line claudeLine) {
 	}
 }
 
+// claudeInterrupted is the user line Claude Code writes when a turn is
+// interrupted (measured on 2.1.327): a marker, not something the person said.
+const claudeInterrupted = "[Request interrupted by user]"
+
 func readClaudeUser(c *chatSession, line claudeLine, history bool) {
 	var text string
 	if json.Unmarshal(line.Message.Content, &text) == nil {
@@ -282,7 +288,7 @@ func readClaudeUser(c *chatSession, line claudeLine, history bool) {
 				}
 				it.Tool.Output = shorten(blockText(b.Content))
 			})
-		case b.Type == "text" && history:
+		case b.Type == "text" && history && b.Text != claudeInterrupted:
 			c.conv.userMessage(b.Text)
 		}
 	}

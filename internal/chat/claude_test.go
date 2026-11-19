@@ -1,3 +1,5 @@
+//go:build !windows
+
 package chat
 
 import (
@@ -19,6 +21,7 @@ func TestClaudeSwitchRoundTrip(t *testing.T) {
 		`{"type":"assistant","message":{"id":"h1","content":[{"type":"text","text":"earlier answer"}]}}`,
 		`{"type":"assistant","isSidechain":true,"message":{"id":"h2","content":[{"type":"text","text":"side"}]}}`,
 		`{"type":"user","isMeta":true,"message":{"content":"meta"}}`,
+		`{"type":"user","message":{"content":[{"type":"text","text":"[Request interrupted by user]"}]}}`,
 		`not json`,
 	)
 	if _, err := r.term.Start(t.Context(), api.StartOptions{ID: "s1", ProjectID: "p1", Cwd: r.home, Kind: providers.Claude, Resume: "conv-1", Cols: 80, Rows: 24}); err != nil {
@@ -39,6 +42,9 @@ func TestClaudeSwitchRoundTrip(t *testing.T) {
 	}
 	if _, ok := r.item(api.ItemAgent, "earlier answer"); !ok {
 		t.Error("history lacks the transcript's answer")
+	}
+	if _, ok := r.item(api.ItemUser, "interrupted"); ok {
+		t.Error("the interrupt marker became a message")
 	}
 	if _, ok := r.item(api.ItemAgent, "side"); ok {
 		t.Error("history holds a sidechain line")
@@ -210,6 +216,9 @@ func TestClaudeCancelErrorsAndExit(t *testing.T) {
 	r.prompt("die")
 	if turn := r.turnEnd(3); turn.StopReason != stopError {
 		t.Errorf("a dead process ended the turn %q", turn.StopReason)
+	}
+	if got := r.term.Status("s1").State; got != stateDone {
+		t.Errorf("card state after the process died = %q, want done", got)
 	}
 	if !r.sent(api.ItemNotice, "boom") {
 		t.Error("the process's death was not said with its stderr")
