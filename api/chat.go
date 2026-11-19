@@ -21,6 +21,8 @@ var (
 	ChatCancel = define[SessionIDOptions, None]("chat.Cancel")
 	// ChatAnswer answers a permission item with one of its options.
 	ChatAnswer = define[ChatAnswerOptions, None]("chat.Answer")
+	// ChatReply answers a question item, or declines it.
+	ChatReply = define[ChatReplyOptions, None]("chat.Reply")
 	// ChatOptions is what a chat session can be set to now: its model, its
 	// effort and its mode, each as the provider offers them.
 	ChatOptions = define[SessionIDOptions, []ChatOption]("chat.Options")
@@ -76,6 +78,7 @@ const (
 	ItemThought    = "thought"    // the agent's reasoning, when the provider reports it
 	ItemTool       = "tool"       // a tool call and its outcome
 	ItemPermission = "permission" // the agent asking before a tool runs
+	ItemQuestion   = "question"   // the agent asking the person to choose or write
 	ItemNotice     = "notice"     // something lich or the provider says about the session: an error, a resume
 )
 
@@ -98,6 +101,7 @@ type ChatItem struct {
 	Text       string          `json:"text,omitempty"`
 	Tool       *ChatToolCall   `json:"tool,omitempty"`
 	Permission *ChatPermission `json:"permission,omitempty"`
+	Question   *ChatQuestion   `json:"question,omitempty"`
 	// At is when the item began, in unix milliseconds.
 	At int64 `json:"at"`
 	// Model and Effort are what produced the item, as the person reads them:
@@ -215,4 +219,51 @@ type ChatSetOptionOptions struct {
 type ChatOptionsUpdate struct {
 	SessionID string       `json:"sessionId"`
 	Options   []ChatOption `json:"options"`
+}
+
+// ChatQuestion is the agent asking the person, Claude Code's AskUserQuestion
+// shape that every provider's request for input is read into: one to four
+// questions. Reply is the answer once given, nil while it waits.
+type ChatQuestion struct {
+	Questions []ChatAsk     `json:"questions"`
+	Reply     *ChatQReplied `json:"reply,omitempty"`
+}
+
+// ChatAsk is one question. Header is its short label; an ask with no Options
+// takes free text alone. Multi lets the person pick more than one option.
+// Every ask also takes the person's own words.
+type ChatAsk struct {
+	Header  string      `json:"header,omitempty"`
+	Text    string      `json:"text"`
+	Options []ChatOffer `json:"options,omitempty"`
+	Multi   bool        `json:"multi,omitempty"`
+}
+
+// ChatOffer is one option of a question; Preview is a block of text shown
+// beside the options while this one is highlighted.
+type ChatOffer struct {
+	Label       string `json:"label"`
+	Description string `json:"description,omitempty"`
+	Preview     string `json:"preview,omitempty"`
+}
+
+// ChatQReplied is how a question item was answered: one answer per ask, in
+// order, or Declined when the person answered none.
+type ChatQReplied struct {
+	Answers  []ChatAskAnswer `json:"answers,omitempty"`
+	Declined bool            `json:"declined,omitempty"`
+}
+
+// ChatAskAnswer is the options picked, by label, and the person's own words,
+// "" for none.
+type ChatAskAnswer struct {
+	Picked []string `json:"picked,omitempty"`
+	Other  string   `json:"other,omitempty"`
+}
+
+// ChatReplyOptions answers question item ItemID of session ID.
+type ChatReplyOptions struct {
+	ID     string       `json:"id"`
+	ItemID string       `json:"itemId"`
+	Reply  ChatQReplied `json:"reply"`
 }

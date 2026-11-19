@@ -46,6 +46,7 @@ chat.History(SessionIDOptions) []ChatItem
 chat.Kinds(None) []string
 chat.Options(SessionIDOptions) []ChatOption
 chat.Prompt(ChatPromptOptions) None
+chat.Reply(ChatReplyOptions) None
 chat.SetOption(ChatSetOptionOptions) None
 chat.SetView(ChatViewOptions) None
 claudeprofile.CancelLogin(ProfileSlugOptions) None
@@ -609,6 +610,7 @@ ChatItem {
 	text,omitempty string
 	tool,omitempty *ChatToolCall
 	permission,omitempty *ChatPermission
+	question,omitempty *ChatQuestion
 	at int64
 	model,omitempty string
 	effort,omitempty string
@@ -625,6 +627,12 @@ ChatOption {
 ChatPromptOptions {
 	id string
 	text string
+}
+
+ChatReplyOptions {
+	id string
+	itemId string
+	reply ChatQReplied
 }
 
 ChatSetOptionOptions {
@@ -2344,11 +2352,21 @@ ChatPermission {
 	chosen,omitempty string
 }
 
+ChatQuestion {
+	questions []ChatAsk
+	reply,omitempty *ChatQReplied
+}
+
 ChatChoice {
 	id string
 	label string
 	description,omitempty string
 	danger,omitempty bool
+}
+
+ChatQReplied {
+	answers,omitempty []ChatAskAnswer
+	declined,omitempty bool
 }
 
 ProfileUpdate {
@@ -2639,6 +2657,18 @@ ChatPermitOption {
 	kind string
 }
 
+ChatAsk {
+	header,omitempty string
+	text string
+	options,omitempty []ChatOffer
+	multi,omitempty bool
+}
+
+ChatAskAnswer {
+	picked,omitempty []string
+	other,omitempty string
+}
+
 StepLog {
 	step,omitempty string
 	lines []string
@@ -2667,4 +2697,10 @@ SyntaxStyle {
 	italic,omitempty bool
 	underline,omitempty bool
 	strikethrough,omitempty bool
+}
+
+ChatOffer {
+	label string
+	description,omitempty string
+	preview,omitempty string
 }
