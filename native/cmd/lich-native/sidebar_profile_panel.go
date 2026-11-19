@@ -93,7 +93,8 @@ func (pf *profileFooter) entryRow(gtx C, th *ui.Theme, key string, e ui.MenuEntr
 						children = append(children, layout.Rigid(func(gtx C) D { return e.Lead(gtx, ui.Space(4)) }), ui.Gap(2))
 					}
 					children = append(children, layout.Flexed(1, on.Text(ui.TextSM, e.Label).Layout))
-					if e.Shortcut != "" {
+					// The chosen login's usage is the block above; the others' help to choose.
+					if e.Shortcut != "" && !e.Checked {
 						note := on.Text(ui.TextXS, e.Shortcut).Muted()
 						if e.ShortcutDestructive {
 							note = on.Text(ui.TextXS, e.Shortcut).In(on.Destructive)

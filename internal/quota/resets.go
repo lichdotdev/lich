@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/claudeprofile"
@@ -27,6 +28,13 @@ const (
 	claudeResetProgram = "cedar_ember"
 	// maxResetBody bounds what is read of an answer.
 	maxResetBody = 1 << 20
+	// attemptTTL is how long the request id of a spend that got no answer is
+	// kept. A retry in the minutes after an error is the same attempt; a click
+	// long after is a new one, and must not be answered as the old one's repeat.
+	attemptTTL = 10 * time.Minute
+	// shownBody is how much of an answer lich cannot read an error quotes, so
+	// the real shape of the route can be learned from the first report.
+	shownBody = 200
 )
 
 // claudeResetRequest is the body of a spend. RequestID is what lets the server
@@ -91,10 +99,9 @@ func (s *Service) installedVersion() string {
 	if v, ok := versions.Load(key); ok {
 		return v.(string)
 	}
-	version, err := providers.ProbeVersion(context.Background(), path)
-	if err != nil {
-		return ""
-	}
+	// A failed probe is kept too, as an empty version: it would otherwise run
+	// again, for up to its timeout, on every reading.
+	version, _ := providers.ProbeVersion(context.Background(), path)
 	versions.Store(key, version)
 	return version
 }
@@ -124,16 +131,17 @@ func (s *Service) UseReset(ctx context.Context, opts api.UseResetOptions) (api.U
 	}
 	id := s.attemptID(opts.Profile, opts.GrantID)
 	result, err := s.postReset(ctx, creds.OAuth.AccessToken, org, claudeResetRequest{Program: claudeResetProgram, GrantID: opts.GrantID, RequestID: id})
+	// Whatever came back, the reset may have gone through: the next reading must
+	// come from the provider, not from the cache.
+	s.mu.Lock()
+	delete(s.cache, cacheKey(account))
+	delete(s.cache, providers.Claude+"\x00"+cacheKey(account))
+	s.mu.Unlock()
 	if err != nil {
 		return api.UseResetResult{}, err
 	}
 	s.mu.Lock()
 	delete(s.attempts, opts.Profile+"\x00"+opts.GrantID)
-	if result.Status == api.UseResetReset || result.Status == api.UseResetAlreadyUsed {
-		// The limit is cleared: the next reading must see it, not the cache.
-		delete(s.cache, cacheKey(account))
-		delete(s.cache, providers.Claude+"\x00"+cacheKey(account))
-	}
 	s.mu.Unlock()
 	return result, nil
 }
@@ -151,20 +159,28 @@ func (s *Service) profileAccount(profile string) (Account, error) {
 	return Account{Read: true, Env: envMap(claudeprofile.Env(os.Environ(), dir))}, nil
 }
 
+// attempt is a spend no answer came for: its request id, and when it was first
+// made.
+type attempt struct {
+	id string
+	at time.Time
+}
+
 // attemptID is the request id of the spend of grant by profile: made on the
 // first try and kept until an answer comes.
 func (s *Service) attemptID(profile, grant string) string {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	key := profile + "\x00" + grant
-	if id, ok := s.attempts[key]; ok {
-		return id
+	now := s.now()
+	if a, ok := s.attempts[key]; ok && now.Sub(a.at) < attemptTTL {
+		return a.id
 	}
 	if s.attempts == nil {
-		s.attempts = map[string]string{}
+		s.attempts = map[string]attempt{}
 	}
 	id := newUUID()
-	s.attempts[key] = id
+	s.attempts[key] = attempt{id: id, at: now}
 	return id
 }
 
@@ -239,5 +255,17 @@ func (s *Service) postReset(ctx context.Context, token, org string, body claudeR
 	if resp.StatusCode == http.StatusTooManyRequests {
 		return api.UseResetResult{}, errors.New("Claude is rate limiting these requests, try again soon")
 	}
-	return api.UseResetResult{}, fmt.Errorf("Claude answered %d and did not say whether the reset went through", resp.StatusCode)
+	return api.UseResetResult{}, fmt.Errorf("Claude answered %d and did not say whether the reset went through: %s", resp.StatusCode, quoteBody(data))
+}
+
+// quoteBody is the start of an answer body on one line, for an error.
+func quoteBody(data []byte) string {
+	text := strings.Join(strings.Fields(string(data)), " ")
+	if len(text) > shownBody {
+		text = text[:shownBody] + "…"
+	}
+	if text == "" {
+		return "(empty)"
+	}
+	return text
 }

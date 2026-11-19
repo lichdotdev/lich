@@ -110,7 +110,7 @@ func (m *model) profilePlan(f profileFocus) (backend.QuotaPlan, bool) {
 }
 
 // profileUsageRows are the blocks at the top of the panel: the usage of the
-// account new sessions are born in, the same ones the plan quota's tooltip
+// account new sessions are born in, the same blocks the plan quota's tooltip
 // draws, with a way to spend a limit reset on Claude Code. Only Claude Code and
 // Codex are read per profile: any other provider, with a plan of its own or
 // none, says so in a line rather than draw the machine's reading under a
@@ -133,7 +133,11 @@ func profileUsageRows(th *ui.Theme, f profileFocus, plan backend.QuotaPlan, load
 	if f.kind != claudeKind {
 		use = nil
 	}
-	return append([]layout.Widget{tipHead(th, planTitle(plan), "")}, planRows(th, plan, now, use)...)
+	head := []layout.Widget{tipHead(th, planTitle(plan), "")}
+	if account := accountLine(plan); account != "" {
+		head = append(head, para(th.Text(accountSize, account).Leading(accountLeading).Muted().Mono()).Layout)
+	}
+	return append(head, usageBlocks(th, plan, now, use)...)
 }
 
 // footerEntries is the footer's menu: the focused provider's logins, then a

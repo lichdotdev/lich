@@ -201,7 +201,7 @@ type Service struct {
 	claudeVersion func() string
 	// attempts holds the request id of each spend not yet answered, by profile
 	// and grant, guarded by mu (UseReset).
-	attempts map[string]string
+	attempts map[string]attempt
 
 	// enabled reports whether the user turned a provider on; nil is all on.
 	enabled func(provider string) bool

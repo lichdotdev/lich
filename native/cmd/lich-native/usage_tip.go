@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	// usageBlockGap is the room between two blocks of the usage tooltip, more
+	// usageBlockGap is the room between two blocks of the usage panel, more
 	// than the one inside a block so each reads as a unit.
 	usageBlockGap = 3
 	usageLineGap  = 1.5

@@ -279,7 +279,7 @@ the provider's reason in `Destructive`. After the windows, `Extra usage` with th
 ("$12.50 of $50.00", "$141.57 · no limit") and a bar only when there is a cap, then a `Reset credits` line like a
 context row ("1 available") for Codex, each only when the account has them. Amounts follow the locale (`money.go`):
 its separators, the symbol before or after, the sign outside the symbol, the ISO code where there is no symbol. The
-account's email closes the usage, under a separator.
+account's email sits under the plan's name. The chosen login carries no usage note in the list below: its blocks are above.
 
 Claude Code's limit resets are a `Resets` block of their own: its title with "N left" (every reset of every live
 grant) at the right, and a line per grant. The line is its name at the left ("Full" when it clears the weekly window,

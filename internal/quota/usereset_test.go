@@ -120,7 +120,8 @@ func TestUseResetReportsWhatItCannotTurnIntoAnOutcome(t *testing.T) {
 		want   string
 	}{
 		"unknown status": {200, `{"status":"teapot"}`, "does not know"},
-		"no status":      {200, `{}`, "did not say whether"},
+		"no status":      {200, `{"granted": true}`, `did not say whether the reset went through: {"granted": true}`},
+		"an empty body":  {200, ``, "(empty)"},
 		"server error":   {500, `oops`, "Claude answered 500"},
 		"rate limited":   {429, `{}`, "rate limiting"},
 		"signed out":     {401, `{}`, "sign in to Claude Code again"},
@@ -162,22 +163,29 @@ func TestUseResetKeepsTheRequestIdOfAnAttemptThatFailed(t *testing.T) {
 	}
 }
 
-func TestASpentResetDropsTheCachedReading(t *testing.T) {
-	for status, drops := range map[string]bool{"reset": true, "already_used": true, "not_limited": false, "cooldown": false} {
-		_, s := newResetServer(t, http.StatusOK, `{"status":"`+status+`"}`)
+// Whatever came back, the reset may have gone through, so the next reading is
+// the provider's and not the cache's.
+func TestAnyAnswerToASpendDropsTheCachedReading(t *testing.T) {
+	for name, answer := range map[string]struct {
+		status int
+		body   string
+	}{
+		"reset": {200, `{"status":"reset"}`}, "already used": {200, `{"status":"already_used"}`},
+		"not limited": {200, `{"status":"not_limited"}`}, "cooldown": {200, `{"status":"cooldown"}`},
+		"a body lich cannot read": {200, `{"granted":true}`}, "a server error": {500, `oops`}, "rate limited": {429, `{}`},
+	} {
+		_, s := newResetServer(t, answer.status, answer.body)
 		url, calls := serve(t, http.StatusOK, claudeLimitsBody)
 		s.claudeURL = url
 		s.plans("")
 		s.plans("")
 		if *calls != 1 {
-			t.Fatalf("%s: the reading was not cached: %d calls", status, *calls)
+			t.Fatalf("%s: the reading was not cached: %d calls", name, *calls)
 		}
-		if _, err := spend(s); err != nil {
-			t.Fatal(err)
-		}
+		_, _ = spend(s) // an answer lich cannot read is an error, and still drops it
 		s.plans("")
-		if refetched := *calls == 2; refetched != drops {
-			t.Errorf("%s: calls = %d, want the cache dropped = %v", status, *calls, drops)
+		if *calls != 2 {
+			t.Errorf("%s: calls = %d, want the cache dropped", name, *calls)
 		}
 	}
 }
@@ -250,5 +258,42 @@ func TestTheInstalledVersionIsReadOnceFromTheBinary(t *testing.T) {
 	s.claudeBin = func() string { return filepath.Join(t.TempDir(), "missing") }
 	if got := s.usageAgent(); got != "claude-cli/"+claudeFallbackVersion+" (external, cli)" {
 		t.Errorf("a binary that is gone falls back: %q", got)
+	}
+}
+
+func TestTheRequestIdOfAnUnansweredAttemptExpires(t *testing.T) {
+	rs, s := newResetServer(t, http.StatusInternalServerError, `oops`)
+	now := time.Date(2026, 11, 19, 12, 0, 0, 0, time.UTC)
+	s.now = func() time.Time { return now }
+	_, _ = spend(s)
+	now = now.Add(attemptTTL - time.Second)
+	_, _ = spend(s)
+	now = now.Add(2 * time.Second)
+	_, _ = spend(s)
+	if rs.bodies[0].RequestID != rs.bodies[1].RequestID {
+		t.Error("a retry within minutes must be the same attempt")
+	}
+	if rs.bodies[2].RequestID == rs.bodies[0].RequestID {
+		t.Error("a click long after the first reused its id, and the server would answer it as the old one's repeat")
+	}
+}
+
+func TestAVersionThatCannotBeReadIsNotProbedAgain(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("the binary here is a shell script")
+	}
+	dir := t.TempDir()
+	count := filepath.Join(dir, "count")
+	bin := filepath.Join(dir, "claude")
+	if err := os.WriteFile(bin, []byte("#!/bin/sh\necho x >> '"+count+"'\nexit 1\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	s := newService("", "", time.Now())
+	s.claudeVersion, s.claudeBin = nil, func() string { return bin }
+	s.usageAgent()
+	s.usageAgent()
+	data, _ := os.ReadFile(count)
+	if n := strings.Count(string(data), "x"); n != 1 {
+		t.Errorf("the failing probe ran %d times, want once", n)
 	}
 }

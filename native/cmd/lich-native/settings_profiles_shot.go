@@ -15,7 +15,7 @@ import (
 
 var (
 	flagProfileDialog = flag.String("settings-profile-dialog", "", "open the profile dialog of the provider -settings-provider names (Claude Code by default) at start, for -shot: new, rename, delete, copy, login or result")
-	flagProfileUsage  = flag.String("profile-usage", "", "seed Continue in's five-hour readings as slug=percent,…, for -shot; slug=full seeds a whole plan for the usage tooltip and holds it against the backend's own reading")
+	flagProfileUsage  = flag.String("profile-usage", "", "seed Continue in's five-hour readings as slug=percent,…, for -shot; slug=full seeds a whole plan for the usage panel and holds it against the backend's own reading")
 	flagCardMenu      = flag.String("card-menu", "", "open a card's menu at start as <session id>@<x>,<y>:<row>[,<row>…], for -shot")
 )
 
@@ -93,7 +93,7 @@ func (b *profileBook) seedProfilePlans(spec string) error {
 	return nil
 }
 
-// shotUsagePlan is a plan with everything the usage tooltip can show: three
+// shotUsagePlan is a plan with everything the usage panel can show: three
 // windows out of order, a weekly one on course to run out, and the one extra
 // each provider alone reports.
 func shotUsagePlan(kind string) backend.QuotaPlan {

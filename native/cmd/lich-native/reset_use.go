@@ -111,9 +111,8 @@ func resetClears(r backend.QuotaReset) string {
 	return ""
 }
 
-// applyUseReset sends a confirmed spend and tells the person how it went. The
-// reading is asked again at once on a reset: the backend drops its cache when
-// one went through.
+// applyUseReset sends a confirmed spend and tells the person how it went, then
+// reads the usage again.
 func (u *window) applyUseReset(r resetRequest) {
 	if r.grantID == "" {
 		return
@@ -125,9 +124,9 @@ func (u *window) applyUseReset(r resetRequest) {
 		}()
 		res, err := u.client.QuotaUseReset(u.ctx, r.profile, r.grantID)
 		u.toaster.Show(useResetToast(res, err, time.Now()))
-		if err == nil && (res.Status == api.UseResetReset || res.Status == api.UseResetAlreadyUsed) {
-			u.model.quota.reread(r.key)
-		}
+		// Whatever the answer, the reset may have gone through: the backend
+		// dropped its cache, and the reading is taken again at once.
+		u.model.quota.reread(r.key)
 	}()
 }
 
