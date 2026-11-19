@@ -27,6 +27,8 @@ var (
 	// pickerChrome is what the panel adds to its columns: the hairline between
 	// them and the popover's p-1 either side.
 	pickerChrome = unit.Dp(9)
+	// pickerMaxH is the tallest the panel grows: past it the models scroll.
+	pickerMaxH = unit.Dp(420)
 	// pickerBarW, pickerBarGap and pickerBarStep draw the signal glyph of an
 	// effort: bars three wide, two apart, each two taller than the one before.
 	pickerBarW    = ui.Space(0.75)
@@ -56,6 +58,10 @@ type modelPicker struct {
 	rows     []widget.Clickable
 	efforts  []widget.Clickable
 	more     widget.Clickable
+	// list scrolls the models; moved says the keyboard just moved the cursor,
+	// which is to be kept in view.
+	list  widget.List
+	moved bool
 }
 
 // pickerVisible is the models the panel lists, as positions in choices: those
@@ -112,9 +118,9 @@ func (pk *modelPicker) keys(gtx C, shown int) (take int) {
 		}
 		switch {
 		case e.Name == key.NameDownArrow:
-			pk.cursor = min(pk.cursor+1, max(shown-1, 0))
+			pk.cursor, pk.moved = min(pk.cursor+1, max(shown-1, 0)), true
 		case e.Name == key.NameUpArrow:
-			pk.cursor = max(pk.cursor-1, 0)
+			pk.cursor, pk.moved = max(pk.cursor-1, 0), true
 		case e.Name == key.NameReturn || e.Name == key.NameEnter:
 			take = pk.cursor
 		case e.Name == key.NameEscape:
@@ -230,20 +236,12 @@ func (u *window) modelColumn(gtx C, th *ui.Theme, pk *modelPicker, sv sessionVie
 		u.setChatOption(sv.ID, model.ID, model.Choices[shown[take]].ID)
 	}
 	isMac := runtime.GOOS == "darwin"
-	children := []layout.FlexChild{
-		layout.Rigid(func(gtx C) D {
-			in := th.Input(&pk.query, i18n.T("chat.model.search", i18n.Args{"provider": name}))
-			in.Borderless = true
-			return in.Layout(gtx)
-		}),
-		layout.Rigid(th.Separator),
-		ui.VGap(1),
-	}
+	var items []layout.Widget
 	for pos, i := range shown {
 		c := model.Choices[i]
 		click := &pk.rows[pos]
 		current := c.ID == model.Current
-		children = append(children, layout.Rigid(func(gtx C) D {
+		items = append(items, func(gtx C) D {
 			return pickerRow(gtx, th, click, pos == pk.cursor, func(gtx C, th *ui.Theme) D {
 				row := []layout.FlexChild{layout.Rigid(th.Text(ui.TextSM, choiceLabel(c)).Layout)}
 				if pickerDefault(c) {
@@ -256,16 +254,40 @@ func (u *window) modelColumn(gtx C, th *ui.Theme, pk *modelPicker, sv sessionVie
 				row = append(row, layout.Rigid(pickerCheck(th, current)))
 				return layout.Flex{Alignment: layout.Middle}.Layout(gtx, row...)
 			})
-		}))
+		})
 	}
 	if folded {
-		children = append(children, layout.Rigid(func(gtx C) D {
+		items = append(items, func(gtx C) D {
 			return pickerRow(gtx, th, &pk.more, false, func(gtx C, th *ui.Theme) D {
 				return th.Text(ui.TextSM, i18n.T("chat.model.showMore")).Muted().Layout(gtx)
 			})
-		}))
+		})
 	}
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
+	// A cursor the keyboard moved is kept in view.
+	pk.list.Axis = layout.Vertical
+	if pos := pk.list.Position; pk.moved && pos.Count > 0 {
+		switch {
+		case pk.cursor < pos.First:
+			pk.list.ScrollTo(pk.cursor)
+		case pk.cursor >= pos.First+pos.Count-1:
+			pk.list.ScrollTo(pk.cursor - pos.Count + 2)
+		}
+	}
+	pk.moved = false
+	// The search stays where it is and the models scroll under it, in what the
+	// panel's height leaves.
+	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+		layout.Rigid(func(gtx C) D {
+			in := th.Input(&pk.query, i18n.T("chat.model.search", i18n.Args{"provider": name}))
+			in.Borderless = true
+			return in.Layout(gtx)
+		}),
+		layout.Rigid(th.Separator),
+		ui.VGap(1),
+		layout.Rigid(func(gtx C) D {
+			return th.ThinScrollArea(&pk.list).Layout(gtx, len(items), func(gtx C, i int) D { return items[i](gtx) })
+		}),
+	)
 }
 
 // effortColumn is the effort's title, with the model in force beside it, and

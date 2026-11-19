@@ -96,6 +96,9 @@ type menuLevel struct {
 	hints []Tooltip
 	// shown is when the panel first drew, the start of its animate-in.
 	shown time.Time
+	// scroll is how far a panel taller than the room it has is scrolled, and
+	// revealed the row last brought into view by the keyboard.
+	scroll, revealed int
 }
 
 // Opened reports whether the menu is showing.
@@ -268,7 +271,8 @@ func (m menuCore) levelEntries(k int) []MenuEntry {
 func (m menuCore) panelEvents(gtx C, k int) {
 	lv := m.s.levels[k]
 	for {
-		ev, ok := gtx.Event(pointer.Filter{Target: lv, Kinds: pointer.Move | pointer.Enter | pointer.Leave | pointer.Press | pointer.Release})
+		ev, ok := gtx.Event(pointer.Filter{Target: lv, Kinds: pointer.Move | pointer.Enter | pointer.Leave | pointer.Press | pointer.Release | pointer.Scroll,
+			ScrollY: pointer.ScrollRange{Min: -menuScrollRange, Max: menuScrollRange}})
 		if !ok {
 			return
 		}
@@ -280,6 +284,10 @@ func (m menuCore) panelEvents(gtx C, k int) {
 			m.root.pointer = pe.Position
 		}
 		live := m.s.open && k < len(m.s.levels) && m.s.levels[k] == lv
+		if ok && live && pe.Kind == pointer.Scroll {
+			lv.scroll += int(pe.Scroll.Y)
+			continue
+		}
 		if ok && live {
 			m.panelPointer(gtx, k, pe)
 		}
@@ -457,11 +465,11 @@ func (m menuCore) drawOverlay(gtx C) {
 	}
 	anchor, place, minWidth, entries, cols := m.s.anchor, m.geo.root, m.geo.minWidth, m.entries, 0
 	for _, lv := range m.s.levels {
-		box := m.drawPanel(gtx, lv, anchor, place, func(gtx C) image.Point {
+		box := m.drawPanel(gtx, lv, anchor, place, func(gtx C, maxH int) image.Point {
 			if cols > 0 {
 				return m.layoutGrid(gtx, lv, entries, cols)
 			}
-			return m.layoutPanel(gtx, lv, entries, minWidth)
+			return m.layoutPanel(gtx, lv, entries, minWidth, maxH)
 		})
 		if lv.highlight < 0 || lv.highlight >= len(entries) {
 			return
@@ -476,11 +484,19 @@ func (m menuCore) drawOverlay(gtx C) {
 
 // drawPanel places what layout draws at its origin beside anchor, and returns
 // where it landed.
-func (m menuCore) drawPanel(gtx C, lv *menuLevel, anchor image.Rectangle, place popupPlace, layout func(C) image.Point) image.Rectangle {
+func (m menuCore) drawPanel(gtx C, lv *menuLevel, anchor image.Rectangle, place popupPlace, layout func(C, int) image.Point) image.Rectangle {
+	window := image.Rectangle{Max: m.root.window}
 	macro := op.Record(gtx.Ops)
-	size := layout(gtx)
+	size := layout(gtx, 0)
 	call := macro.Stop()
-	box, side := place.box(gtx, anchor, size, image.Rectangle{Max: m.root.window})
+	// A panel taller than the room on its side is laid out again in what the
+	// room is, scrolling inside it, and never moved over its anchor.
+	if lim := place.limit(gtx, anchor, size, window); size.Y > lim.Y {
+		macro = op.Record(gtx.Ops)
+		size = layout(gtx, lim.Y)
+		call = macro.Stop()
+	}
+	box, side := place.box(gtx, anchor, size, window)
 	pos := box.Min
 	for i := range lv.rows {
 		lv.rows[i] = lv.rows[i].Add(pos)
@@ -545,7 +561,7 @@ func menuOrigin(side Side, anchor, size image.Point) (origin, toward f32.Point) 
 // layoutPanel draws the popup at its origin and records each row's rectangle
 // in lv.rows. The panel is as wide as its widest row (w-auto), never
 // narrower than minWidth.
-func (m menuCore) layoutPanel(gtx C, lv *menuLevel, entries []MenuEntry, minWidth unit.Dp) image.Point {
+func (m menuCore) layoutPanel(gtx C, lv *menuLevel, entries []MenuEntry, minWidth unit.Dp, maxH int) image.Point {
 	pad := gtx.Dp(menuPanelPad)
 	width, height := gtx.Dp(minWidth)-2*pad, 2*pad
 	rows := make([]menuRow, len(entries))
@@ -553,13 +569,36 @@ func (m menuCore) layoutPanel(gtx C, lv *menuLevel, entries []MenuEntry, minWidt
 		rows[i] = m.measureRow(gtx, e, i == lv.highlight)
 		width, height = max(width, rows[i].natural), height+rows[i].height
 	}
-	size := image.Pt(width+2*pad, height)
+	view := height
+	if maxH > 0 && height > maxH {
+		view = maxH
+	}
+	// The first sight of a panel (maxH 0) only measures it: what it scrolled to
+	// is for the pass that lays it out in the room it has.
+	if maxH > 0 {
+		lv.scroll = m.scrolled(lv, rows, pad, view, height)
+	}
+	scroll := lv.scroll
+	if view >= height {
+		scroll = 0
+	}
+	size := image.Pt(width+2*pad, view)
 	m.drawSurface(gtx, size)
+	inner := image.Rect(0, pad, size.X, view-pad)
+	if view == height {
+		inner = image.Rectangle{Max: size}
+	}
+	defer clip.Rect(inner).Push(gtx.Ops).Pop()
 	lv.rows = lv.rows[:0]
-	y := pad
+	y := pad - scroll
 	for i, r := range rows {
 		rect := image.Rect(pad, y, pad+width, y+r.height)
-		lv.rows = append(lv.rows, rect)
+		// A row scrolled out of view cannot be pointed at.
+		if seen := rect.Intersect(inner); seen.Empty() {
+			lv.rows = append(lv.rows, image.Rectangle{})
+		} else {
+			lv.rows = append(lv.rows, seen)
+		}
 		r.draw(gtx, rect)
 		if spot := entries[i].Spot; spot != nil {
 			at := op.Offset(rect.Min).Push(gtx.Ops)
@@ -569,6 +608,34 @@ func (m menuCore) layoutPanel(gtx C, lv *menuLevel, entries []MenuEntry, minWidt
 		y += r.height
 	}
 	return size
+}
+
+// menuScrollRange is how far one wheel event may move a panel.
+const menuScrollRange = 1 << 20
+
+// scrolled is the scroll of a panel showing view of height, within its
+// bounds, moved to show the highlighted row when the keyboard just put the
+// highlight on it.
+func (m menuCore) scrolled(lv *menuLevel, rows []menuRow, pad, view, height int) int {
+	if view >= height {
+		return 0
+	}
+	scroll := lv.scroll
+	if h := lv.highlight; h >= 0 && h < len(rows) && h != lv.revealed {
+		top := pad
+		for _, r := range rows[:h] {
+			top += r.height
+		}
+		bottom := top + rows[h].height
+		switch {
+		case top-scroll < pad:
+			scroll = top - pad
+		case bottom-scroll > view-pad:
+			scroll = bottom - (view - pad)
+		}
+	}
+	lv.revealed = lv.highlight
+	return min(max(scroll, 0), height-view)
 }
 
 // drawSurface is rounded-md bg-popover ring-1 ring-foreground/10. The ring

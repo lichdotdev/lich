@@ -249,6 +249,8 @@ func (u *window) modelChip(gtx C, th *ui.Theme, p *chatPane, sv sessionView, wor
 		width = pickerEffortW + pickerChrome - 1
 	}
 	panel := th.DropdownPanel(&u.root, &pk.panel, width, func(gtx C, pth *ui.Theme) D { return u.modelPanel(gtx, pth, p, sv) })
+	panel.MaxHeight = pickerMaxH
+	panel = panel.Above()
 	return th.Tooltip(&u.root, &w.tip, title).Layout(gtx, func(gtx C) D {
 		return panel.Layout(gtx, func(gtx C) D { return buttonFace(gtx, th, true, pk.panel.Opened(), false, content) })
 	})
