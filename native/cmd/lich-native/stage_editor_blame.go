@@ -10,7 +10,6 @@ import (
 	"image"
 	"strconv"
 	"time"
-	"unicode/utf8"
 
 	"gioui.org/f32"
 	"gioui.org/font"
@@ -18,6 +17,7 @@ import (
 	"gioui.org/op"
 	"gioui.org/unit"
 
+	"github.com/lichdotdev/godemirror"
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
@@ -29,14 +29,6 @@ const (
 	// blameMinRoom is the narrowest blame worth drawing; past the code's
 	// end with less room, the line shows none.
 	blameMinRoom = unit.Dp(80)
-	// codeCellEm is a code font's cell, in ems: the editor does not say
-	// where a line's text ends, and monospace faces advance about 0.6em.
-	// shortcut: a face wider than that cuts the blame at the code area's
-	// edge without the ellipsis; ask godemirror for a line's end once it
-	// exposes one.
-	codeCellEm = 0.6
-	// gutterCells is the gutter beside the line numbers' digits, in cells.
-	gutterCells = 3
 	// blameDateLayout is the tooltip's full date.
 	blameDateLayout = "2006-01-02 15:04"
 	daysPerMonth    = 30
@@ -50,7 +42,7 @@ type editorBlame struct {
 	gen int
 	// text is the line at the end of the cursor's line, "" for none; commit
 	// and hash the commit it names, hash "" for an uncommitted line. cells is
-	// how many cells the line's code and the gutter take before it.
+	// how many cells the line's text takes.
 	text   string
 	hash   string
 	commit api.GitBlameCommit
@@ -100,23 +92,20 @@ func blameAge(at int64, now time.Time) string {
 	return agoLabel(at, now)
 }
 
-// blameRoom is how wide the blame may be drawn: the code area's width past
-// the gutter and the line's code, estimated in cells.
-func blameRoom(width, cells int, cell float32) int {
-	return width - int(float32(cells)*cell)
-}
-
-// codeCells is how many cells sit before a line's end: the gutter, its
-// digits and the line's text.
-func codeCells(lines int, text string) int {
-	return gutterCells + len(strconv.Itoa(lines)) + utf8.RuneCountInString(text)
+// blameRoom is how wide the blame may be drawn, given the code area's width
+// (a line widget's widest): the editor draws it a cell past the line's text,
+// TextX plus the line's cells, and the code area starts at GutterWidth.
+func blameRoom(code, cells int, g godemirror.Geometry) int {
+	return code + g.GutterWidth - g.TextX - (cells+1)*g.CellWidth
 }
 
 // blameWidget draws the cursor line's blame, muted and italic past a gap,
 // cut with "…" where the code area ends, with the commit in its tooltip.
-func (f *fileEditor) blameWidget(gtx C) D {
+func (f *fileEditor) blameWidget(gtx C) D { return f.blameLabel(gtx, f.ed.Geometry()) }
+
+func (f *fileEditor) blameLabel(gtx C, g godemirror.Geometry) D {
 	th := f.th
-	room := blameRoom(gtx.Constraints.Max.X, f.blame.cells, float32(gtx.Sp(f.size))*codeCellEm)
+	room := blameRoom(gtx.Constraints.Max.X, f.blame.cells, g)
 	if room < gtx.Dp(blameGap+blameMinRoom) {
 		return D{}
 	}

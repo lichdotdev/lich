@@ -5,6 +5,7 @@ import (
 	"image"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 	"time"
 
@@ -20,26 +21,75 @@ import (
 	"github.com/lichdotdev/lich/native/ui/codeview"
 )
 
-// writes stands in for the backend's project.WriteFile, handing each write
-// to the test.
-func writes(t *testing.T) (*httptest.Server, chan api.WriteFileOptions) {
-	t.Helper()
-	got := make(chan api.WriteFileOptions, 4)
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/rpc/project.WriteFile" {
-			var args []api.WriteFileOptions
-			_ = json.NewDecoder(r.Body).Decode(&args)
-			got <- args[0]
-		}
-		_, _ = w.Write([]byte("null"))
-	}))
-	t.Cleanup(srv.Close)
-	return srv, got
+// fakeDisk stands in for the backend's reads and writes of the one file an
+// editor holds, handing each write to the test.
+type fakeDisk struct {
+	mu     sync.Mutex
+	text   string
+	fail   bool
+	writes chan api.WriteFileOptions
 }
 
-// loadedEditor is checkout /c's editor holding a.go, read as text.
-func loadedEditor(t *testing.T, srv *httptest.Server, text string) *fileEditor {
+func (d *fakeDisk) set(text string) {
+	d.mu.Lock()
+	d.text = text
+	d.mu.Unlock()
+}
+
+func (d *fakeDisk) serve(w http.ResponseWriter, r *http.Request) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	switch r.URL.Path {
+	case "/rpc/project.ReadFile":
+		_ = json.NewEncoder(w).Encode(d.text)
+	case "/rpc/project.WriteFile":
+		if d.fail {
+			http.Error(w, `{"error":"disk full"}`, http.StatusBadRequest)
+			return
+		}
+		var args []api.WriteFileOptions
+		_ = json.NewDecoder(r.Body).Decode(&args)
+		d.text = args[0].Content
+		d.writes <- args[0]
+		_, _ = w.Write([]byte("null"))
+	default:
+		_, _ = w.Write([]byte("null"))
+	}
+}
+
+func diskBackend(t *testing.T) (*httptest.Server, *fakeDisk) {
 	t.Helper()
+	d := &fakeDisk{writes: make(chan api.WriteFileOptions, 8)}
+	srv := httptest.NewServer(http.HandlerFunc(d.serve))
+	t.Cleanup(srv.Close)
+	return srv, d
+}
+
+// waitSave lands the save in flight, as the next frame would.
+func waitSave(t *testing.T, f *fileEditor) {
+	t.Helper()
+	for deadline := time.Now().Add(5 * time.Second); time.Now().Before(deadline); time.Sleep(time.Millisecond) {
+		f.saving.mu.Lock()
+		landed := !f.saving.busy && f.saving.done != nil
+		f.saving.mu.Unlock()
+		if landed {
+			f.takeSave()
+			return
+		}
+	}
+	t.Fatal("the save never came back")
+}
+
+func busy(f *fileEditor) bool {
+	f.saving.mu.Lock()
+	defer f.saving.mu.Unlock()
+	return f.saving.busy
+}
+
+// loadedEditor is checkout /c's editor holding a.go, read from d as text.
+func loadedEditor(t *testing.T, srv *httptest.Server, d *fakeDisk, text string) *fileEditor {
+	t.Helper()
+	d.set(text)
 	ed, err := codeview.NewTextEditor(fonts.SystemMono, 13)
 	if err != nil {
 		t.Fatal(err)
@@ -78,8 +128,8 @@ func layOut(t *testing.T, f *fileEditor) {
 }
 
 func TestEditingMarksTheEditorUnsavedAndUndoingClearsIt(t *testing.T) {
-	srv, _ := writes(t)
-	f := loadedEditor(t, srv, "one\ntwo\n")
+	srv, d := diskBackend(t)
+	f := loadedEditor(t, srv, d, "one\ntwo\n")
 	heard := 0
 	f.onDirty = func() { heard++ }
 	typeAt(t, f, 0, "x")
@@ -94,8 +144,8 @@ func TestEditingMarksTheEditorUnsavedAndUndoingClearsIt(t *testing.T) {
 }
 
 func TestAnIdleEditorTakesTheDiskOnItsCursorsLine(t *testing.T) {
-	srv, _ := writes(t)
-	f := loadedEditor(t, srv, "a\nb\nc\n")
+	srv, d := diskBackend(t)
+	f := loadedEditor(t, srv, d, "a\nb\nc\n")
 	at := f.ed.State().Line(3).From
 	_ = f.ed.Dispatch(godemirror.TransactionSpec{Selection: godemirror.SingleSelection(at, at)})
 	f.weighDisk("a\nB\nc\nd\n")
@@ -109,8 +159,8 @@ func TestAnIdleEditorTakesTheDiskOnItsCursorsLine(t *testing.T) {
 }
 
 func TestADiskChangeUnderUnsavedEditsWarnsAndWaits(t *testing.T) {
-	srv, _ := writes(t)
-	f := loadedEditor(t, srv, "a\nb\n")
+	srv, d := diskBackend(t)
+	f := loadedEditor(t, srv, d, "a\nb\n")
 	typeAt(t, f, 0, "mine ")
 	f.weighDisk("a\nagent\n")
 	if f.disk.theirs == nil || *f.disk.theirs != "a\nagent\n" {
@@ -136,23 +186,14 @@ func TestADiskChangeUnderUnsavedEditsWarnsAndWaits(t *testing.T) {
 }
 
 func TestSaveWritesTheFilesOwnLineBreaksAndCleansTheEditor(t *testing.T) {
-	srv, got := writes(t)
-	f := loadedEditor(t, srv, "a\r\nb\r\n")
+	srv, d := diskBackend(t)
+	f := loadedEditor(t, srv, d, "a\r\nb\r\n")
 	typeAt(t, f, 0, "x")
 	saved := false
-	f.startSave(func() { saved = true })
-	select {
-	case w := <-got:
-		if w.Path != "/c" || w.Rel != "a.go" || w.Content != "xa\r\nb\r\n" {
-			t.Fatalf("wrote %+v, want /c a.go in CRLF", w)
-		}
-	case <-time.After(5 * time.Second):
-		t.Fatal("Save wrote nothing")
-	}
-	deadline := time.Now().Add(5 * time.Second)
-	for !saved && time.Now().Before(deadline) {
-		f.takeSave()
-		time.Sleep(time.Millisecond)
+	f.startSave(func() { saved = true }, false)
+	waitSave(t, f)
+	if w := <-d.writes; w.Path != "/c" || w.Rel != "a.go" || w.Content != "xa\r\nb\r\n" {
+		t.Fatalf("wrote %+v, want /c a.go in CRLF", w)
 	}
 	if !saved || f.dirty || f.base != "xa\nb\n" {
 		t.Fatalf("saved %v dirty %v base %q; want what waited on the save run, clean", saved, f.dirty, f.base)
@@ -164,12 +205,117 @@ func TestSaveWritesTheFilesOwnLineBreaksAndCleansTheEditor(t *testing.T) {
 	}
 }
 
-// askFrames draws the Save / Discard / Cancel question over f's unsaved
-// changes, asked for then.
+// clockedEditor is loadedEditor on a clock the test moves.
+func clockedEditor(t *testing.T, text string) (*fileEditor, *fakeDisk, *time.Time) {
+	t.Helper()
+	srv, d := diskBackend(t)
+	f := loadedEditor(t, srv, d, text)
+	now := time.Unix(1000, 0)
+	f.now = func() time.Time { return now }
+	return f, d, &now
+}
+
+func frameCtx() C {
+	return layout.Context{Ops: new(op.Ops), Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}, Constraints: layout.Exact(image.Pt(400, 300))}
+}
+
+func TestAutoSaveWritesASecondAfterTheLastEdit(t *testing.T) {
+	f, d, now := clockedEditor(t, "one\n")
+	typeAt(t, f, 0, "a")
+	*now = now.Add(800 * time.Millisecond)
+	typeAt(t, f, 1, "b")
+	*now = now.Add(800 * time.Millisecond)
+	if f.autoSave(frameCtx()); busy(f) {
+		t.Fatal("saved 0.8s after the last edit, want a second of quiet first")
+	}
+	*now = now.Add(200 * time.Millisecond)
+	if f.autoSave(frameCtx()); !busy(f) {
+		t.Fatal("nothing saved a second after the last edit")
+	}
+	waitSave(t, f)
+	if w := <-d.writes; w.Content != "abone\n" || f.dirty {
+		t.Fatalf("wrote %q, dirty %v; want the text, and the dot gone", w.Content, f.dirty)
+	}
+}
+
+func TestAutoSaveNeverWritesOverTheAgentsChange(t *testing.T) {
+	f, d, now := clockedEditor(t, "a\nb\n")
+	typeAt(t, f, 0, "mine ")
+	d.set("a\nagent\n")
+	*now = now.Add(autoSaveDelay)
+	f.autoSave(frameCtx())
+	waitSave(t, f)
+	if f.disk.theirs == nil || *f.disk.theirs != "a\nagent\n" || !f.dirty {
+		t.Fatalf("warning %v dirty %v; want the agent's change put to the user, the edit unsaved", f.disk.theirs != nil, f.dirty)
+	}
+	select {
+	case w := <-d.writes:
+		t.Fatalf("auto-save wrote %q over the agent's change", w.Content)
+	default:
+	}
+	*now = now.Add(time.Hour)
+	if f.autoSave(frameCtx()); busy(f) {
+		t.Fatal("auto-save ran while the warning waits")
+	}
+	f.keepMine()
+	waitSave(t, f)
+	if w := <-d.writes; w.Content != "mine a\nb\n" || f.dirty {
+		t.Fatalf("Keep mine wrote %q, dirty %v; want the user's text written", w.Content, f.dirty)
+	}
+}
+
+func TestAFailedSaveKeepsTheDotAndClosingAsks(t *testing.T) {
+	f, d, now := clockedEditor(t, "one\n")
+	d.fail = true
+	told := 0
+	f.env.notify = func(ui.Toast) { told++ }
+	typeAt(t, f, 0, "x")
+	*now = now.Add(autoSaveDelay)
+	f.autoSave(frameCtx())
+	waitSave(t, f)
+	if !f.dirty || told != 1 {
+		t.Fatalf("dirty %v, toasts %d; want the dot kept and the error told once", f.dirty, told)
+	}
+	*now = now.Add(time.Hour)
+	if f.autoSave(frameCtx()); busy(f) {
+		t.Fatal("a failed save retried by itself with nothing new to save")
+	}
+	closed := false
+	s := &stageEditors{byCheckout: map[string]*fileEditor{"/c": f}}
+	s.saveThen(f, func() { closed = true })
+	if !s.ask.open || closed {
+		t.Fatalf("asked %v closed %v; want the question before the text is left", s.ask.open, closed)
+	}
+}
+
+func TestLeavingTheEditorOrTheWindowSavesIt(t *testing.T) {
+	f, d, _ := clockedEditor(t, "one\n")
+	s := &stageEditors{byCheckout: map[string]*fileEditor{"/c": f}}
+	s.follow("/c")
+	typeAt(t, f, 0, "x")
+	s.follow("")
+	if !busy(f) {
+		t.Fatal("leaving the editor saved nothing")
+	}
+	waitSave(t, f)
+	<-d.writes
+	typeAt(t, f, 0, "y")
+	s.flushAll()
+	if !busy(f) {
+		t.Fatal("the window losing the focus saved nothing")
+	}
+	waitSave(t, f)
+	if w := <-d.writes; w.Content != "yxone\n" {
+		t.Fatalf("wrote %q", w.Content)
+	}
+}
+
+// askFrames draws the stage editors' frame step after asking to leave f's
+// text for then.
 func askFrames(t *testing.T, f *fileEditor, then func()) (*stageEditors, *frameRig) {
 	t.Helper()
 	s := &stageEditors{byCheckout: map[string]*fileEditor{"/c": f}, invalidate: func() {}}
-	s.unlessUnsaved(f, then)
+	s.saveThen(f, then)
 	root := new(ui.Root)
 	r := newFrameRig(image.Pt(800, 600), func(gtx C, th *ui.Theme) {
 		root.Layout(gtx, func(gtx C) D {
@@ -180,41 +326,48 @@ func askFrames(t *testing.T, f *fileEditor, then func()) (*stageEditors, *frameR
 	return s, r
 }
 
-func TestAnotherFileOverUnsavedChangesAsksFirst(t *testing.T) {
-	srv, got := writes(t)
-	f := loadedEditor(t, srv, "one\n")
-	ran := 0
-	if s, _ := askFrames(t, f, func() { ran++ }); s.ask.open || ran != 1 {
-		t.Fatalf("asked %v ran %d with nothing unsaved; want it done at once", s.ask.open, ran)
-	}
+func TestAnotherFileSavesWithoutAQuestion(t *testing.T) {
+	f, d, _ := clockedEditor(t, "one\n")
 	typeAt(t, f, 0, "x")
+	ran := 0
 	s, r := askFrames(t, f, func() { ran++ })
-	if !s.ask.open || ran != 1 {
-		t.Fatalf("asked %v ran %d over unsaved changes; want the question first", s.ask.open, ran)
+	for deadline := time.Now().Add(5 * time.Second); ran == 0 && time.Now().Before(deadline); time.Sleep(time.Millisecond) {
+		r.frame()
 	}
+	if s.ask.open || ran != 1 || f.dirty {
+		t.Fatalf("asked %v ran %d dirty %v; want the file saved and the next one opened, no question", s.ask.open, ran, f.dirty)
+	}
+	if w := <-d.writes; w.Content != "xone\n" {
+		t.Fatalf("wrote %q", w.Content)
+	}
+}
+
+func TestAFailedSaveAsksAndItsAnswersHoldOrLeave(t *testing.T) {
+	f, d, _ := clockedEditor(t, "one\n")
+	d.fail = true
+	typeAt(t, f, 0, "x")
+	f.startSave(nil, false)
+	waitSave(t, f)
+	ran := 0
+	s, r := askFrames(t, f, func() { ran++ })
 	r.clickLabel(t, i18n.T("common.action.cancel"))
-	if s.ask.open || ran != 1 {
+	if s.ask.open || ran != 0 {
 		t.Fatalf("after Cancel: asked %v ran %d; want the question gone and nothing done", s.ask.open, ran)
 	}
 	_, r = askFrames(t, f, func() { ran++ })
 	r.clickLabel(t, i18n.T("dock.editor.discard"))
-	if ran != 2 {
+	if ran != 1 {
 		t.Fatalf("after Discard ran %d, want what was asked for done", ran)
 	}
+	d.mu.Lock()
+	d.fail = false
+	d.mu.Unlock()
 	_, r = askFrames(t, f, func() { ran++ })
 	r.clickLabel(t, i18n.T("dock.editor.save"))
-	select {
-	case <-got:
-	case <-time.After(5 * time.Second):
-		t.Fatal("Save in the question wrote nothing")
-	}
-	// The editor is not laid out here, as when it is off the stage: the
-	// question's own frames land the save and run what waited on it.
-	for deadline := time.Now().Add(5 * time.Second); ran != 3 && time.Now().Before(deadline); {
+	for deadline := time.Now().Add(5 * time.Second); ran != 2 && time.Now().Before(deadline); time.Sleep(time.Millisecond) {
 		r.frame()
-		time.Sleep(time.Millisecond)
 	}
-	if ran != 3 || f.dirty {
-		t.Fatalf("after Save ran %d dirty %v; want what was asked for done once the save landed", ran, f.dirty)
+	if ran != 2 || f.dirty {
+		t.Fatalf("after Save ran %d dirty %v; want the text written and what was asked for done", ran, f.dirty)
 	}
 }

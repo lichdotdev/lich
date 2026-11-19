@@ -8,10 +8,14 @@ package main
 import (
 	"context"
 	"fmt"
+	"image"
 	"strconv"
 	"time"
+	"unicode/utf8"
 
 	"gioui.org/layout"
+	"gioui.org/op/clip"
+	"gioui.org/op/paint"
 	"gioui.org/unit"
 	"gioui.org/widget"
 
@@ -64,22 +68,23 @@ type fileEditor struct {
 	gen, decoGen int
 	// lines is the text weighed against base as of gen, decoKey what the
 	// decorations were last drawn for, and blame the cursor line's blame.
-	lines      lineDiff
-	decoKey    string
-	blame      editorBlame
-	focus      bool
-	disk       diskWatch
-	saving     editorSaving
-	undo, save widget.Clickable
-	saveTip    ui.Tooltip
-	image      *blobView
-	exits      fileExits
-	scroll     widget.List
-	md         codeMarkdown
-	menu       ui.MenuState
-	composer   commentComposer
-	env        editorEnv
-	th         *ui.Theme
+	lines   lineDiff
+	decoKey string
+	blame   editorBlame
+	focus   bool
+	disk    diskWatch
+	saving  editorSaving
+	// editedAt is the last edit, which autoSave counts from on now's clock.
+	editedAt time.Time
+	now      func() time.Time
+	image    *blobView
+	exits    fileExits
+	scroll   widget.List
+	md       codeMarkdown
+	menu     ui.MenuState
+	composer commentComposer
+	env      editorEnv
+	th       *ui.Theme
 }
 
 // editorEnv is what the editor reads of the window each frame.
@@ -93,7 +98,7 @@ type editorEnv struct {
 
 func newFileEditor(client *backend.Client, invalidate func(), family string, size unit.Sp, checkout string) *fileEditor {
 	f := &fileEditor{client: client, invalidate: invalidate, family: family, size: size, checkout: checkout,
-		image: newBlobView(invalidate), onDirty: func() {}, onSaved: func() {}}
+		image: newBlobView(invalidate), onDirty: func() {}, onSaved: func() {}, now: time.Now}
 	f.file.invalidate, f.disk.read.invalidate, f.blame.read.invalidate = invalidate, invalidate, invalidate
 	f.scroll.Axis = layout.Vertical
 	f.md.rendered = markdown.Cache{}
@@ -211,6 +216,7 @@ func (f *fileEditor) updated(u godemirror.Update) {
 		return
 	}
 	f.gen++
+	f.editedAt = f.now()
 	f.setDirty(u.State.Doc() != f.base)
 }
 
@@ -242,7 +248,7 @@ func (f *fileEditor) redecorate(th *ui.Theme, now time.Time) {
 		return
 	}
 	f.decoKey = key
-	f.blame.text, f.blame.hash, f.blame.cells = text, hash, codeCells(st.Lines(), cursor.Text)
+	f.blame.text, f.blame.hash, f.blame.cells = text, hash, utf8.RuneCountInString(cursor.Text)
 	var deco godemirror.Decorations
 	for _, i := range f.lines.marks {
 		if i < st.Lines() {
@@ -264,6 +270,7 @@ func (f *fileEditor) layout(gtx C, th *ui.Theme, env editorEnv) error {
 	}
 	f.takeSave()
 	f.actions(gtx)
+	f.autoSave(gtx)
 	f.watchDisk(gtx)
 	f.readBlame()
 	f.redecorate(th, gtx.Now)
@@ -319,6 +326,9 @@ func (f *fileEditor) body(gtx C, th *ui.Theme) (D, error) {
 		f.ed.Theme = f.env.code
 		d, err := f.ed.Layout(gtx)
 		viewErr = err
+		if err == nil {
+			paint.FillShape(gtx.Ops, th.Over(th.Border), clip.Rect(gutterRule(f.ed.Geometry(), d.Size.Y)).Op())
+		}
 		return d
 	})
 	return dims, viewErr
@@ -360,4 +370,10 @@ func (f *fileEditor) setFont(family string, size unit.Sp) {
 	f.ed, f.diff = nil, nil
 	f.opens++
 	f.land = true
+}
+
+// gutterRule is the 1px line between the line numbers and the code: the
+// gutter's last column, down the whole code area.
+func gutterRule(g godemirror.Geometry, height int) image.Rectangle {
+	return image.Rect(g.GutterWidth-1, 0, g.GutterWidth, height)
 }

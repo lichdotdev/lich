@@ -2,8 +2,10 @@ package main
 
 // The window's side of the stage editor: one editor per checkout, what puts
 // a file in one (the Code tab, a path Ctrl+clicked in a terminal, an agent's
-// show_code), the node's Show and Close, and the question a file's unsaved
-// changes ask before another file or Close takes their place.
+// show_code), the node's Show and Close, and the saves leaving an editor
+// makes: another file, another session or node, Close, the window losing
+// the focus. Only a save that failed, or a disk change nobody decided on,
+// asks before its text is left.
 
 import (
 	"path"
@@ -30,6 +32,8 @@ type stageEditors struct {
 	saved      func(checkout string)
 	byCheckout map[string]*fileEditor
 	ask        unsavedAsk
+	// shown is the checkout whose editor was on the stage last frame.
+	shown string
 	// pending are the checkouts a session wrote to since the last frame,
 	// heard off the UI goroutine.
 	mu      sync.Mutex
@@ -102,13 +106,33 @@ func (s *stageEditors) recheckAll() {
 	}
 }
 
-// unlessUnsaved runs then, or asks first while f holds unsaved changes.
-func (s *stageEditors) unlessUnsaved(f *fileEditor, then func()) {
-	if !f.dirty {
-		then()
+// saveThen saves f, then runs then; it asks first while f's text is one a
+// save cannot simply write (mustAsk).
+func (s *stageEditors) saveThen(f *fileEditor, then func()) {
+	if f.mustAsk() {
+		s.ask = unsavedAsk{open: true, editor: f, then: then}
 		return
 	}
-	s.ask = unsavedAsk{open: true, editor: f, then: then}
+	f.startSave(then, false)
+}
+
+// follow saves the editor that left the stage since the last frame: a
+// session, another node or another project took its place.
+func (s *stageEditors) follow(shown string) {
+	if shown == s.shown {
+		return
+	}
+	if f, ok := s.byCheckout[s.shown]; ok {
+		f.flush(nil)
+	}
+	s.shown = shown
+}
+
+// flushAll saves every editor: the window lost the focus.
+func (s *stageEditors) flushAll() {
+	for _, f := range s.byCheckout {
+		f.flush(nil)
+	}
 }
 
 // layoutAsk draws the question while it is open and runs the answer.
@@ -126,7 +150,7 @@ func (s *stageEditors) layoutAsk(gtx C, th *ui.Theme, root *ui.Root) {
 	switch {
 	case a.save.Clicked(gtx):
 		a.open = false
-		a.editor.startSave(a.then)
+		a.editor.startSave(a.then, true)
 	case a.discard.Clicked(gtx):
 		a.open = false
 		a.then()
@@ -173,7 +197,7 @@ func (u *window) openInEditor(checkout, rel string, line, end int, note agentNot
 		show()
 		return
 	}
-	u.editors.unlessUnsaved(f, show)
+	u.editors.saveThen(f, show)
 }
 
 // applyEditor carries out what an editor node asked: show the editor, or
@@ -201,7 +225,7 @@ func (u *window) applyEditor(act sidebarAction) {
 			closeIt()
 			return
 		}
-		u.editors.unlessUnsaved(f, closeIt)
+		u.editors.saveThen(f, closeIt)
 	}
 }
 
@@ -231,5 +255,5 @@ func (u *window) editorWouldAsk(t codeTarget) bool {
 		return false
 	}
 	f, ok := u.editors.byCheckout[view.path]
-	return ok && f.dirty && f.rel != t.rel
+	return ok && f.mustAsk() && f.rel != t.rel
 }
