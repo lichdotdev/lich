@@ -18,6 +18,7 @@ browser.DevTools(SessionIDOptions) None
 browser.ElementAt(BrowserPointOptions) BrowserElement
 browser.Eval(BrowserEvalOptions) string
 browser.Forward(SessionIDOptions) None
+browser.Icon(BrowserIconOptions) base64
 browser.Info(BrowserInfoOptions) BrowserPageInfo
 browser.Keep(SessionIDOptions) None
 browser.Key(BrowserKeyOptions) None
@@ -491,6 +492,10 @@ BrowserEvalOptions {
 	script string
 }
 
+BrowserIconOptions {
+	key string
+}
+
 BrowserInfoOptions {
 	id string
 	waitFor,omitempty string
@@ -601,6 +606,7 @@ BrowserTab {
 	devtools,omitempty bool
 	paused,omitempty bool
 	loading,omitempty bool
+	icon,omitempty string
 }
 
 BrowserTextOptions {

@@ -93,12 +93,16 @@ func (p *chromePage) bringIn(id target.ID, url string, opener *tab, openedBy tar
 // the page opened misses about half the time (Chromium 157, measured
 // 2026-11-19). A load event that came meanwhile has the last word.
 func (p *chromePage) seedLoading(t *tab) {
-	seen := p.tabs.loadEvents(t)
+	seen, navs := p.tabs.loadEvents(t), p.tabs.navigations(t)
 	var state string
 	if err := runOn(t.ctx, nil, chromedp.Evaluate(`document.readyState`, &state)); err != nil {
 		return
 	}
-	if state != "complete" && p.tabs.seedLoading(t, seen) {
+	if state == "complete" {
+		p.readIcon(t, navs)
+		return
+	}
+	if p.tabs.seedLoading(t, seen) {
 		p.tabsChanged()
 	}
 }
@@ -244,7 +248,10 @@ func (p *chromePage) closeTarget(id target.ID) {
 // tabLoading records that t's page started or stopped loading, for its main
 // frame only: a frame inside the page loads on its own.
 func (p *chromePage) tabLoading(t *tab, frame cdp.FrameID, loading bool) {
-	if string(frame) == string(t.id) && p.tabs.setLoading(t, loading) {
+	if string(frame) != string(t.id) {
+		return
+	}
+	if p.tabs.setLoading(t, loading) {
 		p.tabsChanged()
 	}
 }

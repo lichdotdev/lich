@@ -128,3 +128,8 @@ func (c *Client) BrowserElementAt(ctx context.Context, id string, x, y float64) 
 func (c *Client) BrowserLocate(ctx context.Context, id string, selectors []string, reveal string) ([]api.BrowserRect, error) {
 	return callMethod(ctx, c, api.BrowserLocate, api.BrowserLocateOptions{ID: id, Selectors: selectors, Reveal: reveal})
 }
+
+// BrowserIcon is the PNG a tab's Icon names.
+func (c *Client) BrowserIcon(ctx context.Context, key string) ([]byte, error) {
+	return callMethod(ctx, c, api.BrowserIcon, api.BrowserIconOptions{Key: key})
+}

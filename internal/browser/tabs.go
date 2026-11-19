@@ -30,6 +30,11 @@ type tab struct {
 	// loadEvents counts the tab's load events, which seedLoading reads to
 	// tell whether one came while it looked.
 	loadEvents int
+	// icon is the key of the page's icon, "" for none, read once the page
+	// loaded; navigations counts the main frame's, so a read that ends after
+	// the next one began is dropped.
+	icon        string
+	navigations int
 	// devtools is the pane's DevTools for this tab, nil for none.
 	devtools *devtools
 	fetches  fetches
@@ -178,6 +183,30 @@ func (s *tabStack) loadEvents(t *tab) int {
 	return t.loadEvents
 }
 
+func (s *tabStack) navigated(t *tab) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	t.navigations++
+}
+
+func (s *tabStack) navigations(t *tab) int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return t.navigations
+}
+
+// setIcon shows key as t's icon unless the tab navigated since the seen
+// navigation, and says whether that changed it.
+func (s *tabStack) setIcon(t *tab, key string, seen int) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if t.navigations != seen || t.icon == key {
+		return false
+	}
+	t.icon = key
+	return true
+}
+
 // seedLoading marks t loading unless a load event came since it had seen
 // of them, and says whether that changed it.
 func (s *tabStack) seedLoading(t *tab, seen int) bool {
@@ -282,7 +311,7 @@ func (s *tabStack) list() []api.BrowserTab {
 	out := make([]api.BrowserTab, 0, len(s.open))
 	for _, t := range s.open {
 		front := t == s.front
-		out = append(out, api.BrowserTab{ID: string(t.id), URL: t.url, Title: t.title, Front: front && !s.inspecting, Loading: t.loading})
+		out = append(out, api.BrowserTab{ID: string(t.id), URL: t.url, Title: t.title, Front: front && !s.inspecting, Loading: t.loading, Icon: t.icon})
 		if d := t.devtools; d != nil {
 			out = append(out, api.BrowserTab{ID: string(d.id), DevTools: true, Paused: d.paused, Front: front && s.inspecting})
 		}
@@ -296,6 +325,7 @@ func agentTabs(pane []api.BrowserTab) []api.BrowserTab {
 	out := make([]api.BrowserTab, 0, len(pane))
 	for _, t := range pane {
 		if !t.DevTools {
+			t.Icon = ""
 			out = append(out, t)
 			continue
 		}

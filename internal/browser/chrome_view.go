@@ -62,12 +62,15 @@ func (p *chromePage) listenTab(t *tab) {
 		switch e := ev.(type) {
 		case *page.EventFrameStartedNavigating:
 			if string(e.FrameID) == string(t.id) {
+				p.tabs.navigated(t)
 				started = e.URL
 				p.leaveStarted(t, e.NavigationType)
 				if e.NavigationType == page.FrameStartedNavigatingNavigationTypeReload {
 					p.reloadFront(t, true)
 				}
 			}
+		case *page.EventLoadEventFired:
+			go p.readIcon(t, p.tabs.navigations(t))
 		case *page.EventDomContentEventFired:
 			p.reloadFront(t, false)
 			if p.shot.Load() {
