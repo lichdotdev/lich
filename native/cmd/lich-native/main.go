@@ -212,7 +212,9 @@ type window struct {
 	browserPanes map[string]*browserPaneUI
 	// browserView is the window's size as the backend last heard it, the size
 	// a page no pane shows lays out at, sent in order through browserViews.
-	browserView  api.BrowserDefaultViewOptions
+	browserView api.BrowserDefaultViewOptions
+	// newTabLook is what syncNewTabPage last sent.
+	newTabLook   api.BrowserNewTabPageOptions
 	browserViews *browserQueue
 	// hotkeyLanguage is the language the hotkeys' labels were last put in.
 	hotkeyLanguage i18n.Locale
@@ -441,6 +443,7 @@ func run(w *app.Window, rt backend.Runtime) error {
 			gtx.Metric.PxPerDp *= float32(u.zoom)
 			gtx.Metric.PxPerSp *= float32(u.zoom)
 			u.syncBrowserView(gtx)
+			u.syncNewTabPage()
 			if err := u.layout(gtx); err != nil {
 				return err
 			}

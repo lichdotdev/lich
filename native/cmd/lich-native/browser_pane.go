@@ -7,7 +7,6 @@ import (
 	"image/color"
 	"log"
 	"net/url"
-	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
@@ -167,7 +166,7 @@ func (u *window) browserPaneAt(gtx C, v stageView, session string, r image.Recta
 	// DevTools in the page's place: the notes and the agent's cursor are the
 	// page's.
 	_, inspecting := devtoolsOf(st.Tabs)
-	if !inspecting {
+	if notesOnPage(st) {
 		u.notesOverlay(page, p, session, st.URL)
 		u.notesDock(page, p, session)
 	}
@@ -239,8 +238,8 @@ func (u *window) browserToolbar(gtx C, p *browserPaneUI, session string, st api.
 	if p.reload.Click.Clicked(gtx) {
 		nav("reload")
 	}
-	devtools, inspecting := devtoolsOf(st.Tabs)
-	if inspecting && (p.notes.picking || p.notes.drawing) {
+	devtools, _ := devtoolsOf(st.Tabs)
+	if !notesOnPage(st) && (p.notes.picking || p.notes.drawing) {
 		p.notes.setPicking(false)
 		p.notes.setDrawing(false)
 	}
@@ -258,7 +257,7 @@ func (u *window) browserToolbar(gtx C, p *browserPaneUI, session string, st api.
 			gtx.Execute(key.FocusCmd{Tag: &p.tag})
 		}
 	}
-	u.syncAddress(gtx, p, st.URL)
+	u.syncAddress(gtx, p, pageURL(st))
 	p.url.Submit = true
 	field := th.Input(&p.url, i18n.T("layouts.browser.address"))
 	field.Height, field.TextSize, field.Bare = ui.Space(7), ui.TextXS, true
@@ -539,44 +538,9 @@ func shortURL(raw string) string {
 	return u.Host + strings.TrimSuffix(u.EscapedPath(), "/")
 }
 
-// typedURL is what the address field's text loads: a URL or an absolute path
-// as typed, and a bare host (localhost:3000, example.com) over http for a
-// local one and https for any other. The backend serves a path from the
-// session's checkout (internal/preview).
-func typedURL(text string) string {
-	switch {
-	case text == "":
-		return "about:blank"
-	case hasScheme(text), filepath.IsAbs(text):
-		return text
-	case isLocalHost(text):
-		return "http://" + text
-	}
-	return "https://" + text
-}
-
-func hasScheme(text string) bool {
-	for i, c := range text {
-		switch {
-		case c == ':':
-			return i > 0 && len(text) > i+2 && text[i+1:i+3] == "//"
-		case !('a' <= c && c <= 'z' || 'A' <= c && c <= 'Z' || i > 0 && ('0' <= c && c <= '9' || c == '+' || c == '-' || c == '.')):
-			return false
-		}
-	}
-	return false
-}
-
-func isLocalHost(text string) bool {
-	host := text
-	for i, c := range text {
-		if c == ':' || c == '/' {
-			host = text[:i]
-			break
-		}
-	}
-	return host == "localhost" || host == "127.0.0.1" || host == "[::1]" || strings.HasSuffix(host, ".localhost")
-}
+// typedURL is what the address field's text loads (api.TypedURL, which the
+// new-tab page's own field loads by too).
+func typedURL(text string) string { return api.TypedURL(text) }
 
 // agentLook is how session's agent cursor is drawn: in its card color, or the
 // theme's primary for a card without one, with the icon of the provider that

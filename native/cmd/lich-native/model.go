@@ -702,7 +702,7 @@ func (m *model) viewOf(p backend.Project, s backend.Session, now time.Time) sess
 	tool, _ := m.status.tool(s.ID)
 	usage, _ := m.usage.get(s.ID)
 	st, page := m.browsers.states[s.ID], m.pages[s.ID]
-	web := webView{url: st.URL, title: st.Title, headed: st.Headed, shown: page != nil, focused: page != nil && page.focused}
+	web := webView{url: pageURL(st), title: pageTitle(st), headed: st.Headed, shown: page != nil, focused: page != nil && page.focused}
 	split := ""
 	if i := m.layouts.of(s.ID); i >= 0 {
 		split = m.layouts.tabs[i].ID

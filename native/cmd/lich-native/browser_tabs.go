@@ -169,11 +169,13 @@ func (u *window) devtoolsGlyph(gtx C, p *browserPaneUI, tab api.BrowserTab, x in
 }
 
 // tabLabel names a tab by its title, else its address, else as a blank one;
-// a DevTools tab as DevTools.
+// a DevTools tab as DevTools, and lich's new-tab page as a blank one.
 func tabLabel(tab api.BrowserTab) string {
 	switch {
 	case tab.DevTools:
 		return i18n.T("layouts.browser.devtools")
+	case tab.NewTab:
+		return i18n.T("layouts.browser.blankTab")
 	case tab.Title != "":
 		return tab.Title
 	case tab.URL != "" && tab.URL != "about:blank":
