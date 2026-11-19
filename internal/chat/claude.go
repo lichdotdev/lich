@@ -30,12 +30,14 @@ type claudeDriver struct {
 	// block n, the index its stream events used.
 	blocks      map[string]int
 	interrupted bool
+	run         claudeRunning
 }
 
 type claudeControl struct {
 	Subtype string          `json:"subtype"`
 	ID      string          `json:"request_id"`
 	Error   string          `json:"error"`
+	Code    string          `json:"error_code"`
 	Body    json.RawMessage `json:"response"`
 }
 
@@ -56,6 +58,9 @@ type claudeLine struct {
 	RequestID string          `json:"request_id"`
 	Request   json.RawMessage `json:"request"`
 	Response  claudeControl   `json:"response"`
+	// system/init and system/status
+	Model          string `json:"model"`
+	PermissionMode string `json:"permissionMode"`
 	// result
 	IsError  bool     `json:"is_error"`
 	Result   string   `json:"result"`
@@ -99,9 +104,15 @@ func (d *claudeDriver) open(ctx context.Context, resume string) (string, error) 
 	d.mu.Lock()
 	d.expected = resume
 	d.mu.Unlock()
-	if _, err := d.control(ctx, map[string]any{"subtype": "initialize"}); err != nil {
+	init, err := d.control(ctx, map[string]any{"subtype": "initialize"})
+	if err != nil {
 		return "", fmt.Errorf("Claude Code did not start its chat: %w", err)
 	}
+	d.readInitialize(init.Body, d.c.svc.store.SessionModel(d.c.id))
+	if err := d.readApplied(ctx); err != nil {
+		d.c.conv.notice("Claude Code did not say which model it runs: " + err.Error())
+	}
+	d.publish()
 	// Claude Code names the conversation in system/init, which it writes only
 	// once the first message arrives; a resume keeps the id it was given.
 	return resume, nil
@@ -187,6 +198,7 @@ func (d *claudeDriver) handle(raw []byte) {
 			d.mu.Unlock()
 			d.c.bind(line.SessionID, expected)
 		}
+		d.running(line.Model, line.PermissionMode)
 	case "result":
 		d.result(line)
 	default:

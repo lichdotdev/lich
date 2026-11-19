@@ -86,8 +86,10 @@ func newRig(t *testing.T, kind string) *rig {
 		r.mu.Unlock()
 	})
 	env := []string{fakeEnv + "=1", fakeLogEnv + "=" + r.log, "PATH=" + os.Getenv("PATH"), "HOME=" + home}
-	if v := os.Getenv("LICH_CHAT_FAKE_NOLOAD"); v != "" {
-		env = append(env, "LICH_CHAT_FAKE_NOLOAD="+v)
+	for _, key := range []string{"LICH_CHAT_FAKE_NOLOAD", fakeLegacyEnv} {
+		if v := os.Getenv(key); v != "" {
+			env = append(env, key+"="+v)
+		}
 	}
 	r.term = terminal.New(db, env, hub)
 	r.svc = New(r.term, db, hub, func() prompt.Lang { return prompt.English })
