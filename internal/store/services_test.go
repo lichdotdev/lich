@@ -133,3 +133,39 @@ func TestProjectOpenFollowsTheTab(t *testing.T) {
 		t.Error("a missing project is open")
 	}
 }
+
+func TestSessionProjectNamesTheProjectOfASession(t *testing.T) {
+	svc := newTestStore(t)
+	addTestProject(t, svc, "p1")
+	if _, err := svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s1", Label: "one", NextSeq: 2}); err != nil {
+		t.Fatal(err)
+	}
+	name, id, ok := svc.SessionProject("s1")
+	if !ok || name != "p1-name" || id != "p1" {
+		t.Fatalf("SessionProject = %q, %q, %v", name, id, ok)
+	}
+	if _, _, ok := svc.SessionProject("nope"); ok {
+		t.Fatal("an unknown session has a project")
+	}
+}
+
+func TestDeleteGlobalSettingUnsetsIt(t *testing.T) {
+	svc := newTestStore(t)
+	set := func(project string) {
+		t.Helper()
+		if _, err := svc.SetSetting(t.Context(), api.SetSettingOptions{Key: "k", ProjectID: project, Value: "v"}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	set("")
+	set("p1")
+	if err := svc.DeleteGlobalSetting("k"); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := svc.GetSetting(t.Context(), api.GetSettingOptions{Key: "k"}); got != "" {
+		t.Fatalf("global value after delete = %q", got)
+	}
+	if got, _ := svc.GetSetting(t.Context(), api.GetSettingOptions{Key: "k", ProjectID: "p1"}); got != "v" {
+		t.Fatalf("a project's value went with it: %q", got)
+	}
+}

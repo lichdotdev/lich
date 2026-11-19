@@ -46,10 +46,13 @@ var (
 	// BrowserDefaultView is the window's size, which a page no pane shows
 	// lays out at.
 	BrowserDefaultView = define[BrowserDefaultViewOptions, None]("browser.DefaultView")
-	BrowserMouse       = define[BrowserMouseOptions, None]("browser.Mouse")
-	BrowserKey         = define[BrowserKeyOptions, None]("browser.Key")
-	BrowserText        = define[BrowserTextOptions, None]("browser.Text")
-	BrowserNav         = define[BrowserNavOptions, None]("browser.Nav")
+	// BrowserNewTabPage is the window handing over what the new-tab page is
+	// drawn with: its theme and its words, the only ones that know them.
+	BrowserNewTabPage = define[BrowserNewTabPageOptions, None]("browser.NewTabPage")
+	BrowserMouse      = define[BrowserMouseOptions, None]("browser.Mouse")
+	BrowserKey        = define[BrowserKeyOptions, None]("browser.Key")
+	BrowserText       = define[BrowserTextOptions, None]("browser.Text")
+	BrowserNav        = define[BrowserNavOptions, None]("browser.Nav")
 	// BrowserTabNav is the person opening, selecting or closing a tab in the
 	// pane, the window's side of BrowserTabAction.
 	BrowserTabNav = define[BrowserTabOptions, None]("browser.TabNav")
@@ -119,6 +122,9 @@ type BrowserState struct {
 	ByAgent bool   `json:"byAgent"`
 	URL     string `json:"url"`
 	Title   string `json:"title"`
+	// NewTab says URL is lich's own new-tab page, which the window shows as an
+	// empty address under the title it names.
+	NewTab bool `json:"newTab,omitempty"`
 	// Dialog is the JavaScript dialog the page holds open until the person
 	// or the agent answers it; nil when none is.
 	Dialog *BrowserDialog `json:"dialog,omitempty"`
@@ -144,12 +150,14 @@ type BrowserFrame struct {
 // place of that page, which the agent still drives; Paused says that page is
 // stopped in the debugger. The agent's list never holds a DevTools tab.
 type BrowserTab struct {
-	ID       string `json:"id"`
-	URL      string `json:"url"`
-	Title    string `json:"title"`
-	Front    bool   `json:"front,omitempty"`
-	DevTools bool   `json:"devtools,omitempty"`
-	Paused   bool   `json:"paused,omitempty"`
+	ID    string `json:"id"`
+	URL   string `json:"url"`
+	Title string `json:"title"`
+	// NewTab is BrowserState.NewTab for this tab.
+	NewTab   bool `json:"newTab,omitempty"`
+	Front    bool `json:"front,omitempty"`
+	DevTools bool `json:"devtools,omitempty"`
+	Paused   bool `json:"paused,omitempty"`
 }
 
 // Tab actions: open a blank tab in front, bring Tab to the front, close Tab.
@@ -446,4 +454,49 @@ type BrowserLocateOptions struct {
 	ID        string   `json:"id"`
 	Selectors []string `json:"selectors"`
 	Reveal    string   `json:"reveal,omitempty"`
+}
+
+// BrowserNewTabPageOptions is what the new-tab page is drawn with. Lang is the
+// interface language's tag, which the page formats times in.
+type BrowserNewTabPageOptions struct {
+	Lang   string              `json:"lang"`
+	Colors BrowserNewTabColors `json:"colors"`
+	Flame  BrowserNewTabFlame  `json:"flame"`
+	Text   BrowserNewTabText   `json:"text"`
+}
+
+// BrowserNewTabColors are the window's theme tokens as CSS hex colors, with
+// an alpha pair when the token is translucent.
+type BrowserNewTabColors struct {
+	Background string `json:"background"`
+	Card       string `json:"card"`
+	Foreground string `json:"foreground"`
+	Muted      string `json:"muted"`
+	Border     string `json:"border"`
+	Accent     string `json:"accent"`
+	Pass       string `json:"pass"`
+}
+
+// BrowserNewTabFlame is the sprite drawn above the page: Rows are the sprite's
+// rows joined by " | ", one symbol per pixel and . for none, and the other
+// fields the colors of symbols 4, 2, 3 and 1.
+type BrowserNewTabFlame struct {
+	Rows string `json:"rows"`
+	Core string `json:"core"`
+	Body string `json:"body"`
+	Edge string `json:"edge"`
+	Base string `json:"base"`
+}
+
+// BrowserNewTabText is every sentence of the new-tab page, in the interface
+// language.
+type BrowserNewTabText struct {
+	Title        string `json:"title"`
+	Address      string `json:"address"`
+	AddressError string `json:"addressError"`
+	Running      string `json:"running"`
+	Service      string `json:"service"`
+	Worktree     string `json:"worktree"`
+	Artifacts    string `json:"artifacts"`
+	Recent       string `json:"recent"`
 }

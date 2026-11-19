@@ -19,6 +19,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/lichdotdev/lich/api"
 )
 
 // A checkout's preview port is first tried one window above the dev-server
@@ -33,7 +35,11 @@ const (
 	portCount          = 1000
 	artifactPortOffset = 2000
 	artifactPortBase   = 26000
+	newTabPortBase     = 27000
 )
+
+// newTabKey keys the new-tab listener among the directories' in Service.servers.
+const newTabKey = "\x00new-tab"
 
 const readHeaderTimeout = 10 * time.Second
 
@@ -45,6 +51,7 @@ type Service struct {
 	mu      sync.Mutex
 	servers map[string]*server
 	listen  func(port int) (net.Listener, error)
+	newTab  http.Handler
 }
 
 type server struct {
@@ -168,18 +175,23 @@ func (s *Service) serve(dir string, base, port int) (int, error) {
 	if info, err := os.Stat(dir); err != nil || !info.IsDir() {
 		return 0, fmt.Errorf("%q is not a directory: %w", dir, err)
 	}
-	ln, err := s.listenFrom(base, port)
+	return s.startLocked(dir, base, port, rootHandler(dir))
+}
+
+// startLocked opens the listener that serves h, kept under key.
+func (s *Service) startLocked(key string, base, first int, h http.Handler) (int, error) {
+	ln, err := s.listenFrom(base, first)
 	if err != nil {
-		return 0, fmt.Errorf("serve %q: %w", dir, err)
+		return 0, fmt.Errorf("serve %q: %w", key, err)
 	}
-	port = ln.Addr().(*net.TCPAddr).Port
-	srv := &http.Server{Handler: loopbackHostOnly(port, rootHandler(dir)), ReadHeaderTimeout: readHeaderTimeout}
+	port := ln.Addr().(*net.TCPAddr).Port
+	srv := &http.Server{Handler: loopbackHostOnly(port, h), ReadHeaderTimeout: readHeaderTimeout}
 	go func() {
 		if err := srv.Serve(ln); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			slog.Warn("preview server stopped", "dir", dir, "port", port, "err", err)
+			slog.Warn("preview server stopped", "dir", key, "port", port, "err", err)
 		}
 	}()
-	s.servers[dir] = &server{port: port, srv: srv}
+	s.servers[key] = &server{port: port, srv: srv}
 	return port, nil
 }
 
@@ -243,4 +255,47 @@ func (s *Service) Close() error {
 		delete(s.servers, dir)
 	}
 	return errors.Join(errs...)
+}
+
+// SetNewTab sets the handler of the new-tab page. Startup wiring, called
+// before anything asks for its URL.
+func (s *Service) SetNewTab(h http.Handler) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.newTab = h
+}
+
+// NewTabURL is the http URL of session's new-tab page. One listener of its own
+// serves every session's: a page the agent wrote, from an artifact's origin,
+// then cannot fetch the project's services and recent pages. The session is in
+// the path, and the handler answers 404 for one it does not know.
+func (s *Service) NewTabURL(session string) (string, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.newTab == nil {
+		return "", errors.New("no new-tab page is served")
+	}
+	srv, ok := s.servers[newTabKey]
+	if !ok {
+		if _, err := s.startLocked(newTabKey, newTabPortBase, newTabPortBase, s.newTab); err != nil {
+			return "", err
+		}
+		srv = s.servers[newTabKey]
+	}
+	u := url.URL{Scheme: "http", Host: net.JoinHostPort("127.0.0.1", strconv.Itoa(srv.port)), Path: api.NewTabPrefix + session}
+	return u.String(), nil
+}
+
+// IsNewTab reports whether raw is a new-tab page of this lich: its own origin,
+// not any page of the machine that happens to share the path.
+func (s *Service) IsNewTab(raw string) bool {
+	s.mu.Lock()
+	srv, ok := s.servers[newTabKey]
+	s.mu.Unlock()
+	if !ok {
+		return false
+	}
+	u, err := url.Parse(raw)
+	return err == nil && u.Scheme == "http" && u.Host == net.JoinHostPort("127.0.0.1", strconv.Itoa(srv.port)) &&
+		strings.HasPrefix(u.Path, api.NewTabPrefix)
 }

@@ -66,6 +66,11 @@ func (s *Service) List(_ context.Context, _ api.None) ([]api.SessionArtifacts, e
 	return out, nil
 }
 
+// Of is session's artifacts, newest first: what its Artifacts tab lists.
+func (s *Service) Of(sessionID string) []api.Artifact {
+	return listDir(SessionDir(s.root, s.sessions.Key(sessionID)))
+}
+
 // RunWatch emits ArtifactsEvent for every open session whose list changed
 // since the last pass, and an empty one for a session no longer open. It
 // never returns.

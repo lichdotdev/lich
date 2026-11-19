@@ -81,6 +81,8 @@ type Service struct {
 	// isLocal and local are SetLocal's.
 	isLocal func(raw string) bool
 	local   func(owner, raw string) (string, error)
+	// newTab is SetNewTab's.
+	newTab NewTab
 	// pickFile and pickFiles are SetPicker's.
 	pickFile  func(title string) (string, error)
 	pickFiles func(title string) ([]string, error)
@@ -136,6 +138,8 @@ type session struct {
 	tabs, paneTabs []api.BrowserTab
 	page           Page
 	lastUsed       time.Time
+	// isNewTab is the service's, nil when there is no new-tab page.
+	isNewTab func(raw string) bool
 }
 
 // New starts a service that launches the system Chromium (chromium.FindBrowser)
@@ -191,7 +195,7 @@ func (s *Service) Open(owner, rawURL string) (Handle, error) {
 }
 
 // OpenVisible brings this session's browser on screen. No browser yet: a
-// headed window at about:blank. Already headed: focus it. Headless only:
+// headed window on the new-tab page. Already headed: focus it. Headless only:
 // reopen it as a window (promote).
 func (s *Service) OpenVisible(owner string) (Handle, error) {
 	if owner == "" {
@@ -203,7 +207,7 @@ func (s *Service) OpenVisible(owner string) (Handle, error) {
 	sess := s.current(owner)
 	switch {
 	case sess == nil:
-		return s.launchFresh(owner, "about:blank", true, false)
+		return s.launchFresh(owner, s.blankURL(owner), true, false)
 	case !sess.headed:
 		return s.promote(sess)
 	}
@@ -347,6 +351,7 @@ func (s *Service) start(spec launchSpec) (Handle, error) {
 	sess := &session{
 		id: spec.id, owner: spec.owner, dir: spec.dir, url: spec.url, headed: spec.headed,
 		byAgent: spec.byAgent, page: page, lastUsed: s.now(), launched: time.Now(), scale: scale, window: window,
+		isNewTab: s.newTab.Is,
 	}
 	if sess.id == "" {
 		sess.id = newID()

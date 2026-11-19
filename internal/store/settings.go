@@ -60,6 +60,14 @@ func (s *Service) SetSetting(_ context.Context, opts api.SetSettingOptions) (api
 	return api.None{}, nil
 }
 
+// DeleteGlobalSetting removes a global setting, which reads as unset after.
+func (s *Service) DeleteGlobalSetting(key string) error {
+	if _, err := s.db.Exec(`DELETE FROM settings WHERE key = ? AND project_id = ?`, key, globalScope); err != nil {
+		return fmt.Errorf("delete setting %q: %w", key, err)
+	}
+	return nil
+}
+
 // ProviderEnabled reports whether the user turned providerID on, read the way
 // the windows read provider.<id>.enabled: Claude is on unless switched off,
 // since it was always offered before providers could be chosen, and every
