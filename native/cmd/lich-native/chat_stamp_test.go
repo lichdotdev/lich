@@ -170,3 +170,47 @@ func TestAPersonsMessageFromAnotherDayShowsItsDate(t *testing.T) {
 		t.Errorf("want the message dated %q, and not its bare time:\n%s", want, r.drawn())
 	}
 }
+
+func TestTurnsAreSetApartMoreThanTheRowsInsideOne(t *testing.T) {
+	u, r := stampFrames(t)
+	u.model.chat.history("s1", []backend.ChatItem{
+		{ID: "u1", Kind: api.ItemUser, Turn: 1, At: novDay(18, 14, 0), Text: "first"},
+		{ID: "a1", Kind: api.ItemAgent, Turn: 1, At: novDay(18, 14, 1), Text: "answer"},
+		{ID: "u2", Kind: api.ItemUser, Turn: 2, At: novDay(18, 14, 5), Text: "second"},
+		{ID: "u3", Kind: api.ItemUser, Turn: 3, At: novDay(19, 9, 0), Text: "third"},
+	})
+	r.settle(t)
+	first, second, third := labelTop(t, r, "first"), labelTop(t, r, "second"), labelTop(t, r, "third")
+	day := labelTop(t, r, dayLabel(time.UnixMilli(novDay(19, 9, 0)).In(r.now.Location()), r.now))
+	if first < 0 || second < 0 || third < 0 {
+		t.Fatalf("a message is off screen:\n%s", r.drawn())
+	}
+	// first and second are a turn apart, with an answer between: the room
+	// before "second" is the turn gap, not the row gap.
+	if second-first < 3*20+36 {
+		t.Errorf("turns at y=%d and y=%d, want more room between them", first, second)
+	}
+	if day < 0 || day <= second || third <= day {
+		t.Errorf("the day line at y=%d is not between the second (y=%d) and the third (y=%d) messages", day, second, third)
+	}
+}
+
+func TestOnlyTheRowThatStartsATurnTakesTheTurnGap(t *testing.T) {
+	user := chatRow{kind: chatRowItem, item: backend.ChatItem{Kind: api.ItemUser}}
+	agent := chatRow{kind: chatRowItem, item: backend.ChatItem{Kind: api.ItemAgent}}
+	day, work := chatRow{kind: chatRowDay}, chatRow{kind: chatRowWork}
+	for name, c := range map[string]struct {
+		r, prev chatRow
+		want    bool
+	}{
+		"a message after an answer":    {user, agent, true},
+		"a day line":                   {day, agent, true},
+		"the message under a day line": {user, day, false},
+		"an answer":                    {agent, user, false},
+		"a group's line":               {work, user, false},
+	} {
+		if got := startsTurn(c.r, c.prev); got != c.want {
+			t.Errorf("%s: %v, want %v", name, got, c.want)
+		}
+	}
+}

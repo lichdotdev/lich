@@ -271,7 +271,8 @@ A session whose view is chat draws its conversation in place of the terminal, on
 layout's pane alike (`chat_view.go`, `chat_items.go`). The composer's box takes the pane's width less `Space(6)`
 each side, up to 960px (`chatPadX`, `chatBoxMax`): wide enough for a long line of code, and no wider than a
 paragraph can be read in. The conversation is a column on the same axis, `Space(1.5)` (6px, `chatTextInset`)
-narrower each side, so its text lines up inside the box and not with its border. Its rows are `Space(3.5)` apart.
+narrower each side, so its text lines up inside the box and not with its border. Its rows are `Space(3.5)` apart, and a turn starts after `Space(9)` (`chatTurnGap`), in the person's
+message or the day line over it, so turns read as groups.
 A conversation shorter than the view rests on the composer, its newest message at the bottom and the older
 ones above, and a new one comes in under them and pushes them up, as in a messaging app; one taller than the
 view stays pinned to its end while items arrive, until the person scrolls up. The list ends `Space(4)`

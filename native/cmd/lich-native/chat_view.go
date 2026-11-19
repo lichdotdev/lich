@@ -31,6 +31,10 @@ var (
 	// the user asked for 4 to 8px.
 	chatTextInset = ui.Space(1.5)
 	chatRowGap    = ui.Space(3.5)
+	// chatTurnGap is the room before a turn starts, in the person's message or
+	// the day line over it: more than between a turn's own rows, so turns read
+	// as groups.
+	chatTurnGap = ui.Space(9)
 	// chatTopPad keeps the first row clear of the selector floating over the
 	// column's top-right corner.
 	chatTopPad = 2*balloonInset + chatSwitchItem
@@ -185,8 +189,11 @@ func (u *window) chatScreen(gtx C, sv sessionView, keys bool) {
 			}
 			d := th.ThinScrollArea(&p.list).Layout(gtx, len(shown), func(gtx C, i int) D {
 				top := chatRowGap
-				if i == 0 {
+				switch {
+				case i == 0:
 					top = chatTopPad + gtx.Metric.PxToDp(lead)
+				case startsTurn(p.seen[shown[i]], p.seen[shown[i-1]]):
+					top = chatTurnGap
 				}
 				key := shown[i]
 				return p.rows.Layout(gtx, key, func(gtx C) D {
@@ -364,4 +371,16 @@ func chatUser(gtx C, th *ui.Theme, text string) D {
 					on.Text(ui.TextSM, expandTabs(text)).Wrapped().Layout)
 			})
 	})
+}
+
+// startsTurn is whether row r starts a turn after row prev: the person's
+// message, or the day line over it; not the message a day line already opened.
+func startsTurn(r, prev chatRow) bool {
+	switch {
+	case r.kind == chatRowDay:
+		return true
+	case r.kind == chatRowItem && r.item.Kind == api.ItemUser:
+		return prev.kind != chatRowDay
+	}
+	return false
 }
