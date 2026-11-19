@@ -168,3 +168,26 @@ func TestTextareaScrollbarHiddenWhileTheTextFits(t *testing.T) {
 		t.Errorf("one line: scroll room %d, want none", got)
 	}
 }
+
+// A foot stands inside the frame under the text, and its height comes out of
+// the ceiling rather than past it.
+func TestTextareaFootSitsUnderTheText(t *testing.T) {
+	const foot = 30
+	var editor widget.Editor
+	var rig motionRig
+	frame := func() int {
+		return rig.frame(func(gtx C) D {
+			gtx.Constraints = layout.Constraints{Max: image.Pt(300, 200)}
+			ta := testTheme().Textarea(&editor, "")
+			ta.Foot = func(gtx C) D { return D{Size: image.Pt(gtx.Constraints.Max.X, foot)} }
+			return ta.Layout(gtx)
+		}).Size.Y
+	}
+	if got := frame(); got != 64+foot {
+		t.Errorf("empty: height %d, want min-h-16 plus the foot (%d)", got, 64+foot)
+	}
+	editor.SetText(strings.Repeat("line\n", 40))
+	if got := frame(); got != 200 {
+		t.Errorf("long text: height %d, want the 200 ceiling with the foot in it", got)
+	}
+}

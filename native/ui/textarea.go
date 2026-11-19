@@ -38,7 +38,12 @@ type TextareaStyle struct {
 	MinHeight unit.Dp
 	// Scrollbar is the bar shown while the text overflows, draggable as a
 	// list's; nil scrolls with the wheel and the caret alone.
-	Scrollbar   *widget.Scrollbar
+	Scrollbar *widget.Scrollbar
+	// Foot is drawn inside the frame under the text, full width, and its height
+	// comes out of MaxHeight.
+	Foot func(gtx C) D
+	// Radius is the frame's corner, RadiusMD when 0.
+	Radius      unit.Dp
 	Placeholder string
 	Width       unit.Dp // 0 is w-full
 	Mono        bool
@@ -76,8 +81,8 @@ func (s TextareaStyle) Layout(gtx C) D {
 			field.minHeight = unit.Dp(float32(h) / gtx.Metric.PxPerDp)
 		}
 	}
-	st := inputState{invalid: s.Invalid, disabled: s.Disabled}
-	d := inputFrame(gtx, s.theme, s.Editor, st, false, func(gtx C) D { return field.layout(gtx, 0) })
+	st := inputState{invalid: s.Invalid, disabled: s.Disabled, radius: s.Radius}
+	d := inputFrame(gtx, s.theme, s.Editor, st, false, func(gtx C) D { return s.body(gtx, field) })
 	if s.Scrollbar != nil {
 		s.layoutScrollbar(gtx, d.Size)
 	}
@@ -85,6 +90,22 @@ func (s TextareaStyle) Layout(gtx C) D {
 		r.layout(gtx, s.theme, d.Size)
 	}
 	return d
+}
+
+// body is the text, then Foot under it.
+func (s TextareaStyle) body(gtx C, field inputText) D {
+	if s.Foot == nil {
+		return field.layout(gtx, 0)
+	}
+	gtx.Constraints.Min.Y = 0
+	macro := op.Record(gtx.Ops)
+	foot := s.Foot(gtx)
+	call := macro.Stop()
+	gtx.Constraints.Max.Y = max(gtx.Constraints.Max.Y-foot.Size.Y, 0)
+	d := field.layout(gtx, 0)
+	defer op.Offset(image.Pt(0, d.Size.Y)).Push(gtx.Ops).Pop()
+	call.Add(gtx.Ops)
+	return D{Size: image.Pt(d.Size.X, d.Size.Y+foot.Size.Y)}
 }
 
 // layoutScrollbar draws the bar over the right padding of a frame of size,
