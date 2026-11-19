@@ -42,6 +42,10 @@ var (
 	// the field's padding above and under them.
 	chatComposerMin = ui.Space(24)
 	chatComposerPad = ui.Space(2)
+	// chatComposerGap is the room between the end of the conversation and the
+	// top of the composer's box: the last message, and its time under it, never
+	// touch the box, whether the list rests on it or is pinned to its end.
+	chatComposerGap = ui.Space(4)
 	// chatComposerPadX and chatComposerPadY are the room the text and its
 	// placeholder keep from the box's left and top, a body line's worth, so a
 	// question has air around it.
@@ -209,7 +213,7 @@ func (u *window) chatScreen(gtx C, sv sessionView, keys bool) {
 			return d
 		}),
 		layout.Rigid(func(gtx C) D {
-			return chatColumn(gtx, chatComposerPad, chatComposerPad, 0, func(gtx C) D { return u.chatComposer(gtx, th, p, sv, working) })
+			return chatColumn(gtx, chatComposerGap, chatComposerPad, 0, func(gtx C) D { return u.chatComposer(gtx, th, p, sv, working) })
 		}),
 	)
 }
