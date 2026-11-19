@@ -47,11 +47,11 @@ func TestTheConversationSitsInsideTheBoxByTheTextInset(t *testing.T) {
 	})
 	r.settle(t)
 	box := composerBox(t, r)
-	if left, want := labelLeft(t, r, clockFor(r, novDay(18, 14, 35))), box.Min.X+6; left != want {
-		t.Errorf("an answer's text starts at x=%d, want %d: 6px inside the box's left edge", left, want)
+	if left, want := labelLeft(t, r, clockFor(r, novDay(18, 14, 35))), box.Min.X+16; left != want {
+		t.Errorf("an answer's text starts at x=%d, want %d: 16px inside the box's left edge", left, want)
 	}
 	// The person's message is against the column's right edge, so its time
-	// ends 6px inside the box's right edge: it starts well right of the middle.
+	// ends 16px inside the box's right edge: it starts well right of the middle.
 	if x := labelLeft(t, r, clockFor(r, novDay(18, 14, 32))); x < (box.Min.X+box.Max.X)/2 {
 		t.Errorf("the message's time starts at x=%d, left of the box's middle", x)
 	}
@@ -72,9 +72,9 @@ func TestTheComposerAsksInTheInterfaceFontAtTheBodySize(t *testing.T) {
 	}
 }
 
-// The conversation ends 16px above the composer's box, resting on it or pinned
+// The conversation ends 24px above the composer's box, resting on it or pinned
 // to its end.
-func TestTheConversationEndsSixteenPixelsAboveTheBox(t *testing.T) {
+func TestTheConversationEndsTwentyFourPixelsAboveTheBox(t *testing.T) {
 	u, r := stampFrames(t)
 	at := novDay(18, 14, 35)
 	gap := func() int {
@@ -89,14 +89,14 @@ func TestTheConversationEndsSixteenPixelsAboveTheBox(t *testing.T) {
 	}
 	u.model.chat.history("s1", []backend.ChatItem{{ID: "a1", Kind: api.ItemAgent, Turn: 1, At: at, Text: "short"}})
 	r.settle(t)
-	if g := gap(); g != 16 {
-		t.Errorf("a short conversation ends %dpx above the box, want 16", g)
+	if g := gap(); g != 24 {
+		t.Errorf("a short conversation ends %dpx above the box, want 24", g)
 	}
 	items := userTurns(60)
 	items = append(items, backend.ChatItem{ID: "a2", Kind: api.ItemAgent, Turn: 61, At: at, Text: "last"})
 	u.model.chat.history("s1", items)
 	r.settle(t)
-	if g := gap(); g != 16 {
-		t.Errorf("a long conversation, pinned, ends %dpx above the box, want 16", g)
+	if g := gap(); g != 24 {
+		t.Errorf("a long conversation, pinned, ends %dpx above the box, want 24", g)
 	}
 }
