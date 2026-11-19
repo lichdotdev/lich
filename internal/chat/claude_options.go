@@ -102,11 +102,16 @@ func (d *claudeDriver) running(model, mode string) {
 	d.publish()
 }
 
+// publish tells the window, once initialize has said what the chat can be
+// set to: a resumed process writes its mode before it answers initialize
+// (measured on 2.1.327).
 func (d *claudeDriver) publish() {
 	d.mu.Lock()
 	run := d.run
 	d.mu.Unlock()
-	d.c.setOptions(claudeOptions(run))
+	if run.models != nil {
+		d.c.setOptions(claudeOptions(run))
+	}
 }
 
 func (d *claudeDriver) setOption(ctx context.Context, o api.ChatOption, value string) error {
