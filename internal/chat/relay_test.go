@@ -14,7 +14,7 @@ import (
 // A task sent to a session drawn as a chat reaches its agent: the relay
 // hands it to the chat, which sends it as the turn's message.
 func TestARelayedTaskReachesTheAgentOfAChat(t *testing.T) {
-	for _, kind := range []string{providers.Claude, providers.OpenCode} {
+	for _, kind := range []string{providers.Claude, providers.OpenCode, providers.Codex} {
 		t.Run(kind, func(t *testing.T) {
 			r := newRig(t, kind)
 			if err := r.setView(api.ViewChat); err != nil {

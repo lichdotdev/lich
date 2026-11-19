@@ -193,13 +193,15 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   and answers on `POST /question/{id}/reply`, the person's own words as one more label, or `/reject`. The port is
   picked free and then handed over, so another process can take it in between; the chat then says it could not
   read the question, and the turn waits until the person stops it. opencode 2's ACP server was not measured and
-  runs without any of it, so its agent asks in plain text. Codex (0.170.0) asks through `item/tool/requestUserInput`, answered by
-  each question's id with the labels picked and the person's own words, and an MCP server's form through
-  `mcpServer/elicitation/request`, read as an ACP form is; a URL or other form dialect is declined. Neither was
-  seen live: both are implemented from the schema `codex app-server generate-ts` writes. Its command, patch and
-  extra-permission approvals are permission cards, a permission granted as asked for the turn or the session;
-  one Codex resolves itself (a turn interrupted under it) stops asking, and a request lich does not serve (a
-  dynamic tool call) is refused as an unknown method. Kiro CLI (2.21.0) has no question tool and asks in plain text; Cursor CLI was not measured past its login. Nothing answers a
+  runs without any of it, so its agent asks in plain text.
+  Codex (0.170.0) asks through `item/tool/requestUserInput`, answered by each question's id with the labels
+  picked and the person's own words, and an MCP server's form through `mcpServer/elicitation/request`, read as an
+  ACP form is; a URL or other form dialect is declined. Neither was seen live: both are implemented from the
+  schema `codex app-server generate-ts` writes. Its command, patch and extra-permission approvals are permission
+  cards, a permission granted as asked for the turn or the session; one Codex resolves itself (a turn interrupted
+  under it) stops asking, and a request lich does not serve (a dynamic tool call) is refused as an unknown method.
+  Kiro CLI (2.21.0) has no question tool and asks in
+  plain text; Cursor CLI was not measured past its login. Nothing answers a
   question on the person's behalf, a checkout that skips permissions included. A message sent while questions wait
   declines them and goes to the agent: Claude Code takes it in the turn running, and so does Codex (`turn/steer`); ACP takes no message during a
   turn, so lich stops the turn and sends it once the turn ended. A question the process never got an answer to, read
