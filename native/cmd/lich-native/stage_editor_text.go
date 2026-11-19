@@ -22,6 +22,15 @@ func lineBreak(text string) string {
 	return ""
 }
 
+// normalizedText is text in the lines the editor holds it in, as setText
+// splits it: on CRLF alone in a CRLF file, on any break in another.
+func normalizedText(text string) string {
+	if lineBreak(text) == "\r\n" {
+		return strings.ReplaceAll(text, "\r\n", "\n")
+	}
+	return strings.ReplaceAll(text, "\r", "\n")
+}
+
 // changedLines are the lines of doc, counted from 0, that are not base's:
 // typed, pasted or replaced since base was read. Where lines were only
 // deleted, the line that took their place is marked, so a deletion shows too.

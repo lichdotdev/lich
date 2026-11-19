@@ -109,6 +109,7 @@ type window struct {
 	review  *reviewPanel
 	// comments is the review batch every surface shares.
 	comments    commentStore
+	editors     stageEditors
 	commentEdit commentEditDialog
 	dock        *dock
 	git         *gitPanel
@@ -350,14 +351,17 @@ func run(w *app.Window, rt backend.Runtime) error {
 		return err
 	}
 	u.pulls.view.files.pr = &prFiles{ticks: map[string]*widget.Bool{}}
-	code, err := newCodeTab(client, invalidate, *flagFont, unit.Sp(*flagSize), comments, notify)
-	if err != nil {
-		return err
-	}
+	u.editors = stageEditors{client: client, invalidate: invalidate, family: *flagFont, size: unit.Sp(*flagSize),
+		dirty: func(checkout string, dirty bool) { u.model.markEditorDirty(checkout, dirty); u.model.invalidate() },
+		saved: func(checkout string) { go u.model.checkoutWritten(u.ctx, checkout) }}
+	code := newCodeTab(client, invalidate, comments, notify, func(checkout, rel string, line int) {
+		u.openInEditor(checkout, rel, line, 0, agentNote{})
+	})
 	u.dock = newDock(code, u.review, u.newArtifactsTab(), u.extension)
 	u.dock.tour = &u.tour.Tour
 	u.review.tour = &u.tour.Tour
 	u.model.diffTouched = u.review.feed.touched
+	u.model.editorTouched = u.editors.touched
 	u.model.focusSession = u.focusSession
 	u.model.showToast = u.showToast
 	u.model.raise = func() { w.Activate("") }
@@ -410,6 +414,9 @@ func run(w *app.Window, rt backend.Runtime) error {
 		case app.ConfigEvent:
 			frameLog.Note(framelog.CauseConfig)
 			u.chrome = chromeOf(e.Config)
+			if e.Config.Focused && !u.model.isFocused() {
+				u.editors.recheckAll()
+			}
 			u.model.setFocused(u.ctx, e.Config.Focused)
 			u.pulls.setFocused(e.Config.Focused)
 			u.toaster.SetHidden(!e.Config.Focused)
@@ -664,6 +671,7 @@ func (u *window) layout(gtx C) error {
 		u.layoutSubmitDialog(gtx, u.theme)
 		u.layoutMergeDialog(gtx, u.theme)
 		u.layoutDeleteCommentDialog(gtx, u.theme)
+		u.editors.layoutAsk(gtx, u.theme, &u.root)
 		u.review.layoutDialogs(gtx, u.theme)
 		u.git.layoutDialogs(gtx, u.theme)
 		u.commentEdit.layout(gtx, u.theme, &u.comments)
@@ -725,8 +733,12 @@ type stageView struct {
 	hasLayout bool
 	// console is the service whose console is on screen in place of the
 	// active session, when hasConsole.
-	console      backend.Service
-	hasConsole   bool
+	console    backend.Service
+	hasConsole bool
+	// editor is the checkout whose stage editor is on screen in place of the
+	// active session, when hasEditor.
+	editor       string
+	hasEditor    bool
 	panes        map[string]sessionView
 	mixed        bool
 	projectNames map[string]string
@@ -743,6 +755,10 @@ func (u *window) stageView(now time.Time) stageView {
 	if id := u.model.consoleShown(); id != "" && shown {
 		v.console, v.hasConsole = u.model.services.byID(id)
 		v.hasLayout = v.hasLayout && !v.hasConsole
+	}
+	if c := u.model.editorShown(); c != "" && shown && !v.hasConsole {
+		v.editor, v.hasEditor = c, true
+		v.hasLayout = false
 	}
 	if v.hasLayout {
 		v.panes = u.model.viewsOf(v.layout.sessions(), now)
@@ -828,9 +844,9 @@ func (u *window) body(gtx C, v stageView) (int, sidebarAction, error) {
 }
 
 // sidebarActive is the session the sidebar lights: none while a service's
-// console is on screen.
+// console or the stage editor is on screen.
 func sidebarActive(v stageView) string {
-	if v.hasConsole {
+	if v.hasConsole || v.hasEditor {
 		return ""
 	}
 	return v.active.ID
@@ -871,6 +887,8 @@ func (u *window) island(gtx C, v stageView, termWidth, termHeight int) error {
 		return nil
 	case v.hasConsole:
 		return u.consoleIsland(gtx, v.console, termWidth)
+	case v.hasEditor:
+		return u.editorIsland(gtx, v)
 	case v.hasLayout:
 		return u.layoutIsland(gtx, v)
 	case !v.hasActive && u.model.everySessionInALayout():
@@ -913,7 +931,7 @@ func (u *window) island(gtx C, v stageView, termWidth, termHeight int) error {
 // focusedCard is the session whose terminal takes the keys, "" for none.
 func focusedCard(v stageView) string {
 	switch {
-	case v.home, v.hasConsole:
+	case v.home, v.hasConsole, v.hasEditor:
 		return ""
 	case v.hasLayout:
 		return v.layout.Focus
@@ -1201,6 +1219,7 @@ func (u *window) apply(act sidebarAction) {
 	}
 	u.applyOpenIn(act)
 	u.applyBrowser(act)
+	u.applyEditor(act)
 	if act.unsplit != "" {
 		u.model.unsplit(u.ctx, act.unsplit)
 		u.model.invalidate()

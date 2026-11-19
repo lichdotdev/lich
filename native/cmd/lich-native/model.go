@@ -84,6 +84,9 @@ type model struct {
 	// diffTouched hears the checkout of a session that likely changed files,
 	// for the Review tab's diff, which is read apart from the git store.
 	diffTouched func(checkout string)
+	// editorTouched hears the same checkout, for the stage editor holding
+	// one of its files.
+	editorTouched func(checkout string)
 	// focusSession brings a session's card up, as `lich focus` asks.
 	focusSession func(projectID, id string)
 	// showToast puts a toast up.

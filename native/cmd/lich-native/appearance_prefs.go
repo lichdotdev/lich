@@ -228,12 +228,11 @@ func trafficLightsBar(p appearancePrefs) unit.Dp {
 	return topbarHeight * unit.Dp(p.zoom)
 }
 
-// setCodeFont redraws the Code tab and both review panels in family at size.
+// setCodeFont redraws the stage editors and both review panels in family at
+// size.
 func (u *window) setCodeFont(family string, size unit.Sp) error {
 	u.extension.setCodeFont(family, size)
-	if err := u.dock.code.preview.setFont(family, size); err != nil {
-		return err
-	}
+	u.editors.setFont(family, size)
 	if err := u.review.setFont(family, size); err != nil {
 		return err
 	}

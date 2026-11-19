@@ -23,26 +23,7 @@
     "loading": "Loading…",
     "noMatch": "No file matches",
     "empty": "No files here",
-    "backToTree": "Back to file tree",
-    "readOnly": "read-only",
     "showSource": "Show source"
-  },
-  "findBar": {
-    "placeholder": "Find",
-    "matchCase": "Match case",
-    "wholeWord": "Match whole word",
-    "regexp": "Use regular expression",
-    "showAll": "Show all matches",
-    "previous": "Previous match",
-    "next": "Next match",
-    "close": "Close",
-    "position": "{current} of {total}",
-    "matches": {
-      "one": "{count} match",
-      "other": "{count} matches"
-    },
-    "noResults": "No results",
-    "invalidRegexp": "Invalid regex"
   },
   "artifacts": {
     "empty": "Pages and files this session's agent makes to show you appear here, with those of the project's other open sessions.",
@@ -63,5 +44,18 @@
       "one": "{count} file matches",
       "other": "{count} files match"
     }
+  },
+  "editor": {
+    "save": "Save",
+    "saveTip": "Save ({keys})",
+    "undo": "Undo",
+    "discard": "Discard",
+    "unsavedTitle": "Save the changes to {name}?",
+    "unsavedDescription": "If you don't save them, your changes are lost.",
+    "changedOnDisk": "This file changed on disk since you started editing it.",
+    "keepMine": "Keep mine",
+    "reload": "Reload",
+    "saveFailed": "Could not save {name}",
+    "noteOn": "{author} on lines {lines}"
   }
 }

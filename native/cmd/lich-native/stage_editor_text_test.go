@@ -65,3 +65,12 @@ func TestLineBreakKeepsACRLFFileCRLF(t *testing.T) {
 		t.Fatal("lineBreak missed the file's break")
 	}
 }
+
+func TestADiskReadIsWeighedInTheLinesTheEditorHolds(t *testing.T) {
+	if got := normalizedText("a\r\nb\r\n"); got != "a\nb\n" {
+		t.Errorf("CRLF file = %q", got)
+	}
+	if got := normalizedText("a\rb\n"); got != "a\nb\n" {
+		t.Errorf("CR file = %q", got)
+	}
+}
