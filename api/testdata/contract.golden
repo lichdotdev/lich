@@ -44,7 +44,9 @@ chat.Answer(ChatAnswerOptions) None
 chat.Cancel(SessionIDOptions) None
 chat.History(SessionIDOptions) []ChatItem
 chat.Kinds(None) []string
+chat.Options(SessionIDOptions) []ChatOption
 chat.Prompt(ChatPromptOptions) None
+chat.SetOption(ChatSetOptionOptions) None
 chat.SetView(ChatViewOptions) None
 claudeprofile.CancelLogin(ProfileSlugOptions) None
 claudeprofile.CreateProfile(CreateProfileOptions) Profile
@@ -309,6 +311,7 @@ event browser-download BrowserDownload
 event browser-state BrowserState
 event browser:frame:<id> BrowserFrame
 event chat-item ChatItemUpdate
+event chat-options ChatOptionsUpdate
 event chat-turn ChatTurn
 event claude-profile-login ProfileLogin
 event codex-profile-login ProfileLogin
@@ -607,9 +610,23 @@ ChatItem {
 	at int64
 }
 
+ChatOption {
+	id string
+	category string
+	label string
+	current string
+	choices []ChatChoice
+}
+
 ChatPromptOptions {
 	id string
 	text string
+}
+
+ChatSetOptionOptions {
+	id string
+	optionId string
+	value string
 }
 
 ChatViewOptions {
@@ -2028,6 +2045,11 @@ ChatItemUpdate {
 	item ChatItem
 }
 
+ChatOptionsUpdate {
+	sessionId string
+	options []ChatOption
+}
+
 ChatTurn {
 	sessionId string
 	running bool
@@ -2301,6 +2323,13 @@ ChatPermission {
 	tool ChatToolCall
 	options []ChatPermitOption
 	chosen,omitempty string
+}
+
+ChatChoice {
+	id string
+	label string
+	description,omitempty string
+	danger,omitempty bool
 }
 
 ProfileUpdate {
