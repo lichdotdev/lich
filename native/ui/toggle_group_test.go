@@ -110,3 +110,11 @@ func TestToggleGroupDrawsAClickInTheFrameThatTookIt(t *testing.T) {
 func paintDigest(ops *op.Ops) [sha256.Size]byte {
 	return sha256.Sum256(reflect.ValueOf(&ops.Internal).Elem().FieldByName("data").Bytes())
 }
+
+func TestToggleGroupHeightIsTheTrackAroundItsItems(t *testing.T) {
+	group := testTheme().ToggleGroup(new(widget.Enum), toggleGroupItems...)
+	group.ItemHeight, group.ItemIcon = 20, 12
+	if got, want := layoutAt(group.Layout, 0, 500).Size.Y, int(ToggleGroupHeight(20)); got != want || want != 28 {
+		t.Errorf("group %dpx tall, ToggleGroupHeight says %d, want 28", got, want)
+	}
+}

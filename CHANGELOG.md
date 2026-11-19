@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Talk to an agent in a chat instead of its terminal.** The GUI | TUI switch in the top-right corner of a session moves the conversation between the two, once the agent is between turns; the chat shows the agent's answers formatted, folds its tool calls into one line per turn and asks for permissions inline.
+- **Talk to an agent in a chat instead of its terminal.** The GUI | TUI switch, at the right of the strip over a session's terminal or of a split pane's header, moves the conversation between the two, once the agent is between turns; the chat shows the agent's answers formatted, folds its tool calls into one line per turn and asks for permissions inline.
 - **Draw rectangles, ellipses and arrows on a browser page.** Turn on Draw, choose a shape from the outlined tool button, and drag to place it.
 - **The collapsed sidebar and dock come out when you point at them.** Rest the pointer on the sidebar's rail, or touch the window's right edge with the dock collapsed by its new collapse button, and the panel opens over the terminal without resizing it; it goes back when the pointer leaves.
 - **Click an installed extension to see its catalog page.** In Settings › Extensions › Installed, a row the catalog lists opens the same detail its card does, with Update when there is a newer release.
@@ -18,7 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Panels now have a faint 1px edge.** The sidebar, the stage, the dock and the Git and extension panels are outlined in the theme's `border` color, so they read apart from the window background in light and dark themes alike. Rows, cards, buttons and badges stay unboxed.
 - **The dock's tabs are icons at its foot.** Code, Review, Artifacts and an extension's tabs now sit in a row of icons at the bottom of the dock; hover one for its name. A dot on the icon marks a tab with changes or files.
-- **The footer floats as two balloons over the foot of the stage, and the dock no longer closes.** The terminal keeps a few rows clear under the agent's prompt for them, and a plain terminal has none. Code and Artifacts open from the dock's tabs; the dock stays docked or collapsed and opens on the tab you used last.
+- **The footer floats as two balloons over the foot of the stage, and the dock no longer closes.** The terminal keeps a few rows clear under the agent's prompt for them, and over it a strip names the provider and the session, so nothing covers the agent's banner; a plain terminal has neither. Code and Artifacts open from the dock's tabs; the dock stays docked or collapsed and opens on the tab you used last.
 - **An extension's detail grows with the window.** On a tall or ultrawide screen the dialog and its screenshots take more of it.
 - **A Markdown artifact opens rendered, in the Artifacts tab.** Clicking a `.md` file in the dock's Artifacts tab shows it formatted, as the Code tab's Markdown preview does, instead of its source in the browser.
 - **Review threads sent to a session are resolved only when the agent fixed them.** A question or a point for the team comes back to you in the session instead of getting "Fixing this" on GitHub. A thread the agent fixed is resolved, with a reply naming its commit, once that commit is pushed.

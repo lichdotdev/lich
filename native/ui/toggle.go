@@ -123,6 +123,7 @@ type toggleSpec struct {
 	height   unit.Dp
 	padX     unit.Dp
 	textSize unit.Sp
+	iconSize unit.Dp
 
 	pressed, hovered, focused, disabled bool
 }
@@ -200,8 +201,12 @@ func (th *Theme) toggleContent(gtx C, s toggleSpec, fg color.NRGBA) D {
 	}
 	text := th.Text(size, s.text)
 	var children []layout.FlexChild
+	iconSize := toggleIconSize
+	if s.iconSize != 0 {
+		iconSize = s.iconSize
+	}
 	if s.icon != nil {
-		children = append(children, layout.Rigid(func(gtx C) D { return s.icon.Layout(gtx, toggleIconSize, fg) }))
+		children = append(children, layout.Rigid(func(gtx C) D { return s.icon.Layout(gtx, iconSize, fg) }))
 	}
 	if s.icon != nil && s.text != "" {
 		children = append(children, layout.Rigid(layout.Spacer{Width: toggleGap}.Layout))

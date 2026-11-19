@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 
-	"gioui.org/layout"
 	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/api"
@@ -16,21 +15,24 @@ import (
 var (
 	icChatGUI = icons.Lucide("sparkles")
 	icChatTUI = icons.Lucide("square-terminal")
-	// chatSwitchItem is the selector's h-7 items, a size under the footer's
-	// balloons: it covers the terminal's corner, not a strip of its own.
-	chatSwitchItem = ui.Space(7)
-	chatSwitchPadX = ui.Space(2)
+	// The selector's items are h-5 with a Text2XS label and a size-3 icon, a
+	// step under the footer's h-8: it sits in a strip or a pane header, where
+	// the room is short.
+	chatSwitchItem = ui.Space(5)
+	chatSwitchPadX = ui.Space(1.5)
+	chatSwitchIcon = ui.Space(3)
+	chatSwitchBox  = ui.ToggleGroupHeight(chatSwitchItem)
 )
 
-// chatSwitch draws session sv's GUI | TUI selector floating in the top-right
-// corner of gtx's area, over its terminal or its chat, for a provider that
-// can be drawn as a chat. Its click is read before it is drawn, so the frame
-// that took it already shows the switch on its way.
-func (u *window) chatSwitch(gtx C, sv sessionView) {
+// chatSwitch draws session sv's GUI | TUI selector, on th's ground, for a
+// provider that can be drawn as a chat, and nothing for another. Its click is
+// read before it is drawn, so the frame that took it already shows the
+// switch on its way.
+func (u *window) chatSwitch(gtx C, th *ui.Theme, sv sessionView) D {
 	c := &u.model.chat
 	shown, block := chatSwitchState(c.offers(sv.Kind), sv, c.isRunning(sv.ID), c.isSwitching(sv.ID))
 	if !shown {
-		return
+		return D{}
 	}
 	s := u.chats.pane(sv.ID)
 	current := chatViewOf(sv)
@@ -42,30 +44,19 @@ func (u *window) chatSwitch(gtx C, sv sessionView) {
 		u.switchView(sv.ID, s.view.Value)
 		block = switchPending
 	}
-	th := u.theme.On(u.theme.Sidebar)
 	off := block != switchFree
 	group := th.ToggleGroup(&s.view,
 		ui.ToggleItem{Value: api.ViewChat, Text: i18n.T("chat.switch.gui"), Icon: icChatGUI, Disabled: off},
 		ui.ToggleItem{Value: api.ViewTerminal, Text: i18n.T("chat.switch.tui"), Icon: icChatTUI, Disabled: off})
-	group.Size, group.ItemHeight, group.ItemPadX, group.ItemText = ui.ToggleSizeSM, chatSwitchItem, chatSwitchPadX, ui.TextXS
-	pill := func(gtx C) D {
-		return layout.Background{}.Layout(gtx,
-			func(gtx C) D { return ui.Fill(gtx, u.theme.Sidebar, ui.RadiusMD) },
-			group.Layout)
+	group.Size, group.ItemHeight, group.ItemPadX, group.ItemText, group.ItemIcon = ui.ToggleSizeSM, chatSwitchItem, chatSwitchPadX, ui.Text2XS, chatSwitchIcon
+	if !off {
+		return group.Layout(gtx)
 	}
-	gtx.Constraints.Min = gtx.Constraints.Max
-	layout.Inset{Top: balloonInset, Right: balloonInset}.Layout(gtx, func(gtx C) D {
-		return layout.NE.Layout(gtx, func(gtx C) D {
-			if !off {
-				return pill(gtx)
-			}
-			reason := i18n.T("chat.switch.working")
-			if block == switchPending {
-				reason = i18n.T("chat.switch.pending")
-			}
-			return th.Tooltip(&u.root, &s.switchTip, reason).Layout(gtx, pill)
-		})
-	})
+	reason := i18n.T("chat.switch.working")
+	if block == switchPending {
+		reason = i18n.T("chat.switch.pending")
+	}
+	return th.Tooltip(&u.root, &s.switchTip, reason).Layout(gtx, group.Layout)
 }
 
 // chatViewOf is the view sv is drawn in, "" read as the terminal.
