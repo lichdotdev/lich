@@ -44,6 +44,11 @@
     "busy": "请等本轮结束后再更改。",
     "modelEffort": "模型与思考强度"
   },
+  "permit": {
+    "allowOnce": "允许",
+    "allowAlways": "始终允许",
+    "rejectOnce": "拒绝"
+  },
   "choice": {
     "manual": "手动",
     "plan": "计划",

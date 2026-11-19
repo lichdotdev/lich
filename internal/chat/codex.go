@@ -362,7 +362,7 @@ func (d *codexDriver) delta(params json.RawMessage, kind string) {
 // item shows one item as it starts or completes, live.
 func (d *codexDriver) item(it codexItem, done bool) {
 	model, effort := d.producer()
-	ci, ok := it.chatItem(done)
+	ci, ok := it.under(d.c.cwd).chatItem(done)
 	// A message or a reasoning that has only begun is empty: its deltas fill
 	// it, and one that ends empty (a reasoning with no summary) is not drawn.
 	if !ok || (ci.Kind != api.ItemTool && ci.Text == "") {

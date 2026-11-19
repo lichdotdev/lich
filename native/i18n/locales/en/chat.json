@@ -48,6 +48,11 @@
     "busy": "Wait for the turn to end to change this.",
     "modelEffort": "Model and effort"
   },
+  "permit": {
+    "allowOnce": "Allow",
+    "allowAlways": "Always allow",
+    "rejectOnce": "Deny"
+  },
   "choice": {
     "manual": "Manual",
     "plan": "Plan",

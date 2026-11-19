@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/lichdotdev/lich/api"
@@ -143,6 +145,19 @@ func codexPatch(changes []codexChange) api.ChatToolCall {
 	return t
 }
 
+// under is it with a patch's paths made relative to cwd: Codex sends them
+// absolute (measured), and a diff header spells them a/<path>.
+func (it codexItem) under(cwd string) codexItem {
+	changes := slices.Clone(it.Changes)
+	for i, ch := range changes {
+		if rel, err := filepath.Rel(cwd, ch.Path); err == nil && filepath.IsLocal(rel) {
+			changes[i].Path = filepath.ToSlash(rel)
+		}
+	}
+	it.Changes = changes
+	return it
+}
+
 // deletedDiff is content removed with its file.
 func deletedDiff(path, content string) string {
 	lines := diffLines(content)
@@ -243,7 +258,7 @@ func (d *codexDriver) replayTurn(turn codexTurn, p codexProducer) {
 			d.c.conv.userMessage(it.userText())
 			continue
 		}
-		ci, ok := it.chatItem(true)
+		ci, ok := it.under(d.c.cwd).chatItem(true)
 		if !ok || (ci.Kind != api.ItemTool && ci.Text == "") {
 			continue
 		}

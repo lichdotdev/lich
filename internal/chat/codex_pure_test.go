@@ -90,3 +90,11 @@ func TestCodexItemsTheChatDraws(t *testing.T) {
 		t.Errorf("mcp tool = %+v", mcp.Tool)
 	}
 }
+
+func TestCodexPatchPathsAreRelativeToTheCheckout(t *testing.T) {
+	it := codexItem{Type: "fileChange", ID: "f", Changes: []codexChange{{Path: "/w/src/a.go"}, {Path: "/elsewhere/b.go"}}}
+	got := it.under("/w")
+	if got.Changes[0].Path != "src/a.go" || got.Changes[1].Path != "/elsewhere/b.go" || it.Changes[0].Path != "/w/src/a.go" {
+		t.Errorf("paths = %+v, original %+v", got.Changes, it.Changes)
+	}
+}

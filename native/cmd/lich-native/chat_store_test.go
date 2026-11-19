@@ -10,6 +10,7 @@ import (
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
+	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -313,5 +314,19 @@ func TestATerminalStoppedForTheChatRaisesNoExitToast(t *testing.T) {
 		if u.toaster.Live("exit:s1") {
 			t.Errorf("chat %v: an exit toast for a terminal the chat stopped", chat)
 		}
+	}
+}
+
+func TestAPermitSentByKindAloneIsNamedByLich(t *testing.T) {
+	for kind, want := range map[string]string{
+		api.PermitAllowOnce: i18n.T("chat.permit.allowOnce"), api.PermitAllowAlways: i18n.T("chat.permit.allowAlways"),
+		api.PermitRejectOnce: i18n.T("chat.permit.rejectOnce"), "other": "x",
+	} {
+		if got := permitLabel(api.ChatPermitOption{ID: "x", Kind: kind}); got != want {
+			t.Errorf("%s is %q, want %q", kind, got, want)
+		}
+	}
+	if got := permitLabel(api.ChatPermitOption{ID: "x", Label: "Allow once", Kind: api.PermitAllowOnce}); got != "Allow once" {
+		t.Errorf("the provider's label lost to ours: %q", got)
 	}
 }

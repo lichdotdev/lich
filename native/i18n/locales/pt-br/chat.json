@@ -48,6 +48,11 @@
     "busy": "Espere o turno terminar para mudar isto.",
     "modelEffort": "Modelo e esforço"
   },
+  "permit": {
+    "allowOnce": "Permitir",
+    "allowAlways": "Sempre permitir",
+    "rejectOnce": "Negar"
+  },
   "choice": {
     "manual": "Manual",
     "plan": "Plano",

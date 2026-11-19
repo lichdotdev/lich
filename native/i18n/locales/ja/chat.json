@@ -44,6 +44,11 @@
     "busy": "変更するにはターンの終了を待ってください。",
     "modelEffort": "モデルとエフォート"
   },
+  "permit": {
+    "allowOnce": "許可",
+    "allowAlways": "常に許可",
+    "rejectOnce": "拒否"
+  },
   "choice": {
     "manual": "手動",
     "plan": "プラン",
