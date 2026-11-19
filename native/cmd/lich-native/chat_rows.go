@@ -76,13 +76,6 @@ func chatRows(items []backend.ChatItem, running bool, now time.Time) []chatRow {
 		last = max(last, it.Turn)
 	}
 	var rows []chatRow
-	// A finished turn that began with the person's message ends in a line of
-	// its own, after its last item.
-	closing := func(turn int) {
-		if asked[turn] {
-			rows = append(rows, chatRow{kind: chatRowDone, turn: turn})
-		}
-	}
 	folded := map[int]bool{}
 	led := map[int]bool{}
 	// opener is what first speaks in a turn, "work" or "agent".
@@ -93,10 +86,7 @@ func chatRows(items []backend.ChatItem, running bool, now time.Time) []chatRow {
 	if running && len(items) > 0 {
 		liveID = items[len(items)-1].ID
 	}
-	for i, it := range items {
-		if i > 0 && items[i-1].Turn != it.Turn {
-			closing(items[i-1].Turn)
-		}
+	for _, it := range items {
 		if began := spans[it.Turn].began; it.Kind == api.ItemUser && began > 0 {
 			day := time.UnixMilli(began).In(now.Location())
 			if !turnDay.IsZero() && !sameDay(turnDay, day) {
@@ -132,8 +122,10 @@ func chatRows(items []backend.ChatItem, running bool, now time.Time) []chatRow {
 		}
 		rows = append(rows, work)
 	}
-	if !running && len(items) > 0 {
-		closing(items[len(items)-1].Turn)
+	// The conversation's last turn, once it has ended, closes with a line of
+	// its own; the person's next message takes it away.
+	if !running && len(items) > 0 && asked[last] {
+		rows = append(rows, chatRow{kind: chatRowDone, turn: last})
 	}
 	if running && permissionWaiting(items) == nil {
 		live := chatRow{kind: chatRowLive, turn: last}

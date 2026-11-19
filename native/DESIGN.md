@@ -301,14 +301,16 @@ draws none while it grows in, because the room above the rows is measured in the
   one generic wrench for the rest), its name in medium, what it acted on in mono, and how it ended at the
   right: a spinner in `ToneWait` while it runs, then a check in `TonePass` or a cross in `Destructive`
   with the output's first line. Its diff stands under it as a thread's hunk is drawn.
-- **A turn's closing line** ends each finished turn that began with a message, after its last item: the
-  provider's avatar as the tool-call line opens a turn with, "Done" in `TextSM` medium `Foreground`, then muted
-  "· no changes" or "· 3 files" and the lines the turn added in `TonePass` and removed in `Destructive`
-  ("+12 −4"), as the diffs draw them, and a 1px `Border` hairline to the column's edge. "Stopped" stands
-  for a turn the person cancelled, and "Failed" in `Destructive` for one that ended in an error. The files and
-  lines are the click: they open Review as the footer's changes item does. A turn whose checkout lich could not
-  read (not a repository, or a commit made during the turn) says its word alone, and so does one read back with
-  the history, whose end nobody reported to the window: the line never invents a count.
+- **A turn's closing line** stands once, after the last item of the conversation's last turn, when that turn
+  has ended: the provider's avatar as the tool-call line opens a turn with, "Done" in `TextSM` medium
+  `Foreground`, then muted "· no changes" or "· 3 files" and the lines the turn added in `TonePass` and removed
+  in `Destructive` ("+12 −4"), as the diffs draw them, and a 1px `Border` hairline to the column's edge.
+  "Stopped" stands for a turn the person cancelled, and "Failed" in `Destructive` for one that ended in an
+  error. The files and lines are the click: they open Review as the footer's changes item does. The line
+  leaves when the person's next message begins a turn, and none stands while a turn runs, where the live line
+  is; older turns have none, in a history read back too. A turn whose checkout lich could not read (not a
+  repository, or a commit made during the turn) says its word alone, and so does one read back with the
+  history, whose end nobody reported to the window: the line never invents a count.
 - **What is alive moves.** The text of a live step shimmers: a light band crosses it from left to right once
   every 1.6s (`Label.Shimmer`, looping frames only while it is drawn), and the time it has run counts beside
   it, "6s", "1m 12s", redrawn each second and not each frame. That is "Thinking" for the thought being
