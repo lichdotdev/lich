@@ -41,9 +41,10 @@ require (
 // operations are diffed), pointer.Event.WindowPosition (a widget's place in the
 // window without watching motion), input.Source.Origin (where a widget sat in
 // the last frame), a double click window of 400 ms, the flip model on
-// Windows, and app.PreferX11 with focus kept while a child X11 window holds
-// the keyboard (the web view's page). Every patch of ours lands on that branch.
-replace gioui.org => github.com/lichdotdev/gio v0.0.0-20261119164542-adf064a1199c
+// Windows, app.PreferX11 with focus kept while a child X11 window holds the
+// keyboard (the web view's page), and Vulkan before EGL on X11 (NVIDIA's EGL
+// hangs under XWayland). Every patch of ours lands on that branch.
+replace gioui.org => github.com/lichdotdev/gio v0.0.0-20261119170027-d3cc36d3e89a
 
 replace github.com/lichdotdev/lich => ../
 
