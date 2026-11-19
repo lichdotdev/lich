@@ -346,7 +346,9 @@ view stays pinned to its end while items arrive, until the person scrolls up. Th
   window's clipboard path, and becomes a check for 1.5s. It has no tooltip: the glyph says it. The line is as tall with it as
   without (`chatCopySlot`), so it pushes nothing; the button is a little larger than the line and reaches past it.
 - **A message's time** is a `TextXS` muted line, the window's short clock ("14:32") under a tooltip that holds
-  the footer clock's full date: under the person's box at the right edge, under an answer's text at the left.
+  the footer clock's full date: under the person's box at the right edge, always; under an answer's text at the
+  left, its foot, only while the pointer is over the answer (with the copy button beside it; the line is there at
+  rest, empty, so nothing moves).
   Between two turns that start on different days a muted, centred line names the later day: Today, Yesterday,
   else its date, with the year when it is not this one. A message with no time draws none.
 

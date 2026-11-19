@@ -100,11 +100,17 @@ func (u *window) chatStamp(gtx C, th *ui.Theme, p *chatPane, it backend.ChatItem
 }
 
 // chatStampRow is the line under a message: its time, and while the pointer is
-// over the message the copy button beside it, on the side of the time that
+// over the message the copy button beside it (the person's message keeps its
+// time at rest; an answer shows both only under the pointer), on the side of the time that
 // faces the middle (at the left of a message the time is at the right). The line
 // is as tall with the button as without it.
 func (u *window) chatStampRow(gtx C, th *ui.Theme, p *chatPane, c *chatCopy, it backend.ChatItem, over, copyFirst bool) D {
 	gtx.Constraints.Min.Y = gtx.Dp(chatCopySlot)
+	if !over && !copyFirst {
+		// An answer's foot, its time and its copy button, shows only under the
+		// pointer; the line it stands on is there either way.
+		return D{Size: image.Pt(gtx.Constraints.Min.X, gtx.Constraints.Min.Y)}
+	}
 	row := []layout.FlexChild{layout.Rigid(func(gtx C) D { return u.chatStamp(gtx, th, p, it) })}
 	if over {
 		button := layout.Rigid(func(gtx C) D { return c.button(gtx, th, it.Text) })

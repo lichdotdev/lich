@@ -77,6 +77,7 @@ func TestEachMessageShowsItsTimeAtTheEdgeItIsAlignedTo(t *testing.T) {
 		{ID: "a1", Kind: api.ItemAgent, Turn: 1, At: agentAt, Text: "hello"},
 	})
 	r.settle(t)
+	overAnswer(r, t) // an answer's time shows under the pointer
 	for _, label := range []string{user, agent} {
 		if !r.shows(label) {
 			t.Fatalf("no time %q:\n%s", label, r.drawn())
