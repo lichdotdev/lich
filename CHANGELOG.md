@@ -34,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Only the terminal that takes your keys draws a full cursor.** In a split the other panes, and every terminal while the window is out of focus, show the cursor as an outline.
 - **Clicks in the session browser keep waiting for their requests when the system clock changes.**
 - **The window startup error now points to the native window log.** That log contains the window process's error when it exits before opening.
 - **A message to a Claude Code session that just opened is no longer left unsent on its prompt.**
