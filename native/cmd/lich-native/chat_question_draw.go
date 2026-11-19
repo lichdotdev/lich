@@ -209,7 +209,9 @@ func chatOptionRow(gtx C, th *ui.Theme, q *chatQuiz, a api.ChatAsk, j int, o api
 	return click.Layout(gtx, func(gtx C) D {
 		lead := func(gtx C) D { return th.KeyCap(strconv.Itoa(j + 1)).Layout(gtx) }
 		if a.Multi {
-			lead = th.Checkbox(&q.marks[q.step][j]).Layout
+			// The row is the one target: a box taking the click too would mark
+			// the option and the row's click unmark it, in the same press.
+			lead = func(gtx C) D { return th.Checkbox(&q.marks[q.step][j]).Layout(gtx.Disabled()) }
 		}
 		return chatQuizRow(gtx, th, q.hot == j || click.Hovered(), lead, func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
