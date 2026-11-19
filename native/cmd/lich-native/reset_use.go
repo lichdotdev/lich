@@ -56,7 +56,7 @@ func (u *resetUse) button(gtx C, th *ui.Theme, id string) layout.Widget {
 		gtx.Execute(op.InvalidateCmd{}) // the row is already drawn as it was
 	}
 	b := th.Button(click, i18n.T("shell.planQuota.resetUse"))
-	b.Variant, b.Size, b.Disabled = ui.VariantOutline, ui.SizeXS, u.busyNow()
+	b.Variant, b.Size, b.Disabled = ui.VariantGhost, ui.SizeXS, u.busyNow()
 	return b.Layout
 }
 
