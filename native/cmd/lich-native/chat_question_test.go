@@ -193,14 +193,18 @@ func TestTheComposerSendsPastAWaitingQuestion(t *testing.T) {
 	}
 }
 
-func TestNoLiveRowWhileAQuestionWaits(t *testing.T) {
+// A waiting question stands in for the live row, and a window that opened
+// mid-turn, which heard no turn start, draws no closing line under it.
+func TestNoLiveOrDoneRowWhileAQuestionWaits(t *testing.T) {
 	items := []backend.ChatItem{
 		{ID: "u1", Kind: api.ItemUser, Turn: 1},
 		{ID: "q1", Kind: api.ItemQuestion, Turn: 1, Question: &backend.ChatQuestion{Questions: []api.ChatAsk{askFruit}}},
 	}
-	for _, r := range chatRows(items, true, time.Now()) {
-		if r.kind == chatRowLive {
-			t.Error("a live row under a waiting question")
+	for _, running := range []bool{true, false} {
+		for _, r := range chatRows(items, running, time.Now()) {
+			if r.kind == chatRowLive || r.kind == chatRowDone {
+				t.Errorf("running=%v: a row of kind %d under a waiting question", running, r.kind)
+			}
 		}
 	}
 }

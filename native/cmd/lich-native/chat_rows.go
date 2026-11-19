@@ -123,8 +123,9 @@ func chatRows(items []backend.ChatItem, running bool, now time.Time) []chatRow {
 		rows = append(rows, work)
 	}
 	// The conversation's last turn, once it has ended, closes with a line of
-	// its own; the person's next message takes it away.
-	if !running && len(items) > 0 && asked[last] {
+	// its own; the person's next message takes it away. A question still
+	// waiting holds the turn open, whatever a window opened mid-turn heard.
+	if !running && len(items) > 0 && asked[last] && questionWaiting(items) == nil {
 		rows = append(rows, chatRow{kind: chatRowDone, turn: last})
 	}
 	if running && permissionWaiting(items) == nil && questionWaiting(items) == nil {

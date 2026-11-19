@@ -344,8 +344,24 @@ draws none while it grows in, because the room above the rows is measured in the
 - **A permission** is a box on `Sidebar`, `RadiusMD`, `Space(3)` padding (see Boxes inside a screen): the tool,
   its diff, and a `SizeSM` button per answer the provider offers, the first allow filled. Enter takes the first
   allow and Esc the first reject. Answered, it shrinks to a muted line naming the answer.
+- **A question** (`chat_question.go`, `chat_question_draw.go`) is the same box where the agent stopped, in
+  Claude Code's AskUserQuestion shape, which every provider's request for input is read into. Its head is the
+  ask's header in small capitals on a `Muted` fill, then the question in `TextSM` medium, and "multiple" muted
+  at the right when it takes several; several asks turn the headers into steps along the top (the one on show on
+  `SidebarAccent`, an answered one with a check, each a click back to it) with "2 of 3" muted at the right, and
+  the question under them. Each option is a row, a keycap with its number (a checkbox when it takes several), the
+  label in medium and the description muted, the row the keys stand on lit on `SidebarAccent`; the last row is
+  always "Other…", a field for the person's own words. An ask with no options is a textarea alone. When the
+  options carry a preview, the list takes the left half and the highlighted one's preview stands at the right in
+  mono on `Background`. A single choice answers on a click, its digit or Enter on the lit row; several are marked
+  with a click or Space and go with Send, a `SizeSM` secondary button dimmed until something is marked or written,
+  beside "2 marked"; the last of several asks leads to a summary, a line per ask, and Send all. The keys go to
+  the card while it waits, Esc declines, and the composer stays clickable: a message sent from it declines the
+  questions and reaches the agent. While it waits the flame is left out, as for a permission. Answered, it is a
+  `TextXS` line per ask after a 1px `Border` hairline, the header muted and the answer in medium, the person's
+  own words in quotes; declined, a muted "Not answered".
 - **A notice** is a muted line; the turn in flight ends the column with a pixel flame (`chat_flame.go`: a 9x11 sprite of 1.5dp pixels, drawn as rectangles, in 8 frames of 120ms; a window without focus looks in at `StillFrame` instead) and a verb of the turn, shimmering like "Thinking" with the time it has run beside it; the verb is picked from the language's own list (`chat.view.verbs`, `|`-separated, each language writes its own length) by the session and the turn, so it holds for the whole turn; left out
-  while a permission waits: its box already says so.
+  while a permission or a question waits: its box already says so.
   The flame's colors are tokens, never a fixed hue: the core is `Foreground`, the body a mix of `MutedForeground` toward
   `Foreground` (0.55), the edge `MutedForeground`, and the base and the sparks leaving it `Accent`. A gray theme
   draws a gray flame and a colored one colors it on its own. It does not use `ToneWait`: the turn running is not the
