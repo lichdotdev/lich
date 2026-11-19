@@ -445,6 +445,11 @@ draws the block.
 
 A page pane (`browser_pane.go`, `browser_tabs.go`) is three rows on the pane's fill, no seam between them.
 
+One gap, `Space(2)` (8px, `browserChromeGap`), sets the whole rhythm: from the pane's top edge to the tabs, from
+the tabs to the address, from the address to the page's card, and from the card to the pane's sides and foot. The
+tabs also keep it from the pane's left side. `TestPageChromeKeepsOneGapBetweenItsRows` measures them; a row added
+to the chrome takes the same gap rather than a number of its own.
+
 - **Tabs** on the top row, the page's tabs always, even one, then the new-tab button, and the pane's expand,
   minimize and close at the right. A tab is a neutral 12px square where a favicon would go (the backend sends
   none) and the page's title in `TextXS`; the front tab is filled `Accent`, its title `Foreground` in the focused
@@ -456,7 +461,7 @@ A page pane (`browser_pane.go`, `browser_tabs.go`) is three rows on the pane's f
   selected; on a blank page and on the new-tab page the placeholder. What a button says lives in its tooltip: the Select tool's is
   "Click an element to leave a note". Open in a window is not here: it is an item of the browser row's menu in
   the sidebar.
-- **The page** is a card inset `Space(2)` from the pane's left, right and bottom, `RadiusLG`, its edge the 1px
+- **The page** is a card `Space(2)` under the toolbar and from the pane's left, right and bottom, `RadiusLG`, its edge the 1px
   `Border` hairline. The notes bar floats over it, as before, except on the new-tab page.
 - **The new-tab page** is the backend's HTML, drawn with the window's tokens sent over `browser.NewTabPage`
   (`browser_newtab.go`): `Background` for the page, `Card` for the address field, `Accent` for a hovered row,

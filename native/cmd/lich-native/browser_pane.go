@@ -124,8 +124,24 @@ func (u *window) sendBrowser(session, what string, call func(context.Context) er
 	}})
 }
 
-// browserPageInset is the gap the page's card keeps from the pane's edges.
-var browserPageInset = ui.Space(2)
+// browserChromeGap is the one gap of a page pane's chrome: from the pane's top
+// edge to the tabs, from the tabs to the toolbar, from the toolbar to the
+// page's card, and from the card to the pane's sides and foot.
+var browserChromeGap = ui.Space(2)
+
+// browserAddressHeight is the address pill's height.
+var browserAddressHeight = ui.Space(7)
+
+// browserChrome is where a page pane of size lays out: head is the tabs' row
+// with the gap over it, bar the toolbar's row with a gap above and below its
+// pill, and card the page.
+func browserChrome(gtx C, size image.Point) (head, bar int, card image.Rectangle) {
+	gap := gtx.Dp(browserChromeGap)
+	head = gap + gtx.Dp(browserTabHeight)
+	bar = gap + gtx.Dp(browserAddressHeight) + gap
+	card = image.Rect(gap, head+bar, max(size.X-gap, gap), max(size.Y-gap, head+bar))
+	return head, bar, card
+}
 
 // browserPaneAt draws session's page pane in r, the way paneAt draws a
 // session's: the tabs, the toolbar, and the page as a card.
@@ -143,8 +159,7 @@ func (u *window) browserPaneAt(gtx C, v stageView, session string, r image.Recta
 	shape := clip.UniformRRect(image.Rectangle{Max: size}, gtx.Dp(paneRadius))
 	paint.FillShape(gtx.Ops, th.Background, shape.Op(gtx.Ops))
 	area := shape.Push(gtx.Ops)
-	head, bar, inset := gtx.Dp(paneHeader), gtx.Dp(ui.Space(9)), gtx.Dp(browserPageInset)
-	card := image.Rect(inset, head+bar, max(size.X-inset, inset), max(size.Y-inset, head+bar))
+	head, bar, card := browserChrome(gtx, size)
 	u.playAgentCursor(gtx, p, marks, head, bar, card)
 	p.dialog.sync(st.Dialog, p.answering(gtx.Now))
 	header := gtx
@@ -200,7 +215,7 @@ func (u *window) browserHeader(gtx C, p *browserPaneUI, session string, st api.B
 		session := paneSession(pane)
 		u.sendBrowser(session, "close", func(ctx context.Context) error { return u.client.CloseBrowser(ctx, session) })
 	}
-	layout.Inset{Left: tabsInset, Right: ui.Space(2)}.Layout(gtx, func(gtx C) D {
+	layout.Inset{Left: browserChromeGap, Right: browserChromeGap, Top: browserChromeGap}.Layout(gtx, func(gtx C) D {
 		gtx.Constraints.Min.Y = gtx.Constraints.Max.Y
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Flexed(1, func(gtx C) D { return u.browserTabs(gtx, p, session, st, focused) }),
@@ -262,7 +277,7 @@ func (u *window) browserToolbar(gtx C, p *browserPaneUI, session string, st api.
 	u.syncAddress(gtx, p, pageURL(st))
 	p.url.Submit = true
 	field := th.Input(&p.url, i18n.T("layouts.browser.address"))
-	field.Height, field.TextSize, field.Bare = ui.Space(7), ui.TextXS, true
+	field.Height, field.TextSize, field.Bare = browserAddressHeight, ui.TextXS, true
 	layout.Inset{Left: ui.Space(1.5), Right: ui.Space(1.5)}.Layout(gtx, func(gtx C) D {
 		gtx.Constraints.Min.Y = gtx.Constraints.Max.Y
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
