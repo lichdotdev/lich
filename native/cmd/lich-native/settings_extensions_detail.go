@@ -66,7 +66,7 @@ var (
 type catalogDetail struct {
 	id, shown                      string
 	state                          ui.DialogState
-	close, readme, install, update widget.Clickable
+	close, readme, install, update ui.Clickable
 	body, shots                    widget.List
 }
 

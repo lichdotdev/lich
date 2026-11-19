@@ -11,7 +11,6 @@ import (
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
 	"gioui.org/unit"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
@@ -57,10 +56,10 @@ const (
 	toggleHoverFill   = 0.5 // hover:bg-accent/50
 )
 
-// ToggleStyle draws a shadcn Toggle around a caller-owned widget.Bool: Pressed
+// ToggleStyle draws a shadcn Toggle around a caller-owned Bool: Pressed
 // is aria-pressed, a click flips its Value.
 type ToggleStyle struct {
-	Pressed *widget.Bool
+	Pressed *Bool
 	Text    string
 	Icon    *icons.Icon // leading, optional
 	Variant ToggleVariant
@@ -75,7 +74,7 @@ type ToggleStyle struct {
 }
 
 // Toggle is a default-variant, default-size toggle.
-func (th *Theme) Toggle(pressed *widget.Bool, text string) ToggleStyle {
+func (th *Theme) Toggle(pressed *Bool, text string) ToggleStyle {
 	return ToggleStyle{Pressed: pressed, Text: text, theme: th}
 }
 
@@ -100,11 +99,11 @@ func (t ToggleStyle) Layout(gtx C) D {
 	dims := t.Pressed.Layout(gtx, func(gtx C) D {
 		spec.pressed = t.Pressed.Value
 		spec.hovered = t.Pressed.Hovered()
-		spec.focused = gtx.Focused(t.Pressed)
+		spec.focused = t.Pressed.Focused(gtx)
 		return t.theme.toggleItem(gtx, spec)
 	})
 	toggle := macro.Stop()
-	if gtx.Focused(t.Pressed) {
+	if t.Pressed.Focused(gtx) {
 		toggleStroke(gtx, dims.Size, gtx.Dp(toggleRingWidth), gtx.Dp(RadiusMD), t.theme.Over(Alpha(t.theme.Ring, toggleRingOpacity)))
 	}
 	toggle.Add(gtx.Ops)

@@ -13,7 +13,6 @@ import (
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
 	"gioui.org/unit"
-	"gioui.org/widget"
 )
 
 // sonner 2.0.7's geometry (dist/index.mjs, dist/styles.css) and the toast
@@ -105,7 +104,7 @@ type toastView struct {
 	// offset is the expanded stack's distance from the top, frozen once
 	// the toast is removed (sonner's offsetBeforeRemove).
 	offset                          float32
-	action, cancel, secondary       widget.Clickable
+	action, cancel, secondary       Clickable
 	actionAt, cancelAt, secondaryAt image.Rectangle // body-local
 	drag                            toastDrag
 	swipedOut                       bool
@@ -235,7 +234,7 @@ func (s ToasterStyle) readEntries(gtx C) []func() {
 			clicked = append(clicked, e.OnDismiss)
 		}
 		for _, b := range []struct {
-			click  *widget.Clickable
+			click  *Clickable
 			button *ToastButton
 		}{{&e.view.action, e.Action}, {&e.view.cancel, e.Cancel}, {&e.view.secondary, e.Secondary}} {
 			if b.click.Clicked(gtx) && b.button != nil && !e.removed() {
@@ -385,14 +384,13 @@ func (s ToasterStyle) areas(gtx C) {
 	}
 }
 
-func buttonArea(gtx C, click *widget.Clickable, r image.Rectangle) {
+func buttonArea(gtx C, click *Clickable, r image.Rectangle) {
 	if r.Empty() {
 		return
 	}
 	defer op.Offset(r.Min).Push(gtx.Ops).Pop()
 	gtx.Constraints = layout.Exact(r.Size())
 	click.Layout(gtx, func(gtx C) D {
-		pointer.CursorPointer.Add(gtx.Ops)
 		return D{Size: gtx.Constraints.Min}
 	})
 }

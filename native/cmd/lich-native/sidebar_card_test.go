@@ -9,7 +9,6 @@ import (
 	"gioui.org/op"
 	"gioui.org/text"
 	"gioui.org/unit"
-	"gioui.org/widget"
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/ui"
 )
@@ -20,7 +19,7 @@ func cardBodyHeight(sv sessionView, hovered bool) int {
 	var ops op.Ops
 	gtx := layout.Context{Ops: &ops, Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}, Constraints: layout.Constraints{Max: image.Pt(300, 4000)}}
 	more := func(gtx layout.Context) layout.Dimensions { return layout.Dimensions{Size: image.Pt(16, 16)} }
-	return s.cardBody(gtx, th, &sv, new(widget.Clickable), more, hovered).Size.Y
+	return s.cardBody(gtx, th, &sv, new(ui.Clickable), more, hovered).Size.Y
 }
 
 func TestCardIsOneLineInEveryState(t *testing.T) {

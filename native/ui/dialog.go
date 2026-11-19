@@ -16,7 +16,6 @@ import (
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
 	"gioui.org/unit"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
@@ -47,10 +46,10 @@ const (
 )
 
 // DialogState is a dialog's widget state, owned by the caller like a
-// widget.Clickable. The open flag is not part of it: the caller owns that
+// Clickable. The open flag is not part of it: the caller owns that
 // and passes it to every Layout.
 type DialogState struct {
-	close widget.Clickable
+	close Clickable
 	scrim popupBackdrop
 	panel bool // the panel's event tag
 	shown transition

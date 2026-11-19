@@ -15,7 +15,6 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/unit"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/godemirror"
 	"github.com/lichdotdev/lich/api"
@@ -64,7 +63,7 @@ type conflictResolver struct {
 	oursBtn, theirsBtn []chunkButtons
 	all                [2]ui.IconActionState // accept ours, accept theirs
 	prev, next, close  ui.IconActionState
-	apply, changes     widget.Clickable
+	apply, changes     ui.Clickable
 	applyTip           ui.Tooltip
 	// scrolled is the pane the user scrolled, -1 for none, and wanted the
 	// position this window set on each pane, so the echo is not followed.

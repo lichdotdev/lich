@@ -6,7 +6,6 @@ import (
 	"sync/atomic"
 
 	"gioui.org/layout"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
@@ -19,8 +18,8 @@ var flagGitMissing = flag.Bool("git-missing", false, "open the git-missing dialo
 type gitMissing struct {
 	missing, checking atomic.Bool
 	dialog            ui.DialogState
-	notNow, again     widget.Clickable
-	install           widget.Clickable
+	notNow, again     ui.Clickable
+	install           ui.Clickable
 }
 
 // checkGit asks the backend whether git resolves; with refresh it re-reads

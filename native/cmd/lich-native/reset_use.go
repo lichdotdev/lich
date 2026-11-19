@@ -7,7 +7,6 @@ import (
 
 	"gioui.org/layout"
 	"gioui.org/op"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
@@ -25,8 +24,8 @@ type resetUse struct {
 	pending         string // the grant whose confirmation replaces its row
 	profile, key    string // the Claude Code profile asked about, and its planQuota key
 	act             *sidebarAction
-	buttons         map[string]*widget.Clickable
-	cancel, confirm widget.Clickable
+	buttons         map[string]*ui.Clickable
+	cancel, confirm ui.Clickable
 }
 
 // resetRequest is a confirmed spend, handed to the window to send.
@@ -48,7 +47,7 @@ func (u *resetUse) setBusy(id string) {
 // for the confirmation, unless a spend is out.
 func (u *resetUse) button(gtx C, th *ui.Theme, id string) layout.Widget {
 	if u.buttons == nil {
-		u.buttons = map[string]*widget.Clickable{}
+		u.buttons = map[string]*ui.Clickable{}
 	}
 	click := clickableOf(u.buttons, id)
 	if click.Clicked(gtx) && !u.busyNow() {

@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"gioui.org/layout"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
@@ -23,7 +22,7 @@ import (
 const mergeStripTint = 0.12
 
 type mergeStrip struct {
-	commit, abort, keep, confirm widget.Clickable
+	commit, abort, keep, confirm ui.Clickable
 	commitTip                    ui.Tooltip
 	// asking is Abort pressed and waiting on its confirmation.
 	asking bool

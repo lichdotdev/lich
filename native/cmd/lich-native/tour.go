@@ -1,6 +1,7 @@
 package main
 
 import (
+	"gioui.org/widget"
 	"image"
 	"image/color"
 	"log"
@@ -12,7 +13,6 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/unit"
-	"gioui.org/widget"
 
 	driver "github.com/lichdotdev/gio-driver"
 
@@ -111,7 +111,10 @@ type windowTour struct {
 	// offered is the first-run check made; due asks the next frame to start.
 	offered bool
 	due     atomic.Bool
-	skip    widget.Clickable
+	skip    ui.Clickable
+	// next, back and close stand in for the driver's own, which are gio
+	// Clickables and show no hand; a click on one is passed on.
+	next, back, close ui.Clickable
 }
 
 // decideFirstTour is whether the first-run tour opens: on a launch that
@@ -276,7 +279,8 @@ func (u *window) tourCard(gtx C, th *ui.Theme, s driver.StepState) D {
 }
 
 func (u *window) tourHeader(gtx C, th *ui.Theme, words tourText, s driver.StepState) D {
-	closeB := th.Button(s.Close, "")
+	forward(gtx, &u.tour.close, s.Close)
+	closeB := th.Button(&u.tour.close, "")
 	closeB.Icon, closeB.Variant, closeB.Size = icMenuClose, ui.VariantGhost, ui.SizeIconXS
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 		layout.Flexed(1, th.Text(ui.TextSM, i18n.T(words.title)).Weight(font.SemiBold).Wrapped().Layout),
@@ -302,35 +306,42 @@ func tourHint(gtx C, th *ui.Theme, hint string) D {
 // tourActions is the progress, then Skip on a step that waits for its action,
 // or Back and Next on one that does not.
 func (u *window) tourActions(gtx C, th *ui.Theme, s driver.StepState) D {
-	button := func(click *widget.Clickable, key string, v ui.Variant) layout.FlexChild {
+	button := func(click *ui.Clickable, key string, v ui.Variant) layout.FlexChild {
 		return layout.Rigid(func(gtx C) D {
 			b := th.Button(click, i18n.T(key))
 			b.Variant, b.Size = v, ui.SizeSM
 			return b.Layout(gtx)
 		})
 	}
-	if u.tour.skip.Clicked(gtx) {
-		s.Close.Click()
-	}
+	forward(gtx, &u.tour.skip, s.Close)
+	forward(gtx, &u.tour.next, s.Next)
+	forward(gtx, &u.tour.back, s.Back)
 	progress := i18n.T("tour.progress", i18n.Args{"index": s.Index + 1, "total": s.Total})
 	children := []layout.FlexChild{layout.Flexed(1, th.Text(ui.TextXS, progress).Mono().Muted().Layout)}
 	switch {
 	case s.Waiting:
 		children = append(children, button(&u.tour.skip, "tour.skip", ui.VariantGhost))
 	case s.Last:
-		children = append(children, tourBack(s, button)...)
-		children = append(children, button(s.Next, "tour.done", ui.VariantDefault))
+		children = append(children, tourBack(s, &u.tour.back, button)...)
+		children = append(children, button(&u.tour.next, "tour.done", ui.VariantDefault))
 	default:
-		children = append(children, tourBack(s, button)...)
-		children = append(children, button(s.Next, "tour.next", ui.VariantDefault))
+		children = append(children, tourBack(s, &u.tour.back, button)...)
+		children = append(children, button(&u.tour.next, "tour.next", ui.VariantDefault))
 	}
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
 }
 
+// forward passes a click on from to the driver's to.
+func forward(gtx C, from *ui.Clickable, to *widget.Clickable) {
+	if from.Clicked(gtx) {
+		to.Click()
+	}
+}
+
 // tourBack is Back and its gap, when the step can go back.
-func tourBack(s driver.StepState, button func(*widget.Clickable, string, ui.Variant) layout.FlexChild) []layout.FlexChild {
+func tourBack(s driver.StepState, back *ui.Clickable, button func(*ui.Clickable, string, ui.Variant) layout.FlexChild) []layout.FlexChild {
 	if !s.CanBack {
 		return nil
 	}
-	return []layout.FlexChild{button(s.Back, "tour.back", ui.VariantGhost), ui.Gap(2)}
+	return []layout.FlexChild{button(back, "tour.back", ui.VariantGhost), ui.Gap(2)}
 }

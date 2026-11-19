@@ -51,8 +51,8 @@ type mergeDialog struct {
 	subject widget.Editor
 	body    widget.Editor
 	bodyFit ui.TextareaResize
-	merge   widget.Clickable
-	cancel  widget.Clickable
+	merge   ui.Clickable
+	cancel  ui.Clickable
 	focus   bool
 }
 

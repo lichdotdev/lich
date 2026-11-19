@@ -11,7 +11,6 @@ import (
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
 	"gioui.org/unit"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
@@ -46,9 +45,9 @@ type settingRow struct {
 	title, description string
 	kind               rowKind
 	overriddenIn       []string
-	globalValue        string            // rowChanged's "Global: <value>"
-	reset              *widget.Clickable // rowChanged's Use Global
-	lit                float32           // the search's flash, 0 to 1
+	globalValue        string        // rowChanged's "Global: <value>"
+	reset              *ui.Clickable // rowChanged's Use Global
+	lit                float32       // the search's flash, 0 to 1
 	// sample is drawn in the description's place when set, for a
 	// description that is not text in the interface's font.
 	sample layout.Widget
@@ -189,7 +188,7 @@ func (r settingRow) note(th *ui.Theme) layout.Widget {
 
 // resetButton is the mockup's Use Global: h-22 px-7 rounded, an inset
 // border, the foreground's text.
-func resetButton(gtx C, th *ui.Theme, click *widget.Clickable) D {
+func resetButton(gtx C, th *ui.Theme, click *ui.Clickable) D {
 	return click.Layout(gtx, func(gtx C) D {
 		macro := op.Record(gtx.Ops)
 		gtx.Constraints.Min = image.Point{}

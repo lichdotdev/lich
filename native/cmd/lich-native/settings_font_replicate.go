@@ -5,7 +5,6 @@ import (
 	"slices"
 
 	"gioui.org/layout"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
@@ -15,7 +14,7 @@ import (
 // terminal and the editor take it too.
 type fontReplication struct {
 	state       ui.DialogState
-	keep, apply widget.Clickable
+	keep, apply ui.Clickable
 	// family is the one offered, "" while closed; settingsScreen.mu guards it.
 	family string
 }

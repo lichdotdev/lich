@@ -10,7 +10,6 @@ import (
 	"gioui.org/op"
 	"gioui.org/text"
 	"gioui.org/unit"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/godemirror"
 	"github.com/lichdotdev/lich/native/ui"
@@ -55,7 +54,7 @@ func TestFileCardMakesRoomForTheBlocksUnderItsLines(t *testing.T) {
 	p.th = &ui.Theme{Palette: ui.Dark, Shaper: text.NewShaper(text.WithCollection(gofont.Collection())), Surface: ui.Dark.Sidebar}
 	const blockSize = 77
 	var shown bool
-	p.pr = &prFiles{ticks: map[string]*widget.Bool{}, blocks: func(string) []diffview.Block {
+	p.pr = &prFiles{ticks: map[string]*ui.Bool{}, blocks: func(string) []diffview.Block {
 		if !shown {
 			return nil
 		}

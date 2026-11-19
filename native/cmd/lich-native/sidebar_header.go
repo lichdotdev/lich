@@ -39,12 +39,12 @@ var (
 // filter is never persisted (sidebarFilter says why).
 type sidebarHeader struct {
 	newMenu    ui.MenuState
-	newHover   widget.Clickable // the trigger's hover; the menu takes the press
-	search     widget.Clickable
-	collapse   widget.Clickable
+	newHover   ui.Clickable // the trigger's hover; the menu takes the press
+	search     ui.Clickable
+	collapse   ui.Clickable
 	open       bool
 	query      widget.Editor
-	clearQuery widget.Clickable
+	clearQuery ui.Clickable
 	// focusQuery asks for the field's focus once it is laid out: the press
 	// that opened it is the request for it (autoFocus).
 	focusQuery    bool
@@ -52,7 +52,7 @@ type sidebarHeader struct {
 	// panelPress and fieldPress see every press on the panel and on the
 	// field, past whatever takes it.
 	panelPress, fieldPress int
-	chips                  [5]widget.Clickable // All, then sessionPhases
+	chips                  [5]ui.Clickable // All, then sessionPhases
 	phases                 map[sessionPhase]bool
 }
 
@@ -225,7 +225,7 @@ func (s *sidebar) phaseChips(gtx C, th *ui.Theme, counts map[sessionPhase]int) D
 // text foreground and its icon muted; a square one is `size-8`, muted until
 // hovered or on.
 type sideButton struct {
-	click *widget.Clickable
+	click *ui.Clickable
 	icon  *icons.Icon
 	label string
 	on    bool    // aria-pressed or aria-expanded: bg-accent

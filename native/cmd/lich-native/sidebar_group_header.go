@@ -10,7 +10,6 @@ import (
 	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/unit"
-	"gioui.org/widget"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
 	"github.com/lichdotdev/lich/native/ui/icons"
@@ -141,7 +140,7 @@ func headerEntries(b blockView, f blockFrame, providers []launchProvider, hooks 
 }
 
 // headerMenu is a ghost icon-xs trigger under its Hint, opening entries.
-func (s *sidebar) headerMenu(gtx C, th *ui.Theme, state *ui.MenuState, click *widget.Clickable, ic *icons.Icon, hint string, entries []ui.MenuEntry) D {
+func (s *sidebar) headerMenu(gtx C, th *ui.Theme, state *ui.MenuState, click *ui.Clickable, ic *icons.Icon, hint string, entries []ui.MenuEntry) D {
 	return th.DropdownMenu(s.root, state, entries).Layout(gtx, func(gtx C) D {
 		return th.Tooltip(s.root, s.hint(hint), hint).Layout(gtx, func(gtx C) D {
 			btn := th.Button(click, "")

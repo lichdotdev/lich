@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"gioui.org/layout"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/ui"
 )
@@ -70,7 +69,7 @@ func (pf *profileFooter) entryRow(gtx C, th *ui.Theme, key string, e ui.MenuEntr
 		})
 	}
 	if pf.rows == nil {
-		pf.rows = map[string]*widget.Clickable{}
+		pf.rows = map[string]*ui.Clickable{}
 	}
 	click := clickableOf(pf.rows, key)
 	if click.Clicked(gtx) && e.OnClick != nil {

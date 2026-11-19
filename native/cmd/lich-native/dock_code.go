@@ -54,8 +54,8 @@ type codeTab struct {
 	// over.
 	checkout   string
 	query      widget.Editor
-	clearQuery widget.Clickable
-	mode       widget.Enum
+	clearQuery ui.Clickable
+	mode       ui.Enum
 	toggled    map[string]bool
 	selected   string // the file last opened, which reads as current
 	// focusQuery asks the next browse box to take the keyboard.
@@ -105,7 +105,7 @@ func (c *codeTab) focused(gtx C) bool {
 		return true
 	}
 	for i := range c.hits.hits {
-		if gtx.Focused(&c.hits.clicks[i]) {
+		if c.hits.clicks[i].Focused(gtx) {
 			return true
 		}
 	}

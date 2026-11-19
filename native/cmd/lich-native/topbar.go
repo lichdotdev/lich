@@ -10,7 +10,6 @@ import (
 	"gioui.org/op"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
-	"gioui.org/widget"
 	driver "github.com/lichdotdev/gio-driver"
 
 	"github.com/lichdotdev/lich/native/backend"
@@ -51,7 +50,7 @@ var (
 // and the active tab merges into the island under it.
 type topbar struct {
 	root  *ui.Root
-	brand widget.Clickable
+	brand ui.Clickable
 	sort  ui.Sortable
 	list  layout.List
 	// tabW is the tabs' width as the strip last laid them out, and laid
@@ -68,8 +67,8 @@ type topbar struct {
 	bell      bellMenu
 	hints     map[string]*ui.Tooltip
 	menu      ui.MenuState
-	menuOpen  widget.Clickable
-	pulls     widget.Clickable
+	menuOpen  ui.Clickable
+	pulls     ui.Clickable
 	// tour is the window's guided tour, which points at the menu.
 	tour     *driver.Tour
 	confirm  closeConfirm
@@ -77,7 +76,7 @@ type topbar struct {
 
 	// surfaceClicks are the extension surfaces' buttons
 	// (topbar_extensions.go).
-	surfaceClicks map[extensionKey]*widget.Clickable
+	surfaceClicks map[extensionKey]*ui.Clickable
 
 	// shift is how far right of the terminal island's edge the strip starts:
 	// past the window's own buttons on the left when the sidebar is too

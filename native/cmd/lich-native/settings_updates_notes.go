@@ -216,7 +216,7 @@ type patchNotesView struct {
 	startup          bool
 	dialog           ui.DialogState
 	list             widget.List
-	gotIt, changelog widget.Clickable
+	gotIt, changelog ui.Clickable
 }
 
 func (v *patchNotesView) show() { v.open = true }

@@ -3,14 +3,13 @@ package ui
 import (
 	"gioui.org/font"
 	"gioui.org/layout"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
 // HoverLink is a text-xs link that reads muted and takes the foreground under
 // the pointer.
-func (th *Theme) HoverLink(gtx C, click *widget.Clickable, text string) D {
+func (th *Theme) HoverLink(gtx C, click *Clickable, text string) D {
 	return click.Layout(gtx, func(gtx C) D {
 		fg := th.MutedForeground
 		if click.Hovered() {
@@ -22,7 +21,7 @@ func (th *Theme) HoverLink(gtx C, click *widget.Clickable, text string) D {
 
 // TrailingIconLink is HoverLink with ic at the end of the text: a link that
 // leaves the window.
-func (th *Theme) TrailingIconLink(gtx C, click *widget.Clickable, label string, ic *icons.Icon) D {
+func (th *Theme) TrailingIconLink(gtx C, click *Clickable, label string, ic *icons.Icon) D {
 	return click.Layout(gtx, func(gtx C) D {
 		ink := th.MutedForeground
 		if click.Hovered() {
@@ -75,7 +74,7 @@ func (th *Theme) SpinnerBeside(gtx C, w layout.Widget) D {
 
 // CheckRow is a checkbox beside its text-sm label and, when Note is set, a
 // muted text-xs line under it.
-func (th *Theme) CheckRow(gtx C, box *widget.Bool, label, note string) D {
+func (th *Theme) CheckRow(gtx C, box *Bool, label, note string) D {
 	text := []layout.FlexChild{layout.Rigid(th.Text(TextSM, label).Layout)}
 	if note != "" {
 		text = append(text, layout.Rigid(th.Text(TextXS, note).Muted().Layout))

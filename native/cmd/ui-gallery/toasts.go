@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"gioui.org/layout"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/ui"
 )
@@ -88,6 +87,6 @@ func (g *gallery) raiseDemoToasts() {
 // toastState is the gallery's share of the toast demo.
 type toastState struct {
 	toaster      ui.Toaster
-	toastButtons [toastDemoCount]widget.Clickable
+	toastButtons [toastDemoCount]ui.Clickable
 	toastCount   int
 }

@@ -18,32 +18,32 @@ import (
 // talkState is the Conversation tab's widgets, by thread id where a thread
 // owns one.
 type talkState struct {
-	folds        map[string]*widget.Bool
-	foldClicks   map[string]*widget.Clickable
+	folds        map[string]*ui.Bool
+	foldClicks   map[string]*ui.Clickable
 	replying     map[string]bool
 	replyFields  map[string]*replyField
-	replyClicks  map[string]*widget.Clickable
-	sendClicks   map[string]*widget.Clickable
-	cancelClicks map[string]*widget.Clickable
-	resolveClick map[string]*widget.Clickable
-	toSession    map[string]*widget.Clickable
-	allToSession widget.Clickable
+	replyClicks  map[string]*ui.Clickable
+	sendClicks   map[string]*ui.Clickable
+	cancelClicks map[string]*ui.Clickable
+	resolveClick map[string]*ui.Clickable
+	toSession    map[string]*ui.Clickable
+	allToSession ui.Clickable
 	editing      map[string]bool
 	focusEdit    string
 	menus        map[string]*ui.MenuState
-	moreClicks   map[string]*widget.Clickable
+	moreClicks   map[string]*ui.Clickable
 	deleting     *commentTarget
 	deleteShown  commentTarget
 	deleteDialog ui.DialogState
-	deleteYes    widget.Clickable
-	deleteNo     widget.Clickable
-	showResolved widget.Bool
-	resolvedTap  widget.Clickable
+	deleteYes    ui.Clickable
+	deleteNo     ui.Clickable
+	showResolved ui.Bool
+	resolvedTap  ui.Clickable
 	comment      widget.Editor
 	commentSize  ui.TextareaResize
-	commentSend  widget.Clickable
-	discards     map[int]*widget.Clickable
-	edits        map[int]*widget.Clickable
+	commentSend  ui.Clickable
+	discards     map[int]*ui.Clickable
+	edits        map[int]*ui.Clickable
 	pendingEdit  pendingEdit
 }
 
@@ -54,17 +54,17 @@ type pendingEdit struct {
 	index        int
 	editor       widget.Editor
 	resize       ui.TextareaResize
-	save, cancel widget.Clickable
+	save, cancel ui.Clickable
 }
 
 func (s *talkState) init() {
-	s.folds, s.foldClicks = map[string]*widget.Bool{}, map[string]*widget.Clickable{}
+	s.folds, s.foldClicks = map[string]*ui.Bool{}, map[string]*ui.Clickable{}
 	s.replying, s.replyFields = map[string]bool{}, map[string]*replyField{}
-	s.replyClicks, s.sendClicks = map[string]*widget.Clickable{}, map[string]*widget.Clickable{}
-	s.cancelClicks, s.resolveClick = map[string]*widget.Clickable{}, map[string]*widget.Clickable{}
-	s.toSession = map[string]*widget.Clickable{}
-	s.editing, s.menus, s.moreClicks = map[string]bool{}, map[string]*ui.MenuState{}, map[string]*widget.Clickable{}
-	s.discards, s.edits = map[int]*widget.Clickable{}, map[int]*widget.Clickable{}
+	s.replyClicks, s.sendClicks = map[string]*ui.Clickable{}, map[string]*ui.Clickable{}
+	s.cancelClicks, s.resolveClick = map[string]*ui.Clickable{}, map[string]*ui.Clickable{}
+	s.toSession = map[string]*ui.Clickable{}
+	s.editing, s.menus, s.moreClicks = map[string]bool{}, map[string]*ui.MenuState{}, map[string]*ui.Clickable{}
+	s.discards, s.edits = map[int]*ui.Clickable{}, map[int]*ui.Clickable{}
 }
 
 // replyField is one thread's reply box: its text and the height it was

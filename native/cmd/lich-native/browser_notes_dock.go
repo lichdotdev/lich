@@ -16,7 +16,6 @@ import (
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
 	"gioui.org/unit"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
@@ -181,7 +180,7 @@ func (u *window) notesPill(gtx C, n *browserNotes) D {
 // noteTools is Select and Draw, the one that is on filled, and the pencil's
 // colors beside them while it draws.
 func (u *window) noteTools(gtx C, n *browserNotes) D {
-	tool := func(click *widget.Clickable, ic *icons.Icon, label string, on bool) layout.Widget {
+	tool := func(click *ui.Clickable, ic *icons.Icon, label string, on bool) layout.Widget {
 		b := u.theme.Button(click, label)
 		b.Icon, b.Size, b.Variant = ic, ui.SizeSM, ui.VariantGhost
 		if on {

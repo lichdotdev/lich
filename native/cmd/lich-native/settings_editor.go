@@ -5,8 +5,6 @@ import (
 	"log"
 	"strconv"
 
-	"gioui.org/widget"
-
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
@@ -49,7 +47,7 @@ func loadEditorPrefs(ctx context.Context, c *backend.Client) (editorPrefs, error
 type editorSettings struct {
 	prefs  editorPrefs
 	hide   ui.SwitchState
-	layout widget.Enum
+	layout ui.Enum
 }
 
 // row answers the description and the control of the Editor row for key.

@@ -28,7 +28,6 @@ import (
 	"gioui.org/op/paint"
 	"gioui.org/text"
 	"gioui.org/unit"
-	"gioui.org/widget"
 	"gioui.org/widget/material"
 
 	"github.com/lichdotdev/godemirror"
@@ -165,7 +164,7 @@ type window struct {
 	// closeAllConfirm is Close all sessions' question when a turn is in flight.
 	closeAllConfirm closeAllConfirm
 	// homeOpen is Home's Open project button.
-	homeOpen widget.Clickable
+	homeOpen ui.Clickable
 	// hideSettings is a request, from another goroutine, to take Settings down
 	// at the next frame.
 	hideSettings atomic.Bool
@@ -174,7 +173,7 @@ type window struct {
 	codeAsk  atomic.Pointer[func()]
 	codeMenu codeMenu
 	// emptyNew is the empty stage's New session button.
-	emptyNew widget.Clickable
+	emptyNew ui.Clickable
 	// exitFocus is the card that had focus last frame, and exitRaised the
 	// cards whose exit toast is up, under exitMu: syncExitToasts reads both.
 	exitFocus  string
@@ -352,7 +351,7 @@ func run(w *app.Window, rt backend.Runtime) error {
 	if u.pulls.view.files, err = newReviewPanel(client, &u.root, comments, *flagFont, unit.Sp(*flagSize), invalidate, notify); err != nil {
 		return err
 	}
-	u.pulls.view.files.pr = &prFiles{ticks: map[string]*widget.Bool{}}
+	u.pulls.view.files.pr = &prFiles{ticks: map[string]*ui.Bool{}}
 	u.editors = stageEditors{client: client, invalidate: invalidate, family: *flagFont, size: unit.Sp(*flagSize),
 		dirty: func(checkout string, dirty bool) { u.model.markEditorDirty(checkout, dirty); u.model.invalidate() },
 		saved: func(checkout string) { go u.model.checkoutWritten(u.ctx, checkout) }}

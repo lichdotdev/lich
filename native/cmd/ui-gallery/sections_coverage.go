@@ -23,35 +23,35 @@ type coverageState struct {
 	inline      ui.InlineEdit
 	inlineName  string
 	inlineLast  string
-	inlineStart widget.Clickable
+	inlineStart ui.Clickable
 
 	fields   [6]widget.Editor
-	clear    widget.Clickable
+	clear    ui.Clickable
 	areas    [4]widget.Editor
 	groups   [5]widget.Editor
-	groupBtn widget.Clickable
+	groupBtn ui.Clickable
 
 	tips        [2]ui.Tooltip
-	tipTriggers [2]widget.Clickable
+	tipTriggers [2]ui.Clickable
 	panels      [3]ui.DropdownPanelState
-	panelTrig   [3]widget.Clickable
+	panelTrig   [3]ui.Clickable
 	menu        ui.MenuState
 	radio       string
 	menuLast    string
 
-	toastButtons [3]widget.Clickable
+	toastButtons [3]ui.Clickable
 
 	dialogs      [4]ui.DialogState
 	dialogOpen   int // 1-based index into dialogs; 0 is none
-	dialogOpener [4]widget.Clickable
-	dialogClose  widget.Clickable
+	dialogOpener [4]ui.Clickable
+	dialogClose  ui.Clickable
 	dialogField  widget.Editor
 	dialogPick   widget.Editor
 
 	resize      ui.ResizeHandle
 	resizeWidth unit.Dp
-	toggles     [2]widget.Bool
-	groupSmall  widget.Enum
+	toggles     [2]ui.Bool
+	groupSmall  ui.Enum
 	tabs        ui.TabsState
 
 	sortV, sortH, sortS ui.Sortable

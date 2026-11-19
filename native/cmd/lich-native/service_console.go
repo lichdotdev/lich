@@ -10,7 +10,6 @@ import (
 	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/op"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
@@ -23,7 +22,7 @@ import (
 // which run each service's terminal shows, and the output fetched for one
 // that stopped before this window saw it run.
 type serviceConsole struct {
-	start, stop, restart, force, edit widget.Clickable
+	start, stop, restart, force, edit ui.Clickable
 
 	mu sync.Mutex
 	// runs is the StartedAt of the run each service's terminal holds.
@@ -250,7 +249,7 @@ func (u *window) fetchTail(v backend.Service) {
 // offers.
 func (u *window) consoleBar(gtx C, th *ui.Theme, v backend.Service) D {
 	c := &u.console
-	button := func(click *widget.Clickable, text string, variant ui.Variant) layout.FlexChild {
+	button := func(click *ui.Clickable, text string, variant ui.Variant) layout.FlexChild {
 		return layout.Rigid(func(gtx C) D {
 			b := th.Button(click, text)
 			b.Variant, b.Size = variant, ui.SizeSM

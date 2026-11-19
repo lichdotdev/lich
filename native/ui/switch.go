@@ -9,7 +9,6 @@ import (
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
 	"gioui.org/unit"
-	"gioui.org/widget"
 )
 
 // SwitchSize is shadcn's switch size.
@@ -44,11 +43,11 @@ const (
 // sides.
 const toggleSwitchTravel unit.Dp = 2
 
-// SwitchState is a Switch's caller-owned state: a widget.Bool, plus the
+// SwitchState is a Switch's caller-owned state: a Bool, plus the
 // position of the thumb, which slides when Value changes. Gio has no CSS
 // transition to hand that to, so the state carries it.
 type SwitchState struct {
-	widget.Bool
+	Bool
 	slide toggleSlide
 }
 
@@ -156,7 +155,7 @@ func (s SwitchStyle) draw(gtx C) D {
 	travel := thumb - gtx.Dp(toggleSwitchTravel)
 	at := image.Pt(inset+int(math.Round(float64(pos)*float64(travel))), (size.Y-thumb)/2)
 
-	focused := !s.Disabled && gtx.Focused(&s.Checked.Bool)
+	focused := !s.Disabled && s.Checked.Bool.Focused(gtx)
 	radius := size.Y / 2
 	if focused {
 		toggleStroke(gtx, size, gtx.Dp(toggleRingWidth), radius, th.Over(Alpha(p.Ring, toggleRingOpacity)))

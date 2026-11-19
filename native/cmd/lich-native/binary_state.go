@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 
 	"gioui.org/layout"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
@@ -18,7 +17,7 @@ import (
 
 // fileExits are the two buttons out of lich for one work-tree file.
 type fileExits struct {
-	open, reveal widget.Clickable
+	open, reveal ui.Clickable
 }
 
 // update runs this frame's clicks against rel in checkout, off the UI

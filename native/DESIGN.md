@@ -141,6 +141,8 @@ the rest, `VariantDestructive` for what cannot be undone. A disabled button says
 
 Buttons do not move when pressed; only their color changes.
 
+Anything that answers a click shows the hand (`ui.Clickable`, `ui.Bool` and `ui.Enum` do it by themselves, a hand-drawn click area calls `ui.HandCursor`); editable text shows the text cursor; a disabled control keeps the arrow.
+
 In the browser's drawing toolbar, the shape picker uses the outline variant so
 the current tool reads as a button that can switch tools.
 

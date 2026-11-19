@@ -5,7 +5,6 @@ import (
 	"sync"
 
 	"gioui.org/layout"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
@@ -35,7 +34,7 @@ type updatesSettings struct {
 	checkingApp   bool
 	appResult     string
 
-	checkApp, viewNotes widget.Clickable
+	checkApp, viewNotes ui.Clickable
 	plugin              pluginControls
 	patch               patchNotesView
 }

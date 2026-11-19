@@ -9,7 +9,6 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
@@ -49,8 +48,8 @@ var (
 )
 
 type tabState struct {
-	click widget.Clickable
-	close widget.Clickable
+	click ui.Clickable
+	close ui.Clickable
 	tip   ui.Tooltip
 	menu  ui.MenuState
 	// rename is a layout tab's name as a field, while it is renamed.
