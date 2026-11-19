@@ -75,6 +75,7 @@ func main() {
 		}
 		go servePprof(ln)
 	}
+	webview.PrepareWindow()
 	go func() {
 		width, height := windowSize(*flagWindow)
 		w := new(app.Window)

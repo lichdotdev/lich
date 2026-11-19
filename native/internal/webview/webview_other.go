@@ -9,6 +9,9 @@ import (
 	"gioui.org/app"
 )
 
+// PrepareWindow leaves the window as it opens: nothing holds a page here yet.
+func PrepareWindow() {}
+
 // SetParent records the window pages go in; nothing holds a page here yet.
 func SetParent(app.ViewEvent) {}
 

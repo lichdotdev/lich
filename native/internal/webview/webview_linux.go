@@ -28,6 +28,12 @@ var (
 	errNoGTK    = errors.New("webview: GTK cannot open the X11 display")
 )
 
+// PrepareWindow opens the window on X11 where it can, XWayland included:
+// only an X11 window can hold a page. Call it before the window opens.
+func PrepareWindow() {
+	app.PreferX11()
+}
+
 // parent is the X11 window Gio draws into, zero while there is none: on
 // Wayland, or before the window exists.
 var parent atomic.Uint64
