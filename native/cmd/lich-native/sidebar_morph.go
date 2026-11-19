@@ -200,18 +200,30 @@ func (s *sidebar) column(gtx C) (int, float32) {
 // the narrower shape's for the whole flight: the stage keeps one size and
 // slides with the sidebar's edge, clipped by the window. A terminal resize
 // reaches the PTY, so the stage resizes once, as a collapse starts or once an
-// expand lands, and never to a size in between.
+// expand lands, and never to a size in between. The peek's slide narrows the
+// stage on every frame instead, as the dock's does, its terminal laid out at
+// the width the slide ends at (stageOverhang).
 func (s *sidebar) stageReserve(gtx C) int {
 	if !s.morph.active() {
-		return s.boxWidth(gtx, s.open)
+		return max(s.boxWidth(gtx, s.open), s.peek.width)
 	}
 	return min(s.boxWidth(gtx, true), s.boxWidth(gtx, false))
 }
 
 // stageOverhang is how much wider the stage is this frame than where the
-// morph leaves it: the shapes' difference through an expand, else 0.
+// morph or the peek's slide leaves it: negative while the peek goes back.
 func (s *sidebar) stageOverhang(gtx C) int {
-	return s.boxWidth(gtx, s.open) - s.stageReserve(gtx)
+	end := s.boxWidth(gtx, s.open)
+	if s.peek.shown {
+		end = max(end, s.boxWidth(gtx, true))
+	}
+	return end - s.stageReserve(gtx)
+}
+
+// holdsStage is whether this frame starts or lands a change of the stage's
+// size: the morph's, or the peek's slide.
+func (s *sidebar) holdsStage() bool {
+	return s.morph.holdsStage() || s.peek.slide.began || s.peek.slide.landed
 }
 
 // morphing is the sidebar mid-morph: its box eases between the two shapes'

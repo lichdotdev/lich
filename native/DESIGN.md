@@ -705,10 +705,12 @@ the footer; it outlives the panel, and the button stays lit with a dot while it 
 
 ### The peek
 
-A collapsed panel comes out over the stage when the pointer rests on it (`panel_peek.go`): the sidebar from its
-rail's tree, the dock from the window's right gutter once its collapse button took it off the stage. It is the
-open panel, drawn over the terminal at the place it stands when open, so the terminal keeps its width and
-nothing the agent printed rewraps. The sidebar comes out after `peekOpenDelay` (150ms) of rest on the rail; the
+A collapsed panel comes out when the pointer rests on it (`panel_peek.go`): the sidebar from its rail's tree,
+the dock from the window's right gutter once its collapse button took it off the stage. It is the open panel at
+the place it stands when open, and it pushes the stage in as the open one does, sliding on the dock's 180ms
+curve: a page in the stage is a window of the system's (WebKitGTK on Linux), which nothing the window draws can
+cover, so a panel drawn over the stage would show behind it. The terminal takes the width the slide ends at
+from its first frame, so the agent redraws once each way. The sidebar comes out after `peekOpenDelay` (150ms) of rest on the rail; the
 dock comes out the moment the pointer touches the window's edge, even a flick that goes on past it within one frame,
 since the edge is somewhere you throw the pointer, not something it crosses on its way. A pointer gone out of the
 window across that edge still counts as on it until it comes back onto the stage. A panel goes back

@@ -7,7 +7,9 @@ import (
 	"gioui.org/f32"
 	"gioui.org/io/event"
 	"gioui.org/io/pointer"
+	"gioui.org/layout"
 	"gioui.org/op/clip"
+	"gioui.org/unit"
 
 	"github.com/lichdotdev/lich/native/ui"
 )
@@ -156,5 +158,33 @@ func TestPeekKeepsItsClicksFromTheTerminalUnderIt(t *testing.T) {
 	r.click(t, f32.Pt(600, 450))
 	if *presses != 1 {
 		t.Fatalf("a click beside the panel reached the terminal %d times, want 1", *presses)
+	}
+}
+
+func TestPeekTakesTheStagesRoomAndGivesItBack(t *testing.T) {
+	s, r, _ := peekFrames(t, nil)
+	r.settle(t)
+	// The rig draws a pixel a dp.
+	gtx := layout.Context{Metric: unit.Metric{PxPerDp: 1}}
+	rail, panel := s.boxWidth(gtx, false), s.boxWidth(gtx, true)
+	rest(t, r, railTree)
+	if got := s.stageReserve(gtx); got != panel {
+		t.Fatalf("the stage leaves the sidebar out %dpx, want the open sidebar's %d", got, panel)
+	}
+	r.hover(f32.Pt(700, 300))
+	r.now = r.now.Add(peekCloseDelay)
+	r.frame()
+	r.now = r.now.Add(frameStep)
+	r.frame()
+	reserve := s.stageReserve(gtx)
+	if reserve <= rail || reserve >= panel {
+		t.Fatalf("on its way back the stage leaves %dpx, want between the rail's %d and the panel's %d", reserve, rail, panel)
+	}
+	if end := reserve + s.stageOverhang(gtx); end != rail {
+		t.Errorf("on its way back the terminal is laid out beside %dpx, want the rail's %d it lands on", end, rail)
+	}
+	r.settle(t)
+	if got := s.stageReserve(gtx); got != rail {
+		t.Errorf("the stage leaves %dpx once the sidebar went back, want the rail's %d", got, rail)
 	}
 }

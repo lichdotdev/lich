@@ -707,8 +707,7 @@ func (u *window) layout(gtx C) error {
 		u.layoutGitMissing(gtx, u.theme)
 		u.layoutMoveConfirm(gtx, u.theme)
 		var edge int
-		edge, act, contentErr = u.body(gtx, v)
-		peekAct = u.sidebar.peekLayout(gtx, u.theme, u.model, sidebarActive(v), image.Pt(gtx.Dp(gutter), gtx.Dp(topbarHeight)))
+		edge, act, peekAct, contentErr = u.body(gtx, v)
 		u.sidebar.flight(gtx, u.theme, u.model)
 		top = u.topbar.layout(gtx, u.theme, u.topbarFrame(gtx, v, edge))
 		u.drawCarried(gtx)
@@ -790,8 +789,8 @@ func (u *window) stageView(now time.Time) stageView {
 }
 
 // body lays the sidebar and the stage out under the strip, and answers the
-// stage's left edge.
-func (u *window) body(gtx C, v stageView) (int, sidebarAction, error) {
+// stage's left edge and what the sidebar and its peek asked for.
+func (u *window) body(gtx C, v stageView) (int, sidebarAction, sidebarAction, error) {
 	bar := gtx.Dp(topbarHeight)
 	defer op.Offset(image.Pt(0, bar)).Push(gtx.Ops).Pop()
 	gtx.Constraints = layout.Exact(image.Pt(gtx.Constraints.Max.X, max(gtx.Constraints.Max.Y-bar, 0)))
@@ -803,6 +802,8 @@ func (u *window) body(gtx C, v stageView) (int, sidebarAction, error) {
 		act = a
 		return d
 	}).Size.X
+	peek := u.sidebar.peekLayout(gtx, u.theme, u.model, sidebarActive(v), image.Pt(gtx.Dp(gutter), 0))
+	edge = max(edge, u.sidebar.peek.width+2*gtx.Dp(gutter))
 	var err error
 	u.toastFloor, u.toastRight = gtx.Dp(gutter), 0
 	u.footer.frame(gtx, v.in)
@@ -857,7 +858,7 @@ func (u *window) body(gtx C, v stageView) (int, sidebarAction, error) {
 			)
 		})
 	})
-	return edge, act, err
+	return edge, act, peek, err
 }
 
 // sidebarActive is the session the sidebar lights: none while a service's
@@ -1018,6 +1019,9 @@ func (u *window) stageRow(gtx C, v stageView) error {
 	if t, ok := d.tabToSave(); ok {
 		go func() { u.logErr("dock tab", saveDockTab(u.ctx, u.client, t)) }()
 	}
+	if u.dockPeek(gtx, v) {
+		defer d.peek.watch(gtx)
+	}
 	if d.tab != dockClosed && !v.home {
 		d.shown = d.tab
 	}
@@ -1026,7 +1030,7 @@ func (u *window) stageRow(gtx C, v stageView) error {
 		d.slide.snap(open)
 	}
 	share := d.slide.at(gtx, open)
-	u.terms.refitNow = d.slide.began || d.slide.landed || u.sidebar.morph.holdsStage() || u.git.moved() || u.extPanel.moved()
+	u.terms.refitNow = d.slide.began || d.slide.landed || u.sidebar.holdsStage() || u.git.moved() || u.extPanel.moved()
 	defer func() { u.terms.refitNow = false }()
 	size := gtx.Constraints.Max
 	// The session's terminal takes the width the dock's slide and the
@@ -1040,10 +1044,7 @@ func (u *window) stageRow(gtx C, v stageView) error {
 	termHeight := max(size.Y-u.git.pending()-u.extPanel.pending()-u.ptyBand(gtx, v)-u.sessionBand(gtx, v), 0)
 	if share == 0 {
 		d.islands = nil
-		if err := u.island(gtx, v, termWidth, termHeight); err != nil {
-			return err
-		}
-		return u.dockPeek(gtx, v)
+		return u.island(gtx, v, termWidth, termHeight)
 	}
 	at, w, slot := 0, size.X, 0
 	if !d.fullscreen {
@@ -1072,6 +1073,13 @@ func (u *window) stageRow(gtx C, v stageView) error {
 	defer op.Offset(image.Pt(at, 0)).Push(gtx.Ops).Pop()
 	gtx.Constraints = layout.Exact(image.Pt(w, size.Y))
 	d.gap = u.tabGap(gtx, v, d.islands, at)
+	if d.peek.shown {
+		// The dock out from the edge hears the pointer over everything it
+		// draws. One collapsed under the pointer is not out, and does not
+		// come straight back.
+		defer clip.Rect{Max: gtx.Constraints.Max}.Push(gtx.Ops).Pop()
+		event.Op(gtx.Ops, &d.peek.panel)
+	}
 	return u.layoutDock(gtx, v)
 }
 
