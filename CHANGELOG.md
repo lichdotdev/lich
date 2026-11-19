@@ -20,7 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **Settings has a page for each group of settings, under named groups in its sidebar.** General splits into Language, Window, Notifications and Terminal, and Appearance into Interface, Terminal and Footer; the sidebar sorts every page under General, Appearance, Agents and Workspace. Ctrl+F (Cmd+F on macOS) puts the cursor in the search while Settings is open.
+- **Settings has a page for each group of settings, under named groups in its sidebar.** General splits into Language, Window and Notifications, and Appearance into Interface, Terminal and Footer, where Copy on select now sits beside the terminal font; the sidebar sorts every page under General, Appearance, Agents and Workspace. Ctrl+F (Cmd+F on macOS) puts the cursor in the search while Settings is open.
 - **The browser's controls are lighter and its tabs are always in view.** The pages' tabs sit on top with a button for a new one, the address is a filled pill that shows the host and path and the whole URL when you edit it, and the page is a rounded card. Open in a window moved to the browser's menu in the sidebar.
 - **A pane in a split no longer wears a frame when it has the focus.** The focused pane's name is brighter than the others'.
 - **Panels now have a faint 1px edge.** The sidebar, the stage, the dock and the Git and extension panels are outlined in the theme's `border` color, so they read apart from the window background in light and dark themes alike. Rows, cards, buttons and badges stay unboxed.

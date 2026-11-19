@@ -149,8 +149,8 @@ func TestAppearanceRowsAreFoundBySearch(t *testing.T) {
 			t.Errorf("%q: %+v, want %q", q, got, title)
 		}
 	}
-	if got := searchSettings("clipboard"); len(got) == 0 || got[0].title != "Copy on select" || got[0].section != sectionGeneral {
-		t.Errorf("clipboard: %+v, want Copy on select under General", got)
+	if got := searchSettings("clipboard"); len(got) == 0 || got[0].title != "Copy on select" || got[0].path() != "Appearance › Terminal" {
+		t.Errorf("clipboard: %+v, want Copy on select under Appearance › Terminal", got)
 	}
 	// The Hotkeys rows are searchable, so "Quit lich" is a
 	// prefix match and outranks the close setting, found by its also words.

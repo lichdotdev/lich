@@ -101,15 +101,12 @@ const (
 	groupFooter        = "settings.footerSettings.title"
 )
 
-var icTerminalPage = icons.Lucide("square-terminal")
-
 // settingsSections is the nav in order.
 var settingsSections = []settingsSection{
 	{id: sectionGeneral, labelKey: "settings.settingsIndex.sectionGeneral", icon: icons.Lucide("settings-2"), navGroupKey: navGroupGeneral, pages: []settingsPage{
 		{id: "language", groupKey: groupLanguage, icon: icons.Lucide("languages")},
 		{id: "window", groupKey: groupWindow, icon: icons.Lucide("app-window")},
 		{id: "notifications", groupKey: groupNotifications, icon: icons.Lucide("bell")},
-		{id: "terminal", groupKey: groupTerminal, icon: icTerminalPage},
 	}, rows: []settingEntry{
 		{titleKey: "settings.language.uiTitle", alsoKey: "settings.language.uiSearchWords", key: uiLanguageKey, groupKey: groupLanguage},
 		{titleKey: "settings.language.promptTitle", alsoKey: "settings.language.promptSearchWords", key: promptLanguageKey, groupKey: groupLanguage},
@@ -117,12 +114,11 @@ var settingsSections = []settingsSection{
 		{titleKey: "settings.windowButtonsSetting.title", alsoKey: "settings.windowButtonsSetting.searchWords", key: windowButtonsKey, groupKey: groupWindow},
 		{titleKey: "settings.notificationsSettings.needsInputTitle", alsoKey: "settings.settingsGeneral.notifySearchWords", key: desktopNotifyKey, groupKey: groupNotifications},
 		{titleKey: "settings.notificationsSettings.finishedTitle", alsoKey: "settings.settingsGeneral.notifySearchWords", key: finishedNotifyKey, groupKey: groupNotifications},
-		{titleKey: "settings.appearanceSettings.copyOnSelectTitle", alsoKey: "settings.appearanceSettings.copyOnSelectSearchWords", key: copyOnSelectKey, groupKey: groupTerminal},
 	}},
 	{id: sectionHotkeys, labelKey: "settings.settings.section.hotkeys", icon: icons.Lucide("keyboard"), navGroupKey: navGroupGeneral, rows: hotkeyEntries()},
 	{id: sectionAppearance, labelKey: "settings.settings.section.appearance", icon: icons.Lucide("palette"), navGroupKey: navGroupAppearance, pages: []settingsPage{
 		{id: "interface", groupKey: groupInterface, icon: icons.Lucide("palette")},
-		{id: "terminal", groupKey: groupTerminal, icon: icTerminalPage},
+		{id: "terminal", groupKey: groupTerminal, icon: icons.Lucide("square-terminal")},
 		{id: "footer", groupKey: groupFooter, icon: icons.Lucide("panel-bottom")},
 	}, rows: []settingEntry{
 		{titleKey: "settings.themePicker.title", alsoKey: "settings.themePicker.searchWords", key: themeSettingKey, groupKey: groupInterface},
@@ -130,6 +126,7 @@ var settingsSections = []settingsSection{
 		{titleKey: "settings.settingsAppearance.uiFontTitle", alsoKey: "settings.settingsAppearance.uiFontSearchWords", key: uiFontKey, groupKey: groupInterface},
 		{titleKey: "settings.fontSetting.title", alsoKey: "settings.fontSetting.searchWords", key: terminalFontKey, groupKey: groupTerminal},
 		{titleKey: "settings.appearanceSettings.textSizeTitle", key: terminalFontSizeKey, groupKey: groupTerminal},
+		{titleKey: "settings.appearanceSettings.copyOnSelectTitle", alsoKey: "settings.appearanceSettings.copyOnSelectSearchWords", key: copyOnSelectKey, groupKey: groupTerminal},
 		{titleKey: "settings.footerSettings.title", alsoKey: "settings.footerSettings.searchWords", key: footerLayoutKey, groupKey: groupFooter},
 		{titleKey: "settings.footerSettings.ceilingTitle", alsoKey: "settings.footerSettings.ceilingSearchWords", key: costBudgetKey, groupKey: groupFooter},
 	}},

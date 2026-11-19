@@ -551,11 +551,10 @@ muted and uppercase, with a hairline from the label to the nav's edge (`navHeadi
 foot under a separator, with no label.
 
 A section whose rows fall into groups gives each group an entry and a page of its own (`settingsSection.pages`):
-General is Language, Window, Notifications and Terminal; Appearance is Interface, Terminal and Footer. The entry
-is named after the group, the page's title is that name, and the page draws no group heading under it. A section
-with a structure of its own (Providers, Sandbox, Extensions, Services, Version Control, Hotkeys, Updates, Help)
-stays one entry. A search result's path names the section and the group, so a hit on one of the two Terminal
-pages says which one.
+General is Language, Window and Notifications; Appearance is Interface, Terminal (its font, its size and Copy
+on select) and Footer. The entry is named after the group, the page's title is that name, and the page draws no
+group heading under it. A section with a structure of its own (Providers, Sandbox, Extensions, Services, Version
+Control, Hotkeys, Updates, Help) stays one entry. A search result's path names the section and the group.
 
 The pane's content sits in a reading column centred at `settingsColumn` (760px), the title included; the
 extension catalog keeps the pane's width, since its grid takes columns as the pane grows. A page title has no

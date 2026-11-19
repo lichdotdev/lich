@@ -31,7 +31,7 @@ func handScreens() map[string]func(*testing.T) *frameRig {
 	for name, tab := range map[string]dockTab{"review": dockReview, "code tab": dockCode, "artifacts": dockArtifacts} {
 		screens["dock "+name] = func(t *testing.T) *frameRig { _, r := stageFrames(t, tab); return r }
 	}
-	for _, section := range []string{sectionGeneral, "general/window", "general/notifications", "general/terminal", sectionHotkeys, sectionProviders, sectionSandbox, sectionVersionControl, sectionEditor, sectionUpdates, sectionHelp, sectionServices, sectionExtensions} {
+	for _, section := range []string{sectionGeneral, "general/window", "general/notifications", sectionHotkeys, sectionProviders, sectionSandbox, sectionVersionControl, sectionEditor, sectionUpdates, sectionHelp, sectionServices, sectionExtensions} {
 		screens["settings "+section] = func(t *testing.T) *frameRig { _, r := settingsFrames(t, section); return r }
 	}
 	return screens

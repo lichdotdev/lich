@@ -26,7 +26,7 @@ func TestANavEntryOpensItsPageInTheFrameThatTookTheClick(t *testing.T) {
 func TestASearchResultOpensThePageThatHoldsItsRow(t *testing.T) {
 	for q, want := range map[string]struct{ title, section, page string }{
 		"finishes":      {"Notify me when a session finishes working", sectionGeneral, "notifications"},
-		"copy on":       {"Copy on select", sectionGeneral, "terminal"},
+		"copy on":       {"Copy on select", sectionAppearance, "terminal"},
 		"terminal font": {"Terminal font", sectionAppearance, "terminal"},
 	} {
 		t.Run(q, func(t *testing.T) {
@@ -41,10 +41,15 @@ func TestASearchResultOpensThePageThatHoldsItsRow(t *testing.T) {
 	}
 }
 
-func TestTwoTerminalPagesAreToldApartByTheirPath(t *testing.T) {
-	for q, want := range map[string]string{"copy on select": "General › Terminal", "terminal font": "Appearance › Terminal"} {
-		if got := searchSettings(q); len(got) == 0 || got[0].path() != want {
-			t.Errorf("%q: %+v, want the path %q first", q, got, want)
+func TestCopyOnSelectSitsWithTheTerminalFont(t *testing.T) {
+	for _, q := range []string{"copy on select", "terminal font"} {
+		if got := searchSettings(q); len(got) == 0 || got[0].path() != "Appearance › Terminal" {
+			t.Errorf("%q: %+v, want the path Appearance › Terminal first", q, got)
+		}
+	}
+	for _, p := range sectionByID(sectionGeneral).pages {
+		if p.groupKey == groupTerminal {
+			t.Error("General still has a Terminal page")
 		}
 	}
 }
