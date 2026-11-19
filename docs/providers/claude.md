@@ -76,7 +76,7 @@ cap) and `used_credits` in minor units, either of which may arrive as a float (`
 `decimal_places`. lich decodes it only when `is_enabled` is true, into `QuotaPlan.Extra`, and the usage tooltip shows it
 as one more block. An account with it off reports every amount null.
 
-The usage request also carries `cedar_ember=1&skip_spend=1` and the CLI's own user agent (`claude-cli/<version>
+The usage request also carries `cedar_ember=1` (not `skip_spend=1`, which removes `extra_usage` from the payload) and the CLI's own user agent (`claude-cli/<version>
 (external, cli)`), because the reset grants come in a `cedar_ember` block that is only filled for that spelling: the
 `claude-code/<version>` agent lich used before answers `eligible: false` (`ineligible_reason: "surface"`), and a CLI
 version older than the server's floor answers `"cli_version"` (2.1.183 does, 2.1.328 does not). Each grant carries

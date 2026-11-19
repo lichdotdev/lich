@@ -406,8 +406,8 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   has none (its windows come off headers). A grant is named for what it clears: "Full" for the weekly window, the
   model of the plan's scoped weekly cap for a model-scoped one (the server's own label when the plan has no such
   cap); the "N left" counts held grants too. Nothing in the window spends a reset, because it cannot be undone. The
-  request also asks `skip_spend=1`, as the CLI does; whether that drops the amounts of `extra_usage` for an account
-  that has it on was not measured, because the one account measured has it off.
+  request does not send `skip_spend=1` as the CLI does: measured live, it removes the `extra_usage` block
+  altogether, and with it the extra spend the tooltip shows.
 - **Measuring a token-only Claude Code login costs a request against the very plan it measures**
   (`internal/quota/claude.go`): the usage route refuses a `claude setup-token` token, so the gauge reads that
   account the way Claude Code reads it for itself, with one message (`docs/providers/claude.md`, Account).

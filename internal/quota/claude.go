@@ -14,9 +14,10 @@ import (
 )
 
 const (
-	// claudeUsageURL asks for the reset grants (cedar_ember) beside the windows,
-	// and leaves out the spend breakdown, which nothing here draws.
-	claudeUsageURL = "https://api.anthropic.com/api/oauth/usage?cedar_ember=1&skip_spend=1"
+	// claudeUsageURL asks for the reset grants (cedar_ember) beside the windows.
+	// It does not send skip_spend=1: measured live, that parameter removes the
+	// extra_usage block from the payload altogether.
+	claudeUsageURL = "https://api.anthropic.com/api/oauth/usage?cedar_ember=1"
 	// claudeBetaHeader opts the OAuth token into the usage route.
 	claudeBetaHeader = "oauth-2025-04-20"
 	// claudeUserAgent is what the endpoint expects from the client holding this

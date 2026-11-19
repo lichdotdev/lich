@@ -439,7 +439,7 @@ func TestPlansServesEveryMeteredProviderFromOneReading(t *testing.T) {
 
 func TestNewPointsAtTheLiveEndpoints(t *testing.T) {
 	s := New()
-	if s.claudeURL != "https://api.anthropic.com/api/oauth/usage?cedar_ember=1&skip_spend=1" {
+	if s.claudeURL != "https://api.anthropic.com/api/oauth/usage?cedar_ember=1" {
 		t.Errorf("claudeURL = %q", s.claudeURL)
 	}
 	if s.codexURL != "https://chatgpt.com/backend-api/wham/usage" {

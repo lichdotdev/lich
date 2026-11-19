@@ -99,7 +99,7 @@ func TestClaudeAsksForGrantsInTheSameRequestAsTheWindows(t *testing.T) {
 	s.claudeURL, s.profileURL = server.URL+"?"+strings.SplitN(claudeUsageURL, "?", 2)[1], ""
 	s.claudeLogin = readClaudeFile
 	s.claudePlan(lichEnv())
-	if calls != 1 || query != "cedar_ember=1&skip_spend=1" || agent != claudeUsageUserAgent {
+	if calls != 1 || query != "cedar_ember=1" || agent != claudeUsageUserAgent {
 		t.Errorf("calls = %d, query = %q, agent = %q", calls, query, agent)
 	}
 }
