@@ -155,17 +155,24 @@ func (u *window) questionActs(gtx C, p *chatPane, sv sessionView, it *backend.Ch
 		u.summaryActs(gtx, q, reply)
 		return
 	}
-	a := asks[q.step]
-	for j := range q.rows[q.step] {
-		if q.rows[q.step][j].Clicked(gtx) {
+	// An answer moves the card on mid-frame: the rest of the frame's clicks
+	// and keys belong to the ask that was on show, and are dropped with it.
+	step := q.step
+	for j := range q.rows[step] {
+		if q.rows[step][j].Clicked(gtx) {
 			q.hot = j
 			q.pick(asks, j, reply)
+			break
 		}
+	}
+	if q.step != step {
+		return
 	}
 	if q.send.Clicked(gtx) {
 		q.submit(asks, reply)
+		return
 	}
-	q.keys(gtx, a, asks, reply)
+	q.keys(gtx, asks, reply)
 }
 
 // questionFieldActs runs ask i's own field: Enter answers with it, Esc
@@ -216,7 +223,9 @@ const chatQuizDigits = 9
 // keys runs the card's own keys on ask a: a digit picks its option, the
 // arrows walk them, Space marks one of several, Enter takes the one the keys
 // stand on (or sends the marks), Esc declines.
-func (q *chatQuiz) keys(gtx C, a api.ChatAsk, asks []api.ChatAsk, reply func(api.ChatQReplied)) {
+func (q *chatQuiz) keys(gtx C, asks []api.ChatAsk, reply func(api.ChatQReplied)) {
+	step := q.step
+	a := asks[step]
 	filters := []event.Filter{
 		key.Filter{Focus: q, Name: key.NameUpArrow}, key.Filter{Focus: q, Name: key.NameDownArrow},
 		key.Filter{Focus: q, Name: key.NameReturn}, key.Filter{Focus: q, Name: key.NameEnter},
@@ -235,6 +244,9 @@ func (q *chatQuiz) keys(gtx C, a api.ChatAsk, asks []api.ChatAsk, reply func(api
 			continue
 		}
 		q.key(gtx, e.Name, a, asks, reply)
+		if q.step != step || q.sent.Load() {
+			return
+		}
 	}
 }
 

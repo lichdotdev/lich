@@ -282,3 +282,20 @@ func TestClickingTheBoxMarksTheOptionOnce(t *testing.T) {
 		t.Error("a click on the label after the box did not unmark Red")
 	}
 }
+
+// A click that answers an ask with more options than the next one moves the
+// card on in the same frame, and the rest of that frame reads the next ask:
+// nothing of the old ask's options is read against it.
+func TestAnsweringALongerAskThanTheNextMovesOn(t *testing.T) {
+	long := api.ChatAsk{Header: "Plan", Text: "Which plan?", Options: []api.ChatOffer{
+		{Label: "Free"}, {Label: "Pro"}, {Label: "Team"}, {Label: "Enterprise"},
+	}}
+	u, r, _ := questionFrames(t, nil, long, askFruit)
+	r.click(t, r.at(t, "Team"))
+	if q := u.chats.pane("s1").quizzes["q1"]; q.step != 1 || q.answers[0].Picked[0] != "Team" {
+		t.Fatalf("after the click step = %d, answers = %+v", q.step, q.answers)
+	}
+	if !r.shows("Which fruit?") {
+		t.Errorf("the next ask is not drawn:\n%s", r.drawn())
+	}
+}
