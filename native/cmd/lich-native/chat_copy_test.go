@@ -10,7 +10,6 @@ import (
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
-	"github.com/lichdotdev/lich/native/i18n"
 )
 
 func copyFrames(t *testing.T) (*window, *frameRig, string, string) {
@@ -104,27 +103,32 @@ func TestTheCopyButtonCopiesTheWholeTextOfItsMessage(t *testing.T) {
 	}
 }
 
-func TestTheCopyButtonShowsACheckForASecondAndAHalfThenCopyAgain(t *testing.T) {
-	_, r, user, _ := copyFrames(t)
+func TestTheCopyButtonHasNoTooltipAndShowsACheckForASecondAndAHalf(t *testing.T) {
+	u, r, user, _ := copyFrames(t)
 	overMessage(r, user, t)
 	button := r.smallestClickIn(t, copyArea(t, r, user, true))
 	r.queueClick(button)
 	r.frame()
-	// A press hides the tooltip until the pointer comes back to the button.
-	stamp := f32.Pt(float32(labelLeft(t, r, user)+4), float32(labelTop(t, r, user)+4))
-	r.router.Queue(pointer.Event{Kind: pointer.Move, Source: pointer.Mouse, Position: stamp})
+	c := u.chats.pane("s1").copyOf("u1")
+	if !c.done(r.now) {
+		t.Fatal("no check right after copying")
+	}
+	// Left alone on the button, no tooltip comes up.
+	r.router.Queue(pointer.Event{Kind: pointer.Move, Source: pointer.Mouse, Position: f32.Pt(5, 5)})
 	r.frame()
 	r.router.Queue(pointer.Event{Kind: pointer.Move, Source: pointer.Mouse, Position: button})
 	r.frame()
 	r.now = r.now.Add(800 * time.Millisecond)
 	r.frame()
-	if !r.shows(i18n.T("chat.copy.copied")) || r.shows(i18n.T("chat.copy.copy")) {
-		t.Errorf("a moment after copying the tooltip should say Copied:\n%s", r.drawn())
+	if r.shows("Copy") || r.shows("Copied") {
+		t.Errorf("the copy button grew a tooltip:\n%s", r.drawn())
+	}
+	if !c.done(r.now) {
+		t.Error("the check is gone before a second and a half")
 	}
 	r.now = r.now.Add(2 * time.Second)
 	r.frame()
-	r.frame()
-	if !r.shows(i18n.T("chat.copy.copy")) || r.shows(i18n.T("chat.copy.copied")) {
-		t.Errorf("two seconds on it should say Copy again:\n%s", r.drawn())
+	if c.done(r.now) {
+		t.Error("the check stayed past a second and a half")
 	}
 }

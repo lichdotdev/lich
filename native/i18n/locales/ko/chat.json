@@ -54,9 +54,5 @@
     "search": "{provider} 모델 검색…",
     "showMore": "더 보기",
     "default": "기본값"
-  },
-  "copy": {
-    "copy": "복사",
-    "copied": "복사됨"
   }
 }
