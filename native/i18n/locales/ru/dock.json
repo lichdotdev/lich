@@ -58,6 +58,8 @@
     "keepMine": "Оставить мои",
     "reload": "Перезагрузить",
     "saveFailed": "Не удалось сохранить {name}",
-    "noteOn": "{author} о строках {lines}"
+    "noteOn": "{author} о строках {lines}",
+    "blame": "{author}, {age} · {summary}",
+    "blameUncommitted": "Вы · Незакоммиченные изменения"
   }
 }

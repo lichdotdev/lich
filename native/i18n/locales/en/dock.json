@@ -56,6 +56,8 @@
     "keepMine": "Keep mine",
     "reload": "Reload",
     "saveFailed": "Could not save {name}",
-    "noteOn": "{author} on lines {lines}"
+    "noteOn": "{author} on lines {lines}",
+    "blame": "{author}, {age} · {summary}",
+    "blameUncommitted": "You · Uncommitted changes"
   }
 }

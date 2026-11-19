@@ -7,7 +7,9 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"strconv"
+	"time"
 
 	"gioui.org/layout"
 	"gioui.org/unit"
@@ -60,19 +62,24 @@ type fileEditor struct {
 	base, sep    string
 	dirty        bool
 	gen, decoGen int
-	focus        bool
-	disk         diskWatch
-	saving       editorSaving
-	undo, save   widget.Clickable
-	saveTip      ui.Tooltip
-	image        *blobView
-	exits        fileExits
-	scroll       widget.List
-	md           codeMarkdown
-	menu         ui.MenuState
-	composer     commentComposer
-	env          editorEnv
-	th           *ui.Theme
+	// lines is the text weighed against base as of gen, decoKey what the
+	// decorations were last drawn for, and blame the cursor line's blame.
+	lines      lineDiff
+	decoKey    string
+	blame      editorBlame
+	focus      bool
+	disk       diskWatch
+	saving     editorSaving
+	undo, save widget.Clickable
+	saveTip    ui.Tooltip
+	image      *blobView
+	exits      fileExits
+	scroll     widget.List
+	md         codeMarkdown
+	menu       ui.MenuState
+	composer   commentComposer
+	env        editorEnv
+	th         *ui.Theme
 }
 
 // editorEnv is what the editor reads of the window each frame.
@@ -87,7 +94,7 @@ type editorEnv struct {
 func newFileEditor(client *backend.Client, invalidate func(), family string, size unit.Sp, checkout string) *fileEditor {
 	f := &fileEditor{client: client, invalidate: invalidate, family: family, size: size, checkout: checkout,
 		image: newBlobView(invalidate), onDirty: func() {}, onSaved: func() {}}
-	f.file.invalidate, f.disk.read.invalidate = invalidate, invalidate
+	f.file.invalidate, f.disk.read.invalidate, f.blame.read.invalidate = invalidate, invalidate, invalidate
 	f.scroll.Axis = layout.Vertical
 	f.md.rendered = markdown.Cache{}
 	f.md.scroll.Axis = layout.Vertical
@@ -178,6 +185,7 @@ func (f *fileEditor) setText(text string) error {
 		StyleTags: codeview.StyleTags, AllowMultipleSelections: true})
 	f.base = f.ed.State().Doc()
 	f.gen++
+	f.blame.gen++
 	f.setDirty(false)
 	return err
 }
@@ -213,18 +221,36 @@ func (f *fileEditor) setDirty(dirty bool) {
 	}
 }
 
-// redecorate marks, in the margin, the lines that differ from base.
-func (f *fileEditor) redecorate(th *ui.Theme) {
-	if f.ed == nil || f.decoGen == f.gen {
+// redecorate marks, in the margin, the lines that differ from base, and
+// hangs the blame at the end of the cursor's line.
+func (f *fileEditor) redecorate(th *ui.Theme, now time.Time) {
+	if f.ed == nil || f.loaded != f.opens {
 		return
 	}
-	f.decoGen = f.gen
 	st := f.ed.State()
+	if f.decoGen != f.gen {
+		f.decoGen, f.lines = f.gen, diffLines(f.base, st.Doc())
+	}
+	cursor := st.LineAt(st.Selection().Main().Head())
+	text, hash := "", ""
+	if b, loading, err := f.blame.read.get(); !loading && err == nil {
+		text, hash = blameLine(b, f.lines.kept, cursor.Number-1, now)
+		f.blame.commit = b.Commits[hash]
+	}
+	key := fmt.Sprint(f.gen, cursor.Number, text, th.ToneWait)
+	if key == f.decoKey {
+		return
+	}
+	f.decoKey = key
+	f.blame.text, f.blame.hash, f.blame.cells = text, hash, codeCells(st.Lines(), cursor.Text)
 	var deco godemirror.Decorations
-	for _, i := range changedLines(f.base, st.Doc()) {
+	for _, i := range f.lines.marks {
 		if i < st.Lines() {
 			deco.Lines = append(deco.Lines, godemirror.LineDecorationAt{Pos: st.Line(i + 1).From, Decoration: godemirror.LineDecoration{GutterStrip: th.ToneWait}})
 		}
+	}
+	if text != "" {
+		deco.Widgets = []godemirror.LineWidgetAt{{Pos: cursor.From, Placement: godemirror.AfterText, Widget: f.blameWidget}}
 	}
 	_ = f.ed.Dispatch(godemirror.TransactionSpec{Decorations: &deco, SkipHistory: true})
 }
@@ -239,7 +265,8 @@ func (f *fileEditor) layout(gtx C, th *ui.Theme, env editorEnv) error {
 	f.takeSave()
 	f.actions(gtx)
 	f.watchDisk(gtx)
-	f.redecorate(th)
+	f.readBlame()
+	f.redecorate(th, gtx.Now)
 	if f.focus && f.ed != nil && f.kind == blobNone {
 		f.focus = false
 		f.ed.Focus(gtx)

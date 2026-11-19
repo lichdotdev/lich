@@ -56,6 +56,8 @@
     "keepMine": "自分の変更を残す",
     "reload": "再読み込み",
     "saveFailed": "{name} を保存できませんでした",
-    "noteOn": "{author}({lines} 行目について)"
+    "noteOn": "{author}({lines} 行目について)",
+    "blame": "{author}、{age} · {summary}",
+    "blameUncommitted": "自分 · 未コミットの変更"
   }
 }

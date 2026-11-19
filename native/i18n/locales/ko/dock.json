@@ -56,6 +56,8 @@
     "keepMine": "내 변경 유지",
     "reload": "다시 불러오기",
     "saveFailed": "{name}을(를) 저장하지 못했습니다",
-    "noteOn": "{author} · {lines}행"
+    "noteOn": "{author} · {lines}행",
+    "blame": "{author}, {age} · {summary}",
+    "blameUncommitted": "나 · 커밋하지 않은 변경 사항"
   }
 }

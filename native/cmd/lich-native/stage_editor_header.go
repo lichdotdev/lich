@@ -116,6 +116,7 @@ func (f *fileEditor) takeSave() {
 	}
 	f.base, f.disk.seen, f.disk.theirs = s.doc, s.doc, nil
 	f.gen++
+	f.blame.gen++
 	f.setDirty(f.ed.State().Doc() != f.base)
 	f.onSaved()
 	if s.then != nil {
