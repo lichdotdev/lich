@@ -24,7 +24,7 @@
     }
   },
   "composer": {
-    "placeholder": "给 {provider} 发消息…",
+    "placeholder": "向 {provider} 询问有关此项目的问题",
     "send": "发送",
     "stop": "停止"
   },
@@ -44,5 +44,10 @@
   "day": {
     "today": "今天",
     "yesterday": "昨天"
+  },
+  "model": {
+    "search": "搜索 {provider} 的模型…",
+    "showMore": "显示更多",
+    "default": "默认"
   }
 }

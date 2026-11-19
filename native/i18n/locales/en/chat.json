@@ -27,7 +27,7 @@
     }
   },
   "composer": {
-    "placeholder": "Message {provider}…",
+    "placeholder": "Ask {provider} about this project",
     "send": "Send",
     "stop": "Stop"
   },
@@ -47,5 +47,10 @@
   "day": {
     "today": "Today",
     "yesterday": "Yesterday"
+  },
+  "model": {
+    "search": "Search {provider}'s models…",
+    "showMore": "Show more",
+    "default": "Default"
   }
 }

@@ -24,7 +24,7 @@
     }
   },
   "composer": {
-    "placeholder": "{provider}へのメッセージ…",
+    "placeholder": "このプロジェクトについて{provider}に質問",
     "send": "送信",
     "stop": "停止"
   },
@@ -44,5 +44,10 @@
   "day": {
     "today": "今日",
     "yesterday": "昨日"
+  },
+  "model": {
+    "search": "{provider}のモデルを検索…",
+    "showMore": "さらに表示",
+    "default": "デフォルト"
   }
 }
