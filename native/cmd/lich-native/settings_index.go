@@ -33,8 +33,9 @@ const (
 )
 
 // settingEntry is one row of a section, with the backend key and scope the
-// row's states are read from. groupKey names the heading the row sits under, ""
-// in a section without groups. A row names its catalog keys (titleKey, alsoKey,
+// row's states are read from. groupKey names the heading the row sits under,
+// or the page that holds it in a split section; "" in a section without
+// groups. A row names its catalog keys (titleKey, alsoKey,
 // groupKey) and is read through titleText, alsoText and groupText.
 type settingEntry struct {
 	key   string
@@ -62,9 +63,9 @@ func keyText(key string) string {
 	return i18n.T(key)
 }
 
-// settingsSection is one nav row. rows are the ported rows, drawn and
-// searched; unported are the scoped keys of rows still to be ported, counted
-// for the override badges until they are.
+// settingsSection is one nav row, or one per page when it has pages. rows
+// are the ported rows, drawn and searched; unported are the scoped keys of
+// rows still to be ported, counted for the override badges until they are.
 type settingsSection struct {
 	id       string
 	labelKey string

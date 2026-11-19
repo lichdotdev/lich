@@ -14,6 +14,12 @@ func TestEverySettingsKeyBuiltAtRuntimeIsInEveryLocale(t *testing.T) {
 	add := func(k ...string) { keys = append(keys, k...) }
 	for _, s := range settingsSections {
 		add(s.labelKey)
+		if s.navGroupKey != "" {
+			add(s.navGroupKey)
+		}
+		for _, p := range s.pages {
+			add(p.groupKey)
+		}
 		for _, e := range s.entries() {
 			for _, k := range []string{e.titleKey, e.alsoKey, e.groupKey} {
 				if k != "" {
