@@ -112,6 +112,12 @@ func (c *Client) ReadFileAt(ctx context.Context, path, rel, ref string) (string,
 	return callMethod(ctx, c, api.ProjectReadFileAt, api.ReadFileAtOptions{Path: path, Rel: rel, Ref: ref})
 }
 
+// WriteFile writes content over file rel of the checkout at path.
+func (c *Client) WriteFile(ctx context.Context, path, rel, content string) error {
+	_, err := callMethod(ctx, c, api.ProjectWriteFile, api.WriteFileOptions{Path: path, Rel: rel, Content: content})
+	return err
+}
+
 // DiscardFile throws away every uncommitted change to file rel.
 func (c *Client) DiscardFile(ctx context.Context, path, rel string) error {
 	_, err := callMethod(ctx, c, api.ProjectDiscardFile, api.CheckoutFileOptions{Path: path, Rel: rel})

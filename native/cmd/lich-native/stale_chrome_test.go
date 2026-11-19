@@ -20,10 +20,7 @@ func stageFrames(t *testing.T, tab dockTab) (*window, *frameRig) {
 	_, client := newSidebarBackend(t)
 	u.ctx, u.client = t.Context(), client
 	comments := new(commentStore)
-	code, err := newCodeTab(client, r.invalidate, "monospace", 12, comments, func(ui.Toast) {})
-	if err != nil {
-		t.Fatal(err)
-	}
+	code := newCodeTab(client, r.invalidate, comments, func(ui.Toast) {}, func(string, string, int) {})
 	review, err := newReviewPanel(client, &u.root, comments, "monospace", 12, r.invalidate, func(ui.Toast) {})
 	if err != nil {
 		t.Fatal(err)

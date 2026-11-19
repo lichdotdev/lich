@@ -23,26 +23,7 @@
     "loading": "Cargando…",
     "noMatch": "Ningún archivo coincide",
     "empty": "No hay archivos aquí",
-    "backToTree": "Volver al árbol de archivos",
-    "readOnly": "solo lectura",
     "showSource": "Mostrar código fuente"
-  },
-  "findBar": {
-    "placeholder": "Buscar",
-    "matchCase": "Coincidir mayúsculas y minúsculas",
-    "wholeWord": "Solo palabras completas",
-    "regexp": "Usar expresión regular",
-    "showAll": "Mostrar todas las coincidencias",
-    "previous": "Coincidencia anterior",
-    "next": "Coincidencia siguiente",
-    "close": "Cerrar",
-    "position": "{current} de {total}",
-    "matches": {
-      "one": "{count} coincidencia",
-      "other": "{count} coincidencias"
-    },
-    "noResults": "Sin resultados",
-    "invalidRegexp": "Expresión regular no válida"
   },
   "artifacts": {
     "empty": "Aquí aparecen las páginas y los archivos que el agente de esta sesión crea para mostrarte, junto con los de las otras sesiones abiertas del proyecto.",
@@ -63,5 +44,20 @@
       "one": "{count} archivo coincide",
       "other": "{count} archivos coinciden"
     }
+  },
+  "editor": {
+    "save": "Guardar",
+    "saveTip": "Guardar ({keys})",
+    "undo": "Deshacer",
+    "discard": "Descartar",
+    "unsavedTitle": "¿Guardar los cambios en {name}?",
+    "unsavedDescription": "Si no los guardas, perderás los cambios.",
+    "changedOnDisk": "Este archivo cambió en el disco desde que empezaste a editarlo.",
+    "keepMine": "Conservar los míos",
+    "reload": "Recargar",
+    "saveFailed": "No se pudo guardar {name}",
+    "noteOn": "{author} sobre las líneas {lines}",
+    "blame": "{author}, {age} · {summary}",
+    "blameUncommitted": "Tú · Cambios sin confirmar"
   }
 }

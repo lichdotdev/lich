@@ -21,12 +21,22 @@ var (
 	ChatCancel = define[SessionIDOptions, None]("chat.Cancel")
 	// ChatAnswer answers a permission item with one of its options.
 	ChatAnswer = define[ChatAnswerOptions, None]("chat.Answer")
+	// ChatOptions is what a chat session can be set to now: its model, its
+	// effort and its mode, each as the provider offers them.
+	ChatOptions = define[SessionIDOptions, []ChatOption]("chat.Options")
+	// ChatSetOption sets one of them. A value the provider only takes at spawn
+	// is applied by resuming the conversation once the agent is idle; while a
+	// turn runs it is refused.
+	ChatSetOption = define[ChatSetOptionOptions, None]("chat.SetOption")
 
 	// ChatItemEvent carries one item of a chat, whole, each time it changes:
 	// the window replaces the item with the same id, or appends a new one.
 	ChatItemEvent = defineEvent[ChatItemUpdate]("chat-item")
 	// ChatTurnEvent carries a chat session's turn starting and ending.
 	ChatTurnEvent = defineEvent[ChatTurn]("chat-turn")
+	// ChatOptionsEvent carries a chat session's options whole, each time one
+	// changes, whoever changed it.
+	ChatOptionsEvent = defineEvent[ChatOptionsUpdate]("chat-options")
 	// SessionViewEvent carries a session's view once the switch is done: the
 	// new process is up, not merely asked for.
 	SessionViewEvent = defineEvent[SessionView]("session-view")
@@ -145,4 +155,45 @@ type ChatTurn struct {
 type SessionView struct {
 	ID   string `json:"id"`
 	View string `json:"view"`
+}
+
+// The categories of chat option, ACP's session config option categories.
+const (
+	OptionModel  = "model"
+	OptionEffort = "thought_level"
+	OptionMode   = "mode"
+)
+
+// ChatOption is one setting of a chat session, as the provider offers it:
+// Current is the ID of the choice in force.
+type ChatOption struct {
+	ID       string       `json:"id"`
+	Category string       `json:"category"`
+	Label    string       `json:"label"`
+	Current  string       `json:"current"`
+	Choices  []ChatChoice `json:"choices"`
+}
+
+// ChatChoice is one value a ChatOption can take, in the provider's words.
+// Danger marks a mode that runs tools without asking (Claude Code's
+// bypassPermissions), which the window sets apart.
+type ChatChoice struct {
+	ID          string `json:"id"`
+	Label       string `json:"label"`
+	Description string `json:"description,omitempty"`
+	Danger      bool   `json:"danger,omitempty"`
+}
+
+// ChatSetOptionOptions sets option OptionID of session ID to the choice
+// Value.
+type ChatSetOptionOptions struct {
+	ID       string `json:"id"`
+	OptionID string `json:"optionId"`
+	Value    string `json:"value"`
+}
+
+// ChatOptionsUpdate is the payload of ChatOptionsEvent.
+type ChatOptionsUpdate struct {
+	SessionID string       `json:"sessionId"`
+	Options   []ChatOption `json:"options"`
 }

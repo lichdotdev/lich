@@ -46,7 +46,15 @@
       "minute": "hace {count} min",
       "hour": "hace {count} h",
       "day": "hace {count} d",
-      "week": "hace {count} sem."
+      "week": "hace {count} sem.",
+      "month": {
+        "one": "hace {count} mes",
+        "other": "hace {count} meses"
+      },
+      "year": {
+        "one": "hace {count} año",
+        "other": "hace {count} años"
+      }
     }
   }
 }

@@ -63,14 +63,18 @@ const (
 	rowNestedCheckout
 	// rowBrowser is a session's running browser, the first row under it.
 	rowBrowser
+	// rowEditor is a checkout's file in the stage editor, the last row under
+	// the checkout.
+	rowEditor
 )
 
 // sessionRow is one line of a block's tree.
 type sessionRow struct {
-	kind sessionRowKind
-	key  string
-	sv   sessionView // rowCard, and rowBrowser's session
-	path string      // rowNestedCheckout: the checkout
+	kind   sessionRowKind
+	key    string
+	sv     sessionView // rowCard, and rowBrowser's session
+	path   string      // rowNestedCheckout and rowEditor: the checkout
+	editor editorNode  // rowEditor
 	// depth is the row's level; its elbow leaves the ring of level depth-1.
 	depth int
 	// lanes says, per level under depth-1, whether that level's line runs on
@@ -95,6 +99,13 @@ type sessionRow struct {
 // checkout row of its own inside her group. under is the checkout a row above
 // the block draws, "" for none; folded reports a mother's stored fold.
 func sessionRows(sessions []sessionView, under string, folded func(id string) bool) []sessionRow {
+	return checkoutRows(sessions, under, folded, nil)
+}
+
+// checkoutRows is sessionRows with the editor nodes of editors hung under
+// their checkouts: the checkout row above the block's, after its sessions,
+// and each checkout row inside a mother's group.
+func checkoutRows(sessions []sessionView, under string, folded func(id string) bool, editors map[string]editorNode) []sessionRow {
 	in := make(map[string]bool, len(sessions))
 	for _, sv := range sessions {
 		in[sv.ID] = true
@@ -108,15 +119,27 @@ func sessionRows(sessions []sessionView, under string, folded func(id string) bo
 		}
 		roots = append(roots, sv)
 	}
-	t := tree{children: children, folded: folded}
+	t := tree{children: children, folded: folded, editors: editors}
 	base := 0
 	if under != "" {
 		base = 1
 	}
+	editor, hasEditor := editors[under]
+	hasEditor = hasEditor && under != ""
 	for i, root := range roots {
-		t.walk(root, base, nil, i == len(roots)-1, under != "", map[string]bool{})
+		t.walk(root, base, nil, i == len(roots)-1 && !hasEditor, under != "", map[string]bool{})
+	}
+	if hasEditor {
+		t.rows = append(t.rows, editorRow(editorRowPrefix+under, under, editor, base, nil))
 	}
 	return t.rows
+}
+
+const editorRowPrefix = "__editor__:"
+
+// editorRow is checkout's editor node, the last row under it.
+func editorRow(key, checkout string, n editorNode, depth int, lanes []bool) sessionRow {
+	return sessionRow{kind: rowEditor, key: key, path: checkout, editor: n, depth: depth, lanes: lanes, tail: true}
 }
 
 // blockRows is a block's rows. A folder or the pinned block only gathers
@@ -126,7 +149,7 @@ func sessionRows(sessions []sessionView, under string, folded func(id string) bo
 func blockRows(b blockView, sessions []sessionView) []sessionRow {
 	folded := func(id string) bool { return b.motherFolds[id] }
 	if !b.byCheckout {
-		return withoutCarriedBrowser(sessionRows(sessions, b.under, folded), b.carried)
+		return withoutCarriedBrowser(checkoutRows(sessions, b.under, folded, b.editors), b.carried)
 	}
 	in := make(map[string]sessionView, len(sessions))
 	for _, sv := range sessions {
@@ -155,7 +178,7 @@ func blockRows(b blockView, sessions []sessionView) []sessionRow {
 	var rows []sessionRow
 	for _, path := range paths {
 		rows = append(rows, sessionRow{kind: rowNestedCheckout, key: "__checkout__:" + b.key + ":" + path, path: path, stub: true})
-		rows = append(rows, sessionRows(groups[path], path, folded)...)
+		rows = append(rows, checkoutRows(groups[path], path, folded, b.editors)...)
 	}
 	return withoutCarriedBrowser(rows, b.carried)
 }
@@ -178,6 +201,7 @@ func withoutCarriedBrowser(rows []sessionRow, carried string) []sessionRow {
 type tree struct {
 	children map[string][]sessionView
 	folded   func(id string) bool
+	editors  map[string]editorNode
 	rows     []sessionRow
 }
 
@@ -256,8 +280,12 @@ func (t *tree) group(mother sessionView, depth int, lanes []bool, seen map[strin
 		}
 		row := sessionRow{kind: rowNestedCheckout, key: "__checkout__:" + mother.ID + ":" + it.path, path: it.path, depth: depth, lanes: lanes, tail: tail, stub: true}
 		t.rows = append(t.rows, row)
+		editor, hasEditor := t.editors[it.path]
 		for j, sv := range it.sessions {
-			t.walk(sv, depth+1, childLanes(row), j == len(it.sessions)-1, true, seen)
+			t.walk(sv, depth+1, childLanes(row), j == len(it.sessions)-1 && !hasEditor, true, seen)
+		}
+		if hasEditor {
+			t.rows = append(t.rows, editorRow(editorRowPrefix+mother.ID+":"+it.path, it.path, editor, depth+1, childLanes(row)))
 		}
 	}
 }

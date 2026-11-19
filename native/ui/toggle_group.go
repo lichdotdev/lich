@@ -16,6 +16,12 @@ const toggleTrackPad = 0.1875 * toggleRem
 
 var toggleItemGap = Space(1) // spacing={1}
 
+// ToggleGroupHeight is how tall a group of items itemHeight tall stands: the
+// items and the track's border and padding around them.
+func ToggleGroupHeight(itemHeight unit.Dp) unit.Dp {
+	return itemHeight + 2*(toggleBorderWidth+toggleTrackPad)
+}
+
 // ToggleItem is one option of a ToggleGroup, a ToggleGroupItem.
 type ToggleItem struct {
 	Value    string
@@ -33,11 +39,13 @@ type ToggleGroupStyle struct {
 	Items   []ToggleItem
 	Variant ToggleVariant
 	Size    ToggleSize
-	// ItemHeight, ItemPadX and ItemText are the h-*, px-* and text-* that
-	// call sites put on each ToggleGroupItem; zero keeps the size's own.
+	// ItemHeight, ItemPadX, ItemText and ItemIcon are the h-*, px-*, text-*
+	// and size-* that call sites put on each ToggleGroupItem; zero keeps the
+	// size's own.
 	ItemHeight unit.Dp
 	ItemPadX   unit.Dp
 	ItemText   unit.Sp
+	ItemIcon   unit.Dp
 	theme      *Theme
 }
 
@@ -86,6 +94,7 @@ func (g ToggleGroupStyle) item(gtx C, item ToggleItem) D {
 		height:   g.ItemHeight,
 		padX:     g.ItemPadX,
 		textSize: g.ItemText,
+		iconSize: g.ItemIcon,
 		pressed:  g.Value.Value == item.Value,
 		disabled: item.Disabled,
 	}

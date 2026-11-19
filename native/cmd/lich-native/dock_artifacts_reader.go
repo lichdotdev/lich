@@ -15,8 +15,11 @@ import (
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
+	"github.com/lichdotdev/lich/native/ui/icons"
 	"github.com/lichdotdev/lich/native/ui/markdown"
 )
+
+var icPreviewBack = icons.Lucide("chevron-left")
 
 type artifactReader struct {
 	client *backend.Client

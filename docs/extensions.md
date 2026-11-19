@@ -247,7 +247,7 @@ comes from lich's own watch when it has read that checkout, and from one `gh` re
 
 `notify` raises a desktop notification the way lich raises its own, title over body, each cut at 120 characters,
 at most 3 a minute per extension; one past that is refused. `window.showCode` opens a file of a session's checkout
-in the window's dock, at a line or a range, as `show_code` does. `window.openURL` loads an http or https page in a
+in its stage editor, at a line or a range, as `show_code` does. `window.openURL` loads an http or https page in a
 session's browser, the page beside that session's terminal, as `browser_open` does. Both name the session by its id, and both
 are refused when no lich window is open.
 

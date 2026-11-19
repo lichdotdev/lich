@@ -18,6 +18,7 @@ var (
 	ProjectGitMergeUndo    = define[GitMergeUndoOptions, None]("project.GitMergeUndo")
 	ProjectGitConflict     = define[CheckoutFileOptions, GitConflict]("project.GitConflict")
 	ProjectGitResolveFile  = define[GitResolveFileOptions, None]("project.GitResolveFile")
+	ProjectGitBlame        = define[CheckoutFileOptions, GitBlame]("project.GitBlame")
 	ProjectGitMergeAbort   = define[PathOptions, None]("project.GitMergeAbort")
 	ProjectGitMergeCommit  = define[PathOptions, None]("project.GitMergeCommit")
 	ProjectGitMarkResolved = define[CheckoutFileOptions, None]("project.GitMarkResolved")
@@ -214,6 +215,26 @@ type GitConflict struct {
 	Ours   string             `json:"ours"`
 	Theirs string             `json:"theirs"`
 	Chunks []GitConflictChunk `json:"chunks"`
+}
+
+// GitBlame is who last changed each line of a file as it is in the working
+// tree.
+type GitBlame struct {
+	// Lines holds, for each line from the first, the commit that last changed
+	// it, "" for a line not committed yet. A line past its end is not
+	// committed either: an untracked file, or a repository with no commit,
+	// has no Lines at all.
+	Lines   []string                  `json:"lines"`
+	Commits map[string]GitBlameCommit `json:"commits"`
+}
+
+// GitBlameCommit is a commit a GitBlame names.
+type GitBlameCommit struct {
+	Author string `json:"author"`
+	// Time is when it was authored, in Unix seconds.
+	Time    int64  `json:"time"`
+	Summary string `json:"summary"`
+	Message string `json:"message"`
 }
 
 // GitResolveFileOptions writes Content as the resolution of conflicted file Rel

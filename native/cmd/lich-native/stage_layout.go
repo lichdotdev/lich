@@ -294,6 +294,7 @@ func (u *window) paneHeader(gtx C, th *ui.Theme, v stageView, sv sessionView, fo
 					layout.Flexed(1, th.Text(ui.TextXS, worktreeLabel(sv, v.projectPaths[sv.projectID])).Muted().Mono().Layout),
 				)
 			}),
+			layout.Rigid(func(gtx C) D { return u.paneSwitch(gtx, th, sv) }),
 			layout.Rigid(func(gtx C) D { return u.delegatesChip(gtx, th, v, sv, p) }),
 			layout.Rigid(func(gtx C) D { return u.paneButtons(gtx, th, v, sv, p) }),
 		)
@@ -390,9 +391,8 @@ func (u *window) applyLayoutStage() {
 }
 
 // content shows session s's terminal or its chat over gtx's area, keys
-// typing into it when it takes them, under the GUI | TUI selector.
+// typing into it when it takes them.
 func (u *window) content(gtx C, s sessionView, keys bool) error {
-	defer u.chatSwitch(gtx, s)
 	if s.View == api.ViewChat {
 		u.chatScreen(gtx, s, keys)
 		return nil

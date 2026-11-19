@@ -710,7 +710,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
 - **A Markdown preview shows the file's new version, never the change** (`native/cmd/lich-native/dock_review_markdown.go`):
   the Review card's preview renders the whole file as the Pulls screen renders a PR body, with nothing marking
   what was added or removed, no line to hang a review comment on and no selection to inject. It reads the
-  working tree (`project.ReadFile`, as the Code tab does); on the Pulls screen an added file renders its patch,
+  working tree (`project.ReadFile`, as the stage editor does); on the Pulls screen an added file renders its patch,
   and an edited one is read at the pull request's head (`project.ReadFileAt`), from GitHub when the clone does
   not hold it, under ReadFile's size cap. A relative image
   shows its alt text (the renderer fetches nothing) and raw HTML is left out. A new version of the file puts
@@ -1789,14 +1789,30 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   pane shows the page opens the chooser in front of the person. The input's `accept` filter is not passed on: the
   chooser lists every file and the page refuses a type it does not take.
 
-- **Showing code is one file, read-only, in the session's own checkout.** `show_code` and a Ctrl+click on a
-  `path:line` open the dock's Code tab, and a new one replaces the file on screen, with no history to go back
-  through, and an agent's comment under the lines goes with it. A path outside the session's checkout (a dependency's sources, the JDK, another worktree) is refused.
+- **Showing code is one file per checkout, in the session's own checkout.** `show_code`, a Ctrl+click on a
+  `path:line` and a file picked in the Code tab open the checkout's stage editor, and a new file replaces the one
+  on screen, with no history to go back through, and an agent's comment on the lines goes with it. A file with
+  unsaved changes asks Save, Discard or Cancel first; an agent's `show_code` never asks: while the editor is on the stage, or
+  holds unsaved changes to another file, it only offers the lines in a toast. A path outside the session's checkout (a dependency's sources, the JDK, another worktree) is refused.
   The terminal underlines by the text alone, because the
   hover runs every frame and cannot touch the disk: a `path:line` naming nothing still underlines, and the
   click answers with a toast, as it does for a host written like `example.com:443`. Only a soft-wrapped path is
   joined. Claude Code and Kiro CLI, measured at 44 columns, break a path wider than the terminal with a real
   line break, so the click reads only the half under the pointer; the other providers are not measured.
+
+- **The stage editor has no find, and its notes sit over the code** (`native/cmd/lich-native/stage_editor*.go`):
+  it is godemirror v0.9.0's `Editor`, which has neither the read-only `View`'s search nor its widgets under a
+  line, so Ctrl+F finds nothing in a file (the Code tab's Text search still finds across the checkout), and the
+  agent's `show_code` comment and the session comment box sit in a strip over the code, naming the lines. It
+  writes only a file that is UTF-8 on disk (`project.WriteFile`): another encoding is read decoded as
+  Windows-1252 and would be written back changed, so Save on one fails with a toast. Its buffers live in the
+  window: a window that closes drops an unsaved one without asking, and an editor whose checkout row leaves the
+  tree (its last session closed) keeps its buffer with no node to reach it until a file of that checkout opens
+  again. A disk change made outside any session shows within `editorDiskTick` (5 s) while the editor is on the
+  stage, and when it comes back to it. The cursor line's blame (`project.GitBlame`) is read when the file is
+  opened, saved or reloaded, never on a timer, so a commit made meanwhile shows at the next of those; and
+  since the editor does not say where a line's text ends, the blame's room is estimated at 0.6em a cell, so a
+  wider code face cuts it at the code area's edge without the "…".
 
 ## Languages
 

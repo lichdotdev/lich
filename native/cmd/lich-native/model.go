@@ -84,6 +84,9 @@ type model struct {
 	// diffTouched hears the checkout of a session that likely changed files,
 	// for the Review tab's diff, which is read apart from the git store.
 	diffTouched func(checkout string)
+	// editorTouched hears the same checkout, for the stage editor holding
+	// one of its files.
+	editorTouched func(checkout string)
 	// focusSession brings a session's card up, as `lich focus` asks.
 	focusSession func(projectID, id string)
 	// showToast puts a toast up.
@@ -149,6 +152,11 @@ type model struct {
 	// console is the service whose console is on screen in place of the
 	// active session, "" for none.
 	console string
+	// editors are the checkouts' files in the stage editor, by checkout, and
+	// editorOn the checkout whose editor the stage shows in place of the
+	// active session, "" for none.
+	editors  map[string]editorNode
+	editorOn string
 	// serviceReveal hears the tray ask for a service's console.
 	serviceReveal func(id string)
 
@@ -293,7 +301,7 @@ func (m *model) setActiveProject(id string) bool {
 	m.activeProject, m.home = id, id == m.homeID
 	m.active = m.projects[i].ActiveSessionID
 	m.shownLayout = ""
-	m.console = ""
+	m.console, m.editorOn = "", ""
 	m.aloneLocked()
 	return true
 }
@@ -302,7 +310,7 @@ func (m *model) setActiveProject(id string) bool {
 // session, which comes back when a card is picked again.
 func (m *model) openConsole(id string) {
 	m.mu.Lock()
-	m.console = id
+	m.console, m.editorOn = id, ""
 	m.shownLayout = ""
 	m.mu.Unlock()
 }
@@ -812,7 +820,7 @@ func (m *model) setActive(ctx context.Context, id string) {
 	refocused := m.routeLocked(id)
 	left := m.active
 	m.active = id
-	m.console = ""
+	m.console, m.editorOn = "", ""
 	if p := m.shownProject(); p != nil {
 		p.ActiveSessionID = id
 	}

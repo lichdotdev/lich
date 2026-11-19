@@ -18,8 +18,8 @@ import (
 	"github.com/lichdotdev/lich/internal/relpath"
 )
 
-// maxReadFileSize caps a previewed file. The Code tab is a source viewer, not a
-// blob viewer, and the RPC body limit rejects a response this large anyway
+// maxReadFileSize caps a file read for the stage editor, which is for source,
+// not blobs, and the RPC body limit rejects a response this large anyway
 // (internal/rpc.bodyLimit). Deliberately tighter than maxTextFileBytes: this one
 // crosses the wire, the others only ever reach a line count or a diff.
 const maxReadFileSize = 1 << 20

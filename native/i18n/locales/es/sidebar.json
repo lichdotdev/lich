@@ -269,5 +269,9 @@
     "review": "Escribe su prompt cuando llega una revisión",
     "at": "Prompt a las {when}",
     "resume": "Continúa tras el límite de uso a las {when}"
+  },
+  "editorRow": {
+    "close": "Cerrar el editor",
+    "unsaved": "Cambios sin guardar"
   }
 }

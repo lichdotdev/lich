@@ -48,7 +48,19 @@
       "minute": "{count} мин назад",
       "hour": "{count} ч назад",
       "day": "{count} дн. назад",
-      "week": "{count} нед. назад"
+      "week": "{count} нед. назад",
+      "month": {
+        "one": "{count} мес. назад",
+        "few": "{count} мес. назад",
+        "many": "{count} мес. назад",
+        "other": "{count} мес. назад"
+      },
+      "year": {
+        "one": "{count} год назад",
+        "few": "{count} года назад",
+        "many": "{count} лет назад",
+        "other": "{count} года назад"
+      }
     }
   }
 }

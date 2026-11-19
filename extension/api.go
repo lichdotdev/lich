@@ -34,8 +34,8 @@ const (
 	PermissionGitRead Permission = "git:read"
 	// PermissionNotify raises desktop notifications.
 	PermissionNotify Permission = "notify"
-	// PermissionWindow shows a file in the dock and opens pages in a session's
-	// browser.
+	// PermissionWindow shows a file in the stage editor and opens pages in a
+	// session's browser.
 	PermissionWindow Permission = "window"
 )
 

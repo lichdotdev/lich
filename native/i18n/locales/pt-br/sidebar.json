@@ -269,5 +269,9 @@
     "review": "Digita o prompt quando chega uma revisão",
     "at": "Prompt às {when}",
     "resume": "Continua depois do limite de uso às {when}"
+  },
+  "editorRow": {
+    "close": "Fechar o editor",
+    "unsaved": "Alterações não salvas"
   }
 }

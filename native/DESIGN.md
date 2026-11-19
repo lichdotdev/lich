@@ -33,8 +33,8 @@ Elements are defined by space, hover and islands, not by enclosure.
 
 Inside an island, a change that adds a border, a pill, a second line or a nested surface is probably wrong. Reach for spacing,
 a hover state or the tooltip first. The folder tray is the one nested surface, and the reason is written
-under it; the dock's tab pill reuses its fill, for the same reason. The footer's balloons and the chat's GUI | TUI
-switch are the pills on `Sidebar`: they float over the terminal and need a ground of their own to read on it. The extension catalog is
+under it; the dock's tab pill reuses its fill, for the same reason. The footer's balloons are the pills on `Sidebar`:
+they float over the terminal and need a ground of their own to read on it. The extension catalog is
 the one screen of cards, and the reason is written under it.
 
 ## Foundations
@@ -276,11 +276,52 @@ pinned to its end while items arrive, until the person scrolls up.
   as its balloon did. Only the session the footer follows carries the items; another chat pane of a layout has
   the box and Send alone.
 
-The GUI | TUI switch floats in the top-right corner of the session's panel, `balloonInset` from its edges, over
-the terminal or the chat (`chat_switch.go`): the segmented control on a `Sidebar` fill, the view on screen in
-`Accent`. It is the second pill on `Sidebar` after the balloons, for their reason: it floats over a terminal and
-needs a ground to read on. Only a provider `chat.Kinds` lists gets it, never a plain terminal. While the agent
-works, or a switch is on its way, it takes no click and says why in a tooltip.
+### The session's strip
+
+The balloons' mirror: an agent session's terminal, or its chat, gives up a band at its top
+(`sessionBandHeight`, `session_band.go`): the selector and `balloonInset` over and under it, so the PTY has fewer
+rows and nothing floats over the agent's banner. It follows the session's kind like the foot's band, so the grid
+is resized once, and the Git panel rising from the foot does not take it back. A plain terminal, a service's
+console, Home and a split carry none. The chat starts under it.
+
+The strip has no ground. At its left the provider as the window names it, then the session's label: `TextSM`,
+the provider in `MutedForeground` and the label in `Foreground`, cut with an ellipsis when the room is short. At
+its right the GUI | TUI selector (`chat_switch.go`), which takes its room first: the segmented control in its
+`Border` track, items h-5 with a `Text2XS` label and a size-3 icon, the view on screen in `Accent`. Only a
+provider `chat.Kinds` lists gets the selector, so a Codex or Crush session's strip is the name alone. While the
+agent works, or a switch is on its way, it takes no click and says why in a tooltip.
+
+A split's pane has its header already, so it gets no strip: the selector, same size, stands at the right of the
+header between the name and the zoom button, and the pane's terminal keeps every row.
+
+### The editor
+
+Draft, to be validated in a real window. A file opened from the Code tab, a `path:line` in a terminal or an
+agent's `show_code` takes the whole stage, in place of the session, as a service's console does
+(`stage_editor*.go`). The dock stays beside it, its Code tab the tree and the search.
+
+- The header is a `Space(10)` strip on the 8px edge: the folder in `MutedForeground` mono, the file's name in
+  `Foreground` mono at `font.Medium`, and the unsaved dot (`ToneWait`, 6px) after the name while the text is not
+  the disk's. Its actions sit at the right: Undo as a ghost button, Save as the view's one `Primary`, disabled
+  while nothing is unsaved, its chord (Ctrl+S, ⌘S) in the tooltip rather than beside it.
+- The code is on the island's own fill. A line the user changed since the file was read or saved wears a
+  `ToneWait` strip down its gutter cell, and a run of deleted lines marks the line that took their place.
+- The cursor's line, and no other, ends in its blame, `blameGap` (32) past the code: "author, age · summary"
+  or "You · Uncommitted changes" for a line not committed or not saved, `TextXS` in `MutedForeground`, leaning
+  as italic (Onest has none, so it is sheared, `oblique`), cut with "…" where the code area ends and left out
+  under `blameMinRoom` (80). Its tooltip is the short hash and full date, the author, then the whole message.
+- An agent's note and the session comment box sit in a strip under the header, over the code, the note naming
+  its lines: the editor hangs no widget under a line.
+- A disk change under unsaved edits is a strip under the header tinted `ToneWait` at `editorBannerTint`
+  (0.14): one sentence, then Keep mine (outline) and Reload (secondary), never a second `Primary`, and under it
+  the diff of what the disk changed since the read, unchanged runs collapsed to git's three lines of context, at
+  most `diskBannerDiff` (240) tall so the code stays in sight.
+- Another file or Close over unsaved changes asks in a dialog: Cancel (outline), Discard (destructive), Save
+  (`Primary`).
+- In the tree the editor is a node of its checkout, the last row under it: the file glyph in a neutral ring and
+  the file's name in mono, the unsaved dot after the name, lit as an active session is while the editor is on the
+  stage. Its only action is Close, in its menu and its `⋯`; there is no ✕ on the row. In the rail it is the glyph
+  in the card's 32px square, the path and the unsaved state in its tooltip.
 
 ### Toasts
 

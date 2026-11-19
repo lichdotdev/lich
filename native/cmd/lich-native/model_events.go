@@ -31,6 +31,9 @@ func (m *model) sessionTouched(ctx context.Context, ev backend.Event) {
 	if m.diffTouched != nil {
 		m.diffTouched(checkout)
 	}
+	if m.editorTouched != nil {
+		m.editorTouched(checkout)
+	}
 }
 
 // checkoutWritten reads again every card of the project on screen that sits in

@@ -266,7 +266,8 @@ func (d *dock) body(gtx C, th *ui.Theme, root *ui.Root, in dockInput) error {
 		d.extAct = d.extensions.placed(gtx, th, placeDock, d.ext)
 		return nil
 	}
-	return d.code.layout(gtx, th, root, in)
+	d.code.layout(gtx, th, in)
+	return nil
 }
 
 // header is the h-10 strip: at its right the Review tab's actions, collapse

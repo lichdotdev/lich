@@ -13,7 +13,7 @@ var (
 
 // ShowCodeOptions names a file relative to the session's checkout, or absolute
 // inside it. Line and EndLine are 1-based and inclusive; 0 leaves them out.
-// Comment is plain text the agent adds under the lines.
+// Comment is plain text the agent adds on the lines.
 type ShowCodeOptions struct {
 	ID      string `json:"id"`
 	Path    string `json:"path"`

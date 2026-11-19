@@ -46,7 +46,15 @@
       "minute": "{count}分钟前",
       "hour": "{count}小时前",
       "day": "{count}天前",
-      "week": "{count}周前"
+      "week": "{count}周前",
+      "month": {
+        "one": "{count}个月前",
+        "other": "{count}个月前"
+      },
+      "year": {
+        "one": "{count}年前",
+        "other": "{count}年前"
+      }
     }
   }
 }

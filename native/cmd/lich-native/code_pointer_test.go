@@ -72,75 +72,46 @@ func TestCodeLabelNamesTheFileAndItsLines(t *testing.T) {
 
 // An agent that edits a file and points at it again has to show the edit.
 func TestOpeningTheSameFileAgainReadsItAgain(t *testing.T) {
-	view, err := codeview.New(fonts.SystemMono, 13)
-	if err != nil {
-		t.Fatal(err)
+	f := newFileEditor(nil, func() {}, fonts.SystemMono, 13, "/c")
+	f.open("a.go", 7, 0, agentNote{})
+	first, nudge := f.fileKey(), f.disk.nudge
+	f.open("a.go", 7, 0, agentNote{})
+	if f.disk.nudge == nudge {
+		t.Fatal("a second open of a.go does not read the disk again")
 	}
-	p := newPreview(nil, view, func() {})
-	p.openAt("a.go", 7)
-	first := p.fileKey("/c")
-	p.openAt("a.go", 7)
-	if p.fileKey("/c") == first {
-		t.Fatal("a second open of a.go reuses the first read")
-	}
-}
-
-func TestAgentNoteHangsUnderTheLastLineAndGoesWithTheFile(t *testing.T) {
-	view, err := codeview.New(fonts.SystemMono, 13)
-	if err != nil {
-		t.Fatal(err)
-	}
-	p := newPreview(nil, view, func() {})
-	p.openLines("a.go", 2, 3)
-	if blocks := p.blocksWith(-1); blocks != nil {
-		t.Fatalf("no note, no composer: %d blocks", len(blocks))
-	}
-	p.note = agentNote{text: "why"}
-	p.show("k", "one\ntwo\nthree\nfour\n")
-	if len(p.content.Blocks) != 1 || p.content.Blocks[0].After != 2 {
-		t.Fatalf("blocks = %+v, want one under line index 2", p.content.Blocks)
-	}
-	p.openAt("b.go", 1)
-	if p.note.text != "" {
-		t.Fatal("the note followed the panel to another file")
+	f.open("b.go", 1, 0, agentNote{})
+	if f.fileKey() == first {
+		t.Fatal("another file reuses the first one's read")
 	}
 }
 
-func TestNoteAndComposerNeverShareALineAsTwoBlocks(t *testing.T) {
-	view, err := codeview.New(fonts.SystemMono, 13)
-	if err != nil {
-		t.Fatal(err)
-	}
-	p := newPreview(nil, view, func() {})
-	p.openLines("a.go", 5, 7)
-	if got := p.blocksWith(2); len(got) != 1 || got[0].After != 2 {
-		t.Fatalf("composer alone: %+v", got)
-	}
-	p.note = agentNote{text: "why"}
-	if got := p.blocksWith(6); len(got) != 1 || got[0].After != 6 {
-		t.Fatalf("same line: %+v", got)
-	}
-	got := p.blocksWith(2)
-	if len(got) != 2 || got[0].After != 2 || got[1].After != 6 {
-		t.Fatalf("different lines: %+v", got)
+func TestAgentNoteGoesWithTheFile(t *testing.T) {
+	f := newFileEditor(nil, func() {}, fonts.SystemMono, 13, "/c")
+	f.open("a.go", 2, 3, agentNote{text: "why"})
+	f.open("b.go", 1, 0, agentNote{})
+	if f.note.text != "" {
+		t.Fatal("the note followed the editor to another file")
 	}
 }
 
-func TestOpenLinesSelectsARangeAndOpenAtForgetsIt(t *testing.T) {
-	view, err := codeview.New(fonts.SystemMono, 13)
+func TestOpenLinesSelectsARangeAndAPlainOpenForgetsIt(t *testing.T) {
+	ed, err := codeview.NewTextEditor(fonts.SystemMono, 13)
 	if err != nil {
 		t.Fatal(err)
 	}
-	p := newPreview(nil, view, func() {})
-	p.openLines("a.go", 2, 3)
-	p.show("k", "one\ntwo\nthree\nfour\n")
-	from, to, ok := p.view.SelectedLines()
-	if !ok || from != 1 || to != 2 {
-		t.Fatalf("selected %d..%d (%v), want 1..2", from, to, ok)
+	f := newFileEditor(nil, func() {}, fonts.SystemMono, 13, "/c")
+	f.open("a.go", 2, 3, agentNote{})
+	f.ed, f.loaded = ed, f.opens
+	if err := f.setText("one\ntwo\nthree\nfour\n"); err != nil {
+		t.Fatal(err)
 	}
-	p.openAt("a.go", 4)
-	if p.endLine != 0 {
-		t.Fatalf("endLine %d survived a plain open", p.endLine)
+	f.landLines()
+	if got := f.selectedLines(); got != "2-3" {
+		t.Fatalf("selected %q, want 2-3", got)
+	}
+	f.open("a.go", 4, 0, agentNote{})
+	if f.endLine != 0 {
+		t.Fatalf("endLine %d survived a plain open", f.endLine)
 	}
 }
 
