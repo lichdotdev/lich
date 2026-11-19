@@ -5,6 +5,7 @@ package chat
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/providers"
@@ -249,4 +250,27 @@ func TestClaudeConversationThatDidNotComeBack(t *testing.T) {
 	if conv, _ := r.db.ProviderSession("s1"); conv != "claude-other" {
 		t.Errorf("bound conversation = %q", conv)
 	}
+}
+
+// A Claude Code tool call ends at its result's time, in a history too.
+func TestClaudeToolEndsAtItsResult(t *testing.T) {
+	r := newRig(t, providers.Claude)
+	_ = r.db.SetProviderSession("s1", "conv-t")
+	r.writeClaudeTranscript("conv-t",
+		`{"type":"assistant","timestamp":"2026-11-19T10:00:00Z","message":{"id":"m1","content":[{"type":"tool_use","id":"b1","name":"Bash","input":{"command":"ls"}}]}}`,
+		`{"type":"user","timestamp":"2026-11-19T10:00:02.5Z","message":{"content":[{"type":"tool_result","tool_use_id":"b1","content":"ok"}]}}`,
+	)
+	if err := r.setView(api.ViewChat); err != nil {
+		t.Fatalf("SetView: %v", err)
+	}
+	for _, it := range r.history() {
+		if it.ID != "b1" {
+			continue
+		}
+		if want := time.Date(2026, 11, 19, 10, 0, 2, 5e8, time.UTC).UnixMilli(); it.Tool.Ended != want {
+			t.Errorf("ended at %d, want %d", it.Tool.Ended, want)
+		}
+		return
+	}
+	t.Fatal("no b1 in the history")
 }

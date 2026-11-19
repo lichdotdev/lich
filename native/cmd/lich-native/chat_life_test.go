@@ -14,6 +14,7 @@ import (
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
+	"github.com/lichdotdev/lich/native/ui"
 )
 
 // wakeAfter draws w once at now and answers the frame it asks for.
@@ -210,6 +211,133 @@ func TestAnOpenGroupLinksItsCallsAndShowsHowEachEnded(t *testing.T) {
 	}
 	if line := labelLeft(t, r, i18n.T("chat.view.workedAt", i18n.Args{"duration": chatElapsed(time.Minute), "count": 2, "time": clockFor(r, novDay(18, 17, 59))})); line-edge < 20 {
 		t.Errorf("the group's line starts at x=%d: the avatar is not before it (column edge %d)", line, edge)
+	}
+}
+
+// A call running in a live turn shimmers in its name and target and counts
+// its time; once it ended it is still, its time standing at how long it ran.
+func TestARunningCallShimmersAndCountsAndAnEndedOneStandsStill(t *testing.T) {
+	start := time.Unix(1000, 0)
+	call := backend.ChatItem{ID: "k1", Kind: api.ItemTool, At: start.UnixMilli(), Tool: &backend.ChatToolCall{Name: "Bash", Title: "go test", State: api.ToolRunning}}
+	draw := func(it backend.ChatItem, live bool) func(C, *ui.Theme) {
+		return func(gtx C, th *ui.Theme) { chatTool(gtx, th, it, live) }
+	}
+	r := newFrameRig(image.Pt(400, 40), draw(call, true))
+	r.now = start.Add(2 * time.Second)
+	wake := func(it backend.ChatItem, live bool) (time.Time, bool) {
+		return wakeAfter(r.now, func(gtx C) { chatTool(gtx, r.theme, it, live) })
+	}
+	if at, ok := wake(call, true); !ok || at.After(r.now.Add(ui.LoopFrame)) {
+		t.Errorf("a running call asked for its next frame at %v (asked %v): it does not shimmer", at, ok)
+	}
+	r.frame()
+	for _, label := range []string{"Bash", "go test", chatElapsed(2 * time.Second)} {
+		if !r.shows(label) {
+			t.Errorf("no %q:\n%s", label, r.drawn())
+		}
+	}
+	r.now = r.now.Add(3 * time.Second)
+	r.frame()
+	if !r.shows(chatElapsed(5 * time.Second)) {
+		t.Errorf("the time did not count on:\n%s", r.drawn())
+	}
+
+	done := call
+	done.Tool = &backend.ChatToolCall{Name: "Bash", Title: "go test", State: api.ToolDone, Ended: start.Add(4 * time.Second).UnixMilli()}
+	r = newFrameRig(image.Pt(400, 40), draw(done, true))
+	r.now = start.Add(time.Minute)
+	if at, ok := wake(done, true); ok {
+		t.Errorf("an ended call asked to be drawn again at %v", at)
+	}
+	r.frame()
+	if !r.shows(chatElapsed(4 * time.Second)) {
+		t.Errorf("no time standing at 4s:\n%s", r.drawn())
+	}
+
+	// A call whose end nobody reported, read back with the history, shows no
+	// time rather than one made up.
+	done.Tool = &backend.ChatToolCall{Name: "Bash", Title: "go test", State: api.ToolDone}
+	r = newFrameRig(image.Pt(400, 40), draw(done, false))
+	r.frame()
+	if r.shows(chatElapsed(0)) {
+		t.Errorf("a call with no end shows a time:\n%s", r.drawn())
+	}
+}
+
+// The band crosses a running call's name and its target, and an ended call's
+// row stays as it was drawn.
+func TestTheBandCrossesARunningCallsNameAndTarget(t *testing.T) {
+	// time.Unix(1000, 0) starts a lap, the band left of the text; half a lap
+	// on it stands over the middle of each word, within the same second.
+	start := time.Unix(1000, 0)
+	size := image.Pt(400, 40)
+	// visibleShift is a change of a channel the eye catches, past rounding.
+	const visibleShift = 24
+	call := func(state string) backend.ChatItem {
+		return backend.ChatItem{ID: "k1", Kind: api.ItemTool, At: start.Add(-2 * time.Second).UnixMilli(),
+			Tool: &backend.ChatToolCall{Name: "Bash", Title: "go test ./internal/...", State: state, Ended: start.Add(-time.Second).UnixMilli()}}
+	}
+	for _, tc := range []struct {
+		state string
+		moves bool
+	}{{api.ToolRunning, true}, {api.ToolDone, false}} {
+		it := call(tc.state)
+		r := newFrameRig(size, func(gtx C, th *ui.Theme) { chatTool(gtx, th, it, true) })
+		r.now = start
+		r.frame()
+		before := renderRig(t, r)
+		r.now = start.Add(ui.ShimmerLap / 2)
+		r.frame()
+		after := renderRig(t, r)
+		// A label's bounds run to the row's end, so the name's stop where the
+		// target's start.
+		target := labelBox(t, r, "go test ./internal/...")
+		name := labelBox(t, r, "Bash")
+		name.Max.X = target.Min.X
+		for label, box := range map[string]image.Rectangle{"Bash": name, "go test ./internal/...": target} {
+			if shift := inkShift(before, after, box); (shift >= visibleShift) != tc.moves {
+				t.Errorf("%s call: %q shifted by %d between the two frames, moving = %v, want %v", tc.state, label, shift, shift >= visibleShift, tc.moves)
+			}
+		}
+	}
+}
+
+// A turn ran until its last call ended, past the last item that began.
+func TestAGroupTookUntilItsLastCallEnded(t *testing.T) {
+	start := novDay(18, 17, 58)
+	items := []backend.ChatItem{
+		{ID: "u1", Kind: api.ItemUser, Turn: 1, At: start},
+		{ID: "k1", Kind: api.ItemTool, Turn: 1, At: start + 1000, Tool: &backend.ChatToolCall{Name: "Bash", State: api.ToolDone, Ended: start + 9000}},
+	}
+	for _, r := range chatRows(items, false, time.Time{}) {
+		if r.kind == chatRowWork && (r.took != 9*time.Second || r.ended != start+9000) {
+			t.Errorf("the group took %v and ended at %d, want 9s and %d", r.took, r.ended, start+9000)
+		}
+	}
+}
+
+// The calls still running stand under a folded group, each until it ends.
+func TestAFoldedGroupShowsTheCallsStillRunning(t *testing.T) {
+	items := []backend.ChatItem{
+		{ID: "u1", Kind: api.ItemUser, Turn: 1, At: novDay(18, 17, 58), Text: "go"},
+		{ID: "k1", Kind: api.ItemTool, Turn: 1, At: novDay(18, 17, 58), Tool: &backend.ChatToolCall{Name: "Read", Title: "a.go", State: api.ToolDone}},
+		{ID: "k2", Kind: api.ItemTool, Turn: 1, At: novDay(18, 17, 59), Tool: &backend.ChatToolCall{Name: "Bash", Title: "go test", State: api.ToolRunning}},
+		{ID: "k3", Kind: api.ItemTool, Turn: 1, At: novDay(18, 17, 59), Tool: &backend.ChatToolCall{Name: "Grep", Title: "TODO", State: api.ToolRunning}},
+	}
+	_, r := lifeFrames(t, items, true)
+	r.frame()
+	for _, label := range []string{"Bash", "go test", "Grep", "TODO"} {
+		if !r.shows(label) {
+			t.Errorf("no running %q under the folded group:\n%s", label, r.drawn())
+		}
+	}
+	if r.shows("Read") {
+		t.Error("a call that ended stands under the folded group")
+	}
+	_, r = lifeFrames(t, items, false)
+	r.settle(t)
+	if r.shows("Bash") {
+		t.Error("a folded group of a turn that is over shows a call")
 	}
 }
 

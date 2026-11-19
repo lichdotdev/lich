@@ -87,3 +87,39 @@ func TestToolHelpers(t *testing.T) {
 		t.Errorf("lastLines = %q", got)
 	}
 }
+
+// A tool call ends when it is first seen ended live; a later report keeps that
+// time, and one replayed from a history carries none.
+func TestConversationStampsWhenAToolCallEnded(t *testing.T) {
+	t.Parallel()
+	c := newConversation(func(api.ChatItem) {})
+	now := time.Unix(100, 0)
+	c.now = func() time.Time { return now }
+	call := func(state string) api.ChatItem {
+		return api.ChatItem{ID: "k1", Kind: api.ItemTool, Tool: &api.ChatToolCall{Name: "Bash", State: state}}
+	}
+	ended := func(id string) int64 {
+		it, _ := c.get(id)
+		return it.Tool.Ended
+	}
+	c.put(call(api.ToolRunning), true)
+	if got := ended("k1"); got != 0 {
+		t.Errorf("a running call ended at %d", got)
+	}
+	now = now.Add(2 * time.Second)
+	c.put(call(api.ToolDone), true)
+	if got, want := ended("k1"), now.UnixMilli(); got != want {
+		t.Errorf("ended at %d, want %d", got, want)
+	}
+	stamped := now.UnixMilli()
+	now = now.Add(time.Second)
+	c.put(call(api.ToolDone), true)
+	if got := ended("k1"); got != stamped {
+		t.Errorf("a second report moved the end to %d, want %d", got, stamped)
+	}
+	c.setQuiet(true)
+	c.put(api.ChatItem{ID: "k2", Kind: api.ItemTool, Tool: &api.ChatToolCall{Name: "Read", State: api.ToolDone}}, true)
+	if got := ended("k2"); got != 0 {
+		t.Errorf("a replayed call ended at %d, want 0: nobody said when", got)
+	}
+}

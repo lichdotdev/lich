@@ -99,6 +99,7 @@ func (c *conversation) update(id, kind string, final bool, fn func(*api.ChatItem
 func (c *conversation) put(item api.ChatItem, final bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	c.stampEnd(&item)
 	if i, ok := c.index[item.ID]; ok {
 		item.Turn, item.At = c.items[i].Turn, c.items[i].At
 		c.items[i] = item
@@ -149,6 +150,22 @@ func (c *conversation) flush() {
 	defer c.mu.Unlock()
 	for _, id := range slices.Sorted(maps.Keys(c.pending)) {
 		c.sendLocked(id)
+	}
+}
+
+// stampEnd sets when a tool call ended, the first time it is seen ended live
+// and its provider gave no time: a replayed one ended who knows when.
+func (c *conversation) stampEnd(item *api.ChatItem) {
+	t := item.Tool
+	if t == nil || t.Ended != 0 || (t.State != api.ToolDone && t.State != api.ToolFailed) {
+		return
+	}
+	if i, ok := c.index[item.ID]; ok && c.items[i].Tool != nil && c.items[i].Tool.Ended != 0 {
+		t.Ended = c.items[i].Tool.Ended
+		return
+	}
+	if !c.quiet {
+		t.Ended = c.now().UnixMilli()
 	}
 }
 

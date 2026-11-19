@@ -337,9 +337,11 @@ draws none while it grows in, because the room above the rows is measured in the
   when the history has none). Open, each call is a 28px row hung under the line by a connector, a 1px
   `Border` line under the fold's chevron with a stub into the row, ending at the last row as the sidebar's
   tree does. A row is its tool's glyph (a Lucide mark by tool name, Claude Code's own names and ACP's kinds,
-  one generic wrench for the rest), its name in medium, what it acted on in mono, and how it ended at the
-  right: a spinner in `ToneWait` while it runs, then a check in `TonePass` or a cross in `Destructive`
-  with the output's first line. Its diff stands under it as a thread's hunk is drawn.
+  one generic wrench for the rest), its name in medium, what it acted on in mono, then at the right the time it
+  ran in muted mono and how it ended: nothing while it runs, then a check in `TonePass` or a cross in
+  `Destructive` with the output's first line. A call whose end nobody reported (most histories) shows no time.
+  Its diff stands under it as a thread's hunk is drawn. The calls still running stand under the line even folded,
+  each until it ends, so a call shows the moment it starts.
 - **A turn's closing line** stands once, after the last item of the conversation's last turn, when that turn
   has ended: the provider's avatar as the tool-call line opens a turn with, "Done" in `TextSM` medium
   `Foreground`, then muted "· no changes" or "· 3 files" and the lines the turn added in `TonePass` and removed
@@ -353,7 +355,9 @@ draws none while it grows in, because the room above the rows is measured in the
 - **What is alive moves.** The text of a live step shimmers: a light band crosses it from left to right once
   every 1.6s (`Label.Shimmer`, looping frames only while it is drawn), and the time it has run counts beside
   it, "6s", "1m 12s", redrawn each second and not each frame. That is "Thinking" for the thought being
-  thought, "2 tool calls" for the turn's line while a call runs, and the name of the call that runs. The
+  thought, "2 tool calls" for the turn's line while a call runs, and the name and target of each call that runs,
+  its time counting from when it was asked for, a wait on a permission included. A running call's name is muted
+  under the band, which lights toward `Foreground` and would not show on it; ended, it is `Foreground` again. The
   answer being written ends in a caret that blinks every half second. A row new to the conversation enters
   with `ui.Presence`, growing in from the top; the conversation read when the pane opens, or after it, does
   not play as arrivals. A list at its end stays at its end while rows grow in.

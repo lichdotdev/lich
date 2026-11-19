@@ -198,6 +198,7 @@ distinto.
 | Una sesión mostrada como chat recibe las tareas y los avisos que le envían otras sesiones | sí | sí; responder con las herramientas de lich desde el chat sin verificar | sí; responder con las herramientas de lich desde el chat sin verificar | sí; responder con las herramientas de lich desde el chat sin verificar | sí; responder con las herramientas de lich desde el chat sin verificar | sin chat | sin verificar | sí; responder con las herramientas de lich desde el chat sin verificar |
 | En el chat, elegir el modelo, el esfuerzo y el modo que ofrece el agente | sí, incluido un modo que ejecuta todas las herramientas sin preguntar | sí, incluido un modo que ejecuta todas las herramientas sin preguntar; el cambio vale desde tu próximo mensaje | sí | sí | sí | no | sin verificar | modelo y modo, sin esfuerzo |
 | En el chat, las preguntas del agente llegan en una tarjeta que respondes con un clic o una tecla | sí | sin verificar | sí | sí en opencode 1; opencode 2 sin verificar | sí | no | sin verificar | no: Kiro pregunta en texto |
+| En el chat, una llamada a una herramienta aparece en cuanto empieza, con su tiempo corriendo, y guarda cuánto duró | sí | sí; una conversación releída no muestra tiempos | sin verificar | sin verificar | sin verificar | no | sin verificar | sin verificar |
 
 </details>
 
