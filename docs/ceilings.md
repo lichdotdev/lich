@@ -27,7 +27,8 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   same files; the caller is only told to stop. The note is the caller's own account of its work, checked against
   nothing, and waits 45 seconds for the successor's prompt (inside the 120 seconds an MCP client gives the call),
   where a relayed task waits five minutes; past that the session is open without it. The successor inherits the
-  model, effort, ultracode and profile the caller was opened with, not one switched inside it (`/model`). It
+  model, effort, ultracode and profile the caller was opened with or last picked in its chat, not one switched
+  inside its terminal (`/model`). It
   reaches every provider through spawn and `relay.Submit`. The successor always starts on the caller's profile,
   because lich moves work to another account only on the user's click; a `profile` on the call is only a suggestion
   put to the user as a toast once the successor's first turn has ended, so its button works when it appears: the
@@ -64,7 +65,8 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   provider-wide switch is on.
 - **A model or effort is a birth value, and some providers forget it on resume** (`internal/terminal/command.go`,
   `modelArgs`, `effortArgs`): lich passes neither when it resumes or forks a conversation, because a `/model` or
-  `/effort` typed inside the session is the user's decision and re-sending the birth value would undo it. Claude
+  `/effort` typed inside the session is the user's decision and re-sending the birth value would undo it. A pick
+  in the session's chat replaces the recorded model and effort, which only a new conversation reads. Claude
   Code's effort and all of Antigravity resume on the saved default rather than on the conversation's (each
   measurement in `docs/providers/`, Spawn), so a change made inside the session survives while a level or model
   lich set at birth falls back to that default. Cursor CLI also writes whatever model a spawn or resume runs on into
@@ -84,6 +86,79 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   machine, is what the sandbox confines; on Cursor CLI and Antigravity skipping it writes the trust down, so a
   folder once opened confined stays trusted outside the sandbox too. Whether Codex's trust and Cursor CLI's
   `--trust` loosen anything beyond the question was not measured.
+- **A session runs its chat or its terminal, never both, and a chat leaves out two providers**
+  (`internal/chat`, `internal/terminal/chat.go`): the structured modes keep no lock on a conversation, so two
+  processes on one would write one transcript from two histories; a switch stops one side, waits for it to exit
+  and resumes the other, and refuses while a turn runs. Codex and Crush have no chat: Codex's structured mode is
+  its own app-server protocol and Crush's is an HTTP server, where every other provider speaks Claude Code's
+  stream-json or ACP over stdio. Cursor CLI's ACP server was measured only up to its login, so its chat is wired
+  and unverified. A resume is checked after the switch: an ACP load that fails or replays nothing (Kiro was
+  measured opening a new conversation in silence) and a Claude Code `system/init` naming another id each leave a
+  notice, but Claude Code names its conversation only once the first message is sent, so until then the only
+  check is that the transcript exists. An ACP server takes far fewer flags than its terminal: lich passes only
+  what each `acp --help` lists, sets the birth model and effort over the protocol, and answers every permission
+  yes itself where the checkout skips permissions and the server has no flag for it. lich serves no ACP client
+  method (`fs/*`, `terminal/*`): a file the agent asked lich to write would land outside the sandbox. The text of
+  lich's own notices is English, like backend error text.
+- **A chat turn's count of changes is a difference of two numstat readings, not a record of what the agent did**
+  (`internal/chat/changes.go`, `internal/project/lines.go`): lich reads `git diff --numstat HEAD` and the untracked
+  files before the message goes out and again when the turn ends, and counts the files whose numbers differ. It
+  therefore counts whatever else changed the checkout in between (a person's edit, a build), and misses an edit
+  that leaves a file's added and removed counts as they were (a line rewritten in a file already changed by as many
+  lines), and a binary file that stays binary. A turn that moved HEAD (the agent committed) has no count, since the
+  two readings are against different commits; so does a checkout that is not a repository, or whose reading takes
+  more than five seconds. The window then shows the turn's end without a count. The count is not kept: a chat
+  read back from the provider's history shows its turns as done with none. A session opened in a subdirectory
+  counts only that subdirectory. Every provider with a chat reads it the same way.
+- **An answer names the model and effort that wrote it only as far as its provider says** (`ChatItem.Model`,
+  `Effort`; `internal/chat/claude.go`, `claude_options.go`, `acp_options.go`): Claude Code puts `message.model` on
+  every message, live and in the transcript, which lich names with the display name of the `initialize` model that
+  resolves to it (an alias other than `default` first); the effort is the one the process runs on when the message
+  arrives, and the transcript keeps none, so a resumed conversation's answers name a model and no effort. An id
+  that `initialize` does not list stays as the id. An ACP server says neither on a message: an item takes the
+  current model and effort when it begins, and what `session/load` replays names nothing, so a resumed ACP chat's
+  old answers carry no model. The header then shows less, never the model the chat is set to now.
+- **A chat recognises Claude Code's own lines in a conversation by their exact text** (`internal/chat/local_command.go`,
+  `claude.go`): `[Request interrupted by user]` and its `for tool use` form, a local command's `<command-name>`,
+  `<command-message>`, `<command-args>` and `<local-command-stdout>` lines (one muted notice, "/model haiku ·
+  Set model to haiku"), and the answer `No response requested.` written after one are Claude Code's, not the
+  person's or the agent's, and are left out or made a notice. Any other tag, `<local-command-stderr>` among them, or
+  text that only contains one of these, stays as written. Only Claude Code writes them; an ACP server has no such lines.
+- **A chat offers only the model, effort and mode its provider offers, and two of them restart its process**
+  (`internal/chat/options.go`, `claude_options.go`, `acp_options.go`): Claude Code's come from its `initialize`
+  (the models, each with its efforts and whether it has an auto mode) and from the permission modes its `--help`
+  lists, `bypassPermissions` marked as dangerous; an ACP server's from its `configOptions`, or its older `modes`
+  and `models` where it has no option of that category. Labels are the provider's words where it has some; Claude
+  Code names neither its options, nor its efforts, nor its modes, so the window names those by id. Every one is
+  set over the protocol but two, which resume the conversation in a process started for them and are refused
+  while a turn runs: Claude Code's `bypassPermissions`, refused to a process launched without
+  `--allow-dangerously-skip-permissions`, and Kiro CLI's model, whose `session/set_model` never answers and
+  changes nothing (2.21.0) while `acp --model` holds on a load. No ACP server offers a mode that runs every tool
+  without asking, so their chat has none; the checkout's skip-permissions setting still answers every question
+  yes (above). Kiro CLI offers no effort over ACP, opencode one only for a model that has one, and what Cursor
+  CLI offers was not measured past its login. The model and effort picked become the session's own, which a new
+  conversation starts on; the mode is kept for the session's later chats, because Claude Code resumes on the mode
+  of the last turn, not one picked after it, and oh-my-pi on its default. A later chat leaves the model and effort
+  to the provider's resume, which for Claude Code loses the effort and, after a turn in plan mode, came back on
+  another model than the turn's (2.1.327). A terminal resumed after the chat is passed none of them (the
+  birth-value bullet), so there Claude Code's effort, and Antigravity's model and effort, come back on the
+  provider's default.
+- **A chat draws the agent's questions only where the provider hands them to the client** (`internal/chat/question.go`,
+  `claude_question.go`, `acp_question.go`): every request is read into Claude Code's AskUserQuestion shape. Claude
+  Code asks through `can_use_tool` for `AskUserQuestion`, even in `bypassPermissions` (2.1.328), and takes the
+  answers in the allowed input, several picks and the person's own words joined by ", ", or a deny with a word to
+  the agent from the prompt catalog. Antigravity (1.5.3) and oh-my-pi (18.8.9) ask over ACP's `elicitation/create`
+  in form mode once the client declares it: lich reads the schema's properties in name order, folds `<key>__other`
+  and `<key>_other` into the question they belong to as its own words, and answers with each choice's `const`; a
+  form that is not one, or a mode other than form, is declined. opencode (1.19.4) leaves its `question` tool out
+  of an ACP session unless `OPENCODE_ENABLE_QUESTION_TOOL` is set, so its agent asks in plain text; with that
+  variable in the person's environment the tool waits on opencode's own screen, never reaches the client, and the
+  turn waits until the person stops it. Kiro CLI (2.21.0) has no question tool and asks in plain text; Cursor CLI was not measured past its login. Nothing answers a
+  question on the person's behalf, a checkout that skips permissions included. A message sent while questions wait
+  declines them and goes to the agent: Claude Code takes it in the turn running; ACP takes no message during a
+  turn, so lich stops the turn and sends it once the turn ended. A question the process never got an answer to, read
+  back from a transcript, shows as not answered. The window learns a turn is running from its start event, so one
+  opened mid-turn knows it only from a question still waiting.
 
 ## Session state and hooks
 
@@ -271,7 +346,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   event carries, which only Claude Code, Codex and Kiro CLI record (`docs/providers/`, Transcript & cost), so
   oh-my-pi, opencode, Crush, Antigravity and Cursor CLI get no line at all, never the model the session was born
   on standing in for one nobody read. When that model differs from the birth model (`model` column,
-  `SetSessionModel`) the line reads "Opened on …, running …". The comparison is a heuristic, not a lookup:
+  `SetSessionModel`, which a pick in the session's chat replaces) the line reads "Opened on …, running …". The comparison is a heuristic, not a lookup:
   equal once both are shortened (`formatModel`), or the birth model is the family alias of the running id
   (`opus` against `claude-opus-5-5`, a `[1m]` suffix dropped). Any other alias the CLI accepts (`default`,
   `opusplan`) reads as a change, and so does a `/model` the user typed, which is intended.
@@ -323,17 +398,61 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   prompt a person parked there stays and goes out at its own time, so that click moves the session and sends
   nothing. The other six providers record no limit lich can read (above), so none of them is offered anything;
   opencode's conversations could not move between profiles anyway. Nothing crosses providers.
-- **The pace marker is borrowed calibration, and it is silent far more often than it is wrong**
-  (`internal/quota/pace.go`): the two numbers that decide when a weekly window is marked as spending ahead —
-  fifteen percentage points past the elapsed share, and no marking at all in the first twenty-four hours after
-  a reset — are the claude-swap project's measurements (`src/claude_swap/pace.py`, its issue #125), not lich's
-  own. Nothing here has been tuned against a lich user's accounts. The consequence to know before debugging a
-  marker that "never appears": a window ninety percent spent on the first day of its cycle is deliberately
-  unmarked, because just after a reset the elapsed share is near zero and almost any use at all would read as
-  far ahead. Only the weekly window is paced, so the five-hour one and Codex's monthly free-tier window carry
-  no marker however they are spent. The verdict is derived from the window's own reset time, which is the next
-  reset and never the start — the start is that time rolled back whole windows — so a provider that stops
-  reporting a reset time silently drops the marker rather than the gauge.
+- **The runs-out projection is a straight line over borrowed calibration, and it is silent far more often than it
+  is wrong** (`internal/quota/pace.go`): a weekly window that, spent at its average rate so far, would reach 100%
+  before it resets carries a time ("Runs out in 1d 9h"); every other window carries nothing. The line is the
+  whole cycle's average, not the last hours' rate, so a burst reads as a rate and a quiet day pulls it back. The
+  twenty-four hour grace after a reset, in which nothing is projected, is the claude-swap project's measurement
+  (`src/claude_swap/pace.py`, its issue #125), not lich's own, and nothing here has been tuned against a lich
+  user's accounts. The consequence to know before debugging a projection that "never appears": a window ninety
+  percent spent on the first day of its cycle is deliberately unprojected, because just after a reset the rate is
+  one request divided by almost nothing. Only the weekly window is projected, so the five-hour one and Codex's
+  monthly free-tier window carry nothing however they are spent. The verdict is derived from the window's own
+  reset time, which is the next reset and never the start (the start is that time rolled back whole windows),
+  so a provider that stops reporting a reset time silently drops the projection rather than the gauge. It is
+  computed when a reading is taken and so is up to the five-minute cache old; "% left at reset" is not shown.
+- **Extra usage is Claude Code's alone, and Codex's reset credits are Codex's alone** (`internal/quota/claude.go`,
+  `codex.go`; the usage panel and tooltip, `native/cmd/lich-native/usage_tip.go`): the Claude usage route's `extra_usage`
+  block (pay-as-you-go spend past the plan, with its monthly cap) and the Codex route's
+  `rate_limit_reset_credits.available_count` (how many on-demand window resets the account holds) are read from
+  the payloads lich already polls and shown as one more block of the usage panel, only when the account has them on:
+  an `extra_usage` that is disabled, and a count of zero, draw nothing. No other provider's route reports either,
+  so the other six show their windows alone. The usage panel of the profile footer reads per-profile plans only for Claude Code
+  and Codex: Cursor CLI's and opencode's plans are read for the machine's login alone, so on their profiles (and on
+  oh-my-pi's and Kiro CLI's, which have none) it says usage is not measured per profile rather than draw another
+  account's numbers. A `claude setup-token` login reads its windows off response headers
+  (see the bullet below), which carry neither, so its panel never has the extra-usage block. The extra block's shape was
+  written against the field names and a disabled account's nulls: an enabled one has not been seen in a live
+  payload, so a currency or unit the route does not spell the documented way would draw a wrong amount. The
+  currency symbol is known for five currencies; any other shows its ISO code. Codex's payload also carries an
+  `applicable_available_count` beside the count lich reads, which says how many credits fit the window in hand;
+  lich reads and shows the first.
+- **Claude Code's limit resets appear only while the server believes lich is the CLI, and spending one is
+  irreversible** (`internal/quota/claude.go`, `resets`, and `resets.go`, `UseReset`; the usage panel): the grants
+  come in the usage route's `cedar_ember` block, which the server fills only for the user agent the CLI itself
+  sends and a version it still supports. The agent lich sends is `claude-cli/<version> (external, cli)` with the
+  version of the `claude` binary installed (`claude --version`, cached by path, size and modification time, one
+  probe per install), and `claude-cli/2.1.328 (external, cli)` when none can be read. A machine whose `claude` is
+  older than the server's floor reads `eligible: false` (`ineligible_reason: "cli_version"`) and the block silently
+  disappears while the windows keep reading; the same version is sent when spending. Spending is the `Use` button of
+  a grant, after an inline confirmation: `POST /api/organizations/<organization>/reset_rate_limits` with the grant,
+  the program `cedar_ember` and a request id. The organization is read from the account's own `.claude.json`
+  (`oauthAccount.organizationUuid`, in `CLAUDE_CONFIG_DIR` when the profile has one, else `~/.claude.json`), so an
+  account that never started Claude Code has none and the spend says so rather than guess. The request id of an
+  attempt is kept in the backend until the provider answers, so a retry after an error carries the id of the attempt
+  that may have gone through and the server counts one spend, not two; a restart of lich forgets it. The answer
+  decoding (`status` or `result`: `reset`, `already_used`, `not_limited`, `ineligible`, `cooldown`, and a
+  `cooldown_until`) is written from the statuses the Claude CLI's own messages name, never from a spend: no reset was
+  spent to measure the body, so a different shape reads as an error that says Claude did not say whether it went
+  through. The token is only read: a 401 or 403 is "sign in to Claude Code again", never a refresh. A reset that went
+  through drops the cached reading so the next one sees the limit cleared. The button exists on the sidebar footer's
+  panel only; the rail's profile button keeps the old menu. Any caller that holds the lich token can call
+  `quota.UseReset`, a session's own `lich` CLI included, as with every RPC method: nothing scopes a method to the
+  window. Only Claude Code has grants, and a `claude setup-token` login
+  has none (its windows come off headers). A grant is named for what it clears: "Full" for the weekly window, the
+  model of the plan's scoped weekly cap for a model-scoped one (the server's own label when the plan has no such
+  cap); the "N left" counts held grants too. The request does not send `skip_spend=1` as the CLI does: measured live, it removes the `extra_usage` block
+  altogether, and with it the extra spend the panel shows.
 - **Measuring a token-only Claude Code login costs a request against the very plan it measures**
   (`internal/quota/claude.go`): the usage route refuses a `claude setup-token` token, so the gauge reads that
   account the way Claude Code reads it for itself, with one message (`docs/providers/claude.md`, Account).
@@ -696,7 +815,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
 - **A Markdown preview shows the file's new version, never the change** (`native/cmd/lich-native/dock_review_markdown.go`):
   the Review card's preview renders the whole file as the Pulls screen renders a PR body, with nothing marking
   what was added or removed, no line to hang a review comment on and no selection to inject. It reads the
-  working tree (`project.ReadFile`, as the Code tab does); on the Pulls screen an added file renders its patch,
+  working tree (`project.ReadFile`, as the stage editor does); on the Pulls screen an added file renders its patch,
   and an edited one is read at the pull request's head (`project.ReadFileAt`), from GitHub when the clone does
   not hold it, under ReadFile's size cap. A relative image
   shows its alt text (the renderer fetches nothing) and raw HTML is left out. A new version of the file puts
@@ -1351,8 +1470,8 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   goes when the extension fails, is removed, or the window restarts. A tree drawn for another checkout than the
   active one shows a placeholder, and an extension that never draws one for the new checkout leaves it there.
 - **The dock is never narrower than its tabs** (`native/cmd/lich-native/dock.go`, `fitTabs`): each extension with a
-  dock surface adds a tab with its icon and title, so with several the dock cannot be dragged narrow and the
-  terminal beside it loses the columns.
+  dock surface adds an icon button, 28px and a 2px gap, to the pill at the dock's foot, so with enough of them the
+  dock cannot be dragged narrow and the terminal beside it loses the columns. The title is only in the tooltip.
 - **`render` is coalesced, at 30 a second per surface** (`internal/extensions/throttle.go`): the first goes out at
   once, and while the interval has not passed only the newest is kept and sent when it ends, so a loop of renders
   costs the window a frame rate and the newest tree always arrives. The older ones in between never reach the
@@ -1623,6 +1742,17 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   Ubuntu 23.10 and later AppArmor refuses it the user namespace unless the browser ships an AppArmor profile,
   as the distribution's Chrome, Edge and Brave do: one unpacked from a tarball fails to start with "No usable
   sandbox!", which the agent reads as the browser's error.
+- **The new-tab page is the backend's page in the window's colors and words, as of the last time the window sent
+  them** (`internal/newtab`, `docs/browser-tab.md`): a tab already open keeps its look until it is opened again, and
+  before the window has sent any it is the dark theme in English. It has a listener of its own from port 27000,
+  protected like the other preview listeners by a loopback bind and a Host check and no token. A service row is
+  never a link: `api.Service` holds a command and no URL or port, and lich does not parse one out of a command or
+  its output. The checkout's port is listed only while something answers on it, found by a connect when the page
+  renders. Recent pages are the last eight web pages of the session's browser, kept in the settings table under
+  `browser.recent.<files key>` and dropped with the session's row, with whatever title Chrome had when the page
+  was last seen. A browser opened in a window of its own shows the page's internal URL in Chrome's address bar,
+  and the agent's own open and new tab with no URL stay `about:blank`. A note waiting in the tray is hidden while
+  the new-tab page is in front, and comes back with the page it belongs to.
 - **The pane's DevTools is Chrome's front-end drawn as frames** (`internal/browser/chrome_devtools.go`,
   `docs/browser-tab.md`): a target lich creates in a headless window of its own, loading the browser's own
   DevTools from its debugging port, screencast like a page. It has no device toolbar (it emulates on the
@@ -1679,9 +1809,11 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   a parked session's pages show again only once it is resumed. Attach to prompt copies a page of another session
   into the active one's folder (a folder page with everything in it), read through an `os.Root` so a link inside
   the source cannot copy a file from elsewhere; edits to either copy never reach the other.
-  A `.md` row opens rendered in the tab itself (`native/cmd/lich-native/dock_artifacts_reader.go`), with the Code
-  tab's Markdown renderer; `browser_open` on the same file still loads its source in the browser, since the
-  renderer only draws in the window.
+  A `.md` row opens rendered on the stage, in the editor of the active session's checkout
+  (`openArtifactInEditor`, `native/cmd/lich-native/stage_editor_window.go`), with the Code tab's Markdown
+  renderer. The editor reads it from the artifact folder and never writes it, since `project.WriteFile` is bound
+  to the checkout; typing in its source changes nothing. `browser_open` on the same file still loads its source
+  in the browser, since the renderer only draws in the window.
 - **`browser_eval` hands the agent whatever the page holds, form values and passwords included**
   (`internal/browser/eval.go`): page info never reads a field's value, but a script asks for what it wants, and
   its answer lands in the session's transcript. It runs in the page's own world, so it changes what the user
@@ -1775,14 +1907,35 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   pane shows the page opens the chooser in front of the person. The input's `accept` filter is not passed on: the
   chooser lists every file and the page refuses a type it does not take.
 
-- **Showing code is one file, read-only, in the session's own checkout.** `show_code` and a Ctrl+click on a
-  `path:line` open the dock's Code tab, and a new one replaces the file on screen, with no history to go back
-  through, and an agent's comment under the lines goes with it. A path outside the session's checkout (a dependency's sources, the JDK, another worktree) is refused.
+- **Showing code is one file per checkout, in the session's own checkout.** `show_code`, a Ctrl+click on a
+  `path:line` and a file picked in the Code tab open the checkout's stage editor, and a new file replaces the one
+  on screen, with no history to go back through, and an agent's comment on the lines goes with it. The file on
+  screen is saved first, and asks Save, Discard or Cancel only when its save failed or a disk change waits on
+  the user; an agent's `show_code` never asks: while the editor is on the stage, or holds such a file, it only
+  offers the lines in a toast. A path outside the session's checkout (a dependency's sources, the JDK, another worktree) is refused.
   The terminal underlines by the text alone, because the
   hover runs every frame and cannot touch the disk: a `path:line` naming nothing still underlines, and the
   click answers with a toast, as it does for a host written like `example.com:443`. Only a soft-wrapped path is
   joined. Claude Code and Kiro CLI, measured at 44 columns, break a path wider than the terminal with a real
   line break, so the click reads only the half under the pointer; the other providers are not measured.
+
+- **The stage editor has no find, and its notes sit over the code** (`native/cmd/lich-native/stage_editor*.go`):
+  it is godemirror v0.9.0's `Editor`, which has neither the read-only `View`'s search nor its widgets under a
+  line, so Ctrl+F finds nothing in a file (the Code tab's Text search still finds across the checkout), and the
+  agent's `show_code` comment and the session comment box sit in a strip over the code, naming the lines. It
+  writes only a file that is UTF-8 on disk (`project.WriteFile`): another encoding is read decoded as
+  Windows-1252 and would be written back changed, so saving one fails with a toast. It saves by itself a second
+  after the last edit and when it is left (another file, session or node, Close, the window losing the focus),
+  so a window that closes loses at most that last second, never asking; a failed save keeps the dot and asks
+  only when its text is about to be left. A save first reads the file and writes nothing when it no longer
+  holds what the editor read: the disk's change is put to the user instead. An agent that writes in the moment
+  between that read and the write is still overwritten. An editor whose checkout row leaves the
+  tree (its last session closed) keeps its buffer with no node to reach it until a file of that checkout opens
+  again. A disk change made outside any session shows within `editorDiskTick` (5 s) while the editor is on the
+  stage, and when it comes back to it. The cursor line's blame (`project.GitBlame`) is read when the file is
+  opened, saved or reloaded, never on a timer, so a commit made meanwhile shows at the next of those. Its
+  room counts the line's runes as cells, so a line with tabs or wide characters cuts it at the code area's
+  edge without the "…".
 
 ## Languages
 

@@ -50,6 +50,13 @@ func (c *Client) SetBrowserDefaultView(ctx context.Context, v api.BrowserDefault
 	return err
 }
 
+// SetBrowserNewTabPage hands the backend the theme and words its new-tab page
+// is drawn with.
+func (c *Client) SetBrowserNewTabPage(ctx context.Context, v api.BrowserNewTabPageOptions) error {
+	_, err := callMethod(ctx, c, api.BrowserNewTabPage, v)
+	return err
+}
+
 func (c *Client) ResizeBrowser(ctx context.Context, v api.BrowserViewOptions) error {
 	_, err := callMethod(ctx, c, api.BrowserResize, v)
 	return err

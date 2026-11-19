@@ -33,7 +33,10 @@ type diffFeed struct {
 	kick chan struct{}
 }
 
-// follow points the feed at path, starting over when it changed.
+// follow points the feed at path. Another path starts over; the same one
+// after close polls again and keeps showing its last read until the new one
+// lands, so a tab coming back never flashes a loading state over a diff the
+// user just saw.
 func (f *diffFeed) follow(path string) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
@@ -43,8 +46,12 @@ func (f *diffFeed) follow(path string) {
 	if f.stop != nil {
 		f.stop()
 	}
+	read := f.read
+	if f.path != path {
+		read = nil
+	}
 	ctx, stop := context.WithCancel(context.Background())
-	f.path, f.stop, f.read, f.kick = path, stop, nil, make(chan struct{}, 1)
+	f.path, f.stop, f.read, f.kick = path, stop, read, make(chan struct{}, 1)
 	go f.poll(ctx, path, f.kick)
 }
 

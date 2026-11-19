@@ -43,7 +43,7 @@ type InputGroupStyle struct {
 	TextSize    unit.Sp // 0 is text-sm; the dense fields use TextXS
 	// Clear, when set, is a ghost X at the end while the field has text, as
 	// on Input.
-	Clear     *widget.Clickable
+	Clear     *Clickable
 	Disabled  bool
 	Invalid   bool
 	multiline bool
@@ -154,7 +154,7 @@ func (th *Theme) InputGroupIcon(ic *icons.Icon) layout.Widget {
 
 // InputGroupButton is an InputGroupButton: a ghost, xs button. Set Size to
 // SizeIconXS or SizeIconSM for a bare icon, and Icon for its glyph.
-func (th *Theme) InputGroupButton(click *widget.Clickable, text string) ButtonStyle {
+func (th *Theme) InputGroupButton(click *Clickable, text string) ButtonStyle {
 	b := th.Button(click, text)
 	b.Variant, b.Size = VariantGhost, SizeXS
 	return b

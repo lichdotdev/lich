@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"slices"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -24,7 +25,7 @@ const inputWait = 2 * time.Second
 var errInWindow = errors.New("this browser is open in its own window")
 
 // Attach shows this session's browser in a pane sized v, starting a headless
-// one at about:blank when there is none. The page the agent left stays as it
+// one on the new-tab page when there is none. The page the agent left stays as it
 // is: the pane only starts watching it.
 func (s *Service) Attach(owner string, v Viewport) (Handle, error) {
 	if owner == "" {
@@ -39,7 +40,7 @@ func (s *Service) Attach(owner string, v Viewport) (Handle, error) {
 	lock.Lock()
 	defer lock.Unlock()
 	if s.current(owner) == nil {
-		if _, err := s.launchFresh(owner, "about:blank", false, false); err != nil {
+		if _, err := s.launchFresh(owner, s.blankURL(owner), false, false); err != nil {
 			return Handle{}, err
 		}
 	}
@@ -396,6 +397,9 @@ func (s *Service) infoSink(sess *session) func(url, title string) {
 		if registered {
 			s.emitState(sess, true)
 		}
+		if s.newTab.Visit != nil && url != "" {
+			s.newTab.Visit(sess.owner, url, title)
+		}
 	}
 }
 
@@ -432,8 +436,17 @@ func (s *Service) agentPoint(owner string) *point {
 }
 
 func (s *session) stateLocked(open bool) api.BrowserState {
-	return api.BrowserState{
+	state := api.BrowserState{
 		Owner: s.owner, Open: open, Headed: s.headed, ByAgent: s.byAgent, URL: s.url, Title: s.title,
 		Dialog: s.dialog, Tabs: s.paneTabs, Idle: s.asked,
 	}
+	if s.isNewTab == nil {
+		return state
+	}
+	state.NewTab = s.isNewTab(s.url)
+	state.Tabs = slices.Clone(s.paneTabs)
+	for i := range state.Tabs {
+		state.Tabs[i].NewTab = s.isNewTab(state.Tabs[i].URL)
+	}
+	return state
 }

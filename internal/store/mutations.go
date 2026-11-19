@@ -360,7 +360,7 @@ func (s *Service) reopen(newSessionID, where string, args ...any) (*Session, err
 		// copies and artifacts are in the conversation it resumes: a fresh key
 		// would leave every one of them naming a directory no row holds.
 		var labelAuto int
-		var projectID, model, effort, sandbox, folder, color, profile, filesID string
+		var projectID, model, effort, sandbox, folder, color, profile, filesID, view, chatMode string
 		var ultracode bool
 		var subagent int
 		var forkOffset float64
@@ -369,7 +369,7 @@ func (s *Service) reopen(newSessionID, where string, args ...any) (*Session, err
 			        model, effort, ultracode, subagent, sandbox, pinned, folder, color, origin_session_id, origin_label,
 			        forked, scheduled_at, scheduled_prompt, scheduled_by, fork_cost_offset, profile,
 			        watch_on, watch_prompt, watch_by, watch_runs, watch_pr, watch_seen,
-			        CASE files_id WHEN '' THEN id ELSE files_id END
+			        CASE files_id WHEN '' THEN id ELSE files_id END, view, chat_mode
 			   FROM sessions `+where,
 			args...,
 		)
@@ -379,7 +379,7 @@ func (s *Service) reopen(newSessionID, where string, args ...any) (*Session, err
 			&old.OriginSessionID, &old.OriginLabel, &old.Forked,
 			&old.ScheduledAt, &old.ScheduledPrompt, &old.ScheduledBy, &forkOffset, &profile,
 			&old.Watch.On, &old.Watch.Prompt, &old.Watch.By, &old.Watch.Runs, &old.Watch.PR, &old.Watch.Seen,
-			&filesID,
+			&filesID, &view, &chatMode,
 		); err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				return nil // nothing parked; caller creates a new session
@@ -434,12 +434,12 @@ func (s *Service) reopen(newSessionID, where string, args ...any) (*Session, err
 			   (id, project_id, label, kind, path, provider_session_id, label_auto,
 			    model, effort, ultracode, subagent, sandbox, pinned, folder, color, origin_session_id, origin_label,
 			    forked, scheduled_at, scheduled_prompt, scheduled_by, fork_cost_offset, profile,
-			    watch_on, watch_prompt, watch_by, watch_runs, watch_pr, watch_seen, files_id, position)
-			 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, `+nextSessionPosition+`)`,
+			    watch_on, watch_prompt, watch_by, watch_runs, watch_pr, watch_seen, files_id, view, chat_mode, position)
+			 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, `+nextSessionPosition+`)`,
 			newSessionID, projectID, old.Label, old.Kind, old.Path, old.ProviderSessionID, labelAuto,
 			model, effort, ultracode, subagent, sandbox, old.Pinned, folder, color, old.OriginSessionID, old.OriginLabel,
 			old.Forked, old.ScheduledAt, old.ScheduledPrompt, old.ScheduledBy, forkOffset, profile,
-			old.Watch.On, old.Watch.Prompt, old.Watch.By, old.Watch.Runs, old.Watch.PR, old.Watch.Seen, filesID, projectID,
+			old.Watch.On, old.Watch.Prompt, old.Watch.By, old.Watch.Runs, old.Watch.PR, old.Watch.Seen, filesID, view, chatMode, projectID,
 		); err != nil {
 			return fmt.Errorf("reinsert session %q: %w", newSessionID, err)
 		}
@@ -473,6 +473,7 @@ func (s *Service) reopen(newSessionID, where string, args ...any) (*Session, err
 			ScheduledPrompt:   old.ScheduledPrompt,
 			ScheduledBy:       old.ScheduledBy,
 			Watch:             old.Watch,
+			View:              view,
 		}
 		return nil
 	})
@@ -738,13 +739,14 @@ func (s *Service) SetSessionTitle(sessionID, title string) (bool, error) {
 	return n > 0, nil
 }
 
-// SetSessionModel records the model a session was born on, so every spawn that
+// SetSessionModel records the model a session runs on, so every spawn that
 // starts a new conversation for it (the first view, a restart) repeats the
 // flag. A resume does not: the conversation's own model is the provider's to
 // restore (terminal.modelArgs).
 //
-// It is written once, right after the row is created. A session whose row is
-// gone matches nothing and is not an error.
+// It is written right after the row is created, and again when the person
+// picks another model in the session's chat (internal/chat). A session whose
+// row is gone matches nothing and is not an error.
 func (s *Service) SetSessionModel(sessionID, model string) error {
 	if _, err := s.db.Exec(
 		`UPDATE sessions SET model = ? WHERE id = ?`, model, sessionID,
@@ -769,7 +771,7 @@ func (s *Service) SessionModel(sessionID string) string {
 }
 
 // SetSessionEffort records the reasoning effort a session's provider was asked
-// to run at, read back the way SetSessionModel's is.
+// to run at, at birth or in its chat, read back the way SetSessionModel's is.
 func (s *Service) SetSessionEffort(sessionID, effort string) error {
 	if _, err := s.db.Exec(
 		`UPDATE sessions SET effort = ? WHERE id = ?`, effort, sessionID,
@@ -924,6 +926,59 @@ func (s *Service) SessionSandbox(sessionID string) string {
 		return ""
 	}
 	return sandbox.String
+}
+
+// SessionSpawn is where session sessionID runs: its project, its provider and
+// its checkout, the project's own when the row names none.
+func (s *Service) SessionSpawn(sessionID string) (projectID, kind, cwd string, err error) {
+	err = s.db.QueryRow(
+		`SELECT s.project_id, s.kind, CASE s.path WHEN '' THEN p.path ELSE s.path END
+		   FROM sessions s JOIN projects p ON p.id = s.project_id WHERE s.id = ?`, sessionID,
+	).Scan(&projectID, &kind, &cwd)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", "", "", fmt.Errorf("session %q not found", sessionID)
+	}
+	return projectID, kind, cwd, err
+}
+
+// SetSessionView records how session sessionID is drawn, api.ViewChat or
+// api.ViewTerminal.
+func (s *Service) SetSessionView(sessionID, view string) error {
+	if _, err := s.db.Exec(`UPDATE sessions SET view = ? WHERE id = ?`, view, sessionID); err != nil {
+		return fmt.Errorf("set session view: %w", err)
+	}
+	return nil
+}
+
+// SetSessionChatMode records the mode the person picked in session sessionID's
+// chat (api.OptionMode), which every later chat of it opens on: Claude Code
+// resumes on the mode of the last turn, not one picked after it, oh-my-pi on
+// its default, and a plan dropped by a silent respawn would let the agent edit.
+func (s *Service) SetSessionChatMode(sessionID, mode string) error {
+	if _, err := s.db.Exec(`UPDATE sessions SET chat_mode = ? WHERE id = ?`, mode, sessionID); err != nil {
+		return fmt.Errorf("set session chat mode: %w", err)
+	}
+	return nil
+}
+
+// SessionChatMode is the mode SetSessionChatMode recorded, "" for none.
+func (s *Service) SessionChatMode(sessionID string) string {
+	var mode string
+	err := s.db.QueryRow(`SELECT chat_mode FROM sessions WHERE id = ?`, sessionID).Scan(&mode)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		slog.Warn("session chat mode", "session", sessionID, "err", err)
+	}
+	return mode
+}
+
+// SessionView is how session sessionID is drawn, "" for the terminal.
+func (s *Service) SessionView(sessionID string) string {
+	var view string
+	err := s.db.QueryRow(`SELECT view FROM sessions WHERE id = ?`, sessionID).Scan(&view)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		slog.Warn("session view", "session", sessionID, "err", err)
+	}
+	return view
 }
 
 // SessionFilesKey names the directories that hang off a session on disk, its

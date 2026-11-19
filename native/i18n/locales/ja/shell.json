@@ -49,22 +49,23 @@
   },
   "footerBar": {
     "attachFile": "ファイルを添付",
-    "browseCode": "コードを閲覧",
     "reviewChanges": "変更をレビュー",
     "viewPullRequest": "プルリクエストを見る",
-    "pullRequest": "PR #{number}",
-    "showArtifacts": "アーティファクトを表示"
+    "pullRequest": "PR #{number}"
   },
   "footerSession": {
-    "contextWindow": "コンテキストウィンドウ",
-    "contextTokens": "{tokens} / {window} トークン",
     "cacheHit": "キャッシュ: ヒット率 {percent}%",
     "costUnavailable": "コストは取得できません",
     "sessionCost": "セッションのコスト",
     "costOfBudget": "予算 {budget} のうち {cost}",
     "costNote": "このセッションの会話全体の API コストです。サブスクリプションの料金とは異なる場合があります。",
     "handsOnTime": "作業時間",
-    "handsOnFailed": "作業時間を取得できませんでした。"
+    "handsOnFailed": "作業時間を取得できませんでした。",
+    "context": "コンテキスト",
+    "tokens": "トークン",
+    "modelWindow": "モデルのウィンドウ",
+    "cache": "キャッシュ",
+    "cacheHitShort": "ヒット率 {percent}%"
   },
   "gitMissingGate": {
     "title": "git がインストールされていません",
@@ -97,7 +98,39 @@
   },
   "planQuota": {
     "planUsage": "プランの使用量",
-    "locked": "ロック中"
+    "locked": "ロック中",
+    "runsOut": "あと {time} で上限に達します",
+    "resetsIn": "{time} 後にリセット",
+    "extraUsage": "追加使用量",
+    "extraOf": "{used} / {limit}",
+    "extraNoLimit": "{used} · 上限なし",
+    "resets": "リセット",
+    "resetsLeft": {
+      "one": "残り {count} 回",
+      "other": "残り {count} 回"
+    },
+    "resetFull": "フル",
+    "resetUntil": "{month}{day}日まで",
+    "shortMonths": "1月,2月,3月,4月,5月,6月,7月,8月,9月,10月,11月,12月",
+    "resetUse": "使う",
+    "resetConfirm": "{name} のリセットを 1 回使いますか？",
+    "resetClearsFull": "セッションと週の上限をリセットします。",
+    "resetClearsModel": "セッションの上限と {model} の週の上限をリセットします。",
+    "resetClearsSession": "セッションの上限をリセットします。",
+    "resetDone": "上限をリセットしました",
+    "resetNothing": "リセットするものがありません",
+    "resetNothingDetail": "上限に達していません。",
+    "resetIneligible": "Claude は今このリセットを提供していません",
+    "resetCooldownAt": "リセットはクールダウン中です。{time} 後にもう一度お試しください。",
+    "resetCooldownLater": "リセットはクールダウン中です。しばらくしてからもう一度お試しください。",
+    "resetFailed": "リセットを使えませんでした: {error}",
+    "resetCredits": "リセットクレジット",
+    "resetCreditsAvailable": {
+      "one": "{count} 件利用可能",
+      "other": "{count} 件利用可能"
+    },
+    "noUsage": "{provider} ではプロファイルごとの使用量は計測していません。",
+    "unreadable": "プランの使用量を読み取れませんでした。"
   },
   "providerSetupDialog": {
     "chooseTitle": "エージェントを選択",

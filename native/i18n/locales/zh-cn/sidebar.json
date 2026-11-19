@@ -269,5 +269,9 @@
     "review": "收到评审时输入提示词",
     "at": "{when} 发送提示词",
     "resume": "用量限制后于 {when} 继续"
+  },
+  "editorRow": {
+    "close": "关闭编辑器",
+    "unsaved": "有未保存的更改"
   }
 }

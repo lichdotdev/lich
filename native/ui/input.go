@@ -50,7 +50,14 @@ const (
 )
 
 // inputState is what the aria and :focus-visible classes of an input select on.
-type inputState struct{ focused, invalid, disabled, bare bool }
+type inputState struct {
+	focused, invalid, disabled, bare bool
+	// steady keeps the frame as it is unfocused: the caret says where the
+	// keyboard is.
+	steady bool
+	// radius is the frame's corner, RadiusMD when 0.
+	radius unit.Dp
+}
 
 // inputPaint is the box's three layers, opaque, or transparent where a layer
 // is not drawn.
@@ -75,7 +82,7 @@ func inputPaintFor(th *Theme, st inputState, borderless bool) inputPaint {
 	switch {
 	case st.invalid:
 		c.border, c.ring = box.Over(Alpha(p.Destructive, inputInvalidBorderAlpha)), th.Over(Alpha(p.Destructive, inputInvalidRingAlpha))
-	case st.focused:
+	case st.focused && !st.steady:
 		c.border, c.ring = p.Ring, th.Over(Alpha(p.Ring, inputFocusRingAlpha))
 	}
 	if borderless {
@@ -113,7 +120,7 @@ type InputStyle struct {
 	// Clear, when set, is a ghost X at the right edge while the field has
 	// text: pressing it empties the field, as an undo step, and leaves the
 	// focus in it.
-	Clear    *widget.Clickable
+	Clear    *Clickable
 	Disabled bool
 	Invalid  bool
 	theme    *Theme
@@ -229,6 +236,17 @@ type inputText struct {
 	single                  bool
 	// minHeight is the frame's floor (min-h-16) for a field that grows.
 	minHeight unit.Dp
+	// leading is the line height, the Tailwind one for size when 0.
+	leading unit.Sp
+}
+
+// lineHeight is the line height of the text, and whether it has one.
+func (f inputText) lineHeight() (unit.Sp, bool) {
+	if f.leading > 0 {
+		return f.leading, true
+	}
+	leading, ok := tailwindLeading[f.size]
+	return leading, ok
 }
 
 // layout draws the text and returns the frame's size. A single-line field is
@@ -273,7 +291,7 @@ func (f inputText) layout(gtx C, height int) D {
 // lines together: it spaces lines at the line height but sizes a line alone
 // to its glyphs. 0 for a size the leading table does not hold.
 func (f inputText) missingLeading(gtx C) int {
-	leading, ok := tailwindLeading[f.size]
+	leading, ok := f.lineHeight()
 	if !ok {
 		return 0
 	}
@@ -301,7 +319,7 @@ func (f inputText) layoutEditor(gtx C) D {
 		maxLines = 1
 	}
 	hintLabel := widget.Label{MaxLines: maxLines, Truncator: "…"}
-	if leading, ok := tailwindLeading[f.size]; ok {
+	if leading, ok := f.lineHeight(); ok {
 		// Gio scales an explicit LineHeight by 1.2 unless told otherwise.
 		hintLabel.LineHeight, hintLabel.LineHeightScale = leading, 1
 		f.editor.LineHeight, f.editor.LineHeightScale = leading, 1
@@ -335,6 +353,9 @@ func inputFrame(gtx C, th *Theme, editor *widget.Editor, st inputState, borderle
 	st.focused = gtx.Focused(editor)
 	col := inputPaintFor(th, st, borderless)
 	radius := gtx.Dp(RadiusMD)
+	if st.radius > 0 {
+		radius = gtx.Dp(st.radius)
+	}
 	if col.ring.A != 0 {
 		inputStroke(gtx, d.Size, radius, float32(gtx.Dp(inputRingWidth)), true, col.ring)
 	}

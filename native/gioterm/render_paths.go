@@ -123,10 +123,17 @@ func (g *grid) draw(gtx layout.Context, sn snap, cells []cell, dirty []uint8, be
 }
 
 // drawCursor paints a block cursor over the cell under it, the character
-// kept readable in cursorStyleOf's ink.
+// kept readable in cursorStyleOf's ink, or its outline when the terminal
+// does not have the keyboard.
 func (g *grid) drawCursor(ops *op.Ops, c cell, sn snap) {
 	st := cursorStyleOf(c, sn)
 	r := image.Rect(sn.cursorX*g.cellW, sn.cursorY*g.cellH, (sn.cursorX+1)*g.cellW, (sn.cursorY+1)*g.cellH)
+	if sn.unfocused {
+		for _, e := range cursorOutline(r) {
+			paint.FillShape(ops, rgba(st.bg), clip.Rect(e).Op())
+		}
+		return
+	}
 	paint.FillShape(ops, rgba(st.bg), clip.Rect(r).Op())
 	if c.cp <= ' ' && c.rest == "" {
 		return

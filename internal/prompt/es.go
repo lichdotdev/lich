@@ -186,6 +186,8 @@ Esta sesión tiene un navegador propio (herramientas browser_*). Corre sin venta
 		One:   "(%d error de consola más)",
 		Other: "(%d errores de consola más)",
 	},
-	PageDialogWaits:    "La página no ejecuta nada hasta que se responda este diálogo: llama a browser_dialog.",
-	PageDialogWaitsCLI: "La página no ejecuta nada hasta que se responda este diálogo: ejecuta lich browser dialog accept|dismiss.",
+	PageDialogWaits:      "La página no ejecuta nada hasta que se responda este diálogo: llama a browser_dialog.",
+	PageDialogWaitsCLI:   "La página no ejecuta nada hasta que se responda este diálogo: ejecuta lich browser dialog accept|dismiss.",
+	ChatPermissionDenied: "La persona rechazó esta llamada a la herramienta.",
+	ChatQuestionDeclined: "La persona no respondió estas preguntas. No supongas una respuesta: sigue sin ella o vuelve a preguntar.",
 }

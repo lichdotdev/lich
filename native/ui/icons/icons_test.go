@@ -221,3 +221,11 @@ func TestLookupLobeReportsAMissingName(t *testing.T) {
 		t.Error("LookupLobe(no-such-mark) found a mark")
 	}
 }
+
+func TestBrandMarksParse(t *testing.T) {
+	for name := range brandPaths {
+		if Brand(name) == nil {
+			t.Errorf("brand %q did not parse", name)
+		}
+	}
+}

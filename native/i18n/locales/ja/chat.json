@@ -1,0 +1,75 @@
+{
+  "switch": {
+    "gui": "GUI",
+    "tui": "TUI",
+    "working": "エージェントのターンが終わってから切り替えられます",
+    "pending": "切り替え中…",
+    "failed": "表示を切り替えられませんでした"
+  },
+  "view": {
+    "failed": "チャットへのリクエストに失敗しました",
+    "thought": "思考",
+    "worked": {
+      "other": "{duration}作業 · ツール{count}件"
+    },
+    "toolFailed": "失敗",
+    "answered": "{tool} · {choice}",
+    "verbs": "詠唱中|召喚中|魔力を注ぎ中|調合中|占い中|刻印中|紡ぎ中|蘇らせ中",
+    "thinking": "思考中",
+    "toolCalls": {
+      "other": "ツール呼び出し{count}件"
+    },
+    "workedAt": {
+      "other": "{duration}作業 · ツール{count}件 · {time}"
+    }
+  },
+  "done": {
+    "done": "完了",
+    "stopped": "停止",
+    "failed": "失敗",
+    "noChanges": "変更なし",
+    "files": {
+      "other": "{count} 個のファイル"
+    }
+  },
+  "composer": {
+    "placeholder": "このプロジェクトについて{provider}に質問",
+    "send": "送信",
+    "stop": "停止"
+  },
+  "option": {
+    "model": "モデル",
+    "effort": "エフォート",
+    "mode": "モード",
+    "busy": "変更するにはターンの終了を待ってください。",
+    "modelEffort": "モデルとエフォート"
+  },
+  "choice": {
+    "manual": "手動",
+    "plan": "プラン",
+    "auto": "自動",
+    "yolo": "YOLO"
+  },
+  "day": {
+    "today": "今日",
+    "yesterday": "昨日"
+  },
+  "model": {
+    "search": "{provider}のモデルを検索…",
+    "showMore": "さらに表示",
+    "default": "デフォルト"
+  },
+  "question": {
+    "multi": "複数選択",
+    "step": "{n} / {total}",
+    "sendAll": "すべて送信",
+    "freeHint": "Enter で送信 · Esc で断る",
+    "marked": {
+      "other": "{count} 件選択"
+    },
+    "write": "その他… 自分で回答を書く",
+    "declined": "未回答",
+    "label": "{header}:",
+    "own": "「{text}」"
+  }
+}

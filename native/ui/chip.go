@@ -8,7 +8,6 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/unit"
-	"gioui.org/widget"
 )
 
 // Chip classes of SessionPhaseChips: `inline-flex items-baseline gap-1
@@ -33,14 +32,14 @@ var (
 // set of chips can be several at once or cleared by an All chip. Clicking one
 // takes no focus, which keeps it in the filter field.
 type ChipStyle struct {
-	Click *widget.Clickable
+	Click *Clickable
 	Label string
 	Count int
 	On    bool
 	theme *Theme
 }
 
-func (th *Theme) Chip(click *widget.Clickable, label string, count int, on bool) ChipStyle {
+func (th *Theme) Chip(click *Clickable, label string, count int, on bool) ChipStyle {
 	return ChipStyle{Click: click, Label: label, Count: count, On: on, theme: th}
 }
 
@@ -48,7 +47,7 @@ func (c ChipStyle) Layout(gtx C) D {
 	m := op.Record(gtx.Ops)
 	d := c.Click.Layout(gtx, func(gtx C) D { return c.draw(gtx, c.Click.Hovered()) })
 	call := m.Stop()
-	if gtx.Focused(c.Click) {
+	if c.Click.Focused(gtx) {
 		toggleStroke(gtx, d.Size, gtx.Dp(chipRingWidth), gtx.Dp(RadiusMD), c.theme.Ring)
 	}
 	call.Add(gtx.Ops)

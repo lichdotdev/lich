@@ -30,16 +30,16 @@ type sidebar struct {
 	renames    map[string]*ui.InlineEdit
 	// renamed is the label a rename committed during this frame's layout.
 	renamed sessionRename
-	cards   map[string]*widget.Clickable
+	cards   map[string]*ui.Clickable
 	// moreClicks and moreMenus are the … of each card's corner and its menu.
-	moreClicks map[string]*widget.Clickable
+	moreClicks map[string]*ui.Clickable
 	moreMenus  map[string]*ui.MenuState
 	// checkoutRows are the checkout rows a mother's group or a folder draws,
 	// lit under the pointer.
-	checkoutRows map[string]*widget.Clickable
+	checkoutRows map[string]*ui.Clickable
 	// mothers are the chevrons that fold a mother's children.
-	mothers  map[string]*widget.Clickable
-	prChips  map[string]*widget.Clickable
+	mothers  map[string]*ui.Clickable
+	prChips  map[string]*ui.Clickable
 	icPin    *icons.Icon
 	icShield *icons.Icon
 	icPR     *icons.Icon
@@ -60,6 +60,7 @@ type sidebar struct {
 	schedule scheduleDialog
 	rail     sidebarRail
 	morph    sidebarMorph
+	peek     sidebarPeek
 	profile  profileFooter
 	services servicesFooter
 	// launchProviders is this frame's m.launchProviders(), what every launch
@@ -71,15 +72,15 @@ func newSidebar(root *ui.Root) *sidebar {
 	s := &sidebar{
 		root:         root,
 		tour:         new(driver.Tour),
-		cards:        map[string]*widget.Clickable{},
-		moreClicks:   map[string]*widget.Clickable{},
+		cards:        map[string]*ui.Clickable{},
+		moreClicks:   map[string]*ui.Clickable{},
 		moreMenus:    map[string]*ui.MenuState{},
-		checkoutRows: map[string]*widget.Clickable{},
-		mothers:      map[string]*widget.Clickable{},
+		checkoutRows: map[string]*ui.Clickable{},
+		mothers:      map[string]*ui.Clickable{},
 		tips:         map[string]*ui.Tooltip{},
 		menus:        map[string]*ui.MenuState{},
 		renames:      map[string]*ui.InlineEdit{},
-		prChips:      map[string]*widget.Clickable{},
+		prChips:      map[string]*ui.Clickable{},
 		icPin:        icons.Lucide("pin"),
 		icShield:     icons.Lucide("shield"),
 		icPR:         icons.Lucide("git-pull-request-arrow"),
@@ -88,7 +89,7 @@ func newSidebar(root *ui.Root) *sidebar {
 		open:         true,
 		hints:        map[string]*ui.Tooltip{},
 		blocks:       map[string]*blockState{},
-		rail:         sidebarRail{cards: map[string]*widget.Clickable{}, tips: map[string]*ui.Tooltip{}, menus: map[string]*ui.MenuState{}},
+		rail:         sidebarRail{cards: map[string]*ui.Clickable{}, tips: map[string]*ui.Tooltip{}, menus: map[string]*ui.MenuState{}},
 		services:     newServicesFooter(),
 	}
 	s.header.phases = map[sessionPhase]bool{}
@@ -114,7 +115,7 @@ func (s *sidebar) holdsKeys() bool {
 			return true
 		}
 	}
-	if s.header.newMenu.Opened() || s.profile.menu.Opened() || s.services.holdsKeys() || s.rail.holdsKeys() {
+	if s.header.newMenu.Opened() || s.profile.panel.Opened() || s.services.holdsKeys() || s.rail.holdsKeys() {
 		return true
 	}
 	for _, b := range s.blocks {
@@ -141,12 +142,15 @@ type sidebarAction struct {
 	terminalAt, editorAt, folderAt, browser string
 	// From a browser row's menu, each the session whose browser it is.
 	browserMinimize, browserWindow, browserClose string
-	unsplit                                      string // the session to take out of its split
-	rename                                       sessionRename
-	color, colorTo                               string // session id, and its new tint ("" for the theme)
-	continueIn                                   continueRequest
-	profilePick                                  profilePick
-	worktree                                     bool // the + menu asked for a worktree session
+	// From an editor node, the checkout whose editor to show or to close.
+	editor, editorClose string
+	unsplit             string // the session to take out of its split
+	rename              sessionRename
+	color, colorTo      string // session id, and its new tint ("" for the theme)
+	continueIn          continueRequest
+	profilePick         profilePick
+	useReset            resetRequest
+	worktree            bool // the + menu asked for a worktree session
 	// The session to fork, in its own checkout or into a new worktree.
 	forkHere, forkWorktree string
 	schedule               string // the session whose Schedule prompt… was picked
@@ -270,6 +274,7 @@ func (s *sidebar) panel(gtx C, th *ui.Theme, m *model, active string) (D, sideba
 	gtx.Constraints = layout.Exact(size)
 	ui.Fill(gtx, th.Sidebar, ui.RadiusLG)
 	on := th.On(th.Sidebar)
+	defer ui.InsetBorder(gtx, size, gtx.Dp(ui.RadiusLG), on.Over(on.Border))
 	s.header.leaveField(gtx)
 	s.header.clicks(gtx)
 	view := m.sidebarBlocks(s.header.filter())

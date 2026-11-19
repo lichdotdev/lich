@@ -5,7 +5,6 @@ import (
 	"slices"
 
 	"gioui.org/layout"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
@@ -15,7 +14,7 @@ import (
 
 // footerItemIcons is the glyph each chip wears beside its example reading.
 var footerItemIcons = map[string]*icons.Icon{
-	"attach": icAttach, "files": icCode, "changes": icons.Lucide("file-diff"), "artifacts": icDockArtifacts, "pr": icPR,
+	"attach": icAttach, "changes": icons.Lucide("file-diff"), "pr": icPR,
 	"checkout": icBranch, "path": icFolder, "model": icons.Lucide("cpu"), "context": icGauge,
 	"plan": icGauge, "cost": icons.Lucide("coins"), "handsOn": icTimer, "clock": icons.Lucide("clock"),
 }
@@ -33,7 +32,7 @@ const placeholderOpacity = 0.3
 // layout editor and the preview under it.
 type footerEditor struct {
 	sortable ui.Sortable
-	restore  widget.Clickable
+	restore  ui.Clickable
 }
 
 // editorState is the row's description, and whether the editor takes no

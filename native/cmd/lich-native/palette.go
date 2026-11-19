@@ -69,8 +69,8 @@ type commandPalette struct {
 	hovered int
 	settle  settler
 	list    widget.List
-	tabs    map[paletteTab]*widget.Clickable
-	rows    []widget.Clickable
+	tabs    map[paletteTab]*ui.Clickable
+	rows    []ui.Clickable
 	// opened counts openings: an answer never outlives the opening it was
 	// asked in, so a reopened palette does not flash the last one's rows.
 	opened int
@@ -104,7 +104,7 @@ type commandPalette struct {
 }
 
 func newCommandPalette(invalidate func()) *commandPalette {
-	p := &commandPalette{tab: tabAll, tabs: map[paletteTab]*widget.Clickable{}, dropped: map[string]bool{}}
+	p := &commandPalette{tab: tabAll, tabs: map[paletteTab]*ui.Clickable{}, dropped: map[string]bool{}}
 	p.history.invalidate = invalidate
 	p.external.invalidate, p.said.invalidate = invalidate, invalidate
 	p.list.Axis = layout.Vertical
@@ -151,9 +151,9 @@ func (p *commandPalette) reset() {
 	p.polls, p.pollAt = 0, time.Time{}
 }
 
-func (p *commandPalette) tabClick(tab paletteTab) *widget.Clickable {
+func (p *commandPalette) tabClick(tab paletteTab) *ui.Clickable {
 	if p.tabs[tab] == nil {
-		p.tabs[tab] = new(widget.Clickable)
+		p.tabs[tab] = new(ui.Clickable)
 	}
 	return p.tabs[tab]
 }

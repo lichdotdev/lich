@@ -1,7 +1,7 @@
 package main
 
-// The Git panel: the region between the stage and the footer, opened from the
-// footer, that reads the repository of the active session. Log, the only tab
+// The Git panel: the region at the stage's foot, opened from the branch's
+// balloon, that reads the repository of the active session. Log, the only tab
 // for now, is the branch tree, the history and the selected commit's detail.
 
 import (
@@ -78,9 +78,9 @@ type gitPanelInput struct {
 
 // gitRowState is a list row's clickable and its tooltip.
 type gitRowState struct {
-	click         widget.Clickable
+	click         ui.Clickable
 	tip, moreTip  ui.Tooltip
-	more          widget.Clickable
+	more          ui.Clickable
 	menu, context ui.MenuState
 }
 
@@ -114,7 +114,7 @@ type gitPanel struct {
 	typedAt               time.Time
 	sinceDays             int
 	authorMenu, dateMenu  ui.MenuState
-	author, date          widget.Clickable
+	author, date          ui.Clickable
 
 	treeField widget.Editor
 	tree      widget.List
@@ -206,6 +206,7 @@ func (g *gitPanel) layout(gtx C, th *ui.Theme, in gitPanelInput) {
 	defer clip.UniformRRect(image.Rectangle{Max: size}, gtx.Dp(ui.RadiusLG)).Push(gtx.Ops).Pop()
 	ui.Fill(gtx, th.Sidebar, 0)
 	on := th.On(th.Sidebar)
+	defer ui.InsetBorder(gtx, size, gtx.Dp(ui.RadiusLG), on.Over(on.Border))
 	layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D { return g.header(gtx, on) }),
 		layout.Rigid(on.Separator),

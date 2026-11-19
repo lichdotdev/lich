@@ -39,7 +39,7 @@ func (th *Theme) DropdownMenu(root *Root, state *MenuState, entries []MenuEntry)
 // ArrowDown land with keyboard focus traversal.
 func (d DropdownMenuStyle) Layout(gtx C, trigger layout.Widget) D {
 	s := d.State
-	dims := menuLayoutTrigger(gtx, &s.trigger, trigger)
+	dims := menuLayoutTrigger(gtx, &s.trigger, func(gtx C) D { return hand(gtx, trigger) })
 	if at, ok := menuTriggerPress(gtx, &s.trigger, pointer.ButtonPrimary); ok && !s.open {
 		origin := d.Root.origin(at)
 		s.menuOpen(image.Rectangle{Min: origin, Max: origin.Add(dims.Size)}, origin)

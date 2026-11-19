@@ -50,7 +50,7 @@ var dialogActions = map[string]bool{"accept": true, "dismiss": true}
 // agent's cursor to press.
 type dialogCard struct {
 	shown      *api.BrowserDialog
-	ok, cancel widget.Clickable
+	ok, cancel ui.Clickable
 	field      widget.Editor
 	focusField bool
 	okAt, noAt image.Rectangle
@@ -155,9 +155,9 @@ func (u *window) dialogPageKey(p *browserPaneUI, session string, e key.Event) bo
 	return true
 }
 
-// dialogCardAt draws the card over the page in gtx, whose top is top pixels
-// down the pane.
-func (u *window) dialogCardAt(gtx C, p *browserPaneUI, session string, top int) {
+// dialogCardAt draws the card over the page in gtx, whose corner is origin
+// in the pane.
+func (u *window) dialogCardAt(gtx C, p *browserPaneUI, session string, origin image.Point) {
 	d := &p.dialog
 	if d.shown == nil {
 		return
@@ -181,9 +181,9 @@ func (u *window) dialogCardAt(gtx C, p *browserPaneUI, session string, top int) 
 	at := image.Pt((page.X-width)/2, gtx.Dp(dialogCardTop))
 	ok.at = image.Pt(width-pad-ok.size.X, rowY)
 	no.at = image.Pt(ok.at.X-gtx.Dp(ui.Space(2))-no.size.X, rowY)
-	d.okAt, d.noAt = ok.rect().Add(at).Add(image.Pt(0, top)), image.Rectangle{}
+	d.okAt, d.noAt = ok.rect().Add(at).Add(origin), image.Rectangle{}
 	if no.size.X > 0 {
-		d.noAt = no.rect().Add(at).Add(image.Pt(0, top))
+		d.noAt = no.rect().Add(at).Add(origin)
 	}
 
 	defer op.Offset(at).Push(gtx.Ops).Pop()

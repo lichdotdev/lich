@@ -17,14 +17,13 @@ import (
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
 	"gioui.org/unit"
-	"gioui.org/widget"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
-func clickable(m map[string]*widget.Clickable, key string) *widget.Clickable {
+func clickable(m map[string]*ui.Clickable, key string) *ui.Clickable {
 	c, ok := m[key]
 	if !ok {
-		c = new(widget.Clickable)
+		c = new(ui.Clickable)
 		m[key] = c
 	}
 	return c
@@ -108,7 +107,7 @@ func (s *sidebar) card(gtx C, th *ui.Theme, sv *sessionView, active bool, folder
 }
 
 // cardFace is the card itself, under its tooltip.
-func (s *sidebar) cardFace(gtx C, th *ui.Theme, sv *sessionView, click, prChip *widget.Clickable, more layout.Widget, moreOpen bool, fill color.NRGBA) D {
+func (s *sidebar) cardFace(gtx C, th *ui.Theme, sv *sessionView, click, prChip *ui.Clickable, more layout.Widget, moreOpen bool, fill color.NRGBA) D {
 	return click.Layout(gtx, func(gtx C) D {
 		return layout.Background{}.Layout(gtx,
 			func(gtx C) D { return treeRowFill(gtx, fill, sv.place) },
@@ -167,7 +166,7 @@ func (s *sidebar) renaming(id string) bool {
 // cardBody is the card's one line: its place in the tree, the title row, a
 // folded mother's count, the open pull request and the checkout's changes
 // unless a checkout row above shows them, then the corner slot.
-func (s *sidebar) cardBody(gtx C, th *ui.Theme, sv *sessionView, prChip *widget.Clickable, more layout.Widget, hovered bool) D {
+func (s *sidebar) cardBody(gtx C, th *ui.Theme, sv *sessionView, prChip *ui.Clickable, more layout.Widget, hovered bool) D {
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 	sv.place.hot = hovered && sv.place.kids > 0
 	row := append(treeLead(sv.place), s.titleRow(th, sv)...)
@@ -261,7 +260,7 @@ var cardSlotSize = unit.Dp(18)
 
 // prBadge is the open pull request's number, a button that brightens on
 // hover.
-func (s *sidebar) prBadge(gtx C, th *ui.Theme, click *widget.Clickable, number int) D {
+func (s *sidebar) prBadge(gtx C, th *ui.Theme, click *ui.Clickable, number int) D {
 	c := th.MutedForeground
 	if click.Hovered() {
 		c = th.Foreground

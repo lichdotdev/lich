@@ -28,12 +28,10 @@ import (
 	"gioui.org/op/paint"
 	"gioui.org/text"
 	"gioui.org/unit"
-	"gioui.org/widget"
 	"gioui.org/widget/material"
 
 	"github.com/lichdotdev/godemirror"
 	"github.com/lichdotdev/lich/api"
-	"github.com/lichdotdev/lich/extension"
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/fonts"
 	"github.com/lichdotdev/lich/native/gioterm"
@@ -52,7 +50,7 @@ var (
 	flagSize     = flag.Float64("size", 13, "terminal font size in sp")
 	flagShot     = flag.String("shot", "", "write a PNG of the frame drawn -shot-after into the run")
 	flagAfter    = flag.Duration("shot-after", 3*time.Second, "when to take -shot")
-	flagTab      = flag.String("tab", "terminal", "what opens at start beside the terminal: terminal (nothing), the dock on code, review or artifacts, git for the Git panel, or ext:<extension>/<surface> for an extension's dock or panel surface")
+	flagTab      = flag.String("tab", "terminal", "what opens at start beside the terminal: terminal (the dock on its stored tab), the dock on code, review or artifacts, git for the Git panel, or ext:<extension>/<surface> for an extension's dock or panel surface")
 	flagWindow   = flag.String("window", "1400x900", "the window's size in dp, WxH, for -shot")
 	flagDropHint = flag.Bool("drop-hint", false, "draw the file-drop hint over the terminal as if a drag were over it, for -shot")
 )
@@ -112,6 +110,7 @@ type window struct {
 	review  *reviewPanel
 	// comments is the review batch every surface shares.
 	comments    commentStore
+	editors     stageEditors
 	commentEdit commentEditDialog
 	dock        *dock
 	git         *gitPanel
@@ -124,13 +123,16 @@ type window struct {
 	settings *settingsScreen
 	gate     *spawnGate
 	resume   resumeDialog
+	chats    chatScreens
 	th       *material.Theme
 	theme    *ui.Theme
 	root     ui.Root
 	toaster  ui.Toaster
-	// footerHeight is the footer bar's height this frame, which the toasts
-	// stand over.
-	footerHeight int
+	// toastFloor is how high off the window's bottom the toasts stand a
+	// gutter over this frame: the stage's foot, or the balloons' top;
+	// toastRight is the right balloon's right edge they end at, 0 for the
+	// window's.
+	toastFloor, toastRight int
 	// caption is where the topbar draws the window's buttons, swapped whole
 	// when the desktop's layout changes; chrome what the window manager last
 	// said about the window.
@@ -149,7 +151,7 @@ type window struct {
 	// extension is an extension's surface, drawn over the stage while open,
 	// and extOutbox what the window sends extensions, in order.
 	extension *extensionScreen
-	// extPanel is an extension's panel surface over the footer, in the Git
+	// extPanel is an extension's panel surface at the stage's foot, in the Git
 	// panel's place; gitWasOpen is the Git panel's open on the frame before,
 	// which onePanel reads to tell which of the two a click just opened.
 	extPanel   *extensionPanel
@@ -164,7 +166,7 @@ type window struct {
 	// closeAllConfirm is Close all sessions' question when a turn is in flight.
 	closeAllConfirm closeAllConfirm
 	// homeOpen is Home's Open project button.
-	homeOpen widget.Clickable
+	homeOpen ui.Clickable
 	// hideSettings is a request, from another goroutine, to take Settings down
 	// at the next frame.
 	hideSettings atomic.Bool
@@ -173,7 +175,7 @@ type window struct {
 	codeAsk  atomic.Pointer[func()]
 	codeMenu codeMenu
 	// emptyNew is the empty stage's New session button.
-	emptyNew widget.Clickable
+	emptyNew ui.Clickable
 	// exitFocus is the card that had focus last frame, and exitRaised the
 	// cards whose exit toast is up, under exitMu: syncExitToasts reads both.
 	exitFocus  string
@@ -211,7 +213,9 @@ type window struct {
 	browserPanes map[string]*browserPaneUI
 	// browserView is the window's size as the backend last heard it, the size
 	// a page no pane shows lays out at, sent in order through browserViews.
-	browserView  api.BrowserDefaultViewOptions
+	browserView api.BrowserDefaultViewOptions
+	// newTabLook is what syncNewTabPage last sent.
+	newTabLook   api.BrowserNewTabPageOptions
 	browserViews *browserQueue
 	// hotkeyLanguage is the language the hotkeys' labels were last put in.
 	hotkeyLanguage i18n.Locale
@@ -302,6 +306,7 @@ func run(w *app.Window, rt backend.Runtime) error {
 	u.model.themeSelection = u.appearance.applySelection
 	u.model.themeUpdates = u.themeUpdatesChanged
 	u.model.exited = u.sessionExited
+	u.model.toTerminal, u.model.toChat = u.leaveChat, u.enterChat
 	u.model.serviceReveal = u.revealService
 	u.model.duplicate = u.warnDuplicate
 	u.model.profileOffer = u.offerProfile
@@ -350,15 +355,18 @@ func run(w *app.Window, rt backend.Runtime) error {
 	if u.pulls.view.files, err = newReviewPanel(client, &u.root, comments, *flagFont, unit.Sp(*flagSize), invalidate, notify); err != nil {
 		return err
 	}
-	u.pulls.view.files.pr = &prFiles{ticks: map[string]*widget.Bool{}}
-	code, err := newCodeTab(client, invalidate, *flagFont, unit.Sp(*flagSize), comments, notify)
-	if err != nil {
-		return err
-	}
+	u.pulls.view.files.pr = &prFiles{ticks: map[string]*ui.Bool{}}
+	u.editors = stageEditors{client: client, invalidate: invalidate, family: *flagFont, size: unit.Sp(*flagSize),
+		dirty: func(checkout string, dirty bool) { u.model.markEditorDirty(checkout, dirty); u.model.invalidate() },
+		saved: func(checkout string) { go u.model.checkoutWritten(u.ctx, checkout) }}
+	code := newCodeTab(client, invalidate, comments, notify, func(checkout, rel string, line int) {
+		u.openInEditor(checkout, rel, line, 0, agentNote{})
+	})
 	u.dock = newDock(code, u.review, u.newArtifactsTab(), u.extension)
 	u.dock.tour = &u.tour.Tour
 	u.review.tour = &u.tour.Tour
 	u.model.diffTouched = u.review.feed.touched
+	u.model.editorTouched = u.editors.touched
 	u.model.focusSession = u.focusSession
 	u.model.showToast = u.showToast
 	u.model.raise = func() { w.Activate("") }
@@ -375,12 +383,11 @@ func run(w *app.Window, rt backend.Runtime) error {
 	u.model.projectClosed = u.projectClosed
 	u.model.pluginProfiles = u.pluginProfilesFailed
 	u.settings.theme = newThemePicker(ctx, client, u.appearance, &u.toaster, &u.root)
-	u.dock.tab = map[string]dockTab{"code": dockCode, "review": dockReview, "artifacts": dockArtifacts}[*flagTab]
 	u.footer.dock = u.dock
 	u.git = newGitPanel(u.ctx, client, &u.root, invalidate, notify, *flagFont, unit.Sp(*flagSize))
 	u.git.openSession = u.focusSession
 	u.git.wrote = u.review.wrote
-	u.git.showReview = func() { u.dock.tab = dockReview }
+	u.git.showReview = func() { u.dock.show(dockReview) }
 	u.footer.git = u.git
 	u.footer.panel = u.extPanel
 	u.footer.extensions = &u.model.extensions
@@ -412,6 +419,12 @@ func run(w *app.Window, rt backend.Runtime) error {
 		case app.ConfigEvent:
 			frameLog.Note(framelog.CauseConfig)
 			u.chrome = chromeOf(e.Config)
+			switch was := u.model.isFocused(); {
+			case e.Config.Focused && !was:
+				u.editors.recheckAll()
+			case !e.Config.Focused && was:
+				u.editors.flushAll()
+			}
 			u.model.setFocused(u.ctx, e.Config.Focused)
 			u.pulls.setFocused(e.Config.Focused)
 			u.toaster.SetHidden(!e.Config.Focused)
@@ -433,6 +446,7 @@ func run(w *app.Window, rt backend.Runtime) error {
 			gtx.Metric.PxPerDp *= float32(u.zoom)
 			gtx.Metric.PxPerSp *= float32(u.zoom)
 			u.syncBrowserView(gtx)
+			u.syncNewTabPage()
 			if err := u.layout(gtx); err != nil {
 				return err
 			}
@@ -485,6 +499,10 @@ func (u *window) connect() error {
 	if err := u.model.artifacts.load(u.ctx, u.client); err != nil {
 		u.logErr("read the session artifacts", err)
 	}
+	if err := u.model.chat.loadKinds(u.ctx, u.client); err != nil {
+		u.logErr("read the chat providers", err)
+	}
+	u.model.loadChats(u.ctx)
 	if err := u.model.extensions.load(u.ctx, u.client); err != nil {
 		u.logErr("read the extensions", err)
 	}
@@ -536,6 +554,17 @@ func (u *window) connect() error {
 	if u.dock.widthRem, err = loadDockWidth(u.ctx, u.client); err != nil {
 		return err
 	}
+	if u.dock.collapsed, err = loadDockCollapsed(u.ctx, u.client); err != nil {
+		return err
+	}
+	tab, err := loadDockTab(u.ctx, u.client)
+	if err != nil {
+		return err
+	}
+	if t, ok := map[string]dockTab{"code": dockCode, "review": dockReview, "artifacts": dockArtifacts}[*flagTab]; ok {
+		tab = t
+	}
+	u.dock.restore(tab)
 	if u.pulls.view.tree.widthRem, err = loadTreeWidth(u.ctx, u.client); err != nil {
 		return err
 	}
@@ -632,7 +661,7 @@ func (u *window) layout(gtx C) error {
 	u.readDragPointer(gtx)
 	pointerArea := clip.Rect{Max: gtx.Constraints.Max}.Push(gtx.Ops)
 	event.Op(gtx.Ops, &u.layoutStage.pointer.tag)
-	var act sidebarAction
+	var act, peekAct sidebarAction
 	var top topbarAction
 	var contentErr error
 	v := u.stageView(gtx.Now)
@@ -658,6 +687,8 @@ func (u *window) layout(gtx C) error {
 		u.layoutSubmitDialog(gtx, u.theme)
 		u.layoutMergeDialog(gtx, u.theme)
 		u.layoutDeleteCommentDialog(gtx, u.theme)
+		u.editors.follow(u.model.editorShown())
+		u.editors.layoutAsk(gtx, u.theme, &u.root)
 		u.review.layoutDialogs(gtx, u.theme)
 		u.git.layoutDialogs(gtx, u.theme)
 		u.commentEdit.layout(gtx, u.theme, &u.comments)
@@ -677,6 +708,7 @@ func (u *window) layout(gtx C) error {
 		u.layoutMoveConfirm(gtx, u.theme)
 		var edge int
 		edge, act, contentErr = u.body(gtx, v)
+		peekAct = u.sidebar.peekLayout(gtx, u.theme, u.model, sidebarActive(v), image.Pt(gtx.Dp(gutter), gtx.Dp(topbarHeight)))
 		u.sidebar.flight(gtx, u.theme, u.model)
 		top = u.topbar.layout(gtx, u.theme, u.topbarFrame(gtx, v, edge))
 		u.drawCarried(gtx)
@@ -689,6 +721,7 @@ func (u *window) layout(gtx C) error {
 	pointerArea.Pop()
 	u.endStrandedDrag(gtx)
 	u.apply(act)
+	u.apply(peekAct)
 	u.applyTopbar(top)
 	u.applyLayoutStage()
 	u.settleBrowserPanes()
@@ -717,8 +750,12 @@ type stageView struct {
 	hasLayout bool
 	// console is the service whose console is on screen in place of the
 	// active session, when hasConsole.
-	console      backend.Service
-	hasConsole   bool
+	console    backend.Service
+	hasConsole bool
+	// editor is the checkout whose stage editor is on screen in place of the
+	// active session, when hasEditor.
+	editor       string
+	hasEditor    bool
 	panes        map[string]sessionView
 	mixed        bool
 	projectNames map[string]string
@@ -735,6 +772,10 @@ func (u *window) stageView(now time.Time) stageView {
 	if id := u.model.consoleShown(); id != "" && shown {
 		v.console, v.hasConsole = u.model.services.byID(id)
 		v.hasLayout = v.hasLayout && !v.hasConsole
+	}
+	if c := u.model.editorShown(); c != "" && shown && !v.hasConsole {
+		v.editor, v.hasEditor = c, true
+		v.hasLayout = false
 	}
 	if v.hasLayout {
 		v.panes = u.model.viewsOf(v.layout.sessions(), now)
@@ -758,21 +799,19 @@ func (u *window) body(gtx C, v stageView) (int, sidebarAction, error) {
 	column := gtx
 	column.Constraints.Min = image.Point{}
 	edge := layout.Inset{Left: gutter, Right: gutter, Bottom: gutter}.Layout(column, func(gtx C) D {
-		active := v.active.ID
-		if v.hasConsole {
-			active = ""
-		}
-		d, a := u.sidebar.layout(gtx, u.theme, u.model, active)
+		d, a := u.sidebar.layout(gtx, u.theme, u.model, sidebarActive(v))
 		act = a
 		return d
 	}).Size.X
 	var err error
+	u.toastFloor, u.toastRight = gtx.Dp(gutter), 0
+	u.footer.frame(gtx, v.in)
 	u.actGit(gtx)
 	onePanel(u.git, u.extPanel, u.gitWasOpen)
 	u.gitWasOpen = u.git.open
 	u.islandAt = image.Pt(edge, bar)
 	u.stage(gtx, edge, func(gtx C) D {
-		return layout.Inset{Right: gutter}.Layout(gtx, func(gtx C) D {
+		return layout.Inset{Right: gutter, Bottom: gutter}.Layout(gtx, func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Flexed(1, func(gtx C) D {
 					if u.settings.open {
@@ -802,6 +841,7 @@ func (u *window) body(gtx C, v stageView) (int, sidebarAction, error) {
 						if x, ok := u.topbar.islandSquare(gtx, topbarFrame{tabs: v.strip, active: v.stripActive, islands: u.pulls.spans}); ok {
 							u.pulls.squareX = x
 						}
+						u.pulls.gap = u.tabGap(gtx, v, u.pulls.spans, 0)
 						u.applyPulls(u.pulls.layout(gtx, u.theme))
 						return D{Size: gtx.Constraints.Max}
 					}
@@ -814,23 +854,28 @@ func (u *window) body(gtx C, v stageView) (int, sidebarAction, error) {
 					u.applyExtension(u.extPanel.takeAction())
 					return d
 				}),
-				layout.Rigid(func(gtx C) D {
-					d := u.footer.layoutBar(gtx, u.theme, v.in)
-					u.footerHeight = d.Size.Y
-					return d
-				}),
 			)
 		})
 	})
 	return edge, act, err
 }
 
+// sidebarActive is the session the sidebar lights: none while a service's
+// console or the stage editor is on screen.
+func sidebarActive(v stageView) string {
+	if v.hasConsole || v.hasEditor {
+		return ""
+	}
+	return v.active.ID
+}
+
 // island is the stage's rounded box: Home, the empty notice, the diff or
-// the terminal, in the color the active tab merges with. Its top-left corner
-// is square while that tab sits on it. A lone session's terminal is laid out
-// termWidth wide, which a dock slide or a sidebar morph sets to where the box
-// is going: wider, the box clips it; narrower, its fill shows past it. The Git
-// panel's slide sets termHeight the same way.
+// the terminal, in the color the active tab merges with, under the footer's
+// balloons. Its top-left corner is square while that tab sits on it. A lone
+// session's terminal is laid out termWidth wide, which a dock slide or a
+// sidebar morph sets to where the box is going: wider, the box clips it;
+// narrower, its fill shows past it. The Git panel's slide sets termHeight the
+// same way.
 func (u *window) island(gtx C, v stageView, termWidth, termHeight int) error {
 	size := gtx.Constraints.Max
 	gtx.Constraints.Min = size
@@ -840,9 +885,12 @@ func (u *window) island(gtx C, v stageView, termWidth, termHeight int) error {
 		nw = 0
 	}
 	defer clip.RRect{Rect: image.Rectangle{Max: size}, NW: nw, NE: r, SE: r, SW: r}.Push(gtx.Ops).Pop()
+	defer u.drawBalloons(gtx, v)
 	u.drop.reset()
 	fill := u.islandColor(v)
 	paint.Fill(gtx.Ops, fill)
+	on := u.theme.On(fill)
+	defer ui.IslandBorder(gtx, size, nw, r, u.tabGap(gtx, v, u.dock.islands, 0), on.Over(on.Border))
 	if u.homeOpen.Clicked(gtx) {
 		go u.pickProject()
 	}
@@ -856,6 +904,8 @@ func (u *window) island(gtx C, v stageView, termWidth, termHeight int) error {
 		return nil
 	case v.hasConsole:
 		return u.consoleIsland(gtx, v.console, termWidth)
+	case v.hasEditor:
+		return u.editorIsland(gtx, v)
 	case v.hasLayout:
 		return u.layoutIsland(gtx, v)
 	case !v.hasActive && u.model.everySessionInALayout():
@@ -868,8 +918,8 @@ func (u *window) island(gtx C, v stageView, termWidth, termHeight int) error {
 	u.spot(gtx, tourStage, func(C) D { return D{Size: size} })
 	u.layoutStage.metric = gtx.Metric
 	u.terms.onScreen(v.active.ID)
-	term := gtx
-	term.Constraints = layout.Exact(image.Pt(termWidth, termHeight))
+	term, band := gtx, u.sessionBand(gtx, v)
+	term.Constraints = layout.Exact(image.Pt(termWidth, termHeight+band))
 	// A session alone has no pane, but the panes it came from or goes to
 	// move against its place, so it stands in the run as one (paneMotion).
 	motion, alone := &u.layoutStage.motion, image.Rectangle{Max: size}.Inset(gtx.Dp(gutter))
@@ -879,7 +929,7 @@ func (u *window) island(gtx C, v stageView, termWidth, termHeight int) error {
 		reveal = clip.Rect(frame)
 	}
 	area := reveal.Push(gtx.Ops)
-	err := u.content(term, v.active, u.terminalTakesKeys(gtx))
+	err := u.bandedSession(term, v.active, band, fill, u.terminalTakesKeys(gtx))
 	area.Pop()
 	u.endPaneMotion(gtx)
 	if err != nil {
@@ -898,7 +948,7 @@ func (u *window) island(gtx C, v stageView, termWidth, termHeight int) error {
 // focusedCard is the session whose terminal takes the keys, "" for none.
 func focusedCard(v stageView) string {
 	switch {
-	case v.home, v.hasConsole:
+	case v.home, v.hasConsole, v.hasEditor:
 		return ""
 	case v.hasLayout:
 		return v.layout.Focus
@@ -954,16 +1004,24 @@ func (u *window) topbarFrame(gtx C, v stageView, edge int) topbarFrame {
 	return f
 }
 
-// stageRow is the row above the footer: the island and, to its right, the dock,
-// which covers the whole row in full screen. Home has no dock: a project-less
-// screen has no checkout to show.
+// stageRow is the island and, to its right, the dock, which covers the whole
+// row in full screen. Home has no dock: a project-less screen has no checkout
+// to show.
 func (u *window) stageRow(gtx C, v stageView) error {
 	d := u.dock
 	d.act(gtx)
-	open := d.tab != dockClosed && !v.home
-	if open {
+	if d.saveCollapsed {
+		d.saveCollapsed = false
+		collapsed := d.collapsed
+		go func() { u.logErr("dock collapsed", saveDockCollapsed(u.ctx, u.client, collapsed)) }()
+	}
+	if t, ok := d.tabToSave(); ok {
+		go func() { u.logErr("dock tab", saveDockTab(u.ctx, u.client, t)) }()
+	}
+	if d.tab != dockClosed && !v.home {
 		d.shown = d.tab
 	}
+	open := d.docked(v.home)
 	if d.fullscreen {
 		d.slide.snap(open)
 	}
@@ -979,10 +1037,13 @@ func (u *window) stageRow(gtx C, v stageView) error {
 		termWidth -= d.width(gtx) + gtx.Dp(gutter)
 	}
 	termWidth = max(termWidth, 0)
-	termHeight := max(size.Y-u.git.pending()-u.extPanel.pending(), 0)
+	termHeight := max(size.Y-u.git.pending()-u.extPanel.pending()-u.ptyBand(gtx, v)-u.sessionBand(gtx, v), 0)
 	if share == 0 {
 		d.islands = nil
-		return u.island(gtx, v, termWidth, termHeight)
+		if err := u.island(gtx, v, termWidth, termHeight); err != nil {
+			return err
+		}
+		return u.dockPeek(gtx, v)
 	}
 	at, w, slot := 0, size.X, 0
 	if !d.fullscreen {
@@ -1010,20 +1071,15 @@ func (u *window) stageRow(gtx C, v stageView) error {
 	}
 	defer op.Offset(image.Pt(at, 0)).Push(gtx.Ops).Pop()
 	gtx.Constraints = layout.Exact(image.Pt(w, size.Y))
-	in := dockInput{sessionID: v.in.sessionID, inject: u.terms.injector(v.in.sessionID), submit: u.terms.submitter(v.in.sessionID), checkout: v.in.path, git: v.in.git, isGit: v.in.isGit, light: u.light, code: u.code, placed: placedIn(v.in.placed, extension.PlaceDock)}
-	save, err := d.layout(gtx, u.theme, &u.root, in)
-	u.applyExtension(d.takeExtensionAction())
-	if save {
-		rem := u.dock.widthRem
-		go func() { u.logErr("dock width", saveDockWidth(u.ctx, u.client, rem)) }()
-	}
-	return err
+	d.gap = u.tabGap(gtx, v, d.islands, at)
+	return u.layoutDock(gtx, v)
 }
 
-// gitPanelRow is the Git panel between the stage and the footer, when it is
-// open and there is a repository for it to read.
+// gitPanelRow is the Git panel at the stage's foot, when it is open and there
+// is a repository for it to read.
 //
-// It slides up from the footer as the dock slides in from the side, and grows
+// It slides up from the foot over the balloons' band, as the dock slides in
+// from the side, and grows
 // over the stage to expand. pendingPx is what the stage still has to give up
 // once the slide lands: the terminal is laid out at that size from the first
 // frame, so the agent redraws once rather than on every frame of the slide.
@@ -1047,7 +1103,7 @@ func (u *window) gitPanelRow(gtx C, v stageView) D {
 		g.covers = true
 		return D{}
 	}
-	full := max(maxY-gtx.Dp(gitFooterHeight)-gtx.Dp(gutter), h)
+	full := max(maxY-gtx.Dp(gutter), h)
 	slot := int(open * float32(h+gtx.Dp(gutter)+int(grow*float32(full-h))))
 	if shown {
 		g.pendingPx = h + gtx.Dp(gutter) - slot
@@ -1055,7 +1111,7 @@ func (u *window) gitPanelRow(gtx C, v stageView) D {
 		g.pendingPx = -slot
 	}
 	// Laid out at the height it is heading for and slid up from under the
-	// footer, so its rows move rather than squeeze.
+	// stage's foot, so its rows move rather than squeeze.
 	size := image.Pt(gtx.Constraints.Max.X, h+int(grow*float32(full-h)))
 	defer clip.Rect{Max: image.Pt(size.X, slot)}.Push(gtx.Ops).Pop()
 	defer op.Offset(image.Pt(0, slot-size.Y)).Push(gtx.Ops).Pop()
@@ -1072,10 +1128,6 @@ func (u *window) actGit(gtx C) {
 	u.git.act(gtx)
 	u.extPanel.actHeader(gtx)
 }
-
-// gitFooterHeight is the footer strip's one-line height, what an expanding
-// panel stops short of.
-const gitFooterHeight = unit.Dp(44)
 
 // gitShown is whether the Git panel has a repository to read and room to draw.
 func (u *window) gitShown(v stageView) bool {
@@ -1184,6 +1236,7 @@ func (u *window) apply(act sidebarAction) {
 	}
 	u.applyOpenIn(act)
 	u.applyBrowser(act)
+	u.applyEditor(act)
 	if act.unsplit != "" {
 		u.model.unsplit(u.ctx, act.unsplit)
 		u.model.invalidate()
@@ -1192,6 +1245,7 @@ func (u *window) apply(act sidebarAction) {
 	if pick := act.profilePick; pick.key != "" {
 		u.settings.writeProviderKey(pick.key, pick.projectID, pick.value, nil)
 	}
+	u.applyUseReset(act.useReset)
 	u.applySidebarWrites(act.sidebarWrites)
 	if act.color != "" && u.model.setColor(act.color, act.colorTo) {
 		u.model.invalidate()

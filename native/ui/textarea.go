@@ -38,13 +38,29 @@ type TextareaStyle struct {
 	MinHeight unit.Dp
 	// Scrollbar is the bar shown while the text overflows, draggable as a
 	// list's; nil scrolls with the wheel and the caret alone.
-	Scrollbar   *widget.Scrollbar
+	Scrollbar *widget.Scrollbar
+	// Foot is drawn inside the frame under the text, full width, and its height
+	// comes out of MaxHeight.
+	Foot func(gtx C) D
+	// Radius is the frame's corner, RadiusMD when 0.
+	Radius unit.Dp
+	// Size and Leading set the text's size and line height, TextSM and its
+	// Tailwind leading when 0; PadX and PadY set the room around the text,
+	// the Input's and py-2 when 0.
+	Size, Leading unit.Sp
+	PadX, PadY    unit.Dp
+
 	Placeholder string
 	Width       unit.Dp // 0 is w-full
 	Mono        bool
 	Disabled    bool
 	Invalid     bool
-	theme       *Theme
+	// Steady draws the frame the same focused and not, with no ring and the
+	// resting border: the blinking caret is what says the keyboard is there.
+	Steady bool
+	// History, when set, gives the field Ctrl+Z, Cmd+Z, and redo.
+	History *EditHistory
+	theme   *Theme
 }
 
 // Textarea is a default textarea over editor.
@@ -57,16 +73,28 @@ func (s TextareaStyle) Layout(gtx C) D {
 		gtx = gtx.Disabled()
 	}
 	s.Editor.SingleLine = false
+	if s.History != nil {
+		s.History.Handle(gtx, s.Editor)
+	}
 	gtx.Constraints.Max.X = inputWidth(gtx, s.Width)
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 	if s.MaxHeight > 0 {
 		gtx.Constraints.Max.Y = min(gtx.Constraints.Max.Y, gtx.Dp(s.MaxHeight))
 	}
-	field := inputText{theme: s.theme, editor: s.Editor, placeholder: s.Placeholder, size: TextSM,
+	field := inputText{theme: s.theme, editor: s.Editor, placeholder: s.Placeholder, size: TextSM, leading: s.Leading,
 		font: font.Font{Typeface: s.theme.Sans}, padLeft: inputPadX, padRight: inputPadX, padY: textareaPadY,
 		minHeight: max(textareaMinHeight, min(s.MinHeight, gtx.Metric.PxToDp(gtx.Constraints.Max.Y)))}
 	if s.Mono {
 		field.font.Typeface = s.theme.Mono
+	}
+	if s.Size > 0 {
+		field.size = s.Size
+	}
+	if s.PadX > 0 {
+		field.padLeft, field.padRight = s.PadX, s.PadX
+	}
+	if s.PadY > 0 {
+		field.padY = s.PadY
 	}
 	r := s.Resize
 	if r != nil {
@@ -76,8 +104,11 @@ func (s TextareaStyle) Layout(gtx C) D {
 			field.minHeight = unit.Dp(float32(h) / gtx.Metric.PxPerDp)
 		}
 	}
-	st := inputState{invalid: s.Invalid, disabled: s.Disabled}
-	d := inputFrame(gtx, s.theme, s.Editor, st, false, func(gtx C) D { return field.layout(gtx, 0) })
+	st := inputState{invalid: s.Invalid, disabled: s.Disabled, radius: s.Radius, steady: s.Steady}
+	d := inputFrame(gtx, s.theme, s.Editor, st, false, func(gtx C) D { return s.body(gtx, field) })
+	if s.History != nil {
+		s.History.observe(gtx.Now, s.Editor)
+	}
 	if s.Scrollbar != nil {
 		s.layoutScrollbar(gtx, d.Size)
 	}
@@ -85,6 +116,22 @@ func (s TextareaStyle) Layout(gtx C) D {
 		r.layout(gtx, s.theme, d.Size)
 	}
 	return d
+}
+
+// body is the text, then Foot under it.
+func (s TextareaStyle) body(gtx C, field inputText) D {
+	if s.Foot == nil {
+		return field.layout(gtx, 0)
+	}
+	gtx.Constraints.Min.Y = 0
+	macro := op.Record(gtx.Ops)
+	foot := s.Foot(gtx)
+	call := macro.Stop()
+	gtx.Constraints.Max.Y = max(gtx.Constraints.Max.Y-foot.Size.Y, 0)
+	d := field.layout(gtx, 0)
+	defer op.Offset(image.Pt(0, d.Size.Y)).Push(gtx.Ops).Pop()
+	call.Add(gtx.Ops)
+	return D{Size: image.Pt(d.Size.X, d.Size.Y+foot.Size.Y)}
 }
 
 // layoutScrollbar draws the bar over the right padding of a frame of size,

@@ -340,6 +340,9 @@ type Session struct {
 	// window restart has to come back to the same answer. Nil for an unconfined
 	// session and for one whose sandbox skipped nothing.
 	SandboxSkippedLinks []string `json:"sandboxSkippedLinks"`
+	// View is how the session is drawn, ViewChat or ViewTerminal; "" reads
+	// as the terminal, what every session was before chats.
+	View string `json:"view,omitempty"`
 }
 
 // RecentProject is a closed project offered for reopening — identity only, since the

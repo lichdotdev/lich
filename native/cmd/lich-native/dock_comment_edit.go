@@ -20,7 +20,7 @@ type commentEditDialog struct {
 	dialog       ui.DialogState
 	editor       widget.Editor
 	resize       ui.TextareaResize
-	save, cancel widget.Clickable
+	save, cancel ui.Clickable
 	// shown is the comment the editor was filled from, and where is its
 	// anchor, kept so the panel still reads right while it closes.
 	shown int

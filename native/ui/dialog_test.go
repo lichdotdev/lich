@@ -14,7 +14,6 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/unit"
-	"gioui.org/widget"
 )
 
 var dialogTestWindow = image.Pt(800, 600)
@@ -26,8 +25,8 @@ type dialogRig struct {
 	now     time.Time
 	th      *Theme
 	state   DialogState
-	under   widget.Clickable
-	confirm widget.Clickable
+	under   Clickable
+	confirm Clickable
 	open    bool
 }
 
@@ -136,7 +135,7 @@ func TestDialogTakesFocusAndCloseButtonDismisses(t *testing.T) {
 	// app.Window turns an unclaimed Tab into this call.
 	r.router.MoveFocus(key.FocusForward)
 	r.frame()
-	if !r.router.Source().Focused(&r.confirm) {
+	if !r.router.Source().Focused(&r.confirm.Clickable) {
 		t.Fatal("Tab after opening did not land on the footer action")
 	}
 	r.router.MoveFocus(key.FocusForward)

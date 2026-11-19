@@ -72,6 +72,9 @@ type markdownBlock struct {
 type markdownCell struct {
 	spans []richtext.SpanStyle
 	code  []bool
+	// decor is what each span is drawn with besides its text: an underline,
+	// a mark before it.
+	decor []decoration
 	state richtext.InteractiveText
 	// lineHeight is the line height scale, LineHeightScale when 0.
 	lineHeight float32
@@ -202,7 +205,7 @@ func (c *markdownCell) layout(gtx C, th *ui.Theme, open func(url string)) D {
 	}
 	style := richtext.Text(&c.state, th.Shaper, c.spans...)
 	style.LineHeightScale = c.lineHeightScale()
-	c.codeBackgrounds(gtx, th)
+	c.decorate(gtx, th)
 	return style.Layout(gtx)
 }
 

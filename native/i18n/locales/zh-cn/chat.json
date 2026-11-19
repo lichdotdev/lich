@@ -1,0 +1,75 @@
+{
+  "switch": {
+    "gui": "GUI",
+    "tui": "TUI",
+    "working": "等智能体结束本轮后再切换",
+    "pending": "正在切换…",
+    "failed": "无法切换视图"
+  },
+  "view": {
+    "failed": "聊天请求失败",
+    "thought": "思考",
+    "worked": {
+      "other": "工作了 {duration} · {count} 个工具"
+    },
+    "toolFailed": "失败",
+    "answered": "{tool} · {choice}",
+    "verbs": "施法中|召唤中|引导魔力中|熬制中|占卜中|铭刻中|编织中|唤醒中",
+    "thinking": "思考中",
+    "toolCalls": {
+      "other": "{count} 次工具调用"
+    },
+    "workedAt": {
+      "other": "工作了 {duration} · {count} 个工具 · {time}"
+    }
+  },
+  "done": {
+    "done": "完成",
+    "stopped": "已停止",
+    "failed": "失败",
+    "noChanges": "没有更改",
+    "files": {
+      "other": "{count} 个文件"
+    }
+  },
+  "composer": {
+    "placeholder": "向 {provider} 询问有关此项目的问题",
+    "send": "发送",
+    "stop": "停止"
+  },
+  "option": {
+    "model": "模型",
+    "effort": "思考强度",
+    "mode": "模式",
+    "busy": "请等本轮结束后再更改。",
+    "modelEffort": "模型与思考强度"
+  },
+  "choice": {
+    "manual": "手动",
+    "plan": "计划",
+    "auto": "自动",
+    "yolo": "YOLO"
+  },
+  "day": {
+    "today": "今天",
+    "yesterday": "昨天"
+  },
+  "model": {
+    "search": "搜索 {provider} 的模型…",
+    "showMore": "显示更多",
+    "default": "默认"
+  },
+  "question": {
+    "multi": "多选",
+    "step": "{n} / {total}",
+    "sendAll": "全部发送",
+    "freeHint": "Enter 发送 · Esc 拒绝",
+    "marked": {
+      "other": "已选 {count} 项"
+    },
+    "write": "其他… 写下你的回答",
+    "declined": "未回答",
+    "label": "{header}：",
+    "own": "“{text}”"
+  }
+}

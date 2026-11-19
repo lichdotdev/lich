@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"gioui.org/op"
-	"gioui.org/widget"
 )
 
 var toggleGroupItems = []ToggleItem{
@@ -18,7 +17,7 @@ var toggleGroupItems = []ToggleItem{
 }
 
 func TestToggleGroupClickChoosesAnItem(t *testing.T) {
-	th, enum := testTheme(), &widget.Enum{Value: "worktree"}
+	th, enum := testTheme(), EnumOf("worktree")
 	group := th.ToggleGroup(enum, toggleGroupItems...)
 	rig := newToggleRig(image.Pt(20, 20), group.Layout)
 	d := rig.frame()
@@ -34,7 +33,7 @@ func TestToggleGroupClickChoosesAnItem(t *testing.T) {
 }
 
 func TestToggleGroupSkipsADisabledItem(t *testing.T) {
-	th, enum := testTheme(), &widget.Enum{Value: "worktree"}
+	th, enum := testTheme(), EnumOf("worktree")
 	items := []ToggleItem{toggleGroupItems[0], {Value: "turn", Text: "Last turn", Disabled: true}}
 	rig := newToggleRig(image.Pt(20, 20), th.ToggleGroup(enum, items...).Layout)
 	d := rig.frame()
@@ -46,7 +45,7 @@ func TestToggleGroupSkipsADisabledItem(t *testing.T) {
 
 // border-border is white at 10% over the page.
 func TestToggleGroupTrackBorderIsBorderOverThePage(t *testing.T) {
-	group := testTheme().ToggleGroup(new(widget.Enum), toggleGroupItems...)
+	group := testTheme().ToggleGroup(new(Enum), toggleGroupItems...)
 	size := layoutAt(group.Layout, 0, 500).Size
 	img := toggleRender(t, size, time.Time{}, group.Layout)
 	if want := (color.NRGBA{R: 40, G: 40, B: 42, A: 255}); !toggleIs(img, image.Pt(size.X/2, 0), want) {
@@ -57,9 +56,9 @@ func TestToggleGroupTrackBorderIsBorderOverThePage(t *testing.T) {
 // A track of border 1 and padding 3 around the options, 4 apart.
 func TestToggleGroupSizesTheTrackAroundItsItems(t *testing.T) {
 	th := testTheme()
-	group := th.ToggleGroup(new(widget.Enum), toggleGroupItems...)
+	group := th.ToggleGroup(new(Enum), toggleGroupItems...)
 	group.Size = ToggleSizeSM
-	first, second := th.Toggle(new(widget.Bool), "Working tree"), th.Toggle(new(widget.Bool), "Last turn")
+	first, second := th.Toggle(new(Bool), "Working tree"), th.Toggle(new(Bool), "Last turn")
 	first.Size, second.Size = ToggleSizeSM, ToggleSizeSM
 	w1, w2 := layoutAt(first.Layout, 0, 500).Size.X, layoutAt(second.Layout, 0, 500).Size.X
 
@@ -71,7 +70,7 @@ func TestToggleGroupSizesTheTrackAroundItsItems(t *testing.T) {
 
 // The group is w-fit: a parent's minimum width does not stretch it.
 func TestToggleGroupIsAsWideAsItsItems(t *testing.T) {
-	group := testTheme().ToggleGroup(new(widget.Enum), toggleGroupItems...)
+	group := testTheme().ToggleGroup(new(Enum), toggleGroupItems...)
 	natural := layoutAt(group.Layout, 0, 500).Size.X
 	if d := layoutAt(group.Layout, 400, 500); d.Size.X != natural {
 		t.Errorf("got width %d under a 400 minimum, want %d", d.Size.X, natural)
@@ -82,7 +81,7 @@ func TestToggleGroupIsAsWideAsItsItems(t *testing.T) {
 // does not.
 func TestToggleGroupItemOverrides(t *testing.T) {
 	th := testTheme()
-	group := th.ToggleGroup(new(widget.Enum), ToggleItem{Value: "a", Text: "i"})
+	group := th.ToggleGroup(new(Enum), ToggleItem{Value: "a", Text: "i"})
 	group.Size = ToggleSizeSM
 	group.ItemHeight = Space(6)
 	if d := layoutAt(group.Layout, 0, 500); d.Size != image.Pt(32+2*4, 24+2*4) {
@@ -94,7 +93,7 @@ func TestToggleGroupItemOverrides(t *testing.T) {
 // takes the click must already draw the item it chose pressed and the one
 // it left not: the next frame waits for the next mouse move.
 func TestToggleGroupDrawsAClickInTheFrameThatTookIt(t *testing.T) {
-	th, enum := testTheme(), &widget.Enum{Value: "worktree"}
+	th, enum := testTheme(), EnumOf("worktree")
 	rig := newToggleRig(image.Pt(20, 20), th.ToggleGroup(enum, toggleGroupItems...).Layout)
 	d := rig.frame()
 	rig.click(image.Pt(d.Size.X-12, d.Size.Y/2))
@@ -109,4 +108,12 @@ func TestToggleGroupDrawsAClickInTheFrameThatTookIt(t *testing.T) {
 // the same.
 func paintDigest(ops *op.Ops) [sha256.Size]byte {
 	return sha256.Sum256(reflect.ValueOf(&ops.Internal).Elem().FieldByName("data").Bytes())
+}
+
+func TestToggleGroupHeightIsTheTrackAroundItsItems(t *testing.T) {
+	group := testTheme().ToggleGroup(new(Enum), toggleGroupItems...)
+	group.ItemHeight, group.ItemIcon = 20, 12
+	if got, want := layoutAt(group.Layout, 0, 500).Size.Y, int(ToggleGroupHeight(20)); got != want || want != 28 {
+		t.Errorf("group %dpx tall, ToggleGroupHeight says %d, want 28", got, want)
+	}
 }

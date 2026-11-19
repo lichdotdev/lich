@@ -142,6 +142,9 @@ o lich consegue ler de volta, porque cada CLI registra coisas diferentes.
 | Custo no rodapé | sim | sim | não | sim | sim | sim | não | créditos |
 | Uma conversa com fork feito dentro do próprio terminal do agente cobra uma vez só o histórico que copia | sim, a não ser quando o custo é o que o próprio Claude Code mediu | não | sem leitura de custo | sim | sim, menos um turno gravado sem id de resposta | não faz fork | sem leitura de custo | sem leitura de custo |
 | Quanto ainda resta do seu plano | sim | sim | sim | só OpenCode Go | não | não | sim | não |
+| O que você gastou além do plano e o teto disso, no tooltip de uso | sim | não | não | não | não | não | não | não |
+| Usar um reset de limite que o seu plano dá, pelo painel do perfil na barra lateral | sim | não | não | não | não | não | não | não |
+| Os resets sob demanda que a sua conta tem, no tooltip de uso | não | sim | não | não | não | não | não | não |
 | Um turno interrompido pelo limite de uso do plano continua quando o limite renova | sim | sim | não | retenta sozinho | retenta sozinho | não | não | não |
 | Se outro perfil seu ainda tem cota, um aviso oferece continuar nele na hora | sim | sim | não | não | não | não | não | não |
 | Ao passar o trabalho, um agente pode sugerir um perfil seu para a sucessora, e um aviso deixa você decidir se ela muda | sim | sim | não | não | sim | não | Linux e Windows | só Linux |
@@ -189,6 +192,9 @@ o lich consegue ler de volta, porque cada CLI registra coisas diferentes.
 | O card da sessão abre um navegador que o agente dirige, ao lado do terminal da sessão | sim | sim | sim | sim | sim | sim | sim | sim |
 | Uma página que o agente faz para te mostrar (um relatório, um diagrama, um mockup) abre nesse navegador a partir de uma pasta própria da sessão, fora do checkout, mantida enquanto a sessão existir | sim, mas o Claude Code ainda pode publicá-la no claude.ai com a própria ferramenta Artifact | sim | sim | sim | sim | sim | sim | sim |
 | Uma skill para escrever uma extensão do lich, que só roda quando você chama (`/lich:extension`) | sim | sim, como `$lich:extension` | sim, mas o agente a vê em todo turno: o Antigravity não consegue deixar uma skill só para uso manual | sim, como `/lich-extension` (opencode 1) ou pelo `/skills` (opencode 2) | sim, como `/skill:lich-extension` | sim, pela paleta de comandos | sim, mas o agente a vê em todo turno: o Cursor mostra ao agente toda skill de um plugin | não: o Kiro não consegue tirar uma skill do contexto do agente |
+| A sessão pode aparecer como chat em vez do terminal, alternando entre os dois na mesma conversa | sim | não | sim | sim | sim | não | não verificado | sim |
+| No chat, escolher o modelo, o esforço e o modo que o agente oferece | sim, inclusive um modo que roda toda ferramenta sem perguntar | não | sim | sim | sim | não | não verificado | modelo e modo, sem esforço |
+| No chat, as perguntas do agente chegam num cartão que você responde com clique ou tecla | sim | não | sim | não: o opencode deixa a ferramenta de pergunta fora do ACP, então o agente pergunta em texto | sim | não | não verificado | não: o Kiro pergunta em texto |
 
 </details>
 

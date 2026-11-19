@@ -1,0 +1,80 @@
+{
+  "switch": {
+    "gui": "GUI",
+    "tui": "TUI",
+    "working": "Cambia cuando el agente termine su turno",
+    "pending": "Cambiando…",
+    "failed": "No se pudo cambiar la vista"
+  },
+  "view": {
+    "failed": "La petición al chat falló",
+    "thought": "Razonamiento",
+    "worked": {
+      "one": "Trabajó {duration} · {count} herramienta",
+      "other": "Trabajó {duration} · {count} herramientas"
+    },
+    "toolFailed": "falló",
+    "answered": "{tool} · {choice}",
+    "verbs": "Conjurando|Invocando|Canalizando|Destilando|Vislumbrando|Inscribiendo|Tejiendo|Alzando",
+    "thinking": "Pensando",
+    "toolCalls": {
+      "one": "{count} llamada a herramienta",
+      "other": "{count} llamadas a herramientas"
+    },
+    "workedAt": {
+      "one": "Trabajó {duration} · {count} herramienta · {time}",
+      "other": "Trabajó {duration} · {count} herramientas · {time}"
+    }
+  },
+  "done": {
+    "done": "Hecho",
+    "stopped": "Detenido",
+    "failed": "Falló",
+    "noChanges": "sin cambios",
+    "files": {
+      "one": "{count} archivo",
+      "other": "{count} archivos"
+    }
+  },
+  "composer": {
+    "placeholder": "Pregúntale a {provider} sobre este proyecto",
+    "send": "Enviar",
+    "stop": "Detener"
+  },
+  "option": {
+    "model": "Modelo",
+    "effort": "Esfuerzo",
+    "mode": "Modo",
+    "busy": "Espera a que termine el turno para cambiarlo.",
+    "modelEffort": "Modelo y esfuerzo"
+  },
+  "choice": {
+    "manual": "Manual",
+    "plan": "Plan",
+    "auto": "Auto",
+    "yolo": "YOLO"
+  },
+  "day": {
+    "today": "Hoy",
+    "yesterday": "Ayer"
+  },
+  "model": {
+    "search": "Buscar modelos de {provider}…",
+    "showMore": "Mostrar más",
+    "default": "Predeterminado"
+  },
+  "question": {
+    "multi": "varias",
+    "step": "{n} de {total}",
+    "sendAll": "Enviar todo",
+    "freeHint": "Enter envía · Esc rechaza",
+    "marked": {
+      "one": "{count} marcada",
+      "other": "{count} marcadas"
+    },
+    "write": "Otra… escribe tu respuesta",
+    "declined": "Sin respuesta",
+    "label": "{header}:",
+    "own": "«{text}»"
+  }
+}

@@ -71,6 +71,9 @@ type footerSlot struct {
 	Hint    string
 	Readout footerReadout // context, plan, cost, handsOn
 	Plan    backend.QuotaPlan
+	// Pane names the chat pane an item is drawn in when it is not the one the
+	// footer follows: its widgets are its own and take no click.
+	Pane string
 }
 
 // footerSlots is the side's items that have something to show, in order.

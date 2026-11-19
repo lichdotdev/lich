@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -87,8 +88,10 @@ func newService(claudeURL, codexURL string, now time.Time) *Service {
 		codexURL:    codexURL,
 		probeURL:    claudeURL,
 		claudeLogin: readClaudeFile,
-		now:         func() time.Time { return now },
-		cache:       make(map[string]reading),
+		// No CLI is asked for its version: the usage agent claims the fallback.
+		claudeVersion: func() string { return "" },
+		now:           func() time.Time { return now },
+		cache:         make(map[string]reading),
 	}
 }
 
@@ -156,9 +159,9 @@ func TestClaudeRequestCarriesTheHeadersTheEndpointDemands(t *testing.T) {
 	if beta := got.Get("anthropic-beta"); beta != "oauth-2025-04-20" {
 		t.Errorf("anthropic-beta = %q, want %q", beta, "oauth-2025-04-20")
 	}
-	// Sent as anything else the endpoint rate-limits within a few requests.
-	if agent := got.Get("User-Agent"); agent[:len("claude-code/")] != "claude-code/" {
-		t.Errorf("User-Agent = %q, want a claude-code/… build", agent)
+	// The CLI's own spelling is the one the server offers reset grants to.
+	if agent := got.Get("User-Agent"); !strings.HasPrefix(agent, "claude-cli/") || !strings.HasSuffix(agent, " (external, cli)") {
+		t.Errorf("User-Agent = %q, want claude-cli/<version> (external, cli)", agent)
 	}
 }
 
@@ -438,7 +441,7 @@ func TestPlansServesEveryMeteredProviderFromOneReading(t *testing.T) {
 
 func TestNewPointsAtTheLiveEndpoints(t *testing.T) {
 	s := New()
-	if s.claudeURL != "https://api.anthropic.com/api/oauth/usage" {
+	if s.claudeURL != "https://api.anthropic.com/api/oauth/usage?cedar_ember=1" {
 		t.Errorf("claudeURL = %q", s.claudeURL)
 	}
 	if s.codexURL != "https://chatgpt.com/backend-api/wham/usage" {

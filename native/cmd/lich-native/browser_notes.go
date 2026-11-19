@@ -56,8 +56,8 @@ type browserNote struct {
 	el          api.BrowserElement
 	text        string
 	box         api.BrowserRect
-	row, remove widget.Clickable
-	pin         widget.Clickable
+	row, remove ui.Clickable
+	pin         ui.Clickable
 }
 
 // browserNotes is one pane's pick and its notes.
@@ -81,12 +81,13 @@ type browserNotes struct {
 	rubTrail []rubPoint
 	// The bar's widgets (browser_notes_dock.go). dock is its tag for the
 	// pointer, and docked how tall it stood last frame, off the page's bottom.
-	selectTool, drawTool, unfold, sketchGone widget.Clickable
-	shapeMenuTrigger                         widget.Clickable
+	selectTool, drawTool, unfold, sketchGone ui.Clickable
+	selectHint                               ui.Tooltip
+	shapeMenuTrigger                         ui.Clickable
 	shapeMenuMenu                            ui.MenuState
 	shapeMenuHint                            ui.Tooltip
 	fold, eraser                             ui.IconActionState
-	inks                                     []widget.Clickable
+	inks                                     []ui.Clickable
 	dock                                     int
 	docked                                   int
 	// hover is the element under the pointer while picking; its outline
@@ -109,8 +110,8 @@ type browserNotes struct {
 	closing widget.Editor
 	// closingHeight is how tall closing stood last frame, for the tray's height.
 	closingHeight    int
-	add, cancel, del widget.Clickable
-	clear, send      widget.Clickable
+	add, cancel, del ui.Clickable
+	clear, send      ui.Clickable
 	list             []*browserNote
 	rows             layout.List
 	found            chan foundElement
@@ -151,7 +152,7 @@ type locatedNotes struct {
 }
 
 func newBrowserNotes() browserNotes {
-	n := browserNotes{found: make(chan foundElement, 4), located: make(chan locatedNotes, 1), sent: make(chan sentNotes, 4), failed: make(chan string, 1), inks: make([]widget.Clickable, len(cardColorNames))}
+	n := browserNotes{found: make(chan foundElement, 4), located: make(chan locatedNotes, 1), sent: make(chan sentNotes, 4), failed: make(chan string, 1), inks: make([]ui.Clickable, len(cardColorNames))}
 	n.rows.Axis = layout.Vertical
 	return n
 }

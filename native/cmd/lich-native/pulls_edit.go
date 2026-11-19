@@ -35,9 +35,9 @@ type editState struct {
 
 	open    ui.IconActionState
 	preview ui.IconActionState
-	save    widget.Clickable
-	cancel  widget.Clickable
-	more    widget.Clickable
+	save    ui.Clickable
+	cancel  ui.Clickable
+	more    ui.Clickable
 	menu    ui.MenuState
 
 	// heldTitle and heldBody are what was sent, shown until a read caught up.

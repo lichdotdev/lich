@@ -96,6 +96,15 @@ func (r *frameRig) settle(t *testing.T) string {
 	return ""
 }
 
+// frames lays the screen out n times, a second apart: for a screen that
+// never goes still, a turn in flight whose mark and verb keep moving.
+func (r *frameRig) frames(n int) {
+	for range n {
+		r.now = r.now.Add(time.Second)
+		r.frame()
+	}
+}
+
 // waitFor frames the screen until something is drawn with label, for a
 // screen that reads its backend off the frame, then lets it settle.
 func (r *frameRig) waitFor(t *testing.T, label string) {
@@ -248,4 +257,34 @@ func (r *frameRig) clickLabel(t *testing.T, label string) (took, next string) {
 	t.Helper()
 	r.settle(t)
 	return r.click(t, r.at(t, label))
+}
+
+// glyph is the point at the first glyph of the first thing drawn with label.
+func (r *frameRig) glyph(t *testing.T, label string) image.Point {
+	t.Helper()
+	for _, n := range r.nodes() {
+		if n.Desc.Label == label {
+			return n.Desc.Bounds.Min.Add(image.Pt(2, 2))
+		}
+	}
+	t.Fatalf("nothing drawn as %q:\n%s", label, r.drawn())
+	return image.Point{}
+}
+
+// boxAround is the largest semantic node inside a screen of size that holds
+// the first glyph of label: the widget the label sits in, not the root.
+func (r *frameRig) boxAround(t *testing.T, label string, size image.Point) image.Rectangle {
+	t.Helper()
+	glyph := r.glyph(t, label)
+	var best image.Rectangle
+	for _, n := range r.nodes() {
+		b := n.Desc.Bounds
+		if glyph.In(b) && b.Dx() <= size.X && b.Dy() <= size.Y && b.Dx()*b.Dy() > best.Dx()*best.Dy() {
+			best = b
+		}
+	}
+	if best.Empty() {
+		t.Fatalf("nothing holds %q", label)
+	}
+	return best
 }

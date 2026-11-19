@@ -1,6 +1,9 @@
 package project
 
-import "strings"
+import (
+	"context"
+	"strings"
+)
 
 // emptyTreeHash is git's well-known empty tree object, the diff base for a
 // repository whose HEAD does not exist yet (no commits).
@@ -33,7 +36,12 @@ type workTreeStatus struct {
 // default collapses a new directory into one "? dir/" entry: an agent writing
 // 25 files into fresh packages would count as one changed file.
 func readWorkTree(path string) workTreeStatus {
-	out, ok := gitQuiet(path, "status", "--porcelain=v2", "--branch",
+	return readWorkTreeContext(context.Background(), path)
+}
+
+// readWorkTreeContext is readWorkTree for a read that must not outlive ctx.
+func readWorkTreeContext(ctx context.Context, path string) workTreeStatus {
+	out, ok := gitQuietContext(ctx, path, "status", "--porcelain=v2", "--branch",
 		"--untracked-files=all", "-z")
 	if !ok {
 		return workTreeStatus{base: emptyTreeHash}
@@ -43,7 +51,7 @@ func readWorkTree(path string) workTreeStatus {
 	// prefix would cost a second git child to be told nothing, on the read the
 	// window polls every few seconds per checkout on screen.
 	if len(status.untracked) > 0 {
-		status.untracked = relativeToPath(path, status.untracked)
+		status.untracked = relativeToPath(ctx, path, status.untracked)
 	}
 	return status
 }
@@ -59,8 +67,8 @@ func readWorkTree(path string) workTreeStatus {
 // prefix are dropped rather than kept: they live outside the directory the
 // caller asked about, and `ls-files --others`, scoped to it, never reported
 // them either.
-func relativeToPath(path string, untracked []string) []string {
-	out, ok := gitQuiet(path, "rev-parse", "--show-prefix")
+func relativeToPath(ctx context.Context, path string, untracked []string) []string {
+	out, ok := gitQuietContext(ctx, path, "rev-parse", "--show-prefix")
 	// The overwhelmingly common case: path is the repository root, and every
 	// entry is already relative to it. A git that refused the question leaves
 	// them alone too — the same paths the read handed back before this call.

@@ -30,7 +30,9 @@ type LabelStyle struct {
 	// default, Middle for text-center. It aligns each wrapped line, so it
 	// shows only on a label laid out at its full width.
 	Align text.Alignment
-	theme *Theme
+	// shimmer sweeps a highlight over the glyphs in a loop; see Shimmer.
+	shimmer bool
+	theme   *Theme
 }
 
 // tailwindLeading is the line-height Tailwind pairs with each text size
@@ -101,12 +103,21 @@ func (l LabelStyle) Layout(gtx layout.Context) layout.Dimensions {
 func (l LabelStyle) draw(gtx layout.Context) layout.Dimensions {
 	colorMacro := op.Record(gtx.Ops)
 	paint.ColorOp{Color: l.Color}.Add(gtx.Ops)
+	material := colorMacro.Stop()
 	w := widget.Label{MaxLines: l.MaxLines, Truncator: "…", LineHeight: l.LineHeight, Alignment: l.Align}
 	if l.LineHeight != 0 {
 		// Gio scales an explicit LineHeight by 1.2 unless told otherwise.
 		w.LineHeightScale = 1
 	}
-	return w.Layout(gtx, l.theme.Shaper, l.Font, l.Size, l.Text, colorMacro.Stop())
+	if l.shimmer {
+		// The sweep needs the text's own size, so the label is laid out once
+		// to measure and again in its material.
+		probe := op.Record(gtx.Ops)
+		d := w.Layout(gtx, l.theme.Shaper, l.Font, l.Size, l.Text, material)
+		probe.Stop()
+		material = l.theme.shimmerMaterial(gtx, l.Color, d.Size)
+	}
+	return w.Layout(gtx, l.theme.Shaper, l.Font, l.Size, l.Text, material)
 }
 
 // unboundedWidth measures a line without wrapping it. The shaper holds widths

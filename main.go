@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -21,6 +22,7 @@ import (
 	"github.com/lichdotdev/lich/internal/appupdate"
 	"github.com/lichdotdev/lich/internal/artifact"
 	"github.com/lichdotdev/lich/internal/browser"
+	"github.com/lichdotdev/lich/internal/chat"
 	"github.com/lichdotdev/lich/internal/claudeprofile"
 	"github.com/lichdotdev/lich/internal/cli"
 	"github.com/lichdotdev/lich/internal/codexprofile"
@@ -28,6 +30,7 @@ import (
 	"github.com/lichdotdev/lich/internal/events"
 	"github.com/lichdotdev/lich/internal/extensions"
 	"github.com/lichdotdev/lich/internal/logging"
+	"github.com/lichdotdev/lich/internal/newtab"
 	"github.com/lichdotdev/lich/internal/ompprofile"
 	"github.com/lichdotdev/lich/internal/patchnotes"
 	"github.com/lichdotdev/lich/internal/preview"
@@ -157,6 +160,10 @@ func app() {
 	// session was worked in this run is still in memory until something writes
 	// it (internal/terminal.handsOn).
 	defer term.FlushHandsOn()
+	// Deferred after the hands-on flush, so it runs first: a chat's process
+	// is lich's child, as a terminal's is.
+	chats := chat.New(term, db, hub, db.PromptLanguage)
+	defer chats.Shutdown()
 	coord := newCoordinator()
 	svcs := services.New(db, term, hub.Emit)
 	// Deferred after the hands-on flush, so it runs first: a service's process
@@ -165,7 +172,7 @@ func app() {
 	exts := extensions.New(extensions.Dir(configDir), extensions.DataDir(configDir), version, env, hub.Emit)
 	exts.SetLanguage(db.InterfaceLanguage)
 	defer exts.Shutdown()
-	sys, closeBrowsers := registerServices(db, term, svcs, exts, hub, configDir, logPath, env, launchEnv, coord)
+	sys, closeBrowsers := registerServices(db, term, chats, svcs, exts, hub, configDir, logPath, env, launchEnv, coord)
 	defer closeBrowsers()
 
 	coord.SetWindowOpen(hub.Attached)
@@ -242,7 +249,7 @@ func resolveEnv() (launchEnv, env []string) {
 // in the order main built them: a service that hands another one a callback has
 // to exist first. It is lifted out of main only for its length; nothing here
 // runs anywhere else.
-func registerServices(db *store.Service, term *terminal.Service, svcs *services.Service, exts *extensions.Service, hub *events.Hub,
+func registerServices(db *store.Service, term *terminal.Service, chats *chat.Service, svcs *services.Service, exts *extensions.Service, hub *events.Hub,
 	configDir, logPath string, env, launchEnv []string, coord *restart.Coordinator) (*system.Service, func()) {
 	// One Chromium per session, closed with the card and with the process.
 	// Never the lich window: this is a second browser the agent drives.
@@ -349,9 +356,11 @@ func registerServices(db *store.Service, term *terminal.Service, svcs *services.
 	}, hub.Emit)
 	go arts.RunWatch()
 	term.SetArtifactDir(artifacts)
+	forgetPages := wireNewTab(db, term, svcs, previews, arts, artifactURL, brows)
 	db.SetSessionGone(func(key string) {
 		drops.Purge(key)
 		arts.Purge(key)
+		forgetPages(key)
 	})
 	// The footer's attach button opens the picker through the drop service, so
 	// the file it copies for a confined session is one a human chose in a dialog
@@ -360,6 +369,7 @@ func registerServices(db *store.Service, term *terminal.Service, svcs *services.
 		return proj.PickFile(context.Background(), api.PickFileOptions{Title: title})
 	})
 	routes.Terminal(dispatcher, term)
+	routes.Chat(dispatcher, chats)
 	routes.Browser(dispatcher, brows)
 	routes.Drop(dispatcher, drops)
 	routes.Artifact(dispatcher, arts)
@@ -501,6 +511,7 @@ func registerServices(db *store.Service, term *terminal.Service, svcs *services.
 		}
 		return on
 	})
+	plans.SetBinary(func() string { return db.ProviderBin(providers.Claude, "") })
 	term.SetRateLimitReports(plans.ReportClaude)
 	routes.Quota(dispatcher, plans)
 	codexProfiles.SetAccount(func(slug string) (string, string) {
@@ -525,7 +536,10 @@ func registerServices(db *store.Service, term *terminal.Service, svcs *services.
 	term.SetSessionClosed(func(id, closerID string) {
 		rl.SessionClosed(id, closerID)
 	})
-	term.SetCardClosed(func(id string) { closeSessionBrowser(brows, id) })
+	term.SetCardClosed(func(id string) {
+		closeSessionBrowser(brows, id)
+		chats.End(id)
+	})
 	term.SetSessionExited(func(id string) {
 		rl.SessionExited(id)
 		closeSessionBrowser(brows, id)
@@ -848,4 +862,55 @@ func showRunning(_ string, running *singleton.Info) {
 	if err := singleton.Show(running); err != nil {
 		slog.Warn("show the running lich's window", "err", err)
 	}
+}
+
+// listeningTimeout bounds the new-tab page's look at whether a port answers;
+// a loopback connect either lands at once or is refused.
+const listeningTimeout = 200 * time.Millisecond
+
+// wireNewTab hands the session browser the page a new tab opens on, built from
+// what lich knows of the session, and returns what forgets the pages a
+// session's browser visited once its row is gone.
+func wireNewTab(db *store.Service, term *terminal.Service, svcs *services.Service, previews *preview.Service, arts *artifact.Service,
+	artifactURL func(session, raw string) (string, bool, error), brows *browser.Service) func(filesKey string) {
+	pages := newtab.New(newtab.Source{
+		Project:  db.SessionProject,
+		Services: func() ([]api.Service, error) { return svcs.List(context.Background(), api.None{}) },
+		WorktreePort: func(session string) int {
+			_, port := term.SessionCheckout(session)
+			return port
+		},
+		Listening: func(port int) bool {
+			conn, err := net.DialTimeout("tcp", net.JoinHostPort("127.0.0.1", strconv.Itoa(port)), listeningTimeout)
+			if err != nil {
+				return false
+			}
+			_ = conn.Close()
+			return true
+		},
+		Artifacts: func(session string) []newtab.Artifact {
+			var out []newtab.Artifact
+			for _, a := range arts.Of(session) {
+				if u, ok, err := artifactURL(session, a.Path); ok && err == nil {
+					out = append(out, newtab.Artifact{Name: a.Name, URL: u, Modified: a.Modified})
+				}
+			}
+			return out
+		},
+		Resolve: brows.ResolveURL,
+		Key:     db.SessionFilesKey,
+		Load: func(key string) string {
+			value, _ := db.GetSetting(context.Background(), api.GetSettingOptions{Key: key})
+			return value
+		},
+		Save: func(key, value string) error {
+			_, err := db.SetSetting(context.Background(), api.SetSettingOptions{Key: key, Value: value})
+			return err
+		},
+		Drop: db.DeleteGlobalSetting,
+		Skip: previews.IsNewTab,
+	})
+	previews.SetNewTab(pages.Handler())
+	brows.SetNewTab(browser.NewTab{URL: previews.NewTabURL, Is: previews.IsNewTab, Visit: pages.Visit, Look: pages.Look})
+	return pages.Forget
 }

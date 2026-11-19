@@ -219,3 +219,15 @@ func TestOpenShowsAnotherSessionsPageFromItsOwnFolder(t *testing.T) {
 		t.Error("Open of an artifact not listed went through")
 	}
 }
+
+func TestOfIsWhatTheArtifactsTabListsForASession(t *testing.T) {
+	s, _, root := newWired(t, map[string]string{"s1": "key1"})
+	put(t, filepath.Join(root, "key1", "old.html"), "old", time.Hour)
+	put(t, filepath.Join(root, "key1", "new.html"), "new", 0)
+	if got := strings.Join(names(s.Of("s1")), " "); got != "new.html old.html" {
+		t.Fatalf("Of = %q", got)
+	}
+	if got := s.Of("s2"); len(got) != 0 {
+		t.Fatalf("a session with no folder lists %v", got)
+	}
+}

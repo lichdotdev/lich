@@ -71,6 +71,24 @@ server: the model quoted a marker that lived only there).
 The plan gauge names the account a session spends (`internal/quota`, `Plan.Account`): lich answers Claude
 Code's profile route with the credentials token. The usage route is the one Claude Code's own CLI polls.
 
+The same payload carries `extra_usage`, the pay-as-you-go spend past the plan: `is_enabled`, `monthly_limit` (null for no
+cap) and `used_credits` in minor units, either of which may arrive as a float (`14157.0`), plus `currency` and
+`decimal_places`. lich decodes it only when `is_enabled` is true, into `QuotaPlan.Extra`, and the usage tooltip shows it
+as one more block. An account with it off reports every amount null.
+
+The usage request also carries `cedar_ember=1` (not `skip_spend=1`, which removes `extra_usage` from the payload) and
+the CLI's own user agent (`claude-cli/<version> (external, cli)`, the version of the installed `claude`), because the reset grants come in a `cedar_ember` block that is only filled for that spelling: the
+`claude-code/<version>` agent lich used before answers `eligible: false` (`ineligible_reason: "surface"`), and a CLI
+version older than the server's floor answers `"cli_version"` (2.1.183 does, 2.1.328 does not). Each grant carries
+`id`, `resets_left`, `ends_at`, `clears` (the windows it resets), `paused` and `usable_now`. lich keeps the grants with resets
+left and an end in the future, into `QuotaPlan.Resets`, and the usage tooltip lists them. The windows read the same
+under either agent.
+
+Spending a reset is `POST https://api.anthropic.com/api/organizations/<organization>/reset_rate_limits` with
+`{"program":"cedar_ember","grant_id":<id>,"request_id":<uuid>}` and the headers of the read. The organization is the
+`oauthAccount.organizationUuid` of the account's `.claude.json`. The answer's body was not measured (see
+`docs/ceilings.md`).
+
 A long-lived OAuth token (`claude setup-token`) carries `user:inference` alone, so the usage route answers it 403
 and the gauge sends one `max_tokens: 1` message for the rate-limit headers on the response
 (`internal/quota/claude.go`). That request carries Claude Code's system prompt verbatim because the API rejects an

@@ -5,14 +5,13 @@ import (
 
 	"gioui.org/layout"
 	"gioui.org/unit"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
 // IconActionState is an IconAction's clickable and tooltip.
 type IconActionState struct {
-	Click widget.Clickable
+	Click Clickable
 	Tip   Tooltip
 }
 
@@ -51,13 +50,13 @@ func (a IconActionStyle) Layout(gtx C) D {
 // CornerButtonStyle is the shape of both controls in a card's corner. On is
 // the set pin: the glyph in the foreground and filled.
 type CornerButtonStyle struct {
-	Click *widget.Clickable
+	Click *Clickable
 	Icon  *icons.Icon
 	On    bool
 	theme *Theme
 }
 
-func (th *Theme) CornerButton(click *widget.Clickable, ic *icons.Icon, on bool) CornerButtonStyle {
+func (th *Theme) CornerButton(click *Clickable, ic *icons.Icon, on bool) CornerButtonStyle {
 	return CornerButtonStyle{Click: click, Icon: ic, On: on, theme: th}
 }
 
@@ -95,13 +94,13 @@ const barDisabledOpacity = 0.5
 // accent/50 hovered, accent while its popover is open, faded when disabled.
 // A nil Click draws it disabled.
 type BarIconButtonStyle struct {
-	Click *widget.Clickable
+	Click *Clickable
 	Icon  icons.Glyph
 	On    bool
 	theme *Theme
 }
 
-func (th *Theme) BarIconButton(click *widget.Clickable, ic icons.Glyph, on bool) BarIconButtonStyle {
+func (th *Theme) BarIconButton(click *Clickable, ic icons.Glyph, on bool) BarIconButtonStyle {
 	return BarIconButtonStyle{Click: click, Icon: ic, On: on, theme: th}
 }
 

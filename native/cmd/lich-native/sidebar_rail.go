@@ -32,10 +32,10 @@ type sidebarRail struct {
 	// and last the rows it last drew, which a row leaving is drawn from.
 	motion treeMotion
 	last   map[string]railItem
-	expand widget.Clickable
-	add    widget.Clickable
+	expand ui.Clickable
+	add    ui.Clickable
 	list   widget.List
-	cards  map[string]*widget.Clickable
+	cards  map[string]*ui.Clickable
 	tips   map[string]*ui.Tooltip
 	menus  map[string]*ui.MenuState
 	// view is the frame's sidebar view, whose blocks and folders a node's
@@ -61,6 +61,7 @@ func (r *sidebarRail) layout(gtx C, th *ui.Theme, s *sidebar, m *model, active s
 	gtx.Constraints = layout.Exact(size)
 	ui.Fill(gtx, th.Sidebar, ui.RadiusLG)
 	th = th.On(th.Sidebar)
+	defer ui.InsetBorder(gtx, size, gtx.Dp(ui.RadiusLG), th.Over(th.Border))
 	s.header.clicks(gtx)
 	r.view = m.sidebarBlocks(s.header.filter())
 	blocks := r.view.blocks
@@ -73,7 +74,13 @@ func (r *sidebarRail) layout(gtx C, th *ui.Theme, s *sidebar, m *model, active s
 				return layout.Center.Layout(gtx, r.button(th, s, &r.expand, icExpand, i18n.T("sidebar.sidebarRail.expand"), glyphToggle))
 			}),
 			ui.VGap(2),
-			layout.Flexed(1, func(gtx C) D { return r.sessions(gtx, th, s, blocks, active, &act) }),
+			layout.Flexed(1, func(gtx C) D {
+				d := r.sessions(gtx, th, s, blocks, active, &act)
+				// Only the tree brings the sidebar out: the panel would cover
+				// expand and the footer's buttons on their way to a click.
+				s.watchRail(gtx, gtx.Constraints.Max)
+				return d
+			}),
 			layout.Rigid(func(gtx C) D { return r.footer(gtx, th, s, m, &act) }),
 		)
 	})
@@ -81,7 +88,7 @@ func (r *sidebarRail) layout(gtx C, th *ui.Theme, s *sidebar, m *model, active s
 }
 
 // button is one of the rail's buttons under its hint.
-func (r *sidebarRail) button(th *ui.Theme, s *sidebar, click *widget.Clickable, ic *icons.Icon, hint, glyph string) layout.Widget {
+func (r *sidebarRail) button(th *ui.Theme, s *sidebar, click *ui.Clickable, ic *icons.Icon, hint, glyph string) layout.Widget {
 	return func(gtx C) D {
 		tip := th.Tooltip(s.root, s.hint("rail:"+hint), hint)
 		tip.Side = ui.SideRight
@@ -111,6 +118,7 @@ const (
 	railCheckout          // a checkout's node, the root its sessions hang from
 	railHead              // a folder's or the pinned block's glyph
 	railGap               // the space between two blocks
+	railEditor            // a checkout's editor node
 )
 
 // railItem is one row of the rail's tree, the open sidebar's in one column.
@@ -126,7 +134,8 @@ type railItem struct {
 	kids   int    // railCard: the sessions under a mother
 	folded bool   // railCard: a mother folded over them
 	sv     *sessionView
-	path   string // railCheckout
+	path   string     // railCheckout and railEditor
+	editor editorNode // railEditor
 	facts  checkoutFacts
 	glyph  *icons.Icon // railHead
 	tint   string      // railHead: a folder's color
@@ -195,6 +204,10 @@ func railRows(b blockView) []railItem {
 			continue
 		}
 		if r.kind == rowBrowser {
+			continue
+		}
+		if r.kind == rowEditor {
+			items = append(items, railItem{kind: railEditor, id: r.key, depth: r.depth, key: r.key, path: r.path, editor: r.editor, small: r.depth > base})
 			continue
 		}
 		sv := r.sv
@@ -332,6 +345,8 @@ func (r *sidebarRail) node(gtx C, th *ui.Theme, s *sidebar, it railItem, active 
 		})
 	case railCheckout:
 		return r.menu(gtx, th, s, it, act).Layout(gtx, func(gtx C) D { return r.checkout(gtx, th, s, it) })
+	case railEditor:
+		return r.menu(gtx, th, s, it, act).Layout(gtx, func(gtx C) D { return r.editorNode(gtx, th, s, it, act) })
 	}
 	return r.menu(gtx, th, s, it, act).Layout(gtx, func(gtx C) D { return r.session(gtx, th, s, it, active, act) })
 }
@@ -455,6 +470,40 @@ func (r *sidebarRail) session(gtx C, th *ui.Theme, s *sidebar, it railItem, acti
 						return railSmall(gtx, true, func(gtx C) D { return s.statusGlyph(gtx, th, sv) })
 					}
 					return s.statusRing(gtx, th, sv)
+				})
+			})
+		})
+	})
+}
+
+// editorNode is a checkout's editor: the file glyph in the card's square,
+// lit while the editor is on the stage, under the open row's tooltip.
+func (r *sidebarRail) editorNode(gtx C, th *ui.Theme, s *sidebar, it railItem, act *sidebarAction) D {
+	click := clickable(r.cards, it.id)
+	if click.Clicked(gtx) {
+		act.editor = it.path
+	}
+	tip, ok := r.tips[it.id]
+	if !ok {
+		tip = new(ui.Tooltip)
+		r.tips[it.id] = tip
+	}
+	tooltip := th.TooltipCard(s.root, tip, editorTooltip(th, it.editor))
+	tooltip.Side = ui.SideRight
+	return layout.Center.Layout(gtx, func(gtx C) D {
+		return tooltip.Layout(gtx, func(gtx C) D {
+			return click.Layout(gtx, func(gtx C) D {
+				var bg color.NRGBA
+				switch {
+				case it.editor.shown:
+					bg = th.Over(th.Accent)
+				case click.Hovered():
+					bg = th.Over(ui.Alpha(th.Accent, railHoverFill))
+				}
+				return ui.SquareFace(gtx, bg, func(gtx C) D {
+					return railSmall(gtx, it.small, func(gtx C) D {
+						return checkoutNode(gtx, onGround(th, railGround(th, it)), icEditorFile, it.entry())
+					})
 				})
 			})
 		})

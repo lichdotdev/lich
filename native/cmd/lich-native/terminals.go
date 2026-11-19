@@ -41,6 +41,9 @@ type termView struct {
 	// seeded is set once vt holds the session's replayed tail: the stream
 	// writes output into it from then on, and its replies reach the session.
 	seeded atomic.Bool
+	// keyboard is the last focus the terminal was told of: its tag took the
+	// keyboard and the window has it. The cursor is an outline without it.
+	keyboard bool
 	// composition holds what an input method has not committed yet.
 	composition gioterm.Composition
 	// The area size waiting to be fitted, and since when it has held.
@@ -565,7 +568,7 @@ func (ts *terminals) layout(gtx layout.Context, t *termView, focus bool) error {
 	ts.mu.Lock()
 	t.background = snap.Background()
 	ts.mu.Unlock()
-	if _, err := t.r.Draw(gtx, snap); err != nil {
+	if _, err := t.r.Draw(gtx, snap.Focus(t.keyboard && gtx.Focused(t.tag))); err != nil {
 		return err
 	}
 	if l, ok := ts.underlinedLink(t); ok {
@@ -622,6 +625,9 @@ func (ts *terminals) input(gtx layout.Context, t *termView, focus bool) {
 		}
 		switch e := ev.(type) {
 		case key.EditEvent, key.CompositionEvent, key.SelectionEvent, key.FocusEvent:
+			if f, ok := e.(key.FocusEvent); ok {
+				t.keyboard = f.Focus
+			}
 			ts.sendTyped(t, []byte(t.composition.Update(e, t.tag, gtx.Execute)))
 		case key.Event:
 			if e.State != key.Press {

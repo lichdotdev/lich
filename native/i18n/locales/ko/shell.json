@@ -49,22 +49,23 @@
   },
   "footerBar": {
     "attachFile": "파일 첨부",
-    "browseCode": "코드 둘러보기",
     "reviewChanges": "변경 사항 리뷰",
     "viewPullRequest": "풀 리퀘스트 보기",
-    "pullRequest": "PR #{number}",
-    "showArtifacts": "아티팩트 보기"
+    "pullRequest": "PR #{number}"
   },
   "footerSession": {
-    "contextWindow": "컨텍스트 창",
-    "contextTokens": "{tokens} / {window} 토큰",
     "cacheHit": "캐시: 적중률 {percent}%",
     "costUnavailable": "비용 정보 없음",
     "sessionCost": "세션 비용",
     "costOfBudget": "예산 {budget} 중 {cost}",
     "costNote": "이 세션의 대화 전체에 대한 API 비용입니다. 구독 요금과는 다를 수 있습니다.",
     "handsOnTime": "직접 작업 시간",
-    "handsOnFailed": "직접 작업 시간을 읽을 수 없습니다."
+    "handsOnFailed": "직접 작업 시간을 읽을 수 없습니다.",
+    "context": "컨텍스트",
+    "tokens": "토큰",
+    "modelWindow": "모델 윈도우",
+    "cache": "캐시",
+    "cacheHitShort": "적중 {percent}%"
   },
   "gitMissingGate": {
     "title": "git이 설치되어 있지 않습니다",
@@ -97,7 +98,39 @@
   },
   "planQuota": {
     "planUsage": "플랜 사용량",
-    "locked": "잠김"
+    "locked": "잠김",
+    "runsOut": "{time} 후 소진",
+    "resetsIn": "{time} 후 초기화",
+    "extraUsage": "추가 사용량",
+    "extraOf": "{used} / {limit}",
+    "extraNoLimit": "{used} · 한도 없음",
+    "resets": "초기화",
+    "resetsLeft": {
+      "one": "{count}회 남음",
+      "other": "{count}회 남음"
+    },
+    "resetFull": "전체",
+    "resetUntil": "{month} {day}일까지",
+    "shortMonths": "1월,2월,3월,4월,5월,6월,7월,8월,9월,10월,11월,12월",
+    "resetUse": "사용",
+    "resetConfirm": "{name} 초기화를 1회 사용할까요?",
+    "resetClearsFull": "세션과 주간 한도를 초기화합니다.",
+    "resetClearsModel": "세션 한도와 {model}의 주간 한도를 초기화합니다.",
+    "resetClearsSession": "세션 한도를 초기화합니다.",
+    "resetDone": "한도를 초기화했습니다",
+    "resetNothing": "초기화할 것이 없습니다",
+    "resetNothingDetail": "한도에 도달하지 않았습니다.",
+    "resetIneligible": "Claude가 지금은 이 초기화를 제공하지 않습니다",
+    "resetCooldownAt": "초기화가 대기 중입니다. {time} 후에 다시 시도하세요.",
+    "resetCooldownLater": "초기화가 대기 중입니다. 잠시 후에 다시 시도하세요.",
+    "resetFailed": "초기화를 사용하지 못했습니다: {error}",
+    "resetCredits": "초기화 크레딧",
+    "resetCreditsAvailable": {
+      "one": "{count}개 사용 가능",
+      "other": "{count}개 사용 가능"
+    },
+    "noUsage": "{provider}에서는 프로필별 사용량을 측정하지 않습니다.",
+    "unreadable": "플랜 사용량을 읽을 수 없습니다."
   },
   "providerSetupDialog": {
     "chooseTitle": "에이전트 선택",

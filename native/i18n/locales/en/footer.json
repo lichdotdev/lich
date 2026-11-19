@@ -3,14 +3,8 @@
     "attach": {
       "example": "Attach file"
     },
-    "files": {
-      "example": "Files"
-    },
     "model": {
       "example": "Model"
-    },
-    "artifacts": {
-      "example": "Artifacts"
     }
   },
   "footerEditor": {

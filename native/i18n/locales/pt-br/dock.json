@@ -5,6 +5,8 @@
     "exitFullScreen": "Sair da tela cheia",
     "fullScreen": "Tela cheia",
     "closePanel": "Fechar painel",
+    "collapsePanel": "Recolher painel",
+    "expandPanel": "Expandir painel",
     "tabArtifacts": "Artifacts"
   },
   "searchResults": {
@@ -21,26 +23,7 @@
     "loading": "Carregando…",
     "noMatch": "Nenhum arquivo corresponde",
     "empty": "Nenhum arquivo aqui",
-    "backToTree": "Voltar à árvore de arquivos",
-    "readOnly": "somente leitura",
     "showSource": "Mostrar código-fonte"
-  },
-  "findBar": {
-    "placeholder": "Localizar",
-    "matchCase": "Diferenciar maiúsculas e minúsculas",
-    "wholeWord": "Palavra inteira",
-    "regexp": "Usar expressão regular",
-    "showAll": "Mostrar todas as ocorrências",
-    "previous": "Ocorrência anterior",
-    "next": "Próxima ocorrência",
-    "close": "Fechar",
-    "position": "{current} de {total}",
-    "matches": {
-      "one": "{count} ocorrência",
-      "other": "{count} ocorrências"
-    },
-    "noResults": "Nenhum resultado",
-    "invalidRegexp": "Expressão regular inválida"
   },
   "artifacts": {
     "empty": "As páginas e os arquivos que o agente desta sessão cria para mostrar a você aparecem aqui, junto com os das outras sessões abertas do projeto.",
@@ -50,8 +33,7 @@
     "openInBrowser": "Abrir no navegador",
     "attachToPrompt": "Anexar ao prompt",
     "copyPath": "Copiar caminho",
-    "showInFileManager": "Mostrar no gerenciador de arquivos",
-    "backToList": "Voltar aos artifacts"
+    "showInFileManager": "Mostrar no gerenciador de arquivos"
   },
   "showCode": {
     "pointed": "{session} apontou para {file}",
@@ -61,5 +43,19 @@
       "one": "{count} arquivo corresponde",
       "other": "{count} arquivos correspondem"
     }
+  },
+  "editor": {
+    "save": "Salvar",
+    "discard": "Descartar",
+    "unsavedTitle": "Salvar as alterações em {name}?",
+    "unsavedDescription": "Não foi possível salvá-las, ou o arquivo mudou no disco desde então. Se você descartar, elas se perdem.",
+    "changedOnDisk": "Este arquivo mudou no disco desde que você começou a editá-lo.",
+    "keepMine": "Manter a minha",
+    "reload": "Recarregar",
+    "saveFailed": "Não foi possível salvar {name}",
+    "noteOn": "{author} sobre as linhas {lines}",
+    "blame": "{author}, {age} · {summary}",
+    "blameUncommitted": "Você · Alterações não commitadas",
+    "artifactReadOnly": "Do agente · somente leitura"
   }
 }

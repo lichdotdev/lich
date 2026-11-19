@@ -28,10 +28,10 @@ var icGitBack = icons.Lucide("arrow-left")
 type gitDetailPane struct {
 	list    widget.List
 	message widget.List
-	files   map[string]*widget.Clickable
+	files   map[string]*ui.Clickable
 
 	open     *gitDiffKey
-	back     widget.Clickable
+	back     ui.Clickable
 	split    bool
 	splitBtn ui.IconActionState
 	view     *godemirror.DiffView
@@ -45,7 +45,7 @@ type gitDetailPane struct {
 
 func (d *gitDetailPane) init() {
 	d.list.Axis, d.message.Axis = layout.Vertical, layout.Vertical
-	d.files = map[string]*widget.Clickable{}
+	d.files = map[string]*ui.Clickable{}
 }
 
 func (d *gitDetailPane) diffOpen() bool { return d.open != nil }
@@ -173,7 +173,7 @@ func gitCommitHead(gtx C, th *ui.Theme, c backend.GitCommitDetail) D {
 func (g *gitPanel) detailFile(gtx C, th *ui.Theme, hash string, f backend.GitCommitFile) D {
 	click, ok := g.detail.files[f.Path]
 	if !ok {
-		click = new(widget.Clickable)
+		click = new(ui.Clickable)
 		g.detail.files[f.Path] = click
 	}
 	for click.Clicked(gtx) {

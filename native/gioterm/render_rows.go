@@ -25,6 +25,7 @@ type rowRenderer struct {
 	// cursorRow and cursorX are where the cursor was composed last frame,
 	// -1 for none: a row is recomposed for the cursor only when it moves.
 	cursorRow, cursorX int
+	cursorUnfocused    bool
 	// clear is what the rows' default background was composed in: the
 	// terminal's own, or transparent while an image lies under the text.
 	clear color.NRGBA
@@ -70,7 +71,7 @@ func (rr *rowRenderer) draw(gtx layout.Context, sn snap, cells []cell, dirty []u
 	if sn.cursorVisible && sn.cursorX < sn.cols && sn.cursorY < sn.rows {
 		cursorRow, cursorX = sn.cursorY, sn.cursorX
 	}
-	if cursorRow != rr.cursorRow || cursorX != rr.cursorX {
+	if cursorRow != rr.cursorRow || cursorX != rr.cursorX || sn.unfocused != rr.cursorUnfocused {
 		if cursorRow >= 0 {
 			dirty[cursorRow] = 1
 		}
@@ -78,7 +79,7 @@ func (rr *rowRenderer) draw(gtx layout.Context, sn snap, cells []cell, dirty []u
 			dirty[rr.cursorRow] = 1
 		}
 	}
-	rr.cursorRow, rr.cursorX = cursorRow, cursorX
+	rr.cursorRow, rr.cursorX, rr.cursorUnfocused = cursorRow, cursorX, sn.unfocused
 	clear := rgba(sn.bg)
 	if len(below) > 0 {
 		clear = color.NRGBA{}
@@ -126,7 +127,7 @@ func (rr *rowRenderer) compose(img *image.RGBA, row []cell, sn snap, cursorX int
 	draw.Draw(img, img.Bounds(), image.NewUniform(clear), image.Point{}, draw.Src)
 	for x, c := range row {
 		st := styleOf(c, sn)
-		if x == cursorX {
+		if x == cursorX && !sn.unfocused {
 			st = cursorStyleOf(c, sn)
 		}
 		styles[x] = st
@@ -168,6 +169,12 @@ func (rr *rowRenderer) compose(img *image.RGBA, row []cell, sn snap, cursorX int
 		// ground is opaque or transparent black, the same premultiplied or not.
 		dst := m.Img.Bounds().Add(m.Off).Add(image.Pt(x*cw, 0))
 		rr.blend.mask(img, dst, col, color.RGBA(ground), m.Img, image.Point{})
+	}
+	if cursorX >= 0 && sn.unfocused {
+		ink := image.NewUniform(rgba(cursorStyleOf(row[cursorX], sn).bg))
+		for _, e := range cursorOutline(image.Rect(cursorX*cw, 0, (cursorX+1)*cw, ch)) {
+			draw.Draw(img, e, ink, image.Point{}, draw.Src)
+		}
 	}
 	return nil
 }

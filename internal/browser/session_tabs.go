@@ -73,14 +73,20 @@ func (s *Service) DevTools(owner string) error {
 	return err
 }
 
-// TabNav is the person opening, selecting or closing a tab in the pane.
+// TabNav is the person opening, selecting or closing a tab in the pane. A new
+// tab opens on the new-tab page.
 func (s *Service) TabNav(opts api.BrowserTabOptions) error {
 	fn, err := tabStep(opts)
 	if err != nil {
 		return err
 	}
-	_, err = s.steer(opts.ID, pageWait, fn)
-	return err
+	if _, err = s.steer(opts.ID, pageWait, fn); err != nil || opts.Action != api.TabNew {
+		return err
+	}
+	if u := s.blankURL(opts.ID); u != "about:blank" {
+		return s.Nav(opts.ID, "go", u)
+	}
+	return nil
 }
 
 func tabStep(opts api.BrowserTabOptions) (func(Page, context.Context) error, error) {

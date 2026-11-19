@@ -7,7 +7,6 @@ import (
 	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/unit"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/ui"
@@ -87,10 +86,14 @@ func footerReadoutView(gtx C, th *ui.Theme, root *ui.Root, w *footerWidgets, r f
 	if title == "" {
 		title = r.Label
 	}
-	tip := th.TooltipCard(root, &w.tip, func(gtx C) D {
-		pop := th.On(th.Popover)
-		return ui.Stack(1.5, pop.Text(ui.TextXS, title).Weight(font.Medium).Layout, detail)(gtx)
-	})
+	pop := th.On(th.Popover)
+	return footerReadoutFace(gtx, th, root, w, r, ui.Stack(1.5, pop.Text(ui.TextXS, title).Weight(font.Medium).Layout, detail), content)
+}
+
+// footerReadoutFace is footerReadoutView with a tooltip body of its own, for a
+// reading that sets out its own title.
+func footerReadoutFace(gtx C, th *ui.Theme, root *ui.Root, w *footerWidgets, r footerReadout, body layout.Widget, content footerContent) D {
+	tip := th.TooltipCard(root, &w.tip, body)
 	return tip.Layout(gtx, func(gtx C) D {
 		return w.click.Layout(gtx, func(gtx C) D {
 			var bg color.NRGBA
@@ -179,7 +182,7 @@ func footerSpan(gtx C, th *ui.Theme, root *ui.Root, tip *ui.Tooltip, hint string
 
 // footerWidgets is one footer control's state.
 type footerWidgets struct {
-	click widget.Clickable
+	click ui.Clickable
 	tip   ui.Tooltip
 	// pressed is aria-pressed: the button's panel is open, so it keeps the
 	// fill it shows hovered.

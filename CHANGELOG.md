@@ -9,17 +9,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Click the profile at the foot of the sidebar to see what its account has spent, and use a limit reset from there.** The panel shows each window the provider reports as a bar with its reset, says "Runs out in 1d 9h" when a weekly window is on course to run out first, and adds Claude Code's spend past the plan and its limit resets, with a Use button that asks before it spends one, and Codex's reset credits, where the account has them. The profiles you switch between sit under it, and the plan usage tooltip in the footer shows the same blocks.
+- **Talk to an agent in a chat instead of its terminal.** The GUI | TUI switch, at the right of the strip over a session's terminal or of a split pane's header, moves the conversation between the two, once the agent is between turns. The chat shows who speaks, a shimmer and a running clock on what the agent is doing and its tool calls hung under their turn, asks for permissions inline, takes the agent's questions in a card where it stopped (a click on a choice answers, Esc declines, a message sent instead declines them) and shows when each message was sent and ends the last turn with a line that says how it ended and how many files and lines it changed, a click away from Review; a searchable model and effort picker and a mode menu sit in the message box, with the branch and the changes count under it. Links are underlined, and a path or a github.com link in an answer wears a file, folder or GitHub mark.
 - **Draw rectangles, ellipses and arrows on a browser page.** Turn on Draw, choose a shape from the outlined tool button, and drag to place it.
+- **The collapsed sidebar and dock come out when you point at them.** Rest the pointer on the sidebar's rail, or touch the window's right edge with the dock collapsed by its new collapse button, and the panel opens over the terminal without resizing it; it goes back when the pointer leaves.
+- **Open a file and edit it on the whole stage.** A file picked in the dock's Code tab, a path Ctrl+clicked in a terminal or one an agent shows opens in an editor that takes the stage and saves by itself a second after you stop typing, or when you leave it; it stays in the sidebar as a node under its checkout until you close it from the node's menu. If an agent changes the file before your edits are saved, the editor shows what changed on disk and lets you reload it or keep yours.
+- **See who last changed the line you are on.** In the editor, the end of the cursor's line names the commit's author, how long ago and its summary, or says the line is yours and not committed; hover it for the whole message.
 - **Click an installed extension to see its catalog page.** In Settings › Extensions › Installed, a row the catalog lists opens the same detail its card does, with Update when there is a newer release.
+- **A new browser tab opens on a page of what the session already has, not a blank one.** It lists the project's running services and the checkout's dev-server port, the session's artifacts and the pages its browser visited last, and has an address field that loads like the toolbar's. It follows the window's theme and language.
 
 ### Changed
 
+- **The browser's controls are lighter and its tabs are always in view.** The pages' tabs sit on top with a button for a new one, the address is a filled pill that shows the host and path and the whole URL when you edit it, and the page is a rounded card. Open in a window moved to the browser's menu in the sidebar.
+- **A pane in a split no longer wears a frame when it has the focus.** The focused pane's name is brighter than the others'.
+- **Panels now have a faint 1px edge.** The sidebar, the stage, the dock and the Git and extension panels are outlined in the theme's `border` color, so they read apart from the window background in light and dark themes alike. Rows, cards, buttons and badges stay unboxed.
+- **The dock's tabs are icons at its foot.** Code, Review, Artifacts and an extension's tabs now sit in a row of icons at the bottom of the dock; hover one for its name. A dot on the icon marks a tab with changes or files.
+- **The footer floats as two balloons over the foot of the stage, and the dock no longer closes.** The terminal keeps a few rows clear under the agent's prompt for them, and over it a strip names the provider and the session, so nothing covers the agent's banner; a plain terminal has neither. Code and Artifacts open from the dock's tabs; the dock stays docked or collapsed and opens on the tab you used last.
 - **An extension's detail grows with the window.** On a tall or ultrawide screen the dialog and its screenshots take more of it.
-- **A Markdown artifact opens rendered, in the Artifacts tab.** Clicking a `.md` file in the dock's Artifacts tab shows it formatted, as the Code tab's Markdown preview does, instead of its source in the browser.
+- **A Markdown artifact opens rendered, on the stage.** Clicking a `.md` file in the dock's Artifacts tab shows it formatted in the editor, read only, instead of its source in the browser. It stays in the tree as the checkout's editor node until you close it from the node's menu.
 - **Review threads sent to a session are resolved only when the agent fixed them.** A question or a point for the team comes back to you in the session instead of getting "Fixing this" on GitHub. A thread the agent fixed is resolved, with a reply naming its commit, once that commit is pushed.
+
+### Removed
+
+- **Find in a file with Ctrl+F is gone for now.** Files open in the new editor, which has no find yet; the Code tab's Text search still finds across the checkout.
 
 ### Fixed
 
+- **Everything you can click shows the hand.** Buttons, tabs, rows, menu items, checkboxes, switches and links now change the pointer on hover; a disabled control keeps the arrow.
+- **Only the terminal that takes your keys draws a full cursor.** In a split the other panes, and every terminal while the window is out of focus, show the cursor as an outline.
 - **Clicks in the session browser keep waiting for their requests when the system clock changes.**
 - **The window startup error now points to the native window log.** That log contains the window process's error when it exits before opening.
 - **A message to a Claude Code session that just opened is no longer left unsent on its prompt.**

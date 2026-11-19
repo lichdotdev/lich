@@ -262,7 +262,7 @@ func TestEachPermissionHasLichsOwnLine(t *testing.T) {
 		extension.PermissionServicesWrite: "Start, stop and restart your projects' services",
 		extension.PermissionGitRead:       "See each checkout's branch, changes and pull request",
 		extension.PermissionNotify:        "Show desktop notifications",
-		extension.PermissionWindow:        "Show files in the dock and open pages in a session's browser",
+		extension.PermissionWindow:        "Show files in the editor and open pages in a session's browser",
 	}
 	for _, p := range extension.Permissions {
 		if got := permissionText(string(p)); got != want[p] {

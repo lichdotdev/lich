@@ -167,7 +167,7 @@ type commentComposer struct {
 	path, lines string
 	editor      widget.Editor
 	resize      ui.TextareaResize
-	add, cancel widget.Clickable
+	add, cancel ui.Clickable
 	focus       bool
 	// toReview files the comment into a pull request's pending review; nil
 	// outside the Pulls screen.
@@ -317,10 +317,10 @@ func (c *commentComposer) box(th *ui.Theme) layout.Widget {
 // commentEditDialog on it.
 type commentBatch struct {
 	list        widget.List
-	removes     map[int]*widget.Clickable
-	edits       map[int]*widget.Clickable
+	removes     map[int]*ui.Clickable
+	edits       map[int]*ui.Clickable
 	note        widget.Editor
-	clear, send widget.Clickable
+	clear, send ui.Clickable
 	// sending is the batch on its way to the session, still in the store:
 	// the session can refuse it after the send left.
 	sending *batchSend
@@ -370,7 +370,7 @@ func (b *commentBatch) layout(gtx C, th *ui.Theme, store *commentStore, target s
 func (b *commentBatch) update(gtx C, store *commentStore, target string, submit func(string, func(error)) bool, notify func(ui.Toast)) {
 	b.note.Submit = true
 	if b.removes == nil {
-		b.removes, b.edits = map[int]*widget.Clickable{}, map[int]*widget.Clickable{}
+		b.removes, b.edits = map[int]*ui.Clickable{}, map[int]*ui.Clickable{}
 	}
 	for {
 		ev, ok := b.note.Update(gtx)
@@ -525,10 +525,10 @@ func (b *commentBatch) sendButton(gtx C, th *ui.Theme) D {
 	)
 }
 
-func clickableAt(m map[int]*widget.Clickable, key int) *widget.Clickable {
+func clickableAt(m map[int]*ui.Clickable, key int) *ui.Clickable {
 	c, ok := m[key]
 	if !ok {
-		c = new(widget.Clickable)
+		c = new(ui.Clickable)
 		m[key] = c
 	}
 	return c

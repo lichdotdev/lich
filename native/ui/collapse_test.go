@@ -11,7 +11,6 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/unit"
-	"gioui.org/widget"
 )
 
 // motionRig lays one widget out per frame on a clock it owns.
@@ -42,7 +41,7 @@ func (r *motionRig) click(p image.Point) {
 
 // clickBox is a 100x80 clickable that counts its clicks.
 type clickBox struct {
-	click  widget.Clickable
+	click  Clickable
 	clicks int
 }
 
@@ -196,5 +195,38 @@ func TestPresenceLeavingItemShrinksAndTakesNoInput(t *testing.T) {
 	}
 	if h := r.at(90*time.Millisecond, item).Size.Y; h != 0 {
 		t.Errorf("leaving at 180ms: height %d, want 0", h)
+	}
+}
+
+// Moving is true while an item enters or leaves, and only then.
+func TestPresenceIsMovingOnlyWhileAnItemEntersOrLeaves(t *testing.T) {
+	var r motionRig
+	var p Presence
+	draw := func(keys ...string) {
+		shown := p.Update(r.now, keys)
+		r.frame(func(gtx C) D {
+			for _, k := range shown {
+				p.Layout(gtx, k, func(gtx C) D { return D{Size: image.Pt(50, 20)} })
+			}
+			return D{}
+		})
+	}
+	draw("a")
+	if p.Moving() {
+		t.Error("the first list moved")
+	}
+	draw("a", "b")
+	r.at(time.Millisecond, func(gtx C) D { p.Layout(gtx, "b", func(gtx C) D { return D{Size: image.Pt(50, 20)} }); return D{} })
+	if !p.Moving() {
+		t.Error("an item entering is not moving")
+	}
+	r.at(presenceEnter+time.Millisecond, func(gtx C) D { p.Layout(gtx, "b", func(gtx C) D { return D{Size: image.Pt(50, 20)} }); return D{} })
+	if p.Moving() {
+		t.Error("an item that entered still moves")
+	}
+	r.now = r.now.Add(time.Second)
+	draw("a")
+	if !p.Moving() {
+		t.Error("an item leaving is not moving")
 	}
 }

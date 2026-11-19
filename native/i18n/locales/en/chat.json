@@ -1,0 +1,80 @@
+{
+  "switch": {
+    "gui": "GUI",
+    "tui": "TUI",
+    "working": "Switch once the agent finishes its turn",
+    "pending": "Switching…",
+    "failed": "Could not switch the view"
+  },
+  "view": {
+    "failed": "The chat request failed",
+    "thought": "Thought",
+    "worked": {
+      "one": "Worked for {duration} · {count} tool",
+      "other": "Worked for {duration} · {count} tools"
+    },
+    "toolFailed": "failed",
+    "answered": "{tool} · {choice}",
+    "verbs": "Conjuring|Summoning|Channeling|Brewing|Scrying|Inscribing|Weaving|Raising",
+    "thinking": "Thinking",
+    "toolCalls": {
+      "one": "{count} tool call",
+      "other": "{count} tool calls"
+    },
+    "workedAt": {
+      "one": "Worked for {duration} · {count} tool · {time}",
+      "other": "Worked for {duration} · {count} tools · {time}"
+    }
+  },
+  "done": {
+    "done": "Done",
+    "stopped": "Stopped",
+    "failed": "Failed",
+    "noChanges": "no changes",
+    "files": {
+      "one": "{count} file",
+      "other": "{count} files"
+    }
+  },
+  "composer": {
+    "placeholder": "Ask {provider} about this project",
+    "send": "Send",
+    "stop": "Stop"
+  },
+  "option": {
+    "model": "Model",
+    "effort": "Effort",
+    "mode": "Mode",
+    "busy": "Wait for the turn to end to change this.",
+    "modelEffort": "Model and effort"
+  },
+  "choice": {
+    "manual": "Manual",
+    "plan": "Plan",
+    "auto": "Auto",
+    "yolo": "YOLO"
+  },
+  "day": {
+    "today": "Today",
+    "yesterday": "Yesterday"
+  },
+  "model": {
+    "search": "Search {provider}'s models…",
+    "showMore": "Show more",
+    "default": "Default"
+  },
+  "question": {
+    "multi": "multiple",
+    "step": "{n} of {total}",
+    "sendAll": "Send all",
+    "freeHint": "Enter sends · Esc declines",
+    "marked": {
+      "one": "{count} marked",
+      "other": "{count} marked"
+    },
+    "write": "Other… write your own answer",
+    "declined": "Not answered",
+    "label": "{header}:",
+    "own": "“{text}”"
+  }
+}

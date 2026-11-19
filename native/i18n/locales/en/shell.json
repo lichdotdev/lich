@@ -49,22 +49,23 @@
   },
   "footerBar": {
     "attachFile": "Attach file",
-    "browseCode": "Browse code",
     "reviewChanges": "Review changes",
     "viewPullRequest": "View pull request",
-    "pullRequest": "PR #{number}",
-    "showArtifacts": "Show artifacts"
+    "pullRequest": "PR #{number}"
   },
   "footerSession": {
-    "contextWindow": "Context window",
-    "contextTokens": "{tokens} / {window} tokens",
     "cacheHit": "Cache: {percent}% hit",
     "costUnavailable": "Cost unavailable",
     "sessionCost": "Session cost",
     "costOfBudget": "{cost} of {budget} budget",
     "costNote": "API cost across this session's conversations. Subscription charges may differ.",
     "handsOnTime": "Hands-on time",
-    "handsOnFailed": "Could not read hands-on time."
+    "handsOnFailed": "Could not read hands-on time.",
+    "context": "Context",
+    "tokens": "Tokens",
+    "modelWindow": "Model window",
+    "cache": "Cache",
+    "cacheHitShort": "{percent}% hit"
   },
   "gitMissingGate": {
     "title": "git is not installed",
@@ -97,7 +98,39 @@
   },
   "planQuota": {
     "planUsage": "Plan usage",
-    "locked": "Locked"
+    "locked": "Locked",
+    "runsOut": "Runs out in {time}",
+    "resetsIn": "Resets in {time}",
+    "extraUsage": "Extra usage",
+    "extraOf": "{used} of {limit}",
+    "extraNoLimit": "{used} · no limit",
+    "resets": "Resets",
+    "resetsLeft": {
+      "one": "{count} left",
+      "other": "{count} left"
+    },
+    "resetFull": "Full",
+    "resetUntil": "until {month} {day}",
+    "shortMonths": "Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec",
+    "resetUse": "Use",
+    "resetConfirm": "Use one {name} reset?",
+    "resetClearsFull": "Clears the session and weekly limits.",
+    "resetClearsModel": "Clears the session limit and the weekly limit of {model}.",
+    "resetClearsSession": "Clears the session limit.",
+    "resetDone": "Limit reset",
+    "resetNothing": "Nothing to reset",
+    "resetNothingDetail": "You are not at a limit.",
+    "resetIneligible": "Claude is not offering this reset right now",
+    "resetCooldownAt": "Resets are cooling down. Try again in {time}.",
+    "resetCooldownLater": "Resets are cooling down. Try again later.",
+    "resetFailed": "Could not use the reset: {error}",
+    "resetCredits": "Reset credits",
+    "resetCreditsAvailable": {
+      "one": "{count} available",
+      "other": "{count} available"
+    },
+    "noUsage": "Usage is not measured per profile for {provider}.",
+    "unreadable": "Plan usage could not be read."
   },
   "providerSetupDialog": {
     "chooseTitle": "Choose your agents",

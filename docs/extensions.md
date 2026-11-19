@@ -59,7 +59,7 @@ release tag, or the folder, it came from. Do not ship a file by that name.
   using it. lich runs an extension without one; the [catalog](#listing-in-the-catalog) does not list it.
 - Surface ids are non-empty and unique. A surface's `place` says where it lives: none for a full screen opened
   from the window's top bar, `dock` for a tab of the dock beside the terminal, `panel` for a panel rising from the
-  footer in the Git panel's place (see [Dock and panel surfaces](#dock-and-panel-surfaces)). A lich older than
+  stage's foot in the Git panel's place (see [Dock and panel surfaces](#dock-and-panel-surfaces)). A lich older than
   `place` shows every surface as a full screen.
 - A surface's `icon` names a glyph from the sets the window draws: a Lucide name, `lobe:name` or `devicon:name`.
   `iconFile`, when set, is the extension's own picture, drawn in place of `icon` on the top bar and in Settings ›
@@ -153,11 +153,13 @@ board := extension.Box.New(extension.BoxProps{Direction: extension.DirectionRow,
 
 ### Dock and panel surfaces
 
-A `dock` or `panel` surface opens from an item of the window's footer, the way Code and Review open the dock and
-the branch opens the Git panel. lich puts each new item at the end of the footer's left side; the person can move
+A `dock` or `panel` surface opens from an item of the window's footer, the balloons at the foot of the stage, the
+way Review opens the dock and the branch opens the Git panel. lich puts each new item at the end of the footer's
+left side; the person can move
 it or hide it in Settings › Appearance › Footer, and a hidden one stays hidden across updates. A dock surface is a
-tab after lich's own, with its icon and title, and the dock is never narrower than its tabs. A panel surface takes
-the Git panel's place over the footer, one panel at a time, each with the height the person dragged it to.
+tab after lich's own, an icon button in the row at the dock's foot with the title in its tooltip, and the dock is
+never narrower than that row. A panel surface takes the Git panel's place at the stage's foot, one panel at a time,
+each with the height the person dragged it to.
 
 Both follow the session the window has active. lich sends `context` to an extension with such a surface when the
 active session changes, when the extension starts and when a window attaches, whether the surface is open or not:
@@ -245,7 +247,7 @@ comes from lich's own watch when it has read that checkout, and from one `gh` re
 
 `notify` raises a desktop notification the way lich raises its own, title over body, each cut at 120 characters,
 at most 3 a minute per extension; one past that is refused. `window.showCode` opens a file of a session's checkout
-in the window's dock, at a line or a range, as `show_code` does. `window.openURL` loads an http or https page in a
+in its stage editor, at a line or a range, as `show_code` does. `window.openURL` loads an http or https page in a
 session's browser, the page beside that session's terminal, as `browser_open` does. Both name the session by its id, and both
 are refused when no lich window is open.
 

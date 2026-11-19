@@ -59,11 +59,11 @@ type Rows struct {
 // treeClickable is a row's clickable and the node it was last drawn for,
 // which clicked answers with.
 type treeClickable struct {
-	click widget.Clickable
+	click ui.Clickable
 	node  *Node
 }
 
-func (t *Rows) click(node *Node) *widget.Clickable {
+func (t *Rows) click(node *Node) *ui.Clickable {
 	if t.clicks == nil {
 		t.clicks = map[string]*treeClickable{}
 	}

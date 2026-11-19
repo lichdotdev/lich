@@ -39,12 +39,12 @@ var (
 // filter is never persisted (sidebarFilter says why).
 type sidebarHeader struct {
 	newMenu    ui.MenuState
-	newHover   widget.Clickable // the trigger's hover; the menu takes the press
-	search     widget.Clickable
-	collapse   widget.Clickable
+	newHover   ui.Clickable // the trigger's hover; the menu takes the press
+	search     ui.Clickable
+	collapse   ui.Clickable
 	open       bool
 	query      widget.Editor
-	clearQuery widget.Clickable
+	clearQuery ui.Clickable
 	// focusQuery asks for the field's focus once it is laid out: the press
 	// that opened it is the request for it (autoFocus).
 	focusQuery    bool
@@ -52,7 +52,7 @@ type sidebarHeader struct {
 	// panelPress and fieldPress see every press on the panel and on the
 	// field, past whatever takes it.
 	panelPress, fieldPress int
-	chips                  [5]widget.Clickable // All, then sessionPhases
+	chips                  [5]ui.Clickable // All, then sessionPhases
 	phases                 map[sessionPhase]bool
 }
 
@@ -139,9 +139,7 @@ func pressed(gtx C, tag event.Tag) bool {
 // headerRow is New Session, the filter toggle and the collapse button.
 func (s *sidebar) headerRow(gtx C, th *ui.Theme, m *model, act *sidebarAction) D {
 	h := &s.header
-	if h.collapse.Clicked(gtx) {
-		s.setOpen(gtx, false, act)
-	}
+	toggle, toggleLabel := s.collapseToggle(gtx, act)
 	entries := append(launchEntries(s.launchProviders, i18n.T("sidebar.sessionLaunchMenuItems.terminal"), func(kind string) { act.launch = launchRequest{kind: kind} }),
 		ui.MenuEntry{Label: i18n.T("sidebar.sessionLaunchMenuItems.worktree"), Icon: icWtBranch, OnClick: func() { act.worktree = true },
 			Spot: func(gtx C, row layout.Widget) D { return s.tour.Anchor(gtx, worktreesItem, row) }})
@@ -165,7 +163,7 @@ func (s *sidebar) headerRow(gtx C, th *ui.Theme, m *model, act *sidebarAction) D
 		ui.Gap(1),
 		square("filter", i18n.T("sidebar.sessionSidebar.filter"), sideButton{click: &h.search, icon: icSearch, on: h.open}),
 		ui.Gap(1),
-		square("collapse", i18n.T("sidebar.sessionSidebar.collapse"), sideButton{click: &h.collapse, icon: icCollapse, morph: &s.morph, glyph: glyphToggle}),
+		square("collapse", toggleLabel, sideButton{click: &h.collapse, icon: toggle, morph: &s.morph, glyph: glyphToggle}),
 	)
 }
 
@@ -227,7 +225,7 @@ func (s *sidebar) phaseChips(gtx C, th *ui.Theme, counts map[sessionPhase]int) D
 // text foreground and its icon muted; a square one is `size-8`, muted until
 // hovered or on.
 type sideButton struct {
-	click *widget.Clickable
+	click *ui.Clickable
 	icon  *icons.Icon
 	label string
 	on    bool    // aria-pressed or aria-expanded: bg-accent

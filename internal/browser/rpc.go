@@ -316,3 +316,11 @@ func (s *Service) NavView(_ context.Context, opts api.BrowserNavOptions) (api.No
 func viewportOf(opts api.BrowserViewOptions) Viewport {
 	return Viewport{W: opts.W, H: opts.H, Scale: opts.Scale}
 }
+
+// NewTabPage takes the window's theme and words for the new-tab page.
+func (s *Service) NewTabPage(_ context.Context, opts api.BrowserNewTabPageOptions) (api.None, error) {
+	if s.newTab.Look == nil {
+		return api.None{}, errors.New("no new-tab page is served")
+	}
+	return api.None{}, s.newTab.Look(opts)
+}

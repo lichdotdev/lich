@@ -108,28 +108,28 @@ type gallery struct {
 
 	icons map[string]*icons.Icon
 
-	buttons  [5][8]widget.Clickable
-	inert    widget.Clickable
+	buttons  [5][8]ui.Clickable
+	inert    ui.Clickable
 	inputs   [6]widget.Editor
 	textarea widget.Editor
 	areaFit  ui.TextareaResize
 	areaBar  widget.Scrollbar
 	groups   [3]widget.Editor
-	copyURL  widget.Clickable
+	copyURL  ui.Clickable
 
-	checks    [4]widget.Bool
+	checks    [4]ui.Bool
 	switches  [4]ui.SwitchState
-	toggles   [4]widget.Bool
-	groupBold widget.Enum
-	groupGrid widget.Enum
+	toggles   [4]ui.Bool
+	groupBold ui.Enum
+	groupGrid ui.Enum
 	tabsH     [3]ui.TabsState
 	tabsV     [3]ui.TabsState
 
-	tipLabelTrigger widget.Clickable
+	tipLabelTrigger ui.Clickable
 	tipLabel        ui.Tooltip
-	tipCardTrigger  widget.Clickable
+	tipCardTrigger  ui.Clickable
 	tipCard         ui.Tooltip
-	menuTrigger     widget.Clickable
+	menuTrigger     ui.Clickable
 	menu            ui.MenuState
 	contextMenu     ui.MenuState
 	pinned          bool
@@ -138,9 +138,9 @@ type gallery struct {
 
 	dialog       ui.DialogState
 	dialogOpen   bool
-	dialogOpener widget.Clickable
-	dialogCancel widget.Clickable
-	dialogDelete widget.Clickable
+	dialogOpener ui.Clickable
+	dialogCancel ui.Clickable
+	dialogDelete ui.Clickable
 
 	sortable    ui.Sortable
 	footerLeft  []string

@@ -18,7 +18,7 @@ import (
 
 // A screen keeps its actions in its top-right corner, where the stack used to
 // stand over them.
-func TestToastsStandInTheBottomRightCornerOverTheFooter(t *testing.T) {
+func TestToastsStandInTheBottomRightCornerOverTheBalloons(t *testing.T) {
 	const footer = 60
 	size := image.Pt(900, 600)
 	win, err := headless.NewWindow(size.X, size.Y)
@@ -27,7 +27,7 @@ func TestToastsStandInTheBottomRightCornerOverTheFooter(t *testing.T) {
 	}
 	defer win.Release()
 	th := &ui.Theme{Palette: ui.Dark, Surface: ui.Dark.Canvas, Shaper: text.NewShaper(text.WithCollection(gofont.Collection()))}
-	u := &window{theme: th, footerHeight: footer}
+	u := &window{theme: th, toastFloor: footer}
 	u.toaster.Show(ui.Toast{Title: "Saved", Duration: ui.ToastForever})
 	now := time.Now()
 	ops := new(op.Ops)
@@ -59,7 +59,7 @@ func TestToastsStandInTheBottomRightCornerOverTheFooter(t *testing.T) {
 	if drawn.Min.Y < size.Y/2 || drawn.Min.X < size.X/2 {
 		t.Errorf("the toast is drawn at %v, want it in the bottom-right corner, clear of a screen's top-right actions", drawn)
 	}
-	// The box ends the gutter over the footer; its shadow falls into the gap.
+	// The box ends the gutter over the balloons; its shadow falls into the gap.
 	if box, top := size.Y-footer-int(gutter), size.Y-footer; drawn.Max.Y < box || drawn.Max.Y > top {
 		t.Errorf("the toast ends at y=%d, want its box at %d and nothing past %d, the top of a %dpx footer", drawn.Max.Y, box, top, footer)
 	}

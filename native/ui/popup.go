@@ -98,18 +98,80 @@ type popupPlace struct {
 }
 
 // box places a popup of size around anchor, both in window's coordinates,
-// and returns the side it landed on: base-ui's flip to the opposite side when
-// the preferred one overflows and the opposite does not, then a shift to stay
-// collisionPadding inside the window, the start winning when it cannot fit.
+// and returns the side it landed on, with the box clamped to the room that
+// side has. The popup never covers its anchor: it takes the preferred side
+// when it fits whole, else the opposite when it does, else whichever has the
+// more room (base-ui's flip with its best-fit fallback), and a popup larger
+// than that room is cut to it along the side's axis, where base-ui sets
+// --available-height and --available-width for the content to scroll in
+// (limit says how large that is). What is left is a shift along the other
+// axis to stay collisionPadding inside the window, the start winning when it
+// cannot fit.
 func (p popupPlace) box(gtx C, anchor image.Rectangle, size image.Point, window image.Rectangle) (image.Rectangle, Side) {
-	pad := image.Pt(gtx.Dp(collisionPadding), gtx.Dp(collisionPadding))
-	inside := image.Rectangle{Min: window.Min.Add(pad), Max: window.Max.Sub(pad)}
-	side := p.side
+	inside := p.inside(gtx, window)
+	side := p.choose(gtx, anchor, size, inside)
+	size = p.clamp(gtx, side, anchor, size, inside)
 	box := p.at(gtx, side, anchor, size)
-	if flipped := p.at(gtx, side.opposite(), anchor, size); !fits(side, box, inside) && fits(side.opposite(), flipped, inside) {
-		side, box = side.opposite(), flipped
-	}
 	return box.Add(image.Pt(shift(box.Min.X, size.X, inside.Min.X, inside.Max.X), shift(box.Min.Y, size.Y, inside.Min.Y, inside.Max.Y))), side
+}
+
+// limit is the largest a popup of size may be where box puts it: along the
+// side's axis the room that side has, and along the other the window's inside.
+// A popup that asks for more has to hold less, scrolling the rest.
+func (p popupPlace) limit(gtx C, anchor image.Rectangle, size image.Point, window image.Rectangle) image.Point {
+	inside := p.inside(gtx, window)
+	return p.clamp(gtx, p.choose(gtx, anchor, size, inside), anchor, image.Pt(1<<24, 1<<24), inside)
+}
+
+func (p popupPlace) inside(gtx C, window image.Rectangle) image.Rectangle {
+	pad := image.Pt(gtx.Dp(collisionPadding), gtx.Dp(collisionPadding))
+	return image.Rectangle{Min: window.Min.Add(pad), Max: window.Max.Sub(pad)}
+}
+
+// room is the span on side between the anchor, less the side offset, and the
+// edge of inside.
+func (p popupPlace) room(gtx C, side Side, anchor, inside image.Rectangle) int {
+	offset := gtx.Dp(p.sideOffset)
+	switch side {
+	case SideTop:
+		return anchor.Min.Y - offset - inside.Min.Y
+	case SideBottom:
+		return inside.Max.Y - (anchor.Max.Y + offset)
+	case SideLeft:
+		return anchor.Min.X - offset - inside.Min.X
+	}
+	return inside.Max.X - (anchor.Max.X + offset)
+}
+
+func mainSize(side Side, size image.Point) int {
+	if side.vertical() {
+		return size.Y
+	}
+	return size.X
+}
+
+// choose is the side a popup of size lands on: the preferred one when it
+// fits, else the opposite when that fits, else the one with more room.
+func (p popupPlace) choose(gtx C, anchor image.Rectangle, size image.Point, inside image.Rectangle) Side {
+	want := mainSize(p.side, size)
+	switch {
+	case p.room(gtx, p.side, anchor, inside) >= want:
+		return p.side
+	case p.room(gtx, p.side.opposite(), anchor, inside) >= want:
+		return p.side.opposite()
+	case p.room(gtx, p.side.opposite(), anchor, inside) > p.room(gtx, p.side, anchor, inside):
+		return p.side.opposite()
+	}
+	return p.side
+}
+
+// clamp cuts size to side's room along its axis, and to inside along the other.
+func (p popupPlace) clamp(gtx C, side Side, anchor image.Rectangle, size image.Point, inside image.Rectangle) image.Point {
+	room := max(p.room(gtx, side, anchor, inside), 0)
+	if side.vertical() {
+		return image.Pt(min(size.X, inside.Dx()), min(size.Y, room))
+	}
+	return image.Pt(min(size.X, room), min(size.Y, inside.Dy()))
 }
 
 func (p popupPlace) at(gtx C, side Side, anchor image.Rectangle, size image.Point) image.Rectangle {

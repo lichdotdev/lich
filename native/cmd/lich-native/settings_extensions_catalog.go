@@ -72,21 +72,21 @@ type catalogGrid struct {
 	filter     catalogFilter
 	tabs       ui.TabsState
 	query      widget.Editor
-	clearQuery widget.Clickable
+	clearQuery ui.Clickable
 	sortMenu   ui.MenuState
-	sortButton widget.Clickable
-	retry      widget.Clickable
-	cards      map[string]*widget.Clickable
+	sortButton ui.Clickable
+	retry      ui.Clickable
+	cards      map[string]*ui.Clickable
 	detail     catalogDetail
 }
 
-func (g *catalogGrid) card(id string) *widget.Clickable {
+func (g *catalogGrid) card(id string) *ui.Clickable {
 	if g.cards == nil {
-		g.cards = map[string]*widget.Clickable{}
+		g.cards = map[string]*ui.Clickable{}
 	}
 	c, ok := g.cards[id]
 	if !ok {
-		c = new(widget.Clickable)
+		c = new(ui.Clickable)
 		g.cards[id] = c
 	}
 	return c

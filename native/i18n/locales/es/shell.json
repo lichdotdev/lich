@@ -49,22 +49,23 @@
   },
   "footerBar": {
     "attachFile": "Adjuntar archivo",
-    "browseCode": "Explorar el código",
     "reviewChanges": "Revisar cambios",
     "viewPullRequest": "Ver pull request",
-    "pullRequest": "PR #{number}",
-    "showArtifacts": "Mostrar artefactos"
+    "pullRequest": "PR #{number}"
   },
   "footerSession": {
-    "contextWindow": "Ventana de contexto",
-    "contextTokens": "{tokens} / {window} tokens",
     "cacheHit": "Caché: {percent}% de aciertos",
     "costUnavailable": "Costo no disponible",
     "sessionCost": "Costo de la sesión",
     "costOfBudget": "{cost} de {budget} de presupuesto",
     "costNote": "Costo de API de las conversaciones de esta sesión. Los cargos de la suscripción pueden ser distintos.",
     "handsOnTime": "Tiempo activo",
-    "handsOnFailed": "No se pudo leer el tiempo activo."
+    "handsOnFailed": "No se pudo leer el tiempo activo.",
+    "context": "Contexto",
+    "tokens": "Tokens",
+    "modelWindow": "Ventana del modelo",
+    "cache": "Caché",
+    "cacheHitShort": "{percent}% de aciertos"
   },
   "gitMissingGate": {
     "title": "git no está instalado",
@@ -97,7 +98,39 @@
   },
   "planQuota": {
     "planUsage": "Uso del plan",
-    "locked": "Bloqueado"
+    "locked": "Bloqueado",
+    "runsOut": "Se agota en {time}",
+    "resetsIn": "Se restablece en {time}",
+    "extraUsage": "Uso extra",
+    "extraOf": "{used} de {limit}",
+    "extraNoLimit": "{used} · sin límite",
+    "resets": "Restablecimientos",
+    "resetsLeft": {
+      "one": "{count} restante",
+      "other": "{count} restantes"
+    },
+    "resetFull": "Completo",
+    "resetUntil": "hasta el {day} de {month}",
+    "shortMonths": "ene,feb,mar,abr,may,jun,jul,ago,sep,oct,nov,dic",
+    "resetUse": "Usar",
+    "resetConfirm": "¿Usar un restablecimiento {name}?",
+    "resetClearsFull": "Restablece los límites de la sesión y semanal.",
+    "resetClearsModel": "Restablece el límite de la sesión y el límite semanal de {model}.",
+    "resetClearsSession": "Restablece el límite de la sesión.",
+    "resetDone": "Límite restablecido",
+    "resetNothing": "Nada que restablecer",
+    "resetNothingDetail": "No has llegado a ningún límite.",
+    "resetIneligible": "Claude no ofrece este restablecimiento ahora",
+    "resetCooldownAt": "Los restablecimientos están en espera. Vuelve a intentarlo en {time}.",
+    "resetCooldownLater": "Los restablecimientos están en espera. Vuelve a intentarlo más tarde.",
+    "resetFailed": "No se pudo usar el restablecimiento: {error}",
+    "resetCredits": "Créditos de restablecimiento",
+    "resetCreditsAvailable": {
+      "one": "{count} disponible",
+      "other": "{count} disponibles"
+    },
+    "noUsage": "El uso por perfil no se mide para {provider}.",
+    "unreadable": "No se pudo leer el uso del plan."
   },
   "providerSetupDialog": {
     "chooseTitle": "Elige tus agentes",

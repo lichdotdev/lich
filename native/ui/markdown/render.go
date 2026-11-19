@@ -21,6 +21,7 @@ import (
 	"github.com/yuin/goldmark/util"
 
 	"github.com/lichdotdev/lich/native/ui"
+	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
 // markdownURL is the span metadata a link's destination is kept under.
@@ -88,12 +89,15 @@ func renderQuote(th *ui.Theme, source []byte, n *ast.Blockquote) (markdownBlock,
 
 // spanWriter walks a node into spans, preserving its inline formatting.
 type spanWriter struct {
-	th            *ui.Theme
-	source        []byte
-	fg            color.NRGBA
-	cur           richtext.SpanStyle
-	spans         []richtext.SpanStyle
-	code          []bool
+	th     *ui.Theme
+	source []byte
+	fg     color.NRGBA
+	cur    richtext.SpanStyle
+	spans  []richtext.SpanStyle
+	code   []bool
+	decor  []decoration
+	// linkIcon is the mark the next span, the first of a link, takes.
+	linkIcon      *icons.Icon
 	codeStart     int
 	inlineCode    bool
 	lists         []*ast.List
@@ -111,7 +115,7 @@ func renderNode(th *ui.Theme, source []byte, n ast.Node, fg color.NRGBA) *markdo
 	if last := len(w.spans) - 1; last >= 0 {
 		w.spans[last].Content = strings.TrimRight(w.spans[last].Content, "\n")
 	}
-	return &markdownCell{spans: w.spans, code: w.code}
+	return &markdownCell{spans: w.spans, code: w.code, decor: w.decor}
 }
 
 func (w *spanWriter) emit(s string) {
@@ -119,6 +123,13 @@ func (w *spanWriter) emit(s string) {
 	span.Content = s
 	w.spans = append(w.spans, span)
 	w.code = append(w.code, w.inlineCode)
+	d := decoration{underline: w.cur.Interactive}
+	if w.linkIcon != nil {
+		// The mark stands in a room of its own before the link's first words.
+		w.spans[len(w.spans)-1].Content = linkIconRoom + w.spans[len(w.spans)-1].Content
+		d.icon, d.tone, w.linkIcon = w.linkIcon, iconLink, nil
+	}
+	w.decor = append(w.decor, d)
 	w.itemStart = false
 }
 
@@ -197,7 +208,14 @@ func (w *spanWriter) codeSpan(entering bool) {
 		return
 	}
 	if w.codeStart < len(w.spans) {
-		w.spans[w.codeStart].Content = "\u00a0" + w.spans[w.codeStart].Content
+		prefix := "\u00a0"
+		if icon := pathIcon(w.spans[w.codeStart:]); icon != nil {
+			// A path wears the mark of a file or a folder in the room of two
+			// of the mono face's cells.
+			prefix = codeIconRoom
+			w.decor[w.codeStart].icon, w.decor[w.codeStart].tone = icon, iconMuted
+		}
+		w.spans[w.codeStart].Content = prefix + w.spans[w.codeStart].Content
 		last := len(w.spans) - 1
 		w.spans[last].Content += "\u00a0"
 	}
@@ -287,8 +305,10 @@ func (w *spanWriter) link(url string, entering bool) {
 	if w.headingWeight == font.Bold {
 		w.cur.Color = w.th.Foreground
 	}
+	w.linkIcon = nil
 	if entering {
 		w.cur.Color = w.th.TonePass
+		w.linkIcon = linkMark(url)
 	}
 }
 

@@ -141,7 +141,7 @@ func TestShellMessagesWithPlaceholdersAndPluralsInPortuguese(t *testing.T) {
 	if before, after := attachToSplit(); before != "Anexar a " || after != "" {
 		t.Errorf("attach hint split into %q and %q", before, after)
 	}
-	if got := footerExample("files"); got != "Arquivos" {
+	if got := footerExample("attach"); got != "Anexar arquivo" {
 		t.Errorf("footer example %q", got)
 	}
 	if text, hint := pathText("/srv/app", "box"); text != "diretório desconhecido · dentro de box" || hint != text {

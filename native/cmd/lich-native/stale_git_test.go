@@ -8,8 +8,9 @@ import (
 	"github.com/lichdotdev/lich/native/ui"
 )
 
-// gitFrames is the stage column's two bottom rows, the Git panel over the
-// footer that opens it, in the order body lays them out.
+// gitFrames is the stage column: the island under the balloons, and the Git
+// panel the branch's balloon opens at its foot, in the order body lays them
+// out.
 func gitFrames(t *testing.T) (*window, *frameRig) {
 	t.Helper()
 	r := newFrameRig(rigWindow, nil)
@@ -22,18 +23,20 @@ func gitFrames(t *testing.T) (*window, *frameRig) {
 	r.draw = func(gtx C, th *ui.Theme) {
 		u.theme = th
 		u.root.Layout(gtx, func(gtx C) D {
+			u.footer.frame(gtx, v.in)
 			u.actGit(gtx)
-			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+			dims := layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Flexed(1, func(gtx C) D { return D{Size: gtx.Constraints.Max} }),
 				layout.Rigid(func(gtx C) D { return u.gitPanelRow(gtx, v) }),
-				layout.Rigid(func(gtx C) D { return u.footer.layoutBar(gtx, th, v.in) }),
 			)
+			u.footer.layoutBalloons(gtx, th)
+			return dims
 		})
 	}
 	return u, r
 }
 
-func TestFooterBranchOpensTheGitPanelInTheFrameThatTookTheClick(t *testing.T) {
+func TestBranchBalloonOpensTheGitPanelInTheFrameThatTookTheClick(t *testing.T) {
 	u, r := gitFrames(t)
 	r.clickLabel(t, "main")
 	if !u.git.open {

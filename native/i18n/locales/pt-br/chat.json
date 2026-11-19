@@ -1,0 +1,80 @@
+{
+  "switch": {
+    "gui": "GUI",
+    "tui": "TUI",
+    "working": "Troque quando o agente terminar o turno",
+    "pending": "Trocando…",
+    "failed": "Não foi possível trocar a visão"
+  },
+  "view": {
+    "failed": "O pedido ao chat falhou",
+    "thought": "Raciocínio",
+    "worked": {
+      "one": "Trabalhou por {duration} · {count} ferramenta",
+      "other": "Trabalhou por {duration} · {count} ferramentas"
+    },
+    "toolFailed": "falhou",
+    "answered": "{tool} · {choice}",
+    "verbs": "Conjurando|Invocando|Canalizando|Destilando|Vislumbrando|Inscrevendo|Tecendo|Erguendo",
+    "thinking": "Pensando",
+    "toolCalls": {
+      "one": "{count} chamada de ferramenta",
+      "other": "{count} chamadas de ferramentas"
+    },
+    "workedAt": {
+      "one": "Trabalhou por {duration} · {count} ferramenta · {time}",
+      "other": "Trabalhou por {duration} · {count} ferramentas · {time}"
+    }
+  },
+  "done": {
+    "done": "Concluído",
+    "stopped": "Interrompido",
+    "failed": "Falhou",
+    "noChanges": "sem alterações",
+    "files": {
+      "one": "{count} arquivo",
+      "other": "{count} arquivos"
+    }
+  },
+  "composer": {
+    "placeholder": "Pergunte ao {provider} sobre este projeto",
+    "send": "Enviar",
+    "stop": "Parar"
+  },
+  "option": {
+    "model": "Modelo",
+    "effort": "Esforço",
+    "mode": "Modo",
+    "busy": "Espere o turno terminar para mudar isto.",
+    "modelEffort": "Modelo e esforço"
+  },
+  "choice": {
+    "manual": "Manual",
+    "plan": "Plano",
+    "auto": "Auto",
+    "yolo": "YOLO"
+  },
+  "day": {
+    "today": "Hoje",
+    "yesterday": "Ontem"
+  },
+  "model": {
+    "search": "Buscar modelos do {provider}…",
+    "showMore": "Mostrar mais",
+    "default": "Padrão"
+  },
+  "question": {
+    "multi": "várias",
+    "step": "{n} de {total}",
+    "sendAll": "Enviar tudo",
+    "freeHint": "Enter envia · Esc recusa",
+    "marked": {
+      "one": "{count} marcada",
+      "other": "{count} marcadas"
+    },
+    "write": "Outra… escreva a sua resposta",
+    "declined": "Sem resposta",
+    "label": "{header}:",
+    "own": "“{text}”"
+  }
+}

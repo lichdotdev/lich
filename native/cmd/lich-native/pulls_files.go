@@ -13,7 +13,6 @@ import (
 
 	"gioui.org/layout"
 	"gioui.org/unit"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/godemirror"
 
@@ -79,7 +78,7 @@ func (c *fileCard) viewedTick(gtx C, th *ui.Theme, p *reviewPanel) D {
 	f := p.pr
 	tick, ok := f.ticks[c.git.path]
 	if !ok {
-		tick = new(widget.Bool)
+		tick = new(ui.Bool)
 		f.ticks[c.git.path] = tick
 	}
 	tick.Value = f.isViewed(c)

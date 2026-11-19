@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"image"
 	"image/color"
 	"slices"
@@ -22,35 +23,35 @@ type coverageState struct {
 	inline      ui.InlineEdit
 	inlineName  string
 	inlineLast  string
-	inlineStart widget.Clickable
+	inlineStart ui.Clickable
 
 	fields   [6]widget.Editor
-	clear    widget.Clickable
+	clear    ui.Clickable
 	areas    [4]widget.Editor
 	groups   [5]widget.Editor
-	groupBtn widget.Clickable
+	groupBtn ui.Clickable
 
 	tips        [2]ui.Tooltip
-	tipTriggers [2]widget.Clickable
-	panels      [2]ui.DropdownPanelState
-	panelTrig   [2]widget.Clickable
+	tipTriggers [2]ui.Clickable
+	panels      [3]ui.DropdownPanelState
+	panelTrig   [3]ui.Clickable
 	menu        ui.MenuState
 	radio       string
 	menuLast    string
 
-	toastButtons [3]widget.Clickable
+	toastButtons [3]ui.Clickable
 
 	dialogs      [4]ui.DialogState
 	dialogOpen   int // 1-based index into dialogs; 0 is none
-	dialogOpener [4]widget.Clickable
-	dialogClose  widget.Clickable
+	dialogOpener [4]ui.Clickable
+	dialogClose  ui.Clickable
 	dialogField  widget.Editor
 	dialogPick   widget.Editor
 
 	resize      ui.ResizeHandle
 	resizeWidth unit.Dp
-	toggles     [2]widget.Bool
-	groupSmall  widget.Enum
+	toggles     [2]ui.Bool
+	groupSmall  ui.Enum
 	tabs        ui.TabsState
 
 	sortV, sortH, sortS ui.Sortable
@@ -289,6 +290,18 @@ func (g *gallery) popupVariantsSection(gtx C, th *ui.Theme) D {
 		p.AlignEnd = align
 		return func(gtx C) D { return p.Layout(gtx, trigger.Layout) }
 	}
+	tall := func(gtx C) D {
+		trigger := th.Button(&c.panelTrig[2], "Fifty rows")
+		trigger.Variant, trigger.Icon = ui.VariantOutline, g.icon("chevron-down")
+		p := th.DropdownPanel(&g.root, &c.panels[2], ui.Space(60), func(gtx C, th *ui.Theme) D {
+			rows := make([]layout.Widget, 50)
+			for i := range rows {
+				rows[i] = th.Text(ui.TextSM, fmt.Sprintf("Row %d", i+1)).Layout
+			}
+			return ui.Stack(2, rows...)(gtx)
+		})
+		return p.Layout(gtx, trigger.Layout)
+	}
 	spread := func(left, right layout.Widget) layout.Widget {
 		return func(gtx C) D {
 			return layout.Flex{}.Layout(gtx,
@@ -306,6 +319,8 @@ func (g *gallery) popupVariantsSection(gtx C, th *ui.Theme) D {
 		},
 		caption(th, "DropdownPanel: left edge aligned, then AlignEnd"),
 		spread(panel(0, false, "Align start"), panel(1, true, "Align end")),
+		caption(th, "DropdownPanel taller than the room: cut to it, scrolling, never over its trigger"),
+		tall,
 	)(gtx)
 }
 

@@ -53,9 +53,9 @@ type appearanceControls struct {
 	replicate  fontReplication
 	budget     widget.Editor
 	typed      bool // the ceiling field holds the user's text, not the stored value
-	closeTo    widget.Enum
+	closeTo    ui.Enum
 	copy       ui.SwitchState
-	buttons    widget.Enum
+	buttons    ui.Enum
 }
 
 // commit applies p at once and stores the setting that changed.

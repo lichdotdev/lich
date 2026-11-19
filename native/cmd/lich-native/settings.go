@@ -70,8 +70,8 @@ type settingsScreen struct {
 
 	nav    settingsNav
 	pane   widget.List
-	close  widget.Clickable
-	resets map[string]*widget.Clickable
+	close  ui.Clickable
+	resets map[string]*ui.Clickable
 	// lit is the row the search sent the user to, lit until litUntil.
 	lit      string
 	litUntil time.Time
@@ -99,7 +99,7 @@ type settingsScreen struct {
 
 func newSettingsScreen(ctx context.Context, c *backend.Client, root *ui.Root, invalidate func()) *settingsScreen {
 	s := &settingsScreen{ctx: ctx, client: c, root: root, invalidate: invalidate, section: defaultSection,
-		resets: map[string]*widget.Clickable{}, scrollTo: -1}
+		resets: map[string]*ui.Clickable{}, scrollTo: -1}
 	s.providers.book = newProviderBook(c, invalidate)
 	s.look.font = fontPicker{find: fonts.MonoFamilies, faces: gioterm.Faces, system: fonts.SystemMono}
 	s.look.editorFont = fontPicker{find: fonts.MonoFamilies, faces: gioterm.Faces, system: fonts.SystemMono}
@@ -246,7 +246,9 @@ func (s *settingsScreen) layout(gtx C, th *ui.Theme, projects []settingsProject)
 func (s *settingsScreen) island(gtx C, th *ui.Theme, bg color.NRGBA, w func(gtx C, th *ui.Theme) D) D {
 	gtx.Constraints.Min = gtx.Constraints.Max
 	ui.Fill(gtx, bg, ui.RadiusLG)
-	return w(gtx, th.On(bg))
+	on := th.On(bg)
+	defer ui.InsetBorder(gtx, gtx.Constraints.Max, gtx.Dp(ui.RadiusLG), on.Over(on.Border))
+	return w(gtx, on)
 }
 
 // paneLayout is the open section: the project pill in a project's scope, the

@@ -2,7 +2,9 @@ package quota
 
 import (
 	"io"
+	"math"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -12,13 +14,23 @@ import (
 )
 
 const (
-	claudeUsageURL = "https://api.anthropic.com/api/oauth/usage"
+	// claudeUsageURL asks for the reset grants (cedar_ember) beside the windows.
+	// It does not send skip_spend=1: measured live, that parameter removes the
+	// extra_usage block from the payload altogether.
+	claudeUsageURL = "https://api.anthropic.com/api/oauth/usage?cedar_ember=1"
 	// claudeBetaHeader opts the OAuth token into the usage route.
 	claudeBetaHeader = "oauth-2025-04-20"
 	// claudeUserAgent is what the endpoint expects from the client holding this
 	// token. Sent as anything else it rate-limits within a few requests; the
 	// patch version is not checked, so a recent one stays good.
 	claudeUserAgent = "claude-code/2.1.183"
+	// claudeFallbackVersion is the CLI version the usage agent claims when the
+	// installed one cannot be read. The agent is what the CLI itself sends to
+	// the usage route, and the only spelling for which the server offers reset
+	// grants: another one answers eligible=false (ineligible_reason "surface"),
+	// and a version older than the server's floor answers "cli_version" (2.1.183
+	// does).
+	claudeFallbackVersion = "2.1.328"
 	// claudeAPIVersion is the dated API contract the probe request is written
 	// against; the usage route above needs none.
 	claudeAPIVersion = "2023-06-01"
@@ -99,6 +111,124 @@ type claudeUsage struct {
 	FiveHour *claudeWindow `json:"five_hour"`
 	SevenDay *claudeWindow `json:"seven_day"`
 	Limits   []claudeLimit `json:"limits"`
+	Extra    *claudeExtra  `json:"extra_usage"`
+	Grants   *claudeGrants `json:"cedar_ember"`
+}
+
+// claudeGrants is the reset-grant block of the usage route.
+type claudeGrants struct {
+	Eligible bool          `json:"eligible"`
+	Grants   []claudeGrant `json:"grants"`
+}
+
+type claudeGrant struct {
+	ID        string   `json:"id"`
+	Label     string   `json:"label"`
+	Left      int      `json:"resets_left"`
+	EndsAt    string   `json:"ends_at"`
+	Clears    []string `json:"clears"`
+	Paused    bool     `json:"paused"`
+	UsableNow bool     `json:"usable_now"`
+}
+
+// The windows a grant says it clears, as the wire spells them.
+const (
+	clearsSession     = "five_hour"
+	clearsWeekly      = "seven_day"
+	clearsModelWeekly = "seven_day_overage_included"
+)
+
+// resets projects the grants still good at now: an account the server does not
+// offer them to, a grant with none left and one that has lapsed are not
+// returned. A grant names itself by what it clears: the weekly window is "full",
+// the model-scoped one is named for the model of the plan's scoped weekly cap,
+// and any other keeps the server's own label.
+func (u claudeUsage) resets(now time.Time) []api.QuotaReset {
+	if u.Grants == nil || !u.Grants.Eligible {
+		return nil
+	}
+	var out []api.QuotaReset
+	for _, g := range u.Grants.Grants {
+		if ends, err := time.Parse(time.RFC3339, g.EndsAt); g.Left <= 0 || err != nil || !ends.After(now) {
+			continue
+		}
+		r := api.QuotaReset{ID: g.ID, Clears: g.clears(), Left: g.Left, EndsAt: g.EndsAt, Held: g.Paused || !g.UsableNow}
+		switch {
+		case slices.Contains(g.Clears, clearsWeekly):
+			r.Kind = api.QuotaResetFull
+		case slices.Contains(g.Clears, clearsModelWeekly) && u.scopedModel() != "":
+			r.Label = u.scopedModel()
+		default:
+			r.Label = g.Label
+		}
+		out = append(out, r)
+	}
+	return out
+}
+
+// clears names the limits the grant resets, in lich's own words.
+func (g claudeGrant) clears() []string {
+	var out []string
+	for wire, name := range map[string]string{clearsSession: api.QuotaClearsSession, clearsWeekly: api.QuotaClearsWeekly, clearsModelWeekly: api.QuotaClearsModel} {
+		if slices.Contains(g.Clears, wire) {
+			out = append(out, name)
+		}
+	}
+	slices.SortFunc(out, func(a, b string) int { return slices.Index(clearsOrder, a) - slices.Index(clearsOrder, b) })
+	return out
+}
+
+var clearsOrder = []string{api.QuotaClearsSession, api.QuotaClearsWeekly, api.QuotaClearsModel}
+
+// scopedModel is the model the plan's weekly cap is scoped to, "" when there is
+// none.
+func (u claudeUsage) scopedModel() string {
+	for _, l := range u.Limits {
+		if l.Kind == "weekly_scoped" && l.Scope != nil && l.Scope.Model != nil {
+			return l.Scope.Model.DisplayName
+		}
+	}
+	return ""
+}
+
+// claudeExtra is the pay-as-you-go block beside the windows. The amounts are in
+// minor units and numbers of either spelling (14157 or 14157.0), null when the
+// account has no cap (MonthlyLimit) or has spent nothing yet (UsedCredits).
+type claudeExtra struct {
+	IsEnabled     bool     `json:"is_enabled"`
+	MonthlyLimit  *float64 `json:"monthly_limit"`
+	UsedCredits   *float64 `json:"used_credits"`
+	Currency      string   `json:"currency"`
+	DecimalPlaces *float64 `json:"decimal_places"`
+}
+
+const (
+	// extraDecimals is the minor-unit exponent assumed when the payload names
+	// none: cents.
+	extraDecimals = 2
+	// maxExtraDecimals bounds the exponent a reader divides by.
+	maxExtraDecimals = 4
+)
+
+// extra projects the block onto the neutral shape: nil unless the account has
+// extra usage switched on, since a disabled block reports every amount null.
+func (u claudeUsage) extra() *api.QuotaExtra {
+	e := u.Extra
+	if e == nil || !e.IsEnabled {
+		return nil
+	}
+	out := &api.QuotaExtra{Currency: e.Currency, Decimals: extraDecimals}
+	if e.DecimalPlaces != nil {
+		out.Decimals = min(max(int(*e.DecimalPlaces), 0), maxExtraDecimals)
+	}
+	if e.UsedCredits != nil {
+		out.Used = max(int64(math.Round(*e.UsedCredits)), 0)
+	}
+	if e.MonthlyLimit != nil {
+		limit := int64(math.Round(*e.MonthlyLimit))
+		out.Limit = &limit
+	}
+	return out
 }
 
 type claudeWindow struct {
@@ -143,7 +273,7 @@ func (s *Service) claudePlan(a Account) Plan {
 	var usage claudeUsage
 	authOK, err := s.readJSON(s.claudeURL, creds.OAuth.AccessToken, map[string]string{
 		"anthropic-beta": claudeBetaHeader,
-		"User-Agent":     claudeUserAgent,
+		"User-Agent":     s.usageAgent(),
 	}, &usage)
 	if !authOK {
 		return signedOut(p)
@@ -155,6 +285,8 @@ func (s *Service) claudePlan(a Account) Plan {
 	if len(p.Windows) == 0 {
 		return failed(p)
 	}
+	p.Extra = usage.extra()
+	p.Resets = usage.resets(s.now())
 	p.Account = s.claudeAccount(creds.OAuth.AccessToken)
 	return p
 }

@@ -26,6 +26,7 @@ browser.Locate(BrowserLocateOptions) []BrowserRect
 browser.Mouse(BrowserMouseOptions) None
 browser.Nav(BrowserNavOptions) None
 browser.Navigate(BrowserOpenOptions) BrowserHandle
+browser.NewTabPage(BrowserNewTabPageOptions) None
 browser.Open(BrowserOpenOptions) BrowserHandle
 browser.Press(BrowserPressOptions) BrowserPageInfo
 browser.Reload(SessionIDOptions) None
@@ -40,6 +41,15 @@ browser.TabNav(BrowserTabOptions) None
 browser.Tabs(SessionIDOptions) []BrowserTab
 browser.Text(BrowserTextOptions) None
 browser.Type(BrowserTypeOptions) None
+chat.Answer(ChatAnswerOptions) None
+chat.Cancel(SessionIDOptions) None
+chat.History(SessionIDOptions) []ChatItem
+chat.Kinds(None) []string
+chat.Options(SessionIDOptions) []ChatOption
+chat.Prompt(ChatPromptOptions) None
+chat.Reply(ChatReplyOptions) None
+chat.SetOption(ChatSetOptionOptions) None
+chat.SetView(ChatViewOptions) None
 claudeprofile.CancelLogin(ProfileSlugOptions) None
 claudeprofile.CreateProfile(CreateProfileOptions) Profile
 claudeprofile.DeleteProfile(ProfileSlugOptions) None
@@ -120,6 +130,7 @@ project.EditReviewComment(PRCommentBodyOptions) None
 project.Exists(PathOptions) bool
 project.FileLines(FileLinesOptions) []string
 project.GitAuthors(GitAuthorsOptions) []string
+project.GitBlame(CheckoutFileOptions) GitBlame
 project.GitBranchOnly(GitBranchOptions) int
 project.GitCheckout(GitCheckoutOptions) None
 project.GitCommit(GitCommitOptions) GitCommitDetail
@@ -173,6 +184,7 @@ project.ThreadFixes(None) []ThreadFix
 project.Tree(PathOptions) FileListing
 project.WorktreeAdopted(PathOptions) bool
 project.WorktreeDirty(PathOptions) bool
+project.WriteFile(WriteFileOptions) None
 providers.Detect(None) []DetectedProvider
 providers.OnPath(ProviderIDOptions) []ProviderBinary
 providers.RefreshPath(None) None
@@ -181,6 +193,7 @@ providers.Version(BinaryOptions) string
 quota.CodexProfilePlan(ProfilePlanOptions) QuotaPlan
 quota.Plans(QuotaPlansOptions) []QuotaPlan
 quota.ProfilePlan(ProfilePlanOptions) QuotaPlan
+quota.UseReset(UseResetOptions) UseResetResult
 relay.AnnounceMerge(AnnounceMergeOptions) None
 relay.Collect(CollectOptions) CollectedResults
 relay.CollectNow(CollectNowOptions) CollectedResults
@@ -302,6 +315,9 @@ event browser-agent BrowserAgentAct
 event browser-download BrowserDownload
 event browser-state BrowserState
 event browser:frame:<id> BrowserFrame
+event chat-item ChatItemUpdate
+event chat-options ChatOptionsUpdate
+event chat-turn ChatTurn
 event claude-profile-login ProfileLogin
 event codex-profile-login ProfileLogin
 event extension-catalog ExtensionCatalog
@@ -342,6 +358,7 @@ event session-title SessionTitle
 event session-todo SessionTodo
 event session-touched SessionTouched
 event session-usage SessionUsage
+event session-view SessionView
 event session-watch SessionWatchChange
 event session-watch-stopped SessionWatchStopped
 event sessions-colored SessionsColored
@@ -525,6 +542,12 @@ BrowserOpenOptions {
 	url string
 }
 
+BrowserNewTabPageOptions {
+	lang string
+	colors BrowserNewTabColors
+	text BrowserNewTabText
+}
+
 BrowserPressOptions {
 	id string
 	key string
@@ -538,6 +561,7 @@ BrowserState {
 	byAgent bool
 	url string
 	title string
+	newTab,omitempty bool
 	dialog,omitempty *BrowserDialog
 	tabs,omitempty []BrowserTab
 	idle,omitempty bool
@@ -565,6 +589,7 @@ BrowserTab {
 	id string
 	url string
 	title string
+	newTab,omitempty bool
 	front,omitempty bool
 	devtools,omitempty bool
 	paused,omitempty bool
@@ -580,6 +605,55 @@ BrowserTypeOptions {
 	text string
 	clear bool
 	...BrowserTarget
+}
+
+ChatAnswerOptions {
+	id string
+	itemId string
+	optionId string
+}
+
+ChatItem {
+	id string
+	kind string
+	turn int
+	text,omitempty string
+	tool,omitempty *ChatToolCall
+	permission,omitempty *ChatPermission
+	question,omitempty *ChatQuestion
+	at int64
+	model,omitempty string
+	effort,omitempty string
+}
+
+ChatOption {
+	id string
+	category string
+	label string
+	current string
+	choices []ChatChoice
+}
+
+ChatPromptOptions {
+	id string
+	text string
+}
+
+ChatReplyOptions {
+	id string
+	itemId string
+	reply ChatQReplied
+}
+
+ChatSetOptionOptions {
+	id string
+	optionId string
+	value string
+}
+
+ChatViewOptions {
+	id string
+	view string
 }
 
 ProfileSlugOptions {
@@ -858,6 +932,11 @@ FileLinesOptions {
 GitAuthorsOptions {
 	path string
 	ref,omitempty string
+}
+
+GitBlame {
+	lines []string
+	commits map[string]GitBlameCommit
 }
 
 GitBranchOptions {
@@ -1175,6 +1254,12 @@ FileListing {
 	hidden []string
 }
 
+WriteFileOptions {
+	path string
+	rel string
+	content string
+}
+
 DetectedProvider {
 	id string
 	name string
@@ -1214,11 +1299,24 @@ QuotaPlan {
 	account,omitempty string
 	noAccount,omitempty string
 	windows,omitempty []QuotaWindow
+	extra,omitempty *QuotaExtra
+	resetCredits,omitempty int
+	resets,omitempty []QuotaReset
 	status string
 }
 
 QuotaPlansOptions {
 	sessionId string
+}
+
+UseResetOptions {
+	profile string
+	grantId string
+}
+
+UseResetResult {
+	status string
+	cooldownUntil,omitempty string
 }
 
 AnnounceMergeOptions {
@@ -1719,6 +1817,7 @@ Session {
 	unread bool
 	mcpServers []string
 	sandboxSkippedLinks []string
+	view,omitempty string
 }
 
 ReopenWorktreeSessionOptions {
@@ -1987,6 +2086,24 @@ BrowserFrame {
 	data string
 }
 
+ChatItemUpdate {
+	sessionId string
+	item ChatItem
+}
+
+ChatOptionsUpdate {
+	sessionId string
+	options []ChatOption
+}
+
+ChatTurn {
+	sessionId string
+	running bool
+	stopReason,omitempty string
+	durationMs,omitempty int64
+	changes,omitempty *ChatTurnChanges
+}
+
 ProfileLogin {
 	profile string
 	output,omitempty string
@@ -2175,6 +2292,11 @@ SessionUsage {
 	cache,omitempty *SessionCache
 }
 
+SessionView {
+	id string
+	view string
+}
+
 SessionWatchChange {
 	id string
 	watch SessionWatch
@@ -2236,6 +2358,57 @@ BrowserTarget {
 	y,omitempty *float64
 }
 
+BrowserNewTabColors {
+	background string
+	card string
+	foreground string
+	muted string
+	border string
+	accent string
+	pass string
+}
+
+BrowserNewTabText {
+	title string
+	address string
+	addressError string
+	running string
+	worktree string
+	artifacts string
+	recent string
+}
+
+ChatToolCall {
+	name string
+	title,omitempty string
+	state string
+	output,omitempty string
+	diff,omitempty string
+}
+
+ChatPermission {
+	tool ChatToolCall
+	options []ChatPermitOption
+	chosen,omitempty string
+}
+
+ChatQuestion {
+	questions []ChatAsk
+	reply,omitempty *ChatQReplied
+}
+
+ChatChoice {
+	id string
+	label string
+	description,omitempty string
+	danger,omitempty bool
+}
+
+ChatQReplied {
+	answers,omitempty []ChatAskAnswer
+	declined,omitempty bool
+}
+
 ProfileUpdate {
 	name,omitempty string
 	color,omitempty *string
@@ -2276,6 +2449,13 @@ FailedCheck {
 	name string
 	url,omitempty string
 	steps,omitempty []StepLog
+}
+
+GitBlameCommit {
+	author string
+	time int64
+	summary string
+	message string
 }
 
 GitRef {
@@ -2414,7 +2594,24 @@ QuotaWindow {
 	resetsAt,omitempty string
 	active,omitempty bool
 	lockedReason,omitempty string
-	ahead,omitempty bool
+	runsOutAt,omitempty string
+}
+
+QuotaExtra {
+	used int64
+	limit,omitempty *int64
+	currency,omitempty string
+	decimals int
+}
+
+QuotaReset {
+	id string
+	clears,omitempty []string
+	kind,omitempty string
+	label,omitempty string
+	left int
+	endsAt string
+	held,omitempty bool
 }
 
 ServiceConfig {
@@ -2478,6 +2675,12 @@ PullRequest {
 	baseRefName string
 }
 
+ChatTurnChanges {
+	files int
+	added int
+	removed int
+}
+
 PluginProfileFailure {
 	profile string
 	name string
@@ -2488,6 +2691,24 @@ SessionCache {
 	read int
 	write int
 	uncached int
+}
+
+ChatPermitOption {
+	id string
+	label string
+	kind string
+}
+
+ChatAsk {
+	header,omitempty string
+	text string
+	options,omitempty []ChatOffer
+	multi,omitempty bool
+}
+
+ChatAskAnswer {
+	picked,omitempty []string
+	other,omitempty string
 }
 
 StepLog {
@@ -2518,4 +2739,10 @@ SyntaxStyle {
 	italic,omitempty bool
 	underline,omitempty bool
 	strikethrough,omitempty bool
+}
+
+ChatOffer {
+	label string
+	description,omitempty string
+	preview,omitempty string
 }

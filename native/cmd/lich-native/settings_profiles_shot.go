@@ -6,14 +6,16 @@ import (
 	"image"
 	"strconv"
 	"strings"
+	"time"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
 var (
 	flagProfileDialog = flag.String("settings-profile-dialog", "", "open the profile dialog of the provider -settings-provider names (Claude Code by default) at start, for -shot: new, rename, delete, copy, login or result")
-	flagProfileUsage  = flag.String("profile-usage", "", "seed Continue in's five-hour readings as slug=percent,…, for -shot")
+	flagProfileUsage  = flag.String("profile-usage", "", "seed Continue in's five-hour readings as slug=percent,…, for -shot; slug=full seeds a whole plan for the usage panel and holds it against the backend's own reading")
 	flagCardMenu      = flag.String("card-menu", "", "open a card's menu at start as <session id>@<x>,<y>:<row>[,<row>…], for -shot")
 )
 
@@ -76,6 +78,10 @@ func (s *settingsScreen) showProfileDialog(name string) error {
 func (b *profileBook) seedProfilePlans(spec string) error {
 	for pair := range strings.SplitSeq(spec, ",") {
 		slug, raw, ok := strings.Cut(pair, "=")
+		if raw == "full" {
+			b.quota.pin(profileQuotaKey(b.provider, slug), []backend.QuotaPlan{shotUsagePlan(b.provider.kind)})
+			continue
+		}
 		percent, err := strconv.Atoi(raw)
 		if !ok || err != nil {
 			return fmt.Errorf("-profile-usage: want slug=percent, got %q", pair)
@@ -85,6 +91,31 @@ func (b *profileBook) seedProfilePlans(spec string) error {
 		b.quota.seed(profileQuotaKey(b.provider, slug), []backend.QuotaPlan{plan})
 	}
 	return nil
+}
+
+// shotUsagePlan is a plan with everything the usage panel can show: three
+// windows out of order, a weekly one on course to run out, and the one extra
+// each provider alone reports.
+func shotUsagePlan(kind string) backend.QuotaPlan {
+	in := func(d time.Duration) string { return time.Now().Add(d).UTC().Format(time.RFC3339) }
+	weekly := 3*24*time.Hour + 14*time.Hour
+	plan := backend.QuotaPlan{Provider: kind, Name: "Claude Code", Plan: "Max 5x", Account: "dev@example.com", Status: "ok",
+		Windows: []backend.QuotaWindow{
+			{Label: "Fable", Seconds: 7 * day, Percent: 6, ResetsAt: in(weekly)},
+			{Kind: api.QuotaWindowWeekly, Seconds: 7 * day, Percent: 62, ResetsAt: in(weekly), RunsOutAt: in(33 * time.Hour)},
+			{Kind: api.QuotaWindowSession, Seconds: 5 * hour, Percent: 25, ResetsAt: in(4*time.Hour + 12*time.Minute)},
+		},
+		Extra: &backend.QuotaExtra{Used: 1250, Limit: new(int64(5000)), Currency: "USD", Decimals: 2},
+		Resets: []backend.QuotaReset{
+			{ID: "full", Kind: api.QuotaResetFull, Clears: []string{"session", "weekly", "model"}, Left: 1, EndsAt: in(21 * 24 * time.Hour)},
+			{ID: "fable-1", Label: "Fable", Clears: []string{"session", "model"}, Left: 1, EndsAt: in(110 * 24 * time.Hour)},
+			{ID: "fable-2", Label: "Fable", Clears: []string{"session", "model"}, Left: 1, EndsAt: in(110 * 24 * time.Hour), Held: true},
+		},
+	}
+	if kind == codexKind {
+		plan.Name, plan.Plan, plan.Extra, plan.Resets, plan.ResetCredits = "Codex", "Plus", nil, nil, 1
+	}
+	return plan
 }
 
 // openShotMenu opens the card menu -card-menu names, once its session is on
@@ -115,6 +146,18 @@ func (u *window) openShotMenu() {
 	}
 	menu.OpenAt(image.Pt(x, y), rows...)
 	*flagCardMenu = ""
+}
+
+// pin is seed that the poll cannot replace: key answers plans for good.
+func (q *planQuota) pin(key string, plans []backend.QuotaPlan) {
+	q.seed(key, plans)
+	fetch := q.fetch
+	q.fetch = func(k string) ([]backend.QuotaPlan, error) {
+		if k == key {
+			return plans, nil
+		}
+		return fetch(k)
+	}
 }
 
 // seed puts a reading under key as if a read had landed, for the rigs that

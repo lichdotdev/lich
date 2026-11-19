@@ -49,7 +49,7 @@ func (u *window) tourReviewReady() bool {
 	return ok && canReview(sv)
 }
 
-func (u *window) tourReviewOpen() bool { return u.dock.tab == dockReview }
+func (u *window) tourReviewOpen() bool { return u.dock.showing(dockReview) }
 
 func (u *window) tourReviewMenuOpen() bool { return u.review.menuOpen() }
 

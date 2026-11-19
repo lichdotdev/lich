@@ -74,7 +74,9 @@ The session is handed lich's own MCP server on its command line (`-c` overrides 
 The plan gauge names the account a session spends (`internal/quota`, `Plan.Account`): Codex carries an `email`
 claim in the OIDC id token beside its access token. It is read unverified, and discarded once its `exp` has
 passed, because the CLI can rotate the access token without rewriting the id one and a gauge under a login the
-user has left is worse than one under no name. The usage route is the one Codex's own CLI polls.
+user has left is worse than one under no name. The usage route is the one Codex's own CLI polls. Its `rate_limit_reset_credits.available_count` is how many
+on-demand resets of a window the account holds; lich carries it as `QuotaPlan.ResetCredits` and the usage tooltip says
+so while it is above zero.
 
 ## Profiles
 

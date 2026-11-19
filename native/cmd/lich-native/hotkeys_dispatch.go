@@ -289,24 +289,16 @@ func (u *window) hotkeySidebar(gtx C) {
 	}
 }
 
-// hotkeyDock toggles the dock as a whole, reopening on the tab it last
-// showed.
+// hotkeyDock collapses the dock off the stage, or puts it back beside the
+// terminal: it never closes.
 func (u *window) hotkeyDock(C) {
-	d := u.dock
-	switch {
-	case d.tab != dockClosed:
-		d.tab = dockClosed
-	case d.shown != dockClosed:
-		d.tab = d.shown
-	default:
-		d.tab = dockCode
-	}
+	u.dock.setCollapsed(!u.dock.collapsed)
 }
 
 // hotkeySearch opens the Code tab on its text search with the field focused.
 func (u *window) hotkeySearch(C) {
 	u.settings.hide()
-	u.dock.tab = dockCode
+	u.dock.show(dockCode)
 	u.dock.code.requestSearch()
 }
 

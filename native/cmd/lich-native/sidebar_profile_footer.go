@@ -2,10 +2,10 @@ package main
 
 import (
 	"image"
+	"time"
 
 	"gioui.org/layout"
 	"gioui.org/unit"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
@@ -16,11 +16,13 @@ import (
 var icProfileFooter = icons.Lucide("chevrons-up-down")
 
 // profileFooter is the panel's last line: the profile new sessions of the
-// provider in focus are born in, in the shown project, opening a menu that
-// changes it.
+// provider in focus are born in, in the shown project, opening a panel with the
+// usage of its account over the menu that changes it.
 type profileFooter struct {
-	menu  ui.MenuState
-	hover widget.Clickable // the row's hover; the menu takes the press
+	panel ui.DropdownPanelState
+	hover ui.Clickable // the row's hover; the panel takes the press
+	rows  map[string]*ui.Clickable
+	reset resetUse
 }
 
 // profileFocus is one provider's line: its book, the project and the profile
@@ -100,6 +102,43 @@ func (m *model) profileEntries(th *ui.Theme, f profileFocus, act *sidebarAction)
 	return out
 }
 
+// profilePlan is the plan reading of the account f's shown profile spends, and
+// whether it has landed.
+func (m *model) profilePlan(f profileFocus) (backend.QuotaPlan, bool) {
+	return planFor(m.quota.plans(profileQuotaKey(f.book.provider, f.choice.shown)), f.kind)
+}
+
+// profileUsageRows are the blocks at the top of the panel: the usage of the
+// account new sessions are born in, the same blocks the plan quota's tooltip
+// draws, with a way to spend a limit reset on Claude Code. Only Claude Code and
+// Codex are read per profile: any other provider, with a plan of its own or
+// none, says so in a line rather than draw the machine's reading under a
+// profile that may be another account. Nil while the first reading is in
+// flight, so nothing is drawn over an empty answer.
+func profileUsageRows(th *ui.Theme, f profileFocus, plan backend.QuotaPlan, loaded bool, now time.Time, use *resetUse) []layout.Widget {
+	note := func(text string) []layout.Widget {
+		return []layout.Widget{para(th.Text(ui.TextXS, text).Muted()).Layout}
+	}
+	switch {
+	case f.book.provider.quotaPrefix == "":
+		return note(i18n.T("shell.planQuota.noUsage", i18n.Args{"provider": f.book.provider.label}))
+	case !loaded:
+		return nil
+	case plan.Status == "signed-out":
+		return note(i18n.T("settings.planUsageSetting.signedOut"))
+	case plan.Status != "ok":
+		return note(i18n.T("shell.planQuota.unreadable"))
+	}
+	if f.kind != claudeKind {
+		use = nil
+	}
+	head := []layout.Widget{tipHead(th, planTitle(plan), "")}
+	if account := accountLine(plan); account != "" {
+		head = append(head, para(th.Text(accountSize, account).Leading(accountLeading).Muted().Mono()).Layout)
+	}
+	return append(head, usageBlocks(th, plan, now, use)...)
+}
+
 // footerEntries is the footer's menu: the focused provider's logins, then a
 // submenu per other provider with profiles.
 func (m *model) footerEntries(th *ui.Theme, f profileFocus, act *sidebarAction) []ui.MenuEntry {
@@ -127,7 +166,7 @@ func (pf *profileFooter) layout(gtx C, th *ui.Theme, root *ui.Root, m *model, f 
 			h := gtx.Dp(ui.Space(8))
 			gtx.Constraints.Min.Y, gtx.Constraints.Max.Y = h, h
 			bg := th.Surface
-			if pf.menu.Opened() || pf.hover.Hovered() {
+			if pf.panel.Opened() || pf.hover.Hovered() {
 				bg = th.Over(ui.Alpha(th.Muted, ghostHoverFill))
 				ui.Fill(gtx, bg, ui.RadiusMD)
 			}
@@ -151,6 +190,13 @@ func (pf *profileFooter) layout(gtx C, th *ui.Theme, root *ui.Root, m *model, f 
 			return ui.Fill(gtx, th.Over(th.Border), 0)
 		}),
 		ui.VGap(1.5),
-		layout.Rigid(func(gtx C) D { return th.DropdownMenu(root, &pf.menu, m.footerEntries(th, f, act)).Layout(gtx, row) }),
+		layout.Rigid(func(gtx C) D {
+			if !pf.panel.Opened() {
+				pf.reset.pending = ""
+			}
+			pf.reset.act, pf.reset.profile, pf.reset.key = act, effectiveProfile(f.choice.shown), profileQuotaKey(f.book.provider, f.choice.shown)
+			panel := th.DropdownPanel(root, &pf.panel, profilePanelW, func(gtx C, th *ui.Theme) D { return pf.panelBody(gtx, th, m, f, act) }).Above()
+			return panel.Layout(gtx, row)
+		}),
 	)
 }

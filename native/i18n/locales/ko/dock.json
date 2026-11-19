@@ -5,6 +5,8 @@
     "exitFullScreen": "전체 화면 종료",
     "fullScreen": "전체 화면",
     "closePanel": "패널 닫기",
+    "collapsePanel": "패널 접기",
+    "expandPanel": "패널 펼치기",
     "tabArtifacts": "아티팩트"
   },
   "searchResults": {
@@ -21,25 +23,7 @@
     "loading": "불러오는 중…",
     "noMatch": "일치하는 파일이 없습니다",
     "empty": "파일이 없습니다",
-    "backToTree": "파일 트리로 돌아가기",
-    "readOnly": "읽기 전용",
     "showSource": "소스 보기"
-  },
-  "findBar": {
-    "placeholder": "찾기",
-    "matchCase": "대/소문자 구분",
-    "wholeWord": "단어 단위로",
-    "regexp": "정규식 사용",
-    "showAll": "모든 일치 항목 표시",
-    "previous": "이전 일치 항목",
-    "next": "다음 일치 항목",
-    "close": "닫기",
-    "position": "{current}/{total}",
-    "matches": {
-      "other": "{count}개 일치"
-    },
-    "noResults": "결과 없음",
-    "invalidRegexp": "잘못된 정규식"
   },
   "artifacts": {
     "empty": "이 세션의 에이전트가 보여 주려고 만든 페이지와 파일이 여기에 나타납니다. 프로젝트에 열려 있는 다른 세션의 것도 함께 표시됩니다.",
@@ -49,8 +33,7 @@
     "openInBrowser": "브라우저에서 열기",
     "attachToPrompt": "프롬프트에 첨부",
     "copyPath": "경로 복사",
-    "showInFileManager": "파일 관리자에서 보기",
-    "backToList": "아티팩트 목록으로 돌아가기"
+    "showInFileManager": "파일 관리자에서 보기"
   },
   "showCode": {
     "pointed": "{session}에서 {file} 파일을 가리켰습니다",
@@ -60,5 +43,19 @@
       "one": "파일 {count}개 일치",
       "other": "파일 {count}개 일치"
     }
+  },
+  "editor": {
+    "save": "저장",
+    "discard": "버리기",
+    "unsavedTitle": "{name}의 변경 사항을 저장할까요?",
+    "unsavedDescription": "저장하지 못했거나 그 사이 디스크에서 파일이 바뀌었습니다. 버리면 사라집니다.",
+    "changedOnDisk": "편집을 시작한 뒤 디스크에서 이 파일이 바뀌었습니다.",
+    "keepMine": "내 변경 유지",
+    "reload": "다시 불러오기",
+    "saveFailed": "{name}을(를) 저장하지 못했습니다",
+    "noteOn": "{author} · {lines}행",
+    "blame": "{author}, {age} · {summary}",
+    "blameUncommitted": "나 · 커밋하지 않은 변경 사항",
+    "artifactReadOnly": "에이전트 파일 · 읽기 전용"
   }
 }

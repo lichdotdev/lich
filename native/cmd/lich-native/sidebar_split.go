@@ -6,7 +6,6 @@ import (
 	"gioui.org/font"
 	"gioui.org/layout"
 
-	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -92,18 +91,16 @@ func (m *model) everySessionInALayout() bool {
 // splitHeader is the layout's name and the collapse button.
 func (s *sidebar) splitHeader(gtx C, th *ui.Theme, name string, act *sidebarAction) D {
 	h := &s.header
-	if h.collapse.Clicked(gtx) {
-		s.setOpen(gtx, false, act)
-	}
+	toggle, toggleLabel := s.collapseToggle(gtx, act)
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 		layout.Flexed(1, func(gtx C) D {
 			return layout.Inset{Left: rowInset}.Layout(gtx, th.Text(ui.TextSM, name).Weight(font.Medium).Layout)
 		}),
 		ui.Gap(1),
 		layout.Rigid(func(gtx C) D {
-			tip := th.Tooltip(s.root, s.hint("collapse"), i18n.T("sidebar.sessionSidebar.collapse"))
+			tip := th.Tooltip(s.root, s.hint("collapse"), toggleLabel)
 			tip.Side = ui.SideBottom
-			return tip.Layout(gtx, sideButton{click: &h.collapse, icon: icCollapse, morph: &s.morph, glyph: glyphToggle}.layout(th))
+			return tip.Layout(gtx, sideButton{click: &h.collapse, icon: toggle, morph: &s.morph, glyph: glyphToggle}.layout(th))
 		}),
 	)
 }

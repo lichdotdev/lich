@@ -10,7 +10,6 @@ import (
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
 	"gioui.org/unit"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
@@ -48,7 +47,7 @@ type TabsTrigger struct {
 // the triggers.
 type TabsState struct {
 	Selected int
-	clicks   []widget.Clickable
+	clicks   []Clickable
 	changed  bool
 }
 
@@ -62,7 +61,7 @@ func (s *TabsState) Changed() bool {
 
 func (s *TabsState) tabsUpdate(gtx C, n int) {
 	for len(s.clicks) < n {
-		s.clicks = append(s.clicks, widget.Clickable{})
+		s.clicks = append(s.clicks, Clickable{})
 	}
 	for i := range s.clicks[:n] {
 		for s.clicks[i].Clicked(gtx) {
@@ -330,7 +329,7 @@ func (t TabsStyle) tabsTrigger(gtx C, i int, size image.Point, geo tabsGeometry)
 		d = click.Layout(gtx, draw)
 	}
 	// Outside the clickable, whose clip would cut them off.
-	if !tr.Disabled && gtx.Focused(click) {
+	if !tr.Disabled && click.Focused(gtx) {
 		t.tabsFocusRing(gtx, d.Size)
 	}
 	if active && t.Variant == TabsVariantLine {

@@ -21,8 +21,8 @@ type folderNaming struct {
 	focus  bool // the field asks for focus the frame after opening (autoFocus)
 	dialog ui.DialogState
 	name   widget.Editor
-	cancel widget.Clickable
-	create widget.Clickable
+	cancel ui.Clickable
+	create ui.Clickable
 }
 
 // askFolderName opens the dialog for ids, the field emptied: the dialog

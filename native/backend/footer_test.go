@@ -62,16 +62,39 @@ func TestFooterCallsSendTheirOptions(t *testing.T) {
 
 func TestQuotaPlansDecodesWindows(t *testing.T) {
 	c := fakeBackend(t, func(string, []json.RawMessage) (any, int) {
-		return json.RawMessage(`[{"provider":"claude","name":"Claude","status":"ok","noAccount":"token-login",
-			"windows":[{"label":"Session","seconds":18000,"percent":42,"resetsAt":"2026-10-11T15:00:00Z","active":true,"lockedReason":"x","ahead":true}]}]`), http.StatusOK
+		return json.RawMessage(`[{"provider":"claude","name":"Claude","status":"ok","noAccount":"token-login","resetCredits":2,
+			"extra":{"used":1250,"limit":5000,"currency":"USD","decimals":2},
+			"windows":[{"label":"Session","seconds":18000,"percent":42,"resetsAt":"2026-10-11T15:00:00Z","active":true,"lockedReason":"x","runsOutAt":"2026-10-12T00:00:00Z"}]}]`), http.StatusOK
 	})
 	plans, err := c.QuotaPlans(context.Background(), "")
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := QuotaWindow{Label: "Session", Seconds: 18000, Percent: 42, ResetsAt: "2026-10-11T15:00:00Z", Active: true, LockedReason: "x", Ahead: true}
+	want := QuotaWindow{Label: "Session", Seconds: 18000, Percent: 42, ResetsAt: "2026-10-11T15:00:00Z", Active: true, LockedReason: "x", RunsOutAt: "2026-10-12T00:00:00Z"}
 	if len(plans) != 1 || plans[0].NoAccount != "token-login" || len(plans[0].Windows) != 1 || plans[0].Windows[0] != want {
 		t.Fatalf("got %+v", plans)
+	}
+	if e := plans[0].Extra; plans[0].ResetCredits != 2 || e == nil || e.Used != 1250 || e.Limit == nil || *e.Limit != 5000 || e.Currency != "USD" {
+		t.Fatalf("extra usage and reset credits: %+v", plans[0])
+	}
+}
+
+func TestQuotaUseResetSendsTheProfileAndGrantAndDecodesTheOutcome(t *testing.T) {
+	var method string
+	var args []json.RawMessage
+	c := fakeBackend(t, func(m string, a []json.RawMessage) (any, int) {
+		method, args = m, a
+		return json.RawMessage(`{"status":"cooldown","cooldownUntil":"2026-11-20T10:00:00Z"}`), http.StatusOK
+	})
+	got, err := c.QuotaUseReset(context.Background(), "work", "full-reset-2611")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if method != "quota.UseReset" || len(args) != 1 || string(args[0]) != `{"profile":"work","grantId":"full-reset-2611"}` {
+		t.Errorf("sent %s %s", method, args)
+	}
+	if got.Status != "cooldown" || got.CooldownUntil != "2026-11-20T10:00:00Z" {
+		t.Errorf("got %+v", got)
 	}
 }
 

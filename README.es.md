@@ -143,6 +143,9 @@ distinto.
 | Costo en el pie de ventana | sí | sí | no | sí | sí | sí | no | créditos |
 | Una conversación bifurcada dentro de la propia terminal del agente cobra una sola vez el historial que copia | sí, salvo cuando el costo es el que midió el propio Claude Code | no | sin lectura de costo | sí | sí, salvo un turno guardado sin id de respuesta | no se puede bifurcar | sin lectura de costo | sin lectura de costo |
 | Cuánto queda de tu plan | sí | sí | sí | solo OpenCode Go | no | no | sí | no |
+| Lo que has gastado más allá de tu plan y su tope, en el tooltip de uso | sí | no | no | no | no | no | no | no |
+| Usar un restablecimiento de límite que da tu plan, desde el panel del perfil en la barra lateral | sí | no | no | no | no | no | no | no |
+| Los restablecimientos a demanda que tiene tu cuenta, en el tooltip de uso | no | sí | no | no | no | no | no | no |
 | Un turno que el límite de uso de tu plan detuvo se reanuda cuando el límite se restablece | sí | sí | no | sus propios reintentos | sus propios reintentos | no | no | no |
 | Si otro de tus perfiles aún tiene cuota, un aviso ofrece continuar allí al momento | sí | sí | no | no | no | no | no | no |
 | Al traspasar su trabajo, un agente puede sugerir uno de tus perfiles para su sucesora, y un aviso te deja decidir si moverla | sí | sí | no | no | sí | no | Linux y Windows | solo Linux |
@@ -190,6 +193,9 @@ distinto.
 | La tarjeta de la sesión abre un navegador que el agente conduce, junto al terminal de la sesión | sí | sí | sí | sí | sí | sí | sí | sí |
 | Una página que el agente hace para mostrarte (un informe, un diagrama, un mockup) se abre en ese navegador desde una carpeta propia de la sesión, fuera del checkout, que dura lo que dure la sesión | sí, aunque Claude Code puede seguir publicándola en claude.ai con su propia herramienta Artifact | sí | sí | sí | sí | sí | sí | sí |
 | Una skill para escribir una extensión de lich, que solo corre cuando la llamas (`/lich:extension`) | sí | sí, como `$lich:extension` | sí, pero el agente la ve en cada turno: Antigravity no puede reservar una skill para uso manual | sí, como `/lich-extension` (opencode 1) o desde `/skills` (opencode 2) | sí, como `/skill:lich-extension` | sí, desde la paleta de comandos | sí, pero el agente la ve en cada turno: Cursor le muestra al agente toda skill de un plugin | no: Kiro no puede sacar una skill del contexto del agente |
+| La sesión puede mostrarse como chat en lugar de su terminal, alternando entre ambos en la misma conversación | sí | no | sí | sí | sí | no | sin verificar | sí |
+| En el chat, elegir el modelo, el esfuerzo y el modo que ofrece el agente | sí, incluido un modo que ejecuta todas las herramientas sin preguntar | no | sí | sí | sí | no | sin verificar | modelo y modo, sin esfuerzo |
+| En el chat, las preguntas del agente llegan en una tarjeta que respondes con un clic o una tecla | sí | no | sí | no: opencode deja su herramienta de preguntas fuera de ACP, así que el agente pregunta en texto | sí | no | sin verificar | no: Kiro pregunta en texto |
 
 </details>
 

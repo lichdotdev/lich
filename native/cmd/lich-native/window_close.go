@@ -8,7 +8,6 @@ import (
 	"gioui.org/app"
 	"gioui.org/io/system"
 	"gioui.org/layout"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
@@ -24,10 +23,10 @@ type closePrompt struct {
 	services int  // the running services it counts beside them
 	leaving  bool // the window is on its way out: a close request passes
 
-	remember widget.Bool
+	remember ui.Bool
 	dialog   ui.DialogState
-	keep     widget.Clickable
-	quit     widget.Clickable
+	keep     ui.Clickable
+	quit     ui.Clickable
 }
 
 // onClosing answers the window manager's close: let through, or held until
@@ -150,7 +149,7 @@ func closeRunning(sessions, services int) string {
 
 // closeRemember is the checkbox and its label, the hint of where the
 // answer can be changed muted after it.
-func closeRemember(gtx C, th *ui.Theme, remember *widget.Bool) D {
+func closeRemember(gtx C, th *ui.Theme, remember *ui.Bool) D {
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 		layout.Rigid(th.Checkbox(remember).Layout),
 		ui.Gap(2),

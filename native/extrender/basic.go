@@ -5,7 +5,6 @@ import (
 
 	"gioui.org/layout"
 	"gioui.org/unit"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/extension"
 	"github.com/lichdotdev/lich/native/ui"
@@ -164,7 +163,7 @@ func drawLabel(r *Renderer, gtx C, th *ui.Theme, n extension.Node, _ string) D {
 
 func drawButton(r *Renderer, gtx C, th *ui.Theme, n extension.Node, id string) D {
 	p := props[extension.ButtonProps](n)
-	click := stateOf[widget.Clickable](r, id)
+	click := stateOf[ui.Clickable](r, id)
 	if click.Clicked(gtx) && !p.Disabled {
 		r.fire(p.OnPress, extension.EventData{})
 	}

@@ -13,7 +13,6 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/unit"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
@@ -103,7 +102,7 @@ func TestToggleSizes(t *testing.T) {
 		h    int
 	}{{ToggleSizeDefault, 36}, {ToggleSizeSM, 32}, {ToggleSizeLG, 40}}
 	for _, tc := range cases {
-		tg := th.Toggle(new(widget.Bool), "Bold")
+		tg := th.Toggle(new(Bool), "Bold")
 		tg.Size = tc.size
 		if d := layoutAt(tg.Layout, 0, 500); d.Size.Y != tc.h || d.Size.X <= tc.h {
 			t.Errorf("size %d: got %v, want height %d at natural width", tc.size, d.Size, tc.h)
@@ -112,7 +111,7 @@ func TestToggleSizes(t *testing.T) {
 }
 
 func TestToggleHeightOverridesTheSize(t *testing.T) {
-	tg := testTheme().Toggle(new(widget.Bool), "Aa")
+	tg := testTheme().Toggle(new(Bool), "Aa")
 	tg.Size, tg.Height = ToggleSizeSM, Space(6)
 	if d := layoutAt(tg.Layout, 0, 500); d.Size.Y != 24 {
 		t.Errorf("h-6 toggle: got height %d, want 24", d.Size.Y)
@@ -122,12 +121,12 @@ func TestToggleHeightOverridesTheSize(t *testing.T) {
 // min-w-9: a toggle of one narrow glyph or an icon alone is still a square.
 func TestToggleIsNoNarrowerThanItsHeight(t *testing.T) {
 	th := testTheme()
-	icon := th.Toggle(new(widget.Bool), "")
+	icon := th.Toggle(new(Bool), "")
 	icon.Icon = icons.Lucide("bold")
 	if d := layoutAt(icon.Layout, 0, 500); d.Size != image.Pt(36, 36) {
 		t.Errorf("icon only: got %v, want 36x36", d.Size)
 	}
-	narrow := th.Toggle(new(widget.Bool), "i")
+	narrow := th.Toggle(new(Bool), "i")
 	narrow.Size = ToggleSizeLG
 	if d := layoutAt(narrow.Layout, 0, 500); d.Size.X != 40 {
 		t.Errorf("one glyph: got width %d, want the 40 of min-w-10", d.Size.X)
@@ -135,7 +134,7 @@ func TestToggleIsNoNarrowerThanItsHeight(t *testing.T) {
 }
 
 func TestToggleClickFlipsPressed(t *testing.T) {
-	th, pressed := testTheme(), new(widget.Bool)
+	th, pressed := testTheme(), new(Bool)
 	rig := newToggleRig(image.Pt(20, 20), th.Toggle(pressed, "Bold").Layout)
 	rig.click(image.Pt(10, 10))
 	if !pressed.Value {
@@ -148,7 +147,7 @@ func TestToggleClickFlipsPressed(t *testing.T) {
 }
 
 func TestToggleDisabledIgnoresClicks(t *testing.T) {
-	th, pressed := testTheme(), new(widget.Bool)
+	th, pressed := testTheme(), new(Bool)
 	tg := th.Toggle(pressed, "Bold")
 	tg.Disabled = true
 	rig := newToggleRig(image.Pt(20, 20), tg.Layout)
@@ -161,7 +160,7 @@ func TestToggleDisabledIgnoresClicks(t *testing.T) {
 func TestTogglePressedIsAccentFill(t *testing.T) {
 	th := testTheme()
 	draw := func(pressed bool, mod func(*ToggleStyle)) *image.RGBA {
-		state := &widget.Bool{Value: pressed}
+		state := BoolOf(pressed)
 		tg := th.Toggle(state, "Bold")
 		if mod != nil {
 			mod(&tg)
@@ -184,7 +183,7 @@ func TestTogglePressedIsAccentFill(t *testing.T) {
 func TestToggleOutlineHasBorderDefaultHasNone(t *testing.T) {
 	th := testTheme()
 	edge := func(v ToggleVariant) color.RGBA {
-		tg := th.Toggle(new(widget.Bool), "Bold")
+		tg := th.Toggle(new(Bool), "Bold")
 		tg.Variant = v
 		return toggleRender(t, image.Pt(80, 36), time.Time{}, tg.Layout).RGBAAt(40, 0)
 	}

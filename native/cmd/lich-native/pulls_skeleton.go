@@ -3,7 +3,6 @@ package main
 import (
 	"gioui.org/layout"
 	"gioui.org/unit"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
@@ -43,7 +42,7 @@ func (v *pullView) detailSkeleton(th *ui.Theme) layout.Widget {
 // skeletonHeading is titleRow: heading's title over the stats line, beside
 // the actions Open in Session, Merge and ⋯ as blocks of their size.
 func skeletonHeading(gtx C, th *ui.Theme) D {
-	var session, merge, more widget.Clickable
+	var session, merge, more ui.Clickable
 	actions := func(gtx C) D {
 		sessionB := th.Button(&session, i18n.T("pulls.pulls.openInSession"))
 		sessionB.Icon, sessionB.Size = icPullSession, ui.SizeSM
@@ -116,7 +115,7 @@ func (v *pullView) skeletonTabs(gtx C, th *ui.Theme) D {
 // prose filling the column, beside the facts, stacked the same way on an
 // island too narrow for both.
 func skeletonOverview(gtx C, th *ui.Theme) D {
-	var more widget.Clickable
+	var more ui.Clickable
 	heading := func(gtx C) D {
 		return layout.Inset{Left: pullsPadX, Right: pullsPadX, Top: ui.Space(4)}.Layout(gtx, func(gtx C) D {
 			moreB := th.Button(&more, "")

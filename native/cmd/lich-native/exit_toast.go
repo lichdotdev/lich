@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
 )
@@ -64,7 +65,8 @@ func (u *window) raiseExit(id string) {
 		return
 	}
 	sv, ok := u.model.sessionViewOf(id)
-	if !ok {
+	// A terminal stopped for the session's chat ended on purpose.
+	if !ok || sv.View == api.ViewChat || u.model.chat.isSwitching(id) {
 		return
 	}
 	u.exitMu.Lock()

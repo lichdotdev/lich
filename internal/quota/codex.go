@@ -38,6 +38,11 @@ type codexUsage struct {
 		Primary   *codexWindow `json:"primary_window"`
 		Secondary *codexWindow `json:"secondary_window"`
 	} `json:"rate_limit"`
+	// ResetCredits are the on-demand resets the account holds; the same payload
+	// carries an applicable_available_count beside it, which lich does not read.
+	ResetCredits *struct {
+		Available int `json:"available_count"`
+	} `json:"rate_limit_reset_credits"`
 }
 
 type codexWindow struct {
@@ -78,6 +83,9 @@ func (s *Service) codexPlan(a Account) Plan {
 	p.Windows = usage.windows()
 	if len(p.Windows) == 0 {
 		return failed(p)
+	}
+	if usage.ResetCredits != nil {
+		p.ResetCredits = max(usage.ResetCredits.Available, 0)
 	}
 	return p
 }

@@ -33,10 +33,10 @@ var (
 type themeDialogs struct {
 	imp                              ui.DialogState
 	url                              widget.Editor
-	install, choose, template, close widget.Clickable
+	install, choose, template, close ui.Clickable
 
 	remove, overwrite, pack ui.DialogState
-	cancel, confirm         [3]widget.Clickable
+	cancel, confirm         [3]ui.Clickable
 }
 
 // layoutDialogs draws the picker's dialogs. The window lays it out with

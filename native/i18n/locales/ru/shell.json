@@ -51,22 +51,23 @@
   },
   "footerBar": {
     "attachFile": "Прикрепить файл",
-    "browseCode": "Обзор кода",
     "reviewChanges": "Просмотр изменений",
     "viewPullRequest": "Открыть pull request",
-    "pullRequest": "PR #{number}",
-    "showArtifacts": "Показать артефакты"
+    "pullRequest": "PR #{number}"
   },
   "footerSession": {
-    "contextWindow": "Контекстное окно",
-    "contextTokens": "{tokens} / {window} токенов",
     "cacheHit": "Кэш: {percent}% попаданий",
     "costUnavailable": "Стоимость недоступна",
     "sessionCost": "Стоимость сессии",
     "costOfBudget": "{cost} из бюджета {budget}",
     "costNote": "Стоимость API по всем разговорам этой сессии. Списания по подписке могут отличаться.",
     "handsOnTime": "Время за работой",
-    "handsOnFailed": "Не удалось прочитать время за работой."
+    "handsOnFailed": "Не удалось прочитать время за работой.",
+    "context": "Контекст",
+    "tokens": "Токены",
+    "modelWindow": "Окно модели",
+    "cache": "Кэш",
+    "cacheHitShort": "{percent}% попаданий"
   },
   "gitMissingGate": {
     "title": "git не установлен",
@@ -99,7 +100,43 @@
   },
   "planQuota": {
     "planUsage": "Использование тарифа",
-    "locked": "Заблокировано"
+    "locked": "Заблокировано",
+    "runsOut": "Закончится через {time}",
+    "resetsIn": "Сброс через {time}",
+    "extraUsage": "Дополнительное использование",
+    "extraOf": "{used} из {limit}",
+    "extraNoLimit": "{used} · без лимита",
+    "resets": "Сбросы",
+    "resetsLeft": {
+      "one": "Осталось {count}",
+      "few": "Осталось {count}",
+      "many": "Осталось {count}",
+      "other": "Осталось {count}"
+    },
+    "resetFull": "Полный",
+    "resetUntil": "до {day} {month}",
+    "shortMonths": "янв.,февр.,марта,апр.,мая,июня,июля,авг.,сент.,окт.,нояб.,дек.",
+    "resetUse": "Использовать",
+    "resetConfirm": "Использовать один сброс «{name}»?",
+    "resetClearsFull": "Сбросит лимиты сессии и недели.",
+    "resetClearsModel": "Сбросит лимит сессии и недельный лимит {model}.",
+    "resetClearsSession": "Сбросит лимит сессии.",
+    "resetDone": "Лимит сброшен",
+    "resetNothing": "Сбрасывать нечего",
+    "resetNothingDetail": "Вы не достигли лимита.",
+    "resetIneligible": "Claude сейчас не предлагает этот сброс",
+    "resetCooldownAt": "Сбросы на паузе. Повторите через {time}.",
+    "resetCooldownLater": "Сбросы на паузе. Повторите позже.",
+    "resetFailed": "Не удалось использовать сброс: {error}",
+    "resetCredits": "Кредиты сброса",
+    "resetCreditsAvailable": {
+      "one": "{count} доступен",
+      "few": "{count} доступно",
+      "many": "{count} доступно",
+      "other": "{count} доступно"
+    },
+    "noUsage": "Для {provider} использование по профилям не измеряется.",
+    "unreadable": "Не удалось прочитать использование тарифа."
   },
   "providerSetupDialog": {
     "chooseTitle": "Выберите агентов",

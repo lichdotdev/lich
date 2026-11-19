@@ -1,0 +1,90 @@
+{
+  "switch": {
+    "gui": "GUI",
+    "tui": "TUI",
+    "working": "Переключить можно, когда агент закончит ход",
+    "pending": "Переключаем…",
+    "failed": "Не удалось переключить вид"
+  },
+  "view": {
+    "failed": "Запрос к чату не выполнен",
+    "thought": "Рассуждение",
+    "worked": {
+      "one": "Работал {duration} · {count} инструмент",
+      "few": "Работал {duration} · {count} инструмента",
+      "many": "Работал {duration} · {count} инструментов",
+      "other": "Работал {duration} · {count} инструмента"
+    },
+    "toolFailed": "ошибка",
+    "answered": "{tool} · {choice}",
+    "verbs": "Колдует|Призывает|Направляет силу|Варит зелье|Гадает|Чертит руны|Плетёт чары|Воскрешает",
+    "thinking": "Думает",
+    "toolCalls": {
+      "one": "{count} вызов инструмента",
+      "few": "{count} вызова инструмента",
+      "many": "{count} вызовов инструмента",
+      "other": "{count} вызова инструмента"
+    },
+    "workedAt": {
+      "one": "Работал {duration} · {count} инструмент · {time}",
+      "few": "Работал {duration} · {count} инструмента · {time}",
+      "many": "Работал {duration} · {count} инструментов · {time}",
+      "other": "Работал {duration} · {count} инструмента · {time}"
+    }
+  },
+  "done": {
+    "done": "Готово",
+    "stopped": "Остановлено",
+    "failed": "Сбой",
+    "noChanges": "без изменений",
+    "files": {
+      "one": "{count} файл",
+      "few": "{count} файла",
+      "many": "{count} файлов",
+      "other": "{count} файла"
+    }
+  },
+  "composer": {
+    "placeholder": "Спросите {provider} об этом проекте",
+    "send": "Отправить",
+    "stop": "Остановить"
+  },
+  "option": {
+    "model": "Модель",
+    "effort": "Глубина рассуждений",
+    "mode": "Режим",
+    "busy": "Изменить можно после завершения хода.",
+    "modelEffort": "Модель и глубина рассуждений"
+  },
+  "choice": {
+    "manual": "Ручной",
+    "plan": "План",
+    "auto": "Авто",
+    "yolo": "YOLO"
+  },
+  "day": {
+    "today": "Сегодня",
+    "yesterday": "Вчера"
+  },
+  "model": {
+    "search": "Поиск моделей {provider}…",
+    "showMore": "Показать ещё",
+    "default": "По умолчанию"
+  },
+  "question": {
+    "multi": "несколько",
+    "step": "{n} из {total}",
+    "sendAll": "Отправить всё",
+    "freeHint": "Enter отправляет · Esc отказывает",
+    "marked": {
+      "one": "Отмечен {count}",
+      "few": "Отмечено {count}",
+      "many": "Отмечено {count}",
+      "other": "Отмечено {count}"
+    },
+    "write": "Другое… напишите свой ответ",
+    "declined": "Без ответа",
+    "label": "{header}:",
+    "own": "«{text}»"
+  }
+}

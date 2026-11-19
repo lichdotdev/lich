@@ -84,6 +84,9 @@ type model struct {
 	// diffTouched hears the checkout of a session that likely changed files,
 	// for the Review tab's diff, which is read apart from the git store.
 	diffTouched func(checkout string)
+	// editorTouched hears the same checkout, for the stage editor holding
+	// one of its files.
+	editorTouched func(checkout string)
 	// focusSession brings a session's card up, as `lich focus` asks.
 	focusSession func(projectID, id string)
 	// showToast puts a toast up.
@@ -128,6 +131,12 @@ type model struct {
 	threadFixes threadFixStore
 	// artifacts is every open session's artifact list.
 	artifacts artifactStore
+	// chat is every chat session's conversation (chat_store.go). toTerminal
+	// hears a session leaving its chat before the store says so, and toChat
+	// one that reached it.
+	chat       chatStore
+	toTerminal func(ctx context.Context, id string)
+	toChat     func(id string)
 	// extensions is every extension, its state and its surfaces' renders.
 	extensions extensionStore
 	// catalog is the lich catalog and the images it names.
@@ -143,6 +152,11 @@ type model struct {
 	// console is the service whose console is on screen in place of the
 	// active session, "" for none.
 	console string
+	// editors are the checkouts' files in the stage editor, by checkout, and
+	// editorOn the checkout whose editor the stage shows in place of the
+	// active session, "" for none.
+	editors  map[string]editorNode
+	editorOn string
 	// serviceReveal hears the tray ask for a service's console.
 	serviceReveal func(id string)
 
@@ -287,7 +301,7 @@ func (m *model) setActiveProject(id string) bool {
 	m.activeProject, m.home = id, id == m.homeID
 	m.active = m.projects[i].ActiveSessionID
 	m.shownLayout = ""
-	m.console = ""
+	m.console, m.editorOn = "", ""
 	m.aloneLocked()
 	return true
 }
@@ -296,7 +310,7 @@ func (m *model) setActiveProject(id string) bool {
 // session, which comes back when a card is picked again.
 func (m *model) openConsole(id string) {
 	m.mu.Lock()
-	m.console = id
+	m.console, m.editorOn = id, ""
 	m.shownLayout = ""
 	m.mu.Unlock()
 }
@@ -423,6 +437,8 @@ func (m *model) follow(ctx context.Context, events <-chan backend.Event) {
 		case api.SessionScheduleEvent.Name, api.SessionScheduleByEvent.Name, api.SessionWatchEvent.Name,
 			api.SessionWatchStoppedEvent.Name, api.ScheduleForfeitedEvent.Name:
 			m.scheduleEvent(ev)
+		case api.ChatItemEvent.Name, api.ChatTurnEvent.Name, api.ChatOptionsEvent.Name, api.SessionViewEvent.Name:
+			m.chatEvent(ctx, ev)
 		case api.SessionConversationEvent.Name:
 			if c, err := backend.Decode(ev, api.SessionConversationEvent); err == nil {
 				m.setConversation(c.ID, c.ProviderSessionID)
@@ -523,12 +539,14 @@ func (m *model) follow(ctx context.Context, events <-chan backend.Event) {
 			} else if err := m.loadFolds(ctx); err != nil {
 				log.Printf("load folds after %s: %v", ev.Name, err)
 			}
+			m.loadChats(ctx)
 		case api.SessionOpenedEvent.Name, api.SessionClosedEvent.Name, api.SessionsFiledEvent.Name, api.SessionsColoredEvent.Name:
 			if err := m.reload(ctx); err != nil {
 				log.Printf("reload after %s: %v", ev.Name, err)
 			} else if err := m.loadFolds(ctx); err != nil {
 				log.Printf("load folds after %s: %v", ev.Name, err)
 			}
+			m.loadChats(ctx)
 		default:
 			live, err := m.applyLive(ev)
 			if err != nil {
@@ -684,7 +702,7 @@ func (m *model) viewOf(p backend.Project, s backend.Session, now time.Time) sess
 	tool, _ := m.status.tool(s.ID)
 	usage, _ := m.usage.get(s.ID)
 	st, page := m.browsers.states[s.ID], m.pages[s.ID]
-	web := webView{url: st.URL, title: st.Title, headed: st.Headed, shown: page != nil, focused: page != nil && page.focused}
+	web := webView{url: pageURL(st), title: pageTitle(st), headed: st.Headed, shown: page != nil, focused: page != nil && page.focused}
 	split := ""
 	if i := m.layouts.of(s.ID); i >= 0 {
 		split = m.layouts.tabs[i].ID
@@ -802,7 +820,7 @@ func (m *model) setActive(ctx context.Context, id string) {
 	refocused := m.routeLocked(id)
 	left := m.active
 	m.active = id
-	m.console = ""
+	m.console, m.editorOn = "", ""
 	if p := m.shownProject(); p != nil {
 		p.ActiveSessionID = id
 	}

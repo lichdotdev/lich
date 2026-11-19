@@ -4,7 +4,6 @@ import (
 	"slices"
 
 	"gioui.org/layout"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
@@ -39,8 +38,8 @@ type closeAllConfirm struct {
 	open    bool
 	ids     []string
 	running int
-	cancel  widget.Clickable
-	confirm widget.Clickable
+	cancel  ui.Clickable
+	confirm ui.Clickable
 }
 
 func (c *closeAllConfirm) ask(ids []string, running int) {

@@ -11,7 +11,6 @@ import (
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
 	"gioui.org/unit"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
@@ -57,10 +56,10 @@ const (
 	toggleHoverFill   = 0.5 // hover:bg-accent/50
 )
 
-// ToggleStyle draws a shadcn Toggle around a caller-owned widget.Bool: Pressed
+// ToggleStyle draws a shadcn Toggle around a caller-owned Bool: Pressed
 // is aria-pressed, a click flips its Value.
 type ToggleStyle struct {
-	Pressed *widget.Bool
+	Pressed *Bool
 	Text    string
 	Icon    *icons.Icon // leading, optional
 	Variant ToggleVariant
@@ -75,7 +74,7 @@ type ToggleStyle struct {
 }
 
 // Toggle is a default-variant, default-size toggle.
-func (th *Theme) Toggle(pressed *widget.Bool, text string) ToggleStyle {
+func (th *Theme) Toggle(pressed *Bool, text string) ToggleStyle {
 	return ToggleStyle{Pressed: pressed, Text: text, theme: th}
 }
 
@@ -100,11 +99,11 @@ func (t ToggleStyle) Layout(gtx C) D {
 	dims := t.Pressed.Layout(gtx, func(gtx C) D {
 		spec.pressed = t.Pressed.Value
 		spec.hovered = t.Pressed.Hovered()
-		spec.focused = gtx.Focused(t.Pressed)
+		spec.focused = t.Pressed.Focused(gtx)
 		return t.theme.toggleItem(gtx, spec)
 	})
 	toggle := macro.Stop()
-	if gtx.Focused(t.Pressed) {
+	if t.Pressed.Focused(gtx) {
 		toggleStroke(gtx, dims.Size, gtx.Dp(toggleRingWidth), gtx.Dp(RadiusMD), t.theme.Over(Alpha(t.theme.Ring, toggleRingOpacity)))
 	}
 	toggle.Add(gtx.Ops)
@@ -123,6 +122,7 @@ type toggleSpec struct {
 	height   unit.Dp
 	padX     unit.Dp
 	textSize unit.Sp
+	iconSize unit.Dp
 
 	pressed, hovered, focused, disabled bool
 }
@@ -200,8 +200,12 @@ func (th *Theme) toggleContent(gtx C, s toggleSpec, fg color.NRGBA) D {
 	}
 	text := th.Text(size, s.text)
 	var children []layout.FlexChild
+	iconSize := toggleIconSize
+	if s.iconSize != 0 {
+		iconSize = s.iconSize
+	}
 	if s.icon != nil {
-		children = append(children, layout.Rigid(func(gtx C) D { return s.icon.Layout(gtx, toggleIconSize, fg) }))
+		children = append(children, layout.Rigid(func(gtx C) D { return s.icon.Layout(gtx, iconSize, fg) }))
 	}
 	if s.icon != nil && s.text != "" {
 		children = append(children, layout.Rigid(layout.Spacer{Width: toggleGap}.Layout))

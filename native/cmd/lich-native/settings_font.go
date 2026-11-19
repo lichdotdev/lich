@@ -41,7 +41,7 @@ type fontPicker struct {
 	panel  ui.DropdownPanelState
 	search widget.Editor
 	list   widget.List
-	rows   map[string]*widget.Clickable
+	rows   map[string]*ui.Clickable
 
 	mu       sync.Mutex
 	families []string
@@ -195,7 +195,7 @@ func (s *settingsScreen) fontPanel(gtx C, th *ui.Theme, f *fontPicker, options [
 // chosen one; picking it applies it and closes the panel.
 func fontRow(gtx C, th *ui.Theme, f *fontPicker, family string, chosen bool, choose func(string)) D {
 	if f.rows == nil {
-		f.rows = map[string]*widget.Clickable{}
+		f.rows = map[string]*ui.Clickable{}
 	}
 	click := clickableOf(f.rows, family)
 	if click.Clicked(gtx) {

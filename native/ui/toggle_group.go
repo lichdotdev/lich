@@ -5,7 +5,6 @@ import (
 
 	"gioui.org/layout"
 	"gioui.org/unit"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
@@ -16,6 +15,12 @@ const toggleTrackPad = 0.1875 * toggleRem
 
 var toggleItemGap = Space(1) // spacing={1}
 
+// ToggleGroupHeight is how tall a group of items itemHeight tall stands: the
+// items and the track's border and padding around them.
+func ToggleGroupHeight(itemHeight unit.Dp) unit.Dp {
+	return itemHeight + 2*(toggleBorderWidth+toggleTrackPad)
+}
+
 // ToggleItem is one option of a ToggleGroup, a ToggleGroupItem.
 type ToggleItem struct {
 	Value    string
@@ -25,25 +30,27 @@ type ToggleItem struct {
 }
 
 // ToggleGroupStyle draws a shadcn ToggleGroup of one selected value around a
-// caller-owned widget.Enum, in the form lich uses it: the options spaced by 1
+// caller-owned Enum, in the form lich uses it: the options spaced by 1
 // inside a bordered track (border border-border p-[0.1875rem], the segmented
 // control of DESIGN.md). Pressing the chosen option again keeps it chosen.
 type ToggleGroupStyle struct {
-	Value   *widget.Enum
+	Value   *Enum
 	Items   []ToggleItem
 	Variant ToggleVariant
 	Size    ToggleSize
-	// ItemHeight, ItemPadX and ItemText are the h-*, px-* and text-* that
-	// call sites put on each ToggleGroupItem; zero keeps the size's own.
+	// ItemHeight, ItemPadX, ItemText and ItemIcon are the h-*, px-*, text-*
+	// and size-* that call sites put on each ToggleGroupItem; zero keeps the
+	// size's own.
 	ItemHeight unit.Dp
 	ItemPadX   unit.Dp
 	ItemText   unit.Sp
+	ItemIcon   unit.Dp
 	theme      *Theme
 }
 
 // ToggleGroup is a default-variant group of items; Value.Value is the chosen
 // one.
-func (th *Theme) ToggleGroup(value *widget.Enum, items ...ToggleItem) ToggleGroupStyle {
+func (th *Theme) ToggleGroup(value *Enum, items ...ToggleItem) ToggleGroupStyle {
 	return ToggleGroupStyle{Value: value, Items: items, theme: th}
 }
 
@@ -75,7 +82,7 @@ func (g ToggleGroupStyle) row(gtx C) D {
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
 }
 
-// item has no focus ring: widget.Enum takes focus on a mouse press, so a ring
+// item has no focus ring: Enum takes focus on a mouse press, so a ring
 // drawn for focus would show after every click, which focus-visible does not.
 func (g ToggleGroupStyle) item(gtx C, item ToggleItem) D {
 	spec := toggleSpec{
@@ -86,6 +93,7 @@ func (g ToggleGroupStyle) item(gtx C, item ToggleItem) D {
 		height:   g.ItemHeight,
 		padX:     g.ItemPadX,
 		textSize: g.ItemText,
+		iconSize: g.ItemIcon,
 		pressed:  g.Value.Value == item.Value,
 		disabled: item.Disabled,
 	}

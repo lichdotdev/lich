@@ -5,6 +5,8 @@
     "exitFullScreen": "Exit full screen",
     "fullScreen": "Full screen",
     "closePanel": "Close panel",
+    "collapsePanel": "Collapse panel",
+    "expandPanel": "Expand panel",
     "tabArtifacts": "Artifacts"
   },
   "searchResults": {
@@ -21,26 +23,7 @@
     "loading": "Loading…",
     "noMatch": "No file matches",
     "empty": "No files here",
-    "backToTree": "Back to file tree",
-    "readOnly": "read-only",
     "showSource": "Show source"
-  },
-  "findBar": {
-    "placeholder": "Find",
-    "matchCase": "Match case",
-    "wholeWord": "Match whole word",
-    "regexp": "Use regular expression",
-    "showAll": "Show all matches",
-    "previous": "Previous match",
-    "next": "Next match",
-    "close": "Close",
-    "position": "{current} of {total}",
-    "matches": {
-      "one": "{count} match",
-      "other": "{count} matches"
-    },
-    "noResults": "No results",
-    "invalidRegexp": "Invalid regex"
   },
   "artifacts": {
     "empty": "Pages and files this session's agent makes to show you appear here, with those of the project's other open sessions.",
@@ -50,8 +33,7 @@
     "openInBrowser": "Open in browser",
     "attachToPrompt": "Attach to prompt",
     "copyPath": "Copy path",
-    "showInFileManager": "Show in file manager",
-    "backToList": "Back to artifacts"
+    "showInFileManager": "Show in file manager"
   },
   "showCode": {
     "pointed": "{session} pointed at {file}",
@@ -61,5 +43,19 @@
       "one": "{count} file matches",
       "other": "{count} files match"
     }
+  },
+  "editor": {
+    "save": "Save",
+    "discard": "Discard",
+    "unsavedTitle": "Save the changes to {name}?",
+    "unsavedDescription": "Saving them failed, or the file changed on disk since. If you discard them, they are lost.",
+    "changedOnDisk": "This file changed on disk since you started editing it.",
+    "keepMine": "Keep mine",
+    "reload": "Reload",
+    "saveFailed": "Could not save {name}",
+    "noteOn": "{author} on lines {lines}",
+    "blame": "{author}, {age} · {summary}",
+    "blameUncommitted": "You · Uncommitted changes",
+    "artifactReadOnly": "From the agent · read only"
   }
 }

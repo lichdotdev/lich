@@ -11,7 +11,6 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/unit"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
@@ -178,7 +177,7 @@ var (
 func (p *pullsScreen) row(gtx C, th *ui.Theme, pr backend.PRSummary, now time.Time) D {
 	click := p.rowClicks[pr.Number]
 	if click == nil {
-		click = new(widget.Clickable)
+		click = new(ui.Clickable)
 		p.rowClicks[pr.Number] = click
 	}
 	checkout, _ := p.checkedOut(pr.HeadRefName)

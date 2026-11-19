@@ -3,14 +3,8 @@
     "attach": {
       "example": "附加文件"
     },
-    "files": {
-      "example": "文件"
-    },
     "model": {
       "example": "模型"
-    },
-    "artifacts": {
-      "example": "产物"
     }
   },
   "footerEditor": {

@@ -46,7 +46,15 @@
       "minute": "{count}m ago",
       "hour": "{count}h ago",
       "day": "{count}d ago",
-      "week": "{count}w ago"
+      "week": "{count}w ago",
+      "month": {
+        "one": "{count}mo ago",
+        "other": "{count}mo ago"
+      },
+      "year": {
+        "one": "{count}y ago",
+        "other": "{count}y ago"
+      }
     }
   }
 }

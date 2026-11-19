@@ -1,11 +1,9 @@
 package main
 
-// The dock's Code tab: a read-only tree of the active
-// session's checkout, tracked and untracked in a repository, whatever is on
-// disk in a plain folder, with one field that filters it by name or searches
-// the files' text, and an in-dock preview that covers it. Clicks only
-// navigate, inject references into the session's PTY, or comment on lines for
-// the checkout's review batch.
+// The dock's Code tab: a tree of the active session's checkout, tracked and
+// untracked in a repository, whatever is on disk in a plain folder, with one
+// field that filters it by name or searches the files' text. A file picked
+// opens in the stage editor; the checkout's review batch sits under the tree.
 
 import (
 	"context"
@@ -16,14 +14,12 @@ import (
 	"gioui.org/io/key"
 	"gioui.org/layout"
 	"gioui.org/op"
-	"gioui.org/unit"
 	"gioui.org/widget"
 
 	"github.com/lichdotdev/godemirror"
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
-	"github.com/lichdotdev/lich/native/ui/codeview"
 	"github.com/lichdotdev/lich/native/ui/filetree"
 )
 
@@ -50,15 +46,18 @@ type codeTab struct {
 	client   *backend.Client
 	comments *commentStore
 	notify   func(ui.Toast)
+	// openFile opens rel of checkout in the stage editor, on line (1-based,
+	// 0 for the top).
+	openFile func(checkout, rel string, line int)
 
 	// checkout is the one the browse below belongs to; another one starts it
 	// over.
 	checkout   string
 	query      widget.Editor
-	clearQuery widget.Clickable
-	mode       widget.Enum
+	clearQuery ui.Clickable
+	mode       ui.Enum
 	toggled    map[string]bool
-	selected   string // the file last opened, which reads as current on Back
+	selected   string // the file last opened, which reads as current
 	// focusQuery asks the next browse box to take the keyboard.
 	focusQuery bool
 
@@ -71,21 +70,15 @@ type codeTab struct {
 	rowsFrom *treeData
 	rowsFor  string
 	hits     hitList
-	preview  *preview
 	batch    commentBatch
 }
 
-func newCodeTab(client *backend.Client, invalidate func(), family string, size unit.Sp, comments *commentStore, notify func(ui.Toast)) (*codeTab, error) {
-	view, err := codeview.New(family, size)
-	if err != nil {
-		return nil, err
-	}
-	c := &codeTab{client: client, comments: comments, notify: notify, toggled: map[string]bool{}}
+func newCodeTab(client *backend.Client, invalidate func(), comments *commentStore, notify func(ui.Toast), openFile func(checkout, rel string, line int)) *codeTab {
+	c := &codeTab{client: client, comments: comments, notify: notify, openFile: openFile, toggled: map[string]bool{}}
 	c.mode.Value = browseByName
 	c.tree.invalidate, c.search.invalidate = invalidate, invalidate
-	c.preview = newPreview(client, view, invalidate)
 	c.rows.List.Axis, c.hits.list.Axis = layout.Vertical, layout.Vertical
-	return c, nil
+	return c
 }
 
 // hidden stops the reads while the tab is off screen; what they answered
@@ -95,38 +88,24 @@ func (c *codeTab) hidden() {
 	c.search.stop()
 }
 
-func (c *codeTab) layout(gtx C, th *ui.Theme, root *ui.Root, in dockInput) error {
+func (c *codeTab) layout(gtx C, th *ui.Theme, in dockInput) {
 	c.follow(in.checkout)
 	c.fetchTree(gtx, in)
-	inject := in.inject
-	open := c.preview.isOpen()
-	var err error
 	layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Flexed(1, func(gtx C) D {
 			gtx.Constraints.Min = gtx.Constraints.Max
-			if open {
-				var d D
-				d, err = c.preview.layout(gtx, th, root, previewEnv{checkout: in.checkout, code: in.code, inject: inject, comments: c.comments, notify: c.notify})
-				return d
-			}
 			return c.browse(gtx, th)
 		}),
 		layout.Rigid(func(gtx C) D { return c.batch.layout(gtx, th, c.comments, in.checkout, in.submit, c.notify) }),
 	)
-	if c.preview.isOpen() != open {
-		// A file picked in the tree or the hits opens the preview while the
-		// browse it replaces is drawn.
-		gtx.Execute(op.InvalidateCmd{})
-	}
-	return err
 }
 
 func (c *codeTab) focused(gtx C) bool {
-	if gtx.Focused(&c.query) || gtx.Focused(&c.batch.note) || c.preview.holdsKeys(gtx) {
+	if gtx.Focused(&c.query) || gtx.Focused(&c.batch.note) {
 		return true
 	}
 	for i := range c.hits.hits {
-		if gtx.Focused(&c.hits.clicks[i]) {
+		if c.hits.clicks[i].Focused(gtx) {
 			return true
 		}
 	}
@@ -134,7 +113,7 @@ func (c *codeTab) focused(gtx C) bool {
 }
 
 // follow starts the browse over for another checkout: a worktree's folds and
-// open file mean nothing in the next one.
+// current file mean nothing in the next one.
 func (c *codeTab) follow(checkout string) {
 	if checkout == c.checkout {
 		return
@@ -142,7 +121,6 @@ func (c *codeTab) follow(checkout string) {
 	c.checkout, c.selected = checkout, ""
 	c.query.SetText("")
 	clear(c.toggled)
-	c.preview.close()
 }
 
 // fetchTree keys the tree's read like FilesPanel: on the git status's counts
@@ -242,26 +220,24 @@ func (c *codeTab) fieldKeys(gtx C) {
 	}
 }
 
-// open shows rel in the preview, on line (1-based, 0 for the top).
+// open shows rel in the stage editor, on line (1-based, 0 for the top).
 func (c *codeTab) open(rel string, line int) {
 	c.selected = rel
-	c.preview.openAt(rel, line)
+	c.openFile(c.checkout, rel, line)
 }
 
-// showLines opens rel of checkout on lines line to end. It follows the checkout
-// first: the session asked for may be the one the dock is about to come to,
-// and following it later would close the file.
-func (c *codeTab) showLines(checkout, rel string, line, end int, note agentNote) {
+// showing marks rel of checkout as the file the stage editor opened from
+// elsewhere, a path in a terminal or an agent's show_code. It follows the
+// checkout first: the session asked for may be the one the dock is about to
+// come to.
+func (c *codeTab) showing(checkout, rel string) {
 	c.follow(checkout)
 	c.selected = rel
-	c.preview.openLines(rel, line, end)
-	c.preview.note = note
 }
 
-// requestSearch is FilesPanel's file-search request: the text search, over a
-// closed preview, with its field focused and selected.
+// requestSearch is FilesPanel's file-search request: the text search, with
+// its field focused and selected.
 func (c *codeTab) requestSearch() {
 	c.mode.Value = browseByText
-	c.preview.close()
 	c.focusQuery = true
 }

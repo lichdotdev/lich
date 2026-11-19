@@ -17,13 +17,17 @@ var (
 )
 
 // layoutToasts draws the stack in the bottom-right corner, the gutter over
-// the footer however many rows it wraps to: a screen keeps its actions in its
-// top-right corner, and a stack there covers them.
+// the balloons, or over the stage's foot without them: a screen keeps its
+// actions in its top-right corner, and a stack there covers them.
 func (u *window) layoutToasts(gtx C) {
 	toasts := u.theme.Toaster(&u.toaster, u.light)
 	toasts.Position = ui.ToastBottomRight
-	toasts.Bottom = u.footerHeight + gtx.Dp(gutter)
+	toasts.Bottom = u.toastFloor + gtx.Dp(gutter)
 	toasts.Expand = *flagToastsExpanded
+	if u.toastRight > 0 {
+		gtx.Constraints.Max.X = min(gtx.Constraints.Max.X, u.toastRight)
+		gtx.Constraints.Min.X = min(gtx.Constraints.Min.X, gtx.Constraints.Max.X)
+	}
 	toasts.Layout(gtx)
 }
 

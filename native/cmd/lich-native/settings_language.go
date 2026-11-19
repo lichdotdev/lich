@@ -10,7 +10,6 @@ import (
 	"sync/atomic"
 
 	"gioui.org/layout"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/fonts"
@@ -181,7 +180,7 @@ type hanFontOffer struct {
 	open             bool
 	target           i18n.Locale
 	apply            func(i18n.Locale)
-	download, cancel widget.Clickable
+	download, cancel ui.Clickable
 	// run tells a download's outcome from one started before a cancel.
 	run         int
 	downloading bool

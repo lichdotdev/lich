@@ -5,7 +5,6 @@ import (
 
 	"gioui.org/layout"
 	"gioui.org/unit"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
@@ -14,12 +13,12 @@ import (
 // rounded-sm, bg-accent while the pointer is on it. Content draws on the
 // row's own fill.
 type PopoverRowStyle struct {
-	Click   *widget.Clickable
+	Click   *Clickable
 	Content func(gtx C, th *Theme) D
 	theme   *Theme
 }
 
-func (th *Theme) PopoverRow(click *widget.Clickable, content func(gtx C, th *Theme) D) PopoverRowStyle {
+func (th *Theme) PopoverRow(click *Clickable, content func(gtx C, th *Theme) D) PopoverRowStyle {
 	return PopoverRowStyle{Click: click, Content: content, theme: th}
 }
 

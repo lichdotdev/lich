@@ -99,6 +99,11 @@ func (c *Client) GitConflict(ctx context.Context, path, rel string) (api.GitConf
 	return callMethod(ctx, c, api.ProjectGitConflict, api.CheckoutFileOptions{Path: path, Rel: rel})
 }
 
+// GitBlame says who last changed each line of file rel of the checkout at path.
+func (c *Client) GitBlame(ctx context.Context, path, rel string) (api.GitBlame, error) {
+	return callMethod(ctx, c, api.ProjectGitBlame, api.CheckoutFileOptions{Path: path, Rel: rel})
+}
+
 func (c *Client) GitResolveFile(ctx context.Context, path, rel, content string) error {
 	_, err := callMethod(ctx, c, api.ProjectGitResolveFile, api.GitResolveFileOptions{Path: path, Rel: rel, Content: content})
 	return err

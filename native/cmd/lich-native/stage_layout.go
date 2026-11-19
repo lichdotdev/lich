@@ -12,8 +12,8 @@ import (
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
 	"gioui.org/unit"
-	"gioui.org/widget"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/gioterm"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
@@ -44,7 +44,7 @@ var (
 
 // paneUI is one pane's widgets, kept across frames by session id.
 type paneUI struct {
-	zoom, unsplit, chip, delegates    widget.Clickable
+	zoom, unsplit, chip, delegates    ui.Clickable
 	zoomTip, unsplitTip, delegatesTip ui.Tooltip
 }
 
@@ -110,6 +110,9 @@ func (u *window) layoutIsland(gtx C, v stageView) error {
 	}
 	u.terms.onScreen(onScreenOf(root)...)
 	in := image.Rectangle{Max: gtx.Constraints.Max}.Inset(gtx.Dp(gutter))
+	if band := u.ptyBand(gtx, v); band > 0 {
+		in.Max.Y = max(in.Min.Y, gtx.Constraints.Max.Y-band)
+	}
 	drawn := layoutTab{Root: root}
 	st.motion.begin(gtx.Now, lt.Zoomed, drawn.panes())
 	err := u.paneTree(gtx, v, root, "", in, len(lt.panes()) > 1)
@@ -128,7 +131,7 @@ func (u *window) paneTree(gtx C, v stageView, n *paneNode, path string, r image.
 	if n.leaf() {
 		return u.paneLeaf(gtx, n.Session, r, func() error {
 			if owner, page := browserOwner(n.Session); page {
-				u.browserPaneAt(gtx, v, owner, r, several)
+				u.browserPaneAt(gtx, v, owner, r)
 				return nil
 			}
 			return u.paneAt(gtx, v, n.Session, r, several)
@@ -177,7 +180,7 @@ func pathSteps(path string) []bool {
 }
 
 // paneAt draws session id's pane in r: its header, its terminal, and with
-// more than one pane the focus ring or the fade.
+// more than one pane the fade of the unfocused ones.
 func (u *window) paneAt(gtx C, v stageView, id string, r image.Rectangle, several bool) error {
 	sv, ok := v.panes[id]
 	if !ok {
@@ -216,11 +219,7 @@ func (u *window) paneAt(gtx C, v stageView, id string, r image.Rectangle, severa
 	u.paneFocusTarget(gtx, id)
 	area.Pop()
 	u.paneDropZones(gtx, id, image.Rectangle{Max: size}, r.Add(u.islandAt), false)
-	border, width := on.Over(on.Border), float32(gtx.Dp(1))
-	if several && focused {
-		border, width = u.theme.Ring, float32(gtx.Dp(1.5))
-	}
-	paint.FillShape(gtx.Ops, border, clip.Stroke{Path: shape.Path(gtx.Ops), Width: width}.Op())
+	paint.FillShape(gtx.Ops, on.Over(on.Border), clip.Stroke{Path: shape.Path(gtx.Ops), Width: float32(gtx.Dp(1))}.Op())
 	return err
 }
 
@@ -290,6 +289,7 @@ func (u *window) paneHeader(gtx C, th *ui.Theme, v stageView, sv sessionView, fo
 					layout.Flexed(1, th.Text(ui.TextXS, worktreeLabel(sv, v.projectPaths[sv.projectID])).Muted().Mono().Layout),
 				)
 			}),
+			layout.Rigid(func(gtx C) D { return u.paneSwitch(gtx, th, sv) }),
 			layout.Rigid(func(gtx C) D { return u.delegatesChip(gtx, th, v, sv, p) }),
 			layout.Rigid(func(gtx C) D { return u.paneButtons(gtx, th, v, sv, p) }),
 		)
@@ -385,9 +385,13 @@ func (u *window) applyLayoutStage() {
 	}
 }
 
-// content shows session s's terminal over gtx's area, keys typing into it
-// when it takes them.
+// content shows session s's terminal or its chat over gtx's area, keys
+// typing into it when it takes them.
 func (u *window) content(gtx C, s sessionView, keys bool) error {
+	if s.View == api.ViewChat {
+		u.chatScreen(gtx, s, keys)
+		return nil
+	}
 	resume, ok := "", u.terms.has(s.ID)
 	if !ok {
 		resume, ok = u.gate.release(u.ctx, s)

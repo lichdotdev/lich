@@ -186,6 +186,8 @@ Esta sessão tem um navegador próprio (ferramentas browser_*). Ele roda sem jan
 		One:   "(mais %d erro de console)",
 		Other: "(mais %d erros de console)",
 	},
-	PageDialogWaits:    "A página não roda nada até este diálogo ser respondido: chame browser_dialog.",
-	PageDialogWaitsCLI: "A página não roda nada até este diálogo ser respondido: rode lich browser dialog accept|dismiss.",
+	PageDialogWaits:      "A página não roda nada até este diálogo ser respondido: chame browser_dialog.",
+	PageDialogWaitsCLI:   "A página não roda nada até este diálogo ser respondido: rode lich browser dialog accept|dismiss.",
+	ChatPermissionDenied: "A pessoa recusou esta chamada de ferramenta.",
+	ChatQuestionDeclined: "A pessoa não respondeu a estas perguntas. Não presuma uma resposta: siga sem ela ou pergunte de novo.",
 }

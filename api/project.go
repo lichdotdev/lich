@@ -22,6 +22,7 @@ var (
 	ProjectSearch                   = define[SearchOptions, SearchResult]("project.Search")
 	ProjectReadFile                 = define[CheckoutFileOptions, string]("project.ReadFile")
 	ProjectReadFileAt               = define[ReadFileAtOptions, string]("project.ReadFileAt")
+	ProjectWriteFile                = define[WriteFileOptions, None]("project.WriteFile")
 	ProjectFileLines                = define[FileLinesOptions, []string]("project.FileLines")
 	ProjectDiscardFile              = define[CheckoutFileOptions, None]("project.DiscardFile")
 	ProjectRevertLines              = define[RevertLinesOptions, RevertResult]("project.RevertLines")
@@ -97,6 +98,13 @@ type SearchOptions struct {
 type CheckoutFileOptions struct {
 	Path string `json:"path"`
 	Rel  string `json:"rel"`
+}
+
+// WriteFileOptions writes Content over file Rel of the checkout at Path.
+type WriteFileOptions struct {
+	Path    string `json:"path"`
+	Rel     string `json:"rel"`
+	Content string `json:"content"`
 }
 
 // ReadFileAtOptions names file Rel of the checkout at Path as it was at Ref.

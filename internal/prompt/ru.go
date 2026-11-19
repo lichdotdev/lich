@@ -203,6 +203,8 @@ var ru = Catalog{
 		Many:  "(ещё %d ошибок консоли)",
 		Other: "(ещё %d ошибки консоли)",
 	},
-	PageDialogWaits:    "Пока на этот диалог не ответят, страница ничего не выполняет: вызовите browser_dialog.",
-	PageDialogWaitsCLI: "Пока на этот диалог не ответят, страница ничего не выполняет: выполните lich browser dialog accept|dismiss.",
+	PageDialogWaits:      "Пока на этот диалог не ответят, страница ничего не выполняет: вызовите browser_dialog.",
+	PageDialogWaitsCLI:   "Пока на этот диалог не ответят, страница ничего не выполняет: выполните lich browser dialog accept|dismiss.",
+	ChatPermissionDenied: "Пользователь отклонил этот вызов инструмента.",
+	ChatQuestionDeclined: "Пользователь не ответил на эти вопросы. Не додумывайте ответ: продолжайте без него или спросите снова.",
 }

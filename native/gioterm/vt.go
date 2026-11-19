@@ -282,6 +282,8 @@ type snap struct {
 	// the cell under it.
 	hasCursor bool
 	cursor    uint32
+	// unfocused draws the cursor as an outline: the keyboard is elsewhere.
+	unfocused bool
 }
 
 //export goWritePty
@@ -476,6 +478,16 @@ func (v *Terminal) Update() (Snapshot, error) {
 	s, dirty, err := v.update()
 	return Snapshot{s: s, cells: v.grid, dirty: dirty, below: v.img.below, above: v.img.above}, err
 }
+
+// Focus says whether the terminal has the keyboard. A Snapshot is focused
+// until told otherwise; an unfocused one draws its cursor as an outline.
+func (s Snapshot) Focus(focused bool) Snapshot {
+	s.s.unfocused = !focused
+	return s
+}
+
+// Focused is whether the terminal has the keyboard.
+func (s Snapshot) Focused() bool { return !s.s.unfocused }
 
 // Colors are a terminal's defaults: what a cell that sets no color of its
 // own is drawn in. A zero (transparent) Cursor or ANSI entry keeps

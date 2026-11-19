@@ -13,10 +13,16 @@ Elements are defined by space, hover and islands, not by enclosure.
 
 - **Rows, not cards.** A list item is one line with no border and no fill of its own. Hover and selection
   paint it; at rest it paints nothing.
-- **Panels are islands.** The window's regions (sidebar, stage, dock) are rounded surfaces floating on
-  `Canvas`, separated by the `gutter` (6px, `cmd/lich-native/main.go`) instead of a hairline. The top bar
-  and the footer sit on the canvas itself, unboxed.
-- **Hairlines are seams inside an island.** `th.Separator` splits a panel's own parts (a screen's header
+- **Panels are islands.** The window's regions (sidebar, rail, stage, dock, the Git and extension panels,
+  Settings' two columns, Pulls, and the sidebar's and dock's peeks) are rounded surfaces floating on `Canvas`, separated by the `gutter`
+  (6px, `cmd/lich-native/main.go`) instead of a rule between them, the stage and the dock running down to the
+  window's foot as the sidebar does. Each carries a 1px hairline in `Border`
+  just inside its `RadiusLG` edge (`ui.InsetBorder`, `ui.IslandBorder`): the one outline in the window that
+  wraps a surface rather than a field. The active project tab that has grown out of its island takes the
+  line with it, up its sides and round its fillets, and the island's top edge is left open under it
+  (`topbar.tabGap`). The top bar sits on the canvas itself, unboxed; the footer is two balloons over the
+  stage (see below).
+- **Hairlines are seams inside an island, and its edge.** `th.Separator` splits a panel's own parts (a screen's header
   from its body, two panes, a folder header from its rule). It never wraps a list item, a badge or a button
   at rest. Inputs are the one exception: a field needs an edge to read as editable.
 - **Badges are text and glyph**, never a filled pill: a pull request is its icon and `#N`, a diff is `+a -d`
@@ -25,9 +31,11 @@ Elements are defined by space, hover and islands, not by enclosure.
 - **What does not fit the line goes to the tooltip.** A row carries what you scan for; the rest (path,
   model, the tool a turn runs, how long) is one hover away, never a second line.
 
-A change that adds a border, a pill, a second line or a nested surface is probably wrong. Reach for spacing,
+Inside an island, a change that adds a border, a pill, a second line or a nested surface is probably wrong. Reach for spacing,
 a hover state or the tooltip first. The folder tray is the one nested surface, and the reason is written
-under it. The extension catalog is the one screen of cards, and the reason is written under it.
+under it; the dock's tab pill reuses its fill, for the same reason. The footer's balloons are the pills on `Sidebar`:
+they float over the terminal and need a ground of their own to read on it. The extension catalog is
+the one screen of cards, and the reason is written under it.
 
 ## Foundations
 
@@ -60,7 +68,7 @@ look on every page (`browser_notes_view.go`), and Windows' close button hovers i
 | `Sidebar`, `Card`, `Popover` | islands and raised parts: sidebar, dock, a thread or comment box, menus, dialogs |
 | `Accent` | hover and selection fill |
 | `MutedForeground` | secondary text, icons at rest, paths, meta, the tree's links and neutral rings |
-| `Border` | seams and input edges |
+| `Border` | seams, input edges and the island hairline |
 | `Primary` | the one high-emphasis button of a view |
 | `Foreground` | primary text |
 
@@ -133,6 +141,8 @@ the rest, `VariantDestructive` for what cannot be undone. A disabled button says
 
 Buttons do not move when pressed; only their color changes.
 
+Anything that answers a click shows the hand (`ui.Clickable`, `ui.Bool` and `ui.Enum` do it by themselves, a hand-drawn click area calls `ui.HandCursor`); editable text shows the text cursor; a disabled control keeps the arrow.
+
 In the browser's drawing toolbar, the shape picker uses the outline variant so
 the current tool reads as a button that can switch tools.
 
@@ -150,6 +160,15 @@ the current tool reads as a button that can switch tools.
 - A menu never opens or ends on a separator, and never shows two in a row.
 - A submenu stands `menuSubGap` (4px) off its parent's edge, level with the row that opens it, and never
   over the parent. At the window's edge it flips to the parent's other side, the same gap away.
+- **A popup never covers its anchor** (`popupPlace.box`, `popupPlace.limit`, base-ui's flip with its
+  `--available-height`). A menu, a dropdown panel or a tooltip takes its preferred side when it fits whole,
+  the opposite when that fits, else whichever has the more room; one that fits on neither is cut to that
+  room along the side's axis (its height above or below, its width beside), never shifted over the anchor,
+  and its content scrolls inside: a menu's rows with the wheel and the keyboard's highlight, a panel's content
+  in the scroll area the kit gives it. A panel's content is laid out with the height it may take as its
+  maximum (`DropdownPanelStyle.MaxHeight` caps it lower), so a panel with a fixed part, as the model panel's
+  search and effort, keeps it and scrolls the rest itself. `Above()` makes a panel prefer the room over its
+  trigger.
 
 ### Tooltips
 
@@ -201,10 +220,320 @@ their own line above the title rather than squeezing it.
 
 A `th.Separator` closes the header off from the body.
 
+### The dock's tabs
+
+The dock's tabs (Code, Review, Artifacts and an extension's surfaces) are a pill of icon-only `BarIconButton`s
+floating at its foot, centred, with the tab's name in a tooltip. The pill is `RadiusLG` on a faint `Accent` tray
+(`folderTrayAlpha`; a `Sidebar` pill would vanish on the dock, which is `Sidebar` itself), `Space(1)` of padding, `Space(2)` off the dock's edges; the tab on screen is the
+`Accent` fill, the others light on hover. The body stops above the strip, so nothing is covered. The header keeps
+only actions at its right (Review's, collapse, full screen). A tab that holds something (Review with
+changes, Artifacts with files) wears a 5px dot on its icon, never a count or a pill: `Foreground`, or `ToneWait`
+on Review over a checkout with conflicts. The dock is never narrower
+than the pill.
+
+### The footer's balloons
+
+The footer is no strip: the two sides the footer editor arranges float as two balloons over the foot of the
+stage, the left side in its bottom-left corner and the right side in its bottom-right (`footer_balloons.go`).
+A balloon is a pill on `Sidebar` at `RadiusLG`, `Space(0.5)` around the footer's 32px items so their
+`RadiusMD` hover sits concentric in it, and it stands on the island's 8px edge from the sides and the foot.
+Each is one line: the right side is measured first, the left takes what is left, and an item that does not fit
+is left out with the ones after it, never wrapped onto a second line. A side with nothing to show draws no pill.
+A balloon is not an island and carries no `Border` hairline: the `Sidebar` ground already sets it off the terminal.
+
+The balloons never cover the agent's prompt. A terminal under them gives up a band at its foot
+(`balloonBand`, the balloon and the 8px edge above and below it), so the PTY has fewer rows and the
+balloons stand in the room it left; the grid only loses whole rows. The band follows the session's kind, not the
+agent live in its PTY, so the grid is resized once, not each time an agent starts or ends. In a layout the
+balloons stand at the foot of the stage, reading the focused pane's session, and every pane stands above the
+band, which the layout keeps however the focus moves.
+
+A plain terminal (a `shell` session), a service's console and Home carry no balloons and no band: the terminal
+takes the island's full height. A session drawn as a chat carries none either: its footer stands in the
+composer (see The chat view), and the chat takes the band back. In a layout the footer follows the focus, so
+the balloons give way while a chat pane is focused and return when a terminal is. Settings, Pulls and an
+extension's screen cover the stage and carry none either. A project with no session keeps them, since its branch is the click into the Git panel.
+
+The Git panel and an extension's panel rise from the stage's foot over the band: while one is up the balloons
+are not drawn and the terminal takes the band back, in the one resize the panel's slide already makes.
+
+### The context tooltip
+
+The context ring's tooltip is one component for the balloon and the chat's composer (`footer_context.go`): a
+card with "Context" at the left and the share used at the right in medium, a bar of twenty rounded segments
+(`SegmentedBar`) whose lit ones are `Foreground` up to 70%, `ToneWait` up to 90% and `Destructive` past it, then
+lines of a muted label at the left and its value at the right: Tokens (compact, "585.7K", the window muted after
+it), Model window, Cache with its hit rate and Session cost, each only when the report has it. Numbers are
+compact with the locale's decimal mark. There is no line for compactions or for what is left before one: lich
+keeps no count of the first and no provider tells it the threshold of the second.
+
+### The usage menu
+
+The profile at the sidebar's foot opens a panel on a click (`DropdownPanel`, rising above the row, scrolling when
+the window is short); hovering it draws nothing. The top of the panel is the usage of the shown profile's account, the
+plan quota's tooltip in the footer draws the same blocks (`usage_tip.go`), built from the context tooltip's pieces
+(`tipHead`, `tipRow`, `contextBarColor`, the bar of twenty segments). Under the plan's name ("Claude Code · Max 5x"),
+a block per window, in the order session, weekly, then a model's own cap: the window's name (lich's own for a window
+it names, with its length: "Session · 5h") at the left and the share spent at the right in medium, the bar in the
+same tones as the context's (70%, 90%), then muted `Resets in 4h 12m` and, only when the pace so far empties a
+weekly window before it resets, `Runs out in 1d 9h` in `ToneWait`. A locked window reads "Locked" with its bar and
+the provider's reason in `Destructive`. After the windows, `Extra usage` with the amount against the cap at the right
+("$12.50 of $50.00", "$141.57 · no limit") and a bar only when there is a cap, then a `Reset credits` line like a
+context row ("1 available") for Codex, each only when the account has them. Amounts follow the locale (`money.go`):
+its separators, the symbol before or after, the sign outside the symbol, the ISO code where there is no symbol. The
+account's email sits under the plan's name. The chosen login carries no usage note in the list below: its blocks are above.
+
+Claude Code's limit resets are a `Resets` block of their own: its title with "N left" (every reset of every live
+grant) at the right, and a line per grant. The line is its name at the left ("Full" when it clears the weekly window,
+the model's name for a model's own cap, the provider's text otherwise), "×2" and a muted "until Dec 10" (the month in
+the interface language) at the right, and a `Use` button, a ghost `SizeXS` one (no outline or fill at rest), when the grant can be spent now. A
+grant that cannot (paused, or not usable) is muted whole and has no button; with no live grant the block is not drawn.
+Use never spends on the first click: it replaces its row, in place and never in a dialog, with the question ("Use one
+Full reset?"), a muted line saying what it clears ("Clears the session and weekly limits.") and, at the right,
+`Cancel` (outline) and `Use` (`Destructive`: a reset does not come back). Cancel gives the row back; Use sends the
+spend, and the answer comes as a toast and an immediate re-read of the usage. While one is out every Use is disabled.
+The panel closing drops a confirmation left open.
+
+Under the usage, a separator, then what the footer's menu always held: the logins to switch to, each with its avatar
+and its five-hour usage and the chosen one checked, "Use Global" while the project sets its own, and the other
+providers' logins, each provider a label (its glyph and name) over its rows: the submenu of the old menu, opened in
+place. Choosing a row runs it and closes the panel. A provider with no per-profile reading (anything but Claude Code
+and Codex) shows a single muted line in place of the usage, saying usage is not measured per profile; while the first
+reading is in flight there is no usage section at all, rather than one that says nothing. The rail's profile button
+keeps the old menu.
+
+### The chat view
+
+A session whose view is chat draws its conversation in place of the terminal, on the same island and in a
+layout's pane alike (`chat_view.go`, `chat_items.go`). The composer's box takes the pane's width less `Space(6)`
+each side, up to 960px (`chatPadX`, `chatBoxMax`): wide enough for a long line of code, and no wider than a
+paragraph can be read in. The conversation is a column on the same axis, `Space(4)` (16px, `chatTextInset`)
+narrower each side, so its text lines up inside the box and not with its border. Its rows are `Space(3.5)` apart, and a turn starts after `Space(9)` (`chatTurnGap`), in the person's
+message or the day line over it, so turns read as groups.
+A conversation shorter than the view rests on the composer, its newest message at the bottom and the older
+ones above, and a new one comes in under them and pushes them up, as in a messaging app; one taller than the
+view stays pinned to its end while items arrive, until the person scrolls up. The list ends `Space(6)`
+(24px, `chatComposerGap`) above the composer's box in both cases, so the last message and its time never touch it.
+The list's scrollbar shows only while the rows outgrow the view: a message sent into a conversation that fits
+draws none while it grows in, because the room above the rows is measured in the frame that draws them.
+
+- **The person's message** is a box in `Accent`, `RadiusLG`, against the column's right edge, at most 78% of
+  it. It breaks "rows, not cards" on purpose: a turn starts where a message does, and the eye finds it by the
+  box faster than by a rule.
+- **The agent's text** is Markdown at the prose size (`ui/markdown`). A link is underlined, in its color; a link to github.com, a path
+  in code (a folder when it ends in a slash, else a file) wears a 13px mark before it, GitHub's, a folder's or a file's
+  (`decor.go`). Anything else in code is plain. The first answer of each turn opens
+  with who speaks: the provider's mark at 20px on a `RadiusMD` square, in the session's card color (the
+  agent cursor's color, `Primary` for a card with none; the window keeps no brand color per provider) over
+  a fill of that color mixed 22% into the surface, then the provider's name in medium, then muted
+  "· model · effort" as the answer's own item says them (`ChatItem.Model`, `Effort`: what wrote it, not what the
+  chat is set to now; the options are never read for it, so changing the model leaves old answers as they were; an
+  empty effort leaves it out, and with neither the header is the name alone). A thought is a muted fold, closed, with the
+  sparkles before its label.
+- **A turn's tool calls** fold into one muted line where the first of them came, with a 1px `Border` hairline
+  running from its label to the column's edge. When the line opens the turn (no answer before it) it starts with
+  the provider's avatar, and the answer's header that follows leaves the avatar out, keeping name and model. Finished, it reads
+  "Worked for 41s · 6 tools · 09:15": how long the turn took, how many calls, when it ended (without the time
+  when the history has none). Open, each call is a 28px row hung under the line by a connector, a 1px
+  `Border` line under the fold's chevron with a stub into the row, ending at the last row as the sidebar's
+  tree does. A row is its tool's glyph (a Lucide mark by tool name, Claude Code's own names and ACP's kinds,
+  one generic wrench for the rest), its name in medium, what it acted on in mono, and how it ended at the
+  right: a spinner in `ToneWait` while it runs, then a check in `TonePass` or a cross in `Destructive`
+  with the output's first line. Its diff stands under it as a thread's hunk is drawn.
+- **A turn's closing line** stands once, after the last item of the conversation's last turn, when that turn
+  has ended: the provider's avatar as the tool-call line opens a turn with, "Done" in `TextSM` medium
+  `Foreground`, then muted "· no changes" or "· 3 files" and the lines the turn added in `TonePass` and removed
+  in `Destructive` ("+12 −4"), as the diffs draw them, and a 1px `Border` hairline to the column's edge.
+  "Stopped" stands for a turn the person cancelled, and "Failed" in `Destructive` for one that ended in an
+  error. The files and lines are the click: they open Review as the footer's changes item does. The line
+  leaves when the person's next message begins a turn, and none stands while a turn runs, where the live line
+  is; older turns have none, in a history read back too. A turn whose checkout lich could not read (not a
+  repository, or a commit made during the turn) says its word alone, and so does one read back with the
+  history, whose end nobody reported to the window: the line never invents a count.
+- **What is alive moves.** The text of a live step shimmers: a light band crosses it from left to right once
+  every 1.6s (`Label.Shimmer`, looping frames only while it is drawn), and the time it has run counts beside
+  it, "6s", "1m 12s", redrawn each second and not each frame. That is "Thinking" for the thought being
+  thought, "2 tool calls" for the turn's line while a call runs, and the name of the call that runs. The
+  answer being written ends in a caret that blinks every half second. A row new to the conversation enters
+  with `ui.Presence`, growing in from the top; the conversation read when the pane opens, or after it, does
+  not play as arrivals. A list at its end stays at its end while rows grow in.
+- **A permission** is a box on `Sidebar`, `RadiusMD`, `Space(3)` padding (see Boxes inside a screen): the tool,
+  its diff, and a `SizeSM` button per answer the provider offers, the first allow filled. Enter takes the first
+  allow and Esc the first reject. Answered, it shrinks to a muted line naming the answer.
+- **A question** (`chat_question.go`, `chat_question_draw.go`) is the same box where the agent stopped, in
+  Claude Code's AskUserQuestion shape, which every provider's request for input is read into. Its head is the
+  ask's header in small capitals on a `Muted` fill, then the question in `TextSM` medium, and "multiple" muted
+  at the right when it takes several; several asks turn the headers into steps along the top (the one on show on
+  `SidebarAccent`, an answered one with a check, each a click back to it; an ask with no header shows its number) with "2 of 3" muted at the right, and
+  the question under them. Each option is a row, a keycap with its number (a checkbox when it takes several), the
+  label in medium and the description muted, the row the keys stand on lit on `SidebarAccent`; the last row is
+  always "Other…", a field for the person's own words. An ask with no options is a textarea alone. When the
+  options carry a preview, the list takes the left half and the highlighted one's preview stands at the right in
+  mono on `Background`. A single choice answers on a click, its digit or Enter on the lit row; several are marked
+  with a click or Space and go with Send, a `SizeSM` secondary button dimmed until something is marked or written,
+  beside "2 marked"; the last of several asks leads to a summary, a line per ask, and Send all. The keys go to
+  the card while it waits, Esc declines, and the composer stays clickable: a message sent from it declines the
+  questions and reaches the agent. While it waits the flame is left out, as for a permission. Answered, it is a
+  `TextXS` line per ask after a 1px `Border` hairline, the header muted and the answer in medium, the person's
+  own words in quotes; declined, a muted "Not answered".
+- **A notice** is a muted line; the turn in flight ends the column with a pixel flame (`chat_flame.go`: a 9x11 sprite of 1.5dp pixels, drawn as rectangles, in 8 frames of 120ms; a window without focus looks in at `StillFrame` instead) and a verb of the turn, shimmering like "Thinking" with the time it has run beside it; the verb is picked from the language's own list (`chat.view.verbs`, `|`-separated, each language writes its own length) by the session and the turn, so it holds for the whole turn; left out
+  while a permission or a question waits: its box already says so.
+  The flame's colors are tokens, never a fixed hue: the core is `Foreground`, the body a mix of `MutedForeground` toward
+  `Foreground` (0.55), the edge `MutedForeground`, and the base and the sparks leaving it `Accent`. A gray theme
+  draws a gray flame and a colored one colors it on its own. It does not use `ToneWait`: the turn running is not the
+  turn waiting on the person, and that tone already says the second.
+- **The composer** stands at the column's foot: a textarea (Enter sends, Shift+Enter breaks the line) in a
+  `RadiusLG` box, three lines of text tall at least, growing with the text to a ceiling and scrolling past it.
+  Its text and its placeholder, "Ask {provider} about this project", are in the interface font at the body size
+  and leading of the messages (15sp at 1.5), `Space(4)` in from the left and `Space(3.5)` down from the top.
+  Inside the box stand only the provider's controls, one line under the text: the footer's attach as a "+",
+  the model with its effort in one chip ("Opus 5.5 · high") and the mode, each a ghost chip with a chevron.
+  After them the footer's context ring with its percentage, the same readout as the terminal's balloon, when the
+  session reports a window.
+  The mode's menu lists the provider's choices, the current one checked, and picking one sets it
+  (`ChatSetOption`). The model chip opens one panel upward, in two columns with a hairline between
+  (`chat_picker.go`): at the left a search that has the focus, which filters the models as it is typed, then
+  32px rows with the name, "Default" muted when the provider's default has a name that does not say so, a
+  `Ctrl+1`..`Ctrl+4` keycap on the first four (the chord works with the panel open) and a check on the current
+  one; past six models the rest wait behind "Show more", which a search does not need. The arrows walk the
+  rows, Enter takes one, Escape closes. At the right, the effort when the provider offers it: its title with
+  the model in force muted beside it, and a row per level under a signal glyph of five bars that rise with the
+  level, the lit ones in `Foreground` and the rest muted, a check on the current. Choosing a model leaves the
+  panel open for the effort; choosing an effort closes it. A provider with only one of the two has that
+  column alone. The panel opens above the chip, a gap over it, and holds at 420px or the room above, whichever is
+  less: the search and the effort stay put and the models scroll under the search. A category the provider does not offer has no chip. A
+  dangerous choice (`Danger`, Claude Code's bypass mode) wears a bolt in `ToneWait` while it is active. At the
+  right end, Send, a `Primary` icon button (arrow up), or Stop, an outline one (square), each named by a
+  tooltip and no word; while the agent works the chips take no click and a tooltip says why. What does not
+  fit is left out with the items after it, never wrapped. The rest of the footer stays out of a chat. Under
+  the box, outside it with no fill, one line, `Space(2)` (`chatCrumbsPad`) under the box and `Space(2)` clear of the island's
+  bottom edge, over the composer's own pad, in a lone session and in each pane of a split: at the left a `TextXS` muted project, a slash and the branch,
+  which opens the Git panel as its balloon did, and at the right the changes, only while there are some
+  (files above 0): in the left's style, a small file-diff glyph, the file count and `+added -deleted` (`TonePass`,
+  `Destructive`) in `TextXS`, on the same line and height, no fill at rest and the kit's hover fill under the
+  pointer, which stands `Space(1.5)` by `Space(1)` (`chatChangesPadX`, `chatChangesPadY`) round the text and grows
+  outward from it: the item takes the room of its text alone, so the text ends `chatFootPad` in from the box's
+  right edge, as the left side starts, and the fill reaches the edge. A click opens Review. It is never drawn pressed, as the footer's button is while the dock shows Review:
+  on this line a lit item reads as a button switched on for no reason. Attach, changes and the branch show only when the user's footer layout has them, and
+  in every pane, each for its own session (its checkout, branch and changes, with or without the focus, but only the
+  followed pane's items take a click); the attach "+" and the context ring are the followed session's alone, so another
+  chat pane of a layout has the provider's chips and Send.
+  Ctrl+Z (Cmd+Z on macOS) undoes the last step of the text, bringing back the caret and selection it started from,
+  and Ctrl+Shift+Z or Ctrl+Y redoes it (`ui.EditHistory`, which takes the keys from Gio's editor: its own undo is one
+  keystroke a step and cannot be cleared). A run of characters typed or deleted side by side, less than a second
+  apart, is one step; a paste, a cut or a replaced selection is a step of its own. Sending a message, or a refused
+  one coming back, forgets the history. Only the focused composer takes the keys: the terminal's Ctrl+Z is still
+  the agent's suspend, and the sketch, the browser pane and the resolver keep theirs under their own focus.
+  The box has no focus ring: its 1px border is the same with the keyboard and without (`TextareaStyle.Steady`; the
+  kit's inputs keep their `ring-3`). The blinking caret already says where the keyboard is, and in a chat the
+  composer is nearly always the focused thing, so a ring around the biggest box on the screen only reads as a
+  loud frame that never goes away.
+- **Copy** is an icon-only button that shows only while the pointer is over a message, on the line of its time and
+  beside it: at the left of the time for the person's message, so it sits at the right, at the right of the time
+  for an answer, so it sits at the left. It copies the item's whole text, an answer's Markdown source, through the
+  window's clipboard path, and becomes a check for 1.5s. It has no tooltip: the glyph says it. The line is as tall with it as
+  without (`chatCopySlot`), so it pushes nothing; the button is a little larger than the line and reaches past it.
+- **A message's time** is a `TextXS` muted line, the window's short clock ("14:32") under a tooltip that holds
+  the footer clock's full date: under the person's box at the right edge, always, led by its day when that is
+  not today ("Nov 17 · 23:05", the year too past this one); under an answer's text at the
+  left, its foot, only while the pointer is over the answer (with the copy button beside it; the line is there at
+  rest, empty, so nothing moves).
+  Between two turns that start on different days a muted, centred line names the later day: Today, Yesterday,
+  else its date, with the year when it is not this one. A message with no time draws none.
+
+### The session's strip
+
+The balloons' mirror: an agent session's terminal, or its chat, gives up a band at its top
+(`sessionBandHeight`, `session_band.go`): the selector and `balloonInset` over and under it, so the PTY has fewer
+rows and nothing floats over the agent's banner. It follows the session's kind like the foot's band, so the grid
+is resized once, and the Git panel rising from the foot does not take it back. A plain terminal, a service's
+console, Home and a split carry none. The chat starts under it.
+
+The strip has no ground. At its left the provider as the window names it, then the session's label: `TextSM`,
+the provider in `MutedForeground` and the label in `Foreground`, cut with an ellipsis when the room is short. At
+its right the GUI | TUI selector (`chat_switch.go`), which takes its room first: the segmented control in its
+`Border` track, items h-5 with a `Text2XS` label and a size-3 icon, the view on screen in `Accent`. Only a
+provider `chat.Kinds` lists gets the selector, so a Codex or Crush session's strip is the name alone. While the
+agent works, or a switch is on its way, it takes no click and says why in a tooltip.
+
+A split's pane has its header already, so it gets no strip: the selector, same size, stands at the right of the
+header between the name and the zoom button, and the pane's terminal keeps every row.
+
+A terminal that does not have the keyboard (a split's other panes, any pane while a field or dialog is typing, every
+terminal while the window is out of focus) draws its cursor as a 1px outline in the cursor's color; the one that has it
+draws the block.
+
+### The session's browser
+
+A page pane (`browser_pane.go`, `browser_tabs.go`) is three rows on the pane's fill, no seam between them.
+
+One gap, `Space(2)` (8px, `browserChromeGap`), sets the whole rhythm: from the pane's top edge to the tabs, from
+the tabs to the address, from the address to the page's card, and from the card to the pane's sides and foot. The
+tabs also keep it from the pane's left side. `TestPageChromeKeepsOneGapBetweenItsRows` measures them; a row added
+to the chrome takes the same gap rather than a number of its own.
+
+- **Tabs** on the top row, the page's tabs always, even one, then the new-tab button, and the pane's expand,
+  minimize and close at the right. A tab is a neutral 12px square where a favicon would go (the backend sends
+  none) and the page's title in `TextXS`; the front tab is filled `Accent`, its title `Foreground` in the focused
+  pane and `MutedForeground` in the others. A tab behind has no fill until hovered. There is no pane title and
+  no globe.
+- **The toolbar** is back, forward and reload as icons in `MutedForeground`, the address, then the zoom (its
+  percentage shows only off 100%) and DevTools. The address is a pill, `Accent` fill, `RadiusMD`, no border, in
+  the interface font: at rest the page's host and path with no scheme (`shortURL`), while edited the whole URL,
+  selected; on a blank page and on the new-tab page the placeholder. What a button says lives in its tooltip: the Select tool's is
+  "Click an element to leave a note". Open in a window is not here: it is an item of the browser row's menu in
+  the sidebar.
+- **The page** is a card `Space(2)` under the toolbar and from the pane's left, right and bottom, `RadiusLG`, its edge the 1px
+  `Border` hairline. The notes bar floats over it, as before, except on the new-tab page.
+- **The new-tab page** is the backend's HTML, drawn with the window's tokens sent over `browser.NewTabPage`
+  (`browser_newtab.go`): `Background` for the page, `Card` for the address field, `Accent` for a hovered row,
+  `Border` for the field's edge and `MutedForeground` for the section labels, the commands and the ages. One
+  column, 560px wide, centered, with nothing over it: the address field (42px, 9px radius, an inset `Border`) 104px
+  under the page's top, then the sections, each a 10.5px uppercase `MutedForeground` label over 34px rows with no fill until hovered. The
+  tab is named New tab, the toolbar's address is empty, and there is no Select and Draw bar.
+
+### The editor
+
+A file opened from the Code tab, a `path:line` in a terminal or an
+agent's `show_code` takes the whole stage, in place of the session, as a service's console does
+(`stage_editor*.go`). The dock stays beside it, its Code tab the tree and the search.
+
+- The header is a `Space(10)` strip on the 8px edge: the folder in `MutedForeground` mono, the file's name in
+  `Foreground` mono at `font.Medium`, and the unsaved dot (`ToneWait`, 6px) after the name while the text is not
+  the disk's: between an edit and its save, or while a failed save or a disk change waits. There are no Undo or
+  Save buttons: the editor saves itself (`autoSaveDelay`, 1 s after the last edit, and at once when it is left),
+  and Ctrl+Z and Ctrl+S stay on the keyboard.
+- A 1px rule in `Border` (`th.Over(th.Border)` on the editor's fill) runs down the whole code area on the
+  gutter's last column (`Geometry().GutterWidth-1`), between the line numbers and the code, the usual half cell
+  before the text. The `ToneWait` mark of a changed line stays in the gutter cell, left of it.
+- The code is on the island's own fill. A line the user changed since the file was read or saved wears a
+  `ToneWait` strip down its gutter cell, and a run of deleted lines marks the line that took their place.
+- The cursor's line, and no other, ends in its blame, `blameGap` (32) past the code: "author, age · summary"
+  or "You · Uncommitted changes" for a line not committed or not saved, `TextXS` in `MutedForeground`, leaning
+  as italic (Onest has none, so it is sheared, `oblique`), cut with "…" where the code area ends and left out
+  under `blameMinRoom` (80). Its tooltip is the short hash and full date, the author, then the whole message.
+- An agent's note and the session comment box sit in a strip under the header, over the code, the note naming
+  its lines: the editor hangs no widget under a line.
+- A disk change under unsaved edits is a strip under the header tinted `ToneWait` at `editorBannerTint`
+  (0.14): one sentence, then Keep mine (outline) and Reload (secondary), never a second `Primary`, and under it
+  the diff of what the disk changed since the read, unchanged runs collapsed to git's three lines of context, at
+  most `diskBannerDiff` (240) tall so the code stays in sight.
+- Another file or Close asks nothing: the text is saved first. Only a failed save or an undecided disk change
+  asks, in a dialog: Cancel (outline), Discard (destructive), Save (`Primary`).
+- A Markdown file an agent left in the session's artifact folder (the dock's Artifacts tab) opens in the same
+  editor, on the stage and already rendered, read only: the header carries a `TextXS` `MutedForeground` note after the
+  name ("From the agent · read only"), nothing is saved and the unsaved dot never lights, the source view takes
+  no edits, and the context menu that hands lines to a session is left out. Its node in the tree is the file's name
+  like any other, closed from the same menu.
+- In the tree the editor is a node of its checkout, the last row under it: the file glyph in a neutral ring and
+  the file's name in mono, the unsaved dot after the name, lit as an active session is while the editor is on the
+  stage. Its only action is Close, in its menu and its `⋯`; there is no ✕ on the row. In the rail it is the glyph
+  in the card's 32px square, the path and the unsaved state in its tooltip.
+
 ### Toasts
 
-The window has one toast stack, in the bottom-right corner, the `gutter` over the footer however many rows
-the footer wraps to (`layoutToasts`). It grows upward, and a toast comes in and leaves by the bottom edge. A
+The window has one toast stack, in the bottom-right corner: the `gutter` over the right balloon and ending
+at its right edge, or over the stage's foot at the window's edge where there are none (`layoutToasts`). It grows upward, and a toast comes in and leaves by the bottom edge. A
 screen keeps its actions at the right of its header, so nothing the window raises stands in the top-right
 corner; a question that waits for an answer goes on the same stack as a passing note, not in a corner of its
 own.
@@ -296,7 +625,8 @@ Every row is one line, 34dp tall: `Space(1.5)` above and below a 22px node. Rows
   layout's own sidebar draws none: every card there is in it.
 - **A layout's sidebar**: the layout's name where New Session stands, then its sessions under each
   project's name in `TextXS` `MutedForeground`, in the same tree of checkout, session and browser rows, with their motion. No
-  card there wears the active fill: the focused pane's ring says which session has the keys.
+  card there wears the active fill: the focused pane's header says which session has the keys, its name in
+  `Foreground` and the others' in `MutedForeground`. A pane wears no frame for focus, only its 1px hairline.
 - **A pane's motion**: a pane new to the stage grows out of the edge it was split on in 200ms ease-out, and
   one that leaves shrinks back into it in 180ms ease-in, the neighbours giving and taking the room over the
   same time. A zoom, a divider and a change of tab move at once.
@@ -335,7 +665,7 @@ alone, no tray.
 
 ### The rail
 
-The collapsed sidebar is an island like the open one (`sidebar_rail.go`): `Sidebar`, `RadiusLG`, its content
+The collapsed sidebar is an island like the open one (`sidebar_rail.go`): `Sidebar`, `RadiusLG`, the same `Border` hairline, its content
 on the 8px edge around a column as wide as a row is tall (34), so it is 50px wide and every node centres
 where it does in the open sidebar. Expand sits in a row of the open header's height
 (36), where collapse sits in the open sidebar; new session, Services and the profile sit in its footer, so
@@ -347,6 +677,22 @@ a tree, a child's ring 16px on its mother's line, and a folder on its tray. A fo
 only its node. A session's ring is lit by a 32px square, `Accent` while active. A card drags in the rail as
 in the open sidebar, and the filter is the open one's field and chips in a panel off the search button in
 the footer; it outlives the panel, and the button stays lit with a dot while it narrows the tree.
+
+### The peek
+
+A collapsed panel comes out over the stage when the pointer rests on it (`panel_peek.go`): the sidebar from its
+rail's tree, the dock from the window's right gutter once its collapse button took it off the stage. It is the
+open panel, drawn over the terminal at the place it stands when open, so the terminal keeps its width and
+nothing the agent printed rewraps. The sidebar comes out after `peekOpenDelay` (150ms) of rest on the rail; the
+dock comes out the moment the pointer touches the window's edge, even a flick that goes on past it within one frame,
+since the edge is somewhere you throw the pointer, not something it crosses on its way. A pointer gone out of the
+window across that edge still counts as on it until it comes back onto the stage. A panel goes back
+`peekCloseDelay` (300ms) after the pointer left it, never while a menu, a field or a drag in it is in use. Only
+the rail's tree brings the sidebar out: over expand or the footer's buttons it would cover the button on its way
+to a click. The button that collapses a panel keeps it open from the peek, in place, with no morph or slide. The
+dock never closes: it is docked or collapsed, and opens on the tab of lich's it was last on (`lich.dock.tab`,
+Review until one is stored; an extension's tab is not stored, as its surface is placed only after the first
+frames). A tab opened from a balloon brings a collapsed dock out until the pointer has been in it.
 
 ## Motion
 
@@ -380,15 +726,16 @@ at once, whatever its row is still doing.
   the redraw request, and the motion freezes on its first frame.
 - **A click shows in the frame that took it.** Gio draws one frame per event, so a click read after the
   thing it changes was laid out leaves the old state on screen until the mouse moves. Read the click before
-  that layout, as `actGit` does for the Git panel, whose row comes before the footer button that opens it.
+  that layout, as `actGit` does for the Git panel, whose row comes before the balloon that opens it.
   A control that opens, closes or resizes something laid out elsewhere gets a `frameRig.click` test
   (`stale_*_test.go`), which fails on exactly this.
 
 ## Fixed by decision: do not "fix" these
 
 - **The bundled themes stay achromatic.** A colored palette is a custom theme, not a widget's color.
-- **The layout**: top tabs, left sidebar, terminal, right dock, footer, and the Git panel rising from the footer
-  across the terminal and the dock. An extension's panel takes the Git panel's place, one panel at a time, and its
+- **The layout**: top tabs, left sidebar, terminal, right dock always there (docked or collapsed), the footer's
+  balloons over the stage's foot, and the Git panel rising from the stage's foot across the terminal and the
+  dock. An extension's panel takes the Git panel's place, one panel at a time, and its
   dock surface is a tab of the dock. It takes height, never width: fewer terminal rows repaint, while fewer columns
   would rewrap what the agent printed.
 - **Pinned project tabs** stay at the left of the top strip, grouped before unpinned tabs with one hairline

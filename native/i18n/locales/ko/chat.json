@@ -1,0 +1,75 @@
+{
+  "switch": {
+    "gui": "GUI",
+    "tui": "TUI",
+    "working": "에이전트의 턴이 끝나면 전환할 수 있습니다",
+    "pending": "전환 중…",
+    "failed": "보기를 전환하지 못했습니다"
+  },
+  "view": {
+    "failed": "채팅 요청이 실패했습니다",
+    "thought": "생각",
+    "worked": {
+      "other": "{duration} 작업 · 도구 {count}개"
+    },
+    "toolFailed": "실패",
+    "answered": "{tool} · {choice}",
+    "verbs": "주문 외우는 중|소환하는 중|마력을 모으는 중|달이는 중|들여다보는 중|새기는 중|엮는 중|일으키는 중",
+    "thinking": "생각 중",
+    "toolCalls": {
+      "other": "도구 호출 {count}개"
+    },
+    "workedAt": {
+      "other": "{duration} 작업 · 도구 {count}개 · {time}"
+    }
+  },
+  "done": {
+    "done": "완료",
+    "stopped": "중지됨",
+    "failed": "실패",
+    "noChanges": "변경 사항 없음",
+    "files": {
+      "other": "파일 {count}개"
+    }
+  },
+  "composer": {
+    "placeholder": "이 프로젝트에 대해 {provider}에게 물어보세요",
+    "send": "보내기",
+    "stop": "중지"
+  },
+  "option": {
+    "model": "모델",
+    "effort": "추론 강도",
+    "mode": "모드",
+    "busy": "턴이 끝난 뒤에 바꿀 수 있습니다.",
+    "modelEffort": "모델 및 추론 강도"
+  },
+  "choice": {
+    "manual": "수동",
+    "plan": "계획",
+    "auto": "자동",
+    "yolo": "YOLO"
+  },
+  "day": {
+    "today": "오늘",
+    "yesterday": "어제"
+  },
+  "model": {
+    "search": "{provider} 모델 검색…",
+    "showMore": "더 보기",
+    "default": "기본값"
+  },
+  "question": {
+    "multi": "여러 개",
+    "step": "{n} / {total}",
+    "sendAll": "모두 보내기",
+    "freeHint": "Enter 보내기 · Esc 거절",
+    "marked": {
+      "other": "{count}개 선택"
+    },
+    "write": "기타… 직접 답 쓰기",
+    "declined": "답하지 않음",
+    "label": "{header}:",
+    "own": "“{text}”"
+  }
+}

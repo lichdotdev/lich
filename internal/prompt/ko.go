@@ -177,6 +177,8 @@ var ko = Catalog{
 		One:   "(콘솔 오류 %d개 더 있음)",
 		Other: "(콘솔 오류 %d개 더 있음)",
 	},
-	PageDialogWaits:    "이 대화상자에 응답할 때까지 페이지는 아무것도 실행하지 않습니다. browser_dialog를 호출하세요.",
-	PageDialogWaitsCLI: "이 대화상자에 응답할 때까지 페이지는 아무것도 실행하지 않습니다. lich browser dialog accept|dismiss를 실행하세요.",
+	PageDialogWaits:      "이 대화상자에 응답할 때까지 페이지는 아무것도 실행하지 않습니다. browser_dialog를 호출하세요.",
+	PageDialogWaitsCLI:   "이 대화상자에 응답할 때까지 페이지는 아무것도 실행하지 않습니다. lich browser dialog accept|dismiss를 실행하세요.",
+	ChatPermissionDenied: "사용자가 이 도구 호출을 거부했습니다.",
+	ChatQuestionDeclined: "사용자가 이 질문에 답하지 않았습니다. 답을 짐작하지 말고, 답 없이 진행하거나 다시 질문하세요.",
 }
