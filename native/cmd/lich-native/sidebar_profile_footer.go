@@ -2,6 +2,7 @@ package main
 
 import (
 	"image"
+	"time"
 
 	"gioui.org/layout"
 	"gioui.org/unit"
@@ -21,6 +22,7 @@ var icProfileFooter = icons.Lucide("chevrons-up-down")
 type profileFooter struct {
 	menu  ui.MenuState
 	hover widget.Clickable // the row's hover; the menu takes the press
+	tip   ui.Tooltip       // the usage of the shown profile's account
 }
 
 // profileFocus is one provider's line: its book, the project and the profile
@@ -100,6 +102,33 @@ func (m *model) profileEntries(th *ui.Theme, f profileFocus, act *sidebarAction)
 	return out
 }
 
+// profilePlan is the plan reading of the account f's shown profile spends, and
+// whether it has landed.
+func (m *model) profilePlan(f profileFocus) (backend.QuotaPlan, bool) {
+	return planFor(m.quota.plans(profileQuotaKey(f.book.provider, f.choice.shown)), f.kind)
+}
+
+// profileUsageTip is the tooltip over the footer: the usage of the account new
+// sessions are born in, the same blocks the plan quota's tooltip draws. A
+// provider that reports no plan says so in a line; nil while the first reading
+// is in flight, so nothing opens over an empty answer.
+func profileUsageTip(th *ui.Theme, f profileFocus, plan backend.QuotaPlan, loaded bool, now time.Time) layout.Widget {
+	note := func(text string) layout.Widget {
+		return usageStack([]layout.Widget{para(th.Text(ui.TextXS, text).Muted()).Layout})
+	}
+	switch {
+	case f.book.provider.quotaPrefix == "":
+		return note(i18n.T("shell.planQuota.noUsage", i18n.Args{"provider": f.book.provider.label}))
+	case !loaded:
+		return nil
+	case plan.Status == "signed-out":
+		return note(i18n.T("settings.planUsageSetting.signedOut"))
+	case plan.Status != "ok":
+		return note(i18n.T("shell.planQuota.unreadable"))
+	}
+	return usageStack(append([]layout.Widget{tipHead(th, planTitle(plan), "")}, planRows(th, plan, now)...))
+}
+
 // footerEntries is the footer's menu: the focused provider's logins, then a
 // submenu per other provider with profiles.
 func (m *model) footerEntries(th *ui.Theme, f profileFocus, act *sidebarAction) []ui.MenuEntry {
@@ -151,6 +180,12 @@ func (pf *profileFooter) layout(gtx C, th *ui.Theme, root *ui.Root, m *model, f 
 			return ui.Fill(gtx, th.Over(th.Border), 0)
 		}),
 		ui.VGap(1.5),
-		layout.Rigid(func(gtx C) D { return th.DropdownMenu(root, &pf.menu, m.footerEntries(th, f, act)).Layout(gtx, row) }),
+		layout.Rigid(func(gtx C) D {
+			plan, loaded := m.profilePlan(f)
+			tip := th.TooltipCard(root, &pf.tip, profileUsageTip(th.On(th.Popover), f, plan, loaded, gtx.Now))
+			return tip.Layout(gtx, func(gtx C) D {
+				return th.DropdownMenu(root, &pf.menu, m.footerEntries(th, f, act)).Layout(gtx, row)
+			})
+		}),
 	)
 }

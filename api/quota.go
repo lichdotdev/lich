@@ -38,7 +38,22 @@ type QuotaPlan struct {
 	Account   string        `json:"account,omitempty"`
 	NoAccount string        `json:"noAccount,omitempty"`
 	Windows   []QuotaWindow `json:"windows,omitempty"`
-	Status    string        `json:"status"`
+	// Extra is Claude's pay-as-you-go spend past the plan, present only when the
+	// account has it switched on. ResetCredits is how many windows Codex lets
+	// the account reset on demand; 0 is none or not reported.
+	Extra        *QuotaExtra `json:"extra,omitempty"`
+	ResetCredits int         `json:"resetCredits,omitempty"`
+	Status       string      `json:"status"`
+}
+
+// QuotaExtra is the spend past a plan's windows, in the currency's minor units
+// (cents for USD). Limit is nil for an account with no monthly cap. Decimals is
+// how many of those digits sit after the point, 2 unless the provider says so.
+type QuotaExtra struct {
+	Used     int64  `json:"used"`
+	Limit    *int64 `json:"limit,omitempty"`
+	Currency string `json:"currency,omitempty"`
+	Decimals int    `json:"decimals"`
 }
 
 // QuotaWindow is one metered window of a plan: how much of it is spent, how long it
@@ -51,8 +66,10 @@ type QuotaPlan struct {
 // it is looking at; 0 when the provider does not report one. ResetsAt is RFC 3339, empty when unreported.
 // Active is the provider's own verdict on which window is the binding one, when
 // it reports one at all. LockedReason is non-empty only when the provider says
-// this window cannot be spent past regardless of its percentage. Ahead is
-// lich's own reading of the rate rather than the provider's — see pace.go.
+// this window cannot be spent past regardless of its percentage. RunsOutAt is
+// lich's own reading of the rate rather than the provider's, RFC 3339 and set
+// only when spending at the pace so far empties the window before ResetsAt —
+// see pace.go.
 type QuotaWindow struct {
 	Kind         string `json:"kind,omitempty"`
 	Label        string `json:"label,omitempty"`
@@ -61,7 +78,7 @@ type QuotaWindow struct {
 	ResetsAt     string `json:"resetsAt,omitempty"`
 	Active       bool   `json:"active,omitempty"`
 	LockedReason string `json:"lockedReason,omitempty"`
-	Ahead        bool   `json:"ahead,omitempty"`
+	RunsOutAt    string `json:"runsOutAt,omitempty"`
 }
 
 const (

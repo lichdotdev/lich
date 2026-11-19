@@ -98,7 +98,19 @@
   },
   "planQuota": {
     "planUsage": "プランの使用量",
-    "locked": "ロック中"
+    "locked": "ロック中",
+    "runsOut": "あと {time} で上限に達します",
+    "resetsIn": "{time} 後にリセット",
+    "extraUsage": "追加使用量",
+    "extraOf": "{used} / {limit}",
+    "extraNoLimit": "{used} · 上限なし",
+    "resetCredits": "リセットクレジット",
+    "resetCreditsAvailable": {
+      "one": "{count} 件利用可能",
+      "other": "{count} 件利用可能"
+    },
+    "noUsage": "{provider} はプランの使用量を提供していません。",
+    "unreadable": "プランの使用量を読み取れませんでした。"
   },
   "providerSetupDialog": {
     "chooseTitle": "エージェントを選択",

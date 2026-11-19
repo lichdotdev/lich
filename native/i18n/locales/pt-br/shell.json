@@ -98,7 +98,19 @@
   },
   "planQuota": {
     "planUsage": "Uso do plano",
-    "locked": "Bloqueado"
+    "locked": "Bloqueado",
+    "runsOut": "Acaba em {time}",
+    "resetsIn": "Renova em {time}",
+    "extraUsage": "Uso extra",
+    "extraOf": "{used} de {limit}",
+    "extraNoLimit": "{used} · sem limite",
+    "resetCredits": "Créditos de reset",
+    "resetCreditsAvailable": {
+      "one": "{count} disponível",
+      "other": "{count} disponíveis"
+    },
+    "noUsage": "{provider} não informa o uso do plano.",
+    "unreadable": "Não foi possível ler o uso do plano."
   },
   "providerSetupDialog": {
     "chooseTitle": "Escolha seus agentes",

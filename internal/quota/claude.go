@@ -2,6 +2,7 @@ package quota
 
 import (
 	"io"
+	"math"
 	"net/http"
 	"strconv"
 	"strings"
@@ -99,6 +100,47 @@ type claudeUsage struct {
 	FiveHour *claudeWindow `json:"five_hour"`
 	SevenDay *claudeWindow `json:"seven_day"`
 	Limits   []claudeLimit `json:"limits"`
+	Extra    *claudeExtra  `json:"extra_usage"`
+}
+
+// claudeExtra is the pay-as-you-go block beside the windows. The amounts are in
+// minor units and numbers of either spelling (14157 or 14157.0), null when the
+// account has no cap (MonthlyLimit) or has spent nothing yet (UsedCredits).
+type claudeExtra struct {
+	IsEnabled     bool     `json:"is_enabled"`
+	MonthlyLimit  *float64 `json:"monthly_limit"`
+	UsedCredits   *float64 `json:"used_credits"`
+	Currency      string   `json:"currency"`
+	DecimalPlaces *float64 `json:"decimal_places"`
+}
+
+const (
+	// extraDecimals is the minor-unit exponent assumed when the payload names
+	// none: cents.
+	extraDecimals = 2
+	// maxExtraDecimals bounds the exponent a reader divides by.
+	maxExtraDecimals = 4
+)
+
+// extra projects the block onto the neutral shape: nil unless the account has
+// extra usage switched on, since a disabled block reports every amount null.
+func (u claudeUsage) extra() *api.QuotaExtra {
+	e := u.Extra
+	if e == nil || !e.IsEnabled {
+		return nil
+	}
+	out := &api.QuotaExtra{Currency: e.Currency, Decimals: extraDecimals}
+	if e.DecimalPlaces != nil {
+		out.Decimals = min(max(int(*e.DecimalPlaces), 0), maxExtraDecimals)
+	}
+	if e.UsedCredits != nil {
+		out.Used = max(int64(math.Round(*e.UsedCredits)), 0)
+	}
+	if e.MonthlyLimit != nil {
+		limit := int64(math.Round(*e.MonthlyLimit))
+		out.Limit = &limit
+	}
+	return out
 }
 
 type claudeWindow struct {
@@ -155,6 +197,7 @@ func (s *Service) claudePlan(a Account) Plan {
 	if len(p.Windows) == 0 {
 		return failed(p)
 	}
+	p.Extra = usage.extra()
 	p.Account = s.claudeAccount(creds.OAuth.AccessToken)
 	return p
 }

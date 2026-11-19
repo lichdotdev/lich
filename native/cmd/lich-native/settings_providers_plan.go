@@ -81,31 +81,28 @@ func planHead(gtx C, th *ui.Theme, plan string) D {
 		muted(i18n.T("settings.planUsageSetting.used")), muted(i18n.T("settings.planUsageSetting.resets"))).Layout(gtx)
 }
 
-// planGauge is QuotaGauge on one line: the label (and the pace mark), the
-// bar, the reading and the time left, the row in the window's tone.
+// planGauge is QuotaGauge on one line: the label, the bar, the reading and the
+// time left, the row in the window's tone, and under it when the window runs
+// out at its pace so far.
 func planGauge(gtx C, th *ui.Theme, g quotaGauge) D {
 	tone := toneColor(th, g.Tone)
-	label := func(gtx C) D {
-		children := []layout.FlexChild{layout.Flexed(1, th.Text(ui.TextXS, g.Label).Muted().Layout)}
-		if g.Ahead {
-			children = append(children, ui.Gap(1), layout.Rigid(func(gtx C) D { return icAhead.Layout(gtx, ui.Space(3), tone) }))
-		}
-		return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
-	}
 	row := func(gtx C) D {
-		return planRow(label,
+		return planRow(th.Text(ui.TextXS, g.Label).Muted().Layout,
 			func(gtx C) D { return th.GaugeBar(gtx, g.Percent, tone) },
 			th.Text(ui.TextXS, g.Reading).In(tone).Layout,
 			th.Text(ui.TextXS, g.Left).Muted().Layout).Layout(gtx)
 	}
-	if g.Locked == "" {
-		return row(gtx)
+	children := []layout.FlexChild{layout.Rigid(row)}
+	if g.Locked != "" {
+		children = append(children, ui.VGap(1),
+			layout.Rigid(func(gtx C) D { return th.Text(ui.TextXS, g.Locked).In(th.Destructive).Wrapped().Layout(gtx) }))
 	}
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(row),
-		ui.VGap(1),
-		layout.Rigid(func(gtx C) D { return th.Text(ui.TextXS, g.Locked).In(th.Destructive).Wrapped().Layout(gtx) }),
-	)
+	if g.RunsOut != "" {
+		runsOut := i18n.T("shell.planQuota.runsOut", i18n.Args{"time": g.RunsOut})
+		children = append(children, ui.VGap(1),
+			layout.Rigid(func(gtx C) D { return th.Text(ui.TextXS, runsOut).In(toneColor(th, toneWait)).Wrapped().Layout(gtx) }))
+	}
+	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
 }
 
 // planRow is the grid's four columns at the page's widths.

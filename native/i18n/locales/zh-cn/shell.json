@@ -98,7 +98,19 @@
   },
   "planQuota": {
     "planUsage": "套餐用量",
-    "locked": "已锁定"
+    "locked": "已锁定",
+    "runsOut": "预计 {time} 后用完",
+    "resetsIn": "{time} 后重置",
+    "extraUsage": "额外用量",
+    "extraOf": "{used} / {limit}",
+    "extraNoLimit": "{used} · 不限额",
+    "resetCredits": "重置额度",
+    "resetCreditsAvailable": {
+      "one": "{count} 次可用",
+      "other": "{count} 次可用"
+    },
+    "noUsage": "{provider} 不提供套餐用量。",
+    "unreadable": "无法读取套餐用量。"
   },
   "providerSetupDialog": {
     "chooseTitle": "选择你的智能体",

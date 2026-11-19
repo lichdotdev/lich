@@ -4,38 +4,34 @@ import "time"
 
 // Pace is what a weekly window's percentage cannot say on its own: a window 40%
 // spent on day two and one 40% spent on day six draw exactly the same bar, and
-// only one of them is going to run out. Ahead marks the first — spend running
-// far enough past the share of the window that has already elapsed that the
-// rate, not the number, is the thing worth seeing.
-const (
-	// aheadPoints is how far past the elapsed share spend has to run before the
-	// window is marked. Anything tighter marks an ordinary heavy afternoon in an
-	// otherwise light week, and a marker that is on most of the time is a marker
-	// nobody reads.
-	aheadPoints = 15
-	// aheadGrace is how long after a reset no window is marked. Just after one,
-	// the elapsed share is near zero and expected spend with it, so almost any
-	// use at all reads as far ahead — a false positive, not a warning. An
-	// `elapsed == 0` guard does not cover this: a reading taken an hour into a
-	// fresh window has a small elapsed, not a zero one.
-	aheadGrace = 24 * time.Hour
-)
+// only one of them is going to run out. RunsOutAt is the moment the first one
+// does, at the rate it has spent so far.
+//
+// paceGrace is how long after a reset no window is projected. Just after one,
+// the elapsed time is near zero, so the rate is one request divided by almost
+// nothing and every reading projects an exhaustion — a false positive, not a
+// warning. An `elapsed == 0` guard does not cover this: a reading taken an hour
+// into a fresh window has a small elapsed, not a zero one. The 24 hours are
+// calibration measured by the claude-swap project (`src/claude_swap/pace.py`,
+// its issue #125); the number is what is borrowed from there, the code is
+// lich's own.
+const paceGrace = 24 * time.Hour
 
-// markAhead marks w when its spend runs ahead of the window's own clock. Pure:
-// `now` is a parameter so the verdict is testable and no reading depends on a
-// clock read somewhere else.
+// projectRunOut sets RunsOutAt when w, spent at its average rate so far, would
+// reach 100% before it resets. Pure: `now` is a parameter so the verdict is
+// testable and no reading depends on a clock read somewhere else.
 //
-// Only the weekly window is paced — the account-wide one and the model-scoped
-// caps alike, which are weekly too. The five-hour window is left out on purpose:
-// it turns over too fast for a rate to mean anything, since the first spend in a
-// fresh window is "ahead" almost by definition, and the package's five-minute
-// cache is a large fraction of five hours while it is nothing against a week.
+// Only the weekly window is projected — the account-wide one and the
+// model-scoped caps alike, which are weekly too. The five-hour window is left
+// out on purpose: it turns over too fast for a rate to mean anything, since the
+// first spend in a fresh window projects an exhaustion almost by definition,
+// and the package's five-minute cache is a large fraction of five hours while
+// it is nothing against a week.
 //
-// The 15-point threshold and the 24-hour grace are calibration measured by the
-// claude-swap project (`src/claude_swap/pace.py`, its issue #125). The numbers
-// are what is borrowed from there; the code is lich's own.
-func markAhead(w Window, now time.Time) Window {
-	if w.Seconds != weeklyWindow {
+// The line is straight: the average over the cycle so far, no weighting of the
+// recent hours. A window already at 100% or at 0% has nothing to project.
+func projectRunOut(w Window, now time.Time) Window {
+	if w.Seconds != weeklyWindow || w.Percent <= 0 || w.Percent >= fullPercent {
 		return w
 	}
 	start, ok := windowStart(w, now)
@@ -43,11 +39,14 @@ func markAhead(w Window, now time.Time) Window {
 		return w
 	}
 	elapsed := now.Sub(start)
-	if elapsed < aheadGrace {
+	if elapsed < paceGrace {
 		return w
 	}
-	expected := elapsed.Seconds() / float64(w.Seconds) * 100
-	w.Ahead = float64(w.Percent)-expected >= aheadPoints
+	reset, _ := time.Parse(time.RFC3339, w.ResetsAt)
+	left := time.Duration(float64(elapsed) * float64(fullPercent-w.Percent) / float64(w.Percent))
+	if runsOut := now.Add(left); runsOut.Before(reset) {
+		w.RunsOutAt = runsOut.UTC().Format(time.RFC3339)
+	}
 	return w
 }
 
@@ -75,13 +74,13 @@ func windowStart(w Window, now time.Time) (time.Time, bool) {
 	return reset.Add(-time.Duration(cycles) * period), true
 }
 
-// pace marks every window of a reading. One call site for every provider,
+// pace projects every window of a reading. One call site for every provider,
 // because the verdict is derived from a Window alone: a provider that starts
 // reporting a weekly window is paced without knowing this exists.
 func pace(plans []Plan, now time.Time) {
 	for _, p := range plans {
 		for i, w := range p.Windows {
-			p.Windows[i] = markAhead(w, now)
+			p.Windows[i] = projectRunOut(w, now)
 		}
 	}
 }

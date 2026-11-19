@@ -98,7 +98,19 @@
   },
   "planQuota": {
     "planUsage": "Plan usage",
-    "locked": "Locked"
+    "locked": "Locked",
+    "runsOut": "Runs out in {time}",
+    "resetsIn": "Resets in {time}",
+    "extraUsage": "Extra usage",
+    "extraOf": "{used} of {limit}",
+    "extraNoLimit": "{used} · no limit",
+    "resetCredits": "Reset credits",
+    "resetCreditsAvailable": {
+      "one": "{count} available",
+      "other": "{count} available"
+    },
+    "noUsage": "{provider} reports no plan usage.",
+    "unreadable": "Plan usage could not be read."
   },
   "providerSetupDialog": {
     "chooseTitle": "Choose your agents",

@@ -230,10 +230,20 @@ func (q *planQuota) refresh(key string, e *quotaEntry) {
 func sameQuota(a, b []backend.QuotaPlan) bool {
 	return slices.EqualFunc(a, b, func(p, o backend.QuotaPlan) bool {
 		return p.Provider == o.Provider && p.Status == o.Status && p.Plan == o.Plan && p.Account == o.Account &&
+			p.ResetCredits == o.ResetCredits && sameExtra(p.Extra, o.Extra) &&
 			slices.EqualFunc(p.Windows, o.Windows, func(w, v backend.QuotaWindow) bool {
-				return w.Label == v.Label && w.Percent == v.Percent && w.Seconds == v.Seconds && w.ResetsAt == v.ResetsAt
+				return w.Label == v.Label && w.Percent == v.Percent && w.Seconds == v.Seconds && w.ResetsAt == v.ResetsAt &&
+					w.RunsOutAt == v.RunsOutAt
 			})
 	})
+}
+
+func sameExtra(a, b *backend.QuotaExtra) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+	return a.Used == b.Used && a.Currency == b.Currency && a.Decimals == b.Decimals &&
+		(a.Limit == nil) == (b.Limit == nil) && (a.Limit == nil || *a.Limit == *b.Limit)
 }
 
 // planFor is usePlanQuotaFor: provider's reading, false for a provider lich
@@ -284,16 +294,13 @@ func footerWindow(plan backend.QuotaPlan) (backend.QuotaWindow, bool) {
 }
 
 // planReadout is the plan quota's strip text and tooltip title; the tooltip
-// body is quotaGauges and accountLine.
+// body is usageBlocks and accountLine.
 func planReadout(plan backend.QuotaPlan) (footerReadout, bool) {
 	w, ok := footerWindow(plan)
 	if !ok {
 		return footerReadout{}, false
 	}
-	r := footerReadout{Label: i18n.T("shell.planQuota.planUsage"), Title: plan.Name, Tone: toneOf(float64(w.Percent))}
-	if plan.Plan != "" {
-		r.Title = plan.Name + " · " + plan.Plan
-	}
+	r := footerReadout{Label: i18n.T("shell.planQuota.planUsage"), Title: planTitle(plan), Tone: toneOf(float64(w.Percent))}
 	reading := fmt.Sprintf("%d%%", w.Percent)
 	if w.LockedReason != "" {
 		reading, r.Tone = i18n.T("shell.planQuota.locked"), toneDestructive
@@ -302,6 +309,9 @@ func planReadout(plan backend.QuotaPlan) (footerReadout, bool) {
 	return r, true
 }
 
+// planTitle names a plan as the tooltips head it: "Claude Code · Max 5x".
+func planTitle(plan backend.QuotaPlan) string { return joinNonEmpty(" · ", plan.Name, plan.Plan) }
+
 // quotaGauge is one row of the plan quota's tooltip.
 type quotaGauge struct {
 	Label   string // "Session · 5h"
@@ -309,7 +319,7 @@ type quotaGauge struct {
 	Left    string // time to reset, "" when unknown or past
 	Percent int    // the bar's fill
 	Locked  string // the provider's reason, verbatim
-	Ahead   bool   // spending ahead of this window's pace
+	RunsOut string // time until the window empties at its pace so far, "" when it lasts to the reset
 	Tone    usageTone
 }
 
@@ -318,7 +328,7 @@ func quotaGauges(plan backend.QuotaPlan, now time.Time) []quotaGauge {
 	for _, w := range plan.Windows {
 		g := quotaGauge{
 			Label: joinNonEmpty(" · ", windowLabel(w), formatWindow(w.Seconds)), Reading: fmt.Sprintf("%d%%", w.Percent),
-			Left: timeLeft(w.ResetsAt, now), Percent: w.Percent, Locked: w.LockedReason, Ahead: w.Ahead,
+			Left: timeLeft(w.ResetsAt, now), Percent: w.Percent, Locked: w.LockedReason, RunsOut: timeLeft(w.RunsOutAt, now),
 			Tone: toneOf(float64(w.Percent)),
 		}
 		if w.LockedReason != "" {
