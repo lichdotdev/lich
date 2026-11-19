@@ -217,32 +217,29 @@ func (u *window) chatFailed(err error) {
 	u.model.invalidate()
 }
 
-// chatComposer is the message field, and Send, or Stop while a turn runs.
+// chatComposer is the message field with the footer's chips and Send, or
+// Stop while a turn runs, inside its box, and the project and branch under it.
+// Only the session the footer follows carries the footer's items: another
+// pane of a layout has just the field and Send.
 func (u *window) chatComposer(gtx C, th *ui.Theme, p *chatPane, sv sessionView, working bool) D {
 	name := sv.Kind
 	if info, ok := u.model.providers.find(sv.Kind); ok && info.name != "" {
 		name = info.name
 	}
+	var chips []footerSlot
+	var checkout, path *footerSlot
+	if u.footer.shown.sessionID == sv.ID {
+		l, _ := u.footer.snapshot()
+		chips, checkout, path = chatFootSlots(l, u.footer.shown)
+	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			ta := th.Textarea(&p.editor, i18n.T("chat.composer.placeholder", i18n.Args{"provider": name}))
-			ta.MaxHeight = chatComposerMax
+			ta.MaxHeight, ta.Radius = chatComposerMax, ui.RadiusLG
+			ta.Foot = u.chatChips(th, p, working, chips)
 			return ta.Layout(gtx)
 		}),
-		ui.VGap(2),
-		layout.Rigid(func(gtx C) D {
-			gtx.Constraints.Min.X = gtx.Constraints.Max.X
-			return layout.E.Layout(gtx, func(gtx C) D {
-				if working {
-					b := th.Button(&p.stop, i18n.T("chat.composer.stop"))
-					b.Variant, b.Size, b.Icon = ui.VariantOutline, ui.SizeSM, icChatStop
-					return b.Layout(gtx)
-				}
-				b := th.Button(&p.send, i18n.T("chat.composer.send"))
-				b.Size, b.Icon = ui.SizeSM, icChatSend
-				return b.Layout(gtx)
-			})
-		}),
+		layout.Rigid(func(gtx C) D { return u.chatCrumbs(gtx, th, sv, checkout, path) }),
 	)
 }
 

@@ -238,8 +238,10 @@ balloons stand at the foot of the stage, reading the focused pane's session, and
 band, which the layout keeps however the focus moves.
 
 A plain terminal (a `shell` session), a service's console and Home carry no balloons and no band: the terminal
-takes the island's full height. Settings, Pulls and an extension's screen cover the stage and carry none
-either. A project with no session keeps them, since its branch is the click into the Git panel.
+takes the island's full height. A session drawn as a chat carries none either: its footer stands in the
+composer (see The chat view), and the chat takes the band back. In a layout the footer follows the focus, so
+the balloons give way while a chat pane is focused and return when a terminal is. Settings, Pulls and an
+extension's screen cover the stage and carry none either. A project with no session keeps them, since its branch is the click into the Git panel.
 
 The Git panel and an extension's panel rise from the stage's foot over the band: while one is up the balloons
 are not drawn and the terminal takes the band back, in the one resize the panel's slide already makes.
@@ -264,8 +266,15 @@ pinned to its end while items arrive, until the person scrolls up.
   allow and Esc the first reject. Answered, it shrinks to a muted line naming the answer.
 - **A notice** is a muted line; the turn in flight ends the column with a spinner and "Working…", left out
   while a permission waits: its box already says so.
-- **The composer** stands at the column's foot, above the balloons' band the island already keeps: a textarea
-  (Enter sends, Shift+Enter breaks the line) over Send, or Stop while the agent works.
+- **The composer** stands at the column's foot: a textarea (Enter sends, Shift+Enter breaks the line) in a
+  `RadiusLG` box, and the footer's items inside the box under the text. The chips are the footer layout's
+  left side, then its right (`footerSlots`, the same readings and clicks as the balloons, attach drawn as a
+  "+"), ghost and muted, on one line: Send, or Stop while the agent works, takes the right end first and what
+  does not fit in the rest is left out with the items after it, never wrapped. Model and effort are a reading
+  here, not a menu. The checkout and the path are no chips: under the box, outside it and with no fill, a
+  `TextXS` muted line reads project, a slash and the branch, then the path, and the branch opens the Git panel
+  as its balloon did. Only the session the footer follows carries the items; another chat pane of a layout has
+  the box and Send alone.
 
 The GUI | TUI switch floats in the top-right corner of the session's panel, `balloonInset` from its edges, over
 the terminal or the chat (`chat_switch.go`): the segmented control on a `Sidebar` fill, the view on screen in

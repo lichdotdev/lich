@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"image"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -61,17 +62,26 @@ func (f *chatBackend) waitCall(t *testing.T, method string) string {
 }
 
 // chatFrames is session s1, a Claude Code session in view, drawn through
-// content as the island draws it.
+// content as the island draws it, its footer reading busySession.
 func chatFrames(t *testing.T, view string) (*window, *frameRig, *chatBackend) {
+	return chatFramesIn(t, view, rigWindow, busySession())
+}
+
+// chatFramesIn is chatFrames on a stage of size, its footer reading in.
+func chatFramesIn(t *testing.T, view string, size image.Point, in footerInput) (*window, *frameRig, *chatBackend) {
 	t.Helper()
-	r := newFrameRig(rigWindow, nil)
+	r := newFrameRig(size, nil)
 	f, client := newChatBackend(t)
-	u := &window{ctx: t.Context(), client: client, model: chatModel(view)}
+	foot := newFooterRig(t, nil).f
+	foot.dock, foot.git = new(dock), new(gitPanel)
+	u := &window{ctx: t.Context(), client: client, model: chatModel(view), footer: foot}
 	u.model.invalidate = r.invalidate
 	u.model.chat.kinds = []string{"claude"}
 	r.draw = func(gtx C, th *ui.Theme) {
 		u.theme = th
 		u.root.Layout(gtx, func(gtx C) D {
+			u.footer.frame(gtx, in)
+			u.footer.actGit(gtx)
 			sv, _ := u.model.sessionViewOf("s1")
 			if err := u.content(gtx, sv, true); err != nil {
 				t.Fatal(err)
