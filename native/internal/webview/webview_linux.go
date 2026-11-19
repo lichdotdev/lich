@@ -45,6 +45,8 @@ func SetParent(e app.ViewEvent) {
 var (
 	gtkOnce sync.Once
 	gtkErr  error
+	// gtkUp is whether GTK runs: calls wait for its thread to take them.
+	gtkUp atomic.Bool
 )
 
 func startGTK() error {
@@ -60,6 +62,7 @@ func startGTK() error {
 			C.lich_webview_main()
 		}()
 		gtkErr = <-started
+		gtkUp.Store(gtkErr == nil)
 	})
 	return gtkErr
 }
@@ -136,4 +139,14 @@ func (p *Page) Navigate(url string) {
 // Close ends the page.
 func (p *Page) Close() {
 	onGTK(func() { C.lich_webview_close(p.page) })
+}
+
+// KeyboardToWindow gives the keyboard back to the window, from a page that
+// took it with a click: the window calls it on every press it gets, since a
+// press in a page never reaches it.
+func KeyboardToWindow() {
+	if !gtkUp.Load() {
+		return
+	}
+	onGTK(func() { C.lich_webview_keyboard_to_window() })
 }

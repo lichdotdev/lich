@@ -12,6 +12,9 @@ import (
 // SetParent records the window pages go in; nothing holds a page here yet.
 func SetParent(app.ViewEvent) {}
 
+// KeyboardToWindow does nothing: no page takes the keyboard here.
+func KeyboardToWindow() {}
+
 // Page is one web page; none opens on this system yet.
 type Page struct{}
 

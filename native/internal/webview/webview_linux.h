@@ -19,3 +19,4 @@ void lich_webview_place(LichPage *page, int x, int y, int width, int height);
 void lich_webview_hide(LichPage *page);
 void lich_webview_navigate(LichPage *page, const char *url);
 void lich_webview_close(LichPage *page);
+void lich_webview_keyboard_to_window(void);

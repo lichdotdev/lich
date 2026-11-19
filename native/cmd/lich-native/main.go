@@ -435,6 +435,7 @@ func run(w *app.Window, rt backend.Runtime) error {
 			if err := u.layout(gtx); err != nil {
 				return err
 			}
+			keyboardFromPages(gtx)
 			u.reportShown()
 			u.sidebar.morph.capture(gtx.Ops)
 			if *flagShot != "" {

@@ -35,6 +35,52 @@ int lich_webview_init(void) {
 
 void lich_webview_main(void) { gtk_main(); }
 
+// X sends a key to the window under the pointer when that window is inside
+// the one holding the keyboard, and never past the one holding it. So the
+// app's window keeps the keyboard, and a key a page gets only for sitting
+// under the pointer goes on to the app; a click into a page gives that page
+// the keyboard until the app takes it back.
+static LichPage *keyed;
+static unsigned long app;
+
+void lich_webview_keyboard_to_window(void) {
+	if (!app) {
+		return;
+	}
+	Display *x = gdk_x11_display_get_xdisplay(gdk_display_get_default());
+	keyed = NULL;
+	XSetInputFocus(x, app, RevertToParent, CurrentTime);
+	XFlush(x);
+}
+
+static gboolean take_keyboard(GtkWidget *view, GdkEvent *event, gpointer page) {
+	LichPage *p = page;
+	GdkWindow *window = gtk_widget_get_window(view);
+	keyed = p;
+	XSetInputFocus(p->x, gdk_x11_window_get_xid(window), RevertToParent, CurrentTime);
+	XFlush(p->x);
+	return FALSE;
+}
+
+static gboolean pass_key(GtkWidget *holder, GdkEventKey *event, gpointer page) {
+	LichPage *p = page;
+	if (keyed == p) {
+		return FALSE;
+	}
+	XKeyEvent key = {0};
+	key.type = event->type == GDK_KEY_PRESS ? KeyPress : KeyRelease;
+	key.display = p->x;
+	key.window = app;
+	key.root = DefaultRootWindow(p->x);
+	key.time = event->time;
+	key.state = event->state;
+	key.keycode = event->hardware_keycode;
+	key.same_screen = True;
+	XSendEvent(p->x, app, False, key.type == KeyPress ? KeyPressMask : KeyReleaseMask, (XEvent *)&key);
+	XFlush(p->x);
+	return TRUE;
+}
+
 // The window's realize hands GTK the X window we made inside the parent, so
 // GTK draws into it instead of making a toplevel of its own; registered, so
 // destroying the widget can unrealize it.
@@ -46,6 +92,7 @@ static void adopt(GtkWidget *widget, gpointer window) {
 LichPage *lich_webview_open(unsigned long parent, const char *url) {
 	GdkDisplay *display = gdk_display_get_default();
 	Display *x = gdk_x11_display_get_xdisplay(display);
+	app = parent;
 	Window child = XCreateSimpleWindow(x, parent, 0, 0, 1, 1, 0, 0, 0);
 	GdkWindow *window = gdk_x11_window_foreign_new_for_display(display, child);
 
@@ -67,6 +114,10 @@ LichPage *lich_webview_open(unsigned long parent, const char *url) {
 	page->window = window;
 	page->holder = holder;
 	page->view = view;
+	gdk_window_ensure_native(gtk_widget_get_window(view));
+	g_signal_connect(view, "button-press-event", G_CALLBACK(take_keyboard), page);
+	g_signal_connect(holder, "key-press-event", G_CALLBACK(pass_key), page);
+	g_signal_connect(holder, "key-release-event", G_CALLBACK(pass_key), page);
 	return page;
 }
 
@@ -87,6 +138,9 @@ void lich_webview_hide(LichPage *page) {
 void lich_webview_navigate(LichPage *page, const char *url) { webkit_web_view_load_uri(WEBKIT_WEB_VIEW(page->view), url); }
 
 void lich_webview_close(LichPage *page) {
+	if (keyed == page) {
+		keyed = NULL;
+	}
 	gtk_widget_destroy(page->holder);
 	XDestroyWindow(page->x, page->child);
 	XFlush(page->x);
