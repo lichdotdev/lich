@@ -240,8 +240,9 @@ func chatThought(gtx C, th *ui.Theme, f *chatFold, it backend.ChatItem, live boo
 
 // chatWork is a turn's tool calls folded into one line, opening on a line per
 // call under a connector. While a call runs the line shimmers, with the
-// number of calls and the time the turn has run; once it is over it says how
-// long the turn took, how many calls it made and when it ended.
+// number of calls and the time the turn has run, and the calls still running
+// stand under it even folded; once it is over it says how long the turn took,
+// how many calls it made and when it ended.
 func (u *window) chatWork(gtx C, th *ui.Theme, f *chatFold, sv sessionView, r chatRow) D {
 	f.update(gtx)
 	label := func(gtx C, fg color.NRGBA) D {
@@ -268,14 +269,21 @@ func (u *window) chatWork(gtx C, th *ui.Theme, f *chatFold, sv sessionView, r ch
 		layout.Flexed(1, func(gtx C) D { return chatHairline(gtx, th) }),
 	)
 	children := []layout.FlexChild{layout.Rigid(func(gtx C) D { return layout.Flex{Alignment: layout.Middle}.Layout(gtx, line...) })}
-	if f.open {
-		children = append(children, ui.VGap(1))
-		for i, it := range r.tools {
-			last := i == len(r.tools)-1
-			children = append(children, layout.Rigid(func(gtx C) D {
-				return chatBranch(gtx, th, last, func(gtx C) D { return chatTool(gtx, th, it.Tool) })
-			}))
+	shown := r.tools
+	if !f.open {
+		shown = nil
+		if r.live {
+			shown = slices.DeleteFunc(slices.Clone(r.tools), func(it backend.ChatItem) bool { return !callRunning(it) })
 		}
+	}
+	if len(shown) > 0 {
+		children = append(children, ui.VGap(1))
+	}
+	for i, it := range shown {
+		last := i == len(shown)-1
+		children = append(children, layout.Rigid(func(gtx C) D {
+			return chatBranch(gtx, th, last, func(gtx C) D { return chatTool(gtx, th, it, r.live) })
+		}))
 	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
 }
@@ -310,28 +318,32 @@ func chatBranch(gtx C, th *ui.Theme, last bool, w layout.Widget) D {
 	return D{Size: image.Pt(d.Size.X+gutter, d.Size.Y)}
 }
 
-// chatTool is one call: its glyph, name, what it acted on, and how it ended,
-// with the diff it made under it. A running call's name shimmers.
-func chatTool(gtx C, th *ui.Theme, t *backend.ChatToolCall) D {
+// chatTool is one call: its glyph, name, what it acted on, the time it has
+// run, and how it ended, with the diff it made under it. While it runs in a
+// live turn its name and target shimmer and its time counts; once it ends the
+// time stands still, and a call whose end nobody reported shows none.
+func chatTool(gtx C, th *ui.Theme, it backend.ChatItem, live bool) D {
+	t := it.Tool
 	if t == nil {
 		return D{}
 	}
-	running := t.State == api.ToolPending || t.State == api.ToolRunning
+	running := live && callRunning(it)
 	line := func(gtx C) D {
 		h := gtx.Dp(chatToolRow)
 		gtx.Constraints.Min.Y, gtx.Constraints.Max.Y = h, h
 		return layout.Inset{Left: ui.Space(2), Right: ui.Space(2)}.Layout(gtx, func(gtx C) D {
 			name := th.Text(ui.TextXS, t.Name).Weight(font.Medium)
+			target := th.Text(ui.TextXS, cleanLine(t.Title)).Mono().Muted()
 			if running {
-				name = name.Shimmer()
+				name, target = name.Shimmer(), target.Shimmer()
 			}
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 				layout.Rigid(func(gtx C) D { return toolIcon(t.Name).Layout(gtx, ui.Space(3.5), th.MutedForeground) }),
 				ui.Gap(2),
 				layout.Rigid(name.Layout),
 				ui.Gap(2.5),
-				layout.Flexed(1, th.Text(ui.TextXS, cleanLine(t.Title)).Mono().Muted().Layout),
-				ui.Gap(2.5),
+				layout.Flexed(1, target.Layout),
+				layout.Rigid(func(gtx C) D { return chatToolTime(gtx, th, it, running) }),
 				layout.Rigid(func(gtx C) D { return chatToolOutcome(gtx, th, t) }),
 			)
 		})
@@ -345,16 +357,38 @@ func chatTool(gtx C, th *ui.Theme, t *backend.ChatToolCall) D {
 	)
 }
 
-// chatToolOutcome is how a call stands: a spinner while it runs, then a check
-// in TonePass or a cross in Destructive with the first line of its output.
+// chatToolTime is the time a call has run, counting while running, standing
+// still once it ended, and nothing where its start or end is unknown.
+func chatToolTime(gtx C, th *ui.Theme, it backend.ChatItem, running bool) D {
+	if it.At <= 0 {
+		return D{}
+	}
+	start := time.UnixMilli(it.At)
+	var took time.Duration
+	switch {
+	case running:
+		chatTick(gtx, start)
+		took = gtx.Now.Sub(start)
+	case it.Tool.Ended > 0:
+		took = time.UnixMilli(it.Tool.Ended).Sub(start)
+	default:
+		return D{}
+	}
+	return layout.Inset{Left: ui.Space(2.5)}.Layout(gtx, th.Text(ui.TextXS, chatElapsed(took)).Mono().Muted().Layout)
+}
+
+// chatToolOutcome is how a call ended: nothing while it runs, then a check in
+// TonePass or a cross in Destructive with the first line of its output.
 func chatToolOutcome(gtx C, th *ui.Theme, t *backend.ChatToolCall) D {
 	out := cleanLine(t.Output)
 	mark := func(ic *icons.Icon, c color.NRGBA) layout.FlexChild {
-		return layout.Rigid(func(gtx C) D { return ic.Layout(gtx, ui.Space(3.5), c) })
+		return layout.Rigid(func(gtx C) D {
+			return layout.Inset{Left: ui.Space(2.5)}.Layout(gtx, func(gtx C) D { return ic.Layout(gtx, ui.Space(3.5), c) })
+		})
 	}
 	switch t.State {
 	case api.ToolPending, api.ToolRunning:
-		return th.Spinner(gtx, ui.Space(3), th.ToneWait)
+		return D{}
 	case api.ToolFailed:
 		if out == "" {
 			out = i18n.T("chat.view.toolFailed")

@@ -356,6 +356,7 @@ func readClaudeUser(c *chatSession, line claudeLine, history bool) {
 					it.Tool.State = api.ToolFailed
 				}
 				it.Tool.Output = shorten(blockText(b.Content))
+				it.Tool.Ended = stamp(line.Timestamp)
 			})
 		case b.Type == "text" && localCommand(c, b.Text):
 		case b.Type == "text" && history && !isInterruptMarker(b.Text):

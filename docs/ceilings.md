@@ -105,6 +105,14 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   yes itself where the checkout skips permissions and the server has no flag for it. lich serves no ACP client
   method (`fs/*`, `terminal/*`): a file the agent asked lich to write would land outside the sandbox. The text of
   lich's own notices is English, like backend error text.
+- **A chat draws a tool call running only when its provider reports the call before its end, and times it only
+  when someone saw it end** (`internal/chat/conversation.go`, `claude.go`, `codex.go`, `acp.go`): Claude Code's
+  stream-json writes the `tool_use` before the tool runs and Codex's app-server sends `item/started`, so both show
+  the call as it starts. An ACP server reports a call with `tool_call`, pending or in progress, and the chat draws
+  it at once; that each of Antigravity, opencode, oh-my-pi, Cursor CLI and Kiro CLI sends it before the end was not
+  measured, and one that reports a call only once finished shows it ended, with no running time. The time a call
+  took is its result's time in a Claude Code transcript, and otherwise the moment lich first saw it ended live: a
+  conversation read back from Codex or an ACP server carries no end, so its calls show no time.
 - **A new session is born as a chat only where its provider is in `chat.Kinds`, and a fork never is**
   (`internal/store/sessionview.go`, `internal/spawn`): the store writes the view with the row, a chat unless the
   global `session.view` (Settings › Providers › New sessions open as) asks for the terminal, so the window, the

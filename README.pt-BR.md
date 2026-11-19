@@ -197,6 +197,7 @@ o lich consegue ler de volta, porque cada CLI registra coisas diferentes.
 | Uma sessão em chat recebe as tarefas e os avisos que outras sessões mandam | sim | sim; responder com as ferramentas do lich pelo chat não verificado | sim; responder com as ferramentas do lich pelo chat não verificado | sim; responder com as ferramentas do lich pelo chat não verificado | sim; responder com as ferramentas do lich pelo chat não verificado | sem chat | não verificado | sim; responder com as ferramentas do lich pelo chat não verificado |
 | No chat, escolher o modelo, o esforço e o modo que o agente oferece | sim, inclusive um modo que roda toda ferramenta sem perguntar | sim, inclusive um modo que roda todas as ferramentas sem perguntar; a mudança vale a partir da sua próxima mensagem | sim | sim | sim | não | não verificado | modelo e modo, sem esforço |
 | No chat, as perguntas do agente chegam num cartão que você responde com clique ou tecla | sim | não verificado | sim | sim no opencode 1; opencode 2 não verificado | sim | não | não verificado | não: o Kiro pergunta em texto |
+| No chat, a chamada de ferramenta aparece assim que começa, com o tempo correndo, e guarda quanto durou | sim | sim; uma conversa relida não mostra tempos | não verificado | não verificado | não verificado | não | não verificado | não verificado |
 
 </details>
 

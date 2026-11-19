@@ -54,7 +54,8 @@ type chatTurnSpan struct {
 // chatRows lays items out as the view draws them: each turn's tool calls
 // folded into one work row where its first one was, and while running, a
 // live row last, which a waiting permission's or question's box stands in for. A turn has run from its first item to its last, or to now
-// while it is the one in flight: the history carries no durations.
+// while it is the one in flight, a tool call's end included: most histories
+// carry no durations.
 func chatRows(items []backend.ChatItem, running bool, now time.Time) []chatRow {
 	spans := map[int]*chatTurnSpan{}
 	asked := map[int]bool{}
@@ -71,6 +72,9 @@ func chatRows(items []backend.ChatItem, running bool, now time.Time) []chatRow {
 		}
 		if it.Kind == api.ItemTool {
 			sp.tools = append(sp.tools, it)
+			if it.Tool != nil {
+				sp.end = max(sp.end, it.Tool.Ended)
+			}
 		}
 		asked[it.Turn] = asked[it.Turn] || it.Kind == api.ItemUser
 		last = max(last, it.Turn)
@@ -139,10 +143,11 @@ func chatRows(items []backend.ChatItem, running bool, now time.Time) []chatRow {
 }
 
 // toolRunning is whether any of calls has not ended.
-func toolRunning(calls []backend.ChatItem) bool {
-	return slices.ContainsFunc(calls, func(it backend.ChatItem) bool {
-		return it.Tool != nil && (it.Tool.State == api.ToolPending || it.Tool.State == api.ToolRunning)
-	})
+func toolRunning(calls []backend.ChatItem) bool { return slices.ContainsFunc(calls, callRunning) }
+
+// callRunning is whether the tool call it has not ended.
+func callRunning(it backend.ChatItem) bool {
+	return it.Tool != nil && (it.Tool.State == api.ToolPending || it.Tool.State == api.ToolRunning)
 }
 
 // chatRowKey names a row for its entry: an item by its id, the others by the

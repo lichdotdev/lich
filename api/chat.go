@@ -115,13 +115,16 @@ type ChatItem struct {
 
 // ChatToolCall is a tool the agent ran. Name is the provider's own (Read,
 // Bash), Title what it acts on (a path, a command), Output a short reading
-// of its result; Diff is a unified diff when the tool edits a file.
+// of its result; Diff is a unified diff when the tool edits a file. Ended is
+// when it finished, in unix milliseconds, 0 while it runs and where nobody
+// reported its end: a conversation read back from most providers.
 type ChatToolCall struct {
 	Name   string `json:"name"`
 	Title  string `json:"title,omitempty"`
 	State  string `json:"state"`
 	Output string `json:"output,omitempty"`
 	Diff   string `json:"diff,omitempty"`
+	Ended  int64  `json:"ended,omitempty"`
 }
 
 // ChatPermission is the agent asking to run Tool. Chosen is the option the

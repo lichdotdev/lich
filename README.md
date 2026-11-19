@@ -194,6 +194,7 @@ what lich can read back out of it, since each CLI records different things.
 | A session shown as a chat takes the tasks and notes other sessions send it | yes | yes; answering with lich's tools from the chat not verified | yes; answering with lich's tools from the chat not verified | yes; answering with lich's tools from the chat not verified | yes; answering with lich's tools from the chat not verified | no chat | not verified | yes; answering with lich's tools from the chat not verified |
 | In the chat, pick the model, effort and mode the agent offers | yes, including a mode that runs every tool without asking | yes, including a mode that runs every tool without asking; a change applies from your next message | yes | yes | yes | no | not verified | model and mode, no effort |
 | In the chat, the agent's questions come as a card you answer by click or key | yes | not verified | yes | yes on opencode 1; opencode 2 not verified | yes | no | not verified | no: Kiro asks in plain text |
+| In the chat, a tool call shows the moment it starts, its time counting, and keeps how long it took | yes | yes; a conversation read back shows no times | not verified | not verified | not verified | no | not verified | not verified |
 
 </details>
 
