@@ -43,7 +43,13 @@ type TextareaStyle struct {
 	// comes out of MaxHeight.
 	Foot func(gtx C) D
 	// Radius is the frame's corner, RadiusMD when 0.
-	Radius      unit.Dp
+	Radius unit.Dp
+	// Size and Leading set the text's size and line height, TextSM and its
+	// Tailwind leading when 0; PadX and PadY set the room around the text,
+	// the Input's and py-2 when 0.
+	Size, Leading unit.Sp
+	PadX, PadY    unit.Dp
+
 	Placeholder string
 	Width       unit.Dp // 0 is w-full
 	Mono        bool
@@ -67,11 +73,20 @@ func (s TextareaStyle) Layout(gtx C) D {
 	if s.MaxHeight > 0 {
 		gtx.Constraints.Max.Y = min(gtx.Constraints.Max.Y, gtx.Dp(s.MaxHeight))
 	}
-	field := inputText{theme: s.theme, editor: s.Editor, placeholder: s.Placeholder, size: TextSM,
+	field := inputText{theme: s.theme, editor: s.Editor, placeholder: s.Placeholder, size: TextSM, leading: s.Leading,
 		font: font.Font{Typeface: s.theme.Sans}, padLeft: inputPadX, padRight: inputPadX, padY: textareaPadY,
 		minHeight: max(textareaMinHeight, min(s.MinHeight, gtx.Metric.PxToDp(gtx.Constraints.Max.Y)))}
 	if s.Mono {
 		field.font.Typeface = s.theme.Mono
+	}
+	if s.Size > 0 {
+		field.size = s.Size
+	}
+	if s.PadX > 0 {
+		field.padLeft, field.padRight = s.PadX, s.PadX
+	}
+	if s.PadY > 0 {
+		field.padY = s.PadY
 	}
 	r := s.Resize
 	if r != nil {

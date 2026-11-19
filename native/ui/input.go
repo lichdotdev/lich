@@ -233,6 +233,17 @@ type inputText struct {
 	single                  bool
 	// minHeight is the frame's floor (min-h-16) for a field that grows.
 	minHeight unit.Dp
+	// leading is the line height, the Tailwind one for size when 0.
+	leading unit.Sp
+}
+
+// lineHeight is the line height of the text, and whether it has one.
+func (f inputText) lineHeight() (unit.Sp, bool) {
+	if f.leading > 0 {
+		return f.leading, true
+	}
+	leading, ok := tailwindLeading[f.size]
+	return leading, ok
 }
 
 // layout draws the text and returns the frame's size. A single-line field is
@@ -277,7 +288,7 @@ func (f inputText) layout(gtx C, height int) D {
 // lines together: it spaces lines at the line height but sizes a line alone
 // to its glyphs. 0 for a size the leading table does not hold.
 func (f inputText) missingLeading(gtx C) int {
-	leading, ok := tailwindLeading[f.size]
+	leading, ok := f.lineHeight()
 	if !ok {
 		return 0
 	}
@@ -305,7 +316,7 @@ func (f inputText) layoutEditor(gtx C) D {
 		maxLines = 1
 	}
 	hintLabel := widget.Label{MaxLines: maxLines, Truncator: "…"}
-	if leading, ok := tailwindLeading[f.size]; ok {
+	if leading, ok := f.lineHeight(); ok {
 		// Gio scales an explicit LineHeight by 1.2 unless told otherwise.
 		hintLabel.LineHeight, hintLabel.LineHeightScale = leading, 1
 		f.editor.LineHeight, f.editor.LineHeightScale = leading, 1

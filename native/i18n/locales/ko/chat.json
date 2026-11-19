@@ -24,7 +24,7 @@
     }
   },
   "composer": {
-    "placeholder": "{provider}에게 메시지…",
+    "placeholder": "이 프로젝트에 대해 {provider}에게 물어보세요",
     "send": "보내기",
     "stop": "중지"
   },
@@ -44,5 +44,10 @@
   "day": {
     "today": "오늘",
     "yesterday": "어제"
+  },
+  "model": {
+    "search": "{provider} 모델 검색…",
+    "showMore": "더 보기",
+    "default": "기본값"
   }
 }

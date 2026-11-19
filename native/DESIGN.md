@@ -249,9 +249,11 @@ are not drawn and the terminal takes the band back, in the one resize the panel'
 ### The chat view
 
 A session whose view is chat draws its conversation in place of the terminal, on the same island and in a
-layout's pane alike (`chat_view.go`, `chat_items.go`). It is a reading column, centred, at most 720px wide with
-`Space(6)` inside its edges (`chatColumnMax`, `chatColumnPadX`), its rows `Space(3.5)` apart; the list stays
-pinned to its end while items arrive, until the person scrolls up.
+layout's pane alike (`chat_view.go`, `chat_items.go`). The composer's box takes the pane's width less `Space(6)`
+each side, up to 960px (`chatPadX`, `chatBoxMax`): wide enough for a long line of code, and no wider than a
+paragraph can be read in. The conversation is a column on the same axis, `Space(1.5)` (6px, `chatTextInset`)
+narrower each side, so its text lines up inside the box and not with its border. Its rows are `Space(3.5)` apart;
+the list stays pinned to its end while items arrive, until the person scrolls up.
 
 - **The person's message** is a box in `Accent`, `RadiusLG`, against the column's right edge, at most 78% of
   it. It breaks "rows, not cards" on purpose: a turn starts where a message does, and the eye finds it by the
@@ -284,10 +286,21 @@ pinned to its end while items arrive, until the person scrolls up.
   while a permission waits: its box already says so.
 - **The composer** stands at the column's foot: a textarea (Enter sends, Shift+Enter breaks the line) in a
   `RadiusLG` box, three lines of text tall at least, growing with the text to a ceiling and scrolling past it.
+  Its text and its placeholder, "Ask {provider} about this project", are in the interface font at the body size
+  and leading of the messages (15sp at 1.5), `Space(4)` in from the left and `Space(3.5)` down from the top.
   Inside the box stand only the provider's controls, one line under the text: the footer's attach as a "+",
-  the model with its effort in one chip ("Opus 5.5 · High", its menu holding both categories under their
-  names), and the mode, each a ghost chip with a chevron whose menu lists the provider's choices, the current
-  one checked and picking one sets it (`ChatSetOption`). A category the provider does not offer has no chip. A
+  the model with its effort in one chip ("Opus 5.5 · high") and the mode, each a ghost chip with a chevron.
+  The mode's menu lists the provider's choices, the current one checked, and picking one sets it
+  (`ChatSetOption`). The model chip opens one panel upward, in two columns with a hairline between
+  (`chat_picker.go`): at the left a search that has the focus, which filters the models as it is typed, then
+  32px rows with the name, "Default" muted when the provider's default has a name that does not say so, a
+  `Ctrl+1`..`Ctrl+4` keycap on the first four (the chord works with the panel open) and a check on the current
+  one; past six models the rest wait behind "Show more", which a search does not need. The arrows walk the
+  rows, Enter takes one, Escape closes. At the right, the effort when the provider offers it: its title with
+  the model in force muted beside it, and a row per level under a signal glyph of five bars that rise with the
+  level, the lit ones in `Foreground` and the rest muted, a check on the current. Choosing a model leaves the
+  panel open for the effort; choosing an effort closes it. A provider with only one of the two has that
+  column alone. A category the provider does not offer has no chip. A
   dangerous choice (`Danger`, Claude Code's bypass mode) wears a bolt in `ToneWait` while it is active. At the
   right end, Send, a `Primary` icon button (arrow up), or Stop, an outline one (square), each named by a
   tooltip and no word; while the agent works the chips take no click and a tooltip says why. What does not

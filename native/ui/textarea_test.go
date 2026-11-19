@@ -191,3 +191,25 @@ func TestTextareaFootSitsUnderTheText(t *testing.T) {
 		t.Errorf("long text: height %d, want the 200 ceiling with the foot in it", got)
 	}
 }
+
+// A textarea takes its own type size, line height and room around the text.
+func TestTextareaTakesItsOwnTypeAndRoom(t *testing.T) {
+	var editor widget.Editor
+	editor.SetText("a\nb\nc")
+	height := func(set func(*TextareaStyle)) int {
+		var r motionRig
+		return r.frame(func(gtx C) D {
+			gtx.Constraints = layout.Constraints{Max: image.Pt(300, 400)}
+			ta := testTheme().Textarea(&editor, "")
+			set(&ta)
+			return ta.Layout(gtx)
+		}).Size.Y
+	}
+	plain := height(func(*TextareaStyle) {})
+	roomy := height(func(ta *TextareaStyle) { ta.Size, ta.Leading, ta.PadY = 15, 22.5, 14 })
+	// Three lines of 22.5 with 14 above and under, against 20 and 8: the
+	// first 15 or so taller, within a pixel or two of rounding.
+	if plain != 3*20+16 || roomy < 3*22+2*14 || roomy > 3*23+2*14+2 {
+		t.Errorf("heights %d and %d, want %d and about %d", plain, roomy, 3*20+16, 3*22+2*14+2)
+	}
+}

@@ -20,11 +20,17 @@ import (
 )
 
 var (
-	// chatColumnMax and chatColumnPadX are mockup A's reading column,
-	// max-w-[720px] px-6.
-	chatColumnMax  = unit.Dp(720)
-	chatColumnPadX = ui.Space(6)
-	chatRowGap     = ui.Space(3.5)
+	// chatPadX is the breathing edge of a screen on the island, kept either
+	// side of the chat in a pane of any width, and chatBoxMax the widest the
+	// composer's box grows: wide enough to hold a long line of code or a
+	// paragraph at the prose size without the eye losing its line.
+	chatPadX   = ui.Space(6)
+	chatBoxMax = unit.Dp(960)
+	// chatTextInset is how far the conversation sits inside the composer's
+	// edges, so its text lines up inside the box rather than with its border;
+	// the user asked for 4 to 8px.
+	chatTextInset = ui.Space(1.5)
+	chatRowGap    = ui.Space(3.5)
 	// chatTopPad keeps the first row clear of the selector floating over the
 	// column's top-right corner.
 	chatTopPad = 2*balloonInset + chatSwitchItem
@@ -32,10 +38,15 @@ var (
 	// mockup A's max-w-[78%].
 	chatUserShare   = float32(0.78)
 	chatComposerMax = ui.Space(48)
-	// chatComposerMin is the text's floor, three lines of text-sm leading-5
-	// and the field's py-2.
-	chatComposerMin = ui.Space(19)
+	// chatComposerMin is the text's floor: three body lines (15sp at 1.5) and
+	// the field's padding above and under them.
+	chatComposerMin = ui.Space(24)
 	chatComposerPad = ui.Space(2)
+	// chatComposerPadX and chatComposerPadY are the room the text and its
+	// placeholder keep from the box's left and top, a body line's worth, so a
+	// question has air around it.
+	chatComposerPadX = ui.Space(4)
+	chatComposerPadY = ui.Space(3.5)
 )
 
 // chatView is one session's chat, kept across frames.
@@ -44,6 +55,7 @@ type chatView struct {
 	editor           widget.Editor
 	send, stop       widget.Clickable
 	sendTip, stopTip ui.Tooltip
+	picker           modelPicker
 	// rows brings the conversation's rows in, and seen is the row each key
 	// last was, for one that is playing its exit.
 	rows ui.Presence
@@ -160,7 +172,7 @@ func (u *window) chatScreen(gtx C, sv sessionView, keys bool) {
 				}
 				key := shown[i]
 				return p.rows.Layout(gtx, key, func(gtx C) D {
-					return chatColumn(gtx, top, 0, func(gtx C) D { return u.chatRow(gtx, th, p, sv, p.seen[key]) })
+					return chatColumn(gtx, top, 0, chatTextInset, func(gtx C) D { return u.chatRow(gtx, th, p, sv, p.seen[key]) })
 				})
 			})
 			// A row that comes in at no height at the list's end makes Gio
@@ -180,16 +192,18 @@ func (u *window) chatScreen(gtx C, sv sessionView, keys bool) {
 			return d
 		}),
 		layout.Rigid(func(gtx C) D {
-			return chatColumn(gtx, chatComposerPad, chatComposerPad, func(gtx C) D { return u.chatComposer(gtx, th, p, sv, working) })
+			return chatColumn(gtx, chatComposerPad, chatComposerPad, 0, func(gtx C) D { return u.chatComposer(gtx, th, p, sv, working) })
 		}),
 	)
 }
 
-// chatColumn centres w in the reading column, top above it and bottom under.
-func chatColumn(gtx C, top, bottom unit.Dp, w layout.Widget) D {
+// chatColumn centres w on the pane's axis, as wide as the composer's box,
+// which is the pane less chatPadX each side up to chatBoxMax, and inset from
+// its edges by inset; top is above it and bottom under.
+func chatColumn(gtx C, top, bottom, inset unit.Dp, w layout.Widget) D {
 	full := gtx.Constraints.Max.X
-	width := min(full, gtx.Dp(chatColumnMax))
-	side := gtx.Metric.PxToDp((full-width)/2) + chatColumnPadX
+	width := max(min(full-2*gtx.Dp(chatPadX), gtx.Dp(chatBoxMax)), 0)
+	side := gtx.Metric.PxToDp((full-width)/2) + inset
 	return layout.Inset{Top: top, Left: side, Right: side, Bottom: bottom}.Layout(gtx, func(gtx C) D {
 		gtx.Constraints.Min.X = gtx.Constraints.Max.X
 		return w(gtx)
@@ -206,7 +220,8 @@ func (u *window) chatActs(gtx C, p *chatPane, sv sessionView, keys, working bool
 	}
 	p.unsent = ""
 	p.mu.Unlock()
-	if keys && !gtx.Focused(&p.editor) {
+	// The model panel's search holds the keys while the panel is open.
+	if keys && !p.picker.panel.Opened() && !gtx.Focused(&p.editor) {
 		gtx.Execute(key.FocusCmd{Tag: &p.editor})
 	}
 	if p.editor.Len() > 0 {
@@ -303,6 +318,7 @@ func (u *window) chatComposer(gtx C, th *ui.Theme, p *chatPane, sv sessionView, 
 		layout.Rigid(func(gtx C) D {
 			ta := th.Textarea(&p.editor, i18n.T("chat.composer.placeholder", i18n.Args{"provider": name}))
 			ta.MaxHeight, ta.MinHeight, ta.Radius = chatComposerMax, chatComposerMin, ui.RadiusLG
+			ta.Size, ta.Leading, ta.PadX, ta.PadY = markdown.BodySize, markdown.BodySize*markdown.LineHeightScale, chatComposerPadX, chatComposerPadY
 			ta.Foot = u.chatChips(th, p, sv, working, ft.attach)
 			return ta.Layout(gtx)
 		}),

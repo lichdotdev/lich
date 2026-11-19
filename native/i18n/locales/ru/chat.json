@@ -33,7 +33,7 @@
     }
   },
   "composer": {
-    "placeholder": "Сообщение для {provider}…",
+    "placeholder": "Спросите {provider} об этом проекте",
     "send": "Отправить",
     "stop": "Остановить"
   },
@@ -53,5 +53,10 @@
   "day": {
     "today": "Сегодня",
     "yesterday": "Вчера"
+  },
+  "model": {
+    "search": "Поиск моделей {provider}…",
+    "showMore": "Показать ещё",
+    "default": "По умолчанию"
   }
 }

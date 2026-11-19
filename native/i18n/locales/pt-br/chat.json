@@ -27,7 +27,7 @@
     }
   },
   "composer": {
-    "placeholder": "Mensagem para {provider}…",
+    "placeholder": "Pergunte ao {provider} sobre este projeto",
     "send": "Enviar",
     "stop": "Parar"
   },
@@ -47,5 +47,10 @@
   "day": {
     "today": "Hoje",
     "yesterday": "Ontem"
+  },
+  "model": {
+    "search": "Buscar modelos do {provider}…",
+    "showMore": "Mostrar mais",
+    "default": "Padrão"
   }
 }

@@ -203,8 +203,8 @@ func crumbText(gtx C, th *ui.Theme, ic icons.Glyph, text string) D {
 }
 
 // modelChip is the chip of the model and its effort: the two choices in
-// force, and one menu holding both categories that sets either. While the
-// agent works it takes no click and says why.
+// force, and the panel that sets either (chat_picker.go). While the agent
+// works it takes no click and says why.
 func (u *window) modelChip(gtx C, th *ui.Theme, p *chatPane, sv sessionView, working bool) D {
 	var opts []backend.ChatOption
 	var names []string
@@ -225,18 +225,24 @@ func (u *window) modelChip(gtx C, th *ui.Theme, p *chatPane, sv sessionView, wor
 	if len(opts) == 2 {
 		title = i18n.T("chat.option.modelEffort")
 	}
-	return u.optionChip(gtx, th, p, chipModel, title, working, optionContent(glyph, strings.Join(names, " · "), false), func() []ui.MenuEntry {
-		var entries []ui.MenuEntry
-		for i, o := range opts {
-			if i > 0 {
-				entries = append(entries, ui.MenuEntry{Kind: ui.MenuSeparator})
-			}
-			if len(opts) > 1 {
-				entries = append(entries, ui.MenuEntry{Kind: ui.MenuLabel, Label: optionTitle(o)})
-			}
-			entries = append(entries, u.optionEntries(sv.ID, o)...)
-		}
-		return entries
+	content := optionContent(glyph, strings.Join(names, " · "), false)
+	w := u.footer.w(chipModel)
+	if working {
+		return th.Tooltip(&u.root, &w.tip, i18n.T("chat.option.busy")).Layout(gtx, func(gtx C) D {
+			return buttonFace(gtx, th, true, false, true, content)
+		})
+	}
+	pk := &p.picker
+	if !pk.panel.Opened() {
+		pk.fresh = true
+	}
+	width := pickerModelW + pickerEffortW + pickerChrome
+	if len(opts) == 1 && opts[0].Category == api.OptionEffort {
+		width = pickerEffortW + pickerChrome - 1
+	}
+	panel := th.DropdownPanel(&u.root, &pk.panel, width, func(gtx C, pth *ui.Theme) D { return u.modelPanel(gtx, pth, p, sv) })
+	return th.Tooltip(&u.root, &w.tip, title).Layout(gtx, func(gtx C) D {
+		return panel.Layout(gtx, func(gtx C) D { return buttonFace(gtx, th, true, pk.panel.Opened(), false, content) })
 	})
 }
 

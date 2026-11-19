@@ -47,13 +47,13 @@ func centreY(t *testing.T, r *frameRig, label string) float32 {
 
 // boxFoot is where the composer's Send or Stop stands: the right end of the
 // box's foot, in the chat rigs' window.
-var boxFoot = image.Rect(840, 700, 940, 752)
+var boxFoot = image.Rect(1000, 700, 1100, 752)
 
 func TestTheComposerHoldsOnlyTheProvidersControlsInItsBox(t *testing.T) {
 	u, r, _ := chatFrames(t, api.ViewChat)
 	u.model.chat.setOptions("s1", chatOptions())
 	r.settle(t)
-	plus := r.smallestClickIn(t, image.Rect(266, 700, 310, 752))
+	plus := r.smallestClickIn(t, image.Rect(120, 700, 170, 752))
 	model, mode := r.at(t, "Haiku 5.5 · Medium"), r.at(t, i18n.T("chat.choice.manual"))
 	send := r.smallestClickIn(t, boxFoot)
 	if !(plus.X < model.X && model.X < mode.X && mode.X < send.X) {
@@ -101,7 +101,7 @@ func TestTheComposerGrowsFromThreeLinesToACeiling(t *testing.T) {
 	r.settle(t)
 	height := func() int {
 		for _, n := range r.nodes() {
-			if b := n.Desc.Bounds; n.Desc.Gestures != 0 && b.Dx() == 672 && b.Min.Y > 200 {
+			if b := n.Desc.Bounds; n.Desc.Gestures != 0 && b.Dx() == 960 && b.Min.Y > 200 {
 				return b.Dy()
 			}
 		}
@@ -109,7 +109,7 @@ func TestTheComposerGrowsFromThreeLinesToACeiling(t *testing.T) {
 		return 0
 	}
 	empty := height()
-	if empty < 3*20+16+32 {
+	if empty < 3*22+2*14+32 {
 		t.Errorf("empty box %dpx tall, want three lines of text, its padding and the foot", empty)
 	}
 	p := u.chats.pane("s1")
@@ -241,35 +241,6 @@ func TestAProviderOffersAChipOnlyForTheCategoriesItHas(t *testing.T) {
 				t.Errorf("%s: drew %q", c.name, label)
 			}
 		}
-	}
-}
-
-func TestTheModelChipsMenuHoldsModelAndEffortAndSetsEither(t *testing.T) {
-	u, r, f := chatFrames(t, api.ViewChat)
-	u.model.chat.setOptions("s1", chatOptions())
-	r.settle(t)
-	r.clickLabel(t, "Haiku 5.5 · Medium")
-	for _, label := range []string{i18n.T("chat.option.model"), i18n.T("chat.option.effort"), "Opus 5.5", "Low"} {
-		if !r.shows(label) {
-			t.Fatalf("the menu lacks %q:\n%s", label, r.drawn())
-		}
-	}
-	pickEntry(t, r, "Low")
-	body := f.waitCall(t, api.ChatSetOption.Name)
-	if !strings.Contains(body, `"optionId":"effort"`) || !strings.Contains(body, `"value":"low"`) || !strings.Contains(body, `"id":"s1"`) {
-		t.Errorf("set %s", body)
-	}
-}
-
-func TestChoosingAModelSetsIt(t *testing.T) {
-	u, r, f := chatFrames(t, api.ViewChat)
-	u.model.chat.setOptions("s1", chatOptions())
-	r.settle(t)
-	r.clickLabel(t, "Haiku 5.5 · Medium")
-	pickEntry(t, r, "Opus 5.5")
-	body := f.waitCall(t, api.ChatSetOption.Name)
-	if !strings.Contains(body, `"optionId":"model"`) || !strings.Contains(body, `"value":"opus"`) {
-		t.Errorf("set %s", body)
 	}
 }
 
