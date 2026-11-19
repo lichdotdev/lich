@@ -27,6 +27,7 @@ import (
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/gioterm"
 	"github.com/lichdotdev/lich/native/i18n"
+	"github.com/lichdotdev/lich/native/internal/webview"
 	"github.com/lichdotdev/lich/native/ui"
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
@@ -85,6 +86,10 @@ type browserPaneUI struct {
 	notes  browserNotes
 	dialog dialogCard
 	tabs   browserTabsUI
+	// native is the page the window holds itself, nil where it holds none
+	// and the pane draws the screencast; nativeURL is what it was last sent.
+	native    *webview.Page
+	nativeURL string
 }
 
 // agentPress is what the agent's cursor does on the toolbar, from at: the
@@ -156,7 +161,7 @@ func (u *window) browserPaneAt(gtx C, v stageView, session string, r image.Recta
 	off := op.Offset(image.Pt(0, head+bar)).Push(gtx.Ops)
 	// Unlike a terminal, the page is not dimmed out of focus: the person keeps
 	// the session's prompt in focus nearly always, and watches the page.
-	u.browserPage(page, p, session, frame, focused)
+	u.browserPage(page, p, session, st.URL, frame, focused)
 	u.spot(page, tourBrowserPage, func(C) D { return D{Size: page.Constraints.Max} })
 	// DevTools in the page's place: the notes and the agent's cursor are the
 	// page's.
@@ -296,7 +301,7 @@ func (u *window) browserToolbar(gtx C, p *browserPaneUI, session string, st api.
 
 // browserPage draws the page's last frame over gtx's area, keeps the
 // backend's page the area's size, and passes the pointer and keys on.
-func (u *window) browserPage(gtx C, p *browserPaneUI, session string, frame browserFrame, focused bool) {
+func (u *window) browserPage(gtx C, p *browserPaneUI, session, url string, frame browserFrame, focused bool) {
 	size := gtx.Constraints.Max
 	scale := u.pageScale(gtx)
 	want := api.BrowserViewOptions{ID: session, W: int(float32(size.X) / scale), H: int(float32(size.Y) / scale), Scale: float64(scale)}
@@ -310,6 +315,11 @@ func (u *window) browserPage(gtx C, p *browserPaneUI, session string, frame brow
 		}
 	}
 	paint.FillShape(gtx.Ops, u.theme.Background, clip.Rect{Max: size}.Op())
+	if u.placeNativePage(gtx, p, url) {
+		defer clip.Rect{Max: size}.Push(gtx.Ops).Pop()
+		event.Op(gtx.Ops, &p.tag)
+		return
+	}
 	if frame.size.X > 0 {
 		// A frame is the page at the size it was last laid out at, which
 		// lags a resize by a frame or two: it is drawn scaled to the area.
@@ -480,6 +490,9 @@ func (u *window) settleBrowserPanes() {
 	for session, p := range u.browserPanes {
 		gone := p.wasOnScreen && !p.onScreen
 		p.wasOnScreen, p.onScreen = p.onScreen, false
+		if gone && p.native != nil {
+			u.putNativePageAway(session, p)
+		}
 		if !gone || p.view.ID == "" {
 			continue
 		}

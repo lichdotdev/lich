@@ -40,6 +40,7 @@ import (
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/internal/framelog"
 	"github.com/lichdotdev/lich/native/internal/shot"
+	"github.com/lichdotdev/lich/native/internal/webview"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -417,6 +418,8 @@ func run(w *app.Window, rt backend.Runtime) error {
 				u.theme.Still = still
 				invalidate()
 			}
+		case app.ViewEvent:
+			webview.SetParent(e)
 		case *app.ClosingEvent:
 			u.onClosing(e)
 		case app.DropEvent:
