@@ -190,6 +190,7 @@ o lich consegue ler de volta, porque cada CLI registra coisas diferentes.
 | Uma página que o agente faz para te mostrar (um relatório, um diagrama, um mockup) abre nesse navegador a partir de uma pasta própria da sessão, fora do checkout, mantida enquanto a sessão existir | sim, mas o Claude Code ainda pode publicá-la no claude.ai com a própria ferramenta Artifact | sim | sim | sim | sim | sim | sim | sim |
 | Uma skill para escrever uma extensão do lich, que só roda quando você chama (`/lich:extension`) | sim | sim, como `$lich:extension` | sim, mas o agente a vê em todo turno: o Antigravity não consegue deixar uma skill só para uso manual | sim, como `/lich-extension` (opencode 1) ou pelo `/skills` (opencode 2) | sim, como `/skill:lich-extension` | sim, pela paleta de comandos | sim, mas o agente a vê em todo turno: o Cursor mostra ao agente toda skill de um plugin | não: o Kiro não consegue tirar uma skill do contexto do agente |
 | A sessão pode aparecer como chat em vez do terminal, alternando entre os dois na mesma conversa | sim | não | sim | sim | sim | não | não verificado | sim |
+| No chat, escolher o modelo, o esforço e o modo que o agente oferece | sim, inclusive um modo que roda toda ferramenta sem perguntar | não | sim | sim | sim | não | não verificado | modelo e modo, sem esforço |
 
 </details>
 

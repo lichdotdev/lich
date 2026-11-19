@@ -27,7 +27,8 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   same files; the caller is only told to stop. The note is the caller's own account of its work, checked against
   nothing, and waits 45 seconds for the successor's prompt (inside the 120 seconds an MCP client gives the call),
   where a relayed task waits five minutes; past that the session is open without it. The successor inherits the
-  model, effort, ultracode and profile the caller was opened with, not one switched inside it (`/model`). It
+  model, effort, ultracode and profile the caller was opened with or last picked in its chat, not one switched
+  inside its terminal (`/model`). It
   reaches every provider through spawn and `relay.Submit`. The successor always starts on the caller's profile,
   because lich moves work to another account only on the user's click; a `profile` on the call is only a suggestion
   put to the user as a toast once the successor's first turn has ended, so its button works when it appears: the
@@ -64,7 +65,8 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   provider-wide switch is on.
 - **A model or effort is a birth value, and some providers forget it on resume** (`internal/terminal/command.go`,
   `modelArgs`, `effortArgs`): lich passes neither when it resumes or forks a conversation, because a `/model` or
-  `/effort` typed inside the session is the user's decision and re-sending the birth value would undo it. Claude
+  `/effort` typed inside the session is the user's decision and re-sending the birth value would undo it. A pick
+  in the session's chat replaces the recorded model and effort, which only a new conversation reads. Claude
   Code's effort and all of Antigravity resume on the saved default rather than on the conversation's (each
   measurement in `docs/providers/`, Spawn), so a change made inside the session survives while a level or model
   lich set at birth falls back to that default. Cursor CLI also writes whatever model a spawn or resume runs on into
@@ -98,6 +100,22 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   yes itself where the checkout skips permissions and the server has no flag for it. lich serves no ACP client
   method (`fs/*`, `terminal/*`): a file the agent asked lich to write would land outside the sandbox. The text of
   lich's own notices is English, like backend error text.
+- **A chat offers only the model, effort and mode its provider offers, and two of them restart its process**
+  (`internal/chat/options.go`, `claude_options.go`, `acp_options.go`): Claude Code's come from its `initialize`
+  (the models, each with its efforts and whether it has an auto mode) and from the permission modes its `--help`
+  lists, `bypassPermissions` marked as dangerous; an ACP server's from its `configOptions`, or its older `modes`
+  and `models` where it has no option of that category. Labels are the provider's words where it has some; Claude
+  Code names neither its options, nor its efforts, nor its modes, so the window names those by id. Every one is
+  set over the protocol but two, which resume the conversation in a process started for them and are refused
+  while a turn runs: Claude Code's `bypassPermissions`, refused to a process launched without
+  `--allow-dangerously-skip-permissions`, and Kiro CLI's model, whose `session/set_model` never answers and
+  changes nothing (2.21.0) while `acp --model` holds on a load. No ACP server offers a mode that runs every tool
+  without asking, so their chat has none; the checkout's skip-permissions setting still answers every question
+  yes (above). Kiro CLI and Cursor CLI offer no effort over ACP, and opencode one only for a model that has one.
+  The model and effort picked become the session's own, which a new conversation starts on; the mode is kept for
+  the session's later chats, because Claude Code and oh-my-pi resume on their default mode. A terminal resumed
+  after the chat is passed none of them (the birth-value bullet), so there Claude Code's effort and mode, and
+  Antigravity's model and effort, come back on the provider's default.
 
 ## Session state and hooks
 
@@ -285,7 +303,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   event carries, which only Claude Code, Codex and Kiro CLI record (`docs/providers/`, Transcript & cost), so
   oh-my-pi, opencode, Crush, Antigravity and Cursor CLI get no line at all, never the model the session was born
   on standing in for one nobody read. When that model differs from the birth model (`model` column,
-  `SetSessionModel`) the line reads "Opened on …, running …". The comparison is a heuristic, not a lookup:
+  `SetSessionModel`, which a pick in the session's chat replaces) the line reads "Opened on …, running …". The comparison is a heuristic, not a lookup:
   equal once both are shortened (`formatModel`), or the birth model is the family alias of the running id
   (`opus` against `claude-opus-5-5`, a `[1m]` suffix dropped). Any other alias the CLI accepts (`default`,
   `opusplan`) reads as a change, and so does a `/model` the user typed, which is intended.
