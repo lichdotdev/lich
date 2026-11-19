@@ -1798,6 +1798,19 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   Ubuntu 23.10 and later AppArmor refuses it the user namespace unless the browser ships an AppArmor profile,
   as the distribution's Chrome, Edge and Brave do: one unpacked from a tarball fails to start with "No usable
   sandbox!", which the agent reads as the browser's error.
+- **Select on a page the window draws itself shows the window's drawing through cuts in the page**
+  (`native/internal/webview`, `docs/browser-tab.md`): on X11 the WebKitGTK page is a child window over the pane,
+  and the window's drawing over it shows only where that window is cut away (X SHAPE). An outline is cut along
+  its band, so its faint fill over the element is lost and the band shows the pane's background behind the dashes;
+  a menu, a popover (the page zoom's) or a tooltip that falls over the page has no cut and stays under it. Draw is
+  not carried yet: its strokes draw under the page. The element is read in WebKit, whose context keeps no cookies
+  of Chrome's, so on a page the person signed into only one of them the selector the agent gets may not match the
+  agent's page. macOS will need the overlay plane on top of the WKWebView, a `hitTest:` that lets clicks fall
+  through where the window draws (as Sikemux's `hit_test_outside_holes` does) and the scripts run in the page's
+  own content world (`WKContentWorld.pageWorld`), since they read React's fiber on the element. Windows will need
+  `ExecuteScript` for the scripts and either a window region cut out of the WebView2's child window
+  (`SetWindowRgn`) or a composition controller for anything drawn over the page, which Sikemux has not done:
+  its pages cover its menus.
 - **A load in the page the window draws itself reaches the agent's page by its URL only**
   (`native/internal/webview`, `browser.NativeLoad`): on X11 the pane shows a WebKitGTK page and the agent drives
   Chrome, so a link the person follows there is loaded again in Chrome by the URL WebKit committed to. A form

@@ -144,7 +144,9 @@ func (u *window) notesChip(gtx C, n *browserNotes, lift int, radius unit.Dp, bod
 	inner.Constraints.Min = image.Point{}
 	d := body(inner)
 	call := macro.Stop()
-	defer op.Offset(image.Pt((page.X-d.Size.X)/2, page.Y-d.Size.Y-lift)).Push(gtx.Ops).Pop()
+	at := image.Pt((page.X-d.Size.X)/2, page.Y-d.Size.Y-lift)
+	n.cut(image.Rectangle{Min: at, Max: at.Add(d.Size)})
+	defer op.Offset(at).Push(gtx.Ops).Pop()
 	r := gtx.Dp(radius)
 	shape := clip.RRect{Rect: image.Rectangle{Max: d.Size}, NW: r, NE: r, SE: r, SW: r}
 	if lift == 0 {

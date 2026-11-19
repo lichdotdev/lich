@@ -62,6 +62,9 @@ type browserNote struct {
 
 // browserNotes is one pane's pick and its notes.
 type browserNotes struct {
+	// cuts are where the notes drew over the page in the last layout, local to
+	// it: a page the window draws itself is left out there (webview.Page.Place).
+	cuts    []image.Rectangle
 	picking bool
 	// drawing is the pencil, on instead of the pick; stroking is a drag of it
 	// under way. strokes are the sketch, drawn on the page at sketchURL.
@@ -278,8 +281,9 @@ func (u *window) probeElement(p *browserPaneUI, session string, x, y float64, op
 	if open {
 		merge = ""
 	}
+	page := p.native
 	p.queue.push(browserCall{merge: merge, send: func(ctx context.Context) error {
-		el, err := u.client.BrowserElementAt(ctx, session, x, y)
+		el, err := u.elementAt(ctx, page, session, x, y)
 		if err != nil {
 			return fmt.Errorf("element at: %w", err)
 		}
@@ -307,8 +311,9 @@ func (u *window) relocateNotes(p *browserPaneUI, session string) {
 		// The lookups queued behind a reveal must not merge it away.
 		merge = ""
 	}
+	page := p.native
 	p.queue.push(browserCall{merge: merge, send: func(ctx context.Context) error {
-		boxes, err := u.client.BrowserLocate(ctx, session, selectors, reveal)
+		boxes, err := u.locateIn(ctx, page, session, selectors, reveal)
 		if err != nil {
 			return fmt.Errorf("locate notes: %w", err)
 		}

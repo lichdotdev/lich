@@ -1,6 +1,7 @@
 #include "webview_linux.h"
 
 #include <X11/Xlib.h>
+#include <X11/extensions/shape.h>
 #include <fcntl.h>
 #include <gbm.h>
 #include <gdk/gdkx.h>
@@ -11,6 +12,7 @@
 
 extern void lichWebviewRun(uintptr_t handle);
 extern void lichWebviewLoad(uintptr_t owner, int step, char *uri);
+extern void lichWebviewEvaluated(uintptr_t handle, char *json, char *error);
 
 static gboolean run(gpointer data) {
 	lichWebviewRun((uintptr_t)data);
@@ -206,6 +208,59 @@ void lich_webview_place(LichPage *page, int x, int y, int width, int height) {
 	XMoveResizeWindow(page->x, page->child, x, y, width, height);
 	XMapWindow(page->x, page->child);
 	XFlush(page->x);
+}
+
+// lich_webview_cut leaves the page window out of rects, page-local, where the
+// app draws over the page, so the app's drawing shows there; none gives the
+// page its whole window back. A bounding shape keeps its own size, so it is
+// set anew on every change of size.
+void lich_webview_cut(LichPage *page, int width, int height, XRectangle *rects, int n) {
+	if (n == 0) {
+		XShapeCombineMask(page->x, page->child, ShapeBounding, 0, 0, None, ShapeSet);
+	} else {
+		XRectangle whole = {0, 0, width, height};
+		XShapeCombineRectangles(page->x, page->child, ShapeBounding, 0, 0, &whole, 1, ShapeSet, Unsorted);
+		XShapeCombineRectangles(page->x, page->child, ShapeBounding, 0, 0, rects, n, ShapeSubtract, Unsorted);
+	}
+	XFlush(page->x);
+}
+
+// An empty input shape lets the pointer through the page to the app's window
+// under it; no input shape takes it back.
+void lich_webview_pointer_to_window(LichPage *page) {
+	XShapeCombineRectangles(page->x, page->child, ShapeInput, 0, 0, NULL, 0, ShapeSet, Unsorted);
+	XFlush(page->x);
+}
+
+void lich_webview_pointer_to_page(LichPage *page) {
+	XShapeCombineMask(page->x, page->child, ShapeInput, 0, 0, None, ShapeSet);
+	XFlush(page->x);
+}
+
+static void evaluated(GObject *view, GAsyncResult *result, gpointer handle) {
+	GError *error = NULL;
+	JSCValue *value = webkit_web_view_evaluate_javascript_finish(WEBKIT_WEB_VIEW(view), result, &error);
+	if (!value) {
+		lichWebviewEvaluated((uintptr_t)handle, NULL, error->message);
+		g_error_free(error);
+		return;
+	}
+	char *json = jsc_value_to_json(value, 0);
+	lichWebviewEvaluated((uintptr_t)handle, json ? json : "null", NULL);
+	g_free(json);
+	g_object_unref(value);
+}
+
+// lich_webview_eval runs script in the page's own world, where its scripts'
+// objects are, and hands its value back as JSON.
+void lich_webview_eval(LichPage *page, const char *script, uintptr_t handle) {
+	webkit_web_view_evaluate_javascript(WEBKIT_WEB_VIEW(page->view), script, -1, NULL, NULL, NULL, evaluated, (gpointer)handle);
+}
+
+// lich_webview_zoom draws scale device pixels per CSS pixel, as Chrome draws
+// the screencast, so the window's pointer and boxes divide by the same scale.
+void lich_webview_zoom(LichPage *page, double scale) {
+	webkit_web_view_set_zoom_level(WEBKIT_WEB_VIEW(page->view), scale / gtk_widget_get_scale_factor(page->view));
 }
 
 void lich_webview_hide(LichPage *page) {

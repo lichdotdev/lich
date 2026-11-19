@@ -358,6 +358,7 @@ func (u *window) addressPill(field ui.InputStyle) layout.Widget {
 func (u *window) browserPage(gtx C, p *browserPaneUI, session, url string, frame browserFrame, focused bool) {
 	size := gtx.Constraints.Max
 	scale := u.pageScale(gtx)
+	p.notes.cuts = p.notes.cuts[:0]
 	paint.FillShape(gtx.Ops, u.theme.Background, clip.Rect{Max: size}.Op())
 	native := u.placeNativePage(gtx, p, session, url)
 	want := api.BrowserViewOptions{ID: session, W: int(float32(size.X) / scale), H: int(float32(size.Y) / scale), Scale: float64(scale), Drawn: native}
@@ -372,6 +373,7 @@ func (u *window) browserPage(gtx C, p *browserPaneUI, session, url string, frame
 	}
 	if native {
 		defer clip.Rect{Max: size}.Push(gtx.Ops).Pop()
+		u.nativeNotesInput(gtx, p, session, scale)
 		event.Op(gtx.Ops, &p.tag)
 		return
 	}

@@ -5,18 +5,20 @@
 package webview
 
 /*
-#cgo pkg-config: gtk+-3.0 webkit2gtk-4.1 x11 gbm
+#cgo pkg-config: gtk+-3.0 webkit2gtk-4.1 x11 xext gbm
 #include <stdlib.h>
 #include "webview_linux.h"
 */
 import "C"
 
 import (
+	"context"
 	"errors"
 	"image"
 	"image/color"
 	"runtime"
 	"runtime/cgo"
+	"slices"
 	"sync"
 	"sync/atomic"
 	"unsafe"
@@ -92,6 +94,13 @@ type Page struct {
 	page   *C.LichPage
 	placed image.Rectangle
 	shown  bool
+	cuts   []image.Rectangle
+	// pointerOff: the pointer goes through the page to the window.
+	pointerOff bool
+	zoom       float64
+	// closed is touched only on the GTK thread: a call queued after Close
+	// finds the page gone.
+	closed bool
 	loads  loads
 	// onLoad hears the page's loads, on the GTK thread.
 	onLoad func(Load)
@@ -133,17 +142,50 @@ func (p *Page) URL() string {
 	return p.loads.url()
 }
 
-// Place shows the page over r, in the window's pixels, and says whether that
-// moved it.
-func (p *Page) Place(r image.Rectangle) bool {
-	if p.shown && r == p.placed {
+// Place shows the page over r, in the window's pixels, left out of cuts, local
+// to r, where the window draws over it; it says whether the cuts changed, since
+// a cut shows the window's drawing only from its next frame.
+func (p *Page) Place(r image.Rectangle, cuts []image.Rectangle) bool {
+	cut := !slices.Equal(cuts, p.cuts)
+	if p.shown && r == p.placed && !cut {
 		return false
 	}
-	p.placed, p.shown = r, true
+	reshape := cut || r.Size() != p.placed.Size()
+	p.placed, p.shown, p.cuts = r, true, slices.Clone(cuts)
+	rects := make([]C.XRectangle, len(cuts))
+	for i, c := range cuts {
+		rects[i] = C.XRectangle{x: C.short(c.Min.X), y: C.short(c.Min.Y), width: C.ushort(c.Dx()), height: C.ushort(c.Dy())}
+	}
 	onGTK(func() {
 		C.lich_webview_place(p.page, C.int(r.Min.X), C.int(r.Min.Y), C.int(max(r.Dx(), 1)), C.int(max(r.Dy(), 1)))
+		if reshape {
+			var first *C.XRectangle
+			if len(rects) > 0 {
+				first = &rects[0]
+			}
+			C.lich_webview_cut(p.page, C.int(r.Dx()), C.int(r.Dy()), first, C.int(len(rects)))
+		}
 	})
-	return true
+	return cut
+}
+
+// PointerToWindow lets the pointer through the page to the window, which
+// draws and answers over it while a tool of its own is on.
+func (p *Page) PointerToWindow() {
+	if p.pointerOff {
+		return
+	}
+	p.pointerOff = true
+	onGTK(func() { C.lich_webview_pointer_to_window(p.page) })
+}
+
+// PointerToPage gives the pointer back to the page.
+func (p *Page) PointerToPage() {
+	if !p.pointerOff {
+		return
+	}
+	p.pointerOff = false
+	onGTK(func() { C.lich_webview_pointer_to_page(p.page) })
 }
 
 // Hide puts the page out of sight; it keeps running.
@@ -168,6 +210,7 @@ func (p *Page) Navigate(url string) {
 // Close ends the page.
 func (p *Page) Close() {
 	onGTK(func() {
+		p.closed = true
 		C.lich_webview_close(p.page)
 		p.self.Delete()
 	})
@@ -194,4 +237,52 @@ func SetGround(c color.NRGBA) {
 	ground = c
 	pixel := C.ulong(0xff)<<24 | C.ulong(c.R)<<16 | C.ulong(c.G)<<8 | C.ulong(c.B)
 	onGTK(func() { C.lich_webview_set_ground(pixel) })
+}
+
+var errClosed = errors.New("webview: the page is closed")
+
+type evaluated struct {
+	json string
+	err  error
+}
+
+// Eval runs script in the page and answers its value as JSON.
+func (p *Page) Eval(ctx context.Context, script string) (string, error) {
+	done := make(chan evaluated, 1)
+	onGTK(func() {
+		if p.closed {
+			done <- evaluated{err: errClosed}
+			return
+		}
+		s := C.CString(script)
+		defer C.free(unsafe.Pointer(s))
+		C.lich_webview_eval(p.page, s, C.uintptr_t(cgo.NewHandle(done)))
+	})
+	select {
+	case r := <-done:
+		return r.json, r.err
+	case <-ctx.Done():
+		return "", ctx.Err()
+	}
+}
+
+//export lichWebviewEvaluated
+func lichWebviewEvaluated(handle C.uintptr_t, json, message *C.char) {
+	h := cgo.Handle(handle)
+	done := h.Value().(chan evaluated)
+	h.Delete()
+	if message != nil {
+		done <- evaluated{err: errors.New(C.GoString(message))}
+		return
+	}
+	done <- evaluated{json: C.GoString(json)}
+}
+
+// SetZoom draws the page at scale device pixels per CSS pixel.
+func (p *Page) SetZoom(scale float64) {
+	if scale == p.zoom {
+		return
+	}
+	p.zoom = scale
+	onGTK(func() { C.lich_webview_zoom(p.page, C.double(scale)) })
 }

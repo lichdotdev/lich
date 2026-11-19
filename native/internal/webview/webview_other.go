@@ -3,6 +3,7 @@
 package webview
 
 import (
+	"context"
 	"errors"
 	"image"
 	"image/color"
@@ -29,8 +30,12 @@ type Page struct{}
 // the screencast instead.
 func Open(string, func(Load)) (*Page, error) { return nil, errors.ErrUnsupported }
 
-func (*Page) Place(image.Rectangle) bool { return false }
-func (*Page) URL() string                { return "" }
-func (*Page) Hide()                      {}
-func (*Page) Navigate(string)            {}
-func (*Page) Close()                     {}
+func (*Page) Place(image.Rectangle, []image.Rectangle) bool { return false }
+func (*Page) PointerToWindow()                              {}
+func (*Page) PointerToPage()                                {}
+func (*Page) URL() string                                   { return "" }
+func (*Page) Eval(context.Context, string) (string, error)  { return "", errors.ErrUnsupported }
+func (*Page) SetZoom(float64)                               {}
+func (*Page) Hide()                                         {}
+func (*Page) Navigate(string)                               {}
+func (*Page) Close()                                        {}

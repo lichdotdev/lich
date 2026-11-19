@@ -101,6 +101,7 @@ func (u *window) notesOverlay(gtx C, p *browserPaneUI, session, pageURL string) 
 			continue
 		}
 		ring := noteRing(gtx, cssRect(note.box, scale))
+		n.cutRing(gtx, ring)
 		if i == lit {
 			ui.FillRRect(gtx, ring, noteRingRadius, withAlpha(notePick, 0x1a))
 			if n.open {
@@ -115,6 +116,7 @@ func (u *window) notesOverlay(gtx C, p *browserPaneUI, session, pageURL string) 
 	}
 	if n.open && n.editing < 0 {
 		ring := noteRing(gtx, cssRect(n.draftBox(), scale))
+		n.cutRing(gtx, ring)
 		ui.FillRRect(gtx, ring, noteRingRadius, withAlpha(notePick, 0x1a))
 		// Still while the note is written: the pick is made, and redrawing the
 		// window each frame for it cost a third of a core (measured 2026-10-27).
@@ -122,6 +124,7 @@ func (u *window) notesOverlay(gtx C, p *browserPaneUI, session, pageURL string) 
 	}
 	if n.picking && !n.open && n.hover.Label != "" {
 		ring := noteRing(gtx, cssRect(n.hoverBox(gtx.Now), scale))
+		n.cutRing(gtx, ring)
 		if n.gliding(gtx.Now) {
 			// Every frame for the glide's moment: the march's 20 a second
 			// would step it.
@@ -129,7 +132,7 @@ func (u *window) notesOverlay(gtx C, p *browserPaneUI, session, pageURL string) 
 		}
 		ui.FillRRect(gtx, ring, noteRingRadius, withAlpha(notePick, 0x1a))
 		ui.MarchingRing(gtx, ring, noteRingRadius, noteRingWidth, notePick, noteHalo)
-		u.hoverTag(gtx, ring, n.hover)
+		u.hoverTag(gtx, n, ring, n.hover)
 	}
 	for i, note := range n.list {
 		if r := cssRect(note.box, scale); noteVisible(note, pageURL) && r.Overlaps(image.Rectangle{Max: gtx.Constraints.Max}) {
@@ -144,7 +147,7 @@ func (u *window) notesOverlay(gtx C, p *browserPaneUI, session, pageURL string) 
 // hoverTag names the element under the pointer above it, or below when it
 // sits at the page's top: its label, component and size, in the inverted
 // colors of a tooltip.
-func (u *window) hoverTag(gtx C, r image.Rectangle, el api.BrowserElement) {
+func (u *window) hoverTag(gtx C, n *browserNotes, r image.Rectangle, el api.BrowserElement) {
 	th := u.theme
 	macro := op.Record(gtx.Ops)
 	tag := gtx
@@ -166,6 +169,7 @@ func (u *window) hoverTag(gtx C, r image.Rectangle, el api.BrowserElement) {
 	}
 	at.X = min(max(at.X, 0), gtx.Constraints.Max.X-d.Size.X)
 	at.Y = min(max(at.Y, 0), gtx.Constraints.Max.Y-d.Size.Y)
+	n.cut(image.Rectangle{Min: at, Max: at.Add(d.Size)})
 	defer op.Offset(at).Push(gtx.Ops).Pop()
 	paint.FillShape(gtx.Ops, noteTagBg, clip.UniformRRect(image.Rectangle{Max: d.Size}, gtx.Dp(ui.RadiusMD)).Op(gtx.Ops))
 	call.Add(gtx.Ops)
@@ -189,6 +193,7 @@ func (u *window) notePin(gtx C, n *browserNotes, i int, r image.Rectangle, lit b
 	at := image.Pt(r.Min.X+gtx.Dp(noteRingRadius), r.Min.Y-d.Size.Y)
 	at.X = min(max(at.X, 0), page.X-d.Size.X)
 	at.Y = min(max(at.Y, 0), page.Y-d.Size.Y)
+	n.cut(image.Rectangle{Min: at, Max: at.Add(d.Size)})
 	defer op.Offset(at).Push(gtx.Ops).Pop()
 	call.Add(gtx.Ops)
 }
@@ -266,6 +271,7 @@ func (u *window) notePopover(gtx C, p *browserPaneUI, scale float32) {
 	room.Y -= n.docked
 	el := cssRect(n.draftBox(), scale)
 	at := notePopoverAt(el, d.Size, room, gtx.Dp(ui.Space(3)))
+	n.cut(image.Rectangle{Min: at, Max: at.Add(d.Size)})
 	defer op.Offset(at).Push(gtx.Ops).Pop()
 	defer noteEnter(gtx, n.openedAt, el.Sub(at), d.Size)()
 	shape := clip.UniformRRect(image.Rectangle{Max: d.Size}, gtx.Dp(ui.RadiusMD))
@@ -438,7 +444,9 @@ func (u *window) notesTray(gtx C, p *browserPaneUI, session string) {
 	n.docked = height + edge
 	page := gtx.Constraints.Max
 	size := image.Pt(max(page.X-2*edge, 0), height)
-	defer op.Offset(image.Pt(edge, page.Y-height-edge)).Push(gtx.Ops).Pop()
+	at := image.Pt(edge, page.Y-height-edge)
+	n.cut(image.Rectangle{Min: at, Max: at.Add(size)})
+	defer op.Offset(at).Push(gtx.Ops).Pop()
 	u.spot(gtx, tourBrowserNotes, func(C) D { return D{Size: size} })
 	defer noteEnter(gtx, n.trayShown, image.Rect(size.X/2, size.Y, size.X/2, size.Y+1), size)()
 	gtx.Constraints = layout.Exact(size)

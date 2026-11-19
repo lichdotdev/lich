@@ -175,6 +175,14 @@ page only answers what is where (`browser.ElementAt`, `browser.Locate`); the
 outline, the pins, the strokes and the note are the window's, so nothing is
 injected into the page.
 
+On a page the window draws itself (a WebKitGTK view on X11), the same scripts
+(`pagescript`) run in that page instead of in Chrome, since that is the page the
+person scrolls and points at, and WebKit draws it at the pane's scale, so the
+pointer and the boxes divide by one. The window's drawing over the page (the
+bar or tray, the outlines, the tag, the pins and the note) is cut out of the
+page's X window, so it shows there; while Select is on the page lets the
+pointer through to the window, and the wheel scrolls it from there.
+
 ## Console errors
 
 Each page answer (`browser_info`, `browser_click`, `browser_press`) names the
