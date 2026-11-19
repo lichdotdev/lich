@@ -375,8 +375,11 @@ draws none while it grows in, because the room above the rows is measured in the
   tooltip and no word; while the agent works the chips take no click and a tooltip says why. What does not
   fit is left out with the items after it, never wrapped. The rest of the footer stays out of a chat. Under
   the box, outside it with no fill, one line: at the left a `TextXS` muted project, a slash and the branch,
-  which opens the Git panel as its balloon did, and at the right the footer's changes item (files and diff),
-  which opens Review. Attach, changes and the branch show only when the user's footer layout has them, and
+  which opens the Git panel as its balloon did, and at the right the changes, only while there are some
+  (files above 0): in the left's style, a small file-diff glyph, the file count and `+added -deleted` (`TonePass`,
+  `Destructive`) in `TextXS`, on the same line and height, no fill at rest and the kit's hover fill under the
+  pointer, which opens Review. It is never drawn pressed, as the footer's button is while the dock shows Review:
+  on this line a lit item reads as a button switched on for no reason. Attach, changes and the branch show only when the user's footer layout has them, and
   in every pane, each for its own session (its checkout, branch and changes, with or without the focus, but only the
   followed pane's items take a click); the attach "+" and the context ring are the followed session's alone, so another
   chat pane of a layout has the provider's chips and Send.
