@@ -483,7 +483,7 @@ func (u *window) chatAgent(gtx C, th *ui.Theme, p *chatPane, sv sessionView, r c
 	notify := func(t ui.Toast) { u.toaster.Show(t) }
 	var children []layout.FlexChild
 	if r.lead {
-		children = append(children, layout.Rigid(func(gtx C) D { return u.chatWho(gtx, th, sv, r.bare) }), ui.VGap(1.5))
+		children = append(children, layout.Rigid(func(gtx C) D { return u.chatWho(gtx, th, sv, it, r.bare) }), ui.VGap(1.5))
 	}
 	c := p.copyOf(it.ID)
 	return c.hover(gtx, func(gtx C, over bool) D {
@@ -502,18 +502,19 @@ func (u *window) chatAgent(gtx C, th *ui.Theme, p *chatPane, sv sessionView, r c
 
 // chatWho is who speaks: the provider's mark in the color of the session's
 // card, on a fill of that color mixed into the surface, its name, and muted the
-// model and effort in force when the session's options say them.
-func (u *window) chatWho(gtx C, th *ui.Theme, sv sessionView, bare bool) D {
+// model and effort that wrote the answer, as the item says. The session's
+// options are never read here: they are what the chat is set to now, and an
+// answer written before a change keeps the model that wrote it.
+func (u *window) chatWho(gtx C, th *ui.Theme, sv sessionView, it backend.ChatItem, bare bool) D {
 	tint, mark, _ := u.agentLook(sv.ID)
 	name := sv.Kind
 	if info, ok := u.model.providers.find(sv.Kind); ok && info.name != "" {
 		name = info.name
 	}
 	var running []string
-	for _, cat := range []string{api.OptionModel, api.OptionEffort} {
-		if o, ok := u.model.chat.optionOf(sv.ID, cat); ok {
-			cur, _ := currentChoice(o)
-			running = append(running, choiceLabel(cur))
+	for _, part := range []string{it.Model, it.Effort} {
+		if part != "" {
+			running = append(running, part)
 		}
 	}
 	var row []layout.FlexChild

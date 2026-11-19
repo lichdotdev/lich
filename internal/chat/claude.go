@@ -74,6 +74,7 @@ type claudeLine struct {
 
 type claudeMessage struct {
 	ID      string          `json:"id"`
+	Model   string          `json:"model"`
 	Content json.RawMessage `json:"content"`
 }
 
@@ -109,6 +110,9 @@ func (d *claudeDriver) open(ctx context.Context, resume string) (string, error) 
 		return "", fmt.Errorf("Claude Code did not start its chat: %w", err)
 	}
 	d.readInitialize(init.Body, d.c.svc.store.SessionModel(d.c.id))
+	// The transcript was read before the models were known: its items carry
+	// the ids Claude Code wrote.
+	d.c.conv.renameModels(d.modelName)
 	if err := d.readApplied(ctx); err != nil {
 		d.c.conv.notice("Claude Code did not say which model it runs: " + err.Error())
 	}
@@ -219,7 +223,7 @@ func readClaudeMessage(c *chatSession, line claudeLine, history bool) {
 			d.stream(line)
 		}
 	case "assistant":
-		readClaudeAssistant(c, d, line)
+		readClaudeAssistant(c, d, line, history)
 	case "user":
 		readClaudeUser(c, line, history)
 	}
@@ -234,17 +238,23 @@ func (d *claudeDriver) stream(line claudeLine) {
 	switch {
 	case line.Event.Type != "content_block_delta":
 	case delta.Type == "text_delta" && delta.Text != "":
-		d.c.conv.update(id, api.ItemAgent, false, func(it *api.ChatItem) { it.Text += delta.Text })
+		model, effort := d.producer("", false)
+		d.c.conv.update(id, api.ItemAgent, false, func(it *api.ChatItem) { it.Text += delta.Text; attribute(it, model, effort) })
 	case delta.Type == "thinking_delta" && delta.Thinking != "":
-		d.c.conv.update(id, api.ItemThought, false, func(it *api.ChatItem) { it.Text += delta.Thinking })
+		model, effort := d.producer("", false)
+		d.c.conv.update(id, api.ItemThought, false, func(it *api.ChatItem) {
+			it.Text += delta.Thinking
+			attribute(it, model, effort)
+		})
 	}
 }
 
-func readClaudeAssistant(c *chatSession, d *claudeDriver, line claudeLine) {
+func readClaudeAssistant(c *chatSession, d *claudeDriver, line claudeLine, history bool) {
 	var blocks []claudeBlock
 	if json.Unmarshal(line.Message.Content, &blocks) != nil {
 		return
 	}
+	model, effort := d.producer(line.Message.Model, history)
 	for _, b := range blocks {
 		index := 0
 		if d != nil {
@@ -256,15 +266,15 @@ func readClaudeAssistant(c *chatSession, d *claudeDriver, line claudeLine) {
 		id := fmt.Sprintf("%s/%d", line.Message.ID, index)
 		switch b.Type {
 		case "text":
-			c.conv.put(api.ChatItem{ID: id, Kind: api.ItemAgent, Text: b.Text, At: stamp(line.Timestamp)}, true)
+			c.conv.put(api.ChatItem{ID: id, Kind: api.ItemAgent, Text: b.Text, At: stamp(line.Timestamp), Model: model, Effort: effort}, true)
 		case "thinking":
 			if b.Thinking != "" {
-				c.conv.put(api.ChatItem{ID: id, Kind: api.ItemThought, Text: b.Thinking, At: stamp(line.Timestamp)}, true)
+				c.conv.put(api.ChatItem{ID: id, Kind: api.ItemThought, Text: b.Thinking, At: stamp(line.Timestamp), Model: model, Effort: effort}, true)
 			}
 		case "tool_use":
 			tool := claudeTool(b.Name, b.Input)
 			tool.State = api.ToolRunning
-			c.conv.put(api.ChatItem{ID: b.ID, Kind: api.ItemTool, Tool: &tool, At: stamp(line.Timestamp)}, true)
+			c.conv.put(api.ChatItem{ID: b.ID, Kind: api.ItemTool, Tool: &tool, At: stamp(line.Timestamp), Model: model, Effort: effort}, true)
 			c.toolStarted(tool.Name, tool.Title)
 		}
 	}

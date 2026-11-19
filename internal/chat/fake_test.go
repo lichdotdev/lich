@@ -93,7 +93,7 @@ func (f *fake) claude(args []string) {
 			f.claudeControl(run, m)
 		case "user":
 			f.send(map[string]any{"type": "system", "subtype": "init", "session_id": session, "model": run.model, "permissionMode": run.mode})
-			f.claudeTurn(str(m, "message", "content"))
+			f.claudeTurn(run, str(m, "message", "content"))
 		}
 	}
 }
@@ -102,9 +102,9 @@ func (f *fake) claudeResult(isError bool, terminal, text string) {
 	f.send(map[string]any{"type": "result", "subtype": "success", "is_error": isError, "terminal_reason": terminal, "result": text})
 }
 
-func (f *fake) claudeTurn(text string) {
+func (f *fake) claudeTurn(run *fakeClaude, text string) {
 	msg := func(id string, block map[string]any) {
-		f.send(map[string]any{"type": "assistant", "parent_tool_use_id": nil, "message": map[string]any{"id": id, "content": []any{block}}})
+		f.send(map[string]any{"type": "assistant", "parent_tool_use_id": nil, "message": map[string]any{"id": id, "model": run.model, "content": []any{block}}})
 	}
 	switch text {
 	case "hi":

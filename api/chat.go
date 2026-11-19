@@ -100,6 +100,12 @@ type ChatItem struct {
 	Permission *ChatPermission `json:"permission,omitempty"`
 	// At is when the item began, in unix milliseconds.
 	At int64 `json:"at"`
+	// Model and Effort are what produced the item, as the person reads them:
+	// the model's name and the effort level in force when the item began. Each
+	// is "" where the provider does not say, as for most of a conversation read
+	// back from a transcript, which holds no effort.
+	Model  string `json:"model,omitempty"`
+	Effort string `json:"effort,omitempty"`
 }
 
 // ChatToolCall is a tool the agent ran. Name is the provider's own (Read,

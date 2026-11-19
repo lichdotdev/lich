@@ -168,3 +168,23 @@ func (c *conversation) snapshot() []api.ChatItem {
 	defer c.mu.Unlock()
 	return slices.Clone(c.items)
 }
+
+// renameModels rewrites the model of every item that has one through name,
+// without telling the window: it is for a history the window has not read.
+func (c *conversation) renameModels(name func(string) string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	for i := range c.items {
+		if c.items[i].Model != "" {
+			c.items[i].Model = name(c.items[i].Model)
+		}
+	}
+}
+
+// attribute gives an item the model and effort that produced it, once: what
+// an item began with stays, whatever the chat is set to afterwards.
+func attribute(it *api.ChatItem, model, effort string) {
+	if it.Model == "" && it.Effort == "" {
+		it.Model, it.Effort = model, effort
+	}
+}

@@ -610,6 +610,8 @@ ChatItem {
 	tool,omitempty *ChatToolCall
 	permission,omitempty *ChatPermission
 	at int64
+	model,omitempty string
+	effort,omitempty string
 }
 
 ChatOption {

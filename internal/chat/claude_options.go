@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"slices"
+	"strings"
 
 	"github.com/lichdotdev/lich/api"
 )
@@ -214,4 +215,54 @@ func claudeCurrentModel(run claudeRunning) (string, claudeModel) {
 		return run.models[i].Value, run.models[i]
 	}
 	return "", claudeModel{}
+}
+
+// modelName is the name the window gives the model id: the display name of
+// the choice that resolves to it, an alias other than "default" first, since
+// that one only says which model the default is. An id the chat does not list
+// stays as it is.
+func (d *claudeDriver) modelName(id string) string {
+	d.mu.Lock()
+	models := d.run.models
+	d.mu.Unlock()
+	named := func(m claudeModel) bool { return m.Value == id || m.Resolved == id }
+	if i := slices.IndexFunc(models, func(m claudeModel) bool { return named(m) && m.Value != claudeDefault }); i >= 0 {
+		return models[i].Name
+	}
+	if i := slices.IndexFunc(models, named); i >= 0 {
+		return models[i].Name
+	}
+	return id
+}
+
+// claudeDefault is the alias that stands for whichever model is the default.
+const claudeDefault = "default"
+
+// producer is the model and effort an item written now is attributed to: the
+// model id Claude Code put on the message, or the one the process runs on
+// when the line carries none, and the effort the process runs on. A
+// conversation read from the transcript knows the model only, and a model
+// that takes no effort has none.
+func (d *claudeDriver) producer(id string, history bool) (model, effort string) {
+	if d == nil {
+		return "", ""
+	}
+	d.mu.Lock()
+	run := d.run
+	d.mu.Unlock()
+	if id == "" && !history {
+		id = run.model
+	}
+	// Claude Code names the messages it writes itself "<synthetic>".
+	if id == "" || strings.HasPrefix(id, "<") {
+		return "", ""
+	}
+	model = d.modelName(id)
+	if history {
+		return model, ""
+	}
+	if i := slices.IndexFunc(run.models, func(m claudeModel) bool { return m.Value == id || m.Resolved == id }); i >= 0 && !slices.Contains(run.models[i].Efforts, run.effort) {
+		return model, ""
+	}
+	return model, run.effort
 }

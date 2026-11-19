@@ -220,3 +220,30 @@ func (d *acpDriver) configSet(id, value string, raw json.RawMessage) {
 		}
 	}
 }
+
+// producer is the model and effort an item that begins now is attributed to:
+// the current choice of each, by name where the provider gives one. What a
+// session/load replays is not attributed: the provider does not say.
+func (d *acpDriver) producer() (model, effort string) {
+	if d.c.conv.replaying() {
+		return "", ""
+	}
+	d.mu.Lock()
+	opts := d.settings.options()
+	d.mu.Unlock()
+	named := func(o api.ChatOption) string {
+		if i := slices.IndexFunc(o.Choices, func(c api.ChatChoice) bool { return c.ID == o.Current }); i >= 0 && o.Choices[i].Label != "" {
+			return o.Choices[i].Label
+		}
+		return o.Current
+	}
+	for _, o := range opts {
+		switch o.Category {
+		case api.OptionModel:
+			model = named(o)
+		case api.OptionEffort:
+			effort = named(o)
+		}
+	}
+	return model, effort
+}
