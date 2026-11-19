@@ -461,7 +461,6 @@ type BrowserLocateOptions struct {
 type BrowserNewTabPageOptions struct {
 	Lang   string              `json:"lang"`
 	Colors BrowserNewTabColors `json:"colors"`
-	Flame  BrowserNewTabFlame  `json:"flame"`
 	Text   BrowserNewTabText   `json:"text"`
 }
 
@@ -475,17 +474,6 @@ type BrowserNewTabColors struct {
 	Border     string `json:"border"`
 	Accent     string `json:"accent"`
 	Pass       string `json:"pass"`
-}
-
-// BrowserNewTabFlame is the sprite drawn above the page: Rows are the sprite's
-// rows joined by " | ", one symbol per pixel and . for none, and the other
-// fields the colors of symbols 4, 2, 3 and 1.
-type BrowserNewTabFlame struct {
-	Rows string `json:"rows"`
-	Core string `json:"core"`
-	Body string `json:"body"`
-	Edge string `json:"edge"`
-	Base string `json:"base"`
 }
 
 // BrowserNewTabText is every sentence of the new-tab page, in the interface

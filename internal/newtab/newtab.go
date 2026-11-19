@@ -19,9 +19,9 @@ import (
 
 // Source is what the page reads, wired at startup.
 type Source struct {
-	// Project names the project session belongs to; ok is false for a session
-	// lich does not know.
-	Project func(session string) (name, projectID string, ok bool)
+	// Project is the id of the project session belongs to; ok is false for a
+	// session lich does not know.
+	Project func(session string) (projectID string, ok bool)
 	// Services is every project's services (internal/services).
 	Services func() ([]api.Service, error)
 	// WorktreePort is the dev-server port the session's checkout reserves, 0
@@ -93,7 +93,7 @@ func (s *Service) Handler() http.Handler {
 			http.NotFound(w, r)
 			return
 		}
-		name, projectID, known := s.src.Project(session)
+		projectID, known := s.src.Project(session)
 		if !known {
 			http.NotFound(w, r)
 			return
@@ -101,7 +101,7 @@ func (s *Service) Handler() http.Handler {
 		w.Header().Set("Cache-Control", "no-store")
 		switch rest {
 		case "":
-			s.page(w, session, name, projectID, r.URL.Query().Get("err") != "")
+			s.page(w, session, projectID, r.URL.Query().Get("err") != "")
 		case "go":
 			s.goTo(w, r, session)
 		default:

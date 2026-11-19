@@ -134,17 +134,17 @@ func TestProjectOpenFollowsTheTab(t *testing.T) {
 	}
 }
 
-func TestSessionProjectNamesTheProjectOfASession(t *testing.T) {
+func TestSessionProjectIsTheProjectOfASession(t *testing.T) {
 	svc := newTestStore(t)
 	addTestProject(t, svc, "p1")
 	if _, err := svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s1", Label: "one", NextSeq: 2}); err != nil {
 		t.Fatal(err)
 	}
-	name, id, ok := svc.SessionProject("s1")
-	if !ok || name != "p1-name" || id != "p1" {
-		t.Fatalf("SessionProject = %q, %q, %v", name, id, ok)
+	id, ok := svc.SessionProject("s1")
+	if !ok || id != "p1" {
+		t.Fatalf("SessionProject = %q, %v", id, ok)
 	}
-	if _, _, ok := svc.SessionProject("nope"); ok {
+	if _, ok := svc.SessionProject("nope"); ok {
 		t.Fatal("an unknown session has a project")
 	}
 }

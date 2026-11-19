@@ -32,7 +32,7 @@ type fixture struct {
 func newFixture() *fixture {
 	k := &kept{values: map[string]string{}}
 	return &fixture{kept: k, src: Source{
-		Project:      func(session string) (string, string, bool) { return "todo-api", "p1", session == "s1" },
+		Project:      func(session string) (string, bool) { return "p1", session == "s1" },
 		Services:     func() ([]api.Service, error) { return nil, nil },
 		WorktreePort: func(string) int { return 0 },
 		Listening:    func(int) bool { return true },
@@ -52,7 +52,7 @@ func get(h http.Handler, target string) *httptest.ResponseRecorder {
 
 func TestPageOfAnEmptySessionShowsOnlyTheAddressField(t *testing.T) {
 	body := get(New(newFixture().src).Handler(), api.NewTabPrefix+"s1").Body.String()
-	for _, want := range []string{"lich · todo-api", `placeholder="Enter an address, or pick below"`, `action="/new-tab/s1/go"`, "<title>New tab</title>"} {
+	for _, want := range []string{`placeholder="Enter an address, or pick below"`, `action="/new-tab/s1/go"`, "<title>New tab</title>"} {
 		if !strings.Contains(body, want) {
 			t.Errorf("page lacks %q", want)
 		}
@@ -124,7 +124,7 @@ func TestPageCapsItsArtifacts(t *testing.T) {
 func TestPageEscapesEverythingTheAgentWrites(t *testing.T) {
 	const hostile = `<script>alert(1)</script>"'`
 	f := newFixture()
-	f.src.Project = func(string) (string, string, bool) { return hostile, "p1", true }
+	f.src.Project = func(string) (string, bool) { return "p1", true }
 	f.src.Services = func() ([]api.Service, error) {
 		return []api.Service{{ProjectID: "p1", Name: hostile, Command: hostile, State: api.ServiceRunning}}, nil
 	}
@@ -175,19 +175,20 @@ func TestPageIsDrawnWithTheWindowsTheme(t *testing.T) {
 	}
 }
 
-func TestPageDrawsTheFlameOnce(t *testing.T) {
+func TestPageHasNoHeaderAboveTheAddressField(t *testing.T) {
 	body := get(New(newFixture().src).Handler(), api.NewTabPrefix+"s1").Body.String()
-	if !strings.Contains(body, `viewBox="0 0 9 11"`) || !strings.Contains(body, `class="f4"`) {
-		t.Fatalf("no flame:\n%s", body)
+	if strings.Contains(body, "<svg") || strings.Contains(body, "lich ·") {
+		t.Fatalf("the page still carries a header:\n%s", body)
+	}
+	if !strings.Contains(body, "padding:104px") {
+		t.Fatal("the address field lost the room over it that the header left")
 	}
 }
 
 func TestLookRefusesWhatCouldBreakOutOfTheStyleOrTheMarkup(t *testing.T) {
 	for name, edit := range map[string]func(*api.BrowserNewTabPageOptions){
-		"color":       func(l *api.BrowserNewTabPageOptions) { l.Colors.Muted = "red;}</style><script>" },
-		"flame color": func(l *api.BrowserNewTabPageOptions) { l.Flame.Core = "#12" },
-		"language":    func(l *api.BrowserNewTabPageOptions) { l.Lang = `en"><script>` },
-		"flame rows":  func(l *api.BrowserNewTabPageOptions) { l.Flame.Rows = "..x.." },
+		"color":    func(l *api.BrowserNewTabPageOptions) { l.Colors.Muted = "red;}</style><script>" },
+		"language": func(l *api.BrowserNewTabPageOptions) { l.Lang = `en"><script>` },
 	} {
 		look := Fallback
 		edit(&look)
@@ -257,7 +258,7 @@ func TestGoRefusesATargetThatIsNotAWebPage(t *testing.T) {
 
 func TestSessionIDsAreEscapedInTheFormAction(t *testing.T) {
 	f := newFixture()
-	f.src.Project = func(string) (string, string, bool) { return "p", "p1", true }
+	f.src.Project = func(string) (string, bool) { return "p1", true }
 	body := get(New(f.src).Handler(), "/new-tab/a%20b").Body.String()
 	if !strings.Contains(body, `action="/new-tab/a%20b/go"`) {
 		t.Fatalf("action not escaped:\n%s", body)

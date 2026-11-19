@@ -307,9 +307,9 @@ own (`OpenVisible`) shows the page's internal URL in Chrome's own address bar.
   whenever its resolved theme (a followed system scheme, a theme's pair) or its
   interface language changes, and the page is drawn with the last it got, so a
   tab already open keeps its look until it is opened again. The CSS colors are
-  checked as hex and the language as a tag before they reach the page. The flame
-  is the chat's first frame on the chat's own tokens. The font is Onest when it is
-  installed and the system's otherwise; the window's copy is not reachable from
+  checked as hex and the language as a tag before they reach the page. The page has
+  no header over the address field: the project and a mark would tell the person
+  what the sidebar already does. The font is Onest when it is installed and the system's otherwise; the window's copy is not reachable from
   the backend.
 - **What the window does with it.** `BrowserState.NewTab` and `BrowserTab.NewTab`
   mark the page by its origin, never by a path another site could share. The

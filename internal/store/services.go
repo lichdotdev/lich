@@ -64,13 +64,11 @@ func (s *Service) ProjectName(projectID string) string {
 	return name
 }
 
-// SessionProject is the name and id of the project a session belongs to, and
-// false for a session the store does not hold.
-func (s *Service) SessionProject(sessionID string) (name, projectID string, ok bool) {
-	err := s.db.QueryRow(
-		`SELECT p.name, p.id FROM sessions s JOIN projects p ON p.id = s.project_id WHERE s.id = ?`, sessionID,
-	).Scan(&name, &projectID)
-	return name, projectID, err == nil
+// SessionProject is the id of the project a session belongs to, and false for
+// a session the store does not hold.
+func (s *Service) SessionProject(sessionID string) (projectID string, ok bool) {
+	err := s.db.QueryRow(`SELECT project_id FROM sessions WHERE id = ?`, sessionID).Scan(&projectID)
+	return projectID, err == nil
 }
 
 // ProjectOpen is whether project id has a tab: open, not closed to the
