@@ -146,3 +146,27 @@ func TestATurnWithNoMessageTimeTakesItsDayFromItsAnswer(t *testing.T) {
 		t.Errorf("%d day rows, want 1 between the turns", days)
 	}
 }
+
+func TestAPersonsMessageNamesItsDayUnlessItIsToday(t *testing.T) {
+	now := time.Date(2026, 11, 18, 18, 0, 0, 0, time.UTC)
+	for at, want := range map[time.Time]string{
+		time.Date(2026, 11, 18, 14, 32, 0, 0, time.UTC): "14:32",
+		time.Date(2026, 11, 17, 23, 5, 0, 0, time.UTC):  "Nov 17 · 23:05",
+		time.Date(2025, 12, 31, 9, 0, 0, 0, time.UTC):   "Dec 31, 2025 · 09:00",
+	} {
+		if got := datedClock(at, now); got != want {
+			t.Errorf("%v reads %q, want %q", at, got, want)
+		}
+	}
+}
+
+func TestAPersonsMessageFromAnotherDayShowsItsDate(t *testing.T) {
+	u, r := stampFrames(t)
+	at := novDay(17, 14, 32)
+	u.model.chat.history("s1", []backend.ChatItem{{ID: "u1", Kind: api.ItemUser, Turn: 1, At: at, Text: "hi"}})
+	r.settle(t)
+	want := datedClock(time.UnixMilli(at).In(r.now.Location()), r.now)
+	if !r.shows(want) || r.shows(clockFor(r, at)) {
+		t.Errorf("want the message dated %q, and not its bare time:\n%s", want, r.drawn())
+	}
+}

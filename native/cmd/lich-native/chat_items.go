@@ -96,7 +96,32 @@ func (u *window) chatStamp(gtx C, th *ui.Theme, p *chatPane, it backend.ChatItem
 		return D{}
 	}
 	t := time.UnixMilli(it.At).In(gtx.Now.Location())
-	return th.Tooltip(&u.root, p.stamp(it.ID), clockText(t)).Layout(gtx, th.Text(ui.TextXS, t.Format(chatClock)).Muted().Layout)
+	return u.chatStampText(gtx, th, p, it, t, t.Format(chatClock))
+}
+
+// chatDatedStamp is chatStamp with the day in front when it is not today's:
+// "Nov 18 · 14:32", the year too when it is not this one's.
+func (u *window) chatDatedStamp(gtx C, th *ui.Theme, p *chatPane, it backend.ChatItem) D {
+	if it.At <= 0 {
+		return D{}
+	}
+	t := time.UnixMilli(it.At).In(gtx.Now.Location())
+	return u.chatStampText(gtx, th, p, it, t, datedClock(t, gtx.Now))
+}
+
+func (u *window) chatStampText(gtx C, th *ui.Theme, p *chatPane, it backend.ChatItem, t time.Time, text string) D {
+	return th.Tooltip(&u.root, p.stamp(it.ID), clockText(t)).Layout(gtx, th.Text(ui.TextXS, text).Muted().Layout)
+}
+
+// datedClock is t's short clock, led by its day unless that is now's.
+func datedClock(t, now time.Time) string {
+	switch {
+	case sameDay(t, now):
+		return t.Format(chatClock)
+	case t.Year() == now.Year():
+		return t.Format("Jan 2 · " + chatClock)
+	}
+	return t.Format("Jan 2, 2006 · " + chatClock)
 }
 
 // chatStampRow is the line under a message: its time, and while the pointer is
@@ -105,13 +130,17 @@ func (u *window) chatStamp(gtx C, th *ui.Theme, p *chatPane, it backend.ChatItem
 // faces the middle (at the left of a message the time is at the right). The line
 // is as tall with the button as without it.
 func (u *window) chatStampRow(gtx C, th *ui.Theme, p *chatPane, c *chatCopy, it backend.ChatItem, over, copyFirst bool) D {
+	stamp := u.chatStamp
+	if copyFirst {
+		stamp = u.chatDatedStamp
+	}
 	gtx.Constraints.Min.Y = gtx.Dp(chatCopySlot)
 	if !over && !copyFirst {
 		// An answer's foot, its time and its copy button, shows only under the
 		// pointer; the line it stands on is there either way.
 		return D{Size: image.Pt(gtx.Constraints.Min.X, gtx.Constraints.Min.Y)}
 	}
-	row := []layout.FlexChild{layout.Rigid(func(gtx C) D { return u.chatStamp(gtx, th, p, it) })}
+	row := []layout.FlexChild{layout.Rigid(func(gtx C) D { return stamp(gtx, th, p, it) })}
 	if over {
 		button := layout.Rigid(func(gtx C) D { return c.button(gtx, th, it.Text) })
 		if copyFirst {
