@@ -123,3 +123,34 @@ func TestConversationStampsWhenAToolCallEnded(t *testing.T) {
 		t.Errorf("a replayed call ended at %d, want 0: nobody said when", got)
 	}
 }
+
+// A turn's end stops the calls its provider left running in it, and only its
+// own: an older turn's unended call keeps no end anyone saw.
+func TestATurnsEndStopsTheCallsLeftRunningInIt(t *testing.T) {
+	t.Parallel()
+	var sent []api.ChatItem
+	c := newConversation(func(it api.ChatItem) { sent = append(sent, it) })
+	now := time.Unix(100, 0)
+	c.now = func() time.Time { return now }
+	c.put(api.ChatItem{ID: "old", Kind: api.ItemTool, Tool: &api.ChatToolCall{Name: "Bash", State: api.ToolRunning}}, true)
+	c.userMessage("go")
+	c.put(api.ChatItem{ID: "k1", Kind: api.ItemTool, Tool: &api.ChatToolCall{Name: "Bash", State: api.ToolRunning}}, true)
+	c.put(api.ChatItem{ID: "k2", Kind: api.ItemTool, Tool: &api.ChatToolCall{Name: "Read", State: api.ToolDone}}, true)
+	done, _ := c.get("k2")
+	now = now.Add(3 * time.Second)
+	sent = nil
+	c.stopCalls()
+	k1, _ := c.get("k1")
+	if k1.Tool.Ended != now.UnixMilli() || k1.Tool.State != api.ToolRunning {
+		t.Errorf("k1 = %+v, want its state kept and ended at %d", *k1.Tool, now.UnixMilli())
+	}
+	if k2, _ := c.get("k2"); k2.Tool.Ended != done.Tool.Ended {
+		t.Errorf("k2 ended at %d, want %d as it was", k2.Tool.Ended, done.Tool.Ended)
+	}
+	if old, _ := c.get("old"); old.Tool.Ended != 0 {
+		t.Errorf("an older turn's call ended at %d", old.Tool.Ended)
+	}
+	if len(sent) != 1 || sent[0].ID != "k1" {
+		t.Errorf("sent %+v, want k1 alone", sent)
+	}
+}

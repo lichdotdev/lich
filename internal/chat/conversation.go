@@ -169,6 +169,24 @@ func (c *conversation) stampEnd(item *api.ChatItem) {
 	}
 }
 
+// stopCalls ends, at now, the calls of the turn in flight its provider left
+// unended, interrupted with the turn: their time stops where the turn did.
+func (c *conversation) stopCalls() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.quiet {
+		return
+	}
+	for i, it := range c.items {
+		if t := it.Tool; it.Turn == c.turn && t != nil && t.Ended == 0 && (t.State == api.ToolPending || t.State == api.ToolRunning) {
+			stopped := *t
+			stopped.Ended = c.now().UnixMilli()
+			c.items[i].Tool = &stopped
+			c.sendLocked(it.ID)
+		}
+	}
+}
+
 // setQuiet holds the window's copy back, or lets it go again.
 func (c *conversation) setQuiet(quiet bool) {
 	c.mu.Lock()

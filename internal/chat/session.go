@@ -220,6 +220,7 @@ func (c *chatSession) endTurn(reason string) {
 	took := time.Since(c.since).Milliseconds()
 	c.mu.Unlock()
 	c.dismissPermissions()
+	c.conv.stopCalls()
 	c.conv.flush()
 	c.svc.term.ReportChatState(c.id, stateDone, "", "")
 	events.Send(c.svc.hub.Emit, api.ChatTurnEvent, api.ChatTurn{SessionID: c.id, StopReason: reason, DurationMs: took, Changes: changes})

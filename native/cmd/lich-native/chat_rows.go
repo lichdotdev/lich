@@ -119,7 +119,7 @@ func chatRows(items []backend.ChatItem, running bool, now time.Time) []chatRow {
 		if running && it.Turn == last {
 			end = now.UnixMilli()
 		}
-		work := chatRow{kind: chatRowWork, avatar: opener[it.Turn] == "", turn: it.Turn, tools: sp.tools, ended: sp.end, live: running && toolRunning(sp.tools),
+		work := chatRow{kind: chatRowWork, avatar: opener[it.Turn] == "", turn: it.Turn, tools: sp.tools, ended: sp.end, live: running && it.Turn == last && toolRunning(sp.tools),
 			took: time.Duration(max(end-sp.start, 0)) * time.Millisecond}
 		if opener[it.Turn] == "" {
 			opener[it.Turn] = "work"

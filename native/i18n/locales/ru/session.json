@@ -42,6 +42,7 @@
   },
   "age": {
     "second": "{count} с",
+    "millisecond": "{count} мс",
     "minute": "{count} мин",
     "hour": "{count} ч",
     "ago": {

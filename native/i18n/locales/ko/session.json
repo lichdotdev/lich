@@ -39,6 +39,7 @@
   },
   "age": {
     "second": "{count}초",
+    "millisecond": "{count}밀리초",
     "minute": "{count}분",
     "hour": "{count}시간",
     "ago": {

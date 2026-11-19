@@ -2,6 +2,7 @@ package main
 
 import (
 	"image"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -107,8 +108,16 @@ func TestOnlyTheFirstAnswerOfATurnIsLeadAndOnlyWhileRunningIsAnythingLive(t *tes
 	if !lead["a1"] || lead["a2"] || !lead["a3"] {
 		t.Errorf("lead %v, want a1 and a3 alone", lead)
 	}
-	if live["t1"] || live["a1"] || live["a2"] || !live["a3"] || !live["work:1"] {
-		t.Errorf("live %v, want the answer being written and the group whose call runs", live)
+	// The first turn's call was left running, but that turn is over: only the
+	// turn in flight comes alive.
+	if live["t1"] || live["a1"] || live["a2"] || !live["a3"] || live["work:1"] {
+		t.Errorf("live %v, want the answer being written alone", live)
+	}
+	running := append(slices.Clone(items), backend.ChatItem{ID: "k2", Kind: api.ItemTool, Turn: 2, Tool: &backend.ChatToolCall{Name: "Bash", State: api.ToolRunning}})
+	for _, r := range chatRows(running, true, time.Time{}) {
+		if r.kind == chatRowWork && r.live != (r.turn == 2) {
+			t.Errorf("turn %d's group live = %v, want it live only in the turn in flight", r.turn, r.live)
+		}
 	}
 	for _, r := range chatRows(items, false, time.Time{}) {
 		if r.live {
@@ -184,7 +193,7 @@ func TestARunningGroupCountsItsCallsAndAFinishedOneSaysWhenItEnded(t *testing.T)
 	}
 	_, r = lifeFrames(t, call(api.ToolDone), false)
 	r.frame()
-	ended := i18n.T("chat.view.workedAt", i18n.Args{"duration": chatElapsed(0), "count": 1, "time": clockFor(r, novDay(18, 17, 59))})
+	ended := i18n.T("chat.view.workedAt", i18n.Args{"duration": chatTook(0), "count": 1, "time": clockFor(r, novDay(18, 17, 59))})
 	if !r.shows(ended) {
 		t.Errorf("no %q:\n%s", ended, r.drawn())
 	}
@@ -259,7 +268,7 @@ func TestARunningCallShimmersAndCountsAndAnEndedOneStandsStill(t *testing.T) {
 	done.Tool = &backend.ChatToolCall{Name: "Bash", Title: "go test", State: api.ToolDone}
 	r = newFrameRig(image.Pt(400, 40), draw(done, false))
 	r.frame()
-	if r.shows(chatElapsed(0)) {
+	if r.shows(chatElapsed(0)) || r.shows(chatTook(0)) {
 		t.Errorf("a call with no end shows a time:\n%s", r.drawn())
 	}
 }
@@ -316,7 +325,8 @@ func TestAGroupTookUntilItsLastCallEnded(t *testing.T) {
 	}
 }
 
-// The calls still running stand under a folded group, each until it ends.
+// The calls still running stand under a folded group, each until it ends;
+// with none running the last call stays, still, until the next one starts.
 func TestAFoldedGroupShowsTheCallsStillRunning(t *testing.T) {
 	items := []backend.ChatItem{
 		{ID: "u1", Kind: api.ItemUser, Turn: 1, At: novDay(18, 17, 58), Text: "go"},
@@ -334,10 +344,64 @@ func TestAFoldedGroupShowsTheCallsStillRunning(t *testing.T) {
 	if r.shows("Read") {
 		t.Error("a call that ended stands under the folded group")
 	}
-	_, r = lifeFrames(t, items, false)
-	r.settle(t)
-	if r.shows("Bash") {
-		t.Error("a folded group of a turn that is over shows a call")
+	ended := slices.Clone(items)
+	ended[3].Tool = &backend.ChatToolCall{Name: "Grep", Title: "TODO", State: api.ToolDone, Ended: novDay(18, 17, 59) + 476}
+	ended[2].Tool = &backend.ChatToolCall{Name: "Bash", Title: "go test", State: api.ToolDone}
+	for _, running := range []bool{true, false} {
+		_, r = lifeFrames(t, ended, running)
+		r.frame()
+		if !r.shows("Grep") || !r.shows("476ms") {
+			t.Errorf("running %v: the last call does not stand under the folded group with its time:\n%s", running, r.drawn())
+		}
+		if r.shows("Bash") || r.shows("Read") {
+			t.Errorf("running %v: a call before the last stands under the folded group", running)
+		}
+	}
+}
+
+// A call its turn left running, interrupted, stops with the turn: no band, no
+// counter, the time up to the turn's end, or none where that is unknown.
+func TestACallOfAnEndedTurnStandsStill(t *testing.T) {
+	start := time.Unix(1000, 0)
+	call := func(ended int64) backend.ChatItem {
+		return backend.ChatItem{ID: "k1", Kind: api.ItemTool, Turn: 1, At: start.UnixMilli(),
+			Tool: &backend.ChatToolCall{Name: "Bash", Title: "sleep 9", State: api.ToolRunning, Ended: ended}}
+	}
+	items := func(it backend.ChatItem) []backend.ChatItem {
+		return []backend.ChatItem{{ID: "u1", Kind: api.ItemUser, Turn: 1, At: start.UnixMilli()}, it}
+	}
+	for _, tc := range []struct {
+		ended int64
+		want  string
+	}{{start.Add(3 * time.Second).UnixMilli(), chatTook(3 * time.Second)}, {0, ""}} {
+		it := call(tc.ended)
+		var row chatRow
+		for _, r := range chatRows(items(it), false, start.Add(time.Minute)) {
+			if r.kind == chatRowWork {
+				row = r
+			}
+		}
+		r := newFrameRig(image.Pt(400, 40), func(gtx C, th *ui.Theme) { chatTool(gtx, th, it, row.live) })
+		r.now = start.Add(time.Minute)
+		r.frame()
+		if at, ok := wakeAfter(r.now, func(gtx C) { chatTool(gtx, r.theme, it, row.live) }); ok {
+			t.Errorf("a call of an ended turn asked to be drawn again at %v", at)
+		}
+		if tc.want != "" && !r.shows(tc.want) {
+			t.Errorf("no %q:\n%s", tc.want, r.drawn())
+		}
+		if r.shows(chatElapsed(time.Minute)) {
+			t.Errorf("the call counts on past its turn:\n%s", r.drawn())
+		}
+	}
+}
+
+// A time that stands still under a second reads in milliseconds.
+func TestAStillTimeUnderASecondReadsInMilliseconds(t *testing.T) {
+	for d, want := range map[time.Duration]string{476 * time.Millisecond: "476ms", 0: "0ms", 2 * time.Second: chatElapsed(2 * time.Second)} {
+		if got := chatTook(d); got != want {
+			t.Errorf("chatTook(%v) = %q, want %q", d, got, want)
+		}
 	}
 }
 
