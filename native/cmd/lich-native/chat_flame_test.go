@@ -1,6 +1,7 @@
 package main
 
 import (
+	"image"
 	"image/color"
 	"strings"
 	"testing"
@@ -73,5 +74,35 @@ func TestTheFlameAdvancesAFrameEveryStepAndLoops(t *testing.T) {
 	}
 	if len(seen) != len(chatFlameFrames) {
 		t.Errorf("%d frames shown, want all %d", len(seen), len(chatFlameFrames))
+	}
+}
+
+// The flame is taller than the line it burns on: only its foot takes room, so
+// the turn's line is as tall as the foot and the verb sits at the foot's middle.
+func TestTheFlamesFootCentersOnTheVerbAndTheLineIsNoTaller(t *testing.T) {
+	var line, label D
+	r := newFrameRig(image.Pt(400, 200), func(gtx C, th *ui.Theme) {
+		gtx.Constraints.Min = image.Point{}
+		label = chatLiveLabel(gtx, th, chatVerb("s1", 1), th.MutedForeground, time.Time{})
+		line = chatLive(gtx, th, "s1", chatRow{turn: 1})
+	})
+	r.frame()
+	const foot = 22 // 11 rows of 1.5dp pixels, two device pixels each at 1x
+	if line.Size.Y != foot {
+		t.Fatalf("the line is %dpx tall, want the flame's foot, %dpx", line.Size.Y, foot)
+	}
+	// Both verbs are drawn from the top of the screen: the bare one, then the
+	// line's, which the foot pushes down by half of what it is taller.
+	var tops []int
+	for _, n := range r.nodes() {
+		if n.Desc.Label == chatVerb("s1", 1) {
+			tops = append(tops, n.Desc.Bounds.Min.Y)
+		}
+	}
+	if len(tops) != 2 {
+		t.Fatalf("%d verbs drawn, want the bare one and the line's:\n%s", len(tops), r.drawn())
+	}
+	if got, want := tops[1]-tops[0], (foot-label.Size.Y)/2; got != want {
+		t.Errorf("the verb sits %dpx down the line, want %dpx, the middle of the foot", got, want)
 	}
 }

@@ -41,6 +41,10 @@ var chatFlameFrames = [...]string{
 const (
 	chatFlameCols = 14
 	chatFlameRows = 17
+	// chatFlameLineRows is how many rows, from the foot up, the flame takes of
+	// its line: the tongues' tips and the sparks burn over the line above, so
+	// the foot centers on the verb and the line is no taller for them.
+	chatFlameLineRows = 11
 	// chatFlameStep is how long a frame holds.
 	chatFlameStep = 100 * time.Millisecond
 	// chatFlameBody is how far the body goes from the muted foreground toward
@@ -85,6 +89,7 @@ func chatFlame(gtx C, th *ui.Theme) D {
 	}
 	gtx.Execute(op.InvalidateCmd{At: next})
 	px := max(gtx.Dp(chatFlamePixel), 1)
+	defer op.Offset(image.Pt(0, (chatFlameLineRows-chatFlameRows)*px)).Push(gtx.Ops).Pop()
 	for y, row := range strings.Split(chatFlameFrames[frame], " | ") {
 		for x := 0; x < len(row); {
 			c, ok := chatFlameColor(th, row[x])
@@ -99,5 +104,5 @@ func chatFlame(gtx C, th *ui.Theme) D {
 			x += run
 		}
 	}
-	return D{Size: image.Pt(chatFlameCols*px, chatFlameRows*px)}
+	return D{Size: image.Pt(chatFlameCols*px, chatFlameLineRows*px)}
 }
