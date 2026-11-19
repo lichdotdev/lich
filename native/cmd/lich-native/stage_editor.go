@@ -64,22 +64,23 @@ type fileEditor struct {
 	gen, decoGen int
 	// lines is the text weighed against base as of gen, decoKey what the
 	// decorations were last drawn for, and blame the cursor line's blame.
-	lines      lineDiff
-	decoKey    string
-	blame      editorBlame
-	focus      bool
-	disk       diskWatch
-	saving     editorSaving
-	undo, save widget.Clickable
-	saveTip    ui.Tooltip
-	image      *blobView
-	exits      fileExits
-	scroll     widget.List
-	md         codeMarkdown
-	menu       ui.MenuState
-	composer   commentComposer
-	env        editorEnv
-	th         *ui.Theme
+	lines   lineDiff
+	decoKey string
+	blame   editorBlame
+	focus   bool
+	disk    diskWatch
+	saving  editorSaving
+	// editedAt is the last edit, which autoSave counts from on now's clock.
+	editedAt time.Time
+	now      func() time.Time
+	image    *blobView
+	exits    fileExits
+	scroll   widget.List
+	md       codeMarkdown
+	menu     ui.MenuState
+	composer commentComposer
+	env      editorEnv
+	th       *ui.Theme
 }
 
 // editorEnv is what the editor reads of the window each frame.
@@ -93,7 +94,7 @@ type editorEnv struct {
 
 func newFileEditor(client *backend.Client, invalidate func(), family string, size unit.Sp, checkout string) *fileEditor {
 	f := &fileEditor{client: client, invalidate: invalidate, family: family, size: size, checkout: checkout,
-		image: newBlobView(invalidate), onDirty: func() {}, onSaved: func() {}}
+		image: newBlobView(invalidate), onDirty: func() {}, onSaved: func() {}, now: time.Now}
 	f.file.invalidate, f.disk.read.invalidate, f.blame.read.invalidate = invalidate, invalidate, invalidate
 	f.scroll.Axis = layout.Vertical
 	f.md.rendered = markdown.Cache{}
@@ -211,6 +212,7 @@ func (f *fileEditor) updated(u godemirror.Update) {
 		return
 	}
 	f.gen++
+	f.editedAt = f.now()
 	f.setDirty(u.State.Doc() != f.base)
 }
 
@@ -264,6 +266,7 @@ func (f *fileEditor) layout(gtx C, th *ui.Theme, env editorEnv) error {
 	}
 	f.takeSave()
 	f.actions(gtx)
+	f.autoSave(gtx)
 	f.watchDisk(gtx)
 	f.readBlame()
 	f.redecorate(th, gtx.Now)

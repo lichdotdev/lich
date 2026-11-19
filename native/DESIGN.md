@@ -311,8 +311,9 @@ agent's `show_code` takes the whole stage, in place of the session, as a service
 
 - The header is a `Space(10)` strip on the 8px edge: the folder in `MutedForeground` mono, the file's name in
   `Foreground` mono at `font.Medium`, and the unsaved dot (`ToneWait`, 6px) after the name while the text is not
-  the disk's. Its actions sit at the right: Undo as a ghost button, Save as the view's one `Primary`, disabled
-  while nothing is unsaved, its chord (Ctrl+S, ⌘S) in the tooltip rather than beside it.
+  the disk's: between an edit and its save, or while a failed save or a disk change waits. There are no Undo or
+  Save buttons: the editor saves itself (`autoSaveDelay`, 1 s after the last edit, and at once when it is left),
+  and Ctrl+Z and Ctrl+S stay on the keyboard.
 - The code is on the island's own fill. A line the user changed since the file was read or saved wears a
   `ToneWait` strip down its gutter cell, and a run of deleted lines marks the line that took their place.
 - The cursor's line, and no other, ends in its blame, `blameGap` (32) past the code: "author, age · summary"
@@ -325,8 +326,8 @@ agent's `show_code` takes the whole stage, in place of the session, as a service
   (0.14): one sentence, then Keep mine (outline) and Reload (secondary), never a second `Primary`, and under it
   the diff of what the disk changed since the read, unchanged runs collapsed to git's three lines of context, at
   most `diskBannerDiff` (240) tall so the code stays in sight.
-- Another file or Close over unsaved changes asks in a dialog: Cancel (outline), Discard (destructive), Save
-  (`Primary`).
+- Another file or Close asks nothing: the text is saved first. Only a failed save or an undecided disk change
+  asks, in a dialog: Cancel (outline), Discard (destructive), Save (`Primary`).
 - In the tree the editor is a node of its checkout, the last row under it: the file glyph in a neutral ring and
   the file's name in mono, the unsaved dot after the name, lit as an active session is while the editor is on the
   stage. Its only action is Close, in its menu and its `⋯`; there is no ✕ on the row. In the rail it is the glyph

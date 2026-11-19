@@ -47,11 +47,9 @@
   },
   "editor": {
     "save": "저장",
-    "saveTip": "저장 ({keys})",
-    "undo": "실행 취소",
     "discard": "버리기",
     "unsavedTitle": "{name}의 변경 사항을 저장할까요?",
-    "unsavedDescription": "저장하지 않으면 변경 사항이 사라집니다.",
+    "unsavedDescription": "저장하지 못했거나 그 사이 디스크에서 파일이 바뀌었습니다. 버리면 사라집니다.",
     "changedOnDisk": "편집을 시작한 뒤 디스크에서 이 파일이 바뀌었습니다.",
     "keepMine": "내 변경 유지",
     "reload": "다시 불러오기",

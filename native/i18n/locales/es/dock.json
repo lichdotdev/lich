@@ -47,11 +47,9 @@
   },
   "editor": {
     "save": "Guardar",
-    "saveTip": "Guardar ({keys})",
-    "undo": "Deshacer",
     "discard": "Descartar",
     "unsavedTitle": "¿Guardar los cambios en {name}?",
-    "unsavedDescription": "Si no los guardas, perderás los cambios.",
+    "unsavedDescription": "No se pudieron guardar, o el archivo cambió en el disco desde entonces. Si los descartas, se pierden.",
     "changedOnDisk": "Este archivo cambió en el disco desde que empezaste a editarlo.",
     "keepMine": "Conservar los míos",
     "reload": "Recargar",

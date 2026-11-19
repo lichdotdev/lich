@@ -47,11 +47,9 @@
   },
   "editor": {
     "save": "保存",
-    "saveTip": "保存 ({keys})",
-    "undo": "元に戻す",
     "discard": "破棄",
     "unsavedTitle": "{name} の変更を保存しますか?",
-    "unsavedDescription": "保存しないと、変更は失われます。",
+    "unsavedDescription": "保存に失敗したか、その後ファイルがディスク上で変更されました。破棄すると失われます。",
     "changedOnDisk": "編集を始めてから、このファイルはディスク上で変更されました。",
     "keepMine": "自分の変更を残す",
     "reload": "再読み込み",

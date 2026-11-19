@@ -1,71 +1,97 @@
 package main
 
-// The stage editor's header and what it saves: the path with the file's
-// name standing out, the unsaved dot, Undo, and Save, which Ctrl+S presses.
+// The stage editor's header and its saves: the path with the file's name
+// standing out and the unsaved dot, a second after the last edit or at once
+// on Ctrl+S, and whenever the editor is left.
 
 import (
 	"context"
 	"image"
 	"path"
-	"runtime"
 	"strings"
 	"sync"
+	"time"
 
 	"gioui.org/font"
 	"gioui.org/io/key"
 	"gioui.org/layout"
+	"gioui.org/op"
 
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
+// autoSaveDelay is how long after the last edit the editor writes it.
+const autoSaveDelay = time.Second
+
 // editorSaving is the save in flight, which lands on the frame after it.
 // UI goroutine fields: next is a save asked for while one was in flight, run
-// once it lands so it writes the text as it is then, with what waits on it.
+// once it lands so it writes the text as it is then, with what waits on it;
+// failedGen is the text a save failed on, which waits for an edit before it
+// is tried again by itself.
 type editorSaving struct {
-	mu     sync.Mutex
-	busy   bool
-	done   *editorSaved
-	next   bool
-	nextDo func()
+	mu        sync.Mutex
+	busy      bool
+	done      *editorSaved
+	next      bool
+	nextDo    func()
+	failed    bool
+	failedGen int
 }
 
 // editorSaved is a save that came back: the text it wrote, of which open,
-// and what was waiting on it.
+// and what was waiting on it. disk is the file as it was found when it no
+// longer held what the editor read, in which case nothing was written.
 type editorSaved struct {
 	doc   string
 	opens int
 	err   error
+	disk  *string
 	then  func()
 }
 
-var saveChord = combo{Mod: true, Key: "s"}
-
-// actions runs the header's clicks and Ctrl+S.
+// actions runs Ctrl+S, which saves at once.
 func (f *fileEditor) actions(gtx C) {
-	if f.undo.Clicked(gtx) && f.editable() {
-		f.ed.Undo()
-		f.focus = true
-	}
-	saved := f.save.Clicked(gtx)
 	for {
 		ev, ok := gtx.Event(key.Filter{Name: "S", Required: key.ModShortcut})
 		if !ok {
 			break
 		}
-		if e, isKey := ev.(key.Event); isKey && e.State == key.Press {
-			saved = true
+		if e, isKey := ev.(key.Event); isKey && e.State == key.Press && f.editable() && f.dirty {
+			f.startSave(nil, false)
 		}
 	}
-	if saved && f.editable() && f.dirty {
-		f.startSave(nil)
+}
+
+// autoSave writes the text autoSaveDelay after the last edit. It waits while
+// the disk's change is up for the user to decide, and after a failed save
+// until the next edit.
+func (f *fileEditor) autoSave(gtx C) {
+	if !f.dirty || !f.editable() || f.disk.theirs != nil || (f.saving.failed && f.saving.failedGen == f.gen) {
+		return
+	}
+	due := f.editedAt.Add(autoSaveDelay)
+	if now := f.now(); now.Before(due) {
+		gtx.Execute(op.InvalidateCmd{At: due})
+		return
+	}
+	f.startSave(nil, false)
+}
+
+// flush saves what the editor holds now, then runs then; with nothing to
+// save, or only a failure or a disk change to decide on, it saves nothing.
+func (f *fileEditor) flush(then func()) {
+	if f.dirty && f.disk.theirs == nil && !(f.saving.failed && f.saving.failedGen == f.gen) {
+		f.startSave(then, false)
 	}
 }
 
 // startSave writes the text over the file, then runs then; with nothing to
-// save, then runs at once.
-func (f *fileEditor) startSave(then func()) {
+// save, then runs at once. Unless overwrite, it first reads the file and
+// writes nothing when it no longer holds what the editor read: an agent wrote
+// it since, and the disk's change is put to the user instead.
+func (f *fileEditor) startSave(then func(), overwrite bool) {
 	if !f.editable() || !f.dirty {
 		if then != nil {
 			then()
@@ -81,12 +107,22 @@ func (f *fileEditor) startSave(then func()) {
 	f.saving.busy = true
 	f.saving.mu.Unlock()
 	st := f.ed.State()
-	doc, content := st.Doc(), st.SliceDoc(0, len(st.Doc()))
+	doc, content, base := st.Doc(), st.SliceDoc(0, len(st.Doc())), f.base
 	client, checkout, rel, opens := f.client, f.checkout, f.rel, f.opens
 	go func() {
-		err := client.WriteFile(context.Background(), checkout, rel, content)
+		saved := &editorSaved{doc: doc, opens: opens, then: then}
+		ctx := context.Background()
+		if !overwrite {
+			disk, err := client.ReadFile(ctx, checkout, rel)
+			if err == nil && normalizedText(disk) != base {
+				saved.disk = &disk
+			}
+		}
+		if saved.disk == nil {
+			saved.err = client.WriteFile(ctx, checkout, rel, content)
+		}
 		f.saving.mu.Lock()
-		f.saving.busy, f.saving.done = false, &editorSaved{doc: doc, opens: opens, err: err, then: then}
+		f.saving.busy, f.saving.done = false, saved
 		f.saving.mu.Unlock()
 		f.invalidate()
 	}()
@@ -104,28 +140,42 @@ func (f *fileEditor) takeSave() {
 	}
 	next, nextDo := f.saving.next, f.saving.nextDo
 	f.saving.next, f.saving.nextDo = false, nil
-	if s.err != nil {
+	switch {
+	case s.opens != f.opens:
+		return
+	case s.err != nil:
+		f.saving.failed, f.saving.failedGen = true, f.gen
 		f.env.notify(ui.Toast{Variant: ui.ToastError, Title: i18n.T("dock.editor.saveFailed", i18n.Args{"name": path.Base(f.rel)}), Description: backend.ErrorText(s.err)})
 		return
-	}
-	if s.opens != f.opens {
+	case s.disk != nil:
+		f.disk.seen = *s.disk
+		f.weighDisk(*s.disk)
 		return
 	}
-	if next {
-		f.startSave(nextDo)
+	f.saving.failed = false
+	if s.doc != f.base {
+		f.blame.gen++
 	}
 	f.base, f.disk.seen, f.disk.theirs = s.doc, s.doc, nil
 	f.gen++
-	f.blame.gen++
 	f.setDirty(f.ed.State().Doc() != f.base)
 	f.onSaved()
+	if next {
+		f.startSave(nextDo, false)
+	}
 	if s.then != nil {
 		s.then()
 	}
 }
 
-// header is the h-8 strip: the folder muted and the file's name in the
-// foreground, the unsaved dot, then the actions.
+// mustAsk is whether leaving f's text needs the user: a save of it failed,
+// or the disk changed under it and nothing was decided.
+func (f *fileEditor) mustAsk() bool {
+	return f.dirty && (f.saving.failed || f.disk.theirs != nil)
+}
+
+// header is the strip over the code: the folder muted and the file's name
+// in the foreground, the unsaved dot, then the Markdown toggle.
 func (f *fileEditor) header(gtx C, th *ui.Theme) D {
 	gtx.Constraints = layout.Exact(image.Pt(gtx.Constraints.Max.X, gtx.Dp(ui.Space(10))))
 	return layout.Inset{Left: ui.Space(3), Right: ui.Space(2)}.Layout(gtx, func(gtx C) D {
@@ -134,10 +184,6 @@ func (f *fileEditor) header(gtx C, th *ui.Theme) D {
 			children := []layout.FlexChild{layout.Flexed(1, func(gtx C) D { return f.title(gtx, th) })}
 			if isMarkdown(f.rel) && f.kind == blobNone {
 				children = append(children, layout.Rigid(func(gtx C) D { return f.markdownToggle(gtx, th, f.env.root) }), ui.Gap(1.5))
-			}
-			if f.kind == blobNone && !f.md.rendering {
-				children = append(children, layout.Rigid(func(gtx C) D { return f.undoButton(gtx, th) }), ui.Gap(1.5),
-					layout.Rigid(func(gtx C) D { return f.saveButton(gtx, th) }))
 			}
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
 		})
@@ -155,17 +201,4 @@ func (f *fileEditor) title(gtx C, th *ui.Theme) D {
 		children = append(children, ui.Gap(2), layout.Rigid(func(gtx C) D { return ui.Dot(gtx, th.ToneWait, editorDirtyDot) }))
 	}
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
-}
-
-func (f *fileEditor) undoButton(gtx C, th *ui.Theme) D {
-	b := th.Button(&f.undo, i18n.T("dock.editor.undo"))
-	b.Size, b.Variant, b.Disabled = ui.SizeSM, ui.VariantGhost, !f.editable() || f.ed.UndoDepth() == 0
-	return b.Layout(gtx)
-}
-
-func (f *fileEditor) saveButton(gtx C, th *ui.Theme) D {
-	b := th.Button(&f.save, i18n.T("dock.editor.save"))
-	b.Size, b.Disabled = ui.SizeSM, !f.editable() || !f.dirty
-	tip := i18n.T("dock.editor.saveTip", i18n.Args{"keys": formatCombo(saveChord, runtime.GOOS == "darwin")})
-	return th.Tooltip(f.env.root, &f.saveTip, tip).Layout(gtx, b.Layout)
 }

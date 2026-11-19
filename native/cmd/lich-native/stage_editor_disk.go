@@ -63,10 +63,7 @@ func (f *fileEditor) watchDisk(gtx C) {
 		f.reloadFrom(*f.disk.theirs)
 	}
 	if f.disk.keep.Clicked(gtx) && f.disk.theirs != nil {
-		f.base, f.disk.theirs = *f.disk.theirs, nil
-		f.gen++
-		f.blame.gen++
-		f.setDirty(f.ed.State().Doc() != f.base)
+		f.keepMine()
 	}
 	text, loading, err := f.disk.read.get()
 	if loading || err != nil || text == f.disk.seen {
@@ -74,6 +71,16 @@ func (f *fileEditor) watchDisk(gtx C) {
 	}
 	f.disk.seen = text
 	f.weighDisk(text)
+}
+
+// keepMine writes the user's text over the disk's change: the disk's text is
+// what the editor read now, and the save overwrites it.
+func (f *fileEditor) keepMine() {
+	f.base, f.disk.theirs = *f.disk.theirs, nil
+	f.gen++
+	f.blame.gen++
+	f.setDirty(f.ed.State().Doc() != f.base)
+	f.startSave(nil, true)
 }
 
 // weighDisk takes text, the disk's, as diskVerdictOf rules.
