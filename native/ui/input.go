@@ -52,6 +52,9 @@ const (
 // inputState is what the aria and :focus-visible classes of an input select on.
 type inputState struct {
 	focused, invalid, disabled, bare bool
+	// steady keeps the frame as it is unfocused: the caret says where the
+	// keyboard is.
+	steady bool
 	// radius is the frame's corner, RadiusMD when 0.
 	radius unit.Dp
 }
@@ -79,7 +82,7 @@ func inputPaintFor(th *Theme, st inputState, borderless bool) inputPaint {
 	switch {
 	case st.invalid:
 		c.border, c.ring = box.Over(Alpha(p.Destructive, inputInvalidBorderAlpha)), th.Over(Alpha(p.Destructive, inputInvalidRingAlpha))
-	case st.focused:
+	case st.focused && !st.steady:
 		c.border, c.ring = p.Ring, th.Over(Alpha(p.Ring, inputFocusRingAlpha))
 	}
 	if borderless {
