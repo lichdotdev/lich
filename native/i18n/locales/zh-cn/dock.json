@@ -47,11 +47,9 @@
   },
   "editor": {
     "save": "保存",
-    "saveTip": "保存 ({keys})",
-    "undo": "撤销",
     "discard": "放弃",
     "unsavedTitle": "保存对 {name} 的更改?",
-    "unsavedDescription": "如果不保存,更改将会丢失。",
+    "unsavedDescription": "保存失败，或文件此后在磁盘上已被更改。放弃后这些更改将会丢失。",
     "changedOnDisk": "你开始编辑后,此文件在磁盘上已被更改。",
     "keepMine": "保留我的",
     "reload": "重新加载",

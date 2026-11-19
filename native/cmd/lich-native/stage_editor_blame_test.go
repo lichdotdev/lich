@@ -81,8 +81,8 @@ func TestALongBlameIsCutToTheRoomPastTheLine(t *testing.T) {
 }
 
 func TestMovingTheCursorReadsTheBlameItHolds(t *testing.T) {
-	srv, _ := writes(t)
-	f := loadedEditor(t, srv, "one\ntwo\nthree\n")
+	srv, d := diskBackend(t)
+	f := loadedEditor(t, srv, d, "one\ntwo\nthree\n")
 	f.th = &ui.Theme{Palette: ui.Dark, Shaper: text.NewShaper(text.WithCollection(gofont.Collection()))}
 	f.blame.read.data, f.blame.read.has, f.blame.read.settled = someBlame(), true, true
 	f.redecorate(f.th, blameNow)

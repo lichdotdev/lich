@@ -1812,9 +1812,10 @@ work when nobody knows it and that the call site never shows. The mechanism and 
 
 - **Showing code is one file per checkout, in the session's own checkout.** `show_code`, a Ctrl+click on a
   `path:line` and a file picked in the Code tab open the checkout's stage editor, and a new file replaces the one
-  on screen, with no history to go back through, and an agent's comment on the lines goes with it. A file with
-  unsaved changes asks Save, Discard or Cancel first; an agent's `show_code` never asks: while the editor is on the stage, or
-  holds unsaved changes to another file, it only offers the lines in a toast. A path outside the session's checkout (a dependency's sources, the JDK, another worktree) is refused.
+  on screen, with no history to go back through, and an agent's comment on the lines goes with it. The file on
+  screen is saved first, and asks Save, Discard or Cancel only when its save failed or a disk change waits on
+  the user; an agent's `show_code` never asks: while the editor is on the stage, or holds such a file, it only
+  offers the lines in a toast. A path outside the session's checkout (a dependency's sources, the JDK, another worktree) is refused.
   The terminal underlines by the text alone, because the
   hover runs every frame and cannot touch the disk: a `path:line` naming nothing still underlines, and the
   click answers with a toast, as it does for a host written like `example.com:443`. Only a soft-wrapped path is
@@ -1826,8 +1827,12 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   line, so Ctrl+F finds nothing in a file (the Code tab's Text search still finds across the checkout), and the
   agent's `show_code` comment and the session comment box sit in a strip over the code, naming the lines. It
   writes only a file that is UTF-8 on disk (`project.WriteFile`): another encoding is read decoded as
-  Windows-1252 and would be written back changed, so Save on one fails with a toast. Its buffers live in the
-  window: a window that closes drops an unsaved one without asking, and an editor whose checkout row leaves the
+  Windows-1252 and would be written back changed, so saving one fails with a toast. It saves by itself a second
+  after the last edit and when it is left (another file, session or node, Close, the window losing the focus),
+  so a window that closes loses at most that last second, never asking; a failed save keeps the dot and asks
+  only when its text is about to be left. A save first reads the file and writes nothing when it no longer
+  holds what the editor read: the disk's change is put to the user instead. An agent that writes in the moment
+  between that read and the write is still overwritten. An editor whose checkout row leaves the
   tree (its last session closed) keeps its buffer with no node to reach it until a file of that checkout opens
   again. A disk change made outside any session shows within `editorDiskTick` (5 s) while the editor is on the
   stage, and when it comes back to it. The cursor line's blame (`project.GitBlame`) is read when the file is

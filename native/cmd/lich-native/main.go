@@ -416,8 +416,11 @@ func run(w *app.Window, rt backend.Runtime) error {
 		case app.ConfigEvent:
 			frameLog.Note(framelog.CauseConfig)
 			u.chrome = chromeOf(e.Config)
-			if e.Config.Focused && !u.model.isFocused() {
+			switch was := u.model.isFocused(); {
+			case e.Config.Focused && !was:
 				u.editors.recheckAll()
+			case !e.Config.Focused && was:
+				u.editors.flushAll()
 			}
 			u.model.setFocused(u.ctx, e.Config.Focused)
 			u.pulls.setFocused(e.Config.Focused)
@@ -677,6 +680,7 @@ func (u *window) layout(gtx C) error {
 		u.layoutSubmitDialog(gtx, u.theme)
 		u.layoutMergeDialog(gtx, u.theme)
 		u.layoutDeleteCommentDialog(gtx, u.theme)
+		u.editors.follow(u.model.editorShown())
 		u.editors.layoutAsk(gtx, u.theme, &u.root)
 		u.review.layoutDialogs(gtx, u.theme)
 		u.git.layoutDialogs(gtx, u.theme)
