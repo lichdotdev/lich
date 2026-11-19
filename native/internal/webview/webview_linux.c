@@ -1,9 +1,13 @@
 #include "webview_linux.h"
 
 #include <X11/Xlib.h>
+#include <fcntl.h>
+#include <gbm.h>
 #include <gdk/gdkx.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 extern void lichWebviewRun(uintptr_t handle);
 extern void lichWebviewLoad(uintptr_t owner, int step, char *uri);
@@ -21,11 +25,52 @@ static int has_dri3(void) {
 	return XQueryExtension(x, "DRI3", &opcode, &event, &error);
 }
 
+// allocates is whether the render node at path makes the buffers WebKit's
+// DMA-BUF renderer maps: NVIDIA's GBM refuses a linear one to render to.
+static int allocates(const char *path) {
+	int fd = open(path, O_RDWR | O_CLOEXEC);
+	if (fd < 0) {
+		return 0;
+	}
+	struct gbm_device *gbm = gbm_create_device(fd);
+	struct gbm_bo *bo = gbm ? gbm_bo_create(gbm, 64, 64, GBM_FORMAT_ARGB8888, GBM_BO_USE_RENDERING | GBM_BO_USE_LINEAR) : NULL;
+	if (bo) {
+		gbm_bo_destroy(bo);
+	}
+	if (gbm) {
+		gbm_device_destroy(gbm);
+	}
+	close(fd);
+	return bo != NULL;
+}
+
+// The render nodes the kernel numbers from 128, one per GPU.
+#define FIRST_RENDER_NODE 128
+#define RENDER_NODES 64
+
+// choose_render_device hands WebKit the first render node that makes its
+// buffers. Left to itself it takes the X server's, which on a laptop whose
+// XWayland runs on the NVIDIA GPU fails every buffer ("Failed to create GBM
+// buffer: Invalid argument") and leaves the page black. With none that makes
+// them, pages draw without DMA-BUF.
+static void choose_render_device(void) {
+	if (getenv("WEBKIT_WEB_RENDER_DEVICE_FILE")) {
+		return;
+	}
+	char path[32];
+	for (int n = FIRST_RENDER_NODE; n < FIRST_RENDER_NODE + RENDER_NODES; n++) {
+		snprintf(path, sizeof path, "/dev/dri/renderD%d", n);
+		if (allocates(path)) {
+			setenv("WEBKIT_WEB_RENDER_DEVICE_FILE", path, 0);
+			return;
+		}
+	}
+	setenv("WEBKIT_DISABLE_DMABUF_RENDERER", "1", 0);
+}
+
 int lich_webview_init(void) {
-	// Under NVIDIA's PRIME offload (prime-run) WebKit's DMA-BUF buffers and the
-	// GL that shows them land on different GPUs and the page stays black, while
-	// turning DMA-BUF off copies every frame through the X server. Pages draw on
-	// the display's GPU instead; the window has already chosen its own.
+	// Pages draw on the GPU WebKit picks for itself, not the one prime-run
+	// picked for the window, whose variables the web process would inherit.
 	unsetenv("__NV_PRIME_RENDER_OFFLOAD");
 	unsetenv("__GLX_VENDOR_LIBRARY_NAME");
 	unsetenv("__VK_LAYER_NV_optimus");
@@ -38,6 +83,7 @@ int lich_webview_init(void) {
 	if (!has_dri3()) {
 		setenv("WEBKIT_DISABLE_DMABUF_RENDERER", "1", 0);
 	}
+	choose_render_device();
 	return 1;
 }
 
