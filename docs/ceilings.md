@@ -1799,6 +1799,18 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   Ubuntu 23.10 and later AppArmor refuses it the user namespace unless the browser ships an AppArmor profile,
   as the distribution's Chrome, Edge and Brave do: one unpacked from a tarball fails to start with "No usable
   sandbox!", which the agent reads as the browser's error.
+- **A layer the window floats over the content shows over a page it draws itself only where it says so**
+  (`coverPages` in `native/cmd/lich-native/browser_native.go`): the page is a native child window over the pane,
+  above anything the window draws, so a layer that floats over the content (a dock or sidebar sliding in, and later
+  a menu or a tooltip) must name the rectangle it covers, in the window's pixels, every frame it draws; the page is
+  cut there and keeps going around it. On X11 the cut is the page window's X SHAPE, set in one request before the
+  frame reaches the window: set after it, a layer sliding onto the page showed a band of the window's background
+  for a frame on 20 of 288 frames over four 180 ms slides, and none set before (Xvfb, 60 fps, 2026-11-19). A
+  layer that forgets to name its rectangle draws under the page. macOS will need the window's drawing for such
+  layers in an overlay view above the WKWebView (Sikemux's overlay plane in its GPUI fork) and a `hitTest:` that
+  falls through it; Windows will need a region cut out of the WebView2's child window (`SetWindowRgn`, its
+  rectangles combined with `RGN_DIFF`) set before the frame is presented, or a composition controller that lets
+  the window's drawing stand over the page.
 - **Select on a page the window draws itself shows the window's drawing through cuts in the page**
   (`native/internal/webview`, `docs/browser-tab.md`): on X11 the WebKitGTK page is a child window over the pane,
   and the window's drawing over it shows only where that window is cut away (X SHAPE). An outline is cut along

@@ -169,6 +169,11 @@ func (p *Page) Place(r image.Rectangle, cuts []image.Rectangle) bool {
 	return cut
 }
 
+// Placed is where the page was last placed, in the window's pixels.
+func (p *Page) Placed() image.Rectangle {
+	return p.placed
+}
+
 // PointerToWindow lets the pointer through the page to the window, which
 // draws and answers over it while a tool of its own is on.
 func (p *Page) PointerToWindow() {

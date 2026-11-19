@@ -31,6 +31,7 @@ type Page struct{}
 func Open(string, func(Load)) (*Page, error) { return nil, errors.ErrUnsupported }
 
 func (*Page) Place(image.Rectangle, []image.Rectangle) bool { return false }
+func (*Page) Placed() image.Rectangle                       { return image.Rectangle{} }
 func (*Page) PointerToWindow()                              {}
 func (*Page) PointerToPage()                                {}
 func (*Page) URL() string                                   { return "" }

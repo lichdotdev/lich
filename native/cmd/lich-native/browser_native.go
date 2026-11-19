@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"image"
 	"log"
+	"slices"
 	"time"
 
 	"gioui.org/f32"
@@ -58,11 +59,48 @@ func (u *window) placeNativePages(src input.Source) {
 		}
 		if origin, ok := src.Origin(&p.tag); ok {
 			at := origin.Round()
-			if p.native.Place(image.Rectangle{Min: at, Max: at.Add(p.nativeSize)}, p.notes.cuts) {
+			r := image.Rectangle{Min: at, Max: at.Add(p.nativeSize)}
+			if p.native.Place(r, pageCuts(r, p.notes.cuts, u.covers)) {
 				u.win.Invalidate()
 			}
 		}
 	}
+}
+
+// coverPages marks r, in the window's pixels, as drawn over everything in the
+// frame being laid out: a layer floating over the content (a dock or sidebar
+// sliding in, a menu) calls it each frame it draws, and every page the window
+// draws itself is cut there, so the layer shows over the page and the page
+// keeps going around it.
+func (u *window) coverPages(r image.Rectangle) {
+	u.covers = append(u.covers, r)
+}
+
+// cutNativePages cuts each shown page, where it stands, before the frame is
+// handed to the window: a cut made after it showed the window's background
+// for a frame where a sliding layer had just moved onto the page, a band on 20
+// of 288 frames over 4 slides, and none made before (Xvfb, 60 fps, 2026-11-19).
+func (u *window) cutNativePages() {
+	for _, p := range u.browserPanes {
+		if p.native == nil || !p.wasOnScreen {
+			continue
+		}
+		if r := p.native.Placed(); !r.Empty() {
+			p.native.Place(r, pageCuts(r, p.notes.cuts, u.covers))
+		}
+	}
+}
+
+// pageCuts are a page's cuts at r: its own (local to it) and the window's
+// covers (in the window's pixels) where they fall on it.
+func pageCuts(r image.Rectangle, own, covers []image.Rectangle) []image.Rectangle {
+	cuts := slices.Clone(own)
+	for _, c := range covers {
+		if on := c.Intersect(r); !on.Empty() {
+			cuts = append(cuts, on.Sub(r.Min))
+		}
+	}
+	return cuts
 }
 
 // floatingBoxes are where the collapsed sidebar and dock float over the

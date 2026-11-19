@@ -103,6 +103,9 @@ func windowClass(getenv func(string) string) string {
 type window struct {
 	ctx    context.Context
 	client *backend.Client
+	// covers are where the window's floating layers draw over everything in
+	// the frame being laid out, in the window's pixels (coverPages).
+	covers []image.Rectangle
 	// uiFonts is what the interface's shaper was last built from.
 	uiFonts *interfaceFonts
 	model   *model
@@ -445,6 +448,7 @@ func run(w *app.Window, rt backend.Runtime) error {
 		case app.FrameEvent:
 			frame := frameLog.Begin(e.Size)
 			gtx := app.NewContext(&ops, e)
+			u.covers = u.covers[:0]
 			u.terms.unzoomed = gtx.Metric
 			gtx.Metric.PxPerDp *= float32(u.zoom)
 			gtx.Metric.PxPerSp *= float32(u.zoom)
@@ -466,6 +470,7 @@ func run(w *app.Window, rt backend.Runtime) error {
 				}
 			}
 			frame.HandOff()
+			u.cutNativePages()
 			e.Frame(gtx.Ops)
 			u.placeNativePages(e.Source)
 			frame.End()

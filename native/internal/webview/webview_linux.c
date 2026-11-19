@@ -1,6 +1,7 @@
 #include "webview_linux.h"
 
 #include <X11/Xlib.h>
+#include <X11/Xutil.h>
 #include <X11/extensions/shape.h>
 #include <fcntl.h>
 #include <gbm.h>
@@ -212,16 +213,26 @@ void lich_webview_place(LichPage *page, int x, int y, int width, int height) {
 
 // lich_webview_cut leaves the page window out of rects, page-local, where the
 // app draws over the page, so the app's drawing shows there; none gives the
-// page its whole window back. A bounding shape keeps its own size, so it is
-// set anew on every change of size.
+// page its whole window back. The shape is set in one request: setting the
+// whole window first and taking the rects out after exposed every cut anew,
+// which X painted over with the background on each frame of a slide.
 void lich_webview_cut(LichPage *page, int width, int height, XRectangle *rects, int n) {
 	if (n == 0) {
 		XShapeCombineMask(page->x, page->child, ShapeBounding, 0, 0, None, ShapeSet);
-	} else {
-		XRectangle whole = {0, 0, width, height};
-		XShapeCombineRectangles(page->x, page->child, ShapeBounding, 0, 0, &whole, 1, ShapeSet, Unsorted);
-		XShapeCombineRectangles(page->x, page->child, ShapeBounding, 0, 0, rects, n, ShapeSubtract, Unsorted);
+		XFlush(page->x);
+		return;
 	}
+	Region shape = XCreateRegion();
+	XRectangle whole = {0, 0, width, height};
+	XUnionRectWithRegion(&whole, shape, shape);
+	Region cut = XCreateRegion();
+	for (int i = 0; i < n; i++) {
+		XUnionRectWithRegion(&rects[i], cut, cut);
+	}
+	XSubtractRegion(shape, cut, shape);
+	XShapeCombineRegion(page->x, page->child, ShapeBounding, 0, 0, shape, ShapeSet);
+	XDestroyRegion(cut);
+	XDestroyRegion(shape);
 	XFlush(page->x);
 }
 
