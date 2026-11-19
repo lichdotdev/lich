@@ -3,6 +3,7 @@ package main
 import (
 	"image"
 	"image/color"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -65,11 +66,16 @@ func (u *window) chatRow(gtx C, th *ui.Theme, p *chatPane, sv sessionView, r cha
 	it := r.item
 	switch it.Kind {
 	case api.ItemUser:
-		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-			layout.Rigid(func(gtx C) D { return chatUser(gtx, th, it.Text) }),
-			ui.VGap(1),
-			layout.Rigid(func(gtx C) D { return layout.E.Layout(gtx, func(gtx C) D { return u.chatStamp(gtx, th, p, it) }) }),
-		)
+		c := p.copyOf(it.ID)
+		return c.hover(gtx, func(gtx C, over bool) D {
+			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+				layout.Rigid(func(gtx C) D { return chatUser(gtx, th, it.Text) }),
+				ui.VGap(1),
+				layout.Rigid(func(gtx C) D {
+					return layout.E.Layout(gtx, func(gtx C) D { return u.chatStampRow(gtx, th, p, c, it, over, true) })
+				}),
+			)
+		})
 	case api.ItemAgent:
 		return u.chatAgent(gtx, th, p, sv, r)
 	case api.ItemThought:
@@ -91,6 +97,24 @@ func (u *window) chatStamp(gtx C, th *ui.Theme, p *chatPane, it backend.ChatItem
 	}
 	t := time.UnixMilli(it.At).In(gtx.Now.Location())
 	return th.Tooltip(&u.root, p.stamp(it.ID), clockText(t)).Layout(gtx, th.Text(ui.TextXS, t.Format(chatClock)).Muted().Layout)
+}
+
+// chatStampRow is the line under a message: its time, and while the pointer is
+// over the message the copy button beside it, on the side of the time that
+// faces the middle (at the left of a message the time is at the right). The line
+// is as tall with the button as without it.
+func (u *window) chatStampRow(gtx C, th *ui.Theme, p *chatPane, c *chatCopy, it backend.ChatItem, over, copyFirst bool) D {
+	gtx.Constraints.Min.Y = gtx.Dp(chatCopySlot)
+	row := []layout.FlexChild{layout.Rigid(func(gtx C) D { return u.chatStamp(gtx, th, p, it) })}
+	if over {
+		button := layout.Rigid(func(gtx C) D { return c.button(gtx, th, &u.root, it.Text) })
+		if copyFirst {
+			row = append([]layout.FlexChild{button, ui.Gap(1)}, row...)
+		} else {
+			row = append(row, ui.Gap(1), button)
+		}
+	}
+	return layout.Flex{Alignment: layout.Middle}.Layout(gtx, row...)
 }
 
 // dayLabel names a day against now: Today, Yesterday, else its date, with the
@@ -383,14 +407,19 @@ func (u *window) chatAgent(gtx C, th *ui.Theme, p *chatPane, sv sessionView, r c
 	if r.lead {
 		children = append(children, layout.Rigid(func(gtx C) D { return u.chatWho(gtx, th, sv) }), ui.VGap(1.5))
 	}
-	children = append(children,
-		layout.Rigid(func(gtx C) D {
-			return p.md.Layout(gtx, th, it.ID, src, func(url string) { openLink(u.client, notify, url) })
-		}),
-		ui.VGap(1),
-		layout.Rigid(func(gtx C) D { return layout.W.Layout(gtx, func(gtx C) D { return u.chatStamp(gtx, th, p, it) }) }),
-	)
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
+	c := p.copyOf(it.ID)
+	return c.hover(gtx, func(gtx C, over bool) D {
+		body := append(slices.Clone(children),
+			layout.Rigid(func(gtx C) D {
+				return p.md.Layout(gtx, th, it.ID, src, func(url string) { openLink(u.client, notify, url) })
+			}),
+			ui.VGap(1),
+			layout.Rigid(func(gtx C) D {
+				return layout.W.Layout(gtx, func(gtx C) D { return u.chatStampRow(gtx, th, p, c, it, over, false) })
+			}),
+		)
+		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, body...)
+	})
 }
 
 // chatWho is who speaks: the provider's mark in the color of the session's

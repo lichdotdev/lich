@@ -54,5 +54,9 @@
     "search": "搜索 {provider} 的模型…",
     "showMore": "显示更多",
     "default": "默认"
+  },
+  "copy": {
+    "copy": "复制",
+    "copied": "已复制"
   }
 }
