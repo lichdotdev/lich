@@ -711,7 +711,8 @@ func (u *window) layout(gtx C) error {
 		u.layoutGitMissing(gtx, u.theme)
 		u.layoutMoveConfirm(gtx, u.theme)
 		var edge int
-		edge, act, peekAct, contentErr = u.body(gtx, v)
+		edge, act, contentErr = u.body(gtx, v)
+		peekAct = u.sidebar.peekLayout(gtx, u.theme, u.model, sidebarActive(v), image.Pt(gtx.Dp(gutter), gtx.Dp(topbarHeight)))
 		u.sidebar.flight(gtx, u.theme, u.model)
 		top = u.topbar.layout(gtx, u.theme, u.topbarFrame(gtx, v, edge))
 		u.drawCarried(gtx)
@@ -793,8 +794,8 @@ func (u *window) stageView(now time.Time) stageView {
 }
 
 // body lays the sidebar and the stage out under the strip, and answers the
-// stage's left edge and what the sidebar and its peek asked for.
-func (u *window) body(gtx C, v stageView) (int, sidebarAction, sidebarAction, error) {
+// stage's left edge.
+func (u *window) body(gtx C, v stageView) (int, sidebarAction, error) {
 	bar := gtx.Dp(topbarHeight)
 	defer op.Offset(image.Pt(0, bar)).Push(gtx.Ops).Pop()
 	gtx.Constraints = layout.Exact(image.Pt(gtx.Constraints.Max.X, max(gtx.Constraints.Max.Y-bar, 0)))
@@ -806,8 +807,6 @@ func (u *window) body(gtx C, v stageView) (int, sidebarAction, sidebarAction, er
 		act = a
 		return d
 	}).Size.X
-	peek := u.sidebar.peekLayout(gtx, u.theme, u.model, sidebarActive(v), image.Pt(gtx.Dp(gutter), 0))
-	edge = max(edge, u.sidebar.peek.width+2*gtx.Dp(gutter))
 	var err error
 	u.toastFloor, u.toastRight = gtx.Dp(gutter), 0
 	u.footer.frame(gtx, v.in)
@@ -862,7 +861,7 @@ func (u *window) body(gtx C, v stageView) (int, sidebarAction, sidebarAction, er
 			)
 		})
 	})
-	return edge, act, peek, err
+	return edge, act, err
 }
 
 // sidebarActive is the session the sidebar lights: none while a service's
@@ -878,9 +877,8 @@ func sidebarActive(v stageView) string {
 // the terminal, in the color the active tab merges with, under the footer's
 // balloons. Its top-left corner is square while that tab sits on it. A lone
 // session is laid out termWidth wide, which a sidebar morph sets to where
-// the box is going and a dock's or a peek's slide, for a terminal, to where
-// the box came from: wider, the box clips it; narrower, its fill shows past
-// it. The Git panel's slide sets termHeight the
+// the box is going and the dock's slide, for a terminal, to where the box
+// came from: wider, the box clips it; narrower, its fill shows past it. The Git panel's slide sets termHeight the
 // same way.
 func (u *window) island(gtx C, v stageView, termWidth, termHeight int) error {
 	size := gtx.Constraints.Max
@@ -1024,9 +1022,6 @@ func (u *window) stageRow(gtx C, v stageView) error {
 	if t, ok := d.tabToSave(); ok {
 		go func() { u.logErr("dock tab", saveDockTab(u.ctx, u.client, t)) }()
 	}
-	if u.dockPeek(gtx, v) {
-		defer d.peek.watch(gtx)
-	}
 	if d.tab != dockClosed && !v.home {
 		d.shown = d.tab
 	}
@@ -1035,7 +1030,7 @@ func (u *window) stageRow(gtx C, v stageView) error {
 		d.slide.snap(open)
 	}
 	share := d.slide.at(gtx, open)
-	u.terms.refitNow = d.slide.landed || u.sidebar.holdsStage() || u.git.moved() || u.extPanel.moved()
+	u.terms.refitNow = d.slide.landed || u.sidebar.morph.holdsStage() || u.git.moved() || u.extPanel.moved()
 	defer func() { u.terms.refitNow = false }()
 	size := gtx.Constraints.Max
 	slot := 0
@@ -1043,18 +1038,18 @@ func (u *window) stageRow(gtx C, v stageView) error {
 		slot = int(share * float32(d.width(gtx)+gtx.Dp(gutter)))
 	}
 	// The session takes the width the sidebar's morph ends at from its
-	// first frame. While the dock's or the peek's slide moves the stage's
-	// edge, the chat follows the island on every frame, and a terminal keeps
-	// its grid, clipped by the island or short of its edge, until the slide
-	// lands: a resize reaches the agent, which redraws everything it printed,
-	// too slow for the slide's frames.
+	// first frame. While the dock's slide moves the stage's edge, the chat
+	// follows the island on every frame, and a terminal keeps its grid,
+	// clipped by the island or short of its edge, until the slide lands: a
+	// resize reaches the agent, which redraws everything it printed, too slow
+	// for the slide's frames.
 	termWidth := size.X - u.sidebar.stageOverhang(gtx)
 	if open && !d.fullscreen {
 		termWidth -= d.width(gtx) + gtx.Dp(gutter)
 	}
 	termWidth = max(termWidth, 0)
 	switch {
-	case !d.slide.moving() && !u.sidebar.peek.slide.moving():
+	case !d.slide.moving():
 		u.termWidth = termWidth
 	case v.active.View == api.ViewChat || u.termWidth == 0:
 		termWidth = max(size.X-slot, 0)
@@ -1064,7 +1059,10 @@ func (u *window) stageRow(gtx C, v stageView) error {
 	termHeight := max(size.Y-u.git.pending()-u.extPanel.pending()-u.ptyBand(gtx, v)-u.sessionBand(gtx, v), 0)
 	if share == 0 {
 		d.islands = nil
-		return u.island(gtx, v, termWidth, termHeight)
+		if err := u.island(gtx, v, termWidth, termHeight); err != nil {
+			return err
+		}
+		return u.dockPeek(gtx, v)
 	}
 	at, w := 0, size.X
 	if !d.fullscreen {
@@ -1092,13 +1090,6 @@ func (u *window) stageRow(gtx C, v stageView) error {
 	defer op.Offset(image.Pt(at, 0)).Push(gtx.Ops).Pop()
 	gtx.Constraints = layout.Exact(image.Pt(w, size.Y))
 	d.gap = u.tabGap(gtx, v, d.islands, at)
-	if d.peek.shown {
-		// The dock out from the edge hears the pointer over everything it
-		// draws. One collapsed under the pointer is not out, and does not
-		// come straight back.
-		defer clip.Rect{Max: gtx.Constraints.Max}.Push(gtx.Ops).Pop()
-		event.Op(gtx.Ops, &d.peek.panel)
-	}
 	return u.layoutDock(gtx, v)
 }
 

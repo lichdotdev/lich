@@ -706,15 +706,15 @@ the footer; it outlives the panel, and the button stays lit with a dot while it 
 ### The peek
 
 A collapsed panel comes out when the pointer rests on it (`panel_peek.go`): the sidebar from its rail's tree,
-the dock from the window's right gutter once its collapse button took it off the stage. It is the open panel at
-the place it stands when open, and it pushes the stage in as the open one does, sliding on the dock's 180ms
-curve: a page in the stage is a window of the system's (WebKitGTK on Linux), which nothing the window draws can
-cover, so a panel drawn over the stage would show behind it. The stage's edge follows the panel's on every frame
-of the slide, and the chat and a page in the stage follow it on every frame. A terminal keeps its grid while the
-slide moves, as it does through the dock's own: the island clips it as a panel comes out and its fill shows past it
-as one goes back, and the sidebar's slide carries it with the stage's left edge. It takes the stage's width once, in
-the frame the slide lands: a resize reaches the agent, which redraws all it printed, too slow for the slide's frames, so
-the agent redraws once each way, after the motion. The sidebar comes out after `peekOpenDelay` (150ms) of rest on the rail; the
+the dock from the window's right gutter once its collapse button took it off the stage. The hover only decides
+when it opens and closes: it runs the same expansion its button runs, with the same timing and curve, the
+sidebar's morph from the rail and the dock's slide from the edge, and the same collapse back. It is drawn over
+the stage, which keeps its width, so the terminal is not resized and nothing the agent printed rewraps; only
+keeping the panel open, from its button or the hotkey, gives it the stage's room. Through the dock's slide
+beside the stage, the chat follows the stage's edge on every frame and a terminal keeps its grid until the slide
+lands, so the agent redraws once, after the motion. A page in the stage is a window of the system's that nothing
+the window draws covers, so the panel's box each frame (`floatingBoxes`) is what the page will cut out of itself
+once `internal/webview` can. The sidebar comes out after `peekOpenDelay` (150ms) of rest on the rail; the
 dock comes out the moment the pointer touches the window's edge, even a flick that goes on past it within one frame,
 since the edge is somewhere you throw the pointer, not something it crosses on its way. A pointer gone out of the
 window across that edge still counts as on it until it comes back onto the stage. A panel goes back

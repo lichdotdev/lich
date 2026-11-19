@@ -14,65 +14,87 @@ import (
 )
 
 // sidebarPeek is the collapsed sidebar brought out: the pointer resting on
-// the rail draws the open sidebar over it, and the stage gives it room as it
-// does the open one, since a page in the stage is a window of the system's,
-// which nothing the window draws can cover.
+// the rail runs the expand button's morph over the stage, which keeps its
+// width, so the terminal is not resized and nothing the agent printed
+// rewraps. Leaving runs the collapse back.
 type sidebarPeek struct {
 	panelPeek
-	slide dockSlide
 	rail  hoverArea
 	panel hoverArea
-	// width is how far the panel reaches from the rail's left edge this
-	// frame, 0 while it is in.
-	width int
+	// out is the shape the peek last morphed to: shown, as of the frame's
+	// start, so every part of the frame reads the same.
+	out bool
+	// morph is whether the morph running is the peek's, drawn over the stage.
+	morph bool
+	// box is where the panel floats this frame, in window pixels, empty
+	// while it does not.
+	box image.Rectangle
 }
 
-// watchRail lays the rail's hover area over the rail just drawn.
+// watchRail lays the rail's hover area over the rail's place.
 func (s *sidebar) watchRail(gtx C, size image.Point) {
 	s.peek.rail.read(gtx)
 	s.peek.rail.watch(gtx, image.Rectangle{Max: size})
 }
 
-// peekLayout draws the open sidebar over the rail while the collapsed one is
-// out, its corner at the rail's, at, and as tall as the rail. It runs before
-// the stage, which makes room for it in the same frame (stageReserve).
-func (s *sidebar) peekLayout(gtx C, th *ui.Theme, m *model, active string, at image.Point) sidebarAction {
+// wide is whether the sidebar shows its panel: open, or out from the rail.
+func (s *sidebar) wide() bool { return s.open || s.peek.out }
+
+// floats is whether the sidebar is drawn over the stage this frame, out from
+// the rail or morphing to or from it, while the stage keeps the rail's room.
+func (s *sidebar) floats() bool {
+	return !s.open && (s.peek.out || s.peek.morph && s.morph.active())
+}
+
+// peekDecide decides from the pointer whether the collapsed sidebar is out,
+// before anything of the sidebar is laid out, and starts the morph toward
+// the shape that changes it to.
+func (s *sidebar) peekDecide(gtx C) {
 	p := &s.peek
-	if s.open || s.morph.active() {
+	if s.open || s.morph.active() && !p.morph {
 		// A collapse lands under the pointer, which has to leave the rail
 		// before the panel can come back out.
-		p.panelPeek, p.rail, p.panel, p.width = panelPeek{muted: !s.open, since: gtx.Now}, hoverArea{}, hoverArea{}, 0
-		p.slide.snap(false)
-		return sidebarAction{}
+		p.panelPeek, p.rail, p.panel, p.out, p.morph = panelPeek{muted: !s.open, since: gtx.Now}, hoverArea{}, hoverArea{}, false, false
+		return
 	}
+	p.rail.read(gtx)
 	p.panel.read(gtx)
 	p.point(gtx.Now, p.rail.over || p.panel.over)
 	if wake := p.update(gtx.Now, s.peekInUse()); !wake.IsZero() {
 		gtx.Execute(op.InvalidateCmd{At: wake})
 	}
-	share := p.slide.at(gtx, p.shown)
-	size := image.Pt(s.boxWidth(gtx, true), max(gtx.Constraints.Max.Y-at.Y-gtx.Dp(gutter), 0))
-	p.width = int(share * float32(size.X))
-	if share == 0 {
+	if p.shown != p.out {
+		p.out, p.morph = p.shown, true
+		s.morph.begin(gtx)
+	}
+}
+
+// peekLayout draws the sidebar over the stage while it floats, its corner at
+// the rail's, at, and as tall as the rail.
+func (s *sidebar) peekLayout(gtx C, th *ui.Theme, m *model, active string, at image.Point) sidebarAction {
+	p := &s.peek
+	p.box = image.Rectangle{}
+	if !s.floats() {
 		return sidebarAction{}
 	}
+	size := image.Pt(s.boxWidth(gtx, true), max(gtx.Constraints.Max.Y-at.Y-gtx.Dp(gutter), 0))
+	if s.morph.active() {
+		size.X = s.morphWidth(gtx)
+	}
+	p.box = image.Rectangle{Min: at, Max: at.Add(size)}
 	defer op.Offset(at).Push(gtx.Ops).Pop()
-	// It slides out from under the rail's left edge.
-	defer clip.Rect{Max: size}.Push(gtx.Ops).Pop()
-	defer op.Offset(image.Pt(int((share-1)*float32(size.X)), 0)).Push(gtx.Ops).Pop()
-	// The panel's own area takes the pointer from the rail under it, and
+	// The panel's own area takes the pointer from the stage under it, and
 	// reads it over every row it draws.
 	area := clip.UniformRRect(image.Rectangle{Max: size}, gtx.Dp(ui.RadiusLG)).Push(gtx.Ops)
 	event.Op(gtx.Ops, &p.panel)
-	gtx.Constraints = layout.Exact(size)
-	if share < 1 {
-		// A moving panel takes no input; the slide asked for its frames.
-		gtx = gtx.Disabled()
-	}
-	_, act := s.panel(gtx, th, m, active)
+	gtx.Constraints = layout.Exact(image.Pt(gtx.Constraints.Max.X, size.Y))
+	gtx.Constraints.Min.X = 0
+	_, act := s.draw(gtx, th, m, active)
 	area.Pop()
 	if act.activate != "" || act.launch.kind != "" || act.worktree {
+		// The morph back starts with the next frame's decision.
 		p.dismiss()
+		gtx.Execute(op.InvalidateCmd{})
 	}
 	return act
 }
@@ -109,8 +131,9 @@ func (s *sidebar) collapseToggle(gtx C, act *sidebarAction) (*icons.Icon, string
 }
 
 // pinPeek keeps the sidebar that is out open, in place: no morph, since the
-// panel is already where the open sidebar sits, and the stage already gives
-// it the room.
+// panel is already where the open sidebar sits. The click is read after the
+// rail and the stage were laid out, so the stage makes room on the next
+// frame, asked for now.
 func (s *sidebar) pinPeek(gtx C, act *sidebarAction) {
 	s.open, act.saveOpen = true, true
 	gtx.Execute(op.InvalidateCmd{})

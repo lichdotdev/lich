@@ -3,6 +3,7 @@ package main
 import (
 	"image"
 	"testing"
+	"time"
 
 	"gioui.org/f32"
 	"gioui.org/io/event"
@@ -16,8 +17,8 @@ import (
 
 // peekFrames is the collapsed sidebar on a wide window, with its peek drawn
 // over the rest as the window draws it; acted is the last session a peek
-// click activated. stage, when set, is laid out before the peek, under
-// where it comes out.
+// click activated. stage, when set, is laid out under the peek, as the
+// window lays the stage out before it.
 func peekFrames(t *testing.T, stage func(C)) (s *sidebar, r *frameRig, acted *string) {
 	t.Helper()
 	m := modelOn("a")
@@ -26,6 +27,9 @@ func peekFrames(t *testing.T, stage func(C)) (s *sidebar, r *frameRig, acted *st
 	s.open = false
 	acted = new(string)
 	r = newFrameRig(image.Pt(800, 600), func(gtx C, th *ui.Theme) {
+		// As the window does: the morph advances before the frame, and
+		// reads its capture frame once it is drawn.
+		s.morph.advance(gtx)
 		root.Layout(gtx, func(gtx C) D {
 			s.layout(gtx, th, m, "a1")
 			if stage != nil {
@@ -36,6 +40,7 @@ func peekFrames(t *testing.T, stage func(C)) (s *sidebar, r *frameRig, acted *st
 			}
 			return D{Size: gtx.Constraints.Max}
 		})
+		s.morph.capture(gtx.Ops)
 	})
 	return s, r, acted
 }
@@ -161,31 +166,6 @@ func TestPeekKeepsItsClicksFromTheTerminalUnderIt(t *testing.T) {
 	}
 }
 
-func TestPeekTakesTheStagesRoomAndGivesItBack(t *testing.T) {
-	s, r, _ := peekFrames(t, nil)
-	r.settle(t)
-	// The rig draws a pixel a dp.
-	gtx := layout.Context{Metric: unit.Metric{PxPerDp: 1}}
-	rail, panel := s.boxWidth(gtx, false), s.boxWidth(gtx, true)
-	rest(t, r, railTree)
-	if got := s.stageReserve(gtx); got != panel {
-		t.Fatalf("the stage leaves the sidebar out %dpx, want the open sidebar's %d", got, panel)
-	}
-	r.hover(f32.Pt(700, 300))
-	r.now = r.now.Add(peekCloseDelay)
-	r.frame()
-	r.now = r.now.Add(frameStep)
-	r.frame()
-	reserve := s.stageReserve(gtx)
-	if reserve <= rail || reserve >= panel {
-		t.Fatalf("on its way back the stage leaves %dpx, want between the rail's %d and the panel's %d", reserve, rail, panel)
-	}
-	r.settle(t)
-	if got := s.stageReserve(gtx); got != rail {
-		t.Errorf("the stage leaves %dpx once the sidebar went back, want the rail's %d", got, rail)
-	}
-}
-
 func TestSidebarOpenedWhileOutStaysWhereItIs(t *testing.T) {
 	s, r, _ := peekFrames(t, nil)
 	r.settle(t)
@@ -197,5 +177,75 @@ func TestSidebarOpenedWhileOutStaysWhereItIs(t *testing.T) {
 	}
 	if s.morph.active() {
 		t.Error("opened with a morph from the rail, though it already stands where it opens")
+	}
+}
+
+// morphRun steps frameStep at a time from a pointer move to p until the
+// sidebar's morph lands, and reports its box's width on each frame it flew
+// and the stage's room on every frame.
+func morphRun(t *testing.T, s *sidebar, r *frameRig, p f32.Point) (widths, room []int) {
+	t.Helper()
+	gtx := layout.Context{Metric: unit.Metric{PxPerDp: 1}}
+	r.router.Queue(pointer.Event{Kind: pointer.Move, Source: pointer.Mouse, Position: p})
+	for range 100 {
+		r.frame()
+		room = append(room, s.stageReserve(gtx))
+		if s.morph.landed {
+			return widths, room
+		}
+		if s.morph.phase == morphFlying && !s.morph.capturing {
+			widths = append(widths, s.morphWidth(gtx))
+		}
+		r.now = r.now.Add(frameStep)
+	}
+	t.Fatal("the morph never landed")
+	return nil, nil
+}
+
+// The pointer on the rail runs the expand button's morph, over the stage,
+// which keeps the rail's room; leaving runs the collapse back.
+func TestPeekRunsTheExpandMorphOverTheStage(t *testing.T) {
+	s, r, _ := peekFrames(t, nil)
+	r.settle(t)
+	gtx := layout.Context{Metric: unit.Metric{PxPerDp: 1}}
+	rail, panel := s.boxWidth(gtx, false), s.boxWidth(gtx, true)
+	for _, way := range []struct {
+		name     string
+		at       f32.Point
+		from, to int
+	}{{"out", railTree, rail, panel}, {"back", f32.Pt(700, 300), panel, rail}} {
+		widths, room := morphRun(t, s, r, way.at)
+		if !s.peek.morph {
+			t.Fatalf("%s: the morph that ran is not the peek's", way.name)
+		}
+		if len(widths) < 5 {
+			t.Fatalf("%s: the morph flew %d frames of 180ms, want one a frame", way.name, len(widths))
+		}
+		for i, w := range widths {
+			if want := lerpInt(way.from, way.to, morphProgress(time.Duration(i)*frameStep)); w != want {
+				t.Errorf("%s, frame %d: the sidebar %dpx wide, want the expand's %d", way.name, i, w, want)
+			}
+		}
+		for i, x := range room {
+			if x != rail {
+				t.Fatalf("%s, frame %d: the stage leaves %dpx, want the rail's %d throughout", way.name, i, x, rail)
+			}
+		}
+	}
+}
+
+// Kept open from the peek, the sidebar takes its room from the stage.
+func TestPeekPinnedTakesTheStagesRoom(t *testing.T) {
+	s, r, _ := peekFrames(t, nil)
+	r.settle(t)
+	rest(t, r, railTree)
+	gtx := layout.Context{Metric: unit.Metric{PxPerDp: 1}}
+	if got, rail := s.stageReserve(gtx), s.boxWidth(gtx, false); got != rail {
+		t.Fatalf("out from the rail, the stage leaves %dpx, want the rail's %d", got, rail)
+	}
+	s.setOpen(gtx, true, new(sidebarAction))
+	r.settle(t)
+	if got, panel := s.stageReserve(gtx), s.boxWidth(gtx, true); got != panel {
+		t.Errorf("kept open, the stage leaves %dpx, want the panel's %d", got, panel)
 	}
 }

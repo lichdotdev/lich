@@ -8,7 +8,6 @@ import (
 	"gioui.org/f32"
 	"gioui.org/io/pointer"
 	"gioui.org/layout"
-	"gioui.org/unit"
 
 	"github.com/lichdotdev/lich/native/ui"
 )
@@ -179,72 +178,6 @@ func TestDockStaysOutWhileThePointerIsOutOfTheWindowPastTheEdge(t *testing.T) {
 	r.settle(t)
 	if u.dock.peek.shown {
 		t.Fatal("still out once the pointer came back onto the stage")
-	}
-}
-
-// pageDockFrames is peekDockFrames with session s's page alone in the island,
-// where the window would place its web view.
-func pageDockFrames(t *testing.T) (*window, *frameRig, *browserPaneUI) {
-	t.Helper()
-	u, r := peekDockFrames(t)
-	u.browserZoom = defaultZoom
-	page := browserPaneOf("s")
-	v := stageView{hasLayout: true, layout: layoutTab{ID: "l", Root: &paneNode{Session: page}}}
-	r.draw = func(gtx C, th *ui.Theme) {
-		u.theme = th
-		u.root.Layout(gtx, func(gtx C) D {
-			row := gtx
-			row.Constraints = layout.Exact(image.Pt(gtx.Constraints.Max.X-gtx.Dp(gutter), gtx.Constraints.Max.Y))
-			if err := u.stageRow(row, v); err != nil {
-				t.Fatal(err)
-			}
-			return D{Size: gtx.Constraints.Max}
-		})
-	}
-	return u, r, u.browserPane("s")
-}
-
-// pageRect is where placeNativePage puts the page's web view after the last
-// frame: the page area's corner, at the size the pane laid the page out at.
-func pageRect(t *testing.T, r *frameRig, p *browserPaneUI) image.Rectangle {
-	t.Helper()
-	at, ok := r.router.Source().Origin(&p.tag)
-	if !ok {
-		t.Fatal("no page area drawn")
-	}
-	corner := at.Round()
-	return image.Rectangle{Min: corner, Max: corner.Add(image.Pt(p.view.W, p.view.H))}
-}
-
-func TestCollapsedDockOutFromTheEdgePushesThePageIn(t *testing.T) {
-	u, r, p := pageDockFrames(t)
-	r.settle(t)
-	before := pageRect(t, r, p)
-	r.hover(edgePoint)
-	r.settle(t)
-	if !u.dock.peek.shown {
-		t.Fatal("still in with the pointer on the window's edge")
-	}
-	if len(u.dock.islands) == 0 {
-		t.Fatal("the dock out stands over the island, not beside it")
-	}
-	// The rig draws a pixel a dp.
-	push := u.dock.width(layout.Context{Metric: unit.Metric{PxPerDp: 1}}) + int(gutter)
-	if got, want := u.dock.islands[0].x1, rigWindow.X-int(gutter)-push; got != want {
-		t.Errorf("the island ends at %d, want %d: the dock out is drawn over it", got, want)
-	}
-	out := pageRect(t, r, p)
-	if want := (image.Rectangle{Min: before.Min, Max: before.Max.Sub(image.Pt(push, 0))}); out != want {
-		t.Errorf("page at %v with the dock out, want %v", out, want)
-	}
-	r.hover(f32.Pt(100, 300))
-	r.now = r.now.Add(peekCloseDelay)
-	r.settle(t)
-	if u.dock.peek.shown {
-		t.Fatal("still out once the pointer left it")
-	}
-	if back := pageRect(t, r, p); back != before {
-		t.Errorf("page at %v once the dock went back, want %v", back, before)
 	}
 }
 

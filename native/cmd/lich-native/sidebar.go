@@ -242,12 +242,24 @@ func (a *sidebarAction) takeCard(c sidebarAction) {
 	}
 }
 
-// layout draws the open sidebar, or its rail, or the morph between them.
+// layout draws the open sidebar, or its rail, or the morph between them, in
+// the sidebar's column. Floating over the stage, it is drawn later
+// (peekLayout), and the column keeps the rail's room and its hover area.
 func (s *sidebar) layout(gtx C, th *ui.Theme, m *model, active string) (D, sidebarAction) {
+	s.peekDecide(gtx)
+	if s.floats() {
+		size := image.Pt(s.boxWidth(gtx, false), gtx.Constraints.Max.Y)
+		s.watchRail(gtx, size)
+		return D{Size: size}, sidebarAction{}
+	}
+	return s.draw(gtx, th, m, active)
+}
+
+func (s *sidebar) draw(gtx C, th *ui.Theme, m *model, active string) (D, sidebarAction) {
 	if s.morph.active() {
 		return s.morphing(gtx, th, m, active)
 	}
-	return s.shape(gtx, th, m, active, s.open)
+	return s.shape(gtx, th, m, active, s.wide())
 }
 
 func (s *sidebar) shape(gtx C, th *ui.Theme, m *model, active string, open bool) (D, sidebarAction) {
@@ -261,11 +273,11 @@ func (s *sidebar) shape(gtx C, th *ui.Theme, m *model, active string, open bool)
 // setOpen switches the sidebar, stores the choice and morphs to it. Out
 // from the rail, it is already where it opens, and stays there.
 func (s *sidebar) setOpen(gtx C, open bool, act *sidebarAction) {
-	if open && s.peek.shown {
+	if open && s.peek.out {
 		s.pinPeek(gtx, act)
 		return
 	}
-	s.open, act.saveOpen = open, true
+	s.open, act.saveOpen, s.peek.morph = open, true, false
 	s.morph.begin(gtx)
 }
 

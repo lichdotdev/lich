@@ -7,7 +7,6 @@ import (
 	"gioui.org/f32"
 	"gioui.org/io/pointer"
 	"gioui.org/layout"
-	"gioui.org/op"
 	"gioui.org/unit"
 
 	"github.com/lichdotdev/lich/api"
@@ -50,14 +49,14 @@ func slideFrames(t *testing.T) (*window, *frameRig, *termView) {
 	return u, r, tv
 }
 
-// slide steps frameStep at a time from a pointer move to p until s lands,
-// and reports where edge has the stage on each frame s moved, and the
-// terminal's columns before it and on every frame.
-func slide(t *testing.T, r *frameRig, tv *termView, p f32.Point, s *dockSlide, edge func() int) (edges, cols []int) {
+// slide steps frameStep at a time from start until s lands, and reports
+// where edge has the panel on each frame s moved, and the terminal's
+// columns before it and on every frame.
+func slide(t *testing.T, r *frameRig, tv *termView, start func(), s *dockSlide, edge func() int) (edges, cols []int) {
 	t.Helper()
 	c, _ := tv.vt.Size()
 	cols = append(cols, c)
-	r.router.Queue(pointer.Event{Kind: pointer.Move, Source: pointer.Mouse, Position: p})
+	start()
 	for range 100 {
 		r.frame()
 		c, _ := tv.vt.Size()
@@ -123,7 +122,12 @@ func settledCols(t *testing.T, r *frameRig, tv *termView) int {
 	return c
 }
 
-func TestDockPeekSlidesTheStageEdgeAndReflowsTheTerminalOnceItLands(t *testing.T) {
+// pointTo moves the rig's pointer to p.
+func pointTo(r *frameRig, p f32.Point) func() {
+	return func() { r.router.Queue(pointer.Event{Kind: pointer.Move, Source: pointer.Mouse, Position: p}) }
+}
+
+func TestDockExpandSlidesTheStageEdgeAndReflowsTheTerminalOnceItLands(t *testing.T) {
 	u, r, tv := slideFrames(t)
 	wide := settledCols(t, r, tv)
 	// The rig draws a pixel a dp.
@@ -132,13 +136,13 @@ func TestDockPeekSlidesTheStageEdgeAndReflowsTheTerminalOnceItLands(t *testing.T
 	row := rigWindow.X - g
 	end := func() int { return u.dock.islands[0].x1 }
 	at := func(share float32) int { return row - int(share*float32(w+g)) }
-	edges, cols := slide(t, r, tv, edgePoint, &u.dock.slide, end)
+	edges, cols := slide(t, r, tv, func() { u.dock.setCollapsed(false) }, &u.dock.slide, end)
 	onCurve(t, "out", edges, true, at)
 	heldThenOnce(t, "out", cols)
 	if narrow, _ := tv.vt.Size(); narrow >= wide {
 		t.Fatalf("out: %d columns beside the dock, want fewer than the %d without it", narrow, wide)
 	}
-	edges, cols = slide(t, r, tv, f32.Pt(100, 300), &u.dock.slide, end)
+	edges, cols = slide(t, r, tv, func() { u.dock.setCollapsed(true) }, &u.dock.slide, end)
 	onCurve(t, "back", edges, false, at)
 	heldThenOnce(t, "back", cols)
 	if c, _ := tv.vt.Size(); c != wide {
@@ -146,46 +150,33 @@ func TestDockPeekSlidesTheStageEdgeAndReflowsTheTerminalOnceItLands(t *testing.T
 	}
 }
 
-func TestSidebarPeekSlidesTheStageEdgeAndReflowsTheTerminalOnceItLands(t *testing.T) {
+// The dock out from the edge slides in as the expanded one does, over the
+// stage: the stage keeps its width and the terminal its grid, both ways.
+func TestDockPeekSlidesOverTheStageAsTheExpandDoes(t *testing.T) {
 	u, r, tv := slideFrames(t)
-	m := modelOn("a")
-	v := stageView{hasActive: true, active: sessionView{Session: api.Session{ID: "s", Kind: "shell"}}}
-	s := u.sidebar
-	s.open = false
-	gtx := layout.Context{Metric: unit.Metric{PxPerDp: 1}}
-	rail, panel := s.boxWidth(gtx, false), s.boxWidth(gtx, true)
-	// The stage beside the sidebar, as body lays it out.
-	r.draw = func(gtx C, th *ui.Theme) {
-		u.theme = th
-		u.root.Layout(gtx, func(gtx C) D {
-			s.layout(gtx, th, m, "a1")
-			s.peekLayout(gtx, th, m, "a1", image.Point{})
-			x := s.stageReserve(gtx)
-			defer op.Offset(image.Pt(x, 0)).Push(gtx.Ops).Pop()
-			row := gtx
-			row.Constraints = layout.Exact(image.Pt(gtx.Constraints.Max.X-x, gtx.Constraints.Max.Y))
-			if err := u.stageRow(row, v); err != nil {
-				t.Fatal(err)
-			}
-			return D{Size: gtx.Constraints.Max}
-		})
-	}
 	wide := settledCols(t, r, tv)
-	left := func() int { return s.stageReserve(gtx) }
-	edges, cols := slide(t, r, tv, railTree, &s.peek.slide, left)
-	// The panel slides out from under the rail, which the stage never
-	// gives back.
-	at := func(share float32) int { return max(int(share*float32(panel)), rail) }
-	onCurve(t, "out", edges, true, at)
-	heldThenOnce(t, "out", cols)
-	if narrow, _ := tv.vt.Size(); narrow >= wide {
-		t.Fatalf("out: %d columns beside the sidebar, want fewer than the %d beside the rail", narrow, wide)
+	gtx := layout.Context{Metric: unit.Metric{PxPerDp: 1}}
+	g, w := gtx.Dp(gutter), u.dock.width(gtx)
+	row := rigWindow.X - g
+	left := func() int {
+		if u.dock.islands != nil {
+			t.Fatalf("the dock out from the edge took room from the stage: %v", u.dock.islands)
+		}
+		if u.dock.peek.slide.shown == 0 {
+			// Nothing of it drawn yet: where share 0 has it.
+			return row + g
+		}
+		return u.dock.peek.box.Min.X
 	}
-	edges, cols = slide(t, r, tv, f32.Pt(700, 300), &s.peek.slide, left)
+	at := func(share float32) int { return row - int(share*float32(w+g)) + g }
+	edges, cols := slide(t, r, tv, pointTo(r, edgePoint), &u.dock.peek.slide, left)
+	onCurve(t, "out", edges, true, at)
+	edges, more := slide(t, r, tv, pointTo(r, f32.Pt(100, 300)), &u.dock.peek.slide, left)
 	onCurve(t, "back", edges, false, at)
-	heldThenOnce(t, "back", cols)
-	if c, _ := tv.vt.Size(); c != wide {
-		t.Errorf("back: %d columns once the sidebar went in, want the %d it had before", c, wide)
+	for _, c := range append(cols, more...) {
+		if c != wide {
+			t.Fatalf("the terminal's columns went %v then %v, want %d throughout: the peek resized it", cols, more, wide)
+		}
 	}
 }
 
@@ -201,7 +192,7 @@ func labelX(t *testing.T, r *frameRig, label string) int {
 	return 0
 }
 
-func TestDockPeekCarriesTheChatWithTheStageEdgeOnEveryFrame(t *testing.T) {
+func TestDockExpandCarriesTheChatWithTheStageEdgeOnEveryFrame(t *testing.T) {
 	u, r := peekDockFrames(t)
 	u.palette, u.worktree = new(commandPalette), new(worktreeDialog)
 	u.git = newGitPanel(u.ctx, u.client, &u.root, r.invalidate, func(ui.Toast) {}, "monospace", 12)
@@ -226,7 +217,7 @@ func TestDockPeekCarriesTheChatWithTheStageEdgeOnEveryFrame(t *testing.T) {
 	tui := i18n.T("chat.switch.tui")
 	// The switch sits at the strip's right end, inset from the island's.
 	inset := rigWindow.X - gtx1(gutter) - labelX(t, r, tui)
-	r.router.Queue(pointer.Event{Kind: pointer.Move, Source: pointer.Mouse, Position: edgePoint})
+	u.dock.setCollapsed(false)
 	frames := 0
 	for range 100 {
 		r.frame()

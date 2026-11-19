@@ -193,38 +193,25 @@ func (s *sidebar) boxWidth(gtx C, open bool) int {
 // rail to 1 for the panel, mid-morph in between: what the topbar's brand
 // column follows.
 func (s *sidebar) column(gtx C) (int, float32) {
-	return brandColumn(s.boxWidth(gtx, false), s.boxWidth(gtx, true), s.open, s.morph.active(), s.morph.p)
+	return brandColumn(s.boxWidth(gtx, false), s.boxWidth(gtx, true), s.open, s.morph.active() && !s.peek.morph, s.morph.p)
 }
 
 // stageReserve is the sidebar width the stage makes room for. Mid-morph it is
 // the narrower shape's for the whole flight: the stage keeps one size and
 // slides with the sidebar's edge, clipped by the window. A terminal resize
 // reaches the PTY, so the stage resizes once, as a collapse starts or once an
-// expand lands, and never to a size in between. The peek's slide narrows the
-// stage on every frame instead, as the dock's does, its terminal keeping its
-// grid until the slide lands (stageRow).
+// expand lands, and never to a size in between.
 func (s *sidebar) stageReserve(gtx C) int {
 	if !s.morph.active() {
-		return max(s.boxWidth(gtx, s.open), s.peek.width)
+		return s.boxWidth(gtx, s.open)
 	}
 	return min(s.boxWidth(gtx, true), s.boxWidth(gtx, false))
 }
 
 // stageOverhang is how much wider the stage is this frame than where the
-// morph or the peek's slide leaves it: negative while the peek goes back.
+// morph leaves it: the shapes' difference through an expand, else 0.
 func (s *sidebar) stageOverhang(gtx C) int {
-	end := s.boxWidth(gtx, s.open)
-	if s.peek.shown {
-		end = max(end, s.boxWidth(gtx, true))
-	}
-	return end - s.stageReserve(gtx)
-}
-
-// holdsStage is whether the terminal follows the stage's size this frame
-// without waiting for it to settle: through the morph, or as the peek's slide
-// lands.
-func (s *sidebar) holdsStage() bool {
-	return s.morph.holdsStage() || s.peek.slide.landed
+	return s.boxWidth(gtx, s.open) - s.stageReserve(gtx)
 }
 
 // morphing is the sidebar mid-morph: its box eases between the two shapes'
@@ -232,17 +219,22 @@ func (s *sidebar) holdsStage() bool {
 // clipped by it, the old one fading out as the new one fades in.
 func (s *sidebar) morphing(gtx C, th *ui.Theme, m *model, active string) (D, sidebarAction) {
 	mo := &s.morph
-	width := lerpInt(s.boxWidth(gtx, !s.open), s.boxWidth(gtx, s.open), mo.p)
-	size := image.Pt(width, gtx.Constraints.Max.Y)
+	size := image.Pt(s.morphWidth(gtx), gtx.Constraints.Max.Y)
 	defer clip.Rect{Max: size}.Push(gtx.Ops).Pop()
 	mo.side = sideFrom
-	s.faded(gtx.Disabled(), th, m, active, !s.open, 1-mo.p)
+	s.faded(gtx.Disabled(), th, m, active, !s.wide(), 1-mo.p)
 	mo.side = sideTo
 	to := gtx
 	if mo.phase == morphCapture {
 		to = gtx.Disabled()
 	}
-	return D{Size: size}, s.faded(to, th, m, active, s.open, mo.p)
+	return D{Size: size}, s.faded(to, th, m, active, s.wide(), mo.p)
+}
+
+// morphWidth is the box's width this frame of the morph, toward the shape
+// the sidebar shows.
+func (s *sidebar) morphWidth(gtx C) int {
+	return lerpInt(s.boxWidth(gtx, !s.wide()), s.boxWidth(gtx, s.wide()), s.morph.p)
 }
 
 func (s *sidebar) faded(gtx C, th *ui.Theme, m *model, active string, open bool, alpha float32) sidebarAction {
@@ -326,7 +318,7 @@ func (s *sidebar) flyingGlyph(gtx C, th *ui.Theme, name string, side morphSide, 
 	defer op.Offset(box.Min).Push(gtx.Ops).Pop()
 	defer paint.PushOpacity(gtx.Ops, alpha).Pop()
 	gtx.Constraints = layout.Exact(box.Size())
-	panel := (side == sideTo) == s.open
+	panel := (side == sideTo) == s.wide()
 	switch {
 	case name == glyphToggle && panel:
 		icCollapse.Layout(gtx, ui.Space(4), th.MutedForeground)
