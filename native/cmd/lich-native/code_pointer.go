@@ -1,6 +1,6 @@
 package main
 
-// Lines of a session's checkout brought to the dock's Code tab, by its agent
+// Lines of a session's checkout brought to the stage editor, by its agent
 // (show_code) or by a Ctrl+click on a path:line in its terminal.
 
 import (
@@ -53,11 +53,11 @@ func (u *window) tellShowCode(s api.ShowCode) {
 	})
 }
 
-// agentPointed opens the lines when the person is looking at the session. From
-// anywhere else it only offers them: taking the screen would pull them off what
-// they are typing into.
+// agentPointed opens the lines when the person is looking at the session's
+// terminal. From anywhere else, the stage editor included, it only offers
+// them: taking the screen would pull them off what they are typing into.
 func (u *window) agentPointed(t codeTarget) {
-	if !u.settings.open && u.model.sessionOnScreen(t.session) {
+	if !u.settings.open && u.model.sessionOnScreen(t.session) && u.model.editorShown() == "" && !u.editorWouldAsk(t) {
 		u.openCode(t)
 		return
 	}
@@ -82,7 +82,8 @@ func codeLabel(t codeTarget) string {
 	return name + ":" + formatLineRef(t.line, max(t.line, t.end))
 }
 
-// openCode brings the session up if it is not the active one, then its lines.
+// openCode brings the session up if it is not the active one, then its lines
+// in its checkout's stage editor.
 func (u *window) openCode(t codeTarget) {
 	view, ok := u.model.sessionViewOf(t.session)
 	if !ok {
@@ -91,9 +92,9 @@ func (u *window) openCode(t codeTarget) {
 	if !u.model.sessionOnScreen(t.session) {
 		u.focusSession(view.projectID, t.session)
 	}
-	u.dock.show(dockCode)
 	note := agentNote{text: t.comment, kind: view.Kind, author: u.model.providerName(view.Kind)}
-	u.dock.code.showLines(view.path, t.rel, t.line, t.end, note)
+	u.dock.code.showing(view.path, t.rel)
+	u.openInEditor(view.path, t.rel, t.line, t.end, note)
 }
 
 func (m *model) sessionOnScreen(id string) bool {

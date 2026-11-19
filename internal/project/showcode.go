@@ -14,8 +14,8 @@ import (
 	"github.com/lichdotdev/lich/internal/relpath"
 )
 
-// maxCodeComment keeps the block under the lines readable at a glance, without
-// pushing the code off the panel.
+// maxCodeComment keeps the note on the lines readable at a glance, without
+// pushing the code off the stage.
 const maxCodeComment = 360
 
 // SetSessionCheckout wires the directory a live session runs in, "" for one

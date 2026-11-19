@@ -28,74 +28,52 @@ func codeBackend(t *testing.T) *httptest.Server {
 	return srv
 }
 
-// codeFrames is the Code tab over codeBackend, read as a plain folder.
-func codeFrames(t *testing.T) (*codeTab, *frameRig) {
+// codeFrames is the Code tab over codeBackend, read as a plain folder, and
+// the last file it opened in the stage editor.
+func codeFrames(t *testing.T) (*codeTab, *frameRig, *codeTarget) {
 	t.Helper()
 	r := newFrameRig(image.Pt(500, 600), nil)
-	c, err := newCodeTab(clientOf(codeBackend(t)), r.invalidate, "monospace", 12, new(commentStore), func(ui.Toast) {})
-	if err != nil {
-		t.Fatal(err)
-	}
+	opened := new(codeTarget)
+	c := newCodeTab(clientOf(codeBackend(t)), r.invalidate, new(commentStore), func(ui.Toast) {}, func(checkout, rel string, line int) {
+		*opened = codeTarget{session: checkout, rel: rel, line: line}
+	})
 	root := new(ui.Root)
 	r.draw = func(gtx C, th *ui.Theme) {
 		root.Layout(gtx, func(gtx C) D {
-			if err := c.layout(gtx, th, root, dockInput{checkout: "/repo"}); err != nil {
-				t.Fatal(err)
-			}
+			c.layout(gtx, th, dockInput{checkout: "/repo"})
 			return D{Size: gtx.Constraints.Max}
 		})
 	}
-	return c, r
+	return c, r, opened
 }
 
-func TestCodeTreeOpensAFileInTheFrameAfterTheClick(t *testing.T) {
-	c, r := codeFrames(t)
+func TestCodeTreeOpensAFileInTheEditorInTheFrameThatTookTheClick(t *testing.T) {
+	_, r, opened := codeFrames(t)
 	r.waitFor(t, "a.go")
 	r.click(t, r.at(t, "a.go"))
-	if !c.preview.isOpen() {
-		t.Fatal("the click missed the file")
+	if want := (codeTarget{session: "/repo", rel: "a.go"}); *opened != want {
+		t.Fatalf("opened %+v, want %+v", *opened, want)
 	}
 }
 
-func TestCodeSearchHitOpensInTheFrameAfterTheClick(t *testing.T) {
-	c, r := codeFrames(t)
+func TestCodeSearchHitOpensInTheEditorInTheFrameThatTookTheClick(t *testing.T) {
+	c, r, opened := codeFrames(t)
 	r.waitFor(t, "a.go")
 	c.mode.Value = browseByText
 	c.query.SetText("needle")
 	r.waitFor(t, "needle")
 	r.click(t, r.at(t, "needle"))
-	if !c.preview.isOpen() {
-		t.Fatal("the click missed the hit")
+	if want := (codeTarget{session: "/repo", rel: "a.go", line: 2}); *opened != want {
+		t.Fatalf("opened %+v, want %+v", *opened, want)
 	}
 }
 
 func TestCodeBrowseModeSaysWhatTheFieldDoesInTheFrameThatTookTheClick(t *testing.T) {
-	c, r := codeFrames(t)
+	c, r, _ := codeFrames(t)
 	r.waitFor(t, "a.go")
 	c.mode.Value = browseByText
 	r.clickLabel(t, i18n.T("dock.filesPanel.byName"))
 	if c.mode.Value != browseByName {
 		t.Fatal("the click missed By name")
-	}
-}
-
-func TestCodeFindMatchCaseCountsInTheFrameThatTookTheClick(t *testing.T) {
-	c, r := codeFrames(t)
-	r.waitFor(t, "a.go")
-	c.open("a.go", 0)
-	c.preview.find.open = true
-	c.preview.find.query.SetText("needle")
-	status := i18n.T("dock.findBar.matches", i18n.Args{"count": 2})
-	r.waitFor(t, status)
-	// Match case is the first toggle right of the status.
-	var at image.Point
-	for _, n := range r.nodes() {
-		if n.Desc.Label == status {
-			at = n.Desc.Bounds.Min
-		}
-	}
-	r.click(t, r.smallestClickIn(t, image.Rect(at.X, at.Y-10, at.X+100, at.Y+22)))
-	if !c.preview.find.matchCase.Value {
-		t.Fatal("the click missed Match case")
 	}
 }

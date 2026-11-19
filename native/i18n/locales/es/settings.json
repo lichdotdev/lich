@@ -666,7 +666,7 @@
       "servicesWrite": "Iniciar, detener y reiniciar los servicios de tus proyectos",
       "gitRead": "Ver la rama, los cambios y el pull request de cada checkout",
       "notify": "Mostrar notificaciones de escritorio",
-      "window": "Mostrar archivos en el panel derecho y abrir páginas en el navegador de una sesión"
+      "window": "Mostrar archivos en el editor y abrir páginas en el navegador de una sesión"
     },
     "removeTitle": "¿Quitar {name}?",
     "removeDescription": "lich la detiene y borra el programa. Lo que guardó se conserva, así que al instalarla de nuevo sigue donde lo dejó.",

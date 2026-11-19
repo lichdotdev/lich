@@ -289,7 +289,7 @@ type NotifyParams struct {
 // ShowCodeParams opens Path, relative to the checkout of Session (its id as
 // ListSessions returns it) or absolute inside it, at Line through EndLine,
 // 1-based and inclusive, 0 leaving them out. Comment is plain text shown
-// under the lines, at most 360 characters, and needs Line.
+// on the lines, at most 360 characters, and needs Line.
 type ShowCodeParams struct {
 	Session string `json:"session"`
 	Path    string `json:"path"`

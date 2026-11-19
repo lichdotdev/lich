@@ -181,6 +181,7 @@ project.ThreadFixes(None) []ThreadFix
 project.Tree(PathOptions) FileListing
 project.WorktreeAdopted(PathOptions) bool
 project.WorktreeDirty(PathOptions) bool
+project.WriteFile(WriteFileOptions) None
 providers.Detect(None) []DetectedProvider
 providers.OnPath(ProviderIDOptions) []ProviderBinary
 providers.RefreshPath(None) None
@@ -1225,6 +1226,12 @@ FileListing {
 	files []string
 	cut bool
 	hidden []string
+}
+
+WriteFileOptions {
+	path string
+	rel string
+	content string
 }
 
 DetectedProvider {

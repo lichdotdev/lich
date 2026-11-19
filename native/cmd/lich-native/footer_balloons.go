@@ -30,11 +30,11 @@ var (
 
 // balloonsShown is whether the stage's foot carries the footer's balloons:
 // a session's terminal or a layout of them, and a project with no session.
-// A plain terminal, a service's console and Home carry none, and nor does a
+// A plain terminal, a service's console, the stage editor and Home carry none, and nor does a
 // stage the Git panel or an extension's panel rises over.
 func (u *window) balloonsShown(v stageView) bool {
 	switch {
-	case v.home, v.hasConsole, u.panelShown(v):
+	case v.home, v.hasConsole, v.hasEditor, u.panelShown(v):
 		return false
 	case v.hasLayout:
 		for _, sv := range v.panes {

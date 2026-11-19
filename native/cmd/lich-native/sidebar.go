@@ -142,12 +142,14 @@ type sidebarAction struct {
 	terminalAt, editorAt, folderAt, browser string
 	// From a browser row's menu, each the session whose browser it is.
 	browserMinimize, browserWindow, browserClose string
-	unsplit                                      string // the session to take out of its split
-	rename                                       sessionRename
-	color, colorTo                               string // session id, and its new tint ("" for the theme)
-	continueIn                                   continueRequest
-	profilePick                                  profilePick
-	worktree                                     bool // the + menu asked for a worktree session
+	// From an editor node, the checkout whose editor to show or to close.
+	editor, editorClose string
+	unsplit             string // the session to take out of its split
+	rename              sessionRename
+	color, colorTo      string // session id, and its new tint ("" for the theme)
+	continueIn          continueRequest
+	profilePick         profilePick
+	worktree            bool // the + menu asked for a worktree session
 	// The session to fork, in its own checkout or into a new worktree.
 	forkHere, forkWorktree string
 	schedule               string // the session whose Schedule prompt… was picked

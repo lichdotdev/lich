@@ -269,5 +269,9 @@
     "review": "Types its prompt when a review arrives",
     "at": "Prompt at {when}",
     "resume": "Continues after the usage limit at {when}"
+  },
+  "editorRow": {
+    "close": "Close the editor",
+    "unsaved": "Unsaved changes"
   }
 }

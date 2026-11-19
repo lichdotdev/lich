@@ -23,25 +23,7 @@
     "loading": "正在加载…",
     "noMatch": "没有匹配的文件",
     "empty": "这里没有文件",
-    "backToTree": "返回文件树",
-    "readOnly": "只读",
     "showSource": "显示源码"
-  },
-  "findBar": {
-    "placeholder": "查找",
-    "matchCase": "区分大小写",
-    "wholeWord": "全字匹配",
-    "regexp": "使用正则表达式",
-    "showAll": "显示所有匹配项",
-    "previous": "上一个匹配项",
-    "next": "下一个匹配项",
-    "close": "关闭",
-    "position": "第 {current} 项，共 {total} 项",
-    "matches": {
-      "other": "{count} 个匹配项"
-    },
-    "noResults": "无结果",
-    "invalidRegexp": "无效的正则表达式"
   },
   "artifacts": {
     "empty": "此会话的智能体生成给你看的页面和文件会显示在这里，项目中其他已打开会话生成的也会一并列出。",
@@ -62,5 +44,18 @@
       "one": "{count} 个文件匹配",
       "other": "{count} 个文件匹配"
     }
+  },
+  "editor": {
+    "save": "保存",
+    "saveTip": "保存 ({keys})",
+    "undo": "撤销",
+    "discard": "放弃",
+    "unsavedTitle": "保存对 {name} 的更改?",
+    "unsavedDescription": "如果不保存,更改将会丢失。",
+    "changedOnDisk": "你开始编辑后,此文件在磁盘上已被更改。",
+    "keepMine": "保留我的",
+    "reload": "重新加载",
+    "saveFailed": "无法保存 {name}",
+    "noteOn": "{author} 关于第 {lines} 行"
   }
 }
