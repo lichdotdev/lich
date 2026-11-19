@@ -2068,6 +2068,7 @@ ChatTurn {
 	running bool
 	stopReason,omitempty string
 	durationMs,omitempty int64
+	changes,omitempty *ChatTurnChanges
 }
 
 ProfileLogin {
@@ -2592,6 +2593,12 @@ PullRequest {
 	state string
 	headRefName string
 	baseRefName string
+}
+
+ChatTurnChanges {
+	files int
+	added int
+	removed int
 }
 
 PluginProfileFailure {
