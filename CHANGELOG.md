@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **New sessions open as a chat.** Pick Chat or Terminal under Settings › Providers › New sessions open as; a provider without a chat, and a fork, still open their terminal.
 - **Settings has a page for each group of settings, under named groups in its sidebar.** General splits into Language, Window and Notifications, and Appearance into Interface, Terminal and Footer, where Copy on select now sits beside the terminal font; the sidebar sorts every page under General, Appearance, Agents and Workspace. Ctrl+F (Cmd+F on macOS) puts the cursor in the search while Settings is open.
 - **The browser's controls are lighter and its tabs are always in view.** The pages' tabs sit on top with a button for a new one, the address is a filled pill that shows the host and path and the whole URL when you edit it, and the page is a rounded card. Open in a window moved to the browser's menu in the sidebar.
 - **A pane in a split no longer wears a frame when it has the focus.** The focused pane's name is brighter than the others'.
@@ -36,6 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **A session shown as a chat now gets the tasks and messages other sessions send it.** Sending to one used to fail with "no live session"; the message now arrives as its next one, after the turn it is in.
 - **Everything you can click shows the hand.** Buttons, tabs, rows, menu items, checkboxes, switches and links now change the pointer on hover; a disabled control keeps the arrow.
 - **Only the terminal that takes your keys draws a full cursor.** In a split the other panes, and every terminal while the window is out of focus, show the cursor as an outline.
 - **Clicks in the session browser keep waiting for their requests when the system clock changes.**

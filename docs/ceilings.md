@@ -86,7 +86,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   machine, is what the sandbox confines; on Cursor CLI and Antigravity skipping it writes the trust down, so a
   folder once opened confined stays trusted outside the sandbox too. Whether Codex's trust and Cursor CLI's
   `--trust` loosen anything beyond the question was not measured.
-- **A session runs its chat or its terminal, never both, and a chat leaves out two providers**
+- **A session runs its chat or its terminal, never both, and only the providers in `chat.Kinds` have a chat**
   (`internal/chat`, `internal/terminal/chat.go`): the structured modes keep no lock on a conversation, so two
   processes on one would write one transcript from two histories; a switch stops one side, waits for it to exit
   and resumes the other, and refuses while a turn runs. Codex and Crush have no chat: Codex's structured mode is
@@ -100,6 +100,25 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   yes itself where the checkout skips permissions and the server has no flag for it. lich serves no ACP client
   method (`fs/*`, `terminal/*`): a file the agent asked lich to write would land outside the sandbox. The text of
   lich's own notices is English, like backend error text.
+- **A new session is born as a chat only where its provider is in `chat.Kinds`, and a fork never is**
+  (`internal/store/sessionview.go`, `internal/spawn`): the store writes the view with the row, a chat unless the
+  global `session.view` (Settings › Providers › New sessions open as) asks for the terminal, so the window, the
+  `lich` CLI, `open_session` and a handoff all get it from the same insert. A provider outside `chat.Kinds` opens
+  its terminal whatever the setting says. A fork opens its terminal too (`MarkForked` clears the view): its first
+  start branches its source's conversation, and only the terminal's resume flag does that; the chat resumes a
+  conversation, it cannot branch one. The setting decides the birth only: a resumed or restored session keeps
+  the view it had.
+- **A session drawn as a chat takes the relay's tasks and notes as its next message, and nothing that needs its
+  terminal** (`internal/chat/relay.go`, `internal/terminal/chatprompt.go`): `SubmitPrompt` hands the text to the
+  chat, which sends it at once or queues it, oldest first, behind the turn running; the receipt is acked when its
+  turn starts, as a mod's is. What still needs a terminal or the Claude Code mod refuses a chat with an error
+  rather than writing nothing: `lich ask` / `ask_session` and every action of `control_session` go through the
+  mod, and Insert types at a prompt a chat does not have. A chat is reachable only while its process runs: the
+  window starts every session drawn as a chat when it attaches, and a spawn starts one at its birth, so a
+  headless lich restarted with no window attached leaves those sessions out of the roster until one does. An ACP
+  chat opens its conversation with no MCP servers of its own (`mcpServers: []`), so whether its agent answers a
+  task with lich's tools rests on the provider loading lich's registration in its ACP mode, which was not
+  measured for any ACP provider in `chat.Kinds`; Claude Code's chat is given `--mcp-config` like its terminal.
 - **A chat turn's count of changes is a difference of two numstat readings, not a record of what the agent did**
   (`internal/chat/changes.go`, `internal/project/lines.go`): lich reads `git diff --numstat HEAD` and the untracked
   files before the message goes out and again when the turn ends, and counts the files whose numbers differ. It
