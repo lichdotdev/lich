@@ -348,7 +348,7 @@ draws none while it grows in, because the room above the rows is measured in the
   Claude Code's AskUserQuestion shape, which every provider's request for input is read into. Its head is the
   ask's header in small capitals on a `Muted` fill, then the question in `TextSM` medium, and "multiple" muted
   at the right when it takes several; several asks turn the headers into steps along the top (the one on show on
-  `SidebarAccent`, an answered one with a check, each a click back to it) with "2 of 3" muted at the right, and
+  `SidebarAccent`, an answered one with a check, each a click back to it; an ask with no header shows its number) with "2 of 3" muted at the right, and
   the question under them. Each option is a row, a keycap with its number (a checkbox when it takes several), the
   label in medium and the description muted, the row the keys stand on lit on `SidebarAccent`; the last row is
   always "Other…", a field for the person's own words. An ask with no options is a textarea alone. When the
