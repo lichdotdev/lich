@@ -297,6 +297,10 @@ agent's `show_code` takes the whole stage, in place of the session, as a service
   while nothing is unsaved, its chord (Ctrl+S, ⌘S) in the tooltip rather than beside it.
 - The code is on the island's own fill. A line the user changed since the file was read or saved wears a
   `ToneWait` strip down its gutter cell, and a run of deleted lines marks the line that took their place.
+- The cursor's line, and no other, ends in its blame, `blameGap` (32) past the code: "author, age · summary"
+  or "You · Uncommitted changes" for a line not committed or not saved, `TextXS` in `MutedForeground`, leaning
+  as italic (Onest has none, so it is sheared, `oblique`), cut with "…" where the code area ends and left out
+  under `blameMinRoom` (80). Its tooltip is the short hash and full date, the author, then the whole message.
 - An agent's note and the session comment box sit in a strip under the header, over the code, the note naming
   its lines: the editor hangs no widget under a line.
 - A disk change under unsaved edits is a strip under the header tinted `ToneWait` at `editorBannerTint`

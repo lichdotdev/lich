@@ -65,6 +65,7 @@ func (f *fileEditor) watchDisk(gtx C) {
 	if f.disk.keep.Clicked(gtx) && f.disk.theirs != nil {
 		f.base, f.disk.theirs = *f.disk.theirs, nil
 		f.gen++
+		f.blame.gen++
 		f.setDirty(f.ed.State().Doc() != f.base)
 	}
 	text, loading, err := f.disk.read.get()
@@ -85,6 +86,7 @@ func (f *fileEditor) weighDisk(text string) {
 		if disk == doc && disk != f.base {
 			f.base = disk
 			f.gen++
+			f.blame.gen++
 			f.setDirty(false)
 		}
 	case diskReload:

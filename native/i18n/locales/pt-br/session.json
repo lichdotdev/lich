@@ -46,7 +46,15 @@
       "minute": "há {count} min.",
       "hour": "há {count} h",
       "day": "há {count} dias",
-      "week": "há {count} sem."
+      "week": "há {count} sem.",
+      "month": {
+        "one": "há {count} mês",
+        "other": "há {count} meses"
+      },
+      "year": {
+        "one": "há {count} ano",
+        "other": "há {count} anos"
+      }
     }
   }
 }

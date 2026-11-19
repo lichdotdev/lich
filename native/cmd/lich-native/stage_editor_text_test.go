@@ -74,3 +74,10 @@ func TestADiskReadIsWeighedInTheLinesTheEditorHolds(t *testing.T) {
 		t.Errorf("CR file = %q", got)
 	}
 }
+
+func TestEachLineKeepsItsPlaceOnDiskThroughEdits(t *testing.T) {
+	d := diffLines("a\nb\nc\nd\n", "new\na\nB\nc\nd\n")
+	if want := []int{-1, 0, -1, 2, 3, 4}; !slices.Equal(d.kept, want) {
+		t.Fatalf("kept %v, want %v: an untouched line is the disk's line it was", d.kept, want)
+	}
+}

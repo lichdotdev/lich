@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Draw rectangles, ellipses and arrows on a browser page.** Turn on Draw, choose a shape from the outlined tool button, and drag to place it.
 - **The collapsed sidebar and dock come out when you point at them.** Rest the pointer on the sidebar's rail, or touch the window's right edge with the dock collapsed by its new collapse button, and the panel opens over the terminal without resizing it; it goes back when the pointer leaves.
 - **Open a file and edit it on the whole stage.** A file picked in the dock's Code tab, a path Ctrl+clicked in a terminal or one an agent shows opens in an editor that takes the stage, with Save (Ctrl+S) and a dot for unsaved changes; it stays in the sidebar as a node under its checkout until you close it from the node's menu. If an agent changes the file while you hold unsaved edits, the editor shows what changed on disk and lets you reload it or keep yours.
+- **See who last changed the line you are on.** In the editor, the end of the cursor's line names the commit's author, how long ago and its summary, or says the line is yours and not committed; hover it for the whole message.
 - **Click an installed extension to see its catalog page.** In Settings › Extensions › Installed, a row the catalog lists opens the same detail its card does, with Update when there is a newer release.
 
 ### Changed

@@ -1809,7 +1809,10 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   window: a window that closes drops an unsaved one without asking, and an editor whose checkout row leaves the
   tree (its last session closed) keeps its buffer with no node to reach it until a file of that checkout opens
   again. A disk change made outside any session shows within `editorDiskTick` (5 s) while the editor is on the
-  stage, and when it comes back to it.
+  stage, and when it comes back to it. The cursor line's blame (`project.GitBlame`) is read when the file is
+  opened, saved or reloaded, never on a timer, so a commit made meanwhile shows at the next of those; and
+  since the editor does not say where a line's text ends, the blame's room is estimated at 0.6em a cell, so a
+  wider code face cuts it at the code area's edge without the "…".
 
 ## Languages
 

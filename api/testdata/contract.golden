@@ -128,6 +128,7 @@ project.EditReviewComment(PRCommentBodyOptions) None
 project.Exists(PathOptions) bool
 project.FileLines(FileLinesOptions) []string
 project.GitAuthors(GitAuthorsOptions) []string
+project.GitBlame(CheckoutFileOptions) GitBlame
 project.GitBranchOnly(GitBranchOptions) int
 project.GitCheckout(GitCheckoutOptions) None
 project.GitCommit(GitCommitOptions) GitCommitDetail
@@ -911,6 +912,11 @@ FileLinesOptions {
 GitAuthorsOptions {
 	path string
 	ref,omitempty string
+}
+
+GitBlame {
+	lines []string
+	commits map[string]GitBlameCommit
 }
 
 GitBranchOptions {
@@ -2379,6 +2385,13 @@ FailedCheck {
 	name string
 	url,omitempty string
 	steps,omitempty []StepLog
+}
+
+GitBlameCommit {
+	author string
+	time int64
+	summary string
+	message string
 }
 
 GitRef {
