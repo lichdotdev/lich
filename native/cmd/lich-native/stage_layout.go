@@ -388,7 +388,11 @@ func (u *window) applyLayoutStage() {
 // content shows session s's terminal or its chat over gtx's area, keys
 // typing into it when it takes them.
 func (u *window) content(gtx C, s sessionView, keys bool) error {
+	u.chats.look(s)
 	if s.View == api.ViewChat {
+		if a := u.chats.viewFade(gtx, s.ID); a < 1 {
+			defer paint.PushOpacity(gtx.Ops, a).Pop()
+		}
 		u.chatScreen(gtx, s, keys)
 		return nil
 	}
@@ -402,6 +406,9 @@ func (u *window) content(gtx C, s sessionView, keys bool) error {
 	t, err := u.terms.show(u.ctx, gtx, s, resume)
 	if err != nil {
 		return err
+	}
+	if a := u.chats.viewFade(gtx, s.ID); a < 1 {
+		defer paint.PushOpacity(gtx.Ops, a).Pop()
 	}
 	err = u.terms.layout(gtx, t, keys)
 	// A closed session frees its terminal off the frame goroutine; one shown

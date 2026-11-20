@@ -12,9 +12,9 @@ import (
 	"gioui.org/op/paint"
 )
 
-// collapseDuration is SessionGroup's `transition-[grid-template-rows,opacity]
+// CollapseDuration is SessionGroup's `transition-[grid-template-rows,opacity]
 // duration-200 ease-out`.
-const collapseDuration = 200 * time.Millisecond
+const CollapseDuration = 200 * time.Millisecond
 
 // Collapse is SessionGroup's fold: the `grid grid-rows-[0fr]↔[1fr]` box that
 // clips its child to a height animating between nothing and all of it,
@@ -29,7 +29,7 @@ func (c *Collapse) Layout(gtx C, open bool, w layout.Widget) D {
 	if open {
 		target = 1
 	}
-	p := c.fold.at(gtx, target, collapseDuration, easeOut)
+	p := c.fold.at(gtx, target, CollapseDuration, easeOut)
 	if !open {
 		gtx = gtx.Disabled()
 	}
@@ -143,6 +143,17 @@ func (p *Presence) Settle(key string) {
 
 // Layout draws key's item w in its motion; a leaving item takes no input.
 func (p *Presence) Layout(gtx C, key string, w layout.Widget) D {
+	return p.layout(gtx, key, presenceScale, w)
+}
+
+// LayoutFlat is Layout with no scale, height and opacity alone: for a row
+// whose text or pixel art must never be drawn at a fractional size.
+func (p *Presence) LayoutFlat(gtx C, key string, w layout.Widget) D {
+	return p.layout(gtx, key, 1, w)
+}
+
+// layout draws key's item w in its motion, growing from a scale of pose.
+func (p *Presence) layout(gtx C, key string, pose float32, w layout.Widget) D {
 	it, ok := p.items[key]
 	if !ok {
 		return w(gtx)
@@ -155,7 +166,7 @@ func (p *Presence) Layout(gtx C, key string, w layout.Widget) D {
 	if it.leaving {
 		gtx = gtx.Disabled()
 	}
-	return reveal(gtx, v, presenceScale+(1-presenceScale)*v, v, w)
+	return reveal(gtx, v, pose+(1-pose)*v, v, w)
 }
 
 // Reveal draws w clipped to rows of its height, the share of it a motion

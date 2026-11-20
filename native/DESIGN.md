@@ -361,9 +361,25 @@ draws none while it grows in, because the room above the rows is measured in the
   thought, "2 tool calls" for the turn's line while a call runs, and the name and target of each call that runs,
   its time counting from when it was asked for, a wait on a permission included. A running call's name is muted
   under the band, which lights toward `Foreground` and would not show on it; ended, it is `Foreground` again. The
-  answer being written ends in a caret that blinks every half second. A row new to the conversation enters
-  with `ui.Presence`, growing in from the top; the conversation read when the pane opens, or after it, does
-  not play as arrivals. A list at its end stays at its end while rows grow in.
+  answer being written ends in a caret that stays lit while its text grows and blinks every half second once
+  it has rested 600ms (`chatStreamHold`); the text itself comes in dry. A row new to the conversation enters
+  with `ui.Presence.LayoutFlat`, its height and opacity rising with no scale (160ms ease-out, out in 180ms
+  ease-in), so its text and the flame never draw at a fractional size; the conversation read when the pane
+  opens, or after it, or drawn again after the TUI, does not play as arrivals. A list at its end stays at its
+  end while rows grow in.
+- **A row that becomes another changes in its slot** (`chat_motion.go`). A turn ending turns the live line into
+  the closing line where it stood: the flame, verb and clock fade out in 120ms ease-in, then the avatar, word
+  and count fade in by 280ms and the hairline runs from the word to the column's edge by 360ms, both ease-out;
+  the slot eases to the closing line's height in 160ms, since the two differ by a few pixels. Neither row
+  plays its own entry or exit. A question answered turns its card into its answer lines: the card fades out in
+  120ms, the lines fade in from 80ms to 200ms, and the row's height runs down to theirs in 200ms. A fold, a
+  thought's text or a group's calls, opens and shuts with `ui.Collapse`, 200ms, its first draw landing where it
+  stands; a call that comes into an open group enters as a row does, and one that starts or stops running
+  under a folded group shows or goes at once. Sending a message while the list is scrolled up runs it back
+  to its end in 220ms ease-out and pins it there. Switching between GUI and TUI fades the view that comes in
+  from the background in 150ms ease-out, from the first frame that draws it; the one that leaves goes at once.
+  The chevrons, the option highlight, the Send and Stop swap, the composer's height, a tool's state, the copy
+  check and the footer's changes stay dry.
 - **A permission** is a box on `Sidebar`, `RadiusMD`, `Space(3)` padding (see Boxes inside a screen): the tool,
   its diff, and a `SizeSM` button per answer the provider offers, the first allow filled. Enter takes the first
   allow and Esc the first reject. Answered, it shrinks to a muted line naming the answer.
@@ -383,7 +399,7 @@ draws none while it grows in, because the room above the rows is measured in the
   questions and reaches the agent. While it waits the flame is left out, as for a permission. Answered, it is a
   `TextXS` line per ask after a 1px `Border` hairline, the header muted and the answer in medium, the person's
   own words in quotes; declined, a muted "Not answered".
-- **A notice** is a muted line; the turn in flight ends the column with a pixel flame (`chat_flame.go`: a 9x11 sprite of 1.5dp pixels, drawn as rectangles, in 8 frames of 120ms; a window without focus looks in at `StillFrame` instead) and a verb of the turn, shimmering like "Thinking" with the time it has run beside it; the verb is picked from the language's own list (`chat.view.verbs`, `|`-separated, each language writes its own length) by the session and the turn, so it holds for the whole turn; left out
+- **A notice** is a muted line; the turn in flight ends the column with a pixel flame (`chat_flame.go`: an 11x14 sprite of 1.5dp pixels, drawn as rectangles, in 16 frames of 100ms; only its 11 bottom rows take the line, the tips and sparks burning over the line above; a window without focus looks in at `StillFrame` instead) and a verb of the turn, shimmering like "Thinking" with the time it has run beside it; the verb is picked from the language's own list (`chat.view.verbs`, `|`-separated, each language writes its own length) by the session and the turn, so it holds for the whole turn; left out
   while a permission or a question waits: its box already says so.
   The flame's colors are tokens, never a fixed hue: the core is `Foreground`, the body a mix of `MutedForeground` toward
   `Foreground` (0.55), the edge `MutedForeground`, and the base and the sparks leaving it `Accent`. A gray theme
@@ -756,7 +772,8 @@ at once, whatever its row is still doing.
   the tree will keep the card (`treeSnap`). A block the card would go to lights its whole tray, a border in its color, in
   the open sidebar and the rail alike.
 - **Other lists** enter and leave with `ui.Presence`: 160ms in, 180ms out, from a 0.6 scale at the top
-  edge. A fold is `ui.Collapse`, 200ms.
+  edge. The chat's rows use `LayoutFlat`, the same timings with no scale (see The chat view). A fold is
+  `ui.Collapse`, 200ms.
 - **One motion per arrival.** An item another motion brings in is settled in `Presence`
   (`Presence.Settle`), or Presence plays its own entry once the first one hands the item back, and the row
   jumps.

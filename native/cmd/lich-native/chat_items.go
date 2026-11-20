@@ -15,6 +15,7 @@ import (
 	"gioui.org/op"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
+	"gioui.org/unit"
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
@@ -61,7 +62,10 @@ func (u *window) chatRow(gtx C, th *ui.Theme, p *chatPane, sv sessionView, r cha
 	case chatRowLive:
 		return chatLive(gtx, th, sv.ID, r)
 	case chatRowDone:
-		return u.chatDone(gtx, th, p, sv, r)
+		if p.swap.key == chatRowKey(r) && p.swap.playing(gtx.Now) {
+			return u.chatSwapLine(gtx, th, p, sv, r)
+		}
+		return u.chatDone(gtx, th, p, sv, r, 1, 1)
 	case chatRowDay:
 		return layout.Center.Layout(gtx, th.Text(ui.TextXS, dayLabel(time.UnixMilli(r.day).In(gtx.Now.Location()), gtx.Now)).Muted().Layout)
 	}
@@ -176,7 +180,7 @@ func dayLabel(t, now time.Time) string {
 // update takes the fold's click before what it opens is laid out.
 func (f *chatFold) update(gtx C) {
 	if f.click.Clicked(gtx) {
-		f.open = !f.open
+		f.open, f.clicked = !f.open, gtx.Now
 	}
 }
 
@@ -230,10 +234,12 @@ func chatThought(gtx C, th *ui.Theme, f *chatFold, it backend.ChatItem, live boo
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D { return chatFoldLine(gtx, th, f, icThink, label) }),
 		layout.Rigid(func(gtx C) D {
-			if !f.open {
-				return D{}
+			if f.shut(gtx.Now) {
+				return f.body.Layout(gtx, false, chatNothing)
 			}
-			return layout.Inset{Top: ui.Space(1.5), Left: ui.Space(5)}.Layout(gtx, th.Text(ui.TextSM, expandTabs(it.Text)).Muted().Wrapped().Layout)
+			return f.body.Layout(gtx, f.open, func(gtx C) D {
+				return layout.Inset{Top: ui.Space(1.5), Left: ui.Space(5)}.Layout(gtx, th.Text(ui.TextSM, expandTabs(it.Text)).Muted().Wrapped().Layout)
+			})
 		}),
 	)
 }
@@ -269,29 +275,53 @@ func (u *window) chatWork(gtx C, th *ui.Theme, f *chatFold, sv sessionView, r ch
 		layout.Flexed(1, func(gtx C) D { return chatHairline(gtx, th) }),
 	)
 	children := []layout.FlexChild{layout.Rigid(func(gtx C) D { return layout.Flex{Alignment: layout.Middle}.Layout(gtx, line...) })}
-	shown := r.tools
-	if !f.open {
-		shown = chatFoldedCalls(r)
-	}
-	if len(shown) > 0 {
-		children = append(children, ui.VGap(1))
-	}
-	for i, it := range shown {
-		last := i == len(shown)-1
-		children = append(children, layout.Rigid(func(gtx C) D {
-			return chatBranch(gtx, th, last, func(gtx C) D { return chatTool(gtx, th, it, r.live) })
-		}))
-	}
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
+	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, append(children, chatCalls(gtx, th, f, r)...)...)
 }
 
-// chatFoldedCalls is what a folded group keeps in view: the calls running in
-// its live turn, or else its last call, standing still until the next starts.
-func chatFoldedCalls(r chatRow) []backend.ChatItem {
-	if r.live {
-		return slices.DeleteFunc(slices.Clone(r.tools), func(it backend.ChatItem) bool { return !callRunning(it) })
+// chatCalls are a group's calls, each in a fold of its own: open with the
+// group, and while the turn runs, folded or not, the calls still running.
+// A call that comes once the group is drawn enters as a row does.
+func chatCalls(gtx C, th *ui.Theme, f *chatFold, r chatRow) []layout.FlexChild {
+	ids := make([]string, len(r.tools))
+	open := make([]bool, len(r.tools))
+	first, last := -1, -1
+	for i, it := range r.tools {
+		ids[i] = it.ID
+		running := f.call(it.ID, r.live && callRunning(it)).running
+		open[i] = f.open || running
+		if open[i] {
+			if first < 0 {
+				first = i
+			}
+			last = i
+		}
 	}
-	return r.tools[len(r.tools)-1:]
+	// A group folding shut takes all its calls with it.
+	if last < 0 {
+		first, last = 0, len(r.tools)-1
+	}
+	f.enter.Update(gtx.Now, ids)
+	children := make([]layout.FlexChild, 0, len(r.tools))
+	for i, it := range r.tools {
+		children = append(children, layout.Rigid(func(gtx C) D {
+			return f.enter.LayoutFlat(gtx, it.ID, func(gtx C) D {
+				fold := &f.calls[it.ID].fold
+				if !open[i] && f.shut(gtx.Now) {
+					return fold.Layout(gtx, false, chatNothing)
+				}
+				return fold.Layout(gtx, open[i], func(gtx C) D {
+					var top unit.Dp
+					if i == first {
+						top = ui.Space(1)
+					}
+					return layout.Inset{Top: top}.Layout(gtx, func(gtx C) D {
+						return chatBranch(gtx, th, i == last, func(gtx C) D { return chatTool(gtx, th, it, r.live) })
+					})
+				})
+			})
+		}))
+	}
+	return children
 }
 
 // chatHairline is a 1px rule in Border across the room it is given.
@@ -323,6 +353,9 @@ func chatBranch(gtx C, th *ui.Theme, last bool, w layout.Widget) D {
 	call.Add(gtx.Ops)
 	return D{Size: image.Pt(d.Size.X+gutter, d.Size.Y)}
 }
+
+// chatNothing stands in for what a shut fold hides.
+func chatNothing(C) D { return D{} }
 
 // chatTool is one call: its glyph, name, what it acted on, the time it has
 // run, and how it ended, with the diff it made under it. While it runs in a
@@ -552,7 +585,11 @@ func chatLive(gtx C, th *ui.Theme, session string, r chatRow) D {
 // caret.
 func (u *window) chatAgent(gtx C, th *ui.Theme, p *chatPane, sv sessionView, r chatRow) D {
 	it := r.item
-	src := chatSource(gtx, it.Text, r.live)
+	// The caret stays lit while the text grows, and blinks once it rests.
+	src := it.Text + chatCaretGlyph
+	if !r.live || !p.stream.streaming(gtx, it) {
+		src = chatSource(gtx, it.Text, r.live)
+	}
 	notify := func(t ui.Toast) { u.toaster.Show(t) }
 	var children []layout.FlexChild
 	if r.lead {

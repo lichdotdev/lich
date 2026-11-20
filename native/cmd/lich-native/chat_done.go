@@ -1,10 +1,12 @@
 package main
 
 import (
+	"image"
 	"strconv"
 
 	"gioui.org/font"
 	"gioui.org/layout"
+	"gioui.org/op/paint"
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/i18n"
@@ -40,8 +42,11 @@ func chatChangesText(c api.ChatTurnChanges) string {
 // with a hairline to the column's edge as the turn's tool calls have. The count
 // of files and lines is the click: it opens Review, where the footer's changes
 // item does. A turn with no count to give (the checkout could not be read, or
-// the turn was read back with the history) says its word alone.
-func (u *window) chatDone(gtx C, th *ui.Theme, p *chatPane, sv sessionView, r chatRow) D {
+// the turn was read back with the history) says its word alone. The avatar,
+// word and count are drawn at opacity shown, and the hairline over share rule
+// of its room from its left end: both 1 at rest, less while the live line
+// turns into this one.
+func (u *window) chatDone(gtx C, th *ui.Theme, p *chatPane, sv sessionView, r chatRow, shown, rule float32) D {
 	end, _ := u.model.chat.endOf(sv.ID, r.turn)
 	f := p.fold("done:" + strconv.Itoa(r.turn))
 	if f.click.Clicked(gtx) {
@@ -52,15 +57,29 @@ func (u *window) chatDone(gtx C, th *ui.Theme, p *chatPane, sv sessionView, r ch
 	if end.StopReason == stopError {
 		word = word.In(th.Destructive)
 	}
+	faded := func(w layout.Widget) layout.FlexChild {
+		if shown == 1 {
+			return layout.Rigid(w)
+		}
+		return layout.Rigid(func(gtx C) D {
+			defer paint.PushOpacity(gtx.Ops, shown).Pop()
+			return w(gtx)
+		})
+	}
 	line := []layout.FlexChild{
-		layout.Rigid(func(gtx C) D { return chatAvatar(gtx, th, tint, mark) }),
+		faded(func(gtx C) D { return chatAvatar(gtx, th, tint, mark) }),
 		ui.Gap(2),
-		layout.Rigid(word.Layout),
+		faded(word.Layout),
 	}
 	if c := end.Changes; c != nil {
-		line = append(line, ui.Gap(2), layout.Rigid(th.Text(ui.TextSM, "·").Muted().Layout), ui.Gap(2), layout.Rigid(func(gtx C) D { return u.chatDoneCount(gtx, th, f, *c) }))
+		line = append(line, ui.Gap(2), faded(th.Text(ui.TextSM, "·").Muted().Layout), ui.Gap(2), faded(func(gtx C) D { return u.chatDoneCount(gtx, th, f, *c) }))
 	}
-	line = append(line, ui.Gap(3), layout.Flexed(1, func(gtx C) D { return chatHairline(gtx, th) }))
+	line = append(line, ui.Gap(3), layout.Flexed(1, func(gtx C) D {
+		d := D{Size: image.Pt(gtx.Constraints.Max.X, gtx.Dp(1))}
+		gtx.Constraints.Max.X = int(float32(gtx.Constraints.Max.X)*rule + 0.5)
+		chatHairline(gtx, th)
+		return d
+	}))
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx, line...)
 }
 

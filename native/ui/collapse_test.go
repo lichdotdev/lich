@@ -230,3 +230,29 @@ func TestPresenceIsMovingOnlyWhileAnItemEntersOrLeaves(t *testing.T) {
 		t.Error("an item leaving is not moving")
 	}
 }
+
+// LayoutFlat grows an arriving item in its height and opacity alone: half way
+// in, the item already spans its whole width, where Layout's scale still
+// draws it narrower about its middle.
+func TestPresenceLayoutFlatGrowsInWithoutScale(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		layout func(*Presence, C, string, layout.Widget) D
+		whole  bool
+	}{{"Layout", (*Presence).Layout, false}, {"LayoutFlat", (*Presence).LayoutFlat, true}} {
+		var r motionRig
+		var p Presence
+		var b clickBox
+		item := func(gtx C) D { return tc.layout(&p, gtx, "b", b.Layout) }
+		p.Update(r.now, nil)
+		p.Update(r.now, []string{"b"})
+		r.frame(item)
+		r.at(80*time.Millisecond, item)
+		// The box's right edge, inside its first rows.
+		r.click(image.Pt(97, 2))
+		r.frame(item)
+		if got := b.clicks == 1; got != tc.whole {
+			t.Errorf("%s: a click at the right edge half way in landed %v, want %v", tc.name, got, tc.whole)
+		}
+	}
+}

@@ -26,11 +26,16 @@ const chatAnswerJoin = ", "
 // chatQuestion is the agent asking the person: a box with the ask on show and
 // its options, or, answered, a muted line per ask.
 func chatQuestion(gtx C, th *ui.Theme, p *chatPane, it backend.ChatItem) D {
-	asks := it.Question.Questions
-	if r := it.Question.Reply; r != nil {
-		return chatQuestionAnswered(gtx, th, asks, r)
+	if it.Question.Reply != nil {
+		return chatQuestionReply(gtx, th, p, it)
 	}
-	q := p.quiz(it.ID, asks)
+	q := p.quiz(it.ID, it.Question.Questions)
+	p.cards[it.ID] = chatCard{item: it, quiz: q}
+	return chatQuestionCard(gtx, th, q, it.Question.Questions)
+}
+
+// chatQuestionCard is the box of a question waiting, its card q.
+func chatQuestionCard(gtx C, th *ui.Theme, q *chatQuiz, asks []api.ChatAsk) D {
 	box := th.On(th.Sidebar)
 	return layout.Background{}.Layout(gtx,
 		func(gtx C) D { return ui.Fill(gtx, th.Sidebar, ui.RadiusMD) },
