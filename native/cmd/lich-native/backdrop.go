@@ -20,7 +20,9 @@ import (
 // pixel/backdrop-field.js): long bands that flow slowly from an ember toward
 // the far corner, dithered by Bayer 8x8 on a lattice of dots. Every pane draws
 // the same field over its own area, from its top to its middle; a chat that
-// has nothing in it yet draws it over the whole pane.
+// has nothing in it yet draws it over the whole pane. It is inked in the
+// theme's primary, the user's ask: a field in every theme's near-black grays
+// gave no theme a face of its own.
 
 const (
 	// backdropSeed is the one the user's reference print shows. They wrote
@@ -165,12 +167,13 @@ func (f *backdropField) at(x, y int) float64 {
 	return top*(1-ty) + bottom*ty
 }
 
-// backdropInks is a lit dot's color by its value in 64ths: the muted
-// foreground up to half, toward the foreground past it, at an opacity that
-// grows with the value, composited onto the ground in sRGB.
+// backdropInks is a lit dot's color by its value in 64ths: the theme's
+// primary up to half, so each theme's field wears the color of its own
+// buttons, toward the foreground past it, at an opacity that grows with the
+// value, composited onto the ground in sRGB.
 type backdropInks [65]color.NRGBA
 
-func newBackdropInks(muted, fg, ground color.NRGBA) (l backdropInks) {
+func newBackdropInks(primary, fg, ground color.NRGBA) (l backdropInks) {
 	ch := func(m, f, g uint8, v float64) uint8 {
 		c := float64(m)
 		if v > 0.5 {
@@ -180,7 +183,7 @@ func newBackdropInks(muted, fg, ground color.NRGBA) (l backdropInks) {
 	}
 	for k := range l {
 		v := float64(k) / 64
-		l[k] = color.NRGBA{R: ch(muted.R, fg.R, ground.R, v), G: ch(muted.G, fg.G, ground.G, v), B: ch(muted.B, fg.B, ground.B, v), A: 255}
+		l[k] = color.NRGBA{R: ch(primary.R, fg.R, ground.R, v), G: ch(primary.G, fg.G, ground.G, v), B: ch(primary.B, fg.B, ground.B, v), A: 255}
 	}
 	return l
 }
@@ -305,7 +308,7 @@ func (b *backdrops) layout(gtx C, th *ui.Theme, id string, size image.Point, gro
 	if e.cells.X == 0 || e.cells.Y == 0 {
 		return
 	}
-	if tints := [2]color.NRGBA{ui.Over(ground, th.MutedForeground), ui.Over(ground, th.Foreground)}; tints != e.tints {
+	if tints := [2]color.NRGBA{ui.Over(ground, th.Primary), ui.Over(ground, th.Foreground)}; tints != e.tints {
 		e.tints, e.inks, e.marks = tints, newBackdropInks(tints[0], tints[1], ground), newMarkInks(th, ground)
 		e.tick = -1
 	}

@@ -258,3 +258,21 @@ func TestStartMarkTakesTheFieldsMotion(t *testing.T) {
 		t.Fatal("forty seconds later the mark had not changed")
 	}
 }
+
+// The field is inked in the theme's primary, the color of its buttons.
+func TestBackdropTakesTheThemesPrimary(t *testing.T) {
+	var b backdrops
+	pink := color.NRGBA{R: 0xf3, G: 0x8b, B: 0xa8, A: 0xff}
+	r := newFrameRig(image.Pt(400, 300), func(gtx C, th *ui.Theme) {
+		b.layout(gtx, th, "p", image.Pt(300, 200), th.Background, 1, backdropMark{})
+	})
+	r.theme.Primary = pink
+	r.frame()
+	e := b.byID["p"]
+	if e.tints[0] != pink || e.inks[0] == e.inks[32] {
+		t.Fatalf("inks from %v, want the primary %v", e.tints[0], pink)
+	}
+	if want := newBackdropInks(pink, ui.Over(r.theme.Background, r.theme.Foreground), r.theme.Background); e.inks != want {
+		t.Fatal("the inks are not the primary's ramp")
+	}
+}
