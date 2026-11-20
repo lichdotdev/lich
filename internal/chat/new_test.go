@@ -14,7 +14,11 @@ import (
 func TestNewStartsAnEmptyConversation(t *testing.T) {
 	r := newChat(t, providers.OpenCode)
 	r.prompt("hi")
-	r.eventually("the answer", func() bool { _, ok := r.item(api.ItemAgent, "Oi!"); return ok })
+	// New refuses while a turn runs: the answer is in before its turn ends.
+	r.turnEnd(0)
+	if _, ok := r.item(api.ItemAgent, "Oi!"); !ok {
+		t.Fatal("the turn ended with no answer")
+	}
 	if _, err := r.svc.New(t.Context(), api.SessionIDOptions{ID: "s1"}); err != nil {
 		t.Fatalf("New: %v", err)
 	}
