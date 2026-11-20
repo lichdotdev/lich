@@ -4,6 +4,7 @@ import (
 	"image"
 	"image/color"
 
+	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/op"
 
@@ -66,11 +67,12 @@ func (u *window) sessionHeader(gtx C, th *ui.Theme, sv sessionView, project stri
 }
 
 // sessionName is "Claude Code · Cart totals a cent off": the project when
-// set and the provider as the window names it, in MutedForeground, then the
-// card's label in ink, the one cut first when the room is short.
+// set and the provider as the window names it, then the card's label in
+// semibold, the one cut first when the room is short, all in ink: the
+// backdrop's dots run behind them, and a muted name would sink into it.
 func (u *window) sessionName(gtx C, th *ui.Theme, sv sessionView, project string, ink color.NRGBA) D {
 	gtx.Constraints.Min.X = 0
-	name := layout.Flexed(1, th.Text(ui.TextSM, sv.Label).In(ink).Truncated().Layout)
+	name := layout.Flexed(1, th.Text(ui.TextSM, sv.Label).In(ink).Weight(font.SemiBold).Truncated().Layout)
 	prefix := ""
 	if project != "" {
 		prefix = project + " · "
@@ -82,7 +84,7 @@ func (u *window) sessionName(gtx C, th *ui.Theme, sv sessionView, project string
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx, name)
 	}
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-		layout.Rigid(th.Text(ui.TextSM, prefix).Muted().Truncated().Layout),
+		layout.Rigid(th.Text(ui.TextSM, prefix).In(ink).Truncated().Layout),
 		name,
 	)
 }

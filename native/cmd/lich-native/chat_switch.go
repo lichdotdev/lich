@@ -2,7 +2,12 @@ package main
 
 import (
 	"context"
+	"image"
 	"sync"
+
+	"gioui.org/op"
+	"gioui.org/op/clip"
+	"gioui.org/op/paint"
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
@@ -48,14 +53,24 @@ func (u *window) chatSwitch(gtx C, th *ui.Theme, sv sessionView) D {
 		ui.ToggleItem{Value: api.ViewChat, Text: i18n.T("chat.switch.gui"), Icon: icChatGUI, Disabled: off},
 		ui.ToggleItem{Value: api.ViewTerminal, Text: i18n.T("chat.switch.tui"), Icon: icChatTUI, Disabled: off})
 	group.Size, group.ItemHeight, group.ItemPadX, group.ItemText, group.ItemIcon = ui.ToggleSizeSM, chatSwitchItem, chatSwitchPadX, ui.Text2XS, chatSwitchIcon
+	// The selector sits on the backdrop's dots; a ground of its own keeps
+	// them from showing through it.
+	grounded := func(gtx C) D {
+		m := op.Record(gtx.Ops)
+		d := group.Layout(gtx)
+		call := m.Stop()
+		paint.FillShape(gtx.Ops, th.Surface, clip.UniformRRect(image.Rectangle{Max: d.Size}, gtx.Dp(ui.RadiusMD)).Op(gtx.Ops))
+		call.Add(gtx.Ops)
+		return d
+	}
 	if !off {
-		return group.Layout(gtx)
+		return grounded(gtx)
 	}
 	reason := i18n.T("chat.switch.working")
 	if block == switchPending {
 		reason = i18n.T("chat.switch.pending")
 	}
-	return th.Tooltip(&u.root, &s.switchTip, reason).Layout(gtx, group.Layout)
+	return th.Tooltip(&u.root, &s.switchTip, reason).Layout(gtx, grounded)
 }
 
 // chatViewOf is the view sv is drawn in, "" read as the terminal.
