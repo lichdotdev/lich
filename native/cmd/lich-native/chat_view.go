@@ -311,7 +311,9 @@ func (u *window) chatScreen(gtx C, sv sessionView, keys bool) {
 	composer := func(gtx C) D {
 		return chatColumn(gtx, chatComposerGap, chatComposerPad, 0, func(gtx C) D { return u.chatComposer(gtx, th, p, sv, working) })
 	}
-	if p.start.shows(gtx.Now, chatEmpty(u.model.chat.holds(sv.ID), sv, items) && !working) {
+	// A turn of the chat's own, not a hook's report, keeps the start screen
+	// away: a session reports itself busy while its chat opens.
+	if p.start.shows(gtx.Now, p.start.emptyNow(u.model.chat.holds(sv.ID), sv, items) && !u.model.chat.isRunning(sv.ID)) {
 		u.chatStartScreen(gtx, th, p, sv, list, composer)
 		return
 	}

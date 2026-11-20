@@ -139,12 +139,14 @@ func (s *chatStart) shows(now time.Time, empty bool) bool {
 	return empty || (!s.left.IsZero() && now.Sub(s.left) < chatStartRun)
 }
 
-// chatEmpty is whether session sv's chat has nothing in it: read and empty,
+// emptyNow is whether session sv's chat has nothing in it: read and empty,
 // or never given a conversation at all, which a new session is before its
-// chat even opens, so its start screen is up from the first frame.
-func chatEmpty(read bool, sv sessionView, items []backend.ChatItem) bool {
+// chat even opens, so its start screen is up from the first frame. The
+// conversation a new session's chat opens is bound before the window reads
+// it, and is empty too: a start screen already up stays until the read.
+func (s *chatStart) emptyNow(read bool, sv sessionView, items []backend.ChatItem) bool {
 	if !read {
-		return sv.ProviderSessionID == ""
+		return sv.ProviderSessionID == "" || s.empty
 	}
 	return len(items) == 0
 }

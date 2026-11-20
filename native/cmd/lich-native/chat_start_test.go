@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"image"
 	"strings"
 	"testing"
@@ -114,5 +115,44 @@ func TestANewSessionShowsTheStartScreenFromItsFirstFrame(t *testing.T) {
 	r.frame()
 	if r.shows(before) {
 		t.Error("a session with a conversation still to read draws the start screen")
+	}
+}
+
+// While a new session's chat opens nothing takes its start screen away: not
+// a hook reporting the session busy, nor the conversation its chat opens
+// being bound before the window reads it. Only an item does.
+func TestANewSessionKeepsItsStartScreenWhileItsChatOpens(t *testing.T) {
+	u, r, _ := chatFramesIn(t, api.ViewChat, rigWindow, busySession())
+	u.model.projects[0].Sessions[0].ProviderSessionID = ""
+	r.frame()
+	before, _ := chatStartQuestion("s1")
+	if !r.shows(before) {
+		t.Fatalf("no start screen on the first frame:\n%s", r.drawn())
+	}
+	if err := u.model.applyStatus(context.Background(), statusEv(t, statusEvent{ID: "s1", State: statusBusy})); err != nil {
+		t.Fatal(err)
+	}
+	r.now = r.now.Add(chatStartRun + frameStep)
+	r.frame()
+	if sv, _ := u.model.sessionViewOf("s1"); !chatWorking(sv, false) {
+		t.Fatalf("the busy report did not make the session work: %q", sv.status)
+	}
+	if !r.shows(before) {
+		t.Error("the session reported busy while its chat opens took the start screen away")
+	}
+	u.model.setConversation("s1", "conv-new")
+	if sv, _ := u.model.sessionViewOf("s1"); sv.ProviderSessionID != "conv-new" {
+		t.Fatalf("the conversation did not reach the session: %q", sv.ProviderSessionID)
+	}
+	r.now = r.now.Add(chatStartRun + frameStep)
+	r.frame()
+	if !r.shows(before) {
+		t.Error("the conversation bound before the read took the start screen away")
+	}
+	u.model.chat.history("s1", nil)
+	r.now = r.now.Add(chatStartRun + frameStep)
+	r.frame()
+	if !r.shows(before) {
+		t.Error("the empty read took the start screen away")
 	}
 }
