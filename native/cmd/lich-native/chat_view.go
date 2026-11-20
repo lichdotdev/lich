@@ -92,6 +92,8 @@ type chatView struct {
 	asked   string
 	// undo is the composer's undo and redo, forgotten when a message is sent.
 	undo ui.EditHistory
+	// start is the start screen of the chat while it has nothing in it.
+	start chatStart
 	// slash is the list of the provider's commands over the composer, which
 	// may grow over the conversation up to slashRoom, the pane's height.
 	slash     chatSlash
@@ -257,60 +259,63 @@ func (u *window) chatScreen(gtx C, sv sessionView, keys bool) {
 	rows := chatRows(items, working, gtx.Now)
 	th := u.theme.On(u.theme.Background)
 	p.slashRoom = gtx.Constraints.Max.Y
-	layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Flexed(1, func(gtx C) D {
-			shown := p.enter(gtx.Now, rows, u.model.chat.holds(sv.ID))
-			p.runToEnd(gtx, len(shown))
-			atEnd := !p.list.Position.BeforeEnd
-			drawList := func(lead int) (D, op.CallOp) {
-				m := op.Record(gtx.Ops)
-				d := th.ThinScrollArea(&p.list).Layout(gtx, len(shown), func(gtx C, i int) D {
-					top := chatRowGap
-					switch {
-					case i == 0:
-						top = chatTopPad + gtx.Metric.PxToDp(lead)
-					case startsTurn(p.seen[shown[i]], p.seen[shown[i-1]]):
-						top = chatTurnGap
-					}
-					key := shown[i]
-					return p.rows.LayoutFlat(gtx, key, func(gtx C) D {
-						return chatColumn(gtx, top, 0, chatTextInset, func(gtx C) D { return u.chatRow(gtx, th, p, sv, p.seen[key]) })
-					})
-				})
-				return d, m.Stop()
-			}
-			// A conversation shorter than the view rests on the composer: what
-			// the view has over, which is what its content leaves, goes above it.
-			// The list is laid out with none first, because that is the one
-			// measure that lays every row out and so tells their length, and
-			// again with the room it left, which is what is drawn.
-			d, call := drawList(0)
-			lead := 0
-			if len(shown) > 0 {
-				if lead = max(gtx.Constraints.Max.Y-p.list.Position.Length, 0); lead > 0 {
-					d, call = drawList(lead)
+	list := func(gtx C) D {
+		shown := p.enter(gtx.Now, rows, u.model.chat.holds(sv.ID))
+		p.runToEnd(gtx, len(shown))
+		atEnd := !p.list.Position.BeforeEnd
+		drawList := func(lead int) (D, op.CallOp) {
+			m := op.Record(gtx.Ops)
+			d := th.ThinScrollArea(&p.list).Layout(gtx, len(shown), func(gtx C, i int) D {
+				top := chatRowGap
+				switch {
+				case i == 0:
+					top = chatTopPad + gtx.Metric.PxToDp(lead)
+				case startsTurn(p.seen[shown[i]], p.seen[shown[i-1]]):
+					top = chatTurnGap
 				}
+				key := shown[i]
+				return p.rows.LayoutFlat(gtx, key, func(gtx C) D {
+					return chatColumn(gtx, top, 0, chatTextInset, func(gtx C) D { return u.chatRow(gtx, th, p, sv, p.seen[key]) })
+				})
+			})
+			return d, m.Stop()
+		}
+		// A conversation shorter than the view rests on the composer: what
+		// the view has over, which is what its content leaves, goes above it.
+		// The list is laid out with none first, because that is the one
+		// measure that lays every row out and so tells their length, and
+		// again with the room it left, which is what is drawn.
+		d, call := drawList(0)
+		lead := 0
+		if len(shown) > 0 {
+			if lead = max(gtx.Constraints.Max.Y-p.list.Position.Length, 0); lead > 0 {
+				d, call = drawList(lead)
 			}
-			call.Add(gtx.Ops)
-			// A row that comes in at no height at the list's end makes Gio
-			// count the list as scrolled up, and it would no longer follow the end
-			// as the row grows: a list that was at its end stays there while its
-			// rows move.
-			if atEnd && p.rows.Moving() {
-				p.list.Position.BeforeEnd = false
-			}
-			// Once the conversation outgrows the view, where nobody could have
-			// scrolled it, it goes to its end and stays there until scrolled up.
-			if over := p.list.Position.Length-lead > gtx.Constraints.Max.Y; over != p.list.ScrollToEnd {
-				p.list.ScrollToEnd, p.list.Position.BeforeEnd = over, false
-				gtx.Execute(op.InvalidateCmd{})
-			}
-			return d
-		}),
-		layout.Rigid(func(gtx C) D {
-			return chatColumn(gtx, chatComposerGap, chatComposerPad, 0, func(gtx C) D { return u.chatComposer(gtx, th, p, sv, working) })
-		}),
-	)
+		}
+		call.Add(gtx.Ops)
+		// A row that comes in at no height at the list's end makes Gio
+		// count the list as scrolled up, and it would no longer follow the end
+		// as the row grows: a list that was at its end stays there while its
+		// rows move.
+		if atEnd && p.rows.Moving() {
+			p.list.Position.BeforeEnd = false
+		}
+		// Once the conversation outgrows the view, where nobody could have
+		// scrolled it, it goes to its end and stays there until scrolled up.
+		if over := p.list.Position.Length-lead > gtx.Constraints.Max.Y; over != p.list.ScrollToEnd {
+			p.list.ScrollToEnd, p.list.Position.BeforeEnd = over, false
+			gtx.Execute(op.InvalidateCmd{})
+		}
+		return d
+	}
+	composer := func(gtx C) D {
+		return chatColumn(gtx, chatComposerGap, chatComposerPad, 0, func(gtx C) D { return u.chatComposer(gtx, th, p, sv, working) })
+	}
+	if p.start.shows(gtx.Now, u.model.chat.holds(sv.ID) && len(items) == 0 && !working) {
+		u.chatStartScreen(gtx, th, p, sv, list, composer)
+		return
+	}
+	layout.Flex{Axis: layout.Vertical}.Layout(gtx, layout.Flexed(1, list), layout.Rigid(composer))
 }
 
 // chatColumn centres w on the pane's axis, as wide as the composer's box,

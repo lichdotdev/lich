@@ -81,5 +81,8 @@
   },
   "slash": {
     "new": "在此会话中开始新对话"
+    },
+  "start": {
+    "lines": "要在 {project} 里炼成什么？|要为 {project} 召唤些什么？|要往 {project} 里注入什么？|{project} 的坩埚里要熬点什么？|想在 {project} 里占卜些什么？|今天要在 {project} 上刻下什么？|要往 {project} 里织进什么？|要在 {project} 里唤醒什么？"
   }
 }

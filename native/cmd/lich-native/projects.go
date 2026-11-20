@@ -136,6 +136,16 @@ func (m *model) projectByID(id string) *backend.Project {
 	return nil
 }
 
+// projectName is the name of the open project with id, "" when none is.
+func (m *model) projectName(id string) string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if p := m.projectByID(id); p != nil {
+		return p.Name
+	}
+	return ""
+}
+
 // homeSessionLabel and homeNextSeq seed the home project's first shell the
 // way newSession numbers one.
 const (

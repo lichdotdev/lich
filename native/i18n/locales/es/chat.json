@@ -86,5 +86,8 @@
   },
   "slash": {
     "new": "Empieza una conversación nueva en esta sesión"
+    },
+  "start": {
+    "lines": "¿Qué conjuramos en {project}?|¿Qué invocamos para {project}?|¿Qué canalizamos hacia {project}?|¿Qué se cuece en {project}?|¿Qué quieres adivinar en {project}?|¿Qué inscribimos hoy en {project}?|¿Qué tejemos en {project}?|¿Qué levantamos en {project}?"
   }
 }
