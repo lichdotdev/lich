@@ -144,7 +144,7 @@ func TestPaneBackdropMovesOncePerStep(t *testing.T) {
 func TestStillWindowMovesItsBackdropLessOften(t *testing.T) {
 	var b backdrops
 	r := newFrameRig(image.Pt(400, 300), func(gtx C, th *ui.Theme) {
-		b.layout(gtx, th, "p", image.Pt(300, 200), th.Background, 1)
+		b.layout(gtx, th, "p", image.Pt(300, 200), th.Background, 1, backdropMark{})
 	})
 	r.theme.Still = true
 	r.frame()
@@ -160,7 +160,7 @@ func TestBackdropOutOfSightIsKeptAWhile(t *testing.T) {
 	id, size := "a", image.Pt(300, 200)
 	r := newFrameRig(image.Pt(400, 300), func(gtx C, th *ui.Theme) {
 		b.sweep(gtx.Now)
-		b.layout(gtx, th, id, size, th.Background, 1)
+		b.layout(gtx, th, id, size, th.Background, 1, backdropMark{})
 	})
 	r.frame()
 	first := b.byID["a"]
@@ -209,5 +209,52 @@ func BenchmarkBackdropStep(b *testing.B) {
 				f.paint(img, drawn, cover, &inks)
 			}
 		})
+	}
+}
+
+func TestStartMarkIsTheLogoAtHalfSize(t *testing.T) {
+	want := image.Pt((len(chatStartLogo[0])+1)/2, (len(chatStartLogo)+1)/2)
+	if chatStartMarkSize != want {
+		t.Fatalf("mark is %v cells, want %v", chatStartMarkSize, want)
+	}
+}
+
+// markCells paints the mark over a field at t and counts its dots lit and
+// dropped.
+func markCells(t float64) (lit, dropped int, img *image.RGBA) {
+	cols, rows := 200, 160
+	f := newBackdropField(cols, rows)
+	inks := newBackdropInks(fieldInk, fieldHot, fieldGround)
+	th := &ui.Theme{Palette: ui.Dark}
+	marks := newMarkInks(th, fieldGround)
+	img = image.NewRGBA(image.Rect(0, 0, cols, rows))
+	f.step(t, rows)
+	f.paint(img, rows, 0, &inks)
+	m := backdropMark{at: image.Pt(80, 40), fade: 1}
+	f.paintMark(img, rows, m, &marks)
+	for j, line := range chatStartMark {
+		for i, s := range line {
+			if s == '.' {
+				continue
+			}
+			if img.RGBAAt(m.at.X+i, m.at.Y+j).A == 0 {
+				dropped++
+			} else {
+				lit++
+			}
+		}
+	}
+	return lit, dropped, img
+}
+
+// The mark keeps most of its dots, drops some where the field thins, and
+// drops others as the bands move on.
+func TestStartMarkTakesTheFieldsMotion(t *testing.T) {
+	lit, dropped, a := markCells(0)
+	if lit == 0 || dropped == 0 || dropped > lit {
+		t.Fatalf("%d dots lit and %d dropped: want most lit and some dropped", lit, dropped)
+	}
+	if _, _, b := markCells(40000); bytes.Equal(a.Pix, b.Pix) {
+		t.Fatal("forty seconds later the mark had not changed")
 	}
 }

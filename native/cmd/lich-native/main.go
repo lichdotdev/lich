@@ -916,7 +916,7 @@ func (u *window) island(gtx C, v stageView, termWidth, termHeight int) error {
 	on := u.theme.On(fill)
 	defer ui.IslandBorder(gtx, size, r, on.Over(on.Border))
 	if !v.hasConsole && !v.hasEditor {
-		u.backdrop(gtx, stageBackdropID(v), size, fill)
+		u.backdrop(gtx, stageBackdropID(v), size, fill, u.sessionBand(gtx, v))
 	}
 	if u.homeOpen.Clicked(gtx) {
 		go u.pickProject()
