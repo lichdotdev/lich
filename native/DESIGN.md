@@ -588,6 +588,34 @@ agent's `show_code` takes the whole stage, in place of the session, as a service
   stage. Its only action is Close, in its menu and its `⋯`; there is no ✕ on the row. In the rail it is the glyph
   in the card's 32px square, the path and the unsaved state in its tooltip.
 
+### The Welcome
+
+The first launch's screen, and the menu's Welcome after it (`welcome_view.go`, `welcome_grid.go`). It covers
+the window's whole content under the top strip, which keeps the window's controls: one island of `Background`
+on the canvas, inside the `gutter`, as the screens under it are, never a box floating in the middle of the UI.
+It takes every press and the focus off what is under it, cuts a browser page under it (`coverPages`), and
+Escape, Enter and Continue close it, the first launch included. A sign-in dialog it opens draws over it and
+has Escape first.
+
+- **Two columns, laid out for the room there is.** The books take half the island or two 300dp cells, the
+  larger; the intro the rest. With less than 360dp left the intro goes, and its foot (Esc's hint and
+  Continue) ends the line under the books. Cells share the island's height and center their row in it.
+- **The intro**: the logo at the largest whole pixel that fits, up to 5dp; the title at 54sp, the line with
+  lich's name muted, where the language puts it; the line under it in `TextBase` muted; the foot, with
+  Continue the view's one `Primary` button at `SizeSM`.
+- **A cell is a row, not a card**: seams of 1px in `Border` between cells, no fill at rest. The book at 3dp a
+  pixel, then the name at 19sp semibold, the state at 13sp in the muted color (`TonePass` once ready,
+  `Destructive` for a failure, whose whole line is in the tooltip), and the state's one action as a
+  `SizeXS` secondary button. The default provider's book says Default in text, never a button.
+- **Choosing is the cell itself.** A ready book that is not the default is the whole cell's click, hovered
+  in `Alpha(Accent, ghostHoverFill)` with its gem lit. The 46dp line under the books says how to choose
+  only once two are ready.
+- **The pixel art is symbols painted with tokens** (`native/grimoire`), the chat flame's four and 5:
+  1 `Accent`, 5 `Accent` toward `MutedForeground` at 0.45, 3 `MutedForeground`, 2 `MutedForeground` toward
+  `Foreground` at 0.55, 4 `Foreground`; a gray theme draws gray books. Every frame is a function of
+  `gtx.Now` (a journey from the time its move was seen, the flame and the logo from the clock), never a
+  goroutine that sleeps, so a test reaches any frame.
+
 ### Toasts
 
 The window has one toast stack, in the bottom-right corner: the `gutter` over the right balloon and ending
