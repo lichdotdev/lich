@@ -83,7 +83,10 @@ func (u *window) notesOverlay(gtx C, p *browserPaneUI, session, pageURL string) 
 	n := &p.notes
 	u.takeFound(gtx, p, session)
 	n.keepSketchOn(pageURLOf(pageURL))
-	if !n.picking && !n.pending() {
+	// The eraser's trail fades out after it took the last stroke: a page the
+	// window draws itself shows it until paintEraser empties it.
+	if !n.picking && !n.pending() && len(n.rubTrail) == 0 {
+		n.trailOnPage = n.trailOnPage[:0]
 		return
 	}
 	defer clip.Rect{Max: gtx.Constraints.Max}.Push(gtx.Ops).Pop()
