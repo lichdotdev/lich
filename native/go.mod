@@ -45,11 +45,13 @@ require (
 // keyboard (the web view's page), and Vulkan before EGL on X11 (NVIDIA's EGL
 // hangs under XWayland) with a present on a stale surface or a lost device
 // dropping the frame rather than the window, Vulkan reusing released buffers
-// and textures (NVIDIA makes every allocation a kernel call), and a
-// suboptimal swapchain's acquired image kept, with a bounded acquire (a
-// resize under XWayland leaked one per resize until the window froze). Every
-// patch of ours lands on that branch.
-replace gioui.org => github.com/lichdotdev/gio v0.0.0-20261120032138-f951d1cba156
+// and textures (NVIDIA makes every allocation a kernel call), a suboptimal
+// swapchain's acquired image kept, with a bounded acquire (a resize under
+// XWayland leaked one per resize until the window froze), and paths cached by
+// their content rather than their place in the frame's ops (a border drawn
+// again unchanged was stroked and uploaded again every frame). Every patch of
+// ours lands on that branch.
+replace gioui.org => github.com/lichdotdev/gio v0.0.0-20261120034148-0e0ffc082c29
 
 replace github.com/lichdotdev/lich => ../
 
