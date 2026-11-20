@@ -71,7 +71,7 @@ func paintedField(cols, rows int, t, cover float64) *image.RGBA {
 	inks := newBackdropInks(fieldInk, fieldHot, fieldGround)
 	img := image.NewRGBA(image.Rect(0, 0, cols, rows))
 	f.step(t, rows)
-	f.paint(img, rows, cover, &inks)
+	f.paint(img, rows, cover, image.Pt(cols/2, rows/2), &inks)
 	return img
 }
 
@@ -206,7 +206,7 @@ func BenchmarkBackdropStep(b *testing.B) {
 			for b.Loop() {
 				t += float64(backdropStep / time.Millisecond)
 				f.step(t, drawn)
-				f.paint(img, drawn, cover, &inks)
+				f.paint(img, drawn, cover, image.Pt(cols/2, rows/2), &inks)
 			}
 		})
 	}
@@ -225,11 +225,10 @@ func markCells(t float64) (lit, dropped int, img *image.RGBA) {
 	cols, rows := 200, 160
 	f := newBackdropField(cols, rows)
 	inks := newBackdropInks(fieldInk, fieldHot, fieldGround)
-	th := &ui.Theme{Palette: ui.Dark}
-	marks := newMarkInks(th, fieldGround)
+	marks := newMarkInks(fieldInk, fieldHot, fieldGround)
 	img = image.NewRGBA(image.Rect(0, 0, cols, rows))
 	f.step(t, rows)
-	f.paint(img, rows, 0, &inks)
+	f.paint(img, rows, 0, image.Pt(cols/2, rows/2), &inks)
 	m := backdropMark{at: image.Pt(80, 40), fade: 1}
 	f.paintMark(img, rows, m, &marks)
 	for j, line := range chatStartMark {
@@ -269,10 +268,23 @@ func TestBackdropTakesTheThemesPrimary(t *testing.T) {
 	r.theme.Primary = pink
 	r.frame()
 	e := b.byID["p"]
-	if e.tints[0] != pink || e.inks[0] == e.inks[32] {
-		t.Fatalf("inks from %v, want the primary %v", e.tints[0], pink)
+	if e.primary != pink || e.inks[0] == e.inks[32] {
+		t.Fatalf("inks from %v, want the primary %v", e.primary, pink)
 	}
-	if want := newBackdropInks(pink, ui.Over(r.theme.Background, r.theme.Foreground), r.theme.Background); e.inks != want {
+	hot := mixSRGB(pink, color.NRGBA{R: 255, G: 255, B: 255, A: 255}, backdropHot)
+	if want := newBackdropInks(pink, hot, r.theme.Background); e.inks != want {
 		t.Fatal("the inks are not the primary's ramp")
+	}
+}
+
+// The start screen's field is calm around its centre and whole at the edges.
+func TestStartFieldIsCalmInTheMiddle(t *testing.T) {
+	f := newBackdropField(300, 200)
+	centre := image.Pt(150, 90)
+	if got := f.calm(centre.X, centre.Y, centre); got != centreFloor {
+		t.Fatalf("calm %v at the centre, want %v", got, centreFloor)
+	}
+	if got := f.calm(0, 0, centre); got != 1 {
+		t.Fatalf("calm %v in a corner, want 1", got)
 	}
 }

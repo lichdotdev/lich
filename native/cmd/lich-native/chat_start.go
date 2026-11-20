@@ -11,6 +11,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/op/paint"
+	"gioui.org/unit"
 
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
@@ -27,7 +28,14 @@ const (
 	// take to go: the chat's own move and exit.
 	chatStartRun  = 220 * time.Millisecond
 	chatStartFade = 120 * time.Millisecond
+	// chatStartQuestionSize is the question's size, off the type scale: the
+	// centre-mix mockup's 17px, a step over the body so it reads on the field.
+	chatStartQuestionSize unit.Sp = 17
 )
+
+// chatStartLift is what the question keeps over the composer on top of the
+// composer's own chatComposerGap: 36dp between them, the centre-mix mockup's.
+const chatStartLift unit.Dp = 12
 
 // chatStartGap is the room between the logo and the question.
 var chatStartGap = ui.Space(4)
@@ -46,6 +54,9 @@ type chatStart struct {
 	// there.
 	mark     image.Point
 	markFade float32
+	// centre is the middle of the start screen's block, where the field
+	// calms down.
+	centre image.Point
 }
 
 // shows reports whether the start screen is drawn at now: while the
@@ -97,11 +108,12 @@ func chatStartHero(gtx C, th *ui.Theme, session, project string) D {
 		layout.Rigid(layout.Spacer{Height: chatStartGap}.Layout),
 		layout.Rigid(func(gtx C) D {
 			return layout.Flex{Alignment: layout.Baseline}.Layout(gtx,
-				layout.Rigid(th.Text(ui.TextBase, before).Weight(font.Medium).Layout),
-				layout.Rigid(th.Text(ui.TextBase, project).Mono().Weight(font.Medium).Layout),
-				layout.Rigid(th.Text(ui.TextBase, after).Weight(font.Medium).Layout),
+				layout.Rigid(th.Text(chatStartQuestionSize, before).Weight(font.SemiBold).Layout),
+				layout.Rigid(th.Text(chatStartQuestionSize, project).Mono().Weight(font.SemiBold).Layout),
+				layout.Rigid(th.Text(chatStartQuestionSize, after).Weight(font.SemiBold).Layout),
 			)
 		}),
+		layout.Rigid(layout.Spacer{Height: chatStartLift}.Layout),
 	)
 }
 
@@ -137,6 +149,7 @@ func (u *window) chatStartScreen(gtx C, th *ui.Theme, p *chatPane, sv sessionVie
 	top := h - cd.Size.Y - below
 	heroAt := image.Pt((w-hd.Size.X)/2, top-hd.Size.Y)
 	p.start.mark = heroAt.Add(image.Pt((hd.Size.X-chatStartSlot(gtx).Size.X)/2, 0))
+	p.start.centre = image.Pt(w/2, top-hd.Size.Y+(hd.Size.Y+cd.Size.Y)/2)
 	p.start.markFade = 0
 	if shown {
 		p.start.markFade = fade
