@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **The chat's mode menu names every mode in your language, for every agent.** Claude Code's Accept edits and Pre-approved only, and the built-in modes Antigravity, oh-my-pi, Cursor, opencode and Kiro send, read the same way in all of them; an agent you made keeps the name you gave it. YOLO, the mode that never asks, is drawn in a rainbow with a filled bolt.
 - **Kiro CLI sessions show Kiro's own mark.** The ghost that stood in for it on cards, menus and the footer is gone.
 - **Resize the sidebar and the dock from the gap between them and the terminal.** Drag anywhere in that gap; the cursor shows it, and nothing lights up under the pointer.
 - **New sessions open as a chat.** Pick Chat or Terminal under Settings › Providers › New sessions open as; a provider without a chat, and a fork, still open their terminal.

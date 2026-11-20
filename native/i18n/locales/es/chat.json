@@ -59,7 +59,15 @@
     "auto": "Auto",
     "yolo": "YOLO",
     "readOnly": "Solo lectura",
-    "workspace": "Espacio de trabajo"
+    "workspace": "Espacio de trabajo",
+    "acceptEdits": "Aceptar ediciones",
+    "preApproved": "Solo lo preaprobado",
+    "default": "Predeterminado",
+    "agent": "Agente",
+    "ask": "Preguntar",
+    "build": "Build",
+    "planner": "Planificador",
+    "guide": "Guía"
   },
   "day": {
     "today": "Hoy",
@@ -86,7 +94,7 @@
   },
   "slash": {
     "new": "Empieza una conversación nueva en esta sesión"
-    },
+  },
   "start": {
     "lines": "¿Qué conjuramos en {project}?|¿Qué invocamos para {project}?|¿Qué canalizamos hacia {project}?|¿Qué se cuece en {project}?|¿Qué quieres adivinar en {project}?|¿Qué inscribimos hoy en {project}?|¿Qué tejemos en {project}?|¿Qué levantamos en {project}?"
   }

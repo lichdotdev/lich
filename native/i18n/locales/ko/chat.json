@@ -55,7 +55,15 @@
     "auto": "자동",
     "yolo": "YOLO",
     "readOnly": "읽기 전용",
-    "workspace": "작업 공간"
+    "workspace": "작업 공간",
+    "acceptEdits": "편집 승인",
+    "preApproved": "사전 승인만",
+    "default": "기본",
+    "agent": "에이전트",
+    "ask": "질문",
+    "build": "Build",
+    "planner": "플래너",
+    "guide": "가이드"
   },
   "day": {
     "today": "오늘",
@@ -81,7 +89,7 @@
   },
   "slash": {
     "new": "이 세션에서 새 대화를 시작"
-    },
+  },
   "start": {
     "lines": "{project}에서 무엇을 빚어 볼까요?|{project}에 무엇을 소환할까요?|{project}에 무엇을 불어넣을까요?|{project}의 가마솥에서 무엇을 끓여 볼까요?|{project}에서 무엇을 점쳐 볼까요?|오늘은 {project}에 무엇을 새길까요?|{project}에 무엇을 엮어 넣을까요?|{project}에서 무엇을 되살려 볼까요?"
   }

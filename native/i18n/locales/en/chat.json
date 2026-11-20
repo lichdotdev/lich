@@ -59,7 +59,15 @@
     "auto": "Auto",
     "yolo": "YOLO",
     "readOnly": "Read only",
-    "workspace": "Workspace"
+    "workspace": "Workspace",
+    "acceptEdits": "Accept edits",
+    "preApproved": "Pre-approved only",
+    "default": "Default",
+    "agent": "Agent",
+    "ask": "Ask",
+    "build": "Build",
+    "planner": "Planner",
+    "guide": "Guide"
   },
   "day": {
     "today": "Today",
@@ -86,7 +94,7 @@
   },
   "slash": {
     "new": "Start a new conversation in this session"
-    },
+  },
   "start": {
     "lines": "What shall we conjure in {project}?|What should we summon for {project}?|What are we channeling into {project}?|What's brewing in {project}?|What do you want to scry in {project}?|What are we inscribing in {project} today?|What shall we weave into {project}?|What are we raising in {project}?"
   }
