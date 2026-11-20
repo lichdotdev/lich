@@ -252,6 +252,20 @@ A folder takes the color of the most urgent file inside it (conflict, then modif
 on disk and not ignored. The state comes from the git status store (`DiffStats.Changes`), never from a read of the
 tree's own.
 
+The tab's search is out of sight at rest: a magnifier `IconAction` in the header's actions, before collapse and
+full screen and only on this tab, wears the `Accent` fill while the bar is open. A click on it, or the search
+hotkey, unfolds the bar (`ui.Collapse`, 200ms) over the tree and gives its field the keyboard. The bar is one
+field under a `th.Separator`, with no mode switch: its placeholder says it reads names and content. Esc empties the
+field and, once it is empty, folds the bar; a click on the magnifier folds it and clears the field, so no filter
+stays on without showing.
+
+With nothing typed the tree shows. A query replaces it with one list under two headings in `TextXS` caps and
+`MutedForeground`, each with its count in mono at the right: **Files**, the paths whose names match, as soon as
+typed and the first ten only, counted "10/52" once there are more, with the query marked in the name; and
+**In content**, the lines holding it, grouped under their file, once typing settles, counted "500+" when the
+answer was cut. Keeping Files to ten keeps In content on screen; typing more narrows them. Down in the field and
+the arrows walk the files and then the lines, and Enter or a click opens the file, a line on its number.
+
 ### The footer's balloons
 
 The footer is no strip: the two sides the footer editor arranges float as two balloons over the foot of the
