@@ -663,7 +663,7 @@ func (u *window) layout(gtx C) error {
 	u.takeCodeAsk()
 	u.extension.writeClipboard(gtx)
 	paint.Fill(gtx.Ops, u.theme.Canvas)
-	u.backdrops.sweep()
+	u.backdrops.sweep(gtx.Now)
 	if u.model.connectionLost() {
 		u.lostNotice(gtx)
 		return nil

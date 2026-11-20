@@ -5,6 +5,7 @@ import (
 	"image"
 	"image/color"
 	"math"
+	"time"
 
 	"gioui.org/op"
 	"gioui.org/op/clip"
@@ -341,7 +342,7 @@ type backdropEntry struct {
 	// pending is the size a resize asked for, painted once a frame sees it
 	// again.
 	pending image.Point
-	seen    bool
+	seenAt  time.Time
 }
 
 // dockBackdropID seeds the dock's backdrop: one dock, one field.
@@ -368,14 +369,16 @@ func (l backdropLayer) below(dy int) backdropLayer {
 	return l
 }
 
-// sweep forgets the backdrops no frame drew since the last sweep: a pane
-// closed, or out of sight.
-func (b *backdrops) sweep() {
+// backdropKeep is how long a pane out of sight keeps its backdrop: going back
+// to a card, or out of Settings, finds it painted, and a closed pane's goes.
+const backdropKeep = time.Minute
+
+// sweep forgets the backdrops no frame drew in the backdropKeep before now.
+func (b *backdrops) sweep(now time.Time) {
 	for id, e := range b.byID {
-		if !e.seen {
+		if now.Sub(e.seenAt) > backdropKeep {
 			delete(b.byID, id)
 		}
-		e.seen = false
 	}
 }
 
@@ -420,6 +423,6 @@ func (b *backdrops) entry(gtx C, th *ui.Theme, id string, size image.Point, grou
 		b.byID[id] = e
 		b.painted++
 	}
-	e.seen = true
+	e.seenAt = gtx.Now
 	return e
 }

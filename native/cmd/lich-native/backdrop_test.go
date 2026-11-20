@@ -7,6 +7,7 @@ import (
 	"image/color"
 	"slices"
 	"testing"
+	"time"
 
 	"github.com/lichdotdev/lich/native/ui"
 )
@@ -131,32 +132,32 @@ func TestPaneBackdropIsPaintedOncePerSizeAndTheme(t *testing.T) {
 	}
 }
 
-func TestBackdropSweepForgetsPanesNoFrameDrew(t *testing.T) {
+// Going from one card to another and back finds the first one painted; a
+// pane no frame drew for backdropKeep loses its backdrop.
+func TestBackdropOutOfSightIsKeptAWhile(t *testing.T) {
 	var b backdrops
-	b.byID = map[string]*backdropEntry{"gone": {}, "drawn": {seen: true}}
-	b.sweep()
-	if _, ok := b.byID["gone"]; ok {
-		t.Fatal("kept a backdrop no frame drew")
+	id, size := "a", image.Pt(300, 200)
+	r := newFrameRig(image.Pt(400, 300), func(gtx C, th *ui.Theme) {
+		b.sweep(gtx.Now)
+		b.layout(gtx, th, id, size, th.Background)
+	})
+	r.frame()
+	id = "b"
+	r.now = r.now.Add(time.Second)
+	r.frame()
+	id = "a"
+	r.now = r.now.Add(time.Second)
+	r.frame()
+	if b.painted != 2 {
+		t.Fatalf("painted %d times for a, b and a again, want 2", b.painted)
 	}
-	if _, ok := b.byID["drawn"]; !ok {
-		t.Fatal("forgot a backdrop the last frame drew")
+	r.now = r.now.Add(backdropKeep + time.Second)
+	r.frame()
+	if _, ok := b.byID["b"]; ok {
+		t.Fatal("kept b's backdrop past backdropKeep out of sight")
 	}
-}
-
-func BenchmarkGrainImage(b *testing.B) {
-	for _, c := range []struct {
-		name      string
-		size      image.Point
-		cell, dot int
-	}{
-		{"1600x1000@1x", image.Pt(1600, 1000), 3, 2},
-		{"1600x1000@2x", image.Pt(3200, 2000), 6, 4},
-	} {
-		b.Run(c.name, func(b *testing.B) {
-			for b.Loop() {
-				grainImage(c.size, c.cell, c.dot, grainInk, grainSeeds[0])
-			}
-		})
+	if _, ok := b.byID["a"]; !ok {
+		t.Fatal("forgot the backdrop of the pane on screen")
 	}
 }
 
