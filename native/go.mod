@@ -47,11 +47,12 @@ require (
 // dropping the frame rather than the window, Vulkan reusing released buffers
 // and textures (NVIDIA makes every allocation a kernel call), a suboptimal
 // swapchain's acquired image kept, with a bounded acquire (a resize under
-// XWayland leaked one per resize until the window froze), and paths cached by
+// XWayland leaked one per resize until the window froze), paths cached by
 // their content rather than their place in the frame's ops (a border drawn
-// again unchanged was stroked and uploaded again every frame). Every patch of
-// ours lands on that branch.
-replace gioui.org => github.com/lichdotdev/gio v0.0.0-20261120034148-0e0ffc082c29
+// again unchanged was stroked and uploaded again every frame), and no Vulkan
+// barrier between reads of a texture (one a draw, a tenth of the CPU in
+// NVIDIA's driver). Every patch of ours lands on that branch.
+replace gioui.org => github.com/lichdotdev/gio v0.0.0-20261120203420-7697e1dd038b
 
 replace github.com/lichdotdev/lich => ../
 
