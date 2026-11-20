@@ -12,9 +12,9 @@ import (
 	"gioui.org/op/paint"
 )
 
-// collapseDuration is SessionGroup's `transition-[grid-template-rows,opacity]
+// CollapseDuration is SessionGroup's `transition-[grid-template-rows,opacity]
 // duration-200 ease-out`.
-const collapseDuration = 200 * time.Millisecond
+const CollapseDuration = 200 * time.Millisecond
 
 // Collapse is SessionGroup's fold: the `grid grid-rows-[0fr]↔[1fr]` box that
 // clips its child to a height animating between nothing and all of it,
@@ -29,7 +29,7 @@ func (c *Collapse) Layout(gtx C, open bool, w layout.Widget) D {
 	if open {
 		target = 1
 	}
-	p := c.fold.at(gtx, target, collapseDuration, easeOut)
+	p := c.fold.at(gtx, target, CollapseDuration, easeOut)
 	if !open {
 		gtx = gtx.Disabled()
 	}

@@ -58,6 +58,9 @@ func (u *window) chatDone(gtx C, th *ui.Theme, p *chatPane, sv sessionView, r ch
 		word = word.In(th.Destructive)
 	}
 	faded := func(w layout.Widget) layout.FlexChild {
+		if shown == 1 {
+			return layout.Rigid(w)
+		}
 		return layout.Rigid(func(gtx C) D {
 			defer paint.PushOpacity(gtx.Ops, shown).Pop()
 			return w(gtx)

@@ -106,6 +106,14 @@ type chatFold struct {
 	body  ui.Collapse
 	calls map[string]*chatCall
 	enter ui.Presence
+	// clicked is when the fold was last clicked.
+	clicked time.Time
+}
+
+// shut reports whether the fold is folded and done folding, so what it
+// hides need not be laid out.
+func (f *chatFold) shut(now time.Time) bool {
+	return !f.open && now.Sub(f.clicked) >= ui.CollapseDuration
 }
 
 // chatCall is one call of a group: its fold, and whether it stood open for
@@ -173,7 +181,7 @@ func (v *chatView) enter(now time.Time, rows []chatRow, read bool) []string {
 	shown := v.rows.Update(now, keys)
 	// The turn ending turns the live line into the closing line in its slot:
 	// neither plays its own motion.
-	if done := keys[len(keys)-1]; strings.HasPrefix(done, "done:") && slices.Contains(before, chatLiveKey) && !slices.Contains(before, done) {
+	if done := lastKey(keys); strings.HasPrefix(done, "done:") && slices.Contains(before, chatLiveKey) && !slices.Contains(before, done) {
 		v.rows.Settle(done)
 		v.swap = chatSwap{key: done, at: now, live: v.seen[chatLiveKey]}
 	}
@@ -182,6 +190,14 @@ func (v *chatView) enter(now time.Time, rows []chatRow, read bool) []string {
 	return slices.DeleteFunc(shown, func(k string) bool {
 		return v.rows.Leaving(k) && (strings.HasPrefix(k, "done:") || k == chatLiveKey && v.swap.playing(now))
 	})
+}
+
+// lastKey is the last of keys, "" for none.
+func lastKey(keys []string) string {
+	if len(keys) == 0 {
+		return ""
+	}
+	return keys[len(keys)-1]
 }
 
 // call is the group's call id, which stands open for running while the group

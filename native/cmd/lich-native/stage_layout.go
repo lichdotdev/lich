@@ -390,7 +390,9 @@ func (u *window) applyLayoutStage() {
 func (u *window) content(gtx C, s sessionView, keys bool) error {
 	u.chats.look(s)
 	if s.View == api.ViewChat {
-		defer u.chats.viewFade(gtx, s.ID).Pop()
+		if a := u.chats.viewFade(gtx, s.ID); a < 1 {
+			defer paint.PushOpacity(gtx.Ops, a).Pop()
+		}
 		u.chatScreen(gtx, s, keys)
 		return nil
 	}
@@ -405,9 +407,10 @@ func (u *window) content(gtx C, s sessionView, keys bool) error {
 	if err != nil {
 		return err
 	}
-	fade := u.chats.viewFade(gtx, s.ID)
+	if a := u.chats.viewFade(gtx, s.ID); a < 1 {
+		defer paint.PushOpacity(gtx.Ops, a).Pop()
+	}
 	err = u.terms.layout(gtx, t, keys)
-	fade.Pop()
 	// A closed session frees its terminal off the frame goroutine; one shown
 	// since is replaced on the next frame, which the window must survive.
 	if errors.Is(err, gioterm.ErrClosed) {

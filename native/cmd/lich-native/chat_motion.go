@@ -238,16 +238,16 @@ func (c *chatScreens) look(s sessionView) {
 // from nothing over chatViewFade from the first frame that draws it after its
 // view changed, whole otherwise. A terminal still starting draws nothing, so
 // its fade waits for it.
-func (c *chatScreens) viewFade(gtx C, id string) paint.OpacityStack {
+func (c *chatScreens) viewFade(gtx C, id string) float32 {
 	seen := c.views[id]
 	if !seen.changed {
-		return paint.PushOpacity(gtx.Ops, 1)
+		return 1
 	}
 	if seen.at.IsZero() {
 		seen.at = gtx.Now
 		c.views[id] = seen
 	}
-	return paint.PushOpacity(gtx.Ops, chatPhase(gtx, seen.at, 0, chatViewFade, paneEaseOut))
+	return chatPhase(gtx, seen.at, 0, chatViewFade, paneEaseOut)
 }
 
 // reopen forgets the rows the view brought in, and the calls of each fold, so

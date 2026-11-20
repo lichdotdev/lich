@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"gioui.org/gpu/headless"
 	"gioui.org/io/key"
 
 	"github.com/lichdotdev/lich/api"
@@ -36,6 +37,37 @@ func textBox(t *testing.T, r *frameRig, label string, w int) image.Rectangle {
 	return b
 }
 
+// labelInk is peakInk over label's first line, w wide, in r's last frame;
+// false when there is no GPU to render it, so a test still judges the rest.
+func labelInk(t *testing.T, r *frameRig, label string, w int) (uint8, bool) {
+	t.Helper()
+	win, err := headless.NewWindow(r.size.X, r.size.Y)
+	if err != nil {
+		return 0, false
+	}
+	defer win.Release()
+	if err := win.Frame(&r.ops); err != nil {
+		t.Fatal(err)
+	}
+	img := image.NewRGBA(image.Rectangle{Max: r.size})
+	if err := win.Screenshot(img); err != nil {
+		t.Fatal(err)
+	}
+	return peakInk(img, textBox(t, r, label, w)), true
+}
+
+// judgeInk fails when ok and dim is not under lit, and skips when there was
+// no GPU to measure them.
+func judgeInk(t *testing.T, ok bool, dim, lit uint8, what string) {
+	t.Helper()
+	if !ok {
+		t.Skip("no headless GPU: the opacity is not measured")
+	}
+	if dim >= lit {
+		t.Errorf("%s peaks at %d, at rest %d: want it dimmer", what, dim, lit)
+	}
+}
+
 // play frames the screen n times, frameStep apart.
 func (r *frameRig) play(n int) {
 	for range n {
@@ -56,19 +88,17 @@ func TestAChatRowEntersByHeightAndOpacityWithoutScale(t *testing.T) {
 	r.frame()
 	r.play(5) // 80ms of the entry's 160
 	mid, midTop := labelBox(t, r, "fresh"), labelTop(t, r, "q0")
-	midInk := peakInk(renderRig(t, r), textBox(t, r, "fresh", 30))
+	midInk, gpu := labelInk(t, r, "fresh", 30)
 	r.settle(t)
 	rest, after := labelBox(t, r, "fresh"), labelTop(t, r, "q0")
-	restInk := peakInk(renderRig(t, r), textBox(t, r, "fresh", 30))
+	restInk, _ := labelInk(t, r, "fresh", 30)
 	if mid.Min.X != rest.Min.X {
 		t.Errorf("half way in the message starts at x=%d, at rest at x=%d: it grew from a smaller size", mid.Min.X, rest.Min.X)
 	}
 	if midTop >= before || midTop <= after {
 		t.Errorf("the message before it at y=%d, %d half way and %d at rest: want the new row's height growing", before, midTop, after)
 	}
-	if midInk >= restInk {
-		t.Errorf("half way in the text peaks at %d, at rest %d: want it dimmer while it fades in", midInk, restInk)
-	}
+	judgeInk(t, gpu, midInk, restInk, "half way in the text")
 }
 
 // The live line leaving for a permission plays the entry backwards: it keeps
@@ -82,7 +112,7 @@ func TestAChatRowLeavesByHeightAndOpacityWithoutScale(t *testing.T) {
 	verb := chatVerb("s1", 1)
 	r.frame()
 	rest := labelBox(t, r, verb)
-	restInk := peakInk(renderRig(t, r), textBox(t, r, verb, 40))
+	restInk, gpu := labelInk(t, r, verb, 40)
 	// The flame and the shimmer loop every 1.6s: the frame a lap after this
 	// one draws them alike.
 	const into = 60 * time.Millisecond
@@ -101,7 +131,7 @@ func TestAChatRowLeavesByHeightAndOpacityWithoutScale(t *testing.T) {
 		t.Fatalf("the live line left at once:\n%s", r.drawn())
 	}
 	mid, midGap := labelBox(t, r, verb), gap()
-	midInk := peakInk(renderRig(t, r), textBox(t, r, verb, 40))
+	midInk, _ := labelInk(t, r, verb, 40)
 	r.settle(t)
 	if r.shows(verb) {
 		t.Error("the live line never left")
@@ -112,9 +142,36 @@ func TestAChatRowLeavesByHeightAndOpacityWithoutScale(t *testing.T) {
 	if end := gap(); midGap >= start || midGap <= end {
 		t.Errorf("the permission %dpx under the message, %d at %v, %d once the live line left: want its row shrinking", start, midGap, into, end)
 	}
-	if midInk >= restInk {
-		t.Errorf("%v into the exit the verb peaks at %d, at rest %d: want it dimmer while it fades out", into, midInk, restInk)
+	judgeInk(t, gpu, midInk, restInk, "60ms into the exit the verb")
+}
+
+// The caret's hold, which needs no GPU to judge: lit while the text grows
+// and for chatStreamHold after, not once it rests.
+func TestTheCaretHoldsAfterEachChunk(t *testing.T) {
+	var s chatStream
+	it := backend.ChatItem{ID: "a1", Text: "Hel"}
+	at := func(d time.Duration) bool {
+		var got bool
+		wakeAfter(time.Unix(1000, 0).Add(d), func(gtx C) { got = s.streaming(gtx, it) })
+		return got
 	}
+	if !at(0) || !at(chatStreamHold-time.Millisecond) {
+		t.Error("the caret does not hold after the first chunk")
+	}
+	if at(chatStreamHold) {
+		t.Error("the caret still holds once the text rested")
+	}
+	it.Text += "lo"
+	if !at(2 * chatStreamHold) {
+		t.Error("a new chunk does not light the caret again")
+	}
+}
+
+// A conversation read with nothing in it draws, a new session's chat.
+func TestAnEmptyConversationDraws(t *testing.T) {
+	u, r := stampFrames(t)
+	u.model.chat.history("s1", nil)
+	r.settle(t)
 }
 
 // While chunks of the answer arrive the caret stays lit, even on the half
@@ -260,7 +317,7 @@ func TestTheChatFadesInWhenTheViewSwitchesToIt(t *testing.T) {
 	u.model.chat.history("s1", userTurns(2))
 	r.settle(t)
 	placeholder := "Ask claude about this project"
-	restInk := peakInk(renderRig(t, r), textBox(t, r, placeholder, 60))
+	restInk, gpu := labelInk(t, r, placeholder, 60)
 	u.terms = &terminals{byID: map[string]*termView{}, invalidate: r.invalidate}
 	u.gate = &spawnGate{probe: &fakeProbe{live: true}, invalidate: r.invalidate, deciding: "another"}
 	u.model.projects[0].Sessions[0].View = api.ViewTerminal
@@ -273,14 +330,12 @@ func TestTheChatFadesInWhenTheViewSwitchesToIt(t *testing.T) {
 	}
 	r.now = r.now.Add(chatViewFade / 2)
 	r.frame()
-	midInk := peakInk(renderRig(t, r), textBox(t, r, placeholder, 60))
-	if midInk >= restInk {
-		t.Errorf("half way into the fade the composer peaks at %d, at rest %d: want it coming up from the background", midInk, restInk)
-	}
+	midInk, _ := labelInk(t, r, placeholder, 60)
 	r.settle(t)
-	if got := peakInk(renderRig(t, r), textBox(t, r, placeholder, 60)); got != restInk {
+	if got, _ := labelInk(t, r, placeholder, 60); got != restInk {
 		t.Errorf("after the fade the composer peaks at %d, want %d", got, restInk)
 	}
+	judgeInk(t, gpu, midInk, restInk, "half way into the fade the composer")
 }
 
 // A fold opens and shuts by ui.Collapse: half way, its text is drawn in a

@@ -180,7 +180,7 @@ func dayLabel(t, now time.Time) string {
 // update takes the fold's click before what it opens is laid out.
 func (f *chatFold) update(gtx C) {
 	if f.click.Clicked(gtx) {
-		f.open = !f.open
+		f.open, f.clicked = !f.open, gtx.Now
 	}
 }
 
@@ -234,6 +234,9 @@ func chatThought(gtx C, th *ui.Theme, f *chatFold, it backend.ChatItem, live boo
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D { return chatFoldLine(gtx, th, f, icThink, label) }),
 		layout.Rigid(func(gtx C) D {
+			if f.shut(gtx.Now) {
+				return f.body.Layout(gtx, false, chatNothing)
+			}
 			return f.body.Layout(gtx, f.open, func(gtx C) D {
 				return layout.Inset{Top: ui.Space(1.5), Left: ui.Space(5)}.Layout(gtx, th.Text(ui.TextSM, expandTabs(it.Text)).Muted().Wrapped().Layout)
 			})
@@ -302,7 +305,11 @@ func chatCalls(gtx C, th *ui.Theme, f *chatFold, r chatRow) []layout.FlexChild {
 	for i, it := range r.tools {
 		children = append(children, layout.Rigid(func(gtx C) D {
 			return f.enter.LayoutFlat(gtx, it.ID, func(gtx C) D {
-				return f.calls[it.ID].fold.Layout(gtx, open[i], func(gtx C) D {
+				fold := &f.calls[it.ID].fold
+				if !open[i] && f.shut(gtx.Now) {
+					return fold.Layout(gtx, false, chatNothing)
+				}
+				return fold.Layout(gtx, open[i], func(gtx C) D {
 					var top unit.Dp
 					if i == first {
 						top = ui.Space(1)
@@ -346,6 +353,9 @@ func chatBranch(gtx C, th *ui.Theme, last bool, w layout.Widget) D {
 	call.Add(gtx.Ops)
 	return D{Size: image.Pt(d.Size.X+gutter, d.Size.Y)}
 }
+
+// chatNothing stands in for what a shut fold hides.
+func chatNothing(C) D { return D{} }
 
 // chatTool is one call: its glyph, name, what it acted on, the time it has
 // run, and how it ended, with the diff it made under it. While it runs in a
