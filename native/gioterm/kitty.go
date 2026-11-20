@@ -317,15 +317,6 @@ func toNRGBA(w, h, format int, pix []byte) *image.NRGBA {
 
 // paintImages draws each placement's source rectangle scaled into its place
 // on the grid.
-// Under lays img under the text, its top-left at at in the grid's pixels,
-// beneath the Kitty images under the text: a backdrop the cells on the
-// default background let through.
-func (s Snapshot) Under(img paint.ImageOp, at image.Point) Snapshot {
-	r := image.Rectangle{Max: img.Size()}
-	s.below = append([]placedImage{{op: img, src: r, dst: r.Add(at)}}, s.below...)
-	return s
-}
-
 func paintImages(ops *op.Ops, images []placedImage) {
 	for _, im := range images {
 		if im.src.Empty() || im.dst.Empty() {

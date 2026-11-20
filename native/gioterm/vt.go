@@ -284,6 +284,9 @@ type snap struct {
 	cursor    uint32
 	// unfocused draws the cursor as an outline: the keyboard is elsewhere.
 	unfocused bool
+	// bare leaves the default background unpainted: the caller painted it,
+	// with a backdrop over it the text sits on.
+	bare bool
 }
 
 //export goWritePty
@@ -483,6 +486,13 @@ func (v *Terminal) Update() (Snapshot, error) {
 // until told otherwise; an unfocused one draws its cursor as an outline.
 func (s Snapshot) Focus(focused bool) Snapshot {
 	s.s.unfocused = !focused
+	return s
+}
+
+// Bare draws the text and the cells' own backgrounds only, over whatever the
+// caller painted: it must be the terminal's Background, or what stands for it.
+func (s Snapshot) Bare() Snapshot {
+	s.s.bare = true
 	return s
 }
 

@@ -25,7 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Click an installed extension to see its catalog page.** In Settings › Extensions › Installed, a row the catalog lists opens the same detail its card does, with Update when there is a newer release.
 - **A browser tab shows its page's icon.** The icon the site declares, or its /favicon.ico, takes the place of the gray square; a page without one keeps the square.
 - **A browser tab shows a spinner while its page loads.** It turns where the tab's icon sits, from a navigation, a reload or a clicked link until the page has loaded or failed.
-- **Panes wear a faint grain of dots that thins out from their top to their middle.** Each session's pane, the stage and the dock get a field of their own in the theme's muted color, behind the terminal's text, and keep it after a resize or a restart.
+- **Session panes wear a field of dots that drifts slowly from their top to their middle.** Bands of dots in the theme's muted color flow behind the terminal's text, and a chat with nothing in it yet shows the whole field around a glowing ember.
 - **A new browser tab opens on a page of what the session already has, not a blank one.** It lists the project's running services and the checkout's dev-server port, the session's artifacts and the pages its browser visited last, and has an address field that loads like the toolbar's. It follows the window's theme and language.
 
 ### Changed

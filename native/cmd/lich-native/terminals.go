@@ -531,17 +531,17 @@ func (ts *terminals) backgroundOf(id string) color.NRGBA {
 // layout draws t into the whole of gtx.Constraints.Max, following the area's
 // size with the grid and the backend PTY, and routes keys typed into it.
 // focus says nothing else in the window wants the keyboard (a rename, an open
-// menu), so the terminal takes it. under is the pane's backdrop, laid under
-// the text where the cells let it through.
-func (ts *terminals) layout(gtx layout.Context, t *termView, focus bool, under backdropLayer) error {
+// menu), so the terminal takes it. The terminal paints no ground of its own:
+// every island it sits on is filled with its background (backgroundOf), and
+// the backdrop over that shows between the cells.
+func (ts *terminals) layout(gtx layout.Context, t *termView, focus bool) error {
 	gtx.Metric = ts.unzoomed
 	defer clip.Rect(image.Rectangle{Max: gtx.Constraints.Max}).Push(gtx.Ops).Pop()
 	// The arrow stays while the program takes the mouse (tmux, vim).
 	if !t.vt.MouseTracking() {
 		pointer.CursorText.Add(gtx.Ops)
 	}
-	pad := image.Pt(gtx.Dp(terminalPadding.Left), gtx.Dp(terminalPadding.Top))
-	defer op.Offset(pad).Push(gtx.Ops).Pop()
+	defer op.Offset(image.Pt(gtx.Dp(terminalPadding.Left), gtx.Dp(terminalPadding.Top))).Push(gtx.Ops).Pop()
 	size := gridArea(gtx)
 	gtx.Constraints = layout.Exact(size)
 	if err := t.r.Measure(gtx); err != nil {
@@ -570,10 +570,7 @@ func (ts *terminals) layout(gtx layout.Context, t *termView, focus bool, under b
 	ts.mu.Lock()
 	t.background = snap.Background()
 	ts.mu.Unlock()
-	if under.ok {
-		snap = snap.Under(under.op, under.at.Sub(pad))
-	}
-	if _, err := t.r.Draw(gtx, snap.Focus(t.keyboard && gtx.Focused(t.tag))); err != nil {
+	if _, err := t.r.Draw(gtx, snap.Focus(t.keyboard && gtx.Focused(t.tag)).Bare()); err != nil {
 		return err
 	}
 	if l, ok := ts.underlinedLink(t); ok {

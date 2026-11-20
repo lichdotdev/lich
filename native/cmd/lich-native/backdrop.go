@@ -1,94 +1,54 @@
 package main
 
 import (
-	"hash/fnv"
 	"image"
 	"image/color"
 	"math"
 	"time"
 
+	"gioui.org/f32"
 	"gioui.org/op"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
 	"gioui.org/unit"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
-// The Grain backdrop is a port of the mockup the user approved
-// (backdrop-embers.html: hash2, BAYER, fade, effective, VEIL, LAYERS, wisps,
-// sparks, emberField and drawKind's grain branch). Every coordinate is the
-// pane's own: the mockup offsets its lattice by the island's place in the
-// window, so a pane moved or resized would show another field; here the
-// pane's seed alone picks it, and the band counts from the pane's top.
-
-// grainSeeds are the 16 seeds the user had drawn at random; a pane takes one
-// by its id (grainSeed).
-var grainSeeds = [16]int{
-	11918, 13134, 16212, 17242, 20156, 31009, 36095, 46317,
-	57780, 66777, 68745, 75115, 76708, 83767, 85635, 95744,
-}
+// The backdrop is the field the user approved running (backdrop-spread.html,
+// pixel/backdrop-field.js): long bands that flow slowly from an ember toward
+// the far corner, dithered by Bayer 8x8 on a lattice of dots. Every pane draws
+// the same field over its own area, from its top to its middle; a chat that
+// has nothing in it yet draws it over the whole pane.
 
 const (
-	// grainTurn and grainAmount were on screen when the user approved the
-	// mockup: up to 45 degrees off upright either way, and 1.5 times the
-	// lattices' share of cells holding a mark.
-	grainTurn   = 45.0
-	grainAmount = 1.5
-	// grainVeil is the even veil of dots under the marks, at the top.
-	grainVeil = 0.07
-	// grainSolid is a dot's opacity at Pane strength 1 (KINDS.grain.solid).
-	grainSolid = 0.2
-	// grainPatch is how much of a letter-sized patch the grain can cover,
-	// for the read check (KINDS.grain.patch).
-	grainPatch = 0.55
-	// grainStrength is Pane strength until Settings sets it.
-	grainStrength = 1.0
-	// grainBand is the share of the pane, from its top, the band reaches.
-	grainBand = 0.5
-	// grainHold is fade's exponent for the marks, so they hold lower than
-	// the veil.
-	grainHold = 0.6
-)
-
-// grainCell is the lattice's step; a dot is grainDot, a dp short of it, so
-// the lattice shows as dots, not as a fill.
-const (
-	grainCell unit.Dp = 3
-	grainDot  unit.Dp = 2
-)
-
-type grainLayer struct {
-	step   int
-	share  float64
-	h0, h1 float64
-	salt   int
-	ox, oy int
-}
-
-// grainLayers are the mockup's LAYERS: big marks, small ones, and, past
-// amount 1, smaller ones filling in at (amount-1)*0.9.
-var grainLayers = [...]grainLayer{
-	{step: 22, share: min(1, 0.85*grainAmount), h0: 14, h1: 8, salt: 60},
-	{step: 17, share: min(1, 0.55*grainAmount), h0: 10, h1: 5, salt: 360, ox: 9, oy: 13},
-	{step: 13, share: min(1, (grainAmount-1)*0.9), h0: 8, h1: 4, salt: 160, ox: 5, oy: 4},
-}
-
-const (
-	sparkStep  = 11
-	sparkShare = 0.12
-	sparkSalt  = 260
-	// seedSpread is how far apart two seeds put their hashes (SEED * 131).
+	// backdropSeed is the one the user's reference print shows. They wrote
+	// 11916 but the print reads 11918; confirm with them.
+	backdropSeed = 11918
+	// seedSpread is how far apart two seeds put their hashes (seed * 131).
 	seedSpread = 131
+	// emberX and emberY are where the ember glows, as shares of the area:
+	// read off the user's print, about 52% across and 64% down.
+	emberX, emberY = 0.52, 0.64
+	// backdropCoarse is the field's own step, in cells: it is smooth, so it
+	// is worked out every few cells and the cells between are interpolated.
+	backdropCoarse = 4
+	// backdropBand is the share of the pane, from its top, a pane's field
+	// reaches.
+	backdropBand = 0.5
 )
 
-// grainSeed is pane id's seed: the same on every run, so a pane shows the
-// same field after a resize and a restart.
-func grainSeed(id string) int {
-	h := fnv.New32a()
-	h.Write([]byte(id))
-	return grainSeeds[h.Sum32()%uint32(len(grainSeeds))]
-}
+// backdropStep is how long a frame of the field holds: the bands move a
+// fraction of a cell in that time, so a faster step shows nothing more.
+const backdropStep = 66 * time.Millisecond
+
+// backdropCell is the lattice's step; a dot is backdropDot, a dp short of
+// it, so the lattice shows as dots, not as a fill.
+const (
+	backdropCell unit.Dp = 3
+	backdropDot  unit.Dp = 2
+)
 
 // hash2 is the mockup's, in the uint32 arithmetic Math.imul and >>> do.
 func hash2(x, y, s int) float64 {
@@ -120,257 +80,162 @@ var bayer8 = func() (m [8][8]float64) {
 	return m
 }()
 
-// grainFade is how much of the backdrop shows at y, the share of the way
-// down the pane: gone by the band's end.
-func grainFade(y float64) float64 {
-	if y >= grainBand {
+// noise2 is value noise on the integer lattice, smoothstepped between.
+func noise2(x, y float64, s int) float64 {
+	fx0, fy0 := math.Floor(x), math.Floor(y)
+	ix, iy := int(fx0), int(fy0)
+	fx, fy := x-fx0, y-fy0
+	sx, sy := fx*fx*(3-2*fx), fy*fy*(3-2*fy)
+	a, b := hash2(ix, iy, s), hash2(ix+1, iy, s)
+	c, d := hash2(ix, iy+1, s), hash2(ix+1, iy+1, s)
+	return a + (b-a)*sx + (c-a)*sy + (a-b-c+d)*sx*sy
+}
+
+// fbm sums oct octaves of noise2, each twice the frequency at half the weight.
+func fbm(x, y float64, oct, s int) float64 {
+	v, amp, f, sum := 0.0, 0.5, 1.0, 0.0
+	for i := range oct {
+		v += noise2(x*f, y*f, s+i*17) * amp
+		sum += amp
+		amp *= 0.5
+		f *= 2
+	}
+	return v / sum
+}
+
+// backdropFade is how much of a pane's field shows at y, the share of the
+// way down: gone by the band's end.
+func backdropFade(y float64) float64 {
+	if y >= backdropBand {
 		return 0
 	}
-	f := 1 - y/grainBand
+	f := 1 - y/backdropBand
 	return f * f
 }
 
-// mark is one lattice cell's flame mark, resolved once per paint: whether the
-// cell holds one and, if so, where its foot is and how it leans.
-type mark struct {
-	on               bool
-	h, ca, sa        float64
-	fx, fy           float64
-	side, bend, wide float64
+// backdropField is the field over cols x rows cells: its flow, from the
+// ember to the corner across from it, and the coarse values of one frame.
+type backdropField struct {
+	cols, rows   int
+	ox, oy       float64
+	fx, fy, diag float64
+	coarseW      int
+	coarse       []float32
 }
 
-func newMark(l grainLayer, lx, ly, seed int) mark {
-	r := func(n int) float64 { return hash2(lx, ly, l.salt+n+seed*seedSpread) }
-	if r(0) > l.share {
-		return mark{}
+func newBackdropField(cols, rows int) *backdropField {
+	f := &backdropField{cols: cols, rows: rows, diag: math.Hypot(float64(cols), float64(rows))}
+	f.ox, f.oy = emberX*float64(cols), emberY*float64(rows)
+	dx, dy := -1.0, -1.0
+	if float64(cols)-f.ox > f.ox {
+		dx = 1
 	}
-	ang := (r(9) - 0.5) * 2 * grainTurn * math.Pi / 180
-	side := 1.0
-	if r(5) < 0.5 {
-		side = -1
+	if float64(rows)-f.oy > f.oy {
+		dy = 1
 	}
-	return mark{
-		on: true, h: l.h0 + r(1)*l.h1, ca: math.Cos(ang), sa: math.Sin(ang),
-		fx: (float64(lx) + r(3)) * float64(l.step), fy: (float64(ly) + r(4)) * float64(l.step),
-		side: side, bend: 0.85 + 0.3*r(6), wide: 0.2 + 0.04*r(2),
-	}
-}
-
-// covers is whether the mark covers lattice point x, y: a fat foot that curls
-// into a hooked point, a shorter tongue forking off the other side, and a
-// small spur under the hook, each a stroke tapering to a point.
-func (m mark) covers(x, y float64) bool {
-	dx, dy := x-m.fx, y-m.fy
-	// every stroke stays within 0.8 of the mark's height from its foot
-	if dx*dx+dy*dy > m.h*m.h {
-		return false
-	}
-	across, v := dx*m.ca+dy*m.sa, 0.5-(dy*m.ca-dx*m.sa)/m.h
-	if v < 0 || v > 1 {
-		return false
-	}
-	q, k := across*m.side/m.h, m.bend
-	// mid, the stroke's line across the mark, is c0 + c2*w*w at w of the way along
-	tongue := func(v0, v1, c0, c2, wide float64) bool {
-		if v < v0 || v > v1 {
-			return false
-		}
-		w := (v - v0) / (v1 - v0)
-		off := math.Abs(q - (c0 + c2*w*w))
-		// the taper only narrows the stroke, so a point past wide is out
-		return off <= wide && off <= wide*math.Pow(1-w, 0.8)*math.Sqrt(min(1, w/0.14))
-	}
-	return tongue(0, 1, -0.05*k, 0.36*k, m.wide) || tongue(0.06, 0.66, -0.1, -0.3*k, 0.13) || tongue(0.02, 0.42, 0.19, 0.26*k, 0.085)
-}
-
-// markGrid is one layer's marks over the lattice cells a pane reaches.
-type markGrid struct {
-	l          grainLayer
-	x0, y0, nx int
-	marks      []mark
-}
-
-func newMarkGrid(l grainLayer, cols, rows, seed int) markGrid {
-	x0, y0 := (l.ox)/l.step-2, (l.oy)/l.step-2
-	nx, ny := (cols-1+l.ox)/l.step+3-x0, (rows-1+l.oy)/l.step+3-y0
-	g := markGrid{l: l, x0: x0, y0: y0, nx: nx, marks: make([]mark, nx*ny)}
-	for j := range ny {
-		for i := range nx {
-			g.marks[j*nx+i] = newMark(l, x0+i, y0+j, seed)
-		}
-	}
-	return g
-}
-
-func (g markGrid) covers(x, y int) bool {
-	X, Y := x+g.l.ox, y+g.l.oy
-	cx, cy := X/g.l.step, Y/g.l.step
-	for b := -2; b <= 2; b++ {
-		for a := -2; a <= 2; a++ {
-			m := g.marks[(cy+b-g.y0)*g.nx+cx+a-g.x0]
-			if m.on && m.covers(float64(X), float64(Y)) {
-				return true
-			}
-		}
-	}
-	return false
-}
-
-// spark is a loose ember between the marks: a round dot of its own density.
-func spark(x, y, seed int) float64 {
-	cx, cy, best := x/sparkStep, y/sparkStep, 0.0
-	s := sparkSalt + seed*seedSpread
-	for b := -1; b <= 1; b++ {
-		for a := -1; a <= 1; a++ {
-			lx, ly := cx+a, cy+b
-			if hash2(lx, ly, s) > sparkShare {
-				continue
-			}
-			px, py := (float64(lx)+hash2(lx, ly, s+1))*sparkStep, (float64(ly)+hash2(lx, ly, s+2))*sparkStep
-			if math.Hypot(float64(x)-px, float64(y)-py)/(0.8+0.8*hash2(lx, ly, s+3)) < 1 {
-				best = max(best, 0.6+0.35*hash2(lx, ly, s+4))
-			}
-		}
-	}
-	return best
-}
-
-// grainField is the embers' density at every lattice point of a cols x rows
-// pane, read through ember(x, y).
-type grainField struct {
-	seed  int
-	grids [len(grainLayers)]markGrid
-}
-
-func newGrainField(cols, rows, seed int) *grainField {
-	f := &grainField{seed: seed}
-	for i, l := range grainLayers {
-		f.grids[i] = newMarkGrid(l, cols, rows, seed)
-	}
+	f.fx, f.fy = dx*float64(cols)/f.diag, dy*float64(rows)/f.diag
+	f.coarseW = ceilDiv(cols, backdropCoarse) + 2
+	f.coarse = make([]float32, f.coarseW*(ceilDiv(rows, backdropCoarse)+2))
 	return f
 }
 
-func (f *grainField) ember(x, y int) float64 {
-	for _, g := range f.grids {
-		if g.covers(x, y) {
-			return 1
+// step works the coarse values out at t, in ms, under the first rows rows.
+func (f *backdropField) step(t float64, rows int) {
+	s := backdropSeed * seedSpread
+	for ay := range ceilDiv(rows, backdropCoarse) + 2 {
+		for ax := range f.coarseW {
+			x, y := float64(ax*backdropCoarse), float64(ay*backdropCoarse)
+			u, w := x*f.fx+y*f.fy, -x*f.fy+y*f.fx
+			warp := fbm(u/150, w/90+t*0.00002, 2, 70+s) * 3
+			band := min(1, max(0, (fbm(w/34+warp, u/190-t*0.00009, 3, 40+s)-0.3)/0.4))
+			glow := math.Exp(-math.Hypot(x-f.ox, y-f.oy) / (0.3 * f.diag))
+			f.coarse[ay*f.coarseW+ax] = float32(0.03 + 0.26*band*band + glow*glow*(0.25+0.75*band))
 		}
 	}
-	return spark(x, y, f.seed)
 }
 
-// grainImage is the band of a pane size device pixels big, its dots cell
-// apart and dot wide, in ink, transparent between them. Only the band is
-// stored: below it nothing shows.
-func grainImage(size image.Point, cell, dot int, ink color.NRGBA, seed int) *image.RGBA {
-	cols, rows := ceilDiv(size.X, cell), ceilDiv(size.Y, cell)
-	band := min(rows, ceilDiv(int(math.Ceil(float64(size.Y)*grainBand)), cell))
-	img := image.NewRGBA(image.Rect(0, 0, size.X, min(size.Y, band*cell)))
-	if cols == 0 || band == 0 {
-		return img
-	}
-	field := newGrainField(cols, rows, seed)
-	for j := range band {
-		f := grainFade((float64(j*cell) + float64(cell)/2) / float64(size.Y))
-		if f <= 0 {
-			continue
+// at is the field's value at cell x, y, between the coarse values around it.
+func (f *backdropField) at(x, y int) float64 {
+	x0, y0 := x/backdropCoarse, y/backdropCoarse
+	tx := float64(x)/backdropCoarse - float64(x0)
+	ty := float64(y)/backdropCoarse - float64(y0)
+	a, w, c := y0*f.coarseW+x0, f.coarseW, f.coarse
+	top := float64(c[a])*(1-tx) + float64(c[a+1])*tx
+	bottom := float64(c[a+w])*(1-tx) + float64(c[a+w+1])*tx
+	return top*(1-ty) + bottom*ty
+}
+
+// backdropInks is a lit dot's color by its value in 64ths: the muted
+// foreground up to half, toward the foreground past it, at an opacity that
+// grows with the value, composited onto the ground in sRGB.
+type backdropInks [65]color.NRGBA
+
+func newBackdropInks(muted, fg, ground color.NRGBA) (l backdropInks) {
+	ch := func(m, f, g uint8, v float64) uint8 {
+		c := float64(m)
+		if v > 0.5 {
+			c += (float64(f) - c) * (2*v - 1)
 		}
-		veil, hold := f*grainVeil, math.Pow(f, grainHold)
-		for i := range cols {
-			t := bayer8[j%8][i%8]
-			// the field is at most 1, so it is read only where it can lift a dot
-			if veil > t || hold > t && hold*field.ember(i, j) > t {
-				dotAt(img, image.Rect(i*cell, j*cell, i*cell+dot, j*cell+dot), ink)
+		return uint8(math.Round(float64(g) + (c-float64(g))*(0.22+0.78*v)))
+	}
+	for k := range l {
+		v := float64(k) / 64
+		l[k] = color.NRGBA{R: ch(muted.R, fg.R, ground.R, v), G: ch(muted.G, fg.G, ground.G, v), B: ch(muted.B, fg.B, ground.B, v), A: 255}
+	}
+	return l
+}
+
+// paint draws rows rows of the field into img, a pixel a cell, lit cells in
+// their ink and the rest transparent. cover is 1 for a pane's band, faded
+// from its top to its middle, and 0 for the whole pane.
+func (f *backdropField) paint(img *image.RGBA, rows int, cover float64, inks *backdropInks) {
+	for y := range rows {
+		keep := 1 - cover*(1-backdropFade((float64(y)+0.5)/float64(f.rows)))
+		row := img.Pix[y*img.Stride:]
+		for x := range f.cols {
+			v := f.at(x, y) * keep
+			p := row[4*x : 4*x+4 : 4*x+4]
+			if v > bayer8[y&7][x&7] {
+				c := inks[min(64, int(math.Round(v*64)))]
+				p[0], p[1], p[2], p[3] = c.R, c.G, c.B, 255
+			} else {
+				p[0], p[1], p[2], p[3] = 0, 0, 0, 0
 			}
-		}
-	}
-	return img
-}
-
-func dotAt(img *image.RGBA, r image.Rectangle, c color.NRGBA) {
-	r = r.Intersect(img.Rect)
-	for y := r.Min.Y; y < r.Max.Y; y++ {
-		row := img.Pix[img.PixOffset(r.Min.X, y):]
-		for x := 0; x < r.Dx(); x++ {
-			row[4*x], row[4*x+1], row[4*x+2], row[4*x+3] = c.R, c.G, c.B, 255
 		}
 	}
 }
 
 func ceilDiv(a, b int) int { return (a + b - 1) / b }
 
-// grainAlpha is a dot's opacity on ground: grainSolid at the strength
-// asked, lowered until text still reads over it (the mockup's effective).
-// The foreground keeps 4.5:1 over a letter-sized patch the grain covers by
-// grainPatch, the muted foreground 3:1, and 1.5:1 over a single dot, each
-// capped at nine tenths of what the bare ground gives.
-func grainAlpha(fg, dim, ground color.NRGBA, strength float64) float64 {
-	need := func(t color.NRGBA, want float64) float64 { return min(want, 0.9*contrast(t, ground)) }
-	holds := func(s float64) bool {
-		a := min(1, grainSolid*s)
-		patch, dot := ui.Over(ground, ui.Alpha(dim, float32(a*grainPatch))), ui.Over(ground, ui.Alpha(dim, float32(a)))
-		return contrast(fg, patch) >= need(fg, 4.5) && contrast(dim, patch) >= need(dim, 3) && contrast(dim, dot) >= need(dim, 1.5)
-	}
-	s := strength
-	if !holds(s) {
-		lo, hi := 0.0, s
-		for range 24 {
-			if mid := (lo + hi) / 2; holds(mid) {
-				lo = mid
-			} else {
-				hi = mid
-			}
-		}
-		s = math.Floor(lo*100) / 100
-	}
-	return min(1, grainSolid*s)
-}
-
-// backdropKey is what a pane's backdrop is painted from; any change paints
-// it again.
-type backdropKey struct {
-	size      image.Point
-	cell, dot int
-	ink       color.NRGBA
-	seed      int
-}
-
+// backdropEntry is one pane's backdrop between frames.
 type backdropEntry struct {
-	key  backdropKey
-	op   paint.ImageOp
-	size image.Point
-	// pending is the size a resize asked for, painted once a frame sees it
-	// again.
-	pending image.Point
+	size, cells image.Point
+	cell, dot   int
+	ground      color.NRGBA
+	field       *backdropField
+	img         *image.RGBA
+	op          paint.ImageOp
+	inks        backdropInks
+	tints       [2]color.NRGBA
+	// tick and cover are what op was painted for.
+	tick  int64
+	cover float32
+	// gaps draws the ground between the dots, recorded once per size.
+	gaps    op.Ops
+	gapCall op.CallOp
 	seenAt  time.Time
 }
 
-// dockBackdropID seeds the dock's backdrop: one dock, one field.
-const dockBackdropID = "dock"
-
-// backdrops holds each pane's painted backdrop between frames.
+// backdrops holds each pane's backdrop, and the clock they all move on.
 type backdrops struct {
-	byID map[string]*backdropEntry
-	// painted counts paints, for the tests.
+	byID  map[string]*backdropEntry
+	epoch time.Time
+	// painted counts the frames of the field painted, for the tests.
 	painted int
 }
 
-// backdropLayer is a pane's backdrop as its content sees it: the image and
-// where its top-left lies from the content's own origin.
-type backdropLayer struct {
-	op paint.ImageOp
-	at image.Point
-	ok bool
-}
-
-// below is the layer as content dy lower down sees it.
-func (l backdropLayer) below(dy int) backdropLayer {
-	l.at.Y -= dy
-	return l
-}
-
 // backdropKeep is how long a pane out of sight keeps its backdrop: going back
-// to a card, or out of Settings, finds it painted, and a closed pane's goes.
+// to a card, or out of Settings, finds it ready, and a closed pane's goes.
 const backdropKeep = time.Minute
 
 // sweep forgets the backdrops no frame drew in the backdropKeep before now.
@@ -382,47 +247,107 @@ func (b *backdrops) sweep(now time.Time) {
 	}
 }
 
-// layout paints pane id's backdrop, size big on ground, at gtx's origin, and
-// returns it for content that paints its own ground (the terminal) to lay
-// under its text. It is the one place a pane's backdrop is chosen.
-func (b *backdrops) layout(gtx C, th *ui.Theme, id string, size image.Point, ground color.NRGBA) backdropLayer {
-	e := b.entry(gtx, th, id, size, ground)
-	if e.size.Y == 0 {
-		return backdropLayer{}
-	}
-	defer clip.Rect{Max: image.Pt(min(e.size.X, size.X), min(e.size.Y, size.Y))}.Push(gtx.Ops).Pop()
-	e.op.Add(gtx.Ops)
-	paint.PaintOp{}.Add(gtx.Ops)
-	return backdropLayer{op: e.op, ok: true}
+// backdrop paints the backdrop of the session or island id, size big on
+// ground, at gtx's origin: the field over the whole pane while its chat has
+// nothing in it, its band otherwise. It is the one place a pane's backdrop
+// is chosen.
+func (u *window) backdrop(gtx C, id string, size image.Point, ground color.NRGBA) {
+	u.backdrops.layout(gtx, u.theme, id, size, ground, u.backdropCover(gtx, id))
 }
 
-func (b *backdrops) entry(gtx C, th *ui.Theme, id string, size image.Point, ground color.NRGBA) *backdropEntry {
-	a := grainAlpha(ui.Over(ground, th.Foreground), ui.Over(ground, th.MutedForeground), ground, grainStrength)
-	key := backdropKey{
-		size: size, cell: max(1, gtx.Dp(grainCell)), dot: max(1, gtx.Dp(grainDot)),
-		ink: ui.Over(ground, ui.Alpha(ui.Over(ground, th.MutedForeground), float32(a))), seed: grainSeed(id),
+// backdropCover is 0 while session id is a chat with nothing in it, 1 once
+// its start screen is gone, and between while it fades.
+func (u *window) backdropCover(gtx C, id string) float32 {
+	sv, ok := u.model.sessionViewOf(id)
+	if !ok || sv.View != api.ViewChat {
+		return 1
 	}
+	s := u.chats.pane(id).start
+	if s.empty {
+		return 0
+	}
+	if s.left.IsZero() {
+		return 1
+	}
+	return chatPhase(gtx, s.left, 0, chatStartFade, paneEaseIn)
+}
+
+// layout paints id's field at the frame of gtx.Now, size big on ground, and
+// asks for the frame that moves it on.
+func (b *backdrops) layout(gtx C, th *ui.Theme, id string, size image.Point, ground color.NRGBA, cover float32) {
+	if b.epoch.IsZero() {
+		b.epoch = gtx.Now
+	}
+	tick := int64(gtx.Now.Sub(b.epoch) / backdropStep)
+	next := b.epoch.Add(time.Duration(tick+1) * backdropStep)
+	// A window without focus keeps the frame it has and looks in less often.
+	if th.Still {
+		next = gtx.Now.Add(ui.StillFrame)
+	}
+	gtx.Execute(op.InvalidateCmd{At: next})
+	e := b.entry(gtx, id, size, ground)
+	if e.cells.X == 0 || e.cells.Y == 0 {
+		return
+	}
+	if tints := [2]color.NRGBA{ui.Over(ground, th.MutedForeground), ui.Over(ground, th.Foreground)}; tints != e.tints {
+		e.tints, e.inks = tints, newBackdropInks(tints[0], tints[1], ground)
+		e.tick = -1
+	}
+	rows := e.cells.Y
+	if cover == 1 {
+		rows = min(rows, int(math.Ceil(float64(rows)*backdropBand)))
+	}
+	if tick != e.tick || cover != e.cover {
+		e.field.step(float64(time.Duration(tick)*backdropStep)/float64(time.Millisecond), rows)
+		e.field.paint(e.img, rows, float64(cover), &e.inks)
+		e.op = paint.NewImageOp(e.img)
+		e.op.Filter = paint.FilterNearest
+		e.tick, e.cover = tick, cover
+		b.painted++
+	}
+	defer clip.Rect{Max: image.Pt(min(size.X, e.cells.X*e.cell), min(size.Y, rows*e.cell))}.Push(gtx.Ops).Pop()
+	scale := op.Affine(f32.AffineId().Scale(f32.Point{}, f32.Pt(float32(e.cell), float32(e.cell)))).Push(gtx.Ops)
+	cells := clip.Rect{Max: image.Pt(e.cells.X, rows)}.Push(gtx.Ops)
+	e.op.Add(gtx.Ops)
+	paint.PaintOp{}.Add(gtx.Ops)
+	cells.Pop()
+	scale.Pop()
+	e.gapCall.Add(gtx.Ops)
+}
+
+// entry is id's backdrop for size on ground at gtx's scale, built again when
+// any of them changed.
+func (b *backdrops) entry(gtx C, id string, size image.Point, ground color.NRGBA) *backdropEntry {
 	if b.byID == nil {
 		b.byID = map[string]*backdropEntry{}
 	}
+	cell, dot := max(1, gtx.Dp(backdropCell)), max(1, gtx.Dp(backdropDot))
 	e, ok := b.byID[id]
-	var resized backdropKey
-	if ok {
-		resized = e.key
-		resized.size = size
-	}
-	// A pane being dragged or animated changes size every frame, and a paint
-	// takes longer than one: it keeps its old field until a frame finds the
-	// size it asked about.
-	if ok && e.key != key && resized == key && e.pending != size {
-		e.pending = size
-		gtx.Execute(op.InvalidateCmd{})
-	} else if !ok || e.key != key {
-		img := grainImage(size, key.cell, key.dot, key.ink, key.seed)
-		e = &backdropEntry{key: key, op: paint.NewImageOp(img), size: img.Rect.Size()}
+	if !ok || e.size != size || e.cell != cell || e.dot != dot || e.ground != ground {
+		e = &backdropEntry{size: size, cell: cell, dot: dot, ground: ground, tick: -1}
+		e.cells = image.Pt(ceilDiv(size.X, cell), ceilDiv(size.Y, cell))
+		e.field = newBackdropField(e.cells.X, e.cells.Y)
+		e.img = image.NewRGBA(image.Rectangle{Max: e.cells})
+		e.recordGaps()
 		b.byID[id] = e
-		b.painted++
 	}
 	e.seenAt = gtx.Now
 	return e
+}
+
+// recordGaps records the ground's lines between the dots: the last cell-dot
+// pixels of every column and row of cells.
+func (e *backdropEntry) recordGaps() {
+	e.gaps.Reset()
+	m := op.Record(&e.gaps)
+	full := e.cells.Mul(e.cell)
+	if e.dot < e.cell {
+		for i := range e.cells.X {
+			paint.FillShape(&e.gaps, e.ground, clip.Rect{Min: image.Pt(i*e.cell+e.dot, 0), Max: image.Pt((i+1)*e.cell, full.Y)}.Op())
+		}
+		for j := range e.cells.Y {
+			paint.FillShape(&e.gaps, e.ground, clip.Rect{Min: image.Pt(0, j*e.cell+e.dot), Max: image.Pt(full.X, (j+1)*e.cell)}.Op())
+		}
+	}
+	e.gapCall = m.Stop()
 }
