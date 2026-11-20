@@ -85,7 +85,7 @@ func chatFramesIn(t *testing.T, view string, size image.Point, in footerInput) (
 			u.footer.actGit(gtx)
 			sv, _ := u.model.sessionViewOf("s1")
 			band := u.sessionBand(gtx, stageView{active: sv, hasActive: true})
-			if err := u.bandedSession(gtx, sv, band, th.Background, true, backdropLayer{}); err != nil {
+			if err := u.bandedSession(gtx, sv, band, th.Background, true); err != nil {
 				t.Fatal(err)
 			}
 			return D{Size: gtx.Constraints.Max}

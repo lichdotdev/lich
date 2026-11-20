@@ -121,8 +121,6 @@ type dock struct {
 	// body.
 	tour *driver.Tour
 	tab  dockTab
-	// backdrop is the dock's one backdrop, kept while the window lives.
-	backdrop backdrops
 	// shown is the tab the dock last opened on, which it keeps drawing while
 	// it slides out.
 	shown      dockTab
@@ -236,7 +234,6 @@ func (d *dock) layout(gtx C, th *ui.Theme, root *ui.Root, in dockInput) (saveWid
 	on := th.On(th.Sidebar)
 	rr := gtx.Dp(ui.RadiusLG)
 	defer ui.IslandBorder(gtx, size, rr, on.Over(on.Border))
-	d.backdrop.layout(gtx, th, dockBackdropID, size, th.Sidebar)
 	layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D { return d.header(gtx, on, root, in) }),
 		layout.Rigid(on.Separator),

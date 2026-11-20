@@ -27,7 +27,8 @@ type rowRenderer struct {
 	cursorRow, cursorX int
 	cursorUnfocused    bool
 	// clear is what the rows' default background was composed in: the
-	// terminal's own, or transparent while an image lies under the text.
+	// terminal's own, or transparent while an image lies under the text or
+	// the snapshot is bare.
 	clear color.NRGBA
 	blend blender
 }
@@ -81,7 +82,7 @@ func (rr *rowRenderer) draw(gtx layout.Context, sn snap, cells []cell, dirty []u
 	}
 	rr.cursorRow, rr.cursorX, rr.cursorUnfocused = cursorRow, cursorX, sn.unfocused
 	clear := rgba(sn.bg)
-	if len(below) > 0 {
+	if len(below) > 0 || sn.bare {
 		clear = color.NRGBA{}
 	}
 	if clear != rr.clear {
@@ -91,7 +92,9 @@ func (rr *rowRenderer) draw(gtx layout.Context, sn snap, cells []cell, dirty []u
 		}
 	}
 
-	paint.Fill(gtx.Ops, rgba(sn.bg))
+	if !sn.bare {
+		paint.Fill(gtx.Ops, rgba(sn.bg))
+	}
 	paintImages(gtx.Ops, below)
 	redrawn := 0
 	for y := range sn.rows {

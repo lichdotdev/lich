@@ -41,10 +41,10 @@ func TestOnlyTheTerminalWithTheKeyboardDrawsTheCursor(t *testing.T) {
 		for range 3 {
 			ops.Reset()
 			gtx := layout.Context{Ops: &ops, Source: router.Source(), Metric: metric, Constraints: layout.Exact(size)}
-			if err := ts.layout(gtx, a, takesA, backdropLayer{}); err != nil {
+			if err := ts.layout(gtx, a, takesA); err != nil {
 				t.Fatal(err)
 			}
-			if err := ts.layout(gtx, b, takesB, backdropLayer{}); err != nil {
+			if err := ts.layout(gtx, b, takesB); err != nil {
 				t.Fatal(err)
 			}
 			router.Frame(&ops)

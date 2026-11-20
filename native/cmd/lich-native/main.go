@@ -915,9 +915,8 @@ func (u *window) island(gtx C, v stageView, termWidth, termHeight int) error {
 	paint.Fill(gtx.Ops, fill)
 	on := u.theme.On(fill)
 	defer ui.IslandBorder(gtx, size, r, on.Over(on.Border))
-	var under backdropLayer
 	if !v.hasConsole && !v.hasEditor {
-		under = u.backdrops.layout(gtx, u.theme, stageBackdropID(v), size, fill)
+		u.backdrop(gtx, stageBackdropID(v), size, fill)
 	}
 	if u.homeOpen.Clicked(gtx) {
 		go u.pickProject()
@@ -940,7 +939,7 @@ func (u *window) island(gtx C, v stageView, termWidth, termHeight int) error {
 		emptySessionsView(gtx, on, &u.emptyNew, u.model.newSessionKind() == "shell", u.spot)
 		return nil
 	}
-	return u.loneSession(gtx, v, fill, termWidth, termHeight, under)
+	return u.loneSession(gtx, v, fill, termWidth, termHeight)
 }
 
 // loneSession is the active session alone on the island, laid out termWidth
@@ -948,7 +947,7 @@ func (u *window) island(gtx C, v stageView, termWidth, termHeight int) error {
 // slide, for a terminal, to where the box came from: wider, the box clips it;
 // narrower, its fill shows past it. The Git panel's slide sets termHeight the
 // same way.
-func (u *window) loneSession(gtx C, v stageView, fill color.NRGBA, termWidth, termHeight int, under backdropLayer) error {
+func (u *window) loneSession(gtx C, v stageView, fill color.NRGBA, termWidth, termHeight int) error {
 	size := gtx.Constraints.Max
 	u.spot(gtx, tourStage, func(C) D { return D{Size: size} })
 	u.layoutStage.metric = gtx.Metric
@@ -964,7 +963,7 @@ func (u *window) loneSession(gtx C, v stageView, fill color.NRGBA, termWidth, te
 		reveal = clip.Rect(frame)
 	}
 	area := reveal.Push(gtx.Ops)
-	err := u.bandedSession(term, v.active, band, fill, u.terminalTakesKeys(gtx), under)
+	err := u.bandedSession(term, v.active, band, fill, u.terminalTakesKeys(gtx))
 	area.Pop()
 	u.endPaneMotion(gtx)
 	if err != nil {

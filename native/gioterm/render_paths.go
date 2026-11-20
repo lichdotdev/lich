@@ -103,7 +103,9 @@ func (g *grid) draw(gtx layout.Context, sn snap, cells []cell, dirty []uint8, be
 			dirty[i] = 1
 		}
 	}
-	paint.Fill(gtx.Ops, rgba(sn.bg))
+	if !sn.bare {
+		paint.Fill(gtx.Ops, rgba(sn.bg))
+	}
 	paintImages(gtx.Ops, below)
 	repainted := 0
 	for y := range sn.rows {

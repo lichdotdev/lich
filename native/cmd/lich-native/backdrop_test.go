@@ -5,6 +5,7 @@ import (
 	"context"
 	"image"
 	"image/color"
+	"math"
 	"slices"
 	"testing"
 	"time"
@@ -12,10 +13,14 @@ import (
 	"github.com/lichdotdev/lich/native/ui"
 )
 
-var grainInk = color.NRGBA{R: 200, G: 200, B: 200, A: 255}
+var (
+	fieldInk    = color.NRGBA{R: 159, G: 159, B: 169, A: 255}
+	fieldHot    = color.NRGBA{R: 250, G: 250, B: 250, A: 255}
+	fieldGround = color.NRGBA{R: 16, G: 16, B: 18, A: 255}
+)
 
-// The values the mockup's hash2 gives (backdrop-embers.html, run in node):
-// every mark and spark is placed by it, so a drift moves the whole field.
+// The values the mockup's hash gives (pixel.js, run in node): every band
+// moves by it, so a drift moves the whole field.
 func TestHash2MatchesTheMockup(t *testing.T) {
 	for _, c := range []struct {
 		x, y, s int
@@ -27,6 +32,23 @@ func TestHash2MatchesTheMockup(t *testing.T) {
 	} {
 		if got := hash2(c.x, c.y, c.s); got != c.want {
 			t.Errorf("hash2(%d, %d, %d) = %v, want %v", c.x, c.y, c.s, got, c.want)
+		}
+	}
+}
+
+// P.fbm's values in node, at the field's own seeds.
+func TestFbmMatchesTheMockup(t *testing.T) {
+	for _, c := range []struct {
+		x, y   float64
+		oct, s int
+		want   float64
+	}{
+		{1.3, -2.7, 2, 70 + 11918*131, 0.5407644148759148},
+		{-14.25, 3.5, 3, 40 + 11918*131, 0.5397531646511717},
+		{123.456, 78.9, 3, 40 + 11918*131, 0.35876839790518095},
+	} {
+		if got := fbm(c.x, c.y, c.oct, c.s); math.Abs(got-c.want) > 1e-12 {
+			t.Errorf("fbm(%v, %v, %d, %d) = %v, want %v", c.x, c.y, c.oct, c.s, got, c.want)
 		}
 	}
 }
@@ -44,112 +66,112 @@ func TestBayerIsAPermutationOfItsSteps(t *testing.T) {
 	}
 }
 
-func TestGrainSameSeedAndSizeSamePixels(t *testing.T) {
-	size := image.Pt(640, 400)
-	a := grainImage(size, 3, 2, grainInk, grainSeeds[3])
-	b := grainImage(size, 3, 2, grainInk, grainSeeds[3])
-	if !bytes.Equal(a.Pix, b.Pix) {
-		t.Fatal("the same seed and size painted different pixels")
+func paintedField(cols, rows int, t, cover float64) *image.RGBA {
+	f := newBackdropField(cols, rows)
+	inks := newBackdropInks(fieldInk, fieldHot, fieldGround)
+	img := image.NewRGBA(image.Rect(0, 0, cols, rows))
+	f.step(t, rows)
+	f.paint(img, rows, cover, &inks)
+	return img
+}
+
+func TestBackdropSameTimeSamePixels(t *testing.T) {
+	a := paintedField(300, 200, 5000, 0)
+	if b := paintedField(300, 200, 5000, 0); !bytes.Equal(a.Pix, b.Pix) {
+		t.Fatal("the same time and size painted different pixels")
 	}
-	if c := grainImage(size, 3, 2, grainInk, grainSeeds[4]); bytes.Equal(a.Pix, c.Pix) {
-		t.Fatal("another seed painted the same pixels")
+	if c := paintedField(300, 200, 25000, 0); bytes.Equal(a.Pix, c.Pix) {
+		t.Fatal("twenty seconds later the field had not moved")
 	}
 }
 
-func TestGrainBandEndsAtTheMiddle(t *testing.T) {
-	size, cell := image.Pt(400, 1000), 3
-	img := grainImage(size, cell, 2, grainInk, grainSeeds[0])
-	top, last := false, -1
+// lastLitRow is the last row with a lit cell, -1 for none.
+func lastLitRow(img *image.RGBA) int {
+	last := -1
 	for y := range img.Rect.Dy() {
 		for x := range img.Rect.Dx() {
 			if img.RGBAAt(x, y).A != 0 {
-				top = top || y < 10*cell
-				last = max(last, y/cell*cell)
+				last = y
 			}
 		}
 	}
-	if !top {
-		t.Fatal("no dot near the pane's top")
+	return last
+}
+
+func TestBackdropBandEndsAtTheMiddle(t *testing.T) {
+	rows := 300
+	if last := lastLitRow(paintedField(400, rows, 0, 1)); last < 0 || last >= rows/2 {
+		t.Fatalf("a pane's band lights row %d, want some row above %d and none past it", last, rows/2)
 	}
-	if last < 0 || last >= size.Y/2 {
-		t.Fatalf("a dot starts at y %d, past the middle %d", last, size.Y/2)
-	}
-	if img.Rect.Dy() > size.Y/2+cell {
-		t.Fatalf("the image is %d tall, more than the band", img.Rect.Dy())
+	if last := lastLitRow(paintedField(400, rows, 0, 0)); last < rows/2 {
+		t.Fatalf("the whole-pane field lights no row past %d", last)
 	}
 }
 
-func TestGrainSeedIsTheSameForTheSamePane(t *testing.T) {
-	if grainSeed("s1") != grainSeed("s1") {
-		t.Fatal("one pane got two seeds")
-	}
-	// FNV-1a of "s1" is 0x0851b8c9: every run picks the tenth seed.
-	if got := grainSeed("s1"); got != 66777 {
-		t.Fatalf("seed %d, want 66777", got)
-	}
-}
-
-func TestGrainLowersItsDotsWhereTextWouldNotRead(t *testing.T) {
-	ground := color.NRGBA{R: 30, G: 30, B: 30, A: 255}
-	if a := grainAlpha(color.NRGBA{R: 240, G: 240, B: 240, A: 255}, color.NRGBA{R: 160, G: 160, B: 160, A: 255}, ground, 1); a != grainSolid {
-		t.Fatalf("alpha %v on a readable ground, want %v", a, grainSolid)
-	}
-	// dots in a muted gray far brighter than the text wash the text out
-	dim := color.NRGBA{R: 255, G: 255, B: 255, A: 255}
-	if a := grainAlpha(color.NRGBA{R: 60, G: 60, B: 60, A: 255}, dim, ground, 1); a >= grainSolid {
-		t.Fatalf("alpha %v where the text would not read, want it lowered", a)
-	}
-}
-
-// Two panes of a layout each paint their backdrop once; frames after that
-// reuse it, and a theme change paints both again.
-func TestPaneBackdropIsPaintedOncePerSizeAndTheme(t *testing.T) {
+// Two panes paint their field once per step of the clock: frames in between
+// reuse it, the next step paints both again, and the frame asks for that
+// step.
+func TestPaneBackdropMovesOncePerStep(t *testing.T) {
 	u, r, _ := besideFrames(t, image.Pt(1200, 800), func(m *model) {
 		m.splitBeside(context.Background(), "orch", "wa", edgeRight, false)
 	})
 	for _, id := range []string{"orch", "wa"} {
-		e, ok := u.backdrops.byID[id]
-		if !ok {
+		if _, ok := u.backdrops.byID[id]; !ok {
 			t.Fatalf("pane %s has no backdrop", id)
 		}
-		if e.key.seed != grainSeed(id) || e.size.Y == 0 {
-			t.Fatalf("pane %s backdrop %+v", id, e.key)
-		}
 	}
-	painted := u.backdrops.painted
-	if painted != 2 {
-		t.Fatalf("painted %d backdrops for two panes", painted)
-	}
+	// the frames below start on a step, so they stay inside it
+	r.now = u.backdrops.epoch.Add(time.Duration(int64(r.now.Sub(u.backdrops.epoch)/backdropStep)+1) * backdropStep)
 	r.frame()
+	painted := u.backdrops.painted
+	r.now = r.now.Add(backdropStep / 2)
 	r.frame()
 	if u.backdrops.painted != painted {
-		t.Fatalf("painted %d times over frames that changed nothing, want %d", u.backdrops.painted, painted)
+		t.Fatalf("painted %d times inside one step, want %d", u.backdrops.painted, painted)
 	}
-	r.theme = &ui.Theme{Palette: ui.Light, Shaper: r.theme.Shaper, Surface: ui.Light.Background}
+	// frame already took the wakeup; the time it asked for stays
+	if at, _ := r.router.WakeupTime(); !at.Equal(r.now.Add(backdropStep / 2)) {
+		t.Fatalf("asked for a frame at %v, want the next step at %v", at, r.now.Add(backdropStep/2))
+	}
+	r.now = r.now.Add(backdropStep / 2)
 	r.frame()
 	if u.backdrops.painted != painted+2 {
-		t.Fatalf("painted %d after a theme change, want %d", u.backdrops.painted, painted+2)
+		t.Fatalf("painted %d at the next step, want %d", u.backdrops.painted, painted+2)
 	}
 }
 
-// Going from one card to another and back finds the first one painted; a
-// pane no frame drew for backdropKeep loses its backdrop.
+// A window without focus moves its backdrop at the still pace.
+func TestStillWindowMovesItsBackdropLessOften(t *testing.T) {
+	var b backdrops
+	r := newFrameRig(image.Pt(400, 300), func(gtx C, th *ui.Theme) {
+		b.layout(gtx, th, "p", image.Pt(300, 200), th.Background, 1)
+	})
+	r.theme.Still = true
+	r.frame()
+	if at, _ := r.router.WakeupTime(); !at.Equal(r.now.Add(ui.StillFrame)) {
+		t.Fatalf("asked for a frame at %v, want %v", at, r.now.Add(ui.StillFrame))
+	}
+}
+
+// Going from one card to another and back finds the first one's backdrop
+// kept; a pane no frame drew for backdropKeep loses it.
 func TestBackdropOutOfSightIsKeptAWhile(t *testing.T) {
 	var b backdrops
 	id, size := "a", image.Pt(300, 200)
 	r := newFrameRig(image.Pt(400, 300), func(gtx C, th *ui.Theme) {
 		b.sweep(gtx.Now)
-		b.layout(gtx, th, id, size, th.Background)
+		b.layout(gtx, th, id, size, th.Background, 1)
 	})
 	r.frame()
+	first := b.byID["a"]
 	id = "b"
 	r.now = r.now.Add(time.Second)
 	r.frame()
 	id = "a"
 	r.now = r.now.Add(time.Second)
 	r.frame()
-	if b.painted != 2 {
-		t.Fatalf("painted %d times for a, b and a again, want 2", b.painted)
+	if b.byID["a"] != first {
+		t.Fatal("a's backdrop was built again after b was shown")
 	}
 	r.now = r.now.Add(backdropKeep + time.Second)
 	r.frame()
@@ -161,28 +183,31 @@ func TestBackdropOutOfSightIsKeptAWhile(t *testing.T) {
 	}
 }
 
-// A pane resized keeps its field while the size moves, and paints the new
-// one on the frame after the size holds.
-func TestBackdropWaitsForAResizeToHold(t *testing.T) {
-	var b backdrops
-	size := image.Pt(600, 400)
-	r := newFrameRig(image.Pt(800, 600), func(gtx C, th *ui.Theme) {
-		b.layout(gtx, th, "p", size, th.Background)
-	})
-	r.frame()
-	size = image.Pt(620, 400)
-	if _, redraw := r.frame(); !redraw || b.painted != 1 {
-		t.Fatalf("a resize painted %d times and asked for a frame %v, want 1 and true", b.painted, redraw)
-	}
-	size = image.Pt(640, 400)
-	r.frame()
-	if b.painted != 1 {
-		t.Fatalf("painted %d times while the size moved, want 1", b.painted)
-	}
-	if _, redraw := r.frame(); redraw || b.painted != 2 {
-		t.Fatalf("painted %d times once the size held, asking for a frame %v, want 2 and false", b.painted, redraw)
-	}
-	if got := b.byID["p"].key.size; got != size {
-		t.Fatalf("painted for %v, want %v", got, size)
+func BenchmarkBackdropStep(b *testing.B) {
+	for _, c := range []struct {
+		name  string
+		size  image.Point
+		cell  int
+		whole bool
+	}{
+		{"1600x1000@1x band", image.Pt(1600, 1000), 3, false},
+		{"1600x1000@1x whole", image.Pt(1600, 1000), 3, true},
+		{"1600x1000@2x whole", image.Pt(3200, 2000), 6, true},
+	} {
+		b.Run(c.name, func(b *testing.B) {
+			cols, rows := ceilDiv(c.size.X, c.cell), ceilDiv(c.size.Y, c.cell)
+			f, inks := newBackdropField(cols, rows), newBackdropInks(fieldInk, fieldHot, fieldGround)
+			img := image.NewRGBA(image.Rect(0, 0, cols, rows))
+			drawn, cover := rows/2, 1.0
+			if c.whole {
+				drawn, cover = rows, 0
+			}
+			t := 0.0
+			for b.Loop() {
+				t += float64(backdropStep / time.Millisecond)
+				f.step(t, drawn)
+				f.paint(img, drawn, cover, &inks)
+			}
+		})
 	}
 }

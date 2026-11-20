@@ -118,7 +118,9 @@ func (a *atlasRenderer) draw(gtx layout.Context, sn snap, cells []cell, dirty []
 			dirty[y] = 1
 		}
 	}
-	paint.Fill(gtx.Ops, rgba(sn.bg))
+	if !sn.bare {
+		paint.Fill(gtx.Ops, rgba(sn.bg))
+	}
 	paintImages(gtx.Ops, below)
 	redrawn := 0
 	for y := range sn.rows {
