@@ -52,6 +52,10 @@ const (
 	centreOut   = 0.9
 )
 
+// backdropOpacity is how much of the band shows behind a session's or the
+// editor's text: the user's pick, 0.3, over the full field.
+const backdropOpacity = 0.3
+
 // backdropHot is how far the field's brightest dots go from the theme's
 // primary toward white, so the ember keeps the theme's hue.
 const backdropHot = 0.4
@@ -348,7 +352,11 @@ func (b *backdrops) stirOf(id string) *backdropStir {
 // mark in its dots, and its band otherwise. It is the one place a pane's
 // backdrop is chosen.
 func (u *window) backdrop(gtx C, id string, size image.Point, ground color.NRGBA, top int) {
-	u.backdrops.layout(gtx, u.theme, id, size, ground, u.backdropCover(gtx, id), u.backdropMark(gtx, id, top), u.backdropMoves(gtx, id))
+	cover := u.backdropCover(gtx, id)
+	// the band behind a session's text is faint; a chat's start screen, its
+	// mark drawn in the field's dots, keeps the field whole
+	defer paint.PushOpacity(gtx.Ops, 1-(1-backdropOpacity)*cover).Pop()
+	u.backdrops.layout(gtx, u.theme, id, size, ground, cover, u.backdropMark(gtx, id, top), u.backdropMoves(gtx, id))
 }
 
 // backdropMoves is whether id's backdrop moves at gtx.Now: a session's while
