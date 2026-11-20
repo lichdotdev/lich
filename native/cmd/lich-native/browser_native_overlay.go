@@ -95,8 +95,11 @@ func cssColor(c color.NRGBA) string {
 }
 
 // pageOverlayScript draws an overlay, or takes the layer away when it has
-// nothing. It builds the layer with DOM calls rather than markup, which a
-// page enforcing Trusted Types would refuse.
+// nothing. It changes the layer in place, a stroke's line growing as the
+// pointer moves: rebuilt on every update, the layer went blank for a frame
+// now and then under WebKit's shared-memory renderer (measured on the
+// user's display, 24 blank frames in 20 s of drawing). It builds with DOM
+// calls rather than markup, which a page enforcing Trusted Types refuses.
 const pageOverlayScript = `((o, trail, ring) => {
 	const id = 'lich-note-rings';
 	let host = document.getElementById(id);
@@ -109,41 +112,68 @@ const pageOverlayScript = `((o, trail, ring) => {
 		if (host) host.remove();
 		return;
 	}
-	if (!host) {
-		host = document.createElement('div');
-		host.id = id;
-		host.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:2147483647';
-		host.attachShadow({mode: 'open'});
-		document.documentElement.appendChild(host);
-	}
-	const root = host.shadowRoot;
+	const ns = 'http://www.w3.org/2000/svg';
 	const el = (tag, attrs, parent) => {
-		const e = document.createElementNS('http://www.w3.org/2000/svg', tag);
-		for (const k in attrs) e.setAttribute(k, attrs[k]);
+		const e = document.createElementNS(ns, tag);
+		set(e, attrs);
 		parent.appendChild(e);
 		return e;
 	};
-	root.replaceChildren();
-	const style = document.createElement('style');
-	style.textContent = 'svg{position:fixed;overflow:visible}@keyframes m{to{stroke-dashoffset:' + (-2 * o.dash) + 'px}}.m{animation:m ' + o.march + 'ms linear infinite}';
-	root.appendChild(style);
-	for (const r of o.rings) {
-		const svg = el('svg', {width: r.W, height: r.H, style: 'left:' + r.X + 'px;top:' + r.Y + 'px'}, root);
-		const box = {width: r.W, height: r.H, rx: r.Radius};
-		const dash = {'stroke-dasharray': r.Dash + ' ' + r.Dash};
-		if (r.March) dash.class = 'm';
-		el('rect', {...box, fill: o.color, 'fill-opacity': r.Fill / 255}, svg);
-		el('rect', {...box, fill: 'none', stroke: '#fff', 'stroke-opacity': 0.69, 'stroke-width': r.Width + 1, ...dash}, svg);
-		el('rect', {...box, fill: 'none', stroke: o.color, 'stroke-width': r.Width, ...dash}, svg);
+	const set = (e, attrs) => {
+		for (const k in attrs) {
+			const v = String(attrs[k]);
+			if (e.getAttribute(k) !== v) e.setAttribute(k, v);
+		}
+	};
+	if (!host || !host.__lich) {
+		if (host) host.remove();
+		host = document.createElement('div');
+		host.id = id;
+		host.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:2147483647';
+		const root = host.attachShadow({mode: 'open'});
+		const style = document.createElement('style');
+		root.appendChild(style);
+		const rings = document.createElement('div');
+		root.appendChild(rings);
+		const page = el('svg', {width: '100%', height: '100%', style: 'left:0;top:0'}, root);
+		const lines = document.createElementNS(ns, 'g');
+		page.appendChild(lines);
+		host.__lich = {style, rings, lines,
+			trail: el('polygon', {display: 'none'}, page),
+			ring: el('circle', {display: 'none', 'stroke-width': 1.5}, page)};
+		document.documentElement.appendChild(host);
 	}
-	const page = el('svg', {width: '100%', height: '100%', style: 'left:0;top:0'}, root);
-	for (const s of o.strokes) {
-		for (const line of s.lines) {
-			el('polyline', {points: line.join(' '), fill: 'none', stroke: s.ink, 'stroke-opacity': s.opacity, 'stroke-width': o.width, 'stroke-linecap': 'round', 'stroke-linejoin': 'round'}, page);
+	const s = host.__lich;
+	const css = 'svg{position:fixed;overflow:visible}@keyframes m{to{stroke-dashoffset:' + (-2 * o.dash) + 'px}}.m{animation:m ' + o.march + 'ms linear infinite}';
+	if (s.style.textContent !== css) s.style.textContent = css;
+	const rk = JSON.stringify([o.rings, o.color]);
+	if (s.rk !== rk) {
+		s.rk = rk;
+		s.rings.replaceChildren();
+		for (const r of o.rings) {
+			const svg = el('svg', {width: r.W, height: r.H, style: 'left:' + r.X + 'px;top:' + r.Y + 'px'}, s.rings);
+			const box = {width: r.W, height: r.H, rx: r.Radius};
+			const dash = {'stroke-dasharray': r.Dash + ' ' + r.Dash};
+			if (r.March) dash.class = 'm';
+			el('rect', {...box, fill: o.color, 'fill-opacity': r.Fill / 255}, svg);
+			el('rect', {...box, fill: 'none', stroke: '#fff', 'stroke-opacity': 0.69, 'stroke-width': r.Width + 1, ...dash}, svg);
+			el('rect', {...box, fill: 'none', stroke: o.color, 'stroke-width': r.Width, ...dash}, svg);
 		}
 	}
-	if (o.trail.length) el('polygon', {points: o.trail.join(' '), fill: trail[0], 'fill-opacity': trail[1]}, page);
-	if (o.eraser) el('circle', {cx: o.eraser.x, cy: o.eraser.y, r: o.eraser.r, fill: ring[0], 'fill-opacity': ring[1], stroke: ring[2], 'stroke-opacity': ring[3], 'stroke-width': 1.5}, page);
+	let n = 0;
+	for (const st of o.strokes) {
+		for (const line of st.lines) {
+			const attrs = {points: line.join(' '), fill: 'none', stroke: st.ink, 'stroke-opacity': st.opacity, 'stroke-width': o.width, 'stroke-linecap': 'round', 'stroke-linejoin': 'round'};
+			const e = s.lines.children[n];
+			if (e) set(e, attrs); else el('polyline', attrs, s.lines);
+			n++;
+		}
+	}
+	while (s.lines.children.length > n) s.lines.lastChild.remove();
+	if (o.trail.length) set(s.trail, {display: 'inline', points: o.trail.join(' '), fill: trail[0], 'fill-opacity': trail[1]});
+	else set(s.trail, {display: 'none'});
+	if (o.eraser) set(s.ring, {display: 'inline', cx: o.eraser.x, cy: o.eraser.y, r: o.eraser.r, fill: ring[0], 'fill-opacity': ring[1], stroke: ring[2], 'stroke-opacity': ring[3]});
+	else set(s.ring, {display: 'none'});
 })`
 
 // overlayScript is the call that draws o over the page, the same text for
