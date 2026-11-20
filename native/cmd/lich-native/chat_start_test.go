@@ -7,6 +7,7 @@ import (
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
+	"github.com/lichdotdev/lich/native/grimoire"
 	"github.com/lichdotdev/lich/native/i18n"
 )
 
@@ -19,9 +20,13 @@ func startFrames(t *testing.T, size image.Point) (*window, *frameRig) {
 	u, r, _ := chatFramesIn(t, api.ViewChat, size, busySession())
 	u.model.projects[0].Name = "lichtrack"
 	u.model.chat.history("s1", nil)
-	r.settle(t)
+	r.settleOn(t, logoLoop)
 	return u, r
 }
+
+// logoLoop is the start screen's logo once round: settling on it lands every
+// frame on the same frame of the flames.
+const logoLoop = grimoire.LogoFrames * grimoire.LogoStep
 
 // An empty chat asks its question over the composer, the project named in
 // it, the block a little over the middle of the pane rather than at its foot.

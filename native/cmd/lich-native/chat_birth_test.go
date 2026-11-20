@@ -47,7 +47,7 @@ func TestASessionBornAsAChatShowsItsOptionsBeforeTheFirstMessage(t *testing.T) {
 	if err := u.loadSessions(); err != nil {
 		t.Fatalf("loadSessions: %v", err)
 	}
-	r.settle(t)
+	r.settleOn(t, logoLoop)
 	if _, ok := u.model.chat.optionOf("s1", api.OptionModel); !ok {
 		t.Fatal("no options in the store for a session born as a chat")
 	}
