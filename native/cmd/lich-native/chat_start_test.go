@@ -96,3 +96,23 @@ func TestTheStartQuestionIsTheSessionsAndEveryLanguageHasAList(t *testing.T) {
 		}
 	}
 }
+
+// A session that never had a conversation is empty before its chat opens:
+// the start screen is up from its first frame, not after the read. One with
+// a conversation to read keeps the composer at the foot until it is read.
+func TestANewSessionShowsTheStartScreenFromItsFirstFrame(t *testing.T) {
+	u, r, _ := chatFramesIn(t, api.ViewChat, rigWindow, busySession())
+	u.model.projects[0].Name = "lichtrack"
+	u.model.projects[0].Sessions[0].ProviderSessionID = ""
+	r.frame()
+	before, _ := chatStartQuestion("s1")
+	if !r.shows(before) {
+		t.Errorf("a session with no conversation, not read yet, draws no start screen:\n%s", r.drawn())
+	}
+	u, r, _ = chatFramesIn(t, api.ViewChat, rigWindow, busySession())
+	u.model.projects[0].Sessions[0].ProviderSessionID = "conv-1"
+	r.frame()
+	if r.shows(before) {
+		t.Error("a session with a conversation still to read draws the start screen")
+	}
+}

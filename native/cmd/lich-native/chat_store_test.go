@@ -65,7 +65,10 @@ func chatModel(views ...string) *model {
 	m := newModel(nil, func() {})
 	var sessions []backend.Session
 	for i, v := range views {
-		sessions = append(sessions, backend.Session{ID: "s" + string(rune('1'+i)), Kind: "claude", View: v})
+		// Each has a conversation, as a session that has talked does: one that
+		// never had any opens on the start screen before its chat is read.
+		id := "s" + string(rune('1'+i))
+		sessions = append(sessions, backend.Session{ID: id, Kind: "claude", View: v, ProviderSessionID: "conv-" + id})
 	}
 	m.projects = []backend.Project{{ID: "p", Sessions: sessions}}
 	return m

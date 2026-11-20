@@ -15,6 +15,7 @@ import (
 	"gioui.org/op/paint"
 	"gioui.org/unit"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
 )
@@ -136,6 +137,16 @@ func (s *chatStart) shows(now time.Time, empty bool) bool {
 	}
 	s.empty = empty
 	return empty || (!s.left.IsZero() && now.Sub(s.left) < chatStartRun)
+}
+
+// chatEmpty is whether session sv's chat has nothing in it: read and empty,
+// or never given a conversation at all, which a new session is before its
+// chat even opens, so its start screen is up from the first frame.
+func chatEmpty(read bool, sv sessionView, items []backend.ChatItem) bool {
+	if !read {
+		return sv.ProviderSessionID == ""
+	}
+	return len(items) == 0
 }
 
 // chatStartColor is the color of a logo symbol, from the theme's own tokens
