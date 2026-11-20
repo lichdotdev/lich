@@ -33,6 +33,11 @@ const (
 	chatStartQuestionSize unit.Sp = 17
 )
 
+// chatStartCrumbSize is the size of the project, branch and changes under
+// the start screen's composer, a step over the footer's TextXS so they read
+// on the backdrop (the user's 14px, crumbs-mix mockup).
+const chatStartCrumbSize unit.Sp = 14
+
 // chatStartLift is what the question keeps over the composer on top of the
 // composer's own chatComposerGap: 36dp between them, the centre-mix mockup's.
 const chatStartLift unit.Dp = 12

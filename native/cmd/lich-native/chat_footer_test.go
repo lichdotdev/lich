@@ -127,12 +127,17 @@ func TestTheComposerGrowsFromThreeLinesToACeiling(t *testing.T) {
 	}
 }
 
-func TestTheChangesItemStandsAtTheRightOfTheLineUnderTheBox(t *testing.T) {
+// The changes' line counts follow the branch they are on, with no file count
+// (the user's call: the count of files said less than the lines).
+func TestTheChangesFollowTheBranchUnderTheBox(t *testing.T) {
 	u, r, _ := chatFrames(t, api.ViewChat)
 	r.settle(t)
-	branch, changes := r.at(t, "main"), r.at(t, "2")
-	if changes.X < float32(rigWindow.X/2) || branch.X > changes.X {
-		t.Errorf("branch at x=%v, changes at x=%v: want the branch at the left, the changes at the right", branch.X, changes.X)
+	branch, changes := r.at(t, "main"), r.at(t, "+0")
+	if branch.X > changes.X || changes.X > float32(rigWindow.X/2) {
+		t.Errorf("branch at x=%v, changes at x=%v: want the changes right after the branch", branch.X, changes.X)
+	}
+	if r.shows("2") {
+		t.Errorf("the file count is drawn:\n%s", r.drawn())
 	}
 	if d := changes.Y - branch.Y; d < -20 || d > 20 || changes.Y < float32(boxFoot.Max.Y) {
 		t.Errorf("branch at y=%v, changes at y=%v: want them on the line under the box", branch.Y, changes.Y)
@@ -304,15 +309,15 @@ func TestEachPaneOfALayoutShowsItsOwnBranchAndChanges(t *testing.T) {
 	u, r, _ := chatFramesIn(t, api.ViewChat, rigWindow, in)
 	u.model.projects[0].Path = "/home/me/other"
 	u.model.mu.Lock()
-	u.model.git["/home/me/other"] = backend.DiffStats{Branch: "feature-x", Files: 3}
+	u.model.git["/home/me/other"] = backend.DiffStats{Branch: "feature-x", Files: 3, Added: 5}
 	u.model.mu.Unlock()
 	r.settle(t)
-	for _, label := range []string{"feature-x", "3"} {
+	for _, label := range []string{"feature-x", "+5"} {
 		if !r.shows(label) {
 			t.Errorf("no %q under the pane's box, which is the session's own:\n%s", label, r.drawn())
 		}
 	}
-	for _, label := range []string{"main", "2"} {
+	for _, label := range []string{"main", "+0"} {
 		if r.shows(label) {
 			t.Errorf("%q is the followed session's, drawn in another pane", label)
 		}
@@ -358,8 +363,8 @@ func TestTheChangesItemIsThereOnlyWhenThereAreChanges(t *testing.T) {
 	}
 	_, r, _ = chatFramesIn(t, api.ViewChat, rigWindow, busySession())
 	r.settle(t)
-	if !r.shows("2") {
-		t.Errorf("no file count for a checkout with changes:\n%s", r.drawn())
+	if !r.shows("+0") {
+		t.Errorf("no line counts for a checkout with changes:\n%s", r.drawn())
 	}
 }
 
@@ -375,7 +380,7 @@ func TestTheChangesItemHasNoFillAtRestAndNeverTheLitOne(t *testing.T) {
 	if r.drawn() != rest {
 		t.Error("the item changed with Review open: it must not be drawn pressed")
 	}
-	r.hover(r.at(t, "2"))
+	r.hover(r.at(t, "+0"))
 	r.settle(t)
 	if r.drawn() == rest {
 		t.Error("the item has no hover fill")
@@ -411,8 +416,7 @@ func TestTheLineUnderTheBoxHasSpace2OnBothSides(t *testing.T) {
 }
 
 // The hover fill of the changes item stands chatChangesPad round its text, and
-// takes none of the line: the text keeps the place it has chatFootPad in from the
-// box's edge, as the left side's does, and the fill reaches the edge.
+// takes none of the line: the text keeps its place after the branch.
 func TestTheChangesItemsFillGrowsOutwardFromItsText(t *testing.T) {
 	_, r, _ := chatFrames(t, api.ViewChat)
 	r.settle(t)
@@ -420,7 +424,7 @@ func TestTheChangesItemsFillGrowsOutwardFromItsText(t *testing.T) {
 		t.Errorf("padding %v by %v, want Space(1.5) by Space(1)", chatChangesPadX, chatChangesPadY)
 	}
 	var box, item image.Rectangle
-	label := image.Pt(labelLeft(t, r, "2"), labelTop(t, r, "2")+4)
+	label := image.Pt(labelLeft(t, r, "+0"), labelTop(t, r, "+0")+4)
 	for _, n := range r.nodes() {
 		b := n.Desc.Bounds
 		switch {
@@ -436,10 +440,10 @@ func TestTheChangesItemsFillGrowsOutwardFromItsText(t *testing.T) {
 	if item.Dy() != 16+2*int(chatChangesPadY) {
 		t.Errorf("the item is %dpx tall, want the line's 16 and %vpx round it", item.Dy(), chatChangesPadY)
 	}
-	if item.Max.X != box.Max.X {
-		t.Errorf("the item ends at x=%d, the box at x=%d: the fill should reach the edge, the text %v in", item.Max.X, box.Max.X, chatFootPad)
+	if got := label.X - item.Min.X; got != int(chatChangesPadX) {
+		t.Errorf("the text is %dpx in from the fill's left, want %v", got, chatChangesPadX)
 	}
-	if text := labelTop(t, r, "2"); text-item.Min.Y != int(chatChangesPadY) {
+	if text := labelTop(t, r, "+0"); text-item.Min.Y != int(chatChangesPadY) {
 		t.Errorf("the text is %dpx under the fill's top, want %v", text-item.Min.Y, chatChangesPadY)
 	}
 }

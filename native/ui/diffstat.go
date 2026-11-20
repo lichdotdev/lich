@@ -6,6 +6,7 @@ import (
 
 	"gioui.org/font"
 	"gioui.org/layout"
+	"gioui.org/unit"
 )
 
 // The added and deleted colors are fixed shades, not theme tokens.
@@ -28,7 +29,9 @@ func diffStatColors(th *Theme) (added, deleted color.NRGBA) {
 // DiffStatStyle is the +added -deleted pair every diff surface shows.
 type DiffStatStyle struct {
 	Added, Deleted int
-	theme          *Theme
+	// Size is the counts' text size, TextXS when zero.
+	Size  unit.Sp
+	theme *Theme
 }
 
 func (th *Theme) DiffStat(added, deleted int) DiffStatStyle {
@@ -38,9 +41,13 @@ func (th *Theme) DiffStat(added, deleted int) DiffStatStyle {
 func (s DiffStatStyle) Layout(gtx C) D {
 	th := s.theme
 	addedColor, deletedColor := diffStatColors(th)
+	size := s.Size
+	if size == 0 {
+		size = TextXS
+	}
 	return layout.Flex{Alignment: layout.Baseline}.Layout(gtx,
-		layout.Rigid(th.Text(TextXS, "+"+strconv.Itoa(s.Added)).In(addedColor).Weight(font.Medium).Layout),
+		layout.Rigid(th.Text(size, "+"+strconv.Itoa(s.Added)).In(addedColor).Weight(font.Medium).Layout),
 		Gap(1.5),
-		layout.Rigid(th.Text(TextXS, "-"+strconv.Itoa(s.Deleted)).In(deletedColor).Weight(font.Medium).Layout),
+		layout.Rigid(th.Text(size, "-"+strconv.Itoa(s.Deleted)).In(deletedColor).Weight(font.Medium).Layout),
 	)
 }

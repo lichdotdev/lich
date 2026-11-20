@@ -505,13 +505,13 @@ func (u *window) chatComposer(gtx C, th *ui.Theme, p *chatPane, sv sessionView, 
 		layout.Rigid(func(gtx C) D {
 			// on the start screen the line sits on the backdrop, and reads in
 			// the foreground
-			crumbs := th
+			crumbs, size := th, ui.TextXS
 			if p.start.empty {
 				bright := *th
 				bright.Palette.MutedForeground = th.Foreground
-				crumbs = &bright
+				crumbs, size = &bright, chatStartCrumbSize
 			}
-			return u.chatCrumbs(gtx, crumbs, sv, in, ft)
+			return u.chatCrumbs(gtx, crumbs, sv, in, ft, size)
 		}),
 	)
 }
