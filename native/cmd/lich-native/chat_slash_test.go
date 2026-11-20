@@ -11,6 +11,7 @@ import (
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
+	"github.com/lichdotdev/lich/native/i18n"
 )
 
 func TestASlashOpensOnlyAtTheStartOfALineAndNotOnAPath(t *testing.T) {
@@ -73,7 +74,7 @@ func (r *frameRig) showsAll(labels ...string) bool {
 func TestTheSlashListOpensFiltersAndCompletes(t *testing.T) {
 	_, r, f, p := slashFrames(t)
 	typeIn(r, p, "/")
-	if !r.showsAll("/review", "[pr]", "/deploy", "/compact", "Ship it") {
+	if !r.showsAll("/new", "/review", "[pr]", "/deploy", "/compact", "Ship it") {
 		t.Fatalf("no list of commands on /:\n%s", r.drawn())
 	}
 	typeIn(r, p, "/co")
@@ -88,7 +89,9 @@ func TestTheSlashListOpensFiltersAndCompletes(t *testing.T) {
 	if r.shows("Compact the conversation") {
 		t.Error("the list stays open once the command is in")
 	}
+	// lich's own /new leads the provider's commands.
 	typeIn(r, p, "/")
+	r.press(key.NameDownArrow)
 	r.press(key.NameDownArrow)
 	r.press(key.NameReturn)
 	if got := p.editor.Text(); got != "/deploy " {
@@ -178,5 +181,27 @@ func TestTheSlashListStaysInALowPane(t *testing.T) {
 	}
 	if top < 0 {
 		t.Errorf("the list's first row at y=%d, above the pane", top)
+	}
+}
+
+// /new is lich's own command: sent, it starts an empty conversation in the
+// chat instead of reaching the agent as text.
+func TestNewStartsAConversationInsteadOfSending(t *testing.T) {
+	_, r, f, p := slashFrames(t)
+	typeIn(r, p, "/ne")
+	if !r.showsAll("/new", i18n.T("chat.slash.new")) {
+		t.Fatalf("no /new in the list:\n%s", r.drawn())
+	}
+	r.press(key.NameTab)
+	r.press(key.NameReturn)
+	if body := f.waitCall(t, api.ChatNew.Name); !strings.Contains(body, `"id":"s1"`) {
+		t.Errorf("chat.New for %s", body)
+	}
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	for _, c := range f.calls {
+		if strings.HasPrefix(c, api.ChatPrompt.Name) {
+			t.Errorf("/new reached the agent: %s", c)
+		}
 	}
 }

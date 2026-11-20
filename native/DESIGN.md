@@ -459,7 +459,9 @@ draws none while it grows in, because the room above the rows is measured in the
   muted and the description muted on the rest of the line, lit on `Accent` under the cursor. Typing filters it,
   names that start with what was typed first; the arrows walk it, Enter or Tab put the command in place of what
   was typed, with a space, unsent, and Escape shuts it until the start changes. A path, a slash mid-line or a
-  start that matches nothing opens nothing, so Enter sends.
+  start that matches nothing opens nothing, so Enter sends. lich's own `/new` leads the list: sent, it starts an
+  empty conversation in the card (`chat.New`) instead of reaching the agent, and the conversation it replaces
+  leaves at once, with no row playing out.
   A file dragged over a session drawn as a chat lights the terminal's drop hint over the whole session, and dropped
   it types the paths the terminal would paste at the composer's caret, quoted the same way, an image included
   (`dropInChat`); the chat has no attachments, so the attach "+" types the picked file's path there the same way.

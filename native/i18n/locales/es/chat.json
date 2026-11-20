@@ -83,5 +83,8 @@
     "declined": "Sin respuesta",
     "label": "{header}:",
     "own": "«{text}»"
+  },
+  "slash": {
+    "new": "Empieza una conversación nueva en esta sesión"
   }
 }

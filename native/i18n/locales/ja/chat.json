@@ -78,5 +78,8 @@
     "declined": "未回答",
     "label": "{header}:",
     "own": "「{text}」"
+  },
+  "slash": {
+    "new": "このセッションで新しい会話を始める"
   }
 }
