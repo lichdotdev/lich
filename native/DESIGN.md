@@ -16,7 +16,8 @@ Elements are defined by space, hover and islands, not by enclosure.
 - **Panels are islands.** The window's regions (sidebar, rail, stage, dock, the Git and extension panels,
   Settings' two columns, Pulls, and the sidebar's and dock's peeks) are rounded surfaces floating on `Canvas`, separated by the `gutter`
   (6px, `cmd/lich-native/main.go`) instead of a rule between them, the stage and the dock running down to the
-  window's foot as the sidebar does. Each carries a 1px hairline in `Border`
+  window's foot as the sidebar does. The sidebar and the dock are resized from the gutter between them and the
+  stage, all of its width (`ui.ResizeHandle.LayoutGap`), which shows only the resize cursor and paints nothing. Each carries a 1px hairline in `Border`
   just inside its `RadiusLG` edge (`ui.InsetBorder`, `ui.IslandBorder`): the one outline in the window that
   wraps a surface rather than a field. The active project tab that has grown out of its island takes the
   line with it, up its sides and round its fillets, and the island's top edge is left open under it

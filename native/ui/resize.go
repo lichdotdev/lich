@@ -102,6 +102,22 @@ func (r *ResizeHandle) drag(gtx C, x float32, minWidth, maxWidth unit.Dp) unit.D
 	return min(max(next, minWidth), maxWidth)
 }
 
+// LayoutGap lays the handle out in the gap of gap px beside the panel box
+// gtx.Constraints.Max, on the side of its Edge (right or left), in the
+// panel's own coordinates. It draws nothing: the pointer over it shows only
+// the resize cursor.
+func (r *ResizeHandle) LayoutGap(gtx C, gap int) {
+	box := gtx.Constraints.Max
+	r.laidOut = box.X
+	strip := image.Rect(box.X, 0, box.X+gap, box.Y)
+	if r.Edge == PanelEdgeLeft {
+		strip = image.Rect(-gap, 0, 0, box.Y)
+	}
+	defer clip.Rect(strip).Push(gtx.Ops).Pop()
+	event.Op(gtx.Ops, r)
+	pointer.CursorColResize.Add(gtx.Ops)
+}
+
 // Dragging reports whether a drag is in flight.
 func (r *ResizeHandle) Dragging() bool { return r.dragging }
 

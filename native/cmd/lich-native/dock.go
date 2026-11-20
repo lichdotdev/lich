@@ -231,6 +231,11 @@ func (d *dock) layout(gtx C, th *ui.Theme, root *ui.Root, in dockInput) (saveWid
 	}
 	size := gtx.Constraints.Max
 	gtx.Constraints = layout.Exact(size)
+	if !d.fullscreen {
+		// In the gap between the stage and the dock, outside the dock's own
+		// clip.
+		d.resize.LayoutGap(gtx, gtx.Dp(gutter))
+	}
 	defer clip.UniformRRect(image.Rectangle{Max: size}, gtx.Dp(ui.RadiusLG)).Push(gtx.Ops).Pop()
 	ui.Fill(gtx, th.Sidebar, 0)
 	on := th.On(th.Sidebar)
@@ -249,9 +254,6 @@ func (d *dock) layout(gtx C, th *ui.Theme, root *ui.Root, in dockInput) (saveWid
 		layout.Rigid(func(gtx C) D { return d.tabBar(gtx, on, root, in) }),
 	)
 	d.fitTabs(gtx, max(d.actionsWidth+gtx.Dp(dockHeaderSpare), d.tabBarWidth))
-	if !d.fullscreen {
-		d.resize.Layout(gtx, on)
-	}
 	return saveWidth, err
 }
 
