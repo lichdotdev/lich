@@ -168,6 +168,10 @@ func TestAToolFoldOpensInTheFrameThatTookTheClick(t *testing.T) {
 	// when it ended.
 	worked := i18n.T("chat.view.workedAt", i18n.Args{"duration": chatElapsed(3 * time.Second), "count": 1, "time": clockFor(r, 3000)})
 	r.clickLabel(t, worked)
+	// The fold opens over ui.Collapse's 200ms, from the frame that took the
+	// click: half way through, its call is already drawn.
+	r.now = r.now.Add(100 * time.Millisecond)
+	r.frame()
 	if !r.shows("4 results") {
 		t.Errorf("the fold did not open:\n%s", r.drawn())
 	}

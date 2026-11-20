@@ -150,6 +150,9 @@ func callRunning(it backend.ChatItem) bool {
 	return it.Tool != nil && (it.Tool.State == api.ToolPending || it.Tool.State == api.ToolRunning)
 }
 
+// chatLiveKey is the live line's key: there is one at most.
+const chatLiveKey = "live"
+
 // chatRowKey names a row for its entry: an item by its id, the others by the
 // turn they belong to.
 func chatRowKey(r chatRow) string {
@@ -161,7 +164,7 @@ func chatRowKey(r chatRow) string {
 	case chatRowDone:
 		return "done:" + strconv.Itoa(r.turn)
 	case chatRowLive:
-		return "live"
+		return chatLiveKey
 	}
 	return r.item.ID
 }

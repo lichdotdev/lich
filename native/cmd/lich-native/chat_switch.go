@@ -109,6 +109,8 @@ func (u *window) enterChat(id string) {
 // session close if windows with thousands of sessions show up.
 type chatScreens struct {
 	panes map[string]*chatPane
+	// views is the view each session was last drawn in.
+	views map[string]chatShown
 }
 
 func (c *chatScreens) pane(id string) *chatPane {

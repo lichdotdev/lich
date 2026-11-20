@@ -68,6 +68,15 @@ type chatView struct {
 	// last was, for one that is playing its exit.
 	rows ui.Presence
 	seen map[string]chatRow
+	// keys are the rows of the frame before, swap the live line turning into
+	// the closing line, stream the answer the caret follows, cards the
+	// questions drawn waiting, by item id, and run the list's way back to
+	// its end.
+	keys   []string
+	swap   chatSwap
+	stream chatStream
+	cards  map[string]chatCard
+	run    chatToEnd
 	// stamps are the tooltips of the time under each message, by item id.
 	stamps map[string]*ui.Tooltip
 	// copies are the copy buttons of the messages, by item id.
@@ -92,6 +101,18 @@ type chatView struct {
 type chatFold struct {
 	click ui.Clickable
 	open  bool
+	// body folds a thought's text; calls fold a group's calls each, by id,
+	// and enter brings in the ones that come once the group is drawn.
+	body  ui.Collapse
+	calls map[string]*chatCall
+	enter ui.Presence
+}
+
+// chatCall is one call of a group: its fold, and whether it stood open for
+// running the frame before.
+type chatCall struct {
+	fold    ui.Collapse
+	running bool
 }
 
 type chatAnswer struct{ item, option string }
@@ -103,6 +124,7 @@ func newChatPane() *chatPane {
 	p.md = markdown.Cache{}
 	p.folds = map[string]*chatFold{}
 	p.answers = map[chatAnswer]*ui.Clickable{}
+	p.cards = map[string]chatCard{}
 	return p
 }
 
@@ -143,13 +165,42 @@ func (v *chatView) enter(now time.Time, rows []chatRow, read bool) []string {
 		keys[i] = chatRowKey(r)
 		v.seen[keys[i]] = r
 	}
+	before := v.keys
+	v.keys = keys
 	if !read {
 		return keys
 	}
 	shown := v.rows.Update(now, keys)
+	// The turn ending turns the live line into the closing line in its slot:
+	// neither plays its own motion.
+	if done := keys[len(keys)-1]; strings.HasPrefix(done, "done:") && slices.Contains(before, chatLiveKey) && !slices.Contains(before, done) {
+		v.rows.Settle(done)
+		v.swap = chatSwap{key: done, at: now, live: v.seen[chatLiveKey]}
+	}
 	// The closing line plays no exit: while it fades, the turn that took it
 	// away is drawn under it, and it would stand beside that turn's live line.
-	return slices.DeleteFunc(shown, func(k string) bool { return strings.HasPrefix(k, "done:") && v.rows.Leaving(k) })
+	return slices.DeleteFunc(shown, func(k string) bool {
+		return v.rows.Leaving(k) && (strings.HasPrefix(k, "done:") || k == chatLiveKey && v.swap.playing(now))
+	})
+}
+
+// call is the group's call id, which stands open for running while the group
+// is folded. A call that starts or ends running in a folded group shows or
+// goes at once: only a click plays the fold.
+func (f *chatFold) call(id string, running bool) *chatCall {
+	if f.calls == nil {
+		f.calls = map[string]*chatCall{}
+	}
+	c, ok := f.calls[id]
+	if !ok {
+		c = new(chatCall)
+		f.calls[id] = c
+	}
+	if c.running != running && !f.open {
+		c.fold = ui.Collapse{}
+	}
+	c.running = running
+	return c
 }
 
 func (v *chatView) fold(key string) *chatFold {
@@ -183,6 +234,7 @@ func (u *window) chatScreen(gtx C, sv sessionView, keys bool) {
 	layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Flexed(1, func(gtx C) D {
 			shown := p.enter(gtx.Now, rows, u.model.chat.holds(sv.ID))
+			p.runToEnd(gtx, len(shown))
 			atEnd := !p.list.Position.BeforeEnd
 			drawList := func(lead int) (D, op.CallOp) {
 				m := op.Record(gtx.Ops)
@@ -195,7 +247,7 @@ func (u *window) chatScreen(gtx C, sv sessionView, keys bool) {
 						top = chatTurnGap
 					}
 					key := shown[i]
-					return p.rows.Layout(gtx, key, func(gtx C) D {
+					return p.rows.LayoutFlat(gtx, key, func(gtx C) D {
 						return chatColumn(gtx, top, 0, chatTextInset, func(gtx C) D { return u.chatRow(gtx, th, p, sv, p.seen[key]) })
 					})
 				})
@@ -297,11 +349,13 @@ func (u *window) chatActs(gtx C, p *chatPane, sv sessionView, keys, working bool
 		case waiting != nil:
 			u.answerChat(sv.ID, waiting.ID, permitOption(waiting.Permission, api.PermitAllowOnce, api.PermitAllowAlways))
 		case !working || asking != nil:
-			u.sendChat(p, sv.ID)
+			if u.sendChat(p, sv.ID) {
+				p.toEnd(gtx.Now)
+			}
 		}
 	}
-	if p.send.Clicked(gtx) && !working {
-		u.sendChat(p, sv.ID)
+	if p.send.Clicked(gtx) && !working && u.sendChat(p, sv.ID) {
+		p.toEnd(gtx.Now)
 	}
 	if p.stop.Clicked(gtx) {
 		id := sv.ID
@@ -314,12 +368,13 @@ func (u *window) chatActs(gtx C, p *chatPane, sv sessionView, keys, working bool
 	}
 }
 
-// sendChat hands the editor's text to the agent. The person's message comes
-// back as an item; a refused one goes back into the editor.
-func (u *window) sendChat(p *chatPane, id string) {
+// sendChat hands the editor's text to the agent, and reports whether it had
+// any. The person's message comes back as an item; a refused one goes back
+// into the editor.
+func (u *window) sendChat(p *chatPane, id string) bool {
 	text := strings.TrimSpace(p.editor.Text())
 	if text == "" {
-		return
+		return false
 	}
 	p.editor.SetText("")
 	p.undo.Reset()
@@ -333,6 +388,7 @@ func (u *window) sendChat(p *chatPane, id string) {
 		p.mu.Unlock()
 		u.chatFailed(err)
 	}()
+	return true
 }
 
 func (u *window) answerChat(id, item, option string) {
