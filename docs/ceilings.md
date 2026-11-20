@@ -223,6 +223,12 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   terminal's prompt would, quoted the same way, with the same copy and notice for a confined session's file outside
   its checkout, and the agent sees an image only by opening that path with a tool of its own that reads images;
   which of the seven do was not measured.
+- **`lich insert` cannot reach a session drawn as a chat** (`internal/relay/insert.go` `refuseChat`): it leaves text
+  at a prompt unsent, and a chat's unsent text lives in the window's composer, which the backend has no way to type
+  into. It is refused, saying so, where it used to wait out its timeout and report the session stopped. Inside the
+  window everything that leaves text at a session's prompt (a drop, the attach "+", an artifact sent to it, a Code
+  tab, editor or pull request reference) types it in a chat's composer instead (`window.writeAtPrompt`,
+  `window.injector`); `send`, `submit` and the browser's notes reach a chat as a message.
 
 ## Session state and hooks
 

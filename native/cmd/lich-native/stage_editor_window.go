@@ -260,7 +260,7 @@ func (u *window) editorIsland(gtx C, v stageView) error {
 	code.Background, code.GutterBackground = fill, fill
 	inject := func(string) bool { return false }
 	if id := u.model.referenceTarget(v.editor); id != "" {
-		inject = u.terms.injector(id)
+		inject = u.injector(id)
 	}
 	return f.layout(gtx, th, editorEnv{root: &u.root, code: code, inject: inject, comments: &u.comments, notify: func(t ui.Toast) { u.toaster.Show(t) }})
 }

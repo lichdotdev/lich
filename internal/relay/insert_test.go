@@ -285,3 +285,21 @@ func TestExpandHome(t *testing.T) {
 		t.Errorf("expandHome(/abs) = %q, want it untouched", got)
 	}
 }
+
+// A session drawn as a chat has no terminal prompt to paste at, and its
+// message box is the window's: the insert says so at once, rather than that
+// the session stopped, and types nothing.
+func TestInsertIntoAChatSaysItIsAChat(t *testing.T) {
+	t.Parallel()
+	term := newFakeTerminal()
+	term.chats = map[string]bool{"s3": true}
+	svc := newRelay(editorWorkspace("/src/lich", "/src/lich-wt"), term, nil)
+
+	_, err := svc.Insert(t.Context(), InsertOptions{Target: "solo", Text: "x"})
+	if err == nil || !strings.Contains(err.Error(), "chat") {
+		t.Errorf("Insert into a chat = %v, want an error saying it is a chat", err)
+	}
+	if writes := term.writesTo("s3"); len(writes) > 0 {
+		t.Errorf("writes = %q, want none", writes)
+	}
+}
