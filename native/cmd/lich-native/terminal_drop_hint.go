@@ -100,3 +100,18 @@ func (u *window) droppedPaste(target dropTarget, paths []string) string {
 	}
 	return composeDroppedPaths(r.paths, runtime.GOOS == "windows", r.notices)
 }
+
+// injector is what writes a reference at session id's prompt from the Code
+// tab, the editor or a pull request's files: its chat's composer when it is
+// drawn as a chat, else its terminal (terminals.injector). The view is read
+// at the write, which may come after a switch.
+func (u *window) injector(id string) func(string) bool {
+	term := u.terms.injector(id)
+	return func(text string) bool {
+		if sv, ok := u.model.sessionViewOf(id); ok && sv.View == api.ViewChat {
+			u.logErr("inject", u.typeInChat(u.ctx, id, safeToWrite(text)))
+			return true
+		}
+		return term(text)
+	}
+}

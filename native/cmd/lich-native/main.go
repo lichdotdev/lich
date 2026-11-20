@@ -845,7 +845,7 @@ func (u *window) body(gtx C, v stageView) (int, sidebarAction, error) {
 						return D{Size: gtx.Constraints.Max}
 					}
 					if u.pulls.open && !v.home {
-						u.pulls.files = filesInput{activeID: v.in.sessionID, injector: u.terms.injector, submitter: u.terms.submitter, light: u.light, code: u.code}
+						u.pulls.files = filesInput{activeID: v.in.sessionID, injector: u.injector, submitter: u.terms.submitter, light: u.light, code: u.code}
 						u.pulls.squareX = -1
 						if x, ok := u.topbar.islandSquare(gtx, topbarFrame{tabs: v.strip, active: v.stripActive, islands: u.pulls.spans}); ok {
 							u.pulls.squareX = x

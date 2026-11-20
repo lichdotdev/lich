@@ -79,6 +79,9 @@ func (s *Service) insert(ctx context.Context, fromID, target, project, text stri
 			"%q is waiting on a permission prompt, and text typed there goes to the dialog "+
 				"instead of the prompt: answer it in that session first", dest.Peer.Label)
 	}
+	if err := s.refuseChat(dest); err != nil {
+		return Inserted{}, err
+	}
 	if err := s.awaitPrompt(dest, wait); err != nil {
 		return Inserted{}, err
 	}
@@ -190,6 +193,22 @@ func labelsOf(matches []candidate) string {
 		labels = append(labels, c.Peer.Label)
 	}
 	return strings.Join(labels, ", ")
+}
+
+// refuseChat refuses a session drawn as a chat: it has no terminal prompt
+// to paste at, and its message box is the window's, which the backend does
+// not type into.
+func (s *Service) refuseChat(dest candidate) error {
+	ctx, id := context.Background(), api.SessionIDOptions{ID: dest.ID}
+	live, err := s.term.Live(ctx, id)
+	if err != nil || live {
+		return err
+	}
+	if reachable, err := s.term.Reachable(ctx, id); err != nil || !reachable {
+		return err
+	}
+	return fmt.Errorf("%q is drawn as a chat, whose message box only the window types into: "+
+		"send the text as a message instead, or switch the session to its terminal", dest.Peer.Label)
 }
 
 // awaitPrompt waits for the session's agent to be sitting at its prompt, up to

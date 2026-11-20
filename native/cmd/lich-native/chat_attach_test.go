@@ -104,3 +104,32 @@ func TestAnArtifactSentToAChatLandsInItsComposer(t *testing.T) {
 		t.Errorf("the artifact wrote %q to a terminal", writes)
 	}
 }
+
+// A reference injected from the Code tab, the editor or a pull request's
+// files into a session drawn as a chat lands in its composer, and writes
+// nothing to a terminal the session has not got.
+func TestAReferenceInjectedIntoAChatLandsInItsComposer(t *testing.T) {
+	u, r, _ := chatFrames(t, api.ViewChat)
+	var mu sync.Mutex
+	var writes []string
+	u.terms = &terminals{client: pickBackend(t, backend.Attachment{}, &mu, &writes)}
+	r.settle(t)
+	p := u.chats.pane("s1")
+	if !u.injector("s1")("a.go:3-4 ") {
+		t.Fatal("the inject was refused")
+	}
+	want := "a.go:3-4 "
+	for deadline := time.Now().Add(2 * time.Second); p.editor.Text() != want; time.Sleep(time.Millisecond) {
+		if time.Now().After(deadline) {
+			mu.Lock()
+			t.Fatalf("the composer reads %q, want %q; the terminal was written %q", p.editor.Text(), want, writes)
+		}
+		r.now = r.now.Add(frameStep)
+		r.frame()
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	if len(writes) > 0 {
+		t.Errorf("the inject wrote %q to a terminal", writes)
+	}
+}

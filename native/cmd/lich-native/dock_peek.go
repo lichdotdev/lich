@@ -171,7 +171,7 @@ func (u *window) dockPeek(gtx C, v stageView) error {
 // layoutDock lays the dock out in gtx.Constraints.Max and keeps what it
 // asked for: a width to store, an extension's action.
 func (u *window) layoutDock(gtx C, v stageView) error {
-	in := dockInput{sessionID: v.in.sessionID, inject: u.terms.injector(v.in.sessionID), submit: u.terms.submitter(v.in.sessionID), checkout: v.in.path, git: v.in.git, isGit: v.in.isGit, light: u.light, code: u.code, placed: placedIn(v.in.placed, extension.PlaceDock)}
+	in := dockInput{sessionID: v.in.sessionID, inject: u.injector(v.in.sessionID), submit: u.terms.submitter(v.in.sessionID), checkout: v.in.path, git: v.in.git, isGit: v.in.isGit, light: u.light, code: u.code, placed: placedIn(v.in.placed, extension.PlaceDock)}
 	save, err := u.dock.layout(gtx, u.theme, &u.root, in)
 	u.applyExtension(u.dock.takeExtensionAction())
 	if save {

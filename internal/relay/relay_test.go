@@ -52,6 +52,8 @@ type fakeTerminal struct {
 	// take it over.
 	live     map[string]bool
 	starting map[string]bool
+	// chats are the sessions drawn as a chat: reachable, with no PTY.
+	chats map[string]bool
 	// typing is whether the person at that session has a half-written line at its
 	// prompt, which the terminal service reports through the same Ready.
 	typing map[string]bool
@@ -141,7 +143,10 @@ func (f *fakeTerminal) Live(_ context.Context, opts api.SessionIDOptions) (bool,
 
 // Reachable is Live: every fake session runs a terminal.
 func (f *fakeTerminal) Reachable(ctx context.Context, opts api.SessionIDOptions) (bool, error) {
-	return f.Live(ctx, opts)
+	live, err := f.Live(ctx, opts)
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return live || f.chats[opts.ID], err
 }
 
 // Ready defaults to "as ready as it is live": most tests are about delivery and

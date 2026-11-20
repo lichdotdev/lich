@@ -340,6 +340,8 @@ plugins call.
   added after it, which is where it was meant to go.
 - A session in `waiting` — blocked on a permission prompt — is refused: what is
   typed there is read by the dialog, not the prompt.
+- A session drawn as a chat is refused: it has no terminal prompt, and its
+  message box is the window's. `send` reaches it as a message.
 - Prints `Inserted <n> bytes at the prompt of "<label>" (<project>). Nothing was
   sent.`; `--json` prints `{"id","label","project","kind","bytes"}`. Exit 1 when
   nothing was inserted.
