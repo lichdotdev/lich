@@ -7,8 +7,10 @@ import (
 	"maps"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"slices"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -254,5 +256,71 @@ func TestClipKeepsUTF8Whole(t *testing.T) {
 	}
 	if got := clip("short", 10); got != "short" {
 		t.Errorf("clip = %q", got)
+	}
+}
+
+// offPathInstall is an install whose installer wrote claude into a folder of
+// its own, PATH not holding it until the adder puts it there; written is
+// whether the binary is in the folder.
+func offPathInstall(t *testing.T, written bool) (*Service, <-chan Install, *[]string) {
+	t.Helper()
+	root := t.TempDir()
+	t.Setenv("LICH_TEST_INSTALL_DIR", root)
+	dir := filepath.Join(root, "bin")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if written {
+		if err := os.WriteFile(filepath.Join(dir, "claude"), nil, 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	s, steps := fakeInstaller(t, "ok")
+	onPath := map[string]bool{"bash": true, "curl": true}
+	var mu sync.Mutex
+	s.lookPath = func(name string) (string, error) {
+		mu.Lock()
+		defer mu.Unlock()
+		if onPath[name] {
+			return "/fake/bin/" + name, nil
+		}
+		return "", exec.ErrNotFound
+	}
+	var added []string
+	s.SetPathAdder(func(d string) error {
+		mu.Lock()
+		defer mu.Unlock()
+		added = append(added, d)
+		onPath["claude"] = d == dir
+		return nil
+	})
+	r := testRecipe
+	r.dir = installDir{env: "LICH_TEST_INSTALL_DIR", rel: "bin"}
+	withRecipe(t, Claude, r)
+	return s, steps, &added
+}
+
+func TestAnInstallersFolderGoesOnPath(t *testing.T) {
+	s, steps, added := offPathInstall(t, true)
+	if _, err := s.Install(t.Context(), api.ProviderIDOptions{ID: Claude}); err != nil {
+		t.Fatal(err)
+	}
+	got := untilDone(t, steps)
+	if last := got[len(got)-1]; last.Error != "" {
+		t.Fatalf("ended on %q", last.Error)
+	}
+	if want := filepath.Join(os.Getenv("LICH_TEST_INSTALL_DIR"), "bin"); len(*added) != 1 || (*added)[0] != want {
+		t.Errorf("added %v, want %s", *added, want)
+	}
+}
+
+func TestAFolderWithoutTheBinaryStaysOffPath(t *testing.T) {
+	s, steps, added := offPathInstall(t, false)
+	if _, err := s.Install(t.Context(), api.ProviderIDOptions{ID: Claude}); err != nil {
+		t.Fatal(err)
+	}
+	got := untilDone(t, steps)
+	if last := got[len(got)-1]; last.Error != "Claude Code installed, but claude is not on PATH" || len(*added) != 0 {
+		t.Fatalf("ended on %q, added %v", last.Error, *added)
 	}
 }

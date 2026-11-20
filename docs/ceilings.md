@@ -252,10 +252,16 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   never through sudo.
 - **An install's progress is an estimate** (`installProgress`): no vendor script states a percentage, so the bar
   follows the lines the installer prints, rising toward 0.9, and lands on 1 when it exits.
-- **An install that leaves its binary off PATH ends as a failure** (`finishInstall`). The login shell's PATH is
-  read again first, so an installer that edits the rc file is found. One that only prints the export line
-  (oh-my-pi's unix script, and Cursor's, which tells you to add `~/.local/bin` by hand) reads
-  "installed, but omp is not on PATH" until `~/.local/bin` is on PATH or the binary is set in Settings › Providers.
+- **lich puts an installer's folder on PATH itself** (`putOnPath`, `terminal.AddToShellRC`). The login shell's
+  PATH is read again first, so an installer that edits the rc file is found. One that only prints the export line
+  (oh-my-pi's unix script, and Cursor's, which tells you to add `~/.local/bin` by hand) leaves its binary in the
+  folder its recipe names: lich puts that folder ahead on the PATH it resolves binaries through and hands its
+  sessions, for the rest of the run, and appends one marked line to the shell's startup file (`.zshrc` under
+  `ZDOTDIR`, `.bashrc`, or `.bash_profile` on macOS, a `conf.d` file for fish, `.profile` for any other shell)
+  unless it already names the folder, which carries it to the next launch and to terminals outside lich. A
+  terminal already open keeps its old PATH. Only a binary found in that folder counts: anything else still ends
+  on "installed, but omp is not on PATH". On Windows the scripts put their folder on the user's PATH themselves,
+  and lich adds it to its own for the run.
   Cursor's pages name the binary `agent`; its script links `cursor-agent` beside it (on Windows,
   `cursor-agent.cmd` beside `agent.cmd`), which is the one lich spawns. Kiro CLI's script adds `~/.local/bin` to
   the rc files itself, but asks before replacing an install it finds, so a reinstall over one off PATH fails on
