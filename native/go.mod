@@ -54,7 +54,7 @@ require (
 // NVIDIA's driver), and input.KeepOp with Source.Queued (input and frame
 // requests still reaching the widgets of a subtree a frame replays from a
 // cache). Every patch of ours lands on that branch.
-replace gioui.org => github.com/lichdotdev/gio v0.0.0-20261120220421-16de86110725
+replace gioui.org => github.com/lichdotdev/gio v0.0.0-20261120221248-b1e4ac5fb5fd
 
 replace github.com/lichdotdev/lich => ../
 

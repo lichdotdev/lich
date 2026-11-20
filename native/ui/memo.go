@@ -40,7 +40,7 @@ type MemoKey struct {
 
 // Layout draws w, or what it drew for the same key.
 func (m *Memo) Layout(gtx layout.Context, key MemoKey, w layout.Widget) layout.Dimensions {
-	if !m.ok || m.key != key || gtx.Source.Queued() {
+	if !m.ok || m.key != key || gtx.Source.Queued(gtx.Now) {
 		m.ops.Reset()
 		rec := gtx
 		rec.Ops = &m.ops
