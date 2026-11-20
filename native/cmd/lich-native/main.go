@@ -101,8 +101,9 @@ func windowClass(getenv func(string) string) string {
 }
 
 type window struct {
-	ctx    context.Context
-	client *backend.Client
+	ctx       context.Context
+	client    *backend.Client
+	backdrops backdrops
 	// covers are where the window's floating layers draw over everything in
 	// the frame being laid out, in the window's pixels (coverPages).
 	covers []image.Rectangle
@@ -662,6 +663,7 @@ func (u *window) layout(gtx C) error {
 	u.takeCodeAsk()
 	u.extension.writeClipboard(gtx)
 	paint.Fill(gtx.Ops, u.theme.Canvas)
+	u.backdrops.sweep(gtx.Now)
 	if u.model.connectionLost() {
 		u.lostNotice(gtx)
 		return nil
@@ -884,6 +886,15 @@ func sidebarActive(v stageView) string {
 	return v.active.ID
 }
 
+// stageBackdropID names the stage island's backdrop: the session alone on
+// it, or the stage itself while it holds none.
+func stageBackdropID(v stageView) string {
+	if v.home || !v.hasActive {
+		return "stage"
+	}
+	return v.active.ID
+}
+
 // island is the stage's rounded box: Home, the empty notice, the diff or
 // the terminal, under the footer's balloons. A layout has no box: its panes
 // are islands of their own on the canvas (layoutPanes).
@@ -904,6 +915,10 @@ func (u *window) island(gtx C, v stageView, termWidth, termHeight int) error {
 	paint.Fill(gtx.Ops, fill)
 	on := u.theme.On(fill)
 	defer ui.IslandBorder(gtx, size, r, on.Over(on.Border))
+	var under backdropLayer
+	if !v.hasConsole && !v.hasEditor {
+		under = u.backdrops.layout(gtx, u.theme, stageBackdropID(v), size, fill)
+	}
 	if u.homeOpen.Clicked(gtx) {
 		go u.pickProject()
 	}
@@ -925,7 +940,7 @@ func (u *window) island(gtx C, v stageView, termWidth, termHeight int) error {
 		emptySessionsView(gtx, on, &u.emptyNew, u.model.newSessionKind() == "shell", u.spot)
 		return nil
 	}
-	return u.loneSession(gtx, v, fill, termWidth, termHeight)
+	return u.loneSession(gtx, v, fill, termWidth, termHeight, under)
 }
 
 // loneSession is the active session alone on the island, laid out termWidth
@@ -933,7 +948,7 @@ func (u *window) island(gtx C, v stageView, termWidth, termHeight int) error {
 // slide, for a terminal, to where the box came from: wider, the box clips it;
 // narrower, its fill shows past it. The Git panel's slide sets termHeight the
 // same way.
-func (u *window) loneSession(gtx C, v stageView, fill color.NRGBA, termWidth, termHeight int) error {
+func (u *window) loneSession(gtx C, v stageView, fill color.NRGBA, termWidth, termHeight int, under backdropLayer) error {
 	size := gtx.Constraints.Max
 	u.spot(gtx, tourStage, func(C) D { return D{Size: size} })
 	u.layoutStage.metric = gtx.Metric
@@ -949,7 +964,7 @@ func (u *window) loneSession(gtx C, v stageView, fill color.NRGBA, termWidth, te
 		reveal = clip.Rect(frame)
 	}
 	area := reveal.Push(gtx.Ops)
-	err := u.bandedSession(term, v.active, band, fill, u.terminalTakesKeys(gtx))
+	err := u.bandedSession(term, v.active, band, fill, u.terminalTakesKeys(gtx), under)
 	area.Pop()
 	u.endPaneMotion(gtx)
 	if err != nil {

@@ -531,15 +531,17 @@ func (ts *terminals) backgroundOf(id string) color.NRGBA {
 // layout draws t into the whole of gtx.Constraints.Max, following the area's
 // size with the grid and the backend PTY, and routes keys typed into it.
 // focus says nothing else in the window wants the keyboard (a rename, an open
-// menu), so the terminal takes it.
-func (ts *terminals) layout(gtx layout.Context, t *termView, focus bool) error {
+// menu), so the terminal takes it. under is the pane's backdrop, laid under
+// the text where the cells let it through.
+func (ts *terminals) layout(gtx layout.Context, t *termView, focus bool, under backdropLayer) error {
 	gtx.Metric = ts.unzoomed
 	defer clip.Rect(image.Rectangle{Max: gtx.Constraints.Max}).Push(gtx.Ops).Pop()
 	// The arrow stays while the program takes the mouse (tmux, vim).
 	if !t.vt.MouseTracking() {
 		pointer.CursorText.Add(gtx.Ops)
 	}
-	defer op.Offset(image.Pt(gtx.Dp(terminalPadding.Left), gtx.Dp(terminalPadding.Top))).Push(gtx.Ops).Pop()
+	pad := image.Pt(gtx.Dp(terminalPadding.Left), gtx.Dp(terminalPadding.Top))
+	defer op.Offset(pad).Push(gtx.Ops).Pop()
 	size := gridArea(gtx)
 	gtx.Constraints = layout.Exact(size)
 	if err := t.r.Measure(gtx); err != nil {
@@ -568,6 +570,9 @@ func (ts *terminals) layout(gtx layout.Context, t *termView, focus bool) error {
 	ts.mu.Lock()
 	t.background = snap.Background()
 	ts.mu.Unlock()
+	if under.ok {
+		snap = snap.Under(under.op, under.at.Sub(pad))
+	}
 	if _, err := t.r.Draw(gtx, snap.Focus(t.keyboard && gtx.Focused(t.tag))); err != nil {
 		return err
 	}

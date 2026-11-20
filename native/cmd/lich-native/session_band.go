@@ -30,9 +30,9 @@ func (u *window) sessionBand(gtx C, v stageView) int {
 
 // bandedSession lays out session sv over gtx's area under the strip it names
 // itself in, band tall: the terminal or the chat takes what the strip leaves.
-func (u *window) bandedSession(gtx C, sv sessionView, band int, bg color.NRGBA, keys bool) error {
+func (u *window) bandedSession(gtx C, sv sessionView, band int, bg color.NRGBA, keys bool, under backdropLayer) error {
 	if band == 0 {
-		return u.content(gtx, sv, keys)
+		return u.content(gtx, sv, keys, under)
 	}
 	size := gtx.Constraints.Max
 	strip := gtx
@@ -41,7 +41,7 @@ func (u *window) bandedSession(gtx C, sv sessionView, band int, bg color.NRGBA, 
 	u.sessionHeader(strip, th, sv, "", th.Foreground, nil)
 	defer op.Offset(image.Pt(0, band)).Push(gtx.Ops).Pop()
 	gtx.Constraints = layout.Exact(image.Pt(size.X, max(size.Y-band, 0)))
-	return u.content(gtx, sv, keys)
+	return u.content(gtx, sv, keys, under.below(band))
 }
 
 // sessionHeader is a session's header, alone on the stage and as a layout's

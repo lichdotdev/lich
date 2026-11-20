@@ -198,6 +198,7 @@ func (u *window) paneAt(gtx C, v stageView, id string, r image.Rectangle, severa
 	shape := clip.UniformRRect(image.Rectangle{Max: size}, rr)
 	paint.FillShape(gtx.Ops, bg, shape.Op(gtx.Ops))
 	area := shape.Push(gtx.Ops)
+	under := u.backdrops.layout(gtx, u.theme, id, size, bg)
 	on := u.theme.On(bg)
 	head := gtx.Dp(paneHeader)
 	header := gtx
@@ -209,7 +210,7 @@ func (u *window) paneAt(gtx C, v stageView, id string, r image.Rectangle, severa
 	body := gtx
 	body.Constraints = layout.Exact(image.Pt(size.X, max(size.Y-head, 0)))
 	off := op.Offset(image.Pt(0, head)).Push(gtx.Ops)
-	err := u.content(body, sv, focused && u.terminalTakesKeys(gtx))
+	err := u.content(body, sv, focused && u.terminalTakesKeys(gtx), under.below(head))
 	if several && !focused {
 		paint.FillShape(gtx.Ops, ui.Alpha(u.theme.Background, paneDim), clip.Rect{Max: body.Constraints.Max}.Op())
 	}
@@ -364,8 +365,8 @@ func (u *window) applyLayoutStage() {
 }
 
 // content shows session s's terminal or its chat over gtx's area, keys
-// typing into it when it takes them.
-func (u *window) content(gtx C, s sessionView, keys bool) error {
+// typing into it when it takes them, the terminal over under.
+func (u *window) content(gtx C, s sessionView, keys bool, under backdropLayer) error {
 	u.chats.look(s)
 	if s.View == api.ViewChat {
 		if a := u.chats.viewFade(gtx, s.ID); a < 1 {
@@ -388,7 +389,7 @@ func (u *window) content(gtx C, s sessionView, keys bool) error {
 	if a := u.chats.viewFade(gtx, s.ID); a < 1 {
 		defer paint.PushOpacity(gtx.Ops, a).Pop()
 	}
-	err = u.terms.layout(gtx, t, keys)
+	err = u.terms.layout(gtx, t, keys, under)
 	// A closed session frees its terminal off the frame goroutine; one shown
 	// since is replaced on the next frame, which the window must survive.
 	if errors.Is(err, gioterm.ErrClosed) {
