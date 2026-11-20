@@ -93,8 +93,10 @@ type browserPaneUI struct {
 	// and the pane draws the screencast; nativeURL is what it was last sent.
 	native    *webview.Page
 	nativeURL string
-	// nativeSize is the page area's size in the last layout.
+	// nativeSize is the page area's size in the last layout; ringsSent is
+	// the rings the page was last told to draw (ringsScript).
 	nativeSize image.Point
+	ringsSent  string
 }
 
 // agentPress is what the agent's cursor does on the toolbar, from at: the
@@ -358,7 +360,7 @@ func (u *window) addressPill(field ui.InputStyle) layout.Widget {
 func (u *window) browserPage(gtx C, p *browserPaneUI, session, url string, frame browserFrame, focused bool) {
 	size := gtx.Constraints.Max
 	scale := u.pageScale(gtx)
-	p.notes.cuts = p.notes.cuts[:0]
+	p.notes.cuts, p.notes.rings = p.notes.cuts[:0], p.notes.rings[:0]
 	paint.FillShape(gtx.Ops, u.theme.Background, clip.Rect{Max: size}.Op())
 	native := u.placeNativePage(gtx, p, session, url)
 	want := api.BrowserViewOptions{ID: session, W: int(float32(size.X) / scale), H: int(float32(size.Y) / scale), Scale: float64(scale), Drawn: native}

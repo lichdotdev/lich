@@ -18,6 +18,7 @@ import (
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/internal/webview"
+	"github.com/lichdotdev/lich/native/ui"
 	"github.com/lichdotdev/lich/pagescript"
 )
 
@@ -90,6 +91,10 @@ func (u *window) cutNativePages() {
 		}
 		if r := p.native.Placed(); !r.Empty() {
 			p.native.Place(r, pageCuts(r, p.notes.cuts, u.covers))
+		}
+		if script := ringsScript(p.notes.rings); script != p.ringsSent {
+			p.ringsSent = script
+			p.native.Run(script)
 		}
 	}
 }
@@ -258,4 +263,42 @@ func (u *window) scrollNativePage(gtx C, p *browserPaneUI, session string, x, y 
 		return err
 	}})
 	u.probeElement(p, session, x, y, false)
+}
+
+// pageRingsScript draws rings, in CSS pixels, over the page in a layer of its
+// own that takes no pointer, or takes the layer away when there are none.
+const pageRingsScript = `((rings, color, march) => {
+	const id = 'lich-note-rings';
+	let host = document.getElementById(id);
+	if (!rings.length) {
+		if (host) host.remove();
+		return;
+	}
+	if (!host) {
+		host = document.createElement('div');
+		host.id = id;
+		host.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:2147483647';
+		host.attachShadow({mode: 'open'});
+		document.documentElement.appendChild(host);
+	}
+	const svg = rings.map(r => {
+		const box = 'width="' + r.W + '" height="' + r.H + '" rx="' + r.Radius + '"';
+		const dash = 'stroke-dasharray="' + r.Dash + ' ' + r.Dash + '"' + (r.March ? ' class="m"' : '');
+		return '<svg style="position:fixed;overflow:visible;left:' + r.X + 'px;top:' + r.Y + 'px" width="' + r.W + '" height="' + r.H + '">' +
+			'<rect ' + box + ' fill="' + color + '" fill-opacity="' + (r.Fill / 255) + '"/>' +
+			'<rect ' + box + ' fill="none" stroke="#fff" stroke-opacity="0.69" stroke-width="' + (r.Width + 1) + '" ' + dash + '/>' +
+			'<rect ' + box + ' fill="none" stroke="' + color + '" stroke-width="' + r.Width + '" ' + dash + '/></svg>';
+	}).join('');
+	host.shadowRoot.innerHTML = '<style>@keyframes m{to{stroke-dashoffset:' + (-2 * rings[0].Dash) + 'px}}.m{animation:m ' + march + 'ms linear infinite}</style>' + svg;
+})`
+
+// ringsScript is the call that draws rings over the page, the same text for
+// the same rings, so a page is told only of a change.
+func ringsScript(rings []pageRing) string {
+	encoded, err := json.Marshal(rings)
+	if err != nil || len(rings) == 0 {
+		encoded = []byte("[]")
+	}
+	c := notePick
+	return fmt.Sprintf("%s(%s, %q, %d)", pageRingsScript, encoded, fmt.Sprintf("#%02x%02x%02x", c.R, c.G, c.B), ui.RingMarch.Milliseconds())
 }

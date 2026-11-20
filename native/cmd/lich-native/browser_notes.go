@@ -64,7 +64,10 @@ type browserNote struct {
 type browserNotes struct {
 	// cuts are where the notes drew over the page in the last layout, local to
 	// it: a page the window draws itself is left out there (webview.Page.Place).
-	cuts    []image.Rectangle
+	cuts []image.Rectangle
+	// rings are the outlines the notes drew over the page in the last layout,
+	// which a page the window draws itself draws over its own content.
+	rings   []pageRing
 	picking bool
 	// drawing is the pencil, on instead of the pick; stroking is a drag of it
 	// under way. strokes are the sketch, drawn on the page at sketchURL.

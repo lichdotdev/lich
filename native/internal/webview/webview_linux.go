@@ -307,6 +307,18 @@ func lichWebviewEvaluated(handle C.uintptr_t, json, message *C.char) {
 	done <- evaluated{json: C.GoString(json)}
 }
 
+// Run runs script in the page for what it does, not waiting for it.
+func (p *Page) Run(script string) {
+	onGTK(func() {
+		if p.closed {
+			return
+		}
+		s := C.CString(script)
+		defer C.free(unsafe.Pointer(s))
+		C.lich_webview_run(p.page, s)
+	})
+}
+
 // SetZoom draws the page at scale device pixels per CSS pixel.
 func (p *Page) SetZoom(scale float64) {
 	if scale == p.zoom {

@@ -197,9 +197,12 @@ On a page the window draws itself (a WebKitGTK view on X11), the same scripts
 (`pagescript`) run in that page instead of in Chrome, since that is the page the
 person scrolls and points at, and WebKit draws it at the pane's scale, so the
 pointer and the boxes divide by one. The window's drawing over the page (the
-bar or tray, the outlines, the tag, the pins and the note) is cut out of the
-page's X window, so it shows there; while Select is on the page lets the
-pointer through to the window, and the wheel scrolls it from there.
+bar or tray, the tag, the pins and the note) is cut out of the page's X
+window, rounded corners and all, so it shows there; the outlines are drawn by
+the page itself, in a layer of its own that takes no pointer, since a cut
+would show the pane's background under their dashes instead of the element.
+While Select is on the page lets the pointer through to the window, and the
+wheel scrolls it from there.
 
 ## Console errors
 

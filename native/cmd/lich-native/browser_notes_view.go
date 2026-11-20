@@ -101,7 +101,11 @@ func (u *window) notesOverlay(gtx C, p *browserPaneUI, session, pageURL string) 
 			continue
 		}
 		ring := noteRing(gtx, cssRect(note.box, scale))
-		n.cutRing(gtx, ring)
+		if i == lit {
+			n.ringOnPage(gtx, ring, scale, 0x1a, !n.open)
+		} else {
+			n.ringOnPage(gtx, ring, scale, 0x0d, false)
+		}
 		if i == lit {
 			ui.FillRRect(gtx, ring, noteRingRadius, withAlpha(notePick, 0x1a))
 			if n.open {
@@ -116,7 +120,7 @@ func (u *window) notesOverlay(gtx C, p *browserPaneUI, session, pageURL string) 
 	}
 	if n.open && n.editing < 0 {
 		ring := noteRing(gtx, cssRect(n.draftBox(), scale))
-		n.cutRing(gtx, ring)
+		n.ringOnPage(gtx, ring, scale, 0x1a, false)
 		ui.FillRRect(gtx, ring, noteRingRadius, withAlpha(notePick, 0x1a))
 		// Still while the note is written: the pick is made, and redrawing the
 		// window each frame for it cost a third of a core (measured 2026-10-27).
@@ -124,7 +128,7 @@ func (u *window) notesOverlay(gtx C, p *browserPaneUI, session, pageURL string) 
 	}
 	if n.picking && !n.open && n.hover.Label != "" {
 		ring := noteRing(gtx, cssRect(n.hoverBox(gtx.Now), scale))
-		n.cutRing(gtx, ring)
+		n.ringOnPage(gtx, ring, scale, 0x1a, true)
 		if n.gliding(gtx.Now) {
 			// Every frame for the glide's moment: the march's 20 a second
 			// would step it.
@@ -169,7 +173,7 @@ func (u *window) hoverTag(gtx C, n *browserNotes, r image.Rectangle, el api.Brow
 	}
 	at.X = min(max(at.X, 0), gtx.Constraints.Max.X-d.Size.X)
 	at.Y = min(max(at.Y, 0), gtx.Constraints.Max.Y-d.Size.Y)
-	n.cut(image.Rectangle{Min: at, Max: at.Add(d.Size)})
+	n.cut(image.Rectangle{Min: at, Max: at.Add(d.Size)}, gtx.Dp(ui.RadiusMD), gtx.Dp(ui.RadiusMD))
 	defer op.Offset(at).Push(gtx.Ops).Pop()
 	paint.FillShape(gtx.Ops, noteTagBg, clip.UniformRRect(image.Rectangle{Max: d.Size}, gtx.Dp(ui.RadiusMD)).Op(gtx.Ops))
 	call.Add(gtx.Ops)
@@ -193,7 +197,7 @@ func (u *window) notePin(gtx C, n *browserNotes, i int, r image.Rectangle, lit b
 	at := image.Pt(r.Min.X+gtx.Dp(noteRingRadius), r.Min.Y-d.Size.Y)
 	at.X = min(max(at.X, 0), page.X-d.Size.X)
 	at.Y = min(max(at.Y, 0), page.Y-d.Size.Y)
-	n.cut(image.Rectangle{Min: at, Max: at.Add(d.Size)})
+	n.cut(image.Rectangle{Min: at, Max: at.Add(d.Size)}, gtx.Dp(ui.Space(1)), 0)
 	defer op.Offset(at).Push(gtx.Ops).Pop()
 	call.Add(gtx.Ops)
 }
@@ -271,7 +275,7 @@ func (u *window) notePopover(gtx C, p *browserPaneUI, scale float32) {
 	room.Y -= n.docked
 	el := cssRect(n.draftBox(), scale)
 	at := notePopoverAt(el, d.Size, room, gtx.Dp(ui.Space(3)))
-	n.cut(image.Rectangle{Min: at, Max: at.Add(d.Size)})
+	n.cut(image.Rectangle{Min: at, Max: at.Add(d.Size)}, gtx.Dp(ui.RadiusMD), gtx.Dp(ui.RadiusMD))
 	defer op.Offset(at).Push(gtx.Ops).Pop()
 	defer noteEnter(gtx, n.openedAt, el.Sub(at), d.Size)()
 	shape := clip.UniformRRect(image.Rectangle{Max: d.Size}, gtx.Dp(ui.RadiusMD))
@@ -445,7 +449,7 @@ func (u *window) notesTray(gtx C, p *browserPaneUI, session string) {
 	page := gtx.Constraints.Max
 	size := image.Pt(max(page.X-2*edge, 0), height)
 	at := image.Pt(edge, page.Y-height-edge)
-	n.cut(image.Rectangle{Min: at, Max: at.Add(size)})
+	n.cut(image.Rectangle{Min: at, Max: at.Add(size)}, gtx.Dp(paneRadius), gtx.Dp(paneRadius))
 	defer op.Offset(at).Push(gtx.Ops).Pop()
 	u.spot(gtx, tourBrowserNotes, func(C) D { return D{Size: size} })
 	defer noteEnter(gtx, n.trayShown, image.Rect(size.X/2, size.Y, size.X/2, size.Y+1), size)()

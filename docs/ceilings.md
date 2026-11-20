@@ -1820,9 +1820,11 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   the window's drawing stand over the page.
 - **Select on a page the window draws itself shows the window's drawing through cuts in the page**
   (`native/internal/webview`, `docs/browser-tab.md`): on X11 the WebKitGTK page is a child window over the pane,
-  and the window's drawing over it shows only where that window is cut away (X SHAPE). An outline is cut along
-  its band, so its faint fill over the element is lost and the band shows the pane's background behind the dashes;
-  a menu, a popover (the page zoom's) or a tooltip that falls over the page has no cut and stays under it. Draw is
+  and the window's drawing over it shows only where that window is cut away (X SHAPE). The outlines are drawn into
+  the page instead, in a layer of their own appended to its document, which the page's own scripts can see; a menu,
+  a popover (the page zoom's) or a tooltip that falls over the page has no cut and stays under it. A cut shows the
+  window's drawing only while the window is not fullscreen: fullscreen, XWayland hands the window's frame to the
+  compositor whole and the cuts stay dark (measured on Umbriel with the NVIDIA GPU, 2026-11-19). Draw is
   not carried yet: its strokes draw under the page. The element is read in WebKit, whose context keeps no cookies
   of Chrome's, so on a page the person signed into only one of them the selector the agent gets may not match the
   agent's page. macOS will need the overlay plane on top of the WKWebView, a `hitTest:` that lets clicks fall

@@ -36,6 +36,7 @@ func (*Page) PointerToWindow()                              {}
 func (*Page) PointerToPage()                                {}
 func (*Page) URL() string                                   { return "" }
 func (*Page) Eval(context.Context, string) (string, error)  { return "", errors.ErrUnsupported }
+func (*Page) Run(string)                                    {}
 func (*Page) SetZoom(float64)                               {}
 func (*Page) Hide()                                         {}
 func (*Page) Navigate(string)                               {}

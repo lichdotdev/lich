@@ -269,6 +269,11 @@ void lich_webview_eval(LichPage *page, const char *script, uintptr_t handle) {
 	webkit_web_view_evaluate_javascript(WEBKIT_WEB_VIEW(page->view), script, -1, NULL, NULL, NULL, evaluated, (gpointer)handle);
 }
 
+// lich_webview_run runs script in the page's own world for what it does.
+void lich_webview_run(LichPage *page, const char *script) {
+	webkit_web_view_evaluate_javascript(WEBKIT_WEB_VIEW(page->view), script, -1, NULL, NULL, NULL, NULL, NULL);
+}
+
 // lich_webview_zoom draws scale device pixels per CSS pixel, as Chrome draws
 // the screencast, so the window's pointer and boxes divide by the same scale.
 void lich_webview_zoom(LichPage *page, double scale) {

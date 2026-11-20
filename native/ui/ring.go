@@ -14,10 +14,11 @@ import (
 )
 
 const (
-	ringDash = unit.Dp(5)
-	// ringMarch is how long the dashes of a MarchingRing take to move one dash
+	// RingDash is a dashed ring's dash, and the gap after it.
+	RingDash = unit.Dp(5)
+	// RingMarch is how long the dashes of a MarchingRing take to move one dash
 	// and gap along.
-	ringMarch = 600 * time.Millisecond
+	RingMarch = 600 * time.Millisecond
 	// ringMarchFrame paces the march at 20 frames a second: every frame of it
 	// redraws the whole window, which at the display's rate cost 30 to 60% of
 	// a core (measured 2026-10-27).
@@ -37,14 +38,14 @@ func DashedRing(gtx C, ring image.Rectangle, radius, width unit.Dp, c, halo colo
 
 // MarchingRing is a DashedRing whose dashes move with the clock.
 func MarchingRing(gtx C, ring image.Rectangle, radius, width unit.Dp, c, halo color.NRGBA) {
-	dash := float32(gtx.Dp(ringDash))
-	cycle := gtx.Now.UnixNano() % int64(ringMarch)
+	dash := float32(gtx.Dp(RingDash))
+	cycle := gtx.Now.UnixNano() % int64(RingMarch)
 	gtx.Execute(op.InvalidateCmd{At: gtx.Now.Add(ringMarchFrame)})
-	dashedRing(gtx, ring, radius, width, c, halo, 2*dash*float32(cycle)/float32(ringMarch))
+	dashedRing(gtx, ring, radius, width, c, halo, 2*dash*float32(cycle)/float32(RingMarch))
 }
 
 func dashedRing(gtx C, ring image.Rectangle, radius, width unit.Dp, c, halo color.NRGBA, phase float32) {
-	dash := float32(gtx.Dp(ringDash))
+	dash := float32(gtx.Dp(RingDash))
 	rr := roundedRect{min: f32.Pt(float32(ring.Min.X), float32(ring.Min.Y)), max: f32.Pt(float32(ring.Max.X), float32(ring.Max.Y)), radius: float32(gtx.Dp(radius))}
 	w := float32(gtx.Dp(width))
 	// One stroke a dash: Gio's stroker bridges the subpaths of one path, which
