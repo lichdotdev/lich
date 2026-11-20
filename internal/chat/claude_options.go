@@ -59,13 +59,15 @@ type claudeRunning struct {
 // readInitialize keeps what initialize says the chat can be set to.
 func (d *claudeDriver) readInitialize(body json.RawMessage, chosen string) {
 	var init struct {
-		Models []claudeModel `json:"models"`
-		Mode   string        `json:"current_permission_mode"`
+		Models   []claudeModel   `json:"models"`
+		Mode     string          `json:"current_permission_mode"`
+		Commands []claudeCommand `json:"commands"`
 	}
 	_ = json.Unmarshal(body, &init)
 	d.mu.Lock()
 	d.run.models, d.run.mode, d.run.chosen = init.Models, init.Mode, chosen
 	d.mu.Unlock()
+	d.listCommands(init.Commands)
 }
 
 // readApplied asks the process which model and effort it runs on.

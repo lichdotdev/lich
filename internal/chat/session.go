@@ -91,6 +91,7 @@ type chatSession struct {
 	exited    chan struct{}
 	bound     string
 	opts      []api.ChatOption
+	cmds      []api.ChatCommand
 	// next are the messages for the turns after this one, oldest first: one a
 	// provider that takes none during a turn is sent once the turn ends, and
 	// those the relay delivered while it ran.

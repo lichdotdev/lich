@@ -100,7 +100,8 @@ func (f *fake) claude(args []string) {
 		case "control_request":
 			f.claudeControl(run, m)
 		case "user":
-			f.send(map[string]any{"type": "system", "subtype": "init", "session_id": session, "model": run.model, "permissionMode": run.mode})
+			f.send(map[string]any{"type": "system", "subtype": "init", "session_id": session, "model": run.model, "permissionMode": run.mode,
+				"skills": []any{"deploy"}, "terminal_slash_commands": []any{"doctor"}})
 			f.claudeTurn(run, str(m, "message", "content"))
 		}
 	}
@@ -194,6 +195,7 @@ func (f *fake) acp(args []string) {
 			f.result(id, map[string]any{"agentCapabilities": map[string]any{"loadSession": os.Getenv("LICH_CHAT_FAKE_NOLOAD") == ""}})
 		case "session/new":
 			f.result(id, opts.session(map[string]any{"sessionId": "ses-new"}))
+			f.acpCommands()
 		case "session/set_config_option", "session/set_model", "session/set_mode":
 			f.acpSet(opts, id, method, params)
 		case "session/load":

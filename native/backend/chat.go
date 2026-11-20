@@ -17,6 +17,7 @@ type (
 	ChatTurn       = api.ChatTurn
 	ChatOption     = api.ChatOption
 	ChatChoice     = api.ChatChoice
+	ChatCommand    = api.ChatCommand
 )
 
 // ChatKinds is the providers whose sessions can be drawn as a chat.
@@ -63,6 +64,11 @@ func (c *Client) ChatReply(ctx context.Context, id, itemID string, reply ChatQRe
 // ChatOptions is what session id's chat can be set to now.
 func (c *Client) ChatOptions(ctx context.Context, id string) ([]ChatOption, error) {
 	return callMethod(ctx, c, api.ChatOptions, api.SessionIDOptions{ID: id})
+}
+
+// ChatCommands is what session id's provider takes typed at its prompt.
+func (c *Client) ChatCommands(ctx context.Context, id string) ([]ChatCommand, error) {
+	return callMethod(ctx, c, api.ChatCommands, api.SessionIDOptions{ID: id})
 }
 
 // ChatSetOption sets option optionID of session id's chat to the choice value.

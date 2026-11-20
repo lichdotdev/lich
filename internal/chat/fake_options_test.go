@@ -53,7 +53,7 @@ func (f *fake) claudeControl(run *fakeClaude, m map[string]any) {
 	}
 	switch str(m, "request", "subtype") {
 	case "initialize":
-		ok(map[string]any{"models": fakeClaudeModels, "current_permission_mode": run.mode})
+		ok(map[string]any{"models": fakeClaudeModels, "current_permission_mode": run.mode, "commands": fakeClaudeCommands})
 	case "get_settings":
 		ok(map[string]any{"applied": map[string]any{"model": run.model, "effort": run.effort}})
 	case "set_model":

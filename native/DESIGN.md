@@ -452,6 +452,14 @@ draws none while it grows in, because the room above the rows is measured in the
   apart, is one step; a paste, a cut or a replaced selection is a step of its own. Sending a message, or a refused
   one coming back, forgets the history. Only the focused composer takes the keys: the terminal's Ctrl+Z is still
   the agent's suspend, and the sketch, the browser pane and the resolver keep theirs under their own focus.
+  `/` at the start of a line opens the provider's commands and skills over the box, as wide as it and `Space(2)`
+  above it, on the popover surface (`ui.PopoverPanel`, which takes no focus: the box keeps the keyboard), up to
+  320px and scrolling past it (`chat_slash.go`). A row is the model picker's: a glyph, `square-slash` for a command
+  and `wand-sparkles` for a skill where the provider tells them apart, the command in medium with its arguments
+  muted and the description muted on the rest of the line, lit on `Accent` under the cursor. Typing filters it,
+  names that start with what was typed first; the arrows walk it, Enter or Tab put the command in place of what
+  was typed, with a space, unsent, and Escape shuts it until the start changes. A path, a slash mid-line or a
+  start that matches nothing opens nothing, so Enter sends.
   A file dragged over a session drawn as a chat lights the terminal's drop hint over the whole session, and dropped
   it types the paths the terminal would paste at the composer's caret, quoted the same way, an image included
   (`dropInChat`); the chat has no attachments, so the attach "+" types the picked file's path there the same way.

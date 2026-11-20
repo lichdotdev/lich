@@ -45,6 +45,7 @@ browser.Text(BrowserTextOptions) None
 browser.Type(BrowserTypeOptions) None
 chat.Answer(ChatAnswerOptions) None
 chat.Cancel(SessionIDOptions) None
+chat.Commands(SessionIDOptions) []ChatCommand
 chat.History(SessionIDOptions) []ChatItem
 chat.Kinds(None) []string
 chat.Options(SessionIDOptions) []ChatOption
@@ -317,6 +318,7 @@ event browser-agent BrowserAgentAct
 event browser-download BrowserDownload
 event browser-state BrowserState
 event browser:frame:<id> BrowserFrame
+event chat-commands ChatCommandsUpdate
 event chat-item ChatItemUpdate
 event chat-options ChatOptionsUpdate
 event chat-turn ChatTurn
@@ -626,6 +628,13 @@ ChatAnswerOptions {
 	id string
 	itemId string
 	optionId string
+}
+
+ChatCommand {
+	text string
+	description,omitempty string
+	hint,omitempty string
+	skill,omitempty bool
 }
 
 ChatItem {
@@ -2099,6 +2108,11 @@ BrowserDownload {
 BrowserFrame {
 	tab string
 	data string
+}
+
+ChatCommandsUpdate {
+	sessionId string
+	commands []ChatCommand
 }
 
 ChatItemUpdate {

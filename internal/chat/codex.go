@@ -31,6 +31,8 @@ type codexDriver struct {
 	// asks is the item each server request still waiting on the person
 	// shows, by the request's id: serverRequest/resolved names only the id.
 	asks map[string]string
+	// skills are the skills skills/list gave, their paths by name.
+	skills map[string]string
 }
 
 func newCodexDriver(c *chatSession) *codexDriver {
@@ -96,6 +98,7 @@ func (d *codexDriver) open(ctx context.Context, resume string) (string, error) {
 	if err := d.readModels(ctx); err != nil {
 		d.c.conv.notice("Codex did not list its models: " + err.Error())
 	}
+	d.listSkills(ctx)
 	if resume == "" {
 		return d.start(ctx)
 	}
@@ -189,7 +192,7 @@ func textInput(text string) []map[string]any {
 // prompt starts a turn, carrying what the person set since the last one:
 // turn/start's overrides hold for the turns after it too (measured).
 func (d *codexDriver) prompt(text string) error {
-	params := map[string]any{"threadId": d.threadID(), "input": textInput(text)}
+	params := map[string]any{"threadId": d.threadID(), "input": d.input(text)}
 	staged := d.staged()
 	maps.Copy(params, staged.params())
 	ctx, cancel := context.WithTimeout(context.Background(), callTimeout)
@@ -228,7 +231,7 @@ func (d *codexDriver) follow(text string) error {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), callTimeout)
 	defer cancel()
-	_, err := d.call(ctx, "turn/steer", map[string]any{"threadId": d.threadID(), "expectedTurnId": turn, "input": textInput(text)})
+	_, err := d.call(ctx, "turn/steer", map[string]any{"threadId": d.threadID(), "expectedTurnId": turn, "input": d.input(text)})
 	return err
 }
 
@@ -325,6 +328,13 @@ func (d *codexDriver) notification(method string, params json.RawMessage) {
 		d.settingsUpdated(params)
 	case "serverRequest/resolved":
 		d.resolved(params)
+	case "skills/changed":
+		// Off the reader: the call's answer comes in on it.
+		go func() {
+			ctx, cancel := context.WithTimeout(context.Background(), callTimeout)
+			defer cancel()
+			d.listSkills(ctx)
+		}()
 	}
 }
 

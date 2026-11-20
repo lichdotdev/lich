@@ -92,6 +92,8 @@ type chatView struct {
 	asked   string
 	// undo is the composer's undo and redo, forgotten when a message is sent.
 	undo ui.EditHistory
+	// slash is the list of the provider's commands over the composer.
+	slash chatSlash
 	// unsent is a message the backend refused, handed back to an empty
 	// editor on the next frame.
 	mu     sync.Mutex
@@ -335,6 +337,7 @@ func (u *window) chatActs(gtx C, p *chatPane, sv sessionView, keys, working bool
 	if asking != nil {
 		u.questionActs(gtx, p, sv, asking)
 	}
+	p.slash.update(gtx, &p.editor, u.model.chat.commandsOf(sv.ID), !keys || asking != nil || p.picker.panel.Opened())
 	// The model panel's search holds the keys while the panel is open.
 	switch {
 	case !keys || p.picker.panel.Opened():
@@ -452,7 +455,10 @@ func (u *window) chatComposer(gtx C, th *ui.Theme, p *chatPane, sv sessionView, 
 			ta.MaxHeight, ta.MinHeight, ta.Radius, ta.Steady, ta.History = chatComposerMax, chatComposerMin, ui.RadiusLG, true, &p.undo
 			ta.Size, ta.Leading, ta.PadX, ta.PadY = markdown.BodySize, markdown.BodySize*markdown.LineHeightScale, chatComposerPadX, chatComposerPadY
 			ta.Foot = u.chatChips(th, p, sv, working, ft)
-			return ta.Layout(gtx)
+			d := ta.Layout(gtx)
+			gtx.Constraints.Max.X = d.Size.X
+			p.slash.layout(gtx, th)
+			return d
 		}),
 		layout.Rigid(func(gtx C) D { return u.chatCrumbs(gtx, th, sv, in, ft) }),
 	)

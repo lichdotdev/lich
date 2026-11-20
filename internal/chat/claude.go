@@ -34,6 +34,10 @@ type claudeDriver struct {
 	held        map[string]string
 	interrupted bool
 	run         claudeRunning
+	// cmds are the commands initialize listed, skills those system/init
+	// names skills and terminalOnly those it says only the TUI runs.
+	cmds                 []claudeCommand
+	skills, terminalOnly []string
 }
 
 type claudeControl struct {
@@ -64,6 +68,9 @@ type claudeLine struct {
 	// system/init and system/status
 	Model          string `json:"model"`
 	PermissionMode string `json:"permissionMode"`
+	// system/init
+	Skills           []string `json:"skills"`
+	TerminalCommands []string `json:"terminal_slash_commands"`
 	// result
 	IsError  bool     `json:"is_error"`
 	Result   string   `json:"result"`
@@ -211,6 +218,7 @@ func (d *claudeDriver) handle(raw []byte) {
 			d.expected = ""
 			d.mu.Unlock()
 			d.c.bind(line.SessionID, expected)
+			d.markCommands(line.Skills, line.TerminalCommands)
 		}
 		d.running(line.Model, line.PermissionMode)
 	case "result":
