@@ -325,46 +325,33 @@ func TestAGroupTookUntilItsLastCallEnded(t *testing.T) {
 	}
 }
 
-// The calls still running stand under a folded group, each until it ends:
-// with none running, the group shows no call until it is opened.
-func TestAFoldedGroupShowsTheCallsStillRunning(t *testing.T) {
+// While the model is in a run of tool calls its group stands open with every
+// call of it, ended and running alike; once it writes text again, or the turn
+// is over, the group is shut, and one read back from an ended turn starts so.
+func TestAGroupShowsEveryCallWhileTheModelCallsTools(t *testing.T) {
 	items := []backend.ChatItem{
 		{ID: "u1", Kind: api.ItemUser, Turn: 1, At: novDay(18, 17, 58), Text: "go"},
 		{ID: "k1", Kind: api.ItemTool, Turn: 1, At: novDay(18, 17, 58), Tool: &backend.ChatToolCall{Name: "Read", Title: "a.go", State: api.ToolDone}},
 		{ID: "k2", Kind: api.ItemTool, Turn: 1, At: novDay(18, 17, 59), Tool: &backend.ChatToolCall{Name: "Bash", Title: "go test", State: api.ToolRunning}},
-		{ID: "k3", Kind: api.ItemTool, Turn: 1, At: novDay(18, 17, 59), Tool: &backend.ChatToolCall{Name: "Grep", Title: "TODO", State: api.ToolRunning}},
+		{ID: "k3", Kind: api.ItemTool, Turn: 1, At: novDay(18, 17, 59), Tool: &backend.ChatToolCall{Name: "Grep", Title: "TODO", State: api.ToolDone}},
 	}
 	_, r := lifeFrames(t, items, true)
 	r.frame()
-	for _, label := range []string{"Bash", "go test", "Grep", "TODO"} {
+	for _, label := range []string{"Read", "Bash", "go test", "Grep", "TODO"} {
 		if !r.shows(label) {
-			t.Errorf("no running %q under the folded group:\n%s", label, r.drawn())
+			t.Errorf("no %q under the group of the run in flight:\n%s", label, r.drawn())
 		}
 	}
-	if r.shows("Read") {
-		t.Error("a call that ended stands under the folded group")
-	}
-	// A call that ends under the folded group goes at once, as chat motion has
-	// it, and the one still running stays.
-	u, r := lifeFrames(t, items, true)
-	r.frame()
-	r.frame()
-	u.model.chat.apply(api.ChatItemUpdate{SessionID: "s1", Item: backend.ChatItem{ID: "k3", Kind: api.ItemTool, Turn: 1, At: novDay(18, 17, 59),
-		Tool: &backend.ChatToolCall{Name: "Grep", Title: "TODO", State: api.ToolDone, Ended: novDay(18, 17, 59) + 476}}})
-	r.now = r.now.Add(frameStep)
-	r.frame()
-	if r.shows("Grep") || !r.shows("Bash") {
-		t.Errorf("the call that ended stays, or the running one left:\n%s", r.drawn())
-	}
-	ended := slices.Clone(items)
-	ended[3].Tool = &backend.ChatToolCall{Name: "Grep", Title: "TODO", State: api.ToolDone, Ended: novDay(18, 17, 59) + 476}
-	ended[2].Tool = &backend.ChatToolCall{Name: "Bash", Title: "go test", State: api.ToolDone}
-	for _, running := range []bool{true, false} {
-		_, r = lifeFrames(t, ended, running)
+	answered := append(slices.Clone(items), backend.ChatItem{ID: "a1", Kind: api.ItemAgent, Turn: 1, At: novDay(18, 17, 59), Text: "done"})
+	for name, c := range map[string]struct {
+		items   []backend.ChatItem
+		running bool
+	}{"text after the run": {answered, true}, "an ended turn": {items, false}} {
+		_, r = lifeFrames(t, c.items, c.running)
 		r.frame()
 		for _, label := range []string{"Read", "Bash", "Grep"} {
 			if r.shows(label) {
-				t.Errorf("running %v: %q, which ended, stands under the folded group:\n%s", running, label, r.drawn())
+				t.Errorf("%s: %q stands under a group whose run is over:\n%s", name, label, r.drawn())
 			}
 		}
 	}

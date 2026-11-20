@@ -104,23 +104,29 @@ type chatFold struct {
 	// body folds a thought's text; calls fold a group's calls each, by id,
 	// and enter brings in the ones that come once the group is drawn.
 	body  ui.Collapse
-	calls map[string]*chatCall
+	calls map[string]*ui.Collapse
 	enter ui.Presence
-	// clicked is when the fold was last clicked.
-	clicked time.Time
+	// turned is when the fold last opened or shut.
+	turned time.Time
+	// calling is whether the group's turn was in a run of tool calls the
+	// frame before.
+	calling bool
 }
 
 // shut reports whether the fold is folded and done folding, so what it
 // hides need not be laid out.
 func (f *chatFold) shut(now time.Time) bool {
-	return !f.open && now.Sub(f.clicked) >= ui.CollapseDuration
+	return !f.open && now.Sub(f.turned) >= ui.CollapseDuration
 }
 
-// chatCall is one call of a group: its fold, and whether it stood open for
-// running the frame before.
-type chatCall struct {
-	fold    ui.Collapse
-	running bool
+// follow opens a group as its turn starts a run of tool calls and shuts it
+// as the run ends, when the model writes text or the turn is over. Only the
+// run's edges move it, so a click in between holds until the run ends.
+func (f *chatFold) follow(now time.Time, calling bool) {
+	if calling != f.calling {
+		f.open, f.turned = calling, now
+	}
+	f.calling = calling
 }
 
 type chatAnswer struct{ item, option string }
@@ -200,22 +206,16 @@ func lastKey(keys []string) string {
 	return keys[len(keys)-1]
 }
 
-// call is the group's call id, which stands open for running while the group
-// is folded. A call that starts or ends running in a folded group shows or
-// goes at once: only a click plays the fold.
-func (f *chatFold) call(id string, running bool) *chatCall {
+// call is the fold of the group's call id.
+func (f *chatFold) call(id string) *ui.Collapse {
 	if f.calls == nil {
-		f.calls = map[string]*chatCall{}
+		f.calls = map[string]*ui.Collapse{}
 	}
 	c, ok := f.calls[id]
 	if !ok {
-		c = new(chatCall)
+		c = new(ui.Collapse)
 		f.calls[id] = c
 	}
-	if c.running != running && !f.open {
-		c.fold = ui.Collapse{}
-	}
-	c.running = running
 	return c
 }
 

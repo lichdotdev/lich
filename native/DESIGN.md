@@ -343,8 +343,11 @@ draws none while it grows in, because the room above the rows is measured in the
   ran in muted mono and how it ended: nothing while it runs, then a check in `TonePass` or a cross in
   `Destructive` with the output's first line. A time that stands still reads in milliseconds under a second
   ("476ms"), the line's "Worked for" too; a call whose end nobody reported (most histories) shows no time. Its
-  diff stands under it as a thread's hunk is drawn. Folded, the line keeps the calls still running under it, so a
-  call shows the moment it starts, and each leaves once it ends: what ran is the fold's to open. Only
+  diff stands under it as a thread's hunk is drawn. While the model is in a run of calls (in the turn in flight,
+  the last call or text it wrote is a call; a thought, a permission or a question in between does not end it) the
+  group stands open with every call of the run, ended and running, so none leaves between one and the next; it
+  shuts when the model writes text again or the turn ends, and stays shut for the person to open. A group read
+  back from an ended turn starts shut. A click during the run holds until the run ends (`chatFold.follow`). Only
   the turn in flight is alive: a call an ended turn left running (interrupted) stops with it, its time up to the
   turn's end, or none where nobody saw it.
 - **A turn's closing line** stands once, after the last item of the conversation's last turn, when that turn
@@ -376,8 +379,8 @@ draws none while it grows in, because the room above the rows is measured in the
   plays its own entry or exit. A question answered turns its card into its answer lines: the card fades out in
   120ms, the lines fade in from 80ms to 200ms, and the row's height runs down to theirs in 200ms. A fold, a
   thought's text or a group's calls, opens and shuts with `ui.Collapse`, 200ms, its first draw landing where it
-  stands; a call that comes into an open group enters as a row does, and one that starts or stops running
-  under a folded group shows or goes at once. Sending a message while the list is scrolled up runs it back
+  stands, and a group opens and shuts that way at the edges of its run of calls; a call that comes into an open
+  group enters as a row does. Sending a message while the list is scrolled up runs it back
   to its end in 220ms ease-out and pins it there. Switching between GUI and TUI fades the view that comes in
   from the background in 150ms ease-out, from the first frame that draws it; the one that leaves goes at once.
   The chevrons, the option highlight, the Send and Stop swap, the composer's height, a tool's state, the copy

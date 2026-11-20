@@ -32,7 +32,9 @@ type chatRow struct {
 	lead, bare, avatar bool
 	// live marks the row's item as alive: the thought being thought, the
 	// answer being written, a turn's tool calls while one of them runs.
-	live bool
+	// calling marks a work row whose turn is in a run of tool calls: in the
+	// turn in flight, the last call or text the model wrote is a call.
+	live, calling bool
 	// ended is when a work row's turn last did something, unix ms.
 	ended int64
 	// turn, tools and took are a work row's: its tool calls and how long the
@@ -120,7 +122,8 @@ func chatRows(items []backend.ChatItem, running bool, now time.Time) []chatRow {
 			end = now.UnixMilli()
 		}
 		work := chatRow{kind: chatRowWork, avatar: opener[it.Turn] == "", turn: it.Turn, tools: sp.tools, ended: sp.end, live: running && it.Turn == last && toolRunning(sp.tools),
-			took: time.Duration(max(end-sp.start, 0)) * time.Millisecond}
+			calling: running && it.Turn == last && callingTools(items),
+			took:    time.Duration(max(end-sp.start, 0)) * time.Millisecond}
 		if opener[it.Turn] == "" {
 			opener[it.Turn] = "work"
 		}
@@ -140,6 +143,21 @@ func chatRows(items []backend.ChatItem, running bool, now time.Time) []chatRow {
 		rows = append(rows, live)
 	}
 	return rows
+}
+
+// callingTools is whether the last of items the model wrote, a call or text,
+// is a call: a thought, a permission or a question between two calls does not
+// end the run.
+func callingTools(items []backend.ChatItem) bool {
+	for _, it := range slices.Backward(items) {
+		switch it.Kind {
+		case api.ItemTool:
+			return true
+		case api.ItemAgent, api.ItemUser:
+			return false
+		}
+	}
+	return false
 }
 
 // toolRunning is whether any of calls has not ended.

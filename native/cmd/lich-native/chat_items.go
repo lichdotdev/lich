@@ -180,7 +180,7 @@ func dayLabel(t, now time.Time) string {
 // update takes the fold's click before what it opens is laid out.
 func (f *chatFold) update(gtx C) {
 	if f.click.Clicked(gtx) {
-		f.open, f.clicked = !f.open, gtx.Now
+		f.open, f.turned = !f.open, gtx.Now
 	}
 }
 
@@ -247,9 +247,10 @@ func chatThought(gtx C, th *ui.Theme, f *chatFold, it backend.ChatItem, live boo
 // chatWork is a turn's tool calls folded into one line, opening on a line per
 // call under a connector. While a call runs the line shimmers, with the
 // number of calls and the time the turn has run; once it is over it says how
-// long the turn took, how many calls it made and when it ended. Folded, it
-// keeps the calls still running under it, each until it ends.
+// long the turn took, how many calls it made and when it ended. It stands
+// open while its turn is in a run of calls and shuts when the run ends.
 func (u *window) chatWork(gtx C, th *ui.Theme, f *chatFold, sv sessionView, r chatRow) D {
+	f.follow(gtx.Now, r.calling)
 	f.update(gtx)
 	label := func(gtx C, fg color.NRGBA) D {
 		if r.live {
@@ -278,44 +279,30 @@ func (u *window) chatWork(gtx C, th *ui.Theme, f *chatFold, sv sessionView, r ch
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, append(children, chatCalls(gtx, th, f, r)...)...)
 }
 
-// chatCalls are a group's calls, each in a fold of its own: open with the
-// group, and while the turn runs, folded or not, the calls still running.
-// A call that comes once the group is drawn enters as a row does.
+// chatCalls are a group's calls, each in a fold of its own that opens and
+// shuts with the group. A call that comes once the group is drawn enters as a
+// row does.
 func chatCalls(gtx C, th *ui.Theme, f *chatFold, r chatRow) []layout.FlexChild {
 	ids := make([]string, len(r.tools))
-	open := make([]bool, len(r.tools))
-	first, last := -1, -1
 	for i, it := range r.tools {
 		ids[i] = it.ID
-		running := f.call(it.ID, r.live && callRunning(it)).running
-		open[i] = f.open || running
-		if open[i] {
-			if first < 0 {
-				first = i
-			}
-			last = i
-		}
-	}
-	// A group folding shut takes all its calls with it.
-	if last < 0 {
-		first, last = 0, len(r.tools)-1
 	}
 	f.enter.Update(gtx.Now, ids)
 	children := make([]layout.FlexChild, 0, len(r.tools))
 	for i, it := range r.tools {
 		children = append(children, layout.Rigid(func(gtx C) D {
 			return f.enter.LayoutFlat(gtx, it.ID, func(gtx C) D {
-				fold := &f.calls[it.ID].fold
-				if !open[i] && f.shut(gtx.Now) {
+				fold := f.call(it.ID)
+				if f.shut(gtx.Now) {
 					return fold.Layout(gtx, false, chatNothing)
 				}
-				return fold.Layout(gtx, open[i], func(gtx C) D {
+				return fold.Layout(gtx, f.open, func(gtx C) D {
 					var top unit.Dp
-					if i == first {
+					if i == 0 {
 						top = ui.Space(1)
 					}
 					return layout.Inset{Top: top}.Layout(gtx, func(gtx C) D {
-						return chatBranch(gtx, th, i == last, func(gtx C) D { return chatTool(gtx, th, it, r.live) })
+						return chatBranch(gtx, th, i == len(r.tools)-1, func(gtx C) D { return chatTool(gtx, th, it, r.live) })
 					})
 				})
 			})
