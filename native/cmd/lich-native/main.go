@@ -886,6 +886,10 @@ func sidebarActive(v stageView) string {
 	return v.active.ID
 }
 
+// editorBackdropID names the stage editor's backdrop: one field, whatever
+// file it shows.
+const editorBackdropID = "editor"
+
 // stageBackdropID names the stage island's backdrop: the session alone on
 // it, or the stage itself while it holds none.
 func stageBackdropID(v stageView) string {
@@ -915,7 +919,11 @@ func (u *window) island(gtx C, v stageView, termWidth, termHeight int) error {
 	paint.Fill(gtx.Ops, fill)
 	on := u.theme.On(fill)
 	defer ui.IslandBorder(gtx, size, r, on.Over(on.Border))
-	if !v.hasConsole && !v.hasEditor {
+	switch {
+	case v.hasEditor:
+		// the editor's backdrop holds still: code is read, not watched
+		u.backdrops.layout(gtx, u.theme, editorBackdropID, size, fill, 1, backdropMark{}, false)
+	case !v.hasConsole:
 		u.backdrop(gtx, stageBackdropID(v), size, fill, u.sessionBand(gtx, v))
 	}
 	if u.homeOpen.Clicked(gtx) {

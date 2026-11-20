@@ -257,7 +257,12 @@ func (u *window) editorIsland(gtx C, v stageView) error {
 	fill := u.islandColor(v)
 	th := u.theme.On(fill)
 	code := u.code
-	code.Background, code.GutterBackground = fill, fill
+	// The island paints fill and the backdrop over it; the editor paints its
+	// ground in fill with no alpha, which lets the dots through, and still
+	// mixes its selection and line tints over fill's color.
+	ground := fill
+	ground.A = 0
+	code.Background, code.GutterBackground = ground, ground
 	inject := func(string) bool { return false }
 	if id := u.model.referenceTarget(v.editor); id != "" {
 		inject = u.injector(id)
