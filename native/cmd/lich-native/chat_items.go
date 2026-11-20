@@ -248,7 +248,7 @@ func chatThought(gtx C, th *ui.Theme, f *chatFold, it backend.ChatItem, live boo
 // call under a connector. While a call runs the line shimmers, with the
 // number of calls and the time the turn has run; once it is over it says how
 // long the turn took, how many calls it made and when it ended. Folded, it
-// keeps the calls still running under it, or else its last call.
+// keeps the calls still running under it, each until it ends.
 func (u *window) chatWork(gtx C, th *ui.Theme, f *chatFold, sv sessionView, r chatRow) D {
 	f.update(gtx)
 	label := func(gtx C, fg color.NRGBA) D {

@@ -344,6 +344,18 @@ func TestAFoldedGroupShowsTheCallsStillRunning(t *testing.T) {
 	if r.shows("Read") {
 		t.Error("a call that ended stands under the folded group")
 	}
+	// A call that ends under the folded group goes at once, as chat motion has
+	// it, and the one still running stays.
+	u, r := lifeFrames(t, items, true)
+	r.frame()
+	r.frame()
+	u.model.chat.apply(api.ChatItemUpdate{SessionID: "s1", Item: backend.ChatItem{ID: "k3", Kind: api.ItemTool, Turn: 1, At: novDay(18, 17, 59),
+		Tool: &backend.ChatToolCall{Name: "Grep", Title: "TODO", State: api.ToolDone, Ended: novDay(18, 17, 59) + 476}}})
+	r.now = r.now.Add(frameStep)
+	r.frame()
+	if r.shows("Grep") || !r.shows("Bash") {
+		t.Errorf("the call that ended stays, or the running one left:\n%s", r.drawn())
+	}
 	ended := slices.Clone(items)
 	ended[3].Tool = &backend.ChatToolCall{Name: "Grep", Title: "TODO", State: api.ToolDone, Ended: novDay(18, 17, 59) + 476}
 	ended[2].Tool = &backend.ChatToolCall{Name: "Bash", Title: "go test", State: api.ToolDone}
