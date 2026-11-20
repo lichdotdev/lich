@@ -10,12 +10,6 @@
     }
   },
   "fileSearch": {
-    "cutMatches": "{count}+ resultados",
-    "summary": "{matches} em {files}",
-    "matches": {
-      "one": "{count} resultado",
-      "other": "{count} resultados"
-    },
     "cutNote": "Mostrando as primeiras {count} linhas encontradas. Restrinja a busca.",
     "tooLarge": {
       "one": "{count} arquivo acima de 1 MB não foi pesquisado.",

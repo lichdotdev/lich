@@ -75,19 +75,6 @@ func highlightSegments(text, query string) []ui.MarkedSegment {
 	return out
 }
 
-// searchSummary is the label over the list. A cut answer counts the lines it
-// stopped at, not files: the files past the cap were never read.
-func searchSummary(r searchResult, groups int) string {
-	lines := len(r.Matches)
-	if r.Cut {
-		return i18n.T("git.fileSearch.cutMatches", i18n.Args{"count": lines})
-	}
-	return i18n.T("git.fileSearch.summary", i18n.Args{
-		"matches": i18n.T("git.fileSearch.matches", i18n.Args{"count": lines}),
-		"files":   i18n.T("common.count.file", i18n.Args{"count": groups}),
-	})
-}
-
 // searchFootnote is what the answer did not read: the lines past the cap and
 // the files skipped for size.
 func searchFootnote(r searchResult) string {

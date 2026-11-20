@@ -7,14 +7,7 @@ import (
 
 func TestDockCountsFollowTheInterfaceLanguage(t *testing.T) {
 	inPortuguese(t)
-	r := searchResult{Matches: make([]searchMatch, 3), Cut: true, TooLarge: 2}
-	if got := searchSummary(r, 2); got != "3+ resultados" {
-		t.Errorf("cut summary = %q", got)
-	}
-	r.Cut = false
-	if got := searchSummary(r, 1); got != "3 resultados em 1 arquivo" {
-		t.Errorf("summary = %q", got)
-	}
+	r := searchResult{Matches: make([]searchMatch, 3), TooLarge: 2}
 	if got := searchFootnote(r); got != "2 arquivos acima de 1 MB não foram pesquisados." {
 		t.Errorf("footnote = %q", got)
 	}

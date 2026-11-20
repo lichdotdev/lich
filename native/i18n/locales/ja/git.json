@@ -10,12 +10,6 @@
     }
   },
   "fileSearch": {
-    "cutMatches": "{count}+ 件の一致",
-    "summary": "{files} 中 {matches}",
-    "matches": {
-      "one": "{count} 件の一致",
-      "other": "{count} 件の一致"
-    },
     "cutNote": "一致した最初の {count} 行を表示しています。検索を絞り込んでください。",
     "tooLarge": {
       "one": "1 MB を超える {count} 個のファイルは検索されていません。",

@@ -10,12 +10,6 @@
     }
   },
   "fileSearch": {
-    "cutMatches": "{count}+ coincidencias",
-    "summary": "{matches} en {files}",
-    "matches": {
-      "one": "{count} coincidencia",
-      "other": "{count} coincidencias"
-    },
     "cutNote": "Se muestran las primeras {count} líneas que coinciden. Acota la búsqueda.",
     "tooLarge": {
       "one": "No se buscó en {count} archivo de más de 1 MB.",

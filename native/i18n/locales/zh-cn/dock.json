@@ -10,18 +10,16 @@
     "tabArtifacts": "产物"
   },
   "searchResults": {
-    "prompt": "在此检出的所有文件中搜索文本",
+    "files": "文件",
+    "inContent": "在内容中",
     "searching": "正在搜索…",
     "noMatch": "没有文件包含“{query}”"
   },
   "filesPanel": {
-    "searchPlaceholder": "在文件中搜索",
-    "filterPlaceholder": "按名称筛选",
-    "byName": "名称",
-    "byText": "文本",
+    "placeholder": "按名称或内容搜索",
+    "search": "搜索文件",
     "readFailed": "无法读取此文件夹",
     "loading": "正在加载…",
-    "noMatch": "没有匹配的文件",
     "empty": "这里没有文件",
     "showSource": "显示源码"
   },

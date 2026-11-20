@@ -8,11 +8,6 @@
     }
   },
   "fileSearch": {
-    "cutMatches": "{count}개 이상 일치",
-    "summary": "{files}에서 {matches}",
-    "matches": {
-      "other": "{count}개 일치"
-    },
     "cutNote": "일치하는 처음 {count}줄만 표시합니다. 검색 범위를 좁히세요.",
     "tooLarge": {
       "other": "1 MB를 넘는 파일 {count}개는 검색하지 않았습니다."

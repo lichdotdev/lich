@@ -14,14 +14,6 @@
     }
   },
   "fileSearch": {
-    "cutMatches": "{count}+ совпадений",
-    "summary": "{matches} в {files}",
-    "matches": {
-      "one": "{count} совпадение",
-      "few": "{count} совпадения",
-      "many": "{count} совпадений",
-      "other": "{count} совпадения"
-    },
     "cutNote": "Показаны первые {count} строк с совпадениями. Сузьте поиск.",
     "tooLarge": {
       "one": "{count} файл больше 1 МБ не просмотрен.",

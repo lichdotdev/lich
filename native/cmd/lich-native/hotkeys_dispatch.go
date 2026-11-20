@@ -295,11 +295,11 @@ func (u *window) hotkeyDock(C) {
 	u.dock.setCollapsed(!u.dock.collapsed)
 }
 
-// hotkeySearch opens the Code tab on its text search with the field focused.
+// hotkeySearch opens the Code tab with its search bar open and the field focused.
 func (u *window) hotkeySearch(C) {
 	u.settings.hide()
 	u.dock.show(dockCode)
-	u.dock.code.requestSearch()
+	u.dock.code.openSearch()
 }
 
 func (u *window) hotkeyOpenSettings(C) {

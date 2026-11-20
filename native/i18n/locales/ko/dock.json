@@ -10,18 +10,16 @@
     "tabArtifacts": "아티팩트"
   },
   "searchResults": {
-    "prompt": "이 체크아웃의 모든 파일 내용 검색",
+    "files": "파일",
+    "inContent": "내용에서",
     "searching": "검색 중…",
     "noMatch": "“{query}” 텍스트가 들어 있는 파일이 없습니다"
   },
   "filesPanel": {
-    "searchPlaceholder": "파일 내용 검색",
-    "filterPlaceholder": "이름으로 필터",
-    "byName": "이름",
-    "byText": "내용",
+    "placeholder": "이름 또는 내용으로 검색",
+    "search": "파일 검색",
     "readFailed": "이 폴더를 읽을 수 없습니다",
     "loading": "불러오는 중…",
-    "noMatch": "일치하는 파일이 없습니다",
     "empty": "파일이 없습니다",
     "showSource": "소스 보기"
   },

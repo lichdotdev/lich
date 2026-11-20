@@ -30,17 +30,6 @@ func TestHighlightSegmentsShowsALineWhoseLowercaseResizesPlain(t *testing.T) {
 	}
 }
 
-func TestSearchSummaryCountsLinesAndFilesOrStopsAtTheCut(t *testing.T) {
-	r := searchResult{Matches: make([]searchMatch, 3)}
-	if got := searchSummary(r, 1); got != "3 matches in 1 file" {
-		t.Errorf("summary = %q", got)
-	}
-	r.Cut = true
-	if got := searchSummary(r, 2); got != "3+ matches" {
-		t.Errorf("cut summary = %q", got)
-	}
-}
-
 func TestSearchFootnoteSaysWhatWasNotRead(t *testing.T) {
 	r := searchResult{Matches: make([]searchMatch, 2), Cut: true, TooLarge: 1}
 	want := "Showing the first 2 matching lines. Narrow the search. 1 file over 1 MB not searched."

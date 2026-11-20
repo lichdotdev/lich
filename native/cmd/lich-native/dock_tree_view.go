@@ -2,7 +2,6 @@ package main
 
 import (
 	"maps"
-	"strings"
 
 	"gioui.org/layout"
 
@@ -11,15 +10,15 @@ import (
 	"github.com/lichdotdev/lich/native/ui/filetree"
 )
 
-// buildRows is the tree for data narrowed by query, colored by the git
-// status's changes, rebuilt only when one of them changed: a big checkout is
-// thousands of paths to nest every frame.
-func (c *codeTab) buildRows(data *treeData, query string) {
-	if data == c.rowsFrom && query == c.rowsFor && maps.Equal(c.changes, c.rowsWith) {
+// buildRows is the tree for data, colored by the git status's changes,
+// rebuilt only when one of them changed: a big checkout is thousands of paths
+// to nest every frame.
+func (c *codeTab) buildRows(data *treeData) {
+	if data == c.rowsFrom && maps.Equal(c.changes, c.rowsWith) {
 		return
 	}
-	c.rowsFrom, c.rowsFor, c.rowsWith = data, query, c.changes
-	c.rows.Tree = filetree.Build(filterPaths(data.listing.Files, query))
+	c.rowsFrom, c.rowsWith = data, c.changes
+	c.rows.Tree = filetree.Build(data.listing.Files)
 	c.rows.Stats = filetree.WithDirStats(c.rows.Tree, data.stats)
 	c.rows.States = filetree.WithDirStates(c.rows.Tree, treeStates(c.changes))
 }
@@ -34,21 +33,15 @@ func (c *codeTab) treeBody(gtx C, th *ui.Theme) D {
 	case loading || data == nil:
 		return th.Notice(i18n.T("dock.filesPanel.loading")).Layout(gtx)
 	}
-	query := c.query.Text()
-	filtering := strings.TrimSpace(query) != ""
-	c.buildRows(data, query)
+	c.buildRows(data)
 	c.treeClicks(gtx)
-	rows := filetree.VisibleRows(c.rows.Tree, func(path string) bool { return filtering || c.toggled[path] })
+	rows := filetree.VisibleRows(c.rows.Tree, func(path string) bool { return c.toggled[path] })
 	note := treeFootnote(data.listing.Cut, data.listing.Hidden)
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Flexed(1, func(gtx C) D {
 			gtx.Constraints.Min = gtx.Constraints.Max
 			if len(rows) == 0 {
-				empty := i18n.T("dock.filesPanel.empty")
-				if filtering {
-					empty = i18n.T("dock.filesPanel.noMatch")
-				}
-				return th.Notice(empty).Layout(gtx)
+				return th.Notice(i18n.T("dock.filesPanel.empty")).Layout(gtx)
 			}
 			return c.treeList(gtx, th, rows)
 		}),

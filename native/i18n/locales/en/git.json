@@ -10,12 +10,6 @@
     }
   },
   "fileSearch": {
-    "cutMatches": "{count}+ matches",
-    "summary": "{matches} in {files}",
-    "matches": {
-      "one": "{count} match",
-      "other": "{count} matches"
-    },
     "cutNote": "Showing the first {count} matching lines. Narrow the search.",
     "tooLarge": {
       "one": "{count} file over 1 MB not searched.",

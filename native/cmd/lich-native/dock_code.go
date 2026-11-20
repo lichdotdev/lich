@@ -1,15 +1,17 @@
 package main
 
 // The dock's Code tab: a tree of the active session's checkout, tracked and
-// untracked in a repository, whatever is on disk in a plain folder, with one
-// field that filters it by name or searches the files' text. A file picked
-// opens in the stage editor; the checkout's review batch sits under the tree.
+// untracked in a repository, whatever is on disk in a plain folder, with a
+// search the header's magnifier opens: one field whose answer is the files whose
+// names match and the lines of the files' text that do. A file picked opens in
+// the stage editor; the checkout's review batch sits under the tree.
 
 import (
 	"context"
 	"fmt"
 	"path"
 	"strconv"
+	"strings"
 	"time"
 
 	"gioui.org/io/key"
@@ -28,11 +30,6 @@ import (
 // has no git status to notice a file the agent just wrote, so it re-reads on
 // the cadence an idle repository's poll settles at.
 const plainFolderTick = 3 * time.Second
-
-const (
-	browseByName = "name"
-	browseByText = "text"
-)
 
 type fileListing = backend.FileListing
 
@@ -56,10 +53,12 @@ type codeTab struct {
 	checkout   string
 	query      widget.Editor
 	clearQuery ui.Clickable
-	mode       ui.Enum
 	toggled    map[string]bool
 	selected   string // the file last opened, which reads as current
-	// focusQuery asks the next browse box to take the keyboard.
+	// searching is the search bar open over the tab; searchFold plays its
+	// unfolding. focusQuery asks the next bar to take the keyboard.
+	searching  bool
+	searchFold ui.Collapse
 	focusQuery bool
 
 	tree    remote[*treeData]
@@ -69,18 +68,21 @@ type codeTab struct {
 
 	rows     filetree.Rows
 	rowsFrom *treeData
-	rowsFor  string
 	// changes is the checkout's dirty files by state, from the git status
 	// store; rowsWith is what the rows' colors were last built from.
 	changes  map[string]string
 	rowsWith map[string]string
 	hits     hitList
-	batch    commentBatch
+	// names is the listing's paths whose names match the query, for the tree
+	// it was read from and the query it was matched with.
+	names     []string
+	namesFrom *treeData
+	namesFor  string
+	batch     commentBatch
 }
 
 func newCodeTab(client *backend.Client, invalidate func(), comments *commentStore, notify func(ui.Toast), openFile func(checkout, rel string, line int)) *codeTab {
 	c := &codeTab{client: client, comments: comments, notify: notify, openFile: openFile, toggled: map[string]bool{}}
-	c.mode.Value = browseByName
 	c.tree.invalidate, c.search.invalidate = invalidate, invalidate
 	c.rows.List.Axis, c.hits.list.Axis = layout.Vertical, layout.Vertical
 	return c
@@ -166,47 +168,46 @@ func readTree(ctx context.Context, client *backend.Client, path string) (*treeDa
 
 func (c *codeTab) browse(gtx C, th *ui.Theme) D {
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(func(gtx C) D { return c.browseBox(gtx, th) }),
-		layout.Rigid(th.Separator),
+		layout.Rigid(func(gtx C) D {
+			return c.searchFold.Layout(gtx, c.searching, func(gtx C) D {
+				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+					layout.Rigid(func(gtx C) D { return c.browseBox(gtx, th) }),
+					layout.Rigid(th.Separator),
+				)
+			})
+		}),
 		layout.Flexed(1, func(gtx C) D {
 			gtx.Constraints.Min = gtx.Constraints.Max
-			if c.mode.Value == browseByText {
-				return c.searchBody(gtx, th)
+			if strings.TrimSpace(c.query.Text()) == "" {
+				c.hits.hits = 0
+				return c.treeBody(gtx, th)
 			}
-			return c.treeBody(gtx, th)
+			return c.searchBody(gtx, th)
 		}),
 	)
 }
 
-// browseBox is the one field over the tab and the switch saying how it reads.
+// browseBox is the one field over the tab.
 func (c *codeTab) browseBox(gtx C, th *ui.Theme) D {
 	c.fieldKeys(gtx)
 	if c.focusQuery {
-		c.focusQuery = false
-		gtx.Execute(key.FocusCmd{Tag: &c.query})
-		c.query.SetCaret(0, c.query.Len())
+		// The field draws nothing while the bar is folded, and a focus asked of
+		// a tag that did not draw is lost: ask until the frame that has it.
+		if gtx.Focused(&c.query) {
+			c.focusQuery = false
+			c.query.SetCaret(0, c.query.Len())
+		} else {
+			gtx.Execute(key.FocusCmd{Tag: &c.query})
+			gtx.Execute(op.InvalidateCmd{})
+		}
 	}
-	c.mode.Update(gtx)
-	text := c.mode.Value == browseByText
-	placeholder := i18n.T("dock.filesPanel.filterPlaceholder")
-	if text {
-		placeholder = i18n.T("dock.filesPanel.searchPlaceholder")
-	}
-	field := th.Input(&c.query, placeholder)
+	field := th.Input(&c.query, i18n.T("dock.filesPanel.placeholder"))
 	field.Leading, field.Height, field.TextSize, field.Clear = icSearch, ui.Space(7), ui.TextXS, &c.clearQuery
-	modes := th.ToggleGroup(&c.mode, ui.ToggleItem{Value: browseByName, Text: i18n.T("dock.filesPanel.byName")}, ui.ToggleItem{Value: browseByText, Text: i18n.T("dock.filesPanel.byText")})
-	modes.Size, modes.ItemHeight, modes.ItemPadX, modes.ItemText = ui.ToggleSizeSM, ui.Space(5), ui.Space(2), ui.TextXS
-	return layout.UniformInset(ui.Space(1.5)).Layout(gtx, func(gtx C) D {
-		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-			layout.Flexed(1, field.Layout),
-			ui.Gap(1.5),
-			layout.Rigid(modes.Layout),
-		)
-	})
+	return layout.UniformInset(ui.Space(1.5)).Layout(gtx, field.Layout)
 }
 
-// fieldKeys is BrowseBox's onKeyDown: Escape empties the field, and Down in
-// text mode hands focus to the first hit.
+// fieldKeys is BrowseBox's onKeyDown: Escape empties the field and, once it is
+// empty, folds the bar; Down hands focus to the first row of the answer.
 func (c *codeTab) fieldKeys(gtx C) {
 	for {
 		ev, ok := gtx.Event(key.Filter{Focus: &c.query, Name: key.NameEscape}, key.Filter{Focus: &c.query, Name: key.NameDownArrow})
@@ -220,10 +221,33 @@ func (c *codeTab) fieldKeys(gtx C) {
 		switch {
 		case e.Name == key.NameEscape && c.query.Text() != "":
 			c.query.SetText("")
-		case e.Name == key.NameDownArrow && c.mode.Value == browseByText:
+		case e.Name == key.NameEscape:
+			c.closeSearch(gtx)
+		case e.Name == key.NameDownArrow:
 			c.hits.focus(gtx, 0)
 		}
 	}
+}
+
+// openSearch unfolds the bar and puts the keyboard in its field.
+func (c *codeTab) openSearch() {
+	c.searching, c.focusQuery = true, true
+}
+
+// closeSearch folds the bar and drops what it held: a filter nobody can see
+// would still narrow the tab.
+func (c *codeTab) closeSearch(gtx C) {
+	c.searching, c.focusQuery = false, false
+	c.query.SetText("")
+	gtx.Execute(key.FocusCmd{Tag: nil})
+}
+
+func (c *codeTab) toggleSearch(gtx C) {
+	if c.searching {
+		c.closeSearch(gtx)
+		return
+	}
+	c.openSearch()
 }
 
 // open shows rel in the stage editor, on line (1-based, 0 for the top).
@@ -248,11 +272,4 @@ func (c *codeTab) unfold(checkout, rel string) {
 	for d := rel; d != "." && d != "/"; d = path.Dir(d) {
 		c.toggled[d] = true
 	}
-}
-
-// requestSearch is FilesPanel's file-search request: the text search, with
-// its field focused and selected.
-func (c *codeTab) requestSearch() {
-	c.mode.Value = browseByText
-	c.focusQuery = true
 }

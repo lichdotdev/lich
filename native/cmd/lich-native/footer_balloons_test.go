@@ -9,6 +9,7 @@ import (
 	"gioui.org/op"
 	"gioui.org/unit"
 
+	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -129,14 +130,14 @@ func TestChangesBalloonOpensTheReviewTabInTheFrameThatTookTheClick(t *testing.T)
 	r.waitFor(t, "No uncommitted changes")
 	u.dock.tab = dockCode
 	r.settle(t)
-	if !r.shows("Filter by name") {
+	if !r.shows(i18n.T("dock.filesPanel.empty")) {
 		t.Fatalf("the Code tab is not on screen:\n%s", r.drawn())
 	}
 	took, _ := r.clickLabel(t, "2")
 	if u.dock.tab != dockReview {
 		t.Fatalf("the click missed Review changes: dock on %v", u.dock.tab)
 	}
-	if strings.Contains(took, "Filter by name") {
+	if strings.Contains(took, i18n.T("dock.filesPanel.empty")) {
 		t.Errorf("the frame that took the click still showed the Code tab:\n%s", took)
 	}
 }

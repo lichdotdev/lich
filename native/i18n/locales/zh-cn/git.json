@@ -10,12 +10,6 @@
     }
   },
   "fileSearch": {
-    "cutMatches": "{count}+ 处匹配",
-    "summary": "{matches}（{files}）",
-    "matches": {
-      "one": "{count} 处匹配",
-      "other": "{count} 处匹配"
-    },
     "cutNote": "仅显示前 {count} 个匹配行。请缩小搜索范围。",
     "tooLarge": {
       "one": "{count} 个超过 1 MB 的文件未被搜索。",

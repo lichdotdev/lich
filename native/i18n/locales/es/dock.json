@@ -10,18 +10,16 @@
     "tabArtifacts": "Artefactos"
   },
   "searchResults": {
-    "prompt": "Busca texto en todos los archivos de este checkout",
+    "files": "Archivos",
+    "inContent": "En el contenido",
     "searching": "Buscando…",
     "noMatch": "Ningún archivo contiene “{query}”"
   },
   "filesPanel": {
-    "searchPlaceholder": "Buscar en archivos",
-    "filterPlaceholder": "Filtrar por nombre",
-    "byName": "Nombre",
-    "byText": "Texto",
+    "placeholder": "Buscar por nombre o contenido",
+    "search": "Buscar archivos",
     "readFailed": "No se pudo leer esta carpeta",
     "loading": "Cargando…",
-    "noMatch": "Ningún archivo coincide",
     "empty": "No hay archivos aquí",
     "showSource": "Mostrar código fuente"
   },

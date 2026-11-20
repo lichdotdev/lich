@@ -130,6 +130,7 @@ type dock struct {
 	resize     ui.ResizeHandle
 	full       ui.IconActionState
 	collapse   ui.IconActionState
+	search     ui.IconActionState
 	// collapsed is the dock off the stage, out over it from the window's
 	// right edge (peek); saveCollapsed is a click on collapse to store.
 	collapsed     bool
@@ -265,8 +266,8 @@ func (d *dock) body(gtx C, th *ui.Theme, root *ui.Root, in dockInput) error {
 	return nil
 }
 
-// header is the h-10 strip: at its right the Review tab's actions, collapse
-// and full screen. The tabs are the pill at the dock's foot.
+// header is the h-10 strip: at its right the Review tab's actions or the Code
+// tab's search, collapse and full screen. The tabs are the pill at the dock's foot.
 func (d *dock) header(gtx C, th *ui.Theme, root *ui.Root, in dockInput) D {
 	changed := in.isGit && in.git.Files > 0
 	actions := 0
@@ -283,6 +284,15 @@ func (d *dock) header(gtx C, th *ui.Theme, root *ui.Root, in dockInput) D {
 					return D{}
 				}
 				dims := d.review.layoutActions(gtx, th)
+				actions += dims.Size.X
+				return dims
+			}),
+			ui.Gap(1),
+			layout.Rigid(func(gtx C) D {
+				if d.tab != dockCode {
+					return D{}
+				}
+				dims := th.IconAction(root, &d.search, icSearch, i18n.T("dock.filesPanel.search"), d.code.searching).Layout(gtx)
 				actions += dims.Size.X
 				return dims
 			}),
@@ -350,6 +360,9 @@ func (d *dock) pickTab(index int, placed []placedSurface) {
 // is open and how wide, so the frame shows their outcome.
 func (d *dock) act(gtx C) {
 	d.actTabs(gtx)
+	for d.search.Click.Clicked(gtx) {
+		d.code.toggleSearch(gtx)
+	}
 	for d.full.Click.Clicked(gtx) {
 		d.fullscreen = !d.fullscreen
 	}

@@ -10,18 +10,16 @@
     "tabArtifacts": "Артефакты"
   },
   "searchResults": {
-    "prompt": "Поиск по тексту всех файлов в этой рабочей копии",
+    "files": "Файлы",
+    "inContent": "В содержимом",
     "searching": "Поиск…",
     "noMatch": "Нет файлов, содержащих «{query}»"
   },
   "filesPanel": {
-    "searchPlaceholder": "Поиск в файлах",
-    "filterPlaceholder": "Фильтр по имени",
-    "byName": "Имя",
-    "byText": "Текст",
+    "placeholder": "Поиск по имени или содержимому",
+    "search": "Поиск файлов",
     "readFailed": "Не удалось прочитать эту папку",
     "loading": "Загрузка…",
-    "noMatch": "Нет подходящих файлов",
     "empty": "Здесь нет файлов",
     "showSource": "Показать исходный код"
   },

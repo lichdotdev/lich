@@ -10,18 +10,16 @@
     "tabArtifacts": "Artifacts"
   },
   "searchResults": {
-    "prompt": "Search the text of every file in this checkout",
+    "files": "Files",
+    "inContent": "In content",
     "searching": "Searching…",
     "noMatch": "No file contains “{query}”"
   },
   "filesPanel": {
-    "searchPlaceholder": "Search in files",
-    "filterPlaceholder": "Filter by name",
-    "byName": "Name",
-    "byText": "Text",
+    "placeholder": "Search by name or content",
+    "search": "Search files",
     "readFailed": "Could not read this folder",
     "loading": "Loading…",
-    "noMatch": "No file matches",
     "empty": "No files here",
     "showSource": "Show source"
   },
