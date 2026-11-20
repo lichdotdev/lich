@@ -334,15 +334,16 @@ func (s *sidebar) panel(gtx C, th *ui.Theme, m *model, active string) (D, sideba
 		}
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
 	})
-	s.resizeHandle(gtx, on, size)
+	s.resizeHandle(gtx, size)
 	watchPresses(gtx, &s.header.panelPress, size)
 	return D{Size: size}, act
 }
 
-// resizeHandle lays the resize strip out on the panel's own right edge.
-func (s *sidebar) resizeHandle(gtx C, th *ui.Theme, panel image.Point) {
+// resizeHandle lays the resize strip out in the gap between the panel and
+// the stage.
+func (s *sidebar) resizeHandle(gtx C, panel image.Point) {
 	gtx.Constraints = layout.Exact(panel)
-	s.resize.Layout(gtx, th)
+	s.resize.LayoutGap(gtx, gtx.Dp(gutter))
 }
 
 // hint is the Tooltip state of one Hint, keyed by what it labels.
