@@ -1879,8 +1879,10 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   the page instead, in a layer of their own appended to its document, which the page's own scripts can see; a menu,
   a popover (the page zoom's) or a tooltip that falls over the page has no cut and stays under it. A cut shows the
   window's drawing only while the window is not fullscreen: fullscreen, XWayland hands the window's frame to the
-  compositor whole and the cuts stay dark (measured on Umbriel with the NVIDIA GPU, 2026-11-19). Draw is
-  not carried yet: its strokes draw under the page. The element is read in WebKit, whose context keeps no cookies
+  compositor whole and the cuts stay dark (measured on Umbriel with the NVIDIA GPU, 2026-11-19). The sketch's
+  strokes and the eraser are drawn in that layer too, and while strokes stand on the page the layer keeps the wheel
+  from scrolling it; keys (arrows, Page Down) still scroll a page whose strokes then point at the wrong place. The
+  sketch's picture is a shot of the page (`webkit_web_view_get_snapshot`) with the layer hidden for it. The element is read in WebKit, whose context keeps no cookies
   of Chrome's, so on a page the person signed into only one of them the selector the agent gets may not match the
   agent's page. macOS will need the overlay plane on top of the WKWebView, a `hitTest:` that lets clicks fall
   through where the window draws (as Sikemux's `hit_test_outside_holes` does) and the scripts run in the page's

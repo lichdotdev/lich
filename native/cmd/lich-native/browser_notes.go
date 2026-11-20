@@ -85,6 +85,9 @@ type browserNotes struct {
 	rubAt    f32.Point
 	rubOver  bool
 	rubTrail []rubPoint
+	// trailOnPage is the eraser trail's outline in the last layout, in CSS
+	// pixels, which a page the window draws itself draws over its content.
+	trailOnPage []f32.Point
 	// The bar's widgets (browser_notes_dock.go). dock is its tag for the
 	// pointer, and docked how tall it stood last frame, off the page's bottom.
 	selectTool, drawTool, unfold, sketchGone ui.Clickable
@@ -450,6 +453,10 @@ func (u *window) sendNotes(p *browserPaneUI, session string) {
 	sent := sentNotes{notes: n.sending(), strokes: len(n.strokes), closing: n.closing.Text()}
 	_, frame, _ := u.model.browserView(session)
 	sketch := sentSketch{strokes: slices.Clone(n.strokes), frame: frame.src, viewW: p.view.W, url: n.sketchURL}
+	if p.native != nil {
+		// The pane shows the page the window draws, not the backend's frame.
+		sketch.frame, sketch.page = nil, p.native
+	}
 	n.setPicking(false)
 	n.setDrawing(false)
 	label := u.model.sessionLabel(session)

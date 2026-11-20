@@ -148,6 +148,7 @@ func trailEdges(points []f32.Point, half []float32) (left, right []f32.Point) {
 // its points age, and its ring.
 func (n *browserNotes) paintEraser(gtx C, scale float32) {
 	n.rubTrail = slices.DeleteFunc(n.rubTrail, func(p rubPoint) bool { return gtx.Now.Sub(p.t) >= rubTrailFor })
+	n.trailOnPage = n.trailOnPage[:0]
 	if !n.erasing {
 		n.rubTrail = nil
 		return
@@ -156,17 +157,18 @@ func (n *browserNotes) paintEraser(gtx C, scale float32) {
 		points, half := make([]f32.Point, len(n.rubTrail)), make([]float32, len(n.rubTrail))
 		for i, p := range n.rubTrail {
 			fresh := 1 - progress(gtx.Now.Sub(p.t), rubTrailFor)
-			points[i], half[i] = p.at.Mul(scale), (rubTrailThin+(rubTrailWide-rubTrailThin)*fresh)*scale/2
+			points[i], half[i] = p.at, (rubTrailThin+(rubTrailWide-rubTrailThin)*fresh)/2
 		}
 		left, right := trailEdges(points, half)
+		n.trailOnPage = append(n.trailOnPage, left...)
+		for _, p := range slices.Backward(right) {
+			n.trailOnPage = append(n.trailOnPage, p)
+		}
 		var path clip.Path
 		path.Begin(gtx.Ops)
-		path.MoveTo(left[0])
-		for _, p := range left[1:] {
-			path.LineTo(p)
-		}
-		for _, p := range slices.Backward(right) {
-			path.LineTo(p)
+		path.MoveTo(n.trailOnPage[0].Mul(scale))
+		for _, p := range n.trailOnPage[1:] {
+			path.LineTo(p.Mul(scale))
 		}
 		path.Close()
 		paint.FillShape(gtx.Ops, rubTrailColor, clip.Outline{Path: path.End()}.Op())

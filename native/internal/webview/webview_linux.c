@@ -11,6 +11,7 @@
 extern void lichWebviewRun(uintptr_t handle);
 extern void lichWebviewLoad(uintptr_t owner, int step, char *uri);
 extern void lichWebviewEvaluated(uintptr_t handle, char *json, char *error);
+extern void lichWebviewSnapshot(uintptr_t handle, unsigned char *data, int width, int height, int stride, char *error);
 
 static gboolean run(gpointer data) {
 	lichWebviewRun((uintptr_t)data);
@@ -227,6 +228,27 @@ void lich_webview_eval(LichPage *page, const char *script, uintptr_t handle) {
 // lich_webview_run runs script in the page's own world for what it does.
 void lich_webview_run(LichPage *page, const char *script) {
 	webkit_web_view_evaluate_javascript(WEBKIT_WEB_VIEW(page->view), script, -1, NULL, NULL, NULL, NULL, NULL);
+}
+
+static void snapshotted(GObject *view, GAsyncResult *result, gpointer handle) {
+	GError *error = NULL;
+	cairo_surface_t *shot = webkit_web_view_get_snapshot_finish(WEBKIT_WEB_VIEW(view), result, &error);
+	if (!shot) {
+		lichWebviewSnapshot((uintptr_t)handle, NULL, 0, 0, 0, error ? error->message : "no snapshot");
+		g_clear_error(&error);
+		return;
+	}
+	cairo_surface_flush(shot);
+	lichWebviewSnapshot((uintptr_t)handle, cairo_image_surface_get_data(shot), cairo_image_surface_get_width(shot),
+	                    cairo_image_surface_get_height(shot), cairo_image_surface_get_stride(shot), NULL);
+	cairo_surface_destroy(shot);
+}
+
+// lich_webview_snapshot draws the part of the page in sight, as WebKit draws
+// it, into an image the window reads.
+void lich_webview_snapshot(LichPage *page, uintptr_t handle) {
+	webkit_web_view_get_snapshot(WEBKIT_WEB_VIEW(page->view), WEBKIT_SNAPSHOT_REGION_VISIBLE, WEBKIT_SNAPSHOT_OPTIONS_NONE, NULL,
+	                             snapshotted, (gpointer)handle);
 }
 
 // lich_webview_zoom draws scale device pixels per CSS pixel, as Chrome draws

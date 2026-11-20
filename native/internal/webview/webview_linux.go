@@ -307,6 +307,42 @@ func lichWebviewEvaluated(handle C.uintptr_t, json, message *C.char) {
 	done <- evaluated{json: C.GoString(json)}
 }
 
+type snapshot struct {
+	img *image.RGBA
+	err error
+}
+
+// Snapshot is the part of the page in sight, as WebKit draws it.
+func (p *Page) Snapshot(ctx context.Context) (*image.RGBA, error) {
+	done := make(chan snapshot, 1)
+	onGTK(func() {
+		if p.closed {
+			done <- snapshot{err: errClosed}
+			return
+		}
+		C.lich_webview_snapshot(p.page, C.uintptr_t(cgo.NewHandle(done)))
+	})
+	select {
+	case r := <-done:
+		return r.img, r.err
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
+}
+
+//export lichWebviewSnapshot
+func lichWebviewSnapshot(handle C.uintptr_t, data *C.uchar, width, height, stride C.int, message *C.char) {
+	h := cgo.Handle(handle)
+	done := h.Value().(chan snapshot)
+	h.Delete()
+	if message != nil {
+		done <- snapshot{err: errors.New(C.GoString(message))}
+		return
+	}
+	pixels := unsafe.Slice((*byte)(unsafe.Pointer(data)), int(stride)*int(height))
+	done <- snapshot{img: fromARGB32(pixels, int(width), int(height), int(stride))}
+}
+
 // Run runs script in the page for what it does, not waiting for it.
 func (p *Page) Run(script string) {
 	onGTK(func() {

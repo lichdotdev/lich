@@ -37,6 +37,7 @@ func (*Page) PointerToPage()                                {}
 func (*Page) URL() string                                   { return "" }
 func (*Page) Eval(context.Context, string) (string, error)  { return "", errors.ErrUnsupported }
 func (*Page) Run(string)                                    {}
+func (*Page) Snapshot(context.Context) (*image.RGBA, error) { return nil, errors.ErrUnsupported }
 func (*Page) SetZoom(float64)                               {}
 func (*Page) Hide()                                         {}
 func (*Page) Navigate(string)                               {}

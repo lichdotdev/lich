@@ -241,3 +241,12 @@ func TestTheEraserTrailIsARibbonAsWideAsEachPointAsks(t *testing.T) {
 		t.Errorf("last point's sides: %v and %v, want 4 left and right of it", left[3], right[3])
 	}
 }
+
+func TestASketchSentBeforeThePageDrewSaysSoInsteadOfCrashing(t *testing.T) {
+	u := &window{}
+	var none browserFrame
+	_, err := u.uploadSketch("s", sentSketch{strokes: []sketchStroke{{points: []f32.Point{{X: 1, Y: 1}, {X: 9, Y: 9}}}}, frame: none.src, viewW: 100})
+	if err == nil {
+		t.Fatal("a sketch with no frame under it was uploaded")
+	}
+}

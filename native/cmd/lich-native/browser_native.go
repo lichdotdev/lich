@@ -18,7 +18,6 @@ import (
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/internal/webview"
-	"github.com/lichdotdev/lich/native/ui"
 	"github.com/lichdotdev/lich/pagescript"
 )
 
@@ -92,8 +91,8 @@ func (u *window) cutNativePages() {
 		if r := p.native.Placed(); !r.Empty() {
 			p.native.Place(r, pageCuts(r, p.notes.cuts, u.covers))
 		}
-		if script := ringsScript(p.notes.rings); script != p.ringsSent {
-			p.ringsSent = script
+		if script := overlayScript(pageOverlayOf(&p.notes)); script != p.overlaySent {
+			p.overlaySent = script
 			p.native.Run(script)
 		}
 	}
@@ -208,12 +207,13 @@ func (u *window) locateIn(ctx context.Context, page *webview.Page, session strin
 }
 
 // nativeNotesInput takes, over a page the window draws itself, only what the
-// notes need: the pointer while picking, which the page lets through then,
-// and the notes' keys. The page takes everything else itself.
+// notes need: the pointer while picking or drawing, which the page lets
+// through then, and the notes' keys. The page takes everything else itself.
 func (u *window) nativeNotesInput(gtx C, p *browserPaneUI, session string, scale float32) {
-	if p.notes.picking {
+	if p.notes.picking || p.notes.drawing {
 		p.native.PointerToWindow()
-		// Esc and the pick's other keys come to the pane while it picks.
+		// Esc and the notes' other keys come to the pane while it picks or
+		// draws.
 		if !p.notes.open && !gtx.Focused(&p.tag) {
 			u.layoutStage.focus = browserPaneOf(session)
 			gtx.Execute(key.FocusCmd{Tag: &p.tag})
@@ -222,10 +222,11 @@ func (u *window) nativeNotesInput(gtx C, p *browserPaneUI, session string, scale
 		p.native.PointerToPage()
 	}
 	filters := []event.Filter{
-		pointer.Filter{Target: &p.tag, Kinds: pointer.Press | pointer.Drag | pointer.Move | pointer.Leave | pointer.Scroll,
+		pointer.Filter{Target: &p.tag, Kinds: pointer.Press | pointer.Drag | pointer.Release | pointer.Cancel | pointer.Move | pointer.Leave | pointer.Scroll,
 			ScrollX: pointer.ScrollRange{Min: -1 << 20, Max: 1 << 20}, ScrollY: pointer.ScrollRange{Min: -1 << 20, Max: 1 << 20}},
 		key.FocusFilter{Target: &p.tag},
 		key.Filter{Focus: &p.tag, Name: key.NameEscape},
+		key.Filter{Focus: &p.tag, Name: "Z", Required: key.ModShortcut},
 		key.Filter{Focus: &p.tag, Name: "E", Required: key.ModShortcut | key.ModShift},
 		key.Filter{Focus: &p.tag, Name: key.NameReturn, Required: key.ModShortcut},
 		key.Filter{Focus: &p.tag, Name: key.NameEnter, Required: key.ModShortcut},
@@ -240,9 +241,15 @@ func (u *window) nativeNotesInput(gtx C, p *browserPaneUI, session string, scale
 			u.notesKey(p, session, e)
 		case pointer.Event:
 			x, y := float64(e.Position.X/scale), float64(e.Position.Y/scale)
-			if e.Kind == pointer.Scroll {
+			switch {
+			case e.Kind == pointer.Scroll && len(p.notes.strokes) > 0:
+				// The strokes stand on what the pane shows, as the
+				// screencast's do (browserPointer).
+			case e.Kind == pointer.Scroll:
 				u.scrollNativePage(gtx, p, session, x, y, e.Scroll.Div(scale))
-			} else if p.notes.picking {
+			case p.notes.drawing:
+				u.sketchPointer(gtx, p, session, x, y, e)
+			case p.notes.picking:
 				u.notesPointer(gtx, p, session, x, y, e)
 			}
 		}
@@ -263,42 +270,4 @@ func (u *window) scrollNativePage(gtx C, p *browserPaneUI, session string, x, y 
 		return err
 	}})
 	u.probeElement(p, session, x, y, false)
-}
-
-// pageRingsScript draws rings, in CSS pixels, over the page in a layer of its
-// own that takes no pointer, or takes the layer away when there are none.
-const pageRingsScript = `((rings, color, march) => {
-	const id = 'lich-note-rings';
-	let host = document.getElementById(id);
-	if (!rings.length) {
-		if (host) host.remove();
-		return;
-	}
-	if (!host) {
-		host = document.createElement('div');
-		host.id = id;
-		host.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:2147483647';
-		host.attachShadow({mode: 'open'});
-		document.documentElement.appendChild(host);
-	}
-	const svg = rings.map(r => {
-		const box = 'width="' + r.W + '" height="' + r.H + '" rx="' + r.Radius + '"';
-		const dash = 'stroke-dasharray="' + r.Dash + ' ' + r.Dash + '"' + (r.March ? ' class="m"' : '');
-		return '<svg style="position:fixed;overflow:visible;left:' + r.X + 'px;top:' + r.Y + 'px" width="' + r.W + '" height="' + r.H + '">' +
-			'<rect ' + box + ' fill="' + color + '" fill-opacity="' + (r.Fill / 255) + '"/>' +
-			'<rect ' + box + ' fill="none" stroke="#fff" stroke-opacity="0.69" stroke-width="' + (r.Width + 1) + '" ' + dash + '/>' +
-			'<rect ' + box + ' fill="none" stroke="' + color + '" stroke-width="' + r.Width + '" ' + dash + '/></svg>';
-	}).join('');
-	host.shadowRoot.innerHTML = '<style>@keyframes m{to{stroke-dashoffset:' + (-2 * rings[0].Dash) + 'px}}.m{animation:m ' + march + 'ms linear infinite}</style>' + svg;
-})`
-
-// ringsScript is the call that draws rings over the page, the same text for
-// the same rings, so a page is told only of a change.
-func ringsScript(rings []pageRing) string {
-	encoded, err := json.Marshal(rings)
-	if err != nil || len(rings) == 0 {
-		encoded = []byte("[]")
-	}
-	c := notePick
-	return fmt.Sprintf("%s(%s, %q, %d)", pageRingsScript, encoded, fmt.Sprintf("#%02x%02x%02x", c.R, c.G, c.B), ui.RingMarch.Milliseconds())
 }

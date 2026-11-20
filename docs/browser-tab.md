@@ -198,11 +198,13 @@ On a page the window draws itself (a WebKitGTK view on X11), the same scripts
 person scrolls and points at, and WebKit draws it at the pane's scale, so the
 pointer and the boxes divide by one. The window's drawing over the page (the
 bar or tray, the tag, the pins and the note) is cut out of the page's X
-window, rounded corners and all, so it shows there; the outlines are drawn by
-the page itself, in a layer of its own that takes no pointer, since a cut
-would show the pane's background under their dashes instead of the element.
-While Select is on the page lets the pointer through to the window, and the
-wheel scrolls it from there.
+window, rounded corners and all, so it shows there; the outlines, the sketch's
+strokes and the eraser are drawn by the page itself, in a layer of its own that
+takes no pointer, since a cut would show the pane's background under them
+instead of the page. While Select or Draw is on the page lets the pointer
+through to the window, and the wheel scrolls it from there unless strokes stand
+on it. A sketch's picture there is a shot of the page as WebKit draws it, taken
+with that layer hidden, since the picture draws the strokes itself.
 
 ## Console errors
 

@@ -93,10 +93,10 @@ type browserPaneUI struct {
 	// and the pane draws the screencast; nativeURL is what it was last sent.
 	native    *webview.Page
 	nativeURL string
-	// nativeSize is the page area's size in the last layout; ringsSent is
-	// the rings the page was last told to draw (ringsScript).
-	nativeSize image.Point
-	ringsSent  string
+	// nativeSize is the page area's size in the last layout; overlaySent is
+	// what the page was last told to draw over itself (overlayScript).
+	nativeSize  image.Point
+	overlaySent string
 }
 
 // agentPress is what the agent's cursor does on the toolbar, from at: the
