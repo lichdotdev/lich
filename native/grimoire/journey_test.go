@@ -15,9 +15,17 @@ import (
 type reference struct {
 	Keyframes map[string]string
 	Digests   map[string]struct {
-		Written, Bind, BindAwake, Unseal []string
+		Written, Bind, BindAwake, Unseal, Flame, Snuff []string
+		Choose                                         [][]string
+		Hover                                          string
 	}
 }
+
+// chooseAt are the flame frames the reference chose a book at, snuffAt the one
+// it snuffed one at.
+var chooseAt = []int{0, 7, 23}
+
+const snuffAt = 3
 
 // writtenAt are the install fractions the reference drew a page at.
 var writtenAt = []float64{0, 0.1, 0.25, 0.5, 0.6, 0.8, 1}
@@ -71,6 +79,16 @@ func TestJourneyIsTheMockupsFrameForFrame(t *testing.T) {
 		sameFrames(t, k+" bind", Bind(k), want.Bind)
 		sameFrames(t, k+" bind awake", BindAwake(k), want.BindAwake)
 		sameFrames(t, k+" unseal", Unseal(k), want.Unseal)
+		var flame []Grid
+		for f := range len(want.Flame) {
+			flame = append(flame, Flame(k, f))
+		}
+		sameFrames(t, k+" flame", flame, want.Flame)
+		for i, f := range chooseAt {
+			sameFrames(t, k+" choose", Choose(k, f), want.Choose[i])
+		}
+		sameFrames(t, k+" snuff", Snuff(k, snuffAt), want.Snuff)
+		sameFrames(t, k+" hover", []Grid{Hover(k)}, []string{want.Hover})
 	}
 }
 
@@ -82,6 +100,7 @@ func TestKeyFramesReadAsTheMockupsStrip(t *testing.T) {
 		"bind6":     Bind(id)[6],
 		"bind10":    Bind(id)[10],
 		"unseal4":   Unseal(id)[4],
+		"choose6":   Choose(id, 0)[6],
 	}
 	for name, g := range cases {
 		if got := text(g); got != ref.Keyframes[name] {
