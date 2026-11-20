@@ -26,13 +26,14 @@ func (u *window) openArtifact(session, from, name string) {
 	u.openBrowser(session)
 }
 
-// attachArtifact pastes, unsent, at target's prompt the path the backend
-// readies for artifact name of session from, as the footer's attach does.
+// attachArtifact pastes, unsent, at target's prompt, its terminal's or its
+// chat's composer, the path the backend readies for artifact name of session
+// from, as the footer's attach does.
 func (u *window) attachArtifact(target, from, name string) {
 	go func() {
 		a, err := u.client.AttachArtifact(u.ctx, target, from, name)
 		if err == nil && a.Path != "" {
-			err = u.terms.writePaste(u.ctx, target, composeDroppedPaths([]string{a.Path}, runtime.GOOS == "windows", []string{a.Notice}))
+			err = u.writeAtPrompt(u.ctx, target, composeDroppedPaths([]string{a.Path}, runtime.GOOS == "windows", []string{a.Notice}))
 		}
 		if err != nil {
 			u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: backend.ErrorText(err)})
