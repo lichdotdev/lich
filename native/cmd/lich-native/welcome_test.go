@@ -389,6 +389,9 @@ func TestTheWelcomeFillsTheWindowAtAnyWidth(t *testing.T) {
 		if got := r.shows(i18n.T("shell.welcome.tagline")); got != c.intro {
 			t.Errorf("%v: intro drawn %v, want %v", c.size, got, c.intro)
 		}
+		if !r.shows(i18n.T("shell.welcome.continue")) {
+			t.Errorf("%v: no way out drawn", c.size)
+		}
 		var claude image.Rectangle
 		for _, n := range r.nodes() {
 			if n.Desc.Label == "Claude Code" {
@@ -439,4 +442,15 @@ func TestEscapeClosesTheFirstWelcomeAsContinueDoes(t *testing.T) {
 		t.Fatal("Escape left the first Welcome open")
 	}
 	f.stored(t, providerDefaultKey+"@", "claude")
+}
+
+// A native browser page is a window of the system's, which nothing the
+// window draws covers: the Welcome cuts it where it lies.
+func TestTheWelcomeCutsTheBrowserPageUnderIt(t *testing.T) {
+	u, r, _ := welcomeRig(t, installedClaude)
+	r.frames(2)
+	want := image.Rect(0, int(topbarHeight), r.size.X, r.size.Y)
+	if !slices.Contains(u.covers, want) {
+		t.Fatalf("covers %v, want %v", u.covers, want)
+	}
 }

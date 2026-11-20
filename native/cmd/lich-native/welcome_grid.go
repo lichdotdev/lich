@@ -46,8 +46,9 @@ func (u *window) welcomeCells(list []providerInfo) (cells []welcomeCell, main st
 
 // welcomeGrid is the right half: a cell per provider, two to a row, with a
 // seam between them, and under them how to choose the default once there is
-// a choice. signing is a login running for one of them.
-func (u *window) welcomeGrid(gtx C, th *ui.Theme, list []providerInfo, rows int) (D, bool) {
+// a choice, and foot at the line's end when it is given. signing is a login
+// running for one of them.
+func (u *window) welcomeGrid(gtx C, th *ui.Theme, list []providerInfo, rows int, foot layout.Widget) (D, bool) {
 	cells, main := u.welcomeCells(list)
 	for _, c := range cells {
 		u.welcome.tome(c.p.id).observe(c.p.id, c.state, c.facts.known || !c.facts.needsLogin, gtx.Now)
@@ -79,12 +80,28 @@ func (u *window) welcomeGrid(gtx C, th *ui.Theme, list []providerInfo, rows int)
 		seam(gtx, th, image.Pt(gtx.Constraints.Max.X, line))
 		st.Pop()
 	}
-	if ready > 1 {
-		st := op.Offset(image.Pt(0, rows*cell.Y+line)).Push(gtx.Ops)
-		layout.Inset{Top: welcomeHintPad, Left: welcomeCellPadX, Right: welcomeCellPadX}.Layout(gtx,
-			th.Text(welcomeStatusSize, i18n.T("shell.welcome.chooseHint")).Muted().Layout)
-		st.Pop()
-	}
+	st := op.Offset(image.Pt(0, rows*cell.Y+line)).Push(gtx.Ops)
+	hgtx := gtx
+	hgtx.Constraints = layout.Exact(image.Pt(gtx.Constraints.Max.X, hint-line))
+	layout.Inset{Left: welcomeCellPadX, Right: welcomeCellPadX}.Layout(hgtx, func(gtx C) D {
+		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+			layout.Flexed(1, func(gtx C) D {
+				if ready < 2 {
+					return D{}
+				}
+				gtx.Constraints.Min.Y = 0
+				return th.Text(welcomeStatusSize, i18n.T("shell.welcome.chooseHint")).Muted().Layout(gtx)
+			}),
+			layout.Rigid(func(gtx C) D {
+				if foot == nil {
+					return D{}
+				}
+				gtx.Constraints.Min = image.Point{}
+				return foot(gtx)
+			}),
+		)
+	})
+	st.Pop()
 	return D{Size: gtx.Constraints.Max}, signing
 }
 
@@ -123,11 +140,11 @@ func (u *window) welcomeTome(gtx C, th *ui.Theme, c welcomeCell, main bool) {
 			ui.Fill(gtx, th.Over(ui.Alpha(th.Accent, ghostHoverFill)), 0)
 		}
 		return layout.Inset{Left: welcomeCellPadX, Right: welcomeCellPadX}.Layout(gtx, func(gtx C) D {
-			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-				layout.Rigid(func(gtx C) D { return welcomeBook(gtx, th, g) }),
-				ui.Gap(welcomeGapUnits),
-				layout.Flexed(1, func(gtx C) D { return u.welcomeLabels(gtx, th, c, t, main, playing) }),
-			)
+			// The cell is as tall as the window allows: the row centers in it.
+			return layout.W.Layout(gtx, func(gtx C) D {
+				gtx.Constraints.Min = image.Point{X: gtx.Constraints.Max.X}
+				return welcomeRow(gtx, th, g, func(gtx C) D { return u.welcomeLabels(gtx, th, c, t, main, playing) })
+			})
 		})
 	}
 	if choosable {
@@ -135,6 +152,18 @@ func (u *window) welcomeTome(gtx C, th *ui.Theme, c welcomeCell, main bool) {
 		return
 	}
 	body(gtx)
+}
+
+// welcomeRow is the book and its labels beside it.
+func welcomeRow(gtx C, th *ui.Theme, g grimoire.Grid, labels layout.Widget) D {
+	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+		layout.Rigid(func(gtx C) D { return welcomeBook(gtx, th, g) }),
+		ui.Gap(welcomeGapUnits),
+		layout.Flexed(1, func(gtx C) D {
+			gtx.Constraints.Min = image.Point{}
+			return labels(gtx)
+		}),
+	)
 }
 
 // welcomeFlame is the default's book at the flame's frame of now, asking for

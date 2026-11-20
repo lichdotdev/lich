@@ -28,9 +28,8 @@ var (
 	welcomeTagTop   = ui.Space(3)
 	welcomeFootTop  = ui.Space(8.5)
 	// welcomeHintHeight is the row under the books that says how to choose
-	// the default, .hint's 13px line in 14px of padding.
+	// the default, .hint's 13px line in 14px of padding, centered in it.
 	welcomeHintHeight unit.Dp = 46
-	welcomeHintPad            = ui.Space(3.5)
 	// welcomeCellMinWidth is the narrowest a book's cell reads in: the book,
 	// its gap and a name; welcomeIntroMinWidth the narrowest the logo and the
 	// title fit, under which the intro gives its room to the books.
@@ -132,7 +131,12 @@ func (u *window) welcomeScreen(gtx C, th *ui.Theme, area image.Rectangle) bool {
 		children = append(children, layout.Rigid(func(gtx C) D {
 			gtx.Constraints = layout.Exact(image.Pt(books-gtx.Dp(1), island.Dy()))
 			var d D
-			d, signing = u.welcomeGrid(gtx, on, list, rows)
+			// Alone, the books carry the way out on their last line.
+			var foot layout.Widget
+			if books == island.Dx() {
+				foot = func(gtx C) D { return u.welcomeFoot(gtx, on) }
+			}
+			d, signing = u.welcomeGrid(gtx, on, list, rows, foot)
 			return d
 		}))
 		return layout.Flex{}.Layout(gtx, children...)
@@ -156,18 +160,21 @@ func (u *window) welcomeIntro(gtx C, th *ui.Theme) D {
 				return layout.Inset{Top: welcomeTagTop}.Layout(gtx, th.Text(ui.TextBase, i18n.T("shell.welcome.tagline")).Muted().Layout)
 			}),
 			layout.Rigid(func(gtx C) D {
-				return layout.Inset{Top: welcomeFootTop}.Layout(gtx, func(gtx C) D {
-					cont := th.Button(&u.welcome.cont, i18n.T("shell.welcome.continue"))
-					cont.Size = ui.SizeSM
-					return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-						layout.Rigid(th.Text(ui.TextXS, i18n.T("shell.welcome.escCloses")).Muted().Layout),
-						layout.Flexed(1, func(gtx C) D { return D{Size: image.Pt(gtx.Constraints.Min.X, 0)} }),
-						layout.Rigid(cont.Layout),
-					)
-				})
+				return layout.Inset{Top: welcomeFootTop}.Layout(gtx, func(gtx C) D { return u.welcomeFoot(gtx, th) })
 			}),
 		)
 	})
+}
+
+// welcomeFoot is the way out: Esc's hint, and Continue at the end of the line.
+func (u *window) welcomeFoot(gtx C, th *ui.Theme) D {
+	cont := th.Button(&u.welcome.cont, i18n.T("shell.welcome.continue"))
+	cont.Size = ui.SizeSM
+	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+		layout.Rigid(th.Text(ui.TextXS, i18n.T("shell.welcome.escCloses")).Muted().Layout),
+		layout.Flexed(1, func(gtx C) D { return D{Size: image.Pt(gtx.Constraints.Min.X, 0)} }),
+		layout.Rigid(cont.Layout),
+	)
 }
 
 // welcomeTitle is the title a line at a time, the line with lich's name in
