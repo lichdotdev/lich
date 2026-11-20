@@ -3,6 +3,8 @@ package project
 import (
 	"context"
 	"strings"
+
+	"github.com/lichdotdev/lich/api"
 )
 
 // emptyTreeHash is git's well-known empty tree object, the diff base for a
@@ -24,6 +26,9 @@ type workTreeStatus struct {
 	// conflicted is the unmerged paths, relative to the repository root as git
 	// diff names them, which is how the review panel matches them.
 	conflicted []string
+	// changes is every dirty file still on disk by its state, relative to the
+	// path that was read.
+	changes map[string]string
 }
 
 // readWorkTree runs the single status call and parses it. A path git will not
@@ -50,13 +55,13 @@ func readWorkTreeContext(ctx context.Context, path string) workTreeStatus {
 	// Asked for only when there is something to translate: on a clean tree the
 	// prefix would cost a second git child to be told nothing, on the read the
 	// window polls every few seconds per checkout on screen.
-	if len(status.untracked) > 0 {
-		status.untracked = relativeToPath(ctx, path, status.untracked)
+	if len(status.changes) > 0 {
+		status.untracked, status.changes = relativeToPath(ctx, path, status.untracked, status.changes)
 	}
 	return status
 }
 
-// relativeToPath translates the untracked paths porcelain v2 reports — always
+// relativeToPath translates the untracked and changed paths porcelain v2 reports — always
 // relative to the repository root, and covering the whole repository, which
 // --porcelain forces whatever status.relativePaths says — back to being
 // relative to path, the way the `ls-files --others` call this read replaced
@@ -67,14 +72,14 @@ func readWorkTreeContext(ctx context.Context, path string) workTreeStatus {
 // prefix are dropped rather than kept: they live outside the directory the
 // caller asked about, and `ls-files --others`, scoped to it, never reported
 // them either.
-func relativeToPath(ctx context.Context, path string, untracked []string) []string {
+func relativeToPath(ctx context.Context, path string, untracked []string, changes map[string]string) ([]string, map[string]string) {
 	out, ok := gitQuietContext(ctx, path, "rev-parse", "--show-prefix")
 	// The overwhelmingly common case: path is the repository root, and every
 	// entry is already relative to it. A git that refused the question leaves
 	// them alone too — the same paths the read handed back before this call.
 	prefix := strings.TrimRight(out, "\r\n")
 	if !ok || prefix == "" {
-		return untracked
+		return untracked, changes
 	}
 	scoped := untracked[:0]
 	for _, rel := range untracked {
@@ -82,7 +87,13 @@ func relativeToPath(ctx context.Context, path string, untracked []string) []stri
 			scoped = append(scoped, under)
 		}
 	}
-	return scoped
+	under := make(map[string]string, len(changes))
+	for rel, change := range changes {
+		if inside, found := strings.CutPrefix(rel, prefix); found {
+			under[inside] = change
+		}
+	}
+	return scoped, under
 }
 
 // parseWorkTree reads porcelain v2's NUL-terminated records. Every record shape
@@ -106,22 +117,53 @@ func parseWorkTree(out string) workTreeStatus {
 			// here, or one renamed file would count as two dirty ones.
 			i++
 			status.files++
+			// 2 <XY> <sub> <mH> <mI> <mW> <hH> <hI> <Xscore> <path>
+			if fields := strings.SplitN(record, " ", 10); len(fields) == 10 {
+				status.change(fields[9], api.FileRenamed, fields[1])
+			}
 		case '1':
 			status.files++
+			// 1 <XY> <sub> <mH> <mI> <mW> <hH> <hI> <path>
+			if fields := strings.SplitN(record, " ", 9); len(fields) == 9 {
+				status.change(fields[8], changeOf(fields[1]), fields[1])
+			}
 		case 'u':
 			status.files++
 			// u <XY> <sub> <m1> <m2> <m3> <mW> <h1> <h2> <h3> <path>
 			if fields := strings.SplitN(record, " ", 11); len(fields) == 11 {
 				status.conflicted = append(status.conflicted, fields[10])
+				status.change(fields[10], api.FileConflict, "")
 			}
 		case '?':
 			status.files++
 			if _, path, ok := strings.Cut(record, " "); ok {
 				status.untracked = append(status.untracked, path)
+				status.change(path, api.FileUntracked, "")
 			}
 		}
 	}
 	return status
+}
+
+// changeOf is an ordinary entry's state from its XY: staged as new reads as
+// added, anything else as modified.
+func changeOf(xy string) string {
+	if strings.HasPrefix(xy, "A") {
+		return api.FileAdded
+	}
+	return api.FileModified
+}
+
+// change notes path's state, unless xy says the file is gone from disk: the
+// Files tree lists only what is there.
+func (s *workTreeStatus) change(path string, state string, xy string) {
+	if strings.Contains(xy, "D") {
+		return
+	}
+	if s.changes == nil {
+		s.changes = map[string]string{}
+	}
+	s.changes[path] = state
 }
 
 // readHeader takes the two `# branch.*` lines the readout needs, mapping v2's

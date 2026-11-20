@@ -408,7 +408,20 @@ type DiffStats struct {
 	// a rebase or a cherry-pick alike.
 	Merging    string   `json:"merging,omitempty"`
 	Conflicted []string `json:"conflicted,omitempty"`
+	// Changes is each dirty file still on disk by its state, keyed by its path
+	// relative to the path read, as the Files tree lists it.
+	// The values are the File* constants.
+	Changes map[string]string `json:"changes,omitempty"`
 }
+
+// A dirty file's state in DiffStats.Changes.
+const (
+	FileModified  = "modified"
+	FileAdded     = "added"
+	FileUntracked = "untracked"
+	FileRenamed   = "renamed"
+	FileConflict  = "conflict"
+)
 
 // PRDetail is the full view of a branch's open pull request — richer than the
 // footer badge's PullRequest — driving the dock's Pulls panel: the title, body,

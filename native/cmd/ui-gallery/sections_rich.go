@@ -118,14 +118,15 @@ func (r *richState) buildDiff() error {
 	return err
 }
 
-var richPaths = []string{"native/ui/markdown/markdown.go", "native/ui/codeview/view.go", "native/ui/tabs.go", "README.md"}
+var richPaths = []string{"native/ui/markdown/markdown.go", "native/ui/codeview/view.go", "native/ui/tabs.go", "native/ui/pill.go", "native/ui/merge.go", "README.md", "NOTES.md"}
 
 func (g *gallery) treeSection(gtx C, th *ui.Theme) D {
 	r := &g.rich
 	if r.tree.Tree == nil {
 		r.tree.List.Axis = layout.Vertical
 		r.tree.Tree = filetree.Build(richPaths)
-		r.tree.Stats = filetree.WithDirStats(r.tree.Tree, map[string]filetree.Delta{"native/ui/tabs.go": {Added: 12, Deleted: 3}})
+		r.tree.Stats = filetree.WithDirStats(r.tree.Tree, map[string]filetree.Delta{"native/ui/tabs.go": {Added: 12, Deleted: 3}, "native/ui/pill.go": {Added: 40}, "native/ui/merge.go": {Added: 9, Deleted: 2}, "NOTES.md": {Added: 1}})
+		r.tree.States = filetree.WithDirStates(r.tree.Tree, map[string]filetree.State{"native/ui/tabs.go": filetree.Modified, "native/ui/pill.go": filetree.Added, "native/ui/merge.go": filetree.Conflict, "NOTES.md": filetree.Untracked})
 		r.treeClosed = map[string]bool{}
 	}
 	for _, n := range r.tree.Clicked(gtx) {

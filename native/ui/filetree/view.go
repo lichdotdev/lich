@@ -2,6 +2,7 @@ package filetree
 
 import (
 	"image"
+	"image/color"
 
 	"gioui.org/font"
 	"gioui.org/gesture"
@@ -52,8 +53,9 @@ type Rows struct {
 	measure int
 	offsetX int
 
-	Tree  []*Node
-	Stats map[string]Delta
+	Tree   []*Node
+	Stats  map[string]Delta
+	States map[string]State
 }
 
 // treeClickable is a row's clickable and the node it was last drawn for,
@@ -168,6 +170,12 @@ func (t *Rows) measureRow(gtx C, inset layout.Inset, lead, stat layout.Widget) {
 	t.measure = max(t.measure, width)
 }
 
+// The state column: a letter's room, and a folder's dot.
+var (
+	markWidth = ui.Space(2)
+	markDot   = ui.Space(1.5)
+)
+
 // treeUnbounded is the width a row is measured in, wider than any name.
 const treeUnbounded = 1 << 20
 
@@ -229,16 +237,62 @@ func (t *Rows) rowParts(th *ui.Theme, r Row, lit bool) (lead, stat layout.Widget
 			name = name.Muted()
 		}
 	}
+	state := t.States[r.Node.Path]
+	if state != Clean {
+		name = name.In(stateColor(th, state))
+	}
 	lead = func(gtx C) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Rigid(glyphs[0]), ui.Gap(1.5), layout.Rigid(glyphs[1]), ui.Gap(1.5), layout.Rigid(name.Layout))
 	}
 	stat = func(gtx C) D {
-		d, changed := t.Stats[r.Node.Path]
-		if !changed {
-			return D{}
-		}
-		return layout.Inset{Left: ui.Space(2)}.Layout(gtx, func(gtx C) D { return th.DiffStat(d.Added, d.Deleted).Layout(gtx) })
+		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+			layout.Rigid(func(gtx C) D {
+				d, changed := t.Stats[r.Node.Path]
+				if !changed {
+					return D{}
+				}
+				return layout.Inset{Left: ui.Space(2)}.Layout(gtx, th.DiffStat(d.Added, d.Deleted).Layout)
+			}),
+			layout.Rigid(func(gtx C) D {
+				if state == Clean {
+					return D{}
+				}
+				return layout.Inset{Left: ui.Space(2)}.Layout(gtx, stateMark(th, state, r.Node.Dir))
+			}),
+		)
 	}
 	return lead, stat
+}
+
+// stateLetter is git's own letter for a file's state, the one VS Code shows;
+// a conflict reads "!".
+var stateLetter = [...]string{Untracked: "U", Added: "A", Renamed: "R", Modified: "M", Conflict: "!"}
+
+// stateColor is the tone a changed path's name and mark take.
+func stateColor(th *ui.Theme, s State) color.NRGBA {
+	switch s {
+	case Conflict:
+		return th.Destructive
+	case Modified:
+		return th.ToneWait
+	default:
+		return th.TonePass
+	}
+}
+
+// stateMark is a file's letter, or a folder's dot, in its state's color, in a
+// column as wide as the widest letter so the +/- beside it lines up.
+func stateMark(th *ui.Theme, s State, dir bool) layout.Widget {
+	tone := stateColor(th, s)
+	return func(gtx C) D {
+		gtx.Constraints.Min.X = gtx.Dp(markWidth)
+		return layout.E.Layout(gtx, func(gtx C) D {
+			if dir {
+				gtx.Constraints.Min = image.Pt(gtx.Dp(markDot), gtx.Dp(markDot))
+				return ui.Fill(gtx, tone, markDot/2)
+			}
+			return th.Text(ui.TextXS, stateLetter[s]).Mono().Weight(font.SemiBold).In(tone).Layout(gtx)
+		})
+	}
 }

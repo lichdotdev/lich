@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"maps"
 	"slices"
 	"strconv"
 
@@ -67,7 +68,7 @@ func mergingText(git backend.DiffStats) string {
 
 func sameDiff(a, b backend.DiffStats) bool {
 	return a.Files == b.Files && a.Added == b.Added && a.Deleted == b.Deleted && a.Head == b.Head &&
-		a.Branch == b.Branch && a.Merging == b.Merging && slices.Equal(a.Conflicted, b.Conflicted)
+		a.Branch == b.Branch && a.Merging == b.Merging && slices.Equal(a.Conflicted, b.Conflicted) && maps.Equal(a.Changes, b.Changes)
 }
 
 func standingOf(b *backend.BaseStatus) baseStanding {

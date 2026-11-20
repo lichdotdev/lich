@@ -921,6 +921,7 @@ DiffStats {
 	branch string
 	merging,omitempty string
 	conflicted,omitempty []string
+	changes,omitempty map[string]string
 }
 
 CheckoutFileOptions {

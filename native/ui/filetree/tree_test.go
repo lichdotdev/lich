@@ -64,6 +64,15 @@ func TestWithDirStatsSumsEveryFolderAboveAChange(t *testing.T) {
 	}
 }
 
+func TestWithDirStatesTakesTheMostUrgentFileBelow(t *testing.T) {
+	tree := Build([]string{"a/b/x.go", "a/c/y.go", "a/c/z.go", "clean/w.go", "top.go"})
+	got := WithDirStates(tree, map[string]State{"a/b/x.go": Untracked, "a/c/y.go": Conflict, "a/c/z.go": Modified})
+	want := map[string]State{"a/b/x.go": Untracked, "a/c/y.go": Conflict, "a/c/z.go": Modified, "a/b": Untracked, "a/c": Conflict, "a": Conflict}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("states = %v, want %v", got, want)
+	}
+}
+
 func TestVisibleRowsShowAFoldersChildrenOnlyWhileOpen(t *testing.T) {
 	tree := Build([]string{"a/x.go", "a/y.go", "b/z.go"})
 	names := func(rows []Row) (out []string) {

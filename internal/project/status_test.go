@@ -3,6 +3,7 @@ package project
 import (
 	"fmt"
 	"github.com/lichdotdev/lich/api"
+	"maps"
 	"os"
 	"path/filepath"
 	"slices"
@@ -153,6 +154,37 @@ func TestParseWorkTreeCountsEveryDirtyEntryOnce(t *testing.T) {
 	}
 }
 
+// TestParseWorkTreeReadsEachFileState pins the state the Files tree colors a
+// row by, and that a file gone from disk gets none: the tree does not list it.
+func TestParseWorkTreeReadsEachFileState(t *testing.T) {
+	t.Parallel()
+	oid := "6d19bac07168c90c890aab654501e68498ac4d57"
+	blobs := "45b983be36b73c0788dc9cbcb76cbb80fc7bb057 45b983be36b73c0788dc9cbcb76cbb80fc7bb057"
+	got := parseWorkTree(v2(
+		"1 .M N... 100644 100644 100644 "+blobs+" edited.txt",
+		"1 M. N... 100644 100644 100644 "+blobs+" staged.txt",
+		"1 A. N... 000000 100644 100644 "+blobs+" new.txt",
+		"1 AM N... 000000 100644 100644 "+blobs+" new edited.txt",
+		"1 .D N... 100644 100644 000000 "+blobs+" removed.txt",
+		"1 D. N... 100644 000000 000000 "+blobs+" staged-removed.txt",
+		"2 R. N... 100644 100644 100644 "+blobs+" R100 moved.txt", "old.txt",
+		"u UU N... 100644 100644 100644 100644 "+blobs+" "+oid+" both.txt",
+		"? loose.txt",
+	))
+	want := map[string]string{
+		"edited.txt":     api.FileModified,
+		"staged.txt":     api.FileModified,
+		"new.txt":        api.FileAdded,
+		"new edited.txt": api.FileAdded,
+		"moved.txt":      api.FileRenamed,
+		"both.txt":       api.FileConflict,
+		"loose.txt":      api.FileUntracked,
+	}
+	if !maps.Equal(got.changes, want) {
+		t.Errorf("changes = %v, want %v", got.changes, want)
+	}
+}
+
 // TestParseWorkTreeSurvivesMalformedOutput is the reason this parse is written
 // the way it is: branch, head and dirty count now come out of one call, so a
 // record it cannot read has to cost that record alone. Nothing here may panic,
@@ -292,6 +324,10 @@ func TestReadWorkTreeFromASubdirectory(t *testing.T) {
 	// v1 call this replaced ran without a pathspec too. Only the paths moved.
 	if got.files != 3 {
 		t.Errorf("files = %d, want 3", got.files)
+	}
+	changes := map[string]string{"nested/deep.txt": api.FileUntracked, "new.txt": api.FileUntracked}
+	if !maps.Equal(got.changes, changes) {
+		t.Errorf("changes = %v, want %v", got.changes, changes)
 	}
 }
 

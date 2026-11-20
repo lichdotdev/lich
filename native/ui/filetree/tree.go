@@ -118,6 +118,44 @@ func WithDirStats(tree []*Node, files map[string]Delta) map[string]Delta {
 	return out
 }
 
+// State is a path's state in git, in rising urgency: a folder takes the
+// most urgent of its files'.
+type State uint8
+
+const (
+	Clean State = iota
+	Untracked
+	Added
+	Renamed
+	Modified
+	Conflict
+)
+
+// WithDirStates adds every folder holding a changed file, at its most urgent
+// file's state, so a closed folder says a change is inside.
+func WithDirStates(tree []*Node, files map[string]State) map[string]State {
+	out := make(map[string]State, len(files))
+	maps.Copy(out, files)
+	var walk func(n *Node) State
+	walk = func(n *Node) State {
+		if !n.Dir {
+			return files[n.Path]
+		}
+		most := Clean
+		for _, c := range n.Children {
+			most = max(most, walk(c))
+		}
+		if most != Clean {
+			out[n.Path] = most
+		}
+		return most
+	}
+	for _, n := range tree {
+		walk(n)
+	}
+	return out
+}
+
 // Row is one row on screen.
 type Row struct {
 	Node  *Node

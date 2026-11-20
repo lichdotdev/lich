@@ -1,13 +1,14 @@
 package main
 
 // What the Code tab's tree reads from the session's listing: the name filter,
-// the line counts by path and the note a listing that left something out owes.
+// the line counts and git states by path and the note a listing that left something out owes.
 
 import (
 	"strings"
 
 	"github.com/lichdotdev/godemirror"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui/filetree"
 )
@@ -30,6 +31,26 @@ func diffStatsByPath(files []godemirror.FilePatch) map[string]filetree.Delta {
 	out := make(map[string]filetree.Delta, len(files))
 	for _, f := range files {
 		out[f.Path] = filetree.Delta{Added: f.Added, Deleted: f.Deleted}
+	}
+	return out
+}
+
+// treeStates is the git status's changes as the tree's states.
+func treeStates(changes map[string]string) map[string]filetree.State {
+	out := make(map[string]filetree.State, len(changes))
+	for rel, change := range changes {
+		switch change {
+		case api.FileUntracked:
+			out[rel] = filetree.Untracked
+		case api.FileAdded:
+			out[rel] = filetree.Added
+		case api.FileRenamed:
+			out[rel] = filetree.Renamed
+		case api.FileModified:
+			out[rel] = filetree.Modified
+		case api.FileConflict:
+			out[rel] = filetree.Conflict
+		}
 	}
 	return out
 }

@@ -70,6 +70,10 @@ type codeTab struct {
 	rows     filetree.Rows
 	rowsFrom *treeData
 	rowsFor  string
+	// changes is the checkout's dirty files by state, from the git status
+	// store; rowsWith is what the rows' colors were last built from.
+	changes  map[string]string
+	rowsWith map[string]string
 	hits     hitList
 	batch    commentBatch
 }
@@ -91,6 +95,7 @@ func (c *codeTab) hidden() {
 
 func (c *codeTab) layout(gtx C, th *ui.Theme, in dockInput) {
 	c.follow(in.checkout)
+	c.changes = in.git.Changes
 	c.fetchTree(gtx, in)
 	layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Flexed(1, func(gtx C) D {

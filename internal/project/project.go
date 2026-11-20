@@ -259,7 +259,7 @@ func (s *Service) Diff(_ context.Context, opts api.PathOptions) (DiffStats, erro
 func (s *Service) diff(path string) DiffStats {
 	status := readWorkTree(path)
 	stats := DiffStats{Files: status.files, Head: status.head, Branch: status.branch,
-		Merging: mergingFrom(path), Conflicted: status.conflicted}
+		Merging: mergingFrom(path), Conflicted: status.conflicted, Changes: status.changes}
 	// A tree the status read found nothing dirty in has nothing to total, so the
 	// second child would spend a process to be told so — on a call the window
 	// polls every few seconds per checkout on screen, most of which nobody is

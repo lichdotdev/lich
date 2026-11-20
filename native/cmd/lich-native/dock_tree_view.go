@@ -1,6 +1,7 @@
 package main
 
 import (
+	"maps"
 	"strings"
 
 	"gioui.org/layout"
@@ -10,15 +11,17 @@ import (
 	"github.com/lichdotdev/lich/native/ui/filetree"
 )
 
-// buildRows is the tree for data narrowed by query, rebuilt only when either
-// changed: a big checkout is thousands of paths to nest every frame.
+// buildRows is the tree for data narrowed by query, colored by the git
+// status's changes, rebuilt only when one of them changed: a big checkout is
+// thousands of paths to nest every frame.
 func (c *codeTab) buildRows(data *treeData, query string) {
-	if data == c.rowsFrom && query == c.rowsFor {
+	if data == c.rowsFrom && query == c.rowsFor && maps.Equal(c.changes, c.rowsWith) {
 		return
 	}
-	c.rowsFrom, c.rowsFor = data, query
+	c.rowsFrom, c.rowsFor, c.rowsWith = data, query, c.changes
 	c.rows.Tree = filetree.Build(filterPaths(data.listing.Files, query))
 	c.rows.Stats = filetree.WithDirStats(c.rows.Tree, data.stats)
+	c.rows.States = filetree.WithDirStates(c.rows.Tree, treeStates(c.changes))
 }
 
 // treeBody is TreeBody: the states the tree reads as, the rows, and the
