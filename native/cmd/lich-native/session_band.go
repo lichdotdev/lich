@@ -38,7 +38,7 @@ func (u *window) bandedSession(gtx C, sv sessionView, band int, bg color.NRGBA, 
 	strip := gtx
 	strip.Constraints = layout.Exact(image.Pt(size.X, band))
 	th := u.theme.On(bg)
-	u.sessionHeader(strip, th, sv, th.Foreground, nil)
+	u.sessionHeader(strip, th, sv, "", th.Foreground, nil)
 	defer op.Offset(image.Pt(0, band)).Push(gtx.Ops).Pop()
 	gtx.Constraints = layout.Exact(image.Pt(size.X, max(size.Y-band, 0)))
 	return u.content(gtx, sv, keys)
@@ -47,13 +47,13 @@ func (u *window) bandedSession(gtx C, sv sessionView, band int, bg color.NRGBA, 
 // sessionHeader is a session's header, alone on the stage and as a layout's
 // pane alike: the provider and the session's name floating at the left, with
 // no ground, cut with "…" when the room is short, then the selector and
-// controls, a pane's own, which take their room first. ink is the name's
-// color.
-func (u *window) sessionHeader(gtx C, th *ui.Theme, sv sessionView, ink color.NRGBA, controls layout.Widget) {
+// controls, a pane's own, which take their room first. project, when set,
+// leads the name; ink is the name's color.
+func (u *window) sessionHeader(gtx C, th *ui.Theme, sv sessionView, project string, ink color.NRGBA, controls layout.Widget) {
 	gtx.Constraints.Min = gtx.Constraints.Max
 	layout.Inset{Left: balloonInset, Right: balloonInset}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-			layout.Flexed(1, func(gtx C) D { return u.sessionName(gtx, th, sv, ink) }),
+			layout.Flexed(1, func(gtx C) D { return u.sessionName(gtx, th, sv, project, ink) }),
 			layout.Rigid(func(gtx C) D { return u.chatSwitch(gtx, th, sv) }),
 			layout.Rigid(func(gtx C) D {
 				if controls == nil {
@@ -65,17 +65,24 @@ func (u *window) sessionHeader(gtx C, th *ui.Theme, sv sessionView, ink color.NR
 	})
 }
 
-// sessionName is "Claude Code · Cart totals a cent off": the provider as the
-// window names it, in MutedForeground, then the card's label in ink.
-func (u *window) sessionName(gtx C, th *ui.Theme, sv sessionView, ink color.NRGBA) D {
+// sessionName is "Claude Code · Cart totals a cent off": the project when
+// set and the provider as the window names it, in MutedForeground, then the
+// card's label in ink, the one cut first when the room is short.
+func (u *window) sessionName(gtx C, th *ui.Theme, sv sessionView, project string, ink color.NRGBA) D {
 	gtx.Constraints.Min.X = 0
 	name := layout.Flexed(1, th.Text(ui.TextSM, sv.Label).In(ink).Truncated().Layout)
-	p, ok := u.model.providers.find(sv.Kind)
-	if !ok {
+	prefix := ""
+	if project != "" {
+		prefix = project + " · "
+	}
+	if p, ok := u.model.providers.find(sv.Kind); ok {
+		prefix += p.name + " · "
+	}
+	if prefix == "" {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx, name)
 	}
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-		layout.Rigid(th.Text(ui.TextSM, p.name+" · ").Muted().Truncated().Layout),
+		layout.Rigid(th.Text(ui.TextSM, prefix).Muted().Truncated().Layout),
 		name,
 	)
 }

@@ -254,7 +254,8 @@ func (u *window) paneFocusTarget(gtx C, id string) {
 }
 
 // paneHeader is the pane's top row: the session's own header, as alone on
-// the stage, its name muted out of focus, then the delegates chip and the
+// the stage, led by its project in a layout of several, its name muted out
+// of focus, then the delegates chip and the
 // zoom and unsplit buttons, or while zoomed, the chip that tells what the
 // zoom hides.
 func (u *window) paneHeader(gtx C, th *ui.Theme, v stageView, sv sessionView, focused bool) {
@@ -272,7 +273,7 @@ func (u *window) paneHeader(gtx C, th *ui.Theme, v stageView, sv sessionView, fo
 	if focused {
 		ink = th.Foreground
 	}
-	u.sessionHeader(gtx, th, sv, ink, func(gtx C) D {
+	u.sessionHeader(gtx, th, sv, v.projectNames[sv.projectID], ink, func(gtx C) D {
 		return layout.Inset{Left: ui.Space(1.5)}.Layout(gtx, func(gtx C) D {
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 				layout.Rigid(func(gtx C) D { return u.delegatesChip(gtx, th, v, sv, p) }),

@@ -403,3 +403,43 @@ func TestALayoutOfChatsHasNoBand(t *testing.T) {
 		}
 	}
 }
+
+// In a layout of several projects a pane's header leads with the project, in
+// the muted run before the name; in a layout of one it does not.
+func TestAMixedLayoutsPaneNamesItsProject(t *testing.T) {
+	const w, label = 800, "Cart totals a cent off"
+	u, r := stripFrames(t, w, label)
+	sv, _ := u.model.sessionViewOf("s1")
+	v := stageView{hasLayout: true, layout: layoutTab{Focus: "s1", Root: &paneNode{Session: "s1"}}, panes: map[string]sessionView{"s1": sv}}
+	u.sidebar, u.footer, u.dock, u.git, u.extPanel, u.topbar = &sidebar{}, &footer{}, &dock{}, &gitPanel{}, &extensionPanel{}, &topbar{}
+	u.palette, u.worktree = &commandPalette{}, &worktreeDialog{}
+	r.draw = func(gtx C, th *ui.Theme) {
+		u.theme = th
+		u.root.Layout(gtx, func(gtx C) D {
+			if err := u.paneAt(gtx, v, "s1", image.Rect(0, 0, w, 300), false); err != nil {
+				t.Fatal(err)
+			}
+			return D{Size: gtx.Constraints.Max}
+		})
+	}
+	r.settle(t)
+	if !r.shows("Claude Code · ") || r.shows("lich · Claude Code · ") {
+		t.Fatalf("a layout of one project names it:\n%s", r.drawn())
+	}
+	v.projectNames = map[string]string{sv.projectID: "lich"}
+	r.settle(t)
+	if !r.shows("lich · Claude Code · ") {
+		t.Fatalf("a layout of several projects does not name the pane's:\n%s", r.drawn())
+	}
+	if !r.shows(label) {
+		t.Errorf("the name is gone from the header:\n%s", r.drawn())
+	}
+}
+
+func TestMixedProjectsNeedsTwo(t *testing.T) {
+	one := map[string]sessionView{"a": {projectID: "lich"}, "b": {projectID: "lich"}}
+	two := map[string]sessionView{"a": {projectID: "lich"}, "b": {projectID: "skipo"}}
+	if mixedProjects(one) || !mixedProjects(two) || mixedProjects(nil) {
+		t.Errorf("mixed: one project %v, two %v, none %v", mixedProjects(one), mixedProjects(two), mixedProjects(nil))
+	}
+}

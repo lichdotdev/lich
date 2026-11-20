@@ -769,6 +769,9 @@ type stageView struct {
 	editor    string
 	hasEditor bool
 	panes     map[string]sessionView
+	// projectNames are the projects' names by id, set only when the layout's
+	// panes come from more than one: their headers then name the project.
+	projectNames map[string]string
 }
 
 func (u *window) stageView(now time.Time) stageView {
@@ -788,6 +791,9 @@ func (u *window) stageView(now time.Time) stageView {
 	}
 	if v.hasLayout {
 		v.panes = u.model.viewsOf(v.layout.sessions(), now)
+		if mixedProjects(v.panes) {
+			v.projectNames, _ = u.model.projectNamesAndPaths()
+		}
 	}
 	return v
 }
@@ -854,6 +860,19 @@ func (u *window) body(gtx C, v stageView) (int, sidebarAction, error) {
 		})
 	})
 	return edge, act, err
+}
+
+// mixedProjects reports whether panes come from more than one project.
+func mixedProjects(panes map[string]sessionView) bool {
+	first := ""
+	for _, sv := range panes {
+		if first == "" {
+			first = sv.projectID
+		} else if sv.projectID != first {
+			return true
+		}
+	}
+	return false
 }
 
 // sidebarActive is the session the sidebar lights: none while a service's

@@ -499,7 +499,9 @@ agent works, or a switch is on its way, it takes no click and says why in a tool
 A split's pane is headed by this same strip (`sessionHeader`), at the same height, with the same type and
 spacing and no hairline under it, so a session reads the same alone and in a layout. Only the pane's own controls
 are added at its right, after the selector: the delegates chip, then zoom and unsplit, or while zoomed the chip
-that names what the zoom hides. Out of focus the label turns `MutedForeground`.
+that names what the zoom hides. Out of focus the label turns `MutedForeground`. In a layout whose panes come
+from more than one project, the project leads the muted run, "lich · Claude Code · Claude 3", and the label is
+the part cut first; a layout of one project names none.
 
 A terminal that does not have the keyboard (a split's other panes, any pane while a field or dialog is typing, every
 terminal while the window is out of focus) draws its cursor as a 1px outline in the cursor's color; the one that has it
