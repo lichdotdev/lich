@@ -892,7 +892,7 @@ const editorBackdropID = "editor"
 
 // editorBackdropOpacity is how much of the backdrop the editor shows: the
 // user asked for it fainter than a session's.
-const editorBackdropOpacity = 0.5
+const editorBackdropOpacity = 0.3
 
 // stageBackdropID names the stage island's backdrop: the session alone on
 // it, or the stage itself while it holds none.
