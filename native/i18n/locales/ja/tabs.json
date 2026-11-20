@@ -33,6 +33,7 @@
   "mainMenu": {
     "open": "メニュー",
     "guides": "ガイド",
-    "basics": "基本"
+    "basics": "基本",
+    "welcome": "ようこそ"
   }
 }

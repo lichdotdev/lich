@@ -39,6 +39,7 @@ type BinaryOptions struct {
 // Docs is carried on every entry, installed or not: the row that has somewhere
 // to send the user is exactly the one that found nothing.
 // Source is SourcePath or SourceSetting, empty when nothing was found.
+// Installable is whether ProvidersInstall has an install for it on this OS.
 type DetectedProvider struct {
 	ID        string `json:"id"`
 	Name      string `json:"name"`
@@ -47,6 +48,8 @@ type DetectedProvider struct {
 	Path      string `json:"path"`
 	Source    string `json:"source"`
 	Docs      string `json:"docs"`
+	// Installable is set on every entry, installed or not.
+	Installable bool `json:"installable,omitempty"`
 }
 
 // ProviderBinary is one executable a provider could be started from, and the version it

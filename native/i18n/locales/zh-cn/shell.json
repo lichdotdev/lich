@@ -132,15 +132,6 @@
     "noUsage": "{provider} 不按配置文件统计用量。",
     "unreadable": "无法读取套餐用量。"
   },
-  "providerSetupDialog": {
-    "chooseTitle": "选择你的智能体",
-    "noneTitle": "未找到编码智能体",
-    "chooseDescription": "lich 在这台机器上找到了以下智能体。启用你要用的，其余的不会出现在“新建会话”菜单里。",
-    "noneDescription": "lich 运行的是本机已安装的智能体，目前一个也没找到。安装一个后再检查一次。",
-    "changeLater": "你可以随时在设置 › 提供商中更改。",
-    "pointToBinary": "已经装好了？在设置 › 提供商中为 lich 指定它的可执行文件。",
-    "continue": "继续"
-  },
   "resumeSessionDialog": {
     "title": "恢复之前的会话？",
     "description": "{label} 有一段未结束的对话（{id}）。恢复会从中断处接着进行，新建则开始一段空白对话。",
@@ -248,5 +239,21 @@
     "available": "{name} {version} 可用",
     "availableMany": "有 {n} 个扩展更新可用",
     "review": "查看"
+  },
+  "welcome": {
+    "title": "欢迎使用\n{name}",
+    "tagline": "在这里安装编码智能体并完成登录。",
+    "escCloses": "按 Esc 关闭",
+    "continue": "继续",
+    "notInstalled": "未安装",
+    "installing": "正在安装…",
+    "signedOut": "未登录",
+    "signingIn": "正在登录…",
+    "ready": "就绪",
+    "install": "安装",
+    "installPage": "安装说明",
+    "retry": "重试",
+    "signIn": "登录",
+    "signInNeedsProject": "请先打开一个项目：登录要在它的终端里进行。"
   }
 }

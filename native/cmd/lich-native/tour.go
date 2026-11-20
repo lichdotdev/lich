@@ -174,7 +174,7 @@ func (u *window) layerTour(now time.Time) {
 }
 
 func (u *window) offerTour() {
-	if u.tour.offered || !u.setup.shown || !u.setup.done {
+	if u.tour.offered || !u.welcome.firstRun || u.welcome.open {
 		return
 	}
 	u.tour.offered = true

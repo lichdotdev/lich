@@ -132,15 +132,6 @@
     "noUsage": "{provider} ではプロファイルごとの使用量は計測していません。",
     "unreadable": "プランの使用量を読み取れませんでした。"
   },
-  "providerSetupDialog": {
-    "chooseTitle": "エージェントを選択",
-    "noneTitle": "コーディングエージェントが見つかりません",
-    "chooseDescription": "lich がこのマシンで見つけたエージェントです。使うものを有効にしてください。それ以外は「新規セッション」メニューに表示されません。",
-    "noneDescription": "lich はこのマシンにインストール済みのエージェントを実行しますが、見つかりませんでした。いずれかをインストールしてから、もう一度確認してください。",
-    "changeLater": "設定 › プロバイダーでいつでも変更できます。",
-    "pointToBinary": "すでにインストール済みですか？設定 › プロバイダーでバイナリの場所を指定してください。",
-    "continue": "続行"
-  },
   "resumeSessionDialog": {
     "title": "前回のセッションを再開しますか？",
     "description": "{label} に前回の会話が残っています（{id}）。再開すると中断したところから続けられます。新規で始めると空の会話になります。",
@@ -248,5 +239,21 @@
     "available": "{name} {version} が利用可能です",
     "availableMany": "拡張機能のアップデート: {n} 件",
     "review": "確認する"
+  },
+  "welcome": {
+    "title": "{name}\nへようこそ",
+    "tagline": "コーディングエージェントのインストールもログインも、ここでまとめて。",
+    "escCloses": "Esc で閉じる",
+    "continue": "続行",
+    "notInstalled": "未インストール",
+    "installing": "インストール中…",
+    "signedOut": "未ログイン",
+    "signingIn": "ログイン中…",
+    "ready": "準備完了",
+    "install": "インストール",
+    "installPage": "インストール手順",
+    "retry": "再試行",
+    "signIn": "ログイン",
+    "signInNeedsProject": "先にプロジェクトを開いてください。ログインはそのターミナルで行います。"
   }
 }

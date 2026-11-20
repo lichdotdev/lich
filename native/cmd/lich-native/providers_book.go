@@ -15,6 +15,8 @@ type providerInfo struct {
 	binary string // the executable a session spawns, which an id is not
 	source string // "path", "setting" or "" when nothing was found
 	docs   string
+	// installable is whether lich can install it on this OS.
+	installable bool
 }
 
 // providersMachine is what the backend answered: the detected providers with
@@ -70,7 +72,7 @@ func (m providersMachine) skipLevel(kind string) string {
 func providerFrom(d backend.DetectedProvider, enabled bool) providerInfo {
 	return providerInfo{
 		id: d.ID, name: d.Name, installed: d.Installed, enabled: enabled,
-		binary: d.Binary, source: d.Source, docs: d.Docs,
+		binary: d.Binary, source: d.Source, docs: d.Docs, installable: d.Installable,
 	}
 }
 

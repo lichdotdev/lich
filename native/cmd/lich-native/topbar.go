@@ -41,6 +41,7 @@ var (
 	icSettings     = icons.Lucide("settings")
 	icMainMenu     = icons.Lucide("menu")
 	icGuides       = icons.Lucide("circle-question-mark")
+	icWelcome      = icons.Lucide("book-open")
 )
 
 // topbar is the native window's top strip: the brand over the sidebar's
@@ -91,6 +92,7 @@ type topbarAction struct {
 	// settings is the menu's Settings; projectSettings a tab's "Project
 	// settings…", by project id. tour is the menu's Basics guide.
 	settings        bool
+	welcome         bool   // the menu's Welcome
 	tour            string // a guide's id
 	projectSettings string
 	pulls           bool // the Pull requests button
@@ -273,10 +275,11 @@ func brandColumn(rail, panel int, open, morphing bool, p float32) (int, float32)
 }
 
 // menuButton is the strip's menu: Settings, which closes Settings while it
-// is open, and the guides in a submenu. The button is lit while Settings is.
+// is open, the Welcome, and the guides in a submenu. The button is lit while Settings is.
 func (t *topbar) menuButton(gtx C, th *ui.Theme, settingsOpen bool, guides []guideItem, act *topbarAction) D {
 	entries := []ui.MenuEntry{
 		{Label: i18n.T("tabs.projectTabs.settings"), Icon: icSettings, OnClick: func() { act.settings = true }},
+		{Label: i18n.T("tabs.mainMenu.welcome"), Icon: icWelcome, OnClick: func() { act.welcome = true }},
 		{Kind: ui.MenuSeparator},
 		{Kind: ui.MenuSubTrigger, Label: i18n.T("tabs.mainMenu.guides"), Icon: icGuides, Sub: guideEntries(guides, act)},
 	}

@@ -33,6 +33,7 @@
   "mainMenu": {
     "open": "Menu",
     "guides": "Guias",
-    "basics": "O básico"
+    "basics": "O básico",
+    "welcome": "Boas-vindas"
   }
 }

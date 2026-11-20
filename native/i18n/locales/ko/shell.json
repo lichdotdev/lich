@@ -132,15 +132,6 @@
     "noUsage": "{provider}에서는 프로필별 사용량을 측정하지 않습니다.",
     "unreadable": "플랜 사용량을 읽을 수 없습니다."
   },
-  "providerSetupDialog": {
-    "chooseTitle": "에이전트 선택",
-    "noneTitle": "코딩 에이전트를 찾지 못했습니다",
-    "chooseDescription": "lich가 이 머신에서 다음 에이전트를 찾았습니다. 사용하는 것을 켜세요. 나머지는 새 세션 메뉴에 나타나지 않습니다.",
-    "noneDescription": "lich는 이 머신에 설치된 에이전트를 실행하는데, 찾은 에이전트가 없습니다. 에이전트를 설치한 뒤 다시 확인하세요.",
-    "changeLater": "설정 › 프로바이더에서 언제든 바꿀 수 있습니다.",
-    "pointToBinary": "이미 설치되어 있나요? 설정 › 프로바이더에서 lich에 바이너리 위치를 알려 주세요.",
-    "continue": "계속"
-  },
   "resumeSessionDialog": {
     "title": "이전 세션을 재개할까요?",
     "description": "{label}에 남은 대화가 있습니다({id}). 재개하면 멈춘 곳에서 대화를 이어 가고, 새로 시작하면 빈 대화로 시작합니다.",
@@ -245,5 +236,21 @@
     "available": "{name} {version} 버전을 사용할 수 있습니다",
     "availableMany": "확장 프로그램 업데이트 {n}개",
     "review": "살펴보기"
+  },
+  "welcome": {
+    "title": "{name}에 오신 것을\n환영합니다",
+    "tagline": "코딩 에이전트 설치와 로그인을 여기서 한 번에 하세요.",
+    "escCloses": "Esc로 닫기",
+    "continue": "계속",
+    "notInstalled": "설치 안 됨",
+    "installing": "설치 중…",
+    "signedOut": "로그인 안 됨",
+    "signingIn": "로그인 중…",
+    "ready": "준비됨",
+    "install": "설치",
+    "installPage": "설치 안내",
+    "retry": "다시 시도",
+    "signIn": "로그인",
+    "signInNeedsProject": "먼저 프로젝트를 여세요. 로그인은 그 터미널에서 진행됩니다."
   }
 }

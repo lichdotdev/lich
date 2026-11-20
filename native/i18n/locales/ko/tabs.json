@@ -32,6 +32,7 @@
   "mainMenu": {
     "open": "메뉴",
     "guides": "가이드",
-    "basics": "기본 사용법"
+    "basics": "기본 사용법",
+    "welcome": "시작하기"
   }
 }

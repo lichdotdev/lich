@@ -132,15 +132,6 @@
     "noUsage": "Usage is not measured per profile for {provider}.",
     "unreadable": "Plan usage could not be read."
   },
-  "providerSetupDialog": {
-    "chooseTitle": "Choose your agents",
-    "noneTitle": "No coding agents found",
-    "chooseDescription": "lich found these on your machine. Turn on the ones you use; the rest stay out of the New Session menu.",
-    "noneDescription": "lich runs the agents already installed on your machine, and found none. Install one, then check again.",
-    "changeLater": "You can change this any time in Settings › Providers.",
-    "pointToBinary": "Already have one installed? Point lich at its binary in Settings › Providers.",
-    "continue": "Continue"
-  },
   "resumeSessionDialog": {
     "title": "Resume previous session?",
     "description": "{label} left a conversation behind ({id}). Resume it to pick the conversation up where it stopped, or start new for an empty one.",
@@ -248,5 +239,21 @@
     "available": "{name} {version} is available",
     "availableMany": "Extension updates available: {n}",
     "review": "Review"
+  },
+  "welcome": {
+    "title": "Welcome to\n{name}",
+    "tagline": "Install your coding agents and sign in to them, all from here.",
+    "escCloses": "Esc closes",
+    "continue": "Continue",
+    "notInstalled": "Not installed",
+    "installing": "Installing…",
+    "signedOut": "Signed out",
+    "signingIn": "Signing in…",
+    "ready": "Ready",
+    "install": "Install",
+    "installPage": "Install page",
+    "retry": "Retry",
+    "signIn": "Sign in",
+    "signInNeedsProject": "Open a project first: the sign-in runs in its terminal."
   }
 }

@@ -132,15 +132,6 @@
     "noUsage": "O uso por perfil não é medido para {provider}.",
     "unreadable": "Não foi possível ler o uso do plano."
   },
-  "providerSetupDialog": {
-    "chooseTitle": "Escolha seus agentes",
-    "noneTitle": "Nenhum agente de código encontrado",
-    "chooseDescription": "O lich encontrou estes agentes na sua máquina. Ative os que você usa; os demais ficam fora do menu Nova sessão.",
-    "noneDescription": "O lich executa os agentes já instalados na sua máquina e não encontrou nenhum. Instale um e verifique de novo.",
-    "changeLater": "Você pode mudar isso quando quiser em Configurações › Provedores.",
-    "pointToBinary": "Já tem um instalado? Aponte o lich para o binário dele em Configurações › Provedores.",
-    "continue": "Continuar"
-  },
   "resumeSessionDialog": {
     "title": "Retomar a sessão anterior?",
     "description": "{label} tem uma conversa anterior ({id}). Retome para continuar de onde ela parou ou inicie uma nova, vazia.",
@@ -248,5 +239,21 @@
     "available": "{name} {version} está disponível",
     "availableMany": "Atualizações de extensões disponíveis: {n}",
     "review": "Ver"
+  },
+  "welcome": {
+    "title": "Boas-vindas ao\n{name}",
+    "tagline": "Instale seus agentes de código e entre neles, tudo por aqui.",
+    "escCloses": "Esc fecha",
+    "continue": "Continuar",
+    "notInstalled": "Não instalado",
+    "installing": "Instalando…",
+    "signedOut": "Sem login",
+    "signingIn": "Entrando…",
+    "ready": "Pronto",
+    "install": "Instalar",
+    "installPage": "Página de instalação",
+    "retry": "Tentar de novo",
+    "signIn": "Entrar",
+    "signInNeedsProject": "Abra um projeto antes: o login roda no terminal dele."
   }
 }

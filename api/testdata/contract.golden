@@ -1294,6 +1294,7 @@ DetectedProvider {
 	path string
 	source string
 	docs string
+	installable,omitempty bool
 }
 
 ProviderIDOptions {

@@ -59,6 +59,9 @@ func (u *window) applyTopbar(act topbarAction) {
 	if act.tour != "" {
 		u.startGuide(act.tour)
 	}
+	if act.welcome {
+		u.reopenWelcome()
+	}
 	if act.captionClicked {
 		// Off the frame: Window.Option waits on the event loop this frame
 		// is holding.
