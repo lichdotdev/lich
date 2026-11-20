@@ -134,7 +134,7 @@ func TestDockExpandSlidesTheStageEdgeAndReflowsTheTerminalOnceItLands(t *testing
 	gtx := layout.Context{Metric: unit.Metric{PxPerDp: 1}}
 	g, w := gtx.Dp(gutter), u.dock.width(gtx)
 	row := rigWindow.X - g
-	end := func() int { return u.dock.islands[0].x1 }
+	end := func() int { return stageEnd(t, u, "s") }
 	at := func(share float32) int { return row - int(share*float32(w+g)) }
 	edges, cols := slide(t, r, tv, func() { u.dock.setCollapsed(false) }, &u.dock.slide, end)
 	onCurve(t, "out", edges, true, at)
@@ -159,8 +159,8 @@ func TestDockPeekSlidesOverTheStageAsTheExpandDoes(t *testing.T) {
 	g, w := gtx.Dp(gutter), u.dock.width(gtx)
 	row := rigWindow.X - g
 	left := func() int {
-		if u.dock.islands != nil {
-			t.Fatalf("the dock out from the edge took room from the stage: %v", u.dock.islands)
+		if end := stageEnd(t, u, "s"); end != row {
+			t.Fatalf("the dock out from the edge took room from the stage: its edge at %d, want %d", end, row)
 		}
 		if u.dock.peek.slide.shown == 0 {
 			// Nothing of it drawn yet: where share 0 has it.
@@ -178,6 +178,19 @@ func TestDockPeekSlidesOverTheStageAsTheExpandDoes(t *testing.T) {
 			t.Fatalf("the terminal's columns went %v then %v, want %d throughout: the peek resized it", cols, more, wide)
 		}
 	}
+}
+
+// stageEnd is the stage's right edge in the last frame, where it drew
+// session's terminal or chat.
+func stageEnd(t *testing.T, u *window, session string) int {
+	t.Helper()
+	u.drop.mu.Lock()
+	defer u.drop.mu.Unlock()
+	r, ok := u.drop.rects[session]
+	if !ok {
+		t.Fatalf("%s not drawn on the stage", session)
+	}
+	return r.Max.X
 }
 
 // labelX is where the first thing drawn with label starts.
@@ -226,7 +239,7 @@ func TestDockExpandCarriesTheChatWithTheStageEdgeOnEveryFrame(t *testing.T) {
 		}
 		if u.dock.slide.moving() {
 			frames++
-			if end, x := u.dock.islands[0].x1, labelX(t, r, tui); x != end-inset {
+			if end, x := stageEnd(t, u, "s1"), labelX(t, r, tui); x != end-inset {
 				t.Errorf("frame %d of the slide: the chat's switch starts at %d, want %d, %d inside the stage's edge at %d", frames-1, x, end-inset, inset, end)
 			}
 		}

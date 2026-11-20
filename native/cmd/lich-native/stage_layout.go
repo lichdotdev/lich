@@ -20,8 +20,9 @@ import (
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
-// A layout on the island: its tree of panes, each a session's terminal under
-// a header naming it, with draggable gaps between them.
+// A layout on the stage: its tree of panes, each an island of its own holding
+// a session's terminal under a header naming it, with draggable gaps between
+// them.
 
 // The smallest pane a split leaves. 480dp is 51 columns at the default 13sp,
 // where Claude Code's and Codex's dialogs still wrap cleanly (measured
@@ -31,8 +32,8 @@ var (
 	paneMinHeight = unit.Dp(180)
 	paneHeader    = ui.Space(8)
 	paneRadius    = ui.RadiusLG
-	// paneDim is how far an unfocused pane's terminal fades toward the
-	// island, so the one that takes the keys reads first.
+	// paneDim is how far an unfocused pane's terminal fades toward
+	// Background, so the one that takes the keys reads first.
 	paneDim = float32(0.35)
 )
 
@@ -52,7 +53,7 @@ type paneUI struct {
 type layoutStage struct {
 	panes    map[string]*paneUI
 	dividers map[string]*ui.SplitPane
-	// metric is the island's, which the smallest pane is measured in.
+	// metric is the stage's, which the smallest pane is measured in.
 	metric  unit.Metric
 	move    moveConfirm
 	pointer dragPointer
@@ -95,8 +96,9 @@ func (s *layoutStage) divider(key string) *ui.SplitPane {
 	return d
 }
 
-// layoutIsland draws the layout on screen over the island's area.
-func (u *window) layoutIsland(gtx C, v stageView) error {
+// layoutPanes draws the layout on screen over the stage's area, its panes
+// running to the stage's edges and stopping over the balloons' band.
+func (u *window) layoutPanes(gtx C, v stageView) error {
 	st := &u.layoutStage
 	st.metric = gtx.Metric
 	st.sort.Carry = &u.sidebar.carry
@@ -109,10 +111,8 @@ func (u *window) layoutIsland(gtx C, v stageView) error {
 		root = &paneNode{Session: lt.Focus}
 	}
 	u.terms.onScreen(onScreenOf(root)...)
-	in := image.Rectangle{Max: gtx.Constraints.Max}.Inset(gtx.Dp(gutter))
-	if band := u.ptyBand(gtx, v); band > 0 {
-		in.Max.Y = max(in.Min.Y, gtx.Constraints.Max.Y-band)
-	}
+	in := image.Rectangle{Max: gtx.Constraints.Max}
+	in.Max.Y = max(0, in.Max.Y-u.ptyBand(gtx, v))
 	drawn := layoutTab{Root: root}
 	st.motion.begin(gtx.Now, lt.Zoomed, drawn.panes())
 	err := u.paneTree(gtx, v, root, "", in, len(lt.panes()) > 1)

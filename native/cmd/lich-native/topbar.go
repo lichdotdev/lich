@@ -2,7 +2,6 @@ package main
 
 import (
 	"image"
-	"image/color"
 
 	"gioui.org/font"
 	"gioui.org/io/system"
@@ -46,29 +45,21 @@ var (
 
 // topbar is the native window's top strip: the brand over the sidebar's
 // column, the project tabs from the terminal island's edge, and the bell,
-// Pull requests and the menu on the right. The native window has no Home tab,
-// and the active tab merges into the island under it.
+// Pull requests and the menu on the right. The native window has no Home tab.
 type topbar struct {
 	root  *ui.Root
 	brand ui.Clickable
 	sort  ui.Sortable
 	list  layout.List
-	// tabW is the tabs' width as the strip last laid them out, and laid
-	// where each tab was drawn, in window pixels.
-	tabW int
-	laid []laidTab
-	// merge eases the active tab between detached and merged into merged,
-	// the island it last grew out of; mergedFor is the tab it eases.
-	merge     dockSlide
-	merged    islandSpan
-	mergedFor string
-	tabs      map[string]*tabState
-	open      openMenu
-	bell      bellMenu
-	hints     map[string]*ui.Tooltip
-	menu      ui.MenuState
-	menuOpen  ui.Clickable
-	pulls     ui.Clickable
+	// laid is where each tab was drawn, in window pixels.
+	laid     []laidTab
+	tabs     map[string]*tabState
+	open     openMenu
+	bell     bellMenu
+	hints    map[string]*ui.Tooltip
+	menu     ui.MenuState
+	menuOpen ui.Clickable
+	pulls    ui.Clickable
 	// tour is the window's guided tour, which points at the menu.
 	tour     *driver.Tour
 	confirm  closeConfirm
@@ -77,11 +68,6 @@ type topbar struct {
 	// surfaceClicks are the extension surfaces' buttons
 	// (topbar_extensions.go).
 	surfaceClicks map[extensionKey]*ui.Clickable
-
-	// shift is how far right of the terminal island's edge the strip starts:
-	// past the window's own buttons on the left when the sidebar is too
-	// narrow to hold them and the brand.
-	shift int
 }
 
 func newTopbar(root *ui.Root) *topbar {
@@ -122,27 +108,18 @@ type layoutRename struct{ id, name string }
 
 // topbarFrame is what the window measured for the strip this frame.
 type topbarFrame struct {
-	brandWidth int     // the sidebar's column, rail to panel
-	brandName  float32 // the name's opacity, the panel's own mid-morph
-	stripX     int     // the terminal island's left edge
-	island     color.NRGBA
-	// islands are the islands under the strip, in strip pixels, when the
-	// screen has more than one (Pulls or the dock); none is one island of
-	// island's color under the whole strip.
-	islands []islandSpan
-	// islandsSliding is whether the islands are mid-slide: the active tab
-	// then grows out of the one it overlaps most rather than detaching while
-	// it fits wholly over none.
-	islandsSliding bool
-	tabs           []projectTab
-	active         string
-	pending        []notification
-	settings       bool // the Settings screen is open
-	guides         []guideItem
-	pulls          bool // the Pulls screen is open
-	caption        captionLayout
-	chrome         windowChrome
-	windowButtons  string // the window buttons setting
+	brandWidth    int     // the sidebar's column, rail to panel
+	brandName     float32 // the name's opacity, the panel's own mid-morph
+	stripX        int     // the terminal island's left edge
+	tabs          []projectTab
+	active        string
+	pending       []notification
+	settings      bool // the Settings screen is open
+	guides        []guideItem
+	pulls         bool // the Pulls screen is open
+	caption       captionLayout
+	chrome        windowChrome
+	windowButtons string // the window buttons setting
 
 	// extensions is every extension, whose surfaces get a button each, and
 	// extension the surface on screen, zero for none.
@@ -150,13 +127,6 @@ type topbarFrame struct {
 	// surfaceImages is the surfaces' own icons, drawn in place of the names.
 	surfaceImages map[extensionKey]*icons.Bitmap
 	extension     extensionKey
-}
-
-// islandSpan is one island under the tab strip: its left and right edges in
-// strip pixels and its color.
-type islandSpan struct {
-	x0, x1 int
-	color  color.NRGBA
 }
 
 // layout draws the strip in a topbarHeight band at the top of gtx; th is on
@@ -179,8 +149,7 @@ func (t *topbar) layout(gtx C, th *ui.Theme, f topbarFrame) topbarAction {
 	right := t.rightSide(gtx, th, f, &act)
 	left := t.leftSide(gtx, th, f, &act)
 	f.brandWidth = max(f.brandWidth-left, gtx.Dp(brandHeight))
-	start := stripStart(f.stripX, g+left+f.brandWidth+gtx.Dp(barGap), gtx.Dp(tabRadius))
-	t.shift, f.stripX = start-f.stripX, start
+	f.stripX = max(f.stripX, g+left+f.brandWidth+gtx.Dp(barGap))
 	t.place(gtx, image.Pt(g+left, 0), func(gtx C) D { return t.brandButton(gtx, th, f) })
 	stripW := gtx.Constraints.Max.X - right - g - gtx.Dp(barGap) - f.stripX
 	t.place(gtx, image.Pt(f.stripX, 0), func(gtx C) D {
@@ -188,16 +157,6 @@ func (t *topbar) layout(gtx C, th *ui.Theme, f topbarFrame) topbarAction {
 		return t.strip(gtx, th, f, &act)
 	})
 	return act
-}
-
-// stripStart is where the tab strip starts: at the island's edge, or, when
-// the window's own buttons and the brand reach past it, a fillet radius after
-// them, the room the active first tab's left fillet draws in.
-func stripStart(islandEdge, brandEnd, radius int) int {
-	if brandEnd <= islandEdge {
-		return islandEdge
-	}
-	return brandEnd + radius
 }
 
 // place lays w out at p.

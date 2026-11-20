@@ -27,6 +27,9 @@ var (
 	// foot: the balloon, the edge under it and as much over it, in whole
 	// rows once the grid rounds it down.
 	balloonBand = balloonInset + balloonItemHeight + 2*balloonPad + balloonInset
+	// layoutBalloonBand is the band under a layout's panes, which are islands
+	// of their own: the balloon on the stage's foot and a gutter over it.
+	layoutBalloonBand = balloonItemHeight + 2*balloonPad + gutter
 )
 
 // balloonsShown is whether the stage's foot carries the footer's balloons:
@@ -56,10 +59,14 @@ func (u *window) balloonsShown(v stageView) bool {
 // ptyBand is the height a terminal on the stage leaves the balloons at its
 // foot, 0 where there are none. It follows the session's kind rather than
 // the agent live in its PTY, which comes and goes, so the grid is not resized
-// when an agent starts in a plain terminal.
+// when an agent starts in a plain terminal. A layout's band does not follow
+// which of its terminals has the focus; a chat in focus still takes it away.
 func (u *window) ptyBand(gtx C, v stageView) int {
-	if (!v.hasLayout && !v.hasActive) || !u.balloonsShown(v) {
+	switch {
+	case (!v.hasLayout && !v.hasActive) || !u.balloonsShown(v):
 		return 0
+	case v.hasLayout:
+		return gtx.Dp(layoutBalloonBand)
 	}
 	return gtx.Dp(balloonBand)
 }
@@ -77,34 +84,33 @@ func (u *window) panelShown(v stageView) bool {
 	return shown
 }
 
-// drawBalloons lays the balloons over the foot of gtx's area, the island at
-// islandAt, when the stage carries them, and stands the toasts over the right
-// one.
-func (u *window) drawBalloons(gtx C, v stageView) {
+// drawBalloons lays the balloons over the foot of gtx's area, the stage at
+// islandAt, inset from its sides and foot, when the stage carries them, and
+// stands the toasts over the right one.
+func (u *window) drawBalloons(gtx C, v stageView, inset int) {
 	if !u.balloonsShown(v) {
 		return
 	}
-	u.footer.layoutBalloons(gtx, u.theme)
-	u.toastFloor = gtx.Dp(gutter) + gtx.Dp(balloonInset) + gtx.Dp(balloonItemHeight) + 2*gtx.Dp(balloonPad)
-	u.toastRight = u.islandAt.X + gtx.Constraints.Max.X - gtx.Dp(balloonInset)
+	u.footer.layoutBalloons(gtx, u.theme, inset)
+	u.toastFloor = gtx.Dp(gutter) + inset + gtx.Dp(balloonItemHeight) + 2*gtx.Dp(balloonPad)
+	u.toastRight = u.islandAt.X + gtx.Constraints.Max.X - inset
 }
 
 // layoutBalloons draws the layout's left side in a balloon at the bottom-left
-// corner of gtx's area and its right side at the bottom-right, from what
-// frame kept. Each is one line: the right side is measured first, the left
+// corner of gtx's area and its right side at the bottom-right, inset from
+// the sides and the foot, from what frame kept. Each is one line: the right side is measured first, the left
 // takes the room left, and an item that does not fit is left out with the
 // ones after it. A right press on either opens the menu that leads to
 // Settings › Appearance › Footer.
-func (f *footer) layoutBalloons(gtx C, th *ui.Theme) {
+func (f *footer) layoutBalloons(gtx C, th *ui.Theme, inset int) {
 	in := f.shown
 	f.press(in)
 	l, _ := f.snapshot()
 	size := gtx.Constraints.Max
-	inset := gtx.Dp(balloonInset)
 	y := size.Y - inset - gtx.Dp(balloonItemHeight) - 2*gtx.Dp(balloonPad)
 	on := th.On(th.Sidebar)
 	right, rw := f.balloon(gtx, on, footerSlots(l.Right, in), in, size.X-2*inset)
-	left, lw := f.balloon(gtx, on, withDelegates(footerSlots(l.Left, in), in), in, size.X-3*inset-rw)
+	left, lw := f.balloon(gtx, on, withDelegates(footerSlots(l.Left, in), in), in, size.X-2*inset-gtx.Dp(balloonInset)-rw)
 	f.placeBalloon(gtx, th, 0, left, image.Pt(inset, y), lw)
 	f.placeBalloon(gtx, th, 1, right, image.Pt(size.X-inset-rw, y), rw)
 }

@@ -55,7 +55,7 @@ func TestLayingOutDelegatesFromOtherLayoutsAsksInTheFrameAfterTheClick(t *testin
 		u.root.Layout(gtx, func(gtx C) D {
 			u.layoutMoveConfirm(gtx, th)
 			u.footer.frame(gtx, in)
-			u.footer.layoutBalloons(gtx, th)
+			u.footer.layoutBalloons(gtx, th, gtx.Dp(balloonInset))
 			u.applyLayoutStage()
 			return D{Size: gtx.Constraints.Max}
 		})

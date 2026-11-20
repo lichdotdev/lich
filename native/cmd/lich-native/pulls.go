@@ -62,17 +62,7 @@ type pullsScreen struct {
 
 	open bool
 	// focused is whether the window has the user's focus.
-	focused bool
-	// squareX is the left edge of the island the active project tab sits on
-	// the top-left corner of, -1 for none: that island drops the rounding for
-	// the tab to grow out of, as the stage's island does.
-	squareX int
-	// gap is the run of the island's top edge the active tab takes, nil when
-	// it sits on none.
-	gap *ui.EdgeGap
-	// spans are the islands as the last layout placed them, for the tab
-	// strip to merge the active tab into the one it sits over.
-	spans    []islandSpan
+	focused  bool
 	project  backend.Project
 	selected int // the PR in view, 0 for the index
 	// branchPR is the PR of the checkout's branch, which the screen opens on.
@@ -210,8 +200,7 @@ func (p *pullsScreen) layout(gtx C, th *ui.Theme) pullsAction {
 	if p.selected != 0 {
 		p.view.navClicks(gtx, p, p.visible(rows.val))
 	}
-	p.spans = append(p.spans[:0], islandSpan{x0: 0, x1: gtx.Constraints.Max.X, color: th.Background})
-	pullsIsland(gtx, th, th.Background, p.squareX == 0, p.gap, func(gtx C, th *ui.Theme) D {
+	pullsIsland(gtx, th, th.Background, func(gtx C, th *ui.Theme) D {
 		account := p.store.account(p.project.Path)
 		if !account.loaded {
 			return p.awaitAccount(gtx, th, &act)
@@ -259,18 +248,13 @@ func (p *pullsScreen) backToIndex() {
 	p.store.invalidate()
 }
 
-// pullsIsland is a rounded-lg box of bg the size of gtx, its top-left corner
-// square when the active tab grows out of it.
-func pullsIsland(gtx C, th *ui.Theme, bg color.NRGBA, squareNW bool, gap *ui.EdgeGap, w func(gtx C, th *ui.Theme) D) D {
+// pullsIsland is a rounded-lg box of bg the size of gtx.
+func pullsIsland(gtx C, th *ui.Theme, bg color.NRGBA, w func(gtx C, th *ui.Theme) D) D {
 	gtx.Constraints.Min = gtx.Constraints.Max
 	r := gtx.Dp(ui.RadiusLG)
-	nw := r
-	if squareNW {
-		nw = 0
-	}
-	paint.FillShape(gtx.Ops, bg, clip.RRect{Rect: image.Rectangle{Max: gtx.Constraints.Max}, NW: nw, NE: r, SE: r, SW: r}.Op(gtx.Ops))
+	paint.FillShape(gtx.Ops, bg, clip.UniformRRect(image.Rectangle{Max: gtx.Constraints.Max}, r).Op(gtx.Ops))
 	on := th.On(bg)
-	defer ui.IslandBorder(gtx, gtx.Constraints.Max, nw, r, gap, on.Over(on.Border))
+	defer ui.IslandBorder(gtx, gtx.Constraints.Max, r, on.Over(on.Border))
 	return w(gtx, on)
 }
 

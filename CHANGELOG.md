@@ -35,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **An extension's detail grows with the window.** On a tall or ultrawide screen the dialog and its screenshots take more of it.
 - **A Markdown artifact opens rendered, on the stage.** Clicking a `.md` file in the dock's Artifacts tab shows it formatted in the editor, read only, instead of its source in the browser. It stays in the tree as the checkout's editor node until you close it from the node's menu.
 - **Review threads sent to a session are resolved only when the agent fixed them.** A question or a point for the team comes back to you in the session instead of getting "Fixing this" on GitHub. A thread the agent fixed is resolved, with a reply naming its commit, once that commit is pushed.
+- **Project tabs and split panes float on the canvas as islands of their own.** The active tab is a filled pill instead of growing out of the terminal, and each pane of a split or of a session beside its browser is its own rounded island. In a split, the footer's balloons sit at the foot of the stage, under the panes.
 
 ### Removed
 
