@@ -5,7 +5,7 @@
 package webview
 
 /*
-#cgo pkg-config: gtk+-3.0 webkit2gtk-4.1 x11 xext gbm
+#cgo pkg-config: gtk+-3.0 webkit2gtk-4.1 x11 xext
 #include <stdlib.h>
 #include "webview_linux.h"
 */
