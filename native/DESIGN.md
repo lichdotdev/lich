@@ -495,8 +495,10 @@ its right the GUI | TUI selector (`chat_switch.go`), which takes its room first:
 provider `chat.Kinds` lists gets the selector, so a Codex or Crush session's strip is the name alone. While the
 agent works, or a switch is on its way, it takes no click and says why in a tooltip.
 
-A split's pane has its header already, so it gets no strip: the selector, same size, stands at the right of the
-header between the name and the zoom button, and the pane's terminal keeps every row.
+A split's pane is headed by this same strip (`sessionHeader`), at the same height, with the same type and
+spacing and no hairline under it, so a session reads the same alone and in a layout. Only the pane's own controls
+are added at its right, after the selector: the delegates chip, then zoom and unsplit, or while zoomed the chip
+that names what the zoom hides. Out of focus the label turns `MutedForeground`.
 
 A terminal that does not have the keyboard (a split's other panes, any pane while a field or dialog is typing, every
 terminal while the window is out of focus) draws its cursor as a 1px outline in the cursor's color; the one that has it

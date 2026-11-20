@@ -757,8 +757,7 @@ type stageView struct {
 	strip       []projectTab
 	stripActive string
 	// layout is the layout on screen when hasLayout, with each pane's
-	// session; mixed is its panes coming from more than one project, whose
-	// names and paths the headers read.
+	// session.
 	layout    layoutTab
 	hasLayout bool
 	// console is the service whose console is on screen in place of the
@@ -767,12 +766,9 @@ type stageView struct {
 	hasConsole bool
 	// editor is the checkout whose stage editor is on screen in place of the
 	// active session, when hasEditor.
-	editor       string
-	hasEditor    bool
-	panes        map[string]sessionView
-	mixed        bool
-	projectNames map[string]string
-	projectPaths map[string]string
+	editor    string
+	hasEditor bool
+	panes     map[string]sessionView
 }
 
 func (u *window) stageView(now time.Time) stageView {
@@ -792,12 +788,6 @@ func (u *window) stageView(now time.Time) stageView {
 	}
 	if v.hasLayout {
 		v.panes = u.model.viewsOf(v.layout.sessions(), now)
-		v.projectNames, v.projectPaths = u.model.projectNamesAndPaths()
-		seen := map[string]bool{}
-		for _, sv := range v.panes {
-			seen[sv.projectID] = true
-		}
-		v.mixed = len(seen) > 1
 	}
 	return v
 }

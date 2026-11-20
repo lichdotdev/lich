@@ -213,17 +213,6 @@ func TestRotateTurnsTheFocusedSplit(t *testing.T) {
 	}
 }
 
-func TestPaneHeaderNamesOnlyAWorktree(t *testing.T) {
-	root := sessionView{projectID: "e48f04f46a4a", path: "/src/lich"}
-	worktree := sessionView{projectID: "e48f04f46a4a", path: "/home/u/.local/share/lich/worktrees/e48f04f46a4a/imfl"}
-	if got := worktreeLabel(root, "/src/lich"); got != "" {
-		t.Errorf("a session in the project's own checkout is labelled %q, want none", got)
-	}
-	if got := worktreeLabel(worktree, "/src/lich"); got != "imfl" {
-		t.Errorf("worktree label = %q, want imfl", got)
-	}
-}
-
 func TestOpenBesideStacksTheDelegatesEvenlyAtTheRight(t *testing.T) {
 	var ls layoutTabs
 	tab := ls.byID(ls.openBeside("orch", "orch", []string{"w1", "w2", "w3"}))
