@@ -19,10 +19,11 @@ Elements are defined by space, hover and islands, not by enclosure.
   window's foot as the sidebar does. The sidebar and the dock are resized from the gutter between them and the
   stage, all of its width (`ui.ResizeHandle.LayoutGap`), which shows only the resize cursor and paints nothing. Each carries a 1px hairline in `Border`
   just inside its `RadiusLG` edge (`ui.InsetBorder`, `ui.IslandBorder`): the one outline in the window that
-  wraps a surface rather than a field. The active project tab that has grown out of its island takes the
-  line with it, up its sides and round its fillets, and the island's top edge is left open under it
-  (`topbar.tabGap`). The top bar sits on the canvas itself, unboxed; the footer is two balloons over the
-  stage (see below).
+  wraps a surface rather than a field. A layout has no stage island: each of its panes is an island of its
+  own on `Canvas`, a gutter apart, running to the stage's edges (`layoutPanes`). The top bar sits on the
+  canvas itself, unboxed: a project tab is a pill a gutter clear of the islands, `Accent` when active, the
+  foreground at 4% on hover, taking hover and clicks on the pill alone, with one `Border` hairline where the
+  pinned tabs end and none between the others. The footer is two balloons over the stage (see below).
 - **Hairlines are seams inside an island, and its edge.** `th.Separator` splits a panel's own parts (a screen's header
   from its body, two panes, a folder header from its rule). It never wraps a list item, a badge or a button
   at rest. Inputs are the one exception: a field needs an edge to read as editable.
@@ -247,8 +248,9 @@ The balloons never cover the agent's prompt. A terminal under them gives up a ba
 (`balloonBand`, the balloon and the 8px edge above and below it), so the PTY has fewer rows and the
 balloons stand in the room it left; the grid only loses whole rows. The band follows the session's kind, not the
 agent live in its PTY, so the grid is resized once, not each time an agent starts or ends. In a layout the
-balloons stand at the foot of the stage, reading the focused pane's session, and every pane stands above the
-band, which the layout keeps however the focus moves.
+balloons stand on the stage's foot, flush with its sides and its foot, under the panes, reading the focused
+pane's session. Every pane stops a gutter over them (`layoutBalloonBand`, the balloon and a gutter), and the
+band stays where it is however the focus moves, so no pane's grid is resized.
 
 A plain terminal (a `shell` session), a service's console and Home carry no balloons and no band: the terminal
 takes the island's full height. A session drawn as a chat carries none either: its footer stands in the
@@ -581,7 +583,8 @@ The window has one toast stack, in the bottom-right corner: the `gutter` over th
 at its right edge, or over the stage's foot at the window's edge where there are none (`layoutToasts`). It grows upward, and a toast comes in and leaves by the bottom edge. A
 screen keeps its actions at the right of its header, so nothing the window raises stands in the top-right
 corner; a question that waits for an answer goes on the same stack as a passing note, not in a corner of its
-own.
+own. The stack stands over a session's browser page too: the page, a window of the system's, is cut under it
+(`floatingBoxes`), as under the sidebar's and the dock's peeks.
 
 ### Body
 
