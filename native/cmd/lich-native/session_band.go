@@ -37,30 +37,39 @@ func (u *window) bandedSession(gtx C, sv sessionView, band int, bg color.NRGBA, 
 	size := gtx.Constraints.Max
 	strip := gtx
 	strip.Constraints = layout.Exact(image.Pt(size.X, band))
-	u.sessionStrip(strip, u.theme.On(bg), sv)
+	th := u.theme.On(bg)
+	u.sessionHeader(strip, th, sv, th.Foreground, nil)
 	defer op.Offset(image.Pt(0, band)).Push(gtx.Ops).Pop()
 	gtx.Constraints = layout.Exact(image.Pt(size.X, max(size.Y-band, 0)))
 	return u.content(gtx, sv, keys)
 }
 
-// sessionStrip is the band's row: the provider and the session's name floating
-// at the left, with no ground, cut with "…" when the room is short, and the
-// selector at the right, which takes its room first.
-func (u *window) sessionStrip(gtx C, th *ui.Theme, sv sessionView) {
+// sessionHeader is a session's header, alone on the stage and as a layout's
+// pane alike: the provider and the session's name floating at the left, with
+// no ground, cut with "…" when the room is short, then the selector and
+// controls, a pane's own, which take their room first. ink is the name's
+// color.
+func (u *window) sessionHeader(gtx C, th *ui.Theme, sv sessionView, ink color.NRGBA, controls layout.Widget) {
 	gtx.Constraints.Min = gtx.Constraints.Max
 	layout.Inset{Left: balloonInset, Right: balloonInset}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-			layout.Flexed(1, func(gtx C) D { return u.sessionName(gtx, th, sv) }),
+			layout.Flexed(1, func(gtx C) D { return u.sessionName(gtx, th, sv, ink) }),
 			layout.Rigid(func(gtx C) D { return u.chatSwitch(gtx, th, sv) }),
+			layout.Rigid(func(gtx C) D {
+				if controls == nil {
+					return D{}
+				}
+				return controls(gtx)
+			}),
 		)
 	})
 }
 
 // sessionName is "Claude Code · Cart totals a cent off": the provider as the
-// window names it, in MutedForeground, then the card's label.
-func (u *window) sessionName(gtx C, th *ui.Theme, sv sessionView) D {
+// window names it, in MutedForeground, then the card's label in ink.
+func (u *window) sessionName(gtx C, th *ui.Theme, sv sessionView, ink color.NRGBA) D {
 	gtx.Constraints.Min.X = 0
-	name := layout.Flexed(1, th.Text(ui.TextSM, sv.Label).In(th.Foreground).Truncated().Layout)
+	name := layout.Flexed(1, th.Text(ui.TextSM, sv.Label).In(ink).Truncated().Layout)
 	p, ok := u.model.providers.find(sv.Kind)
 	if !ok {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx, name)
@@ -69,14 +78,4 @@ func (u *window) sessionName(gtx C, th *ui.Theme, sv sessionView) D {
 		layout.Rigid(th.Text(ui.TextSM, p.name+" · ").Muted().Truncated().Layout),
 		name,
 	)
-}
-
-// paneSwitch is a layout pane's selector, at the right of its header, which
-// already names the session: no strip of its own, and the pane's terminal
-// keeps every row.
-func (u *window) paneSwitch(gtx C, th *ui.Theme, sv sessionView) D {
-	if !u.model.chat.offers(sv.Kind) {
-		return D{}
-	}
-	return layout.Inset{Left: ui.Space(1.5), Right: ui.Space(1.5)}.Layout(gtx, func(gtx C) D { return u.chatSwitch(gtx, th, sv) })
 }

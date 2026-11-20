@@ -4,7 +4,6 @@ import (
 	"errors"
 	"image"
 
-	"gioui.org/font"
 	"gioui.org/io/event"
 	"gioui.org/io/pointer"
 	"gioui.org/layout"
@@ -30,7 +29,7 @@ import (
 var (
 	paneMinWidth  = unit.Dp(480)
 	paneMinHeight = unit.Dp(180)
-	paneHeader    = ui.Space(8)
+	paneHeader    = sessionBandHeight
 	paneRadius    = ui.RadiusLG
 	// paneDim is how far an unfocused pane's terminal fades toward
 	// Background, so the one that takes the keys reads first.
@@ -207,7 +206,6 @@ func (u *window) paneAt(gtx C, v stageView, id string, r image.Rectangle, severa
 		u.paneHeader(gtx, on, v, sv, focused)
 		return D{Size: gtx.Constraints.Max}
 	}, nil)
-	paint.FillShape(gtx.Ops, on.Over(on.Border), clip.Rect{Min: image.Pt(0, head-gtx.Dp(1)), Max: image.Pt(size.X, head)}.Op())
 	body := gtx
 	body.Constraints = layout.Exact(image.Pt(size.X, max(size.Y-head, 0)))
 	off := op.Offset(image.Pt(0, head)).Push(gtx.Ops)
@@ -255,9 +253,10 @@ func (u *window) paneFocusTarget(gtx C, id string) {
 	event.Op(gtx.Ops, p)
 }
 
-// paneHeader is the pane's top row: its ring, its project when the layout
-// spans several, its name and checkout, and its zoom and unsplit buttons, or
-// while zoomed, the chip that tells what the zoom hides.
+// paneHeader is the pane's top row: the session's own header, as alone on
+// the stage, its name muted out of focus, then the delegates chip and the
+// zoom and unsplit buttons, or while zoomed, the chip that tells what the
+// zoom hides.
 func (u *window) paneHeader(gtx C, th *ui.Theme, v stageView, sv sessionView, focused bool) {
 	p := u.layoutStage.pane(sv.ID)
 	if p.zoom.Clicked(gtx) || p.chip.Clicked(gtx) {
@@ -269,31 +268,17 @@ func (u *window) paneHeader(gtx C, th *ui.Theme, v stageView, sv sessionView, fo
 	if p.delegates.Clicked(gtx) {
 		u.layoutStage.delegates = sv.ID
 	}
-	fg, weight := th.MutedForeground, font.Normal
+	ink := th.MutedForeground
 	if focused {
-		fg, weight = th.Foreground, font.Medium
+		ink = th.Foreground
 	}
-	layout.Inset{Left: ui.Space(1), Right: ui.Space(2)}.Layout(gtx, func(gtx C) D {
-		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-			layout.Rigid(func(gtx C) D { return u.sidebar.statusGlyph(gtx, th, &sv) }),
-			ui.Gap(1.5),
-			layout.Rigid(func(gtx C) D {
-				if !v.mixed {
-					return D{}
-				}
-				return layout.Flex{Alignment: layout.Middle}.Layout(gtx, layout.Rigid(th.Tag(v.projectNames[sv.projectID], fg).Layout), ui.Gap(1.5))
-			}),
-			layout.Flexed(1, func(gtx C) D {
-				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-					layout.Rigid(th.Text(ui.TextXS, sv.Label).In(fg).Weight(weight).Layout),
-					ui.Gap(2),
-					layout.Flexed(1, th.Text(ui.TextXS, worktreeLabel(sv, v.projectPaths[sv.projectID])).Muted().Mono().Layout),
-				)
-			}),
-			layout.Rigid(func(gtx C) D { return u.paneSwitch(gtx, th, sv) }),
-			layout.Rigid(func(gtx C) D { return u.delegatesChip(gtx, th, v, sv, p) }),
-			layout.Rigid(func(gtx C) D { return u.paneButtons(gtx, th, v, sv, p) }),
-		)
+	u.sessionHeader(gtx, th, sv, ink, func(gtx C) D {
+		return layout.Inset{Left: ui.Space(1.5)}.Layout(gtx, func(gtx C) D {
+			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+				layout.Rigid(func(gtx C) D { return u.delegatesChip(gtx, th, v, sv, p) }),
+				layout.Rigid(func(gtx C) D { return u.paneButtons(gtx, th, v, sv, p) }),
+			)
+		})
 	})
 }
 
@@ -339,15 +324,6 @@ func zoomChip(gtx C, th *ui.Theme, v stageView) D {
 			layout.Rigid(th.Text(ui.TextXS, text).Muted().Layout),
 		)
 	}, ui.Space(2), ui.Space(2)).Layout(gtx)
-}
-
-// worktreeLabel names the worktree a pane's session runs in, "" for the
-// project's own checkout: the project already names that one.
-func worktreeLabel(sv sessionView, projectPath string) string {
-	if checkoutPath(sv.path, projectPath) == "" {
-		return ""
-	}
-	return checkoutLabel(sv.path, projectPath, sv.projectID)
 }
 
 // applyLayoutStage carries out what the frame's clicks asked of the panes.

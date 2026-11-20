@@ -12,6 +12,7 @@ import (
 	"gioui.org/unit"
 
 	"github.com/lichdotdev/lich/native/gioterm"
+	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -256,5 +257,78 @@ func TestMovingTheFocusResizesNoPane(t *testing.T) {
 	}
 	if c, rr := u.terms.byID["b"].vt.Size(); c != cb || rr != rb {
 		t.Errorf("pane b's terminal went from %dx%d to %dx%d", cb, rb, c, rr)
+	}
+}
+
+// headerParts is where the last frame drew each of labels, by label.
+func headerParts(r *frameRig, labels ...string) map[string]image.Rectangle {
+	parts := map[string]image.Rectangle{}
+	for _, n := range r.nodes() {
+		for _, l := range labels {
+			if _, seen := parts[l]; !seen && n.Desc.Label == l {
+				parts[l] = n.Desc.Bounds
+			}
+		}
+	}
+	return parts
+}
+
+// A pane's header is the lone session's: the provider and the name at the
+// same places, the selector on the same line and the same size, only moved
+// left by the pane's own controls, and no hairline under it.
+func TestAPanesHeaderIsTheLoneSessionsHeader(t *testing.T) {
+	const w, label = 800, "Cart totals a cent off"
+	gui, tui := i18n.T("chat.switch.gui"), i18n.T("chat.switch.tui")
+	_, lone := stripFrames(t, w, label)
+	u, pane := stripFrames(t, w, label)
+	sv, _ := u.model.sessionViewOf("s1")
+	v := stageView{hasLayout: true, layout: layoutTab{Focus: "s1", Root: &paneNode{Session: "s1"}}, panes: map[string]sessionView{"s1": sv}}
+	u.sidebar, u.footer, u.dock, u.git, u.extPanel, u.topbar = &sidebar{}, &footer{}, &dock{}, &gitPanel{}, &extensionPanel{}, &topbar{}
+	u.palette, u.worktree = &commandPalette{}, &worktreeDialog{}
+	pane.draw = func(gtx C, th *ui.Theme) {
+		u.theme = th
+		paint.Fill(gtx.Ops, th.Background)
+		u.root.Layout(gtx, func(gtx C) D {
+			if err := u.paneAt(gtx, v, "s1", image.Rect(0, 0, w, 300), false); err != nil {
+				t.Fatal(err)
+			}
+			return D{Size: gtx.Constraints.Max}
+		})
+	}
+	lone.settle(t)
+	pane.settle(t)
+	a := headerParts(lone, "Claude Code · ", label, gui, tui)
+	b := headerParts(pane, "Claude Code · ", label, gui, tui)
+	for _, l := range []string{"Claude Code · ", label, gui, tui} {
+		if a[l].Empty() || b[l].Empty() {
+			t.Fatalf("%q drawn at %v alone and %v in a pane", l, a[l], b[l])
+		}
+	}
+	for _, l := range []string{"Claude Code · ", label} {
+		if a[l].Min != b[l].Min {
+			t.Errorf("%q at %v alone, %v in a pane", l, a[l], b[l])
+		}
+	}
+	for _, l := range []string{gui, tui} {
+		if a[l].Min.Y != b[l].Min.Y || b[l].Min.X >= a[l].Min.X {
+			t.Errorf("%q at %v alone, %v in a pane: want the same line and size, left of where it stands alone", l, a[l], b[l])
+		}
+	}
+	end := w - gtx1(balloonInset)
+	loneTUI, _ := lone.smallestClickAt(a[tui].Min.Add(image.Pt(2, 2)))
+	paneTUI, _ := pane.smallestClickAt(b[tui].Min.Add(image.Pt(2, 2)))
+	if loneTUI.Size() != paneTUI.Size() {
+		t.Errorf("TUI is %v alone, %v in a pane: want the same size", loneTUI, paneTUI)
+	}
+	if loneTUI.Max.X > end {
+		t.Errorf("the lone selector ends at %d, past the header's edge at %d", loneTUI.Max.X, end)
+	}
+	if c, ok := pane.smallestClickAt(image.Pt(end-4, paneTUI.Min.Y+paneTUI.Dy()/2)); !ok || c.Min.X < paneTUI.Max.X {
+		t.Errorf("the pane's header lacks its controls between the selector at %v and its edge", paneTUI)
+	}
+	img := renderRig(t, pane)
+	head := gtx1(paneHeader)
+	if got := img.RGBAAt(w/3, head-1); !inkNear(got, pane.theme.Background) {
+		t.Errorf("the header's foot is %v, want the pane's ground %v: no hairline", got, pane.theme.Background)
 	}
 }
