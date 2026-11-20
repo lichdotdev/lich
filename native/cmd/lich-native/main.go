@@ -890,6 +890,10 @@ func sidebarActive(v stageView) string {
 // file it shows.
 const editorBackdropID = "editor"
 
+// editorBackdropOpacity is how much of the backdrop the editor shows: the
+// user asked for it fainter than a session's.
+const editorBackdropOpacity = 0.5
+
 // stageBackdropID names the stage island's backdrop: the session alone on
 // it, or the stage itself while it holds none.
 func stageBackdropID(v stageView) string {
@@ -921,8 +925,11 @@ func (u *window) island(gtx C, v stageView, termWidth, termHeight int) error {
 	defer ui.IslandBorder(gtx, size, r, on.Over(on.Border))
 	switch {
 	case v.hasEditor:
-		// the editor's backdrop holds still: code is read, not watched
+		// the editor's backdrop holds still and stays faint: code is read,
+		// not watched
+		faint := paint.PushOpacity(gtx.Ops, editorBackdropOpacity)
 		u.backdrops.layout(gtx, u.theme, editorBackdropID, size, fill, 1, backdropMark{}, false)
+		faint.Pop()
 	case !v.hasConsole:
 		u.backdrop(gtx, stageBackdropID(v), size, fill, u.sessionBand(gtx, v))
 	}
