@@ -31,6 +31,10 @@ var (
 	// is applied by resuming the conversation once the agent is idle; while a
 	// turn runs it is refused.
 	ChatSetOption = define[ChatSetOptionOptions, None]("chat.SetOption")
+	// ChatCommands is what a chat session's provider takes typed at its
+	// prompt, its slash commands and skills, as it lists them; none until it
+	// has.
+	ChatCommands = define[SessionIDOptions, []ChatCommand]("chat.Commands")
 
 	// ChatItemEvent carries one item of a chat, whole, each time it changes:
 	// the window replaces the item with the same id, or appends a new one.
@@ -40,6 +44,9 @@ var (
 	// ChatOptionsEvent carries a chat session's options whole, each time one
 	// changes, whoever changed it.
 	ChatOptionsEvent = defineEvent[ChatOptionsUpdate]("chat-options")
+	// ChatCommandsEvent carries a chat session's commands whole, each time
+	// the provider lists them anew.
+	ChatCommandsEvent = defineEvent[ChatCommandsUpdate]("chat-commands")
 	// SessionViewEvent carries a session's view once the switch is done: the
 	// new process is up, not merely asked for. A chat resumed in a new process
 	// for an option sends it too, and its history is read again.
@@ -217,6 +224,23 @@ type ChatSetOptionOptions struct {
 	ID       string `json:"id"`
 	OptionID string `json:"optionId"`
 	Value    string `json:"value"`
+}
+
+// ChatCommand is one command a chat's provider takes typed at its prompt.
+// Text is what the composer gets, as the provider's TUI takes it: "/compact",
+// or "$deploy" for a Codex skill. Hint names its arguments, and Skill sets a
+// skill apart from a command where the provider tells the two apart.
+type ChatCommand struct {
+	Text        string `json:"text"`
+	Description string `json:"description,omitempty"`
+	Hint        string `json:"hint,omitempty"`
+	Skill       bool   `json:"skill,omitempty"`
+}
+
+// ChatCommandsUpdate is the payload of ChatCommandsEvent.
+type ChatCommandsUpdate struct {
+	SessionID string        `json:"sessionId"`
+	Commands  []ChatCommand `json:"commands"`
 }
 
 // ChatOptionsUpdate is the payload of ChatOptionsEvent.

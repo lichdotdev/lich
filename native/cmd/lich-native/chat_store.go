@@ -20,6 +20,7 @@ type chatStore struct {
 	running   map[string]bool
 	ends      map[string]map[int]api.ChatTurn
 	options   map[string][]backend.ChatOption
+	commands  map[string][]backend.ChatCommand
 	switching map[string]string
 }
 
@@ -117,6 +118,24 @@ func (s *chatStore) setOptions(id string, options []backend.ChatOption) {
 	s.options[id] = slices.Clone(options)
 }
 
+// setCommands takes session id's commands whole, as ChatCommands or the
+// commands event left them.
+func (s *chatStore) setCommands(id string, commands []backend.ChatCommand) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.commands == nil {
+		s.commands = map[string][]backend.ChatCommand{}
+	}
+	s.commands[id] = slices.Clone(commands)
+}
+
+// commandsOf is what session id's provider takes typed at its prompt.
+func (s *chatStore) commandsOf(id string) []backend.ChatCommand {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.commands[id]
+}
+
 // optionOf is the option of session id in category that offers a choice,
 // false when its provider offers none.
 func (s *chatStore) optionOf(id, category string) (backend.ChatOption, bool) {
@@ -197,6 +216,10 @@ func (m *model) chatEvent(ctx context.Context, ev backend.Event) {
 		if u, err := backend.Decode(ev, api.ChatOptionsEvent); err == nil {
 			m.chat.setOptions(u.SessionID, u.Options)
 		}
+	case api.ChatCommandsEvent.Name:
+		if u, err := backend.Decode(ev, api.ChatCommandsEvent); err == nil {
+			m.chat.setCommands(u.SessionID, u.Commands)
+		}
 	case api.SessionViewEvent.Name:
 		if v, err := backend.Decode(ev, api.SessionViewEvent); err == nil {
 			m.applyView(ctx, v)
@@ -261,4 +284,10 @@ func (m *model) loadChat(ctx context.Context, id string) {
 		return
 	}
 	m.chat.setOptions(id, options)
+	commands, err := m.client.ChatCommands(ctx, id)
+	if err != nil {
+		log.Printf("chat commands of %s: %v", id, err)
+		return
+	}
+	m.chat.setCommands(id, commands)
 }

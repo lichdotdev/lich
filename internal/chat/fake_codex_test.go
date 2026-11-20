@@ -101,6 +101,11 @@ func (c *fakeCodex) serve(m map[string]any) {
 		c.start(id, params)
 	case "turn/steer", "turn/interrupt":
 		c.reply(id, map[string]any{})
+	case "skills/list":
+		c.reply(id, map[string]any{"data": []any{map[string]any{"cwd": "/x", "errors": []any{}, "skills": []any{
+			map[string]any{"name": "deploy", "description": "Ship the build to staging, long form", "shortDescription": "Ship it", "path": "/skills/deploy/SKILL.md", "scope": "user", "enabled": true},
+			map[string]any{"name": "off", "description": "Turned off", "path": "/skills/off/SKILL.md", "scope": "user", "enabled": false},
+		}}}})
 	}
 }
 

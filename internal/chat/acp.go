@@ -266,6 +266,8 @@ func (d *acpDriver) handle(raw []byte) {
 		d.request(m)
 	case m.Method == "session/update":
 		d.update(m.Params)
+	case m.Method == kiroCommands:
+		d.kiroCommandsAvailable(m.Params)
 	case m.Method == "" && len(m.ID) > 0:
 		d.reply(m)
 	}
@@ -373,6 +375,8 @@ func (d *acpDriver) update(params json.RawMessage) {
 		d.configChanged(p.Update)
 	case "current_mode_update":
 		d.modeChanged(u.Mode)
+	case "available_commands_update":
+		d.commandsAvailable(p.Update)
 	}
 }
 

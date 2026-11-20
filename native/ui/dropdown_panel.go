@@ -185,3 +185,22 @@ func (p DropdownPanelStyle) panel(gtx C, core menuCore, on *Theme, maxH int) ima
 	content.Add(gtx.Ops)
 	return size
 }
+
+// PopoverPanel draws content on the surface a DropdownPanel draws, inside its
+// p-1, as wide as the room it is given: for a panel with no trigger that
+// takes no focus, as a list over a field that keeps the keyboard. The caller
+// places it.
+func (th *Theme) PopoverPanel(gtx C, content func(gtx C, th *Theme) D) D {
+	pad := gtx.Dp(menuPanelPad)
+	inner := gtx
+	inner.Constraints = layout.Exact(image.Pt(max(gtx.Constraints.Max.X-2*pad, 0), 0))
+	inner.Constraints.Max.Y = max(gtx.Constraints.Max.Y-2*pad, 0)
+	macro := op.Record(gtx.Ops)
+	d := content(inner, th.On(th.Popover))
+	call := macro.Stop()
+	size := image.Pt(gtx.Constraints.Max.X, d.Size.Y+2*pad)
+	menuCore{th: th}.drawSurface(gtx, size)
+	defer op.Offset(image.Pt(pad, pad)).Push(gtx.Ops).Pop()
+	call.Add(gtx.Ops)
+	return D{Size: size}
+}

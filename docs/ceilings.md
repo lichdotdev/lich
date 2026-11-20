@@ -229,6 +229,17 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   window everything that leaves text at a session's prompt (a drop, the attach "+", an artifact sent to it, a Code
   tab, editor or pull request reference) types it in a chat's composer instead (`window.writeAtPrompt`,
   `window.injector`); `send`, `submit` and the browser's notes reach a chat as a message.
+- **A chat lists the commands its provider names, and a picked one is sent as text** (`internal/chat/commands.go`,
+  `claude_commands.go`, `acp_commands.go`, `codex_commands.go`). Claude Code lists them in its initialize answer
+  (2.1.329), but says which are skills, and which five only its TUI runs, only in `system/init`, written once the
+  first message arrives: until then every one shows as a command and those five are listed. One sent as text runs
+  (measured: `/context` answered locally at no cost). opencode (1.19.4), oh-my-pi (18.8.9) and Antigravity (1.5.11)
+  list theirs in ACP's `available_commands_update` and do not tell skills apart. Kiro CLI (2.21.0) lists its own in
+  `_kiro.dev/commands/available`, the ones it marks local left out, and runs one sent as text (measured with
+  `/usage`). Codex lists no commands over app-server, its slash commands being its TUI's: the list holds the
+  enabled skills `skills/list` gives, typed `$name` as its TUI takes them, and a message naming one also hands
+  `turn/start` the skill as the schema has it; that this loads the skill was not measured. Cursor CLI was not
+  measured past its login, and Crush has no chat. lich adds no commands of its own.
 
 ## Session state and hooks
 
