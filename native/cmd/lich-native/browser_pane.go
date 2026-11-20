@@ -192,8 +192,8 @@ func (u *window) browserPaneAt(gtx C, v stageView, session string, r image.Recta
 	// DevTools in the page's place: the notes and the agent's cursor are the
 	// page's.
 	_, inspecting := devtoolsOf(st.Tabs)
-	if notesOnPage(st) {
-		u.notesOverlay(page, p, session, st.URL)
+	if shown := shownState(st, p.nativeShown()); notesOnPage(shown) {
+		u.notesOverlay(page, p, session, shown.URL)
 		u.notesDock(page, p, session)
 	}
 	u.dialogCardAt(page, p, session, card.Min)
@@ -265,7 +265,7 @@ func (u *window) browserToolbar(gtx C, p *browserPaneUI, session string, st api.
 		nav("reload")
 	}
 	devtools, _ := devtoolsOf(st.Tabs)
-	if !notesOnPage(st) && (p.notes.picking || p.notes.drawing) {
+	if !notesOnPage(shownState(st, p.nativeShown())) && (p.notes.picking || p.notes.drawing) {
 		p.notes.setPicking(false)
 		p.notes.setDrawing(false)
 	}
@@ -720,4 +720,12 @@ func (p *browserPaneUI) typed(gtx C) (string, bool) {
 	}
 	gtx.Execute(op.InvalidateCmd{})
 	return string(runes[:n]), true
+}
+
+// nativeShown is where the page the window draws itself is, empty without one.
+func (p *browserPaneUI) nativeShown() string {
+	if p.native == nil {
+		return ""
+	}
+	return p.native.URL()
 }

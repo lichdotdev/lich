@@ -121,3 +121,21 @@ func TestTranslucentTokensAreComposedOnTheBackground(t *testing.T) {
 		t.Errorf("a clear card = %s, want the background", look.Colors.Card)
 	}
 }
+
+func TestANativePageThatLeftTheNewTabShowsTheBarBeforeTheBackendFollows(t *testing.T) {
+	newTab := api.BrowserState{URL: "http://127.0.0.1:27000/new-tab/s", NewTab: true}
+	shown := shownState(newTab, "https://example.com/")
+	if !notesOnPage(shown) || shown.URL != "https://example.com/" {
+		t.Fatalf("shown %+v: the page left the new tab, the bar waits for the backend", shown)
+	}
+	if notesOnPage(shownState(newTab, newTab.URL)) {
+		t.Fatal("a native page still on the new tab shows the bar")
+	}
+	if notesOnPage(shownState(newTab, "")) {
+		t.Fatal("with no native page the backend's new tab shows the bar")
+	}
+	away := api.BrowserState{URL: "https://agent.example/"}
+	if got := shownState(away, "https://example.com/"); got.URL != away.URL {
+		t.Fatalf("a page off the new tab took the native URL %q: only the new tab's lag is the window's to bridge", got.URL)
+	}
+}
