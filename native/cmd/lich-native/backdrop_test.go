@@ -73,7 +73,7 @@ func paintedField(cols, rows int, t, cover float64) *image.RGBA {
 	inks := newBackdropInks(fieldInk, fieldHot, fieldGround)
 	img := image.NewRGBA(image.Rect(0, 0, cols, rows))
 	f.step(t, rows)
-	f.paint(img, rows, cover, image.Pt(cols/2, rows/2), &inks)
+	f.paint(img, rows, cover, image.Pt(cols/2, rows/2), image.Rectangle{}, &inks)
 	return img
 }
 
@@ -274,7 +274,7 @@ func BenchmarkBackdropStep(b *testing.B) {
 			for b.Loop() {
 				t += float64(backdropStep / time.Millisecond)
 				f.step(t, drawn)
-				f.paint(img, drawn, cover, image.Pt(cols/2, rows/2), &inks)
+				f.paint(img, drawn, cover, image.Pt(cols/2, rows/2), image.Rectangle{}, &inks)
 			}
 		})
 	}
@@ -296,7 +296,7 @@ func markCells(t float64) (lit, dropped int, img *image.RGBA) {
 	marks := newMarkInks(fieldInk, fieldHot, fieldGround)
 	img = image.NewRGBA(image.Rect(0, 0, cols, rows))
 	f.step(t, rows)
-	f.paint(img, rows, 0, image.Pt(cols/2, rows/2), &inks)
+	f.paint(img, rows, 0, image.Pt(cols/2, rows/2), image.Rectangle{}, &inks)
 	m := backdropMark{at: image.Pt(80, 40), fade: 1}
 	f.paintMark(img, rows, m, &marks)
 	for j, line := range chatStartMark {
@@ -382,5 +382,20 @@ func TestABusyReportDoesNotKeepAChatsBackdropMoving(t *testing.T) {
 	}
 	if until := u.backdrops.stirOf("s1").until; r.now.Before(until) {
 		t.Fatalf("a busy report with no turn stirs the backdrop until %v at %v", until, r.now)
+	}
+}
+
+// The start screen's field goes out over its quiet box and comes back
+// quietEdge cells out.
+func TestStartFieldHushesAroundTheComposer(t *testing.T) {
+	quiet := image.Rect(10, 10, 20, 14)
+	if got := hush(15, 12, quiet); got != 0 {
+		t.Fatalf("hush %v inside the box, want 0", got)
+	}
+	if got := hush(20+quietEdge, 12, quiet); got != 1 {
+		t.Fatalf("hush %v quietEdge cells out, want 1", got)
+	}
+	if got := hush(0, 0, image.Rectangle{}); got != 1 {
+		t.Fatalf("hush %v with no box, want 1", got)
 	}
 }
