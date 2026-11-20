@@ -353,3 +353,32 @@ func TestStartFieldIsCalmInTheMiddle(t *testing.T) {
 		t.Fatalf("calm %v in a corner, want 1", got)
 	}
 }
+
+// An empty chat's start screen moves its backdrop for backdropAwake when it
+// opens, then holds still until the user types.
+func TestStartScreenBackdropStopsAfterItOpens(t *testing.T) {
+	u, r := startFrames(t, rigWindow)
+	r.now = r.now.Add(2 * backdropAwake)
+	r.frame()
+	r.frame()
+	if until := u.backdrops.stirOf("s1").until; r.now.Before(until) {
+		t.Fatalf("the start screen still stirs its backdrop until %v at %v", until, r.now)
+	}
+}
+
+// A chat's session reports itself busy while its chat opens, and can stay so
+// with no turn running: the report alone does not keep the backdrop moving,
+// only the chat's own turn does.
+func TestABusyReportDoesNotKeepAChatsBackdropMoving(t *testing.T) {
+	u, r := startFrames(t, rigWindow)
+	if err := u.model.applyStatus(context.Background(), statusEv(t, statusEvent{ID: "s1", State: statusBusy})); err != nil {
+		t.Fatal(err)
+	}
+	for range 3 {
+		r.now = r.now.Add(backdropAwake)
+		r.frame()
+	}
+	if until := u.backdrops.stirOf("s1").until; r.now.Before(until) {
+		t.Fatalf("a busy report with no turn stirs the backdrop until %v at %v", until, r.now)
+	}
+}

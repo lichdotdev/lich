@@ -264,7 +264,9 @@ func (u *window) chatScreen(gtx C, sv sessionView, keys bool) {
 	p := u.chats.pane(sv.ID)
 	items := u.model.chat.of(sv.ID)
 	working := chatWorking(sv, u.model.chat.isRunning(sv.ID))
-	u.backdrops.stirOf(sv.ID).keep(gtx.Now, working, p.editor.Len(), p.start.empty)
+	// The chat's own turn stirs the backdrop, not the session's status: a
+	// session reports itself busy while its chat opens, and can stay so.
+	u.backdrops.stirOf(sv.ID).keep(gtx.Now, u.model.chat.isRunning(sv.ID), p.editor.Len(), p.start.empty)
 	u.chatActs(gtx, p, sv, keys, working, permissionWaiting(items), questionWaiting(items))
 	rows := chatRows(items, working, gtx.Now)
 	u.terms.readLinkKey(gtx)
