@@ -325,8 +325,8 @@ func TestAGroupTookUntilItsLastCallEnded(t *testing.T) {
 	}
 }
 
-// The calls still running stand under a folded group, each until it ends;
-// with none running the last call stays, still, until the next one starts.
+// The calls still running stand under a folded group, each until it ends:
+// with none running, the group shows no call until it is opened.
 func TestAFoldedGroupShowsTheCallsStillRunning(t *testing.T) {
 	items := []backend.ChatItem{
 		{ID: "u1", Kind: api.ItemUser, Turn: 1, At: novDay(18, 17, 58), Text: "go"},
@@ -350,11 +350,10 @@ func TestAFoldedGroupShowsTheCallsStillRunning(t *testing.T) {
 	for _, running := range []bool{true, false} {
 		_, r = lifeFrames(t, ended, running)
 		r.frame()
-		if !r.shows("Grep") || !r.shows("476ms") {
-			t.Errorf("running %v: the last call does not stand under the folded group with its time:\n%s", running, r.drawn())
-		}
-		if r.shows("Bash") || r.shows("Read") {
-			t.Errorf("running %v: a call before the last stands under the folded group", running)
+		for _, label := range []string{"Read", "Bash", "Grep"} {
+			if r.shows(label) {
+				t.Errorf("running %v: %q, which ended, stands under the folded group:\n%s", running, label, r.drawn())
+			}
 		}
 	}
 }

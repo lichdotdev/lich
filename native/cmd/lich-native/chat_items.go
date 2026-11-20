@@ -242,7 +242,7 @@ func chatThought(gtx C, th *ui.Theme, f *chatFold, it backend.ChatItem, live boo
 // call under a connector. While a call runs the line shimmers, with the
 // number of calls and the time the turn has run; once it is over it says how
 // long the turn took, how many calls it made and when it ended. Folded, it
-// keeps the calls still running under it, or else its last call.
+// keeps the calls still running under it, each until it ends.
 func (u *window) chatWork(gtx C, th *ui.Theme, f *chatFold, sv sessionView, r chatRow) D {
 	f.update(gtx)
 	label := func(gtx C, fg color.NRGBA) D {
@@ -286,12 +286,12 @@ func (u *window) chatWork(gtx C, th *ui.Theme, f *chatFold, sv sessionView, r ch
 }
 
 // chatFoldedCalls is what a folded group keeps in view: the calls running in
-// its live turn, or else its last call, standing still until the next starts.
+// its live turn.
 func chatFoldedCalls(r chatRow) []backend.ChatItem {
-	if r.live {
-		return slices.DeleteFunc(slices.Clone(r.tools), func(it backend.ChatItem) bool { return !callRunning(it) })
+	if !r.live {
+		return nil
 	}
-	return r.tools[len(r.tools)-1:]
+	return slices.DeleteFunc(slices.Clone(r.tools), func(it backend.ChatItem) bool { return !callRunning(it) })
 }
 
 // chatHairline is a 1px rule in Border across the room it is given.

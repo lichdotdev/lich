@@ -342,7 +342,7 @@ draws none while it grows in, because the room above the rows is measured in the
   `Destructive` with the output's first line. A time that stands still reads in milliseconds under a second
   ("476ms"), the line's "Worked for" too; a call whose end nobody reported (most histories) shows no time. Its
   diff stands under it as a thread's hunk is drawn. Folded, the line keeps the calls still running under it, so a
-  call shows the moment it starts, and with none running its last call, still, until the next one starts. Only
+  call shows the moment it starts, and each leaves once it ends: what ran is the fold's to open. Only
   the turn in flight is alive: a call an ended turn left running (interrupted) stops with it, its time up to the
   turn's end, or none where nobody saw it.
 - **A turn's closing line** stands once, after the last item of the conversation's last turn, when that turn
