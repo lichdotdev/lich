@@ -4,8 +4,10 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"maps"
 	"os"
 	"os/exec"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -47,10 +49,8 @@ func fakeInstaller(t *testing.T, mode string, missing ...string) (*Service, <-ch
 	steps := make(chan Install, 64)
 	s := &Service{
 		lookPath: func(name string) (string, error) {
-			for _, m := range missing {
-				if m == name {
-					return "", exec.ErrNotFound
-				}
+			if slices.Contains(missing, name) {
+				return "", exec.ErrNotFound
 			}
 			return "/fake/bin/" + name, nil
 		},
@@ -71,9 +71,7 @@ func withRecipe(t *testing.T, id string, r recipe) {
 	t.Helper()
 	saved := recipes[hostOS]
 	mine := map[string]recipe{}
-	for k, v := range saved {
-		mine[k] = v
-	}
+	maps.Copy(mine, saved)
 	mine[id] = r
 	recipes[hostOS] = mine
 	t.Cleanup(func() { recipes[hostOS] = saved })
