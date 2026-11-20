@@ -26,6 +26,8 @@ import (
 type chatBackend struct {
 	mu    sync.Mutex
 	calls []string
+	// answers is what a method answers, by its name; null for any other.
+	answers map[string]any
 }
 
 func newChatBackend(t *testing.T) (*chatBackend, *backend.Client) {
@@ -34,9 +36,11 @@ func newChatBackend(t *testing.T) (*chatBackend, *backend.Client) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
 		f.mu.Lock()
-		f.calls = append(f.calls, strings.TrimPrefix(r.URL.Path, "/rpc/")+" "+string(body))
+		method := strings.TrimPrefix(r.URL.Path, "/rpc/")
+		f.calls = append(f.calls, method+" "+string(body))
+		answer := f.answers[method]
 		f.mu.Unlock()
-		_ = json.NewEncoder(w).Encode(nil)
+		_ = json.NewEncoder(w).Encode(answer)
 	}))
 	t.Cleanup(srv.Close)
 	u, _ := url.Parse(srv.URL)
@@ -75,7 +79,7 @@ func chatFramesIn(t *testing.T, view string, size image.Point, in footerInput) (
 	f, client := newChatBackend(t)
 	foot := newFooterRig(t, nil).f
 	foot.dock, foot.git = new(dock), new(gitPanel)
-	u := &window{ctx: t.Context(), client: client, model: chatModel(view), footer: foot}
+	u := &window{ctx: t.Context(), client: client, model: chatModel(view), footer: foot, terms: &terminals{byID: map[string]*termView{}, invalidate: r.invalidate}}
 	u.model.invalidate = r.invalidate
 	u.model.chat.kinds = []string{"claude"}
 	r.draw = func(gtx C, th *ui.Theme) {

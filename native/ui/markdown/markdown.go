@@ -75,6 +75,8 @@ type markdownCell struct {
 	// decor is what each span is drawn with besides its text: an underline,
 	// a mark before it.
 	decor []decoration
+	// paths is the pointer on each span that spells a path, by span.
+	paths []pathPointer
 	state richtext.InteractiveText
 	// lineHeight is the line height scale, LineHeightScale when 0.
 	lineHeight float32
@@ -102,11 +104,20 @@ func ViewportWindow(top, viewport int) Window {
 
 // layout draws src as Markdown; a link clicked lands in open.
 func (m Cache) Layout(gtx C, th *ui.Theme, key, src string, open func(url string)) D {
-	return m.LayoutWindow(gtx, th, key, src, open, whole)
+	return m.layout(gtx, th, key, src, Links{Open: open}, whole)
 }
 
 // LayoutWindow is layout drawing only the blocks within window.
 func (m Cache) LayoutWindow(gtx C, th *ui.Theme, key, src string, open func(url string), window Window) D {
+	return m.layout(gtx, th, key, src, Links{Open: open}, window)
+}
+
+// LayoutLinks is layout handing what src links to, paths included, to l.
+func (m Cache) LayoutLinks(gtx C, th *ui.Theme, key, src string, l Links) D {
+	return m.layout(gtx, th, key, src, l, whole)
+}
+
+func (m Cache) layout(gtx C, th *ui.Theme, key, src string, l Links, window Window) D {
 	t := m.text(th, key, src)
 	gap, estimate := gtx.Dp(ui.Space(BlockGap)), t.estimate(gtx)
 	y, width := 0, gtx.Constraints.Min.X
@@ -125,7 +136,7 @@ func (m Cache) LayoutWindow(gtx C, th *ui.Theme, key, src string, open func(url 
 		g := gtx
 		g.Constraints.Min = image.Point{}
 		stack := op.Offset(image.Pt(0, y)).Push(gtx.Ops)
-		dims := b.layout(g, th, open)
+		dims := b.layout(g, th, l)
 		stack.Pop()
 		t.heights[i] = dims.Size.Y
 		y += dims.Size.Y
@@ -165,47 +176,47 @@ func (t *markdownText) estimate(gtx C) int {
 	return sum / measured
 }
 
-func (b markdownBlock) layout(gtx C, th *ui.Theme, open func(url string)) D {
+func (b markdownBlock) layout(gtx C, th *ui.Theme, l Links) D {
 	if b.table != nil {
-		return b.table.layout(gtx, th, open)
+		return b.table.layout(gtx, th, l)
 	}
 	if b.list != nil {
-		return b.list.layout(gtx, th, open)
+		return b.list.layout(gtx, th, l)
 	}
 	if b.quote {
 		return layoutQuote(gtx, th, func(gtx C) D {
 			if b.blocks != nil {
-				return layoutBlocks(gtx, th, open, b.blocks, BlockGap)
+				return layoutBlocks(gtx, th, l, b.blocks, BlockGap)
 			}
-			return b.prose.layout(gtx, th, open)
+			return b.prose.layout(gtx, th, l)
 		})
 	}
 	if b.panel {
-		return b.prose.layoutPanel(gtx, th, open)
+		return b.prose.layoutPanel(gtx, th, l)
 	}
 	if b.rule {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-			layout.Rigid(func(gtx C) D { return b.prose.layout(gtx, th, open) }),
+			layout.Rigid(func(gtx C) D { return b.prose.layout(gtx, th, l) }),
 			ui.VGap(1),
 			layout.Rigid(th.Separator),
 		)
 	}
-	return b.prose.layout(gtx, th, open)
+	return b.prose.layout(gtx, th, l)
 }
 
-func (c *markdownCell) layout(gtx C, th *ui.Theme, open func(url string)) D {
+func (c *markdownCell) layout(gtx C, th *ui.Theme, l Links) D {
 	for {
 		span, ev, ok := c.state.Update(gtx)
 		if !ok {
 			break
 		}
-		if url, isLink := span.Get(markdownURL).(string); isLink && url != "" && ev.Type == richtext.Click && open != nil {
-			open(url)
+		if url, isLink := span.Get(markdownURL).(string); isLink && url != "" && ev.Type == richtext.Click && l.Open != nil {
+			l.Open(url)
 		}
 	}
 	style := richtext.Text(&c.state, th.Shaper, c.spans...)
 	style.LineHeightScale = c.lineHeightScale()
-	c.decorate(gtx, th)
+	c.decorate(gtx, th, l.Paths)
 	return style.Layout(gtx)
 }
 

@@ -40,8 +40,8 @@ func TestMarkdownListWrapsInsideMarkerColumn(t *testing.T) {
 	markerWidth := measureCell(gtx, th, &item.marker)
 	body := gtx
 	body.Constraints.Max.X -= markerWidth + gtx.Dp(ui.Space(2))
-	bodySize := item.layoutBody(body, th, nil).Size
-	got := list.layout(gtx, th, nil).Size
+	bodySize := item.layoutBody(body, th, Links{}).Size
+	got := list.layout(gtx, th, Links{}).Size
 	if bodySize.Y <= gtx.Sp(BodySize)*2 {
 		t.Fatalf("test item did not wrap: height %d", bodySize.Y)
 	}

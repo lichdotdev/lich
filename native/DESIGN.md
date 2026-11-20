@@ -327,7 +327,11 @@ draws none while it grows in, because the room above the rows is measured in the
   box faster than by a rule.
 - **The agent's text** is Markdown at the prose size (`ui/markdown`). A link is underlined, in its color; a link to github.com, a path
   in code (a folder when it ends in a slash, else a file) wears a 13px mark before it, GitHub's, a folder's or a file's
-  (`decor.go`). Anything else in code is plain. The first answer of each turn opens
+  (`decor.go`). A path the checkout's listing holds, from the checkout or as the tail of a file the way a
+  terminal's path:line is found, is a link the terminal's way: while Ctrl (Cmd on macOS) is held the hovered one
+  is underlined in its color and takes the hand, and a click with it opens a file in the stage editor
+  (`followCodeRef`) and a folder in the dock's Code tab, unfolded down to it (`chat_paths.go`). A path it does not
+  hold stays text. Anything else in code is plain. The first answer of each turn opens
   with who speaks: the provider's mark at 20px on a `RadiusMD` square, in the session's card color (the
   agent cursor's color, `Primary` for a card with none; the window keeps no brand color per provider) over
   a fill of that color mixed 22% into the surface, then the provider's name in medium, then muted

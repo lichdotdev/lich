@@ -11,7 +11,6 @@ import (
 	"gioui.org/op"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
-	"gioui.org/x/richtext"
 	"gioui.org/x/styledtext"
 
 	"github.com/lichdotdev/lich/native/ui"
@@ -27,11 +26,13 @@ const (
 )
 
 // decoration is what a span is drawn with besides its text: an underline, for a
-// link, and a mark in room the text leaves before it.
+// link, and a mark in room the text leaves before it. path is the path the
+// span's code spells, "" for any other span.
 type decoration struct {
 	underline bool
 	icon      *icons.Icon
 	tone      iconTone
+	path      string
 }
 
 const (
@@ -68,14 +69,9 @@ var pathLike = regexp.MustCompile(`^[~.]{0,2}/?[\w@.+-]+(/[\w@.+-]+)*/?$`)
 
 var fileExtension = regexp.MustCompile(`\.[A-Za-z][A-Za-z0-9]{0,7}$`)
 
-// pathIcon is the folder or file mark for code spans that spell one path, nil
-// for any other code.
-func pathIcon(spans []richtext.SpanStyle) *icons.Icon {
-	var text strings.Builder
-	for _, s := range spans {
-		text.WriteString(s.Content)
-	}
-	t := text.String()
+// pathIcon is the folder or file mark for code that spells one path, nil for
+// any other code.
+func pathIcon(t string) *icons.Icon {
 	switch {
 	case t == "" || !pathLike.MatchString(t) || strings.Contains(t, "://"):
 		return nil
@@ -88,9 +84,10 @@ func pathIcon(spans []richtext.SpanStyle) *icons.Icon {
 }
 
 // decorate draws what is under or beside the text of each span: the ground of
-// inline code, a link's underline and the marks of paths and of GitHub links.
-// The text is laid out invisibly to learn where each span stands.
-func (c *markdownCell) decorate(gtx C, th *ui.Theme) {
+// inline code, a link's underline and the marks of paths and of GitHub links,
+// and gives a path that paths links the pointer. The text is laid out
+// invisibly to learn where each span stands.
+func (c *markdownCell) decorate(gtx C, th *ui.Theme, paths *Paths) {
 	drawn := false
 	for i, code := range c.code {
 		drawn = drawn || code || (i < len(c.decor) && (c.decor[i].underline || c.decor[i].icon != nil))
@@ -116,6 +113,9 @@ func (c *markdownCell) decorate(gtx C, th *ui.Theme) {
 			return
 		}
 		d, link := c.decor[i], c.spans[i].Color
+		if d.path != "" && paths != nil && paths.Link(d.path) && c.followPath(gtx, i, dims.Size, paths) {
+			d.underline = true
+		}
 		if d.underline {
 			y := dims.Size.Y - gtx.Dp(3)
 			paint.FillShape(gtx.Ops, link, clip.Rect{Min: image.Pt(0, y), Max: image.Pt(dims.Size.X, y+gtx.Dp(1))}.Op())

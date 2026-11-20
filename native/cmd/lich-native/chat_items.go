@@ -22,6 +22,7 @@ import (
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
 	"github.com/lichdotdev/lich/native/ui/icons"
+	"github.com/lichdotdev/lich/native/ui/markdown"
 )
 
 var (
@@ -586,7 +587,7 @@ func (u *window) chatAgent(gtx C, th *ui.Theme, p *chatPane, sv sessionView, r c
 	return c.hover(gtx, func(gtx C, over bool) D {
 		body := append(slices.Clone(children),
 			layout.Rigid(func(gtx C) D {
-				return p.md.Layout(gtx, th, it.ID, src, func(url string) { openLink(u.client, notify, url) })
+				return p.md.LayoutLinks(gtx, th, it.ID, src, markdown.Links{Open: func(url string) { openLink(u.client, notify, url) }, Paths: p.paths})
 			}),
 			ui.VGap(1),
 			layout.Rigid(func(gtx C) D {

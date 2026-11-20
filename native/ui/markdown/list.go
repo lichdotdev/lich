@@ -63,7 +63,7 @@ func taskCheckBox(item ast.Node) *extast.TaskCheckBox {
 	return box
 }
 
-func (l *markdownList) layout(gtx C, th *ui.Theme, open func(string)) D {
+func (l *markdownList) layout(gtx C, th *ui.Theme, links Links) D {
 	markerWidth := 0
 	for i := range l.items {
 		markerWidth = max(markerWidth, l.items[i].markerWidth(gtx, th))
@@ -72,23 +72,23 @@ func (l *markdownList) layout(gtx C, th *ui.Theme, open func(string)) D {
 	for i := range l.items {
 		item := &l.items[i]
 		children = append(children, layout.Rigid(func(gtx C) D {
-			return item.layout(gtx, th, open, markerWidth)
+			return item.layout(gtx, th, links, markerWidth)
 		}))
 	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
 }
 
-func (item *markdownListItem) layout(gtx C, th *ui.Theme, open func(string), markerWidth int) D {
+func (item *markdownListItem) layout(gtx C, th *ui.Theme, l Links, markerWidth int) D {
 	return layout.Flex{Alignment: layout.Start}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			gtx.Constraints.Min.X, gtx.Constraints.Max.X = markerWidth, markerWidth
 			if item.task != nil {
 				return item.layoutTask(gtx, th)
 			}
-			return layout.E.Layout(gtx, func(gtx C) D { return item.marker.layout(gtx, th, nil) })
+			return layout.E.Layout(gtx, func(gtx C) D { return item.marker.layout(gtx, th, Links{}) })
 		}),
 		layout.Rigid(layout.Spacer{Width: ui.Space(2)}.Layout),
-		layout.Flexed(1, func(gtx C) D { return item.layoutBody(gtx, th, open) }),
+		layout.Flexed(1, func(gtx C) D { return item.layoutBody(gtx, th, l) }),
 	)
 }
 
@@ -120,13 +120,13 @@ func (item *markdownListItem) layoutTask(gtx C, th *ui.Theme) D {
 	})
 }
 
-func (item *markdownListItem) layoutBody(gtx C, th *ui.Theme, open func(string)) D {
-	return layoutBlocks(gtx, th, open, item.blocks, 2)
+func (item *markdownListItem) layoutBody(gtx C, th *ui.Theme, l Links) D {
+	return layoutBlocks(gtx, th, l, item.blocks, 2)
 }
 
 // layoutBlocks stacks blocks, gap between them, as an item or a quote holds
 // them.
-func layoutBlocks(gtx C, th *ui.Theme, open func(string), blocks []markdownBlock, gap float32) D {
+func layoutBlocks(gtx C, th *ui.Theme, l Links, blocks []markdownBlock, gap float32) D {
 	children := make([]layout.FlexChild, 0, len(blocks)*2)
 	for i, block := range blocks {
 		if i > 0 {
@@ -134,7 +134,7 @@ func layoutBlocks(gtx C, th *ui.Theme, open func(string), blocks []markdownBlock
 		}
 		children = append(children, layout.Rigid(func(gtx C) D {
 			gtx.Constraints.Min = image.Point{}
-			return block.layout(gtx, th, open)
+			return block.layout(gtx, th, l)
 		}))
 	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)

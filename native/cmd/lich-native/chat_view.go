@@ -86,6 +86,10 @@ type chatView struct {
 	optionMenus map[string]*ui.MenuState
 	answers     map[chatAnswer]*ui.Clickable
 	md          markdown.Cache
+	// files is the checkout's listing the paths in answers are looked up in,
+	// and paths what makes them links this frame.
+	files remote[*chatFiles]
+	paths *markdown.Paths
 	// quizzes are the waiting questions' cards, by item id, and asked the
 	// last one the keys were handed to.
 	quizzes map[string]*chatQuiz
@@ -257,6 +261,8 @@ func (u *window) chatScreen(gtx C, sv sessionView, keys bool) {
 	working := chatWorking(sv, u.model.chat.isRunning(sv.ID))
 	u.chatActs(gtx, p, sv, keys, working, permissionWaiting(items), questionWaiting(items))
 	rows := chatRows(items, working, gtx.Now)
+	u.terms.readLinkKey(gtx)
+	p.paths = u.chatPaths(p, sv, len(items))
 	th := u.theme.On(u.theme.Background)
 	p.slashRoom = gtx.Constraints.Max.Y
 	list := func(gtx C) D {
