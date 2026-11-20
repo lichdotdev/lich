@@ -88,3 +88,17 @@ func TestEachInstallIsTheVendorsCommand(t *testing.T) {
 func ps(command string) []string {
 	return []string{"powershell", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", command}
 }
+
+// The scripts write the binary detection looks for (read 2026-11-19, not run):
+// Cursor's links ~/.local/bin/cursor-agent beside its new `agent` name, and on
+// Windows writes %LOCALAPPDATA%\cursor-agent\cursor-agent.cmd beside agent.cmd;
+// oh-my-pi's writes omp, and Kiro CLI's kiro-cli. A rename upstream lands
+// here, not as an install that always ends off PATH.
+func TestEachInstallWritesTheBinaryLichLooksFor(t *testing.T) {
+	want := map[string]string{Cursor: "cursor-agent", OMP: "omp", Kiro: "kiro-cli"}
+	for id, bin := range want {
+		if got := DefaultBinary(id); got != bin {
+			t.Errorf("%s looks for %q, its install writes %q", id, got, bin)
+		}
+	}
+}

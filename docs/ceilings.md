@@ -256,8 +256,10 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   read again first, so an installer that edits the rc file is found. One that only prints the export line
   (oh-my-pi's unix script, and Cursor's, which tells you to add `~/.local/bin` by hand) reads
   "installed, but omp is not on PATH" until `~/.local/bin` is on PATH or the binary is set in Settings › Providers.
-  Cursor's pages name the binary `agent`; lich spawns `cursor-agent`, and whether its script still writes that
-  name was not measured.
+  Cursor's pages name the binary `agent`; its script links `cursor-agent` beside it (on Windows,
+  `cursor-agent.cmd` beside `agent.cmd`), which is the one lich spawns. Kiro CLI's script adds `~/.local/bin` to
+  the rc files itself, but asks before replacing an install it finds, so a reinstall over one off PATH fails on
+  that question.
 - **The Welcome signs in only where lich runs the login or can open it in a terminal** (`welcomeFacts`). Claude
   Code and Codex sign in in lich's own login dialog. oh-my-pi, opencode, Cursor CLI (Linux and Windows) and Kiro
   CLI (Linux) log in in a shell card, so their Sign in needs a project open and is disabled, with the reason in
