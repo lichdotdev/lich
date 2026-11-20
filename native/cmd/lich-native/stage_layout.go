@@ -223,10 +223,10 @@ func (u *window) paneAt(gtx C, v stageView, id string, r image.Rectangle, severa
 	return err
 }
 
-// paneDrop takes a file dragged over the pane's terminal, at at in the
-// island.
+// paneDrop takes a file dragged over the pane's terminal or chat, at at in
+// the island.
 func (u *window) paneDrop(gtx C, th *ui.Theme, sv sessionView, at image.Point) {
-	if !u.terms.has(sv.ID) {
+	if !u.terms.has(sv.ID) && sv.View != api.ViewChat {
 		return
 	}
 	corner := u.islandAt.Add(at)

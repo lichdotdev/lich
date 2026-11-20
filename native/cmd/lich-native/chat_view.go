@@ -93,9 +93,11 @@ type chatView struct {
 	// undo is the composer's undo and redo, forgotten when a message is sent.
 	undo ui.EditHistory
 	// unsent is a message the backend refused, handed back to an empty
-	// editor on the next frame.
-	mu     sync.Mutex
-	unsent string
+	// editor on the next frame, and dropped the paths of files dropped on the
+	// session, typed at the caret on the next frame.
+	mu      sync.Mutex
+	unsent  string
+	dropped string
 }
 
 type chatFold struct {
@@ -327,6 +329,10 @@ func (u *window) chatActs(gtx C, p *chatPane, sv sessionView, keys, working bool
 		p.undo.Reset()
 	}
 	p.unsent = ""
+	if p.dropped != "" {
+		p.editor.Insert(p.dropped)
+		p.dropped = ""
+	}
 	p.mu.Unlock()
 	p.dropQuizzes(asking)
 	if asking != nil {
