@@ -3,7 +3,6 @@ package main
 import (
 	"image"
 	"image/color"
-	"math"
 
 	"gioui.org/font"
 	"gioui.org/layout"
@@ -18,15 +17,15 @@ import (
 // The project tab, from the approved mockup: browser-style tabs of a fixed
 // width that shrinks evenly to a floor before the strip scrolls.
 var (
-	tabWidthMax    = ui.Space(49)   // 196px
-	tabWidthMin    = ui.Space(29.5) // 118px
-	tabHeight      = ui.Space(9.5)  // 38px, from 6px under the band's top
-	tabTop         = ui.Space(1.5)
-	tabRadius      = ui.RadiusLG // its top corners, and the fillets into the island
-	tabPadLeft     = ui.Space(3.5)
-	tabPadRight    = ui.Space(2.5)
-	tabGlyph       = ui.Space(3.5)
-	tabSeparatorIn = ui.Space(2.75) // the hairline between tabs stops 11px short of each edge
+	tabWidthMax  = ui.Space(49)   // 196px
+	tabWidthMin  = ui.Space(29.5) // 118px
+	tabHeight    = ui.Space(9.5)  // 38px, from 6px under the band's top
+	tabTop       = ui.Space(1.5)
+	tabRadius    = ui.RadiusLG
+	tabPadLeft   = ui.Space(3.5)
+	tabPadRight  = ui.Space(2.5)
+	tabGlyph     = ui.Space(3.5)
+	tabSeparator = ui.Space(4) // the hairline between the pinned tabs and the rest, centred on the pill
 )
 
 const (
@@ -34,9 +33,6 @@ const (
 	tabTextLeading = 20
 	// tabHoverFill is the mockup's --hover-faint, the foreground at 4%.
 	tabHoverFill = 0.04
-	// tabDetachedFill is the active tab that sits over the gap between two
-	// islands and so grows out of neither: a raised fill instead of a merge.
-	tabDetachedFill = 0.08
 )
 
 var (
@@ -87,7 +83,7 @@ func tabWidth(room, count, widest, narrowest int) int {
 }
 
 // strip is the scrolling row of tabs with the open-project button right after
-// the last one, and the fillets that merge the active tab into the island.
+// the last one.
 func (t *topbar) strip(gtx C, th *ui.Theme, f topbarFrame, act *topbarAction) D {
 	// A tab being renamed takes presses for its field, not for a drag.
 	t.sort.Disabled = t.holdsKeys()
@@ -98,21 +94,13 @@ func (t *topbar) strip(gtx C, th *ui.Theme, f topbarFrame, act *topbarAction) D 
 	dragEnded := before != "" && t.sort.Dragging() == ""
 	plus := gtx.Dp(ui.BarButtonSize) + gtx.Dp(barGap)
 	w := tabWidth(gtx.Constraints.Max.X-plus, len(f.tabs), gtx.Dp(tabWidthMax), gtx.Dp(tabWidthMin))
-	t.tabW = w
 	t.lay(gtx, f, w)
 	ids := make([]string, len(f.tabs))
 	for i, tab := range f.tabs {
 		ids[i] = tab.ID
 	}
 	size := gtx.Constraints.Max
-	// A strip pushed past the island's edge reaches left over the room
-	// stripStart left, where the active first tab's left fillet draws.
-	var filletRoom int
-	if t.shift > 0 {
-		filletRoom = gtx.Dp(tabRadius)
-	}
-	// One line past the band, where the fillets' hairline meets the island's.
-	clipped := clip.Rect{Min: image.Pt(-filletRoom, 0), Max: size.Add(image.Pt(0, gtx.Dp(1)))}.Push(gtx.Ops)
+	clipped := clip.Rect{Max: size}.Push(gtx.Ops)
 	// Sized to its tabs, the list leaves the strip's empty run to the band
 	// under it, which drags the window.
 	content := gtx
@@ -133,7 +121,6 @@ func (t *topbar) strip(gtx C, th *ui.Theme, f topbarFrame, act *topbarAction) D 
 			layout.Rigid(func(gtx C) D { return t.openButton(gtx, th, act) }),
 		)
 	})
-	t.fillets(gtx, th, f, w)
 	clipped.Pop()
 	return D{Size: size}
 }
@@ -216,65 +203,41 @@ func (t *topbar) tab(gtx C, th *ui.Theme, f topbarFrame, i, w int, dragEnded boo
 	}, nil)
 }
 
-// tabFace draws a tab: the island's color when active, a faint fill when
-// hovered, the hairline before an inactive tab that follows another, then
-// the badge, the name and the ×, shown on hover and on the active tab.
+// tabFace draws a tab: a pill of Accent when active or carried, a faint
+// fill when hovered, the hairline where the pinned tabs end, then the badge,
+// the name and the ×, shown on hover and on the active tab.
 func (t *topbar) tabFace(gtx C, th *ui.Theme, f topbarFrame, i int, st *tabState, act *topbarAction) D {
 	tab := f.tabs[i]
 	active := tab.ID == f.active
 	hovered := st.click.Hovered() || st.close.Hovered()
-	bg := th.Surface
 	size := gtx.Constraints.Min
-	r := gtx.Dp(tabRadius)
-	shape := clip.RRect{Rect: image.Rectangle{Max: size}, NW: r, NE: r}
+	// The pill stands a gutter clear of the islands under it, as they are
+	// of each other.
+	pill := image.Pt(size.X, size.Y-gtx.Dp(gutter))
+	bg := th.Surface
 	switch {
-	case t.sort.Dragging() == tab.ID:
-		// In the air it grows out of no island.
-		bg, shape = th.Accent, detachedTab(gtx, size, r)
-	case active:
-		s, k := t.mergeShare(gtx, f)
-		bg, shape = ui.Over(th.Over(ui.Alpha(th.Foreground, tabDetachedFill)), ui.Alpha(s.color, k)), mergingTab(gtx, size, r, k)
-		if k == 1 {
-			flush := t.activeIndex(f)*size.X-t.list.Position.Offset == s.x0
-			defer ui.TabBorder(gtx, size, r, flush, ui.Over(s.color, th.Border))
-		}
+	case active || t.sort.Dragging() == tab.ID:
+		bg = th.Accent
 	case hovered:
 		bg = th.Over(ui.Alpha(th.Foreground, tabHoverFill))
 	}
-	paint.FillShape(gtx.Ops, bg, shape.Op(gtx.Ops))
-	groupBoundary := i > 0 && f.tabs[i-1].pinned != tab.pinned
-	if i > 0 && (groupBoundary || !active && f.tabs[i-1].ID != f.active) {
-		inset := gtx.Dp(tabSeparatorIn)
-		paint.FillShape(gtx.Ops, th.Over(th.Border), clip.Rect{Min: image.Pt(0, inset), Max: image.Pt(gtx.Dp(1), size.Y-inset)}.Op())
+	if bg != th.Surface {
+		paint.FillShape(gtx.Ops, bg, clip.UniformRRect(image.Rectangle{Max: pill}, gtx.Dp(tabRadius)).Op(gtx.Ops))
+	}
+	if i > 0 && f.tabs[i-1].pinned != tab.pinned {
+		top := (pill.Y - gtx.Dp(tabSeparator)) / 2
+		paint.FillShape(gtx.Ops, th.Over(th.Border), clip.Rect{Min: image.Pt(0, top), Max: image.Pt(gtx.Dp(1), top+gtx.Dp(tabSeparator))}.Op())
 	}
 	on := th.On(bg)
 	fg, weight := on.MutedForeground, font.Normal
 	if active {
 		fg, weight = on.Foreground, font.Medium
 	}
-	// Every label sits on the line a detached tab centres it on, so changing
-	// tabs never moves one.
-	gtx.Constraints = layout.Exact(image.Pt(size.X, size.Y-gtx.Dp(gutter)))
+	gtx.Constraints = layout.Exact(pill)
 	layout.Inset{Left: tabPadLeft, Right: tabPadRight}.Layout(gtx, func(gtx C) D {
 		return layout.W.Layout(gtx, func(gtx C) D { return t.tabContent(gtx, on, tab, st, fg, weight, active || hovered, act) })
 	})
 	return D{Size: size}
-}
-
-// mergingTab is a tab k of the way from detached (0) to grown into its
-// island (1): its foot comes down the gutter and its bottom corners square.
-func mergingTab(gtx C, size image.Point, r int, k float32) clip.RRect {
-	shape := detachedTab(gtx, size, r)
-	shape.Rect.Max.Y += int(k * float32(gtx.Dp(gutter)))
-	shape.SW = int((1 - k) * float32(r))
-	shape.SE = shape.SW
-	return shape
-}
-
-// detachedTab is a tab that grows out of no island: rounded all round, a
-// gutter clear of the islands as they are of each other.
-func detachedTab(gtx C, size image.Point, r int) clip.RRect {
-	return clip.RRect{Rect: image.Rectangle{Max: image.Pt(size.X, size.Y-gtx.Dp(gutter))}, NW: r, NE: r, SE: r, SW: r}
 }
 
 // tabContent is the badge, the name and the × in a row.
@@ -341,165 +304,4 @@ func tabTooltip(th *ui.Theme, tab projectTab) layout.Widget {
 			layout.Rigid(path.Layout),
 		)
 	}
-}
-
-// fillets draw the concave curves that turn the active tab's bottom corners
-// into the island's top edge (the mockup's radial-gradient corners). A tab
-// flush with the island's left edge has no left fillet: the island's corner
-// is square there instead (islandSquare). None is drawn while a tab is in
-// the air (mergeSpan).
-func (t *topbar) fillets(gtx C, th *ui.Theme, f topbarFrame, w int) {
-	s, k := t.mergeShare(gtx, f)
-	r := int(k * float32(gtx.Dp(tabRadius)))
-	if r == 0 {
-		return
-	}
-	left := t.activeIndex(f)*w - t.list.Position.Offset
-	bottom := gtx.Constraints.Max.Y
-	line := ui.Over(s.color, th.Border)
-	if left != s.x0 {
-		ui.Fillet(gtx, image.Pt(left-r, bottom-r), r, false, s.color)
-		if k == 1 {
-			ui.FilletBorder(gtx, image.Pt(left-r, bottom-r), r, false, line)
-		}
-	}
-	ui.Fillet(gtx, image.Pt(left+w, bottom-r), r, true, s.color)
-	if k == 1 {
-		ui.FilletBorder(gtx, image.Pt(left+w, bottom-r), r, true, line)
-	}
-}
-
-// tabGap is the run of its top edge, in its own x, that the island at x0
-// leaves unstroked for the active tab grown out of it, fillets included. ok is
-// false when the tab sits on another island or has not finished growing in,
-// and the island's whole edge is stroked.
-func (t *topbar) tabGap(gtx C, f topbarFrame, x0 int) (gap ui.EdgeGap, ok bool) {
-	s, merged := t.mergeSpan(gtx, f)
-	if !merged || len(f.islands) > 0 && s.x0 != x0 || t.mergedFor == f.active && t.merge.shown < 1 {
-		return ui.EdgeGap{}, false
-	}
-	r := gtx.Dp(tabRadius)
-	left := t.activeIndex(f)*t.tabW - t.list.Position.Offset - s.x0
-	gap = ui.EdgeGap{From: left, To: left + t.tabW + r}
-	if left > 0 {
-		gap.From -= r
-	}
-	return gap, true
-}
-
-// mergeShare is how far the active tab has grown into the island it merges
-// with, 0 detached to 1 merged, easing between the two on the sidebar's
-// curve, and that island (the last one it merged with while it leaves).
-// Another tab becoming active snaps rather than animates: only a tab leaving
-// or landing in its island eases.
-func (t *topbar) mergeShare(gtx C, f topbarFrame) (islandSpan, float32) {
-	s, ok := t.mergeSpan(gtx, f)
-	if ok {
-		t.merged = s
-	}
-	if f.active != t.mergedFor {
-		t.mergedFor = f.active
-		t.merge.snap(ok)
-	}
-	return t.merged, t.merge.at(gtx, ok)
-}
-
-// mergeSpan is the island the active tab grows out of: the one its whole
-// width and both fillets sit over. A tab over the gap between two islands
-// grows out of neither. With a single island the tab always merges.
-func (t *topbar) mergeSpan(gtx C, f topbarFrame) (islandSpan, bool) {
-	at := t.activeIndex(f)
-	// While a tab is in the air the others slide out of its way, so none
-	// grows out of an island: the fillets and square corner would stay
-	// behind at the active tab's slot.
-	if at < 0 || t.sort.Dragging() != "" {
-		return islandSpan{}, false
-	}
-	if len(f.islands) == 0 {
-		return islandSpan{x0: -t.shift, x1: math.MaxInt, color: f.island}, true
-	}
-	r := gtx.Dp(tabRadius)
-	left := at*t.tabW - t.list.Position.Offset
-	right := left + t.tabW
-	if f.islandsSliding {
-		return mostOverlapped(f.islands, left, right), true
-	}
-	for _, s := range f.islands {
-		from := left - r
-		if left == s.x0 {
-			from = left
-		}
-		if from >= s.x0 && right+r <= s.x1 {
-			return s, true
-		}
-	}
-	return islandSpan{}, false
-}
-
-// mostOverlapped is the island covering most of left..right.
-func mostOverlapped(islands []islandSpan, left, right int) islandSpan {
-	best, most := islands[0], -1
-	for _, s := range islands {
-		if o := min(right, s.x1) - max(left, s.x0); o > most {
-			best, most = s, o
-		}
-	}
-	return best
-}
-
-func (t *topbar) activeIndex(f topbarFrame) int {
-	for i, tab := range f.tabs {
-		if tab.ID == f.active {
-			return i
-		}
-	}
-	return -1
-}
-
-// islandSquare reports the left edge of the island whose top-left corner the
-// active tab sits on, which then drops its rounding for the tab to grow out
-// of.
-func (t *topbar) islandSquare(gtx C, f topbarFrame) (x0 int, ok bool) {
-	if x0, ok := t.hoverSquare(gtx, f); ok {
-		return x0, true
-	}
-	s, merged := t.mergeSpan(gtx, f)
-	// Square only once the tab has fully grown in: the island's corner
-	// rounds again as soon as the tab starts to leave. A tab not eased yet
-	// is merged outright, as mergeShare snaps it.
-	growing := t.mergedFor == f.active && t.merge.shown < 1
-	if !merged || growing || t.activeIndex(f)*t.tabW-t.list.Position.Offset != s.x0 {
-		return 0, false
-	}
-	return s.x0, true
-}
-
-// hoverSquare is the first island's left edge while the first tab, flush
-// with it and not active, is hovered: the hover reaches down to the island,
-// and the island's rounded corner under its square foot showed as a curve.
-func (t *topbar) hoverSquare(gtx C, f topbarFrame) (x0 int, ok bool) {
-	if len(f.tabs) == 0 || f.tabs[0].ID == f.active || t.sort.Dragging() != "" {
-		return 0, false
-	}
-	st := t.tabs[f.tabs[0].ID]
-	if st == nil || !(st.click.Hovered() || st.close.Hovered()) {
-		return 0, false
-	}
-	x0 = -t.shift
-	x1 := math.MaxInt
-	if len(f.islands) > 0 {
-		x0, x1 = f.islands[0].x0, f.islands[0].x1
-	}
-	left := -t.list.Position.Offset
-	return x0, left == x0 && left+t.tabW+gtx.Dp(tabRadius) <= x1
-}
-
-// tabGap is gap for the island at x0, the stage's view of tabGap; nil when
-// the tab leaves the island's edge whole.
-func (u *window) tabGap(gtx C, v stageView, islands []islandSpan, x0 int) *ui.EdgeGap {
-	gap, ok := u.topbar.tabGap(gtx, topbarFrame{tabs: v.strip, active: v.stripActive, islands: islands}, x0)
-	if !ok {
-		return nil
-	}
-	return &gap
 }

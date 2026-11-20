@@ -306,7 +306,7 @@ func panelFrames(t *testing.T) (*window, *frameRig) {
 			)
 			// Over the panels, where they hold still while one slides: the
 			// window hides them under a panel, which this rig does not.
-			u.footer.layoutBalloons(gtx, th)
+			u.footer.layoutBalloons(gtx, th, gtx.Dp(balloonInset))
 			return dims
 		})
 	}

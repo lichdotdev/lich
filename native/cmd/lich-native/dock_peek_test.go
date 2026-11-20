@@ -24,8 +24,8 @@ func TestDockCollapseTakesItOffTheStageInTheFrameAfterTheClick(t *testing.T) {
 	}
 	r.hover(f32.Pt(100, 300))
 	r.settle(t)
-	if u.dock.islands != nil || u.dock.visible() {
-		t.Fatalf("still on the stage once collapsed: islands %v", u.dock.islands)
+	if u.dock.slide.shown != 0 || u.dock.visible() {
+		t.Fatalf("still on the stage once collapsed: %v of it out", u.dock.slide.shown)
 	}
 	if u.dock.tab != dockReview {
 		t.Errorf("collapsing closed the dock: on %v", u.dock.tab)

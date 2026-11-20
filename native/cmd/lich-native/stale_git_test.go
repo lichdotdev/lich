@@ -29,7 +29,7 @@ func gitFrames(t *testing.T) (*window, *frameRig) {
 				layout.Flexed(1, func(gtx C) D { return D{Size: gtx.Constraints.Max} }),
 				layout.Rigid(func(gtx C) D { return u.gitPanelRow(gtx, v) }),
 			)
-			u.footer.layoutBalloons(gtx, th)
+			u.footer.layoutBalloons(gtx, th, gtx.Dp(balloonInset))
 			return dims
 		})
 	}

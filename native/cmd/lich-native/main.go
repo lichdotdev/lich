@@ -830,12 +830,10 @@ func (u *window) body(gtx C, v stageView) (int, sidebarAction, error) {
 						return D{Size: gtx.Constraints.Max}
 					}
 					if u.git.covers {
-						u.dock.islands = []islandSpan{{x1: gtx.Constraints.Max.X, color: u.theme.Sidebar}}
 						u.layoutGit(gtx, v)
 						return D{Size: gtx.Constraints.Max}
 					}
 					if u.extPanel != nil && u.extPanel.covers {
-						u.dock.islands = []islandSpan{{x1: gtx.Constraints.Max.X, color: u.theme.Sidebar}}
 						u.layoutExtPanelCovering(gtx, v)
 						u.applyExtension(u.extPanel.takeAction())
 						return D{Size: gtx.Constraints.Max}
@@ -846,11 +844,6 @@ func (u *window) body(gtx C, v stageView) (int, sidebarAction, error) {
 					}
 					if u.pulls.open && !v.home {
 						u.pulls.files = filesInput{activeID: v.in.sessionID, injector: u.injector, submitter: u.terms.submitter, light: u.light, code: u.code}
-						u.pulls.squareX = -1
-						if x, ok := u.topbar.islandSquare(gtx, topbarFrame{tabs: v.strip, active: v.stripActive, islands: u.pulls.spans}); ok {
-							u.pulls.squareX = x
-						}
-						u.pulls.gap = u.tabGap(gtx, v, u.pulls.spans, 0)
 						u.applyPulls(u.pulls.layout(gtx, u.theme))
 						return D{Size: gtx.Constraints.Max}
 					}
@@ -879,51 +872,56 @@ func sidebarActive(v stageView) string {
 }
 
 // island is the stage's rounded box: Home, the empty notice, the diff or
-// the terminal, in the color the active tab merges with, under the footer's
-// balloons. Its top-left corner is square while that tab sits on it. A lone
-// session is laid out termWidth wide, which a sidebar morph sets to where
-// the box is going and the dock's slide, for a terminal, to where the box
-// came from: wider, the box clips it; narrower, its fill shows past it. The Git panel's slide sets termHeight the
-// same way.
+// the terminal, under the footer's balloons. A layout has no box: its panes
+// are islands of their own on the canvas (layoutPanes).
 func (u *window) island(gtx C, v stageView, termWidth, termHeight int) error {
 	size := gtx.Constraints.Max
 	gtx.Constraints.Min = size
-	r := gtx.Dp(ui.RadiusLG)
-	nw := r
-	if x, ok := u.topbar.islandSquare(gtx, topbarFrame{tabs: v.strip, active: v.stripActive, islands: u.dock.islands}); ok && x == 0 {
-		nw = 0
-	}
-	defer clip.RRect{Rect: image.Rectangle{Max: size}, NW: nw, NE: r, SE: r, SW: r}.Push(gtx.Ops).Pop()
-	defer u.drawBalloons(gtx, v)
 	u.drop.reset()
+	u.syncExitToasts(focusedCard(v))
+	if v.hasLayout && !v.home && !v.hasConsole && !v.hasEditor {
+		defer clip.Rect{Max: size}.Push(gtx.Ops).Pop()
+		defer u.drawBalloons(gtx, v, 0)
+		return u.layoutPanes(gtx, v)
+	}
+	r := gtx.Dp(ui.RadiusLG)
+	defer clip.UniformRRect(image.Rectangle{Max: size}, r).Push(gtx.Ops).Pop()
+	defer u.drawBalloons(gtx, v, gtx.Dp(balloonInset))
 	fill := u.islandColor(v)
 	paint.Fill(gtx.Ops, fill)
 	on := u.theme.On(fill)
-	defer ui.IslandBorder(gtx, size, nw, r, u.tabGap(gtx, v, u.dock.islands, 0), on.Over(on.Border))
+	defer ui.IslandBorder(gtx, size, r, on.Over(on.Border))
 	if u.homeOpen.Clicked(gtx) {
 		go u.pickProject()
 	}
 	if u.emptyNew.Clicked(gtx) {
 		go u.newSession(launchRequest{kind: u.model.newSessionKind()}, "")
 	}
-	u.syncExitToasts(focusedCard(v))
 	switch {
 	case v.home:
-		homeView(gtx, u.theme.On(fill), &u.homeOpen)
+		homeView(gtx, on, &u.homeOpen)
 		return nil
 	case v.hasConsole:
 		return u.consoleIsland(gtx, v.console, termWidth)
 	case v.hasEditor:
 		return u.editorIsland(gtx, v)
-	case v.hasLayout:
-		return u.layoutIsland(gtx, v)
 	case !v.hasActive && u.model.everySessionInALayout():
-		allInLayoutView(gtx, u.theme.On(fill), &u.emptyNew, u.spot)
+		allInLayoutView(gtx, on, &u.emptyNew, u.spot)
 		return nil
 	case !v.hasActive:
-		emptySessionsView(gtx, u.theme.On(fill), &u.emptyNew, u.model.newSessionKind() == "shell", u.spot)
+		emptySessionsView(gtx, on, &u.emptyNew, u.model.newSessionKind() == "shell", u.spot)
 		return nil
 	}
+	return u.loneSession(gtx, v, fill, termWidth, termHeight)
+}
+
+// loneSession is the active session alone on the island, laid out termWidth
+// wide, which a sidebar morph sets to where the box is going and the dock's
+// slide, for a terminal, to where the box came from: wider, the box clips it;
+// narrower, its fill shows past it. The Git panel's slide sets termHeight the
+// same way.
+func (u *window) loneSession(gtx C, v stageView, fill color.NRGBA, termWidth, termHeight int) error {
+	size := gtx.Constraints.Max
 	u.spot(gtx, tourStage, func(C) D { return D{Size: size} })
 	u.layoutStage.metric = gtx.Metric
 	u.terms.onScreen(v.active.ID)
@@ -931,7 +929,7 @@ func (u *window) island(gtx C, v stageView, termWidth, termHeight int) error {
 	term.Constraints = layout.Exact(image.Pt(termWidth, termHeight+band))
 	// A session alone has no pane, but the panes it came from or goes to
 	// move against its place, so it stands in the run as one (paneMotion).
-	motion, alone := &u.layoutStage.motion, image.Rectangle{Max: size}.Inset(gtx.Dp(gutter))
+	motion, alone := &u.layoutStage.motion, image.Rectangle{Max: size}
 	motion.begin(gtx.Now, false, []string{v.active.ID})
 	reveal := clip.Rect{Max: size}
 	if frame := motion.frame(v.active.ID, alone); frame != alone {
@@ -988,27 +986,20 @@ func (u *window) islandColor(v stageView) color.NRGBA {
 func (u *window) topbarFrame(gtx C, v stageView, edge int) topbarFrame {
 	width, name := u.sidebar.column(gtx)
 	f := topbarFrame{
-		brandWidth: width, brandName: name, stripX: edge, island: u.islandColor(v),
+		brandWidth: width, brandName: name, stripX: edge,
 		tabs: v.strip, active: v.stripActive, pending: u.model.notifications(),
 		caption: u.caption.Load().under(u.settings.look.prefs.windowButtons), chrome: u.chrome,
 		windowButtons: u.settings.look.prefs.windowButtons, guides: u.guideItems(),
+		pulls: u.pulls.open && !v.home,
 	}
-	// Settings is no project's screen, so no tab merges into it.
-	if u.settings.open {
-		f.active, f.settings = "", true
-	}
-	f.pulls = u.pulls.open && !v.home
 	f.extensions, f.surfaceImages = u.model.extensions.all(), u.model.extensions.surfaceImages()
+	// Settings and an extension's screen are no project's, so no tab is lit
+	// over them.
 	switch {
-	case f.settings:
+	case u.settings.open:
+		f.active, f.settings = "", true
 	case u.extension.open:
-		// The extension draws its own islands, which the strip cannot know,
-		// so no tab merges into them.
 		f.active, f.extension = "", u.extension.shown
-	case f.pulls:
-		f.islands = u.pulls.spans
-	default:
-		f.islands = u.dock.islands
 	}
 	return f
 }
@@ -1063,7 +1054,6 @@ func (u *window) stageRow(gtx C, v stageView) error {
 	}
 	termHeight := max(size.Y-u.git.pending()-u.extPanel.pending()-u.ptyBand(gtx, v)-u.sessionBand(gtx, v), 0)
 	if share == 0 {
-		d.islands = nil
 		if err := u.island(gtx, v, termWidth, termHeight); err != nil {
 			return err
 		}
@@ -1073,13 +1063,6 @@ func (u *window) stageRow(gtx C, v stageView) error {
 	if !d.fullscreen {
 		w = d.width(gtx)
 		at = size.X - slot + gtx.Dp(gutter)
-		mainEnd := max(size.X-slot, 0)
-		d.islands = []islandSpan{
-			{x0: 0, x1: mainEnd, color: u.islandColor(v)},
-			{x0: max(at, 0), x1: min(at+w, size.X), color: u.theme.Sidebar},
-		}
-	} else {
-		d.islands = []islandSpan{{x0: 0, x1: size.X, color: u.theme.Sidebar}}
 	}
 	island := gtx
 	island.Constraints = layout.Exact(image.Pt(max(size.X-slot, 0), size.Y))
@@ -1094,7 +1077,6 @@ func (u *window) stageRow(gtx C, v stageView) error {
 	}
 	defer op.Offset(image.Pt(at, 0)).Push(gtx.Ops).Pop()
 	gtx.Constraints = layout.Exact(image.Pt(w, size.Y))
-	d.gap = u.tabGap(gtx, v, d.islands, at)
 	return u.layoutDock(gtx, v)
 }
 

@@ -2,7 +2,6 @@ package main
 
 import (
 	"image"
-	"image/color"
 	"testing"
 
 	"gioui.org/f32"
@@ -54,71 +53,6 @@ func TestBrandColumnFollowsTheSidebar(t *testing.T) {
 	}
 }
 
-// The active tab grows out of the island it sits wholly over, fillets
-// included, and out of neither when it sits over the gap between two.
-func TestActiveTabMergesOnlyIntoTheIslandUnderIt(t *testing.T) {
-	gtx := layout.Context{Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}}
-	r := gtx.Dp(tabRadius)
-	list := islandSpan{x0: 0, x1: 300, color: color.NRGBA{R: 1, A: 255}}
-	view := islandSpan{x0: 306, x1: 1000, color: color.NRGBA{R: 2, A: 255}}
-	tabs := []projectTab{{ID: "a"}, {ID: "b"}, {ID: "c"}, {ID: "d"}}
-	bar := &topbar{tabW: 100}
-	cases := []struct {
-		active string
-		want   islandSpan
-		merged bool
-		square bool
-	}{
-		{"a", list, true, true},
-		{"b", list, true, false},
-		{"c", islandSpan{}, false, false}, // 200..300 plus its right fillet runs past the list
-		{"d", islandSpan{}, false, false}, // 300..400 straddles the gap
-	}
-	for _, c := range cases {
-		f := topbarFrame{tabs: tabs, active: c.active, islands: []islandSpan{list, view}}
-		got, ok := bar.mergeSpan(gtx, f)
-		if ok != c.merged || got != c.want {
-			t.Errorf("tab %s: merged into %+v (%v), want %+v (%v)", c.active, got, ok, c.want, c.merged)
-		}
-		if _, sq := bar.islandSquare(gtx, f); sq != c.square {
-			t.Errorf("tab %s: square %v, want %v", c.active, sq, c.square)
-		}
-	}
-	over := topbarFrame{tabs: tabs, active: "d", islands: []islandSpan{list, {x0: 300 - r, x1: 1000}}}
-	if s, ok := bar.mergeSpan(gtx, over); !ok || s.x0 != 300-r {
-		t.Errorf("a tab wholly over the second island did not merge into it: %+v, %v", s, ok)
-	}
-	if _, ok := bar.mergeSpan(gtx, topbarFrame{tabs: tabs, active: "d"}); !ok {
-		t.Error("with one island the active tab did not merge")
-	}
-}
-
-// While the Pulls list slides in, the first tab stays merged the whole way
-// and swaps from the pull request island to the list's once, instead of
-// detaching while it fits wholly over neither.
-func TestActiveTabStaysMergedWhileTheListSlides(t *testing.T) {
-	gtx := layout.Context{Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}}
-	const listW, gap, width = 320, 6, 1400
-	list := color.NRGBA{R: 1, A: 255}
-	view := color.NRGBA{R: 2, A: 255}
-	bar := &topbar{tabW: 160}
-	tabs := []projectTab{{ID: "a"}, {ID: "b"}}
-	swaps, last := 0, view
-	for slot := 1; slot < listW+gap; slot++ {
-		spans := []islandSpan{{x0: slot - listW - gap, x1: slot - gap, color: list}, {x0: slot, x1: width, color: view}}
-		s, ok := bar.mergeSpan(gtx, topbarFrame{tabs: tabs, active: "a", islands: spans, islandsSliding: true})
-		if !ok {
-			t.Fatalf("slot %d: the active tab detached mid-slide", slot)
-		}
-		if s.color != last {
-			swaps, last = swaps+1, s.color
-		}
-	}
-	if swaps != 1 || last != list {
-		t.Errorf("the tab swapped islands %d times and landed on %v, want once onto the list", swaps, last)
-	}
-}
-
 func TestSettingsButtonOpensOnGlobalAfterAProjectScope(t *testing.T) {
 	u, _ := newGateWindow(t)
 	u.applySettingsAction(topbarAction{projectSettings: "p"})
@@ -129,19 +63,6 @@ func TestSettingsButtonOpensOnGlobalAfterAProjectScope(t *testing.T) {
 	u.applySettingsAction(topbarAction{settings: true})
 	if !u.settings.open || u.settings.scope != "" {
 		t.Errorf("the settings button opened on scope %q (open %v), want Global", u.settings.scope, u.settings.open)
-	}
-}
-
-// Past the window's own buttons, the strip leaves the active first tab's
-// left fillet a radius of room after the brand, where it would otherwise be
-// cut off at the strip's edge.
-func TestStripStartLeavesTheFilletRoom(t *testing.T) {
-	const island, radius = 44, 8
-	if got := stripStart(island, 40, radius); got != island {
-		t.Errorf("brand short of the island: start %d, want the island's edge %d", got, island)
-	}
-	if got := stripStart(island, 120, radius); got != 120+radius {
-		t.Errorf("brand past the island: start %d, want %d", got, 120+radius)
 	}
 }
 

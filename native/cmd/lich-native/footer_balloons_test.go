@@ -28,7 +28,7 @@ func TestTheTerminalGivesTheBalloonsABandOnlyWhereTheyFloat(t *testing.T) {
 	}{
 		{"an agent's terminal", stageView{active: agent, hasActive: true}, 52},
 		{"a plain terminal", stageView{active: shell, hasActive: true}, 0},
-		{"a layout with an agent", stageView{hasLayout: true, panes: map[string]sessionView{"s": shell, "a": agent}}, 52},
+		{"a layout with an agent", stageView{hasLayout: true, panes: map[string]sessionView{"s": shell, "a": agent}}, 42},
 		{"a layout of plain terminals", stageView{hasLayout: true, panes: map[string]sessionView{"s": shell}}, 0},
 		{"a service's console", stageView{active: agent, hasActive: true, hasConsole: true}, 0},
 		{"Home", stageView{home: true}, 0},
@@ -70,7 +70,7 @@ func balloonFrames(t *testing.T, in footerInput) (*footer, *frameRig) {
 	f.dock = new(dock)
 	r.draw = func(gtx C, th *ui.Theme) {
 		f.frame(gtx, in)
-		f.layoutBalloons(gtx, th)
+		f.layoutBalloons(gtx, th, gtx.Dp(balloonInset))
 	}
 	return f, r
 }
@@ -97,7 +97,7 @@ func TestANarrowStageLeavesOutWhatDoesNotFitRatherThanWrap(t *testing.T) {
 	f.dock = new(dock)
 	r.draw = func(gtx C, th *ui.Theme) {
 		f.frame(gtx, in)
-		f.layoutBalloons(gtx, th)
+		f.layoutBalloons(gtx, th, gtx.Dp(balloonInset))
 	}
 	drawn := r.settle(t)
 	if !strings.Contains(drawn, "main") {

@@ -162,7 +162,6 @@ func (u *window) dockPeek(gtx C, v stageView) error {
 		// A moving panel takes no input; the slide asked for its frames.
 		gtx = gtx.Disabled()
 	}
-	u.dock.gap = nil
 	err := u.layoutDock(gtx, v)
 	area.Pop()
 	return err
