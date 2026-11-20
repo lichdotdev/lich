@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"gioui.org/io/key"
+
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/grimoire"
@@ -131,6 +133,17 @@ func TestParseWelcomeShot(t *testing.T) {
 	}
 }
 
+// stored waits for the backend to hold want at key: a setting is written off
+// the frame.
+func (f *sidebarBackend) stored(t *testing.T, key, want string) {
+	t.Helper()
+	for deadline := time.Now().Add(5 * time.Second); f.get(key) != want; time.Sleep(time.Millisecond) {
+		if time.Now().After(deadline) {
+			t.Fatalf("%s is %q, want %q", key, f.get(key), want)
+		}
+	}
+}
+
 func (f *sidebarBackend) called(call string) bool {
 	f.mu.Lock()
 	defer f.mu.Unlock()
@@ -189,9 +202,7 @@ func TestTheFirstLaunchOpensTheWelcome(t *testing.T) {
 	if u.welcome.open || r.shows(i18n.T("shell.welcome.tagline")) {
 		t.Fatal("Continue left the Welcome open")
 	}
-	if got := f.get(providerDefaultKey + "@"); got != "claude" {
-		t.Errorf("the default stored is %q, want claude", got)
-	}
+	f.stored(t, providerDefaultKey+"@", "claude")
 }
 
 func TestALaterLaunchOpensNoWelcome(t *testing.T) {
@@ -328,9 +339,7 @@ func TestTheFirstReadyBookStartsAsTheDefault(t *testing.T) {
 	}
 	r.click(t, r.at(t, i18n.T("shell.welcome.continue")))
 	r.frames(1)
-	if got := f.get(providerDefaultKey + "@"); got != "claude" {
-		t.Errorf("Continue stored %q, want the book shown as the default", got)
-	}
+	f.stored(t, providerDefaultKey+"@", "claude")
 }
 
 func TestHoveringAReadyBookLightsItsGem(t *testing.T) {
@@ -364,4 +373,70 @@ func TestClickingAReadyBookMakesItTheDefault(t *testing.T) {
 	if countLabel(r, i18n.T("shell.welcome.default")) != 1 {
 		t.Errorf("Default shows %d times", countLabel(r, i18n.T("shell.welcome.default")))
 	}
+}
+
+// The Welcome takes the whole content under the top strip, laid out for the
+// window it is in: the intro beside the books where both fit, the books alone
+// in a narrow one.
+func TestTheWelcomeFillsTheWindowAtAnyWidth(t *testing.T) {
+	for _, c := range []struct {
+		size  image.Point
+		intro bool
+	}{{image.Pt(1600, 1000), true}, {image.Pt(800, 700), false}} {
+		u, r, _ := welcomeRig(t, installedClaude)
+		r.size = c.size
+		r.frames(3)
+		if got := r.shows(i18n.T("shell.welcome.tagline")); got != c.intro {
+			t.Errorf("%v: intro drawn %v, want %v", c.size, got, c.intro)
+		}
+		var claude image.Rectangle
+		for _, n := range r.nodes() {
+			if n.Desc.Label == "Claude Code" {
+				claude = n.Desc.Bounds
+			}
+		}
+		if claude.Empty() || claude.Min.Y < u.topbarBottom() {
+			t.Errorf("%v: Claude Code at %v, want under the top strip", c.size, claude)
+		}
+		if !c.intro && claude.Min.X > c.size.X/4 {
+			t.Errorf("%v: the books start at %d with no intro beside them", c.size, claude.Min.X)
+		}
+	}
+}
+
+func (u *window) topbarBottom() int { return int(topbarHeight) }
+
+func TestEscapeClosesTheReopenedWelcome(t *testing.T) {
+	u, r, f := welcomeRig(t, installedClaude)
+	f.mu.Lock()
+	f.settings[providerDefaultKey+"@"] = "codex"
+	f.mu.Unlock()
+	if err := u.model.providers.reload(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	r.frames(2)
+	u.reopenWelcome()
+	r.frames(2)
+	if !r.shows(i18n.T("shell.welcome.continue")) {
+		t.Fatal("the Welcome did not reopen")
+	}
+	r.router.Queue(key.Event{Name: key.NameEscape, State: key.Press})
+	r.frames(2)
+	if u.welcome.open || r.shows(i18n.T("shell.welcome.continue")) {
+		t.Fatal("Escape left the reopened Welcome open")
+	}
+	if got := f.get(providerDefaultKey + "@"); got != "codex" {
+		t.Errorf("Escape moved the default to %q", got)
+	}
+}
+
+func TestEscapeClosesTheFirstWelcomeAsContinueDoes(t *testing.T) {
+	u, r, f := welcomeRig(t, installedClaude)
+	r.frames(3)
+	r.router.Queue(key.Event{Name: key.NameEscape, State: key.Press})
+	r.frames(2)
+	if u.welcome.open {
+		t.Fatal("Escape left the first Welcome open")
+	}
+	f.stored(t, providerDefaultKey+"@", "claude")
 }

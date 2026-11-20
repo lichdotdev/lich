@@ -6,7 +6,9 @@ import (
 	"strings"
 
 	"gioui.org/font"
+	"gioui.org/io/event"
 	"gioui.org/io/key"
+	"gioui.org/io/pointer"
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/op/clip"
@@ -20,17 +22,20 @@ import (
 
 // The Welcome's geometry, from the approved mockup (welcome-sim.html).
 var (
-	welcomeMaxWidth   unit.Dp = 1180 // .win, max-w 1180px
-	welcomeCellHeight unit.Dp = 155  // .tome, h-155px
-	welcomeCellPadX           = ui.Space(4.5)
-	welcomePadY               = ui.Space(9)
-	welcomePadX               = ui.Space(10)
-	welcomeTagTop             = ui.Space(3)
-	welcomeFootTop            = ui.Space(8.5)
+	welcomeCellPadX = ui.Space(4.5)
+	welcomePadY     = ui.Space(9)
+	welcomePadX     = ui.Space(10)
+	welcomeTagTop   = ui.Space(3)
+	welcomeFootTop  = ui.Space(8.5)
 	// welcomeHintHeight is the row under the books that says how to choose
 	// the default, .hint's 13px line in 14px of padding.
 	welcomeHintHeight unit.Dp = 46
 	welcomeHintPad            = ui.Space(3.5)
+	// welcomeCellMinWidth is the narrowest a book's cell reads in: the book,
+	// its gap and a name; welcomeIntroMinWidth the narrowest the logo and the
+	// title fit, under which the intro gives its room to the books.
+	welcomeCellMinWidth  unit.Dp = 300
+	welcomeIntroMinWidth unit.Dp = 360
 	// welcomeBookPixel is a book pixel's side, three device pixels at 1x;
 	// welcomeLogoPixel the most a logo pixel takes, less in a short window.
 	welcomeBookPixel unit.Dp = 3
@@ -48,47 +53,39 @@ const (
 	welcomeAccentMuted = 0.45
 )
 
-// layoutWelcome is the Welcome, over the whole window. Escape, a press off it
-// and Continue close it; a login running in its own dialog keeps it open
-// under that dialog.
+// layoutWelcome is the Welcome, over the window's whole content under the top
+// strip, which keeps the window's controls: an island on the canvas, as the
+// screens under it are. Continue, Enter and Escape close it, the first launch
+// included; a login running in its own dialog over it keeps it open. It is
+// laid out before the dialogs a sign-in opens, so they draw over it.
 func (u *window) layoutWelcome(gtx C, th *ui.Theme) {
 	u.decideWelcome()
 	w := &u.welcome
-	if !w.open && !w.dialog.Animating(gtx) {
+	if !w.open {
 		return
 	}
-	list := welcomeProviders(u.settings.providers.snapshot())
-	if w.cont.Clicked(gtx) || w.open && enterPressed(gtx) {
+	if w.cont.Clicked(gtx) || welcomeKey(gtx, key.NameReturn) || welcomeKey(gtx, key.NameEscape) && !w.signing {
 		u.closeWelcome()
+		gtx.Execute(op.InvalidateCmd{})
+		return
 	}
-	on := th.On(th.Popover)
-	signing := false
-	d := th.Dialog(&w.dialog, w.open, "", "")
-	d.MaxWidth, d.Root = welcomeMaxWidth, &u.root
-	d.Raw = func(gtx C) D {
-		rows := (len(list) + welcomeColumns - 1) / welcomeColumns
-		h := min(rows*gtx.Dp(welcomeCellHeight)+gtx.Dp(welcomeHintHeight), gtx.Constraints.Max.Y-gtx.Dp(ui.Space(8)))
-		gtx.Constraints.Min.Y, gtx.Constraints.Max.Y = h, h
-		gtx.Constraints.Min.X = gtx.Constraints.Max.X
-		return layout.Flex{}.Layout(gtx,
-			layout.Flexed(1, func(gtx C) D { return u.welcomeIntro(gtx, on) }),
-			layout.Rigid(func(gtx C) D { return seam(gtx, on, image.Pt(gtx.Dp(1), gtx.Constraints.Max.Y)) }),
-			layout.Flexed(1, func(gtx C) D {
-				var g D
-				g, signing = u.welcomeGrid(gtx, on, list, rows)
-				return g
-			}),
-		)
+	if !th.Overlays.Open() && !gtx.Focused(&w.tag) {
+		gtx.Execute(key.FocusCmd{Tag: &w.tag})
 	}
-	if d.Layout(gtx) && !signing {
-		u.closeWelcome()
-	}
+	area := image.Rect(0, gtx.Dp(topbarHeight), gtx.Constraints.Max.X, gtx.Constraints.Max.Y)
+	u.coverPages(area)
+	macro := op.Record(gtx.Ops)
+	w.signing = u.welcomeScreen(gtx, th, area)
+	op.Defer(gtx.Ops, macro.Stop())
 }
 
-func enterPressed(gtx C) bool {
+// welcomeKey reports a press of name, as a dialog reads its Escape: the
+// Welcome takes the focus off whatever is under it, a sign-in dialog over it
+// takes it first.
+func welcomeKey(gtx C, name key.Name) bool {
 	pressed := false
 	for {
-		ev, ok := gtx.Event(key.Filter{Name: key.NameReturn})
+		ev, ok := gtx.Event(key.Filter{Name: name})
 		if !ok {
 			return pressed
 		}
@@ -96,6 +93,51 @@ func enterPressed(gtx C) bool {
 			pressed = true
 		}
 	}
+}
+
+// welcomeScreen draws the Welcome in area: the canvas, taking every press so
+// nothing under it answers, and the island with the intro and the books. The
+// books take what they need, the intro the rest, and a window too narrow for
+// both shows the books alone. It reports a login running for a provider.
+func (u *window) welcomeScreen(gtx C, th *ui.Theme, area image.Rectangle) bool {
+	w := &u.welcome
+	defer op.Offset(area.Min).Push(gtx.Ops).Pop()
+	size := area.Size()
+	defer clip.Rect{Max: size}.Push(gtx.Ops).Pop()
+	event.Op(gtx.Ops, &w.tag)
+	for {
+		if _, ok := gtx.Event(pointer.Filter{Target: &w.tag, Kinds: pointer.Press | pointer.Scroll, ScrollY: pointer.ScrollRange{Min: -1, Max: 1}}); !ok {
+			break
+		}
+	}
+	paint.FillShape(gtx.Ops, th.Canvas, clip.Rect{Max: size}.Op())
+	g := gtx.Dp(gutter)
+	island := image.Rect(g, 0, size.X-g, size.Y-g)
+	defer op.Offset(island.Min).Push(gtx.Ops).Pop()
+	gtx.Constraints = layout.Exact(island.Size())
+	list := welcomeProviders(u.settings.providers.snapshot())
+	rows := (len(list) + welcomeColumns - 1) / welcomeColumns
+	books := min(island.Dx(), max(island.Dx()/2, welcomeColumns*gtx.Dp(welcomeCellMinWidth)))
+	if island.Dx()-books < gtx.Dp(welcomeIntroMinWidth) {
+		books = island.Dx()
+	}
+	signing := false
+	pullsIsland(gtx, th, th.Background, func(gtx C, on *ui.Theme) D {
+		var children []layout.FlexChild
+		if books < island.Dx() {
+			children = append(children,
+				layout.Flexed(1, func(gtx C) D { return u.welcomeIntro(gtx, on) }),
+				layout.Rigid(func(gtx C) D { return seam(gtx, on, image.Pt(gtx.Dp(1), gtx.Constraints.Max.Y)) }))
+		}
+		children = append(children, layout.Rigid(func(gtx C) D {
+			gtx.Constraints = layout.Exact(image.Pt(books-gtx.Dp(1), island.Dy()))
+			var d D
+			d, signing = u.welcomeGrid(gtx, on, list, rows)
+			return d
+		}))
+		return layout.Flex{}.Layout(gtx, children...)
+	})
+	return signing
 }
 
 func seam(gtx C, th *ui.Theme, size image.Point) D {

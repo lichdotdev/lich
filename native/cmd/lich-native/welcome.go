@@ -43,9 +43,12 @@ type welcome struct {
 	// the shape, once a provider was found.
 	decided, firstRun, installed bool
 	open                         bool
-	dialog                       ui.DialogState
-	cont                         ui.Clickable
-	tomes                        map[string]*tome
+	// tag takes the window's presses and keys while the Welcome is open;
+	// signing is a login it ran that is still going, which Escape leaves.
+	tag     bool
+	signing bool
+	cont    ui.Clickable
+	tomes   map[string]*tome
 	// main is the default provider the screen last showed, the book with the
 	// flame; mainSeen that it showed one at all.
 	main     string
