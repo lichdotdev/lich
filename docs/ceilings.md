@@ -239,7 +239,12 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   `/usage`). Codex lists no commands over app-server, its slash commands being its TUI's: the list holds the
   enabled skills `skills/list` gives, typed `$name` as its TUI takes them, and a message naming one also hands
   `turn/start` the skill as the schema has it; that this loads the skill was not measured. Cursor CLI was not
-  measured past its login, and Crush has no chat. lich adds no commands of its own.
+  measured past its login, and Crush has no chat. lich adds one command of its own, `/new` (`internal/chat/new.go`):
+  the chat's process is started again with nothing to resume, which every provider opens as an empty
+  conversation, after the session forgets the one it leaves; that conversation stays the provider's, reopened from
+  the palette's History, which lists a conversation no row holds (Cursor CLI's not). Claude Code's own `/clear`,
+  typed and sent, is not caught and goes to the process as any command does; what the card makes of the
+  conversation it opens was not measured.
 
 - **The Welcome installs a provider with the vendor's own command, and only where that runs as you**
   (`internal/providers/install_recipes.go`). Each line is the vendor's install page word for word, run with no

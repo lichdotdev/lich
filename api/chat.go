@@ -35,6 +35,9 @@ var (
 	// prompt, its slash commands and skills, as it lists them; none until it
 	// has.
 	ChatCommands = define[SessionIDOptions, []ChatCommand]("chat.Commands")
+	// ChatNew starts an empty conversation in a chat session, the one it had
+	// left to the provider. It refuses while the agent works.
+	ChatNew = define[SessionIDOptions, None]("chat.New")
 
 	// ChatItemEvent carries one item of a chat, whole, each time it changes:
 	// the window replaces the item with the same id, or appends a new one.

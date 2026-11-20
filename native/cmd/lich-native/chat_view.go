@@ -188,6 +188,11 @@ func (v *chatView) enter(now time.Time, rows []chatRow, read bool) []string {
 	if !read {
 		return keys
 	}
+	// A conversation replaced whole, by /new or a history read again on
+	// another, lands as it is rather than playing every old row out.
+	if len(before) > 0 && !slices.ContainsFunc(keys, func(k string) bool { return slices.Contains(before, k) }) {
+		v.rows = ui.Presence{}
+	}
 	shown := v.rows.Update(now, keys)
 	// The turn ending turns the live line into the closing line in its slot:
 	// neither plays its own motion.
@@ -398,7 +403,7 @@ func (u *window) chatActs(gtx C, p *chatPane, sv sessionView, keys, working bool
 
 // sendChat hands the editor's text to the agent, and reports whether it had
 // any. The person's message comes back as an item; a refused one goes back
-// into the editor.
+// into the editor. /new alone starts an empty conversation instead.
 func (u *window) sendChat(p *chatPane, id string) bool {
 	text := strings.TrimSpace(p.editor.Text())
 	if text == "" {
@@ -406,6 +411,10 @@ func (u *window) sendChat(p *chatPane, id string) bool {
 	}
 	p.editor.SetText("")
 	p.undo.Reset()
+	if text == chatNewCommand {
+		go func() { u.chatFailed(u.client.ChatNew(u.ctx, id)) }()
+		return true
+	}
 	go func() {
 		err := u.client.ChatPrompt(u.ctx, id, text)
 		if err == nil {
@@ -462,7 +471,7 @@ func (u *window) chatComposer(gtx C, th *ui.Theme, p *chatPane, sv sessionView, 
 			ta.Size, ta.Leading, ta.PadX, ta.PadY = markdown.BodySize, markdown.BodySize*markdown.LineHeightScale, chatComposerPadX, chatComposerPadY
 			ta.Foot = u.chatChips(th, p, sv, working, ft)
 			d := ta.Layout(gtx)
-			p.slash.refresh(&p.editor, u.model.chat.commandsOf(sv.ID))
+			p.slash.refresh(gtx, &p.editor, slashCommands(u.model.chat.commandsOf(sv.ID)))
 			gtx.Constraints.Max.X = d.Size.X
 			p.slash.layout(gtx, th, p.slashRoom-d.Size.Y-gtx.Dp(2*chatComposerGap))
 			return d

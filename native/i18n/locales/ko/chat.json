@@ -78,5 +78,8 @@
     "declined": "답하지 않음",
     "label": "{header}:",
     "own": "“{text}”"
+  },
+  "slash": {
+    "new": "이 세션에서 새 대화를 시작"
   }
 }

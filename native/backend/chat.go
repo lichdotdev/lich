@@ -71,6 +71,12 @@ func (c *Client) ChatCommands(ctx context.Context, id string) ([]ChatCommand, er
 	return callMethod(ctx, c, api.ChatCommands, api.SessionIDOptions{ID: id})
 }
 
+// ChatNew starts an empty conversation in session id's chat.
+func (c *Client) ChatNew(ctx context.Context, id string) error {
+	_, err := callMethod(ctx, c, api.ChatNew, api.SessionIDOptions{ID: id})
+	return err
+}
+
 // ChatSetOption sets option optionID of session id's chat to the choice value.
 func (c *Client) ChatSetOption(ctx context.Context, id, optionID, value string) error {
 	_, err := callMethod(ctx, c, api.ChatSetOption, api.ChatSetOptionOptions{ID: id, OptionID: optionID, Value: value})

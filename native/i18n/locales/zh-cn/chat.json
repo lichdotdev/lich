@@ -78,5 +78,8 @@
     "declined": "未回答",
     "label": "{header}：",
     "own": "“{text}”"
+  },
+  "slash": {
+    "new": "在此会话中开始新对话"
   }
 }

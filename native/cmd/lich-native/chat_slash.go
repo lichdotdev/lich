@@ -15,6 +15,7 @@ import (
 	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/backend"
+	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
@@ -69,6 +70,17 @@ func slashQuery(text string, caret int) (query string, from int, ok bool) {
 	return word, from, true
 }
 
+// chatNewCommand is lich's own command in the list: the chat starts an empty
+// conversation (api.ChatNew) instead of sending the text.
+const chatNewCommand = "/new"
+
+// slashCommands is what the list offers: lich's own command first, then the
+// provider's, less one that would shadow it.
+func slashCommands(provider []backend.ChatCommand) []backend.ChatCommand {
+	own := backend.ChatCommand{Text: chatNewCommand, Description: i18n.T("chat.slash.new")}
+	return append([]backend.ChatCommand{own}, slices.DeleteFunc(slices.Clone(provider), func(c backend.ChatCommand) bool { return c.Text == own.Text })...)
+}
+
 // slashName is a command's name without the sigil it is typed with.
 func slashName(c backend.ChatCommand) string { return strings.TrimLeft(c.Text, "/$") }
 
@@ -106,8 +118,9 @@ func (s *chatSlash) act(gtx C, ed *widget.Editor) {
 
 // refresh opens, filters or shuts the list on what the editor holds once it
 // has been laid out, which is where it takes typed text, so the frame that
-// took a keystroke draws the list it leaves.
-func (s *chatSlash) refresh(ed *widget.Editor, cmds []backend.ChatCommand) {
+// took a keystroke draws the list it leaves. A list open asks for its keys in
+// that frame too: the next key is routed by the filters of this one.
+func (s *chatSlash) refresh(gtx C, ed *widget.Editor, cmds []backend.ChatCommand) {
 	was := len(s.shown) > 0
 	s.shown = nil
 	_, caret := ed.Selection()
@@ -130,6 +143,7 @@ func (s *chatSlash) refresh(ed *widget.Editor, cmds []backend.ChatCommand) {
 	if len(s.rows) < len(shown) {
 		s.rows = make([]ui.Clickable, len(shown))
 	}
+	s.keys(gtx, ed)
 }
 
 func (s *chatSlash) keys(gtx C, ed *widget.Editor) {

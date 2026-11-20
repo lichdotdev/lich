@@ -362,3 +362,16 @@ func TestAThoughtFoldOpensOverItsCollapse(t *testing.T) {
 	}
 	_ = u
 }
+
+// A conversation replaced whole, as /new leaves it, lands as it is: its old
+// rows play no exit, its new ones no entry.
+func TestAConversationReplacedWholeLandsAsItIs(t *testing.T) {
+	u, r := stampFrames(t)
+	u.model.chat.history("s1", userTurns(5))
+	r.settle(t)
+	u.model.chat.history("s1", []backend.ChatItem{{ID: "fresh", Kind: api.ItemUser, Turn: 1, Text: "fresh start"}})
+	r.frame()
+	if p := u.chats.pane("s1"); p.rows.Moving() || !r.shows("fresh start") || r.shows("q0") {
+		t.Errorf("a replaced conversation plays its rows in or out:\n%s", r.drawn())
+	}
+}

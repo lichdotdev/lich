@@ -48,6 +48,7 @@ chat.Cancel(SessionIDOptions) None
 chat.Commands(SessionIDOptions) []ChatCommand
 chat.History(SessionIDOptions) []ChatItem
 chat.Kinds(None) []string
+chat.New(SessionIDOptions) None
 chat.Options(SessionIDOptions) []ChatOption
 chat.Prompt(ChatPromptOptions) None
 chat.Reply(ChatReplyOptions) None
