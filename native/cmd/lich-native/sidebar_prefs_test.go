@@ -25,6 +25,8 @@ type sidebarBackend struct {
 	detected []backend.DetectedProvider
 	themes   []backend.Theme
 	calls    []string
+	// diff is what project.DiffText answers.
+	diff string
 }
 
 func newSidebarBackend(t *testing.T) (*sidebarBackend, *backend.Client) {
@@ -56,6 +58,8 @@ func (f *sidebarBackend) answer(method string, args []json.RawMessage) any {
 		return nil
 	case "providers.Detect":
 		return f.detected
+	case "project.DiffText":
+		return f.diff
 	case "themes.List":
 		return f.themes
 	case "themes.Selection":

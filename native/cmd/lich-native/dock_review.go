@@ -9,9 +9,12 @@ package main
 
 import (
 	"context"
+	"hash/maphash"
 	"image"
 	"log"
+	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"gioui.org/layout"
@@ -40,11 +43,17 @@ const splitMinWidth = unit.Dp(560)
 // reviewPanel is the Review tab. Every field is the UI goroutine's but the
 // gap answers, which arrive from the backend.
 type reviewPanel struct {
-	client     *backend.Client
-	root       *ui.Root
-	comments   *commentStore
-	notify     func(ui.Toast)
+	client   *backend.Client
+	root     *ui.Root
+	comments *commentStore
+	notify   func(ui.Toast)
+	// invalidate is the window's, counting into version: whatever the panel
+	// reads off the UI goroutine (the diff, its highlighting, gap answers)
+	// arrives through it, so version moves whenever the panel has something
+	// new to draw and memo replays the body while it holds.
 	invalidate func()
+	version    atomic.Uint64
+	memo       ui.Memo
 	family     string
 	size       unit.Sp
 	cells      *glyphs.Rasterizer
@@ -155,14 +164,21 @@ func newReviewPanel(client *backend.Client, root *ui.Root, comments *commentStor
 		return nil, err
 	}
 	p := &reviewPanel{tour: new(driver.Tour), client: client, root: root, comments: comments, notify: notify,
-		invalidate: invalidate, family: family, size: size, cells: cells, bulkOpen: true, cards: map[string]*fileCard{}}
-	p.feed = diffFeed{client: client, invalidate: invalidate}
+		family: family, size: size, cells: cells, bulkOpen: true, cards: map[string]*fileCard{}}
+	p.invalidate = func() {
+		p.version.Add(1)
+		invalidate()
+	}
+	p.feed = diffFeed{client: client, invalidate: p.invalidate}
 	p.list.Axis = layout.Vertical
 	return p, nil
 }
 
 // hidden stops the polling while the tab is off screen.
-func (p *reviewPanel) hidden() { p.feed.close() }
+func (p *reviewPanel) hidden() {
+	p.feed.close()
+	p.memo.Drop()
+}
 
 // holdsKeys keeps the terminal off the note field and any open composer. The
 // terminal asks before the dock is laid out, so it is read off the focus as
@@ -217,12 +233,40 @@ func (p *reviewPanel) layoutBody(gtx C, th *ui.Theme, in dockInput) error {
 	if rel := p.resolveNext; rel != "" {
 		p.resolveNext = ""
 		p.openResolver(rel)
+		p.version.Add(1)
 	}
 	p.inject, p.submit = in.inject, in.submit
 	p.feed.follow(in.checkout)
 	p.takeRead(in.checkout, p.feed.latest())
 	p.takeAnswers()
-	return p.bodyWithBatch(gtx, th)
+	var err error
+	key := ui.MemoKey{Constraints: gtx.Constraints, Theme: th.Generation(), Version: p.memoVersion(in)}
+	p.memo.Layout(gtx, key, func(gtx C) D {
+		err = p.bodyWithBatch(gtx, th)
+		return D{Size: gtx.Constraints.Max}
+	})
+	if err != nil {
+		p.memo.Drop()
+	}
+	return err
+}
+
+// reviewLook is what the body draws from besides the panel's own reads.
+type reviewLook struct {
+	version                   uint64
+	checkout, branch, merging string
+	conflicted                string
+	light                     bool
+	code                      godemirror.Theme
+}
+
+var reviewLookSeed = maphash.MakeSeed()
+
+func (p *reviewPanel) memoVersion(in dockInput) uint64 {
+	return maphash.Comparable(reviewLookSeed, reviewLook{
+		version: p.version.Load(), checkout: in.checkout, branch: in.git.Branch, merging: in.git.Merging,
+		conflicted: strings.Join(in.git.Conflicted, "\x00"), light: in.light, code: in.code,
+	})
 }
 
 // bodyWithBatch is the files over the comment batch at their foot.
