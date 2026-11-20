@@ -211,15 +211,17 @@ void lich_webview_place(LichPage *page, int x, int y, int width, int height) {
 	XFlush(page->x);
 }
 
-// lich_webview_cut leaves the page window out of rects, page-local, where the
-// app draws over the page, so the app's drawing shows there; none gives the
-// page its whole window back. The shape is set in one request: setting the
-// whole window first and taking the rects out after exposed every cut anew,
-// which X painted over with the background on each frame of a slide.
-void lich_webview_cut(LichPage *page, int width, int height, XRectangle *rects, int n) {
+// lich_webview_shape leaves the page window out of rects, page-local, where
+// the app draws over the page, so the app's drawing shows there; none gives
+// the page its whole window back. It goes on x, the app's own connection,
+// unflushed: the frame the app presents next flushes it, so X takes the cut
+// and the frame that draws there together, and XWayland shows them in one
+// commit. Sent apart, the cut showed the background until the frame came. The
+// shape is one request (a region): setting the whole window first and taking
+// the rects out after exposed every cut anew.
+void lich_webview_shape(Display *x, unsigned long child, int width, int height, XRectangle *rects, int n) {
 	if (n == 0) {
-		XShapeCombineMask(page->x, page->child, ShapeBounding, 0, 0, None, ShapeSet);
-		XFlush(page->x);
+		XShapeCombineMask(x, child, ShapeBounding, 0, 0, None, ShapeSet);
 		return;
 	}
 	Region shape = XCreateRegion();
@@ -230,10 +232,9 @@ void lich_webview_cut(LichPage *page, int width, int height, XRectangle *rects, 
 		XUnionRectWithRegion(&rects[i], cut, cut);
 	}
 	XSubtractRegion(shape, cut, shape);
-	XShapeCombineRegion(page->x, page->child, ShapeBounding, 0, 0, shape, ShapeSet);
+	XShapeCombineRegion(x, child, ShapeBounding, 0, 0, shape, ShapeSet);
 	XDestroyRegion(cut);
 	XDestroyRegion(shape);
-	XFlush(page->x);
 }
 
 // An empty input shape lets the pointer through the page to the app's window

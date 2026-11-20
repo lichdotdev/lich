@@ -20,7 +20,7 @@ void lich_webview_place(LichPage *page, int x, int y, int width, int height);
 void lich_webview_hide(LichPage *page);
 void lich_webview_eval(LichPage *page, const char *script, uintptr_t handle);
 void lich_webview_zoom(LichPage *page, double scale);
-void lich_webview_cut(LichPage *page, int width, int height, XRectangle *rects, int n);
+void lich_webview_shape(Display *x, unsigned long child, int width, int height, XRectangle *rects, int n);
 void lich_webview_pointer_to_window(LichPage *page);
 void lich_webview_pointer_to_page(LichPage *page);
 void lich_webview_navigate(LichPage *page, const char *url);

@@ -38,17 +38,23 @@ func PrepareWindow() {
 }
 
 // parent is the X11 window Gio draws into, zero while there is none: on
-// Wayland, or before the window exists.
-var parent atomic.Uint64
+// Wayland, or before the window exists; display is Gio's connection to it,
+// which Gio opened thread-safe (XInitThreads).
+var (
+	parent  atomic.Uint64
+	display atomic.Pointer[byte]
+)
 
 // SetParent records the window pages go in, from the window's ViewEvent.
 func SetParent(e app.ViewEvent) {
 	x, ok := e.(app.X11ViewEvent)
 	if !ok || !x.Valid() {
 		parent.Store(0)
+		display.Store(nil)
 		return
 	}
 	parent.Store(uint64(x.Window))
+	display.Store((*byte)(x.Display))
 }
 
 var (
@@ -98,6 +104,8 @@ type Page struct {
 	// pointerOff: the pointer goes through the page to the window.
 	pointerOff bool
 	zoom       float64
+	// child is the page's X window, once the GTK thread made it.
+	child atomic.Uint64
 	// closed is touched only on the GTK thread: a call queued after Close
 	// finds the page gone.
 	closed bool
@@ -124,6 +132,7 @@ func Open(url string, onLoad func(Load)) (*Page, error) {
 		u := C.CString(url)
 		defer C.free(unsafe.Pointer(u))
 		p.page = C.lich_webview_open(C.ulong(into), u, C.uintptr_t(p.self))
+		p.child.Store(uint64(p.page.child))
 	})
 	return p, nil
 }
@@ -144,29 +153,44 @@ func (p *Page) URL() string {
 
 // Place shows the page over r, in the window's pixels, left out of cuts, local
 // to r, where the window draws over it; it says whether the cuts changed, since
-// a cut shows the window's drawing only from its next frame.
+// a cut shows the window's drawing only from its next frame. It moves the page
+// only when r moved: a resize makes WebKit lay the page out again.
 func (p *Page) Place(r image.Rectangle, cuts []image.Rectangle) bool {
-	cut := !slices.Equal(cuts, p.cuts)
-	if p.shown && r == p.placed && !cut {
+	moved := !p.shown || r != p.placed
+	cut := !slices.Equal(cuts, p.cuts) || r.Size() != p.placed.Size()
+	if !moved && !cut {
 		return false
 	}
-	reshape := cut || r.Size() != p.placed.Size()
-	p.placed, p.shown, p.cuts = r, true, slices.Clone(cuts)
+	if moved {
+		onGTK(func() {
+			C.lich_webview_place(p.page, C.int(r.Min.X), C.int(r.Min.Y), C.int(max(r.Dx(), 1)), C.int(max(r.Dy(), 1)))
+		})
+	}
+	p.placed, p.shown = r, true
+	if cut && p.shape(r.Size(), cuts) {
+		p.cuts = slices.Clone(cuts)
+	}
+	return cut
+}
+
+// shape cuts the page's window on the window's own X connection (see
+// lich_webview_shape), or reports that it cannot yet: the GTK thread has not
+// made the page's window.
+func (p *Page) shape(size image.Point, cuts []image.Rectangle) bool {
+	x, child := (*C.Display)(unsafe.Pointer(display.Load())), p.child.Load()
+	if x == nil || child == 0 {
+		return false
+	}
 	rects := make([]C.XRectangle, len(cuts))
 	for i, c := range cuts {
 		rects[i] = C.XRectangle{x: C.short(c.Min.X), y: C.short(c.Min.Y), width: C.ushort(c.Dx()), height: C.ushort(c.Dy())}
 	}
-	onGTK(func() {
-		C.lich_webview_place(p.page, C.int(r.Min.X), C.int(r.Min.Y), C.int(max(r.Dx(), 1)), C.int(max(r.Dy(), 1)))
-		if reshape {
-			var first *C.XRectangle
-			if len(rects) > 0 {
-				first = &rects[0]
-			}
-			C.lich_webview_cut(p.page, C.int(r.Dx()), C.int(r.Dy()), first, C.int(len(rects)))
-		}
-	})
-	return cut
+	var first *C.XRectangle
+	if len(rects) > 0 {
+		first = &rects[0]
+	}
+	C.lich_webview_shape(x, C.ulong(child), C.int(size.X), C.int(size.Y), first, C.int(len(rects)))
+	return true
 }
 
 // Placed is where the page was last placed, in the window's pixels.
