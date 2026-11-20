@@ -9,9 +9,12 @@ package main
 import (
 	"context"
 	"fmt"
+	"hash/maphash"
 	"path"
+	"reflect"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"gioui.org/io/key"
@@ -79,11 +82,21 @@ type codeTab struct {
 	namesFrom *treeData
 	namesFor  string
 	batch     commentBatch
+
+	// version counts the reads that landed (the tree, the search), which
+	// arrive through the invalidate newCodeTab wraps, and memo replays the
+	// tab while it and what the window hands it hold.
+	version atomic.Uint64
+	memo    ui.Memo
 }
 
 func newCodeTab(client *backend.Client, invalidate func(), comments *commentStore, notify func(ui.Toast), openFile func(checkout, rel string, line int)) *codeTab {
 	c := &codeTab{client: client, comments: comments, notify: notify, openFile: openFile, toggled: map[string]bool{}}
-	c.tree.invalidate, c.search.invalidate = invalidate, invalidate
+	counted := func() {
+		c.version.Add(1)
+		invalidate()
+	}
+	c.tree.invalidate, c.search.invalidate = counted, counted
 	c.rows.List.Axis, c.hits.list.Axis = layout.Vertical, layout.Vertical
 	return c
 }
@@ -93,19 +106,46 @@ func newCodeTab(client *backend.Client, invalidate func(), comments *commentStor
 func (c *codeTab) hidden() {
 	c.tree.stop()
 	c.search.stop()
+	c.memo.Drop()
 }
 
 func (c *codeTab) layout(gtx C, th *ui.Theme, in dockInput) {
 	c.follow(in.checkout)
 	c.changes = in.git.Changes
 	c.fetchTree(gtx, in)
-	layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Flexed(1, func(gtx C) D {
-			gtx.Constraints.Min = gtx.Constraints.Max
-			return c.browse(gtx, th)
-		}),
-		layout.Rigid(func(gtx C) D { return c.batch.layout(gtx, th, c.comments, in.checkout, in.submit, c.notify) }),
-	)
+	key := ui.MemoKey{Constraints: gtx.Constraints, Theme: th.Generation(), Version: c.memoVersion(in)}
+	c.memo.Layout(gtx, key, func(gtx C) D {
+		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+			layout.Flexed(1, func(gtx C) D {
+				gtx.Constraints.Min = gtx.Constraints.Max
+				return c.browse(gtx, th)
+			}),
+			layout.Rigid(func(gtx C) D { return c.batch.layout(gtx, th, c.comments, in.checkout, in.submit, c.notify) }),
+		)
+	})
+}
+
+// codeLook is what the tab draws from besides its own reads: the tree it
+// asks for, the dirty files that color its rows (a new map from the git
+// store on every change), and the search bar, which a shortcut opens and
+// fills from outside the tab.
+type codeLook struct {
+	version           uint64
+	checkout, treeKey string
+	changes           uintptr
+	changed           int
+	searching         bool
+	query             string
+}
+
+var codeLookSeed = maphash.MakeSeed()
+
+func (c *codeTab) memoVersion(in dockInput) uint64 {
+	return maphash.Comparable(codeLookSeed, codeLook{
+		version: c.version.Load(), checkout: in.checkout, treeKey: c.treeKey,
+		changes: uintptr(reflect.ValueOf(in.git.Changes).UnsafePointer()), changed: len(in.git.Changes),
+		searching: c.searching, query: c.query.Text(),
+	})
 }
 
 func (c *codeTab) focused(gtx C) bool {
