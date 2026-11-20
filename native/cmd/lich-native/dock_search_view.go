@@ -38,9 +38,10 @@ func (h *hitList) focus(gtx C, i int) {
 	}
 }
 
-// nameMatchCap is how many files whose names match the list shows; its header
-// counts them all.
-const nameMatchCap = 50
+// nameMatchCap is how many files whose names match the list shows, few enough
+// that the lines of the second section stay in view; its header counts them
+// all.
+const nameMatchCap = 10
 
 type resultKind int
 
@@ -163,7 +164,7 @@ func (c *codeTab) searchRows(files []string, groups []searchGroup, data searchRe
 	}
 	inContent := i18n.T("dock.searchResults.inContent")
 	if len(files) > 0 {
-		rows = append(rows, searchRow{kind: resultSection, text: i18n.T("dock.searchResults.files"), count: sectionCount(len(files), false)})
+		rows = append(rows, searchRow{kind: resultSection, text: i18n.T("dock.searchResults.files"), count: namesCount(len(files))})
 		for _, p := range files[:min(len(files), nameMatchCap)] {
 			rows = append(rows, searchRow{kind: resultFile, path: p, hit: focusable()})
 		}
@@ -186,6 +187,15 @@ func (c *codeTab) searchRows(files []string, groups []searchGroup, data searchRe
 		h.clicks = append(h.clicks, ui.Clickable{})
 	}
 	return rows
+}
+
+// namesCount is the files section's count: how many are listed of how many
+// match.
+func namesCount(total int) string {
+	if total > nameMatchCap {
+		return fmt.Sprintf("%d/%d", nameMatchCap, total)
+	}
+	return fmt.Sprint(total)
 }
 
 // sectionCount is a section's count; a cut one counts what it holds with a plus.

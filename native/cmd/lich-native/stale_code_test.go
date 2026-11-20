@@ -151,3 +151,12 @@ func topmost(t *testing.T, r *frameRig, label string) f32.Point {
 	}
 	return f32.Pt(float32(best.X+2), float32(best.Y+2))
 }
+
+func TestNamesCountSaysHowManyOfHowManyOnceTheListIsCut(t *testing.T) {
+	if got := namesCount(3); got != "3" {
+		t.Errorf("a whole list = %q", got)
+	}
+	if got := namesCount(52); got != "10/52" {
+		t.Errorf("a cut list = %q", got)
+	}
+}
