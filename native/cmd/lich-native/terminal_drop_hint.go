@@ -6,6 +6,7 @@ import (
 
 	"gioui.org/app"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
 )
@@ -30,7 +31,8 @@ func attachToSplit() (before, after string) {
 }
 
 // onDrag follows one OS file drag over the window, and pastes what lands on
-// a terminal at its session's prompt, focusing its pane as a click would.
+// a session at its prompt, the terminal's or the chat's composer, focusing
+// its pane as a click would.
 func (u *window) onDrag(e app.DropEvent, invalidate func()) {
 	was := u.drop.overSession()
 	id, paths := u.drop.handle(e)
@@ -47,18 +49,41 @@ func (u *window) onDrag(e app.DropEvent, invalidate func()) {
 	u.model.focusPane(u.ctx, id)
 	invalidate()
 	target := dropTarget{sessionID: sv.ID, checkout: sv.path, confined: sv.sandbox.Confined}
+	if sv.View == api.ViewChat {
+		go u.dropInChat(u.chats.pane(sv.ID), target, paths, invalidate)
+		return
+	}
 	go u.dropFiles(target, paths)
 }
 
 // dropFiles resolves a drop and writes it at the session's prompt.
 func (u *window) dropFiles(target dropTarget, paths []string) {
+	if paste := u.droppedPaste(target, paths); paste != "" {
+		u.logErr("drop files", u.terms.writePaste(u.ctx, target.sessionID, paste))
+	}
+}
+
+// dropInChat resolves a drop and hands it to the chat's composer p, which
+// types it at its caret on the next frame: the text the terminal would have
+// pasted, without the paste's brackets. An image is a path like any file;
+// the chat sends the agent text alone.
+func (u *window) dropInChat(p *chatPane, target dropTarget, paths []string, invalidate func()) {
+	paste := u.droppedPaste(target, paths)
+	if paste == "" {
+		return
+	}
+	p.mu.Lock()
+	p.dropped += strings.TrimSuffix(strings.TrimPrefix(paste, pasteStart), pasteEnd)
+	p.mu.Unlock()
+	invalidate()
+}
+
+// droppedPaste resolves a drop into the paste of its paths, toasting what
+// yielded none; "" when nothing did.
+func (u *window) droppedPaste(target dropTarget, paths []string) string {
 	r := resolveDrop(u.ctx, u.client, target, paths)
 	if len(r.skipped) > 0 {
 		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("terminal.drop.notAttached", i18n.Args{"files": strings.Join(r.skipped, ", ")})})
 	}
-	paste := composeDroppedPaths(r.paths, runtime.GOOS == "windows", r.notices)
-	if paste == "" {
-		return
-	}
-	u.logErr("drop files", u.terms.writePaste(u.ctx, target.sessionID, paste))
+	return composeDroppedPaths(r.paths, runtime.GOOS == "windows", r.notices)
 }

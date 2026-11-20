@@ -945,7 +945,7 @@ func (u *window) island(gtx C, v stageView, termWidth, termHeight int) error {
 		return err
 	}
 	u.paneDropZones(gtx, v.active.ID, image.Rectangle{Max: size}, image.Rectangle{Max: size}.Add(u.islandAt), true)
-	if u.terms.has(v.active.ID) {
+	if u.terms.has(v.active.ID) || v.active.View == api.ViewChat {
 		u.drop.add(v.active.ID, image.Rectangle{Min: u.islandAt, Max: u.islandAt.Add(size)})
 		if u.drop.hinting(v.active.ID) || *flagDropHint {
 			dropHintFor(u.theme.On(fill), v.active.Label, v.active.sandbox.Confined).Layout(gtx)

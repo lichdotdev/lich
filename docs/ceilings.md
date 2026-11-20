@@ -216,6 +216,13 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   turn, so lich stops the turn and sends it once the turn ended. A question the process never got an answer to, read
   back from a transcript, shows as not answered. The window learns a turn is running from its start event, so one
   opened mid-turn knows it only from a question still waiting.
+- **A file dropped on a chat reaches the agent as its path in the message, an image included**
+  (`native/cmd/lich-native/terminal_drop_hint.go` `dropInChat`, `api.ChatPromptOptions`): a chat's prompt carries
+  text alone, for every provider in `chat.Kinds`, so lich attaches no image through any of their protocols, though
+  Claude Code's stream-json, ACP and Codex's app-server each have a place for one. The composer gets the paths the
+  terminal's prompt would, quoted the same way, with the same copy and notice for a confined session's file outside
+  its checkout, and the agent sees an image only by opening that path with a tool of its own that reads images;
+  which of the seven do was not measured.
 
 ## Session state and hooks
 
