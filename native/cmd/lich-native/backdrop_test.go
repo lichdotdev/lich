@@ -10,6 +10,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lichdotdev/lich/api"
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -177,7 +179,7 @@ func TestBackdropHoldsStillAndGoesOn(t *testing.T) {
 
 // A session's backdrop moves while its agent works or its user types, and
 // backdropAwake after the last of either; a chat's start screen stirs it
-// once.
+// for as long as it is up.
 func TestStirKeepsMovingAfterWork(t *testing.T) {
 	var s backdropStir
 	now := time.Unix(100, 0)
@@ -199,9 +201,10 @@ func TestStirKeepsMovingAfterWork(t *testing.T) {
 	}
 	opened := typed.Add(time.Minute)
 	s.keep(opened, false, 3, true)
-	s.keep(opened.Add(time.Second), false, 3, true)
-	if !s.until.Equal(opened.Add(backdropAwake)) {
-		t.Fatalf("the start screen stirred it until %v, want once at %v", s.until, opened.Add(backdropAwake))
+	later := opened.Add(time.Hour)
+	s.keep(later, false, 3, true)
+	if !s.until.Equal(later.Add(backdropAwake)) {
+		t.Fatalf("a start screen up for an hour stirred it until %v, want %v", s.until, later.Add(backdropAwake))
 	}
 }
 
@@ -354,23 +357,22 @@ func TestStartFieldIsCalmInTheMiddle(t *testing.T) {
 	}
 }
 
-// An empty chat's start screen moves its backdrop for backdropAwake when it
-// opens, then holds still until the user types.
-func TestStartScreenBackdropStopsAfterItOpens(t *testing.T) {
+// An empty chat's start screen moves its backdrop for as long as it shows.
+func TestStartScreenBackdropMovesWhileItShows(t *testing.T) {
 	u, r := startFrames(t, rigWindow)
 	r.now = r.now.Add(2 * backdropAwake)
 	r.frame()
-	r.frame()
-	if until := u.backdrops.stirOf("s1").until; r.now.Before(until) {
-		t.Fatalf("the start screen still stirs its backdrop until %v at %v", until, r.now)
+	if until := u.backdrops.stirOf("s1").until; !r.now.Before(until) {
+		t.Fatalf("the start screen stopped its backdrop at %v, still up at %v", until, r.now)
 	}
 }
 
 // A chat's session reports itself busy while its chat opens, and can stay so
-// with no turn running: the report alone does not keep the backdrop moving,
+// with no turn running, past its start screen: the report alone does not keep the backdrop moving,
 // only the chat's own turn does.
 func TestABusyReportDoesNotKeepAChatsBackdropMoving(t *testing.T) {
 	u, r := startFrames(t, rigWindow)
+	u.model.chat.apply(api.ChatItemUpdate{SessionID: "s1", Item: backend.ChatItem{ID: "u1", Kind: api.ItemUser, Turn: 1, Text: "go"}})
 	if err := u.model.applyStatus(context.Background(), statusEv(t, statusEvent{ID: "s1", State: statusBusy})); err != nil {
 		t.Fatal(err)
 	}

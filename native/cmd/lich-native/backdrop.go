@@ -67,20 +67,19 @@ const backdropAwake = 10 * time.Second
 
 // backdropStir is when a session's backdrop stops moving, chat or terminal
 // alike: backdropAwake after the last frame its agent worked, its user typed,
-// or its chat's start screen first showed.
+// or its chat's start screen was up, which moves for as long as it shows.
 type backdropStir struct {
 	until time.Time
 	typed int
-	shown bool
 }
 
-// keep moves until on by what the chat is doing at now: working, the
-// composer's length typed, and whether its start screen is up.
+// keep moves until on by what the session is doing at now: working, the
+// length typed, and whether its chat's start screen is up.
 func (s *backdropStir) keep(now time.Time, working bool, typed int, starting bool) {
-	if working || typed != s.typed || starting && !s.shown {
+	if working || typed != s.typed || starting {
 		s.until = now.Add(backdropAwake)
 	}
-	s.typed, s.shown = typed, s.shown || starting
+	s.typed = typed
 }
 
 // backdropStep is how long a frame of the field holds: the bands move a
