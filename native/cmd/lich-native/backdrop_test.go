@@ -108,9 +108,9 @@ func TestBackdropBandEndsAtTheMiddle(t *testing.T) {
 	}
 }
 
-// Two panes paint their field once per step of the clock: frames in between
-// reuse it, the next step paints both again, and the frame asks for that
-// step.
+// Two stirred panes paint their field once per step of their clock: frames
+// in between reuse it, the next step paints both again, and the frame asks
+// for that step.
 func TestPaneBackdropMovesOncePerStep(t *testing.T) {
 	u, r, _ := besideFrames(t, image.Pt(1200, 800), func(m *model) {
 		m.splitBeside(context.Background(), "orch", "wa", edgeRight, false)
@@ -119,24 +119,89 @@ func TestPaneBackdropMovesOncePerStep(t *testing.T) {
 		if _, ok := u.backdrops.byID[id]; !ok {
 			t.Fatalf("pane %s has no backdrop", id)
 		}
+		u.backdrops.stirOf(id).until = r.now.Add(time.Hour)
 	}
-	// the frames below start on a step, so they stay inside it
-	r.now = u.backdrops.epoch.Add(time.Duration(int64(r.now.Sub(u.backdrops.epoch)/backdropStep)+1) * backdropStep)
 	r.frame()
+	r.now = r.now.Add(backdropStep / 4)
+	r.frame()
+	e := u.backdrops.byID["orch"]
+	left := backdropStep - e.clock.moved%backdropStep
 	painted := u.backdrops.painted
-	r.now = r.now.Add(backdropStep / 2)
+	r.now = r.now.Add(left / 2)
 	r.frame()
 	if u.backdrops.painted != painted {
 		t.Fatalf("painted %d times inside one step, want %d", u.backdrops.painted, painted)
 	}
+	left -= left / 2
 	// frame already took the wakeup; the time it asked for stays
-	if at, _ := r.router.WakeupTime(); !at.Equal(r.now.Add(backdropStep / 2)) {
-		t.Fatalf("asked for a frame at %v, want the next step at %v", at, r.now.Add(backdropStep/2))
+	if at, _ := r.router.WakeupTime(); !at.Equal(r.now.Add(left)) {
+		t.Fatalf("asked for a frame at %v, want the next step at %v", at, r.now.Add(left))
 	}
-	r.now = r.now.Add(backdropStep / 2)
+	r.now = r.now.Add(left)
 	r.frame()
 	if u.backdrops.painted != painted+2 {
 		t.Fatalf("painted %d at the next step, want %d", u.backdrops.painted, painted+2)
+	}
+}
+
+// A backdrop that does not move holds its frame and asks for none; moving
+// again, it goes on from where it stopped.
+func TestBackdropHoldsStillAndGoesOn(t *testing.T) {
+	var b backdrops
+	moving := true
+	r := newFrameRig(image.Pt(400, 300), func(gtx C, th *ui.Theme) {
+		b.layout(gtx, th, "p", image.Pt(300, 200), th.Background, 1, backdropMark{}, moving)
+	})
+	r.frame()
+	r.now = r.now.Add(backdropStep)
+	r.frame()
+	moving = false
+	r.frame()
+	held, painted := b.byID["p"].clock.moved, b.painted
+	r.now = r.now.Add(time.Minute)
+	r.frame()
+	if at, ok := backdropNext(r.now, held, false, false); ok {
+		t.Fatalf("a still backdrop asked for a frame at %v", at)
+	}
+	if b.byID["p"].clock.moved != held || b.painted != painted {
+		t.Fatalf("a still backdrop moved to %v and painted %d, want %v and %d", b.byID["p"].clock.moved, b.painted, held, painted)
+	}
+	moving = true
+	r.frame()
+	r.now = r.now.Add(backdropStep)
+	r.frame()
+	if got := b.byID["p"].clock.moved; got != held+backdropStep {
+		t.Fatalf("moving again it went to %v, want %v on from %v", got, held+backdropStep, held)
+	}
+}
+
+// A session's backdrop moves while its agent works or its user types, and
+// backdropAwake after the last of either; a chat's start screen stirs it
+// once.
+func TestStirKeepsMovingAfterWork(t *testing.T) {
+	var s backdropStir
+	now := time.Unix(100, 0)
+	s.keep(now, false, 0, false)
+	if s.until.After(now) {
+		t.Fatal("an idle session stirred its backdrop")
+	}
+	s.keep(now, true, 0, false)
+	done := now.Add(3 * time.Second)
+	s.keep(done, true, 0, false)
+	s.keep(done.Add(time.Second), false, 0, false)
+	if !s.until.Equal(done.Add(backdropAwake)) {
+		t.Fatalf("stirred until %v, want backdropAwake after the turn's end %v", s.until, done.Add(backdropAwake))
+	}
+	typed := done.Add(time.Minute)
+	s.keep(typed, false, 3, false)
+	if !s.until.Equal(typed.Add(backdropAwake)) {
+		t.Fatalf("typing stirred it until %v, want %v", s.until, typed.Add(backdropAwake))
+	}
+	opened := typed.Add(time.Minute)
+	s.keep(opened, false, 3, true)
+	s.keep(opened.Add(time.Second), false, 3, true)
+	if !s.until.Equal(opened.Add(backdropAwake)) {
+		t.Fatalf("the start screen stirred it until %v, want once at %v", s.until, opened.Add(backdropAwake))
 	}
 }
 
@@ -144,7 +209,7 @@ func TestPaneBackdropMovesOncePerStep(t *testing.T) {
 func TestStillWindowMovesItsBackdropLessOften(t *testing.T) {
 	var b backdrops
 	r := newFrameRig(image.Pt(400, 300), func(gtx C, th *ui.Theme) {
-		b.layout(gtx, th, "p", image.Pt(300, 200), th.Background, 1, backdropMark{})
+		b.layout(gtx, th, "p", image.Pt(300, 200), th.Background, 1, backdropMark{}, true)
 	})
 	r.theme.Still = true
 	r.frame()
@@ -160,7 +225,7 @@ func TestBackdropOutOfSightIsKeptAWhile(t *testing.T) {
 	id, size := "a", image.Pt(300, 200)
 	r := newFrameRig(image.Pt(400, 300), func(gtx C, th *ui.Theme) {
 		b.sweep(gtx.Now)
-		b.layout(gtx, th, id, size, th.Background, 1, backdropMark{})
+		b.layout(gtx, th, id, size, th.Background, 1, backdropMark{}, true)
 	})
 	r.frame()
 	first := b.byID["a"]
@@ -263,7 +328,7 @@ func TestBackdropTakesTheThemesPrimary(t *testing.T) {
 	var b backdrops
 	pink := color.NRGBA{R: 0xf3, G: 0x8b, B: 0xa8, A: 0xff}
 	r := newFrameRig(image.Pt(400, 300), func(gtx C, th *ui.Theme) {
-		b.layout(gtx, th, "p", image.Pt(300, 200), th.Background, 1, backdropMark{})
+		b.layout(gtx, th, "p", image.Pt(300, 200), th.Background, 1, backdropMark{}, true)
 	})
 	r.theme.Primary = pink
 	r.frame()

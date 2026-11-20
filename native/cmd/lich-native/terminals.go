@@ -35,9 +35,12 @@ import (
 type termView struct {
 	id   string
 	kind string
-	vt   *gioterm.Terminal
-	r    gioterm.Renderer
-	tag  *int
+	// typed counts the keys typed into it, read on the frame goroutine: the
+	// backdrop moves while someone types (backdropStir).
+	typed int
+	vt    *gioterm.Terminal
+	r     gioterm.Renderer
+	tag   *int
 	// seeded is set once vt holds the session's replayed tail: the stream
 	// writes output into it from then on, and its replies reach the session.
 	seeded atomic.Bool
@@ -631,6 +634,7 @@ func (ts *terminals) input(gtx layout.Context, t *termView, focus bool) {
 				t.keyboard = f.Focus
 			}
 			ts.sendTyped(t, []byte(t.composition.Update(e, t.tag, gtx.Execute)))
+			t.typed++
 		case key.Event:
 			if e.State != key.Press {
 				break
@@ -646,6 +650,7 @@ func (ts *terminals) input(gtx layout.Context, t *termView, focus bool) {
 				break
 			}
 			ts.sendTyped(t, terminalKeyBytes(t.vt, e, runtime.GOOS))
+			t.typed++
 		case transfer.DataEvent:
 			text, err := readTransfer(e)
 			if err != nil {

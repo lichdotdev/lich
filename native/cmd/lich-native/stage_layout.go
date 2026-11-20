@@ -390,6 +390,7 @@ func (u *window) content(gtx C, s sessionView, keys bool) error {
 		defer paint.PushOpacity(gtx.Ops, a).Pop()
 	}
 	err = u.terms.layout(gtx, t, keys)
+	u.backdrops.stirOf(s.ID).keep(gtx.Now, spins(s.status), t.typed, false)
 	// A closed session frees its terminal off the frame goroutine; one shown
 	// since is replaced on the next frame, which the window must survive.
 	if errors.Is(err, gioterm.ErrClosed) {

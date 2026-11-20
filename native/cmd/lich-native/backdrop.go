@@ -56,6 +56,29 @@ const (
 // primary toward white, so the ember keeps the theme's hue.
 const backdropHot = 0.4
 
+// backdropAwake is how long a session's backdrop keeps moving after the agent's
+// turn is done, or the user last typed: then it holds still until the next
+// (the user's call).
+const backdropAwake = 10 * time.Second
+
+// backdropStir is when a session's backdrop stops moving, chat or terminal
+// alike: backdropAwake after the last frame its agent worked, its user typed,
+// or its chat's start screen first showed.
+type backdropStir struct {
+	until time.Time
+	typed int
+	shown bool
+}
+
+// keep moves until on by what the chat is doing at now: working, the
+// composer's length typed, and whether its start screen is up.
+func (s *backdropStir) keep(now time.Time, working bool, typed int, starting bool) {
+	if working || typed != s.typed || starting && !s.shown {
+		s.until = now.Add(backdropAwake)
+	}
+	s.typed, s.shown = typed, s.shown || starting
+}
+
 // backdropStep is how long a frame of the field holds: the bands move a
 // fraction of a cell in that time, so a faster step shows nothing more.
 const backdropStep = 66 * time.Millisecond
@@ -252,12 +275,37 @@ type backdropEntry struct {
 	gaps    op.Ops
 	gapCall op.CallOp
 	seenAt  time.Time
+	clock   backdropClock
 }
 
-// backdrops holds each pane's backdrop, and the clock they all move on.
+// backdropClock is how long a backdrop has moved for: it runs while the
+// backdrop moves and holds while it does not, so a field that starts again
+// goes on from where it stopped.
+type backdropClock struct {
+	moved time.Duration
+	last  time.Time
+}
+
+// backdropCatchUp is the most one frame moves the clock: a window that drew
+// nothing for a while (hidden, asleep) goes on from where it was.
+const backdropCatchUp = ui.StillFrame
+
+// advance runs the clock to now when the backdrop moves, and holds it when
+// it does not.
+func (c *backdropClock) advance(now time.Time, moving bool) {
+	if moving && !c.last.IsZero() {
+		c.moved += min(now.Sub(c.last), backdropCatchUp)
+	}
+	c.last = time.Time{}
+	if moving {
+		c.last = now
+	}
+}
+
+// backdrops holds each pane's backdrop, and each session's stir.
 type backdrops struct {
 	byID  map[string]*backdropEntry
-	epoch time.Time
+	stirs map[string]*backdropStir
 	// painted counts the frames of the field painted, for the tests.
 	painted int
 }
@@ -266,13 +314,32 @@ type backdrops struct {
 // to a card, or out of Settings, finds it ready, and a closed pane's goes.
 const backdropKeep = time.Minute
 
-// sweep forgets the backdrops no frame drew in the backdropKeep before now.
+// sweep forgets the backdrops no frame drew in the backdropKeep before now,
+// and the stirs of sessions that drew none either.
 func (b *backdrops) sweep(now time.Time) {
 	for id, e := range b.byID {
 		if now.Sub(e.seenAt) > backdropKeep {
 			delete(b.byID, id)
 		}
 	}
+	for id, s := range b.stirs {
+		if _, drawn := b.byID[id]; !drawn && now.After(s.until.Add(backdropKeep)) {
+			delete(b.stirs, id)
+		}
+	}
+}
+
+// stirOf is session id's stir.
+func (b *backdrops) stirOf(id string) *backdropStir {
+	if b.stirs == nil {
+		b.stirs = map[string]*backdropStir{}
+	}
+	s, ok := b.stirs[id]
+	if !ok {
+		s = &backdropStir{}
+		b.stirs[id] = s
+	}
+	return s
 }
 
 // backdrop paints the backdrop of the session or island id, size big on
@@ -281,7 +348,16 @@ func (b *backdrops) sweep(now time.Time) {
 // mark in its dots, and its band otherwise. It is the one place a pane's
 // backdrop is chosen.
 func (u *window) backdrop(gtx C, id string, size image.Point, ground color.NRGBA, top int) {
-	u.backdrops.layout(gtx, u.theme, id, size, ground, u.backdropCover(gtx, id), u.backdropMark(gtx, id, top))
+	u.backdrops.layout(gtx, u.theme, id, size, ground, u.backdropCover(gtx, id), u.backdropMark(gtx, id, top), u.backdropMoves(gtx, id))
+}
+
+// backdropMoves is whether id's backdrop moves at gtx.Now: a session's while
+// it is stirred (backdropStir), the stage's own always.
+func (u *window) backdropMoves(gtx C, id string) bool {
+	if _, ok := u.model.sessionViewOf(id); !ok {
+		return true
+	}
+	return gtx.Now.Before(u.backdrops.stirOf(id).until)
 }
 
 // backdropMark is where session id's start screen put its mark, in cells of
@@ -314,20 +390,29 @@ func (u *window) backdropCover(gtx C, id string) float32 {
 	return chatPhase(gtx, s.left, 0, chatStartFade, paneEaseIn)
 }
 
-// layout paints id's field at the frame of gtx.Now, size big on ground, and
-// asks for the frame that moves it on.
-func (b *backdrops) layout(gtx C, th *ui.Theme, id string, size image.Point, ground color.NRGBA, cover float32, mark backdropMark) {
-	if b.epoch.IsZero() {
-		b.epoch = gtx.Now
+// backdropNext is the frame a backdrop that has moved for moved asks for at
+// now: its next step while it moves, none while it holds still.
+func backdropNext(now time.Time, moved time.Duration, moving, still bool) (time.Time, bool) {
+	if !moving {
+		return time.Time{}, false
 	}
-	tick := int64(gtx.Now.Sub(b.epoch) / backdropStep)
-	next := b.epoch.Add(time.Duration(tick+1) * backdropStep)
 	// A window without focus keeps the frame it has and looks in less often.
-	if th.Still {
-		next = gtx.Now.Add(ui.StillFrame)
+	if still {
+		return now.Add(ui.StillFrame), true
 	}
-	gtx.Execute(op.InvalidateCmd{At: next})
+	return now.Add(backdropStep - moved%backdropStep), true
+}
+
+// layout paints id's field, size big on ground, and while it moves asks for
+// the frame that moves it on; a field that does not move holds its frame and
+// asks for none.
+func (b *backdrops) layout(gtx C, th *ui.Theme, id string, size image.Point, ground color.NRGBA, cover float32, mark backdropMark, moving bool) {
 	e := b.entry(gtx, id, size, ground)
+	e.clock.advance(gtx.Now, moving)
+	tick := int64(e.clock.moved / backdropStep)
+	if next, ok := backdropNext(gtx.Now, e.clock.moved, moving, th.Still); ok {
+		gtx.Execute(op.InvalidateCmd{At: next})
+	}
 	if e.cells.X == 0 || e.cells.Y == 0 {
 		return
 	}
@@ -370,7 +455,11 @@ func (b *backdrops) entry(gtx C, id string, size image.Point, ground color.NRGBA
 	cell, dot := max(1, gtx.Dp(backdropCell)), max(1, gtx.Dp(backdropDot))
 	e, ok := b.byID[id]
 	if !ok || e.size != size || e.cell != cell || e.dot != dot || e.ground != ground {
-		e = &backdropEntry{size: size, cell: cell, dot: dot, ground: ground, tick: -1}
+		clock := backdropClock{}
+		if ok {
+			clock = e.clock
+		}
+		e = &backdropEntry{size: size, cell: cell, dot: dot, ground: ground, tick: -1, clock: clock}
 		e.cells = image.Pt(ceilDiv(size.X, cell), ceilDiv(size.Y, cell))
 		e.field = newBackdropField(e.cells.X, e.cells.Y)
 		e.img = image.NewRGBA(image.Rectangle{Max: e.cells})
