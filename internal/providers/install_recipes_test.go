@@ -68,7 +68,6 @@ func TestEachInstallIsTheVendorsCommand(t *testing.T) {
 			Claude:      ps("irm https://claude.ai/install.ps1 | iex"),
 			Codex:       ps("irm https://chatgpt.com/codex/install.ps1 | iex"),
 			Antigravity: ps("irm https://antigravity.google/cli/install.ps1 | iex"),
-			OpenCode:    {"npm", "install", "-g", "@opencode/cli"},
 			OMP:         ps("irm https://omp.sh/install.ps1 | iex"),
 			Crush:       {"npm", "install", "-g", "@charmland/crush"},
 			Cursor:      ps("irm 'https://cursor.com/install?win32=true' | iex"),
@@ -88,4 +87,18 @@ func TestEachInstallIsTheVendorsCommand(t *testing.T) {
 
 func ps(command string) []string {
 	return []string{"powershell", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", command}
+}
+
+// The scripts write the binary detection looks for (read 2026-11-19, not run):
+// Cursor's links ~/.local/bin/cursor-agent beside its new `agent` name, and on
+// Windows writes %LOCALAPPDATA%\cursor-agent\cursor-agent.cmd beside agent.cmd;
+// oh-my-pi's writes omp, and Kiro CLI's kiro-cli. A rename upstream lands
+// here, not as an install that always ends off PATH.
+func TestEachInstallWritesTheBinaryLichLooksFor(t *testing.T) {
+	want := map[string]string{Cursor: "cursor-agent", OMP: "omp", Kiro: "kiro-cli"}
+	for id, bin := range want {
+		if got := DefaultBinary(id); got != bin {
+			t.Errorf("%s looks for %q, its install writes %q", id, got, bin)
+		}
+	}
 }
