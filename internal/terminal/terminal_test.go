@@ -9,6 +9,7 @@ package terminal
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -442,13 +443,18 @@ func TestNewSessionEnv(t *testing.T) {
 	}
 }
 
-// TestOperationsOnUnknownSessionAreNoops proves Write/Resize/Close on a session
-// that was never started return nil instead of panicking on a missing PTY.
+// TestOperationsOnUnknownSessionAreNoops proves Resize/Close on a session that
+// was never started return nil instead of panicking on a missing PTY, and that
+// Write says it had nowhere to go: what it carried is lost otherwise, as a
+// path the attach "+" wrote for a session drawn as a chat was.
 func TestOperationsOnUnknownSessionAreNoops(t *testing.T) {
 	t.Parallel()
 	svc := New(stubBins{}, nil, events.New())
-	if _, err := svc.Write(t.Context(), api.WriteOptions{ID: "ghost", Data: "hi"}); err != nil {
-		t.Errorf("Write unknown = %v, want nil", err)
+	if _, err := svc.Write(t.Context(), api.WriteOptions{ID: "ghost", Data: "hi"}); !errors.Is(err, errNoTerminal) {
+		t.Errorf("Write unknown = %v, want errNoTerminal", err)
+	}
+	if err := svc.InterruptService("ghost"); err != nil {
+		t.Errorf("InterruptService of a service not running = %v, want nil", err)
 	}
 	if _, err := svc.Resize(t.Context(), api.ResizeOptions{ID: "ghost", Cols: 80, Rows: 24}); err != nil {
 		t.Errorf("Resize unknown = %v, want nil", err)

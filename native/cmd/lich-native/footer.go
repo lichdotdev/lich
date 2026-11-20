@@ -44,7 +44,8 @@ type footer struct {
 	quota         *planQuota
 	handsOn       *handsOn
 	cost          *costGate
-	// writePaste is terminals.writePaste, which unfolds a long paste.
+	// writePaste is window.writeAtPrompt: the terminal's writePaste, which
+	// unfolds a long paste, or a chat's composer.
 	writePaste func(ctx context.Context, id, block string) error
 
 	mu     sync.Mutex

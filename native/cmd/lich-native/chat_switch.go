@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"sync"
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
@@ -111,6 +112,29 @@ type chatScreens struct {
 	panes map[string]*chatPane
 	// views is the view each session was last drawn in.
 	views map[string]chatShown
+	// typed is what a drop or the attach "+" handed each session's composer
+	// off the frame, waiting for the frame that types it.
+	mu    sync.Mutex
+	typed map[string]string
+}
+
+// typeIn queues text for session id's composer, from any goroutine.
+func (c *chatScreens) typeIn(id, text string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.typed == nil {
+		c.typed = map[string]string{}
+	}
+	c.typed[id] += text
+}
+
+// takeTyped is the text queued for session id's composer, now taken.
+func (c *chatScreens) takeTyped(id string) string {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	text := c.typed[id]
+	delete(c.typed, id)
+	return text
 }
 
 func (c *chatScreens) pane(id string) *chatPane {

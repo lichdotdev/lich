@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"runtime"
 	"slices"
@@ -89,7 +90,10 @@ func (s *Service) StartService(c ServiceCommand) error {
 // would: the command is asked to stop and decides how long that takes. A
 // service that is not running is a no-op.
 func (s *Service) InterruptService(id string) error {
-	return s.writeBytes(id, []byte{interruptByte})
+	if err := s.writeBytes(id, []byte{interruptByte}); !errors.Is(err, errNoTerminal) {
+		return err
+	}
+	return nil
 }
 
 // KillService ends service id's process without waiting for it to agree:

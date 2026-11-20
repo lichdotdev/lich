@@ -2,6 +2,8 @@ package terminal
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"math"
 	"time"
 
@@ -110,9 +112,14 @@ func (s *Service) Write(_ context.Context, opts api.WriteOptions) (api.None, err
 	return api.None{}, s.writeBytes(opts.ID, []byte(opts.Data))
 }
 
-// writeBytes delivers input bytes to a session's PTY; unknown sessions are a
-// no-op. It is the shared sink for the RPC Write and the WebSocket
-// transport's input frames.
+// errNoTerminal is a write to a session with no PTY: one never started, one
+// whose process ended, or one drawn as a chat. What it carried has nowhere to
+// go, and the writer is told so rather than left to think it was typed.
+var errNoTerminal = errors.New("the session has no terminal to write to")
+
+// writeBytes delivers input bytes to a session's PTY, errNoTerminal for a
+// session that has none. It is the shared sink for the RPC Write and the
+// WebSocket transport's input frames.
 //
 // It loops until every byte is written. A single call is not enough:
 // ConPTY's input pipe (pty_windows.go) is a plain Windows anonymous pipe, and
@@ -125,7 +132,7 @@ func (s *Service) Write(_ context.Context, opts api.WriteOptions) (api.None, err
 func (s *Service) writeBytes(id string, data []byte) error {
 	p := s.ptyOf(id)
 	if p == nil {
-		return nil
+		return fmt.Errorf("%w: %s", errNoTerminal, id)
 	}
 	for len(data) > 0 {
 		n, err := p.Write(data)

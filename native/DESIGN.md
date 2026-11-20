@@ -451,7 +451,7 @@ draws none while it grows in, because the room above the rows is measured in the
   the agent's suspend, and the sketch, the browser pane and the resolver keep theirs under their own focus.
   A file dragged over a session drawn as a chat lights the terminal's drop hint over the whole session, and dropped
   it types the paths the terminal would paste at the composer's caret, quoted the same way, an image included
-  (`dropInChat`); the chat has no attachments.
+  (`dropInChat`); the chat has no attachments, so the attach "+" types the picked file's path there the same way.
   The box has no focus ring: its 1px border is the same with the keyboard and without (`TextareaStyle.Steady`; the
   kit's inputs keep their `ring-3`). The blinking caret already says where the keyboard is, and in a chat the
   composer is nearly always the focused thing, so a ring around the biggest box on the screen only reads as a

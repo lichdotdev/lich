@@ -8,6 +8,7 @@ package terminal
 import (
 	"context"
 	"encoding/base64"
+	"errors"
 	"log/slog"
 	"net/http"
 	"os"
@@ -429,7 +430,12 @@ func (s *Service) onInput(id string, data []byte) {
 	if s.noteInput(id, data) {
 		s.noteInterrupt(id)
 	}
-	if err := s.writeBytes(id, data); err != nil {
+	// Keys typed at a terminal whose process ended have no PTY to reach, and
+	// its pane already says it ended: one line per key is noise.
+	switch err := s.writeBytes(id, data); {
+	case errors.Is(err, errNoTerminal):
+		slog.Debug("terminal: input with no terminal", "session", id)
+	case err != nil:
 		slog.Warn("terminal: input write failed", "session", id, "err", err)
 	}
 }

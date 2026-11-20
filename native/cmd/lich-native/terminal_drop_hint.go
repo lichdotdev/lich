@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"runtime"
 	"strings"
 
@@ -50,7 +51,7 @@ func (u *window) onDrag(e app.DropEvent, invalidate func()) {
 	invalidate()
 	target := dropTarget{sessionID: sv.ID, checkout: sv.path, confined: sv.sandbox.Confined}
 	if sv.View == api.ViewChat {
-		go u.dropInChat(u.chats.pane(sv.ID), target, paths, invalidate)
+		go u.dropInChat(target, paths)
 		return
 	}
 	go u.dropFiles(target, paths)
@@ -63,19 +64,31 @@ func (u *window) dropFiles(target dropTarget, paths []string) {
 	}
 }
 
-// dropInChat resolves a drop and hands it to the chat's composer p, which
-// types it at its caret on the next frame: the text the terminal would have
-// pasted, without the paste's brackets. An image is a path like any file;
-// the chat sends the agent text alone.
-func (u *window) dropInChat(p *chatPane, target dropTarget, paths []string, invalidate func()) {
-	paste := u.droppedPaste(target, paths)
-	if paste == "" {
-		return
+// dropInChat resolves a drop and types it in the chat's composer. An image
+// is a path like any file: the chat sends the agent text alone.
+func (u *window) dropInChat(target dropTarget, paths []string) {
+	if paste := u.droppedPaste(target, paths); paste != "" {
+		u.logErr("drop files", u.typeInChat(u.ctx, target.sessionID, paste))
 	}
-	p.mu.Lock()
-	p.dropped += strings.TrimSuffix(strings.TrimPrefix(paste, pasteStart), pasteEnd)
-	p.mu.Unlock()
-	invalidate()
+}
+
+// writeAtPrompt puts a paste at session id's prompt: its chat's composer
+// when it is drawn as a chat, which has no terminal to write to, else its
+// terminal.
+func (u *window) writeAtPrompt(ctx context.Context, id, block string) error {
+	if sv, ok := u.model.sessionViewOf(id); ok && sv.View == api.ViewChat {
+		return u.typeInChat(ctx, id, block)
+	}
+	return u.terms.writePaste(ctx, id, block)
+}
+
+// typeInChat hands a paste to session id's composer, which types it at its
+// caret on the next frame: the text the terminal would have taken, without
+// the paste's brackets.
+func (u *window) typeInChat(_ context.Context, id, block string) error {
+	u.chats.typeIn(id, strings.TrimSuffix(strings.TrimPrefix(block, pasteStart), pasteEnd))
+	u.model.invalidate()
+	return nil
 }
 
 // droppedPaste resolves a drop into the paste of its paths, toasting what
