@@ -66,6 +66,8 @@ type MenuEntry struct {
 	// OnCheckedChange runs with the new state when a checkbox item is
 	// chosen; the menu stays open.
 	OnCheckedChange func(checked bool)
+	// Rainbow draws the label in the rainbow.
+	Rainbow bool
 	// Spot, when set, is handed a widget of the row's size laid at the row,
 	// for a guided tour to point at it.
 	Spot func(gtx C, row layout.Widget) D
@@ -763,7 +765,11 @@ func (m menuCore) leading(gtx C, e MenuEntry, col menuColors) D {
 			layout.Rigid(func(gtx C) D { return e.Icon.Layout(gtx, menuIconSize, col.icon) }),
 			layout.Rigid(layout.Spacer{Width: menuGap}.Layout))
 	}
-	children = append(children, layout.Rigid(m.panel.Text(TextSM, e.Label).In(col.fg).Layout))
+	label := m.panel.Text(TextSM, e.Label).In(col.fg)
+	if e.Rainbow {
+		label = label.Rainbow()
+	}
+	children = append(children, layout.Rigid(label.Layout))
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
 }
 

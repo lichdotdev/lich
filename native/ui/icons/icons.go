@@ -204,6 +204,25 @@ func (ic *Icon) LayoutFilled(gtx layout.Context, size unit.Dp, c color.NRGBA) la
 	return ic.Layout(gtx, size, c)
 }
 
+// LayoutPainted draws the icon filled as LayoutFilled does, with fill
+// painting each of its shapes instead of one color: a gradient.
+func (ic *Icon) LayoutPainted(gtx layout.Context, size unit.Dp, fill func(gtx layout.Context)) layout.Dimensions {
+	px := gtx.Dp(size)
+	scale := float32(px) / viewBox
+	paths := ic.at(scale)
+	for i, sh := range ic.shapes {
+		st := clip.Outline{Path: paths[i]}.Op().Push(gtx.Ops)
+		fill(gtx)
+		st.Pop()
+		if sh.stroke {
+			st := clip.Stroke{Path: paths[i], Width: lucideStroke * scale}.Op().Push(gtx.Ops)
+			fill(gtx)
+			st.Pop()
+		}
+	}
+	return layout.Dimensions{Size: image.Pt(px, px)}
+}
+
 // at is the shapes' paths at scale, recorded on first use.
 func (ic *Icon) at(scale float32) []clip.PathSpec {
 	if paths, ok := ic.paths[scale]; ok {

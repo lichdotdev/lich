@@ -32,6 +32,8 @@ type LabelStyle struct {
 	Align text.Alignment
 	// shimmer sweeps a highlight over the glyphs in a loop; see Shimmer.
 	shimmer bool
+	// rainbow paints the glyphs in the rainbow; see Rainbow.
+	rainbow bool
 	theme   *Theme
 }
 
@@ -116,6 +118,12 @@ func (l LabelStyle) draw(gtx layout.Context) layout.Dimensions {
 		d := w.Layout(gtx, l.theme.Shaper, l.Font, l.Size, l.Text, material)
 		probe.Stop()
 		material = l.theme.shimmerMaterial(gtx, l.Color, d.Size)
+	}
+	if l.rainbow {
+		probe := op.Record(gtx.Ops)
+		d := w.Layout(gtx, l.theme.Shaper, l.Font, l.Size, l.Text, material)
+		probe.Stop()
+		material = l.theme.rainbowMaterial(gtx, d.Size.X)
 	}
 	return w.Layout(gtx, l.theme.Shaper, l.Font, l.Size, l.Text, material)
 }

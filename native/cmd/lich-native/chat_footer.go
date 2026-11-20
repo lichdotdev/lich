@@ -310,7 +310,7 @@ func (u *window) modelChip(gtx C, th *ui.Theme, p *chatPane, sv sessionView, wor
 	if len(opts) == 2 {
 		title = i18n.T("chat.option.modelEffort")
 	}
-	content := optionContent(glyph, strings.Join(names, " · "), false)
+	content := optionContent(glyph, strings.Join(names, " · "))
 	w := u.footer.w(chipModel)
 	if working {
 		return th.Tooltip(&u.root, &w.tip, i18n.T("chat.option.busy")).Layout(gtx, func(gtx C) D {
@@ -333,20 +333,20 @@ func (u *window) modelChip(gtx C, th *ui.Theme, p *chatPane, sv sessionView, wor
 	})
 }
 
-// modeChip is the chip of the mode in force, with a bolt in ToneWait while
-// it is a dangerous one.
+// modeChip is the chip of the mode in force, under lich's name for the
+// option, with a bolt and its name in the rainbow while it is a dangerous one.
 func (u *window) modeChip(gtx C, th *ui.Theme, p *chatPane, sv sessionView, working bool) D {
 	opt, ok := u.model.chat.optionOf(sv.ID, api.OptionMode)
 	if !ok {
 		return D{}
 	}
 	cur, _ := currentChoice(opt)
-	var glyph icons.Glyph = icMode
+	content := optionContent(icMode, modeLabel(sv.Kind, cur))
 	if cur.Danger {
-		glyph = icDanger
+		content = rainbowContent(modeLabel(sv.Kind, cur))
 	}
-	return u.optionChip(gtx, th, p, chipMode, optionTitle(opt), working, optionContent(glyph, choiceLabel(cur), cur.Danger), func() []ui.MenuEntry {
-		return u.optionEntries(sv.ID, opt)
+	return u.optionChip(gtx, th, p, chipMode, i18n.T("chat.option.mode"), working, content, func() []ui.MenuEntry {
+		return u.modeEntries(sv, opt)
 	})
 }
 
@@ -368,17 +368,17 @@ func (u *window) optionChip(gtx C, th *ui.Theme, p *chatPane, id, title string, 
 	})
 }
 
-// optionEntries is the menu of option opt: each choice, the one in force
-// checked, a dangerous one with a bolt.
-func (u *window) optionEntries(id string, opt backend.ChatOption) []ui.MenuEntry {
+// modeEntries is the mode's menu: each choice, the one in force checked, a
+// dangerous one in the rainbow, with a bolt when it is not checked.
+func (u *window) modeEntries(sv sessionView, opt backend.ChatOption) []ui.MenuEntry {
 	entries := make([]ui.MenuEntry, len(opt.Choices))
 	for i, c := range opt.Choices {
-		e := ui.MenuEntry{Kind: ui.MenuItem, Label: choiceLabel(c), Inset: true, OnClick: func() { u.setChatOption(id, opt.ID, c.ID) }}
+		e := ui.MenuEntry{Kind: ui.MenuItem, Label: modeLabel(sv.Kind, c), Inset: true, Rainbow: c.Danger, OnClick: func() { u.setChatOption(sv.ID, opt.ID, c.ID) }}
 		switch {
 		case c.ID == opt.Current:
 			e.Icon, e.Inset = icCheck, false
 		case c.Danger:
-			e.Icon, e.Inset = icDanger, false
+			e.Lead, e.Inset = rainbowBolt(u.theme), false
 		}
 		entries[i] = e
 	}
@@ -390,21 +390,24 @@ func (u *window) setChatOption(id, optionID, value string) {
 }
 
 // optionContent is a glyph, the choice's name cut at modelMaxWidth and a
-// chevron; a dangerous choice is drawn in ToneWait.
-func optionContent(glyph icons.Glyph, text string, danger bool) footerContent {
+// chevron.
+func optionContent(glyph icons.Glyph, text string) footerContent {
 	return func(gtx C, th *ui.Theme, fg color.NRGBA) D {
-		if danger {
-			fg = th.ToneWait
-		}
-		gtx.Constraints.Max.X = min(gtx.Constraints.Max.X, gtx.Dp(modelMaxWidth))
-		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-			layout.Rigid(func(gtx C) D { return glyph.Layout(gtx, footerGlyph, fg) }),
-			ui.Gap(1.5),
-			layout.Rigid(func(gtx C) D { return th.Text(ui.TextXS, text).In(fg).Truncated().Layout(gtx) }),
-			ui.Gap(1),
-			layout.Rigid(func(gtx C) D { return icPullDown.Layout(gtx, chatCrumbGlyph, fg) }),
-		)
+		return chipFace(gtx, fg, func(gtx C) D { return glyph.Layout(gtx, footerGlyph, fg) }, th.Text(ui.TextXS, text).In(fg))
 	}
+}
+
+// chipFace lays out a choice's chip: glyph, name cut at modelMaxWidth and a
+// chevron in fg.
+func chipFace(gtx C, fg color.NRGBA, glyph layout.Widget, name ui.LabelStyle) D {
+	gtx.Constraints.Max.X = min(gtx.Constraints.Max.X, gtx.Dp(modelMaxWidth))
+	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+		layout.Rigid(glyph),
+		ui.Gap(1.5),
+		layout.Rigid(name.Truncated().Layout),
+		ui.Gap(1),
+		layout.Rigid(func(gtx C) D { return icPullDown.Layout(gtx, chatCrumbGlyph, fg) }),
+	)
 }
 
 // currentChoice is the choice of opt in force; with none listed under that
@@ -425,6 +428,10 @@ func choiceLabel(c backend.ChatChoice) string {
 	switch strings.ToLower(c.ID) {
 	case "default", "manual":
 		return i18n.T("chat.choice.manual")
+	case "acceptedits":
+		return i18n.T("chat.choice.acceptEdits")
+	case "dontask":
+		return i18n.T("chat.choice.preApproved")
 	case "plan":
 		return i18n.T("chat.choice.plan")
 	case "auto":
