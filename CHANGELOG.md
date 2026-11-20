@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Kiro CLI sessions show Kiro's own mark.** The ghost that stood in for it on cards, menus and the footer is gone.
 - **Resize the sidebar and the dock from the gap between them and the terminal.** Drag anywhere in that gap; the cursor shows it, and nothing lights up under the pointer.
 - **New sessions open as a chat.** Pick Chat or Terminal under Settings › Providers › New sessions open as; a provider without a chat, and a fork, still open their terminal.
 - **Settings has a page for each group of settings, under named groups in its sidebar.** General splits into Language, Window and Notifications, and Appearance into Interface, Terminal and Footer, where Copy on select now sits beside the terminal font; the sidebar sorts every page under General, Appearance, Agents and Workspace. Ctrl+F (Cmd+F on macOS) puts the cursor in the search while Settings is open.
