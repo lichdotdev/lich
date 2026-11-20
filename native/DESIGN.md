@@ -453,7 +453,14 @@ draws none while it grows in, because the room above the rows is measured in the
   After them the footer's context ring with its percentage, the same readout as the terminal's balloon, when the
   session reports a window.
   The mode's menu lists the provider's choices, the current one checked, and picking one sets it
-  (`ChatSetOption`). The model chip opens one panel upward, in two columns with a hairline between
+  (`ChatSetOption`). It is a `DropdownMenu` on `Popover`, the surface of the model panel and every other menu;
+  a theme whose `popover` sits darker than `background` makes both look sunken, and the fix is the theme's token.
+  Every mode is named by lich in the window's language, in sentence case like the rest of the menu, never with
+  the provider's raw id or English name (`chat_modes.go`, per provider); only an agent the person made keeps the
+  name they gave it. The chip's tooltip is lich's "Mode", not the provider's option name. A `Danger` choice (Claude
+  Code's bypass, Codex's full access) is drawn in the rainbow, the theme's `GraphLanes` in hue order red to
+  magenta: its name and a filled bolt on the chip, its name in the menu, with the filled bolt in the icon's place
+  when it is not the checked one. The model chip opens one panel upward, in two columns with a hairline between
   (`chat_picker.go`): at the left a search that has the focus, which filters the models as it is typed, then
   32px rows with the name, "Default" muted when the provider's default has a name that does not say so, a
   `Ctrl+1`..`Ctrl+4` keycap on the first four (the chord works with the panel open) and a check on the current
