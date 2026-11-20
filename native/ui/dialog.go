@@ -122,8 +122,9 @@ type OverlayCount struct{ shown, last int }
 // Frame closes a frame's count; call it once a frame, before the overlays.
 func (c *OverlayCount) Frame() { c.last, c.shown = c.shown, 0 }
 
-// Open is whether the last frame showed a dialog or a menu.
-func (c *OverlayCount) Open() bool { return c.last > 0 }
+// Open is whether the last frame showed a dialog or a menu; a Theme with no
+// count shows none.
+func (c *OverlayCount) Open() bool { return c != nil && c.last > 0 }
 
 // Shown is how many dialogs and menus the last frame showed, one over another.
 func (c *OverlayCount) Shown() int { return c.last }
