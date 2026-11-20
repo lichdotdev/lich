@@ -27,7 +27,7 @@ var unixRecipes = map[string]recipe{
 	Claude: curlPipe("bash", "curl -fsSL https://claude.ai/install.sh"),
 	// https://learn.chatgpt.com/docs/codex/cli
 	Codex: curlPipe("sh", "curl -fsSL https://chatgpt.com/codex/install.sh"),
-	// https://antigravity.google/docs/install?tab=cli
+	// https://antigravity.google/docs/getting-started?tab=cli
 	Antigravity: curlPipe("bash", "curl -fsSL https://antigravity.google/cli/install.sh"),
 	// https://opencode.ai/docs/
 	OpenCode: curlPipe("bash", "curl -fsSL https://opencode.ai/v2/install"),
@@ -61,11 +61,8 @@ var recipes = map[string]map[string]recipe{
 		Claude: powershell("irm https://claude.ai/install.ps1 | iex"),
 		// https://github.com/openai/codex (README)
 		Codex: powershell("irm https://chatgpt.com/codex/install.ps1 | iex"),
-		// https://antigravity.google/docs/install?tab=cli
+		// https://antigravity.google/docs/getting-started?tab=cli
 		Antigravity: powershell("irm https://antigravity.google/cli/install.ps1 | iex"),
-		// opencode documents no Windows script; npm is one of its routes.
-		// https://opencode.ai/docs/
-		OpenCode: npmGlobal("@opencode/cli"),
 		// https://github.com/can1357/oh-my-pi (README)
 		OMP: powershell("irm https://omp.sh/install.ps1 | iex"),
 		// https://github.com/charmbracelet/crush
@@ -79,8 +76,11 @@ var recipes = map[string]map[string]recipe{
 // id; docs/ceilings.md and the README's provider table say the same.
 var installGaps = map[string]map[string]string{
 	"windows": {
-		// https://kiro.dev/downloads/ lists the bash line for Windows too, and
-		// no page shows a PowerShell install.
-		Kiro: "Kiro CLI documents no Windows install lich can run",
+		// https://opencode.ai/docs/: "Windows package managers are not
+		// supported", and the page offers a zip.
+		OpenCode: "opencode installs on Windows from the zip on its page",
+		// https://kiro.dev/cli/ gives Windows the same curl | bash line, which
+		// runs only under bash (WSL or Git Bash).
+		Kiro: "Kiro CLI's Windows install is its curl | bash line, which needs bash (WSL or Git Bash)",
 	},
 }

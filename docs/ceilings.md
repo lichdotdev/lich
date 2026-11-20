@@ -244,10 +244,11 @@ work when nobody knows it and that the call site never shows. The mechanism and 
 - **The Welcome installs a provider with the vendor's own command, and only where that runs as you**
   (`internal/providers/install_recipes.go`). Each line is the vendor's install page word for word, run with no
   terminal and no stdin, `SUDO_ASKPASS` and the askpass hooks emptied, refused outright when lich runs as root: a
-  step that would ask for a password fails on its own last line instead of waiting. Kiro CLI on Windows has no
-  install (its downloads page shows only the bash line), so its cell opens the install page. Crush has no script:
-  it needs npm on Linux and Windows and Homebrew on macOS, opencode needs npm on Windows, and the rest need curl
-  with bash or sh, or PowerShell. An npm whose global prefix belongs to root fails with its own EACCES line,
+  step that would ask for a password fails on its own last line instead of waiting. Two have no install on
+  Windows, so their cell opens the install page: opencode, whose page offers a zip and says Windows package
+  managers are not supported, and Kiro CLI, whose page gives Windows the same `curl … | bash` line, which runs only
+  under bash (WSL or Git Bash). Crush has no script: it needs npm on Linux and Windows and Homebrew on macOS, and
+  the rest need curl with bash or sh, or PowerShell. An npm whose global prefix belongs to root fails with its own EACCES line,
   never through sudo.
 - **An install's progress is an estimate** (`installProgress`): no vendor script states a percentage, so the bar
   follows the lines the installer prints, rising toward 0.9, and lands on 1 when it exits.

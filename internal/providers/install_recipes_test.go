@@ -68,7 +68,6 @@ func TestEachInstallIsTheVendorsCommand(t *testing.T) {
 			Claude:      ps("irm https://claude.ai/install.ps1 | iex"),
 			Codex:       ps("irm https://chatgpt.com/codex/install.ps1 | iex"),
 			Antigravity: ps("irm https://antigravity.google/cli/install.ps1 | iex"),
-			OpenCode:    {"npm", "install", "-g", "@opencode/cli"},
 			OMP:         ps("irm https://omp.sh/install.ps1 | iex"),
 			Crush:       {"npm", "install", "-g", "@charmland/crush"},
 			Cursor:      ps("irm 'https://cursor.com/install?win32=true' | iex"),

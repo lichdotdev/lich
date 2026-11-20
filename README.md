@@ -133,7 +133,7 @@ what lich can read back out of it, since each CLI records different things.
 
 | What you get | Claude Code | Codex | Antigravity | opencode | oh-my-pi | Crush | Cursor CLI | Kiro CLI |
 | --- | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: |
-| Install it from the Welcome | yes | yes | yes | yes; on Windows with npm | yes | with npm, or Homebrew on macOS | yes | Linux and macOS |
+| Install it from the Welcome | yes | yes | yes | yes; not on Windows | yes | with npm, or Homebrew on macOS | yes | Linux and macOS |
 | Sign in from the Welcome | yes | yes | no, on its first run | in a terminal, with a project open | in a terminal, with a project open | no, on its first run | in a terminal, with a project open; not on macOS | in a terminal, with a project open; Linux only |
 | Context window in the footer | yes | yes | no | no | no | no | no | yes |
 | How much of the last turn came from the prompt cache, in the footer | yes | yes | no | in the cost tooltip | in the cost tooltip | no | no | no |

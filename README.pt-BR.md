@@ -136,7 +136,7 @@ o lich consegue ler de volta, porque cada CLI registra coisas diferentes.
 
 | Recurso | Claude Code | Codex | Antigravity | opencode | oh-my-pi | Crush | Cursor CLI | Kiro CLI |
 | --- | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: |
-| Instalar pela tela de boas-vindas | sim | sim | sim | sim; no Windows com npm | sim | com npm, ou Homebrew no macOS | sim | Linux e macOS |
+| Instalar pela tela de boas-vindas | sim | sim | sim | sim; não no Windows | sim | com npm, ou Homebrew no macOS | sim | Linux e macOS |
 | Entrar pela tela de boas-vindas | sim | sim | não, na primeira execução | num terminal, com um projeto aberto | num terminal, com um projeto aberto | não, na primeira execução | num terminal, com um projeto aberto; não no macOS | num terminal, com um projeto aberto; só Linux |
 | Janela de contexto no rodapé | sim | sim | não | não | não | não | não | sim |
 | Quanto do último turno veio do cache de prompt, no rodapé | sim | sim | não | no tooltip de custo | no tooltip de custo | não | não | não |

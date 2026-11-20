@@ -130,7 +130,7 @@ tarball、清除隔离标记，以及从旧的 Homebrew formula 升级，见 [IN
 
 | 功能 | Claude Code | Codex | Antigravity | opencode | oh-my-pi | Crush | Cursor CLI | Kiro CLI |
 | --- | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: |
-| 在欢迎页安装 | 是 | 是 | 是 | 是；Windows 需要 npm | 是 | 需要 npm，macOS 用 Homebrew | 是 | Linux 和 macOS |
+| 在欢迎页安装 | 是 | 是 | 是 | 是；Windows 不支持 | 是 | 需要 npm，macOS 用 Homebrew | 是 | Linux 和 macOS |
 | 在欢迎页登录 | 是 | 是 | 否，首次运行时登录 | 在终端中，需打开一个项目 | 在终端中，需打开一个项目 | 否，首次运行时配置 | 在终端中，需打开一个项目；macOS 不支持 | 在终端中，需打开一个项目；仅 Linux |
 | 底栏显示上下文窗口 | 有 | 有 | 无 | 无 | 无 | 无 | 无 | 有 |
 | 在底栏显示上一轮有多少来自提示缓存 | 有 | 有 | 无 | 在费用提示框中 | 在费用提示框中 | 无 | 无 | 无 |
