@@ -1652,7 +1652,8 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   zoom and a divider do not animate.
   Show beside puts the delegates in a column on the right half of their opener's pane, or stacked under it
   when that pane is too narrow to halve (`delegateRoom`), and lays out only the delegates that fit the 180dp pane
-  floor, counted from where the panes were drawn the frame before (`columnRoom`); the rest stay out and
+  floor, counted from where the panes were drawn the frame before (`columnRoom`), or, when that pane holds
+  none, as many as fit once the layout's dividers give way (`delegatesFitting`); the rest stay out and
   the pane header offers them. Its footer item is not an item of the Footer layout, so Settings can neither
   move nor hide it: it shows only while the session, in no layout, has delegates.
 - **Single instance via the pinned port**: the bind is the lock (`internal/singleton`); a duplicate launch asks
