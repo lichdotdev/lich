@@ -10,6 +10,7 @@ import (
 	"log/slog"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -39,10 +40,29 @@ const (
 )
 
 // recipe is how a provider installs on one OS: the programs it needs on PATH,
-// and the command line, whose first word is the first of them.
+// the command line, whose first word is the first of them, and the folder the
+// installer writes the binary into, zero where PATH already holds it (npm's,
+// Homebrew's) or no script was read for it.
 type recipe struct {
 	needs []string
 	args  []string
+	dir   installDir
+}
+
+// installDir is a folder under the home directory, or under the one an
+// environment variable names (Windows' LOCALAPPDATA).
+type installDir struct{ env, rel string }
+
+func (d installDir) path() (string, error) {
+	if d.env != "" {
+		base := os.Getenv(d.env)
+		if base == "" {
+			return "", fmt.Errorf("%s is not set", d.env)
+		}
+		return filepath.Join(base, d.rel), nil
+	}
+	home, err := os.UserHomeDir()
+	return filepath.Join(home, d.rel), err
 }
 
 type Install = api.ProviderInstall
@@ -87,7 +107,7 @@ func (s *Service) Install(_ context.Context, opts api.ProviderIDOptions) (api.No
 		_ = w.Close()
 		last := <-relayed
 		_ = t.end(cmd.Process)
-		s.finishInstall(ctx, opts.ID, last, waitErr)
+		s.finishInstall(ctx, opts.ID, r.dir, last, waitErr)
 		cancel()
 	}()
 	return api.None{}, nil
@@ -189,8 +209,9 @@ func scanLines(data []byte, atEOF bool) (int, []byte, error) {
 }
 
 // finishInstall sends the last event: why the install failed, or, once the
-// PATH lich resolves binaries through is read again, that the provider is on it.
-func (s *Service) finishInstall(ctx context.Context, id, last string, waitErr error) {
+// PATH lich resolves binaries through is read again and the installer's
+// folder is on it, that the provider is.
+func (s *Service) finishInstall(ctx context.Context, id string, dir installDir, last string, waitErr error) {
 	defer s.releaseInstall(id)
 	done := Install{ID: id, Progress: 1, Done: true}
 	if failure := installFailure(ctx.Err(), last, waitErr); failure != "" {
@@ -203,10 +224,45 @@ func (s *Service) finishInstall(ctx context.Context, id, last string, waitErr er
 		slog.Warn("provider install: refresh PATH", "provider", id, "err", err)
 	}
 	p, _ := find(id)
-	if d := s.resolve(Detected{ID: id}, p.Binaries); !d.Installed {
+	if d := s.resolve(Detected{ID: id}, p.Binaries); !d.Installed && !s.putOnPath(id, dir) {
 		done.Error = fmt.Sprintf("%s installed, but %s is not on PATH", p.Name, DefaultBinary(id))
 	}
 	s.sendInstall(done)
+}
+
+// putOnPath puts the folder the installer wrote id's binary into on PATH,
+// when the binary is there and the installer left the folder off it, and
+// reports whether id resolves then.
+func (s *Service) putOnPath(id string, d installDir) bool {
+	s.mu.Lock()
+	add := s.addPath
+	s.mu.Unlock()
+	if add == nil || d == (installDir{}) {
+		return false
+	}
+	dir, err := d.path()
+	if err != nil {
+		slog.Warn("provider install: its folder", "provider", id, "err", err)
+		return false
+	}
+	if found, _ := filepath.Glob(filepath.Join(dir, DefaultBinary(id)+"*")); len(found) == 0 {
+		return false
+	}
+	if err := add(dir); err != nil {
+		slog.Warn("provider install: put its folder on PATH", "provider", id, "dir", dir, "err", err)
+		return false
+	}
+	p, _ := find(id)
+	return s.resolve(Detected{ID: id}, p.Binaries).Installed
+}
+
+// SetPathAdder wires what puts an installer's folder on PATH: main.go owns the
+// PATH lich resolves binaries through and hands its sessions, and the user's
+// shell startup file.
+func (s *Service) SetPathAdder(add func(dir string) error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.addPath = add
 }
 
 // installFailure is the one line an install that went wrong ends on, "" for

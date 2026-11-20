@@ -182,6 +182,8 @@ type Service struct {
 	// providers installing now.
 	emit       func(name string, data any)
 	installing map[string]bool
+	// addPath puts an installer's folder on PATH; also guarded by mu.
+	addPath func(dir string) error
 }
 
 // New returns a Service that scans the real PATH.

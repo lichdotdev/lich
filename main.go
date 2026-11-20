@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strconv"
+	"sync"
 	"syscall"
 	"time"
 
@@ -482,14 +483,47 @@ func registerServices(db *store.Service, term *terminal.Service, chats *chat.Ser
 	// binary through, what a new session inherits, and the editor lookup. They
 	// are replaced together or not at all — a failed re-read leaves every one of
 	// them on the pin lich booted with, which is what the surface reports.
+	// installDirs are the folders a provider's installer wrote into this run and
+	// left off PATH: every resolution keeps them on it, and the shell's startup
+	// file carries them to the next launch.
+	var installDirs struct {
+		sync.Mutex
+		list []string
+	}
+	applyEnv := func(next []string) {
+		installDirs.Lock()
+		for _, dir := range installDirs.list {
+			next = terminal.WithPathDir(next, dir)
+		}
+		installDirs.Unlock()
+		terminal.PinPath(next)
+		term.SetEnv(next)
+		sys.SetEnv(next)
+	}
 	providerSvc.SetPathRefresh(func() error {
 		next, err := terminal.ReresolveShellEnv(launchEnv)
 		if err != nil {
 			return err
 		}
-		terminal.PinPath(next)
-		term.SetEnv(next)
-		sys.SetEnv(next)
+		applyEnv(next)
+		return nil
+	})
+	providerSvc.SetPathAdder(func(dir string) error {
+		if home, err := os.UserHomeDir(); err == nil {
+			if file, err := terminal.AddToShellRC(os.Getenv("SHELL"), home, dir); err != nil {
+				slog.Warn("put an installer's folder in the shell's startup file", "dir", dir, "err", err)
+			} else if file != "" {
+				slog.Info("put an installer's folder in the shell's startup file", "dir", dir, "file", file)
+			}
+		}
+		installDirs.Lock()
+		installDirs.list = append(installDirs.list, dir)
+		installDirs.Unlock()
+		next, err := terminal.ReresolveShellEnv(launchEnv)
+		if err != nil {
+			next = env
+		}
+		applyEnv(next)
 		return nil
 	})
 	// Detection resolves a provider the way the spawn does, so an agent reached
