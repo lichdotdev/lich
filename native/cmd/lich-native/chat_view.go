@@ -50,9 +50,11 @@ var (
 	// top of the composer's box: the last message, and its time under it, never
 	// touch the box, whether the list rests on it or is pinned to its end.
 	chatComposerGap = ui.Space(6)
-	// chatComposerTint is how far the box's edge and fill go from the input
-	// color toward the theme's primary (centre-mix mockup).
-	chatComposerTint = 0.45
+	// chatComposerTint is how far the box's edge goes from the input color
+	// toward the theme's primary (centre-mix mockup), and chatComposerFillTint
+	// its fill, which the user wanted near the theme's own ground.
+	chatComposerTint     = 0.45
+	chatComposerFillTint = 0.08
 	// chatComposerPadX and chatComposerPadY are the room the text and its
 	// placeholder keep from the box's left and top, a body line's worth, so a
 	// question has air around it.
@@ -483,15 +485,16 @@ func (u *window) chatComposer(gtx C, th *ui.Theme, p *chatPane, sv sessionView, 
 	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			// the box's edge and fill lean to the theme's primary, as the
-			// backdrop around it does
+			// the box's fill keeps near the theme's own ground and its edge
+			// leans to the theme's primary, as the backdrop around it does
 			tinted := *th
-			tinted.Palette.Input = ui.MixOKLab(th.Palette.Input, th.Primary, chatComposerTint)
+			tinted.Palette.Input = ui.MixOKLab(th.Palette.Input, th.Primary, chatComposerFillTint)
 			ta := tinted.Textarea(&p.editor, i18n.T("chat.composer.placeholder", i18n.Args{"provider": name}))
 			ta.MaxHeight, ta.MinHeight, ta.Radius, ta.Steady, ta.History = chatComposerMax, chatComposerMin, ui.RadiusLG, true, &p.undo
 			ta.Size, ta.Leading, ta.PadX, ta.PadY = markdown.BodySize, markdown.BodySize*markdown.LineHeightScale, chatComposerPadX, chatComposerPadY
 			ta.Foot = u.chatChips(th, p, sv, working, ft)
 			d := ta.Layout(gtx)
+			ui.InsetBorder(gtx, d.Size, gtx.Dp(ui.RadiusLG), th.Over(ui.MixOKLab(th.Palette.Input, th.Primary, chatComposerTint)))
 			p.slash.refresh(gtx, &p.editor, slashCommands(u.model.chat.commandsOf(sv.ID)))
 			gtx.Constraints.Max.X = d.Size.X
 			p.slash.layout(gtx, th, p.slashRoom-d.Size.Y-gtx.Dp(2*chatComposerGap))
