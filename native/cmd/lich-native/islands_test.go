@@ -11,6 +11,7 @@ import (
 	"gioui.org/op/paint"
 	"gioui.org/unit"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/gioterm"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
@@ -330,5 +331,75 @@ func TestAPanesHeaderIsTheLoneSessionsHeader(t *testing.T) {
 	head := gtx1(paneHeader)
 	if got := img.RGBAAt(w/3, head-1); !inkNear(got, pane.theme.Background) {
 		t.Errorf("the header's foot is %v, want the pane's ground %v: no hairline", got, pane.theme.Background)
+	}
+}
+
+// mixedFrames is a layout of root's panes over the chat rig's stage: s1 and
+// s3 drawn as chats, s2 as an agent's terminal.
+func mixedFrames(t *testing.T, root *paneNode, focus string) (*window, *frameRig, *stageView) {
+	t.Helper()
+	u, r, _ := chatFrames(t, api.ViewChat)
+	u.model = chatModel(api.ViewChat, api.ViewTerminal, api.ViewChat)
+	u.model.invalidate = r.invalidate
+	u.model.chat.kinds = []string{"claude"}
+	u.sidebar, u.dock, u.git, u.extPanel, u.topbar = &sidebar{}, &dock{}, &gitPanel{}, &extensionPanel{}, &topbar{}
+	u.palette, u.worktree = &commandPalette{}, &worktreeDialog{}
+	u.terms = &terminals{byID: map[string]*termView{}, invalidate: r.invalidate, client: u.client, unzoomed: unit.Metric{PxPerDp: 1, PxPerSp: 1}}
+	u.gate = &spawnGate{probe: &fakeProbe{live: true}, invalidate: r.invalidate, deciding: "another"}
+	agentTerm(t, u, "s2")
+	lt := layoutTab{ID: "l", Focus: focus, Root: root}
+	v := &stageView{hasLayout: true, layout: lt, panes: u.model.viewsOf(lt.sessions(), time.Now())}
+	v.active, v.hasActive = v.panes[focus], true
+	r.draw = func(gtx C, th *ui.Theme) {
+		u.theme = th
+		u.root.Layout(gtx, func(gtx C) D {
+			if err := u.layoutPanes(gtx, *v); err != nil {
+				t.Fatal(err)
+			}
+			return D{Size: gtx.Constraints.Max}
+		})
+	}
+	return u, r, v
+}
+
+// The balloons' band stays under a layout holding an agent's terminal while
+// the focus moves between a chat and that terminal: no pane is resized.
+func TestMovingTheFocusFromAChatToATerminalResizesNoPane(t *testing.T) {
+	root := &paneNode{Axis: splitRow, Ratio: 0.5, First: &paneNode{Session: "s1"}, Second: &paneNode{Session: "s2"}}
+	u, r, v := mixedFrames(t, root, "s1")
+	term := u.terms.byID["s2"]
+	settledCols(t, r, term)
+	bodies := func() (image.Rectangle, image.Rectangle) {
+		u.drop.mu.Lock()
+		defer u.drop.mu.Unlock()
+		return u.drop.rects["s1"], u.drop.rects["s2"]
+	}
+	chat0, term0 := bodies()
+	c0, r0 := term.vt.Size()
+	if foot := r.size.Y - gtx1(layoutBalloonBand); term0.Max.Y != foot || chat0.Max.Y != foot {
+		t.Fatalf("with the chat in focus the panes end at y=%d and %d, want %d, over the band", chat0.Max.Y, term0.Max.Y, foot)
+	}
+	v.layout.Focus, v.active = "s2", v.panes["s2"]
+	settledCols(t, r, term)
+	chat1, term1 := bodies()
+	if chat1 != chat0 || term1 != term0 {
+		t.Errorf("the panes went from %v %v to %v %v when the focus moved to the terminal", chat0, term0, chat1, term1)
+	}
+	if c, rows := term.vt.Size(); c != c0 || rows != r0 {
+		t.Errorf("the terminal went from %dx%d to %dx%d", c0, r0, c, rows)
+	}
+}
+
+// A layout of chats has no band: its panes run to the stage's foot.
+func TestALayoutOfChatsHasNoBand(t *testing.T) {
+	root := &paneNode{Axis: splitRow, Ratio: 0.5, First: &paneNode{Session: "s1"}, Second: &paneNode{Session: "s3"}}
+	u, r, _ := mixedFrames(t, root, "s1")
+	r.settle(t)
+	u.drop.mu.Lock()
+	defer u.drop.mu.Unlock()
+	for _, id := range []string{"s1", "s3"} {
+		if b := u.drop.rects[id]; b.Max.Y != r.size.Y {
+			t.Errorf("chat %s ends at y=%d, want the stage's foot at %d", id, b.Max.Y, r.size.Y)
+		}
 	}
 }

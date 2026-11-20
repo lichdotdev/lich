@@ -252,8 +252,9 @@ band, which the layout keeps however the focus moves.
 
 A plain terminal (a `shell` session), a service's console and Home carry no balloons and no band: the terminal
 takes the island's full height. A session drawn as a chat carries none either: its footer stands in the
-composer (see The chat view), and the chat takes the band back. In a layout the footer follows the focus, so
-the balloons give way while a chat pane is focused and return when a terminal is. Settings, Pulls and an
+composer (see The chat view), and the chat takes the band back. A layout keeps the
+balloons and the band while it holds an agent's terminal, whichever pane has the focus, a chat's included, so
+moving the focus resizes no pane; a layout of chats carries none. Settings, Pulls and an
 extension's screen cover the stage and carry none either. A project with no session keeps them, since its branch is the click into the Git panel.
 
 The Git panel and an extension's panel rise from the stage's foot over the band: while one is up the balloons

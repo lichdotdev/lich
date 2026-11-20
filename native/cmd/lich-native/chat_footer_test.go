@@ -25,7 +25,8 @@ func TestAChatCarriesNoBalloonsAndNoBand(t *testing.T) {
 		want int
 	}{
 		{"a chat", stageView{active: chat, hasActive: true}, 0},
-		{"a layout whose focus is a chat", stageView{active: chat, hasActive: true, hasLayout: true, panes: map[string]sessionView{"a": chat, "t": terminal}}, 0},
+		{"a layout whose focus is a chat", stageView{active: chat, hasActive: true, hasLayout: true, panes: map[string]sessionView{"a": chat, "t": terminal}}, 42},
+		{"a layout of chats", stageView{active: chat, hasActive: true, hasLayout: true, panes: map[string]sessionView{"a": chat, "b": {ID: "b", Kind: "codex", View: api.ViewChat}}}, 0},
 		{"a layout whose focus is a terminal", stageView{active: terminal, hasActive: true, hasLayout: true, panes: map[string]sessionView{"a": chat, "t": terminal}}, 42},
 		{"the same agent as a terminal", stageView{active: terminal, hasActive: true}, 52},
 	}

@@ -33,22 +33,23 @@ var (
 )
 
 // balloonsShown is whether the stage's foot carries the footer's balloons:
-// a session's terminal or a layout of them, and a project with no session.
-// A plain terminal, a service's console, the stage editor and Home carry none,
-// nor does a stage the Git panel or an extension's panel rises over, nor one
-// whose active session is a chat: its footer stands in the composer.
+// a session's terminal, a layout holding an agent's terminal whichever pane
+// has the focus, and a project with no session. A plain terminal, a service's
+// console, the stage editor and Home carry none, nor does a stage the Git
+// panel or an extension's panel rises over, a session alone as a chat or a
+// layout of chats: a chat's footer stands in its composer.
 func (u *window) balloonsShown(v stageView) bool {
 	switch {
 	case v.home, v.hasConsole, v.hasEditor, u.panelShown(v):
 		return false
-	case v.hasActive && v.active.View == api.ViewChat:
-		return false
 	case v.hasLayout:
 		for _, sv := range v.panes {
-			if sv.Kind != "shell" {
+			if sv.Kind != "shell" && sv.View != api.ViewChat {
 				return true
 			}
 		}
+		return false
+	case v.hasActive && v.active.View == api.ViewChat:
 		return false
 	case v.hasActive:
 		return v.active.Kind != "shell"
@@ -60,7 +61,7 @@ func (u *window) balloonsShown(v stageView) bool {
 // foot, 0 where there are none. It follows the session's kind rather than
 // the agent live in its PTY, which comes and goes, so the grid is not resized
 // when an agent starts in a plain terminal. A layout's band does not follow
-// which of its terminals has the focus; a chat in focus still takes it away.
+// its focus, so moving the focus resizes no pane.
 func (u *window) ptyBand(gtx C, v stageView) int {
 	switch {
 	case (!v.hasLayout && !v.hasActive) || !u.balloonsShown(v):
