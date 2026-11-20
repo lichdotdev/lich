@@ -44,10 +44,12 @@ require (
 // Windows, app.PreferX11 with focus kept while a child X11 window holds the
 // keyboard (the web view's page), and Vulkan before EGL on X11 (NVIDIA's EGL
 // hangs under XWayland) with a present on a stale surface or a lost device
-// dropping the frame rather than the window, and Vulkan reusing released
-// buffers and textures (NVIDIA makes every allocation a kernel call). Every
+// dropping the frame rather than the window, Vulkan reusing released buffers
+// and textures (NVIDIA makes every allocation a kernel call), and a
+// suboptimal swapchain's acquired image kept, with a bounded acquire (a
+// resize under XWayland leaked one per resize until the window froze). Every
 // patch of ours lands on that branch.
-replace gioui.org => github.com/lichdotdev/gio v0.0.0-20261120022425-d04d1b70ab1a
+replace gioui.org => github.com/lichdotdev/gio v0.0.0-20261120032138-f951d1cba156
 
 replace github.com/lichdotdev/lich => ../
 
