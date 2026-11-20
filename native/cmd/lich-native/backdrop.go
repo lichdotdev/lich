@@ -216,10 +216,12 @@ type backdropEntry struct {
 	img         *image.RGBA
 	op          paint.ImageOp
 	inks        backdropInks
+	marks       markInks
 	tints       [2]color.NRGBA
-	// tick and cover are what op was painted for.
+	// tick, cover and mark are what op was painted for.
 	tick  int64
 	cover float32
+	mark  backdropMark
 	// gaps draws the ground between the dots, recorded once per size.
 	gaps    op.Ops
 	gapCall op.CallOp
@@ -248,11 +250,25 @@ func (b *backdrops) sweep(now time.Time) {
 }
 
 // backdrop paints the backdrop of the session or island id, size big on
-// ground, at gtx's origin: the field over the whole pane while its chat has
-// nothing in it, its band otherwise. It is the one place a pane's backdrop
-// is chosen.
-func (u *window) backdrop(gtx C, id string, size image.Point, ground color.NRGBA) {
-	u.backdrops.layout(gtx, u.theme, id, size, ground, u.backdropCover(gtx, id))
+// ground, at gtx's origin, its content top down from there: the field over
+// the whole pane while its chat has nothing in it, with the start screen's
+// mark in its dots, and its band otherwise. It is the one place a pane's
+// backdrop is chosen.
+func (u *window) backdrop(gtx C, id string, size image.Point, ground color.NRGBA, top int) {
+	u.backdrops.layout(gtx, u.theme, id, size, ground, u.backdropCover(gtx, id), u.backdropMark(gtx, id, top))
+}
+
+// backdropMark is where session id's start screen put its mark, in cells of
+// a pane whose content starts top down, or a mark faded out.
+func (u *window) backdropMark(gtx C, id string, top int) backdropMark {
+	sv, ok := u.model.sessionViewOf(id)
+	if !ok || sv.View != api.ViewChat {
+		return backdropMark{}
+	}
+	s := u.chats.pane(id).start
+	cell := max(1, gtx.Dp(backdropCell))
+	at := s.mark.Add(image.Pt(0, top))
+	return backdropMark{at: image.Pt((at.X+cell/2)/cell, (at.Y+cell/2)/cell), fade: s.markFade}
 }
 
 // backdropCover is 0 while session id is a chat with nothing in it, 1 once
@@ -274,7 +290,7 @@ func (u *window) backdropCover(gtx C, id string) float32 {
 
 // layout paints id's field at the frame of gtx.Now, size big on ground, and
 // asks for the frame that moves it on.
-func (b *backdrops) layout(gtx C, th *ui.Theme, id string, size image.Point, ground color.NRGBA, cover float32) {
+func (b *backdrops) layout(gtx C, th *ui.Theme, id string, size image.Point, ground color.NRGBA, cover float32, mark backdropMark) {
 	if b.epoch.IsZero() {
 		b.epoch = gtx.Now
 	}
@@ -290,19 +306,22 @@ func (b *backdrops) layout(gtx C, th *ui.Theme, id string, size image.Point, gro
 		return
 	}
 	if tints := [2]color.NRGBA{ui.Over(ground, th.MutedForeground), ui.Over(ground, th.Foreground)}; tints != e.tints {
-		e.tints, e.inks = tints, newBackdropInks(tints[0], tints[1], ground)
+		e.tints, e.inks, e.marks = tints, newBackdropInks(tints[0], tints[1], ground), newMarkInks(th, ground)
 		e.tick = -1
 	}
 	rows := e.cells.Y
 	if cover == 1 {
 		rows = min(rows, int(math.Ceil(float64(rows)*backdropBand)))
 	}
-	if tick != e.tick || cover != e.cover {
+	if tick != e.tick || cover != e.cover || mark != e.mark {
 		e.field.step(float64(time.Duration(tick)*backdropStep)/float64(time.Millisecond), rows)
 		e.field.paint(e.img, rows, float64(cover), &e.inks)
+		if mark.fade > 0 {
+			e.field.paintMark(e.img, rows, mark, &e.marks)
+		}
 		e.op = paint.NewImageOp(e.img)
 		e.op.Filter = paint.FilterNearest
-		e.tick, e.cover = tick, cover
+		e.tick, e.cover, e.mark = tick, cover, mark
 		b.painted++
 	}
 	defer clip.Rect{Max: image.Pt(min(size.X, e.cells.X*e.cell), min(size.Y, rows*e.cell))}.Push(gtx.Ops).Pop()

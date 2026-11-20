@@ -11,18 +11,13 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/op/paint"
-	"gioui.org/unit"
 
 	"github.com/lichdotdev/lich/native/backend"
-	"github.com/lichdotdev/lich/native/grimoire"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
 const (
-	// chatStartPixel is one logo pixel's side, a whole number of device pixels
-	// at the scales a window runs at, as the flame's is.
-	chatStartPixel unit.Dp = 1.5
 	// chatStartRise is how far up the start screen's block sits: the share of
 	// the room it leaves that goes above it, under half so it stands a little
 	// over the middle.
@@ -46,6 +41,11 @@ const chatStartSep = "|"
 type chatStart struct {
 	empty bool
 	left  time.Time
+	// mark is where the mark's slot lay the frame before, from the chat's
+	// top-left, and markFade how far it showed: the backdrop paints the mark
+	// there.
+	mark     image.Point
+	markFade float32
 }
 
 // shows reports whether the start screen is drawn at now: while the
@@ -70,18 +70,11 @@ func (s *chatStart) emptyNow(read bool, sv sessionView, items []backend.ChatItem
 	return len(items) == 0
 }
 
-// chatStartMark draws the logo's flames at the frame of gtx.Now, the
-// Welcome's, and asks for the next one.
-func chatStartMark(gtx C, th *ui.Theme) D {
-	frame, next := grimoire.LogoFrame(gtx.Now)
-	// A window without focus keeps the frame it has and looks in less often.
-	if th.Still {
-		next = gtx.Now.Add(ui.StillFrame)
-	}
-	gtx.Execute(op.InvalidateCmd{At: next})
-	px := max(gtx.Dp(chatStartPixel), 1)
-	paintGrid(gtx, th, grimoire.Logo[frame], px)
-	return D{Size: image.Pt(grimoire.LogoCols*px, grimoire.LogoRows*px)}
+// chatStartSlot is the room the mark takes over the question. The mark is
+// not drawn here: the pane's backdrop paints it in its own dots, where the
+// start screen says it lies (chatStart.mark).
+func chatStartSlot(gtx C) D {
+	return D{Size: chatStartMarkSize.Mul(max(1, gtx.Dp(backdropCell)))}
 }
 
 // chatStartQuestion is the question the start screen asks, picked by session
@@ -100,7 +93,7 @@ func chatStartQuestion(session string) (before, after string) {
 func chatStartHero(gtx C, th *ui.Theme, session, project string) D {
 	before, after := chatStartQuestion(session)
 	return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
-		layout.Rigid(func(gtx C) D { return chatStartMark(gtx, th) }),
+		layout.Rigid(chatStartSlot),
 		layout.Rigid(layout.Spacer{Height: chatStartGap}.Layout),
 		layout.Rigid(func(gtx C) D {
 			return layout.Flex{Alignment: layout.Baseline}.Layout(gtx,
@@ -142,8 +135,14 @@ func (u *window) chatStartScreen(gtx C, th *ui.Theme, p *chatPane, sv sessionVie
 		list(lg)
 	}
 	top := h - cd.Size.Y - below
+	heroAt := image.Pt((w-hd.Size.X)/2, top-hd.Size.Y)
+	p.start.mark = heroAt.Add(image.Pt((hd.Size.X-chatStartSlot(gtx).Size.X)/2, 0))
+	p.start.markFade = 0
+	if shown {
+		p.start.markFade = fade
+	}
 	if shown && fade > 0 {
-		off := op.Offset(image.Pt((w-hd.Size.X)/2, top-hd.Size.Y)).Push(gtx.Ops)
+		off := op.Offset(heroAt).Push(gtx.Ops)
 		chatStartFaded(gtx, hero, fade)
 		off.Pop()
 	}

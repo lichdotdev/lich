@@ -171,7 +171,7 @@ func TestTheCaretHoldsAfterEachChunk(t *testing.T) {
 func TestAnEmptyConversationDraws(t *testing.T) {
 	u, r := stampFrames(t)
 	u.model.chat.history("s1", nil)
-	r.settleOn(t, logoLoop)
+	r.settle(t)
 }
 
 // While chunks of the answer arrive the caret stays lit, even on the half

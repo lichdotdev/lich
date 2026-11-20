@@ -198,7 +198,7 @@ func (u *window) paneAt(gtx C, v stageView, id string, r image.Rectangle, severa
 	shape := clip.UniformRRect(image.Rectangle{Max: size}, rr)
 	paint.FillShape(gtx.Ops, bg, shape.Op(gtx.Ops))
 	area := shape.Push(gtx.Ops)
-	u.backdrop(gtx, id, size, bg)
+	u.backdrop(gtx, id, size, bg, gtx.Dp(paneHeader))
 	on := u.theme.On(bg)
 	head := gtx.Dp(paneHeader)
 	header := gtx

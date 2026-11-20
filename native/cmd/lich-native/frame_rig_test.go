@@ -83,17 +83,9 @@ func (r *frameRig) drawn() string {
 // twice and asks for no frame.
 func (r *frameRig) settle(t *testing.T) string {
 	t.Helper()
-	return r.settleOn(t, time.Second)
-}
-
-// settleOn settles frames step apart: for a screen with a loop that never
-// stops, step is the loop's length, so every frame lands on the same frame
-// of it.
-func (r *frameRig) settleOn(t *testing.T, step time.Duration) string {
-	t.Helper()
 	last, _ := r.frame()
 	for range maxSettleFrames {
-		r.now = r.now.Add(step)
+		r.now = r.now.Add(time.Second)
 		drawn, redraw := r.frame()
 		if drawn == last && !redraw {
 			return drawn
