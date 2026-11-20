@@ -51,8 +51,10 @@ require (
 // their content rather than their place in the frame's ops (a border drawn
 // again unchanged was stroked and uploaded again every frame), and no Vulkan
 // barrier between reads of a texture (one a draw, a tenth of the CPU in
-// NVIDIA's driver). Every patch of ours lands on that branch.
-replace gioui.org => github.com/lichdotdev/gio v0.0.0-20261120203420-7697e1dd038b
+// NVIDIA's driver), and input still routed to a handler whose operations a
+// frame replayed, with Source.Queued saying a frame has input to lay out
+// for. Every patch of ours lands on that branch.
+replace gioui.org => github.com/lichdotdev/gio v0.0.0-20261120213930-e43ed6ab2a26
 
 replace github.com/lichdotdev/lich => ../
 
