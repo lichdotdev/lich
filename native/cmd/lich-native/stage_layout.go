@@ -113,6 +113,7 @@ func (u *window) layoutPanes(gtx C, v stageView) error {
 	u.terms.onScreen(onScreenOf(root)...)
 	in := image.Rectangle{Max: gtx.Constraints.Max}
 	in.Max.Y = max(0, in.Max.Y-u.ptyBand(gtx, v))
+	st.pointer.stage = in.Size()
 	drawn := layoutTab{Root: root}
 	st.motion.begin(gtx.Now, lt.Zoomed, drawn.panes())
 	err := u.paneTree(gtx, v, root, "", in, len(lt.panes()) > 1)

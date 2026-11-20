@@ -942,6 +942,7 @@ func (u *window) loneSession(gtx C, v stageView, fill color.NRGBA, termWidth, te
 	if err != nil {
 		return err
 	}
+	u.layoutStage.pointer.stage = size
 	u.paneDropZones(gtx, v.active.ID, image.Rectangle{Max: size}, image.Rectangle{Max: size}.Add(u.islandAt), true)
 	if u.terms.has(v.active.ID) || v.active.View == api.ViewChat {
 		u.drop.add(v.active.ID, image.Rectangle{Min: u.islandAt, Max: u.islandAt.Add(size)})

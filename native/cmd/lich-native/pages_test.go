@@ -18,7 +18,7 @@ func pageScreen(t *testing.T, m *model) (shape, focus string) {
 
 func TestShowPagePutsThePageBesideItsSessionAndMakesNoTab(t *testing.T) {
 	m, _ := newLayoutsModel(t)
-	if !m.showPage(context.Background(), "orch") {
+	if !m.showPage(context.Background(), "orch", splitRow) {
 		t.Fatal("refused a live session")
 	}
 	if shape, focus := pageScreen(t, m); shape != "row(orch,browser:orch)" || focus != "browser:orch" {
@@ -33,7 +33,7 @@ func TestShowPagePutsThePageBesideItsSessionAndMakesNoTab(t *testing.T) {
 	if active != "lich" {
 		t.Fatalf("strip on %q, want the session's project", active)
 	}
-	if m.showPage(context.Background(), "gone") {
+	if m.showPage(context.Background(), "gone", splitRow) {
 		t.Fatal("showed the page of a session no project holds")
 	}
 }
@@ -41,7 +41,7 @@ func TestShowPagePutsThePageBesideItsSessionAndMakesNoTab(t *testing.T) {
 func TestAPageFollowsItsSessionIntoAndOutOfALayout(t *testing.T) {
 	m, _ := newLayoutsModel(t)
 	ctx := context.Background()
-	m.showPage(ctx, "wa")
+	m.showPage(ctx, "wa", splitRow)
 	if !m.splitBeside(ctx, "orch", "wa", edgeRight, false) {
 		t.Fatal("a session showing its page was refused a split")
 	}
@@ -64,7 +64,7 @@ func TestAPageFollowsItsSessionIntoAndOutOfALayout(t *testing.T) {
 func TestALayoutTakesAnotherSessionBesideOneShowingItsPage(t *testing.T) {
 	m, _ := newLayoutsModel(t)
 	ctx := context.Background()
-	m.showPage(ctx, "orch")
+	m.showPage(ctx, "orch", splitRow)
 	if !m.splitBeside(ctx, "orch", "notes", edgeBottom, false) {
 		t.Fatal("split refused beside a session showing its page")
 	}
@@ -77,7 +77,7 @@ func TestMinimizeTakesThePageOffScreenAndLeavesTheBrowserRunning(t *testing.T) {
 	m, _ := newLayoutsModel(t)
 	ctx := context.Background()
 	send(m, api.BrowserStateEvent.Name, api.BrowserState{Owner: "orch", Open: true})
-	m.showPage(ctx, "orch")
+	m.showPage(ctx, "orch", splitRow)
 	if !m.minimizePage("orch") || m.minimizePage("orch") {
 		t.Fatal("minimize must report the one page it took")
 	}
@@ -87,7 +87,7 @@ func TestMinimizeTakesThePageOffScreenAndLeavesTheBrowserRunning(t *testing.T) {
 	if st, ok := m.browserState("orch"); !ok || !st.Open {
 		t.Fatal("minimizing closed the browser")
 	}
-	m.showPage(ctx, "orch")
+	m.showPage(ctx, "orch", splitRow)
 	if shape, _ := pageScreen(t, m); shape != "row(orch,browser:orch)" {
 		t.Fatalf("on screen %q, want the page back", shape)
 	}
@@ -97,10 +97,10 @@ func TestMinimizeKeepsTheDividerAndAClosedBrowserForgetsIt(t *testing.T) {
 	m, _ := newLayoutsModel(t)
 	ctx := context.Background()
 	send(m, api.BrowserStateEvent.Name, api.BrowserState{Owner: "orch", Open: true})
-	m.showPage(ctx, "orch")
+	m.showPage(ctx, "orch", splitRow)
 	m.setRatio(soloLayoutPrefix+"orch", []bool{}, 0.3)
 	m.minimizePage("orch")
-	m.showPage(ctx, "orch")
+	m.showPage(ctx, "orch", splitRow)
 	m.mu.Lock()
 	got := m.pages["orch"].Ratio
 	m.mu.Unlock()
@@ -110,7 +110,7 @@ func TestMinimizeKeepsTheDividerAndAClosedBrowserForgetsIt(t *testing.T) {
 	m.minimizePage("orch")
 	send(m, api.BrowserStateEvent.Name, api.BrowserState{Owner: "orch", Open: false})
 	send(m, api.BrowserStateEvent.Name, api.BrowserState{Owner: "orch", Open: true})
-	m.showPage(ctx, "orch")
+	m.showPage(ctx, "orch", splitRow)
 	m.mu.Lock()
 	got = m.pages["orch"].Ratio
 	m.mu.Unlock()
@@ -122,7 +122,7 @@ func TestMinimizeKeepsTheDividerAndAClosedBrowserForgetsIt(t *testing.T) {
 func TestUnsplitOfASessionAloneMinimizesItsPage(t *testing.T) {
 	m, _ := newLayoutsModel(t)
 	ctx := context.Background()
-	m.showPage(ctx, "orch")
+	m.showPage(ctx, "orch", splitRow)
 	m.unsplit(ctx, "orch")
 	if m.pageShown("orch") {
 		t.Fatal("the page stayed beside a session taken out of its only split")
@@ -132,7 +132,7 @@ func TestUnsplitOfASessionAloneMinimizesItsPage(t *testing.T) {
 func TestClosedBrowserTakesItsPageOffScreen(t *testing.T) {
 	m, _ := newLayoutsModel(t)
 	send(m, api.BrowserStateEvent.Name, api.BrowserState{Owner: "orch", Open: true})
-	m.showPage(context.Background(), "orch")
+	m.showPage(context.Background(), "orch", splitRow)
 	send(m, api.BrowserStateEvent.Name, api.BrowserState{Owner: "orch", Open: false})
 	if m.pageShown("orch") {
 		t.Fatal("kept the page of a closed browser")
@@ -148,7 +148,7 @@ func TestClosedBrowserTakesItsPageOffScreen(t *testing.T) {
 func TestBrowserMovedToAWindowTakesItsPageOffScreen(t *testing.T) {
 	m, _ := newLayoutsModel(t)
 	send(m, api.BrowserStateEvent.Name, api.BrowserState{Owner: "orch", Open: true})
-	m.showPage(context.Background(), "orch")
+	m.showPage(context.Background(), "orch", splitRow)
 	send(m, api.BrowserStateEvent.Name, api.BrowserState{Owner: "orch", Open: true, Headed: true})
 	if m.pageShown("orch") {
 		t.Fatal("kept the page of a browser in its own window")
@@ -158,10 +158,10 @@ func TestBrowserMovedToAWindowTakesItsPageOffScreen(t *testing.T) {
 func TestThePagesDividerAndRotationAreItsOwn(t *testing.T) {
 	m, _ := newLayoutsModel(t)
 	ctx := context.Background()
-	m.showPage(ctx, "orch")
+	m.showPage(ctx, "orch", splitRow)
 	m.setRatio(soloLayoutPrefix+"orch", nil, 0.3)
 	m.splitBeside(ctx, "orch", "wa", edgeRight, false)
-	m.showPage(ctx, "wa")
+	m.showPage(ctx, "wa", splitRow)
 	layoutID, _, _ := layoutScreen(t, m)
 	m.setRatio(layoutID, []bool{true}, 0.7)
 	if !m.rotateFocused() {
@@ -183,7 +183,7 @@ func TestThePagesDividerAndRotationAreItsOwn(t *testing.T) {
 func TestPickingTheSessionAgainGivesTheKeysBackToItsTerminal(t *testing.T) {
 	m, _ := newLayoutsModel(t)
 	ctx := context.Background()
-	m.showPage(ctx, "orch")
+	m.showPage(ctx, "orch", splitRow)
 	m.setActive(ctx, "notes")
 	m.setActive(ctx, "orch")
 	if _, focus := pageScreen(t, m); focus != "orch" {
@@ -197,7 +197,7 @@ func TestPickingTheSessionAgainGivesTheKeysBackToItsTerminal(t *testing.T) {
 
 func TestZoomOfASessionAloneCoversItsPageOrItsTerminal(t *testing.T) {
 	m, _ := newLayoutsModel(t)
-	m.showPage(context.Background(), "orch")
+	m.showPage(context.Background(), "orch", splitRow)
 	m.toggleZoom()
 	if lt, _ := m.shownLayoutTab(); !lt.Zoomed || lt.Focus != "browser:orch" {
 		t.Fatalf("shown %+v, want the page zoomed over its terminal", lt)
@@ -229,8 +229,8 @@ func TestPagesRoundTripAndRefuseABrokenAxis(t *testing.T) {
 func TestPrunePagesDropsOnlyWhatIsRefused(t *testing.T) {
 	m, _ := newLayoutsModel(t)
 	ctx := context.Background()
-	m.showPage(ctx, "orch")
-	m.showPage(ctx, "wa")
+	m.showPage(ctx, "orch", splitRow)
+	m.showPage(ctx, "wa", splitRow)
 	m.mu.Lock()
 	m.prunePagesLocked(func(session string) bool { return session == "wa" })
 	m.mu.Unlock()

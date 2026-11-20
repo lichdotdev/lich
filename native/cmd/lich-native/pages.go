@@ -155,10 +155,11 @@ func (m *model) pageShown(session string) bool {
 	return m.pages[session] != nil
 }
 
-// showPage puts session's page beside its terminal, at its right the first
-// time, and brings it on screen in focus. It reports false for a session no
-// open project holds.
-func (m *model) showPage(ctx context.Context, session string) bool {
+// showPage puts session's page against its terminal on axis, at its right
+// for splitRow and under it for splitColumn, with the divider a minimized
+// page had, and brings it on screen in focus. It reports false for a session
+// no open project holds.
+func (m *model) showPage(ctx context.Context, session string, axis splitAxis) bool {
 	m.mu.Lock()
 	if !m.liveLocked(session) {
 		m.mu.Unlock()
@@ -167,8 +168,9 @@ func (m *model) showPage(ctx context.Context, session string) bool {
 	if m.pages[session] == nil {
 		view := m.minimized[session]
 		if view == nil {
-			view = &pageView{Axis: splitRow, Ratio: 0.5}
+			view = &pageView{Ratio: 0.5}
 		}
+		view.Axis = axis
 		delete(m.minimized, session)
 		m.pages[session] = view
 		m.savePagesLocked()
@@ -176,6 +178,17 @@ func (m *model) showPage(ctx context.Context, session string) bool {
 	m.mu.Unlock()
 	m.focusPane(ctx, browserPaneOf(session))
 	return true
+}
+
+// pageAxis is the axis session's page comes back on: the one it was
+// minimized on, else at its terminal's right.
+func (m *model) pageAxis(session string) splitAxis {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if v := m.minimized[session]; v != nil {
+		return v.Axis
+	}
+	return splitRow
 }
 
 // minimizePage takes session's page off the screen and leaves its browser

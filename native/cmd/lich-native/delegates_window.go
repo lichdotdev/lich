@@ -47,13 +47,18 @@ func delegatesText(o delegateOffer) string {
 }
 
 // layDelegatesOut lays out as many of orchestrator's missing delegates as
-// fit at delegateSlot, refused with a toast when none does and asked about
-// first when any sits in another layout.
+// fit at delegateSlot, in the pane there as drawn or, when it holds none,
+// once the layout's dividers give way; refused with a toast when not even
+// one fits, and asked about first when any sits in another layout.
 func (u *window) layDelegatesOut(orchestrator string) {
 	o := u.model.delegateOffer(orchestrator)
 	target, below := u.model.delegateSlot(orchestrator, o.all)
-	room, under := u.layoutStage.pointer.delegateRoom(target, below)
+	d := &u.layoutStage.pointer
+	room, under := d.delegateRoom(target, below)
 	ids := o.missing[:min(len(o.missing), room)]
+	if len(ids) == 0 {
+		ids, under = d.delegatesFitting(u.shownTree(target), target, below, o.missing)
+	}
 	if len(ids) == 0 {
 		u.toaster.Show(ui.Toast{Title: i18n.T("layouts.split.noRoom")})
 		return

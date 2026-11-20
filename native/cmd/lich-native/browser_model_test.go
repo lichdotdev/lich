@@ -240,7 +240,7 @@ func TestALayoutOfHomeSessionsComesOnScreen(t *testing.T) {
 	m.projects = append(m.projects, backend.Project{ID: "home", Name: "~", Path: "/home/u", Sessions: []backend.Session{{ID: "h1", Label: "home one"}, {ID: "h2", Label: "home two"}}})
 	m.homeID = "home"
 	ctx := context.Background()
-	if !m.showPage(ctx, "h1") {
+	if !m.showPage(ctx, "h1", splitRow) {
 		t.Fatal("refused a Home session")
 	}
 	if lt, ok := m.shownLayoutTab(); !ok || paneShape(lt.Root) != "row(h1,browser:h1)" {

@@ -45,6 +45,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **A browser, delegates or a pane shown beside a session open wherever the layout has room, not only at its right.** When the pane is too narrow to halve, the new one goes under it, or the other panes give way; the "No room for another pane" message is left for a layout that cannot fit one more.
 - **A session shown as a chat now gets the tasks and messages other sessions send it.** Sending to one used to fail with "no live session"; the message now arrives as its next one, after the turn it is in.
 - **Everything you can click shows the hand.** Buttons, tabs, rows, menu items, checkboxes, switches and links now change the pointer on hover; a disabled control keeps the arrow.
 - **Only the terminal that takes your keys draws a full cursor.** In a split the other panes, and every terminal while the window is out of focus, show the cursor as an outline.

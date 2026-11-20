@@ -115,7 +115,7 @@ func TestBrowserMenuOffersWhatTheBrowsersPlaceAllows(t *testing.T) {
 func TestASessionsViewSaysWhereItsBrowserIs(t *testing.T) {
 	m, _ := newLayoutsModel(t)
 	send(m, api.BrowserStateEvent.Name, api.BrowserState{Owner: "orch", Open: true, URL: "http://localhost:3000/", Title: "App"})
-	m.showPage(t.Context(), "orch")
+	m.showPage(t.Context(), "orch", splitRow)
 	m.mu.Lock()
 	sv := m.viewOf(m.projects[0], m.projects[0].Sessions[0], time.Now())
 	m.mu.Unlock()

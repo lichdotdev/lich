@@ -33,9 +33,9 @@ func (u *window) applyBrowser(act sidebarAction) {
 }
 
 // openBrowser puts session's browser on screen: its page beside its
-// terminal, refused with a toast when the pane on screen has no room for
-// both, or, for a browser moved to its own window, by bringing that window
-// forward.
+// terminal, at its right or under it, wherever the layout on screen has room
+// (besideEdge), refused with a toast only when it has none, or, for a
+// browser moved to its own window, by bringing that window forward.
 func (u *window) openBrowser(session string) {
 	if st, ok := u.model.browserState(session); ok && st.Open && st.Headed {
 		go func() {
@@ -45,11 +45,16 @@ func (u *window) openBrowser(session string) {
 		}()
 		return
 	}
-	if d := &u.layoutStage.pointer; !u.model.pageShown(session) && d.drawn(session) && !d.fits(session, edgeRight) {
-		u.toaster.Show(ui.Toast{Title: i18n.T("layouts.split.noRoom")})
-		return
+	axis := u.model.pageAxis(session)
+	if d := &u.layoutStage.pointer; !u.model.pageShown(session) && d.drawn(session) {
+		edge, ok := d.besideEdge(u.shownTree(session), session, edgeOfAxis(axis))
+		if !ok {
+			u.toaster.Show(ui.Toast{Title: i18n.T("layouts.split.noRoom")})
+			return
+		}
+		axis = axisOfEdge(edge)
 	}
-	u.model.showPage(u.ctx, session)
+	u.model.showPage(u.ctx, session, axis)
 	u.model.invalidate()
 }
 

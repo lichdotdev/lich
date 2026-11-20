@@ -49,10 +49,12 @@ func (u *window) besidePicked(r besideRequest, id string) {
 	if id == r.target {
 		return
 	}
-	if !u.fitsBeside(r.target, r.edge) {
+	edge, ok := u.layoutStage.pointer.besideEdge(u.shownTree(r.target), r.target, r.edge)
+	if !ok {
 		u.toaster.Show(ui.Toast{Title: i18n.T("layouts.split.noRoom")})
 		return
 	}
+	r.edge = edge
 	from := u.model.layoutOf(id)
 	if from != "" && from != u.model.layoutOf(r.target) {
 		u.askMove(r, id, from)
@@ -65,10 +67,30 @@ func (u *window) besidePicked(r besideRequest, id string) {
 	u.model.invalidate()
 }
 
-// fitsBeside reports whether target's pane, as last drawn, has room to split
-// against edge.
-func (u *window) fitsBeside(target string, edge paneEdge) bool {
-	return u.layoutStage.pointer.fits(target, edge)
+// shownTree is the layout on screen with its pages, or target alone when
+// none is: what a pane added beside target has to fit in.
+func (u *window) shownTree(target string) layoutTab {
+	if t, ok := u.model.shownLayoutTab(); ok {
+		return t
+	}
+	return layoutTab{Root: &paneNode{Session: target}}
+}
+
+// edgeOfAxis is the edge a page on axis stands against its terminal at.
+func edgeOfAxis(axis splitAxis) paneEdge {
+	if axis == splitColumn {
+		return edgeBottom
+	}
+	return edgeRight
+}
+
+// axisOfEdge is the axis of a page against its terminal's edge, right or
+// bottom.
+func axisOfEdge(edge paneEdge) splitAxis {
+	if edge == edgeBottom {
+		return splitColumn
+	}
+	return splitRow
 }
 
 // moveConfirm is the question before a split takes a session out of the

@@ -102,6 +102,8 @@ type dragPointer struct {
 	// paneW, paneH and gap are the smallest pane and the gap between two, in
 	// window pixels.
 	paneW, paneH, gap int
+	// stage is the room the panes or the session alone were last drawn in.
+	stage image.Point
 	// hover is the drop zone under the pointer, "" for none.
 	hover string
 	// released is the pointer let go this frame.
@@ -234,6 +236,65 @@ func (d *dragPointer) fits(target string, edge paneEdge) bool {
 		return r.Dy() >= 2*d.paneH+d.gap
 	}
 	return true
+}
+
+// roomFor reports whether t, once grow has changed a copy of it, still
+// gives every pane its smallest size on the stage as last drawn: its
+// dividers then give way to fit (ui.SplitPane.Rects). A grow that finds no
+// place for its panes is no room.
+func (d *dragPointer) roomFor(t layoutTab, grow func(*layoutTab) bool) bool {
+	c := t
+	c.Root = cloneNode(t.Root)
+	if !grow(&c) {
+		return false
+	}
+	w, h := minSize(c.Root, d.paneW, d.paneH, d.gap)
+	return w <= d.stage.X && h <= d.stage.Y
+}
+
+// besideEdge is the edge of target a new pane goes against: edge while
+// target's pane holds both as drawn, else across it, else either once the
+// layout's dividers give way. ok is false when not even that fits.
+func (d *dragPointer) besideEdge(t layoutTab, target string, edge paneEdge) (paneEdge, bool) {
+	tries := []paneEdge{edge, acrossOf(edge)}
+	for _, e := range tries {
+		if d.fits(target, e) {
+			return e, true
+		}
+	}
+	for _, e := range tries {
+		if d.roomFor(t, func(c *layoutTab) bool { return c.split(target, besideProbe, e) }) {
+			return e, true
+		}
+	}
+	return edge, false
+}
+
+// delegatesFitting is the most of ids that fit at target once the layout's
+// dividers give way, in a column at its right unless below, else stacked
+// under it, and whether they go under.
+func (d *dragPointer) delegatesFitting(t layoutTab, target string, below bool, ids []string) ([]string, bool) {
+	for n := len(ids); n > 0; n-- {
+		if !below && d.roomFor(t, func(c *layoutTab) bool { return c.columnBeside(target, ids[:n]) }) {
+			return ids[:n], false
+		}
+		if d.roomFor(t, func(c *layoutTab) bool { return c.stackUnder(target, ids[:n]) }) {
+			return ids[:n], true
+		}
+	}
+	return nil, below
+}
+
+// besideProbe stands for the pane besideEdge measures, a name no session has.
+const besideProbe = "\x00beside"
+
+// acrossOf is the edge a pane that does not fit against edge tries next:
+// under for one at the side, at the right for one above or under.
+func acrossOf(edge paneEdge) paneEdge {
+	if edge == edgeLeft || edge == edgeRight {
+		return edgeBottom
+	}
+	return edgeRight
 }
 
 // columnRoom is how many panes a column fits in target's pane as last
