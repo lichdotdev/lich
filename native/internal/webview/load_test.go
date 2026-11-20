@@ -56,3 +56,17 @@ func TestAFailedLoadStopsLoading(t *testing.T) {
 		t.Fatalf("a failed load told the window %+v, want %+v", got, want)
 	}
 }
+
+func TestTheBlankPageAPageOpensOnIsNeverAPlaceThePersonWent(t *testing.T) {
+	l := &loads{}
+	// The page opens on about:blank and the backend's new-tab page is asked
+	// for before WebKit starts that first load.
+	l.ask("about:blank")
+	l.ask("http://127.0.0.1:27000/new-tab/s")
+	got := told(l, step{loadStarted, "about:blank"}, step{loadCommitted, "about:blank"}, step{loadFinished, "about:blank"})
+	for _, load := range got {
+		if load.URL != "" {
+			t.Fatalf("the blank page told the window %+v: the backend would follow it there", got)
+		}
+	}
+}

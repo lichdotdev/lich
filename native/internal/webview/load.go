@@ -11,6 +11,9 @@ type Load struct {
 	URL     string
 }
 
+// blankPage is the page a page opens on.
+const blankPage = "about:blank"
+
 // The steps of a main-frame load, WebKitLoadEvent's values: a failed or
 // cancelled load ends with loadFinished too.
 const (
@@ -58,7 +61,10 @@ func (l *loads) step(kind int, uri string) (Load, bool) {
 		return Load{Loading: true}, true
 	case loadCommitted:
 		l.at = uri
-		if l.own {
+		// about:blank is where a page opens, never where a person goes: the
+		// window's ask for it is overwritten when the next one comes before
+		// WebKit starts it, and told as the person's, the backend followed.
+		if l.own || uri == blankPage {
 			return Load{}, false
 		}
 		return Load{Loading: true, URL: uri}, true
