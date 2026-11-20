@@ -30,9 +30,10 @@ const (
 	backdropSeed = 11918
 	// seedSpread is how far apart two seeds put their hashes (seed * 131).
 	seedSpread = 131
-	// emberX and emberY are where the ember glows, as shares of the area:
-	// read off the user's print, about 52% across and 64% down.
-	emberX, emberY = 0.52, 0.64
+	// emberX and emberY are where the ember glows, as shares of the area: the
+	// bottom-right corner, chosen in the centre-mix mockup (option B), so the
+	// bands cross the screen along its edges and leave its middle calm.
+	emberX, emberY = 0.92, 0.94
 	// backdropCoarse is the field's own step, in cells: it is smooth, so it
 	// is worked out every few cells and the cells between are interpolated.
 	backdropCoarse = 4
@@ -40,6 +41,20 @@ const (
 	// reaches.
 	backdropBand = 0.5
 )
+
+// The start screen's field is calm in the middle, where its text is:
+// centreFloor of it shows around the start screen's centre, rising to all of
+// it from centreIn to centreOut of the half-width and half-height away
+// (centre-mix mockup).
+const (
+	centreFloor = 0.2
+	centreIn    = 0.25
+	centreOut   = 0.9
+)
+
+// backdropHot is how far the field's brightest dots go from the theme's
+// primary toward white, so the ember keeps the theme's hue.
+const backdropHot = 0.4
 
 // backdropStep is how long a frame of the field holds: the bands move a
 // fraction of a cell in that time, so a faster step shows nothing more.
@@ -169,11 +184,11 @@ func (f *backdropField) at(x, y int) float64 {
 
 // backdropInks is a lit dot's color by its value in 64ths: the theme's
 // primary up to half, so each theme's field wears the color of its own
-// buttons, toward the foreground past it, at an opacity that grows with the
+// buttons, toward hot past it, at an opacity that grows with the
 // value, composited onto the ground in sRGB.
 type backdropInks [65]color.NRGBA
 
-func newBackdropInks(primary, fg, ground color.NRGBA) (l backdropInks) {
+func newBackdropInks(primary, hot, ground color.NRGBA) (l backdropInks) {
 	ch := func(m, f, g uint8, v float64) uint8 {
 		c := float64(m)
 		if v > 0.5 {
@@ -183,20 +198,20 @@ func newBackdropInks(primary, fg, ground color.NRGBA) (l backdropInks) {
 	}
 	for k := range l {
 		v := float64(k) / 64
-		l[k] = color.NRGBA{R: ch(primary.R, fg.R, ground.R, v), G: ch(primary.G, fg.G, ground.G, v), B: ch(primary.B, fg.B, ground.B, v), A: 255}
+		l[k] = color.NRGBA{R: ch(primary.R, hot.R, ground.R, v), G: ch(primary.G, hot.G, ground.G, v), B: ch(primary.B, hot.B, ground.B, v), A: 255}
 	}
 	return l
 }
 
 // paint draws rows rows of the field into img, a pixel a cell, lit cells in
 // their ink and the rest transparent. cover is 1 for a pane's band, faded
-// from its top to its middle, and 0 for the whole pane.
-func (f *backdropField) paint(img *image.RGBA, rows int, cover float64, inks *backdropInks) {
+// from its top to its middle, and 0 for the whole pane, calm around centre.
+func (f *backdropField) paint(img *image.RGBA, rows int, cover float64, centre image.Point, inks *backdropInks) {
 	for y := range rows {
 		keep := 1 - cover*(1-backdropFade((float64(y)+0.5)/float64(f.rows)))
 		row := img.Pix[y*img.Stride:]
 		for x := range f.cols {
-			v := f.at(x, y) * keep
+			v := f.at(x, y) * keep * (1 - (1-cover)*(1-f.calm(x, y, centre)))
 			p := row[4*x : 4*x+4 : 4*x+4]
 			if v > bayer8[y&7][x&7] {
 				c := inks[min(64, int(math.Round(v*64)))]
@@ -206,6 +221,14 @@ func (f *backdropField) paint(img *image.RGBA, rows int, cover float64, inks *ba
 			}
 		}
 	}
+}
+
+// calm is how much of the field shows at cell x, y on the start screen,
+// around centre.
+func (f *backdropField) calm(x, y int, centre image.Point) float64 {
+	d := math.Hypot(float64(x-centre.X)/(float64(f.cols)/2), float64(y-centre.Y)/(float64(f.rows)/2))
+	k := min(1, max(0, (d-centreIn)/(centreOut-centreIn)))
+	return centreFloor + (1-centreFloor)*k*k*(3-2*k)
 }
 
 func ceilDiv(a, b int) int { return (a + b - 1) / b }
@@ -220,7 +243,7 @@ type backdropEntry struct {
 	op          paint.ImageOp
 	inks        backdropInks
 	marks       markInks
-	tints       [2]color.NRGBA
+	primary     color.NRGBA
 	// tick, cover and mark are what op was painted for.
 	tick  int64
 	cover float32
@@ -270,8 +293,8 @@ func (u *window) backdropMark(gtx C, id string, top int) backdropMark {
 	}
 	s := u.chats.pane(id).start
 	cell := max(1, gtx.Dp(backdropCell))
-	at := s.mark.Add(image.Pt(0, top))
-	return backdropMark{at: image.Pt((at.X+cell/2)/cell, (at.Y+cell/2)/cell), fade: s.markFade}
+	at, centre := s.mark.Add(image.Pt(0, top)), s.centre.Add(image.Pt(0, top))
+	return backdropMark{at: image.Pt((at.X+cell/2)/cell, (at.Y+cell/2)/cell), centre: centre.Div(cell), fade: s.markFade}
 }
 
 // backdropCover is 0 while session id is a chat with nothing in it, 1 once
@@ -308,8 +331,9 @@ func (b *backdrops) layout(gtx C, th *ui.Theme, id string, size image.Point, gro
 	if e.cells.X == 0 || e.cells.Y == 0 {
 		return
 	}
-	if tints := [2]color.NRGBA{ui.Over(ground, th.Primary), ui.Over(ground, th.Foreground)}; tints != e.tints {
-		e.tints, e.inks, e.marks = tints, newBackdropInks(tints[0], tints[1], ground), newMarkInks(th, ground)
+	if primary := ui.Over(ground, th.Primary); primary != e.primary || e.tick < 0 {
+		hot := mixSRGB(primary, color.NRGBA{R: 255, G: 255, B: 255, A: 255}, backdropHot)
+		e.primary, e.inks, e.marks = primary, newBackdropInks(primary, hot, ground), newMarkInks(primary, hot, ground)
 		e.tick = -1
 	}
 	rows := e.cells.Y
@@ -318,7 +342,7 @@ func (b *backdrops) layout(gtx C, th *ui.Theme, id string, size image.Point, gro
 	}
 	if tick != e.tick || cover != e.cover || mark != e.mark {
 		e.field.step(float64(time.Duration(tick)*backdropStep)/float64(time.Millisecond), rows)
-		e.field.paint(e.img, rows, float64(cover), &e.inks)
+		e.field.paint(e.img, rows, float64(cover), mark.centre, &e.inks)
 		if mark.fade > 0 {
 			e.field.paintMark(e.img, rows, mark, &e.marks)
 		}

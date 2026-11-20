@@ -50,8 +50,9 @@ var (
 	chatChangesPadY = ui.Space(1)
 )
 
-// chatCrumbGap is the space either side of the line's slash, in ui.Space units.
-const chatCrumbGap = 2
+// chatCrumbSpread is the room between the project and the checkout, which
+// sit apart with no separator (centre-mix mockup's 20px).
+const chatCrumbSpread = 5
 
 // optionSlots are the chips of the options session id's provider offers: the
 // model's, which also holds the effort, and the mode's. A category it does not
@@ -181,8 +182,7 @@ func (u *window) chatCrumbs(gtx C, th *ui.Theme, sv sessionView, in footerInput,
 	if ft.checkout != nil {
 		names, _ := u.model.projectNamesAndPaths()
 		if name := names[sv.projectID]; name != "" {
-			left = append(left, layout.Rigid(func(gtx C) D { return crumbText(gtx, th, icFolder, name) }),
-				ui.Gap(chatCrumbGap), layout.Rigid(th.Text(ui.TextXS, "/").In(th.Over(ui.Alpha(th.MutedForeground, separatorOpacity))).Layout), ui.Gap(chatCrumbGap))
+			left = append(left, layout.Rigid(func(gtx C) D { return crumbText(gtx, th, icFolder, name) }), ui.Gap(chatCrumbSpread))
 		}
 		ic := icFolder
 		if in.git.Branch != "" {

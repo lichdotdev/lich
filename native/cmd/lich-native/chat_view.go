@@ -50,6 +50,9 @@ var (
 	// top of the composer's box: the last message, and its time under it, never
 	// touch the box, whether the list rests on it or is pinned to its end.
 	chatComposerGap = ui.Space(6)
+	// chatComposerTint is how far the box's edge and fill go from the input
+	// color toward the theme's primary (centre-mix mockup).
+	chatComposerTint = 0.45
 	// chatComposerPadX and chatComposerPadY are the room the text and its
 	// placeholder keep from the box's left and top, a body line's worth, so a
 	// question has air around it.
@@ -479,7 +482,11 @@ func (u *window) chatComposer(gtx C, th *ui.Theme, p *chatPane, sv sessionView, 
 	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			ta := th.Textarea(&p.editor, i18n.T("chat.composer.placeholder", i18n.Args{"provider": name}))
+			// the box's edge and fill lean to the theme's primary, as the
+			// backdrop around it does
+			tinted := *th
+			tinted.Palette.Input = ui.MixOKLab(th.Palette.Input, th.Primary, chatComposerTint)
+			ta := tinted.Textarea(&p.editor, i18n.T("chat.composer.placeholder", i18n.Args{"provider": name}))
 			ta.MaxHeight, ta.MinHeight, ta.Radius, ta.Steady, ta.History = chatComposerMax, chatComposerMin, ui.RadiusLG, true, &p.undo
 			ta.Size, ta.Leading, ta.PadX, ta.PadY = markdown.BodySize, markdown.BodySize*markdown.LineHeightScale, chatComposerPadX, chatComposerPadY
 			ta.Foot = u.chatChips(th, p, sv, working, ft)
@@ -489,7 +496,17 @@ func (u *window) chatComposer(gtx C, th *ui.Theme, p *chatPane, sv sessionView, 
 			p.slash.layout(gtx, th, p.slashRoom-d.Size.Y-gtx.Dp(2*chatComposerGap))
 			return d
 		}),
-		layout.Rigid(func(gtx C) D { return u.chatCrumbs(gtx, th, sv, in, ft) }),
+		layout.Rigid(func(gtx C) D {
+			// on the start screen the line sits on the backdrop, and reads in
+			// the foreground
+			crumbs := th
+			if p.start.empty {
+				bright := *th
+				bright.Palette.MutedForeground = th.Foreground
+				crumbs = &bright
+			}
+			return u.chatCrumbs(gtx, crumbs, sv, in, ft)
+		}),
 	)
 }
 

@@ -159,8 +159,8 @@ func TestTheProjectLeadsTheBranchUnderTheComposer(t *testing.T) {
 	u, r, _ := chatFrames(t, api.ViewChat)
 	u.model.projects[0].Name = "lich"
 	r.settle(t)
-	if !r.shows("lich") || !r.shows("/") {
-		t.Fatalf("no project and slash before the branch:\n%s", r.drawn())
+	if !r.shows("lich") || r.shows("/") {
+		t.Fatalf("want the project before the branch, with no slash between:\n%s", r.drawn())
 	}
 	if project, branch := labelTop(t, r, "lich"), labelTop(t, r, "main"); project != branch {
 		t.Errorf("project's top at y=%d, branch's at y=%d: want them on one line", project, branch)

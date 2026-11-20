@@ -4,8 +4,6 @@ import (
 	"image"
 	"image/color"
 	"math"
-
-	"github.com/lichdotdev/lich/native/ui"
 )
 
 // chatStartLogo is lich's mark in pixel art as the start screen drew it before
@@ -83,20 +81,16 @@ var chatStartLogo = [...]string{
 	"................................................",
 }
 
-const (
-	// chatStartMid is how far the logo's middle tone goes from the muted
-	// foreground toward the foreground, and chatStartShade and chatStartDeep
-	// how far its two dark ones go toward the background.
-	chatStartMid   = 0.5
-	chatStartShade = 0.35
-	chatStartDeep  = 0.65
-)
+// markTones is how far each of the logo's tones, 1 the darkest to 5 the
+// lightest, goes from the ground toward the theme's primary: the mark wears
+// the theme's color, as the field does (centre-mix mockup).
+var markTones = map[byte]float64{'1': 0.3, '2': 0.45, '3': 0.62, '4': 0.8, '5': 1}
 
 // The mark takes the field's motion as the user approved it in the mockup
 // (logo-mix): a dot shows while markKeep + the field's value * markKeepGain
 // passes its Bayer threshold, about a third of them out where the bands thin
 // and all of them on a band, and the field's value past markFloor lifts it
-// toward the foreground by markLift, never past markLiftMost, so its darkest
+// toward the field's hot end by markLift, never past markLiftMost, so its darkest
 // tones still read.
 const (
 	markKeep     = 0.62
@@ -142,45 +136,27 @@ func lightestOf(g []string, x, y int) byte {
 // chatStartMarkSize is the mark's size in cells.
 var chatStartMarkSize = image.Pt(len(chatStartMark[0]), len(chatStartMark))
 
-// chatStartColor is the color of a logo symbol, from the theme's own tokens
-// so it follows a light theme and a dark one; false for nothing.
-func chatStartColor(th *ui.Theme, symbol byte) (color.NRGBA, bool) {
-	switch symbol {
-	case '5':
-		return th.Foreground, true
-	case '4':
-		return ui.MixOKLab(th.MutedForeground, th.Foreground, chatStartMid), true
-	case '3':
-		return th.MutedForeground, true
-	case '2':
-		return ui.MixOKLab(th.MutedForeground, th.Background, chatStartShade), true
-	case '1':
-		return ui.MixOKLab(th.MutedForeground, th.Background, chatStartDeep), true
-	}
-	return color.NRGBA{}, false
-}
-
-// markInks are the mark's tones on a ground, by symbol, and the foreground
-// the field lifts them toward.
+// markInks are the mark's tones on a ground, by symbol, and the hot end the
+// field lifts them toward.
 type markInks struct {
 	tone [256]color.NRGBA
 	fg   color.NRGBA
 }
 
-func newMarkInks(th *ui.Theme, ground color.NRGBA) (m markInks) {
-	for _, s := range []byte("12345") {
-		c, _ := chatStartColor(th, s)
-		m.tone[s] = ui.Over(ground, c)
+func newMarkInks(primary, hot, ground color.NRGBA) (m markInks) {
+	for s, w := range markTones {
+		m.tone[s] = mixSRGB(ground, primary, w)
 	}
-	m.fg = ui.Over(ground, th.Foreground)
+	m.fg = hot
 	return m
 }
 
 // backdropMark is where the start screen's mark lies in a pane's field, in
-// cells, and how far it has faded in: 1 shown, 0 gone.
+// cells, the start screen's centre the field is calm around, and how far the
+// mark has faded in: 1 shown, 0 gone.
 type backdropMark struct {
-	at   image.Point
-	fade float32
+	at, centre image.Point
+	fade       float32
 }
 
 // paintMark draws the mark into the field's first rows rows of img, a pixel a
