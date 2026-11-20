@@ -4,6 +4,7 @@ import (
 	"image"
 	"image/color"
 	"testing"
+	"time"
 
 	"gioui.org/f32"
 	"gioui.org/layout"
@@ -60,7 +61,7 @@ func TestTabsArePillsOnTheCanvas(t *testing.T) {
 	r.settle(t)
 	img := renderRig(t, r)
 	th := r.theme
-	top, pill := gtx1(tabTop), gtx1(tabHeight)-gtx1(gutter)
+	top, pill := gtx1(tabTop), gtx1(tabHeight)
 	p, a, b, d := laidOf(t, bar, "p"), laidOf(t, bar, "a"), laidOf(t, bar, "b"), laidOf(t, bar, "d")
 	if b.Min.Y != top || p.Max.X != a.Min.X {
 		t.Fatalf("tabs laid at %v, %v and %v: want them from y=%d, edge to edge", p, a, b, top)
@@ -86,6 +87,59 @@ func TestTabsArePillsOnTheCanvas(t *testing.T) {
 		if got := img.RGBAAt(c.x, c.y); !inkNear(got, c.want) {
 			t.Errorf("%s at (%d,%d): %v, want %v", c.name, c.x, c.y, got, c.want)
 		}
+	}
+}
+
+// A tab takes hover and clicks on its pill only, not the gutter under it.
+func TestATabTakesOnlyItsPill(t *testing.T) {
+	// The spec's pill: 32px tall, 6px under the band's top, a 6px gutter
+	// under it.
+	const pillTop, pillFoot = 6, 38
+	bar, r := tabsFrames(t)
+	r.settle(t)
+	c := laidOf(t, bar, "c")
+	if c.Min.Y != pillTop || c.Max.Y != pillFoot {
+		t.Errorf("tab c laid %v, want it from y=%d to %d", c, pillTop, pillFoot)
+	}
+	x, gap := c.Min.X+c.Dx()/2, pillFoot+3
+	r.hover(f32.Pt(float32(x), float32(gap)))
+	r.settle(t)
+	if bar.tabState("c").click.Hovered() {
+		t.Error("the gutter under the pill hovers the tab")
+	}
+	if b, ok := r.smallestClickAt(image.Pt(x, gap)); ok && b.Dx() <= c.Dx() {
+		t.Errorf("the gutter under the pill takes the tab's clicks, at %v", b)
+	}
+	r.hover(f32.Pt(float32(x), float32(pillFoot-2)))
+	r.settle(t)
+	if !bar.tabState("c").click.Hovered() {
+		t.Error("the pill's foot does not hover the tab")
+	}
+}
+
+// A toast is a cover: a native page under it is cut where the stack is
+// drawn, and whole again once it is gone.
+func TestAToastCutsTheNativePageUnderIt(t *testing.T) {
+	u := &window{sidebar: &sidebar{}, dock: &dock{}, toastFloor: 60}
+	r := newFrameRig(rigWindow, nil)
+	r.draw = func(gtx C, th *ui.Theme) {
+		u.theme = th
+		u.layoutToasts(gtx)
+	}
+	// The toaster dates a dismissal by the clock, so the rig runs on it.
+	r.now = time.Now()
+	id := u.toaster.Show(ui.Toast{Title: "Saved", Duration: ui.ToastForever})
+	r.settle(t)
+	page := image.Rect(rigWindow.X/2, 0, rigWindow.X, rigWindow.Y)
+	cuts := pageCuts(page, nil, u.floatingBoxes())
+	title := labelBox(t, r, "Saved").Min.Sub(page.Min)
+	if len(cuts) != 1 || !title.In(cuts[0]) {
+		t.Fatalf("the page's cuts are %v, want one around the toast's title at %v", cuts, title)
+	}
+	u.toaster.Dismiss(id)
+	r.settle(t)
+	if boxes := u.floatingBoxes(); len(boxes) != 0 {
+		t.Errorf("the page is still cut at %v once the toast is gone", boxes)
 	}
 }
 

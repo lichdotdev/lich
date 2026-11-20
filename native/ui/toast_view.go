@@ -174,7 +174,7 @@ func (s ToasterStyle) frame(gtx C) []func() {
 		gtx.Execute(op.InvalidateCmd{At: wake})
 	}
 	if len(t.stack.entries) == 0 {
-		t.hovered, t.pressed = false, false
+		t.hovered, t.pressed, t.box = false, false, image.Rectangle{}
 		return clicked
 	}
 	s.place(gtx)
@@ -185,8 +185,10 @@ func (s ToasterStyle) frame(gtx C) []func() {
 	}
 	off := op.Offset(at).Push(gtx.Ops)
 	entries := t.stack.entries
+	t.box = image.Rectangle{}
 	for _, e := range slices.Backward(entries) {
 		s.paint(gtx, e)
+		t.box = t.box.Union(boundsOf(e.view.place, e.view.boxSize).Add(at))
 	}
 	s.areas(gtx)
 	off.Pop()

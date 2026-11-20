@@ -19,7 +19,7 @@ import (
 var (
 	tabWidthMax  = ui.Space(49)   // 196px
 	tabWidthMin  = ui.Space(29.5) // 118px
-	tabHeight    = ui.Space(9.5)  // 38px, from 6px under the band's top
+	tabHeight    = ui.Space(8)    // 32px, the pill, from 6px under the band's top
 	tabTop       = ui.Space(1.5)
 	tabRadius    = ui.RadiusLG
 	tabPadLeft   = ui.Space(3.5)
@@ -108,16 +108,16 @@ func (t *topbar) strip(gtx C, th *ui.Theme, f topbarFrame, act *topbarAction) D 
 	t.list.Layout(content, 1, func(gtx C, _ int) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
-				return layout.Inset{Top: tabTop}.Layout(gtx, func(gtx C) D {
+				// The pills stand a gutter clear of the islands under them, as
+				// they are of each other; the gutter takes no hover nor click.
+				return layout.Inset{Top: tabTop, Bottom: gutter}.Layout(gtx, func(gtx C) D {
 					return t.sort.List(gtx, ui.SortList{Horizontal: true, Within: true}, ids, func(gtx C, i int) D {
 						return t.tab(gtx, th, f, i, w, dragEnded, act)
 					})
 				})
 			}),
 			ui.Gap(1),
-			// Centred on the band, which puts the "+" on the tabs' label line:
-			// it sits a gutter above the middle of a tab, as the tab sits
-			// tabTop below the band's top.
+			// Centred on the band, which puts the "+" on the tabs' label line.
 			layout.Rigid(func(gtx C) D { return t.openButton(gtx, th, act) }),
 		)
 	})
@@ -210,10 +210,7 @@ func (t *topbar) tabFace(gtx C, th *ui.Theme, f topbarFrame, i int, st *tabState
 	tab := f.tabs[i]
 	active := tab.ID == f.active
 	hovered := st.click.Hovered() || st.close.Hovered()
-	size := gtx.Constraints.Min
-	// The pill stands a gutter clear of the islands under it, as they are
-	// of each other.
-	pill := image.Pt(size.X, size.Y-gtx.Dp(gutter))
+	pill := gtx.Constraints.Min
 	bg := th.Surface
 	switch {
 	case active || t.sort.Dragging() == tab.ID:
@@ -237,7 +234,7 @@ func (t *topbar) tabFace(gtx C, th *ui.Theme, f topbarFrame, i int, st *tabState
 	layout.Inset{Left: tabPadLeft, Right: tabPadRight}.Layout(gtx, func(gtx C) D {
 		return layout.W.Layout(gtx, func(gtx C) D { return t.tabContent(gtx, on, tab, st, fg, weight, active || hovered, act) })
 	})
-	return D{Size: size}
+	return D{Size: pill}
 }
 
 // tabContent is the badge, the name and the × in a row.
