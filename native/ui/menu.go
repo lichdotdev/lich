@@ -497,6 +497,7 @@ func (m menuCore) drawPanel(gtx C, lv *menuLevel, anchor image.Rectangle, place 
 		call = macro.Stop()
 	}
 	box, side := place.box(gtx, anchor, size, window)
+	m.root.popups = append(m.root.popups, box)
 	pos := box.Min
 	for i := range lv.rows {
 		lv.rows[i] = lv.rows[i].Add(pos)

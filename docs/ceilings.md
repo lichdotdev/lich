@@ -1876,8 +1876,9 @@ work when nobody knows it and that the call site never shows. The mechanism and 
 - **Select on a page the window draws itself shows the window's drawing through cuts in the page**
   (`native/internal/webview`, `docs/browser-tab.md`): on X11 the WebKitGTK page is a child window over the pane,
   and the window's drawing over it shows only where that window is cut away (X SHAPE). The outlines are drawn into
-  the page instead, in a layer of their own appended to its document, which the page's own scripts can see; a menu,
-  a popover (the page zoom's) or a tooltip that falls over the page has no cut and stays under it. A cut shows the
+  the page instead, in a layer of their own appended to its document, which the page's own scripts can see. Menus,
+  dropdown panels and tooltips cut the page where they land (`ui.Root.Popups`); a popup drawn outside those three
+  has no cut and stays under it. A cut shows the
   window's drawing only while the window is not fullscreen: fullscreen, XWayland hands the window's frame to the
   compositor whole and the cuts stay dark (measured on Umbriel with the NVIDIA GPU, 2026-11-19). The sketch's
   strokes and the eraser are drawn in that layer too, and while strokes stand on the page the layer keeps the wheel

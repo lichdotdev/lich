@@ -26,10 +26,19 @@ type Root struct {
 	// overlay is the area a deferred overlay (a dialog) lays over the window
 	// to report the pointer from where the Root's own area cannot see it.
 	overlay struct{ _ byte }
+	// popups are where this frame's menus, dropdown panels and tooltips
+	// landed, in window coordinates.
+	popups []image.Rectangle
 }
+
+// Popups are where this frame's menus, dropdown panels and tooltips landed,
+// in window coordinates: what a native window over the window's content has
+// to leave uncovered for them to show.
+func (r *Root) Popups() []image.Rectangle { return r.popups }
 
 func (r *Root) Layout(gtx C, w layout.Widget) D {
 	r.window = gtx.Constraints.Max
+	r.popups = r.popups[:0]
 	const kinds = pointer.Drag | pointer.Press | pointer.Release | pointer.Enter | pointer.Leave
 	for {
 		ev, ok := gtx.Event(pointer.Filter{Target: r, Kinds: kinds}, pointer.Filter{Target: &r.overlay, Kinds: kinds})

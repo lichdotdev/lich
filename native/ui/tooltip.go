@@ -167,6 +167,7 @@ func (t TooltipStyle) drawBubble(gtx C, triggerSize image.Point, progress float3
 	window := image.Rectangle{Max: t.Root.window}.Sub(t.State.origin)
 	place := popupPlace{side: t.Side, sideOffset: tooltipSideOffset}
 	box, side := place.box(gtx, image.Rectangle{Max: triggerSize}, size, window)
+	t.Root.popups = append(t.Root.popups, box.Add(t.State.origin))
 	pl := m.anchor(side, box, triggerSize)
 	bg, border := t.colors()
 

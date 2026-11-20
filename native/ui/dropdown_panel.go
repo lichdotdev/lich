@@ -142,6 +142,7 @@ func (p DropdownPanelStyle) overlay(gtx C) {
 	}
 	box, side := place.box(gtx, anchor, size, window)
 	s.box = box
+	p.Root.popups = append(p.Root.popups, box)
 	area := clip.Rect(box).Push(gtx.Ops)
 	event.Op(gtx.Ops, &s.panel)
 	area.Pop()
