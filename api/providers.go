@@ -6,6 +6,9 @@ var (
 	ProvidersRefreshPath = define[None, None]("providers.RefreshPath")
 	ProvidersVerify      = define[BinaryOptions, BinaryCheck]("providers.Verify")
 	ProvidersVersion     = define[BinaryOptions, string]("providers.Version")
+	// ProvidersInstall starts installing a provider's CLI and returns once it
+	// runs; ProviderInstallEvent carries the rest.
+	ProvidersInstall = define[ProviderIDOptions, None]("providers.Install")
 )
 
 // The Status of a BinaryCheck that passed, and of one with nothing to check;

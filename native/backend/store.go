@@ -55,3 +55,10 @@ func (c *Client) AddSessionInFolder(ctx context.Context, projectID, sessionID, l
 func (c *Client) DetectProviders(ctx context.Context) ([]DetectedProvider, error) {
 	return callMethod(ctx, c, api.ProvidersDetect, api.None{})
 }
+
+// InstallProvider starts installing a provider's CLI; its progress arrives as
+// ProviderInstallEvent events.
+func (c *Client) InstallProvider(ctx context.Context, id string) error {
+	_, err := callMethod(ctx, c, api.ProvidersInstall, api.ProviderIDOptions{ID: id})
+	return err
+}

@@ -189,6 +189,7 @@ project.WorktreeAdopted(PathOptions) bool
 project.WorktreeDirty(PathOptions) bool
 project.WriteFile(WriteFileOptions) None
 providers.Detect(None) []DetectedProvider
+providers.Install(ProviderIDOptions) None
 providers.OnPath(ProviderIDOptions) []ProviderBinary
 providers.RefreshPath(None) None
 providers.Verify(BinaryOptions) BinaryCheck
@@ -336,6 +337,7 @@ event project-added ProjectAdded
 event project-closed ProjectClosed
 event project-opened Project
 event projects-reordered ProjectsReordered
+event provider-install ProviderInstall
 event pull-request-changed PRChanged
 event service-reveal ServiceIDOptions
 event services []Service
@@ -2184,6 +2186,13 @@ ProjectClosed {
 
 ProjectsReordered {
 	ids []string
+}
+
+ProviderInstall {
+	id string
+	progress float64
+	done,omitempty bool
+	error,omitempty string
 }
 
 PRChanged {
