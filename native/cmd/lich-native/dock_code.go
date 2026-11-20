@@ -8,6 +8,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"path"
 	"strconv"
 	"time"
 
@@ -233,6 +234,15 @@ func (c *codeTab) open(rel string, line int) {
 func (c *codeTab) showing(checkout, rel string) {
 	c.follow(checkout)
 	c.selected = rel
+}
+
+// unfold opens folder rel of checkout and every folder over it, for a folder
+// a path in an answer names.
+func (c *codeTab) unfold(checkout, rel string) {
+	c.follow(checkout)
+	for d := rel; d != "." && d != "/"; d = path.Dir(d) {
+		c.toggled[d] = true
+	}
 }
 
 // requestSearch is FilesPanel's file-search request: the text search, with

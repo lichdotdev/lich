@@ -60,7 +60,7 @@ const markdownUnbounded = 1 << 20
 // layout is mdProse's table: w-max up to the column's width, px-2 py-1
 // cells, a 1px border around each. A table wider than the column shares the
 // room out by each column's natural width, and its cells wrap.
-func (t *markdownTable) layout(gtx C, th *ui.Theme, open func(url string)) D {
+func (t *markdownTable) layout(gtx C, th *ui.Theme, l Links) D {
 	padX, padY, line := gtx.Dp(ui.Space(2)), gtx.Dp(ui.Space(1)), gtx.Dp(1)
 	columns := len(t.rows[0])
 	t.measure(gtx, th, padX)
@@ -78,7 +78,7 @@ func (t *markdownTable) layout(gtx C, th *ui.Theme, open func(url string)) D {
 			macro := op.Record(gtx.Ops)
 			g := gtx
 			g.Constraints = layout.Constraints{Max: image.Pt(max(widths[c]-2*padX, 0), markdownUnbounded)}
-			height = max(height, cell.layout(g, th, open).Size.Y)
+			height = max(height, cell.layout(g, th, l).Size.Y)
 			calls[c] = macro.Stop()
 		}
 		x := line

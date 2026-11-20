@@ -24,13 +24,13 @@ var codePanelPad = ui.Space(2)
 
 // layoutPanel draws the cell as a code block: across the body, on a fill of
 // its own.
-func (c *markdownCell) layoutPanel(gtx C, th *ui.Theme, open func(string)) D {
+func (c *markdownCell) layoutPanel(gtx C, th *ui.Theme, l Links) D {
 	pad, width := gtx.Dp(codePanelPad), gtx.Constraints.Max.X
 	macro := op.Record(gtx.Ops)
 	inner := gtx
 	inner.Constraints.Max.X = max(width-2*pad, 0)
 	stack := op.Offset(image.Pt(pad, pad)).Push(gtx.Ops)
-	d := c.layout(inner, th, open)
+	d := c.layout(inner, th, l)
 	stack.Pop()
 	text := macro.Stop()
 	size := image.Pt(width, d.Size.Y+2*pad)

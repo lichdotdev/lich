@@ -209,11 +209,16 @@ func (w *spanWriter) codeSpan(entering bool) {
 	}
 	if w.codeStart < len(w.spans) {
 		prefix := "\u00a0"
-		if icon := pathIcon(w.spans[w.codeStart:]); icon != nil {
+		var code strings.Builder
+		for _, s := range w.spans[w.codeStart:] {
+			code.WriteString(s.Content)
+		}
+		if icon := pathIcon(code.String()); icon != nil {
 			// A path wears the mark of a file or a folder in the room of two
 			// of the mono face's cells.
 			prefix = codeIconRoom
-			w.decor[w.codeStart].icon, w.decor[w.codeStart].tone = icon, iconMuted
+			d := &w.decor[w.codeStart]
+			d.icon, d.tone, d.path = icon, iconMuted, code.String()
 		}
 		w.spans[w.codeStart].Content = prefix + w.spans[w.codeStart].Content
 		last := len(w.spans) - 1

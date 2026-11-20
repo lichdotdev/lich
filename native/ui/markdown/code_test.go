@@ -116,8 +116,8 @@ func TestACodeBlockUsesTheCodeLineHeight(t *testing.T) {
 	th := markdownTheme()
 	blocks := renderBlocks(th, "one\\\ntwo\\\nthree\n\n```\none\ntwo\nthree\n```")
 	gtx, _ := markdownFrame(400)
-	prose := blocks[0].layout(gtx, th, nil).Size.Y
-	code := blocks[1].layout(gtx, th, nil).Size.Y - 2*gtx.Dp(codePanelPad)
+	prose := blocks[0].layout(gtx, th, Links{}).Size.Y
+	code := blocks[1].layout(gtx, th, Links{}).Size.Y - 2*gtx.Dp(codePanelPad)
 	if code >= prose {
 		t.Errorf("three lines of code are %dpx tall and three of prose %dpx, want code set tighter than prose", code, prose)
 	}

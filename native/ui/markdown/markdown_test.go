@@ -190,7 +190,7 @@ func TestABlockquoteIsMutedBehindABar(t *testing.T) {
 	gtx, _ := markdownFrame(400)
 	plain := blocks[1]
 	plain.quote = false
-	if quoted, bare := blocks[1].layout(gtx, th, nil), plain.layout(gtx, th, nil); quoted.Size.X-bare.Size.X != gtx.Dp(quoteBar+quoteInset) {
+	if quoted, bare := blocks[1].layout(gtx, th, Links{}), plain.layout(gtx, th, Links{}); quoted.Size.X-bare.Size.X != gtx.Dp(quoteBar+quoteInset) {
 		t.Errorf("a quote is %d wide and its text %d, want the bar and inset between them", quoted.Size.X, bare.Size.X)
 	}
 }
@@ -204,7 +204,7 @@ func TestAFencedCodeBlockSitsInAPanel(t *testing.T) {
 	gtx, _ := markdownFrame(400)
 	plain := blocks[1]
 	plain.panel = false
-	panel, bare := blocks[1].layout(gtx, th, nil), plain.layout(gtx, th, nil)
+	panel, bare := blocks[1].layout(gtx, th, Links{}), plain.layout(gtx, th, Links{})
 	if panel.Size.X != gtx.Constraints.Max.X {
 		t.Errorf("a code panel is %d wide, want the body's %d", panel.Size.X, gtx.Constraints.Max.X)
 	}
