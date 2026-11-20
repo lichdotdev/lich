@@ -199,7 +199,7 @@ type window struct {
 	notifier    *notifier
 	optIn       notifyOptIn
 	gitMissing  gitMissing
-	setup       providerSetup
+	welcome     welcome
 	tour        windowTour
 	plugin      pluginGate
 	appUpdate   appUpdateGate
@@ -385,6 +385,7 @@ func run(w *app.Window, rt backend.Runtime) error {
 	u.settings.providers.omp.bind(u.model.ompProfiles, u.openLoginTerminal)
 	u.settings.providers.bindXDG(u.model.xdgProfiles, u.openLoginTerminal)
 	u.model.loginProgress = u.settings.loginProgress
+	u.bindWelcome()
 	u.settings.providers.book = u.model.providers
 	u.model.projectClosed = u.projectClosed
 	u.model.pluginProfiles = u.pluginProfilesFailed
@@ -616,6 +617,9 @@ func (u *window) connect() error {
 	}
 	u.shortcuts.open = *flagShortcuts
 	u.servicesShot()
+	if err := u.welcomeShot(*flagWelcomeShot); err != nil {
+		return err
+	}
 	u.paletteShot()
 	u.worktreeShot()
 	u.pullsShot()
@@ -704,7 +708,7 @@ func (u *window) layout(gtx C) error {
 		u.settings.theme.layoutDialogs(gtx, u.theme)
 		u.settings.layoutExtensionDialogs(gtx, u.theme)
 		u.settings.layoutFontReplication(gtx, u.theme)
-		u.layoutProviderSetup(gtx, u.theme)
+		u.layoutWelcome(gtx, u.theme)
 		u.layoutPluginGate(gtx, u.theme)
 		u.settings.layoutSandboxDialog(gtx, u.theme)
 		u.settings.layoutProviderDialog(gtx, u.theme)

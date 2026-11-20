@@ -176,6 +176,12 @@ type Service struct {
 	configuredBin func(id string) string
 	// runVersion runs a binary with --version; nil runs it for real.
 	runVersion func(ctx context.Context, path string) (stdout, stderr []byte, err error)
+	// newInstall builds an installer's command; nil builds the real one.
+	newInstall func(ctx context.Context, args []string) *exec.Cmd
+	// emit and installing are guarded by mu: where install events go, and the
+	// providers installing now.
+	emit       func(name string, data any)
+	installing map[string]bool
 }
 
 // New returns a Service that scans the real PATH.
@@ -245,7 +251,8 @@ func (s *Service) RefreshPath(_ context.Context, _ api.None) (api.None, error) {
 func (s *Service) Detect(_ context.Context, _ api.None) ([]Detected, error) {
 	out := make([]Detected, 0, len(Registry))
 	for _, p := range Registry {
-		d := Detected{ID: p.ID, Name: p.Name, Binary: DefaultBinary(p.ID), Docs: p.Docs}
+		_, installable := recipes[hostOS][p.ID]
+		d := Detected{ID: p.ID, Name: p.Name, Binary: DefaultBinary(p.ID), Docs: p.Docs, Installable: installable}
 		out = append(out, s.resolve(d, p.Binaries))
 	}
 	return out, nil

@@ -249,6 +249,17 @@ type ProfileLogin struct {
 	PluginError    string `json:"pluginError,omitempty"`
 }
 
+// ProviderInstall is one step of a provider's install. Progress runs from 0 to
+// 1 and is an estimate read off the installer's output, which states no
+// percentage. The last event has Done set, and Error then says, in one line,
+// why the install failed; on success the provider is on PATH by then.
+type ProviderInstall struct {
+	ID       string  `json:"id"`
+	Progress float64 `json:"progress"`
+	Done     bool    `json:"done,omitempty"`
+	Error    string  `json:"error,omitempty"`
+}
+
 // ProfileChanged is ProfileChangedEvent's payload: Provider is the provider id
 // ("claude", "kiro"), Profile the profile as it now is, without its login state.
 type ProfileChanged struct {

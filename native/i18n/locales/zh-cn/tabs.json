@@ -33,6 +33,7 @@
   "mainMenu": {
     "open": "菜单",
     "guides": "指南",
-    "basics": "基础入门"
+    "basics": "基础入门",
+    "welcome": "欢迎"
   }
 }

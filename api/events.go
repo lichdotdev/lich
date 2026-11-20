@@ -277,6 +277,10 @@ var (
 	// CodexProfileLoginEvent is the event a login reports its progress on.
 	CodexProfileLoginEvent = defineEvent[ProfileLogin]("codex-profile-login")
 
+	// ProviderInstallEvent is the event an install ProvidersInstall started
+	// reports its progress on, the last one with Done set.
+	ProviderInstallEvent = defineEvent[ProviderInstall]("provider-install")
+
 	// ProfileChangedEvent is the event a profile's update emits once it is
 	// written: its name, color or image changed.
 	ProfileChangedEvent = defineEvent[ProfileChanged]("profile-changed")

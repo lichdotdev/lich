@@ -6,6 +6,9 @@ var (
 	ProvidersRefreshPath = define[None, None]("providers.RefreshPath")
 	ProvidersVerify      = define[BinaryOptions, BinaryCheck]("providers.Verify")
 	ProvidersVersion     = define[BinaryOptions, string]("providers.Version")
+	// ProvidersInstall starts installing a provider's CLI and returns once it
+	// runs; ProviderInstallEvent carries the rest.
+	ProvidersInstall = define[ProviderIDOptions, None]("providers.Install")
 )
 
 // The Status of a BinaryCheck that passed, and of one with nothing to check;
@@ -36,6 +39,7 @@ type BinaryOptions struct {
 // Docs is carried on every entry, installed or not: the row that has somewhere
 // to send the user is exactly the one that found nothing.
 // Source is SourcePath or SourceSetting, empty when nothing was found.
+// Installable is whether ProvidersInstall has an install for it on this OS.
 type DetectedProvider struct {
 	ID        string `json:"id"`
 	Name      string `json:"name"`
@@ -44,6 +48,8 @@ type DetectedProvider struct {
 	Path      string `json:"path"`
 	Source    string `json:"source"`
 	Docs      string `json:"docs"`
+	// Installable is set on every entry, installed or not.
+	Installable bool `json:"installable,omitempty"`
 }
 
 // ProviderBinary is one executable a provider could be started from, and the version it

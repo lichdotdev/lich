@@ -132,15 +132,6 @@
     "noUsage": "El uso por perfil no se mide para {provider}.",
     "unreadable": "No se pudo leer el uso del plan."
   },
-  "providerSetupDialog": {
-    "chooseTitle": "Elige tus agentes",
-    "noneTitle": "No se encontraron agentes de código",
-    "chooseDescription": "lich encontró estos agentes en tu máquina. Activa los que uses y el resto no aparecerá en el menú Nueva sesión.",
-    "noneDescription": "lich ejecuta los agentes que ya tienes instalados en tu máquina y no encontró ninguno. Instala uno y vuelve a comprobar.",
-    "changeLater": "Puedes cambiarlo cuando quieras en Ajustes › Proveedores.",
-    "pointToBinary": "¿Ya tienes uno instalado? Indica la ruta de su binario en Ajustes › Proveedores.",
-    "continue": "Continuar"
-  },
   "resumeSessionDialog": {
     "title": "¿Reanudar la sesión anterior?",
     "description": "{label} dejó una conversación ({id}). Reanúdala para seguir donde se quedó o empieza de cero con una vacía.",
@@ -248,5 +239,23 @@
     "available": "{name} {version} está disponible",
     "availableMany": "Actualizaciones de extensiones disponibles: {n}",
     "review": "Revisar"
+  },
+  "welcome": {
+    "title": "Te damos la bienvenida a\n{name}",
+    "tagline": "Instala tus agentes y elige con cuál empiezan las sesiones nuevas.",
+    "escCloses": "Esc cierra",
+    "continue": "Continuar",
+    "notInstalled": "No instalado",
+    "installing": "Instalando…",
+    "signedOut": "Sin sesión iniciada",
+    "signingIn": "Iniciando sesión…",
+    "ready": "Listo",
+    "install": "Instalar",
+    "installPage": "Página de instalación",
+    "retry": "Reintentar",
+    "signIn": "Iniciar sesión",
+    "signInNeedsProject": "Abre un proyecto primero: el inicio de sesión se hace en su terminal.",
+    "default": "Predeterminado",
+    "chooseHint": "Haz clic en un agente listo para que las sesiones nuevas empiecen con él."
   }
 }

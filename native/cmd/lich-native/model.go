@@ -81,6 +81,10 @@ type model struct {
 	// loginProgress takes each step of a profile login, of the provider kind
 	// names.
 	loginProgress func(kind string, step backend.ProfileLogin)
+	// installs is every provider install the window started, and
+	// providerInstalled hears one that finished with the provider on PATH.
+	installs          installBook
+	providerInstalled func(id string)
 	// diffTouched hears the checkout of a session that likely changed files,
 	// for the Review tab's diff, which is read apart from the git store.
 	diffTouched func(checkout string)
@@ -459,6 +463,10 @@ func (m *model) follow(ctx context.Context, events <-chan backend.Event) {
 			var step backend.ProfileLogin
 			if json.Unmarshal(ev.Data, &step) == nil {
 				m.loginStep(ctx, loginEventKind(ev.Name), step)
+			}
+		case api.ProviderInstallEvent.Name:
+			if step, err := backend.Decode(ev, api.ProviderInstallEvent); err == nil {
+				m.installEvent(ctx, step)
 			}
 		case api.PluginProfilesEvent.Name:
 			if pass, err := backend.Decode(ev, api.PluginProfilesEvent); err == nil && m.pluginProfiles != nil {
