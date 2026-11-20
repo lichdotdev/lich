@@ -234,6 +234,24 @@ changes, Artifacts with files) wears a 5px dot on its icon, never a count or a p
 on Review over a checkout with conflicts. The dock is never narrower
 than the pill.
 
+### The Code tab's tree
+
+A changed file's name takes its git state's color, and git's own letter sits after its `+added -deleted`, in a
+`Space(2)` column so the counts line up (`ui/filetree`):
+
+| State | Token | Letter |
+|---|---|---|
+| modified | `ToneWait` | M |
+| untracked | `TonePass` | U |
+| added | `TonePass` | A |
+| renamed | `TonePass` | R |
+| conflict | `Destructive` | ! |
+
+A folder takes the color of the most urgent file inside it (conflict, then modified, then the rest) and a
+`Space(1.5)` dot in the letter's place. A deleted file and an ignored one get nothing: the tree lists only what is
+on disk and not ignored. The state comes from the git status store (`DiffStats.Changes`), never from a read of the
+tree's own.
+
 ### The footer's balloons
 
 The footer is no strip: the two sides the footer editor arranges float as two balloons over the foot of the
