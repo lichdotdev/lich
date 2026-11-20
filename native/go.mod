@@ -51,10 +51,10 @@ require (
 // their content rather than their place in the frame's ops (a border drawn
 // again unchanged was stroked and uploaded again every frame), and no Vulkan
 // barrier between reads of a texture (one a draw, a tenth of the CPU in
-// NVIDIA's driver), and input.KeepOp with Source.Queued (input still
-// routed to handlers whose operations a frame replays from a cached
-// subtree). Every patch of ours lands on that branch.
-replace gioui.org => github.com/lichdotdev/gio v0.0.0-20261120215118-960161e1e656
+// NVIDIA's driver), and input.KeepOp with Source.Queued (input and frame
+// requests still reaching the widgets of a subtree a frame replays from a
+// cache). Every patch of ours lands on that branch.
+replace gioui.org => github.com/lichdotdev/gio v0.0.0-20261120220421-16de86110725
 
 replace github.com/lichdotdev/lich => ../
 
