@@ -17,8 +17,8 @@ import (
 // The Welcome replaces the first-launch provider dialog and keeps its
 // decision: the cases are that dialog's, under the screen's name.
 func TestDecideWelcome(t *testing.T) {
-	claude := providerInfo{launchProvider: launchProvider{id: "claude", enabled: true}}
-	codex := providerInfo{launchProvider: launchProvider{id: "codex", installed: true}}
+	claude := providerInfo{id: "claude", enabled: true}
+	codex := providerInfo{id: "codex", installed: true}
 	cases := []struct {
 		name      string
 		m         providersMachine
@@ -295,7 +295,7 @@ func TestEveryStateAndKeyFrameDraws(t *testing.T) {
 		}
 		r.frames(3)
 		drawn, _ := r.frame()
-		paint := strings.SplitN(drawn, "\n", 2)[0]
+		paint, _, _ := strings.Cut(drawn, "\n")
 		for other, p := range paints {
 			if p == paint {
 				t.Errorf("%s draws the same as %s", spec, other)

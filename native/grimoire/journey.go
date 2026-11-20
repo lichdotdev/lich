@@ -1,5 +1,7 @@
 package grimoire
 
+import "slices"
+
 import "math"
 
 // dimBook is the book a tone down with its mark unlit, the ribbon gone and the
@@ -299,8 +301,8 @@ func cover(id string) []Grid {
 func Bind(id string) []Grid {
 	out := cover(id)
 	straps := strapFrames(id)
-	for i := len(straps) - 1; i >= 0; i-- {
-		out = append(out, straps[i])
+	for _, strap := range slices.Backward(straps) {
+		out = append(out, strap)
 	}
 	return append(out, Sprite(id, SignedOut))
 }
