@@ -2,6 +2,8 @@ package main
 
 import (
 	"image"
+	"image/color"
+	"image/draw"
 	"strings"
 	"testing"
 	"time"
@@ -9,6 +11,7 @@ import (
 	"gioui.org/f32"
 	"gioui.org/layout"
 	"gioui.org/op"
+	"gioui.org/op/paint"
 	"gioui.org/unit"
 
 	"github.com/lichdotdev/lich/api"
@@ -141,4 +144,24 @@ func titleBounds(t *testing.T, rig *frameRig) image.Rectangle {
 	}
 	t.Fatalf("no tab titled Alpha:\n%s", rig.drawn())
 	return image.Rectangle{}
+}
+
+// A tab draws its page's icon where its mark sits, the title staying put; an
+// icon the window does not hold yet leaves the square.
+func TestATabDrawsItsPagesIconInItsMarksPlace(t *testing.T) {
+	tab := api.BrowserTab{ID: "a", Title: "Alpha", Front: true, Icon: "red"}
+	u, _, rig := chromeRig(t, api.BrowserState{Open: true, Tabs: []api.BrowserTab{tab}})
+	square, _ := rig.frame()
+	at := titleBounds(t, rig)
+	red := image.NewNRGBA(image.Rect(0, 0, 32, 32))
+	draw.Draw(red, red.Bounds(), image.NewUniform(color.NRGBA{R: 255, A: 255}), image.Point{}, draw.Src)
+	u.model = &model{browsers: newBrowserStore()}
+	u.model.browsers.icons["red"] = &tabIcon{src: red, sized: map[int]paint.ImageOp{}}
+	drawn, _ := rig.frame()
+	if paintOf(drawn) == paintOf(square) {
+		t.Fatal("a tab with its icon in draws the square")
+	}
+	if b := titleBounds(t, rig); b != at {
+		t.Fatalf("the title moved for the icon: %v, with the square %v", b, at)
+	}
 }

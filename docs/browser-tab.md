@@ -62,7 +62,25 @@ itself, the URL it committed to, which the backend loads in the agent's page
 too, so URL and title arrive on `browser-state` as for any load. That pane
 attaches with `drawn` (`browser.Attach`): Chrome lays the agent's page out at
 the pane's size and sends no frames, which the window would decode and redraw
-for nothing, and is never relaunched to draw at the window's scale. A browser no pane shows and no one used for five minutes is
+for nothing, and is never relaunched to draw at the window's scale.
+
+Each tab's `icon` names its page's icon, never the image: the window reads
+the PNG once per name with `browser.Icon`. Once Chrome's renderer fires the
+page's load event (`frameStoppedLoading` can come before the new document is
+the one a script reads), the backend lists the icons the page declares
+(`<link rel="icon">`, scalable or 32px and up first, then its touch icon, then
+`/favicon.ico` on its origin) and has the page draw the first that loads onto
+a 32px canvas, so every format the browser decodes, ICO and SVG included,
+arrives as a PNG. A read a later navigation overtook is dropped. The answer of
+an icon address, an icon or none, is kept for a minute for every browser
+(`internal/browser/favicon.go`), so an edited icon or a dev server that was
+down shows on a later load. An icon on another origin that sends no CORS
+header taints the canvas and leaves the square. An SVG that colors itself by
+`prefers-color-scheme` draws in the window's scheme, which the backend reads
+from the background of the new-tab page's colors (`browser.NewTabPage`). A page the window draws itself is loaded in the agent's page too
+(`NativeLoad` above), so its icon comes the same way.
+
+A browser no pane shows and no one used for five minutes is
 never closed on its own: its state turns `idle`, the window asks with a toast,
 and Close (`browser.Close`) or Keep open (`browser.Keep`, five more minutes)
 answers. Unanswered, it stays open and is not asked about again; any use

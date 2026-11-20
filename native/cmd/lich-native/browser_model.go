@@ -74,10 +74,13 @@ type browserStore struct {
 	frameSeq  uint64
 	agent     map[string][]browserMark
 	seq       uint64
+	// icons are the pages' icons by BrowserTab.Icon, nil while one is read
+	// or after it failed.
+	icons map[string]*tabIcon
 }
 
 func newBrowserStore() browserStore {
-	return browserStore{states: map[string]api.BrowserState{}, frames: map[string]map[string]browserFrame{}, pending: map[string]pendingFrame{}, agent: map[string][]browserMark{}}
+	return browserStore{states: map[string]api.BrowserState{}, frames: map[string]map[string]browserFrame{}, pending: map[string]pendingFrame{}, agent: map[string][]browserMark{}, icons: map[string]*tabIcon{}}
 }
 
 // hydrateBrowsers reads the browsers running now, and takes off the screen

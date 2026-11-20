@@ -321,8 +321,10 @@ func viewportOf(opts api.BrowserViewOptions) Viewport {
 	return Viewport{W: opts.W, H: opts.H, Scale: opts.Scale}
 }
 
-// NewTabPage takes the window's theme and words for the new-tab page.
+// NewTabPage takes the window's theme and words for the new-tab page, and
+// from its background the color scheme the pages' icons are drawn in.
 func (s *Service) NewTabPage(_ context.Context, opts api.BrowserNewTabPageOptions) (api.None, error) {
+	iconsDark.Store(darkColor(opts.Colors.Background))
 	if s.newTab.Look == nil {
 		return api.None{}, errors.New("no new-tab page is served")
 	}
@@ -353,4 +355,12 @@ func (s *Service) NativeLoad(_ context.Context, opts api.BrowserNativeLoadOption
 		return api.None{}, err
 	}
 	return api.None{}, s.loadURL(sess, opts.URL)
+}
+
+// Icon is the PNG a tab's Icon names.
+func (s *Service) Icon(_ context.Context, opts api.BrowserIconOptions) ([]byte, error) {
+	if b, ok := icons.png(opts.Key); ok {
+		return b, nil
+	}
+	return nil, errNoIcon
 }

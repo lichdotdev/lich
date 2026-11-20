@@ -124,11 +124,14 @@ func (u *window) tabLayout(gtx C, p *browserPaneUI, tab api.BrowserTab, pick, cl
 	right := gtx.Dp(ui.Space(1.5))
 	box := image.Rect(size.X-right-side, (size.Y-side)/2, size.X-right, (size.Y+side)/2)
 	left := gtx.Dp(ui.Space(2.5))
+	icon := u.model.tabIcon(tab.Icon)
 	switch {
 	case tab.DevTools:
 		left += u.devtoolsGlyph(gtx, p, tab, left, fg)
 	case tab.Loading:
 		left += tabSpinner(gtx, th, left, fg)
+	case icon != nil:
+		left += tabIconMark(gtx, icon, left)
 	default:
 		left += tabMark(gtx, left, fg)
 	}
@@ -146,9 +149,9 @@ func (u *window) tabLayout(gtx C, p *browserPaneUI, tab api.BrowserTab, pick, cl
 	return box
 }
 
-// tabMark draws the neutral square a page's tab wears where its favicon
-// would go, at x, and returns the width it takes with the gap after it. The
-// backend sends no favicons.
+// tabMark draws the neutral square a page's tab wears in place of an icon
+// its page has none of, or that did not load, at x, and returns the width it
+// takes with the gap after it.
 func tabMark(gtx C, x int, fg color.NRGBA) int {
 	side := gtx.Dp(ui.Space(3))
 	r := image.Rect(x, (gtx.Constraints.Max.Y-side)/2, x+side, (gtx.Constraints.Max.Y+side)/2)

@@ -60,7 +60,8 @@ Never a hex or OKLCH value in a widget: always a `Theme` token. Themes are JSON 
 Three colors are literals on purpose, each named in a constant that says why: a toast's description is
 sonner's own gray (`ui/toast_body.go`), the browser notes' tag and halo sit on the website and keep one
 look on every page (`browser_notes_view.go`), and Windows' close button hovers in the system's red
-(`caption.go`). A fourth needs the same kind of reason.
+(`caption.go`). A page's icon on its browser tab is the site's own picture, in the site's colors
+(`browser_icon.go`). A fifth needs the same kind of reason.
 
 | Token | Role |
 | --- | --- |
@@ -497,9 +498,9 @@ tabs also keep it from the pane's left side. `TestPageChromeKeepsOneGapBetweenIt
 to the chrome takes the same gap rather than a number of its own.
 
 - **Tabs** on the top row, the page's tabs always, even one, then the new-tab button, and the pane's expand,
-  minimize and close at the right. A tab is a neutral 12px square where a favicon would go (the backend sends
-  none) and the page's title in `TextXS`; while the tab's page loads (`BrowserTab.Loading`) the kit's
-  `Spinner` takes the square's place, same 12px, in the title's color; the front tab is filled `Accent`, its title `Foreground` in the focused
+  minimize and close at the right. A tab is its page's 12px icon (`BrowserTab.Icon`), a neutral 12px square
+  where the page has none or it did not load, and the page's title in `TextXS`; while the tab's page loads
+  (`BrowserTab.Loading`) the kit's `Spinner` takes the icon's place, same 12px, in the title's color; the front tab is filled `Accent`, its title `Foreground` in the focused
   pane and `MutedForeground` in the others. A tab behind has no fill until hovered. There is no pane title and
   no globe.
 - **The toolbar** is back, forward and reload as icons in `MutedForeground`, the address, then the zoom (its
