@@ -46,6 +46,8 @@ type chatSlash struct {
 	rows      []ui.Clickable
 	list      widget.List
 	moved     bool
+	// blocked keeps the list shut while the keys belong to something else.
+	blocked bool
 }
 
 // slashQuery is the command being typed at the caret of text: what runs from
@@ -87,26 +89,40 @@ func slashMatches(cmds []backend.ChatCommand, query string) []backend.ChatComman
 	return append(starts, holds...)
 }
 
-// update opens, filters or shuts the list on what the editor holds, and runs
-// the keys and clicks it takes, before the editor reads its own: while the
-// list is open, Enter and Tab complete the command under the cursor instead
-// of sending, the arrows walk it and Escape shuts it. blocked keeps it shut
-// while the keys belong to something else.
-func (s *chatSlash) update(gtx C, ed *widget.Editor, cmds []backend.ChatCommand, blocked bool) {
+// act runs the clicks and keys the open list takes, before the editor reads
+// its own: while it is open, Enter and Tab complete the command under the
+// cursor instead of sending, the arrows walk it and Escape shuts it.
+func (s *chatSlash) act(gtx C, ed *widget.Editor) {
+	for i := range s.shown {
+		if s.rows[i].Clicked(gtx) {
+			s.pick(ed, i)
+			return
+		}
+	}
+	if len(s.shown) > 0 {
+		s.keys(gtx, ed)
+	}
+}
+
+// refresh opens, filters or shuts the list on what the editor holds once it
+// has been laid out, which is where it takes typed text, so the frame that
+// took a keystroke draws the list it leaves.
+func (s *chatSlash) refresh(ed *widget.Editor, cmds []backend.ChatCommand) {
+	was := len(s.shown) > 0
 	s.shown = nil
 	_, caret := ed.Selection()
 	query, from, ok := slashQuery(ed.Text(), caret)
 	if !ok {
 		s.dismissed = ""
 	}
-	if !ok || blocked || len(cmds) == 0 || slashSigil+query == s.dismissed {
+	if !ok || s.blocked || len(cmds) == 0 || slashSigil+query == s.dismissed {
 		return
 	}
 	shown := slashMatches(cmds, query)
 	if len(shown) == 0 {
 		return
 	}
-	if query != s.query {
+	if query != s.query || !was {
 		s.query, s.cursor, s.moved = query, 0, true
 	}
 	s.shown, s.from, s.to = shown, from, caret
@@ -114,13 +130,6 @@ func (s *chatSlash) update(gtx C, ed *widget.Editor, cmds []backend.ChatCommand,
 	if len(s.rows) < len(shown) {
 		s.rows = make([]ui.Clickable, len(shown))
 	}
-	for i := range shown {
-		if s.rows[i].Clicked(gtx) {
-			s.pick(ed, i)
-			return
-		}
-	}
-	s.keys(gtx, ed)
 }
 
 func (s *chatSlash) keys(gtx C, ed *widget.Editor) {
@@ -161,8 +170,8 @@ func (s *chatSlash) pick(ed *widget.Editor, i int) {
 }
 
 // layout draws the open list over the composer's box, as wide as it and a gap
-// above it, deferred so it stands over the conversation.
-func (s *chatSlash) layout(gtx C, th *ui.Theme) {
+// above it, deferred so it stands over the conversation, no taller than room.
+func (s *chatSlash) layout(gtx C, th *ui.Theme, room int) {
 	if len(s.shown) == 0 {
 		return
 	}
@@ -173,7 +182,7 @@ func (s *chatSlash) layout(gtx C, th *ui.Theme) {
 		s.moved = false
 	}
 	g := gtx
-	g.Constraints = layout.Constraints{Max: image.Pt(gtx.Constraints.Max.X, gtx.Dp(slashMaxH))}
+	g.Constraints = layout.Constraints{Max: image.Pt(gtx.Constraints.Max.X, max(min(gtx.Dp(slashMaxH), room), 0))}
 	macro := op.Record(gtx.Ops)
 	d := th.PopoverPanel(g, func(gtx C, th *ui.Theme) D {
 		return th.ThinScrollArea(&s.list).Layout(gtx, len(s.shown), func(gtx C, i int) D {

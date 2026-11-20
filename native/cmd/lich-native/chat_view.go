@@ -92,8 +92,10 @@ type chatView struct {
 	asked   string
 	// undo is the composer's undo and redo, forgotten when a message is sent.
 	undo ui.EditHistory
-	// slash is the list of the provider's commands over the composer.
-	slash chatSlash
+	// slash is the list of the provider's commands over the composer, which
+	// may grow over the conversation up to slashRoom, the pane's height.
+	slash     chatSlash
+	slashRoom int
 	// unsent is a message the backend refused, handed back to an empty
 	// editor on the next frame.
 	mu     sync.Mutex
@@ -249,6 +251,7 @@ func (u *window) chatScreen(gtx C, sv sessionView, keys bool) {
 	u.chatActs(gtx, p, sv, keys, working, permissionWaiting(items), questionWaiting(items))
 	rows := chatRows(items, working, gtx.Now)
 	th := u.theme.On(u.theme.Background)
+	p.slashRoom = gtx.Constraints.Max.Y
 	layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Flexed(1, func(gtx C) D {
 			shown := p.enter(gtx.Now, rows, u.model.chat.holds(sv.ID))
@@ -337,7 +340,10 @@ func (u *window) chatActs(gtx C, p *chatPane, sv sessionView, keys, working bool
 	if asking != nil {
 		u.questionActs(gtx, p, sv, asking)
 	}
-	p.slash.update(gtx, &p.editor, u.model.chat.commandsOf(sv.ID), !keys || asking != nil || p.picker.panel.Opened())
+	p.slash.blocked = !keys || asking != nil || p.picker.panel.Opened()
+	if !p.slash.blocked {
+		p.slash.act(gtx, &p.editor)
+	}
 	// The model panel's search holds the keys while the panel is open.
 	switch {
 	case !keys || p.picker.panel.Opened():
@@ -456,8 +462,9 @@ func (u *window) chatComposer(gtx C, th *ui.Theme, p *chatPane, sv sessionView, 
 			ta.Size, ta.Leading, ta.PadX, ta.PadY = markdown.BodySize, markdown.BodySize*markdown.LineHeightScale, chatComposerPadX, chatComposerPadY
 			ta.Foot = u.chatChips(th, p, sv, working, ft)
 			d := ta.Layout(gtx)
+			p.slash.refresh(&p.editor, u.model.chat.commandsOf(sv.ID))
 			gtx.Constraints.Max.X = d.Size.X
-			p.slash.layout(gtx, th)
+			p.slash.layout(gtx, th, p.slashRoom-d.Size.Y-gtx.Dp(2*chatComposerGap))
 			return d
 		}),
 		layout.Rigid(func(gtx C) D { return u.chatCrumbs(gtx, th, sv, in, ft) }),

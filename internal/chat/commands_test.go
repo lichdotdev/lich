@@ -110,7 +110,7 @@ func TestKiroCommandsComeFromItsNotification(t *testing.T) {
 func TestCodexSkillsAreItsCommands(t *testing.T) {
 	r := newChat(t, providers.Codex)
 	r.waitCommands([]api.ChatCommand{{Text: "$deploy", Description: "Ship it", Skill: true}})
-	r.prompt("hi $deploy and $off")
+	r.prompt("hi $off, then $deploy.")
 	r.eventually("a turn/start", func() bool { return len(r.turnStarts()) > 0 })
 	start := r.turnStarts()[0]
 	if !strings.Contains(start, `"type":"skill"`) || !strings.Contains(start, `"/skills/deploy/SKILL.md"`) || strings.Contains(start, "/skills/off/") {

@@ -1,6 +1,8 @@
 package main
 
 import (
+	"image"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -134,5 +136,47 @@ func TestNoSlashListLeavesEnterToSend(t *testing.T) {
 		if body := f.waitCall(t, api.ChatPrompt.Name); !strings.Contains(body, text) {
 			t.Errorf("%q sent %s", text, body)
 		}
+	}
+}
+
+// Typed through the keyboard, the frame that took a keystroke draws the list
+// it leaves, not the one before it.
+func TestTheFrameThatTookTheKeyDrawsTheList(t *testing.T) {
+	_, r, _, p := slashFrames(t)
+	// A platform follows each edit with where the caret went.
+	r.router.Queue(key.EditEvent{Text: "/"}, key.SelectionEvent{Start: 1, End: 1})
+	r.frame()
+	if p.editor.Text() != "/" || !r.shows("/review") {
+		t.Fatalf("the frame that took / draws no list (text %q):\n%s", p.editor.Text(), r.drawn())
+	}
+	r.router.Queue(key.EditEvent{Range: key.Range{Start: 1, End: 1}, Text: "c"}, key.SelectionEvent{Start: 2, End: 2})
+	r.frame()
+	if !r.shows("/compact") || r.shows("/review") {
+		t.Errorf("the frame that took c draws the list before it:\n%s", r.drawn())
+	}
+}
+
+// A low pane holds the list under its own top: a long list scrolls in the
+// room over the composer instead of running past the pane.
+func TestTheSlashListStaysInALowPane(t *testing.T) {
+	u, r, _ := chatFramesIn(t, api.ViewChat, image.Pt(1200, 400), busySession())
+	var cmds []backend.ChatCommand
+	for i := range 40 {
+		cmds = append(cmds, backend.ChatCommand{Text: "/cmd" + strconv.Itoa(i), Description: "a command"})
+	}
+	u.model.chat.setCommands("s1", cmds)
+	r.settle(t)
+	typeIn(r, u.chats.pane("s1"), "/")
+	top := r.size.Y
+	for _, n := range r.nodes() {
+		if strings.HasPrefix(n.Desc.Label, "/cmd") {
+			top = min(top, n.Desc.Bounds.Min.Y)
+		}
+	}
+	if top == r.size.Y {
+		t.Fatalf("no list in a low pane:\n%s", r.drawn())
+	}
+	if top < 0 {
+		t.Errorf("the list's first row at y=%d, above the pane", top)
 	}
 }

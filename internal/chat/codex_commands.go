@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"regexp"
+	"strings"
 
 	"github.com/lichdotdev/lich/api"
 )
@@ -80,7 +81,8 @@ func (d *codexDriver) input(text string) []map[string]any {
 	defer d.mu.Unlock()
 	seen := map[string]bool{}
 	for _, m := range codexMention.FindAllStringSubmatch(text, -1) {
-		name := m[1]
+		// A mention ending a sentence keeps its full stop out of the name.
+		name := strings.TrimRight(m[1], ".:-")
 		if path, ok := d.skills[name]; ok && !seen[name] {
 			seen[name] = true
 			in = append(in, map[string]any{"type": "skill", "name": name, "path": path})
