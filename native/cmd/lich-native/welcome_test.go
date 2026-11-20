@@ -1,13 +1,16 @@
 package main
 
 import (
+	"crypto/sha256"
 	"image"
+	"image/color"
+	"reflect"
 	"slices"
-	"strings"
 	"testing"
 	"time"
 
 	"gioui.org/io/key"
+	"gioui.org/op"
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
@@ -297,7 +300,7 @@ func TestEveryStateAndKeyFrameDraws(t *testing.T) {
 		"codex=signingin", "codex=ready", "codex=bind:6", "codex=bind:10", "codex=unseal:4",
 		"codex=default", "codex=hover", "codex=choose:6", "codex=snuff:1",
 	}
-	paints := map[string]string{}
+	paints := map[string][sha256.Size]byte{}
 	for _, spec := range specs {
 		u, r, _ := welcomeRig(t, installedClaude)
 		// Claude Code ready too, so the default is not Codex unless pinned.
@@ -305,8 +308,8 @@ func TestEveryStateAndKeyFrameDraws(t *testing.T) {
 			t.Fatal(err)
 		}
 		r.frames(3)
-		drawn, _ := r.frame()
-		paint, _, _ := strings.Cut(drawn, "\n")
+		r.frame()
+		paint := paintWithImages(&r.ops)
 		for other, p := range paints {
 			if p == paint {
 				t.Errorf("%s draws the same as %s", spec, other)
@@ -314,6 +317,21 @@ func TestEveryStateAndKeyFrameDraws(t *testing.T) {
 		}
 		paints[spec] = paint
 	}
+}
+
+// paintWithImages hashes what ops draw, the pixels of their images included:
+// a book is one image, kept out of the operations' bytes.
+func paintWithImages(o *op.Ops) [sha256.Size]byte {
+	ops := reflect.ValueOf(&o.Internal).Elem()
+	h := sha256.New()
+	h.Write(ops.FieldByName("data").Bytes())
+	refs := ops.FieldByName("refs")
+	for i := range refs.Len() {
+		if ref := refs.Index(i).Elem(); ref.Type() == reflect.TypeFor[*image.RGBA]() {
+			h.Write(ref.Elem().FieldByName("Pix").Bytes())
+		}
+	}
+	return [sha256.Size]byte(h.Sum(nil))
 }
 
 // twoReady is Claude Code signed in and Codex installed with no login lich
@@ -452,5 +470,38 @@ func TestTheWelcomeCutsTheBrowserPageUnderIt(t *testing.T) {
 	want := image.Rect(0, int(topbarHeight), r.size.X, r.size.Y)
 	if !slices.Contains(u.covers, want) {
 		t.Fatalf("covers %v, want %v", u.covers, want)
+	}
+}
+
+func TestRasterGridInksEachSymbolAtItsScale(t *testing.T) {
+	red, blue := color.NRGBA{R: 255, A: 255}, color.NRGBA{B: 255, A: 255}
+	inks := [len(gridSymbols)]color.NRGBA{0: red, 4: blue}
+	img := rasterGrid(grimoire.Grid{[]byte("1.5")}, 2, inks)
+	if got := img.Bounds().Size(); got != image.Pt(6, 2) {
+		t.Fatalf("a row of 3 at 2px is %v, want 6x2", got)
+	}
+	for _, c := range []struct {
+		x, y int
+		want color.NRGBA
+	}{{0, 0, red}, {1, 1, red}, {2, 0, color.NRGBA{}}, {3, 1, color.NRGBA{}}, {4, 0, blue}, {5, 1, blue}} {
+		if got := img.NRGBAAt(c.x, c.y); got != c.want {
+			t.Errorf("pixel %d,%d is %v, want %v", c.x, c.y, got, c.want)
+		}
+	}
+}
+
+func TestGridImagesKeepWhatTheLastFrameDrew(t *testing.T) {
+	var c gridImageCache
+	g := grimoire.Grid{[]byte("12")}
+	k := gridKey{cells: gridCells(g), px: 1}
+	t0 := time.Unix(0, 0)
+	first := c.get(t0, k, g)
+	if again := c.get(t0.Add(time.Millisecond), k, g); again != first {
+		t.Fatal("a grid painted again the next frame was rasterized again")
+	}
+	c.get(t0.Add(2*time.Millisecond), gridKey{px: 2}, nil)
+	c.get(t0.Add(3*time.Millisecond), gridKey{px: 2}, nil)
+	if later := c.get(t0.Add(4*time.Millisecond), k, g); later == first {
+		t.Fatal("a grid no frame painted for two frames was kept")
 	}
 }

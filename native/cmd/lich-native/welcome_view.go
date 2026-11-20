@@ -3,7 +3,9 @@ package main
 import (
 	"image"
 	"image/color"
+	"image/draw"
 	"strings"
+	"time"
 
 	"gioui.org/font"
 	"gioui.org/io/event"
@@ -250,21 +252,85 @@ func welcomeVerb(p providerInfo, s tomeState) string {
 	return ""
 }
 
-// paintGrid paints g at px device pixels a symbol, each run of one symbol on a
-// row as one rectangle.
+// paintGrid paints g at px device pixels a symbol, as one image. A rectangle a
+// run was thousands of draws a frame, and the inks' OKLab mixes a fifth of the
+// window's CPU, while the Welcome animated.
 func paintGrid(gtx C, th *ui.Theme, g grimoire.Grid, px int) {
+	k := gridKey{cells: gridCells(g), px: px}
+	for i := range len(gridSymbols) {
+		k.inks[i], _ = grimoireInk(th, gridSymbols[i])
+	}
+	img := gridImages.get(gtx.Now, k, g)
+	img.Add(gtx.Ops)
+	defer clip.Rect(image.Rectangle{Max: img.Size()}).Push(gtx.Ops).Pop()
+	paint.PaintOp{}.Add(gtx.Ops)
+}
+
+// gridSymbols are the symbols a grid inks; any other stays clear.
+const gridSymbols = "12345"
+
+// gridKey is how a painted grid looks: its symbols row by row, a symbol's side
+// in device pixels, and the theme's ink for each of gridSymbols.
+type gridKey struct {
+	cells string
+	px    int
+	inks  [len(gridSymbols)]color.NRGBA
+}
+
+func gridCells(g grimoire.Grid) string {
+	var b strings.Builder
+	for _, row := range g {
+		b.Write(row)
+		b.WriteByte('\n')
+	}
+	return b.String()
+}
+
+// gridImageCache keeps the images of the grids the last two frames painted:
+// a grid that holds still is rasterized once, and one an animation left is
+// let go a frame later.
+type gridImageCache struct {
+	now       time.Time
+	prev, cur map[gridKey]paint.ImageOp
+}
+
+var gridImages gridImageCache
+
+func (c *gridImageCache) get(now time.Time, k gridKey, g grimoire.Grid) paint.ImageOp {
+	if c.cur == nil {
+		c.prev, c.cur = map[gridKey]paint.ImageOp{}, map[gridKey]paint.ImageOp{}
+	}
+	if !now.Equal(c.now) {
+		c.now, c.prev, c.cur = now, c.cur, c.prev
+		clear(c.cur)
+	}
+	if img, ok := c.cur[k]; ok {
+		return img
+	}
+	img, ok := c.prev[k]
+	if !ok {
+		img = paint.NewImageOp(rasterGrid(g, k.px, k.inks))
+		img.Filter = paint.FilterNearest
+	}
+	c.cur[k] = img
+	return img
+}
+
+// rasterGrid draws g at px pixels a symbol, each of gridSymbols in its ink.
+func rasterGrid(g grimoire.Grid, px int, inks [len(gridSymbols)]color.NRGBA) *image.NRGBA {
+	cols := 0
+	for _, row := range g {
+		cols = max(cols, len(row))
+	}
+	img := image.NewNRGBA(image.Rect(0, 0, cols*px, len(g)*px))
 	for y, row := range g {
-		for x := 0; x < len(row); {
-			run := 1
-			for x+run < len(row) && row[x+run] == row[x] {
-				run++
+		for x, s := range row {
+			if i := strings.IndexByte(gridSymbols, s); i >= 0 {
+				draw.Draw(img, image.Rect(x*px, y*px, (x+1)*px, (y+1)*px), image.NewUniform(inks[i]), image.Point{}, draw.Src)
 			}
-			if c, ok := grimoireInk(th, row[x]); ok {
-				paint.FillShape(gtx.Ops, c, clip.Rect(image.Rect(x*px, y*px, (x+run)*px, (y+1)*px)).Op())
-			}
-			x += run
 		}
 	}
+	return img
 }
 
 // grimoireInk is a symbol's color: the chat flame's four, and 5 between
