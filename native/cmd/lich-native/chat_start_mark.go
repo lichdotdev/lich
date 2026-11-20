@@ -156,7 +156,6 @@ func newMarkInks(primary, hot, ground color.NRGBA) (m markInks) {
 // mark has faded in: 1 shown, 0 gone.
 type backdropMark struct {
 	at, centre image.Point
-	quiet      image.Rectangle
 	fade       float32
 }
 
