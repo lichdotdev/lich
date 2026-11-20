@@ -242,7 +242,7 @@
   },
   "welcome": {
     "title": "Boas-vindas ao\n{name}",
-    "tagline": "Instale seus agentes de código e entre neles, tudo por aqui.",
+    "tagline": "Instale seus agentes e escolha com qual as sessões novas começam.",
     "escCloses": "Esc fecha",
     "continue": "Continuar",
     "notInstalled": "Não instalado",
@@ -254,6 +254,8 @@
     "installPage": "Página de instalação",
     "retry": "Tentar de novo",
     "signIn": "Entrar",
-    "signInNeedsProject": "Abra um projeto antes: o login roda no terminal dele."
+    "signInNeedsProject": "Abra um projeto antes: o login roda no terminal dele.",
+    "default": "Padrão",
+    "chooseHint": "Clique num agente pronto para as sessões novas começarem com ele."
   }
 }

@@ -118,9 +118,8 @@ func TestParseWelcomeShot(t *testing.T) {
 	if s := shots["kiro"]; s.state != tomeInstalling || s.progress != 0.6 {
 		t.Errorf("kiro = %+v", s)
 	}
-	state, _, g, pinned := shots["codex"].apply("codex")
-	if state != tomeReady || !pinned || !slices.EqualFunc(g, grimoire.Unseal("codex")[4], slices.Equal) {
-		t.Errorf("codex: state %d, pinned %v", state, pinned)
+	if c := shots["codex"]; c.state != tomeReady || !slices.EqualFunc(c.grid("codex"), grimoire.Unseal("codex")[4], slices.Equal) {
+		t.Errorf("codex: state %d", c.state)
 	}
 	if shots["cursor"].failure == "" {
 		t.Error("a failed shot has no line")
@@ -285,11 +284,13 @@ func TestEveryStateAndKeyFrameDraws(t *testing.T) {
 	specs := []string{
 		"codex=notinstalled", "codex=installing:0.6", "codex=failed", "codex=signedout",
 		"codex=signingin", "codex=ready", "codex=bind:6", "codex=bind:10", "codex=unseal:4",
+		"codex=default", "codex=hover", "codex=choose:6", "codex=snuff:1",
 	}
 	paints := map[string]string{}
 	for _, spec := range specs {
 		u, r, _ := welcomeRig(t, installedClaude)
-		if err := u.welcomeShot(spec); err != nil {
+		// Claude Code ready too, so the default is not Codex unless pinned.
+		if err := u.welcomeShot("claude=ready," + spec); err != nil {
 			t.Fatal(err)
 		}
 		r.frames(3)
@@ -301,5 +302,66 @@ func TestEveryStateAndKeyFrameDraws(t *testing.T) {
 			}
 		}
 		paints[spec] = paint
+	}
+}
+
+// twoReady is Claude Code signed in and Codex installed with no login lich
+// reads: two books a default can be chosen between.
+func twoReady(t *testing.T) (*window, *frameRig, *sidebarBackend) {
+	t.Helper()
+	u, r, f := welcomeRig(t, []backend.DetectedProvider{
+		{ID: "claude", Name: "Claude Code", Installed: true},
+		{ID: "codex", Name: "Codex", Installed: true},
+	})
+	u.model.profiles.list = []backend.Profile{{Slug: personalProfile, Name: "Personal", LoggedIn: true}}
+	r.frames(3)
+	return u, r, f
+}
+
+func TestTheFirstReadyBookStartsAsTheDefault(t *testing.T) {
+	u, r, f := twoReady(t)
+	if u.welcome.main != "claude" || countLabel(r, i18n.T("shell.welcome.default")) != 1 {
+		t.Fatalf("main %q:\n%s", u.welcome.main, r.drawn())
+	}
+	if !r.shows(i18n.T("shell.welcome.chooseHint")) {
+		t.Error("two ready books and no word on choosing")
+	}
+	r.click(t, r.at(t, i18n.T("shell.welcome.continue")))
+	r.frames(1)
+	if got := f.get(providerDefaultKey + "@"); got != "claude" {
+		t.Errorf("Continue stored %q, want the book shown as the default", got)
+	}
+}
+
+func TestHoveringAReadyBookLightsItsGem(t *testing.T) {
+	u, r, _ := twoReady(t)
+	before, _ := r.frame()
+	r.hover(r.at(t, "Codex"))
+	after, _ := r.frame()
+	if !u.welcome.tome("codex").row.Hovered() || before == after {
+		t.Fatal("the hover drew nothing new")
+	}
+}
+
+func TestClickingAReadyBookMakesItTheDefault(t *testing.T) {
+	u, r, f := twoReady(t)
+	r.click(t, r.at(t, "Codex"))
+	r.frame()
+	if got := f.get(providerDefaultKey + "@"); got != "codex" {
+		t.Fatalf("the click stored %q", got)
+	}
+	if u.welcome.main != "codex" {
+		t.Fatalf("main is %q after the click", u.welcome.main)
+	}
+	codex, claude := u.welcome.tome("codex"), u.welcome.tome("claude")
+	if len(codex.journey) != len(grimoire.Choose("codex", 0)) || codex.step != grimoire.ChooseStep {
+		t.Errorf("the new default plays %d frames at %v, want the choosing", len(codex.journey), codex.step)
+	}
+	if len(claude.journey) != len(grimoire.Snuff("claude", 0)) || claude.step != grimoire.SnuffStep {
+		t.Errorf("the old default plays %d frames at %v, want its flame going out", len(claude.journey), claude.step)
+	}
+	r.frames(3)
+	if countLabel(r, i18n.T("shell.welcome.default")) != 1 {
+		t.Errorf("Default shows %d times", countLabel(r, i18n.T("shell.welcome.default")))
 	}
 }

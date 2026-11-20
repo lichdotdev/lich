@@ -239,7 +239,7 @@
   },
   "welcome": {
     "title": "{name}에 오신 것을\n환영합니다",
-    "tagline": "코딩 에이전트 설치와 로그인을 여기서 한 번에 하세요.",
+    "tagline": "에이전트를 설치하고 새 세션이 시작할 에이전트를 고르세요.",
     "escCloses": "Esc로 닫기",
     "continue": "계속",
     "notInstalled": "설치 안 됨",
@@ -251,6 +251,8 @@
     "installPage": "설치 안내",
     "retry": "다시 시도",
     "signIn": "로그인",
-    "signInNeedsProject": "먼저 프로젝트를 여세요. 로그인은 그 터미널에서 진행됩니다."
+    "signInNeedsProject": "먼저 프로젝트를 여세요. 로그인은 그 터미널에서 진행됩니다.",
+    "default": "기본값",
+    "chooseHint": "준비된 에이전트를 클릭하면 새 세션의 기본값이 됩니다."
   }
 }

@@ -242,7 +242,7 @@
   },
   "welcome": {
     "title": "欢迎使用\n{name}",
-    "tagline": "在这里安装编码智能体并完成登录。",
+    "tagline": "安装你的智能体，并选择新会话默认使用哪一个。",
     "escCloses": "按 Esc 关闭",
     "continue": "继续",
     "notInstalled": "未安装",
@@ -254,6 +254,8 @@
     "installPage": "安装说明",
     "retry": "重试",
     "signIn": "登录",
-    "signInNeedsProject": "请先打开一个项目：登录要在它的终端里进行。"
+    "signInNeedsProject": "请先打开一个项目：登录要在它的终端里进行。",
+    "default": "默认",
+    "chooseHint": "点击一个就绪的智能体，将其设为新会话的默认选项。"
   }
 }

@@ -80,13 +80,21 @@ func restSprite(id string, s tomeState, progress float64) grimoire.Grid {
 
 // tome is one provider's cell as the Welcome last drew it.
 type tome struct {
-	action  ui.Clickable
+	action ui.Clickable
+	// row is the whole cell, a click on a ready book making it the default.
+	row     ui.Clickable
 	tip     ui.Tooltip
 	seen    bool
 	last    tomeState
 	known   bool
 	journey []grimoire.Grid
 	since   time.Time
+	step    time.Duration
+}
+
+// play starts frames at now, a frame every step.
+func (t *tome) play(frames []grimoire.Grid, step time.Duration, now time.Time) {
+	t.journey, t.since, t.step = frames, now, step
 }
 
 // observe takes the state the stores say now: a move seen from a known state
@@ -95,7 +103,7 @@ type tome struct {
 func (t *tome) observe(id string, s tomeState, known bool, now time.Time) {
 	if t.seen && t.known && s != t.last {
 		if j := journeyBetween(id, t.last, s); j != nil {
-			t.journey, t.since = j, now
+			t.play(j, welcomeJourneyStep, now)
 		}
 	}
 	t.seen, t.last, t.known = true, s, known
@@ -107,10 +115,32 @@ func (t *tome) frame(now time.Time) (g grimoire.Grid, next time.Time, ok bool) {
 	if t.journey == nil {
 		return nil, time.Time{}, false
 	}
-	i := int(now.Sub(t.since) / welcomeJourneyStep)
+	i := int(now.Sub(t.since) / t.step)
 	if i >= len(t.journey) {
 		t.journey = nil
 		return nil, time.Time{}, false
 	}
-	return t.journey[max(i, 0)], t.since.Add(time.Duration(i+1) * welcomeJourneyStep), true
+	return t.journey[max(i, 0)], t.since.Add(time.Duration(i+1) * t.step), true
+}
+
+// flameTick is the flame's frame at now, and when the next starts: one clock
+// for the window, so a book chosen now joins the flame where it is.
+func flameTick(now time.Time) (int, time.Time) {
+	tick := now.UnixNano() / int64(grimoire.FlameStep)
+	return int(tick), time.Unix(0, (tick+1)*int64(grimoire.FlameStep))
+}
+
+// observeMain plays the change of default: the old one's flame goes out, the
+// new one's lights. A first look plays nothing.
+func (w *welcome) observeMain(id string, now time.Time) {
+	if w.mainSeen && id != w.main {
+		tick, _ := flameTick(now)
+		if w.main != "" {
+			w.tome(w.main).play(grimoire.Snuff(w.main, tick), grimoire.SnuffStep, now)
+		}
+		if id != "" {
+			w.tome(id).play(grimoire.Choose(id, tick), grimoire.ChooseStep, now)
+		}
+	}
+	w.main, w.mainSeen = id, true
 }

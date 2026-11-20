@@ -27,6 +27,10 @@ var (
 	welcomePadX               = ui.Space(10)
 	welcomeTagTop             = ui.Space(3)
 	welcomeFootTop            = ui.Space(8.5)
+	// welcomeHintHeight is the row under the books that says how to choose
+	// the default, .hint's 13px line in 14px of padding.
+	welcomeHintHeight unit.Dp = 46
+	welcomeHintPad            = ui.Space(3.5)
 	// welcomeBookPixel is a book pixel's side, three device pixels at 1x;
 	// welcomeLogoPixel the most a logo pixel takes, less in a short window.
 	welcomeBookPixel unit.Dp = 3
@@ -63,7 +67,7 @@ func (u *window) layoutWelcome(gtx C, th *ui.Theme) {
 	d.MaxWidth, d.Root = welcomeMaxWidth, &u.root
 	d.Raw = func(gtx C) D {
 		rows := (len(list) + welcomeColumns - 1) / welcomeColumns
-		h := min(rows*gtx.Dp(welcomeCellHeight), gtx.Constraints.Max.Y-gtx.Dp(ui.Space(8)))
+		h := min(rows*gtx.Dp(welcomeCellHeight)+gtx.Dp(welcomeHintHeight), gtx.Constraints.Max.Y-gtx.Dp(ui.Space(8)))
 		gtx.Constraints.Min.Y, gtx.Constraints.Max.Y = h, h
 		gtx.Constraints.Min.X = gtx.Constraints.Max.X
 		return layout.Flex{}.Layout(gtx,
@@ -152,99 +156,6 @@ func welcomeLogo(gtx C, th *ui.Theme) D {
 	defer op.Offset(room.Sub(size).Div(2)).Push(gtx.Ops).Pop()
 	paintGrid(gtx, th, grimoire.Logo[frame], px)
 	return D{Size: room}
-}
-
-// welcomeGrid is the right half: a cell per provider, two to a row, with a
-// seam between them. signing is a login running for one of them.
-func (u *window) welcomeGrid(gtx C, th *ui.Theme, list []providerInfo, rows int) (D, bool) {
-	signing := false
-	cell := image.Pt((gtx.Constraints.Max.X-gtx.Dp(1))/welcomeColumns, gtx.Constraints.Max.Y/max(rows, 1))
-	line := gtx.Dp(1)
-	for i, p := range list {
-		col, row := i%welcomeColumns, i/welcomeColumns
-		at := image.Pt(col*(cell.X+line), row*cell.Y)
-		st := op.Offset(at).Push(gtx.Ops)
-		cgtx := gtx
-		cgtx.Constraints = layout.Exact(cell)
-		if u.welcomeTome(cgtx, th, p) == tomeSigningIn {
-			signing = true
-		}
-		st.Pop()
-	}
-	for col := 1; col < welcomeColumns; col++ {
-		st := op.Offset(image.Pt(col*cell.X+(col-1)*line, 0)).Push(gtx.Ops)
-		seam(gtx, th, image.Pt(line, gtx.Constraints.Max.Y))
-		st.Pop()
-	}
-	for row := 1; row < rows; row++ {
-		st := op.Offset(image.Pt(0, row*cell.Y)).Push(gtx.Ops)
-		seam(gtx, th, image.Pt(gtx.Constraints.Max.X, line))
-		st.Pop()
-	}
-	return D{Size: gtx.Constraints.Max}, signing
-}
-
-// welcomeTome is one provider's cell: its book, its name, where it is and the
-// one action that moves it on. It returns the state it drew.
-func (u *window) welcomeTome(gtx C, th *ui.Theme, p providerInfo) tomeState {
-	t := u.welcome.tome(p.id)
-	facts := u.welcomeFacts(p)
-	state := tomeStateOf(facts)
-	t.observe(p.id, state, facts.known || !facts.needsLogin, gtx.Now)
-	g, next, playing := t.frame(gtx.Now)
-	shot, pinned := u.welcome.shot[p.id]
-	if pinned {
-		state, facts.install, g, playing = shot.apply(p.id)
-	}
-	if playing && !pinned {
-		gtx.Execute(op.InvalidateCmd{At: next})
-	} else if !playing {
-		g = restSprite(p.id, state, facts.install.progress)
-	}
-	if t.action.Clicked(gtx) && !playing {
-		u.welcomeAction(p, state)
-	}
-	layout.Inset{Left: welcomeCellPadX, Right: welcomeCellPadX}.Layout(gtx, func(gtx C) D {
-		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-			layout.Rigid(func(gtx C) D { return welcomeBook(gtx, th, g) }),
-			ui.Gap(welcomeGapUnits),
-			layout.Flexed(1, func(gtx C) D { return u.welcomeLabels(gtx, th, p, t, state, facts, playing) }),
-		)
-	})
-	return state
-}
-
-// welcomeGapUnits is the gap between a book and its labels, and
-// welcomeActionGap the one over the action, on the spacing scale.
-const (
-	welcomeGapUnits  = 4
-	welcomeActionGap = 2
-)
-
-func welcomeBook(gtx C, th *ui.Theme, g grimoire.Grid) D {
-	px := max(1, gtx.Dp(welcomeBookPixel))
-	paintGrid(gtx, th, g, px)
-	return D{Size: image.Pt(grimoire.Cols*px, grimoire.Rows*px)}
-}
-
-func (u *window) welcomeLabels(gtx C, th *ui.Theme, p providerInfo, t *tome, s tomeState, f tomeFacts, playing bool) D {
-	children := []layout.FlexChild{
-		layout.Rigid(th.Text(welcomeNameSize, p.name).Weight(font.SemiBold).Truncated().Layout),
-		layout.Rigid(func(gtx C) D { return welcomeStatus(gtx, th, &u.root, t, s, f) }),
-	}
-	verb := welcomeVerb(p, s)
-	if verb != "" && !playing {
-		children = append(children, ui.VGap(welcomeActionGap), layout.Rigid(func(gtx C) D {
-			b := th.Button(&t.action, verb)
-			b.Variant, b.Size = ui.VariantSecondary, ui.SizeXS
-			if s == tomeSignedOut && u.signInBlocked(p) {
-				b.Disabled = true
-				return th.Tooltip(&u.root, &t.tip, i18n.T("shell.welcome.signInNeedsProject")).Layout(gtx, b.Layout)
-			}
-			return b.Layout(gtx)
-		}))
-	}
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
 }
 
 // welcomeStatus is where the provider is, in one line; a failure is the

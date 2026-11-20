@@ -242,7 +242,7 @@
   },
   "welcome": {
     "title": "Welcome to\n{name}",
-    "tagline": "Install your coding agents and sign in to them, all from here.",
+    "tagline": "Install your agents and choose the one new sessions start with.",
     "escCloses": "Esc closes",
     "continue": "Continue",
     "notInstalled": "Not installed",
@@ -254,6 +254,8 @@
     "installPage": "Install page",
     "retry": "Retry",
     "signIn": "Sign in",
-    "signInNeedsProject": "Open a project first: the sign-in runs in its terminal."
+    "signInNeedsProject": "Open a project first: the sign-in runs in its terminal.",
+    "default": "Default",
+    "chooseHint": "Click a ready agent to make it the default for new sessions."
   }
 }

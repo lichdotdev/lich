@@ -1,6 +1,8 @@
 package main
 
 import (
+	"slices"
+
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/grimoire"
 	"github.com/lichdotdev/lich/native/ui"
@@ -44,6 +46,10 @@ type welcome struct {
 	dialog                       ui.DialogState
 	cont                         ui.Clickable
 	tomes                        map[string]*tome
+	// main is the default provider the screen last showed, the book with the
+	// flame; mainSeen that it showed one at all.
+	main     string
+	mainSeen bool
 	// shot pins providers to a state or a journey's frame, for a screenshot.
 	shot map[string]tomeShot
 }
@@ -110,14 +116,30 @@ func (u *window) closeWelcome() {
 	if !w.firstRun || m.globals[providerDefaultKey] != "" {
 		return
 	}
-	s.writeProviderKey(providerDefaultKey, "", welcomeDefault(m), s.providersChanged)
+	id := w.main
+	if id == "" {
+		id = resolveProjectDefaultProvider(m.launchList(), "", "")
+	}
+	s.writeProviderKey(providerDefaultKey, "", id, s.providersChanged)
 }
 
-// welcomeDefault is the default provider closing the first Welcome stores:
-// the one a new session would pick by itself. The step that lets the user
-// choose it replaces this.
-func welcomeDefault(m providersMachine) string {
-	return resolveProjectDefaultProvider(m.launchList(), "", "")
+// welcomeMain is the book that shows as the default: the stored default
+// while it is ready, else the first ready provider, "" while none is.
+func welcomeMain(stored string, ready []string) string {
+	if slices.Contains(ready, stored) {
+		return stored
+	}
+	if len(ready) > 0 {
+		return ready[0]
+	}
+	return ""
+}
+
+// chooseMain makes id the default new sessions start with: the setting
+// Settings › Providers writes, shown at once.
+func (u *window) chooseMain(id string) {
+	s := u.settings
+	s.writeProviderKey(providerDefaultKey, "", id, s.providersChanged)
 }
 
 // welcomeFacts reads one provider's facts off the window's stores.
