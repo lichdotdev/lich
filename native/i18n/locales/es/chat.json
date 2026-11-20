@@ -83,5 +83,8 @@
     "declined": "Sin respuesta",
     "label": "{header}:",
     "own": "«{text}»"
+  },
+  "start": {
+    "lines": "¿Qué conjuramos en {project}?|¿Qué invocamos para {project}?|¿Qué canalizamos hacia {project}?|¿Qué se cuece en {project}?|¿Qué quieres adivinar en {project}?|¿Qué inscribimos hoy en {project}?|¿Qué tejemos en {project}?|¿Qué levantamos en {project}?"
   }
 }

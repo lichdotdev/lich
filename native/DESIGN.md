@@ -413,6 +413,15 @@ draws none while it grows in, because the room above the rows is measured in the
   `Foreground` (0.55), the edge `MutedForeground`, and the base and the sparks leaving it `Accent`. A gray theme
   draws a gray flame and a colored one colors it on its own. It does not use `ToneWait`: the turn running is not the
   turn waiting on the person, and that tone already says the second.
+- **An empty chat** (its conversation read and holding nothing: a new session, or after `/new`) draws its start
+  screen (`chat_start.go`): lich's mark in pixel art, the Welcome screen's still frame (48x68, pixels of 1.5dp,
+  its five tones from the tokens: `Foreground`, a mix of it and `MutedForeground`, `MutedForeground`, and two
+  mixes of `MutedForeground` toward `Background`), then a question in `TextBase` medium naming the project in
+  mono, then the composer and its line, the block a little over the middle of the pane (`chatStartRise`). The
+  question is one of the language's own list (`chat.start.lines`, `|`-separated, one per verb of the live line),
+  picked by the session as the turn's verb is, so it holds while the screen is up. The first item fades the mark
+  and the question (120ms ease-in) and runs the composer down to the foot (220ms ease-out) while the
+  conversation grows over it. A pane too low for the block keeps the composer at its foot, with neither.
 - **The composer** stands at the column's foot: a textarea (Enter sends, Shift+Enter breaks the line) in a
   `RadiusLG` box, three lines of text tall at least, growing with the text to a ceiling and scrolling past it.
   Its text and its placeholder, "Ask {provider} about this project", are in the interface font at the body size

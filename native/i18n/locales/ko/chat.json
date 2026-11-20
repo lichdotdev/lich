@@ -78,5 +78,8 @@
     "declined": "답하지 않음",
     "label": "{header}:",
     "own": "“{text}”"
+  },
+  "start": {
+    "lines": "{project}에서 무엇을 빚어 볼까요?|{project}에 무엇을 소환할까요?|{project}에 무엇을 불어넣을까요?|{project}의 가마솥에서 무엇을 끓여 볼까요?|{project}에서 무엇을 점쳐 볼까요?|오늘은 {project}에 무엇을 새길까요?|{project}에 무엇을 엮어 넣을까요?|{project}에서 무엇을 되살려 볼까요?"
   }
 }

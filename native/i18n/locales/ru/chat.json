@@ -93,5 +93,8 @@
     "declined": "Без ответа",
     "label": "{header}:",
     "own": "«{text}»"
+  },
+  "start": {
+    "lines": "Что наколдуем в {project}?|Что призовём в {project}?|Что направим в {project}?|Что варится в {project}?|Что хочешь разглядеть в {project}?|Что впишем сегодня в {project}?|Что вплетём в {project}?|Что поднимем в {project}?"
   }
 }
