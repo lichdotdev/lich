@@ -196,7 +196,7 @@ func (u *window) consoleTerminal(gtx C, v backend.Service) error {
 }
 
 func (u *window) layoutConsole(gtx C, t *termView) error {
-	err := u.terms.layout(gtx, t, u.terminalTakesKeys(gtx))
+	err := u.terms.layout(gtx, t, u.terminalTakesKeys(gtx), backdropLayer{})
 	if errors.Is(err, gioterm.ErrClosed) {
 		gtx.Execute(op.InvalidateCmd{})
 		return nil

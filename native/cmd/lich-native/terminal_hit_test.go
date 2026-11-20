@@ -41,7 +41,7 @@ func TestDragSelectsTheCellsUnderThePointer(t *testing.T) {
 	frame := func() {
 		ops.Reset()
 		gtx := layout.Context{Ops: &ops, Source: router.Source(), Metric: metric, Constraints: layout.Exact(size)}
-		if err := ts.layout(gtx, v, false); err != nil {
+		if err := ts.layout(gtx, v, false, backdropLayer{}); err != nil {
 			t.Fatal(err)
 		}
 		router.Frame(&ops)
