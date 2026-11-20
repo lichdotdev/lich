@@ -241,6 +241,29 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   `turn/start` the skill as the schema has it; that this loads the skill was not measured. Cursor CLI was not
   measured past its login, and Crush has no chat. lich adds no commands of its own.
 
+- **The Welcome installs a provider with the vendor's own command, and only where that runs as you**
+  (`internal/providers/install_recipes.go`). Each line is the vendor's install page word for word, run with no
+  terminal and no stdin, `SUDO_ASKPASS` and the askpass hooks emptied, refused outright when lich runs as root: a
+  step that would ask for a password fails on its own last line instead of waiting. Kiro CLI on Windows has no
+  install (its downloads page shows only the bash line), so its cell opens the install page. Crush has no script:
+  it needs npm on Linux and Windows and Homebrew on macOS, opencode needs npm on Windows, and the rest need curl
+  with bash or sh, or PowerShell. An npm whose global prefix belongs to root fails with its own EACCES line,
+  never through sudo.
+- **An install's progress is an estimate** (`installProgress`): no vendor script states a percentage, so the bar
+  follows the lines the installer prints, rising toward 0.9, and lands on 1 when it exits.
+- **An install that leaves its binary off PATH ends as a failure** (`finishInstall`). The login shell's PATH is
+  read again first, so an installer that edits the rc file is found. One that only prints the export line
+  (oh-my-pi's unix script, and Cursor's, which tells you to add `~/.local/bin` by hand) reads
+  "installed, but omp is not on PATH" until `~/.local/bin` is on PATH or the binary is set in Settings › Providers.
+  Cursor's pages name the binary `agent`; lich spawns `cursor-agent`, and whether its script still writes that
+  name was not measured.
+- **The Welcome signs in only where lich runs the login or can open it in a terminal** (`welcomeFacts`). Claude
+  Code and Codex sign in in lich's own login dialog. oh-my-pi, opencode, Cursor CLI (Linux and Windows) and Kiro
+  CLI (Linux) log in in a shell card, so their Sign in needs a project open and is disabled, with the reason in
+  its tooltip, on a first launch that has none. Antigravity and Crush, and Cursor CLI on macOS and Kiro CLI on
+  macOS and Windows, have no login lich can read: they show Ready once installed and sign in, or take a key, on
+  their first session.
+
 ## Session state and hooks
 
 - **The sidebar's state chips read the ring, nothing more** (`native/cmd/lich-native/sidebar_filter.go`):

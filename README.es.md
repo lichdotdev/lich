@@ -137,6 +137,8 @@ distinto.
 
 | Lo que obtienes | Claude Code | Codex | Antigravity | opencode | oh-my-pi | Crush | Cursor CLI | Kiro CLI |
 | --- | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: |
+| Instalarlo desde la bienvenida | sí | sí | sí | sí; en Windows con npm | sí | con npm, o Homebrew en macOS | sí | Linux y macOS |
+| Iniciar sesión desde la bienvenida | sí | sí | no, en su primera ejecución | en una terminal, con un proyecto abierto | en una terminal, con un proyecto abierto | no, en su primera ejecución | en una terminal, con un proyecto abierto; no en macOS | en una terminal, con un proyecto abierto; solo Linux |
 | Ventana de contexto en el pie de ventana | sí | sí | no | no | no | no | no | sí |
 | Cuánto del último turno salió de la caché de prompts, en el pie de ventana | sí | sí | no | en el tooltip del costo | en el tooltip del costo | no | no | no |
 | El tooltip de la tarjeta nombra el modelo en uso, y con cuál se abrió si cambió | sí | sí | no | no | no | no | no | sí |
