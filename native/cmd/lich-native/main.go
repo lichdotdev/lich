@@ -1377,11 +1377,10 @@ func (u *window) newSession(l launchRequest, typeahead string) bool {
 		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: backend.ErrorText(err)})
 		return false
 	}
-	if err := u.model.reload(u.ctx); err != nil {
+	if err := u.loadSessions(); err != nil {
 		u.logErr("reload", err)
 		return true
 	}
-	u.logErr("load folds", u.model.loadFolds(u.ctx))
 	if typeahead != "" {
 		u.terms.queue(id, typeahead)
 	}

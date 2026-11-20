@@ -458,12 +458,17 @@ func (u *window) showNewSession(projectID, id string) error {
 	return nil
 }
 
-// loadSessions reloads the projects, so a session just recorded has its card.
+// loadSessions reloads the projects, so a session just recorded has its card,
+// and reads the chat of one born as a chat: its process starts now, and its
+// options reach the composer before anyone writes to it. The backend's
+// SessionOpenedEvent does this for a spawn, but a session the window records
+// itself sends none.
 func (u *window) loadSessions() error {
 	if err := u.model.reload(u.ctx); err != nil {
 		return err
 	}
 	u.logErr("load folds", u.model.loadFolds(u.ctx))
+	u.model.loadChats(u.ctx)
 	return nil
 }
 
