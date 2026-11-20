@@ -232,12 +232,12 @@ func newBackdropInks(primary, hot, ground color.NRGBA) (l backdropInks) {
 // paint draws rows rows of the field into img, a pixel a cell, lit cells in
 // their ink and the rest transparent. cover is 1 for a pane's band, faded
 // from its top to its middle, and 0 for the whole pane, calm around centre.
-func (f *backdropField) paint(img *image.RGBA, rows int, cover float64, centre image.Point, inks *backdropInks) {
+func (f *backdropField) paint(img *image.RGBA, rows int, cover float64, centre image.Point, line image.Rectangle, inks *backdropInks) {
 	for y := range rows {
 		keep := 1 - cover*(1-backdropFade((float64(y)+0.5)/float64(f.rows)))
 		row := img.Pix[y*img.Stride:]
 		for x := range f.cols {
-			v := f.at(x, y) * keep * (1 - (1-cover)*(1-f.calm(x, y, centre)))
+			v := f.at(x, y) * keep * (1 - (1-cover)*(1-f.calm(x, y, centre)*lull(x, y, line)))
 			p := row[4*x : 4*x+4 : 4*x+4]
 			if v > bayer8[y&7][x&7] {
 				c := inks[min(64, int(math.Round(v*64)))]
@@ -255,6 +255,27 @@ func (f *backdropField) calm(x, y int, centre image.Point) float64 {
 	d := math.Hypot(float64(x-centre.X)/(float64(f.cols)/2), float64(y-centre.Y)/(float64(f.rows)/2))
 	k := min(1, max(0, (d-centreIn)/(centreOut-centreIn)))
 	return centreFloor + (1-centreFloor)*k*k*(3-2*k)
+}
+
+// Around the line under the start screen's composer the field lulls to
+// lineFloor, over a wide soft ellipse lineReachX cells past the line's ends
+// and lineReachY above and below its middle: a band that comes by dims there
+// without going out (crumbs-mix mockup, option A).
+const (
+	lineFloor  = 0.4
+	lineReachX = 14
+	lineReachY = 9
+)
+
+// lull is how much of the field shows at cell x, y around line.
+func lull(x, y int, line image.Rectangle) float64 {
+	if line.Empty() {
+		return 1
+	}
+	cx, cy := float64(line.Min.X+line.Max.X)/2, float64(line.Min.Y+line.Max.Y)/2
+	rx := float64(line.Dx())/2 + lineReachX
+	dx, dy := (float64(x)-cx)/rx, (float64(y)-cy)/lineReachY
+	return 1 - (1-lineFloor)*math.Exp(-2*(dx*dx+dy*dy))
 }
 
 func ceilDiv(a, b int) int { return (a + b - 1) / b }
@@ -376,8 +397,11 @@ func (u *window) backdropMark(gtx C, id string, top int) backdropMark {
 	}
 	s := u.chats.pane(id).start
 	cell := max(1, gtx.Dp(backdropCell))
-	at, centre := s.mark.Add(image.Pt(0, top)), s.centre.Add(image.Pt(0, top))
-	return backdropMark{at: image.Pt((at.X+cell/2)/cell, (at.Y+cell/2)/cell), centre: centre.Div(cell), fade: s.markFade}
+	at, centre, line := s.mark.Add(image.Pt(0, top)), s.centre.Add(image.Pt(0, top)), s.line.Add(image.Pt(0, top))
+	return backdropMark{
+		at: image.Pt((at.X+cell/2)/cell, (at.Y+cell/2)/cell), centre: centre.Div(cell),
+		line: image.Rectangle{Min: line.Min.Div(cell), Max: line.Max.Div(cell)}, fade: s.markFade,
+	}
 }
 
 // backdropCover is 0 while session id is a chat with nothing in it, 1 once
@@ -434,7 +458,7 @@ func (b *backdrops) layout(gtx C, th *ui.Theme, id string, size image.Point, gro
 	}
 	if tick != e.tick || cover != e.cover || mark != e.mark {
 		e.field.step(float64(time.Duration(tick)*backdropStep)/float64(time.Millisecond), rows)
-		e.field.paint(e.img, rows, float64(cover), mark.centre, &e.inks)
+		e.field.paint(e.img, rows, float64(cover), mark.centre, mark.line, &e.inks)
 		if mark.fade > 0 {
 			e.field.paintMark(e.img, rows, mark, &e.marks)
 		}

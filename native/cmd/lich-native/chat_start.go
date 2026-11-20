@@ -60,8 +60,11 @@ type chatStart struct {
 	mark     image.Point
 	markFade float32
 	// centre is the middle of the start screen's block, where the field
-	// calms down.
+	// calms down, and line the line under the composer, lineH tall, where it
+	// lulls too.
 	centre image.Point
+	line   image.Rectangle
+	lineH  int
 }
 
 // shows reports whether the start screen is drawn at now: while the
@@ -155,6 +158,8 @@ func (u *window) chatStartScreen(gtx C, th *ui.Theme, p *chatPane, sv sessionVie
 	heroAt := image.Pt((w-hd.Size.X)/2, top-hd.Size.Y)
 	p.start.mark = heroAt.Add(image.Pt((hd.Size.X-chatStartSlot(gtx).Size.X)/2, 0))
 	p.start.centre = image.Pt(w/2, top-hd.Size.Y+(hd.Size.Y+cd.Size.Y)/2)
+	column := max(min(w-2*gtx.Dp(chatPadX), gtx.Dp(chatBoxMax)), 0)
+	p.start.line = image.Rect((w-column)/2, top+cd.Size.Y-p.start.lineH, (w+column)/2, top+cd.Size.Y)
 	p.start.markFade = 0
 	if shown {
 		p.start.markFade = fade

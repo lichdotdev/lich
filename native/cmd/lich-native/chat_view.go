@@ -511,7 +511,9 @@ func (u *window) chatComposer(gtx C, th *ui.Theme, p *chatPane, sv sessionView, 
 				bright.Palette.MutedForeground = th.Foreground
 				crumbs, size = &bright, chatStartCrumbSize
 			}
-			return u.chatCrumbs(gtx, crumbs, sv, in, ft, size)
+			d := u.chatCrumbs(gtx, crumbs, sv, in, ft, size)
+			p.start.lineH = d.Size.Y
+			return d
 		}),
 	)
 }
