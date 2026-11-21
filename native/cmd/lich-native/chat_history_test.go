@@ -249,3 +249,30 @@ func TestClickingASearchedMessagePicksIt(t *testing.T) {
 		t.Errorf("box %q, want the message clicked", got)
 	}
 }
+
+// ↓ straight after ↑ brings the draft back: the walk asks for ↓ in the frame
+// that began it.
+func TestDownRightAfterUpBringsTheDraftBack(t *testing.T) {
+	_, r, _, p := sentFrames(t, false)
+	typeIn(r, p, "half a thought")
+	r.press(key.NameUpArrow)
+	r.press(key.NameDownArrow)
+	if got := p.editor.Text(); got != "half a thought" {
+		t.Errorf("box %q, want the draft back", got)
+	}
+}
+
+// The ↑ that takes the caret to the first line is the editor's, the next one
+// walks.
+func TestUpFromTheSecondLineMovesThenWalks(t *testing.T) {
+	_, r, _, p := sentFrames(t, false)
+	typeIn(r, p, "one\ntwo")
+	r.press(key.NameUpArrow)
+	if got := p.editor.Text(); got != "one\ntwo" {
+		t.Fatalf("the first ↑ walked: box %q", got)
+	}
+	r.press(key.NameUpArrow)
+	if got := p.editor.Text(); got != "ship the docs" {
+		t.Errorf("the second ↑: box %q, want the newest message", got)
+	}
+}

@@ -427,7 +427,7 @@ func (u *window) chatActs(gtx C, p *chatPane, sv sessionView, keys, working bool
 			}
 		}
 	}
-	if p.send.Clicked(gtx) && !working && u.sendChat(p, sv.ID) {
+	if p.send.Clicked(gtx) && !working && !p.search.open && u.sendChat(p, sv.ID) {
 		p.toEnd(gtx.Now)
 	}
 	if p.stop.Clicked(gtx) && !u.unholdChat(p, sv.ID) {
