@@ -1,13 +1,7 @@
 package main
 
 import (
-	"image"
-	"strings"
 	"time"
-
-	"gioui.org/op"
-	"gioui.org/op/clip"
-	"gioui.org/op/paint"
 
 	"github.com/lichdotdev/lich/native/ui"
 )
@@ -59,24 +53,6 @@ func soulsFrame(now time.Time) (frame int, next time.Time) {
 // the next frame. Only a working session's row draws it.
 func soulsSpinner(gtx C, th *ui.Theme) D {
 	frame, next := soulsFrame(gtx.Now)
-	if th.Still {
-		next = gtx.Now.Add(ui.StillFrame)
-	}
-	gtx.Execute(op.InvalidateCmd{At: next})
-	px := max(1, (gtx.Dp(soulsSize)+soulsCells/2)/soulsCells)
-	side := soulsCells * px
-	box := gtx.Constraints.Min
-	defer op.Offset(image.Pt((box.X-side)/2, (box.Y-side)/2)).Push(gtx.Ops).Pop()
-	for y, row := range strings.Split(soulsFrames[frame], " | ") {
-		for x := 0; x < len(row); x++ {
-			c, ok := chatFlameColor(th, row[x])
-			if row[x] == '1' {
-				c, ok = th.Muted, true
-			}
-			if ok {
-				paint.FillShape(gtx.Ops, c, clip.Rect(image.Rect(x*px, y*px, (x+1)*px, (y+1)*px)).Op())
-			}
-		}
-	}
-	return D{Size: box}
+	nextFrame(gtx, th, next.Sub(gtx.Now))
+	return drawSprite(gtx, th, soulsFrames[frame])
 }
