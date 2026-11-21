@@ -106,8 +106,8 @@
     "edit": "↑ edita la cola"
   },
   "search": {
-    "placeholder": "Busca en tus mensajes",
-    "empty": "Ningún mensaje coincide"
+    "label": "Busca en tus mensajes",
+    "failed": "Ningún mensaje coincide"
   },
   "tools": {
     "loading": "Cargando…",

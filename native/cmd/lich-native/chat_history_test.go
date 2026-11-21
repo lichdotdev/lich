@@ -1,7 +1,6 @@
 package main
 
 import (
-	"image"
 	"strings"
 	"testing"
 	"time"
@@ -121,19 +120,17 @@ func TestEscShutsTheToolsPanelRatherThanStopping(t *testing.T) {
 	noCancel(t, f)
 }
 
-// Esc with the search open shuts it, the draft back, and leaves the turn
-// running.
-func TestEscShutsTheSearchRatherThanStopping(t *testing.T) {
+// Esc while searching keeps the match in the box and leaves the turn running.
+func TestEscKeepsTheSearchedMessageRatherThanStopping(t *testing.T) {
 	_, r, f, p := sentFrames(t, true)
 	typeIn(r, p, "half a thought")
 	r.pressWith("R", key.ModCtrl)
-	typeIn(r, p, "docs")
+	// typed as the window system does, to whatever has the focus
+	r.router.Queue(key.EditEvent{Text: "docs"})
+	r.frame()
 	r.press(key.NameEscape)
-	if got := p.editor.Text(); got != "half a thought" {
-		t.Errorf("box %q, want the draft back", got)
-	}
-	if r.shows("ship the docs") && p.search.open {
-		t.Errorf("Esc left the search open:\n%s", r.drawn())
+	if got := p.editor.Text(); got != "ship the docs" || p.search.open {
+		t.Errorf("box %q, search open %v: want the match kept and the search shut", got, p.search.open)
 	}
 	noCancel(t, f)
 }
@@ -201,78 +198,105 @@ func TestTheQueueComesBeforeTheMessagesSent(t *testing.T) {
 	}
 }
 
-// Ctrl+R lists the messages sent over the box, typing filters them, and Enter
-// puts the one picked in the box without sending it.
-func TestCtrlRSearchesTheMessagesSent(t *testing.T) {
+// searchFor types query in the search's field and draws the frame that reads it.
+func searchFor(r *frameRig, p *chatPane, query string) {
+	p.search.query.SetText(query)
+	r.frame()
+}
+
+// Ctrl+R searches the messages sent in the box itself: the newest that holds
+// the query is shown with the match selected, Ctrl+R goes on to older ones,
+// and past the oldest the field says nothing more matches.
+func TestCtrlRShowsTheNewestMatchAndGoesBack(t *testing.T) {
 	_, r, f, p := sentFrames(t, false)
+	typeIn(r, p, "half a thought")
 	r.pressWith("R", key.ModCtrl)
-	if !r.showsAll(i18n.T("chat.search.placeholder"), "ship the docs", "rename the flag", "fix the totals in cents") {
-		t.Fatalf("Ctrl+R lists no messages:\n%s", r.drawn())
+	if !r.shows(i18n.T("chat.search.label")) || p.editor.Text() != "half a thought" {
+		t.Fatalf("Ctrl+R: box %q, want the draft under the search's label:\n%s", p.editor.Text(), r.drawn())
 	}
-	typeIn(r, p, "THE")
-	r.press(key.NameDownArrow)
-	r.press(key.NameReturn)
-	if got := p.editor.Text(); got != "fix the totals\nin cents" {
-		t.Errorf("box %q, want the second match", got)
+	searchFor(r, p, "THE")
+	if got := p.editor.Text(); got != "ship the docs" {
+		t.Fatalf("box %q, want the newest match", got)
+	}
+	if a, b := p.editor.Selection(); min(a, b) != 5 || max(a, b) != 8 {
+		t.Errorf("selection %d..%d, want the match, 5..8", a, b)
+	}
+	for _, want := range []string{"fix the totals\nin cents", "rename the flag", "rename the flag"} {
+		r.pressWith("R", key.ModCtrl)
+		if got := p.editor.Text(); got != want {
+			t.Fatalf("Ctrl+R again: box %q, want %q", got, want)
+		}
+	}
+	if !r.shows(i18n.T("chat.search.failed")) {
+		t.Errorf("past the oldest match the field does not say so:\n%s", r.drawn())
 	}
 	time.Sleep(20 * time.Millisecond)
-	if n := f.callsOf(api.ChatPrompt.Name); n != 0 || p.search.open {
-		t.Errorf("the pick was sent (%d prompts) or the list stayed open", n)
+	if n := f.callsOf(api.ChatPrompt.Name); n != 0 {
+		t.Errorf("searching sent %d prompts", n)
 	}
+}
+
+// Esc or Tab keep the match in the box to edit, the caret where it matched.
+func TestEscOrTabKeepsTheMatchToEdit(t *testing.T) {
+	for _, k := range []key.Name{key.NameEscape, key.NameTab} {
+		_, r, _, p := sentFrames(t, false)
+		r.pressWith("R", key.ModCtrl)
+		searchFor(r, p, "totals")
+		r.press(k)
+		if got := p.editor.Text(); got != "fix the totals\nin cents" || p.search.open {
+			t.Fatalf("%s: box %q, search open %v", k, got, p.search.open)
+		}
+		if a, b := p.editor.Selection(); a != 8 || b != 8 {
+			t.Errorf("%s: caret %d..%d, want 8 where it matched", k, a, b)
+		}
+		if u := p.editor.PaintSelectionWhenUnfocused; u {
+			t.Errorf("%s: the box still paints its selection unfocused", k)
+		}
+	}
+}
+
+// Enter sends the match.
+func TestEnterSendsTheMatch(t *testing.T) {
+	u, r, _, p := sentFrames(t, false)
 	r.pressWith("R", key.ModCtrl)
-	typeIn(r, p, "nothing like it")
-	if !r.shows(i18n.T("chat.search.empty")) {
+	searchFor(r, p, "flag")
+	r.press(key.NameReturn)
+	if p.editor.Len() != 0 || !u.model.chat.holding("s1") {
+		t.Errorf("box %q, holding %v: want the match sent", p.editor.Text(), u.model.chat.holding("s1"))
+	}
+}
+
+// Enter on a query nothing holds sends nothing and ends the search.
+func TestEnterWithNoMatchSendsNothing(t *testing.T) {
+	u, r, _, p := sentFrames(t, false)
+	typeIn(r, p, "half a thought")
+	r.pressWith("R", key.ModCtrl)
+	searchFor(r, p, "nothing like it")
+	if !r.shows(i18n.T("chat.search.failed")) {
 		t.Errorf("no word for a query nothing holds:\n%s", r.drawn())
 	}
 	r.press(key.NameReturn)
-	if !p.search.open {
-		t.Error("Enter with no match shut the search")
+	if p.search.open || u.model.chat.holding("s1") || p.editor.Text() != "half a thought" {
+		t.Errorf("box %q, open %v, holding %v: want the draft, shut, unsent", p.editor.Text(), p.search.open, u.model.chat.holding("s1"))
 	}
 }
 
-// A message clicked in the list goes in the box.
-func TestClickingASearchedMessagePicksIt(t *testing.T) {
-	_, r, _, p := sentFrames(t, false)
-	r.pressWith("R", key.ModCtrl)
-	var row image.Rectangle
-	for _, n := range r.nodes() {
-		// the conversation draws the message too; the list is drawn over it
-		if n.Desc.Label == "rename the flag" {
-			row, _ = r.smallestClickAt(n.Desc.Bounds.Min.Add(image.Pt(2, 2)))
+// Ctrl+C, or Backspace on an empty query, puts the draft back.
+func TestCtrlCOrBackspaceCancelsTheSearch(t *testing.T) {
+	for name, cancel := range map[string]func(r *frameRig, p *chatPane){
+		"Ctrl+C": func(r *frameRig, _ *chatPane) { r.pressWith("C", key.ModCtrl) },
+		"Backspace": func(r *frameRig, p *chatPane) {
+			searchFor(r, p, "")
+			r.press(key.NameDeleteBackward)
+		},
+	} {
+		_, r, _, p := sentFrames(t, false)
+		typeIn(r, p, "half a thought")
+		r.pressWith("R", key.ModCtrl)
+		searchFor(r, p, "docs")
+		cancel(r, p)
+		if got := p.editor.Text(); got != "half a thought" || p.search.open {
+			t.Errorf("%s: box %q, search open %v: want the draft back", name, got, p.search.open)
 		}
-	}
-	if row.Empty() {
-		t.Fatalf("no row to click:\n%s", r.drawn())
-	}
-	r.click(t, centre(row))
-	if got := p.editor.Text(); got != "rename the flag" {
-		t.Errorf("box %q, want the message clicked", got)
-	}
-}
-
-// ↓ straight after ↑ brings the draft back: the walk asks for ↓ in the frame
-// that began it.
-func TestDownRightAfterUpBringsTheDraftBack(t *testing.T) {
-	_, r, _, p := sentFrames(t, false)
-	typeIn(r, p, "half a thought")
-	r.press(key.NameUpArrow)
-	r.press(key.NameDownArrow)
-	if got := p.editor.Text(); got != "half a thought" {
-		t.Errorf("box %q, want the draft back", got)
-	}
-}
-
-// The ↑ that takes the caret to the first line is the editor's, the next one
-// walks.
-func TestUpFromTheSecondLineMovesThenWalks(t *testing.T) {
-	_, r, _, p := sentFrames(t, false)
-	typeIn(r, p, "one\ntwo")
-	r.press(key.NameUpArrow)
-	if got := p.editor.Text(); got != "one\ntwo" {
-		t.Fatalf("the first ↑ walked: box %q", got)
-	}
-	r.press(key.NameUpArrow)
-	if got := p.editor.Text(); got != "ship the docs" {
-		t.Errorf("the second ↑: box %q, want the newest message", got)
 	}
 }

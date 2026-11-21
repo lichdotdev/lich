@@ -138,8 +138,21 @@ func (u *window) chatChips(th *ui.Theme, p *chatPane, sv sessionView, working bo
 			}
 			return f.slot(gtx, th, s, in)
 		}
-		items, _ := f.fit(gtx, chips, width-2*pad-action.Size.X-gap-hint.Size.X, gap, itemH, draw)
+		room := width - 2*pad - action.Size.X - gap - hint.Size.X
 		h := max(itemH, action.Size.Y)
+		// while Ctrl+R searches, its field takes the chips' place
+		if p.search.open {
+			g := gtx
+			g.Constraints = layout.Constraints{Min: image.Pt(max(room, 0), 0), Max: image.Pt(max(room, 0), h)}
+			m = op.Record(gtx.Ops)
+			line := chatSearchLine(g, th, &p.search)
+			call := m.Stop()
+			t := op.Offset(image.Pt(pad, (h-line.Size.Y)/2)).Push(gtx.Ops)
+			call.Add(gtx.Ops)
+			t.Pop()
+			chips = nil
+		}
+		items, _ := f.fit(gtx, chips, room, gap, itemH, draw)
 		for _, it := range items {
 			t := op.Offset(it.at.Add(image.Pt(pad, (h-itemH)/2))).Push(gtx.Ops)
 			it.call.Add(gtx.Ops)

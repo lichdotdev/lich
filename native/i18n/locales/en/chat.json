@@ -106,8 +106,8 @@
     "edit": "↑ edits the queue"
   },
   "search": {
-    "placeholder": "Search your messages",
-    "empty": "No message matches"
+    "label": "Search your messages",
+    "failed": "No message matches"
   },
   "tools": {
     "loading": "Loading…",

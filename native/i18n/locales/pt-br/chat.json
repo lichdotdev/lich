@@ -106,8 +106,8 @@
     "edit": "↑ edita a fila"
   },
   "search": {
-    "placeholder": "Busque nas suas mensagens",
-    "empty": "Nenhuma mensagem corresponde"
+    "label": "Busque nas suas mensagens",
+    "failed": "Nenhuma mensagem corresponde"
   },
   "tools": {
     "loading": "Carregando…",

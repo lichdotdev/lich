@@ -101,8 +101,8 @@
     "edit": "↑ 编辑队列"
   },
   "search": {
-    "placeholder": "搜索已发送的消息",
-    "empty": "没有匹配的消息"
+    "label": "搜索已发送的消息",
+    "failed": "没有匹配的消息"
   },
   "tools": {
     "loading": "加载中…",

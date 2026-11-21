@@ -1,14 +1,13 @@
 package main
 
 import (
-	"image"
 	"slices"
 	"strings"
+	"unicode/utf8"
 
 	"gioui.org/io/event"
 	"gioui.org/io/key"
 	"gioui.org/layout"
-	"gioui.org/op"
 	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/api"
@@ -104,140 +103,142 @@ func (h *chatHistory) forward(ed *widget.Editor, sent []string) {
 	ed.SetCaret(n, n)
 }
 
-// chatSearch is the Ctrl+R list of the messages sent over the composer, in the
-// slash list's place. While it is open the box is its query, and draft what
-// the box held when it opened, back on Escape.
+// chatSearch is Ctrl+R's reverse search through the messages sent, inline as
+// Claude Code's is (its HistorySearch keys, 2.1.330): the query is typed in a
+// field on the box's foot, the box shows the newest message that holds it with
+// the match selected, Ctrl+R goes on to the next older one, Esc or Tab keep it
+// in the box to edit, Enter sends it, and Ctrl+C or Backspace on an empty query
+// put back the draft the box held.
 type chatSearch struct {
-	open   bool
-	draft  string
-	query  string
-	shown  []string
-	cursor int
-	rows   []ui.Clickable
-	list   widget.List
-	moved  bool
+	open  bool
+	draft string
+	query widget.Editor
+	// last is the query the box was searched for, at the message it shows in
+	// sent, -1 for none, and seen the messages shown for it, so Ctrl+R skips a
+	// repeat; failed is a query nothing older holds.
+	last   string
+	at     int
+	seen   []string
+	caret  int
+	failed bool
 }
 
-func searchFilter(ed *widget.Editor) key.Filter {
-	return key.Filter{Focus: ed, Name: "R", Required: key.ModCtrl}
+func searchFilter(tag event.Tag, name key.Name) key.Filter {
+	return key.Filter{Focus: tag, Name: name, Required: key.ModCtrl}
 }
 
-// acts runs the search's clicks and keys before the box reads its own:
-// Ctrl+R opens it while there are messages to search, and once open it takes
-// the keys a pick needs, so Enter puts the message in the box instead of
-// sending the query.
-func (s *chatSearch) acts(gtx C, ed *widget.Editor, sent []string) {
+// acts runs the search's keys before the box reads its own, and reports
+// whether Enter asked for the box to be sent.
+func (s *chatSearch) acts(gtx C, ed *widget.Editor, sent []string) (submit bool) {
 	if !s.open {
-		if len(sent) == 0 {
-			return
-		}
-		for {
-			ev, ok := gtx.Event(searchFilter(ed))
+		for len(sent) > 0 {
+			ev, ok := gtx.Event(searchFilter(ed, "R"))
 			if !ok {
-				return
+				break
 			}
 			if e, ok := ev.(key.Event); ok && e.State == key.Press {
-				s.open, s.draft, s.query, s.shown = true, ed.Text(), "", nil
-				ed.SetText("")
+				s.open, s.draft, s.last, s.at, s.seen, s.failed = true, ed.Text(), "", -1, nil, false
+				s.query.SetText("")
+				ed.PaintSelectionWhenUnfocused = true
 			}
 		}
-	}
-	for i := range s.shown {
-		if s.rows[i].Clicked(gtx) {
-			s.pick(ed, i)
-			return
+		if !s.open {
+			return false
 		}
 	}
-	s.keys(gtx, ed)
-}
-
-// refresh filters the list on what the box holds once it has been laid out,
-// as the slash list does, and asks for its keys in that frame.
-func (s *chatSearch) refresh(gtx C, ed *widget.Editor, sent []string) {
-	if !s.open {
-		return
+	if !gtx.Focused(&s.query) {
+		gtx.Execute(key.FocusCmd{Tag: &s.query})
 	}
-	query := strings.ToLower(strings.TrimSpace(ed.Text()))
-	s.shown = slices.DeleteFunc(slices.Clone(sent), func(m string) bool { return !strings.Contains(strings.ToLower(m), query) })
-	if query != s.query {
-		s.query, s.cursor, s.moved = query, 0, true
+	filters := []event.Filter{searchFilter(&s.query, "R"), searchFilter(&s.query, "C")}
+	for _, name := range []key.Name{key.NameEscape, key.NameTab, key.NameReturn, key.NameEnter} {
+		filters = append(filters, key.Filter{Focus: &s.query, Name: name})
 	}
-	s.cursor = min(s.cursor, max(len(s.shown)-1, 0))
-	if len(s.rows) < len(s.shown) {
-		s.rows = make([]ui.Clickable, len(s.shown))
-	}
-	s.keys(gtx, ed)
-}
-
-func (s *chatSearch) keys(gtx C, ed *widget.Editor) {
-	filters := []event.Filter{searchFilter(ed)}
-	for _, name := range []key.Name{key.NameUpArrow, key.NameDownArrow, key.NameReturn, key.NameEnter, key.NameTab, key.NameEscape} {
-		filters = append(filters, key.Filter{Focus: ed, Name: name})
+	if s.query.Len() == 0 {
+		filters = append(filters, key.Filter{Focus: &s.query, Name: key.NameDeleteBackward})
 	}
 	for s.open {
 		ev, ok := gtx.Event(filters...)
 		if !ok {
-			return
+			break
 		}
 		e, isKey := ev.(key.Event)
 		if !isKey || e.State != key.Press {
 			continue
 		}
-		n := len(s.shown)
-		switch {
-		case e.Name == key.NameEscape:
-			s.shut(ed, s.draft)
-		case n == 0:
-		case e.Name == key.NameUpArrow:
-			s.cursor, s.moved = (s.cursor+n-1)%n, true
-		case e.Name == key.NameDownArrow || e.Name == "R":
-			s.cursor, s.moved = (s.cursor+1)%n, true
+		switch e.Name {
+		case "R":
+			s.find(ed, sent, s.at+1)
+		case key.NameEscape, key.NameTab:
+			s.close(ed)
+		case key.NameReturn, key.NameEnter:
+			submit = s.at >= 0 || s.query.Len() == 0
+			s.close(ed)
 		default:
-			s.pick(ed, s.cursor)
+			ed.SetText(s.draft)
+			s.caret = len([]rune(s.draft))
+			s.close(ed)
 		}
 	}
-}
-
-func (s *chatSearch) pick(ed *widget.Editor, i int) { s.shut(ed, s.shown[i]) }
-
-// shut puts text in the box, the caret at its end, and shuts the list.
-func (s *chatSearch) shut(ed *widget.Editor, text string) {
-	s.open, s.shown = false, nil
-	ed.SetText(text)
-	n := len([]rune(text))
-	ed.SetCaret(n, n)
-}
-
-// layout draws the open list over the composer's box as the slash list is
-// drawn, a line for each message, or a muted line when none holds the query.
-func (s *chatSearch) layout(gtx C, th *ui.Theme, room int) {
 	if !s.open {
+		return submit
+	}
+	for {
+		if _, ok := s.query.Update(gtx); !ok {
+			break
+		}
+	}
+	if q := s.query.Text(); q != s.last {
+		s.last, s.at, s.seen, s.failed = q, -1, nil, false
+		if q == "" {
+			ed.SetText(s.draft)
+		} else {
+			s.find(ed, sent, 0)
+		}
+	}
+	return false
+}
+
+// find shows the first message in sent from index from that holds the query
+// and was not shown for it yet, or marks the search failed, the box as it was.
+func (s *chatSearch) find(ed *widget.Editor, sent []string, from int) {
+	q := strings.ToLower(s.last)
+	if q == "" {
 		return
 	}
-	s.list.Axis = layout.Vertical
-	if s.moved {
-		s.list.ScrollTo(max(s.cursor-2, 0))
-		s.moved = false
-	}
-	g := gtx
-	g.Constraints = layout.Constraints{Max: image.Pt(gtx.Constraints.Max.X, max(min(gtx.Dp(slashMaxH), room), 0))}
-	macro := op.Record(gtx.Ops)
-	d := th.PopoverPanel(g, func(gtx C, th *ui.Theme) D {
-		if len(s.shown) == 0 {
-			gtx.Constraints.Min = image.Pt(gtx.Constraints.Max.X, gtx.Dp(pickerRowH))
-			return layout.W.Layout(gtx, func(gtx C) D {
-				return layout.Inset{Left: ui.Space(2)}.Layout(gtx, th.Text(ui.TextSM, i18n.T("chat.search.empty")).Muted().Layout)
-			})
+	for i := max(from, 0); i < len(sent); i++ {
+		lower := strings.ToLower(sent[i])
+		at := strings.Index(lower, q)
+		if at < 0 || slices.Contains(s.seen, sent[i]) {
+			continue
 		}
-		return th.ThinScrollArea(&s.list).Layout(gtx, len(s.shown), func(gtx C, i int) D {
-			return pickerRow(gtx, th, &s.rows[i], i == s.cursor, func(gtx C, th *ui.Theme) D {
-				return th.Text(ui.TextSM, expandTabs(strings.Join(strings.Fields(s.shown[i]), " "))).Truncated().Layout(gtx)
-			})
-		})
-	})
-	call := macro.Stop()
-	m := op.Record(gtx.Ops)
-	op.Offset(image.Pt(0, -d.Size.Y-gtx.Dp(ui.Space(2)))).Add(gtx.Ops)
-	call.Add(gtx.Ops)
-	op.Defer(gtx.Ops, m.Stop())
+		s.at, s.failed, s.seen = i, false, append(s.seen, sent[i])
+		s.caret = utf8.RuneCountInString(lower[:at])
+		ed.SetText(sent[i])
+		ed.SetCaret(s.caret+utf8.RuneCountInString(q), s.caret)
+		return
+	}
+	s.failed = true
+}
+
+// close ends the search with the box as it is, the caret where the match was.
+func (s *chatSearch) close(ed *widget.Editor) {
+	s.open = false
+	ed.PaintSelectionWhenUnfocused = false
+	ed.SetCaret(s.caret, s.caret)
+}
+
+// chatSearchLine is the search's field on the box's foot, after what it is.
+func chatSearchLine(gtx C, th *ui.Theme, s *chatSearch) D {
+	label := i18n.T("chat.search.label")
+	if s.failed {
+		label = i18n.T("chat.search.failed")
+	}
+	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+		layout.Rigid(th.Text(ui.TextXS, label).Muted().Layout),
+		layout.Flexed(1, func(gtx C) D {
+			in := th.Input(&s.query, "")
+			in.Bare, in.TextSize, in.Height = true, ui.TextXS, balloonItemHeight
+			return in.Layout(gtx)
+		}),
+	)
 }
