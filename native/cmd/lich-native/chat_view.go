@@ -109,8 +109,8 @@ type chatView struct {
 	// may grow over the conversation up to slashRoom, the pane's height.
 	slash     chatSlash
 	slashRoom int
-	// unsent is a message the backend refused, handed back to an empty
-	// editor on the next frame.
+	// unsent is a message the backend refused, handed back to the editor,
+	// ahead of what was typed since, on the next frame.
 	mu     sync.Mutex
 	unsent string
 }
@@ -355,8 +355,12 @@ func chatColumn(gtx C, top, bottom, inset unit.Dp, w layout.Widget) D {
 // message sent past it declines it.
 func (u *window) chatActs(gtx C, p *chatPane, sv sessionView, keys, working bool, waiting, asking *backend.ChatItem) {
 	p.mu.Lock()
-	if p.unsent != "" && p.editor.Len() == 0 {
-		p.editor.SetText(p.unsent)
+	if p.unsent != "" {
+		text := p.unsent
+		if typed := strings.TrimSpace(p.editor.Text()); typed != "" {
+			text += chatQueueJoin + typed
+		}
+		p.editor.SetText(text)
 		p.undo.Reset()
 	}
 	p.unsent = ""
@@ -444,6 +448,16 @@ func (u *window) sendChat(p *chatPane, id string) bool {
 	p.undo.Reset()
 	if text == chatNewCommand {
 		go func() { u.chatFailed(u.client.ChatNew(u.ctx, id)) }()
+		return true
+	}
+	// A message sent while the agent's questions wait declines them, and goes
+	// at once: Esc there is the questions'.
+	if u.model.chat.isRunning(id) {
+		go func() {
+			if err := u.client.ChatPrompt(u.ctx, id, text); err != nil {
+				u.chatRefused(p, text, err)
+			}
+		}()
 		return true
 	}
 	u.holdChat(p, id, text)

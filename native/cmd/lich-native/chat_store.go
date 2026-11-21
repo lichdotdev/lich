@@ -59,6 +59,7 @@ func (s *chatStore) history(id string, items []backend.ChatItem) {
 		s.items = map[string][]backend.ChatItem{}
 	}
 	s.items[id] = slices.Clone(items)
+	s.forgetSent(id)
 	// The turns' numbers are the conversation's own, and a history read back
 	// may number them anew: an end kept from before would close another turn.
 	delete(s.ends, id)
@@ -90,6 +91,7 @@ func (s *chatStore) turn(t api.ChatTurn) {
 	if t.Running {
 		return
 	}
+	s.forgetSent(t.SessionID)
 	// The event does not name its turn: it is the last one the conversation
 	// holds, whose items were all heard before the end.
 	list := s.items[t.SessionID]

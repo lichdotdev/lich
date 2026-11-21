@@ -131,3 +131,33 @@ func TestTheMessageHeardBackReplacesTheOneWaiting(t *testing.T) {
 		}
 	}
 }
+
+// A message the backend refused goes back ahead of what was typed in the wait.
+func TestARefusedMessageKeepsWhatWasTyped(t *testing.T) {
+	_, r, _, p := holdFrames(t, "rename the flag")
+	typeIn(r, p, "and the docs")
+	p.mu.Lock()
+	p.unsent = "rename the flag"
+	p.mu.Unlock()
+	r.frame()
+	if got := p.editor.Text(); got != "rename the flag\n\nand the docs" {
+		t.Errorf("box %q, want the refused message then what was typed", got)
+	}
+}
+
+// A message gone and never heard back stops running the turn once the turn
+// ends or the history is read again.
+func TestAMessageGoneEndsWithItsTurn(t *testing.T) {
+	for name, end := range map[string]func(*chatStore){
+		"turn":    func(s *chatStore) { s.turn(api.ChatTurn{SessionID: "s1", StopReason: "end_turn"}) },
+		"history": func(s *chatStore) { s.history("s1", nil) },
+	} {
+		var s chatStore
+		s.history("s1", nil)
+		s.dispatch("s1", s.hold("s1", "rename the flag", time.Now()))
+		end(&s)
+		if s.isRunning("s1") || len(s.of("s1")) != 0 {
+			t.Errorf("%s: the message gone still runs the turn", name)
+		}
+	}
+}

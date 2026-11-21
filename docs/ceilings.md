@@ -143,7 +143,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   (`native/cmd/lich-native/chat_hold.go`): Esc or Stop takes it back meanwhile, and nothing reached the agent.
   It is drawn sent with its turn running from Enter, so the wait does not show, and a window closed inside it
   loses the message. Written in the wait, Enter and Ctrl+Enter queue: steered, the text would reach the agent
-  before it.
+  before it. A message sent while the agent's questions wait goes at once, since Esc there declines them.
 - **A chat turn's count of changes is a difference of two numstat readings, not a record of what the agent did**
   (`internal/chat/changes.go`, `internal/project/lines.go`): lich reads `git diff --numstat HEAD` and the untracked
   files before the message goes out and again when the turn ends, and counts the files whose numbers differ. It

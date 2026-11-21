@@ -97,7 +97,16 @@ func (s *chatStore) withHeld(id string, list []backend.ChatItem) []backend.ChatI
 // heard forgets session id's message gone once the backend's copy of a
 // person's message arrives, whatever id it carries. s.mu is held.
 func (s *chatStore) heard(id string, it backend.ChatItem) {
-	if h := s.held[id]; h != nil && h.sent && it.Kind == api.ItemUser {
+	if it.Kind == api.ItemUser {
+		s.forgetSent(id)
+	}
+}
+
+// forgetSent forgets session id's message gone, which the conversation now
+// holds or never will: a history read again or a turn ended stand for it too,
+// so a copy never heard does not keep the turn running. s.mu is held.
+func (s *chatStore) forgetSent(id string) {
+	if h := s.held[id]; h != nil && h.sent {
 		delete(s.held, id)
 	}
 }
@@ -111,16 +120,19 @@ func (u *window) holdChat(p *chatPane, id, text string) {
 		if !u.model.chat.dispatch(id, h) {
 			return
 		}
-		err := u.client.ChatPrompt(u.ctx, id, text)
-		if err == nil {
-			return
+		if err := u.client.ChatPrompt(u.ctx, id, text); err != nil {
+			u.model.chat.dropHeld(id, h)
+			u.chatRefused(p, text, err)
 		}
-		u.model.chat.dropHeld(id, h)
-		p.mu.Lock()
-		p.unsent = text
-		p.mu.Unlock()
-		u.chatFailed(err)
 	})
+}
+
+// chatRefused hands text, which the backend refused, back to the editor.
+func (u *window) chatRefused(p *chatPane, text string, err error) {
+	p.mu.Lock()
+	p.unsent = text
+	p.mu.Unlock()
+	u.chatFailed(err)
 }
 
 // unholdChat takes session id's waiting message back into the box, ahead of

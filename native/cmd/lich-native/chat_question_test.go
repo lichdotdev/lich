@@ -190,6 +190,9 @@ func TestTheComposerSendsPastAWaitingQuestion(t *testing.T) {
 	r.click(t, r.at(t, "Ask claude about this project"))
 	u.chats.pane("s1").editor.SetText("cheese instead")
 	r.press(key.NameReturn)
+	if u.model.chat.holding("s1") {
+		t.Error("the message waits: Esc would decline the questions and still send it")
+	}
 	if body := f.waitCall(t, api.ChatPrompt.Name); !strings.Contains(body, "cheese instead") {
 		t.Errorf("sent %s", body)
 	}
