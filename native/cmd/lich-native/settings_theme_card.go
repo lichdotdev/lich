@@ -28,15 +28,11 @@ const (
 
 var miniBarWidths = [3]float64{0.60, 0.85, 0.45}
 
-// The card's rings: selected is ring-foreground/70, two pixels; a
-// miniature's edge is ring-foreground/20, one.
+// A miniature's edge is ring-foreground/20, one pixel.
 const (
-	cardSelectedRing = 0.7
-	cardMiniRing     = 0.2
-	cardActionsFill  = 0.9 // bg-popover/90
-	spinTurn         = 1.0 // animate-spin: one turn a second
-	importDash       = 4
-	importDashGap    = 3
+	cardMiniRing    = 0.2
+	cardActionsFill = 0.9 // bg-popover/90
+	spinTurn        = 1.0 // animate-spin: one turn a second
 )
 
 var (
@@ -91,7 +87,7 @@ func (p *themePicker) cardLayout(gtx C, th *ui.Theme, c *themeCard, s themeCardS
 	tip := th.Tooltip(p.root, &c.tip, s.name+"  "+s.caption)
 	tip.Side = ui.SideBottom
 	d := tip.Layout(gtx, func(gtx C) D {
-		return c.click.Layout(gtx, func(gtx C) D { return cardBody(gtx, th, s.name, s.caption, s.selected, s.preview) })
+		return c.click.Layout(gtx, func(gtx C) D { return cardBody(gtx, th, s.name, s.caption, s.selected, c.click.Hovered(), s.preview) })
 	})
 	if s.custom && (c.click.Hovered() || c.update.Hovered() || c.remove.Hovered()) {
 		p.cardActions(gtx, th, c, s, d.Size.X)
@@ -99,33 +95,47 @@ func (p *themePicker) cardLayout(gtx C, th *ui.Theme, c *themeCard, s themeCardS
 	return d
 }
 
-// cardBody is the p-1 rounded-lg frame around the preview, ringed when
-// selected, and the mt-1.5 line of name and caption.
-func cardBody(gtx C, th *ui.Theme, name, caption string, selected bool, preview func(gtx C, th *ui.Theme, size image.Point) D) D {
-	w, pad := gtx.Dp(themeCardWidth), gtx.Dp(themeCardPad)
-	frame := image.Pt(w, gtx.Dp(themeCardPreview)+2*pad)
+// cardBody is the preview and the line of name and caption under it, on a
+// rounded-lg fill: Accent when selected, with a check before the name, the
+// hover fill under the pointer, nothing at rest.
+func cardBody(gtx C, th *ui.Theme, name, caption string, selected, hovered bool, preview func(gtx C, th *ui.Theme, size image.Point) D) D {
+	macro := op.Record(gtx.Ops)
+	d := layout.UniformInset(themeCardPad).Layout(gtx, func(gtx C) D { return cardContent(gtx, th, name, caption, selected, preview) })
+	call := macro.Stop()
+	fill := gtx
+	fill.Constraints = layout.Exact(d.Size)
+	switch {
+	case selected:
+		ui.Fill(fill, th.Over(th.Accent), ui.RadiusLG)
+	case hovered:
+		ui.Fill(fill, th.Over(ui.Alpha(th.Accent, ghostHoverFill)), ui.RadiusLG)
+	}
+	call.Add(gtx.Ops)
+	return d
+}
+
+func cardContent(gtx C, th *ui.Theme, name, caption string, selected bool, preview func(gtx C, th *ui.Theme, size image.Point) D) D {
+	w := gtx.Dp(themeCardWidth) - 2*gtx.Dp(themeCardPad)
+	frame := image.Pt(w, gtx.Dp(themeCardPreview))
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			if selected {
-				ui.InsetRing(gtx, frame, gtx.Dp(ui.RadiusLG), gtx.Dp(2), th.Over(ui.Alpha(th.Foreground, cardSelectedRing)))
-			}
-			inner := frame.Sub(image.Pt(2*pad, 2*pad))
-			t := op.Offset(image.Pt(pad, pad)).Push(gtx.Ops)
-			cl := clip.UniformRRect(image.Rectangle{Max: inner}, gtx.Dp(ui.RadiusMD)).Push(gtx.Ops)
-			preview(gtx, th, inner)
-			cl.Pop()
-			t.Pop()
+			defer clip.UniformRRect(image.Rectangle{Max: frame}, gtx.Dp(ui.RadiusMD)).Push(gtx.Ops).Pop()
+			preview(gtx, th, frame)
 			return D{Size: frame}
 		}),
 		ui.VGap(1.5),
 		layout.Rigid(func(gtx C) D {
 			gtx.Constraints = layout.Exact(image.Pt(w, gtx.Constraints.Max.Y))
 			gtx.Constraints.Min.Y = 0
-			return layout.Flex{Alignment: layout.Baseline}.Layout(gtx,
+			var check []layout.FlexChild
+			if selected {
+				check = []layout.FlexChild{layout.Rigid(func(gtx C) D { return icCheck.Layout(gtx, ui.Space(3), th.Foreground) }), ui.Gap(1)}
+			}
+			return layout.Flex{Alignment: layout.Middle}.Layout(gtx, append(check,
 				layout.Rigid(th.Text(ui.TextXS, name).Weight(font.Medium).Layout),
 				ui.Gap(1.5),
 				layout.Flexed(1, th.Text(ui.Text2XS, caption).Muted().Layout),
-			)
+			)...)
 		}),
 	)
 }
@@ -173,36 +183,6 @@ func spinAngle(gtx C) float32 {
 	gtx.Execute(op.InvalidateCmd{})
 	secs := float64(gtx.Now.UnixMilli()%1000) / 1000 / spinTurn
 	return float32(secs * 2 * math.Pi)
-}
-
-// importCardLayout is the strip's first card: a dashed frame with a + in
-// the preview's place and "Import theme" where a theme's name goes, so it
-// lines up with the cards and reads as the action that adds one.
-func (p *themePicker) importCardLayout(gtx C, th *ui.Theme) D {
-	c := &p.importCard
-	if c.click.Clicked(gtx) {
-		p.openImport()
-	}
-	return c.click.Layout(gtx, func(gtx C) D {
-		hovered := c.click.Hovered()
-		ink, edge := th.MutedForeground, th.Over(ui.Alpha(th.Foreground, cardMiniRing))
-		if hovered {
-			ink, edge = th.Foreground, th.Over(ui.Alpha(th.Foreground, 2*cardMiniRing))
-		}
-		preview := func(gtx C, th *ui.Theme, size image.Point) D {
-			if hovered {
-				box := gtx
-				box.Constraints = layout.Exact(size)
-				ui.Fill(box, th.Over(ui.Alpha(th.Accent, 0.5)), ui.RadiusMD)
-			}
-			ui.DashedBorder(gtx, size, gtx.Dp(ui.RadiusMD), edge, importDash, importDashGap)
-			icon := gtx.Dp(ui.Space(5))
-			defer op.Offset(image.Pt((size.X-icon)/2, (size.Y-icon)/2)).Push(gtx.Ops).Pop()
-			icImportTheme.Layout(gtx, ui.Space(5), ink)
-			return D{Size: size}
-		}
-		return cardBody(gtx, th, i18n.T("settings.importThemeDialog.title"), "", false, preview)
-	})
 }
 
 // themeMiniature is ThemeMiniature: the window at a glance in p's colors,

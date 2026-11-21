@@ -64,7 +64,7 @@
     "notRepository": "不是 git 仓库",
     "loading": "正在加载…",
     "noChanges": "没有未提交的更改",
-    "squeezed": "并排视图需要更宽的面板"
+    "squeezed": "分栏视图需要更宽的面板"
   },
   "reviewSlots": {
     "forSession": "发给会话 · {lines}",
@@ -75,7 +75,7 @@
     "reviewPlaceholder": "留下评论，提交评审时一并发送。"
   },
   "dockReviewBody": {
-    "split": "并排",
+    "split": "分栏",
     "unified": "统一"
   },
   "binaryState": {

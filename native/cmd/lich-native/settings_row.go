@@ -26,15 +26,13 @@ const (
 )
 
 var (
-	rowPadX      = ui.Space(2)
-	rowPadY      = ui.Space(3.5)
-	rowChangedPL = ui.Space(3.5)
-	rowRule      = unit.Dp(2)
-	rowGap       = ui.Space(6)
-	rowTextMinW  = ui.Space(40)
-	rowNoteSize  = ui.TextXS
-	icRowFolder  = icons.Lucide("folder")
-	icRowReset   = icons.Lucide("undo-2")
+	rowPadX     = ui.Space(2)
+	rowPadY     = ui.Space(3.5)
+	rowGap      = ui.Space(6)
+	rowTextMinW = ui.Space(40)
+	rowNoteSize = ui.TextXS
+	icRowFolder = icons.Lucide("folder")
+	icRowReset  = icons.Lucide("undo-2")
 )
 
 // settingRow is SettingRow: a title and its description on the left, the
@@ -48,6 +46,8 @@ type settingRow struct {
 	globalValue        string        // rowChanged's "Global: <value>"
 	reset              *ui.Clickable // rowChanged's Use Global
 	lit                float32       // the search's flash, 0 to 1
+	// lead is drawn before the title when set: a provider's mark.
+	lead layout.Widget
 	// detail is a line under the description saying what the control's
 	// value does.
 	detail string
@@ -79,8 +79,8 @@ func (r settingRow) layoutBlock(gtx C, th *ui.Theme, first bool, under func(gtx 
 	})
 }
 
-// frame is what every row draws around its content: the divider, the
-// search's flash and the changed rule.
+// frame is what every row draws around its content: the divider and the
+// search's flash.
 func (r settingRow) frame(gtx C, th *ui.Theme, first bool, content func(gtx C, th *ui.Theme) D) D {
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 	bg := th.Surface
@@ -98,9 +98,6 @@ func (r settingRow) frame(gtx C, th *ui.Theme, first bool, content func(gtx C, t
 		lit.Constraints = layout.Exact(d.Size)
 		ui.Fill(lit, bg, ui.RadiusMD)
 	}
-	if r.kind == rowChanged {
-		paint.FillShape(gtx.Ops, th.ToneWait, clip.Rect{Max: image.Pt(gtx.Dp(rowRule), d.Size.Y)}.Op())
-	}
 	call.Add(gtx.Ops)
 	return d
 }
@@ -112,11 +109,7 @@ func (r settingRow) content(gtx C, th *ui.Theme, control func(gtx C, th *ui.Them
 	if r.kind == rowGlobalOnly {
 		text = fadedTheme(th, rowOffOpacity)
 	}
-	padL := rowPadX
-	if r.kind == rowChanged {
-		padL = rowChangedPL
-	}
-	return layout.Inset{Left: padL, Right: rowPadX, Top: rowPadY, Bottom: rowPadY}.Layout(gtx, func(gtx C) D {
+	return layout.Inset{Left: rowPadX, Right: rowPadX, Top: rowPadY, Bottom: rowPadY}.Layout(gtx, func(gtx C) D {
 		loose := gtx
 		loose.Constraints.Min = image.Point{}
 		drawn := record(loose, func(gtx C) D { return r.control(gtx, th, text, control) })
@@ -148,7 +141,14 @@ func (r settingRow) text(gtx C, th *ui.Theme) D {
 	if r.sample != nil {
 		descLayout = r.sample
 	}
-	children := []layout.FlexChild{layout.Rigid(th.Text(ui.TextSM, r.title).Weight(font.Medium).Layout)}
+	title := th.Text(ui.TextSM, r.title).Weight(font.Medium).Layout
+	if r.lead != nil {
+		lead, name := r.lead, title
+		title = func(gtx C) D {
+			return layout.Flex{Alignment: layout.Middle}.Layout(gtx, layout.Rigid(lead), ui.Gap(2), layout.Rigid(name))
+		}
+	}
+	children := []layout.FlexChild{layout.Rigid(title)}
 	if r.description != "" || r.sample != nil {
 		children = append(children, ui.VGap(0.5), layout.Rigid(descLayout))
 	}

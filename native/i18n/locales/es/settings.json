@@ -82,10 +82,6 @@
     "followsOs": "según el sistema",
     "inUse": "en uso",
     "bundled": "incluido",
-    "count": {
-      "one": "{count} tema",
-      "other": "{count} temas"
-    },
     "updateTo": "Actualizar a la v{version}",
     "updateAvailable": "v{version} disponible",
     "checkUpdates": "Buscar actualizaciones",
@@ -149,25 +145,27 @@
   "diffLayoutSetting": {
     "title": "Diseño del diff",
     "searchWords": "lado a lado dividido unificado revisión side by side split unified review",
-    "description": "Cómo se muestran los cambios en la pestaña Revisión y en los pull requests. Si el panel es demasiado estrecho para dos columnas, la vista en paralelo pasa a unificada.",
+    "description": "Cómo se muestran los cambios en la pestaña Revisión y en los pull requests. El modo dividido pasa a unificado si el panel es demasiado estrecho.",
     "layout": {
       "unified": "Unificado",
-      "split": "En paralelo"
+      "split": "Dividido"
     }
   },
   "notificationsSettings": {
     "needsInputTitle": "Avisarme cuando una sesión necesite una respuesta",
-    "needsInputDescription": "Muestra una notificación de escritorio cuando una sesión está bloqueada esperándote (una petición de permiso, una pregunta) y no estás en la ventana de lich. Mientras estás en lich no cambia nada, porque ya avisan la campana de la tarjeta y el aviso emergente.",
+    "needsInputDescription": "Muestra una notificación de escritorio cuando una sesión está bloqueada esperándote (una petición de permiso, una pregunta) y no estás en la ventana de lich.",
     "finishedTitle": "Avisarme cuando una sesión termine de trabajar",
-    "finishedDescription": "Muestra una notificación de escritorio cuando una sesión termina su turno sin nada más que preguntarte y no estás en la ventana de lich. Funciona aparte del ajuste anterior, así que puedes enterarte del final de una ejecución larga que dejaste corriendo sin recibir un aviso por cada petición. No muestra aviso emergente, porque dentro de lich la tarjeta y la pestaña de su proyecto ya lo indican.",
+    "finishedDescription": "Muestra una notificación de escritorio cuando una sesión termina su turno sin nada más que preguntarte y no estás en la ventana de lich.",
     "onCount": "{on} de {count} activadas"
   },
   "hotkeysSettings": {
     "alsoBound": "También asignado a {actions}",
     "pressKeys": "Pulsa las teclas…",
-    "unassignHint": "Deja esta acción sin atajo",
     "resetHint": "Restaura el atajo predeterminado",
-    "passthroughNote": "lich los reescribe de camino a la terminal del agente, así que no se pueden reasignar."
+    "passthroughNote": "lich los reescribe de camino a la terminal del agente, así que no se pueden reasignar.",
+    "record": "Grabar un atajo nuevo",
+    "unassign": "Quitar el atajo",
+    "options": "Opciones de {action}"
   },
   "providersPane": {
     "detecting": "Detectando proveedores…",
@@ -175,7 +173,7 @@
     "moreDetected": "{count} más detectados",
     "defaultTitle": "Proveedor predeterminado",
     "defaultSearchWords": "agente nueva sesión agent new session",
-    "defaultDescription": "El proveedor que lanzan las acciones de sesión implícitas: el atajo de nueva sesión, el botón Nueva sesión de un proyecto vacío y las worktrees recién creadas.",
+    "defaultDescription": "Lo usan el atajo de nueva sesión, el botón Nueva sesión de un proyecto vacío y las worktrees nuevas.",
     "defaultHere": "predeterminado aquí",
     "skipEverywhere": "sin preguntas"
   },
@@ -227,12 +225,9 @@
   "planUsageSetting": {
     "title": "Uso del plan",
     "searchWords": "cuota suscripción límite quota subscription limit",
-    "description": "Cuánto de cada ventana ha gastado tu suscripción. Se lee de tu cuenta y se actualiza cada 5 minutos mientras lich está abierto.",
     "signedOut": "Sin sesión iniciada.",
     "signedOutRun": "Sin sesión iniciada. Ejecuta {command} para leer el uso del plan.",
-    "readFailed": "No se pudo leer el uso del plan. El endpoint de uso del proveedor no está documentado y puede haber cambiado.",
-    "used": "usado",
-    "resets": "se restablece"
+    "readFailed": "No se pudo leer el uso del plan. El endpoint de uso del proveedor no está documentado y puede haber cambiado."
   },
   "closeSetting": {
     "title": "Al cerrar la ventana",
@@ -325,7 +320,7 @@
     "summary": "Un home vacío, la máquina en solo lectura, escritura solo en el checkout. La red sigue activa.",
     "confinedTitle": "Qué sesiones se ejecutan confinadas",
     "confinedSearchWords": "aislar bwrap seatbelt isolate",
-    "confinedHint": "Preguntar añade la pregunta al menú Nueva sesión y al diálogo Nueva sesión en worktree. Una sesión abierta donde nadie puede responder (por otra sesión o mediante la herramienta MCP) queda confinada. Las terminales nunca se confinan, porque el sandbox es para agentes que trabajan sin supervisión.",
+    "confinedHint": "Preguntar añade la pregunta a Nueva sesión y a Nueva sesión en worktree; una sesión que nadie puede responder queda confinada. Las terminales nunca se confinan.",
     "carryTitle": "Qué puede llevarse dentro una sesión confinada",
     "sshTitle": "Agente SSH",
     "sshSearchWords": "push claves keys",
@@ -341,8 +336,7 @@
     "confirmDescription": "{rung}: {exposes}",
     "confirm": "Dejar sin confinar",
     "canConfine": "Esta máquina puede confinar sesiones",
-    "cannotConfine": "Esta máquina no puede confinar sesiones",
-    "statusDetail": "· {detail}"
+    "cannotConfine": "Esta máquina no puede confinar sesiones"
   },
   "vcsToolsSetting": {
     "title": "Herramientas de línea de comandos",
@@ -437,7 +431,7 @@
     "terminalGroup": "Terminal"
   },
   "settingsHelp": {
-    "bugDescription": "Abre el formulario de errores en tu navegador con la versión y la plataforma ya rellenadas. El issue lo escribes y lo envías tú. Ejecuta `lich rage` en una terminal para reunir los logs, las versiones y lo que lich encontró en esta máquina en un solo archivo para adjuntar.",
+    "bugDescription": "Abre el formulario de errores en tu navegador con la versión y la plataforma ya rellenadas. Ejecuta `lich rage` en una terminal para reunir los logs, las versiones y lo que lich encontró en esta máquina en un solo archivo para adjuntar.",
     "logSearchWords": "depuración logs ventana nativa",
     "logDescription": "La carpeta contiene el log de lich y, junto a él, el de la ventana nativa (lich-native.log). Contienen rutas absolutas, nombres de proyectos y ramas, y tu login de gh, pero nunca un token de sesión. Léelos antes de adjuntarlos a nada.",
     "logFailed": "No se pudo abrir la carpeta de logs: {error}"
@@ -634,8 +628,6 @@
   "servicesSettings": {
     "title": "Servicios",
     "searchWords": "servicios comandos docker contenedor túnel servidor de desarrollo iniciar con lich services",
-    "description": "Comandos que lich mantiene en marcha para este proyecto, cada uno en su propia consola: un contenedor, un túnel, un servidor de desarrollo. Si el comando termina, el servicio se da por detenido.",
-    "globalDescription": "Servicios que se ejecutan en tu carpeta personal y aparecen en la pantalla de inicio de lich. Los servicios de un proyecto están en su ámbito.",
     "add": "Añadir servicio",
     "startsWithLich": "Se inicia con lich",
     "name": "Nombre",
@@ -647,7 +639,6 @@
     "save": "Guardar"
   },
   "extensionsSettings": {
-    "description": "Cada extensión se ejecuta en tu equipo como tú, con acceso a tus archivos y cuentas.",
     "openFolder": "Abrir carpeta",
     "fromGit": "Desde GitHub",
     "fromDir": "Desde una carpeta",
@@ -734,7 +725,7 @@
   },
   "sessionViewSetting": {
     "title": "Las sesiones nuevas se abren como",
-    "description": "Una sesión nueva empieza como chat o en la terminal de su agente. Un proveedor sin chat abre su terminal de todos modos, y GUI | TUI cambia cualquier sesión después.",
+    "description": "Una sesión nueva empieza como chat o en la terminal de su agente.",
     "chat": "Chat",
     "terminal": "Terminal",
     "searchWords": "gui tui vista chat terminal predeterminado nueva sesión abrir"

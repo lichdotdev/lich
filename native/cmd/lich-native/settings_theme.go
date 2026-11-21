@@ -186,29 +186,33 @@ func (p *themePicker) selectionMiniature(gtx C, th *ui.Theme, v appearanceView, 
 	return themeMiniature(gtx, th, v.resolved.palette, px, true)
 }
 
-// stripLayout is the count line, the two-row grid of cards and the broken
-// themes.
+// stripLayout is Check for updates while a theme from a repository is
+// installed, the two-row grid of cards, Import theme and the broken themes.
 func (p *themePicker) stripLayout(gtx C, th *ui.Theme, v appearanceView) D {
 	cards := p.cardWidgets(th, v)
 	columns := (len(cards) + themeStripRows - 1) / themeStripRows
+	if p.importCard.click.Clicked(gtx) {
+		p.openImport()
+	}
+	add := th.Button(&p.importCard.click, i18n.T("settings.importThemeDialog.title"))
+	add.Variant, add.Size, add.Icon = ui.VariantGhost, ui.SizeSM, icImportTheme
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D { return p.stripHeader(gtx, th, v) }),
-		ui.VGap(2),
 		layout.Rigid(func(gtx C) D {
 			return th.ScrollArea(&p.strip).Layout(gtx, columns, func(gtx C, col int) D {
 				return p.stripColumn(gtx, cards, col, columns)
 			})
 		}),
+		layout.Rigid(func(gtx C) D { return layout.W.Layout(gtx, add.Layout) }),
 		layout.Rigid(func(gtx C) D { return p.brokenList(gtx, th, v.broken) }),
 	)
 }
 
-// stripHeader is the count line, with Check for updates at its end while a
-// theme from a repository is installed.
+// stripHeader is Check for updates at the strip's right while a theme from a
+// repository is installed, nothing otherwise.
 func (p *themePicker) stripHeader(gtx C, th *ui.Theme, v appearanceView) D {
-	count := layout.Rigid(th.Text(ui.TextXS, themeCount(len(v.themes))).Muted().Layout)
 	if !slices.ContainsFunc(v.themes, func(e themeEntry) bool { return e.def.Source != nil }) {
-		return layout.Flex{Alignment: layout.Middle}.Layout(gtx, count)
+		return D{}
 	}
 	checking := p.snapshot().checking
 	if p.check.Clicked(gtx) && !checking {
@@ -218,13 +222,11 @@ func (p *themePicker) stripHeader(gtx C, th *ui.Theme, v appearanceView) D {
 	if checking {
 		ink = th.MutedForeground
 	}
-	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-		count,
-		layout.Flexed(1, layout.Spacer{}.Layout),
-		layout.Rigid(func(gtx C) D {
+	return layout.Inset{Bottom: ui.Space(2)}.Layout(gtx, func(gtx C) D {
+		return layout.E.Layout(gtx, func(gtx C) D {
 			return th.GhostTextButton(gtx, &p.check, i18n.T("settings.themePicker.checkUpdates"), ink)
-		}),
-	)
+		})
+	})
 }
 
 // stripColumn is one column of the grid-flow-col grid: cards fill a column
@@ -254,11 +256,10 @@ func (p *themePicker) stripColumn(gtx C, cards []layout.Widget, col, columns int
 	})
 }
 
-// cardWidgets are the strip's cards in order: import, System, every theme.
+// cardWidgets are the strip's cards in order: System, every theme.
 func (p *themePicker) cardWidgets(th *ui.Theme, v appearanceView) []layout.Widget {
 	busy := p.snapshot()
 	cards := []layout.Widget{
-		func(gtx C) D { return p.importCardLayout(gtx, th) },
 		func(gtx C) D {
 			light, dark := bundledPair(v.themes)
 			preview := func(gtx C, th *ui.Theme, size image.Point) D {

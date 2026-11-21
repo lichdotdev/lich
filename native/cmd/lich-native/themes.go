@@ -311,8 +311,3 @@ func repoLabel(url string) string {
 	}
 	return strings.Join(segments[max(0, len(segments)-2):], "/")
 }
-
-// themeCount is the strip's count line, System included.
-func themeCount(themes int) string {
-	return i18n.T("settings.themePicker.count", i18n.Args{"count": themes + 1})
-}

@@ -86,7 +86,7 @@ var disabledAtRest = map[string]bool{
 	"dock code tab(10,758)-(42,790)":     true,
 	"dock artifacts(10,758)-(42,790)":    true,
 	"git(895,758)-(978,790)":             true, // the pull request, with none
-	"settings editor(941,162)-(977,198)": true, // the font stepper's minus, at its minimum
+	"settings editor(961,166)-(993,198)": true, // the font stepper's minus, at its minimum
 }
 
 // trackWidth is the widest a scrollbar's track or a resize edge is, in px.

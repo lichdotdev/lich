@@ -158,19 +158,7 @@ func (s *settingsScreen) fontControl(gtx C, th *ui.Theme, f *fontPicker, current
 // fontTrigger is the Button variant="outline" w-64 justify-between
 // font-normal the combobox opens from.
 func fontTrigger(gtx C, th *ui.Theme, family string) D {
-	size := image.Pt(gtx.Dp(fontTriggerWidth), gtx.Dp(ui.Space(9)))
-	gtx.Constraints = layout.Exact(size)
-	bg := th.Over(ui.Alpha(th.Palette.Input, 0.3))
-	ui.Fill(gtx, bg, ui.RadiusMD)
-	ui.InsetBorder(gtx, size, gtx.Dp(ui.RadiusMD), th.Over(th.Palette.Input))
-	on := th.On(bg)
-	return layout.Inset{Left: ui.Space(2.5), Right: ui.Space(2.5)}.Layout(gtx, func(gtx C) D {
-		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-			layout.Flexed(1, on.Text(ui.TextSM, family).Layout),
-			ui.Gap(2),
-			layout.Rigid(func(gtx C) D { return icChevronDown.Layout(gtx, ui.Space(4), on.MutedForeground) }),
-		)
-	})
+	return th.SelectTrigger(family, fontTriggerWidth).Layout(gtx)
 }
 
 // fontPanel is ComboboxContent: the search field over the matching

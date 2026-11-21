@@ -8,6 +8,7 @@ import (
 	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/op"
+	"gioui.org/unit"
 
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
@@ -16,12 +17,17 @@ import (
 )
 
 var (
-	providerRowPadX   = ui.Space(2)
-	providerRowPadY   = ui.Space(2.5)
-	providerAddPadY   = ui.Space(3)
-	providerHeadIcon  = ui.Space(5.5) // ProviderIcon size={22}
-	providerTriggerW  = ui.Space(64)  // ProviderSelect's w-64
-	providerAddInsetR = ui.Space(9)   // pr-9: under the switches, not the chevrons
+	providerRowPadX = ui.Space(2)
+	providerRowPadY = ui.Space(2.5)
+	providerAddPadY = ui.Space(1.5)
+	// A provider's mark takes 2dp a cell in a box that holds the largest
+	// book mark, Cursor's 15 cells, so every name starts on one line; a
+	// picker's row keeps the sidebar's 1dp.
+	providerMarkBox   = ui.Space(7.5)
+	providerMarkCell  = unit.Dp(2)
+	providerPickBox   = ui.Space(4)
+	providerTriggerW  = ui.Space(64) // ProviderSelect's w-64
+	providerAddInsetR = ui.Space(9)  // pr-9: under the switches, not the chevrons
 	providerTitleGap  = ui.Space(4)
 	icProviderOpen    = icons.Lucide("chevron-right")
 	icProviderBack    = icons.Lucide("chevron-left")
@@ -162,7 +168,11 @@ func (s *settingsScreen) providerPicker(gtx C, th *ui.Theme, m providersMachine,
 		}
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, rows...)
 	})
-	return pop.Layout(gtx, th.SelectTrigger(m.nameOf(shown), providerTriggerW).Layout)
+	trigger := th.SelectTrigger(m.nameOf(shown), providerTriggerW)
+	if shown != "" {
+		trigger.Lead = func(gtx C) D { return providerGlyph(gtx, th, shown, providerPickBox, markPixel) }
+	}
+	return pop.Layout(gtx, trigger.Layout)
 }
 
 // providerOption is one SelectItem: the mark and the name, checked when
@@ -187,7 +197,7 @@ func (s *settingsScreen) providerOption(gtx C, th *ui.Theme, p providerInfo, cho
 		on := th.On(bg)
 		return layout.Inset{Left: ui.Space(2), Right: ui.Space(2)}.Layout(gtx, func(gtx C) D {
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-				layout.Rigid(func(gtx C) D { return providerIcon(p.id).Layout(gtx, ui.Space(3.5), on.Foreground) }),
+				layout.Rigid(func(gtx C) D { return providerGlyph(gtx, on, p.id, providerPickBox, markPixel) }),
 				ui.Gap(2),
 				layout.Flexed(1, on.Text(ui.TextSM, p.name).Layout),
 				layout.Rigid(func(gtx C) D {
@@ -244,8 +254,8 @@ func (s *settingsScreen) providerListRow(gtx C, th *ui.Theme, values scopedValue
 		}),
 		layout.Stacked(func(gtx C) D {
 			children := []layout.FlexChild{
-				layout.Rigid(func(gtx C) D { return providerIcon(p.id).Layout(gtx, ui.Space(4), th.Foreground) }),
-				ui.Gap(3),
+				layout.Rigid(func(gtx C) D { return providerGlyph(gtx, th, p.id, providerMarkBox, providerMarkCell) }),
+				ui.Gap(2),
 				layout.Rigid(th.Text(ui.TextSM, p.name).Weight(font.Medium).Layout),
 				ui.Gap(3),
 			}
@@ -344,7 +354,10 @@ func (s *settingsScreen) providerToggleRow(gtx C, th *ui.Theme, p providerInfo, 
 	}
 	sw := th.Switch(&st.toggle)
 	sw.Disabled = !p.installed && !p.enabled
-	sub := []layout.FlexChild{layout.Rigid(th.Text(ui.TextXS, installSummary(p)).Muted().Layout)}
+	var sub []layout.FlexChild
+	if p.source == "setting" {
+		sub = []layout.FlexChild{layout.Rigid(th.Text(ui.TextXS, installSummary(p)).Muted().Layout)}
+	}
 	if !p.installed {
 		sub = []layout.FlexChild{layout.Rigid(th.Text(ui.TextXS, i18n.T("settings.providerToggleRow.notFound")).Muted().Layout)}
 		if p.docs != "" {
@@ -358,14 +371,11 @@ func (s *settingsScreen) providerToggleRow(gtx C, th *ui.Theme, p providerInfo, 
 		return layout.Inset{Top: providerAddPadY, Bottom: providerAddPadY}.Layout(gtx, func(gtx C) D {
 			gtx.Constraints.Min.X = gtx.Constraints.Max.X
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-				layout.Rigid(func(gtx C) D { return providerIcon(p.id).Layout(gtx, ui.Space(4), th.Foreground) }),
+				layout.Rigid(func(gtx C) D { return providerGlyph(gtx, th, p.id, providerMarkBox, providerMarkCell) }),
+				ui.Gap(2),
+				layout.Rigid(th.Text(ui.TextSM, p.name).Weight(font.Medium).Layout),
 				ui.Gap(3),
-				layout.Flexed(1, func(gtx C) D {
-					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-						layout.Rigid(th.Text(ui.TextSM, p.name).Weight(font.Medium).Layout),
-						layout.Rigid(func(gtx C) D { return layout.Flex{Alignment: layout.Middle}.Layout(gtx, sub...) }),
-					)
-				}),
+				layout.Flexed(1, func(gtx C) D { return layout.Flex{Alignment: layout.Middle}.Layout(gtx, sub...) }),
 				ui.Gap(4),
 				layout.Rigid(sw.Layout),
 			)
@@ -411,8 +421,8 @@ func (s *settingsScreen) providerHeader(th *ui.Theme, p providerInfo) []layout.W
 			loose.Constraints.Min = image.Point{}
 			name := record(loose, func(gtx C) D {
 				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-					layout.Rigid(func(gtx C) D { return providerIcon(p.id).Layout(gtx, providerHeadIcon, th.Foreground) }),
-					ui.Gap(3),
+					layout.Rigid(func(gtx C) D { return providerGlyph(gtx, th, p.id, providerMarkBox, providerMarkCell) }),
+					ui.Gap(2),
 					layout.Rigid(th.Text(settingsTitle, p.name).Weight(font.SemiBold).Leading(32).Layout),
 				)
 			})
@@ -563,8 +573,8 @@ func (s *settingsScreen) restoreBlock(gtx C, th *ui.Theme, values scopedValues, 
 		func(next string) { s.writeProviderKey(key, "", next, nil) })
 }
 
-// ladderBlock is a global-only choice of one rung: the segmented control, and
-// under it what the chosen rung means. read answers the chosen rung after the
+// ladderBlock is a global-only choice of one rung: the segmented control at
+// the row's right, and what the chosen rung means under the description. read answers the chosen rung after the
 // click is chosen, so a rung written straight through draws where it went.
 func (s *settingsScreen) ladderBlock(gtx C, th *ui.Theme, r settingRow, first bool, enum *ui.Enum,
 	rungs []ladderRung, read func(providersMachine) string, choose func(next string)) D {
@@ -584,14 +594,11 @@ func (s *settingsScreen) ladderBlock(gtx C, th *ui.Theme, r settingRow, first bo
 			consequence = i18n.T(rung.consequenceKey)
 		}
 	}
-	return r.layoutBlock(gtx, th, first, func(gtx C, th *ui.Theme) D {
+	r.detail = consequence
+	return r.layout(gtx, th, first, func(gtx C, th *ui.Theme) D {
 		g := th.ToggleGroup(enum, items...)
 		g.Size = ui.ToggleSizeSM
-		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-			layout.Rigid(func(gtx C) D { return layout.W.Layout(gtx, g.Layout) }),
-			ui.VGap(2),
-			layout.Rigid(func(gtx C) D { return th.Text(ui.TextXS, consequence).Muted().Wrapped().Layout(gtx) }),
-		)
+		return g.Layout(gtx)
 	})
 }
 

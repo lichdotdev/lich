@@ -323,7 +323,7 @@ func (s *sidebar) statusGlyph(gtx C, th *ui.Theme, sv *sessionView) D {
 		if !ok {
 			ink = th.Foreground
 		}
-		return pixelGrid(gtx, mark, ui.Alpha(ink, fade))
+		return pixelGrid(gtx, mark, ui.Alpha(ink, fade), markPixel)
 	}
 	return ui.CenteredIcon(gtx, providerIcon(kind), 13, ui.Alpha(th.MutedForeground, fade))
 }

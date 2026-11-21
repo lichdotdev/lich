@@ -120,9 +120,6 @@ func TestReadThemesSortsAndSetsAsideWhatItCannotDraw(t *testing.T) {
 	if len(broken) != 2 || broken[1].ID != "labbed" || !strings.Contains(broken[1].Reason, "app.background") {
 		t.Errorf("broken %+v, want the backend's and labbed's with its token", broken)
 	}
-	if got := themeCount(len(themes)); got != "5 themes" {
-		t.Errorf("count %q, want System counted too", got)
-	}
 }
 
 func TestResolveTheme(t *testing.T) {

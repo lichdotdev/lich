@@ -1,7 +1,6 @@
 package main
 
 import (
-	"image"
 	"strings"
 
 	"gioui.org/layout"
@@ -11,14 +10,6 @@ import (
 	"github.com/lichdotdev/lich/native/ui"
 )
 
-// The gauge grid's columns (gaugeGrid): every one fixed but the bar's, so
-// gauges of the same thing end in the same place.
-var (
-	planLabelW   = ui.Space(28)
-	planReadingW = ui.Space(10)
-	planLeftW    = ui.Space(16)
-)
-
 // planBlock is PlanUsageSetting: what is left of the provider's subscription,
 // the state of the provider above everything that configures it. It is a
 // reading, not a setting, so it has no scope of its own. heading is the title
@@ -26,7 +17,6 @@ var (
 func (s *settingsScreen) planBlock(gtx C, th *ui.Theme, values scopedValues, plan backend.QuotaPlan, first bool, heading string) D {
 	r := s.providerRow(gtx, settingEntry{titleKey: "settings.planUsageSetting.title"}, values)
 	r.kind, r.overriddenIn = rowPlain, nil
-	r.description = i18n.T("settings.planUsageSetting.description")
 	if heading != "" {
 		r.title = heading
 	}
@@ -40,15 +30,8 @@ func planBody(gtx C, th *ui.Theme, plan backend.QuotaPlan) D {
 	case "error":
 		return th.Text(ui.TextXS, i18n.T("settings.planUsageSetting.readFailed")).Muted().Wrapped().Layout(gtx)
 	}
-	gtx.Constraints.Max.X = min(gtx.Constraints.Max.X, gtx.Sp(ui.TextXS)*proseCh*6/10)
-	children := []layout.FlexChild{layout.Rigid(func(gtx C) D { return planHead(gtx, th, plan.Plan) })}
-	for _, g := range quotaGauges(plan, gtx.Now) {
-		children = append(children, ui.VGap(2), layout.Rigid(func(gtx C) D { return planGauge(gtx, th, g) }))
-	}
-	if account := accountLine(plan); account != "" {
-		children = append(children, ui.VGap(2), layout.Rigid(th.Text(accountSize, account).Leading(accountLeading).Muted().Mono().Layout))
-	}
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
+	blocks := append([]layout.Widget{th.Text(ui.TextXS, plan.Plan).Muted().Layout}, usageBlocks(th, plan, gtx.Now, nil)...)
+	return ui.Stack(usageBlockGap, blocks...)(gtx)
 }
 
 // commandSlot stands in for the command while the sentence is split around
@@ -67,45 +50,4 @@ func planSignedOutLine(gtx C, th *ui.Theme, command string) D {
 		layout.Rigid(th.Text(ui.TextXS, command).Mono().Layout),
 		layout.Rigid(th.Text(ui.TextXS, tail).Muted().Layout),
 	)
-}
-
-// planHead is the grid's header row: the plan doubles as the left header,
-// which keeps it from floating above the rows as a line of its own.
-func planHead(gtx C, th *ui.Theme, plan string) D {
-	muted := func(text string) layout.Widget {
-		return th.Text(ui.Text2XS, strings.ToUpper(text)).Muted().Layout
-	}
-	return planRow(
-		th.Text(ui.TextXS, plan).Muted().Layout,
-		func(gtx C) D { return D{Size: image.Pt(gtx.Constraints.Max.X, 0)} },
-		muted(i18n.T("settings.planUsageSetting.used")), muted(i18n.T("settings.planUsageSetting.resets"))).Layout(gtx)
-}
-
-// planGauge is QuotaGauge on one line: the label, the bar, the reading and the
-// time left, the row in the window's tone, and under it when the window runs
-// out at its pace so far.
-func planGauge(gtx C, th *ui.Theme, g quotaGauge) D {
-	tone := toneColor(th, g.Tone)
-	row := func(gtx C) D {
-		return planRow(th.Text(ui.TextXS, g.Label).Muted().Layout,
-			func(gtx C) D { return th.GaugeBar(gtx, g.Percent, tone) },
-			th.Text(ui.TextXS, g.Reading).In(tone).Layout,
-			th.Text(ui.TextXS, g.Left).Muted().Layout).Layout(gtx)
-	}
-	children := []layout.FlexChild{layout.Rigid(row)}
-	if g.Locked != "" {
-		children = append(children, ui.VGap(1),
-			layout.Rigid(func(gtx C) D { return th.Text(ui.TextXS, g.Locked).In(th.Destructive).Wrapped().Layout(gtx) }))
-	}
-	if g.RunsOut != "" {
-		runsOut := i18n.T("shell.planQuota.runsOut", i18n.Args{"time": g.RunsOut})
-		children = append(children, ui.VGap(1),
-			layout.Rigid(func(gtx C) D { return th.Text(ui.TextXS, runsOut).In(toneColor(th, toneWait)).Wrapped().Layout(gtx) }))
-	}
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
-}
-
-// planRow is the grid's four columns at the page's widths.
-func planRow(label, bar, reading, left layout.Widget) ui.GaugeRowStyle {
-	return ui.GaugeRowStyle{LabelW: planLabelW, ReadingW: planReadingW, LeftW: planLeftW, Label: label, Bar: bar, Reading: reading, Left: left}
 }

@@ -4,12 +4,14 @@ import (
 	"image"
 	"image/color"
 
+	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
 	"gioui.org/unit"
 
 	"github.com/lichdotdev/lich/native/grimoire"
+	"github.com/lichdotdev/lich/native/ui"
 )
 
 // markPixel is one cell of a provider's mark: a whole device pixel at every
@@ -33,6 +35,10 @@ var markColors = map[string]color.NRGBA{
 // logo is a frame half lit inside.
 const markHalf = 0.35
 
+// markIconShare is how much of a mark's box the vector mark of a provider with
+// no book takes: a book's mark fills about as much of it.
+const markIconShare = 0.8
+
 // marks memoizes grimoire.Mark by provider: a crop of the book, read on every
 // row of every frame.
 var marks = map[string]grimoire.Grid{}
@@ -48,10 +54,26 @@ func providerMark(kind string) grimoire.Grid {
 	return g
 }
 
-// pixelGrid paints g's mark cells in c (its half-lit ones fainter), centered
-// in gtx's minimum size.
-func pixelGrid(gtx C, g grimoire.Grid, c color.NRGBA) D {
-	px := max(1, gtx.Dp(markPixel))
+// providerGlyph is kind's mark centered in a square box wide, each of its
+// cells cell dp: the book's mark in the provider's color, or the vector mark of
+// a provider with no book.
+func providerGlyph(gtx C, th *ui.Theme, kind string, box, cell unit.Dp) D {
+	gtx.Constraints = layout.Exact(image.Pt(gtx.Dp(box), gtx.Dp(box)))
+	mark := providerMark(kind)
+	if mark == nil {
+		return ui.CenteredIcon(gtx, providerIcon(kind), box*markIconShare, th.Foreground)
+	}
+	ink, ok := markColors[kind]
+	if !ok {
+		ink = th.Foreground
+	}
+	return pixelGrid(gtx, mark, ink, cell)
+}
+
+// pixelGrid paints g's mark cells in c (its half-lit ones fainter), each cell
+// dp square, centered in gtx's minimum size.
+func pixelGrid(gtx C, g grimoire.Grid, c color.NRGBA, cell unit.Dp) D {
+	px := max(1, gtx.Dp(cell))
 	box := gtx.Constraints.Min
 	w, h := len(g[0])*px, len(g)*px
 	defer op.Offset(image.Pt((box.X-w)/2, (box.Y-h)/2)).Push(gtx.Ops).Pop()
