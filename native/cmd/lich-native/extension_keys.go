@@ -1,6 +1,7 @@
 package main
 
 import (
+	"runtime"
 	"strings"
 
 	"gioui.org/io/event"
@@ -64,7 +65,7 @@ func pollShortcuts(gtx C, list []extension.Shortcut, typing bool) []extension.Ha
 			continue
 		}
 		live = append(live, bound{c, sc.Handler})
-		for _, f := range comboFilters(c) {
+		for _, f := range comboFilters(c, runtime.GOOS) {
 			filters = append(filters, f)
 		}
 	}

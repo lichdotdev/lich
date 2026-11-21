@@ -156,7 +156,7 @@ distinto.
 | Un pull request que abre el agente aparece en su tarjeta al terminar el turno | sí | sí | sí | sí | sí | no, cuando la ventana recupera el foco | sí | sí |
 | Se repinta con el aspecto nuevo al cambiar lich entre un tema claro y uno oscuro | sí | no | no | sí | sí | no | sí | no |
 | Campana cuando el agente está bloqueado esperándote | sí | sí | no | sí | no | no | no | no |
-| Ctrl+Shift+Y salta a la siguiente sesión que te espera | sí | sí | no | sí | no | no | no | no |
+| Ctrl+Shift+I salta a la siguiente sesión que te espera | sí | sí | no | sí | no | no | no | no |
 | Un programa en la terminal del agente puede fijar la tarjeta (OSC 7501) mientras el agente corre | no | no | no | no | no | sí | no | no |
 | De vuelta en un shell sin marcas de prompt tras salir del agente, un programa puede volver a fijar la tarjeta | sí | no | no | no | no | sí | sí | no |
 | La bandeja lista las sesiones que te esperan y las que trabajan, y su icono lleva un punto | sí | sí | solo las que trabajan | sí | solo las que trabajan | no | solo las que trabajan | solo las que trabajan |

@@ -132,7 +132,7 @@ func (s *settingsScreen) hotkeyRow(gtx C, th *ui.Theme, a hotkeyAction, conflict
 		d := layout.Inset{Left: rowPadX, Right: rowPadX, Top: hotkeyRowPadY, Bottom: hotkeyRowPadY}.Layout(gtx, func(gtx C) D {
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 				layout.Flexed(1, func(gtx C) D {
-					return hotkeyName(gtx, th, hotkeyActionText(a.id), hotkeyLabels(conflicts), terminalCost(c))
+					return hotkeyName(gtx, th, hotkeyActionText(a.id), hotkeyLabels(conflicts), inTerminalHint(c, runtime.GOOS))
 				}),
 				layout.Rigid(layout.Spacer{Width: hotkeyRowGap}.Layout),
 				layout.Rigid(func(gtx C) D { return captureButton(gtx, th, r, c, recording, len(conflicts) > 0) }),
@@ -189,8 +189,8 @@ func hotkeySlot(gtx C) D {
 }
 
 // hotkeyName is the row's left column: the action, the amber line naming who
-// else holds its chord, and what the chord costs the terminal.
-func hotkeyName(gtx C, th *ui.Theme, label string, conflicts []string, cost string) D {
+// else holds its chord, and the chord a focused terminal takes for it.
+func hotkeyName(gtx C, th *ui.Theme, label string, conflicts []string, note string) D {
 	children := []layout.FlexChild{layout.Rigid(th.Text(ui.TextSM, label).Layout)}
 	if len(conflicts) > 0 {
 		line := th.Text(ui.TextXS, i18n.T("settings.hotkeysSettings.alsoBound", i18n.Args{"actions": strings.Join(conflicts, ", ")})).In(th.ToneWait)
@@ -205,8 +205,8 @@ func hotkeyName(gtx C, th *ui.Theme, label string, conflicts []string, cost stri
 			)
 		}))
 	}
-	if cost != "" {
-		line := th.Text(ui.TextXS, cost).Muted()
+	if note != "" {
+		line := th.Text(ui.TextXS, note).Muted()
 		line.MaxLines = 0
 		children = append(children, ui.VGap(0.5), layout.Rigid(line.Layout))
 	}

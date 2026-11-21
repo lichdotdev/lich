@@ -1,6 +1,8 @@
 package main
 
 import (
+	"runtime"
+
 	"gioui.org/io/event"
 	"gioui.org/io/key"
 
@@ -21,8 +23,7 @@ type hotkeyHandler struct {
 	run   func(u *window, gtx C)
 }
 
-// hotkeyHandlers are the actions with a native screen or command. Absent,
-// and so inert: delegate (no delegate flow).
+// hotkeyHandlers are the actions with a native screen or command.
 var hotkeyHandlers = map[hotkeyID]hotkeyHandler{
 	hotkeySplitBeside:        {(*window).hasActiveSession, func(u *window, _ C) { u.pickBeside(edgeRight) }},
 	hotkeySplitBelow:         {(*window).hasActiveSession, func(u *window, _ C) { u.pickBeside(edgeBottom) }},
@@ -59,7 +60,7 @@ var hotkeyHandlers = map[hotkeyID]hotkeyHandler{
 // pollHotkeys is pollChords over the actions this window can carry out now,
 // then the ones the command palette picked.
 func (u *window) pollHotkeys(gtx C) []hotkeyID {
-	fired := pollChords(gtx, &u.settings.hotkeys, func(id hotkeyID) bool {
+	fired := pollChords(gtx, &u.settings.hotkeys, runtime.GOOS, u.terms.focused(gtx), func(id hotkeyID) bool {
 		handler, ok := hotkeyHandlers[id]
 		return ok && (handler.ready == nil || handler.ready(u))
 	})
@@ -70,19 +71,25 @@ func (u *window) pollHotkeys(gtx C) []hotkeyID {
 // the order they were. It reads nothing while a capture button records, so
 // the chord being recorded is not also run, and it takes only the chords of
 // the actions that are available: the rest are left for whoever asks next.
-func pollChords(gtx C, h *hotkeyEditor, available func(hotkeyID) bool) []hotkeyID {
+// inTerminal is a terminal holding the keyboard (hotkeyFilters).
+func pollChords(gtx C, h *hotkeyEditor, goos string, inTerminal bool, available func(hotkeyID) bool) []hotkeyID {
 	if h.recording != "" {
 		return nil
 	}
 	bound := h.current()
-	var live []hotkeyID
+	type live struct {
+		id      hotkeyID
+		filters []key.Filter
+	}
+	var lives []live
 	var filters []event.Filter
 	for _, a := range hotkeyActions {
 		if bound[a.id].Key == "" || !available(a.id) {
 			continue
 		}
-		live = append(live, a.id)
-		for _, f := range comboFilters(bound[a.id]) {
+		fs := hotkeyFilters(bound[a.id], goos, inTerminal)
+		lives = append(lives, live{a.id, fs})
+		for _, f := range fs {
 			filters = append(filters, f)
 		}
 	}
@@ -96,10 +103,9 @@ func pollChords(gtx C, h *hotkeyEditor, available func(hotkeyID) bool) []hotkeyI
 		if !isKey || e.State != key.Press {
 			continue
 		}
-		state := keyStateOf(e)
-		for _, id := range live {
-			if matchesCombo(state, bound[id]) {
-				fired = append(fired, id)
+		for _, l := range lives {
+			if filtersTake(l.filters, e) {
+				fired = append(fired, l.id)
 				break
 			}
 		}

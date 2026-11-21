@@ -45,7 +45,7 @@ func TestShortcutGroupsShowTheLiveBindings(t *testing.T) {
 func TestShortcutGroupsSpellTheChordsOfTheMac(t *testing.T) {
 	for _, g := range shortcutGroupsOf(defaultHotkeys(), "darwin") {
 		for _, r := range g.rows {
-			if r.label == hotkeyLabel(hotkeyNewSession) && r.keys != "⌘⇧T" {
+			if r.label == hotkeyLabel(hotkeyNewSession) && r.keys != "⌘N" {
 				t.Errorf("new session = %q", r.keys)
 			}
 		}

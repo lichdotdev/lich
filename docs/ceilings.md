@@ -325,6 +325,12 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   search and state filter is skipped rather than unfolded, so a waiting session folded away is reached only through
   its block's mark. The active card never counts: when it is the only one waiting, the chord does nothing and
   goes on to the terminal.
+- **A hotkey in a terminal is Ctrl+Shift+letter** (`hotkeyFilters`, `native/cmd/lich-native/hotkeys_keys.go`):
+  off macOS a Ctrl+letter hotkey answers to Ctrl+Shift+letter while a terminal holds the keyboard, so Ctrl+letter
+  stays the program's control code; elsewhere both fire. Which one is live follows the focus of the frame before,
+  so the first key after the focus moves can still meet the old set. A Ctrl+Shift+letter whose action declines
+  reaches the program as a CSI u sequence (`ESC [110;6u` for N), which a shell without the kitty protocol may
+  print. On macOS a letter hotkey is Command only: Ctrl+letter never fires one.
 - **An interrupted turn is read off the keystrokes, not from the provider** (`internal/terminal/draft.go`,
   `hookstate.go`, `Service.noteInterrupt`): Claude Code, Codex and oh-my-pi all skip the hook that ends a turn when
   the user stops one, so lich publishes `interrupted` itself when a lone Ctrl+C or Escape reaches a session it knows

@@ -423,7 +423,7 @@ func actionTerm(query string) (string, bool) {
 }
 
 // actionGroups lists the actions matching term, grouped as the shortcuts
-// overlay groups them, each with its chord as currently bound. The palette's
+// overlay groups them, each with the chord it answers to anywhere. The palette's
 // own action is left out: run from the palette it would only close the palette
 // it was run from. available is what this window can carry out.
 func actionGroups(term string, bound hotkeyBindings, isMac bool, available func(hotkeyID) bool) []paletteGroup {
@@ -434,7 +434,7 @@ func actionGroups(term string, bound hotkeyBindings, isMac bool, available func(
 			if a.group != g.id || a.id == hotkeyCommandPalette || !available(a.id) || !matchesQuery(a.label, term) {
 				continue
 			}
-			rows = append(rows, paletteRow{kind: rowAction, action: a.id, keys: formatCombo(bound[a.id], isMac)})
+			rows = append(rows, paletteRow{kind: rowAction, action: a.id, keys: formatCombo(shownCombo(bound[a.id], isMac), isMac)})
 		}
 		if len(rows) > 0 {
 			groups = append(groups, group(g.label, rows, 0, 0))

@@ -3,10 +3,14 @@ package main
 import (
 	"reflect"
 	"testing"
+
+	"gioui.org/io/key"
 )
 
+var ctrlShiftT = combo{Mod: true, Shift: true, Key: "t"}
+
 func TestMatchesComboAcceptsCtrlOrCmdForThePrimaryModifier(t *testing.T) {
-	newSession := defaultHotkeys()[hotkeyNewSession] // Ctrl+Shift+T
+	newSession := ctrlShiftT
 	if !matchesCombo(keyState{ctrl: true, shift: true, key: "T"}, newSession) {
 		t.Error("Ctrl+Shift+T does not match")
 	}
@@ -23,14 +27,14 @@ func TestMatchesComboFoldsEqualsIntoPlus(t *testing.T) {
 }
 
 func TestMatchesComboIgnoresAutoRepeat(t *testing.T) {
-	newSession := defaultHotkeys()[hotkeyNewSession]
+	newSession := ctrlShiftT
 	if matchesCombo(keyState{ctrl: true, shift: true, key: "T", repeat: true}, newSession) {
 		t.Error("a held chord fired again")
 	}
 }
 
 func TestMatchesComboRejectsADifferentModifierOrKey(t *testing.T) {
-	newSession := defaultHotkeys()[hotkeyNewSession]
+	newSession := ctrlShiftT
 	for name, e := range map[string]keyState{
 		"no shift":  {ctrl: true, key: "T"},
 		"no mod":    {shift: true, key: "T"},
@@ -198,7 +202,7 @@ func TestHotkeyConflictsNamesTheOtherActionOnBothSides(t *testing.T) {
 }
 
 func TestHotkeyConflictsNamesBothOthersWhenThreeShareACombo(t *testing.T) {
-	shared := combo{Mod: true, Shift: true, Key: "j"}
+	shared := combo{Mod: true, Shift: true, Key: "k"}
 	b := defaultHotkeys()
 	b[hotkeyNewSession], b[hotkeyNextSession], b[hotkeyPrevSession] = shared, shared, shared
 	if got := hotkeyConflicts(b)[hotkeyNextSession]; !reflect.DeepEqual(got, []hotkeyID{hotkeyNewSession, hotkeyPrevSession}) {
@@ -304,37 +308,59 @@ func TestHotkeyLabel(t *testing.T) {
 	}
 }
 
-func TestTerminalCostNamesWhatARebindSpendsAndNothingForAFreeChord(t *testing.T) {
-	cost := terminalCost(combo{Mod: true, Key: "r"})
-	if want := "Ctrl+R is the shell's history search; sessions will no longer see it."; cost != want {
-		t.Errorf("Ctrl+R: %q", cost)
-	}
-	if got := terminalCost(combo{Mod: true, Key: "Backspace"}); got != "Ctrl+Backspace is the erase word lich sends the agent; sessions will no longer see it." {
-		t.Errorf("Ctrl+Backspace: %q", got)
-	}
-	for name, c := range map[string]combo{
-		"with shift": {Mod: true, Shift: true, Key: "r"},
-		"with alt":   {Mod: true, Alt: true, Key: "r"},
-		"no mod":     {Key: "r"},
-		"free key":   {Mod: true, Key: "j"},
-		"unassigned": comboUnassigned,
-	} {
-		if got := terminalCost(c); got != "" {
-			t.Errorf("%s: %q", name, got)
-		}
+func TestHotkeyConflictsCountsCtrlLetterAndItsTerminalChordAsOne(t *testing.T) {
+	b := defaultHotkeys()
+	b[hotkeyPulls] = combo{Mod: true, Shift: true, Key: "n"}
+	got := hotkeyConflicts(b)
+	if !reflect.DeepEqual(got[hotkeyPulls], []hotkeyID{hotkeyNewSession}) || !reflect.DeepEqual(got[hotkeyNewSession], []hotkeyID{hotkeyPulls}) {
+		t.Errorf("conflicts = %v", got)
 	}
 }
 
-func TestOnlyCommandPaletteDefaultsToAChordTheTerminalSpends(t *testing.T) {
-	// Ctrl+K is the one plain-Ctrl+letter default; the rest are
-	// Ctrl+Shift+letter, which no TUI sees, and Ctrl+, and Ctrl+/.
-	costly := map[hotkeyID]bool{}
-	for _, a := range hotkeyActions {
-		if terminalCost(a.combo) != "" {
-			costly[a.id] = true
+func TestInTerminalHintNamesTheShiftedChordOffMacOSOnly(t *testing.T) {
+	if got := inTerminalHint(combo{Mod: true, Key: "n"}, "linux"); got != "Ctrl+Shift+N in a terminal" {
+		t.Errorf("Ctrl+N: %q", got)
+	}
+	for name, c := range map[string]combo{
+		"with shift": {Mod: true, Shift: true, Key: "s"},
+		"with alt":   {Mod: true, Alt: true, Key: "n"},
+		"no letter":  {Mod: true, Key: "Tab"},
+		"no mod":     {Key: "F1"},
+		"unassigned": comboUnassigned,
+	} {
+		if got := inTerminalHint(c, "linux"); got != "" {
+			t.Errorf("%s: %q", name, got)
 		}
 	}
-	if !reflect.DeepEqual(costly, map[hotkeyID]bool{hotkeyCommandPalette: true}) {
-		t.Errorf("defaults that cost the terminal: %v", costly)
+	if got := inTerminalHint(combo{Mod: true, Key: "n"}, "darwin"); got != "" {
+		t.Errorf("macOS: %q", got)
+	}
+}
+
+func TestShownComboIsTheChordThatAnswersAnywhere(t *testing.T) {
+	ctrlN := combo{Mod: true, Key: "n"}
+	if got := formatCombo(shownCombo(ctrlN, false), false); got != "Ctrl+Shift+N" {
+		t.Errorf("off macOS: %q", got)
+	}
+	if got := formatCombo(shownCombo(ctrlN, true), true); got != "⌘N" {
+		t.Errorf("macOS: %q", got)
+	}
+}
+
+func TestFormatComboSpellsModTabAsControlOnMacOS(t *testing.T) {
+	if got := formatCombo(combo{Mod: true, Shift: true, Key: "Tab"}, true); got != "⌃⇧Tab" {
+		t.Errorf("got %q", got)
+	}
+}
+
+// No default may take a control code a terminal program reads: a letter
+// default answers to Ctrl+Shift there.
+func TestNoDefaultTakesAControlCodeInATerminal(t *testing.T) {
+	for _, a := range hotkeyActions {
+		for _, f := range hotkeyFilters(a.combo, "linux", true) {
+			if f.Required == key.ModCtrl && len(f.Name) == 1 && 'A' <= f.Name[0] && f.Name[0] <= 'Z' {
+				t.Errorf("%s takes Ctrl+%s from the terminal", a.id, f.Name)
+			}
+		}
 	}
 }

@@ -340,6 +340,18 @@ func (ts *terminals) has(id string) bool {
 	return ts.byID[id] != nil
 }
 
+// focused reports whether a terminal holds the keyboard.
+func (ts *terminals) focused(gtx C) bool {
+	ts.mu.Lock()
+	defer ts.mu.Unlock()
+	for _, t := range ts.byID {
+		if gtx.Focused(t.tag) {
+			return true
+		}
+	}
+	return false
+}
+
 // show returns s's terminal, attaching it on first use: the replayed tail
 // first, then Start (a no-op for a running session) resuming the conversation
 // resume names, "" for none, then the size.

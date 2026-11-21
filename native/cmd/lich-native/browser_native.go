@@ -228,7 +228,7 @@ func (u *window) nativeNotesInput(gtx C, p *browserPaneUI, session string, scale
 		key.FocusFilter{Target: &p.tag},
 		key.Filter{Focus: &p.tag, Name: key.NameEscape},
 		key.Filter{Focus: &p.tag, Name: "Z", Required: key.ModShortcut},
-		key.Filter{Focus: &p.tag, Name: "E", Required: key.ModShortcut | key.ModShift},
+		key.Filter{Focus: &p.tag, Name: "X", Required: key.ModShortcut | key.ModShift},
 		key.Filter{Focus: &p.tag, Name: key.NameReturn, Required: key.ModShortcut},
 		key.Filter{Focus: &p.tag, Name: key.NameEnter, Required: key.ModShortcut},
 	}
