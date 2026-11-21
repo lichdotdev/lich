@@ -16,7 +16,21 @@ type (
 	BrokenTheme       = api.BrokenTheme
 	ThemeImportResult = api.ThemeImportResult
 	ThemeGitResult    = api.ThemeGitResult
+	ThemeCatalog      = api.ThemeCatalog
+	ThemeCatalogPack  = api.ThemeCatalogPack
 )
+
+// ThemeCatalog is the theme catalog the backend holds; it fails only when the
+// backend has no copy and cannot read one.
+func (c *Client) ThemeCatalog(ctx context.Context) (ThemeCatalog, error) {
+	return callMethod(ctx, c, api.ThemesCatalog, api.None{})
+}
+
+// InstallCatalogTheme installs the listed pack id at the commit the catalog
+// names.
+func (c *Client) InstallCatalogTheme(ctx context.Context, id string, overwrite bool) (ThemeGitResult, error) {
+	return callMethod(ctx, c, api.ThemesInstallFromCatalog, api.ThemeCatalogInstallOptions{ID: id, Overwrite: overwrite})
+}
 
 // ThemeSelection reads the stored selection; a theme never chosen reads
 // "system".

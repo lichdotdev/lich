@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log/slog"
 	"maps"
+	"strings"
 	"time"
 
 	"github.com/lichdotdev/lich/api"
@@ -12,17 +13,19 @@ import (
 	"github.com/lichdotdev/lich/internal/semver"
 )
 
-// updateCheckEvery is how often the installed packs are cloned again to look
-// for a newer version: a pack is released rarely, and each check is one
-// shallow clone per repository.
+// updateCheckEvery is how often the catalog is read again and the installed
+// packs it does not list are cloned to look for a newer version: a pack is
+// released rarely, and each check is one shallow clone per repository.
 const updateCheckEvery = 6 * time.Hour
 
-// WatchUpdates checks the installed packs for a newer version now and every
-// updateCheckEvery, until ctx ends. It only looks: installing is the user's.
+// WatchUpdates reads the catalog and checks the installed packs for a newer
+// version now and every updateCheckEvery, until ctx ends. It only looks:
+// installing is the user's.
 func (s *Service) WatchUpdates(ctx context.Context) {
 	tick := time.NewTicker(updateCheckEvery)
 	defer tick.Stop()
 	for {
+		s.refreshCatalog()
 		if _, err := s.CheckUpdates(ctx, api.None{}); err != nil {
 			slog.Warn("themes: check for updates", "err", err)
 		}
@@ -34,9 +37,11 @@ func (s *Service) WatchUpdates(ctx context.Context) {
 	}
 }
 
-// CheckUpdates clones every repository an installed theme came from, once per
-// repository, and remembers the version its manifest carries; List then marks
-// the themes installed at an older one. A repository that cannot be read keeps
+// CheckUpdates remembers the newest version of every repository an installed
+// theme came from: the one the catalog lists when it lists the repository, so
+// a pack from the catalog moves only to what the catalog offers, else the one
+// a fresh clone's manifest carries, once per repository. List then marks the
+// themes installed at an older one. A repository that cannot be read keeps
 // what the last check found for it and is named in the error.
 func (s *Service) CheckUpdates(_ context.Context, _ api.None) (api.None, error) {
 	if s.initErr != nil {
@@ -63,6 +68,10 @@ func (s *Service) CheckUpdates(_ context.Context, _ api.None) (api.None, error) 
 			continue
 		}
 		seen[url] = struct{}{}
+		if p := s.listedPack(url); p != nil {
+			found[url] = api.ThemeLatest{Pack: p.Name, Version: strings.TrimPrefix(p.Version, "v")}
+			continue
+		}
 		remote, err := fetchPack(url, s.lichVersion)
 		if err != nil {
 			failed = append(failed, err)

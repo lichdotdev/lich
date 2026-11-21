@@ -283,7 +283,7 @@ func themeAfterRemoval(removedID, selected string) string {
 	return selected
 }
 
-// themeCaption is the line beside a card's name: "in use" on the selected
+// themeCaption is the line under a theme's name: "in use" on the selected
 // one, else where it came from.
 func themeCaption(def backend.Theme, selected string) string {
 	switch {

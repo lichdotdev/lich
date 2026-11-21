@@ -16,16 +16,17 @@ type themeRef struct{ id, name string }
 // themeFile is a picked file whose id is already taken.
 type themeFile struct{ path, id string }
 
-// packConflict is a repository whose install found ids already taken.
+// packConflict is a repository, or a listed pack (catalogID), whose install
+// found ids already taken.
 type packConflict struct {
-	url       string
-	conflicts []string
+	url, catalogID string
+	conflicts      []string
 }
 
 // themeTasks is the picker's state that the backend's answers change from
 // their goroutines; it is read and written under themePicker.mu.
 type themeTasks struct {
-	importing  bool   // a clone or a file import is running
+	importing  bool   // a clone, a catalog install or a file import is running
 	updating   string // the theme an update is running for
 	checking   bool   // a check for newer pack versions is running
 	importOpen bool
@@ -60,7 +61,7 @@ func (p *themePicker) fail(title string) {
 // own words.
 func failedWith(err error) i18n.Args { return i18n.Args{"error": backend.ErrorText(err)} }
 
-// reloadThemes rereads the list after a change, so the strip and the window
+// reloadThemes rereads the list after a change, so the page and the window
 // follow it at once.
 func (p *themePicker) reloadThemes() {
 	if err := p.look.reload(); err != nil {
@@ -166,7 +167,8 @@ func (p *themePicker) updateTheme(id string) {
 }
 
 // checkUpdates asks the backend to look for newer pack versions now. What
-// it finds reaches the cards through the themes; finding nothing says so.
+// it finds reaches the Installed rows through the themes; finding nothing
+// says so.
 func (p *themePicker) checkUpdates() {
 	p.with(func(t *themeTasks) { t.checking = true })
 	go func() {
@@ -223,14 +225,13 @@ func joinConflicts(c *packConflict) string {
 	return strings.Join(c.conflicts, ", ")
 }
 
-var flagThemePicker = flag.String("theme-picker", "", "open Settings › Appearance with the theme strip at start, for -shot: open, import, remove (the first imported theme) or replace")
+var flagThemePicker = flag.String("theme-picker", "", "open Settings › Appearance › Themes at start, for -shot: open, installed, import, remove (the first imported theme) or replace")
 
 // showThemePicker is -theme-picker.
 func (u *window) showThemePicker(mode string) error {
-	u.settings.section, u.settings.page = sectionAppearance, ""
+	u.settings.section, u.settings.page = sectionAppearance, themesPage
 	u.settings.show("", nil)
 	p := u.settings.theme
-	p.open = true
 	var custom []backend.Theme
 	for _, e := range u.appearance.view().themes {
 		if e.def.Origin == themeOriginCustom {
@@ -239,16 +240,19 @@ func (u *window) showThemePicker(mode string) error {
 	}
 	switch {
 	case mode == "open":
+	case mode == "installed":
+		p.view.Selected = themesViewInstalled
 	case mode == "import":
 		p.openImport()
 	case mode == "remove" && len(custom) > 0:
+		p.view.Selected = themesViewInstalled
 		p.askRemove(custom[0].ID, custom[0].Name)
 	case mode == "replace" && len(custom) > 0 && custom[0].Source != nil:
 		p.with(func(t *themeTasks) {
 			t.pack = &packConflict{url: custom[0].Source.URL, conflicts: []string{custom[0].ID}}
 		})
 	default:
-		return fmt.Errorf("-theme-picker %q: want open, import, or remove/replace with an imported theme", mode)
+		return fmt.Errorf("-theme-picker %q: want open, installed, import, or remove/replace with an imported theme", mode)
 	}
 	return nil
 }

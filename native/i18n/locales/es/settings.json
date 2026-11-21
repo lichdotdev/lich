@@ -82,12 +82,10 @@
     "followsOs": "según el sistema",
     "inUse": "en uso",
     "bundled": "incluido",
-    "updateTo": "Actualizar a la v{version}",
     "updateAvailable": "v{version} disponible",
     "checkUpdates": "Buscar actualizaciones",
     "checkFailed": "No se pudieron buscar actualizaciones de temas: {error}",
-    "allUpToDate": "Tus temas están al día",
-    "removeNamed": "Eliminar {name}"
+    "allUpToDate": "Tus temas están al día"
   },
   "brokenThemeList": {
     "heading": {
@@ -457,9 +455,7 @@
     "hideWhitespaceDescription": "Omite los cambios que solo afectan al espaciado en la pestaña Revisión."
   },
   "settingsTheme": {
-    "autoLightDark": "Claro/oscuro automático",
-    "pairLight": "par claro",
-    "pairDark": "par oscuro"
+    "autoLightDark": "Claro/oscuro automático"
   },
   "settingsThemeActions": {
     "reloadFailed": "No se pudieron volver a leer los temas: {error}"
@@ -728,5 +724,58 @@
     "chat": "Chat",
     "terminal": "Terminal",
     "searchWords": "gui tui vista chat terminal predeterminado nueva sesión abrir"
+  },
+  "themesPage": {
+    "title": "Temas",
+    "installFrom": "Instalar desde…",
+    "catalogTab": "Catálogo",
+    "installedTab": "Instalados",
+    "catalogRow": "Catálogo de temas",
+    "catalogSearchWords": "explorar instalar colores paleta oscuro claro browse install colors palette dark light",
+    "installedRow": "Temas instalados",
+    "installedSearchWords": "eliminar actualizar incluidos propios remove update bundled",
+    "all": "Todos",
+    "dark": "Oscuros",
+    "light": "Claros",
+    "search": "Buscar temas",
+    "inUse": "En uso",
+    "installed": "Instalado",
+    "variantsDark": {
+      "one": "{count} variante · oscura",
+      "other": "{count} variantes · oscuras"
+    },
+    "variantsLight": {
+      "one": "{count} variante · clara",
+      "other": "{count} variantes · claras"
+    },
+    "variantsBoth": {
+      "one": "{count} variante · oscura y clara",
+      "other": "{count} variantes · oscuras y claras"
+    },
+    "readFailed": "No se pudo leer el catálogo de temas. Instalar desde la URL de un repositorio sigue funcionando.",
+    "noMatch": "Ningún tema coincide.",
+    "use": "Usar",
+    "version": "Versión",
+    "pairs": "Pares",
+    "license": "Licencia",
+    "updated": "Actualizado",
+    "repository": "Repositorio",
+    "needsLich": "Requiere lich {version} o posterior",
+    "trying": "Probando {name}",
+    "revert": "Deshacer",
+    "keep": "Conservar",
+    "bundledGroup": "Incluidos",
+    "update": "Actualizar",
+    "rowOptions": "Opciones de {name}",
+    "browse": "Explorar temas",
+    "preview": {
+      "ask": "Añade reintentos al helper de fetch",
+      "askShort": "Añade reintentos",
+      "reply": "Metí la llamada en un bucle que espera más tras cada fallo:",
+      "sessionRefactor": "Refactorizar auth",
+      "sessionFlaky": "Arreglar test inestable",
+      "sessionReview": "Revisar PR #42"
+    },
+    "try": "Probar"
   }
 }

@@ -302,6 +302,10 @@ var (
 	// update installed one. Theme.Latest carries them.
 	ThemeUpdatesEvent = defineEvent[None]("theme-updates")
 
+	// ThemeCatalogEvent carries the theme catalog once the backend holds a copy
+	// newer than the one it last sent.
+	ThemeCatalogEvent = defineEvent[ThemeCatalog]("theme-catalog")
+
 	// PullRequestChangedEvent is what a pull request write through lich reports
 	// once GitHub took it, so every window's pull request store reads it again
 	// instead of the screen that made the change telling the others.

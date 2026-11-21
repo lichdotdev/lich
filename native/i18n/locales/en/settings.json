@@ -82,12 +82,10 @@
     "followsOs": "follows the OS",
     "inUse": "in use",
     "bundled": "bundled",
-    "updateTo": "Update to v{version}",
     "updateAvailable": "v{version} available",
     "checkUpdates": "Check for updates",
     "checkFailed": "Couldn't check for theme updates: {error}",
-    "allUpToDate": "Your themes are up to date",
-    "removeNamed": "Remove {name}"
+    "allUpToDate": "Your themes are up to date"
   },
   "brokenThemeList": {
     "heading": {
@@ -457,9 +455,7 @@
     "hideWhitespaceDescription": "Leave out changes that only touch spacing in the Review tab."
   },
   "settingsTheme": {
-    "autoLightDark": "Auto light/dark",
-    "pairLight": "light pair",
-    "pairDark": "dark pair"
+    "autoLightDark": "Auto light/dark"
   },
   "settingsThemeActions": {
     "reloadFailed": "Couldn't reread the themes: {error}"
@@ -728,5 +724,58 @@
     "chat": "Chat",
     "terminal": "Terminal",
     "searchWords": "gui tui view chat terminal default new session open"
+  },
+  "themesPage": {
+    "title": "Themes",
+    "installFrom": "Install from…",
+    "catalogTab": "Catalog",
+    "installedTab": "Installed",
+    "catalogRow": "Theme catalog",
+    "catalogSearchWords": "browse install colors palette dark light",
+    "installedRow": "Installed themes",
+    "installedSearchWords": "remove update bundled custom",
+    "all": "All",
+    "dark": "Dark",
+    "light": "Light",
+    "search": "Search themes",
+    "inUse": "In use",
+    "installed": "Installed",
+    "variantsDark": {
+      "one": "{count} variant · dark",
+      "other": "{count} variants · dark"
+    },
+    "variantsLight": {
+      "one": "{count} variant · light",
+      "other": "{count} variants · light"
+    },
+    "variantsBoth": {
+      "one": "{count} variant · dark & light",
+      "other": "{count} variants · dark & light"
+    },
+    "readFailed": "Couldn't read the theme catalog. Installing from a repository URL still works.",
+    "noMatch": "No theme matches.",
+    "use": "Use",
+    "version": "Version",
+    "pairs": "Pairs",
+    "license": "License",
+    "updated": "Updated",
+    "repository": "Repository",
+    "needsLich": "Needs lich {version} or newer",
+    "trying": "Trying {name}",
+    "revert": "Revert",
+    "keep": "Keep",
+    "bundledGroup": "Bundled",
+    "update": "Update",
+    "rowOptions": "Options for {name}",
+    "browse": "Browse themes",
+    "preview": {
+      "ask": "Add a retry to the fetch helper",
+      "askShort": "Add a retry",
+      "reply": "Wrapped the call in a loop that waits longer after each failure:",
+      "sessionRefactor": "Refactor auth",
+      "sessionFlaky": "Fix flaky test",
+      "sessionReview": "Review PR #42"
+    },
+    "try": "Try"
   }
 }

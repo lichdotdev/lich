@@ -82,12 +82,10 @@
     "followsOs": "OS に従う",
     "inUse": "使用中",
     "bundled": "同梱",
-    "updateTo": "v{version} に更新",
     "updateAvailable": "v{version} が利用可能",
     "checkUpdates": "更新を確認",
     "checkFailed": "テーマの更新を確認できませんでした: {error}",
-    "allUpToDate": "テーマはすべて最新です",
-    "removeNamed": "{name} を削除"
+    "allUpToDate": "テーマはすべて最新です"
   },
   "brokenThemeList": {
     "heading": {
@@ -457,9 +455,7 @@
     "hideWhitespaceDescription": "レビュータブで、空白だけに関わる変更を除外します。"
   },
   "settingsTheme": {
-    "autoLightDark": "ライト/ダークを自動切り替え",
-    "pairLight": "ライト側",
-    "pairDark": "ダーク側"
+    "autoLightDark": "ライト/ダークを自動切り替え"
   },
   "settingsThemeActions": {
     "reloadFailed": "テーマを再読み込みできませんでした: {error}"
@@ -728,5 +724,58 @@
     "chat": "チャット",
     "terminal": "ターミナル",
     "searchWords": "gui tui 表示 チャット ターミナル 既定 新規 セッション"
+  },
+  "themesPage": {
+    "title": "テーマ",
+    "installFrom": "他の場所からインストール…",
+    "catalogTab": "カタログ",
+    "installedTab": "インストール済み",
+    "catalogRow": "テーマカタログ",
+    "catalogSearchWords": "探す インストール 色 パレット ダーク ライト",
+    "installedRow": "インストール済みのテーマ",
+    "installedSearchWords": "削除 更新 同梱 自作",
+    "all": "すべて",
+    "dark": "ダーク",
+    "light": "ライト",
+    "search": "テーマを検索",
+    "inUse": "使用中",
+    "installed": "インストール済み",
+    "variantsDark": {
+      "one": "{count} 種類 · ダーク",
+      "other": "{count} 種類 · ダーク"
+    },
+    "variantsLight": {
+      "one": "{count} 種類 · ライト",
+      "other": "{count} 種類 · ライト"
+    },
+    "variantsBoth": {
+      "one": "{count} 種類 · ダークとライト",
+      "other": "{count} 種類 · ダークとライト"
+    },
+    "readFailed": "テーマカタログを読み込めませんでした。リポジトリの URL からのインストールは引き続き使えます。",
+    "noMatch": "一致するテーマはありません。",
+    "use": "使う",
+    "version": "バージョン",
+    "pairs": "ペア",
+    "license": "ライセンス",
+    "updated": "更新日",
+    "repository": "リポジトリ",
+    "needsLich": "lich {version} 以降が必要です",
+    "trying": "{name} を試しています",
+    "revert": "元に戻す",
+    "keep": "このまま使う",
+    "bundledGroup": "同梱",
+    "update": "更新",
+    "rowOptions": "{name} のオプション",
+    "browse": "テーマを探す",
+    "preview": {
+      "ask": "fetch ヘルパーにリトライを入れて",
+      "askShort": "リトライを入れて",
+      "reply": "失敗するたびに待ち時間を延ばすループで呼び出しを包みました:",
+      "sessionRefactor": "認証をリファクタリング",
+      "sessionFlaky": "不安定なテストを直す",
+      "sessionReview": "PR #42 をレビュー"
+    },
+    "try": "試す"
   }
 }

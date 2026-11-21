@@ -393,6 +393,7 @@ func run(w *app.Window, rt backend.Runtime) error {
 	u.model.projectClosed = u.projectClosed
 	u.model.pluginProfiles = u.pluginProfilesFailed
 	u.settings.theme = newThemePicker(ctx, client, u.appearance, &u.toaster, &u.root)
+	u.settings.theme.catalog = u.model.themeCatalog
 	u.footer.dock = u.dock
 	u.git = newGitPanel(u.ctx, client, &u.root, invalidate, notify, *flagFont, unit.Sp(*flagSize))
 	u.git.openSession = u.focusSession
@@ -603,7 +604,9 @@ func (u *window) connect() error {
 		u.settings.show(*flagSettingsScope, settingsProjectsOf(tabs))
 		u.settings.providers.open = *flagSettingsProvider
 		u.settings.providers.adding, u.settings.providers.addingSet = *flagSettingsAdd, *flagSettingsAdd
-		u.settings.theme.open = *flagSettingsThemes
+		if *flagSettingsThemes {
+			u.settings.section, u.settings.page = sectionAppearance, themesPage
+		}
 		u.settings.updates.patch.open = *flagPatchNotes
 		u.settings.nav.query.SetText(*flagSettingsQuery)
 		u.catalogShot()
@@ -634,6 +637,9 @@ func (u *window) connect() error {
 		if err := u.showThemePicker(*flagThemePicker); err != nil {
 			return err
 		}
+	}
+	if err := u.themesShot(); err != nil {
+		return err
 	}
 	if err := u.footer.start(); err != nil {
 		return err
@@ -713,7 +719,7 @@ func (u *window) layout(gtx C) error {
 		u.review.layoutDialogs(gtx, u.theme)
 		u.git.layoutDialogs(gtx, u.theme)
 		u.commentEdit.layout(gtx, u.theme, &u.comments)
-		u.settings.theme.layoutDialogs(gtx, u.theme)
+		u.settings.layoutThemesDialogs(gtx, u.theme)
 		u.settings.layoutExtensionDialogs(gtx, u.theme)
 		u.settings.layoutFontReplication(gtx, u.theme)
 		u.layoutWelcome(gtx, u.theme)
@@ -735,6 +741,7 @@ func (u *window) layout(gtx C) error {
 		top = u.topbar.layout(gtx, u.theme, u.topbarFrame(gtx, v, edge))
 		u.drawCarried(gtx)
 		top.close = closed
+		u.settings.layoutThemeTrial(gtx, u.theme)
 		u.layoutToasts(gtx)
 		return D{Size: gtx.Constraints.Max}
 	}

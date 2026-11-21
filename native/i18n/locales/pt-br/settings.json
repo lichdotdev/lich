@@ -82,12 +82,10 @@
     "followsOs": "segue o SO",
     "inUse": "em uso",
     "bundled": "incluído",
-    "updateTo": "Atualizar para a v{version}",
     "updateAvailable": "v{version} disponível",
     "checkUpdates": "Buscar atualizações",
     "checkFailed": "Não foi possível buscar atualizações de temas: {error}",
-    "allUpToDate": "Seus temas estão atualizados",
-    "removeNamed": "Remover {name}"
+    "allUpToDate": "Seus temas estão atualizados"
   },
   "brokenThemeList": {
     "heading": {
@@ -457,9 +455,7 @@
     "hideWhitespaceDescription": "Na aba Revisão, omite as mudanças que só mexem no espaçamento."
   },
   "settingsTheme": {
-    "autoLightDark": "Claro/escuro automático",
-    "pairLight": "par claro",
-    "pairDark": "par escuro"
+    "autoLightDark": "Claro/escuro automático"
   },
   "settingsThemeActions": {
     "reloadFailed": "Não foi possível reler os temas: {error}"
@@ -728,5 +724,58 @@
     "chat": "Chat",
     "terminal": "Terminal",
     "searchWords": "gui tui vista chat terminal padrão nova sessão abrir"
+  },
+  "themesPage": {
+    "title": "Temas",
+    "installFrom": "Instalar de…",
+    "catalogTab": "Catálogo",
+    "installedTab": "Instalados",
+    "catalogRow": "Catálogo de temas",
+    "catalogSearchWords": "explorar instalar cores paleta escuro claro",
+    "installedRow": "Temas instalados",
+    "installedSearchWords": "remover atualizar incluídos próprios",
+    "all": "Todos",
+    "dark": "Escuros",
+    "light": "Claros",
+    "search": "Buscar temas",
+    "inUse": "Em uso",
+    "installed": "Instalado",
+    "variantsDark": {
+      "one": "{count} variante · escura",
+      "other": "{count} variantes · escuras"
+    },
+    "variantsLight": {
+      "one": "{count} variante · clara",
+      "other": "{count} variantes · claras"
+    },
+    "variantsBoth": {
+      "one": "{count} variante · escura e clara",
+      "other": "{count} variantes · escuras e claras"
+    },
+    "readFailed": "Não foi possível ler o catálogo de temas. Instalar pela URL de um repositório continua funcionando.",
+    "noMatch": "Nenhum tema encontrado.",
+    "use": "Usar",
+    "version": "Versão",
+    "pairs": "Pares",
+    "license": "Licença",
+    "updated": "Atualizado",
+    "repository": "Repositório",
+    "needsLich": "Precisa do lich {version} ou mais novo",
+    "trying": "Experimentando {name}",
+    "revert": "Desfazer",
+    "keep": "Manter",
+    "bundledGroup": "Incluídos",
+    "update": "Atualizar",
+    "rowOptions": "Opções de {name}",
+    "browse": "Explorar temas",
+    "preview": {
+      "ask": "Coloque novas tentativas no helper de fetch",
+      "askShort": "Coloque novas tentativas",
+      "reply": "Pus a chamada num laço que espera mais a cada falha:",
+      "sessionRefactor": "Refatorar auth",
+      "sessionFlaky": "Corrigir teste instável",
+      "sessionReview": "Revisar PR #42"
+    },
+    "try": "Experimentar"
   }
 }

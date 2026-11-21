@@ -66,7 +66,7 @@ func (p *themePicker) layoutDialogs(gtx C, th *ui.Theme) {
 		desc: i18n.T("settings.appearanceSettings.replaceThemesDescription", i18n.Args{"themes": joinConflicts(t.pack)}), action: i18n.T("settings.appearanceSettings.replaceThemes"),
 		closed: dismiss(func(t *themeTasks) { t.pack = nil })}
 	if p.confirmDialog(gtx, th, pack) {
-		p.installRepository(t.pack.url, true)
+		p.replacePack(*t.pack)
 	}
 }
 

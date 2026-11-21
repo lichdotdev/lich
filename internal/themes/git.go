@@ -59,8 +59,9 @@ func (s *Service) InstallFromGit(_ context.Context, opts api.InstallThemesOption
 	return s.installPack(installed, opts.Overwrite)
 }
 
-// UpdateFromGit re-clones the repository a theme came from and installs it
-// again when the manifest carries a newer version. The whole pack moves
+// UpdateFromGit reads the repository a theme came from again and installs it
+// when the manifest carries a newer version: at the commit the catalog lists
+// when it lists the repository, else at its tip. The whole pack moves
 // together — the repository, not the single theme, is what is versioned.
 func (s *Service) UpdateFromGit(_ context.Context, opts api.UpdateThemeOptions) (GitInstallResult, error) {
 	if s.initErr != nil {
@@ -73,7 +74,7 @@ func (s *Service) UpdateFromGit(_ context.Context, opts api.UpdateThemeOptions) 
 	if theme.Source == nil {
 		return GitInstallResult{}, fmt.Errorf("theme %q was imported as a single file and has no repository to update from", opts.ID)
 	}
-	latest, err := fetchPack(theme.Source.URL, s.lichVersion)
+	latest, err := s.newestPack(theme.Source.URL)
 	if err != nil {
 		return GitInstallResult{}, err
 	}
@@ -151,6 +152,15 @@ func (s *Service) installPack(installed pack, overwrite bool) (GitInstallResult,
 // fetchPack clones url into a temporary directory and reads the pack out of
 // it. The clone is thrown away: an update is another clone, which costs one
 // shallow fetch and saves reconciling a cache nobody watches.
+// newestPack is url's pack as an update takes it: the catalog's listing when
+// it lists url, so a pack from the catalog never goes past what it offers.
+func (s *Service) newestPack(url string) (pack, error) {
+	if p := s.listedPack(url); p != nil {
+		return fetchListed(*p, s.lichVersion)
+	}
+	return fetchPack(url, s.lichVersion)
+}
+
 func fetchPack(url, lichVersion string) (pack, error) {
 	remote, err := validateRemote(url)
 	if err != nil {

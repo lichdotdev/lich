@@ -34,6 +34,8 @@ func Themes(d *rpc.Handler, s *themes.Service) {
 	rpc.Handle(d, api.ThemesSelection, s.Selection)
 	rpc.Handle(d, api.ThemesSelect, s.Select)
 	rpc.Handle(d, api.ThemesSetFollowSystem, s.SetFollowSystem)
+	rpc.Handle(d, api.ThemesCatalog, s.Catalog)
+	rpc.Handle(d, api.ThemesInstallFromCatalog, s.InstallFromCatalog)
 }
 
 // Spawn exposes the spawn service as api declares it. CloseFinishedWorker
