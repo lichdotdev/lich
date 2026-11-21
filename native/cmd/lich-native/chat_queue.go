@@ -228,8 +228,9 @@ func revealed(gtx C, shown bool, w layout.Widget) D {
 
 // composerKeys runs the queue's keys in the composer: Ctrl+Enter (Cmd+Enter
 // on macOS) sends the text into the turn running, or as a message when none
-// runs, and ↑ on an empty box takes the queue back to edit.
-func (u *window) composerKeys(gtx C, p *chatPane, id string, keys bool) {
+// runs, ↑ on an empty box takes the queue back to edit, and otherwise the
+// arrows walk the messages sent.
+func (u *window) composerKeys(gtx C, p *chatPane, id string, sent []string, keys bool) {
 	if !keys {
 		return
 	}
@@ -237,9 +238,8 @@ func (u *window) composerKeys(gtx C, p *chatPane, id string, keys bool) {
 		key.Filter{Focus: &p.editor, Name: key.NameReturn, Required: key.ModShortcut},
 		key.Filter{Focus: &p.editor, Name: key.NameEnter, Required: key.ModShortcut},
 	}
-	if p.editor.Len() == 0 && len(p.attached) == 0 && len(u.model.chat.queued(id)) > 0 {
-		filters = append(filters, key.Filter{Focus: &p.editor, Name: key.NameUpArrow})
-	}
+	queue := p.editor.Len() == 0 && len(p.attached) == 0 && len(u.model.chat.queued(id)) > 0
+	filters = append(filters, p.history.filters(&p.editor, sent, queue)...)
 	for {
 		ev, ok := gtx.Event(filters...)
 		if !ok {
@@ -249,8 +249,15 @@ func (u *window) composerKeys(gtx C, p *chatPane, id string, keys bool) {
 		if !isKey || e.State != key.Press {
 			continue
 		}
-		if e.Name == key.NameUpArrow {
+		switch {
+		case e.Name == key.NameUpArrow && queue:
 			u.editQueue(p, id)
+			continue
+		case e.Name == key.NameUpArrow:
+			p.history.back(&p.editor, sent)
+			continue
+		case e.Name == key.NameDownArrow:
+			p.history.forward(&p.editor, sent)
 			continue
 		}
 		m := p.composed()

@@ -109,8 +109,11 @@ type chatView struct {
 	// may grow over the conversation up to slashRoom, the pane's height.
 	slash     chatSlash
 	slashRoom int
-	// tools is the /mcp or /skills panel, in the slash list's place.
-	tools chatTools
+	// tools is the /mcp or /skills panel, in the slash list's place, and
+	// search the Ctrl+R search of the messages sent; history is the ↑/↓ walk.
+	tools   chatTools
+	search  chatSearch
+	history chatHistory
 	// attached are the files the next message carries, drawn as cards over
 	// the text in cardList; fileCards are the cards' controls, by path in the
 	// composer and by item and path in a sent message.
@@ -384,7 +387,11 @@ func (u *window) chatActs(gtx C, p *chatPane, sv sessionView, keys, working bool
 	if p.tools.opened() && (p.editor.Len() > 0 || p.tools.keyTag(p) != &p.editor && !p.tools.focus && gtx.Focused(&p.editor)) {
 		p.tools.shut()
 	}
-	p.slash.blocked = !keys || asking != nil || p.picker.panel.Opened() || p.tools.opened()
+	sent, submit := sentHistory(u.model.chat.of(sv.ID)), false
+	if keys && asking == nil && !p.picker.panel.Opened() && !p.tools.opened() {
+		submit = p.search.acts(gtx, &p.editor, sent)
+	}
+	p.slash.blocked = !keys || asking != nil || p.picker.panel.Opened() || p.tools.opened() || p.search.open
 	if !p.slash.blocked {
 		p.slash.act(gtx, &p.editor)
 	}
@@ -393,51 +400,32 @@ func (u *window) chatActs(gtx C, p *chatPane, sv sessionView, keys, working bool
 	}
 	// The model panel's search holds the keys while the panel is open.
 	switch {
-	case !keys || p.picker.panel.Opened() || p.tools.opened():
+	case !keys || p.picker.panel.Opened() || p.tools.opened() || p.search.open:
 	case asking != nil:
 		p.focusQuestion(gtx, asking, p.quiz(asking.ID, asking.Question.Questions))
 	case !gtx.Focused(&p.editor):
 		gtx.Execute(key.FocusCmd{Tag: &p.editor})
 	}
+	u.escapeChat(gtx, p, sv.ID, waiting, asking)
 	if p.editor.Len() > 0 || len(p.attached) > 0 {
 		waiting = nil
 	}
-	for {
-		ev, ok := gtx.Event(key.Filter{Focus: &p.editor, Name: key.NameEscape})
-		if !ok {
-			break
-		}
-		e, ok := ev.(key.Event)
-		if !ok || e.State != key.Press || u.unholdChat(p, sv.ID) {
-			continue
-		}
-		if waiting != nil {
-			u.answerChat(sv.ID, waiting.ID, permitOption(waiting.Permission, api.PermitRejectOnce))
-		}
-	}
 	u.queueActs(gtx, p, sv.ID)
-	u.composerKeys(gtx, p, sv.ID, keys && asking == nil)
+	u.composerKeys(gtx, p, sv.ID, sent, keys && asking == nil && !p.search.open)
 	p.undo.Handle(gtx, &p.editor)
 	for {
 		ev, ok := p.editor.Update(gtx)
 		if !ok {
 			break
 		}
-		if _, ok := ev.(widget.SubmitEvent); !ok {
-			continue
-		}
-		switch {
-		case waiting != nil:
-			u.answerChat(sv.ID, waiting.ID, permitOption(waiting.Permission, api.PermitAllowOnce, api.PermitAllowAlways))
-		case asking == nil && u.model.chat.isRunning(sv.ID):
-			u.queueChat(p, sv.ID)
-		case !working || asking != nil:
-			if u.sendChat(p, sv.ID) {
-				p.toEnd(gtx.Now)
-			}
+		if _, ok := ev.(widget.SubmitEvent); ok {
+			u.submitChat(gtx, p, sv.ID, working, waiting, asking)
 		}
 	}
-	if p.send.Clicked(gtx) && !working && u.sendChat(p, sv.ID) {
+	if submit {
+		u.submitChat(gtx, p, sv.ID, working, waiting, asking)
+	}
+	if p.send.Clicked(gtx) && !working && !p.search.open && u.sendChat(p, sv.ID) {
 		p.toEnd(gtx.Now)
 	}
 	if p.stop.Clicked(gtx) && !u.unholdChat(p, sv.ID) {
@@ -447,6 +435,47 @@ func (u *window) chatActs(gtx C, p *chatPane, sv sessionView, keys, working bool
 	for k, c := range p.answers {
 		if c.Clicked(gtx) {
 			u.answerChat(sv.ID, k.item, k.option)
+		}
+	}
+}
+
+// submitChat is Enter in the box: it allows a waiting permission on an empty
+// box, queues the text while a turn runs, and otherwise sends it.
+func (u *window) submitChat(gtx C, p *chatPane, id string, working bool, waiting, asking *backend.ChatItem) {
+	switch {
+	case waiting != nil:
+		u.answerChat(id, waiting.ID, permitOption(waiting.Permission, api.PermitAllowOnce, api.PermitAllowAlways))
+	case asking == nil && u.model.chat.isRunning(id):
+		u.queueChat(p, id)
+	case !working || asking != nil:
+		if u.sendChat(p, id) {
+			p.toEnd(gtx.Now)
+		}
+	}
+}
+
+// escapeChat runs Esc on the box once the slash list and the panel took
+// theirs; the search reads its own on its field, as Claude Code's prompt does: it takes a waiting message
+// back, rejects a waiting permission on an empty box, and otherwise stops the
+// turn running as Stop does, the box's text kept. A waiting question has the
+// keys on its card.
+func (u *window) escapeChat(gtx C, p *chatPane, id string, waiting, asking *backend.ChatItem) {
+	for {
+		ev, ok := gtx.Event(key.Filter{Focus: &p.editor, Name: key.NameEscape})
+		if !ok {
+			return
+		}
+		e, ok := ev.(key.Event)
+		if !ok || e.State != key.Press || u.unholdChat(p, id) {
+			continue
+		}
+		switch {
+		case waiting != nil:
+			if p.editor.Len() == 0 && len(p.attached) == 0 {
+				u.answerChat(id, waiting.ID, permitOption(waiting.Permission, api.PermitRejectOnce))
+			}
+		case asking == nil && u.model.chat.isRunning(id):
+			go func() { u.chatFailed(u.client.ChatCancel(u.ctx, id)) }()
 		}
 	}
 }

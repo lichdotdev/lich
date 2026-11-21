@@ -106,6 +106,10 @@
     "drop": "Remove from the queue",
     "edit": "↑ edits the queue"
   },
+  "search": {
+    "label": "Search your messages",
+    "failed": "No message matches"
+  },
   "tools": {
     "loading": "Loading…",
     "mcpTitle": "MCP servers",

@@ -106,6 +106,10 @@
     "drop": "Quitar de la cola",
     "edit": "↑ edita la cola"
   },
+  "search": {
+    "label": "Busca en tus mensajes",
+    "failed": "Ningún mensaje coincide"
+  },
   "tools": {
     "loading": "Cargando…",
     "mcpTitle": "Servidores MCP",

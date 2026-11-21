@@ -101,6 +101,10 @@
     "drop": "移出队列",
     "edit": "↑ 编辑队列"
   },
+  "search": {
+    "label": "搜索已发送的消息",
+    "failed": "没有匹配的消息"
+  },
   "tools": {
     "loading": "加载中…",
     "mcpTitle": "MCP 服务器",
