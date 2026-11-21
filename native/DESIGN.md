@@ -848,6 +848,18 @@ folder's color at `tintRest`; a card painted the folder's color paints nothing a
 the tray's edges, clipped to its corners, so a lit row fills it to the end. A closed folder is its header
 alone, no tray.
 
+### The Services footer
+
+The project's services sit at the sidebar's foot, above the profile, in a place of their own: the sessions
+scroll over them and they never move when a session opens (`sidebar_services.go`). A `Border` hairline parts
+them from the list, then a header drawn as a folder's is (the services glyph in the node's column, turning to
+the fold's chevron under the pointer, SERVICES, how many run of how many, the rule to the `⋯`), which opens
+and closes the rows under it. Its `⋯` and right click hold Start all, Stop all and New service. A service is a
+row as a session is: its glyph where the mark sits, the name (`MutedForeground` while it is down), how long it
+has run at the end or its exit code in `Destructive`, and the corner slot, the `⋯` under the pointer and the
+souls spinner while it stops. No dot, and no button on the row: its actions are its menu; a click shows its
+console. The open list scrolls past `serviceRowsShown` rows.
+
 ### The rail
 
 The collapsed sidebar is an island like the open one (`sidebar_rail.go`): `Sidebar`, `RadiusLG`, the same `Border` hairline, its content

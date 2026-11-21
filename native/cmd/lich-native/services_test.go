@@ -8,6 +8,7 @@ import (
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
+	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -147,5 +148,39 @@ func TestGlobalServicesAreHomes(t *testing.T) {
 	}
 	if got := (&servicesSettings{}).projectOf(""); got != "" {
 		t.Errorf("before Home is known Global edits %q", got)
+	}
+}
+
+func TestTheServicesHeaderOffersWhatTheTallyAllows(t *testing.T) {
+	labels := func(tally servicesTally) []string {
+		var out []string
+		for _, e := range servicesEntries(tally, "p", new(sidebarAction)) {
+			if e.Kind == ui.MenuSeparator {
+				out = append(out, "-")
+				continue
+			}
+			out = append(out, e.Label)
+		}
+		return out
+	}
+	start, stop, add := i18n.T("sidebar.services.startAll"), i18n.T("sidebar.services.stopAll"), i18n.T("sidebar.services.newService")
+	cases := []struct {
+		tally servicesTally
+		want  []string
+	}{
+		{servicesTally{}, []string{add}},
+		{servicesTally{up: 0, total: 2}, []string{start, "-", add}},
+		{servicesTally{up: 1, total: 2}, []string{start, stop, "-", add}},
+		{servicesTally{up: 2, total: 2}, []string{stop, "-", add}},
+	}
+	for _, c := range cases {
+		if got := labels(c.tally); !slices.Equal(got, c.want) {
+			t.Errorf("tally %+v: menu %v, want %v", c.tally, got, c.want)
+		}
+	}
+	var act sidebarAction
+	servicesEntries(servicesTally{total: 1}, "p", &act)[0].OnClick()
+	if act.service != (serviceRequest{op: serviceStartAll, project: "p"}) {
+		t.Errorf("Start all asked %+v", act.service)
 	}
 }

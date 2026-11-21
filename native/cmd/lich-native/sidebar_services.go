@@ -4,7 +4,10 @@ import (
 	"fmt"
 	"image"
 	"strconv"
+	"strings"
 	"time"
+
+	"gioui.org/font"
 
 	"gioui.org/layout"
 	"gioui.org/op"
@@ -24,8 +27,6 @@ var (
 	icServiceStop    = icons.Lucide("square")
 	icServiceRestart = icons.Lucide("rotate-cw")
 	icServiceOutput  = icons.Lucide("square-terminal")
-	icServicesOpen   = icons.Lucide("chevron-down")
-	icServicesClosed = icons.Lucide("chevron-up")
 	icServiceDelete  = icons.Lucide("trash-2")
 )
 
@@ -58,53 +59,61 @@ type serviceRequest struct {
 	project string
 }
 
-// servicesFooter is the Services row above the profile: closed, one line that
-// counts what runs; open, a short list of the project's services above it.
+// servicesFooter is the Services block above the profile: a group header
+// that opens and closes it, and the project's services under it.
 type servicesFooter struct {
-	open     bool
-	header   ui.Clickable
-	all      ui.Clickable
-	allTip   ui.Tooltip
-	add      ui.Clickable
-	list     widget.List
-	rows     map[string]*ui.Clickable
-	starts   map[string]*ui.Clickable
-	stops    map[string]*ui.Clickable
-	restarts map[string]*ui.Clickable
-	menus    map[string]*ui.MenuState
+	open       bool
+	header     ui.Clickable
+	more       ui.Clickable
+	headerMenu ui.MenuState // the header's …
+	headerCtx  ui.MenuState // the header's right click
+	all        ui.Clickable
+	allTip     ui.Tooltip
+	add        ui.Clickable
+	list       widget.List
+	rows       map[string]*ui.Clickable
+	mores      map[string]*ui.Clickable
+	menus      map[string]*ui.MenuState // a row's right click
+	moreMenus  map[string]*ui.MenuState // a row's …
 }
 
 func newServicesFooter() servicesFooter {
 	f := servicesFooter{
-		rows: map[string]*ui.Clickable{}, starts: map[string]*ui.Clickable{}, stops: map[string]*ui.Clickable{},
-		restarts: map[string]*ui.Clickable{}, menus: map[string]*ui.MenuState{},
+		rows: map[string]*ui.Clickable{}, mores: map[string]*ui.Clickable{},
+		menus: map[string]*ui.MenuState{}, moreMenus: map[string]*ui.MenuState{},
 	}
 	f.list.Axis = layout.Vertical
 	return f
 }
 
-// holdsKeys is whether a service's menu is open, which takes the keys.
+// holdsKeys is whether one of the block's menus is open, which takes the keys.
 func (f *servicesFooter) holdsKeys() bool {
-	for _, m := range f.menus {
-		if m.Opened() {
-			return true
+	if f.headerMenu.Opened() || f.headerCtx.Opened() {
+		return true
+	}
+	for _, states := range []map[string]*ui.MenuState{f.menus, f.moreMenus} {
+		for _, m := range states {
+			if m.Opened() {
+				return true
+			}
 		}
 	}
 	return false
 }
 
-func (f *servicesFooter) menu(id string) *ui.MenuState {
-	m, ok := f.menus[id]
+func menuOf(states map[string]*ui.MenuState, id string) *ui.MenuState {
+	m, ok := states[id]
 	if !ok {
 		m = new(ui.MenuState)
-		f.menus[id] = m
+		states[id] = m
 	}
 	return m
 }
 
-// layout is the footer's Services block: the hairline, the open list and its
-// New service row, then the row that opens and closes it. console is the
-// service whose console is on screen.
+// layout is the footer's Services block: the hairline that parts it from
+// the sessions, the header that opens and closes it, then the open list, or
+// New service while there is none. console is the service whose console is
+// on screen.
 func (f *servicesFooter) layout(gtx C, th *ui.Theme, root *ui.Root, projectID string, list []backend.Service, console string, act *sidebarAction) D {
 	if f.header.Clicked(gtx) {
 		f.open = !f.open
@@ -113,24 +122,198 @@ func (f *servicesFooter) layout(gtx C, th *ui.Theme, root *ui.Root, projectID st
 		act.service = serviceRequest{op: serviceAdd, project: projectID}
 	}
 	tally := tallyServices(list)
-	if f.all.Clicked(gtx) {
-		act.service = serviceRequest{op: allServicesOp(tally), project: projectID}
-	}
 	children := []layout.FlexChild{
 		layout.Rigid(func(gtx C) D {
 			gtx.Constraints = layout.Exact(image.Pt(gtx.Constraints.Max.X, gtx.Dp(1)))
 			return ui.Fill(gtx, th.Over(th.Border), 0)
 		}),
 		ui.VGap(1.5),
+		layout.Rigid(func(gtx C) D { return f.headerRow(gtx, th, root, projectID, tally, act) }),
 	}
-	if f.open {
-		children = append(children,
-			layout.Rigid(func(gtx C) D { return f.rowList(gtx, th, root, list, console, act) }),
-			layout.Rigid(func(gtx C) D { return f.addRow(gtx, th) }),
-		)
+	switch {
+	case f.open && len(list) == 0:
+		children = append(children, layout.Rigid(func(gtx C) D { return f.addRow(gtx, th) }))
+	case f.open:
+		children = append(children, layout.Rigid(func(gtx C) D { return f.rowList(gtx, th, root, list, console, act) }))
 	}
-	children = append(children, layout.Rigid(func(gtx C) D { return f.headerRow(gtx, th, root, tally) }))
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
+}
+
+// rowHeight is a sidebar row's height: the node's box and its inset above and
+// below.
+func rowHeight(gtx C) int { return gtx.Dp(2*sessionTreeRingR) + 2*gtx.Dp(ui.Space(1.5)) }
+
+// headerRow is the block's header as a folder's is drawn: the glyph in the
+// node's column, turning to the fold's chevron under the pointer, SERVICES,
+// how many run of how many, a rule to the …, whose entries the right click
+// opens too.
+func (f *servicesFooter) headerRow(gtx C, th *ui.Theme, root *ui.Root, projectID string, t servicesTally, act *sidebarAction) D {
+	entries := func() []ui.MenuEntry { return servicesEntries(t, projectID, act) }
+	h := rowHeight(gtx)
+	lit := f.header.Hovered() || f.more.Hovered() || f.headerMenu.Opened() || f.headerCtx.Opened()
+	fill := cardLayer(th, "", false, lit)
+	return th.ContextMenuLazy(root, &f.headerCtx, entries).Layout(gtx, func(gtx C) D {
+		return layout.Background{}.Layout(gtx,
+			func(gtx C) D { return ui.Fill(gtx, fill, ui.RadiusMD) },
+			func(gtx C) D {
+				return layout.Inset{Right: ui.Space(1)}.Layout(gtx, func(gtx C) D {
+					gtx.Constraints.Min.Y = h
+					return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+						layout.Flexed(1, func(gtx C) D {
+							gtx.Constraints.Min.Y = h
+							return f.header.Layout(gtx, func(gtx C) D {
+								gtx.Constraints.Min.X = gtx.Constraints.Max.X
+								return servicesTitle(gtx, th, t, f.open, f.header.Hovered())
+							})
+						}),
+						ui.Gap(1),
+						layout.Rigid(func(gtx C) D {
+							return th.DropdownMenu(root, &f.headerMenu, entries()).Layout(gtx, func(gtx C) D {
+								btn := th.Button(&f.more, "")
+								btn.Icon, btn.Variant, btn.Size = icGroupMore, ui.VariantGhost, ui.SizeIconXS
+								return btn.Layout(gtx)
+							})
+						}),
+					)
+				})
+			},
+		)
+	})
+}
+
+// servicesTitle is the header's line: the glyph, SERVICES, the count, and
+// the rule.
+func servicesTitle(gtx C, th *ui.Theme, t servicesTally, open, hovered bool) D {
+	fg := th.Over(ui.Alpha(th.MutedForeground, headerTitleOpacity))
+	glyph := icServices
+	if hovered {
+		fg, glyph = th.MutedForeground, foldIcon(open)
+	}
+	count := strconv.Itoa(t.up) + "/" + strconv.Itoa(t.total)
+	if t.total == 0 {
+		count = i18n.T("sidebar.services.add")
+	}
+	return layout.Inset{Left: rowInset, Right: ui.Space(1)}.Layout(gtx, func(gtx C) D {
+		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+			layout.Rigid(func(gtx C) D {
+				gtx.Constraints = layout.Exact(image.Pt(gtx.Dp(sessionTreeRingR)*2, gtx.Dp(ui.Space(3))))
+				return ui.CenteredIcon(gtx, glyph, ui.Space(3), fg)
+			}),
+			ui.Gap(1.5),
+			layout.Rigid(th.Text(ui.Text2XS, strings.ToUpper(i18n.T("sidebar.services.title"))).Leading(text2XSLeading).In(fg).Weight(font.SemiBold).Layout),
+			ui.Gap(1.5),
+			layout.Rigid(th.Text(ui.Text2XS, count).Leading(text2XSLeading).In(th.Over(ui.Alpha(th.MutedForeground, headerCountOpacity))).Weight(font.Medium).Layout),
+			ui.Gap(1.5),
+			layout.Flexed(1, th.Separator),
+		)
+	})
+}
+
+// servicesEntries is the header's menu: start what is down, stop what runs,
+// and add a service.
+func servicesEntries(t servicesTally, projectID string, act *sidebarAction) []ui.MenuEntry {
+	do := func(op serviceOp) func() { return func() { act.service = serviceRequest{op: op, project: projectID} } }
+	var entries []ui.MenuEntry
+	if t.up < t.total {
+		entries = append(entries, ui.MenuEntry{Label: i18n.T("sidebar.services.startAll"), Icon: icServiceStart, OnClick: do(serviceStartAll)})
+	}
+	if t.up > 0 {
+		entries = append(entries, ui.MenuEntry{Label: i18n.T("sidebar.services.stopAll"), Icon: icServiceStop, OnClick: do(serviceStopAll)})
+	}
+	if len(entries) > 0 {
+		entries = append(entries, ui.MenuEntry{Kind: ui.MenuSeparator})
+	}
+	return append(entries, ui.MenuEntry{Label: i18n.T("sidebar.services.newService"), Icon: icPlus, OnClick: do(serviceAdd)})
+}
+
+func (f *servicesFooter) rowList(gtx C, th *ui.Theme, root *ui.Root, list []backend.Service, console string, act *sidebarAction) D {
+	gtx.Constraints.Max.Y = min(gtx.Constraints.Max.Y, rowHeight(gtx)*serviceRowsShown)
+	// The thumb floats over the rows, as the rail's does: a reserved gutter
+	// would end every row short of the cards above it.
+	rows := th.ScrollArea(&f.list)
+	rows.AnchorStrategy = material.Overlay
+	return rows.Layout(gtx, len(list), func(gtx C, i int) D {
+		return f.row(gtx, th, root, list[i], list[i].ID == console, act)
+	})
+}
+
+// row is one service as a session's row is drawn: its glyph where a
+// session's mark sits, the name, muted while it is down, how long it has run
+// or how it failed, and the corner: the … under the pointer, the spinner while
+// it stops. Its actions are its menu, from the … or the right click; a click
+// shows its console.
+func (f *servicesFooter) row(gtx C, th *ui.Theme, root *ui.Root, v backend.Service, shown bool, act *sidebarAction) D {
+	click, more := clickable(f.rows, v.ID), clickable(f.mores, v.ID)
+	if click.Clicked(gtx) && !more.Hovered() {
+		act.service = serviceRequest{op: serviceShow, id: v.ID}
+	}
+	moreMenu := menuOf(f.moreMenus, v.ID)
+	entries := func() []ui.MenuEntry { return serviceMenu(v, act) }
+	lit := click.Hovered() || moreMenu.Opened()
+	fill := cardLayer(th, "", shown, lit)
+	gtx.Constraints.Min.X = gtx.Constraints.Max.X
+	return th.ContextMenuLazy(root, menuOf(f.menus, v.ID), entries).Layout(gtx, func(gtx C) D {
+		return click.Layout(gtx, func(gtx C) D {
+			return layout.Background{}.Layout(gtx,
+				func(gtx C) D { return ui.Fill(gtx, fill, ui.RadiusMD) },
+				func(gtx C) D {
+					on := th.On(th.Over(fill))
+					name, glyph := on.Text(ui.TextSM, v.Name), on.Foreground
+					if !serviceUp(v) && v.State != api.ServiceFailed {
+						name, glyph = name.Muted(), on.MutedForeground
+					}
+					return layout.Inset{Top: ui.Space(1.5), Bottom: ui.Space(1.5), Left: rowInset, Right: ui.Space(1)}.Layout(gtx, func(gtx C) D {
+						return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+							layout.Rigid(func(gtx C) D {
+								side := gtx.Dp(2 * sessionTreeRingR)
+								gtx.Constraints = layout.Exact(image.Pt(side, side))
+								return ui.CenteredIcon(gtx, icServiceOutput, 13, glyph)
+							}),
+							ui.Gap(1.5),
+							layout.Flexed(1, name.Layout),
+							layout.Rigid(func(gtx C) D { return serviceReadout(gtx, on, v) }),
+							ui.Gap(1),
+							layout.Rigid(func(gtx C) D { return serviceCorner(gtx, on, root, v, more, moreMenu, lit, entries) }),
+						)
+					})
+				},
+			)
+		})
+	})
+}
+
+// serviceCorner is a row's corner slot: the … under the pointer or while its
+// menu is open, the spinner while the service stops, empty otherwise.
+func serviceCorner(gtx C, th *ui.Theme, root *ui.Root, v backend.Service, more *ui.Clickable, menu *ui.MenuState, lit bool, entries func() []ui.MenuEntry) D {
+	size := gtx.Dp(cardSlotSize)
+	gtx.Constraints = layout.Exact(image.Pt(size, size))
+	switch {
+	case lit:
+		return layout.Center.Layout(gtx, func(gtx C) D {
+			return th.DropdownMenu(root, menu, entries()).Layout(gtx, func(gtx C) D {
+				return th.CornerButton(more, icGroupMore, menu.Opened()).Layout(gtx)
+			})
+		})
+	case v.State == api.ServiceStopping:
+		return soulsSpinner(gtx, th)
+	}
+	return D{Size: gtx.Constraints.Min}
+}
+
+// serviceReadout is a row's end: how long it has run, or how it failed; a
+// stopped service says nothing, its muted name already does.
+func serviceReadout(gtx C, th *ui.Theme, v backend.Service) D {
+	l := th.Text(ui.TextXS, serviceStateText(v, gtx.Now)).Mono().Muted()
+	switch v.State {
+	case api.ServiceRunning:
+		elapsed := gtx.Now.Sub(time.UnixMilli(v.StartedAt))
+		gtx.Execute(op.InvalidateCmd{At: gtx.Now.Add(nextAgeChange(elapsed))})
+	case api.ServiceFailed:
+		l.Color = th.Destructive
+	case api.ServiceStopped:
+		return D{}
+	}
+	return l.Layout(gtx)
 }
 
 // allServicesOp is what the header's all button does: start what is down,
@@ -140,44 +323,6 @@ func allServicesOp(t servicesTally) serviceOp {
 		return serviceStopAll
 	}
 	return serviceStartAll
-}
-
-func (f *servicesFooter) headerRow(gtx C, th *ui.Theme, root *ui.Root, t servicesTally) D {
-	gtx.Constraints.Min.X = gtx.Constraints.Max.X
-	return f.header.Layout(gtx, func(gtx C) D {
-		h := gtx.Dp(ui.Space(8))
-		gtx.Constraints.Min.Y, gtx.Constraints.Max.Y = h, h
-		bg := th.Surface
-		if f.header.Hovered() {
-			bg = th.Over(ui.Alpha(th.Muted, ghostHoverFill))
-			ui.Fill(gtx, bg, ui.RadiusMD)
-		}
-		on := th.On(bg)
-		chevron := icServicesClosed
-		if f.open {
-			chevron = icServicesOpen
-		}
-		label := on.Text(ui.TextSM, i18n.T("sidebar.services.title"))
-		if t.total == 0 {
-			label = label.Muted()
-		}
-		children := []layout.FlexChild{
-			layout.Rigid(func(gtx C) D { return servicesGlyph(gtx, on, t) }),
-			ui.Gap(2),
-			layout.Rigid(label.Layout),
-			ui.Gap(2),
-			layout.Rigid(func(gtx C) D { return servicesCount(gtx, on, t) }),
-			layout.Flexed(1, func(gtx C) D { return D{Size: gtx.Constraints.Min} }),
-		}
-		if f.open && t.total > 0 {
-			children = append(children, layout.Rigid(func(gtx C) D { return f.allButton(gtx, on, root, t) }), ui.Gap(1.5))
-		}
-		children = append(children, layout.Rigid(func(gtx C) D { return chevron.Layout(gtx, 14, on.MutedForeground) }))
-		return layout.Inset{Left: ui.Space(2), Right: ui.Space(2)}.Layout(gtx, func(gtx C) D {
-			gtx.Constraints.Min.Y = h
-			return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
-		})
-	})
 }
 
 // allButton starts every service that is down, or stops them all once all
@@ -206,18 +351,6 @@ func servicesCount(gtx C, th *ui.Theme, t servicesTally) D {
 	return l.Layout(gtx)
 }
 
-// servicesGlyph is the dot that says how a project's services stand: red when
-// one failed, pulsing while one runs, hollow otherwise.
-func servicesGlyph(gtx C, th *ui.Theme, t servicesTally) D {
-	switch {
-	case t.failed:
-		return stateDot(gtx, th, api.ServiceFailed)
-	case t.up > 0:
-		return th.BeatingDot(gtx, th.TonePass)
-	}
-	return stateDot(gtx, th, api.ServiceStopped)
-}
-
 // stateDot is a service state as a 14dp glyph.
 func stateDot(gtx C, th *ui.Theme, state string) D {
 	switch state {
@@ -229,104 +362,6 @@ func stateDot(gtx C, th *ui.Theme, state string) D {
 		return ui.StatusDot(gtx, th.Destructive)
 	}
 	return ui.HollowDot(gtx, th.MutedForeground)
-}
-
-func (f *servicesFooter) rowList(gtx C, th *ui.Theme, root *ui.Root, list []backend.Service, console string, act *sidebarAction) D {
-	rowH := gtx.Dp(ui.Space(6.5))
-	gtx.Constraints.Max.Y = min(gtx.Constraints.Max.Y, rowH*serviceRowsShown)
-	// The thumb floats over the rows, as the rail's does: a reserved gutter
-	// would end every row short of the cards above it.
-	rows := th.ScrollArea(&f.list)
-	rows.AnchorStrategy = material.Overlay
-	return rows.Layout(gtx, len(list), func(gtx C, i int) D {
-		return f.row(gtx, th, root, list[i], list[i].ID == console, act)
-	})
-}
-
-// row is one service: its dot, its name, and how long it has run or how it
-// ended, which hover trades for the buttons its state offers.
-func (f *servicesFooter) row(gtx C, th *ui.Theme, root *ui.Root, v backend.Service, shown bool, act *sidebarAction) D {
-	click := clickable(f.rows, v.ID)
-	start, stop, restart := clickable(f.starts, v.ID), clickable(f.stops, v.ID), clickable(f.restarts, v.ID)
-	switch {
-	case start.Clicked(gtx):
-		act.service = serviceRequest{op: serviceStart, id: v.ID}
-	case stop.Clicked(gtx):
-		act.service = serviceRequest{op: serviceStop, id: v.ID}
-	case restart.Clicked(gtx):
-		act.service = serviceRequest{op: serviceRestart, id: v.ID}
-	case click.Clicked(gtx):
-		act.service = serviceRequest{op: serviceShow, id: v.ID}
-	}
-	gtx.Constraints.Min.X = gtx.Constraints.Max.X
-	return th.ContextMenuLazy(root, f.menu(v.ID), func() []ui.MenuEntry { return serviceMenu(v, act) }).Layout(gtx, func(gtx C) D {
-		return click.Layout(gtx, func(gtx C) D {
-			h := gtx.Dp(ui.Space(6.5))
-			gtx.Constraints.Min.Y, gtx.Constraints.Max.Y = h, h
-			bg := th.Surface
-			switch {
-			case shown:
-				bg = th.Accent
-			case click.Hovered():
-				bg = th.Over(ui.Alpha(th.Muted, ghostHoverFill))
-			}
-			if bg != th.Surface {
-				ui.Fill(gtx, bg, ui.RadiusMD)
-			}
-			on := th.On(bg)
-			name := on.Text(ui.TextSM, v.Name)
-			if !serviceUp(v) && v.State != api.ServiceFailed {
-				name = name.Muted()
-			}
-			return layout.Inset{Left: ui.Space(2), Right: ui.Space(1.5)}.Layout(gtx, func(gtx C) D {
-				gtx.Constraints.Min.Y = h
-				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-					layout.Rigid(func(gtx C) D { return stateDot(gtx, on, v.State) }),
-					ui.Gap(2),
-					layout.Flexed(1, name.Layout),
-					layout.Rigid(func(gtx C) D {
-						if click.Hovered() {
-							return serviceRowButtons(gtx, on, v, start, stop, restart)
-						}
-						return serviceReadout(gtx, on, v)
-					}),
-				)
-			})
-		})
-	})
-}
-
-// serviceRowButtons are the hover actions of a row: Restart and Stop while it
-// runs, Start otherwise; none while it is on its way out.
-func serviceRowButtons(gtx C, th *ui.Theme, v backend.Service, start, stop, restart *ui.Clickable) D {
-	switch v.State {
-	case api.ServiceRunning:
-		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-			layout.Rigid(func(gtx C) D { return th.CornerButton(restart, icServiceRestart, false).Layout(gtx) }),
-			ui.Gap(1),
-			layout.Rigid(func(gtx C) D { return th.CornerButton(stop, icServiceStop, false).Layout(gtx) }),
-		)
-	case api.ServiceStopping:
-		return D{}
-	}
-	return th.CornerButton(start, icServiceStart, false).Layout(gtx)
-}
-
-// serviceReadout is a row's right side at rest: how long it has run, or how
-// it ended.
-func serviceReadout(gtx C, th *ui.Theme, v backend.Service) D {
-	l := th.Text(ui.TextXS, serviceStateText(v, gtx.Now)).Mono().Muted()
-	switch v.State {
-	case api.ServiceRunning:
-		l.Color = th.TonePass
-		elapsed := gtx.Now.Sub(time.UnixMilli(v.StartedAt))
-		gtx.Execute(op.InvalidateCmd{At: gtx.Now.Add(nextAgeChange(elapsed))})
-	case api.ServiceStopping:
-		l.Color = th.ToneWait
-	case api.ServiceFailed:
-		l.Color = th.Destructive
-	}
-	return l.Layout(gtx)
 }
 
 // serviceStateText is a service's state in a few words: its uptime while it
