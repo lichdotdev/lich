@@ -405,10 +405,7 @@
   "settingsNav": {
     "scopeLabel": "범위",
     "scopeGlobal": "전역",
-    "openProjects": "열린 프로젝트",
-    "changes": {
-      "other": "변경 {count}개"
-    },
+    "everyProject": "모든 프로젝트",
     "scopeNote": "프로젝트가 바꿀 수 있는 설정만 켜져 있습니다. 나머지는 어디서나 같습니다.",
     "groupAgents": "에이전트",
     "groupWorkspace": "작업 공간"

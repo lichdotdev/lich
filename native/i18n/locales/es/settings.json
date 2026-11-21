@@ -409,11 +409,7 @@
   "settingsNav": {
     "scopeLabel": "Ámbito",
     "scopeGlobal": "Global",
-    "openProjects": "Proyectos abiertos",
-    "changes": {
-      "one": "{count} cambio",
-      "other": "{count} cambios"
-    },
+    "everyProject": "Todos los proyectos",
     "scopeNote": "Solo están activos los ajustes que un proyecto puede cambiar. El resto es igual en todas partes.",
     "groupAgents": "Agentes",
     "groupWorkspace": "Espacio de trabajo"

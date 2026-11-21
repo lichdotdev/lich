@@ -2,24 +2,17 @@ package main
 
 import (
 	"context"
-	"hash/fnv"
-	"image/color"
 	"maps"
 
 	"github.com/lichdotdev/lich/native/backend"
 )
 
-// settingsProject is an open project as the scope selector lists it.
+// settingsProject is an open project as the scope selector lists it: its
+// path, the providers its sessions run and whether one of them works.
 type settingsProject struct {
-	id, name string
-}
-
-// projectSwatch is a project's color in the scope selector. Projects have no
-// color of their own, so it is a stable pick from the card palette by id.
-func projectSwatch(id string) color.NRGBA {
-	h := fnv.New32a()
-	h.Write([]byte(id))
-	return cardColors[cardColorNames[h.Sum32()%uint32(len(cardColorNames))]]
+	id, name, path string
+	agents         []string
+	working        bool
 }
 
 // scopedValues is what the open projects set: key, then project id, to a

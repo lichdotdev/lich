@@ -409,11 +409,7 @@
   "settingsNav": {
     "scopeLabel": "スコープ",
     "scopeGlobal": "グローバル",
-    "openProjects": "開いているプロジェクト",
-    "changes": {
-      "one": "{count} 件の変更",
-      "other": "{count} 件の変更"
-    },
+    "everyProject": "すべてのプロジェクト",
     "scopeNote": "プロジェクトで変更できる設定だけが有効になっています。それ以外はどこでも共通です。",
     "groupAgents": "エージェント",
     "groupWorkspace": "ワークスペース"

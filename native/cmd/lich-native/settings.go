@@ -400,7 +400,7 @@ func (s *settingsScreen) drawRow(gtx C, th *ui.Theme, e settingEntry, r settingR
 	return r.layout(gtx, th, first, control)
 }
 
-// scopePill is the pane's "● project" pill in a project's scope.
+// scopePill is the pane's pill naming the project whose scope is open.
 func (s *settingsScreen) scopePill(gtx C, th *ui.Theme) D {
 	name := ""
 	for _, p := range s.projects {
@@ -408,19 +408,13 @@ func (s *settingsScreen) scopePill(gtx C, th *ui.Theme) D {
 			name = p.name
 		}
 	}
-	return th.Pill(func(gtx C) D {
-		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-			layout.Rigid(func(gtx C) D { return ui.Swatch(gtx, projectSwatch(s.scope)) }),
-			ui.Gap(2),
-			layout.Rigid(th.Text(ui.TextXS, name).Muted().Weight(font.Medium).Layout),
-		)
-	}, ui.Space(1.75), ui.Space(2.25)).Layout(gtx)
+	return th.Pill(th.Text(ui.TextXS, name).Muted().Weight(font.Medium).Layout, ui.Space(2.25), ui.Space(2.25)).Layout(gtx)
 }
 
 func settingsProjectsOf(tabs []projectTab) []settingsProject {
 	projects := make([]settingsProject, len(tabs))
 	for i, t := range tabs {
-		projects[i] = settingsProject{id: t.ID, name: t.Name}
+		projects[i] = settingsProject{id: t.ID, name: t.Name, path: t.Path, agents: t.agents, working: t.working}
 	}
 	return projects
 }
