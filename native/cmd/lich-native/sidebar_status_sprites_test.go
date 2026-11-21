@@ -4,6 +4,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/lichdotdev/lich/native/ui"
 )
 
 func TestStatusSpritesAreElevenByElevenWithAStepEach(t *testing.T) {
@@ -54,6 +56,31 @@ func TestTheFusionStartsWhenTheSpinnerMeetsInTheCenter(t *testing.T) {
 		}
 		if start.Before(end.Truncate(soulsStep)) || start.Sub(end) >= time.Duration(len(soulsFrames))*soulsStep {
 			t.Errorf("end %v: fusion at %v, want within one turn of the spinner", end, start)
+		}
+	}
+}
+
+func TestEachStatusPaintsInItsOwnPalette(t *testing.T) {
+	th := &ui.Theme{Palette: ui.Dark, Surface: ui.Dark.Sidebar}
+	if c, _ := soulsInk(th, '4'); c != th.Primary {
+		t.Errorf("a soul's head %v, want the theme's Primary %v", c, th.Primary)
+	}
+	if c, _ := glassInk(th, '4'); c != th.ToneWait {
+		t.Errorf("the sand %v, want ToneWait %v", c, th.ToneWait)
+	}
+	if c, _ := checkInk(th, '7'); c != th.TonePass {
+		t.Errorf("the check %v, want TonePass %v", c, th.TonePass)
+	}
+	for _, s := range []statusSprite{hourglassSprite, glassEnter, checkFusion} {
+		if s.ink == nil {
+			t.Fatal("a status sprite has no palette")
+		}
+		for _, f := range s.frames {
+			for _, c := range strings.ReplaceAll(strings.ReplaceAll(f, " | ", ""), ".", "") {
+				if _, ok := s.ink(th, byte(c)); !ok {
+					t.Errorf("symbol %q has no color in its sprite's palette", c)
+				}
+			}
 		}
 	}
 }
