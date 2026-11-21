@@ -57,5 +57,5 @@ func soulsFrame(now time.Time) (frame int, next time.Time) {
 func soulsSpinner(gtx C, th *ui.Theme) D {
 	frame, next := soulsFrame(gtx.Now)
 	nextFrame(gtx, th, next.Sub(gtx.Now))
-	return drawSprite(gtx, th, soulsFrames[frame])
+	return drawSprite(gtx, th, soulsFrames[frame], soulsInk)
 }
