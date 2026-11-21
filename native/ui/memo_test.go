@@ -10,7 +10,6 @@ import (
 	"gioui.org/io/pointer"
 	"gioui.org/layout"
 	"gioui.org/op"
-	"gioui.org/widget"
 )
 
 // memoRig is a window holding one memoized subtree.
@@ -44,9 +43,9 @@ func (r *memoRig) queue(events ...pointer.Event) {
 }
 
 // clickRig memoizes a full-size button, counting its clicks.
-func clickRig() (*memoRig, *widget.Clickable, *int) {
+func clickRig() (*memoRig, *Clickable, *int) {
 	r := &memoRig{}
-	btn, clicks := new(widget.Clickable), new(int)
+	btn, clicks := new(Clickable), new(int)
 	r.draw = func(gtx C) D {
 		if btn.Clicked(gtx) {
 			*clicks++
