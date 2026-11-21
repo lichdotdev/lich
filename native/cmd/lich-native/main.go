@@ -679,6 +679,9 @@ func (u *window) layout(gtx C) error {
 	var act, peekAct sidebarAction
 	var top topbarAction
 	var contentErr error
+	if u.model.takeOpened() {
+		u.uncoverStage()
+	}
 	v := u.stageView(gtx.Now)
 	u.extension.follow(activeContext(v))
 	u.frameTour(gtx)
@@ -1237,12 +1240,18 @@ func (u *window) terminalTakesKeys(gtx C) bool {
 	return !typing && !u.palette.open && !u.worktree.open && !u.comments.isEditing()
 }
 
+// uncoverStage takes away the screens that cover the stage, Settings, Pulls
+// and an extension's, so the session put on it shows.
+func (u *window) uncoverStage() {
+	u.settings.hide()
+	u.pulls.hide()
+	u.extension.hide()
+}
+
 func (u *window) apply(act sidebarAction) {
 	u.applyService(act.service)
 	if act.activate != "" {
-		u.settings.hide()
-		u.pulls.hide()
-		u.extension.hide()
+		u.uncoverStage()
 		u.model.setActive(u.ctx, act.activate)
 		if p, ok := u.model.project(); ok {
 			id := act.activate
@@ -1420,8 +1429,8 @@ func (u *window) newSession(l launchRequest, typeahead string) bool {
 		u.terms.queue(id, typeahead)
 	}
 	u.model.setActive(u.ctx, id)
+	u.model.sessionOpened()
 	u.logErr("set active session", u.client.SetActiveSession(u.ctx, p.ID, id))
-	u.model.invalidate()
 	return true
 }
 

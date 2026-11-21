@@ -161,6 +161,9 @@ type model struct {
 	// active session, "" for none.
 	editors  map[string]editorNode
 	editorOn string
+	// opened is a session just opened off the frame, whose window must take
+	// the screens that cover the stage away on its next frame (takeOpened).
+	opened bool
 	// serviceReveal hears the tray ask for a service's console.
 	serviceReveal func(id string)
 
@@ -973,4 +976,22 @@ func normalizeCheckouts(ps []backend.Project) {
 			s.Path = checkoutPath(s.Path, ps[pi].Path)
 		}
 	}
+}
+
+// sessionOpened says a session was just opened and set active off the frame:
+// the window's next frame shows it, taking away what covers the stage.
+func (m *model) sessionOpened() {
+	m.mu.Lock()
+	m.opened = true
+	m.mu.Unlock()
+	m.invalidate()
+}
+
+// takeOpened reports a session opened since the last frame asked, once.
+func (m *model) takeOpened() bool {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	opened := m.opened
+	m.opened = false
+	return opened
 }
