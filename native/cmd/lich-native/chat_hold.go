@@ -1,0 +1,141 @@
+package main
+
+import (
+	"slices"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/lichdotdev/lich/api"
+	"github.com/lichdotdev/lich/native/backend"
+)
+
+// A message sent from the composer waits chatSendHold in the window before it
+// goes to the agent, as Claude Code's prompt does, Esc or Stop taking it back
+// to the box meanwhile. It is drawn sent, its turn running, so the wait does
+// not show.
+
+const chatSendHold = 2 * time.Second
+
+// chatHeld is a message waiting to go: its item as the conversation draws it,
+// and whether it went, which takes it out of Esc's reach.
+type chatHeld struct {
+	item backend.ChatItem
+	sent bool
+}
+
+// hold keeps text as session id's message waiting to go. Its item takes the
+// id and turn the backend gives the person's message (conversation.userMessage)
+// so the one heard back replaces it in place, and its time is the wait's end,
+// where the turn's clock starts counting.
+func (s *chatStore) hold(id, text string, now time.Time) *chatHeld {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	turn := 0
+	for _, it := range s.items[id] {
+		turn = max(turn, it.Turn)
+	}
+	turn++
+	h := &chatHeld{item: backend.ChatItem{ID: "user-" + strconv.Itoa(turn), Kind: api.ItemUser, Text: text, Turn: turn, At: now.Add(chatSendHold).UnixMilli()}}
+	if s.held == nil {
+		s.held = map[string]*chatHeld{}
+	}
+	s.held[id] = h
+	return h
+}
+
+// holding is whether session id has a message waiting to go.
+func (s *chatStore) holding(id string) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	h := s.held[id]
+	return h != nil && !h.sent
+}
+
+// unhold takes session id's waiting message back, false once it went.
+func (s *chatStore) unhold(id string) (string, bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	h := s.held[id]
+	if h == nil || h.sent {
+		return "", false
+	}
+	delete(s.held, id)
+	return h.item.Text, true
+}
+
+// dispatch marks h gone to the agent, false when it was taken back first.
+func (s *chatStore) dispatch(id string, h *chatHeld) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.held[id] != h || h.sent {
+		return false
+	}
+	h.sent = true
+	return true
+}
+
+// dropHeld forgets h, which the backend refused.
+func (s *chatStore) dropHeld(id string, h *chatHeld) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.held[id] == h {
+		delete(s.held, id)
+	}
+}
+
+// withHeld is list with session id's message waiting or gone and not yet heard
+// back. s.mu is held.
+func (s *chatStore) withHeld(id string, list []backend.ChatItem) []backend.ChatItem {
+	h := s.held[id]
+	if h == nil || slices.ContainsFunc(list, func(it backend.ChatItem) bool { return it.ID == h.item.ID }) {
+		return list
+	}
+	return append(list, h.item)
+}
+
+// heard forgets session id's message gone once the backend's copy of a
+// person's message arrives, whatever id it carries. s.mu is held.
+func (s *chatStore) heard(id string, it backend.ChatItem) {
+	if h := s.held[id]; h != nil && h.sent && it.Kind == api.ItemUser {
+		delete(s.held, id)
+	}
+}
+
+// holdChat keeps text as session id's message, sending it once the wait is
+// up unless it was taken back; a refused one goes back into the editor.
+func (u *window) holdChat(p *chatPane, id, text string) {
+	h := u.model.chat.hold(id, text, time.Now())
+	u.model.invalidate()
+	time.AfterFunc(chatSendHold, func() {
+		if !u.model.chat.dispatch(id, h) {
+			return
+		}
+		err := u.client.ChatPrompt(u.ctx, id, text)
+		if err == nil {
+			return
+		}
+		u.model.chat.dropHeld(id, h)
+		p.mu.Lock()
+		p.unsent = text
+		p.mu.Unlock()
+		u.chatFailed(err)
+	})
+}
+
+// unholdChat takes session id's waiting message back into the box, ahead of
+// what was typed since, and reports whether there was one.
+func (u *window) unholdChat(p *chatPane, id string) bool {
+	text, ok := u.model.chat.unhold(id)
+	if !ok {
+		return false
+	}
+	if typed := strings.TrimSpace(p.editor.Text()); typed != "" {
+		text += chatQueueJoin + typed
+	}
+	p.editor.SetText(text)
+	p.editor.SetCaret(len([]rune(text)), len([]rune(text)))
+	// This frame read the conversation with the message in it.
+	u.model.invalidate()
+	return true
+}

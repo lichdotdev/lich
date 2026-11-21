@@ -25,6 +25,9 @@ type chatStore struct {
 	// queue is each session's messages written while its turn ran, sent
 	// together once it ends (chatQueue).
 	queue map[string][]string
+	// held is each session's message waiting to go (chatHold), or gone and
+	// not yet heard back.
+	held map[string]*chatHeld
 }
 
 func (s *chatStore) loadKinds(ctx context.Context, client *backend.Client) error {
@@ -68,6 +71,7 @@ func (s *chatStore) apply(u api.ChatItemUpdate) {
 	if s.items == nil {
 		s.items = map[string][]backend.ChatItem{}
 	}
+	s.heard(u.SessionID, u.Item)
 	list := s.items[u.SessionID]
 	if i := slices.IndexFunc(list, func(it backend.ChatItem) bool { return it.ID == u.Item.ID }); i >= 0 {
 		list[i] = u.Item
@@ -162,13 +166,15 @@ func (s *chatStore) holds(id string) bool {
 func (s *chatStore) of(id string) []backend.ChatItem {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return slices.Clone(s.items[id])
+	return s.withHeld(id, slices.Clone(s.items[id]))
 }
 
+// isRunning is whether session id's turn runs, a message waiting to go
+// counting as its start.
 func (s *chatStore) isRunning(id string) bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return s.running[id]
+	return s.running[id] || s.held[id] != nil
 }
 
 // beginSwitch marks a switch of session id to view asked for, false when

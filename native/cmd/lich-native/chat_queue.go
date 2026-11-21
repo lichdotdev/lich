@@ -112,8 +112,13 @@ func (u *window) queueChat(p *chatPane, id string) {
 }
 
 // steerChat sends text into session id's turn running; a refusal puts it
-// back in the queue.
+// back in the queue, and so does a turn not begun, its message still waiting
+// to go: steered, text would reach the agent first.
 func (u *window) steerChat(id, text string) {
+	if u.model.chat.holding(id) {
+		u.model.chat.requeue(id, []string{text})
+		return
+	}
 	go func() {
 		if err := u.client.ChatSteer(u.ctx, id, text); err != nil {
 			u.model.chat.requeue(id, []string{text})

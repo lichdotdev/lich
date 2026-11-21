@@ -139,6 +139,11 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   opencode, oh-my-pi, Cursor CLI and Kiro CLI forcing stops the turn and sends the message as the next one. The
   queue itself is the window's (`native/cmd/lich-native/chat_queue.go`): it is sent, joined, when the turn ends
   as anything but stopped, and lost if the window closes before. Crush has no chat.
+- **A chat message waits two seconds in the window before it reaches the agent**
+  (`native/cmd/lich-native/chat_hold.go`): Esc or Stop takes it back meanwhile, and nothing reached the agent.
+  It is drawn sent with its turn running from Enter, so the wait does not show, and a window closed inside it
+  loses the message. Written in the wait, Enter and Ctrl+Enter queue: steered, the text would reach the agent
+  before it.
 - **A chat turn's count of changes is a difference of two numstat readings, not a record of what the agent did**
   (`internal/chat/changes.go`, `internal/project/lines.go`): lich reads `git diff --numstat HEAD` and the untracked
   files before the message goes out and again when the turn ends, and counts the files whose numbers differ. It

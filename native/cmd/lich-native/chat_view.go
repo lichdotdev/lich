@@ -388,7 +388,11 @@ func (u *window) chatActs(gtx C, p *chatPane, sv sessionView, keys, working bool
 		if !ok {
 			break
 		}
-		if e, ok := ev.(key.Event); ok && e.State == key.Press && waiting != nil {
+		e, ok := ev.(key.Event)
+		if !ok || e.State != key.Press || u.unholdChat(p, sv.ID) {
+			continue
+		}
+		if waiting != nil {
 			u.answerChat(sv.ID, waiting.ID, permitOption(waiting.Permission, api.PermitRejectOnce))
 		}
 	}
@@ -417,7 +421,7 @@ func (u *window) chatActs(gtx C, p *chatPane, sv sessionView, keys, working bool
 	if p.send.Clicked(gtx) && !working && u.sendChat(p, sv.ID) {
 		p.toEnd(gtx.Now)
 	}
-	if p.stop.Clicked(gtx) {
+	if p.stop.Clicked(gtx) && !u.unholdChat(p, sv.ID) {
 		id := sv.ID
 		go func() { u.chatFailed(u.client.ChatCancel(u.ctx, id)) }()
 	}
@@ -428,9 +432,9 @@ func (u *window) chatActs(gtx C, p *chatPane, sv sessionView, keys, working bool
 	}
 }
 
-// sendChat hands the editor's text to the agent, and reports whether it had
-// any. The person's message comes back as an item; a refused one goes back
-// into the editor. /new alone starts an empty conversation instead.
+// sendChat hands the editor's text to the agent, once it waited chatSendHold,
+// and reports whether it had any; a refused one goes back into the editor.
+// /new alone starts an empty conversation instead.
 func (u *window) sendChat(p *chatPane, id string) bool {
 	text := strings.TrimSpace(p.editor.Text())
 	if text == "" {
@@ -442,16 +446,7 @@ func (u *window) sendChat(p *chatPane, id string) bool {
 		go func() { u.chatFailed(u.client.ChatNew(u.ctx, id)) }()
 		return true
 	}
-	go func() {
-		err := u.client.ChatPrompt(u.ctx, id, text)
-		if err == nil {
-			return
-		}
-		p.mu.Lock()
-		p.unsent = text
-		p.mu.Unlock()
-		u.chatFailed(err)
-	}()
+	u.holdChat(p, id, text)
 	return true
 }
 
