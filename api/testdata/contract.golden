@@ -305,8 +305,10 @@ terminal.TakeProfileOffer(ContinueInOptions) None
 terminal.TurnStates(None) []TurnState
 terminal.WorkdirMissing(WorkdirOptions) bool
 terminal.Write(WriteOptions) None
+themes.Catalog(None) ThemeCatalog
 themes.CheckUpdates(None) None
 themes.Import(ImportThemeOptions) ThemeImportResult
+themes.InstallFromCatalog(ThemeCatalogInstallOptions) ThemeGitResult
 themes.InstallFromGit(InstallThemesOptions) ThemeGitResult
 themes.List(None) []Theme
 themes.ListBroken(None) []BrokenTheme
@@ -378,6 +380,7 @@ event sessions-filed SessionsFiled
 event show-code ShowCode
 event terminal:data:<id> string
 event terminal:exit:<id> SessionExit
+event theme-catalog ThemeCatalog
 event theme-selection ThemeSelection
 event theme-updates None
 event thread-fixes []ThreadFix
@@ -2032,6 +2035,13 @@ WriteOptions {
 	data string
 }
 
+ThemeCatalog {
+	formatVersion int
+	generated string
+	packs []ThemeCatalogPack
+	revoked,omitempty []ThemeRevocation
+}
+
 ImportThemeOptions {
 	path string
 	overwrite bool
@@ -2042,8 +2052,8 @@ ThemeImportResult {
 	needsOverwrite bool
 }
 
-InstallThemesOptions {
-	url string
+ThemeCatalogInstallOptions {
+	id string
 	overwrite bool
 }
 
@@ -2053,6 +2063,11 @@ ThemeGitResult {
 	themes []Theme
 	conflicts []string
 	upToDate bool
+}
+
+InstallThemesOptions {
+	url string
+	overwrite bool
 }
 
 Theme {
@@ -2751,6 +2766,30 @@ SessionWatch {
 	runs int
 	pr int
 	seen string
+}
+
+ThemeCatalogPack {
+	id string
+	name string
+	description,omitempty string
+	publisher string
+	official,omitempty bool
+	stars int
+	repo string
+	repoId int64
+	license,omitempty string
+	version string
+	commit string
+	minLichVersion,omitempty string
+	updated string
+	held,omitempty string
+	themes []Theme
+}
+
+ThemeRevocation {
+	repo string
+	repoId,omitempty int64
+	reason string
 }
 
 ThemeSource {

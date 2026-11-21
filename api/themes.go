@@ -17,7 +17,62 @@ var (
 	ThemesSelection       = define[None, ThemeSelection]("themes.Selection")
 	ThemesSelect          = define[SelectThemeOptions, None]("themes.Select")
 	ThemesSetFollowSystem = define[FollowSystemOptions, None]("themes.SetFollowSystem")
+	// ThemesCatalog is the theme catalog the backend holds, read first when it
+	// holds none: it fails only when it has no copy and cannot read one. A copy
+	// read later arrives as ThemeCatalogEvent.
+	ThemesCatalog = define[None, ThemeCatalog]("themes.Catalog")
+	// ThemesInstallFromCatalog installs a listed pack at the commit the catalog
+	// names, and nothing else.
+	ThemesInstallFromCatalog = define[ThemeCatalogInstallOptions, ThemeGitResult]("themes.InstallFromCatalog")
 )
+
+// ThemeCatalog is catalog.json of github.com/lichdotdev/themes, built there
+// from the repositories it lists (docs/themes.md, Listing in the catalog).
+type ThemeCatalog struct {
+	FormatVersion int                `json:"formatVersion"`
+	Generated     string             `json:"generated"`
+	Packs         []ThemeCatalogPack `json:"packs"`
+	// Revoked is every repository taken down: lich no longer offers it.
+	Revoked []ThemeRevocation `json:"revoked,omitempty"`
+}
+
+// ThemeCatalogPack is one listed theme repository at the version the catalog
+// offers. Repo is https://github.com/<owner>/<repo> and Publisher its owner.
+// Commit is the first commit the catalog saw carry Version: lich installs the
+// pack there and only there. Held, when set, says why a newer state of the
+// repository is not the one listed. Themes are the pack's theme files in full,
+// so the window draws them before anything is installed.
+type ThemeCatalogPack struct {
+	ID             string  `json:"id"`
+	Name           string  `json:"name"`
+	Description    string  `json:"description,omitempty"`
+	Publisher      string  `json:"publisher"`
+	Official       bool    `json:"official,omitempty"`
+	Stars          int     `json:"stars"`
+	Repo           string  `json:"repo"`
+	RepoID         int64   `json:"repoId"`
+	License        string  `json:"license,omitempty"`
+	Version        string  `json:"version"`
+	Commit         string  `json:"commit"`
+	MinLichVersion string  `json:"minLichVersion,omitempty"`
+	Updated        string  `json:"updated"`
+	Held           string  `json:"held,omitempty"`
+	Themes         []Theme `json:"themes"`
+}
+
+// ThemeRevocation is a repository the catalog took down, and why.
+type ThemeRevocation struct {
+	Repo   string `json:"repo"`
+	RepoID int64  `json:"repoId,omitempty"`
+	Reason string `json:"reason"`
+}
+
+// ThemeCatalogInstallOptions names a listed pack by its id; Overwrite replaces
+// custom themes of the same ids instead of asking.
+type ThemeCatalogInstallOptions struct {
+	ID        string `json:"id"`
+	Overwrite bool   `json:"overwrite"`
+}
 
 // Theme describes every color value the window needs to paint the app and
 // the terminal.

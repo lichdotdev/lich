@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"maps"
+	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -14,6 +15,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"unicode/utf8"
 
 	"github.com/lichdotdev/lich/api"
@@ -85,6 +87,14 @@ type Service struct {
 	mu       sync.Mutex
 	// latest is the newest version the last check read, by repository URL.
 	latest map[string]api.ThemeLatest
+
+	// The theme catalog: where it is read from, the copy in memory and the
+	// ETag it came with, catalogMu serializing the reads.
+	catalogURL  string
+	catalogHTTP *http.Client
+	catalog     atomic.Pointer[api.ThemeCatalog]
+	catalogTag  string
+	catalogMu   sync.Mutex
 }
 
 // New returns a theme service rooted under lich's config directory, checking
@@ -92,12 +102,13 @@ type Service struct {
 // selection in settings and reports a change to it through emit.
 func New(lichVersion string, settings Settings, emit func(name string, data any)) *Service {
 	dir, err := defaultDir()
-	return &Service{dir: dir, lichVersion: lichVersion, initErr: err, settings: settings, emit: emit}
+	return &Service{dir: dir, lichVersion: lichVersion, initErr: err, settings: settings, emit: emit,
+		catalogURL: catalogURL, catalogHTTP: &http.Client{Timeout: catalogTimeout}}
 }
 
 // NewInDir returns a theme service rooted at dir. It is used by tests.
 func NewInDir(dir string) *Service {
-	return &Service{dir: dir, emit: func(string, any) {}}
+	return &Service{dir: dir, emit: func(string, any) {}, catalogURL: catalogURL, catalogHTTP: &http.Client{Timeout: catalogTimeout}}
 }
 
 func defaultDir() (string, error) {
