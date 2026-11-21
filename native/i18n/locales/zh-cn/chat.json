@@ -88,7 +88,9 @@
     "own": "“{text}”"
   },
   "slash": {
-    "new": "在此会话中开始新对话"
+    "new": "在此会话中开始新对话",
+    "mcp": "管理 MCP 服务器",
+    "skills": "开启或关闭技能"
   },
   "start": {
     "lines": "要在 {project} 里炼成什么？|要为 {project} 召唤些什么？|要往 {project} 里注入什么？|{project} 的坩埚里要熬点什么？|想在 {project} 里占卜些什么？|今天要在 {project} 上刻下什么？|要往 {project} 里织进什么？|要在 {project} 里唤醒什么？"
@@ -97,5 +99,73 @@
     "force": "立即发送",
     "drop": "移出队列",
     "edit": "↑ 编辑队列"
+  },
+  "tools": {
+    "loading": "加载中…",
+    "mcpTitle": "MCP 服务器",
+    "serverCount": {
+      "other": "{count} 个服务器"
+    },
+    "toolCount": {
+      "other": "{count} 个工具"
+    },
+    "group": {
+      "user": "用户",
+      "project": "项目",
+      "local": "本地",
+      "claudeai": "claude.ai",
+      "misc": "其他"
+    },
+    "status": {
+      "connected": "已连接",
+      "pending": "连接中",
+      "failed": "失败",
+      "needsAuth": "需要登录",
+      "disabled": "在此项目中已关闭"
+    },
+    "mcpNone": "{provider} 不会告诉 lich 它的 MCP 服务器。切换到 TUI，使用它自己的 /mcp。",
+    "skillsNone": "{provider} 不区分技能和其他命令。它们在 / 列表里。",
+    "back": "服务器",
+    "act": {
+      "signIn": "登录",
+      "reconnect": "重新连接",
+      "enable": "在此项目中开启",
+      "disable": "在此项目中关闭",
+      "viewTools": "查看工具",
+      "hideTools": "隐藏工具"
+    },
+    "fact": {
+      "status": "状态",
+      "auth": "登录",
+      "version": "版本",
+      "target": "URL 或命令",
+      "config": "配置位置",
+      "tools": "工具"
+    },
+    "auth": {
+      "signedIn": "已登录",
+      "notSignedIn": "未登录"
+    },
+    "skillsTitle": "技能",
+    "skillCount": {
+      "other": "{count} 个技能"
+    },
+    "search": "搜索技能",
+    "sortName": "排序：名称",
+    "sortTokens": "排序：token",
+    "skill": {
+      "nameOnly": "仅名称",
+      "userOnly": "仅限你",
+      "tokens": {
+        "other": "约 {count} token"
+      }
+    },
+    "lock": {
+      "author": "已被作者锁定",
+      "plugin": "已被插件锁定",
+      "policy": "已被策略锁定",
+      "any": "已锁定"
+    },
+    "pluginSkills": "插件的技能通过 /plugin 管理。"
   }
 }

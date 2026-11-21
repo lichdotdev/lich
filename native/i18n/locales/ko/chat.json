@@ -88,7 +88,9 @@
     "own": "“{text}”"
   },
   "slash": {
-    "new": "이 세션에서 새 대화를 시작"
+    "new": "이 세션에서 새 대화를 시작",
+    "mcp": "MCP 서버 관리",
+    "skills": "스킬 켜기 또는 끄기"
   },
   "start": {
     "lines": "{project}에서 무엇을 빚어 볼까요?|{project}에 무엇을 소환할까요?|{project}에 무엇을 불어넣을까요?|{project}의 가마솥에서 무엇을 끓여 볼까요?|{project}에서 무엇을 점쳐 볼까요?|오늘은 {project}에 무엇을 새길까요?|{project}에 무엇을 엮어 넣을까요?|{project}에서 무엇을 되살려 볼까요?"
@@ -97,5 +99,73 @@
     "force": "지금 보내기",
     "drop": "대기열에서 빼기",
     "edit": "↑ 대기열 편집"
+  },
+  "tools": {
+    "loading": "불러오는 중…",
+    "mcpTitle": "MCP 서버",
+    "serverCount": {
+      "other": "서버 {count}개"
+    },
+    "toolCount": {
+      "other": "도구 {count}개"
+    },
+    "group": {
+      "user": "사용자",
+      "project": "프로젝트",
+      "local": "로컬",
+      "claudeai": "claude.ai",
+      "misc": "기타"
+    },
+    "status": {
+      "connected": "연결됨",
+      "pending": "연결 중",
+      "failed": "실패",
+      "needsAuth": "로그인 필요",
+      "disabled": "이 프로젝트에서 꺼짐"
+    },
+    "mcpNone": "{provider}는 lich에 MCP 서버를 알려 주지 않습니다. TUI로 바꾸고 {provider}의 /mcp를 사용하세요.",
+    "skillsNone": "{provider}는 스킬을 다른 명령과 구분하지 않습니다. / 목록에 있습니다.",
+    "back": "서버",
+    "act": {
+      "signIn": "로그인",
+      "reconnect": "다시 연결",
+      "enable": "이 프로젝트에서 켜기",
+      "disable": "이 프로젝트에서 끄기",
+      "viewTools": "도구 보기",
+      "hideTools": "도구 숨기기"
+    },
+    "fact": {
+      "status": "상태",
+      "auth": "로그인",
+      "version": "버전",
+      "target": "URL 또는 명령",
+      "config": "설정 위치",
+      "tools": "도구"
+    },
+    "auth": {
+      "signedIn": "로그인됨",
+      "notSignedIn": "로그인 안 됨"
+    },
+    "skillsTitle": "스킬",
+    "skillCount": {
+      "other": "스킬 {count}개"
+    },
+    "search": "스킬 검색",
+    "sortName": "정렬: 이름",
+    "sortTokens": "정렬: 토큰",
+    "skill": {
+      "nameOnly": "이름만",
+      "userOnly": "나만",
+      "tokens": {
+        "other": "약 {count}토큰"
+      }
+    },
+    "lock": {
+      "author": "작성자가 잠금",
+      "plugin": "플러그인이 잠금",
+      "policy": "정책으로 잠금",
+      "any": "잠김"
+    },
+    "pluginSkills": "플러그인 스킬은 /plugin에서 관리합니다."
   }
 }

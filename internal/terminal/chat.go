@@ -178,7 +178,11 @@ type ChatProcess struct {
 	Stdin  io.WriteCloser
 	Stdout io.ReadCloser
 	Birth  ChatBirth
+	// ProfileDir is the profile's config directory the process runs in, ""
+	// for Personal's.
+	ProfileDir string
 
+	cli    ptySpec
 	cmd    *exec.Cmd
 	stderr *tailBuffer
 	done   chan struct{}
@@ -191,6 +195,20 @@ func (p *ChatProcess) Done() <-chan struct{} { return p.done }
 // Stderr is the end of what the process wrote to stderr, which is what says
 // why one that died did.
 func (p *ChatProcess) Stderr() string { return p.stderr.String() }
+
+// Command is the provider's CLI run with args in the chat's directory and
+// environment, outside the sandbox: for what its protocol has no request for.
+func (p *ChatProcess) Command(ctx context.Context, args ...string) (*exec.Cmd, error) {
+	path, err := exec.LookPath(p.cli.bin)
+	if err != nil {
+		return nil, err
+	}
+	argv := wrapArgv(path, args)
+	cmd := exec.CommandContext(ctx, argv[0], argv[1:]...)
+	cmd.Dir, cmd.Env = p.cli.dir, slices.Clone(p.cli.env)
+	winexec.Hide(cmd)
+	return cmd, nil
+}
 
 // Close ends the process the way every protocol is told to end, by closing
 // its stdin, and kills it if it has not left within chatCloseGrace. It returns
@@ -233,6 +251,7 @@ func (s *Service) StartChat(_ context.Context, opts api.StartOptions, launch Cha
 	if err != nil {
 		return nil, err
 	}
+	p.ProfileDir = profileDir
 	s.publishCwd(cwdEvent{ID: opts.ID, Cwd: opts.Cwd})
 	events.Send(s.hub.Emit, api.SessionAgentEvent, agentEvent{ID: opts.ID, Agent: opts.Kind})
 	s.reportProfileMove(opts.ID, bornIn)
@@ -274,7 +293,7 @@ func (s *Service) spawnChat(opts api.StartOptions, launch ChatLaunch, profileDir
 		s.spawns.CompareAndDelete(opts.ID, started)
 		return nil, spawnLaunch{}, fmt.Errorf("failed to start the chat of %q: %w", opts.ID, err)
 	}
-	p.Birth = s.chatBirth(opts)
+	p.Birth, p.cli = s.chatBirth(opts), l.cli
 	return p, l, nil
 }
 

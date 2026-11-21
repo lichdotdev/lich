@@ -109,6 +109,8 @@ type chatView struct {
 	// may grow over the conversation up to slashRoom, the pane's height.
 	slash     chatSlash
 	slashRoom int
+	// tools is the /mcp or /skills panel, in the slash list's place.
+	tools chatTools
 	// unsent is a message the backend refused, handed back to the editor,
 	// ahead of what was typed since, on the next frame.
 	mu     sync.Mutex
@@ -372,13 +374,21 @@ func (u *window) chatActs(gtx C, p *chatPane, sv sessionView, keys, working bool
 	if asking != nil {
 		u.questionActs(gtx, p, sv, asking)
 	}
-	p.slash.blocked = !keys || asking != nil || p.picker.panel.Opened()
+	// Typing in the box shuts the panel, and so does a click back in it while
+	// the skills' search has the keys, as one outside a popover does.
+	if p.tools.opened() && (p.editor.Len() > 0 || p.tools.kind == chatSkillsCommand && !p.tools.focus && gtx.Focused(&p.editor)) {
+		p.tools.shut()
+	}
+	p.slash.blocked = !keys || asking != nil || p.picker.panel.Opened() || p.tools.opened()
 	if !p.slash.blocked {
 		p.slash.act(gtx, &p.editor)
 	}
+	if keys {
+		u.toolsActs(gtx, p, sv.ID)
+	}
 	// The model panel's search holds the keys while the panel is open.
 	switch {
-	case !keys || p.picker.panel.Opened():
+	case !keys || p.picker.panel.Opened() || p.tools.opened():
 	case asking != nil:
 		p.focusQuestion(gtx, asking, p.quiz(asking.ID, asking.Question.Questions))
 	case !gtx.Focused(&p.editor):
@@ -441,7 +451,7 @@ func (u *window) chatActs(gtx C, p *chatPane, sv sessionView, keys, working bool
 // /new alone starts an empty conversation instead.
 func (u *window) sendChat(p *chatPane, id string) bool {
 	text := strings.TrimSpace(p.editor.Text())
-	if text == "" {
+	if text == "" || u.openTools(p, id, text) {
 		return false
 	}
 	p.editor.SetText("")
@@ -513,9 +523,10 @@ func (u *window) chatComposer(gtx C, th *ui.Theme, p *chatPane, sv sessionView, 
 			ta.Foot = u.chatChips(th, p, sv, working, ft)
 			d := ta.Layout(gtx)
 			ui.InsetBorder(gtx, d.Size, gtx.Dp(ui.RadiusLG), th.Over(ui.MixOKLab(th.Palette.Input, th.Primary, chatComposerTint)))
-			p.slash.refresh(gtx, &p.editor, slashCommands(u.model.chat.commandsOf(sv.ID)))
+			p.slash.refresh(gtx, &p.editor, slashCommands(u.model.chat.commandsOf(sv.ID), sv.Kind))
 			gtx.Constraints.Max.X = d.Size.X
 			p.slash.layout(gtx, th, p.slashRoom-d.Size.Y-gtx.Dp(2*chatComposerGap))
+			u.chatToolsPanel(gtx, th, p, sv, p.slashRoom-d.Size.Y-gtx.Dp(2*chatComposerGap))
 			return d
 		}),
 		layout.Rigid(func(gtx C) D {

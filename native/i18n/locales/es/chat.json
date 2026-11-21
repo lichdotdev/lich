@@ -93,7 +93,9 @@
     "own": "«{text}»"
   },
   "slash": {
-    "new": "Empieza una conversación nueva en esta sesión"
+    "new": "Empieza una conversación nueva en esta sesión",
+    "mcp": "Gestiona los servidores MCP",
+    "skills": "Activa o desactiva skills"
   },
   "start": {
     "lines": "¿Qué conjuramos en {project}?|¿Qué invocamos para {project}?|¿Qué canalizamos hacia {project}?|¿Qué se cuece en {project}?|¿Qué quieres adivinar en {project}?|¿Qué inscribimos hoy en {project}?|¿Qué tejemos en {project}?|¿Qué levantamos en {project}?"
@@ -102,5 +104,77 @@
     "force": "Forzar",
     "drop": "Quitar de la cola",
     "edit": "↑ edita la cola"
+  },
+  "tools": {
+    "loading": "Cargando…",
+    "mcpTitle": "Servidores MCP",
+    "serverCount": {
+      "one": "{count} servidor",
+      "other": "{count} servidores"
+    },
+    "toolCount": {
+      "one": "{count} herramienta",
+      "other": "{count} herramientas"
+    },
+    "group": {
+      "user": "Del usuario",
+      "project": "Del proyecto",
+      "local": "Locales",
+      "claudeai": "claude.ai",
+      "misc": "Otros"
+    },
+    "status": {
+      "connected": "conectado",
+      "pending": "conectando",
+      "failed": "falló",
+      "needsAuth": "falta iniciar sesión",
+      "disabled": "desactivado en este proyecto"
+    },
+    "mcpNone": "{provider} no le dice a lich cuáles son sus servidores MCP. Cambia a TUI y usa su propio /mcp.",
+    "skillsNone": "{provider} no separa sus skills de los demás comandos. Están en la lista de /.",
+    "back": "Servidores",
+    "act": {
+      "signIn": "Iniciar sesión",
+      "reconnect": "Reconectar",
+      "enable": "Activar en este proyecto",
+      "disable": "Desactivar en este proyecto",
+      "viewTools": "Ver herramientas",
+      "hideTools": "Ocultar herramientas"
+    },
+    "fact": {
+      "status": "Estado",
+      "auth": "Sesión",
+      "version": "Versión",
+      "target": "URL o comando",
+      "config": "Configurado en",
+      "tools": "Herramientas"
+    },
+    "auth": {
+      "signedIn": "sesión iniciada",
+      "notSignedIn": "sin sesión"
+    },
+    "skillsTitle": "Skills",
+    "skillCount": {
+      "one": "{count} skill",
+      "other": "{count} skills"
+    },
+    "search": "Buscar skills",
+    "sortName": "Ordenar: nombre",
+    "sortTokens": "Ordenar: tokens",
+    "skill": {
+      "nameOnly": "solo el nombre",
+      "userOnly": "solo tú",
+      "tokens": {
+        "one": "~{count} token",
+        "other": "~{count} tokens"
+      }
+    },
+    "lock": {
+      "author": "bloqueada por su autor",
+      "plugin": "bloqueada por su plugin",
+      "policy": "bloqueada por política",
+      "any": "bloqueada"
+    },
+    "pluginSkills": "Las skills de un plugin se gestionan con /plugin."
   }
 }

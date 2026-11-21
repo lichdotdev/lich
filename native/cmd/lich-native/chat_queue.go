@@ -103,7 +103,7 @@ func (m *model) flushQueue(ctx context.Context, t api.ChatTurn) {
 // queueChat puts the composer's text in session id's queue.
 func (u *window) queueChat(p *chatPane, id string) {
 	text := strings.TrimSpace(p.editor.Text())
-	if text == "" {
+	if text == "" || u.openTools(p, id, text) {
 		return
 	}
 	p.editor.SetText("")
@@ -256,7 +256,7 @@ func (u *window) composerKeys(gtx C, p *chatPane, id string, keys bool) {
 			continue
 		}
 		text := strings.TrimSpace(p.editor.Text())
-		if text == "" {
+		if text == "" || u.openTools(p, id, text) {
 			continue
 		}
 		if !u.model.chat.isRunning(id) {

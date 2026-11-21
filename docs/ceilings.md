@@ -256,6 +256,25 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   the palette's History, which lists a conversation no row holds (Cursor CLI's not). Claude Code's own `/clear`,
   typed and sent, is not caught and goes to the process as any command does; what the card makes of the
   conversation it opens was not measured.
+- **A chat's /mcp and /skills panels show what Claude Code and Codex report, and nothing for any other provider**
+  (`internal/chat/tools.go`, `claude_tools.go`, `codex_tools.go`). Claude Code (2.1.330) lists its servers with
+  `mcp_status` and its skills with `get_skills_dialog`, a request it marks @internal: a refusal or a reshaped
+  answer reads as nothing reported, never an error. Turning a server off is `mcp_toggle`, written to
+  `projects[<cwd>].disabledMcpServers` of the profile's `.claude.json`, so it holds for that checkout only.
+  Turning a skill off has no request: lich runs `claude edit-skill-overrides --json` in the checkout, outside the
+  sandbox and without `CLAUDE_CODE_CHILD_SESSION` (it refuses to run with it), which writes the person's
+  `.claude/settings.local.json` there, then `reload_skills` gives the slash list without it. Codex (0.170.0) lists
+  servers with `mcpServerStatus/list`; whether one is off and its URL or command come from `config/read`, since
+  `runtimeStatus` stayed null with the server on or off, a thread open or not (measured). Turning one off is
+  `config/value/write` of `mcp_servers.<name>.enabled` then `config/mcpServer/reload`, and a skill is
+  `skills/config/write` of its path, both into the session's `config.toml`; in a profile other than Personal that
+  file takes its MCP servers and skills from Personal's at every spawn (`internal/codexprofile/config.go`), so the
+  change lasts until a session next starts in that profile. Codex refuses the write for a server `config.toml` does
+  not declare (measured with a name it lacks), which `codex_apps` and a plugin's are. Sign-in on both was built from the schema, never called: Claude Code's
+  `mcp_authenticate` answers the page, refused when its callback would need relaying (no `callbackPort`), Codex's
+  `mcpServer/oauth/login` its `authorizationUrl`. lich's own server, injected at spawn, cannot be turned off. A
+  server's target is its URL or command line, never its env or headers, though an argument or a query string can
+  still carry a token. The ACP providers and Kiro CLI report neither list, and Crush has no chat.
 
 - **The Welcome installs a provider with the vendor's own command, and only where that runs as you**
   (`internal/providers/install_recipes.go`). Each line is the vendor's install page word for word, run with no

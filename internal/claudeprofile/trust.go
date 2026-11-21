@@ -62,12 +62,9 @@ func InheritTrust(dir, top, origin string) error {
 // its main checkout's (see InheritTrust), so it opens at its prompt without
 // asking.
 func Trusts(dir, cwd, top, origin string) (bool, error) {
-	path := filepath.Join(dir, ".claude.json")
-	if dir == "" {
-		var err error
-		if path, err = personalGlobalFile(); err != nil {
-			return false, err
-		}
+	path, err := GlobalFile(dir)
+	if err != nil {
+		return false, err
 	}
 	_, projects, err := readGlobalConfig(path)
 	if err != nil {
