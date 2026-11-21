@@ -64,7 +64,7 @@
     "notRepository": "Não é um repositório git",
     "loading": "Carregando…",
     "noChanges": "Nenhuma alteração não commitada",
-    "squeezed": "A visão lado a lado precisa de um painel mais largo"
+    "squeezed": "O modo dividido precisa de um painel mais largo"
   },
   "reviewSlots": {
     "forSession": "para a sessão · {lines}",
@@ -75,7 +75,7 @@
     "reviewPlaceholder": "Deixe um comentário. Ele vai junto quando você enviar a revisão."
   },
   "dockReviewBody": {
-    "split": "Lado a lado",
+    "split": "Dividido",
     "unified": "Unificado"
   },
   "binaryState": {

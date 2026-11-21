@@ -19,17 +19,15 @@ var (
 	extensionIconSize = ui.Space(4)
 )
 
-// extensionsPaneRows is the pane under its title line: the description, the
-// tabs, then the view the selected one names.
+// extensionsPaneRows is the pane under its title line: the tabs, then the view
+// the selected one names.
 func (s *settingsScreen) extensionsPaneRows(th *ui.Theme) []layout.Widget {
 	p := &s.extensions
 	var list []backend.Extension
 	if p.store != nil {
 		list = p.store.all()
 	}
-	rows := []layout.Widget{func(gtx C) D {
-		return layout.Inset{Top: -ui.Space(2), Bottom: ui.Space(2)}.Layout(gtx, th.Text(settingsDescSize, i18n.T("settings.extensionsSettings.description")).Muted().Leading(20).Wrapped().Layout)
-	}, s.extensionsViews(th, list)}
+	rows := []layout.Widget{s.extensionsViews(th, list)}
 	if p.view.Selected == extensionsViewInstalled {
 		return append(rows, s.installedRows(th, list)...)
 	}

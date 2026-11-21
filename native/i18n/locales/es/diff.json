@@ -64,7 +64,7 @@
     "notRepository": "No es un repositorio git",
     "loading": "Cargando…",
     "noChanges": "No hay cambios sin confirmar",
-    "squeezed": "La vista en paralelo necesita un panel más ancho"
+    "squeezed": "El modo dividido necesita un panel más ancho"
   },
   "reviewSlots": {
     "forSession": "para la sesión · {lines}",
@@ -75,7 +75,7 @@
     "reviewPlaceholder": "Deja un comentario. Se publicará al enviar la revisión."
   },
   "dockReviewBody": {
-    "split": "En paralelo",
+    "split": "Dividido",
     "unified": "Unificado"
   },
   "binaryState": {

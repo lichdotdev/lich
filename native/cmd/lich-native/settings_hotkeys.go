@@ -29,9 +29,10 @@ type hotkeyEditor struct {
 
 // hotkeyRow is one action's controls.
 type hotkeyRow struct {
-	hover, capture, unassign, reset ui.Clickable
-	unassignTip, resetTip           ui.Tooltip
-	tag                             bool // the capture button's key event tag
+	hover, capture, reset, more ui.Clickable
+	resetTip, moreTip           ui.Tooltip
+	menu                        ui.MenuState
+	tag                         bool // the capture button's key event tag
 	// held is whether the capture button has had the focus since the
 	// recording began: losing it after that is the blur that cancels.
 	held bool

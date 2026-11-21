@@ -64,7 +64,7 @@
     "notRepository": "Not a git repository",
     "loading": "Loading…",
     "noChanges": "No uncommitted changes",
-    "squeezed": "Side-by-side needs a wider panel"
+    "squeezed": "Split needs a wider panel"
   },
   "reviewSlots": {
     "forSession": "for the session · {lines}",
@@ -75,7 +75,7 @@
     "reviewPlaceholder": "Leave a comment. It is sent when you submit the review."
   },
   "dockReviewBody": {
-    "split": "Side by side",
+    "split": "Split",
     "unified": "Unified"
   },
   "binaryState": {

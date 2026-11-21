@@ -1,21 +1,20 @@
 package main
 
 import (
-	"image"
 	"runtime"
 	"strconv"
 
 	"gioui.org/font"
 	"gioui.org/layout"
-	"gioui.org/unit"
 
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
+	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
 var (
-	// statusDot is the strip's size-[0.4375rem] dot.
-	statusDot = unit.Dp(7)
+	icSandboxOn  = icons.Lucide("shield-check")
+	icSandboxOff = icons.Lucide("shield-off")
 	// proseCh is max-w-prose, a ch taken as 0.6em as settingsDescCh is.
 	proseCh = 65
 )
@@ -51,6 +50,7 @@ func (s *settingsScreen) rungRow(gtx C, th *ui.Theme, m sandboxMachine, p launch
 	e := settingEntry{key: sandboxKey(p.id), scope: scopeOverridable}
 	r := s.rowFor(e, values)
 	r.title = p.name
+	r.lead = func(gtx C) D { return providerGlyph(gtx, th, p.id, providerMarkBox, providerMarkCell) }
 	if r.kind == rowChanged {
 		r.globalValue = rungLabel(sandboxLevel(m.globals[e.key]))
 		if r.reset.Clicked(gtx) {
@@ -128,34 +128,20 @@ func (s *settingsScreen) grantRow(gtx C, th *ui.Theme, e settingEntry, r setting
 	return r.layout(gtx, th, first, func(gtx C, th *ui.Theme) D { return th.Switch(sw).Layout(gtx) })
 }
 
-// sandboxStatus is StatusStrip: the machine's answer drawn as state, the
-// backend named because the two have different holes.
+// sandboxStatus is the machine's answer as a line, its glyph in the state's
+// tone, the backend named because the two have different holes.
 func sandboxStatus(gtx C, th *ui.Theme, backend string) D {
-	dot, title, detail := th.TonePass, i18n.T("settings.sandboxSettings.canConfine"), backend
+	glyph, tone, title, detail := icSandboxOn, th.TonePass, i18n.T("settings.sandboxSettings.canConfine"), backend
 	if backend == "" {
-		dot, title = th.MutedForeground, i18n.T("settings.sandboxSettings.cannotConfine")
+		glyph, tone, title = icSandboxOff, th.MutedForeground, i18n.T("settings.sandboxSettings.cannotConfine")
 		detail, _ = cannotConfineCopy(runtime.GOOS)
 	}
-	gtx.Constraints.Min.X = gtx.Constraints.Max.X
-	return layout.Stack{}.Layout(gtx,
-		layout.Expanded(func(gtx C) D {
-			ui.InsetBorder(gtx, gtx.Constraints.Min, gtx.Dp(ui.RadiusMD), th.Over(th.Border))
-			return D{Size: gtx.Constraints.Min}
-		}),
-		layout.Stacked(func(gtx C) D {
-			return layout.Inset{Left: ui.Space(3), Right: ui.Space(3), Top: ui.Space(2.5), Bottom: ui.Space(2.5)}.Layout(gtx, func(gtx C) D {
-				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-					layout.Rigid(func(gtx C) D {
-						gtx.Constraints = layout.Exact(image.Pt(gtx.Dp(statusDot), gtx.Dp(statusDot)))
-						return ui.Fill(gtx, dot, statusDot/2)
-					}),
-					ui.Gap(2.5),
-					layout.Rigid(th.Text(ui.TextXS, title).Weight(font.Medium).Layout),
-					ui.Gap(2.5),
-					layout.Flexed(1, th.Text(ui.TextXS, i18n.T("settings.sandboxSettings.statusDetail", i18n.Args{"detail": detail})).Muted().Layout),
-				)
-			})
-		}),
+	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+		layout.Rigid(func(gtx C) D { return glyph.Layout(gtx, ui.Space(4), tone) }),
+		ui.Gap(2),
+		layout.Rigid(th.Text(ui.TextSM, title).Weight(font.Medium).Layout),
+		ui.Gap(2),
+		layout.Flexed(1, th.Text(ui.TextXS, detail).Muted().Mono().Layout),
 	)
 }
 

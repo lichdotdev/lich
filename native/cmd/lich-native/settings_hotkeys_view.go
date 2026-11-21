@@ -18,8 +18,8 @@ import (
 
 var (
 	icHotkeyConflict = icons.Lucide("triangle-alert")
-	icHotkeyUnassign = icons.Lucide("ban")
 	icHotkeyReset    = icons.Lucide("rotate-ccw")
+	icHotkeyMore     = icons.Lucide("ellipsis")
 )
 
 // The row's measures: the capture button's minimum width, the row's gap, and
@@ -104,8 +104,9 @@ func hotkeyNote(th *ui.Theme, text string) layout.Widget {
 	}
 }
 
-// hotkeyRow is HotkeyRow: the action's name, the capture button with the
-// chord, and the two opposite moves, unassign and reset.
+// hotkeyRow is HotkeyRow: the action's name, the chord as a key cap that
+// records a new one on a click, Reset while the chord is not the default, and
+// the row's ⋯ under the pointer, its menu holding record and unassign.
 func (s *settingsScreen) hotkeyRow(gtx C, th *ui.Theme, a hotkeyAction, conflicts []hotkeyID) D {
 	h := &s.hotkeys
 	r := h.row(a.id)
@@ -116,9 +117,6 @@ func (s *settingsScreen) hotkeyRow(gtx C, th *ui.Theme, a hotkeyAction, conflict
 		s.capture(gtx, a.id, r)
 	}
 	recording := h.recording == a.id
-	if r.unassign.Clicked(gtx) {
-		s.setHotkey(a.id, comboUnassigned)
-	}
 	if r.reset.Clicked(gtx) {
 		s.resetHotkey(a.id)
 	}
@@ -140,12 +138,14 @@ func (s *settingsScreen) hotkeyRow(gtx C, th *ui.Theme, a hotkeyAction, conflict
 				layout.Rigid(func(gtx C) D { return captureButton(gtx, th, r, c, recording, len(conflicts) > 0) }),
 				layout.Rigid(layout.Spacer{Width: hotkeyRowGap}.Layout),
 				layout.Rigid(func(gtx C) D {
-					return th.GhostIconButton(gtx, s.root, &r.unassign, &r.unassignTip, icHotkeyUnassign, i18n.T("settings.hotkeysSettings.unassignHint"), c.Key == "")
+					if c == defaultHotkeys()[a.id] {
+						return hotkeySlot(gtx)
+					}
+					return th.Tooltip(s.root, &r.resetTip, i18n.T("settings.hotkeysSettings.resetHint")).Layout(gtx, func(gtx C) D {
+						return hotkeyIconButton(gtx, th, &r.reset, icHotkeyReset)
+					})
 				}),
-				layout.Rigid(layout.Spacer{Width: hotkeyRowGap}.Layout),
-				layout.Rigid(func(gtx C) D {
-					return th.GhostIconButton(gtx, s.root, &r.reset, &r.resetTip, icHotkeyReset, i18n.T("settings.hotkeysSettings.resetHint"), c == defaultHotkeys()[a.id])
-				}),
+				layout.Rigid(func(gtx C) D { return s.hotkeyMore(gtx, th, a, r, c) }),
 			)
 		})
 		call := macro.Stop()
@@ -158,6 +158,34 @@ func (s *settingsScreen) hotkeyRow(gtx C, th *ui.Theme, a hotkeyAction, conflict
 		call.Add(gtx.Ops)
 		return d
 	})
+}
+
+// hotkeyMore is the row's ⋯, drawn under the pointer and while its menu is
+// open, its slot kept at rest so the key cap never moves.
+func (s *settingsScreen) hotkeyMore(gtx C, th *ui.Theme, a hotkeyAction, r *hotkeyRow, c combo) D {
+	if !r.hover.Hovered() && !r.menu.Opened() {
+		return hotkeySlot(gtx)
+	}
+	entries := []ui.MenuEntry{
+		{Label: i18n.T("settings.hotkeysSettings.record"), OnClick: func() { s.hotkeys.startRecording(a.id) }},
+		{Label: i18n.T("settings.hotkeysSettings.unassign"), Disabled: c.Key == "", OnClick: func() { s.setHotkey(a.id, comboUnassigned) }},
+	}
+	hint := i18n.T("settings.hotkeysSettings.options", i18n.Args{"action": hotkeyActionText(a.id)})
+	return th.DropdownMenu(s.root, &r.menu, entries).Layout(gtx, func(gtx C) D {
+		return th.Tooltip(s.root, &r.moreTip, hint).Layout(gtx, func(gtx C) D { return hotkeyIconButton(gtx, th, &r.more, icHotkeyMore) })
+	})
+}
+
+func hotkeyIconButton(gtx C, th *ui.Theme, click *ui.Clickable, ic *icons.Icon) D {
+	b := th.Button(click, "")
+	b.Icon, b.Variant, b.Size = ic, ui.VariantGhost, ui.SizeIconSM
+	return b.Layout(gtx)
+}
+
+// hotkeySlot keeps an icon button's room on the row.
+func hotkeySlot(gtx C) D {
+	side := gtx.Dp(ui.Space(8))
+	return D{Size: image.Pt(side, side)}
 }
 
 // hotkeyName is the row's left column: the action, the amber line naming who
@@ -185,8 +213,9 @@ func hotkeyName(gtx C, th *ui.Theme, label string, conflicts []string, cost stri
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
 }
 
-// captureButton is the chord in a bordered button: ring while it records,
-// amber at 60% for a chord another action holds, muted for none.
+// captureButton is the chord as a key cap, muted words for none; recording,
+// it is a bordered box in the ring, amber at 60% for a chord another action
+// holds.
 func captureButton(gtx C, th *ui.Theme, r *hotkeyRow, c combo, recording, conflict bool) D {
 	label, ink := formatCombo(c, runtime.GOOS == "darwin"), th.Foreground
 	switch {
@@ -194,6 +223,21 @@ func captureButton(gtx C, th *ui.Theme, r *hotkeyRow, c combo, recording, confli
 		label, ink = i18n.T("settings.hotkeysSettings.pressKeys"), th.MutedForeground
 	case c.Key == "":
 		ink = th.MutedForeground
+	}
+	if !recording {
+		return r.capture.Layout(gtx, func(gtx C) D {
+			gtx.Constraints.Min = image.Point{}
+			var d D
+			if c.Key == "" {
+				d = th.Text(ui.TextXS, label).In(ink).Layout(gtx)
+			} else {
+				d = th.KeyCap(label).Layout(gtx)
+			}
+			defer clip.Rect{Max: d.Size}.Push(gtx.Ops).Pop()
+			event.Op(gtx.Ops, &r.tag)
+			ui.HandCursor(gtx)
+			return d
+		})
 	}
 	return r.capture.Layout(gtx, func(gtx C) D {
 		macro := op.Record(gtx.Ops)
@@ -207,9 +251,6 @@ func captureButton(gtx C, th *ui.Theme, r *hotkeyRow, c combo, recording, confli
 			border = th.Ring
 		case conflict:
 			border = th.Over(ui.Alpha(th.ToneWait, 0.6))
-		}
-		if !recording && r.capture.Hovered() {
-			th.FillRow(gtx, size, 1)
 		}
 		ui.InsetBorder(gtx, size, gtx.Dp(ui.RadiusMD), border)
 		call.Add(gtx.Ops)

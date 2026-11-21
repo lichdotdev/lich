@@ -1,10 +1,12 @@
 package main
 
 import (
+	"image"
 	"image/color"
 	"slices"
 
 	"gioui.org/layout"
+	"gioui.org/op"
 
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
@@ -13,6 +15,10 @@ import (
 )
 
 // footerItemIcons is the glyph each chip wears beside its example reading.
+// footerPreviewStage is the preview's stage: room for a line of a session over
+// the balloons.
+var footerPreviewStage = ui.Space(24)
+
 var footerItemIcons = map[string]*icons.Icon{
 	"attach": icAttach, "changes": icons.Lucide("file-diff"), "pr": icPR,
 	"checkout": icBranch, "path": icFolder, "model": icons.Lucide("cpu"), "context": icGauge,
@@ -297,43 +303,50 @@ func footerExample(id string) string {
 	return id
 }
 
-// previewLayout is the hint over a strip on the sidebar color, rounded like
-// the zones above it, that reads each side's items with example values. The
-// items wrap as the footer's own do, so the strip never scrolls.
+// previewLayout is the hint over a stage of the window's ground with the two
+// balloons at its foot, as the footer stands over a session, each side's items
+// read with example values and left out past the room, as the balloons do.
 func (f *footer) previewLayout(gtx C, th *ui.Theme, l footerLayout, in footerInput) D {
-	on := th.On(th.Sidebar)
-	strip := func(gtx C) D {
-		gtx.Constraints.Min.X = gtx.Constraints.Max.X
-		return layout.Background{}.Layout(gtx,
-			func(gtx C) D { return ui.FillIf(gtx, th.Sidebar, ui.RadiusLG) },
-			func(gtx C) D {
-				gtx.Constraints.Min.Y = gtx.Dp(ui.Space(12))
-				return layout.Inset{Left: ui.Space(3), Right: ui.Space(3), Top: ui.Space(2), Bottom: ui.Space(2)}.Layout(gtx, func(gtx C) D {
-					return previewSides(gtx, on, l, in)
-				})
-			})
+	stage := func(gtx C) D {
+		size := image.Pt(gtx.Constraints.Max.X, gtx.Dp(footerPreviewStage))
+		gtx.Constraints = layout.Exact(size)
+		ui.Fill(gtx, th.Over(th.Background), ui.RadiusLG)
+		ui.InsetBorder(gtx, size, gtx.Dp(ui.RadiusLG), th.Over(th.Border))
+		if len(l.Left)+len(l.Right) == 0 {
+			return layout.Center.Layout(gtx, th.Text(ui.TextXS, i18n.T("settings.footerLayoutEditor.previewEmpty")).Muted().Layout)
+		}
+		inset, on := gtx.Dp(balloonInset), th.On(th.Sidebar)
+		y := size.Y - inset - gtx.Dp(balloonItemHeight) - 2*gtx.Dp(balloonPad)
+		right, rw := f.previewBalloon(gtx, on, l.Right, in, size.X-2*inset)
+		left, lw := f.previewBalloon(gtx, on, l.Left, in, size.X-3*inset-rw)
+		for _, b := range []struct {
+			call op.CallOp
+			x, w int
+		}{{left, inset, lw}, {right, size.X - inset - rw, rw}} {
+			if b.w > 0 {
+				t := op.Offset(image.Pt(b.x, y)).Push(gtx.Ops)
+				b.call.Add(gtx.Ops)
+				t.Pop()
+			}
+		}
+		return D{Size: size}
 	}
-	return ui.Stack(2, th.Text(ui.TextXS, i18n.T("footer.footerEditor.previewHint")).Muted().Layout, strip)(gtx)
+	return ui.Stack(2, th.Text(ui.TextXS, i18n.T("footer.footerEditor.previewHint")).Muted().Layout, stage)(gtx)
 }
 
-// previewSides is the footer's wrap: the left side, the right side at the
-// far end, or the empty line when neither holds an item.
-func previewSides(gtx C, th *ui.Theme, l footerLayout, in footerInput) D {
-	if len(l.Left)+len(l.Right) == 0 {
-		return layout.W.Layout(gtx, th.Text(ui.TextXS, i18n.T("settings.footerLayoutEditor.previewEmpty")).Muted().Layout)
+// previewBalloon records a side's items on a balloon at most maxW wide, each
+// as the footer's h-8 item reads it, and answers its width, 0 for none.
+func (f *footer) previewBalloon(gtx C, th *ui.Theme, ids []string, in footerInput, maxW int) (op.CallOp, int) {
+	ids = drawnItems(ids, in)
+	slots := make([]footerSlot, len(ids))
+	for i, id := range ids {
+		slots[i] = footerSlot{ID: id}
 	}
-	side := func(items []string, justify ui.Justify) layout.Widget {
-		items = drawnItems(items, in)
-		return func(gtx C) D {
-			kids := make([]ui.WrapChild, len(items))
-			for i, id := range items {
-				kids[i] = ui.WrapItem(func(gtx C) D { return itemReading(gtx, th, id, th.MutedForeground, in) })
-			}
-			return ui.Wrap{GapX: ui.Space(3), GapY: ui.Space(1), Justify: justify}.Layout(gtx, kids...)
-		}
-	}
-	return ui.Wrap{GapX: ui.Space(8), GapY: ui.Space(1), Justify: ui.JustifyBetween}.Layout(gtx,
-		ui.WrapItem(side(l.Left, ui.JustifyStart)),
-		ui.WrapMLAuto(side(l.Right, ui.JustifyEnd)),
-	)
+	pad, itemH := gtx.Dp(balloonPad), gtx.Dp(balloonItemHeight)
+	items, iw := f.fit(gtx, slots, maxW-2*pad, gtx.Dp(balloonGap), itemH, func(gtx C, s footerSlot) D {
+		return layout.Inset{Left: ui.Space(2), Right: ui.Space(2)}.Layout(gtx, func(gtx C) D {
+			return itemReading(gtx, th, s.ID, th.MutedForeground, in)
+		})
+	})
+	return balloonPill(gtx, th, items, iw)
 }

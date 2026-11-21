@@ -82,10 +82,6 @@
     "followsOs": "跟随操作系统",
     "inUse": "使用中",
     "bundled": "内置",
-    "count": {
-      "one": "{count} 个主题",
-      "other": "{count} 个主题"
-    },
     "updateTo": "更新到 v{version}",
     "updateAvailable": "v{version} 可用",
     "checkUpdates": "检查更新",
@@ -149,25 +145,27 @@
   "diffLayoutSetting": {
     "title": "差异布局",
     "searchWords": "并排 拆分 统一 评审",
-    "description": "更改在“审查”标签页和拉取请求中的显示方式。面板太窄放不下两列时，并排视图会改用统一视图显示。",
+    "description": "更改在“审查”标签页和拉取请求中的显示方式。面板太窄时，分栏视图会改用统一视图显示。",
     "layout": {
       "unified": "统一",
-      "split": "并排"
+      "split": "分栏"
     }
   },
   "notificationsSettings": {
     "needsInputTitle": "会话需要输入时通知我",
-    "needsInputDescription": "会话在等你处理（权限确认、提问），而你当前不在 lich 窗口时，弹出桌面通知。在 lich 窗口内一切照旧：由卡片上的铃铛和提示消息提醒你。",
+    "needsInputDescription": "会话在等你处理（权限确认、提问），而你当前不在 lich 窗口时，弹出桌面通知。",
     "finishedTitle": "会话完成工作时通知我",
-    "finishedDescription": "会话结束一轮且没有要问你的事，而你当前不在 lich 窗口时，弹出桌面通知。它与上一项设置互不影响，因此你可以只在离开期间的长任务结束时收到通知，而不必每次提示都被打扰。不会附带提示消息：在 lich 内，卡片和项目标签页已经会显示。",
+    "finishedDescription": "会话结束一轮且没有要问你的事，而你当前不在 lich 窗口时，弹出桌面通知。",
     "onCount": "已开启 {on}/{count}"
   },
   "hotkeysSettings": {
     "alsoBound": "同时绑定到 {actions}",
     "pressKeys": "请按下按键…",
-    "unassignHint": "不为此操作绑定快捷键",
     "resetHint": "恢复默认快捷键",
-    "passthroughNote": "lich 会在这些按键送往智能体终端时改写它们，因此无法重新绑定。"
+    "passthroughNote": "lich 会在这些按键送往智能体终端时改写它们，因此无法重新绑定。",
+    "record": "录制新快捷键",
+    "unassign": "取消分配",
+    "options": "{action} 的选项"
   },
   "providersPane": {
     "detecting": "正在检测提供商…",
@@ -175,7 +173,7 @@
     "moreDetected": "另检测到 {count} 个",
     "defaultTitle": "默认提供商",
     "defaultSearchWords": "智能体 新建会话",
-    "defaultDescription": "不指定提供商的会话操作所启动的提供商：新建会话快捷键、空项目中的“新建会话”按钮，以及新建的工作树。",
+    "defaultDescription": "用于新建会话快捷键、空项目中的“新建会话”按钮，以及新建的工作树。",
     "defaultHere": "此处默认",
     "skipEverywhere": "无提示"
   },
@@ -227,12 +225,9 @@
   "planUsageSetting": {
     "title": "套餐用量",
     "searchWords": "配额 订阅 上限 用量",
-    "description": "订阅在每个时间窗口内的已用额度，从你的账户读取；lich 运行期间每 5 分钟刷新一次。",
     "signedOut": "已登出。",
     "signedOutRun": "已登出。运行 {command} 以读取套餐用量。",
-    "readFailed": "无法读取套餐用量。提供商的用量接口没有公开文档，可能已经变了。",
-    "used": "已用",
-    "resets": "重置于"
+    "readFailed": "无法读取套餐用量。提供商的用量接口没有公开文档，可能已经变了。"
   },
   "closeSetting": {
     "title": "关闭窗口时",
@@ -325,7 +320,7 @@
     "summary": "主目录为空，本机只读，只有检出目录可写。网络保持开启。",
     "confinedTitle": "哪些会话在受限环境中运行",
     "confinedSearchWords": "隔离 bwrap seatbelt",
-    "confinedHint": "选择“询问”时，“新建会话”菜单和“新建工作树”对话框会询问这一项。无人能作答时打开的会话（由其他会话或通过 MCP 工具打开）会受限运行。终端从不受限；沙箱是给无人值守的智能体用的。",
+    "confinedHint": "选择“询问”时，“新建会话”和“新建工作树”会询问这一项；无人能作答的会话会受限运行。终端从不受限。",
     "carryTitle": "受限会话可以带入什么",
     "sshTitle": "SSH 代理",
     "sshSearchWords": "推送 密钥",
@@ -341,8 +336,7 @@
     "confirmDescription": "{rung}：{exposes}",
     "confirm": "不再限制",
     "canConfine": "本机可以让会话受限运行",
-    "cannotConfine": "本机无法让会话受限运行",
-    "statusDetail": "：{detail}"
+    "cannotConfine": "本机无法让会话受限运行"
   },
   "vcsToolsSetting": {
     "title": "命令行工具",
@@ -437,7 +431,7 @@
     "terminalGroup": "终端"
   },
   "settingsHelp": {
-    "bugDescription": "在浏览器中打开问题报告表单，版本和平台已自动填好。issue 需要你自己填写并提交。在终端运行 `lich rage`，可将日志、版本以及 lich 在本机检测到的信息打包成一个压缩文件，方便附上。",
+    "bugDescription": "在浏览器中打开问题报告表单，版本和平台已自动填好。在终端运行 `lich rage`，可将日志、版本以及 lich 在本机检测到的信息打包成一个压缩文件，方便附上。",
     "logSearchWords": "调试 日志 原生窗口",
     "logDescription": "该文件夹包含 lich 的日志，旁边是原生窗口的日志（lich-native.log）。其中有绝对路径、项目和分支名称以及你的 gh 登录名，但绝不含会话令牌。附到任何地方之前，请先检查一遍内容。",
     "logFailed": "无法打开日志文件夹：{error}"
@@ -633,8 +627,6 @@
   "servicesSettings": {
     "title": "服务",
     "searchWords": "服务 命令 docker 容器 隧道 开发服务器 随 lich 启动 services",
-    "description": "lich 为此项目保持运行的命令，每条命令都有自己的控制台，例如容器、隧道、开发服务器。命令退出即表示服务已停止。",
-    "globalDescription": "在主目录中运行的服务，显示在 lich 首页。项目自己的服务在该项目的范围中设置。",
     "add": "添加服务",
     "startsWithLich": "随 lich 启动",
     "name": "名称",
@@ -646,7 +638,6 @@
     "save": "保存"
   },
   "extensionsSettings": {
-    "description": "每个扩展都以你的身份在你的电脑上运行，可以访问你的文件和账户。",
     "openFolder": "打开文件夹",
     "fromGit": "从 GitHub",
     "fromDir": "从文件夹",
@@ -733,7 +724,7 @@
   },
   "sessionViewSetting": {
     "title": "新会话打开方式",
-    "description": "新会话以聊天开始，或在智能体的终端中开始。没有聊天的提供商无论如何都在终端中打开，之后可用 GUI | TUI 切换任意会话。",
+    "description": "新会话以聊天开始，或在智能体的终端中开始。",
     "chat": "聊天",
     "terminal": "终端",
     "searchWords": "gui tui 视图 聊天 终端 默认 新会话 打开"

@@ -5,6 +5,7 @@ import (
 	"strings"
 	"sync"
 
+	"gioui.org/gesture"
 	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/backend"
@@ -128,6 +129,7 @@ type profileSettings struct {
 }
 
 type profileRowState struct {
+	hover gesture.Hover
 	tip   ui.Tooltip
 	login ui.Clickable
 	more  ui.Clickable

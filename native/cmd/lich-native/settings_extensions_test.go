@@ -467,7 +467,7 @@ func TestARowActionsErrorLandsUnderThatRow(t *testing.T) {
 func TestTheInstalledViewIsARowEachOrOneLineSayingThereIsNone(t *testing.T) {
 	s := extensionsScreen(t, &extensionBackend{})
 	th := testTheme()
-	const head = 2 // the description and the tabs
+	const head = 1 // the tabs
 	s.extensions.store.setStatus(backend.Extension{ID: "a"})
 	s.extensions.store.setStatus(backend.Extension{ID: "b"})
 	if got := len(s.extensionsPaneRows(th)); got != head {

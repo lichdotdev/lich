@@ -86,7 +86,7 @@ var disabledAtRest = map[string]bool{
 	"dock code tab(10,758)-(42,790)":     true,
 	"dock artifacts(10,758)-(42,790)":    true,
 	"git(895,758)-(978,790)":             true, // the pull request, with none
-	"settings editor(941,162)-(977,198)": true, // the font stepper's minus, at its minimum
+	"settings editor(961,166)-(993,198)": true, // the font stepper's minus, at its minimum
 }
 
 // trackWidth is the widest a scrollbar's track or a resize edge is, in px.
@@ -95,8 +95,8 @@ const trackWidth = 12
 // handProbe is a point on n worth hovering, or false for what is no control:
 // a node with another inside it is a panel, a scrim or a stage that takes
 // presses, a node thinner than a scrollbar's track is the track or a resize
-// edge, and a point off the window or under a smaller node belongs to
-// something else.
+// edge, and a point off the window, under a smaller node or outside the view
+// of the list n scrolls in belongs to something else.
 func (r *frameRig) handProbe(n input.SemanticNode) (f32.Point, bool) {
 	nb := n.Desc.Bounds
 	c := nb.Min.Add(nb.Max).Div(2)
@@ -112,5 +112,23 @@ func (r *frameRig) handProbe(n input.SemanticNode) (f32.Point, bool) {
 			return f32.Point{}, false
 		}
 	}
+	if r.cutOff(n, c) {
+		return f32.Point{}, false
+	}
 	return f32.Pt(float32(c.X), float32(c.Y)), true
+}
+
+// cutOff is whether p lies outside the view of a list n scrolls in: the
+// node's bounds run on under the list's edge, where nothing takes a press.
+func (r *frameRig) cutOff(n input.SemanticNode, p image.Point) bool {
+	nodes := map[input.SemanticID]input.SemanticNode{}
+	for _, o := range r.nodes() {
+		nodes[o.ID] = o
+	}
+	for up := n.ParentID; up != 0; up = nodes[up].ParentID {
+		if s := nodes[up]; s.Desc.Gestures&input.ScrollGesture != 0 && !p.In(s.Desc.Bounds) {
+			return true
+		}
+	}
+	return false
 }

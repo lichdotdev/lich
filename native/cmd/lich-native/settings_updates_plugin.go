@@ -200,7 +200,7 @@ func pluginOutcome(checked, failed bool) string {
 func (c *pluginControls) row(gtx C, th *ui.Theme, st backend.PluginStatus, busy bool) D {
 	children := []layout.FlexChild{
 		layout.Rigid(func(gtx C) D {
-			return providerIcon(st.Provider).Layout(gtx, unit.Dp(pluginProviderIcon), th.Foreground)
+			return providerGlyph(gtx, th, st.Provider, unit.Dp(pluginProviderIcon), markPixel)
 		}),
 		ui.Gap(2.5),
 		layout.Rigid(th.Text(ui.TextSM, st.Name).Layout),

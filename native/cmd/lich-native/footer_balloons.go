@@ -121,9 +121,16 @@ func (f *footer) layoutBalloons(gtx C, th *ui.Theme, inset int) {
 func (f *footer) balloon(gtx C, th *ui.Theme, slots []footerSlot, in footerInput, maxW int) (op.CallOp, int) {
 	pad, itemH := gtx.Dp(balloonPad), gtx.Dp(balloonItemHeight)
 	items, iw := f.fit(gtx, slots, maxW-2*pad, gtx.Dp(balloonGap), itemH, func(gtx C, s footerSlot) D { return f.slot(gtx, th, s, in) })
+	return balloonPill(gtx, th, items, iw)
+}
+
+// balloonPill records fitted items, iw wide, on the balloon's pill, and
+// answers its width, 0 when there are none.
+func balloonPill(gtx C, th *ui.Theme, items []fitted, iw int) (op.CallOp, int) {
 	if len(items) == 0 {
 		return op.CallOp{}, 0
 	}
+	pad, itemH := gtx.Dp(balloonPad), gtx.Dp(balloonItemHeight)
 	w := iw + 2*pad
 	m := op.Record(gtx.Ops)
 	pill := image.Rectangle{Max: image.Pt(w, itemH+2*pad)}

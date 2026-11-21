@@ -76,26 +76,15 @@ func (p *servicesSettings) setErr(text string) {
 	p.mu.Unlock()
 }
 
-// servicesPaneRows is the pane under its title: what a service is, then the
-// project's services, then Add service. Global has none to show.
+// servicesPaneRows is the pane under its title: the project's services, then
+// Add service.
 func (s *settingsScreen) servicesPaneRows(th *ui.Theme) []layout.Widget {
 	p := &s.services
 	if p.edits == nil {
 		p.edits, p.deletes = map[string]*ui.Clickable{}, map[string]*ui.Clickable{}
 	}
-	desc := i18n.T("settings.servicesSettings.description")
-	if s.scope == "" {
-		desc = i18n.T("settings.servicesSettings.globalDescription")
-	}
 	projectID := p.projectOf(s.scope)
-	rows := []layout.Widget{func(gtx C) D {
-		return layout.Inset{Top: -ui.Space(2), Bottom: ui.Space(4)}.Layout(gtx, func(gtx C) D {
-			gtx.Constraints.Max.X = min(gtx.Constraints.Max.X, gtx.Sp(settingsDescSize)*settingsDescCh*6/10)
-			l := th.Text(settingsDescSize, desc).Muted().Leading(20)
-			l.MaxLines = 0
-			return l.Layout(gtx)
-		})
-	}}
+	var rows []layout.Widget
 	if projectID == "" || p.store == nil {
 		return rows
 	}
@@ -113,8 +102,8 @@ func (s *settingsScreen) servicesPaneRows(th *ui.Theme) []layout.Widget {
 			p.begin(newServiceRow)
 		}
 		b := th.Button(&p.add, i18n.T("settings.servicesSettings.add"))
-		b.Variant, b.Size, b.Icon = ui.VariantOutline, ui.SizeSM, icPlus
-		return layout.Inset{Top: ui.Space(3)}.Layout(gtx, b.Layout)
+		b.Variant, b.Size, b.Icon = ui.VariantGhost, ui.SizeSM, icPlus
+		return layout.Inset{Top: ui.Space(1)}.Layout(gtx, func(gtx C) D { return layout.W.Layout(gtx, b.Layout) })
 	})
 	return rows
 }

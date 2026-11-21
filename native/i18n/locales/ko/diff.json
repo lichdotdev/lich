@@ -62,7 +62,7 @@
     "notRepository": "git 저장소가 아닙니다",
     "loading": "불러오는 중…",
     "noChanges": "커밋하지 않은 변경 사항 없음",
-    "squeezed": "나란히 보기에는 더 넓은 패널이 필요합니다"
+    "squeezed": "분할 보기에는 더 넓은 패널이 필요합니다"
   },
   "reviewSlots": {
     "forSession": "세션용 · {lines}",
@@ -73,7 +73,7 @@
     "reviewPlaceholder": "코멘트를 남기세요. 리뷰를 제출할 때 함께 보냅니다."
   },
   "dockReviewBody": {
-    "split": "나란히",
+    "split": "분할",
     "unified": "통합"
   },
   "binaryState": {

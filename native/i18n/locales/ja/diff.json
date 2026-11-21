@@ -64,7 +64,7 @@
     "notRepository": "git リポジトリではありません",
     "loading": "読み込み中…",
     "noChanges": "コミットされていない変更はありません",
-    "squeezed": "左右に並べて表示するにはパネルの幅が足りません"
+    "squeezed": "分割表示にはパネルの幅が足りません"
   },
   "reviewSlots": {
     "forSession": "セッションへ · {lines}",
@@ -75,7 +75,7 @@
     "reviewPlaceholder": "コメントを入力してください。レビューを送信すると一緒に投稿されます。"
   },
   "dockReviewBody": {
-    "split": "左右に並べる",
+    "split": "分割",
     "unified": "統合"
   },
   "binaryState": {

@@ -5,6 +5,8 @@ import (
 
 	"gioui.org/font"
 	"gioui.org/layout"
+	"gioui.org/op"
+	"gioui.org/op/clip"
 
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
@@ -161,12 +163,13 @@ func (s *settingsScreen) profileRows(gtx C, th *ui.Theme, c *profileSettings) D 
 }
 
 // profileListRow is one profile: its mark and name, the account it is logged
-// in to or the amber word that it is not, and its menu.
+// in to or the amber word that it is not, and its menu's ⋯ under the pointer.
 func (s *settingsScreen) profileListRow(gtx C, th *ui.Theme, c *profileSettings, p backend.Profile, first bool) D {
 	st := c.row(p.Slug)
 	if st.login.Clicked(gtx) {
 		s.startLogin(c, p, nil)
 	}
+	hovered := st.hover.Update(gtx.Source)
 	row := func(gtx C) D {
 		gtx.Constraints.Min.X = gtx.Constraints.Max.X
 		children := []layout.FlexChild{
@@ -180,9 +183,22 @@ func (s *settingsScreen) profileListRow(gtx C, th *ui.Theme, c *profileSettings,
 			in.Variant, in.Size = ui.VariantOutline, ui.SizeSM
 			children = append(children, layout.Rigid(in.Layout), ui.Gap(1))
 		}
-		children = append(children, layout.Rigid(func(gtx C) D { return s.profileMenu(gtx, th, c, p, st) }))
-		return layout.Inset{Top: profileRowPadY, Bottom: profileRowPadY}.Layout(gtx,
+		children = append(children, layout.Rigid(func(gtx C) D {
+			if !hovered && !st.menu.Opened() {
+				side := gtx.Dp(ui.Space(8))
+				return D{Size: image.Pt(side, side)}
+			}
+			return s.profileMenu(gtx, th, c, p, st)
+		}))
+		macro := op.Record(gtx.Ops)
+		d := layout.Inset{Top: profileRowPadY, Bottom: profileRowPadY}.Layout(gtx,
 			func(gtx C) D { return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...) })
+		call := macro.Stop()
+		area := clip.Rect{Max: d.Size}.Push(gtx.Ops)
+		st.hover.Add(gtx.Ops)
+		area.Pop()
+		call.Add(gtx.Ops)
+		return d
 	}
 	if first {
 		return row(gtx)

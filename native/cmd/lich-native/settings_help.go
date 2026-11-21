@@ -5,8 +5,6 @@ import (
 	"net/url"
 	"sync"
 
-	"gioui.org/layout"
-
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
@@ -79,7 +77,12 @@ func (s *settingsScreen) helpRow(gtx C, th *ui.Theme, e settingEntry, r settingR
 			s.revealLog()
 		}
 		r.description = i18n.T("settings.settingsHelp.logDescription")
-		return r.layoutBlock(gtx, th, first, func(gtx C, th *ui.Theme) D { return h.logLine(gtx, th, d) }), true
+		r.detail = logPath(d)
+		return r.layout(gtx, th, first, func(gtx C, th *ui.Theme) D {
+			b := th.Button(&h.reveal, i18n.T("settings.helpSettings.openLogFolder"))
+			b.Size, b.Variant, b.Disabled = ui.SizeSM, ui.VariantOutline, d == nil || d.LogPath == ""
+			return b.Layout(gtx)
+		}), true
 	case helpAboutKey:
 		if h.repo.Clicked(gtx) {
 			s.openExternal(helpRepoURL)
@@ -89,27 +92,18 @@ func (s *settingsScreen) helpRow(gtx C, th *ui.Theme, e settingEntry, r settingR
 			r.description = i18n.T("settings.helpSettings.aboutVersion", i18n.Args{"version": d.Version, "platform": d.Platform})
 		}
 		return r.layout(gtx, th, first, func(gtx C, th *ui.Theme) D {
-			b := th.Button(&h.repo, i18n.T("settings.helpSettings.repository"))
-			b.Size, b.Variant = ui.SizeSM, ui.VariantGhost
-			return b.Layout(gtx)
+			return th.TrailingIconLink(gtx, &h.repo, i18n.T("settings.helpSettings.repository"), icProviderDocs)
 		}), true
 	}
 	return D{}, false
 }
 
-// logLine is the Open log folder button and the log's path beside it.
-func (h *helpSettings) logLine(gtx C, th *ui.Theme, d *backend.Diagnostics) D {
-	path := i18n.T("settings.helpSettings.noLogFile")
+// logPath is the log's path, or the line saying there is none.
+func logPath(d *backend.Diagnostics) string {
 	if d != nil && d.LogPath != "" {
-		path = d.LogPath
+		return d.LogPath
 	}
-	b := th.Button(&h.reveal, i18n.T("settings.helpSettings.openLogFolder"))
-	b.Size, b.Variant, b.Disabled = ui.SizeSM, ui.VariantOutline, d == nil || d.LogPath == ""
-	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-		layout.Rigid(b.Layout),
-		ui.Gap(3),
-		layout.Flexed(1, th.Text(ui.TextXS, path).Muted().Mono().Layout),
-	)
+	return i18n.T("settings.helpSettings.noLogFile")
 }
 
 // revealLog is runWithToast over System.RevealLog: a spinning toast that the
