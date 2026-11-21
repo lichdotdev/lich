@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"slices"
 	"strconv"
 	"sync"
 	"testing"
@@ -48,29 +49,36 @@ func pickBackend(t *testing.T, picked backend.Attachment, mu *sync.Mutex, writes
 // row under the text, inside the box.
 var boxPlus = image.Rect(100, 720, 170, 770)
 
-// The composer's "+" in a session drawn as a chat types the picked file's
-// path at the composer's caret, as a drop does, and writes nothing to a
+// waitCards runs frames until session s1's composer holds a card for each of
+// paths, in order.
+func waitCards(t *testing.T, r *frameRig, p *chatPane, paths ...string) {
+	t.Helper()
+	for deadline := time.Now().Add(5 * time.Second); !slices.Equal(filePaths(p.attached), paths); time.Sleep(time.Millisecond) {
+		if time.Now().After(deadline) {
+			t.Fatalf("the composer holds %q, want %q", filePaths(p.attached), paths)
+		}
+		r.now = r.now.Add(frameStep)
+		r.frame()
+	}
+}
+
+// The composer's "+" in a session drawn as a chat puts the picked file in a
+// card over the text, which it leaves as it was, and writes nothing to a
 // terminal the session has not got.
-func TestAttachInAChatTypesThePathInTheComposer(t *testing.T) {
+func TestAttachInAChatAddsACard(t *testing.T) {
 	u, r, _ := chatFrames(t, api.ViewChat)
 	var mu sync.Mutex
 	var writes []string
 	c := pickBackend(t, backend.Attachment{Path: "/home/me/repo/notes.md"}, &mu, &writes)
 	u.footer.client = c
-	u.footer.writePaste = u.writeAtPrompt
+	u.footer.attachAt = u.attachAtPrompt
 	p := u.chats.pane("s1")
 	p.editor.SetText("read ")
-	p.editor.SetCaret(p.editor.Len(), p.editor.Len())
 	r.settle(t)
 	r.click(t, r.smallestClickIn(t, boxPlus))
-	want := "read /home/me/repo/notes.md "
-	for deadline := time.Now().Add(5 * time.Second); p.editor.Text() != want; time.Sleep(time.Millisecond) {
-		if time.Now().After(deadline) {
-			mu.Lock()
-			t.Fatalf("the composer reads %q, want %q; the terminal was written %q", p.editor.Text(), want, writes)
-		}
-		r.now = r.now.Add(frameStep)
-		r.frame()
+	waitCards(t, r, p, "/home/me/repo/notes.md")
+	if p.editor.Text() != "read " {
+		t.Errorf("the composer reads %q, want the text it had", p.editor.Text())
 	}
 	mu.Lock()
 	defer mu.Unlock()
@@ -79,8 +87,9 @@ func TestAttachInAChatTypesThePathInTheComposer(t *testing.T) {
 	}
 }
 
-// An artifact sent to a session drawn as a chat lands in its composer as the
-// "+" does, and writes nothing to a terminal the session has not got.
+// An artifact sent to a session drawn as a chat lands in its composer as a
+// card, as the "+" does, and writes nothing to a terminal the session has not
+// got.
 func TestAnArtifactSentToAChatLandsInItsComposer(t *testing.T) {
 	u, r, _ := chatFrames(t, api.ViewChat)
 	var mu sync.Mutex
@@ -89,19 +98,28 @@ func TestAnArtifactSentToAChatLandsInItsComposer(t *testing.T) {
 	r.settle(t)
 	p := u.chats.pane("s1")
 	u.attachArtifact("s1", "s2", "shot.png")
-	want := "/home/me/repo/shot.png "
-	for deadline := time.Now().Add(5 * time.Second); p.editor.Text() != want; time.Sleep(time.Millisecond) {
-		if time.Now().After(deadline) {
-			mu.Lock()
-			t.Fatalf("the composer reads %q, want %q; the terminal was written %q", p.editor.Text(), want, writes)
-		}
-		r.now = r.now.Add(frameStep)
-		r.frame()
-	}
+	waitCards(t, r, p, "/home/me/repo/shot.png")
 	mu.Lock()
 	defer mu.Unlock()
 	if len(writes) > 0 {
 		t.Errorf("the artifact wrote %q to a terminal", writes)
+	}
+}
+
+// The "+" or an artifact on a session drawn as its terminal pastes the
+// file's path at its prompt, unsent, with the notice under it.
+func TestAttachAtATerminalPastesThePath(t *testing.T) {
+	u, _, _ := chatFrames(t, api.ViewTerminal)
+	var mu sync.Mutex
+	var writes []string
+	u.terms = &terminals{client: pickBackend(t, backend.Attachment{}, &mu, &writes)}
+	if err := u.attachAtPrompt(t.Context(), "s1", backend.Attachment{Path: "/cfg/dropped/b.png", Notice: "copy of b"}); err != nil {
+		t.Fatal(err)
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	if want := []string{"\x1b[200~/cfg/dropped/b.png\ncopy of b\n\x1b[201~"}; !slices.Equal(writes, want) {
+		t.Errorf("wrote %q, want %q", writes, want)
 	}
 }
 

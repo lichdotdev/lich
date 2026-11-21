@@ -133,7 +133,7 @@ func TestATurnsEndStopsTheCallsLeftRunningInIt(t *testing.T) {
 	now := time.Unix(100, 0)
 	c.now = func() time.Time { return now }
 	c.put(api.ChatItem{ID: "old", Kind: api.ItemTool, Tool: &api.ChatToolCall{Name: "Bash", State: api.ToolRunning}}, true)
-	c.userMessage("go")
+	c.userMessage("go", nil)
 	c.put(api.ChatItem{ID: "k1", Kind: api.ItemTool, Tool: &api.ChatToolCall{Name: "Bash", State: api.ToolRunning}}, true)
 	c.put(api.ChatItem{ID: "k2", Kind: api.ItemTool, Tool: &api.ChatToolCall{Name: "Read", State: api.ToolDone}}, true)
 	done, _ := c.get("k2")

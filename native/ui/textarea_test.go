@@ -193,6 +193,30 @@ func TestTextareaFootSitsUnderTheText(t *testing.T) {
 	}
 }
 
+// A head stands inside the frame over the text, which starts under it, and
+// its height comes out of the ceiling too.
+func TestTextareaHeadSitsOverTheText(t *testing.T) {
+	const head, foot = 40, 30
+	var editor widget.Editor
+	var rig motionRig
+	frame := func() int {
+		return rig.frame(func(gtx C) D {
+			gtx.Constraints = layout.Constraints{Max: image.Pt(300, 200)}
+			ta := testTheme().Textarea(&editor, "")
+			ta.Head = func(gtx C) D { return D{Size: image.Pt(gtx.Constraints.Max.X, head)} }
+			ta.Foot = func(gtx C) D { return D{Size: image.Pt(gtx.Constraints.Max.X, foot)} }
+			return ta.Layout(gtx)
+		}).Size.Y
+	}
+	if got := frame(); got != 64+head+foot {
+		t.Errorf("empty: height %d, want min-h-16 plus the head and foot (%d)", got, 64+head+foot)
+	}
+	editor.SetText(strings.Repeat("line\n", 40))
+	if got := frame(); got != 200 {
+		t.Errorf("long text: height %d, want the 200 ceiling with the head and foot in it", got)
+	}
+}
+
 // A textarea takes its own type size, line height and room around the text.
 func TestTextareaTakesItsOwnTypeAndRoom(t *testing.T) {
 	var editor widget.Editor

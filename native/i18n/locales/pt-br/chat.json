@@ -102,5 +102,8 @@
     "force": "Forçar",
     "drop": "Tirar da fila",
     "edit": "↑ edita a fila"
+  },
+  "attach": {
+    "remove": "Remover"
   }
 }

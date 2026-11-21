@@ -3,7 +3,6 @@ package main
 import (
 	"slices"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/lichdotdev/lich/api"
@@ -17,18 +16,19 @@ import (
 
 const chatSendHold = 2 * time.Second
 
-// chatHeld is a message waiting to go: its item as the conversation draws it,
-// and whether it went, which takes it out of Esc's reach.
+// chatHeld is a message waiting to go: it, its item as the conversation draws
+// it, and whether it went, which takes it out of Esc's reach.
 type chatHeld struct {
+	msg  chatMessage
 	item backend.ChatItem
 	sent bool
 }
 
-// hold keeps text as session id's message waiting to go. Its item takes the
+// hold keeps m as session id's message waiting to go. Its item takes the
 // id and turn the backend gives the person's message (conversation.userMessage)
 // so the one heard back replaces it in place, and its time is the wait's end,
 // where the turn's clock starts counting.
-func (s *chatStore) hold(id, text string, now time.Time) *chatHeld {
+func (s *chatStore) hold(id string, m chatMessage, now time.Time) *chatHeld {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	turn := 0
@@ -36,7 +36,7 @@ func (s *chatStore) hold(id, text string, now time.Time) *chatHeld {
 		turn = max(turn, it.Turn)
 	}
 	turn++
-	h := &chatHeld{item: backend.ChatItem{ID: "user-" + strconv.Itoa(turn), Kind: api.ItemUser, Text: text, Turn: turn, At: now.Add(chatSendHold).UnixMilli()}}
+	h := &chatHeld{msg: m, item: backend.ChatItem{ID: "user-" + strconv.Itoa(turn), Kind: api.ItemUser, Text: m.text, Files: filePaths(m.files), Turn: turn, At: now.Add(chatSendHold).UnixMilli()}}
 	if s.held == nil {
 		s.held = map[string]*chatHeld{}
 	}
@@ -53,15 +53,15 @@ func (s *chatStore) holding(id string) bool {
 }
 
 // unhold takes session id's waiting message back, false once it went.
-func (s *chatStore) unhold(id string) (string, bool) {
+func (s *chatStore) unhold(id string) (chatMessage, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	h := s.held[id]
 	if h == nil || h.sent {
-		return "", false
+		return chatMessage{}, false
 	}
 	delete(s.held, id)
-	return h.item.Text, true
+	return h.msg, true
 }
 
 // dispatch marks h gone to the agent, false when it was taken back first.
@@ -111,42 +111,39 @@ func (s *chatStore) forgetSent(id string) {
 	}
 }
 
-// holdChat keeps text as session id's message, sending it once the wait is
-// up unless it was taken back; a refused one goes back into the editor.
-func (u *window) holdChat(p *chatPane, id, text string) {
-	h := u.model.chat.hold(id, text, time.Now())
+// holdChat keeps m as session id's message, sending it once the wait is up
+// unless it was taken back; a refused one goes back into the composer.
+func (u *window) holdChat(p *chatPane, id string, m chatMessage) {
+	h := u.model.chat.hold(id, m, time.Now())
 	u.model.invalidate()
 	time.AfterFunc(chatSendHold, func() {
 		if !u.model.chat.dispatch(id, h) {
 			return
 		}
-		if err := u.client.ChatPrompt(u.ctx, id, text); err != nil {
+		if err := u.client.ChatPrompt(u.ctx, id, m.text, m.files); err != nil {
 			u.model.chat.dropHeld(id, h)
-			u.chatRefused(p, text, err)
+			u.chatRefused(p, m, err)
 		}
 	})
 }
 
-// chatRefused hands text, which the backend refused, back to the editor.
-func (u *window) chatRefused(p *chatPane, text string, err error) {
+// chatRefused hands m, which the backend refused, back to the composer.
+func (u *window) chatRefused(p *chatPane, m chatMessage, err error) {
 	p.mu.Lock()
-	p.unsent = text
+	p.unsent = m
 	p.mu.Unlock()
 	u.chatFailed(err)
 }
 
-// unholdChat takes session id's waiting message back into the box, ahead of
-// what was typed since, and reports whether there was one.
+// unholdChat takes session id's waiting message back into the box, its text
+// ahead of what was typed since and its cards ahead of those added, and
+// reports whether there was one.
 func (u *window) unholdChat(p *chatPane, id string) bool {
-	text, ok := u.model.chat.unhold(id)
+	m, ok := u.model.chat.unhold(id)
 	if !ok {
 		return false
 	}
-	if typed := strings.TrimSpace(p.editor.Text()); typed != "" {
-		text += chatQueueJoin + typed
-	}
-	p.editor.SetText(text)
-	p.editor.SetCaret(len([]rune(text)), len([]rune(text)))
+	p.restore(m)
 	// This frame read the conversation with the message in it.
 	u.model.invalidate()
 	return true

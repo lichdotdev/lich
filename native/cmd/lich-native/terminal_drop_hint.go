@@ -8,6 +8,7 @@ import (
 	"gioui.org/app"
 
 	"github.com/lichdotdev/lich/api"
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
 )
@@ -64,22 +65,24 @@ func (u *window) dropFiles(target dropTarget, paths []string) {
 	}
 }
 
-// dropInChat resolves a drop and types it in the chat's composer. An image
-// is a path like any file: the chat sends the agent text alone.
+// dropInChat resolves a drop into cards in the chat's composer.
 func (u *window) dropInChat(target dropTarget, paths []string) {
-	if paste := u.droppedPaste(target, paths); paste != "" {
-		u.logErr("drop files", u.typeInChat(u.ctx, target.sessionID, paste))
+	if r := u.resolved(target, paths); len(r.files) > 0 {
+		u.chats.attachIn(target.sessionID, r.files)
+		u.model.invalidate()
 	}
 }
 
-// writeAtPrompt puts a paste at session id's prompt: its chat's composer
-// when it is drawn as a chat, which has no terminal to write to, else its
-// terminal.
-func (u *window) writeAtPrompt(ctx context.Context, id, block string) error {
+// attachAtPrompt puts file a at session id's prompt: a card in its chat's
+// composer when it is drawn as a chat, which has no terminal to write to,
+// else its path pasted at its terminal.
+func (u *window) attachAtPrompt(ctx context.Context, id string, a backend.Attachment) error {
 	if sv, ok := u.model.sessionViewOf(id); ok && sv.View == api.ViewChat {
-		return u.typeInChat(ctx, id, block)
+		u.chats.attachIn(id, []backend.Attachment{a})
+		u.model.invalidate()
+		return nil
 	}
-	return u.terms.writePaste(ctx, id, block)
+	return u.terms.writePaste(ctx, id, composeDroppedPaths([]string{a.Path}, runtime.GOOS == "windows", []string{a.Notice}))
 }
 
 // typeInChat hands a paste to session id's composer, which types it at its
@@ -94,11 +97,17 @@ func (u *window) typeInChat(_ context.Context, id, block string) error {
 // droppedPaste resolves a drop into the paste of its paths, toasting what
 // yielded none; "" when nothing did.
 func (u *window) droppedPaste(target dropTarget, paths []string) string {
+	r := u.resolved(target, paths)
+	return composeDroppedPaths(r.paths, runtime.GOOS == "windows", r.notices)
+}
+
+// resolved resolves a drop, toasting what yielded no path.
+func (u *window) resolved(target dropTarget, paths []string) dropResult {
 	r := resolveDrop(u.ctx, u.client, target, paths)
 	if len(r.skipped) > 0 {
 		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("terminal.drop.notAttached", i18n.Args{"files": strings.Join(r.skipped, ", ")})})
 	}
-	return composeDroppedPaths(r.paths, runtime.GOOS == "windows", r.notices)
+	return r
 }
 
 // injector is what writes a reference at session id's prompt from the Code

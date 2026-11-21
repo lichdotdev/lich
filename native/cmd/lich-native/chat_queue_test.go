@@ -39,7 +39,7 @@ func TestEnterDuringATurnQueuesTheMessage(t *testing.T) {
 	if n := f.callsOf(api.ChatPrompt.Name); n != 0 {
 		t.Errorf("Enter during a turn sent %d prompts", n)
 	}
-	if q := u.model.chat.queued("s1"); !slices.Equal(q, []string{"also the offsets"}) {
+	if q := u.model.chat.queued("s1"); !slices.Equal(queuedTexts(q), []string{"also the offsets"}) {
 		t.Fatalf("queue %q, want the message", q)
 	}
 	if p.editor.Len() != 0 {
@@ -53,8 +53,8 @@ func TestEnterDuringATurnQueuesTheMessage(t *testing.T) {
 // The queue goes in one message once the turn ends.
 func TestTheQueueGoesInOneMessageWhenTheTurnEnds(t *testing.T) {
 	u, _, f, _ := queueFrames(t)
-	u.model.chat.enqueue("s1", "first")
-	u.model.chat.enqueue("s1", "second")
+	u.model.chat.enqueue("s1", chatMessage{text: "first"})
+	u.model.chat.enqueue("s1", chatMessage{text: "second"})
 	u.model.flushQueue(context.Background(), api.ChatTurn{SessionID: "s1", StopReason: "end_turn"})
 	if body := f.waitCall(t, api.ChatPrompt.Name); !strings.Contains(body, `first\n\nsecond`) {
 		t.Errorf("the turn's end sent %s, want both messages in one", body)
@@ -67,7 +67,7 @@ func TestTheQueueGoesInOneMessageWhenTheTurnEnds(t *testing.T) {
 // A turn the person stopped keeps its queue for them.
 func TestAStoppedTurnKeepsItsQueue(t *testing.T) {
 	u, _, f, _ := queueFrames(t)
-	u.model.chat.enqueue("s1", "first")
+	u.model.chat.enqueue("s1", chatMessage{text: "first"})
 	u.model.flushQueue(context.Background(), api.ChatTurn{SessionID: "s1", StopReason: stopCancelled})
 	time.Sleep(20 * time.Millisecond)
 	if n := f.callsOf(api.ChatPrompt.Name); n != 0 {
@@ -95,14 +95,14 @@ func TestShortcutEnterSteersIntoTheTurn(t *testing.T) {
 // the queue.
 func TestForceSendsAQueuedMessageIntoTheTurn(t *testing.T) {
 	u, r, f, _ := queueFrames(t)
-	u.model.chat.enqueue("s1", "first")
-	u.model.chat.enqueue("s1", "second")
+	u.model.chat.enqueue("s1", chatMessage{text: "first"})
+	u.model.chat.enqueue("s1", chatMessage{text: "second"})
 	r.frame()
 	r.click(t, r.at(t, "Force"))
 	if body := f.waitCall(t, api.ChatSteer.Name); !strings.Contains(body, "first") {
 		t.Errorf("Force steered %s, want the first queued message", body)
 	}
-	if q := u.model.chat.queued("s1"); !slices.Equal(q, []string{"second"}) {
+	if q := u.model.chat.queued("s1"); !slices.Equal(queuedTexts(q), []string{"second"}) {
 		t.Errorf("queue %q, want the other one left", q)
 	}
 }
@@ -110,8 +110,8 @@ func TestForceSendsAQueuedMessageIntoTheTurn(t *testing.T) {
 // ↑ on an empty box takes the whole queue back into it.
 func TestUpTakesTheQueueBackToEdit(t *testing.T) {
 	u, r, _, p := queueFrames(t)
-	u.model.chat.enqueue("s1", "first")
-	u.model.chat.enqueue("s1", "second")
+	u.model.chat.enqueue("s1", chatMessage{text: "first"})
+	u.model.chat.enqueue("s1", chatMessage{text: "second"})
 	r.frame()
 	if !r.shows("↑ edits the queue") {
 		t.Errorf("no hint for the queue:\n%s", r.drawn())
@@ -128,7 +128,7 @@ func TestUpTakesTheQueueBackToEdit(t *testing.T) {
 // Clicking a queued message takes it out of the queue and back into the box.
 func TestClickingAQueuedMessageTakesItBack(t *testing.T) {
 	u, r, _, p := queueFrames(t)
-	u.model.chat.enqueue("s1", "first")
+	u.model.chat.enqueue("s1", chatMessage{text: "first"})
 	r.frame()
 	r.click(t, r.at(t, "first"))
 	if got := p.editor.Text(); got != "first" {
@@ -137,4 +137,13 @@ func TestClickingAQueuedMessageTakesItBack(t *testing.T) {
 	if q := u.model.chat.queued("s1"); len(q) != 0 {
 		t.Errorf("queue %q after the click", q)
 	}
+}
+
+// queuedTexts are the texts of a queue's messages.
+func queuedTexts(q []chatMessage) []string {
+	texts := make([]string, len(q))
+	for i, m := range q {
+		texts[i] = m.text
+	}
+	return texts
 }

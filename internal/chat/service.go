@@ -262,9 +262,14 @@ func (s *Service) History(ctx context.Context, opts api.SessionIDOptions) ([]api
 	return c.conv.snapshot(), nil
 }
 
-// Prompt answers api.ChatPrompt.
+// Prompt answers api.ChatPrompt. The attachments are read before anything
+// else, so a file that cannot be read refuses the message whole.
 func (s *Service) Prompt(ctx context.Context, opts api.ChatPromptOptions) (api.None, error) {
 	c, err := s.ensure(ctx, opts.ID)
+	if err != nil {
+		return api.None{}, err
+	}
+	m, err := compose(opts.Text, opts.Attachments)
 	if err != nil {
 		return api.None{}, err
 	}
@@ -274,14 +279,14 @@ func (s *Service) Prompt(ctx context.Context, opts api.ChatPromptOptions) (api.N
 	// A message written while the agent waits on its questions answers none
 	// of them, and goes to the agent after.
 	if c.declineQuestions() {
-		c.conv.userMessage(opts.Text)
-		return api.None{}, c.drv.follow(opts.Text)
+		c.conv.userMessage(opts.Text, filePaths(opts.Attachments))
+		return api.None{}, c.drv.follow(m)
 	}
 	if err := c.beginTurn(); err != nil {
 		return api.None{}, err
 	}
-	c.conv.userMessage(opts.Text)
-	return api.None{}, c.send(opts.Text)
+	c.conv.userMessage(opts.Text, filePaths(opts.Attachments))
+	return api.None{}, c.send(m)
 }
 
 // Steer answers api.ChatSteer: the message goes to the agent in the turn
@@ -296,8 +301,12 @@ func (s *Service) Steer(ctx context.Context, opts api.ChatPromptOptions) (api.No
 	if !c.turnRunning() {
 		return s.Prompt(ctx, opts)
 	}
-	c.conv.userMessage(opts.Text)
-	return api.None{}, c.drv.follow(opts.Text)
+	m, err := compose(opts.Text, opts.Attachments)
+	if err != nil {
+		return api.None{}, err
+	}
+	c.conv.userMessage(opts.Text, filePaths(opts.Attachments))
+	return api.None{}, c.drv.follow(m)
 }
 
 // Cancel answers api.ChatCancel.

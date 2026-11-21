@@ -48,13 +48,14 @@ func newConversation(emit func(api.ChatItem)) *conversation {
 	}
 }
 
-// userMessage opens a turn with the person's text and returns that turn.
-func (c *conversation) userMessage(text string) int {
+// userMessage opens a turn with the person's text and the files it attached,
+// and returns that turn.
+func (c *conversation) userMessage(text string, files []string) int {
 	c.mu.Lock()
 	c.turn++
 	turn := c.turn
 	c.mu.Unlock()
-	c.put(api.ChatItem{ID: "user-" + strconv.Itoa(turn), Kind: api.ItemUser, Text: text}, true)
+	c.put(api.ChatItem{ID: "user-" + strconv.Itoa(turn), Kind: api.ItemUser, Text: text, Files: files}, true)
 	return turn
 }
 

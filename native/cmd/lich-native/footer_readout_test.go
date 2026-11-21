@@ -366,22 +366,31 @@ func attachBackend(t *testing.T, picked backend.Attachment, writes *[][]string) 
 	return backend.New(backend.Runtime{Port: port, Token: "tok"})
 }
 
-func TestAttachFilePastesThePickedPathUnsent(t *testing.T) {
+func TestAttachFileHandsOnThePickedFile(t *testing.T) {
 	var writes [][]string
-	c := attachBackend(t, backend.Attachment{Path: "/cfg/dropped/b.png", Notice: "copy of b"}, &writes)
-	if err := attachFile(context.Background(), c, c.Write, "s1", "/repo", true, false); err != nil {
+	picked := backend.Attachment{Path: "/cfg/dropped/b.png", Notice: "copy of b"}
+	c := attachBackend(t, picked, &writes)
+	var got []backend.Attachment
+	put := func(_ context.Context, id string, a backend.Attachment) error {
+		if id == "s1" {
+			got = append(got, a)
+		}
+		return nil
+	}
+	if err := attachFile(context.Background(), c, put, "s1", "/repo", true); err != nil {
 		t.Fatal(err)
 	}
-	want := [][]string{{"s1", "\x1b[200~/cfg/dropped/b.png\ncopy of b\n\x1b[201~"}}
-	if !reflect.DeepEqual(writes, want) {
-		t.Errorf("wrote %q, want %q", writes, want)
+	if !reflect.DeepEqual(got, []backend.Attachment{picked}) {
+		t.Errorf("handed on %v, want %v", got, picked)
 	}
 }
 
-func TestAttachFileCancelledWritesNothing(t *testing.T) {
+func TestAttachFileCancelledHandsOnNothing(t *testing.T) {
 	var writes [][]string
 	c := attachBackend(t, backend.Attachment{}, &writes)
-	if err := attachFile(context.Background(), c, c.Write, "s1", "/repo", true, false); err != nil || len(writes) != 0 {
-		t.Errorf("cancelled dialog: err %v, writes %q", err, writes)
+	called := false
+	put := func(context.Context, string, backend.Attachment) error { called = true; return nil }
+	if err := attachFile(context.Background(), c, put, "s1", "/repo", true); err != nil || called {
+		t.Errorf("cancelled dialog: err %v, handed on %v", err, called)
 	}
 }

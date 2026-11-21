@@ -73,10 +73,13 @@ type ChatViewOptions struct {
 	View string `json:"view"`
 }
 
-// ChatPromptOptions sends Text to session ID's agent.
+// ChatPromptOptions sends Text to session ID's agent, with Attachments: an
+// image goes as an image where the provider takes one, any other file as its
+// path under the text with its notice, as a drop at the terminal pastes it.
 type ChatPromptOptions struct {
-	ID   string `json:"id"`
-	Text string `json:"text"`
+	ID          string           `json:"id"`
+	Text        string           `json:"text"`
+	Attachments []DropAttachment `json:"attachments,omitempty"`
 }
 
 // ChatAnswerOptions answers permission item ItemID of session ID with the
@@ -113,8 +116,11 @@ type ChatItem struct {
 	Kind string `json:"kind"`
 	// Turn counts the person's messages: every item of an answer carries the
 	// turn of the message it answers.
-	Turn       int             `json:"turn"`
-	Text       string          `json:"text,omitempty"`
+	Turn int    `json:"turn"`
+	Text string `json:"text,omitempty"`
+	// Files are the paths a person's message attached, in this run of the
+	// chat: a conversation read back has its text alone.
+	Files      []string        `json:"files,omitempty"`
 	Tool       *ChatToolCall   `json:"tool,omitempty"`
 	Permission *ChatPermission `json:"permission,omitempty"`
 	Question   *ChatQuestion   `json:"question,omitempty"`

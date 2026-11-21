@@ -191,8 +191,8 @@ func textInput(text string) []map[string]any {
 
 // prompt starts a turn, carrying what the person set since the last one:
 // turn/start's overrides hold for the turns after it too (measured).
-func (d *codexDriver) prompt(text string) error {
-	params := map[string]any{"threadId": d.threadID(), "input": d.input(text)}
+func (d *codexDriver) prompt(m message) error {
+	params := map[string]any{"threadId": d.threadID(), "input": d.input(m)}
 	staged := d.staged()
 	maps.Copy(params, staged.params())
 	ctx, cancel := context.WithTimeout(context.Background(), callTimeout)
@@ -223,15 +223,15 @@ func (d *codexDriver) setTurn(id string) {
 
 // follow adds the message to the turn running, turn/steer's job; a turn the
 // decline already ended takes it as a new one.
-func (d *codexDriver) follow(text string) error {
+func (d *codexDriver) follow(m message) error {
 	turn := d.turnID()
 	if turn == "" {
-		go d.c.sendNext(pending{text: text})
+		go d.c.sendNext(pending{msg: m})
 		return nil
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), callTimeout)
 	defer cancel()
-	_, err := d.call(ctx, "turn/steer", map[string]any{"threadId": d.threadID(), "expectedTurnId": turn, "input": d.input(text)})
+	_, err := d.call(ctx, "turn/steer", map[string]any{"threadId": d.threadID(), "expectedTurnId": turn, "input": d.input(m)})
 	return err
 }
 

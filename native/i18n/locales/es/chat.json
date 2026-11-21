@@ -102,5 +102,8 @@
     "force": "Forzar",
     "drop": "Quitar de la cola",
     "edit": "↑ edita la cola"
+  },
+  "attach": {
+    "remove": "Quitar"
   }
 }

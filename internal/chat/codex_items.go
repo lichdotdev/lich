@@ -255,7 +255,7 @@ func (d *codexDriver) replayTurn(turn codexTurn, p codexProducer) {
 	model := d.modelName(p.Model)
 	for _, it := range turn.Items {
 		if it.Type == "userMessage" {
-			d.c.conv.userMessage(it.userText())
+			d.c.conv.userMessage(it.userText(), nil)
 			continue
 		}
 		ci, ok := it.under(d.c.cwd).chatItem(true)

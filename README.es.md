@@ -203,6 +203,7 @@ distinto.
 | En el chat, escribir / al inicio de una línea lista los comandos y las skills del agente para completarlos | sí, con las skills marcadas | solo skills, escritas como `$nombre` | sí | sí | sí | no | sin verificar | sí |
 | En el chat, una llamada a una herramienta aparece en cuanto empieza, con su tiempo corriendo, y guarda cuánto duró | sí | sí; una conversación releída no muestra tiempos | sin verificar | sin verificar | sin verificar | no | sin verificar | sin verificar |
 | En el chat, un mensaje escrito mientras el agente trabaja espera en una cola que sale al terminar el turno, o se fuerza dentro del turno en curso | sí | sí | en cola; forzarlo detiene el turno y lo envía después | en cola; forzarlo detiene el turno y lo envía después | en cola; forzarlo detiene el turno y lo envía después | no | sin verificar | en cola; forzarlo detiene el turno y lo envía después |
+| En el chat, una imagen que adjuntas llega al agente como imagen, y cualquier otro archivo como su ruta en tu mensaje | sí | enviada como imagen; sin verificar que el agente la vea | enviada como imagen; sin verificar que el agente la vea | enviada como imagen; sin verificar que el agente la vea | enviada como imagen; sin verificar que el agente la vea | no | sin verificar | enviada como imagen; sin verificar que el agente la vea |
 
 </details>
 

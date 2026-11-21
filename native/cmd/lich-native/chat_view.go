@@ -109,10 +109,16 @@ type chatView struct {
 	// may grow over the conversation up to slashRoom, the pane's height.
 	slash     chatSlash
 	slashRoom int
-	// unsent is a message the backend refused, handed back to the editor,
+	// attached are the files the next message carries, drawn as cards over
+	// the text in cardList; fileCards are the cards' controls, by path in the
+	// composer and by item and path in a sent message.
+	attached  []backend.Attachment
+	cardList  layout.List
+	fileCards map[string]*chatFileCard
+	// unsent is a message the backend refused, handed back to the composer,
 	// ahead of what was typed since, on the next frame.
 	mu     sync.Mutex
-	unsent string
+	unsent chatMessage
 }
 
 type chatFold struct {
@@ -151,6 +157,7 @@ type chatAnswer struct{ item, option string }
 func newChatPane() *chatPane {
 	p := &chatPane{}
 	p.list.Axis = layout.Vertical
+	p.cardList.Axis = layout.Horizontal
 	p.editor.Submit = true
 	p.md = markdown.Cache{}
 	p.folds = map[string]*chatFold{}
@@ -355,19 +362,17 @@ func chatColumn(gtx C, top, bottom, inset unit.Dp, w layout.Widget) D {
 // message sent past it declines it.
 func (u *window) chatActs(gtx C, p *chatPane, sv sessionView, keys, working bool, waiting, asking *backend.ChatItem) {
 	p.mu.Lock()
-	if p.unsent != "" {
-		text := p.unsent
-		if typed := strings.TrimSpace(p.editor.Text()); typed != "" {
-			text += chatQueueJoin + typed
-		}
-		p.editor.SetText(text)
+	if !p.unsent.empty() {
+		p.restore(p.unsent)
 		p.undo.Reset()
 	}
-	p.unsent = ""
+	p.unsent = chatMessage{}
 	p.mu.Unlock()
 	if typed := u.chats.takeTyped(sv.ID); typed != "" {
 		p.editor.Insert(typed)
 	}
+	p.attached = addFiles(p.attached, u.chats.takeAttached(sv.ID))
+	p.cardActs(gtx)
 	p.dropQuizzes(asking)
 	if asking != nil {
 		u.questionActs(gtx, p, sv, asking)
@@ -384,7 +389,7 @@ func (u *window) chatActs(gtx C, p *chatPane, sv sessionView, keys, working bool
 	case !gtx.Focused(&p.editor):
 		gtx.Execute(key.FocusCmd{Tag: &p.editor})
 	}
-	if p.editor.Len() > 0 {
+	if p.editor.Len() > 0 || len(p.attached) > 0 {
 		waiting = nil
 	}
 	for {
@@ -436,17 +441,16 @@ func (u *window) chatActs(gtx C, p *chatPane, sv sessionView, keys, working bool
 	}
 }
 
-// sendChat hands the editor's text to the agent, once it waited chatSendHold,
-// and reports whether it had any; a refused one goes back into the editor.
-// /new alone starts an empty conversation instead.
+// sendChat hands the composer's message to the agent, once it waited
+// chatSendHold, and reports whether it had any; a refused one goes back into
+// the composer. /new alone starts an empty conversation instead.
 func (u *window) sendChat(p *chatPane, id string) bool {
-	text := strings.TrimSpace(p.editor.Text())
-	if text == "" {
+	m := p.composed()
+	if m.empty() {
 		return false
 	}
-	p.editor.SetText("")
-	p.undo.Reset()
-	if text == chatNewCommand {
+	p.clearComposer()
+	if m.text == chatNewCommand && len(m.files) == 0 {
 		go func() { u.chatFailed(u.client.ChatNew(u.ctx, id)) }()
 		return true
 	}
@@ -454,13 +458,13 @@ func (u *window) sendChat(p *chatPane, id string) bool {
 	// at once: Esc there is the questions'.
 	if u.model.chat.isRunning(id) {
 		go func() {
-			if err := u.client.ChatPrompt(u.ctx, id, text); err != nil {
-				u.chatRefused(p, text, err)
+			if err := u.client.ChatPrompt(u.ctx, id, m.text, m.files); err != nil {
+				u.chatRefused(p, m, err)
 			}
 		}()
 		return true
 	}
-	u.holdChat(p, id, text)
+	u.holdChat(p, id, m)
 	return true
 }
 
@@ -510,6 +514,12 @@ func (u *window) chatComposer(gtx C, th *ui.Theme, p *chatPane, sv sessionView, 
 			ta := tinted.Textarea(&p.editor, i18n.T("chat.composer.placeholder", i18n.Args{"provider": name}))
 			ta.MaxHeight, ta.MinHeight, ta.Radius, ta.Steady, ta.History = chatComposerMax, chatComposerMin, ui.RadiusLG, true, &p.undo
 			ta.Size, ta.Leading, ta.PadX, ta.PadY = markdown.BodySize, markdown.BodySize*markdown.LineHeightScale, chatComposerPadX, chatComposerPadY
+			// the cards stand over the text, adding to the box's ceiling
+			// rather than taking from the text's room
+			if len(p.attached) > 0 {
+				ta.MaxHeight += chatCardSize + chatComposerPadY
+			}
+			ta.Head = func(gtx C) D { return u.composerCards(gtx, th, p, tinted.Palette.Input) }
 			ta.Foot = u.chatChips(th, p, sv, working, ft)
 			d := ta.Layout(gtx)
 			ui.InsetBorder(gtx, d.Size, gtx.Dp(ui.RadiusLG), th.Over(ui.MixOKLab(th.Palette.Input, th.Primary, chatComposerTint)))

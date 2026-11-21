@@ -13,14 +13,14 @@ import (
 // its checkout, so the call that chooses the file also copies it where the
 // session can read it. checkout, not the shell's cwd, because the sandbox is
 // built around the spawn directory. A cancelled dialog is no error; a failure
-// carries the backend's sentence, which names why a file was refused. write
-// puts the paste at the prompt.
-func attachFile(ctx context.Context, c *backend.Client, write func(ctx context.Context, id, block string) error, sessionID, checkout string, sandboxed, windows bool) error {
+// carries the backend's sentence, which names why a file was refused. put
+// puts the file at the prompt.
+func attachFile(ctx context.Context, c *backend.Client, put func(ctx context.Context, id string, a backend.Attachment) error, sessionID, checkout string, sandboxed bool) error {
 	a, err := c.Attach(ctx, sessionID, checkout, sandboxed)
 	if err != nil || a.Path == "" {
 		return err
 	}
-	return write(ctx, sessionID, composeDroppedPaths([]string{a.Path}, windows, []string{a.Notice}))
+	return put(ctx, sessionID, a)
 }
 
 // composeDroppedPaths returns the paths quoted and space-separated as a

@@ -177,6 +177,9 @@ func TestResolveDropCopiesWhatAConfinedSessionCannotRead(t *testing.T) {
 	if want := []string{"copy of out.txt"}; !reflect.DeepEqual(r.notices, want) {
 		t.Fatalf("notices %q, want %q", r.notices, want)
 	}
+	if want := []backend.Attachment{{Path: inside}, {Path: "/copies/s1/out.txt", Notice: "copy of out.txt"}}; !reflect.DeepEqual(r.files, want) {
+		t.Fatalf("files %v, want each path with its notice", r.files)
+	}
 	if want := []string{"s1/out.txt=out"}; !reflect.DeepEqual(uploads, want) {
 		t.Fatalf("uploads %q, want %q", uploads, want)
 	}

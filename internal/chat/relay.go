@@ -64,8 +64,8 @@ func (s *Service) Take(id, text string) (relay.HandedPrompt, error) {
 	if c == nil || !s.Opened(id) {
 		return relay.HandedPrompt{}, errNoChat
 	}
-	c.conv.userMessage(text)
-	began, err := c.take(text)
+	c.conv.userMessage(text, nil)
+	began, err := c.take(message{text: text})
 	if err != nil {
 		return relay.HandedPrompt{}, err
 	}
@@ -84,21 +84,21 @@ func (s *Service) Take(id, text string) (relay.HandedPrompt, error) {
 	}, nil
 }
 
-// take sends text in a turn of its own, or after the agent's waiting
+// take sends m in a turn of its own, or after the agent's waiting
 // questions, and answers a channel that closes once the turn carrying it has
 // started.
-func (c *chatSession) take(text string) (<-chan struct{}, error) {
+func (c *chatSession) take(m message) (<-chan struct{}, error) {
 	started := make(chan struct{})
 	close(started)
 	if c.declineQuestions() {
-		return started, c.drv.follow(text)
+		return started, c.drv.follow(m)
 	}
 	for {
 		if err := c.beginTurn(); err == nil {
-			return started, c.send(text)
+			return started, c.send(m)
 		}
 		began := make(chan struct{})
-		if c.hold(pending{text: text, began: began}) {
+		if c.hold(pending{msg: m, began: began}) {
 			return began, nil
 		}
 	}

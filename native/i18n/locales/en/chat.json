@@ -102,5 +102,8 @@
     "force": "Force",
     "drop": "Remove from the queue",
     "edit": "↑ edits the queue"
+  },
+  "attach": {
+    "remove": "Remove"
   }
 }

@@ -128,10 +128,12 @@ type window struct {
 	gate     *spawnGate
 	resume   resumeDialog
 	chats    chatScreens
-	th       *material.Theme
-	theme    *ui.Theme
-	root     ui.Root
-	toaster  ui.Toaster
+	// attachPreview is the dialog a chat's file card opens.
+	attachPreview attachPreview
+	th            *material.Theme
+	theme         *ui.Theme
+	root          ui.Root
+	toaster       ui.Toaster
 	// toastFloor is how high off the window's bottom the toasts stand a
 	// gutter over this frame: the stage's foot, or the balloons' top;
 	// toastRight is the right balloon's right edge they end at, 0 for the
@@ -401,7 +403,7 @@ func run(w *app.Window, rt backend.Runtime) error {
 	u.footer.extensions = &u.model.extensions
 	u.git.open = *flagTab == "git"
 	u.footer.openPullRequest = u.openPR
-	u.footer.writePaste = u.writeAtPrompt
+	u.footer.attachAt = u.attachAtPrompt
 	u.footer.showDelegates = func(id string) { u.layoutStage.delegates = id }
 	u.settings.footer = u.footer
 	u.footer.customize = u.customizeFooter
@@ -721,6 +723,7 @@ func (u *window) layout(gtx C) error {
 		u.layoutNotifyOptIn(gtx, u.theme)
 		u.layoutGitMissing(gtx, u.theme)
 		u.layoutMoveConfirm(gtx, u.theme)
+		u.layoutAttachPreview(gtx, u.theme)
 		var edge int
 		edge, act, contentErr = u.body(gtx, v)
 		peekAct = u.sidebar.peekLayout(gtx, u.theme, u.model, sidebarActive(v), image.Pt(gtx.Dp(gutter), gtx.Dp(topbarHeight)))

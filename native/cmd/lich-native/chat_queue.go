@@ -4,7 +4,6 @@ import (
 	"context"
 	"log"
 	"slices"
-	"strings"
 
 	"gioui.org/io/event"
 	"gioui.org/io/key"
@@ -31,37 +30,37 @@ var (
 // turn's end sends.
 const chatQueueJoin = "\n\n"
 
-func (s *chatStore) enqueue(id, text string) {
+func (s *chatStore) enqueue(id string, m chatMessage) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.queue == nil {
-		s.queue = map[string][]string{}
+		s.queue = map[string][]chatMessage{}
 	}
-	s.queue[id] = append(s.queue[id], text)
+	s.queue[id] = append(s.queue[id], m)
 }
 
 // queued is session id's queue, a copy.
-func (s *chatStore) queued(id string) []string {
+func (s *chatStore) queued(id string) []chatMessage {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return slices.Clone(s.queue[id])
 }
 
 // unqueue takes message i out of session id's queue.
-func (s *chatStore) unqueue(id string, i int) (string, bool) {
+func (s *chatStore) unqueue(id string, i int) (chatMessage, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	q := s.queue[id]
 	if i < 0 || i >= len(q) {
-		return "", false
+		return chatMessage{}, false
 	}
-	text := q[i]
+	m := q[i]
 	s.queue[id] = slices.Delete(q, i, i+1)
-	return text, true
+	return m, true
 }
 
 // takeQueue empties session id's queue and returns it.
-func (s *chatStore) takeQueue(id string) []string {
+func (s *chatStore) takeQueue(id string) []chatMessage {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	q := s.queue[id]
@@ -69,14 +68,14 @@ func (s *chatStore) takeQueue(id string) []string {
 	return q
 }
 
-// requeue puts texts back at the head of session id's queue.
-func (s *chatStore) requeue(id string, texts []string) {
+// requeue puts msgs back at the head of session id's queue.
+func (s *chatStore) requeue(id string, msgs []chatMessage) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.queue == nil {
-		s.queue = map[string][]string{}
+		s.queue = map[string][]chatMessage{}
 	}
-	s.queue[id] = append(slices.Clone(texts), s.queue[id]...)
+	s.queue[id] = append(slices.Clone(msgs), s.queue[id]...)
 }
 
 // flushQueue sends session t.SessionID's queue in one message once its turn
@@ -91,8 +90,9 @@ func (m *model) flushQueue(ctx context.Context, t api.ChatTurn) {
 	if len(q) == 0 {
 		return
 	}
+	joined := joinMessages(q)
 	go func() {
-		if err := m.client.ChatPrompt(ctx, t.SessionID, strings.Join(q, chatQueueJoin)); err != nil {
+		if err := m.client.ChatPrompt(ctx, t.SessionID, joined.text, joined.files); err != nil {
 			log.Printf("chat queue of %s: %v", t.SessionID, err)
 			m.chat.requeue(t.SessionID, q)
 			m.invalidate()
@@ -100,28 +100,27 @@ func (m *model) flushQueue(ctx context.Context, t api.ChatTurn) {
 	}()
 }
 
-// queueChat puts the composer's text in session id's queue.
+// queueChat puts the composer's message in session id's queue.
 func (u *window) queueChat(p *chatPane, id string) {
-	text := strings.TrimSpace(p.editor.Text())
-	if text == "" {
+	m := p.composed()
+	if m.empty() {
 		return
 	}
-	p.editor.SetText("")
-	p.undo.Reset()
-	u.model.chat.enqueue(id, text)
+	p.clearComposer()
+	u.model.chat.enqueue(id, m)
 }
 
-// steerChat sends text into session id's turn running; a refusal puts it
-// back in the queue, and so does a turn not begun, its message still waiting
-// to go: steered, text would reach the agent first.
-func (u *window) steerChat(id, text string) {
+// steerChat sends m into session id's turn running; a refusal puts it back in
+// the queue, and so does a turn not begun, its message still waiting to go:
+// steered, m would reach the agent first.
+func (u *window) steerChat(id string, m chatMessage) {
 	if u.model.chat.holding(id) {
-		u.model.chat.requeue(id, []string{text})
+		u.model.chat.requeue(id, []chatMessage{m})
 		return
 	}
 	go func() {
-		if err := u.client.ChatSteer(u.ctx, id, text); err != nil {
-			u.model.chat.requeue(id, []string{text})
+		if err := u.client.ChatSteer(u.ctx, id, m.text, m.files); err != nil {
+			u.model.chat.requeue(id, []chatMessage{m})
 			u.chatFailed(err)
 		}
 	}()
@@ -133,9 +132,7 @@ func (u *window) editQueue(p *chatPane, id string) {
 	if len(q) == 0 {
 		return
 	}
-	text := strings.Join(q, chatQueueJoin)
-	p.editor.SetText(text)
-	p.editor.SetCaret(len([]rune(text)), len([]rune(text)))
+	p.restore(joinMessages(q))
 }
 
 // chatQueueRow is one queued message's controls: the row, which takes it back
@@ -151,14 +148,15 @@ func (u *window) queueActs(gtx C, p *chatPane, id string) {
 		r := &p.queueRows[i]
 		switch {
 		case r.force.Clicked(gtx):
-			if text, ok := u.model.chat.unqueue(id, i); ok {
-				u.steerChat(id, text)
+			if m, ok := u.model.chat.unqueue(id, i); ok {
+				u.steerChat(id, m)
 			}
 		case r.drop.Clicked(gtx):
 			u.model.chat.unqueue(id, i)
 		case r.edit.Clicked(gtx):
-			if text, ok := u.model.chat.unqueue(id, i); ok {
-				p.editor.Insert(text)
+			if m, ok := u.model.chat.unqueue(id, i); ok {
+				p.editor.Insert(m.text)
+				p.attached = addFiles(p.attached, m.files)
 			}
 		}
 	}
@@ -175,9 +173,9 @@ func (u *window) chatQueue(gtx C, th *ui.Theme, p *chatPane, id string) D {
 		p.queueRows = append(p.queueRows, make([]chatQueueRow, len(q)-len(p.queueRows))...)
 	}
 	rows := make([]layout.FlexChild, len(q))
-	for i, text := range q {
+	for i, m := range q {
 		r := &p.queueRows[i]
-		rows[i] = layout.Rigid(func(gtx C) D { return u.chatQueueLine(gtx, th, r, text) })
+		rows[i] = layout.Rigid(func(gtx C) D { return u.chatQueueLine(gtx, th, r, m.line()) })
 	}
 	return layout.Inset{Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, rows...)
@@ -208,7 +206,7 @@ func (u *window) chatQueueLine(gtx C, th *ui.Theme, r *chatQueueRow, text string
 				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 					layout.Rigid(func(gtx C) D { return icQueued.Layout(gtx, chatCrumbGlyph, ink) }),
 					ui.Gap(2),
-					layout.Flexed(1, th.Text(ui.TextSM, strings.ReplaceAll(text, "\n", " ")).In(ink).Truncated().Layout),
+					layout.Flexed(1, th.Text(ui.TextSM, text).In(ink).Truncated().Layout),
 					layout.Rigid(func(gtx C) D { return revealed(gtx, shown, force.Layout) }),
 					layout.Rigid(func(gtx C) D {
 						return th.Tooltip(&u.root, &r.dropTip, i18n.T("chat.queue.drop")).Layout(gtx, func(gtx C) D { return revealed(gtx, shown, drop.Layout) })
@@ -239,7 +237,7 @@ func (u *window) composerKeys(gtx C, p *chatPane, id string, keys bool) {
 		key.Filter{Focus: &p.editor, Name: key.NameReturn, Required: key.ModShortcut},
 		key.Filter{Focus: &p.editor, Name: key.NameEnter, Required: key.ModShortcut},
 	}
-	if p.editor.Len() == 0 && len(u.model.chat.queued(id)) > 0 {
+	if p.editor.Len() == 0 && len(p.attached) == 0 && len(u.model.chat.queued(id)) > 0 {
 		filters = append(filters, key.Filter{Focus: &p.editor, Name: key.NameUpArrow})
 	}
 	for {
@@ -255,8 +253,8 @@ func (u *window) composerKeys(gtx C, p *chatPane, id string, keys bool) {
 			u.editQueue(p, id)
 			continue
 		}
-		text := strings.TrimSpace(p.editor.Text())
-		if text == "" {
+		m := p.composed()
+		if m.empty() {
 			continue
 		}
 		if !u.model.chat.isRunning(id) {
@@ -265,8 +263,7 @@ func (u *window) composerKeys(gtx C, p *chatPane, id string, keys bool) {
 			}
 			continue
 		}
-		p.editor.SetText("")
-		p.undo.Reset()
-		u.steerChat(id, text)
+		p.clearComposer()
+		u.steerChat(id, m)
 	}
 }

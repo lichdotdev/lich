@@ -102,9 +102,25 @@ func (f *fake) claude(args []string) {
 		case "user":
 			f.send(map[string]any{"type": "system", "subtype": "init", "session_id": session, "model": run.model, "permissionMode": run.mode,
 				"skills": []any{"deploy"}, "terminal_slash_commands": []any{"doctor"}})
-			f.claudeTurn(run, str(m, "message", "content"))
+			f.claudeTurn(run, claudeText(m))
 		}
 	}
+}
+
+// claudeText is a user message's text: its content, or its first text block
+// when the content is blocks.
+func claudeText(m map[string]any) string {
+	msg, _ := m["message"].(map[string]any)
+	blocks, ok := msg["content"].([]any)
+	if !ok {
+		return str(m, "message", "content")
+	}
+	for _, b := range blocks {
+		if b, _ := b.(map[string]any); str(b, "type") == "text" {
+			return str(b, "text")
+		}
+	}
+	return ""
 }
 
 func (f *fake) claudeResult(isError bool, terminal, text string) {
