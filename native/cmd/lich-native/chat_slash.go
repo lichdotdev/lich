@@ -74,11 +74,20 @@ func slashQuery(text string, caret int) (query string, from int, ok bool) {
 // conversation (api.ChatNew) instead of sending the text.
 const chatNewCommand = "/new"
 
-// slashCommands is what the list offers: lich's own command first, then the
-// provider's, less one that would shadow it.
-func slashCommands(provider []backend.ChatCommand) []backend.ChatCommand {
-	own := backend.ChatCommand{Text: chatNewCommand, Description: i18n.T("chat.slash.new")}
-	return append([]backend.ChatCommand{own}, slices.DeleteFunc(slices.Clone(provider), func(c backend.ChatCommand) bool { return c.Text == own.Text })...)
+// slashCommands is what the list offers: lich's own commands first, /mcp and
+// /skills where provider kind reports what they open, then the provider's,
+// less those they would shadow.
+func slashCommands(provider []backend.ChatCommand, kind string) []backend.ChatCommand {
+	own := []backend.ChatCommand{{Text: chatNewCommand, Description: i18n.T("chat.slash.new")}}
+	if slices.Contains(chatToolKinds, kind) {
+		own = append(own,
+			backend.ChatCommand{Text: chatMCPCommand, Description: i18n.T("chat.slash.mcp")},
+			backend.ChatCommand{Text: chatSkillsCommand, Description: i18n.T("chat.slash.skills")})
+	}
+	shadowed := func(c backend.ChatCommand) bool {
+		return slices.ContainsFunc(own, func(o backend.ChatCommand) bool { return o.Text == c.Text })
+	}
+	return append(own, slices.DeleteFunc(slices.Clone(provider), shadowed)...)
 }
 
 // slashName is a command's name without the sigil it is typed with.

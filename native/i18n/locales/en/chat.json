@@ -93,7 +93,9 @@
     "own": "“{text}”"
   },
   "slash": {
-    "new": "Start a new conversation in this session"
+    "new": "Start a new conversation in this session",
+    "mcp": "Manage the MCP servers",
+    "skills": "Turn skills on or off"
   },
   "start": {
     "lines": "What shall we conjure in {project}?|What should we summon for {project}?|What are we channeling into {project}?|What's brewing in {project}?|What do you want to scry in {project}?|What are we inscribing in {project} today?|What shall we weave into {project}?|What are we raising in {project}?"
@@ -102,5 +104,77 @@
     "force": "Force",
     "drop": "Remove from the queue",
     "edit": "↑ edits the queue"
+  },
+  "tools": {
+    "loading": "Loading…",
+    "mcpTitle": "MCP servers",
+    "serverCount": {
+      "one": "{count} server",
+      "other": "{count} servers"
+    },
+    "toolCount": {
+      "one": "{count} tool",
+      "other": "{count} tools"
+    },
+    "group": {
+      "user": "User",
+      "project": "Project",
+      "local": "Local",
+      "claudeai": "claude.ai",
+      "misc": "Other"
+    },
+    "status": {
+      "connected": "connected",
+      "pending": "connecting",
+      "failed": "failed",
+      "needsAuth": "needs sign-in",
+      "disabled": "off in this project"
+    },
+    "mcpNone": "{provider} does not tell lich its MCP servers. Switch to TUI and use its own /mcp.",
+    "skillsNone": "{provider} does not tell lich its skills apart from its commands. They are in the / list.",
+    "back": "Servers",
+    "act": {
+      "signIn": "Sign in",
+      "reconnect": "Reconnect",
+      "enable": "Turn on in this project",
+      "disable": "Turn off in this project",
+      "viewTools": "View tools",
+      "hideTools": "Hide tools"
+    },
+    "fact": {
+      "status": "Status",
+      "auth": "Sign-in",
+      "version": "Version",
+      "target": "URL or command",
+      "config": "Configured in",
+      "tools": "Tools"
+    },
+    "auth": {
+      "signedIn": "signed in",
+      "notSignedIn": "not signed in"
+    },
+    "skillsTitle": "Skills",
+    "skillCount": {
+      "one": "{count} skill",
+      "other": "{count} skills"
+    },
+    "search": "Search skills",
+    "sortName": "Sort: name",
+    "sortTokens": "Sort: tokens",
+    "skill": {
+      "nameOnly": "name only",
+      "userOnly": "you only",
+      "tokens": {
+        "one": "~{count} token",
+        "other": "~{count} tokens"
+      }
+    },
+    "lock": {
+      "author": "locked by its author",
+      "plugin": "locked by its plugin",
+      "policy": "locked by policy",
+      "any": "locked"
+    },
+    "pluginSkills": "Plugin skills are managed with /plugin."
   }
 }

@@ -26,6 +26,7 @@ type codexSkill struct {
 		ShortDescription string `json:"shortDescription"`
 	} `json:"interface"`
 	Path    string `json:"path"`
+	Scope   string `json:"scope"`
 	Enabled bool   `json:"enabled"`
 }
 
@@ -40,28 +41,42 @@ func (s codexSkill) summary() string {
 	return s.Description
 }
 
-// listSkills reads the skills the chat's checkout has into its commands. A
-// failed read leaves the list as it was: the prompt takes text either way.
-func (d *codexDriver) listSkills(ctx context.Context) {
+// readSkills is every skill the chat's checkout has, on or off.
+func (d *codexDriver) readSkills(ctx context.Context) ([]codexSkill, error) {
 	raw, err := d.call(ctx, "skills/list", map[string]any{"cwds": []string{d.c.cwd}})
 	if err != nil {
-		return
+		return nil, err
 	}
 	var r struct {
 		Data []struct {
 			Skills []codexSkill `json:"skills"`
 		} `json:"data"`
 	}
-	if json.Unmarshal(raw, &r) != nil {
+	if err := json.Unmarshal(raw, &r); err != nil {
+		return nil, err
+	}
+	var skills []codexSkill
+	for _, entry := range r.Data {
+		for _, s := range entry.Skills {
+			if s.Name != "" {
+				skills = append(skills, s)
+			}
+		}
+	}
+	return skills, nil
+}
+
+// listSkills reads the skills the chat's checkout has on into its commands. A
+// failed read leaves the list as it was: the prompt takes text either way.
+func (d *codexDriver) listSkills(ctx context.Context) {
+	skills, err := d.readSkills(ctx)
+	if err != nil {
 		return
 	}
 	paths := map[string]string{}
 	var cmds []api.ChatCommand
-	for _, entry := range r.Data {
-		for _, s := range entry.Skills {
-			if !s.Enabled || s.Name == "" || paths[s.Name] != "" {
-				continue
-			}
+	for _, s := range skills {
+		if s.Enabled && paths[s.Name] == "" {
 			paths[s.Name] = s.Path
 			cmds = append(cmds, api.ChatCommand{Text: codexSkillSigil + s.Name, Description: s.summary(), Skill: true})
 		}

@@ -88,7 +88,9 @@
     "own": "「{text}」"
   },
   "slash": {
-    "new": "このセッションで新しい会話を始める"
+    "new": "このセッションで新しい会話を始める",
+    "mcp": "MCP サーバーを管理する",
+    "skills": "スキルをオンまたはオフにする"
   },
   "start": {
     "lines": "{project}で何を錬成しましょうか？|{project}に何を召喚しましょうか？|{project}に何を注ぎ込みましょうか？|{project}の大鍋で何を煮込みましょうか？|{project}の何を占いましょうか？|今日は{project}に何を刻みましょうか？|{project}に何を織り込みましょうか？|{project}で何を蘇らせましょうか？"
@@ -97,5 +99,73 @@
     "force": "今すぐ送信",
     "drop": "キューから外す",
     "edit": "↑ でキューを編集"
+  },
+  "tools": {
+    "loading": "読み込み中…",
+    "mcpTitle": "MCP サーバー",
+    "serverCount": {
+      "other": "{count} 件のサーバー"
+    },
+    "toolCount": {
+      "other": "ツール {count} 個"
+    },
+    "group": {
+      "user": "ユーザー",
+      "project": "プロジェクト",
+      "local": "ローカル",
+      "claudeai": "claude.ai",
+      "misc": "その他"
+    },
+    "status": {
+      "connected": "接続済み",
+      "pending": "接続中",
+      "failed": "失敗",
+      "needsAuth": "サインインが必要",
+      "disabled": "このプロジェクトではオフ"
+    },
+    "mcpNone": "{provider} は MCP サーバーを lich に伝えません。TUI に切り替えて、{provider} 自身の /mcp を使ってください。",
+    "skillsNone": "{provider} はスキルをほかのコマンドと区別しません。/ のリストにあります。",
+    "back": "サーバー",
+    "act": {
+      "signIn": "サインイン",
+      "reconnect": "再接続",
+      "enable": "このプロジェクトでオンにする",
+      "disable": "このプロジェクトでオフにする",
+      "viewTools": "ツールを表示",
+      "hideTools": "ツールを隠す"
+    },
+    "fact": {
+      "status": "状態",
+      "auth": "サインイン",
+      "version": "バージョン",
+      "target": "URL またはコマンド",
+      "config": "設定ファイル",
+      "tools": "ツール"
+    },
+    "auth": {
+      "signedIn": "サインイン済み",
+      "notSignedIn": "未サインイン"
+    },
+    "skillsTitle": "スキル",
+    "skillCount": {
+      "other": "{count} 個のスキル"
+    },
+    "search": "スキルを検索",
+    "sortName": "並び替え: 名前",
+    "sortTokens": "並び替え: トークン",
+    "skill": {
+      "nameOnly": "名前のみ",
+      "userOnly": "自分のみ",
+      "tokens": {
+        "other": "約 {count} トークン"
+      }
+    },
+    "lock": {
+      "author": "作成者がロック",
+      "plugin": "プラグインがロック",
+      "policy": "ポリシーでロック",
+      "any": "ロック中"
+    },
+    "pluginSkills": "プラグインのスキルは /plugin で管理します。"
   }
 }

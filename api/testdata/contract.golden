@@ -48,12 +48,16 @@ chat.Cancel(SessionIDOptions) None
 chat.Commands(SessionIDOptions) []ChatCommand
 chat.History(SessionIDOptions) []ChatItem
 chat.Kinds(None) []string
+chat.MCP(SessionIDOptions) ChatMCPList
+chat.MCPAct(ChatMCPActOptions) ChatMCPActResult
 chat.New(SessionIDOptions) None
 chat.Options(SessionIDOptions) []ChatOption
 chat.Prompt(ChatPromptOptions) None
 chat.Reply(ChatReplyOptions) None
 chat.SetOption(ChatSetOptionOptions) None
+chat.SetSkill(ChatSetSkillOptions) None
 chat.SetView(ChatViewOptions) None
+chat.Skills(SessionIDOptions) ChatSkillList
 chat.Steer(ChatPromptOptions) None
 claudeprofile.CancelLogin(ProfileSlugOptions) None
 claudeprofile.CreateProfile(CreateProfileOptions) Profile
@@ -654,6 +658,22 @@ ChatItem {
 	effort,omitempty string
 }
 
+ChatMCPList {
+	reported bool
+	servers,omitempty []ChatMCPServer
+	actions,omitempty []string
+}
+
+ChatMCPActOptions {
+	id string
+	server string
+	action string
+}
+
+ChatMCPActResult {
+	authUrl,omitempty string
+}
+
 ChatOption {
 	id string
 	category string
@@ -679,9 +699,20 @@ ChatSetOptionOptions {
 	value string
 }
 
+ChatSetSkillOptions {
+	id string
+	name string
+	enabled bool
+}
+
 ChatViewOptions {
 	id string
 	view string
+}
+
+ChatSkillList {
+	reported bool
+	skills,omitempty []ChatSkill
 }
 
 ProfileSlugOptions {
@@ -2440,6 +2471,20 @@ ChatQuestion {
 	reply,omitempty *ChatQReplied
 }
 
+ChatMCPServer {
+	name string
+	status string
+	scope,omitempty string
+	config,omitempty string
+	transport,omitempty string
+	target,omitempty string
+	version,omitempty string
+	error,omitempty string
+	auth,omitempty string
+	fixed,omitempty bool
+	tools,omitempty []ChatMCPTool
+}
+
 ChatChoice {
 	id string
 	label string
@@ -2450,6 +2495,15 @@ ChatChoice {
 ChatQReplied {
 	answers,omitempty []ChatAskAnswer
 	declined,omitempty bool
+}
+
+ChatSkill {
+	name string
+	description,omitempty string
+	source,omitempty string
+	tokens,omitempty int
+	state string
+	locked,omitempty string
 }
 
 ProfileUpdate {
@@ -2747,6 +2801,11 @@ ChatAsk {
 	text string
 	options,omitempty []ChatOffer
 	multi,omitempty bool
+}
+
+ChatMCPTool {
+	name string
+	description,omitempty string
 }
 
 ChatAskAnswer {

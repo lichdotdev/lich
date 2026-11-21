@@ -89,3 +89,24 @@ func (c *Client) ChatSetOption(ctx context.Context, id, optionID, value string) 
 	_, err := callMethod(ctx, c, api.ChatSetOption, api.ChatSetOptionOptions{ID: id, OptionID: optionID, Value: value})
 	return err
 }
+
+// ChatMCP is session id's MCP servers as its provider reports them.
+func (c *Client) ChatMCP(ctx context.Context, id string) (api.ChatMCPList, error) {
+	return callMethod(ctx, c, api.ChatMCP, api.SessionIDOptions{ID: id})
+}
+
+// ChatMCPAct runs action on MCP server server of session id.
+func (c *Client) ChatMCPAct(ctx context.Context, id, server, action string) (api.ChatMCPActResult, error) {
+	return callMethod(ctx, c, api.ChatMCPAct, api.ChatMCPActOptions{ID: id, Server: server, Action: action})
+}
+
+// ChatSkills is session id's skills as its provider reports them.
+func (c *Client) ChatSkills(ctx context.Context, id string) (api.ChatSkillList, error) {
+	return callMethod(ctx, c, api.ChatSkills, api.SessionIDOptions{ID: id})
+}
+
+// ChatSetSkill turns skill name of session id on or off.
+func (c *Client) ChatSetSkill(ctx context.Context, id, name string, enabled bool) error {
+	_, err := callMethod(ctx, c, api.ChatSetSkill, api.ChatSetSkillOptions{ID: id, Name: name, Enabled: enabled})
+	return err
+}

@@ -133,6 +133,15 @@ func personalPath(personal, name string) string {
 	return filepath.Join(personal, name)
 }
 
+// GlobalFile is the global config of Claude Code run with its config in dir,
+// Personal's for "": where it keeps its user and local MCP servers.
+func GlobalFile(dir string) (string, error) {
+	if dir == "" {
+		return personalGlobalFile()
+	}
+	return filepath.Join(dir, ".claude.json"), nil
+}
+
 // personalGlobalFile is the default profile's global config: inside the config
 // dir when CLAUDE_CONFIG_DIR names one, else ~/.claude.json beside ~/.claude.
 func personalGlobalFile() (string, error) {

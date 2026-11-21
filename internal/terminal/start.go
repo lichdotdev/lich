@@ -192,7 +192,10 @@ func (s *Service) spawnSession(opts api.StartOptions, profileDir, name string, o
 // whether it runs confined, and the home paths its sandbox skipped for being
 // symlinks.
 type spawnLaunch struct {
-	spec     ptySpec
+	spec ptySpec
+	// cli is spec as it was before the sandbox wrapped it: the provider's own
+	// binary and environment, which a chat runs its CLI's subcommands on.
+	cli      ptySpec
 	confined bool
 	links    []string
 }
@@ -289,8 +292,9 @@ func (s *Service) prepareSpawnLocked(opts api.StartOptions, profileDir, name str
 	}
 	creds := s.sandboxCredentials(opts.ProjectID, opts.Cwd, inSandbox)
 	reads := []string{sessionDropDir(s.dropDir, filesKey, inSandbox), s.shellIntegrationDir}
+	cli := spec
 	spec, skippedLinks := wrapSandbox(spec, opts.Kind, userHome(), reads, []string{artifacts}, profileDir, inSandbox, creds)
-	return spawnLaunch{spec: spec, confined: inSandbox, links: skippedLinks}, nil
+	return spawnLaunch{spec: spec, cli: cli, confined: inSandbox, links: skippedLinks}, nil
 }
 
 // providerKind resolves which provider mark a session-start report puts on a

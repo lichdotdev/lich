@@ -38,6 +38,10 @@ func runFake(args []string) {
 		f.log, _ = os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600)
 		fmt.Fprintf(f.log, "argv %s\n", strings.Join(args, " "))
 	}
+	if slices.Contains(args, "edit-skill-overrides") {
+		f.editSkillOverrides()
+		return
+	}
 	if slices.Contains(args, "acp") {
 		f.acp(args)
 		return
