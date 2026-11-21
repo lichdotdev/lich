@@ -825,10 +825,13 @@ Every row is one line, 34dp tall: `Space(1.5)` above and below a 22px node. Rows
   row's does: the glyph in the node's column, the uppercase label, its count, a rule to the `⋯`.
 
 The corner slot (`cardSlotSize`, 22px, the mark's box) is always reserved, so nothing on the line moves when
-it fills: the `⋯` under the pointer or while its menu is open, the working spinner while the session runs, a
-pin at rest on a pinned session, empty otherwise. The spinner is three souls diving to the center and back
-(`sidebar_spinner.go`), 11x11 pixels in 20 frames of 70ms, each pixel the whole device pixel nearest to
-filling the slot. Opening a session in the checkout a card runs in is the first entry of its menu.
+it fills: the `⋯` under the pointer or while its menu is open; at rest the session's status, else a pin on a
+pinned session, else nothing. The status is pixel art in the theme's grays, 11x11, each pixel the whole device
+pixel nearest to filling the slot: while the session runs, three souls diving to the center and back
+(`sidebar_spinner.go`, 20 frames of 70ms); while it waits on you, an hourglass whose sand runs down and that
+turns over; for a turn nobody read, the souls fuse into one when the spinner brings them to its center, once,
+and that soul breathes until the turn is read (`sidebar_status_sprites.go`). A turn read at startup goes
+straight to the breathing soul. Idle shows nothing. Opening a session in the checkout a card runs in is the first entry of its menu.
 
 ### The node
 

@@ -31,7 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **The sidebar lists your sessions instead of a tree of worktrees.** Sessions filed nowhere come first and folders after, each sorted by what needs you: waiting on you, working, finished and unread, then idle. A row shows the provider's pixel mark, the branch at its end and a spinner while the session works; New session here, in a session's menu, opens one in the same checkout.
+- **The sidebar lists your sessions instead of a tree of worktrees.** Sessions filed nowhere come first and folders after, each sorted by what needs you: waiting on you, working, finished and unread, then idle. A row shows the provider's pixel mark, the branch at its end and, in its corner, a spinner while the session works, an hourglass while it waits on you and a soul when a turn is done and unread; New session here, in a session's menu, opens one in the same checkout.
 - **The dock's Code tab searches from a magnifier in its header.** Click it, or use the search shortcut, to open one field that lists the files whose names match and the lines of the files' text that do, each under its own heading; Esc on the empty field or a second click folds it, and the Name | Text switch is gone.
 - **The chat's mode menu names every mode in your language, for every agent.** Claude Code's Accept edits and Pre-approved only, and the built-in modes Antigravity, oh-my-pi, Cursor, opencode and Kiro send, read the same way in all of them; an agent you made keeps the name you gave it. YOLO, the mode that never asks, is drawn in a rainbow with a filled bolt.
 - **Kiro CLI sessions show Kiro's own mark.** The ghost that stood in for it on cards, menus and the footer is gone.

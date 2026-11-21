@@ -251,15 +251,20 @@ func (s *sidebar) renameField(gtx C, th *ui.Theme, id string, rename *ui.InlineE
 
 // cardSlot is the corner every card keeps free, so nothing on its line moves
 // when it fills: under the pointer, or while its menu is open, the … that opens
-// the card's menu (more, nil for none); at rest, the pin of a pinned card.
+// the card's menu (more, nil for none); at rest, the session's status, else the
+// pin of a pinned card.
 func (s *sidebar) cardSlot(gtx C, th *ui.Theme, sv *sessionView, more layout.Widget, hovered bool) D {
 	size := gtx.Dp(cardSlotSize)
 	gtx.Constraints = layout.Exact(image.Pt(size, size))
 	switch {
 	case hovered && more != nil && !s.renaming(sv.ID):
 		return layout.Center.Layout(gtx, more)
-	case spins(sv.status):
-		return soulsSpinner(gtx, th)
+	case !hovered:
+		if d, ok := statusCorner(gtx, th, sv); ok {
+			return d
+		}
+	}
+	switch {
 	case sv.Pinned:
 		return layout.Center.Layout(gtx, func(gtx C) D { return s.icPin.LayoutFilled(gtx, 12, th.MutedForeground) })
 	}

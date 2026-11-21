@@ -12,13 +12,14 @@ import (
 	"github.com/lichdotdev/lich/native/ui"
 )
 
-// sidebarFrames is the open sidebar over three projects' sessions, a1
-// waiting and b1 busy.
+// sidebarFrames is the open sidebar over three projects' sessions, b1
+// waiting and c1 busy off the shown project: a waiting or busy row's corner
+// moves on every frame, and these screens are read once they are still.
 func sidebarFrames(t *testing.T) (*sidebar, *frameRig) {
 	t.Helper()
 	m := modelOn("a")
-	report(t, m, "a1", statusWaiting)
-	report(t, m, "b1", statusBusy)
+	report(t, m, "b1", statusWaiting)
+	report(t, m, "c1", statusBusy)
 	root := new(ui.Root)
 	s := newSidebar(root)
 	s.open = true
