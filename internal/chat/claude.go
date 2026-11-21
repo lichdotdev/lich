@@ -2,6 +2,7 @@ package chat
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -163,16 +164,36 @@ func (d *claudeDriver) control(ctx context.Context, request map[string]any) (cla
 	}
 }
 
-func (d *claudeDriver) prompt(text string) error {
+func (d *claudeDriver) prompt(m message) error {
 	d.mu.Lock()
 	d.interrupted = false
 	d.mu.Unlock()
-	return d.c.out.send(map[string]any{"type": "user", "message": map[string]any{"role": "user", "content": text}})
+	return d.c.out.send(map[string]any{"type": "user", "message": map[string]any{"role": "user", "content": claudeContent(m)}})
+}
+
+// claudeContent is m as a user message's content: its text alone, or the
+// API's blocks with an image block for each image. A message of images alone
+// has no text block, which the API refuses empty (measured on 2.1.330: an
+// image with and without text was seen).
+func claudeContent(m message) any {
+	if len(m.images) == 0 {
+		return m.text
+	}
+	var blocks []map[string]any
+	if m.text != "" {
+		blocks = append(blocks, map[string]any{"type": "text", "text": m.text})
+	}
+	for _, img := range m.images {
+		blocks = append(blocks, map[string]any{"type": "image", "source": map[string]any{
+			"type": "base64", "media_type": img.mime, "data": base64.StdEncoding.EncodeToString(img.data),
+		}})
+	}
+	return blocks
 }
 
 // follow writes the message during the turn: Claude Code takes it into the
 // turn running, after the denied question (measured on 2.1.328).
-func (d *claudeDriver) follow(text string) error { return d.prompt(text) }
+func (d *claudeDriver) follow(m message) error { return d.prompt(m) }
 
 func (d *claudeDriver) cancel() error {
 	d.mu.Lock()
@@ -337,7 +358,7 @@ func readClaudeUser(c *chatSession, line claudeLine, history bool) {
 		}
 		// Live, the person's message is already an item: lich wrote it.
 		if history && !isInterruptMarker(text) {
-			c.conv.userMessage(text)
+			c.conv.userMessage(text, nil)
 		}
 		return
 	}
@@ -368,7 +389,7 @@ func readClaudeUser(c *chatSession, line claudeLine, history bool) {
 			})
 		case b.Type == "text" && localCommand(c, b.Text):
 		case b.Type == "text" && history && !isInterruptMarker(b.Text):
-			c.conv.userMessage(b.Text)
+			c.conv.userMessage(b.Text, nil)
 		}
 	}
 }

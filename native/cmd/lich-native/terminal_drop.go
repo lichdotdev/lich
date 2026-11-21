@@ -70,8 +70,10 @@ type dropTarget struct {
 
 // dropResult is a resolved drop: the paths to paste, in drop order, the
 // backend's notices for the ones that are copies, and what yielded no path.
+// files are the paths with their notices, as a chat attaches them.
 type dropResult struct {
 	paths, notices, skipped []string
+	files                   []backend.Attachment
 }
 
 // resolveDrop turns dropped paths into what the session can open.
@@ -85,6 +87,7 @@ func resolveDrop(ctx context.Context, up *backend.Client, target dropTarget, dro
 			r.skipped = append(r.skipped, skippedDrop(name, err.Error()))
 		case !target.confined || under(target.checkout, path):
 			r.paths = append(r.paths, path)
+			r.files = append(r.files, backend.Attachment{Path: path})
 		case info.IsDir():
 			// The confined half of a folder refusal: the other half, a folder
 			// not found, cannot happen with a real path.
@@ -98,6 +101,7 @@ func resolveDrop(ctx context.Context, up *backend.Client, target dropTarget, dro
 				continue
 			}
 			r.paths, r.notices = append(r.paths, a.Path), append(r.notices, a.Notice)
+			r.files = append(r.files, a)
 		}
 	}
 	return r

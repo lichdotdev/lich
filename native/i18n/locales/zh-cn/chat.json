@@ -167,5 +167,8 @@
       "any": "已锁定"
     },
     "pluginSkills": "插件的技能通过 /plugin 管理。"
+  },
+  "attach": {
+    "remove": "移除"
   }
 }

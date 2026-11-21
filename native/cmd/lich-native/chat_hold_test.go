@@ -122,7 +122,7 @@ func TestTheMessageHeardBackReplacesTheOneWaiting(t *testing.T) {
 	for _, id := range []string{"user-1", "user-7"} {
 		var s chatStore
 		s.history("s1", nil)
-		h := s.hold("s1", "rename the flag", time.Now())
+		h := s.hold("s1", chatMessage{text: "rename the flag"}, time.Now())
 		s.dispatch("s1", h)
 		s.apply(api.ChatItemUpdate{SessionID: "s1", Item: backend.ChatItem{ID: id, Kind: api.ItemUser, Text: "rename the flag", Turn: 1}})
 		users := slices.DeleteFunc(s.of("s1"), func(it backend.ChatItem) bool { return it.Kind != api.ItemUser })
@@ -137,7 +137,7 @@ func TestARefusedMessageKeepsWhatWasTyped(t *testing.T) {
 	_, r, _, p := holdFrames(t, "rename the flag")
 	typeIn(r, p, "and the docs")
 	p.mu.Lock()
-	p.unsent = "rename the flag"
+	p.unsent = chatMessage{text: "rename the flag"}
 	p.mu.Unlock()
 	r.frame()
 	if got := p.editor.Text(); got != "rename the flag\n\nand the docs" {
@@ -154,7 +154,7 @@ func TestAMessageGoneEndsWithItsTurn(t *testing.T) {
 	} {
 		var s chatStore
 		s.history("s1", nil)
-		s.dispatch("s1", s.hold("s1", "rename the flag", time.Now()))
+		s.dispatch("s1", s.hold("s1", chatMessage{text: "rename the flag"}, time.Now()))
 		end(&s)
 		if s.isRunning("s1") || len(s.of("s1")) != 0 {
 			t.Errorf("%s: the message gone still runs the turn", name)

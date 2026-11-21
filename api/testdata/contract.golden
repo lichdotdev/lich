@@ -650,6 +650,7 @@ ChatItem {
 	kind string
 	turn int
 	text,omitempty string
+	files,omitempty []string
 	tool,omitempty *ChatToolCall
 	permission,omitempty *ChatPermission
 	question,omitempty *ChatQuestion
@@ -685,6 +686,7 @@ ChatOption {
 ChatPromptOptions {
 	id string
 	text string
+	attachments,omitempty []DropAttachment
 }
 
 ChatReplyOptions {

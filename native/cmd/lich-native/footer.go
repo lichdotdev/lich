@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"log"
-	"runtime"
 	"sync"
 	"time"
 
@@ -44,9 +43,9 @@ type footer struct {
 	quota         *planQuota
 	handsOn       *handsOn
 	cost          *costGate
-	// writePaste is window.writeAtPrompt: the terminal's writePaste, which
-	// unfolds a long paste, or a chat's composer.
-	writePaste func(ctx context.Context, id, block string) error
+	// attachAt is window.attachAtPrompt: a card in a chat's composer, or the
+	// path pasted at the terminal.
+	attachAt func(ctx context.Context, id string, a backend.Attachment) error
 
 	mu     sync.Mutex
 	layout footerLayout
@@ -275,11 +274,11 @@ func (f *footer) actGit(gtx C) {
 	}
 }
 
-// attach picks a file for the session and pastes its path at the prompt.
+// attach picks a file for the session and puts it at the prompt.
 // A failure is toasted in the backend's own words, which name the ceiling a
 // file was refused for.
 func (f *footer) attach(in footerInput) {
-	if err := attachFile(f.ctx, f.client, f.writePaste, in.sessionID, in.checkout, in.sandboxed, runtime.GOOS == "windows"); err != nil {
+	if err := attachFile(f.ctx, f.client, f.attachAt, in.sessionID, in.checkout, in.sandboxed); err != nil {
 		f.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: backend.ErrorText(err)})
 	}
 }

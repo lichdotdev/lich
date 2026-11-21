@@ -176,5 +176,8 @@
       "any": "locked"
     },
     "pluginSkills": "Plugin skills are managed with /plugin."
+  },
+  "attach": {
+    "remove": "Remove"
   }
 }

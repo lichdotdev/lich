@@ -87,11 +87,20 @@ func (d *codexDriver) listSkills(ctx context.Context) {
 	d.c.setCommands(cmds)
 }
 
-// input is a message as turn/start and turn/steer take it: its text, and a
-// skill item for each skill it names, which is how app-server's schema hands
-// one to the turn.
-func (d *codexDriver) input(text string) []map[string]any {
-	in := textInput(text)
+// input is a message as turn/start and turn/steer take it: its text, an
+// image item for each image, and a skill item for each skill it names, which
+// is how app-server's schema hands one to the turn.
+func (d *codexDriver) input(m message) []map[string]any {
+	text := m.text
+	var in []map[string]any
+	if text != "" || len(m.images) == 0 {
+		in = textInput(text)
+	}
+	// app-server reads the file itself: turn/start's and turn/steer's
+	// LocalImageUserInput (0.170.0 schema).
+	for _, img := range m.images {
+		in = append(in, map[string]any{"type": "localImage", "path": img.path})
+	}
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	seen := map[string]bool{}

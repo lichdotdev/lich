@@ -39,9 +39,9 @@ type TextareaStyle struct {
 	// Scrollbar is the bar shown while the text overflows, draggable as a
 	// list's; nil scrolls with the wheel and the caret alone.
 	Scrollbar *widget.Scrollbar
-	// Foot is drawn inside the frame under the text, full width, and its height
-	// comes out of MaxHeight.
-	Foot func(gtx C) D
+	// Head and Foot are drawn inside the frame over and under the text, full
+	// width, and their height comes out of MaxHeight.
+	Head, Foot func(gtx C) D
 	// Radius is the frame's corner, RadiusMD when 0.
 	Radius unit.Dp
 	// Size and Leading set the text's size and line height, TextSM and its
@@ -118,20 +118,32 @@ func (s TextareaStyle) Layout(gtx C) D {
 	return d
 }
 
-// body is the text, then Foot under it.
+// body is Head, the text, then Foot under it.
 func (s TextareaStyle) body(gtx C, field inputText) D {
-	if s.Foot == nil {
+	if s.Head == nil && s.Foot == nil {
 		return field.layout(gtx, 0)
 	}
 	gtx.Constraints.Min.Y = 0
-	macro := op.Record(gtx.Ops)
-	foot := s.Foot(gtx)
-	call := macro.Stop()
-	gtx.Constraints.Max.Y = max(gtx.Constraints.Max.Y-foot.Size.Y, 0)
+	head, headCall := recordPart(gtx, s.Head)
+	foot, footCall := recordPart(gtx, s.Foot)
+	headCall.Add(gtx.Ops)
+	gtx.Constraints.Max.Y = max(gtx.Constraints.Max.Y-head.Y-foot.Y, 0)
+	off := op.Offset(image.Pt(0, head.Y)).Push(gtx.Ops)
 	d := field.layout(gtx, 0)
-	defer op.Offset(image.Pt(0, d.Size.Y)).Push(gtx.Ops).Pop()
-	call.Add(gtx.Ops)
-	return D{Size: image.Pt(d.Size.X, d.Size.Y+foot.Size.Y)}
+	off.Pop()
+	defer op.Offset(image.Pt(0, head.Y+d.Size.Y)).Push(gtx.Ops).Pop()
+	footCall.Add(gtx.Ops)
+	return D{Size: image.Pt(d.Size.X, head.Y+d.Size.Y+foot.Y)}
+}
+
+// recordPart lays w out into a macro, nothing for no w.
+func recordPart(gtx C, w layout.Widget) (image.Point, op.CallOp) {
+	if w == nil {
+		return image.Point{}, op.CallOp{}
+	}
+	macro := op.Record(gtx.Ops)
+	d := w(gtx)
+	return d.Size, macro.Stop()
 }
 
 // layoutScrollbar draws the bar over the right padding of a frame of size,

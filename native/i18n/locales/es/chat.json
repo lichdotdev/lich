@@ -176,5 +176,8 @@
       "any": "bloqueada"
     },
     "pluginSkills": "Las skills de un plugin se gestionan con /plugin."
+  },
+  "attach": {
+    "remove": "Quitar"
   }
 }

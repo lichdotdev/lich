@@ -76,7 +76,13 @@ func (u *window) chatRow(gtx C, th *ui.Theme, p *chatPane, sv sessionView, r cha
 		c := p.copyOf(it.ID)
 		return c.hover(gtx, func(gtx C, over bool) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-				layout.Rigid(func(gtx C) D { return chatUser(gtx, th, it.Text) }),
+				layout.Rigid(func(gtx C) D { return u.sentCards(gtx, th, p, it.ID, it.Files) }),
+				layout.Rigid(func(gtx C) D {
+					if it.Text == "" {
+						return D{}
+					}
+					return chatUser(gtx, th, it.Text)
+				}),
 				ui.VGap(1),
 				layout.Rigid(func(gtx C) D {
 					return layout.E.Layout(gtx, func(gtx C) D { return u.chatStampRow(gtx, th, p, c, it, over, true) })

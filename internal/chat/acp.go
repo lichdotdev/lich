@@ -2,6 +2,7 @@ package chat
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -39,6 +40,9 @@ type acpDriver struct {
 	// replayed counts the items session/load reproduced.
 	replayed int
 	settings acpSettings
+	// images is whether the agent takes an image in a prompt, as its
+	// initialize says (promptCapabilities.image).
+	images bool
 }
 
 type acpMessage struct {
@@ -118,10 +122,16 @@ func (d *acpDriver) open(ctx context.Context, resume string) (string, error) {
 	}
 	var init struct {
 		Caps struct {
-			Load bool `json:"loadSession"`
+			Load   bool `json:"loadSession"`
+			Prompt struct {
+				Image bool `json:"image"`
+			} `json:"promptCapabilities"`
 		} `json:"agentCapabilities"`
 	}
 	_ = json.Unmarshal(raw, &init)
+	d.mu.Lock()
+	d.images = init.Caps.Prompt.Image
+	d.mu.Unlock()
 	if resume != "" && init.Caps.Load {
 		if d.load(ctx, resume) {
 			return resume, nil
@@ -204,12 +214,13 @@ func (d *acpDriver) sessionID() string {
 
 // prompt sends the message; session/prompt answers when the turn ends, with its
 // stop reason, or with the error that ended it.
-func (d *acpDriver) prompt(text string) error {
+func (d *acpDriver) prompt(m message) error {
 	d.endRun()
+	blocks := d.content(m)
 	go func() {
 		raw, err := d.call(context.Background(), "session/prompt", map[string]any{
 			"sessionId": d.sessionID(),
-			"prompt":    []map[string]string{{"type": "text", "text": text}},
+			"prompt":    blocks,
 		})
 		d.endRun()
 		if errors.Is(err, errExited) {
@@ -232,14 +243,34 @@ func (d *acpDriver) prompt(text string) error {
 	return nil
 }
 
+// content is m as a prompt's content blocks: an image block for each image
+// where the agent takes one, its path under the text where it does not. A
+// message of images alone has no text block.
+func (d *acpDriver) content(m message) []map[string]string {
+	d.mu.Lock()
+	images := d.images
+	d.mu.Unlock()
+	if !images {
+		m = m.imagesAsText()
+	}
+	var blocks []map[string]string
+	if m.text != "" || len(m.images) == 0 {
+		blocks = append(blocks, map[string]string{"type": "text", "text": m.text})
+	}
+	for _, img := range m.images {
+		blocks = append(blocks, map[string]string{"type": "image", "mimeType": img.mime, "data": base64.StdEncoding.EncodeToString(img.data)})
+	}
+	return blocks
+}
+
 // follow stops the turn and sends the message once it ended: ACP takes no
 // message during a turn. The decline may already have ended it (oh-my-pi ends
 // its turn on one), and then the message goes now.
-func (d *acpDriver) follow(text string) error {
-	if d.c.holdForNext(text) {
+func (d *acpDriver) follow(m message) error {
+	if d.c.holdForNext(m) {
 		return d.cancel()
 	}
-	go d.c.sendNext(pending{text: text})
+	go d.c.sendNext(pending{msg: m})
 	return nil
 }
 
@@ -398,7 +429,7 @@ func (d *acpDriver) chunk(kind string, content acpContent) {
 	d.replayed++
 	d.mu.Unlock()
 	if first && kind == api.ItemUser {
-		turn := d.c.conv.userMessage(content.Text)
+		turn := d.c.conv.userMessage(content.Text, nil)
 		d.mu.Lock()
 		d.run = "user-" + strconv.Itoa(turn)
 		d.mu.Unlock()

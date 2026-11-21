@@ -37,16 +37,16 @@ func (c *Client) ChatHistory(ctx context.Context, id string) ([]ChatItem, error)
 	return callMethod(ctx, c, api.ChatHistory, api.SessionIDOptions{ID: id})
 }
 
-// ChatPrompt sends text to session id's agent.
-func (c *Client) ChatPrompt(ctx context.Context, id, text string) error {
-	_, err := callMethod(ctx, c, api.ChatPrompt, api.ChatPromptOptions{ID: id, Text: text})
+// ChatPrompt sends text to session id's agent, with files attached.
+func (c *Client) ChatPrompt(ctx context.Context, id, text string, files []Attachment) error {
+	_, err := callMethod(ctx, c, api.ChatPrompt, api.ChatPromptOptions{ID: id, Text: text, Attachments: files})
 	return err
 }
 
-// ChatSteer sends text into session id's turn in flight, a prompt when none
-// is.
-func (c *Client) ChatSteer(ctx context.Context, id, text string) error {
-	_, err := callMethod(ctx, c, api.ChatSteer, api.ChatPromptOptions{ID: id, Text: text})
+// ChatSteer sends text, with files attached, into session id's turn in
+// flight, a prompt when none is.
+func (c *Client) ChatSteer(ctx context.Context, id, text string, files []Attachment) error {
+	_, err := callMethod(ctx, c, api.ChatSteer, api.ChatPromptOptions{ID: id, Text: text, Attachments: files})
 	return err
 }
 

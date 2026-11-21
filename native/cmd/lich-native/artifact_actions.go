@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"runtime"
 
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
@@ -26,14 +25,14 @@ func (u *window) openArtifact(session, from, name string) {
 	u.openBrowser(session)
 }
 
-// attachArtifact pastes, unsent, at target's prompt, its terminal's or its
-// chat's composer, the path the backend readies for artifact name of session
+// attachArtifact puts at target's prompt, unsent, its terminal's or its
+// chat's composer, the file the backend readies for artifact name of session
 // from, as the footer's attach does.
 func (u *window) attachArtifact(target, from, name string) {
 	go func() {
 		a, err := u.client.AttachArtifact(u.ctx, target, from, name)
 		if err == nil && a.Path != "" {
-			err = u.writeAtPrompt(u.ctx, target, composeDroppedPaths([]string{a.Path}, runtime.GOOS == "windows", []string{a.Notice}))
+			err = u.attachAtPrompt(u.ctx, target, a)
 		}
 		if err != nil {
 			u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: backend.ErrorText(err)})

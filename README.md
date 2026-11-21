@@ -200,6 +200,7 @@ what lich can read back out of it, since each CLI records different things.
 | In the chat, /mcp lists the agent's MCP servers and their tools, to turn one off or on, reconnect it or sign in, and /skills lists its skills to turn on or off | yes; a skill you turn off is written to the checkout's `.claude/settings.local.json` | yes; in a profile other than your main account, the change is undone the next time a session starts in it | no | no | no | no | no | no |
 | In the chat, a tool call shows the moment it starts, its time counting, and keeps how long it took | yes | yes; a conversation read back shows no times | not verified | not verified | not verified | no | not verified | not verified |
 | In the chat, a message written while the agent works waits in a queue that goes when the turn ends, or is forced into the turn running | yes | yes | queued; forcing it stops the turn and sends it after | queued; forcing it stops the turn and sends it after | queued; forcing it stops the turn and sends it after | no | not verified | queued; forcing it stops the turn and sends it after |
+| In the chat, an image you attach reaches the agent as an image, and any other file as its path in your message | yes | sent as an image; whether the agent sees it not verified | sent as an image; whether the agent sees it not verified | sent as an image; whether the agent sees it not verified | sent as an image; whether the agent sees it not verified | no | not verified | sent as an image; whether the agent sees it not verified |
 
 </details>
 

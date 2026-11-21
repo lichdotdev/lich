@@ -176,5 +176,8 @@
       "any": "travada"
     },
     "pluginSkills": "As skills de plugin se gerenciam pelo /plugin."
+  },
+  "attach": {
+    "remove": "Remover"
   }
 }

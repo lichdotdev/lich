@@ -127,10 +127,16 @@ type chatScreens struct {
 	panes map[string]*chatPane
 	// views is the view each session was last drawn in.
 	views map[string]chatShown
-	// typed is what a drop or the attach "+" handed each session's composer
-	// off the frame, waiting for the frame that types it.
+	// typed is what a reference injected from the Code tab, the editor or a
+	// pull request handed each session's composer off the frame, waiting for
+	// the frame that types it.
 	mu    sync.Mutex
 	typed map[string]string
+	// attached is what a drop, the attach "+" or an artifact handed each
+	// session's composer as cards, as typed is for text.
+	attached map[string][]backend.Attachment
+	// thumbs are the images the cards draw, by path, read once.
+	thumbs map[string]*remote[*previewImage]
 }
 
 // typeIn queues text for session id's composer, from any goroutine.

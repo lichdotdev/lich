@@ -167,5 +167,8 @@
       "any": "잠김"
     },
     "pluginSkills": "플러그인 스킬은 /plugin에서 관리합니다."
+  },
+  "attach": {
+    "remove": "빼기"
   }
 }

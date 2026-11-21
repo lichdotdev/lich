@@ -227,19 +227,26 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   turn, so lich stops the turn and sends it once the turn ended. A question the process never got an answer to, read
   back from a transcript, shows as not answered. The window learns a turn is running from its start event, so one
   opened mid-turn knows it only from a question still waiting.
-- **A file dropped on a chat reaches the agent as its path in the message, an image included**
-  (`native/cmd/lich-native/terminal_drop_hint.go` `dropInChat`, `api.ChatPromptOptions`): a chat's prompt carries
-  text alone, for every provider in `chat.Kinds`, so lich attaches no image through any of their protocols, though
-  Claude Code's stream-json, ACP and Codex's app-server each have a place for one. The composer gets the paths the
-  terminal's prompt would, quoted the same way, with the same copy and notice for a confined session's file outside
-  its checkout, and the agent sees an image only by opening that path with a tool of its own that reads images;
-  which of the seven do was not measured.
+- **An image attached to a chat reaches the agent as an image only where its protocol takes one, and every
+  other file as its path** (`internal/chat/attach.go`, each driver's `prompt`; `native/cmd/lich-native/chat_attach.go`):
+  a drop, the attach "+" or an artifact sent to a chat is a card over the composer, and the message carries the
+  files as `api.ChatPromptOptions.Attachments`. A PNG, JPEG, GIF or WebP, told by its bytes and no larger than
+  3.75 MB (Claude Code's own cap for an image, whose base64 stays under 5 MB), goes as an image: Claude Code gets an image block
+  in the user message (measured on 2.1.330: seen with and without text), Codex a `localImage` it reads itself
+  (0.170.0's app-server schema, not sent to a real thread; that it shows the model the image was not measured), and an ACP agent an image block when its `initialize`
+  says `promptCapabilities.image`, which opencode 1.19.4, oh-my-pi 18.8.9, Antigravity 1.5.11, Kiro CLI 2.21.0 and
+  Cursor CLI all declare; that each one shows the model the image was not measured. Any other file, a larger
+  image, and an image for an ACP agent that declares none go as their paths under the text, quoted where they
+  hold a space, with the copy notice a confined session's file outside its checkout gets, and the agent opens
+  them with tools of its own. The window reads the file to draw its thumbnail, and the backend reads it again to
+  send it, so a file changed between the two goes as it is at the send. The person's message keeps its cards
+  for as long as the chat's process runs: a conversation read back shows its text alone, and a message of
+  images alone read back from Claude Code or replayed by an ACP agent shows no message at all. Crush has no chat.
 - **`lich insert` cannot reach a session drawn as a chat** (`internal/relay/insert.go` `refuseChat`): it leaves text
   at a prompt unsent, and a chat's unsent text lives in the window's composer, which the backend has no way to type
   into. It is refused, saying so, where it used to wait out its timeout and report the session stopped. Inside the
-  window everything that leaves text at a session's prompt (a drop, the attach "+", an artifact sent to it, a Code
-  tab, editor or pull request reference) types it in a chat's composer instead (`window.writeAtPrompt`,
-  `window.injector`); `send`, `submit` and the browser's notes reach a chat as a message.
+  window a drop, the attach "+" and an artifact sent to a chat add a card to its composer
+  (`window.attachAtPrompt`), and a Code tab, editor or pull request reference types in it (`window.injector`); `send`, `submit` and the browser's notes reach a chat as a message.
 - **A chat lists the commands its provider names, and a picked one is sent as text** (`internal/chat/commands.go`,
   `claude_commands.go`, `acp_commands.go`, `codex_commands.go`). Claude Code lists them in its initialize answer
   (2.1.329), but says which are skills, and which five only its TUI runs, only in `system/init`, written once the

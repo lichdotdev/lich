@@ -559,9 +559,16 @@ draws none while it grows in, because the room above the rows is measured in the
   start that matches nothing opens nothing, so Enter sends. lich's own `/new` leads the list: sent, it starts an
   empty conversation in the card (`chat.New`) instead of reaching the agent, and the conversation it replaces
   leaves at once, with no row playing out.
-  A file dragged over a session drawn as a chat lights the terminal's drop hint over the whole session, and dropped
-  it types the paths the terminal would paste at the composer's caret, quoted the same way, an image included
-  (`dropInChat`); the chat has no attachments, so the attach "+" types the picked file's path there the same way.
+  A file dragged over a session drawn as a chat lights the terminal's drop hint over the whole session, and
+  dropped, or picked with the attach "+", it stands over the text inside the box as a card (`chat_attach.go`): a
+  `Space(30)` square, `RadiusLG`, the box's fill and a `Border` hairline, `Space(2)` apart in a row that scrolls
+  sideways. An image is its thumbnail, covering the card; any other file its name without the extension,
+  `TextXS` up to three lines, over its type in `Text2XS` semibold muted capitals at the card's foot. The ×, a
+  `SizeIconXS` secondary button `Space(1.5)` in from the top right corner, shows while the pointer is on the card,
+  and a click on the card opens a dialog with the file's name over its path and the image whole, or the file's
+  size. The person's message shows its cards the same way, without the ×, at the column's right over the text.
+  These cards are the chat's one exception to rows over boxes: a thumbnail needs an edge to read as a file, and
+  Claude's web composer, which the person asked for, draws them so.
   The box has no focus ring: its 1px border is the same with the keyboard and without (`TextareaStyle.Steady`; the
   kit's inputs keep their `ring-3`). The blinking caret already says where the keyboard is, and in a chat the
   composer is nearly always the focused thing, so a ring around the biggest box on the screen only reads as a

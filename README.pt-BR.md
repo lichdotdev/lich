@@ -203,6 +203,7 @@ o lich consegue ler de volta, porque cada CLI registra coisas diferentes.
 | No chat, /mcp lista os servidores MCP do agente com as ferramentas de cada um, para desligar ou ligar, reconectar ou fazer login, e /skills lista as skills para ligar ou desligar | sim; uma skill que você desliga fica gravada no `.claude/settings.local.json` do checkout | sim; num perfil que não é o da sua conta principal, a mudança se desfaz na próxima vez que uma sessão abre nele | não | não | não | não | não | não |
 | No chat, a chamada de ferramenta aparece assim que começa, com o tempo correndo, e guarda quanto durou | sim | sim; uma conversa relida não mostra tempos | não verificado | não verificado | não verificado | não | não verificado | não verificado |
 | No chat, a mensagem escrita enquanto o agente trabalha espera numa fila que vai quando o turno termina, ou é forçada dentro do turno em andamento | sim | sim | na fila; forçar para o turno e manda depois | na fila; forçar para o turno e manda depois | na fila; forçar para o turno e manda depois | não | não verificado | na fila; forçar para o turno e manda depois |
+| No chat, a imagem que você anexa chega ao agente como imagem, e qualquer outro arquivo como o caminho dele na mensagem | sim | vai como imagem; não verificado se o agente a vê | vai como imagem; não verificado se o agente a vê | vai como imagem; não verificado se o agente a vê | vai como imagem; não verificado se o agente a vê | não | não verificado | vai como imagem; não verificado se o agente a vê |
 
 </details>
 

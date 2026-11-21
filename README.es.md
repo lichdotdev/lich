@@ -204,6 +204,7 @@ distinto.
 | En el chat, /mcp lista los servidores MCP del agente con sus herramientas, para apagar o encender uno, reconectarlo o iniciar sesión, y /skills lista sus skills para apagarlas o encenderlas | sí; una skill que apagas se guarda en `.claude/settings.local.json` del checkout | sí; en un perfil que no es el de tu cuenta principal, el cambio se deshace la próxima vez que una sesión arranca en él | no | no | no | no | no | no |
 | En el chat, una llamada a una herramienta aparece en cuanto empieza, con su tiempo corriendo, y guarda cuánto duró | sí | sí; una conversación releída no muestra tiempos | sin verificar | sin verificar | sin verificar | no | sin verificar | sin verificar |
 | En el chat, un mensaje escrito mientras el agente trabaja espera en una cola que sale al terminar el turno, o se fuerza dentro del turno en curso | sí | sí | en cola; forzarlo detiene el turno y lo envía después | en cola; forzarlo detiene el turno y lo envía después | en cola; forzarlo detiene el turno y lo envía después | no | sin verificar | en cola; forzarlo detiene el turno y lo envía después |
+| En el chat, una imagen que adjuntas llega al agente como imagen, y cualquier otro archivo como su ruta en tu mensaje | sí | enviada como imagen; sin verificar que el agente la vea | enviada como imagen; sin verificar que el agente la vea | enviada como imagen; sin verificar que el agente la vea | enviada como imagen; sin verificar que el agente la vea | no | sin verificar | enviada como imagen; sin verificar que el agente la vea |
 
 </details>
 

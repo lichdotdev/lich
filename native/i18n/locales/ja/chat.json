@@ -167,5 +167,8 @@
       "any": "ロック中"
     },
     "pluginSkills": "プラグインのスキルは /plugin で管理します。"
+  },
+  "attach": {
+    "remove": "外す"
   }
 }

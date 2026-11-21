@@ -24,7 +24,7 @@ type chatStore struct {
 	switching map[string]string
 	// queue is each session's messages written while its turn ran, sent
 	// together once it ends (chatQueue).
-	queue map[string][]string
+	queue map[string][]chatMessage
 	// held is each session's message waiting to go (chatHold), or gone and
 	// not yet heard back.
 	held map[string]*chatHeld

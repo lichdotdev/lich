@@ -45,10 +45,10 @@ type driver interface {
 	// provider names it only once the first message is sent.
 	open(ctx context.Context, resume string) (string, error)
 	// prompt sends the person's message. The turn ends through endTurn.
-	prompt(text string) error
+	prompt(m message) error
 	// follow sends the message the person wrote while the agent waited on
 	// questions, which were just declined, in the turn still running.
-	follow(text string) error
+	follow(m message) error
 	// cancel asks the provider to stop the turn in flight.
 	cancel() error
 	// handle reads one line the provider wrote.
@@ -104,7 +104,7 @@ type chatSession struct {
 // pending is a message waiting for a turn of its own. began, when set, closes
 // once that turn starts.
 type pending struct {
-	text  string
+	msg   message
 	began chan struct{}
 }
 
@@ -237,10 +237,10 @@ func (c *chatSession) endTurn(reason string) {
 	}
 }
 
-// send hands text to the agent in the turn just begun.
-func (c *chatSession) send(text string) error {
+// send hands m to the agent in the turn just begun.
+func (c *chatSession) send(m message) error {
 	c.markStart()
-	if err := c.drv.prompt(text); err != nil {
+	if err := c.drv.prompt(m); err != nil {
 		c.conv.notice(err.Error())
 		c.endTurn(stopError)
 		return err
@@ -258,15 +258,15 @@ func (c *chatSession) sendNext(p pending) {
 	if p.began != nil {
 		close(p.began)
 	}
-	if err := c.send(p.text); err != nil {
+	if err := c.send(p.msg); err != nil {
 		slog.Warn("chat: send the next message", "session", c.id, "err", err)
 	}
 }
 
-// holdForNext keeps text for the turn after the one running, and reports
+// holdForNext keeps m for the turn after the one running, and reports
 // false when none runs.
-func (c *chatSession) holdForNext(text string) bool {
-	return c.hold(pending{text: text})
+func (c *chatSession) holdForNext(m message) bool {
+	return c.hold(pending{msg: m})
 }
 
 // hold queues p behind the turn running, and reports false when none runs.
