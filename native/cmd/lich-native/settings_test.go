@@ -13,7 +13,7 @@ var (
 	overridable = settingEntry{key: "sandbox.ssh-agent", scope: scopeOverridable}
 	globalOnly  = settingEntry{key: diffLayoutKey}
 	projectOnly = settingEntry{key: "vcs.account", scope: scopeProjectOnly}
-	openTabs    = []settingsProject{{"lich", "lich"}, {"pg", "lich-playground"}, {"ij", "lich-intellij"}}
+	openTabs    = []settingsProject{{id: "lich", name: "lich"}, {id: "pg", name: "lich-playground"}, {id: "ij", name: "lich-intellij"}}
 )
 
 func TestRowStateFollowsTheScope(t *testing.T) {
@@ -68,8 +68,8 @@ func TestBadgesCountOverridesNotProjectOnlyRows(t *testing.T) {
 	if got := projectChanges("ij", values); got != 2 {
 		t.Errorf("lich-intellij changes = %d, want 2", got)
 	}
-	if changesLabel(1) != "1 change" || changesLabel(2) != "2 changes" || changesLabel(0) != "" {
-		t.Errorf("labels: %q %q %q", changesLabel(0), changesLabel(1), changesLabel(2))
+	if changesCount(1, false) != "1" || changesCount(2, true) != "· 2" || changesCount(0, true) != "" {
+		t.Errorf("counts: %q %q %q, want the number, a dot after the agents, nothing for none", changesCount(1, false), changesCount(2, true), changesCount(0, true))
 	}
 }
 
@@ -200,8 +200,5 @@ func TestSearchAndLabelsFollowTheInterfaceLanguage(t *testing.T) {
 	}
 	if got := searchSettings("notificações"); len(got) != 2 || got[0].path() != "Geral › Notificações" {
 		t.Errorf("notificações: %+v", got)
-	}
-	if changesLabel(1) != "1 mudança" || changesLabel(2) != "2 mudanças" {
-		t.Errorf("labels: %q %q", changesLabel(1), changesLabel(2))
 	}
 }

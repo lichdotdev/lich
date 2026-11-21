@@ -76,7 +76,7 @@ func TestTheProfileMenuOffersRemoveImageOnlyWithAnImage(t *testing.T) {
 	}
 	color, _ := lookEntry(s.profileLookEntries(c, plain), "Color")
 	first := color.Sub[0]
-	if first.Label != "Automatic" || first.Swatch != projectSwatch("work") || !first.Checked {
+	if first.Label != "Automatic" || first.Swatch != slugSwatch("work") || !first.Checked {
 		t.Errorf("first swatch = %+v, want the profile's own color, checked", first)
 	}
 }
@@ -85,7 +85,7 @@ func TestAnImageTheWindowCannotDecodeShowsTheInitial(t *testing.T) {
 	if decodeAvatar(backend.Profile{Slug: "work", Image: []byte("not a png")}) != nil {
 		t.Error("garbage decoded as an image")
 	}
-	if profileColor("work", "chartreuse") != projectSwatch("work") {
+	if profileColor("work", "chartreuse") != slugSwatch("work") {
 		t.Error("an unknown color name was not drawn as the derived color")
 	}
 }

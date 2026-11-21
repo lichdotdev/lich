@@ -417,13 +417,7 @@
   "settingsNav": {
     "scopeLabel": "Область",
     "scopeGlobal": "Глобальные",
-    "openProjects": "Открытые проекты",
-    "changes": {
-      "one": "{count} изменение",
-      "few": "{count} изменения",
-      "many": "{count} изменений",
-      "other": "{count} изменения"
-    },
+    "everyProject": "Все проекты",
     "scopeNote": "Включены только настройки, которые проект может менять. Остальные везде одинаковы.",
     "groupAgents": "Агенты",
     "groupWorkspace": "Рабочее пространство"

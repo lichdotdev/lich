@@ -294,3 +294,22 @@ func TestOpenHomeSeedsNoSession(t *testing.T) {
 		t.Error("openHome seeded a session; the caller opens the one it needs")
 	}
 }
+
+func TestAProjectTabNamesEachProviderItsSessionsRunOnceAndWhetherOneWorks(t *testing.T) {
+	m := newModel(nil, func() {})
+	m.projects = []backend.Project{{ID: "p", Name: "p", Sessions: []backend.Session{
+		{ID: "s1", Kind: "claude"}, {ID: "s2", Kind: "shell"}, {ID: "s3", Kind: "codex"}, {ID: "s4", Kind: "claude"},
+	}}}
+	tabs, _ := m.projectTabs()
+	if !slices.Equal(tabs[0].agents, []string{"claude", "codex"}) || tabs[0].working {
+		t.Errorf("agents %v, working %v; want claude and codex once, no shell, nothing working", tabs[0].agents, tabs[0].working)
+	}
+	report(t, m, "s2", statusBusy)
+	if tabs, _ := m.projectTabs(); tabs[0].working != true {
+		t.Error("a busy session left the project not working")
+	}
+	report(t, m, "s2", statusWaiting)
+	if tabs, _ := m.projectTabs(); tabs[0].working {
+		t.Error("a session waiting on the user counts as working; the souls are for a turn running")
+	}
+}

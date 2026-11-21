@@ -29,11 +29,10 @@ var (
 	navRowHeight   = ui.Space(8)
 	navRowPadX     = rowInset // a tree row's, so the nav reads on the sidebar's grid
 	navScopeHeight = ui.Space(10)
-	navScopeMenuW  = unit.Dp(212)
+	navScopeMenuW  = settingsNavWidth - 2*ui.Space(2) // the trigger's width, the nav's inside
 	navBadgeSize   = unit.Dp(18)
 	navBadgePadX   = unit.Dp(5)
 	navBadgeFill   = float32(0.2)
-	icScopeGlobal  = icons.Lucide("globe")
 	icScopeChevron = icons.Lucide("chevrons-up-down")
 	icScopeCheck   = icons.Lucide("check")
 	icNavSearch    = icons.Lucide("search")

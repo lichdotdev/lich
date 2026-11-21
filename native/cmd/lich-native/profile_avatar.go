@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"hash/fnv"
 	"image/color"
 	"image/png"
 	"log"
@@ -34,13 +35,20 @@ func decodeAvatar(p backend.Profile) *ui.AvatarImage {
 }
 
 // profileColor is the color a profile is shown in: the card color it picked,
-// else the same hash the scope selector paints a project with, so a profile
-// keeps its color across screens. A name the palette does not know is no pick.
+// else a stable pick from the card palette by its slug, so a profile keeps its
+// color across screens. A name the palette does not know is no pick.
 func profileColor(slug, picked string) color.NRGBA {
 	if c, ok := cardColors[picked]; ok {
 		return c
 	}
-	return projectSwatch(slug)
+	return slugSwatch(slug)
+}
+
+// slugSwatch is a stable pick from the card palette by slug.
+func slugSwatch(slug string) color.NRGBA {
+	h := fnv.New32a()
+	h.Write([]byte(slug))
+	return cardColors[cardColorNames[h.Sum32()%uint32(len(cardColorNames))]]
 }
 
 // profileAvatar is a profile's image, or its initial, on its color.

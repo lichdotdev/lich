@@ -409,11 +409,7 @@
   "settingsNav": {
     "scopeLabel": "范围",
     "scopeGlobal": "全局",
-    "openProjects": "已打开的项目",
-    "changes": {
-      "one": "{count} 项更改",
-      "other": "{count} 项更改"
-    },
+    "everyProject": "所有项目",
     "scopeNote": "只有项目可以单独更改的设置可用，其余设置全局统一。",
     "groupAgents": "智能体",
     "groupWorkspace": "工作区"

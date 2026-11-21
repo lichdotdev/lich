@@ -39,6 +39,10 @@ type projectTab struct {
 	status string
 	// layout marks a split layout's tab, whose Path lists its sessions.
 	layout bool
+	// agents are the providers the project's sessions run, each once, and
+	// working whether one of them is mid-turn: Settings' scope menu shows them.
+	agents  []string
+	working bool
 }
 
 // projectTabs is the strip: every open project in order with its badge, and
@@ -54,6 +58,7 @@ func (m *model) projectTabs() (tabs []projectTab, active string) {
 			continue
 		}
 		t := projectTab{ID: p.ID, Name: p.Name, Path: p.Path, pinned: m.pinnedProjects[p.ID]}
+		t.agents, t.working = m.projectAgents(p)
 		if p.ID != active {
 			t.status = m.status.projectStatus(sessionIDs(p))
 		}
@@ -99,6 +104,21 @@ func (m *model) persistPinnedProjects(ctx context.Context) error {
 		return err
 	}
 	return m.client.SetSetting(ctx, pinnedProjectsKey, "", string(data))
+}
+
+// projectAgents is the providers p's sessions run, each once in the order its
+// sessions stand, and whether one of them is mid-turn.
+func (m *model) projectAgents(p backend.Project) (kinds []string, working bool) {
+	for _, s := range p.Sessions {
+		if s.Kind != "shell" && !slices.Contains(kinds, s.Kind) {
+			kinds = append(kinds, s.Kind)
+		}
+		switch m.status.status(s.ID) {
+		case statusBusy, statusCompacting:
+			working = true
+		}
+	}
+	return kinds, working
 }
 
 func sessionIDs(p backend.Project) []string {
