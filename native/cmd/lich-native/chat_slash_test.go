@@ -89,9 +89,9 @@ func TestTheSlashListOpensFiltersAndCompletes(t *testing.T) {
 	if r.shows("Compact the conversation") {
 		t.Error("the list stays open once the command is in")
 	}
-	// lich's own /new, /mcp and /skills lead the provider's commands.
+	// lich's own /new, /mcp, /skills and /plugin lead the provider's commands.
 	typeIn(r, p, "/")
-	for range 4 {
+	for range 5 {
 		r.press(key.NameDownArrow)
 	}
 	r.press(key.NameReturn)

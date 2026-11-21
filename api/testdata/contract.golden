@@ -52,6 +52,8 @@ chat.MCP(SessionIDOptions) ChatMCPList
 chat.MCPAct(ChatMCPActOptions) ChatMCPActResult
 chat.New(SessionIDOptions) None
 chat.Options(SessionIDOptions) []ChatOption
+chat.PluginAct(ChatPluginActOptions) ChatPluginActResult
+chat.Plugins(SessionIDOptions) ChatPluginList
 chat.Prompt(ChatPromptOptions) None
 chat.Reply(ChatReplyOptions) None
 chat.SetOption(ChatSetOptionOptions) None
@@ -680,6 +682,26 @@ ChatOption {
 	label string
 	current string
 	choices []ChatChoice
+}
+
+ChatPluginActOptions {
+	id string
+	action string
+	target string
+	scope,omitempty string
+}
+
+ChatPluginActResult {
+	restart,omitempty bool
+	current,omitempty bool
+}
+
+ChatPluginList {
+	reported bool
+	plugins,omitempty []ChatPlugin
+	marketplaces,omitempty []ChatMarketplace
+	actions,omitempty []string
+	scopes,omitempty []string
 }
 
 ChatPromptOptions {
@@ -2492,6 +2514,28 @@ ChatChoice {
 	danger,omitempty bool
 }
 
+ChatPlugin {
+	id string
+	name string
+	marketplace string
+	description,omitempty string
+	version,omitempty string
+	latest,omitempty string
+	installed,omitempty bool
+	enabled,omitempty bool
+	scope,omitempty string
+	installs,omitempty int
+	parts,omitempty *ChatPluginParts
+	fixed,omitempty bool
+}
+
+ChatMarketplace {
+	name string
+	source,omitempty string
+	plugins int
+	fixed,omitempty bool
+}
+
 ChatQReplied {
 	answers,omitempty []ChatAskAnswer
 	declined,omitempty bool
@@ -2806,6 +2850,14 @@ ChatAsk {
 ChatMCPTool {
 	name string
 	description,omitempty string
+}
+
+ChatPluginParts {
+	skills int
+	agents int
+	hooks int
+	mcp int
+	tokens,omitempty int
 }
 
 ChatAskAnswer {

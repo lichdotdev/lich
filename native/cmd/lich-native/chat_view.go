@@ -375,8 +375,8 @@ func (u *window) chatActs(gtx C, p *chatPane, sv sessionView, keys, working bool
 		u.questionActs(gtx, p, sv, asking)
 	}
 	// Typing in the box shuts the panel, and so does a click back in it while
-	// the skills' search has the keys, as one outside a popover does.
-	if p.tools.opened() && (p.editor.Len() > 0 || p.tools.kind == chatSkillsCommand && !p.tools.focus && gtx.Focused(&p.editor)) {
+	// a field of the panel has the keys, as one outside a popover does.
+	if p.tools.opened() && (p.editor.Len() > 0 || p.tools.keyTag(p) != &p.editor && !p.tools.focus && gtx.Focused(&p.editor)) {
 		p.tools.shut()
 	}
 	p.slash.blocked = !keys || asking != nil || p.picker.panel.Opened() || p.tools.opened()

@@ -90,7 +90,8 @@
   "slash": {
     "new": "在此会话中开始新对话",
     "mcp": "管理 MCP 服务器",
-    "skills": "开启或关闭技能"
+    "skills": "开启或关闭技能",
+    "plugin": "安装和管理插件"
   },
   "start": {
     "lines": "要在 {project} 里炼成什么？|要为 {project} 召唤些什么？|要往 {project} 里注入什么？|{project} 的坩埚里要熬点什么？|想在 {project} 里占卜些什么？|今天要在 {project} 上刻下什么？|要往 {project} 里织进什么？|要在 {project} 里唤醒什么？"
@@ -167,5 +168,76 @@
       "any": "已锁定"
     },
     "pluginSkills": "插件的技能通过 /plugin 管理。"
+  },
+  "plugins": {
+    "title": "插件",
+    "installedCount": {
+      "other": "已安装 {count} 个"
+    },
+    "tab": {
+      "discover": "发现",
+      "installed": "已安装",
+      "markets": "市场"
+    },
+    "search": "搜索插件",
+    "none": "{provider} 不会告诉 lich 它的插件。切换到 TUI，使用它自己的 /plugin。",
+    "noneFound": "没有匹配的插件。",
+    "noneInstalled": "这里没有安装任何插件。",
+    "updateChip": "可更新",
+    "scope": {
+      "user": "用户",
+      "project": "项目",
+      "local": "本地"
+    },
+    "installs": {
+      "other": "{count} 次安装"
+    },
+    "pluginCount": {
+      "other": "{count} 个插件"
+    },
+    "back": "插件",
+    "backMarkets": "市场",
+    "fact": {
+      "version": "版本",
+      "state": "状态",
+      "scope": "安装位置",
+      "brings": "包含",
+      "cost": "开销",
+      "installs": "安装次数",
+      "source": "来源",
+      "plugins": "插件"
+    },
+    "versionNewer": "{version}，{latest} 已发布",
+    "state": {
+      "on": "已开启",
+      "off": "已关闭"
+    },
+    "part": {
+      "agents": {
+        "other": "{count} 个代理"
+      },
+      "hooks": {
+        "other": "{count} 个钩子"
+      },
+      "mcp": {
+        "other": "{count} 个 MCP 服务器"
+      }
+    },
+    "act": {
+      "update": "更新",
+      "enable": "开启",
+      "disable": "关闭",
+      "uninstall": "卸载",
+      "installUser": "为自己安装",
+      "installProject": "安装到项目",
+      "installLocal": "仅安装在此处",
+      "marketUpdate": "更新",
+      "marketRemove": "移除",
+      "marketAdd": "添加市场"
+    },
+    "sourceHint": "owner/repo、URL 或路径",
+    "restart": "已更新。重启聊天后运行新版本。",
+    "current": "已经是最新版本。",
+    "fixed": "lich 会自己安装和更新这个插件。"
   }
 }

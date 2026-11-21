@@ -38,6 +38,10 @@ func runFake(args []string) {
 		f.log, _ = os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600)
 		fmt.Fprintf(f.log, "argv %s\n", strings.Join(args, " "))
 	}
+	if len(args) > 1 && args[0] == "plugin" {
+		f.claudePluginCLI(args)
+		return
+	}
 	if slices.Contains(args, "edit-skill-overrides") {
 		f.editSkillOverrides()
 		return

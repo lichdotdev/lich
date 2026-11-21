@@ -74,15 +74,16 @@ func slashQuery(text string, caret int) (query string, from int, ok bool) {
 // conversation (api.ChatNew) instead of sending the text.
 const chatNewCommand = "/new"
 
-// slashCommands is what the list offers: lich's own commands first, /mcp and
-// /skills where provider kind reports what they open, then the provider's,
-// less those they would shadow.
+// slashCommands is what the list offers: lich's own commands first, /mcp,
+// /skills and /plugin where provider kind reports what they open, then the
+// provider's, less those they would shadow.
 func slashCommands(provider []backend.ChatCommand, kind string) []backend.ChatCommand {
 	own := []backend.ChatCommand{{Text: chatNewCommand, Description: i18n.T("chat.slash.new")}}
 	if slices.Contains(chatToolKinds, kind) {
 		own = append(own,
 			backend.ChatCommand{Text: chatMCPCommand, Description: i18n.T("chat.slash.mcp")},
-			backend.ChatCommand{Text: chatSkillsCommand, Description: i18n.T("chat.slash.skills")})
+			backend.ChatCommand{Text: chatSkillsCommand, Description: i18n.T("chat.slash.skills")},
+			backend.ChatCommand{Text: chatPluginCommand, Description: i18n.T("chat.slash.plugin")})
 	}
 	shadowed := func(c backend.ChatCommand) bool {
 		return slices.ContainsFunc(own, func(o backend.ChatCommand) bool { return o.Text == c.Text })

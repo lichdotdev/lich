@@ -105,7 +105,8 @@
   "slash": {
     "new": "Начать новый разговор в этой сессии",
     "mcp": "Управлять серверами MCP",
-    "skills": "Включить или выключить навыки"
+    "skills": "Включить или выключить навыки",
+    "plugin": "Установить плагины и управлять ими"
   },
   "start": {
     "lines": "Что наколдуем в {project}?|Что призовём в {project}?|Что направим в {project}?|Что варится в {project}?|Что хочешь разглядеть в {project}?|Что впишем сегодня в {project}?|Что вплетём в {project}?|Что поднимем в {project}?"
@@ -194,5 +195,94 @@
       "any": "заблокирован"
     },
     "pluginSkills": "Навыками плагинов управляют через /plugin."
+  },
+  "plugins": {
+    "title": "Плагины",
+    "installedCount": {
+      "one": "{count} установлен",
+      "few": "{count} установлено",
+      "many": "{count} установлено",
+      "other": "{count} установлено"
+    },
+    "tab": {
+      "discover": "Обзор",
+      "installed": "Установленные",
+      "markets": "Маркетплейсы"
+    },
+    "search": "Искать плагин",
+    "none": "{provider} не сообщает lich свои плагины. Переключитесь в TUI и используйте его /plugin.",
+    "noneFound": "Ни один плагин не подходит.",
+    "noneInstalled": "Здесь не установлено ни одного плагина.",
+    "updateChip": "обновление",
+    "scope": {
+      "user": "пользователь",
+      "project": "проект",
+      "local": "локально"
+    },
+    "installs": {
+      "one": "{count} установка",
+      "few": "{count} установки",
+      "many": "{count} установок",
+      "other": "{count} установки"
+    },
+    "pluginCount": {
+      "one": "{count} плагин",
+      "few": "{count} плагина",
+      "many": "{count} плагинов",
+      "other": "{count} плагина"
+    },
+    "back": "Плагины",
+    "backMarkets": "Маркетплейсы",
+    "fact": {
+      "version": "Версия",
+      "state": "Состояние",
+      "scope": "Где установлен",
+      "brings": "Содержит",
+      "cost": "Стоимость",
+      "installs": "Установки",
+      "source": "Источник",
+      "plugins": "Плагины"
+    },
+    "versionNewer": "{version}, вышла {latest}",
+    "state": {
+      "on": "включён",
+      "off": "выключен"
+    },
+    "part": {
+      "agents": {
+        "one": "{count} агент",
+        "few": "{count} агента",
+        "many": "{count} агентов",
+        "other": "{count} агента"
+      },
+      "hooks": {
+        "one": "{count} хук",
+        "few": "{count} хука",
+        "many": "{count} хуков",
+        "other": "{count} хука"
+      },
+      "mcp": {
+        "one": "{count} сервер MCP",
+        "few": "{count} сервера MCP",
+        "many": "{count} серверов MCP",
+        "other": "{count} сервера MCP"
+      }
+    },
+    "act": {
+      "update": "Обновить",
+      "enable": "Включить",
+      "disable": "Выключить",
+      "uninstall": "Удалить",
+      "installUser": "Установить для себя",
+      "installProject": "Установить в проект",
+      "installLocal": "Установить только здесь",
+      "marketUpdate": "Обновить",
+      "marketRemove": "Убрать",
+      "marketAdd": "Добавить маркетплейс"
+    },
+    "sourceHint": "владелец/репозиторий, URL или путь",
+    "restart": "Обновлено. Чат запустит новую версию после перезапуска.",
+    "current": "Это уже последняя версия.",
+    "fixed": "lich сам устанавливает и обновляет этот плагин."
   }
 }
