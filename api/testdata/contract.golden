@@ -54,6 +54,7 @@ chat.Prompt(ChatPromptOptions) None
 chat.Reply(ChatReplyOptions) None
 chat.SetOption(ChatSetOptionOptions) None
 chat.SetView(ChatViewOptions) None
+chat.Steer(ChatPromptOptions) None
 claudeprofile.CancelLogin(ProfileSlugOptions) None
 claudeprofile.CreateProfile(CreateProfileOptions) Profile
 claudeprofile.DeleteProfile(ProfileSlugOptions) None

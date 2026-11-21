@@ -18,6 +18,11 @@ var (
 	ChatHistory = define[SessionIDOptions, []ChatItem]("chat.History")
 	// ChatPrompt sends the person's message.
 	ChatPrompt = define[ChatPromptOptions, None]("chat.Prompt")
+	// ChatSteer sends the person's message into the turn in flight, which
+	// carries on with it; with no turn in flight it is ChatPrompt. A provider
+	// that takes no message during a turn stops it and sends the message
+	// after.
+	ChatSteer = define[ChatPromptOptions, None]("chat.Steer")
 	// ChatCancel stops the turn in flight.
 	ChatCancel = define[SessionIDOptions, None]("chat.Cancel")
 	// ChatAnswer answers a permission item with one of its options.

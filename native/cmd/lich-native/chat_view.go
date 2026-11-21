@@ -103,6 +103,8 @@ type chatView struct {
 	undo ui.EditHistory
 	// start is the start screen of the chat while it has nothing in it.
 	start chatStart
+	// queueRows are the controls of the session's queued messages.
+	queueRows []chatQueueRow
 	// slash is the list of the provider's commands over the composer, which
 	// may grow over the conversation up to slashRoom, the pane's height.
 	slash     chatSlash
@@ -390,6 +392,8 @@ func (u *window) chatActs(gtx C, p *chatPane, sv sessionView, keys, working bool
 			u.answerChat(sv.ID, waiting.ID, permitOption(waiting.Permission, api.PermitRejectOnce))
 		}
 	}
+	u.queueActs(gtx, p, sv.ID)
+	u.composerKeys(gtx, p, sv.ID, keys && asking == nil)
 	p.undo.Handle(gtx, &p.editor)
 	for {
 		ev, ok := p.editor.Update(gtx)
@@ -402,6 +406,8 @@ func (u *window) chatActs(gtx C, p *chatPane, sv sessionView, keys, working bool
 		switch {
 		case waiting != nil:
 			u.answerChat(sv.ID, waiting.ID, permitOption(waiting.Permission, api.PermitAllowOnce, api.PermitAllowAlways))
+		case asking == nil && u.model.chat.isRunning(sv.ID):
+			u.queueChat(p, sv.ID)
 		case !working || asking != nil:
 			if u.sendChat(p, sv.ID) {
 				p.toEnd(gtx.Now)
@@ -486,6 +492,7 @@ func (u *window) chatComposer(gtx C, th *ui.Theme, p *chatPane, sv sessionView, 
 		ft.attach, ft.context = nil, nil
 	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+		layout.Rigid(func(gtx C) D { return u.chatQueue(gtx, th, p, sv.ID) }),
 		layout.Rigid(func(gtx C) D {
 			// the box's fill keeps near the theme's own ground and its edge
 			// leans to the theme's primary, as the backdrop around it does

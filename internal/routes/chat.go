@@ -12,6 +12,7 @@ func Chat(d *rpc.Handler, s *chat.Service) {
 	rpc.Handle(d, api.ChatSetView, s.SetView)
 	rpc.Handle(d, api.ChatHistory, s.History)
 	rpc.Handle(d, api.ChatPrompt, s.Prompt)
+	rpc.Handle(d, api.ChatSteer, s.Steer)
 	rpc.Handle(d, api.ChatCancel, s.Cancel)
 	rpc.Handle(d, api.ChatAnswer, s.Answer)
 	rpc.Handle(d, api.ChatReply, s.Reply)

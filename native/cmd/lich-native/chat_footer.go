@@ -117,6 +117,16 @@ func (u *window) chatChips(th *ui.Theme, p *chatPane, sv sessionView, working bo
 		m := op.Record(gtx.Ops)
 		action := u.chatAction(gtx, th, p, working)
 		actionCall := m.Stop()
+		// while messages wait in the queue, the way back to them is named
+		// before the action
+		var hint D
+		var hintCall op.CallOp
+		if len(u.model.chat.queued(sv.ID)) > 0 {
+			m = op.Record(gtx.Ops)
+			hint = th.Text(ui.TextXS, i18n.T("chat.queue.edit")).Muted().Layout(gtx)
+			hintCall = m.Stop()
+			hint.Size.X += gap
+		}
 		draw := func(gtx C, s footerSlot) D {
 			switch s.ID {
 			case "attach":
@@ -128,7 +138,7 @@ func (u *window) chatChips(th *ui.Theme, p *chatPane, sv sessionView, working bo
 			}
 			return f.slot(gtx, th, s, in)
 		}
-		items, _ := f.fit(gtx, chips, width-2*pad-action.Size.X-gap, gap, itemH, draw)
+		items, _ := f.fit(gtx, chips, width-2*pad-action.Size.X-gap-hint.Size.X, gap, itemH, draw)
 		h := max(itemH, action.Size.Y)
 		for _, it := range items {
 			t := op.Offset(it.at.Add(image.Pt(pad, (h-itemH)/2))).Push(gtx.Ops)
@@ -138,6 +148,11 @@ func (u *window) chatChips(th *ui.Theme, p *chatPane, sv sessionView, working bo
 		t := op.Offset(image.Pt(width-pad-action.Size.X, (h-action.Size.Y)/2)).Push(gtx.Ops)
 		actionCall.Add(gtx.Ops)
 		t.Pop()
+		if hint.Size.X > 0 {
+			t = op.Offset(image.Pt(width-pad-action.Size.X-hint.Size.X, (h-hint.Size.Y)/2)).Push(gtx.Ops)
+			hintCall.Add(gtx.Ops)
+			t.Pop()
+		}
 		return D{Size: image.Pt(width, h+pad)}
 	}
 }

@@ -198,6 +198,7 @@ what lich can read back out of it, since each CLI records different things.
 | In the chat, the agent's questions come as a card you answer by click or key | yes | not verified | yes | yes on opencode 1; opencode 2 not verified | yes | no | not verified | no: Kiro asks in plain text |
 | In the chat, typing / at the start of a line lists the agent's commands and skills to complete | yes, skills marked as such | skills only, typed as `$name` | yes | yes | yes | no | not verified | yes |
 | In the chat, a tool call shows the moment it starts, its time counting, and keeps how long it took | yes | yes; a conversation read back shows no times | not verified | not verified | not verified | no | not verified | not verified |
+| In the chat, a message written while the agent works waits in a queue that goes when the turn ends, or is forced into the turn running | yes | yes | queued; forcing it stops the turn and sends it after | queued; forcing it stops the turn and sends it after | queued; forcing it stops the turn and sends it after | no | not verified | queued; forcing it stops the turn and sends it after |
 
 </details>
 

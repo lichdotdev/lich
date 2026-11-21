@@ -22,6 +22,9 @@ type chatStore struct {
 	options   map[string][]backend.ChatOption
 	commands  map[string][]backend.ChatCommand
 	switching map[string]string
+	// queue is each session's messages written while its turn ran, sent
+	// together once it ends (chatQueue).
+	queue map[string][]string
 }
 
 func (s *chatStore) loadKinds(ctx context.Context, client *backend.Client) error {
@@ -211,6 +214,7 @@ func (m *model) chatEvent(ctx context.Context, ev backend.Event) {
 	case api.ChatTurnEvent.Name:
 		if t, err := backend.Decode(ev, api.ChatTurnEvent); err == nil {
 			m.chat.turn(t)
+			m.flushQueue(ctx, t)
 		}
 	case api.ChatOptionsEvent.Name:
 		if u, err := backend.Decode(ev, api.ChatOptionsEvent); err == nil {
