@@ -190,7 +190,7 @@ func TestEditingARecalledMessageEndsTheWalk(t *testing.T) {
 // ↑ on an empty box with a queue edits the queue, not the messages sent.
 func TestTheQueueComesBeforeTheMessagesSent(t *testing.T) {
 	u, r, _, p := sentFrames(t, true)
-	u.model.chat.enqueue("s1", "queued one")
+	u.model.chat.enqueue("s1", chatMessage{text: "queued one"})
 	r.frame()
 	r.press(key.NameUpArrow)
 	if got := p.editor.Text(); got != "queued one" {
