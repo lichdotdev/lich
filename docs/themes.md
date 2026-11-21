@@ -140,16 +140,19 @@ The stored theme records where it came from:
 
 lich looks for a newer version on its own, when it starts and every six hours:
 it clones each repository once, whatever number of its themes are installed,
-and compares the manifest's `version` with the installed one. A newer version
-shows on the pack's cards in Settings › Appearance, with **Update to vX** among
-a card's actions, and raises a toast once per version: **Update** installs it,
-**Later** puts that version off. Several packs at once share one toast that
-opens Settings. **Check for updates**, over the cards, looks now. lich never
-installs an update by itself, and a theme imported as a single file has nothing
-to check.
+and compares the manifest's `version` with the installed one. A repository the
+[catalog](#listing-in-the-catalog) lists is not cloned: its newer version is the
+one the catalog lists, so a pack from the catalog never moves past what the
+catalog vouched for. A newer version shows on the theme's row in Settings ›
+Appearance › Themes › Installed, with **Update**, and raises a toast once per
+version: **Update** installs it, **Later** puts that version off. Several packs
+at once share one toast that opens Settings. **Check for updates**, on the
+Installed tab, looks now. lich never installs an update by itself, and a theme
+imported as a single file has nothing to check.
 
-Updating re-clones that URL and installs the pack again when the manifest
-carries a newer version; an equal or older one is reported as up to date. A
+Updating re-clones that URL, or fetches the commit the catalog lists for it,
+and installs the pack again when the manifest carries a newer version; an equal
+or older one is reported as up to date. A
 theme the new pack no longer carries — its file removed or renamed — is kept
 where it is and stamped with the version that was just installed, so it stops
 being offered the same update forever. Remove it yourself if you no longer want
@@ -176,7 +179,7 @@ cat > lich-theme.json <<'EOF'
 EOF
 ```
 
-Put a theme beside it. Settings › Appearance › **Import** › **Download template** writes a valid
+Put a theme beside it. Settings › Appearance › Themes › **Install from…** › **Download template** writes a valid
 starter naming every supported color — save it into the repository, then set its
 `id`, `name` and `scheme`. File names inside the repository are yours; lich
 stores each theme as `<id>.json` under its own directory on install.
@@ -186,12 +189,68 @@ git add . && git commit -m "themes"
 ```
 
 An absolute path is an accepted remote, so the repository installs before it is
-pushed anywhere: **Import**, paste the directory, **Install**. Once it is on a
+pushed anywhere: **Install from…**, paste the directory, **Install**. Once it is on a
 host, the clone URL is what other people paste.
 
 Shipping a change: edit the themes, bump `version` in the manifest, commit and
 push. An install still on the old version is offered it within six hours, or at
 once with **Check for updates**; forget the bump and nothing is offered.
+
+## Listing in the catalog
+
+Settings › Appearance › Themes opens on a catalog of packs anyone can install
+with one click. It is built from
+[github.com/lichdotdev/themes](https://github.com/lichdotdev/themes): its
+`themes.json` lists repositories as `"<owner>/<repo>"`, and a build there reads
+each one every hour and writes `catalog.json`, which lich reads from
+`https://raw.githubusercontent.com/lichdotdev/themes/main/catalog.json`.
+
+To get a pack listed, publish it as a [theme repository](#theme-repositories)
+and open a pull request adding it to `themes.json`. A check comments on the pull
+request with what fails; a maintainer approves the first listing, and every
+later version is picked up within an hour. Run the same check yourself with
+`go run ./cmd/catalog check <owner>/<repo>` in that repository.
+
+What the build checks is structural: a manifest with a name and a
+`MAJOR.MINOR.PATCH` version and a description of at most 200 characters; 1 to 32
+themes, each with a valid id that is not `light`, `dark`, `system` or `match`, a
+name, a `dark` or `light` scheme, a `pair` in the same pack, the app colors the
+previews draw with and all 16 terminal colors; and no pack id (the repository
+name without `-lich`) or theme id another listed pack claimed first. lich
+validates every color again when it installs.
+
+A pack is pinned by commit. The build records the commit each version was first
+listed at in `versions.lock.json`, and that record never changes: a version whose
+files change afterwards stays listed at its first commit, so bump the version to
+list a change. lich installs a listed pack by fetching that one commit and
+refuses it when the manifest there is not the listed version. A new version that
+fails a check keeps the pack at its last good entry, with the reason in `held`.
+
+`catalog.json` carries every theme in full, so the window draws a pack's
+previews, and lets you try a theme on the whole window, before anything is
+installed:
+
+```json
+{
+  "formatVersion": 1,
+  "generated": "2026-11-21T14:00:00Z",
+  "packs": [{
+    "id": "rose-pine", "name": "Rosé Pine", "description": "…",
+    "publisher": "lichdotdev", "official": true, "stars": 2,
+    "repo": "https://github.com/lichdotdev/rose-pine-lich", "repoId": 1,
+    "license": "MIT", "version": "1.5.0", "commit": "<40 hex>",
+    "minLichVersion": "0.53.0", "updated": "2026-11-02T00:00:00Z",
+    "themes": [{ "id": "rose-pine", "name": "Rosé Pine", "scheme": "dark",
+                 "pair": "rose-pine-dawn", "app": {}, "terminal": {}, "syntax": {} }]
+  }],
+  "revoked": [{ "repo": "https://github.com/…", "repoId": 2, "reason": "…" }]
+}
+```
+
+The format is `api.ThemeCatalog`. lich refuses a `formatVersion` newer than it
+reads and keeps the last catalog it read when a new one cannot be read. A
+repository in `revoked` is no longer offered; what is already installed from it
+stays, since a theme is data and runs nothing.
 
 ## Syntax Highlighting
 
