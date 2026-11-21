@@ -275,6 +275,29 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   `mcpServer/oauth/login` its `authorizationUrl`. lich's own server, injected at spawn, cannot be turned off. A
   server's target is its URL or command line, never its env or headers, though an argument or a query string can
   still carry a token. The ACP providers and Kiro CLI report neither list, and Crush has no chat.
+- **A chat's /plugin panel runs the CLI on Claude Code and the app-server on Codex, and nothing elsewhere**
+  (`internal/chat/plugins.go`, `claude_plugins.go`, `codex_plugins.go`). Claude Code (2.1.330) has no stream-json
+  request for plugins: lich runs `claude plugin list --json --available` and `claude plugin marketplace list
+  --json` in the checkout, outside the sandbox and without `CLAUDE_CODE_CHILD_SESSION`. Its installed list holds
+  every project's installs, so lich keeps the user ones and those whose `projectPath` is the checkout. What a
+  plugin brings and its always-on cost come from `claude plugin details`, which has no --json and answers only for
+  an installed plugin: lich reads its text, runs at most four at once and keeps each answer by install path, and a
+  wording it cannot read leaves the row without it. A newer version is known only for a plugin read from a folder
+  (`folderVersion`): the CLI's list says nothing of one for any other, and lich does not read the marketplace's
+  manifest, where most plugins measured named no version anyway. So Update is offered on every installed plugin
+  and says when it was already the latest. Each change is the CLI with `--json` and the plugin's
+  scope, then `reload_plugins` so the running chat takes it (measured on a turned-off plugin, whose skill left the
+  slash list); an update says it applies on a restart, which the panel repeats, and was measured only on a plugin
+  read from a folder. lich never passes `-y`, so an install whose marketplace declares a command to run is refused
+  by the CLI (not measured). Codex (0.170.0) installs for the person only, so it has one Install. Its catalog is
+  `plugin/list` with `marketplaceKinds: ["local"]`, since the remote one ran past 14,000 plugins and 43 MB; a remote
+  plugin is listed once installed (`plugin/installed`) but cannot be installed from the panel. Turning a plugin off
+  has no method: it is `config/value/write` of `plugins."<id>".enabled`, the key Codex writes itself, after which
+  `skills/list` drops its skills (measured). Codex has no plugin update and says nothing of a newer version, so the
+  panel offers none there; `marketplace/upgrade` updates a git marketplace and refuses any other. Whether a running
+  Codex chat picks up a plugin's hooks or MCP servers before it restarts is not measured. lich's own plugin and its
+  marketplace take no action in the panel: lich installs and pins them itself (Plugin install and upgrades). The
+  ACP providers and Kiro CLI report no plugins.
 
 - **The Welcome installs a provider with the vendor's own command, and only where that runs as you**
   (`internal/providers/install_recipes.go`). Each line is the vendor's install page word for word, run with no

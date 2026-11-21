@@ -90,7 +90,8 @@
   "slash": {
     "new": "이 세션에서 새 대화를 시작",
     "mcp": "MCP 서버 관리",
-    "skills": "스킬 켜기 또는 끄기"
+    "skills": "스킬 켜기 또는 끄기",
+    "plugin": "플러그인 설치 및 관리"
   },
   "start": {
     "lines": "{project}에서 무엇을 빚어 볼까요?|{project}에 무엇을 소환할까요?|{project}에 무엇을 불어넣을까요?|{project}의 가마솥에서 무엇을 끓여 볼까요?|{project}에서 무엇을 점쳐 볼까요?|오늘은 {project}에 무엇을 새길까요?|{project}에 무엇을 엮어 넣을까요?|{project}에서 무엇을 되살려 볼까요?"
@@ -167,5 +168,76 @@
       "any": "잠김"
     },
     "pluginSkills": "플러그인 스킬은 /plugin에서 관리합니다."
+  },
+  "plugins": {
+    "title": "플러그인",
+    "installedCount": {
+      "other": "{count}개 설치됨"
+    },
+    "tab": {
+      "discover": "찾아보기",
+      "installed": "설치됨",
+      "markets": "마켓플레이스"
+    },
+    "search": "플러그인 검색",
+    "none": "{provider}는 lich에 플러그인을 알려 주지 않습니다. TUI로 바꾸고 {provider}의 /plugin을 사용하세요.",
+    "noneFound": "맞는 플러그인이 없습니다.",
+    "noneInstalled": "여기에 설치된 플러그인이 없습니다.",
+    "updateChip": "업데이트",
+    "scope": {
+      "user": "사용자",
+      "project": "프로젝트",
+      "local": "로컬"
+    },
+    "installs": {
+      "other": "설치 {count}회"
+    },
+    "pluginCount": {
+      "other": "플러그인 {count}개"
+    },
+    "back": "플러그인",
+    "backMarkets": "마켓플레이스",
+    "fact": {
+      "version": "버전",
+      "state": "상태",
+      "scope": "설치 위치",
+      "brings": "포함",
+      "cost": "비용",
+      "installs": "설치 수",
+      "source": "소스",
+      "plugins": "플러그인"
+    },
+    "versionNewer": "{version}, {latest} 출시됨",
+    "state": {
+      "on": "켜짐",
+      "off": "꺼짐"
+    },
+    "part": {
+      "agents": {
+        "other": "에이전트 {count}개"
+      },
+      "hooks": {
+        "other": "훅 {count}개"
+      },
+      "mcp": {
+        "other": "MCP 서버 {count}개"
+      }
+    },
+    "act": {
+      "update": "업데이트",
+      "enable": "켜기",
+      "disable": "끄기",
+      "uninstall": "제거",
+      "installUser": "나만 쓰도록 설치",
+      "installProject": "프로젝트에 설치",
+      "installLocal": "여기에만 설치",
+      "marketUpdate": "업데이트",
+      "marketRemove": "삭제",
+      "marketAdd": "마켓플레이스 추가"
+    },
+    "sourceHint": "owner/repo, URL 또는 경로",
+    "restart": "업데이트했습니다. 채팅을 다시 시작하면 새 버전으로 실행됩니다.",
+    "current": "이미 최신 버전입니다.",
+    "fixed": "이 플러그인은 lich가 직접 설치하고 업데이트합니다."
   }
 }

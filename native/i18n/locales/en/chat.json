@@ -95,7 +95,8 @@
   "slash": {
     "new": "Start a new conversation in this session",
     "mcp": "Manage the MCP servers",
-    "skills": "Turn skills on or off"
+    "skills": "Turn skills on or off",
+    "plugin": "Install and manage plugins"
   },
   "start": {
     "lines": "What shall we conjure in {project}?|What should we summon for {project}?|What are we channeling into {project}?|What's brewing in {project}?|What do you want to scry in {project}?|What are we inscribing in {project} today?|What shall we weave into {project}?|What are we raising in {project}?"
@@ -176,5 +177,82 @@
       "any": "locked"
     },
     "pluginSkills": "Plugin skills are managed with /plugin."
+  },
+  "plugins": {
+    "title": "Plugins",
+    "installedCount": {
+      "one": "{count} installed",
+      "other": "{count} installed"
+    },
+    "tab": {
+      "discover": "Discover",
+      "installed": "Installed",
+      "markets": "Marketplaces"
+    },
+    "search": "Search plugins",
+    "none": "{provider} does not tell lich its plugins. Switch to TUI and use its own /plugin.",
+    "noneFound": "No plugin matches.",
+    "noneInstalled": "No plugin is installed here.",
+    "updateChip": "update",
+    "scope": {
+      "user": "user",
+      "project": "project",
+      "local": "local"
+    },
+    "installs": {
+      "one": "{count} install",
+      "other": "{count} installs"
+    },
+    "pluginCount": {
+      "one": "{count} plugin",
+      "other": "{count} plugins"
+    },
+    "back": "Plugins",
+    "backMarkets": "Marketplaces",
+    "fact": {
+      "version": "Version",
+      "state": "State",
+      "scope": "Installed in",
+      "brings": "Brings",
+      "cost": "Cost",
+      "installs": "Installs",
+      "source": "Source",
+      "plugins": "Plugins"
+    },
+    "versionNewer": "{version}, {latest} is out",
+    "state": {
+      "on": "on",
+      "off": "off"
+    },
+    "part": {
+      "agents": {
+        "one": "{count} agent",
+        "other": "{count} agents"
+      },
+      "hooks": {
+        "one": "{count} hook",
+        "other": "{count} hooks"
+      },
+      "mcp": {
+        "one": "{count} MCP server",
+        "other": "{count} MCP servers"
+      }
+    },
+    "act": {
+      "update": "Update",
+      "enable": "Turn on",
+      "disable": "Turn off",
+      "uninstall": "Uninstall",
+      "installUser": "Install for you",
+      "installProject": "Install in the project",
+      "installLocal": "Install here only",
+      "marketUpdate": "Update",
+      "marketRemove": "Remove",
+      "marketAdd": "Add marketplace"
+    },
+    "sourceHint": "owner/repo, URL or path",
+    "restart": "Updated. The chat runs the new version once restarted.",
+    "current": "This is already the latest version.",
+    "fixed": "lich installs and updates this plugin itself."
   }
 }

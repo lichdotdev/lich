@@ -110,3 +110,15 @@ func (c *Client) ChatSetSkill(ctx context.Context, id, name string, enabled bool
 	_, err := callMethod(ctx, c, api.ChatSetSkill, api.ChatSetSkillOptions{ID: id, Name: name, Enabled: enabled})
 	return err
 }
+
+// ChatPlugins is session id's plugins and marketplaces as its provider
+// reports them.
+func (c *Client) ChatPlugins(ctx context.Context, id string) (api.ChatPluginList, error) {
+	return callMethod(ctx, c, api.ChatPlugins, api.SessionIDOptions{ID: id})
+}
+
+// ChatPluginAct runs action of session id on target, a plugin or a
+// marketplace, in scope.
+func (c *Client) ChatPluginAct(ctx context.Context, id, action, target, scope string) (api.ChatPluginActResult, error) {
+	return callMethod(ctx, c, api.ChatPluginAct, api.ChatPluginActOptions{ID: id, Action: action, Target: target, Scope: scope})
+}

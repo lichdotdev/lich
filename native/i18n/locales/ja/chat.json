@@ -90,7 +90,8 @@
   "slash": {
     "new": "このセッションで新しい会話を始める",
     "mcp": "MCP サーバーを管理する",
-    "skills": "スキルをオンまたはオフにする"
+    "skills": "スキルをオンまたはオフにする",
+    "plugin": "プラグインをインストールして管理する"
   },
   "start": {
     "lines": "{project}で何を錬成しましょうか？|{project}に何を召喚しましょうか？|{project}に何を注ぎ込みましょうか？|{project}の大鍋で何を煮込みましょうか？|{project}の何を占いましょうか？|今日は{project}に何を刻みましょうか？|{project}に何を織り込みましょうか？|{project}で何を蘇らせましょうか？"
@@ -167,5 +168,76 @@
       "any": "ロック中"
     },
     "pluginSkills": "プラグインのスキルは /plugin で管理します。"
+  },
+  "plugins": {
+    "title": "プラグイン",
+    "installedCount": {
+      "other": "{count} 個インストール済み"
+    },
+    "tab": {
+      "discover": "探す",
+      "installed": "インストール済み",
+      "markets": "マーケットプレイス"
+    },
+    "search": "プラグインを検索",
+    "none": "{provider} はプラグインを lich に伝えません。TUI に切り替えて、{provider} 自身の /plugin を使ってください。",
+    "noneFound": "一致するプラグインはありません。",
+    "noneInstalled": "ここにはプラグインがインストールされていません。",
+    "updateChip": "更新あり",
+    "scope": {
+      "user": "ユーザー",
+      "project": "プロジェクト",
+      "local": "ローカル"
+    },
+    "installs": {
+      "other": "{count} 件のインストール"
+    },
+    "pluginCount": {
+      "other": "{count} 個のプラグイン"
+    },
+    "back": "プラグイン",
+    "backMarkets": "マーケットプレイス",
+    "fact": {
+      "version": "バージョン",
+      "state": "状態",
+      "scope": "インストール先",
+      "brings": "含むもの",
+      "cost": "コスト",
+      "installs": "インストール数",
+      "source": "ソース",
+      "plugins": "プラグイン"
+    },
+    "versionNewer": "{version}（{latest} が公開済み）",
+    "state": {
+      "on": "オン",
+      "off": "オフ"
+    },
+    "part": {
+      "agents": {
+        "other": "エージェント {count} 個"
+      },
+      "hooks": {
+        "other": "フック {count} 個"
+      },
+      "mcp": {
+        "other": "MCP サーバー {count} 個"
+      }
+    },
+    "act": {
+      "update": "更新",
+      "enable": "オンにする",
+      "disable": "オフにする",
+      "uninstall": "アンインストール",
+      "installUser": "自分用にインストール",
+      "installProject": "プロジェクトにインストール",
+      "installLocal": "ここだけにインストール",
+      "marketUpdate": "更新",
+      "marketRemove": "削除",
+      "marketAdd": "マーケットプレイスを追加"
+    },
+    "sourceHint": "owner/repo、URL またはパス",
+    "restart": "更新しました。チャットを再起動すると新しいバージョンで動きます。",
+    "current": "すでに最新のバージョンです。",
+    "fixed": "このプラグインは lich が自分でインストールして更新します。"
   }
 }

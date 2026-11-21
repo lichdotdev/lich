@@ -24,4 +24,6 @@ func Chat(d *rpc.Handler, s *chat.Service) {
 	rpc.Handle(d, api.ChatMCPAct, s.MCPAct)
 	rpc.Handle(d, api.ChatSkills, s.Skills)
 	rpc.Handle(d, api.ChatSetSkill, s.SetSkill)
+	rpc.Handle(d, api.ChatPlugins, s.Plugins)
+	rpc.Handle(d, api.ChatPluginAct, s.PluginAct)
 }

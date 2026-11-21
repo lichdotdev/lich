@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os/exec"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -202,13 +203,23 @@ func (d *claudeDriver) setSkill(ctx context.Context, name string, enabled bool) 
 	return nil
 }
 
-func (d *claudeDriver) editSkillOverride(ctx context.Context, name, state string) error {
-	cmd, err := d.c.proc.Command(ctx, claudeSkillsCommand...)
+// cli is the claude CLI run with args in the chat's checkout, without the
+// variable some of its commands refuse to run under.
+func (d *claudeDriver) cli(ctx context.Context, args ...string) (*exec.Cmd, error) {
+	cmd, err := d.c.proc.Command(ctx, args...)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	cmd.Dir = d.c.cwd
 	cmd.Env = slices.DeleteFunc(cmd.Env, func(kv string) bool { return strings.HasPrefix(kv, claudeChildEnv+"=") })
+	return cmd, nil
+}
+
+func (d *claudeDriver) editSkillOverride(ctx context.Context, name, state string) error {
+	cmd, err := d.cli(ctx, claudeSkillsCommand...)
+	if err != nil {
+		return err
+	}
 	in, _ := json.Marshal(map[string]string{"name": name, "state": state})
 	cmd.Stdin = bytes.NewReader(in)
 	var stderr bytes.Buffer

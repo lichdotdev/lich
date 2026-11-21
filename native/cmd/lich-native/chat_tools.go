@@ -15,33 +15,40 @@ import (
 	"github.com/lichdotdev/lich/native/ui"
 )
 
-// /mcp and /skills are lich's own commands where the provider reports its MCP
-// servers and skills (api.ChatMCP, api.ChatSkills): instead of reaching the
-// agent as text they open a panel over the composer, the screen the
-// provider's TUI opens for them.
+// /mcp, /skills and /plugin are lich's own commands where the provider
+// reports its MCP servers, skills and plugins (api.ChatMCP, api.ChatSkills,
+// api.ChatPlugins): instead of reaching the agent as text they open a panel
+// over the composer, the screen the provider's TUI opens for them.
 
 const (
 	chatMCPCommand    = "/mcp"
 	chatSkillsCommand = "/skills"
+	chatPluginCommand = "/plugin"
 )
 
-// chatToolKinds is the providers whose chat reports its MCP servers and
-// skills; elsewhere /mcp and /skills go to the agent as they always did.
+// chatToolKinds is the providers whose chat reports its MCP servers, skills
+// and plugins; elsewhere the commands go to the agent as they always did.
 var chatToolKinds = []string{claudeKind, codexKind}
 
 // chatToolsPoll is how often an open panel reads a server still connecting
 // again: the provider answers a reconnect before its state changes.
 const chatToolsPoll = 2 * time.Second
 
-// chatTools is one chat's /mcp or /skills panel, shut while kind is "".
+// chatTools is one chat's /mcp, /skills or /plugin panel, shut while kind is
+// "".
 type chatTools struct {
 	kind string
-	// mu guards what the reads answer, which land off the frame.
+	// mu guards what the reads and the plugin actions answer, which land off
+	// the frame.
 	mu       sync.Mutex
 	mcp      api.ChatMCPList
 	skills   api.ChatSkillList
+	plugins  api.ChatPluginList
 	loaded   bool
 	fetching bool
+	// gen counts the reads that landed, for what is kept from one.
+	gen  int
+	plug chatPlugins
 	// next is when a server still connecting is read again.
 	next time.Time
 	// focus hands the keys to the panel on the frame after it opens.
@@ -67,6 +74,7 @@ func (t *chatTools) open(kind string) {
 	defer t.mu.Unlock()
 	t.kind, t.loaded, t.detail, t.showTools, t.cursor, t.moved, t.next, t.focus = kind, false, "", false, 0, true, time.Time{}, true
 	t.query.SetText("")
+	t.plug.reset()
 }
 
 func (t *chatTools) shut() { t.kind, t.detail = "", "" }
@@ -91,7 +99,7 @@ func (t *chatTools) act(a string) *ui.Clickable {
 func (u *window) openTools(p *chatPane, id, text string) bool {
 	kind := ""
 	switch text {
-	case chatMCPCommand, chatSkillsCommand:
+	case chatMCPCommand, chatSkillsCommand, chatPluginCommand:
 		kind = text
 	}
 	sv, ok := u.model.sessionViewOf(id)
@@ -118,19 +126,24 @@ func (u *window) fetchTools(p *chatPane, id string) {
 	t.mu.Unlock()
 	go func() {
 		var (
-			mcp    api.ChatMCPList
-			skills api.ChatSkillList
-			err    error
+			mcp     api.ChatMCPList
+			skills  api.ChatSkillList
+			plugins api.ChatPluginList
+			err     error
 		)
-		if kind == chatMCPCommand {
+		switch kind {
+		case chatMCPCommand:
 			mcp, err = u.client.ChatMCP(u.ctx, id)
-		} else {
+		case chatSkillsCommand:
 			skills, err = u.client.ChatSkills(u.ctx, id)
+		default:
+			plugins, err = u.client.ChatPlugins(u.ctx, id)
 		}
 		t.mu.Lock()
 		t.fetching = false
 		if err == nil && t.kind == kind {
-			t.mcp, t.skills, t.loaded = mcp, skills, true
+			t.mcp, t.skills, t.plugins, t.loaded = mcp, skills, plugins, true
+			t.gen++
 		}
 		t.mu.Unlock()
 		u.chatFailed(err)
@@ -209,11 +222,13 @@ func (u *window) toolsActs(gtx C, p *chatPane, id string) {
 		return
 	}
 	t.mu.Lock()
-	mcp, skills, loaded := t.mcp, t.skills, t.loaded
+	mcp, skills, plugins, loaded := t.mcp, t.skills, t.plugins, t.loaded
 	t.mu.Unlock()
 	rows, enter := 0, func(int) {}
 	switch {
 	case !loaded:
+	case t.kind == chatPluginCommand:
+		rows, enter = u.pluginActs(gtx, p, id, plugins)
 	case t.kind == chatSkillsCommand:
 		if t.sortBtn.Clicked(gtx) {
 			t.byTokens = !t.byTokens
@@ -233,7 +248,7 @@ func (u *window) toolsActs(gtx C, p *chatPane, id string) {
 			enter(i)
 		}
 	}
-	u.toolsKeys(gtx, p, rows, enter)
+	u.toolsKeys(gtx, p, id, rows, enter)
 	t.cursor = min(t.cursor, max(rows-1, 0))
 }
 
@@ -257,15 +272,12 @@ func (u *window) mcpDetailActs(gtx C, p *chatPane, id string, l api.ChatMCPList)
 }
 
 // toolsKeys runs the panel's keys: the arrows walk its rows, Enter opens the
-// server or turns the skill under the cursor, Escape goes back from a
-// server and shuts the list. The search takes them for skills; for servers
-// the box keeps the keyboard, as it does under the slash list.
-func (u *window) toolsKeys(gtx C, p *chatPane, rows int, enter func(i int)) {
+// server or plugin or turns the skill under the cursor, Escape goes back from
+// a detail and shuts the list. A field of the panel takes them where it has
+// one; elsewhere the box keeps the keyboard, as it does under the slash list.
+func (u *window) toolsKeys(gtx C, p *chatPane, id string, rows int, enter func(i int)) {
 	t := &p.tools
-	var tag event.Tag = &p.editor
-	if t.kind == chatSkillsCommand {
-		tag = &t.query
-	}
+	var tag event.Tag = t.keyTag(p)
 	var filters []event.Filter
 	for _, name := range []key.Name{key.NameUpArrow, key.NameDownArrow, key.NameReturn, key.NameEnter, key.NameEscape} {
 		filters = append(filters, key.Filter{Focus: tag, Name: name})
@@ -290,16 +302,33 @@ func (u *window) toolsKeys(gtx C, p *chatPane, rows int, enter func(i int)) {
 			t.cursor, t.moved = max(t.cursor-1, 0), true
 		case key.NameEscape:
 			if t.detail != "" {
-				t.detail, t.showTools = "", false
+				t.detail, t.showTools, t.focus = "", false, true
 				continue
 			}
 			t.shut()
 			gtx.Execute(key.FocusCmd{Tag: &p.editor})
 			return
 		default:
-			if t.cursor < rows {
+			if !u.submitSource(p, id, t.keyTag(p)) && t.cursor < rows {
 				enter(t.cursor)
 			}
 		}
 	}
+}
+
+// keyTag is the field that holds the panel's keys: the search of the skills
+// and of the plugins on offer, the marketplace source on its tab, and the
+// box everywhere else.
+func (t *chatTools) keyTag(p *chatPane) *widget.Editor {
+	switch {
+	case t.kind == chatSkillsCommand:
+		return &t.query
+	case t.kind != chatPluginCommand || t.detail != "":
+		return &p.editor
+	case t.plug.tabs.Selected == pluginTabDiscover:
+		return &t.query
+	case t.plug.tabs.Selected == pluginTabMarkets:
+		return &t.plug.source
+	}
+	return &p.editor
 }
