@@ -39,6 +39,9 @@ type claudeDriver struct {
 	// names skills and terminalOnly those it says only the TUI runs.
 	cmds                 []claudeCommand
 	skills, terminalOnly []string
+	// details is what `claude plugin details` said of each installed plugin,
+	// by its install path, which a new version changes.
+	details map[string]claudeDetails
 }
 
 type claudeControl struct {

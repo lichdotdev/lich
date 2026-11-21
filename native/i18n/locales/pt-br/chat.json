@@ -95,7 +95,8 @@
   "slash": {
     "new": "Começa uma conversa nova nesta sessão",
     "mcp": "Gerencia os servidores MCP",
-    "skills": "Liga e desliga skills"
+    "skills": "Liga e desliga skills",
+    "plugin": "Instala e gerencia plugins"
   },
   "start": {
     "lines": "O que vamos conjurar em {project}?|O que invocamos para {project}?|O que vamos canalizar para {project}?|O que tem no caldeirão de {project}?|O que você quer desvendar em {project}?|O que vamos inscrever hoje em {project}?|O que vamos tecer em {project}?|O que vamos erguer em {project}?"
@@ -179,5 +180,82 @@
   },
   "attach": {
     "remove": "Remover"
+  },
+  "plugins": {
+    "title": "Plugins",
+    "installedCount": {
+      "one": "{count} instalado",
+      "other": "{count} instalados"
+    },
+    "tab": {
+      "discover": "Descobrir",
+      "installed": "Instalados",
+      "markets": "Marketplaces"
+    },
+    "search": "Buscar plugin",
+    "none": "O {provider} não informa ao lich os plugins. Mude para TUI e use o /plugin dele.",
+    "noneFound": "Nenhum plugin bate com a busca.",
+    "noneInstalled": "Nenhum plugin instalado aqui.",
+    "updateChip": "atualização",
+    "scope": {
+      "user": "usuário",
+      "project": "projeto",
+      "local": "local"
+    },
+    "installs": {
+      "one": "{count} instalação",
+      "other": "{count} instalações"
+    },
+    "pluginCount": {
+      "one": "{count} plugin",
+      "other": "{count} plugins"
+    },
+    "back": "Plugins",
+    "backMarkets": "Marketplaces",
+    "fact": {
+      "version": "Versão",
+      "state": "Estado",
+      "scope": "Instalado em",
+      "brings": "Traz",
+      "cost": "Custo",
+      "installs": "Instalações",
+      "source": "Origem",
+      "plugins": "Plugins"
+    },
+    "versionNewer": "{version}, já saiu a {latest}",
+    "state": {
+      "on": "ligado",
+      "off": "desligado"
+    },
+    "part": {
+      "agents": {
+        "one": "{count} agente",
+        "other": "{count} agentes"
+      },
+      "hooks": {
+        "one": "{count} hook",
+        "other": "{count} hooks"
+      },
+      "mcp": {
+        "one": "{count} servidor MCP",
+        "other": "{count} servidores MCP"
+      }
+    },
+    "act": {
+      "update": "Atualizar",
+      "enable": "Ligar",
+      "disable": "Desligar",
+      "uninstall": "Desinstalar",
+      "installUser": "Instalar para você",
+      "installProject": "Instalar no projeto",
+      "installLocal": "Instalar só aqui",
+      "marketUpdate": "Atualizar",
+      "marketRemove": "Remover",
+      "marketAdd": "Adicionar marketplace"
+    },
+    "sourceHint": "dono/repo, URL ou caminho",
+    "restart": "Atualizado. O chat roda a versão nova quando reiniciar.",
+    "current": "Esta já é a versão mais nova.",
+    "fixed": "O lich instala e atualiza este plugin sozinho."
   }
 }

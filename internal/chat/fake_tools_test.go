@@ -56,6 +56,8 @@ func (f *fake) claudeTools(subtype string, m map[string]any, ok func(any), fail 
 			return true
 		}
 		ok(map[string]any{"skills": fakeClaudeSkills})
+	case "reload_plugins":
+		ok(map[string]any{"commands": fakeReloadedCommands, "agents": []any{}, "plugins": []any{}, "mcpServers": []any{}, "error_count": 0})
 	case "reload_skills":
 		ok(map[string]any{"skills": slices.DeleteFunc(slices.Clone(fakeClaudeCommands), func(c any) bool {
 			return c.(map[string]any)["name"] == "deploy"
@@ -127,7 +129,7 @@ func (c *fakeCodex) serveTools(id any, method string, params map[string]any) {
 		}
 		c.reply(id, map[string]any{"data": fakeCodexMCP[2:], "nextCursor": nil})
 	case "config/read":
-		c.reply(id, map[string]any{"config": map[string]any{"model": "gpt-a", "mcp_servers": fakeCodexConfig}, "origins": map[string]any{}})
+		c.reply(id, map[string]any{"config": map[string]any{"model": "gpt-a", "mcp_servers": fakeCodexConfig, "marketplaces": fakeCodexMarketplaces}, "origins": map[string]any{}})
 	case "config/value/write":
 		c.reply(id, map[string]any{"status": "ok", "version": "sha256:x", "filePath": "/x/config.toml"})
 	case "config/mcpServer/reload":
@@ -144,6 +146,8 @@ func (c *fakeCodex) serveTools(id any, method string, params map[string]any) {
 		}
 		c.off[path] = !on
 		c.reply(id, map[string]any{"effectiveEnabled": on})
+	default:
+		c.servePlugins(id, method, params)
 	}
 }
 
