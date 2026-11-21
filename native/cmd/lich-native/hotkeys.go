@@ -28,7 +28,6 @@ const (
 	hotkeyCloseSession       hotkeyID = "closeSession"
 	hotkeyTogglePin          hotkeyID = "togglePin"
 	hotkeyOpenTerminal       hotkeyID = "openTerminal"
-	hotkeyDelegate           hotkeyID = "delegate"
 	hotkeyNextSession        hotkeyID = "nextSession"
 	hotkeyPrevSession        hotkeyID = "prevSession"
 	hotkeyNextWaitingSession hotkeyID = "nextWaitingSession"
@@ -100,40 +99,49 @@ type hotkeyAction struct {
 	combo    combo
 }
 
+func modChord(key string) combo   { return combo{Mod: true, Key: key} }
 func shiftChord(key string) combo { return combo{Mod: true, Shift: true, Key: key} }
 
 // hotkeyActions drives the defaults, the settings list and its search, in
-// this order.
+// this order. A letter default is Ctrl+letter, which a focused terminal takes
+// as Ctrl+Shift+letter (hotkeyFilters); the rest are one chord everywhere.
+// Ctrl+Shift+letter is never a default of its own when Ctrl+letter is one,
+// and A, C, V, X, Z and Y stay with text editing, Q with XON, S with the
+// editor's save and U with IBus, whose Ctrl+Shift+U starts Unicode entry.
+// None is Ctrl+Alt: on Windows that is AltGr, which types text.
 var hotkeyActions = labelActions([]hotkeyAction{
-	{id: hotkeyNewSession, labelKey: "hotkeys.action.newSession", group: hotkeyGroupSessions, combo: shiftChord("t")},
-	{id: hotkeyNewWorktree, labelKey: "hotkeys.action.newWorktree", group: hotkeyGroupSessions, combo: shiftChord("b")},
-	{id: hotkeyRenameSession, labelKey: "hotkeys.action.renameSession", group: hotkeyGroupSessions, combo: shiftChord("e")},
-	{id: hotkeyCloseSession, labelKey: "hotkeys.action.closeSession", group: hotkeyGroupSessions, combo: shiftChord("x")},
-	{id: hotkeyTogglePin, labelKey: "hotkeys.action.togglePin", group: hotkeyGroupSessions, combo: shiftChord("k")},
-	{id: hotkeyOpenTerminal, labelKey: "hotkeys.action.openTerminal", group: hotkeyGroupSessions, combo: shiftChord("l")},
-	{id: hotkeyDelegate, labelKey: "hotkeys.action.delegate", group: hotkeyGroupSessions, combo: shiftChord("h")},
-	{id: hotkeyNextSession, labelKey: "hotkeys.action.nextSession", group: hotkeyGroupSessions, combo: shiftChord("ArrowDown")},
-	{id: hotkeyPrevSession, labelKey: "hotkeys.action.prevSession", group: hotkeyGroupSessions, combo: shiftChord("ArrowUp")},
-	{id: hotkeyNextWaitingSession, labelKey: "hotkeys.action.nextWaitingSession", group: hotkeyGroupSessions, combo: shiftChord("y")},
-	{id: hotkeyFocusTerminal, labelKey: "hotkeys.action.focusTerminal", group: hotkeyGroupSessions, combo: shiftChord("Enter")},
-	{id: hotkeyNextProject, labelKey: "hotkeys.action.nextProject", group: hotkeyGroupView, combo: shiftChord("ArrowRight")},
-	{id: hotkeyPrevProject, labelKey: "hotkeys.action.prevProject", group: hotkeyGroupView, combo: shiftChord("ArrowLeft")},
+	{id: hotkeyNewSession, labelKey: "hotkeys.action.newSession", group: hotkeyGroupSessions, combo: modChord("n")},
+	{id: hotkeyNewWorktree, labelKey: "hotkeys.action.newWorktree", group: hotkeyGroupSessions, combo: modChord("b")},
+	{id: hotkeyRenameSession, labelKey: "hotkeys.action.renameSession", group: hotkeyGroupSessions, combo: comboUnassigned},
+	{id: hotkeyCloseSession, labelKey: "hotkeys.action.closeSession", group: hotkeyGroupSessions, combo: modChord("w")},
+	{id: hotkeyTogglePin, labelKey: "hotkeys.action.togglePin", group: hotkeyGroupSessions, combo: comboUnassigned},
+	{id: hotkeyOpenTerminal, labelKey: "hotkeys.action.openTerminal", group: hotkeyGroupSessions, combo: modChord("t")},
+	{id: hotkeyNextSession, labelKey: "hotkeys.action.nextSession", group: hotkeyGroupSessions, combo: modChord("Tab")},
+	{id: hotkeyPrevSession, labelKey: "hotkeys.action.prevSession", group: hotkeyGroupSessions, combo: shiftChord("Tab")},
+	{id: hotkeyNextWaitingSession, labelKey: "hotkeys.action.nextWaitingSession", group: hotkeyGroupSessions, combo: modChord("i")},
+	{id: hotkeyFocusTerminal, labelKey: "hotkeys.action.focusTerminal", group: hotkeyGroupSessions, combo: comboUnassigned},
+	{id: hotkeyNextProject, labelKey: "hotkeys.action.nextProject", group: hotkeyGroupView, combo: modChord("PageDown")},
+	{id: hotkeyPrevProject, labelKey: "hotkeys.action.prevProject", group: hotkeyGroupView, combo: modChord("PageUp")},
+	// S is the editor's save, so the sidebar keeps Shift: Ctrl+S is no
+	// window action, and Ctrl+Shift+S is the chord everywhere.
 	{id: hotkeyToggleSidebar, labelKey: "hotkeys.action.toggleSidebar", group: hotkeyGroupView, combo: shiftChord("s")},
-	{id: hotkeyToggleDock, labelKey: "hotkeys.action.toggleDock", group: hotkeyGroupView, combo: shiftChord("d")},
-	{id: hotkeyToggleGit, labelKey: "hotkeys.action.toggleGit", group: hotkeyGroupView, combo: comboUnassigned},
+	{id: hotkeyToggleDock, labelKey: "hotkeys.action.toggleDock", group: hotkeyGroupView, combo: modChord("j")},
+	{id: hotkeyToggleGit, labelKey: "hotkeys.action.toggleGit", group: hotkeyGroupView, combo: modChord("g")},
 	{id: hotkeyToggleFullscreen, labelKey: "hotkeys.action.toggleFullscreen", group: hotkeyGroupView, combo: combo{Key: "F11"}},
-	{id: hotkeySearchInFiles, labelKey: "hotkeys.action.searchInFiles", group: hotkeyGroupView, combo: comboUnassigned},
-	{id: hotkeySplitBeside, labelKey: "hotkeys.action.splitBeside", group: hotkeyGroupView, combo: shiftChord("g")},
-	{id: hotkeySplitBelow, labelKey: "hotkeys.action.splitBelow", group: hotkeyGroupView, combo: shiftChord("i")},
-	{id: hotkeyOtherPane, labelKey: "hotkeys.action.otherPane", group: hotkeyGroupView, combo: shiftChord("f")},
-	{id: hotkeyZoomPane, labelKey: "hotkeys.action.zoomPane", group: hotkeyGroupView, combo: shiftChord("m")},
-	{id: hotkeyUnsplitPane, labelKey: "hotkeys.action.unsplitPane", group: hotkeyGroupView, combo: shiftChord("w")},
-	{id: hotkeyRotateSplit, labelKey: "hotkeys.action.rotateSplit", group: hotkeyGroupView, combo: shiftChord("r")},
-	{id: hotkeyCommandPalette, labelKey: "hotkeys.action.commandPalette", group: hotkeyGroupApp, combo: combo{Mod: true, Key: "k"}},
-	{id: hotkeySettings, labelKey: "hotkeys.action.settings", group: hotkeyGroupApp, combo: combo{Mod: true, Key: ","}},
-	{id: hotkeyPulls, labelKey: "hotkeys.action.pulls", group: hotkeyGroupApp, combo: shiftChord("p")},
+	{id: hotkeySearchInFiles, labelKey: "hotkeys.action.searchInFiles", group: hotkeyGroupView, combo: shiftChord("f")},
+	{id: hotkeySplitBeside, labelKey: "hotkeys.action.splitBeside", group: hotkeyGroupView, combo: modChord("d")},
+	{id: hotkeySplitBelow, labelKey: "hotkeys.action.splitBelow", group: hotkeyGroupView, combo: modChord("e")},
+	{id: hotkeyOtherPane, labelKey: "hotkeys.action.otherPane", group: hotkeyGroupView, combo: modChord("o")},
+	{id: hotkeyZoomPane, labelKey: "hotkeys.action.zoomPane", group: hotkeyGroupView, combo: shiftChord("Enter")},
+	{id: hotkeyUnsplitPane, labelKey: "hotkeys.action.unsplitPane", group: hotkeyGroupView, combo: comboUnassigned},
+	{id: hotkeyRotateSplit, labelKey: "hotkeys.action.rotateSplit", group: hotkeyGroupView, combo: comboUnassigned},
+	{id: hotkeyCommandPalette, labelKey: "hotkeys.action.commandPalette", group: hotkeyGroupApp, combo: modChord("p")},
+	{id: hotkeySettings, labelKey: "hotkeys.action.settings", group: hotkeyGroupApp, combo: modChord(",")},
+	{id: hotkeyPulls, labelKey: "hotkeys.action.pulls", group: hotkeyGroupApp, combo: comboUnassigned},
 	{id: hotkeyTour, labelKey: "hotkeys.action.tour", group: hotkeyGroupApp, combo: comboUnassigned},
-	{id: hotkeyShortcuts, labelKey: "hotkeys.action.shortcuts", group: hotkeyGroupApp, combo: combo{Mod: true, Key: "/"}},
+	// F1, not Ctrl+/: in a terminal Ctrl+/ is 0x1f, the undo of readline and
+	// Claude Code, and Codex's side conversation.
+	{id: hotkeyShortcuts, labelKey: "hotkeys.action.shortcuts", group: hotkeyGroupApp, combo: combo{Key: "F1"}},
 	{id: hotkeyStartServices, labelKey: "hotkeys.action.startServices", group: hotkeyGroupApp, combo: comboUnassigned},
 	{id: hotkeyQuit, labelKey: "hotkeys.action.quit", group: hotkeyGroupApp, combo: comboUnassigned},
 })
@@ -227,65 +235,27 @@ func comboFromEvent(e keyState) (combo, bool) {
 	return combo{Mod: mod, Shift: e.shift, Alt: e.alt, Key: normalizeKey(e.key)}, true
 }
 
-// hotkeyConflicts reports, for every action sharing its chord with another,
-// the other actions holding it, in hotkeyActions order. Recording a taken
+// hotkeyConflicts reports, for every action sharing a chord with another,
+// the other actions holding it, in hotkeyActions order. Ctrl+letter shares
+// Ctrl+Shift+letter, which a focused terminal takes for it. Recording a taken
 // chord is allowed; both rows say so.
 func hotkeyConflicts(b hotkeyBindings) map[hotkeyID][]hotkeyID {
-	byCombo := map[combo][]hotkeyID{}
-	for _, a := range hotkeyActions {
-		if c := b[a.id]; c.Key != "" {
-			byCombo[c] = append(byCombo[c], a.id)
-		}
-	}
 	conflicts := map[hotkeyID][]hotkeyID{}
-	for _, ids := range byCombo {
-		if len(ids) < 2 {
-			continue
-		}
-		for _, id := range ids {
-			for _, other := range ids {
-				if other != id {
-					conflicts[id] = append(conflicts[id], other)
-				}
+	for _, a := range hotkeyActions {
+		for _, other := range hotkeyActions {
+			if other.id != a.id && sharesChord(b[a.id], b[other.id]) {
+				conflicts[a.id] = append(conflicts[a.id], other.id)
 			}
 		}
 	}
 	return conflicts
 }
 
-// terminalChordCosts is the catalog key of what the terminal side already
-// spends a chord on, keyed by the combo's key. Ctrl+letter and nothing else:
-// Ctrl+Shift+anything reaches no TUI at all.
-var terminalChordCosts = map[string]string{
-	"a":         "hotkeys.terminalCost.a",
-	"c":         "hotkeys.terminalCost.c",
-	"d":         "hotkeys.terminalCost.d",
-	"e":         "hotkeys.terminalCost.e",
-	"k":         "hotkeys.terminalCost.k",
-	"l":         "hotkeys.terminalCost.l",
-	"q":         "hotkeys.terminalCost.q",
-	"r":         "hotkeys.terminalCost.r",
-	"s":         "hotkeys.terminalCost.s",
-	"u":         "hotkeys.terminalCost.u",
-	"w":         "hotkeys.terminalCost.w",
-	"z":         "hotkeys.terminalCost.z",
-	"f":         "hotkeys.terminalCost.f",
-	"v":         "hotkeys.terminalCost.v",
-	"Backspace": "hotkeys.terminalCost.Backspace",
-}
-
-// terminalCost is the line the recorder shows for a chord the terminal side
-// already spends, "" for one the PTY never sees anyway. The chord is spelled
-// Ctrl even on macOS: what a TUI reads is the control code.
-func terminalCost(c combo) string {
-	if !c.Mod || c.Shift || c.Alt {
-		return ""
+func sharesChord(x, y combo) bool {
+	if x.Key == "" || y.Key == "" {
+		return false
 	}
-	cost, ok := terminalChordCosts[c.Key]
-	if !ok {
-		return ""
-	}
-	return i18n.T(cost, i18n.Args{"key": formatKey(c.Key)})
+	return x == y || shownCombo(x, false) == shownCombo(y, false)
 }
 
 func formatKey(key string) string {
@@ -304,11 +274,16 @@ func formatCombo(c combo, isMac bool) string {
 	if c.Key == "" {
 		return i18n.T("hotkeys.unassigned")
 	}
+	// Command+Tab is the system's app switcher: Mod+Tab is Control there.
+	mod := "⌘"
+	if c.Key == "Tab" {
+		mod = "⌃"
+	}
 	var parts []string
 	for _, m := range []struct {
 		on        bool
 		mac, text string
-	}{{c.Mod, "⌘", "Ctrl"}, {c.Shift, "⇧", "Shift"}, {c.Alt, "⌥", "Alt"}} {
+	}{{c.Mod, mod, "Ctrl"}, {c.Shift, "⇧", "Shift"}, {c.Alt, "⌥", "Alt"}} {
 		switch {
 		case !m.on:
 		case isMac:
@@ -322,6 +297,25 @@ func formatCombo(c combo, isMac bool) string {
 		return strings.Join(parts, "")
 	}
 	return strings.Join(parts, "+")
+}
+
+// inTerminalHint is the line under a Settings row naming the chord a focused
+// terminal takes for c, "" when that is c itself.
+func inTerminalHint(c combo, goos string) string {
+	t, ok := inTerminalCombo(c, goos)
+	if !ok {
+		return ""
+	}
+	return i18n.T("hotkeys.inTerminal", i18n.Args{"keys": formatCombo(t, false)})
+}
+
+// shownCombo is the chord a list that teaches the keys spells for c: the one
+// that answers whatever holds the keyboard.
+func shownCombo(c combo, isMac bool) combo {
+	if !isMac && spendsControlCode(c) {
+		c.Shift = true
+	}
+	return c
 }
 
 // comboOf reads a decoded JSON value as a combo: all three flags booleans

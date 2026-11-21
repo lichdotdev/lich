@@ -442,7 +442,7 @@ func (u *window) browserInput(gtx C, p *browserPaneUI, session string, scale flo
 		key.Filter{Focus: &p.tag, Name: "=", Required: key.ModShortcut, Optional: key.ModShift},
 		key.Filter{Focus: &p.tag, Name: "+", Required: key.ModShortcut, Optional: key.ModShift},
 		key.Filter{Focus: &p.tag, Name: "0", Required: key.ModShortcut},
-		key.Filter{Focus: &p.tag, Name: "E", Required: key.ModShortcut | key.ModShift},
+		key.Filter{Focus: &p.tag, Name: "X", Required: key.ModShortcut | key.ModShift},
 		key.Filter{Focus: &p.tag, Name: "Z", Required: key.ModShortcut},
 		key.Filter{Focus: &p.tag, Name: key.NameReturn, Required: key.ModShortcut},
 		key.Filter{Focus: &p.tag, Name: key.NameEnter, Required: key.ModShortcut},

@@ -415,7 +415,7 @@ func (u *window) notesPointer(gtx C, p *browserPaneUI, session string, x, y floa
 }
 
 // notesKey takes the keys of the pick and the pencil from the page:
-// Ctrl+Shift+E (Cmd on macOS) turns the pick on and off, Esc closes the note
+// Ctrl+Shift+X (Cmd on macOS) turns the pick on and off, Esc closes the note
 // or stops the tool, Ctrl+Z takes back the last stroke and Ctrl+Enter sends
 // what waits. It reports whether it took e.
 func (u *window) notesKey(p *browserPaneUI, session string, e key.Event) bool {
@@ -424,7 +424,7 @@ func (u *window) notesKey(p *browserPaneUI, session string, e key.Event) bool {
 	}
 	n := &p.notes
 	switch {
-	case e.Name == "E" && e.Modifiers == key.ModShortcut|key.ModShift:
+	case e.Name == "X" && e.Modifiers == key.ModShortcut|key.ModShift:
 		n.setPicking(!n.picking)
 	case e.Name == key.NameEscape && n.picking:
 		if n.open {

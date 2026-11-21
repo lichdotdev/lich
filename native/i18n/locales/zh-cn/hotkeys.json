@@ -12,7 +12,6 @@
     "closeSession": "关闭当前会话",
     "togglePin": "置顶或取消置顶当前会话",
     "openTerminal": "在会话目录中打开终端",
-    "delegate": "委派给另一个会话",
     "nextSession": "下一个会话",
     "prevSession": "上一个会话",
     "nextWaitingSession": "下一个等待输入的会话",
@@ -37,24 +36,8 @@
     "toggleGit": "切换 Git 面板",
     "tour": "开始导览"
   },
-  "terminalCost": {
-    "a": "Ctrl+{key} 在 shell 中用于移到行首，会话将收不到这个按键。",
-    "c": "Ctrl+{key} 在 shell 中用于中断，会话将收不到这个按键。",
-    "d": "Ctrl+{key} 在 shell 中用于结束输入，会话将收不到这个按键。",
-    "e": "Ctrl+{key} 在 shell 中用于移到行尾，会话将收不到这个按键。",
-    "k": "Ctrl+{key} 在 shell 中用于删除到行尾，会话将收不到这个按键。",
-    "l": "Ctrl+{key} 在 shell 中用于清屏，会话将收不到这个按键。",
-    "q": "Ctrl+{key} 在 shell 中用于恢复输出，会话将收不到这个按键。",
-    "r": "Ctrl+{key} 在 shell 中用于搜索历史，会话将收不到这个按键。",
-    "s": "Ctrl+{key} 在 shell 中用于暂停输出，会话将收不到这个按键。",
-    "u": "Ctrl+{key} 在 shell 中用于删除到行首，会话将收不到这个按键。",
-    "w": "Ctrl+{key} 在 shell 中用于删除前一个词，会话将收不到这个按键。",
-    "z": "Ctrl+{key} 在 shell 中用于挂起，会话将收不到这个按键。",
-    "f": "Ctrl+{key} 用于会话终端自己的搜索，会话将收不到这个按键。",
-    "v": "Ctrl+{key} 是 lich 发给智能体的图片粘贴，会话将收不到这个按键。",
-    "Backspace": "Ctrl+{key} 是 lich 发给智能体的“删除前一个词”，会话将收不到这个按键。"
-  },
   "unassigned": "未分配",
+  "inTerminal": "终端中为 {keys}",
   "shortcuts": {
     "passthroughTitle": "传递给智能体",
     "attachImage": "从剪贴板附加图片",

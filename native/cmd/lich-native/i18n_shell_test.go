@@ -85,8 +85,8 @@ func TestHotkeyTablesFollowTheLanguageOnTheNextFrame(t *testing.T) {
 	if hotkeyGroups[0].label != "Sessões" {
 		t.Errorf("group label %q", hotkeyGroups[0].label)
 	}
-	if got := terminalCost(combo{Mod: true, Key: "c"}); !strings.HasPrefix(got, "Ctrl+C é o atalho do shell para interromper") {
-		t.Errorf("terminal cost %q", got)
+	if got := inTerminalHint(combo{Mod: true, Key: "n"}, "linux"); got != "Ctrl+Shift+N no terminal" {
+		t.Errorf("in terminal %q", got)
 	}
 }
 
@@ -98,9 +98,7 @@ func TestEveryKeyTheTablesNameResolvesInEveryLocale(t *testing.T) {
 	for _, g := range hotkeyGroups {
 		keys = append(keys, g.labelKey)
 	}
-	for _, key := range terminalChordCosts {
-		keys = append(keys, key)
-	}
+	keys = append(keys, "hotkeys.inTerminal")
 	for _, key := range costMissReasonKeys {
 		keys = append(keys, key)
 	}
@@ -114,7 +112,7 @@ func TestEveryKeyTheTablesNameResolvesInEveryLocale(t *testing.T) {
 	}
 	for _, l := range i18n.Locales {
 		for _, key := range keys {
-			if i18n.In(l, key, i18n.Args{"key": "C"}) == "" {
+			if i18n.In(l, key, i18n.Args{"key": "C", "keys": "Ctrl+Shift+C"}) == "" {
 				t.Errorf("%s has no text for %s", l, key)
 			}
 		}

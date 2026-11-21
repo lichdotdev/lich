@@ -80,9 +80,12 @@ func gioNames(web string) []key.Name {
 	return nil
 }
 
-// chordModifiers are the modifier sets a combo's chord arrives with: the
-// primary modifier is Ctrl, Command or the Super key.
-func chordModifiers(c combo) []key.Modifiers {
+// chordModifiers are the modifier sets a combo's chord arrives with. The
+// primary modifier is Ctrl or the Super key, and Command on macOS, where Ctrl
+// also counts for a chord no terminal program reads as a control code: a
+// letter's Ctrl chord belongs to the program in the terminal, and Ctrl+Tab
+// stands in for Command+Tab, which is the system's.
+func chordModifiers(c combo, goos string) []key.Modifiers {
 	var base key.Modifiers
 	if c.Shift {
 		base |= key.ModShift
@@ -90,26 +93,75 @@ func chordModifiers(c combo) []key.Modifiers {
 	if c.Alt {
 		base |= key.ModAlt
 	}
-	if !c.Mod {
+	switch {
+	case !c.Mod:
 		return []key.Modifiers{base}
+	case goos != "darwin":
+		return []key.Modifiers{base | key.ModCtrl, base | key.ModSuper}
+	case isLetter(c.Key):
+		return []key.Modifiers{base | key.ModCommand}
 	}
-	return []key.Modifiers{base | key.ModCtrl, base | key.ModCommand, base | key.ModSuper}
+	return []key.Modifiers{base | key.ModCommand, base | key.ModCtrl}
 }
+
+func isLetter(k string) bool { return len(k) == 1 && 'a' <= k[0] && k[0] <= 'z' }
 
 // comboFilters are the key filters that deliver c's chord and nothing else:
 // the modifiers are required and none is optional, so Ctrl+Shift+T is not
 // also Ctrl+T. No Focus, so the chord is the window's whoever holds the focus.
-func comboFilters(c combo) []key.Filter {
+func comboFilters(c combo, goos string) []key.Filter {
 	if c.Key == "" {
 		return nil
 	}
 	var filters []key.Filter
 	for _, name := range gioNames(c.Key) {
-		for _, mods := range chordModifiers(c) {
+		for _, mods := range chordModifiers(c, goos) {
 			filters = append(filters, key.Filter{Name: name, Required: mods})
 		}
 	}
 	return filters
+}
+
+// spendsControlCode is a chord a terminal program reads as a control code,
+// Ctrl and a letter, which shells, Claude Code, Codex and vim all bind.
+func spendsControlCode(c combo) bool {
+	return c.Mod && !c.Shift && !c.Alt && isLetter(c.Key)
+}
+
+// hotkeyFilters are comboFilters for a window hotkey, which leaves a focused
+// terminal its control codes: there a Ctrl+letter hotkey answers to
+// Ctrl+Shift+letter, a chord no terminal program binds, and anywhere else to
+// both. Command reaches no terminal, so macOS has one chord everywhere.
+func hotkeyFilters(c combo, goos string, inTerminal bool) []key.Filter {
+	if goos == "darwin" || !spendsControlCode(c) {
+		return comboFilters(c, goos)
+	}
+	shifted := c
+	shifted.Shift = true
+	if inTerminal {
+		return comboFilters(shifted, goos)
+	}
+	return append(comboFilters(c, goos), comboFilters(shifted, goos)...)
+}
+
+// inTerminalCombo is the chord c answers to in a focused terminal, and false
+// when that is c itself.
+func inTerminalCombo(c combo, goos string) (combo, bool) {
+	if goos == "darwin" || !spendsControlCode(c) {
+		return c, false
+	}
+	c.Shift = true
+	return c, true
+}
+
+// filtersTake reports whether one of filters delivers e.
+func filtersTake(filters []key.Filter, e key.Event) bool {
+	for _, f := range filters {
+		if f.Name == e.Name && f.Required == e.Modifiers {
+			return true
+		}
+	}
+	return false
 }
 
 // keyStateOf reads a Gio key event as the matcher's KeyState.

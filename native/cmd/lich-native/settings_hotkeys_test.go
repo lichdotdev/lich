@@ -49,7 +49,7 @@ func TestHotkeysStoreEveryAction(t *testing.T) {
 	}
 	s.setHotkey(hotkeyNewSession, combo{Mod: true, Shift: true, Key: "j"})
 	s.setHotkey(hotkeyQuit, combo{Mod: true, Alt: true, Key: "q"})
-	s.setHotkey(hotkeyDelegate, comboUnassigned)
+	s.setHotkey(hotkeySplitBelow, comboUnassigned)
 	waitForSetting(t, f, hotkeysSettingKey+"@", mustStringify(t, s.hotkeys.current()))
 
 	var raw map[string]map[string]any
@@ -59,8 +59,8 @@ func TestHotkeysStoreEveryAction(t *testing.T) {
 	if len(raw) != len(hotkeyActions) {
 		t.Errorf("stored %d actions, want all %d", len(raw), len(hotkeyActions))
 	}
-	if got := raw["delegate"]; got["key"] != "" || got["mod"] != false {
-		t.Errorf("delegate = %v, want the unassigned shape", got)
+	if got := raw["splitBelow"]; got["key"] != "" || got["mod"] != false {
+		t.Errorf("splitBelow = %v, want the unassigned shape", got)
 	}
 
 	again := newSettingsScreen(context.Background(), client, nil, func() {})

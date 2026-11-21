@@ -37,7 +37,7 @@ func shortcutGroupsOf(bound hotkeyBindings, goos string) []shortcutGroup {
 		group := shortcutGroup{title: i18n.T(g.labelKey)}
 		for _, a := range hotkeyActions {
 			if a.group == g.id {
-				group.rows = append(group.rows, shortcutRow{i18n.T(a.labelKey), formatCombo(bound[a.id], goos == "darwin")})
+				group.rows = append(group.rows, shortcutRow{i18n.T(a.labelKey), formatCombo(shownCombo(bound[a.id], goos == "darwin"), goos == "darwin")})
 			}
 		}
 		groups = append(groups, group)

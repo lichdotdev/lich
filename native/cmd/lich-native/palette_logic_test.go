@@ -403,7 +403,8 @@ func TestActionGroupsListChordsAsBound(t *testing.T) {
 		}
 		return out
 	}
-	equal(t, "pin", lines(actionGroups(" pin", defaultHotkeys(), false, all)), []string{"Sessions: togglePin Ctrl+Shift+K"})
+	// Ctrl+J is bound; the palette spells the chord that answers in a terminal too.
+	equal(t, "dock", lines(actionGroups(" dock", defaultHotkeys(), false, all)), []string{"View: toggleDock Ctrl+Shift+J"})
 
 	rebound := defaultHotkeys()
 	rebound[hotkeySettings] = combo{Mod: true, Shift: true, Key: "o"}
