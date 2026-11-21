@@ -105,6 +105,10 @@
     "drop": "Tirar da fila",
     "edit": "↑ edita a fila"
   },
+  "search": {
+    "placeholder": "Busque nas suas mensagens",
+    "empty": "Nenhuma mensagem corresponde"
+  },
   "tools": {
     "loading": "Carregando…",
     "mcpTitle": "Servidores MCP",

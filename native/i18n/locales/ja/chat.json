@@ -100,6 +100,10 @@
     "drop": "キューから外す",
     "edit": "↑ でキューを編集"
   },
+  "search": {
+    "placeholder": "送ったメッセージを検索",
+    "empty": "一致するメッセージはありません"
+  },
   "tools": {
     "loading": "読み込み中…",
     "mcpTitle": "MCP サーバー",

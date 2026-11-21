@@ -109,8 +109,11 @@ type chatView struct {
 	// may grow over the conversation up to slashRoom, the pane's height.
 	slash     chatSlash
 	slashRoom int
-	// tools is the /mcp or /skills panel, in the slash list's place.
-	tools chatTools
+	// tools is the /mcp or /skills panel, in the slash list's place, and
+	// search the Ctrl+R list of the messages sent; history is the ↑/↓ walk.
+	tools   chatTools
+	search  chatSearch
+	history chatHistory
 	// unsent is a message the backend refused, handed back to the editor,
 	// ahead of what was typed since, on the next frame.
 	mu     sync.Mutex
@@ -379,7 +382,11 @@ func (u *window) chatActs(gtx C, p *chatPane, sv sessionView, keys, working bool
 	if p.tools.opened() && (p.editor.Len() > 0 || p.tools.kind == chatSkillsCommand && !p.tools.focus && gtx.Focused(&p.editor)) {
 		p.tools.shut()
 	}
-	p.slash.blocked = !keys || asking != nil || p.picker.panel.Opened() || p.tools.opened()
+	sent := sentHistory(u.model.chat.of(sv.ID))
+	if keys && asking == nil && !p.picker.panel.Opened() && !p.tools.opened() {
+		p.search.acts(gtx, &p.editor, sent)
+	}
+	p.slash.blocked = !keys || asking != nil || p.picker.panel.Opened() || p.tools.opened() || p.search.open
 	if !p.slash.blocked {
 		p.slash.act(gtx, &p.editor)
 	}
@@ -394,24 +401,12 @@ func (u *window) chatActs(gtx C, p *chatPane, sv sessionView, keys, working bool
 	case !gtx.Focused(&p.editor):
 		gtx.Execute(key.FocusCmd{Tag: &p.editor})
 	}
+	u.escapeChat(gtx, p, sv.ID, waiting, asking)
 	if p.editor.Len() > 0 {
 		waiting = nil
 	}
-	for {
-		ev, ok := gtx.Event(key.Filter{Focus: &p.editor, Name: key.NameEscape})
-		if !ok {
-			break
-		}
-		e, ok := ev.(key.Event)
-		if !ok || e.State != key.Press || u.unholdChat(p, sv.ID) {
-			continue
-		}
-		if waiting != nil {
-			u.answerChat(sv.ID, waiting.ID, permitOption(waiting.Permission, api.PermitRejectOnce))
-		}
-	}
 	u.queueActs(gtx, p, sv.ID)
-	u.composerKeys(gtx, p, sv.ID, keys && asking == nil)
+	u.composerKeys(gtx, p, sv.ID, sent, keys && asking == nil && !p.search.open)
 	p.undo.Handle(gtx, &p.editor)
 	for {
 		ev, ok := p.editor.Update(gtx)
@@ -442,6 +437,32 @@ func (u *window) chatActs(gtx C, p *chatPane, sv sessionView, keys, working bool
 	for k, c := range p.answers {
 		if c.Clicked(gtx) {
 			u.answerChat(sv.ID, k.item, k.option)
+		}
+	}
+}
+
+// escapeChat runs Esc on the box once the slash list, the panel and the
+// search took theirs, as Claude Code's prompt does: it takes a waiting message
+// back, rejects a waiting permission on an empty box, and otherwise stops the
+// turn running as Stop does, the box's text kept. A waiting question has the
+// keys on its card.
+func (u *window) escapeChat(gtx C, p *chatPane, id string, waiting, asking *backend.ChatItem) {
+	for {
+		ev, ok := gtx.Event(key.Filter{Focus: &p.editor, Name: key.NameEscape})
+		if !ok {
+			return
+		}
+		e, ok := ev.(key.Event)
+		if !ok || e.State != key.Press || u.unholdChat(p, id) {
+			continue
+		}
+		switch {
+		case waiting != nil:
+			if p.editor.Len() == 0 {
+				u.answerChat(id, waiting.ID, permitOption(waiting.Permission, api.PermitRejectOnce))
+			}
+		case asking == nil && u.model.chat.isRunning(id):
+			go func() { u.chatFailed(u.client.ChatCancel(u.ctx, id)) }()
 		}
 	}
 }
@@ -517,7 +538,11 @@ func (u *window) chatComposer(gtx C, th *ui.Theme, p *chatPane, sv sessionView, 
 			// leans to the theme's primary, as the backdrop around it does
 			tinted := *th
 			tinted.Palette.Input = ui.MixOKLab(th.Palette.Input, th.Primary, chatComposerFillTint)
-			ta := tinted.Textarea(&p.editor, i18n.T("chat.composer.placeholder", i18n.Args{"provider": name}))
+			hint := i18n.T("chat.composer.placeholder", i18n.Args{"provider": name})
+			if p.search.open {
+				hint = i18n.T("chat.search.placeholder")
+			}
+			ta := tinted.Textarea(&p.editor, hint)
 			ta.MaxHeight, ta.MinHeight, ta.Radius, ta.Steady, ta.History = chatComposerMax, chatComposerMin, ui.RadiusLG, true, &p.undo
 			ta.Size, ta.Leading, ta.PadX, ta.PadY = markdown.BodySize, markdown.BodySize*markdown.LineHeightScale, chatComposerPadX, chatComposerPadY
 			ta.Foot = u.chatChips(th, p, sv, working, ft)
@@ -527,6 +552,8 @@ func (u *window) chatComposer(gtx C, th *ui.Theme, p *chatPane, sv sessionView, 
 			gtx.Constraints.Max.X = d.Size.X
 			p.slash.layout(gtx, th, p.slashRoom-d.Size.Y-gtx.Dp(2*chatComposerGap))
 			u.chatToolsPanel(gtx, th, p, sv, p.slashRoom-d.Size.Y-gtx.Dp(2*chatComposerGap))
+			p.search.refresh(gtx, &p.editor, sentHistory(u.model.chat.of(sv.ID)))
+			p.search.layout(gtx, th, p.slashRoom-d.Size.Y-gtx.Dp(2*chatComposerGap))
 			return d
 		}),
 		layout.Rigid(func(gtx C) D {

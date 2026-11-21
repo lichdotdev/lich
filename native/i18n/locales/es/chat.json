@@ -105,6 +105,10 @@
     "drop": "Quitar de la cola",
     "edit": "↑ edita la cola"
   },
+  "search": {
+    "placeholder": "Busca en tus mensajes",
+    "empty": "Ningún mensaje coincide"
+  },
   "tools": {
     "loading": "Cargando…",
     "mcpTitle": "Servidores MCP",

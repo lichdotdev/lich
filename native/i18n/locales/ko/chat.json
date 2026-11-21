@@ -100,6 +100,10 @@
     "drop": "대기열에서 빼기",
     "edit": "↑ 대기열 편집"
   },
+  "search": {
+    "placeholder": "보낸 메시지 검색",
+    "empty": "일치하는 메시지가 없습니다"
+  },
   "tools": {
     "loading": "불러오는 중…",
     "mcpTitle": "MCP 서버",
