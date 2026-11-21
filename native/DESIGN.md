@@ -173,6 +173,17 @@ the current tool reads as a button that can switch tools.
   search and effort, keeps it and scrolls the rest itself. `Above()` makes a panel prefer the room over its
   trigger.
 
+### Pickers, steppers and add rows
+
+- **A select** is `th.SelectTrigger`: a 36px field with its edge, the value, an optional lead (a provider's mark,
+  a profile's avatar) and the chevron, opening on `Popover` with the current choice checked. A new select uses
+  it rather than drawing its own; the theme's trigger, with its miniature, is the one still drawn apart.
+- **A stepper** is minus, the reading and plus as ghost buttons in one bordered track, the segmented control's,
+  so it stands as tall as one beside it (`settings_stepper.go`). The reading is the reset to the default; there
+  is no Reset button.
+- **An add row** (New profile, Import theme, Add service) is a ghost `SizeSM` button with a plus, at the list's
+  left under its last row, never a dashed card or an outline button across the column.
+
 ### Tooltips
 
 `th.Tooltip`, in a few words: what an icon-only control does, or why a control is disabled. What a row left
@@ -719,15 +730,64 @@ Control, Hotkeys, Updates, Help) stays one entry. A search result's path names t
 
 The pane's content sits in a reading column centred at `settingsColumn` (760px), the title included; the
 extension catalog keeps the pane's width, since its grid takes columns as the pane grows. A page title has no
-subtitle. A count beside it, in muted mono, appears only on Notifications (switches on) and Footer (items
-shown).
+subtitle; the Footer's alone holds its one line of how to use the editor, and Restore default at its right. A
+count beside it, in muted mono, appears only on Notifications (switches on) and Footer (items shown).
 
 Every row keeps its control at its right, a segmented control included; what the chosen answer does is a line
 under the description (`settingRow.detail`), never under the control. The control drops under the text only
-when the row is too narrow for both.
+when the row is too narrow for both. Rows stand on seams, as the Welcome's cells do. A group of rows inside a
+page is headed by the nav's own label, uppercase with its hairline to the column's edge (`groupHeading`).
+
+A row a project changed says so in its scope line ("Global: Claude Code · Use Global") and nothing else: no side
+bar, no tint. The search's flash is the one fill a row takes.
 
 Ctrl+F (Cmd+F on macOS) focuses the search field while Settings is open, and its key cap sits at the field's
 right end while the field is empty. It is Settings' own key, not a window hotkey, and not in the Hotkeys table.
+
+#### The scope selector
+
+The nav's top is the scope being edited, as one line of two (`settings_scope_menu.go`): the name over a muted
+mono line, then what runs there and the chevrons, on the nav's hover fill while hovered or open, with no border.
+Global's line is "Every project"; a project's is its path, its last parts behind "…" (`shortPath`). What runs is
+the pixel mark of each provider its sessions run, once each and at most four, at the sidebar's 1dp a cell, led
+by the sidebar's souls while one of them is mid-turn. The menu, on `Popover` and as wide as the trigger, holds
+Global, a seam, then every open project in that same shape, with how many settings it changed as a muted mono
+number after its marks ("· 1") and the check on the scope being edited. A project has no color here or anywhere:
+the pane names the project in scope in a pill of its name alone.
+
+#### Providers in Settings
+
+A provider is its book's pixel mark wherever Settings names it, never the vector logo (`providerGlyph`): at 2dp
+a cell in a box of 30, the room of Cursor's fifteen cells, so every name after one starts on the same line, on
+the provider list, the Add provider list, a provider's title and the Sandbox's rows; at the sidebar's 1dp in a
+picker's row, a select's lead and the plugin rows. A provider with no book keeps its vector mark in that box.
+An installed provider in Add provider is its mark, its name and its switch on one line; a custom path or "not
+found" stays on that line, muted.
+
+Plan usage is the usage menu's blocks (`usageBlocks`): the plan's name muted, then a window a block, its share at
+the right, the bar of twenty segments and when it resets. The account is on the profile's row, never repeated
+under the bars.
+
+A profile's row and a hotkey's row show their `⋯` under the pointer and while its menu is open, its room kept
+at rest so nothing on the line moves.
+
+#### Appearance, Hotkeys and the rest
+
+- **Theme.** A card is its miniature and its name; the theme in use stands on an `Accent` fill with a check
+  before its name, a card under the pointer on the hover fill, the rest on nothing. There is no ring and no
+  count of themes. Import theme is the add row under the strip.
+- **Footer.** The preview is a stage on `Background` with the two balloons at its foot, each side's items read
+  with example values and left out past the room, as over a session (`previewBalloon`). The editor's zones and
+  chips stay as they are: dragging is the editor.
+- **Hotkeys.** The chord is a `KeyCap` that records a new one on a click; recording, it is a bordered box in the
+  ring. Reset is a ghost icon button only while the chord is not the default, and the row's `⋯` holds Record a
+  new shortcut and Unassign.
+- **Sandbox.** The machine's answer is a line, not a box: a shield in `TonePass` (a crossed one muted when it
+  cannot confine), the sentence in medium and the backend in muted mono.
+- **Help.** Open log folder stands at its row's right, the log's path as the row's detail; Repository is a link
+  with the external glyph, as a provider's Documentation.
+- **Services and Extensions** carry no line under their title.
+- The diff layouts are Unified and Split.
 
 ### Loading
 
