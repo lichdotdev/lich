@@ -2,6 +2,8 @@ package main
 
 import (
 	"runtime"
+	"strconv"
+	"strings"
 
 	"gioui.org/io/event"
 	"gioui.org/io/key"
@@ -55,16 +57,39 @@ var hotkeyHandlers = map[hotkeyID]hotkeyHandler{
 	hotkeyTour:               {nil, func(u *window, _ C) { u.startGuide(basicsID) }},
 	hotkeyCommandPalette:     {nil, (*window).hotkeyPalette},
 	hotkeyQuit:               {nil, func(u *window, _ C) { go u.askOrQuit(closeAsk) }},
+	hotkeyTextLarger:         {nil, func(u *window, gtx C) { u.stepTextSize(gtx, 1) }},
+	hotkeyTextSmaller:        {nil, func(u *window, gtx C) { u.stepTextSize(gtx, -1) }},
+	hotkeyTextReset:          {nil, func(u *window, gtx C) { u.stepTextSize(gtx, 0) }},
+	hotkeyLastTab:            tabHandler(0),
+}
+
+func init() {
+	for n := 1; n <= stripTabKeys; n++ {
+		hotkeyHandlers[hotkeyTab(n)] = tabHandler(n)
+	}
 }
 
 // pollHotkeys is pollChords over the actions this window can carry out now,
 // then the ones the command palette picked.
 func (u *window) pollHotkeys(gtx C) []hotkeyID {
-	fired := pollChords(gtx, &u.settings.hotkeys, runtime.GOOS, u.terms.focused(gtx), func(id hotkeyID) bool {
+	inTerminal, picking := u.terms.focused(gtx), u.chats.pickerHasKeys(gtx)
+	fired := pollChords(gtx, &u.settings.hotkeys, runtime.GOOS, inTerminal, func(id hotkeyID) bool {
 		handler, ok := hotkeyHandlers[id]
-		return ok && (handler.ready == nil || handler.ready(u))
+		return ok && (handler.ready == nil || handler.ready(u)) && !leftToFocus(id, inTerminal, picking)
 	})
 	return append(fired, u.pickedHotkeys()...)
+}
+
+// leftToFocus is a chord the focused widget keeps: F6 in a terminal, which
+// is already there, and the digits while a model picker takes Ctrl+1..4.
+func leftToFocus(id hotkeyID, inTerminal, picking bool) bool {
+	switch {
+	case id == hotkeyFocusTerminal:
+		return inTerminal
+	case id == hotkeyLastTab || strings.HasPrefix(string(id), "tab"):
+		return picking
+	}
+	return false
 }
 
 // pollChords answers the actions whose bound chord was pressed this frame, in
@@ -321,4 +346,69 @@ func (u *window) hotkeyStartServices(C) {
 	if p, ok := u.model.project(); ok {
 		u.applyService(serviceRequest{op: serviceStartAll, project: p.ID})
 	}
+}
+
+// tabHandler shows the strip's n-th tab, from 1, or its last for 0. A tab
+// the strip does not have still takes the chord: let through, Ctrl+digit
+// types the digit into a terminal without the kitty protocol.
+func tabHandler(n int) hotkeyHandler {
+	return hotkeyHandler{
+		run: func(u *window, _ C) {
+			if id, ok := u.stripTab(n); ok {
+				u.settings.hide()
+				u.showStripTab(id)
+			}
+		},
+	}
+}
+
+func (u *window) stripTab(n int) (string, bool) {
+	tabs, _ := u.model.stripTabs()
+	return stripTabAt(tabs, n)
+}
+
+func stripTabAt(tabs []projectTab, n int) (string, bool) {
+	switch {
+	case len(tabs) == 0 || n > len(tabs):
+		return "", false
+	case n == 0:
+		return tabs[len(tabs)-1].ID, true
+	}
+	return tabs[n-1].ID, true
+}
+
+// stepTextSize steps the page's zoom while a page holds the keys, and the
+// terminals' text size anywhere else; 0 is back to the default.
+func (u *window) stepTextSize(gtx C, step int) {
+	if u.pageHasKeys(gtx) {
+		zoom := clampZoom(u.browserZoom + float64(step)*zoomStep)
+		if step == 0 {
+			zoom = defaultZoom
+		}
+		u.setBrowserZoom(zoom)
+		return
+	}
+	p := u.settings.look.prefs
+	size := steppedTextSize(p.fontSize, step)
+	if size == p.fontSize {
+		return
+	}
+	p.fontSize = size
+	u.settings.commitAppearance(p, terminalFontSizeKey, strconv.Itoa(size))
+}
+
+func steppedTextSize(size, step int) int {
+	if step == 0 {
+		return defaultTerminalSize
+	}
+	return clampTerminalFontSize(size + step*terminalFontStep)
+}
+
+func (u *window) pageHasKeys(gtx C) bool {
+	for _, p := range u.browserPanes {
+		if gtx.Focused(&p.tag) {
+			return true
+		}
+	}
+	return false
 }

@@ -2,6 +2,8 @@ package main
 
 import (
 	"encoding/json"
+	"slices"
+	"strconv"
 	"strings"
 	"unicode/utf8"
 
@@ -50,7 +52,28 @@ const (
 	hotkeyTour               hotkeyID = "tour"
 	hotkeyShortcuts          hotkeyID = "shortcuts"
 	hotkeyStartServices      hotkeyID = "startServices"
+	hotkeyTextLarger         hotkeyID = "textLarger"
+	hotkeyTextSmaller        hotkeyID = "textSmaller"
+	hotkeyTextReset          hotkeyID = "textReset"
+	hotkeyLastTab            hotkeyID = "lastTab"
 )
+
+// stripTabKeys is how many strip tabs a digit reaches, Ctrl+1 to Ctrl+8;
+// Ctrl+9 is the last tab, as in a browser.
+const stripTabKeys = 8
+
+// hotkeyTab is the action that shows the strip's n-th tab, from 1.
+func hotkeyTab(n int) hotkeyID { return hotkeyID("tab" + strconv.Itoa(n)) }
+
+// tabActions are Ctrl+1 to Ctrl+8, then Ctrl+9 for the last tab.
+func tabActions() []hotkeyAction {
+	var actions []hotkeyAction
+	for n := 1; n <= stripTabKeys; n++ {
+		id := hotkeyTab(n)
+		actions = append(actions, hotkeyAction{id: id, labelKey: "hotkeys.action." + string(id), group: hotkeyGroupView, combo: modChord(strconv.Itoa(n))})
+	}
+	return append(actions, hotkeyAction{id: hotkeyLastTab, labelKey: "hotkeys.action.lastTab", group: hotkeyGroupView, combo: modChord("9")})
+}
 
 // hotkeyGroup is which part of the app an action acts on.
 type hotkeyGroup string
@@ -109,7 +132,7 @@ func shiftChord(key string) combo { return combo{Mod: true, Shift: true, Key: ke
 // and A, C, V, X, Z and Y stay with text editing, Q with XON, S with the
 // editor's save and U with IBus, whose Ctrl+Shift+U starts Unicode entry.
 // None is Ctrl+Alt: on Windows that is AltGr, which types text.
-var hotkeyActions = labelActions([]hotkeyAction{
+var hotkeyActions = labelActions(slices.Concat([]hotkeyAction{
 	{id: hotkeyNewSession, labelKey: "hotkeys.action.newSession", group: hotkeyGroupSessions, combo: modChord("n")},
 	{id: hotkeyNewWorktree, labelKey: "hotkeys.action.newWorktree", group: hotkeyGroupSessions, combo: modChord("b")},
 	{id: hotkeyRenameSession, labelKey: "hotkeys.action.renameSession", group: hotkeyGroupSessions, combo: comboUnassigned},
@@ -119,15 +142,19 @@ var hotkeyActions = labelActions([]hotkeyAction{
 	{id: hotkeyNextSession, labelKey: "hotkeys.action.nextSession", group: hotkeyGroupSessions, combo: modChord("Tab")},
 	{id: hotkeyPrevSession, labelKey: "hotkeys.action.prevSession", group: hotkeyGroupSessions, combo: shiftChord("Tab")},
 	{id: hotkeyNextWaitingSession, labelKey: "hotkeys.action.nextWaitingSession", group: hotkeyGroupSessions, combo: modChord("i")},
-	{id: hotkeyFocusTerminal, labelKey: "hotkeys.action.focusTerminal", group: hotkeyGroupSessions, combo: comboUnassigned},
+	{id: hotkeyFocusTerminal, labelKey: "hotkeys.action.focusTerminal", group: hotkeyGroupSessions, combo: combo{Key: "F6"}},
 	{id: hotkeyNextProject, labelKey: "hotkeys.action.nextProject", group: hotkeyGroupView, combo: modChord("PageDown")},
 	{id: hotkeyPrevProject, labelKey: "hotkeys.action.prevProject", group: hotkeyGroupView, combo: modChord("PageUp")},
+}, tabActions(), []hotkeyAction{
 	// S is the editor's save, so the sidebar keeps Shift: Ctrl+S is no
 	// window action, and Ctrl+Shift+S is the chord everywhere.
 	{id: hotkeyToggleSidebar, labelKey: "hotkeys.action.toggleSidebar", group: hotkeyGroupView, combo: shiftChord("s")},
 	{id: hotkeyToggleDock, labelKey: "hotkeys.action.toggleDock", group: hotkeyGroupView, combo: modChord("j")},
 	{id: hotkeyToggleGit, labelKey: "hotkeys.action.toggleGit", group: hotkeyGroupView, combo: modChord("g")},
 	{id: hotkeyToggleFullscreen, labelKey: "hotkeys.action.toggleFullscreen", group: hotkeyGroupView, combo: combo{Key: "F11"}},
+	{id: hotkeyTextLarger, labelKey: "hotkeys.action.textLarger", group: hotkeyGroupView, combo: modChord("+")},
+	{id: hotkeyTextSmaller, labelKey: "hotkeys.action.textSmaller", group: hotkeyGroupView, combo: modChord("-")},
+	{id: hotkeyTextReset, labelKey: "hotkeys.action.textReset", group: hotkeyGroupView, combo: modChord("0")},
 	{id: hotkeySearchInFiles, labelKey: "hotkeys.action.searchInFiles", group: hotkeyGroupView, combo: shiftChord("f")},
 	{id: hotkeySplitBeside, labelKey: "hotkeys.action.splitBeside", group: hotkeyGroupView, combo: modChord("d")},
 	{id: hotkeySplitBelow, labelKey: "hotkeys.action.splitBelow", group: hotkeyGroupView, combo: modChord("e")},
@@ -144,7 +171,7 @@ var hotkeyActions = labelActions([]hotkeyAction{
 	{id: hotkeyShortcuts, labelKey: "hotkeys.action.shortcuts", group: hotkeyGroupApp, combo: combo{Key: "F1"}},
 	{id: hotkeyStartServices, labelKey: "hotkeys.action.startServices", group: hotkeyGroupApp, combo: comboUnassigned},
 	{id: hotkeyQuit, labelKey: "hotkeys.action.quit", group: hotkeyGroupApp, combo: comboUnassigned},
-})
+}))
 
 // hotkeyBindings is every action's chord.
 type hotkeyBindings map[hotkeyID]combo

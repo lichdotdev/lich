@@ -177,3 +177,57 @@ func TestNamedKeysFireAsTheirWebNames(t *testing.T) {
 		t.Errorf("fired = %v, want %v", fired, want)
 	}
 }
+
+func TestDigitsAndTextSizeChordsFireInATerminal(t *testing.T) {
+	r := newTerminalRig(t)
+	r.router.Queue(chord("1", key.ModCtrl), chord("9", key.ModCtrl), chord("=", key.ModCtrl), chord("-", key.ModCtrl), chord("0", key.ModCtrl))
+	fired, typed := r.frame(t, always)
+	want := []hotkeyID{hotkeyTab(1), hotkeyLastTab, hotkeyTextLarger, hotkeyTextSmaller, hotkeyTextReset}
+	if !slices.Equal(fired, want) || len(typed) != 0 {
+		t.Errorf("fired %v, terminal got %v; want %v", fired, typed, want)
+	}
+}
+
+func TestLeftToFocusKeepsF6ForATerminalAndDigitsForAPicker(t *testing.T) {
+	for _, c := range []struct {
+		id                  hotkeyID
+		inTerminal, picking bool
+		want                bool
+	}{
+		{hotkeyFocusTerminal, true, false, true},
+		{hotkeyFocusTerminal, false, false, false},
+		{hotkeyTab(3), false, true, true},
+		{hotkeyLastTab, false, true, true},
+		{hotkeyTab(3), true, false, false},
+		{hotkeyTextLarger, true, true, false},
+	} {
+		if got := leftToFocus(c.id, c.inTerminal, c.picking); got != c.want {
+			t.Errorf("%s (terminal %v, picker %v) = %v", c.id, c.inTerminal, c.picking, got)
+		}
+	}
+}
+
+func TestStripTabAtCountsFromOneAndZeroIsTheLast(t *testing.T) {
+	tabs := []projectTab{{ID: "a"}, {ID: "b"}, {ID: "c"}}
+	for n, want := range map[int]string{1: "a", 3: "c", 0: "c"} {
+		if got, ok := stripTabAt(tabs, n); !ok || got != want {
+			t.Errorf("%d = %q, %v", n, got, ok)
+		}
+	}
+	if _, ok := stripTabAt(tabs, 4); ok {
+		t.Error("a tab the strip does not have")
+	}
+	if _, ok := stripTabAt(nil, 0); ok {
+		t.Error("the last tab of an empty strip")
+	}
+}
+
+func TestSteppedTextSizeClampsAndResets(t *testing.T) {
+	for _, c := range []struct{ size, step, want int }{
+		{14, 1, 15}, {14, -1, 13}, {terminalFontSizeMax, 1, terminalFontSizeMax}, {terminalFontSizeMin, -1, terminalFontSizeMin}, {20, 0, defaultTerminalSize},
+	} {
+		if got := steppedTextSize(c.size, c.step); got != c.want {
+			t.Errorf("%d%+d = %d, want %d", c.size, c.step, got, c.want)
+		}
+	}
+}

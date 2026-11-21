@@ -152,6 +152,16 @@ func (c *chatScreens) takeTyped(id string) string {
 	return text
 }
 
+// pickerHasKeys reports whether a chat's model picker holds the keyboard.
+func (c *chatScreens) pickerHasKeys(gtx C) bool {
+	for _, p := range c.panes {
+		if gtx.Focused(&p.picker.query) {
+			return true
+		}
+	}
+	return false
+}
+
 func (c *chatScreens) pane(id string) *chatPane {
 	if c.panes == nil {
 		c.panes = map[string]*chatPane{}
