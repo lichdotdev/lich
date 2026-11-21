@@ -730,13 +730,13 @@ muted and uppercase, with a hairline from the label to the nav's edge (`navHeadi
 foot under a separator, with no label.
 
 A section whose rows fall into groups gives each group an entry and a page of its own (`settingsSection.pages`):
-General is Language, Window and Notifications; Appearance is Interface, Terminal (its font, its size and Copy
-on select) and Footer. The entry is named after the group, the page's title is that name, and the page draws no
+General is Language, Window and Notifications; Appearance is Interface, Themes, Terminal (its font, its size
+and Copy on select) and Footer. The entry is named after the group, the page's title is that name, and the page draws no
 group heading under it. A section with a structure of its own (Providers, Sandbox, Extensions, Services, Version
 Control, Hotkeys, Updates, Help) stays one entry. A search result's path names the section and the group.
 
 The pane's content sits in a reading column centred at `settingsColumn` (760px), the title included; the
-extension catalog keeps the pane's width, since its grid takes columns as the pane grows. A page title has no
+extension catalog and the Themes page keep the pane's width, since their grids take columns as the pane grows. A page title has no
 subtitle; the Footer's alone holds its one line of how to use the editor, and Restore default at its right. A
 count beside it, in muted mono, appears only on Notifications (switches on) and Footer (items shown).
 
@@ -780,9 +780,9 @@ at rest so nothing on the line moves.
 
 #### Appearance, Hotkeys and the rest
 
-- **Theme.** A card is its miniature and its name; the theme in use stands on an `Accent` fill with a check
-  before its name, a card under the pointer on the hover fill, the rest on nothing. There is no ring and no
-  count of themes. Import theme is the add row under the strip.
+- **Theme.** Interface's Theme row is the trigger with the selection's miniature and name; it opens a
+  `DropdownMenu` of System and every installed theme, the selection checked, then Browse themes, which opens the
+  Themes page. Choosing and installing live on that page.
 - **Footer.** The preview is a stage on `Background` with the two balloons at its foot, each side's items read
   with example values and left out past the room, as over a session (`previewBalloon`). The editor's zones and
   chips stay as they are: dragging is the editor.
@@ -836,6 +836,33 @@ The detail is sized by the window's height, not a dialog width: a screenshot at 
 45% of the window, so a tall or ultrawide window gets a wider detail. It is never narrower than the site's
 736. An installed extension the catalog lists opens the same detail from its
 row on the Installed tab.
+
+### The theme catalog
+
+Settings › Appearance › Themes is the extension catalog's shape for themes, and takes its exception for cards
+for the same reason: a theme is chosen by looking at it. The catalog tab is what the page opens on, with All,
+Dark and Light (a pack is in each scheme one of its themes is in), the search and the order over the grid; the
+installed themes are the second tab, as rows. Install from… on the title line opens the import dialog (a
+repository URL, a file, the template).
+
+- **A cover is drawn, never a picture.** The catalog carries every theme in full, so a card's 16:10 cover is a
+  small lich window in the pack's first dark theme: a sidebar, a person's message on the theme's accent, a code
+  block in its syntax colors, the Done line in its tones and a strip of its terminal colors
+  (`settings_themes_cover.go`). Under it, the name with In use or Installed, the publisher in mono, a dot per
+  variant in its background, the count of variants and their schemes, and the stars.
+- **The detail** is the pack's whole window in the chosen variant (`settings_themes_preview.go`): the tabs, a
+  sidebar of sessions, a chat with its code block, the closing line, a terminal with all sixteen colors and the
+  composer. The variants are a segmented control over the description; the one Primary is Install, or Use once
+  installed. A pack written for a newer lich keeps Install disabled, the version it needs in the tooltip.
+- **Try** paints the window in the variant and stores nothing: a bar on `Popover` at the window's foot says
+  "Trying <name>" with Revert and Keep (Primary). Keep installs the pack if it must and chooses the theme;
+  everything else gives the window its theme back: Revert, Escape, closing Settings, a selection from outside,
+  the system's light and dark switching, and a Keep that failed.
+- **Installed** is rows: Bundled (System, Light, Dark), then the installed themes with a miniature, the pack
+  and its version in mono and the newer one when there is, Update while there is, In use or Use, and the row's
+  `⋯` holding Remove, which asks first; the themes that cannot load end the list. Auto light/dark and Check for
+  updates stand at the right of the tabs' line while this tab shows. The tab wears a dot while an update or a
+  broken theme waits on it.
 
 ### Fixed headings
 
