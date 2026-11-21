@@ -60,37 +60,45 @@ var hourglassSprite = statusSprite{
 	steps: []time.Duration{500 * time.Millisecond, 500 * time.Millisecond, 500 * time.Millisecond, 500 * time.Millisecond, 600 * time.Millisecond, 90 * time.Millisecond, 90 * time.Millisecond, 90 * time.Millisecond},
 }
 
-// soulFusion is a turn ending: the three souls of the spinner, met in its
-// center, fuse into one. It plays once, from the spinner's soulsMeet frame.
-var soulFusion = statusSprite{
+// glassEnter is a session that stops to wait on you: the spinner's three
+// souls, met in its center, become the hourglass. It plays once, from the
+// spinner's soulsMeet frame, into the hourglass's first frame.
+var glassEnter = statusSprite{
 	frames: []string{
-		"........... | ........... | ........... | ........... | ........... | ....351.... | ....351.... | ....111.... | ........... | ........... | ...........",
-		"........... | ........... | ........... | ........... | .....1..... | ....553.... | ...35451... | ...35553... | ....333.... | ........... | ...........",
-		"........... | ........... | ........... | .....1..... | ....331.... | ....351.... | ...55553... | ..5544453.. | ..3544453.. | ...35553... | ....333....",
-		"........... | ........... | .....1..... | ....331.... | ....331.... | ...55553... | ..5555553.. | ..5544453.. | ..3544453.. | ...35553... | ....333....",
-		".....1..... | .....1..... | ....31..... | ....553.... | ...5553.... | ...55553... | ..5555553.. | ..5544453.. | ..3544453.. | ...35553... | ....333....",
+		"........... | ........... | ........... | ........... | ........... | .....4..... | ........... | ........... | ........... | ........... | ...........",
+		"........... | ........... | ........... | ........... | ....444.... | .....3..... | ....414.... | ........... | ........... | ........... | ...........",
+		"........... | ........... | ........... | ...44444... | ....543.... | .....3..... | ....513.... | ...41114... | ........... | ........... | ...........",
+		"........... | ........... | ..4444444.. | ...54443... | ....543.... | .....3..... | ....513.... | ...51113... | ..4111114.. | ........... | ...........",
+		"........... | ..4444444.. | ..5444443.. | ...54443... | ....543.... | .....3..... | ....513.... | ...51113... | ..5111113.. | ..4111114.. | ...........",
 	},
-	steps: []time.Duration{90 * time.Millisecond, 90 * time.Millisecond, 90 * time.Millisecond, 90 * time.Millisecond, 140 * time.Millisecond},
+	steps: []time.Duration{80 * time.Millisecond, 60 * time.Millisecond, 60 * time.Millisecond, 60 * time.Millisecond, 60 * time.Millisecond},
 }
 
-// soulRest is a finished turn nobody read: the one soul breathing, looped.
-var soulRest = statusSprite{
+// checkFusion is a turn ending: the ember the souls meet in turns green and
+// stretches into the check, white at its ends, then shines. It plays once,
+// from the spinner's soulsMeet frame.
+var checkFusion = statusSprite{
 	frames: []string{
-		"........... | .....1..... | ....31..... | ....351.... | ...5553.... | ...55553... | ..5555553.. | ..5544453.. | ..3544453.. | ...35553... | ....333....",
-		"......1.... | .....31.... | .....31.... | ....553.... | ...55553... | ...55553... | ..5555553.. | ..5544453.. | ..3544453.. | ...35553... | ....333....",
-		"........... | ......1.... | .....31.... | ....351.... | ....5553... | ...55553... | ..5555553.. | ..5544453.. | ..3544453.. | ...35553... | ....333....",
-		".....3..... | ........... | .....1..... | ....331.... | ...35351... | ...55553... | ..5555553.. | ..5544453.. | ..3544453.. | ...35553... | ....333....",
-		"........... | ....1...... | ....31..... | ....351.... | ...5553.... | ...55553... | ..5555553.. | ..5544453.. | ..3544453.. | ...35553... | ....333....",
+		"........... | ........... | ........... | ........... | ........... | ....676.... | ....777.... | ....676.... | ........... | ........... | ...........",
+		"........... | ........... | ........... | ........... | ........... | ........... | .....44.... | .....4..... | ........... | ........... | ...........",
+		"........... | ........... | ........... | ........... | .......4... | ......84... | .....87.... | ...487..... | ...44...... | ........... | ...........",
+		"........... | ........... | ........... | ........44. | .......87.. | ......87... | .44..87.... | ..7887..... | ...77...... | ........... | ...........",
+		"........... | ........... | .........8. | ........87. | .......87.. | .8....87... | .78..87.... | ..7887..... | ...77...... | ........... | ...........",
+		"........... | ........... | .........4. | ........44. | .......44.. | .4....44... | .44..44.... | ..4444..... | ...44...... | ........... | ...........",
 	},
-	steps: []time.Duration{900 * time.Millisecond, 180 * time.Millisecond, 180 * time.Millisecond, 180 * time.Millisecond, 180 * time.Millisecond},
+	steps: []time.Duration{80 * time.Millisecond, 60 * time.Millisecond, 60 * time.Millisecond, 60 * time.Millisecond, 60 * time.Millisecond, 90 * time.Millisecond},
 }
+
+// checkDone is a finished turn nobody read, at rest: the check, still, so a
+// finished session asks the sidebar for no frame.
+const checkDone = "........... | ........... | .........8. | ........87. | .......87.. | .8....87... | .78..87.... | ..7887..... | ...77...... | ........... | ..........."
 
 // soulsMeet is the spinner's frame with the three souls together in the
 // center, where the fusion starts so the corner never jumps.
 const soulsMeet = 10
 
-// fusionStart is when a turn that ended at end starts its fusion: the next
-// time the spinner reaches soulsMeet.
+// fusionStart is when a turn that ended at end starts the motion out of the
+// spinner: the next time the spinner reaches soulsMeet.
 func fusionStart(end time.Time) time.Time {
 	tick := end.UnixNano() / int64(soulsStep)
 	n := int64(len(soulsFrames))
@@ -99,28 +107,52 @@ func fusionStart(end time.Time) time.Time {
 }
 
 // spriteInk is a status symbol's color: 4 Foreground, 5 halfway from
-// MutedForeground to it, 2 the chat flame's body, 3 MutedForeground, 1 Muted.
+// MutedForeground to it, 2 the chat flame's body, 3 MutedForeground, 1 Muted;
+// the check's 7 TonePass, 8 its lit side, toward the lighter of the theme's
+// ink and ground, and 6 its dim side, toward the surface under it.
 func spriteInk(th *ui.Theme, symbol byte) (color.NRGBA, bool) {
 	switch symbol {
 	case '5':
 		return ui.MixOKLab(th.MutedForeground, th.Foreground, 0.5), true
 	case '1':
 		return th.Muted, true
+	case '7':
+		return th.TonePass, true
+	case '8':
+		return ui.MixOKLab(th.TonePass, lighter(th.Foreground, th.Background), checkLit), true
+	case '6':
+		return ui.MixOKLab(th.TonePass, th.Surface, checkDim), true
 	}
 	return chatFlameColor(th, symbol)
 }
 
-// drawSprite paints rows, an 11x11 frame, centered in gtx's minimum size, each
-// cell the whole device pixel nearest to filling soulsSize.
+// How far the check's lit and dim sides go from TonePass.
+const (
+	checkLit = 0.4
+	checkDim = 0.5
+)
+
+// lighter is whichever of a and b is lighter, the side light comes from in
+// a dark theme and in a light one alike.
+func lighter(a, b color.NRGBA) color.NRGBA {
+	if int(a.R)+int(a.G)+int(a.B) >= int(b.R)+int(b.G)+int(b.B) {
+		return a
+	}
+	return b
+}
+
+// drawSprite paints rows, an 11x11 frame, centered in gtx's minimum size at
+// soulsSize. Each cell's edges land on whole device pixels, so the sprite
+// never blurs; at a size 11 does not divide, some cells are a pixel wider.
 func drawSprite(gtx C, th *ui.Theme, rows string) D {
-	px := max(1, (gtx.Dp(soulsSize)+soulsCells/2)/soulsCells)
-	side := soulsCells * px
+	side := max(soulsCells, gtx.Dp(soulsSize))
+	edge := func(i int) int { return (i*side + soulsCells/2) / soulsCells }
 	box := gtx.Constraints.Min
 	defer op.Offset(image.Pt((box.X-side)/2, (box.Y-side)/2)).Push(gtx.Ops).Pop()
 	for y, row := range strings.Split(rows, " | ") {
 		for x := 0; x < len(row); x++ {
 			if c, ok := spriteInk(th, row[x]); ok {
-				paint.FillShape(gtx.Ops, c, clip.Rect(image.Rect(x*px, y*px, (x+1)*px, (y+1)*px)).Op())
+				paint.FillShape(gtx.Ops, c, clip.Rect(image.Rect(edge(x), edge(y), edge(x+1), edge(y+1))).Op())
 			}
 		}
 	}
@@ -146,36 +178,62 @@ func loop(gtx C, th *ui.Theme, s statusSprite, since time.Duration) D {
 
 // statusCorner draws what a session's corner shows at rest, false for a
 // status it has nothing for: the spinner while it works, the hourglass while
-// it waits on you, and a finished turn nobody read as the soul the spinner's
-// souls fuse into.
+// it waits on you, and the check for a finished turn nobody read. A status
+// the session reached on screen, from working, plays out of the spinner when
+// its souls meet in the center; one read at startup is drawn at once.
 func statusCorner(gtx C, th *ui.Theme, sv *sessionView) (D, bool) {
-	sinceEpoch := gtx.Now.Sub(time.Unix(0, 0))
 	switch {
 	case spins(sv.status):
 		return soulsSpinner(gtx, th), true
 	case sv.status == statusWaiting:
-		return loop(gtx, th, hourglassSprite, sinceEpoch), true
+		return waitingCorner(gtx, th, sv.turn), true
 	case sv.status == statusDone && sv.unread:
-		return turnEnding(gtx, th, sv.turn), true
+		return doneCorner(gtx, th, sv.turn), true
 	}
 	return D{}, false
 }
 
-// turnEnding is the corner of a finished turn: the spinner until it reaches
-// soulsMeet, the fusion once, then the soul at rest. A turn that did not end
-// on screen, read at startup, goes straight to rest.
-func turnEnding(gtx C, th *ui.Theme, turn statusTurn) D {
+// sinceSpinner is how far past the motion out of the spinner gtx.Now is for
+// turn, false for a status that did not come from working on screen.
+func sinceSpinner(gtx C, turn statusTurn) (time.Duration, bool) {
 	if !spins(turn.from) || turn.at.IsZero() {
-		return loop(gtx, th, soulRest, gtx.Now.Sub(time.Unix(0, 0)))
+		return 0, false
 	}
-	since := gtx.Now.Sub(fusionStart(turn.at))
+	return gtx.Now.Sub(fusionStart(turn.at)), true
+}
+
+// waitingCorner is the spinner until its souls meet, the souls turning into
+// the hourglass once, then the hourglass looped.
+func waitingCorner(gtx C, th *ui.Theme, turn statusTurn) D {
+	since, played := sinceSpinner(gtx, turn)
 	switch {
+	case !played:
+		return loop(gtx, th, hourglassSprite, gtx.Now.Sub(time.Unix(0, 0)))
 	case since < 0:
 		return soulsSpinner(gtx, th)
-	case since < soulFusion.length():
-		f, left := soulFusion.at(since)
-		nextFrame(gtx, th, left)
-		return drawSprite(gtx, th, soulFusion.frames[f])
+	case since < glassEnter.length():
+		return once(gtx, th, glassEnter, since)
 	}
-	return loop(gtx, th, soulRest, since-soulFusion.length())
+	return loop(gtx, th, hourglassSprite, since-glassEnter.length())
+}
+
+// doneCorner is the spinner until its souls meet, the check forming once,
+// then the check at rest, which asks for no frame.
+func doneCorner(gtx C, th *ui.Theme, turn statusTurn) D {
+	since, played := sinceSpinner(gtx, turn)
+	switch {
+	case played && since < 0:
+		return soulsSpinner(gtx, th)
+	case played && since < checkFusion.length():
+		return once(gtx, th, checkFusion, since)
+	}
+	return drawSprite(gtx, th, checkDone)
+}
+
+// once draws s since into its single play and asks for its next frame, or
+// for the frame that ends it.
+func once(gtx C, th *ui.Theme, s statusSprite, since time.Duration) D {
+	f, left := s.at(since)
+	nextFrame(gtx, th, left)
+	return drawSprite(gtx, th, s.frames[f])
 }

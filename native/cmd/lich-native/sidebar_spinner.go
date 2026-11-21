@@ -3,6 +3,8 @@ package main
 import (
 	"time"
 
+	"gioui.org/unit"
+
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -37,9 +39,10 @@ const (
 	soulsStep  = 70 * time.Millisecond
 )
 
-// soulsSize is the side the spinner aims at, the provider mark's box: the
-// cells take the whole device pixel nearest to it, so the sprite never blurs.
-var soulsSize = 2 * sessionTreeRingR
+// soulsSize is the side the status sprites are drawn at in the corner slot:
+// smaller than the provider mark's box, so the corner reads as a mark beside
+// the name and not as a second icon.
+var soulsSize = unit.Dp(16)
 
 // soulsFrame is the frame showing at now, and when the next one starts. A
 // time before the epoch (a context that never set Now) still lands on a frame.

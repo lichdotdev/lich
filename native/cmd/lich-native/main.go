@@ -685,6 +685,7 @@ func (u *window) layout(gtx C) error {
 	content := func(gtx C) D {
 		u.layoutCodeMenu(gtx)
 		filed := u.sidebar.layoutFolderDialog(gtx, u.theme, u.model.projectFolders())
+		u.settings.layoutServiceDialog(gtx, u.theme)
 		defer func() {
 			if filed.ids != nil {
 				act.file = filed

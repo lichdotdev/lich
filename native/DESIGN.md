@@ -826,12 +826,13 @@ Every row is one line, 34dp tall: `Space(1.5)` above and below a 22px node. Rows
 
 The corner slot (`cardSlotSize`, 22px, the mark's box) is always reserved, so nothing on the line moves when
 it fills: the `⋯` under the pointer or while its menu is open; at rest the session's status, else a pin on a
-pinned session, else nothing. The status is pixel art in the theme's grays, 11x11, each pixel the whole device
-pixel nearest to filling the slot: while the session runs, three souls diving to the center and back
-(`sidebar_spinner.go`, 20 frames of 70ms); while it waits on you, an hourglass whose sand runs down and that
-turns over; for a turn nobody read, the souls fuse into one when the spinner brings them to its center, once,
-and that soul breathes until the turn is read (`sidebar_status_sprites.go`). A turn read at startup goes
-straight to the breathing soul. Idle shows nothing. Opening a session in the checkout a card runs in is the first entry of its menu.
+pinned session, else nothing. The status is pixel art, 11x11 at `soulsSize` (16dp, under the mark's box), each
+cell's edges on whole device pixels: while the session runs, three souls diving to the center and back
+(`sidebar_spinner.go`, 20 frames of 70ms), in the theme's grays; while it waits on you, an hourglass whose
+sand runs down and that turns over; for a turn nobody read, a check in `TonePass` that asks for no frame, gone
+once the turn is read. A status reached on screen from working plays out of the spinner when its souls meet in
+the center: they become the hourglass, or an ember that stretches into the check (`sidebar_status_sprites.go`);
+one read at startup is drawn at once. Idle shows nothing. Opening a session in the checkout a card runs in is the first entry of its menu.
 
 ### The node
 
@@ -858,7 +859,11 @@ and closes the rows under it. Its `⋯` and right click hold Start all, Stop all
 row as a session is: its glyph where the mark sits, the name (`MutedForeground` while it is down), how long it
 has run at the end or its exit code in `Destructive`, and the corner slot, the `⋯` under the pointer and the
 souls spinner while it stops. No dot, and no button on the row: its actions are its menu; a click shows its
-console. The open list scrolls past `serviceRowsShown` rows.
+console. The open list scrolls past `serviceRowsShown` rows. Adding a service and editing one happen in a dialog over the screen
+(`settings_service_dialog.go`), from the footer's New service, a row's Edit or Settings › Services alike,
+whose rows open it on a click: the name in a narrow field beside the command, one line on how a command runs
+with the rest in a help glyph's tooltip, Start with lich as a switch, then Delete for a saved service that is
+down, Cancel and Save.
 
 ### The rail
 

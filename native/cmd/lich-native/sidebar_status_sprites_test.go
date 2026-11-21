@@ -7,7 +7,7 @@ import (
 )
 
 func TestStatusSpritesAreElevenByElevenWithAStepEach(t *testing.T) {
-	for name, s := range map[string]statusSprite{"hourglass": hourglassSprite, "fusion": soulFusion, "rest": soulRest} {
+	for name, s := range map[string]statusSprite{"hourglass": hourglassSprite, "glass enter": glassEnter, "check": checkFusion, "check done": {frames: []string{checkDone}, steps: []time.Duration{time.Second}}} {
 		if len(s.frames) == 0 || len(s.frames) != len(s.steps) {
 			t.Fatalf("%s: %d frames, %d steps", name, len(s.frames), len(s.steps))
 		}
@@ -17,7 +17,7 @@ func TestStatusSpritesAreElevenByElevenWithAStepEach(t *testing.T) {
 				t.Errorf("%s frame %d: %d rows", name, i, len(rows))
 			}
 			for _, r := range rows {
-				if len(r) != soulsCells || strings.Trim(r, ".1345") != "" {
+				if len(r) != soulsCells || strings.Trim(r, ".1345678") != "" {
 					t.Errorf("%s frame %d: row %q", name, i, r)
 				}
 			}
