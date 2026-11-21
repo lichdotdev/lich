@@ -32,6 +32,9 @@ type appearance struct {
 	followSystem bool
 	systemDark   bool
 	changed      bool
+	// trial is a theme worn on approval (Try), drawn in place of the
+	// selection until it is kept or let go; nothing stores it.
+	trial *themeEntry
 }
 
 // appearanceView is what the picker draws from.
@@ -59,7 +62,30 @@ func (a *appearance) take() (themeEntry, bool) {
 		return themeEntry{}, false
 	}
 	a.changed = false
+	if a.trial != nil {
+		return *a.trial, true
+	}
 	return resolveTheme(a.selected, a.themes, a.systemDark, a.followSystem), true
+}
+
+// try wears e on the window alone: the stored selection stays as it was.
+func (a *appearance) try(e themeEntry) { a.update(func() { a.trial = &e }) }
+
+// trying is the theme worn on approval, false for none.
+func (a *appearance) trying() (themeEntry, bool) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	if a.trial == nil {
+		return themeEntry{}, false
+	}
+	return *a.trial, true
+}
+
+// endTrial goes back to the selection, a no-op with nothing on approval.
+func (a *appearance) endTrial() {
+	if _, ok := a.trying(); ok {
+		a.update(func() { a.trial = nil })
+	}
 }
 
 func (a *appearance) update(change func()) {
@@ -72,7 +98,7 @@ func (a *appearance) update(change func()) {
 
 // choose selects id and stores it.
 func (a *appearance) choose(id string) {
-	a.update(func() { a.selected = id })
+	a.update(func() { a.selected, a.trial = id, nil })
 	go func() {
 		if err := a.client.SelectTheme(a.ctx, id); err != nil {
 			log.Printf("appearance: save theme: %v", err)
@@ -94,10 +120,18 @@ func (a *appearance) setFollowSystem(on bool) {
 // applySelection takes a selection the backend stored, from this window,
 // another, or `lich theme switch`.
 func (a *appearance) applySelection(s backend.ThemeSelection) {
-	a.update(func() { a.selected, a.followSystem = s.Theme, s.FollowSystem })
+	a.update(func() { a.selected, a.followSystem, a.trial = s.Theme, s.FollowSystem, nil })
 }
 
-func (a *appearance) setSystemDark(dark bool) { a.update(func() { a.systemDark = dark }) }
+// setSystemDark follows the OS's scheme; a switch of it lets a trial go.
+func (a *appearance) setSystemDark(dark bool) {
+	a.update(func() {
+		if a.systemDark != dark {
+			a.trial = nil
+		}
+		a.systemDark = dark
+	})
+}
 
 // reload rereads the themes, after an install, an update or a removal.
 func (a *appearance) reload() error {

@@ -101,6 +101,9 @@ func (s *settingsScreen) shown() settingsSection {
 func (s *settingsScreen) openPage(section, page string) {
 	s.section, s.page = section, page
 	s.extensions.view.Selected = extensionsViewCatalog
+	if s.theme != nil {
+		s.theme.view.Selected = themesViewCatalog
+	}
 	saved := section
 	if page != "" {
 		saved += pageSeparator + page
@@ -113,10 +116,10 @@ func (s *settingsScreen) openPage(section, page string) {
 }
 
 // readingColumn lays w out in the pane's reading column, centred. The
-// extension catalog keeps the pane's width: its grid takes columns as the
-// pane grows.
+// extension and theme catalogs keep the pane's width: their grids take
+// columns as the pane grows.
 func (s *settingsScreen) readingColumn(gtx C, w layout.Widget) D {
-	if s.section == sectionExtensions {
+	if s.section == sectionExtensions || s.onThemesPage() {
 		return w(gtx)
 	}
 	full := gtx.Constraints.Max.X

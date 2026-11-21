@@ -103,12 +103,12 @@ func (u *window) dismissThemeUpdates(pending []themePackUpdate) {
 	u.writePref(themeUpdatesDismissedKey, strings.Join(keys, "\n"))
 }
 
-// showThemeUpdates opens Settings › Appearance with the theme strip open,
-// where each pack's update is.
+// showThemeUpdates opens Settings › Appearance › Themes on Installed, where
+// each pack's update is.
 func (u *window) showThemeUpdates() {
-	u.settings.section, u.settings.page = sectionAppearance, ""
+	u.settings.section, u.settings.page = sectionAppearance, themesPage
 	u.settings.show("", nil)
-	u.settings.theme.open = true
+	u.settings.theme.view.Selected = themesViewInstalled
 }
 
 // themeUpdateToast is the app update's prompt for theme packs: one pack

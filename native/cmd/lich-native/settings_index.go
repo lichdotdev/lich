@@ -98,6 +98,7 @@ const (
 	groupNotifications = "settings.settings.section.notifications"
 	groupTerminal      = "settings.settingsGeneral.terminalGroup"
 	groupInterface     = "settings.settingsIndex.interfaceGroup"
+	groupThemes        = "settings.themesPage.title"
 	groupFooter        = "settings.footerSettings.title"
 )
 
@@ -118,12 +119,15 @@ var settingsSections = []settingsSection{
 	{id: sectionHotkeys, labelKey: "settings.settings.section.hotkeys", icon: icons.Lucide("keyboard"), navGroupKey: navGroupGeneral, rows: hotkeyEntries()},
 	{id: sectionAppearance, labelKey: "settings.settings.section.appearance", icon: icons.Lucide("palette"), navGroupKey: navGroupAppearance, pages: []settingsPage{
 		{id: "interface", groupKey: groupInterface, icon: icons.Lucide("palette")},
+		{id: themesPage, groupKey: groupThemes, icon: icThemesBrowse},
 		{id: "terminal", groupKey: groupTerminal, icon: icons.Lucide("square-terminal")},
 		{id: "footer", groupKey: groupFooter, icon: icons.Lucide("panel-bottom")},
 	}, rows: []settingEntry{
 		{titleKey: "settings.themePicker.title", alsoKey: "settings.themePicker.searchWords", key: themeSettingKey, groupKey: groupInterface},
 		{titleKey: "settings.appearanceSettings.zoomTitle", key: zoomKey, groupKey: groupInterface},
 		{titleKey: "settings.settingsAppearance.uiFontTitle", alsoKey: "settings.settingsAppearance.uiFontSearchWords", key: uiFontKey, groupKey: groupInterface},
+		{titleKey: "settings.themesPage.catalogRow", alsoKey: "settings.themesPage.catalogSearchWords", key: themesCatalogKey, groupKey: groupThemes},
+		{titleKey: "settings.themesPage.installedRow", alsoKey: "settings.themesPage.installedSearchWords", key: themesInstalledKey, groupKey: groupThemes},
 		{titleKey: "settings.fontSetting.title", alsoKey: "settings.fontSetting.searchWords", key: terminalFontKey, groupKey: groupTerminal},
 		{titleKey: "settings.appearanceSettings.textSizeTitle", key: terminalFontSizeKey, groupKey: groupTerminal},
 		{titleKey: "settings.appearanceSettings.copyOnSelectTitle", alsoKey: "settings.appearanceSettings.copyOnSelectSearchWords", key: copyOnSelectKey, groupKey: groupTerminal},

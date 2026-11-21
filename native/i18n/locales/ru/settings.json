@@ -86,12 +86,10 @@
     "followsOs": "как в системе",
     "inUse": "используется",
     "bundled": "встроенная",
-    "updateTo": "Обновить до v{version}",
     "updateAvailable": "доступна v{version}",
     "checkUpdates": "Проверить обновления",
     "checkFailed": "Не удалось проверить обновления тем: {error}",
-    "allUpToDate": "Все темы актуальны",
-    "removeNamed": "Удалить {name}"
+    "allUpToDate": "Все темы актуальны"
   },
   "brokenThemeList": {
     "heading": {
@@ -465,9 +463,7 @@
     "hideWhitespaceDescription": "Не показывать на вкладке «Ревью» изменения, которые затрагивают только пробелы."
   },
   "settingsTheme": {
-    "autoLightDark": "Авто светлая/тёмная",
-    "pairLight": "светлая пара",
-    "pairDark": "тёмная пара"
+    "autoLightDark": "Авто светлая/тёмная"
   },
   "settingsThemeActions": {
     "reloadFailed": "Не удалось перечитать темы: {error}"
@@ -738,5 +734,64 @@
     "chat": "Чат",
     "terminal": "Терминал",
     "searchWords": "gui tui вид чат терминал по умолчанию новая сессия"
+  },
+  "themesPage": {
+    "title": "Темы",
+    "installFrom": "Установить из…",
+    "catalogTab": "Каталог",
+    "installedTab": "Установленные",
+    "catalogRow": "Каталог тем",
+    "catalogSearchWords": "обзор установить цвета палитра тёмная светлая",
+    "installedRow": "Установленные темы",
+    "installedSearchWords": "удалить обновить встроенные свои",
+    "all": "Все",
+    "dark": "Тёмные",
+    "light": "Светлые",
+    "search": "Поиск тем",
+    "inUse": "Используется",
+    "installed": "Установлена",
+    "variantsDark": {
+      "one": "{count} вариант · тёмный",
+      "few": "{count} варианта · тёмные",
+      "many": "{count} вариантов · тёмные",
+      "other": "{count} варианта · тёмные"
+    },
+    "variantsLight": {
+      "one": "{count} вариант · светлый",
+      "few": "{count} варианта · светлые",
+      "many": "{count} вариантов · светлые",
+      "other": "{count} варианта · светлые"
+    },
+    "variantsBoth": {
+      "one": "{count} вариант · тёмный и светлый",
+      "few": "{count} варианта · тёмные и светлые",
+      "many": "{count} вариантов · тёмные и светлые",
+      "other": "{count} варианта · тёмные и светлые"
+    },
+    "readFailed": "Не удалось прочитать каталог тем. Установка по URL репозитория по-прежнему работает.",
+    "noMatch": "Ни одна тема не подходит.",
+    "use": "Применить",
+    "version": "Версия",
+    "pairs": "Пары",
+    "license": "Лицензия",
+    "updated": "Обновлено",
+    "repository": "Репозиторий",
+    "needsLich": "Нужен lich {version} или новее",
+    "trying": "Примеряем {name}",
+    "revert": "Вернуть",
+    "keep": "Оставить",
+    "bundledGroup": "Встроенные",
+    "update": "Обновить",
+    "rowOptions": "Параметры {name}",
+    "browse": "Открыть каталог тем",
+    "preview": {
+      "ask": "Добавь повторные попытки в хелпер fetch",
+      "askShort": "Добавь повторы",
+      "reply": "Обернул вызов в цикл, который ждёт дольше после каждой ошибки:",
+      "sessionRefactor": "Рефакторинг auth",
+      "sessionFlaky": "Починить нестабильный тест",
+      "sessionReview": "Ревью PR #42"
+    },
+    "try": "Примерить"
   }
 }

@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"image"
-	"slices"
 	"strings"
 	"sync"
 
@@ -13,7 +12,6 @@ import (
 	"gioui.org/op"
 	"gioui.org/op/clip"
 	"gioui.org/unit"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
@@ -21,16 +19,13 @@ import (
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
-// The picker's geometry.
+// The trigger's geometry.
 var (
 	themeTriggerHeight = ui.Space(10)
 	themeTriggerPadL   = ui.Space(1.5)
 	themeTriggerMini   = image.Pt(44, 28)
-	themeCardWidth     = unit.Dp(152)
-	themeCardPreview   = ui.Space(22)
-	themeCardPad       = ui.Space(1)
-	themeCardGap       = ui.Space(3)
 	icTriangleAlert    = icons.Lucide("triangle-alert")
+	icThemesBrowse     = icons.Lucide("paintbrush")
 )
 
 // brokenRowState is one broken theme's row: its hover and its Remove.
@@ -48,70 +43,76 @@ func brokenRowOf(rows map[string]*brokenRowState, id string) *brokenRowState {
 	return r
 }
 
-// themeStripRows is the strip's grid-rows-2: a theme more costs width,
-// which scrolls, rather than height.
-const themeStripRows = 2
-
-// themePicker is Settings › Appearance › Theme: the row's trigger, the strip
-// of cards it opens, the broken themes under it, and the dialogs the cards
-// and the import card open.
+// themePicker is the themes in Settings: Interface's Theme row, a select of
+// the installed ones, and the Themes page, the catalog and the installed
+// themes, with the dialogs both open.
 type themePicker struct {
 	ctx     context.Context
 	client  *backend.Client
 	look    *appearance
 	toaster *ui.Toaster
 	root    *ui.Root
+	catalog *themeCatalogStore
 
-	open         bool
 	trigger      ui.Clickable
+	menu         ui.MenuState
 	check        ui.Clickable
-	strip        widget.List
-	importCard   themeCard
-	systemCard   themeCard
 	follow       ui.SwitchState
-	cards        map[string]*themeCard
 	brokenRemove map[string]*brokenRowState
 	dialogs      themeDialogs
+
+	// view is the Themes page's tab, themesViewCatalog each time it opens.
+	view        ui.TabsState
+	installFrom ui.Clickable
+	grid        themeGrid
+	rows        map[string]*themeRowState
+	bar         themeTrialBar
 
 	mu    sync.Mutex
 	tasks themeTasks
 }
 
 func newThemePicker(ctx context.Context, c *backend.Client, look *appearance, toaster *ui.Toaster, root *ui.Root) *themePicker {
-	p := &themePicker{ctx: ctx, client: c, look: look, toaster: toaster, root: root,
-		cards: map[string]*themeCard{}, brokenRemove: map[string]*brokenRowState{}}
-	p.strip.Axis = layout.Horizontal
-	return p
+	return &themePicker{ctx: ctx, client: c, look: look, toaster: toaster, root: root,
+		brokenRemove: map[string]*brokenRowState{}, rows: map[string]*themeRowState{}}
 }
 
-// layoutRow is the Theme row, and the strip under it while it is open. A
-// project's scope shows the row dimmed with no control: the theme is
-// global.
-func (p *themePicker) layoutRow(gtx C, th *ui.Theme, r settingRow, first bool) D {
+// themeRow is Interface's Theme row: a select of System and every installed
+// theme, and the way to the Themes page. A project's scope shows the row
+// dimmed with no control: the theme is global.
+func (s *settingsScreen) themeRow(gtx C, th *ui.Theme, r settingRow, first bool) D {
 	if r.kind == rowGlobalOnly {
 		return r.layout(gtx, th, first, nil)
 	}
-	if p.trigger.Clicked(gtx) {
-		p.open = !p.open
-	}
+	p := s.theme
 	v := p.look.view()
-	if !p.open {
-		return r.layout(gtx, th, first, func(gtx C, th *ui.Theme) D { return p.triggerButton(gtx, th, v) })
+	return r.layout(gtx, th, first, func(gtx C, th *ui.Theme) D {
+		menu := th.DropdownMenu(s.root, &p.menu, s.themeMenu(v))
+		return menu.Layout(gtx, func(gtx C) D { return p.triggerButton(gtx, th, v) })
+	})
+}
+
+// themeMenu is System and every installed theme, the selected one checked,
+// then Browse themes.
+func (s *settingsScreen) themeMenu(v appearanceView) []ui.MenuEntry {
+	p := s.theme
+	item := func(id, name string) ui.MenuEntry {
+		e := ui.MenuEntry{Label: name, Inset: true, OnClick: func() { p.look.choose(id) }}
+		if id == v.selected {
+			e.Icon, e.Inset = icCheck, false
+		}
+		return e
 	}
-	row := func(gtx C) D {
-		return r.layout(gtx, th, first, func(gtx C, th *ui.Theme) D {
-			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-				layout.Rigid(th.Text(ui.TextXS, i18n.T("settings.settingsTheme.autoLightDark")).Muted().Layout),
-				ui.Gap(2),
-				layout.Rigid(func(gtx C) D { return p.followSwitch(gtx, th, v) }),
-				ui.Gap(3),
-				layout.Rigid(func(gtx C) D { return p.triggerButton(gtx, th, v) }),
-			)
-		})
+	entries := []ui.MenuEntry{item(themeSystem, i18n.T("settings.themePicker.system"))}
+	for _, e := range v.themes {
+		entries = append(entries, item(e.def.ID, e.def.Name))
 	}
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(row),
-		layout.Rigid(func(gtx C) D { return p.stripLayout(gtx, th, v) }),
+	return append(entries,
+		ui.MenuEntry{Kind: ui.MenuSeparator},
+		ui.MenuEntry{Label: i18n.T("settings.themesPage.browse"), Icon: icThemesBrowse, OnClick: func() {
+			s.openPage(sectionAppearance, themesPage)
+			s.invalidate()
+		}},
 	)
 }
 
@@ -141,7 +142,7 @@ func selectedPair(v appearanceView) string {
 }
 
 // triggerButton is the outline h-10 button: the selection's miniature, its
-// name, and the chevron that turns while the strip is open.
+// name, and the chevron that turns while the menu is open.
 func (p *themePicker) triggerButton(gtx C, th *ui.Theme, v appearanceView) D {
 	return p.trigger.Layout(gtx, func(gtx C) D {
 		bg := th.Over(ui.Alpha(th.Palette.Input, 0.3))
@@ -157,7 +158,7 @@ func (p *themePicker) triggerButton(gtx C, th *ui.Theme, v appearanceView) D {
 				ui.Gap(2.5),
 				layout.Rigid(on.Text(ui.TextSM, selectionName(v)).Weight(font.Medium).Layout),
 				ui.Gap(3),
-				layout.Rigid(func(gtx C) D { return on.TriggerChevron(gtx, p.open) }),
+				layout.Rigid(func(gtx C) D { return on.TriggerChevron(gtx, p.menu.Opened()) }),
 			)
 		})
 		call := macro.Stop()
@@ -186,131 +187,16 @@ func (p *themePicker) selectionMiniature(gtx C, th *ui.Theme, v appearanceView, 
 	return themeMiniature(gtx, th, v.resolved.palette, px, true)
 }
 
-// stripLayout is Check for updates while a theme from a repository is
-// installed, the two-row grid of cards, Import theme and the broken themes.
-func (p *themePicker) stripLayout(gtx C, th *ui.Theme, v appearanceView) D {
-	cards := p.cardWidgets(th, v)
-	columns := (len(cards) + themeStripRows - 1) / themeStripRows
-	if p.importCard.click.Clicked(gtx) {
-		p.openImport()
-	}
-	add := th.Button(&p.importCard.click, i18n.T("settings.importThemeDialog.title"))
-	add.Variant, add.Size, add.Icon = ui.VariantGhost, ui.SizeSM, icImportTheme
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(func(gtx C) D { return p.stripHeader(gtx, th, v) }),
-		layout.Rigid(func(gtx C) D {
-			return th.ScrollArea(&p.strip).Layout(gtx, columns, func(gtx C, col int) D {
-				return p.stripColumn(gtx, cards, col, columns)
-			})
-		}),
-		layout.Rigid(func(gtx C) D { return layout.W.Layout(gtx, add.Layout) }),
-		layout.Rigid(func(gtx C) D { return p.brokenList(gtx, th, v.broken) }),
-	)
-}
-
-// stripHeader is Check for updates at the strip's right while a theme from a
-// repository is installed, nothing otherwise.
-func (p *themePicker) stripHeader(gtx C, th *ui.Theme, v appearanceView) D {
-	if !slices.ContainsFunc(v.themes, func(e themeEntry) bool { return e.def.Source != nil }) {
-		return D{}
-	}
-	checking := p.snapshot().checking
-	if p.check.Clicked(gtx) && !checking {
-		p.checkUpdates()
-	}
-	ink := th.Foreground
-	if checking {
-		ink = th.MutedForeground
-	}
-	return layout.Inset{Bottom: ui.Space(2)}.Layout(gtx, func(gtx C) D {
-		return layout.E.Layout(gtx, func(gtx C) D {
-			return th.GhostTextButton(gtx, &p.check, i18n.T("settings.themePicker.checkUpdates"), ink)
-		})
-	})
-}
-
-// stripColumn is one column of the grid-flow-col grid: cards fill a column
-// top to bottom before the next one starts, gap-3 between them all, and
-// px-0.5 pb-3 around, which keeps the ring and the scrollbar apart.
-func (p *themePicker) stripColumn(gtx C, cards []layout.Widget, col, columns int) D {
-	inset := layout.Inset{Bottom: ui.Space(3), Left: themeCardGap}
-	if col == 0 {
-		inset.Left = ui.Space(0.5)
-	}
-	if col == columns-1 {
-		inset.Right = ui.Space(0.5)
-	}
-	return inset.Layout(gtx, func(gtx C) D {
-		var children []layout.FlexChild
-		for row := range themeStripRows {
-			i := col*themeStripRows + row
-			if i >= len(cards) {
-				break
-			}
-			if row > 0 {
-				children = append(children, layout.Rigid(layout.Spacer{Height: themeCardGap}.Layout))
-			}
-			children = append(children, layout.Rigid(cards[i]))
-		}
-		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
-	})
-}
-
-// cardWidgets are the strip's cards in order: System, every theme.
-func (p *themePicker) cardWidgets(th *ui.Theme, v appearanceView) []layout.Widget {
-	busy := p.snapshot()
-	cards := []layout.Widget{
-		func(gtx C) D {
-			light, dark := bundledPair(v.themes)
-			preview := func(gtx C, th *ui.Theme, size image.Point) D {
-				return systemMiniature(gtx, th, light.palette, dark.palette, size)
-			}
-			return p.cardLayout(gtx, th, &p.systemCard, themeCardSpec{
-				id: themeSystem, name: i18n.T("settings.themePicker.system"), caption: i18n.T("settings.themePicker.followsOs"), selected: v.selected == themeSystem, preview: preview})
-		},
-	}
-	pair := selectedPair(v)
-	for _, e := range v.themes {
-		caption := themeCaption(e.def, v.selected)
-		if e.def.ID == pair {
-			caption = pairCaption(e.def.Scheme)
-		}
-		latest := ""
-		if e.def.Latest != nil {
-			latest = e.def.Latest.Version
-			caption = i18n.T("settings.themePicker.updateAvailable", i18n.Args{"version": latest})
-		}
-		spec := themeCardSpec{id: e.def.ID, name: e.def.Name, caption: caption,
-			selected: v.selected == e.def.ID, custom: e.def.Origin == themeOriginCustom, latest: latest,
-			updating: busy.updating, preview: func(gtx C, th *ui.Theme, size image.Point) D {
-				return themeMiniature(gtx, th, e.palette, size, true)
-			}}
-		card := themeCardOf(p.cards, e.def.ID)
-		cards = append(cards, func(gtx C) D { return p.cardLayout(gtx, th, card, spec) })
-	}
-	return cards
-}
-
-// pairCaption is the card line of the selected theme's pair: the scheme it
-// is the other half of.
-func pairCaption(scheme string) string {
-	if scheme == themeSchemeLight {
-		return i18n.T("settings.settingsTheme.pairLight")
-	}
-	return i18n.T("settings.settingsTheme.pairDark")
-}
-
 // brokenList is BrokenThemeList: a theme with no colors to preview is a row
-// under the strip, its reason written out.
+// under the installed ones, its reason written out.
 func (p *themePicker) brokenList(gtx C, th *ui.Theme, broken []backend.BrokenTheme) D {
 	if len(broken) == 0 {
 		return D{}
 	}
 	children := []layout.FlexChild{
-		layout.Rigid(func(gtx C) D { return th.RuleAbove(gtx) }),
-		ui.VGap(2),
+		ui.VGap(4),
 		layout.Rigid(func(gtx C) D {
-			return layout.Inset{Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
+			return layout.Inset{Left: rowPadX, Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
 				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 					layout.Rigid(func(gtx C) D { return icTriangleAlert.Layout(gtx, ui.Space(3.5), th.MutedForeground) }),
 					ui.Gap(1.5),
@@ -323,19 +209,17 @@ func (p *themePicker) brokenList(gtx C, th *ui.Theme, broken []backend.BrokenThe
 		row := brokenRowOf(p.brokenRemove, b.ID)
 		children = append(children, layout.Rigid(func(gtx C) D { return p.brokenRow(gtx, th, b, row) }))
 	}
-	children = append(children, ui.VGap(3))
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
 }
 
 // brokenRow is one grid row: the id, the reason, and Remove, the row's
-// hover fill reaching px-2 past the list on both sides (-mx-2 px-2).
+// hover fill on the list's own edge.
 func (p *themePicker) brokenRow(gtx C, th *ui.Theme, b backend.BrokenTheme, row *brokenRowState) D {
 	if row.remove.Clicked(gtx) {
 		p.askRemove(b.ID, b.ID)
+		// The dialogs were laid out before the row took the click.
+		gtx.Execute(op.InvalidateCmd{})
 	}
-	pad := gtx.Dp(ui.Space(2))
-	defer op.Offset(image.Pt(-pad, 0)).Push(gtx.Ops).Pop()
-	gtx.Constraints.Max.X += 2 * pad
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 	bg := th.Surface
 	if row.hover.Update(gtx.Source) {
@@ -343,7 +227,7 @@ func (p *themePicker) brokenRow(gtx C, th *ui.Theme, b backend.BrokenTheme, row 
 	}
 	on := th.On(bg)
 	macro := op.Record(gtx.Ops)
-	d := layout.Inset{Left: ui.Space(2), Right: ui.Space(2), Top: ui.Space(1), Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
+	d := layout.Inset{Left: rowPadX, Right: rowPadX, Top: ui.Space(1), Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
 		reason := on.Text(ui.TextXS, b.Reason).Muted()
 		reason.MaxLines = 0
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,

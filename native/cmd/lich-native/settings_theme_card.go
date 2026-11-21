@@ -5,13 +5,10 @@ import (
 	"image/color"
 	"math"
 
-	"gioui.org/font"
-	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
 
-	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
@@ -29,161 +26,13 @@ const (
 var miniBarWidths = [3]float64{0.60, 0.85, 0.45}
 
 // A miniature's edge is ring-foreground/20, one pixel.
-const (
-	cardMiniRing    = 0.2
-	cardActionsFill = 0.9 // bg-popover/90
-	spinTurn        = 1.0 // animate-spin: one turn a second
-)
+const cardMiniRing = 0.2
 
 var (
 	icRefresh     = icons.Lucide("refresh-cw")
 	icTrash       = icons.Lucide("trash-2")
 	icImportTheme = icons.Lucide("plus")
-	cardActionBtn = ui.Space(6) // icon-xs
-	cardActionPad = ui.Space(0.5)
 )
-
-// themeCard is one card's widget state.
-type themeCard struct {
-	click                ui.Clickable
-	tip                  ui.Tooltip
-	update, remove       ui.Clickable
-	updateTip, removeTip ui.Tooltip
-}
-
-func themeCardOf(cards map[string]*themeCard, id string) *themeCard {
-	if c, ok := cards[id]; ok {
-		return c
-	}
-	c := new(themeCard)
-	cards[id] = c
-	return c
-}
-
-// themeCardSpec is what one card shows. Only a custom theme has actions,
-// and only one whose pack has a newer version can be updated.
-type themeCardSpec struct {
-	id, name, caption string
-	selected          bool
-	custom            bool
-	latest            string // the pack's newer version, "" for none
-	updating          string // the theme an update is running for, "" for none
-	preview           func(gtx C, th *ui.Theme, size image.Point) D
-}
-
-// cardLayout is ThemeCard: the preview in its frame, the name and caption
-// under it, and the update and remove actions over its top-right corner
-// while the pointer is on it.
-func (p *themePicker) cardLayout(gtx C, th *ui.Theme, c *themeCard, s themeCardSpec) D {
-	if c.update.Clicked(gtx) && s.updating == "" {
-		p.updateTheme(s.id)
-	}
-	if c.remove.Clicked(gtx) {
-		p.askRemove(s.id, s.name)
-	}
-	if c.click.Clicked(gtx) {
-		p.look.choose(s.id)
-	}
-	tip := th.Tooltip(p.root, &c.tip, s.name+"  "+s.caption)
-	tip.Side = ui.SideBottom
-	d := tip.Layout(gtx, func(gtx C) D {
-		return c.click.Layout(gtx, func(gtx C) D { return cardBody(gtx, th, s.name, s.caption, s.selected, c.click.Hovered(), s.preview) })
-	})
-	if s.custom && (c.click.Hovered() || c.update.Hovered() || c.remove.Hovered()) {
-		p.cardActions(gtx, th, c, s, d.Size.X)
-	}
-	return d
-}
-
-// cardBody is the preview and the line of name and caption under it, on a
-// rounded-lg fill: Accent when selected, with a check before the name, the
-// hover fill under the pointer, nothing at rest.
-func cardBody(gtx C, th *ui.Theme, name, caption string, selected, hovered bool, preview func(gtx C, th *ui.Theme, size image.Point) D) D {
-	macro := op.Record(gtx.Ops)
-	d := layout.UniformInset(themeCardPad).Layout(gtx, func(gtx C) D { return cardContent(gtx, th, name, caption, selected, preview) })
-	call := macro.Stop()
-	fill := gtx
-	fill.Constraints = layout.Exact(d.Size)
-	switch {
-	case selected:
-		ui.Fill(fill, th.Over(th.Accent), ui.RadiusLG)
-	case hovered:
-		ui.Fill(fill, th.Over(ui.Alpha(th.Accent, ghostHoverFill)), ui.RadiusLG)
-	}
-	call.Add(gtx.Ops)
-	return d
-}
-
-func cardContent(gtx C, th *ui.Theme, name, caption string, selected bool, preview func(gtx C, th *ui.Theme, size image.Point) D) D {
-	w := gtx.Dp(themeCardWidth) - 2*gtx.Dp(themeCardPad)
-	frame := image.Pt(w, gtx.Dp(themeCardPreview))
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(func(gtx C) D {
-			defer clip.UniformRRect(image.Rectangle{Max: frame}, gtx.Dp(ui.RadiusMD)).Push(gtx.Ops).Pop()
-			preview(gtx, th, frame)
-			return D{Size: frame}
-		}),
-		ui.VGap(1.5),
-		layout.Rigid(func(gtx C) D {
-			gtx.Constraints = layout.Exact(image.Pt(w, gtx.Constraints.Max.Y))
-			gtx.Constraints.Min.Y = 0
-			var check []layout.FlexChild
-			if selected {
-				check = []layout.FlexChild{layout.Rigid(func(gtx C) D { return icCheck.Layout(gtx, ui.Space(3), th.Foreground) }), ui.Gap(1)}
-			}
-			return layout.Flex{Alignment: layout.Middle}.Layout(gtx, append(check,
-				layout.Rigid(th.Text(ui.TextXS, name).Weight(font.Medium).Layout),
-				ui.Gap(1.5),
-				layout.Flexed(1, th.Text(ui.Text2XS, caption).Muted().Layout),
-			)...)
-		}),
-	)
-}
-
-// cardActions is the absolute right-1 top-1 box of icon buttons.
-func (p *themePicker) cardActions(gtx C, th *ui.Theme, c *themeCard, s themeCardSpec, cardWidth int) {
-	n := 1
-	if s.latest != "" {
-		n = 2
-	}
-	btn, pad, gap := gtx.Dp(cardActionBtn), gtx.Dp(cardActionPad), gtx.Dp(cardActionPad)
-	size := image.Pt(2*pad+n*btn+(n-1)*gap, 2*pad+btn)
-	inset := gtx.Dp(ui.Space(1))
-	defer op.Offset(image.Pt(cardWidth-inset-size.X, inset)).Push(gtx.Ops).Pop()
-	bg := th.Over(ui.Alpha(th.Popover, cardActionsFill))
-	box := gtx
-	box.Constraints = layout.Exact(size)
-	ui.Fill(box, bg, ui.RadiusMD)
-	on := th.On(bg)
-	x := pad
-	if s.latest != "" {
-		var turn float32
-		if s.updating == s.id {
-			turn = spinAngle(gtx)
-		}
-		t := op.Offset(image.Pt(x, pad)).Push(gtx.Ops)
-		tip := on.Tooltip(p.root, &c.updateTip, i18n.T("settings.themePicker.updateTo", i18n.Args{"version": s.latest}))
-		tip.Layout(gtx, func(gtx C) D {
-			if s.updating != "" {
-				return on.CardIconDisabled(gtx, icRefresh, cardActionBtn, turn)
-			}
-			return on.CardIconButton(gtx, &c.update, icRefresh, cardActionBtn, turn)
-		})
-		t.Pop()
-		x += btn + gap
-	}
-	t := op.Offset(image.Pt(x, pad)).Push(gtx.Ops)
-	tip := on.Tooltip(p.root, &c.removeTip, i18n.T("settings.themePicker.removeNamed", i18n.Args{"name": s.name}))
-	tip.Layout(gtx, func(gtx C) D { return on.CardIconButton(gtx, &c.remove, icTrash, cardActionBtn, 0) })
-	t.Pop()
-}
-
-// spinAngle is animate-spin's rotation now, and asks for the next frame.
-func spinAngle(gtx C) float32 {
-	gtx.Execute(op.InvalidateCmd{})
-	secs := float64(gtx.Now.UnixMilli()%1000) / 1000 / spinTurn
-	return float32(secs * 2 * math.Pi)
-}
 
 // themeMiniature is ThemeMiniature: the window at a glance in p's colors,
 // the sidebar, the canvas and three bars for the text, the muted text and a

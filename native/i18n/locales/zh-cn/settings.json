@@ -82,12 +82,10 @@
     "followsOs": "跟随操作系统",
     "inUse": "使用中",
     "bundled": "内置",
-    "updateTo": "更新到 v{version}",
     "updateAvailable": "v{version} 可用",
     "checkUpdates": "检查更新",
     "checkFailed": "无法检查主题更新：{error}",
-    "allUpToDate": "主题均为最新版本",
-    "removeNamed": "移除 {name}"
+    "allUpToDate": "主题均为最新版本"
   },
   "brokenThemeList": {
     "heading": {
@@ -457,9 +455,7 @@
     "hideWhitespaceDescription": "在审查标签页中忽略仅改动空白的变更。"
   },
   "settingsTheme": {
-    "autoLightDark": "自动浅色/深色",
-    "pairLight": "浅色配对",
-    "pairDark": "深色配对"
+    "autoLightDark": "自动浅色/深色"
   },
   "settingsThemeActions": {
     "reloadFailed": "无法重新读取主题：{error}"
@@ -727,5 +723,58 @@
     "chat": "聊天",
     "terminal": "终端",
     "searchWords": "gui tui 视图 聊天 终端 默认 新会话 打开"
+  },
+  "themesPage": {
+    "title": "主题",
+    "installFrom": "从其他来源安装…",
+    "catalogTab": "目录",
+    "installedTab": "已安装",
+    "catalogRow": "主题目录",
+    "catalogSearchWords": "浏览 安装 颜色 调色板 深色 浅色",
+    "installedRow": "已安装的主题",
+    "installedSearchWords": "移除 更新 内置 自定义",
+    "all": "全部",
+    "dark": "深色",
+    "light": "浅色",
+    "search": "搜索主题",
+    "inUse": "使用中",
+    "installed": "已安装",
+    "variantsDark": {
+      "one": "{count} 个变体 · 深色",
+      "other": "{count} 个变体 · 深色"
+    },
+    "variantsLight": {
+      "one": "{count} 个变体 · 浅色",
+      "other": "{count} 个变体 · 浅色"
+    },
+    "variantsBoth": {
+      "one": "{count} 个变体 · 深色和浅色",
+      "other": "{count} 个变体 · 深色和浅色"
+    },
+    "readFailed": "无法读取主题目录。仍可通过仓库 URL 安装。",
+    "noMatch": "没有匹配的主题。",
+    "use": "使用",
+    "version": "版本",
+    "pairs": "配对",
+    "license": "许可证",
+    "updated": "更新于",
+    "repository": "仓库",
+    "needsLich": "需要 lich {version} 或更高版本",
+    "trying": "正在试用 {name}",
+    "revert": "还原",
+    "keep": "保留",
+    "bundledGroup": "内置",
+    "update": "更新",
+    "rowOptions": "{name} 的选项",
+    "browse": "浏览主题",
+    "preview": {
+      "ask": "给 fetch 辅助函数加上重试",
+      "askShort": "加上重试",
+      "reply": "我把调用包进了一个循环，每次失败后都多等一会儿：",
+      "sessionRefactor": "重构认证",
+      "sessionFlaky": "修复不稳定的测试",
+      "sessionReview": "审查 PR #42"
+    },
+    "try": "试用"
   }
 }

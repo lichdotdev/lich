@@ -80,12 +80,10 @@
     "followsOs": "OS 설정을 따름",
     "inUse": "사용 중",
     "bundled": "기본 제공",
-    "updateTo": "v{version} 버전으로 업데이트",
     "updateAvailable": "v{version} 사용 가능",
     "checkUpdates": "업데이트 확인",
     "checkFailed": "테마 업데이트를 확인하지 못했습니다: {error}",
-    "allUpToDate": "테마가 모두 최신 버전입니다",
-    "removeNamed": "{name} 삭제"
+    "allUpToDate": "테마가 모두 최신 버전입니다"
   },
   "brokenThemeList": {
     "heading": {
@@ -453,9 +451,7 @@
     "hideWhitespaceDescription": "리뷰 탭에서 공백만 바뀐 변경 사항을 뺍니다."
   },
   "settingsTheme": {
-    "autoLightDark": "자동 라이트/다크",
-    "pairLight": "라이트 짝",
-    "pairDark": "다크 짝"
+    "autoLightDark": "자동 라이트/다크"
   },
   "settingsThemeActions": {
     "reloadFailed": "테마를 다시 읽지 못했습니다: {error}"
@@ -723,5 +719,55 @@
     "chat": "채팅",
     "terminal": "터미널",
     "searchWords": "gui tui 보기 채팅 터미널 기본 새 세션"
+  },
+  "themesPage": {
+    "title": "테마",
+    "installFrom": "다른 곳에서 설치…",
+    "catalogTab": "카탈로그",
+    "installedTab": "설치됨",
+    "catalogRow": "테마 카탈로그",
+    "catalogSearchWords": "둘러보기 설치 색상 팔레트 다크 라이트",
+    "installedRow": "설치된 테마",
+    "installedSearchWords": "삭제 업데이트 기본 제공 직접 만든",
+    "all": "전체",
+    "dark": "다크",
+    "light": "라이트",
+    "search": "테마 검색",
+    "inUse": "사용 중",
+    "installed": "설치됨",
+    "variantsDark": {
+      "other": "변형 {count}개 · 다크"
+    },
+    "variantsLight": {
+      "other": "변형 {count}개 · 라이트"
+    },
+    "variantsBoth": {
+      "other": "변형 {count}개 · 다크와 라이트"
+    },
+    "readFailed": "테마 카탈로그를 읽지 못했습니다. 저장소 URL로 설치하는 방법은 계속 쓸 수 있습니다.",
+    "noMatch": "일치하는 테마가 없습니다.",
+    "use": "사용",
+    "version": "버전",
+    "pairs": "짝",
+    "license": "라이선스",
+    "updated": "업데이트",
+    "repository": "저장소",
+    "needsLich": "lich {version} 이상이 필요합니다",
+    "trying": "{name} 써 보는 중",
+    "revert": "되돌리기",
+    "keep": "계속 쓰기",
+    "bundledGroup": "기본 제공",
+    "update": "업데이트",
+    "rowOptions": "{name} 옵션",
+    "browse": "테마 둘러보기",
+    "preview": {
+      "ask": "fetch 헬퍼에 재시도를 넣어 줘",
+      "askShort": "재시도를 넣어 줘",
+      "reply": "실패할 때마다 더 오래 기다리는 루프로 호출을 감쌌습니다:",
+      "sessionRefactor": "인증 리팩터링",
+      "sessionFlaky": "불안정한 테스트 고치기",
+      "sessionReview": "PR #42 리뷰"
+    },
+    "try": "써 보기"
   }
 }

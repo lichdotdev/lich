@@ -178,6 +178,9 @@ func (s *settingsScreen) choose(gtx C, h settingHit) {
 	if h.section == sectionExtensions && h.title == i18n.T("settings.extensionsSettings.listRow") {
 		s.extensions.view.Selected = extensionsViewInstalled
 	}
+	if s.theme != nil && h.title == i18n.T("settings.themesPage.installedRow") {
+		s.theme.view.Selected = themesViewInstalled
+	}
 	s.providers.open = h.providerID
 	s.lit, s.litUntil, s.scrollTo = h.title, gtx.Now.Add(settingsLitFor), -1
 	for i, e := range s.shown().rows {
@@ -287,6 +290,8 @@ func (s *settingsScreen) paneRows(sec settingsSection, th *ui.Theme, values scop
 		rows = append(rows, s.providerHeader(th, p)...)
 	} else if sec.id == sectionExtensions {
 		rows = append(rows, s.extensionsTitle(th, sec.label()))
+	} else if s.onThemesPage() {
+		rows = append(rows, s.themesTitle(th, sec.label()))
 	} else {
 		rows = append(rows, s.pageTitle(th, sec))
 	}
@@ -295,6 +300,9 @@ func (s *settingsScreen) paneRows(sec settingsSection, th *ui.Theme, values scop
 	}
 	if sec.id == sectionExtensions {
 		return append(rows, s.extensionsPaneRows(th)...)
+	}
+	if s.onThemesPage() {
+		return append(rows, s.themesPaneRows(th)...)
 	}
 	if desc := s.paneDescription(sec); desc != "" {
 		rows = append(rows, func(gtx C) D {
@@ -371,7 +379,7 @@ func (s *settingsScreen) drawRow(gtx C, th *ui.Theme, e settingEntry, r settingR
 		return s.languageRow(gtx, th, e.key, r, first)
 	case themeSettingKey:
 		r.description = i18n.T("settings.themePicker.description")
-		return s.theme.layoutRow(gtx, th, r, first)
+		return s.themeRow(gtx, th, r, first)
 	case footerLayoutKey:
 		return s.footerRow(gtx, th, r, first)
 	case sandboxLadderKey:

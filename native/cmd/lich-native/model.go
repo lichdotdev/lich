@@ -145,6 +145,8 @@ type model struct {
 	extensions extensionStore
 	// catalog is the lich catalog and the images it names.
 	catalog *catalogStore
+	// themeCatalog is the theme catalog, each listed theme read into its colors.
+	themeCatalog *themeCatalogStore
 	// extensionMessage hears a message an extension sent the window, a
 	// render aside.
 	extensionMessage func(id string, msg extension.Message)
@@ -201,6 +203,7 @@ func newModel(client *backend.Client, invalidate func()) *model {
 		providers:     newProviderBook(client, invalidate),
 		closed:        newClosedProjects(client, invalidate),
 		catalog:       newCatalogStore(client, invalidate),
+		themeCatalog:  newThemeCatalogStore(client, invalidate),
 		browsers:      newBrowserStore(),
 		pages:         pageViews{}, minimized: pageViews{}}
 }
@@ -426,6 +429,10 @@ func (m *model) follow(ctx context.Context, events <-chan backend.Event) {
 		case api.ExtensionCatalogEvent.Name:
 			if c, err := backend.Decode(ev, api.ExtensionCatalogEvent); err == nil {
 				m.catalog.set(c)
+			}
+		case api.ThemeCatalogEvent.Name:
+			if c, err := backend.Decode(ev, api.ThemeCatalogEvent); err == nil {
+				m.themeCatalog.set(c)
 			}
 		case api.ServiceRevealEvent.Name:
 			if r, err := backend.Decode(ev, api.ServiceRevealEvent); err == nil && m.serviceReveal != nil {
