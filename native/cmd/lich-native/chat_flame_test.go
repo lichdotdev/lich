@@ -41,13 +41,13 @@ func TestTheFlamesCoreIsTheSameInEveryFrame(t *testing.T) {
 func TestTheFlameTakesItsColorsFromTheThemesTokens(t *testing.T) {
 	th := &ui.Theme{Palette: ui.Dark}
 	th.Foreground = color.NRGBA{R: 250, G: 240, B: 230, A: 255}
-	th.MutedForeground = color.NRGBA{R: 100, G: 90, B: 80, A: 255}
-	th.Accent = color.NRGBA{R: 10, G: 200, B: 30, A: 255}
+	th.Background = color.NRGBA{R: 20, G: 20, B: 30, A: 255}
+	th.Primary = color.NRGBA{R: 10, G: 200, B: 30, A: 255}
 	for symbol, want := range map[byte]color.NRGBA{
 		'4': th.Foreground,
-		'3': th.MutedForeground,
-		'1': th.Accent,
-		'2': ui.MixOKLab(th.MutedForeground, th.Foreground, 0.55),
+		'2': th.Primary,
+		'3': ui.MixOKLab(th.Background, th.Primary, 0.65),
+		'1': ui.MixOKLab(th.Background, th.Primary, 0.35),
 	} {
 		if got, ok := chatFlameColor(th, symbol); !ok || got != want {
 			t.Errorf("symbol %c is %v (%v), want %v", symbol, got, ok, want)

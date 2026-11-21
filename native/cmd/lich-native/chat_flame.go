@@ -47,9 +47,10 @@ const (
 	chatFlameLineRows = 11
 	// chatFlameStep is how long a frame holds.
 	chatFlameStep = 100 * time.Millisecond
-	// chatFlameBody is how far the body goes from the muted foreground toward
-	// the foreground.
-	chatFlameBody = 0.55
+	// chatFlameEdge and chatFlameEmber are how much of Primary the edge and the
+	// ember bed keep over the background.
+	chatFlameEdge  = 0.65
+	chatFlameEmber = 0.35
 )
 
 // chatFlamePixel is one sprite pixel's side: 1.5dp, which is two device pixels
@@ -62,19 +63,19 @@ func chatFlameFrame(now time.Time) (frame int, next time.Time) {
 	return int(tick % int64(len(chatFlameFrames))), time.Unix(0, (tick+1)*int64(chatFlameStep))
 }
 
-// chatFlameColor is the color of a sprite symbol, from the theme's own tokens
-// so a gray theme draws a gray flame and a colored one colors it; false for
-// the symbol that is nothing.
+// chatFlameColor is the color of a sprite symbol: the flame burns in the
+// theme's Primary, as the sidebar's souls do, around a core in the foreground;
+// false for the symbol that is nothing.
 func chatFlameColor(th *ui.Theme, symbol byte) (color.NRGBA, bool) {
 	switch symbol {
 	case '4':
 		return th.Foreground, true
 	case '2':
-		return ui.MixOKLab(th.MutedForeground, th.Foreground, chatFlameBody), true
+		return th.Primary, true
 	case '3':
-		return th.MutedForeground, true
+		return ui.MixOKLab(th.Background, th.Primary, chatFlameEdge), true
 	case '1':
-		return th.Accent, true
+		return ui.MixOKLab(th.Background, th.Primary, chatFlameEmber), true
 	}
 	return color.NRGBA{}, false
 }
