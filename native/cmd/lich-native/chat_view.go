@@ -103,12 +103,14 @@ type chatView struct {
 	undo ui.EditHistory
 	// start is the start screen of the chat while it has nothing in it.
 	start chatStart
+	// queueRows are the controls of the session's queued messages.
+	queueRows []chatQueueRow
 	// slash is the list of the provider's commands over the composer, which
 	// may grow over the conversation up to slashRoom, the pane's height.
 	slash     chatSlash
 	slashRoom int
-	// unsent is a message the backend refused, handed back to an empty
-	// editor on the next frame.
+	// unsent is a message the backend refused, handed back to the editor,
+	// ahead of what was typed since, on the next frame.
 	mu     sync.Mutex
 	unsent string
 }
@@ -353,8 +355,12 @@ func chatColumn(gtx C, top, bottom, inset unit.Dp, w layout.Widget) D {
 // message sent past it declines it.
 func (u *window) chatActs(gtx C, p *chatPane, sv sessionView, keys, working bool, waiting, asking *backend.ChatItem) {
 	p.mu.Lock()
-	if p.unsent != "" && p.editor.Len() == 0 {
-		p.editor.SetText(p.unsent)
+	if p.unsent != "" {
+		text := p.unsent
+		if typed := strings.TrimSpace(p.editor.Text()); typed != "" {
+			text += chatQueueJoin + typed
+		}
+		p.editor.SetText(text)
 		p.undo.Reset()
 	}
 	p.unsent = ""
@@ -386,10 +392,16 @@ func (u *window) chatActs(gtx C, p *chatPane, sv sessionView, keys, working bool
 		if !ok {
 			break
 		}
-		if e, ok := ev.(key.Event); ok && e.State == key.Press && waiting != nil {
+		e, ok := ev.(key.Event)
+		if !ok || e.State != key.Press || u.unholdChat(p, sv.ID) {
+			continue
+		}
+		if waiting != nil {
 			u.answerChat(sv.ID, waiting.ID, permitOption(waiting.Permission, api.PermitRejectOnce))
 		}
 	}
+	u.queueActs(gtx, p, sv.ID)
+	u.composerKeys(gtx, p, sv.ID, keys && asking == nil)
 	p.undo.Handle(gtx, &p.editor)
 	for {
 		ev, ok := p.editor.Update(gtx)
@@ -402,6 +414,8 @@ func (u *window) chatActs(gtx C, p *chatPane, sv sessionView, keys, working bool
 		switch {
 		case waiting != nil:
 			u.answerChat(sv.ID, waiting.ID, permitOption(waiting.Permission, api.PermitAllowOnce, api.PermitAllowAlways))
+		case asking == nil && u.model.chat.isRunning(sv.ID):
+			u.queueChat(p, sv.ID)
 		case !working || asking != nil:
 			if u.sendChat(p, sv.ID) {
 				p.toEnd(gtx.Now)
@@ -411,7 +425,7 @@ func (u *window) chatActs(gtx C, p *chatPane, sv sessionView, keys, working bool
 	if p.send.Clicked(gtx) && !working && u.sendChat(p, sv.ID) {
 		p.toEnd(gtx.Now)
 	}
-	if p.stop.Clicked(gtx) {
+	if p.stop.Clicked(gtx) && !u.unholdChat(p, sv.ID) {
 		id := sv.ID
 		go func() { u.chatFailed(u.client.ChatCancel(u.ctx, id)) }()
 	}
@@ -422,9 +436,9 @@ func (u *window) chatActs(gtx C, p *chatPane, sv sessionView, keys, working bool
 	}
 }
 
-// sendChat hands the editor's text to the agent, and reports whether it had
-// any. The person's message comes back as an item; a refused one goes back
-// into the editor. /new alone starts an empty conversation instead.
+// sendChat hands the editor's text to the agent, once it waited chatSendHold,
+// and reports whether it had any; a refused one goes back into the editor.
+// /new alone starts an empty conversation instead.
 func (u *window) sendChat(p *chatPane, id string) bool {
 	text := strings.TrimSpace(p.editor.Text())
 	if text == "" {
@@ -436,16 +450,17 @@ func (u *window) sendChat(p *chatPane, id string) bool {
 		go func() { u.chatFailed(u.client.ChatNew(u.ctx, id)) }()
 		return true
 	}
-	go func() {
-		err := u.client.ChatPrompt(u.ctx, id, text)
-		if err == nil {
-			return
-		}
-		p.mu.Lock()
-		p.unsent = text
-		p.mu.Unlock()
-		u.chatFailed(err)
-	}()
+	// A message sent while the agent's questions wait declines them, and goes
+	// at once: Esc there is the questions'.
+	if u.model.chat.isRunning(id) {
+		go func() {
+			if err := u.client.ChatPrompt(u.ctx, id, text); err != nil {
+				u.chatRefused(p, text, err)
+			}
+		}()
+		return true
+	}
+	u.holdChat(p, id, text)
 	return true
 }
 
@@ -486,6 +501,7 @@ func (u *window) chatComposer(gtx C, th *ui.Theme, p *chatPane, sv sessionView, 
 		ft.attach, ft.context = nil, nil
 	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+		layout.Rigid(func(gtx C) D { return u.chatQueue(gtx, th, p, sv.ID) }),
 		layout.Rigid(func(gtx C) D {
 			// the box's fill keeps near the theme's own ground and its edge
 			// leans to the theme's primary, as the backdrop around it does

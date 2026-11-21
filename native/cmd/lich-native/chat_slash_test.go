@@ -72,7 +72,7 @@ func (r *frameRig) showsAll(labels ...string) bool {
 // completes the one under the cursor without sending it, and the arrows and
 // Enter pick another.
 func TestTheSlashListOpensFiltersAndCompletes(t *testing.T) {
-	_, r, f, p := slashFrames(t)
+	u, r, f, p := slashFrames(t)
 	typeIn(r, p, "/")
 	if !r.showsAll("/new", "/review", "[pr]", "/deploy", "/compact", "Ship it") {
 		t.Fatalf("no list of commands on /:\n%s", r.drawn())
@@ -96,6 +96,9 @@ func TestTheSlashListOpensFiltersAndCompletes(t *testing.T) {
 	r.press(key.NameReturn)
 	if got := p.editor.Text(); got != "/deploy " {
 		t.Errorf("Down and Enter left %q, want /deploy", got)
+	}
+	if u.model.chat.isRunning("s1") {
+		t.Error("Enter on the list holds a message to send")
 	}
 	time.Sleep(50 * time.Millisecond)
 	f.mu.Lock()
@@ -187,7 +190,7 @@ func TestTheSlashListStaysInALowPane(t *testing.T) {
 // /new is lich's own command: sent, it starts an empty conversation in the
 // chat instead of reaching the agent as text.
 func TestNewStartsAConversationInsteadOfSending(t *testing.T) {
-	_, r, f, p := slashFrames(t)
+	u, r, f, p := slashFrames(t)
 	typeIn(r, p, "/ne")
 	if !r.showsAll("/new", i18n.T("chat.slash.new")) {
 		t.Fatalf("no /new in the list:\n%s", r.drawn())
@@ -196,6 +199,9 @@ func TestNewStartsAConversationInsteadOfSending(t *testing.T) {
 	r.press(key.NameReturn)
 	if body := f.waitCall(t, api.ChatNew.Name); !strings.Contains(body, `"id":"s1"`) {
 		t.Errorf("chat.New for %s", body)
+	}
+	if u.model.chat.isRunning("s1") {
+		t.Error("/new holds a message to send")
 	}
 	f.mu.Lock()
 	defer f.mu.Unlock()

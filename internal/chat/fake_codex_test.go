@@ -210,7 +210,10 @@ func (c *fakeCodex) turn(turn, text string) (status, message string) {
 	case "slow":
 		c.notify("item/agentMessage/delta", map[string]any{"itemId": "slow1", "delta": "counting"})
 		for m := c.next(); m != nil; m = c.next() {
-			if str(m, "method") == "turn/interrupt" {
+			switch str(m, "method") {
+			case "turn/steer":
+				c.reply(m["id"], map[string]any{})
+			case "turn/interrupt":
 				c.reply(m["id"], map[string]any{})
 				return "interrupted", ""
 			}

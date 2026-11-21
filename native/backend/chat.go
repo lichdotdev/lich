@@ -43,6 +43,13 @@ func (c *Client) ChatPrompt(ctx context.Context, id, text string) error {
 	return err
 }
 
+// ChatSteer sends text into session id's turn in flight, a prompt when none
+// is.
+func (c *Client) ChatSteer(ctx context.Context, id, text string) error {
+	_, err := callMethod(ctx, c, api.ChatSteer, api.ChatPromptOptions{ID: id, Text: text})
+	return err
+}
+
 // ChatCancel stops session id's turn in flight.
 func (c *Client) ChatCancel(ctx context.Context, id string) error {
 	_, err := callMethod(ctx, c, api.ChatCancel, api.SessionIDOptions{ID: id})

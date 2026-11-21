@@ -133,6 +133,17 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   chat opens its conversation with no MCP servers of its own (`mcpServers: []`), so whether its agent answers a
   task with lich's tools rests on the provider loading lich's registration in its ACP mode, which was not
   measured for any ACP provider in `chat.Kinds`; Claude Code's chat is given `--mcp-config` like its terminal.
+- **A message the chat's queue forces into the turn running reaches the agent in that turn only on Claude Code
+  and Codex** (`internal/chat/service.go` `Steer`, each driver's `follow`): Claude Code reads a user message
+  written mid-turn, and Codex takes it as `turn/steer`. ACP takes no message during a turn, so on Antigravity,
+  opencode, oh-my-pi, Cursor CLI and Kiro CLI forcing stops the turn and sends the message as the next one. The
+  queue itself is the window's (`native/cmd/lich-native/chat_queue.go`): it is sent, joined, when the turn ends
+  as anything but stopped, and lost if the window closes before. Crush has no chat.
+- **A chat message waits two seconds in the window before it reaches the agent**
+  (`native/cmd/lich-native/chat_hold.go`): Esc or Stop takes it back meanwhile, and nothing reached the agent.
+  It is drawn sent with its turn running from Enter, so the wait does not show, and a window closed inside it
+  loses the message. Written in the wait, Enter and Ctrl+Enter queue: steered, the text would reach the agent
+  before it. A message sent while the agent's questions wait goes at once, since Esc there declines them.
 - **A chat turn's count of changes is a difference of two numstat readings, not a record of what the agent did**
   (`internal/chat/changes.go`, `internal/project/lines.go`): lich reads `git diff --numstat HEAD` and the untracked
   files before the message goes out and again when the turn ends, and counts the files whose numbers differ. It

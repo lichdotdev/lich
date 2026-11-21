@@ -201,6 +201,7 @@ o lich consegue ler de volta, porque cada CLI registra coisas diferentes.
 | No chat, as perguntas do agente chegam num cartão que você responde com clique ou tecla | sim | não verificado | sim | sim no opencode 1; opencode 2 não verificado | sim | não | não verificado | não: o Kiro pergunta em texto |
 | No chat, digitar / no começo de uma linha lista os comandos e as skills do agente para completar | sim, com as skills marcadas | só skills, digitadas como `$nome` | sim | sim | sim | não | não verificado | sim |
 | No chat, a chamada de ferramenta aparece assim que começa, com o tempo correndo, e guarda quanto durou | sim | sim; uma conversa relida não mostra tempos | não verificado | não verificado | não verificado | não | não verificado | não verificado |
+| No chat, a mensagem escrita enquanto o agente trabalha espera numa fila que vai quando o turno termina, ou é forçada dentro do turno em andamento | sim | sim | na fila; forçar para o turno e manda depois | na fila; forçar para o turno e manda depois | na fila; forçar para o turno e manda depois | não | não verificado | na fila; forçar para o turno e manda depois |
 
 </details>
 

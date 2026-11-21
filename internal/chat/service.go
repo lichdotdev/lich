@@ -284,6 +284,22 @@ func (s *Service) Prompt(ctx context.Context, opts api.ChatPromptOptions) (api.N
 	return api.None{}, c.send(opts.Text)
 }
 
+// Steer answers api.ChatSteer: the message goes to the agent in the turn
+// running, by its driver's follow (Claude Code reads it mid-turn, Codex steers
+// the turn, ACP stops it and sends the message after); with no turn running
+// it is a prompt.
+func (s *Service) Steer(ctx context.Context, opts api.ChatPromptOptions) (api.None, error) {
+	c, err := s.ensure(ctx, opts.ID)
+	if err != nil {
+		return api.None{}, err
+	}
+	if !c.turnRunning() {
+		return s.Prompt(ctx, opts)
+	}
+	c.conv.userMessage(opts.Text)
+	return api.None{}, c.drv.follow(opts.Text)
+}
+
 // Cancel answers api.ChatCancel.
 func (s *Service) Cancel(_ context.Context, opts api.SessionIDOptions) (api.None, error) {
 	c := s.running(opts.ID)

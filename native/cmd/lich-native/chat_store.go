@@ -22,6 +22,12 @@ type chatStore struct {
 	options   map[string][]backend.ChatOption
 	commands  map[string][]backend.ChatCommand
 	switching map[string]string
+	// queue is each session's messages written while its turn ran, sent
+	// together once it ends (chatQueue).
+	queue map[string][]string
+	// held is each session's message waiting to go (chatHold), or gone and
+	// not yet heard back.
+	held map[string]*chatHeld
 }
 
 func (s *chatStore) loadKinds(ctx context.Context, client *backend.Client) error {
@@ -53,6 +59,7 @@ func (s *chatStore) history(id string, items []backend.ChatItem) {
 		s.items = map[string][]backend.ChatItem{}
 	}
 	s.items[id] = slices.Clone(items)
+	s.forgetSent(id)
 	// The turns' numbers are the conversation's own, and a history read back
 	// may number them anew: an end kept from before would close another turn.
 	delete(s.ends, id)
@@ -65,6 +72,7 @@ func (s *chatStore) apply(u api.ChatItemUpdate) {
 	if s.items == nil {
 		s.items = map[string][]backend.ChatItem{}
 	}
+	s.heard(u.SessionID, u.Item)
 	list := s.items[u.SessionID]
 	if i := slices.IndexFunc(list, func(it backend.ChatItem) bool { return it.ID == u.Item.ID }); i >= 0 {
 		list[i] = u.Item
@@ -83,6 +91,7 @@ func (s *chatStore) turn(t api.ChatTurn) {
 	if t.Running {
 		return
 	}
+	s.forgetSent(t.SessionID)
 	// The event does not name its turn: it is the last one the conversation
 	// holds, whose items were all heard before the end.
 	list := s.items[t.SessionID]
@@ -159,13 +168,15 @@ func (s *chatStore) holds(id string) bool {
 func (s *chatStore) of(id string) []backend.ChatItem {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return slices.Clone(s.items[id])
+	return s.withHeld(id, slices.Clone(s.items[id]))
 }
 
+// isRunning is whether session id's turn runs, a message waiting to go
+// counting as its start.
 func (s *chatStore) isRunning(id string) bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return s.running[id]
+	return s.running[id] || s.held[id] != nil
 }
 
 // beginSwitch marks a switch of session id to view asked for, false when
@@ -211,6 +222,7 @@ func (m *model) chatEvent(ctx context.Context, ev backend.Event) {
 	case api.ChatTurnEvent.Name:
 		if t, err := backend.Decode(ev, api.ChatTurnEvent); err == nil {
 			m.chat.turn(t)
+			m.flushQueue(ctx, t)
 		}
 	case api.ChatOptionsEvent.Name:
 		if u, err := backend.Decode(ev, api.ChatOptionsEvent); err == nil {
