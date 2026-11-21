@@ -28,7 +28,7 @@
     "otherPane": "Focus the next pane",
     "zoomPane": "Zoom the focused pane",
     "unsplitPane": "Take the focused pane out of its layout",
-    "rotateSplit": "Rotate the focused panes: side by side or stacked",
+    "rotateSplit": "Rotate the focused panes: in columns or stacked",
     "settings": "Settings",
     "pulls": "Pull requests",
     "shortcuts": "Keyboard shortcuts",
