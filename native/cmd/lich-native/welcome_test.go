@@ -374,9 +374,8 @@ func TestClickingAReadyBookMakesItTheDefault(t *testing.T) {
 	u, r, f := twoReady(t)
 	r.click(t, r.at(t, "Codex"))
 	r.frame()
-	if got := f.get(providerDefaultKey + "@"); got != "codex" {
-		t.Fatalf("the click stored %q", got)
-	}
+	// The write goes through the settings' queue, after the click returns.
+	eventually(t, "the click stored codex", func() bool { return f.get(providerDefaultKey+"@") == "codex" })
 	if u.welcome.main != "codex" {
 		t.Fatalf("main is %q after the click", u.welcome.main)
 	}
