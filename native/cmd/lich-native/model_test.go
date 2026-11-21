@@ -172,18 +172,15 @@ func TestFollowStaysQuietWhenTheWindowCloses(t *testing.T) {
 	}
 }
 
-func TestGroupNamesAWorktreeWithASlashByItsWholeName(t *testing.T) {
+func TestSessionsOfEveryWorktreeShareOneList(t *testing.T) {
 	const root = "/home/me/.local/share/lich/worktrees/p"
 	m := newModel(nil, func() {})
 	m.projects = []backend.Project{{ID: "p", Path: checkout, Sessions: []backend.Session{
 		{ID: "a"}, {ID: "b", Path: root + "/feat/x"}, {ID: "c", Path: root + "/fix/x"},
 	}}}
-	var names []string
-	for _, b := range m.sidebarBlocks(sidebarFilter{}).blocks {
-		names = append(names, b.title)
-	}
-	if want := []string{"repo", "feat/x", "fix/x"}; !slices.Equal(names, want) {
-		t.Errorf("got groups %q, want %q", names, want)
+	blocks := m.sidebarBlocks(sidebarFilter{}).blocks
+	if len(blocks) != 1 || blocks[0].key != rootBlockKey || len(blocks[0].sessions) != 3 {
+		t.Errorf("got blocks %+v, want the three sessions in one list", blocks)
 	}
 }
 

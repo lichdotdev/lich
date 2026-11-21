@@ -174,7 +174,7 @@ func (p *blockPresence) leaving(key string) bool {
 	return ok && m.leaving || p.motion.Leaving(key)
 }
 
-// move starts the checkout blocks and folders that came in or left since the
+// move starts the folders that came in or left since the
 // last frame on their motion, and drops the ones whose motion has played. The
 // list's first frame is not news.
 func (p *blockPresence) move(now time.Time, live []blockView) {
@@ -182,12 +182,12 @@ func (p *blockPresence) move(now time.Time, live []blockView) {
 	still := map[string]bool{}
 	for _, b := range live {
 		still[b.key] = true
-		if settled && !p.live[b.key] && (b.under != "" || b.kind == blockFolder) {
+		if settled && !p.live[b.key] && b.kind == blockFolder {
 			p.moving[b.key] = blockMove{start: now, rows: len(blockRows(b, b.sessions))}
 		}
 	}
 	for key := range p.live {
-		if last := p.last[key]; !still[key] && (last.under != "" || last.kind == blockFolder) {
+		if last := p.last[key]; !still[key] && last.kind == blockFolder {
 			p.moving[key] = blockMove{start: now, leaving: true, rows: len(blockRows(last, last.sessions))}
 		}
 	}

@@ -18,7 +18,7 @@ import (
 )
 
 func motionRows(sessions []sessionView, folded ...string) []sessionRow {
-	return sessionRows(sessions, "", func(id string) bool { return slices.Contains(folded, id) })
+	return sessionRows(sessions, func(id string) bool { return slices.Contains(folded, id) }, nil)
 }
 
 func motionTree() []sessionView {
@@ -153,9 +153,9 @@ func TestTreeMotionPutsANewRowsNameInBeforeItsRing(t *testing.T) {
 	}
 }
 
-func TestBlockPresenceHoldsALeavingCheckoutForItsTreeMotion(t *testing.T) {
+func TestBlockPresenceHoldsALeavingFolderForItsTreeMotion(t *testing.T) {
 	checkout := func(key string) blockView {
-		return blockView{key: key, kind: blockCheckout, under: key, sessions: []sessionView{{ID: key + "-s", path: key}}}
+		return blockView{key: key, kind: blockFolder, folder: key, sessions: []sessionView{{ID: key + "-s", path: key}}}
 	}
 	var p blockPresence
 	now := time.Unix(100, 0)
@@ -172,7 +172,7 @@ func TestBlockPresenceHoldsALeavingCheckoutForItsTreeMotion(t *testing.T) {
 	if arrived[1].move == nil || arrived[1].move.leaving {
 		t.Errorf("a new checkout = %+v, want it coming in by the tree's motion", arrived[1])
 	}
-	folder := blockView{key: folderKey("Later"), kind: blockFolder, byCheckout: true, sessions: []sessionView{{ID: "f", path: "/f"}}}
+	folder := blockView{key: folderKey("Later"), kind: blockFolder, sessions: []sessionView{{ID: "f", path: "/f"}}}
 	withFolder := p.shown(end, "p", []blockView{checkout("/a"), checkout("/c"), folder})
 	if withFolder[2].move == nil || withFolder[2].move.leaving {
 		t.Errorf("a new folder = %+v, want it coming in by the tree's motion", withFolder[2])
@@ -208,8 +208,8 @@ func TestRelinkMatchesTheTreesOwnLinks(t *testing.T) {
 	check("tree", motionRows(motionTree()))
 	check("checkout", sessionRows([]sessionView{
 		treeSession("mother", "", "/repo/wt/a"), treeSession("tests", "mother", "/repo/wt/a"), treeSession("flake", "mother", "/repo/wt/b"), treeSession("solo", "", "/repo/wt/a"),
-	}, "/repo/wt/a", func(string) bool { return false }))
-	check("folder", blockRows(blockView{key: "f", byCheckout: true}, []sessionView{
+	}, func(string) bool { return false }, nil))
+	check("folder", blockRows(blockView{key: "f"}, []sessionView{
 		treeSession("a", "", "/wt/a"), treeSession("a-child", "a", "/wt/c"), treeSession("a2", "", "/wt/a"), treeSession("b", "", "/wt/b"),
 	}))
 }

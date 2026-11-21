@@ -4,12 +4,9 @@ import (
 	"image"
 	"image/color"
 	"io"
-	"math"
 	"strconv"
 	"strings"
-	"time"
 
-	"gioui.org/f32"
 	"gioui.org/font"
 	"gioui.org/io/clipboard"
 	"gioui.org/layout"
@@ -17,6 +14,7 @@ import (
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
 	"gioui.org/unit"
+	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -78,6 +76,9 @@ func (s *sidebar) card(gtx C, th *ui.Theme, sv *sessionView, active bool, folder
 			extra = append(extra, continueInItem(th, sv, &act))
 		}
 		e := cardMenu(sv, folders, &act, func() { rename.Start(sv.Label) }, func() { s.askFolderName([]string{sv.ID}) }, extra...)
+		if !sv.guest {
+			e = append([]ui.MenuEntry{s.newSessionHere(sv, &act)}, e...)
+		}
 		if active {
 			tourBrowserSpot(e, s.tour)
 		}
@@ -106,15 +107,22 @@ func (s *sidebar) card(gtx C, th *ui.Theme, sv *sessionView, active bool, folder
 	return d, act
 }
 
+// newSessionHere is a card's first menu entry: a session in the checkout the
+// card runs in, filed with it.
+func (s *sidebar) newSessionHere(sv *sessionView, act *sidebarAction) ui.MenuEntry {
+	launch := launchEntries(s.launchProviders, i18n.T("sidebar.sessionLaunchMenuItems.newTerminal"), func(kind string) {
+		act.launch = launchRequest{kind: kind, dir: sv.path, folder: sv.Folder}
+	})
+	return ui.MenuEntry{Kind: ui.MenuSubTrigger, Label: i18n.T("sidebar.checkoutRow.newSessionHere"), Icon: icPlus, Sub: launch}
+}
+
 // cardFace is the card itself, under its tooltip.
 func (s *sidebar) cardFace(gtx C, th *ui.Theme, sv *sessionView, click, prChip *ui.Clickable, more layout.Widget, moreOpen bool, fill color.NRGBA) D {
 	return click.Layout(gtx, func(gtx C) D {
 		return layout.Background{}.Layout(gtx,
 			func(gtx C) D { return treeRowFill(gtx, fill, sv.place) },
 			func(gtx C) D {
-				return withLinks(gtx, th, sv.place.sessionRowLinks, func(gtx C) D {
-					return s.cardBody(gtx, th, sv, prChip, more, click.Hovered() || moreOpen)
-				})
+				return s.cardBody(gtx, th, sv, prChip, more, click.Hovered() || moreOpen)
 			},
 		)
 	})
@@ -174,14 +182,15 @@ func (s *sidebar) cardBody(gtx C, th *ui.Theme, sv *sessionView, prChip *ui.Clic
 		row = append(row, ui.Gap(1.5))
 		row = append(row, foldedCount(th, sv.place.kids, sv.place.mark)...)
 	}
-	if sv.place.hideGit {
-		return s.cardLine(gtx, th, sv, more, hovered, row)
+	if b := sv.git.Branch; b != "" {
+		most := gtx.Constraints.Max.X * branchShare / 100
+		row = append(row, ui.Gap(1.5), layout.Rigid(func(gtx C) D {
+			gtx.Constraints.Max.X = min(gtx.Constraints.Max.X, most)
+			return th.Text(ui.TextXS, b).Muted().Mono().Layout(gtx)
+		}))
 	}
 	if sv.pr != nil {
 		row = append(row, ui.Gap(1.5), layout.Rigid(func(gtx C) D { return s.prBadge(gtx, th, prChip, sv.pr.Number) }))
-	}
-	if sv.git.Files > 0 {
-		row = append(row, ui.Gap(1.5), layout.Rigid(changesBadge(th, sv.git)))
 	}
 	return s.cardLine(gtx, th, sv, more, hovered, row)
 }
@@ -249,14 +258,21 @@ func (s *sidebar) cardSlot(gtx C, th *ui.Theme, sv *sessionView, more layout.Wid
 	switch {
 	case hovered && more != nil && !s.renaming(sv.ID):
 		return layout.Center.Layout(gtx, more)
+	case spins(sv.status):
+		return soulsSpinner(gtx, th)
 	case sv.Pinned:
 		return layout.Center.Layout(gtx, func(gtx C) D { return s.icPin.LayoutFilled(gtx, 12, th.MutedForeground) })
 	}
 	return D{Size: gtx.Constraints.Min}
 }
 
-// cardSlotSize is the corner slot's side.
-var cardSlotSize = unit.Dp(18)
+// cardSlotSize is the corner slot's side: the provider mark's box, so the
+// spinner it holds while the session works stays clear of the branch.
+var cardSlotSize = 2 * sessionTreeRingR
+
+// branchShare is the most of a row's width, in percent, its branch takes: the
+// label is what the row is scanned for.
+const branchShare = 35
 
 // prBadge is the open pull request's number, a button that brightens on
 // hover.
@@ -283,56 +299,11 @@ func (s *sidebar) statusRing(gtx C, th *ui.Theme, sv *sessionView) D {
 	return s.morph.glyph(gtx, glyphSession+sv.ID, func(gtx C) D { return s.statusGlyph(gtx, th, sv) })
 }
 
-// neutralRingAlpha is how strongly a ring with no status draws in a tree.
-const neutralRingAlpha = 0.35
-
-// ring draws a session's ring for status in a box of size, as much of it as
-// entry has brought in.
-func (s *sidebar) ring(gtx C, th *ui.Theme, status string, unread, tree bool, size int, entry treeEntry) {
-	switch status {
-	case statusBusy, statusCompacting:
-		ringArc(gtx, size, entry, th.Over(ui.Alpha(th.MutedForeground, 0.25)))
-		if entry.ring == 0 {
-			stroke := float32(gtx.Dp(sessionTreeStroke))
-			center := f32.Pt(float32(size)/2, float32(size)/2)
-			turn := float32(time.Since(s.started).Seconds()) * 2 * math.Pi
-			ui.StrokeArc(gtx, center, float32(size)/2-stroke/2, stroke, turn, math.Pi/2, th.MutedForeground)
-		}
-		th.Loop(gtx)
-	case statusWaiting:
-		ringArc(gtx, size, entry, th.ToneWait)
-	case statusDone:
-		ring := th.TonePass
-		if !unread {
-			ring = th.Over(ui.Alpha(ring, 0.3))
-		}
-		ringArc(gtx, size, entry, ring)
-	default:
-		// In a tree every ring is where a link ends, so one with no status
-		// still draws, neutral.
-		if tree {
-			ringArc(gtx, size, entry, th.Over(ui.Alpha(th.MutedForeground, neutralRingAlpha)))
-		}
-	}
-}
-
+// statusGlyph is the session's provider: its book's mark in pixel art, or
+// the vector mark of a provider with no book. A mother shows her fold's
+// chevron in its place under the pointer.
 func (s *sidebar) statusGlyph(gtx C, th *ui.Theme, sv *sessionView) D {
 	size := gtx.Dp(2 * sessionTreeRingR)
-	entry := sv.place.entry
-	// A ring mixes over its row's ground, not the card's fill, so hovering
-	// or lighting the card leaves it, and a tray tints it as it tints a
-	// checkout's.
-	th = onGround(th, sv.place.ground)
-	// A status change redraws the ring: the one it left fades while the new
-	// one draws from the left, as a ring coming into the tree does.
-	if p := sv.turn.progress(gtx.Now); p < 1 {
-		fade := paint.PushOpacity(gtx.Ops, 1-p)
-		s.ring(gtx, th, sv.turn.from, sv.turn.unread, sv.place.tree, size, treeEntry{})
-		fade.Pop()
-		entry.ring = max(entry.ring, 1-p)
-		gtx.Execute(op.InvalidateCmd{})
-	}
-	s.ring(gtx, th, sv.status, sv.unread, sv.place.tree, size, entry)
 	gtx.Constraints = layout.Exact(image.Pt(size, size))
 	kind := sv.Kind
 	if sv.agent != "" {
@@ -341,5 +312,13 @@ func (s *sidebar) statusGlyph(gtx C, th *ui.Theme, sv *sessionView) D {
 	if sv.place.hot {
 		return ui.CenteredIcon(gtx, foldIcon(!sv.place.folded), 13, th.Foreground)
 	}
-	return ui.CenteredIcon(gtx, providerIcon(kind), 13, ui.Alpha(th.MutedForeground, 1-entry.glyph))
+	fade := 1 - sv.place.entry.glyph
+	if mark := providerMark(kind); mark != nil {
+		ink, ok := markColors[kind]
+		if !ok {
+			ink = th.Foreground
+		}
+		return pixelGrid(gtx, mark, ui.Alpha(ink, fade))
+	}
+	return ui.CenteredIcon(gtx, providerIcon(kind), 13, ui.Alpha(th.MutedForeground, fade))
 }

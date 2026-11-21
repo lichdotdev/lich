@@ -174,6 +174,10 @@ func (s *sidebar) block(gtx C, th *ui.Theme, b blockView, f blockFrame) D {
 	body := func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
+				// The sessions filed nowhere are a list with no header.
+				if b.kind == blockLoose {
+					return D{}
+				}
 				// Every header is a row's height, spaced like a card.
 				header := func(gtx C) D {
 					return layout.Inset{Bottom: cardGap}.Layout(gtx, func(gtx C) D { return s.groupHeader(gtx, th, b, st, f) })
@@ -272,7 +276,7 @@ func (s *sidebar) blockCards(gtx C, th *ui.Theme, b blockView, st *blockState, f
 	}
 	rows := st.tree.place(gtx.Now, placed)
 	byKey := make(map[string]sessionRow, len(rows))
-	tree := b.under != "" || b.byCheckout
+	tree := false
 	for _, r := range rows {
 		byKey[r.key] = r
 		tree = tree || r.depth > 0 || r.kids > 0
@@ -318,15 +322,6 @@ func (s *sidebar) blockCards(gtx C, th *ui.Theme, b blockView, st *blockState, f
 // a session's browser, or a card. Every card drags, but a reorder only moves it among the stored
 // order: the tree is read off the origins, so a child stays under its mother.
 func (s *sidebar) blockRow(gtx C, th *ui.Theme, st *blockState, b blockView, r sessionRow, tree bool, f blockFrame, dragEnded bool) D {
-	if r.kind == rowNestedCheckout {
-		row := func(gtx C) D {
-			return layout.Inset{Bottom: cardGap}.Layout(gtx, func(gtx C) D { return s.nestedCheckout(gtx, th, r, b, f.act, tree) })
-		}
-		if r.motion != nil {
-			return moveRow(gtx, r, row)
-		}
-		return st.presence.Layout(gtx, r.key, row)
-	}
 	if r.kind == rowBrowser {
 		row := func(gtx C) D {
 			return layout.Inset{Bottom: cardGap}.Layout(gtx, func(gtx C) D {

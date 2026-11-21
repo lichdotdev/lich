@@ -7,12 +7,10 @@ import (
 	"strconv"
 
 	"gioui.org/f32"
-	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
 	"gioui.org/unit"
-	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
@@ -31,11 +29,10 @@ type treePlace struct {
 	// sidebar, which its ring is mixed over whatever the row paints.
 	ground color.NRGBA
 	sessionRowLinks
-	kids    int
-	folded  bool
-	mark    string
-	hideGit bool
-	entry   treeEntry
+	kids   int
+	folded bool
+	mark   string
+	entry  treeEntry
 }
 
 // sessionRowLinks are the lines a row draws (sessionRow's fields of the same
@@ -59,7 +56,7 @@ func (r sessionRow) place(tree bool) treePlace {
 	p := treePlace{
 		tree:  tree,
 		depth: r.depth, lanes: r.lanes, tail: r.tail, stub: r.stub,
-		kids: r.kids, folded: r.folded, mark: r.mark, hideGit: r.hideGit,
+		kids: r.kids, folded: r.folded, mark: r.mark,
 	}
 	if r.motion != nil {
 		p.sweep, p.entry = &r.motion.sweep, r.motion.entry
@@ -215,13 +212,6 @@ func strokeLinks(gtx C, segs []linkSeg, box image.Point, c color.NRGBA, width fl
 	paint.FillShape(gtx.Ops, c, clip.Stroke{Path: path.End(), Width: width}.Op())
 }
 
-// withLinks lays row out and draws its links over it.
-func withLinks(gtx C, th *ui.Theme, l sessionRowLinks, row layout.Widget) D {
-	d := row(gtx)
-	treeLinks(gtx, th, l, d.Size)
-	return d
-}
-
 // foldedCount is a folded row's hidden sessions and their mark.
 func foldedCount(th *ui.Theme, kids int, mark string) []layout.FlexChild {
 	var out []layout.FlexChild
@@ -231,51 +221,10 @@ func foldedCount(th *ui.Theme, kids int, mark string) []layout.FlexChild {
 	return append(out, layout.Rigid(th.Text(ui.TextXS, strconv.Itoa(kids)).Muted().Mono().Layout), ui.Gap(1.5))
 }
 
-// checkoutLine is a checkout row's line: the branch glyph where a session's
-// ring sits, the branch, its pull request and its changes, then the corner
-// slot a card keeps, with more in it while hovered. node draws the node
-// itself, so the sidebar's morph can fly it.
-func checkoutLine(th *ui.Theme, f checkoutFacts, p treePlace, open bool, node func(C, layout.Widget) D, more layout.Widget, hovered bool, trailing ...layout.FlexChild) layout.Widget {
-	return func(gtx C) D {
-		gtx.Constraints.Min.X = gtx.Constraints.Max.X
-		glyph := icBranch
-		if p.hot {
-			glyph = foldIcon(open)
-		}
-		row := treeLead(p)
-		row = append(row,
-			layout.Rigid(func(gtx C) D {
-				return node(gtx, func(gtx C) D { return checkoutNode(gtx, onGround(th, p.ground), glyph, p.entry) })
-			}),
-			ui.Gap(1.5),
-			layout.Flexed(1, th.Text(ui.TextSM, f.label).Muted().Weight(font.Medium).Layout),
-		)
-		row = append(row, trailing...)
-		if f.pr != nil {
-			row = append(row, ui.Gap(1.5), layout.Rigid(th.Text(ui.TextXS, "#"+strconv.Itoa(f.pr.Number)).Muted().Layout))
-		}
-		if f.git.Files > 0 {
-			row = append(row, ui.Gap(1.5), layout.Rigid(changesBadge(th, f.git)))
-		}
-		row = append(row, ui.Gap(1), layout.Rigid(func(gtx C) D {
-			size := gtx.Dp(cardSlotSize)
-			gtx.Constraints = layout.Exact(image.Pt(size, size))
-			if hovered && more != nil {
-				return layout.Center.Layout(gtx, more)
-			}
-			return D{Size: gtx.Constraints.Min}
-		}))
-		return layout.Inset{Top: ui.Space(1.5), Bottom: ui.Space(1.5), Left: rowInset, Right: ui.Space(1)}.Layout(gtx, func(gtx C) D {
-			return layout.Flex{Alignment: layout.Middle}.Layout(gtx, row...)
-		})
-	}
-}
-
 // checkoutNode is a checkout's node in the tree: its glyph in a neutral ring,
 // so a link meets it as it meets a session's ring.
 func checkoutNode(gtx C, th *ui.Theme, glyph *icons.Icon, entry treeEntry) D {
 	side := gtx.Dp(sessionTreeRingR) * 2
-	ringArc(gtx, side, entry, th.Over(ui.Alpha(th.MutedForeground, neutralRingAlpha)))
 	gtx.Constraints = layout.Exact(image.Pt(side, side))
 	return ui.CenteredIcon(gtx, glyph, 12, ui.Alpha(th.MutedForeground, 1-entry.glyph))
 }
@@ -297,98 +246,6 @@ func onGround(th *ui.Theme, ground color.NRGBA) *ui.Theme {
 	return th.On(ground)
 }
 
-// ringArc draws a node's ring in a box of side, as much of it as has come in:
-// from its left, where the link meets it, round to the left again.
-func ringArc(gtx C, side int, entry treeEntry, c color.NRGBA) {
-	sweep := 2 * math.Pi * (1 - entry.ring)
-	if sweep <= 0 {
-		return
-	}
-	stroke := float32(gtx.Dp(sessionTreeStroke))
-	center := f32.Pt(float32(side)/2, float32(side)/2)
-	ui.StrokeArc(gtx, center, float32(side)/2-stroke/2, stroke, math.Pi, float32(sweep), c)
-}
-
-// nodeGlyph names a tree node the sidebar's morph flies, by the key of the
-// block or row it heads.
-func (s *sidebar) nodeGlyph(key string) func(C, layout.Widget) D {
-	return func(gtx C, w layout.Widget) D { return s.morph.glyph(gtx, glyphNode+key, w) }
-}
-
-// checkoutTooltip is what a checkout row's line cuts: the branch in full, the
-// checkout's path, its standing against the base, its changes, and its pull
-// request's title.
-func checkoutTooltip(th *ui.Theme, path string, f checkoutFacts) layout.Widget {
-	th = th.On(th.Popover)
-	sections := []layout.Widget{}
-	if f.git.Branch != "" {
-		branch := th.Text(ui.TextXS, f.git.Branch).Weight(font.Medium)
-		sections = append(sections, func(gtx C) D {
-			return ui.IconLine(gtx, icBranch, branch.Muted().Color, layout.Flexed(1, para(branch).Layout))
-		})
-	}
-	sections = append(sections, para(th.Text(ui.TextXS, path).Muted().Mono()).Layout)
-	sections = append(sections, baseSections(th, f.base)...)
-	sections = append(sections, mergeSections(th, f.git)...)
-	if f.git.Files > 0 {
-		sections = append(sections, func(gtx C) D { return th.DiffStat(f.git.Added, f.git.Deleted).Layout(gtx) })
-	}
-	if f.pr != nil && f.pr.Title != "" {
-		title := th.Text(ui.TextXS, f.pr.Title)
-		sections = append(sections, func(gtx C) D {
-			return ui.IconLine(gtx, icPR, title.Muted().Color, layout.Flexed(1, para(title).Layout))
-		})
-	}
-	return func(gtx C) D { return ui.Stack(1.5, sections...)(gtx) }
-}
-
-// nestedCheckout is a checkout row a mother's group or a folder draws, the
-// checkout the sessions under it run in. Its menu, from the right click or
-// the … in its corner, opens a session there, filed with the block.
-func (s *sidebar) nestedCheckout(gtx C, th *ui.Theme, r sessionRow, b blockView, act *sidebarAction, tree bool) D {
-	tip, ok := s.tips[r.key]
-	if !ok {
-		tip = new(ui.Tooltip)
-		s.tips[r.key] = tip
-	}
-	f := b.facts[r.path]
-	tooltip := th.TooltipCard(s.root, tip, checkoutTooltip(th, r.path, f))
-	tooltip.Side = ui.SideRight
-	entries := func() []ui.MenuEntry {
-		launch := launchEntries(s.launchProviders, i18n.T("sidebar.sessionLaunchMenuItems.newTerminal"), func(kind string) {
-			act.launch = launchRequest{kind: kind, dir: r.path, folder: b.folder}
-		})
-		return []ui.MenuEntry{{Kind: ui.MenuSubTrigger, Label: i18n.T("sidebar.checkoutRow.newSessionHere"), Icon: icPlus, Sub: launch}}
-	}
-	menu := s.menuState(s.menus, r.key)
-	more := s.menuState(s.moreMenus, r.key)
-	hover := clickable(s.checkoutRows, r.key)
-	moreButton := func(gtx C) D {
-		return th.DropdownMenu(s.root, more, entries()).Layout(gtx, func(gtx C) D {
-			return th.CornerButton(clickable(s.moreClicks, r.key), icGroupMore, more.Opened()).Layout(gtx)
-		})
-	}
-	hovered := hover.Hovered() || more.Opened()
-	p := r.place(tree)
-	p.ground = nodeGround(th, b)
-	if b.ofLayout {
-		return tooltip.Layout(gtx, func(gtx C) D {
-			return withLinks(gtx, th, p.sessionRowLinks, checkoutLine(th, f, p, true, s.nodeGlyph(r.key), nil, false))
-		})
-	}
-	line := checkoutLine(th, f, p, true, s.nodeGlyph(r.key), moreButton, hovered)
-	return th.ContextMenuLazy(s.root, menu, entries).Layout(gtx, func(gtx C) D {
-		return tooltip.Layout(gtx, func(gtx C) D {
-			return hover.Layout(gtx, func(gtx C) D {
-				return layout.Background{}.Layout(gtx,
-					func(gtx C) D { return treeRowFill(gtx, cardLayer(th, "", false, hovered), p) },
-					func(gtx C) D { return withLinks(gtx, th, p.sessionRowLinks, line) },
-				)
-			})
-		})
-	})
-}
-
 // menuState is key's menu in states, made on first use.
 func (s *sidebar) menuState(states map[string]*ui.MenuState, key string) *ui.MenuState {
 	m, ok := states[key]
@@ -397,60 +254,4 @@ func (s *sidebar) menuState(states map[string]*ui.MenuState, key string) *ui.Men
 		states[key] = m
 	}
 	return m
-}
-
-// checkoutHeader is a checkout block's header as the root row of its tree:
-// the fold, the checkout's line, its tooltip, and a menu, from the right click
-// or the … in its corner, that opens a session there or files the whole block.
-func (s *sidebar) checkoutHeader(gtx C, th *ui.Theme, b blockView, st *blockState, f blockFrame) D {
-	facts := b.facts[b.under]
-	// The stub waits for the ring it leaves while the block moves.
-	p := treePlace{tree: true, stub: !b.collapsed && len(b.sessions) > 0 && (b.head == nil || b.head.entry.ring == 0)}
-	if b.head != nil {
-		p.entry = b.head.entry
-	}
-	var count []layout.FlexChild
-	if b.collapsed {
-		count = foldedCount(th, len(b.sessions), b.mark)
-	}
-	tip, ok := s.tips["__checkout__:"+b.key]
-	if !ok {
-		tip = new(ui.Tooltip)
-		s.tips["__checkout__:"+b.key] = tip
-	}
-	tooltip := th.TooltipCard(s.root, tip, checkoutTooltip(th, b.under, facts))
-	tooltip.Side = ui.SideRight
-	hooks := blockMenuHooks{rename: func() {}, newFolder: s.askFolderName}
-	entries := func() []ui.MenuEntry {
-		menu := []ui.MenuEntry{{Kind: ui.MenuSubTrigger, Label: i18n.T("sidebar.checkoutRow.newSessionHere"), Icon: icPlus, Sub: blockLaunch(b, s.launchProviders, f.act)}}
-		return append(menu, blockOptions(b, f.view.folders, f.filtering, f.act, hooks)...)
-	}
-	more := s.menuState(s.moreMenus, "__checkout__:"+b.key)
-	moreButton := func(gtx C) D {
-		return th.DropdownMenu(s.root, more, entries()).Layout(gtx, func(gtx C) D {
-			return th.CornerButton(clickable(s.moreClicks, "__checkout__:"+b.key), icGroupMore, more.Opened()).Layout(gtx)
-		})
-	}
-	p.hot = st.more.Hovered()
-	line := checkoutLine(th, facts, p, !b.collapsed, s.nodeGlyph(b.key), moreButton, st.more.Hovered() || more.Opened(), count...)
-	row := func(gtx C) D {
-		return th.ContextMenuLazy(s.root, &st.options, entries).Layout(gtx, func(gtx C) D {
-			return tooltip.Layout(gtx, func(gtx C) D {
-				return st.more.Layout(gtx, func(gtx C) D {
-					fill := cardLayer(th, "", false, st.more.Hovered() || more.Opened())
-					return layout.Background{}.Layout(gtx,
-						func(gtx C) D { return treeRowFill(gtx, fill, p) },
-						func(gtx C) D { return withLinks(gtx, th, p.sessionRowLinks, line) },
-					)
-				})
-			})
-		})
-	}
-	if st.more.Clicked(gtx) && !f.headerDragEnded {
-		f.act.fold = b.key
-	}
-	if f.filtering {
-		return row(gtx)
-	}
-	return s.sort.Item(gtx, b.key, row, nil)
 }

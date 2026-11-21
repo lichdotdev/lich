@@ -48,7 +48,7 @@ func (g railGroup) split() (lead, rows []railItem) {
 	for i < len(g.items) && g.items[i].kind == railGap {
 		i++
 	}
-	if i < len(g.items) && (g.items[i].kind == railHead || g.items[i].kind == railCheckout && g.items[i].key == g.block) {
+	if i < len(g.items) && g.items[i].kind == railHead {
 		i++
 	}
 	return g.items[:i], g.items[i:]
@@ -118,13 +118,15 @@ func (r *sidebarRail) group(gtx C, th *ui.Theme, s *sidebar, g railGroup, b bloc
 	return d
 }
 
-// rows lays out a block's rows as a sortable list: each card picks up, the
-// rows are linked where the drag shows them, and the slot the card in the
-// air would land in draws its node dashed.
+// rows lays out a block's rows as a sortable list: each card picks up, and
+// the slot the card in the air would land in draws its node dashed.
 func (r *sidebarRail) rows(gtx C, th *ui.Theme, s *sidebar, st *railSort, b blockView, lead, rows []railItem, active string, act *sidebarAction) D {
 	dragging := st.cards.Dragging()
 	st.drag.update(gtx.Now, dragging)
-	byID := railDragLines(lead, rows, dragging, st.cards.Over())
+	byID := make(map[string]railItem, len(rows))
+	for _, it := range rows {
+		byID[it.id] = it
+	}
 	if st.drag.moving(gtx.Now) {
 		gtx.Execute(op.InvalidateCmd{})
 	}
@@ -136,10 +138,9 @@ func (r *sidebarRail) rows(gtx C, th *ui.Theme, s *sidebar, st *railSort, b bloc
 	d := st.cards.List(gtx, ui.SortList{Leaves: st.cards.Carry != nil, Snap: treeSnap(b, ids)}, ids, func(gtx C, i int) D {
 		it := byID[ids[i]]
 		if st.drag.loose(it.id, gtx.Now) {
-			// The card in the air leaves its lines and its tray to its slot.
-			it.up, it.down, it.onTray = false, false, false
+			// The card in the air leaves its tray to its slot.
+			it.onTray = false
 		}
-		it.cut = st.drag.cut(it.id, gtx.Now)
 		if it.kind != railCard || it.motion != nil {
 			return r.item(gtx, th, s, it, active, act)
 		}
@@ -155,53 +156,17 @@ func (r *sidebarRail) rows(gtx C, th *ui.Theme, s *sidebar, st *railSort, b bloc
 	return d
 }
 
-// railDragLines is the block's rows by id, linked in the order a drag in
-// the air shows them: the card moved to the slot it is over.
-func railDragLines(lead, rows []railItem, dragging, over string) map[string]railItem {
-	byID := make(map[string]railItem, len(rows))
-	for _, it := range rows {
-		byID[it.id] = it
-	}
-	from := slices.IndexFunc(rows, func(it railItem) bool { return it.id == dragging })
-	to := slices.IndexFunc(rows, func(it railItem) bool { return it.id == over })
-	if from < 0 || to < 0 || from == to {
-		return byID
-	}
-	moved := slices.Delete(slices.Clone(rows), from, from+1)
-	moved = slices.Insert(moved, to, rows[from])
-	tree := append(slices.Clone(lead), moved...)
-	for i := range tree {
-		tree[i].up, tree[i].down = false, false
-	}
-	railLines(tree)
-	for _, it := range tree[len(lead):] {
-		byID[it.id] = it
-	}
-	return byID
-}
-
-// slot draws where the card in the air would land: the line through it, and
-// its node dashed.
+// slot draws where the card in the air would land: its node dashed.
 func (r *sidebarRail) slot(gtx C, th *ui.Theme, st *railSort) {
 	d := &st.drag
 	y := d.glide.y(gtx.Now, float32(d.at))
 	defer op.Offset(image.Pt(0, int(math.Round(float64(y))))).Push(gtx.Ops).Pop()
 	size := image.Pt(gtx.Constraints.Max.X, d.length)
 	it := st.slot
-	half := gtx.Dp(sessionTreeRingR)
-	if it.small {
-		half = gtx.Dp(railChildR)
-	}
 	it.motion = nil
-	if !d.landed.IsZero() {
-		// The slot lets go of its line as the card settles into it, and the
-		// card's own draws back (dragLine.cut).
-		it.cut = treeEase(clamp01(float32(gtx.Now.Sub(d.landed)) / float32(dragSettle)))
-	}
 	if it.onTray {
 		railTray(gtx, th, it, size)
 	}
-	railLine(gtx, th, it, size, half)
 	_, dashes := d.slot(gtx.Now)
 	if dashes == 0 {
 		return

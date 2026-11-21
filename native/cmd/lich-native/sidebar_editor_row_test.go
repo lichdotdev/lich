@@ -14,35 +14,42 @@ import (
 	"github.com/lichdotdev/lich/native/ui"
 )
 
-func TestAnEditorHangsLastUnderItsCheckout(t *testing.T) {
-	b := blockView{under: "/repo", sessions: []sessionView{treeSession("a", "", "/repo"), treeSession("b", "", "/repo")},
-		editors: map[string]editorNode{"/repo": {rel: "src/total.ts"}}}
+func TestAnEditorHangsUnderTheSessionThatHoldsIt(t *testing.T) {
+	b := blockView{sessions: []sessionView{treeSession("a", "", "/repo"), treeSession("b", "", "/repo")},
+		editors: map[string]editorNode{"a": {rel: "src/total.ts"}}}
 	rows := blockRows(b, b.sessions)
-	want := []string{"1:a", "1:b", "1:__editor__:/repo."}
+	want := []string{"0:a", "1:__editor__:a.", "0:b."}
 	if got := rowShape(rows); !slices.Equal(got, want) {
 		t.Fatalf("rows = %v, want %v", got, want)
 	}
-	if rows[2].kind != rowEditor || rows[2].path != "/repo" || rows[2].editor.name() != "total.ts" {
-		t.Fatalf("row %+v, want /repo's editor named total.ts", rows[2])
+	if rows[1].kind != rowEditor || rows[1].path != "/repo" || rows[1].editor.name() != "total.ts" {
+		t.Fatalf("row %+v, want /repo's editor named total.ts", rows[1])
 	}
 }
 
-func TestAFolderHangsTheEditorUnderTheCheckoutItGathers(t *testing.T) {
-	b := blockView{byCheckout: true, sessions: []sessionView{treeSession("a", "", "/repo"), treeSession("w", "", "/wt")},
-		editors: map[string]editorNode{"/wt": {rel: "go.mod"}}}
-	got := rowShape(blockRows(b, b.sessions))
-	want := []string{"0:__checkout__::/repo", "1:a.", "0:__checkout__::/wt", "1:w", "1:__editor__:/wt."}
-	if !slices.Equal(got, want) {
+func TestAnEditorFollowsItsSessionsBrowser(t *testing.T) {
+	a := treeSession("a", "", "/repo")
+	a.browser = true
+	rows := sessionRows([]sessionView{a}, func(string) bool { return false }, map[string]editorNode{"a": {rel: "go.mod"}})
+	if got, want := rowShape(rows), []string{"0:a.", "1:" + browserRowKey("a"), "1:__editor__:a."}; !slices.Equal(got, want) {
 		t.Fatalf("rows = %v, want %v", got, want)
 	}
 }
 
-func TestAChildsCheckoutRowHangsItsEditor(t *testing.T) {
-	sessions := []sessionView{treeSession("mother", "", "/repo"), treeSession("child", "mother", "/wt")}
-	rows := checkoutRows(sessions, "/repo", func(string) bool { return false }, map[string]editorNode{"/wt": {rel: "a.go"}})
-	want := []string{"1:mother.", "2:__checkout__:mother:/wt.", "3:child", "3:__editor__:mother:/wt."}
-	if got := rowShape(rows); !slices.Equal(got, want) {
-		t.Fatalf("rows = %v, want %v", got, want)
+func TestTheActiveSessionHoldsItsCheckoutsEditor(t *testing.T) {
+	m := editorModel(t)
+	m.openEditor("/repo", "a.go")
+	held := 0
+	for _, b := range m.sidebarBlocks(sidebarFilter{}).blocks {
+		for id := range b.editors {
+			held++
+			if id != "a2" {
+				t.Errorf("block %s hangs the editor under %s, want the active a2", b.key, id)
+			}
+		}
+	}
+	if held != 1 {
+		t.Errorf("the editor hangs under %d sessions, want one", held)
 	}
 }
 
@@ -109,7 +116,7 @@ func TestPickingASessionTakesTheEditorOffTheStageAndTheNodeBringsItBack(t *testi
 }
 
 func TestTheRailDrawsTheEditorNode(t *testing.T) {
-	b := blockView{under: "/repo", sessions: []sessionView{treeSession("a", "", "/repo")}, editors: map[string]editorNode{"/repo": {rel: "a.go"}}}
+	b := blockView{sessions: []sessionView{treeSession("a", "", "/repo")}, editors: map[string]editorNode{"a": {rel: "a.go"}}}
 	items := railRows(b)
 	if len(items) != 2 || items[1].kind != railEditor || items[1].path != "/repo" {
 		t.Fatalf("rail items %+v, want the session then /repo's editor", items)

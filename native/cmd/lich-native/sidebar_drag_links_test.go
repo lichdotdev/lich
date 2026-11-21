@@ -6,22 +6,6 @@ import (
 	"time"
 )
 
-// Dragging the first of two sessions under a checkout below the second drew
-// the tree in its old order: the row now on top ended the checkout's line,
-// and the one carried below it hung off the end of nothing.
-func TestADragLinksTheRowsWhereTheyStand(t *testing.T) {
-	rows := sessionRows([]sessionView{
-		treeSession("shell", "", "/repo/wt/a"), treeSession("side", "", "/repo/wt/a"),
-	}, "/repo/wt/a", func(string) bool { return false })
-	got := dragRows(rows, "shell", "side")
-	if shape := rowShape(got); !slices.Equal(shape, []string{"1:side", "1:shell."}) {
-		t.Errorf("rows = %v, want side then shell, shell ending the line", shape)
-	}
-	if !slices.Equal(rowShape(rows), []string{"1:shell", "1:side."}) {
-		t.Errorf("rows = %v, want the block's own rows left as they were", rowShape(rows))
-	}
-}
-
 func TestADragOverNothingInItsListMovesNoRow(t *testing.T) {
 	rows := motionRows(motionTree())
 	if got := dragRows(rows, "solo", "a folder header"); !slices.Equal(rowShape(got), rowShape(rows)) {
@@ -62,7 +46,7 @@ func TestACarriedCardLetsGoOfItsLineAndJoinsWhereItLands(t *testing.T) {
 }
 
 func snapBlock() blockView {
-	return blockView{key: "/repo", kind: blockCheckout, under: "/repo", sessions: []sessionView{
+	return blockView{key: "/repo", kind: blockLoose, sessions: []sessionView{
 		treeSession("mother", "", "/repo"), treeSession("child", "mother", "/repo"), treeSession("solo", "", "/repo"),
 	}}
 }
@@ -91,7 +75,7 @@ func TestADragOnlyLandsWhereTheTreeKeepsIt(t *testing.T) {
 func TestAMotherInTheAirTakesHerChildren(t *testing.T) {
 	b := carriedFold(snapBlock(), "mother")
 	rows := blockRows(b, b.sessions)
-	if got := rowShape(rows); !slices.Equal(got, []string{"1:mother", "1:solo."}) {
+	if got := rowShape(rows); !slices.Equal(got, []string{"0:mother", "0:solo."}) {
 		t.Fatalf("rows = %v, want the mother folded over her child", got)
 	}
 	if got := treeSnap(b, treeKeys(rows))(0, 1); got != 1 {

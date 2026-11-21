@@ -103,7 +103,7 @@ func (s *sidebar) editorRow(gtx C, th *ui.Theme, r sessionRow, b blockView, act 
 			return hover.Layout(gtx, func(gtx C) D {
 				return layout.Background{}.Layout(gtx,
 					func(gtx C) D { return treeRowFill(gtx, cardLayer(th, "", n.shown, hovered), p) },
-					func(gtx C) D { return withLinks(gtx, th, p.sessionRowLinks, line) },
+					line,
 				)
 			})
 		})

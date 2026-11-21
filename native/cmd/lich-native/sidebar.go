@@ -34,8 +34,8 @@ type sidebar struct {
 	// moreClicks and moreMenus are the … of each card's corner and its menu.
 	moreClicks map[string]*ui.Clickable
 	moreMenus  map[string]*ui.MenuState
-	// checkoutRows are the checkout rows a mother's group or a folder draws,
-	// lit under the pointer.
+	// checkoutRows are the browser and editor rows under a session, lit under
+	// the pointer.
 	checkoutRows map[string]*ui.Clickable
 	// mothers are the chevrons that fold a mother's children.
 	mothers  map[string]*ui.Clickable

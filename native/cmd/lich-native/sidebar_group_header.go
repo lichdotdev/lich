@@ -52,9 +52,6 @@ var (
 // carried, a header whose block refuses it fades.
 func (s *sidebar) groupHeader(gtx C, th *ui.Theme, b blockView, st *blockState, f blockFrame) D {
 	_, refuses := s.headerDrop(b, f.view)
-	if b.kind == blockCheckout {
-		return s.checkoutHeader(gtx, th, b, st, f)
-	}
 	if st.toggle.Clicked(gtx) && !f.headerDragEnded {
 		f.act.fold = b.key
 	}

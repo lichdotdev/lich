@@ -19,7 +19,7 @@ func TestABrowserHangsFirstUnderItsSession(t *testing.T) {
 		treeSession("child", "mother", "/repo"),
 		browsing(treeSession("solo", "", "/repo")),
 	}
-	rows := sessionRows(sessions, "", func(string) bool { return false })
+	rows := sessionRows(sessions, func(string) bool { return false }, nil)
 	want := []string{"0:mother", "1:__browser__:mother", "1:child.", "0:solo.", "1:__browser__:solo."}
 	if got := rowShape(rows); !slices.Equal(got, want) {
 		t.Fatalf("rows = %v, want %v", got, want)
@@ -38,7 +38,7 @@ func TestAFoldedMotherHidesHerBrowserAndAStaleFoldDoesNot(t *testing.T) {
 		treeSession("child", "mother", "/repo"),
 		browsing(treeSession("solo", "", "/repo")),
 	}
-	rows := sessionRows(sessions, "", func(string) bool { return true })
+	rows := sessionRows(sessions, func(string) bool { return true }, nil)
 	want := []string{"0:mother", "0:solo.", "1:__browser__:solo."}
 	if got := rowShape(rows); !slices.Equal(got, want) {
 		t.Fatalf("rows = %v, want %v: a fold with nothing under it hides no browser", got, want)
@@ -69,6 +69,7 @@ func TestBrowserRowNamesThePageAndWhereItIs(t *testing.T) {
 		web          webView
 		label, state string
 	}{
+		{webView{url: "http://localhost:5173/login", title: "Sign in · Pulls", shown: true}, "Sign in · Pulls", ""},
 		{webView{url: "http://localhost:5173/login", shown: true}, "localhost:5173", ""},
 		{webView{url: "about:blank"}, "Browser", "Minimized"},
 		{webView{url: "https://example.com/", headed: true}, "example.com", "In its own window"},

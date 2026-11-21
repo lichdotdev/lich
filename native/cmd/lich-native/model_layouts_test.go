@@ -406,8 +406,8 @@ func TestALayoutsSidebarKeepsTheTreeOfMothersAndChildren(t *testing.T) {
 	m.splitBeside(ctx, "orch", "notes", edgeRight, false)
 	_, _, groups, _ := m.splitSidebar(time.Now())
 	rows := blockRows(groups[0].block, groups[0].block.sessions)
-	want := []string{"0:__checkout__:__layout__:lich:/dev/lich", "1:orch.", "2:notes."}
+	want := []string{"0:orch.", "1:notes."}
 	if got := rowShape(rows); !slices.Equal(got, want) {
-		t.Fatalf("rows %v, want %v: the child under its mother, both under their checkout", got, want)
+		t.Fatalf("rows %v, want %v: the child under its mother, no checkout row", got, want)
 	}
 }

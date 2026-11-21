@@ -283,26 +283,15 @@ func (s *sidebar) flight(gtx C, th *ui.Theme, m *model) {
 }
 
 // nodeGlyphs draws, by glyph name, every node the tree names that is not a
-// session's ring: each checkout's node, each folder's and the pinned glyph.
+// session's mark: each folder's and the pinned glyph.
 func nodeGlyphs(th *ui.Theme, blocks []blockView) map[string]layout.Widget {
 	nodes := map[string]layout.Widget{}
 	for _, b := range blocks {
-		branch := func(gtx C) D {
-			on := onGround(th, nodeGround(th, b))
-			return layout.Center.Layout(gtx, func(gtx C) D { return checkoutNode(gtx, on, icBranch, treeEntry{}) })
-		}
 		switch {
 		case b.kind == blockFolder:
 			nodes[glyphNode+b.key] = headGlyph(th, icGroupFolder, b.color)
 		case b.kind == blockPinned:
 			nodes[glyphNode+b.key] = headGlyph(th, icMenuPin, "")
-		case b.under != "":
-			nodes[glyphNode+b.key] = branch
-		}
-		for _, r := range blockRows(b, b.sessions) {
-			if r.kind == rowNestedCheckout {
-				nodes[glyphNode+r.key] = branch
-			}
 		}
 	}
 	return nodes

@@ -58,9 +58,6 @@ type sessionRowKind int
 
 const (
 	rowCard sessionRowKind = iota
-	// rowNestedCheckout is a checkout inside a mother's group: a child running in
-	// another checkout than its mother's hangs from it.
-	rowNestedCheckout
 	// rowBrowser is a session's running browser, the first row under it.
 	rowBrowser
 	// rowEditor is a checkout's file in the stage editor, the last row under
@@ -73,7 +70,7 @@ type sessionRow struct {
 	kind   sessionRowKind
 	key    string
 	sv     sessionView // rowCard, and rowBrowser's session
-	path   string      // rowNestedCheckout and rowEditor: the checkout
+	path   string      // rowEditor: the checkout
 	editor editorNode  // rowEditor
 	// depth is the row's level; its elbow leaves the ring of level depth-1.
 	depth int
@@ -86,26 +83,15 @@ type sessionRow struct {
 	kids   int // sessions under a mother, drawn or folded
 	folded bool
 	mark   string // a folded mother's markWait / markDone
-	// hideGit is a session row under a checkout row, which already shows the
-	// pull request and the changes.
-	hideGit bool
 	// motion is the row's share of a run opening or closing it, nil at rest.
 	motion *rowMotion
 }
 
 // sessionRows lays a block's sessions out as trees: every session whose origin
 // is in the block hangs from it, a level deeper each generation, in stored
-// order, and a child in a checkout other than its mother's hangs from a
-// checkout row of its own inside her group. under is the checkout a row above
-// the block draws, "" for none; folded reports a mother's stored fold.
-func sessionRows(sessions []sessionView, under string, folded func(id string) bool) []sessionRow {
-	return checkoutRows(sessions, under, folded, nil)
-}
-
-// checkoutRows is sessionRows with the editor nodes of editors hung under
-// their checkouts: the checkout row above the block's, after its sessions,
-// and each checkout row inside a mother's group.
-func checkoutRows(sessions []sessionView, under string, folded func(id string) bool, editors map[string]editorNode) []sessionRow {
+// order, with its browser and the editor it holds under it. folded reports a
+// mother's stored fold.
+func sessionRows(sessions []sessionView, folded func(id string) bool, editors map[string]editorNode) []sessionRow {
 	in := make(map[string]bool, len(sessions))
 	for _, sv := range sessions {
 		in[sv.ID] = true
@@ -120,17 +106,8 @@ func checkoutRows(sessions []sessionView, under string, folded func(id string) b
 		roots = append(roots, sv)
 	}
 	t := tree{children: children, folded: folded, editors: editors}
-	base := 0
-	if under != "" {
-		base = 1
-	}
-	editor, hasEditor := editors[under]
-	hasEditor = hasEditor && under != ""
 	for i, root := range roots {
-		t.walk(root, base, nil, i == len(roots)-1 && !hasEditor, under != "", map[string]bool{})
-	}
-	if hasEditor {
-		t.rows = append(t.rows, editorRow(editorRowPrefix+under, under, editor, base, nil))
+		t.walk(root, 0, nil, i == len(roots)-1, map[string]bool{})
 	}
 	return t.rows
 }
@@ -142,45 +119,11 @@ func editorRow(key, checkout string, n editorNode, depth int, lanes []bool) sess
 	return sessionRow{kind: rowEditor, key: key, path: checkout, editor: n, depth: depth, lanes: lanes, tail: true}
 }
 
-// blockRows is a block's rows. A folder or the pinned block only gathers
-// sessions, so while the project draws checkout rows it draws them too: each
-// checkout its trees' roots run in, as a row they hang from, in the order its
-// first root sits.
+// blockRows is a block's rows: its sessions, each with its browser and its
+// editor under it.
 func blockRows(b blockView, sessions []sessionView) []sessionRow {
 	folded := func(id string) bool { return b.motherFolds[id] }
-	if !b.byCheckout {
-		return withoutCarriedBrowser(checkoutRows(sessions, b.under, folded, b.editors), b.carried)
-	}
-	in := make(map[string]sessionView, len(sessions))
-	for _, sv := range sessions {
-		in[sv.ID] = sv
-	}
-	rootPath := func(sv sessionView) string {
-		seen := map[string]bool{}
-		for {
-			up, ok := in[sv.OriginSessionID]
-			if !ok || seen[up.ID] {
-				return sv.path
-			}
-			seen[up.ID] = true
-			sv = up
-		}
-	}
-	var paths []string
-	groups := map[string][]sessionView{}
-	for _, sv := range sessions {
-		path := rootPath(sv)
-		if _, ok := groups[path]; !ok {
-			paths = append(paths, path)
-		}
-		groups[path] = append(groups[path], sv)
-	}
-	var rows []sessionRow
-	for _, path := range paths {
-		rows = append(rows, sessionRow{kind: rowNestedCheckout, key: "__checkout__:" + b.key + ":" + path, path: path, stub: true})
-		rows = append(rows, checkoutRows(groups[path], path, folded, b.editors)...)
-	}
-	return withoutCarriedBrowser(rows, b.carried)
+	return withoutCarriedBrowser(sessionRows(sessions, folded, b.editors), b.carried)
 }
 
 // withoutCarriedBrowser is rows without the browser of the session in the
@@ -220,23 +163,28 @@ func (t *tree) descendants(id string, seen map[string]bool) []sessionView {
 
 // walk adds sv at depth and, unless it is folded, its browser and its group
 // under it. seen guards against an origin cycle.
-func (t *tree) walk(sv sessionView, depth int, lanes []bool, tail, hideGit bool, seen map[string]bool) {
+func (t *tree) walk(sv sessionView, depth int, lanes []bool, tail bool, seen map[string]bool) {
 	if seen[sv.ID] {
 		return
 	}
 	seen[sv.ID] = true
 	all := t.descendants(sv.ID, maps.Clone(seen))
-	row := sessionRow{kind: rowCard, key: sv.ID, sv: sv, depth: depth, lanes: lanes, tail: tail, kids: len(all), hideGit: hideGit,
+	row := sessionRow{kind: rowCard, key: sv.ID, sv: sv, depth: depth, lanes: lanes, tail: tail, kids: len(all),
 		folded: len(all) > 0 && t.folded(sv.ID)}
 	if row.folded {
 		row.mark = treeMark(all)
 	}
 	open := len(all) > 0 && !row.folded
 	browser := sv.browser && !row.folded
-	row.stub = open || browser
+	editor, hasEditor := t.editors[sv.ID]
+	hasEditor = hasEditor && !row.folded
+	row.stub = open || browser || hasEditor
 	t.rows = append(t.rows, row)
 	if browser {
-		t.rows = append(t.rows, sessionRow{kind: rowBrowser, key: browserRowKey(sv.ID), sv: sv, depth: depth + 1, lanes: childLanes(row), tail: !open})
+		t.rows = append(t.rows, sessionRow{kind: rowBrowser, key: browserRowKey(sv.ID), sv: sv, depth: depth + 1, lanes: childLanes(row), tail: !open && !hasEditor})
+	}
+	if hasEditor {
+		t.rows = append(t.rows, editorRow(editorRowPrefix+sv.ID, sv.path, editor, depth+1, childLanes(row)))
 	}
 	if open {
 		t.group(sv, depth+1, childLanes(row), seen)
@@ -252,41 +200,11 @@ func childLanes(r sessionRow) []bool {
 	return append(slices.Clone(r.lanes), !r.tail)
 }
 
-// group lays a mother's children out at depth: the ones in her checkout
-// first-come, and each other checkout as a row its children hang from, at the
-// slot its first child takes.
+// group lays a mother's children out at depth, in stored order.
 func (t *tree) group(mother sessionView, depth int, lanes []bool, seen map[string]bool) {
-	type item struct {
-		path     string
-		sessions []sessionView
-	}
-	var items []item
-	for _, sv := range t.children[mother.ID] {
-		if sv.path == mother.path {
-			items = append(items, item{sessions: []sessionView{sv}})
-			continue
-		}
-		if i := slices.IndexFunc(items, func(it item) bool { return it.path == sv.path }); i >= 0 {
-			items[i].sessions = append(items[i].sessions, sv)
-			continue
-		}
-		items = append(items, item{path: sv.path, sessions: []sessionView{sv}})
-	}
-	for i, it := range items {
-		tail := i == len(items)-1
-		if it.path == "" {
-			t.walk(it.sessions[0], depth, lanes, tail, true, seen)
-			continue
-		}
-		row := sessionRow{kind: rowNestedCheckout, key: "__checkout__:" + mother.ID + ":" + it.path, path: it.path, depth: depth, lanes: lanes, tail: tail, stub: true}
-		t.rows = append(t.rows, row)
-		editor, hasEditor := t.editors[it.path]
-		for j, sv := range it.sessions {
-			t.walk(sv, depth+1, childLanes(row), j == len(it.sessions)-1 && !hasEditor, true, seen)
-		}
-		if hasEditor {
-			t.rows = append(t.rows, editorRow(editorRowPrefix+mother.ID+":"+it.path, it.path, editor, depth+1, childLanes(row)))
-		}
+	kids := t.children[mother.ID]
+	for i, sv := range kids {
+		t.walk(sv, depth, lanes, i == len(kids)-1, seen)
 	}
 }
 
