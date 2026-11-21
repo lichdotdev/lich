@@ -51,6 +51,9 @@ const (
 	// ember bed keep over the background.
 	chatFlameEdge  = 0.65
 	chatFlameEmber = 0.35
+	// chatFlameCore is how far the core goes from Primary toward the lighter
+	// of the theme's ink and ground.
+	chatFlameCore = 0.5
 )
 
 // chatFlamePixel is one sprite pixel's side: 1.5dp, which is two device pixels
@@ -64,12 +67,12 @@ func chatFlameFrame(now time.Time) (frame int, next time.Time) {
 }
 
 // chatFlameColor is the color of a sprite symbol: the flame burns in the
-// theme's Primary, as the sidebar's souls do, around a core in the foreground;
-// false for the symbol that is nothing.
+// theme's Primary, as the sidebar's souls do, around a core of the same hue,
+// lighter; false for the symbol that is nothing.
 func chatFlameColor(th *ui.Theme, symbol byte) (color.NRGBA, bool) {
 	switch symbol {
 	case '4':
-		return th.Foreground, true
+		return ui.MixOKLab(th.Primary, lighter(th.Foreground, th.Background), chatFlameCore), true
 	case '2':
 		return th.Primary, true
 	case '3':

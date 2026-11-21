@@ -475,7 +475,8 @@ draws none while it grows in, because the room above the rows is measured in the
   own words in quotes; declined, a muted "Not answered".
 - **A notice** is a muted line; the turn in flight ends the column with a pixel flame (`chat_flame.go`: an 11x14 sprite of 1.5dp pixels, drawn as rectangles, in 16 frames of 100ms; only its 11 bottom rows take the line, the tips and sparks burning over the line above; a window without focus looks in at `StillFrame` instead) and a verb of the turn, shimmering like "Thinking" with the time it has run beside it; the verb is picked from the language's own list (`chat.view.verbs`, `|`-separated, each language writes its own length) by the session and the turn, so it holds for the whole turn; left out
   while a permission or a question waits: its box already says so.
-  The flame's colors are tokens, never a fixed hue: the core is `Foreground`, the body `Primary`, the edge
+  The flame's colors are tokens, never a fixed hue: the core is `Primary` halfway to the lighter of `Foreground` and
+  `Background`, the body `Primary`, the edge
   `Primary` at 0.65 over `Background`, and the base and the sparks going out `Primary` at 0.35. The flame burns in
   the theme's own color, as the sidebar's souls do. It does not use `ToneWait`: the turn running is not the
   turn waiting on the person, and that tone already says the second.

@@ -44,7 +44,7 @@ func TestTheFlameTakesItsColorsFromTheThemesTokens(t *testing.T) {
 	th.Background = color.NRGBA{R: 20, G: 20, B: 30, A: 255}
 	th.Primary = color.NRGBA{R: 10, G: 200, B: 30, A: 255}
 	for symbol, want := range map[byte]color.NRGBA{
-		'4': th.Foreground,
+		'4': ui.MixOKLab(th.Primary, th.Foreground, 0.5),
 		'2': th.Primary,
 		'3': ui.MixOKLab(th.Background, th.Primary, 0.65),
 		'1': ui.MixOKLab(th.Background, th.Primary, 0.35),
