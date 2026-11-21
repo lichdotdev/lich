@@ -211,6 +211,36 @@ the sidebar's hover shape, and keeps what makes it itself: the Pulls list keeps 
 Settings pane its reading column. Seams change the hover: a Pulls row and a `PanelRow` light square across the
 whole width, like the seams, since a rounded fill set in between them shows its corners against the lines. Matching a screen to the sidebar means its spacing, never its decoration.
 
+### The backdrop
+
+A session's island wears a field of dots behind its content (`backdrop.go`): long bands that flow from an
+ember in the island's bottom-right corner toward the far corner, dithered by Bayer 8x8 on a lattice of 3dp
+cells with 2dp dots. The dots are the theme's `Primary`, going toward white at the field's brightest, so each
+theme's field wears the color of its own buttons. The ember sits in the corner so the bands run along the
+edges and leave the middle, where the text is, calm.
+
+- **Where.** The stage island of a session, each pane of a layout, Home and the empty stage, and the stage
+  editor. The dock, Settings, Pulls, a service's console and a browser page have none. A terminal paints no
+  ground of its own (`Snapshot.Bare`): the island is filled with the terminal's background and the dots show
+  between its cells.
+- **How much.** A session's field covers its island from the top to the middle, fading down (`backdropFade`),
+  at `backdropOpacity` (0.3); the editor's holds still at the same opacity. A chat with nothing in it shows
+  the whole field at full strength, its middle calm (`centreFloor` of it around the start screen's block) and
+  lulled to `lineFloor` round the line under the composer; it folds back to the band as the start screen
+  fades.
+- **When it moves.** A session's field moves while its agent works (a chat's own turn; a terminal's status that
+  spins the card) or its user types, and holds still `backdropAwake` (10s) after; a chat's start screen moves
+  it for as long as it shows. A still field asks for no frame, and starting again it goes on from where it
+  stopped.
+- **The start screen's mark.** lich's logo, still, at half size, drawn in the field's own dots in the
+  `Primary`'s tones: the bands lift its dots and drop some where they thin, so the mark keeps its shape and
+  moves with the field. The question over the composer is 17sp semibold, 36dp above it.
+- **What sits on it.** Text on the field reads in the foreground, not muted: a session's header names the
+  provider in the name's ink and the name in semibold, and the line under the start screen's composer (the
+  project, the branch and its line counts, no separator) is the foreground at 14sp. A control over it takes a
+  ground of its own (the GUI | TUI selector). The composer's edge leans to `Primary`, its fill stays near the
+  theme's ground.
+
 ### Header and strips
 
 A screen's header and every strip under it (a toolbar, a file list's top bar) sit on the island's 8px edge.
