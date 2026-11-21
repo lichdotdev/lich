@@ -106,3 +106,23 @@ func TestSidebarPressOutsideTheFilterFieldLeavesIt(t *testing.T) {
 		t.Error("the field kept the keyboard after a press on a phase chip")
 	}
 }
+
+// A finished turn nobody read rests on a still check: its row asks for no
+// frame, so a sidebar of finished sessions goes still.
+func TestAFinishedRowLetsTheSidebarGoStill(t *testing.T) {
+	m := modelOn("a")
+	report(t, m, "a1", statusDone)
+	if !m.status.unread("a1") {
+		t.Fatal("the finished turn is not unread")
+	}
+	root := new(ui.Root)
+	s := newSidebar(root)
+	s.open = true
+	r := newFrameRig(image.Pt(400, 700), func(gtx C, th *ui.Theme) {
+		root.Layout(gtx, func(gtx C) D {
+			s.layout(gtx, th, m, "a2")
+			return D{Size: gtx.Constraints.Max}
+		})
+	})
+	r.settle(t)
+}
