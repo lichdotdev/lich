@@ -858,7 +858,11 @@ and closes the rows under it. Its `⋯` and right click hold Start all, Stop all
 row as a session is: its glyph where the mark sits, the name (`MutedForeground` while it is down), how long it
 has run at the end or its exit code in `Destructive`, and the corner slot, the `⋯` under the pointer and the
 souls spinner while it stops. No dot, and no button on the row: its actions are its menu; a click shows its
-console. The open list scrolls past `serviceRowsShown` rows.
+console. The open list scrolls past `serviceRowsShown` rows. Adding a service and editing one happen in a dialog over the screen
+(`settings_service_dialog.go`), from the footer's New service, a row's Edit or Settings › Services alike,
+whose rows open it on a click: the name in a narrow field beside the command, one line on how a command runs
+with the rest in a help glyph's tooltip, Start with lich as a switch, then Delete for a saved service that is
+down, Cancel and Save.
 
 ### The rail
 

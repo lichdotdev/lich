@@ -1,7 +1,6 @@
 package main
 
 import (
-	"image"
 	"sync"
 
 	"gioui.org/font"
@@ -12,7 +11,6 @@ import (
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
-	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
 const sectionServices = "services"
@@ -21,13 +19,8 @@ const sectionServices = "services"
 // under it, the services live in their own table.
 const servicesKey = "services.list"
 
-// newServiceRow is the id the form edits when it adds a service.
-const newServiceRow = "+new"
-
-var icServiceEdit = icons.Lucide("pencil")
-
-// servicesSettings is the Services pane: the project's services as a list,
-// one of them, or a new one, open in a form.
+// servicesSettings is the Services pane, the project's services as a list,
+// and the dialog that adds or edits one.
 type servicesSettings struct {
 	store *servicesStore
 	// home is the id of the project Home shows, whose services Global edits:
@@ -35,30 +28,24 @@ type servicesSettings struct {
 	// directory, which is as global as a service gets.
 	home func() string
 
-	editing  string // a service id, newServiceRow, or "" for none
-	name     widget.Editor
-	command  widget.Editor
-	withLich ui.Bool
-	save     ui.Clickable
-	cancel   ui.Clickable
-	add      ui.Clickable
-	edits    map[string]*ui.Clickable
-	deletes  map[string]*ui.Clickable
+	open        bool
+	focus       bool // the name asks for focus the frame after opening
+	dialog      ui.DialogState
+	svc         backend.Service // what the dialog edits; a new one has no ID
+	projectName string
+	name        widget.Editor
+	command     widget.Editor
+	withLich    ui.SwitchState
+	why         ui.Tooltip
+	save        ui.Clickable
+	cancel      ui.Clickable
+	del         ui.Clickable
+	add         ui.Clickable
+	rows        map[string]*ui.Clickable
 
 	mu     sync.Mutex
 	saving bool
 	err    string
-}
-
-// begin opens the form on service id, newServiceRow for a new one, filled
-// with what the store holds for it.
-func (p *servicesSettings) begin(id string) {
-	p.editing = id
-	p.setErr("")
-	v, _ := p.store.byID(id)
-	p.name.SetText(v.Name)
-	p.command.SetText(v.Command)
-	p.withLich.Value = v.StartWithLich
 }
 
 // projectOf is the project whose services scope edits: the scope's own, or
@@ -80,8 +67,8 @@ func (p *servicesSettings) setErr(text string) {
 // project's services, then Add service. Global has none to show.
 func (s *settingsScreen) servicesPaneRows(th *ui.Theme) []layout.Widget {
 	p := &s.services
-	if p.edits == nil {
-		p.edits, p.deletes = map[string]*ui.Clickable{}, map[string]*ui.Clickable{}
+	if p.rows == nil {
+		p.rows = map[string]*ui.Clickable{}
 	}
 	desc := i18n.T("settings.servicesSettings.description")
 	if s.scope == "" {
@@ -102,15 +89,9 @@ func (s *settingsScreen) servicesPaneRows(th *ui.Theme) []layout.Widget {
 	for _, v := range p.store.of(projectID) {
 		rows = append(rows, func(gtx C) D { return s.serviceRow(gtx, th, v) })
 	}
-	if p.editing == newServiceRow {
-		rows = append(rows, func(gtx C) D {
-			return s.serviceForm(gtx, th, backend.Service{ProjectID: projectID})
-		})
-		return rows
-	}
 	rows = append(rows, func(gtx C) D {
 		if p.add.Clicked(gtx) {
-			p.begin(newServiceRow)
+			p.begin(serviceDialogOf(p.store, projectID, ""), s.projectName(projectID))
 		}
 		b := th.Button(&p.add, i18n.T("settings.servicesSettings.add"))
 		b.Variant, b.Size, b.Icon = ui.VariantOutline, ui.SizeSM, icPlus
@@ -119,97 +100,43 @@ func (s *settingsScreen) servicesPaneRows(th *ui.Theme) []layout.Widget {
 	return rows
 }
 
-// serviceRow is one saved service: its name and command, Edit and Delete; or
-// the form, while it is the one being edited.
+// serviceRow is one saved service, a click that opens its dialog: its name,
+// Starts with lich when it does, and its command.
 func (s *settingsScreen) serviceRow(gtx C, th *ui.Theme, v backend.Service) D {
 	p := &s.services
-	if p.editing == v.ID {
-		return s.serviceForm(gtx, th, v)
-	}
-	edit, del := clickable(p.edits, v.ID), clickable(p.deletes, v.ID)
-	if edit.Clicked(gtx) {
-		p.begin(v.ID)
-	}
-	if del.Clicked(gtx) {
-		go s.deleteService(v.ID)
+	click := clickable(p.rows, v.ID)
+	if click.Clicked(gtx) {
+		p.begin(v, s.projectName(v.ProjectID))
 	}
 	name := []layout.FlexChild{layout.Rigid(th.Text(ui.TextSM, v.Name).Weight(font.Medium).Layout)}
 	if v.StartWithLich {
 		name = append(name, ui.Gap(2), layout.Rigid(th.Text(ui.TextXS, i18n.T("settings.servicesSettings.startsWithLich")).Muted().Layout))
 	}
-	return layout.Inset{Top: ui.Space(2), Bottom: ui.Space(2)}.Layout(gtx, func(gtx C) D {
-		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-			layout.Flexed(1, func(gtx C) D {
-				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-					layout.Rigid(func(gtx C) D { return layout.Flex{Alignment: layout.Middle}.Layout(gtx, name...) }),
-					ui.VGap(0.5),
-					layout.Rigid(th.Text(ui.TextXS, v.Command).Mono().Muted().Layout),
-				)
-			}),
-			layout.Rigid(func(gtx C) D { return th.CornerButton(edit, icServiceEdit, false).Layout(gtx) }),
-			ui.Gap(1),
-			layout.Rigid(func(gtx C) D {
-				if serviceUp(v) {
-					return D{Size: image.Pt(gtx.Dp(16), gtx.Dp(16))}
-				}
-				return th.CornerButton(del, icServiceDelete, false).Layout(gtx)
-			}),
+	gtx.Constraints.Min.X = gtx.Constraints.Max.X
+	return click.Layout(gtx, func(gtx C) D {
+		return layout.Background{}.Layout(gtx,
+			func(gtx C) D { return ui.Fill(gtx, cardLayer(th, "", false, click.Hovered()), ui.RadiusMD) },
+			func(gtx C) D {
+				return layout.UniformInset(ui.Space(2)).Layout(gtx, func(gtx C) D {
+					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+						layout.Rigid(func(gtx C) D { return layout.Flex{Alignment: layout.Middle}.Layout(gtx, name...) }),
+						ui.VGap(0.5),
+						layout.Rigid(th.Text(ui.TextXS, v.Command).Mono().Muted().Layout),
+					)
+				})
+			},
 		)
 	})
 }
 
-// serviceForm edits v, or a new service for a zero v: name, command, start
-// with lich, and the reason a save was refused.
-func (s *settingsScreen) serviceForm(gtx C, th *ui.Theme, v backend.Service) D {
-	p := &s.services
-	if p.cancel.Clicked(gtx) {
-		p.editing = ""
+// projectName is the name projectID goes by, for the dialog's subtitle.
+func (s *settingsScreen) projectName(projectID string) string {
+	for _, p := range s.projects {
+		if p.id == projectID {
+			return p.name
+		}
 	}
-	if p.save.Clicked(gtx) {
-		opts := api.SaveServiceOptions{ID: v.ID, ProjectID: v.ProjectID, Name: p.name.Text(), Command: p.command.Text(), StartWithLich: p.withLich.Value}
-		go s.saveService(opts)
-	}
-	p.mu.Lock()
-	saving, errText := p.saving, p.err
-	p.mu.Unlock()
-	name := th.Input(&p.name, i18n.T("settings.servicesSettings.namePlaceholder"))
-	command := th.Textarea(&p.command, i18n.T("settings.servicesSettings.commandPlaceholder"))
-	command.MaxHeight = ui.Space(32)
-	save := th.Button(&p.save, i18n.T("settings.servicesSettings.save"))
-	save.Size, save.Disabled = ui.SizeSM, saving
-	cancel := th.Button(&p.cancel, i18n.T("common.action.cancel"))
-	cancel.Variant, cancel.Size = ui.VariantGhost, ui.SizeSM
-	children := []layout.FlexChild{
-		layout.Rigid(th.Label(i18n.T("settings.servicesSettings.name")).Layout), ui.VGap(1.5),
-		layout.Rigid(name.Layout), ui.VGap(3),
-		layout.Rigid(th.Label(i18n.T("settings.servicesSettings.command")).Layout), ui.VGap(1.5),
-		layout.Rigid(command.Layout), ui.VGap(1.5),
-		layout.Rigid(func(gtx C) D {
-			return th.Text(ui.TextXS, i18n.T("settings.servicesSettings.commandHint")).Muted().Wrapped().Layout(gtx)
-		}),
-		ui.VGap(3),
-		layout.Rigid(func(gtx C) D {
-			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-				layout.Rigid(th.Checkbox(&p.withLich).Layout), ui.Gap(2),
-				layout.Rigid(th.Text(ui.TextSM, i18n.T("settings.servicesSettings.startWithLich")).Layout),
-			)
-		}),
-	}
-	if errText != "" {
-		children = append(children, ui.VGap(2), layout.Rigid(func(gtx C) D {
-			l := th.Text(ui.TextXS, errText)
-			l.Color = th.Destructive
-			return l.Wrapped().Layout(gtx)
-		}))
-	}
-	children = append(children, ui.VGap(3), layout.Rigid(func(gtx C) D {
-		return layout.Flex{}.Layout(gtx, layout.Rigid(cancel.Layout), ui.Gap(2), layout.Rigid(save.Layout))
-	}))
-	return layout.Inset{Top: ui.Space(2), Bottom: ui.Space(3)}.Layout(gtx, func(gtx C) D {
-		return layout.UniformInset(ui.Space(3)).Layout(gtx, func(gtx C) D {
-			return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
-		})
-	})
+	return ""
 }
 
 func (s *settingsScreen) saveService(opts api.SaveServiceOptions) {
@@ -227,13 +154,16 @@ func (s *settingsScreen) saveService(opts api.SaveServiceOptions) {
 		return
 	}
 	p.setErr("")
-	p.editing = ""
+	p.open = false
 	s.invalidate()
 }
 
 func (s *settingsScreen) deleteService(id string) {
 	if err := s.client.DeleteService(s.ctx, id); err != nil {
 		s.services.setErr(backend.ErrorText(err))
+		s.invalidate()
+		return
 	}
+	s.services.open = false
 	s.invalidate()
 }

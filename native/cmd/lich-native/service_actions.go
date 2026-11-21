@@ -23,10 +23,10 @@ func (u *window) applyService(r serviceRequest) {
 		u.model.invalidate()
 	case serviceEdit:
 		if v, ok := u.model.services.byID(r.id); ok {
-			u.openServiceSettings(v.ProjectID, r.id)
+			u.openServiceDialog(v.ProjectID, r.id)
 		}
 	case serviceAdd:
-		u.openServiceSettings(r.project, "")
+		u.openServiceDialog(r.project, "")
 	default:
 		go u.runServiceOp(r)
 	}
@@ -77,21 +77,9 @@ func (u *window) revealService(id string) {
 	u.saveScreen(v.ProjectID)
 }
 
-// openServiceSettings opens Settings on projectID's Services with service id
-// in the form, a new one for "".
-func (u *window) openServiceSettings(projectID, id string) {
-	u.pulls.hide()
-	u.extension.hide()
-	u.settings.openSection(sectionServices)
-	tabs, _ := u.model.projectTabs()
-	scope := projectID
-	if projectID == u.model.homeProject() {
-		scope = ""
-	}
-	u.settings.show(scope, settingsProjectsOf(tabs))
-	if id == "" {
-		id = newServiceRow
-	}
-	u.settings.services.begin(id)
+// openServiceDialog opens the service dialog where the window is, on
+// projectID's service id, a new one for "".
+func (u *window) openServiceDialog(projectID, id string) {
+	u.settings.services.begin(serviceDialogOf(&u.model.services, projectID, id), u.model.projectName(projectID))
 	u.model.invalidate()
 }

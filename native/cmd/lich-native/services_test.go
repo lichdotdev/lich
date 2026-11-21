@@ -184,3 +184,21 @@ func TestTheServicesHeaderOffersWhatTheTallyAllows(t *testing.T) {
 		t.Errorf("Start all asked %+v", act.service)
 	}
 }
+
+func TestTheServiceDialogOpensOnTheSavedServiceOrANewOne(t *testing.T) {
+	var s servicesStore
+	saved := svc("a", "p1", api.ServiceStopped)
+	saved.Command, saved.StartWithLich = "pnpm dev", true
+	s.set([]backend.Service{saved})
+	if v := serviceDialogOf(&s, "p1", "a"); v.ID != "a" || v.Command != "pnpm dev" {
+		t.Fatalf("saved: %+v", v)
+	}
+	if v := serviceDialogOf(&s, "p2", ""); v.ID != "" || v.ProjectID != "p2" || v.Name != "" {
+		t.Fatalf("new: %+v, want an empty service of p2", v)
+	}
+	var p servicesSettings
+	p.begin(saved, "lichtrack")
+	if !p.open || p.projectName != "lichtrack" || p.name.Text() != "a" || p.command.Text() != "pnpm dev" || !p.withLich.Value {
+		t.Fatalf("dialog opened as open=%v project=%q name=%q command=%q withLich=%v", p.open, p.projectName, p.name.Text(), p.command.Text(), p.withLich.Value)
+	}
+}
