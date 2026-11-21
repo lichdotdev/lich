@@ -24,7 +24,7 @@ func TestBlockLaunchOpensInTheBlocksCheckoutOrAsksAFoldersWhere(t *testing.T) {
 	if blockLaunch(blockView{kind: blockPinned}, twoProviders, &act) != nil {
 		t.Error("the pinned block offers a +")
 	}
-	checkout := blockLaunch(blockView{kind: blockCheckout, path: "/wt/a"}, twoProviders, &act)
+	checkout := blockLaunch(blockView{kind: blockLoose, path: "/wt/a"}, twoProviders, &act)
 	if want := []string{"Claude Code", "Codex", "", "New Terminal"}; !slices.Equal(labels(checkout), want) {
 		t.Fatalf("checkout + %v, want %v", labels(checkout), want)
 	}
@@ -57,7 +57,7 @@ func TestBlockOptionsByKindAndFilter(t *testing.T) {
 	renamed, asked := false, []string(nil)
 	hooks := blockMenuHooks{rename: func() { renamed = true }, newFolder: func(ids []string) { asked = ids }}
 	folder := blockView{kind: blockFolder, folder: "Apps", color: "teal", sessions: views("f1", "f2")}
-	checkout := blockView{kind: blockCheckout, sessions: views("r1", "r2")}
+	checkout := blockView{kind: blockLoose, sessions: views("r1", "r2")}
 
 	if blockOptions(blockView{kind: blockPinned}, nil, false, &act, hooks) != nil {
 		t.Error("the pinned block has a … menu")
@@ -102,8 +102,8 @@ func TestTakesCard(t *testing.T) {
 		return sessionView{ID: "c", Folder: folder, Path: path}
 	}
 	apps := blockView{kind: blockFolder, folder: "Apps"}
-	root := blockView{kind: blockCheckout}
-	wt := blockView{kind: blockCheckout, path: "/wt/a"}
+	root := blockView{kind: blockLoose}
+	wt := blockView{kind: blockLoose, path: "/wt/a"}
 	cases := []struct {
 		name   string
 		target blockView
@@ -203,7 +203,7 @@ func TestWriteSidebarStoresFoldsFilesAndLayout(t *testing.T) {
 	stored := filed(ss("r1", "f1", "w1@/x/worktrees/p/feat"), "Apps", "f1")
 	m, f := sidebarModel(t, stored)
 	ctx := context.Background()
-	const feat = "/x/worktrees/p/feat"
+	feat := folderKey("Apps")
 	w := sidebarWrites{fold: feat, file: fileRequest{ids: []string{"r1"}, folder: "Apps"}, saveWidth: true, saveOpen: true}
 	if err := writeSidebar(ctx, m, w, sidebarLayout{widthRem: 20, open: false}); err != nil {
 		t.Fatal(err)
@@ -217,7 +217,7 @@ func TestWriteSidebarStoresFoldsFilesAndLayout(t *testing.T) {
 	if want := []string{`store.SetSessionFolder({"sessionId":"r1","folder":"Apps"})`}; !slices.Equal(f.calls, want) {
 		t.Errorf("calls %v, want %v", f.calls, want)
 	}
-	if v := m.sidebarBlocks(sidebarFilter{}); !slices.Equal(blockKeys(v), []string{folderKey("Apps"), feat}) || !blockFolded(v, feat) {
+	if v := m.sidebarBlocks(sidebarFilter{}); !slices.Equal(blockKeys(v), []string{rootBlockKey, feat}) || !blockFolded(v, feat) {
 		t.Errorf("blocks after the writes: %v, feat folded %v", blockKeys(v), blockFolded(v, feat))
 	}
 
@@ -228,8 +228,8 @@ func TestWriteSidebarStoresFoldsFilesAndLayout(t *testing.T) {
 	if want := []string{`store.SetSessionColor({"sessionId":"r1","color":"red"})`, `store.SetSessionColor({"sessionId":"f1","color":"red"})`}; !slices.Equal(f.calls, want) {
 		t.Errorf("paint calls %v, want %v", f.calls, want)
 	}
-	if v := m.sidebarBlocks(sidebarFilter{}); v.blocks[0].color != "red" {
-		t.Errorf("folder color %q after the paint", v.blocks[0].color)
+	if v := m.sidebarBlocks(sidebarFilter{}); v.blocks[1].color != "red" {
+		t.Errorf("folder color %q after the paint", v.blocks[1].color)
 	}
 }
 

@@ -63,10 +63,9 @@ func assertLayout(t *testing.T, got []sessionBlock, want ...[]string) {
 	}
 }
 
-func TestBlocksDrawAFolderAboveTheCheckoutItsCardsCameFrom(t *testing.T) {
+func TestBlocksPutTheSessionsFiledNowhereBeforeTheFolders(t *testing.T) {
 	stored := filed(ss("s1", "wt1@/wt/a", "wt2@/wt/a"), "Apps", "wt1")
-	assertLayout(t, sessionBlocks(stored),
-		[]string{rootBlockKey, "s1"}, []string{folderKey("Apps"), "wt1"}, []string{"/wt/a", "wt2"})
+	assertLayout(t, sessionBlocks(stored), []string{rootBlockKey, "s1", "wt2"}, []string{folderKey("Apps"), "wt1"})
 }
 
 func TestBlocksGatherAFolderFromEveryCheckout(t *testing.T) {
@@ -74,9 +73,9 @@ func TestBlocksGatherAFolderFromEveryCheckout(t *testing.T) {
 	assertLayout(t, sessionBlocks(stored), []string{folderKey("Apps"), "s1", "wt1", "wt2"})
 }
 
-func TestBlocksKeyAFolderApartFromAWorktreeOfTheSameName(t *testing.T) {
-	stored := filed(ss("s1", "wt1@/wt/a"), "/wt/a", "s1")
-	assertLayout(t, sessionBlocks(stored), []string{folderKeyPrefix + "/wt/a", "s1"}, []string{"/wt/a", "wt1"})
+func TestBlocksKeyAFolderApartFromTheLooseList(t *testing.T) {
+	stored := filed(ss("s1", "wt1@/wt/a"), rootBlockKey, "s1")
+	assertLayout(t, sessionBlocks(stored), []string{rootBlockKey, "wt1"}, []string{folderKeyPrefix + rootBlockKey, "s1"})
 }
 
 func TestBlocksDrawAPinnedFiledCardInThePinnedBlock(t *testing.T) {
@@ -105,7 +104,7 @@ func TestFolderBlockCarriesItsNameAndNoPath(t *testing.T) {
 	if b.kind != blockFolder || b.folder != "Design system" || b.path != "" {
 		t.Fatalf("folder block = %+v", b)
 	}
-	if blocks[0].kind != blockCheckout || blocks[0].folder != "" {
+	if blocks[0].kind != blockLoose || blocks[0].folder != "" {
 		t.Fatalf("checkout block = %+v", blocks[0])
 	}
 }
@@ -215,29 +214,29 @@ func TestReorderSubset(t *testing.T) {
 }
 
 func TestOrderBlocksMovesWholeBlocks(t *testing.T) {
-	blocks := sessionBlocks(ss("r1", "r2", "a1@/wt/a", "b1@/wt/b", "b2@/wt/b"))
-	if got := orderBlocks(blocks, []string{"/wt/b", rootBlockKey, "/wt/a"}); !slices.Equal(got, []string{"b1", "b2", "r1", "r2", "a1"}) {
+	blocks := sessionBlocks(filed(filed(ss("r1", "r2", "a1", "b1", "b2"), "A", "a1"), "B", "b1", "b2"))
+	if got := orderBlocks(blocks, []string{folderKey("B"), rootBlockKey, folderKey("A")}); !slices.Equal(got, []string{"b1", "b2", "r1", "r2", "a1"}) {
 		t.Fatalf("order = %v", got)
 	}
 	if got := orderBlocks(blocks, []string{""}); len(got) != 0 {
-		t.Fatalf("the root keyed by \"\" gave %v", got)
+		t.Fatalf("a key of \"\" gave %v", got)
 	}
-	if got := orderBlocks(blocks, []string{"/wt/gone"}); len(got) != 0 {
+	if got := orderBlocks(blocks, []string{folderKey("gone")}); len(got) != 0 {
 		t.Fatalf("a gone key gave %v", got)
 	}
 }
 
 func TestDragOrderLeavesThePinnedCardsSlots(t *testing.T) {
-	stored := pin(ss("p1", "r1", "a1@/wt/a"), "p1")
-	got := dragOrder(stored, sessionBlocks(stored), []string{"/wt/a", rootBlockKey})
+	stored := pin(filed(ss("p1", "r1", "a1"), "Apps", "a1"), "p1")
+	got := dragOrder(stored, sessionBlocks(stored), []string{folderKey("Apps"), rootBlockKey})
 	if !slices.Equal(got, []string{"p1", "a1", "r1"}) {
 		t.Fatalf("drag order = %v", got)
 	}
 }
 
-func TestDragOrderMovesAFolderPastACheckout(t *testing.T) {
-	stored := filed(ss("a1@/wt/a", "r1", "r2"), "Apps", "r1", "r2")
-	got := dragOrder(stored, sessionBlocks(stored), []string{folderKey("Apps"), "/wt/a"})
+func TestDragOrderMovesAFolderPastTheLooseList(t *testing.T) {
+	stored := filed(ss("a1", "r1", "r2"), "Apps", "r1", "r2")
+	got := dragOrder(stored, sessionBlocks(stored), []string{folderKey("Apps"), rootBlockKey})
 	if !slices.Equal(got, []string{"r1", "r2", "a1"}) {
 		t.Fatalf("drag order = %v", got)
 	}

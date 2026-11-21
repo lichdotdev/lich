@@ -39,14 +39,9 @@ func (r *sidebarRail) entries(th *ui.Theme, s *sidebar, it railItem, act *sideba
 		if it.kids > 0 {
 			extra = append(extra, foldEntry(motherKey(sv.ID), sv.Label, !it.folded, act))
 		}
-		return cardMenu(sv, folders, act, nil, func() { s.askFolderName([]string{sv.ID}) }, extra...)
+		return append([]ui.MenuEntry{s.newSessionHere(sv, act)}, cardMenu(sv, folders, act, nil, func() { s.askFolderName([]string{sv.ID}) }, extra...)...)
 	case it.kind == railEditor:
 		return editorMenu(it.path, act)
-	case it.kind == railCheckout && it.key != b.key:
-		launch := launchEntries(s.launchProviders, i18n.T("sidebar.sessionLaunchMenuItems.newTerminal"), func(kind string) {
-			act.launch = launchRequest{kind: kind, dir: it.path, folder: b.folder}
-		})
-		return []ui.MenuEntry{{Kind: ui.MenuSubTrigger, Label: i18n.T("sidebar.checkoutRow.newSessionHere"), Icon: icPlus, Sub: launch}}
 	}
 	return append(headerEntries(b, f, s.launchProviders, hooks), foldEntry(b.key, b.title, !b.collapsed, act))
 }

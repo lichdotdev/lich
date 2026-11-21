@@ -6,9 +6,8 @@ import (
 	"github.com/lichdotdev/lich/native/backend"
 )
 
-// The block keys. The pinned and root blocks have no path
-// to key them by, and a folder is prefixed so one named like a real checkout
-// cannot key that checkout's block.
+// The block keys: the pinned block, the sessions filed nowhere, and each
+// folder, prefixed so a folder can never be named like another key.
 const (
 	pinnedBlockKey  = "__pinned__"
 	rootBlockKey    = "__root__"
@@ -19,7 +18,8 @@ const (
 type blockKind int
 
 const (
-	blockCheckout blockKind = iota
+	// blockLoose is the sessions filed nowhere, whatever checkout they run in.
+	blockLoose blockKind = iota
 	blockPinned
 	blockFolder
 )
@@ -42,9 +42,8 @@ type sessionBlock struct {
 	sessions []backend.Session
 }
 
-// blockOf orders the checks by precedence: pin, then folder, then the
-// session's own checkout. A wall (split group) outranks the pin
-// and would be the first check here once the native window has panes.
+// blockOf orders the checks by precedence: pin, then folder, then the one
+// list of sessions filed nowhere.
 func blockOf(s backend.Session) blockKind {
 	switch {
 	case s.Pinned:
@@ -52,23 +51,18 @@ func blockOf(s backend.Session) blockKind {
 	case s.Folder != "":
 		return blockFolder
 	}
-	return blockCheckout
+	return blockLoose
 }
 
 func folderKey(name string) string { return folderKeyPrefix + name }
 
-func checkoutKey(path string) string {
-	if path == "" {
-		return rootBlockKey
-	}
-	return path
-}
-
+// blockKeyOf is the block s lands in: its folder, or the one list of the
+// sessions filed nowhere, whatever checkout they run in.
 func blockKeyOf(s backend.Session) string {
 	if blockOf(s) == blockFolder {
 		return folderKey(s.Folder)
 	}
-	return checkoutKey(s.Path)
+	return rootBlockKey
 }
 
 // sessionBlocks groups the sessions into blocks, without walls: the pinned
@@ -98,13 +92,18 @@ func sessionBlocks(sessions []backend.Session) []sessionBlock {
 		if !ok {
 			i = len(blocks)
 			at[key] = i
-			b := sessionBlock{key: key, kind: kind, path: place.Path}
+			b := sessionBlock{key: key, kind: kind}
 			if kind == blockFolder {
-				b.folder, b.path = place.Folder, ""
+				b.folder = place.Folder
 			}
 			blocks = append(blocks, b)
 		}
 		blocks[i].sessions = append(blocks[i].sessions, s)
+	}
+	// The sessions filed nowhere come first, the folders after them.
+	if i := slices.IndexFunc(blocks, func(b sessionBlock) bool { return b.key == rootBlockKey }); i > 0 {
+		loose := blocks[i]
+		blocks = slices.Insert(slices.Delete(blocks, i, i+1), 0, loose)
 	}
 	if len(pinned) == 0 {
 		return blocks

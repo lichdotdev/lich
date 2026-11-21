@@ -183,7 +183,7 @@ func sidebarHeights(before, after sidebarView) []int {
 func blocksOf(project string, blocks [][]string) sidebarView {
 	v := sidebarView{project: project}
 	for i, ids := range blocks {
-		b := blockView{key: string(rune('A' + i)), kind: blockCheckout}
+		b := blockView{key: string(rune('A' + i)), kind: blockLoose}
 		for _, id := range ids {
 			b.sessions = append(b.sessions, sessionView{ID: id, projectID: project})
 		}
@@ -232,7 +232,6 @@ func TestANewCardGrowsIn(t *testing.T) {
 
 func treeBlocksOf(ids ...string) sidebarView {
 	v := blocksOf("p", [][]string{ids, {"c"}})
-	v.blocks[0].under = "/repo"
 	v.blocks[0].path = "/repo"
 	for i := range v.blocks[0].sessions {
 		v.blocks[0].sessions[i].path = "/repo"
@@ -265,10 +264,10 @@ func TestANewCardNeverDipsOnceItsLineHasDrawn(t *testing.T) {
 	assertNoDip(t, frame, before, after)
 }
 
-func TestANewCheckoutNeverDipsOnceItsRowsHaveDrawn(t *testing.T) {
+func TestANewFolderNeverDipsOnceItsRowsHaveDrawn(t *testing.T) {
 	under := func(v sidebarView) sidebarView {
 		for i := range v.blocks {
-			v.blocks[i].under = v.blocks[i].key
+			v.blocks[i].kind, v.blocks[i].folder = blockFolder, v.blocks[i].key
 		}
 		return v
 	}
@@ -305,11 +304,11 @@ func assertNoDip(t *testing.T, frame func(sidebarView, time.Duration) int, befor
 
 func folderOf(paths ...string) sidebarView {
 	v := sidebarView{project: "p"}
-	b := blockView{key: folderKey("Later"), kind: blockFolder, folder: "Later", title: "Later", byCheckout: true}
+	b := blockView{key: folderKey("Later"), kind: blockFolder, folder: "Later", title: "Later"}
 	for i, path := range paths {
 		b.sessions = append(b.sessions, sessionView{ID: fmt.Sprint("s", i), Folder: "Later", projectID: "p", path: path})
 	}
-	other := blockView{key: "/repo", kind: blockCheckout, under: "/repo", sessions: []sessionView{{ID: "root", projectID: "p", path: "/repo"}}}
+	other := blockView{key: "/repo", kind: blockLoose, sessions: []sessionView{{ID: "root", projectID: "p", path: "/repo"}}}
 	v.blocks = []blockView{other, b}
 	return v
 }

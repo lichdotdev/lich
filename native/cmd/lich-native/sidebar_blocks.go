@@ -37,12 +37,6 @@ type blockView struct {
 	sessions  []sessionView
 	collapsed bool   // the stored fold, what the chevron shows
 	mark      string // markWait / markDone while collapsed, else markNone
-	// under is the checkout a checkout block draws as the row its sessions
-	// hang from, "" for a block that is no checkout's.
-	under string
-	// byCheckout is a folder or the pinned block: it hangs its sessions from
-	// the checkouts they run in (blockRows).
-	byCheckout bool
 	// motherFolds are the mothers of the block folded over their children.
 	motherFolds map[string]bool
 	// ofLayout is a project's sessions in a layout's own sidebar: its rows
@@ -50,9 +44,6 @@ type blockView struct {
 	ofLayout bool
 	// carried is the session whose card is in the air, "" for none.
 	carried string
-	// checkouts' facts, keyed by path: the header's and every checkout a
-	// child runs in apart from its mother.
-	facts map[string]checkoutFacts
 	// editors are the editor nodes the block hangs under its checkouts, by
 	// checkout (hangEditors).
 	editors map[string]editorNode
@@ -60,14 +51,6 @@ type blockView struct {
 	// motion, and head its header's share of it this frame; nil at rest.
 	move *blockMove
 	head *rowMotion
-}
-
-// checkoutFacts is what a checkout row shows and its tooltip spells out.
-type checkoutFacts struct {
-	label string
-	git   backend.DiffStats
-	base  *backend.BaseStatus
-	pr    *backend.PullRequest
 }
 
 // sidebarView is the shown project's sidebar under a filter.
@@ -114,28 +97,32 @@ func (m *model) sidebarBlocks(f sidebarFilter) sidebarView {
 	return v
 }
 
-// hangEditors gives each checkout's editor node to the blocks that draw it:
-// the checkout's own block when it has one, else every block whose tree
-// draws a row for the checkout, so the node is never out of reach. Callers
+// hangEditors hangs each checkout's editor node under one session of that
+// checkout: the active one when it runs there, else the first drawn. Callers
 // hold m.mu.
+// shortcut: the editor still belongs to its checkout, so it follows whichever
+// session runs there; give it the session that opened the file once the
+// editor store keeps that.
 func (m *model) hangEditors(blocks []blockView) {
-	homes := map[string]bool{}
+	owner := map[string]string{}
 	for _, b := range blocks {
-		if b.under != "" {
-			homes[b.under] = true
+		for _, sv := range b.sessions {
+			if _, ok := owner[sv.path]; !ok || sv.ID == m.active {
+				owner[sv.path] = sv.ID
+			}
 		}
 	}
 	for i := range blocks {
 		b := &blocks[i]
-		for path := range b.facts {
-			n, ok := m.editorOf(path)
-			if !ok || (homes[path] && b.under != path) {
+		for _, sv := range b.sessions {
+			n, ok := m.editorOf(sv.path)
+			if !ok || owner[sv.path] != sv.ID {
 				continue
 			}
 			if b.editors == nil {
 				b.editors = map[string]editorNode{}
 			}
-			b.editors[path] = n
+			b.editors[sv.ID] = n
 		}
 	}
 }
@@ -152,18 +139,14 @@ func (m *model) dressBlock(p backend.Project, b sessionBlock, pending []pendingS
 	if collapsed {
 		v.mark = collapsedMark(pending, ids)
 	}
+	slices.SortStableFunc(v.sessions, func(a, b sessionView) int {
+		return phaseRank(phaseOf(a.status, a.unread)) - phaseRank(phaseOf(b.status, b.unread))
+	})
 	v.motherFolds = map[string]bool{}
-	v.facts = map[string]checkoutFacts{}
 	for _, sv := range v.sessions {
 		if m.folds[foldKey(p.ID, motherKey(sv.ID))] {
 			v.motherFolds[sv.ID] = true
 		}
-		v.facts[sv.path] = m.checkoutFactsOf(p, sv.path)
-	}
-	v.byCheckout = b.kind != blockCheckout
-	if b.kind == blockCheckout {
-		v.under = sessionPath(p, backend.Session{Path: b.path})
-		v.facts[v.under] = m.checkoutFactsOf(p, v.under)
 	}
 	switch b.kind {
 	case blockPinned:
@@ -177,18 +160,6 @@ func (m *model) dressBlock(p backend.Project, b sessionBlock, pending []pendingS
 		v.title = checkoutLabel(b.path, p.Path, p.ID)
 	}
 	return v
-}
-
-// checkoutFactsOf reads what the checkout at path shows. Callers hold m.mu.
-func (m *model) checkoutFactsOf(p backend.Project, path string) checkoutFacts {
-	f := checkoutFacts{label: checkoutLabel(path, p.Path, p.ID), git: m.git[path], base: m.base[path], pr: m.prs[path].pr}
-	if path == p.Path {
-		f.label = checkoutLabel("", p.Path, p.ID)
-	}
-	if f.git.Branch != "" {
-		f.label = f.git.Branch
-	}
-	return f
 }
 
 // phaseOfSession looks up a session's phase. Callers hold m.mu.

@@ -37,21 +37,20 @@ func blockKeys(v sidebarView) []string {
 
 func TestSidebarBlocksTitleEachKind(t *testing.T) {
 	m, _ := sidebarModel(t, ss("s1"))
-	if v := m.sidebarBlocks(sidebarFilter{}); len(v.blocks) != 1 || v.blocks[0].title != "repo" || v.blocks[0].under != sidebarProject {
+	if v := m.sidebarBlocks(sidebarFilter{}); len(v.blocks) != 1 || v.blocks[0].key != rootBlockKey {
 		t.Fatalf("lone block: %+v", v)
 	}
 	stored := pin(filed(ss("s1", "w1@/x/worktrees/p/feat/a", "w2@/x/worktrees/p/feat/a"), "Apps", "w1"), "s1")
 	stored = with(stored, "w1", func(s *backend.Session) { s.Color = "teal" })
 	m, _ = sidebarModel(t, stored)
 	v := m.sidebarBlocks(sidebarFilter{})
-	titles := []string{}
-	for _, b := range v.blocks {
-		titles = append(titles, b.title)
+	if keys := blockKeys(v); !slices.Equal(keys, []string{pinnedBlockKey, rootBlockKey, folderKey("Apps")}) {
+		t.Fatalf("blocks = %v, want the pinned block, the sessions filed nowhere, then the folder", keys)
 	}
-	if !slices.Equal(titles, []string{"Pinned", "Apps", "feat/a"}) {
-		t.Fatalf("titles = %v", titles)
+	if v.blocks[0].title != "Pinned" || v.blocks[2].title != "Apps" {
+		t.Fatalf("titles = %q, %q", v.blocks[0].title, v.blocks[2].title)
 	}
-	folder := v.blocks[1]
+	folder := v.blocks[2]
 	if folder.color != "teal" || len(folder.checkouts) != 1 || folder.checkouts[0] != (launchCheckout{path: "/x/worktrees/p/feat/a", label: "feat/a"}) {
 		t.Fatalf("folder block = %+v", folder)
 	}
@@ -60,15 +59,29 @@ func TestSidebarBlocksTitleEachKind(t *testing.T) {
 	}
 }
 
-func TestSidebarBlocksHangALoneFoldersCardsFromTheirCheckout(t *testing.T) {
+func TestAFoldersCardsHangFromNoCheckout(t *testing.T) {
 	m, _ := sidebarModel(t, filed(ss("s1"), "Apps", "s1"))
 	v := m.sidebarBlocks(sidebarFilter{})
 	if len(v.blocks) != 1 || v.blocks[0].title != "Apps" {
 		t.Fatalf("lone folder: %+v", v)
 	}
 	rows := blockRows(v.blocks[0], v.blocks[0].sessions)
-	if len(rows) != 2 || rows[0].kind != rowNestedCheckout || rows[0].path != sidebarProject || rows[1].sv.ID != "s1" || rows[1].depth != 1 {
+	if len(rows) != 1 || rows[0].kind != rowCard || rows[0].sv.ID != "s1" || rows[0].depth != 0 {
 		t.Fatalf("lone folder rows = %+v", rows)
+	}
+}
+
+func TestABlocksSessionsGoInStatusOrder(t *testing.T) {
+	m, _ := sidebarModel(t, ss("idle", "done", "busy", "wait"))
+	reportStatus(m, "done", "done")
+	reportStatus(m, "busy", "busy")
+	reportStatus(m, "wait", "waiting")
+	var ids []string
+	for _, sv := range m.sidebarBlocks(sidebarFilter{}).blocks[0].sessions {
+		ids = append(ids, sv.ID)
+	}
+	if want := []string{"wait", "busy", "done", "idle"}; !slices.Equal(ids, want) {
+		t.Fatalf("order %v, want %v: waiting, running, unread, idle", ids, want)
 	}
 }
 
@@ -90,8 +103,8 @@ func TestSidebarBlocksFilterKeepsTheActiveCardAndSaysWhy(t *testing.T) {
 
 func TestFoldIsReadStoredAndMarked(t *testing.T) {
 	ctx := context.Background()
-	m, f := sidebarModel(t, ss("s1", "w1@/wt/a"))
-	f.settings["lich.sidebar.collapsed./wt/a@p"] = "true"
+	m, f := sidebarModel(t, filed(ss("s1", "w1@/wt/a"), "Apps", "w1"))
+	f.settings["lich.sidebar.collapsed."+folderKey("Apps")+"@p"] = "true"
 	if err := m.loadFolds(ctx); err != nil {
 		t.Fatal(err)
 	}
@@ -112,8 +125,8 @@ func TestFoldIsReadStoredAndMarked(t *testing.T) {
 }
 
 func TestCommitDragOrderStoresTheWholeList(t *testing.T) {
-	m, f := sidebarModel(t, pin(ss("p1", "r1", "a1@/wt/a"), "p1"))
-	if err := m.commitDragOrder(context.Background(), []string{"/wt/a", rootBlockKey}); err != nil {
+	m, f := sidebarModel(t, pin(filed(ss("p1", "r1", "a1"), "Apps", "a1"), "p1"))
+	if err := m.commitDragOrder(context.Background(), []string{folderKey("Apps"), rootBlockKey}); err != nil {
 		t.Fatal(err)
 	}
 	p, _ := m.project()
@@ -158,8 +171,8 @@ func TestRenameFolderMovesTheFoldAndUngroupDropsIt(t *testing.T) {
 		t.Fatal(err)
 	}
 	v := m.sidebarBlocks(sidebarFilter{})
-	if !slices.Equal(blockKeys(v), []string{folderKey("Ops"), rootBlockKey}) || !v.blocks[0].collapsed {
-		t.Fatalf("after rename: %v %+v", blockKeys(v), v.blocks[0])
+	if !slices.Equal(blockKeys(v), []string{rootBlockKey, folderKey("Ops")}) || !v.blocks[1].collapsed {
+		t.Fatalf("after rename: %v %+v", blockKeys(v), v.blocks[1])
 	}
 	if f.get("lich.sidebar.collapsed.__folder__:Ops@p") != "true" || f.get("lich.sidebar.collapsed.__folder__:Apps@p") != "" {
 		t.Fatalf("stored folds %v", f.settings)

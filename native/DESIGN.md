@@ -624,9 +624,9 @@ agent's `show_code` takes the whole stage, in place of the session, as a service
 - A Markdown file an agent left in the session's artifact folder (the dock's Artifacts tab) opens in the same
   editor, on the stage and already rendered, read only: the header carries a `TextXS` `MutedForeground` note after the
   name ("From the agent · read only"), nothing is saved and the unsaved dot never lights, the source view takes
-  no edits, and the context menu that hands lines to a session is left out. Its node in the tree is the file's name
+  no edits, and the context menu that hands lines to a session is left out. Its row in the sidebar is the file's name
   like any other, closed from the same menu.
-- In the tree the editor is a node of its checkout, the last row under it: the file glyph in a neutral ring and
+- In the sidebar the editor is a row under the session working in its checkout: the file glyph and
   the file's name in mono, the unsaved dot after the name, lit as an active session is while the editor is on the
   stage. Its only action is Close, in its menu and its `⋯`; there is no ✕ on the row. In the rail it is the glyph
   in the card's 32px square, the path and the unsaved state in its tooltip.
@@ -759,60 +759,58 @@ A comment, in a box or on the screen's ground, sits beside its author's avatar: 
 `Space(2.5)` from the comment, its byline and body in the column to the right. Until the picture arrives, and
 for an account with none, the disc is `Accent` with the initial in `MutedForeground`, never a color.
 
-## The sidebar: a tree of rows
+## The sidebar: a list of rows
 
-The sidebar is the window's reference list; its geometry lives in `sidebar_tree_draw.go` and
-`sidebar_card.go`.
+The sidebar is the window's reference list; its geometry lives in `sidebar_card.go` and
+`sidebar_tree_draw.go`. It is a list, not a tree of worktrees: the sessions filed nowhere come first, with no
+header, then the folders, and inside each the sessions stand in status order, waiting on you, running, a turn
+nobody read, then idle (`phaseRank`), whatever checkout they run in.
 
 ### A row
 
 Every row is one line, 34dp tall: `Space(1.5)` above and below a 22px node. Rows stand flush, no gap
-(`cardGap` is 0), so the tree's links run from row to row unbroken.
+(`cardGap` is 0).
 
-- **A session row**: its status ring around the provider mark, the shield and fork glyphs it
-  earns, its name, then its pull request and changes unless a checkout row above already shows them, and
-  the corner slot.
-- **A browser row**: a session's running browser, first under it: the globe in a neutral ring, the page's
-  host as its name, the corner slot. The name is `MutedForeground` while the page is off the stage. A folded
-  mother shows a globe on her own row instead.
+- **A session row**: the provider's mark, the shield and fork glyphs it earns, its name, its branch in
+  `TextXS` mono `MutedForeground` (at most `branchShare`, 35%, of the line, so the name keeps the room), its
+  pull request, and the corner slot. The checkout's changes are not on the line.
+- **The provider's mark** is its book's medallion in pixel art (`grimoire.Mark`), 1dp a pixel, in the
+  provider's brand color (`markColors`) or `Foreground` for a logo in black and white; a provider with no
+  book keeps its vector mark. Nothing is drawn around it or over it: no ring, no status.
+- **A browser row**: a session's running browser, under it: the globe, the page's title as its name (its host
+  while it has none), the corner slot. The name is `MutedForeground` while the page is off the stage. A
+  folded mother shows a globe on her own row instead.
+- **An editor row**: the file a session's checkout holds in the stage editor, under the session working in
+  that checkout (the active one, else the first drawn), after its browser row.
 - **A session in a layout** carries the columns glyph before its corner slot in its project's sidebar. The
   layout's own sidebar draws none: every card there is in it.
 - **A layout's sidebar**: the layout's name where New Session stands, then its sessions under each
-  project's name in `TextXS` `MutedForeground`, in the same tree of checkout, session and browser rows, with their motion. No
+  project's name in `TextXS` `MutedForeground`, in the same list of session, browser and editor rows, with their motion. No
   card there wears the active fill: the focused pane's header says which session has the keys, its name in
   `Foreground` and the others' in `MutedForeground`. A pane wears no frame for focus, only its 1px hairline.
 - **A pane's motion**: a pane new to the stage grows out of the edge it was split on in 200ms ease-out, and
   one that leaves shrinks back into it in 180ms ease-in, the neighbours giving and taking the room over the
   same time. A zoom, a divider and a change of tab move at once.
-- **A checkout row**: the branch glyph in a neutral ring, the branch, its pull request and changes, the
-  corner slot. A project's checkout is the root its sessions hang from; a child running in another
-  checkout than its mother hangs from a checkout row of its own inside her group.
 - **A group header** (a folder, the pinned block) is a row too, the same 34dp, so its hover lights as a
   row's does: the glyph in the node's column, the uppercase label, its count, a rule to the `⋯`.
 
-The corner slot (`cardSlotSize`, 18px) is always reserved, so nothing on the line moves when it fills: the
-`⋯` under the pointer or while its menu is open, a pin at rest on a pinned session, empty otherwise.
+The corner slot (`cardSlotSize`, 22px, the mark's box) is always reserved, so nothing on the line moves when
+it fills: the `⋯` under the pointer or while its menu is open, the working spinner while the session runs, a
+pin at rest on a pinned session, empty otherwise. The spinner is three souls diving to the center and back
+(`sidebar_spinner.go`), 11x11 pixels in 20 frames of 70ms, each pixel the whole device pixel nearest to
+filling the slot. Opening a session in the checkout a card runs in is the first entry of its menu.
 
 ### The node
 
-- The ring is 22px (`2 × sessionTreeRingR`), stroke `sessionTreeStroke` (1.25), the glyph inside it 13px
-  (12 for a checkout's branch). It spins while busy, is `ToneWait` while waiting on you, `TonePass` when a
-  turn is done (faded once read), and neutral (`MutedForeground` at `neutralRingAlpha`, 0.35) otherwise.
-- A node that folds (a mother, a checkout, a group header) shows the fold's chevron in place of its glyph
-  under the pointer; there is no separate disclosure column. A folded node keeps a count and the mark of
-  what it hides: `ToneWait` for a session waiting, `TonePass` for an unread turn.
-
-### The links
-
-Git-graph lines in `MutedForeground` at `treeLinkAlpha` (0.45), `sessionTreeStroke` wide. Each level is
-indented `sessionTreeIndent` (16px); a child's elbow leaves its parent's ring column and curves
-(`sessionTreeElbow`, 5px) into the left of its ring. A mother with open children draws a stub from the
-bottom of her ring to the row's end.
+- A child is indented `sessionTreeIndent` (16px) a generation, with no line to its mother.
+- A node that folds (a mother, a group header) shows the fold's chevron in place of its glyph under the
+  pointer; there is no separate disclosure column. A folded node keeps a count and the mark of what it hides:
+  `ToneWait` for a session waiting, `TonePass` for an unread turn.
 
 ### The folder tray
 
 A folder is the one nested surface: its header and rows sit on a tray, `RadiusLG`, so where a folder ends
-reads against the checkouts after it, which share its tree. The tray is `Alpha(Accent, 0.45)`, or the
+reads against the rows after it. The tray is `Alpha(Accent, 0.45)`, or the
 folder's color at `tintRest`; a card painted the folder's color paints nothing at rest on it. Rows run to
 the tray's edges, clipped to its corners, so a lit row fills it to the end. A closed folder is its header
 alone, no tray.
@@ -823,12 +821,11 @@ The collapsed sidebar is an island like the open one (`sidebar_rail.go`): `Sideb
 on the 8px edge around a column as wide as a row is tall (34), so it is 50px wide and every node centres
 where it does in the open sidebar. Expand sits in a row of the open header's height
 (36), where collapse sits in the open sidebar; new session, Services and the profile sit in its footer, so
-the tree starts where the open sidebar's does; blocks stand `Space(1.5)` apart as the open ones do, and every
-node keeps its place across the morph. The tree is
-the open one in one column: rows of the same 34dp, each block starting with its node (a checkout's ring, or
-a folder's or the pinned block's glyph, named in a tooltip), the line down the column through every ring of
-a tree, a child's ring 16px on its mother's line, and a folder on its tray. A folded block or mother keeps
-only its node. A session's ring is lit by a 32px square, `Accent` while active. A card drags in the rail as
+the list starts where the open sidebar's does; blocks stand `Space(1.5)` apart as the open ones do, and every
+node keeps its place across the morph. The list is
+the open one in one column: rows of the same 34dp, a folder or the pinned block led by its glyph, named in a
+tooltip, a child's mark drawn smaller, and a folder on its tray, with no line between the nodes. A folded
+block or mother keeps only its node. A session's mark is lit by a 32px square, `Accent` while active. A card drags in the rail as
 in the open sidebar, and the filter is the open one's field and chips in a panel off the search button in
 the footer; it outlives the panel, and the button stays lit with a dot while it narrows the tree.
 
@@ -859,24 +856,16 @@ frames). A tab opened from a balloon brings a collapsed dock out until the point
 Motion says where something came from and where it went. It never holds anything up: a session's pane opens
 at once, whatever its row is still doing.
 
-- **Rows of a tree move by their line.** Coming in (a mother or a block opens, a session or a worktree appears), the
-  row opens with its name already on it, then the line runs down to it, draws its ring from the left where
-  the link arrives, and the glyph comes in last. Leaving (a mother or a block folds, a session closes) plays the other
-  way: the name and glyph go, the ring undraws, the line runs back up, the row closes. A worktree's last
-  session leaving takes the worktree's row out after it; a folder's last session takes its checkout row,
-  then the folder's header fades and its tray closes; a new folder plays that backwards. The rail moves the
-  same way, in the same timings, its rings and line without the names. Timings live in `sidebar_tree_motion.go`.
-  A folded folder keeps its tray until its rows have left.
-- **A ring redraws when its session's status changes.** The ring of the status it left fades while the new
-  one draws from the left, as a ring coming into the tree does, in `statusTurnDuration` (400ms). Busy and
-  compacting are one ring, so nothing plays between them, and only a live report plays: a status read at
-  startup is drawn at rest.
-- **A dragged card lets go of its line and joins where it lands.** As it lifts, its elbow runs back to its
-  parent's line; while it is in the air, the rows are linked in the order the list shows them, and its slot
-  draws a dashed elbow and ring; let go, it settles and the line draws back to its ring
-  (`sidebar_drag_links.go`). A mother in the air folds over her children, and the slot only stops where
-  the tree will keep the card (`treeSnap`). A block the card would go to lights its whole tray, a border in its color, in
-  the open sidebar and the rail alike.
+- **Rows move in and out of the list.** Coming in (a mother or a folder opens, a session appears), the row
+  opens with its name already on it and the mark comes in after; leaving (a mother or a folder folds, a
+  session closes) plays the other way. A folder's last session leaving fades the folder's header and closes
+  its tray after it; a new folder plays that backwards. The rail moves the same way, in the same timings, its
+  marks without the names. Timings live in `sidebar_tree_motion.go`. A folded folder keeps its tray until its
+  rows have left.
+- **A dragged card lands where the list keeps it.** While it is in the air its slot draws a dashed ring
+  (`sidebar_drag_links.go`); a mother in the air folds over her children, and the slot only stops where the
+  list will keep the card (`treeSnap`). A block the card would go to lights its whole tray, a border in its
+  color, in the open sidebar and the rail alike.
 - **Other lists** enter and leave with `ui.Presence`: 160ms in, 180ms out, from a 0.6 scale at the top
   edge. The chat's rows use `LayoutFlat`, the same timings with no scale (see The chat view). A fold is
   `ui.Collapse`, 200ms.

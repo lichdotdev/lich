@@ -15,18 +15,12 @@ import (
 func railShape(items []railItem) []string {
 	var out []string
 	for _, it := range items {
-		s := [...]string{railCard: "card", railCheckout: "checkout", railHead: "head", railGap: "gap"}[it.kind]
+		s := [...]string{railCard: "card", railHead: "head", railGap: "gap", railEditor: "editor"}[it.kind]
 		if it.sv != nil {
 			s += ":" + it.sv.ID
 		}
 		if it.small {
 			s += " small"
-		}
-		if it.up {
-			s += " ^"
-		}
-		if it.down {
-			s += " v"
 		}
 		if it.onTray {
 			s += " tray"
@@ -36,36 +30,33 @@ func railShape(items []railItem) []string {
 	return out
 }
 
-func TestRailDrawsTheTreeInOneColumn(t *testing.T) {
-	main := blockView{key: "/repo", kind: blockCheckout, under: "/repo", sessions: []sessionView{
+func TestRailDrawsTheListInOneColumn(t *testing.T) {
+	main := blockView{key: rootBlockKey, kind: blockLoose, sessions: []sessionView{
 		treeSession("mother", "", "/repo"), treeSession("child", "mother", "/repo"), treeSession("solo", "", "/repo"),
 	}}
-	folder := blockView{key: folderKey("Later"), kind: blockFolder, byCheckout: true, color: "pink", sessions: []sessionView{
+	folder := blockView{key: folderKey("Later"), kind: blockFolder, color: "pink", sessions: []sessionView{
 		treeSession("a", "", "/wt/a"), treeSession("b", "", "/wt/b"),
 	}}
 	got := railShape(railItems([]blockView{main, folder}))
-	want := []string{
-		"checkout v", "card:mother ^ v", "card:child small ^ v", "card:solo ^",
-		"gap", "head tray", "checkout v tray", "card:a ^ tray", "checkout v tray", "card:b ^ tray",
-	}
+	want := []string{"card:mother", "card:child small", "card:solo", "gap", "head tray", "card:a tray", "card:b tray"}
 	if !slices.Equal(got, want) {
 		t.Errorf("rail = %v\nwant   %v", got, want)
 	}
 }
 
 func TestRailLeavesAFoldedBlockItsHead(t *testing.T) {
-	b := blockView{key: "/repo", kind: blockCheckout, under: "/repo", collapsed: true, sessions: []sessionView{treeSession("s", "", "/repo")}}
-	if got := railShape(railItems([]blockView{b})); !slices.Equal(got, []string{"checkout"}) {
-		t.Errorf("rail = %v, want the checkout's node alone", got)
+	b := blockView{key: folderKey("Later"), kind: blockFolder, collapsed: true, sessions: []sessionView{treeSession("s", "", "/repo")}}
+	if got := railShape(railItems([]blockView{b})); !slices.Equal(got, []string{"head tray"}) {
+		t.Errorf("rail = %v, want the folder's head alone", got)
 	}
 }
 
 func TestMorphNamesEveryNodeBothShapesDraw(t *testing.T) {
-	main := blockView{key: "/repo", kind: blockCheckout, under: "/repo", sessions: []sessionView{treeSession("s", "", "/repo")}}
-	folder := blockView{key: folderKey("Later"), kind: blockFolder, byCheckout: true, sessions: []sessionView{treeSession("a", "", "/wt/a")}}
+	main := blockView{key: "/repo", kind: blockLoose, sessions: []sessionView{treeSession("s", "", "/repo")}}
+	folder := blockView{key: folderKey("Later"), kind: blockFolder, sessions: []sessionView{treeSession("a", "", "/wt/a")}}
 	nodes := nodeGlyphs(&ui.Theme{Palette: ui.Dark}, []blockView{main, folder})
 	for _, it := range railItems([]blockView{main, folder}) {
-		if it.kind == railCheckout || it.kind == railHead {
+		if it.kind == railHead {
 			if _, ok := nodes[glyphNode+it.key]; !ok {
 				t.Errorf("the rail's node %q has no flying glyph", it.key)
 			}
@@ -78,7 +69,7 @@ func railMotionBlocks(ids ...string) []blockView {
 	for _, id := range ids {
 		sessions = append(sessions, treeSession(id, "", "/repo"))
 	}
-	return []blockView{{key: "/repo", kind: blockCheckout, under: "/repo", sessions: sessions}}
+	return []blockView{{key: "/repo", kind: blockLoose, sessions: sessions}}
 }
 
 func railMoves(t *testing.T, r *sidebarRail, now time.Time, blocks []blockView) map[string]*rowMotion {
@@ -106,7 +97,7 @@ func TestRailOpensAndClosesRowsByTheLine(t *testing.T) {
 	if m, ok := closing["b"]; !ok || m == nil || !m.closing {
 		t.Fatalf("a closed session: rows %v, want b drawn while it closes", closing)
 	}
-	if gone := railMoves(t, &r, now.Add(10*time.Second), railMotionBlocks("a")); len(gone) != 2 {
+	if gone := railMoves(t, &r, now.Add(10*time.Second), railMotionBlocks("a")); len(gone) != 1 {
 		t.Errorf("after its close: rows %v, want b gone", gone)
 	}
 }
@@ -123,7 +114,7 @@ func TestRailForgetsWhatChangedWhileTheSidebarWasOpen(t *testing.T) {
 
 func TestRailMenusMatchTheOpenSidebarsLessRename(t *testing.T) {
 	s := newSidebar(&ui.Root{})
-	blocks := []blockView{{key: folderKey("Later"), kind: blockFolder, folder: "Later", title: "Later", byCheckout: true, sessions: []sessionView{
+	blocks := []blockView{{key: folderKey("Later"), kind: blockFolder, folder: "Later", title: "Later", sessions: []sessionView{
 		treeSession("mother", "", "/wt/a"), treeSession("child", "mother", "/wt/a"),
 	}}}
 	s.rail.view = sidebarView{blocks: blocks, folders: []string{"Later"}}

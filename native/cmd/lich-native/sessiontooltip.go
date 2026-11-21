@@ -46,13 +46,10 @@ func sessionTooltip(th *ui.Theme, sv *sessionView) layout.Widget {
 	if len(sv.sandbox.SkippedLinks) > 0 {
 		sections = append(sections, sandboxSection(th, sv.sandbox))
 	}
-	// Under a checkout row, the checkout's facts are that row's tooltip.
-	if sv.git.Branch != "" && !sv.place.hideGit {
+	if sv.git.Branch != "" {
 		sections = append(sections, branchSection(th, sv))
 	}
-	if !sv.place.hideGit {
-		sections = append(sections, baseSections(th, sv.base)...)
-	}
+	sections = append(sections, baseSections(th, sv.base)...)
 	sections = append(sections, scheduleTipSections(th, sv, time.Now())...)
 	if sv.running != "" || sv.aged {
 		sections = append(sections, footLine(th, sv))

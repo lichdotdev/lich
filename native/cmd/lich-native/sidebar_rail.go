@@ -114,11 +114,10 @@ var (
 type railKind int
 
 const (
-	railCard     railKind = iota
-	railCheckout          // a checkout's node, the root its sessions hang from
-	railHead              // a folder's or the pinned block's glyph
-	railGap               // the space between two blocks
-	railEditor            // a checkout's editor node
+	railCard   railKind = iota
+	railHead            // a folder's or the pinned block's glyph
+	railGap             // the space between two blocks
+	railEditor          // a checkout's editor node
 )
 
 // railItem is one row of the rail's tree, the open sidebar's in one column.
@@ -134,18 +133,13 @@ type railItem struct {
 	kids   int    // railCard: the sessions under a mother
 	folded bool   // railCard: a mother folded over them
 	sv     *sessionView
-	path   string     // railCheckout and railEditor
-	editor editorNode // railEditor
-	facts  checkoutFacts
+	path   string      // railEditor
+	editor editorNode  // railEditor
 	glyph  *icons.Icon // railHead
 	tint   string      // railHead: a folder's color
 	title  string      // railHead: the folder's name, or Pinned
-	// small is a child's node; up and down are the line to the node above
-	// and below in the same tree.
-	small, up, down bool
-	// cut is the share of the line to the node not drawn: a card that just
-	// landed from a drag, its line drawing back to it.
-	cut float32
+	// small is a child's node.
+	small bool
 	// tray is the folder's color for a row on its tray (tray set), with top
 	// and bottom its ends.
 	tray        string
@@ -171,8 +165,6 @@ func railItems(blocks []blockView) []railItem {
 			items = append(items, railItem{kind: railHead, id: "head:" + b.key, key: b.key, glyph: icGroupFolder, tint: b.color, title: b.title})
 		case b.kind == blockPinned:
 			items = append(items, railItem{kind: railHead, id: "head:" + b.key, key: b.key, glyph: icMenuPin, title: b.title})
-		case b.under != "":
-			items = append(items, railItem{kind: railCheckout, id: "checkout:" + b.key, key: b.key, path: b.under, facts: b.facts[b.under]})
 		}
 		if !b.collapsed {
 			items = append(items, railRows(b)...)
@@ -180,7 +172,6 @@ func railItems(blocks []blockView) []railItem {
 		for i := first; i < len(items); i++ {
 			items[i].block = b.key
 		}
-		railLines(items[first:])
 		if folder {
 			for i := first; i < len(items); i++ {
 				items[i].onTray, items[i].tray = true, b.color
@@ -193,16 +184,9 @@ func railItems(blocks []blockView) []railItem {
 
 // railRows is a block's rows past its head.
 func railRows(b blockView) []railItem {
-	base := 0
-	if b.under != "" || b.byCheckout {
-		base = 1
-	}
+	const base = 0
 	var items []railItem
 	for _, r := range blockRows(b, b.sessions) {
-		if r.kind == rowNestedCheckout {
-			items = append(items, railItem{kind: railCheckout, id: r.key, depth: r.depth, key: r.key, path: r.path, facts: b.facts[r.path], small: r.depth > base})
-			continue
-		}
 		if r.kind == rowBrowser {
 			continue
 		}
@@ -214,19 +198,6 @@ func railRows(b blockView) []railItem {
 		items = append(items, railItem{kind: railCard, id: r.key, depth: r.depth, sv: &sv, small: r.depth > base, kids: r.kids, folded: r.folded})
 	}
 	return items
-}
-
-// railLines links each node to the next in its tree. A checkout a folder
-// gathers starts a tree of its own, and a head is no node.
-func railLines(items []railItem) {
-	for i := 1; i < len(items); i++ {
-		prev, cur := &items[i-1], &items[i]
-		root := cur.kind == railCheckout && !cur.small
-		if prev.kind == railHead || root {
-			continue
-		}
-		prev.down, cur.up = true, true
-	}
 }
 
 func (r *sidebarRail) sessions(gtx C, th *ui.Theme, s *sidebar, blocks []blockView, active string, act *sidebarAction) D {
@@ -308,15 +279,7 @@ func (r *sidebarRail) row(gtx C, th *ui.Theme, s *sidebar, it railItem, active s
 	if it.onTray {
 		railTray(gtx, th, it, size)
 	}
-	d := r.node(gtx, th, s, it, active, act)
-	// The line goes over the node's square, as the open sidebar's links go
-	// over a lit row, stopping at the ring.
-	half := gtx.Dp(sessionTreeRingR)
-	if it.small {
-		half = gtx.Dp(railChildR)
-	}
-	railLine(gtx, th, it, size, half)
-	return d
+	return r.node(gtx, th, s, it, active, act)
 }
 
 // node draws a row's node: a head's glyph, a checkout's ring, or a session.
@@ -343,8 +306,6 @@ func (r *sidebarRail) node(gtx C, th *ui.Theme, s *sidebar, it railItem, active 
 				})
 			})
 		})
-	case railCheckout:
-		return r.menu(gtx, th, s, it, act).Layout(gtx, func(gtx C) D { return r.checkout(gtx, th, s, it) })
 	case railEditor:
 		return r.menu(gtx, th, s, it, act).Layout(gtx, func(gtx C) D { return r.editorNode(gtx, th, s, it, act) })
 	}
@@ -373,28 +334,6 @@ func railTray(gtx C, th *ui.Theme, it railItem, size image.Point) {
 	paint.FillShape(gtx.Ops, trayColor(th, it.tray), shape.Op(gtx.Ops))
 }
 
-// railLine draws the line through a row's node: up to the node above and
-// down to the next, stopping at the node's edge (half from its centre).
-// A moving row draws the line down to it only as far as it has come.
-func railLine(gtx C, th *ui.Theme, it railItem, size image.Point, half int) {
-	x, mid := float32(size.X)/2, float32(size.Y)/2
-	c, width := th.Over(ui.Alpha(th.MutedForeground, treeLinkAlpha)), float32(gtx.Dp(sessionTreeStroke))
-	// A card landing from a drag takes its line back from both ends, up to
-	// its node.
-	keep := 1 - it.cut
-	if it.up {
-		reach := size
-		if it.motion != nil {
-			reach.Y = int(clamp01(it.motion.sweep.rows) * float32(size.Y))
-		}
-		strokeLinks(gtx, []linkSeg{vline(x, 0, (mid-float32(half))*keep)}, reach, c, width)
-	}
-	if it.down {
-		end := float32(size.Y)
-		strokeLinks(gtx, []linkSeg{vline(x, end-(end-mid-float32(half))*keep, end)}, size, c, width)
-	}
-}
-
 // entry is how much of the row's node is still to come in, 0 at rest.
 func (it railItem) entry() treeEntry {
 	if it.motion == nil {
@@ -412,28 +351,6 @@ func railSmall(gtx C, small bool, w layout.Widget) D {
 	k := float32(gtx.Dp(railChildR)) * 2 / side
 	defer op.Affine(f32.Affine2D{}.Scale(f32.Pt(side/2, side/2), f32.Pt(k, k))).Push(gtx.Ops).Pop()
 	return w(gtx)
-}
-
-// checkout is a checkout's node, under the checkout's tooltip.
-func (r *sidebarRail) checkout(gtx C, th *ui.Theme, s *sidebar, it railItem) D {
-	key := "rail:checkout:" + it.path
-	tip, ok := r.tips[key]
-	if !ok {
-		tip = new(ui.Tooltip)
-		r.tips[key] = tip
-	}
-	tooltip := th.TooltipCard(s.root, tip, checkoutTooltip(th, it.path, it.facts))
-	tooltip.Side = ui.SideRight
-	return layout.Center.Layout(gtx, func(gtx C) D {
-		return tooltip.Layout(gtx, func(gtx C) D {
-			node := func(gtx C) D { return checkoutNode(gtx, onGround(th, railGround(th, it)), icBranch, it.entry()) }
-			if it.small {
-				// A child's node is drawn smaller than it flies: it crossfades.
-				return railSmall(gtx, true, node)
-			}
-			return s.morph.glyph(gtx, glyphNode+it.key, node)
-		})
-	})
 }
 
 // session is RailSession: `size-8 rounded-md` around the card's own status

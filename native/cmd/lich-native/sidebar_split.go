@@ -43,13 +43,12 @@ func (m *model) splitSidebar(now time.Time) (id, name string, groups []splitGrou
 		if !seen {
 			g = len(groups)
 			at[p.ID] = g
-			groups = append(groups, splitGroup{project: p.Name, block: blockView{key: splitGroupPrefix + p.ID, byCheckout: true, ofLayout: true, facts: map[string]checkoutFacts{}}})
+			groups = append(groups, splitGroup{project: p.Name, block: blockView{key: splitGroupPrefix + p.ID, ofLayout: true}})
 		}
 		sv := m.viewOf(*p, p.Sessions[i], now)
 		sv.guest = true
 		b := &groups[g].block
 		b.sessions = append(b.sessions, sv)
-		b.facts[sv.path] = m.checkoutFactsOf(*p, sv.path)
 	}
 	return t.ID, t.Name, groups, true
 }

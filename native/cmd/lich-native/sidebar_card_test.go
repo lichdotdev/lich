@@ -46,3 +46,18 @@ func TestCardIsOneLineInEveryState(t *testing.T) {
 		}
 	}
 }
+
+func TestNewSessionHereOpensInTheCardsCheckoutAndFolder(t *testing.T) {
+	s := &sidebar{launchProviders: []launchProvider{{id: "claude", name: "Claude Code"}}}
+	sv := treeSession("a", "", "/wt/a")
+	sv.Folder = "Apps"
+	var act sidebarAction
+	e := s.newSessionHere(&sv, &act)
+	if len(e.Sub) == 0 {
+		t.Fatal("the entry offers no provider")
+	}
+	e.Sub[0].OnClick()
+	if want := (launchRequest{kind: "claude", dir: "/wt/a", folder: "Apps"}); act.launch != want {
+		t.Fatalf("launch %+v, want %+v", act.launch, want)
+	}
+}

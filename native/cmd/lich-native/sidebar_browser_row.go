@@ -29,8 +29,12 @@ type webView struct {
 	shown, focused, headed bool
 }
 
-// label is the row's name: the page's host, or Browser on a blank page.
+// label is the row's name: the page's title, as the editor's row names its
+// file, else its host, or Browser on a blank page.
 func (w webView) label() string {
+	if w.title != "" {
+		return w.title
+	}
 	if u, err := url.Parse(w.url); err == nil && u.Host != "" {
 		return u.Host
 	}
@@ -141,7 +145,7 @@ func (s *sidebar) browserRow(gtx C, th *ui.Theme, r sessionRow, b blockView, act
 			return hover.Layout(gtx, func(gtx C) D {
 				return layout.Background{}.Layout(gtx,
 					func(gtx C) D { return treeRowFill(gtx, cardLayer(th, "", active && web.focused, hovered), p) },
-					func(gtx C) D { return withLinks(gtx, th, p.sessionRowLinks, line) },
+					line,
 				)
 			})
 		})
