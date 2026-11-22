@@ -203,7 +203,8 @@ func (u *window) chatAction(gtx C, th *ui.Theme, p *chatPane, working bool) D {
 
 // chatCrumbs is the line under the composer's box, with no fill: at the left
 // the project, a slash and the branch, which opens the Git panel as its
-// balloon does, and at the right the changes item, which opens Review.
+// balloon does, the branch's pull request as the session's row draws it, and
+// at the right the changes item, which opens Review.
 func (u *window) chatCrumbs(gtx C, th *ui.Theme, sv sessionView, in footerInput, ft chatFooter, size unit.Sp) D {
 	f := u.footer
 	// The changes are there when there are some.
@@ -237,7 +238,15 @@ func (u *window) chatCrumbs(gtx C, th *ui.Theme, sv sessionView, in footerInput,
 			ic = icBranch
 		}
 		link := followed && f.git != nil && in.inRepository()
-		left = append(left, layout.Rigid(func(gtx C) D { return f.crumb(gtx, th, "checkout"+suffix, ic, *ft.checkout, link, size) }))
+		badge, reserve := u.chatPRBadge(gtx, th, sv)
+		left = append(left, layout.Rigid(func(gtx C) D {
+			// the branch truncates first, so the pull request is never cut
+			gtx.Constraints.Max.X = max(0, gtx.Constraints.Max.X-reserve)
+			return f.crumb(gtx, th, "checkout"+suffix, ic, *ft.checkout, link, size)
+		}))
+		if badge != nil {
+			left = append(left, ui.Gap(chatCrumbStatGap), layout.Rigid(badge))
+		}
 	}
 	// the changes' line counts follow the branch they are on
 	if ft.changes != nil {
@@ -247,6 +256,23 @@ func (u *window) chatCrumbs(gtx C, th *ui.Theme, sv sessionView, in footerInput,
 		gtx.Constraints.Min.X = gtx.Constraints.Max.X
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx, left...)
 	})
+}
+
+// chatPRBadge is sv's pull request on the composer's line, a click away as on
+// its row, and the room it and its gap take; nil with no pull request.
+func (u *window) chatPRBadge(gtx C, th *ui.Theme, sv sessionView) (layout.Widget, int) {
+	if sv.pr == nil {
+		return nil, 0
+	}
+	click := &u.footer.w("pr@" + sv.ID).click
+	if click.Clicked(gtx) {
+		u.openPR(prTarget(sv.pr, sv.shown, sv.path))
+	}
+	gtx.Constraints.Min = image.Point{}
+	m := op.Record(gtx.Ops)
+	d := prChipLayout(gtx, th, click, sv.pr)
+	call := m.Stop()
+	return func(gtx C) D { call.Add(gtx.Ops); return d }, d.Size.X + gtx.Dp(ui.Space(chatCrumbStatGap))
 }
 
 // crumb is a footer item drawn as a line of text under a tooltip, muted and

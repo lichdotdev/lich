@@ -541,7 +541,8 @@ draws none while it grows in, because the room above the rows is measured in the
   fit is left out with the items after it, never wrapped. The rest of the footer stays out of a chat. Under
   the box, outside it with no fill, one line, `Space(2)` (`chatCrumbsPad`) under the box and `Space(2)` clear of the island's
   bottom edge, over the composer's own pad, in a lone session and in each pane of a split: at the left a `TextXS` muted project, a slash and the branch,
-  which opens the Git panel as its balloon did, and at the right the changes, only while there are some
+  which opens the Git panel as its balloon did, then the branch's pull request as its row draws it (the branch
+  truncates first, so it is never cut), and at the right the changes, only while there are some
   (files above 0): in the left's style, a small file-diff glyph, the file count and `+added -deleted` (`TonePass`,
   `Destructive`) in `TextXS`, on the same line and height, no fill at rest and the kit's hover fill under the
   pointer, which stands `Space(1.5)` by `Space(1)` (`chatChangesPadX`, `chatChangesPadY`) round the text and grows
@@ -961,7 +962,8 @@ Every row is one line, 34dp tall: `Space(1.5)` above and below a 22px node. Rows
 - **A session row**: the provider's mark, the shield and fork glyphs it earns, its name, its branch in
   `TextXS` mono `MutedForeground` (at most `branchShare`, 35%, of the line, so the name keeps the room), its
   pull request, and the corner slot. The checkout's changes are not on the line.
-- **A pull request on a row** (`prBadge`, the tooltip draws the same): the forge's logo at 12px in
+- **A pull request on a row** (`prBadge`; the row's tooltip draws it on a line of its own under the branch, and
+  the chat composer's line after the branch, which truncates first so the badge is never cut): the forge's logo at 12px in
   `MutedForeground`, `Foreground` on hover, then the state's glyph at 12px and the number in `TextXS`, both in the
   state's tone: open `git-pull-request` in `TonePass`, draft `git-pull-request-draft` muted, merged `git-merge` in
   `ToneMerged`, closed `git-pull-request-closed` in `Destructive`. A merged or closed one stays while the

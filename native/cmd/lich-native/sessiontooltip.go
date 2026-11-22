@@ -47,6 +47,10 @@ func sessionTooltip(th *ui.Theme, sv *sessionView) layout.Widget {
 	}
 	if sv.git.Branch != "" {
 		sections = append(sections, branchSection(th, sv))
+		// its own line: beside a long branch it would run past the tooltip's edge
+		if sv.pr != nil {
+			sections = append(sections, func(gtx C) D { return prBadge(gtx, th, sv.pr, th.MutedForeground) })
+		}
 	}
 	sections = append(sections, baseSections(th, sv.base)...)
 	sections = append(sections, scheduleTipSections(th, sv, time.Now())...)
@@ -92,9 +96,6 @@ func branchSection(th *ui.Theme, sv *sessionView) layout.Widget {
 		muted := th.Text(ui.TextXS, sv.git.Branch).Muted()
 		children := []layout.FlexChild{
 			layout.Rigid(func(gtx C) D { return ui.IconLine(gtx, icBranch, muted.Color, layout.Rigid(muted.Layout)) }),
-		}
-		if sv.pr != nil {
-			children = append(children, ui.Gap(2), layout.Rigid(func(gtx C) D { return prBadge(gtx, th, sv.pr, th.MutedForeground) }))
 		}
 		if sv.git.Files > 0 {
 			children = append(children, ui.Gap(2), layout.Rigid(func(gtx C) D { return th.DiffStat(sv.git.Added, sv.git.Deleted).Layout(gtx) }))

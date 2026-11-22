@@ -67,7 +67,7 @@ func TestRowAndTooltipDrawEachPRState(t *testing.T) {
 			return func(gtx C, th *ui.Theme) { s.cardBody(gtx, th, sv, chip, more, false) }
 		},
 		"tooltip": func(sv *sessionView) func(C, *ui.Theme) {
-			return func(gtx C, th *ui.Theme) { branchSection(th, sv)(gtx) }
+			return func(gtx C, th *ui.Theme) { sessionTooltip(th, sv)(gtx) }
 		},
 	}
 	for place, draw := range places {
@@ -77,7 +77,7 @@ func TestRowAndTooltipDrawEachPRState(t *testing.T) {
 				continue
 			}
 			sv := sessionView{ID: "s1", Label: "Docs", shown: "/repo", git: backend.DiffStats{Branch: "feat"}, pr: &c.pr}
-			r := newFrameRig(image.Pt(400, 40), draw(&sv))
+			r := newFrameRig(image.Pt(400, 120), draw(&sv))
 			drawn, _ := r.frame()
 			if !r.shows(c.number) {
 				t.Errorf("%s %s: no %q drawn:\n%s", place, c.name, c.number, drawn)
@@ -110,5 +110,41 @@ func TestHoverBrightensOnlyTheLogo(t *testing.T) {
 	}
 	if d := inkShift(rest, hovered, tinted); d != 0 {
 		t.Errorf("hover moved the glyph or the number by %d", d)
+	}
+}
+
+const longBranch = "feat/sidebar-pull-request-badge-closed-state"
+
+// Beside a branch that fills the tooltip's width, the pull request still
+// shows whole.
+func TestTheTooltipNeverCutsThePullRequest(t *testing.T) {
+	sv := sessionView{ID: "s1", Label: "Docs", shown: "/repo", git: backend.DiffStats{Branch: longBranch, Files: 2, Added: 10, Deleted: 3},
+		pr: &backend.PullRequest{Number: 1199, State: "CLOSED", Forge: api.ForgeGitHub}}
+	width := 230
+	r := newFrameRig(image.Pt(width, 200), func(gtx C, th *ui.Theme) { sessionTooltip(th, &sv)(gtx) })
+	r.frame()
+	// on a line of its own the number starts near the left, after the two icons
+	branch, number := labelBox(t, r, longBranch), labelBox(t, r, "#1199")
+	if number.Min.Y <= branch.Min.Y || number.Min.X > width/2 {
+		t.Errorf("#1199 at %v, branch at %v: want it on its own line under the branch", number, branch)
+	}
+}
+
+// The composer's line draws the session's pull request after its branch, and
+// a long branch truncates before the pull request is cut.
+func TestTheComposerDrawsThePullRequestWhole(t *testing.T) {
+	in := busySession()
+	in.git.Branch = longBranch + "-and-then-some-more-words"
+	u, r, _ := chatFramesIn(t, api.ViewChat, image.Pt(300, 800), in)
+	m := u.model
+	m.prs[m.shownPath(m.projects[0], m.projects[0].Sessions[0])] = prLookup{pr: &backend.PullRequest{Number: 1187, State: "MERGED", Forge: api.ForgeGitHub}}
+	r.settle(t)
+	branch, pr, changes := labelBox(t, r, in.git.Branch), labelBox(t, r, "#1187"), labelBox(t, r, "+0")
+	if pr.Min.Y != changes.Min.Y || pr.Min.X <= branch.Min.X || pr.Min.X >= changes.Min.X {
+		t.Errorf("#1187 at %v: want it on the crumbs' line between the branch (%v) and the changes (%v)", pr, branch, changes)
+	}
+	// what follows the pull request starts inside the window: the number ended before it
+	if changes.Min.X >= r.size.X {
+		t.Errorf("the changes start at x=%d, past the %dpx window: the line ran off its edge", changes.Min.X, r.size.X)
 	}
 }
