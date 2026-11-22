@@ -9,15 +9,18 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
-// The commit message gh would write itself, which goes into git as is.
+// The commit message gh would write itself, which goes into git as is, and
+// the one GitLab's default templates write (a squash takes the title alone).
 const (
-	mergeEditSquashSubj = "%s (#%d)"
-	mergeEditMergeSubj  = "Merge pull request #%d from %s"
+	mergeEditSquashSubj      = "%s (#%d)"
+	mergeEditMergeSubj       = "Merge pull request #%d from %s"
+	mergeEditGitLabMergeSubj = "Merge branch '%s' into '%s'"
 )
 
 // The body field's room: MergeMessageDialog's min-h-[30vh] and max-h-[50vh],
@@ -41,6 +44,14 @@ func mergeEditFor(method string, d backend.PRDetail) mergeEdit {
 	return mergeEdit{method: method, title: i18n.T("pulls.mergeMessageDialog.createMergeCommit"), subject: fmt.Sprintf(mergeEditMergeSubj, d.Number, d.HeadRefName)}
 }
 
+// mergeRequestEditFor is mergeEditFor for a GitLab merge request.
+func mergeRequestEditFor(method string, d backend.PRDetail) mergeEdit {
+	if method == "squash" {
+		return mergeEdit{method: method, title: i18n.T("pulls.mergeMessageDialog.squashAndMerge"), subject: d.Title, body: d.Body}
+	}
+	return mergeEdit{method: method, title: i18n.T("pulls.mergeMessageDialog.createMergeCommit"), subject: fmt.Sprintf(mergeEditGitLabMergeSubj, d.HeadRefName, d.BaseRefName)}
+}
+
 // mergeDialog is MergeMessageDialog: the subject, one line that wraps so its
 // PR number stays in sight, and the body, then Merge.
 type mergeDialog struct {
@@ -54,12 +65,18 @@ type mergeDialog struct {
 	merge   ui.Clickable
 	cancel  ui.Clickable
 	focus   bool
+	// forge is the forge of the pull request in view, set as each frame
+	// starts.
+	forge string
 }
 
 // show opens the dialog on method's message for d.
 func (m *mergeDialog) show(method string, admin bool, d backend.PRDetail) {
 	m.open, m.admin, m.focus = true, admin, true
 	m.edit = mergeEditFor(method, d)
+	if m.forge == api.ForgeGitLab {
+		m.edit = mergeRequestEditFor(method, d)
+	}
 	m.subject.SingleLine, m.subject.Submit = false, true
 	m.subject.SetText(m.edit.subject)
 	m.body.SetText(m.edit.body)

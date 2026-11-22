@@ -203,6 +203,7 @@
     "needsInput": "{label} が入力を待っています",
     "finished": "{label} の作業が完了しました",
     "watchStopped": "プルリクエスト #{number} の監視を停止しました",
+    "watchStoppedGitLab": "マージリクエスト !{number} の監視を停止しました",
     "watchStoppedDetail": "{label} はこのプルリクエストでプロンプトを {runs} 回実行しました。",
     "scheduleLost": "予約したプロンプトが失われました",
     "scheduleLostDetail": "{label} を削除したため、{when} に予約したプロンプトも削除されました。"

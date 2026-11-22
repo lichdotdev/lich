@@ -339,8 +339,8 @@
   },
   "vcsToolsSetting": {
     "title": "명령줄 도구",
-    "searchWords": "git gh 설치",
-    "description": "lich는 git과 GitHub CLI를 사용합니다. 이 화면의 모든 기능이 두 도구로 동작합니다.",
+    "searchWords": "git gh glab 설치",
+    "description": "lich는 git, GitHub CLI, GitLab CLI를 사용합니다. 이 화면의 모든 기능이 이 도구들로 동작합니다.",
     "notOnPath": "$PATH에 없음",
     "install": "설치"
   },
@@ -349,6 +349,8 @@
     "accountFor": "{name}의 GitHub 계정",
     "accountSearchWords": "로그인 gh 전환",
     "accountDescription": "이 프로젝트에서 lich가 gh를 실행할 계정입니다. 풀 리퀘스트, 체크, PR 체크아웃, 그리고 세션 안에서 실행하는 gh에 쓰이며, 세션에는 다음 시작부터 적용됩니다. gh는 호스트마다 활성 계정을 하나만 두므로, 다른 계정만 볼 수 있는 저장소는 찾을 수 없다고 나옵니다. 엔터프라이즈 호스트의 계정은 호스트 이름과 함께 표시됩니다.",
+    "gitLabAccountFor": "{name}의 GitLab 계정",
+    "gitLabAccountDescription": "이 프로젝트에서 lich는 glab을 활성 계정으로 실행합니다. 다른 계정을 쓰려면 터미널에서 `glab auth login`으로 로그인하세요.",
     "activeAccount": "gh의 활성 계정",
     "listFailed": "GitHub 계정 목록을 가져오지 못했습니다: {error}",
     "noAccounts": "gh에 로그인된 계정이 없습니다. 터미널에서 `gh auth login`을 실행하세요."

@@ -91,7 +91,8 @@
     "revealFailed": "Не удалось показать {name} в папке"
   },
   "dockReviewBinary": {
-    "viewOnGitHub": "Открыть на GitHub"
+    "viewOnGitHub": "Открыть на GitHub",
+    "viewOnGitLab": "Открыть на GitLab"
   },
   "blobPreview": {
     "tooManyPixels": "{width} × {height} превышает лимит предпросмотра в {megapixels} МП",

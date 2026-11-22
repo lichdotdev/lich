@@ -12,6 +12,7 @@ import (
 
 	"gioui.org/layout"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
@@ -105,6 +106,9 @@ func (u *window) togglePulls() {
 func (u *window) applyPulls(act pullsAction) {
 	p := u.pulls
 	path := p.project.Path
+	if p.forge() == api.ForgeGitLab {
+		act = mergeRequestAction(act)
+	}
 	if act.refresh {
 		u.prChanged()
 	}
@@ -115,7 +119,8 @@ func (u *window) applyPulls(act pullsAction) {
 	if act.create {
 		go func() {
 			if err := u.client.CreatePullRequest(u.ctx, u.checkoutPath(path)); err != nil {
-				u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("pulls.pullsEmptyState.openFailed", i18n.Args{"error": backend.ErrorText(err)})})
+				key := forgeKey(p.forge(), "pulls.pullsEmptyState.openFailed", "pulls.pullsEmptyState.openFailedGitLab")
+				u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T(key, i18n.Args{"error": backend.ErrorText(err)})})
 			}
 		}()
 	}
@@ -140,6 +145,13 @@ func (u *window) applyPulls(act pullsAction) {
 			go u.mergePR(p.project, *d, act.merge, act.admin, "", "")
 		}
 	}
+}
+
+// mergeRequestAction is what of act a GitLab merge request takes: lich does
+// not review, comment on, edit or merge past the rules of one yet.
+func mergeRequestAction(act pullsAction) pullsAction {
+	return pullsAction{session: act.session, handoff: act.handoff, merge: act.merge, refresh: act.refresh,
+		external: act.external, create: act.create}
 }
 
 // checkoutPath is the active session's checkout, the project's own without
@@ -191,7 +203,8 @@ func (u *window) openPRSession(project backend.Project, d backend.PRDetail, prom
 		return
 	}
 	if u.handOffPR(project.ID, id, prompt) {
-		u.toaster.Show(ui.Toast{Variant: ui.ToastSuccess, Title: i18n.T("pulls.pulls.handedOff", i18n.Args{"number": d.Number, "session": u.model.sessionLabel(id)}),
+		key := forgeKey(u.model.forgeOf(project.Path), "pulls.pulls.handedOff", "pulls.pulls.handedOffGitLab")
+		u.toaster.Show(ui.Toast{Variant: ui.ToastSuccess, Title: i18n.T(key, i18n.Args{"number": d.Number, "session": u.model.sessionLabel(id)}),
 			Action: u.openPRButton(project.ID, id)})
 	}
 }
@@ -310,7 +323,8 @@ func (u *window) mergePR(project backend.Project, d backend.PRDetail, method str
 		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("pulls.pullRequestView.mergeFailed", i18n.Args{"error": text})})
 		return false
 	}
-	merged := ui.Toast{Variant: ui.ToastSuccess, Title: i18n.T("pulls.pulls.merged", i18n.Args{"number": d.Number, "base": d.BaseRefName})}
+	key := forgeKey(u.model.forgeOf(project.Path), "pulls.pulls.merged", "pulls.pulls.mergedGitLab")
+	merged := ui.Toast{Variant: ui.ToastSuccess, Title: i18n.T(key, i18n.Args{"number": d.Number, "base": d.BaseRefName})}
 	checkouts, err := u.pulls.store.freshCheckouts(project.Path)
 	u.logErr("list checkouts", err)
 	i := slices.IndexFunc(checkouts, func(c backend.Worktree) bool { return c.Name == d.HeadRefName })

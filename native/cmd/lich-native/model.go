@@ -52,8 +52,9 @@ type model struct {
 	git           map[string]backend.DiffStats   // shown path -> its branch and changes
 	base          map[string]*backend.BaseStatus // shown path -> where it stands against its base
 	prs           map[string]prLookup            // shown path -> its open pull request
-	activeProject string                         // project id on screen
-	home          bool                           // Home is on screen instead
+	forges        *forgeStore
+	activeProject string // project id on screen
+	home          bool   // Home is on screen instead
 	// homeID is the project rooted at the home directory, which Home shows:
 	// pinned out of the strip and never closed.
 	homeID    string
@@ -195,7 +196,7 @@ func newModel(client *backend.Client, invalidate func()) *model {
 	quota := newPlanQuota(quotaReader(client), invalidate)
 	return &model{client: client, invalidate: invalidate, status: newStatusStore(), usage: newFooterUsage(), quota: quota, cwd: map[string]sessionCwd{},
 		agent: map[string]string{}, sandbox: map[string]sandboxEvent{}, relay: map[string]sessionRelay{}, git: map[string]backend.DiffStats{},
-		base: map[string]*backend.BaseStatus{}, prs: map[string]prLookup{}, folds: map[string]bool{},
+		base: map[string]*backend.BaseStatus{}, prs: map[string]prLookup{}, forges: newForgeStore(client, invalidate), folds: map[string]bool{},
 		profiles:      newProfileBook(claudeProfileProvider, client, invalidate, quota),
 		codexProfiles: newProfileBook(codexProfileProvider, client, invalidate, quota),
 		ompProfiles:   newProfileBook(ompProfileProvider, client, invalidate, quota),
@@ -697,6 +698,7 @@ type sessionView struct {
 	git       backend.DiffStats
 	base      *backend.BaseStatus  // nil without a base to stand against
 	pr        *backend.PullRequest // open PR of the shown path's branch, nil for none
+	forge     string               // the shown path's forge, "" while it is read
 	// profileName is the profile the session runs in, "" for Personal;
 	// continueIn are the other logins its conversation could move to.
 	profileName string
@@ -730,7 +732,7 @@ func (m *model) viewOf(p backend.Project, s backend.Session, now time.Time) sess
 		Session: s, projectID: p.ID, path: sessionPath(p, s), shown: shown, host: m.cwd[s.ID].Host, web: web,
 		status: m.status.status(s.ID), unread: m.status.unread(s.ID), turn: m.status.turn(s.ID), age: age, aged: aged,
 		agent: m.agent[s.ID], sandbox: m.sandbox[s.ID], git: m.git[shown],
-		base: m.base[shown], pr: m.prs[shown].pr,
+		base: m.base[shown], pr: m.prs[shown].pr, forge: m.forges.peek(shown),
 		relay: m.relay[s.ID], tool: tool, reason: m.status.reason(s.ID), browser: m.browsers.states[s.ID].Open,
 		profileName: m.profileNameOf(s.Kind, s.Profile), continueIn: m.continueTargets(s.Kind, s.Profile),
 		split: split, running: usage.Model,

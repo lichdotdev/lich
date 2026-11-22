@@ -343,8 +343,8 @@
   },
   "vcsToolsSetting": {
     "title": "命令行工具",
-    "searchWords": "git gh 安装",
-    "description": "lich 依靠 git 和 GitHub CLI 运作，此页面上的所有功能都通过它们完成。",
+    "searchWords": "git gh glab 安装",
+    "description": "lich 依靠 git、GitHub CLI 和 GitLab CLI 运作，此页面上的所有功能都通过它们完成。",
     "notOnPath": "不在 $PATH 中",
     "install": "安装"
   },
@@ -353,6 +353,8 @@
     "accountFor": "{name} 的 GitHub 账户",
     "accountSearchWords": "登录 gh 切换",
     "accountDescription": "lich 在此项目中以哪个账户运行 gh：拉取请求、检查、PR 检出，以及会话中运行的 gh 都使用它（会话下次启动时生效）。gh 每个主机只有一个活动账户，因此只有其他账户能看到的仓库会显示为未找到。企业主机上的账户会和主机一起列出。",
+    "gitLabAccountFor": "{name} 的 GitLab 账户",
+    "gitLabAccountDescription": "在此项目中，lich 以 glab 的活动账户运行它。要换用其他账户，请在终端中运行 `glab auth login` 登录。",
     "activeAccount": "gh 的活动账户",
     "listFailed": "无法列出 GitHub 账户：{error}",
     "noAccounts": "gh 尚未登录任何账户。请在终端中运行 `gh auth login`。"

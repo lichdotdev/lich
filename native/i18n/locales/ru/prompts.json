@@ -1,14 +1,23 @@
 {
   "pullRequest": {
     "conflicts": "У pull request #{number} ({branch}) есть конфликты слияния с {base}. Разрешите их.",
+    "conflictsGitLab": "У merge request !{number} ({branch}) есть конфликты слияния с {base}. Разрешите их.",
     "conflictsListed": "У pull request #{number} ({branch}) есть конфликты слияния с {base} в этих файлах. Разрешите их:\n\n{files}",
+    "conflictsListedGitLab": "У merge request !{number} ({branch}) есть конфликты слияния с {base} в этих файлах. Разрешите их:\n\n{files}",
     "checksUnnamed": {
       "one": "CI падает в pull request #{number} ({branch}). {count} проверка не пройдена; выясните, какая именно, и исправьте.",
       "few": "CI падает в pull request #{number} ({branch}). {count} проверки не пройдены; выясните, какие именно, и исправьте.",
       "many": "CI падает в pull request #{number} ({branch}). {count} проверок не пройдено; выясните, какие именно, и исправьте.",
       "other": "CI падает в pull request #{number} ({branch}). {count} проверки не пройдены; выясните, какие именно, и исправьте."
     },
+    "checksUnnamedGitLab": {
+      "one": "CI падает в merge request !{number} ({branch}). {count} проверка не пройдена; выясните, какая именно, и исправьте.",
+      "few": "CI падает в merge request !{number} ({branch}). {count} проверки не пройдены; выясните, какие именно, и исправьте.",
+      "many": "CI падает в merge request !{number} ({branch}). {count} проверок не пройдено; выясните, какие именно, и исправьте.",
+      "other": "CI падает в merge request !{number} ({branch}). {count} проверки не пройдены; выясните, какие именно, и исправьте."
+    },
     "checksListed": "CI падает в pull request #{number} ({branch}). Исправьте эти проверки:\n\n{checks}",
+    "checksListedGitLab": "CI падает в merge request !{number} ({branch}). Исправьте эти проверки:\n\n{checks}",
     "checksOmitted": {
       "one": "\n\n…и ещё {count} упавшая проверка не показана.",
       "few": "\n\n…и ещё {count} упавшие проверки не показаны.",

@@ -11,6 +11,7 @@
   },
   "projectTabs": {
     "pullRequests": "Pull requests",
+    "mergeRequests": "Merge requests",
     "settings": "Configurações",
     "closeTitle": "Ainda há sessões em execução",
     "closeBody": {

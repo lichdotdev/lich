@@ -28,9 +28,13 @@
   "mergeGate": {
     "changesRequested": "评审者请求了更改",
     "reviewRequired": "GitHub 要求的评审尚未完成",
+    "reviewRequiredGitLab": "GitLab 要求的批准尚未给出",
     "merged": "拉取请求已合并",
+    "mergedGitLab": "合并请求已合并",
     "closed": "拉取请求已关闭",
+    "closedGitLab": "合并请求已关闭",
     "draft": "拉取请求仍是草稿",
+    "draftGitLab": "合并请求仍是草稿",
     "conflicts": "与 {base} 存在冲突",
     "behind": "基础分支已更新，请先更新此分支",
     "pattern": {
@@ -68,8 +72,11 @@
   },
   "pullsEmptyState": {
     "openFailed": "无法打开拉取请求：{error}",
+    "openFailedGitLab": "无法打开合并请求：{error}",
     "none": "没有打开的拉取请求。",
-    "openOnGitHub": "在 GitHub 上打开"
+    "noneGitLab": "没有打开的合并请求。",
+    "openOnGitHub": "在 GitHub 上打开",
+    "openOnGitLab": "在 GitLab 上打开"
   },
   "pullsAccount": {
     "chooseTitle": "选择 GitHub 账号",
@@ -166,6 +173,12 @@
       "merged": "没有已合并的拉取请求。",
       "approved": "没有已批准的拉取请求。"
     },
+    "noneGitLab": {
+      "open": "没有打开的合并请求。",
+      "closed": "没有已关闭的合并请求。",
+      "merged": "没有已合并的合并请求。",
+      "approved": "没有已批准的合并请求。"
+    },
     "noMatch": "没有符合该筛选条件的内容。",
     "draft": "草稿",
     "fork": "分叉",
@@ -224,10 +237,12 @@
     "removed": "已移除 {name}",
     "removeFailed": "移除工作树失败：{error}",
     "merged": "已将 #{number} 合并到 {base}",
+    "mergedGitLab": "已将 !{number} 合并到 {base}",
     "announceFailed": "无法通知 {name} 中的会话：{error}",
     "removeWorktree": "移除工作树",
     "openSessionFailed": "无法打开会话：{error}",
     "handedOff": "已将 #{number} 交给 {session}",
+    "handedOffGitLab": "已将 !{number} 交给 {session}",
     "goToSession": "前往会话",
     "openInSession": "在会话中打开",
     "forkBlocked": "源分支位于不允许维护者编辑的分叉上，提交无法推送回去",
@@ -279,6 +294,10 @@
       "one": "有 {count} 项检查失败；GitHub 仍会合并",
       "other": "有 {count} 项检查失败；GitHub 仍会合并"
     },
+    "failingGitLab": {
+      "one": "有 {count} 项检查失败；GitLab 仍会合并",
+      "other": "有 {count} 项检查失败；GitLab 仍会合并"
+    },
     "durationSeconds": "{value}秒",
     "durationMinutes": "{value}分钟",
     "durationHours": "{value}小时"
@@ -297,12 +316,17 @@
   },
   "pullsNav": {
     "back": "返回拉取请求列表",
+    "backGitLab": "返回合并请求列表",
     "previous": "上一个拉取请求",
+    "previousGitLab": "上一个合并请求",
     "next": "下一个拉取请求",
+    "nextGitLab": "下一个合并请求",
     "position": "{index} / {total}",
     "switch": "前往其他拉取请求",
+    "switchGitLab": "前往其他合并请求",
     "more": "更多操作",
     "create": "新建拉取请求",
+    "createGitLab": "新建合并请求",
     "checkout": "检出",
     "notCheckedOut": "未检出"
   }

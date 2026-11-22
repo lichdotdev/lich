@@ -11,6 +11,7 @@
   },
   "projectTabs": {
     "pullRequests": "拉取请求",
+    "mergeRequests": "合并请求",
     "settings": "设置",
     "closeTitle": "会话仍在运行",
     "closeBody": {

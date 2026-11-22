@@ -28,9 +28,13 @@
   "mergeGate": {
     "changesRequested": "Um revisor pediu alterações",
     "reviewRequired": "O GitHub exige uma revisão que ainda não foi feita",
+    "reviewRequiredGitLab": "O GitLab exige uma aprovação que ainda não foi dada",
     "merged": "O pull request já foi mergeado",
+    "mergedGitLab": "O merge request já foi mergeado",
     "closed": "O pull request está fechado",
+    "closedGitLab": "O merge request está fechado",
     "draft": "O pull request é um rascunho",
+    "draftGitLab": "O merge request é um rascunho",
     "conflicts": "Conflita com {base}",
     "behind": "A branch base avançou. Atualize esta branch primeiro",
     "pattern": {
@@ -68,8 +72,11 @@
   },
   "pullsEmptyState": {
     "openFailed": "Não foi possível abrir um pull request: {error}",
+    "openFailedGitLab": "Não foi possível abrir um merge request: {error}",
     "none": "Nenhum pull request aberto.",
-    "openOnGitHub": "Abrir no GitHub"
+    "noneGitLab": "Nenhum merge request aberto.",
+    "openOnGitHub": "Abrir no GitHub",
+    "openOnGitLab": "Abrir no GitLab"
   },
   "pullsAccount": {
     "chooseTitle": "Escolha uma conta do GitHub",
@@ -166,6 +173,12 @@
       "merged": "Nenhum pull request mergeado.",
       "approved": "Nenhum pull request aprovado."
     },
+    "noneGitLab": {
+      "open": "Nenhum merge request aberto.",
+      "closed": "Nenhum merge request fechado.",
+      "merged": "Nenhum merge request mergeado.",
+      "approved": "Nenhum merge request aprovado."
+    },
     "noMatch": "Nada corresponde a esse filtro.",
     "draft": "Rascunho",
     "fork": "fork",
@@ -225,10 +238,12 @@
     "removed": "{name} removido",
     "removeFailed": "Falha ao remover a worktree: {error}",
     "merged": "#{number} mergeado em {base}",
+    "mergedGitLab": "!{number} mergeado em {base}",
     "announceFailed": "Não foi possível avisar as sessões em {name}: {error}",
     "removeWorktree": "Remover worktree",
     "openSessionFailed": "Não foi possível abrir uma sessão: {error}",
     "handedOff": "#{number} entregue a {session}",
+    "handedOffGitLab": "!{number} entregue a {session}",
     "goToSession": "Ir para a sessão",
     "openInSession": "Abrir em sessão",
     "forkBlocked": "A branch de origem está em um fork que não permite edições dos mantenedores, então os commits não poderiam ser enviados de volta",
@@ -280,6 +295,10 @@
       "one": "{count} check está falhando, mas o GitHub fará o merge mesmo assim",
       "other": "{count} checks estão falhando, mas o GitHub fará o merge mesmo assim"
     },
+    "failingGitLab": {
+      "one": "{count} check está falhando, mas o GitLab fará o merge mesmo assim",
+      "other": "{count} checks estão falhando, mas o GitLab fará o merge mesmo assim"
+    },
     "durationSeconds": "{value}s",
     "durationMinutes": "{value}min",
     "durationHours": "{value}h"
@@ -298,12 +317,17 @@
   },
   "pullsNav": {
     "back": "Voltar para os pull requests",
+    "backGitLab": "Voltar para os merge requests",
     "previous": "Pull request anterior",
+    "previousGitLab": "Merge request anterior",
     "next": "Próximo pull request",
+    "nextGitLab": "Próximo merge request",
     "position": "{index} de {total}",
     "switch": "Ir para outro pull request",
+    "switchGitLab": "Ir para outro merge request",
     "more": "Mais ações",
     "create": "Novo pull request",
+    "createGitLab": "Novo merge request",
     "checkout": "Checkout",
     "notCheckedOut": "Sem checkout"
   }

@@ -171,7 +171,7 @@ func forkItem(sv *sessionView, act *sidebarAction) (ui.MenuEntry, bool) {
 }
 
 func pullRequestItem(sv *sessionView, act *sidebarAction) ui.MenuEntry {
-	item := ui.MenuEntry{Label: i18n.T("sidebar.sessionCard.pullRequest"), Icon: icMenuPR, Disabled: sv.pr == nil}
+	item := ui.MenuEntry{Label: i18n.T(forgeKey(sv.forge, "sidebar.sessionCard.pullRequest", "sidebar.sessionCard.mergeRequest")), Icon: icMenuPR, Disabled: sv.pr == nil}
 	if sv.pr != nil {
 		id := sv.ID
 		number, url := prTarget(sv.pr, sv.shown, sv.path)

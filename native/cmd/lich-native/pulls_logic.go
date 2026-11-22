@@ -86,7 +86,7 @@ func matchesText(pr backend.PRSummary, text string) bool {
 		return true
 	}
 	n := strconv.Itoa(pr.Number)
-	for _, field := range []string{"#" + n, n, pr.Title, pr.Author, pr.HeadRefName} {
+	for _, field := range []string{"#" + n, "!" + n, n, pr.Title, pr.Author, pr.HeadRefName} {
 		if strings.Contains(strings.ToLower(field), needle) {
 			return true
 		}
@@ -165,14 +165,14 @@ func conflictsWithBase(d backend.PRDetail) bool {
 // mergeBlockedReason is why the merge cannot go, "" when GitHub
 // would take it (or a BLOCKED it gives no reason for, which only the merge
 // attempt can explain).
-func mergeBlockedReason(d backend.PRDetail) string {
+func mergeBlockedReason(d backend.PRDetail, forge string) string {
 	switch {
 	case d.State == "MERGED":
-		return i18n.T("pulls.mergeGate.merged")
+		return i18n.T(forgeKey(forge, "pulls.mergeGate.merged", "pulls.mergeGate.mergedGitLab"))
 	case d.State != "OPEN":
-		return i18n.T("pulls.mergeGate.closed")
+		return i18n.T(forgeKey(forge, "pulls.mergeGate.closed", "pulls.mergeGate.closedGitLab"))
 	case d.IsDraft:
-		return i18n.T("pulls.mergeGate.draft")
+		return i18n.T(forgeKey(forge, "pulls.mergeGate.draft", "pulls.mergeGate.draftGitLab"))
 	case conflictsWithBase(d):
 		return i18n.T("pulls.mergeGate.conflicts", i18n.Args{"base": d.BaseRefName})
 	case d.MergeStateStatus == "BEHIND":
@@ -182,7 +182,7 @@ func mergeBlockedReason(d backend.PRDetail) string {
 	case d.ReviewDecision == "CHANGES_REQUESTED":
 		return i18n.T("pulls.mergeGate.changesRequested")
 	case d.ReviewDecision == "REVIEW_REQUIRED":
-		return i18n.T("pulls.mergeGate.reviewRequired")
+		return i18n.T(forgeKey(forge, "pulls.mergeGate.reviewRequired", "pulls.mergeGate.reviewRequiredGitLab"))
 	}
 	return ""
 }
@@ -249,8 +249,8 @@ func mergeRuleNote(d backend.PRDetail, rules *backend.BranchRules) string {
 
 // mergeHint is what the Merge button's tooltip says: the block, else the rule
 // note, else the red checks GitHub would merge over.
-func mergeHint(d backend.PRDetail, rules *backend.BranchRules) string {
-	if r := mergeBlockedReason(d); r != "" {
+func mergeHint(d backend.PRDetail, rules *backend.BranchRules, forge string) string {
+	if r := mergeBlockedReason(d, forge); r != "" {
 		return r
 	}
 	if n := mergeRuleNote(d, rules); n != "" {
@@ -259,7 +259,7 @@ func mergeHint(d backend.PRDetail, rules *backend.BranchRules) string {
 	if d.Checks.Failed == 0 {
 		return ""
 	}
-	return i18n.T("pulls.pullsLogic.failing", i18n.Args{"count": d.Checks.Failed})
+	return i18n.T(forgeKey(forge, "pulls.pullsLogic.failing", "pulls.pullsLogic.failingGitLab"), i18n.Args{"count": d.Checks.Failed})
 }
 
 // handoffNamedChecks is how many checks the prompt names; past it the prompt
@@ -269,29 +269,29 @@ const handoffNamedChecks = 8
 // pullHandoff finds what is wrong with an open PR, conflicts
 // first, as a button label and the prompt that hands it over; ok false when
 // nothing is. conflicts is the colliding files, nil while not yet known.
-func pullHandoff(d backend.PRDetail, conflicts []string) (label, prompt string, ok bool) {
+func pullHandoff(d backend.PRDetail, conflicts []string, forge string) (label, prompt string, ok bool) {
 	if d.State != "OPEN" {
 		return "", "", false
 	}
 	if conflictsWithBase(d) {
-		return i18n.T("pulls.prHandoff.resolveConflicts"), conflictsPrompt(d, conflicts), true
+		return i18n.T("pulls.prHandoff.resolveConflicts"), conflictsPrompt(d, conflicts, forge), true
 	}
 	if d.Checks.Failed > 0 {
-		return i18n.T("pulls.prHandoff.fixChecks"), checksPrompt(d), true
+		return i18n.T("pulls.prHandoff.fixChecks"), checksPrompt(d, forge), true
 	}
 	return "", "", false
 }
 
-func conflictsPrompt(d backend.PRDetail, files []string) string {
+func conflictsPrompt(d backend.PRDetail, files []string, forge string) string {
 	args := i18n.Args{"number": d.Number, "branch": d.HeadRefName, "base": d.BaseRefName}
 	if len(files) == 0 {
-		return i18n.Prompt("prompts.pullRequest.conflicts", args)
+		return i18n.Prompt(forgeKey(forge, "prompts.pullRequest.conflicts", "prompts.pullRequest.conflictsGitLab"), args)
 	}
 	args["files"] = "- " + strings.Join(files, "\n- ")
-	return i18n.Prompt("prompts.pullRequest.conflictsListed", args)
+	return i18n.Prompt(forgeKey(forge, "prompts.pullRequest.conflictsListed", "prompts.pullRequest.conflictsListedGitLab"), args)
 }
 
-func checksPrompt(d backend.PRDetail) string {
+func checksPrompt(d backend.PRDetail, forge string) string {
 	var failed []backend.CheckItem
 	for _, c := range d.CheckRuns {
 		if c.State == "failed" {
@@ -299,7 +299,7 @@ func checksPrompt(d backend.PRDetail) string {
 		}
 	}
 	if len(failed) == 0 {
-		return i18n.Prompt("prompts.pullRequest.checksUnnamed",
+		return i18n.Prompt(forgeKey(forge, "prompts.pullRequest.checksUnnamed", "prompts.pullRequest.checksUnnamedGitLab"),
 			i18n.Args{"number": d.Number, "branch": d.HeadRefName, "count": d.Checks.Failed})
 	}
 	named := failed[:min(len(failed), handoffNamedChecks)]
@@ -310,7 +310,7 @@ func checksPrompt(d backend.PRDetail) string {
 			lines[i] += " — " + c.URL
 		}
 	}
-	out := i18n.Prompt("prompts.pullRequest.checksListed",
+	out := i18n.Prompt(forgeKey(forge, "prompts.pullRequest.checksListed", "prompts.pullRequest.checksListedGitLab"),
 		i18n.Args{"number": d.Number, "branch": d.HeadRefName, "checks": strings.Join(lines, "\n")})
 	if omitted := len(failed) - len(named); omitted > 0 {
 		out += i18n.Prompt("prompts.pullRequest.checksOmitted", i18n.Args{"count": omitted})

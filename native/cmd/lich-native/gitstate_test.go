@@ -80,6 +80,8 @@ func (f *fakeForge) client(t *testing.T) *backend.Client {
 			_ = json.NewEncoder(w).Encode(backend.DiffStats{Branch: f.branch, Head: f.head})
 		case "/rpc/project.BaseStatus":
 			_ = json.NewEncoder(w).Encode(backend.BaseStatus{Behind: 2})
+		case "/rpc/project.Forge":
+			_ = json.NewEncoder(w).Encode(api.ForgeGitHub)
 		case "/rpc/project.RecheckPullRequest":
 			var args []api.PathOptions
 			_ = json.NewDecoder(r.Body).Decode(&args)

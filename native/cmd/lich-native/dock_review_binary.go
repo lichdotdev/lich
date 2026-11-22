@@ -2,10 +2,11 @@ package main
 
 // A binary file's card body (BinaryDiffBody): the image on each side of the
 // change, or the line saying it is binary with the way out to the desktop's
-// application, or to the file on GitHub in a pull request.
+// application, or to the file on the forge in a pull request.
 
 import (
 	"context"
+	"crypto/sha1"
 	"crypto/sha256"
 	"encoding/hex"
 	"image"
@@ -14,6 +15,7 @@ import (
 
 	"gioui.org/layout"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
@@ -57,6 +59,9 @@ func (c *fileCard) binaryBody(gtx C, p *reviewPanel) D {
 func (c *fileCard) prBinary(gtx C, p *reviewPanel) D {
 	if c.bin.github.Clicked(gtx) {
 		url := prFileURL(p.pr.url, c.git.path)
+		if p.pr.forge == api.ForgeGitLab {
+			url = mergeRequestFileURL(p.pr.url, c.git.path)
+		}
 		_, name := splitPath(c.git.path)
 		go func() {
 			if err := p.client.OpenExternal(context.Background(), url); err != nil {
@@ -64,7 +69,7 @@ func (c *fileCard) prBinary(gtx C, p *reviewPanel) D {
 			}
 		}()
 	}
-	b := p.th.Button(&c.bin.github, i18n.T("diff.dockReviewBinary.viewOnGitHub"))
+	b := p.th.Button(&c.bin.github, i18n.T(forgeKey(p.pr.forge, "diff.dockReviewBinary.viewOnGitHub", "diff.dockReviewBinary.viewOnGitLab")))
 	b.Size, b.Variant = ui.SizeXS, ui.VariantOutline
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 		layout.Rigid(func(gtx C) D { return p.th.BodyLine(i18n.T("diff.binaryPreview.binary")).Layout(gtx) }),
@@ -77,6 +82,14 @@ func (c *fileCard) prBinary(gtx C, p *reviewPanel) D {
 func prFileURL(prURL, path string) string {
 	sum := sha256.Sum256([]byte(path))
 	return strings.TrimSuffix(prURL, "/") + "/files#diff-" + hex.EncodeToString(sum[:])
+}
+
+// mergeRequestFileURL is the file's anchor in the merge request's Changes
+// tab, which GitLab names after the SHA-1 of its path (Gitlab::Diff::File
+// #file_hash).
+func mergeRequestFileURL(mrURL, path string) string {
+	sum := sha1.Sum([]byte(path))
+	return strings.TrimSuffix(mrURL, "/") + "/diffs#" + hex.EncodeToString(sum[:])
 }
 
 // imageSides is the grid of BinaryDiffBody, px-3 pt-2.5 pb-3.5 gap-2.5: both

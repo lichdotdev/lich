@@ -118,7 +118,8 @@ type topbarFrame struct {
 	pending       []notification
 	settings      bool // the Settings screen is open
 	guides        []guideItem
-	pulls         bool // the Pulls screen is open
+	pulls         bool   // the Pulls screen is open
+	forge         string // the active project's forge, which names the Pulls button
 	caption       captionLayout
 	chrome        windowChrome
 	windowButtons string // the window buttons setting
@@ -180,7 +181,7 @@ func (t *topbar) rightSide(gtx C, th *ui.Theme, f topbarFrame, act *topbarAction
 	}
 	children = append(children, t.extensionButtons(th, f, act)...)
 	children = append(children,
-		layout.Rigid(func(gtx C) D { return t.pullsButton(gtx, th, f.pulls, act) }),
+		layout.Rigid(func(gtx C) D { return t.pullsButton(gtx, th, f.pulls, f.forge, act) }),
 		ui.Gap(1),
 		layout.Rigid(func(gtx C) D { return t.menuButton(gtx, th, f.settings, f.guides, act) }),
 	)
@@ -306,11 +307,11 @@ func guideEntries(guides []guideItem, act *topbarAction) []ui.MenuEntry {
 }
 
 // pullsButton opens the Pulls screen, and closes it while it is open.
-func (t *topbar) pullsButton(gtx C, th *ui.Theme, open bool, act *topbarAction) D {
+func (t *topbar) pullsButton(gtx C, th *ui.Theme, open bool, forge string, act *topbarAction) D {
 	if t.pulls.Clicked(gtx) {
 		act.pulls = true
 	}
-	tip := th.Tooltip(t.root, t.hint("pulls"), i18n.T("tabs.projectTabs.pullRequests"))
+	tip := th.Tooltip(t.root, t.hint("pulls"), i18n.T(forgeKey(forge, "tabs.projectTabs.pullRequests", "tabs.projectTabs.mergeRequests")))
 	tip.Side = ui.SideBottom
 	return t.tour.Anchor(gtx, tourPullsButton, func(gtx C) D {
 		return tip.Layout(gtx, func(gtx C) D { return th.BarIconButton(&t.pulls, icPullRequests, open).Layout(gtx) })

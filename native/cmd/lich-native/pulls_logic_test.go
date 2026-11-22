@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/ui"
 )
@@ -82,7 +83,7 @@ func TestMergeBlockedReasonFollowsTheWebOrder(t *testing.T) {
 		"clean":             {detail("OPEN", "MERGEABLE", "CLEAN", ""), ""},
 	}
 	for name, c := range cases {
-		if got := mergeBlockedReason(c.d); got != c.want {
+		if got := mergeBlockedReason(c.d, api.ForgeGitHub); got != c.want {
 			t.Errorf("%s: mergeBlockedReason = %q, want %q", name, got, c.want)
 		}
 	}
@@ -123,15 +124,15 @@ func TestAllowedMergeMethods(t *testing.T) {
 func TestMergeHintFallsFromBlockToRuleToChecks(t *testing.T) {
 	rules := &backend.BranchRules{CommitPatterns: []backend.CommitPattern{{Target: "message", Operator: "starts_with", Pattern: "feat"}}}
 	blocked := detail("OPEN", "MERGEABLE", "BLOCKED", "APPROVED")
-	if got := mergeHint(blocked, rules); got != `A ruleset governs main: every commit message must start with "feat".` {
+	if got := mergeHint(blocked, rules, api.ForgeGitHub); got != `A ruleset governs main: every commit message must start with "feat".` {
 		t.Errorf("rule note = %q", got)
 	}
 	red := detail("OPEN", "MERGEABLE", "UNSTABLE", "")
 	red.Checks.Failed = 2
-	if got := mergeHint(red, nil); !strings.HasPrefix(got, "2 checks are failing") {
+	if got := mergeHint(red, nil, api.ForgeGitHub); !strings.HasPrefix(got, "2 checks are failing") {
 		t.Errorf("failing hint = %q", got)
 	}
-	if got := mergeHint(detail("OPEN", "MERGEABLE", "CLEAN", ""), nil); got != "" {
+	if got := mergeHint(detail("OPEN", "MERGEABLE", "CLEAN", ""), nil, api.ForgeGitHub); got != "" {
 		t.Errorf("clean hint = %q, want none", got)
 	}
 }
@@ -140,11 +141,11 @@ func TestPullHandoffConflictsFirstThenChecks(t *testing.T) {
 	d := detail("OPEN", "CONFLICTING", "DIRTY", "")
 	d.Number, d.HeadRefName = 7, "feat/x"
 	d.Checks.Failed = 1
-	label, prompt, ok := pullHandoff(d, nil)
+	label, prompt, ok := pullHandoff(d, nil, api.ForgeGitHub)
 	if !ok || label != "Resolve conflicts" || !strings.Contains(prompt, "conflicts with main") {
 		t.Fatalf("conflict handoff = %q %q %v", label, prompt, ok)
 	}
-	if _, prompt, _ = pullHandoff(d, []string{"go.mod", "a/b.go"}); !strings.HasSuffix(prompt, "\n\n- go.mod\n- a/b.go") {
+	if _, prompt, _ = pullHandoff(d, []string{"go.mod", "a/b.go"}, api.ForgeGitHub); !strings.HasSuffix(prompt, "\n\n- go.mod\n- a/b.go") {
 		t.Errorf("conflict handoff names no files: %q", prompt)
 	}
 	d.Mergeable, d.MergeStateStatus = "MERGEABLE", "UNSTABLE"
@@ -153,7 +154,7 @@ func TestPullHandoffConflictsFirstThenChecks(t *testing.T) {
 		runs[i] = backend.CheckItem{Name: "job", State: "failed", URL: "https://ci"}
 	}
 	d.CheckRuns = runs
-	label, prompt, _ = pullHandoff(d, nil)
+	label, prompt, _ = pullHandoff(d, nil, api.ForgeGitHub)
 	if label != "Fix CI errors" || strings.Count(prompt, "- job — https://ci") != handoffNamedChecks {
 		t.Errorf("checks handoff = %q %q", label, prompt)
 	}
@@ -161,13 +162,13 @@ func TestPullHandoffConflictsFirstThenChecks(t *testing.T) {
 		t.Errorf("omitted tail missing: %q", prompt)
 	}
 	d.CheckRuns = nil
-	if _, prompt, _ = pullHandoff(d, nil); !strings.Contains(prompt, "1 check is red") {
+	if _, prompt, _ = pullHandoff(d, nil, api.ForgeGitHub); !strings.Contains(prompt, "1 check is red") {
 		t.Errorf("unnamed prompt = %q", prompt)
 	}
-	if _, _, ok := pullHandoff(detail("OPEN", "MERGEABLE", "CLEAN", ""), nil); ok {
+	if _, _, ok := pullHandoff(detail("OPEN", "MERGEABLE", "CLEAN", ""), nil, api.ForgeGitHub); ok {
 		t.Error("a healthy PR has nothing to hand off")
 	}
-	if _, _, ok := pullHandoff(detail("MERGED", "CONFLICTING", "DIRTY", ""), nil); ok {
+	if _, _, ok := pullHandoff(detail("MERGED", "CONFLICTING", "DIRTY", ""), nil, api.ForgeGitHub); ok {
 		t.Error("a merged PR has nothing to hand off")
 	}
 }

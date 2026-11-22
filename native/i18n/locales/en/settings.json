@@ -343,8 +343,8 @@
   },
   "vcsToolsSetting": {
     "title": "Command-line tools",
-    "searchWords": "git gh install",
-    "description": "lich drives git and the GitHub CLI. Everything on this screen runs through them.",
+    "searchWords": "git gh glab install",
+    "description": "lich drives git, the GitHub CLI and the GitLab CLI. Everything on this screen runs through them.",
     "notOnPath": "Not on $PATH",
     "install": "Install"
   },
@@ -353,6 +353,8 @@
     "accountFor": "GitHub account for {name}",
     "accountSearchWords": "login gh switch",
     "accountDescription": "Which account lich runs gh as for this project: pull requests, checks, PR checkouts and the gh its sessions run, from their next start. gh keeps one active account per host, so a repository only another account can see reads as not found. Accounts on an enterprise host are listed with it.",
+    "gitLabAccountFor": "GitLab account for {name}",
+    "gitLabAccountDescription": "lich runs glab as its active account for this project. To use another, sign in with `glab auth login` in a terminal.",
     "activeAccount": "gh's active account",
     "listFailed": "Could not list GitHub accounts: {error}",
     "noAccounts": "gh is signed in to no account. Run `gh auth login` in a terminal."

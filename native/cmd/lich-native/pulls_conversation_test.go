@@ -37,7 +37,7 @@ func talkFixture() *backend.PRConversation {
 func layoutTalk(t *testing.T, conv *backend.PRConversation, prepare func(*talkState)) (*op.Ops, image.Point) {
 	t.Helper()
 	stub := &rpcStub{answer: func(string, []json.RawMessage) (any, int) { return conv, http.StatusOK }}
-	p := newPullsScreen(newPullsStore(context.Background(), stub.client(t), func() {}), new(ui.Root))
+	p := newPullsScreen(newPullsStore(context.Background(), stub.client(t), newForgeStore(stub.client(t), func() {}), func() {}), new(ui.Root))
 	p.project, p.selected = backend.Project{Path: "/repo"}, 7
 	d := backend.PRDetail{Number: 7, URL: "https://github.com/o/r/pull/7"}
 	p.view.pendingOf(d.URL).add("a.go", "3-5", "Rename this.")

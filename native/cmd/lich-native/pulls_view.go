@@ -11,6 +11,7 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
@@ -108,6 +109,9 @@ type pullView struct {
 	shotMergeEdit string
 	// shotEdit is -pulls-edit, opened once the detail is read.
 	shotEdit string
+	// forge is the forge of the pull request in view, set as each frame
+	// starts.
+	forge string
 }
 
 // onFrame queues f to run at the start of the next frame: what a write off
@@ -166,6 +170,8 @@ func (v *pullView) tip(key string) *ui.Tooltip {
 
 func (v *pullView) layout(gtx C, th *ui.Theme, p *pullsScreen, act *pullsAction) D {
 	v.runQueued()
+	v.forge = p.forge()
+	v.mergeEdit.forge = v.forge
 	read := p.store.detail(p.project.Path, p.selected)
 	switch {
 	case read.val == nil && read.err != "":
@@ -173,7 +179,9 @@ func (v *pullView) layout(gtx C, th *ui.Theme, p *pullsScreen, act *pullsAction)
 	case read.val == nil && !read.loaded, read.val == nil && read.loading:
 		return v.withToolbar(gtx, th, p, func(gtx C) D { return skeletonHeading(gtx, th) }, v.detailSkeleton(th))
 	case read.val == nil:
-		return v.withToolbar(gtx, th, p, nil, func(gtx C) D { return th.Notice(i18n.T("pulls.pullsEmptyState.none")).Layout(gtx) })
+		return v.withToolbar(gtx, th, p, nil, func(gtx C) D {
+			return th.Notice(i18n.T(forgeKey(v.forge, "pulls.pullsEmptyState.none", "pulls.pullsEmptyState.noneGitLab"))).Layout(gtx)
+		})
 	}
 	d := v.edit.shown(*read.val, read, p.store.lastStale())
 	if stillSettling(d) && !read.loading {
@@ -260,10 +268,12 @@ func (v *pullView) crumb(gtx C, th *ui.Theme, p *pullsScreen) D {
 			layout.Rigid(func(gtx C) D {
 				b := th.Button(&v.back, "")
 				b.Icon, b.Variant, b.Size = icPullBack, ui.VariantGhost, ui.SizeIconSM
-				return v.withTip(gtx, th, p, "back", i18n.T("pulls.pullsNav.back"), b.Layout)
+				return v.withTip(gtx, th, p, "back", i18n.T(forgeKey(v.forge, "pulls.pullsNav.back", "pulls.pullsNav.backGitLab")), b.Layout)
 			}),
 			ui.Gap(2.5),
-			layout.Rigid(func(gtx C) D { return th.HoverLink(gtx, &v.indexLink, i18n.T("tabs.projectTabs.pullRequests")) }),
+			layout.Rigid(func(gtx C) D {
+				return th.HoverLink(gtx, &v.indexLink, i18n.T(forgeKey(v.forge, "tabs.projectTabs.pullRequests", "tabs.projectTabs.mergeRequests")))
+			}),
 			ui.Gap(1.5),
 			layout.Rigid(func(gtx C) D { return icPullRight.Layout(gtx, ui.Space(3), th.MutedForeground) }),
 			ui.Gap(1.5),
@@ -284,7 +294,7 @@ func (v *pullView) crumb(gtx C, th *ui.Theme, p *pullsScreen) D {
 func (v *pullView) switcher(gtx C, th *ui.Theme, p *pullsScreen, rows []backend.PRSummary) D {
 	entries := make([]ui.MenuEntry, len(rows))
 	for i, r := range rows {
-		entries[i] = ui.MenuEntry{Kind: ui.MenuRadioItem, Label: fmt.Sprintf("#%d %s", r.Number, r.Title), Checked: r.Number == p.selected,
+		entries[i] = ui.MenuEntry{Kind: ui.MenuRadioItem, Label: changeRef(v.forge, r.Number) + " " + r.Title, Checked: r.Number == p.selected,
 			OnClick: func() { p.openPR(r.Number) }}
 	}
 	face := func(gtx C) D {
@@ -299,7 +309,7 @@ func (v *pullView) switcher(gtx C, th *ui.Theme, p *pullsScreen, rows []backend.
 					on := th.On(bg)
 					return layout.Inset{Left: ui.Space(2), Right: ui.Space(1.5), Top: ui.Space(0.5), Bottom: ui.Space(0.5)}.Layout(gtx, func(gtx C) D {
 						return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-							layout.Rigid(on.Text(ui.TextXS, fmt.Sprintf("#%d", p.selected)).Mono().Layout),
+							layout.Rigid(on.Text(ui.TextXS, changeRef(v.forge, p.selected)).Mono().Layout),
 							ui.Gap(1),
 							layout.Rigid(func(gtx C) D { return icPullDown.Layout(gtx, ui.Space(3), on.MutedForeground) }),
 						)
@@ -310,7 +320,7 @@ func (v *pullView) switcher(gtx C, th *ui.Theme, p *pullsScreen, rows []backend.
 	if len(entries) == 0 {
 		return face(gtx)
 	}
-	return v.withTip(gtx, th, p, "switch", i18n.T("pulls.pullsNav.switch"), func(gtx C) D {
+	return v.withTip(gtx, th, p, "switch", i18n.T(forgeKey(v.forge, "pulls.pullsNav.switch", "pulls.pullsNav.switchGitLab")), func(gtx C) D {
 		return th.DropdownMenu(p.root, &v.switchMenu, entries).Layout(gtx, face)
 	})
 }
@@ -325,11 +335,11 @@ func (v *pullView) stepper(gtx C, th *ui.Theme, p *pullsScreen, at, total int) D
 		}
 	}
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-		layout.Rigid(arrow(&v.prev, icPullBack, "prev", i18n.T("pulls.pullsNav.previous"), at == 0)),
+		layout.Rigid(arrow(&v.prev, icPullBack, "prev", i18n.T(forgeKey(v.forge, "pulls.pullsNav.previous", "pulls.pullsNav.previousGitLab")), at == 0)),
 		ui.Gap(1),
 		layout.Rigid(th.Text(ui.TextXS, i18n.T("pulls.pullsNav.position", i18n.Args{"index": at + 1, "total": total})).Mono().Muted().Layout),
 		ui.Gap(1),
-		layout.Rigid(arrow(&v.next, icPullRight, "next", i18n.T("pulls.pullsNav.next"), at == total-1)),
+		layout.Rigid(arrow(&v.next, icPullRight, "next", i18n.T(forgeKey(v.forge, "pulls.pullsNav.next", "pulls.pullsNav.nextGitLab")), at == total-1)),
 	)
 }
 
@@ -427,7 +437,7 @@ func (v *pullView) verdicts(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDet
 	if ic, text, fg, ok := mergeableStat(th, d); ok {
 		out.merge = func(gtx C) D {
 			face := func(gtx C) D { return pullStat(gtx, th, ic, text, fg) }
-			if conflictsWithBase(d) {
+			if conflictsWithBase(d) && v.forge != api.ForgeGitLab {
 				return v.conflictsStat(gtx, th, p, d, face)
 			}
 			return face(gtx)
@@ -499,9 +509,14 @@ func reviewStat(th *ui.Theme, decision string, open, total int) (*icons.Icon, st
 }
 
 // tabsOf is the tabs a pull request shows, in order: Checks only when it has
-// any.
-func tabsOf(d backend.PRDetail) []pullsTab {
-	tabs := []pullsTab{tabOverview, tabConversation, tabCommits, tabFiles}
+// any, Conversation not on a GitLab merge request, whose threads lich does not
+// read yet.
+func tabsOf(d backend.PRDetail, forge string) []pullsTab {
+	tabs := []pullsTab{tabOverview}
+	if forge != api.ForgeGitLab {
+		tabs = append(tabs, tabConversation)
+	}
+	tabs = append(tabs, tabCommits, tabFiles)
 	if d.Checks.Total > 0 {
 		tabs = append(tabs, tabChecks)
 	}
@@ -511,7 +526,7 @@ func tabsOf(d backend.PRDetail) []pullsTab {
 // openTab is the tab on screen; one the PR does not show falls back to
 // Overview.
 func (v *pullView) openTab(d backend.PRDetail) pullsTab {
-	tabs := tabsOf(d)
+	tabs := tabsOf(d, v.forge)
 	if v.tabs.Selected < 0 || v.tabs.Selected >= len(tabs) {
 		return tabOverview
 	}
@@ -519,7 +534,7 @@ func (v *pullView) openTab(d backend.PRDetail) pullsTab {
 }
 
 func (v *pullView) showTab(d backend.PRDetail, tab pullsTab) {
-	for i, t := range tabsOf(d) {
+	for i, t := range tabsOf(d, v.forge) {
 		if t == tab {
 			v.tabs.Selected = i
 		}
@@ -544,7 +559,7 @@ func (v *pullView) tabStrip(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDet
 	items, resolved := conversationTimeline(p.store.conversation(p.project.Path, d.Number).val)
 	counts := map[pullsTab]int{tabConversation: len(items) + len(resolved), tabCommits: len(d.Commits), tabFiles: d.ChangedFiles, tabChecks: d.Checks.Total}
 	var triggers []ui.TabsTrigger
-	for _, t := range tabsOf(d) {
+	for _, t := range tabsOf(d, v.forge) {
 		trigger := ui.TabsTrigger{Text: t.label()}
 		if n := counts[t]; n > 0 {
 			trigger.Trailing = th.Text(ui.TextSM, fmt.Sprint(n)).Muted().Layout

@@ -11,6 +11,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
@@ -148,13 +149,18 @@ func (v *pullView) editClicks(gtx C, d backend.PRDetail, act *pullsAction) {
 }
 
 // pullTitle is the title with the pencil that opens the edit right after its
-// last word, or the field editing it.
+// last word (none on a GitLab merge request), or the field editing it.
 func (v *pullView) pullTitle(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDetail, act *pullsAction) D {
 	s := &v.edit
 	return layout.Flex{}.Layout(gtx,
 		layout.Flexed(1, func(gtx C) D {
 			if s.editing(d) {
 				return v.titleField(gtx, th, d, act)
+			}
+			if v.forge == api.ForgeGitLab {
+				l := th.Text(pullsTitleSize, d.Title).Weight(font.SemiBold)
+				l.MaxLines = 0
+				return l.Layout(gtx)
 			}
 			return layout.Flex{}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {

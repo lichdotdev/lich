@@ -11,6 +11,7 @@
   },
   "projectTabs": {
     "pullRequests": "プルリクエスト",
+    "mergeRequests": "マージリクエスト",
     "settings": "設定",
     "closeTitle": "まだ実行中のセッションがあります",
     "closeBody": {

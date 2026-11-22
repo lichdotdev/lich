@@ -87,7 +87,8 @@
     "revealFailed": "{name} をフォルダーに表示できませんでした"
   },
   "dockReviewBinary": {
-    "viewOnGitHub": "GitHub で表示"
+    "viewOnGitHub": "GitHub で表示",
+    "viewOnGitLab": "GitLab で表示"
   },
   "blobPreview": {
     "tooManyPixels": "{width} × {height} はプレビュー上限の {megapixels} MP を超えています",

@@ -12,6 +12,7 @@ import (
 	"gioui.org/op"
 	"gioui.org/unit"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
@@ -39,6 +40,19 @@ func (s pullsState) none() string {
 		return i18n.T("pulls.pullsList.none.merged")
 	}
 	return i18n.T("pulls.pullsList.none.open")
+}
+
+// noneMergeRequests is none for a GitLab project's merge requests.
+func (s pullsState) noneMergeRequests() string {
+	switch s {
+	case pullsApproved:
+		return i18n.T("pulls.pullsList.noneGitLab.approved")
+	case pullsClosed:
+		return i18n.T("pulls.pullsList.noneGitLab.closed")
+	case pullsMerged:
+		return i18n.T("pulls.pullsList.noneGitLab.merged")
+	}
+	return i18n.T("pulls.pullsList.noneGitLab.open")
 }
 
 // indexLayout is the index: one header line with the field (the state menu
@@ -75,7 +89,7 @@ func (p *pullsScreen) indexHeader(gtx C, th *ui.Theme, counts [pullsFilterCount]
 			}),
 			ui.Gap(2),
 			layout.Rigid(func(gtx C) D {
-				b := th.Button(&p.create, i18n.T("pulls.pullsNav.create"))
+				b := th.Button(&p.create, i18n.T(forgeKey(p.forge(), "pulls.pullsNav.create", "pulls.pullsNav.createGitLab")))
 				b.Icon, b.Variant, b.Size = icPullOut, ui.VariantOutline, ui.SizeSM
 				return b.Layout(gtx)
 			}),
@@ -145,6 +159,8 @@ func (p *pullsScreen) rowList(gtx C, th *ui.Theme, list pullsRead[[]backend.PRSu
 		return listSkeleton(gtx, th)
 	case list.err != "":
 		return th.Notice(list.err).Layout(gtx)
+	case len(list.val) == 0 && p.forge() == api.ForgeGitLab:
+		return th.Notice(p.state.noneMergeRequests()).Layout(gtx)
 	case len(list.val) == 0:
 		return th.Notice(p.state.none()).Layout(gtx)
 	case len(rows) == 0:
@@ -196,7 +212,7 @@ func (p *pullsScreen) row(gtx C, th *ui.Theme, pr backend.PRSummary, now time.Ti
 					func(gtx C) D { return ui.Fill(gtx, bg, 0) },
 					func(gtx C) D {
 						return layout.Inset{Left: pullsRowEdge, Right: pullsRowEdge}.Layout(gtx, func(gtx C) D {
-							return rowContent(gtx, th.On(bg), pr, checkoutName(checkout), now)
+							return rowContent(gtx, th.On(bg), pr, checkoutName(checkout), p.forge(), now)
 						})
 					})
 			}),
@@ -205,12 +221,12 @@ func (p *pullsScreen) row(gtx C, th *ui.Theme, pr backend.PRSummary, now time.Ti
 	})
 }
 
-func rowContent(gtx C, th *ui.Theme, pr backend.PRSummary, checkout string, now time.Time) D {
+func rowContent(gtx C, th *ui.Theme, pr backend.PRSummary, checkout, forge string, now time.Time) D {
 	return layout.Inset{Left: pullsRowPadX, Right: pullsRowPadX, Top: pullsRowPadY, Bottom: pullsRowPadY}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Flexed(1, func(gtx C) D {
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-					layout.Rigid(func(gtx C) D { return rowTitle(gtx, th, pr) }),
+					layout.Rigid(func(gtx C) D { return rowTitle(gtx, th, pr, forge) }),
 					ui.VGap(1),
 					layout.Rigid(func(gtx C) D { return rowMeta(gtx, th, pr, now) }),
 				)
@@ -221,9 +237,9 @@ func rowContent(gtx C, th *ui.Theme, pr backend.PRSummary, checkout string, now 
 	})
 }
 
-func rowTitle(gtx C, th *ui.Theme, pr backend.PRSummary) D {
+func rowTitle(gtx C, th *ui.Theme, pr backend.PRSummary, forge string) D {
 	return layout.Flex{}.Layout(gtx,
-		layout.Rigid(th.Text(ui.TextSM, fmt.Sprintf("#%d", pr.Number)).Mono().Muted().Layout),
+		layout.Rigid(th.Text(ui.TextSM, changeRef(forge, pr.Number)).Mono().Muted().Layout),
 		ui.Gap(1.5),
 		layout.Flexed(1, func(gtx C) D {
 			l := th.Text(ui.TextSM, pr.Title).Weight(font.Medium)

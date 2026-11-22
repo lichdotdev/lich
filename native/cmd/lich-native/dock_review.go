@@ -135,11 +135,13 @@ type prFiles struct {
 	// mergeBase is the old side every image card reads, asked once per head.
 	mergeBase mergeBaseMemo
 	url       string // the pull request's page
+	forge     string
 	// viewed is each ticked file's diff text when it was ticked: a commit
 	// that changes the file unticks it, one that does not leaves it.
 	viewed map[string]string
 	ticks  map[string]*ui.Bool
-	// toReview files a line comment into the PR's pending review.
+	// toReview files a line comment into the PR's pending review; nil on a
+	// merge request, which lich does not review.
 	toReview func(path, lines, body string)
 	// own is the account's own pull request, which takes no line comment.
 	own bool

@@ -43,6 +43,7 @@ var scheduleKinds = []string{scheduleAtTime, api.WatchChecksFailed, api.WatchChe
 // scheduleDialog is the card's Schedule prompt…: one session, one trigger.
 type scheduleDialog struct {
 	id, label, branch, kind, by string
+	forge                       string
 	number, runs                int
 	open, focus, armed          bool
 	dialog                      ui.DialogState
@@ -54,7 +55,7 @@ type scheduleDialog struct {
 // show opens the dialog on what sv holds: its watch when it has one, as the
 // tooltip's first line says, else its parked prompt.
 func (d *scheduleDialog) show(sv sessionView) {
-	d.id, d.label, d.branch, d.number = sv.ID, sv.Label, sv.git.Branch, 0
+	d.id, d.label, d.branch, d.forge, d.number = sv.ID, sv.Label, sv.git.Branch, sv.forge, 0
 	if sv.pr != nil {
 		d.number = sv.pr.Number
 	}
@@ -120,9 +121,9 @@ func scheduleKindIcon(kind string) *icons.Icon {
 	return icSchedule
 }
 
-func scheduleKindNote(kind string) string {
+func scheduleKindNote(kind, forge string) string {
 	if kind == api.WatchChecksFailed {
-		return i18n.T("sidebar.scheduleDialog.staysOn", i18n.Args{"limit": api.WatchRunLimit})
+		return i18n.T(forgeKey(forge, "sidebar.scheduleDialog.staysOn", "sidebar.scheduleDialog.staysOnGitLab"), i18n.Args{"limit": api.WatchRunLimit})
 	}
 	return i18n.T("sidebar.scheduleDialog.runsOnce")
 }
@@ -316,12 +317,12 @@ func scheduleLeft(d time.Duration) string {
 
 func (d *scheduleDialog) pullRequestLine(gtx C, th *ui.Theme) D {
 	if d.number == 0 {
-		return para(th.Text(ui.TextXS, i18n.T("sidebar.scheduleDialog.noPR")).Muted()).Layout(gtx)
+		return para(th.Text(ui.TextXS, i18n.T(forgeKey(d.forge, "sidebar.scheduleDialog.noPR", "sidebar.scheduleDialog.noPRGitLab"))).Muted()).Layout(gtx)
 	}
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 		layout.Rigid(func(gtx C) D { return icMenuPR.Layout(gtx, ui.Space(3), th.MutedForeground) }),
 		ui.Gap(1.5),
-		layout.Rigid(th.Text(ui.TextXS, fmt.Sprintf("#%d", d.number)).Muted().Mono().Layout),
+		layout.Rigid(th.Text(ui.TextXS, changeRef(d.forge, d.number)).Muted().Mono().Layout),
 		ui.Gap(1.5),
 		layout.Flexed(1, th.Text(ui.TextXS, d.branch).Muted().Layout),
 	)
@@ -335,7 +336,7 @@ func (d *scheduleDialog) promptField(gtx C, th *ui.Theme) D {
 		ui.VGap(1.5),
 		layout.Rigid(area.Layout),
 		ui.VGap(1.5),
-		layout.Rigid(para(th.Text(ui.TextXS, scheduleKindNote(d.kind)).Muted()).Layout),
+		layout.Rigid(para(th.Text(ui.TextXS, scheduleKindNote(d.kind, d.forge)).Muted()).Layout),
 	)
 }
 

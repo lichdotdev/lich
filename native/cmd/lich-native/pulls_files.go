@@ -16,6 +16,7 @@ import (
 
 	"github.com/lichdotdev/godemirror"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
@@ -122,9 +123,12 @@ func (v *pullView) filesTab(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDet
 		viewed = map[string]string{}
 		v.viewed[d.URL] = viewed
 	}
-	files.pr.viewed, files.pr.url, files.pr.number = viewed, d.URL, d.Number
+	files.pr.viewed, files.pr.url, files.pr.number, files.pr.forge = viewed, d.URL, d.Number, v.forge
 	review := v.pendingOf(d.URL)
 	files.pr.toReview, files.pr.own = review.add, v.ownPR(p, d)
+	if v.forge == api.ForgeGitLab {
+		files.pr.toReview = nil
+	}
 	v.talkClicks(gtx, review)
 	v.inline = inlineFrame{th: th, p: p, d: d, act: act, now: gtx.Now}
 	files.pr.blocks = v.diffBlocks

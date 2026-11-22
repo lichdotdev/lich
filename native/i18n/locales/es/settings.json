@@ -343,8 +343,8 @@
   },
   "vcsToolsSetting": {
     "title": "Herramientas de línea de comandos",
-    "searchWords": "git gh instalar install",
-    "description": "lich usa git y la CLI de GitHub, y todo lo de esta pantalla pasa por ellas.",
+    "searchWords": "git gh glab instalar install",
+    "description": "lich usa git, la CLI de GitHub y la de GitLab, y todo lo de esta pantalla pasa por ellas.",
     "notOnPath": "No está en $PATH",
     "install": "Instalar"
   },
@@ -353,6 +353,8 @@
     "accountFor": "Cuenta de GitHub para {name}",
     "accountSearchWords": "login gh cambiar switch usuario",
     "accountDescription": "La cuenta con la que lich ejecuta gh en este proyecto: pull requests, comprobaciones, checkouts de PR y el gh que ejecutan sus sesiones a partir de su próximo inicio. gh mantiene una sola cuenta activa por host, así que un repositorio que solo ve otra cuenta aparece como no encontrado. Las cuentas de un host empresarial aparecen junto a él.",
+    "gitLabAccountFor": "Cuenta de GitLab para {name}",
+    "gitLabAccountDescription": "lich ejecuta glab con su cuenta activa en este proyecto. Para usar otra, inicia sesión con `glab auth login` en una terminal.",
     "activeAccount": "la cuenta activa de gh",
     "listFailed": "No se pudieron listar las cuentas de GitHub: {error}",
     "noAccounts": "gh no ha iniciado sesión en ninguna cuenta. Ejecuta `gh auth login` en una terminal."

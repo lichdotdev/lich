@@ -87,7 +87,8 @@
     "revealFailed": "Could not show {name} in its folder"
   },
   "dockReviewBinary": {
-    "viewOnGitHub": "View on GitHub"
+    "viewOnGitHub": "View on GitHub",
+    "viewOnGitLab": "View on GitLab"
   },
   "blobPreview": {
     "tooManyPixels": "{width} × {height} is above the {megapixels} MP preview limit",

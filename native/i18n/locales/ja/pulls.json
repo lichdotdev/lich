@@ -28,9 +28,13 @@
   "mergeGate": {
     "changesRequested": "レビュアーが変更をリクエストしています",
     "reviewRequired": "GitHub が求めるレビューがまだありません",
+    "reviewRequiredGitLab": "GitLab が求める承認がまだありません",
     "merged": "プルリクエストはマージ済みです",
+    "mergedGitLab": "マージリクエストはマージ済みです",
     "closed": "プルリクエストはクローズ済みです",
+    "closedGitLab": "マージリクエストはクローズ済みです",
     "draft": "プルリクエストはドラフトです",
+    "draftGitLab": "マージリクエストはドラフトです",
     "conflicts": "{base} とコンフリクトしています",
     "behind": "ベースブランチが進んでいます。先にこのブランチを更新してください",
     "pattern": {
@@ -68,8 +72,11 @@
   },
   "pullsEmptyState": {
     "openFailed": "プルリクエストを作成できませんでした: {error}",
+    "openFailedGitLab": "マージリクエストを作成できませんでした: {error}",
     "none": "オープンなプルリクエストはありません。",
-    "openOnGitHub": "GitHub で開く"
+    "noneGitLab": "オープンなマージリクエストはありません。",
+    "openOnGitHub": "GitHub で開く",
+    "openOnGitLab": "GitLab で開く"
   },
   "pullsAccount": {
     "chooseTitle": "GitHub アカウントを選択",
@@ -166,6 +173,12 @@
       "merged": "マージ済みのプルリクエストはありません。",
       "approved": "承認済みのプルリクエストはありません。"
     },
+    "noneGitLab": {
+      "open": "オープンなマージリクエストはありません。",
+      "closed": "クローズ済みのマージリクエストはありません。",
+      "merged": "マージ済みのマージリクエストはありません。",
+      "approved": "承認済みのマージリクエストはありません。"
+    },
     "noMatch": "このフィルターに一致するものはありません。",
     "draft": "ドラフト",
     "fork": "フォーク",
@@ -224,10 +237,12 @@
     "removed": "{name} を削除しました",
     "removeFailed": "ワークツリーを削除できませんでした: {error}",
     "merged": "#{number} を {base} にマージしました",
+    "mergedGitLab": "!{number} を {base} にマージしました",
     "announceFailed": "{name} のセッションに通知できませんでした: {error}",
     "removeWorktree": "ワークツリーを削除",
     "openSessionFailed": "セッションを開けませんでした: {error}",
     "handedOff": "#{number} を {session} に渡しました",
+    "handedOffGitLab": "!{number} を {session} に渡しました",
     "goToSession": "セッションへ移動",
     "openInSession": "セッションで開く",
     "forkBlocked": "head ブランチのあるフォークがメンテナーによる編集を許可していないため、コミットをプッシュできませんでした",
@@ -279,6 +294,10 @@
       "one": "{count} 件のチェックが失敗していますが、GitHub はそのままマージします",
       "other": "{count} 件のチェックが失敗していますが、GitHub はそのままマージします"
     },
+    "failingGitLab": {
+      "one": "{count} 件のチェックが失敗していますが、GitLab はそのままマージします",
+      "other": "{count} 件のチェックが失敗していますが、GitLab はそのままマージします"
+    },
     "durationSeconds": "{value}秒",
     "durationMinutes": "{value}分",
     "durationHours": "{value}時間"
@@ -297,12 +316,17 @@
   },
   "pullsNav": {
     "back": "プルリクエスト一覧に戻る",
+    "backGitLab": "マージリクエスト一覧に戻る",
     "previous": "前のプルリクエスト",
+    "previousGitLab": "前のマージリクエスト",
     "next": "次のプルリクエスト",
+    "nextGitLab": "次のマージリクエスト",
     "position": "{index} / {total}",
     "switch": "別のプルリクエストへ移動",
+    "switchGitLab": "別のマージリクエストへ移動",
     "more": "その他の操作",
     "create": "新しいプルリクエスト",
+    "createGitLab": "新しいマージリクエスト",
     "checkout": "チェックアウト",
     "notCheckedOut": "未チェックアウト"
   }

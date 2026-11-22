@@ -118,6 +118,9 @@ func (m *model) refreshPath(ctx context.Context, path string) {
 		m.prs[path] = next
 	}
 	m.mu.Unlock()
+	if !looked {
+		m.forges.of(path)
+	}
 	if ask {
 		go m.recheckPR(ctx, path)
 	}

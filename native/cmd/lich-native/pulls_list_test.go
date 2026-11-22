@@ -13,6 +13,7 @@ import (
 	"gioui.org/text"
 	"gioui.org/unit"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/fonts"
 	"github.com/lichdotdev/lich/native/i18n"
@@ -165,7 +166,7 @@ func TestListSkeletonRowIsALoadedRowsHeight(t *testing.T) {
 	gtx := layout.Context{Ops: new(op.Ops), Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}, Constraints: layout.Constraints{Max: image.Pt(1200, 800)}}
 	pr := backend.PRSummary{Number: 1003, Title: "feat: a title", Author: "ana", HeadRefName: "feat/x",
 		UpdatedAt: rowMetaNow.Format(time.RFC3339), Checks: backend.ChecksRollup{Total: 7}}
-	loaded := rowContent(gtx, th, pr, "fuzzy-pine", rowMetaNow).Size.Y
+	loaded := rowContent(gtx, th, pr, "fuzzy-pine", api.ForgeGitHub, rowMetaNow).Size.Y
 	if got := skeletonRow(gtx, th, 0.5).Size.Y; got != loaded {
 		t.Errorf("skeleton row is %dpx tall, a loaded row %dpx", got, loaded)
 	}

@@ -358,6 +358,9 @@ func (c *fileCard) menuEntries(p *reviewPanel) []ui.MenuEntry {
 	// The last of injectEntries is Comment for the session.
 	entries[len(entries)-1].Spot = func(gtx C, row layout.Widget) D { return p.spot(gtx, tourReviewItem, row) }
 	if p.pr != nil {
+		if p.pr.toReview == nil {
+			return entries
+		}
 		return append(entries, reviewCommentEntries(lines, p.pr.own, func() { c.composer.openReview(path, lines) })...)
 	}
 	if c.git.status == statusRenamed || !p.reverts(path) {

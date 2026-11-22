@@ -32,6 +32,10 @@ func fakeDiff(t *testing.T, notGit string) *backend.Client {
 			_ = json.NewEncoder(w).Encode(nil)
 			return
 		}
+		if r.URL.Path == "/rpc/project.Forge" {
+			_ = json.NewEncoder(w).Encode(api.ForgeGitHub)
+			return
+		}
 		if err := json.Unmarshal(body, &args); err != nil || r.URL.Path != "/rpc/project.Diff" {
 			t.Errorf("unexpected call %s %s", r.URL.Path, body)
 		}

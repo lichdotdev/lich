@@ -4,7 +4,6 @@ import (
 	"image"
 	"image/color"
 	"io"
-	"strconv"
 	"strings"
 
 	"gioui.org/font"
@@ -190,7 +189,7 @@ func (s *sidebar) cardBody(gtx C, th *ui.Theme, sv *sessionView, prChip *ui.Clic
 		}))
 	}
 	if sv.pr != nil {
-		row = append(row, ui.Gap(1.5), layout.Rigid(func(gtx C) D { return s.prBadge(gtx, th, prChip, sv.pr.Number) }))
+		row = append(row, ui.Gap(1.5), layout.Rigid(func(gtx C) D { return s.prBadge(gtx, th, prChip, sv.pr.Number, sv.forge) }))
 	}
 	return s.cardLine(gtx, th, sv, more, hovered, row)
 }
@@ -281,7 +280,7 @@ const branchShare = 35
 
 // prBadge is the open pull request's number, a button that brightens on
 // hover.
-func (s *sidebar) prBadge(gtx C, th *ui.Theme, click *ui.Clickable, number int) D {
+func (s *sidebar) prBadge(gtx C, th *ui.Theme, click *ui.Clickable, number int, forge string) D {
 	c := th.MutedForeground
 	if click.Hovered() {
 		c = th.Foreground
@@ -290,7 +289,7 @@ func (s *sidebar) prBadge(gtx C, th *ui.Theme, click *ui.Clickable, number int) 
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Rigid(func(gtx C) D { return s.icPR.Layout(gtx, 12, c) }),
 			ui.Gap(1),
-			layout.Rigid(th.Text(ui.TextXS, "#"+strconv.Itoa(number)).In(c).Layout),
+			layout.Rigid(th.Text(ui.TextXS, changeRef(forge, number)).In(c).Layout),
 		)
 	})
 }

@@ -11,6 +11,7 @@
   },
   "projectTabs": {
     "pullRequests": "풀 리퀘스트",
+    "mergeRequests": "병합 요청",
     "settings": "설정",
     "closeTitle": "세션이 아직 실행 중입니다",
     "closeBody": {

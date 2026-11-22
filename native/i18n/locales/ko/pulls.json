@@ -28,9 +28,13 @@
   "mergeGate": {
     "changesRequested": "리뷰어가 변경을 요청했습니다",
     "reviewRequired": "GitHub에서 요구하는 리뷰가 아직 없습니다",
+    "reviewRequiredGitLab": "GitLab에서 요구하는 승인이 아직 없습니다",
     "merged": "풀 리퀘스트가 병합되었습니다",
+    "mergedGitLab": "병합 요청이 병합되었습니다",
     "closed": "풀 리퀘스트가 닫혔습니다",
+    "closedGitLab": "병합 요청이 닫혔습니다",
     "draft": "풀 리퀘스트가 초안입니다",
+    "draftGitLab": "병합 요청이 초안입니다",
     "conflicts": "{base} 브랜치와 충돌",
     "behind": "베이스 브랜치에 새 커밋이 있습니다. 먼저 이 브랜치를 업데이트하세요",
     "pattern": {
@@ -67,8 +71,11 @@
   },
   "pullsEmptyState": {
     "openFailed": "풀 리퀘스트를 열지 못했습니다: {error}",
+    "openFailedGitLab": "병합 요청을 열지 못했습니다: {error}",
     "none": "열린 풀 리퀘스트가 없습니다.",
-    "openOnGitHub": "GitHub에서 열기"
+    "noneGitLab": "열린 병합 요청이 없습니다.",
+    "openOnGitHub": "GitHub에서 열기",
+    "openOnGitLab": "GitLab에서 열기"
   },
   "pullsAccount": {
     "chooseTitle": "GitHub 계정 선택",
@@ -162,6 +169,12 @@
       "merged": "병합된 풀 리퀘스트가 없습니다.",
       "approved": "승인된 풀 리퀘스트가 없습니다."
     },
+    "noneGitLab": {
+      "open": "열린 병합 요청이 없습니다.",
+      "closed": "닫힌 병합 요청이 없습니다.",
+      "merged": "병합된 병합 요청이 없습니다.",
+      "approved": "승인된 병합 요청이 없습니다."
+    },
     "noMatch": "그 필터와 일치하는 항목이 없습니다.",
     "draft": "초안",
     "fork": "포크",
@@ -220,10 +233,12 @@
     "removed": "{name} worktree를 삭제했습니다",
     "removeFailed": "worktree를 삭제하지 못했습니다: {error}",
     "merged": "#{number} 풀 리퀘스트를 {base}에 병합했습니다",
+    "mergedGitLab": "!{number} 병합 요청을 {base}에 병합했습니다",
     "announceFailed": "{name}의 세션에 알리지 못했습니다: {error}",
     "removeWorktree": "worktree 삭제",
     "openSessionFailed": "세션을 열지 못했습니다: {error}",
     "handedOff": "#{number} 풀 리퀘스트를 {session} 세션에 넘겼습니다",
+    "handedOffGitLab": "!{number} 병합 요청을 {session} 세션에 넘겼습니다",
     "goToSession": "세션으로 이동",
     "openInSession": "세션에서 열기",
     "forkBlocked": "헤드 브랜치가 메인테이너의 수정을 허용하지 않는 포크에 있어서 커밋을 다시 푸시할 수 없습니다",
@@ -272,6 +287,9 @@
     "failing": {
       "other": "체크 {count}개가 실패하고 있지만, GitHub는 그래도 병합합니다"
     },
+    "failingGitLab": {
+      "other": "체크 {count}개가 실패하고 있지만, GitLab은 그래도 병합합니다"
+    },
     "durationSeconds": "{value}초",
     "durationMinutes": "{value}분",
     "durationHours": "{value}시간"
@@ -289,12 +307,17 @@
   },
   "pullsNav": {
     "back": "풀 리퀘스트 목록으로 돌아가기",
+    "backGitLab": "병합 요청 목록으로 돌아가기",
     "previous": "이전 풀 리퀘스트",
+    "previousGitLab": "이전 병합 요청",
     "next": "다음 풀 리퀘스트",
+    "nextGitLab": "다음 병합 요청",
     "position": "{index} / {total}",
     "switch": "다른 풀 리퀘스트로 이동",
+    "switchGitLab": "다른 병합 요청으로 이동",
     "more": "추가 작업",
     "create": "새 풀 리퀘스트",
+    "createGitLab": "새 병합 요청",
     "checkout": "체크아웃",
     "notCheckedOut": "체크아웃 안 됨"
   }

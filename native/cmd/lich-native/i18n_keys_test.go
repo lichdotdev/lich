@@ -47,6 +47,9 @@ func catalogKeys(t *testing.T) map[string]token.Position {
 				if arg, ok := keyArgument(n); ok {
 					note(arg)
 				}
+				for _, arg := range forgeKeyArguments(n) {
+					note(arg)
+				}
 			case *ast.KeyValueExpr:
 				if id, ok := n.Key.(*ast.Ident); ok && keyFields[id.Name] {
 					note(n.Value)
@@ -85,4 +88,12 @@ func TestEveryKeyTheSourceNamesIsInTheCatalog(t *testing.T) {
 			t.Errorf("%s: no message %q", pos, key)
 		}
 	}
+}
+
+// forgeKeyArguments are the two keys a call to forgeKey chooses between.
+func forgeKeyArguments(call *ast.CallExpr) []ast.Expr {
+	if id, ok := call.Fun.(*ast.Ident); !ok || id.Name != "forgeKey" || len(call.Args) != 3 {
+		return nil
+	}
+	return call.Args[1:]
 }

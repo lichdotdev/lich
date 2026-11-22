@@ -201,6 +201,9 @@ func (p *pullsScreen) layout(gtx C, th *ui.Theme) pullsAction {
 		p.view.navClicks(gtx, p, p.visible(rows.val))
 	}
 	pullsIsland(gtx, th, th.Background, func(gtx C, th *ui.Theme) D {
+		if _, known := p.store.forges.of(p.project.Path); !known {
+			return p.awaitAccount(gtx, th, &act)
+		}
 		account := p.store.account(p.project.Path)
 		if !account.loaded {
 			return p.awaitAccount(gtx, th, &act)
@@ -216,8 +219,8 @@ func (p *pullsScreen) layout(gtx C, th *ui.Theme) pullsAction {
 	return act
 }
 
-// awaitAccount is the screen's skeleton while it does not know yet whether
-// the gate stands in front of it.
+// awaitAccount is the screen's skeleton while it does not know yet the
+// project's forge, or whether the gate stands in front of it.
 func (p *pullsScreen) awaitAccount(gtx C, th *ui.Theme, act *pullsAction) D {
 	if p.selected == 0 {
 		return p.indexLayout(gtx, th, pullsRead[[]backend.PRSummary]{}, act)
@@ -256,6 +259,12 @@ func pullsIsland(gtx C, th *ui.Theme, bg color.NRGBA, w func(gtx C, th *ui.Theme
 	on := th.On(bg)
 	defer ui.IslandBorder(gtx, gtx.Constraints.Max, r, on.Over(on.Border))
 	return w(gtx, on)
+}
+
+// forge is the project's forge, "" while it is read.
+func (p *pullsScreen) forge() string {
+	forge, _ := p.store.forges.of(p.project.Path)
+	return forge
 }
 
 // checkedOut is the checkout holding branch, ok false when none does.

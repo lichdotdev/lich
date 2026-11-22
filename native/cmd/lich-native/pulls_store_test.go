@@ -16,7 +16,7 @@ func TestPullsStoreReadsOnceUntilAChangeIsAnnounced(t *testing.T) {
 	stub := &rpcStub{answer: func(method string, _ []json.RawMessage) (any, int) {
 		return []backend.PRSummary{{Number: 7}}, http.StatusOK
 	}}
-	s := newPullsStore(context.Background(), stub.client(t), func() {})
+	s := newPullsStore(context.Background(), stub.client(t), newForgeStore(stub.client(t), func() {}), func() {})
 	s.list("/repo", pullsOpen)
 	waitFor(t, "the first read", func() bool { return s.list("/repo", pullsOpen).loaded })
 	s.list("/repo", pullsOpen)
@@ -34,7 +34,7 @@ func TestPullsStoreApprovedNarrowsTheOpenRead(t *testing.T) {
 	stub := &rpcStub{answer: func(string, []json.RawMessage) (any, int) {
 		return []backend.PRSummary{{Number: 7, ReviewDecision: "APPROVED"}, {Number: 8, ReviewDecision: "REVIEW_REQUIRED"}, {Number: 9}}, http.StatusOK
 	}}
-	s := newPullsStore(context.Background(), stub.client(t), func() {})
+	s := newPullsStore(context.Background(), stub.client(t), newForgeStore(stub.client(t), func() {}), func() {})
 	s.list("/repo", pullsApproved)
 	waitFor(t, "the first read", func() bool { return s.list("/repo", pullsApproved).loaded })
 	if got := numbers(s.list("/repo", pullsApproved).val); !slices.Equal(got, []int{7}) {
@@ -50,7 +50,7 @@ func TestPullsStoreApprovedNarrowsTheOpenRead(t *testing.T) {
 
 func TestPullsStoreKeepsGhsRefusalAsText(t *testing.T) {
 	stub := &rpcStub{answer: func(string, []json.RawMessage) (any, int) { return failing("gh is not installed") }}
-	s := newPullsStore(context.Background(), stub.client(t), func() {})
+	s := newPullsStore(context.Background(), stub.client(t), newForgeStore(stub.client(t), func() {}), func() {})
 	s.list("/repo", pullsOpen)
 	waitFor(t, "the refusal", func() bool { return s.list("/repo", pullsOpen).loaded })
 	if got := s.list("/repo", pullsOpen).err; got != "gh is not installed" {
@@ -62,7 +62,7 @@ func TestPullsStoreRereadsADetailWhileAChecksRuns(t *testing.T) {
 	stub := &rpcStub{answer: func(string, []json.RawMessage) (any, int) {
 		return backend.PRDetail{Number: 7, Checks: backend.ChecksRollup{Pending: 1, Total: 1}}, http.StatusOK
 	}}
-	s := newPullsStore(context.Background(), stub.client(t), func() {})
+	s := newPullsStore(context.Background(), stub.client(t), newForgeStore(stub.client(t), func() {}), func() {})
 	s.detail("/repo", 7)
 	waitFor(t, "the first read", func() bool { return s.detail("/repo", 7).loaded })
 	s.mu.Lock()
@@ -78,7 +78,7 @@ func TestPullsStoreRereadsADetailWhileGitHubWorksOutMergeability(t *testing.T) {
 	stub := &rpcStub{answer: func(string, []json.RawMessage) (any, int) {
 		return backend.PRDetail{Number: 7, State: "OPEN", Mergeable: "UNKNOWN", MergeStateStatus: "UNKNOWN"}, http.StatusOK
 	}}
-	s := newPullsStore(context.Background(), stub.client(t), func() {})
+	s := newPullsStore(context.Background(), stub.client(t), newForgeStore(stub.client(t), func() {}), func() {})
 	s.detail("/repo", 7)
 	waitFor(t, "the first read", func() bool { return s.detail("/repo", 7).loaded })
 	s.mu.Lock()
@@ -95,7 +95,7 @@ func pullsScreenOnAList(t *testing.T) (*pullsScreen, *rpcStub) {
 	stub := &rpcStub{answer: func(string, []json.RawMessage) (any, int) {
 		return []backend.PRSummary{{Number: 7}}, http.StatusOK
 	}}
-	p := newPullsScreen(newPullsStore(context.Background(), stub.client(t), func() {}), new(ui.Root))
+	p := newPullsScreen(newPullsStore(context.Background(), stub.client(t), newForgeStore(stub.client(t), func() {}), func() {}), new(ui.Root))
 	p.show(backend.Project{ID: "p", Path: "/repo"}, "main", 0)
 	waitFor(t, "the first read", func() bool { return p.store.list("/repo", pullsOpen).loaded })
 	return p, stub
@@ -136,7 +136,7 @@ func TestPullRequestCommentsGoOnlyToASessionInItsBranchCheckout(t *testing.T) {
 		}
 		return []backend.PRSummary{}, http.StatusOK
 	}}
-	p := newPullsScreen(newPullsStore(context.Background(), stub.client(t), func() {}), new(ui.Root))
+	p := newPullsScreen(newPullsStore(context.Background(), stub.client(t), newForgeStore(stub.client(t), func() {}), func() {}), new(ui.Root))
 	p.show(backend.Project{ID: "p", Path: "/repo"}, "main", 0)
 	p.sessionsIn = func(projectID, path string) []string {
 		if projectID == "p" && path == "/wt/feat-x" {
@@ -169,7 +169,7 @@ func TestPullRequestFilesAreReadFromAClone(t *testing.T) {
 		}
 		return []backend.PRSummary{}, http.StatusOK
 	}}
-	p := newPullsScreen(newPullsStore(context.Background(), stub.client(t), func() {}), new(ui.Root))
+	p := newPullsScreen(newPullsStore(context.Background(), stub.client(t), newForgeStore(stub.client(t), func() {}), func() {}), new(ui.Root))
 	p.show(backend.Project{ID: "p", Path: "/repo"}, "main", 0)
 	waitFor(t, "the checkouts", func() bool { return len(p.store.checkoutsOf("/repo")) == 2 })
 

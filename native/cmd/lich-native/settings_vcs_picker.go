@@ -21,10 +21,16 @@ var vcsPickerWidth = ui.Space(72)
 
 // vcsAccountBlock is VersionControlSettings: the project's checkout, the
 // account picker, what gh said if it could not list, and who commits land
-// as. Only a project's scope draws it.
+// as. Only a project's scope draws it; a GitLab project's has no picker, glab
+// running as its active account.
 func (s *settingsScreen) vcsAccountBlock(gtx C, th *ui.Theme, r settingRow, first bool) D {
 	v := &s.vcs
 	project, path := s.scope, v.pathOf(s.scope)
+	if v.gitLab(path) {
+		r.title = i18n.T("settings.versionControlSettings.gitLabAccountFor", i18n.Args{"name": s.scopeName()})
+		r.description = i18n.T("settings.versionControlSettings.gitLabAccountDescription")
+		return r.layoutBlock(gtx, th, first, func(gtx C, th *ui.Theme) D { return v.checkoutLines(gtx, th, s, path, nil) })
+	}
 	stored, _ := s.snapshot().set(vcsAccountKey, project)
 	v.mu.Lock()
 	accounts, listErr := v.accounts, v.accountsErr
@@ -37,8 +43,7 @@ func (s *settingsScreen) vcsAccountBlock(gtx C, th *ui.Theme, r settingRow, firs
 	r.title = i18n.T("settings.versionControlSettings.accountFor", i18n.Args{"name": s.scopeName()})
 	r.description = i18n.T("settings.versionControlSettings.accountDescription")
 	under := func(gtx C, th *ui.Theme) D {
-		children := []layout.FlexChild{
-			layout.Rigid(th.Text(ui.TextXS, path).Muted().Layout),
+		picker := []layout.FlexChild{
 			ui.VGap(2),
 			layout.Rigid(func(gtx C) D { return s.vcsPicker(gtx, th, project, stored, options) }),
 		}
@@ -51,14 +56,21 @@ func (s *settingsScreen) vcsAccountBlock(gtx C, th *ui.Theme, r settingRow, firs
 		}
 		if notice.Text != "" {
 			notice.MaxLines = 0
-			children = append(children, ui.VGap(2), layout.Rigid(notice.Layout))
+			picker = append(picker, ui.VGap(2), layout.Rigid(notice.Layout))
 		}
-		if id, ok := v.identity(s, path); ok && !v.failed(vcsGitBin) {
-			children = append(children, ui.VGap(3), layout.Rigid(func(gtx C) D { return identityRow(gtx, th, identityLineOf(id)) }))
-		}
-		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
+		return v.checkoutLines(gtx, th, s, path, picker)
 	}
 	return r.layoutBlock(gtx, th, first, under)
+}
+
+// checkoutLines is the checkout's path, then between, then who its commits
+// land as.
+func (v *vcsSettings) checkoutLines(gtx C, th *ui.Theme, s *settingsScreen, path string, between []layout.FlexChild) D {
+	children := append([]layout.FlexChild{layout.Rigid(th.Text(ui.TextXS, path).Muted().Layout)}, between...)
+	if id, ok := v.identity(s, path); ok && !v.failed(vcsGitBin) {
+		children = append(children, ui.VGap(3), layout.Rigid(func(gtx C) D { return identityRow(gtx, th, identityLineOf(id)) }))
+	}
+	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
 }
 
 func (s *settingsScreen) scopeName() string {

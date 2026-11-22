@@ -1,12 +1,19 @@
 {
   "pullRequest": {
     "conflicts": "O pull request #{number} ({branch}) tem conflitos de merge com {base}. Resolva-os.",
+    "conflictsGitLab": "O merge request !{number} ({branch}) tem conflitos de merge com {base}. Resolva-os.",
     "conflictsListed": "O pull request #{number} ({branch}) tem conflitos de merge com {base} nestes arquivos. Resolva-os:\n\n{files}",
+    "conflictsListedGitLab": "O merge request !{number} ({branch}) tem conflitos de merge com {base} nestes arquivos. Resolva-os:\n\n{files}",
     "checksUnnamed": {
       "one": "O CI está falhando no pull request #{number} ({branch}). {count} check está vermelho; descubra qual e corrija.",
       "other": "O CI está falhando no pull request #{number} ({branch}). {count} checks estão vermelhos; descubra quais e corrija."
     },
+    "checksUnnamedGitLab": {
+      "one": "O CI está falhando no merge request !{number} ({branch}). {count} check está vermelho; descubra qual e corrija.",
+      "other": "O CI está falhando no merge request !{number} ({branch}). {count} checks estão vermelhos; descubra quais e corrija."
+    },
     "checksListed": "O CI está falhando no pull request #{number} ({branch}). Corrija estes checks:\n\n{checks}",
+    "checksListedGitLab": "O CI está falhando no merge request !{number} ({branch}). Corrija estes checks:\n\n{checks}",
     "checksOmitted": {
       "one": "\n\n…e mais {count} check com falha não listado.",
       "other": "\n\n…e mais {count} checks com falha não listados."

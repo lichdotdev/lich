@@ -26,6 +26,12 @@ type CommitPattern = api.CommitPattern
 
 type BranchRules = api.BranchRules
 
+// Forge names the forge path's remote points at, api.ForgeGitHub or
+// api.ForgeGitLab.
+func (c *Client) Forge(ctx context.Context, path string) (string, error) {
+	return callMethod(ctx, c, api.ProjectForge, api.PathOptions{Path: path})
+}
+
 // ListPullRequests reads the repository's pull requests in state
 // (open|closed|merged|all) through gh, at most the backend's page of them.
 func (c *Client) ListPullRequests(ctx context.Context, path, state string) ([]PRSummary, error) {

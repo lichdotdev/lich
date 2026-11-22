@@ -28,9 +28,13 @@
   "mergeGate": {
     "changesRequested": "Ревьюер запросил изменения",
     "reviewRequired": "GitHub требует ревью, которого пока нет",
+    "reviewRequiredGitLab": "GitLab требует одобрения, которого пока нет",
     "merged": "Pull request уже слит",
+    "mergedGitLab": "Merge request уже слит",
     "closed": "Pull request закрыт",
+    "closedGitLab": "Merge request закрыт",
     "draft": "Pull request в статусе черновика",
+    "draftGitLab": "Merge request в статусе черновика",
     "conflicts": "Конфликты с {base}",
     "behind": "Базовая ветка ушла вперёд. Сначала обновите эту ветку.",
     "pattern": {
@@ -70,8 +74,11 @@
   },
   "pullsEmptyState": {
     "openFailed": "Не удалось открыть pull request: {error}",
+    "openFailedGitLab": "Не удалось открыть merge request: {error}",
     "none": "Нет открытого pull request.",
-    "openOnGitHub": "Открыть на GitHub"
+    "noneGitLab": "Нет открытого merge request.",
+    "openOnGitHub": "Открыть на GitHub",
+    "openOnGitLab": "Открыть на GitLab"
   },
   "pullsAccount": {
     "chooseTitle": "Выберите аккаунт GitHub",
@@ -174,6 +181,12 @@
       "merged": "Нет слитых pull request.",
       "approved": "Нет одобренных pull request."
     },
+    "noneGitLab": {
+      "open": "Нет открытых merge request.",
+      "closed": "Нет закрытых merge request.",
+      "merged": "Нет слитых merge request.",
+      "approved": "Нет одобренных merge request."
+    },
     "noMatch": "Под этот фильтр ничего не подходит.",
     "draft": "Черновик",
     "fork": "форк",
@@ -239,10 +252,12 @@
     "removed": "Удалено: {name}",
     "removeFailed": "Не удалось удалить worktree: {error}",
     "merged": "#{number} слит в {base}",
+    "mergedGitLab": "!{number} слит в {base}",
     "announceFailed": "Не удалось сообщить сессиям в {name}: {error}",
     "removeWorktree": "Удалить worktree",
     "openSessionFailed": "Не удалось открыть сессию: {error}",
     "handedOff": "#{number} передан в {session}",
+    "handedOffGitLab": "!{number} передан в {session}",
     "goToSession": "Перейти к сессии",
     "openInSession": "Открыть в сессии",
     "forkBlocked": "Головная ветка находится в форке, где мейнтейнерам запрещено вносить правки, поэтому коммиты не удалось отправить обратно",
@@ -300,6 +315,12 @@
       "many": "{count} проверок не пройдено, GitHub всё равно выполнит слияние",
       "other": "{count} проверки не пройдено, GitHub всё равно выполнит слияние"
     },
+    "failingGitLab": {
+      "one": "{count} проверка не пройдена, GitLab всё равно выполнит слияние",
+      "few": "{count} проверки не пройдены, GitLab всё равно выполнит слияние",
+      "many": "{count} проверок не пройдено, GitLab всё равно выполнит слияние",
+      "other": "{count} проверки не пройдено, GitLab всё равно выполнит слияние"
+    },
     "durationSeconds": "{value} с",
     "durationMinutes": "{value} мин",
     "durationHours": "{value} ч"
@@ -320,12 +341,17 @@
   },
   "pullsNav": {
     "back": "Назад к pull request’ам",
+    "backGitLab": "Назад к merge request’ам",
     "previous": "Предыдущий pull request",
+    "previousGitLab": "Предыдущий merge request",
     "next": "Следующий pull request",
+    "nextGitLab": "Следующий merge request",
     "position": "{index} из {total}",
     "switch": "Перейти к другому pull request",
+    "switchGitLab": "Перейти к другому merge request",
     "more": "Другие действия",
     "create": "Новый pull request",
+    "createGitLab": "Новый merge request",
     "checkout": "Рабочая копия",
     "notCheckedOut": "Нет рабочей копии"
   }

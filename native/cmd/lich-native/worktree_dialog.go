@@ -36,6 +36,7 @@ const (
 // Fields under mu are written by the reads it starts.
 type worktreeDialog struct {
 	client     *backend.Client
+	forges     *forgeStore
 	root       *ui.Root
 	invalidate func()
 
@@ -77,8 +78,8 @@ type worktreeDialog struct {
 	done                   bool
 }
 
-func newWorktreeDialog(c *backend.Client, root *ui.Root, invalidate func()) *worktreeDialog {
-	return &worktreeDialog{client: c, root: root, invalidate: invalidate}
+func newWorktreeDialog(c *backend.Client, forges *forgeStore, root *ui.Root, invalidate func()) *worktreeDialog {
+	return &worktreeDialog{client: c, forges: forges, root: root, invalidate: invalidate}
 }
 
 // show opens the dialog for a session of kind, based on source (a checkout
@@ -203,7 +204,7 @@ func (d *worktreeDialog) pick(ctx context.Context, value string) {
 
 // lookUpIssue follows the reference the name holds: a new one is looked up
 // once the name has settled, and one that changed under the lookup is
-// dropped.
+// dropped. A GitLab project's issues are not looked up yet.
 func (d *worktreeDialog) lookUpIssue(ctx context.Context, typed string) {
 	ref := parseIssueRef(typed)
 	d.mu.Lock()
@@ -213,7 +214,7 @@ func (d *worktreeDialog) lookUpIssue(ctx context.Context, typed string) {
 	}
 	d.issueRef, d.issue, d.issueErr = ref, nil, ""
 	d.mu.Unlock()
-	if ref == 0 {
+	if ref == 0 || d.forges.gitLab(d.project.Path) {
 		return
 	}
 	go func() {

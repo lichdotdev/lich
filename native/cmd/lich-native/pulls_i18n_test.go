@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
@@ -51,10 +52,10 @@ func TestMergeGateSpeaksTheInterfaceLanguage(t *testing.T) {
 	rules := &backend.BranchRules{CommitPatterns: []backend.CommitPattern{{Target: "author email", Operator: "ends_with", Pattern: "@x.dev", Negate: true}}}
 	blocked := detail("OPEN", "MERGEABLE", "BLOCKED", "APPROVED")
 	want := `Um ruleset governa main: em todo commit, o e-mail do autor não deve terminar com "@x.dev".`
-	if got := mergeHint(blocked, rules); got != want {
+	if got := mergeHint(blocked, rules, api.ForgeGitHub); got != want {
 		t.Errorf("rule note = %q, want %q", got, want)
 	}
-	if got := mergeBlockedReason(detail("OPEN", "CONFLICTING", "BLOCKED", "")); got != "Conflita com main" {
+	if got := mergeBlockedReason(detail("OPEN", "CONFLICTING", "BLOCKED", ""), api.ForgeGitHub); got != "Conflita com main" {
 		t.Errorf("conflicts = %q", got)
 	}
 }
@@ -62,16 +63,16 @@ func TestMergeGateSpeaksTheInterfaceLanguage(t *testing.T) {
 func TestMergeHintCountsTheRedChecksInTheInterfaceLanguage(t *testing.T) {
 	red := detail("OPEN", "MERGEABLE", "UNSTABLE", "")
 	red.Checks.Failed = 1
-	if got := mergeHint(red, nil); got != "1 check is failing; GitHub will merge over it" {
+	if got := mergeHint(red, nil, api.ForgeGitHub); got != "1 check is failing; GitHub will merge over it" {
 		t.Errorf("one = %q", got)
 	}
 	i18n.SetCurrent(i18n.PtBR)
 	defer i18n.SetCurrent(i18n.EN)
-	if got := mergeHint(red, nil); got != "1 check está falhando, mas o GitHub fará o merge mesmo assim" {
+	if got := mergeHint(red, nil, api.ForgeGitHub); got != "1 check está falhando, mas o GitHub fará o merge mesmo assim" {
 		t.Errorf("pt-BR one = %q", got)
 	}
 	red.Checks.Failed = 3
-	if got := mergeHint(red, nil); got != "3 checks estão falhando, mas o GitHub fará o merge mesmo assim" {
+	if got := mergeHint(red, nil, api.ForgeGitHub); got != "3 checks estão falhando, mas o GitHub fará o merge mesmo assim" {
 		t.Errorf("pt-BR other = %q", got)
 	}
 }

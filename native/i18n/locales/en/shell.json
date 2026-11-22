@@ -203,6 +203,7 @@
     "needsInput": "{label} needs your input",
     "finished": "{label} has finished working",
     "watchStopped": "Stopped watching pull request #{number}",
+    "watchStoppedGitLab": "Stopped watching merge request !{number}",
     "watchStoppedDetail": "{label} ran its prompt {runs} times on it.",
     "scheduleLost": "Scheduled prompt lost",
     "scheduleLostDetail": "Deleting {label} also deleted the prompt set for {when}."

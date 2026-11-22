@@ -203,6 +203,7 @@
     "needsInput": "{label} necesita una respuesta tuya",
     "finished": "{label} terminó de trabajar",
     "watchStopped": "Se dejó de vigilar el pull request #{number}",
+    "watchStoppedGitLab": "Se dejó de vigilar el merge request !{number}",
     "watchStoppedDetail": "{label} ejecutó su prompt {runs} veces en él.",
     "scheduleLost": "Prompt programado perdido",
     "scheduleLostDetail": "Al eliminar {label} también se eliminó el prompt programado para {when}."

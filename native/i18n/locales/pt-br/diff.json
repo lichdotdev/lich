@@ -87,7 +87,8 @@
     "revealFailed": "Não foi possível mostrar {name} na pasta"
   },
   "dockReviewBinary": {
-    "viewOnGitHub": "Ver no GitHub"
+    "viewOnGitHub": "Ver no GitHub",
+    "viewOnGitLab": "Ver no GitLab"
   },
   "blobPreview": {
     "tooManyPixels": "{width} × {height} passa do limite de {megapixels} MP da pré-visualização",

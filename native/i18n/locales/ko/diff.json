@@ -85,7 +85,8 @@
     "revealFailed": "폴더에서 {name} 파일을 표시할 수 없습니다"
   },
   "dockReviewBinary": {
-    "viewOnGitHub": "GitHub에서 보기"
+    "viewOnGitHub": "GitHub에서 보기",
+    "viewOnGitLab": "GitLab에서 보기"
   },
   "blobPreview": {
     "tooManyPixels": "{width} × {height} 크기는 미리 보기 한도인 {megapixels} MP를 넘습니다",

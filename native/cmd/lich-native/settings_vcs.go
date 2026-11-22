@@ -17,16 +17,20 @@ const (
 	vcsAccountKey   = "vcs.account"
 	vcsGitBin       = "git"
 	vcsGhBin        = "gh"
+	vcsGlabBin      = "glab"
 	vcsGitLabel     = "git"
 	vcsGhLabel      = "GitHub CLI (gh)"
+	vcsGlabLabel    = "GitLab CLI (glab)"
 	vcsGitURL       = "https://git-scm.com/downloads"
 	vcsGhURL        = "https://cli.github.com"
+	vcsGlabURL      = "https://gitlab.com/gitlab-org/cli"
 	vcsWithoutInset = 6.5 // ml-6.5: under the label, past the icon and its gap
 )
 
 var (
 	icVcsGit      = icons.Lucide("git-branch")
 	icVcsGh       = icons.Lucide("git-pull-request-arrow")
+	icVcsGlab     = icons.Lucide("git-merge")
 	icVcsExternal = icons.Lucide("external-link")
 	icVcsRecheck  = icons.Lucide("refresh-cw")
 )
@@ -39,8 +43,11 @@ type vcsTool struct {
 }
 
 var (
-	vcsGit = vcsTool{vcsGitBin, vcsGitLabel, vcsGitURL, "env.vcsTools.gitWithout", icVcsGit}
-	vcsGh  = vcsTool{vcsGhBin, vcsGhLabel, vcsGhURL, "env.vcsTools.ghWithout", icVcsGh}
+	vcsGit  = vcsTool{vcsGitBin, vcsGitLabel, vcsGitURL, "env.vcsTools.gitWithout", icVcsGit}
+	vcsGh   = vcsTool{vcsGhBin, vcsGhLabel, vcsGhURL, "env.vcsTools.ghWithout", icVcsGh}
+	vcsGlab = vcsTool{vcsGlabBin, vcsGlabLabel, vcsGlabURL, "env.vcsTools.glabWithout", icVcsGlab}
+	// vcsTools are the rows of the tools block, in order.
+	vcsTools = []vcsTool{vcsGit, vcsGh, vcsGlab}
 )
 
 // vcsSettings is Settings › Version Control's reads, each nil until it
@@ -48,9 +55,11 @@ var (
 // revalidated under the drawn answer when Settings opens again.
 type vcsSettings struct {
 	// pathOf is an open project's checkout; onAccount makes the pull request
-	// badges ask gh again once a project's account was written.
+	// badges ask gh again once a project's account was written; gitLab is
+	// whether a checkout is a GitLab one, which gh's accounts do not serve.
 	pathOf    func(projectID string) string
 	onAccount func()
+	gitLab    func(path string) bool
 
 	mu          sync.Mutex
 	checks      map[string]backend.BinaryCheck
@@ -89,10 +98,10 @@ func (v *vcsSettings) ensure(s *settingsScreen) {
 	go v.listAccounts(s)
 }
 
-// verifyTools asks where git and gh resolve. A failed call leaves the tool
+// verifyTools asks where git, gh and glab resolve. A failed call leaves the tool
 // unknown rather than missing: nothing answered.
 func (v *vcsSettings) verifyTools(s *settingsScreen) {
-	for _, t := range []vcsTool{vcsGit, vcsGh} {
+	for _, t := range vcsTools {
 		c, err := s.client.Verify(s.ctx, t.bin)
 		if err != nil {
 			log.Printf("settings: verify %s: %v", t.bin, err)
@@ -168,8 +177,8 @@ func (s *settingsScreen) vcsRow(gtx C, th *ui.Theme, e settingEntry, r settingRo
 	return D{}, false
 }
 
-// vcsToolsBlock is VcsToolsSetting: where git and gh resolve, and the way to
-// either one that does not.
+// vcsToolsBlock is VcsToolsSetting: where git, gh and glab resolve, and the
+// way to any one that does not.
 func (s *settingsScreen) vcsToolsBlock(gtx C, th *ui.Theme, r settingRow, first bool) D {
 	r.description = i18n.T("settings.vcsToolsSetting.description")
 	if r.kind == rowGlobalOnly {
@@ -180,12 +189,16 @@ func (s *settingsScreen) vcsToolsBlock(gtx C, th *ui.Theme, r settingRow, first 
 		v.recheckTools(s)
 	}
 	under := func(gtx C, th *ui.Theme) D {
-		children := []layout.FlexChild{
-			layout.Rigid(func(gtx C) D { return s.vcsToolRow(gtx, th, vcsGit) }),
-			ui.VGap(1),
-			layout.Rigid(func(gtx C) D { return s.vcsToolRow(gtx, th, vcsGh) }),
+		var children []layout.FlexChild
+		failed := false
+		for i, t := range vcsTools {
+			if i > 0 {
+				children = append(children, ui.VGap(1))
+			}
+			children = append(children, layout.Rigid(func(gtx C) D { return s.vcsToolRow(gtx, th, t) }))
+			failed = failed || v.failed(t.bin)
 		}
-		if v.failed(vcsGitBin) || v.failed(vcsGhBin) {
+		if failed {
 			children = append(children, ui.VGap(1), layout.Rigid(func(gtx C) D {
 				return layout.Inset{Top: ui.Space(1)}.Layout(gtx, func(gtx C) D { return v.recheckButton(gtx, th) })
 			}))

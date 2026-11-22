@@ -87,7 +87,8 @@
     "revealFailed": "无法在文件夹中显示 {name}"
   },
   "dockReviewBinary": {
-    "viewOnGitHub": "在 GitHub 上查看"
+    "viewOnGitHub": "在 GitHub 上查看",
+    "viewOnGitLab": "在 GitLab 上查看"
   },
   "blobPreview": {
     "tooManyPixels": "{width} × {height} 超过了 {megapixels} MP 的预览上限",

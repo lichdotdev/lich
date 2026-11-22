@@ -87,7 +87,8 @@
     "revealFailed": "No se pudo mostrar {name} en su carpeta"
   },
   "dockReviewBinary": {
-    "viewOnGitHub": "Ver en GitHub"
+    "viewOnGitHub": "Ver en GitHub",
+    "viewOnGitLab": "Ver en GitLab"
   },
   "blobPreview": {
     "tooManyPixels": "{width} × {height} supera el límite de {megapixels} MP de la vista previa",

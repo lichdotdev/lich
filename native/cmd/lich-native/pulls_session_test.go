@@ -36,7 +36,7 @@ func prWindow(t *testing.T) (*window, *gateBackend) {
 	b.answer["project.ListCheckouts"] = []backend.Worktree{{Name: "feat", Path: "/repo"}}
 	b.answer["terminal.Live"], b.answer["terminal.Ready"] = true, true
 	u.gate = &spawnGate{probe: u.client, invalidate: func() {}, notify: func(t ui.Toast) { u.toaster.Show(t) }}
-	u.pulls = newPullsScreen(newPullsStore(u.ctx, u.client, func() {}), &u.root)
+	u.pulls = newPullsScreen(newPullsStore(u.ctx, u.client, newForgeStore(u.client, func() {}), func() {}), &u.root)
 	u.pulls.open = true
 	return u, b
 }

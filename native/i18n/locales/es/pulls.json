@@ -28,9 +28,13 @@
   "mergeGate": {
     "changesRequested": "Un revisor pidió cambios",
     "reviewRequired": "GitHub exige una revisión que todavía nadie ha hecho",
+    "reviewRequiredGitLab": "GitLab exige una aprobación que todavía nadie ha dado",
     "merged": "El pull request ya está fusionado",
+    "mergedGitLab": "El merge request ya está fusionado",
     "closed": "El pull request está cerrado",
+    "closedGitLab": "El merge request está cerrado",
     "draft": "El pull request es un borrador",
+    "draftGitLab": "El merge request es un borrador",
     "conflicts": "Conflictos con {base}",
     "behind": "La rama base avanzó. Actualiza primero esta rama",
     "pattern": {
@@ -68,8 +72,11 @@
   },
   "pullsEmptyState": {
     "openFailed": "No se pudo abrir un pull request: {error}",
+    "openFailedGitLab": "No se pudo abrir un merge request: {error}",
     "none": "No hay ningún pull request abierto.",
-    "openOnGitHub": "Abrir en GitHub"
+    "noneGitLab": "No hay ningún merge request abierto.",
+    "openOnGitHub": "Abrir en GitHub",
+    "openOnGitLab": "Abrir en GitLab"
   },
   "pullsAccount": {
     "chooseTitle": "Elige una cuenta de GitHub",
@@ -166,6 +173,12 @@
       "merged": "No hay pull requests fusionados.",
       "approved": "No hay pull requests aprobados."
     },
+    "noneGitLab": {
+      "open": "No hay merge requests abiertos.",
+      "closed": "No hay merge requests cerrados.",
+      "merged": "No hay merge requests fusionados.",
+      "approved": "No hay merge requests aprobados."
+    },
     "noMatch": "Nada coincide con ese filtro.",
     "draft": "Borrador",
     "fork": "fork",
@@ -225,10 +238,12 @@
     "removed": "Se eliminó {name}",
     "removeFailed": "No se pudo eliminar la worktree: {error}",
     "merged": "Se fusionó #{number} en {base}",
+    "mergedGitLab": "Se fusionó !{number} en {base}",
     "announceFailed": "No se pudo avisar a las sesiones de {name}: {error}",
     "removeWorktree": "Eliminar worktree",
     "openSessionFailed": "No se pudo abrir una sesión: {error}",
     "handedOff": "Se pasó #{number} a {session}",
+    "handedOffGitLab": "Se pasó !{number} a {session}",
     "goToSession": "Ir a la sesión",
     "openInSession": "Abrir en una sesión",
     "forkBlocked": "La rama de origen está en un fork que no permite ediciones de los mantenedores, así que no se pudieron enviar sus commits de vuelta",
@@ -280,6 +295,10 @@
       "one": "{count} comprobación falla, pero GitHub fusionará igualmente",
       "other": "{count} comprobaciones fallan, pero GitHub fusionará igualmente"
     },
+    "failingGitLab": {
+      "one": "{count} comprobación falla, pero GitLab fusionará igualmente",
+      "other": "{count} comprobaciones fallan, pero GitLab fusionará igualmente"
+    },
     "durationSeconds": "{value} s",
     "durationMinutes": "{value} min",
     "durationHours": "{value} h"
@@ -298,12 +317,17 @@
   },
   "pullsNav": {
     "back": "Volver a los pull requests",
+    "backGitLab": "Volver a los merge requests",
     "previous": "Pull request anterior",
+    "previousGitLab": "Merge request anterior",
     "next": "Siguiente pull request",
+    "nextGitLab": "Siguiente merge request",
     "position": "{index} de {total}",
     "switch": "Ir a otro pull request",
+    "switchGitLab": "Ir a otro merge request",
     "more": "Más acciones",
     "create": "Nuevo pull request",
+    "createGitLab": "Nuevo merge request",
     "checkout": "Checkout",
     "notCheckedOut": "Sin checkout"
   }

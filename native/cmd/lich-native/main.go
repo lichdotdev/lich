@@ -294,8 +294,8 @@ func run(w *app.Window, rt backend.Runtime) error {
 	u.sidebar.tour = &u.tour.Tour
 	u.console = newServiceConsole()
 	u.palette = newCommandPalette(invalidate)
-	u.worktree = newWorktreeDialog(client, &u.root, invalidate)
-	u.pulls = newPullsScreen(newPullsStore(ctx, client, invalidate), &u.root)
+	u.worktree = newWorktreeDialog(client, u.model.forges, &u.root, invalidate)
+	u.pulls = newPullsScreen(newPullsStore(ctx, client, u.model.forges, invalidate), &u.root)
 	u.pulls.sessionsIn = func(projectID, path string) []string {
 		ids, _, _ := u.model.sessionsAt(projectID, path)
 		return ids
@@ -386,6 +386,7 @@ func run(w *app.Window, rt backend.Runtime) error {
 	u.review.wrote = func(checkout string) { u.model.checkoutWritten(u.ctx, checkout) }
 	u.settings.applyEditor = u.takeEditorPref
 	u.settings.vcs.pathOf, u.settings.vcs.onAccount = u.model.projectPath, u.model.accountChanged
+	u.settings.vcs.gitLab = u.model.forges.gitLab
 	u.settings.providers.claude.bind(u.model.profiles, u.openLoginTerminal)
 	u.settings.providers.codex.bind(u.model.codexProfiles, u.openLoginTerminal)
 	u.settings.providers.omp.bind(u.model.ompProfiles, u.openLoginTerminal)
@@ -1046,6 +1047,9 @@ func (u *window) topbarFrame(gtx C, v stageView, edge int) topbarFrame {
 		caption: u.caption.Load().under(u.settings.look.prefs.windowButtons), chrome: u.chrome,
 		windowButtons: u.settings.look.prefs.windowButtons, guides: u.guideItems(),
 		pulls: u.pulls.open && !v.home,
+	}
+	if path := u.model.projectPath(v.stripActive); path != "" {
+		f.forge = u.model.forgeOf(path)
 	}
 	f.extensions, f.surfaceImages = u.model.extensions.all(), u.model.extensions.surfaceImages()
 	// Settings and an extension's screen are no project's, so no tab is lit

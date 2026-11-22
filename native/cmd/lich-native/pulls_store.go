@@ -33,6 +33,7 @@ type pullsRead[T any] struct {
 type pullsStore struct {
 	ctx        context.Context
 	client     *backend.Client
+	forges     *forgeStore
 	invalidate func()
 
 	mu sync.Mutex
@@ -51,9 +52,9 @@ type pullsStore struct {
 	avatars map[string]*pullsRead[*ui.AvatarImage]
 }
 
-func newPullsStore(ctx context.Context, c *backend.Client, invalidate func()) *pullsStore {
+func newPullsStore(ctx context.Context, c *backend.Client, forges *forgeStore, invalidate func()) *pullsStore {
 	return &pullsStore{
-		ctx: ctx, client: c, invalidate: invalidate,
+		ctx: ctx, client: c, forges: forges, invalidate: invalidate,
 		lists:     map[string]*pullsRead[[]backend.PRSummary]{},
 		details:   map[string]*pullsRead[*backend.PRDetail]{},
 		rules:     map[string]*pullsRead[*backend.BranchRules]{},
@@ -165,13 +166,22 @@ func stillSettling(d backend.PRDetail) bool {
 	return d.State == "OPEN" && (d.Mergeable == "UNKNOWN" || d.MergeStateStatus == "UNKNOWN")
 }
 
+// The reads below are GitHub's alone: on a GitLab checkout they answer
+// nothing without asking, so no screen reaches an RPC GitLab refuses.
+
 func (s *pullsStore) branchRules(path, base string) *backend.BranchRules {
+	if s.forges.gitLab(path) {
+		return nil
+	}
 	return read(s, s.rules, path+"\x00"+base, func() (*backend.BranchRules, error) {
 		return s.client.BranchRules(s.ctx, path, base)
 	}).val
 }
 
 func (s *pullsStore) conflictFiles(path string, d *backend.PRDetail) pullsRead[[]string] {
+	if s.forges.gitLab(path) {
+		return pullsRead[[]string]{}
+	}
 	return read(s, s.conflicts, d.URL, func() ([]string, error) {
 		return s.client.PullRequestConflicts(s.ctx, path, d.Number, d.BaseRefName, d.URL)
 	})
@@ -184,6 +194,9 @@ func (s *pullsStore) diff(path string, number int) pullsRead[string] {
 }
 
 func (s *pullsStore) conversation(path string, number int) pullsRead[*backend.PRConversation] {
+	if s.forges.gitLab(path) {
+		return pullsRead[*backend.PRConversation]{loaded: true}
+	}
 	return read(s, s.talks, fmt.Sprint(path, "\x00", number), func() (*backend.PRConversation, error) {
 		return s.client.PullRequestConversation(s.ctx, path, number)
 	})
@@ -192,7 +205,7 @@ func (s *pullsStore) conversation(path string, number int) pullsRead[*backend.PR
 // avatar is the picture at url, an author's Avatar; nil while it loads, when
 // it failed, or when there is none.
 func (s *pullsStore) avatar(path, url string) *ui.AvatarImage {
-	if url == "" {
+	if url == "" || s.forges.gitLab(path) {
 		return nil
 	}
 	return read(s, s.avatars, url, func() (*ui.AvatarImage, error) {
@@ -205,6 +218,9 @@ func (s *pullsStore) avatar(path, url string) *ui.AvatarImage {
 }
 
 func (s *pullsStore) account(path string) pullsRead[backend.GitHubAccountState] {
+	if s.forges.gitLab(path) {
+		return pullsRead[backend.GitHubAccountState]{loaded: true}
+	}
 	return read(s, s.accounts, path, func() (backend.GitHubAccountState, error) {
 		return s.client.GitHubAccountOf(s.ctx, path)
 	})

@@ -9,6 +9,7 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget/material"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
@@ -50,10 +51,11 @@ func (v *pullView) actions(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDeta
 }
 
 // moreButton is ⋯: Approve while no review is being written on somebody
-// else's pull request, Refresh and Open on GitHub.
+// else's pull request (never on a GitLab merge request), Refresh and Open on
+// GitHub.
 func (v *pullView) moreButton(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDetail, busy, reviewBlocked string, act *pullsAction) D {
 	var entries []ui.MenuEntry
-	if len(v.pendingOf(d.URL).snapshot()) == 0 && !v.ownPR(p, d) {
+	if len(v.pendingOf(d.URL).snapshot()) == 0 && !v.ownPR(p, d) && v.forge != api.ForgeGitLab {
 		label := i18n.T("pulls.pullRequestView.approve")
 		switch {
 		case busy == "approve":
@@ -69,7 +71,7 @@ func (v *pullView) moreButton(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRD
 	entries = append(entries,
 		ui.MenuEntry{Kind: ui.MenuSeparator},
 		ui.MenuEntry{Label: i18n.T("pulls.pullRequestView.refresh"), Icon: icPullRefresh, OnClick: func() { act.refresh = true }},
-		ui.MenuEntry{Label: i18n.T("pulls.pullsEmptyState.openOnGitHub"), Icon: icPullOut, OnClick: func() { act.external = url }},
+		ui.MenuEntry{Label: i18n.T(forgeKey(v.forge, "pulls.pullsEmptyState.openOnGitHub", "pulls.pullsEmptyState.openOnGitLab")), Icon: icPullOut, OnClick: func() { act.external = url }},
 	)
 	b := th.Button(&v.moreClick, "")
 	b.Icon, b.Variant, b.Size = icPullMore, ui.VariantGhost, ui.SizeIconSM
@@ -85,7 +87,7 @@ func (v *pullView) handoffButton(gtx C, th *ui.Theme, p *pullsScreen, d backend.
 	if conflictsWithBase(d) {
 		conflicts = p.store.conflictFiles(p.project.Path, &d).val
 	}
-	label, prompt, ok := pullHandoff(d, conflicts)
+	label, prompt, ok := pullHandoff(d, conflicts, v.forge)
 	if !ok {
 		return nil
 	}
@@ -140,7 +142,7 @@ func (v *pullView) withTip(gtx C, th *ui.Theme, p *pullsScreen, key, text string
 func (v *pullView) mergeButton(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDetail, busy string, act *pullsAction) D {
 	rules := p.store.branchRules(p.project.Path, d.BaseRefName)
 	bypass := canAdminOverride(d, rules)
-	blocked := mergeBlockedReason(d) != "" && !bypass
+	blocked := mergeBlockedReason(d, v.forge) != "" && !bypass
 	var entries []ui.MenuEntry
 	for _, m := range allowedMergeMethods(rules) {
 		label := mergeMethodLabel(m)
@@ -160,10 +162,10 @@ func (v *pullView) mergeButton(gtx C, th *ui.Theme, p *pullsScreen, d backend.PR
 	b := th.Button(&v.mergeClick, label)
 	b.Icon, b.Size, b.Disabled = icPullMerged, ui.SizeSM, blocked || busy != ""
 	if b.Disabled {
-		return v.withTip(gtx, th, p, "merge", mergeHint(d, rules), b.Layout)
+		return v.withTip(gtx, th, p, "merge", mergeHint(d, rules, v.forge), b.Layout)
 	}
 	menu := th.DropdownMenu(p.root, &v.mergeMenu, entries)
-	return v.withTip(gtx, th, p, "merge", mergeHint(d, rules), func(gtx C) D { return menu.Layout(gtx, b.Layout) })
+	return v.withTip(gtx, th, p, "merge", mergeHint(d, rules, v.forge), func(gtx C) D { return menu.Layout(gtx, b.Layout) })
 }
 
 // conflictsPanelWidth and conflictsPanelHeight bound the conflicting files'

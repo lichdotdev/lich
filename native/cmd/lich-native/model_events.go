@@ -72,7 +72,7 @@ func (m *model) scheduleEvent(ev backend.Event) {
 		}
 	case api.SessionWatchStoppedEvent.Name:
 		if e, err := backend.Decode(ev, api.SessionWatchStoppedEvent); err == nil && m.showToast != nil {
-			m.showToast(watchStoppedToast(e))
+			m.showToast(watchStoppedToast(e, m.sessionForge(e.ID)))
 		}
 	case api.ScheduleForfeitedEvent.Name:
 		if e, err := backend.Decode(ev, api.ScheduleForfeitedEvent); err == nil && m.showToast != nil {
@@ -89,9 +89,25 @@ func (m *model) editSession(id string, edit func(*backend.Session)) {
 	}
 }
 
-func watchStoppedToast(e api.SessionWatchStopped) ui.Toast {
+// sessionForge is the forge of session id's checkout as already read, "" while it is not or
+// for a session gone.
+func (m *model) sessionForge(id string) string {
+	m.mu.Lock()
+	p, i := m.sessionAt(id)
+	path := ""
+	if p != nil {
+		path = m.shownPath(*p, p.Sessions[i])
+	}
+	m.mu.Unlock()
+	if path == "" {
+		return ""
+	}
+	return m.forges.peek(path)
+}
+
+func watchStoppedToast(e api.SessionWatchStopped, forge string) ui.Toast {
 	return ui.Toast{Icon: icWatch, IconColor: waitTone,
-		Title:       i18n.T("shell.projectEvents.watchStopped", i18n.Args{"number": e.Number}),
+		Title:       i18n.T(forgeKey(forge, "shell.projectEvents.watchStopped", "shell.projectEvents.watchStoppedGitLab"), i18n.Args{"number": e.Number}),
 		Description: i18n.T("shell.projectEvents.watchStoppedDetail", i18n.Args{"label": e.Label, "runs": e.Runs})}
 }
 

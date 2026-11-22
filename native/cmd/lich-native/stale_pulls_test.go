@@ -49,7 +49,7 @@ func pullsFramesHeld(t *testing.T, hold chan struct{}) (*window, *frameRig) {
 	}}
 	client := stub.client(t)
 	u := &window{ctx: t.Context(), client: client, model: newModel(client, r.invalidate)}
-	u.pulls = newPullsScreen(newPullsStore(t.Context(), client, r.invalidate), &u.root)
+	u.pulls = newPullsScreen(newPullsStore(t.Context(), client, newForgeStore(client, r.invalidate), r.invalidate), &u.root)
 	u.pulls.sessionsIn = func(string, string) []string { return nil }
 	u.pulls.files = filesInput{
 		injector:  func(string) func(string) bool { return func(string) bool { return false } },

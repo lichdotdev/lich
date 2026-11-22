@@ -95,7 +95,7 @@ func branchSection(th *ui.Theme, sv *sessionView) layout.Widget {
 			layout.Rigid(func(gtx C) D { return ui.IconLine(gtx, icBranch, muted.Color, layout.Rigid(muted.Layout)) }),
 		}
 		if sv.pr != nil {
-			number := th.Text(ui.TextXS, "#"+strconv.Itoa(sv.pr.Number)).Muted()
+			number := th.Text(ui.TextXS, changeRef(sv.forge, sv.pr.Number)).Muted()
 			children = append(children, ui.Gap(2), layout.Rigid(func(gtx C) D {
 				return ui.IconLine(gtx, icPR, number.Color, layout.Rigid(number.Layout))
 			}))

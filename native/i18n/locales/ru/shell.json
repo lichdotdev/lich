@@ -215,6 +215,7 @@
     "needsInput": "{label} ждёт вашего ответа",
     "finished": "{label}: работа завершена",
     "watchStopped": "Наблюдение за pull request #{number} остановлено",
+    "watchStoppedGitLab": "Наблюдение за merge request !{number} остановлено",
     "watchStoppedDetail": "Запусков промпта от {label}: {runs}.",
     "scheduleLost": "Запланированный промпт потерян",
     "scheduleLostDetail": "Вместе с {label} удалён и промпт, запланированный на {when}."
