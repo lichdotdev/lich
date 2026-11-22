@@ -245,6 +245,7 @@ func (s *Service) prepareSpawnLocked(opts api.StartOptions, profileDir, name str
 		return spawnLaunch{}, err
 	}
 	env = mcpEnv(env, opts.Kind, mcpBin)
+	env = todoToolsEnv(env, opts.Kind)
 	filesKey := s.store.SessionFilesKey(opts.ID)
 	artifacts := sessionArtifactDir(s.artifactDir, filesKey)
 	if artifacts != "" {

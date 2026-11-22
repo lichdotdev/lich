@@ -13,7 +13,8 @@ import (
 // Claude Code keeps its task list with TaskCreate and TaskUpdate, or with
 // TodoWrite where tasks are off (CLAUDE_CODE_ENABLE_TASKS=0), and offers
 // either only to the models that have it: on 2.1.330 the Claude 5 models get
-// neither unless CLAUDE_CODE_ENABLE_TODO_TOOLS=1 (measured). claudeTasks reads
+// neither unless CLAUDE_CODE_ENABLE_TODO_TOOLS=1 (measured), which every spawn
+// is given (internal/terminal/claude_todo.go). claudeTasks reads
 // the list off the calls the way Claude Code's own SDK does.
 const (
 	claudeTodoTool   = "TodoWrite"

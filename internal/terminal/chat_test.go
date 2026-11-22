@@ -265,3 +265,48 @@ func TestOpenCodeChatRunsItsServerOnLichsPort(t *testing.T) {
 		t.Error("another provider was given opencode's server")
 	}
 }
+
+// todoEnvBin is a provider that prints what it was told of its task tools,
+// then waits for its stdin to close.
+func todoEnvBin(t *testing.T) string {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "fake-claude")
+	script := "#!/bin/sh\necho \"todo=${" + claudeTodoToolsVar + "-unset}\"\nwhile read line; do :; done\n"
+	if err := os.WriteFile(path, []byte(script), 0o755); err != nil {
+		t.Fatalf("write stub bin: %v", err)
+	}
+	return path
+}
+
+// A Claude Code spawn turns its task tools on, and a value the person exports
+// stays as they set it.
+func TestClaudeSpawnTurnsTheTaskToolsOnUnlessThePersonSaidSo(t *testing.T) {
+	cases := []struct {
+		name string
+		env  []string
+		want string
+	}{
+		{"unset", []string{"PATH=" + os.Getenv("PATH")}, "todo=1\n"},
+		{"the person's own", []string{"PATH=" + os.Getenv("PATH"), claudeTodoToolsVar + "=0"}, "todo=0\n"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			svc := New(stubBins{bin: todoEnvBin(t)}, nil, events.New())
+			svc.SetEnv(c.env)
+			p, err := svc.StartChat(t.Context(), api.StartOptions{ID: "s1", ProjectID: "p1", Cwd: t.TempDir(), Kind: providers.Claude}, ChatLaunch{})
+			if err != nil {
+				t.Fatalf("StartChat: %v", err)
+			}
+			defer p.Close()
+			if line, err := bufio.NewReader(p.Stdout).ReadString('\n'); err != nil || line != c.want {
+				t.Errorf("the spawn read %q (%v), want %q", line, err, c.want)
+			}
+		})
+	}
+}
+
+func TestTodoToolsEnvIsClaudeCodesAlone(t *testing.T) {
+	if got := todoToolsEnv([]string{"A=1"}, providers.Codex); !slices.Equal(got, []string{"A=1"}) {
+		t.Errorf("todoToolsEnv(codex) = %v, want the env untouched", got)
+	}
+}
