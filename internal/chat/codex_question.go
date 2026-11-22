@@ -36,6 +36,10 @@ const (
 )
 
 func (d *codexDriver) request(m acpMessage) {
+	if d.isFork(m.Params) {
+		d.refuse(m)
+		return
+	}
 	switch m.Method {
 	case "item/commandExecution/requestApproval", "item/fileChange/requestApproval":
 		d.approve(m)

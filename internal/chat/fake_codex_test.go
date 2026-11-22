@@ -37,6 +37,12 @@ type fakeCodex struct {
 	turns   int
 	// signedOut makes a compaction fail as Codex's does with no account.
 	signedOut bool
+	// last is the text of the person's last turn, which decides how the fake
+	// answers the fork made after it (fake_suggest_test.go).
+	last   string
+	forked string
+	// forkTurn is the fork's turn left waiting for its interrupt.
+	forkTurn string
 	// off are the skills skills/config/write set, by path: true when off.
 	off map[string]bool
 }
@@ -102,9 +108,21 @@ func (c *fakeCodex) serve(m map[string]any) {
 		c.reply(id, c.threadAnswer(params))
 	case "thread/turns/list":
 		c.turnsPage(id, str(params, "cursor"))
+	case "thread/fork":
+		c.fork(id, params)
+	case "thread/unsubscribe":
+		c.reply(id, map[string]any{"status": "unsubscribed"})
 	case "turn/start":
+		if c.forked != "" && str(params, "threadId") == c.forked {
+			c.forkStart(id)
+			return
+		}
 		c.start(id, params)
 	case "turn/steer", "turn/interrupt":
+		if c.forked != "" && str(params, "threadId") == c.forked {
+			c.forkInterrupt(id)
+			return
+		}
 		c.reply(id, map[string]any{})
 	case "thread/shellCommand":
 		c.shell(id, str(params, "command"))
@@ -157,6 +175,7 @@ func (c *fakeCodex) start(id any, params map[string]any) {
 		first, _ := input[0].(map[string]any)
 		text = str(first, "text")
 	}
+	c.last = text
 	c.notify("item/started", map[string]any{"item": map[string]any{"type": "userMessage", "id": "echo-" + turn, "content": input}})
 	status, message := c.turn(turn, text)
 	done := map[string]any{"id": turn, "status": status}

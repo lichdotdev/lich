@@ -197,7 +197,16 @@ func (f *fake) claudeTurn(run *fakeClaude, text string) {
 	if f.claudeCompactTurn(msg, text) {
 		return
 	}
+	// an envelope plays as "suggest" does: lich, not the fake, drops its
+	// suggestion
+	if strings.HasPrefix(text, "<lich-notification ") {
+		text = "suggest"
+	}
 	switch text {
+	case "suggest":
+		msg("m10", map[string]any{"type": "text", "text": "Fixed."})
+		f.claudeResult(false, "completed", "Fixed.")
+		f.send(map[string]any{"type": "prompt_suggestion", "suggestion": " commit this ", "uuid": "u1", "session_id": "claude-new"})
 	case "hi":
 		f.send(map[string]any{"type": "stream_event", "api_message_id": "m0", "event": map[string]any{"type": "content_block_delta", "index": 0, "delta": map[string]any{"type": "thinking_delta", "thinking": ""}}})
 		msg("m0", map[string]any{"type": "thinking", "thinking": ""})

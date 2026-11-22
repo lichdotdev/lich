@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"strconv"
 	"strings"
 	"sync"
@@ -96,6 +97,8 @@ type claudeLine struct {
 	Result   string   `json:"result"`
 	Errors   []string `json:"errors"`
 	Terminal string   `json:"terminal_reason"`
+	// prompt_suggestion
+	Suggestion string `json:"suggestion"`
 	// the tool's own reading of its result, live and in the transcript
 	ToolResult  json.RawMessage `json:"tool_use_result"`
 	SavedResult json.RawMessage `json:"toolUseResult"`
@@ -138,9 +141,14 @@ func (d *claudeDriver) open(ctx context.Context, resume string) (string, error) 
 	d.mu.Lock()
 	d.expected = resume
 	d.mu.Unlock()
-	init, err := d.control(ctx, map[string]any{"subtype": "initialize"})
+	init, err := d.control(ctx, map[string]any{"subtype": "initialize", "promptSuggestions": true})
 	if err != nil {
 		return "", fmt.Errorf("Claude Code did not start its chat: %w", err)
+	}
+	// The pause is the process's: a new one, after /new or an option's
+	// relaunch, makes suggestions again until told.
+	if d.c.svc.suggestionsPaused(d.c.id) {
+		d.pauseSuggestions(true)
 	}
 	d.readInitialize(init.Body, d.c.svc.store.SessionModel(d.c.id))
 	// The transcript was read before the models were known: its items carry
@@ -227,6 +235,19 @@ func (d *claudeDriver) cancel() error {
 	return d.c.out.send(map[string]any{"type": "control_request", "request_id": id, "request": map[string]any{"subtype": "interrupt"}})
 }
 
+// pauseSuggestions stops or resumes the prompt_suggestion Claude Code writes
+// after each turn. Sent without waiting for its response, as cancel is: what
+// Claude Code still writes while it takes effect is dropped by suggest.
+func (d *claudeDriver) pauseSuggestions(paused bool) {
+	d.mu.Lock()
+	d.next++
+	id := "lich-" + strconv.Itoa(d.next)
+	d.mu.Unlock()
+	if err := d.c.out.send(map[string]any{"type": "control_request", "request_id": id, "request": map[string]any{"subtype": "set_prompt_suggestions_paused", "paused": paused}}); err != nil {
+		slog.Debug("chat: pause Claude Code's suggestions", "session", d.c.id, "err", err)
+	}
+}
+
 func (d *claudeDriver) stopped() {
 	d.mu.Lock()
 	defer d.mu.Unlock()
@@ -273,6 +294,8 @@ func (d *claudeDriver) handle(raw []byte) {
 		d.running(line.Model, line.PermissionMode)
 	case "result":
 		d.result(line)
+	case "prompt_suggestion":
+		d.c.suggest(d.c.offered(), strings.TrimSpace(line.Suggestion))
 	default:
 		if line.Type == "user" {
 			d.shellResults(line)

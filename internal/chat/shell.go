@@ -41,6 +41,7 @@ func (s *Service) RunShell(ctx context.Context, opts api.ChatRunShellOptions) (a
 		return api.None{}, err
 	}
 	c.conv.userMessage(shellMark+opts.Command, nil)
+	c.unsuggested(true)
 	c.markStart()
 	if err := d.shell(opts.Command); err != nil {
 		c.conv.notice(err.Error())
