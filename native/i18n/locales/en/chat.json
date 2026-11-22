@@ -196,7 +196,6 @@
     "noOutput": "No output yet",
     "stop": "Stop",
     "state": {
-      "running": "running",
       "completed": "done",
       "failed": "failed",
       "stopped": "stopped"

@@ -32,8 +32,10 @@ func shellsFrames(t *testing.T) (*window, *frameRig, *chatBackend, *chatPane) {
 // running time; one opens on a click with its output, and Stop stops it.
 func TestShellsChipOpensTheShellsAndStopStopsOne(t *testing.T) {
 	_, r, f, p := shellsFrames(t)
+	writeShot(t, r, "shells-chip.png")
 	r.click(t, r.at(t, "2 shells"))
-	if !r.showsAll("Background shells", "npm run dev", "tail -f log.txt", "go test ./...", "failed · 4s") || !strings.Contains(r.drawn(), `"running · 1m `) {
+	writeShot(t, r, "shells-list.png")
+	if !r.showsAll("Background shells", "npm run dev", "tail -f log.txt", "go test ./...", "failed · 4s") || !strings.Contains(r.drawn(), `"1m `) {
 		t.Fatalf("the shells are not drawn:\n%s", r.drawn())
 	}
 	r.click(t, r.at(t, "npm run dev"))
@@ -41,6 +43,7 @@ func TestShellsChipOpensTheShellsAndStopStopsOne(t *testing.T) {
 	if !r.showsAll("Start the dev server", "ready on :5173", "watching for changes", "Stop") {
 		t.Fatalf("the shell's detail is not drawn:\n%s", r.drawn())
 	}
+	writeShot(t, r, "shells-detail.png")
 	if body := f.waitCall(t, api.ChatShellOutput.Name); !strings.Contains(body, `"shell":"b1"`) {
 		t.Errorf("read the output of %s", body)
 	}

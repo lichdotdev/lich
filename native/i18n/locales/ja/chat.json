@@ -186,7 +186,6 @@
     "noOutput": "まだ出力はありません",
     "stop": "停止",
     "state": {
-      "running": "実行中",
       "completed": "完了",
       "failed": "失敗",
       "stopped": "停止済み"

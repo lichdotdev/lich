@@ -196,7 +196,6 @@
     "noOutput": "Todavía sin salida",
     "stop": "Detener",
     "state": {
-      "running": "en marcha",
       "completed": "terminado",
       "failed": "falló",
       "stopped": "detenido"

@@ -32,11 +32,11 @@ func (u *window) shellsChip(gtx C, th *ui.Theme, p *chatPane, sv sessionView) D 
 	return footerButton(gtx, th, &u.root, &p.shellsChip, i18n.T("chat.shells.title"), true, false, glyphText(icToolRun, label))
 }
 
-// shellState is a shell's glyph and its state in words.
+// shellState is a shell's glyph and how it ended in words, "" while it runs.
 func shellState(th *ui.Theme, s backend.ChatShell) (*icons.Icon, color.NRGBA, string) {
 	switch s.State {
 	case api.ShellRunning:
-		return icToolsPending, th.ToneWait, i18n.T("chat.shells.state.running")
+		return icToolsPending, th.ToneWait, ""
 	case api.ShellCompleted:
 		return icCheck, th.TonePass, i18n.T("chat.shells.state.completed")
 	case api.ShellFailed:
@@ -55,13 +55,21 @@ func shellTook(gtx C, s backend.ChatShell) string {
 	return chatElapsed(time.UnixMilli(s.Ended).Sub(start))
 }
 
+// shellMeta is what a shell's line says at its end: how long it has run, and
+// how it ended once it has; the glyph already says it runs.
+func shellMeta(gtx C, s backend.ChatShell, state string) string {
+	if s.State == api.ShellRunning {
+		return shellTook(gtx, s)
+	}
+	return state + " · " + shellTook(gtx, s)
+}
+
 func (u *window) shellsView(gtx C, th *ui.Theme, p *chatPane, sv sessionView) D {
 	t := &p.tools
 	shells := shellsOrdered(u.model.chat.shellsOf(sv.ID))
 	if i := slices.IndexFunc(shells, func(s backend.ChatShell) bool { return s.ID == t.detail }); i >= 0 {
 		return u.shellDetail(gtx, th, p, sv.ID, shells[i])
 	}
-	t.list.ScrollToEnd = false
 	if len(shells) == 0 {
 		return toolsNote(gtx, th, i18n.T("chat.shells.none"))
 	}
@@ -73,7 +81,7 @@ func (u *window) shellsView(gtx C, th *ui.Theme, p *chatPane, sv sessionView) D 
 		}
 	}
 	head := func(gtx C) D {
-		return toolsHead(gtx, th, i18n.T("chat.shells.title"), i18n.T("chat.shells.count", i18n.Args{"count": runningShells(shells)}), nil)
+		return toolsHead(gtx, th, i18n.T("chat.shells.title"), "", nil)
 	}
 	return t.scrolled(gtx, th, head, lines, nil)
 }
@@ -85,7 +93,7 @@ func shellRow(gtx C, th *ui.Theme, s backend.ChatShell) D {
 		ui.Gap(2),
 		layout.Flexed(1, th.Text(ui.TextSM, cleanLine(s.Command)).Mono().Truncated().Layout),
 		ui.Gap(toolsMetaGap),
-		layout.Rigid(th.Text(ui.TextXS, state+" · "+shellTook(gtx, s)).Muted().Layout),
+		layout.Rigid(th.Text(ui.TextXS, shellMeta(gtx, s, state)).Muted().Layout),
 	)
 }
 
@@ -96,7 +104,7 @@ func (u *window) shellDetail(gtx C, th *ui.Theme, p *chatPane, id string, s back
 	t := &p.tools
 	u.pollShell(gtx, p, id, s)
 	t.mu.Lock()
-	out, read := t.shell.text, t.shell.read
+	out, read, gen := t.shell.text, t.shell.read, t.shell.gen
 	t.mu.Unlock()
 	back := th.Button(&t.back, i18n.T("chat.shells.back"))
 	back.Icon, back.Variant, back.Size = icToolsBack, ui.VariantGhost, ui.SizeXS
@@ -110,7 +118,7 @@ func (u *window) shellDetail(gtx C, th *ui.Theme, p *chatPane, id string, s back
 				ui.Gap(1.5),
 				layout.Flexed(1, th.Text(ui.TextSM, cleanLine(s.Command)).Mono().Weight(font.SemiBold).Truncated().Layout),
 				ui.Gap(toolsMetaGap),
-				layout.Rigid(th.Text(ui.TextXS, state+" · "+shellTook(gtx, s)).Muted().Layout),
+				layout.Rigid(th.Text(ui.TextXS, shellMeta(gtx, s, state)).Muted().Layout),
 			)
 		})
 	}
@@ -130,7 +138,11 @@ func (u *window) shellDetail(gtx C, th *ui.Theme, p *chatPane, id string, s back
 			lines = append(lines, shellLine(th, l))
 		}
 	}
-	t.list.ScrollToEnd = true
+	// each read lands with the list at its end, where the output grows
+	if t.shell.scrolled != gen {
+		t.shell.scrolled = gen
+		t.list.ScrollTo(len(lines))
+	}
 	var foot layout.Widget
 	if s.State == api.ShellRunning {
 		foot = func(gtx C) D {

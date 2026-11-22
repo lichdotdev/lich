@@ -42,6 +42,9 @@ type chatShellOut struct {
 	// state is the shell's state at the last read: one more read follows its end.
 	state    string
 	fetching bool
+	// gen counts the reads that landed, scrolled the one the list was
+	// scrolled to the end for.
+	gen, scrolled int
 	next     time.Time
 	stop     ui.Clickable
 }
@@ -147,6 +150,7 @@ func (u *window) pollShell(gtx C, p *chatPane, id string, s backend.ChatShell) {
 			o.read, o.state = true, state
 			if err == nil {
 				o.text = text
+				o.gen++
 			}
 		}
 		p.tools.mu.Unlock()
