@@ -24,9 +24,10 @@ type Palette struct {
 	Sidebar, SidebarForeground             color.NRGBA
 	SidebarAccent, SidebarAccentForeground color.NRGBA
 	SidebarBorder                          color.NRGBA
-	// GraphLanes are the history graph's branch colors. A theme file does not
-	// set them: a new required token would refuse every theme already published.
+	// GraphLanes and ToneMerged are scheme colors a theme file does not set: a
+	// new required token would refuse every theme already published.
 	GraphLanes [6]color.NRGBA
+	ToneMerged color.NRGBA
 }
 
 var graphLanesDark = [6]color.NRGBA{
@@ -37,6 +38,21 @@ var graphLanesDark = [6]color.NRGBA{
 var graphLanesLight = [6]color.NRGBA{
 	OKLCH(0.55, 0.15, 255, 1), OKLCH(0.55, 0.14, 150, 1), OKLCH(0.58, 0.15, 60, 1),
 	OKLCH(0.55, 0.17, 320, 1), OKLCH(0.55, 0.11, 200, 1), OKLCH(0.55, 0.19, 25, 1),
+}
+
+// toneMergedDark and toneMergedLight are Tailwind's purple-400 and purple-600,
+// the light one picked for the contrast the other light tones have.
+var (
+	toneMergedDark  = OKLCH(0.714, 0.203, 305.504, 1)
+	toneMergedLight = OKLCH(0.558, 0.288, 302.321, 1)
+)
+
+// ToneMergedFor is the merged tone of a theme's scheme.
+func ToneMergedFor(light bool) color.NRGBA {
+	if light {
+		return toneMergedLight
+	}
+	return toneMergedDark
 }
 
 // GraphLanesFor is the graph colors of a theme's scheme.
@@ -77,6 +93,7 @@ var Dark = Palette{
 	SidebarAccentForeground: OKLCH(0.985, 0, 0, 1),
 	SidebarBorder:           OKLCH(1, 0, 0, 0.10),
 	GraphLanes:              graphLanesDark,
+	ToneMerged:              toneMergedDark,
 }
 
 // Light is the light theme (themes/light.json).
@@ -109,6 +126,7 @@ var Light = Palette{
 	SidebarAccentForeground: OKLCH(0.21, 0.006, 285.885, 1),
 	SidebarBorder:           OKLCH(0.888, 0.004, 286.32, 1),
 	GraphLanes:              graphLanesLight,
+	ToneMerged:              toneMergedLight,
 }
 
 // Theme is what every primitive draws with: the palette, the shaper, the

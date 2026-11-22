@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -40,6 +41,16 @@ var (
 
 var scheduleKinds = []string{scheduleAtTime, api.WatchChecksFailed, api.WatchChecksPassed, api.WatchReview}
 
+// kinds is what the dialog offers. A GitLab watch never meets a review (no id
+// tells a new one), so a GitLab checkout is not offered one, unless it is the
+// one already armed.
+func (d *scheduleDialog) kinds() []string {
+	if d.forge != api.ForgeGitLab || d.kind == api.WatchReview {
+		return scheduleKinds
+	}
+	return slices.DeleteFunc(slices.Clone(scheduleKinds), func(k string) bool { return k == api.WatchReview })
+}
+
 // scheduleDialog is the card's Schedule prompt…: one session, one trigger.
 type scheduleDialog struct {
 	id, label, branch, kind, by string
@@ -56,7 +67,7 @@ type scheduleDialog struct {
 // tooltip's first line says, else its parked prompt.
 func (d *scheduleDialog) show(sv sessionView) {
 	d.id, d.label, d.branch, d.forge, d.number = sv.ID, sv.Label, sv.git.Branch, sv.forge, 0
-	if sv.pr != nil {
+	if isOpenPR(sv.pr) {
 		d.number = sv.pr.Number
 	}
 	d.kind, d.by, d.runs, d.armed = scheduleAtTime, "", 0, true
@@ -164,7 +175,7 @@ func (d *scheduleDialog) layout(ctx context.Context, gtx C, th *ui.Theme, client
 	if d.cancel.Clicked(gtx) {
 		d.open = false
 	}
-	for i, kind := range scheduleKinds {
+	for i, kind := range d.kinds() {
 		if d.options[i].Clicked(gtx) {
 			d.pick(kind)
 		}
@@ -228,8 +239,9 @@ func (d *scheduleDialog) body(gtx C, th *ui.Theme) D {
 }
 
 func (d *scheduleDialog) kindList(gtx C, th *ui.Theme) D {
-	rows := make([]layout.FlexChild, 0, 2*len(scheduleKinds))
-	for i, kind := range scheduleKinds {
+	kinds := d.kinds()
+	rows := make([]layout.FlexChild, 0, 2*len(kinds))
+	for i, kind := range kinds {
 		if i > 0 {
 			rows = append(rows, ui.VGap(0.5))
 		}

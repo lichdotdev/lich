@@ -356,6 +356,7 @@ event extension-message ExtensionMessage
 event extension-removed ExtensionIDOptions
 event extension-status Extension
 event extension-update ExtensionUpdate
+event forge ForgeChange
 event lich-plugin-profiles PluginProfiles
 event plugin-incompatible PluginIncompatible
 event profile-changed ProfileChanged
@@ -2347,6 +2348,11 @@ ExtensionUpdate {
 	latest string
 }
 
+ForgeChange {
+	path string
+	forge string
+}
+
 PluginProfiles {
 	provider string
 	name string
@@ -3037,6 +3043,7 @@ PullRequest {
 	url string
 	title string
 	state string
+	isDraft bool
 	headRefName string
 	baseRefName string
 }

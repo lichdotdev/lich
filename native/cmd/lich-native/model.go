@@ -500,6 +500,10 @@ func (m *model) follow(ctx context.Context, events <-chan backend.Event) {
 			if b, err := backend.Decode(ev, api.BranchPullRequestEvent); err == nil {
 				m.setBranchPR(b)
 			}
+		case api.ForgeEvent.Name:
+			if f, err := backend.Decode(ev, api.ForgeEvent); err == nil {
+				m.forges.set(f.Path, f.Forge)
+			}
 		case api.AppUpdateProgressEvent.Name:
 			if p, err := backend.Decode(ev, api.AppUpdateProgressEvent); err == nil && m.appUpdateProgress != nil {
 				m.appUpdateProgress(p)
@@ -697,7 +701,7 @@ type sessionView struct {
 	reason    string       // what a waiting session is blocked on, "" for unsaid
 	git       backend.DiffStats
 	base      *backend.BaseStatus  // nil without a base to stand against
-	pr        *backend.PullRequest // open PR of the shown path's branch, nil for none
+	pr        *backend.PullRequest // PR of the shown path's branch in any state, nil for none
 	forge     string               // the shown path's forge, "" while it is read
 	// profileName is the profile the session runs in, "" for Personal;
 	// continueIn are the other logins its conversation could move to.

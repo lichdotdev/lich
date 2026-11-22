@@ -246,15 +246,23 @@ func TestGitStoreKeepsTheLastReadingThroughATransientFailure(t *testing.T) {
 }
 
 // A merge on GitHub moves neither branch nor head: the backend's own read of
-// the open pull request is what takes the badge down.
-func TestAMergeTheBackendReadsTakesTheBadgeDown(t *testing.T) {
+// the pull request is what turns the badge merged, and it stays while the
+// checkout is on that branch.
+func TestAMergeTheBackendReadsTurnsTheBadgeMerged(t *testing.T) {
 	forge := &fakeForge{prs: map[string]*backend.PullRequest{"c1": {Number: 7, State: "OPEN"}}}
 	forge.set("feat", "c1")
 	m := forge.watch(newTestModel(forge.client(t)))
 	prOnCard(t, m, 7)
 
 	send(m, api.BranchPullRequestEvent.Name, api.BranchPullRequest{Path: checkout, PR: &backend.PullRequest{Number: 7, State: "MERGED"}})
-	awaitPROnCard(t, m, 0)
+	for deadline := time.Now().Add(5 * time.Second); ; time.Sleep(10 * time.Millisecond) {
+		if pr := cardOf(t, m).pr; pr != nil && pr.Number == 7 && pr.State == "MERGED" {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("PR on card %+v, want #7 merged", cardOf(t, m).pr)
+		}
+	}
 
 	send(m, api.BranchPullRequestEvent.Name, api.BranchPullRequest{Path: elsewhere, PR: &backend.PullRequest{Number: 9, State: "OPEN"}})
 	m.mu.Lock()

@@ -70,6 +70,12 @@ const (
 	ForgeGitLab = "gitlab"
 )
 
+// ForgeChange is the forge the checkout at Path now answers with.
+type ForgeChange struct {
+	Path  string `json:"path"`
+	Forge string `json:"forge"`
+}
+
 // PathOptions names a checkout, or a directory, by its path.
 type PathOptions struct {
 	Path string `json:"path"`
@@ -383,13 +389,14 @@ type OpenedProject struct {
 	Path string `json:"path"`
 }
 
-// PullRequest is the GitHub pull request of a work tree's current branch, as
-// reported by the gh CLI, whatever its state: one of gh's OPEN, CLOSED, MERGED.
+// PullRequest is the pull request of a work tree's current branch, whatever its
+// state: one of gh's OPEN, CLOSED, MERGED.
 type PullRequest struct {
 	Number      int    `json:"number"`
 	URL         string `json:"url"`
 	Title       string `json:"title"`
 	State       string `json:"state"`
+	IsDraft     bool   `json:"isDraft"`
 	HeadRefName string `json:"headRefName"`
 	BaseRefName string `json:"baseRefName"`
 }

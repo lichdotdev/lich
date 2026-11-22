@@ -229,3 +229,12 @@ func TestBrandMarksParse(t *testing.T) {
 		}
 	}
 }
+
+// GitLab's path draws with relative moves and arcs: the body fills and the
+// notch between its ears stays open.
+func TestGitLabFillsItsBody(t *testing.T) {
+	inked := render(t, Brand("gitlab"))
+	if !inked(12, 14) || !inked(4, 4) || inked(12, 3) {
+		t.Errorf("gitlab: body %v, ear %v, notch %v; want body and ear inked, notch open", inked(12, 14), inked(4, 4), inked(12, 3))
+	}
+}

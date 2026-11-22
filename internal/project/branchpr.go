@@ -197,7 +197,7 @@ func fillPRRead(read *api.PRRead, out []byte) error {
 }
 
 // OpenPullRequest is the open pull request of opts.Path's branch, nil when it
-// has none open, as the badge shows it: the watch's last read when there is
+// has none open: the watch's last read when there is
 // one, else one gh read, which is not recorded, since only the window's ask
 // starts following a checkout. A repository with no remote has none, with no
 // gh read.
@@ -229,7 +229,7 @@ func (s *Service) BranchPullRequest(path string) (*PullRequest, error) {
 }
 
 func (g githubForge) branchPullRequest(path string) (*PullRequest, error) {
-	out, err := g.s.gh(prLookupTimeout, path, "pr", "view", "--json", "number,url,title,state,headRefName,baseRefName")
+	out, err := g.s.gh(prLookupTimeout, path, "pr", "view", "--json", "number,url,title,state,isDraft,headRefName,baseRefName")
 	if err != nil {
 		return nil, err
 	}

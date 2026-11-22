@@ -23,7 +23,6 @@ var (
 	icSandboxed = icons.Lucide("shield")
 	icConflict  = icons.Lucide("triangle-alert")
 	icBranch    = icons.Lucide("git-branch")
-	icPR        = icons.Lucide("git-pull-request-arrow")
 	icModel     = icons.Lucide("cpu")
 )
 
@@ -48,6 +47,9 @@ func sessionTooltip(th *ui.Theme, sv *sessionView) layout.Widget {
 	}
 	if sv.git.Branch != "" {
 		sections = append(sections, branchSection(th, sv))
+		if line, ok := prChangesSection(th, sv); ok {
+			sections = append(sections, line)
+		}
 	}
 	sections = append(sections, baseSections(th, sv.base)...)
 	sections = append(sections, scheduleTipSections(th, sv, time.Now())...)
@@ -88,23 +90,29 @@ func sandboxSection(th *ui.Theme, s sandboxEvent) layout.Widget {
 	return func(gtx C) D { return ui.IconLine(gtx, icSandboxed, line.Color, layout.Flexed(1, para(line).Layout)) }
 }
 
+// branchSection is the branch alone on its line, wrapped rather than cut.
 func branchSection(th *ui.Theme, sv *sessionView) layout.Widget {
-	return func(gtx C) D {
-		muted := th.Text(ui.TextXS, sv.git.Branch).Muted()
-		children := []layout.FlexChild{
-			layout.Rigid(func(gtx C) D { return ui.IconLine(gtx, icBranch, muted.Color, layout.Rigid(muted.Layout)) }),
-		}
-		if sv.pr != nil {
-			number := th.Text(ui.TextXS, changeRef(sv.forge, sv.pr.Number)).Muted()
-			children = append(children, ui.Gap(2), layout.Rigid(func(gtx C) D {
-				return ui.IconLine(gtx, icPR, number.Color, layout.Rigid(number.Layout))
-			}))
-		}
-		if sv.git.Files > 0 {
-			children = append(children, ui.Gap(2), layout.Rigid(func(gtx C) D { return th.DiffStat(sv.git.Added, sv.git.Deleted).Layout(gtx) }))
-		}
-		return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
+	muted := para(th.Text(ui.TextXS, sv.git.Branch).Muted())
+	return func(gtx C) D { return ui.IconLine(gtx, icBranch, muted.Color, layout.Rigid(muted.Layout)) }
+}
+
+// prChangesSection is the line under the branch: its pull request, then the
+// checkout's changes. ok is false when there is neither.
+func prChangesSection(th *ui.Theme, sv *sessionView) (layout.Widget, bool) {
+	var children []layout.FlexChild
+	if sv.pr != nil && sv.forge != "" {
+		children = append(children, layout.Rigid(func(gtx C) D { return prBadge(gtx, th, sv.pr, sv.forge, th.MutedForeground, ui.TextXS) }))
 	}
+	if sv.git.Files > 0 {
+		if len(children) > 0 {
+			children = append(children, ui.Gap(2))
+		}
+		children = append(children, layout.Rigid(func(gtx C) D { return th.DiffStat(sv.git.Added, sv.git.Deleted).Layout(gtx) }))
+	}
+	if len(children) == 0 {
+		return nil, false
+	}
+	return func(gtx C) D { return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...) }, true
 }
 
 // baseSections spell out the base readout: commits behind the
