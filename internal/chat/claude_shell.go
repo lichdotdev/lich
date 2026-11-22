@@ -19,6 +19,10 @@ var (
 	bashOutput = regexp.MustCompile(`(?s)^\s*(<bash-stdout>(.*?)</bash-stdout>)?<bash-stderr>(.*?)</bash-stderr>(?:<bash-exit-code>(-?\d+)</bash-exit-code>)?\s*$`)
 )
 
+// claudeEscape escapes text as Claude Code writes it in a shell command's
+// lines: angle brackets and ampersands, never quotes (measured on 2.1.330).
+var claudeEscape = strings.NewReplacer("&", "&amp;", "<", "&lt;", ">", "&gt;")
+
 // claudeShellTool is the tool a shell command is drawn as, the agent's own
 // Bash.
 const claudeShellTool = "Bash"
@@ -95,7 +99,7 @@ func (d *claudeDriver) shellEnded(command string, out []string) {
 		d.c.endTurn(stopEndTurn)
 	default:
 		lines := []map[string]any{
-			{"type": "text", "text": "<bash-input>" + html.EscapeString(command) + "</bash-input>"},
+			{"type": "text", "text": "<bash-input>" + claudeEscape.Replace(command) + "</bash-input>"},
 			{"type": "text", "text": "<bash-stdout>" + shortenTo(out[2], claudeShellToModel) + "</bash-stdout><bash-stderr>" + shortenTo(out[3], claudeShellToModel) + "</bash-stderr>"},
 		}
 		if err := d.c.out.send(map[string]any{"type": "user", "message": map[string]any{"role": "user", "content": lines}}); err != nil {

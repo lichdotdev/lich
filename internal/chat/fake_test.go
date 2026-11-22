@@ -6,7 +6,6 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"html"
 	"os"
 	"os/exec"
 	"slices"
@@ -154,7 +153,7 @@ func (f *fake) claudeShell(command string) {
 		row("<bash-stderr>Not run: no command was given.</bash-stderr>")
 		return
 	}
-	row("<bash-input>" + html.EscapeString(command) + "</bash-input>")
+	row("<bash-input>" + claudeEscape.Replace(command) + "</bash-input>")
 	switch command {
 	case "fail":
 		row("<bash-stdout></bash-stdout><bash-stderr>x &gt; y</bash-stderr><bash-exit-code>4</bash-exit-code>")
@@ -166,7 +165,7 @@ func (f *fake) claudeShell(command string) {
 		}
 		row("<bash-stdout></bash-stdout><bash-stderr>[interrupted]</bash-stderr><bash-exit-code>130</bash-exit-code>")
 	default:
-		row("<bash-stdout>ran " + html.EscapeString(command) + "</bash-stdout><bash-stderr></bash-stderr><bash-exit-code>0</bash-exit-code>")
+		row("<bash-stdout>ran " + claudeEscape.Replace(command) + "</bash-stdout><bash-stderr></bash-stderr><bash-exit-code>0</bash-exit-code>")
 	}
 }
 

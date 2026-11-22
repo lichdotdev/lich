@@ -152,10 +152,12 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   the person stopped or Claude Code refused never reaches the agent, and so is gone from a chat read back. The
   TUI's `respondToBashCommands` setting is not read: the agent always answers. Codex's
   `thread/shellCommand` runs it unsandboxed in a turn of its own, and the rollout files it for the agent's next
-  turn as a `<user_shell_command>` message, with no answer, as its TUI's `!` (measured on 0.144.5), but
+  turn as a `<user_shell_command>` message, with no answer (measured on app-server 0.144.5; that its TUI's `!`
+  starts no turn either was read from its code, not run), but
   `thread/turns/list` gives that turn back empty, so a chat read back no longer shows it.
   opencode's `/session/{id}/shell`, on the server its ACP runs beside, runs it under the agent in force and files
-  it in the conversation, where the agent sees it on the next turn and does not answer it; read back, the call
+  it in the conversation, where the agent sees it on the next turn and does not answer it (measured on the server; the TUI calls the
+  same route, read from its code, not run); read back, the call
   comes without the person's line, since the user message opencode files it under is addressed to the agent alone. Stop ends it on all three (Claude Code prints `[interrupted]`,
   Codex interrupts the turn, opencode's `session/cancel` aborts the command), though opencode's turn then ends as
   done, not stopped. One runs at a time, never while a turn runs, and never from the queue: joined with the queued

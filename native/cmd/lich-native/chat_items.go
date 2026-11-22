@@ -330,12 +330,13 @@ func chatCalls(gtx C, th *ui.Theme, f *chatFold, r chatRow) []layout.FlexChild {
 
 // chatShellCall is a shell command's call with its output under it, as
 // Claude Code prints it, on a branch from the person's command: the row keeps
-// the mark, not the output's first line, and output past chatShellLines opens
-// on a click of the line under it.
+// the mark, neither the command the message over it already shows nor the
+// output's first line, and output past chatShellLines opens on a click of the
+// line under it.
 func chatShellCall(gtx C, th *ui.Theme, more *chatFold, it backend.ChatItem, live bool) D {
 	tool := *it.Tool
 	out := strings.Trim(tool.Output, "\n")
-	tool.Output = ""
+	tool.Output, tool.Title = "", ""
 	row := it
 	row.Tool = &tool
 	if out == "" {
