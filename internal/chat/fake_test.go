@@ -150,6 +150,8 @@ func (f *fake) claudeTurn(run *fakeClaude, text string) {
 		f.claudeResult(false, "completed", "Oi!")
 	case "tasks":
 		f.claudeTasks(msg)
+	case "shells":
+		f.claudeShellTurn(msg)
 	case "todos":
 		msg("m2", map[string]any{"type": "tool_use", "id": "toolu_t", "name": "TodoWrite", "input": map[string]any{"todos": []any{
 			map[string]any{"content": "Read the parser", "status": "completed", "activeForm": "Reading the parser"},

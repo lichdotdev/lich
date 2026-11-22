@@ -194,6 +194,22 @@
     },
     "pluginSkills": "As skills de plugin se gerenciam pelo /plugin."
   },
+  "shells": {
+    "count": {
+      "one": "{count} shell",
+      "other": "{count} shells"
+    },
+    "title": "Shells em segundo plano",
+    "back": "Shells",
+    "none": "Nenhum shell rodando em segundo plano",
+    "noOutput": "Ainda sem saída",
+    "stop": "Parar",
+    "state": {
+      "completed": "concluído",
+      "failed": "falhou",
+      "stopped": "parado"
+    }
+  },
   "attach": {
     "remove": "Remover",
     "pasteNeedsTool": "Para colar uma imagem, instale o wl-paste (wl-clipboard) ou o xclip"

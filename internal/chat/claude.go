@@ -43,6 +43,7 @@ type claudeDriver struct {
 	// by its install path, which a new version changes.
 	details map[string]claudeDetails
 	tasks   *claudeTasks
+	shells  claudeShells
 }
 
 type claudeControl struct {
@@ -246,10 +247,16 @@ func (d *claudeDriver) handle(raw []byte) {
 			d.c.bind(line.SessionID, expected)
 			d.markCommands(line.Skills, line.TerminalCommands)
 		}
+		if strings.HasPrefix(line.Subtype, "task_") {
+			d.shellTask(line.Subtype, raw)
+		}
 		d.running(line.Model, line.PermissionMode)
 	case "result":
 		d.result(line)
 	default:
+		if line.Type == "user" {
+			d.shellResults(line)
+		}
 		readClaudeMessage(d.c, line, false)
 	}
 }

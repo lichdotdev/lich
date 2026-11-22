@@ -168,6 +168,22 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   leaving a plan mode; read from their binaries, opencode's `plan_exit` asks with its own question (the question
   card) and Antigravity's `exit_plan_mode` starts the work without asking, and Cursor CLI, oh-my-pi and Kiro CLI
   are not verified. Crush has no chat.
+- **A chat lists the agent's background shells only on Claude Code, and they end with the chat's process**
+  (`internal/chat/claude_shells.go`, `shells.go`, `native/cmd/lich-native/chat_shells.go`): Claude Code 2.1.330
+  reports a command its Bash tool runs in the background as a `local_bash` task (`system/task_started` with
+  `is_backgrounded`, then `task_updated` and `task_notification` on its end), and lich stops one with the
+  `stop_task` control request and reads the end of its output with `read_file`, through Claude Code, since a
+  sandbox's private /tmp hides the file from lich (measured outside a sandbox; that `read_file` reaches the file
+  inside bubblewrap is inferred, Claude Code reading through its own view of the filesystem). A Monitor's
+  command is counted with the shells, where Claude Code's TUI counts it apart, and a subagent's shells are
+  listed with the session's, both read in its code and not seen; so is the move of a foreground command to the
+  background (`task_updated` patching `is_backgrounded`). The shells run in the chat's process, so a switch to TUI, /new or a switch to YOLO mode,
+  which start a new one, stops them, and a conversation read back has none. A shell that ends after the turn
+  makes Claude Code answer on its own (measured): that answer reaches the chat with no turn running in lich.
+  Codex lists its background terminals only on its experimental app-server API
+  (`thread/backgroundTerminals/list`, 0.170.0's schema), with no event and no output, and lich opens Codex on the
+  stable one; ACP has no such report, its `terminal/*` methods being the client running commands for the agent,
+  which lich does not offer (`terminal: false`). Their chats show no shells. Crush has no chat.
 - **A chat message waits two seconds in the window before it reaches the agent**
   (`native/cmd/lich-native/chat_hold.go`): Esc or Stop takes it back meanwhile, and nothing reached the agent.
   It is drawn sent with its turn running from Enter, so the wait does not show, and a window closed inside it

@@ -212,6 +212,24 @@
     },
     "pluginSkills": "Навыками плагинов управляют через /plugin."
   },
+  "shells": {
+    "count": {
+      "one": "{count} оболочка",
+      "few": "{count} оболочки",
+      "many": "{count} оболочек",
+      "other": "{count} оболочки"
+    },
+    "title": "Фоновые оболочки",
+    "back": "Оболочки",
+    "none": "В фоне не работает ни одна оболочка",
+    "noOutput": "Вывода пока нет",
+    "stop": "Остановить",
+    "state": {
+      "completed": "завершена",
+      "failed": "ошибка",
+      "stopped": "остановлена"
+    }
+  },
   "attach": {
     "remove": "Убрать",
     "pasteNeedsTool": "Чтобы вставить изображение, нужен wl-paste (wl-clipboard) или xclip"
