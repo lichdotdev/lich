@@ -41,6 +41,8 @@ type Service struct {
 	// every host but gitlab.com as GitHub. glabProbes caches its host probe.
 	glab       glabRunner
 	glabProbes glabHosts
+	// forges is the last forge each checkout was answered with (forge.go).
+	forges forgeKinds
 	// accounts resolves the gh account a checkout's calls run as; nil (the
 	// default, and every test that does not wire it) means gh's own active
 	// account. Wired to the store in main (ghaccount.go).

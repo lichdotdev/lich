@@ -1047,6 +1047,9 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   answers a token, the one key glab does not answer with a default for a host it has never seen (glab 1.131).
   A GitHub Enterprise remote, a host glab is not signed in to and a checkout with no remote stay GitHub. The
   answer is kept a minute per host (`glabProbeTTL`), so a `glab auth login` made meanwhile is seen within one.
+  A changed answer reaches the windows as `api.ForgeEvent`, and only when the backend next picks the forge for
+  that checkout, on its next pull request read (the badge watch, the Pulls screen); a forge that changed while
+  the backend was down is not announced.
   An ssh host alias (`git@work:group/repo`) names no host glab knows, and reads as GitHub.
 - **On GitLab, the Pulls screen reads, merges and checks out, and the rest stays GitHub only**
   (`internal/project/gitlab.go`, `gitlabchecks.go`): the badge, the watch and its merge notice, the list, a
@@ -1073,10 +1076,11 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   - An administrator merge is refused: GitLab has no bypass of a branch's rules from the merge call. Merge,
     squash and rebase map onto glab's own; glab's rebase rebases the branch on GitLab and then merges it.
   - GitLab finds a branch's merge request by the branch's name alone, so a fork's merge request counts only
-    when this checkout holds its head commit (`holdsCommit`) and its branch is not named like its target: one
-    opened from a fork's `main` would otherwise badge every checkout of `main`, and once merged it is in
-    `main`'s history. So a session on a fork's merge request from its `main` gets no badge. A branch with
-    several is read as its open one, else the newest.
+    when the branch tracks that branch of a project other than the target (`tracksFork`), as
+    `glab mr checkout` leaves it: a stranger's merge request from a branch named like yours never badges
+    yours. A branch checked out by hand from a fork, with no upstream set, gets no badge, and two forks that
+    both hold the branch name the tracked one has are not told apart. A branch with several is read as its
+    open one, else the newest.
 - **A worktree off a local branch waits on a fetch first** (`internal/spawn/spawn.go` `newerOf`,
   `internal/project/freshness.go`): `lich open --worktree`, a subagent's worktree and `open_session` fetch the
   base's upstream to start from the newer of the two, so against a remote that does not answer the session

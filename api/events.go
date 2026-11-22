@@ -316,6 +316,11 @@ var (
 	// asked for a recheck hears its answer here.
 	BranchPullRequestEvent = defineEvent[BranchPullRequest]("branch-pull-request")
 
+	// ForgeEvent is a checkout's forge once the backend's answer for it
+	// changes: a host glab signs in to later turns a checkout GitLab, and
+	// nothing else would tell the window.
+	ForgeEvent = defineEvent[ForgeChange]("forge")
+
 	// ServicesEvent carries every project service and its state, emitted once a
 	// change to either is true: a save, a delete, a start, an exit.
 	ServicesEvent = defineEvent[[]Service]("services")

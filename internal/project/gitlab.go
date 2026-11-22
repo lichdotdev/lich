@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net/url"
 	"slices"
 	"strconv"
 	"strings"
@@ -113,7 +114,7 @@ func glabMergeState(mr glabMR) string {
 
 func (mr glabMR) pullRequest() *PullRequest {
 	return &PullRequest{Number: mr.IID, URL: mr.WebURL, Title: mr.Title, State: glabStates[mr.State],
-		HeadRefName: mr.SourceBranch, BaseRefName: mr.TargetBranch}
+		IsDraft: mr.Draft, HeadRefName: mr.SourceBranch, BaseRefName: mr.TargetBranch}
 }
 
 func (mr glabMR) crossRepo() bool { return mr.SourceProjectID != mr.TargetProjectID }
@@ -125,9 +126,9 @@ func (mr glabMR) crossRepo() bool { return mr.SourceProjectID != mr.TargetProjec
 //
 // GitLab filters by branch name alone, so every fork's merge request from a
 // branch called main comes back for a checkout of main (measured on
-// gitlab-org/cli). A fork's one counts only when this checkout holds its head,
-// and never when it merges a branch into its namesake: a fork's main merged
-// into main is in main's history, and is still someone else's.
+// gitlab-org/cli). A fork's one counts only when the branch tracks that branch
+// of a project other than the one the merge request targets, as
+// `glab mr checkout` leaves it.
 func (g gitlabForge) branchMR(path string, all bool) (glabMR, error) {
 	branch, _ := gitQuiet(path, "symbolic-ref", "--short", "HEAD")
 	if branch = strings.TrimSpace(branch); branch == "" {
@@ -145,9 +146,7 @@ func (g gitlabForge) branchMR(path string, all bool) (glabMR, error) {
 	if err := json.Unmarshal(out, &mrs); err != nil {
 		return glabMR{}, errUnreadableGitLab(err)
 	}
-	mrs = slices.DeleteFunc(mrs, func(mr glabMR) bool {
-		return mr.crossRepo() && (mr.SourceBranch == mr.TargetBranch || !holdsCommit(path, mr.SHA))
-	})
+	mrs = slices.DeleteFunc(mrs, func(mr glabMR) bool { return mr.crossRepo() && !tracksFork(path, branch, mr) })
 	if len(mrs) == 0 {
 		return glabMR{}, errNoPullRequest
 	}
@@ -159,12 +158,60 @@ func (g gitlabForge) branchMR(path string, all bool) (glabMR, error) {
 	return mrs[0], nil
 }
 
-func holdsCommit(path, sha string) bool {
-	if sha == "" || strings.HasPrefix(sha, "-") {
+// tracksFork is whether branch tracks mr's source branch on a project other
+// than the one mr targets: what `glab mr checkout` writes for a fork's merge
+// request (measured, glab 1.131: branch.<b>.remote is the fork's URL and
+// branch.<b>.merge its source branch).
+//
+// shortcut: two forks that both hold mr's source branch name both match;
+// telling them apart costs a glab api call per read for the fork's path.
+func tracksFork(path, branch string, mr glabMR) bool {
+	merge, _ := gitQuiet(path, "config", "--get", "branch."+branch+".merge")
+	if strings.TrimSpace(merge) != "refs/heads/"+mr.SourceBranch {
 		return false
 	}
-	_, ok := gitQuiet(path, "merge-base", "--is-ancestor", sha, "HEAD")
-	return ok
+	remote, _ := gitQuiet(path, "config", "--get", "branch."+branch+".remote")
+	tracked := projectPath(remoteURL(path, strings.TrimSpace(remote)))
+	return tracked != "" && tracked != webProjectPath(mr.WebURL)
+}
+
+// remoteURL is the URL a branch's remote setting names: itself when it is
+// one, the named remote's URL otherwise.
+func remoteURL(path, remote string) string {
+	if remote == "" || remote == "." || strings.HasPrefix(remote, "-") {
+		return ""
+	}
+	if strings.ContainsAny(remote, "/:") {
+		return remote
+	}
+	out, _ := gitQuiet(path, "remote", "get-url", "--", remote)
+	return strings.TrimSpace(out)
+}
+
+// projectPath is a remote's group/project, lowercased and without .git, ""
+// for a remote on the local disk.
+func projectPath(remote string) string {
+	if urlHost(remote) == "" {
+		return ""
+	}
+	p := remote
+	if u, err := url.Parse(remote); err == nil && strings.Contains(remote, "://") {
+		p = u.Path
+	} else if _, after, ok := strings.Cut(remote, ":"); ok {
+		p = after
+	}
+	return strings.ToLower(strings.TrimSuffix(strings.Trim(p, "/"), ".git"))
+}
+
+// webProjectPath is the group/project of a merge request's web_url,
+// https://host/group/project/-/merge_requests/N.
+func webProjectPath(webURL string) string {
+	u, err := url.Parse(webURL)
+	if err != nil {
+		return ""
+	}
+	p, _, _ := strings.Cut(u.Path, "/-/")
+	return strings.ToLower(strings.Trim(p, "/"))
 }
 
 // view reads merge request number, or the branch's open one for zero.

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/lichdotdev/lich/api"
+	"github.com/lichdotdev/lich/internal/events"
 )
 
 // forge is the part of the pull request flows that differs between GitHub (gh)
@@ -45,12 +46,40 @@ func (s *Service) Forge(_ context.Context, opts api.PathOptions) (string, error)
 // GitHub Enterprise remote and a checkout with no remote stay GitHub, as they
 // were before GitLab existed here.
 func (s *Service) forgeOf(path string) forge {
+	f := s.pickForge(path)
+	s.noteForge(path, f.kind())
+	return f
+}
+
+func (s *Service) pickForge(path string) forge {
 	switch host := remoteHost(path); {
 	case host == "github.com":
 	case host == "gitlab.com", host != "" && s.glabHost(host):
 		return gitlabForge{run: s.glab}
 	}
 	return githubForge{s: s}
+}
+
+// forgeKinds is the last forge each checkout was answered with. Zero value
+// ready.
+type forgeKinds struct {
+	mu   sync.Mutex
+	last map[string]string
+}
+
+// noteForge announces path's forge when it differs from the last answer for
+// path. The first answer is not news: whoever asked has it.
+func (s *Service) noteForge(path, kind string) {
+	s.forges.mu.Lock()
+	prev, seen := s.forges.last[path]
+	if s.forges.last == nil {
+		s.forges.last = map[string]string{}
+	}
+	s.forges.last[path] = kind
+	s.forges.mu.Unlock()
+	if seen && prev != kind && s.emit != nil {
+		events.Send(s.emit, api.ForgeEvent, api.ForgeChange{Path: path, Forge: kind})
+	}
 }
 
 // remoteHost is the host of the checkout's forge remote, "" for none or a
@@ -129,15 +158,20 @@ func (s *Service) glabHost(host string) bool {
 		return false
 	}
 	s.glabProbes.mu.Lock()
-	defer s.glabProbes.mu.Unlock()
-	if p, ok := s.glabProbes.seen[host]; ok && time.Since(p.at) < glabProbeTTL {
+	p, ok := s.glabProbes.seen[host]
+	s.glabProbes.mu.Unlock()
+	if ok && time.Since(p.at) < glabProbeTTL {
 		return p.gitlab
 	}
+	// Unlocked while glab runs, so one slow host does not hold up another's
+	// probe; two probes of one host at once both answer and the last one stays.
 	out, err := s.glab(glabProbeTimeout, "", "config", "get", "token", "--host", host)
-	p := glabProbe{gitlab: err == nil && strings.TrimSpace(string(out)) != "", at: time.Now()}
+	p = glabProbe{gitlab: err == nil && strings.TrimSpace(string(out)) != "", at: time.Now()}
+	s.glabProbes.mu.Lock()
 	if s.glabProbes.seen == nil {
 		s.glabProbes.seen = map[string]glabProbe{}
 	}
 	s.glabProbes.seen[host] = p
+	s.glabProbes.mu.Unlock()
 	return p.gitlab
 }

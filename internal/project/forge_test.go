@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"maps"
+	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/lichdotdev/lich/api"
 )
@@ -135,7 +137,6 @@ func TestBranchMergeRequestPicksTheCheckoutsOwn(t *testing.T) {
 		{"a fork's open one this checkout does not hold is a stranger's", listRows(t, []int{4527, 4514}, nil), 4514},
 		{"the open one before a newer closed one", listRows(t, []int{4495, 4512}, map[int]map[string]any{4512: {"state": "opened"}}), 4512},
 		{"the newest when none is open", listRows(t, []int{4514, 4495}, nil), 4514},
-		{"a fork's one whose head this checkout holds", listRows(t, []int{4527}, map[int]map[string]any{4527: {"sha": head}}), 4527},
 		{
 			"a fork's main merged into main, held by main's history",
 			listRows(t, []int{4516}, map[int]map[string]any{4516: {"sha": head, "source_branch": "main"}}),
@@ -158,6 +159,54 @@ func TestBranchMergeRequestPicksTheCheckoutsOwn(t *testing.T) {
 				t.Errorf("branch merge request = !%d, want !%d (0: none)", got, tc.want)
 			}
 		})
+	}
+}
+
+// A fork's merge request belongs to the checkout whose branch tracks the fork,
+// as `glab mr checkout` leaves it (measured, glab 1.131), however far the
+// contributor pushed past it; a branch of the same name that tracks no fork
+// owns none of the fork's, though its history holds their head.
+func TestAForksMergeRequestIsTheBranchThatTracksTheFork(t *testing.T) {
+	t.Parallel()
+	repo, git := repoWithRemote(t, "origin", "https://gitlab.com/gitlab-org/cli.git")
+	head := strings.TrimSpace(git("rev-parse", "HEAD"))
+	read := func(branch string, list []byte) int {
+		t.Helper()
+		git("checkout", "-q", "-B", branch)
+		s := &Service{glab: newFakeGLab().on("mr list --source-branch="+branch+" --per-page 20 -F json --all", list).run}
+		pr, err := s.BranchPullRequest(repo)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if pr == nil {
+			return 0
+		}
+		return pr.Number
+	}
+
+	git("config", "branch.feat/x.remote", "https://gitlab.com/gitlab-community/gitlab-org/cli.git")
+	git("config", "branch.feat/x.merge", "refs/heads/feat/x")
+	pushedPast := listRows(t, []int{4527}, map[int]map[string]any{4527: {"source_branch": "feat/x", "sha": "8de77cfeb0e714cb0a6fde52704fea0b6003639e"}})
+	if got := read("feat/x", pushedPast); got != 4527 {
+		t.Errorf("a checked out fork merge request pushed past = !%d, want !4527", got)
+	}
+
+	git("remote", "add", "fork", "git@gitlab.com:gitlab-community/gitlab-org/cli.git")
+	git("config", "branch.feat/y.remote", "fork")
+	git("config", "branch.feat/y.merge", "refs/heads/feat/y")
+	byName := listRows(t, []int{4527}, map[int]map[string]any{4527: {"source_branch": "feat/y"}})
+	if got := read("feat/y", byName); got != 4527 {
+		t.Errorf("a branch tracking the fork by remote name = !%d, want !4527", got)
+	}
+
+	strangers := listRows(t, []int{4516}, map[int]map[string]any{4516: {"source_branch": "patch-1", "sha": head}})
+	if got := read("patch-1", strangers); got != 0 {
+		t.Errorf("a branch of the same name tracking no fork = !%d, want none", got)
+	}
+	git("config", "branch.patch-1.remote", "origin")
+	git("config", "branch.patch-1.merge", "refs/heads/patch-1")
+	if got := read("patch-1", strangers); got != 0 {
+		t.Errorf("a branch of the same name tracking origin = !%d, want none", got)
 	}
 }
 
@@ -239,5 +288,40 @@ func TestCreateWorktreeFromAForkMergeRequestThatTakesNoPush(t *testing.T) {
 		api.CreateWorktreeFromPROptions{ProjectPath: repo, ProjectID: "p", Number: 4527})
 	if err == nil || !strings.Contains(err.Error(), "Merge request !4527 comes from a fork") {
 		t.Errorf("err = %v, want the GitLab refusal", err)
+	}
+}
+
+// A host glab signs in to after the window first asked reaches the windows as
+// an event once the backend answers GitLab for it; the window never asks again
+// on its own.
+func TestAForgeThatChangesIsAnnounced(t *testing.T) {
+	t.Parallel()
+	repo, _ := repoWithRemote(t, "origin", "git@gitlab.example.org:g/r.git")
+	token := []byte("\n")
+	var heard []api.ForgeChange
+	s := &Service{glab: func(_ time.Duration, _ string, args ...string) ([]byte, error) { return token, nil }}
+	s.SetEmit(func(name string, data any) {
+		if name == api.ForgeEvent.Name {
+			heard = append(heard, data.(api.ForgeChange))
+		}
+	})
+	s.forgeOf(repo)
+	s.forgeOf(repo)
+	token = []byte("glpat-x\n")
+	s.glabProbes.seen = nil // the probe's minute is over
+	s.forgeOf(repo)
+	want := []api.ForgeChange{{Path: repo, Forge: api.ForgeGitLab}}
+	if !slices.Equal(heard, want) {
+		t.Errorf("heard %+v, want the change alone, once: %+v", heard, want)
+	}
+}
+
+func TestAGitLabDraftReadsAsADraft(t *testing.T) {
+	t.Parallel()
+	repo, _ := repoWithRemote(t, "origin", "https://gitlab.com/gitlab-org/cli.git")
+	list := listRows(t, []int{4512}, map[int]map[string]any{4512: {"state": "opened", "draft": true}})
+	pr, err := (&Service{glab: newFakeGLab().on(branchList, list).run}).BranchPullRequest(repo)
+	if err != nil || pr == nil || !pr.IsDraft {
+		t.Errorf("branch merge request = %+v, %v, want a draft", pr, err)
 	}
 }
