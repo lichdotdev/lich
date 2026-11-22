@@ -36,7 +36,8 @@ type chatRow struct {
 	// answer being written, a turn's tool calls while one of them runs.
 	// calling marks a work row whose turn is in a run of tool calls: in the
 	// turn in flight, the last call or text the model wrote is a call.
-	live, calling bool
+	// movable marks a live row whose turn waits on a command Ctrl+B moves.
+	live, calling, movable bool
 	// ended is when a work row's turn last did something, unix ms.
 	ended int64
 	// turn, tools and took are a work row's: its tool calls and how long the
@@ -156,7 +157,7 @@ func chatRows(items []backend.ChatItem, kind string, running bool, now time.Time
 		rows = append(rows, chatRow{kind: chatRowDone, turn: last})
 	}
 	if running && permissionWaiting(items) == nil && questionWaiting(items) == nil {
-		live := chatRow{kind: chatRowLive, turn: last}
+		live := chatRow{kind: chatRowLive, turn: last, movable: movable(items)}
 		if sp := spans[last]; sp != nil && sp.start > 0 && !now.IsZero() {
 			live.took = time.Duration(max(now.UnixMilli()-sp.start, 0)) * time.Millisecond
 		}
@@ -186,6 +187,17 @@ func callingTools(items []backend.ChatItem) bool {
 
 // toolRunning is whether any of calls has not ended.
 func toolRunning(calls []backend.ChatItem) bool { return slices.ContainsFunc(calls, callRunning) }
+
+// movable is whether a running call of the last turn of items waits on a
+// command Ctrl+B moves to the background: one an ended turn left unended is
+// not alive.
+func movable(items []backend.ChatItem) bool {
+	if len(items) == 0 {
+		return false
+	}
+	last := items[len(items)-1].Turn
+	return slices.ContainsFunc(items, func(it backend.ChatItem) bool { return it.Turn == last && callRunning(it) && it.Tool.Movable })
+}
 
 // callRunning is whether the tool call it has not ended.
 func callRunning(it backend.ChatItem) bool {

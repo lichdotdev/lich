@@ -201,6 +201,7 @@
     "pluginSkills": "Plugin skills are managed with /plugin."
   },
   "shells": {
+    "move": "Ctrl+B to run in background",
     "count": {
       "one": "{count} shell",
       "other": "{count} shells"

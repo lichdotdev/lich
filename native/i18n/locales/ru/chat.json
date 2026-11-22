@@ -221,6 +221,7 @@
     "pluginSkills": "Навыками плагинов управляют через /plugin."
   },
   "shells": {
+    "move": "Ctrl+B, чтобы перевести в фон",
     "count": {
       "one": "{count} оболочка",
       "few": "{count} оболочки",

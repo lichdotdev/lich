@@ -30,4 +30,5 @@ func Chat(d *rpc.Handler, s *chat.Service) {
 	rpc.Handle(d, api.ChatShells, s.Shells)
 	rpc.Handle(d, api.ChatShellOutput, s.ShellOutput)
 	rpc.Handle(d, api.ChatStopShell, s.StopShell)
+	rpc.Handle(d, api.ChatBackground, s.Background)
 }

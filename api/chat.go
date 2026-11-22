@@ -157,14 +157,17 @@ type ChatItem struct {
 // Bash), Title what it acts on (a path, a command), Output a short reading
 // of its result; Diff is a unified diff when the tool edits a file. Ended is
 // when it finished, in unix milliseconds, 0 while it runs and where nobody
-// reported its end: a conversation read back from most providers.
+// reported its end: a conversation read back from most providers. Movable
+// marks a call that waits on a command ChatBackground can move to the
+// background.
 type ChatToolCall struct {
-	Name   string `json:"name"`
-	Title  string `json:"title,omitempty"`
-	State  string `json:"state"`
-	Output string `json:"output,omitempty"`
-	Diff   string `json:"diff,omitempty"`
-	Ended  int64  `json:"ended,omitempty"`
+	Name    string `json:"name"`
+	Title   string `json:"title,omitempty"`
+	State   string `json:"state"`
+	Output  string `json:"output,omitempty"`
+	Diff    string `json:"diff,omitempty"`
+	Ended   int64  `json:"ended,omitempty"`
+	Movable bool   `json:"movable,omitempty"`
 }
 
 // ChatPlan is the agent's task list, in its order. A turn's plan item holds

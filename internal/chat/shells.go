@@ -55,6 +55,17 @@ func (s *Service) StopShell(ctx context.Context, opts api.ChatShellOptions) (api
 	return api.None{}, d.stopShell(callCtx, opts.Shell)
 }
 
+// Background answers api.ChatBackground.
+func (s *Service) Background(ctx context.Context, opts api.SessionIDOptions) (api.None, error) {
+	d, err := s.shellDriver(ctx, opts.ID)
+	if err != nil {
+		return api.None{}, err
+	}
+	callCtx, cancel := context.WithTimeout(ctx, callTimeout)
+	defer cancel()
+	return api.None{}, d.background(callCtx)
+}
+
 func (s *Service) shellDriver(ctx context.Context, id string) (*claudeDriver, error) {
 	c, err := s.ensure(ctx, id)
 	if err != nil {
