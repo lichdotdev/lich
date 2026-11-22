@@ -103,6 +103,8 @@ func (c *fakeCodex) serve(m map[string]any) {
 		c.start(id, params)
 	case "turn/steer", "turn/interrupt":
 		c.reply(id, map[string]any{})
+	case "thread/shellCommand":
+		c.shell(id, str(params, "command"))
 	default:
 		c.serveTools(id, str(m, "method"), params)
 	}
@@ -157,6 +159,21 @@ func (c *fakeCodex) start(id any, params map[string]any) {
 		done["error"] = map[string]any{"message": message}
 	}
 	c.notify("turn/completed", map[string]any{"threadId": c.thread, "turn": done})
+}
+
+// shell runs the person's command as Codex does (measured on 0.170.0): the
+// answer, then a turn of its own holding one commandExecution of the user's
+// shell, run by the thread's shell.
+func (c *fakeCodex) shell(id any, command string) {
+	c.reply(id, map[string]any{})
+	c.turns++
+	turn := fmt.Sprintf("turn-%d", c.turns)
+	c.notify("turn/started", map[string]any{"threadId": c.thread, "turn": map[string]any{"id": turn}})
+	run := map[string]any{"type": "commandExecution", "id": "sh-" + turn, "command": "/bin/zsh -lc '" + command + "'", "source": "userShell", "status": "inProgress"}
+	c.item("item/started", run)
+	run["status"], run["aggregatedOutput"], run["exitCode"] = "completed", "ran "+command+"\n", 0
+	c.item("item/completed", run)
+	c.notify("turn/completed", map[string]any{"threadId": c.thread, "turn": map[string]any{"id": turn, "status": "completed"}})
 }
 
 func (c *fakeCodex) item(event string, item map[string]any) {

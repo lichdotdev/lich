@@ -3,6 +3,7 @@ package main
 import (
 	"slices"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/lichdotdev/lich/api"
@@ -35,6 +36,10 @@ type chatRow struct {
 	// calling marks a work row whose turn is in a run of tool calls: in the
 	// turn in flight, the last call or text the model wrote is a call.
 	live, calling bool
+	// shell marks a work row of a turn the person ran in the shell, a "!"
+	// message the agent did not answer: its call is the output they asked to
+	// see, which Claude Code prints under the command.
+	shell bool
 	// ended is when a work row's turn last did something, unix ms.
 	ended int64
 	// turn, tools and took are a work row's: its tool calls and how long the
@@ -64,6 +69,7 @@ func chatRows(items []backend.ChatItem, running bool, now time.Time) []chatRow {
 	}
 	spans := map[int]*chatTurnSpan{}
 	asked := map[int]bool{}
+	bang, spoke := map[int]bool{}, map[int]bool{}
 	last := 0
 	for _, it := range items {
 		sp := spans[it.Turn]
@@ -82,6 +88,8 @@ func chatRows(items []backend.ChatItem, running bool, now time.Time) []chatRow {
 			}
 		}
 		asked[it.Turn] = asked[it.Turn] || it.Kind == api.ItemUser
+		bang[it.Turn] = bang[it.Turn] || it.Kind == api.ItemUser && strings.HasPrefix(it.Text, chatShellMark)
+		spoke[it.Turn] = spoke[it.Turn] || it.Kind == api.ItemAgent
 		last = max(last, it.Turn)
 	}
 	var rows []chatRow
@@ -126,6 +134,7 @@ func chatRows(items []backend.ChatItem, running bool, now time.Time) []chatRow {
 		}
 		work := chatRow{kind: chatRowWork, avatar: opener[it.Turn] == "", turn: it.Turn, tools: sp.tools, ended: sp.end, live: running && it.Turn == last && toolRunning(sp.tools),
 			calling: running && it.Turn == last && callingTools(items),
+			shell:   bang[it.Turn] && !spoke[it.Turn],
 			took:    time.Duration(max(end-sp.start, 0)) * time.Millisecond}
 		if opener[it.Turn] == "" {
 			opener[it.Turn] = "work"

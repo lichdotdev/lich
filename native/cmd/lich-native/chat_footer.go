@@ -117,11 +117,18 @@ func (u *window) chatChips(th *ui.Theme, p *chatPane, sv sessionView, working bo
 		m := op.Record(gtx.Ops)
 		action := u.chatAction(gtx, th, p, working)
 		actionCall := m.Stop()
-		// while messages wait in the queue, the way back to them is named
-		// before the action
+		// the shell mode, as Claude Code names it, or while messages wait in
+		// the queue the way back to them, is named before the action
 		var hint D
 		var hintCall op.CallOp
-		if len(u.model.chat.queued(sv.ID)) > 0 {
+		_, shell := p.shellLine(sv.Kind)
+		switch {
+		case shell:
+			m = op.Record(gtx.Ops)
+			hint = th.Text(ui.TextXS, i18n.T("chat.composer.shell")).In(th.ToneWait).Layout(gtx)
+			hintCall = m.Stop()
+			hint.Size.X += gap
+		case len(u.model.chat.queued(sv.ID)) > 0:
 			m = op.Record(gtx.Ops)
 			hint = th.Text(ui.TextXS, i18n.T("chat.queue.edit")).Muted().Layout(gtx)
 			hintCall = m.Stop()

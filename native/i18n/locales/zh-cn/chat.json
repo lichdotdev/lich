@@ -35,7 +35,8 @@
   "composer": {
     "placeholder": "向 {provider} 询问有关此项目的问题",
     "send": "发送",
-    "stop": "停止"
+    "stop": "停止",
+    "shell": "Shell 模式"
   },
   "option": {
     "model": "模型",

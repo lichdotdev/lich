@@ -143,6 +143,12 @@ func (d *acpDriver) findOpenCodeRequest(callID string) (openCodeRequest, error) 
 // openCodeCall makes one request of opencode's server for the chat's
 // directory, decoding the answer into out when it is not nil.
 func (d *acpDriver) openCodeCall(method, path string, body any, out any) error {
+	ctx, cancel := context.WithTimeout(context.Background(), callTimeout)
+	defer cancel()
+	return d.openCodeDo(ctx, method, path, body, out)
+}
+
+func (d *acpDriver) openCodeDo(ctx context.Context, method, path string, body any, out any) error {
 	var payload io.Reader
 	if body != nil {
 		raw, err := json.Marshal(body)
@@ -151,8 +157,6 @@ func (d *acpDriver) openCodeCall(method, path string, body any, out any) error {
 		}
 		payload = bytes.NewReader(raw)
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), callTimeout)
-	defer cancel()
 	u := "http://127.0.0.1:" + strconv.Itoa(d.server.Port) + path + "?directory=" + url.QueryEscape(d.c.cwd)
 	req, err := http.NewRequestWithContext(ctx, method, u, payload)
 	if err != nil {

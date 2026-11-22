@@ -489,8 +489,12 @@ func (u *window) escapeChat(gtx C, p *chatPane, id string, waiting, asking *back
 
 // sendChat hands the composer's message to the agent, once it waited
 // chatSendHold, and reports whether it had any; a refused one goes back into
-// the composer. /new alone starts an empty conversation instead.
+// the composer. /new alone starts an empty conversation instead, and a "!"
+// line runs in the shell.
 func (u *window) sendChat(p *chatPane, id string) bool {
+	if u.takeShell(p, id) {
+		return true
+	}
 	m := p.composed()
 	if m.empty() || (len(m.files) == 0 && u.openTools(p, id, m.text)) {
 		return false
@@ -556,8 +560,15 @@ func (u *window) chatComposer(gtx C, th *ui.Theme, p *chatPane, sv sessionView, 
 		layout.Rigid(func(gtx C) D {
 			// the box's fill keeps near the theme's own ground and its edge
 			// leans to the theme's primary, as the backdrop around it does
+			// in shell mode it leans to ToneWait instead, the tone of the bolt
+			// on a mode that runs unchecked: the command runs with no
+			// permission check
+			lean := th.Primary
+			if _, shell := p.shellLine(sv.Kind); shell {
+				lean = th.ToneWait
+			}
 			tinted := *th
-			tinted.Palette.Input = ui.MixOKLab(th.Palette.Input, th.Primary, chatComposerFillTint)
+			tinted.Palette.Input = ui.MixOKLab(th.Palette.Input, lean, chatComposerFillTint)
 			ta := tinted.Textarea(&p.editor, i18n.T("chat.composer.placeholder", i18n.Args{"provider": name}))
 			ta.MaxHeight, ta.MinHeight, ta.Radius, ta.Steady, ta.History = chatComposerMax, chatComposerMin, ui.RadiusLG, true, &p.undo
 			ta.Size, ta.Leading, ta.PadX, ta.PadY = markdown.BodySize, markdown.BodySize*markdown.LineHeightScale, chatComposerPadX, chatComposerPadY
@@ -569,7 +580,7 @@ func (u *window) chatComposer(gtx C, th *ui.Theme, p *chatPane, sv sessionView, 
 			ta.Head = func(gtx C) D { return u.composerCards(gtx, th, p, tinted.Palette.Input) }
 			ta.Foot = u.chatChips(th, p, sv, working, ft)
 			d := ta.Layout(gtx)
-			ui.InsetBorder(gtx, d.Size, gtx.Dp(ui.RadiusLG), th.Over(ui.MixOKLab(th.Palette.Input, th.Primary, chatComposerTint)))
+			ui.InsetBorder(gtx, d.Size, gtx.Dp(ui.RadiusLG), th.Over(ui.MixOKLab(th.Palette.Input, lean, chatComposerTint)))
 			p.slash.refresh(gtx, &p.editor, slashCommands(u.model.chat.commandsOf(sv.ID), sv.Kind))
 			gtx.Constraints.Max.X = d.Size.X
 			p.slash.layout(gtx, th, p.slashRoom-d.Size.Y-gtx.Dp(2*chatComposerGap))

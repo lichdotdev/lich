@@ -59,6 +59,15 @@ func (c *conversation) userMessage(text string, files []string) int {
 	return turn
 }
 
+// turnText is the turn in flight and the person's text that opened it.
+func (c *conversation) turnText() (int, string) {
+	c.mu.Lock()
+	turn := c.turn
+	c.mu.Unlock()
+	it, _ := c.get("user-" + strconv.Itoa(turn))
+	return turn, it.Text
+}
+
 // notice adds something lich or the provider says about the session.
 func (c *conversation) notice(text string) {
 	c.mu.Lock()

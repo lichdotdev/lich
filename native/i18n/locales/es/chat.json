@@ -39,7 +39,8 @@
   "composer": {
     "placeholder": "Pregúntale a {provider} sobre este proyecto",
     "send": "Enviar",
-    "stop": "Detener"
+    "stop": "Detener",
+    "shell": "Modo shell"
   },
   "option": {
     "model": "Modelo",

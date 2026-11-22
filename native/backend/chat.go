@@ -84,6 +84,12 @@ func (c *Client) ChatNew(ctx context.Context, id string) error {
 	return err
 }
 
+// ChatShell runs command in session id's shell, as the person's own.
+func (c *Client) ChatShell(ctx context.Context, id, command string) error {
+	_, err := callMethod(ctx, c, api.ChatShell, api.ChatShellOptions{ID: id, Command: command})
+	return err
+}
+
 // ChatSetOption sets option optionID of session id's chat to the choice value.
 func (c *Client) ChatSetOption(ctx context.Context, id, optionID, value string) error {
 	_, err := callMethod(ctx, c, api.ChatSetOption, api.ChatSetOptionOptions{ID: id, OptionID: optionID, Value: value})

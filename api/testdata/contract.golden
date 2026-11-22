@@ -59,6 +59,7 @@ chat.Reply(ChatReplyOptions) None
 chat.SetOption(ChatSetOptionOptions) None
 chat.SetSkill(ChatSetSkillOptions) None
 chat.SetView(ChatViewOptions) None
+chat.Shell(ChatShellOptions) None
 chat.Skills(SessionIDOptions) ChatSkillList
 chat.Steer(ChatPromptOptions) None
 claudeprofile.CancelLogin(ProfileSlugOptions) None
@@ -736,6 +737,11 @@ ChatSetSkillOptions {
 ChatViewOptions {
 	id string
 	view string
+}
+
+ChatShellOptions {
+	id string
+	command string
 }
 
 ChatSkillList {

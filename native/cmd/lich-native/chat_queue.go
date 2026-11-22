@@ -102,6 +102,9 @@ func (m *model) flushQueue(ctx context.Context, t api.ChatTurn) {
 
 // queueChat puts the composer's message in session id's queue.
 func (u *window) queueChat(p *chatPane, id string) {
+	if u.takeShell(p, id) {
+		return
+	}
 	m := p.composed()
 	if m.empty() || (len(m.files) == 0 && u.openTools(p, id, m.text)) {
 		return
@@ -229,7 +232,8 @@ func revealed(gtx C, shown bool, w layout.Widget) D {
 // composerKeys runs the queue's keys in the composer: Ctrl+Enter (Cmd+Enter
 // on macOS) sends the text into the turn running, or as a message when none
 // runs, ↑ on an empty box takes the queue back to edit, and otherwise the
-// arrows walk the messages sent.
+// arrows walk the messages sent. Shift+Tab cycles the mode, as in Claude
+// Code's prompt; held here, it never moves the focus off the box.
 func (u *window) composerKeys(gtx C, p *chatPane, id string, sent []string, keys bool) {
 	if !keys {
 		return
@@ -237,6 +241,7 @@ func (u *window) composerKeys(gtx C, p *chatPane, id string, sent []string, keys
 	filters := []event.Filter{
 		key.Filter{Focus: &p.editor, Name: key.NameReturn, Required: key.ModShortcut},
 		key.Filter{Focus: &p.editor, Name: key.NameEnter, Required: key.ModShortcut},
+		key.Filter{Focus: &p.editor, Name: key.NameTab, Required: key.ModShift},
 	}
 	queue := p.editor.Len() == 0 && len(p.attached) == 0 && len(u.model.chat.queued(id)) > 0
 	filters = append(filters, p.history.filters(&p.editor, sent, queue)...)
@@ -259,9 +264,12 @@ func (u *window) composerKeys(gtx C, p *chatPane, id string, sent []string, keys
 		case e.Name == key.NameDownArrow:
 			p.history.forward(&p.editor, sent)
 			continue
+		case e.Name == key.NameTab:
+			u.cycleMode(id)
+			continue
 		}
 		m := p.composed()
-		if m.empty() || (len(m.files) == 0 && u.openTools(p, id, m.text)) {
+		if m.empty() || (len(m.files) == 0 && u.openTools(p, id, m.text)) || u.takeShell(p, id) {
 			continue
 		}
 		if !u.model.chat.isRunning(id) {

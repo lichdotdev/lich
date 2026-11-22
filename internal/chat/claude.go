@@ -361,7 +361,7 @@ func isInterruptMarker(text string) bool {
 func readClaudeUser(c *chatSession, line claudeLine, history bool) {
 	var text string
 	if json.Unmarshal(line.Message.Content, &text) == nil {
-		if localCommand(c, text) {
+		if claudeShellLine(c, text, history) || localCommand(c, text) {
 			return
 		}
 		// Live, the person's message is already an item: lich wrote it.
@@ -398,7 +398,7 @@ func readClaudeUser(c *chatSession, line claudeLine, history bool) {
 				it.Tool.Output = shorten(blockText(b.Content))
 				it.Tool.Ended = stamp(line.Timestamp)
 			})
-		case b.Type == "text" && localCommand(c, b.Text):
+		case b.Type == "text" && (claudeShellLine(c, b.Text, history) || localCommand(c, b.Text)):
 		case b.Type == "text" && history && !isInterruptMarker(b.Text):
 			c.conv.userMessage(b.Text, nil)
 		}

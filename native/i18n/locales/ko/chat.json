@@ -35,7 +35,8 @@
   "composer": {
     "placeholder": "이 프로젝트에 대해 {provider}에게 물어보세요",
     "send": "보내기",
-    "stop": "중지"
+    "stop": "중지",
+    "shell": "셸 모드"
   },
   "option": {
     "model": "모델",

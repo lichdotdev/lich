@@ -40,6 +40,10 @@ var (
 	// prompt, its slash commands and skills, as it lists them; none until it
 	// has.
 	ChatCommands = define[SessionIDOptions, []ChatCommand]("chat.Commands")
+	// ChatShell runs a command the person typed after "!" the way the
+	// provider's own TUI does, with no model and no permission check; a
+	// provider whose protocol has no such way refuses it.
+	ChatShell = define[ChatShellOptions, None]("chat.Shell")
 	// ChatNew starts an empty conversation in a chat session, the one it had
 	// left to the provider. It refuses while the agent works.
 	ChatNew = define[SessionIDOptions, None]("chat.New")
@@ -80,6 +84,12 @@ type ChatPromptOptions struct {
 	ID          string           `json:"id"`
 	Text        string           `json:"text"`
 	Attachments []DropAttachment `json:"attachments,omitempty"`
+}
+
+// ChatShellOptions runs Command in session ID's checkout.
+type ChatShellOptions struct {
+	ID      string `json:"id"`
+	Command string `json:"command"`
 }
 
 // ChatAnswerOptions answers permission item ItemID of session ID with the

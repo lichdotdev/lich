@@ -6,10 +6,13 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"html"
 	"os"
 	"os/exec"
 	"slices"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -28,8 +31,13 @@ type fake struct {
 	in   *bufio.Reader
 	log  *os.File
 	args []string
-	// asks counts the fake's opencode questions, which name their tool calls.
-	asks int
+	// asks counts the fake's opencode questions, which name their tool calls,
+	// read by its server too, and answers is where that server puts the
+	// person's answer.
+	asks    atomic.Int64
+	answers chan string
+	// out keeps a line the server writes whole beside the reader's.
+	out sync.Mutex
 }
 
 func runFake(args []string) {
@@ -59,6 +67,8 @@ func runFake(args []string) {
 
 func (f *fake) send(v any) {
 	line, _ := json.Marshal(v)
+	f.out.Lock()
+	defer f.out.Unlock()
 	fmt.Println(string(line))
 }
 
@@ -107,6 +117,8 @@ func (f *fake) claude(args []string) {
 		switch str(m, "type") {
 		case "control_request":
 			f.claudeControl(run, m)
+		case "bash_command":
+			f.claudeShell(str(m, "command"))
 		case "user":
 			f.send(map[string]any{"type": "system", "subtype": "init", "session_id": session, "model": run.model, "permissionMode": run.mode,
 				"skills": []any{"deploy"}, "terminal_slash_commands": []any{"doctor"}})
@@ -129,6 +141,31 @@ func claudeText(m map[string]any) string {
 		}
 	}
 	return ""
+}
+
+// claudeShell answers a bash_command with the two replay rows Claude Code
+// writes, XML-escaped (measured on 2.1.330): the command, then its output, or
+// why it did not run. "fail" exits 4 and "sleep" waits for the interrupt.
+func (f *fake) claudeShell(command string) {
+	row := func(content string) {
+		f.send(map[string]any{"type": "user", "isReplay": true, "parent_tool_use_id": nil, "message": map[string]any{"role": "user", "content": content}})
+	}
+	if strings.TrimSpace(command) == "" {
+		row("<bash-stderr>Not run: no command was given.</bash-stderr>")
+		return
+	}
+	row("<bash-input>" + html.EscapeString(command) + "</bash-input>")
+	switch command {
+	case "fail":
+		row("<bash-stdout></bash-stdout><bash-stderr>x &gt; y</bash-stderr><bash-exit-code>4</bash-exit-code>")
+	case "sleep":
+		if m := f.next(); str(m, "type") == "control_request" {
+			f.send(map[string]any{"type": "control_response", "response": map[string]any{"subtype": "success", "request_id": str(m, "request_id"), "response": map[string]any{"still_queued": []any{}}}})
+		}
+		row("<bash-stdout></bash-stdout><bash-stderr>[interrupted]</bash-stderr><bash-exit-code>130</bash-exit-code>")
+	default:
+		row("<bash-stdout>ran " + html.EscapeString(command) + "</bash-stdout><bash-stderr></bash-stderr><bash-exit-code>0</bash-exit-code>")
+	}
 }
 
 func (f *fake) claudeResult(isError bool, terminal, text string) {
@@ -219,6 +256,7 @@ func (f *fake) claudeTurn(run *fakeClaude, text string) {
 
 func (f *fake) acp(args []string) {
 	opts := newFakeACP(args)
+	f.openCodeServe()
 	for m := f.next(); m != nil; m = f.next() {
 		id, method := m["id"], str(m, "method")
 		params, _ := m["params"].(map[string]any)

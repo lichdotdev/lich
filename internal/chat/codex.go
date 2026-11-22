@@ -212,6 +212,18 @@ func (d *codexDriver) prompt(m message) error {
 	return nil
 }
 
+func (d *codexDriver) runsShell() bool { return true }
+
+// shell runs the command as the TUI's `!` does, in a turn of its own Codex
+// starts and ends, with the thread's shell, unsandboxed; the agent sees it
+// on its next turn (measured on 0.170.0).
+func (d *codexDriver) shell(command string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), callTimeout)
+	defer cancel()
+	_, err := d.call(ctx, "thread/shellCommand", map[string]any{"threadId": d.threadID(), "command": command})
+	return err
+}
+
 func (d *codexDriver) setTurn(id string) {
 	if id == "" {
 		return

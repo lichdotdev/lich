@@ -1,0 +1,78 @@
+package chat
+
+import (
+	"encoding/json"
+	"html"
+	"regexp"
+	"strconv"
+	"strings"
+
+	"github.com/lichdotdev/lich/api"
+)
+
+// A shell command, the TUI's `!` or stream-json's bash_command, is written as
+// two user lines of tagged text: the command, then its output or why it did
+// not run, XML-escaped. Live, both come as replay rows; the TUI's land in the
+// transcript, bash_command's do not (measured on 2.1.330).
+var (
+	bashInput  = regexp.MustCompile(`(?s)^\s*<bash-input>(.*?)</bash-input>\s*$`)
+	bashOutput = regexp.MustCompile(`(?s)^\s*(<bash-stdout>(.*?)</bash-stdout>)?<bash-stderr>(.*?)</bash-stderr>(?:<bash-exit-code>(-?\d+)</bash-exit-code>)?\s*$`)
+)
+
+// claudeShellTool is the tool a shell command is drawn as, the agent's own
+// Bash.
+const claudeShellTool = "Bash"
+
+func (d *claudeDriver) runsShell() bool { return true }
+
+// shell runs the command beside the conversation, which the agent never sees:
+// the TUI's `!` adds it to the conversation, stream-json does that only on a
+// cloud worker (2.1.330).
+func (d *claudeDriver) shell(command string) error {
+	return d.c.out.send(map[string]any{"type": "bash_command", "command": command})
+}
+
+// claudeShellLine reads a shell command's line into the conversation and
+// reports whether text was one: the command as the person's message, read
+// back only from the transcript, as lich already wrote it live; its output
+// as a call of the shell tool under it, which ends the command's turn live.
+func claudeShellLine(c *chatSession, text string, history bool) bool {
+	if m := bashInput.FindStringSubmatch(text); m != nil {
+		if history {
+			c.conv.userMessage(shellMark+html.UnescapeString(m[1]), nil)
+		}
+		return true
+	}
+	m := bashOutput.FindStringSubmatch(text)
+	if m == nil {
+		return false
+	}
+	turn, typed := c.conv.turnText()
+	input, _ := json.Marshal(map[string]string{"command": strings.TrimPrefix(typed, shellMark)})
+	tool := claudeTool(claudeShellTool, input)
+	tool.Output = shorten(strings.TrimSpace(html.UnescapeString(m[2]) + "\n" + html.UnescapeString(m[3])))
+	// A command that did not run has no stdout; the TUI's carry no code.
+	tool.State = api.ToolDone
+	if code, _ := strconv.Atoi(m[4]); code != 0 || m[1] == "" {
+		tool.State = api.ToolFailed
+	}
+	c.conv.put(api.ChatItem{ID: "shell-" + strconv.Itoa(turn), Kind: api.ItemTool, Tool: &tool}, true)
+	if d, ok := c.drv.(*claudeDriver); ok && !history {
+		d.shellEnded()
+	}
+	return true
+}
+
+// shellEnded ends a shell command's turn, as a cancel when the person
+// stopped it: Claude Code then prints [interrupted] with code 130.
+func (d *claudeDriver) shellEnded() {
+	d.mu.Lock()
+	interrupted := d.interrupted
+	d.interrupted = false
+	d.mu.Unlock()
+	if interrupted {
+		d.c.endTurn(stopCancelled)
+		return
+	}
+	d.c.endTurn(stopEndTurn)
+}
