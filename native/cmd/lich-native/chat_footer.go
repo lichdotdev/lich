@@ -203,20 +203,20 @@ func (u *window) chatAction(gtx C, th *ui.Theme, p *chatPane, working bool) D {
 
 // chatCrumbs is the line under the composer's box, with no fill: at the left
 // the project, a slash and the branch, which opens the Git panel as its
-// balloon does, the branch's pull request as the session's row draws it, and
-// at the right the changes item, which opens Review.
+// balloon does, then the changes item, which opens Review, and the branch's
+// pull request.
 func (u *window) chatCrumbs(gtx C, th *ui.Theme, sv sessionView, in footerInput, ft chatFooter, size unit.Sp) D {
 	f := u.footer
 	// The changes are there when there are some.
 	if in.git.Files == 0 {
 		ft.changes = nil
 	}
-	if ft.checkout == nil && ft.changes == nil {
+	if ft.checkout == nil && ft.changes == nil && sv.pr == nil {
 		return D{}
 	}
-	// The footer's clicks (the Git panel, Review) act on the session it
-	// follows. Another pane's items are the same text under widgets of their
-	// own, which take no click, so that pane cannot open the other's panel.
+	// The footer's clicks (the Git panel, Review, the pull request) act on the
+	// session it follows. Another pane's items are the same text under widgets
+	// of their own, which take no click, so that pane cannot open the other's.
 	followed := sv.ID == f.shown.sessionID
 	suffix := ""
 	if !followed {
@@ -227,6 +227,7 @@ func (u *window) chatCrumbs(gtx C, th *ui.Theme, sv sessionView, in footerInput,
 			}
 		}
 	}
+	tail, reserve := u.crumbsTail(gtx, th, sv, in, ft, followed, size)
 	var left []layout.FlexChild
 	if ft.checkout != nil {
 		names, _ := u.model.projectNamesAndPaths()
@@ -238,51 +239,66 @@ func (u *window) chatCrumbs(gtx C, th *ui.Theme, sv sessionView, in footerInput,
 			ic = icBranch
 		}
 		link := followed && f.git != nil && in.inRepository()
-		badge, reserve := u.chatPRBadge(gtx, th, sv)
 		left = append(left, layout.Rigid(func(gtx C) D {
-			// the branch truncates first, so the pull request is never cut
+			// the branch truncates first, so what follows it is never cut
 			gtx.Constraints.Max.X = max(0, gtx.Constraints.Max.X-reserve)
 			return f.crumb(gtx, th, "checkout"+suffix, ic, *ft.checkout, link, size)
 		}))
-		if badge != nil {
-			left = append(left, ui.Gap(chatCrumbStatGap), layout.Rigid(badge))
-		}
 	}
-	// the changes' line counts follow the branch they are on
-	if ft.changes != nil {
-		left = append(left, ui.Gap(chatCrumbStatGap), layout.Rigid(func(gtx C) D { return f.crumbChanges(gtx, th, *ft.changes, in.git, followed, size) }))
-	}
+	left = append(left, tail...)
 	return layout.Inset{Top: chatCrumbsPad, Bottom: chatCrumbsPad, Left: chatFootPad, Right: chatFootPad}.Layout(gtx, func(gtx C) D {
 		gtx.Constraints.Min.X = gtx.Constraints.Max.X
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx, left...)
 	})
 }
 
-// chatPRBadge is sv's pull request on the composer's line, a click away as on
-// its row, and the room it and its gap take; nil with no pull request.
-func (u *window) chatPRBadge(gtx C, th *ui.Theme, sv sessionView) (layout.Widget, int) {
-	if sv.pr == nil {
-		return nil, 0
+// crumbsTail is what follows the branch, the changes' line counts and the pull
+// request, laid out ahead of it, and the room they take with their gaps.
+func (u *window) crumbsTail(gtx C, th *ui.Theme, sv sessionView, in footerInput, ft chatFooter, followed bool, size unit.Sp) ([]layout.FlexChild, int) {
+	var items []layout.Widget
+	if ft.changes != nil {
+		items = append(items, func(gtx C) D { return u.footer.crumbChanges(gtx, th, *ft.changes, in.git, followed, size) })
 	}
-	click := &u.footer.w("pr@" + sv.ID).click
-	if click.Clicked(gtx) {
-		u.openPR(prTarget(sv.pr, sv.shown, sv.path))
+	if sv.pr != nil {
+		items = append(items, func(gtx C) D { return u.chatPRBadge(gtx, th, sv, followed, size) })
 	}
 	gtx.Constraints.Min = image.Point{}
-	m := op.Record(gtx.Ops)
-	d := prChipLayout(gtx, th, click, sv.pr)
-	call := m.Stop()
-	return func(gtx C) D { call.Add(gtx.Ops); return d }, d.Size.X + gtx.Dp(ui.Space(chatCrumbStatGap))
+	gap := gtx.Dp(ui.Space(chatCrumbStatGap))
+	var tail []layout.FlexChild
+	room := 0
+	for i, item := range items {
+		m := op.Record(gtx.Ops)
+		d := item(gtx)
+		call := m.Stop()
+		if i > 0 || ft.checkout != nil {
+			tail, room = append(tail, ui.Gap(chatCrumbStatGap)), room+gap
+		}
+		tail, room = append(tail, layout.Rigid(func(gtx C) D { call.Add(gtx.Ops); return d })), room+d.Size.X
+	}
+	return tail, room
 }
 
-// prChipLayout is the composer's pull request badge, a button whose logo
-// brightens on hover.
-func prChipLayout(gtx C, th *ui.Theme, click *ui.Clickable, pr *backend.PullRequest) D {
+// chatPRBadge is the session's pull request on the composer's line: a click
+// opens it where its row's menu does, under a tooltip of its title. Another
+// pane's takes no click.
+func (u *window) chatPRBadge(gtx C, th *ui.Theme, sv sessionView, followed bool, size unit.Sp) D {
+	w := u.footer.w("pr@" + sv.ID)
 	logo := th.MutedForeground
-	if click.Hovered() {
-		logo = th.Foreground
+	badge := func(gtx C) D { return prBadge(gtx, th, sv.pr, logo, size) }
+	if followed {
+		if w.click.Clicked(gtx) {
+			u.openPR(prTarget(sv.pr, sv.shown, sv.path))
+		}
+		if w.click.Hovered() {
+			logo = th.Foreground
+		}
+		draw := badge
+		badge = func(gtx C) D { return w.click.Layout(gtx, draw) }
 	}
-	return click.Layout(gtx, func(gtx C) D { return prBadge(gtx, th, pr, logo) })
+	if sv.pr.Title == "" {
+		return badge(gtx)
+	}
+	return th.Tooltip(u.footer.root, &w.tip, sv.pr.Title).Layout(gtx, badge)
 }
 
 // crumb is a footer item drawn as a line of text under a tooltip, muted and

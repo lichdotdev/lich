@@ -101,7 +101,7 @@ func branchSection(th *ui.Theme, sv *sessionView) layout.Widget {
 func prChangesSection(th *ui.Theme, sv *sessionView) (layout.Widget, bool) {
 	var children []layout.FlexChild
 	if sv.pr != nil {
-		children = append(children, layout.Rigid(func(gtx C) D { return prBadge(gtx, th, sv.pr, th.MutedForeground) }))
+		children = append(children, layout.Rigid(func(gtx C) D { return prBadge(gtx, th, sv.pr, th.MutedForeground, ui.TextXS) }))
 	}
 	if sv.git.Files > 0 {
 		if len(children) > 0 {

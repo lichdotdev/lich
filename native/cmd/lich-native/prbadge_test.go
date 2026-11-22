@@ -4,6 +4,7 @@ import (
 	"image"
 	"strings"
 	"testing"
+	"time"
 
 	"gioui.org/f32"
 
@@ -121,43 +122,85 @@ func TestTheTooltipKeepsTheBranchWholeOnItsLine(t *testing.T) {
 	}
 }
 
-// Hovering the composer's badge brightens its logo and leaves the state's glyph and
-// number in their tone.
+// composerWithPR is a chat whose session has pr, on a stage of size, its
+// footer following follows.
+func composerWithPR(t *testing.T, size image.Point, pr backend.PullRequest, follows string) (*window, *frameRig, *chatBackend) {
+	in := busySession()
+	in.sessionID = follows
+	in.git.Branch = longBranch
+	u, r, f := chatFramesIn(t, api.ViewChat, size, in)
+	m := u.model
+	m.git[m.shownPath(m.projects[0], m.projects[0].Sessions[0])] = in.git
+	m.prs[m.shownPath(m.projects[0], m.projects[0].Sessions[0])] = prLookup{pr: &pr}
+	r.settle(t)
+	return u, r, f
+}
+
+// The composer's line draws each state after the changes.
+func TestTheComposerDrawsEachPRStateAfterTheChanges(t *testing.T) {
+	for _, c := range prCases() {
+		pr := c.pr
+		pr.Title = "Add the badge"
+		_, r, _ := composerWithPR(t, rigWindow, pr, "s1")
+		if !r.shows(c.number) {
+			t.Errorf("%s: no %q on the composer's line", c.name, c.number)
+			continue
+		}
+		changes, number := labelBox(t, r, "+0"), labelBox(t, r, c.number)
+		if number.Min.Y != changes.Min.Y || number.Min.X <= changes.Min.X {
+			t.Errorf("%s: %q at %v, the changes at %v: want it after them on their line", c.name, c.number, number, changes)
+		}
+	}
+}
+
+// In a narrow pane the branch truncates, and what follows it stays inside.
+func TestTheComposerNeverCutsThePullRequest(t *testing.T) {
+	pr := backend.PullRequest{Number: 1187, State: "MERGED", Forge: api.ForgeGitHub}
+	_, r, _ := composerWithPR(t, image.Pt(300, 800), pr, "s1")
+	branch, changes, number := labelBox(t, r, longBranch), labelBox(t, r, "+0"), labelBox(t, r, "#1187")
+	if !(branch.Min.X < changes.Min.X && changes.Min.X < number.Min.X) {
+		t.Errorf("branch %v, changes %v, #1187 %v: want them in that order", branch, changes, number)
+	}
+	// "#1187" in TextXS is under 40px wide
+	if number.Min.X > r.size.X-40 {
+		t.Errorf("#1187 starts at x=%d of a %dpx pane: the line ran off its edge", number.Min.X, r.size.X)
+	}
+}
+
+// A click on the composer's pull request opens it; another pane's takes none.
+func TestTheComposerPullRequestOpensOnlyInTheFollowedPane(t *testing.T) {
+	pr := backend.PullRequest{Number: 1187, State: "MERGED", Forge: api.ForgeGitHub, URL: "https://github.com/acme/app/pull/1187"}
+	_, r, f := composerWithPR(t, rigWindow, pr, "s1")
+	r.click(t, r.at(t, "#1187"))
+	if body := f.waitCall(t, api.SystemOpenExternal.Name); !strings.Contains(body, pr.URL) {
+		t.Errorf("opened %s, want %s", body, pr.URL)
+	}
+
+	_, r, f = composerWithPR(t, rigWindow, pr, "another")
+	r.click(t, r.at(t, "#1187"))
+	time.Sleep(100 * time.Millisecond)
+	if n := f.callsOf(api.SystemOpenExternal.Name); n != 0 {
+		t.Errorf("another pane's pull request opened %d times", n)
+	}
+}
+
+// Hovering the composer's pull request brightens its logo and leaves the
+// state's glyph and number in their tone.
 func TestHoverBrightensOnlyTheLogo(t *testing.T) {
-	pr := backend.PullRequest{Number: 990, State: "MERGED", Forge: api.ForgeGitHub}
-	chip := new(ui.Clickable)
-	r := newFrameRig(image.Pt(80, 20), func(gtx C, th *ui.Theme) { prChipLayout(gtx, th, chip, &pr) })
-	r.frame()
+	pr := backend.PullRequest{Number: 1187, State: "MERGED", Forge: api.ForgeGitHub}
+	_, r, _ := composerWithPR(t, rigWindow, pr, "s1")
 	rest := renderRig(t, r)
-	number := labelBox(t, r, "#990")
-	r.hover(f32.Pt(float32(number.Min.X+2), float32(number.Min.Y+number.Dy()/2)))
+	number := labelBox(t, r, "#1187")
+	r.hover(f32.Pt(float32(number.Min.X+2), float32(number.Min.Y+6)))
 	r.frame()
 	hovered := renderRig(t, r)
-	logo := image.Rect(0, 0, 12, r.size.Y)
-	tinted := image.Rect(logo.Max.X+1, 0, r.size.X, r.size.Y)
+	// the logo and the glyph stand 12px wide with a 4px gap before each
+	logo := image.Rect(number.Min.X-32, number.Min.Y-4, number.Min.X-20, number.Min.Y+16)
+	tinted := image.Rect(number.Min.X-16, number.Min.Y-4, number.Min.X+40, number.Min.Y+16)
 	if inkShift(rest, hovered, logo) == 0 {
 		t.Error("hover left the logo as it was")
 	}
 	if d := inkShift(rest, hovered, tinted); d != 0 {
 		t.Errorf("hover moved the glyph or the number by %d", d)
-	}
-}
-
-// The composer's line draws the session's pull request after its branch, and
-// a long branch truncates before the pull request is cut.
-func TestTheComposerDrawsThePullRequestWhole(t *testing.T) {
-	in := busySession()
-	in.git.Branch = longBranch + "-and-then-some-more-words"
-	u, r, _ := chatFramesIn(t, api.ViewChat, image.Pt(300, 800), in)
-	m := u.model
-	m.prs[m.shownPath(m.projects[0], m.projects[0].Sessions[0])] = prLookup{pr: &backend.PullRequest{Number: 1187, State: "MERGED", Forge: api.ForgeGitHub}}
-	r.settle(t)
-	branch, pr, changes := labelBox(t, r, in.git.Branch), labelBox(t, r, "#1187"), labelBox(t, r, "+0")
-	if pr.Min.Y != changes.Min.Y || pr.Min.X <= branch.Min.X || pr.Min.X >= changes.Min.X {
-		t.Errorf("#1187 at %v: want it on the crumbs' line between the branch (%v) and the changes (%v)", pr, branch, changes)
-	}
-	// what follows the pull request starts inside the window: the number ended before it
-	if changes.Min.X >= r.size.X {
-		t.Errorf("the changes start at x=%d, past the %dpx window: the line ran off its edge", changes.Min.X, r.size.X)
 	}
 }

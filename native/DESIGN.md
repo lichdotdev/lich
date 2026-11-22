@@ -541,14 +541,16 @@ draws none while it grows in, because the room above the rows is measured in the
   fit is left out with the items after it, never wrapped. The rest of the footer stays out of a chat. Under
   the box, outside it with no fill, one line, `Space(2)` (`chatCrumbsPad`) under the box and `Space(2)` clear of the island's
   bottom edge, over the composer's own pad, in a lone session and in each pane of a split: at the left a `TextXS` muted project, a slash and the branch,
-  which opens the Git panel as its balloon did, then the branch's pull request as its row draws it (the branch
-  truncates first, so it is never cut), and at the right the changes, only while there are some
+  which opens the Git panel as its balloon did, then the changes, only while there are some
   (files above 0): in the left's style, a small file-diff glyph, the file count and `+added -deleted` (`TonePass`,
   `Destructive`) in `TextXS`, on the same line and height, no fill at rest and the kit's hover fill under the
   pointer, which stands `Space(1.5)` by `Space(1)` (`chatChangesPadX`, `chatChangesPadY`) round the text and grows
   outward from it: the item takes the room of its text alone, so the text ends `chatFootPad` in from the box's
   right edge, as the left side starts, and the fill reaches the edge. A click opens Review. It is never drawn pressed, as the footer's button is while the dock shows Review:
-  on this line a lit item reads as a button switched on for no reason. Attach, changes and the branch show only when the user's footer layout has them, and
+  on this line a lit item reads as a button switched on for no reason. Last, `chatCrumbStatGap` after the changes,
+  the branch's pull request (`prBadge` in the line's size): a click opens it on Pulls or in the browser
+  (`prTarget`), its title in a tooltip; it shows with no checkout or changes, and the branch truncates first, so
+  neither it nor the changes is ever cut. Attach, changes and the branch show only when the user's footer layout has them, and
   in every pane, each for its own session (its checkout, branch and changes, with or without the focus, but only the
   followed pane's items take a click); the attach "+" and the context ring are the followed session's alone, so another
   chat pane of a layout has the provider's chips and Send.
@@ -967,7 +969,7 @@ Every row is one line, 34dp tall: `Space(1.5)` above and below a 22px node. Rows
   pull request and then the changes.
 - **A pull request** (`prBadge`, in a row's tooltip and on the chat composer's line): the forge's logo at 12px in
   `MutedForeground` (`Foreground` on hover where it is a link), then the state's glyph at 12px and the number in
-  `TextXS`, both in the state's tone: open `git-pull-request` in `TonePass`, draft `git-pull-request-draft` muted, merged `git-merge` in
+  the line's text size, both in the state's tone: open `git-pull-request` in `TonePass`, draft `git-pull-request-draft` muted, merged `git-merge` in
   `ToneMerged`, closed `git-pull-request-closed` in `Destructive`. A merged or closed one stays while the
   checkout is on its branch. A forge the reader did not name draws `git-pull-request-arrow` for the logo.
 - **The provider's mark** is its book's medallion in pixel art (`grimoire.Mark`), 1dp a pixel, in the

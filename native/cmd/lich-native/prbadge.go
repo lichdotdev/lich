@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"gioui.org/layout"
+	"gioui.org/unit"
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
@@ -63,15 +64,16 @@ func prLookOf(th *ui.Theme, pr *backend.PullRequest) prLook {
 	return l
 }
 
-// prBadge draws pr in a session's tooltip and on its chat composer's line;
-// logo is the ink of the forge's logo, which the composer brightens on hover.
-func prBadge(gtx C, th *ui.Theme, pr *backend.PullRequest, logo color.NRGBA) D {
+// prBadge draws pr in a session's tooltip and on its chat composer's line, its
+// number in size; logo is the ink of the forge's logo, which the composer
+// brightens on hover.
+func prBadge(gtx C, th *ui.Theme, pr *backend.PullRequest, logo color.NRGBA, size unit.Sp) D {
 	l := prLookOf(th, pr)
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 		layout.Rigid(func(gtx C) D { return l.logo.Layout(gtx, 12, logo) }),
 		ui.Gap(1),
 		layout.Rigid(func(gtx C) D { return l.glyph.Layout(gtx, 12, l.tone) }),
 		ui.Gap(1),
-		layout.Rigid(th.Text(ui.TextXS, l.number).In(l.tone).Layout),
+		layout.Rigid(th.Text(size, l.number).In(l.tone).Layout),
 	)
 }
