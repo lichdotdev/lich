@@ -105,7 +105,9 @@
     "new": "이 세션에서 새 대화를 시작",
     "mcp": "MCP 서버 관리",
     "skills": "스킬 켜기 또는 끄기",
-    "plugin": "플러그인 설치 및 관리"
+    "plugin": "플러그인 설치 및 관리",
+    "permissions": "권한 규칙을 보고 바꾸기",
+    "hooks": "실행되는 훅 보기"
   },
   "start": {
     "lines": "{project}에서 무엇을 빚어 볼까요?|{project}에 무엇을 소환할까요?|{project}에 무엇을 불어넣을까요?|{project}의 가마솥에서 무엇을 끓여 볼까요?|{project}에서 무엇을 점쳐 볼까요?|오늘은 {project}에 무엇을 새길까요?|{project}에 무엇을 엮어 넣을까요?|{project}에서 무엇을 되살려 볼까요?"
@@ -284,5 +286,88 @@
     "restart": "업데이트했습니다. 채팅을 다시 시작하면 새 버전으로 실행됩니다.",
     "current": "이미 최신 버전입니다.",
     "fixed": "이 플러그인은 lich가 직접 설치하고 업데이트합니다."
+  },
+  "permissions": {
+    "title": "권한",
+    "ruleCount": {
+      "other": "규칙 {count}개"
+    },
+    "tab": {
+      "allow": "허용",
+      "ask": "확인",
+      "deny": "거부",
+      "folders": "폴더"
+    },
+    "add": "규칙 추가…",
+    "addTitle": {
+      "allow": "새 허용 규칙",
+      "ask": "새 확인 규칙",
+      "deny": "새 거부 규칙"
+    },
+    "ruleHint": "도구 이름, 원하면 패턴까지: Bash(npm run *)",
+    "saveIn": "저장 위치",
+    "dest": {
+      "local": "이 체크아웃에만, 공유 안 함",
+      "project": "프로젝트의 모두, 저장소에 들어감",
+      "user": "나, 모든 프로젝트"
+    },
+    "source": {
+      "user": "사용자",
+      "project": "프로젝트",
+      "local": "로컬",
+      "managed": "조직 관리",
+      "flag": "실행 플래그",
+      "session": "이 세션",
+      "plugin": "플러그인",
+      "misc": "기타"
+    },
+    "back": "권한",
+    "noRules": "이 탭에는 규칙이 없습니다.",
+    "startedIn": "시작 폴더",
+    "fact": {
+      "means": "뜻",
+      "source": "출처"
+    },
+    "remove": "삭제",
+    "ignored": "조직이 자체 규칙만 허용하므로 이 규칙은 적용되지 않습니다.",
+    "readOnly": "이 규칙은 lich가 바꿀 수 있는 설정 파일에서 오지 않았습니다.",
+    "locked": "조직이 자체 규칙만 허용합니다.",
+    "skipped": "오류로 건너뛴 파일: {files}",
+    "none": "{provider}은(는) 권한을 lich에 알려 주지 않습니다. TUI로 바꿔서 그쪽 /permissions를 쓰세요."
+  },
+  "hooks": {
+    "title": "훅",
+    "noHooks": "설정된 훅이 없습니다.",
+    "none": "{provider}은(는) 훅을 lich에 알려 주지 않습니다. TUI로 바꿔서 그쪽 /hooks를 쓰세요.",
+    "back": "훅",
+    "act": {
+      "trust": "신뢰"
+    },
+    "state": {
+      "on": "실행됨",
+      "off": "꺼짐",
+      "untrusted": "신뢰가 필요함",
+      "modified": "신뢰한 뒤 바뀜"
+    },
+    "fact": {
+      "event": "이벤트",
+      "matcher": "대상 도구",
+      "condition": "조건",
+      "type": "종류",
+      "runs": "실행",
+      "timeout": "시간 제한"
+    },
+    "seconds": {
+      "other": "{count}초"
+    },
+    "readOnly": "훅은 설정 파일에서 바꾸거나, 에이전트에게 부탁해서 바꿉니다.",
+    "managed": "조직이 설정한 훅이라 항상 실행됩니다.",
+    "blocked": {
+      "policy": "조직이 모든 훅을 껐습니다.",
+      "managedOnly": "조직은 자체 훅만 실행하며, 그 훅은 여기에 나오지 않습니다.",
+      "off": "훅이 꺼져 있어 (disableAllHooks) 이 중 어느 것도 실행되지 않습니다.",
+      "safeMode": "안전 모드라서 이 훅들은 실행되지 않습니다.",
+      "bareMode": "베어 모드라서 이 훅들은 실행되지 않습니다."
+    }
   }
 }

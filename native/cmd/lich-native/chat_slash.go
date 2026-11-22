@@ -97,7 +97,9 @@ func slashCommands(provider []backend.ChatCommand, kind string) []backend.ChatCo
 		own = append(own,
 			backend.ChatCommand{Text: chatMCPCommand, Description: i18n.T("chat.slash.mcp")},
 			backend.ChatCommand{Text: chatSkillsCommand, Description: i18n.T("chat.slash.skills")},
-			backend.ChatCommand{Text: chatPluginCommand, Description: i18n.T("chat.slash.plugin")})
+			backend.ChatCommand{Text: chatPluginCommand, Description: i18n.T("chat.slash.plugin")},
+			backend.ChatCommand{Text: chatPermissionsCommand, Description: i18n.T("chat.slash.permissions")},
+			backend.ChatCommand{Text: chatHooksCommand, Description: i18n.T("chat.slash.hooks")})
 	}
 	shadowed := func(c backend.ChatCommand) bool {
 		return slices.ContainsFunc(own, func(o backend.ChatCommand) bool { return o.Text == c.Text })

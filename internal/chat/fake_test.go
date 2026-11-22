@@ -49,6 +49,10 @@ func runFake(args []string) {
 		f.claudePluginCLI(args)
 		return
 	}
+	if slices.Contains(args, "edit-permission-rules") {
+		f.editPermissionRules()
+		return
+	}
 	if slices.Contains(args, "edit-skill-overrides") {
 		f.editSkillOverrides()
 		return

@@ -437,6 +437,28 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   marketplace take no action in the panel: lich installs and pins them itself (Plugin install and upgrades). The
   ACP providers and Kiro CLI report no plugins.
 
+- **A chat's /permissions and /hooks panels show what Claude Code and Codex report, and nothing elsewhere**
+  (`internal/chat/permissions.go`, `claude_permissions.go`, `claude_hooks.go`, `codex_hooks.go`). Claude Code
+  (2.1.330) lists its rules, with their source and the folders it may work in, through `list_permission_rules`,
+  and its hooks through `get_hooks_listing`; no stream-json request changes a rule, so lich runs `claude
+  edit-permission-rules --json`, the writer its VS Code extension runs, outside the sandbox and without
+  `CLAUDE_CODE_CHILD_SESSION`. That writer refuses a rule that holds a secret or would land in a file git tracks,
+  and its reason is the toast. The running chat watches its settings files and lists an edit about a second later,
+  so the call waits up to four seconds for the list to show it. In a git worktree the local file is the main
+  checkout's `.claude/settings.local.json`, which the CLI picks, not lich. Its /hooks is read only ("To add or
+  change a hook, edit settings.json or ask Claude"), and so is lich's, though `claude edit-hook --json` exists for
+  the VS Code extension. Left out of its /permissions: adding or removing a folder (the TUI's /add-dir answers are
+  a session-only grant no request makes, or a write of `additionalDirectories` no CLI does; `list_permission_rules`
+  also names a user settings folder `localSettings`, so its source cannot pick the file), the recent denials of
+  auto mode and the auto mode rules tabs. A rule of an untrusted folder's project settings is not listed by
+  Claude Code itself. Codex (0.170.0) has no permission rules: its /permissions is the permission profile, the
+  mode the chat already sets, which the panel lists to pick. Its hooks come from `hooks/list`; trusting one writes
+  `trusted_hash` of the hash the person saw, and turning one off `enabled = false`, both in its `hooks.state`
+  entry of `config.toml` through `config/batchWrite` with an upsert, which keeps every other entry and field
+  (lich-plugin's trust among them), and `reloadUserConfig`. Its /hooks "trust all" is not offered: each hook is
+  trusted from its own detail. Antigravity, opencode, oh-my-pi, Crush, Cursor CLI and Kiro CLI report neither over
+  ACP, so /permissions and /hooks go to their agent as typed, as /plugin does there.
+
 - **The Welcome installs a provider with the vendor's own command, and only where that runs as you**
   (`internal/providers/install_recipes.go`). Each line is the vendor's install page word for word, run with no
   terminal and no stdin, `SUDO_ASKPASS` and the askpass hooks emptied, refused outright when lich runs as root: a

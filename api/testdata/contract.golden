@@ -48,11 +48,15 @@ chat.Background(SessionIDOptions) None
 chat.Cancel(SessionIDOptions) None
 chat.Commands(SessionIDOptions) []ChatCommand
 chat.History(SessionIDOptions) []ChatItem
+chat.HookAct(ChatHookActOptions) None
+chat.Hooks(SessionIDOptions) ChatHookList
 chat.Kinds(None) []string
 chat.MCP(SessionIDOptions) ChatMCPList
 chat.MCPAct(ChatMCPActOptions) ChatMCPActResult
 chat.New(SessionIDOptions) None
 chat.Options(SessionIDOptions) []ChatOption
+chat.PermissionAct(ChatPermissionActOptions) ChatPermissionActResult
+chat.Permissions(SessionIDOptions) ChatPermissionList
 chat.PluginAct(ChatPluginActOptions) ChatPluginActResult
 chat.Plugins(SessionIDOptions) ChatPluginList
 chat.Prompt(ChatPromptOptions) None
@@ -671,6 +675,21 @@ ChatItem {
 	effort,omitempty string
 }
 
+ChatHookActOptions {
+	id string
+	key string
+	action string
+	hash,omitempty string
+}
+
+ChatHookList {
+	reported bool
+	hooks,omitempty []ChatHook
+	actions,omitempty []string
+	blocked,omitempty string
+	errors,omitempty []string
+}
+
 ChatMCPList {
 	reported bool
 	servers,omitempty []ChatMCPServer
@@ -693,6 +712,28 @@ ChatOption {
 	label string
 	current string
 	choices []ChatChoice
+}
+
+ChatPermissionActOptions {
+	id string
+	action string
+	behavior string
+	rule string
+	source string
+}
+
+ChatPermissionActResult {
+	warnings,omitempty []string
+}
+
+ChatPermissionList {
+	reported bool
+	rules,omitempty []ChatPermissionRule
+	folders,omitempty []ChatFolder
+	cwd,omitempty string
+	destinations,omitempty []string
+	locked,omitempty bool
+	errors,omitempty []string
 }
 
 ChatPluginActOptions {
@@ -2548,6 +2589,24 @@ ChatPlan {
 	entries []ChatPlanEntry
 }
 
+ChatHook {
+	event string
+	summary,omitempty string
+	matcher,omitempty string
+	source string
+	plugin,omitempty string
+	type string
+	command string
+	label,omitempty string
+	condition,omitempty string
+	timeout,omitempty int
+	off,omitempty bool
+	key,omitempty string
+	hash,omitempty string
+	trust,omitempty string
+	managed,omitempty bool
+}
+
 ChatMCPServer {
 	name string
 	status string
@@ -2567,6 +2626,20 @@ ChatChoice {
 	label string
 	description,omitempty string
 	danger,omitempty bool
+}
+
+ChatPermissionRule {
+	behavior string
+	rule string
+	source string
+	description,omitempty string
+	removable,omitempty bool
+	ignored,omitempty bool
+}
+
+ChatFolder {
+	path string
+	source string
 }
 
 ChatPlugin {

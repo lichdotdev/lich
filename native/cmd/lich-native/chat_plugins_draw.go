@@ -174,6 +174,9 @@ func twoLineRow(gtx C, th *ui.Theme, glyph, name layout.Widget, desc string, end
 			layout.Rigid(glyph),
 			ui.Gap(2),
 			layout.Flexed(1, func(gtx C) D {
+				// the row's height reaches here from pickerRow; a name with no
+				// description under it would sit at the top instead of the middle
+				gtx.Constraints.Min.Y = 0
 				col := []layout.FlexChild{layout.Rigid(name)}
 				if desc != "" {
 					col = append(col, layout.Rigid(th.Text(ui.TextXS, cleanLine(desc)).Muted().Truncated().Layout))

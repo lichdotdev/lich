@@ -111,7 +111,9 @@
     "new": "Start a new conversation in this session",
     "mcp": "Manage the MCP servers",
     "skills": "Turn skills on or off",
-    "plugin": "Install and manage plugins"
+    "plugin": "Install and manage plugins",
+    "permissions": "Review and change the permission rules",
+    "hooks": "See the hooks that run"
   },
   "start": {
     "lines": "What shall we conjure in {project}?|What should we summon for {project}?|What are we channeling into {project}?|What's brewing in {project}?|What do you want to scry in {project}?|What are we inscribing in {project} today?|What shall we weave into {project}?|What are we raising in {project}?"
@@ -302,5 +304,90 @@
     "restart": "Updated. The chat runs the new version once restarted.",
     "current": "This is already the latest version.",
     "fixed": "lich installs and updates this plugin itself."
+  },
+  "permissions": {
+    "title": "Permissions",
+    "ruleCount": {
+      "one": "{count} rule",
+      "other": "{count} rules"
+    },
+    "tab": {
+      "allow": "Allow",
+      "ask": "Ask",
+      "deny": "Deny",
+      "folders": "Folders"
+    },
+    "add": "Add a rule…",
+    "addTitle": {
+      "allow": "New allow rule",
+      "ask": "New ask rule",
+      "deny": "New deny rule"
+    },
+    "ruleHint": "Tool name, with a pattern if you want one: Bash(npm run *)",
+    "saveIn": "Save in",
+    "dest": {
+      "local": "This checkout only, not shared",
+      "project": "Everyone in the project, checked in",
+      "user": "You, in every project"
+    },
+    "source": {
+      "user": "User",
+      "project": "Project",
+      "local": "Local",
+      "managed": "Managed",
+      "flag": "Launch flag",
+      "session": "This session",
+      "plugin": "Plugin",
+      "misc": "Other"
+    },
+    "back": "Permissions",
+    "noRules": "No rule in this tab.",
+    "startedIn": "Started in",
+    "fact": {
+      "means": "Means",
+      "source": "From"
+    },
+    "remove": "Remove",
+    "ignored": "Your organization allows only its own rules, so this one does not apply.",
+    "readOnly": "This rule does not come from a settings file lich can change.",
+    "locked": "Your organization allows only its own rules.",
+    "skipped": "Skipped for errors: {files}",
+    "none": "{provider} does not tell lich its permissions. Switch to TUI and use its own /permissions."
+  },
+  "hooks": {
+    "title": "Hooks",
+    "noHooks": "No hook is set up.",
+    "none": "{provider} does not tell lich its hooks. Switch to TUI and use its own /hooks.",
+    "back": "Hooks",
+    "act": {
+      "trust": "Trust"
+    },
+    "state": {
+      "on": "runs",
+      "off": "off",
+      "untrusted": "needs your trust",
+      "modified": "changed since you trusted it"
+    },
+    "fact": {
+      "event": "Event",
+      "matcher": "For tools",
+      "condition": "If",
+      "type": "Type",
+      "runs": "Runs",
+      "timeout": "Timeout"
+    },
+    "seconds": {
+      "one": "{count} second",
+      "other": "{count} seconds"
+    },
+    "readOnly": "Hooks are changed in the settings files, or by asking the agent.",
+    "managed": "Your organization set this hook, and it always runs.",
+    "blocked": {
+      "policy": "Your organization turned every hook off.",
+      "managedOnly": "Your organization runs only its own hooks, which are not listed.",
+      "off": "Hooks are turned off (disableAllHooks), so none of these run.",
+      "safeMode": "Safe mode is on, so these hooks do not run.",
+      "bareMode": "Bare mode is on, so these hooks do not run."
+    }
   }
 }

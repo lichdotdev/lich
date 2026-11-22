@@ -57,6 +57,10 @@ func (u *window) chatToolsPanel(gtx C, th *ui.Theme, p *chatPane, sv sessionView
 			return u.mcpView(gtx, th, p, sv, mcp)
 		case t.kind == chatPluginCommand:
 			return u.pluginsView(gtx, th, p, sv, plugins)
+		case t.kind == chatPermissionsCommand:
+			return u.permissionsView(gtx, th, p, sv)
+		case t.kind == chatHooksCommand:
+			return u.hooksView(gtx, th, p, sv)
 		}
 		return u.skillsView(gtx, th, p, sv, skills)
 	})

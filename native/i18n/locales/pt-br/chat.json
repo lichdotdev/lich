@@ -111,7 +111,9 @@
     "new": "Começa uma conversa nova nesta sessão",
     "mcp": "Gerencia os servidores MCP",
     "skills": "Liga e desliga skills",
-    "plugin": "Instala e gerencia plugins"
+    "plugin": "Instala e gerencia plugins",
+    "permissions": "Ver e mudar as regras de permissão",
+    "hooks": "Ver os hooks que rodam"
   },
   "start": {
     "lines": "O que vamos conjurar em {project}?|O que invocamos para {project}?|O que vamos canalizar para {project}?|O que tem no caldeirão de {project}?|O que você quer desvendar em {project}?|O que vamos inscrever hoje em {project}?|O que vamos tecer em {project}?|O que vamos erguer em {project}?"
@@ -302,5 +304,90 @@
     "restart": "Atualizado. O chat roda a versão nova quando reiniciar.",
     "current": "Esta já é a versão mais nova.",
     "fixed": "O lich instala e atualiza este plugin sozinho."
+  },
+  "permissions": {
+    "title": "Permissões",
+    "ruleCount": {
+      "one": "{count} regra",
+      "other": "{count} regras"
+    },
+    "tab": {
+      "allow": "Permitir",
+      "ask": "Perguntar",
+      "deny": "Negar",
+      "folders": "Pastas"
+    },
+    "add": "Adicionar regra…",
+    "addTitle": {
+      "allow": "Nova regra de permitir",
+      "ask": "Nova regra de perguntar",
+      "deny": "Nova regra de negar"
+    },
+    "ruleHint": "Nome da ferramenta, com um padrão se quiser: Bash(npm run *)",
+    "saveIn": "Salvar em",
+    "dest": {
+      "local": "Só neste checkout, sem compartilhar",
+      "project": "Todos no projeto, versionado no git",
+      "user": "Você, em todo projeto"
+    },
+    "source": {
+      "user": "Usuário",
+      "project": "Projeto",
+      "local": "Local",
+      "managed": "Gerenciada",
+      "flag": "Flag de início",
+      "session": "Esta sessão",
+      "plugin": "Plugin",
+      "misc": "Outra"
+    },
+    "back": "Permissões",
+    "noRules": "Nenhuma regra nesta aba.",
+    "startedIn": "Iniciou em",
+    "fact": {
+      "means": "Significa",
+      "source": "De"
+    },
+    "remove": "Remover",
+    "ignored": "Sua organização só aceita as próprias regras, então esta não vale.",
+    "readOnly": "Esta regra não vem de um arquivo de configuração que o lich possa mudar.",
+    "locked": "Sua organização só aceita as próprias regras.",
+    "skipped": "Ignorados por erro: {files}",
+    "none": "{provider} não informa ao lich suas permissões. Troque para a TUI e use o /permissions dele."
+  },
+  "hooks": {
+    "title": "Hooks",
+    "noHooks": "Nenhum hook configurado.",
+    "none": "{provider} não informa ao lich seus hooks. Troque para a TUI e use o /hooks dele.",
+    "back": "Hooks",
+    "act": {
+      "trust": "Confiar"
+    },
+    "state": {
+      "on": "roda",
+      "off": "desligado",
+      "untrusted": "precisa da sua confiança",
+      "modified": "mudou desde que você confiou"
+    },
+    "fact": {
+      "event": "Evento",
+      "matcher": "Para as ferramentas",
+      "condition": "Se",
+      "type": "Tipo",
+      "runs": "Roda",
+      "timeout": "Tempo limite"
+    },
+    "seconds": {
+      "one": "{count} segundo",
+      "other": "{count} segundos"
+    },
+    "readOnly": "Hooks se mudam nos arquivos de configuração, ou pedindo ao agente.",
+    "managed": "Sua organização definiu este hook, e ele sempre roda.",
+    "blocked": {
+      "policy": "Sua organização desligou todos os hooks.",
+      "managedOnly": "Sua organização roda só os próprios hooks, que não aparecem aqui.",
+      "off": "Os hooks estão desligados (disableAllHooks), então nenhum destes roda.",
+      "safeMode": "O modo seguro está ligado, então estes hooks não rodam.",
+      "bareMode": "O modo bare está ligado, então estes hooks não rodam."
+    }
   }
 }
