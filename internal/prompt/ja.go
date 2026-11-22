@@ -186,4 +186,6 @@ var ja = Catalog{
 	PageDialogWaitsCLI:   "このダイアログに応答するまでページは何も実行しません。lich browser dialog accept|dismiss を実行してください。",
 	ChatPermissionDenied: "ユーザーがこのツール呼び出しを拒否しました。",
 	ChatQuestionDeclined: "ユーザーはこれらの質問に回答しませんでした。回答を推測せず、回答なしで進めるか、もう一度質問してください。",
+	ChatPlanDeclined:     "ユーザーはプランを承認せず、計画を続けることを望んでいます。ここで止まり、何を変えるかの指示を待ってください。",
+	ChatPlanFeedback:     "ユーザーはプランを承認せず、計画を続けることを望んでいます。求められた変更: %s",
 }

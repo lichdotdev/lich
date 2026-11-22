@@ -2509,6 +2509,7 @@ ChatPermission {
 ChatQuestion {
 	questions []ChatAsk
 	reply,omitempty *ChatQReplied
+	proposal,omitempty *ChatProposal
 }
 
 ChatPlan {
@@ -2891,6 +2892,10 @@ ChatAsk {
 	text string
 	options,omitempty []ChatOffer
 	multi,omitempty bool
+}
+
+ChatProposal {
+	plan string
 }
 
 ChatPlanEntry {

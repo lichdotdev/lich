@@ -189,4 +189,6 @@ This session has a browser of its own (browser_* tools). It runs headless inside
 	PageDialogWaitsCLI:   "The page runs nothing until this dialog is answered: run lich browser dialog accept|dismiss.",
 	ChatPermissionDenied: "The person declined this tool call.",
 	ChatQuestionDeclined: "The person did not answer these questions. Do not assume an answer: go on without one or ask again.",
+	ChatPlanDeclined:     "The person did not approve the plan and wants to keep planning. Stop here and wait for them to say what to change.",
+	ChatPlanFeedback:     "The person did not approve the plan and wants to keep planning. They asked for this change: %s",
 }

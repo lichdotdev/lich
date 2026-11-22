@@ -102,6 +102,9 @@ func (u *window) chatRow(gtx C, th *ui.Theme, p *chatPane, sv sessionView, r cha
 		if it.Question == nil {
 			return D{}
 		}
+		if it.Question.Proposal != nil {
+			return u.chatProposal(gtx, th, p, it)
+		}
 		return chatQuestion(gtx, th, p, it)
 	}
 	return th.Text(ui.TextSM, expandTabs(it.Text)).Muted().Wrapped().Layout(gtx)

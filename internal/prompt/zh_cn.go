@@ -178,4 +178,6 @@ var zhCN = Catalog{
 	PageDialogWaitsCLI:   "在回应此对话框之前，页面不会执行任何操作：请运行 lich browser dialog accept|dismiss。",
 	ChatPermissionDenied: "用户拒绝了这次工具调用。",
 	ChatQuestionDeclined: "用户没有回答这些问题。不要臆测答案：在没有答案的情况下继续，或者再问一次。",
+	ChatPlanDeclined:     "用户没有批准这个计划，想继续规划。请在这里停下，等用户说明要改什么。",
+	ChatPlanFeedback:     "用户没有批准这个计划，想继续规划。用户要求的修改：%s",
 }

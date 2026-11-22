@@ -290,9 +290,21 @@ type ChatOptionsUpdate struct {
 // ChatQuestion is the agent asking the person, Claude Code's AskUserQuestion
 // shape that every provider's request for input is read into: one to four
 // questions. Reply is the answer once given, nil while it waits.
+//
+// Proposal is set where the agent asks to start on the plan it wrote: the one
+// ask's options are then the modes the work can start in, each Label a choice
+// id of the session's mode option, which the window names; the person's own
+// words, or no answer, keep it planning.
 type ChatQuestion struct {
 	Questions []ChatAsk     `json:"questions"`
 	Reply     *ChatQReplied `json:"reply,omitempty"`
+	Proposal  *ChatProposal `json:"proposal,omitempty"`
+}
+
+// ChatProposal is the plan the agent asks to start on, in Markdown, "" where
+// it gave none.
+type ChatProposal struct {
+	Plan string `json:"plan"`
 }
 
 // ChatAsk is one question. Header is its short label; an ask with no Options

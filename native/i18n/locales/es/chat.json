@@ -92,6 +92,15 @@
     "label": "{header}:",
     "own": "«{text}»"
   },
+  "proposal": {
+    "header": "Plan",
+    "ask": "¿Quieres continuar?",
+    "acceptEdits": "Sí, aceptar ediciones automáticamente",
+    "manual": "Sí, aprobar cada edición",
+    "keep": "No, seguir planificando",
+    "change": "No, seguir planificando: di qué cambiar",
+    "approved": "Aprobado"
+  },
   "slash": {
     "new": "Empieza una conversación nueva en esta sesión",
     "mcp": "Gestiona los servidores MCP",

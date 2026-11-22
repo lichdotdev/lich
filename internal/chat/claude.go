@@ -324,8 +324,7 @@ func readClaudeAssistant(c *chatSession, d *claudeDriver, line claudeLine, histo
 				c.conv.put(api.ChatItem{ID: id, Kind: api.ItemThought, Text: b.Thinking, At: stamp(line.Timestamp), Model: model, Effort: effort}, true)
 			}
 		case "tool_use":
-			if b.Name == claudeQuestionTool {
-				q, _ := readClaudeQuestion(b.Input)
+			if q, ok := claudeAsking(b); ok {
 				c.conv.update(b.ID, api.ItemQuestion, true, func(it *api.ChatItem) {
 					if it.Question == nil {
 						it.Question, it.At, it.Model, it.Effort = &q, stamp(line.Timestamp), model, effort
@@ -451,8 +450,9 @@ type claudeAsk struct {
 }
 
 // request answers what Claude Code asks of lich: can_use_tool becomes a
-// permission item, or a question item for AskUserQuestion, and anything else is refused, which is what the protocol
-// expects of a client that does not serve it.
+// permission item, or a question item for AskUserQuestion and ExitPlanMode,
+// and anything else is refused, which is what the protocol expects of a
+// client that does not serve it.
 func (d *claudeDriver) request(id string, raw json.RawMessage) {
 	var ask claudeAsk
 	_ = json.Unmarshal(raw, &ask)
@@ -467,8 +467,12 @@ func (d *claudeDriver) request(id string, raw json.RawMessage) {
 			"subtype": "success", "request_id": id, "response": behavior,
 		}})
 	}
-	if ask.Tool == claudeQuestionTool {
+	switch ask.Tool {
+	case claudeQuestionTool:
 		d.askQuestion(ask, respond)
+		return
+	case claudeExitPlanTool:
+		d.askProposal(ask, respond)
 		return
 	}
 	options := []api.ChatPermitOption{{ID: api.PermitAllowOnce, Kind: api.PermitAllowOnce}}

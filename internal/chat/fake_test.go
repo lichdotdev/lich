@@ -192,6 +192,8 @@ func (f *fake) claudeTurn(run *fakeClaude, text string) {
 		f.claudeResult(false, "completed", "")
 	case "question", "question-then-write":
 		f.claudeQuestion(msg, text == "question-then-write")
+	case "exit-plan":
+		f.claudeExitPlan(msg)
 	case "slow":
 		msg("m5", map[string]any{"type": "text", "text": "counting"})
 		if m := f.next(); str(m, "request", "subtype") == "interrupt" {
