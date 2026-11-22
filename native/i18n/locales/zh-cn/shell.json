@@ -49,9 +49,7 @@
   },
   "footerBar": {
     "attachFile": "附加文件",
-    "reviewChanges": "审查更改",
-    "viewPullRequest": "查看拉取请求",
-    "pullRequest": "PR #{number}"
+    "reviewChanges": "审查更改"
   },
   "footerSession": {
     "cacheHit": "缓存：命中率 {percent}%",

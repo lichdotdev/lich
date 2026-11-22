@@ -635,7 +635,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   transcripts are priced: when another profile disables it, an old layout cannot enable pricing just by
   moving an unrelated item. The editor takes no change until that setting has loaded.
   An item without data can occupy an editor slot while drawing
-  nothing in the live footer — a PR on a branch without one, or an unsupported provider reading.
+  nothing in the live footer — the changes outside a git checkout, or an unsupported provider reading.
 - **The card's tooltip names the running model only where the readout above has one**
   (`modelRuns`, `native/cmd/lich-native/sessiontooltip.go`): the line comes from the model the session-usage
   event carries, which only Claude Code, Codex and Kiro CLI record (`docs/providers/`, Transcript & cost), so
@@ -712,10 +712,11 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   `rate_limit_reset_credits.available_count` (how many on-demand window resets the account holds) are read from
   the payloads lich already polls and shown as one more block of the usage panel, only when the account has them on:
   an `extra_usage` that is disabled, and a count of zero, draw nothing. No other provider's route reports either,
-  so the other six show their windows alone. The usage panel of the profile footer reads per-profile plans only for Claude Code
-  and Codex: Cursor CLI's and opencode's plans are read for the machine's login alone, so on their profiles (and on
-  oh-my-pi's and Kiro CLI's, which have none) it says usage is not measured per profile rather than draw another
-  account's numbers. A `claude setup-token` login reads its windows off response headers
+  so the other six show their windows alone. The sidebar's account row reads per-profile plans only for Claude Code
+  and Codex: Cursor CLI's and opencode's plans are read for the machine's login alone, so on their profiles other
+  than Personal (and on oh-my-pi's and Kiro CLI's, which have none) its panel says usage is not measured per profile
+  rather than draw another account's numbers, and the row shows no readout. The row reads the account new sessions
+  spend, not the open card's: after Continue in moves a card to another login, the row still shows the project's. A `claude setup-token` login reads its windows off response headers
   (see the bullet below), which carry neither, so its panel never has the extra-usage block. The extra block's shape was
   written against the field names and a disabled account's nulls: an enabled one has not been seen in a live
   payload, so a currency or unit the route does not spell the documented way would draw a wrong amount. The

@@ -406,7 +406,6 @@ func run(w *app.Window, rt backend.Runtime) error {
 	u.footer.panel = u.extPanel
 	u.footer.extensions = &u.model.extensions
 	u.git.open = *flagTab == "git"
-	u.footer.openPullRequest = u.openPR
 	u.footer.attachAt = u.attachAtPrompt
 	u.footer.showDelegates = func(id string) { u.layoutStage.delegates = id }
 	u.settings.footer = u.footer

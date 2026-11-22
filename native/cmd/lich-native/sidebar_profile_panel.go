@@ -12,20 +12,23 @@ import (
 // panel's padding and the room for a profile's name beside its usage.
 var profilePanelW = contextTipWide + ui.Space(2)
 
-// panelBody is what the footer opens: the usage of the shown profile's account,
-// a separator, then what the footer's menu always held (the logins to switch
-// to, and the other providers').
-func (pf *profileFooter) panelBody(gtx C, th *ui.Theme, m *model, f profileFocus, act *sidebarAction) D {
+// panelBody is what the account row opens: the usage of its account, then,
+// while the provider has logins to switch between, a separator and what the
+// footer's menu always held (the logins, and the other providers').
+func (pf *profileFooter) panelBody(gtx C, th *ui.Theme, m *model, a sidebarAccount, act *sidebarAction) D {
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
-	plan, loaded := m.profilePlan(f)
 	var children []layout.FlexChild
-	if usage := profileUsageRows(th, f, plan, loaded, gtx.Now, &pf.reset); len(usage) > 0 {
+	if usage := profileUsageRows(th, a.profile, a.plan, a.loaded, gtx.Now, &pf.reset); len(usage) > 0 {
 		inset := layout.Inset{Left: ui.Space(2), Right: ui.Space(2), Top: ui.Space(1.5), Bottom: ui.Space(1.5)}
-		children = append(children,
-			layout.Rigid(func(gtx C) D { return inset.Layout(gtx, ui.Stack(usageBlockGap, usage...)) }),
-			layout.Rigid(th.Separator), ui.VGap(1))
+		children = append(children, layout.Rigid(func(gtx C) D { return inset.Layout(gtx, ui.Stack(usageBlockGap, usage...)) }))
 	}
-	for i, e := range flattenEntries(m.footerEntries(th, f, act)) {
+	if !a.switches() {
+		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
+	}
+	if len(children) > 0 {
+		children = append(children, layout.Rigid(th.Separator), ui.VGap(1))
+	}
+	for i, e := range flattenEntries(m.footerEntries(th, a.profile, act)) {
 		children = append(children, layout.Rigid(func(gtx C) D { return pf.entryRow(gtx, th, fmt.Sprint(i), e) }))
 	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)

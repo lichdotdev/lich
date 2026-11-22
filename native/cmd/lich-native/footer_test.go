@@ -31,9 +31,7 @@ func busySession() footerInput {
 	return footerInput{
 		sessionID: "s1", provider: "claude", path: "/home/me/repo", checkout: "/home/me/repo",
 		git: backend.DiffStats{Branch: "main", Files: 2}, isGit: true,
-		pr:    &backend.PullRequest{Number: 7, URL: "https://example.com/pr/7"},
 		usage: sessionUsage{Percent: 42, Tokens: 1000, Window: 200000, Model: "claude-opus-4-8", CostUSD: new(0.5)}, hasUsage: true,
-		plans:   []backend.QuotaPlan{quotaPlan(backend.QuotaWindow{Label: "Session", Seconds: 5 * hour, Percent: 28})},
 		handsOn: 600, cost: true, now: time.Date(2026, 10, 11, 14, 30, 0, 0, time.UTC),
 	}
 }
@@ -45,14 +43,14 @@ func TestFooterShowsEveryItemOnceTheSessionHasReportedIt(t *testing.T) {
 	}
 }
 
-func TestFooterWithoutASessionShowsOnlyTheCheckoutAndTheClock(t *testing.T) {
+func TestFooterWithoutASessionShowsOnlyAttachAndTheCheckout(t *testing.T) {
 	in := footerInput{path: "/home/me/repo", now: time.Now()}
 	got := slotIDs(footerSlots(allItems(), in))
-	want := []string{"attach", "checkout", "path", "clock"}
+	want := []string{"attach", "checkout"}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("slots %v, want %v", got, want)
 	}
-	if got := slotIDs(footerSlots(allItems(), footerInput{})); !reflect.DeepEqual(got, []string{"attach", "clock"}) {
+	if got := slotIDs(footerSlots(allItems(), footerInput{})); !reflect.DeepEqual(got, []string{"attach"}) {
 		t.Errorf("with no project either: %v", got)
 	}
 }
@@ -60,10 +58,8 @@ func TestFooterWithoutASessionShowsOnlyTheCheckoutAndTheClock(t *testing.T) {
 func TestFooterDropsReadingsTheSessionHasNot(t *testing.T) {
 	cases := map[string]func(*footerInput){
 		"changes": func(in *footerInput) { in.isGit = false },
-		"pr":      func(in *footerInput) { in.pr = nil },
 		"model":   func(in *footerInput) { in.usage.Model = "" },
 		"context": func(in *footerInput) { in.usage.Window = 0 },
-		"plan":    func(in *footerInput) { in.provider = "codex" },
 		"cost":    func(in *footerInput) { in.cost = false },
 		"handsOn": func(in *footerInput) { in.handsOn = 59 },
 	}
@@ -77,7 +73,7 @@ func TestFooterDropsReadingsTheSessionHasNot(t *testing.T) {
 }
 
 func TestFooterSlotsKeepTheLayoutOrder(t *testing.T) {
-	ids := []string{"clock", "pr", "attach"}
+	ids := []string{"handsOn", "checkout", "attach"}
 	if got := slotIDs(footerSlots(ids, busySession())); !reflect.DeepEqual(got, ids) {
 		t.Errorf("slots %v, want %v", got, ids)
 	}
@@ -94,14 +90,14 @@ func TestFooterHandsOnFailureStillShows(t *testing.T) {
 
 func TestFooterCheckoutTexts(t *testing.T) {
 	in := busySession()
-	slots := footerSlots([]string{"checkout", "path"}, in)
-	if slots[0].Text != "main" || slots[1].Text != "~/repo" || slots[1].Hint != "/home/me/repo" {
+	slots := footerSlots([]string{"checkout"}, in)
+	if slots[0].Text != "main" {
 		t.Errorf("slots %+v", slots)
 	}
-	in.git.Branch, in.host = "", "tmux"
-	slots = footerSlots([]string{"checkout", "path"}, in)
-	if slots[0].Text != "repo" || slots[1].Text != unknownCwd("tmux") {
-		t.Errorf("without a branch, inside tmux: %+v", slots)
+	in.git.Branch = ""
+	slots = footerSlots([]string{"checkout"}, in)
+	if slots[0].Text != "repo" {
+		t.Errorf("without a branch: %+v", slots)
 	}
 }
 
@@ -149,11 +145,11 @@ func (r *footerRig) settle(t *testing.T) {
 
 func TestEditorDropAppliesAndSavesTheLayout(t *testing.T) {
 	r := newFooterRig(t, map[string]string{})
-	r.f.drop(ui.SortDrop{ID: "clock", Over: "attach"})
+	r.f.drop(ui.SortDrop{ID: "model", Over: "attach"})
 	r.settle(t)
 	want := footerLayout{
-		Left:  []string{"clock", "attach", "changes", "pr"},
-		Right: []string{"checkout", "model", "context", "plan", "handsOn"},
+		Left:  []string{"model", "attach", "changes"},
+		Right: []string{"checkout", "context"},
 	}
 	if l, _ := r.f.snapshot(); !reflect.DeepEqual(l, want) {
 		t.Errorf("applied %+v, want %+v", l, want)
@@ -192,8 +188,8 @@ func TestEditorKeepsTheLayoutWhenTheCostWriteFails(t *testing.T) {
 }
 
 func TestEditorRestoreDefault(t *testing.T) {
-	r := newFooterRig(t, map[string]string{"/" + footerLayoutKey: `{"left":[],"right":["clock"]}`})
-	if l, _ := r.f.snapshot(); !reflect.DeepEqual(l, footerLayout{Left: []string{}, Right: []string{"clock"}}) {
+	r := newFooterRig(t, map[string]string{"/" + footerLayoutKey: `{"left":[],"right":["model"]}`})
+	if l, _ := r.f.snapshot(); !reflect.DeepEqual(l, footerLayout{Left: []string{}, Right: []string{"model"}}) {
 		t.Fatalf("loaded %+v", l)
 	}
 	r.f.change(defaultFooterLayout())
@@ -205,7 +201,7 @@ func TestEditorRestoreDefault(t *testing.T) {
 
 func TestAvailableItemsAreTheUnplacedInCatalogOrder(t *testing.T) {
 	got := availableItems(defaultFooterLayout(), footerInput{})
-	if want := []string{"path", "cost", "clock"}; !reflect.DeepEqual(got, want) {
+	if want := []string{"model", "cost", "handsOn"}; !reflect.DeepEqual(got, want) {
 		t.Errorf("available %v, want %v", got, want)
 	}
 }
