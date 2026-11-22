@@ -6,7 +6,6 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"html"
 	"os"
 	"os/exec"
 	"slices"
@@ -154,17 +153,19 @@ func (f *fake) claudeShell(command string) {
 		row("<bash-stderr>Not run: no command was given.</bash-stderr>")
 		return
 	}
-	row("<bash-input>" + html.EscapeString(command) + "</bash-input>")
+	row("<bash-input>" + claudeEscape.Replace(command) + "</bash-input>")
 	switch command {
 	case "fail":
 		row("<bash-stdout></bash-stdout><bash-stderr>x &gt; y</bash-stderr><bash-exit-code>4</bash-exit-code>")
+	case "long":
+		row("<bash-stdout>" + strings.Repeat("x", claudeShellToModel+100) + "</bash-stdout><bash-stderr></bash-stderr><bash-exit-code>0</bash-exit-code>")
 	case "sleep":
 		if m := f.next(); str(m, "type") == "control_request" {
 			f.send(map[string]any{"type": "control_response", "response": map[string]any{"subtype": "success", "request_id": str(m, "request_id"), "response": map[string]any{"still_queued": []any{}}}})
 		}
 		row("<bash-stdout></bash-stdout><bash-stderr>[interrupted]</bash-stderr><bash-exit-code>130</bash-exit-code>")
 	default:
-		row("<bash-stdout>ran " + html.EscapeString(command) + "</bash-stdout><bash-stderr></bash-stderr><bash-exit-code>0</bash-exit-code>")
+		row("<bash-stdout>ran " + claudeEscape.Replace(command) + "</bash-stdout><bash-stderr></bash-stderr><bash-exit-code>0</bash-exit-code>")
 	}
 }
 
@@ -175,6 +176,15 @@ func (f *fake) claudeResult(isError bool, terminal, text string) {
 func (f *fake) claudeTurn(run *fakeClaude, text string) {
 	msg := func(id string, block map[string]any) {
 		f.send(map[string]any{"type": "assistant", "parent_tool_use_id": nil, "message": map[string]any{"id": id, "model": run.model, "content": []any{block}}})
+	}
+	// the TUI's two lines of a shell command, which the agent answers; "slow"
+	// answers as the slow prompt does
+	if text == "<bash-input>slow</bash-input>" {
+		text = "slow"
+	} else if strings.HasPrefix(text, "<bash-input>") {
+		msg("m8", map[string]any{"type": "text", "text": "The command ran."})
+		f.claudeResult(false, "completed", "The command ran.")
+		return
 	}
 	switch text {
 	case "hi":

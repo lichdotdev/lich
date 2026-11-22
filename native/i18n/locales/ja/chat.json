@@ -13,6 +13,10 @@
       "other": "{duration}作業 · ツール{count}件"
     },
     "toolFailed": "失敗",
+    "shellMore": {
+      "other": "残り{count}行を表示"
+    },
+    "shellLess": "折りたたむ",
     "answered": "{tool} · {choice}",
     "verbs": "詠唱中|召喚中|魔力を注ぎ中|調合中|占い中|刻印中|紡ぎ中|蘇らせ中",
     "thinking": "思考中",
@@ -36,7 +40,7 @@
     "placeholder": "このプロジェクトについて{provider}に質問",
     "send": "送信",
     "stop": "停止",
-    "shell": "シェルモード"
+    "shell": "シェルモード · Enterでコマンドを実行"
   },
   "option": {
     "model": "モデル",

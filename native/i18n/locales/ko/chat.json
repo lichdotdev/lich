@@ -13,6 +13,10 @@
       "other": "{duration} 작업 · 도구 {count}개"
     },
     "toolFailed": "실패",
+    "shellMore": {
+      "other": "{count}줄 더 보기"
+    },
+    "shellLess": "접기",
     "answered": "{tool} · {choice}",
     "verbs": "주문 외우는 중|소환하는 중|마력을 모으는 중|달이는 중|들여다보는 중|새기는 중|엮는 중|일으키는 중",
     "thinking": "생각 중",
@@ -36,7 +40,7 @@
     "placeholder": "이 프로젝트에 대해 {provider}에게 물어보세요",
     "send": "보내기",
     "stop": "중지",
-    "shell": "셸 모드"
+    "shell": "셸 모드 · Enter로 명령 실행"
   },
   "option": {
     "model": "모델",

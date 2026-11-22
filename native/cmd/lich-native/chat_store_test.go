@@ -154,7 +154,7 @@ func TestChatRowsFoldEachTurnsToolsWhereItsFirstWas(t *testing.T) {
 		{ID: "u2", Kind: api.ItemUser, Turn: 2, At: 20000},
 		tool("t3", 2, 21000),
 	}
-	rows := chatRows(items, true, time.UnixMilli(50000))
+	rows := chatRows(items, claudeKind, true, time.UnixMilli(50000))
 	var got []string
 	for _, r := range rows {
 		switch r.kind {
@@ -184,7 +184,7 @@ func TestChatRowsLiveRowGivesWayToAWaitingPermission(t *testing.T) {
 		return backend.ChatItem{ID: "p", Kind: api.ItemPermission, Permission: &backend.ChatPermission{Chosen: chosen}}
 	}
 	last := func(items []backend.ChatItem, running bool) chatRowKind {
-		rows := chatRows(items, running, time.Time{})
+		rows := chatRows(items, claudeKind, running, time.Time{})
 		return rows[len(rows)-1].kind
 	}
 	if last([]backend.ChatItem{perm("")}, true) == chatRowLive {

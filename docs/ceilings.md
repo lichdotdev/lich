@@ -143,20 +143,29 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   opencode 1, and has no `#` memory line on any** (`internal/chat/shell.go`, `claude_shell.go`, `codex.go`
   `shell`, `opencode_shell.go`, `native/cmd/lich-native/chat_shell.go`): each runs it the way its TUI's `!` does,
   with no model and no permission check, through its structured mode, measured on Claude Code 2.1.330, Codex
-  0.170.0 and opencode 1.19.4. Claude Code's stream-json `bash_command` runs it beside the conversation, which
-  the agent never sees, where the TUI's `!` adds it to the conversation (stream-json joins it only on a cloud
-  worker), and writes nothing of it to the transcript, so a chat read back no longer shows it. Codex's
+  0.170.0 and opencode 1.19.4. Claude Code's stream-json `bash_command` runs it beside the conversation, in a
+  one-shot `sh -c` whose working directory does not carry over, and writes nothing of it to the transcript
+  (stream-json joins it only on a cloud worker). So lich then hands the agent what the TUI's `!` does
+  (`processBashCommand` in 2.1.330): the `<bash-input>` and `<bash-stdout>`/`<bash-stderr>` lines as the person's
+  message, its output cut to the 30000 characters the Bash tool gives the model inline, which starts a turn the
+  agent answers, and lands in the transcript, so a chat read back shows the command. As the TUI does, a command
+  the person stopped or Claude Code refused never reaches the agent, and so is gone from a chat read back. The
+  TUI's `respondToBashCommands` setting is not read: the agent always answers. Codex's
   `thread/shellCommand` runs it unsandboxed in a turn of its own, and the rollout files it for the agent's next
-  turn, but `thread/turns/list` gives that turn back empty, so a chat read back no longer shows it either.
+  turn as a `<user_shell_command>` message, with no answer (measured on app-server 0.144.5; that its TUI's `!`
+  starts no turn either was read from its code, not run), but
+  `thread/turns/list` gives that turn back empty, so a chat read back no longer shows it.
   opencode's `/session/{id}/shell`, on the server its ACP runs beside, runs it under the agent in force and files
-  it in the conversation; read back, the call comes without the person's line, since the user message opencode
-  files it under is addressed to the agent alone. Stop ends it on all three (Claude Code prints `[interrupted]`,
+  it in the conversation, where the agent sees it on the next turn and does not answer it (measured on the server; the TUI calls the
+  same route, read from its code, not run); read back, the call
+  comes without the person's line, since the user message opencode files it under is addressed to the agent alone. Stop ends it on all three (Claude Code prints `[interrupted]`,
   Codex interrupts the turn, opencode's `session/cancel` aborts the command), though opencode's turn then ends as
   done, not stopped. One runs at a time, never while a turn runs, and never from the queue: joined with the queued
   messages it would reach the agent as text. ACP has no such method, so on Antigravity, oh-my-pi, Cursor CLI, Kiro
   CLI and opencode 2 (which runs no server) a `!` line goes to the agent as typed; this was read from their ACP
   code and extension methods, not run. On opencode 2 the box still wears the shell mode, since the window cannot
-  tell it from opencode 1. Claude Code 2.1.330 has no
+  tell it from opencode 1, and the agent's first call after the line is drawn as the command's, its output
+  open: the window knows the command's call only as the one right after a `!` message. Claude Code 2.1.330 has no
   `#` memory mode (its prompt has only `prompt` and `bash` modes, and `?` lists `! for shell mode` alone), and
   no other provider has one, so `#` is text everywhere. Shift+Tab walks the mode option's choices, Claude Code's
   in its own order (default, accept edits, plan, auto where the model has it, back to default; dontAsk goes to

@@ -13,17 +13,18 @@ import (
 type chatRowKind uint8
 
 const (
-	chatRowItem chatRowKind = iota // one item as it is
-	chatRowWork                    // a turn's tool calls, folded into one line
-	chatRowLive                    // the turn in flight, unless a permission or a question says it waits
-	chatRowDay                     // the day a turn starts on, when it is not the day of the turn before
-	chatRowDone                    // the line that closes a finished turn
+	chatRowItem  chatRowKind = iota // one item as it is
+	chatRowWork                     // a turn's tool calls, folded into one line
+	chatRowShell                    // the call of the person's shell command, its output under it
+	chatRowLive                     // the turn in flight, unless a permission or a question says it waits
+	chatRowDay                      // the day a turn starts on, when it is not the day of the turn before
+	chatRowDone                     // the line that closes a finished turn
 )
 
 // chatRow is one line of the chat view.
 type chatRow struct {
 	kind chatRowKind
-	item backend.ChatItem // chatRowItem
+	item backend.ChatItem // chatRowItem, chatRowShell
 	// day is a day row's moment, unix ms: when the turn it starts began.
 	day int64
 	// lead marks the first answer of a turn, which opens with who speaks. When
@@ -36,10 +37,6 @@ type chatRow struct {
 	// calling marks a work row whose turn is in a run of tool calls: in the
 	// turn in flight, the last call or text the model wrote is a call.
 	live, calling bool
-	// shell marks a work row of a turn the person ran in the shell, a "!"
-	// message the agent did not answer: its call is the output they asked to
-	// see, which Claude Code prints under the command.
-	shell bool
 	// ended is when a work row's turn last did something, unix ms.
 	ended int64
 	// turn, tools and took are a work row's: its tool calls and how long the
@@ -63,15 +60,25 @@ type chatTurnSpan struct {
 // live row last, which a waiting permission's or question's box stands in for. A turn has run from its first item to its last, or to now
 // while it is the one in flight, a tool call's end included: most histories
 // carry no durations.
-func chatRows(items []backend.ChatItem, running bool, now time.Time) []chatRow {
+//
+// In a chat of kind whose provider runs the person's shell command, the call
+// right after their "!" message is that command's: a row of its own, kept out
+// of the turn's work row, whose agent answers after it.
+func chatRows(items []backend.ChatItem, kind string, running bool, now time.Time) []chatRow {
 	if slices.ContainsFunc(items, isPlan) {
 		items = slices.DeleteFunc(slices.Clone(items), isPlan)
 	}
 	spans := map[int]*chatTurnSpan{}
 	asked := map[int]bool{}
-	bang, spoke := map[int]bool{}, map[int]bool{}
+	shell := map[string]bool{}
+	runsShell := slices.Contains(chatRunShellKinds, kind)
+	var prev backend.ChatItem
 	last := 0
 	for _, it := range items {
+		if runsShell && it.Kind == api.ItemTool && prev.Kind == api.ItemUser && prev.Turn == it.Turn && strings.HasPrefix(prev.Text, chatShellMark) {
+			shell[it.ID] = true
+		}
+		prev = it
 		sp := spans[it.Turn]
 		if sp == nil {
 			sp = &chatTurnSpan{start: it.At, end: it.At}
@@ -81,15 +88,13 @@ func chatRows(items []backend.ChatItem, running bool, now time.Time) []chatRow {
 		if it.At > 0 && (sp.began == 0 || it.At < sp.began) {
 			sp.began = it.At
 		}
-		if it.Kind == api.ItemTool {
+		if it.Kind == api.ItemTool && !shell[it.ID] {
 			sp.tools = append(sp.tools, it)
 			if it.Tool != nil {
 				sp.end = max(sp.end, it.Tool.Ended)
 			}
 		}
 		asked[it.Turn] = asked[it.Turn] || it.Kind == api.ItemUser
-		bang[it.Turn] = bang[it.Turn] || it.Kind == api.ItemUser && strings.HasPrefix(it.Text, chatShellMark)
-		spoke[it.Turn] = spoke[it.Turn] || it.Kind == api.ItemAgent
 		last = max(last, it.Turn)
 	}
 	var rows []chatRow
@@ -123,6 +128,10 @@ func chatRows(items []backend.ChatItem, running bool, now time.Time) []chatRow {
 			rows = append(rows, r)
 			continue
 		}
+		if shell[it.ID] {
+			rows = append(rows, chatRow{kind: chatRowShell, item: it, turn: it.Turn, live: running && it.Turn == last && callRunning(it)})
+			continue
+		}
 		if folded[it.Turn] {
 			continue
 		}
@@ -134,7 +143,6 @@ func chatRows(items []backend.ChatItem, running bool, now time.Time) []chatRow {
 		}
 		work := chatRow{kind: chatRowWork, avatar: opener[it.Turn] == "", turn: it.Turn, tools: sp.tools, ended: sp.end, live: running && it.Turn == last && toolRunning(sp.tools),
 			calling: running && it.Turn == last && callingTools(items),
-			shell:   bang[it.Turn] && !spoke[it.Turn],
 			took:    time.Duration(max(end-sp.start, 0)) * time.Millisecond}
 		if opener[it.Turn] == "" {
 			opener[it.Turn] = "work"

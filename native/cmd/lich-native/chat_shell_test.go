@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	"image"
 	"strings"
 	"testing"
 	"time"
@@ -171,22 +173,144 @@ func TestBangLineIsTextWhereTheProviderHasNoShell(t *testing.T) {
 	}
 }
 
-// The calls of a turn the person ran in the shell stand open; a "!" message
-// the agent answered, or any other, keeps the usual fold.
-func TestAShellTurnsCallStandsOpen(t *testing.T) {
+// The call right after the person's "!" message is their command's, a row of
+// its own out of the turn's work row, where the provider runs it; the
+// agent's answer and calls after it keep the usual fold. The contract changed:
+// on Claude Code the agent now answers a command, and its answer used to fold
+// the command's output away.
+func TestAShellCommandsCallIsARowOfItsOwn(t *testing.T) {
+	user := backend.ChatItem{ID: "u", Kind: api.ItemUser, Text: "!ls", Turn: 1}
 	call := backend.ChatItem{ID: "c", Kind: api.ItemTool, Turn: 1, Tool: &api.ChatToolCall{Name: "Bash", State: api.ToolDone}}
+	answer := backend.ChatItem{ID: "a", Kind: api.ItemAgent, Text: "ok", Turn: 1}
+	read := backend.ChatItem{ID: "r", Kind: api.ItemTool, Turn: 1, Tool: &api.ChatToolCall{Name: "Read", State: api.ToolDone}}
 	for name, c := range map[string]struct {
+		kind  string
 		items []backend.ChatItem
-		want  bool
+		shell string
+		work  int
 	}{
-		"shell":           {[]backend.ChatItem{{ID: "u", Kind: api.ItemUser, Text: "!ls", Turn: 1}, call}, true},
-		"agent answered":  {[]backend.ChatItem{{ID: "u", Kind: api.ItemUser, Text: "!ls", Turn: 1}, call, {ID: "a", Kind: api.ItemAgent, Text: "ok", Turn: 1}}, false},
-		"a plain message": {[]backend.ChatItem{{ID: "u", Kind: api.ItemUser, Text: "ls", Turn: 1}, call}, false},
+		"shell":                   {claudeKind, []backend.ChatItem{user, call}, "c", 0},
+		"shell, answered":         {claudeKind, []backend.ChatItem{user, call, answer, read}, "c", 1},
+		"codex":                   {codexKind, []backend.ChatItem{user, call}, "c", 0},
+		"a line the agent got":    {"omp", []backend.ChatItem{user, call, answer}, "", 1},
+		"a plain message":         {claudeKind, []backend.ChatItem{{ID: "u", Kind: api.ItemUser, Text: "ls", Turn: 1}, call}, "", 1},
+		"a call after the answer": {claudeKind, []backend.ChatItem{user, answer, call}, "", 1},
 	} {
-		for _, r := range chatRows(c.items, false, time.Time{}) {
-			if r.kind == chatRowWork && r.shell != c.want {
-				t.Errorf("%s: shell %v, want %v", name, r.shell, c.want)
+		shell, work := "", 0
+		for _, r := range chatRows(c.items, c.kind, false, time.Time{}) {
+			switch r.kind {
+			case chatRowShell:
+				shell = r.item.ID
+			case chatRowWork:
+				work += len(r.tools)
 			}
+		}
+		if shell != c.shell || work != c.work {
+			t.Errorf("%s: shell row %q and %d folded calls, want %q and %d", name, shell, work, c.shell, c.work)
+		}
+	}
+}
+
+// shellListing is n lines of a command's output, as an ls prints them.
+func shellListing(n int) string {
+	lines := make([]string, n)
+	for i := range lines {
+		lines[i] = fmt.Sprintf("file-%02d.go", i+1)
+	}
+	return strings.Join(lines, "\n")
+}
+
+// A shell command's output is under it whole, as Claude Code prints it, and
+// not its first line beside the check, though the agent answered; an agent's
+// own call keeps its one line.
+func TestAShellCommandsOutputIsShownWhole(t *testing.T) {
+	u, r, _, _ := shellFrames(t, claudeKind)
+	u.model.chat.history("s1", []backend.ChatItem{
+		{ID: "user-1", Kind: api.ItemUser, Text: "!ls", Turn: 1},
+		{ID: "shell-1", Kind: api.ItemTool, Turn: 1, Tool: &api.ChatToolCall{Name: "Bash", Title: "ls", Output: "AGENTS.md\nCLAUDE.md\n  README.md", State: api.ToolDone}},
+		{ID: "agent-1", Kind: api.ItemAgent, Text: "Three files.", Turn: 1},
+		{ID: "user-2", Kind: api.ItemUser, Text: "and now?", Turn: 2},
+		{ID: "tool-2", Kind: api.ItemTool, Turn: 2, Tool: &api.ChatToolCall{Name: "Bash", Title: "git status", Output: "On branch main\nnothing to commit", State: api.ToolDone}},
+		{ID: "agent-2", Kind: api.ItemAgent, Text: "Clean.", Turn: 2},
+	})
+	r.now = r.now.Add(time.Second)
+	r.frames(3)
+	if !r.showsAll("AGENTS.md", "CLAUDE.md", "  README.md") {
+		t.Errorf("the command's output is not shown whole:\n%s", r.drawn())
+	}
+	writeShot(t, r, "chat-shell-output.png")
+	r.clickLabel(t, i18n.T("chat.view.worked", i18n.Args{"duration": chatTook(0), "count": 1}))
+	r.frames(3)
+	if r.shows("nothing to commit") {
+		t.Errorf("an agent's call shows more than its line:\n%s", r.drawn())
+	}
+}
+
+// Long output shows its head and a line that opens the rest.
+func TestALongShellOutputOpensTheRest(t *testing.T) {
+	u, r, _, _ := shellFrames(t, claudeKind)
+	n := chatShellLines + 5
+	u.model.chat.history("s1", []backend.ChatItem{
+		{ID: "user-1", Kind: api.ItemUser, Text: "!ls", Turn: 1},
+		{ID: "shell-1", Kind: api.ItemTool, Turn: 1, Tool: &api.ChatToolCall{Name: "Bash", Title: "ls", Output: shellListing(n), State: api.ToolDone}},
+	})
+	r.now = r.now.Add(time.Second)
+	r.frames(3)
+	last, more := fmt.Sprintf("file-%02d.go", n), i18n.T("chat.view.shellMore", i18n.Args{"count": 5})
+	if !r.shows(fmt.Sprintf("file-%02d.go", chatShellLines)) || r.shows(last) || !r.shows(more) {
+		t.Fatalf("the head and its way to the rest are not shown:\n%s", r.drawn())
+	}
+	r.clickLabel(t, more)
+	r.frames(3)
+	if !r.shows(last) || !r.shows(i18n.T("chat.view.shellLess")) {
+		t.Errorf("the rest did not open:\n%s", r.drawn())
+	}
+}
+
+// In shell mode the mode's name takes the chips' place, which do not apply
+// to a command; deleting the "!" brings them back.
+func TestShellModeNamesItselfInPlaceOfTheChips(t *testing.T) {
+	_, r, _, p := shellFrames(t, claudeKind)
+	mode := modeLabel(claudeKind, backend.ChatChoice{ID: "default"})
+	if !r.shows(mode) {
+		t.Fatalf("the box has no mode chip to begin with:\n%s", r.drawn())
+	}
+	typeIn(r, p, "!ls")
+	if !r.shows(i18n.T("chat.composer.shell")) || r.shows(mode) {
+		t.Errorf("shell mode is not named in the chips' place:\n%s", r.drawn())
+	}
+	p.editor.SetText("ls")
+	r.frames(2)
+	if r.shows(i18n.T("chat.composer.shell")) || !r.shows(mode) {
+		t.Errorf("out of shell mode the chips are not back:\n%s", r.drawn())
+	}
+}
+
+// The mode's name lines up with the text over it, and a narrow box cuts it
+// short of Send rather than running it under the button.
+func TestShellModeNameLinesUpAndFits(t *testing.T) {
+	for _, width := range []int{1200, 320} {
+		u, r, _ := chatFramesIn(t, api.ViewChat, image.Pt(width, 800), busySession())
+		u.model.projects[0].Sessions[0].Kind = claudeKind
+		u.model.chat.history("s1", nil)
+		r.frame()
+		p := u.chats.pane("s1")
+		typeIn(r, p, "!ls")
+		box := composerBox(t, r)
+		var name image.Rectangle
+		for _, n := range r.nodes() {
+			if strings.HasPrefix(i18n.T("chat.composer.shell"), strings.TrimSuffix(n.Desc.Label, "…")) && n.Desc.Label != "" {
+				name = n.Desc.Bounds
+			}
+		}
+		if name.Empty() {
+			t.Fatalf("%dpx: the mode is not named:\n%s", width, r.drawn())
+		}
+		if name.Min.X != box.Min.X+16 {
+			t.Errorf("%dpx: the name starts at x=%d, want %d: 16px inside the box, as the text", width, name.Min.X, box.Min.X+16)
+		}
+		if send := box.Max.X - 34; name.Max.X > send {
+			t.Errorf("%dpx: the name ends at x=%d, under Send at x=%d", width, name.Max.X, send)
 		}
 	}
 }

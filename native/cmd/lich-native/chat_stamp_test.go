@@ -37,7 +37,7 @@ func TestADayRowSeparatesTurnsOfDifferentDays(t *testing.T) {
 		{ID: "u3", Kind: api.ItemUser, Turn: 3, At: novDay(18, 9, 0)},
 	}
 	var days []int64
-	for _, r := range chatRows(items, false, time.Time{}) {
+	for _, r := range chatRows(items, claudeKind, false, time.Time{}) {
 		if r.kind == chatRowDay {
 			days = append(days, r.day)
 		}
@@ -137,7 +137,7 @@ func TestATurnWithNoMessageTimeTakesItsDayFromItsAnswer(t *testing.T) {
 		{ID: "u2", Kind: api.ItemUser, Turn: 2, At: novDay(18, 5, 3)},
 	}
 	var days int
-	for _, r := range chatRows(items, false, time.Time{}) {
+	for _, r := range chatRows(items, claudeKind, false, time.Time{}) {
 		if r.kind == chatRowDay {
 			days++
 		}

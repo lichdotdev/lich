@@ -90,11 +90,14 @@ func (t acpToolCall) call(prev api.ChatToolCall) api.ChatToolCall {
 }
 
 // shorten cuts text to outputLimit bytes, on a rune boundary.
-func shorten(text string) string {
-	if len(text) <= outputLimit {
+func shorten(text string) string { return shortenTo(text, outputLimit) }
+
+// shortenTo cuts text to limit bytes, on a rune boundary.
+func shortenTo(text string, limit int) string {
+	if len(text) <= limit {
 		return text
 	}
-	cut := outputLimit
+	cut := limit
 	for cut > 0 && !utf8.RuneStart(text[cut]) {
 		cut--
 	}

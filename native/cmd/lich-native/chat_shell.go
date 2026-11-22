@@ -10,7 +10,8 @@ import (
 
 // A line that starts with "!" runs in the shell, as Claude Code's prompt does
 // in its shell mode (2.1.330): the box wears the mode while the text starts
-// so, and Enter runs the rest with no model and no permission check. Deleting
+// so, and Enter runs the rest with no model and no permission check; the
+// agent gets its output as the provider's own TUI hands it over. Deleting
 // the "!" leaves the mode, as Backspace does on Claude Code's empty prompt.
 
 // chatRunShellKinds are the providers whose protocol runs a command of the

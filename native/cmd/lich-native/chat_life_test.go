@@ -101,7 +101,7 @@ func TestOnlyTheFirstAnswerOfATurnIsLeadAndOnlyWhileRunningIsAnythingLive(t *tes
 		{ID: "a3", Kind: api.ItemAgent, Turn: 2},
 	}
 	lead, live := map[string]bool{}, map[string]bool{}
-	for _, r := range chatRows(items, true, time.Time{}) {
+	for _, r := range chatRows(items, claudeKind, true, time.Time{}) {
 		key := chatRowKey(r)
 		lead[key], live[key] = r.lead, r.live
 	}
@@ -114,24 +114,24 @@ func TestOnlyTheFirstAnswerOfATurnIsLeadAndOnlyWhileRunningIsAnythingLive(t *tes
 		t.Errorf("live %v, want the answer being written alone", live)
 	}
 	running := append(slices.Clone(items), backend.ChatItem{ID: "k2", Kind: api.ItemTool, Turn: 2, Tool: &backend.ChatToolCall{Name: "Bash", State: api.ToolRunning}})
-	for _, r := range chatRows(running, true, time.Time{}) {
+	for _, r := range chatRows(running, claudeKind, true, time.Time{}) {
 		if r.kind == chatRowWork && r.live != (r.turn == 2) {
 			t.Errorf("turn %d's group live = %v, want it live only in the turn in flight", r.turn, r.live)
 		}
 	}
-	for _, r := range chatRows(items, false, time.Time{}) {
+	for _, r := range chatRows(items, claudeKind, false, time.Time{}) {
 		if r.live {
 			t.Errorf("%s is live in a conversation that is not running", chatRowKey(r))
 		}
 	}
 	items[3].Tool.State = api.ToolDone
-	for _, r := range chatRows(items, true, time.Time{}) {
+	for _, r := range chatRows(items, claudeKind, true, time.Time{}) {
 		if r.kind == chatRowWork && r.live {
 			t.Error("a group whose calls all ended is live")
 		}
 	}
 	items = append(items[:6:6], backend.ChatItem{ID: "t2", Kind: api.ItemThought, Turn: 2})
-	for _, r := range chatRows(items, true, time.Time{}) {
+	for _, r := range chatRows(items, claudeKind, true, time.Time{}) {
 		if r.item.ID == "t2" && !r.live {
 			t.Error("the thought being thought is not live")
 		}
@@ -318,7 +318,7 @@ func TestAGroupTookUntilItsLastCallEnded(t *testing.T) {
 		{ID: "u1", Kind: api.ItemUser, Turn: 1, At: start},
 		{ID: "k1", Kind: api.ItemTool, Turn: 1, At: start + 1000, Tool: &backend.ChatToolCall{Name: "Bash", State: api.ToolDone, Ended: start + 9000}},
 	}
-	for _, r := range chatRows(items, false, time.Time{}) {
+	for _, r := range chatRows(items, claudeKind, false, time.Time{}) {
 		if r.kind == chatRowWork && (r.took != 9*time.Second || r.ended != start+9000) {
 			t.Errorf("the group took %v and ended at %d, want 9s and %d", r.took, r.ended, start+9000)
 		}
@@ -374,7 +374,7 @@ func TestACallOfAnEndedTurnStandsStill(t *testing.T) {
 	}{{start.Add(3 * time.Second).UnixMilli(), chatTook(3 * time.Second)}, {0, ""}} {
 		it := call(tc.ended)
 		var row chatRow
-		for _, r := range chatRows(items(it), false, start.Add(time.Minute)) {
+		for _, r := range chatRows(items(it), claudeKind, false, start.Add(time.Minute)) {
 			if r.kind == chatRowWork {
 				row = r
 			}
@@ -490,7 +490,7 @@ func TestTheAvatarIsOnTheLineThatOpensTheTurn(t *testing.T) {
 	tool := backend.ChatItem{ID: "k1", Kind: api.ItemTool, Turn: 1, Tool: &backend.ChatToolCall{Name: "Read", State: api.ToolDone}}
 	answer := backend.ChatItem{ID: "a1", Kind: api.ItemAgent, Turn: 1}
 	flags := func(items ...backend.ChatItem) (work, agent chatRow) {
-		for _, r := range chatRows(items, false, time.Time{}) {
+		for _, r := range chatRows(items, claudeKind, false, time.Time{}) {
 			switch r.kind {
 			case chatRowWork:
 				work = r

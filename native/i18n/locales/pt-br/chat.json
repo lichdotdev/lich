@@ -14,6 +14,11 @@
       "other": "Trabalhou por {duration} · {count} ferramentas"
     },
     "toolFailed": "falhou",
+    "shellMore": {
+      "one": "Mostrar mais {count} linha",
+      "other": "Mostrar mais {count} linhas"
+    },
+    "shellLess": "Mostrar menos",
     "answered": "{tool} · {choice}",
     "verbs": "Conjurando|Invocando|Canalizando|Destilando|Vislumbrando|Inscrevendo|Tecendo|Erguendo",
     "thinking": "Pensando",
@@ -40,7 +45,7 @@
     "placeholder": "Pergunte ao {provider} sobre este projeto",
     "send": "Enviar",
     "stop": "Parar",
-    "shell": "Modo shell"
+    "shell": "Modo shell · Enter roda o comando"
   },
   "option": {
     "model": "Modelo",

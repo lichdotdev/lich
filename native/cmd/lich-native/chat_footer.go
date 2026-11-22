@@ -99,7 +99,9 @@ func chatFootSlots(l footerLayout, in footerInput) chatFooter {
 
 // chatChips is the foot of the composer's box: the attach "+" when the footer
 // has it, then the provider's chips, on one line, and Send or Stop at the
-// right. A chip that does not fit is left out with the ones after it.
+// right. A chip that does not fit is left out with the ones after it. In
+// shell mode the chips, which do not apply to a command, give their place to
+// the mode's name.
 func (u *window) chatChips(th *ui.Theme, p *chatPane, sv sessionView, working bool, ft chatFooter) func(gtx C) D {
 	f, in := u.footer, u.footer.shown
 	var chips []footerSlot
@@ -120,18 +122,12 @@ func (u *window) chatChips(th *ui.Theme, p *chatPane, sv sessionView, working bo
 		m := op.Record(gtx.Ops)
 		action := u.chatAction(gtx, th, p, working)
 		actionCall := m.Stop()
-		// the shell mode, as Claude Code names it, or while messages wait in
-		// the queue the way back to them, is named before the action
+		// while messages wait in the queue the way back to them is named
+		// before the action
 		var hint D
 		var hintCall op.CallOp
 		_, shell := p.shellLine(sv.Kind)
-		switch {
-		case shell:
-			m = op.Record(gtx.Ops)
-			hint = th.Text(ui.TextXS, i18n.T("chat.composer.shell")).In(th.ToneWait).Layout(gtx)
-			hintCall = m.Stop()
-			hint.Size.X += gap
-		case len(u.model.chat.queued(sv.ID)) > 0:
+		if !shell && len(u.model.chat.queued(sv.ID)) > 0 {
 			m = op.Record(gtx.Ops)
 			hint = th.Text(ui.TextXS, i18n.T("chat.queue.edit")).Muted().Layout(gtx)
 			hintCall = m.Stop()
@@ -152,14 +148,24 @@ func (u *window) chatChips(th *ui.Theme, p *chatPane, sv sessionView, working bo
 		}
 		room := width - 2*pad - action.Size.X - gap - hint.Size.X
 		h := max(itemH, action.Size.Y)
-		// while Ctrl+R searches, its field takes the chips' place
-		if p.search.open {
+		// while Ctrl+R searches its field takes the chips' place, and in shell
+		// mode the mode's name does, lined up with the text over it
+		var lead func(gtx C) D
+		leadX := pad
+		switch {
+		case p.search.open:
+			lead = func(gtx C) D { return chatSearchLine(gtx, th, &p.search) }
+		case shell:
+			lead, leadX = th.Text(ui.TextXS, i18n.T("chat.composer.shell")).In(th.ToneWait).Truncated().Layout, gtx.Dp(chatComposerPadX)
+		}
+		if lead != nil {
+			w := max(room-leadX+pad, 0)
 			g := gtx
-			g.Constraints = layout.Constraints{Min: image.Pt(max(room, 0), 0), Max: image.Pt(max(room, 0), h)}
+			g.Constraints = layout.Constraints{Min: image.Pt(w, 0), Max: image.Pt(w, h)}
 			m = op.Record(gtx.Ops)
-			line := chatSearchLine(g, th, &p.search)
+			line := lead(g)
 			call := m.Stop()
-			t := op.Offset(image.Pt(pad, (h-line.Size.Y)/2)).Push(gtx.Ops)
+			t := op.Offset(image.Pt(leadX, (h-line.Size.Y)/2)).Push(gtx.Ops)
 			call.Add(gtx.Ops)
 			t.Pop()
 			chips = nil
