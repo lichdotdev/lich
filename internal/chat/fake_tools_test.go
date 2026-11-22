@@ -63,7 +63,7 @@ func (f *fake) claudeTools(subtype string, m map[string]any, ok func(any), fail 
 			return c.(map[string]any)["name"] == "deploy"
 		})})
 	default:
-		return false
+		return f.claudeSettings(subtype, ok)
 	}
 	return true
 }
@@ -129,7 +129,7 @@ func (c *fakeCodex) serveTools(id any, method string, params map[string]any) {
 		}
 		c.reply(id, map[string]any{"data": fakeCodexMCP[2:], "nextCursor": nil})
 	case "config/read":
-		c.reply(id, map[string]any{"config": map[string]any{"model": "gpt-a", "mcp_servers": fakeCodexConfig, "marketplaces": fakeCodexMarketplaces}, "origins": map[string]any{}})
+		c.reply(id, map[string]any{"config": map[string]any{"model": "gpt-a", "mcp_servers": fakeCodexConfig, "marketplaces": fakeCodexMarketplaces, "agents": fakeCodexAgents}, "origins": map[string]any{}})
 	case "config/value/write":
 		c.reply(id, map[string]any{"status": "ok", "version": "sha256:x", "filePath": "/x/config.toml"})
 	case "config/mcpServer/reload":
@@ -147,7 +147,9 @@ func (c *fakeCodex) serveTools(id any, method string, params map[string]any) {
 		c.off[path] = !on
 		c.reply(id, map[string]any{"effectiveEnabled": on})
 	default:
-		c.servePlugins(id, method, params)
+		if !c.servePlugins(id, method, params) {
+			c.serveHooks(id, method, params)
+		}
 	}
 }
 

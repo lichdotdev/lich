@@ -278,8 +278,10 @@ func (u *window) modelColumn(gtx C, th *ui.Theme, pk *modelPicker, sv sessionVie
 	// panel's height leaves.
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
+			// a row of the panel, as tall as the effort's title beside it, so the
+			// two hairlines under them meet
 			in := th.Input(&pk.query, i18n.T("chat.model.search", i18n.Args{"provider": name}))
-			in.Borderless = true
+			in.Bare, in.Height = true, pickerRowH
 			return in.Layout(gtx)
 		}),
 		layout.Rigid(th.Separator),

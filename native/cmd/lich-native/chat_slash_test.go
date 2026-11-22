@@ -89,9 +89,10 @@ func TestTheSlashListOpensFiltersAndCompletes(t *testing.T) {
 	if r.shows("Compact the conversation") {
 		t.Error("the list stays open once the command is in")
 	}
-	// lich's own /new, /mcp, /skills and /plugin lead the provider's commands.
+	// lich's own /new, /mcp, /skills, /plugin, /permissions, /hooks, /memory
+	// and /agents lead the provider's commands.
 	typeIn(r, p, "/")
-	for range 5 {
+	for range 9 {
 		r.press(key.NameDownArrow)
 	}
 	r.press(key.NameReturn)
@@ -175,8 +176,10 @@ func TestTheSlashListStaysInALowPane(t *testing.T) {
 	r.settle(t)
 	typeIn(r, u.chats.pane("s1"), "/")
 	top := r.size.Y
+	// lich's own commands lead the list, so its first row is /new; a low pane
+	// may show no /cmd row before it scrolls.
 	for _, n := range r.nodes() {
-		if strings.HasPrefix(n.Desc.Label, "/cmd") {
+		if strings.HasPrefix(n.Desc.Label, "/cmd") || strings.HasPrefix(n.Desc.Label, "/new") {
 			top = min(top, n.Desc.Bounds.Min.Y)
 		}
 	}
@@ -226,5 +229,46 @@ func TestClearStartsAConversationAsNewDoes(t *testing.T) {
 		if n := f.callsOf(api.ChatPrompt.Name); n != 0 {
 			t.Errorf("%s reached the agent (%d prompts)", text, n)
 		}
+	}
+}
+
+// Keys typed in the frame that also takes Enter count: the list reads Enter
+// before the editor reads its keys, so "/comp" typed fast after the list
+// opened on "/co" completes to /compact, not "/compact mp".
+func TestEnterAfterFastTypingCompletesWhatWasTyped(t *testing.T) {
+	_, r, _, p := slashFrames(t)
+	typeIn(r, p, "/co")
+	p.editor.SetText("/comp")
+	p.editor.SetCaret(5, 5)
+	r.press(key.NameReturn)
+	if got := p.editor.Text(); got != "/compact " {
+		t.Errorf("box %q, want /compact and a space", got)
+	}
+}
+
+// On an empty chat's start screen the composer sits mid-pane: the list over it
+// fits in what is above it, not in the whole pane's height.
+func TestTheSlashListFitsOverTheStartScreensComposer(t *testing.T) {
+	u, r, _ := chatFramesIn(t, api.ViewChat, image.Pt(1200, 560), busySession())
+	var cmds []backend.ChatCommand
+	for i := range 40 {
+		cmds = append(cmds, backend.ChatCommand{Text: "/cmd" + strconv.Itoa(i), Description: "a command"})
+	}
+	u.model.chat.setCommands("s1", cmds)
+	u.model.chat.history("s1", nil)
+	r.settle(t)
+	typeIn(r, u.chats.pane("s1"), "/")
+	r.frame()
+	top := r.size.Y
+	for _, n := range r.nodes() {
+		if strings.HasPrefix(n.Desc.Label, "/cmd") || strings.HasPrefix(n.Desc.Label, "/new") {
+			top = min(top, n.Desc.Bounds.Min.Y)
+		}
+	}
+	if top == r.size.Y {
+		t.Fatalf("no list on the start screen:\n%s", r.drawn())
+	}
+	if top < 0 {
+		t.Errorf("the list's first row at y=%d, above the pane", top)
 	}
 }

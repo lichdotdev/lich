@@ -38,12 +38,22 @@ type chatMention struct {
 	moved     bool
 	// blocked keeps the list shut while the keys belong to something else.
 	blocked bool
+	// taking is an Enter (mentionPick) or Tab (mentionComplete) taken before
+	// the editor read the keys of its frame: refresh does it once the text
+	// holds them, as the slash list does.
+	taking int
 	// index is files' ranking, and found what foundFor found in it last.
 	files    *chatFiles
 	index    *mentionIndex
 	found    []string
 	foundFor string
 }
+
+// What an Enter or a Tab taken early does once the text is current.
+const (
+	mentionPick = iota + 1
+	mentionComplete
+)
 
 // mentionQuery is the path being typed at the caret of text: the @ the caret
 // stands after, at the start of the text or after a space as Claude Code
@@ -114,10 +124,12 @@ func (m *chatMention) refresh(gtx C, ed *widget.Editor, files *chatFiles) {
 		m.dismissed = ""
 	}
 	if !ok || m.blocked || files == nil || mentionSigil+query == m.dismissed {
+		m.taking = 0
 		return
 	}
 	shown := m.matches(files, query)
 	if len(shown) == 0 {
+		m.taking = 0
 		return
 	}
 	if query != m.query || !was {
@@ -128,7 +140,21 @@ func (m *chatMention) refresh(gtx C, ed *widget.Editor, files *chatFiles) {
 	if len(m.rows) < len(shown) {
 		m.rows = make([]ui.Clickable, len(shown))
 	}
+	m.flush(ed)
 	m.keys(gtx, ed)
+	m.flush(ed)
+}
+
+// flush does the Enter or Tab taken earlier, on the list the text now holds.
+func (m *chatMention) flush(ed *widget.Editor) {
+	switch {
+	case len(m.shown) == 0:
+	case m.taking == mentionPick:
+		m.pick(ed, m.cursor)
+	case m.taking == mentionComplete:
+		m.complete(ed)
+	}
+	m.taking = 0
 }
 
 // matches is query's paths in files, searched again only when either changes:
@@ -165,9 +191,9 @@ func (m *chatMention) keys(gtx C, ed *widget.Editor) {
 		case key.NameEscape:
 			m.dismissed, m.shown = mentionSigil+m.query, nil
 		case key.NameTab:
-			m.complete(ed)
+			m.taking = mentionComplete
 		default:
-			m.pick(ed, m.cursor)
+			m.taking = mentionPick
 		}
 	}
 }

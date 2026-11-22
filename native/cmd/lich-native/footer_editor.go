@@ -20,9 +20,8 @@ import (
 var footerPreviewStage = ui.Space(24)
 
 var footerItemIcons = map[string]*icons.Icon{
-	"attach": icAttach, "changes": icons.Lucide("file-diff"), "pr": icPR,
-	"checkout": icBranch, "path": icFolder, "model": icons.Lucide("cpu"), "context": icGauge,
-	"plan": icGauge, "cost": icons.Lucide("coins"), "handsOn": icTimer, "clock": icons.Lucide("clock"),
+	"attach": icAttach, "changes": icons.Lucide("file-diff"), "checkout": icBranch,
+	"model": icons.Lucide("cpu"), "context": icGauge, "cost": icons.Lucide("coins"), "handsOn": icTimer,
 }
 
 var footerZoneLabelKeys = map[string]string{

@@ -105,7 +105,11 @@
     "new": "在此会话中开始新对话",
     "mcp": "管理 MCP 服务器",
     "skills": "开启或关闭技能",
-    "plugin": "安装和管理插件"
+    "plugin": "安装和管理插件",
+    "permissions": "查看并修改权限规则",
+    "hooks": "查看会运行的钩子",
+    "memory": "编辑指令文件和记忆设置",
+    "agents": "查看和添加子代理"
   },
   "start": {
     "lines": "要在 {project} 里炼成什么？|要为 {project} 召唤些什么？|要往 {project} 里注入什么？|{project} 的坩埚里要熬点什么？|想在 {project} 里占卜些什么？|今天要在 {project} 上刻下什么？|要往 {project} 里织进什么？|要在 {project} 里唤醒什么？"
@@ -191,6 +195,7 @@
     "pluginSkills": "插件的技能通过 /plugin 管理。"
   },
   "shells": {
+    "move": "Ctrl+B 转到后台运行",
     "count": {
       "other": "{count} 个 shell"
     },
@@ -234,7 +239,7 @@
       "local": "本地"
     },
     "installs": {
-      "other": "{count} 次安装"
+      "other": "{n} 次安装"
     },
     "pluginCount": {
       "other": "{count} 个插件"
@@ -283,5 +288,117 @@
     "restart": "已更新。重启聊天后运行新版本。",
     "current": "已经是最新版本。",
     "fixed": "lich 会自己安装和更新这个插件。"
+  },
+  "permissions": {
+    "title": "权限",
+    "ruleCount": {
+      "other": "{count} 条规则"
+    },
+    "tab": {
+      "allow": "允许",
+      "ask": "询问",
+      "deny": "拒绝",
+      "folders": "文件夹"
+    },
+    "add": "添加规则…",
+    "addTitle": {
+      "allow": "新的允许规则",
+      "ask": "新的询问规则",
+      "deny": "新的拒绝规则"
+    },
+    "ruleHint": "工具名，需要的话加上模式：Bash(npm run *)",
+    "saveIn": "保存到",
+    "dest": {
+      "local": "仅此检出，不共享",
+      "project": "项目里的所有人，提交到仓库",
+      "user": "你自己，所有项目"
+    },
+    "source": {
+      "user": "用户",
+      "project": "项目",
+      "local": "本地",
+      "managed": "组织管理",
+      "flag": "启动参数",
+      "session": "本次会话",
+      "plugin": "插件",
+      "misc": "其他"
+    },
+    "back": "权限",
+    "noRules": "这个标签页里没有规则。",
+    "startedIn": "启动于",
+    "fact": {
+      "means": "含义",
+      "source": "来自"
+    },
+    "remove": "删除",
+    "ignored": "你的组织只认可自己的规则，所以这条不生效。",
+    "readOnly": "这条规则不是来自 lich 能修改的设置文件。",
+    "locked": "你的组织只认可自己的规则。",
+    "skipped": "因出错而跳过：{files}",
+    "none": "{provider} 不把权限告诉 lich。切换到 TUI，使用它自己的 /permissions。"
+  },
+  "hooks": {
+    "title": "钩子",
+    "noHooks": "没有设置钩子。",
+    "none": "{provider} 不把钩子告诉 lich。切换到 TUI，使用它自己的 /hooks。",
+    "back": "钩子",
+    "act": {
+      "trust": "信任"
+    },
+    "state": {
+      "on": "会运行",
+      "off": "已关闭",
+      "untrusted": "需要你的信任",
+      "modified": "信任后被改过"
+    },
+    "fact": {
+      "event": "事件",
+      "matcher": "适用工具",
+      "condition": "条件",
+      "type": "类型",
+      "runs": "运行",
+      "timeout": "超时"
+    },
+    "seconds": {
+      "other": "{count} 秒"
+    },
+    "readOnly": "钩子要在设置文件里改，或者让代理去改。",
+    "managed": "这个钩子是你的组织设置的，总会运行。",
+    "blocked": {
+      "policy": "你的组织关闭了所有钩子。",
+      "managedOnly": "你的组织只运行自己的钩子，它们不在这里列出。",
+      "off": "钩子已关闭（disableAllHooks），所以这些都不会运行。",
+      "safeMode": "安全模式已开启，所以这些钩子不会运行。",
+      "bareMode": "精简模式已开启，所以这些钩子不会运行。"
+    }
+  },
+  "memory": {
+    "title": "记忆",
+    "fileCount": {
+      "other": "{count} 个文件"
+    },
+    "none": "{provider} 不会告诉 lich 它加载了哪些指令文件。",
+    "user": "用户指令",
+    "project": "项目指令",
+    "missing": "尚未创建",
+    "saved": "已保存的记忆",
+    "auto": "自动记忆",
+    "dream": "Auto-dream"
+  },
+  "agents": {
+    "title": "子代理",
+    "count": {
+      "other": "{count} 个子代理"
+    },
+    "none": "{provider} 不会告诉 lich 它的子代理。",
+    "group": {
+      "plugin": "插件",
+      "managed": "托管",
+      "builtIn": "内置"
+    },
+    "name": "名称",
+    "description": "何时使用",
+    "addProject": "添加到此项目",
+    "addUser": "添加到所有项目"
   }
 }

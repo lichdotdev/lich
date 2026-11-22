@@ -173,6 +173,17 @@ func (c *chatScreens) pickerHasKeys(gtx C) bool {
 	return false
 }
 
+// backgroundHasKeys reports whether a chat's composer holds Ctrl+B: it has
+// the keyboard while its turn waits on a command Ctrl+B moves (backgroundKeys).
+func (c *chatScreens) backgroundHasKeys(gtx C, m *model) bool {
+	for id, p := range c.panes {
+		if gtx.Focused(&p.editor) && m.chat.isRunning(id) && movable(m.chat.of(id)) {
+			return true
+		}
+	}
+	return false
+}
+
 func (c *chatScreens) pane(id string) *chatPane {
 	if c.panes == nil {
 		c.panes = map[string]*chatPane{}

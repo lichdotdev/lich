@@ -36,6 +36,7 @@ const (
 	closeActionKey      = "window.closeAction"
 	copyOnSelectKey     = "lich.terminal.copyOnSelect"
 	windowButtonsKey    = "window.buttons"
+	chatWidthKey        = "lich.chat.width"
 )
 
 // Bounds and steps for the zoom and the font sizes.
@@ -67,6 +68,17 @@ const (
 	windowButtonsHide   = "hide"
 )
 
+// The values the chat width setting takes.
+const (
+	chatWidthComfortable = "comfortable"
+	chatWidthWide        = "wide"
+	chatWidthFull        = "full"
+)
+
+// chatBoxWide is Wide's cap on the chat column, a third past Comfortable's
+// chatBoxMax.
+const chatBoxWide = unit.Dp(1280)
+
 // appearancePrefs are the Appearance values the window applies.
 type appearancePrefs struct {
 	zoom        float64
@@ -82,6 +94,7 @@ type appearancePrefs struct {
 	closeAction    string
 	copyOnSelect   bool
 	windowButtons  string
+	chatWidth      string
 }
 
 // clampZoom bounds a zoom and snaps it to one decimal.
@@ -146,6 +159,27 @@ func windowButtonsOf(stored string) string {
 	return windowButtonsSystem
 }
 
+// chatWidthOf reads the stored chat width: nothing stored, or a value from a
+// newer lich, is Comfortable.
+func chatWidthOf(stored string) string {
+	switch stored {
+	case chatWidthWide, chatWidthFull:
+		return stored
+	}
+	return chatWidthComfortable
+}
+
+// chatBox is the widest the chat column grows under choice, 0 for no cap.
+func chatBox(choice string) unit.Dp {
+	switch choice {
+	case chatWidthWide:
+		return chatBoxWide
+	case chatWidthFull:
+		return 0
+	}
+	return chatBoxMax
+}
+
 // parseNumber parses raw; what does not parse is the fallback.
 func parseNumber(raw string, fallback float64) float64 {
 	v, err := strconv.ParseFloat(raw, 64)
@@ -158,7 +192,7 @@ func parseNumber(raw string, fallback float64) float64 {
 // loadAppearancePrefs reads the stored values.
 func loadAppearancePrefs(ctx context.Context, c *backend.Client) (appearancePrefs, error) {
 	raw := map[string]string{}
-	for _, key := range []string{zoomKey, browserZoomKey, terminalFontSizeKey, terminalFontKey, editorFontSizeKey, editorFontKey, uiFontKey, costBudgetKey, closeActionKey, copyOnSelectKey, windowButtonsKey} {
+	for _, key := range []string{zoomKey, browserZoomKey, terminalFontSizeKey, terminalFontKey, editorFontSizeKey, editorFontKey, uiFontKey, costBudgetKey, closeActionKey, copyOnSelectKey, windowButtonsKey, chatWidthKey} {
 		v, err := c.GetSetting(ctx, key, "")
 		if err != nil {
 			return appearancePrefs{}, err
@@ -177,6 +211,7 @@ func loadAppearancePrefs(ctx context.Context, c *backend.Client) (appearancePref
 		closeAction:    closeActionOf(raw[closeActionKey]),
 		copyOnSelect:   copyOnSelectOf(raw[copyOnSelectKey]),
 		windowButtons:  windowButtonsOf(raw[windowButtonsKey]),
+		chatWidth:      chatWidthOf(raw[chatWidthKey]),
 	}
 	return p, nil
 }
@@ -201,7 +236,7 @@ func fontFailure(title string) ui.Toast {
 // applyAppearance puts p on screen: the interface and page zooms, the terminals'
 // font, and the ceiling the cost readout colours against.
 func (u *window) applyAppearance(p appearancePrefs) {
-	u.zoom, u.browserZoom = p.zoom, p.browserZoom
+	u.zoom, u.browserZoom, u.chatWidth = p.zoom, p.browserZoom, p.chatWidth
 	if u.caption.Load().leftReserve > 0 {
 		u.win.Option(app.TrafficLights(trafficLightsBar(p)))
 	}

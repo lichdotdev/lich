@@ -4,6 +4,9 @@ import (
 	"context"
 	"slices"
 	"testing"
+
+	"gioui.org/layout"
+	"gioui.org/unit"
 )
 
 func TestAppearanceClamps(t *testing.T) {
@@ -38,6 +41,26 @@ func TestWindowButtonsAnswers(t *testing.T) {
 	}
 }
 
+// Comfortable keeps the column at chatBoxMax, Wide at chatBoxWide and Full
+// lets it take the pane less its edges; anything else stored is Comfortable.
+func TestChatWidthCapsTheColumn(t *testing.T) {
+	for stored, want := range map[string]string{"": chatWidthComfortable, "wide": chatWidthWide, "full": chatWidthFull, "huge": chatWidthComfortable} {
+		if got := chatWidthOf(stored); got != want {
+			t.Errorf("chatWidthOf(%q) = %q, want %q", stored, got, want)
+		}
+	}
+	gtx := layout.Context{Metric: unit.Metric{PxPerDp: 1}}
+	pane, edges := 3000, 2*int(chatPadX)
+	for choice, want := range map[string]int{"": int(chatBoxMax), chatWidthComfortable: int(chatBoxMax), chatWidthWide: int(chatBoxWide), chatWidthFull: pane - edges} {
+		if got := chatColumnWidth(gtx, pane, choice); got != want {
+			t.Errorf("chatColumnWidth(%q) = %d, want %d", choice, got, want)
+		}
+	}
+	if got := chatColumnWidth(gtx, edges-10, chatWidthFull); got != 0 {
+		t.Errorf("a pane narrower than its edges gives a %d column", got)
+	}
+}
+
 func TestCloseAnswers(t *testing.T) {
 	for stored, want := range map[string]string{"": closeAsk, "ask": closeAsk, "background": closeBackground, "quit": closeQuit, "tray": closeAsk} {
 		if got := closeActionOf(stored); got != want {
@@ -65,16 +88,16 @@ func TestLoadAppearancePrefs(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := appearancePrefs{zoom: 1, browserZoom: 1, fontSize: defaultTerminalSize, editorFontSize: defaultEditorSize, closeAction: closeAsk, copyOnSelect: true, windowButtons: windowButtonsSystem}
+	want := appearancePrefs{zoom: 1, browserZoom: 1, fontSize: defaultTerminalSize, editorFontSize: defaultEditorSize, closeAction: closeAsk, copyOnSelect: true, windowButtons: windowButtonsSystem, chatWidth: chatWidthComfortable}
 	if p != want {
 		t.Errorf("defaults %+v, want %+v", p, want)
 	}
 	f.settings[zoomKey+"@"], f.settings[terminalFontSizeKey+"@"] = "3", "x"
 	f.settings[costBudgetKey+"@"], f.settings[closeActionKey+"@"] = "25.5", "quit"
 	f.settings[terminalFontKey+"@"], f.settings[copyOnSelectKey+"@"], f.settings[browserZoomKey+"@"] = "Iosevka", "false", "0.8"
-	f.settings[windowButtonsKey+"@"] = "hide"
+	f.settings[windowButtonsKey+"@"], f.settings[chatWidthKey+"@"] = "hide", "full"
 	p, _ = loadAppearancePrefs(context.Background(), client)
-	want = appearancePrefs{zoom: zoomMax, browserZoom: 0.8, fontSize: defaultTerminalSize, font: "Iosevka", editorFontSize: defaultEditorSize, budget: 25.5, closeAction: closeQuit, windowButtons: windowButtonsHide}
+	want = appearancePrefs{zoom: zoomMax, browserZoom: 0.8, fontSize: defaultTerminalSize, font: "Iosevka", editorFontSize: defaultEditorSize, budget: 25.5, closeAction: closeQuit, windowButtons: windowButtonsHide, chatWidth: chatWidthFull}
 	if p != want {
 		t.Errorf("stored %+v, want %+v", p, want)
 	}

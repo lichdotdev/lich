@@ -142,9 +142,6 @@ func TestShellMessagesWithPlaceholdersAndPluralsInPortuguese(t *testing.T) {
 	if got := footerExample("attach"); got != "Anexar arquivo" {
 		t.Errorf("footer example %q", got)
 	}
-	if text, hint := pathText("/srv/app", "box"); text != "diretório desconhecido · dentro de box" || hint != text {
-		t.Errorf("unknown cwd: %q, hint %q", text, hint)
-	}
 }
 
 func TestPatchNotesGroupsAreNamedInTheInterfaceLanguage(t *testing.T) {

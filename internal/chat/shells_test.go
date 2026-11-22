@@ -62,6 +62,37 @@ func TestClaudeBackgroundShellIsListedReadAndStopped(t *testing.T) {
 	r.shells("the shells gone with the process", func(s []api.ChatShell) bool { return len(s) == 0 })
 }
 
+// Ctrl+B on a foreground command: the call says it can move while it runs,
+// the move makes it a shell and the turn carries on to its own end.
+func TestClaudeForegroundCommandMovesToTheBackground(t *testing.T) {
+	r := newChat(t, providers.Claude)
+	r.prompt("wait")
+	const call = "toolu_01MJPrhDuMGj39vkbze1sMz7"
+	r.sentCall("the call waiting on its command", call, func(t api.ChatToolCall) bool { return t.Movable && t.State != api.ToolDone })
+	if _, err := r.svc.Background(t.Context(), api.SessionIDOptions{ID: "s1"}); err != nil {
+		t.Fatalf("Background: %v", err)
+	}
+	got := r.shells("the moved command", func(s []api.ChatShell) bool { return len(s) == 1 })
+	if sh := got[0]; sh.ID != "bc4ibdw5i" || sh.Command != "timeout 20 tail -f /dev/null; echo finished-waiting" || sh.State != api.ShellRunning {
+		t.Fatalf("shell = %+v", sh)
+	}
+	r.sentCall("the call returned, no longer movable", call, func(t api.ChatToolCall) bool { return t.State == api.ToolDone && !t.Movable })
+	r.turnEnd(0)
+}
+
+// sentCall waits for the window to be sent call id as cond holds it.
+func (r *rig) sentCall(what, id string, cond func(api.ChatToolCall) bool) {
+	r.t.Helper()
+	r.eventually(what, func() bool {
+		for _, e := range slices.Backward(r.snapshot()) {
+			if u, ok := e.data.(api.ChatItemUpdate); ok && u.Item.ID == id && u.Item.Tool != nil {
+				return cond(*u.Item.Tool)
+			}
+		}
+		return false
+	})
+}
+
 func TestACPChatHasNoShells(t *testing.T) {
 	r := newChat(t, providers.OMP)
 	got, err := r.svc.Shells(t.Context(), api.SessionIDOptions{ID: "s1"})
@@ -70,5 +101,8 @@ func TestACPChatHasNoShells(t *testing.T) {
 	}
 	if _, err := r.svc.StopShell(t.Context(), api.ChatShellOptions{ID: "s1", Shell: "x"}); err != errNoShells {
 		t.Errorf("StopShell = %v, want %v", err, errNoShells)
+	}
+	if _, err := r.svc.Background(t.Context(), api.SessionIDOptions{ID: "s1"}); err != errNoShells {
+		t.Errorf("Background = %v, want %v", err, errNoShells)
 	}
 }

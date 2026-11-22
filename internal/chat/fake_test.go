@@ -49,6 +49,14 @@ func runFake(args []string) {
 		f.claudePluginCLI(args)
 		return
 	}
+	if slices.Contains(args, "edit-permission-rules") {
+		f.editPermissionRules()
+		return
+	}
+	if slices.Contains(args, "edit-memory-settings") {
+		f.editMemorySettings()
+		return
+	}
 	if slices.Contains(args, "edit-skill-overrides") {
 		f.editSkillOverrides()
 		return
@@ -199,6 +207,8 @@ func (f *fake) claudeTurn(run *fakeClaude, text string) {
 		f.claudeTasks(msg)
 	case "shells":
 		f.claudeShellTurn(msg)
+	case "wait":
+		f.claudeMovedTurn(msg)
 	case "todos":
 		msg("m2", map[string]any{"type": "tool_use", "id": "toolu_t", "name": "TodoWrite", "input": map[string]any{"todos": []any{
 			map[string]any{"content": "Read the parser", "status": "completed", "activeForm": "Reading the parser"},

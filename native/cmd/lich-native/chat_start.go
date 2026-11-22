@@ -65,6 +65,10 @@ type chatStart struct {
 	centre image.Point
 	line   image.Rectangle
 	lineH  int
+	// top is where the composer stood the frame before, from the chat's top,
+	// and composerH how tall it was: the lists over it fit in what is above
+	// it (chatPane.slashRoom).
+	top, composerH int
 }
 
 // shows reports whether the start screen is drawn at now: while the
@@ -134,6 +138,12 @@ func (u *window) chatStartScreen(gtx C, th *ui.Theme, p *chatPane, sv sessionVie
 	w, h := gtx.Constraints.Max.X, gtx.Constraints.Max.Y
 	free := gtx
 	free.Constraints.Min = image.Point{}
+	// The composer stands mid-pane here, where its lists have only what is
+	// above it; the room the bottom-standing composer has would run them past
+	// the pane's top. Its height and place hold from frame to frame.
+	if p.start.top > 0 {
+		p.slashRoom = p.start.top + p.start.composerH
+	}
 	m := op.Record(gtx.Ops)
 	cd := composer(free)
 	composed := m.Stop()
@@ -155,10 +165,11 @@ func (u *window) chatStartScreen(gtx C, th *ui.Theme, p *chatPane, sv sessionVie
 		list(lg)
 	}
 	top := h - cd.Size.Y - below
+	p.start.top, p.start.composerH = top, cd.Size.Y
 	heroAt := image.Pt((w-hd.Size.X)/2, top-hd.Size.Y)
 	p.start.mark = heroAt.Add(image.Pt((hd.Size.X-chatStartSlot(gtx).Size.X)/2, 0))
 	p.start.centre = image.Pt(w/2, top-hd.Size.Y+(hd.Size.Y+cd.Size.Y)/2)
-	column := max(min(w-2*gtx.Dp(chatPadX), gtx.Dp(chatBoxMax)), 0)
+	column := chatColumnWidth(gtx, w, u.chatWidth)
 	p.start.line = image.Rect((w-column)/2, top+cd.Size.Y-p.start.lineH, (w+column)/2, top+cd.Size.Y)
 	p.start.markFade = 0
 	if shown {

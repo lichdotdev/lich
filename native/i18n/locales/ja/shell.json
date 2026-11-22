@@ -49,9 +49,7 @@
   },
   "footerBar": {
     "attachFile": "ファイルを添付",
-    "reviewChanges": "変更をレビュー",
-    "viewPullRequest": "プルリクエストを見る",
-    "pullRequest": "PR #{number}"
+    "reviewChanges": "変更をレビュー"
   },
   "footerSession": {
     "cacheHit": "キャッシュ: ヒット率 {percent}%",

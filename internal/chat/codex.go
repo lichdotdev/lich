@@ -33,6 +33,8 @@ type codexDriver struct {
 	asks map[string]string
 	// skills are the skills skills/list gave, their paths by name.
 	skills map[string]string
+	// sources are the instruction files the thread loaded.
+	sources []string
 }
 
 func newCodexDriver(c *chatSession) *codexDriver {
@@ -81,6 +83,7 @@ type codexThread struct {
 	Effort   string        `json:"reasoningEffort"`
 	Approval any           `json:"approvalPolicy"`
 	Sandbox  codexSandboxP `json:"sandbox"`
+	Sources  []string      `json:"instructionSources"`
 }
 
 // open runs initialize, reads the models, then resumes thread resume or
@@ -169,6 +172,7 @@ func (d *codexDriver) readThread(raw json.RawMessage) (codexThread, error) {
 	d.thread = t.Thread.ID
 	d.run.model, d.run.effort, d.run.mode = t.Model, t.Effort, codexModeOf(t.Sandbox)
 	d.run.on = codexProducer{Model: t.Model, Effort: t.Effort}
+	d.sources = t.Sources
 	d.mu.Unlock()
 	return t, nil
 }

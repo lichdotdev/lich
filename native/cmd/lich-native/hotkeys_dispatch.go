@@ -73,11 +73,30 @@ func init() {
 // then the ones the command palette picked.
 func (u *window) pollHotkeys(gtx C) []hotkeyID {
 	inTerminal, picking := u.terms.focused(gtx), u.chats.pickerHasKeys(gtx)
+	chatKeeps := u.chatKeeps(gtx, runtime.GOOS, inTerminal)
 	fired := pollChords(gtx, &u.settings.hotkeys, runtime.GOOS, inTerminal, func(id hotkeyID) bool {
 		handler, ok := hotkeyHandlers[id]
-		return ok && (handler.ready == nil || handler.ready(u)) && !leftToFocus(id, inTerminal, picking)
+		return ok && (handler.ready == nil || handler.ready(u)) && !leftToFocus(id, inTerminal, picking) && !chatKeeps(id)
 	})
 	return append(fired, u.pickedHotkeys()...)
+}
+
+// chatKeeps is whether a chat keeps the chord of hotkey id this frame: its
+// Ctrl+B while a composer holds it for a command to move.
+func (u *window) chatKeeps(gtx C, goos string, inTerminal bool) func(hotkeyID) bool {
+	if !u.chats.backgroundHasKeys(gtx, u.model) {
+		return func(hotkeyID) bool { return false }
+	}
+	bound := u.settings.hotkeys.current()
+	return func(id hotkeyID) bool { return takesBackgroundKey(bound[id], goos, inTerminal) }
+}
+
+// takesBackgroundKey is whether hotkey chord c answers to the chat's Ctrl+B,
+// which moves the command a turn waits on to the background as in Claude
+// Code; while a composer holds it, the chord is the chat's (New worktree's
+// default, Ctrl+B, outside macOS).
+func takesBackgroundKey(c combo, goos string, inTerminal bool) bool {
+	return filtersTake(hotkeyFilters(c, goos, inTerminal), key.Event{Name: "B", Modifiers: key.ModCtrl})
 }
 
 // leftToFocus is a chord the focused widget keeps: F6 in a terminal, which

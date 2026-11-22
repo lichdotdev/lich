@@ -243,6 +243,14 @@
       }
     }
   },
+  "chatWidthSetting": {
+    "title": "Largura do chat",
+    "searchWords": "chat largura largo estreito total coluna mensagens caixa de texto leitura",
+    "description": "Até onde as mensagens e a caixa de texto do chat se esticam numa janela larga.",
+    "comfortable": "Confortável",
+    "wide": "Larga",
+    "full": "Total"
+  },
   "windowButtonsSetting": {
     "title": "Botões",
     "searchWords": "botões janela minimizar maximizar fechar barra de título controles semáforos esconder mostrar",

@@ -49,9 +49,7 @@
   },
   "footerBar": {
     "attachFile": "Adjuntar archivo",
-    "reviewChanges": "Revisar cambios",
-    "viewPullRequest": "Ver pull request",
-    "pullRequest": "PR #{number}"
+    "reviewChanges": "Revisar cambios"
   },
   "footerSession": {
     "cacheHit": "Caché: {percent}% de aciertos",

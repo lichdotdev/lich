@@ -243,6 +243,14 @@
       }
     }
   },
+  "chatWidthSetting": {
+    "title": "聊天宽度",
+    "searchWords": "聊天 宽度 宽 窄 全宽 栏 消息 输入框",
+    "description": "窗口较宽时，聊天消息和输入框最多展开到多宽。",
+    "comfortable": "舒适",
+    "wide": "宽",
+    "full": "全宽"
+  },
   "windowButtonsSetting": {
     "title": "按钮",
     "searchWords": "窗口 按钮 最小化 最大化 关闭 标题栏 控件 红绿灯 隐藏 显示",

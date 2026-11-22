@@ -211,13 +211,33 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   watch is the same `local_bash` task (measured), told apart only by its call's tool name and counted apart as
   Claude Code's TUI does; its result names no output file, only its `task_notification` does, so its output
   reads only once it has ended. A subagent's shells are listed with the session's, read in its code and not
-  seen; so is the move of a foreground command to the background (`task_updated` patching `is_backgrounded`). The shells run in the chat's process, so a switch to TUI, /new or a switch to YOLO mode,
+  seen. The move of a foreground command to the background is measured: `task_updated` patching
+  `is_backgrounded` to true. The shells run in the chat's process, so a switch to TUI, /new or a switch to YOLO mode,
   which start a new one, stops them, and a conversation read back has none. A shell that ends after the turn
   makes Claude Code answer on its own (measured): that answer reaches the chat with no turn running in lich.
   Codex lists its background terminals only on its experimental app-server API
   (`thread/backgroundTerminals/list`, 0.170.0's schema), with no event and no output, and lich opens Codex on the
   stable one; ACP has no such report, its `terminal/*` methods being the client running commands for the agent,
   which lich does not offer (`terminal: false`). Their chats show no shells. Crush has no chat.
+- **Ctrl+B moves a running command to the background only in a Claude Code chat** (`internal/chat/claude_shells.go`,
+  `native/cmd/lich-native/chat_shells.go`). Read in Claude Code 2.1.330's code: its Bash and PowerShell tools
+  register a foreground command as a `local_bash` task once it has run 2000ms, and offer Ctrl+B from then on,
+  unless background tasks are off (`backgroundTasksDisabled` in managed settings, `CLAUDE_CODE_DISABLE_BACKGROUND_TASKS`,
+  `CLAUDE_CODE_SIMPLE` or `--bare`) or the command runs on a remote-tools machine whose profile forbids it; a
+  foreground `sleep N; …` is refused before it runs (measured). The task reaches stream-json as `task_started`
+  with `is_backgrounded` false (measured, 4.1s after the call was written in a fresh config), and only then does
+  the window show the hint in the turn's live line and take Ctrl+B in the message box, ahead of the window
+  hotkey bound to it (New worktree's default outside macOS), which works everywhere else. A Monitor's watch starts
+  in the background (measured), so it never offers it. Ctrl+B sends the `background_tasks` control request with
+  no `tool_use_id`, Claude Code's own Ctrl+B (measured): `task_updated` patches `is_backgrounded` true, the call
+  returns at once with "Command was manually backgrounded by user", the turn carries on, and the command joins
+  the background shells. What follows when it settles is the background shell's, measured above. The same
+  request also moves a subagent the turn waits on (read in its code, not measured; its hint waits 2000ms too
+  and is off where background agents are), which no chip lists; a turn that waits on a subagent alone shows no
+  hint, and neither does a command run inside a subagent, since lich keeps no item for a subagent's calls.
+  Codex has no request that moves a running command (codex-cli 0.170.0 app-server schema, `--experimental`
+  included: only `thread/backgroundTerminals/list`, `clean` and `terminate`), and ACP's schema has none either,
+  its `terminal/*` methods being the agent's requests to the client; Crush has no chat.
 - **A chat message waits two seconds in the window before it reaches the agent**
   (`native/cmd/lich-native/chat_hold.go`): Esc or Stop takes it back meanwhile, and nothing reached the agent.
   It is drawn sent with its turn running from Enter, so the wait does not show, and a window closed inside it
@@ -416,6 +436,50 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   Codex chat picks up a plugin's hooks or MCP servers before it restarts is not measured. lich's own plugin and its
   marketplace take no action in the panel: lich installs and pins them itself (Plugin install and upgrades). The
   ACP providers and Kiro CLI report no plugins.
+- **A chat's /memory and /agents panels show what Claude Code and Codex report, and Claude Code has no /agents
+  screen to mirror** (`internal/chat/memory.go`, `claude_memory.go`, `codex_memory.go`). Claude Code (2.1.330)
+  answers `get_memory_dialog`, marked @internal, with the rows its /memory dialog draws: the instruction files that
+  load, the saved memories of the auto-memory folder and the auto-memory and auto-dream settings. A refusal reads
+  as nothing reported. Its folder rows (the auto-memory, team and agent memory folders) are left out: lich's
+  editor opens files, and the auto-memory folder's files are listed one by one. The memory settings are written by
+  `claude edit-memory-settings --json`, run as `edit-skill-overrides` is, into the profile's `settings.json`, so a
+  change holds for every project of that profile; the running chat reads it at once (measured). Only the user and
+  project files the dialog lists as missing can be created, empty, from the panel. Claude Code's /agents wizard is
+  gone (it prints where the files go), so the /agents panel is lich's: `initialize` lists every subagent by name,
+  description and model, `get_context_usage` (no turn) the source and file of each one not built in, and the
+  tools come from the file's frontmatter, read without a YAML library: a folded or multi-line value reads as
+  empty. Adding one writes `<name>.md` with its name and description, which Claude Code refuses to list without
+  (measured), into the checkout's `.claude/agents/` or the profile's `agents/`, never over a file, and opens it to
+  write its prompt; Claude Code watches those folders, so the chat lists it at once. There is no delete and no
+  "generate with Claude". A plugin's or a managed subagent opens read only. A subagent whose file goes away
+  mid-session still reads as built in until the chat restarts. Codex (0.170.0) has neither screen: /memory lists
+  `instructionSources` of `thread/start` and `thread/resume`, the AGENTS.md files the thread loaded, fixed for the
+  thread's life, with no setting; /agents lists the roles `config/read`'s `agents` table declares, opened by their
+  `config_file`, without Codex's built-in roles, which no method lists, and with no add, since a role is declared
+  in `config.toml`. A memory file outside the checkout opens in the checkout's stage editor and saves in place.
+  The ACP providers and Kiro CLI report neither, and Crush has no chat.
+
+- **A chat's /permissions and /hooks panels show what Claude Code and Codex report, and nothing elsewhere**
+  (`internal/chat/permissions.go`, `claude_permissions.go`, `claude_hooks.go`, `codex_hooks.go`). Claude Code
+  (2.1.330) lists its rules, with their source and the folders it may work in, through `list_permission_rules`,
+  and its hooks through `get_hooks_listing`; no stream-json request changes a rule, so lich runs `claude
+  edit-permission-rules --json`, the writer its VS Code extension runs, outside the sandbox and without
+  `CLAUDE_CODE_CHILD_SESSION`. That writer refuses a rule that holds a secret or would land in a file git tracks,
+  and its reason is the toast. The running chat watches its settings files and lists an edit about a second later,
+  so the call waits up to four seconds for the list to show it. In a git worktree the local file is the main
+  checkout's `.claude/settings.local.json`, which the CLI picks, not lich. Its /hooks is read only ("To add or
+  change a hook, edit settings.json or ask Claude"), and so is lich's, though `claude edit-hook --json` exists for
+  the VS Code extension. Left out of its /permissions: adding or removing a folder (the TUI's /add-dir answers are
+  a session-only grant no request makes, or a write of `additionalDirectories` no CLI does; `list_permission_rules`
+  also names a user settings folder `localSettings`, so its source cannot pick the file), the recent denials of
+  auto mode and the auto mode rules tabs. A rule of an untrusted folder's project settings is not listed by
+  Claude Code itself. Codex (0.170.0) has no permission rules: its /permissions is the permission profile, the
+  mode the chat already sets, which the panel lists to pick. Its hooks come from `hooks/list`; trusting one writes
+  `trusted_hash` of the hash the person saw, and turning one off `enabled = false`, both in its `hooks.state`
+  entry of `config.toml` through `config/batchWrite` with an upsert, which keeps every other entry and field
+  (lich-plugin's trust among them), and `reloadUserConfig`. Its /hooks "trust all" is not offered: each hook is
+  trusted from its own detail. Antigravity, opencode, oh-my-pi, Crush, Cursor CLI and Kiro CLI report neither over
+  ACP, so /permissions and /hooks go to their agent as typed, as /plugin does there.
 
 - **The Welcome installs a provider with the vendor's own command, and only where that runs as you**
   (`internal/providers/install_recipes.go`). Each line is the vendor's install page word for word, run with no
@@ -635,7 +699,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   transcripts are priced: when another profile disables it, an old layout cannot enable pricing just by
   moving an unrelated item. The editor takes no change until that setting has loaded.
   An item without data can occupy an editor slot while drawing
-  nothing in the live footer — a PR on a branch without one, or an unsupported provider reading.
+  nothing in the live footer — the changes outside a git checkout, or an unsupported provider reading.
 - **The card's tooltip names the running model only where the readout above has one**
   (`modelRuns`, `native/cmd/lich-native/sessiontooltip.go`): the line comes from the model the session-usage
   event carries, which only Claude Code, Codex and Kiro CLI record (`docs/providers/`, Transcript & cost), so
@@ -712,10 +776,11 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   `rate_limit_reset_credits.available_count` (how many on-demand window resets the account holds) are read from
   the payloads lich already polls and shown as one more block of the usage panel, only when the account has them on:
   an `extra_usage` that is disabled, and a count of zero, draw nothing. No other provider's route reports either,
-  so the other six show their windows alone. The usage panel of the profile footer reads per-profile plans only for Claude Code
-  and Codex: Cursor CLI's and opencode's plans are read for the machine's login alone, so on their profiles (and on
-  oh-my-pi's and Kiro CLI's, which have none) it says usage is not measured per profile rather than draw another
-  account's numbers. A `claude setup-token` login reads its windows off response headers
+  so the other six show their windows alone. The sidebar's account row reads per-profile plans only for Claude Code
+  and Codex: Cursor CLI's and opencode's plans are read for the machine's login alone, so on their profiles other
+  than Personal (and on oh-my-pi's and Kiro CLI's, which have none) its panel says usage is not measured per profile
+  rather than draw another account's numbers, and the row shows no readout. The row reads the account new sessions
+  spend, not the open card's: after Continue in moves a card to another login, the row still shows the project's. A `claude setup-token` login reads its windows off response headers
   (see the bullet below), which carry neither, so its panel never has the extra-usage block. The extra block's shape was
   written against the field names and a disabled account's nulls: an enabled one has not been seen in a live
   payload, so a currency or unit the route does not spell the documented way would draw a wrong amount. The

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -14,13 +15,15 @@ import (
 // A Claude Code chat's background shells, as measured on 2.1.330: a command
 // its Bash tool runs is a task of type local_bash, reported by
 // system/task_started with is_backgrounded (false for a foreground command
-// slow enough to become a task, which moving to the background patches), then
-// task_updated with its patch.status (completed, failed, killed) and
-// task_notification with its end (completed, failed, stopped). The tool's
-// result names the file the output is written to; a Monitor tool's watch is
-// the same task, its file named only by its task_notification. stop_task stops one, and
-// read_file reads the file's end through Claude Code itself, which sees it
-// where a sandbox's private /tmp hides it from lich.
+// that has run 2s, when the TUI offers Ctrl+B), then task_updated with its
+// patch.status (completed, failed, killed) and task_notification with its end
+// (completed, failed, stopped). The background_tasks control request is
+// Ctrl+B: task_updated patches is_backgrounded true and the call returns at
+// once, the turn carrying on. The tool's result names the file the output is
+// written to; a Monitor tool's watch is the same task, its file named only by
+// its task_notification. stop_task stops one, and read_file reads the file's
+// end through Claude Code itself, which sees it where a sandbox's private
+// /tmp hides it from lich.
 
 const (
 	claudeShellTask = "local_bash"
@@ -188,6 +191,19 @@ func (s *claudeShells) shown() []api.ChatShell {
 	return out
 }
 
+// waiting is the calls whose command runs in the foreground.
+func (s *claudeShells) waiting() []string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	var out []string
+	for _, sh := range s.list {
+		if !sh.background && sh.State == api.ShellRunning {
+			out = append(out, sh.toolUse)
+		}
+	}
+	return out
+}
+
 // lookup is background shell id, false when the chat has none by that id.
 func (s *claudeShells) lookup(id string) (claudeShell, bool) {
 	s.mu.Lock()
@@ -220,9 +236,38 @@ func (d *claudeDriver) shellTask(subtype string, raw []byte) {
 		}
 		return api.ChatToolCall{}
 	}
+	was := d.shells.waiting()
 	if d.shells.task(subtype, raw, tool, time.Now()) {
 		d.c.setShells(d.shells.shown())
 	}
+	waits := d.shells.waiting()
+	for _, toolUse := range was {
+		if !slices.Contains(waits, toolUse) {
+			d.markMovable(toolUse, false)
+		}
+	}
+	for _, toolUse := range waits {
+		if !slices.Contains(was, toolUse) {
+			d.markMovable(toolUse, true)
+		}
+	}
+}
+
+// markMovable says whether the call toolUse waits on a command Ctrl+B moves,
+// on a call lich holds an item for.
+func (d *claudeDriver) markMovable(toolUse string, movable bool) {
+	if it, ok := d.c.conv.get(toolUse); !ok || it.Tool == nil {
+		return
+	}
+	d.c.conv.update(toolUse, api.ItemTool, false, func(it *api.ChatItem) { it.Tool.Movable = movable })
+}
+
+// background is Ctrl+B: every command the turn waits on moves to the
+// background, and so does a subagent the turn waits on (read in 2.1.330's
+// code, not measured).
+func (d *claudeDriver) background(ctx context.Context) error {
+	_, err := d.control(ctx, map[string]any{"subtype": "background_tasks"})
+	return err
 }
 
 func (d *claudeDriver) stopShell(ctx context.Context, id string) error {

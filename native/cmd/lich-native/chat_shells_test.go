@@ -1,6 +1,7 @@
 package main
 
 import (
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
+	"github.com/lichdotdev/lich/native/ui"
 )
 
 // shellsFrames is session s1 drawn as a Claude Code chat with two shells
@@ -150,5 +152,68 @@ func TestShellsEventReachesTheStore(t *testing.T) {
 	r.frames(2)
 	if len(u.model.chat.shellsOf("s1")) != 0 || r.shows("2 shells") {
 		t.Errorf("the event left %v and the chip:\n%s", u.model.chat.shellsOf("s1"), r.drawn())
+	}
+}
+
+// A turn waiting on a command Claude Code can move shows its Ctrl+B hint in
+// the live line, and Ctrl+B in the box moves it; a call that cannot move
+// shows no hint and leaves the key alone.
+func TestCtrlBMovesTheCommandTheTurnWaitsOn(t *testing.T) {
+	u, r, f := chatFrames(t, api.ViewChat)
+	call := backend.ChatItem{ID: "toolu_1", Kind: api.ItemTool, Turn: 1, At: r.now.Add(-3 * time.Second).UnixMilli(),
+		Tool: &backend.ChatToolCall{Name: "Bash", Title: "npm test", State: api.ToolRunning, Movable: true}}
+	u.model.chat.history("s1", []backend.ChatItem{{ID: "u1", Kind: api.ItemUser, Turn: 1, Text: "go", At: r.now.Add(-12 * time.Second).UnixMilli()}, call})
+	u.model.chat.turn(api.ChatTurn{SessionID: "s1", Running: true})
+	r.frames(3)
+	writeShot(t, r, "chat-background-hint.png")
+	if !r.shows("· Ctrl+B to run in background") {
+		t.Fatalf("no hint while the turn waits on a command:\n%s", r.drawn())
+	}
+	r.pressWith("B", key.ModCtrl)
+	f.waitCall(t, api.ChatBackground.Name)
+
+	// An earlier turn's call left unended is not the turn in flight's.
+	u.model.chat.history("s1", []backend.ChatItem{{ID: "u1", Kind: api.ItemUser, Turn: 1, Text: "go"}, call, {ID: "u2", Kind: api.ItemUser, Turn: 2, Text: "and now"}})
+	r.frames(2)
+	if r.shows("Ctrl+B") {
+		t.Errorf("a hint for an earlier turn's call:\n%s", r.drawn())
+	}
+	call.Tool.Movable = false
+	u.model.chat.history("s1", []backend.ChatItem{{ID: "u1", Kind: api.ItemUser, Turn: 1, Text: "go"}, call})
+	r.frames(2)
+	if r.shows("Ctrl+B") {
+		t.Errorf("a hint for a call that cannot move:\n%s", r.drawn())
+	}
+	r.pressWith("B", key.ModCtrl)
+	time.Sleep(20 * time.Millisecond)
+	if n := f.callsOf(api.ChatBackground.Name); n != 1 {
+		t.Errorf("Ctrl+B with nothing to move asked %d times in all", n)
+	}
+}
+
+// Ctrl+B is also New worktree's default chord, read before the panes: while
+// the box holds it for a command to move, the chord is the chat's.
+func TestCtrlBInTheComposerIsNotNewWorktree(t *testing.T) {
+	u, r, f := chatFrames(t, api.ViewChat)
+	u.settings = new(settingsScreen)
+	var fired []hotkeyID
+	draw := r.draw
+	r.draw = func(gtx C, th *ui.Theme) {
+		// the window reads its chords before it lays the panes out
+		keeps := u.chatKeeps(gtx, "linux", false)
+		fired = append(fired, pollChords(gtx, &u.settings.hotkeys, "linux", false, func(id hotkeyID) bool {
+			return id == hotkeyNewWorktree && !keeps(id)
+		})...)
+		draw(gtx, th)
+	}
+	call := backend.ChatItem{ID: "toolu_1", Kind: api.ItemTool, Turn: 1, At: r.now.Add(-3 * time.Second).UnixMilli(),
+		Tool: &backend.ChatToolCall{Name: "Bash", Title: "npm test", State: api.ToolRunning, Movable: true}}
+	u.model.chat.history("s1", []backend.ChatItem{{ID: "u1", Kind: api.ItemUser, Turn: 1, Text: "go"}, call})
+	u.model.chat.turn(api.ChatTurn{SessionID: "s1", Running: true})
+	r.frames(3)
+	r.pressWith("B", key.ModCtrl)
+	f.waitCall(t, api.ChatBackground.Name)
+	if slices.Contains(fired, hotkeyNewWorktree) {
+		t.Errorf("Ctrl+B in the box also ran New worktree: %v", fired)
 	}
 }

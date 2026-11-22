@@ -79,7 +79,7 @@ func (t *chatTools) pluginsHead(gtx C, th *ui.Theme, l api.ChatPluginList, searc
 	if search {
 		rows = append(rows, layout.Rigid(func(gtx C) D {
 			in := th.Input(&t.query, i18n.T("chat.plugins.search"))
-			in.Borderless = true
+			in.Bare, in.Height = true, pickerRowH
 			return in.Layout(gtx)
 		}))
 	}
@@ -134,7 +134,7 @@ func pluginMeta(pl api.ChatPlugin) string {
 		if pl.Installs == 0 {
 			return ""
 		}
-		return i18n.T("chat.plugins.installs", i18n.Args{"count": pl.Installs})
+		return pluginInstalls(pl.Installs)
 	}
 	parts := []string{pluginScopeLabel(pl.Scope)}
 	if pl.Parts != nil && pl.Parts.Tokens > 0 {
@@ -174,6 +174,9 @@ func twoLineRow(gtx C, th *ui.Theme, glyph, name layout.Widget, desc string, end
 			layout.Rigid(glyph),
 			ui.Gap(2),
 			layout.Flexed(1, func(gtx C) D {
+				// the row's height reaches here from pickerRow; a name with no
+				// description under it would sit at the top instead of the middle
+				gtx.Constraints.Min.Y = 0
 				col := []layout.FlexChild{layout.Rigid(name)}
 				if desc != "" {
 					col = append(col, layout.Rigid(th.Text(ui.TextXS, cleanLine(desc)).Muted().Truncated().Layout))
@@ -217,4 +220,10 @@ func (t *chatTools) addMarketLine(th *ui.Theme) layout.Widget {
 				layout.Flexed(1, in.Layout), ui.Gap(1.5), layout.Rigid(b.Layout))
 		})
 	}
+}
+
+// pluginInstalls is a plugin's install count as the catalog reads it, short:
+// "1.3M installs", the plural picked on the whole number.
+func pluginInstalls(n int) string {
+	return i18n.T("chat.plugins.installs", i18n.Args{"count": n, "n": compactCount(n, i18n.Current())})
 }

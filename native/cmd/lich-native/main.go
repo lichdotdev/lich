@@ -196,8 +196,10 @@ type window struct {
 	// browserZoom scales the pages of the page panes on top of zoom: a small
 	// screen fits more of a page without shrinking the rest of the window.
 	browserZoom float64
-	win         *app.Window
-	closer      closePrompt
+	// chatWidth is the chat width setting, "" before it is read.
+	chatWidth string
+	win       *app.Window
+	closer    closePrompt
 	// notifier is the desktop channel; optIn its one-time question.
 	notifier    *notifier
 	optIn       notifyOptIn
@@ -404,7 +406,6 @@ func run(w *app.Window, rt backend.Runtime) error {
 	u.footer.panel = u.extPanel
 	u.footer.extensions = &u.model.extensions
 	u.git.open = *flagTab == "git"
-	u.footer.openPullRequest = u.openPR
 	u.footer.attachAt = u.attachAtPrompt
 	u.footer.showDelegates = func(id string) { u.layoutStage.delegates = id }
 	u.settings.footer = u.footer

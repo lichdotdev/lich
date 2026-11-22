@@ -36,10 +36,12 @@ func usagePlan() backend.QuotaPlan {
 	}
 }
 
-// tipFrames draws a plan's tooltip body alone.
+// tipFrames draws a plan's usage alone, as the account row's panel does.
 func tipFrames(t *testing.T, plan backend.QuotaPlan) *frameRig {
 	t.Helper()
-	r := newFrameRig(image.Pt(400, 700), func(gtx C, th *ui.Theme) { planDetails(th.On(th.Popover), plan, gtx.Now)(gtx) })
+	r := newFrameRig(image.Pt(400, 700), func(gtx C, th *ui.Theme) {
+		ui.Stack(usageBlockGap, profileUsageRows(th.On(th.Popover), profileFocus{kind: plan.Provider}, plan, true, gtx.Now, nil)...)(gtx)
+	})
 	r.settle(t)
 	return r
 }
@@ -125,12 +127,15 @@ func TestTheProfilePanelSaysWhyThereIsNoUsage(t *testing.T) {
 	}
 	claude := profileFocus{kind: claudeKind, book: &profileBook{provider: claudeProfileProvider}}
 	omp := profileFocus{book: &profileBook{provider: ompProfileProvider}}
-	cursor := profileFocus{book: &profileBook{provider: cursorProfileProvider}}
+	cursor := profileFocus{book: &profileBook{provider: cursorProfileProvider}, choice: projectProfile{shown: "work"}}
+	cursorPersonal := profileFocus{kind: cursorKind, book: &profileBook{provider: cursorProfileProvider}}
 
 	wantShown(t, draw(omp, backend.QuotaPlan{}, false), "Usage is not measured per profile for oh-my-pi.")
 	// Cursor CLI has a plan, but lich reads it for the machine's login alone: another profile's panel never draws it.
 	wantShown(t, draw(cursor, usagePlan(), true), "Usage is not measured per profile for Cursor CLI.")
 	wantAbsent(t, draw(cursor, usagePlan(), true), "Session · 5h")
+	// Personal is the machine's login, the one lich reads Cursor CLI for.
+	wantShown(t, draw(cursorPersonal, usagePlan(), true), "Session · 5h")
 	wantShown(t, draw(claude, backend.QuotaPlan{Status: "signed-out"}, true), "Signed out.")
 	wantShown(t, draw(claude, backend.QuotaPlan{Status: "error"}, true), "Plan usage could not be read.")
 	wantShown(t, draw(claude, backend.QuotaPlan{Status: "unknown"}, true), "Plan usage could not be read.")

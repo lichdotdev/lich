@@ -20,16 +20,12 @@ type footerItem struct {
 var footerItems = []footerItem{
 	{ID: "attach", ExampleKey: "footer.item.attach.example"},
 	{ID: "changes", Example: "3 · +10 −2"},
-	{ID: "pr", Example: "PR #123"},
 	{ID: "checkout", Example: "feature/toolbar"},
-	{ID: "path", Example: "~/project"},
 	// The editor shows the active session's model; this is its fallback.
 	{ID: "model", ExampleKey: "footer.item.model.example"},
 	{ID: "context", Example: "42%"},
-	{ID: "plan", Example: "5h 28%"},
 	{ID: "cost", Example: "$1.25"},
 	{ID: "handsOn", Example: "12m"},
-	{ID: "clock", Example: "Sep 6 · 14:30"},
 }
 
 // Footer zones: the two sides, and the pool of items on neither.
@@ -50,18 +46,10 @@ type footerLayout struct {
 	Seen []string `json:"seen,omitempty"`
 }
 
-// footerVisibility is the pre-layout set of switches, which only seed a layout
-// nobody has saved yet.
-type footerVisibility struct {
-	Model, Plan, HandsOn, Clock bool
-}
-
-var defaultFooterVisibility = footerVisibility{Model: true, Plan: true, HandsOn: true}
-
 func defaultFooterLayout() footerLayout {
 	return footerLayout{
-		Left:  []string{"attach", "changes", "pr"},
-		Right: []string{"checkout", "model", "context", "plan", "handsOn"},
+		Left:  []string{"attach", "changes"},
+		Right: []string{"checkout", "context"},
 	}
 }
 
@@ -103,7 +91,8 @@ func (l footerLayout) adopt(ids []string) (footerLayout, bool) {
 // parseFooterLayout reads a saved layout. A saved empty side is intentional;
 // unknown or repeated items are dropped so a reload cannot clone a control,
 // and so are the Code and Artifacts buttons a layout saved before the dock
-// took them still names.
+// took them still names, and the PR, path, plan and clock items the footer
+// dropped once the sidebar showed them.
 func parseFooterLayout(raw string) (footerLayout, bool) {
 	var value struct {
 		Left, Right *[]json.RawMessage
@@ -129,9 +118,9 @@ func parseFooterLayout(raw string) (footerLayout, bool) {
 	return footerLayout{Left: clean(*value.Left), Right: clean(*value.Right), Seen: seenItems}, true
 }
 
-// resolveFooterLayout is the layout to draw: the saved one, or one seeded
-// from the visibility switches when nothing is saved.
-func resolveFooterLayout(stored *footerLayout, visibility footerVisibility, showContext, cost bool) footerLayout {
+// resolveFooterLayout is the layout to draw: the saved one, or the default
+// when nothing is saved, each with cost on its right while the flag is on.
+func resolveFooterLayout(stored *footerLayout, cost bool) footerLayout {
 	// Cost's backend flag also controls pricing. A layout saved while it was
 	// off must not silently turn that work back on when another item moves.
 	if stored != nil {
@@ -145,17 +134,11 @@ func resolveFooterLayout(stored *footerLayout, visibility footerVisibility, show
 		next, _ := moveFooterItem(*stored, "cost", target)
 		return next
 	}
-	shown := map[string]bool{
-		"model": visibility.Model, "context": showContext, "plan": visibility.Plan,
-		"cost": cost, "handsOn": visibility.HandsOn, "clock": visibility.Clock,
+	l := defaultFooterLayout()
+	if cost {
+		l.Right = append(l.Right, "cost")
 	}
-	right := []string{"checkout"}
-	for _, id := range []string{"model", "context", "plan", "cost", "handsOn", "clock"} {
-		if shown[id] {
-			right = append(right, id)
-		}
-	}
-	return footerLayout{Left: defaultFooterLayout().Left, Right: right}
+	return l
 }
 
 // footerZone is the zone an item, or a zone's own id, belongs to.
@@ -204,8 +187,7 @@ func insertAt(items []string, index int, id string) []string {
 }
 
 // loadFooterLayout reads the saved layout and resolves it against the cost
-// flag. The native window has no visibility switches or context toggle of its
-// own, so an unsaved layout seeds from defaultFooterVisibility.
+// flag.
 func loadFooterLayout(ctx context.Context, c *backend.Client, cost bool) (footerLayout, error) {
 	raw, err := c.GetSetting(ctx, footerLayoutKey, "")
 	if err != nil {
@@ -215,7 +197,7 @@ func loadFooterLayout(ctx context.Context, c *backend.Client, cost bool) (footer
 	if l, ok := parseFooterLayout(raw); ok {
 		stored = &l
 	}
-	return resolveFooterLayout(stored, defaultFooterVisibility, true, cost), nil
+	return resolveFooterLayout(stored, cost), nil
 }
 
 func saveFooterLayout(ctx context.Context, c *backend.Client, l footerLayout) error {

@@ -108,18 +108,18 @@ func (f *fileEditor) startSave(then func(), overwrite bool) {
 	f.saving.mu.Unlock()
 	st := f.ed.State()
 	doc, content, base := st.Doc(), st.SliceDoc(0, len(st.Doc())), f.base
-	client, checkout, rel, opens := f.client, f.checkout, f.rel, f.opens
+	client, root, rel, opens := f.client, f.root(), f.rel, f.opens
 	go func() {
 		saved := &editorSaved{doc: doc, opens: opens, then: then}
 		ctx := context.Background()
 		if !overwrite {
-			disk, err := client.ReadFile(ctx, checkout, rel)
+			disk, err := client.ReadFile(ctx, root, rel)
 			if err == nil && normalizedText(disk) != base {
 				saved.disk = &disk
 			}
 		}
 		if saved.disk == nil {
-			saved.err = client.WriteFile(ctx, checkout, rel, content)
+			saved.err = client.WriteFile(ctx, root, rel, content)
 		}
 		f.saving.mu.Lock()
 		f.saving.busy, f.saving.done = false, saved
@@ -192,6 +192,9 @@ func (f *fileEditor) header(gtx C, th *ui.Theme) D {
 
 func (f *fileEditor) title(gtx C, th *ui.Theme) D {
 	dir, name := path.Dir(f.rel), path.Base(f.rel)
+	if f.writable {
+		dir = displayPath(f.dir)
+	}
 	children := []layout.FlexChild{}
 	if dir != "." {
 		children = append(children, layout.Rigid(th.Text(ui.TextSM, strings.TrimSuffix(dir, "/")+"/").Mono().Muted().Layout))
@@ -200,7 +203,7 @@ func (f *fileEditor) title(gtx C, th *ui.Theme) D {
 	if f.dirty {
 		children = append(children, ui.Gap(2), layout.Rigid(func(gtx C) D { return ui.Dot(gtx, th.ToneWait, editorDirtyDot) }))
 	}
-	if f.dir != "" {
+	if f.readOnly() {
 		children = append(children, ui.Gap(3), layout.Rigid(th.Text(ui.TextXS, i18n.T("dock.editor.artifactReadOnly")).Muted().Layout))
 	}
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)

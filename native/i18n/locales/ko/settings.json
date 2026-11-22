@@ -239,6 +239,14 @@
       }
     }
   },
+  "chatWidthSetting": {
+    "title": "채팅 너비",
+    "searchWords": "채팅 너비 넓게 좁게 전체 열 메시지 입력란",
+    "description": "창이 넓을 때 채팅 메시지와 입력란이 얼마나 넓어질지 정합니다.",
+    "comfortable": "기본",
+    "wide": "넓게",
+    "full": "전체"
+  },
   "windowButtonsSetting": {
     "title": "버튼",
     "searchWords": "창 버튼 최소화 최대화 닫기 제목 표시줄 컨트롤 신호등 숨기기 표시",

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"math"
@@ -59,9 +60,13 @@ func profileQuotaKey(prov profileProvider, slug string) string {
 }
 
 // quotaReader reads the plan a planQuota key stands for. A profile's reading
-// is the one plan its own login has, so it comes back as a list of one.
+// is the one plan its own login has, so it comes back as a list of one. A
+// model with no backend, as the test rigs build it, reads nothing.
 func quotaReader(c *backend.Client) func(key string) ([]backend.QuotaPlan, error) {
 	return func(key string) ([]backend.QuotaPlan, error) {
+		if c == nil {
+			return nil, errors.New("no backend to read plans from")
+		}
 		ctx := context.Background()
 		for _, prov := range []profileProvider{claudeProfileProvider, codexProfileProvider} {
 			slug, isProfile := strings.CutPrefix(key, prov.quotaPrefix)

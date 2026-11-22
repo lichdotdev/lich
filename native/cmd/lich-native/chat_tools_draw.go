@@ -43,6 +43,7 @@ func (u *window) chatToolsPanel(gtx C, th *ui.Theme, p *chatPane, sv sessionView
 	u.pollTools(gtx, p, sv.ID)
 	t.mu.Lock()
 	mcp, skills, plugins, loaded := t.mcp, t.skills, t.plugins, t.loaded
+	memory, agents := t.mem.list, t.mem.agents
 	t.mu.Unlock()
 	g := gtx
 	g.Constraints = layout.Constraints{Max: image.Pt(gtx.Constraints.Max.X, max(min(gtx.Dp(toolsMaxH), room), 0))}
@@ -57,6 +58,14 @@ func (u *window) chatToolsPanel(gtx C, th *ui.Theme, p *chatPane, sv sessionView
 			return u.mcpView(gtx, th, p, sv, mcp)
 		case t.kind == chatPluginCommand:
 			return u.pluginsView(gtx, th, p, sv, plugins)
+		case t.kind == chatPermissionsCommand:
+			return u.permissionsView(gtx, th, p, sv)
+		case t.kind == chatHooksCommand:
+			return u.hooksView(gtx, th, p, sv)
+		case t.kind == chatMemoryCommand:
+			return u.memoryView(gtx, th, p, sv, memory)
+		case t.kind == chatAgentsCommand:
+			return u.agentsView(gtx, th, p, sv, agents)
 		}
 		return u.skillsView(gtx, th, p, sv, skills)
 	})
@@ -312,7 +321,7 @@ func (u *window) skillsView(gtx C, th *ui.Theme, p *chatPane, sv sessionView, l 
 			}),
 			layout.Rigid(func(gtx C) D {
 				in := th.Input(&t.query, i18n.T("chat.tools.search"))
-				in.Borderless = true
+				in.Bare, in.Height = true, pickerRowH
 				return in.Layout(gtx)
 			}),
 			layout.Rigid(th.Separator),

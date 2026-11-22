@@ -105,7 +105,7 @@ func pluginFacts(th *ui.Theme, pl api.ChatPlugin) []layout.Widget {
 	text(i18n.T("chat.plugins.fact.version"), version)
 	if !pl.Installed {
 		if pl.Installs > 0 {
-			text(i18n.T("chat.plugins.fact.installs"), i18n.T("chat.plugins.installs", i18n.Args{"count": pl.Installs}))
+			text(i18n.T("chat.plugins.fact.installs"), pluginInstalls(pl.Installs))
 		}
 		return lines
 	}

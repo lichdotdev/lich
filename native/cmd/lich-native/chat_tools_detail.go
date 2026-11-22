@@ -122,11 +122,13 @@ func mcpFacts(th *ui.Theme, s api.ChatMCPServer) []layout.Widget {
 	}
 	text(i18n.T("chat.tools.fact.version"), s.Version, false)
 	text(i18n.T("chat.tools.fact.target"), s.Target, true)
-	config := s.Config
-	if config == "" {
-		config = toolsGroupLabel(toolsGroup(s.Scope))
+	// a file reads in mono as the target does; the group a server falls in
+	// when no file is known is a word
+	if s.Config != "" {
+		text(i18n.T("chat.tools.fact.config"), s.Config, true)
+	} else {
+		text(i18n.T("chat.tools.fact.config"), toolsGroupLabel(toolsGroup(s.Scope)), false)
 	}
-	text(i18n.T("chat.tools.fact.config"), config, true)
 	text(i18n.T("chat.tools.fact.tools"), i18n.T("chat.tools.toolCount", i18n.Args{"count": len(s.Tools)}), false)
 	if s.Error != "" {
 		lines = append(lines, func(gtx C) D {

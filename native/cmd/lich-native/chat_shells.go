@@ -5,6 +5,7 @@ import (
 	"slices"
 	"time"
 
+	"gioui.org/io/key"
 	"gioui.org/op"
 
 	"github.com/lichdotdev/lich/api"
@@ -121,6 +122,24 @@ func (u *window) shellActs(gtx C, p *chatPane, id string) (int, func(int)) {
 		go func() { u.chatFailed(u.client.ChatStopShell(u.ctx, id, shell)) }()
 	}
 	return 0, func(int) {}
+}
+
+// backgroundKeys takes Ctrl+B from the composer ahead of the editor while the
+// turn waits on a command it moves, Claude Code's key on every system, and
+// moves the command to the background.
+func (u *window) backgroundKeys(gtx C, p *chatPane, id string) {
+	if !u.model.chat.isRunning(id) || !movable(u.model.chat.of(id)) {
+		return
+	}
+	for {
+		ev, ok := gtx.Event(key.Filter{Focus: &p.editor, Name: "B", Required: key.ModCtrl})
+		if !ok {
+			return
+		}
+		if e, isKey := ev.(key.Event); isKey && e.State == key.Press {
+			go func() { u.chatFailed(u.client.ChatBackground(u.ctx, id)) }()
+		}
+	}
 }
 
 // pollShell reads the output of the shell the panel shows: at once, every
