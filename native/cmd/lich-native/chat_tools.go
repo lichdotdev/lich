@@ -49,6 +49,7 @@ type chatTools struct {
 	// gen counts the reads that landed, for what is kept from one.
 	gen  int
 	plug chatPlugins
+	set  chatSettings
 	// shell is the output of the shell the shells' panel shows.
 	shell chatShellOut
 	// base is the box's length when the panel opened: typing past it shuts
@@ -81,6 +82,7 @@ func (t *chatTools) open(kind string) {
 	t.base, t.shell.id = 0, ""
 	t.query.SetText("")
 	t.plug.reset()
+	t.set.reset()
 }
 
 func (t *chatTools) shut() { t.kind, t.detail = "", "" }
@@ -105,7 +107,7 @@ func (t *chatTools) act(a string) *ui.Clickable {
 func (u *window) openTools(p *chatPane, id, text string) bool {
 	kind, kinds := "", chatToolKinds
 	switch text {
-	case chatMCPCommand, chatSkillsCommand, chatPluginCommand:
+	case chatMCPCommand, chatSkillsCommand, chatPluginCommand, chatPermissionsCommand, chatHooksCommand:
 		kind = text
 	case chatShellsPanel, chatBashesCommand:
 		kind, kinds = chatShellsPanel, chatShellKinds
@@ -141,6 +143,8 @@ func (u *window) fetchTools(p *chatPane, id string) {
 			mcp     api.ChatMCPList
 			skills  api.ChatSkillList
 			plugins api.ChatPluginList
+			perms   api.ChatPermissionList
+			hooks   api.ChatHookList
 			err     error
 		)
 		switch kind {
@@ -148,6 +152,10 @@ func (u *window) fetchTools(p *chatPane, id string) {
 			mcp, err = u.client.ChatMCP(u.ctx, id)
 		case chatSkillsCommand:
 			skills, err = u.client.ChatSkills(u.ctx, id)
+		case chatPermissionsCommand:
+			perms, err = u.client.ChatPermissions(u.ctx, id)
+		case chatHooksCommand:
+			hooks, err = u.client.ChatHooks(u.ctx, id)
 		default:
 			plugins, err = u.client.ChatPlugins(u.ctx, id)
 		}
@@ -155,6 +163,7 @@ func (u *window) fetchTools(p *chatPane, id string) {
 		t.fetching = false
 		if err == nil && t.kind == kind {
 			t.mcp, t.skills, t.plugins, t.loaded = mcp, skills, plugins, true
+			t.set.perms, t.set.hooks = perms, hooks
 			t.gen++
 		}
 		t.mu.Unlock()
@@ -243,6 +252,10 @@ func (u *window) toolsActs(gtx C, p *chatPane, id string) {
 		rows, enter = u.shellActs(gtx, p, id)
 	case t.kind == chatPluginCommand:
 		rows, enter = u.pluginActs(gtx, p, id, plugins)
+	case t.kind == chatPermissionsCommand:
+		rows, enter = u.permissionActs(gtx, p, id)
+	case t.kind == chatHooksCommand:
+		rows, enter = u.hookActs(gtx, p, id)
 	case t.kind == chatSkillsCommand:
 		if t.sortBtn.Clicked(gtx) {
 			t.byTokens = !t.byTokens
@@ -337,6 +350,8 @@ func (t *chatTools) keyTag(p *chatPane) *widget.Editor {
 	switch {
 	case t.kind == chatSkillsCommand:
 		return &t.query
+	case t.kind == chatPermissionsCommand && t.detail == permAddDetail:
+		return &t.set.rule
 	case t.kind != chatPluginCommand || t.detail != "":
 		return &p.editor
 	case t.plug.tabs.Selected == pluginTabDiscover:

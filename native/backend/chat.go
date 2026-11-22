@@ -152,3 +152,25 @@ func (c *Client) ChatPlugins(ctx context.Context, id string) (api.ChatPluginList
 func (c *Client) ChatPluginAct(ctx context.Context, id, action, target, scope string) (api.ChatPluginActResult, error) {
 	return callMethod(ctx, c, api.ChatPluginAct, api.ChatPluginActOptions{ID: id, Action: action, Target: target, Scope: scope})
 }
+
+// ChatPermissions is session id's permission rules as its provider reports
+// them.
+func (c *Client) ChatPermissions(ctx context.Context, id string) (api.ChatPermissionList, error) {
+	return callMethod(ctx, c, api.ChatPermissions, api.SessionIDOptions{ID: id})
+}
+
+// ChatPermissionAct adds or removes a permission rule of session id.
+func (c *Client) ChatPermissionAct(ctx context.Context, opts api.ChatPermissionActOptions) (api.ChatPermissionActResult, error) {
+	return callMethod(ctx, c, api.ChatPermissionAct, opts)
+}
+
+// ChatHooks is session id's hooks as its provider reports them.
+func (c *Client) ChatHooks(ctx context.Context, id string) (api.ChatHookList, error) {
+	return callMethod(ctx, c, api.ChatHooks, api.SessionIDOptions{ID: id})
+}
+
+// ChatHookAct trusts a hook of session id or turns it on or off.
+func (c *Client) ChatHookAct(ctx context.Context, opts api.ChatHookActOptions) error {
+	_, err := callMethod(ctx, c, api.ChatHookAct, opts)
+	return err
+}

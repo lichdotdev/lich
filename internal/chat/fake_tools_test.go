@@ -63,7 +63,7 @@ func (f *fake) claudeTools(subtype string, m map[string]any, ok func(any), fail 
 			return c.(map[string]any)["name"] == "deploy"
 		})})
 	default:
-		return false
+		return f.claudeSettings(subtype, ok)
 	}
 	return true
 }
@@ -147,7 +147,9 @@ func (c *fakeCodex) serveTools(id any, method string, params map[string]any) {
 		c.off[path] = !on
 		c.reply(id, map[string]any{"effectiveEnabled": on})
 	default:
-		c.servePlugins(id, method, params)
+		if !c.servePlugins(id, method, params) {
+			c.serveHooks(id, method, params)
+		}
 	}
 }
 
