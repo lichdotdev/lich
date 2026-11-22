@@ -121,7 +121,7 @@ func TestAnnounceMergeReportsAStoreFailure(t *testing.T) {
 
 func TestMergeNoticeNamesThePullRequestAndAsksForNoWork(t *testing.T) {
 	t.Parallel()
-	got := mergeNotice(prompt.English, 42, "Title \x1b[201~with escape", "feat/merge", "main")
+	got := mergeNotice(prompt.English, api.ForgeGitHub, 42, "Title \x1b[201~with escape", "feat/merge", "main")
 
 	for _, want := range []string{"#42", "feat/merge", "merged into main", "not a task"} {
 		if !strings.Contains(got, want) {
@@ -159,5 +159,20 @@ func TestAnnounceMergeTellsAMergeOnce(t *testing.T) {
 	}
 	if got := strings.Count(term.written("agent"), "#42"); got != 1 {
 		t.Fatalf("agent heard #42 %d times, want once", got)
+	}
+}
+
+func TestAGitLabNoticeNamesTheMergeRequest(t *testing.T) {
+	t.Parallel()
+	merge := mergeNotice(prompt.English, api.ForgeGitLab, 42, "Title", "feat/merge", "main")
+	failed := watchNotice(prompt.English, api.WatchChecksFailed, api.PRRead{Number: 7, Head: "abc", Forge: api.ForgeGitLab})
+	passed := watchNotice(prompt.English, api.WatchChecksPassed, api.PRRead{Number: 7, Head: "abc", Forge: api.ForgeGitLab})
+	for notice, want := range map[string]string{merge: "Merge request !42", failed: "merge request !7", passed: "merge request !7"} {
+		if !strings.Contains(notice, want) || strings.Contains(notice, "pull request") {
+			t.Errorf("notice %q wants %q and no pull request", notice, want)
+		}
+	}
+	if got := watchNotice(prompt.English, api.WatchChecksFailed, api.PRRead{Number: 7, Head: "abc"}); !strings.Contains(got, "pull request #7") {
+		t.Errorf("a GitHub watch notice = %q, want pull request #7", got)
 	}
 }

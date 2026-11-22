@@ -1523,6 +1523,7 @@ AnnounceMergeOptions {
 	title string
 	branch string
 	base string
+	forge,omitempty string
 }
 
 CollectOptions {

@@ -333,7 +333,7 @@ func (u *window) mergePR(project backend.Project, d backend.PRDetail, method str
 		return true
 	}
 	wt := checkouts[i]
-	if err := u.client.AnnounceMerge(u.ctx, wt.Path, d.Number, d.Title, d.HeadRefName, d.BaseRefName); err != nil {
+	if err := u.client.AnnounceMerge(u.ctx, wt.Path, d.Number, d.Title, d.HeadRefName, d.BaseRefName, u.model.forgeOf(project.Path)); err != nil {
 		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("pulls.pulls.announceFailed", i18n.Args{"name": filepath.Base(wt.Path), "error": backend.ErrorText(err)})})
 	}
 	if wt.Path != project.Path {

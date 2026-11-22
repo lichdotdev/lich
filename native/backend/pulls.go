@@ -100,9 +100,9 @@ func (c *Client) PurgeWorktreeSessions(ctx context.Context, projectID, path stri
 }
 
 // AnnounceMerge tells the agents in checkout that its pull request merged.
-func (c *Client) AnnounceMerge(ctx context.Context, checkout string, number int, title, branch, base string) error {
+func (c *Client) AnnounceMerge(ctx context.Context, checkout string, number int, title, branch, base, forge string) error {
 	_, err := callMethod(ctx, c, api.RelayAnnounceMerge, api.AnnounceMergeOptions{
-		Checkout: checkout, Number: number, Title: title, Branch: branch, Base: base,
+		Checkout: checkout, Number: number, Title: title, Branch: branch, Base: base, Forge: forge,
 	})
 	return err
 }

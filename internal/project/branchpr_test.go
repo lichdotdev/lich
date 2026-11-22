@@ -166,7 +166,7 @@ func TestAMergeAfterAnOpenReadIsAnnounced(t *testing.T) {
 	w.readBranchPR("/wt/feat")
 	w.readBranchPR("/wt/feat")
 
-	want := []api.AnnounceMergeOptions{{Checkout: "/wt/feat", Number: 42, Title: "Add merge notice", Branch: "feat/merge", Base: "main"}}
+	want := []api.AnnounceMergeOptions{{Checkout: "/wt/feat", Number: 42, Title: "Add merge notice", Branch: "feat/merge", Base: "main", Forge: api.ForgeGitHub}}
 	if got := w.merged(); !slices.Equal(got, want) {
 		t.Fatalf("merges = %+v, want %+v", got, want)
 	}

@@ -147,9 +147,9 @@ func watchNotice(lang prompt.Lang, on string, read api.PRRead) string {
 	}
 	switch on {
 	case api.WatchChecksFailed:
-		return fmt.Sprintf(text.WatchChecksFailed, read.Number, head)
+		return fmt.Sprintf(forgeText(read.Forge, text.WatchChecksFailed, text.WatchChecksFailedGitLab), read.Number, head)
 	case api.WatchChecksPassed:
-		return fmt.Sprintf(text.WatchChecksPassed, read.Number, head)
+		return fmt.Sprintf(forgeText(read.Forge, text.WatchChecksPassed, text.WatchChecksPassedGitLab), read.Number, head)
 	}
 	return fmt.Sprintf(text.WatchReview, read.Number)
 }

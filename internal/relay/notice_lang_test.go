@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/prompt"
 )
 
@@ -28,7 +29,8 @@ func TestEveryNoticeRendersInEveryLanguage(t *testing.T) {
 			"report":         subagentReport(lang, entry, "feat/x"),
 			"report no tree": subagentReport(lang, entry, ""),
 			"blocked":        blockedNotice(lang, "docs"),
-			"merge":          mergeNotice(lang, 42, "Title", "feat/x", "main"),
+			"merge":          mergeNotice(lang, api.ForgeGitHub, 42, "Title", "feat/x", "main"),
+			"merge gitlab":   mergeNotice(lang, api.ForgeGitLab, 42, "Title", "feat/x", "main"),
 			"late":           lateNotice(lang, 1000, 1000+3600),
 			"resume":         prompt.For(lang).ResumePrompt,
 		}

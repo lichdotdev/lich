@@ -26,6 +26,9 @@ type AnnounceMergeOptions struct {
 	Title    string `json:"title"`
 	Branch   string `json:"branch"`
 	Base     string `json:"base"`
+	// Forge is ForgeGitHub or ForgeGitLab, the words the notice names it in;
+	// "" reads as GitHub.
+	Forge string `json:"forge,omitempty"`
 }
 
 // SubmitOptions is a message typed into a session and submitted with Enter.

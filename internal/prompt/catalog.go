@@ -54,7 +54,10 @@ type Catalog struct {
 	BlockedSummary       string
 	MergeNotice          string
 	MergeSummary         string
-	LateNotice           string
+	// The same two for a GitLab merge request, which GitLab numbers !N.
+	MergeNoticeGitLab  string
+	MergeSummaryGitLab string
+	LateNotice         string
 	// ResumePrompt is stored in the sessions table as a parked prompt, marked
 	// as lich's (store SetLichSchedule); never recognise it by comparing text.
 	ResumePrompt string
@@ -63,6 +66,9 @@ type Catalog struct {
 	WatchChecksFailed string
 	WatchChecksPassed string
 	WatchReview       string
+	// A GitLab watch never meets a review: GitLab's carry no id to tell a new one by.
+	WatchChecksFailedGitLab string
+	WatchChecksPassedGitLab string
 	// `lich schedule` and schedule_prompt's answers.
 	ScheduledAtResult string // %[1]s is when
 	ScheduledOnResult string // %[1]s is the condition, %[2]d the run limit

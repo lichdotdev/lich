@@ -135,7 +135,8 @@ func (s *Service) recordBranchPR(path string) {
 	if !merged || s.announceMerge == nil {
 		return
 	}
-	opts := api.AnnounceMergeOptions{Checkout: path, Number: pr.Number, Title: pr.Title, Branch: pr.HeadRefName, Base: pr.BaseRefName}
+	opts := api.AnnounceMergeOptions{Checkout: path, Number: pr.Number, Title: pr.Title, Branch: pr.HeadRefName,
+		Base: pr.BaseRefName, Forge: s.forgeOf(path).kind()}
 	if _, err := s.announceMerge(context.Background(), opts); err != nil {
 		slog.Warn("project: announce a merge made outside lich", "path", path, "err", err)
 	}
@@ -151,7 +152,7 @@ func (s *Service) reportPullRequestWatch(path string, pr *PullRequest) {
 	if pr == nil || s.prWatched == nil || !s.prWatched(path) {
 		return
 	}
-	read := api.PRRead{Path: path, Number: pr.Number, Open: pr.State == prOpen}
+	read := api.PRRead{Path: path, Number: pr.Number, Open: pr.State == prOpen, Forge: s.forgeOf(path).kind()}
 	if read.Open {
 		if err := s.forgeOf(path).watchRead(path, &read); err != nil {
 			slog.Debug("project: read the checks of a watched pull request", "path", path, "err", err)

@@ -70,6 +70,7 @@ type PRRead struct {
 	Head   string
 	Checks ChecksRollup
 	Review string
+	Forge  string
 }
 
 var (
