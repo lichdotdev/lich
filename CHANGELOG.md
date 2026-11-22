@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **See and merge GitLab merge requests in Pulls, on gitlab.com or a GitLab of your own.** Sign the GitLab CLI (glab) in to it, and a checkout whose remote is there gets the branch badge, the list, the diff, the pipeline's jobs, merge, create on GitLab and a session on a merge request. Reviews and comments stay GitHub only.
 - **Browse and install themes from a catalog in Settings › Appearance › Themes.** Each theme is drawn in its own colors before you install it, Try wears it on the whole window until you keep or revert it, and the Installed tab opens on the theme in use and switches, updates and removes the rest.
 - **Choose how wide a chat grows on a wide window.** Settings › Appearance › Interface › Chat width keeps it Comfortable, makes it Wide or lets it take the Full pane.
 - **Ctrl+1 to Ctrl+9 jump to a tab, Ctrl+= and Ctrl+- size the terminal text, and F6 takes you back to the terminal.** Ctrl+9 is the last tab and Ctrl+0 resets the text; on a page in the browser the three zoom the page instead. On macOS the digits and sizes are Command.

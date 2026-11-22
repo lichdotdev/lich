@@ -920,7 +920,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   (`internal/relay`, `AnnounceMerge`; called from the Pulls screen's merge and by the pull request watch,
   `internal/project` `RunBranchPRWatch`): a merge on github.com, with `gh` in a terminal or by an agent is found by
   the watch, the one reader of a checkout's pull request, which the cards' badges hear too. Each minute it reads,
-  one `gh pr view` each, every checkout a live agent runs in and every one whose last read found an open pull
+  one `gh pr view` (`glab mr list` on GitLab) each, every checkout a live agent runs in and every one whose last read found an open pull
   request; any other is read only when a window asks (its branch or head moved, a turn ended there, the window came
   back into focus). A merge is announced only when one read saw the pull request open and a later one sees it
   merged, so one that merged while lich was closed, or before any read saw it open, is never announced; a card
@@ -1041,6 +1041,39 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   without comparing them — noreply forms, vanity domains and org aliases make a string comparison a
   false-positive farm. The Commits tab of the Pulls screen lists each commit's author and compares it with
   nothing either, so a branch built under the wrong identity says so nowhere in lich.
+- **A checkout is GitLab only when its remote says so, and glab is the judge of a self-hosted one**
+  (`internal/project/forge.go` `forgeOf`): the remote is origin, else the first one git lists. github.com is
+  GitHub, gitlab.com is GitLab, and any other host is GitLab only when `glab config get token --host <host>`
+  answers a token, the one key glab does not answer with a default for a host it has never seen (glab 1.131).
+  A GitHub Enterprise remote, a host glab is not signed in to and a checkout with no remote stay GitHub. The
+  answer is kept a minute per host (`glabProbeTTL`), so a `glab auth login` made meanwhile is seen within one.
+  An ssh host alias (`git@work:group/repo`) names no host glab knows, and reads as GitHub.
+- **On GitLab, the Pulls screen reads, merges and checks out, and the rest stays GitHub only**
+  (`internal/project/gitlab.go`, `gitlabchecks.go`): the badge, the watch and its merge notice, the list, a
+  merge request's detail, diff and pipeline jobs, `read_check_log`, Create (GitLab's page, through
+  `glab mr create --fill --web`, which pushes first), Merge and Open a session on one go through glab. Reviews
+  and their threads, comments, editing the title or the description, fixing a thread, avatars, the base
+  branch's rules, the merge base an image's old side is read at, and `#N` from an issue are gh calls, and on a
+  GitLab checkout gh answers "This checkout's git remotes do not point at GitHub." The conflicting files are
+  read from GitHub's own `refs/pull/<n>/head`, which a GitLab remote does not have, so that fetch fails. Within
+  what works, GitLab answers less than GitHub:
+  - glab runs as its own signed-in account. The project's Version Control account, the token a session is
+    spawned with (`GHTokenEnv`) and the account picker are gh's, so a session's own glab answers as whoever
+    glab is signed in as.
+  - A list row carries no checks: GitLab lists a merge request without its pipeline (measured), and a read per
+    row is not a list. Its review decision is only "review required", from `not_approved`.
+  - A detail names no reviewers, a commit names no account (GitLab does not say whose an email is), and
+    "approved" needs an approver: GitLab's `approved` alone may hold for a merge request no rule asks anything of.
+  - A job allowed to fail passes, whatever became of it, and a manual job that is not allowed to fail is pending
+    until someone starts it, so the check log waits on it like a running one. A failed job's log is the tail of
+    its `step_script` section, or of the whole trace when it never got that far; a canceled one has no log.
+    The first 100 jobs of a pipeline and the first 100 commits of a merge request are read.
+  - A watch for a review never fires: a GitLab review has no id the watch could tell a new one by.
+  - An administrator merge is refused: GitLab has no bypass of a branch's rules from the merge call. Merge,
+    squash and rebase map onto glab's own; glab's rebase rebases the branch on GitLab and then merges it.
+  - GitLab finds a branch's merge request by the branch's name alone, so a fork's merge request counts only
+    when this checkout holds its head commit (`holdsCommit`): one opened from a fork's `main` would otherwise
+    badge every checkout of `main`. A branch with several is read as its open one, else the newest.
 - **A worktree off a local branch waits on a fetch first** (`internal/spawn/spawn.go` `newerOf`,
   `internal/project/freshness.go`): `lich open --worktree`, a subagent's worktree and `open_session` fetch the
   base's upstream to start from the newer of the two, so against a remote that does not answer the session

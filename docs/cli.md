@@ -738,6 +738,12 @@ FAIL	github.com/lichdotdev/lich/internal/terminal [build failed]
   the job's last `##[error]` line, and the cleanup after it is left out.
 - A failed check that is not an Actions job (a commit status, another app's
   check) is listed with its link and no log.
+- On a GitLab checkout the checks are the jobs of the merge request's head
+  pipeline, and a failed job carries the last `--lines` lines of its
+  `step_script` section (of the whole job log when it never got that far), read
+  with `glab api projects/<id>/jobs/<id>/trace` as glab's signed-in account,
+  without the runner's timestamps, section markers or terminal escapes. A job
+  allowed to fail counts as passed; a canceled one is listed with no log.
 - Logs are read once no check is pending: gh serves a job's log only when its
   whole run has finished. Until then the answer counts what failed and what is
   still running.
