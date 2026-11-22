@@ -226,7 +226,8 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   `CLAUDE_CODE_SIMPLE` or `--bare`) or the command runs on a remote-tools machine whose profile forbids it; a
   foreground `sleep N; …` is refused before it runs (measured). The task reaches stream-json as `task_started`
   with `is_backgrounded` false (measured, 4.1s after the call was written in a fresh config), and only then does
-  the window show the hint in the turn's live line and take Ctrl+B in the message box. A Monitor's watch starts
+  the window show the hint in the turn's live line and take Ctrl+B in the message box, ahead of the window
+  hotkey bound to it (New worktree's default outside macOS), which works everywhere else. A Monitor's watch starts
   in the background (measured), so it never offers it. Ctrl+B sends the `background_tasks` control request with
   no `tool_use_id`, Claude Code's own Ctrl+B (measured): `task_updated` patches `is_backgrounded` true, the call
   returns at once with "Command was manually backgrounded by user", the turn carries on, and the command joins
