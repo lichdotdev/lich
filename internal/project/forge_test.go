@@ -3,6 +3,7 @@ package project
 import (
 	"encoding/json"
 	"errors"
+	"maps"
 	"strings"
 	"testing"
 
@@ -108,9 +109,7 @@ func listRows(t *testing.T, iids []int, override map[int]map[string]any) []byte 
 	for _, iid := range iids {
 		for _, row := range all {
 			if int(row["iid"].(float64)) == iid {
-				for k, v := range override[iid] {
-					row[k] = v
-				}
+				maps.Copy(row, override[iid])
 				picked = append(picked, row)
 			}
 		}
