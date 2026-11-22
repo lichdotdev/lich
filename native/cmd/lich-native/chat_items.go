@@ -35,6 +35,10 @@ var (
 	chatToolRow = ui.Space(7)
 )
 
+// chatShellLines is how much of a shell command's output shows before the
+// rest opens on a click.
+const chatShellLines = 20
+
 var (
 	// chatBranchGutter is the room a tool row gives its connector, and
 	// chatBranchX where the connector runs: under the fold's chevron.
@@ -59,7 +63,7 @@ const chatClock = "15:04"
 func (u *window) chatRow(gtx C, th *ui.Theme, p *chatPane, sv sessionView, r chatRow) D {
 	switch r.kind {
 	case chatRowWork:
-		return u.chatWork(gtx, th, p.fold("work:"+strconv.Itoa(r.turn)), sv, r)
+		return u.chatWork(gtx, th, p, sv, r)
 	case chatRowLive:
 		return chatLive(gtx, th, sv.ID, r)
 	case chatRowDone:
@@ -260,7 +264,8 @@ func chatThought(gtx C, th *ui.Theme, f *chatFold, it backend.ChatItem, live boo
 // long the turn took, how many calls it made and when it ended. It stands
 // open while its turn is in a run of calls and shuts when the run ends; a
 // shell command's stays open.
-func (u *window) chatWork(gtx C, th *ui.Theme, f *chatFold, sv sessionView, r chatRow) D {
+func (u *window) chatWork(gtx C, th *ui.Theme, p *chatPane, sv sessionView, r chatRow) D {
+	f := p.fold("work:" + strconv.Itoa(r.turn))
 	f.follow(gtx.Now, r.calling || r.shell)
 	f.update(gtx)
 	label := func(gtx C, fg color.NRGBA) D {
@@ -287,13 +292,13 @@ func (u *window) chatWork(gtx C, th *ui.Theme, f *chatFold, sv sessionView, r ch
 		layout.Flexed(1, func(gtx C) D { return chatHairline(gtx, th) }),
 	)
 	children := []layout.FlexChild{layout.Rigid(func(gtx C) D { return layout.Flex{Alignment: layout.Middle}.Layout(gtx, line...) })}
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, append(children, chatCalls(gtx, th, f, r)...)...)
+	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, append(children, chatCalls(gtx, th, p, f, r)...)...)
 }
 
 // chatCalls are a group's calls, each in a fold of its own that opens and
 // shuts with the group. A call that comes once the group is drawn enters as a
-// row does.
-func chatCalls(gtx C, th *ui.Theme, f *chatFold, r chatRow) []layout.FlexChild {
+// row does. A shell command's call carries its output under it.
+func chatCalls(gtx C, th *ui.Theme, p *chatPane, f *chatFold, r chatRow) []layout.FlexChild {
 	ids := make([]string, len(r.tools))
 	for i, it := range r.tools {
 		ids[i] = it.ID
@@ -301,6 +306,10 @@ func chatCalls(gtx C, th *ui.Theme, f *chatFold, r chatRow) []layout.FlexChild {
 	f.enter.Update(gtx.Now, ids)
 	children := make([]layout.FlexChild, 0, len(r.tools))
 	for i, it := range r.tools {
+		call := func(gtx C) D { return chatTool(gtx, th, it, r.live) }
+		if r.shell {
+			call = func(gtx C) D { return chatShellCall(gtx, th, p.fold("out:"+it.ID), it, r.live) }
+		}
 		children = append(children, layout.Rigid(func(gtx C) D {
 			return f.enter.LayoutFlat(gtx, it.ID, func(gtx C) D {
 				fold := f.call(it.ID)
@@ -313,13 +322,70 @@ func chatCalls(gtx C, th *ui.Theme, f *chatFold, r chatRow) []layout.FlexChild {
 						top = ui.Space(1)
 					}
 					return layout.Inset{Top: top}.Layout(gtx, func(gtx C) D {
-						return chatBranch(gtx, th, i == len(r.tools)-1, func(gtx C) D { return chatTool(gtx, th, it, r.live) })
+						return chatBranch(gtx, th, i == len(r.tools)-1, call)
 					})
 				})
 			})
 		}))
 	}
 	return children
+}
+
+// chatShellCall is a shell command's call with its output under it, as
+// Claude Code prints it: the row keeps the mark, not the output's first line,
+// and output past chatShellLines opens on a click of the line under it.
+func chatShellCall(gtx C, th *ui.Theme, more *chatFold, it backend.ChatItem, live bool) D {
+	tool := *it.Tool
+	out := strings.Trim(tool.Output, "\n")
+	tool.Output = ""
+	row := it
+	row.Tool = &tool
+	if out == "" {
+		return chatTool(gtx, th, row, live)
+	}
+	more.update(gtx)
+	lines := strings.Split(out, "\n")
+	hidden := len(lines) - chatShellLines
+	if hidden > 0 && !more.open {
+		lines = lines[:chatShellLines]
+	}
+	children := make([]layout.FlexChild, 0, len(lines)+1)
+	for _, l := range lines {
+		children = append(children, layout.Rigid(shellLine(th, l)))
+	}
+	if hidden > 0 {
+		children = append(children, layout.Rigid(func(gtx C) D { return chatShellMore(gtx, th, more, hidden) }))
+	}
+	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+		layout.Rigid(func(gtx C) D { return chatTool(gtx, th, row, live) }),
+		layout.Rigid(func(gtx C) D {
+			return layout.Background{}.Layout(gtx,
+				func(gtx C) D { return ui.Fill(gtx, th.Background, ui.RadiusSM) },
+				func(gtx C) D {
+					return layout.Inset{Top: ui.Space(2), Bottom: ui.Space(2)}.Layout(gtx, func(gtx C) D {
+						return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
+					})
+				})
+		}),
+	)
+}
+
+// chatShellMore opens the lines of a shell command's output past the head,
+// or shuts them again.
+func chatShellMore(gtx C, th *ui.Theme, more *chatFold, hidden int) D {
+	text := i18n.T("chat.view.shellMore", i18n.Args{"count": hidden})
+	if more.open {
+		text = i18n.T("chat.view.shellLess")
+	}
+	return layout.Inset{Top: ui.Space(1), Left: ui.Space(2), Right: ui.Space(2)}.Layout(gtx, func(gtx C) D {
+		return more.click.Layout(gtx, func(gtx C) D {
+			fg := th.MutedForeground
+			if more.click.Hovered() {
+				fg = th.Foreground
+			}
+			return th.Text(ui.TextXS, text).In(fg).Layout(gtx)
+		})
+	})
 }
 
 // chatHairline is a 1px rule in Border across the room it is given.

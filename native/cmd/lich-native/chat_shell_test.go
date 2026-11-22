@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	"image"
 	"strings"
 	"testing"
 	"time"
@@ -187,6 +189,108 @@ func TestAShellTurnsCallStandsOpen(t *testing.T) {
 			if r.kind == chatRowWork && r.shell != c.want {
 				t.Errorf("%s: shell %v, want %v", name, r.shell, c.want)
 			}
+		}
+	}
+}
+
+// shellListing is n lines of a command's output, as an ls prints them.
+func shellListing(n int) string {
+	lines := make([]string, n)
+	for i := range lines {
+		lines[i] = fmt.Sprintf("file-%02d.go", i+1)
+	}
+	return strings.Join(lines, "\n")
+}
+
+// A shell command's output is under it whole, as Claude Code prints it, and
+// not its first line beside the check; an agent's own call keeps its one line.
+func TestAShellCommandsOutputIsShownWhole(t *testing.T) {
+	u, r, _, _ := shellFrames(t, claudeKind)
+	u.model.chat.history("s1", []backend.ChatItem{
+		{ID: "user-1", Kind: api.ItemUser, Text: "!ls", Turn: 1},
+		{ID: "shell-1", Kind: api.ItemTool, Turn: 1, Tool: &api.ChatToolCall{Name: "Bash", Title: "ls", Output: "AGENTS.md\nCLAUDE.md\n  README.md", State: api.ToolDone}},
+		{ID: "user-2", Kind: api.ItemUser, Text: "and now?", Turn: 2},
+		{ID: "tool-2", Kind: api.ItemTool, Turn: 2, Tool: &api.ChatToolCall{Name: "Bash", Title: "git status", Output: "On branch main\nnothing to commit", State: api.ToolDone}},
+		{ID: "agent-2", Kind: api.ItemAgent, Text: "Clean.", Turn: 2},
+	})
+	r.now = r.now.Add(time.Second)
+	r.frames(3)
+	if !r.showsAll("AGENTS.md", "CLAUDE.md", "  README.md") {
+		t.Errorf("the command's output is not shown whole:\n%s", r.drawn())
+	}
+	writeShot(t, r, "chat-shell-output.png")
+	r.clickLabel(t, i18n.T("chat.view.worked", i18n.Args{"duration": chatTook(0), "count": 1}))
+	r.frames(3)
+	if r.shows("nothing to commit") {
+		t.Errorf("an agent's call shows more than its line:\n%s", r.drawn())
+	}
+}
+
+// Long output shows its head and a line that opens the rest.
+func TestALongShellOutputOpensTheRest(t *testing.T) {
+	u, r, _, _ := shellFrames(t, claudeKind)
+	n := chatShellLines + 5
+	u.model.chat.history("s1", []backend.ChatItem{
+		{ID: "user-1", Kind: api.ItemUser, Text: "!ls", Turn: 1},
+		{ID: "shell-1", Kind: api.ItemTool, Turn: 1, Tool: &api.ChatToolCall{Name: "Bash", Title: "ls", Output: shellListing(n), State: api.ToolDone}},
+	})
+	r.now = r.now.Add(time.Second)
+	r.frames(3)
+	last, more := fmt.Sprintf("file-%02d.go", n), i18n.T("chat.view.shellMore", i18n.Args{"count": 5})
+	if !r.shows(fmt.Sprintf("file-%02d.go", chatShellLines)) || r.shows(last) || !r.shows(more) {
+		t.Fatalf("the head and its way to the rest are not shown:\n%s", r.drawn())
+	}
+	r.clickLabel(t, more)
+	r.frames(3)
+	if !r.shows(last) || !r.shows(i18n.T("chat.view.shellLess")) {
+		t.Errorf("the rest did not open:\n%s", r.drawn())
+	}
+}
+
+// In shell mode the mode's name takes the chips' place, which do not apply
+// to a command; deleting the "!" brings them back.
+func TestShellModeNamesItselfInPlaceOfTheChips(t *testing.T) {
+	_, r, _, p := shellFrames(t, claudeKind)
+	mode := modeLabel(claudeKind, backend.ChatChoice{ID: "default"})
+	if !r.shows(mode) {
+		t.Fatalf("the box has no mode chip to begin with:\n%s", r.drawn())
+	}
+	typeIn(r, p, "!ls")
+	if !r.shows(i18n.T("chat.composer.shell")) || r.shows(mode) {
+		t.Errorf("shell mode is not named in the chips' place:\n%s", r.drawn())
+	}
+	p.editor.SetText("ls")
+	r.frames(2)
+	if r.shows(i18n.T("chat.composer.shell")) || !r.shows(mode) {
+		t.Errorf("out of shell mode the chips are not back:\n%s", r.drawn())
+	}
+}
+
+// The mode's name lines up with the text over it, and a narrow box cuts it
+// short of Send rather than running it under the button.
+func TestShellModeNameLinesUpAndFits(t *testing.T) {
+	for _, width := range []int{1200, 320} {
+		u, r, _ := chatFramesIn(t, api.ViewChat, image.Pt(width, 800), busySession())
+		u.model.projects[0].Sessions[0].Kind = claudeKind
+		u.model.chat.history("s1", nil)
+		r.frame()
+		p := u.chats.pane("s1")
+		typeIn(r, p, "!ls")
+		box := composerBox(t, r)
+		var name image.Rectangle
+		for _, n := range r.nodes() {
+			if strings.HasPrefix(i18n.T("chat.composer.shell"), strings.TrimSuffix(n.Desc.Label, "…")) && n.Desc.Label != "" {
+				name = n.Desc.Bounds
+			}
+		}
+		if name.Empty() {
+			t.Fatalf("%dpx: the mode is not named:\n%s", width, r.drawn())
+		}
+		if name.Min.X != box.Min.X+16 {
+			t.Errorf("%dpx: the name starts at x=%d, want %d: 16px inside the box, as the text", width, name.Min.X, box.Min.X+16)
+		}
+		if send := box.Max.X - 34; name.Max.X > send {
+			t.Errorf("%dpx: the name ends at x=%d, under Send at x=%d", width, name.Max.X, send)
 		}
 	}
 }

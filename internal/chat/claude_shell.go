@@ -50,7 +50,9 @@ func claudeShellLine(c *chatSession, text string, history bool) bool {
 	turn, typed := c.conv.turnText()
 	input, _ := json.Marshal(map[string]string{"command": strings.TrimPrefix(typed, shellMark)})
 	tool := claudeTool(claudeShellTool, input)
-	tool.Output = shorten(strings.TrimSpace(html.UnescapeString(m[2]) + "\n" + html.UnescapeString(m[3])))
+	// Only the blank lines go: a first line's indent lines up the columns
+	// under it, as git status --short's " M" does.
+	tool.Output = shorten(strings.Trim(html.UnescapeString(m[2])+"\n"+html.UnescapeString(m[3]), "\n"))
 	// A command that did not run has no stdout; the TUI's carry no code.
 	tool.State = api.ToolDone
 	if code, _ := strconv.Atoi(m[4]); code != 0 || m[1] == "" {

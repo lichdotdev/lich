@@ -203,3 +203,20 @@ func TestShellWaitsForTheTurn(t *testing.T) {
 	_, _ = r.svc.Cancel(t.Context(), api.SessionIDOptions{ID: "s1"})
 	r.turnEnd(0)
 }
+
+// TestClaudeShellKeepsTheOutputsIndent: the first line's indent stays, as
+// its columns line up with the lines under it.
+func TestClaudeShellKeepsTheOutputsIndent(t *testing.T) {
+	r := newRig(t, providers.Claude)
+	_ = r.db.SetProviderSession("s1", "conv-1")
+	r.writeClaudeTranscript("conv-1",
+		`{"type":"user","message":{"content":"<bash-input>git status -s</bash-input>"}}`,
+		`{"type":"user","message":{"content":"<bash-stdout> M a.go\n?? b.go\n</bash-stdout><bash-stderr></bash-stderr>"}}`,
+	)
+	if err := r.setView(api.ViewChat); err != nil {
+		t.Fatalf("SetView: %v", err)
+	}
+	if call := r.shellCall(1); call.Tool.Output != " M a.go\n?? b.go" {
+		t.Errorf("output %q, want its lines as printed", call.Tool.Output)
+	}
+}

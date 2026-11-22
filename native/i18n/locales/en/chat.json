@@ -14,6 +14,11 @@
       "other": "Worked for {duration} · {count} tools"
     },
     "toolFailed": "failed",
+    "shellMore": {
+      "one": "Show {count} more line",
+      "other": "Show {count} more lines"
+    },
+    "shellLess": "Show less",
     "answered": "{tool} · {choice}",
     "verbs": "Conjuring|Summoning|Channeling|Brewing|Scrying|Inscribing|Weaving|Raising",
     "thinking": "Thinking",
@@ -40,7 +45,7 @@
     "placeholder": "Ask {provider} about this project",
     "send": "Send",
     "stop": "Stop",
-    "shell": "Shell mode"
+    "shell": "Shell mode · Enter runs it without the agent"
   },
   "option": {
     "model": "Model",

@@ -13,6 +13,10 @@
       "other": "工作了 {duration} · {count} 个工具"
     },
     "toolFailed": "失败",
+    "shellMore": {
+      "other": "再显示 {count} 行"
+    },
+    "shellLess": "收起",
     "answered": "{tool} · {choice}",
     "verbs": "施法中|召唤中|引导魔力中|熬制中|占卜中|铭刻中|编织中|唤醒中",
     "thinking": "思考中",
@@ -36,7 +40,7 @@
     "placeholder": "向 {provider} 询问有关此项目的问题",
     "send": "发送",
     "stop": "停止",
-    "shell": "Shell 模式"
+    "shell": "Shell 模式 · 按 Enter 直接运行，不经过智能体"
   },
   "option": {
     "model": "模型",
