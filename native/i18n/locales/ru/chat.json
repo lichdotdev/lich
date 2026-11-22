@@ -201,7 +201,8 @@
     "pluginSkills": "Навыками плагинов управляют через /plugin."
   },
   "attach": {
-    "remove": "Убрать"
+    "remove": "Убрать",
+    "pasteNeedsTool": "Чтобы вставить изображение, нужен wl-paste (wl-clipboard) или xclip"
   },
   "plugins": {
     "title": "Плагины",

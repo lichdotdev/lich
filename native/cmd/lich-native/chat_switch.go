@@ -4,6 +4,7 @@ import (
 	"context"
 	"image"
 	"sync"
+	"sync/atomic"
 
 	"gioui.org/op"
 	"gioui.org/op/clip"
@@ -137,6 +138,10 @@ type chatScreens struct {
 	attached map[string][]backend.Attachment
 	// thumbs are the images the cards draw, by path, read once.
 	thumbs map[string]*remote[*previewImage]
+	// readImage reads the clipboard's image for a paste, nil for no read;
+	// toolWarned is whether this window said it has no tool to.
+	readImage  func(context.Context) (clipImage, error)
+	toolWarned atomic.Bool
 }
 
 // typeIn queues text for session id's composer, from any goroutine.

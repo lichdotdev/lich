@@ -412,6 +412,7 @@ func (u *window) chatActs(gtx C, p *chatPane, sv sessionView, keys, working bool
 	}
 	u.queueActs(gtx, p, sv.ID)
 	u.composerKeys(gtx, p, sv.ID, sent, keys && asking == nil && !p.search.open)
+	u.pasteKeys(gtx, p, sv.ID)
 	p.undo.Handle(gtx, &p.editor)
 	for {
 		ev, ok := p.editor.Update(gtx)

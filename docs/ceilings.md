@@ -242,10 +242,27 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   send it, so a file changed between the two goes as it is at the send. The person's message keeps its cards
   for as long as the chat's process runs: a conversation read back shows its text alone, and a message of
   images alone read back from Claude Code or replayed by an ACP agent shows no message at all. Crush has no chat.
+- **A pasted image becomes a card only where the window can read it off the clipboard, and never beside text**
+  (`native/cmd/lich-native/chat_paste.go`, `clipboard_image*.go`): Ctrl+V (Cmd+V on macOS) in a chat's composer
+  pastes text through the editor as before, and beside it asks the OS for an image, since the Gio fork reads
+  the clipboard as text alone. A clipboard that offers any text type gives text and no card, where Claude Code's
+  own Ctrl+V takes the image (its text paste is another key). The image is stored through `/drop` as
+  `pasted-image.<type>` in the session's copies, so it goes when the session does, and carries no copy notice.
+  Linux runs `wl-paste` (wl-clipboard) then `xclip`, the session's display first, with Claude Code 2.1.330's
+  commands, type order and timeouts; measured on X11 (Xvfb). On X11 the Gio fork never answers a text read the
+  clipboard's owner refuses (`app/os_x11.go` drops a `SelectionNotify` with no property; its Wayland side answers
+  empty), and the router then skips every later read for that editor: after a Ctrl+V over an image alone, the
+  composer pastes no more text until the window restarts. That predates the image paste and is the fork's to fix
+  (answer the refused read empty, as Wayland does). With neither installed the first Ctrl+V of a
+  window toasts once, text or not, since nothing tells an image was there. On a compositor without data-control
+  `wl-paste` may take the keyboard focus for a moment on every Ctrl+V: not measured. macOS (`osascript`, the
+  clipboard as «class PNGf», nothing over text) and Windows (PowerShell, `Clipboard.GetImage`, nothing over
+  text) are written from Claude Code's own commands and only cross-compiled: no Mac or Windows machine here,
+  so neither is measured. Every provider with a chat takes the card as any other attachment.
 - **`lich insert` cannot reach a session drawn as a chat** (`internal/relay/insert.go` `refuseChat`): it leaves text
   at a prompt unsent, and a chat's unsent text lives in the window's composer, which the backend has no way to type
   into. It is refused, saying so, where it used to wait out its timeout and report the session stopped. Inside the
-  window a drop, the attach "+" and an artifact sent to a chat add a card to its composer
+  window a drop, a pasted image, the attach "+" and an artifact sent to a chat add a card to its composer
   (`window.attachAtPrompt`), and a Code tab, editor or pull request reference types in it (`window.injector`); `send`, `submit` and the browser's notes reach a chat as a message.
 - **A chat lists the commands its provider names, and a picked one is sent as text** (`internal/chat/commands.go`,
   `claude_commands.go`, `acp_commands.go`, `codex_commands.go`). Claude Code lists them in its initialize answer

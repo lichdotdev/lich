@@ -286,6 +286,7 @@ func run(w *app.Window, rt backend.Runtime) error {
 	})
 	u.toaster.Invalidate = invalidate
 	u.terms.toaster = &u.toaster
+	u.chats.readImage = clipboardImage
 	u.terms.profileGone = u.profileGone
 	u.sidebar = newSidebar(&u.root)
 	u.sidebar.tour = &u.tour.Tour

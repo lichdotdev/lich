@@ -183,7 +183,8 @@
     "pluginSkills": "Las skills de un plugin se gestionan con /plugin."
   },
   "attach": {
-    "remove": "Quitar"
+    "remove": "Quitar",
+    "pasteNeedsTool": "Para pegar una imagen hace falta wl-paste (wl-clipboard) o xclip"
   },
   "plugins": {
     "title": "Plugins",

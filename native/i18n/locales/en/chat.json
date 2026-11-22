@@ -183,7 +183,8 @@
     "pluginSkills": "Plugin skills are managed with /plugin."
   },
   "attach": {
-    "remove": "Remove"
+    "remove": "Remove",
+    "pasteNeedsTool": "Pasting an image needs wl-paste (wl-clipboard) or xclip"
   },
   "plugins": {
     "title": "Plugins",

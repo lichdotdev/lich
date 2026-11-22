@@ -174,7 +174,8 @@
     "pluginSkills": "插件的技能通过 /plugin 管理。"
   },
   "attach": {
-    "remove": "移除"
+    "remove": "移除",
+    "pasteNeedsTool": "粘贴图片需要 wl-paste（wl-clipboard）或 xclip"
   },
   "plugins": {
     "title": "插件",

@@ -174,7 +174,8 @@
     "pluginSkills": "プラグインのスキルは /plugin で管理します。"
   },
   "attach": {
-    "remove": "外す"
+    "remove": "外す",
+    "pasteNeedsTool": "画像を貼り付けるには wl-paste (wl-clipboard) か xclip が必要です"
   },
   "plugins": {
     "title": "プラグイン",
