@@ -158,7 +158,7 @@ func (u *window) chatStartScreen(gtx C, th *ui.Theme, p *chatPane, sv sessionVie
 	heroAt := image.Pt((w-hd.Size.X)/2, top-hd.Size.Y)
 	p.start.mark = heroAt.Add(image.Pt((hd.Size.X-chatStartSlot(gtx).Size.X)/2, 0))
 	p.start.centre = image.Pt(w/2, top-hd.Size.Y+(hd.Size.Y+cd.Size.Y)/2)
-	column := max(min(w-2*gtx.Dp(chatPadX), gtx.Dp(chatBoxMax)), 0)
+	column := chatColumnWidth(gtx, w, u.chatWidth)
 	p.start.line = image.Rect((w-column)/2, top+cd.Size.Y-p.start.lineH, (w+column)/2, top+cd.Size.Y)
 	p.start.markFade = 0
 	if shown {
