@@ -98,7 +98,10 @@ func (s *Service) deliverDue() {
 			if s.events != nil {
 				events.Send(s.events.Emit, api.SessionScheduleEvent, ScheduleEvent{ID: sess.ID})
 			}
-			text := lateNotice(s.lang(), sess.ScheduledAt, now) + sess.ScheduledPrompt
+			text := scheduledEnvelope(s.lang(), sess.ScheduledAt, now, sess.ScheduledPrompt).String()
+			if parkedByLich(sess) {
+				text = noticeEnvelope(TopicUsageReset, prompt.For(s.lang()).UsageReset, sess.ScheduledPrompt).String()
+			}
 			if err := s.deliver(sess.ID, text, nil); err != nil {
 				slog.Warn("relay: scheduled prompt not delivered", "session", sess.Label, "err", err)
 			}
@@ -114,38 +117,39 @@ func (s *Service) deliverDue() {
 // of a parked prompt's life. The two are read side by side and move together.
 const scheduleClock = "2006-01-02 15:04"
 
-// lateNotice is the line put in front of a prompt that missed its time, and ""
-// for one that did not. Everything reading the card reads it: the agent, which
-// would otherwise act on a reminder from three days ago as if it were now, and
-// the person, for whom a prompt typing itself at a session is otherwise
+// lateNotice is the summary of a prompt that missed its time, and "" for one
+// that did not. Everything reading the card reads it: the agent, which would
+// otherwise act on a reminder from three days ago as if it were now, and the
+// person, for whom a prompt typing itself at a session is otherwise
 // indistinguishable from one typed on time.
 //
 // The threshold is scheduleTick, because that is the resolution the whole
 // feature has: a prompt found on the very next pass is on time by every measure
-// this package can take, and announcing that second would put a notice in front
-// of every prompt lich ever delivers.
+// this package can take, and calling that second late would make every prompt
+// lich ever delivers a late one.
 func lateNotice(lang prompt.Lang, at, now int64) string {
 	late := time.Duration(now-at) * time.Second
 	if late <= scheduleTick {
 		return ""
 	}
 	return fmt.Sprintf(prompt.For(lang).LateNotice,
-		time.Unix(at, 0).Format(scheduleClock), lateBy(late))
+		time.Unix(at, 0).Format(scheduleClock), lateBy(lang, late))
 }
 
-// lateBy words how far past its time a prompt is, in one unit — "45m", "3h",
-// "2d". The reader wants the scale, and a prompt that is two days late is not
-// helped by the minutes on the end of it.
+// lateBy words how far past its time a prompt is, in one unit: "45 minutes",
+// "3 hours", "2 days". The reader wants the scale, and a prompt that is two
+// days late is not helped by the minutes on the end of it.
 //
 // The rung is picked off the rounded figure, not the raw one: 59m40s is under
 // the hour but rounds to 60 minutes, and printing that in minutes puts a "60m"
 // on the card no clock ever shows.
-func lateBy(d time.Duration) string {
+func lateBy(lang prompt.Lang, d time.Duration) string {
+	text := prompt.For(lang)
+	count, unit := int(d.Round(24*time.Hour)/(24*time.Hour)), text.LateDays
 	if minutes := d.Round(time.Minute); minutes < time.Hour {
-		return fmt.Sprintf("%dm", int(minutes/time.Minute))
+		count, unit = int(minutes/time.Minute), text.LateMinutes
+	} else if hours := d.Round(time.Hour); hours < 24*time.Hour {
+		count, unit = int(hours/time.Hour), text.LateHours
 	}
-	if hours := d.Round(time.Hour); hours < 24*time.Hour {
-		return fmt.Sprintf("%dh", int(hours/time.Hour))
-	}
-	return fmt.Sprintf("%dd", int(d.Round(24*time.Hour)/(24*time.Hour)))
+	return fmt.Sprintf(text.Pick(count, unit), count)
 }

@@ -48,7 +48,7 @@ func TestMCPHandoffOpensTheSuccessorAndSubmitsTheNote(t *testing.T) {
 	if submitted.SessionID != "9f8e" {
 		t.Errorf("submitted to %q, want the successor", submitted.SessionID)
 	}
-	for _, phrase := range []string{"[lich]", `"auth-fix"`, "parser ported", "wire the CLI", "feat/parser", "abc123 port the parser", "the golden moves"} {
+	for _, phrase := range []string{`kind="notice" topic="handoff" from="auth-fix" session="s1"`, `"auth-fix"`, "parser ported", "wire the CLI", "feat/parser", "abc123 port the parser", "the golden moves"} {
 		if !strings.Contains(submitted.Message, phrase) {
 			t.Errorf("note is missing %q:\n%s", phrase, submitted.Message)
 		}
@@ -203,8 +203,9 @@ func TestHandoffNoteFormatsInEveryLanguage(t *testing.T) {
 	t.Parallel()
 	note := handoffNote{done: "parser ported", nextSteps: "wire the CLI"}
 	for _, lang := range prompt.Langs {
-		text := note.text(lang, "auth-fix")
-		if strings.Contains(text, "%!") || !strings.HasPrefix(text, "[lich]") {
+		text := note.text(lang, "auth-fix", "s7")
+		if strings.Contains(text, "%!") || !strings.HasPrefix(text, `<lich-notification version="1" kind="notice" topic="handoff" from="auth-fix" session="s7">`+"\n<summary>") ||
+			!strings.Contains(text, "</summary>\n<prompt>") {
 			t.Errorf("%s: the note is malformed:\n%s", lang, text)
 		}
 		for _, field := range []string{`"auth-fix"`, "parser ported", "wire the CLI", "git status"} {

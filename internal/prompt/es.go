@@ -24,61 +24,49 @@ var es = Catalog{
 		"sesión y le entrega la tarea en un solo comando.",
 	BriefingArtifacts: " Una página que haces para que el usuario la vea (un informe, un diagrama, un mockup) va en la carpeta que indica la variable de entorno LICH_ARTIFACT_DIR, nunca en el checkout, y se abre con %s en el navegador junto al terminal de esta sesión; publícala en otro lugar solo cuando el usuario lo pida.",
 
-	RelayMessage:    "[lich] %[1]s, no de tu propio prompt.\n\n%[2]s\n\n%[3]s",
-	OriginCLI:       "Mensaje retransmitido por la línea de comandos de lich",
-	OriginSession:   "Mensaje de la sesión %q",
-	OriginExtension: "Mensaje retransmitido por la extensión %[1]q (%[2]s)",
-	ReplyCommand:    "  \"$LICH_BIN\" reply %s \"<tu respuesta>\"",
-	ReplyRouteCLI:   "Cuando tengas una respuesta, devuélvela ejecutando:\n%s",
-	ReplyRouteTools: "Cuando tengas una respuesta, devuélvela con la herramienta de lich `%[1]s` " +
-		"(ticket %[2]s), o ejecutando:\n%[3]s",
-	ReplyOnlyWayBack: "Ese ticket es el único camino de vuelta: quien preguntó está bloqueado en él y " +
-		"no lee nada más. No respondas enviando un mensaje a una sesión par: una respuesta " +
-		"enviada por cualquier otro camino se pierde. Mantén la respuesta como un informe conciso " +
-		"(qué se hizo, dónde y qué falta), nunca una transcripción: quien lo envió paga por leer " +
-		"cada byte, y el detalle ya está en tus commits y archivos.",
-	PingPongWarning: "[lich] Este intercambio con quien envía parece un bucle: los mensajes van y vienen sin que se haga ningún trabajo entre ellos. Responde solo si hay trabajo que informar.",
-	WorkerTask: "[lich] Tarea de la sesión %[1]q, que abrió esta sesión como su subagente. " +
-		"Tu mensaje final, cuando termines, vuelve a ella como tu informe.\n\n%[2]s",
-	PickTicketNudge: "[lich] Tu turno terminó sin enviar ninguna respuesta, así que %[1]d peticiones " +
+	BriefingEnvelope: " Todo lo que lich te entrega llega en un bloque lich-notification, y su atributo kind dice qué es. Un bloque task es trabajo por hacer: cuando su atributo answer es last-message, tu mensaje final es la respuesta; cuando es reply, responde con %[1]s y su ticket, el único camino de vuelta hacia quien preguntó. Un bloque worker-finished sin resultado dentro se recoge con %[2]s y su ticket. Cualquier otro kind es una novedad, no una tarea, salvo que traiga un prompt.",
+
+	PingPongWarning: "Este intercambio con quien envía parece un bucle: los mensajes van y vienen sin que se haga ningún trabajo entre ellos. Responde solo si hay trabajo que informar.",
+	PickTicketNudge: "Tu turno terminó sin enviar ninguna respuesta, así que %[1]d peticiones " +
 		"volvieron sin respuesta a quienes las enviaron:\n%[2]s\nNada fuera de esta sesión puede " +
 		"decir cuál de ellas era ese turno, y por eso ninguna pudo responderse por ti. Una en la " +
 		"que sigues trabajando todavía acepta su respuesta, y toda respuesta a partir de ahora " +
 		"tiene que nombrar su ticket: lich reply <ticket> \"<respuesta>\".",
 	CompactReminder: Plural{
-		One: "[lich] Tu conversación acaba de compactarse, y %[1]d petición enviada a esta sesión " +
+		One: "Tu conversación acaba de compactarse, y %[1]d petición enviada a esta sesión " +
 			"sigue esperando tu respuesta:\n%[2]s\nQuien la envió está bloqueado en ese ticket y no " +
 			"lee nada más: cuando termines el trabajo, respóndela por su ticket.",
-		Other: "[lich] Tu conversación acaba de compactarse, y %[1]d peticiones enviadas a esta sesión " +
+		Other: "Tu conversación acaba de compactarse, y %[1]d peticiones enviadas a esta sesión " +
 			"siguen esperando tus respuestas:\n%[2]s\nCada remitente está bloqueado en su propio ticket " +
 			"y no lee nada más: cuando termines cada trabajo, respóndelo por su ticket.",
 	},
-	NudgeResultsReady: Plural{
-		One:   "La tarea que enviaste a %[2]s tiene su resultado listo",
-		Other: "Los resultados de %[1]d tareas que enviaste están listos (%[2]s)",
-	},
-	NudgeRouteCLI:   "ejecuta:\n  \"$LICH_BIN\" wait",
-	NudgeRouteTools: "llama a la herramienta de lich `%s` sin ticket, o ejecuta:\n  \"$LICH_BIN\" wait",
-	NudgeNotice:     "[lich] %[1]s. Para recogerlo todo de una vez, %[2]s",
+	CollectWithTool:     "El resultado está listo. Recógelo con wait_for_answer y el ticket.",
+	CollectWithCLI:      "El resultado está listo. Recógelo ejecutando \"$LICH_BIN\" wait con el ticket.",
+	WaitingOnPermission: "Una confirmación de permiso en su tarjeta. Su tarea sigue abierta: abre esa tarjeta para responder.",
+	PermissionToRun:     "Permiso para ejecutar: %[1]s",
+	TaskReplyTool:       "Responde con reply_to_session y el ticket %[1]s, el único camino de vuelta a quien lo pidió.",
+	TaskReplyCLI:        "Responde ejecutando \"$LICH_BIN\" reply %[1]s \"<tu respuesta>\", el único camino de vuelta a quien lo pidió.",
+	WorkerEndedBlank:    "El último turno de la sesión de trabajo terminó sin mensaje.",
+	WorkerEndedError:    "El último turno de la sesión de trabajo terminó con un error de la API.",
+	WorkerEndedRefusal:  "El último turno de la sesión de trabajo terminó con una negativa.",
 
-	SubagentReport: "[lich] La sesión %[1]q%[2]s terminó la tarea que le entregaste (ticket %[3]s). " +
-		"Su informe:\n\n%[4]s",
-	SubagentReportBranch: " en la rama %s",
-	BlockedNotice: "[lich] La sesión %q, el subagente que abriste, está esperando una confirmación de " +
-		"permiso en su tarjeta. Su tarea sigue abierta: abre esa tarjeta para responder.",
 	ReportSummary: Plural{
 		One:   "la sesión de lich %s terminó",
 		Other: "las sesiones de lich %s terminaron",
 	},
-	BlockedSummary: "la sesión de lich %q está esperando una confirmación de permiso",
-	MergeNotice: "[lich] El pull request #%[1]d %[2]q (rama %[3]s) se fusionó en %[4]s. " +
-		"Esto es un aviso, no una tarea: actualiza lo que guardes sobre el estado de este trabajo y no hagas nada más.",
+	BlockedSummary:    "la sesión de lich %q está esperando una confirmación de permiso",
 	MergeSummary:      "Pull request #%[1]d fusionado en %[2]s",
-	LateNotice:        "[lich] Programado para %[1]s, entregado con %[2]s de retraso.\n\n",
-	ResumePrompt:      "[lich] Tu límite de uso se restableció. Continúa la tarea en la que estabas trabajando.",
-	WatchChecksFailed: "[lich] Las comprobaciones fallaron en la pull request #%[1]d, commit %[2]s.\n\n",
-	WatchChecksPassed: "[lich] Las comprobaciones pasaron en la pull request #%[1]d, commit %[2]s.\n\n",
-	WatchReview:       "[lich] Llegó una nueva revisión a la pull request #%[1]d.\n\n",
+	MergeNotice:       "El pull request #%[1]d %[2]q se fusionó en %[3]s.",
+	LateNotice:        "Programado para %[1]s, entregado con %[2]s de retraso.",
+	LateMinutes:       Plural{One: "%d minuto", Other: "%d minutos"},
+	LateHours:         Plural{One: "%d hora", Other: "%d horas"},
+	LateDays:          Plural{One: "%d día", Other: "%d días"},
+	OnTimeNotice:      "Programado para %[1]s.",
+	UsageReset:        "Tu límite de uso se restableció.",
+	ResumePrompt:      "Continúa la tarea en la que estabas trabajando.",
+	WatchChecksFailed: "Las comprobaciones fallaron en la pull request #%[1]d, commit %[2]s.",
+	WatchChecksPassed: "Las comprobaciones pasaron en la pull request #%[1]d, commit %[2]s.",
+	WatchReview:       "Llegó una nueva revisión a la pull request #%[1]d.",
 	ScheduledAtResult: "Programado. Tu prompt se escribirá en esta sesión a las %[1]s.",
 	ScheduledOnResult: "Activado. Tu prompt se escribirá en esta sesión con %[1]s, como máximo %[2]d veces en una misma pull request.",
 	ScheduleCleared:   "Se quitó el prompt programado de esta sesión.",
@@ -92,18 +80,20 @@ var es = Catalog{
 
 	ThreadMarked: "Marcado. lich resuelve el hilo y responde con este commit en cuanto el head del pull request lo contenga.",
 
-	CopyNotice:         "[lich] copia de %s; el original no es accesible desde esta sesión, las ediciones se quedan en la copia.",
-	ArtifactCopyNotice: "[lich] copia de %[1]s de la sesión %[2]q; las ediciones quedan en la copia.",
+	CopyNotice:         "lich copió %s aquí; el original no es accesible desde esta sesión, las ediciones se quedan en la copia.",
+	ArtifactCopyNotice: "lich copió %[1]s aquí desde la sesión %[2]q; las ediciones quedan en la copia.",
 
 	MCPInstructions: `lich corre sesiones de agentes de código lado a lado en una ventana; estas herramientas son la forma en que esta sesión trabaja con las demás.
 
 Delega en paralelo: para el trabajo que puede correr junto al tuyo, abre una sesión de trabajo en su propia git worktree (open_session con worktree) para que tenga su propio checkout y luego entrégale la tarea con send_to_session. Consulta list_worktrees antes: una rama que ya está en checkout se abre, no se crea. Las sesiones de trabajo son sesiones completas en la pantalla del usuario: visibles, guiables y tuyas para cerrar (close_session) cuando el trabajo termina. Esa es la diferencia con los subagentes que corre tu propio harness, y es lo que el usuario pide cuando dice que repartas el trabajo entre ramas o worktrees: un subagente no tiene checkout propio ni una tarjeta que el usuario pueda abrir, leer o asumir a mitad de la tarea. Usa uno de ellos para leer algo y descartarlo, no para correr la implementación que alguien pidió ver. La excepción es una sesión de Claude Code cuyo lich-plugin convierte un subagente general-purpose en una de esas tarjetas: ahí tu herramienta Agent abre la sesión de trabajo, en segundo plano, y su informe te llega solo, así que reparte el trabajo con ella y abre sesiones aquí para lo que un subagente no puede ser.
 
-Nunca hagas polling de resultados. Un envío que supera su espera devuelve un ticket y sigues con tu propio trabajo; cuando los resultados están listos, una nota corta [lich] llega a tu prompt: recógelo todo de una vez con wait_for_answer (sin ticket). Esa nota solo llega entre tus turnos; por eso, mientras corre un turno largo tuyo, mira con wait_for_answer y no_wait en los puntos en que un resultado cambiaría lo que haces (antes de delegar más, después de una validación larga, antes de la síntesis final): devuelve lo que está listo y quién aún debe uno, sin esperar. Una mirada por punto de decisión: si no hay nada listo, sigue adelante. Volver a llamarlo en bucle es polling, y gasta los tokens que este diseño existe para ahorrar.
+Todo lo que lich entrega a esta sesión llega como un bloque lich-notification, y su atributo kind dice qué es: una tarea por hacer, el desenlace de una sesión de trabajo (worker-finished, worker-failed, worker-stopped, worker-waiting, expired), una fusión o un aviso. Solo una tarea, o un bloque que trae un prompt, es trabajo; lo demás son novedades. Pueden llegar varios en un solo mensaje.
 
-Un subagente o paso de workflow que corre dentro de esta sesión no es su agente, y lich no puede distinguirlos: envía y abre con private, y luego espera sus propios tickets. La nota [lich] y el wait_for_answer sin ticket pertenecen al agente de la propia sesión.
+Nunca hagas polling de resultados. Un envío que supera su espera devuelve un ticket y sigues con tu propio trabajo; cuando un resultado está listo, llega a tu prompt un bloque worker-finished con el resultado dentro o, en un terminal, una línea que dice que lo recojas con wait_for_answer y el ticket (o sin ticket para todo de una vez). Un bloque solo llega entre tus turnos; por eso, mientras corre un turno largo tuyo, mira con wait_for_answer y no_wait en los puntos en que un resultado cambiaría lo que haces (antes de delegar más, después de una validación larga, antes de la síntesis final): devuelve lo que está listo y quién aún debe uno, sin esperar. Una mirada por punto de decisión: si no hay nada listo, sigue adelante. Volver a llamarlo en bucle es polling, y gasta los tokens que este diseño existe para ahorrar.
 
-Cuando un mensaje [lich] con ticket llega a TU prompt, eres la sesión de trabajo: haz la tarea y responde con %s, un informe conciso (qué se hizo, dónde, qué falta), nunca una transcripción.
+Un subagente o paso de workflow que corre dentro de esta sesión no es su agente, y lich no puede distinguirlos: envía y abre con private, y luego espera sus propios tickets. Esos bloques y el wait_for_answer sin ticket pertenecen al agente de la propia sesión.
+
+Cuando un bloque task llega a TU prompt, eres la sesión de trabajo: haz la tarea. Su atributo answer dice cómo vuelve la respuesta. last-message: el mensaje final de tu turno es la respuesta, sin nada que llamar. reply: responde con %s y su ticket, el único camino de vuelta; quien preguntó está bloqueado en ese ticket y no lee nada más, así que un mensaje a una sesión par se pierde. En ambos casos, la respuesta es un informe conciso (qué se hizo, dónde, qué falta), nunca una transcripción.
 
 Esta sesión tiene un navegador propio (herramientas browser_*). Corre sin ventana dentro de lich, y el usuario ve la misma página junto al terminal de esta sesión: la abre el elemento Navegador de la tarjeta, y lich se la ofrece con un aviso cuando abres el navegador. No aparece ninguna ventana propia y no hace falta: no le pidas al usuario que abra una. Ábrelo, lee la página, haz clic, escribe, pulsa teclas con nombre y captura la pantalla. Las capturas son archivos. Nunca pegues sus bytes en la respuesta.`,
 	MCPArtifacts: "Las páginas que haces para que el usuario las vea (un informe, un diagrama, un mockup) van en la carpeta de artefactos de esta sesión, %s, nunca en el checkout: ahí quedan fuera de git, sobreviven a un reinicio y duran lo que dure la sesión. Escribe el archivo ahí y ábrelo con browser_open: el usuario lo ve junto al terminal de esta sesión. Publícalo en cualquier otro lugar, incluidos los artefactos alojados de tu propio harness, solo cuando el usuario lo pida.",
@@ -164,7 +154,7 @@ Esta sesión tiene un navegador propio (herramientas browser_*). Corre sin venta
 	ClosedPlain: "Se cerró %q.\n",
 	ClosedProject: "Se cerró el proyecto %[1]q (%[2]s) y se detuvieron sus sesiones. Siguen con él: abrir una sesión " +
 		"en %[2]s de nuevo reabre el proyecto con ellas.\n",
-	HandoffNote: "[lich] La sesión %[1]q te pasó su trabajo: eres su sucesora, abierta desde cero en el mismo " +
+	HandoffNote: "La sesión %[1]q te pasó su trabajo: eres su sucesora, abierta desde cero en el mismo " +
 		"checkout para continuarlo. Esa sesión sigue abierta hasta que el usuario la cierre y no te está esperando, " +
 		"así que nada vuelve a ella. Contrasta esta nota con el repositorio (git status, git log) antes de " +
 		"construir sobre ella y sigue con los próximos pasos.\n\nHecho:\n%[2]s\n\nRama: %[3]s\n\nCommits:\n%[4]s\n\n" +

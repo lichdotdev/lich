@@ -3,6 +3,7 @@ package store
 import (
 	"database/sql"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/lichdotdev/lich/api"
@@ -226,15 +227,32 @@ func addSessionFilesID(tx *sql.Tx) error {
 // be told from a person's by its words alone. A continuation parked before this
 // step is marked from them, in every language it could have been parked in.
 func markLichContinuations(tx *sql.Tx) error {
+	texts := slices.Clone(legacyResumePrompts)
 	for _, lang := range prompt.Langs {
+		texts = append(texts, prompt.For(lang).ResumePrompt)
+	}
+	for _, text := range texts {
 		if _, err := tx.Exec(
 			`UPDATE sessions SET scheduled_by = ? WHERE scheduled_by = '' AND scheduled_prompt = ?`,
-			api.ScheduledByLich, prompt.For(lang).ResumePrompt,
+			api.ScheduledByLich, text,
 		); err != nil {
 			return fmt.Errorf("mark lich continuations: %w", err)
 		}
 	}
 	return nil
+}
+
+// legacyResumePrompts is the continuation in every language as builds before
+// the notification envelope parked it, the words a row from before version 15
+// holds.
+var legacyResumePrompts = []string{
+	"[lich] Your usage limit reset. Continue the task you were working on.",
+	"[lich] O seu limite de uso foi renovado. Continue a tarefa em que você estava trabalhando.",
+	"[lich] Tu límite de uso se restableció. Continúa la tarea en la que estabas trabajando.",
+	"[lich] 你的用量上限已重置。请继续之前进行的任务。",
+	"[lich] 利用上限がリセットされました。作業中だったタスクを続けてください。",
+	"[lich] 사용량 한도가 초기화되었습니다. 하던 작업을 계속하세요.",
+	"[lich] Ваш лимит использования сброшен. Продолжайте задачу, над которой работали.",
 }
 
 // addCostResponses is version 16: the provider responses a session's cost has

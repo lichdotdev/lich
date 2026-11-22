@@ -400,5 +400,16 @@
     "description": "사용할 때",
     "addProject": "이 프로젝트에 추가",
     "addUser": "모든 프로젝트에 추가"
+  },
+  "notification": {
+    "from": "{label}에서 보냄",
+    "finished": "{label} 완료",
+    "answered": "답변함",
+    "failed": "{label} 실패",
+    "stopped": "{label} 닫힘",
+    "stoppedBy": "{label}이(가) 닫음",
+    "stoppedByYou": "직접 닫음",
+    "waiting": "{label} 대기 중",
+    "expired": "{label}이(가) 제시간에 답하지 않음"
   }
 }

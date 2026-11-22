@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/lichdotdev/lich/internal/prompt"
 	"github.com/lichdotdev/lich/internal/providers"
 )
 
@@ -122,26 +121,24 @@ func (s *Service) dropHopStreaks(fromID, toID string) {
 	s.dropStreaksLocked(toID, sessionPair{})
 }
 
-// checkPingPong is the breaker in front of a send: the warning to append to a
-// message that continues a streak, or the error refusing one that ends it. A
+// checkPingPong is the breaker in front of a send: whether the task continues
+// a streak and gets the loop notice behind it, or the error refusing one that
+// ends it. A
 // target that cannot report tools may be working unseen, so a hop to it is no
 // evidence of an idle exchange and never counts.
-func (s *Service) checkPingPong(fromID, toID, target, kind string) (string, error) {
+func (s *Service) checkPingPong(fromID, toID, target, kind string) (bool, error) {
 	if fromID == "" || fromID == toID {
-		return "", nil
+		return false, nil
 	}
 	if !s.reportsTools(kind) {
 		s.dropHopStreaks(fromID, toID)
-		return "", nil
+		return false, nil
 	}
 	streak := s.noteHop(fromID, toID)
 	if streak >= pingPongBreakAt {
-		return "", fmt.Errorf("not delivered: this is message %d in a row between this session and %q "+
+		return false, fmt.Errorf("not delivered: this is message %d in a row between this session and %q "+
 			"with no work done between them, which looks like a loop. Do the work, or end your turn "+
 			"and leave the exchange to the user", streak, target)
 	}
-	if streak >= pingPongWarnAt {
-		return "\n\n" + prompt.For(s.lang()).PingPongWarning, nil
-	}
-	return "", nil
+	return streak >= pingPongWarnAt, nil
 }

@@ -180,3 +180,31 @@ func TestClaudeReplied(t *testing.T) {
 		t.Errorf("claudeReplied = %+v, want %+v", got.Answers, want)
 	}
 }
+
+// TestARelayedMessageWaitsBehindAQuestion: what the relay hands a chat goes
+// in as the next user message, never into the turn running
+// (docs/hooks/notification.md, Delivery), so a question the agent waits on is
+// left for the person and the message follows once that turn ends.
+func TestARelayedMessageWaitsBehindAQuestion(t *testing.T) {
+	r := newRig(t, providers.Claude)
+	if err := r.setView(api.ViewChat); err != nil {
+		t.Fatalf("SetView: %v", err)
+	}
+	r.prompt("question")
+	q := r.waitingQuestion()
+	if _, err := r.svc.Take("s1", "relayed note"); err != nil {
+		t.Fatalf("Take: %v", err)
+	}
+	if got, _ := r.svc.running("s1").conv.get(q.ID); got.Question.Reply != nil {
+		t.Fatalf("the relayed message answered the person's question: %+v", got.Question.Reply)
+	}
+	if strings.Contains(r.fakeLog(), "relayed note") {
+		t.Fatal("the relayed message went into the running turn")
+	}
+	answers := []api.ChatAskAnswer{{Picked: []string{"Pear"}}, {Picked: []string{"Red"}}, {Other: "a mango"}}
+	if err := r.reply(q.ID, api.ChatQReplied{Answers: answers}); err != nil {
+		t.Fatalf("Reply: %v", err)
+	}
+	r.turnEnd(0)
+	r.eventually("the relayed message after the turn", func() bool { return strings.Contains(r.fakeLog(), `"content":"relayed note"`) })
+}

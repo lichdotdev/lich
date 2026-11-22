@@ -31,7 +31,7 @@ func TestAnAnswerAfterTheTurnEndedWithoutOneStillReachesTheSender(t *testing.T) 
 	if _, err := svc.Reply(t.Context(), ReplyOptions{From: "s2", Ticket: sent.Ticket, Answer: "green, after the background run"}); err != nil {
 		t.Fatalf("a late Reply = %v, want the answer accepted", err)
 	}
-	if !awaitWritten(term, "s1", "[lich]") {
+	if !awaitWritten(term, "s1", "<lich-notification") {
 		t.Errorf("the sender was never told the late answer arrived: %q", term.written("s1"))
 	}
 	got, err := svc.Wait(context.Background(), WaitOptions{Ticket: sent.Ticket, WaitSeconds: 1})

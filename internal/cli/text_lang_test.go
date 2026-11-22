@@ -54,7 +54,7 @@ func TestEveryTextRendersInEveryLanguage(t *testing.T) {
 		}
 		for _, literal := range []string{
 			"open_session", "send_to_session", "wait_for_answer", "close_session",
-			"list_worktrees", "no_wait", "private", relay.ToolReply, "[lich]",
+			"list_worktrees", "no_wait", "private", relay.ToolReply, "lich-notification", "last-message",
 		} {
 			if !strings.Contains(texts["instructions"], literal) {
 				t.Errorf("%s: the instructions lost %q", lang, literal)

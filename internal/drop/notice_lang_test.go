@@ -10,7 +10,7 @@ import (
 func TestCopyNoticeRendersInEveryLanguage(t *testing.T) {
 	for _, lang := range prompt.Langs {
 		got := copyNotice(lang, "shot.png")
-		if strings.Contains(got, "%!") || !strings.HasPrefix(got, "[lich] ") || !strings.Contains(got, "shot.png") {
+		if strings.Contains(got, "%!") || !strings.Contains(got, "lich") || !strings.Contains(got, "shot.png") {
 			t.Errorf("%s: notice = %q", lang, got)
 		}
 	}
@@ -34,28 +34,28 @@ func TestTheCopyNoticeFollowsThePromptLanguageLive(t *testing.T) {
 
 func TestTheCopyNoticeIsSpanishWhenChosen(t *testing.T) {
 	got := copyNotice(prompt.Spanish, "a.png")
-	if got == copyNotice(prompt.English, "a.png") || !strings.Contains(got, "copia de a.png") {
+	if got == copyNotice(prompt.English, "a.png") || !strings.Contains(got, "copió a.png") {
 		t.Errorf("notice = %q, want the Spanish text", got)
 	}
 }
 
 func TestTheCopyNoticeIsJapaneseWhenChosen(t *testing.T) {
 	got := copyNotice(prompt.Japanese, "a.png")
-	if got == copyNotice(prompt.English, "a.png") || !strings.Contains(got, "a.png のコピーです") {
+	if got == copyNotice(prompt.English, "a.png") || !strings.Contains(got, "a.png をここにコピー") {
 		t.Errorf("notice = %q, want the Japanese text", got)
 	}
 }
 
 func TestTheCopyNoticeIsKoreanWhenChosen(t *testing.T) {
 	got := copyNotice(prompt.Korean, "a.png")
-	if got == copyNotice(prompt.English, "a.png") || !strings.Contains(got, "a.png의 사본") {
+	if got == copyNotice(prompt.English, "a.png") || !strings.Contains(got, "a.png을(를) 여기에 복사") {
 		t.Errorf("notice = %q, want the Korean text", got)
 	}
 }
 
 func TestTheCopyNoticeIsRussianWhenChosen(t *testing.T) {
 	got := copyNotice(prompt.Russian, "a.png")
-	if got == copyNotice(prompt.English, "a.png") || !strings.Contains(got, "копия a.png") {
+	if got == copyNotice(prompt.English, "a.png") || !strings.Contains(got, "скопировал сюда a.png") {
 		t.Errorf("notice = %q, want the Russian text", got)
 	}
 }

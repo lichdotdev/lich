@@ -27,6 +27,9 @@ func (s *Service) SetChat(c ChatSink) {
 }
 
 // chatSink is the chat service when session id runs as a chat, nil otherwise.
+// Chat is whether session id is drawn as a chat (relay.Terminal).
+func (s *Service) Chat(id string) bool { return s.chatSink(id) != nil }
+
 func (s *Service) chatSink(id string) ChatSink {
 	if !s.spawnOf(id).chat {
 		return nil

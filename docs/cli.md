@@ -1414,40 +1414,42 @@ A relayed task can take minutes; a tool call cannot sit still that long (Claude
 Code detaches one that runs past 120 seconds). So waiting is optional here.
 
 When a result lands and **nobody is still holding the line**, it goes to the
-sender's **inbox**, and what is typed at the sender's prompt is one short
-nudge — never the result itself:
+sender's **inbox**, and the sender is handed one `worker-finished` envelope per
+result ([notification.md](hooks/notification.md)). Typed at a terminal's prompt
+it leaves the result out and says where to collect it:
 
 ```
-[lich] The task you sent "docs" has its result ready. To collect everything at
-once, call the lich tool `wait_for_answer` with no ticket, or run:
-  "$LICH_BIN" wait
+<lich-notification version="1" kind="worker-finished" from="docs" session="c41f" ticket="4b9bc94e">
+<status>answered</status>
+<summary>The result is ready. Collect it with wait_for_answer and the ticket.</summary>
+</lich-notification>
 ```
 
-The nudge is the whole delivery on purpose. Typing the results themselves was
-the first shape this had, and it is what made orchestrating expensive: every
-arrival is a prompt submission, every submission restarts the sender's turn,
-and the full text stays in its context window — an orchestrator fanning out to
-N workers paid all of that N times. The nudge costs one line, arrives once per
-batch (results landing within a couple of seconds share it, and a sender
+Leaving the result out is on purpose. Typing the results themselves was the
+first shape this had, and it is what made orchestrating expensive in a
+terminal: a long report typed into a TUI is collapsed or split, and the full
+text stays in the sender's context window. The envelopes of a burst go in one
+message (results landing within a couple of seconds share it, and a sender
 mid-turn hears nothing until its turn ends), and the text comes back through
 the collect call, inside a turn the sender chose. A result nobody collects
 expires with its ticket's TTL, one hour — except a subagent's, which waits as
-long as its worker runs.
+long as its worker runs. A session drawn as a chat takes each result whole, as
+its next user message, cut at 4000 characters with `truncated` saying how much
+waits on the ticket; that result then leaves the inbox.
 
 A caller that *is* still waiting carries the result out itself and nothing is
 typed — delivering both would deliver twice.
 
-**A subagent's report is the exception** (`lich open --subagent`). Where the
-sender's Claude Code mod takes the note, the note carries the report whole,
-under a line naming the worker, its branch and the ticket, with the nudge for
-anything else waiting beside it — that is what a native subagent's result looks
-like to the model, and the mod hands it over as its own prompt without touching
-what the user is typing. The report then leaves the inbox: `wait_for_answer`
-with no ticket does not return it again, while `lich wait <ticket>` still does.
-A sender whose mod does not take it (no mod polls, or none collected the note)
-is typed the short nudge instead and collects the report as usual: typing a
-long report into a TUI is what the mod route exists to avoid. A report collected
-before the note goes out is not delivered again.
+**A subagent's report goes whole through a terminal's mod too**
+(`lich open --subagent`). Where the sender's Claude Code mod takes the message,
+the report's envelope carries its `<result>`, beside the envelopes of anything
+else waiting: that is what a native subagent's result looks like to the model,
+and the mod hands it over as its own prompt without touching what the user is
+typing. The report then leaves the inbox: `wait_for_answer` with no ticket does
+not return it again, while `lich wait <ticket>` still does. A sender whose mod
+does not take it (no mod polls, or none collected the message) is typed the
+envelopes without results and collects the report as usual. A report collected
+before the message goes out is not delivered again.
 
 A sender that is not a session — the `lich` command from a script — is never
 nudged: its result waits in the inbox for `lich wait <ticket>`, or expires.
@@ -1483,41 +1485,22 @@ A workflow that fans work out to lich sessions therefore:
 ## The message a target receives
 
 ```
-[lich] Message from session "<sender label>", not from your own prompt.
-
-<prompt>
-
-When you have an answer, send it back by running:
-  "$LICH_BIN" reply <ticket> "<your answer>"
-
-That ticket is the only way back: whoever asked is blocked on it and is
-reading nothing else. Do not answer by messaging a peer session — an answer
-sent any other way is lost. Keep the answer a concise report — what was done,
-where, and what remains — never a transcript: the sender pays to read every
-byte, and the detail is in your commits and files anyway.
+<lich-notification version="1" kind="task" from="<sender label>" session="<sender id>" ticket="<ticket>" answer="reply">
+<summary>Answer with reply_to_session and ticket <ticket>, the only way back to whoever asked.</summary>
+<prompt><prompt></prompt>
+</lich-notification>
 ```
 
 A caller with no session of its own — the CLI run from a script or a plain
-shell — opens with `Message relayed by the lich command line` instead. The
-distinction is the point: the receiving agent must not read either as its user
-speaking, and the two are not the same kind of "not your user".
-
-A target that **has** lich's tools is offered one first — Claude Code, Codex and
-opencode always, Antigravity, oh-my-pi, Crush and Kiro once the installed plugin is
-new enough to carry them
-(`agentplugin.HasTools`) — Cursor among them, whose tools come from the document
-its install writes rather than from the plugin it borrows from Claude Code. A session pointed at a tool it does not have loses the
-turn to an error, where the command works everywhere:
-
-```
-When you have an answer, send it back with the lich tool `reply_to_session`
-(ticket <ticket>), or by running:
-  "$LICH_BIN" reply <ticket> "<your answer>"
-```
-
-The command is named either way. A session whose shell is locked down would
-otherwise have no way to answer at all, and the reply path exists for the
-receiving agent only because this text describes it.
+shell — leaves `from` and `session` out, and an extension's task names the
+extension in `from`. `answer` is `last-message` for a Claude Code subagent whose
+mod answers for it (its turn's final message is the answer) and `reply`
+otherwise. A `reply` task's summary names the `reply_to_session` tool where the
+target has lich's tools and `"$LICH_BIN" reply <ticket> "<your answer>"` where
+it does not, since a session pointed at a tool it does not have loses the turn
+to an error; the spawn briefing and lich's MCP instructions say the same once,
+and that the ticket is the only way back: whoever asked is blocked on it and
+reads nothing else, so an answer sent over a peer channel is lost.
 
 ## lich server side
 

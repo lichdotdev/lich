@@ -84,15 +84,13 @@ func (s *Service) Take(id, text string) (relay.HandedPrompt, error) {
 	}, nil
 }
 
-// take sends m in a turn of its own, or after the agent's waiting
-// questions, and answers a channel that closes once the turn carrying it has
-// started.
+// take sends m in a turn of its own, after the turn running if one is, and
+// answers a channel that closes once the turn carrying it has started. A
+// question the agent waits on is left for the person: the relay's message is
+// never written into the running turn (docs/hooks/notification.md, Delivery).
 func (c *chatSession) take(m message) (<-chan struct{}, error) {
 	started := make(chan struct{})
 	close(started)
-	if c.declineQuestions() {
-		return started, c.drv.follow(m)
-	}
 	for {
 		if err := c.beginTurn(); err == nil {
 			return started, c.send(m)

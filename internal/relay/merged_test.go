@@ -119,17 +119,19 @@ func TestAnnounceMergeReportsAStoreFailure(t *testing.T) {
 	}
 }
 
+// A merge is a merged envelope, which the briefing says is news and not a task,
+// and carries no prompt.
 func TestMergeNoticeNamesThePullRequestAndAsksForNoWork(t *testing.T) {
 	t.Parallel()
-	got := mergeNotice(prompt.English, 42, "Title \x1b[201~with escape", "feat/merge", "main")
+	got := mergedEnvelope(prompt.English, 42, "Title \x1b[201~with escape", "feat/merge", "main").String()
 
-	for _, want := range []string{"#42", "feat/merge", "merged into main", "not a task"} {
+	for _, want := range []string{`kind="merged"`, `pr="42"`, `branch="feat/merge"`, "#42", "merged into main"} {
 		if !strings.Contains(got, want) {
 			t.Errorf("notice %q is missing %q", got, want)
 		}
 	}
-	if strings.Contains(got, "\x1b") {
-		t.Errorf("notice %q carries an escape out of the title", got)
+	if strings.Contains(got, "\x1b") || strings.Contains(got, "<prompt>") {
+		t.Errorf("notice %q carries an escape out of the title, or a task", got)
 	}
 }
 

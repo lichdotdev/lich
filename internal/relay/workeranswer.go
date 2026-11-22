@@ -6,27 +6,30 @@ import (
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/events"
+	"github.com/lichdotdev/lich/internal/prompt"
 )
 
 // A subagent worker whose mod answers for it (docs/hooks/mod-answer.md) and a
 // worker its caller closed: the two ways a subagent errand ends that a native
 // subagent has, its last message coming back as its result and TaskStop.
 
-// taskMessage composes a ticket's message for the target it is handed to now.
-// A subagent errand at a worker whose mod answers it is handed the task alone,
-// and is marked so a turn ending without the answer does not end it.
+// taskMessage composes a ticket's task envelope for the target it is handed to
+// now. A subagent errand at a worker whose mod answers it is answered by the
+// worker's last message, and is marked so a turn ending without the answer
+// does not end it; every other worker answers by its ticket.
 func (s *Service) taskMessage(id string, t *ticket, kind string) string {
+	answer := AnswerReply
 	if t.subagent && s.term.ModAnswers(t.targetID) {
 		s.mu.Lock()
 		t.modAnswers = true
 		s.mu.Unlock()
-		return composeForWorker(s.lang(), t.sender, t.prompt)
+		answer = AnswerLastMessage
 	}
-	if t.extensionID != "" {
-		lang := s.lang()
-		return composeFrom(lang, originExtension(lang, t.extensionID, t.extensionName), id, t.prompt, s.offersTools(kind))
+	message := taskEnvelope(s.lang(), id, t, answer, s.offersTools(kind)).String()
+	if t.loop {
+		message += "\n\n" + loopEnvelope(s.lang(), t).String()
 	}
-	return compose(s.lang(), t.sender, id, t.prompt, s.offersTools(kind))
+	return message
 }
 
 // WorkerAnswered answers the one subagent errand open at workerID with text,
@@ -70,16 +73,22 @@ const (
 
 // unansweredWhy is what the caller reads about each reason, in the place a
 // report would be.
-var unansweredWhy = map[string]string{
-	UnansweredBlank:   "The worker's last turn ended without a message.",
-	UnansweredError:   "The worker's last turn ended in an API error.",
-	UnansweredRefusal: "The worker's last turn ended in a refusal.",
+func unansweredWhy(lang prompt.Lang, reason string) string {
+	text := prompt.For(lang)
+	switch reason {
+	case UnansweredBlank:
+		return text.WorkerEndedBlank
+	case UnansweredError:
+		return text.WorkerEndedError
+	case UnansweredRefusal:
+		return text.WorkerEndedRefusal
+	}
+	return ""
 }
 
 // IsUnansweredReason is whether reason is one the contract names.
 func IsUnansweredReason(reason string) bool {
-	_, ok := unansweredWhy[reason]
-	return ok
+	return unansweredWhy(prompt.English, reason) != ""
 }
 
 // WorkerUnanswered ends the one subagent errand open at workerID as
@@ -102,7 +111,7 @@ func (s *Service) WorkerUnanswered(workerID, reason string) {
 		return
 	}
 	delete(s.tickets, id)
-	t.why = unansweredWhy[reason]
+	t.why = unansweredWhy(s.lang(), reason)
 	close(t.stalled)
 	s.lapseLocked(id, t, StatusUnanswered)
 	unattended := t.attended == 0
@@ -241,6 +250,10 @@ func (s *Service) errandOpenAtLocked(sessionID string) bool {
 func (s *Service) SessionClosed(sessionID, closerID string) {
 	var stopped []*ticket
 	var told []string
+	by := ""
+	if closerID != "" {
+		by = s.labelOf(closerID)
+	}
 	s.mu.Lock()
 	delete(s.reportedWorkers, sessionID)
 	s.forgetStateLocked(sessionID)
@@ -249,6 +262,7 @@ func (s *Service) SessionClosed(sessionID, closerID string) {
 			continue
 		}
 		delete(s.tickets, id)
+		t.stoppedBy = by
 		if t.attended == 0 && (t.fromID != closerID || s.owesSubagentAnswerLocked(t.fromID)) {
 			s.stashLocked(id, t, StatusStopped, "")
 			told = append(told, t.fromID)

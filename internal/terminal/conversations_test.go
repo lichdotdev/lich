@@ -320,3 +320,17 @@ func TestKiroConversationsFollowKiroHome(t *testing.T) {
 		t.Error("kiroSessionPath found a conversation under ~/.kiro while KIRO_HOME points elsewhere")
 	}
 }
+
+// A conversation lich opened with a task is named by the task, not by the
+// envelope's tags; one that opened on a notice by what the notice says.
+func TestPromptTitleReadsAnEnvelope(t *testing.T) {
+	task := `<lich-notification version="1" kind="task" from="Relay fixes" session="a1b2" ticket="t1" answer="reply">` +
+		"\n<summary>Answer with reply_to_session and ticket t1.</summary>\n<prompt>Fix #412: the handshake races\nmore</prompt>\n</lich-notification>"
+	if got := promptTitle(task); got != "Fix #412: the handshake races" {
+		t.Errorf("promptTitle(task) = %q", got)
+	}
+	merged := `<lich-notification version="1" kind="merged" pr="7">` + "\n<summary>Pull request #7 was merged into main.</summary>\n</lich-notification>"
+	if got := promptTitle(merged); got != "Pull request #7 was merged into main." {
+		t.Errorf("promptTitle(merged) = %q", got)
+	}
+}

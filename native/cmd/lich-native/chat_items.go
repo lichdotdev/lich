@@ -79,6 +79,9 @@ func (u *window) chatRow(gtx C, th *ui.Theme, p *chatPane, sv sessionView, r cha
 	it := r.item
 	switch it.Kind {
 	case api.ItemUser:
+		if envs, ok := parseEnvelopes(it.Text); ok {
+			return u.chatEnvelopes(gtx, th, p, it, envs)
+		}
 		c := p.copyOf(it.ID)
 		return c.hover(gtx, func(gtx C, over bool) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,

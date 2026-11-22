@@ -37,7 +37,7 @@ func TestACompactionWithErrandsOpenRemindsTheWorkerOnce(t *testing.T) {
 	}
 	reminder := strings.Join(term.writesTo("s2")[delivery:], "")
 	for _, want := range []string{
-		"[lich]", "was just compacted", "run the tests and report the failures", "build the docs",
+		"<lich-notification", "was just compacted", "run the tests and report the failures", "build the docs",
 	} {
 		if !strings.Contains(reminder, want) {
 			t.Errorf("the reminder is missing %q:\n%s", want, reminder)

@@ -231,6 +231,9 @@ type Terminal interface {
 	// ModAnswers is whether that session's mod answers a subagent errand with
 	// its turn's final message (docs/hooks/mod-answer.md).
 	ModAnswers(id string) bool
+	// Chat is whether that session is drawn as a chat, which takes a message
+	// whole as its next user message (docs/hooks/notification.md, Delivery).
+	Chat(id string) bool
 }
 
 type Peer = api.Peer
@@ -294,6 +297,12 @@ type ticket struct {
 	// subagent is a ticket sent with SendSubagent: its worker is the sender's
 	// subagent, and its errand lives as long as the worker does.
 	subagent bool
+	// stoppedBy is the label of the session that closed the worker, empty when
+	// the window did.
+	stoppedBy string
+	// loop is a task that continues a ping-pong streak: the loop notice rides
+	// behind it (checkPingPong).
+	loop bool
 	// modAnswers is a subagent errand handed to a worker whose mod answers it
 	// (WorkerAnswered). A turn ending without that answer handed work to the
 	// background, so it does not end the errand (turnCandidates).
@@ -627,7 +636,7 @@ func (s *Service) send(ctx context.Context, opts SendOptions, mode errandMode) (
 	if depth >= maxChainDepth {
 		return Result{}, chainTooDeep(depth, dest.Peer.Label)
 	}
-	warning, err := s.checkPingPong(fromID, dest.ID, dest.Peer.Label, dest.Peer.Kind)
+	loop, err := s.checkPingPong(fromID, dest.ID, dest.Peer.Label, dest.Peer.Kind)
 	if err != nil {
 		return Result{}, err
 	}
@@ -646,7 +655,8 @@ func (s *Service) send(ctx context.Context, opts SendOptions, mode errandMode) (
 		target:        dest.Peer.Label,
 		created:       s.now(),
 		asked:         askedExcerpt(prompt),
-		prompt:        prompt + warning,
+		prompt:        prompt,
+		loop:          loop,
 		depth:         depth,
 		private:       mode == errandPrivate,
 		subagent:      mode == errandSubagent,
