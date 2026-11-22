@@ -249,13 +249,11 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   own Ctrl+V takes the image (its text paste is another key). The image is stored through `/drop` as
   `pasted-image.<type>` in the session's copies, so it goes when the session does, and carries no copy notice.
   Linux runs `wl-paste` (wl-clipboard) then `xclip`, the session's display first, with Claude Code 2.1.330's
-  commands, type order and timeouts; measured on X11 (Xvfb). On X11 the Gio fork never answers a text read the
-  clipboard's owner refuses (`app/os_x11.go` drops a `SelectionNotify` with no property; its Wayland side answers
-  empty), and the router then asks for no later read on that editor's behalf: after a Ctrl+V over an image
-  alone, the next text paste into the composer did nothing (measured on Xvfb). A read another widget makes is
-  answered to every waiting one, so it likely frees the composer and hands it that text too: not measured. That predates the image paste and is the fork's to fix
-  (answer the refused read empty, as Wayland does). With neither installed the first Ctrl+V of a
-  window toasts once, text or not, since nothing tells an image was there. On a compositor without data-control
+  commands, type order and timeouts; measured on X11 (Xvfb). The Gio fork answers a text read the clipboard's
+  owner refuses empty on X11 as on Wayland (`app/os_x11.go`), which is what keeps the next text paste working
+  after an image: unanswered, the router asked for no later read for that editor (measured on Xvfb, before and
+  after). With neither `wl-paste` nor `xclip` installed the first Ctrl+V of a window toasts once, text or not,
+  since nothing tells an image was there. On a compositor without data-control
   `wl-paste` may take the keyboard focus for a moment on every Ctrl+V: not measured. macOS (`osascript`, the
   clipboard as «class PNGf», nothing over text) and Windows (PowerShell, `Clipboard.GetImage`, nothing over
   text) are written from Claude Code's own commands and only cross-compiled: no Mac or Windows machine here,
