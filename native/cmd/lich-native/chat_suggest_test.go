@@ -137,3 +137,17 @@ func TestANewConversationOrAnotherProcessDropsTheSuggestion(t *testing.T) {
 		}
 	}
 }
+
+// The suggestion reaches the box through /events, the way the backend sends it.
+func TestSuggestionEventThroughTheStreamShowsInTheBox(t *testing.T) {
+	u, r, _, _ := shellFrames(t, claudeKind)
+	u.model.chat.history("s1", []backend.ChatItem{{ID: "u1", Kind: api.ItemUser, Turn: 1, Text: "fix it"}})
+	events := make(chan backend.Event, 1)
+	events <- chatEventOf(t, api.ChatSuggestionEvent, api.ChatSuggestion{SessionID: "s1", Text: testSuggestion})
+	close(events)
+	u.model.follow(t.Context(), events)
+	r.frames(2)
+	if !shownInstead(r) {
+		t.Errorf("the suggestion the event brought is not in the box:\n%s", r.drawn())
+	}
+}
