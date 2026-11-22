@@ -107,6 +107,9 @@ func (u *window) chatChips(th *ui.Theme, p *chatPane, sv sessionView, working bo
 		chips = append(chips, *ft.attach)
 	}
 	chips = append(chips, u.model.chat.optionSlots(sv.ID)...)
+	if runningShells(u.model.chat.shellsOf(sv.ID)) > 0 {
+		chips = append(chips, footerSlot{ID: chipShells})
+	}
 	if ft.context != nil {
 		chips = append(chips, *ft.context)
 	}
@@ -135,6 +138,8 @@ func (u *window) chatChips(th *ui.Theme, p *chatPane, sv sessionView, working bo
 				return u.modelChip(gtx, th, p, sv, working)
 			case chipMode:
 				return u.modeChip(gtx, th, p, sv, working)
+			case chipShells:
+				return u.shellsChip(gtx, th, p, sv)
 			}
 			return f.slot(gtx, th, s, in)
 		}

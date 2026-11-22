@@ -176,6 +176,22 @@
     },
     "pluginSkills": "플러그인 스킬은 /plugin에서 관리합니다."
   },
+  "shells": {
+    "count": {
+      "other": "셸 {count}개"
+    },
+    "title": "백그라운드 셸",
+    "back": "셸",
+    "none": "백그라운드에서 실행 중인 셸이 없습니다",
+    "noOutput": "아직 출력이 없습니다",
+    "stop": "중지",
+    "state": {
+      "running": "실행 중",
+      "completed": "완료",
+      "failed": "실패",
+      "stopped": "중지됨"
+    }
+  },
   "attach": {
     "remove": "빼기",
     "pasteNeedsTool": "이미지를 붙여 넣으려면 wl-paste (wl-clipboard) 또는 xclip이 필요합니다"

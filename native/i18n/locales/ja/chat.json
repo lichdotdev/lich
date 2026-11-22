@@ -176,6 +176,22 @@
     },
     "pluginSkills": "プラグインのスキルは /plugin で管理します。"
   },
+  "shells": {
+    "count": {
+      "other": "シェル {count} 件"
+    },
+    "title": "バックグラウンドのシェル",
+    "back": "シェル",
+    "none": "バックグラウンドで動いているシェルはありません",
+    "noOutput": "まだ出力はありません",
+    "stop": "停止",
+    "state": {
+      "running": "実行中",
+      "completed": "完了",
+      "failed": "失敗",
+      "stopped": "停止済み"
+    }
+  },
   "attach": {
     "remove": "外す",
     "pasteNeedsTool": "画像を貼り付けるには wl-paste (wl-clipboard) か xclip が必要です"

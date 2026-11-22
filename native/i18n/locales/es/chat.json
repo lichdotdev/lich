@@ -185,6 +185,23 @@
     },
     "pluginSkills": "Las skills de un plugin se gestionan con /plugin."
   },
+  "shells": {
+    "count": {
+      "one": "{count} shell",
+      "other": "{count} shells"
+    },
+    "title": "Shells en segundo plano",
+    "back": "Shells",
+    "none": "Ningún shell se ejecuta en segundo plano",
+    "noOutput": "Todavía sin salida",
+    "stop": "Detener",
+    "state": {
+      "running": "en marcha",
+      "completed": "terminado",
+      "failed": "falló",
+      "stopped": "detenido"
+    }
+  },
   "attach": {
     "remove": "Quitar",
     "pasteNeedsTool": "Para pegar una imagen hace falta wl-paste (wl-clipboard) o xclip"

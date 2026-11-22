@@ -185,6 +185,23 @@
     },
     "pluginSkills": "Plugin skills are managed with /plugin."
   },
+  "shells": {
+    "count": {
+      "one": "{count} shell",
+      "other": "{count} shells"
+    },
+    "title": "Background shells",
+    "back": "Shells",
+    "none": "No shell runs in the background",
+    "noOutput": "No output yet",
+    "stop": "Stop",
+    "state": {
+      "running": "running",
+      "completed": "done",
+      "failed": "failed",
+      "stopped": "stopped"
+    }
+  },
   "attach": {
     "remove": "Remove",
     "pasteNeedsTool": "Pasting an image needs wl-paste (wl-clipboard) or xclip"
