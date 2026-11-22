@@ -153,17 +153,24 @@ func (s *Service) reportPullRequestWatch(path string, pr *PullRequest) {
 	}
 	read := api.PRRead{Path: path, Number: pr.Number, Open: pr.State == prOpen}
 	if read.Open {
-		out, err := s.gh(prLookupTimeout, path, "pr", "view", "--json", prWatchFields)
-		if err != nil {
+		if err := s.forgeOf(path).watchRead(path, &read); err != nil {
 			slog.Debug("project: read the checks of a watched pull request", "path", path, "err", err)
-			return
-		}
-		if err := fillPRRead(&read, out); err != nil {
-			slog.Warn("project: read the checks of a watched pull request", "path", path, "err", err)
 			return
 		}
 	}
 	s.prRead(read)
+}
+
+func (g githubForge) watchRead(path string, read *api.PRRead) error {
+	out, err := g.s.gh(prLookupTimeout, path, "pr", "view", "--json", prWatchFields)
+	if err != nil {
+		return err
+	}
+	if err := fillPRRead(read, out); err != nil {
+		slog.Warn("project: read the checks of a watched pull request", "path", path, "err", err)
+		return err
+	}
+	return nil
 }
 
 func fillPRRead(read *api.PRRead, out []byte) error {
@@ -213,10 +220,15 @@ func (s *Service) OpenPullRequest(_ context.Context, opts api.PathOptions) (*api
 // BranchPullRequest returns the pull request of the branch checked out at path
 // whatever its state, nil when the branch has none.
 func (s *Service) BranchPullRequest(path string) (*PullRequest, error) {
-	out, err := s.gh(prLookupTimeout, path, "pr", "view", "--json", "number,url,title,state,headRefName,baseRefName")
+	pr, err := s.forgeOf(path).branchPullRequest(path)
 	if errors.Is(err, errNoPullRequest) {
 		return nil, nil
 	}
+	return pr, err
+}
+
+func (g githubForge) branchPullRequest(path string) (*PullRequest, error) {
+	out, err := g.s.gh(prLookupTimeout, path, "pr", "view", "--json", "number,url,title,state,headRefName,baseRefName")
 	if err != nil {
 		return nil, err
 	}

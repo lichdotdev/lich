@@ -62,6 +62,11 @@ func runGH(timeout time.Duration, dir, tokenEnv string, args ...string) ([]byte,
 	return out, nil
 }
 
+// githubForge is the gh side of forge.
+type githubForge struct{ s *Service }
+
+func (githubForge) kind() string { return api.ForgeGitHub }
+
 // prViewFields is the gh `pr view --json` selection backing the Pulls panel.
 const prViewFields = "number,url,state,title,body,author,isDraft,mergeable,mergeStateStatus,reviewDecision,reviewRequests,latestReviews,baseRefName,headRefName,isCrossRepository,maintainerCanModify,statusCheckRollup,changedFiles,additions,deletions,commits"
 
@@ -141,21 +146,26 @@ type ghCommitAuthor struct {
 // missing, not a GitHub repo) yields an error so the panel can tell "no PR"
 // apart from "could not look up".
 func (s *Service) PullRequestDetail(_ context.Context, opts api.NumberOptions) (*PRDetail, error) {
-	out, err := s.gh(prReadTimeout, opts.Path, prArgs("view", opts.Number, "--json", prViewFields)...)
-	if errors.Is(err, errNoPullRequest) {
-		return nil, nil
-	}
-	if err != nil {
-		return nil, err
-	}
 	// The OPEN-only gate belongs to the branch lookup alone. Naming a number is
 	// asking for that pull request, whatever became of it — the list can show
 	// merged and closed ones, and a row that cannot be opened is not a row.
-	detail, err := parsePRDetail(out, opts.Number == 0)
+	detail, err := s.forgeOf(opts.Path).pullRequestDetail(opts.Path, opts.Number, opts.Number == 0)
+	if errors.Is(err, errNoPullRequest) {
+		return nil, nil
+	}
+	return detail, err
+}
+
+func (g githubForge) pullRequestDetail(path string, number int, openOnly bool) (*PRDetail, error) {
+	out, err := g.s.gh(prReadTimeout, path, prArgs("view", number, "--json", prViewFields)...)
+	if err != nil {
+		return nil, err
+	}
+	detail, err := parsePRDetail(out, openOnly)
 	if err != nil || detail == nil || len(detail.CheckRuns) == 0 {
 		return detail, err
 	}
-	if err := s.markRequiredChecks(opts.Path, detail.Number, detail.CheckRuns); err != nil {
+	if err := g.s.markRequiredChecks(path, detail.Number, detail.CheckRuns); err != nil {
 		return nil, err
 	}
 	return detail, nil
@@ -245,21 +255,30 @@ var mergeMethods = map[string]string{
 	"rebase": "--rebase",
 }
 
-// MergePullRequest merges a pull request on GitHub with the given method
+// MergePullRequest merges a pull request on its forge with the given method
 // (squash|merge|rebase) — the given number, or the PR of the branch checked out
 // at opts.Path when opts.Number is zero. A non-empty opts.Subject overrides the commit message
 // (the dock's "edit message" flow); an empty opts.Subject leaves gh's default, the
 // quick merge. opts.Admin merges with administrator privileges, GitHub's own bypass
-// of the rules on the base branch. It does not pass --delete-branch: lich's
+// of the rules on the base branch, which GitLab refuses. It does not pass --delete-branch: lich's
 // worktree removal owns that cleanup, and deleting a checked-out worktree's
 // branch is trouble. gh's stderr is surfaced on failure (not mergeable, branch
 // protection, gh missing).
 func (s *Service) MergePullRequest(_ context.Context, opts api.MergePullRequestOptions) (api.None, error) {
-	args, err := mergeArgs(opts.Number, opts.Method, opts.Subject, opts.Body, opts.Admin)
-	if err != nil {
+	if err := s.forgeOf(opts.Path).mergePullRequest(opts.Path, opts); err != nil {
 		return api.None{}, err
 	}
-	return api.None{}, s.writePR(prMergeTimeout, opts.Path, opts.Number, args...)
+	s.reportPRWrite(opts.Path, opts.Number)
+	return api.None{}, nil
+}
+
+func (g githubForge) mergePullRequest(path string, opts api.MergePullRequestOptions) error {
+	args, err := mergeArgs(opts.Number, opts.Method, opts.Subject, opts.Body, opts.Admin)
+	if err != nil {
+		return err
+	}
+	_, err = g.s.gh(prMergeTimeout, path, args...)
+	return err
 }
 
 // mergeArgs builds the gh argument list for a merge, rejecting an unknown method
@@ -287,15 +306,17 @@ func mergeArgs(number int, method, subject, body string, admin bool) ([]string, 
 	return args, nil
 }
 
-// CreatePullRequest opens GitHub's "new pull request" page in the browser for
+// CreatePullRequest opens the forge's "new pull request" page in the browser for
 // opts.Path's branch (gh pushes the branch first when it has no upstream).
-// Deliberately the web flow, not an in-app form — GitHub's page already owns the
+// Deliberately the web flow, not an in-app form — the forge's page already owns the
 // title, body, reviewers and template. Returns once the browser is launched.
 func (s *Service) CreatePullRequest(_ context.Context, opts api.PathOptions) (api.None, error) {
-	if _, err := s.gh(prCreateTimeout, opts.Path, "pr", "create", "--web"); err != nil {
-		return api.None{}, err
-	}
-	return api.None{}, nil
+	return api.None{}, s.forgeOf(opts.Path).createPullRequest(opts.Path)
+}
+
+func (g githubForge) createPullRequest(path string) error {
+	_, err := g.s.gh(prCreateTimeout, path, "pr", "create", "--web")
+	return err
 }
 
 // PullRequestDiff returns the unified diff of opts.Path's branch pull request —
@@ -309,14 +330,19 @@ func (s *Service) CreatePullRequest(_ context.Context, opts api.PathOptions) (ap
 // large in a panel is not the workflow; stream it (or cap and mark it
 // truncated) if that ever stops being true.
 func (s *Service) PullRequestDiff(_ context.Context, opts api.NumberOptions) (string, error) {
-	out, err := s.gh(prReadTimeout, opts.Path, prArgs("diff", opts.Number, "--color", "never")...)
+	diff, err := s.forgeOf(opts.Path).pullRequestDiff(opts.Path, opts.Number)
 	if errors.Is(err, errNoPullRequest) {
 		return "", nil
 	}
 	if err != nil {
 		return "", err
 	}
-	return displayDiff(string(out)), nil
+	return displayDiff(diff), nil
+}
+
+func (g githubForge) pullRequestDiff(path string, number int) (string, error) {
+	out, err := g.s.gh(prReadTimeout, path, prArgs("diff", number, "--color", "never")...)
+	return string(out), err
 }
 
 // prListFields is the gh `pr list --json` selection backing the Pulls list
@@ -368,11 +394,15 @@ func (s *Service) ListPullRequests(_ context.Context, opts api.ListPullRequestsO
 	if !prListStates[opts.State] {
 		return nil, fmt.Errorf("unknown pull request state %q", opts.State)
 	}
+	return s.forgeOf(opts.Path).listPullRequests(opts.Path, opts.State)
+}
+
+func (g githubForge) listPullRequests(path, state string) ([]PRSummary, error) {
 	// No errNoPullRequest branch here: asked for --json, gh answers a repository
 	// with no matching pull request as an empty array and exits 0. Its "no pull
 	// requests found" message belongs to view and diff, which address one.
-	out, err := s.gh(prReadTimeout, opts.Path,
-		"pr", "list", "--state", opts.State, "--limit", strconv.Itoa(prListLimit), "--json", prListFields)
+	out, err := g.s.gh(prReadTimeout, path,
+		"pr", "list", "--state", state, "--limit", strconv.Itoa(prListLimit), "--json", prListFields)
 	if err != nil {
 		return nil, err
 	}
@@ -380,7 +410,7 @@ func (s *Service) ListPullRequests(_ context.Context, opts api.ListPullRequestsO
 	if err != nil {
 		return nil, err
 	}
-	if err := s.tallyRequestedThreads(opts.Path, list); err != nil {
+	if err := g.s.tallyRequestedThreads(path, list); err != nil {
 		return nil, err
 	}
 	return list, nil

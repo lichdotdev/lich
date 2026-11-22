@@ -36,6 +36,11 @@ type Service struct {
 	// they are testable without a GitHub remote. Call it through s.gh, which
 	// resolves the account the checkout runs as.
 	runner ghRunner
+	// glab runs the GitLab CLI for a checkout whose remote is a GitLab
+	// (forge.go, gitlab.go); nil, as in a test that does not wire it, treats
+	// every host but gitlab.com as GitHub. glabProbes caches its host probe.
+	glab       glabRunner
+	glabProbes glabHosts
 	// accounts resolves the gh account a checkout's calls run as; nil (the
 	// default, and every test that does not wire it) means gh's own active
 	// account. Wired to the store in main (ghaccount.go).
@@ -73,7 +78,7 @@ type Service struct {
 
 // New returns a project service using the given picker.
 func New(picker Picker) *Service {
-	return &Service{picker: picker, runner: runGH}
+	return &Service{picker: picker, runner: runGH, glab: runGLab}
 }
 
 // Open shows the native directory picker and returns the chosen project, or nil

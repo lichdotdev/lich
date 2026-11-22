@@ -43,7 +43,8 @@ var (
 )
 
 // CheckLog reads the failed checks of the pull request of opts.ID's checkout,
-// with the tail of each failing step of every failed Actions job.
+// with the tail of each failing step of every failed Actions job, or of the
+// script of every failed GitLab job.
 func (s *Service) CheckLog(_ context.Context, opts api.CheckLogOptions) (api.CheckLog, error) {
 	dir := ""
 	if s.sessionCheckout != nil {
@@ -52,10 +53,19 @@ func (s *Service) CheckLog(_ context.Context, opts api.CheckLogOptions) (api.Che
 	if dir == "" {
 		return api.CheckLog{}, fmt.Errorf("session %q is not running", opts.ID)
 	}
-	out, err := s.gh(prLookupTimeout, dir, "pr", "view", "--json", checkLogFields)
+	lines := opts.Lines
+	if lines <= 0 {
+		lines = api.CheckLogLines
+	}
+	log, err := s.forgeOf(dir).checkLog(dir, lines)
 	if errors.Is(err, errNoPullRequest) {
 		return api.CheckLog{}, nil
 	}
+	return log, err
+}
+
+func (g githubForge) checkLog(dir string, lines int) (api.CheckLog, error) {
+	out, err := g.s.gh(prLookupTimeout, dir, "pr", "view", "--json", checkLogFields)
 	if err != nil {
 		return api.CheckLog{}, err
 	}
@@ -63,16 +73,12 @@ func (s *Service) CheckLog(_ context.Context, opts api.CheckLogOptions) (api.Che
 	if err != nil || log.Pending > 0 {
 		return log, err
 	}
-	lines := opts.Lines
-	if lines <= 0 {
-		lines = api.CheckLogLines
-	}
 	for i, check := range log.Failed {
 		job := actionsJobID(check.URL)
 		if job == "" {
 			continue
 		}
-		raw, err := s.gh(checkLogTimeout, dir, "run", "view", "--job", job, "--log-failed")
+		raw, err := g.s.gh(checkLogTimeout, dir, "run", "view", "--job", job, "--log-failed")
 		if err != nil {
 			return api.CheckLog{}, fmt.Errorf("read the log of %s: %w", check.Name, err)
 		}

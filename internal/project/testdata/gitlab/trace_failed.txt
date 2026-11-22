@@ -1,0 +1,94 @@
+2026-11-20T08:37:09.301771Z 00O [0KRunning with gitlab-runner 19.6.0~pre.2678.gd22d8753 (d22d8753)[0;m
+2026-11-20T08:37:09.301799Z 00O [0K  on k8s.saas-linux-medium-amd64.runners-manager.gitlab.com/default j8vTLRhES, system ID: r_7bRnwu0S1qPN[0;m
+2026-11-20T08:37:09.301803Z 00O [0K  UUID: 01a01aa6-2f91-7d2c-b24d-7e2d2752ac58[0;m
+2026-11-20T08:37:09.301818Z 00O [0K  feature flags: FF_USE_GIT_PROACTIVE_AUTH:true, FF_HASH_CACHE_KEYS:true, FF_USE_JOB_ROUTER:true, FF_MACHINE_OPTIONS_EXPAND_ENV:true, FF_DOCKER_MACHINE_JSON_OUTPUT:true[0;m
+2026-11-20T08:37:09.301888Z 00O [0K[36;1mResolving secrets[0;m[0;m
+2026-11-20T08:37:09.302138Z 00O section_start:1795163829:prepare_executor[0K
+2026-11-20T08:37:09.302143Z 00O+[0K[36;1mPreparing the "docker+machine" executor[0;m[0;m
+2026-11-20T08:37:09.398310Z 00O [0KUsing Docker executor with image gitlab.com:443/gitlab-org/dependency_proxy/containers/golang:1.27.4 ...[0;m
+2026-11-20T08:37:09.398385Z 00O [0KUsing helper image:  us-east1-docker.pkg.dev/gitlab-com-artifact-registry/containers-public/gitlab-runner-helper:d22d8753  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v19.6.0 )[0;m
+2026-11-20T08:37:09.398398Z 00O [0KUsing effective pull policy of [always] for container us-east1-docker.pkg.dev/gitlab-com-artifact-registry/containers-public/gitlab-runner-helper:d22d8753[0;m
+2026-11-20T08:37:09.398981Z 00O [0KPulling docker image us-east1-docker.pkg.dev/gitlab-com-artifact-registry/containers-public/gitlab-runner-helper:d22d8753 ...[0;m
+2026-11-20T08:37:10.450470Z 00O [0KUsing docker image sha256:ea7a461bccb1b352892e9fbbf7430a63c0b9ffacd7b28ae6ca2e786ba4d34de2 for us-east1-docker.pkg.dev/gitlab-com-artifact-registry/containers-public/gitlab-runner-helper:d22d8753 with digest us-east1-docker.pkg.dev/gitlab-com-artifact-registry/containers-public/gitlab-runner-helper@sha256:6fa6131930f0200667b536f3269fa038c09338763e864b80153b7bf0591d5bc8 ...[0;m
+2026-11-20T08:37:11.768050Z 00O [0KUsing helper image:  us-east1-docker.pkg.dev/gitlab-com-artifact-registry/containers-public/gitlab-runner-helper:d22d8753  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v19.6.0 )[0;m
+2026-11-20T08:37:11.768068Z 00O [0KUsing effective pull policy of [always] for container us-east1-docker.pkg.dev/gitlab-com-artifact-registry/containers-public/gitlab-runner-helper:d22d8753[0;m
+2026-11-20T08:37:11.769013Z 00O [0KUsing docker image sha256:ea7a461bccb1b352892e9fbbf7430a63c0b9ffacd7b28ae6ca2e786ba4d34de2 for us-east1-docker.pkg.dev/gitlab-com-artifact-registry/containers-public/gitlab-runner-helper:d22d8753 with digest us-east1-docker.pkg.dev/gitlab-com-artifact-registry/containers-public/gitlab-runner-helper@sha256:6fa6131930f0200667b536f3269fa038c09338763e864b80153b7bf0591d5bc8 ...[0;m
+2026-11-20T08:37:11.769034Z 00O [0KUsing effective pull policy of [always] for container gitlab.com:443/gitlab-org/dependency_proxy/containers/golang:1.27.4[0;m
+2026-11-20T08:37:11.769673Z 00O [0KAuthenticating with credentials from job payload (GitLab Registry)[0;m
+2026-11-20T08:37:11.769682Z 00O [0KPulling docker image gitlab.com:443/gitlab-org/dependency_proxy/containers/golang:1.27.4 ...[0;m
+2026-11-20T08:37:23.192088Z 00O [0KUsing docker image sha256:35d05408c49f8e41e965288fb845b7e17f2e7a5d02338c90bbba22757e6470e5 for gitlab.com:443/gitlab-org/dependency_proxy/containers/golang:1.27.4 with digest gitlab.com:443/gitlab-org/dependency_proxy/containers/golang@sha256:205c7636d74e0ffbe3d007162df7d74f859f5a8c8322dfb9f907977686c126cf ...[0;m
+2026-11-20T08:37:23.192204Z 00O section_end:1795163843:prepare_executor[0K
+2026-11-20T08:37:23.192358Z 00O+section_start:1795163843:prepare_script[0K
+2026-11-20T08:37:23.192363Z 00O+[0K[36;1mPreparing environment[0;m[0;m
+2026-11-20T08:37:23.192398Z 00O [0KUsing helper image:  us-east1-docker.pkg.dev/gitlab-com-artifact-registry/containers-public/gitlab-runner-helper:d22d8753  (overridden, default would be  registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-v19.6.0 )[0;m
+2026-11-20T08:37:23.192408Z 00O [0KUsing effective pull policy of [always] for container us-east1-docker.pkg.dev/gitlab-com-artifact-registry/containers-public/gitlab-runner-helper:d22d8753[0;m
+2026-11-20T08:37:23.193473Z 00O [0KUsing docker image sha256:ea7a461bccb1b352892e9fbbf7430a63c0b9ffacd7b28ae6ca2e786ba4d34de2 for us-east1-docker.pkg.dev/gitlab-com-artifact-registry/containers-public/gitlab-runner-helper:d22d8753 with digest us-east1-docker.pkg.dev/gitlab-com-artifact-registry/containers-public/gitlab-runner-helper@sha256:6fa6131930f0200667b536f3269fa038c09338763e864b80153b7bf0591d5bc8 ...[0;m
+2026-11-20T08:37:23.193498Z 00O [0KUsing effective pull policy of [always] for container sha256:ea7a461bccb1b352892e9fbbf7430a63c0b9ffacd7b28ae6ca2e786ba4d34de2[0;m
+2026-11-20T08:37:30.166909Z 01O Running on runner-j8vtlrhes-project-34675721-concurrent-0 via runner-j8vtlrhes-s-l-m-amd64-1795163794-8c8dad22...
+2026-11-20T08:37:30.169931Z 01O Running on CPU: INTEL(R) XEON(R) PLATINUM 8581C CPU @ 2.10GHz (avx, avx2, avx512f)
+2026-11-20T08:37:30.278363Z 00O section_end:1795163850:prepare_script[0K
+2026-11-20T08:37:30.278893Z 00O+section_start:1795163850:get_sources[0K
+2026-11-20T08:37:30.278899Z 00O+[0K[36;1mGetting source from Git repository[0;m[0;m
+2026-11-20T08:37:30.498877Z 01O [32;1mGitaly correlation ID: af7f64837a314422bf524a47eddc7051[0;m
+2026-11-20T08:37:30.504259Z 01O [32;1mFetching changes with git depth set to 20...[0;m
+2026-11-20T08:37:30.507298Z 01O Initialized empty Git repository in /builds/gitlab-org/cli/.git/
+2026-11-20T08:37:30.509547Z 01O [32;1mCreated fresh repository.[0;m
+2026-11-20T08:37:32.763448Z 01O [32;1mChecking out 025611e6 as detached HEAD (ref is refs/merge-requests/4355/train)...[0;m
+2026-11-20T08:37:32.973495Z 01O 
+2026-11-20T08:37:32.973500Z 01O [32;1mSkipping Git submodules setup[0;m
+2026-11-20T08:37:32.973501Z 01O [32;1m$ git remote set-url origin "${CI_REPOSITORY_URL}" || echo 'Not a git repository; skipping'[0;m
+2026-11-20T08:37:33.191811Z 00O section_end:1795163853:get_sources[0K
+2026-11-20T08:37:33.313168Z 00O+section_start:1795163853:restore_cache[0K
+2026-11-20T08:37:33.313181Z 00O+[0K[36;1mRestoring cache[0;m[0;m
+2026-11-20T08:37:33.553167Z 01O [32;1mChecking cache for go-tests-integration-246d97d7f5c9bd87939a9d78fee72aac77b88742-3-protected...[0;m
+2026-11-20T08:37:33.600315Z 01E Using presigned URL for cache download            [0;m 
+2026-11-20T08:37:33.658980Z 01E Selecting primary cache URL                       [0;m  alternate_modified[0;m=0001-01-01 00:00:00 +0000 UTC alternate_url[0;m=https://storage.googleapis.com/gitlab-com-runners-cache/project/34675721/go-tests-integration-246d97d7f5c9bd87939a9d78fee72aac77b88742-3-protected primary_modified[0;m=2026-11-20 06:01:30 +0000 UTC primary_url[0;m=https://storage.googleapis.com/gitlab-com-runners-cache/project/34675721/ae/ae5c3b4759c60dc07877827a446606fed51cfc6813b06d1e0a08e6921f646dd4
+2026-11-20T08:37:33.769256Z 01E Downloading cache from https://storage.googleapis.com/gitlab-com-runners-cache/project/34675721/ae/ae5c3b4759c60dc07877827a446606fed51cfc6813b06d1e0a08e6921f646dd4[0;m  etag[0;m="b2806f559630a6b71fb7543ca49d675a"
+2026-11-20T08:38:08.854886Z 01O [32;1mSuccessfully extracted cache[0;m
+2026-11-20T08:38:28.441856Z 00O section_end:1795163908:restore_cache[0K
+2026-11-20T08:38:28.442730Z 00O+section_start:1795163908:step_script[0K
+2026-11-20T08:38:28.442740Z 00O+[0K[36;1mExecuting "step_script" stage of the job script[0;m[0;m
+2026-11-20T08:38:28.442753Z 00O [0KUsing effective pull policy of [always] for container gitlab.com:443/gitlab-org/dependency_proxy/containers/golang:1.27.4[0;m
+2026-11-20T08:38:28.446766Z 00O [0KUsing docker image sha256:35d05408c49f8e41e965288fb845b7e17f2e7a5d02338c90bbba22757e6470e5 for gitlab.com:443/gitlab-org/dependency_proxy/containers/golang:1.27.4 with digest gitlab.com:443/gitlab-org/dependency_proxy/containers/golang@sha256:205c7636d74e0ffbe3d007162df7d74f859f5a8c8322dfb9f907977686c126cf ...[0;m
+2026-11-20T08:38:28.664138Z 01O [32;1m$ GITLAB_TOKEN_TEST=$GITLAB_TOKEN_TEST GITLAB_TEST_HOST=$GITLAB_TEST_HOST make integration-test-race[0;m
+2026-11-20T08:38:28.687825Z 01O curl -L https://github.com/gotestyourself/gotestsum/releases/download/v1.13.0/gotestsum_1.13.0_linux_amd64.tar.gz | tar -zOxf - gotestsum > ./bin/gotestsum-1.13.0 && chmod +x ./bin/gotestsum-1.13.0
+2026-11-20T08:38:28.695059Z 01E   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+2026-11-20T08:38:28.695065Z 01E                                  Dload  Upload   Total   Spent    Left  Speed
+2026-11-20T08:38:28.695066Z 01E   0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+2026-11-20T08:38:28.739689Z 01E+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+2026-11-20T08:38:28.869543Z 01E 100 2561k  100 2561k    0     0  14.3M      0 --:--:-- --:--:-- --:--:-- 14.3M
+2026-11-20T08:38:28.911257Z 01O bin/gotestsum --no-summary=skipped --format-hide-empty-pkg --junitfile ./coverage-integration.xml --format short -- -coverprofile=./coverage-integration.txt -covermode=atomic -race -tags=integration  ./internal/binarymgr ./internal/commands/ci/lint ./internal/commands/duo/ask ./internal/commands/issue/create ./internal/commands/issue/update ./internal/commands/mr/checkout ./internal/commands/mr/note/draft/publish ./internal/commands/project/archive ./internal/commands/project/clone -count=1
+2026-11-20T08:38:31.416115Z 01O [32m✓[0m  internal/binarymgr (1.383s) (coverage: 1.1% of statements)
+2026-11-20T08:38:32.777430Z 01O [32m✓[0m  internal/commands/issue/create (2.485s) (coverage: 38.9% of statements)
+2026-11-20T08:38:34.111378Z 01O [32m✓[0m  internal/commands/ci/lint (4.011s) (coverage: 0.0% of statements)
+2026-11-20T08:38:34.249758Z 01O [32m✓[0m  internal/commands/issue/update (2.016s) (coverage: 50.0% of statements)
+2026-11-20T08:38:34.798079Z 01O [32m✓[0m  internal/commands/duo/ask (4.599s) (coverage: 56.1% of statements)
+2026-11-20T08:38:35.649222Z 01O [32m✓[0m  internal/commands/mr/checkout (1.874s) (coverage: 53.1% of statements)
+2026-11-20T08:38:36.742759Z 01O [32m✓[0m  internal/commands/project/archive (1.624s) (coverage: 80.0% of statements)
+2026-11-20T08:38:40.869633Z 01O [32m✓[0m  internal/commands/project/clone (5.229s) (coverage: 56.2% of statements)
+2026-11-20T08:39:31.596884Z 01O [31m✖[0m  internal/commands/mr/note/draft/publish (56.571s) (coverage: 0.0% of statements)
+2026-11-20T08:39:31.612279Z 01O 
+2026-11-20T08:39:31.612282Z 01O === [31mFailed[0m
+2026-11-20T08:39:31.612282Z 01O === [31mFAIL[0m: internal/commands/mr/note/draft/publish TestDraftPublish_Integration (56.36s)
+2026-11-20T08:39:31.612283Z 01O     publish_integration_test.go:61: 
+2026-11-20T08:39:31.612284Z 01O         	Error Trace:	/builds/gitlab-org/cli/internal/commands/mr/note/draft/publish/publish_integration_test.go:61
+2026-11-20T08:39:31.612285Z 01O         	Error:      	Received unexpected error:
+2026-11-20T08:39:31.612286Z 01O         	            	POST https://gitlab.com/api/v4/projects/cli-automated-testing%2Ftest/repository/commits: 400 {message: 4:Deadline Exceeded.}
+2026-11-20T08:39:31.612287Z 01O         	Test:       	TestDraftPublish_Integration
+2026-11-20T08:39:31.612288Z 01O 
+2026-11-20T08:39:31.612288Z 01O DONE 33 tests, 1 failure in 61.564s
+2026-11-20T08:39:31.616305Z 01E make: *** [Makefile:192: integration-test-race] Error 1
+2026-11-20T08:39:31.742571Z 00O section_end:1795163971:step_script[0K
+2026-11-20T08:39:31.743524Z 00O+section_start:1795163971:upload_artifacts_on_failure[0K
+2026-11-20T08:39:31.743530Z 00O+[0K[36;1mUploading artifacts for failed job[0;m[0;m
+2026-11-20T08:39:31.977226Z 01O [32;1mUploading artifacts...[0;m
+2026-11-20T08:39:32.024902Z 01E coverage-integration.txt: found 1 matching artifact files and directories[0;m 
+2026-11-20T08:39:32.761594Z 01E Uploading artifacts as "archive" to coordinator... 201 Created[0;m  correlation_id[0;m=4d7f66f6634340968378e0a23277d15e id[0;m=18213579002 status[0;m=201 token[0;m=75_c4H1mr
+2026-11-20T08:39:32.812722Z 01O [32;1mUploading artifacts...[0;m
+2026-11-20T08:39:32.861906Z 01E coverage-integration.xml: found 1 matching artifact files and directories[0;m 
+2026-11-20T08:39:33.295843Z 01E Uploading artifacts as "junit" to coordinator... 201 Created[0;m  correlation_id[0;m=d4afbe649419447a9ac3c67aa852001e id[0;m=18213579002 status[0;m=201 token[0;m=75_c4H1mr
+2026-11-20T08:39:33.404683Z 00O section_end:1795163973:upload_artifacts_on_failure[0K
+2026-11-20T08:39:33.405185Z 00O+section_start:1795163973:cleanup_file_variables[0K
+2026-11-20T08:39:33.405191Z 00O+[0K[36;1mCleaning up project directory and file based variables[0;m[0;m
+2026-11-20T08:39:33.714419Z 00O section_end:1795163973:cleanup_file_variables[0K
+2026-11-20T08:39:33.898944Z 00O [31;1mERROR: Job failed: exit code 2[0;m

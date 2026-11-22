@@ -1,0 +1,132 @@
+[
+ {
+  "id": 18258408892,
+  "name": "tests:coverage",
+  "stage": "test",
+  "status": "success",
+  "allow_failure": false,
+  "web_url": "https://gitlab.com/gitlab-community/gitlab-org/cli/-/jobs/18258408892",
+  "started_at": "2026-11-22T13:52:43.033Z",
+  "finished_at": "2026-11-22T13:53:26.299Z"
+ },
+ {
+  "id": 18258408891,
+  "name": "tests:integration",
+  "stage": "test",
+  "status": "success",
+  "allow_failure": false,
+  "web_url": "https://gitlab.com/gitlab-community/gitlab-org/cli/-/jobs/18258408891",
+  "started_at": "2026-11-22T13:47:59.704Z",
+  "finished_at": "2026-11-22T13:49:33.188Z"
+ },
+ {
+  "id": 18258408890,
+  "name": "tests:unit",
+  "stage": "test",
+  "status": "success",
+  "allow_failure": false,
+  "web_url": "https://gitlab.com/gitlab-community/gitlab-org/cli/-/jobs/18258408890",
+  "started_at": "2026-11-22T13:47:59.617Z",
+  "finished_at": "2026-11-22T13:52:41.531Z"
+ },
+ {
+  "id": 18258408889,
+  "name": "lint",
+  "stage": "test",
+  "status": "success",
+  "allow_failure": false,
+  "web_url": "https://gitlab.com/gitlab-community/gitlab-org/cli/-/jobs/18258408889",
+  "started_at": "2026-11-22T13:47:59.573Z",
+  "finished_at": "2026-11-22T13:49:55.006Z"
+ },
+ {
+  "id": 18258408888,
+  "name": "lint:comments",
+  "stage": "test",
+  "status": "success",
+  "allow_failure": false,
+  "web_url": "https://gitlab.com/gitlab-community/gitlab-org/cli/-/jobs/18258408888",
+  "started_at": "2026-11-22T13:47:59.572Z",
+  "finished_at": "2026-11-22T13:48:27.948Z"
+ },
+ {
+  "id": 18258408887,
+  "name": "docs hugo_build",
+  "stage": "documentation",
+  "status": "success",
+  "allow_failure": false,
+  "web_url": "https://gitlab.com/gitlab-community/gitlab-org/cli/-/jobs/18258408887",
+  "started_at": "2026-11-22T13:47:59.500Z",
+  "finished_at": "2026-11-22T13:48:23.611Z"
+ },
+ {
+  "id": 18258408886,
+  "name": "check_docs_markdown",
+  "stage": "documentation",
+  "status": "success",
+  "allow_failure": false,
+  "web_url": "https://gitlab.com/gitlab-community/gitlab-org/cli/-/jobs/18258408886",
+  "started_at": "2026-11-22T13:47:59.447Z",
+  "finished_at": "2026-11-22T13:48:17.269Z"
+ },
+ {
+  "id": 18258408885,
+  "name": "check_docs_update",
+  "stage": "documentation",
+  "status": "success",
+  "allow_failure": false,
+  "web_url": "https://gitlab.com/gitlab-community/gitlab-org/cli/-/jobs/18258408885",
+  "started_at": "2026-11-22T13:47:59.430Z",
+  "finished_at": "2026-11-22T13:49:34.791Z"
+ },
+ {
+  "id": 18258408884,
+  "name": "check_args",
+  "stage": "checks",
+  "status": "success",
+  "allow_failure": false,
+  "web_url": "https://gitlab.com/gitlab-community/gitlab-org/cli/-/jobs/18258408884",
+  "started_at": "2026-11-22T13:47:59.445Z",
+  "finished_at": "2026-11-22T13:48:09.039Z"
+ },
+ {
+  "id": 18258408883,
+  "name": "check_embed",
+  "stage": "checks",
+  "status": "success",
+  "allow_failure": false,
+  "web_url": "https://gitlab.com/gitlab-community/gitlab-org/cli/-/jobs/18258408883",
+  "started_at": "2026-11-22T13:47:59.191Z",
+  "finished_at": "2026-11-22T13:48:08.542Z"
+ },
+ {
+  "id": 18258408882,
+  "name": "lint_commit",
+  "stage": "checks",
+  "status": "success",
+  "allow_failure": false,
+  "web_url": "https://gitlab.com/gitlab-community/gitlab-org/cli/-/jobs/18258408882",
+  "started_at": "2026-11-22T13:47:59.166Z",
+  "finished_at": "2026-11-22T13:48:23.151Z"
+ },
+ {
+  "id": 18258408881,
+  "name": "check_go_generated_code",
+  "stage": "checks",
+  "status": "success",
+  "allow_failure": false,
+  "web_url": "https://gitlab.com/gitlab-community/gitlab-org/cli/-/jobs/18258408881",
+  "started_at": "2026-11-22T13:47:59.066Z",
+  "finished_at": "2026-11-22T13:48:55.069Z"
+ },
+ {
+  "id": 18258408880,
+  "name": "govulncheck",
+  "stage": "application-security-testing",
+  "status": "manual",
+  "allow_failure": true,
+  "web_url": "https://gitlab.com/gitlab-community/gitlab-org/cli/-/jobs/18258408880",
+  "started_at": null,
+  "finished_at": null
+ }
+]

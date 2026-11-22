@@ -17,8 +17,13 @@ func (s *Service) writePR(timeout time.Duration, path string, number int, args .
 	if _, err := s.gh(timeout, path, args...); err != nil {
 		return err
 	}
+	s.reportPRWrite(path, number)
+	return nil
+}
+
+// reportPRWrite reports a pull request write that landed.
+func (s *Service) reportPRWrite(path string, number int) {
 	if s.emit != nil {
 		events.Send(s.emit, api.PullRequestChangedEvent, PRChanged{Path: path, Number: number})
 	}
-	return nil
 }

@@ -406,8 +406,8 @@ type prHead struct {
 }
 
 // pullRequestHead resolves a pull request's head branch through gh.
-func (s *Service) pullRequestHead(path string, number int) (prHead, error) {
-	out, err := s.gh(prReadTimeout, path, prArgs("view", number, "--json", "headRefName,isCrossRepository,maintainerCanModify")...)
+func (g githubForge) pullRequestHead(path string, number int) (prHead, error) {
+	out, err := g.s.gh(prReadTimeout, path, prArgs("view", number, "--json", "headRefName,isCrossRepository,maintainerCanModify")...)
 	if err != nil {
 		return prHead{}, err
 	}
@@ -437,12 +437,13 @@ func (s *Service) CreateWorktreeFromPR(_ context.Context, opts api.CreateWorktre
 	if opts.Number <= 0 {
 		return nil, fmt.Errorf("%d is not a pull request number.", opts.Number)
 	}
-	head, err := s.pullRequestHead(opts.ProjectPath, opts.Number)
+	forge := s.forgeOf(opts.ProjectPath)
+	head, err := forge.pullRequestHead(opts.ProjectPath, opts.Number)
 	if err != nil {
 		return nil, err
 	}
 	if head.CrossRepo && !head.CanModify {
-		return nil, fmt.Errorf("Pull request #%d comes from a fork that does not allow edits by maintainers: its branch could not be pushed back.", opts.Number)
+		return nil, fmt.Errorf(forkRefusals[forge.kind()], opts.Number)
 	}
 	wtPath, err := reserveWorktreePath(opts.ProjectPath, opts.ProjectID, head.RefName)
 	if err != nil {
@@ -451,10 +452,7 @@ func (s *Service) CreateWorktreeFromPR(_ context.Context, opts api.CreateWorktre
 	if _, err := runGit(opts.ProjectPath, "worktree", "add", "--detach", wtPath); err != nil {
 		return nil, err
 	}
-	// The checkout runs inside the new worktree but answers to the project's
-	// account: the worktree has no session row yet, so it can name no account
-	// of its own.
-	if _, err := s.ghFor(opts.ProjectPath, prCheckoutTimeout, wtPath, "pr", "checkout", strconv.Itoa(opts.Number)); err != nil {
+	if err := forge.checkoutPullRequest(opts.ProjectPath, wtPath, opts.Number); err != nil {
 		if _, rmErr := runGit(opts.ProjectPath, "worktree", "remove", "--force", wtPath); rmErr != nil {
 			slog.Warn("worktree left behind by a failed PR checkout", "path", wtPath, "err", rmErr)
 			return nil, fmt.Errorf("%w Its half-made worktree could not be removed either.", err)
@@ -463,6 +461,21 @@ func (s *Service) CreateWorktreeFromPR(_ context.Context, opts api.CreateWorktre
 	}
 	seedWorktree(opts.ProjectPath, opts.ProjectPath, wtPath)
 	return &Worktree{Name: head.RefName, Path: canonicalPath(wtPath)}, nil
+}
+
+// forkRefusals is CreateWorktreeFromPR's refusal of a fork whose branch takes no
+// push from this side, in each forge's own words.
+var forkRefusals = map[string]string{
+	api.ForgeGitHub: "Pull request #%d comes from a fork that does not allow edits by maintainers: its branch could not be pushed back.",
+	api.ForgeGitLab: "Merge request !%d comes from a fork that does not allow commits from members who can merge: its branch could not be pushed back.",
+}
+
+func (g githubForge) checkoutPullRequest(accountDir, wtPath string, number int) error {
+	// The checkout runs inside the new worktree but answers to the project's
+	// account: the worktree has no session row yet, so it can name no account
+	// of its own.
+	_, err := g.s.ghFor(accountDir, prCheckoutTimeout, wtPath, "pr", "checkout", strconv.Itoa(number))
+	return err
 }
 
 // WorktreeAdopted answers worktreeAdopted over RPC.

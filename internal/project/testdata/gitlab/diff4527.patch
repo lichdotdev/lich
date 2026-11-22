@@ -1,0 +1,342 @@
+diff --git a/docs/source/ci/config/compile.md b/docs/source/ci/config/compile.md
+index 33e0e5d3515245c18302e6d6ff9e6aa801845488..2cd873d467608952899164a766a09b6d171c9394 100644
+--- a/docs/source/ci/config/compile.md
++++ b/docs/source/ci/config/compile.md
+@@ -20,6 +20,8 @@ to standard output.
+ All `include` directives are resolved,
+ and any extended jobs are flattened into their final form.
+ 
++When `--job` is specified, glab prints the resolved shell script for that job.
++
+ By default, glab compiles the `.gitlab-ci.yml` file in the
+ current directory. To compile a different file, pass its path as an
+ argument.
+@@ -42,6 +44,15 @@ glab ci config compile .gitlab-ci.yml
+ # Compile a file at a relative path
+ glab ci config compile path/to/.gitlab-ci.yml
+ 
++# Extract script for a specific job
++glab ci config compile --job test-job
++
++```
++
++## Options
++
++```plaintext
++      --job string   Job name to extract script for.
+ ```
+ 
+ ## Options inherited from parent commands
+diff --git a/internal/commands/ci/config/compile/compile.go b/internal/commands/ci/config/compile/compile.go
+index 8f8ba0902959eab9fc0a87434c024d9dac13627c..d4b7fe7d7ef367356ecb6889238e3e61672dda7f 100644
+--- a/internal/commands/ci/config/compile/compile.go
++++ b/internal/commands/ci/config/compile/compile.go
+@@ -1,7 +1,9 @@
+ package compile
+ 
+ import (
++	"context"
+ 	"fmt"
++	"net/http"
+ 	"os"
+ 	"strings"
+ 
+@@ -12,9 +14,22 @@ import (
+ 
+ 	"gitlab.com/gitlab-org/cli/internal/api"
+ 	"gitlab.com/gitlab-org/cli/internal/cmdutils"
++	"gitlab.com/gitlab-org/cli/internal/iostreams"
+ 	"gitlab.com/gitlab-org/cli/internal/mcpannotations"
+ )
+ 
++type lintJob struct {
++	Name         string   `json:"name"`
++	BeforeScript []string `json:"before_script"`
++	Script       []string `json:"script"`
++	AfterScript  []string `json:"after_script"`
++}
++
++type projectLintResultWithJobs struct {
++	gitlab.ProjectLintResult
++	Jobs []lintJob `json:"jobs"`
++}
++
+ func NewCmdConfigCompile(f cmdutils.Factory) *cobra.Command {
+ 	configCompileCmd := &cobra.Command{
+ 		Use:   "compile [<path>]",
+@@ -26,6 +41,8 @@ func NewCmdConfigCompile(f cmdutils.Factory) *cobra.Command {
+ 		All %[1]sinclude%[1]s directives are resolved,
+ 		and any extended jobs are flattened into their final form.
+ 
++		When %[1]s--job%[1]s is specified, glab prints the resolved shell script for that job.
++
+ 		By default, glab compiles the %[1]s.gitlab-ci.yml%[1]s file in the
+ 		current directory. To compile a different file, pass its path as an
+ 		argument.
+@@ -42,6 +59,9 @@ func NewCmdConfigCompile(f cmdutils.Factory) *cobra.Command {
+ 
+ 			# Compile a file at a relative path
+ 			glab ci config compile path/to/.gitlab-ci.yml
++
++			# Extract script for a specific job
++			glab ci config compile --job test-job
+ 		`),
+ 		Annotations: map[string]string{
+ 			mcpannotations.Safe: "true",
+@@ -51,10 +71,13 @@ func NewCmdConfigCompile(f cmdutils.Factory) *cobra.Command {
+ 			if len(args) == 1 {
+ 				path = args[0]
+ 			}
+-			return compileRun(f, path)
++			jobName, _ := cmd.Flags().GetString("job")
++			return compileRun(cmd.Context(), f, path, jobName)
+ 		},
+ 	}
+ 
++	configCompileCmd.Flags().String("job", "", "Job name to extract script for.")
++
+ 	configCompileCmd.SetHelpFunc(func(command *cobra.Command, strings []string) {
+ 		// Hide "repo"-flag for this command, because it cannot be used on repositories but only on gitlab-ci files
+ 		_ = configCompileCmd.Flags().MarkHidden("repo")
+@@ -65,9 +88,7 @@ func NewCmdConfigCompile(f cmdutils.Factory) *cobra.Command {
+ 	return configCompileCmd
+ }
+ 
+-func compileRun(f cmdutils.Factory, path string) error {
+-	var err error
+-
++func compileRun(ctx context.Context, f cmdutils.Factory, path, jobName string) error {
+ 	client, err := f.GitLabClient()
+ 	if err != nil {
+ 		return err
+@@ -88,8 +109,16 @@ func compileRun(f cmdutils.Factory, path string) error {
+ 		return fmt.Errorf("reading CI/CD configuration at %s: %w", path, err)
+ 	}
+ 
++	if jobName != "" {
++		return showJobScript(ctx, f.IO(), client, project.ID, content, path, jobName)
++	}
++
++	return showMergedYaml(ctx, f.IO(), client, project.ID, content, path)
++}
++
++func showMergedYaml(ctx context.Context, io *iostreams.IOStreams, client *gitlab.Client, projectID int64, content []byte, path string) error {
+ 	compiledResult, _, err := client.Validate.ProjectNamespaceLint(
+-		project.ID,
++		projectID,
+ 		&gitlab.ProjectNamespaceLintOptions{
+ 			Content:     new(string(content)),
+ 			DryRun:      new(bool),
+@@ -97,6 +126,7 @@ func compileRun(f cmdutils.Factory, path string) error {
+ 			IncludeJobs: new(bool),
+ 		},
+ 		api.WithSafeRetries(),
++		gitlab.WithContext(ctx),
+ 	)
+ 	if err != nil {
+ 		return err
+@@ -107,7 +137,69 @@ func compileRun(f cmdutils.Factory, path string) error {
+ 		return fmt.Errorf("could not compile %s: %s", path, errorsStr)
+ 	}
+ 
+-	fmt.Print(compiledResult.MergedYaml)
++	io.LogInfof("%s", compiledResult.MergedYaml)
+ 
+ 	return nil
+ }
++
++func showJobScript(ctx context.Context, io *iostreams.IOStreams, client *gitlab.Client, projectID int64, content []byte, path, jobName string) error {
++	body := &struct {
++		Content     string `json:"content"`
++		IncludeJobs bool   `json:"include_jobs"`
++	}{
++		Content:     string(content),
++		IncludeJobs: true,
++	}
++
++	opts := []gitlab.RequestOptionFunc{
++		api.WithSafeRetries(),
++		gitlab.WithContext(ctx),
++	}
++
++	req, err := client.NewRequest(http.MethodPost, fmt.Sprintf("projects/%d/ci/lint", projectID), body, opts)
++	if err != nil {
++		return err
++	}
++
++	var result projectLintResultWithJobs
++	if _, err := client.Do(req, &result); err != nil {
++		return err
++	}
++
++	if !result.Valid {
++		errorsStr := strings.Join(result.Errors, ", ")
++		return fmt.Errorf("could not compile %s: %s", path, errorsStr)
++	}
++
++	available := make([]string, 0, len(result.Jobs))
++	for _, job := range result.Jobs {
++		if job.Name == jobName {
++			printJob(io, job)
++			return nil
++		}
++		available = append(available, job.Name)
++	}
++
++	return fmt.Errorf("job %q not found in CI/CD configuration. Available jobs: %s", jobName, strings.Join(available, ", "))
++}
++
++func printJob(io *iostreams.IOStreams, job lintJob) {
++	hasMainScript := len(job.BeforeScript) > 0 || len(job.Script) > 0
++
++	for _, line := range job.BeforeScript {
++		io.LogInfo(line)
++	}
++	for _, line := range job.Script {
++		io.LogInfo(line)
++	}
++
++	if len(job.AfterScript) > 0 {
++		if hasMainScript {
++			io.LogInfo()
++		}
++		io.LogInfo("# after_script")
++		for _, line := range job.AfterScript {
++			io.LogInfo(line)
++		}
++	}
++}
+diff --git a/internal/commands/ci/config/compile/compile_test.go b/internal/commands/ci/config/compile/compile_test.go
+index c0008d6bb4a8f218bd552bcb9856137ef9d9a8ac..bb59d295a02cff72ec3edaec6b106160db79ff3e 100644
+--- a/internal/commands/ci/config/compile/compile_test.go
++++ b/internal/commands/ci/config/compile/compile_test.go
+@@ -3,7 +3,10 @@
+ package compile
+ 
+ import (
++	"encoding/json"
+ 	"errors"
++	"net/http"
++	"net/http/httptest"
+ 	"path"
+ 	"testing"
+ 
+@@ -48,12 +51,13 @@ func Test_compileRun(t *testing.T) {
+ 		{
+ 			name:             "when a valid path is specified and yaml is valid",
+ 			testFile:         ".gitlab-ci.yml",
+-			StdOut:           "",
++			StdOut:           "---\ntest:\n  script: echo hello\n",
+ 			wantErr:          false,
+ 			errMsg:           "",
+ 			showHaveBaseRepo: true,
+ 			expectedLintResponse: &gitlab.ProjectLintResult{
+-				Valid: true,
++				Valid:      true,
++				MergedYaml: "---\ntest:\n  script: echo hello\n",
+ 			},
+ 		},
+ 	}
+@@ -84,3 +88,102 @@ func Test_compileRun(t *testing.T) {
+ 		})
+ 	}
+ }
++
++func Test_compileRun_job(t *testing.T) {
++	// This test uses httptest.NewServer because fetching jobs uses raw HTTP
++	// via client.Do() rather than a GitLab client-go service interface.
++	t.Parallel()
++
++	tests := []struct {
++		name       string
++		args       string
++		wantStdOut string
++		wantErr    string
++		resp       projectLintResultWithJobs
++	}{
++		{
++			name:       "job with before_script, script, and after_script",
++			args:       "--job test-job",
++			wantStdOut: "echo setup\nnpm test\nnpm run lint\n\n# after_script\necho cleanup\n",
++			resp: projectLintResultWithJobs{
++				ProjectLintResult: gitlab.ProjectLintResult{Valid: true},
++				Jobs: []lintJob{
++					{Name: "test-job", BeforeScript: []string{"echo setup"}, Script: []string{"npm test", "npm run lint"}, AfterScript: []string{"echo cleanup"}},
++					{Name: "build-job", Script: []string{"npm run build"}},
++				},
++			},
++		},
++		{
++			name:       "job with only script",
++			args:       "--job build-job",
++			wantStdOut: "npm run build\n",
++			resp: projectLintResultWithJobs{
++				ProjectLintResult: gitlab.ProjectLintResult{Valid: true},
++				Jobs: []lintJob{
++					{Name: "test-job", Script: []string{"npm test"}},
++					{Name: "build-job", Script: []string{"npm run build"}},
++				},
++			},
++		},
++		{
++			name:    "job not found lists available jobs",
++			args:    "--job deploy-job",
++			wantErr: `job "deploy-job" not found in CI/CD configuration. Available jobs: test-job, build-job`,
++			resp: projectLintResultWithJobs{
++				ProjectLintResult: gitlab.ProjectLintResult{Valid: true},
++				Jobs: []lintJob{
++					{Name: "test-job", Script: []string{"npm test"}},
++					{Name: "build-job", Script: []string{"npm run build"}},
++				},
++			},
++		},
++		{
++			name:    "invalid CI configuration returns validation error",
++			args:    "--job test-job",
++			wantErr: "could not compile",
++			resp: projectLintResultWithJobs{
++				ProjectLintResult: gitlab.ProjectLintResult{
++					Valid:  false,
++					Errors: []string{"jobs:test-job config key may not be used with script"},
++				},
++			},
++		},
++	}
++
++	for _, tt := range tests {
++		t.Run(tt.name, func(t *testing.T) {
++			t.Parallel()
++
++			testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
++				switch {
++				case r.Method == http.MethodGet && r.URL.Path == "/api/v4/projects/OWNER/REPO":
++					_, _ = w.Write([]byte(`{"id": 123, "path_with_namespace": "OWNER/REPO"}`))
++				case r.Method == http.MethodPost && r.URL.Path == "/api/v4/projects/123/ci/lint":
++					_ = json.NewEncoder(w).Encode(tt.resp)
++				default:
++					t.Errorf("unexpected request: %s %s", r.Method, r.URL.Path)
++					w.WriteHeader(http.StatusNotFound)
++				}
++			}))
++			defer testServer.Close()
++
++			gitlabClient, err := gitlab.NewClient("test-token", gitlab.WithBaseURL(testServer.URL+"/api/v4"))
++			require.NoError(t, err)
++
++			exec := cmdtest.SetupCmdForTest(t, NewCmdConfigCompile, false,
++				cmdtest.WithGitLabClient(gitlabClient),
++				cmdtest.WithBaseRepo("OWNER", "REPO", ""),
++			)
++
++			cliArgs := path.Join(cmdtest.ProjectPath, "test/testdata/.gitlab-ci.yml") + " " + tt.args
++			out, err := exec(cliArgs)
++			if tt.wantErr != "" {
++				require.Error(t, err)
++				require.Contains(t, err.Error(), tt.wantErr)
++				return
++			}
++			require.NoError(t, err)
++			assert.Equal(t, tt.wantStdOut, out.OutBuf.String())
++		})
++	}
++}
