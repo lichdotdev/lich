@@ -65,6 +65,15 @@ func TestGHMessage(t *testing.T) {
 			errTest, nil,
 			"This checkout's git remotes do not point at GitHub.",
 		},
+		// The whole sentence, as gh 2.x prints it on a GitLab checkout: its tail
+		// names `gh auth login`, which must not read as signed out.
+		{
+			"no GitHub remote, gh's whole sentence",
+			"none of the git remotes configured for this repository point to a known GitHub host. " +
+				"To tell gh about a new GitHub host, please use `gh auth login`",
+			errTest, nil,
+			"This checkout's git remotes do not point at GitHub.",
+		},
 		// gh writes one sentence for both refusals and puts the reason in its
 		// tail, so these two must not collapse into each other: only one of them
 		// is a conflict, and the other is fixed somewhere else entirely.

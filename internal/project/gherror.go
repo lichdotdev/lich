@@ -83,10 +83,12 @@ var ghFailures = []toolFailure{
 		"pull request review thread",
 		"GitHub would not take that reply — the thread it answers is gone or already locked.",
 	},
+	// Ahead of the sign-in entries: gh ends this sentence by naming `gh auth
+	// login`, the way to add a host.
+	{"none of the git remotes", "This checkout's git remotes do not point at GitHub."},
 	{"gh auth login", "gh is not signed in to GitHub. Run `gh auth login` in a terminal."},
 	{"not logged into", "gh is not signed in to GitHub. Run `gh auth login` in a terminal."},
 	{"api rate limit exceeded", "GitHub is rate-limiting this account. Try again in a few minutes."},
-	{"none of the git remotes", "This checkout's git remotes do not point at GitHub."},
 	{"no git remotes found", "This checkout has no git remote to look up on GitHub."},
 	{"not a git repository", "This folder is not a git repository."},
 	// gh refuses a merge before it calls GitHub, and its one sentence carries
