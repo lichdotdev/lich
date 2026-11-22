@@ -191,6 +191,7 @@
     "pluginSkills": "플러그인 스킬은 /plugin에서 관리합니다."
   },
   "shells": {
+    "move": "Ctrl+B로 백그라운드에서 실행",
     "count": {
       "other": "셸 {count}개"
     },

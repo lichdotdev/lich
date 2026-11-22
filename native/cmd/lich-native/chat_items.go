@@ -627,9 +627,10 @@ func chatVerb(session string, turn int) string {
 }
 
 // chatLive is the turn in flight: a flame, then a verb of the turn shimmering
-// with the time it has run.
+// with the time it has run, and Claude Code's Ctrl+B hint while the turn
+// waits on a command it moves.
 func chatLive(gtx C, th *ui.Theme, session string, r chatRow) D {
-	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+	row := []layout.FlexChild{
 		layout.Rigid(func(gtx C) D { return chatFlame(gtx, th) }),
 		ui.Gap(2),
 		layout.Rigid(func(gtx C) D {
@@ -640,7 +641,11 @@ func chatLive(gtx C, th *ui.Theme, session string, r chatRow) D {
 			}
 			return chatLiveLabel(gtx, th, chatVerb(session, r.turn), th.MutedForeground, since)
 		}),
-	)
+	}
+	if r.movable {
+		row = append(row, ui.Gap(1.5), layout.Rigid(th.Text(ui.TextSM, "· "+i18n.T("chat.shells.move")).Muted().Layout))
+	}
+	return layout.Flex{Alignment: layout.Middle}.Layout(gtx, row...)
 }
 
 // chatAgent is an answer's text with its time under it, and over it, for the

@@ -12,6 +12,10 @@ var (
 	ChatShellOutput = define[ChatShellOptions, string]("chat.ShellOutput")
 	// ChatStopShell stops one shell that runs.
 	ChatStopShell = define[ChatShellOptions, None]("chat.StopShell")
+	// ChatBackground moves the commands the turn waits on to the background,
+	// as Ctrl+B does in Claude Code's TUI: each call returns and the turn
+	// carries on, the command a shell from then on.
+	ChatBackground = define[SessionIDOptions, None]("chat.Background")
 
 	// ChatShellsEvent carries a chat session's shells whole, each time one
 	// starts or ends.

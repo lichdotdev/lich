@@ -152,3 +152,33 @@ func TestShellsEventReachesTheStore(t *testing.T) {
 		t.Errorf("the event left %v and the chip:\n%s", u.model.chat.shellsOf("s1"), r.drawn())
 	}
 }
+
+// A turn waiting on a command Claude Code can move shows its Ctrl+B hint in
+// the live line, and Ctrl+B in the box moves it; a call that cannot move
+// shows no hint and leaves the key alone.
+func TestCtrlBMovesTheCommandTheTurnWaitsOn(t *testing.T) {
+	u, r, f := chatFrames(t, api.ViewChat)
+	call := backend.ChatItem{ID: "toolu_1", Kind: api.ItemTool, Turn: 1, At: r.now.Add(-3 * time.Second).UnixMilli(),
+		Tool: &backend.ChatToolCall{Name: "Bash", Title: "npm test", State: api.ToolRunning, Movable: true}}
+	u.model.chat.history("s1", []backend.ChatItem{{ID: "u1", Kind: api.ItemUser, Turn: 1, Text: "go"}, call})
+	u.model.chat.turn(api.ChatTurn{SessionID: "s1", Running: true})
+	r.frames(3)
+	writeShot(t, r, "chat-background-hint.png")
+	if !r.shows("· Ctrl+B to run in background") {
+		t.Fatalf("no hint while the turn waits on a command:\n%s", r.drawn())
+	}
+	r.pressWith("B", key.ModCtrl)
+	f.waitCall(t, api.ChatBackground.Name)
+
+	call.Tool.Movable = false
+	u.model.chat.history("s1", []backend.ChatItem{{ID: "u1", Kind: api.ItemUser, Turn: 1, Text: "go"}, call})
+	r.frames(2)
+	if r.shows("Ctrl+B") {
+		t.Errorf("a hint for a call that cannot move:\n%s", r.drawn())
+	}
+	r.pressWith("B", key.ModCtrl)
+	time.Sleep(20 * time.Millisecond)
+	if n := f.callsOf(api.ChatBackground.Name); n != 1 {
+		t.Errorf("Ctrl+B with nothing to move asked %d times in all", n)
+	}
+}

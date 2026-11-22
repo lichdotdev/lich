@@ -95,6 +95,13 @@ func (c *Client) ChatStopShell(ctx context.Context, id, shell string) error {
 	return err
 }
 
+// ChatBackground moves the commands session id's turn waits on to the
+// background.
+func (c *Client) ChatBackground(ctx context.Context, id string) error {
+	_, err := callMethod(ctx, c, api.ChatBackground, api.SessionIDOptions{ID: id})
+	return err
+}
+
 // ChatNew starts an empty conversation in session id's chat.
 func (c *Client) ChatNew(ctx context.Context, id string) error {
 	_, err := callMethod(ctx, c, api.ChatNew, api.SessionIDOptions{ID: id})

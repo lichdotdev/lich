@@ -44,6 +44,7 @@ browser.Tabs(SessionIDOptions) []BrowserTab
 browser.Text(BrowserTextOptions) None
 browser.Type(BrowserTypeOptions) None
 chat.Answer(ChatAnswerOptions) None
+chat.Background(SessionIDOptions) None
 chat.Cancel(SessionIDOptions) None
 chat.Commands(SessionIDOptions) []ChatCommand
 chat.History(SessionIDOptions) []ChatItem
@@ -2528,6 +2529,7 @@ ChatToolCall {
 	output,omitempty string
 	diff,omitempty string
 	ended,omitempty int64
+	movable,omitempty bool
 }
 
 ChatPermission {

@@ -1,6 +1,7 @@
 package chat
 
 import (
+	"slices"
 	"testing"
 	"time"
 
@@ -22,6 +23,38 @@ func TestClaudeOutputPathReadsEveryBackgroundResult(t *testing.T) {
 	}
 	if got := claudeOutputPath("hello", "b1"); got != "" {
 		t.Errorf("a plain result named %q", got)
+	}
+}
+
+// claudeMovedPath is the file a command moved by Ctrl+B writes to.
+const claudeMovedPath = "/tmp/claude-1000/-proj/s/tasks/bc4ibdw5i.output"
+
+// The result 2.1.330 gives a call Ctrl+B moved (measured).
+func TestClaudeOutputPathReadsAMovedCommand(t *testing.T) {
+	text := "Command was manually backgrounded by user with ID: bc4ibdw5i. Output is being written to: " + claudeMovedPath + ". If it is still running after 30m in the background, it will be stopped and you will be notified."
+	if got := claudeOutputPath(text, "bc4ibdw5i"); got != claudeMovedPath {
+		t.Errorf("claudeOutputPath = %q, want %q", got, claudeMovedPath)
+	}
+}
+
+func TestClaudeShellsWaitingIsTheForegroundCommands(t *testing.T) {
+	var s claudeShells
+	now := time.UnixMilli(1000)
+	cmd := func(string) api.ChatToolCall { return api.ChatToolCall{Name: "Bash"} }
+	s.task("task_started", []byte(`{"task_id":"b1","tool_use_id":"t1","task_type":"local_bash","is_backgrounded":false}`), cmd, now)
+	s.task("task_started", []byte(`{"task_id":"b2","tool_use_id":"t2","task_type":"local_bash","is_backgrounded":true}`), cmd, now)
+	s.task("task_started", []byte(`{"task_id":"a1","tool_use_id":"t3","task_type":"local_agent","is_backgrounded":false}`), cmd, now)
+	if got := s.waiting(); !slices.Equal(got, []string{"t1"}) {
+		t.Errorf("waiting = %v, want the foreground command alone", got)
+	}
+	s.task("task_updated", []byte(`{"task_id":"b1","patch":{"is_backgrounded":true}}`), cmd, now)
+	if got := s.waiting(); len(got) != 0 {
+		t.Errorf("waiting after the move = %v", got)
+	}
+	s.task("task_started", []byte(`{"task_id":"b3","tool_use_id":"t4","task_type":"local_bash","is_backgrounded":false}`), cmd, now)
+	s.task("task_notification", []byte(`{"task_id":"b3","status":"completed"}`), cmd, now)
+	if got := s.waiting(); len(got) != 0 {
+		t.Errorf("waiting after its end = %v", got)
 	}
 }
 

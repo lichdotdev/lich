@@ -211,13 +211,25 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   watch is the same `local_bash` task (measured), told apart only by its call's tool name and counted apart as
   Claude Code's TUI does; its result names no output file, only its `task_notification` does, so its output
   reads only once it has ended. A subagent's shells are listed with the session's, read in its code and not
-  seen; so is the move of a foreground command to the background (`task_updated` patching `is_backgrounded`). The shells run in the chat's process, so a switch to TUI, /new or a switch to YOLO mode,
+  seen. The move of a foreground command to the background is measured: `task_updated` patching
+  `is_backgrounded` to true. The shells run in the chat's process, so a switch to TUI, /new or a switch to YOLO mode,
   which start a new one, stops them, and a conversation read back has none. A shell that ends after the turn
   makes Claude Code answer on its own (measured): that answer reaches the chat with no turn running in lich.
   Codex lists its background terminals only on its experimental app-server API
   (`thread/backgroundTerminals/list`, 0.170.0's schema), with no event and no output, and lich opens Codex on the
   stable one; ACP has no such report, its `terminal/*` methods being the client running commands for the agent,
   which lich does not offer (`terminal: false`). Their chats show no shells. Crush has no chat.
+- **Ctrl+B moves a running command to the background only in a Claude Code chat** (`internal/chat/claude_shells.go`,
+  `native/cmd/lich-native/chat_shells.go`). Claude Code 2.1.330 offers it once a Bash or PowerShell command has
+  run 2s in the foreground, unless background tasks are off (the moment it reports the command as a `local_bash`
+  task with `is_backgrounded` false); the window shows its hint in the live line and takes Ctrl+B in the message
+  box only then. Ctrl+B sends the `background_tasks` control request with no `tool_use_id`, Claude Code's own
+  Ctrl+B (measured): the call returns at once with "Command was manually backgrounded by user", the turn carries
+  on, and the command joins the background shells. The same request also moves a subagent the turn waits on (read
+  in its code, not measured), which no chip lists; a turn that waits on a subagent alone shows no hint, and a
+  command run inside a subagent shows none either, lich holding no item for its call. Codex has no request that
+  moves a running command (0.170.0 app-server schema: only the experimental `thread/backgroundTerminals/list`,
+  `clean` and `terminate`), and ACP has no notion of one; Crush has no chat.
 - **A chat message waits two seconds in the window before it reaches the agent**
   (`native/cmd/lich-native/chat_hold.go`): Esc or Stop takes it back meanwhile, and nothing reached the agent.
   It is drawn sent with its turn running from Enter, so the wait does not show, and a window closed inside it

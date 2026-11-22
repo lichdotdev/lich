@@ -191,6 +191,7 @@
     "pluginSkills": "插件的技能通过 /plugin 管理。"
   },
   "shells": {
+    "move": "Ctrl+B 转到后台运行",
     "count": {
       "other": "{count} 个 shell"
     },

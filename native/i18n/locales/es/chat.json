@@ -201,6 +201,7 @@
     "pluginSkills": "Las skills de un plugin se gestionan con /plugin."
   },
   "shells": {
+    "move": "Ctrl+B para ejecutar en segundo plano",
     "count": {
       "one": "{count} shell",
       "other": "{count} shells"

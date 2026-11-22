@@ -191,6 +191,7 @@
     "pluginSkills": "プラグインのスキルは /plugin で管理します。"
   },
   "shells": {
+    "move": "Ctrl+B でバックグラウンド実行",
     "count": {
       "other": "シェル {count} 件"
     },

@@ -28,6 +28,27 @@ func (f *fake) claudeShellTurn(msg func(string, map[string]any)) {
 	f.claudeResult(false, "completed", "")
 }
 
+// claudeMovedTurn is a foreground command the person moves to the
+// background, as 2.1.330 wrote it (measured): its task_started once it has
+// run 2s, and on background_tasks the patch, the answer, the call's result
+// and the turn carrying on to its end.
+func (f *fake) claudeMovedTurn(msg func(string, map[string]any)) {
+	msg("m2", map[string]any{"type": "tool_use", "id": "toolu_01MJPrhDuMGj39vkbze1sMz7", "name": "Bash", "input": map[string]any{"command": "timeout 20 tail -f /dev/null; echo finished-waiting", "description": "Wait 20 seconds in the foreground"}})
+	f.send(map[string]any{"type": "system", "subtype": "task_started", "task_id": "bc4ibdw5i", "run_id": "0mwrtlro7-5717fd6e", "tool_use_id": "toolu_01MJPrhDuMGj39vkbze1sMz7", "description": "Wait 20 seconds in the foreground", "is_backgrounded": false, "task_type": "local_bash"})
+	m := f.next()
+	if str(m, "request", "subtype") != "background_tasks" {
+		f.claudeResult(true, "error", "not moved")
+		return
+	}
+	f.send(map[string]any{"type": "system", "subtype": "background_tasks_changed", "tasks": []any{map[string]any{"task_id": "bc4ibdw5i", "run_id": "0mwrtlro7-5717fd6e", "task_type": "local_bash", "description": "Wait 20 seconds in the foreground"}}})
+	f.send(map[string]any{"type": "system", "subtype": "task_updated", "task_id": "bc4ibdw5i", "run_id": "0mwrtlro7-5717fd6e", "patch": map[string]any{"is_backgrounded": true}})
+	f.send(map[string]any{"type": "control_response", "response": map[string]any{"subtype": "success", "request_id": str(m, "request_id"), "response": map[string]any{}}})
+	f.send(map[string]any{"type": "user", "message": map[string]any{"role": "user", "content": []any{map[string]any{"tool_use_id": "toolu_01MJPrhDuMGj39vkbze1sMz7", "type": "tool_result", "is_error": false,
+		"content": "Command was manually backgrounded by user with ID: bc4ibdw5i. Output is being written to: " + claudeMovedPath + ". If it is still running after 30m in the background, it will be stopped and you will be notified."}}}})
+	msg("m3", map[string]any{"type": "text", "text": "Not yet."})
+	f.claudeResult(false, "completed", "Not yet.")
+}
+
 // claudeShellControl serves stop_task and read_file for the fake's shell.
 func (f *fake) claudeShellControl(subtype string, m map[string]any, ok func(any), fail func(string)) bool {
 	switch subtype {
