@@ -21,11 +21,11 @@ type shellDriver interface {
 // message as they wrote it.
 const shellMark = "!"
 
-// Shell answers api.ChatShell: the command runs in a turn of its own, one at
+// RunShell answers api.ChatRunShell: the command runs in a turn of its own, one at
 // a time, as Claude Code allows only one at once (measured on 2.1.330). An
 // agent that runs none (opencode 2, which runs no server) gets the line as
 // typed.
-func (s *Service) Shell(ctx context.Context, opts api.ChatShellOptions) (api.None, error) {
+func (s *Service) RunShell(ctx context.Context, opts api.ChatRunShellOptions) (api.None, error) {
 	c, err := s.ensure(ctx, opts.ID)
 	if err != nil {
 		return api.None{}, err

@@ -190,4 +190,6 @@ Esta sessão tem um navegador próprio (ferramentas browser_*). Ele roda sem jan
 	PageDialogWaitsCLI:   "A página não roda nada até este diálogo ser respondido: rode lich browser dialog accept|dismiss.",
 	ChatPermissionDenied: "A pessoa recusou esta chamada de ferramenta.",
 	ChatQuestionDeclined: "A pessoa não respondeu a estas perguntas. Não presuma uma resposta: siga sem ela ou pergunte de novo.",
+	ChatPlanDeclined:     "A pessoa não aprovou o plano e quer continuar planejando. Pare aqui e espere que ela diga o que mudar.",
+	ChatPlanFeedback:     "A pessoa não aprovou o plano e quer continuar planejando. Ela pediu esta mudança: %s",
 }

@@ -18,6 +18,7 @@ type (
 	ChatOption     = api.ChatOption
 	ChatChoice     = api.ChatChoice
 	ChatCommand    = api.ChatCommand
+	ChatShell      = api.ChatShell
 )
 
 // ChatKinds is the providers whose sessions can be drawn as a chat.
@@ -78,15 +79,31 @@ func (c *Client) ChatCommands(ctx context.Context, id string) ([]ChatCommand, er
 	return callMethod(ctx, c, api.ChatCommands, api.SessionIDOptions{ID: id})
 }
 
+// ChatShells is session id's background shells, running and ended.
+func (c *Client) ChatShells(ctx context.Context, id string) ([]ChatShell, error) {
+	return callMethod(ctx, c, api.ChatShells, api.SessionIDOptions{ID: id})
+}
+
+// ChatShellOutput is the end of shell's output in session id's chat.
+func (c *Client) ChatShellOutput(ctx context.Context, id, shell string) (string, error) {
+	return callMethod(ctx, c, api.ChatShellOutput, api.ChatShellOptions{ID: id, Shell: shell})
+}
+
+// ChatStopShell stops shell in session id's chat.
+func (c *Client) ChatStopShell(ctx context.Context, id, shell string) error {
+	_, err := callMethod(ctx, c, api.ChatStopShell, api.ChatShellOptions{ID: id, Shell: shell})
+	return err
+}
+
 // ChatNew starts an empty conversation in session id's chat.
 func (c *Client) ChatNew(ctx context.Context, id string) error {
 	_, err := callMethod(ctx, c, api.ChatNew, api.SessionIDOptions{ID: id})
 	return err
 }
 
-// ChatShell runs command in session id's shell, as the person's own.
-func (c *Client) ChatShell(ctx context.Context, id, command string) error {
-	_, err := callMethod(ctx, c, api.ChatShell, api.ChatShellOptions{ID: id, Command: command})
+// ChatRunShell runs command in session id's shell, as the person's own.
+func (c *Client) ChatRunShell(ctx context.Context, id, command string) error {
+	_, err := callMethod(ctx, c, api.ChatRunShell, api.ChatRunShellOptions{ID: id, Command: command})
 	return err
 }
 

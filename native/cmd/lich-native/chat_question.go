@@ -35,6 +35,9 @@ type chatQuiz struct {
 	// sent holds the card back from a second reply while the first is on its
 	// way.
 	sent atomic.Bool
+	// proposal is a card that asks to start on a plan, whose field keeps the
+	// agent planning.
+	proposal bool
 }
 
 // quiz is question item id's state, made for its asks.

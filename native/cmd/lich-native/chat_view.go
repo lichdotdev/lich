@@ -115,9 +115,11 @@ type chatView struct {
 	mention chatMention
 	// tools is the /mcp or /skills panel, in the slash list's place, and
 	// search the Ctrl+R search of the messages sent; history is the ↑/↓ walk.
-	tools   chatTools
-	search  chatSearch
-	history chatHistory
+	tools chatTools
+	// shellsChip is the composer's chip of the shells running.
+	shellsChip footerWidgets
+	search     chatSearch
+	history    chatHistory
 	// attached are the files the next message carries, drawn as cards over
 	// the text in cardList; fileCards are the cards' controls, by path in the
 	// composer and by item and path in a sent message.
@@ -388,7 +390,7 @@ func (u *window) chatActs(gtx C, p *chatPane, sv sessionView, keys, working bool
 	}
 	// Typing in the box shuts the panel, and so does a click back in it while
 	// a field of the panel has the keys, as one outside a popover does.
-	if p.tools.opened() && (p.editor.Len() > 0 || p.tools.keyTag(p) != &p.editor && !p.tools.focus && gtx.Focused(&p.editor)) {
+	if p.tools.opened() && (p.editor.Len() != p.tools.base || p.tools.keyTag(p) != &p.editor && !p.tools.focus && gtx.Focused(&p.editor)) {
 		p.tools.shut()
 	}
 	sent, submit := sentHistory(u.model.chat.of(sv.ID)), false
@@ -402,6 +404,7 @@ func (u *window) chatActs(gtx C, p *chatPane, sv sessionView, keys, working bool
 		p.mention.act(gtx, &p.editor)
 	}
 	if keys {
+		u.shellsChipActs(gtx, p)
 		u.toolsActs(gtx, p, sv.ID)
 	}
 	// The model panel's search holds the keys while the panel is open.

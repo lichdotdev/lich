@@ -92,6 +92,7 @@ type chatSession struct {
 	bound     string
 	opts      []api.ChatOption
 	cmds      []api.ChatCommand
+	shells    []api.ChatShell
 	// next are the messages for the turns after this one, oldest first: one a
 	// provider that takes none during a turn is sent once the turn ends, and
 	// those the relay delivered while it ran.
@@ -153,6 +154,13 @@ func (c *chatSession) died() {
 	if running {
 		c.conv.notice(exitNotice(c.proc.Stderr()))
 		c.endTurn(stopError)
+	}
+	// the shells ran in the process: they are gone with it
+	c.mu.Lock()
+	had := len(c.shells) > 0
+	c.mu.Unlock()
+	if had {
+		c.setShells([]api.ChatShell{})
 	}
 	close(c.exited)
 	c.svc.forget(c)

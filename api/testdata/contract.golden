@@ -56,12 +56,15 @@ chat.PluginAct(ChatPluginActOptions) ChatPluginActResult
 chat.Plugins(SessionIDOptions) ChatPluginList
 chat.Prompt(ChatPromptOptions) None
 chat.Reply(ChatReplyOptions) None
+chat.RunShell(ChatRunShellOptions) None
 chat.SetOption(ChatSetOptionOptions) None
 chat.SetSkill(ChatSetSkillOptions) None
 chat.SetView(ChatViewOptions) None
-chat.Shell(ChatShellOptions) None
+chat.ShellOutput(ChatShellOptions) string
+chat.Shells(SessionIDOptions) []ChatShell
 chat.Skills(SessionIDOptions) ChatSkillList
 chat.Steer(ChatPromptOptions) None
+chat.StopShell(ChatShellOptions) None
 claudeprofile.CancelLogin(ProfileSlugOptions) None
 claudeprofile.CreateProfile(CreateProfileOptions) Profile
 claudeprofile.DeleteProfile(ProfileSlugOptions) None
@@ -333,6 +336,7 @@ event browser:frame:<id> BrowserFrame
 event chat-commands ChatCommandsUpdate
 event chat-item ChatItemUpdate
 event chat-options ChatOptionsUpdate
+event chat-shells ChatShellsUpdate
 event chat-turn ChatTurn
 event claude-profile-login ProfileLogin
 event codex-profile-login ProfileLogin
@@ -722,6 +726,11 @@ ChatReplyOptions {
 	reply ChatQReplied
 }
 
+ChatRunShellOptions {
+	id string
+	command string
+}
+
 ChatSetOptionOptions {
 	id string
 	optionId string
@@ -741,7 +750,16 @@ ChatViewOptions {
 
 ChatShellOptions {
 	id string
+	shell string
+}
+
+ChatShell {
+	id string
 	command string
+	description,omitempty string
+	state string
+	started int64
+	ended,omitempty int64
 }
 
 ChatSkillList {
@@ -2208,6 +2226,11 @@ ChatOptionsUpdate {
 	options []ChatOption
 }
 
+ChatShellsUpdate {
+	sessionId string
+	shells []ChatShell
+}
+
 ChatTurn {
 	sessionId string
 	running bool
@@ -2515,6 +2538,7 @@ ChatPermission {
 ChatQuestion {
 	questions []ChatAsk
 	reply,omitempty *ChatQReplied
+	proposal,omitempty *ChatProposal
 }
 
 ChatPlan {
@@ -2897,6 +2921,10 @@ ChatAsk {
 	text string
 	options,omitempty []ChatOffer
 	multi,omitempty bool
+}
+
+ChatProposal {
+	plan string
 }
 
 ChatPlanEntry {

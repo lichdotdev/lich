@@ -93,6 +93,15 @@
     "label": "{header}:",
     "own": "“{text}”"
   },
+  "proposal": {
+    "header": "Plano",
+    "ask": "Quer prosseguir?",
+    "acceptEdits": "Sim, aceitar edições automaticamente",
+    "manual": "Sim, aprovar cada edição",
+    "keep": "Não, continuar planejando",
+    "change": "Não, continuar planejando: diga o que mudar",
+    "approved": "Aprovado"
+  },
   "slash": {
     "new": "Começa uma conversa nova nesta sessão",
     "mcp": "Gerencia os servidores MCP",
@@ -185,6 +194,22 @@
       "any": "travada"
     },
     "pluginSkills": "As skills de plugin se gerenciam pelo /plugin."
+  },
+  "shells": {
+    "count": {
+      "one": "{count} shell",
+      "other": "{count} shells"
+    },
+    "title": "Shells em segundo plano",
+    "back": "Shells",
+    "none": "Nenhum shell rodando em segundo plano",
+    "noOutput": "Ainda sem saída",
+    "stop": "Parar",
+    "state": {
+      "completed": "concluído",
+      "failed": "falhou",
+      "stopped": "parado"
+    }
   },
   "attach": {
     "remove": "Remover",

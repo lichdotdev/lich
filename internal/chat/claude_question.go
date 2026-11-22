@@ -108,10 +108,27 @@ func (d *claudeDriver) askQuestion(ask claudeAsk, respond func(map[string]any) e
 	})
 }
 
+// claudeAsking is the question item a tool call is, false for a call that
+// asks nothing of the person.
+func claudeAsking(b claudeBlock) (api.ChatQuestion, bool) {
+	switch b.Name {
+	case claudeQuestionTool:
+		q, _ := readClaudeQuestion(b.Input)
+		return q, true
+	case claudeExitPlanTool:
+		return readClaudeProposal(b.Input), true
+	}
+	return api.ChatQuestion{}, false
+}
+
 // readClaudeQuestionResult records how a question item was answered, from its
 // tool result: the answers the tool echoes back, or none when it was denied.
 // Live, the item already holds the reply; this is for the transcript.
 func readClaudeQuestionResult(c *chatSession, it api.ChatItem, b claudeBlock, result json.RawMessage) {
+	if it.Question.Proposal != nil {
+		readClaudeProposalResult(c, it, b)
+		return
+	}
 	if b.IsError {
 		c.replied(it.ID, api.ChatQReplied{Declined: true})
 		return

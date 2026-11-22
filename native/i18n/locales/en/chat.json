@@ -93,6 +93,15 @@
     "label": "{header}:",
     "own": "“{text}”"
   },
+  "proposal": {
+    "header": "Plan",
+    "ask": "Would you like to proceed?",
+    "acceptEdits": "Yes, auto-accept edits",
+    "manual": "Yes, manually approve edits",
+    "keep": "No, keep planning",
+    "change": "No, keep planning: say what to change",
+    "approved": "Approved"
+  },
   "slash": {
     "new": "Start a new conversation in this session",
     "mcp": "Manage the MCP servers",
@@ -185,6 +194,22 @@
       "any": "locked"
     },
     "pluginSkills": "Plugin skills are managed with /plugin."
+  },
+  "shells": {
+    "count": {
+      "one": "{count} shell",
+      "other": "{count} shells"
+    },
+    "title": "Background shells",
+    "back": "Shells",
+    "none": "No shell runs in the background",
+    "noOutput": "No output yet",
+    "stop": "Stop",
+    "state": {
+      "completed": "done",
+      "failed": "failed",
+      "stopped": "stopped"
+    }
   },
   "attach": {
     "remove": "Remove",

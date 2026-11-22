@@ -19,7 +19,7 @@ func Chat(d *rpc.Handler, s *chat.Service) {
 	rpc.Handle(d, api.ChatOptions, s.Options)
 	rpc.Handle(d, api.ChatSetOption, s.SetOption)
 	rpc.Handle(d, api.ChatCommands, s.Commands)
-	rpc.Handle(d, api.ChatShell, s.Shell)
+	rpc.Handle(d, api.ChatRunShell, s.RunShell)
 	rpc.Handle(d, api.ChatNew, s.New)
 	rpc.Handle(d, api.ChatMCP, s.MCP)
 	rpc.Handle(d, api.ChatMCPAct, s.MCPAct)
@@ -27,4 +27,7 @@ func Chat(d *rpc.Handler, s *chat.Service) {
 	rpc.Handle(d, api.ChatSetSkill, s.SetSkill)
 	rpc.Handle(d, api.ChatPlugins, s.Plugins)
 	rpc.Handle(d, api.ChatPluginAct, s.PluginAct)
+	rpc.Handle(d, api.ChatShells, s.Shells)
+	rpc.Handle(d, api.ChatShellOutput, s.ShellOutput)
+	rpc.Handle(d, api.ChatStopShell, s.StopShell)
 }

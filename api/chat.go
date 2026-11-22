@@ -40,10 +40,10 @@ var (
 	// prompt, its slash commands and skills, as it lists them; none until it
 	// has.
 	ChatCommands = define[SessionIDOptions, []ChatCommand]("chat.Commands")
-	// ChatShell runs a command the person typed after "!" the way the
+	// ChatRunShell runs a command the person typed after "!" the way the
 	// provider's own TUI does, with no model and no permission check; a
 	// provider whose protocol has no such way refuses it.
-	ChatShell = define[ChatShellOptions, None]("chat.Shell")
+	ChatRunShell = define[ChatRunShellOptions, None]("chat.RunShell")
 	// ChatNew starts an empty conversation in a chat session, the one it had
 	// left to the provider. It refuses while the agent works.
 	ChatNew = define[SessionIDOptions, None]("chat.New")
@@ -86,8 +86,8 @@ type ChatPromptOptions struct {
 	Attachments []DropAttachment `json:"attachments,omitempty"`
 }
 
-// ChatShellOptions runs Command in session ID's checkout.
-type ChatShellOptions struct {
+// ChatRunShellOptions runs Command in session ID's checkout.
+type ChatRunShellOptions struct {
 	ID      string `json:"id"`
 	Command string `json:"command"`
 }
@@ -300,9 +300,21 @@ type ChatOptionsUpdate struct {
 // ChatQuestion is the agent asking the person, Claude Code's AskUserQuestion
 // shape that every provider's request for input is read into: one to four
 // questions. Reply is the answer once given, nil while it waits.
+//
+// Proposal is set where the agent asks to start on the plan it wrote: the one
+// ask's options are then the modes the work can start in, each Label a choice
+// id of the session's mode option, which the window names; the person's own
+// words, or no answer, keep it planning.
 type ChatQuestion struct {
 	Questions []ChatAsk     `json:"questions"`
 	Reply     *ChatQReplied `json:"reply,omitempty"`
+	Proposal  *ChatProposal `json:"proposal,omitempty"`
+}
+
+// ChatProposal is the plan the agent asks to start on, in Markdown, "" where
+// it gave none.
+type ChatProposal struct {
+	Plan string `json:"plan"`
 }
 
 // ChatAsk is one question. Header is its short label; an ask with no Options

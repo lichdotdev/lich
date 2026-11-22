@@ -177,6 +177,37 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   whether opencode 1.19.4, Antigravity and Kiro 2.21.0 send one is not verified (each carries the schema, none
   was seen emitting it). The window shows the latest turn's list while a task is left, so a new message hides
   a list the agent does not update in the new turn. Crush has no chat.
+- **A chat asks to start on the agent's plan with a card only for Claude Code** (`internal/chat/claude_proposal.go`,
+  `native/cmd/lich-native/chat_proposal.go`): ExitPlanMode reaches the chat as a `can_use_tool` holding the plan
+  and its file, which the card draws as Markdown under the two approvals Claude Code's TUI offers when the
+  context is kept, each an allow with a `setMode` to `acceptEdits` or `default`, and a field that denies it
+  with the person's words; Esc or a message sent instead denies it with none, which keeps plan mode (measured on
+  2.1.330, where an empty deny message fails the next API call, so lich always writes one). The allow leaves
+  the input empty, as the TUI's does, which approves the plan as written; a plan in it would read as edited by
+  the user and be written back to its file (read in Claude Code's code, not run).
+  The TUI's other rows are not offered: clearing the context (`showClearContextOnPlanAccept`), bypass
+  permissions or a return to auto mode in place of accepting edits, Ultraplan, and approving with feedback. A
+  conversation read back shows a plan approved without the mode it started in, and a deny without its words. Codex's plan mode is a collaboration mode lich's Codex chat never sets, and its "Implement
+  this plan?" is the TUI's own prompt, not an app-server request (0.170.0 schema). No ACP provider was measured
+  leaving a plan mode; read from their binaries, opencode's `plan_exit` asks with its own question (the question
+  card) and Antigravity's `exit_plan_mode` starts the work without asking, and Cursor CLI, oh-my-pi and Kiro CLI
+  are not verified. Crush has no chat.
+- **A chat lists the agent's background shells only on Claude Code, and they end with the chat's process**
+  (`internal/chat/claude_shells.go`, `shells.go`, `native/cmd/lich-native/chat_shells.go`): Claude Code 2.1.330
+  reports a command its Bash tool runs in the background as a `local_bash` task (`system/task_started` with
+  `is_backgrounded`, then `task_updated` and `task_notification` on its end), and lich stops one with the
+  `stop_task` control request and reads the end of its output with `read_file`, through Claude Code, since a
+  sandbox's private /tmp hides the file from lich (measured outside a sandbox; that `read_file` reaches the file
+  inside bubblewrap is inferred, Claude Code reading through its own view of the filesystem). A Monitor's
+  command is counted with the shells, where Claude Code's TUI counts it apart, and a subagent's shells are
+  listed with the session's, both read in its code and not seen; so is the move of a foreground command to the
+  background (`task_updated` patching `is_backgrounded`). The shells run in the chat's process, so a switch to TUI, /new or a switch to YOLO mode,
+  which start a new one, stops them, and a conversation read back has none. A shell that ends after the turn
+  makes Claude Code answer on its own (measured): that answer reaches the chat with no turn running in lich.
+  Codex lists its background terminals only on its experimental app-server API
+  (`thread/backgroundTerminals/list`, 0.170.0's schema), with no event and no output, and lich opens Codex on the
+  stable one; ACP has no such report, its `terminal/*` methods being the client running commands for the agent,
+  which lich does not offer (`terminal: false`). Their chats show no shells. Crush has no chat.
 - **A chat message waits two seconds in the window before it reaches the agent**
   (`native/cmd/lich-native/chat_hold.go`): Esc or Stop takes it back meanwhile, and nothing reached the agent.
   It is drawn sent with its turn running from Enter, so the wait does not show, and a window closed inside it

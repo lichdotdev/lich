@@ -49,6 +49,11 @@ type chatTools struct {
 	// gen counts the reads that landed, for what is kept from one.
 	gen  int
 	plug chatPlugins
+	// shell is the output of the shell the shells' panel shows.
+	shell chatShellOut
+	// base is the box's length when the panel opened: typing past it shuts
+	// the panel.
+	base int
 	// next is when a server still connecting is read again.
 	next time.Time
 	// focus hands the keys to the panel on the frame after it opens.
@@ -73,6 +78,7 @@ func (t *chatTools) open(kind string) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	t.kind, t.loaded, t.detail, t.showTools, t.cursor, t.moved, t.next, t.focus = kind, false, "", false, 0, true, time.Time{}, true
+	t.base, t.shell.id = 0, ""
 	t.query.SetText("")
 	t.plug.reset()
 }
@@ -97,17 +103,23 @@ func (t *chatTools) act(a string) *ui.Clickable {
 // openTools opens the panel text names, and reports whether it named one the
 // session's provider has.
 func (u *window) openTools(p *chatPane, id, text string) bool {
-	kind := ""
+	kind, kinds := "", chatToolKinds
 	switch text {
 	case chatMCPCommand, chatSkillsCommand, chatPluginCommand:
 		kind = text
+	case chatShellsPanel, chatBashesCommand:
+		kind, kinds = chatShellsPanel, chatShellKinds
 	}
 	sv, ok := u.model.sessionViewOf(id)
-	if kind == "" || !ok || !slices.Contains(chatToolKinds, sv.Kind) {
+	if kind == "" || !ok || !slices.Contains(kinds, sv.Kind) {
 		return false
 	}
 	p.editor.SetText("")
 	p.undo.Reset()
+	if kind == chatShellsPanel {
+		p.openShells()
+		return true
+	}
 	p.tools.open(kind)
 	u.fetchTools(p, id)
 	return true
@@ -227,6 +239,8 @@ func (u *window) toolsActs(gtx C, p *chatPane, id string) {
 	rows, enter := 0, func(int) {}
 	switch {
 	case !loaded:
+	case t.kind == chatShellsPanel:
+		rows, enter = u.shellActs(gtx, p, id)
 	case t.kind == chatPluginCommand:
 		rows, enter = u.pluginActs(gtx, p, id, plugins)
 	case t.kind == chatSkillsCommand:

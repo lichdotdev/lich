@@ -26,10 +26,14 @@ const chatAnswerJoin = ", "
 // chatQuestion is the agent asking the person: a box with the ask on show and
 // its options, or, answered, a muted line per ask.
 func chatQuestion(gtx C, th *ui.Theme, p *chatPane, it backend.ChatItem) D {
+	if it.Question.Proposal != nil {
+		it = proposalShown(it)
+	}
 	if it.Question.Reply != nil {
 		return chatQuestionReply(gtx, th, p, it)
 	}
 	q := p.quiz(it.ID, it.Question.Questions)
+	q.proposal = it.Question.Proposal != nil
 	p.cards[it.ID] = chatCard{item: it, quiz: q}
 	return chatQuestionCard(gtx, th, q, it.Question.Questions)
 }
@@ -239,8 +243,12 @@ func chatOtherRow(gtx C, th *ui.Theme, q *chatQuiz, a api.ChatAsk) D {
 	if a.Multi {
 		lead = func(gtx C) D { return D{Size: image.Pt(gtx.Dp(ui.Space(4)), 0)} }
 	}
+	hint := i18n.T("chat.question.write")
+	if q.proposal {
+		hint = i18n.T("chat.proposal.change")
+	}
 	return chatQuizRow(gtx, th, q.hot == n, lead, func(gtx C) D {
-		in := th.Input(&q.others[q.step], i18n.T("chat.question.write"))
+		in := th.Input(&q.others[q.step], hint)
 		in.Height = ui.Space(8)
 		return in.Layout(gtx)
 	})

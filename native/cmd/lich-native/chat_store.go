@@ -21,6 +21,7 @@ type chatStore struct {
 	ends      map[string]map[int]api.ChatTurn
 	options   map[string][]backend.ChatOption
 	commands  map[string][]backend.ChatCommand
+	shells    map[string][]backend.ChatShell
 	switching map[string]string
 	// queue is each session's messages written while its turn ran, sent
 	// together once it ends (chatQueue).
@@ -138,6 +139,24 @@ func (s *chatStore) setCommands(id string, commands []backend.ChatCommand) {
 	s.commands[id] = slices.Clone(commands)
 }
 
+// setShells takes session id's background shells whole, as ChatShells or
+// the shells event left them.
+func (s *chatStore) setShells(id string, shells []backend.ChatShell) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.shells == nil {
+		s.shells = map[string][]backend.ChatShell{}
+	}
+	s.shells[id] = slices.Clone(shells)
+}
+
+// shellsOf is session id's background shells, in the order they started.
+func (s *chatStore) shellsOf(id string) []backend.ChatShell {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.shells[id]
+}
+
 // commandsOf is what session id's provider takes typed at its prompt.
 func (s *chatStore) commandsOf(id string) []backend.ChatCommand {
 	s.mu.Lock()
@@ -232,6 +251,10 @@ func (m *model) chatEvent(ctx context.Context, ev backend.Event) {
 		if u, err := backend.Decode(ev, api.ChatCommandsEvent); err == nil {
 			m.chat.setCommands(u.SessionID, u.Commands)
 		}
+	case api.ChatShellsEvent.Name:
+		if u, err := backend.Decode(ev, api.ChatShellsEvent); err == nil {
+			m.chat.setShells(u.SessionID, u.Shells)
+		}
 	case api.SessionViewEvent.Name:
 		if v, err := backend.Decode(ev, api.SessionViewEvent); err == nil {
 			m.applyView(ctx, v)
@@ -302,4 +325,10 @@ func (m *model) loadChat(ctx context.Context, id string) {
 		return
 	}
 	m.chat.setCommands(id, commands)
+	shells, err := m.client.ChatShells(ctx, id)
+	if err != nil {
+		log.Printf("chat shells of %s: %v", id, err)
+		return
+	}
+	m.chat.setShells(id, shells)
 }

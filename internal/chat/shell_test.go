@@ -12,7 +12,7 @@ import (
 )
 
 func (r *rig) shell(command string) error {
-	_, err := r.svc.Shell(r.t.Context(), api.ChatShellOptions{ID: "s1", Command: command})
+	_, err := r.svc.RunShell(r.t.Context(), api.ChatRunShellOptions{ID: "s1", Command: command})
 	return err
 }
 

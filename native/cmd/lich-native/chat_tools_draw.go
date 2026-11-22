@@ -49,6 +49,8 @@ func (u *window) chatToolsPanel(gtx C, th *ui.Theme, p *chatPane, sv sessionView
 	macro := op.Record(gtx.Ops)
 	d := th.PopoverPanel(g, func(gtx C, th *ui.Theme) D {
 		switch {
+		case t.kind == chatShellsPanel:
+			return u.shellsView(gtx, th, p, sv)
 		case !loaded:
 			return toolsNote(gtx, th, i18n.T("chat.tools.loading"))
 		case t.kind == chatMCPCommand:

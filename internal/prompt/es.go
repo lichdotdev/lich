@@ -190,4 +190,6 @@ Esta sesión tiene un navegador propio (herramientas browser_*). Corre sin venta
 	PageDialogWaitsCLI:   "La página no ejecuta nada hasta que se responda este diálogo: ejecuta lich browser dialog accept|dismiss.",
 	ChatPermissionDenied: "La persona rechazó esta llamada a la herramienta.",
 	ChatQuestionDeclined: "La persona no respondió estas preguntas. No supongas una respuesta: sigue sin ella o vuelve a preguntar.",
+	ChatPlanDeclined:     "La persona no aprobó el plan y quiere seguir planificando. Detente aquí y espera a que diga qué cambiar.",
+	ChatPlanFeedback:     "La persona no aprobó el plan y quiere seguir planificando. Pidió este cambio: %s",
 }

@@ -117,7 +117,7 @@ func TestBangLineRunsInTheShell(t *testing.T) {
 	}
 	writeShot(t, r, "chat-shell-mode.png")
 	r.press(key.NameReturn)
-	if body := f.waitCall(t, api.ChatShell.Name); !strings.Contains(body, `"command":"git status"`) {
+	if body := f.waitCall(t, api.ChatRunShell.Name); !strings.Contains(body, `"command":"git status"`) {
 		t.Errorf("Enter ran %s", body)
 	}
 	r.frame()
@@ -139,7 +139,7 @@ func TestBangLineDuringATurnIsNotQueued(t *testing.T) {
 	u.model.chat.turn(api.ChatTurn{SessionID: "s1", Running: true})
 	typeIn(r, p, "!ls")
 	r.press(key.NameReturn)
-	f.waitCall(t, api.ChatShell.Name)
+	f.waitCall(t, api.ChatRunShell.Name)
 	if q := u.model.chat.queued("s1"); len(q) != 0 {
 		t.Errorf("queued %q", q)
 	}
@@ -159,7 +159,7 @@ func TestBangLineIsTextWhereTheProviderHasNoShell(t *testing.T) {
 	if body := f.waitCall(t, api.ChatPrompt.Name); !strings.Contains(body, `"text":"!ls"`) {
 		t.Errorf("sent %s", body)
 	}
-	if n := f.callsOf(api.ChatShell.Name); n != 0 {
+	if n := f.callsOf(api.ChatRunShell.Name); n != 0 {
 		t.Errorf("ran %d shell commands", n)
 	}
 

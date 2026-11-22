@@ -88,6 +88,15 @@
     "label": "{header}:",
     "own": "「{text}」"
   },
+  "proposal": {
+    "header": "プラン",
+    "ask": "このまま進めますか？",
+    "acceptEdits": "はい、編集を自動で承認",
+    "manual": "はい、編集を手動で承認",
+    "keep": "いいえ、計画を続ける",
+    "change": "いいえ、計画を続ける: 変えたい点を書く",
+    "approved": "承認済み"
+  },
   "slash": {
     "new": "このセッションで新しい会話を始める",
     "mcp": "MCP サーバーを管理する",
@@ -176,6 +185,21 @@
       "any": "ロック中"
     },
     "pluginSkills": "プラグインのスキルは /plugin で管理します。"
+  },
+  "shells": {
+    "count": {
+      "other": "シェル {count} 件"
+    },
+    "title": "バックグラウンドのシェル",
+    "back": "シェル",
+    "none": "バックグラウンドで動いているシェルはありません",
+    "noOutput": "まだ出力はありません",
+    "stop": "停止",
+    "state": {
+      "completed": "完了",
+      "failed": "失敗",
+      "stopped": "停止済み"
+    }
   },
   "attach": {
     "remove": "外す",

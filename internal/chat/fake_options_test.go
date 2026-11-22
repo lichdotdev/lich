@@ -80,7 +80,7 @@ func (f *fake) claudeControl(run *fakeClaude, m map[string]any) {
 		fail := func(msg string) {
 			f.send(map[string]any{"type": "control_response", "response": map[string]any{"subtype": "error", "request_id": id, "error": msg}})
 		}
-		if !f.claudeTools(str(m, "request", "subtype"), m, ok, fail) {
+		if !f.claudeTools(str(m, "request", "subtype"), m, ok, fail) && !f.claudeShellControl(str(m, "request", "subtype"), m, ok, fail) {
 			ok(map[string]any{})
 		}
 	}

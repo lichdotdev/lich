@@ -13,10 +13,10 @@ import (
 // so, and Enter runs the rest with no model and no permission check. Deleting
 // the "!" leaves the mode, as Backspace does on Claude Code's empty prompt.
 
-// chatShellKinds are the providers whose protocol runs a command of the
+// chatRunShellKinds are the providers whose protocol runs a command of the
 // person's own (internal/chat/shell.go); in any other chat a "!" line goes
 // to the agent as typed.
-var chatShellKinds = []string{claudeKind, codexKind, opencodeKind}
+var chatRunShellKinds = []string{claudeKind, codexKind, opencodeKind}
 
 const chatShellMark = "!"
 
@@ -25,7 +25,7 @@ const chatShellMark = "!"
 // could not carry.
 func (p *chatPane) shellLine(kind string) (string, bool) {
 	text := p.editor.Text()
-	if len(p.attached) > 0 || !strings.HasPrefix(text, chatShellMark) || !slices.Contains(chatShellKinds, kind) {
+	if len(p.attached) > 0 || !strings.HasPrefix(text, chatShellMark) || !slices.Contains(chatRunShellKinds, kind) {
 		return "", false
 	}
 	return strings.TrimSpace(strings.TrimPrefix(text, chatShellMark)), true
@@ -47,7 +47,7 @@ func (u *window) takeShell(p *chatPane, id string) bool {
 	m := p.composed()
 	p.clearComposer()
 	go func() {
-		if err := u.client.ChatShell(u.ctx, id, command); err != nil {
+		if err := u.client.ChatRunShell(u.ctx, id, command); err != nil {
 			u.chatRefused(p, m, err)
 		}
 	}()

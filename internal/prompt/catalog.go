@@ -144,4 +144,9 @@ type Catalog struct {
 	// its questions: they pressed Esc or wrote a message instead, which
 	// follows as its own.
 	ChatQuestionDeclined string
+	// ChatPlanDeclined is what it is told when the person answers its plan
+	// with no word, and ChatPlanFeedback when they answer it with the change
+	// they want (%s): either keeps it in plan mode.
+	ChatPlanDeclined string
+	ChatPlanFeedback string
 }

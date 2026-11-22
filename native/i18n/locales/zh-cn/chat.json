@@ -88,6 +88,15 @@
     "label": "{header}：",
     "own": "“{text}”"
   },
+  "proposal": {
+    "header": "计划",
+    "ask": "要继续吗？",
+    "acceptEdits": "是，自动接受编辑",
+    "manual": "是，逐个批准编辑",
+    "keep": "否，继续规划",
+    "change": "否，继续规划：写下要改什么",
+    "approved": "已批准"
+  },
   "slash": {
     "new": "在此会话中开始新对话",
     "mcp": "管理 MCP 服务器",
@@ -176,6 +185,21 @@
       "any": "已锁定"
     },
     "pluginSkills": "插件的技能通过 /plugin 管理。"
+  },
+  "shells": {
+    "count": {
+      "other": "{count} 个 shell"
+    },
+    "title": "后台 shell",
+    "back": "Shell",
+    "none": "没有在后台运行的 shell",
+    "noOutput": "暂无输出",
+    "stop": "停止",
+    "state": {
+      "completed": "已完成",
+      "failed": "失败",
+      "stopped": "已停止"
+    }
   },
   "attach": {
     "remove": "移除",
