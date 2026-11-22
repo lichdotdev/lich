@@ -243,6 +243,14 @@
       }
     }
   },
+  "chatWidthSetting": {
+    "title": "Chat width",
+    "searchWords": "chat width wide narrow full column messages composer reading",
+    "description": "How wide a chat's messages and composer grow on a wide window.",
+    "comfortable": "Comfortable",
+    "wide": "Wide",
+    "full": "Full"
+  },
   "windowButtonsSetting": {
     "title": "Buttons",
     "searchWords": "window buttons minimize maximize close title bar caption controls traffic lights hide show",

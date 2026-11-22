@@ -125,6 +125,7 @@ var settingsSections = []settingsSection{
 	}, rows: []settingEntry{
 		{titleKey: "settings.appearanceSettings.zoomTitle", key: zoomKey, groupKey: groupInterface},
 		{titleKey: "settings.settingsAppearance.uiFontTitle", alsoKey: "settings.settingsAppearance.uiFontSearchWords", key: uiFontKey, groupKey: groupInterface},
+		{titleKey: "settings.chatWidthSetting.title", alsoKey: "settings.chatWidthSetting.searchWords", key: chatWidthKey, groupKey: groupInterface},
 		{titleKey: "settings.themesPage.catalogRow", alsoKey: "settings.themesPage.catalogSearchWords", key: themesCatalogKey, groupKey: groupThemes},
 		{titleKey: "settings.themesPage.installedRow", alsoKey: "settings.themesPage.installedSearchWords", key: themesInstalledKey, groupKey: groupThemes},
 		{titleKey: "settings.fontSetting.title", alsoKey: "settings.fontSetting.searchWords", key: terminalFontKey, groupKey: groupTerminal},

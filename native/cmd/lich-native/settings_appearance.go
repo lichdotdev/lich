@@ -30,6 +30,14 @@ var windowButtonsChoices = []struct{ value, labelKey, consequenceKey string }{
 	{windowButtonsHide, "settings.windowButtonsSetting.choice.hide.label", "settings.windowButtonsSetting.choice.hide.consequence"},
 }
 
+// chatWidthChoices are the chat width setting's three answers with the keys
+// of their labels.
+var chatWidthChoices = []struct{ value, labelKey string }{
+	{chatWidthComfortable, "settings.chatWidthSetting.comfortable"},
+	{chatWidthWide, "settings.chatWidthSetting.wide"},
+	{chatWidthFull, "settings.chatWidthSetting.full"},
+}
+
 var (
 	icZoomOut = icons.Lucide("zoom-out")
 	icZoomIn  = icons.Lucide("zoom-in")
@@ -55,6 +63,7 @@ type appearanceControls struct {
 	closeTo    ui.Enum
 	copy       ui.SwitchState
 	buttons    ui.Enum
+	chatWidth  ui.Enum
 }
 
 // commit applies p at once and stores the setting that changed.
@@ -112,6 +121,9 @@ func (s *settingsScreen) appearanceRow(gtx C, th *ui.Theme, e settingEntry, r se
 	case costBudgetKey:
 		r.description = i18n.T("settings.footerSettings.ceilingDescription")
 		control = s.ceilingControl
+	case chatWidthKey:
+		r.description = i18n.T("settings.chatWidthSetting.description")
+		control = s.chatWidthControl
 	case copyOnSelectKey:
 		r.description = i18n.T("settings.appearanceSettings.copyOnSelectDescription")
 		control = s.copyOnSelectControl
@@ -260,6 +272,21 @@ func (s *settingsScreen) windowButtonsBlock(gtx C, th *ui.Theme, r settingRow, f
 	}
 	r.detail = consequence
 	return r.layout(gtx, th, first, func(gtx C, th *ui.Theme) D { return th.ToggleGroup(g, items...).Layout(gtx) })
+}
+
+func (s *settingsScreen) chatWidthControl(gtx C, th *ui.Theme) D {
+	g := &s.look.chatWidth
+	if g.Update(gtx) {
+		p := s.look.prefs
+		p.chatWidth = chatWidthOf(g.Value)
+		s.commitAppearance(p, chatWidthKey, p.chatWidth)
+	}
+	g.Value = s.look.prefs.chatWidth
+	items := make([]ui.ToggleItem, len(chatWidthChoices))
+	for i, c := range chatWidthChoices {
+		items[i] = ui.ToggleItem{Value: c.value, Text: i18n.T(c.labelKey)}
+	}
+	return th.ToggleGroup(g, items...).Layout(gtx)
 }
 
 // rowApplies drops a row that has nothing to set: the spend ceiling while

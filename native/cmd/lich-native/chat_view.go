@@ -23,7 +23,7 @@ import (
 var (
 	// chatPadX is the breathing edge of a screen on the island, kept either
 	// side of the chat in a pane of any width, and chatBoxMax the widest the
-	// composer's box grows: wide enough to hold a long line of code or a
+	// composer's box grows under Comfortable: wide enough to hold a long line of code or a
 	// paragraph at the prose size without the eye losing its line.
 	chatPadX   = ui.Space(6)
 	chatBoxMax = unit.Dp(960)
@@ -309,7 +309,7 @@ func (u *window) chatScreen(gtx C, sv sessionView, keys bool) {
 				}
 				key := shown[i]
 				return p.rows.LayoutFlat(gtx, key, func(gtx C) D {
-					return chatColumn(gtx, top, 0, chatTextInset, func(gtx C) D { return u.chatRow(gtx, th, p, sv, p.seen[key]) })
+					return chatColumn(gtx, u.chatWidth, top, 0, chatTextInset, func(gtx C) D { return u.chatRow(gtx, th, p, sv, p.seen[key]) })
 				})
 			})
 			return d, m.Stop()
@@ -343,7 +343,7 @@ func (u *window) chatScreen(gtx C, sv sessionView, keys bool) {
 		return d
 	}
 	composer := func(gtx C) D {
-		return chatColumn(gtx, chatComposerGap, chatComposerPad, 0, func(gtx C) D { return u.chatComposer(gtx, th, p, sv, working) })
+		return chatColumn(gtx, u.chatWidth, chatComposerGap, chatComposerPad, 0, func(gtx C) D { return u.chatComposer(gtx, th, p, sv, working) })
 	}
 	// A turn of the chat's own, not a hook's report, keeps the start screen
 	// away: a session reports itself busy while its chat opens.
@@ -355,16 +355,25 @@ func (u *window) chatScreen(gtx C, sv sessionView, keys bool) {
 }
 
 // chatColumn centres w on the pane's axis, as wide as the composer's box,
-// which is the pane less chatPadX each side up to chatBoxMax, and inset from
-// its edges by inset; top is above it and bottom under.
-func chatColumn(gtx C, top, bottom, inset unit.Dp, w layout.Widget) D {
+// and inset from its edges by inset; top is above it and bottom under.
+func chatColumn(gtx C, choice string, top, bottom, inset unit.Dp, w layout.Widget) D {
 	full := gtx.Constraints.Max.X
-	width := max(min(full-2*gtx.Dp(chatPadX), gtx.Dp(chatBoxMax)), 0)
+	width := chatColumnWidth(gtx, full, choice)
 	side := gtx.Metric.PxToDp((full-width)/2) + inset
 	return layout.Inset{Top: top, Left: side, Right: side, Bottom: bottom}.Layout(gtx, func(gtx C) D {
 		gtx.Constraints.Min.X = gtx.Constraints.Max.X
 		return w(gtx)
 	})
+}
+
+// chatColumnWidth is the composer's box in a pane full wide: the pane less
+// chatPadX each side, up to the chat width setting's cap.
+func chatColumnWidth(gtx C, full int, choice string) int {
+	width := full - 2*gtx.Dp(chatPadX)
+	if box := chatBox(choice); box > 0 {
+		width = min(width, gtx.Dp(box))
+	}
+	return max(width, 0)
 }
 
 // chatActs runs the view's keys and clicks before it is drawn: Enter sends,

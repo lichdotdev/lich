@@ -243,6 +243,14 @@
       }
     }
   },
+  "chatWidthSetting": {
+    "title": "Ancho del chat",
+    "searchWords": "chat ancho estrecho completo columna mensajes cuadro de texto lectura",
+    "description": "Hasta dónde se estiran los mensajes y el cuadro de texto del chat en una ventana ancha.",
+    "comfortable": "Cómodo",
+    "wide": "Ancho",
+    "full": "Completo"
+  },
   "windowButtonsSetting": {
     "title": "Botones",
     "searchWords": "botones ventana minimizar maximizar cerrar barra de título controles semáforos ocultar mostrar",

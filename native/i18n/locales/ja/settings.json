@@ -243,6 +243,14 @@
       }
     }
   },
+  "chatWidthSetting": {
+    "title": "チャットの幅",
+    "searchWords": "チャット 幅 ワイド 狭い 全幅 カラム メッセージ 入力欄",
+    "description": "ウィンドウが広いとき、チャットのメッセージと入力欄をどこまで広げるか。",
+    "comfortable": "標準",
+    "wide": "ワイド",
+    "full": "全幅"
+  },
   "windowButtonsSetting": {
     "title": "ボタン",
     "searchWords": "ウィンドウ ボタン 最小化 最大化 閉じる タイトルバー コントロール 信号ボタン 非表示 表示",
