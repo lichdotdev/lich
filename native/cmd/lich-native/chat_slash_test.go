@@ -245,3 +245,30 @@ func TestEnterAfterFastTypingCompletesWhatWasTyped(t *testing.T) {
 		t.Errorf("box %q, want /compact and a space", got)
 	}
 }
+
+// On an empty chat's start screen the composer sits mid-pane: the list over it
+// fits in what is above it, not in the whole pane's height.
+func TestTheSlashListFitsOverTheStartScreensComposer(t *testing.T) {
+	u, r, _ := chatFramesIn(t, api.ViewChat, image.Pt(1200, 560), busySession())
+	var cmds []backend.ChatCommand
+	for i := range 40 {
+		cmds = append(cmds, backend.ChatCommand{Text: "/cmd" + strconv.Itoa(i), Description: "a command"})
+	}
+	u.model.chat.setCommands("s1", cmds)
+	u.model.chat.history("s1", nil)
+	r.settle(t)
+	typeIn(r, u.chats.pane("s1"), "/")
+	r.frame()
+	top := r.size.Y
+	for _, n := range r.nodes() {
+		if strings.HasPrefix(n.Desc.Label, "/cmd") || strings.HasPrefix(n.Desc.Label, "/new") {
+			top = min(top, n.Desc.Bounds.Min.Y)
+		}
+	}
+	if top == r.size.Y {
+		t.Fatalf("no list on the start screen:\n%s", r.drawn())
+	}
+	if top < 0 {
+		t.Errorf("the list's first row at y=%d, above the pane", top)
+	}
+}

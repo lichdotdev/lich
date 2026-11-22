@@ -107,7 +107,8 @@ type chatView struct {
 	queueRows []chatQueueRow
 	plan      chatPlanState
 	// slash is the list of the provider's commands over the composer, which
-	// may grow over the conversation up to slashRoom, the pane's height.
+	// may grow over the conversation up to slashRoom, the pane's height (on
+	// the start screen, what is above its composer and the composer).
 	slash     chatSlash
 	slashRoom int
 	// mention is the list of the checkout's paths an @ opens, in the slash
