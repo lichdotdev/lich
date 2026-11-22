@@ -242,6 +242,22 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   send it, so a file changed between the two goes as it is at the send. The person's message keeps its cards
   for as long as the chat's process runs: a conversation read back shows its text alone, and a message of
   images alone read back from Claude Code or replayed by an ACP agent shows no message at all. Crush has no chat.
+- **A path picked from a chat's @ list reaches every agent as the `@path` typed, and only Claude Code reads the
+  file from it** (`native/cmd/lich-native/chat_mention.go`, `chat_mention_rank.go`): the list puts `@path ` in the
+  text, and the text goes as it is. Claude Code reads the file into the message before its model sees it (measured
+  on 2.1.330 in stream-json with every tool off: it answered from the file), but only from a text block
+  that ends the message: with the text before an attached image it left the mention unread, so lich sends a
+  message's images first (`internal/chat/claude.go` `claudeContent`). Codex passes it on as text (measured
+  on `codex exec` 0.170.0: the model said the file was not in the message) and opens the path with its own tools
+  when it wants it. An ACP agent (opencode, oh-my-pi, Antigravity, Kiro CLI, Cursor CLI) gets it inside the text
+  block; ACP carries a file as a `resource_link` block, which lich does not send, so what each does with the text
+  was not measured. The list is the checkout's listing the chat already reads to make an answer's paths links
+  (`project.Tree`: `git ls-files --cached --others --exclude-standard`, Claude Code's own listing), read again as
+  the conversation grows and not as you type, so a file created since the last message is missing until the
+  next one. It ranks the way Claude Code 2.1.330's file index does, its 15 best; a bare @ offers the listing's top
+  level, where Claude Code reads the directory, so an ignored folder such as `node_modules` is not offered. Claude
+  Code's @ also lists agents and MCP resources, and takes a quoted `@"path with spaces"` as typed; lich's lists
+  files and folders, and quotes a path with a space only when it puts one in. Crush has no chat.
 - **`lich insert` cannot reach a session drawn as a chat** (`internal/relay/insert.go` `refuseChat`): it leaves text
   at a prompt unsent, and a chat's unsent text lives in the window's composer, which the backend has no way to type
   into. It is refused, saying so, where it used to wait out its timeout and report the session stopped. Inside the

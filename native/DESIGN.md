@@ -559,6 +559,11 @@ draws none while it grows in, because the room above the rows is measured in the
   start that matches nothing opens nothing, so Enter sends. lich's own `/new` leads the list: sent, it starts an
   empty conversation in the card (`chat.New`) instead of reaching the agent, and the conversation it replaces
   leaves at once, with no row playing out.
+  `@` at the start of a word opens the checkout's folders and files in the same place, on the same surface and
+  rows (`chat_mention.go`): a folder's glyph or the file's icon, the name in medium and the folder it sits in
+  muted on the rest of the line, so a deep path cuts its folder and never its name. It ranks as Claude Code does,
+  its 15 best; Enter puts `@path ` in, Tab first puts in what every path shown shares and keeps the list open on
+  it, and Escape shuts it until the word changes. An `@` mid-word, as in an email, opens nothing.
   A file dragged over a session drawn as a chat lights the terminal's drop hint over the whole session, and
   dropped, or picked with the attach "+", it stands over the text inside the box as a card (`chat_attach.go`): a
   `Space(30)` square, `RadiusLG`, the box's fill and a `Border` hairline, `Space(2)` apart in a row that scrolls

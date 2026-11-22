@@ -119,3 +119,13 @@ func TestClaudeContent(t *testing.T) {
 		t.Errorf("source = %v", src)
 	}
 }
+
+// Claude Code reads an @path only from a text block after the images: with the
+// text first it leaves the mention unread (measured on 2.1.330, stream-json).
+func TestClaudeContentPutsTheTextAfterTheImages(t *testing.T) {
+	img := attachedImage{mime: "image/png", data: pngHead}
+	blocks, _ := claudeContent(message{text: "read @a.go", images: []attachedImage{img, img}}).([]map[string]any)
+	if len(blocks) != 3 || blocks[0]["type"] != "image" || blocks[1]["type"] != "image" || blocks[2]["text"] != "read @a.go" {
+		t.Errorf("content = %v, want the images, then the text", blocks)
+	}
+}
