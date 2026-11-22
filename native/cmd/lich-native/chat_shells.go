@@ -45,8 +45,8 @@ type chatShellOut struct {
 	// gen counts the reads that landed, scrolled the one the list was
 	// scrolled to the end for.
 	gen, scrolled int
-	next     time.Time
-	stop     ui.Clickable
+	next          time.Time
+	stop          ui.Clickable
 }
 
 // openShells opens the shells' panel. The box keeps what was typed: typing

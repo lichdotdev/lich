@@ -78,8 +78,8 @@ func (s *claudeShells) task(subtype string, raw []byte, command func(toolUse str
 		}
 		bg := t.Backgrounded != nil && *t.Backgrounded
 		s.list = append(s.list, &claudeShell{
-			ChatShell: api.ChatShell{ID: t.TaskID, Command: cmd, Description: t.Description, State: api.ShellRunning, Started: now.UnixMilli()},
-			toolUse:   t.ToolUseID, background: bg,
+			ID: t.TaskID, Command: cmd, Description: t.Description, State: api.ShellRunning, Started: now.UnixMilli(),
+			toolUse: t.ToolUseID, background: bg,
 		})
 		return bg
 	}
