@@ -91,3 +91,34 @@ func TestVersionControlRowsFollowTheScope(t *testing.T) {
 		t.Errorf("searching gh misses the account: %v", hits)
 	}
 }
+
+// Each tool's row says what it lacks and offers the command that fixes it:
+// the package manager's for a missing one, the sign-in for a CLI with no
+// account, the form for git without a global name or email.
+func TestToolRowsOfferWhatEachToolLacks(t *testing.T) {
+	v := &vcsSettings{checks: map[string]backend.BinaryCheck{
+		vcsGitBin:  {Path: "/usr/bin/git", Status: backend.CheckOK},
+		vcsGhBin:   {Status: "notFound"},
+		vcsGlabBin: {Path: "/usr/bin/glab", Status: backend.CheckOK},
+	}}
+	v.setup.installs = map[string]string{vcsGhBin: "sudo pacman -S --needed github-cli"}
+	v.setup.glabAccounts = []string{}
+	v.setup.global = &backend.CommitIdentity{Name: "Ana"}
+	if st := v.toolState(vcsGh); !st.gone || st.install != "sudo pacman -S --needed github-cli" {
+		t.Errorf("missing gh: %+v", st)
+	}
+	if st := v.toolState(vcsGlab); st.signIn != vcsGlabSignIn || !st.alarm {
+		t.Errorf("glab with no account: %+v", st)
+	}
+	if st := v.toolState(vcsGit); !st.identity || st.resolved != "/usr/bin/git" {
+		t.Errorf("git with no email: %+v", st)
+	}
+	v.setup.glabAccounts = []string{"gitlab.com/ana.souza"}
+	v.setup.global = &backend.CommitIdentity{Name: "Ana", Email: "ana@example.dev"}
+	if st := v.toolState(vcsGlab); st.status != "ana.souza" || st.signIn != "" || st.alarm {
+		t.Errorf("glab signed in: %+v", st)
+	}
+	if st := v.toolState(vcsGit); st.identity || st.status != "Ana · ana@example.dev" {
+		t.Errorf("git with an identity: %+v", st)
+	}
+}

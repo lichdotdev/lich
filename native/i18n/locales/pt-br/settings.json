@@ -346,7 +346,16 @@
     "searchWords": "git gh glab instalar",
     "description": "O lich usa o git e as CLIs do GitHub e do GitLab. Tudo nesta tela passa por elas.",
     "notOnPath": "Fora do $PATH",
-    "install": "Instalar"
+    "install": "Instalar",
+    "website": "Site",
+    "runsInTerminal": "Abre um terminal rodando {command}.",
+    "noAccount": "Nenhuma conta",
+    "signIn": "Entrar",
+    "noIdentity": "Sem nome e e-mail para os commits",
+    "name": "Nome",
+    "email": "E-mail",
+    "save": "Salvar",
+    "savedGlobally": "Fica salvo com git config --global."
   },
   "versionControlSettings": {
     "account": "Conta do GitHub",

@@ -63,3 +63,30 @@ func (c *Client) GitHubAccountOf(ctx context.Context, path string) (GitHubAccoun
 func (c *Client) CommitIdentity(ctx context.Context, path string) (CommitIdentity, error) {
 	return callMethod(ctx, c, api.ProjectCommitIdentity, api.PathOptions{Path: path})
 }
+
+// ToolInstall is the command that installs git, gh or glab with the machine's
+// package manager, "" when lich knows none.
+func (c *Client) ToolInstall(ctx context.Context, bin string) (string, error) {
+	return callMethod(ctx, c, api.ProvidersToolInstall, api.BinaryOptions{Bin: bin})
+}
+
+// GitLabAccounts lists glab's signed-in accounts as "<host>/<login>"; empty
+// when it is signed in to none.
+func (c *Client) GitLabAccounts(ctx context.Context) ([]string, error) {
+	accounts, err := callMethod(ctx, c, api.ProjectGitLabAccounts, api.None{})
+	if accounts == nil {
+		accounts = []string{}
+	}
+	return accounts, err
+}
+
+// GlobalCommitIdentity is the name and email in the global git config.
+func (c *Client) GlobalCommitIdentity(ctx context.Context) (CommitIdentity, error) {
+	return callMethod(ctx, c, api.ProjectGlobalCommitIdentity, api.None{})
+}
+
+// SetGlobalCommitIdentity writes the name and email to the global git config.
+func (c *Client) SetGlobalCommitIdentity(ctx context.Context, name, email string) error {
+	_, err := callMethod(ctx, c, api.ProjectSetGlobalCommitIdentity, api.CommitIdentityOptions{Name: name, Email: email})
+	return err
+}

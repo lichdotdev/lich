@@ -391,6 +391,7 @@ func run(w *app.Window, rt backend.Runtime) error {
 	u.settings.providers.codex.bind(u.model.codexProfiles, u.openLoginTerminal)
 	u.settings.providers.omp.bind(u.model.ompProfiles, u.openLoginTerminal)
 	u.settings.providers.bindXDG(u.model.xdgProfiles, u.openLoginTerminal)
+	u.settings.vcs.setup.openTerminal = u.openLoginTerminal
 	u.model.loginProgress = u.settings.loginProgress
 	u.bindWelcome()
 	u.settings.providers.book = u.model.providers

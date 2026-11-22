@@ -346,7 +346,16 @@
     "searchWords": "git gh glab install",
     "description": "lich drives git, the GitHub CLI and the GitLab CLI. Everything on this screen runs through them.",
     "notOnPath": "Not on $PATH",
-    "install": "Install"
+    "install": "Install",
+    "website": "Website",
+    "runsInTerminal": "Opens a terminal running {command}.",
+    "noAccount": "No account",
+    "signIn": "Sign in",
+    "noIdentity": "No name or email for commits",
+    "name": "Name",
+    "email": "Email",
+    "save": "Save",
+    "savedGlobally": "Saved with git config --global."
   },
   "versionControlSettings": {
     "account": "GitHub account",

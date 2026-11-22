@@ -74,6 +74,7 @@ type vcsSettings struct {
 	install map[string]*ui.Clickable
 	picker  ui.DropdownPanelState
 	options map[string]*ui.Clickable
+	setup   vcsSetup
 }
 
 // revalidate has the next draw read everything again.
@@ -82,6 +83,7 @@ func (v *vcsSettings) revalidate() {
 	v.loaded = false
 	v.identities.reset()
 	v.mu.Unlock()
+	v.setup.form.filled = false
 }
 
 // ensure starts the section's reads the first time it is drawn after a
@@ -96,6 +98,7 @@ func (v *vcsSettings) ensure(s *settingsScreen) {
 	}
 	go v.verifyTools(s)
 	go v.listAccounts(s)
+	go v.readSetup(s)
 }
 
 // verifyTools asks where git, gh and glab resolve. A failed call leaves the tool
@@ -198,6 +201,9 @@ func (s *settingsScreen) vcsToolsBlock(gtx C, th *ui.Theme, r settingRow, first 
 			children = append(children, layout.Rigid(func(gtx C) D { return s.vcsToolRow(gtx, th, t) }))
 			failed = failed || v.failed(t.bin)
 		}
+		if failure := v.setupFailure(); failure != "" {
+			children = append(children, ui.VGap(1), layout.Rigid(th.Text(ui.TextXS, failure).In(th.Destructive).Layout))
+		}
 		if failed {
 			children = append(children, ui.VGap(1), layout.Rigid(func(gtx C) D {
 				return layout.Inset{Top: ui.Space(1)}.Layout(gtx, func(gtx C) D { return v.recheckButton(gtx, th) })
@@ -224,51 +230,6 @@ func (v *vcsSettings) recheckButton(gtx C, th *ui.Theme) D {
 		layout.Rigid(b.Layout),
 		ui.VGap(1),
 		layout.Rigid(th.Text(ui.TextXS, failure).In(th.Destructive).Layout),
-	)
-}
-
-// vcsToolRow is ToolRow: the tool's icon and name, then its resolved path
-// or, when missing, the verdict, its Install and what goes without it.
-func (s *settingsScreen) vcsToolRow(gtx C, th *ui.Theme, t vcsTool) D {
-	v := &s.vcs
-	c, known := v.check(t.bin)
-	gone := known && c.Failed()
-	if v.install == nil {
-		v.install = map[string]*ui.Clickable{}
-	}
-	install := clickableOf(v.install, t.bin)
-	if install.Clicked(gtx) {
-		s.openExternal(t.url)
-	}
-	verdict := th.Text(ui.TextXS, c.Path).Muted().Mono()
-	if gone {
-		verdict = th.Text(ui.TextXS, i18n.T("settings.vcsToolsSetting.notOnPath")).In(th.Destructive)
-	}
-	line := func(gtx C) D {
-		gtx.Constraints.Min.X = gtx.Constraints.Max.X
-		children := []layout.FlexChild{
-			layout.Rigid(func(gtx C) D { return t.icon.Layout(gtx, ui.Space(4), th.MutedForeground) }),
-			ui.Gap(2.5),
-			layout.Rigid(th.Text(ui.TextSM, t.label).Layout),
-			layout.Flexed(1, func(gtx C) D { return layout.E.Layout(gtx, verdict.Layout) }),
-		}
-		if gone {
-			b := th.Button(install, i18n.T("settings.vcsToolsSetting.install"))
-			b.Size, b.Icon = ui.SizeSM, icVcsExternal
-			children = append(children, ui.Gap(2.5), layout.Rigid(b.Layout))
-		}
-		return layout.Inset{Top: ui.Space(1), Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
-			return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
-		})
-	}
-	if !gone {
-		return line(gtx)
-	}
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(line),
-		layout.Rigid(func(gtx C) D {
-			return layout.Inset{Left: ui.Space(vcsWithoutInset)}.Layout(gtx, th.Text(ui.TextXS, i18n.T(t.without)).Muted().Layout)
-		}),
 	)
 }
 

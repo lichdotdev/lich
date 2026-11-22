@@ -48,6 +48,7 @@ func Providers(d *rpc.Handler, s *providers.Service) {
 	rpc.Handle(d, api.ProvidersOnPath, s.OnPath)
 	rpc.Handle(d, api.ProvidersRefreshPath, s.RefreshPath)
 	rpc.Handle(d, api.ProvidersVerify, s.Verify)
+	rpc.Handle(d, api.ProvidersToolInstall, s.ToolInstall)
 	rpc.Handle(d, api.ProvidersVersion, s.Version)
 	rpc.Handle(d, api.ProvidersInstall, s.Install)
 }

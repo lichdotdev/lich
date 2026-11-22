@@ -342,7 +342,16 @@
     "searchWords": "git gh glab 설치",
     "description": "lich는 git, GitHub CLI, GitLab CLI를 사용합니다. 이 화면의 모든 기능이 이 도구들로 동작합니다.",
     "notOnPath": "$PATH에 없음",
-    "install": "설치"
+    "install": "설치",
+    "website": "웹사이트",
+    "runsInTerminal": "{command}을(를) 실행하는 터미널을 엽니다.",
+    "noAccount": "계정 없음",
+    "signIn": "로그인",
+    "noIdentity": "커밋에 쓸 이름과 이메일이 없습니다",
+    "name": "이름",
+    "email": "이메일",
+    "save": "저장",
+    "savedGlobally": "git config --global로 저장됩니다."
   },
   "versionControlSettings": {
     "account": "GitHub 계정",

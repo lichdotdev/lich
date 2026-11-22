@@ -346,7 +346,16 @@
     "searchWords": "git gh glab インストール",
     "description": "lich は git、GitHub CLI、GitLab CLI を使って動作します。この画面の機能はすべてこれらを通して動きます。",
     "notOnPath": "$PATH にありません",
-    "install": "インストール"
+    "install": "インストール",
+    "website": "Webサイト",
+    "runsInTerminal": "{command} を実行するターミナルを開きます。",
+    "noAccount": "アカウントなし",
+    "signIn": "サインイン",
+    "noIdentity": "コミット用の名前とメールアドレスがありません",
+    "name": "名前",
+    "email": "メールアドレス",
+    "save": "保存",
+    "savedGlobally": "git config --global で保存されます。"
   },
   "versionControlSettings": {
     "account": "GitHub アカウント",

@@ -41,6 +41,8 @@ type Service struct {
 	// every host but gitlab.com as GitHub. glabProbes caches its host probe.
 	glab       glabRunner
 	glabProbes glabHosts
+	// glabStatus is `glab auth status`'s output, a seam for GitLabAccounts.
+	glabStatus func() string
 	// forges is the last forge each checkout was answered with (forge.go).
 	forges forgeKinds
 	// accounts resolves the gh account a checkout's calls run as; nil (the
@@ -80,7 +82,7 @@ type Service struct {
 
 // New returns a project service using the given picker.
 func New(picker Picker) *Service {
-	return &Service{picker: picker, runner: runGH, glab: runGLab}
+	return &Service{picker: picker, runner: runGH, glab: runGLab, glabStatus: runGLabStatus}
 }
 
 // Open shows the native directory picker and returns the chosen project, or nil

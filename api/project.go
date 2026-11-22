@@ -36,6 +36,9 @@ var (
 	ProjectWorktreeDirty            = define[PathOptions, bool]("project.WorktreeDirty")
 	ProjectWorktreeAdopted          = define[PathOptions, bool]("project.WorktreeAdopted")
 	ProjectGitHubAccounts           = define[None, []string]("project.GitHubAccounts")
+	ProjectGitLabAccounts           = define[None, []string]("project.GitLabAccounts")
+	ProjectGlobalCommitIdentity     = define[None, CommitIdentity]("project.GlobalCommitIdentity")
+	ProjectSetGlobalCommitIdentity  = define[CommitIdentityOptions, None]("project.SetGlobalCommitIdentity")
 	ProjectGitHubAccountOf          = define[PathOptions, GitHubAccountState]("project.GitHubAccountOf")
 	ProjectForge                    = define[PathOptions, string]("project.Forge")
 	ProjectIssue                    = define[NumberOptions, Issue]("project.Issue")
@@ -545,6 +548,12 @@ type CommitIdentity struct {
 	Name  string `json:"name"`
 	Email string `json:"email"`
 	Local bool   `json:"local"`
+}
+
+// CommitIdentityOptions is the name and email to author commits with.
+type CommitIdentityOptions struct {
+	Name  string `json:"name"`
+	Email string `json:"email"`
 }
 
 // GitHubAccountState is how the checkout's project answers to gh: Account is

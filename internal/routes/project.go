@@ -79,6 +79,9 @@ func projectBranches(d *rpc.Handler, s *project.Service) {
 
 func projectPullRequests(d *rpc.Handler, s *project.Service) {
 	rpc.Handle(d, api.ProjectGitHubAccounts, s.GitHubAccounts)
+	rpc.Handle(d, api.ProjectGitLabAccounts, s.GitLabAccounts)
+	rpc.Handle(d, api.ProjectGlobalCommitIdentity, s.GlobalCommitIdentity)
+	rpc.Handle(d, api.ProjectSetGlobalCommitIdentity, s.SetGlobalCommitIdentity)
 	rpc.Handle(d, api.ProjectGitHubAccountOf, s.GitHubAccountOf)
 	rpc.Handle(d, api.ProjectForge, s.Forge)
 	rpc.Handle(d, api.ProjectIssue, s.Issue)

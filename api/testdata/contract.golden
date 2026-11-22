@@ -166,6 +166,7 @@ project.GitCreateBranch(GitCreateBranchOptions) None
 project.GitDeleteBranch(GitBranchOptions) GitDeletedBranch
 project.GitHubAccountOf(PathOptions) GitHubAccountState
 project.GitHubAccounts(None) []string
+project.GitLabAccounts(None) []string
 project.GitLog(GitLogOptions) GitLogPage
 project.GitMarkResolved(CheckoutFileOptions) None
 project.GitMerge(GitMergeOptions) GitMergeResult
@@ -176,6 +177,7 @@ project.GitMergeUndo(GitMergeUndoOptions) None
 project.GitRefs(PathOptions) GitRefs
 project.GitRenameBranch(GitRenameBranchOptions) None
 project.GitResolveFile(GitResolveFileOptions) None
+project.GlobalCommitIdentity(None) CommitIdentity
 project.Home(None) *OpenedProject
 project.Issue(NumberOptions) Issue
 project.ListBranches(PathOptions) Branches
@@ -204,6 +206,7 @@ project.ResolveReviewThread(ResolveThreadOptions) None
 project.RestoreLines(RestoreLinesOptions) None
 project.RevertLines(RevertLinesOptions) RevertResult
 project.Search(SearchOptions) SearchResult
+project.SetGlobalCommitIdentity(CommitIdentityOptions) None
 project.ShowCode(ShowCodeOptions) ShowCode
 project.SubmitReview(SubmitReviewOptions) None
 project.ThreadFixes(None) []ThreadFix
@@ -215,6 +218,7 @@ providers.Detect(None) []DetectedProvider
 providers.Install(ProviderIDOptions) None
 providers.OnPath(ProviderIDOptions) []ProviderBinary
 providers.RefreshPath(None) None
+providers.ToolInstall(BinaryOptions) string
 providers.Verify(BinaryOptions) BinaryCheck
 providers.Version(BinaryOptions) string
 quota.CodexProfilePlan(ProfilePlanOptions) QuotaPlan
@@ -1411,6 +1415,11 @@ SearchResult {
 	matches []SearchMatch
 	cut bool
 	tooLarge int
+}
+
+CommitIdentityOptions {
+	name string
+	email string
 }
 
 ShowCodeOptions {

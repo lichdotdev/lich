@@ -9,6 +9,10 @@ var (
 	// ProvidersInstall starts installing a provider's CLI and returns once it
 	// runs; ProviderInstallEvent carries the rest.
 	ProvidersInstall = define[ProviderIDOptions, None]("providers.Install")
+	// ProvidersToolInstall is the command that installs a version control
+	// tool (git, gh, glab) with the machine's package manager, "" when lich
+	// knows none for it.
+	ProvidersToolInstall = define[BinaryOptions, string]("providers.ToolInstall")
 )
 
 // The Status of a BinaryCheck that passed, and of one with nothing to check;
