@@ -131,7 +131,7 @@ func TestClaudeAgents(t *testing.T) {
 		{Name: "Explore", Description: "Search the code", Model: "inherit", Source: api.AgentBuiltIn},
 		{Name: "general-purpose", Description: "Anything else", Source: api.AgentBuiltIn},
 	}
-	if !got.Reported || !slices.EqualFunc(got.Agents, want, agentEqual) || !slices.Equal(got.Create, []string{api.AgentUser, api.AgentProject}) {
+	if !got.Reported || !slices.EqualFunc(got.Agents, want, agentEqual) || !slices.Equal(got.Create, []string{api.AgentProject, api.AgentUser}) {
 		t.Errorf("agents = %+v", got)
 	}
 	path, err := r.newAgent(api.AgentProject, "helper", `Helps with "quotes"`)

@@ -102,7 +102,8 @@ const (
 )
 
 // ChatAgentList is a chat session's subagents. Create is where ChatNewAgent
-// writes one, AgentUser or AgentProject, nil where the provider takes none.
+// writes one, AgentProject or AgentUser, the default first, nil where the
+// provider takes none.
 type ChatAgentList struct {
 	Reported bool        `json:"reported"`
 	Agents   []ChatAgent `json:"agents,omitempty"`

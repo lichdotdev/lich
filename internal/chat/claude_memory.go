@@ -159,7 +159,7 @@ func (d *claudeDriver) agents(ctx context.Context) (api.ChatAgentList, error) {
 	for _, a := range listed {
 		known[a.Name] = a
 	}
-	list := api.ChatAgentList{Reported: true, Create: []string{api.AgentUser, api.AgentProject}}
+	list := api.ChatAgentList{Reported: true, Create: []string{api.AgentProject, api.AgentUser}}
 	filed := map[string]bool{}
 	for _, u := range usage.Agents {
 		filed[u.Type] = true

@@ -66,7 +66,11 @@ func memoryRowView(gtx C, th *ui.Theme, checkout string, r memoryRow) D {
 		return toolsLine(gtx, th, icMemoryNote, th.MutedForeground, th.Text(ui.TextSM, strings.TrimSuffix(r.note.Name, ".md")), r.note.Description, 0)
 	}
 	f := *r.file
-	name, meta := th.Text(ui.TextSM, memoryFileLabel(checkout, f)), displayPath(f.Path)
+	label := memoryFileLabel(checkout, f)
+	name, meta := th.Text(ui.TextSM, label), memoryFilePlace(checkout, f.Path)
+	if meta == label {
+		meta = ""
+	}
 	if !f.Exists {
 		name, meta = name.Muted(), i18n.T("chat.memory.missing")
 	}
@@ -86,10 +90,16 @@ func memoryFileLabel(checkout string, f api.ChatMemoryFile) string {
 	case api.MemoryProject:
 		return i18n.T("chat.memory.project")
 	}
-	if rel, err := filepath.Rel(checkout, f.Path); checkout != "" && err == nil && !strings.HasPrefix(rel, "..") {
+	return memoryFilePlace(checkout, f.Path)
+}
+
+// memoryFilePlace is where a file is: its path in the checkout, or its whole
+// path outside it.
+func memoryFilePlace(checkout, path string) string {
+	if rel, err := filepath.Rel(checkout, path); checkout != "" && err == nil && !strings.HasPrefix(rel, "..") {
 		return rel
 	}
-	return displayPath(f.Path)
+	return displayPath(path)
 }
 
 func memorySettingRow(gtx C, th *ui.Theme, setting string, t api.ChatMemoryToggle) D {
@@ -138,7 +148,7 @@ func (u *window) agentsView(gtx C, th *ui.Theme, p *chatPane, sv sessionView, l 
 	for i, a := range agents {
 		if g := agentGroup(a.Source); g != group {
 			group = g
-			lines = append(lines, memoryGroupLine(th, agentGroupLabel(g), agentGroupDir(g, a.Path)))
+			lines = append(lines, memoryGroupLine(th, agentGroupLabel(g), agentGroupDir(sv.path, g, a.Path)))
 		}
 		lines = append(lines, func(gtx C) D {
 			return pickerRow(gtx, th, &t.rows[i], i == t.cursor, func(gtx C, th *ui.Theme) D { return agentRow(gtx, th, a) })
@@ -172,11 +182,11 @@ func agentGroupLabel(g string) string {
 
 // agentGroupDir is the folder a group's files are in, where they all share
 // one.
-func agentGroupDir(g, path string) string {
+func agentGroupDir(checkout, g, path string) string {
 	if path == "" || (g != api.AgentProject && g != api.AgentUser) {
 		return ""
 	}
-	return displayPath(filepath.Dir(path))
+	return memoryFilePlace(checkout, filepath.Dir(path))
 }
 
 func agentRow(gtx C, th *ui.Theme, a api.ChatAgent) D {
