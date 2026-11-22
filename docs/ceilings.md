@@ -159,12 +159,11 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   context is kept, each an allow with a `setMode` to `acceptEdits` or `default`, and a field that denies it
   with the person's words; Esc or a message sent instead denies it with none, which keeps plan mode (measured on
   2.1.330, where an empty deny message fails the next API call, so lich always writes one). The allow leaves
-  the input empty, as the TUI's does: a plan in it reads as edited by the user and is written back to its file.
+  the input empty, as the TUI's does, which approves the plan as written; a plan in it would read as edited by
+  the user and be written back to its file (read in Claude Code's code, not run).
   The TUI's other rows are not offered: clearing the context (`showClearContextOnPlanAccept`), bypass
   permissions or a return to auto mode in place of accepting edits, Ultraplan, and approving with feedback. A
-  conversation read back shows a plan approved without the mode it started in, and a deny without its words.
-  The card asks even where the checkout answers every permission yes, since Claude Code marks the call as
-  needing the person. Codex's plan mode is a collaboration mode lich's Codex chat never sets, and its "Implement
+  conversation read back shows a plan approved without the mode it started in, and a deny without its words. Codex's plan mode is a collaboration mode lich's Codex chat never sets, and its "Implement
   this plan?" is the TUI's own prompt, not an app-server request (0.170.0 schema). No ACP provider was measured
   leaving a plan mode; read from their binaries, opencode's `plan_exit` asks with its own question (the question
   card) and Antigravity's `exit_plan_mode` starts the work without asking, and Cursor CLI, oh-my-pi and Kiro CLI

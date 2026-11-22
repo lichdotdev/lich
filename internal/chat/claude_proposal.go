@@ -44,8 +44,9 @@ func (d *claudeDriver) askProposal(ask claudeAsk, respond func(map[string]any) e
 	text := prompt.For(d.lang)
 	d.c.question(ask.ToolUseID, q, func(r api.ChatQReplied) error {
 		if mode, ok := proposalMode(r); ok {
-			// The TUI's input stays empty unless the person edited the plan:
-			// a plan in it reads as edited, and is written back to its file.
+			// The TUI's input stays empty unless the person edited the plan,
+			// and so approves it as written (measured); a plan in it reads as
+			// edited and is written back to its file (read in its code).
 			return respond(map[string]any{"behavior": "allow", "updatedInput": map[string]any{},
 				"updatedPermissions": []map[string]any{{"type": "setMode", "mode": mode, "destination": "session"}}})
 		}
