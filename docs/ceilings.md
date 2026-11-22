@@ -1072,8 +1072,10 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   - An administrator merge is refused: GitLab has no bypass of a branch's rules from the merge call. Merge,
     squash and rebase map onto glab's own; glab's rebase rebases the branch on GitLab and then merges it.
   - GitLab finds a branch's merge request by the branch's name alone, so a fork's merge request counts only
-    when this checkout holds its head commit (`holdsCommit`): one opened from a fork's `main` would otherwise
-    badge every checkout of `main`. A branch with several is read as its open one, else the newest.
+    when this checkout holds its head commit (`holdsCommit`) and its branch is not named like its target: one
+    opened from a fork's `main` would otherwise badge every checkout of `main`, and once merged it is in
+    `main`'s history. So a session on a fork's merge request from its `main` gets no badge. A branch with
+    several is read as its open one, else the newest.
 - **A worktree off a local branch waits on a fetch first** (`internal/spawn/spawn.go` `newerOf`,
   `internal/project/freshness.go`): `lich open --worktree`, a subagent's worktree and `open_session` fetch the
   base's upstream to start from the newer of the two, so against a remote that does not answer the session

@@ -124,7 +124,9 @@ func (mr glabMR) crossRepo() bool { return mr.SourceProjectID != mr.TargetProjec
 //
 // GitLab filters by branch name alone, so every fork's merge request from a
 // branch called main comes back for a checkout of main (measured on
-// gitlab-org/cli). A fork's one counts only when this checkout holds its head.
+// gitlab-org/cli). A fork's one counts only when this checkout holds its head,
+// and never when it merges a branch into its namesake: a fork's main merged
+// into main is in main's history, and is still someone else's.
 func (g gitlabForge) branchMR(path string, all bool) (glabMR, error) {
 	branch, _ := gitQuiet(path, "symbolic-ref", "--short", "HEAD")
 	if branch = strings.TrimSpace(branch); branch == "" {
@@ -142,7 +144,9 @@ func (g gitlabForge) branchMR(path string, all bool) (glabMR, error) {
 	if err := json.Unmarshal(out, &mrs); err != nil {
 		return glabMR{}, errUnreadableGitLab(err)
 	}
-	mrs = slices.DeleteFunc(mrs, func(mr glabMR) bool { return mr.crossRepo() && !holdsCommit(path, mr.SHA) })
+	mrs = slices.DeleteFunc(mrs, func(mr glabMR) bool {
+		return mr.crossRepo() && (mr.SourceBranch == mr.TargetBranch || !holdsCommit(path, mr.SHA))
+	})
 	if len(mrs) == 0 {
 		return glabMR{}, errNoPullRequest
 	}

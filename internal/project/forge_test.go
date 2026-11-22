@@ -136,6 +136,11 @@ func TestBranchMergeRequestPicksTheCheckoutsOwn(t *testing.T) {
 		{"the open one before a newer closed one", listRows(t, []int{4495, 4512}, map[int]map[string]any{4512: {"state": "opened"}}), 4512},
 		{"the newest when none is open", listRows(t, []int{4514, 4495}, nil), 4514},
 		{"a fork's one whose head this checkout holds", listRows(t, []int{4527}, map[int]map[string]any{4527: {"sha": head}}), 4527},
+		{
+			"a fork's main merged into main, held by main's history",
+			listRows(t, []int{4516}, map[int]map[string]any{4516: {"sha": head, "source_branch": "main"}}),
+			0,
+		},
 		{"nothing of its own", listRows(t, []int{4527, 4526}, nil), 0},
 		{"none at all", []byte("[]"), 0},
 	} {
