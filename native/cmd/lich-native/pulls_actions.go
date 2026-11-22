@@ -83,7 +83,7 @@ func prTarget(pr *backend.PullRequest, shown, checkout string) (number int, url 
 // own checkout's without a session.
 func (u *window) checkoutPR(p backend.Project) (string, int) {
 	if sv, ok := u.model.activeSession(); ok {
-		if sv.pr != nil {
+		if isOpenPR(sv.pr) {
 			return sv.git.Branch, sv.pr.Number
 		}
 		return sv.git.Branch, 0

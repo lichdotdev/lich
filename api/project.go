@@ -374,15 +374,25 @@ type OpenedProject struct {
 	Path string `json:"path"`
 }
 
-// PullRequest is the GitHub pull request of a work tree's current branch, as
-// reported by the gh CLI, whatever its state: one of gh's OPEN, CLOSED, MERGED.
+// The forges a PullRequest can come from. Its reader says which, since a URL
+// cannot: GitHub Enterprise and self-hosted GitLab live on any host.
+const (
+	ForgeGitHub = "github"
+	ForgeGitLab = "gitlab"
+)
+
+// PullRequest is the pull request of a work tree's current branch, whatever its
+// state: one of gh's OPEN, CLOSED, MERGED. Forge is "" when the reader did not
+// say.
 type PullRequest struct {
 	Number      int    `json:"number"`
 	URL         string `json:"url"`
 	Title       string `json:"title"`
 	State       string `json:"state"`
+	IsDraft     bool   `json:"isDraft"`
 	HeadRefName string `json:"headRefName"`
 	BaseRefName string `json:"baseRefName"`
+	Forge       string `json:"forge"`
 }
 
 // BranchPullRequest is one read of the pull request of the branch checked out

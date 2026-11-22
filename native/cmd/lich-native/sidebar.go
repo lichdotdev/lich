@@ -42,7 +42,6 @@ type sidebar struct {
 	prChips  map[string]*ui.Clickable
 	icPin    *icons.Icon
 	icShield *icons.Icon
-	icPR     *icons.Icon
 	started  time.Time
 
 	// The panel: its persisted layout and the resize strip on its edge.
@@ -83,7 +82,6 @@ func newSidebar(root *ui.Root) *sidebar {
 		prChips:      map[string]*ui.Clickable{},
 		icPin:        icons.Lucide("pin"),
 		icShield:     icons.Lucide("shield"),
-		icPR:         icons.Lucide("git-pull-request-arrow"),
 		started:      time.Now(),
 		widthRem:     sidebarDefaultRem,
 		open:         true,

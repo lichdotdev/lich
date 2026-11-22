@@ -101,11 +101,11 @@ func TestBranchPullRequestKeepsAMergedOne(t *testing.T) {
 	if err != nil {
 		t.Fatalf("BranchPullRequest: %v", err)
 	}
-	want := PullRequest{Number: 42, URL: "u", Title: "Add merge notice", State: "MERGED", HeadRefName: "feat/merge", BaseRefName: "main"}
+	want := PullRequest{Number: 42, URL: "u", Title: "Add merge notice", State: "MERGED", HeadRefName: "feat/merge", BaseRefName: "main", Forge: api.ForgeGitHub}
 	if pr == nil || *pr != want {
 		t.Fatalf("BranchPullRequest = %+v, want %+v", pr, want)
 	}
-	if want := []string{"pr", "view", "--json", "number,url,title,state,headRefName,baseRefName"}; !slices.Equal(gh.args, want) {
+	if want := []string{"pr", "view", "--json", "number,url,title,state,isDraft,headRefName,baseRefName"}; !slices.Equal(gh.args, want) {
 		t.Errorf("args = %v, want %v", gh.args, want)
 	}
 	if gh.dir != "/repo" || gh.timeout != prLookupTimeout {
@@ -122,6 +122,15 @@ func TestBranchPullRequestKeepsAMergedOne(t *testing.T) {
 	}
 	if _, err := withGH(&fakeGH{out: []byte(`not json`)}).BranchPullRequest("/repo"); err == nil {
 		t.Error("malformed answer: want a decode error")
+	}
+}
+
+func TestBranchPullRequestReadsADraft(t *testing.T) {
+	t.Parallel()
+	gh := &fakeGH{out: []byte(`{"number":7,"state":"OPEN","isDraft":true}`)}
+	pr, err := withGH(gh).BranchPullRequest("/repo")
+	if err != nil || pr == nil || !pr.IsDraft || pr.Forge != api.ForgeGitHub {
+		t.Fatalf("BranchPullRequest = %+v, %v, want a draft read from GitHub", pr, err)
 	}
 }
 

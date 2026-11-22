@@ -132,18 +132,14 @@ func (m *model) recheckPR(ctx context.Context, path string) {
 	}
 }
 
-// setBranchPR keeps a read of a shown path's pull request; the badge shows only
-// an open one. A read of a path no card shows is dropped: the window asks for
-// one when it first shows it.
+// setBranchPR keeps a read of a shown path's pull request, merged and closed
+// ones too: the badge shows the branch's PR in its state. A read of a path no
+// card shows is dropped: the window asks for one when it first shows it.
 func (m *model) setBranchPR(b backend.BranchPullRequest) {
-	pr := b.PR
-	if pr != nil && pr.State != "OPEN" {
-		pr = nil
-	}
 	m.mu.Lock()
 	l, shown := m.prs[b.Path]
 	if shown {
-		l.pr = pr
+		l.pr = b.PR
 		m.prs[b.Path] = l
 	}
 	m.mu.Unlock()
@@ -163,7 +159,7 @@ func (m *model) stalePullRequests() {
 }
 
 // recheckMissingPR forgets what was read for the card of a session whose
-// turn just finished, when it shows no pull request: `gh pr create` moves
+// turn just finished, when it shows no open pull request: `gh pr create` moves
 // neither branch nor head, so nothing else would bring up the PR the turn
 // opened. It answers the path to refresh, "" when there is none to ask about
 // again. Callers hold m.mu.
@@ -174,7 +170,7 @@ func (m *model) recheckMissingPR(id string) string {
 	}
 	path := m.shownPath(*p, p.Sessions[i])
 	l, looked := m.prs[path]
-	if !looked || l.pr != nil {
+	if !looked || isOpenPR(l.pr) {
 		return ""
 	}
 	l.head = ""

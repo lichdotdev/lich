@@ -23,7 +23,6 @@ var (
 	icSandboxed = icons.Lucide("shield")
 	icConflict  = icons.Lucide("triangle-alert")
 	icBranch    = icons.Lucide("git-branch")
-	icPR        = icons.Lucide("git-pull-request-arrow")
 	icModel     = icons.Lucide("cpu")
 )
 
@@ -95,10 +94,7 @@ func branchSection(th *ui.Theme, sv *sessionView) layout.Widget {
 			layout.Rigid(func(gtx C) D { return ui.IconLine(gtx, icBranch, muted.Color, layout.Rigid(muted.Layout)) }),
 		}
 		if sv.pr != nil {
-			number := th.Text(ui.TextXS, "#"+strconv.Itoa(sv.pr.Number)).Muted()
-			children = append(children, ui.Gap(2), layout.Rigid(func(gtx C) D {
-				return ui.IconLine(gtx, icPR, number.Color, layout.Rigid(number.Layout))
-			}))
+			children = append(children, ui.Gap(2), layout.Rigid(func(gtx C) D { return prBadge(gtx, th, sv.pr, th.MutedForeground) }))
 		}
 		if sv.git.Files > 0 {
 			children = append(children, ui.Gap(2), layout.Rigid(func(gtx C) D { return th.DiffStat(sv.git.Added, sv.git.Deleted).Layout(gtx) }))

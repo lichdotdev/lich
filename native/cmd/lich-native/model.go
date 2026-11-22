@@ -696,7 +696,7 @@ type sessionView struct {
 	reason    string       // what a waiting session is blocked on, "" for unsaid
 	git       backend.DiffStats
 	base      *backend.BaseStatus  // nil without a base to stand against
-	pr        *backend.PullRequest // open PR of the shown path's branch, nil for none
+	pr        *backend.PullRequest // PR of the shown path's branch in any state, nil for none
 	// profileName is the profile the session runs in, "" for Personal;
 	// continueIn are the other logins its conversation could move to.
 	profileName string

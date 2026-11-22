@@ -213,7 +213,7 @@ func (s *Service) OpenPullRequest(_ context.Context, opts api.PathOptions) (*api
 // BranchPullRequest returns the pull request of the branch checked out at path
 // whatever its state, nil when the branch has none.
 func (s *Service) BranchPullRequest(path string) (*PullRequest, error) {
-	out, err := s.gh(prLookupTimeout, path, "pr", "view", "--json", "number,url,title,state,headRefName,baseRefName")
+	out, err := s.gh(prLookupTimeout, path, "pr", "view", "--json", "number,url,title,state,isDraft,headRefName,baseRefName")
 	if errors.Is(err, errNoPullRequest) {
 		return nil, nil
 	}
@@ -228,6 +228,7 @@ func (s *Service) BranchPullRequest(path string) (*PullRequest, error) {
 	if pr.Number == 0 {
 		return nil, nil
 	}
+	pr.Forge = api.ForgeGitHub
 	return &pr, nil
 }
 

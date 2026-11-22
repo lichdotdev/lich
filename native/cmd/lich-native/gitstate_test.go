@@ -197,3 +197,19 @@ func TestCardFindsThePullRequestItsTurnOpened(t *testing.T) {
 	send(m, api.SessionStatusEvent.Name, statusEvent{ID: "s1", State: statusDone})
 	awaitPROnCard(t, m, 5)
 }
+
+// A branch whose last PR merged opens another from a turn: the merged badge
+// does not stop the turn's end from asking again.
+func TestCardFindsANewPullRequestOverAMergedOne(t *testing.T) {
+	forge := &fakeForge{prs: map[string]*backend.PullRequest{"c1": {Number: 4, State: "MERGED"}}}
+	forge.set("feat", "c1")
+	m := forge.watch(newTestModel(forge.client(t)))
+	prOnCard(t, m, 4)
+
+	forge.mu.Lock()
+	forge.prs["c1"] = &backend.PullRequest{Number: 5, State: "OPEN"}
+	forge.mu.Unlock()
+	send(m, api.SessionStatusEvent.Name, statusEvent{ID: "s1", State: statusBusy})
+	send(m, api.SessionStatusEvent.Name, statusEvent{ID: "s1", State: statusDone})
+	awaitPROnCard(t, m, 5)
+}

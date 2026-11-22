@@ -27,8 +27,8 @@ Elements are defined by space, hover and islands, not by enclosure.
 - **Hairlines are seams inside an island, and its edge.** `th.Separator` splits a panel's own parts (a screen's header
   from its body, two panes, a folder header from its rule). It never wraps a list item, a badge or a button
   at rest. Inputs are the one exception: a field needs an edge to read as editable.
-- **Badges are text and glyph**, never a filled pill: a pull request is its icon and `#N`, a diff is `+a -d`
-  in the tones.
+- **Badges are text and glyph**, never a filled pill: a pull request is its forge's logo, its state's glyph and
+  `#N` (`!N` on GitLab), a diff is `+a -d` in the tones.
 - **State is fill, not chrome.** Selection is a flat `Accent` fill: no side bar, no ring, no shadow.
 - **What does not fit the line goes to the tooltip.** A row carries what you scan for; the rest (path,
   model, the tool a turn runs, how long) is one hover away, never a second line.
@@ -91,13 +91,15 @@ A card painted a color mixes it into the accent: `tintRest` 0.10 at rest, `tintH
 
 The only chromatic color besides a card's own paint and the history graph's lanes. It encodes state and never
 decorates. A lane's color (`th.GraphLanes`, one set per scheme, not a theme token) carries which branch a line is,
-which the eye cannot follow through a crossing in one gray: use it for that graph and nothing else.
+which the eye cannot follow through a crossing in one gray: use it for that graph and nothing else. `ToneMerged`
+is one color per scheme too, not a theme token.
 
 | Token | Meaning |
 | --- | --- |
 | `TonePass` | done, passed, added lines |
 | `ToneWait` | waiting on the user, running, outdated |
 | `Destructive` | destructive action, failure, removed lines |
+| `ToneMerged` | a merged pull request |
 
 Added and removed lines in a code excerpt tint their row with `MixOKLab(Background, tone, 0.12)` and color
 their text with the tone itself.
@@ -959,6 +961,11 @@ Every row is one line, 34dp tall: `Space(1.5)` above and below a 22px node. Rows
 - **A session row**: the provider's mark, the shield and fork glyphs it earns, its name, its branch in
   `TextXS` mono `MutedForeground` (at most `branchShare`, 35%, of the line, so the name keeps the room), its
   pull request, and the corner slot. The checkout's changes are not on the line.
+- **A pull request on a row** (`prBadge`, the tooltip draws the same): the forge's logo at 12px in
+  `MutedForeground`, `Foreground` on hover, then the state's glyph at 12px and the number in `TextXS`, both in the
+  state's tone: open `git-pull-request` in `TonePass`, draft `git-pull-request-draft` muted, merged `git-merge` in
+  `ToneMerged`, closed `git-pull-request-closed` in `Destructive`. A merged or closed one stays while the
+  checkout is on its branch. A forge the reader did not name draws `git-pull-request-arrow` for the logo.
 - **The provider's mark** is its book's medallion in pixel art (`grimoire.Mark`), 1dp a pixel, in the
   provider's brand color (`markColors`) or `Foreground` for a logo in black and white; a provider with no
   book keeps its vector mark. Nothing is drawn around it or over it: no ring, no status.

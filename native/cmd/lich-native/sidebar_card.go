@@ -4,7 +4,6 @@ import (
 	"image"
 	"image/color"
 	"io"
-	"strconv"
 	"strings"
 
 	"gioui.org/font"
@@ -14,6 +13,7 @@ import (
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
 	"gioui.org/unit"
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
 )
@@ -172,7 +172,7 @@ func (s *sidebar) renaming(id string) bool {
 }
 
 // cardBody is the card's one line: its place in the tree, the title row, a
-// folded mother's count, the open pull request and the checkout's changes
+// folded mother's count, the pull request and the checkout's changes
 // unless a checkout row above shows them, then the corner slot.
 func (s *sidebar) cardBody(gtx C, th *ui.Theme, sv *sessionView, prChip *ui.Clickable, more layout.Widget, hovered bool) D {
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
@@ -190,7 +190,7 @@ func (s *sidebar) cardBody(gtx C, th *ui.Theme, sv *sessionView, prChip *ui.Clic
 		}))
 	}
 	if sv.pr != nil {
-		row = append(row, ui.Gap(1.5), layout.Rigid(func(gtx C) D { return s.prBadge(gtx, th, prChip, sv.pr.Number) }))
+		row = append(row, ui.Gap(1.5), layout.Rigid(func(gtx C) D { return prChipLayout(gtx, th, prChip, sv.pr) }))
 	}
 	return s.cardLine(gtx, th, sv, more, hovered, row)
 }
@@ -279,20 +279,14 @@ var cardSlotSize = 2 * sessionTreeRingR
 // label is what the row is scanned for.
 const branchShare = 35
 
-// prBadge is the open pull request's number, a button that brightens on
-// hover.
-func (s *sidebar) prBadge(gtx C, th *ui.Theme, click *ui.Clickable, number int) D {
-	c := th.MutedForeground
+// prChipLayout is the row's pull request badge, a button whose logo brightens
+// on hover.
+func prChipLayout(gtx C, th *ui.Theme, click *ui.Clickable, pr *backend.PullRequest) D {
+	logo := th.MutedForeground
 	if click.Hovered() {
-		c = th.Foreground
+		logo = th.Foreground
 	}
-	return click.Layout(gtx, func(gtx C) D {
-		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-			layout.Rigid(func(gtx C) D { return s.icPR.Layout(gtx, 12, c) }),
-			ui.Gap(1),
-			layout.Rigid(th.Text(ui.TextXS, "#"+strconv.Itoa(number)).In(c).Layout),
-		)
-	})
+	return click.Layout(gtx, func(gtx C) D { return prBadge(gtx, th, pr, logo) })
 }
 
 // statusRing is SessionStatusIcon: the provider mark (the agent live in the
