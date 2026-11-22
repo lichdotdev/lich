@@ -115,6 +115,7 @@ func (d *Doctor) Run() []Check {
 		{"sandbox", d.checkSandbox},
 		{"git", func() (Status, string) { return d.checkTool("git", gitWithout) }},
 		{"gh", func() (Status, string) { return d.checkTool("gh", ghWithout) }},
+		{"glab", func() (Status, string) { return d.checkTool("glab", glabWithout) }},
 	}
 
 	checks := make([]Check, 0, len(steps))
@@ -283,12 +284,13 @@ func (d *Doctor) checkSandbox() (Status, string) {
 	return OK, backend + " confines a session here"
 }
 
-// What a machine loses with each version control tool missing. The same two
+// What a machine loses with each version control tool missing. The same
 // sentences answer on screen (native/i18n/locales/*/env.json) — a diagnosis that
 // disagrees with the app about what is broken is worse than no diagnosis.
 const (
-	gitWithout = "branches, diffs and worktrees stay empty"
-	ghWithout  = "pull requests, checks and PR checkouts are unavailable"
+	gitWithout  = "branches, diffs and worktrees stay empty"
+	ghWithout   = "pull requests, checks and PR checkouts are unavailable"
+	glabWithout = "GitLab merge requests, pipelines and MR checkouts are unavailable"
 )
 
 // checkTool resolves one of the command-line tools lich shells out to. Never a

@@ -54,7 +54,7 @@ func TestAHealthyMachineWalksTheWholeBoot(t *testing.T) {
 	for _, c := range checks {
 		names = append(names, c.Name)
 	}
-	want := []string{"home", "log", "listener", "store", "window", "providers", "sandbox", "git", "gh"}
+	want := []string{"home", "log", "listener", "store", "window", "providers", "sandbox", "git", "gh", "glab"}
 	if strings.Join(names, ",") != strings.Join(want, ",") {
 		t.Errorf("checks ran as %v, want the boot order %v", names, want)
 	}
@@ -72,6 +72,7 @@ func TestAMissingVersionControlToolWarnsWithoutStoppingTheLaunch(t *testing.T) {
 	for _, tc := range []struct{ name, without string }{
 		{"git", "worktrees"},
 		{"gh", "pull requests"},
+		{"glab", "merge requests"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			d := healthy(t)

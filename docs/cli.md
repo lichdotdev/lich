@@ -1299,6 +1299,7 @@ lich v0.25.0 — linux/amd64
   ok    sandbox      11ms  bubblewrap confines a session here
   ok    git          <1ms  /usr/bin/git
   ok    gh           <1ms  /usr/bin/gh
+  ok    glab         <1ms  /usr/bin/glab
         total        17ms
 
 lich starts here — nothing is in the way.
@@ -1317,6 +1318,7 @@ The checks are in boot order, and each carries its own verdict:
 | `sandbox` | — | The backend will not start (an AppArmor policy denying user namespaces, say), so a session opened with the sandbox on will not start either; or it starts and confines nothing, so a session marked confined runs on the machine. Skipped where the platform has no backend at all. |
 | `git` | Never. | Not on PATH: branches, diffs and worktrees stay empty. |
 | `gh` | Never. | Not on PATH: pull requests, checks and PR checkouts are unavailable. |
+| `glab` | Never. | Not on PATH: GitLab merge requests, pipelines and MR checkouts are unavailable. |
 
 A `fail` exits 1 and a clean run exits 0, which is the automation surface here —
 there is no `--json`. It needs no TTY, no running instance and no network.
