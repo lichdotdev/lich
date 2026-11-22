@@ -430,6 +430,7 @@ func (u *window) chatActs(gtx C, p *chatPane, sv sessionView, keys, working bool
 	u.escapeChat(gtx, p, sv.ID, waiting, asking)
 	if p.editor.Len() > 0 || len(p.attached) > 0 {
 		waiting = nil
+		u.model.chat.dropSuggestion(sv.ID)
 	}
 	u.queueActs(gtx, p, sv.ID)
 	u.composerKeys(gtx, p, sv.ID, sent, keys && asking == nil && !p.search.open)
@@ -587,7 +588,11 @@ func (u *window) chatComposer(gtx C, th *ui.Theme, p *chatPane, sv sessionView, 
 			}
 			tinted := *th
 			tinted.Palette.Input = ui.MixOKLab(th.Palette.Input, lean, chatComposerFillTint)
-			ta := tinted.Textarea(&p.editor, i18n.T("chat.composer.placeholder", i18n.Args{"provider": name}))
+			hint := u.shownSuggestion(p, sv.ID)
+			if hint == "" {
+				hint = i18n.T("chat.composer.placeholder", i18n.Args{"provider": name})
+			}
+			ta := tinted.Textarea(&p.editor, hint)
 			ta.MaxHeight, ta.MinHeight, ta.Radius, ta.Steady, ta.History = chatComposerMax, chatComposerMin, ui.RadiusLG, true, &p.undo
 			ta.Size, ta.Leading, ta.PadX, ta.PadY = markdown.BodySize, markdown.BodySize*markdown.LineHeightScale, chatComposerPadX, chatComposerPadY
 			// the cards stand over the text, adding to the box's ceiling
