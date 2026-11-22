@@ -296,6 +296,12 @@ func (f *fake) acpLoad(id any, session string, opts *fakeACP) {
 		f.send(map[string]any{"jsonrpc": "2.0", "id": id, "error": map[string]any{"code": -32002, "message": "session not found"}})
 		return
 	case "omp-empty":
+	case "omp-shelled":
+		// opencode files a shell command under a user message for the agent
+		// alone (measured on 1.19.4).
+		f.update(map[string]any{"sessionUpdate": "user_message_chunk", "content": map[string]any{"type": "text", "text": "The following tool was executed by the user", "annotations": map[string]any{"audience": []any{"assistant"}}}})
+		f.update(map[string]any{"sessionUpdate": "tool_call", "toolCallId": "t9", "title": "ls", "kind": "execute", "status": "completed"})
+		f.update(chunk("user_message_chunk", "and now?"))
 	default:
 		f.update(chunk("user_message_chunk", "remember caju"))
 		f.update(chunk("agent_message_chunk", "ok"))

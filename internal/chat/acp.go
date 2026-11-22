@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -365,8 +366,18 @@ func (d *acpDriver) request(m acpMessage) {
 }
 
 type acpContent struct {
-	Type string `json:"type"`
-	Text string `json:"text"`
+	Type        string `json:"type"`
+	Text        string `json:"text"`
+	Annotations struct {
+		Audience []string `json:"audience"`
+	} `json:"annotations"`
+}
+
+// forAgentOnly is whether the block is addressed to the agent alone: opencode
+// files a shell command the person ran under such a user message, "The
+// following tool was executed by the user" (measured on 1.19.4).
+func (c acpContent) forAgentOnly() bool {
+	return len(c.Annotations.Audience) > 0 && !slices.Contains(c.Annotations.Audience, "user")
 }
 
 // acpUpdate is one session/update. Its content is a block for a chunk and a
@@ -396,7 +407,7 @@ func (d *acpDriver) update(params json.RawMessage) {
 	case "user_message_chunk":
 		// Outside a load the person's message is already an item: lich wrote
 		// it, and Antigravity echoes it.
-		if d.c.conv.replaying() {
+		if d.c.conv.replaying() && !content.forAgentOnly() {
 			d.chunk(api.ItemUser, content)
 		}
 	case "tool_call", "tool_call_update":

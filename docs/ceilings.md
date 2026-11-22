@@ -146,17 +146,23 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   0.170.0 and opencode 1.19.4. Claude Code's stream-json `bash_command` runs it beside the conversation, which
   the agent never sees, where the TUI's `!` adds it to the conversation (stream-json joins it only on a cloud
   worker), and writes nothing of it to the transcript, so a chat read back no longer shows it. Codex's
-  `thread/shellCommand` runs it unsandboxed in a turn of its own and the agent sees it on its next turn, but
-  `thread/turns/list` gives that turn back empty. opencode's `/session/{id}/shell`, on the server its ACP runs
-  beside, runs it under the agent in force and the agent sees it. One runs at a time, never while a turn runs, and
-  never from the queue: joined with the queued messages it would reach the agent as text. ACP has no such method,
-  so on Antigravity, oh-my-pi, Cursor CLI, Kiro CLI and opencode 2 (which runs no server) a `!` line goes to the
-  agent as typed; this was read from their ACP code and extension methods, not run. Claude Code 2.1.330 has no
+  `thread/shellCommand` runs it unsandboxed in a turn of its own, and the rollout files it for the agent's next
+  turn, but `thread/turns/list` gives that turn back empty, so a chat read back no longer shows it either.
+  opencode's `/session/{id}/shell`, on the server its ACP runs beside, runs it under the agent in force and files
+  it in the conversation; read back, the call comes without the person's line, since the user message opencode
+  files it under is addressed to the agent alone. Stop ends it on all three (Claude Code prints `[interrupted]`,
+  Codex interrupts the turn, opencode's `session/cancel` aborts the command), though opencode's turn then ends as
+  done, not stopped. One runs at a time, never while a turn runs, and never from the queue: joined with the queued
+  messages it would reach the agent as text. ACP has no such method, so on Antigravity, oh-my-pi, Cursor CLI, Kiro
+  CLI and opencode 2 (which runs no server) a `!` line goes to the agent as typed; this was read from their ACP
+  code and extension methods, not run. On opencode 2 the box still wears the shell mode, since the window cannot
+  tell it from opencode 1. Claude Code 2.1.330 has no
   `#` memory mode (its prompt has only `prompt` and `bash` modes, and `?` lists `! for shell mode` alone), and
   no other provider has one, so `#` is text everywhere. Shift+Tab walks the mode option's choices, Claude Code's
   in its own order (default, accept edits, plan, auto where the model has it, back to default; dontAsk goes to
   default), but never into a `Danger` one: Claude Code cycles into bypass only when launched for it, and lich
-  launches it so only for a person who picked bypass in the menu. Crush has no chat.
+  launches it so only for a person who picked bypass in the menu. While the agent works it does nothing, as the
+  mode's chip takes no click then, where Claude Code's prompt switches mode mid-turn. Crush has no chat.
 - **A chat shows the agent's task list only where its provider reports one, and every Claude Code spawn is
   given its task tools for it** (`internal/chat/claude_plan.go`, `codex_items.go` `codexPlan`, `acp.go` `acpPlan`,
   `internal/terminal/claude_todo.go`, `native/cmd/lich-native/chat_plan.go`): Claude Code 2.1.330 offers its task

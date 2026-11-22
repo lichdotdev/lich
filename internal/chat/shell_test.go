@@ -157,17 +157,36 @@ func TestOpenCodeShellRunsUnderTheAgentInForce(t *testing.T) {
 	}
 }
 
-// TestShellRefusedWhereTheProtocolHasNone: an ACP agent other than opencode
-// runs no command of the person's, and nothing reaches the conversation.
-func TestShellRefusedWhereTheProtocolHasNone(t *testing.T) {
+// TestShellIsTextWhereTheProtocolHasNone: an ACP agent other than
+// opencode 1 runs no command of the person's, and gets the line as typed.
+func TestShellIsTextWhereTheProtocolHasNone(t *testing.T) {
 	for _, kind := range []string{providers.OMP, providers.Antigravity, providers.Kiro} {
 		r := newChat(t, kind)
-		if err := r.shell("ls"); !errors.Is(err, errNoShell) {
-			t.Errorf("%s: Shell = %v, want %v", kind, err, errNoShell)
+		if err := r.shell("ls"); err != nil {
+			t.Errorf("%s: Shell = %v", kind, err)
 		}
-		if got := r.texts(api.ItemUser); len(got) != 0 {
-			t.Errorf("%s: messages %q, want none", kind, got)
+		r.turnEnd(0)
+		if got := strings.Join(r.texts(api.ItemUser), "|"); got != "!ls" {
+			t.Errorf("%s: messages %q, want the line as typed", kind, got)
 		}
+		if !strings.Contains(r.fakeLog(), `"session/prompt"`) || !strings.Contains(r.fakeLog(), `"text":"!ls"`) {
+			t.Errorf("%s: fake log = %q, want the line as a prompt", kind, r.fakeLog())
+		}
+	}
+}
+
+// TestACPReplayLeavesOutWhatIsForTheAgentAlone: the user message opencode
+// files a shell command under is the agent's, not the person's.
+func TestACPReplayLeavesOutWhatIsForTheAgentAlone(t *testing.T) {
+	r := newRig(t, providers.OMP)
+	_ = r.db.SetProviderSession("s1", "omp-shelled")
+	r.writeOMPSession("omp-shelled")
+	if err := r.setView(api.ViewChat); err != nil {
+		t.Fatalf("SetView: %v", err)
+	}
+	r.mustItem(api.ItemUser, "and now?")
+	if got := strings.Join(r.texts(api.ItemUser), "|"); got != "and now?" {
+		t.Errorf("messages %q, want the person's alone", got)
 	}
 }
 

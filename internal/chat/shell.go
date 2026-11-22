@@ -2,7 +2,6 @@ package chat
 
 import (
 	"context"
-	"errors"
 
 	"github.com/lichdotdev/lich/api"
 )
@@ -12,20 +11,20 @@ import (
 // bash_command, Codex's thread/shellCommand and opencode's /session/{id}/shell.
 // The turn it opens ends through endTurn.
 type shellDriver interface {
-	// runsShell is false for an ACP agent other than opencode: ACP itself
+	// runsShell is false for an ACP agent other than opencode 1: ACP itself
 	// has no such method.
 	runsShell() bool
 	shell(command string) error
 }
-
-var errNoShell = errors.New("this agent runs no shell command of the person's own")
 
 // shellMark is what the person typed before the command, kept on their
 // message as they wrote it.
 const shellMark = "!"
 
 // Shell answers api.ChatShell: the command runs in a turn of its own, one at
-// a time, as Claude Code allows only one at once (measured on 2.1.330).
+// a time, as Claude Code allows only one at once (measured on 2.1.330). An
+// agent that runs none (opencode 2, which runs no server) gets the line as
+// typed.
 func (s *Service) Shell(ctx context.Context, opts api.ChatShellOptions) (api.None, error) {
 	c, err := s.ensure(ctx, opts.ID)
 	if err != nil {
@@ -33,7 +32,7 @@ func (s *Service) Shell(ctx context.Context, opts api.ChatShellOptions) (api.Non
 	}
 	d, ok := c.drv.(shellDriver)
 	if !ok || !d.runsShell() {
-		return api.None{}, errNoShell
+		return s.Prompt(ctx, api.ChatPromptOptions{ID: opts.ID, Text: shellMark + opts.Command})
 	}
 	if s.term.TurnOpen(opts.ID) && !c.turnRunning() {
 		return api.None{}, errBusy
