@@ -74,6 +74,16 @@ func slashQuery(text string, caret int) (query string, from int, ok bool) {
 // conversation (api.ChatNew) instead of sending the text.
 const chatNewCommand = "/new"
 
+// chatNewAliases are typed for the same: Claude Code's /clear, with its
+// aliases (/reset; 2.1.330), starts a new conversation the chat cannot follow,
+// so lich starts its own, for every provider alike.
+var chatNewAliases = []string{"/clear", "/reset"}
+
+// isNewCommand is whether text asks for an empty conversation.
+func isNewCommand(text string) bool {
+	return text == chatNewCommand || slices.Contains(chatNewAliases, text)
+}
+
 // slashCommands is what the list offers: lich's own commands first, /mcp,
 // /skills and /plugin where provider kind reports what they open, then the
 // provider's, less those they would shadow.

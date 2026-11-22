@@ -370,9 +370,9 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   measured past its login, and Crush has no chat. lich adds one command of its own, `/new` (`internal/chat/new.go`):
   the chat's process is started again with nothing to resume, which every provider opens as an empty
   conversation, after the session forgets the one it leaves; that conversation stays the provider's, reopened from
-  the palette's History, which lists a conversation no row holds (Cursor CLI's not). Claude Code's own `/clear`,
-  typed and sent, is not caught and goes to the process as any command does; what the card makes of the
-  conversation it opens was not measured.
+  the palette's History, which lists a conversation no row holds (Cursor CLI's not). `/clear` and `/reset`,
+  Claude Code's own aliases for a new session (2.1.330), are caught as `/new` for every provider: sent to Claude
+  Code they opened a conversation under another id, which the chat refused as one that did not come back.
 - **A chat's /mcp and /skills panels show what Claude Code and Codex report, and nothing for any other provider**
   (`internal/chat/tools.go`, `claude_tools.go`, `codex_tools.go`). Claude Code (2.1.330) lists its servers with
   `mcp_status` and its skills with `get_skills_dialog`, a request it marks @internal: a refusal or a reshaped

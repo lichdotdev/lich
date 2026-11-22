@@ -503,7 +503,7 @@ func (u *window) sendChat(p *chatPane, id string) bool {
 		return false
 	}
 	p.clearComposer()
-	if m.text == chatNewCommand && len(m.files) == 0 {
+	if isNewCommand(m.text) && len(m.files) == 0 {
 		go func() { u.chatFailed(u.client.ChatNew(u.ctx, id)) }()
 		return true
 	}

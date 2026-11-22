@@ -212,3 +212,19 @@ func TestNewStartsAConversationInsteadOfSending(t *testing.T) {
 		}
 	}
 }
+
+// Claude Code's /clear and /reset start a conversation the chat cannot follow:
+// typed in the chat they start lich's own, as /new does.
+func TestClearStartsAConversationAsNewDoes(t *testing.T) {
+	for _, text := range []string{"/clear", "/reset"} {
+		_, r, f, p := slashFrames(t)
+		typeIn(r, p, text)
+		r.press(key.NameReturn)
+		if body := f.waitCall(t, api.ChatNew.Name); !strings.Contains(body, `"id":"s1"`) {
+			t.Errorf("%s: chat.New for %s", text, body)
+		}
+		if n := f.callsOf(api.ChatPrompt.Name); n != 0 {
+			t.Errorf("%s reached the agent (%d prompts)", text, n)
+		}
+	}
+}
