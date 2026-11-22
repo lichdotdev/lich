@@ -188,10 +188,15 @@ func callingTools(items []backend.ChatItem) bool {
 // toolRunning is whether any of calls has not ended.
 func toolRunning(calls []backend.ChatItem) bool { return slices.ContainsFunc(calls, callRunning) }
 
-// movable is whether a call of items that runs waits on a command Ctrl+B
-// moves to the background.
+// movable is whether a running call of the last turn of items waits on a
+// command Ctrl+B moves to the background: one an ended turn left unended is
+// not alive.
 func movable(items []backend.ChatItem) bool {
-	return slices.ContainsFunc(items, func(it backend.ChatItem) bool { return callRunning(it) && it.Tool.Movable })
+	if len(items) == 0 {
+		return false
+	}
+	last := items[len(items)-1].Turn
+	return slices.ContainsFunc(items, func(it backend.ChatItem) bool { return it.Turn == last && callRunning(it) && it.Tool.Movable })
 }
 
 // callRunning is whether the tool call it has not ended.

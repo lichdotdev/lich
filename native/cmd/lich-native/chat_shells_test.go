@@ -160,7 +160,7 @@ func TestCtrlBMovesTheCommandTheTurnWaitsOn(t *testing.T) {
 	u, r, f := chatFrames(t, api.ViewChat)
 	call := backend.ChatItem{ID: "toolu_1", Kind: api.ItemTool, Turn: 1, At: r.now.Add(-3 * time.Second).UnixMilli(),
 		Tool: &backend.ChatToolCall{Name: "Bash", Title: "npm test", State: api.ToolRunning, Movable: true}}
-	u.model.chat.history("s1", []backend.ChatItem{{ID: "u1", Kind: api.ItemUser, Turn: 1, Text: "go"}, call})
+	u.model.chat.history("s1", []backend.ChatItem{{ID: "u1", Kind: api.ItemUser, Turn: 1, Text: "go", At: r.now.Add(-12 * time.Second).UnixMilli()}, call})
 	u.model.chat.turn(api.ChatTurn{SessionID: "s1", Running: true})
 	r.frames(3)
 	writeShot(t, r, "chat-background-hint.png")
@@ -170,6 +170,12 @@ func TestCtrlBMovesTheCommandTheTurnWaitsOn(t *testing.T) {
 	r.pressWith("B", key.ModCtrl)
 	f.waitCall(t, api.ChatBackground.Name)
 
+	// An earlier turn's call left unended is not the turn in flight's.
+	u.model.chat.history("s1", []backend.ChatItem{{ID: "u1", Kind: api.ItemUser, Turn: 1, Text: "go"}, call, {ID: "u2", Kind: api.ItemUser, Turn: 2, Text: "and now"}})
+	r.frames(2)
+	if r.shows("Ctrl+B") {
+		t.Errorf("a hint for an earlier turn's call:\n%s", r.drawn())
+	}
 	call.Tool.Movable = false
 	u.model.chat.history("s1", []backend.ChatItem{{ID: "u1", Kind: api.ItemUser, Turn: 1, Text: "go"}, call})
 	r.frames(2)
