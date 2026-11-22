@@ -82,7 +82,7 @@ func TestRowAndTooltipDrawEachPRState(t *testing.T) {
 			if !r.shows(c.number) {
 				t.Errorf("%s %s: no %q drawn:\n%s", place, c.name, c.number, drawn)
 			}
-			paint := strings.SplitN(drawn, "\n", 2)[0]
+			paint, _, _ := strings.Cut(drawn, "\n")
 			if other, ok := paints[paint]; ok {
 				t.Errorf("%s: %s draws the same as %s", place, c.name, other)
 			}
