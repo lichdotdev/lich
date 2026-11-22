@@ -298,9 +298,7 @@
     "missing": "아직 만들지 않음",
     "saved": "저장된 메모리",
     "auto": "자동 메모리",
-    "dream": "Auto-dream",
-    "on": "켜짐",
-    "off": "꺼짐"
+    "dream": "Auto-dream"
   },
   "agents": {
     "title": "서브에이전트",

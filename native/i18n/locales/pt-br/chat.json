@@ -317,9 +317,7 @@
     "missing": "ainda não criado",
     "saved": "Memórias salvas",
     "auto": "Memória automática",
-    "dream": "Auto-dream",
-    "on": "ligada",
-    "off": "desligada"
+    "dream": "Auto-dream"
   },
   "agents": {
     "title": "Subagentes",

@@ -298,9 +298,7 @@
     "missing": "未作成",
     "saved": "保存されたメモリ",
     "auto": "自動メモリ",
-    "dream": "Auto-dream",
-    "on": "オン",
-    "off": "オフ"
+    "dream": "Auto-dream"
   },
   "agents": {
     "title": "サブエージェント",

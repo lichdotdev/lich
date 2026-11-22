@@ -107,18 +107,14 @@ func memorySettingRow(gtx C, th *ui.Theme, setting string, t api.ChatMemoryToggl
 	if setting == api.MemoryDream {
 		label = i18n.T("chat.memory.dream")
 	}
-	ic, ink, state := icCheck, th.TonePass, i18n.T("chat.memory.on")
+	ic, ink, name := icCheck, th.TonePass, th.Text(ui.TextSM, label)
 	if !t.Enabled {
-		ic, ink, state = icToolsOff, th.MutedForeground, i18n.T("chat.memory.off")
+		ic, ink, name = icToolsOff, th.MutedForeground, name.Muted()
 	}
 	if t.Locked {
 		ink = ui.Alpha(ink, 0.55)
 	}
-	meta := state
-	if t.Detail != "" {
-		meta = state + " · " + t.Detail
-	}
-	return toolsLine(gtx, th, ic, ink, th.Text(ui.TextSM, label), meta, 0)
+	return toolsLine(gtx, th, ic, ink, name, t.Detail, 0)
 }
 
 // toolsLine is a panel row: a glyph, the name, and a muted end.

@@ -355,9 +355,7 @@
     "missing": "ещё не создан",
     "saved": "Сохранённые заметки",
     "auto": "Автопамять",
-    "dream": "Auto-dream",
-    "on": "вкл.",
-    "off": "выкл."
+    "dream": "Auto-dream"
   },
   "agents": {
     "title": "Субагенты",

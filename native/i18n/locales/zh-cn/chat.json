@@ -298,9 +298,7 @@
     "missing": "尚未创建",
     "saved": "已保存的记忆",
     "auto": "自动记忆",
-    "dream": "Auto-dream",
-    "on": "开",
-    "off": "关"
+    "dream": "Auto-dream"
   },
   "agents": {
     "title": "子代理",
