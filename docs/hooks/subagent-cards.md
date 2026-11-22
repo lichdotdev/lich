@@ -30,6 +30,7 @@ X-Lich-Plugin: <plugin release>
  "tasks": [{"title": "List the files", "prompt": "List the files in the current workspace...",
             "type": "explorer"}],
  "model": "",
+ "sealed": false,
  "isolation": "",
  "background": false}
 ```
@@ -53,13 +54,16 @@ X-Lich-Plugin: <plugin release>
 - `model`: the model the call asked for (Claude Code's `model`), empty for the
   provider's default. The worker runs on the asker's provider, so this is that
   provider's spelling, handed to `spawn.OpenSubagent` as `Model`.
+- `sealed`: the provider hands the hook the task encrypted, so lich cannot read
+  it (Codex's multi-agent v2). `tasks[].prompt` is then empty and lich answers
+  with a redirect (below).
 - `isolation`: `worktree` when the call asked for a checkout of its own (Claude
   Code's `isolation`), else empty.
 - `background`: the call asked to run in the background (Claude Code's
   `run_in_background`).
 
 The body is held to 64 KiB. A prompt over the 8 KB `send_to_session` takes is
-refused as a whole (`allow`), so the native subagent runs it instead of a card
+answered `allow` as a whole, so the native subagent runs it instead of a card
 running half of it.
 
 ## Response
@@ -80,6 +84,10 @@ running half of it.
   errand for each. `reason` is the text the model reads, written by lich in the
   session's prompt language; the client passes it on untouched. `sessions`
   names what was opened, for logs.
+- A `deny` on a `sealed` call opens nothing and `sessions` is empty: `reason`
+  tells the model to hand the same task to lich's `open_session` tool, whose
+  `prompt` it writes in clear, and that call is an ordinary errand
+  ([notification.md](notification.md), Which errands use it).
 - `allow`: lich did nothing, and the native subagent runs. lich allows a call
   from a nested conversation, a session already as deep as cards nest
   (`maxSubagentDepth`), a type the provider's row below keeps native, a session
@@ -131,7 +139,7 @@ X" with a link to the card instead of as a failure.
 | Provider | Hook | Tool | Fields → `tasks` | Veto the client returns | The model reads |
 |---|---|---|---|---|---|
 | Claude Code | `PreToolUse` | `Agent` | `description` → title, `prompt`, `subagent_type` → type | `{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":R}}` | `PreToolUse:Agent hook error: R` |
-| Codex | `PreToolUse` | `spawn_agent` | `message` → prompt, `agent_type` → type | same JSON as Claude Code | `Tool call blocked by PreToolUse hook: R` |
+| Codex | `PreToolUse` | `spawn_agent` (multi-agent v1) and `collaborationspawn_agent` (v2, the default) | v1: `message` → prompt, `agent_type` → type; v2: `task_name` → title, `sealed: true` (the `message` is encrypted) | same JSON as Claude Code | `Tool call blocked by PreToolUse hook: R` |
 | opencode | plugin `tool.execute.before` | `task` | `description`, `prompt`, `subagent_type` | `throw new Error(R)` | `R` |
 | oh-my-pi | extension `tool_call` | `task` | each of `tasks[]`: `name` → title, `task` → prompt, `agent` → type; `context` prepended to each prompt | `return {block: true, reason: R}` | `R` |
 | Antigravity | `PreToolUse` | `invoke_subagent` | `Prompt`, `TypeName` → type | stdout `{"decision":"deny","reason":R}` | `tool call denied by pre-tool hook: R` |
@@ -143,8 +151,8 @@ Measured on 2026-11-22, with cheap models and one or two samples per row:
 
 | Provider | Version | What was measured |
 |---|---|---|
-| Claude Code | 2.1.330 | stream-json, in auto, default, plan and bypass modes |
-| Codex | 0.170.0 | `codex exec` in bypass mode, and `codex app-server` |
+| Claude Code | 2.1.330 | stream-json, in auto, default, plan and bypass modes, with a hook registered in `initialize` and with a settings hook (the engine plugins use); sonnet, 3 samples after two turns of work: none retried |
+| Codex | 0.170.0 | `codex exec` and `codex app-server`; gpt-5.6-luna (v1) and the default gpt-5.6-terra (v2), 3 samples after two turns of work: none retried |
 | opencode | 1.19.4 | `opencode run` and `opencode acp` |
 | oh-my-pi | 18.8.9 | `omp -p` and `omp acp` |
 | Antigravity | 1.5.11 | print mode and ACP |
@@ -154,8 +162,18 @@ Measured on 2026-11-22, with cheap models and one or two samples per row:
 
 Where measured, the veto lands before any permission question.
 
-Types kept native (always `allow`): on Claude Code every `subagent_type` but
-`general-purpose`, as the mod did. The other providers' rows have none yet.
+Types kept native (always `allow`), the read-only exploration ones, which run
+inside the session as they always did:
+
+| Provider | Kept native |
+|---|---|
+| Claude Code | every `subagent_type` but `general-purpose` (as the mod did) |
+| Codex | `explorer` (v1; v2 has no type) |
+| opencode | `explore` |
+| oh-my-pi | `scout` |
+| Antigravity | `research` |
+| Cursor CLI | `explore`, where the account's catalog offers it |
+| Kiro CLI, Crush | none: no exploration type |
 
 ## lich server side
 
@@ -166,6 +184,10 @@ Types kept native (always `allow`): on Claude Code every `subagent_type` but
   `isolation: worktree`, filed with the asker, `OriginSessionID` set. The
   provider is the asker's; the errand is a subagent errand
   (`relay.SendSubagent`), kept past `ticketTTL` while the worker runs.
+- A Codex session is spawned with
+  `-c mcp_servers.lich.default_tools_approval_mode="approve"`, so the
+  `open_session` a redirect asks for never waits on an approval (measured on
+  0.170.0: with it no `mcpServer/elicitation/request` is sent).
 - The task reaches the worker as a `task` envelope. A worker drawn as a chat
   gets `answer="last-message"`: its chat driver sees the turn end and answers
   the errand with the turn's final message. A worker in a terminal gets
@@ -200,12 +222,26 @@ routes never run in one session.
 
 - **Cursor CLI's chat runs no hooks** (`cursor-agent acp`, measured with the
   folder trusted, neither Cursor's own hooks nor the Claude Code install's): its
-  native subagent runs and shows as a row in the chat's subagent list, fed by
-  the `cursor/task` request its ACP sends once the subagent has finished. It
-  never becomes a card there.
-- **Codex trusts a hook by its hash**: a release that changes the plugin's
-  `PreToolUse` entry asks the user to trust it again before it runs; until then
-  Codex subagents stay native.
+  native subagent runs and shows as a row in the chat's subagent list. The row
+  starts with the ACP `tool_call` whose `rawInput._toolName` is `task`, sent
+  `pending` before the subagent runs, and ends with its `completed` update; the
+  `cursor/task` request sent at the same moment carries no result, and Cursor
+  discards the client's answer to it (measured on 2026.11.22). It never becomes
+  a card there.
+- **Codex skips a changed hook in silence**: it trusts a hook by its hash, and
+  once the plugin's `PreToolUse` entry changes, `codex exec` and the app-server
+  run without it, with no warning, no event and no error, so Codex subagents run
+  natively (measured on 0.170.0). The app-server's `hooks/list` reports the
+  entry as `trustStatus: "modified"`; lich reads it and tells the user to trust
+  the hook again.
+- **Codex's default multi-agent (v2) encrypts the task**: on gpt-5.6-terra the
+  tool is `collaborationspawn_agent` and its `message` arrives as ciphertext in
+  the hook and in the rollout, so lich cannot read what the worker should do.
+  lich answers it with the redirect above. Measured on gpt-5.6-terra, 3 samples
+  after two turns of work: every one called `open_session` with the whole task
+  in clear and wrote nothing itself; two then called `wait_agent` a few times
+  for a native subagent that does not exist before ending the turn waiting,
+  which costs time and nothing else.
 - **oh-my-pi's ACP server takes no flags** and loads extensions only from
   `$PI_CODING_AGENT_DIR/extensions/` (`.js` or `.ts`), so the plugin's extension
   must be there for the chat.
