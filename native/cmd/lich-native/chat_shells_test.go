@@ -106,6 +106,23 @@ func TestTypingShutsTheShells(t *testing.T) {
 	}
 }
 
+// A shell the agent leaves running after its turn ends reaches the chip
+// through /events, the way the backend sends it.
+func TestShellsEventThroughTheStreamShowsTheChip(t *testing.T) {
+	u, r, _ := chatFrames(t, api.ViewChat)
+	u.model.chat.history("s1", []backend.ChatItem{{ID: "u1", Kind: api.ItemUser, Turn: 1, Text: "go"}})
+	events := make(chan backend.Event, 1)
+	events <- chatEventOf(t, api.ChatShellsEvent, api.ChatShellsUpdate{SessionID: "s1", Shells: []backend.ChatShell{
+		{ID: "bkjocc3vb", Command: "sleep 300", State: api.ShellRunning, Started: r.now.UnixMilli()},
+	}})
+	close(events)
+	u.model.follow(t.Context(), events)
+	r.frames(2)
+	if !r.shows("1 shell") {
+		t.Errorf("no chip for the shell the event brought:\n%s", r.drawn())
+	}
+}
+
 // The shells event replaces the session's shells in the store.
 func TestShellsEventReachesTheStore(t *testing.T) {
 	u, r, _, _ := shellsFrames(t)
