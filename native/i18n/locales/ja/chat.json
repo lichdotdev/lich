@@ -190,6 +190,10 @@
     "count": {
       "other": "シェル {count} 件"
     },
+    "monitors": {
+      "other": "モニター {count} 件"
+    },
+    "monitor": "モニター",
     "title": "バックグラウンドのシェル",
     "back": "シェル",
     "none": "バックグラウンドで動いているシェルはありません",

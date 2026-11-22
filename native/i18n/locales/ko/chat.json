@@ -190,6 +190,10 @@
     "count": {
       "other": "셸 {count}개"
     },
+    "monitors": {
+      "other": "모니터 {count}개"
+    },
+    "monitor": "모니터",
     "title": "백그라운드 셸",
     "back": "셸",
     "none": "백그라운드에서 실행 중인 셸이 없습니다",

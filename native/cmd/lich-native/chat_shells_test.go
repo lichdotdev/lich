@@ -61,6 +61,26 @@ func TestShellsChipOpensTheShellsAndStopStopsOne(t *testing.T) {
 	}
 }
 
+// A Monitor's watch is counted apart from the shells, as Claude Code's TUI
+// counts it, and named a monitor in the list.
+func TestMonitorsAreCountedApartAndNamed(t *testing.T) {
+	u, r, _, _ := shellsFrames(t)
+	start := r.now.Add(-5 * time.Second).UnixMilli()
+	u.model.chat.setShells("s1", append(u.model.chat.shellsOf("s1"),
+		backend.ChatShell{ID: "m1", Command: "tail -f build.log", State: api.ShellRunning, Started: start, Monitor: true}))
+	r.frames(2)
+	r.click(t, r.at(t, "2 shells · 1 monitor"))
+	if !r.shows("tail -f build.log") || !strings.Contains(r.drawn(), `"monitor · `) {
+		t.Fatalf("the monitor is not named in the list:\n%s", r.drawn())
+	}
+	u.model.chat.setShells("s1", []backend.ChatShell{{ID: "m1", Command: "tail -f build.log", State: api.ShellRunning, Started: start, Monitor: true}})
+	r.press(key.NameEscape)
+	r.frames(2)
+	if !r.shows("1 monitor") || r.shows("shell") {
+		t.Errorf("a monitor alone is not counted as one:\n%s", r.drawn())
+	}
+}
+
 // A shell that ended offers no Stop, and with none running there is no chip.
 func TestEndedShellsHaveNoStopAndNoChip(t *testing.T) {
 	u, r, _, _ := shellsFrames(t)

@@ -17,12 +17,16 @@ import (
 // slow enough to become a task, which moving to the background patches), then
 // task_updated with its patch.status (completed, failed, killed) and
 // task_notification with its end (completed, failed, stopped). The tool's
-// result names the file the output is written to. stop_task stops one, and
+// result names the file the output is written to; a Monitor tool's watch is
+// the same task, its file named only by its task_notification. stop_task stops one, and
 // read_file reads the file's end through Claude Code itself, which sees it
 // where a sandbox's private /tmp hides it from lich.
 
 const (
 	claudeShellTask = "local_bash"
+	// claudeMonitorTool is the tool whose local_bash task is a watch, which
+	// Claude Code's TUI counts apart from the shells.
+	claudeMonitorTool = "Monitor"
 	// claudeOutputAt opens the sentence of every background variant of the
 	// Bash tool's result that names the output file.
 	claudeOutputAt = "Output is being written to: "
@@ -60,8 +64,8 @@ type claudeTaskLine struct {
 }
 
 // task reads a system/task_* line, and reports whether the shells shown
-// changed. command is the call's command, "" where lich holds no item for it.
-func (s *claudeShells) task(subtype string, raw []byte, command func(toolUse string) string, now time.Time) bool {
+// changed. tool is the call, empty where lich holds no item for it.
+func (s *claudeShells) task(subtype string, raw []byte, tool func(toolUse string) api.ChatToolCall, now time.Time) bool {
 	var t claudeTaskLine
 	if json.Unmarshal(raw, &t) != nil || t.TaskID == "" {
 		return false
@@ -72,13 +76,15 @@ func (s *claudeShells) task(subtype string, raw []byte, command func(toolUse str
 		if t.TaskType != claudeShellTask {
 			return false
 		}
-		cmd := command(t.ToolUseID)
+		call := tool(t.ToolUseID)
+		cmd := call.Title
 		if cmd == "" {
 			cmd = t.Description
 		}
 		bg := t.Backgrounded != nil && *t.Backgrounded
 		s.list = append(s.list, &claudeShell{
 			ID: t.TaskID, Command: cmd, Description: t.Description, State: api.ShellRunning, Started: now.UnixMilli(),
+			Monitor: call.Name == claudeMonitorTool,
 			toolUse: t.ToolUseID, background: bg,
 		})
 		return bg
@@ -208,13 +214,13 @@ func (d *claudeDriver) shellResults(line claudeLine) {
 }
 
 func (d *claudeDriver) shellTask(subtype string, raw []byte) {
-	command := func(toolUse string) string {
+	tool := func(toolUse string) api.ChatToolCall {
 		if it, ok := d.c.conv.get(toolUse); ok && it.Tool != nil {
-			return it.Tool.Title
+			return *it.Tool
 		}
-		return ""
+		return api.ChatToolCall{}
 	}
-	if d.shells.task(subtype, raw, command, time.Now()) {
+	if d.shells.task(subtype, raw, tool, time.Now()) {
 		d.c.setShells(d.shells.shown())
 	}
 }

@@ -199,9 +199,10 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   `stop_task` control request and reads the end of its output with `read_file`, through Claude Code, since a
   sandbox's private /tmp hides the file from lich (measured outside a sandbox; that `read_file` reaches the file
   inside bubblewrap is inferred, Claude Code reading through its own view of the filesystem). A Monitor's
-  command is counted with the shells, where Claude Code's TUI counts it apart, and a subagent's shells are
-  listed with the session's, both read in its code and not seen; so is the move of a foreground command to the
-  background (`task_updated` patching `is_backgrounded`). The shells run in the chat's process, so a switch to TUI, /new or a switch to YOLO mode,
+  watch is the same `local_bash` task (measured), told apart only by its call's tool name and counted apart as
+  Claude Code's TUI does; its result names no output file, only its `task_notification` does, so its output
+  reads only once it has ended. A subagent's shells are listed with the session's, read in its code and not
+  seen; so is the move of a foreground command to the background (`task_updated` patching `is_backgrounded`). The shells run in the chat's process, so a switch to TUI, /new or a switch to YOLO mode,
   which start a new one, stops them, and a conversation read back has none. A shell that ends after the turn
   makes Claude Code answer on its own (measured): that answer reaches the chat with no turn running in lich.
   Codex lists its background terminals only on its experimental app-server API

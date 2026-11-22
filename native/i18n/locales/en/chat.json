@@ -200,6 +200,11 @@
       "one": "{count} shell",
       "other": "{count} shells"
     },
+    "monitors": {
+      "one": "{count} monitor",
+      "other": "{count} monitors"
+    },
+    "monitor": "monitor",
     "title": "Background shells",
     "back": "Shells",
     "none": "No shell runs in the background",

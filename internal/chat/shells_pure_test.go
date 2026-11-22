@@ -28,7 +28,7 @@ func TestClaudeOutputPathReadsEveryBackgroundResult(t *testing.T) {
 func TestClaudeShellMovedToTheBackgroundIsShownThen(t *testing.T) {
 	var s claudeShells
 	now := time.UnixMilli(1000)
-	cmd := func(string) string { return "make" }
+	cmd := func(string) api.ChatToolCall { return api.ChatToolCall{Name: "Bash", Title: "make"} }
 	if s.task("task_started", []byte(`{"task_id":"b1","tool_use_id":"t1","task_type":"local_bash","is_backgrounded":false}`), cmd, now) {
 		t.Error("a foreground command was shown")
 	}
@@ -46,9 +46,29 @@ func TestClaudeShellMovedToTheBackgroundIsShownThen(t *testing.T) {
 
 func TestClaudeShellCommandFallsBackToItsDescription(t *testing.T) {
 	var s claudeShells
-	s.task("task_started", []byte(`{"task_id":"b1","task_type":"local_bash","description":"Watch","is_backgrounded":true}`), func(string) string { return "" }, time.Now())
+	s.task("task_started", []byte(`{"task_id":"b1","task_type":"local_bash","description":"Watch","is_backgrounded":true}`), func(string) api.ChatToolCall { return api.ChatToolCall{} }, time.Now())
 	if got := s.shown(); got[0].Command != "Watch" {
 		t.Errorf("command = %q, want the description", got[0].Command)
+	}
+}
+
+// A Monitor tool's watch is a local_bash task like a background command, as
+// 2.1.330 writes it; its result names no output file, its end does.
+func TestClaudeMonitorIsListedAsOne(t *testing.T) {
+	var s claudeShells
+	const path = "/tmp/claude-1000/-proj/s/tasks/bryrlw4x0.output"
+	tool := func(string) api.ChatToolCall {
+		return api.ChatToolCall{Name: "Monitor", Title: "for i in 1 2 3; do echo tick $i; sleep 5; done"}
+	}
+	s.task("task_started", []byte(`{"type":"system","subtype":"task_started","task_id":"bryrlw4x0","run_id":"0mwrslkj0-d4b98c7b","tool_use_id":"toolu_01L66XrQLn57KF8wxPQHn8Qm","description":"Tick output from a 3-iteration sleep loop","is_backgrounded":true,"task_type":"local_bash"}`), tool, time.Now())
+	s.result("toolu_01L66XrQLn57KF8wxPQHn8Qm", "Monitor started (task bryrlw4x0, expires in 5m unless the source ends first). You will be notified on each event.")
+	got := s.shown()
+	if len(got) != 1 || !got[0].Monitor || got[0].Command != "for i in 1 2 3; do echo tick $i; sleep 5; done" {
+		t.Fatalf("shown = %+v", got)
+	}
+	s.task("task_notification", []byte(`{"type":"system","subtype":"task_notification","task_id":"bryrlw4x0","tool_use_id":"toolu_01L66XrQLn57KF8wxPQHn8Qm","status":"completed","output_file":"`+path+`"}`), tool, time.Now())
+	if sh, ok := s.lookup("bryrlw4x0"); !ok || sh.path != path || sh.State != api.ShellCompleted {
+		t.Errorf("after its end = %+v, %v", sh, ok)
 	}
 }
 

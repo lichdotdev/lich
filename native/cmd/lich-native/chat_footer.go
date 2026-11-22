@@ -107,7 +107,7 @@ func (u *window) chatChips(th *ui.Theme, p *chatPane, sv sessionView, working bo
 		chips = append(chips, *ft.attach)
 	}
 	chips = append(chips, u.model.chat.optionSlots(sv.ID)...)
-	if runningShells(u.model.chat.shellsOf(sv.ID)) > 0 {
+	if n, monitors := runningShells(u.model.chat.shellsOf(sv.ID)); n+monitors > 0 {
 		chips = append(chips, footerSlot{ID: chipShells})
 	}
 	if ft.context != nil {

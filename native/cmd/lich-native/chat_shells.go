@@ -59,15 +59,18 @@ func (p *chatPane) openShells() {
 	t.mu.Unlock()
 }
 
-// runningShells counts the shells that run.
-func runningShells(shells []backend.ChatShell) int {
-	n := 0
+// runningShells counts the shells that run, the monitors apart.
+func runningShells(shells []backend.ChatShell) (n, monitors int) {
 	for _, s := range shells {
-		if s.State == api.ShellRunning {
+		switch {
+		case s.State != api.ShellRunning:
+		case s.Monitor:
+			monitors++
+		default:
 			n++
 		}
 	}
-	return n
+	return n, monitors
 }
 
 // shellsOrdered is the shells as the panel lists them: those running first,
