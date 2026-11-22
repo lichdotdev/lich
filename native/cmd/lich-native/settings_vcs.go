@@ -28,9 +28,9 @@ const (
 )
 
 var (
-	icVcsGit      = icons.Lucide("git-branch")
-	icVcsGh       = icons.Lucide("git-pull-request-arrow")
-	icVcsGlab     = icons.Lucide("git-merge")
+	icVcsGit      = icons.Brand("git")
+	icVcsGh       = icGitHub
+	icVcsGlab     = icGitLab
 	icVcsExternal = icons.Lucide("external-link")
 	icVcsRecheck  = icons.Lucide("refresh-cw")
 )
