@@ -91,8 +91,10 @@ func TestAPasteWithNoToolSaysSoOnce(t *testing.T) {
 		time.Sleep(20 * time.Millisecond)
 	}
 	paste()
-	if !u.toaster.Live(pasteToolToast) {
-		t.Fatal("a paste with no tool said nothing")
+	for deadline := time.Now().Add(5 * time.Second); !u.toaster.Live(pasteToolToast); time.Sleep(time.Millisecond) {
+		if time.Now().After(deadline) {
+			t.Fatal("a paste with no tool said nothing")
+		}
 	}
 	u.toaster.Dismiss(pasteToolToast)
 	paste()

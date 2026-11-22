@@ -61,7 +61,7 @@ func (u *window) pasteImage(id string) {
 	case err != nil:
 		log.Printf("paste image into %s: %v", id, err)
 		return
-	case img.data == nil:
+	case len(img.data) == 0:
 		return
 	}
 	name := pastedImageBase + img.ext

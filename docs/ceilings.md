@@ -251,8 +251,9 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   Linux runs `wl-paste` (wl-clipboard) then `xclip`, the session's display first, with Claude Code 2.1.330's
   commands, type order and timeouts; measured on X11 (Xvfb). On X11 the Gio fork never answers a text read the
   clipboard's owner refuses (`app/os_x11.go` drops a `SelectionNotify` with no property; its Wayland side answers
-  empty), and the router then skips every later read for that editor: after a Ctrl+V over an image alone, the
-  composer pastes no more text until the window restarts. That predates the image paste and is the fork's to fix
+  empty), and the router then asks for no later read on that editor's behalf: after a Ctrl+V over an image
+  alone, the next text paste into the composer did nothing (measured on Xvfb). A read another widget makes is
+  answered to every waiting one, so it likely frees the composer and hands it that text too: not measured. That predates the image paste and is the fork's to fix
   (answer the refused read empty, as Wayland does). With neither installed the first Ctrl+V of a
   window toasts once, text or not, since nothing tells an image was there. On a compositor without data-control
   `wl-paste` may take the keyboard focus for a moment on every Ctrl+V: not measured. macOS (`osascript`, the
