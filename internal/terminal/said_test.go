@@ -428,3 +428,23 @@ func appendLines(t *testing.T, path string, lines ...string) {
 		t.Fatal(err)
 	}
 }
+
+// FinalMessage is the answer a worker's turn gives its errand, so it reads the
+// last words whole where the recap cuts them, and says lich cannot read a
+// Cursor CLI terminal at all.
+func TestFinalMessageReadsTheWholeLastWords(t *testing.T) {
+	long := strings.Repeat("é", saidRuneCap+10)
+	writeTranscript(t, "uuid-long", `{"type":"assistant","message":{"content":[{"type":"text","text":"`+long+`"}]}}`+"\n")
+	svc := New(stubBins{providerSession: "uuid-long"}, nil, events.New())
+
+	if got, readable := svc.FinalMessage("s1"); !readable || got != long {
+		t.Errorf("FinalMessage = (%d runes, %v), want all %d", len([]rune(got)), readable, len([]rune(long)))
+	}
+	if cut, _ := svc.LastTurnSaid(t.Context(), api.SessionIDOptions{ID: "s1"}); cut.Text == long {
+		t.Error("LastTurnSaid kept the whole text, want the recap's cut")
+	}
+	svc.spawns.Store("s1", spawn{kind: providers.Cursor})
+	if _, readable := svc.FinalMessage("s1"); readable {
+		t.Error("FinalMessage claims to read a Cursor CLI terminal")
+	}
+}

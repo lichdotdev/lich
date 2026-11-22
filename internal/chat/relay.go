@@ -3,6 +3,7 @@ package chat
 import (
 	"context"
 	"errors"
+	"slices"
 	"time"
 
 	"github.com/lichdotdev/lich/api"
@@ -82,6 +83,26 @@ func (s *Service) Take(id, text string) (relay.HandedPrompt, error) {
 		},
 		Collected: func() bool { return true },
 	}, nil
+}
+
+// LastAnswer is the final message of session id's last turn, "" when that
+// turn wrote none or no chat runs there (terminal.ChatSink).
+func (s *Service) LastAnswer(id string) string {
+	c := s.running(id)
+	if c == nil {
+		return ""
+	}
+	items := c.conv.snapshot()
+	last := 0
+	for _, it := range items {
+		last = max(last, it.Turn)
+	}
+	for _, it := range slices.Backward(items) {
+		if it.Turn == last && it.Kind == api.ItemAgent {
+			return it.Text
+		}
+	}
+	return ""
 }
 
 // take sends m in a turn of its own, after the turn running if one is, and

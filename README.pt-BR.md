@@ -153,6 +153,7 @@ o lich consegue ler de volta, porque cada CLI registra coisas diferentes.
 | Spinner enquanto o turno roda, anel quando termina | sim | sim | sim | sim | sim | não | sim | sim |
 | O card ganha o nome da conversa | sim | pelo seu primeiro prompt | pelo seu primeiro prompt | sim | sim, a partir do segundo turno | não | sim, quando o primeiro turno termina | pelo seu primeiro prompt, quando o primeiro turno termina |
 | Um pull request aberto pelo agente aparece no card quando o turno termina | sim | sim | sim | sim | sim | não, só quando a janela volta ao foco | sim | sim |
+| Uma tarefa que você entrega a um agente volta sozinha quando o turno dele termina | sim | sim | sim | sim | sim | não, ele responde com reply_to_session | no chat; no terminal ele responde com reply_to_session | sim |
 | Se redesenha com o novo visual quando você troca o lich entre tema claro e escuro | sim | não | não | sim | sim | não | sim | não |
 | Sino quando o agente depende de você para continuar | sim | sim | não | sim | não | não | não | não |
 | Ctrl+Shift+I pula para a próxima sessão esperando por você | sim | sim | não | sim | não | não | não | não |

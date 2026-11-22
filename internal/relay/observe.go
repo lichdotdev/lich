@@ -40,7 +40,7 @@ func (s *Service) Observe(sessionID, state string) {
 	if state == stateBusy {
 		s.seeNewsLocked(sessionID)
 	}
-	ended, notice := s.endedErrands(sessionID, state)
+	ended, notice, byTurn := s.endedErrands(sessionID, state)
 	reminder := s.compactReminderLocked(sessionID)
 	// A waiter still holding the line carries the news out through its own
 	// select; an errand nobody is attending is stashed for the sender instead,
@@ -80,6 +80,9 @@ func (s *Service) Observe(sessionID, state string) {
 			request := waitingRequest(s.lang(), s.term.Status(e.t.targetID))
 			s.deliverNotice(e.t.fromID, waitingEnvelope(e.t, e.id, request).String(), blockedNotification(s.lang(), e.t.target))
 		}()
+	}
+	if byTurn != nil {
+		go s.answerByTurn(sessionID, *byTurn)
 	}
 	if finished {
 		go s.finishWorker(sessionID)
@@ -203,7 +206,7 @@ func (s *Service) compactReminderLocked(sessionID string) string {
 	delete(s.compacted, sessionID)
 	var owed []string
 	for id, t := range s.tickets {
-		if t.targetID == sessionID && t.submitted && !t.modAnswers {
+		if t.targetID == sessionID && t.submitted && !t.modAnswers && !t.turnAnswers {
 			owed = append(owed, id)
 		}
 	}
@@ -220,11 +223,14 @@ func (s *Service) compactReminderLocked(sessionID string) string {
 // stall channel, for Observe to announce outside the lock. Called with s.mu
 // held.
 //
-// It returns one more thing for a turn that could have been either of two
-// errands: the notice asking the worker to name the ticket next time, for
-// Observe to type outside the lock.
-func (s *Service) endedErrands(sessionID, state string) ([]endedErrand, string) {
+// It returns two more things: for a turn that could have been either of two
+// errands, the notice asking the worker to name the ticket next time, for
+// Observe to type outside the lock; and for a turn that was the one errand its
+// worker answers by finishing its turn, that errand, left open for
+// answerByTurn to read the answer of.
+func (s *Service) endedErrands(sessionID, state string) ([]endedErrand, string, *endedErrand) {
 	var ended []endedErrand
+	var byTurn *endedErrand
 	notice := ""
 	switch state {
 	case stateBusy:
@@ -255,6 +261,10 @@ func (s *Service) endedErrands(sessionID, state string) ([]endedErrand, string) 
 		if len(candidates) > 1 {
 			notice = pickTicketNudge(s.lang(), len(candidates), namedErrands(s.tickets, candidates))
 		}
+		if len(candidates) == 1 && s.tickets[candidates[0]].turnAnswers {
+			byTurn = &endedErrand{candidates[0], s.tickets[candidates[0]]}
+			candidates = nil
+		}
 		// What the ending says is the same thing about every errand it could
 		// have been — the target finished a turn and did not answer this one —
 		// and that is true of each of them whichever one it worked on. So they
@@ -270,7 +280,7 @@ func (s *Service) endedErrands(sessionID, state string) ([]endedErrand, string) 
 			ended = append(ended, endedErrand{id, t})
 		}
 	}
-	return ended, notice
+	return ended, notice, byTurn
 }
 
 // turnCandidates is every errand of a target's the turn that just ended could

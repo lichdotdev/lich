@@ -150,6 +150,7 @@ what lich can read back out of it, since each CLI records different things.
 | Spinner while a turn runs, ring when it ends | yes | yes | yes | yes | yes | no | yes | yes |
 | The card names itself after the conversation | yes | after your first prompt | after your first prompt | yes | yes, from the second turn | no | yes, once the first turn ends | after your first prompt, once the first turn ends |
 | A pull request the agent opens shows on its card when the turn ends | yes | yes | yes | yes | yes | no, once the window regains focus | yes | yes |
+| A task you hand an agent comes back by itself when its turn ends | yes | yes | yes | yes | yes | no, it answers with reply_to_session | in the chat; in a terminal it answers with reply_to_session | yes |
 | Repaints in the new look when you switch lich between a light and a dark theme | yes | no | no | yes | yes | no | yes | no |
 | Bell when the agent is blocked on you | yes | yes | no | yes | no | no | no | no |
 | Ctrl+Shift+I jumps to the next session waiting on you | yes | yes | no | yes | no | no | no | no |

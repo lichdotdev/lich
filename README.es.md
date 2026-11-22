@@ -154,6 +154,7 @@ distinto.
 | Spinner mientras corre un turno, anillo cuando termina | sí | sí | sí | sí | sí | no | sí | sí |
 | La tarjeta toma el nombre de la conversación | sí | por tu primer prompt | por tu primer prompt | sí | sí, desde el segundo turno | no | sí, cuando termina el primer turno | por tu primer prompt, cuando termina el primer turno |
 | Un pull request que abre el agente aparece en su tarjeta al terminar el turno | sí | sí | sí | sí | sí | no, cuando la ventana recupera el foco | sí | sí |
+| Una tarea que le das a un agente vuelve sola cuando termina su turno | sí | sí | sí | sí | sí | no, responde con reply_to_session | en el chat; en una terminal responde con reply_to_session | sí |
 | Se repinta con el aspecto nuevo al cambiar lich entre un tema claro y uno oscuro | sí | no | no | sí | sí | no | sí | no |
 | Campana cuando el agente está bloqueado esperándote | sí | sí | no | sí | no | no | no | no |
 | Ctrl+Shift+I salta a la siguiente sesión que te espera | sí | sí | no | sí | no | no | no | no |

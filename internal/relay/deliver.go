@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/lichdotdev/lich/api"
+	"github.com/lichdotdev/lich/internal/providers"
 	"log/slog"
 	"time"
 )
@@ -150,6 +151,13 @@ func (s *Service) awaitReady(dest candidate, deadline time.Time) error {
 // makes its silence mean something (docs/hooks/session-state.md).
 func (s *Service) reportsState(kind string) bool {
 	return s.plugins != nil && s.plugins.Installed(kind)
+}
+
+// reportsTurnEnd is whether a provider's terminal tells lich its turn ended,
+// the done its final message is read at (answerByTurn). Crush has the plugin
+// and still reports no state (docs/hooks/session-state.md).
+func (s *Service) reportsTurnEnd(kind string) bool {
+	return kind != providers.Crush && s.reportsState(kind)
 }
 
 // offersTools is whether the target can answer with a tool rather than with the
