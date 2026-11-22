@@ -59,6 +59,7 @@ type glabMR struct {
 	HasConflicts        bool          `json:"has_conflicts"`
 	UpdatedAt           string        `json:"updated_at"`
 	HeadPipeline        *glabPipeline `json:"head_pipeline"`
+	Reviewers           []glabUser    `json:"reviewers"`
 }
 
 type glabUser struct {
@@ -254,7 +255,7 @@ func (g gitlabForge) fillDetail(path string, mr glabMR, d *PRDetail) error {
 	var commitsErr, checksErr, diffErr error
 	wg.Go(func() { d.Commits, commitsErr = g.commits(path, mr) })
 	wg.Go(func() { d.Checks, d.CheckRuns, checksErr = g.checks(path, mr.HeadPipeline) })
-	wg.Go(func() { d.ReviewDecision = g.reviewDecision(path, mr) })
+	wg.Go(func() { d.ReviewDecision, d.Reviewers = g.review(path, mr) })
 	wg.Go(func() {
 		var diff string
 		if diff, diffErr = g.pullRequestDiff(path, mr.IID); diffErr == nil {
@@ -320,26 +321,27 @@ func (g gitlabForge) commits(path string, mr glabMR) ([]PRCommit, error) {
 }
 
 type glabApprovals struct {
-	Approved      bool              `json:"approved"`
-	ApprovalsLeft int               `json:"approvals_left"`
-	ApprovedBy    []json.RawMessage `json:"approved_by"`
+	Approved      bool `json:"approved"`
+	ApprovalsLeft int  `json:"approvals_left"`
+	ApprovedBy    []struct {
+		User glabUser `json:"user"`
+	} `json:"approved_by"`
 }
 
-// reviewDecision reads GitLab's approvals as gh's reviewDecision. A failed
-// read answers "", no requirement known, rather than failing the whole detail
-// over its least load-bearing field.
-func (g gitlabForge) reviewDecision(path string, mr glabMR) string {
+// review reads GitLab's approvals as gh's reviewDecision and roster. A failed
+// read answers "" and the requested reviewers alone, rather than failing the
+// whole detail over its least load-bearing fields.
+func (g gitlabForge) review(path string, mr glabMR) (string, []PRReviewer) {
 	out, err := g.run(prReadTimeout, path, "api",
 		fmt.Sprintf("projects/%d/merge_requests/%d/approvals", mr.ProjectID, mr.IID))
-	if err != nil {
-		return ""
-	}
 	var a glabApprovals
-	if err := json.Unmarshal(out, &a); err != nil {
-		slog.Warn("glab approvals could not be decoded", "err", err)
-		return ""
+	if err == nil {
+		if err := json.Unmarshal(out, &a); err != nil {
+			slog.Warn("glab approvals could not be decoded", "err", err)
+			a = glabApprovals{}
+		}
 	}
-	return approvalDecision(a)
+	return approvalDecision(a), glabReviewers(mr.Reviewers, a)
 }
 
 // approvalDecision wants an approver before APPROVED: approved alone may be
@@ -349,6 +351,34 @@ func approvalDecision(a glabApprovals) string {
 	case a.ApprovalsLeft > 0:
 		return prReviewRequired
 	case a.Approved && len(a.ApprovedBy) > 0:
+		return prApproved
+	}
+	return ""
+}
+
+// glabReviewers is the requested reviewers, owing their answer until they
+// approve, then everyone else who approved. GitLab has no "changes requested"
+// verdict to carry.
+func glabReviewers(requested []glabUser, a glabApprovals) []PRReviewer {
+	approved := make(map[string]bool, len(a.ApprovedBy))
+	for _, by := range a.ApprovedBy {
+		approved[by.User.Username] = true
+	}
+	var out []PRReviewer
+	for _, u := range requested {
+		out = append(out, PRReviewer{Login: u.Username, State: approvedState(approved[u.Username])})
+		delete(approved, u.Username)
+	}
+	for _, by := range a.ApprovedBy {
+		if approved[by.User.Username] {
+			out = append(out, PRReviewer{Login: by.User.Username, State: prApproved})
+		}
+	}
+	return out
+}
+
+func approvedState(approved bool) string {
+	if approved {
 		return prApproved
 	}
 	return ""

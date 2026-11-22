@@ -1,7 +1,6 @@
 package project
 
 import (
-	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
@@ -101,6 +100,7 @@ func TestGitLabDetailReadsAMergeRequestInGitHubsWords(t *testing.T) {
 	want := PRDetail{
 		Number: 4527, State: prOpen, Author: "Spiral-Memory", AuthorLogin: "Spiral-Memory",
 		Mergeable: prMergeable, MergeStateStatus: prBlocked, ReviewDecision: prReviewRequired,
+		Reviewers:   []PRReviewer{{Login: "jay_mccure"}, {Login: "GitLabDuo", State: prApproved}},
 		BaseRefName: "main", HeadRefName: "feat/8154-ci-compile-job-script", ChangedFiles: 3,
 		IsCrossRepository: true, MaintainerCanModify: true,
 	}
@@ -223,7 +223,7 @@ func TestGitLabApprovalsReadAsAReviewDecision(t *testing.T) {
 		want string
 	}{
 		{"approvals still owed", glabApprovals{ApprovalsLeft: 2}, prReviewRequired},
-		{"approved by someone", glabApprovals{Approved: true, ApprovedBy: []json.RawMessage{json.RawMessage(`{}`)}}, prApproved},
+		{"approved by someone", approvedBy(true, "ana"), prApproved},
 		{"approved with nobody asked", glabApprovals{Approved: true}, ""},
 	} {
 		if got := approvalDecision(tc.a); got != tc.want {
@@ -231,10 +231,10 @@ func TestGitLabApprovalsReadAsAReviewDecision(t *testing.T) {
 		}
 	}
 	g := newFakeGLab().on("api projects/34675721/merge_requests/4516/approvals", fixture(t, "approvals4516.json"))
-	if got := (gitlabForge{run: g.run}).reviewDecision("/w", glabMR{IID: 4516, ProjectID: 34675721}); got != prApproved {
+	if got := decision(gitlabForge{run: g.run}.review("/w", glabMR{IID: 4516, ProjectID: 34675721})); got != prApproved {
 		t.Errorf("merged !4516 = %q, want APPROVED", got)
 	}
-	if got := (gitlabForge{run: newFakeGLab().run}).reviewDecision("/w", glabMR{IID: 1}); got != "" {
+	if got := decision(gitlabForge{run: newFakeGLab().run}.review("/w", glabMR{IID: 1})); got != "" {
 		t.Errorf("a failed approvals read = %q, want none", got)
 	}
 }
@@ -360,8 +360,37 @@ func TestGitLabAnswersThatCannotBeRead(t *testing.T) {
 		}
 	}
 	g := newFakeGLab().on(approvals4527, bad)
-	if got := (gitlabForge{run: g.run}).reviewDecision("/w", mr); got != "" {
+	if got := decision(gitlabForge{run: g.run}.review("/w", mr)); got != "" {
 		t.Errorf("unreadable approvals = %q", got)
+	}
+}
+
+func decision(d string, _ []PRReviewer) string { return d }
+
+func approvedBy(approved bool, logins ...string) glabApprovals {
+	a := glabApprovals{Approved: approved}
+	for _, l := range logins {
+		a.ApprovedBy = append(a.ApprovedBy, struct {
+			User glabUser `json:"user"`
+		}{glabUser{Username: l}})
+	}
+	return a
+}
+
+func TestGitLabReviewersAreTheRequestedThenTheOtherApprovers(t *testing.T) {
+	t.Parallel()
+	requested := []glabUser{{Username: "ana"}, {Username: "bo"}}
+	got := glabReviewers(requested, approvedBy(true, "bo", "cy"))
+	want := []PRReviewer{{Login: "ana"}, {Login: "bo", State: prApproved}, {Login: "cy", State: prApproved}}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("roster = %+v, want %+v", got, want)
+	}
+	if got := glabReviewers(nil, glabApprovals{}); got != nil {
+		t.Errorf("nobody asked or approved = %+v, want none", got)
+	}
+	_, roster := gitlabForge{run: newFakeGLab().run}.review("/w", glabMR{IID: 1, Reviewers: requested})
+	if !reflect.DeepEqual(roster, []PRReviewer{{Login: "ana"}, {Login: "bo"}}) {
+		t.Errorf("a failed approvals read = %+v, want the requested reviewers still owing", roster)
 	}
 }
 

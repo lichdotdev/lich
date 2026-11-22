@@ -1062,8 +1062,9 @@ work when nobody knows it and that the call site never shows. The mechanism and 
     glab is signed in as.
   - A list row carries no checks: GitLab lists a merge request without its pipeline (measured), and a read per
     row is not a list. Its review decision is only "review required", from `not_approved`.
-  - A detail names no reviewers, a commit names no account (GitLab does not say whose an email is), and
-    "approved" needs an approver: GitLab's `approved` alone may hold for a merge request no rule asks anything of.
+  - A detail's reviewers are the requested ones and whoever approved, never "changes requested" (GitLab has no
+    such verdict); a commit names no account (GitLab does not say whose an email is), and "approved" needs an
+    approver: GitLab's `approved` alone may hold for a merge request no rule asks anything of.
   - A job allowed to fail passes, whatever became of it, and a manual job that is not allowed to fail is pending
     until someone starts it, so the check log waits on it like a running one. A failed job's log is the tail of
     its `step_script` section, or of the whole trace when it never got that far; a canceled one has no log.
