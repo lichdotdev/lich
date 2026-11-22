@@ -158,9 +158,11 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   reports a command its Bash tool runs in the background as a `local_bash` task (`system/task_started` with
   `is_backgrounded`, then `task_updated` and `task_notification` on its end), and lich stops one with the
   `stop_task` control request and reads the end of its output with `read_file`, through Claude Code, since a
-  sandbox's private /tmp hides the file from lich (all measured). A Monitor's command is a `local_bash` task too
-  and is counted with the shells, where Claude Code's TUI counts it apart, and a subagent's shells are listed
-  with the session's. The shells run in the chat's process, so a switch to TUI, /new or a switch to YOLO mode,
+  sandbox's private /tmp hides the file from lich (measured outside a sandbox; that `read_file` reaches the file
+  inside bubblewrap is inferred, Claude Code reading through its own view of the filesystem). A Monitor's
+  command is counted with the shells, where Claude Code's TUI counts it apart, and a subagent's shells are
+  listed with the session's, both read in its code and not seen; so is the move of a foreground command to the
+  background (`task_updated` patching `is_backgrounded`). The shells run in the chat's process, so a switch to TUI, /new or a switch to YOLO mode,
   which start a new one, stops them, and a conversation read back has none. A shell that ends after the turn
   makes Claude Code answer on its own (measured): that answer reaches the chat with no turn running in lich.
   Codex lists its background terminals only on its experimental app-server API

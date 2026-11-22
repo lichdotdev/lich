@@ -254,6 +254,9 @@ func (d *claudeDriver) handle(raw []byte) {
 	case "result":
 		d.result(line)
 	default:
+		if line.Type == "user" {
+			d.shellResults(line)
+		}
 		readClaudeMessage(d.c, line, false)
 	}
 }
@@ -390,10 +393,6 @@ func readClaudeUser(c *chatSession, line claudeLine, history bool) {
 		case b.Type == "tool_result":
 			if d, ok := c.drv.(*claudeDriver); ok && d.tasks.result(b) {
 				c.conv.plan(d.tasks.list())
-			}
-			// a transcript read back names the files of shells long gone
-			if d, ok := c.drv.(*claudeDriver); ok && !history {
-				d.shells.result(b.ToolUseID, blockText(b.Content))
 			}
 			c.conv.update(b.ToolUseID, api.ItemTool, true, func(it *api.ChatItem) {
 				if it.Tool == nil {

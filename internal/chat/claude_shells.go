@@ -193,6 +193,20 @@ func (s *claudeShells) lookup(id string) (claudeShell, bool) {
 	return *sh, true
 }
 
+// shellResults reads the output files a live user line's tool results name,
+// a subagent's among them.
+func (d *claudeDriver) shellResults(line claudeLine) {
+	var blocks []claudeBlock
+	if json.Unmarshal(line.Message.Content, &blocks) != nil {
+		return
+	}
+	for _, b := range blocks {
+		if b.Type == "tool_result" {
+			d.shells.result(b.ToolUseID, blockText(b.Content))
+		}
+	}
+}
+
 func (d *claudeDriver) shellTask(subtype string, raw []byte) {
 	command := func(toolUse string) string {
 		if it, ok := d.c.conv.get(toolUse); ok && it.Tool != nil {

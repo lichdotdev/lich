@@ -105,3 +105,13 @@ func TestTypingShutsTheShells(t *testing.T) {
 		t.Error("typing left the panel open")
 	}
 }
+
+// The shells event replaces the session's shells in the store.
+func TestShellsEventReachesTheStore(t *testing.T) {
+	u, r, _, _ := shellsFrames(t)
+	u.model.chatEvent(t.Context(), chatEventOf(t, api.ChatShellsEvent, api.ChatShellsUpdate{SessionID: "s1", Shells: []backend.ChatShell{}}))
+	r.frames(2)
+	if len(u.model.chat.shellsOf("s1")) != 0 || r.shows("2 shells") {
+		t.Errorf("the event left %v and the chip:\n%s", u.model.chat.shellsOf("s1"), r.drawn())
+	}
+}

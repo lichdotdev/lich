@@ -106,22 +106,7 @@ func (u *window) shellDetail(gtx C, th *ui.Theme, p *chatPane, id string, s back
 	t.mu.Lock()
 	out, read, gen := t.shell.text, t.shell.read, t.shell.gen
 	t.mu.Unlock()
-	back := th.Button(&t.back, i18n.T("chat.shells.back"))
-	back.Icon, back.Variant, back.Size = icToolsBack, ui.VariantGhost, ui.SizeXS
-	ic, ink, state := shellState(th, s)
-	head := func(gtx C) D {
-		return layout.Inset{Left: ui.Space(1), Right: ui.Space(2), Top: ui.Space(1), Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
-			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-				layout.Rigid(back.Layout),
-				ui.Gap(2),
-				layout.Rigid(func(gtx C) D { return ic.Layout(gtx, toolsGlyph, ink) }),
-				ui.Gap(1.5),
-				layout.Flexed(1, th.Text(ui.TextSM, cleanLine(s.Command)).Mono().Weight(font.SemiBold).Truncated().Layout),
-				ui.Gap(toolsMetaGap),
-				layout.Rigid(th.Text(ui.TextXS, shellMeta(gtx, s, state)).Muted().Layout),
-			)
-		})
-	}
+	head := func(gtx C) D { return shellHead(gtx, th, t, s) }
 	var lines []layout.Widget
 	if s.Description != "" && s.Description != s.Command {
 		lines = append(lines, toolsFootNote(th, s.Description))
@@ -145,15 +130,35 @@ func (u *window) shellDetail(gtx C, th *ui.Theme, p *chatPane, id string, s back
 	}
 	var foot layout.Widget
 	if s.State == api.ShellRunning {
-		foot = func(gtx C) D {
-			b := th.Button(&t.shell.stop, i18n.T("chat.shells.stop"))
-			b.Variant, b.Size, b.Icon = ui.VariantSecondary, ui.SizeSM, icChatStop
-			return layout.UniformInset(ui.Space(2)).Layout(gtx, func(gtx C) D {
-				return layout.Flex{}.Layout(gtx, layout.Rigid(b.Layout))
-			})
-		}
+		foot = func(gtx C) D { return shellStop(gtx, th, t) }
 	}
 	return t.scrolled(gtx, th, head, lines, foot)
+}
+
+// shellHead is Back, then the shell's glyph, command and time.
+func shellHead(gtx C, th *ui.Theme, t *chatTools, s backend.ChatShell) D {
+	back := th.Button(&t.back, i18n.T("chat.shells.back"))
+	back.Icon, back.Variant, back.Size = icToolsBack, ui.VariantGhost, ui.SizeXS
+	ic, ink, state := shellState(th, s)
+	return layout.Inset{Left: ui.Space(1), Right: ui.Space(2), Top: ui.Space(1), Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
+		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+			layout.Rigid(back.Layout),
+			ui.Gap(2),
+			layout.Rigid(func(gtx C) D { return ic.Layout(gtx, toolsGlyph, ink) }),
+			ui.Gap(1.5),
+			layout.Flexed(1, th.Text(ui.TextSM, cleanLine(s.Command)).Mono().Weight(font.SemiBold).Truncated().Layout),
+			ui.Gap(toolsMetaGap),
+			layout.Rigid(th.Text(ui.TextXS, shellMeta(gtx, s, state)).Muted().Layout),
+		)
+	})
+}
+
+func shellStop(gtx C, th *ui.Theme, t *chatTools) D {
+	b := th.Button(&t.shell.stop, i18n.T("chat.shells.stop"))
+	b.Variant, b.Size, b.Icon = ui.VariantSecondary, ui.SizeSM, icChatStop
+	return layout.UniformInset(ui.Space(2)).Layout(gtx, func(gtx C) D {
+		return layout.Flex{}.Layout(gtx, layout.Rigid(b.Layout))
+	})
 }
 
 func shellLine(th *ui.Theme, line string) layout.Widget {
