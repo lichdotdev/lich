@@ -148,7 +148,7 @@ func TestCardFollowsThePullRequestOfItsBranch(t *testing.T) {
 	close(forge.hold)
 	forge.hold = nil
 	forge.mu.Unlock()
-	prOnCard(t, m, 0) // c3 has no open PR: merged
+	prOnCard(t, m, 0) // c3 has no PR
 
 	forge.prs["c3"] = &backend.PullRequest{Number: 8, State: "OPEN"}
 	m.mu.Lock()
