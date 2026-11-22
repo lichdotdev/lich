@@ -272,10 +272,15 @@ func stringContent(raw json.RawMessage) string {
 	return text
 }
 
-// promptTitle turns a prompt into a one-line title. A prompt that opens with a
-// tag is one the harness wrote (a slash command, a caveat), not the user.
+// promptTitle turns a prompt into a one-line title. An envelope lich handed
+// the agent is named by what it means (a worker's task by its prompt); any
+// other prompt that opens with a tag is one the harness wrote (a slash
+// command, a caveat), not the user.
 func promptTitle(prompt string) string {
 	prompt = strings.TrimSpace(prompt)
+	if line, ok := relay.EnvelopeLine(prompt); ok {
+		prompt = strings.TrimSpace(line)
+	}
 	if prompt == "" || strings.HasPrefix(prompt, "<") {
 		return ""
 	}

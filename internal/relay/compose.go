@@ -8,10 +8,8 @@ import (
 	"github.com/lichdotdev/lich/internal/prompt"
 )
 
-// The message lich types at the target's prompt, and the keystrokes that put it
-// there. Everything the receiving agent knows about this feature it reads in
-// this text: the words are the whole protocol, which is what lets a provider
-// lich has never heard of answer a relayed request.
+// The briefing lich hands a provider at spawn, the notes it composes, and the
+// keystrokes that put a note at a terminal's prompt.
 
 // SpawnBriefing is what a provider is told about lich when lich starts it: two
 // sentences appended to its system prompt, for the providers whose command line
@@ -34,9 +32,8 @@ import (
 // rule below (see prompt.Catalog).
 //
 // hasTools is whether this provider was handed lich's MCP server at spawn. The
-// command line works everywhere and is named for the ones that were not, on the
-// same rule replyInstruction follows: naming a tool a session does not have is
-// worse than naming the command.
+// command line works everywhere and is named for the ones that were not:
+// naming a tool a session does not have is worse than naming the command.
 //
 // The example spells its placeholders in capitals and quotes with ' rather than
 // the usual <angle brackets> and ": this string is passed as one argv entry, and
@@ -57,11 +54,11 @@ import (
 // (internal/terminal, codexBriefingArgs).
 func SpawnBriefing(lang prompt.Lang, hasTools bool, route SubagentRoute) string {
 	text := prompt.For(lang)
-	command, opener := text.BriefingCommandCLI, briefingOpenerCLI
+	command, opener, reply, collect := text.BriefingCommandCLI, briefingOpenerCLI, briefingReplyCLI, briefingCollectCLI
 	if hasTools {
-		command, opener = text.BriefingCommandTools, briefingOpenerTool
+		command, opener, reply, collect = text.BriefingCommandTools, briefingOpenerTool, ToolReply, ToolCollect
 	}
-	artifacts := fmt.Sprintf(text.BriefingArtifacts, opener)
+	artifacts := fmt.Sprintf(text.BriefingEnvelope, reply, collect) + fmt.Sprintf(text.BriefingArtifacts, opener)
 	switch route {
 	case RouteCards:
 		return text.BriefingIntro + text.BriefingCards + command + artifacts
@@ -72,11 +69,14 @@ func SpawnBriefing(lang prompt.Lang, hasTools bool, route SubagentRoute) string 
 	}
 }
 
-// How the briefing says to open a page, by the same rule as the command:
-// the tool for a session handed lich's MCP server, the CLI for the rest.
+// How the briefing says to open a page, reply and collect, by the same rule as
+// the command: the tool for a session handed lich's MCP server, the CLI for the
+// rest.
 const (
 	briefingOpenerTool = "browser_open"
 	briefingOpenerCLI  = "`lich browser open PATH`"
+	briefingReplyCLI   = "`lich reply TICKET ANSWER`"
+	briefingCollectCLI = "`lich wait`"
 )
 
 // BriefingEnv carries the spawn briefing to a provider whose agent config prints
@@ -106,57 +106,6 @@ const (
 	RouteNative
 )
 
-// compose is the message typed at the target's prompt. It names where the
-// request came from so the receiving agent knows this did not come from the
-// person in front of it, and carries the exact command that sends an answer
-// home — the reply path only exists because this text describes it, so the
-// agent needs no prior knowledge of the feature.
-func compose(lang prompt.Lang, sender, ticketID, task string, hasTools bool) string {
-	return composeFrom(lang, origin(lang, sender), ticketID, task, hasTools)
-}
-
-// composeFrom is compose with the origin line already worded.
-func composeFrom(lang prompt.Lang, from, ticketID, task string, hasTools bool) string {
-	return fmt.Sprintf(
-		prompt.For(lang).RelayMessage,
-		from, task, replyInstruction(lang, hasTools, ticketID),
-	)
-}
-
-// originExtension is the origin line of a message an extension sent.
-func originExtension(lang prompt.Lang, id, name string) string {
-	return fmt.Sprintf(prompt.For(lang).OriginExtension, name, id)
-}
-
-// composeForWorker is the task handed to a worker whose mod answers for it
-// (docs/hooks/mod-answer.md): the task under one line naming who asked, the way
-// a native subagent is handed its prompt. There is no ticket and no reply
-// command, because the worker's last message is its answer.
-func composeForWorker(lang prompt.Lang, sender, task string) string {
-	return fmt.Sprintf(prompt.For(lang).WorkerTask, sender, task)
-}
-
-// replyInstruction tells the receiving agent how to answer. Every agent has a
-// shell, so the command is always named; a provider lich registers its MCP
-// server with is offered the tool first, because a session that withholds shell
-// access would otherwise have no way to answer at all.
-//
-// The exclusivity is load-bearing, not emphasis. A Claude Code session has a
-// peer channel of its own and this message names another session, so answering
-// through that channel is the obvious move — and it reaches a sender that is
-// blocked on a ticket instead. That happened on the first real run: the target
-// replied over its own socket and the errand timed out with the answer already
-// written. The ticket is the only route home, and the message has to say so.
-func replyInstruction(lang prompt.Lang, hasTools bool, ticketID string) string {
-	text := prompt.For(lang)
-	command := fmt.Sprintf(text.ReplyCommand, ticketID)
-	route := fmt.Sprintf(text.ReplyRouteCLI, command)
-	if hasTools {
-		route = fmt.Sprintf(text.ReplyRouteTools, ToolReply, ticketID, command)
-	}
-	return route + "\n\n" + text.ReplyOnlyWayBack
-}
-
 // pickTicketNudge is what a worker is told at its own prompt after a turn that
 // ended with none of its errands answered. Those errands are over by the time it
 // reads this — every one the turn could have been went home unanswered, which is
@@ -165,7 +114,7 @@ func replyInstruction(lang prompt.Lang, hasTools bool, ticketID string) string {
 // and a note that invites that is worse than no note. What it asks for is the
 // next answer, which is the one that can still name its ticket.
 func pickTicketNudge(lang prompt.Lang, count int, errands string) string {
-	return fmt.Sprintf(prompt.For(lang).PickTicketNudge, count, errands)
+	return noticeEnvelope(TopicUnanswered, fmt.Sprintf(prompt.For(lang).PickTicketNudge, count, errands), "").String()
 }
 
 // compactReminder is what a worker is told after its conversation was
@@ -173,24 +122,7 @@ func pickTicketNudge(lang prompt.Lang, count int, errands string) string {
 // closes it, the same lines a refused ticketless answer lists.
 func compactReminder(lang prompt.Lang, count int, errands string) string {
 	text := prompt.For(lang)
-	return fmt.Sprintf(text.Pick(count, text.CompactReminder), count, errands)
-}
-
-// nudgeNotice is the one line typed at a sender's prompt when results are
-// waiting and nobody is holding the line for them. It replaces typing the
-// results themselves: N results landing as N prompt submissions each restart
-// the sender's turn and leave the full text sitting in its context window,
-// while one short line lets the agent drain everything in a single tool call.
-// count and targets cover everything waiting, not only what this nudge is the
-// first to mention — the reader acts on the total.
-func nudgeNotice(lang prompt.Lang, count int, targets []string, hasTools bool) string {
-	text := prompt.For(lang)
-	what := fmt.Sprintf(text.Pick(count, text.NudgeResultsReady), count, QuotedList(targets))
-	route := text.NudgeRouteCLI
-	if hasTools {
-		route = fmt.Sprintf(text.NudgeRouteTools, ToolCollect)
-	}
-	return fmt.Sprintf(text.NudgeNotice, what, route)
+	return noticeEnvelope(TopicCompacted, fmt.Sprintf(text.Pick(count, text.CompactReminder), count, errands), "").String()
 }
 
 // QuotedList words a list of names (session labels, folders) for a message:
@@ -202,17 +134,6 @@ func QuotedList(names []string) string {
 		quoted = append(quoted, fmt.Sprintf("%q", name))
 	}
 	return strings.Join(quoted, ", ")
-}
-
-// origin describes the sender in the message's first line. An empty sender is
-// the lich CLI run outside any session — a script, a scheduled job, the user's
-// own shell — which is a different thing to be told than "another agent".
-func origin(lang prompt.Lang, sender string) string {
-	text := prompt.For(lang)
-	if sender == "" {
-		return text.OriginCLI
-	}
-	return fmt.Sprintf(text.OriginSession, sender)
 }
 
 // paste wraps text in bracketed paste, which is how a multi-line message

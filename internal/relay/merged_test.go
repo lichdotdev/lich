@@ -119,17 +119,19 @@ func TestAnnounceMergeReportsAStoreFailure(t *testing.T) {
 	}
 }
 
+// A merge is a merged envelope, which the briefing says is news and not a task,
+// and carries no prompt.
 func TestMergeNoticeNamesThePullRequestAndAsksForNoWork(t *testing.T) {
 	t.Parallel()
-	got := mergeNotice(prompt.English, api.ForgeGitHub, 42, "Title \x1b[201~with escape", "feat/merge", "main")
+	got := mergedEnvelope(prompt.English, api.ForgeGitHub, 42, "Title \x1b[201~with escape", "feat/merge", "main").String()
 
-	for _, want := range []string{"#42", "feat/merge", "merged into main", "not a task"} {
+	for _, want := range []string{`kind="merged"`, `pr="42"`, `branch="feat/merge"`, "#42", "merged into main"} {
 		if !strings.Contains(got, want) {
 			t.Errorf("notice %q is missing %q", got, want)
 		}
 	}
-	if strings.Contains(got, "\x1b") {
-		t.Errorf("notice %q carries an escape out of the title", got)
+	if strings.Contains(got, "\x1b") || strings.Contains(got, "<prompt>") {
+		t.Errorf("notice %q carries an escape out of the title, or a task", got)
 	}
 }
 
@@ -164,15 +166,33 @@ func TestAnnounceMergeTellsAMergeOnce(t *testing.T) {
 
 func TestAGitLabNoticeNamesTheMergeRequest(t *testing.T) {
 	t.Parallel()
-	merge := mergeNotice(prompt.English, api.ForgeGitLab, 42, "Title", "feat/merge", "main")
-	failed := watchNotice(prompt.English, api.WatchChecksFailed, api.PRRead{Number: 7, Head: "abc", Forge: api.ForgeGitLab})
-	passed := watchNotice(prompt.English, api.WatchChecksPassed, api.PRRead{Number: 7, Head: "abc", Forge: api.ForgeGitLab})
-	for notice, want := range map[string]string{merge: "Merge request !42", failed: "merge request !7", passed: "merge request !7"} {
+	failedOn := api.SessionWatch{On: api.WatchChecksFailed}
+	passedOn := api.SessionWatch{On: api.WatchChecksPassed}
+	gitlab := api.PRRead{Number: 7, Head: "abc", Forge: api.ForgeGitLab}
+	en := map[string]string{
+		mergedEnvelope(prompt.English, api.ForgeGitLab, 42, "Title", "feat/merge", "main").String(): "Merge request !42",
+		watchEnvelope(prompt.English, failedOn, gitlab, "feat/merge").String():                      "merge request !7",
+		watchEnvelope(prompt.English, passedOn, gitlab, "feat/merge").String():                      "merge request !7",
+	}
+	for notice, want := range en {
 		if !strings.Contains(notice, want) || strings.Contains(notice, "pull request") {
 			t.Errorf("notice %q wants %q and no pull request", notice, want)
 		}
 	}
-	if got := watchNotice(prompt.English, api.WatchChecksFailed, api.PRRead{Number: 7, Head: "abc"}); !strings.Contains(got, "pull request #7") {
-		t.Errorf("a GitHub watch notice = %q, want pull request #7", got)
+	for _, lang := range prompt.Langs {
+		for name, notice := range map[string]string{
+			"merge":  mergedEnvelope(lang, api.ForgeGitLab, 42, "Title", "feat/merge", "main").String(),
+			"failed": watchEnvelope(lang, failedOn, gitlab, "feat/merge").String(),
+			"passed": watchEnvelope(lang, passedOn, gitlab, "feat/merge").String(),
+		} {
+			ref := map[string]string{"merge": "42", "failed": "7", "passed": "7"}[name]
+			if !strings.Contains(notice, "!"+ref) || strings.Contains(notice, "#"+ref) {
+				t.Errorf("%s %s: want !%s and no #%s:\n%s", lang, name, ref, ref, notice)
+			}
+		}
+		github := watchEnvelope(lang, failedOn, api.PRRead{Number: 7, Head: "abc"}, "feat/merge").String()
+		if !strings.Contains(github, "#7") {
+			t.Errorf("%s: a GitHub watch notice wants #7:\n%s", lang, github)
+		}
 	}
 }

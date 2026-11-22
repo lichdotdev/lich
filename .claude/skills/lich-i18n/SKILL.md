@@ -10,7 +10,7 @@ lich has two languages that never derive from each other:
 - **Interface language**: lich's own screens. The catalogs are in `native/i18n/locales/`, chosen in
   Settings › General and stored in the global setting `lich.appearance.language`; the window follows the
   system's language until one is picked.
-- **Prompt language**: every word lich hands an agent (spawn briefing, `[lich]` relay notes, nudges,
+- **Prompt language**: every word lich hands an agent (spawn briefing, the text inside notification envelopes,
   merge notices, MCP and CLI results, prompts the window types into a PTY, lich-plugin's mod text).
   Stored as the global `prompt.language` setting, exported to every session as `LICH_PROMPT_LANG`.
 
@@ -52,7 +52,7 @@ Then, in the same PR:
    `internal/prompt/<lang>.go`. `TestEveryLocaleMatchesEnglish` fails on a missing key or placeholder;
    `TestCatalogParity` fails on an empty Go field or mismatched verbs.
    Translate from English, never from another translation.
-3. **Literal in every locale:** `[lich]`, tool and CLI names (`send_to_session`, `wait_for_answer`,
+3. **Literal in every locale:** `[lich]`, the `lich-notification` tag with its attributes and values, tool and CLI names (`send_to_session`, `wait_for_answer`,
    `reply_to_session`, `open_session`, `close_session`, `list_worktrees`, `"$LICH_BIN" reply|wait`,
    `lich send`, `gh pr create`), ticket ids, status enums (`pending`, `answered`, `unread`, ...),
    parameter names, product names, key names, `{placeholders}` and Go format verbs.

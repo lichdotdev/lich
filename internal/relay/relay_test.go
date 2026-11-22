@@ -749,7 +749,7 @@ func TestSendDeliversAndReplyAnswers(t *testing.T) {
 		t.Errorf("second write = %q, want the submit alone", writes[1])
 	}
 	typed := term.written("s2")
-	for _, want := range []string{`"sender"`, "run the tests", `"$LICH_BIN" reply ` + ticketID} {
+	for _, want := range []string{`kind="task" from="sender" session="s1" ticket="` + ticketID + `" answer="reply"`, "<prompt>run the tests</prompt>"} {
 		if !strings.Contains(typed, want) {
 			t.Errorf("typed message is missing %q:\n%s", want, typed)
 		}
@@ -769,8 +769,10 @@ func TestAMessageFromOutsideLichIsAttributedToTheCommandLine(t *testing.T) {
 		t.Fatalf("Send: %v", err)
 	}
 
+	// No session sent it, so the task names none: the command line has no
+	// label to give and no id to answer to but the ticket.
 	typed := term.written("s2")
-	if !strings.Contains(typed, "Message relayed by the lich command line") {
+	if !strings.Contains(typed, `kind="task" ticket="`) || strings.Contains(typed, "from=") || strings.Contains(typed, "session=") {
 		t.Errorf("a caller with no session was announced as one:\n%s", typed)
 	}
 	if strings.Contains(typed, "unknown") {
@@ -778,43 +780,25 @@ func TestAMessageFromOutsideLichIsAttributedToTheCommandLine(t *testing.T) {
 	}
 }
 
-// TestReplyInstructionOffersTheToolOnlyWhereItExists proves the message names
-// the tool only for a session that has it, and always names the command — an
-// agent whose shell is locked down could otherwise have no way to answer at
-// all, and one pointed at a tool it does not have loses the turn to an error.
-func TestReplyInstructionOffersTheToolOnlyWhereItExists(t *testing.T) {
+// TestTheBriefingOffersTheReplyToolOnlyWhereItExists proves the envelope's
+// explanation names the tool only for a session that has it, and always names
+// the command: an agent whose shell is locked down could otherwise have no way
+// to answer at all, and one pointed at a tool it does not have loses the turn
+// to an error. The task envelope carries no reply instruction of its own
+// (docs/hooks/notification.md), so the briefing is where it is pinned.
+func TestTheBriefingOffersTheReplyToolOnlyWhereItExists(t *testing.T) {
 	t.Parallel()
-	tests := []struct {
-		name string
-		tool bool
-	}{
-		{"a session with lich's tools", true},
-		{"a session with none", false},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := replyInstruction(prompt.English, tt.tool, "a1b2c3d4")
-			if !strings.Contains(got, `"$LICH_BIN" reply a1b2c3d4`) {
-				t.Errorf("the command is missing:\n%s", got)
-			}
-			if named := strings.Contains(got, ToolReply); named != tt.tool {
-				t.Errorf("names the %s tool = %v, want %v:\n%s", ToolReply, named, tt.tool, got)
-			}
-			// The first real run lost an answer to a target that replied over
-			// its provider's own peer channel. Saying the ticket is the only
-			// route is the whole fix, so it is pinned rather than left to taste.
-			if !strings.Contains(got, "only way back") {
-				t.Errorf("the instruction does not say the ticket is exclusive:\n%s", got)
-			}
-			if !strings.Contains(got, "Do not answer by messaging a peer session") {
-				t.Errorf("the instruction does not rule out the peer channel:\n%s", got)
-			}
-			// The sender pays to read the answer, so the instruction pins the
-			// shape: a report, not a transcript.
-			if !strings.Contains(got, "concise report") {
-				t.Errorf("the instruction does not ask for a concise report:\n%s", got)
-			}
-		})
+	for _, tools := range []bool{true, false} {
+		got := SpawnBriefing(prompt.English, tools, RouteSessions)
+		if named := strings.Contains(got, ToolReply); named != tools {
+			t.Errorf("tools %v: names the %s tool = %v:\n%s", tools, ToolReply, named, got)
+		}
+		// The first real run lost an answer to a target that replied over its
+		// provider's own peer channel. Saying the ticket is the only route is
+		// the whole fix, so it is pinned rather than left to taste.
+		if !strings.Contains(got, "only way back") {
+			t.Errorf("tools %v: the briefing does not say the ticket is exclusive:\n%s", tools, got)
+		}
 	}
 }
 
@@ -1139,7 +1123,7 @@ func TestTheSenderIsToldAtItsPromptWhenTheTargetStallsUnattended(t *testing.T) {
 	svc.Observe("s2", "busy")
 	svc.Observe("s2", "done")
 
-	if !awaitWritten(term, "s1", "[lich]") {
+	if !awaitWritten(term, "s1", "<lich-notification") {
 		t.Fatalf("the sender was never nudged: %q", term.written("s1"))
 	}
 	if typed := term.written("s1"); !strings.Contains(typed, `"docs"`) {
@@ -1316,7 +1300,7 @@ func TestADoneWithTwoErrandsOpenStallsBothAndAsksForTheTicket(t *testing.T) {
 	}
 	notice := strings.Join(term.writesTo("s2")[delivery:], "")
 	for _, want := range []string{
-		"[lich]", "run the tests and report the failures", "build the docs",
+		"<lich-notification", "run the tests and report the failures", "build the docs",
 		"went back to their senders unanswered", "every answer from here on has to name its ticket",
 	} {
 		if !strings.Contains(notice, want) {
@@ -1603,7 +1587,7 @@ func TestAnAnswerNobodyWaitedForIsStashedAndNudged(t *testing.T) {
 		t.Fatalf("Reply: %v", err)
 	}
 
-	if !awaitWritten(term, "s1", "[lich]") {
+	if !awaitWritten(term, "s1", "<lich-notification") {
 		t.Fatalf("the sender was never nudged: %q", term.written("s1"))
 	}
 	writes := term.writesTo("s1")
@@ -2345,7 +2329,7 @@ func TestQueuedTaskReportsTheTargetDyingToTheInbox(t *testing.T) {
 	term.live["s2"] = false
 	term.mu.Unlock()
 
-	if !awaitWritten(term, "s1", "[lich]") {
+	if !awaitWritten(term, "s1", "<lich-notification") {
 		t.Fatal("the sender was never told its queued task died with the target")
 	}
 	collected, err := svc.Collect(context.Background(), CollectOptions{From: "s1", WaitSeconds: 1})
@@ -2590,7 +2574,7 @@ func TestTheSenderIsToldAtItsPromptWhenNobodyWasWaiting(t *testing.T) {
 	if result.Status != StatusPending {
 		t.Fatalf("status = %q, want the sender to have given up first", result.Status)
 	}
-	if !awaitWritten(term, "s1", "[lich]") {
+	if !awaitWritten(term, "s1", "<lich-notification") {
 		t.Fatalf("the sender was never nudged: %v", term.writesTo("s1"))
 	}
 	collected, err := svc.Collect(context.Background(), CollectOptions{From: "s1", WaitSeconds: 1})
@@ -2660,58 +2644,35 @@ func TestAnAnswerLandingAsItsLastWaiterGivesUpIsStashed(t *testing.T) {
 // told about the server at spawn, opencode and Crush get it with the plugin, and
 // only if the installed one is new enough. The relay asks rather than assumes.
 
-func TestTheMessageNamesTheToolWhenTheTargetHasIt(t *testing.T) {
+// A task answered by its ticket says how in its summary: the tool where the
+// target holds it, the command where it does not or nothing asked, since a
+// session pointed at a tool it does not have loses the turn to an error and
+// the command works everywhere.
+func TestTheTaskNamesTheToolOnlyWhereItExists(t *testing.T) {
 	t.Parallel()
-	term := newFakeTerminal("s1", "s2")
-	svc := newRelay(workspace(), term, nil)
-	svc.SetPlugins(fakePlugins{installed: true, tools: true})
-
-	if _, err := svc.Send(context.Background(), SendOptions{
-		From: "s1", Target: "docs", Prompt: "run the tests", WaitSeconds: 1,
-	}); err != nil {
-		t.Fatalf("Send = %v", err)
-	}
-	typed := strings.Join(term.writesTo("s2"), "")
-	if !strings.Contains(typed, ToolReply) {
-		t.Errorf("a target holding the tool was told to shell out:\n%s", typed)
-	}
-}
-
-func TestTheMessageNamesOnlyTheCommandWithoutTheTool(t *testing.T) {
-	t.Parallel()
-	term := newFakeTerminal("s1", "s2")
-	svc := newRelay(workspace(), term, nil)
-	svc.SetPlugins(fakePlugins{installed: true, tools: false})
-
-	if _, err := svc.Send(context.Background(), SendOptions{
-		From: "s1", Target: "docs", Prompt: "run the tests", WaitSeconds: 1,
-	}); err != nil {
-		t.Fatalf("Send = %v", err)
-	}
-	typed := strings.Join(term.writesTo("s2"), "")
-	if strings.Contains(typed, ToolReply) {
-		t.Errorf("named a tool the target does not have:\n%s", typed)
-	}
-	// The command is the route that needs nothing registered anywhere.
-	if !strings.Contains(typed, `"$LICH_BIN" reply`) {
-		t.Errorf("left the target with no way to answer:\n%s", typed)
-	}
-}
-
-// Nothing wired is the state a test — and a lich whose plugin check never ran —
-// is in. It has to read as "no tools", never as "assume they are there".
-func TestWithoutAPluginCheckTheMessageNamesTheCommand(t *testing.T) {
-	t.Parallel()
-	term := newFakeTerminal("s1", "s2")
-	svc := newRelay(workspace(), term, nil)
-
-	if _, err := svc.Send(context.Background(), SendOptions{
-		From: "s1", Target: "docs", Prompt: "run the tests", WaitSeconds: 1,
-	}); err != nil {
-		t.Fatalf("Send = %v", err)
-	}
-	if typed := strings.Join(term.writesTo("s2"), ""); strings.Contains(typed, ToolReply) {
-		t.Errorf("assumed a tool with nothing to ask:\n%s", typed)
+	for name, plugins := range map[string]*fakePlugins{
+		"with the tool": {installed: true, tools: true}, "without it": {installed: true}, "unasked": nil,
+	} {
+		term := newFakeTerminal("s1", "s2")
+		svc := newRelay(workspace(), term, nil)
+		tools := plugins != nil && plugins.tools
+		if plugins != nil {
+			svc.SetPlugins(*plugins)
+		}
+		result, err := svc.Send(context.Background(), SendOptions{From: "s1", Target: "docs", Prompt: "run the tests", WaitSeconds: 1})
+		if err != nil {
+			t.Fatalf("%s: Send = %v", name, err)
+		}
+		typed := strings.Join(term.writesTo("s2"), "")
+		if named := strings.Contains(typed, ToolReply); named != tools {
+			t.Errorf("%s: names %s = %v, want %v:\n%s", name, ToolReply, named, tools, typed)
+		}
+		if command := strings.Contains(typed, `"$LICH_BIN" reply `+result.Ticket); command == tools {
+			t.Errorf("%s: names the command = %v, want %v:\n%s", name, command, !tools, typed)
+		}
+		if !strings.Contains(typed, `ticket="`+result.Ticket+`" answer="reply">`+"\n<summary>") {
+			t.Errorf("%s: the task does not say how to answer:\n%s", name, typed)
+		}
 	}
 }
 
@@ -2752,7 +2713,7 @@ func TestABurstOfAnswersCoalescesIntoOneNudge(t *testing.T) {
 		t.Fatalf("Reply t2: %v", err)
 	}
 
-	if !awaitWritten(term, "s1", "[lich]") {
+	if !awaitWritten(term, "s1", "<lich-notification") {
 		t.Fatalf("no nudge arrived: %q", term.writesTo("s1"))
 	}
 	// Long enough for a second nudge to have fired if one were coming.
@@ -2762,7 +2723,7 @@ func TestABurstOfAnswersCoalescesIntoOneNudge(t *testing.T) {
 		t.Fatalf("got %d writes, want one nudge (paste and submit): %q", len(writes), writes)
 	}
 	typed := term.written("s1")
-	for _, want := range []string{"2 tasks", `"docs"`, `"api"`} {
+	for _, want := range []string{`from="docs"`, `from="api"`, "</lich-notification>\n\n<lich-notification"} {
 		if !strings.Contains(typed, want) {
 			t.Errorf("the nudge is missing %q:\n%s", want, typed)
 		}
@@ -2787,7 +2748,7 @@ func TestABusySenderIsNudgedOnlyWhenItsTurnEnds(t *testing.T) {
 	}
 
 	svc.Observe("s1", stateDone)
-	if !awaitWritten(term, "s1", "[lich]") {
+	if !awaitWritten(term, "s1", "<lich-notification") {
 		t.Fatalf("the turn ended and no nudge came: %q", term.writesTo("s1"))
 	}
 }
@@ -2803,7 +2764,7 @@ func TestANudgeIsNotRepeatedOnLaterTurnEnds(t *testing.T) {
 	if _, err := svc.Reply(t.Context(), ReplyOptions{Ticket: "t1", Answer: "all green"}); err != nil {
 		t.Fatalf("Reply: %v", err)
 	}
-	if !awaitWritten(term, "s1", "[lich]") {
+	if !awaitWritten(term, "s1", "<lich-notification") {
 		t.Fatalf("no nudge arrived: %q", term.writesTo("s1"))
 	}
 
@@ -2839,7 +2800,7 @@ func TestANudgeThatNeverLandedIsSentAgain(t *testing.T) {
 
 	term.failWrites(nil)
 	svc.Observe("s1", stateDone)
-	if !awaitWritten(term, "s1", "[lich]") {
+	if !awaitWritten(term, "s1", "<lich-notification") {
 		t.Fatalf("a nudge that failed to land was never sent again: %q", term.writesTo("s1"))
 	}
 }
@@ -2866,7 +2827,7 @@ func TestNothingIsTypedIntoAPromptItsUserIsHolding(t *testing.T) {
 	}
 
 	term.typeAt("s1", false)
-	if !awaitWritten(term, "s1", "[lich]") {
+	if !awaitWritten(term, "s1", "<lich-notification") {
 		t.Fatalf("the prompt came free and nothing was delivered: %q", term.writesTo("s1"))
 	}
 }
@@ -3071,15 +3032,17 @@ func TestTheNudgeNamesTheToolOnlyWhereItExists(t *testing.T) {
 				t.Fatalf("Reply: %v", err)
 			}
 
-			if !awaitWritten(term, "s1", "[lich]") {
+			if !awaitWritten(term, "s1", "<lich-notification") {
 				t.Fatalf("no nudge arrived: %q", term.writesTo("s1"))
 			}
 			typed := term.written("s1")
 			if named := strings.Contains(typed, ToolCollect); named != tt.tools {
 				t.Errorf("names %s = %v, want %v:\n%s", ToolCollect, named, tt.tools, typed)
 			}
-			if !strings.Contains(typed, `"$LICH_BIN" wait`) {
-				t.Errorf("the command route is missing:\n%s", typed)
+			// The fixture's summary names the tool alone where the sender has it
+			// (docs/hooks/fixtures/notification.json).
+			if named := strings.Contains(typed, `"$LICH_BIN" wait`); named == tt.tools {
+				t.Errorf("names the command = %v, want %v:\n%s", named, !tt.tools, typed)
 			}
 		})
 	}
@@ -3180,14 +3143,14 @@ func TestAnInterruptedTurnDoesNotEndTheErrand(t *testing.T) {
 	svc.Observe("s2", "busy")
 	svc.Observe("s2", "interrupted")
 
-	if awaitWritten(term, "s1", "[lich]") {
+	if awaitWritten(term, "s1", "<lich-notification") {
 		t.Fatalf("the sender was told its errand was over by an interrupt: %q", term.written("s1"))
 	}
 
 	// The turn that does end it is the target's next one.
 	svc.Observe("s2", "busy")
 	svc.Observe("s2", "done")
-	if !awaitWritten(term, "s1", "[lich]") {
+	if !awaitWritten(term, "s1", "<lich-notification") {
 		t.Fatalf("the errand outlived the turn that ended it: %q", term.written("s1"))
 	}
 }

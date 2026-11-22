@@ -50,7 +50,7 @@ func awaitAttended(t *testing.T, svc *Service, id string, n int) {
 // nudge at the sender's prompt, and the inbox.
 func assertStashedAndNudged(t *testing.T, svc *Service, term *fakeTerminal, answer string) {
 	t.Helper()
-	if !awaitWritten(term, "s1", "[lich]") {
+	if !awaitWritten(term, "s1", "<lich-notification") {
 		t.Errorf("the sender was never nudged: %q", term.written("s1"))
 	}
 	collected, err := svc.CollectNow(t.Context(), CollectNowOptions{From: "s1"})
@@ -239,7 +239,7 @@ func TestAnAbandonedWaitStashesTheOutcomeItWasHolding(t *testing.T) {
 
 	svc.abandon("t1", tk)
 
-	if !awaitWritten(term, "s1", "[lich]") {
+	if !awaitWritten(term, "s1", "<lich-notification") {
 		t.Errorf("the sender was never nudged: %q", term.written("s1"))
 	}
 	collected, err := svc.CollectNow(t.Context(), CollectNowOptions{From: "s1"})
@@ -295,7 +295,7 @@ func TestAnInterruptedSenderIsNudged(t *testing.T) {
 	}
 
 	svc.Observe("s1", stateInterrupted)
-	if !awaitWritten(term, "s1", "[lich]") {
+	if !awaitWritten(term, "s1", "<lich-notification") {
 		t.Fatalf("the turn was stopped and no nudge came: %q", term.writesTo("s1"))
 	}
 }

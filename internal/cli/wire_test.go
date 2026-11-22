@@ -84,6 +84,7 @@ func (*wiredTerminal) ModAttached(string) bool  { return false }
 func (*wiredTerminal) ModAttaching(string) bool { return false }
 
 func (*wiredTerminal) ModAnswers(string) bool { return false }
+func (*wiredTerminal) Chat(string) bool       { return false }
 
 func (w *wiredTerminal) Write(_ context.Context, opts api.WriteOptions) (api.None, error) {
 	w.mu.Lock()
@@ -256,9 +257,9 @@ func TestSendPrivateOverTheRealDispatcher(t *testing.T) {
 func ticketFrom(term *wiredTerminal) string {
 	deadline := time.Now().Add(2 * time.Second)
 	for time.Now().Before(deadline) {
-		_, after, found := strings.Cut(term.message(), `"$LICH_BIN" reply `)
+		_, after, found := strings.Cut(term.message(), ` ticket="`)
 		if found {
-			id, _, _ := strings.Cut(after, " ")
+			id, _, _ := strings.Cut(after, `"`)
 			return id
 		}
 		time.Sleep(time.Millisecond)

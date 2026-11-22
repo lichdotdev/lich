@@ -75,8 +75,11 @@ func (s *Service) Observe(sessionID, state string) {
 	if reminder != "" {
 		go s.deliverNotice(sessionID, reminder, nil)
 	}
-	for _, t := range blocked {
-		go s.deliverNotice(t.fromID, blockedNotice(s.lang(), t.target), blockedNotification(s.lang(), t.target))
+	for _, e := range blocked {
+		go func() {
+			request := waitingRequest(s.lang(), s.term.Status(e.t.targetID))
+			s.deliverNotice(e.t.fromID, waitingEnvelope(e.t, e.id, request).String(), blockedNotification(s.lang(), e.t.target))
+		}()
 	}
 	if finished {
 		go s.finishWorker(sessionID)
@@ -99,7 +102,7 @@ func (s *Service) Observe(sessionID, state string) {
 // noteBlockLocked reads one report for what it says about subagent errands
 // worked at sessionID: a waiting mid-turn is a block their senders hear about
 // once, and a busy or done ends it. Called under s.mu, before recordState.
-func (s *Service) noteBlockLocked(sessionID, state string) []*ticket {
+func (s *Service) noteBlockLocked(sessionID, state string) []endedErrand {
 	switch state {
 	case stateWaiting:
 		return s.blockedSendersLocked(sessionID)

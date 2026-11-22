@@ -84,6 +84,8 @@ type chatView struct {
 	run    chatToEnd
 	// stamps are the tooltips of the time under each message, by item id.
 	stamps map[string]*ui.Tooltip
+	// notes are the clicks on a notification's row, by item id and place.
+	notes map[string]*ui.Clickable
 	// copies are the copy buttons of the messages, by item id.
 	copies map[string]*chatCopy
 	folds  map[string]*chatFold
@@ -624,7 +626,11 @@ func (u *window) chatComposer(gtx C, th *ui.Theme, p *chatPane, sv sessionView, 
 
 // chatUser is the person's message, in an Accent box against the column's
 // right edge.
-func chatUser(gtx C, th *ui.Theme, text string) D {
+func chatUser(gtx C, th *ui.Theme, text string) D { return chatUserFrom(gtx, th, "", text) }
+
+// chatUserFrom is chatUser with a muted line over the text naming who sent it,
+// none when from is empty.
+func chatUserFrom(gtx C, th *ui.Theme, from, text string) D {
 	maxW := int(float32(gtx.Constraints.Max.X) * chatUserShare)
 	on := th.On(th.Accent)
 	return layout.E.Layout(gtx, func(gtx C) D {
@@ -633,20 +639,35 @@ func chatUser(gtx C, th *ui.Theme, text string) D {
 		return layout.Background{}.Layout(gtx,
 			func(gtx C) D { return ui.Fill(gtx, th.Accent, ui.RadiusLG) },
 			func(gtx C) D {
-				return layout.Inset{Top: ui.Space(2), Bottom: ui.Space(2), Left: ui.Space(3), Right: ui.Space(3)}.Layout(gtx,
-					on.Text(ui.TextSM, expandTabs(text)).Wrapped().Layout)
+				return layout.Inset{Top: ui.Space(2), Bottom: ui.Space(2), Left: ui.Space(3), Right: ui.Space(3)}.Layout(gtx, func(gtx C) D {
+					body := on.Text(ui.TextSM, expandTabs(text)).Wrapped().Layout
+					if from == "" {
+						return body(gtx)
+					}
+					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+						layout.Rigid(on.Text(ui.TextXS, from).Muted().Layout),
+						ui.VGap(0.5),
+						layout.Rigid(body),
+					)
+				})
 			})
 	})
 }
 
 // startsTurn is whether row r starts a turn after row prev: the person's
-// message, or the day line over it; not the message a day line already opened.
+// message, or the day line over it; not the message a day line already opened,
+// nor a notification right under another, which read as one list of rows.
 func startsTurn(r, prev chatRow) bool {
 	switch {
 	case r.kind == chatRowDay:
 		return true
 	case r.kind == chatRowItem && r.item.Kind == api.ItemUser:
-		return prev.kind != chatRowDay
+		return prev.kind != chatRowDay && !(isEnvelope(r) && isEnvelope(prev))
 	}
 	return false
+}
+
+// isEnvelope is whether row r is a message lich handed the agent.
+func isEnvelope(r chatRow) bool {
+	return r.kind == chatRowItem && r.item.Kind == api.ItemUser && strings.HasPrefix(r.item.Text, envelopeOpen)
 }

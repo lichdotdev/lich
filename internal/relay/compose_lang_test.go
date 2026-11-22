@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/prompt"
 )
 
@@ -26,69 +27,93 @@ func TestSpawnBriefingIsCmdSafeInEveryLanguage(t *testing.T) {
 	}
 }
 
-// Every message renders in every language with its arguments in place: a
+// Every envelope renders in every language with its arguments in place: a
 // format that drops or misnumbers one shows as %!, which an agent would read as
-// part of the instruction.
-func TestEveryMessageRendersInEveryLanguage(t *testing.T) {
+// part of the note.
+func TestEveryEnvelopeRendersInEveryLanguage(t *testing.T) {
 	t.Parallel()
 	for _, lang := range prompt.Langs {
 		messages := []string{
-			compose(lang, "", "t1", "task", false),
-			compose(lang, "sender", "t1", "task", true),
-			composeForWorker(lang, "sender", "task"),
 			pickTicketNudge(lang, 2, "  t1, t2"),
-			nudgeNotice(lang, 1, []string{"docs"}, false),
-			nudgeNotice(lang, 3, []string{"docs", "api"}, true),
+			compactReminder(lang, 1, "  lich reply t1"),
+			compactReminder(lang, 3, "  lich reply t1"),
+			outcomeEnvelope(lang, &inboxEntry{target: "docs", status: StatusAnswered}, false, true).String(),
+			outcomeEnvelope(lang, &inboxEntry{target: "docs", status: StatusAnswered}, false, false).String(),
+			outcomeEnvelope(lang, &inboxEntry{target: "docs", status: StatusUnread}, true, true).String(),
+			outcomeEnvelope(lang, &inboxEntry{target: "docs", status: StatusUndelivered}, true, true).String(),
+			outcomeEnvelope(lang, &inboxEntry{target: "docs", status: StatusUnanswered}, true, true).String(),
+			loopEnvelope(lang, &ticket{sender: "api"}).String(),
 		}
 		for _, message := range messages {
 			if strings.Contains(message, "%!") {
 				t.Errorf("%s: a format argument is off:\n%s", lang, message)
 			}
-			if !strings.HasPrefix(message, "[lich] ") {
-				t.Errorf("%s: the [lich] token is missing:\n%s", lang, message)
-			}
-		}
-		for _, literal := range []string{`"$LICH_BIN" reply t1`, "`" + ToolReply + "`", "t1"} {
-			if !strings.Contains(compose(lang, "", "t1", "task", true), literal) {
-				t.Errorf("%s: the reply instruction lost %q", lang, literal)
+			if !strings.HasPrefix(message, "<lich-notification version=\"1\" kind=\"") {
+				t.Errorf("%s: not an envelope:\n%s", lang, message)
 			}
 		}
 	}
 }
 
-// The language is read when a message is composed, not when the relay starts,
-// so a change in Settings reaches the next message.
+// The briefing is the only text every provider reads about the envelope
+// (docs/ceilings.md), so it names the block, both ways a task is answered and
+// the tools and command that answer and collect, in every language.
+func TestSpawnBriefingExplainsTheEnvelopeInEveryLanguage(t *testing.T) {
+	t.Parallel()
+	for _, lang := range prompt.Langs {
+		for _, route := range []SubagentRoute{RouteSessions, RouteCards, RouteNative} {
+			for tools, literals := range map[bool][]string{true: {ToolReply, ToolCollect}, false: {"lich reply TICKET ANSWER", "lich wait"}} {
+				briefing := SpawnBriefing(lang, tools, route)
+				for _, literal := range append(literals, "lich-notification", AnswerLastMessage, AnswerReply) {
+					if !strings.Contains(briefing, literal) {
+						t.Errorf("%s route %d tools %v: the briefing lost %q:\n%s", lang, route, tools, literal, briefing)
+					}
+				}
+			}
+		}
+		// Codex reads the briefing inside single quotes.
+		if envelope := prompt.For(lang).BriefingEnvelope; strings.Contains(envelope, "'") {
+			t.Errorf("%s: the envelope sentence carries a single quote:\n%s", lang, envelope)
+		}
+	}
+}
+
+// The language is read when a note is composed, not when the relay starts, so
+// a change in Settings reaches the next one.
 func TestTheRelayTypesInThePromptLanguageReadLive(t *testing.T) {
 	t.Parallel()
-	term := newFakeTerminal("s2")
-	svc := newRelay(workspace(), term, nil)
+	term := newFakeTerminal("agent")
+	svc := newRelay(merging(), term, nil)
 	lang := prompt.English
 	svc.SetPromptLanguage(func() prompt.Lang { return lang })
 	lang = prompt.PortugueseBR
 
-	go func() { _, _ = svc.Reply(t.Context(), ReplyOptions{Ticket: waitForTicket(svc), Answer: "ok"}) }()
-	if _, err := svc.Send(context.Background(), SendOptions{Target: "docs", Prompt: "hello", WaitSeconds: 30}); err != nil {
-		t.Fatalf("Send: %v", err)
+	if _, err := svc.AnnounceMerge(t.Context(), api.AnnounceMergeOptions{Checkout: "/wt/feat", Number: 42, Title: "Fix", Branch: "feat/merge", Base: "main"}); err != nil {
+		t.Fatalf("AnnounceMerge: %v", err)
 	}
 
-	typed := term.written("s2")
-	if !strings.Contains(typed, prompt.For(prompt.PortugueseBR).OriginCLI) {
-		t.Errorf("the message was not typed in the language set after startup:\n%s", typed)
+	want := fmt.Sprintf(prompt.For(prompt.PortugueseBR).MergeNotice, 42, "Fix", "main")
+	if !awaitWritten(term, "agent", want) {
+		t.Errorf("the note was not typed in the language set after startup:\n%s", term.written("agent"))
 	}
 }
 
-// Russian's one form also covers 21, so the nudge prints the count in every
-// form and the noun agrees with it.
-func TestTheRussianNudgeAgreesWithItsCount(t *testing.T) {
+// Russian's one form also covers 21, so the reminder takes a form per count
+// and prints the count in each.
+func TestTheRussianReminderAgreesWithItsCount(t *testing.T) {
 	t.Parallel()
+	ru := prompt.For(prompt.Russian)
 	for count, want := range map[int]string{
-		1: "1 отправленная вами задача готова", 2: "2 отправленные вами задачи готовы",
-		5: "5 отправленных вами задач готовы", 11: "11 отправленных вами задач готовы",
-		21: "21 отправленная вами задача готова", 22: "22 отправленные вами задачи готовы",
+		1: ru.CompactReminder.One, 2: ru.CompactReminder.Few, 5: ru.CompactReminder.Many,
+		11: ru.CompactReminder.Many, 21: ru.CompactReminder.One, 22: ru.CompactReminder.Few,
 	} {
-		if got := nudgeNotice(prompt.Russian, count, []string{"docs"}, false); !strings.Contains(got, want) {
-			t.Errorf("count %d: %q, want it to contain %q", count, got, want)
+		got := compactReminder(prompt.Russian, count, "  t1")
+		if !strings.Contains(got, fmt.Sprintf(want, count, "  t1")) {
+			t.Errorf("count %d: %q, want the form %q", count, got, want)
 		}
+	}
+	if ru.CompactReminder.One == ru.CompactReminder.Few || ru.CompactReminder.Few == ru.CompactReminder.Many {
+		t.Error("Russian's reminder forms are not told apart")
 	}
 }
 
@@ -113,31 +138,22 @@ func TestSpawnBriefingSendsPagesToTheArtifactFolder(t *testing.T) {
 	}
 }
 
-func TestAnExtensionsMessageIsIntroducedAsRelayedByIt(t *testing.T) {
+// An extension's task names the extension and no session: there is none to
+// answer to but the ticket.
+func TestAnExtensionsTaskIsFromTheExtension(t *testing.T) {
 	t.Parallel()
-	for _, lang := range prompt.Langs {
-		term := newFakeTerminal("s2")
-		svc := newRelay(workspace(), term, nil)
-		svc.SetPromptLanguage(func() prompt.Lang { return lang })
+	term := newFakeTerminal("s2")
+	svc := newRelay(workspace(), term, nil)
 
-		go func() { _, _ = svc.Reply(t.Context(), ReplyOptions{Ticket: waitForTicket(svc), Answer: "ok"}) }()
-		if _, err := svc.Send(context.Background(), SendOptions{
-			Target: "docs", Prompt: "hello", WaitSeconds: 30, ExtensionID: "notes", ExtensionName: "Lich Notes",
-		}); err != nil {
-			t.Fatalf("%s: Send: %v", lang, err)
-		}
-
-		typed := term.written("s2")
-		if !strings.Contains(typed, `"Lich Notes"`) || !strings.Contains(typed, "notes") || strings.Contains(typed, prompt.For(lang).OriginCLI) {
-			t.Errorf("%s: the message does not name the extension in place of the command line:\n%s", lang, typed)
-		}
+	go func() { _, _ = svc.Reply(t.Context(), ReplyOptions{Ticket: waitForTicket(svc), Answer: "ok"}) }()
+	if _, err := svc.Send(context.Background(), SendOptions{
+		Target: "docs", Prompt: "hello", WaitSeconds: 30, ExtensionID: "notes", ExtensionName: "Lich Notes",
+	}); err != nil {
+		t.Fatalf("Send: %v", err)
 	}
-}
 
-func TestAnExtensionsMessageInEnglishReadsAsRelayedByTheExtension(t *testing.T) {
-	t.Parallel()
-	got := originExtension(prompt.English, "notes", "Lich Notes")
-	if want := `Message relayed by the extension "Lich Notes" (notes)`; got != want {
-		t.Errorf("got %q, want %q", got, want)
+	typed := term.written("s2")
+	if !strings.Contains(typed, `kind="task" from="Lich Notes" ticket="`) || strings.Contains(typed, "session=") {
+		t.Errorf("the task does not name the extension alone:\n%s", typed)
 	}
 }

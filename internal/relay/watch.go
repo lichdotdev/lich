@@ -106,7 +106,7 @@ func watchMark(w api.SessionWatch, read api.PRRead) (string, bool) {
 // does: a prompt lost to a failed write can be retyped, two turns cannot be
 // taken back. Only a watch on failing checks stays armed, for the next commit.
 func (s *Service) fireWatch(sess store.Session, w api.SessionWatch, mark string, read api.PRRead) {
-	text := watchNotice(s.lang(), w.On, read) + w.Prompt
+	text := watchEnvelope(s.lang(), w, read, s.sessions.SessionBranch(sess.ID)).String()
 	w.Seen = mark
 	w.Runs++
 	if w.On != api.WatchChecksFailed {
@@ -136,20 +136,23 @@ func (s *Service) stopWatch(sess store.Session, w api.SessionWatch) {
 	}
 }
 
-// watchNotice says what happened in front of the prompt. Only the number and
-// the commit go in: a review's body and a check's log are written by others,
-// and the agent reads them with gh, knowing where they came from.
-func watchNotice(lang prompt.Lang, on string, read api.PRRead) string {
+// watchEnvelope is a watch's prompt under what it met. Only the number and the
+// commit go in: a review's body and a check's log are written by others, and
+// the agent reads them with gh, knowing where they came from.
+func watchEnvelope(lang prompt.Lang, w api.SessionWatch, read api.PRRead, branch string) Envelope {
 	text := prompt.For(lang)
 	head := read.Head
 	if len(head) > shortHead {
 		head = head[:shortHead]
 	}
-	switch on {
+	topic, summary := TopicReview, fmt.Sprintf(text.WatchReview, read.Number)
+	switch w.On {
 	case api.WatchChecksFailed:
-		return fmt.Sprintf(forgeText(read.Forge, text.WatchChecksFailed, text.WatchChecksFailedGitLab), read.Number, head)
+		topic, summary = TopicChecksFailed, fmt.Sprintf(forgeText(read.Forge, text.WatchChecksFailed, text.WatchChecksFailedGitLab), read.Number, head)
 	case api.WatchChecksPassed:
-		return fmt.Sprintf(forgeText(read.Forge, text.WatchChecksPassed, text.WatchChecksPassedGitLab), read.Number, head)
+		topic, summary = TopicChecksPassed, fmt.Sprintf(forgeText(read.Forge, text.WatchChecksPassed, text.WatchChecksPassedGitLab), read.Number, head)
 	}
-	return fmt.Sprintf(text.WatchReview, read.Number)
+	env := noticeEnvelope(topic, summary, w.Prompt)
+	env.PR, env.Branch = read.Number, branch
+	return env
 }

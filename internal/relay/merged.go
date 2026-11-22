@@ -39,7 +39,7 @@ func (s *Service) AnnounceMerge(ctx context.Context, opts api.AnnounceMergeOptio
 	}
 	lang := s.lang()
 	text := prompt.For(lang)
-	message := mergeNotice(lang, opts.Forge, opts.Number, opts.Title, opts.Branch, opts.Base)
+	message := mergedEnvelope(lang, opts.Forge, opts.Number, opts.Title, opts.Branch, opts.Base).String()
 	summary := fmt.Sprintf(forgeText(opts.Forge, text.MergeSummary, text.MergeSummaryGitLab), opts.Number, opts.Base)
 	note := &Notification{Status: NotifyCompleted, Summary: summary}
 	for _, sess := range s.mergeAudience(projects, opts.Checkout) {
@@ -120,15 +120,6 @@ func sessionCwd(sessionPath, projectPath string) string {
 		return projectPath
 	}
 	return sessionPath
-}
-
-// mergeNotice is what the agent reads. It says the work is done and asks for
-// nothing beyond keeping its record straight: a notice that read as a task would
-// start one (deleting the branch, pulling the base) in a checkout the user may
-// be about to remove.
-func mergeNotice(lang prompt.Lang, forge string, number int, title, branch, base string) string {
-	text := prompt.For(lang)
-	return fmt.Sprintf(forgeText(forge, text.MergeNotice, text.MergeNoticeGitLab), number, sanitize(title), branch, base)
 }
 
 // forgeText is a notice's GitLab wording on a GitLab checkout, its GitHub one

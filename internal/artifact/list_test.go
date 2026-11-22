@@ -163,7 +163,7 @@ func TestAttachCopiesAnotherSessionsPageBesideEarlierCopies(t *testing.T) {
 	if body, err := os.ReadFile(second.Path); err != nil || string(body) != "from a" {
 		t.Fatalf("copy holds %q (%v)", body, err)
 	}
-	if want := `[lich] copy of report.html from session "label of a"; edits stay in the copy.`; first.Notice != want {
+	if want := `lich copied report.html here from session "label of a"; edits stay in the copy.`; first.Notice != want {
 		t.Errorf("notice = %q, want %q", first.Notice, want)
 	}
 }

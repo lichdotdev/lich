@@ -52,7 +52,7 @@ func TestAWorkerClosedByAnotherHandTellsItsCallerItStopped(t *testing.T) {
 
 			svc.SessionClosed("s2", closer)
 
-			if !awaitWritten(term, "s1", "[lich]") {
+			if !awaitWritten(term, "s1", "<lich-notification") {
 				t.Fatal("the caller was never told its worker stopped")
 			}
 			collected, err := svc.CollectNow(t.Context(), CollectNowOptions{From: "s1"})

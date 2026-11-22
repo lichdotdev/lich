@@ -99,7 +99,7 @@ func TestUploadStoresBytes(t *testing.T) {
 // making, the user whether the path is the file they meant. Derived from
 // nothing, so rewording it is a decision and not a passing test.
 func TestCopyNoticeAnnouncesTheCopy(t *testing.T) {
-	want := "[lich] copy of shot.png; the original is not reachable from this session, " +
+	want := "lich copied shot.png here; the original is not reachable from this session, " +
 		"edits stay in the copy."
 
 	if got := copyNotice(prompt.English, "shot.png"); got != want {

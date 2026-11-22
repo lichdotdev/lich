@@ -69,7 +69,7 @@ func TestASubagentReportReachesItsCallerWholeThroughTheMod(t *testing.T) {
 		t.Fatal("the caller's mod was never handed the report")
 	}
 	note := term.promptsTo("s1")[0]
-	for _, want := range []string{report, `"docs"`, "feat/docs", "t1"} {
+	for _, want := range []string{"<result>" + report + "</result>", `kind="worker-finished" from="docs" session="s2" ticket="t1"`} {
 		if !strings.Contains(note, want) {
 			t.Errorf("note is missing %.60q:\n%.300s", want, note)
 		}
@@ -104,7 +104,7 @@ func TestASubagentReportIsNotTypedAtACallerWithoutAMod(t *testing.T) {
 	if _, err := svc.Reply(t.Context(), ReplyOptions{Ticket: "t1", Answer: "the long report"}); err != nil {
 		t.Fatalf("Reply: %v", err)
 	}
-	if !awaitWritten(term, "s1", "[lich]") {
+	if !awaitWritten(term, "s1", "<lich-notification") {
 		t.Fatal("the caller was never told")
 	}
 	if strings.Contains(term.written("s1"), "the long report") {
@@ -128,7 +128,7 @@ func TestASubagentReportNoPollCollectedStaysCollectable(t *testing.T) {
 	if _, err := svc.Reply(t.Context(), ReplyOptions{Ticket: "t1", Answer: "the long report"}); err != nil {
 		t.Fatalf("Reply: %v", err)
 	}
-	if !awaitWritten(term, "s1", "[lich]") {
+	if !awaitWritten(term, "s1", "<lich-notification") {
 		t.Fatal("the short note was never typed")
 	}
 	if strings.Contains(term.written("s1"), "the long report") {
@@ -163,7 +163,9 @@ func TestASubagentReportCollectedFirstIsNotAlsoDelivered(t *testing.T) {
 	}
 }
 
-// Results that are not subagent reports ride the same note as a nudge.
+// Results that are not subagent reports ride the same message, each in its
+// envelope with the result left to collect: a terminal's mod takes only a
+// report whole.
 func TestASubagentReportCarriesTheNudgeForTheRest(t *testing.T) {
 	t.Parallel()
 	term := newFakeTerminal("s1", "s2", "s3")
@@ -186,8 +188,8 @@ func TestASubagentReportCarriesTheNudgeForTheRest(t *testing.T) {
 	if !strings.Contains(note, "the report") || strings.Contains(note, "the other answer") {
 		t.Errorf("note = %q, want the report inline and the other answer left to collect", note)
 	}
-	if !strings.Contains(note, `The task you sent "api" has its result ready`) {
-		t.Errorf("note = %q, want the nudge for api", note)
+	if !strings.Contains(note, `from="api" session="s3" ticket="t2">`+"\n<status>answered</status>\n<summary>") {
+		t.Errorf("note = %q, want api's envelope saying where to collect it", note)
 	}
 	if got := term.notesTo("s1")[0]; got == nil || got.Summary != `lich session "docs" finished` {
 		t.Errorf("the reports were handed as %+v, want them summed up by the worker that finished", got)

@@ -279,10 +279,11 @@ func TestTheMarkStepMarksAContinuationParkedBeforeTheMarkExisted(t *testing.T) {
 	defer svc.Close()
 	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
 	parked := map[string]string{
-		"en": prompt.For(prompt.English).ResumePrompt,
-		"es": prompt.For(prompt.Spanish).ResumePrompt,
-		"p":  "ship the release notes",
-		"a":  "agent's own",
+		"en":     prompt.For(prompt.English).ResumePrompt,
+		"es":     prompt.For(prompt.Spanish).ResumePrompt,
+		"legacy": "[lich] Your usage limit reset. Continue the task you were working on.",
+		"p":      "ship the release notes",
+		"a":      "agent's own",
 	}
 	for id, text := range parked {
 		_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: id, Label: id, Kind: "claude", NextSeq: 2})
@@ -308,7 +309,7 @@ func TestTheMarkStepMarksAContinuationParkedBeforeTheMarkExisted(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := map[string]string{"en": api.ScheduledByLich, "es": api.ScheduledByLich, "p": "", "a": api.ScheduledByAgent}
+	want := map[string]string{"en": api.ScheduledByLich, "es": api.ScheduledByLich, "legacy": api.ScheduledByLich, "p": "", "a": api.ScheduledByAgent}
 	for _, sess := range projects[0].Sessions {
 		if sess.ScheduledBy != want[sess.ID] {
 			t.Errorf("%s: ScheduledBy = %q, want %q", sess.ID, sess.ScheduledBy, want[sess.ID])

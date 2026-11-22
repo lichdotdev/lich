@@ -38,6 +38,8 @@ type inboxEntry struct {
 	target   string
 	status   string
 	answer   string
+	// by is who closed the worker of a stopped errand (ticket.stoppedBy).
+	by       string
 	ready    time.Time
 	private  bool
 	subagent bool
@@ -189,7 +191,7 @@ func (s *Service) unregister(fromID string, wake chan struct{}) {
 func (s *Service) stashLocked(id string, t *ticket, status, answer string) {
 	entry := &inboxEntry{
 		ticket: id, fromID: t.fromID, targetID: t.targetID, target: t.target,
-		status: status, answer: answer, ready: s.now(),
+		status: status, answer: answer, by: t.stoppedBy, ready: s.now(),
 		private: t.private, subagent: t.subagent,
 	}
 	if t.private {
@@ -299,6 +301,7 @@ func (s *Service) flushNudge(fromID string) {
 	nm.Lock()
 	defer nm.Unlock()
 
+	chat := s.term.Chat(fromID)
 	s.mu.Lock()
 	if timer := s.nudgeTimer[fromID]; timer != nil {
 		timer.Stop()
@@ -309,7 +312,7 @@ func (s *Service) flushNudge(fromID string) {
 		s.mu.Unlock()
 		return
 	}
-	news := s.takeNewsLocked(fromID)
+	news := s.takeNewsLocked(fromID, chat)
 	s.mu.Unlock()
 	if len(news.marked) == 0 {
 		return
@@ -325,7 +328,7 @@ func (s *Service) flushNudge(fromID string) {
 		// success would let two flushes racing each find the same entry fresh.
 		slog.Warn("relay: news not delivered", "session", fromID, "err", err)
 		s.mu.Lock()
-		s.restoreReportsLocked(news.reports)
+		s.restoreReportsLocked(news.results)
 		for _, id := range news.marked {
 			if e, ok := s.ready[id]; ok {
 				e.nudged = false
@@ -335,48 +338,40 @@ func (s *Service) flushNudge(fromID string) {
 	}
 }
 
-// news is what one flush tells a sender: the entries it marks as announced,
-// how many results wait and from whom, and the subagent reports among them,
-// which are taken out of the inbox while the flush hands them over whole
-// (tellNews).
+// news is what one flush tells a sender: the entries no notification named
+// yet, oldest first, and the results among them it hands over whole, which are
+// taken out of the inbox meanwhile (tellNews).
 type news struct {
 	marked  []string
-	count   int
-	labels  []string
-	reports []*inboxEntry
-	// others is the labels of the results that are not reports, for the nudge
-	// that rides beside them.
-	others []string
+	entries []*inboxEntry
+	results []*inboxEntry
 }
 
-// takeNewsLocked marks every entry waiting for fromID that no notice named yet,
-// and takes the subagent reports among them out of the inbox into held, so a
-// collect racing the hand-over cannot return them a second time. held is where
-// Wait still finds them by ticket. Called under s.mu.
-func (s *Service) takeNewsLocked(fromID string) news {
+// takeNewsLocked marks every entry waiting for fromID that no notification
+// named yet, and takes the results it hands over whole out of the inbox into
+// held, so a collect racing the hand-over cannot return them a second time.
+// held is where Wait still finds them by ticket. A chat takes every result
+// whole; a terminal's mod takes a subagent's report whole, the one result the
+// mod route existed for before the envelope. Called under s.mu.
+func (s *Service) takeNewsLocked(fromID string, chat bool) news {
 	var found news
-	targets, others := map[string]bool{}, map[string]bool{}
 	for id, e := range s.ready {
-		if e.fromID != fromID {
-			continue
-		}
-		found.count++
-		targets[e.target] = true
-		if e.nudged {
-			others[e.target] = true
+		if e.fromID != fromID || e.nudged {
 			continue
 		}
 		e.nudged = true
 		found.marked = append(found.marked, id)
-		if !e.subagent || e.status != StatusAnswered {
-			others[e.target] = true
+		found.entries = append(found.entries, e)
+	}
+	sort.Slice(found.entries, func(i, j int) bool { return found.entries[i].ready.Before(found.entries[j].ready) })
+	for _, e := range found.entries {
+		if e.status != StatusAnswered || !(chat || e.subagent) {
 			continue
 		}
-		delete(s.ready, id)
-		s.held[id] = e
-		found.reports = append(found.reports, e)
+		delete(s.ready, e.ticket)
+		s.held[e.ticket] = e
+		found.results = append(found.results, e)
 	}
-	found.labels, found.others = sortedKeys(targets), sortedKeys(others)
 	return found
 }
 

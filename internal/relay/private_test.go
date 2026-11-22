@@ -83,7 +83,7 @@ func TestAPrivateResultIsNeverAnnounced(t *testing.T) {
 	svc.Observe("s1", stateDone)
 	time.Sleep(20 * svc.nudgeDelay)
 
-	if typed := term.written("s1"); strings.Contains(typed, "[lich]") {
+	if typed := term.written("s1"); strings.Contains(typed, "<lich-notification") {
 		t.Errorf("the session was nudged about a private result: %q", typed)
 	}
 	events.mu.Lock()
@@ -122,7 +122,7 @@ func TestAnOrdinaryResultIsStillNudgedBesideAPrivateOne(t *testing.T) {
 	_, _ = svc.Reply(t.Context(), ReplyOptions{Ticket: "t1", Answer: "private"})
 	_, _ = svc.Reply(t.Context(), ReplyOptions{Ticket: "t2", Answer: "ordinary"})
 
-	if !awaitWritten(term, "s1", "[lich]") {
+	if !awaitWritten(term, "s1", "<lich-notification") {
 		t.Fatalf("the ordinary result was never announced: %q", term.written("s1"))
 	}
 	if typed := term.written("s1"); strings.Contains(typed, `"docs"`) || !strings.Contains(typed, `"api"`) {

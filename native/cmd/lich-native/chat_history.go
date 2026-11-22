@@ -21,12 +21,24 @@ import (
 // the one after, and past the newest the draft that was in the box comes back.
 // Ctrl+R searches them in a list over the composer, the box as its query.
 
-// sentHistory is the person's messages in items, newest first.
+// sentHistory is the messages sent in items, newest first, each as the chat
+// shows it: a task lich handed over is its prompt, and the other notes lich
+// handed the agent are left out, since nobody sent them to send again.
 func sentHistory(items []backend.ChatItem) []string {
 	var sent []string
 	for _, it := range slices.Backward(items) {
-		if it.Kind == api.ItemUser && strings.TrimSpace(it.Text) != "" {
-			sent = append(sent, it.Text)
+		if it.Kind != api.ItemUser {
+			continue
+		}
+		text := it.Text
+		if envs, ok := parseEnvelopes(text); ok {
+			text = ""
+			if len(envs) == 1 && envs[0].kind == "task" {
+				text = envs[0].text["prompt"]
+			}
+		}
+		if strings.TrimSpace(text) != "" {
+			sent = append(sent, text)
 		}
 	}
 	return sent

@@ -908,8 +908,9 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   at `defaultSettleLimit` regardless, which is the case this cannot tell from a paste still arriving.
 - **A relayed message reaches a Claude Code session through its mod, and every other session by typing**
   (`internal/relay`, `deliver` and `handOff`; `terminal.SubmitPrompt`): the other seven providers have no mod
-  system, so a task, a result note and a scheduled prompt are typed at them with every trap the typed-delivery bullets above
-  describe. A Claude Code session is typed at too while no mod polls from it: lich-plugin older than 0.14.0, mods
+  system, so a task, a result and a scheduled prompt, each in its notification envelope (docs/hooks/notification.md),
+  are typed at them with every trap the typed-delivery bullets above describe; a session drawn as a chat takes the
+  envelope as its next message instead. A Claude Code session is typed at too while no mod polls from it: lich-plugin older than 0.14.0, mods
   off, a folder not trusted yet, or a session so new its mod has not polled. A session whose mod polls is handed
   the message while its user is mid-sentence, since nothing is typed into that line. Delivery through the mod is at
   most once: a prompt no poll collected is typed instead, one a poll collected is never typed again, so a collected
@@ -936,11 +937,12 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   (`spawn.OpenSubagent`), unless the call asked for worktree isolation, which opens a worktree of its own; it is
   filed with the asker (in the asker's folder, or one named after it that the asker is filed under too), its
   errand is kept past `ticketTTL` for as long as the worker runs,
-  the asker hears once per block when the worker waits on a permission, and the report comes back whole in a
-  `[lich]` note through the asker's mod. The worker's own mod answers for it (docs/hooks/mod-answer.md), so it is
-  handed the task with no ticket and its last message is its report; a worker whose mod had not polled when the
-  task went in (4 of 84 workers measured on 2026-10-09), or runs a lich-plugin older than 0.17.0, is handed
-  the ticket instead. A final turn that ends blank
+  the asker hears once per block when the worker waits on a permission, and the report comes back in a
+  `worker-finished` envelope (docs/hooks/notification.md) through the asker's chat or mod, cut at 4000 characters
+  with `truncated` saying how much waits on the ticket. The worker's own mod
+  answers for it (docs/hooks/mod-answer.md), so its task envelope says `answer="last-message"` and its last message
+  is its report; a worker whose mod had not polled when the task went in (4 of 84 workers measured on 2026-10-09),
+  or runs a lich-plugin older than 0.17.0, gets `answer="reply"` and answers by the ticket instead. A final turn that ends blank
   ends the errand `unanswered` (`relay.WorkerUnanswered`), once the plugin posts it (docs/hooks/mod-answer.md,
   Unanswered turns). A turn ended by an API error or a refusal fires `StopFailure`, which carries no background
   list, and no `Stop` (measured on Claude Code 2.1.296), so the plugin cannot tell it from a turn whose background
@@ -956,10 +958,10 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   nothing to call unanswered) without a word to an asker that closed it itself, as TaskStop does; closed from
   its card or by another session, the asker is told it `stopped`. Who closed it is the session `lich close` runs
   in (`terminal.CloseBy`), so a TaskStop run from anywhere but the asker's own process reads as someone else's. Both reach the asker the way Claude Code's own background agent's
-  completion does, one `● lich session "…" finished` line on screen and the note whole in the model's context
+  completion does, one `● lich session "…" finished` line on screen and the envelope whole in the model's context
   (docs/hooks/mod-control.md, A prompt as a notification), through a render path Claude Code does not document:
   a Claude Code that drops it shows the raw XML as a prompt, and a lich-plugin older than 0.16.0 shows the note as
-  a prompt from the plugin. Without a mod polling there the note is typed short and the report waits
+  a prompt from the plugin. Without a mod polling there the envelope is typed without its `<result>` and the report waits
   for `wait_for_answer`, because typing a long report into a TUI is what the mod route exists to avoid. A worker in
   the asker's checkout is parked once it answered and the turn it answered in ended (`relay.SetWorkerFinished`,
   `spawn.CloseFinishedWorker`) with nothing it sent still out, so typing into its card after its report means resuming it from the history; one
