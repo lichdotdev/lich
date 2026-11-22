@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"image"
 	"strings"
 	"sync"
 
@@ -11,7 +10,6 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/op/clip"
-	"gioui.org/unit"
 
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
@@ -19,13 +17,9 @@ import (
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
-// The trigger's geometry.
 var (
-	themeTriggerHeight = ui.Space(10)
-	themeTriggerPadL   = ui.Space(1.5)
-	themeTriggerMini   = image.Pt(44, 28)
-	icTriangleAlert    = icons.Lucide("triangle-alert")
-	icThemesBrowse     = icons.Lucide("paintbrush")
+	icTriangleAlert = icons.Lucide("triangle-alert")
+	icThemesBrowse  = icons.Lucide("paintbrush")
 )
 
 // brokenRowState is one broken theme's row: its hover and its Remove.
@@ -54,8 +48,6 @@ type themePicker struct {
 	root    *ui.Root
 	catalog *themeCatalogStore
 
-	trigger      ui.Clickable
-	menu         ui.MenuState
 	check        ui.Clickable
 	follow       ui.SwitchState
 	brokenRemove map[string]*brokenRowState
@@ -66,6 +58,7 @@ type themePicker struct {
 	installFrom ui.Clickable
 	grid        themeGrid
 	rows        map[string]*themeRowState
+	looks       map[string]themeLook
 	bar         themeTrialBar
 
 	mu    sync.Mutex
@@ -75,45 +68,6 @@ type themePicker struct {
 func newThemePicker(ctx context.Context, c *backend.Client, look *appearance, toaster *ui.Toaster, root *ui.Root) *themePicker {
 	return &themePicker{ctx: ctx, client: c, look: look, toaster: toaster, root: root,
 		brokenRemove: map[string]*brokenRowState{}, rows: map[string]*themeRowState{}}
-}
-
-// themeRow is Interface's Theme row: a select of System and every installed
-// theme, and the way to the Themes page. A project's scope shows the row
-// dimmed with no control: the theme is global.
-func (s *settingsScreen) themeRow(gtx C, th *ui.Theme, r settingRow, first bool) D {
-	if r.kind == rowGlobalOnly {
-		return r.layout(gtx, th, first, nil)
-	}
-	p := s.theme
-	v := p.look.view()
-	return r.layout(gtx, th, first, func(gtx C, th *ui.Theme) D {
-		menu := th.DropdownMenu(s.root, &p.menu, s.themeMenu(v))
-		return menu.Layout(gtx, func(gtx C) D { return p.triggerButton(gtx, th, v) })
-	})
-}
-
-// themeMenu is System and every installed theme, the selected one checked,
-// then Browse themes.
-func (s *settingsScreen) themeMenu(v appearanceView) []ui.MenuEntry {
-	p := s.theme
-	item := func(id, name string) ui.MenuEntry {
-		e := ui.MenuEntry{Label: name, Inset: true, OnClick: func() { p.look.choose(id) }}
-		if id == v.selected {
-			e.Icon, e.Inset = icCheck, false
-		}
-		return e
-	}
-	entries := []ui.MenuEntry{item(themeSystem, i18n.T("settings.themePicker.system"))}
-	for _, e := range v.themes {
-		entries = append(entries, item(e.def.ID, e.def.Name))
-	}
-	return append(entries,
-		ui.MenuEntry{Kind: ui.MenuSeparator},
-		ui.MenuEntry{Label: i18n.T("settings.themesPage.browse"), Icon: icThemesBrowse, OnClick: func() {
-			s.openPage(sectionAppearance, themesPage)
-			s.invalidate()
-		}},
-	)
 }
 
 // followSwitch turns following the OS to the selected theme's pair on and
@@ -139,52 +93,6 @@ func selectedPair(v appearanceView) string {
 		return ""
 	}
 	return pair.def.ID
-}
-
-// triggerButton is the outline h-10 button: the selection's miniature, its
-// name, and the chevron that turns while the menu is open.
-func (p *themePicker) triggerButton(gtx C, th *ui.Theme, v appearanceView) D {
-	return p.trigger.Layout(gtx, func(gtx C) D {
-		bg := th.Over(ui.Alpha(th.Palette.Input, 0.3))
-		if p.trigger.Hovered() {
-			bg = th.Over(ui.Alpha(th.Palette.Input, 0.5))
-		}
-		on := th.On(bg)
-		macro := op.Record(gtx.Ops)
-		gtx.Constraints.Min = image.Pt(0, gtx.Dp(themeTriggerHeight))
-		d := layout.Inset{Left: themeTriggerPadL, Right: ui.Space(2.5)}.Layout(gtx, func(gtx C) D {
-			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-				layout.Rigid(func(gtx C) D { return p.selectionMiniature(gtx, on, v, themeTriggerMini) }),
-				ui.Gap(2.5),
-				layout.Rigid(on.Text(ui.TextSM, selectionName(v)).Weight(font.Medium).Layout),
-				ui.Gap(3),
-				layout.Rigid(func(gtx C) D { return on.TriggerChevron(gtx, p.menu.Opened()) }),
-			)
-		})
-		call := macro.Stop()
-		box := gtx
-		box.Constraints = layout.Exact(d.Size)
-		ui.Fill(box, bg, ui.RadiusMD)
-		ui.InsetBorder(gtx, d.Size, gtx.Dp(ui.RadiusMD), th.Over(th.Palette.Input))
-		call.Add(gtx.Ops)
-		return d
-	})
-}
-
-func selectionName(v appearanceView) string {
-	if v.selected == themeSystem {
-		return i18n.T("settings.themePicker.system")
-	}
-	return v.resolved.def.Name
-}
-
-func (p *themePicker) selectionMiniature(gtx C, th *ui.Theme, v appearanceView, size image.Point) D {
-	px := image.Pt(gtx.Dp(unit.Dp(size.X)), gtx.Dp(unit.Dp(size.Y)))
-	if v.selected == themeSystem {
-		light, dark := bundledPair(v.themes)
-		return systemMiniature(gtx, th, light.palette, dark.palette, px)
-	}
-	return themeMiniature(gtx, th, v.resolved.palette, px, true)
 }
 
 // brokenList is BrokenThemeList: a theme with no colors to preview is a row

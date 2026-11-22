@@ -780,9 +780,7 @@ at rest so nothing on the line moves.
 
 #### Appearance, Hotkeys and the rest
 
-- **Theme.** Interface's Theme row is the trigger with the selection's miniature and name; it opens a
-  `DropdownMenu` of System and every installed theme, the selection checked, then Browse themes, which opens the
-  Themes page. Choosing and installing live on that page.
+- **Theme.** Interface has no Theme row: choosing, trying and installing a theme live on the Themes page alone.
 - **Footer.** The preview is a stage on `Background` with the two balloons at its foot, each side's items read
   with example values and left out past the room, as over a session (`previewBalloon`). The editor's zones and
   chips stay as they are: dragging is the editor.
@@ -840,9 +838,9 @@ row on the Installed tab.
 ### The theme catalog
 
 Settings › Appearance › Themes is the extension catalog's shape for themes, and takes its exception for cards
-for the same reason: a theme is chosen by looking at it. The catalog tab is what the page opens on, with All,
-Dark and Light (a pack is in each scheme one of its themes is in), the search and the order over the grid; the
-installed themes are the second tab, as rows. Install from… on the title line opens the import dialog (a
+for the same reason: a theme is chosen by looking at it, the ones you have included. The catalog tab is what the
+page opens on, with All, Dark and Light (a pack is in each scheme one of its themes is in), the search and the
+order over the grid; the installed themes are the second tab, as cards too. Install from… on the title line opens the import dialog (a
 repository URL, a file, the template).
 
 - **A cover is drawn, never a picture.** The catalog carries every theme in full, so a card's 16:10 cover is a
@@ -858,11 +856,14 @@ repository URL, a file, the template).
   "Trying <name>" with Revert and Keep (Primary). Keep installs the pack if it must and chooses the theme;
   everything else gives the window its theme back: Revert, Escape, closing Settings, a selection from outside,
   the system's light and dark switching, and a Keep that failed.
-- **Installed** is rows: Bundled (System, Light, Dark), then the installed themes with a miniature, the pack
-  and its version in mono and the newer one when there is, Update while there is, In use or Use, and the row's
-  `⋯` holding Remove, which asks first; the themes that cannot load end the list. Auto light/dark and Check for
-  updates stand at the right of the tabs' line while this tab shows. The tab wears a dot while an update or a
-  broken theme waits on it.
+- **Installed** opens on the theme in use, so nobody scrolls to find it: In use is one wide card on `Accent`,
+  its cover larger, In use, the name, the pack and its version in mono, the theme it pairs with and Auto light/dark
+  at its foot (`settings_themes_installed.go`). Under Other themes, every other theme is a card of the catalog's
+  grid, one per theme (a theme, not a pack, is what is worn): its cover, its name, the pack and version in mono
+  ("imported from a file" for one with no repository), Update while a newer version waits and the `⋯` holding
+  Remove, which asks first. A click on a card wears the theme. The imported themes come first, then System and
+  the bundled ones; the themes that cannot load end the page. Check for updates stands at the right of the tabs'
+  line while this tab shows, and the tab wears a dot while an update or a broken theme waits on it.
 
 ### Fixed headings
 

@@ -75,9 +75,6 @@
     "replaceTheme": "Substituir tema"
   },
   "themePicker": {
-    "title": "Tema",
-    "searchWords": "cores escuro claro terminal paleta",
-    "description": "Dá cor à interface e ao terminal.",
     "system": "Sistema",
     "followsOs": "segue o SO",
     "inUse": "em uso",
@@ -764,18 +761,20 @@
     "trying": "Experimentando {name}",
     "revert": "Desfazer",
     "keep": "Manter",
-    "bundledGroup": "Incluídos",
     "update": "Atualizar",
     "rowOptions": "Opções de {name}",
-    "browse": "Explorar temas",
     "preview": {
-      "ask": "Coloque novas tentativas no helper de fetch",
-      "askShort": "Coloque novas tentativas",
+      "ask": "Tente de novo quando o fetch falhar",
+      "askShort": "Tentar de novo",
       "reply": "Pus a chamada num laço que espera mais a cada falha:",
       "sessionRefactor": "Refatorar auth",
       "sessionFlaky": "Corrigir teste instável",
       "sessionReview": "Revisar PR #42"
     },
-    "try": "Experimentar"
+    "try": "Experimentar",
+    "inUseGroup": "Em uso",
+    "otherGroup": "Outros temas",
+    "imported": "importado de um arquivo",
+    "pairsWith": "Faz par com {name}"
   }
 }

@@ -13,6 +13,7 @@ import (
 	"github.com/lichdotdev/godemirror"
 	"github.com/lichdotdev/godemirror/tags"
 	"github.com/lichdotdev/lich/native/backend"
+	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -239,16 +240,18 @@ func TestRemovingTheThemeInUseFallsBackToSystem(t *testing.T) {
 	}
 }
 
+// The themes live on Appearance › Themes, the catalog first.
 func TestThemeIsFoundBySearch(t *testing.T) {
+	catalog := i18n.T("settings.themesPage.catalogRow")
 	for _, q := range []string{"theme", "DARK"} {
-		if got := searchSettings(q); len(got) == 0 || got[0].title != "Theme" || got[0].section != sectionAppearance {
+		if got := searchSettings(q); len(got) == 0 || got[0].title != catalog || got[0].section != sectionAppearance {
 			t.Errorf("%q: %+v", q, got)
 		}
 	}
 	// "palette" is also the title of a Hotkeys row, a prefix match that
-	// outranks the theme's also words, so the theme is found but not first.
+	// outranks the catalog's also words, so the catalog is found but not first.
 	if got := searchSettings("palette"); !slices.ContainsFunc(got, func(h settingHit) bool {
-		return h.title == "Theme" && h.section == sectionAppearance
+		return h.title == catalog && h.section == sectionAppearance
 	}) {
 		t.Errorf("palette: %+v", got)
 	}

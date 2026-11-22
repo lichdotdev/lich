@@ -75,9 +75,6 @@
     "replaceTheme": "テーマを置き換える"
   },
   "themePicker": {
-    "title": "テーマ",
-    "searchWords": "色 ダーク ライト ターミナル パレット",
-    "description": "インターフェースとターミナルの配色です。",
     "system": "システム",
     "followsOs": "OS に従う",
     "inUse": "使用中",
@@ -764,10 +761,8 @@
     "trying": "{name} を試しています",
     "revert": "元に戻す",
     "keep": "このまま使う",
-    "bundledGroup": "同梱",
     "update": "更新",
     "rowOptions": "{name} のオプション",
-    "browse": "テーマを探す",
     "preview": {
       "ask": "fetch ヘルパーにリトライを入れて",
       "askShort": "リトライを入れて",
@@ -776,6 +771,10 @@
       "sessionFlaky": "不安定なテストを直す",
       "sessionReview": "PR #42 をレビュー"
     },
-    "try": "試す"
+    "try": "試す",
+    "inUseGroup": "使用中",
+    "otherGroup": "その他のテーマ",
+    "imported": "ファイルから読み込み",
+    "pairsWith": "{name} と対になるテーマ"
   }
 }

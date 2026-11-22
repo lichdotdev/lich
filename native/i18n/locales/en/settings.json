@@ -75,9 +75,6 @@
     "replaceTheme": "Replace theme"
   },
   "themePicker": {
-    "title": "Theme",
-    "searchWords": "colors dark light terminal palette",
-    "description": "Colors the interface and the terminal.",
     "system": "System",
     "followsOs": "follows the OS",
     "inUse": "in use",
@@ -764,10 +761,8 @@
     "trying": "Trying {name}",
     "revert": "Revert",
     "keep": "Keep",
-    "bundledGroup": "Bundled",
     "update": "Update",
     "rowOptions": "Options for {name}",
-    "browse": "Browse themes",
     "preview": {
       "ask": "Add a retry to the fetch helper",
       "askShort": "Add a retry",
@@ -776,6 +771,10 @@
       "sessionFlaky": "Fix flaky test",
       "sessionReview": "Review PR #42"
     },
-    "try": "Try"
+    "try": "Try",
+    "inUseGroup": "In use",
+    "otherGroup": "Other themes",
+    "imported": "imported from a file",
+    "pairsWith": "Pairs with {name}"
   }
 }

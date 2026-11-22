@@ -123,7 +123,6 @@ var settingsSections = []settingsSection{
 		{id: "terminal", groupKey: groupTerminal, icon: icons.Lucide("square-terminal")},
 		{id: "footer", groupKey: groupFooter, icon: icons.Lucide("panel-bottom")},
 	}, rows: []settingEntry{
-		{titleKey: "settings.themePicker.title", alsoKey: "settings.themePicker.searchWords", key: themeSettingKey, groupKey: groupInterface},
 		{titleKey: "settings.appearanceSettings.zoomTitle", key: zoomKey, groupKey: groupInterface},
 		{titleKey: "settings.settingsAppearance.uiFontTitle", alsoKey: "settings.settingsAppearance.uiFontSearchWords", key: uiFontKey, groupKey: groupInterface},
 		{titleKey: "settings.themesPage.catalogRow", alsoKey: "settings.themesPage.catalogSearchWords", key: themesCatalogKey, groupKey: groupThemes},
