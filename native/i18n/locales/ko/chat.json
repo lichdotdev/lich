@@ -234,7 +234,7 @@
       "local": "로컬"
     },
     "installs": {
-      "other": "설치 {count}회"
+      "other": "설치 {n}회"
     },
     "pluginCount": {
       "other": "플러그인 {count}개"

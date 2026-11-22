@@ -273,10 +273,10 @@
       "local": "локально"
     },
     "installs": {
-      "one": "{count} установка",
-      "few": "{count} установки",
-      "many": "{count} установок",
-      "other": "{count} установки"
+      "one": "{n} установка",
+      "few": "{n} установки",
+      "many": "{n} установок",
+      "other": "{n} установки"
     },
     "pluginCount": {
       "one": "{count} плагин",

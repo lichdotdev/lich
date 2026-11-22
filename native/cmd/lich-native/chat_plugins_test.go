@@ -120,7 +120,7 @@ func TestLichsOwnPluginTakesNoAction(t *testing.T) {
 func TestDiscoverSearchesAndInstalls(t *testing.T) {
 	r, f, p := pluginFrames(t)
 	r.click(t, r.at(t, "Discover"))
-	if !r.showsAll("frontend-design", "48000 installs", "pr-review") || r.shows("skill-creator") {
+	if !r.showsAll("frontend-design", "48K installs", "pr-review") || r.shows("skill-creator") {
 		t.Fatalf("Discover does not list the plugins on offer:\n%s", r.drawn())
 	}
 	p.tools.query.SetText("review")

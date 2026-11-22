@@ -247,8 +247,8 @@
       "local": "local"
     },
     "installs": {
-      "one": "{count} install",
-      "other": "{count} installs"
+      "one": "{n} install",
+      "other": "{n} installs"
     },
     "pluginCount": {
       "one": "{count} plugin",

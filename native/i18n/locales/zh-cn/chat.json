@@ -234,7 +234,7 @@
       "local": "本地"
     },
     "installs": {
-      "other": "{count} 次安装"
+      "other": "{n} 次安装"
     },
     "pluginCount": {
       "other": "{count} 个插件"

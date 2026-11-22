@@ -234,7 +234,7 @@
       "local": "ローカル"
     },
     "installs": {
-      "other": "{count} 件のインストール"
+      "other": "{n} 件のインストール"
     },
     "pluginCount": {
       "other": "{count} 個のプラグイン"

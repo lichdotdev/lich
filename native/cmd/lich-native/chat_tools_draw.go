@@ -312,7 +312,7 @@ func (u *window) skillsView(gtx C, th *ui.Theme, p *chatPane, sv sessionView, l 
 			}),
 			layout.Rigid(func(gtx C) D {
 				in := th.Input(&t.query, i18n.T("chat.tools.search"))
-				in.Borderless = true
+				in.Bare, in.Height = true, pickerRowH
 				return in.Layout(gtx)
 			}),
 			layout.Rigid(th.Separator),
