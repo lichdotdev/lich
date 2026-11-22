@@ -135,3 +135,33 @@ func TestMemoryCommandsOnlyWhereReported(t *testing.T) {
 		t.Error("the commands are offered where they should not be, or missing")
 	}
 }
+
+// Codex's /agents has no fields to add one: the keys stay on the box, and
+// the arrows, Enter and Escape walk and shut the list.
+func TestAgentsWithoutFieldsKeepTheKeysOnTheBox(t *testing.T) {
+	u, r, f, p := memoryFrames(t, "/agents")
+	f.mu.Lock()
+	f.answers[api.ChatAgents.Name] = api.ChatAgentList{Reported: true, Agents: []api.ChatAgent{
+		{Name: "reviewer", Source: api.AgentOther, Path: "/home/me/.codex/reviewer.toml"},
+		{Name: "writer", Source: api.AgentOther, Path: "/home/me/.codex/writer.toml"},
+	}}
+	f.mu.Unlock()
+	p.tools.open(chatAgentsCommand)
+	u.fetchTools(p, "s1")
+	toolsSettle(r)
+	if p.tools.keyTag(p) != &p.editor || r.shows("Add to this project") {
+		t.Fatal("a panel with no fields took the keys or drew them")
+	}
+	r.press(key.NameDownArrow)
+	r.press(key.NameReturn)
+	if ed := u.editors.byCheckout["/repo"]; ed == nil || ed.rel != "writer.toml" || !ed.writable {
+		t.Fatalf("Down and Enter opened %+v, want writer.toml", ed)
+	}
+	p.tools.open(chatAgentsCommand)
+	u.fetchTools(p, "s1")
+	toolsSettle(r)
+	r.press(key.NameEscape)
+	if p.tools.opened() {
+		t.Error("Escape left the panel open")
+	}
+}

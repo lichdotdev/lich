@@ -72,8 +72,12 @@ func fakeMemoryDialog() map[string]any {
 func fakeFiledAgents() []any {
 	cwd, _ := os.Getwd()
 	var out []any
-	for source, dir := range map[string]string{"userSettings": filepath.Join(fakeClaudeDir(), "agents"), "projectSettings": filepath.Join(cwd, ".claude", "agents")} {
-		names, _ := filepath.Glob(filepath.Join(dir, "*.md"))
+	for _, d := range []struct{ source, dir string }{
+		{"userSettings", filepath.Join(fakeClaudeDir(), "agents")},
+		{"projectSettings", filepath.Join(cwd, ".claude", "agents")},
+	} {
+		source := d.source
+		names, _ := filepath.Glob(filepath.Join(d.dir, "*.md"))
 		for _, p := range names {
 			out = append(out, map[string]any{"agentType": strings.TrimSuffix(filepath.Base(p), ".md"), "source": source, "path": p, "tokens": 9})
 		}

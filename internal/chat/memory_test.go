@@ -119,15 +119,15 @@ func TestClaudeCreateMemory(t *testing.T) {
 }
 
 // The subagents are initialize's built-ins and get_context_usage's files,
-// each file read for its tools; one written through NewAgent is listed with
-// the file's description.
+// each file read for its description, model and tools, which Claude Code
+// reads again once edited; one written through NewAgent is listed too.
 func TestClaudeAgents(t *testing.T) {
 	r := newChat(t, providers.Claude)
 	reviewer := filepath.Join(r.home, "claude", "agents", "reviewer.md")
 	writeTestFile(t, reviewer, "---\nname: reviewer\ndescription: From the file\ntools: Read, Grep\nmodel: haiku\n---\nReview.\n")
 	got := r.agents()
 	want := []api.ChatAgent{
-		{Name: "reviewer", Description: "Reviews code", Model: "sonnet", Source: api.AgentUser, Path: reviewer, Tools: []string{"Read", "Grep"}},
+		{Name: "reviewer", Description: "From the file", Model: "haiku", Source: api.AgentUser, Path: reviewer, Tools: []string{"Read", "Grep"}},
 		{Name: "Explore", Description: "Search the code", Model: "inherit", Source: api.AgentBuiltIn},
 		{Name: "general-purpose", Description: "Anything else", Source: api.AgentBuiltIn},
 	}
@@ -141,9 +141,10 @@ func TestClaudeAgents(t *testing.T) {
 	if path != filepath.Join(r.home, "proj", ".claude", "agents", "helper.md") {
 		t.Errorf("path = %s", path)
 	}
-	i := slices.IndexFunc(r.agents().Agents, func(a api.ChatAgent) bool { return a.Name == "helper" })
-	if i < 0 || r.agents().Agents[i].Description != `Helps with "quotes"` || r.agents().Agents[i].Source != api.AgentProject {
-		t.Errorf("new agent not listed: %+v", r.agents().Agents)
+	listed := r.agents().Agents
+	i := slices.IndexFunc(listed, func(a api.ChatAgent) bool { return a.Name == "helper" })
+	if i < 0 || listed[i].Description != `Helps with "quotes"` || listed[i].Source != api.AgentProject {
+		t.Errorf("new agent not listed: %+v", listed)
 	}
 	if _, err := r.newAgent(api.AgentProject, "helper", "again"); err == nil {
 		t.Error("an agent was written over")

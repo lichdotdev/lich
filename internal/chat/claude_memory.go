@@ -2,6 +2,7 @@ package chat
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"encoding/json"
 	"errors"
@@ -175,9 +176,9 @@ func (d *claudeDriver) agents(ctx context.Context) (api.ChatAgentList, error) {
 	return list, nil
 }
 
-// claudeFiledAgent is an agent defined by the file at path. Its description
-// and model are Claude Code's reading where initialize listed it, the file's
-// for one added since; its tools are always the file's.
+// claudeFiledAgent is an agent defined by the file at path, read for its
+// description, model and tools: Claude Code reads an edited file again, so
+// initialize's reading is only what a value lich cannot read falls back to.
 func claudeFiledAgent(name, source, path string, listed claudeAgent) api.ChatAgent {
 	src, ok := claudeAgentSources[source]
 	if !ok {
@@ -186,10 +187,7 @@ func claudeFiledAgent(name, source, path string, listed claudeAgent) api.ChatAge
 	a := api.ChatAgent{Name: name, Source: src, Path: path, ReadOnly: src == api.AgentPlugin || src == api.AgentManaged}
 	front := readFrontmatter(path)
 	a.Tools = agentTools(front)
-	a.Description, a.Model = listed.Description, listed.Model
-	if listed.Name == "" {
-		a.Description, a.Model = front.scalar("description"), front.scalar("model")
-	}
+	a.Description, a.Model = cmp.Or(front.scalar("description"), listed.Description), cmp.Or(front.scalar("model"), listed.Model)
 	return a
 }
 

@@ -353,7 +353,7 @@ func (u *window) toolsKeys(gtx C, p *chatPane, id string, rows int, enter func(i
 func (t *chatTools) keyTag(p *chatPane) *widget.Editor {
 	switch {
 	case t.kind == chatAgentsCommand:
-		return t.memoryKeyTag()
+		return t.memoryKeyTag(&p.editor)
 	case t.kind == chatSkillsCommand:
 		return &t.query
 	case t.kind != chatPluginCommand || t.detail != "":

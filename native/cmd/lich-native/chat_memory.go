@@ -228,9 +228,16 @@ func (u *window) openChatFile(p *chatPane, sv sessionView, path string, readOnly
 	u.stageFile(sv.path, dir, name, func(e *fileEditor) { e.openOutside(dir, name) })
 }
 
-// memoryKeyTag is the field of the /agents panel that holds the keys.
-func (t *chatTools) memoryKeyTag() *widget.Editor {
-	if t.mem.onDesc {
+// memoryKeyTag is the field of the /agents panel that holds the keys, the
+// box where the panel draws none.
+func (t *chatTools) memoryKeyTag(box *widget.Editor) *widget.Editor {
+	t.mu.Lock()
+	fields := len(t.mem.agents.Create) > 0
+	t.mu.Unlock()
+	switch {
+	case !fields:
+		return box
+	case t.mem.onDesc:
 		return &t.mem.desc
 	}
 	return &t.mem.name
