@@ -457,7 +457,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   entry of `config.toml` through `config/batchWrite` with an upsert, which keeps every other entry and field
   (lich-plugin's trust among them), and `reloadUserConfig`. Its /hooks "trust all" is not offered: each hook is
   trusted from its own detail. Antigravity, opencode, oh-my-pi, Crush, Cursor CLI and Kiro CLI report neither over
-  ACP, so the panel says to switch to TUI.
+  ACP, so /permissions and /hooks go to their agent as typed, as /plugin does there.
 
 - **The Welcome installs a provider with the vendor's own command, and only where that runs as you**
   (`internal/providers/install_recipes.go`). Each line is the vendor's install page word for word, run with no

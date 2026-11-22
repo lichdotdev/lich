@@ -94,25 +94,9 @@ func (u *window) permissionActs(gtx C, p *chatPane, id string) (int, func(int)) 
 	tab := s.tabs.Selected
 	switch {
 	case t.detail == permAddDetail:
-		if t.back.Clicked(gtx) || tab == permTabFolders {
-			t.detail, t.focus = "", true
-			return 0, noRowEnter
-		}
-		dests := l.Destinations
-		return len(dests), func(i int) {
-			if rule := strings.TrimSpace(s.rule.Text()); rule != "" {
-				u.permissionAct(p, id, api.ChatPermissionActOptions{Action: api.PermissionAdd, Behavior: permTabBehaviors[tab], Rule: rule, Source: dests[i]})
-			}
-		}
+		return u.addRuleActs(gtx, p, id, l)
 	case t.detail != "":
-		i := slices.IndexFunc(l.Rules, func(r api.ChatPermissionRule) bool { return ruleKey(r) == t.detail })
-		if t.back.Clicked(gtx) || i < 0 {
-			t.detail, t.focus = "", true
-			return 0, noRowEnter
-		}
-		if r := l.Rules[i]; r.Removable && t.act(chatPluginAction{action: api.PermissionRemove}.key()).Clicked(gtx) {
-			u.permissionAct(p, id, api.ChatPermissionActOptions{Action: api.PermissionRemove, Behavior: r.Behavior, Rule: r.Rule, Source: r.Source})
-		}
+		u.ruleDetailActs(gtx, p, id, l)
 		return 0, noRowEnter
 	case tab == permTabFolders:
 		return 0, noRowEnter
@@ -135,17 +119,56 @@ func (u *window) permissionActs(gtx C, p *chatPane, id string) (int, func(int)) 
 	}
 }
 
+// addRuleActs runs the add form: a row per file, which saves the rule typed
+// there as a rule of the tab's behavior.
+func (u *window) addRuleActs(gtx C, p *chatPane, id string, l api.ChatPermissionList) (int, func(int)) {
+	t := &p.tools
+	tab := t.set.tabs.Selected
+	if t.back.Clicked(gtx) || tab == permTabFolders {
+		t.detail, t.focus = "", true
+		return 0, noRowEnter
+	}
+	dests := l.Destinations
+	return len(dests), func(i int) {
+		if rule := strings.TrimSpace(t.set.rule.Text()); rule != "" {
+			u.permissionAct(p, id, api.ChatPermissionActOptions{Action: api.PermissionAdd, Behavior: permTabBehaviors[tab], Rule: rule, Source: dests[i]})
+		}
+	}
+}
+
+// ruleDetailActs runs a rule's Back and Remove; a rule gone takes the panel
+// back to its tab.
+func (u *window) ruleDetailActs(gtx C, p *chatPane, id string, l api.ChatPermissionList) {
+	t := &p.tools
+	i := slices.IndexFunc(l.Rules, func(r api.ChatPermissionRule) bool { return ruleKey(r) == t.detail })
+	if t.back.Clicked(gtx) || i < 0 {
+		t.detail, t.focus = "", true
+		return
+	}
+	if r := l.Rules[i]; r.Removable && t.act(chatPluginAction{action: api.PermissionRemove}.key()).Clicked(gtx) {
+		u.permissionAct(p, id, api.ChatPermissionActOptions{Action: api.PermissionRemove, Behavior: r.Behavior, Rule: r.Rule, Source: r.Source})
+	}
+}
+
 // modeActs is Codex's /permissions: its modes, the one picked set from the
-// next message on and the panel shut, as its TUI's picker does.
+// next message on and the panel shut, as its TUI's picker does; nothing while
+// a turn runs, as the mode chip.
 func (u *window) modeActs(p *chatPane, id string) (int, func(int)) {
 	opt, ok := u.model.chat.optionOf(id, api.OptionMode)
-	if !ok {
-		return 0, noRowEnter
+	if !ok || u.chatBusy(id) {
+		return len(opt.Choices), noRowEnter
 	}
 	return len(opt.Choices), func(i int) {
 		u.setChatOption(id, opt.ID, opt.Choices[i].ID)
 		p.tools.shut()
 	}
+}
+
+// chatBusy reports whether session id's agent is in a turn, when its options
+// wait.
+func (u *window) chatBusy(id string) bool {
+	sv, ok := u.model.sessionViewOf(id)
+	return ok && chatWorking(sv, u.model.chat.isRunning(id))
 }
 
 // permissionAct adds or removes a rule and reads the rules again, keeping the

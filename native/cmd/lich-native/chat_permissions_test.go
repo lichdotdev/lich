@@ -175,3 +175,25 @@ func TestReadOnlyHooks(t *testing.T) {
 		t.Errorf("a read-only hook offers an action:\n%s", r.drawn())
 	}
 }
+
+// While a turn runs, Codex's modes are listed but a pick waits, as the mode
+// chip does, and the panel says why.
+func TestCodexModesWaitForTheTurn(t *testing.T) {
+	u, r, f, p := permFrames(t, chatPermissionsCommand)
+	f.mu.Lock()
+	f.answers[api.ChatPermissions.Name] = api.ChatPermissionList{}
+	f.mu.Unlock()
+	u.model.chat.setOptions("s1", []backend.ChatOption{{ID: "permissions", Category: api.OptionMode, Current: ":workspace",
+		Choices: []backend.ChatChoice{{ID: ":read-only", Label: "Read Only"}, {ID: ":workspace", Label: "Workspace"}}}})
+	u.model.chat.turn(api.ChatTurn{SessionID: "s1", Running: true})
+	u.fetchTools(p, "s1")
+	toolsSettle(r)
+	if !r.showsAll("Read Only", "Wait for the turn to end to change this.") {
+		t.Fatalf("the busy modes are not drawn:\n%s", r.drawn())
+	}
+	r.press(key.NameReturn)
+	toolsSettle(r)
+	if f.callsOf(api.ChatSetOption.Name) != 0 || !p.tools.opened() {
+		t.Error("a pick changed the mode while the turn runs")
+	}
+}

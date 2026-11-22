@@ -147,8 +147,13 @@ func folderLine(th *ui.Theme, path, meta string) layout.Widget {
 	}
 }
 
-// detailHead is a detail's Back and its title.
+// detailHead is a detail's Back and its title, cut to its line.
 func (t *chatTools) detailHead(th *ui.Theme, back, title string) layout.Widget {
+	return t.detailHeadOf(th, back, th.Text(ui.TextSM, title).Weight(font.SemiBold).Truncated())
+}
+
+// detailHeadOf is a detail's Back and its title as given.
+func (t *chatTools) detailHeadOf(th *ui.Theme, back string, title ui.LabelStyle) layout.Widget {
 	b := th.Button(&t.back, back)
 	b.Icon, b.Variant, b.Size = icToolsBack, ui.VariantGhost, ui.SizeXS
 	return func(gtx C) D {
@@ -156,7 +161,7 @@ func (t *chatTools) detailHead(th *ui.Theme, back, title string) layout.Widget {
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 				layout.Rigid(b.Layout),
 				ui.Gap(2),
-				layout.Flexed(1, th.Text(ui.TextSM, title).Weight(font.SemiBold).Truncated().Layout),
+				layout.Flexed(1, title.Layout),
 			)
 		})
 	}
@@ -229,7 +234,9 @@ func (t *chatTools) ruleDetail(gtx C, th *ui.Theme, l api.ChatPermissionList, ru
 	default:
 		foot = toolsFootNote(th, i18n.T("chat.permissions.readOnly"))
 	}
-	return t.scrolled(gtx, th, t.detailHead(th, i18n.T("chat.permissions.back"), cleanLine(r.Rule)), lines, foot)
+	// the rule is the title, whole: Remove names it as the settings file holds it
+	title := th.Text(ui.TextSM, r.Rule).Weight(font.SemiBold).Wrapped()
+	return t.scrolled(gtx, th, t.detailHeadOf(th, i18n.T("chat.permissions.back"), title), lines, foot)
 }
 
 // modesView is Codex's /permissions: its modes, the one in force checked
@@ -253,7 +260,11 @@ func (u *window) modesView(gtx C, th *ui.Theme, t *chatTools, sv sessionView) D 
 		}
 	}
 	head := func(gtx C) D { return toolsHead(gtx, th, i18n.T("chat.permissions.title"), "", nil) }
-	return t.scrolled(gtx, th, head, lines, nil)
+	var foot layout.Widget
+	if u.chatBusy(sv.ID) {
+		foot = toolsFootNote(th, i18n.T("chat.option.busy"))
+	}
+	return t.scrolled(gtx, th, head, lines, foot)
 }
 
 // footNotes is the muted notes under a list, nil when there are none.
