@@ -110,6 +110,9 @@ type chatView struct {
 	// may grow over the conversation up to slashRoom, the pane's height.
 	slash     chatSlash
 	slashRoom int
+	// mention is the list of the checkout's paths an @ opens, in the slash
+	// list's place.
+	mention chatMention
 	// tools is the /mcp or /skills panel, in the slash list's place, and
 	// search the Ctrl+R search of the messages sent; history is the ↑/↓ walk.
 	tools   chatTools
@@ -393,8 +396,10 @@ func (u *window) chatActs(gtx C, p *chatPane, sv sessionView, keys, working bool
 		submit = p.search.acts(gtx, &p.editor, sent)
 	}
 	p.slash.blocked = !keys || asking != nil || p.picker.panel.Opened() || p.tools.opened() || p.search.open
+	p.mention.blocked = p.slash.blocked
 	if !p.slash.blocked {
 		p.slash.act(gtx, &p.editor)
+		p.mention.act(gtx, &p.editor)
 	}
 	if keys {
 		u.toolsActs(gtx, p, sv.ID)
@@ -568,6 +573,9 @@ func (u *window) chatComposer(gtx C, th *ui.Theme, p *chatPane, sv sessionView, 
 			p.slash.refresh(gtx, &p.editor, slashCommands(u.model.chat.commandsOf(sv.ID), sv.Kind))
 			gtx.Constraints.Max.X = d.Size.X
 			p.slash.layout(gtx, th, p.slashRoom-d.Size.Y-gtx.Dp(2*chatComposerGap))
+			files, _, _ := p.files.get()
+			p.mention.refresh(gtx, &p.editor, files)
+			p.mention.layout(gtx, th, p.slashRoom-d.Size.Y-gtx.Dp(2*chatComposerGap))
 			u.chatToolsPanel(gtx, th, p, sv, p.slashRoom-d.Size.Y-gtx.Dp(2*chatComposerGap))
 			return d
 		}),

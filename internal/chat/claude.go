@@ -178,19 +178,20 @@ func (d *claudeDriver) prompt(m message) error {
 // claudeContent is m as a user message's content: its text alone, or the
 // API's blocks with an image block for each image. A message of images alone
 // has no text block, which the API refuses empty (measured on 2.1.330: an
-// image with and without text was seen).
+// image with and without text was seen). The text goes after the images:
+// Claude Code reads an @path only from a text block that ends the message.
 func claudeContent(m message) any {
 	if len(m.images) == 0 {
 		return m.text
 	}
 	var blocks []map[string]any
-	if m.text != "" {
-		blocks = append(blocks, map[string]any{"type": "text", "text": m.text})
-	}
 	for _, img := range m.images {
 		blocks = append(blocks, map[string]any{"type": "image", "source": map[string]any{
 			"type": "base64", "media_type": img.mime, "data": base64.StdEncoding.EncodeToString(img.data),
 		}})
+	}
+	if m.text != "" {
+		blocks = append(blocks, map[string]any{"type": "text", "text": m.text})
 	}
 	return blocks
 }
