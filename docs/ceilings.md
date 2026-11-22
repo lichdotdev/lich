@@ -834,7 +834,8 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   (`internal/relay/notes.go`, `taskEnvelope`; docs/hooks/notification.md): a `task` carries the prompt, its ticket
   and `answer`, and no longer the reply command in prose. A session that was handed none of the three (one born
   before this change, a Codex user whose own `developer_instructions` replace the briefing, a provider started
-  without lich's MCP server) reads an envelope it was never told about, and may answer by finishing its turn where
+  without lich's MCP server, and possibly Cursor CLI, whose client was never measured passing lich's MCP
+  instructions on, as the next bullet says) reads an envelope it was never told about, and may answer by finishing its turn where
   `answer="reply"` wanted `reply_to_session`; that errand then ends `unanswered` as any unanswered one does.
 - **Codex and Kiro CLI sessions get the spawn briefing, not lich's MCP instructions** (`internal/cli/mcp.go`,
   `mcpInstructions`; `internal/terminal/command.go`, `codexBriefingArgs`, `briefingEnv`): both initialize the
@@ -943,8 +944,9 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   (`spawn.OpenSubagent`), unless the call asked for worktree isolation, which opens a worktree of its own; it is
   filed with the asker (in the asker's folder, or one named after it that the asker is filed under too), its
   errand is kept past `ticketTTL` for as long as the worker runs,
-  the asker hears once per block when the worker waits on a permission, and the report comes back whole in a
-  `worker-finished` envelope (docs/hooks/notification.md) through the asker's chat or mod. The worker's own mod
+  the asker hears once per block when the worker waits on a permission, and the report comes back in a
+  `worker-finished` envelope (docs/hooks/notification.md) through the asker's chat or mod, cut at 4000 characters
+  with `truncated` saying how much waits on the ticket. The worker's own mod
   answers for it (docs/hooks/mod-answer.md), so its task envelope says `answer="last-message"` and its last message
   is its report; a worker whose mod had not polled when the task went in (4 of 84 workers measured on 2026-10-09),
   or runs a lich-plugin older than 0.17.0, gets `answer="reply"` and answers by the ticket instead. A final turn that ends blank

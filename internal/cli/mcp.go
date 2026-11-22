@@ -560,7 +560,8 @@ var mcpTools = append([]mcpTool{
 			"more, after a long validation, before the final synthesis. Once per such point; " +
 			"if nothing is ready, carry on, never call it again in a loop. With a ticket it " +
 			"waits on that one errand, and a ticket sent private is collected that way only: " +
-			"holding the line on it is not polling.",
+			"holding the line on it is not polling. A result a worker-finished block carried with " +
+			"a truncated attribute was cut there; its ticket returns it whole.",
 		Schema: schema(map[string]any{
 			"ticket": property("string",
 				"A ticket send_to_session returned. Omit to collect everything that is ready."),

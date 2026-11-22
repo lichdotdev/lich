@@ -100,7 +100,7 @@ func (s *Service) deliverDue() {
 			}
 			text := scheduledEnvelope(s.lang(), sess.ScheduledAt, now, sess.ScheduledPrompt).String()
 			if parkedByLich(sess) {
-				text = noticeEnvelope(TopicUsageReset, sess.ScheduledPrompt, "").String()
+				text = noticeEnvelope(TopicUsageReset, prompt.For(s.lang()).UsageReset, sess.ScheduledPrompt).String()
 			}
 			if err := s.deliver(sess.ID, text, nil); err != nil {
 				slog.Warn("relay: scheduled prompt not delivered", "session", sess.Label, "err", err)

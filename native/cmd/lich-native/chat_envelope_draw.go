@@ -50,7 +50,8 @@ func (u *window) chatEnvelope(gtx C, th *ui.Theme, p *chatPane, key string, env 
 
 // chatWorkerNote is a worker's outcome: its agent's mark, what happened and
 // muted how, a hairline to the column's edge, and the result as Markdown under
-// it. A click opens the worker's card while it is still open.
+// it. A click on the row opens the worker's card while it is still open; the
+// result keeps its own links.
 func (u *window) chatWorkerNote(gtx C, th *ui.Theme, p *chatPane, key string, env envelope) D {
 	click := p.note(key)
 	if click.Clicked(gtx) {
@@ -75,7 +76,9 @@ func (u *window) chatWorkerNote(gtx C, th *ui.Theme, p *chatPane, key string, en
 		row = append(row, ui.Gap(2), layout.Rigid(th.Text(ui.TextSM, meta).Muted().Layout))
 	}
 	row = append(row, ui.Gap(3), layout.Flexed(1, func(gtx C) D { return chatHairline(gtx, th) }))
-	children := []layout.FlexChild{layout.Rigid(func(gtx C) D { return layout.Flex{Alignment: layout.Middle}.Layout(gtx, row...) })}
+	children := []layout.FlexChild{layout.Rigid(func(gtx C) D {
+		return click.Layout(gtx, func(gtx C) D { return layout.Flex{Alignment: layout.Middle}.Layout(gtx, row...) })
+	})}
 	if result := env.text["result"]; result != "" {
 		children = append(children, ui.VGap(1), layout.Rigid(func(gtx C) D {
 			return layout.Inset{Left: chatNoteIndent}.Layout(gtx, func(gtx C) D {
@@ -88,7 +91,7 @@ func (u *window) chatWorkerNote(gtx C, th *ui.Theme, p *chatPane, key string, en
 			return layout.Inset{Left: chatNoteIndent}.Layout(gtx, th.Text(ui.TextSM, body).Muted().Wrapped().Layout)
 		}))
 	}
-	return click.Layout(gtx, func(gtx C) D { return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...) })
+	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
 }
 
 // workerNoteText is a worker note's title, the muted words beside it and the

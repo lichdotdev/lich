@@ -79,6 +79,8 @@ func envelopeFrames(t *testing.T) (*window, *frameRig) {
 		{ID: "u2", Kind: api.ItemUser, Turn: 2, Text: note("worker-finished",
 			"<status>answered</status>\n<result>The handshake raced on reconnect; fixed in `internal/relay/conn.go`, test added.</result>") +
 			"\n\n" + note("worker-waiting", "<status>waiting</status>\n<request>Permission to run: go test ./internal/relay/...</request>")},
+		{ID: "u5", Kind: api.ItemUser, Turn: 2, Text: note("worker-failed", "<status>failed</status>\n<error>The worker's last turn ended in an API error.</error>") +
+			"\n\n" + note("worker-stopped", "<status>stopped</status>\n<by>user</by>") + "\n\n" + note("expired", "<status>expired</status>")},
 		{ID: "u3", Kind: api.ItemUser, Turn: 3, Text: `<lich-notification version="1" kind="notice" topic="checks-failed" pr="1210" branch="fix-412">` +
 			"\n<summary>The checks failed on pull request #1210 at commit 3f2a9c1.</summary>\n</lich-notification>"},
 		{ID: "u4", Kind: api.ItemUser, Turn: 4, Text: `<lich-notification version="1" kind="task" from="Relay fixes" session="s3" ticket="7c1d" answer="last-message">` +
@@ -99,7 +101,8 @@ func envelopeFrames(t *testing.T) (*window, *frameRig) {
 func TestAnEnvelopeIsDrawnAsItsRows(t *testing.T) {
 	_, r := envelopeFrames(t)
 	if !r.showsAll("Fix #412 finished", "answered", "Fix #412 is waiting", "Permission to run: go test ./internal/relay/...",
-		"The checks failed on pull request #1210 at commit 3f2a9c1.", "From Relay fixes", "Fix #417: the menu bar icon on macOS.") {
+		"The checks failed on pull request #1210 at commit 3f2a9c1.", "From Relay fixes", "Fix #417: the menu bar icon on macOS.",
+		"Fix #412 failed", "Fix #412 was stopped", "by you", "Fix #412 did not answer in time") {
 		t.Fatalf("the envelopes are not drawn as rows:\n%s", r.drawn())
 	}
 	if r.shows("lich-notification") {

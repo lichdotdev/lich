@@ -59,6 +59,8 @@ type Catalog struct {
 	// when it was parked for, %[2]s how late it is.
 	LateNotice   string
 	OnTimeNotice string
+	// UsageReset sums up the notice that carries ResumePrompt.
+	UsageReset string
 	// ResumePrompt is stored in the sessions table as a parked prompt, marked
 	// as lich's (store SetLichSchedule); never recognise it by comparing text.
 	ResumePrompt string

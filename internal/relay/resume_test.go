@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/lichdotdev/lich/api"
+	"github.com/lichdotdev/lich/internal/prompt"
 )
 
 // parkWriter records every scheduled-prompt write, parks included.
@@ -202,5 +203,21 @@ func TestATurnStartingKeepsAPersonsPromptThatReadsLikeTheContinuation(t *testing
 
 	if got := writer.all(); len(got) != 0 {
 		t.Fatalf("writes = %+v, want the person's prompt kept", got)
+	}
+}
+
+// lich's continuation is a usage-reset notice whose prompt is the work to pick
+// back up: a notice with no prompt is news the agent is told not to act on.
+func TestTheContinuationIsTypedAsAUsageResetWithItsPrompt(t *testing.T) {
+	t.Parallel()
+	term := newFakeTerminal("s1")
+	svc := newRelay(lichsContinuation(scheduled(1000, resumePrompt, &scheduleWriter{})), term, nil)
+	svc.now = at(1000)
+
+	svc.deliverDue()
+
+	want := noticeEnvelope(TopicUsageReset, prompt.For(prompt.English).UsageReset, resumePrompt).String()
+	if got := term.written("s1"); !strings.Contains(got, want) {
+		t.Fatalf("typed at s1 = %q, want %q", got, want)
 	}
 }

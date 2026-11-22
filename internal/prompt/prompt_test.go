@@ -171,7 +171,7 @@ func TestPickFollowsRussiansFourForms(t *testing.T) {
 		t.Errorf("Parse(\"ru\") = %q, want %q", got, Russian)
 	}
 	if got := For(Russian).ResumePrompt; got == For(English).ResumePrompt || got == "" {
-		t.Errorf("Russian OriginCLI = %q, want its own text", got)
+		t.Errorf("Russian ResumePrompt = %q, want its own text", got)
 	}
 }
 
@@ -189,7 +189,7 @@ func TestSpanishIsAPromptLanguage(t *testing.T) {
 		}
 	}
 	if got := For(Spanish).ResumePrompt; got == For(English).ResumePrompt || got == "" {
-		t.Errorf("Spanish OriginCLI = %q, want its own text", got)
+		t.Errorf("Spanish ResumePrompt = %q, want its own text", got)
 	}
 }
 
@@ -207,6 +207,6 @@ func TestKoreanIsAPromptLanguage(t *testing.T) {
 		}
 	}
 	if got := For(Korean).ResumePrompt; got == For(English).ResumePrompt || got == "" {
-		t.Errorf("Korean OriginCLI = %q, want its own text", got)
+		t.Errorf("Korean ResumePrompt = %q, want its own text", got)
 	}
 }
