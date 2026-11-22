@@ -170,8 +170,6 @@ func (v *pullView) tip(key string) *ui.Tooltip {
 
 func (v *pullView) layout(gtx C, th *ui.Theme, p *pullsScreen, act *pullsAction) D {
 	v.runQueued()
-	v.forge = p.forge()
-	v.mergeEdit.forge = v.forge
 	read := p.store.detail(p.project.Path, p.selected)
 	switch {
 	case read.val == nil && read.err != "":

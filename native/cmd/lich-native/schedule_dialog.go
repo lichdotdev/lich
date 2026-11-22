@@ -79,20 +79,20 @@ func (d *scheduleDialog) show(sv sessionView) {
 // pick moves to kind, swapping the prompt for kind's own unless the person has
 // written something else.
 func (d *scheduleDialog) pick(kind string) {
-	if strings.TrimSpace(d.prompt.Text()) == schedulePromptFor(d.kind) {
-		d.prompt.SetText(schedulePromptFor(kind))
+	if strings.TrimSpace(d.prompt.Text()) == schedulePromptFor(d.kind, d.forge) {
+		d.prompt.SetText(schedulePromptFor(kind, d.forge))
 	}
 	d.kind, d.focus = kind, true
 }
 
 // schedulePromptFor is the prompt a condition starts with, "" for one where
 // only the person knows what comes next.
-func schedulePromptFor(kind string) string {
+func schedulePromptFor(kind, forge string) string {
 	switch kind {
 	case api.WatchChecksFailed:
-		return i18n.Prompt("prompts.schedule.checksFailed")
+		return i18n.Prompt(forgeKey(forge, "prompts.schedule.checksFailed", "prompts.schedule.checksFailedGitLab"))
 	case api.WatchReview:
-		return i18n.Prompt("prompts.schedule.review")
+		return i18n.Prompt(forgeKey(forge, "prompts.schedule.review", "prompts.schedule.reviewGitLab"))
 	}
 	return ""
 }

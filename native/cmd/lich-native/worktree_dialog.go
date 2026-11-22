@@ -204,9 +204,13 @@ func (d *worktreeDialog) pick(ctx context.Context, value string) {
 
 // lookUpIssue follows the reference the name holds: a new one is looked up
 // once the name has settled, and one that changed under the lookup is
-// dropped. A GitLab project's issues are not looked up yet.
+// dropped. A GitLab project's #N is a plain name: its issues are not looked
+// up yet.
 func (d *worktreeDialog) lookUpIssue(ctx context.Context, typed string) {
 	ref := parseIssueRef(typed)
+	if d.forges.gitLab(d.project.Path) {
+		ref = 0
+	}
 	d.mu.Lock()
 	if ref == d.issueRef {
 		d.mu.Unlock()
@@ -214,7 +218,7 @@ func (d *worktreeDialog) lookUpIssue(ctx context.Context, typed string) {
 	}
 	d.issueRef, d.issue, d.issueErr = ref, nil, ""
 	d.mu.Unlock()
-	if ref == 0 || d.forges.gitLab(d.project.Path) {
+	if ref == 0 {
 		return
 	}
 	go func() {

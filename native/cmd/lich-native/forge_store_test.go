@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"slices"
+	"sync"
 	"testing"
 
 	"github.com/lichdotdev/lich/api"
@@ -175,8 +176,8 @@ func TestWorktreeDialogLooksUpNoGitLabIssue(t *testing.T) {
 	d := newWorktreeDialog(c, forges, new(ui.Root), func() {})
 	d.project = backend.Project{Path: "/repo"}
 	d.lookUpIssue(context.Background(), "#12")
-	if d.issueRef != 12 {
-		t.Fatalf("issueRef = %d, want the reference followed", d.issueRef)
+	if d.issueRef != 0 {
+		t.Fatalf("issueRef = %d, want #12 kept as a plain name", d.issueRef)
 	}
 	if got := stub.calls("project.Issue"); got != 0 {
 		t.Errorf("Issue called %d times on a GitLab project", got)
@@ -185,6 +186,8 @@ func TestWorktreeDialogLooksUpNoGitLabIssue(t *testing.T) {
 
 func TestPullsScreenOnGitLabWaitsForTheForgeAndNeverAsksGitHub(t *testing.T) {
 	hold := make(chan struct{})
+	var release sync.Once
+	t.Cleanup(func() { release.Do(func() { close(hold) }) })
 	stub := &rpcStub{answer: func(method string, _ []json.RawMessage) (any, int) {
 		switch method {
 		case "project.Forge":
@@ -213,7 +216,7 @@ func TestPullsScreenOnGitLabWaitsForTheForgeAndNeverAsksGitHub(t *testing.T) {
 	if got := stub.calls("project.GitHubAccountOf"); got != 0 {
 		t.Fatalf("asked gh for an account before the forge was known: %d", got)
 	}
-	close(hold)
+	release.Do(func() { close(hold) })
 	r.waitFor(t, "!7")
 	r.clickLabel(t, "Fix the thing")
 	r.waitFor(t, "Merge requests")

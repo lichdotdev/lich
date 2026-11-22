@@ -47,6 +47,8 @@
   },
   "schedule": {
     "checksFailed": "The checks on this pull request failed. Read them with gh, fix the cause and push.",
-    "review": "A new review arrived on this pull request. Read it with gh and address what it asks."
+    "checksFailedGitLab": "The checks on this merge request failed. Read them with glab, fix the cause and push.",
+    "review": "A new review arrived on this pull request. Read it with gh and address what it asks.",
+    "reviewGitLab": "A new review arrived on this merge request. Read it with glab and address what it asks."
   }
 }

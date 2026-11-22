@@ -35,7 +35,7 @@ func TestScheduleDialogKeepsWhatThePersonWrote(t *testing.T) {
 	d.show(sessionView{ID: "s1"})
 
 	d.pick(api.WatchChecksFailed)
-	if got := d.prompt.Text(); got != schedulePromptFor(api.WatchChecksFailed) {
+	if got := d.prompt.Text(); got != schedulePromptFor(api.WatchChecksFailed, api.ForgeGitHub) {
 		t.Fatalf("prompt = %q, want the condition's own", got)
 	}
 	d.pick(api.WatchChecksPassed)

@@ -186,6 +186,8 @@ func (p *pullsScreen) recheck(now time.Time) time.Time {
 func (p *pullsScreen) layout(gtx C, th *ui.Theme) pullsAction {
 	var act pullsAction
 	gtx.Constraints.Min = gtx.Constraints.Max
+	p.view.forge = p.forge()
+	p.view.mergeEdit.forge = p.view.forge
 	if p.focused {
 		gtx.Execute(op.InvalidateCmd{At: p.recheck(gtx.Now)})
 	}

@@ -47,6 +47,8 @@
   },
   "schedule": {
     "checksFailed": "Las comprobaciones de esta pull request fallaron. Léelas con gh, corrige la causa y haz push.",
-    "review": "Llegó una nueva revisión a esta pull request. Léela con gh y atiende lo que pide."
+    "checksFailedGitLab": "Las comprobaciones de este merge request fallaron. Léelas con glab, corrige la causa y haz push.",
+    "review": "Llegó una nueva revisión a esta pull request. Léela con gh y atiende lo que pide.",
+    "reviewGitLab": "Llegó una nueva revisión a este merge request. Léela con glab y atiende lo que pide."
   }
 }
