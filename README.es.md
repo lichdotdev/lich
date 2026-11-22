@@ -205,6 +205,7 @@ distinto.
 | En el chat, /plugin lista los plugins del agente para instalar, actualizar, desactivar o desinstalar, y sus marketplaces para añadir, actualizar o quitar | sí; una actualización se aplica cuando el chat se reinicia | sí; instala solo para ti, desde los marketplaces de tu máquina, y no actualiza plugins | no | no | no | no | no | no |
 | En el chat, una llamada a una herramienta aparece en cuanto empieza, con su tiempo corriendo, y guarda cuánto duró | sí | sí; una conversación releída no muestra tiempos | sin verificar | sin verificar | sin verificar | no | sin verificar | sin verificar |
 | En el chat, un mensaje escrito mientras el agente trabaja espera en una cola que sale al terminar el turno, o se fuerza dentro del turno en curso | sí | sí | en cola; forzarlo detiene el turno y lo envía después | en cola; forzarlo detiene el turno y lo envía después | en cola; forzarlo detiene el turno y lo envía después | no | sin verificar | en cola; forzarlo detiene el turno y lo envía después |
+| En el chat, la lista de tareas del agente queda sobre la caja de mensaje mientras le quedan tareas | solo en los modelos que la llevan: Claude 4 y anteriores, o con `CLAUDE_CODE_ENABLE_TODO_TOOLS=1` | sí; una conversación retomada la muestra cuando el agente la actualiza | sin verificar | sin verificar | sí | sin chat | sin verificar | sin verificar |
 
 </details>
 

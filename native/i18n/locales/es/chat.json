@@ -106,6 +106,9 @@
     "drop": "Quitar de la cola",
     "edit": "↑ edita la cola"
   },
+  "plan": {
+    "count": "Tareas {done}/{total}"
+  },
   "tools": {
     "loading": "Cargando…",
     "mcpTitle": "Servidores MCP",

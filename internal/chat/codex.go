@@ -324,6 +324,8 @@ func (d *codexDriver) notification(method string, params json.RawMessage) {
 		d.delta(params, api.ItemAgent)
 	case "item/reasoning/summaryTextDelta":
 		d.delta(params, api.ItemThought)
+	case "turn/plan/updated":
+		d.c.conv.plan(codexPlan(params))
 	case "thread/settings/updated":
 		d.settingsUpdated(params)
 	case "serverRequest/resolved":

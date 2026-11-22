@@ -655,6 +655,7 @@ ChatItem {
 	tool,omitempty *ChatToolCall
 	permission,omitempty *ChatPermission
 	question,omitempty *ChatQuestion
+	plan,omitempty *ChatPlan
 	at int64
 	model,omitempty string
 	effort,omitempty string
@@ -2493,6 +2494,10 @@ ChatQuestion {
 	reply,omitempty *ChatQReplied
 }
 
+ChatPlan {
+	entries []ChatPlanEntry
+}
+
 ChatMCPServer {
 	name string
 	status string
@@ -2845,6 +2850,12 @@ ChatAsk {
 	text string
 	options,omitempty []ChatOffer
 	multi,omitempty bool
+}
+
+ChatPlanEntry {
+	content string
+	activeForm,omitempty string
+	status string
 }
 
 ChatMCPTool {

@@ -101,6 +101,9 @@
     "drop": "キューから外す",
     "edit": "↑ でキューを編集"
   },
+  "plan": {
+    "count": "タスク {done}/{total}"
+  },
   "tools": {
     "loading": "読み込み中…",
     "mcpTitle": "MCP サーバー",

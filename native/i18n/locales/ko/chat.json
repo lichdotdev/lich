@@ -101,6 +101,9 @@
     "drop": "대기열에서 빼기",
     "edit": "↑ 대기열 편집"
   },
+  "plan": {
+    "count": "작업 {done}/{total}"
+  },
   "tools": {
     "loading": "불러오는 중…",
     "mcpTitle": "MCP 서버",

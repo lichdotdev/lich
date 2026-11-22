@@ -302,3 +302,32 @@ func codexTurnProducers(path string) map[string]codexProducer {
 		}
 	}
 }
+
+// codexPlanStates maps a turn/plan/updated step's status onto a plan entry's
+// (codex app-server generate-json-schema, 0.170.0).
+var codexPlanStates = map[string]string{
+	"pending":    api.PlanPending,
+	"inProgress": api.PlanInProgress,
+	"completed":  api.PlanCompleted,
+}
+
+// codexPlan reads turn/plan/updated: Codex names a step once, with no form for
+// while it runs.
+func codexPlan(params json.RawMessage) []api.ChatPlanEntry {
+	var e struct {
+		Plan []struct {
+			Step   string `json:"step"`
+			Status string `json:"status"`
+		} `json:"plan"`
+	}
+	_ = json.Unmarshal(params, &e)
+	out := make([]api.ChatPlanEntry, 0, len(e.Plan))
+	for _, s := range e.Plan {
+		status, ok := codexPlanStates[s.Status]
+		if !ok {
+			status = api.PlanPending
+		}
+		out = append(out, api.ChatPlanEntry{Content: s.Step, Status: status})
+	}
+	return out
+}
