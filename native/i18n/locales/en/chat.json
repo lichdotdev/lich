@@ -45,7 +45,7 @@
     "placeholder": "Ask {provider} about this project",
     "send": "Send",
     "stop": "Stop",
-    "shell": "Shell mode · Enter runs it without the agent"
+    "shell": "Shell mode · Enter runs the command"
   },
   "option": {
     "model": "Model",

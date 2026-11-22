@@ -45,7 +45,7 @@
     "placeholder": "Pregúntale a {provider} sobre este proyecto",
     "send": "Enviar",
     "stop": "Detener",
-    "shell": "Modo shell · Enter lo ejecuta sin pasar por el agente"
+    "shell": "Modo shell · Enter ejecuta el comando"
   },
   "option": {
     "model": "Modelo",
