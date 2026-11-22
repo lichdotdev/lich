@@ -8,8 +8,11 @@ import (
 	"testing"
 	"time"
 
+	"gioui.org/op/paint"
+
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
+	"github.com/lichdotdev/lich/native/ui"
 )
 
 func planItems(turn int, entries ...api.ChatPlanEntry) []backend.ChatItem {
@@ -30,9 +33,23 @@ var fivePlan = []api.ChatPlanEntry{
 
 func planFrames(t *testing.T, items []backend.ChatItem) *frameRig {
 	t.Helper()
+	return planFramesRunning(t, items, true)
+}
+
+// planFramesRunning draws items on the theme's ground, so a shot reads as the
+// window does, with a turn running or not.
+func planFramesRunning(t *testing.T, items []backend.ChatItem, running bool) *frameRig {
+	t.Helper()
 	u, r, _ := chatFrames(t, api.ViewChat)
 	u.model.chat.history("s1", items)
-	u.model.chat.turn(api.ChatTurn{SessionID: "s1", Running: true})
+	if running {
+		u.model.chat.turn(api.ChatTurn{SessionID: "s1", Running: true})
+	}
+	draw := r.draw
+	r.draw = func(gtx C, th *ui.Theme) {
+		paint.Fill(gtx.Ops, th.Background)
+		draw(gtx, th)
+	}
 	r.frame()
 	return r
 }
@@ -80,6 +97,16 @@ func TestThePlanGoesWhenNothingIsLeftOrTheTurnMovesOn(t *testing.T) {
 				t.Errorf("the plan is drawn:\n%s", r.drawn())
 			}
 		})
+	}
+}
+
+// A list left with tasks once the turn ended stays, still: nothing shimmers
+// and the window asks for no frames.
+func TestAPlanLeftAfterTheTurnStaysStill(t *testing.T) {
+	r := planFramesRunning(t, planItems(1, fivePlan...), false)
+	r.settle(t)
+	if !r.showsAll("Tasks 2/5", "Accepting +hh:mm and Z") {
+		t.Fatalf("the plan line is not drawn after the turn:\n%s", r.drawn())
 	}
 }
 

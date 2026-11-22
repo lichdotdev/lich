@@ -512,7 +512,7 @@ func (u *window) chatComposer(gtx C, th *ui.Theme, p *chatPane, sv sessionView, 
 		ft.attach, ft.context = nil, nil
 	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(func(gtx C) D { return u.chatPlan(gtx, th, &p.plan, sv.ID) }),
+		layout.Rigid(func(gtx C) D { return u.chatPlan(gtx, th, &p.plan, sv.ID, working) }),
 		layout.Rigid(func(gtx C) D { return u.chatQueue(gtx, th, p, sv.ID) }),
 		layout.Rigid(func(gtx C) D {
 			// the box's fill keeps near the theme's own ground and its edge

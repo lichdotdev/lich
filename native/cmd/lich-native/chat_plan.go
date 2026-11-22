@@ -80,8 +80,9 @@ func planWords(e api.ChatPlanEntry) string {
 	return e.Content
 }
 
-// chatPlan draws session id's task list over the composer.
-func (u *window) chatPlan(gtx C, th *ui.Theme, s *chatPlanState, id string) D {
+// chatPlan draws session id's task list over the composer; the task running
+// shimmers only while the turn does.
+func (u *window) chatPlan(gtx C, th *ui.Theme, s *chatPlanState, id string, working bool) D {
 	entries := chatPlanOf(u.model.chat.of(id))
 	if len(entries) == 0 {
 		s.open = false
@@ -92,12 +93,12 @@ func (u *window) chatPlan(gtx C, th *ui.Theme, s *chatPlanState, id string) D {
 	}
 	return layout.Inset{Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-			layout.Rigid(func(gtx C) D { return chatPlanLine(gtx, th, s, entries) }),
+			layout.Rigid(func(gtx C) D { return chatPlanLine(gtx, th, s, entries, working) }),
 			layout.Rigid(func(gtx C) D {
 				if !s.open {
 					return D{}
 				}
-				return chatPlanList(gtx, th, s, entries)
+				return chatPlanList(gtx, th, s, entries, working)
 			}),
 		)
 	})
@@ -106,7 +107,7 @@ func (u *window) chatPlan(gtx C, th *ui.Theme, s *chatPlanState, id string) D {
 // chatPlanLine is the folded line: the glyph, "Tasks 2/5" and the task
 // running, shimmering as the live line's verb does; unfolded, the list shows
 // that task and the line keeps the count.
-func chatPlanLine(gtx C, th *ui.Theme, s *chatPlanState, entries []api.ChatPlanEntry) D {
+func chatPlanLine(gtx C, th *ui.Theme, s *chatPlanState, entries []api.ChatPlanEntry, working bool) D {
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 	done := 0
 	for _, e := range entries {
@@ -134,7 +135,7 @@ func chatPlanLine(gtx C, th *ui.Theme, s *chatPlanState, entries []api.ChatPlanE
 					if s.open {
 						return D{Size: image.Pt(gtx.Constraints.Min.X, 0)}
 					}
-					return th.Text(ui.TextSM, planRunning(entries)).Truncated().Shimmer().Layout(gtx)
+					return planShimmer(th.Text(ui.TextSM, planRunning(entries)).Truncated(), working).Layout(gtx)
 				}),
 				ui.Gap(1),
 				layout.Rigid(func(gtx C) D { return chevron.Layout(gtx, ui.Space(3.5), fg) }),
@@ -144,24 +145,24 @@ func chatPlanLine(gtx C, th *ui.Theme, s *chatPlanState, entries []api.ChatPlanE
 }
 
 // chatPlanList is the unfolded list, no taller than chatPlanMax.
-func chatPlanList(gtx C, th *ui.Theme, s *chatPlanState, entries []api.ChatPlanEntry) D {
+func chatPlanList(gtx C, th *ui.Theme, s *chatPlanState, entries []api.ChatPlanEntry, working bool) D {
 	s.list.Axis = layout.Vertical
 	gtx.Constraints.Max.Y = min(gtx.Constraints.Max.Y, gtx.Dp(chatPlanMax))
 	gtx.Constraints.Min.Y = 0
 	return layout.Inset{Left: ui.Space(2), Right: ui.Space(1)}.Layout(gtx, func(gtx C) D {
 		return th.ThinScrollArea(&s.list).Layout(gtx, len(entries), func(gtx C, i int) D {
-			return chatPlanRow(gtx, th, entries[i])
+			return chatPlanRow(gtx, th, entries[i], working)
 		})
 	})
 }
 
-func chatPlanRow(gtx C, th *ui.Theme, e api.ChatPlanEntry) D {
+func chatPlanRow(gtx C, th *ui.Theme, e api.ChatPlanEntry, working bool) D {
 	ic, label := icPlanPending, th.Text(ui.TextSM, planWords(e)).Muted().Truncated()
 	switch e.Status {
 	case api.PlanCompleted:
 		ic = icPlanDone
 	case api.PlanInProgress:
-		ic, label = icPlanRunning, label.In(th.Foreground).Shimmer()
+		ic, label = icPlanRunning, planShimmer(label.In(th.Foreground), working)
 	}
 	return layout.Inset{Top: ui.Space(0.5), Bottom: ui.Space(0.5)}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
@@ -177,6 +178,13 @@ func chatPlanRow(gtx C, th *ui.Theme, e api.ChatPlanEntry) D {
 			}),
 		)
 	})
+}
+
+func planShimmer(l ui.LabelStyle, working bool) ui.LabelStyle {
+	if working {
+		return l.Shimmer()
+	}
+	return l
 }
 
 // strike draws a line through a label of size, at its middle.
