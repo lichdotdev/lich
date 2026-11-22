@@ -75,9 +75,6 @@
     "replaceTheme": "Reemplazar tema"
   },
   "themePicker": {
-    "title": "Tema",
-    "searchWords": "colores oscuro claro terminal paleta colors dark light palette",
-    "description": "Da color a la interfaz y a la terminal.",
     "system": "Sistema",
     "followsOs": "según el sistema",
     "inUse": "en uso",
@@ -764,10 +761,8 @@
     "trying": "Probando {name}",
     "revert": "Deshacer",
     "keep": "Conservar",
-    "bundledGroup": "Incluidos",
     "update": "Actualizar",
     "rowOptions": "Opciones de {name}",
-    "browse": "Explorar temas",
     "preview": {
       "ask": "Añade reintentos al helper de fetch",
       "askShort": "Añade reintentos",
@@ -776,6 +771,10 @@
       "sessionFlaky": "Arreglar test inestable",
       "sessionReview": "Revisar PR #42"
     },
-    "try": "Probar"
+    "try": "Probar",
+    "inUseGroup": "En uso",
+    "otherGroup": "Otros temas",
+    "imported": "importado de un archivo",
+    "pairsWith": "Se combina con {name}"
   }
 }

@@ -79,9 +79,6 @@
     "replaceTheme": "Заменить тему"
   },
   "themePicker": {
-    "title": "Тема",
-    "searchWords": "цвета тёмная светлая терминал палитра colors dark light",
-    "description": "Задаёт цвета интерфейса и терминала.",
     "system": "Системная",
     "followsOs": "как в системе",
     "inUse": "используется",
@@ -780,10 +777,8 @@
     "trying": "Примеряем {name}",
     "revert": "Вернуть",
     "keep": "Оставить",
-    "bundledGroup": "Встроенные",
     "update": "Обновить",
     "rowOptions": "Параметры {name}",
-    "browse": "Открыть каталог тем",
     "preview": {
       "ask": "Добавь повторные попытки в хелпер fetch",
       "askShort": "Добавь повторы",
@@ -792,6 +787,10 @@
       "sessionFlaky": "Починить нестабильный тест",
       "sessionReview": "Ревью PR #42"
     },
-    "try": "Примерить"
+    "try": "Примерить",
+    "inUseGroup": "Используется",
+    "otherGroup": "Другие темы",
+    "imported": "импортирована из файла",
+    "pairsWith": "В паре с {name}"
   }
 }

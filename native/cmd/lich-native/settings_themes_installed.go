@@ -3,7 +3,9 @@ package main
 import (
 	"image"
 
+	"gioui.org/font"
 	"gioui.org/layout"
+	"gioui.org/op"
 	"gioui.org/unit"
 
 	"github.com/lichdotdev/lich/native/backend"
@@ -11,18 +13,24 @@ import (
 	"github.com/lichdotdev/lich/native/ui"
 )
 
-// The installed themes' rows, from the approved mockup's .irow
-// (temas-catalogo, frame 4).
+// The Installed view, from the approved mockup (temas-instalados, option A):
+// the theme in use on a wide card at the top, every other theme a card of the
+// catalog's grid under it.
 var (
-	themeRowPadY = ui.Space(2.5) // .irow padding 10px 8px
-	themeRowMini = image.Pt(64, 40)
+	themeHeroPad    = ui.Space(2.5) // the hero's padding
+	themeHeroCoverW = ui.Space(80)  // its cover's width, 16:10
+	themeHeroGap    = ui.Space(4)
 )
 
-// themeRowState is one installed row's controls and its menu.
+// themeHeroName is the in-use theme's name on its card.
+const themeHeroName = unit.Sp(20)
+
+// themeRowState is one installed theme's card: its click, its Update, and the
+// ⋯ with its menu.
 type themeRowState struct {
-	use, update, more ui.Clickable
-	menu              ui.MenuState
-	moreTip           ui.Tooltip
+	card, update, more ui.Clickable
+	menu               ui.MenuState
+	moreTip            ui.Tooltip
 }
 
 func (p *themePicker) row(id string) *themeRowState {
@@ -34,57 +42,97 @@ func (p *themePicker) row(id string) *themeRowState {
 	return r
 }
 
-// themeRowSpec is what one row shows: the miniature, the name and the line
-// under it, and for an imported theme its newer version and its menu.
-type themeRowSpec struct {
+// installedTheme is one theme the window has, as its card shows it.
+type installedTheme struct {
 	id, name, line string
-	mini           func(gtx C, th *ui.Theme, size image.Point) D
+	look           themeLook
 	latest         string
 	custom         bool
 }
 
-// installedThemeRows is Bundled, then Installed, then the themes that can't
-// load.
+// installedThemeRows is In use, the theme drawn wide, then the rest as cards:
+// the imported themes in the window's order, then the bundled ones, then the
+// themes that can't load.
 func (s *settingsScreen) installedThemeRows(th *ui.Theme, v appearanceView) []layout.Widget {
-	p := s.theme
-	light, dark := bundledPair(v.themes)
-	rows := []layout.Widget{
-		groupHeading(th, i18n.T("settings.themesPage.bundledGroup"), true),
-		s.themeListRow(th, v, themeRowSpec{id: themeSystem, name: i18n.T("settings.themePicker.system"), line: i18n.T("settings.themePicker.followsOs"),
-			mini: func(gtx C, th *ui.Theme, size image.Point) D {
-				return systemMiniature(gtx, th, light.palette, dark.palette, size)
-			}}),
+	all := s.installedThemes(v)
+	var inUse installedTheme
+	var rest []installedTheme
+	for _, t := range all {
+		if t.id == v.selected {
+			inUse = t
+			continue
+		}
+		rest = append(rest, t)
 	}
-	var custom []layout.Widget
+	rows := []layout.Widget{
+		groupHeading(th, i18n.T("settings.themesPage.inUseGroup"), true),
+		func(gtx C) D { return s.themeHero(gtx, th, v, inUse) },
+		groupHeading(th, i18n.T("settings.themesPage.otherGroup"), false),
+		func(gtx C) D {
+			return catalogCards(gtx, len(rest), func(gtx C, i int) D { return s.installedCard(gtx, th, rest[i]) })
+		},
+	}
+	return append(rows, func(gtx C) D { return s.theme.brokenList(gtx, th, v.broken) })
+}
+
+// installedThemes is every theme the window has, System first among the
+// bundled ones, each with the look its card draws.
+func (s *settingsScreen) installedThemes(v appearanceView) []installedTheme {
+	p := s.theme
 	var cat *themeCatalog
 	if p.catalog != nil {
 		cat, _ = p.catalog.read()
 	}
+	var custom, bundled []installedTheme
 	for _, e := range v.themes {
-		spec := themeRowSpec{id: e.def.ID, name: e.def.Name, line: themeCaption(e.def, ""),
-			mini: func(gtx C, th *ui.Theme, size image.Point) D { return themeMiniature(gtx, th, e.palette, size, true) }}
+		t := installedTheme{id: e.def.ID, name: e.def.Name, line: i18n.T("settings.themePicker.bundled"), look: p.lookOf(e)}
 		if e.def.Origin != themeOriginCustom {
-			rows = append(rows, s.themeListRow(th, v, spec))
+			bundled = append(bundled, t)
 			continue
 		}
-		spec.custom, spec.line = true, installedLine(e.def, cat)
+		t.custom, t.line = true, installedLine(e.def, cat)
 		if e.def.Latest != nil {
-			spec.latest = e.def.Latest.Version
+			t.latest = e.def.Latest.Version
 		}
-		custom = append(custom, s.themeListRow(th, v, spec))
+		custom = append(custom, t)
 	}
-	if len(custom) > 0 {
-		rows = append(rows, groupHeading(th, i18n.T("settings.themesPage.installedTab"), false))
-		rows = append(rows, custom...)
+	system := installedTheme{id: themeSystem, name: i18n.T("settings.themePicker.system"), line: i18n.T("settings.themePicker.followsOs"), look: p.lookOf(v.resolved)}
+	if v.selected != themeSystem {
+		if _, dark := bundledPair(v.themes); dark.def.ID != "" {
+			system.look = p.lookOf(dark)
+		}
 	}
-	return append(rows, func(gtx C) D { return p.brokenList(gtx, th, v.broken) })
+	return append(append(custom, system), bundled...)
+}
+
+// lookOf is e as a cover draws it, kept while the theme stays the same.
+func (p *themePicker) lookOf(e themeEntry) themeLook {
+	key := e.def.ID + "\x00" + e.def.Name
+	if e.def.Source != nil {
+		key += "\x00" + e.def.Source.Version
+	}
+	if l, ok := p.looks[key]; ok {
+		return l
+	}
+	l, err := readLook(e.def)
+	if err != nil {
+		l = themeLook{themeEntry: e}
+	}
+	if p.looks == nil {
+		p.looks = map[string]themeLook{}
+	}
+	p.looks[key] = l
+	return l
 }
 
 // installedLine is where an imported theme came from: the catalog's name of
-// its pack and the version, else the repository's, and the newer version when
-// there is one.
+// its pack and the version, else the repository's, "imported" for a single
+// file, and the newer version when there is one.
 func installedLine(def backend.Theme, cat *themeCatalog) string {
-	line := themeCaption(def, "")
+	line := i18n.T("settings.themesPage.imported")
+	if def.Source != nil {
+		line = themeCaption(def, "")
+	}
 	if pack, ok := cat.fromRepo(def.Source); ok {
 		line = pack.def.Name + " " + def.Source.Version
 	}
@@ -94,84 +142,140 @@ func installedLine(def backend.Theme, cat *themeCatalog) string {
 	return line
 }
 
-// themeListRow is one theme's row on its seam: the miniature, the name over
-// the line, then Update while a newer version waits, In use or Use, and an
-// imported theme's ⋯. A bundled row keeps the ⋯'s room so the rows' buttons
-// line up.
-func (s *settingsScreen) themeListRow(th *ui.Theme, v appearanceView, r themeRowSpec) layout.Widget {
-	return func(gtx C) D {
-		p := s.theme
-		st := p.row(r.id)
-		busy := p.snapshot().updating
-		if st.use.Clicked(gtx) {
-			p.look.choose(r.id)
-		}
-		if st.update.Clicked(gtx) && busy == "" {
-			p.updateTheme(r.id)
-		}
-		gtx.Constraints.Min.X = gtx.Constraints.Max.X
-		line := []layout.FlexChild{
+// themeHero is the theme in use on an Accent card: its cover, then In use, the
+// name, where it came from, its pair, and Auto light/dark at the foot; Update
+// and the ⋯ at the top right for an imported one.
+func (s *settingsScreen) themeHero(gtx C, th *ui.Theme, v appearanceView, t installedTheme) D {
+	bg := th.Over(th.Accent)
+	on := th.On(bg)
+	macro := op.Record(gtx.Ops)
+	d := layout.UniformInset(themeHeroPad).Layout(gtx, func(gtx C) D {
+		return layout.Flex{}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
-				return r.mini(gtx, th, image.Pt(gtx.Dp(unit.Dp(themeRowMini.X)), gtx.Dp(unit.Dp(themeRowMini.Y))))
+				w := gtx.Dp(themeHeroCoverW)
+				gtx.Constraints = layout.Exact(image.Pt(w, w*catalogCoverH/catalogCoverW))
+				return themeCover(gtx, on, t.look)
 			}),
-			ui.Gap(3),
+			layout.Rigid(layout.Spacer{Width: themeHeroGap}.Layout),
 			layout.Flexed(1, func(gtx C) D {
-				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-					layout.Rigid(th.Text(ui.TextSM, r.name).Truncated().Layout),
-					layout.Rigid(th.Text(ui.TextXS, r.line).Mono().Muted().Truncated().Layout),
-				)
+				// The text stands as tall as the cover: Auto light/dark sits at its foot.
+				h := gtx.Dp(themeHeroCoverW) * catalogCoverH / catalogCoverW
+				gtx.Constraints.Min.Y, gtx.Constraints.Max.Y = h, h
+				return s.themeHeroText(gtx, on, v, t)
 			}),
-		}
-		if r.latest != "" {
-			b := th.Button(&st.update, i18n.T("settings.themesPage.update"))
-			b.Variant, b.Size, b.Icon, b.Disabled = ui.VariantOutline, ui.SizeSM, icRefresh, busy != ""
-			line = append(line, ui.Gap(2), layout.Rigid(b.Layout))
-		}
-		line = append(line, ui.Gap(2), layout.Rigid(func(gtx C) D { return themeUse(gtx, th, st, r.id == v.selected) }),
-			ui.Gap(1), layout.Rigid(func(gtx C) D { return s.themeRowMore(gtx, th, st, r) }))
-		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-			layout.Rigid(func(gtx C) D {
-				return layout.Inset{Left: rowPadX, Right: rowPadX, Top: themeRowPadY, Bottom: themeRowPadY}.Layout(gtx, func(gtx C) D {
-					return layout.Flex{Alignment: layout.Middle}.Layout(gtx, line...)
-				})
-			}),
-			layout.Rigid(th.Separator),
 		)
-	}
+	})
+	call := macro.Stop()
+	fill := gtx
+	fill.Constraints = layout.Exact(d.Size)
+	ui.Fill(fill, bg, ui.RadiusLG)
+	call.Add(gtx.Ops)
+	return d
 }
 
-// themeUse is In use with its check on the selected theme, Use on the rest.
-func themeUse(gtx C, th *ui.Theme, st *themeRowState, inUse bool) D {
-	if !inUse {
-		b := th.Button(&st.use, i18n.T("settings.themesPage.use"))
-		b.Variant, b.Size = ui.VariantGhost, ui.SizeSM
-		return b.Layout(gtx)
-	}
-	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+func (s *settingsScreen) themeHeroText(gtx C, th *ui.Theme, v appearanceView, t installedTheme) D {
+	p := s.theme
+	head := []layout.FlexChild{
 		layout.Rigid(func(gtx C) D { return icCatalogCheck.Layout(gtx, ui.Space(3.5), th.Foreground) }),
 		ui.Gap(1),
 		layout.Rigid(th.Text(ui.TextXS, i18n.T("settings.themesPage.inUse")).Layout),
+		layout.Flexed(1, func(gtx C) D { return D{Size: image.Pt(gtx.Constraints.Max.X, 0)} }),
+	}
+	head = append(head, s.installedActionsOf(th, t)...)
+	children := []layout.FlexChild{
+		layout.Rigid(func(gtx C) D { return layout.Flex{Alignment: layout.Middle}.Layout(gtx, head...) }),
+		ui.VGap(2),
+		layout.Rigid(th.Text(themeHeroName, t.name).Weight(font.SemiBold).Truncated().Layout),
+		ui.VGap(1),
+		layout.Rigid(th.Text(ui.TextXS, t.line).Mono().Muted().Truncated().Layout),
+	}
+	if pair := selectedPair(v); pair != "" {
+		if e, ok := themeByID(v.themes, pair); ok {
+			children = append(children, ui.VGap(2),
+				layout.Rigid(th.Text(ui.TextXS, i18n.T("settings.themesPage.pairsWith", i18n.Args{"name": e.def.Name})).Muted().Layout))
+		}
+	}
+	children = append(children,
+		layout.Flexed(1, func(gtx C) D { return D{Size: image.Pt(0, gtx.Constraints.Min.Y)} }),
+		layout.Rigid(func(gtx C) D {
+			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+				layout.Rigid(th.Text(ui.TextXS, i18n.T("settings.settingsTheme.autoLightDark")).Muted().Layout),
+				ui.Gap(2),
+				layout.Rigid(func(gtx C) D { return p.followSwitch(gtx, th, v) }),
+			)
+		}),
 	)
+	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
 }
 
-// themeRowMore is an imported theme's ⋯ and its menu, Remove, which asks
-// first; a bundled theme's row keeps its room empty.
-func (s *settingsScreen) themeRowMore(gtx C, th *ui.Theme, st *themeRowState, r themeRowSpec) D {
-	side := gtx.Dp(ui.Space(8))
-	if !r.custom {
-		return D{Size: image.Pt(side, side)}
+// installedCard is one theme the window has as the catalog draws a pack: its
+// cover, then its name with Update or the ⋯, and where it came from. A click
+// on it uses the theme.
+func (s *settingsScreen) installedCard(gtx C, th *ui.Theme, t installedTheme) D {
+	p := s.theme
+	st := p.row(t.id)
+	if st.card.Clicked(gtx) {
+		p.look.choose(t.id)
+		// The view laid out before the card took the click.
+		gtx.Execute(op.InvalidateCmd{})
 	}
+	return st.card.Layout(gtx, func(gtx C) D {
+		bg := th.Card
+		if st.card.Hovered() {
+			bg = ui.MixOKLab(th.Card, th.Over(th.Accent), catalogHoverMix)
+		}
+		on := th.On(bg)
+		return catalogCardSurface(gtx, bg, func(gtx C) D { return themeCover(gtx, on, t.look) }, func(gtx C) D {
+			name := []layout.FlexChild{layout.Flexed(1, on.Text(ui.TextSM, t.name).Weight(font.SemiBold).Leading(themeNameLeading).Truncated().Layout)}
+			name = append(name, s.installedActionsOf(on, t)...)
+			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+				layout.Rigid(func(gtx C) D {
+					gtx.Constraints.Min.Y = gtx.Dp(ui.Space(8))
+					return layout.Flex{Alignment: layout.Middle}.Layout(gtx, name...)
+				}),
+				layout.Rigid(on.Text(ui.TextXS, t.line).Mono().Muted().Leading(themeMetaLeading).Truncated().Layout),
+			)
+		})
+	})
+}
+
+// installedActionsOf is Update while a newer version waits, then an imported
+// theme's ⋯; a bundled theme has neither.
+func (s *settingsScreen) installedActionsOf(th *ui.Theme, t installedTheme) []layout.FlexChild {
+	p := s.theme
+	st := p.row(t.id)
+	var out []layout.FlexChild
+	if t.latest != "" {
+		out = append(out, ui.Gap(2), layout.Rigid(func(gtx C) D {
+			busy := p.snapshot().updating
+			if st.update.Clicked(gtx) && busy == "" {
+				p.updateTheme(t.id)
+			}
+			b := th.Button(&st.update, i18n.T("settings.themesPage.update"))
+			b.Variant, b.Size, b.Icon, b.Disabled = ui.VariantOutline, ui.SizeXS, icRefresh, busy != ""
+			return b.Layout(gtx)
+		}))
+	}
+	if t.custom {
+		out = append(out, ui.Gap(1), layout.Rigid(func(gtx C) D { return s.themeCardMore(gtx, th, st, t) }))
+	}
+	return out
+}
+
+// themeCardMore is an imported theme's ⋯ and its menu, Remove, which asks
+// first.
+func (s *settingsScreen) themeCardMore(gtx C, th *ui.Theme, st *themeRowState, t installedTheme) D {
 	p := s.theme
 	entries := []ui.MenuEntry{{Label: i18n.T("settings.appearanceSettings.removeTheme"), Icon: icTrash, Variant: ui.VariantDestructive, OnClick: func() {
-		p.askRemove(r.id, r.name)
+		p.askRemove(t.id, t.name)
 		// The dialogs were laid out before the menu took the click.
 		s.invalidate()
 	}}}
-	hint := i18n.T("settings.themesPage.rowOptions", i18n.Args{"name": r.name})
+	hint := i18n.T("settings.themesPage.rowOptions", i18n.Args{"name": t.name})
 	return th.DropdownMenu(s.root, &st.menu, entries).Layout(gtx, func(gtx C) D {
 		return th.Tooltip(s.root, &st.moreTip, hint).Layout(gtx, func(gtx C) D {
 			b := th.Button(&st.more, "")
-			b.Icon, b.Variant, b.Size = icExtensionMore, ui.VariantGhost, ui.SizeIconSM
+			b.Icon, b.Variant, b.Size = icExtensionMore, ui.VariantGhost, ui.SizeIconXS
 			return b.Layout(gtx)
 		})
 	})

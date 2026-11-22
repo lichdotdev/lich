@@ -75,9 +75,6 @@
     "replaceTheme": "替换主题"
   },
   "themePicker": {
-    "title": "主题",
-    "searchWords": "颜色 深色 浅色 终端 调色板",
-    "description": "为界面和终端着色。",
     "system": "系统",
     "followsOs": "跟随操作系统",
     "inUse": "使用中",
@@ -763,10 +760,8 @@
     "trying": "正在试用 {name}",
     "revert": "还原",
     "keep": "保留",
-    "bundledGroup": "内置",
     "update": "更新",
     "rowOptions": "{name} 的选项",
-    "browse": "浏览主题",
     "preview": {
       "ask": "给 fetch 辅助函数加上重试",
       "askShort": "加上重试",
@@ -775,6 +770,10 @@
       "sessionFlaky": "修复不稳定的测试",
       "sessionReview": "审查 PR #42"
     },
-    "try": "试用"
+    "try": "试用",
+    "inUseGroup": "使用中",
+    "otherGroup": "其他主题",
+    "imported": "从文件导入",
+    "pairsWith": "与 {name} 配对"
   }
 }

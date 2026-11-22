@@ -73,9 +73,6 @@
     "replaceTheme": "테마 교체"
   },
   "themePicker": {
-    "title": "테마",
-    "searchWords": "색상 다크 라이트 터미널 팔레트",
-    "description": "인터페이스와 터미널의 색상입니다.",
     "system": "시스템",
     "followsOs": "OS 설정을 따름",
     "inUse": "사용 중",
@@ -756,10 +753,8 @@
     "trying": "{name} 써 보는 중",
     "revert": "되돌리기",
     "keep": "계속 쓰기",
-    "bundledGroup": "기본 제공",
     "update": "업데이트",
     "rowOptions": "{name} 옵션",
-    "browse": "테마 둘러보기",
     "preview": {
       "ask": "fetch 헬퍼에 재시도를 넣어 줘",
       "askShort": "재시도를 넣어 줘",
@@ -768,6 +763,10 @@
       "sessionFlaky": "불안정한 테스트 고치기",
       "sessionReview": "PR #42 리뷰"
     },
-    "try": "써 보기"
+    "try": "써 보기",
+    "inUseGroup": "사용 중",
+    "otherGroup": "다른 테마",
+    "imported": "파일에서 가져옴",
+    "pairsWith": "{name}과(와) 짝을 이루는 테마"
   }
 }

@@ -74,8 +74,7 @@ func (s *settingsScreen) themesPaneRows(th *ui.Theme) []layout.Widget {
 }
 
 // themesViews is the line of tabs on the seam over the view, and on Installed
-// its own controls at the right: Auto light/dark, and Check for updates while
-// a theme from a repository is installed. The view was built from the tab
+// Check for updates at the right while a theme from a repository is installed. The view was built from the tab
 // before this lays out, so a change here asks for the frame that shows it.
 func (s *settingsScreen) themesViews(th *ui.Theme, v appearanceView) layout.Widget {
 	return func(gtx C) D {
@@ -105,15 +104,11 @@ func (s *settingsScreen) themesViews(th *ui.Theme, v appearanceView) layout.Widg
 	}
 }
 
-// installedActions are the Installed view's controls on the tabs' line.
+// installedActions are the Installed view's controls on the tabs' line;
+// Auto light/dark stands on the in-use theme's card.
 func (p *themePicker) installedActions(gtx C, th *ui.Theme, v appearanceView) []layout.FlexChild {
-	actions := []layout.FlexChild{
-		layout.Rigid(th.Text(ui.TextXS, i18n.T("settings.settingsTheme.autoLightDark")).Muted().Layout),
-		ui.Gap(2),
-		layout.Rigid(func(gtx C) D { return p.followSwitch(gtx, th, v) }),
-	}
 	if !slices.ContainsFunc(v.themes, func(e themeEntry) bool { return e.def.Source != nil }) {
-		return actions
+		return nil
 	}
 	checking := p.snapshot().checking
 	if p.check.Clicked(gtx) && !checking {
@@ -121,7 +116,7 @@ func (p *themePicker) installedActions(gtx C, th *ui.Theme, v appearanceView) []
 	}
 	b := th.Button(&p.check, i18n.T("settings.themePicker.checkUpdates"))
 	b.Variant, b.Size, b.Icon, b.Disabled = ui.VariantGhost, ui.SizeSM, icRefresh, checking
-	return append(actions, ui.Gap(4), layout.Rigid(b.Layout))
+	return []layout.FlexChild{layout.Rigid(b.Layout)}
 }
 
 // installedThemesMark is what follows the Installed tab's name: how many

@@ -377,9 +377,6 @@ func (s *settingsScreen) drawRow(gtx C, th *ui.Theme, e settingEntry, r settingR
 	switch e.key {
 	case uiLanguageKey, promptLanguageKey:
 		return s.languageRow(gtx, th, e.key, r, first)
-	case themeSettingKey:
-		r.description = i18n.T("settings.themePicker.description")
-		return s.themeRow(gtx, th, r, first)
 	case footerLayoutKey:
 		return s.footerRow(gtx, th, r, first)
 	case sandboxLadderKey:

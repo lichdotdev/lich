@@ -258,8 +258,8 @@ func TestTheThemesTabsSwitchInTheFrameThatTookTheClick(t *testing.T) {
 	if s.theme.view.Selected != themesViewInstalled {
 		t.Fatal("still on the catalog")
 	}
-	if !r.shows(strings.ToUpper(i18n.T("settings.themesPage.bundledGroup"))) {
-		t.Errorf("no Bundled group:\n%s", r.drawn())
+	if !r.shows(strings.ToUpper(i18n.T("settings.themesPage.inUseGroup"))) {
+		t.Errorf("no In use group:\n%s", r.drawn())
 	}
 }
 
