@@ -15,14 +15,18 @@ import (
 
 var icProfileFooter = icons.Lucide("chevrons-up-down")
 
-// profileFooter is the panel's last line: the profile new sessions of the
-// provider in focus are born in, in the shown project, opening a panel with the
-// usage of its account over the menu that changes it.
+// profileFooter is the panel's last line: the account new sessions of the
+// provider in focus spend in the shown project, with its five-hour usage,
+// opening a panel with the rest of its usage over the menu that changes it.
 type profileFooter struct {
 	panel ui.DropdownPanelState
 	hover ui.Clickable // the row's hover; the panel takes the press
 	rows  map[string]*ui.Clickable
 	reset resetUse
+	// watching is the reading the row keeps fresh, unwatch the call that lets
+	// it go; nil while it follows none.
+	watching string
+	unwatch  func()
 }
 
 // profileFocus is one provider's line: its book, the project and the profile
@@ -46,11 +50,16 @@ func (m *model) focusedProfile() (profileFocus, bool) {
 	if !ok {
 		return profileFocus{}, false
 	}
-	kind := m.newSessionKind()
+	return m.profileFocusOf(m.focusedKind(), p)
+}
+
+// focusedKind is the provider the account row follows: the active card's,
+// the default one for a terminal or no card.
+func (m *model) focusedKind() string {
 	if sv, ok := m.activeSession(); ok && sv.Kind != "shell" {
-		kind = sv.Kind
+		return sv.Kind
 	}
-	return m.profileFocusOf(kind, p)
+	return m.newSessionKind()
 }
 
 func (m *model) profileFocusOf(kind string, p backend.Project) (profileFocus, bool) {
@@ -102,25 +111,20 @@ func (m *model) profileEntries(th *ui.Theme, f profileFocus, act *sidebarAction)
 	return out
 }
 
-// profilePlan is the plan reading of the account f's shown profile spends, and
-// whether it has landed.
-func (m *model) profilePlan(f profileFocus) (backend.QuotaPlan, bool) {
-	return planFor(m.quota.plans(profileQuotaKey(f.book.provider, f.choice.shown)), f.kind)
-}
-
 // profileUsageRows are the blocks at the top of the panel: the usage of the
 // account new sessions are born in, the same blocks the plan quota's tooltip
 // draws, with a way to spend a limit reset on Claude Code. Only Claude Code and
-// Codex are read per profile: any other provider, with a plan of its own or
-// none, says so in a line rather than draw the machine's reading under a
-// profile that may be another account. Nil while the first reading is in
-// flight, so nothing is drawn over an empty answer.
+// Codex are read per profile: any other provider says so in a line rather
+// than draw the machine's reading under a profile that may be another account,
+// unless the profile is Personal, the machine's own login, and it has a plan.
+// Nil while the first reading is in flight, so nothing is drawn over an empty
+// answer.
 func profileUsageRows(th *ui.Theme, f profileFocus, plan backend.QuotaPlan, loaded bool, now time.Time, use *resetUse) []layout.Widget {
 	note := func(text string) []layout.Widget {
 		return []layout.Widget{para(th.Text(ui.TextXS, text).Muted()).Layout}
 	}
 	switch {
-	case f.book.provider.quotaPrefix == "":
+	case f.book != nil && f.book.provider.quotaPrefix == "" && !(loaded && effectiveProfile(f.choice.shown) == personalProfile):
 		return note(i18n.T("shell.planQuota.noUsage", i18n.Args{"provider": f.book.provider.label}))
 	case !loaded:
 		return nil
@@ -156,10 +160,16 @@ func (m *model) footerEntries(th *ui.Theme, f profileFocus, act *sidebarAction) 
 		ui.MenuEntry{Kind: ui.MenuSubTrigger, Label: i18n.T("sidebar.sidebarProfile.otherProviders"), Sub: sub})
 }
 
-// layout is the footer row: the provider's glyph, the profile's avatar and
-// name, and the menu's chevrons.
-func (pf *profileFooter) layout(gtx C, th *ui.Theme, root *ui.Root, m *model, f profileFocus, act *sidebarAction) D {
-	name := f.book.nameOf(f.choice.shown)
+// layout is the account row: the provider's glyph, the profile's avatar and
+// name (the provider's name with no profiles), its five-hour usage, and the
+// chevrons of the panel.
+func (pf *profileFooter) layout(gtx C, th *ui.Theme, root *ui.Root, m *model, a sidebarAccount, act *sidebarAction) D {
+	f := a.profile
+	name := a.plan.Name
+	if f.book != nil {
+		name = f.book.nameOf(f.choice.shown)
+	}
+	usage, hasUsage := planReadout(a.plan)
 	row := func(gtx C) D {
 		gtx.Constraints.Min.X = gtx.Constraints.Max.X
 		return pf.hover.Layout(gtx, func(gtx C) D {
@@ -171,16 +181,24 @@ func (pf *profileFooter) layout(gtx C, th *ui.Theme, root *ui.Root, m *model, f 
 				ui.Fill(gtx, bg, ui.RadiusMD)
 			}
 			on := th.On(bg)
+			children := []layout.FlexChild{
+				layout.Rigid(func(gtx C) D { return providerIcon(a.kind).Layout(gtx, 14, on.MutedForeground) }),
+				ui.Gap(2),
+			}
+			if f.book != nil {
+				children = append(children,
+					layout.Rigid(func(gtx C) D { return profileAvatar(gtx, on, f.book.look(f.choice.shown), ui.Space(4)) }),
+					ui.Gap(2))
+			}
+			children = append(children, layout.Flexed(1, on.Text(ui.TextSM, name).Truncated().Layout))
+			if a.loaded && hasUsage {
+				t := on.Text(ui.TextXS, usage.Text).Mono().In(toneColor(on, usage.Tone))
+				children = append(children, ui.Gap(2), layout.Rigid(t.Layout))
+			}
+			children = append(children, ui.Gap(1), layout.Rigid(func(gtx C) D { return icProfileFooter.Layout(gtx, 14, on.MutedForeground) }))
 			return layout.Inset{Left: ui.Space(2), Right: ui.Space(2)}.Layout(gtx, func(gtx C) D {
 				gtx.Constraints.Min.Y = h
-				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-					layout.Rigid(func(gtx C) D { return providerIcon(f.kind).Layout(gtx, 14, on.MutedForeground) }),
-					ui.Gap(2),
-					layout.Rigid(func(gtx C) D { return profileAvatar(gtx, on, f.book.look(f.choice.shown), ui.Space(4)) }),
-					ui.Gap(2),
-					layout.Flexed(1, on.Text(ui.TextSM, name).Layout),
-					layout.Rigid(func(gtx C) D { return icProfileFooter.Layout(gtx, 14, on.MutedForeground) }),
-				)
+				return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
 			})
 		})
 	}
@@ -194,8 +212,8 @@ func (pf *profileFooter) layout(gtx C, th *ui.Theme, root *ui.Root, m *model, f 
 			if !pf.panel.Opened() {
 				pf.reset.pending = ""
 			}
-			pf.reset.act, pf.reset.profile, pf.reset.key = act, effectiveProfile(f.choice.shown), profileQuotaKey(f.book.provider, f.choice.shown)
-			panel := th.DropdownPanel(root, &pf.panel, profilePanelW, func(gtx C, th *ui.Theme) D { return pf.panelBody(gtx, th, m, f, act) }).Above()
+			pf.reset.act, pf.reset.profile, pf.reset.key = act, effectiveProfile(f.choice.shown), a.key
+			panel := th.DropdownPanel(root, &pf.panel, profilePanelW, func(gtx C, th *ui.Theme) D { return pf.panelBody(gtx, th, m, a, act) }).Above()
 			return panel.Layout(gtx, row)
 		}),
 	)

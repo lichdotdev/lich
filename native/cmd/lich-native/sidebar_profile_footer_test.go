@@ -129,3 +129,45 @@ func TestTheFooterMenuOffersGlobalOnlyWhileTheProjectSetsItsOwn(t *testing.T) {
 		t.Fatal("Work is not the checked login")
 	}
 }
+
+// The account row stays with one login, the five-hour reading its reason to
+// be there: with no reading it has nothing to offer and hides.
+func TestTheAccountRowShowsASingleLoginWithItsUsage(t *testing.T) {
+	_, m, _ := profileFooterRig(t)
+	m.profiles.list = m.profiles.list[:1]
+	a, ok := m.focusedAccount()
+	if !ok || a.profile.book == nil || a.key != "" || !a.readable || a.switches() {
+		t.Fatalf("one Claude login: %+v, %v", a, ok)
+	}
+	if a.shows() {
+		t.Error("a row with nothing to switch to and no reading shows")
+	}
+	a.plan, a.loaded = quotaPlan(backend.QuotaWindow{Label: "Session", Seconds: 5 * hour, Percent: 28}), true
+	if !a.shows() {
+		t.Error("a read plan does not show the row")
+	}
+}
+
+// A provider with no profiles is read for the machine's login, so its row
+// shows its plan too.
+func TestTheAccountRowFollowsAProviderWithNoProfiles(t *testing.T) {
+	_, m, _ := profileFooterRig(t)
+	m.mu.Lock()
+	m.projects[0].Sessions = append(m.projects[0].Sessions, backend.Session{ID: "ag", Kind: "antigravity"})
+	m.active = "ag"
+	m.mu.Unlock()
+	a, ok := m.focusedAccount()
+	if !ok || a.kind != "antigravity" || a.profile.book != nil || a.key != "" || !a.readable {
+		t.Fatalf("an Antigravity card: %+v, %v", a, ok)
+	}
+}
+
+// A Codex profile other than Personal is read under its own key; one of a
+// provider lich reads per machine alone has no reading to show.
+func TestTheAccountRowReadsTheProfileNewSessionsSpend(t *testing.T) {
+	_, m, s := profileFooterRig(t)
+	s.setProfile(&s.providers.claude, "work")
+	if a, _ := m.focusedAccount(); a.key != claudeProfileProvider.quotaPrefix+"work" || !a.readable {
+		t.Errorf("Claude on work: key %q, readable %v", a.key, a.readable)
+	}
+}

@@ -49,9 +49,7 @@
   },
   "footerBar": {
     "attachFile": "파일 첨부",
-    "reviewChanges": "변경 사항 리뷰",
-    "viewPullRequest": "풀 리퀘스트 보기",
-    "pullRequest": "PR #{number}"
+    "reviewChanges": "변경 사항 리뷰"
   },
   "footerSession": {
     "cacheHit": "캐시: 적중률 {percent}%",

@@ -60,8 +60,8 @@ func (f *fakeSettings) get(key string) string {
 }
 
 var sampleLayout = footerLayout{
-	Left:  []string{"attach", "pr", "changes"},
-	Right: []string{"model", "context", "plan"},
+	Left:  []string{"attach", "checkout", "changes"},
+	Right: []string{"model", "context", "handsOn"},
 }
 
 func TestParseFooterLayoutRejectsMalformed(t *testing.T) {
@@ -78,8 +78,11 @@ func TestParseFooterLayoutKeepsEmptySidesDropsUnknownAndDuplicates(t *testing.T)
 		want footerLayout
 	}{
 		{`{"left":[],"right":[]}`, footerLayout{Left: []string{}, Right: []string{}}},
-		{`{"left":["model","future",2,"model"],"right":["model","cost","pr"]}`,
-			footerLayout{Left: []string{"model"}, Right: []string{"cost", "pr"}}},
+		{`{"left":["model","future",2,"model"],"right":["model","cost","handsOn"]}`,
+			footerLayout{Left: []string{"model"}, Right: []string{"cost", "handsOn"}}},
+		// The PR, path, plan and clock items left the footer for the sidebar.
+		{`{"left":["attach","pr","path"],"right":["checkout","plan","clock"]}`,
+			footerLayout{Left: []string{"attach"}, Right: []string{"checkout"}}},
 		// Code and Artifacts left the footer for the dock.
 		{`{"left":["attach","files","changes","artifacts"],"right":["artifacts","model"]}`,
 			footerLayout{Left: []string{"attach", "changes"}, Right: []string{"model"}}},
@@ -95,31 +98,27 @@ func TestParseFooterLayoutKeepsEmptySidesDropsUnknownAndDuplicates(t *testing.T)
 	}
 }
 
-func TestResolveFooterLayoutMigratesVisibilityWithoutRestoringHidden(t *testing.T) {
-	got := resolveFooterLayout(nil, footerVisibility{Plan: true, Clock: true}, false, true)
-	want := footerLayout{Left: defaultFooterLayout().Left, Right: []string{"checkout", "plan", "cost", "clock"}}
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("got %+v, want %+v", got, want)
+func TestResolveFooterLayoutSeedsTheDefaultAndKeepsASavedOne(t *testing.T) {
+	if got := resolveFooterLayout(nil, false); !reflect.DeepEqual(got, defaultFooterLayout()) {
+		t.Errorf("got %+v, want %+v", got, defaultFooterLayout())
+	}
+	want := footerLayout{Left: defaultFooterLayout().Left, Right: []string{"checkout", "context", "cost"}}
+	if got := resolveFooterLayout(nil, true); !reflect.DeepEqual(got, want) {
+		t.Errorf("cost on: got %+v, want %+v", got, want)
 	}
 	stored := sampleLayout
-	if got := resolveFooterLayout(&stored, footerVisibility{Clock: true}, false, false); !reflect.DeepEqual(got, sampleLayout) {
+	if got := resolveFooterLayout(&stored, false); !reflect.DeepEqual(got, sampleLayout) {
 		t.Errorf("a saved layout was rewritten: %+v", got)
-	}
-}
-
-func TestResolveFooterLayoutDefaultIsTheWebDefault(t *testing.T) {
-	if got := resolveFooterLayout(nil, defaultFooterVisibility, true, false); !reflect.DeepEqual(got, defaultFooterLayout()) {
-		t.Errorf("got %+v, want %+v", got, defaultFooterLayout())
 	}
 }
 
 func TestBackendCostChoiceWinsOverASavedLayout(t *testing.T) {
 	off := footerLayout{Left: []string{"cost", "model"}, Right: []string{}}
-	if got := resolveFooterLayout(&off, defaultFooterVisibility, true, false); !reflect.DeepEqual(got, footerLayout{Left: []string{"model"}, Right: []string{}}) {
+	if got := resolveFooterLayout(&off, false); !reflect.DeepEqual(got, footerLayout{Left: []string{"model"}, Right: []string{}}) {
 		t.Errorf("cost off: got %+v", got)
 	}
 	on := footerLayout{Left: []string{"model"}, Right: []string{}}
-	if got := resolveFooterLayout(&on, defaultFooterVisibility, true, true); !reflect.DeepEqual(got, footerLayout{Left: []string{"model"}, Right: []string{"cost"}}) {
+	if got := resolveFooterLayout(&on, true); !reflect.DeepEqual(got, footerLayout{Left: []string{"model"}, Right: []string{"cost"}}) {
 		t.Errorf("cost on: got %+v", got)
 	}
 }
@@ -129,13 +128,13 @@ func TestMoveFooterItemLeavesTheSourceAlone(t *testing.T) {
 		id, over string
 		want     footerLayout
 	}{
-		{"attach", "changes", footerLayout{Left: []string{"pr", "changes", "attach"}, Right: sampleLayout.Right}},
-		{"context", "model", footerLayout{Left: sampleLayout.Left, Right: []string{"context", "model", "plan"}}},
-		{"model", "pr", footerLayout{Left: []string{"attach", "model", "pr", "changes"}, Right: []string{"context", "plan"}}},
-		{"model", "left", footerLayout{Left: []string{"attach", "pr", "changes", "model"}, Right: []string{"context", "plan"}}},
-		{"clock", "right", footerLayout{Left: sampleLayout.Left, Right: []string{"model", "context", "plan", "clock"}}},
-		{"model", "available", footerLayout{Left: sampleLayout.Left, Right: []string{"context", "plan"}}},
-		{"model", "clock", footerLayout{Left: sampleLayout.Left, Right: []string{"context", "plan"}}},
+		{"attach", "changes", footerLayout{Left: []string{"checkout", "changes", "attach"}, Right: sampleLayout.Right}},
+		{"context", "model", footerLayout{Left: sampleLayout.Left, Right: []string{"context", "model", "handsOn"}}},
+		{"model", "checkout", footerLayout{Left: []string{"attach", "model", "checkout", "changes"}, Right: []string{"context", "handsOn"}}},
+		{"model", "left", footerLayout{Left: []string{"attach", "checkout", "changes", "model"}, Right: []string{"context", "handsOn"}}},
+		{"cost", "right", footerLayout{Left: sampleLayout.Left, Right: []string{"model", "context", "handsOn", "cost"}}},
+		{"model", "available", footerLayout{Left: sampleLayout.Left, Right: []string{"context", "handsOn"}}},
+		{"model", "cost", footerLayout{Left: sampleLayout.Left, Right: []string{"context", "handsOn"}}},
 	}
 	for _, c := range cases {
 		before, _ := json.Marshal(sampleLayout)
@@ -154,7 +153,7 @@ func TestMoveFooterItemInvalidOrCancelledIsNoMove(t *testing.T) {
 	if !moved || !reflect.DeepEqual(got, footerLayout{Left: []string{"model"}, Right: []string{}}) {
 		t.Errorf("first item onto an empty side: %+v, %v", got, moved)
 	}
-	for _, c := range [][2]string{{"unknown", "left"}, {"model", "outside"}, {"model", "model"}, {"clock", "available"}, {"settings", "left"}} {
+	for _, c := range [][2]string{{"unknown", "left"}, {"model", "outside"}, {"model", "model"}, {"cost", "available"}, {"settings", "left"}} {
 		if got, moved := moveFooterItem(sampleLayout, c[0], c[1]); moved || !reflect.DeepEqual(got, sampleLayout) {
 			t.Errorf("move %s onto %s = %+v, %v; want no move", c[0], c[1], got, moved)
 		}
@@ -204,10 +203,10 @@ func TestFooterLayoutPersistsBothSidesInOrder(t *testing.T) {
 func TestFooterLayoutSavesAnEmptiedSideAsAnArray(t *testing.T) {
 	f := &fakeSettings{values: map[string]string{}}
 	c := f.client(t)
-	if err := saveFooterLayout(context.Background(), c, footerLayout{Left: nil, Right: []string{"clock"}}); err != nil {
+	if err := saveFooterLayout(context.Background(), c, footerLayout{Left: nil, Right: []string{"checkout"}}); err != nil {
 		t.Fatal(err)
 	}
-	if got := f.get(footerLayoutKey); got != `{"left":[],"right":["clock"]}` {
+	if got := f.get(footerLayoutKey); got != `{"left":[],"right":["checkout"]}` {
 		t.Errorf("saved %s", got)
 	}
 }

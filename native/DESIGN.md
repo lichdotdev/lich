@@ -347,9 +347,14 @@ keeps no count of the first and no provider tells it the threshold of the second
 
 ### The usage menu
 
-The profile at the sidebar's foot opens a panel on a click (`DropdownPanel`, rising above the row, scrolling when
-the window is short); hovering it draws nothing. The top of the panel is the usage of the shown profile's account, the
-plan quota's tooltip in the footer draws the same blocks (`usage_tip.go`), built from the context tooltip's pieces
+The account row at the sidebar's foot is where the plan's usage lives; the footer has no plan item. It follows the
+active card's provider (the default one for a terminal or no card) and shows while that provider has logins to
+switch between or a plan reading for the account its new sessions spend, so one login, and a provider with no
+profiles at all, keep it (`sidebar_account.go`). The row is the provider's glyph, the profile's avatar and name (the
+provider's name with no profiles), the five-hour readout in mono at the right ("5h 28%", "wk Locked" when a locked
+window outranks it) in the readout's tone, and the chevrons. It opens a panel on a click (`DropdownPanel`, rising
+above the row, scrolling when the window is short); hovering it draws nothing. The top of the panel is the usage of
+the shown profile's account, in blocks (`usage_tip.go`) built from the context tooltip's pieces
 (`tipHead`, `tipRow`, `contextBarColor`, the bar of twenty segments). Under the plan's name ("Claude Code · Max 5x"),
 a block per window, in the order session, weekly, then a model's own cap: the window's name (lich's own for a window
 it names, with its length: "Session · 5h") at the left and the share spent at the right in medium, the bar in the
@@ -372,11 +377,12 @@ Full reset?"), a muted line saying what it clears ("Clears the session and weekl
 spend, and the answer comes as a toast and an immediate re-read of the usage. While one is out every Use is disabled.
 The panel closing drops a confirmation left open.
 
-Under the usage, a separator, then what the footer's menu always held: the logins to switch to, each with its avatar
+With logins to switch between, a separator under the usage, then what the footer's menu always held: the logins to switch to, each with its avatar
 and its five-hour usage and the chosen one checked, "Use Global" while the project sets its own, and the other
 providers' logins, each provider a label (its glyph and name) over its rows: the submenu of the old menu, opened in
 place. Choosing a row runs it and closes the panel. A provider with no per-profile reading (anything but Claude Code
-and Codex) shows a single muted line in place of the usage, saying usage is not measured per profile; while the first
+and Codex) on a profile other than Personal, the machine's own login, shows a single muted line in place of the usage,
+saying usage is not measured per profile; while the first
 reading is in flight there is no usage section at all, rather than one that says nothing. The rail's profile button
 keeps the old menu.
 

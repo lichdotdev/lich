@@ -79,7 +79,7 @@ func balloonFrames(t *testing.T, in footerInput) (*footer, *frameRig) {
 func TestBalloonsStandInTheStagesBottomCornersOnOneLine(t *testing.T) {
 	_, r := balloonFrames(t, busySession())
 	r.settle(t)
-	left, right := r.at(t, "PR #7"), r.at(t, "main")
+	left, right := r.at(t, "2"), r.at(t, "main")
 	top := float32(rigWindow.Y - 52)
 	for name, p := range map[string]float32{"left": left.Y, "right": right.Y} {
 		if p < top || p > float32(rigWindow.Y-8) {

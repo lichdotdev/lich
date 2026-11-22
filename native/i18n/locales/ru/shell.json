@@ -51,9 +51,7 @@
   },
   "footerBar": {
     "attachFile": "Прикрепить файл",
-    "reviewChanges": "Просмотр изменений",
-    "viewPullRequest": "Открыть pull request",
-    "pullRequest": "PR #{number}"
+    "reviewChanges": "Просмотр изменений"
   },
   "footerSession": {
     "cacheHit": "Кэш: {percent}% попаданий",

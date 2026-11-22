@@ -6,7 +6,6 @@ import (
 	"sync"
 	"time"
 
-	"gioui.org/layout"
 	"gioui.org/op"
 	driver "github.com/lichdotdev/gio-driver"
 
@@ -35,8 +34,6 @@ type footer struct {
 	client     *backend.Client
 	root       *ui.Root
 	invalidate func()
-	// openPullRequest opens a pull request where prTarget says.
-	openPullRequest func(number int, url string)
 	// showDelegates lays a session's delegates out beside it.
 	showDelegates func(id string)
 	usage         *footerUsage
@@ -52,9 +49,7 @@ type footer struct {
 	budget float64 // the spend ceiling the cost readout colours against
 	saving bool    // a layout change is being written
 
-	watching string // the session whose plan is polled
-	unwatch  func()
-	widgets  map[string]*footerWidgets
+	widgets map[string]*footerWidgets
 	// menus are the left and the right balloon's right-click menus.
 	menus  [2]ui.MenuState
 	editor footerEditor
@@ -128,7 +123,7 @@ func (f *footer) input(m *model, now time.Time) footerInput {
 	f.mu.Unlock()
 	in := footerInput{now: now, cost: f.cost.on(), budget: budget}
 	if sv, ok := m.activeSession(); ok {
-		in.sessionID, in.provider, in.path, in.host, in.pr = sv.ID, sv.agent, sv.shown, sv.host, sv.pr
+		in.sessionID, in.provider, in.path, in.host = sv.ID, sv.agent, sv.shown, sv.host
 		in.checkout, in.sandboxed = sv.path, sv.sandbox.Confined
 		if in.provider == "" {
 			in.provider = sv.Kind
@@ -143,7 +138,6 @@ func (f *footer) input(m *model, now time.Time) footerInput {
 	f.readExtensions(&in)
 	in.usage, in.hasUsage = f.usage.get(in.sessionID)
 	f.follow(in)
-	in.plans = f.quota.plans(in.sessionID)
 	in.handsOn, in.handsOnErr = f.handsOn.read()
 	return in
 }
@@ -153,7 +147,7 @@ func (f *footer) input(m *model, now time.Time) footerInput {
 // which are its own with or without the focus. The rest of the footer's data is
 // the followed session's alone.
 func (f *footer) sessionInput(m *model, sv sessionView, now time.Time) footerInput {
-	in := footerInput{now: now, sessionID: sv.ID, provider: sv.agent, path: sv.shown, checkout: sv.path, host: sv.host, pr: sv.pr}
+	in := footerInput{now: now, sessionID: sv.ID, provider: sv.agent, path: sv.shown, checkout: sv.path, host: sv.host}
 	if in.provider == "" {
 		in.provider = sv.Kind
 	}
@@ -181,8 +175,7 @@ func (f *footer) readExtensions(in *footerInput) {
 	}
 }
 
-// follow polls plan and hands-on time only for a session whose footer shows
-// them.
+// follow polls hands-on time only for a session whose footer shows it.
 func (f *footer) follow(in footerInput) {
 	l, _ := f.snapshot()
 	handsOnID := ""
@@ -190,21 +183,6 @@ func (f *footer) follow(in footerInput) {
 		handsOnID = in.sessionID
 	}
 	f.handsOn.follow(handsOnID)
-	plan := ""
-	if l.has("plan") && in.provider != "" {
-		plan = in.sessionID
-	}
-	if plan == f.watching {
-		return
-	}
-	if f.unwatch != nil {
-		f.unwatch()
-		f.unwatch = nil
-	}
-	f.watching = plan
-	if plan != "" {
-		f.unwatch = f.quota.watch(plan)
-	}
 }
 
 // frame runs the balloons' clicks and keeps what they read, before anything
@@ -239,9 +217,6 @@ func (f *footer) act(gtx C, in footerInput) {
 		if it.place == extension.PlaceDock && f.w(it.id).click.Clicked(gtx) {
 			f.dock.showExtension(it.key)
 		}
-	}
-	if f.w("pr").click.Clicked(gtx) && in.pr != nil && f.openPullRequest != nil {
-		f.openPullRequest(prTarget(in.pr, in.path, in.checkout))
 	}
 	if f.w("delegates").click.Clicked(gtx) && in.delegates > 0 {
 		f.showDelegates(in.sessionID)
@@ -313,14 +288,12 @@ func (f *footer) slot(gtx C, th *ui.Theme, s footerSlot, in footerInput) D {
 			return chip(gtx)
 		}
 		return f.tour.Anchor(gtx, tourReviewChip, chip)
-	case "pr":
-		return footerButton(gtx, th, f.root, w, i18n.T("shell.footerBar.viewPullRequest"), true, false, glyphText(icPR, i18n.T("shell.footerBar.pullRequest", i18n.Args{"number": in.pr.Number})))
-	case "checkout", "path":
+	case "checkout":
 		ic := icFolder
-		if s.ID == "checkout" && in.git.Branch != "" {
+		if in.git.Branch != "" {
 			ic = icBranch
 		}
-		if s.ID == "checkout" && f.git != nil && in.inRepository() {
+		if f.git != nil && in.inRepository() {
 			gtx.Constraints.Max.X = min(gtx.Constraints.Max.X, gtx.Dp(checkoutMaxWidth))
 			return f.tour.Anchor(gtx, worktreesBranch, func(gtx C) D {
 				return footerButton(gtx, th, f.root, w, s.Hint, true, false, branchContent(ic, s.Text))
@@ -335,8 +308,6 @@ func (f *footer) slot(gtx C, th *ui.Theme, s footerSlot, in footerInput) D {
 		return f.tour.Anchor(gtx, tourDelegates, func(gtx C) D {
 			return footerButton(gtx, th, f.root, w, i18n.T("layouts.delegates.hint"), true, false, glyphText(icDelegates, s.Text))
 		})
-	case "clock":
-		return layout.Inset{Left: ui.Space(2), Right: ui.Space(2)}.Layout(gtx, th.Text(ui.TextXS, s.Text).Muted().Layout)
 	}
 	return f.readout(gtx, th, w, s, in)
 }
@@ -353,8 +324,6 @@ func (f *footer) readout(gtx C, th *ui.Theme, w *footerWidgets, s footerSlot, in
 	switch s.ID {
 	case "context":
 		return footerReadoutFace(gtx, th, f.root, w, r, contextTip(pop, in.usage), ringContent(in.usage.Percent, r.Text))
-	case "plan":
-		return footerReadoutView(gtx, th, f.root, w, r, planDetails(pop, s.Plan, in.now), glyphText(icGauge, r.Text))
 	case "cost":
 		// A provider with no window has no context tooltip, so its cache
 		// reading rides on the cost one.

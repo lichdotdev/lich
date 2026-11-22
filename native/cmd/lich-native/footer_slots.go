@@ -18,10 +18,8 @@ type footerInput struct {
 	host      string // where the shell went that the backend cannot see into
 	git       backend.DiffStats
 	isGit     bool // path is a git checkout git answered for
-	pr        *backend.PullRequest
 	usage     sessionUsage
 	hasUsage  bool
-	plans     []backend.QuotaPlan
 	handsOn   int64
 	// handsOnErr is why the hands-on figure could not be read.
 	handsOnErr error
@@ -109,8 +107,6 @@ func footerSlotOf(id string, in footerInput) (footerSlot, bool) {
 		return s, in.isGit
 	case "artifacts":
 		return s, in.sessionID != ""
-	case "pr":
-		return s, in.pr != nil
 	case "checkout":
 		s.Text = branchText(in.path, in.git.Branch)
 		if in.git.Merging != "" {
@@ -118,12 +114,6 @@ func footerSlotOf(id string, in footerInput) (footerSlot, bool) {
 		}
 		s.Hint = s.Text
 		return s, in.path != ""
-	case "path":
-		s.Text, s.Hint = pathText(in.path, in.host)
-		return s, in.path != ""
-	case "clock":
-		s.Text = clockText(in.now)
-		return s, true
 	}
 	return sessionSlot(s, in)
 }
@@ -143,11 +133,6 @@ func sessionSlot(s footerSlot, in footerInput) (footerSlot, bool) {
 			return s, false
 		}
 		s.Readout, ok = contextReadout(in.usage)
-	case "plan":
-		s.Plan, ok = planFor(in.plans, in.provider)
-		if ok {
-			s.Readout, ok = planReadout(s.Plan)
-		}
 	case "cost":
 		if !in.cost || !in.hasUsage {
 			return s, false
@@ -172,13 +157,4 @@ func branchText(path, branch string) string {
 		return name
 	}
 	return displayPath(path)
-}
-
-// pathText is FooterCheckout's path display and its hint: the full path
-// behind a home-shortened one, or the host the shell went into.
-func pathText(path, host string) (text, hint string) {
-	if host != "" {
-		return unknownCwd(host), unknownCwd(host)
-	}
-	return displayPath(path), path
 }

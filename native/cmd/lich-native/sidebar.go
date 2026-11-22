@@ -329,8 +329,8 @@ func (s *sidebar) panel(gtx C, th *ui.Theme, m *model, active string) (D, sideba
 				return s.services.layout(gtx, on, s.root, p.ID, list, console, &act)
 			}))
 		}
-		if f, ok := m.focusedProfile(); ok {
-			children = append(children, ui.VGap(2), layout.Rigid(func(gtx C) D { return s.profile.layout(gtx, on, s.root, m, f, &act) }))
+		if a, ok := s.profile.account(m); ok {
+			children = append(children, ui.VGap(2), layout.Rigid(func(gtx C) D { return s.profile.layout(gtx, on, s.root, m, a, &act) }))
 		}
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
 	})
