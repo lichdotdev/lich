@@ -34,7 +34,9 @@ type claudeDriver struct {
 	// kept from the window until it is not.
 	held        map[string]string
 	interrupted bool
-	run         claudeRunning
+	// shellPending is a bash_command lich sent whose output has not come.
+	shellPending bool
+	run          claudeRunning
 	// cmds are the commands initialize listed, skills those system/init
 	// names skills and terminalOnly those it says only the TUI runs.
 	cmds                 []claudeCommand

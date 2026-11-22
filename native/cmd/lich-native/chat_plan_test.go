@@ -112,7 +112,7 @@ func TestAPlanLeftAfterTheTurnStaysStill(t *testing.T) {
 
 // The plan item is no row of the conversation: the live line stays the last.
 func TestThePlanItemIsNoConversationRow(t *testing.T) {
-	rows := chatRows(planItems(1, fivePlan...), true, time.Time{})
+	rows := chatRows(planItems(1, fivePlan...), claudeKind, true, time.Time{})
 	for _, r := range rows {
 		if r.kind == chatRowItem && r.item.Kind == api.ItemPlan {
 			t.Fatal("the plan item became a conversation row")

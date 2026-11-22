@@ -46,7 +46,7 @@ func TestOnlyTheLastFinishedTurnEndsInADoneRow(t *testing.T) {
 		{ID: "a2", Kind: api.ItemAgent, Turn: 2, At: 4000},
 	}
 	done := func(items []backend.ChatItem, running bool) (turns []int) {
-		for _, r := range chatRows(items, running, time.UnixMilli(5000)) {
+		for _, r := range chatRows(items, claudeKind, running, time.UnixMilli(5000)) {
 			if r.kind == chatRowDone {
 				turns = append(turns, r.turn)
 			}
@@ -56,7 +56,7 @@ func TestOnlyTheLastFinishedTurnEndsInADoneRow(t *testing.T) {
 	if got := done(items, false); len(got) != 1 || got[0] != 2 {
 		t.Errorf("done rows %v for a conversation of two finished turns, want turn 2 alone", got)
 	}
-	rows := chatRows(items, false, time.UnixMilli(5000))
+	rows := chatRows(items, claudeKind, false, time.UnixMilli(5000))
 	if last := rows[len(rows)-1]; last.kind != chatRowDone || chatRowKey(last) != "done:2" {
 		t.Errorf("the conversation ends in %+v, want turn 2's done row", last)
 	}

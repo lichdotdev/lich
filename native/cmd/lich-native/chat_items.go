@@ -63,7 +63,9 @@ const chatClock = "15:04"
 func (u *window) chatRow(gtx C, th *ui.Theme, p *chatPane, sv sessionView, r chatRow) D {
 	switch r.kind {
 	case chatRowWork:
-		return u.chatWork(gtx, th, p, sv, r)
+		return u.chatWork(gtx, th, p.fold("work:"+strconv.Itoa(r.turn)), sv, r)
+	case chatRowShell:
+		return chatBranch(gtx, th, true, func(gtx C) D { return chatShellCall(gtx, th, p.fold("out:"+r.item.ID), r.item, r.live) })
 	case chatRowLive:
 		return chatLive(gtx, th, sv.ID, r)
 	case chatRowDone:
@@ -263,10 +265,9 @@ func chatThought(gtx C, th *ui.Theme, f *chatFold, it backend.ChatItem, live boo
 // number of calls and the time the turn has run; once it is over it says how
 // long the turn took, how many calls it made and when it ended. It stands
 // open while its turn is in a run of calls and shuts when the run ends; a
-// shell command's stays open.
-func (u *window) chatWork(gtx C, th *ui.Theme, p *chatPane, sv sessionView, r chatRow) D {
-	f := p.fold("work:" + strconv.Itoa(r.turn))
-	f.follow(gtx.Now, r.calling || r.shell)
+// shell command's is a row of its own.
+func (u *window) chatWork(gtx C, th *ui.Theme, f *chatFold, sv sessionView, r chatRow) D {
+	f.follow(gtx.Now, r.calling)
 	f.update(gtx)
 	label := func(gtx C, fg color.NRGBA) D {
 		if r.live {
@@ -292,13 +293,13 @@ func (u *window) chatWork(gtx C, th *ui.Theme, p *chatPane, sv sessionView, r ch
 		layout.Flexed(1, func(gtx C) D { return chatHairline(gtx, th) }),
 	)
 	children := []layout.FlexChild{layout.Rigid(func(gtx C) D { return layout.Flex{Alignment: layout.Middle}.Layout(gtx, line...) })}
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, append(children, chatCalls(gtx, th, p, f, r)...)...)
+	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, append(children, chatCalls(gtx, th, f, r)...)...)
 }
 
 // chatCalls are a group's calls, each in a fold of its own that opens and
 // shuts with the group. A call that comes once the group is drawn enters as a
-// row does. A shell command's call carries its output under it.
-func chatCalls(gtx C, th *ui.Theme, p *chatPane, f *chatFold, r chatRow) []layout.FlexChild {
+// row does.
+func chatCalls(gtx C, th *ui.Theme, f *chatFold, r chatRow) []layout.FlexChild {
 	ids := make([]string, len(r.tools))
 	for i, it := range r.tools {
 		ids[i] = it.ID
@@ -306,10 +307,6 @@ func chatCalls(gtx C, th *ui.Theme, p *chatPane, f *chatFold, r chatRow) []layou
 	f.enter.Update(gtx.Now, ids)
 	children := make([]layout.FlexChild, 0, len(r.tools))
 	for i, it := range r.tools {
-		call := func(gtx C) D { return chatTool(gtx, th, it, r.live) }
-		if r.shell {
-			call = func(gtx C) D { return chatShellCall(gtx, th, p.fold("out:"+it.ID), it, r.live) }
-		}
 		children = append(children, layout.Rigid(func(gtx C) D {
 			return f.enter.LayoutFlat(gtx, it.ID, func(gtx C) D {
 				fold := f.call(it.ID)
@@ -322,7 +319,7 @@ func chatCalls(gtx C, th *ui.Theme, p *chatPane, f *chatFold, r chatRow) []layou
 						top = ui.Space(1)
 					}
 					return layout.Inset{Top: top}.Layout(gtx, func(gtx C) D {
-						return chatBranch(gtx, th, i == len(r.tools)-1, call)
+						return chatBranch(gtx, th, i == len(r.tools)-1, func(gtx C) D { return chatTool(gtx, th, it, r.live) })
 					})
 				})
 			})
@@ -332,8 +329,9 @@ func chatCalls(gtx C, th *ui.Theme, p *chatPane, f *chatFold, r chatRow) []layou
 }
 
 // chatShellCall is a shell command's call with its output under it, as
-// Claude Code prints it: the row keeps the mark, not the output's first line,
-// and output past chatShellLines opens on a click of the line under it.
+// Claude Code prints it, on a branch from the person's command: the row keeps
+// the mark, not the output's first line, and output past chatShellLines opens
+// on a click of the line under it.
 func chatShellCall(gtx C, th *ui.Theme, more *chatFold, it backend.ChatItem, live bool) D {
 	tool := *it.Tool
 	out := strings.Trim(tool.Output, "\n")

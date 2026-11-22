@@ -32,11 +32,18 @@ func (r *rig) shellCall(turn int) api.ChatItem {
 	return got
 }
 
-// TestClaudeShellRunsBesideTheConversation: a command goes as stream-json's
-// bash_command, the person's message keeps the "!" they typed, its output
-// is a Bash call under it, and the row Claude Code echoes is no second
-// message.
-func TestClaudeShellRunsBesideTheConversation(t *testing.T) {
+// claudeShellFollowUps is how many times lich handed the agent a shell
+// command's two lines.
+func (r *rig) claudeShellFollowUps() int {
+	return strings.Count(r.fakeLog(), `"text":"\u003cbash-input\u003e`)
+}
+
+// TestClaudeShellReachesTheAgentAsTheTUIsDoes: a command goes as
+// stream-json's bash_command, the person's message keeps the "!" they typed,
+// its output is a Bash call under it, and then, once, the TUI's two lines
+// reach the agent as the person's message, which it answers in the same turn.
+// The contract changed: the agent used to never see the command.
+func TestClaudeShellReachesTheAgentAsTheTUIsDoes(t *testing.T) {
 	r := newChat(t, providers.Claude)
 	if err := r.shell("ls a&b"); err != nil {
 		t.Fatalf("Shell: %v", err)
@@ -54,6 +61,13 @@ func TestClaudeShellRunsBesideTheConversation(t *testing.T) {
 	if call.Tool.Name != claudeShellTool || call.Tool.Title != "ls a&b" || call.Tool.Output != "ran ls a&b" || call.Tool.State != api.ToolDone {
 		t.Errorf("call = %+v", call.Tool)
 	}
+	want := `[{"text":"\u003cbash-input\u003els a\u0026amp;b\u003c/bash-input\u003e","type":"text"},{"text":"\u003cbash-stdout\u003eran ls a\u0026amp;b\u003c/bash-stdout\u003e\u003cbash-stderr\u003e\u003c/bash-stderr\u003e","type":"text"}]`
+	if !strings.Contains(r.fakeLog(), want) || r.claudeShellFollowUps() != 1 {
+		t.Errorf("fake log = %q, want the TUI's two lines once", r.fakeLog())
+	}
+	if got := strings.Join(r.texts(api.ItemAgent), "|"); got != "The command ran." {
+		t.Errorf("answers %q at the turn's end, want the agent's: the turn ended before it", got)
+	}
 
 	if err := r.shell("fail"); err != nil {
 		t.Fatalf("Shell(fail): %v", err)
@@ -61,6 +75,49 @@ func TestClaudeShellRunsBesideTheConversation(t *testing.T) {
 	r.turnEnd(1)
 	if call := r.shellCall(2); call.Tool.State != api.ToolFailed || call.Tool.Output != "x > y" {
 		t.Errorf("a command that exits 4 is %+v, want failed with its stderr", call.Tool)
+	}
+	if n := r.claudeShellFollowUps(); n != 2 {
+		t.Errorf("a failed command reached the agent %d times in all, want once more", n-1)
+	}
+}
+
+// TestClaudeShellToTheAgentIsBounded: a long output reaches the agent cut to
+// what Claude Code's Bash tool gives it inline.
+func TestClaudeShellToTheAgentIsBounded(t *testing.T) {
+	r := newChat(t, providers.Claude)
+	if err := r.shell("long"); err != nil {
+		t.Fatalf("Shell: %v", err)
+	}
+	r.turnEnd(0)
+	cut := strings.Repeat("x", claudeShellToModel) + `…\u003c/bash-stdout`
+	if log := r.fakeLog(); !strings.Contains(log, cut) || strings.Contains(log, strings.Repeat("x", claudeShellToModel+1)+"…") {
+		t.Errorf("the output did not reach the agent cut to %d bytes", claudeShellToModel)
+	}
+}
+
+// TestClaudeShellAfterAStoppedAnswer: Stop during the agent's answer to a
+// command leaves nothing behind for the next command, which reaches the agent
+// too.
+func TestClaudeShellAfterAStoppedAnswer(t *testing.T) {
+	r := newChat(t, providers.Claude)
+	if err := r.shell("slow"); err != nil {
+		t.Fatalf("Shell: %v", err)
+	}
+	r.mustItem(api.ItemAgent, "counting")
+	if _, err := r.svc.Cancel(t.Context(), api.SessionIDOptions{ID: "s1"}); err != nil {
+		t.Fatalf("Cancel: %v", err)
+	}
+	if got := r.turnEnd(0); got.StopReason != stopCancelled {
+		t.Errorf("the stopped answer ended %q, want %q", got.StopReason, stopCancelled)
+	}
+	if err := r.shell("ls"); err != nil {
+		t.Fatalf("Shell: %v", err)
+	}
+	if got := r.turnEnd(1); got.StopReason != stopEndTurn {
+		t.Errorf("the next command ended %q, want %q", got.StopReason, stopEndTurn)
+	}
+	if n := r.claudeShellFollowUps(); n != 2 {
+		t.Errorf("%d commands reached the agent, want both", n)
 	}
 }
 
@@ -80,6 +137,9 @@ func TestClaudeShellStoppedIsCancelled(t *testing.T) {
 	if call := r.shellCall(1); call.Tool.State != api.ToolFailed || call.Tool.Output != "[interrupted]" {
 		t.Errorf("call = %+v", call.Tool)
 	}
+	if n := r.claudeShellFollowUps(); n != 0 {
+		t.Errorf("a stopped command reached the agent %d times", n)
+	}
 }
 
 // TestClaudeShellNotRunIsAFailedCall: a command Claude Code refuses says
@@ -92,6 +152,9 @@ func TestClaudeShellNotRunIsAFailedCall(t *testing.T) {
 	r.turnEnd(0)
 	if call := r.shellCall(1); call.Tool.State != api.ToolFailed || call.Tool.Output != "Not run: no command was given." {
 		t.Errorf("call = %+v", call.Tool)
+	}
+	if n := r.claudeShellFollowUps(); n != 0 {
+		t.Errorf("a refused command reached the agent %d times", n)
 	}
 }
 
@@ -219,4 +282,26 @@ func TestClaudeShellKeepsTheOutputsIndent(t *testing.T) {
 	if call := r.shellCall(1); call.Tool.Output != " M a.go\n?? b.go" {
 		t.Errorf("output %q, want its lines as printed", call.Tool.Output)
 	}
+}
+
+// TestClaudeShellOfLichsMessage: the message lich hands the agent after a
+// command, one row of two text blocks in the transcript, comes back as the
+// person's command and its call.
+func TestClaudeShellOfLichsMessage(t *testing.T) {
+	r := newRig(t, providers.Claude)
+	_ = r.db.SetProviderSession("s1", "conv-1")
+	r.writeClaudeTranscript("conv-1",
+		`{"type":"user","message":{"role":"user","content":[{"type":"text","text":"<bash-input>ls</bash-input>"},{"type":"text","text":"<bash-stdout>a\nb</bash-stdout><bash-stderr></bash-stderr>"}]}}`,
+		`{"type":"assistant","message":{"id":"m1","content":[{"type":"text","text":"Two files."}]}}`,
+	)
+	if err := r.setView(api.ViewChat); err != nil {
+		t.Fatalf("SetView: %v", err)
+	}
+	if got := strings.Join(r.texts(api.ItemUser), "|"); got != "!ls" {
+		t.Errorf("messages %q, want the command", got)
+	}
+	if call := r.shellCall(1); call.Tool.Title != "ls" || call.Tool.Output != "a\nb" {
+		t.Errorf("call = %+v", call.Tool)
+	}
+	r.mustItem(api.ItemAgent, "Two files.")
 }

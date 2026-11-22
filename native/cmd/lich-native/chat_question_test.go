@@ -206,7 +206,7 @@ func TestNoLiveOrDoneRowWhileAQuestionWaits(t *testing.T) {
 		{ID: "q1", Kind: api.ItemQuestion, Turn: 1, Question: &backend.ChatQuestion{Questions: []api.ChatAsk{askFruit}}},
 	}
 	for _, running := range []bool{true, false} {
-		for _, r := range chatRows(items, running, time.Now()) {
+		for _, r := range chatRows(items, claudeKind, running, time.Now()) {
 			if r.kind == chatRowLive || r.kind == chatRowDone {
 				t.Errorf("running=%v: a row of kind %d under a waiting question", running, r.kind)
 			}

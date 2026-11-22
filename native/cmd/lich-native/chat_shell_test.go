@@ -173,22 +173,40 @@ func TestBangLineIsTextWhereTheProviderHasNoShell(t *testing.T) {
 	}
 }
 
-// The calls of a turn the person ran in the shell stand open; a "!" message
-// the agent answered, or any other, keeps the usual fold.
-func TestAShellTurnsCallStandsOpen(t *testing.T) {
+// The call right after the person's "!" message is their command's, a row of
+// its own out of the turn's work row, where the provider runs it; the
+// agent's answer and calls after it keep the usual fold. The contract changed:
+// on Claude Code the agent now answers a command, and its answer used to fold
+// the command's output away.
+func TestAShellCommandsCallIsARowOfItsOwn(t *testing.T) {
+	user := backend.ChatItem{ID: "u", Kind: api.ItemUser, Text: "!ls", Turn: 1}
 	call := backend.ChatItem{ID: "c", Kind: api.ItemTool, Turn: 1, Tool: &api.ChatToolCall{Name: "Bash", State: api.ToolDone}}
+	answer := backend.ChatItem{ID: "a", Kind: api.ItemAgent, Text: "ok", Turn: 1}
+	read := backend.ChatItem{ID: "r", Kind: api.ItemTool, Turn: 1, Tool: &api.ChatToolCall{Name: "Read", State: api.ToolDone}}
 	for name, c := range map[string]struct {
+		kind  string
 		items []backend.ChatItem
-		want  bool
+		shell string
+		work  int
 	}{
-		"shell":           {[]backend.ChatItem{{ID: "u", Kind: api.ItemUser, Text: "!ls", Turn: 1}, call}, true},
-		"agent answered":  {[]backend.ChatItem{{ID: "u", Kind: api.ItemUser, Text: "!ls", Turn: 1}, call, {ID: "a", Kind: api.ItemAgent, Text: "ok", Turn: 1}}, false},
-		"a plain message": {[]backend.ChatItem{{ID: "u", Kind: api.ItemUser, Text: "ls", Turn: 1}, call}, false},
+		"shell":                   {claudeKind, []backend.ChatItem{user, call}, "c", 0},
+		"shell, answered":         {claudeKind, []backend.ChatItem{user, call, answer, read}, "c", 1},
+		"codex":                   {codexKind, []backend.ChatItem{user, call}, "c", 0},
+		"a line the agent got":    {"omp", []backend.ChatItem{user, call, answer}, "", 1},
+		"a plain message":         {claudeKind, []backend.ChatItem{{ID: "u", Kind: api.ItemUser, Text: "ls", Turn: 1}, call}, "", 1},
+		"a call after the answer": {claudeKind, []backend.ChatItem{user, answer, call}, "", 1},
 	} {
-		for _, r := range chatRows(c.items, false, time.Time{}) {
-			if r.kind == chatRowWork && r.shell != c.want {
-				t.Errorf("%s: shell %v, want %v", name, r.shell, c.want)
+		shell, work := "", 0
+		for _, r := range chatRows(c.items, c.kind, false, time.Time{}) {
+			switch r.kind {
+			case chatRowShell:
+				shell = r.item.ID
+			case chatRowWork:
+				work += len(r.tools)
 			}
+		}
+		if shell != c.shell || work != c.work {
+			t.Errorf("%s: shell row %q and %d folded calls, want %q and %d", name, shell, work, c.shell, c.work)
 		}
 	}
 }
@@ -203,12 +221,14 @@ func shellListing(n int) string {
 }
 
 // A shell command's output is under it whole, as Claude Code prints it, and
-// not its first line beside the check; an agent's own call keeps its one line.
+// not its first line beside the check, though the agent answered; an agent's
+// own call keeps its one line.
 func TestAShellCommandsOutputIsShownWhole(t *testing.T) {
 	u, r, _, _ := shellFrames(t, claudeKind)
 	u.model.chat.history("s1", []backend.ChatItem{
 		{ID: "user-1", Kind: api.ItemUser, Text: "!ls", Turn: 1},
 		{ID: "shell-1", Kind: api.ItemTool, Turn: 1, Tool: &api.ChatToolCall{Name: "Bash", Title: "ls", Output: "AGENTS.md\nCLAUDE.md\n  README.md", State: api.ToolDone}},
+		{ID: "agent-1", Kind: api.ItemAgent, Text: "Three files.", Turn: 1},
 		{ID: "user-2", Kind: api.ItemUser, Text: "and now?", Turn: 2},
 		{ID: "tool-2", Kind: api.ItemTool, Turn: 2, Tool: &api.ChatToolCall{Name: "Bash", Title: "git status", Output: "On branch main\nnothing to commit", State: api.ToolDone}},
 		{ID: "agent-2", Kind: api.ItemAgent, Text: "Clean.", Turn: 2},
