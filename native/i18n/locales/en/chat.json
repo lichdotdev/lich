@@ -110,6 +110,9 @@
     "label": "Search your messages",
     "failed": "No message matches"
   },
+  "plan": {
+    "count": "Tasks {done}/{total}"
+  },
   "tools": {
     "loading": "Loading…",
     "mcpTitle": "MCP servers",

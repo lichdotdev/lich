@@ -105,6 +105,9 @@
     "label": "搜索已发送的消息",
     "failed": "没有匹配的消息"
   },
+  "plan": {
+    "count": "任务 {done}/{total}"
+  },
   "tools": {
     "loading": "加载中…",
     "mcpTitle": "MCP 服务器",

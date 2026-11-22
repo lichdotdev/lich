@@ -110,6 +110,9 @@
     "label": "Busque nas suas mensagens",
     "failed": "Nenhuma mensagem corresponde"
   },
+  "plan": {
+    "count": "Tarefas {done}/{total}"
+  },
   "tools": {
     "loading": "Carregando…",
     "mcpTitle": "Servidores MCP",

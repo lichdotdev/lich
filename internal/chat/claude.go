@@ -42,6 +42,7 @@ type claudeDriver struct {
 	// details is what `claude plugin details` said of each installed plugin,
 	// by its install path, which a new version changes.
 	details map[string]claudeDetails
+	tasks   *claudeTasks
 }
 
 type claudeControl struct {
@@ -53,7 +54,7 @@ type claudeControl struct {
 }
 
 func newClaudeDriver(c *chatSession, lang prompt.Lang) *claudeDriver {
-	return &claudeDriver{c: c, lang: lang, calls: map[string]chan claudeControl{}, blocks: map[string]int{}, held: map[string]string{}}
+	return &claudeDriver{c: c, lang: lang, calls: map[string]chan claudeControl{}, blocks: map[string]int{}, held: map[string]string{}, tasks: newClaudeTasks()}
 }
 
 // claudeLine is every field lich reads off one line Claude Code writes, of any
@@ -335,6 +336,9 @@ func readClaudeAssistant(c *chatSession, d *claudeDriver, line claudeLine, histo
 			tool.State = api.ToolRunning
 			c.conv.put(api.ChatItem{ID: b.ID, Kind: api.ItemTool, Tool: &tool, At: stamp(line.Timestamp), Model: model, Effort: effort}, true)
 			c.toolStarted(tool.Name, tool.Title)
+			if d != nil && d.tasks.use(b) {
+				c.conv.plan(d.tasks.list())
+			}
 		}
 	}
 }
@@ -379,6 +383,9 @@ func readClaudeUser(c *chatSession, line claudeLine, history bool) {
 		case b.Type == "tool_result" && it.Kind == api.ItemQuestion && it.Question != nil:
 			readClaudeQuestionResult(c, it, b, result)
 		case b.Type == "tool_result":
+			if d, ok := c.drv.(*claudeDriver); ok && d.tasks.result(b) {
+				c.conv.plan(d.tasks.list())
+			}
 			c.conv.update(b.ToolUseID, api.ItemTool, true, func(it *api.ChatItem) {
 				if it.Tool == nil {
 					it.Tool = &api.ChatToolCall{}

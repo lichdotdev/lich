@@ -148,6 +148,14 @@ func (f *fake) claudeTurn(run *fakeClaude, text string) {
 		}
 		msg("m1", map[string]any{"type": "text", "text": "Oi!"})
 		f.claudeResult(false, "completed", "Oi!")
+	case "tasks":
+		f.claudeTasks(msg)
+	case "todos":
+		msg("m2", map[string]any{"type": "tool_use", "id": "toolu_t", "name": "TodoWrite", "input": map[string]any{"todos": []any{
+			map[string]any{"content": "Read the parser", "status": "completed", "activeForm": "Reading the parser"},
+			map[string]any{"content": "Fix it", "status": "in_progress", "activeForm": "Fixing it"},
+		}}})
+		f.claudeResult(false, "completed", "")
 	case "tool":
 		msg("m2", map[string]any{"type": "thinking", "thinking": "reading"})
 		msg("m2", map[string]any{"type": "tool_use", "id": "toolu_1", "name": "Edit", "input": map[string]any{"file_path": "a.txt", "old_string": "x", "new_string": "y"}})
@@ -267,6 +275,13 @@ func (f *fake) acpTurn(id any, text string) {
 			f.update(chunk("agent_message_chunk", part))
 		}
 		f.update(map[string]any{"sessionUpdate": "usage_update", "used": 1})
+	case "plan":
+		f.update(map[string]any{"sessionUpdate": "plan", "entries": []any{
+			map[string]any{"content": "Read the parser", "priority": "high", "status": "completed"},
+			map[string]any{"content": "Fix it", "priority": "medium", "status": "in_progress"},
+		}})
+	case "plan-cleared":
+		f.update(map[string]any{"sessionUpdate": "plan", "entries": []any{}})
 	case "tool":
 		f.update(map[string]any{"sessionUpdate": "tool_call", "toolCallId": "t1", "title": "Editing a.txt", "kind": "edit", "status": "pending", "_meta": map[string]any{"kiro": map[string]any{"toolName": "write"}}})
 		f.update(map[string]any{"sessionUpdate": "tool_call_update", "toolCallId": "t1", "status": "in_progress"})
@@ -426,4 +441,24 @@ func (f *fake) acpElicit(id any, text string) bool {
 	}
 	f.result(id, map[string]any{"stopReason": "cancelled"})
 	return true
+}
+
+// claudeTasks is Claude Code keeping its list with TaskCreate and TaskUpdate,
+// as 2.1.330 does where the model has the tools: the task's id comes in the
+// create's result, and a subagent's own calls are not the session's list.
+func (f *fake) claudeTasks(msg func(string, map[string]any)) {
+	result := func(id, text string, isError bool) {
+		f.send(map[string]any{"type": "user", "message": map[string]any{"content": []any{map[string]any{"type": "tool_result", "tool_use_id": id, "is_error": isError, "content": text}}}})
+	}
+	msg("m2", map[string]any{"type": "tool_use", "id": "toolu_c1", "name": "TaskCreate", "input": map[string]any{"subject": "Read the parser", "activeForm": "Reading the parser"}})
+	result("toolu_c1", "Task #1 created successfully: Read the parser", false)
+	msg("m3", map[string]any{"type": "tool_use", "id": "toolu_c2", "name": "TaskCreate", "input": map[string]any{"subject": "Fix it", "activeForm": "Fixing it"}})
+	result("toolu_c2", "Task #2 created successfully: Fix it", false)
+	msg("m4", map[string]any{"type": "tool_use", "id": "toolu_c3", "name": "TaskCreate", "input": map[string]any{"subject": "Refused"}})
+	result("toolu_c3", "nope", true)
+	f.send(map[string]any{"type": "assistant", "parent_tool_use_id": "toolu_sub", "message": map[string]any{"id": "m9", "content": []any{
+		map[string]any{"type": "tool_use", "id": "toolu_s", "name": "TaskCreate", "input": map[string]any{"subject": "A subagent's own"}}}}})
+	msg("m5", map[string]any{"type": "tool_use", "id": "toolu_u1", "name": "TaskUpdate", "input": map[string]any{"taskId": "1", "status": "completed"}})
+	msg("m6", map[string]any{"type": "tool_use", "id": "toolu_u2", "name": "TaskUpdate", "input": map[string]any{"taskId": "2", "status": "in_progress"}})
+	f.claudeResult(false, "completed", "")
 }

@@ -186,6 +186,12 @@ func (c *fakeCodex) turn(turn, text string) (status, message string) {
 			c.notify("item/agentMessage/delta", map[string]any{"itemId": "msg1", "delta": part})
 		}
 		c.say("msg1", "Oi!")
+	case "plan":
+		c.notify("turn/plan/updated", map[string]any{"threadId": "codex-new", "turnId": turn, "explanation": nil, "plan": []any{
+			map[string]any{"step": "Read the parser", "status": "completed"},
+			map[string]any{"step": "Fix it", "status": "inProgress"},
+			map[string]any{"step": "Test it", "status": "pending"},
+		}})
 	case "tool":
 		c.tools()
 	case "question":

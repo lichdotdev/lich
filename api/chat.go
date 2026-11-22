@@ -99,6 +99,14 @@ const (
 	ItemPermission = "permission" // the agent asking before a tool runs
 	ItemQuestion   = "question"   // the agent asking the person to choose or write
 	ItemNotice     = "notice"     // something lich or the provider says about the session: an error, a resume
+	ItemPlan       = "plan"       // the agent's task list as it stands, whole, drawn over the composer and not in the conversation
+)
+
+// The states of a plan entry, Claude Code's and ACP's own.
+const (
+	PlanPending    = "pending"
+	PlanInProgress = "in_progress"
+	PlanCompleted  = "completed"
 )
 
 // The states of a tool item.
@@ -124,6 +132,7 @@ type ChatItem struct {
 	Tool       *ChatToolCall   `json:"tool,omitempty"`
 	Permission *ChatPermission `json:"permission,omitempty"`
 	Question   *ChatQuestion   `json:"question,omitempty"`
+	Plan       *ChatPlan       `json:"plan,omitempty"`
 	// At is when the item began, in unix milliseconds.
 	At int64 `json:"at"`
 	// Model and Effort are what produced the item, as the person reads them:
@@ -146,6 +155,21 @@ type ChatToolCall struct {
 	Output string `json:"output,omitempty"`
 	Diff   string `json:"diff,omitempty"`
 	Ended  int64  `json:"ended,omitempty"`
+}
+
+// ChatPlan is the agent's task list, in its order. A turn's plan item holds
+// the list as it last stood in that turn; one with no entries is a list the
+// agent cleared.
+type ChatPlan struct {
+	Entries []ChatPlanEntry `json:"entries"`
+}
+
+// ChatPlanEntry is one task. ActiveForm is what the task reads as while it
+// runs ("Running the tests"), its Content where the provider gives none.
+type ChatPlanEntry struct {
+	Content    string `json:"content"`
+	ActiveForm string `json:"activeForm,omitempty"`
+	Status     string `json:"status"`
 }
 
 // ChatPermission is the agent asking to run Tool. Chosen is the option the

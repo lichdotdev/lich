@@ -402,6 +402,8 @@ func (d *acpDriver) update(params json.RawMessage) {
 	case "tool_call", "tool_call_update":
 		d.tool(u.acpToolCall)
 		d.openCodeQuestion(u.acpToolCall)
+	case "plan":
+		d.c.conv.plan(acpPlan(p.Update))
 	case "config_option_update":
 		d.configChanged(p.Update)
 	case "current_mode_update":
@@ -471,4 +473,14 @@ func (d *acpDriver) tool(t acpToolCall) {
 			d.c.toolStarted(it.Tool.Name, it.Tool.Title)
 		}
 	}
+}
+
+// acpPlan reads a plan update, the whole list each time; an empty one clears
+// it (oh-my-pi sends one when its todos are cleared).
+func acpPlan(raw json.RawMessage) []api.ChatPlanEntry {
+	var u struct {
+		Entries []api.ChatPlanEntry `json:"entries"`
+	}
+	_ = json.Unmarshal(raw, &u)
+	return u.Entries
 }

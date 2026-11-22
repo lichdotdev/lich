@@ -59,6 +59,9 @@ type chatTurnSpan struct {
 // while it is the one in flight, a tool call's end included: most histories
 // carry no durations.
 func chatRows(items []backend.ChatItem, running bool, now time.Time) []chatRow {
+	if slices.ContainsFunc(items, isPlan) {
+		items = slices.DeleteFunc(slices.Clone(items), isPlan)
+	}
 	spans := map[int]*chatTurnSpan{}
 	asked := map[int]bool{}
 	last := 0
@@ -144,6 +147,10 @@ func chatRows(items []backend.ChatItem, running bool, now time.Time) []chatRow {
 	}
 	return rows
 }
+
+// isPlan is whether it is the agent's task list, drawn over the composer
+// (chat_plan.go) and not in the conversation.
+func isPlan(it backend.ChatItem) bool { return it.Kind == api.ItemPlan }
 
 // callingTools is whether the last of items the model wrote, a call or text,
 // is a call: a thought, a permission or a question between two calls does not

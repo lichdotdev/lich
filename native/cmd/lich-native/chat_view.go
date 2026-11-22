@@ -105,6 +105,7 @@ type chatView struct {
 	start chatStart
 	// queueRows are the controls of the session's queued messages.
 	queueRows []chatQueueRow
+	plan      chatPlanState
 	// slash is the list of the provider's commands over the composer, which
 	// may grow over the conversation up to slashRoom, the pane's height.
 	slash     chatSlash
@@ -545,6 +546,7 @@ func (u *window) chatComposer(gtx C, th *ui.Theme, p *chatPane, sv sessionView, 
 		ft.attach, ft.context = nil, nil
 	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+		layout.Rigid(func(gtx C) D { return u.chatPlan(gtx, th, &p.plan, sv.ID, working) }),
 		layout.Rigid(func(gtx C) D { return u.chatQueue(gtx, th, p, sv.ID) }),
 		layout.Rigid(func(gtx C) D {
 			// the box's fill keeps near the theme's own ground and its edge

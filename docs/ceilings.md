@@ -139,6 +139,20 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   opencode, oh-my-pi, Cursor CLI and Kiro CLI forcing stops the turn and sends the message as the next one. The
   queue itself is the window's (`native/cmd/lich-native/chat_queue.go`): it is sent, joined, when the turn ends
   as anything but stopped, and lost if the window closes before. Crush has no chat.
+- **A chat shows the agent's task list only where its provider reports one, and every Claude Code spawn is
+  given its task tools for it** (`internal/chat/claude_plan.go`, `codex_items.go` `codexPlan`, `acp.go` `acpPlan`,
+  `internal/terminal/claude_todo.go`, `native/cmd/lich-native/chat_plan.go`): Claude Code 2.1.330 offers its task
+  tools only to the Claude 4 and older models unless `CLAUDE_CODE_ENABLE_TODO_TOOLS=1` (measured: a Claude 5 model
+  gets neither TaskCreate nor TodoWrite), so lich sets it on every Claude Code spawn, terminal and chat alike. A
+  value the person's environment already carries stays as it is: set to 0, a Claude 5 model keeps no list, and
+  the chat shows none. The terminal's agent gets the tools too, and its TUI draws the list its own way. lich reads the list off TaskCreate, whose result names the
+  task's id, TaskUpdate and TodoWrite, as Claude Code's own SDK does; a subagent's calls are not the session's
+  list. Codex sends `turn/plan/updated` with no words for a step while it runs, and `thread/turns/list` holds no
+  plan, so a resumed Codex chat shows none until the agent updates it. ACP's `plan` update is read for every ACP
+  provider, an empty one clearing the list: oh-my-pi and Cursor CLI were read sending it in their code, and
+  whether opencode 1.19.4, Antigravity and Kiro 2.21.0 send one is not verified (each carries the schema, none
+  was seen emitting it). The window shows the latest turn's list while a task is left, so a new message hides
+  a list the agent does not update in the new turn. Crush has no chat.
 - **A chat message waits two seconds in the window before it reaches the agent**
   (`native/cmd/lich-native/chat_hold.go`): Esc or Stop takes it back meanwhile, and nothing reached the agent.
   It is drawn sent with its turn running from Enter, so the wait does not show, and a window closed inside it

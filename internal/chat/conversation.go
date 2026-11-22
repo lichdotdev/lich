@@ -257,3 +257,13 @@ func (c *conversation) commandOutput(out string) {
 	}
 	c.update(id, api.ItemNotice, true, func(it *api.ChatItem) { it.Text += " · " + out })
 }
+
+// plan puts the agent's task list as it stands now on the turn's plan item:
+// the window shows the latest turn's, so a list the agent leaves behind goes
+// with the turn.
+func (c *conversation) plan(entries []api.ChatPlanEntry) {
+	c.mu.Lock()
+	id := "plan-" + strconv.Itoa(c.turn)
+	c.mu.Unlock()
+	c.put(api.ChatItem{ID: id, Kind: api.ItemPlan, Plan: &api.ChatPlan{Entries: entries}}, true)
+}
