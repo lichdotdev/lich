@@ -710,7 +710,7 @@ func (s *Service) send(ctx context.Context, opts SendOptions, mode errandMode) (
 // a prompt yet, on the one holding the message back; and once more from
 // watchReceipt, when the first write reached a terminal nothing was reading.
 func (s *Service) handOff(id string, t *ticket, kind string) error {
-	message := s.taskMessage(id, t)
+	message := s.taskMessage(id, t, kind)
 	// Stamped before the mod is handed it too: its session's busy report can
 	// arrive milliseconds after the prompt is queued.
 	busy := s.stampDelivery(t)

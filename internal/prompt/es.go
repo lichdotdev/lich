@@ -43,6 +43,9 @@ var es = Catalog{
 	CollectWithTool:     "El resultado está listo. Recógelo con wait_for_answer y el ticket.",
 	CollectWithCLI:      "El resultado está listo. Recógelo ejecutando \"$LICH_BIN\" wait con el ticket.",
 	WaitingOnPermission: "Una confirmación de permiso en su tarjeta. Su tarea sigue abierta: abre esa tarjeta para responder.",
+	PermissionToRun:     "Permiso para ejecutar: %[1]s",
+	TaskReplyTool:       "Responde con reply_to_session y el ticket %[1]s, el único camino de vuelta a quien lo pidió.",
+	TaskReplyCLI:        "Responde ejecutando \"$LICH_BIN\" reply %[1]s \"<tu respuesta>\", el único camino de vuelta a quien lo pidió.",
 	WorkerEndedBlank:    "El último turno de la sesión de trabajo terminó sin mensaje.",
 	WorkerEndedError:    "El último turno de la sesión de trabajo terminó con un error de la API.",
 	WorkerEndedRefusal:  "El último turno de la sesión de trabajo terminó con una negativa.",
@@ -55,6 +58,9 @@ var es = Catalog{
 	MergeSummary:      "Pull request #%[1]d fusionado en %[2]s",
 	MergeNotice:       "El pull request #%[1]d %[2]q se fusionó en %[3]s.",
 	LateNotice:        "Programado para %[1]s, entregado con %[2]s de retraso.",
+	LateMinutes:       Plural{One: "%d minuto", Other: "%d minutos"},
+	LateHours:         Plural{One: "%d hora", Other: "%d horas"},
+	LateDays:          Plural{One: "%d día", Other: "%d días"},
 	OnTimeNotice:      "Programado para %[1]s.",
 	UsageReset:        "Tu límite de uso se restableció.",
 	ResumePrompt:      "Continúa la tarea en la que estabas trabajando.",
@@ -74,8 +80,8 @@ var es = Catalog{
 
 	ThreadMarked: "Marcado. lich resuelve el hilo y responde con este commit en cuanto el head del pull request lo contenga.",
 
-	CopyNotice:         "[lich] copia de %s; el original no es accesible desde esta sesión, las ediciones se quedan en la copia.",
-	ArtifactCopyNotice: "[lich] copia de %[1]s de la sesión %[2]q; las ediciones quedan en la copia.",
+	CopyNotice:         "lich copió %s aquí; el original no es accesible desde esta sesión, las ediciones se quedan en la copia.",
+	ArtifactCopyNotice: "lich copió %[1]s aquí desde la sesión %[2]q; las ediciones quedan en la copia.",
 
 	MCPInstructions: `lich corre sesiones de agentes de código lado a lado en una ventana; estas herramientas son la forma en que esta sesión trabaja con las demás.
 
@@ -148,7 +154,7 @@ Esta sesión tiene un navegador propio (herramientas browser_*). Corre sin venta
 	ClosedPlain: "Se cerró %q.\n",
 	ClosedProject: "Se cerró el proyecto %[1]q (%[2]s) y se detuvieron sus sesiones. Siguen con él: abrir una sesión " +
 		"en %[2]s de nuevo reabre el proyecto con ellas.\n",
-	HandoffNote: "[lich] La sesión %[1]q te pasó su trabajo: eres su sucesora, abierta desde cero en el mismo " +
+	HandoffNote: "La sesión %[1]q te pasó su trabajo: eres su sucesora, abierta desde cero en el mismo " +
 		"checkout para continuarlo. Esa sesión sigue abierta hasta que el usuario la cierre y no te está esperando, " +
 		"así que nada vuelve a ella. Contrasta esta nota con el repositorio (git status, git log) antes de " +
 		"construir sobre ella y sigue con los próximos pasos.\n\nHecho:\n%[2]s\n\nRama: %[3]s\n\nCommits:\n%[4]s\n\n" +

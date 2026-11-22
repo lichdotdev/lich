@@ -133,22 +133,23 @@ func lateNotice(lang prompt.Lang, at, now int64) string {
 		return ""
 	}
 	return fmt.Sprintf(prompt.For(lang).LateNotice,
-		time.Unix(at, 0).Format(scheduleClock), lateBy(late))
+		time.Unix(at, 0).Format(scheduleClock), lateBy(lang, late))
 }
 
-// lateBy words how far past its time a prompt is, in one unit — "45m", "3h",
-// "2d". The reader wants the scale, and a prompt that is two days late is not
-// helped by the minutes on the end of it.
+// lateBy words how far past its time a prompt is, in one unit: "45 minutes",
+// "3 hours", "2 days". The reader wants the scale, and a prompt that is two
+// days late is not helped by the minutes on the end of it.
 //
 // The rung is picked off the rounded figure, not the raw one: 59m40s is under
 // the hour but rounds to 60 minutes, and printing that in minutes puts a "60m"
 // on the card no clock ever shows.
-func lateBy(d time.Duration) string {
+func lateBy(lang prompt.Lang, d time.Duration) string {
+	text := prompt.For(lang)
+	count, unit := int(d.Round(24*time.Hour)/(24*time.Hour)), text.LateDays
 	if minutes := d.Round(time.Minute); minutes < time.Hour {
-		return fmt.Sprintf("%dm", int(minutes/time.Minute))
+		count, unit = int(minutes/time.Minute), text.LateMinutes
+	} else if hours := d.Round(time.Hour); hours < 24*time.Hour {
+		count, unit = int(hours/time.Hour), text.LateHours
 	}
-	if hours := d.Round(time.Hour); hours < 24*time.Hour {
-		return fmt.Sprintf("%dh", int(hours/time.Hour))
-	}
-	return fmt.Sprintf("%dd", int(d.Round(24*time.Hour)/(24*time.Hour)))
+	return fmt.Sprintf(text.Pick(count, unit), count)
 }

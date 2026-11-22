@@ -44,9 +44,17 @@ type Catalog struct {
 	CollectWithTool     string
 	CollectWithCLI      string
 	WaitingOnPermission string
-	WorkerEndedBlank    string
-	WorkerEndedError    string
-	WorkerEndedRefusal  string
+	// PermissionToRun is what a blocked worker asks to run: %[1]s is the
+	// command or path its permission prompt names, or the tool.
+	PermissionToRun string
+	// TaskReplyTool and TaskReplyCLI are a task's summary when it is answered
+	// by its ticket, %[1]s: the tool for a session with lich's MCP tools, the
+	// command for the rest.
+	TaskReplyTool      string
+	TaskReplyCLI       string
+	WorkerEndedBlank   string
+	WorkerEndedError   string
+	WorkerEndedRefusal string
 
 	// internal/relay: the one line a Claude Code mod shows for a notification
 	// (docs/hooks/mod-control.md, A prompt as a notification).
@@ -59,6 +67,10 @@ type Catalog struct {
 	// when it was parked for, %[2]s how late it is.
 	LateNotice   string
 	OnTimeNotice string
+	// LateMinutes, LateHours and LateDays word how late, %d the count.
+	LateMinutes Plural
+	LateHours   Plural
+	LateDays    Plural
 	// UsageReset sums up the notice that carries ResumePrompt.
 	UsageReset string
 	// ResumePrompt is stored in the sessions table as a parked prompt, marked
@@ -118,9 +130,11 @@ type Catalog struct {
 	ClosedKept             string
 	ClosedPlain            string
 	ClosedProject          string
-	HandoffNote            string
-	HandoffNone            string
-	HandoffSent            string
+	// HandoffNote's first paragraph is the handoff notice's summary and the
+	// rest its prompt (relay.HandoffEnvelope).
+	HandoffNote string
+	HandoffNone string
+	HandoffSent string
 
 	HandoffProfileSuggested string
 	HandoffProfileDropped   string

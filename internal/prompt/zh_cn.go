@@ -37,6 +37,9 @@ var zhCN = Catalog{
 	CollectWithTool:     "结果已就绪。用 wait_for_answer 和工单取回。",
 	CollectWithCLI:      "结果已就绪。带上工单运行 \"$LICH_BIN\" wait 取回。",
 	WaitingOnPermission: "它的卡片中有一个权限确认。它的任务仍然保持打开：请打开该卡片来回答。",
+	PermissionToRun:     "请求运行的权限：%[1]s",
+	TaskReplyTool:       "用 reply_to_session 和工单 %[1]s 回答，这是回到提问方的唯一途径。",
+	TaskReplyCLI:        "运行 \"$LICH_BIN\" reply %[1]s \"<你的回答>\" 来回答，这是回到提问方的唯一途径。",
 	WorkerEndedBlank:    "工作会话的最后一轮结束时没有消息。",
 	WorkerEndedError:    "工作会话的最后一轮因 API 错误而结束。",
 	WorkerEndedRefusal:  "工作会话的最后一轮以拒绝告终。",
@@ -49,6 +52,9 @@ var zhCN = Catalog{
 	MergeSummary:      "拉取请求 #%[1]d 已合并到 %[2]s",
 	MergeNotice:       "拉取请求 #%[1]d %[2]q 已合并到 %[3]s。",
 	LateNotice:        "原定于 %[1]s 发送，延迟 %[2]s 送达。",
+	LateMinutes:       Plural{One: "%d 分钟", Other: "%d 分钟"},
+	LateHours:         Plural{One: "%d 小时", Other: "%d 小时"},
+	LateDays:          Plural{One: "%d 天", Other: "%d 天"},
 	OnTimeNotice:      "原定于 %[1]s 发送。",
 	UsageReset:        "你的用量上限已重置。",
 	ResumePrompt:      "请继续之前进行的任务。",
@@ -68,8 +74,8 @@ var zhCN = Catalog{
 
 	ThreadMarked: "已标记。拉取请求的 head 包含这个提交后，lich 会解决该讨论串，并以这个提交回复。",
 
-	CopyNotice:         "[lich] %s 的副本；原文件无法从本会话访问，修改只会保留在副本中。",
-	ArtifactCopyNotice: "[lich] 来自会话 %[2]q 的 %[1]s 的副本；编辑只保留在副本中。",
+	CopyNotice:         "lich 已将 %s 复制到这里；原文件无法从本会话访问，修改只会保留在副本中。",
+	ArtifactCopyNotice: "lich 已将会话 %[2]q 中的 %[1]s 复制到这里；编辑只保留在副本中。",
 
 	MCPInstructions: `lich 在同一个窗口中并排运行编码智能体会话；这些工具就是本会话与其他会话协作的方式。
 
@@ -138,7 +144,7 @@ lich 交给本会话的一切都以 lich-notification 块的形式到达，其 k
 	ClosedPlain: "已关闭 %q。\n",
 	ClosedProject: "已关闭项目 %[1]q (%[2]s)，并停止了它的会话。会话仍保留在项目中：" +
 		"再次在 %[2]s 打开会话，会连同这些会话重新打开该项目。\n",
-	HandoffNote: "[lich] 会话 %[1]q 把它的工作交接给了你：你是它的接任者，在同一个检出目录中全新打开，以便继续这项工作。" +
+	HandoffNote: "会话 %[1]q 把它的工作交接给了你：你是它的接任者，在同一个检出目录中全新打开，以便继续这项工作。" +
 		"原会话会一直保持打开，直到用户关闭它；它并不在等你，所以不需要回复它。在此基础上动手之前，先对照仓库" +
 		"（git status、git log）核实这份说明，然后按下一步继续。" +
 		"\n\n已完成：\n%[2]s\n\n分支：%[3]s\n\n提交：\n%[4]s\n\n下一步：\n%[5]s\n\n注意事项：\n%[6]s",

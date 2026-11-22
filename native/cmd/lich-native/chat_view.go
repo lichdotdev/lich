@@ -655,13 +655,19 @@ func chatUserFrom(gtx C, th *ui.Theme, from, text string) D {
 }
 
 // startsTurn is whether row r starts a turn after row prev: the person's
-// message, or the day line over it; not the message a day line already opened.
+// message, or the day line over it; not the message a day line already opened,
+// nor a notification right under another, which read as one list of rows.
 func startsTurn(r, prev chatRow) bool {
 	switch {
 	case r.kind == chatRowDay:
 		return true
 	case r.kind == chatRowItem && r.item.Kind == api.ItemUser:
-		return prev.kind != chatRowDay
+		return prev.kind != chatRowDay && !(isEnvelope(r) && isEnvelope(prev))
 	}
 	return false
+}
+
+// isEnvelope is whether row r is a message lich handed the agent.
+func isEnvelope(r chatRow) bool {
+	return r.kind == chatRowItem && r.item.Kind == api.ItemUser && strings.HasPrefix(r.item.Text, envelopeOpen)
 }

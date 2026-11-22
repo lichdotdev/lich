@@ -43,6 +43,9 @@ var ja = Catalog{
 	CollectWithTool:     "結果が届いています。wait_for_answer とチケットで受け取ってください。",
 	CollectWithCLI:      "結果が届いています。チケットを付けて \"$LICH_BIN\" wait を実行して受け取ってください。",
 	WaitingOnPermission: "カードに権限の確認が出ています。タスクは開いたままです。そのカードを開いて応答してください。",
+	PermissionToRun:     "実行の許可: %[1]s",
+	TaskReplyTool:       "reply_to_session とチケット %[1]s で回答してください。依頼した側への唯一の返信経路です。",
+	TaskReplyCLI:        "\"$LICH_BIN\" reply %[1]s \"<回答>\" を実行して回答してください。依頼した側への唯一の返信経路です。",
 	WorkerEndedBlank:    "ワーカーの最後のターンは、メッセージなしで終わりました。",
 	WorkerEndedError:    "ワーカーの最後のターンは、API エラーで終わりました。",
 	WorkerEndedRefusal:  "ワーカーの最後のターンは、拒否で終わりました。",
@@ -55,6 +58,9 @@ var ja = Catalog{
 	MergeSummary:      "プルリクエスト #%[1]d が %[2]s にマージされました",
 	MergeNotice:       "プルリクエスト #%[1]d %[2]q が %[3]s にマージされました。",
 	LateNotice:        "%[1]s に予定されていたものが、%[2]s 遅れて届きました。",
+	LateMinutes:       Plural{One: "%d 分", Other: "%d 分"},
+	LateHours:         Plural{One: "%d 時間", Other: "%d 時間"},
+	LateDays:          Plural{One: "%d 日", Other: "%d 日"},
 	OnTimeNotice:      "%[1]s に予定されていました。",
 	UsageReset:        "利用上限がリセットされました。",
 	ResumePrompt:      "作業中だったタスクを続けてください。",
@@ -74,8 +80,8 @@ var ja = Catalog{
 
 	ThreadMarked: "記録しました。プルリクエストの head にこのコミットが含まれた時点で、lich がスレッドを解決し、このコミットを添えて返信します。",
 
-	CopyNotice:         "[lich] %s のコピーです。元のファイルはこのセッションからは届かないため、編集はコピーにだけ残ります。",
-	ArtifactCopyNotice: "[lich] セッション %[2]q の %[1]s のコピーです。編集はコピーにだけ残ります。",
+	CopyNotice:         "lich が %s をここにコピーしました。元のファイルはこのセッションからは届かないため、編集はコピーにだけ残ります。",
+	ArtifactCopyNotice: "lich がセッション %[2]q の %[1]s をここにコピーしました。編集はコピーにだけ残ります。",
 
 	MCPInstructions: `lich はコーディングエージェントのセッションを一つのウィンドウに並べて実行します。これらのツールは、このセッションがほかのセッションと連携するための手段です。
 
@@ -145,7 +151,7 @@ task ブロックがあなたのプロンプトに届いたら、あなたがワ
 	ClosedPlain: "%q を閉じました。\n",
 	ClosedProject: "プロジェクト %[1]q (%[2]s) を閉じ、そのセッションを停止しました。セッションはプロジェクトに残っています。" +
 		"%[2]s でもう一度セッションを開くと、プロジェクトがセッションごと再び開きます。\n",
-	HandoffNote: "[lich] セッション %[1]q があなたに作業を引き継ぎました。あなたはその後継で、続きを進めるために同じチェックアウトで" +
+	HandoffNote: "セッション %[1]q があなたに作業を引き継ぎました。あなたはその後継で、続きを進めるために同じチェックアウトで" +
 		"新しく開かれました。元のセッションはユーザーが閉じるまで開いたままですが、あなたを待ってはいないので、何も返す必要は" +
 		"ありません。このメモをリポジトリ（git status、git log）と照らし合わせてから、次のステップに進んでください。" +
 		"\n\n完了したこと:\n%[2]s\n\nブランチ: %[3]s\n\nコミット:\n%[4]s\n\n次のステップ:\n%[5]s\n\n注意点:\n%[6]s",

@@ -124,7 +124,7 @@ func TestDeliverDueTypesAnOverduePrompt(t *testing.T) {
 	if !strings.Contains(written, "the overdue one") {
 		t.Fatalf("typed at s1 = %q, want the overdue prompt", written)
 	}
-	if !strings.Contains(written, "delivered 3d late") {
+	if !strings.Contains(written, "delivered 3 days late") {
 		t.Fatalf("typed at s1 = %q, want it announced as three days late", written)
 	}
 	if !strings.Contains(written, "Scheduled for "+time.Unix(1000, 0).Format(scheduleClock)) {
@@ -165,14 +165,14 @@ func TestLateNoticeWordsTheDelay(t *testing.T) {
 		late int64
 		want string
 	}{
-		"a minute past the tick": {late: 91, want: "2m"},
-		"most of an hour":        {late: 45 * 60, want: "45m"},
-		"three hours":            {late: 3 * 60 * 60, want: "3h"},
-		"two days":               {late: 2 * 24 * 60 * 60, want: "2d"},
+		"a minute past the tick": {late: 91, want: "2 minutes"},
+		"most of an hour":        {late: 45 * 60, want: "45 minutes"},
+		"three hours":            {late: 3 * 60 * 60, want: "3 hours"},
+		"two days":               {late: 2 * 24 * 60 * 60, want: "2 days"},
 		// Rounding carries into the next unit: the rung has to follow it, or
 		// the card reads "60m" and "24h", which no clock ever shows.
-		"minutes that round to an hour": {late: 59*60 + 40, want: "1h"},
-		"hours that round to a day":     {late: 23*60*60 + 40*60, want: "1d"},
+		"minutes that round to an hour": {late: 59*60 + 40, want: "1 hour"},
+		"hours that round to a day":     {late: 23*60*60 + 40*60, want: "1 day"},
 	}
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {

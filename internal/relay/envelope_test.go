@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/prompt"
@@ -28,15 +29,9 @@ func fixtureEnvelopes() map[string]string {
 	cut := outcomeEnvelope(en, fixed, true, true)
 	cut.Truncated = 5120
 	cut.Body[1].Text = "The handshake raced on reconnect. What I found, file by file:"
-	message := func(ticket, text string) string {
-		return Envelope{Kind: KindMessage, From: "Docs sweep", Session: "d9e0", Ticket: ticket,
-			Body: []Element{{"prompt", text}}}.String()
-	}
 	return map[string]string{
-		"task in a chat, answered by the last message":                        taskEnvelope("4b9bc94e", task, AnswerLastMessage).String(),
-		"task in a terminal lich cannot read, answered with reply_to_session": taskEnvelope("4b9bc94e", task, AnswerReply).String(),
-		"message from a peer, reply owed":                                     message("7c1d2e3f", "Which README sections did you already rewrite?"),
-		"message from a peer, no reply owed":                                  message("", "I am done with the install section; it is yours to review."),
+		"task in a chat, answered by the last message":                        taskEnvelope(en, "4b9bc94e", task, AnswerLastMessage, true).String(),
+		"task in a terminal lich cannot read, answered with reply_to_session": taskEnvelope(en, "4b9bc94e", task, AnswerReply, true).String(),
 		"worker finished, result in a chat":                                   outcomeEnvelope(en, fixed, true, true).String(),
 		"worker finished, result cut in a chat":                               cut.String(),
 		"worker finished, terminal leaves the result out":                     outcomeEnvelope(en, fixed, false, true).String(),
@@ -45,13 +40,13 @@ func fixtureEnvelopes() map[string]string {
 		"worker stopped by the user":        outcomeEnvelope(en, entry(StatusStopped, ""), true, true).String(),
 		"worker stopped by another session": outcomeEnvelope(en, stoppedBySession, true, true).String(),
 		"worker waiting on a permission": waitingEnvelope(&ticket{target: "Fix #412", targetID: "c41f"}, "4b9bc94e",
-			"Permission to run: go test ./internal/relay/...").String(),
+			waitingRequest(en, api.SessionStatus{State: stateWaiting, Tool: "Bash", Detail: "go test ./internal/relay/..."})).String(),
 		"ticket expired unanswered": outcomeEnvelope(en, entry(StatusExpired, ""), true, true).String(),
 		"pull request merged":       mergedEnvelope(en, 1210, "fix(relay): handshake race", "fix-412-handshake", "main").String(),
 		"notice: checks failed": watchEnvelope(en, api.SessionWatch{On: api.WatchChecksFailed},
 			api.PRRead{Number: 1210, Head: "3f2a9c1"}, "fix-412-handshake").String(),
 		"notice: scheduled prompt": noticeEnvelope(TopicScheduled,
-			fmt.Sprintf(prompt.For(en).LateNotice, "09:00", "4 minutes"), "Rebase on main and run the gate.").String(),
+			fmt.Sprintf(prompt.For(en).LateNotice, "09:00", lateBy(en, 4*time.Minute)), "Rebase on main and run the gate.").String(),
 		"escaping: attributes escaped, element text verbatim":              outcomeEnvelope(en, escaped, true, true).String(),
 		"two envelopes in one message, oldest first, one blank line apart": newsMessage(en, []*inboxEntry{fixed, entry(StatusExpired, "")}, []*inboxEntry{fixed}, true),
 	}
@@ -98,5 +93,31 @@ func TestCutResultKeepsTheCapAndCountsTheRest(t *testing.T) {
 	env := outcomeEnvelope(prompt.English, &inboxEntry{status: StatusAnswered, answer: short + "abc"}, true, true)
 	if env.Truncated != 3 {
 		t.Fatalf("Truncated = %d, want 3", env.Truncated)
+	}
+}
+
+// A blocked worker's request names what its status names, falling back to the
+// tool and then to the bare permission line.
+func TestWaitingRequestNamesWhatTheStatusNames(t *testing.T) {
+	text := prompt.For(prompt.English)
+	for st, want := range map[api.SessionStatus]string{
+		{Tool: "Bash", Detail: "go test ./..."}: "Permission to run: go test ./...",
+		{Tool: "Edit"}:                          "Permission to run: Edit",
+		{}:                                      text.WaitingOnPermission,
+	} {
+		if got := waitingRequest(prompt.English, st); got != want {
+			t.Errorf("waitingRequest(%+v) = %q, want %q", st, got, want)
+		}
+	}
+}
+
+// The handoff note is a notice whose summary is the note's first paragraph and
+// whose prompt is the rest.
+func TestHandoffEnvelopeSplitsTheNote(t *testing.T) {
+	got := HandoffEnvelope("auth-fix", "s7", "You carry it on.\n\nDone:\nthe parser")
+	want := `<lich-notification version="1" kind="notice" topic="handoff" from="auth-fix" session="s7">` +
+		"\n<summary>You carry it on.</summary>\n<prompt>Done:\nthe parser</prompt>\n</lich-notification>"
+	if got != want {
+		t.Errorf("got %q\nwant %q", got, want)
 	}
 }

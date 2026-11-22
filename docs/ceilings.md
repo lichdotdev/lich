@@ -830,13 +830,6 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   still be lost. The reminder is typed when the compaction's closing report arrives: after a mid-turn
   auto-compaction that report is `busy`, and the reminder queues behind the running turn, so an errand that turn
   ends unanswered is reminded after it is already closed, where only a late answer by its ticket still lands.
-- **Only the briefing, the MCP instructions and the tool descriptions say how to answer a task envelope**
-  (`internal/relay/notes.go`, `taskEnvelope`; docs/hooks/notification.md): a `task` carries the prompt, its ticket
-  and `answer`, and no longer the reply command in prose. A session that was handed none of the three (one born
-  before this change, a Codex user whose own `developer_instructions` replace the briefing, a provider started
-  without lich's MCP server, and possibly Cursor CLI, whose client was never measured passing lich's MCP
-  instructions on, as the next bullet says) reads an envelope it was never told about, and may answer by finishing its turn where
-  `answer="reply"` wanted `reply_to_session`; that errand then ends `unanswered` as any unanswered one does.
 - **Codex and Kiro CLI sessions get the spawn briefing, not lich's MCP instructions** (`internal/cli/mcp.go`,
   `mcpInstructions`; `internal/terminal/command.go`, `codexBriefingArgs`, `briefingEnv`): both initialize the
   server, list its tools and never hand its initialize `instructions` to the model (measured 2026-11-07 on

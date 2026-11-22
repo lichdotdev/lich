@@ -48,6 +48,9 @@ var en = Catalog{
 	CollectWithTool:     "The result is ready. Collect it with wait_for_answer and the ticket.",
 	CollectWithCLI:      "The result is ready. Collect it by running \"$LICH_BIN\" wait with the ticket.",
 	WaitingOnPermission: "A permission prompt in its card. Its task stays open: open that card to answer it.",
+	PermissionToRun:     "Permission to run: %[1]s",
+	TaskReplyTool:       "Answer with reply_to_session and ticket %[1]s, the only way back to whoever asked.",
+	TaskReplyCLI:        "Answer by running \"$LICH_BIN\" reply %[1]s \"<your answer>\", the only way back to whoever asked.",
 	WorkerEndedBlank:    "The worker's last turn ended without a message.",
 	WorkerEndedError:    "The worker's last turn ended in an API error.",
 	WorkerEndedRefusal:  "The worker's last turn ended in a refusal.",
@@ -60,6 +63,9 @@ var en = Catalog{
 	MergeSummary:      "Pull request #%[1]d merged into %[2]s",
 	MergeNotice:       "Pull request #%[1]d %[2]q was merged into %[3]s.",
 	LateNotice:        "Scheduled for %[1]s, delivered %[2]s late.",
+	LateMinutes:       Plural{One: "%d minute", Other: "%d minutes"},
+	LateHours:         Plural{One: "%d hour", Other: "%d hours"},
+	LateDays:          Plural{One: "%d day", Other: "%d days"},
 	OnTimeNotice:      "Scheduled for %[1]s.",
 	UsageReset:        "Your usage limit reset.",
 	ResumePrompt:      "Continue the task you were working on.",
@@ -79,8 +85,8 @@ var en = Catalog{
 
 	ThreadMarked: "Marked. lich resolves the thread and replies with this commit once the pull request's head holds it.",
 
-	CopyNotice:         "[lich] copy of %s; the original is not reachable from this session, edits stay in the copy.",
-	ArtifactCopyNotice: "[lich] copy of %[1]s from session %[2]q; edits stay in the copy.",
+	CopyNotice:         "lich copied %s here; the original is not reachable from this session, edits stay in the copy.",
+	ArtifactCopyNotice: "lich copied %[1]s here from session %[2]q; edits stay in the copy.",
 
 	MCPInstructions: `lich runs coding-agent sessions side by side in one window; these tools are how this session works with the others.
 
@@ -151,7 +157,7 @@ This session has a browser of its own (browser_* tools). It runs headless inside
 	ClosedPlain: "Closed %q.\n",
 	ClosedProject: "Closed the project %[1]q (%[2]s) and stopped its sessions. They stay with it: opening a session " +
 		"on %[2]s again reopens the project with them.\n",
-	HandoffNote: "[lich] Session %[1]q handed its work off to you: you are its successor, opened fresh in the same " +
+	HandoffNote: "Session %[1]q handed its work off to you: you are its successor, opened fresh in the same " +
 		"checkout to carry it on. That session stays open until the user closes it and is not waiting on you, so " +
 		"nothing goes back to it. Check this note against the repository (git status, git log) before you build " +
 		"on it, then carry on with the next steps.\n\nDone:\n%[2]s\n\nBranch: %[3]s\n\nCommits:\n%[4]s\n\n" +

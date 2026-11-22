@@ -36,32 +36,35 @@ of the contract.
 |---|---|---|
 | `version` | every kind | `1` |
 | `kind` | every kind | one of the kinds below |
-| `from` | every kind but `merged` | the label of the session the notice is about (the asker on `task` and `message`, the worker otherwise) |
+| `from` | every kind but `merged` | the label of the session the notice is about (the asker on `task`, the worker otherwise; the predecessor on a `handoff` notice) |
 | `session` | every kind but `merged` | that session's lich id, which `send_to_session` and `close_session` take |
-| `ticket` | `task`, `message` with a reply owed, every `worker-*`, `expired` | the errand's ticket |
+| `ticket` | `task`, every `worker-*`, `expired` | the errand's ticket |
 | `answer` | `task` | how the worker's answer is taken: `last-message` (its turn's final message is the answer, nothing to call) or `reply` (call `reply_to_session` with the ticket) |
 | `truncated` | `worker-finished` | how many characters of the result were cut; absent when nothing was |
 | `pr`, `branch` | `merged`, and `notice` about a pull request | the pull request number and its branch |
-| `topic` | `notice` | what the notice is: `checks-failed`, `checks-passed`, `review`, `scheduled`, `usage-reset`, `compacted`, `unanswered`, `loop` |
+| `topic` | `notice` | what the notice is: `checks-failed`, `checks-passed`, `review`, `scheduled`, `usage-reset`, `compacted`, `unanswered`, `loop`, `handoff` |
 
 ### Kinds
 
 | Kind | Sent to | Children |
 |---|---|---|
-| `task` | a worker, when its task is handed over | `<prompt>` |
-| `message` | any session, a peer's `send_to_session` | `<prompt>` |
+| `task` | a worker, when its task is handed over | `<summary>` when `answer` is `reply`: one line saying to answer with `reply_to_session` and this ticket (`"$LICH_BIN" reply <ticket>` where the session has no lich MCP tools); then `<prompt>` |
 | `worker-finished` | the asker | `<status>answered</status>`, then `<result>` in a chat or `<summary>` in a terminal (see Delivery) |
 | `worker-failed` | the asker | `<status>failed</status>`, `<error>`: the API error, refusal or empty final turn that ended it |
 | `worker-stopped` | the asker, when someone other than the asker closed the worker | `<status>stopped</status>`, `<by>`: the label of who closed it, or `user` |
 | `worker-waiting` | the asker, once per block | `<status>waiting</status>`, `<request>`: what the worker is blocked on (a permission, a question) |
 | `expired` | the asker, when a ticket ran out unanswered | `<status>expired</status>` |
 | `merged` | every live session of the checkout, and the session that opened it | `<summary>` |
-| `notice` | the session it concerns | `<summary>`, and `<prompt>` when the notice carries a task (a scheduled prompt) |
+| `notice` | the session it concerns | `<summary>`, and `<prompt>` when the notice carries a task (a scheduled prompt, a watch's prompt, the continuation after a usage reset, a handoff note's sections) |
 
 `notice` carries every other note lich types today (`internal/prompt`): a
-pull request's checks or a new review, a scheduled prompt (late or on time), a
-usage limit that reset, the errands a compaction may have summarised away, a
-turn that ended with requests unanswered, a loop warning between two sessions.
+pull request's checks or a new review, a scheduled prompt, a usage limit that
+reset, the errands a compaction may have summarised away, a turn that ended with
+requests unanswered, a loop warning between two sessions, and the note a session
+hands its successor (`handoff`: a notice and not a task, since nothing is owed
+back to a session done with the work). A scheduled prompt gets its envelope
+whether it is late or on time: its summary says when it was due, and how late
+when it is.
 `topic` is its one structured field; a new topic is a new value, not a new
 version.
 
@@ -85,6 +88,8 @@ worker's permission from the asker is not part of version 1.
   much is waiting there.
 - `<prompt>` holds the task as sent, under the 8 KB `send_to_session` already
   caps it at.
+- Every errand is a `task`, whoever sends it: an `open_session` with a prompt,
+  `send_to_session`, `lich send` or an extension.
 
 ## Delivery
 

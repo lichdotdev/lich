@@ -41,9 +41,9 @@ func (n handoffNote) check() error {
 	return nil
 }
 
-// text is the note as the successor reads it at its prompt, from the session
-// that wrote it.
-func (n handoffNote) text(lang prompt.Lang, from string) string {
+// text is the note as the successor reads it at its prompt, a handoff notice
+// from the session that wrote it.
+func (n handoffNote) text(lang prompt.Lang, from, session string) string {
 	t := prompt.For(lang)
 	orNone := func(field string) string {
 		if strings.TrimSpace(field) == "" {
@@ -51,7 +51,8 @@ func (n handoffNote) text(lang prompt.Lang, from string) string {
 		}
 		return field
 	}
-	return fmt.Sprintf(t.HandoffNote, from, n.done, orNone(n.branch), orNone(n.commits), n.nextSteps, orNone(n.gotchas))
+	note := fmt.Sprintf(t.HandoffNote, from, n.done, orNone(n.branch), orNone(n.commits), n.nextSteps, orNone(n.gotchas))
+	return relay.HandoffEnvelope(from, session, note)
 }
 
 // openSuccessor opens the session that takes the caller's work over.
@@ -98,7 +99,7 @@ func (c *client) submitNote(ctx context.Context, opened spawn.Session, note hand
 		}
 	}
 	_, err := callMethod(ctx, c, api.RelaySubmit, api.SubmitOptions{
-		SessionID: opened.ID, Message: note.text(c.lang(), opened.OriginLabel),
+		SessionID: opened.ID, Message: note.text(c.lang(), opened.OriginLabel, c.sessionID()),
 	}, shortCall)
 	return err
 }

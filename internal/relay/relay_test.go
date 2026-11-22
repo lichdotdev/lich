@@ -2644,16 +2644,18 @@ func TestAnAnswerLandingAsItsLastWaiterGivesUpIsStashed(t *testing.T) {
 // told about the server at spawn, opencode and Crush get it with the plugin, and
 // only if the installed one is new enough. The relay asks rather than assumes.
 
-// A task carries no reply instruction of its own (docs/hooks/notification.md):
-// the briefing names the tool or the command by the same rule, so the envelope
-// is the same whether the target holds the tool, lacks it, or nothing asked.
-func TestTheTaskIsTheSameWithOrWithoutTheTool(t *testing.T) {
+// A task answered by its ticket says how in its summary: the tool where the
+// target holds it, the command where it does not or nothing asked, since a
+// session pointed at a tool it does not have loses the turn to an error and
+// the command works everywhere.
+func TestTheTaskNamesTheToolOnlyWhereItExists(t *testing.T) {
 	t.Parallel()
 	for name, plugins := range map[string]*fakePlugins{
 		"with the tool": {installed: true, tools: true}, "without it": {installed: true}, "unasked": nil,
 	} {
 		term := newFakeTerminal("s1", "s2")
 		svc := newRelay(workspace(), term, nil)
+		tools := plugins != nil && plugins.tools
 		if plugins != nil {
 			svc.SetPlugins(*plugins)
 		}
@@ -2661,9 +2663,15 @@ func TestTheTaskIsTheSameWithOrWithoutTheTool(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: Send = %v", name, err)
 		}
-		want := taskEnvelope(result.Ticket, &ticket{sender: "sender", fromID: "s1", prompt: "run the tests"}, AnswerReply).String()
-		if typed := strings.Join(term.writesTo("s2"), ""); !strings.Contains(typed, want) {
-			t.Errorf("%s: typed %q, want %q", name, typed, want)
+		typed := strings.Join(term.writesTo("s2"), "")
+		if named := strings.Contains(typed, ToolReply); named != tools {
+			t.Errorf("%s: names %s = %v, want %v:\n%s", name, ToolReply, named, tools, typed)
+		}
+		if command := strings.Contains(typed, `"$LICH_BIN" reply `+result.Ticket); command == tools {
+			t.Errorf("%s: names the command = %v, want %v:\n%s", name, command, !tools, typed)
+		}
+		if !strings.Contains(typed, `ticket="`+result.Ticket+`" answer="reply">`+"\n<summary>") {
+			t.Errorf("%s: the task does not say how to answer:\n%s", name, typed)
 		}
 	}
 }

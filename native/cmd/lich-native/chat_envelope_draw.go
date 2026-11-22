@@ -2,10 +2,12 @@ package main
 
 import (
 	"strconv"
+	"strings"
 
 	"gioui.org/font"
 	"gioui.org/layout"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
 	"github.com/lichdotdev/lich/native/ui/markdown"
@@ -17,21 +19,78 @@ var chatNoteIndent = ui.Space(7)
 // chatEnvelopes draws a message lich handed the agent: a task as the person's
 // box naming who sent it, a worker's outcome as a row, anything else as a
 // muted line.
-func (u *window) chatEnvelopes(gtx C, th *ui.Theme, p *chatPane, id string, envs []envelope) D {
-	children := make([]layout.FlexChild, 0, 2*len(envs))
-	for i, env := range envs {
-		if i > 0 {
-			children = append(children, ui.VGap(3.5))
+//
+// A task stands as the person's message does, with its time and copy button
+// under it, copying the box's words rather than the envelope's tags. Note rows
+// carry no such line: one under each would space them unevenly against the
+// rows of the same message.
+func (u *window) chatEnvelopes(gtx C, th *ui.Theme, p *chatPane, it backend.ChatItem, envs []envelope) D {
+	rows := func(gtx C) D {
+		children := make([]layout.FlexChild, 0, 2*len(envs))
+		for i, env := range envs {
+			if i > 0 {
+				children = append(children, ui.VGap(3.5))
+			}
+			key := it.ID + "#" + strconv.Itoa(i)
+			children = append(children, layout.Rigid(func(gtx C) D { return u.chatEnvelope(gtx, th, p, key, env) }))
 		}
-		key := id + "#" + strconv.Itoa(i)
-		children = append(children, layout.Rigid(func(gtx C) D { return u.chatEnvelope(gtx, th, p, key, env) }))
+		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
 	}
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
+	if len(envs) != 1 || envs[0].kind != "task" {
+		return rows(gtx)
+	}
+	readable := it
+	readable.Text = envelopesText(envs)
+	c := p.copyOf(it.ID)
+	return c.hover(gtx, func(gtx C, over bool) D {
+		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+			layout.Rigid(rows),
+			ui.VGap(1),
+			layout.Rigid(func(gtx C) D {
+				return layout.E.Layout(gtx, func(gtx C) D { return u.chatStampRow(gtx, th, p, c, readable, over, true) })
+			}),
+		)
+	})
+}
+
+// envelopesText is what envelopes say, in the words their rows draw: what
+// copying them puts on the clipboard.
+func envelopesText(envs []envelope) string {
+	parts := make([]string, 0, len(envs))
+	for _, env := range envs {
+		var lines []string
+		switch env.kind {
+		case "task":
+			if env.from != "" {
+				lines = append(lines, i18n.T("chat.notification.from", i18n.Args{"label": env.from}))
+			}
+			lines = append(lines, env.text["prompt"])
+		case "worker-finished", "worker-failed", "worker-stopped", "worker-waiting", "expired":
+			title, meta, body := workerNoteText(env)
+			if meta != "" {
+				title += " · " + meta
+			}
+			lines = append(lines, title)
+			if result := env.text["result"]; result != "" {
+				body = result
+			}
+			if body != "" {
+				lines = append(lines, body)
+			}
+		default:
+			lines = append(lines, env.text["summary"])
+			if env.text["prompt"] != "" {
+				lines = append(lines, env.text["prompt"])
+			}
+		}
+		parts = append(parts, strings.Join(lines, "\n\n"))
+	}
+	return strings.Join(parts, "\n\n")
 }
 
 func (u *window) chatEnvelope(gtx C, th *ui.Theme, p *chatPane, key string, env envelope) D {
 	switch env.kind {
-	case "task", "message":
+	case "task":
 		from := ""
 		if env.from != "" {
 			from = i18n.T("chat.notification.from", i18n.Args{"label": env.from})

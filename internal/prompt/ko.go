@@ -40,6 +40,9 @@ var ko = Catalog{
 	CollectWithTool:     "결과가 준비되었습니다. wait_for_answer와 티켓으로 받으세요.",
 	CollectWithCLI:      "결과가 준비되었습니다. 티켓과 함께 \"$LICH_BIN\" wait를 실행해 받으세요.",
 	WaitingOnPermission: "카드에 권한 확인이 떠 있습니다. 작업은 열린 채로 남아 있으니, 그 카드를 열어 응답하세요.",
+	PermissionToRun:     "실행 권한 요청: %[1]s",
+	TaskReplyTool:       "reply_to_session과 티켓 %[1]s로 답하세요. 요청한 쪽으로 돌아가는 유일한 경로입니다.",
+	TaskReplyCLI:        "\"$LICH_BIN\" reply %[1]s \"<답변>\"을 실행해 답하세요. 요청한 쪽으로 돌아가는 유일한 경로입니다.",
 	WorkerEndedBlank:    "워커의 마지막 턴이 메시지 없이 끝났습니다.",
 	WorkerEndedError:    "워커의 마지막 턴이 API 오류로 끝났습니다.",
 	WorkerEndedRefusal:  "워커의 마지막 턴이 거부로 끝났습니다.",
@@ -52,6 +55,9 @@ var ko = Catalog{
 	MergeSummary:      "풀 리퀘스트 #%[1]d이(가) %[2]s에 병합됨",
 	MergeNotice:       "풀 리퀘스트 #%[1]d %[2]q이(가) %[3]s에 병합되었습니다.",
 	LateNotice:        "%[1]s에 예약되었고, %[2]s 늦게 전달되었습니다.",
+	LateMinutes:       Plural{One: "%d분", Other: "%d분"},
+	LateHours:         Plural{One: "%d시간", Other: "%d시간"},
+	LateDays:          Plural{One: "%d일", Other: "%d일"},
 	OnTimeNotice:      "%[1]s에 예약되었습니다.",
 	UsageReset:        "사용량 한도가 초기화되었습니다.",
 	ResumePrompt:      "하던 작업을 계속하세요.",
@@ -71,8 +77,8 @@ var ko = Catalog{
 
 	ThreadMarked: "표시했습니다. 풀 리퀘스트의 head에 이 커밋이 들어가면 lich가 스레드를 해결하고 이 커밋으로 답글을 답니다.",
 
-	CopyNotice:         "[lich] %s의 사본입니다. 이 세션에서는 원본에 접근할 수 없으며, 수정 사항은 사본에만 남습니다.",
-	ArtifactCopyNotice: "[lich] 세션 %[2]q의 %[1]s 사본입니다. 편집은 사본에만 남습니다.",
+	CopyNotice:         "lich가 %s을(를) 여기에 복사했습니다. 이 세션에서는 원본에 접근할 수 없으며, 수정 사항은 사본에만 남습니다.",
+	ArtifactCopyNotice: "lich가 세션 %[2]q의 %[1]s을(를) 여기에 복사했습니다. 편집은 사본에만 남습니다.",
 
 	MCPInstructions: `lich는 코딩 에이전트 세션을 한 창에서 나란히 실행합니다. 이 도구들은 이 세션이 다른 세션과 함께 일하는 방법입니다.
 
@@ -141,7 +147,7 @@ task 블록이 당신의 프롬프트에 도착하면, 당신이 워커입니다
 	ClosedPlain: "%q을(를) 닫았습니다.\n",
 	ClosedProject: "프로젝트 %[1]q (%[2]s)을(를) 닫고 그 세션들을 멈췄습니다. 세션은 프로젝트에 남아 있습니다. " +
 		"%[2]s에서 세션을 다시 열면 프로젝트가 세션과 함께 다시 열립니다.\n",
-	HandoffNote: "[lich] 세션 %[1]q이(가) 작업을 당신에게 넘겼습니다. 당신은 그 후임으로, 이어서 진행하도록 같은 체크아웃에서 " +
+	HandoffNote: "세션 %[1]q이(가) 작업을 당신에게 넘겼습니다. 당신은 그 후임으로, 이어서 진행하도록 같은 체크아웃에서 " +
 		"새로 열렸습니다. 원래 세션은 사용자가 닫을 때까지 열려 있지만 당신을 기다리지 않으므로 아무것도 돌려보낼 필요가 " +
 		"없습니다. 이 메모를 저장소(git status, git log)와 대조한 뒤 다음 단계를 이어 가세요." +
 		"\n\n완료한 일:\n%[2]s\n\n브랜치: %[3]s\n\n커밋:\n%[4]s\n\n다음 단계:\n%[5]s\n\n주의할 점:\n%[6]s",

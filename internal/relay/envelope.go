@@ -12,7 +12,6 @@ import (
 // The kinds an envelope is.
 const (
 	KindTask           = "task"
-	KindMessage        = "message"
 	KindWorkerFinished = "worker-finished"
 	KindWorkerFailed   = "worker-failed"
 	KindWorkerStopped  = "worker-stopped"
@@ -32,6 +31,7 @@ const (
 	TopicCompacted    = "compacted"
 	TopicUnanswered   = "unanswered"
 	TopicLoop         = "loop"
+	TopicHandoff      = "handoff"
 )
 
 // How a task's answer is taken.
@@ -43,6 +43,9 @@ const (
 // resultCap is where a worker's result is cut inside the envelope, the cut
 // terminal.LastTurnSaid makes (saidRuneCap); the rest waits on the ticket.
 const resultCap = 4000
+
+// envelopeOpen is how every envelope begins.
+const envelopeOpen = "<lich-notification "
 
 // envelopeVersion moves only when a kind, attribute or element is renamed or
 // removed.
@@ -76,7 +79,7 @@ var attrEscaper = strings.NewReplacer("&", "&amp;", "<", "&lt;", ">", "&gt;", `"
 // a &amp;&amp; b (docs/hooks/notification.md, Text).
 func (e Envelope) String() string {
 	var b strings.Builder
-	b.WriteString(`<lich-notification version="` + envelopeVersion + `"`)
+	b.WriteString(envelopeOpen + `version="` + envelopeVersion + `"`)
 	attr := func(name, value string) {
 		if value != "" {
 			b.WriteString(" " + name + `="` + attrEscaper.Replace(value) + `"`)

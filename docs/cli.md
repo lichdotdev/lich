@@ -1486,6 +1486,7 @@ A workflow that fans work out to lich sessions therefore:
 
 ```
 <lich-notification version="1" kind="task" from="<sender label>" session="<sender id>" ticket="<ticket>" answer="reply">
+<summary>Answer with reply_to_session and ticket <ticket>, the only way back to whoever asked.</summary>
 <prompt><prompt></prompt>
 </lich-notification>
 ```
@@ -1494,13 +1495,12 @@ A caller with no session of its own — the CLI run from a script or a plain
 shell — leaves `from` and `session` out, and an extension's task names the
 extension in `from`. `answer` is `last-message` for a Claude Code subagent whose
 mod answers for it (its turn's final message is the answer) and `reply`
-otherwise. The task carries no instruction of its own: how to answer is told
-once, in the spawn briefing and lich's MCP instructions, each naming the
-`reply_to_session` tool where the session has lich's tools and
-`lich reply TICKET ANSWER` where it does not, since a session pointed at a tool
-it does not have loses the turn to an error. Both say the ticket is the only
-way back: whoever asked is blocked on it and reads nothing else, so an answer
-sent over a peer channel is lost.
+otherwise. A `reply` task's summary names the `reply_to_session` tool where the
+target has lich's tools and `"$LICH_BIN" reply <ticket> "<your answer>"` where
+it does not, since a session pointed at a tool it does not have loses the turn
+to an error; the spawn briefing and lich's MCP instructions say the same once,
+and that the ticket is the only way back: whoever asked is blocked on it and
+reads nothing else, so an answer sent over a peer channel is lost.
 
 ## lich server side
 

@@ -17,7 +17,7 @@ import (
 // now. A subagent errand at a worker whose mod answers it is answered by the
 // worker's last message, and is marked so a turn ending without the answer
 // does not end it; every other worker answers by its ticket.
-func (s *Service) taskMessage(id string, t *ticket) string {
+func (s *Service) taskMessage(id string, t *ticket, kind string) string {
 	answer := AnswerReply
 	if t.subagent && s.term.ModAnswers(t.targetID) {
 		s.mu.Lock()
@@ -25,7 +25,7 @@ func (s *Service) taskMessage(id string, t *ticket) string {
 		s.mu.Unlock()
 		answer = AnswerLastMessage
 	}
-	message := taskEnvelope(id, t, answer).String()
+	message := taskEnvelope(s.lang(), id, t, answer, s.offersTools(kind)).String()
 	if t.loop {
 		message += "\n\n" + loopEnvelope(s.lang(), t).String()
 	}

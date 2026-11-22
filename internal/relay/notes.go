@@ -2,8 +2,10 @@ package relay
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/prompt"
 )
 
@@ -11,16 +13,64 @@ import (
 
 // taskEnvelope is a ticket's task as its worker reads it. An extension's
 // errand names the extension and no session: there is none to answer to but
-// the ticket.
-func taskEnvelope(id string, t *ticket, answer string) Envelope {
+// the ticket. One answered by its ticket says how, in one line: the tool where
+// the worker has lich's tools, the command where it does not, since naming a
+// tool a session does not have is worse than naming the command.
+func taskEnvelope(lang prompt.Lang, id string, t *ticket, answer string, hasTools bool) Envelope {
 	from, session := t.sender, t.fromID
 	if t.extensionID != "" {
 		from, session = t.extensionName, ""
 	}
-	return Envelope{
-		Kind: KindTask, From: from, Session: session, Ticket: id, Answer: answer,
-		Body: []Element{{"prompt", t.prompt}},
+	env := Envelope{Kind: KindTask, From: from, Session: session, Ticket: id, Answer: answer}
+	if answer == AnswerReply {
+		text := prompt.For(lang)
+		how := text.TaskReplyCLI
+		if hasTools {
+			how = text.TaskReplyTool
+		}
+		env.Body = append(env.Body, Element{"summary", fmt.Sprintf(how, id)})
 	}
+	env.Body = append(env.Body, Element{"prompt", t.prompt})
+	return env
+}
+
+// HandoffEnvelope is the note a session hands its successor: a notice and not
+// a task, since nothing is owed back to a session done with the work. note is
+// HandoffNote filled in; its first paragraph is the summary, the rest the
+// prompt.
+func HandoffEnvelope(from, session, note string) string {
+	summary, task, _ := strings.Cut(note, "\n\n")
+	env := noticeEnvelope(TopicHandoff, summary, task)
+	env.From, env.Session = from, session
+	return env.String()
+}
+
+// waitingRequest is what a blocked worker asks for, as its status names it:
+// the command or path, else the tool, else only that a permission waits.
+func waitingRequest(lang prompt.Lang, st api.SessionStatus) string {
+	text := prompt.For(lang)
+	for _, what := range []string{st.Detail, st.Tool} {
+		if what != "" {
+			return fmt.Sprintf(text.PermissionToRun, what)
+		}
+	}
+	return text.WaitingOnPermission
+}
+
+// EnvelopeLine is the one line an envelope means, for where a conversation is
+// named by its first message: a task's prompt, else what its first child
+// says. False for a message that is no envelope.
+func EnvelopeLine(message string) (string, bool) {
+	if !strings.HasPrefix(message, envelopeOpen) {
+		return "", false
+	}
+	for _, tag := range []string{"prompt", "summary", "result", "error", "request"} {
+		if _, rest, ok := strings.Cut(message, "\n<"+tag+">"); ok {
+			line, _, _ := strings.Cut(rest, "\n")
+			return strings.TrimSuffix(line, "</"+tag+">"), true
+		}
+	}
+	return "", true
 }
 
 // loopEnvelope rides behind a task that continues a ping-pong streak.

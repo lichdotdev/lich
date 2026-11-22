@@ -6,7 +6,6 @@ import (
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/events"
-	"github.com/lichdotdev/lich/internal/prompt"
 )
 
 // Observe takes one session-state report from the hooks the provider already
@@ -77,7 +76,10 @@ func (s *Service) Observe(sessionID, state string) {
 		go s.deliverNotice(sessionID, reminder, nil)
 	}
 	for _, e := range blocked {
-		go s.deliverNotice(e.t.fromID, waitingEnvelope(e.t, e.id, prompt.For(s.lang()).WaitingOnPermission).String(), blockedNotification(s.lang(), e.t.target))
+		go func() {
+			request := waitingRequest(s.lang(), s.term.Status(e.t.targetID))
+			s.deliverNotice(e.t.fromID, waitingEnvelope(e.t, e.id, request).String(), blockedNotification(s.lang(), e.t.target))
+		}()
 	}
 	if finished {
 		go s.finishWorker(sessionID)
