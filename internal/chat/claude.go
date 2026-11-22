@@ -43,6 +43,7 @@ type claudeDriver struct {
 	// by its install path, which a new version changes.
 	details map[string]claudeDetails
 	tasks   *claudeTasks
+	shells  claudeShells
 }
 
 type claudeControl struct {
@@ -246,6 +247,9 @@ func (d *claudeDriver) handle(raw []byte) {
 			d.c.bind(line.SessionID, expected)
 			d.markCommands(line.Skills, line.TerminalCommands)
 		}
+		if strings.HasPrefix(line.Subtype, "task_") {
+			d.shellTask(line.Subtype, raw)
+		}
 		d.running(line.Model, line.PermissionMode)
 	case "result":
 		d.result(line)
@@ -386,6 +390,10 @@ func readClaudeUser(c *chatSession, line claudeLine, history bool) {
 		case b.Type == "tool_result":
 			if d, ok := c.drv.(*claudeDriver); ok && d.tasks.result(b) {
 				c.conv.plan(d.tasks.list())
+			}
+			// a transcript read back names the files of shells long gone
+			if d, ok := c.drv.(*claudeDriver); ok && !history {
+				d.shells.result(b.ToolUseID, blockText(b.Content))
 			}
 			c.conv.update(b.ToolUseID, api.ItemTool, true, func(it *api.ChatItem) {
 				if it.Tool == nil {

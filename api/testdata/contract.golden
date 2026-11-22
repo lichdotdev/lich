@@ -59,8 +59,11 @@ chat.Reply(ChatReplyOptions) None
 chat.SetOption(ChatSetOptionOptions) None
 chat.SetSkill(ChatSetSkillOptions) None
 chat.SetView(ChatViewOptions) None
+chat.ShellOutput(ChatShellOptions) string
+chat.Shells(SessionIDOptions) []ChatShell
 chat.Skills(SessionIDOptions) ChatSkillList
 chat.Steer(ChatPromptOptions) None
+chat.StopShell(ChatShellOptions) None
 claudeprofile.CancelLogin(ProfileSlugOptions) None
 claudeprofile.CreateProfile(CreateProfileOptions) Profile
 claudeprofile.DeleteProfile(ProfileSlugOptions) None
@@ -332,6 +335,7 @@ event browser:frame:<id> BrowserFrame
 event chat-commands ChatCommandsUpdate
 event chat-item ChatItemUpdate
 event chat-options ChatOptionsUpdate
+event chat-shells ChatShellsUpdate
 event chat-turn ChatTurn
 event claude-profile-login ProfileLogin
 event codex-profile-login ProfileLogin
@@ -736,6 +740,20 @@ ChatSetSkillOptions {
 ChatViewOptions {
 	id string
 	view string
+}
+
+ChatShellOptions {
+	id string
+	shell string
+}
+
+ChatShell {
+	id string
+	command string
+	description,omitempty string
+	state string
+	started int64
+	ended,omitempty int64
 }
 
 ChatSkillList {
@@ -2200,6 +2218,11 @@ ChatItemUpdate {
 ChatOptionsUpdate {
 	sessionId string
 	options []ChatOption
+}
+
+ChatShellsUpdate {
+	sessionId string
+	shells []ChatShell
 }
 
 ChatTurn {
