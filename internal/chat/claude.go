@@ -44,8 +44,10 @@ type claudeDriver struct {
 	// details is what `claude plugin details` said of each installed plugin,
 	// by its install path, which a new version changes.
 	details map[string]claudeDetails
-	tasks   *claudeTasks
-	shells  claudeShells
+	// agentList is the subagents initialize listed.
+	agentList []claudeAgent
+	tasks     *claudeTasks
+	shells    claudeShells
 }
 
 type claudeControl struct {

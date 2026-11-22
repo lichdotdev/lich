@@ -50,6 +50,7 @@ type chatTools struct {
 	gen  int
 	plug chatPlugins
 	set  chatSettings
+	mem  chatMemory
 	// shell is the output of the shell the shells' panel shows.
 	shell chatShellOut
 	// base is the box's length when the panel opened: typing past it shuts
@@ -83,6 +84,7 @@ func (t *chatTools) open(kind string) {
 	t.query.SetText("")
 	t.plug.reset()
 	t.set.reset()
+	t.mem.reset()
 }
 
 func (t *chatTools) shut() { t.kind, t.detail = "", "" }
@@ -111,6 +113,8 @@ func (u *window) openTools(p *chatPane, id, text string) bool {
 		kind = text
 	case chatShellsPanel, chatBashesCommand:
 		kind, kinds = chatShellsPanel, chatShellKinds
+	case chatMemoryCommand, chatAgentsCommand:
+		kind, kinds = text, chatMemoryKinds
 	}
 	sv, ok := u.model.sessionViewOf(id)
 	if kind == "" || !ok || !slices.Contains(kinds, sv.Kind) {
@@ -145,9 +149,15 @@ func (u *window) fetchTools(p *chatPane, id string) {
 			plugins api.ChatPluginList
 			perms   api.ChatPermissionList
 			hooks   api.ChatHookList
+			memory  api.ChatMemoryList
+			agents  api.ChatAgentList
 			err     error
 		)
 		switch kind {
+		case chatMemoryCommand:
+			memory, err = u.client.ChatMemory(u.ctx, id)
+		case chatAgentsCommand:
+			agents, err = u.client.ChatAgents(u.ctx, id)
 		case chatMCPCommand:
 			mcp, err = u.client.ChatMCP(u.ctx, id)
 		case chatSkillsCommand:
@@ -164,6 +174,7 @@ func (u *window) fetchTools(p *chatPane, id string) {
 		if err == nil && t.kind == kind {
 			t.mcp, t.skills, t.plugins, t.loaded = mcp, skills, plugins, true
 			t.set.perms, t.set.hooks = perms, hooks
+			t.mem.list, t.mem.agents = memory, agents
 			t.gen++
 		}
 		t.mu.Unlock()
@@ -244,10 +255,16 @@ func (u *window) toolsActs(gtx C, p *chatPane, id string) {
 	}
 	t.mu.Lock()
 	mcp, skills, plugins, loaded := t.mcp, t.skills, t.plugins, t.loaded
+	memory, agents := t.mem.list, t.mem.agents
 	t.mu.Unlock()
+	sv, _ := u.model.sessionViewOf(id)
 	rows, enter := 0, func(int) {}
 	switch {
 	case !loaded:
+	case t.kind == chatMemoryCommand:
+		rows, enter = u.memoryActs(p, sv, memory)
+	case t.kind == chatAgentsCommand:
+		rows, enter = u.agentsActs(gtx, p, sv, agents)
 	case t.kind == chatShellsPanel:
 		rows, enter = u.shellActs(gtx, p, id)
 	case t.kind == chatPluginCommand:
@@ -336,7 +353,7 @@ func (u *window) toolsKeys(gtx C, p *chatPane, id string, rows int, enter func(i
 			gtx.Execute(key.FocusCmd{Tag: &p.editor})
 			return
 		default:
-			if !u.submitSource(p, id, t.keyTag(p)) && t.cursor < rows {
+			if !u.submitSource(p, id, t.keyTag(p)) && !u.submitAgent(p, id, t.keyTag(p)) && t.cursor < rows {
 				enter(t.cursor)
 			}
 		}
@@ -348,6 +365,8 @@ func (u *window) toolsKeys(gtx C, p *chatPane, id string, rows int, enter func(i
 // box everywhere else.
 func (t *chatTools) keyTag(p *chatPane) *widget.Editor {
 	switch {
+	case t.kind == chatAgentsCommand:
+		return t.memoryKeyTag(&p.editor)
 	case t.kind == chatSkillsCommand:
 		return &t.query
 	case t.kind == chatPermissionsCommand && t.detail == permAddDetail:

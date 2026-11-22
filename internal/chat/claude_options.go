@@ -62,10 +62,12 @@ func (d *claudeDriver) readInitialize(body json.RawMessage, chosen string) {
 		Models   []claudeModel   `json:"models"`
 		Mode     string          `json:"current_permission_mode"`
 		Commands []claudeCommand `json:"commands"`
+		Agents   []claudeAgent   `json:"agents"`
 	}
 	_ = json.Unmarshal(body, &init)
 	d.mu.Lock()
 	d.run.models, d.run.mode, d.run.chosen = init.Models, init.Mode, chosen
+	d.agentList = init.Agents
 	d.mu.Unlock()
 	d.listCommands(init.Commands)
 }

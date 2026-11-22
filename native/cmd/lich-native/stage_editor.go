@@ -43,8 +43,10 @@ type fileEditor struct {
 	checkout   string
 	// dir is the folder outside the checkout the open file is read from, for
 	// an agent's artifact, which the editor only shows: "" for a checkout's
-	// file.
-	dir string
+	// file. writable is set on one the person edits there, a memory or
+	// subagent file of the chat's /memory and /agents panels.
+	dir      string
+	writable bool
 	// onDirty hears the editor start or stop holding unsaved changes, and
 	// onSaved a save that landed.
 	onDirty, onSaved func()
@@ -122,10 +124,21 @@ func (f *fileEditor) openArtifact(dir, name string) {
 	f.openFrom(dir, name, 0, 0, agentNote{})
 }
 
+// openOutside shows file name of dir, outside the checkout, to edit and save
+// in place.
+func (f *fileEditor) openOutside(dir, name string) {
+	f.openFrom(dir, name, 0, 0, agentNote{})
+	f.writable, f.md.rendering = true, false
+}
+
+// readOnly is whether the open file is one the editor only shows.
+func (f *fileEditor) readOnly() bool { return f.dir != "" && !f.writable }
+
 // holds is whether the editor shows rel of dir ("" for the checkout).
 func (f *fileEditor) holds(dir, rel string) bool { return f.rel == rel && f.dir == dir }
 
 func (f *fileEditor) openFrom(dir, rel string, line, end int, note agentNote) {
+	f.writable = false
 	if !f.holds(dir, rel) {
 		f.dir, f.rel, f.kind = dir, rel, previewKindOf(rel)
 		f.opens++
@@ -240,7 +253,7 @@ func (f *fileEditor) updated(u godemirror.Update) {
 	if !u.DocChanged() {
 		return
 	}
-	if f.dir != "" {
+	if f.readOnly() {
 		// An agent's file is not the checkout's to write: typing in its
 		// source changes nothing.
 		if u.State.Doc() != f.base {
@@ -329,7 +342,7 @@ func (f *fileEditor) layout(gtx C, th *ui.Theme, env editorEnv) error {
 
 // editable is a text file in the editor, which Undo and Save act on.
 func (f *fileEditor) editable() bool {
-	return f.kind == blobNone && f.ed != nil && f.loaded == f.opens && !f.md.rendering && f.dir == ""
+	return f.kind == blobNone && f.ed != nil && f.loaded == f.opens && !f.md.rendering && !f.readOnly()
 }
 
 func (f *fileEditor) body(gtx C, th *ui.Theme) (D, error) {

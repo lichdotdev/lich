@@ -436,6 +436,28 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   Codex chat picks up a plugin's hooks or MCP servers before it restarts is not measured. lich's own plugin and its
   marketplace take no action in the panel: lich installs and pins them itself (Plugin install and upgrades). The
   ACP providers and Kiro CLI report no plugins.
+- **A chat's /memory and /agents panels show what Claude Code and Codex report, and Claude Code has no /agents
+  screen to mirror** (`internal/chat/memory.go`, `claude_memory.go`, `codex_memory.go`). Claude Code (2.1.330)
+  answers `get_memory_dialog`, marked @internal, with the rows its /memory dialog draws: the instruction files that
+  load, the saved memories of the auto-memory folder and the auto-memory and auto-dream settings. A refusal reads
+  as nothing reported. Its folder rows (the auto-memory, team and agent memory folders) are left out: lich's
+  editor opens files, and the auto-memory folder's files are listed one by one. The memory settings are written by
+  `claude edit-memory-settings --json`, run as `edit-skill-overrides` is, into the profile's `settings.json`, so a
+  change holds for every project of that profile; the running chat reads it at once (measured). Only the user and
+  project files the dialog lists as missing can be created, empty, from the panel. Claude Code's /agents wizard is
+  gone (it prints where the files go), so the /agents panel is lich's: `initialize` lists every subagent by name,
+  description and model, `get_context_usage` (no turn) the source and file of each one not built in, and the
+  tools come from the file's frontmatter, read without a YAML library: a folded or multi-line value reads as
+  empty. Adding one writes `<name>.md` with its name and description, which Claude Code refuses to list without
+  (measured), into the checkout's `.claude/agents/` or the profile's `agents/`, never over a file, and opens it to
+  write its prompt; Claude Code watches those folders, so the chat lists it at once. There is no delete and no
+  "generate with Claude". A plugin's or a managed subagent opens read only. A subagent whose file goes away
+  mid-session still reads as built in until the chat restarts. Codex (0.170.0) has neither screen: /memory lists
+  `instructionSources` of `thread/start` and `thread/resume`, the AGENTS.md files the thread loaded, fixed for the
+  thread's life, with no setting; /agents lists the roles `config/read`'s `agents` table declares, opened by their
+  `config_file`, without Codex's built-in roles, which no method lists, and with no add, since a role is declared
+  in `config.toml`. A memory file outside the checkout opens in the checkout's stage editor and saves in place.
+  The ACP providers and Kiro CLI report neither, and Crush has no chat.
 
 - **A chat's /permissions and /hooks panels show what Claude Code and Codex report, and nothing elsewhere**
   (`internal/chat/permissions.go`, `claude_permissions.go`, `claude_hooks.go`, `codex_hooks.go`). Claude Code

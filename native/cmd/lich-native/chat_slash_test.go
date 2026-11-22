@@ -89,10 +89,10 @@ func TestTheSlashListOpensFiltersAndCompletes(t *testing.T) {
 	if r.shows("Compact the conversation") {
 		t.Error("the list stays open once the command is in")
 	}
-	// lich's own /new, /mcp, /skills, /plugin, /permissions and /hooks lead
-	// the provider's commands.
+	// lich's own /new, /mcp, /skills, /plugin, /permissions, /hooks, /memory
+	// and /agents lead the provider's commands.
 	typeIn(r, p, "/")
-	for range 7 {
+	for range 9 {
 		r.press(key.NameDownArrow)
 	}
 	r.press(key.NameReturn)
@@ -176,8 +176,10 @@ func TestTheSlashListStaysInALowPane(t *testing.T) {
 	r.settle(t)
 	typeIn(r, u.chats.pane("s1"), "/")
 	top := r.size.Y
+	// lich's own commands lead the list, so its first row is /new; a low pane
+	// may show no /cmd row before it scrolls.
 	for _, n := range r.nodes() {
-		if strings.HasPrefix(n.Desc.Label, "/cmd") {
+		if strings.HasPrefix(n.Desc.Label, "/cmd") || strings.HasPrefix(n.Desc.Label, "/new") {
 			top = min(top, n.Desc.Bounds.Min.Y)
 		}
 	}

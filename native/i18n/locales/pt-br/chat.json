@@ -113,7 +113,9 @@
     "skills": "Liga e desliga skills",
     "plugin": "Instala e gerencia plugins",
     "permissions": "Ver e mudar as regras de permissão",
-    "hooks": "Ver os hooks que rodam"
+    "hooks": "Ver os hooks que rodam",
+    "memory": "Editar arquivos de instruções e ajustes de memória",
+    "agents": "Ver e adicionar subagentes"
   },
   "start": {
     "lines": "O que vamos conjurar em {project}?|O que invocamos para {project}?|O que vamos canalizar para {project}?|O que tem no caldeirão de {project}?|O que você quer desvendar em {project}?|O que vamos inscrever hoje em {project}?|O que vamos tecer em {project}?|O que vamos erguer em {project}?"
@@ -389,5 +391,36 @@
       "safeMode": "O modo seguro está ligado, então estes hooks não rodam.",
       "bareMode": "O modo bare está ligado, então estes hooks não rodam."
     }
+  },
+  "memory": {
+    "title": "Memória",
+    "fileCount": {
+      "one": "{count} arquivo",
+      "other": "{count} arquivos"
+    },
+    "none": "{provider} não informa ao lich quais arquivos de instruções carrega.",
+    "user": "Instruções do usuário",
+    "project": "Instruções do projeto",
+    "missing": "ainda não criado",
+    "saved": "Memórias salvas",
+    "auto": "Memória automática",
+    "dream": "Auto-dream"
+  },
+  "agents": {
+    "title": "Subagentes",
+    "count": {
+      "one": "{count} subagente",
+      "other": "{count} subagentes"
+    },
+    "none": "{provider} não informa ao lich seus subagentes.",
+    "group": {
+      "plugin": "Plugin",
+      "managed": "Gerenciados",
+      "builtIn": "Nativos"
+    },
+    "name": "Nome",
+    "description": "Quando usar",
+    "addProject": "Adicionar a este projeto",
+    "addUser": "Adicionar a todos os projetos"
   }
 }

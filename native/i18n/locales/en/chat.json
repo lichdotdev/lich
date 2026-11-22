@@ -113,7 +113,9 @@
     "skills": "Turn skills on or off",
     "plugin": "Install and manage plugins",
     "permissions": "Review and change the permission rules",
-    "hooks": "See the hooks that run"
+    "hooks": "See the hooks that run",
+    "memory": "Edit instruction files and memory settings",
+    "agents": "See and add subagents"
   },
   "start": {
     "lines": "What shall we conjure in {project}?|What should we summon for {project}?|What are we channeling into {project}?|What's brewing in {project}?|What do you want to scry in {project}?|What are we inscribing in {project} today?|What shall we weave into {project}?|What are we raising in {project}?"
@@ -389,5 +391,36 @@
       "safeMode": "Safe mode is on, so these hooks do not run.",
       "bareMode": "Bare mode is on, so these hooks do not run."
     }
+  },
+  "memory": {
+    "title": "Memory",
+    "fileCount": {
+      "one": "{count} file",
+      "other": "{count} files"
+    },
+    "none": "{provider} does not tell lich which instruction files it loads.",
+    "user": "User instructions",
+    "project": "Project instructions",
+    "missing": "not created yet",
+    "saved": "Saved memories",
+    "auto": "Auto-memory",
+    "dream": "Auto-dream"
+  },
+  "agents": {
+    "title": "Subagents",
+    "count": {
+      "one": "{count} subagent",
+      "other": "{count} subagents"
+    },
+    "none": "{provider} does not tell lich its subagents.",
+    "group": {
+      "plugin": "Plugin",
+      "managed": "Managed",
+      "builtIn": "Built-in"
+    },
+    "name": "Name",
+    "description": "When to use it",
+    "addProject": "Add to this project",
+    "addUser": "Add to all projects"
   }
 }
