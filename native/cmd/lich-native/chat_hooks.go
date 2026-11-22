@@ -196,7 +196,7 @@ func (t *chatTools) hookDetail(gtx C, th *ui.Theme, h api.ChatHook, l api.ChatHo
 	var foot layout.Widget
 	switch {
 	case len(acts) > 0:
-		foot = func(gtx C) D { return t.pluginButtons(gtx, th, hookButtons(acts), false) }
+		foot = func(gtx C) D { return t.pluginButtons(gtx, th, hookButtons(acts), "") }
 	case len(l.Actions) == 0:
 		foot = toolsFootNote(th, i18n.T("chat.hooks.readOnly"))
 	case h.Managed:

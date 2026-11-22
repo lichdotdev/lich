@@ -66,7 +66,7 @@ func (t *chatTools) pluginDetail(gtx C, th *ui.Theme, back, name, sub string, li
 	return t.scrolled(gtx, th, head, lines, foot)
 }
 
-func (t *chatTools) pluginButtons(gtx C, th *ui.Theme, acts []chatPluginAction, running bool) D {
+func (t *chatTools) pluginButtons(gtx C, th *ui.Theme, acts []chatPluginAction, running string) D {
 	if len(acts) == 0 {
 		return D{}
 	}
@@ -76,7 +76,9 @@ func (t *chatTools) pluginButtons(gtx C, th *ui.Theme, acts []chatPluginAction, 
 			row = append(row, ui.Gap(1.5))
 		}
 		b := th.Button(t.act(a.key()), a.label)
-		b.Variant, b.Size, b.Disabled = ui.VariantSecondary, ui.SizeSM, running
+		b.Variant, b.Size = ui.VariantSecondary, ui.SizeSM
+		b.Busy = running == a.key()
+		b.Disabled = running != "" && !b.Busy
 		row = append(row, layout.Rigid(b.Layout))
 	}
 	return layout.UniformInset(ui.Space(1.5)).Layout(gtx, func(gtx C) D {

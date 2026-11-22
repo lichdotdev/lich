@@ -215,7 +215,9 @@ func (t *chatTools) addMarketLine(th *ui.Theme) layout.Widget {
 			in := th.Input(&t.plug.source, i18n.T("chat.plugins.sourceHint"))
 			in.Height, in.TextSize = ui.Space(8), ui.TextXS
 			b := th.Button(&t.plug.add, i18n.T("chat.plugins.act.marketAdd"))
-			b.Variant, b.Size, b.Disabled = ui.VariantSecondary, ui.SizeSM, running
+			b.Variant, b.Size = ui.VariantSecondary, ui.SizeSM
+			b.Busy = running == chatPluginAction{action: api.MarketplaceAdd}.key()
+			b.Disabled = running != "" && !b.Busy
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 				layout.Flexed(1, in.Layout), ui.Gap(1.5), layout.Rigid(b.Layout))
 		})

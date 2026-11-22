@@ -81,7 +81,10 @@ type ButtonStyle struct {
 	Disabled bool
 	// Lit draws it hovered: a press the window plays for someone else, the
 	// agent's cursor on a page's dialog.
-	Lit   bool
+	Lit bool
+	// Busy draws a spinner in the icon's place and takes no click: the action
+	// the button started is still running.
+	Busy  bool
 	theme *Theme
 }
 
@@ -135,7 +138,7 @@ func (b ButtonStyle) colors(hovered bool) buttonColors {
 }
 
 func (b ButtonStyle) Layout(gtx C) D {
-	if b.Disabled {
+	if b.Disabled || b.Busy {
 		return b.draw(gtx, false)
 	}
 	return b.Click.Layout(gtx, func(gtx C) D { return b.draw(gtx, b.Lit || b.Click.Hovered()) })
@@ -177,10 +180,13 @@ func (b ButtonStyle) surface(gtx C, col buttonColors) D {
 
 func (b ButtonStyle) content(gtx C, geo buttonGeometry, fg color.NRGBA) D {
 	var children []layout.FlexChild
-	if b.Icon != nil {
+	switch {
+	case b.Busy:
+		children = append(children, layout.Rigid(func(gtx C) D { return b.theme.Spinner(gtx, geo.icon, fg) }))
+	case b.Icon != nil:
 		children = append(children, layout.Rigid(func(gtx C) D { return b.Icon.Layout(gtx, geo.icon, fg) }))
 	}
-	if b.Icon != nil && b.Text != "" {
+	if (b.Busy || b.Icon != nil) && b.Text != "" {
 		children = append(children, layout.Rigid(layout.Spacer{Width: geo.gap}.Layout))
 	}
 	if b.Text != "" {

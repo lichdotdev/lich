@@ -283,3 +283,35 @@ func TestGapDoesNotMoveTheBaseline(t *testing.T) {
 		t.Errorf("got %v, want a 16px row with the text's own baseline %d", got, want)
 	}
 }
+
+// A busy button takes the icon's room for its spinner and no click: the
+// action it started is still running.
+func TestBusyButtonSpinsInTheIconsPlaceAndTakesNoClick(t *testing.T) {
+	th := testTheme()
+	icon := th.Button(new(Clickable), "Update")
+	icon.Icon, icon.Size = icons.Lucide("plus"), SizeSM
+	busy := th.Button(new(Clickable), "Update")
+	busy.Busy, busy.Size = true, SizeSM
+	if got, want := layoutAt(busy.Layout, 0, 500).Size, layoutAt(icon.Layout, 0, 500).Size; got != want {
+		t.Errorf("busy is %v, want the icon button's %v", got, want)
+	}
+	clicked := 0
+	rig := newToggleRig(image.Pt(10, 10), func(gtx C) D {
+		if busy.Click.Clicked(gtx) {
+			clicked++
+		}
+		return busy.Layout(gtx)
+	})
+	rig.click(image.Pt(20, 10))
+	rig.frame()
+	if clicked != 0 {
+		t.Errorf("a busy button took %d clicks", clicked)
+	}
+	busy.Busy = false
+	rig.frame()
+	rig.click(image.Pt(20, 10))
+	rig.frame()
+	if clicked != 1 {
+		t.Errorf("the button, no longer busy, took %d clicks, want 1", clicked)
+	}
+}

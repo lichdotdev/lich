@@ -142,7 +142,9 @@ Buttons side by side share one size. A row that mixes 24px and 32px buttons is a
 
 Variants: `VariantDefault` (primary fill) for the one action a view exists for, `VariantSecondary` for the
 next most likely, `VariantOutline` for an action that should stand out from ghost ones, `VariantGhost` for
-the rest, `VariantDestructive` for what cannot be undone. A disabled button says why in a tooltip.
+the rest, `VariantDestructive` for what cannot be undone. A disabled button says why in a tooltip. A button
+whose action is still running is `Busy`: the kit's spinner in its icon's place, no click, and its neighbours
+disabled until it ends (the /plugin detail's Update).
 
 Buttons do not move when pressed; only their color changes.
 

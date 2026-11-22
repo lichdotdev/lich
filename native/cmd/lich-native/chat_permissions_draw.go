@@ -230,7 +230,11 @@ func (t *chatTools) ruleDetail(gtx C, th *ui.Theme, l api.ChatPermissionList, ru
 		foot = toolsFootNote(th, i18n.T("chat.permissions.ignored"))
 	case r.Removable:
 		remove := []chatPluginAction{{action: api.PermissionRemove, label: i18n.T("chat.permissions.remove")}}
-		foot = func(gtx C) D { return t.pluginButtons(gtx, th, remove, running) }
+		busy := ""
+		if running {
+			busy = remove[0].key()
+		}
+		foot = func(gtx C) D { return t.pluginButtons(gtx, th, remove, busy) }
 	default:
 		foot = toolsFootNote(th, i18n.T("chat.permissions.readOnly"))
 	}

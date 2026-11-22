@@ -179,3 +179,30 @@ func TestDiscoverPutsNamesFirst(t *testing.T) {
 		t.Errorf("found %+v, want pr-review first", got)
 	}
 }
+
+// While an action runs its button spins and every button waits: another
+// click asks nothing more of the backend.
+func TestARunningUpdateSpinsAndTheButtonsWait(t *testing.T) {
+	r, f, p := pluginFrames(t)
+	r.click(t, r.at(t, "ponytail"))
+	update := chatPluginAction{action: api.PluginUpdate, scope: api.PluginScopeUser}.key()
+	p.tools.mu.Lock()
+	p.tools.plug.running = update
+	p.tools.mu.Unlock()
+	toolsSettle(r)
+	writeShot(t, r, "plugin-update-busy.png")
+	r.click(t, r.at(t, "Turn off"))
+	r.click(t, r.at(t, "Update"))
+	time.Sleep(20 * time.Millisecond)
+	if n := f.callsOf(api.ChatPluginAct.Name); n != 0 {
+		t.Errorf("the buttons took %d actions while one ran", n)
+	}
+	p.tools.mu.Lock()
+	p.tools.plug.running = ""
+	p.tools.mu.Unlock()
+	toolsSettle(r)
+	r.click(t, r.at(t, "Update"))
+	if body := f.waitCall(t, api.ChatPluginAct.Name); !strings.Contains(body, `"action":"update"`) {
+		t.Errorf("Update asked %s", body)
+	}
+}

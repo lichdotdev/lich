@@ -25,10 +25,10 @@ type chatPlugins struct {
 	tabs   ui.TabsState
 	source widget.Editor
 	add    ui.Clickable
-	// note is what the last action left to say and running the action still
-	// going, both guarded by chatTools.mu.
+	// note is what the last action left to say and running the key of the
+	// action still going, "" for none, both guarded by chatTools.mu.
 	note    string
-	running bool
+	running string
 	// found is the plugins on offer the search holds, kept for query and
 	// the read gen it was cut from.
 	found      []api.ChatPlugin
@@ -223,11 +223,11 @@ func (u *window) submitSource(p *chatPane, id string, tag *widget.Editor) bool {
 func (u *window) pluginAct(p *chatPane, id, action, target, scope string) {
 	t := &p.tools
 	t.mu.Lock()
-	if t.plug.running {
+	if t.plug.running != "" {
 		t.mu.Unlock()
 		return
 	}
-	t.plug.running, t.plug.note = true, ""
+	t.plug.running, t.plug.note = chatPluginAction{action: action, scope: scope}.key(), ""
 	t.mu.Unlock()
 	go func() {
 		res, err := u.client.ChatPluginAct(u.ctx, id, action, target, scope)
@@ -239,7 +239,7 @@ func (u *window) pluginAct(p *chatPane, id, action, target, scope string) {
 			note = i18n.T("chat.plugins.current")
 		}
 		t.mu.Lock()
-		t.plug.running, t.plug.note = false, note
+		t.plug.running, t.plug.note = "", note
 		t.mu.Unlock()
 		u.chatFailed(err)
 		u.fetchTools(p, id)
