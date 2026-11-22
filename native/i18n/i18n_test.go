@@ -51,7 +51,7 @@ func TestPromptFollowsThePromptLanguageNotTheInterfaces(t *testing.T) {
 	SetPromptLanguage(ES)
 	defer SetCurrent(EN)
 	defer SetPromptLanguage(EN)
-	if got := Prompt("prompts.reviewComments.header"); got != In(ES, "prompts.reviewComments.header") {
+	if got := Prompt("prompts.schedule.review"); got != In(ES, "prompts.schedule.review") {
 		t.Fatalf("Prompt = %q", got)
 	}
 }

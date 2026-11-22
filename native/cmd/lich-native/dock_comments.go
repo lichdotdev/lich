@@ -27,6 +27,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/lichdotdev/lich/api"
 	"image"
 	"path"
 	"slices"
@@ -137,25 +138,15 @@ func (s *commentStore) edited() (reviewComment, bool) {
 // store's: read it, don't keep it across a change.
 func (s *commentStore) list(target string) []reviewComment { return s.byTarget[target] }
 
-// composeReviewComments is the batch as one prompt: a markdown list, each item
-// anchored the way an inject writes a line reference.
-func composeReviewComments(list []reviewComment, note string) string {
-	items := make([]string, 0, len(list)+1)
+// reviewCommentsRequest is the batch as one request, each comment where it
+// was written, note the person's closing word.
+func reviewCommentsRequest(list []reviewComment, note string) api.RequestOptions {
+	req := api.RequestOptions{Topic: api.RequestReviewComments, Note: note}
 	for _, c := range list {
-		if c.path == "" {
-			items = append(items, "- "+continuation(c.txt))
-			continue
-		}
-		items = append(items, fmt.Sprintf("- %s:%s — %s", c.path, c.lines, continuation(c.txt)))
+		req.Items = append(req.Items, api.RequestItem{Path: c.path, Lines: c.lines, Text: c.txt})
 	}
-	if note = strings.TrimSpace(note); note != "" {
-		items = append(items, "- "+continuation(note))
-	}
-	return i18n.Prompt("prompts.reviewComments.header") + "\n\n" + strings.Join(items, "\n")
+	return req
 }
-
-// continuation keeps a multi-line comment one list item.
-func continuation(text string) string { return strings.ReplaceAll(text, "\n", "\n  ") }
 
 // commentComposer is the box a "Comment for the session" opens under the
 // selection: Enter adds it to the batch, Shift+Enter is a new line, Escape
@@ -344,7 +335,7 @@ const batchNoteMax = unit.Dp(128)
 // submit sends the batch as the session's prompt and reports whether one took
 // it; the comments are the one thing here the user typed, so they stay until
 // the session has taken them.
-func (b *commentBatch) layout(gtx C, th *ui.Theme, store *commentStore, target string, submit func(string, func(error)) bool, notify func(ui.Toast)) D {
+func (b *commentBatch) layout(gtx C, th *ui.Theme, store *commentStore, target string, submit func(api.RequestOptions, func(error)) bool, notify func(ui.Toast)) D {
 	b.update(gtx, store, target, submit, notify)
 	comments := store.list(target)
 	if len(comments) == 0 {
@@ -367,7 +358,7 @@ func (b *commentBatch) layout(gtx C, th *ui.Theme, store *commentStore, target s
 }
 
 // update runs the strip's clicks against the store before it is drawn.
-func (b *commentBatch) update(gtx C, store *commentStore, target string, submit func(string, func(error)) bool, notify func(ui.Toast)) {
+func (b *commentBatch) update(gtx C, store *commentStore, target string, submit func(api.RequestOptions, func(error)) bool, notify func(ui.Toast)) {
 	b.note.Submit = true
 	if b.removes == nil {
 		b.removes, b.edits = map[int]*ui.Clickable{}, map[int]*ui.Clickable{}
@@ -405,13 +396,13 @@ func (b *commentBatch) update(gtx C, store *commentStore, target string, submit 
 
 // sendBatch hands target's batch to submit and keeps it in the store until
 // settle learns the session took it.
-func (b *commentBatch) sendBatch(store *commentStore, target string, submit func(string, func(error)) bool, notify func(ui.Toast)) {
+func (b *commentBatch) sendBatch(store *commentStore, target string, submit func(api.RequestOptions, func(error)) bool, notify func(ui.Toast)) {
 	comments := store.list(target)
 	send := &batchSend{target: target, note: b.note.Text(), result: make(chan error, 1)}
 	for _, c := range comments {
 		send.ids = append(send.ids, c.id)
 	}
-	if !submit(composeReviewComments(comments, send.note), func(err error) { send.result <- err }) {
+	if !submit(reviewCommentsRequest(comments, send.note), func(err error) { send.result <- err }) {
 		notify(ui.Toast{Variant: ui.ToastError, Title: i18n.T("diff.commentBatch.openSession")})
 		return
 	}

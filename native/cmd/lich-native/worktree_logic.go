@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/lichdotdev/lich/api"
 	"regexp"
 	"strconv"
 	"strings"
@@ -53,13 +54,9 @@ func parseIssueRef(typed string) int {
 
 func issueName(i backend.Issue) string { return fmt.Sprintf("%d %s", i.Number, i.Title) }
 
-// issueBrief is the message the issue's session is sent as its first prompt.
-func issueBrief(i backend.Issue) string {
-	head := i18n.Prompt("prompts.issue.head", i18n.Args{"number": i.Number, "title": i.Title, "url": i.URL})
-	if body := strings.TrimSpace(i.Body); body != "" {
-		return head + "\n\n" + body
-	}
-	return head
+// issueRequest is what the issue's session is handed as its first prompt.
+func issueRequest(i backend.Issue) api.RequestOptions {
+	return api.RequestOptions{Topic: api.RequestIssue, Issue: i.Number, Title: i.Title, URL: i.URL, Body: i.Body}
 }
 
 // The bounds a slug of typed words grows within, in words and in

@@ -33,7 +33,7 @@ func (r *frameRig) clipboardText(t *testing.T, text string) {
 // its copy stored through /drop, the text left as it was.
 func TestAPastedImageLandsAsACard(t *testing.T) {
 	u, r, f := chatFrames(t, api.ViewChat)
-	f.answers = map[string]any{"/drop": map[string]string{"path": "/cfg/dropped/s1/pasted-image.png", "notice": "[lich] copy of pasted-image.png"}}
+	f.answers = map[string]any{"/drop": map[string]string{"path": "/cfg/dropped/s1/pasted-image.png", "notice": "lich copied pasted-image.png here"}}
 	u.chats.readImage = func(context.Context) (clipImage, error) { return clipImage{data: []byte("\x89PNG"), ext: ".png"}, nil }
 	p := u.chats.pane("s1")
 	p.editor.SetText("look ")

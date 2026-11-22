@@ -114,8 +114,8 @@ func TestMergeRequestCopySaysMergeRequest(t *testing.T) {
 		t.Errorf("empty merged list = %q", got)
 	}
 	d := backend.PRDetail{Number: 7, State: "OPEN", Mergeable: "CONFLICTING", HeadRefName: "feat/x", BaseRefName: "main"}
-	if _, prompt, _ := pullHandoff(d, nil, api.ForgeGitLab); prompt != "Merge request !7 (feat/x) has merge conflicts with main. Resolve them." {
-		t.Errorf("hand-off = %q", prompt)
+	if _, req, _ := pullHandoff(d, nil, api.ForgeGitLab); req.Forge != api.ForgeGitLab || req.Topic != api.RequestConflicts {
+		t.Errorf("hand-off = %+v, want a GitLab conflicts request", req)
 	}
 	i18n.SetCurrent(i18n.PtBR)
 	defer i18n.SetCurrent(i18n.EN)
@@ -136,11 +136,12 @@ func TestMergeRequestShowsNoConversationTab(t *testing.T) {
 
 func TestMergeRequestActionKeepsOnlyWhatGitLabTakes(t *testing.T) {
 	body := "new"
-	all := pullsAction{session: &backend.PRDetail{}, handoff: "fix", merge: "squash", admin: true, approve: true, refresh: true,
+	fix := &api.RequestOptions{Topic: api.RequestChecks}
+	all := pullsAction{session: &backend.PRDetail{}, handoff: fix, merge: "squash", admin: true, approve: true, refresh: true,
 		external: "u", create: true, comment: "c", reply: &threadReply{}, resolve: &threadResolve{}, threads: []backend.PRReviewThread{{}},
 		edit: &commentEdit{}, title: "t", body: &body}
 	got := mergeRequestAction(all)
-	want := pullsAction{session: all.session, handoff: "fix", merge: "squash", refresh: true, external: "u", create: true}
+	want := pullsAction{session: all.session, handoff: fix, merge: "squash", refresh: true, external: "u", create: true}
 	if got.admin || got.approve || got.comment != "" || got.reply != nil || got.resolve != nil || got.threads != nil ||
 		got.edit != nil || got.title != "" || got.body != nil {
 		t.Errorf("kept a GitHub-only action: %+v", got)

@@ -27,6 +27,7 @@ package main
 
 import (
 	"context"
+	"github.com/lichdotdev/lich/api"
 	"image"
 	"math"
 	"strconv"
@@ -99,7 +100,7 @@ var dockHeaderSpare = ui.Space(8)
 type dockInput struct {
 	sessionID string
 	inject    func(string) bool
-	submit    func(string, func(error)) bool
+	submit    func(api.RequestOptions, func(error)) bool
 	checkout  string
 	git       backend.DiffStats
 	isGit     bool

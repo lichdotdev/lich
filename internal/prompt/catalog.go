@@ -101,6 +101,41 @@ type Catalog struct {
 	CheckLogCut     string // %[1]d is the lines left out
 	CheckLogNoLog   string
 
+	// internal/relay: a request the person made from the window
+	// (relay.Request). The *Summary fields title its box; the rest are the
+	// text the agent reads. GitLab variants say merge request and !N.
+	RequestConflictsSummary  string
+	RequestChecksSummary     string
+	RequestChecksMoreSummary Plural // %d checks not named
+	RequestThreadsSummary    Plural // %d threads
+	RequestCommentsSummary   Plural // %d comments
+	RequestNotesSummary      Plural // %d notes
+	RequestSketchSummary     string
+	RequestIssueSummary      string // %d is the issue
+	// %[1]d is the pull request, %[2]s its branch, %[3]s the base, and
+	// %[4]s the list of files.
+	PRConflicts              string
+	PRConflictsGitLab        string
+	PRConflictsListed        string
+	PRConflictsListedGitLab  string
+	PRChecksUnnamed          Plural // %[1]d pull request, %[2]s branch, %[3]d count
+	PRChecksUnnamedGitLab    Plural
+	PRChecksListed           string // %[1]d pull request, %[2]s branch, %[3]s the checks
+	PRChecksListedGitLab     string
+	PRChecksOmitted          Plural // %d checks
+	ReviewCommentsHeader     string
+	ReviewThreadHead         string // %[1]d pull request, %[2]s branch, %[3]s path, %[4]s lines
+	ReviewThreadHeadOutdated string
+	ReviewThreadID           string // %s
+	ReviewThreadAsk          Plural // no verb: the form follows the number of threads
+	IssueHead                string // %[1]d number, %[2]s title, %[3]s URL
+	BrowserNotesHead         Plural // %d notes
+	BrowserNotesItem         string // %[1]d index, %[2]s label, %[3]s URL
+	BrowserNotesNote         string // %s
+	BrowserNotesSketch       string // %s path
+	BrowserNotesSketchOnly   string // %[1]s URL, %[2]s path
+	BrowserNotesSelectors    string
+
 	// mark_thread_fixed's answer.
 	ThreadMarked string
 

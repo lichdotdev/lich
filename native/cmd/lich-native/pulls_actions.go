@@ -125,8 +125,8 @@ func (u *window) applyPulls(act pullsAction) {
 		}()
 	}
 	if act.session != nil {
-		d, prompt := *act.session, act.handoff
-		go u.openPRSession(p.project, d, prompt)
+		d, req := *act.session, act.handoff
+		go u.openPRSession(p.project, d, req)
 	}
 	if p.selected != 0 {
 		u.applyTalk(path, p.selected, act)
@@ -186,10 +186,10 @@ func (u *window) approvePR(path string, number int) {
 // openPRSession opens the PR in a session: a checkout already holding the
 // branch is reused, its live session or a new one; else the PR is checked out
 // into a new worktree. The checkouts are read fresh, never from what drew the
-// button. A handoff (prompt not "") leaves the Pulls screen up, the session
-// spawned off screen and an Open on the toast that says the prompt landed;
+// button. A handoff (req not nil) leaves the Pulls screen up, the session
+// spawned off screen and an Open on the toast that says the request landed;
 // only a spawn waiting on the user brings the session up.
-func (u *window) openPRSession(project backend.Project, d backend.PRDetail, prompt string) {
+func (u *window) openPRSession(project backend.Project, d backend.PRDetail, req *api.RequestOptions) {
 	u.pulls.view.setBusy("session")
 	id, err := u.prSession(project, d)
 	u.pulls.view.setBusy("")
@@ -198,11 +198,11 @@ func (u *window) openPRSession(project backend.Project, d backend.PRDetail, prom
 		return
 	}
 	u.model.invalidate()
-	if prompt == "" {
+	if req == nil {
 		u.showPRSession(project.ID, id)
 		return
 	}
-	if u.handOffPR(project.ID, id, prompt) {
+	if u.handOffPR(project.ID, id, *req) {
 		key := forgeKey(u.model.forgeOf(project.Path), "pulls.pulls.handedOff", "pulls.pulls.handedOffGitLab")
 		u.toaster.Show(ui.Toast{Variant: ui.ToastSuccess, Title: i18n.T(key, i18n.Args{"number": d.Number, "session": u.model.sessionLabel(id)}),
 			Action: u.openPRButton(project.ID, id)})
@@ -222,11 +222,11 @@ func (u *window) openPRButton(projectID, id string) *ui.ToastButton {
 // handOffPR sends prompt to session id, spawned off screen unless its spawn
 // needs the user, and reports whether it landed; a toast with Open says why
 // not.
-func (u *window) handOffPR(projectID, id, prompt string) bool {
+func (u *window) handOffPR(projectID, id string, req api.RequestOptions) bool {
 	if !u.startUnseen(id) {
 		u.showPRSession(projectID, id)
 	}
-	if err := u.handOff(id, prompt); err != nil {
+	if err := u.handOff(id, req); err != nil {
 		t := handoffLostToast(err)
 		t.Action = u.openPRButton(projectID, id)
 		u.toaster.Show(t)

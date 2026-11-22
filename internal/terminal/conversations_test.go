@@ -334,3 +334,12 @@ func TestPromptTitleReadsAnEnvelope(t *testing.T) {
 		t.Errorf("promptTitle(merged) = %q", got)
 	}
 }
+
+// A conversation a request opened is named by the request's summary.
+func TestPromptTitleNamesARequestByItsSummary(t *testing.T) {
+	issue := `<lich-notification version="1" kind="request" topic="issue" issue="1173">` +
+		"\n<summary>Issue #1173</summary>\n<prompt>GitHub issue #1173: Relay handshake races</prompt>\n</lich-notification>"
+	if got := promptTitle(issue); got != "Issue #1173" {
+		t.Errorf("promptTitle(request) = %q", got)
+	}
+}

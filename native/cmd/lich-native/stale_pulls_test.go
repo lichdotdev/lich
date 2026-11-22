@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"github.com/lichdotdev/lich/api"
 	"image"
 	"net/http"
 	"strings"
@@ -52,8 +53,10 @@ func pullsFramesHeld(t *testing.T, hold chan struct{}) (*window, *frameRig) {
 	u.pulls = newPullsScreen(newPullsStore(t.Context(), client, newForgeStore(client, r.invalidate), r.invalidate), &u.root)
 	u.pulls.sessionsIn = func(string, string) []string { return nil }
 	u.pulls.files = filesInput{
-		injector:  func(string) func(string) bool { return func(string) bool { return false } },
-		submitter: func(string) func(string, func(error)) bool { return func(string, func(error)) bool { return false } },
+		injector: func(string) func(string) bool { return func(string) bool { return false } },
+		submitter: func(string) func(api.RequestOptions, func(error)) bool {
+			return func(api.RequestOptions, func(error)) bool { return false }
+		},
 	}
 	files, err := newReviewPanel(client, &u.root, new(commentStore), "monospace", 12, r.invalidate, func(ui.Toast) {})
 	if err != nil {

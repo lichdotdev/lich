@@ -1,6 +1,10 @@
 package main
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/lichdotdev/lich/api"
+)
 
 func TestInjectReferencesMatchInjectMenu(t *testing.T) {
 	if got := fileReference("src/app.go"); got != "@src/app.go " {
@@ -46,11 +50,11 @@ func TestDockInjectorRefusesWithoutASession(t *testing.T) {
 	if (&terminals{}).injector("")("x") {
 		t.Error("a session-less inject reported taken")
 	}
-	if (&terminals{}).submitter("")("x", func(error) {}) {
+	if (&terminals{}).submitter("")(api.RequestOptions{}, func(error) {}) {
 		t.Error("a session-less submit reported taken")
 	}
 	shell := &terminals{byID: map[string]*termView{"s": {id: "s", kind: "shell"}}}
-	if shell.submitter("s")("x", func(error) {}) {
+	if shell.submitter("s")(api.RequestOptions{}, func(error) {}) {
 		t.Error("a submit to a shell reported taken")
 	}
 }

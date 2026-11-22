@@ -76,6 +76,53 @@ var zhCN = Catalog{
 	CheckLogCut:     "（此步骤之前的 %[1]d 行未显示：可用 lines 或 lich check-log --lines N 查看更多）",
 	CheckLogNoLog:   "这不是 GitHub Actions 作业：它的日志只在上面的链接里。",
 
+	RequestConflictsSummary:  "解决冲突",
+	RequestChecksSummary:     "修复失败的检查",
+	RequestChecksMoreSummary: Plural{One: "修复失败的检查，另有 %d 项未列出", Other: "修复失败的检查，另有 %d 项未列出"},
+	RequestThreadsSummary:    Plural{One: "处理 %d 个审查讨论", Other: "处理 %d 个审查讨论"},
+	RequestCommentsSummary:   Plural{One: "%d 条审查评论", Other: "%d 条审查评论"},
+	RequestNotesSummary:      Plural{One: "页面上的 %d 条备注", Other: "页面上的 %d 条备注"},
+	RequestSketchSummary:     "页面上的一幅草图",
+	RequestIssueSummary:      "Issue #%d",
+	PRConflicts:              "拉取请求 #%[1]d（%[2]s）与 %[3]s 存在合并冲突。请解决这些冲突。",
+	PRConflictsGitLab:        "合并请求 !%[1]d（%[2]s）与 %[3]s 存在合并冲突。请解决这些冲突。",
+	PRConflictsListed:        "拉取请求 #%[1]d（%[2]s）的以下文件与 %[3]s 存在合并冲突。请解决这些冲突：\n\n%[4]s",
+	PRConflictsListedGitLab:  "合并请求 !%[1]d（%[2]s）的以下文件与 %[3]s 存在合并冲突。请解决这些冲突：\n\n%[4]s",
+	PRChecksUnnamed: Plural{
+		One:   "拉取请求 #%[1]d（%[2]s）的 CI 失败了。有 %[3]d 项检查未通过，请找出是哪些并修复。",
+		Other: "拉取请求 #%[1]d（%[2]s）的 CI 失败了。有 %[3]d 项检查未通过，请找出是哪些并修复。",
+	},
+	PRChecksUnnamedGitLab: Plural{
+		One:   "合并请求 !%[1]d（%[2]s）的 CI 失败了。有 %[3]d 项检查未通过，请找出是哪些并修复。",
+		Other: "合并请求 !%[1]d（%[2]s）的 CI 失败了。有 %[3]d 项检查未通过，请找出是哪些并修复。",
+	},
+	PRChecksListed:       "拉取请求 #%[1]d（%[2]s）的 CI 失败了。请修复以下检查：\n\n%[3]s",
+	PRChecksListedGitLab: "合并请求 !%[1]d（%[2]s）的 CI 失败了。请修复以下检查：\n\n%[3]s",
+	PRChecksOmitted: Plural{
+		One:   "\n\n…另有 %d 项失败的检查未列出。",
+		Other: "\n\n…另有 %d 项失败的检查未列出。",
+	},
+	ReviewCommentsHeader:     "审查评论：",
+	ReviewThreadHead:         "pull request #%[1]d (%[2]s) 的审查讨论，%[3]s:%[4]s：",
+	ReviewThreadHeadOutdated: "pull request #%[1]d (%[2]s) 的审查讨论，%[3]s:%[4]s（已过时，请对照当前代码）：",
+	ReviewThreadID:           "讨论 id：%s",
+	ReviewThreadAsk: Plural{
+		One: "如果它要求修改，就修改、提交，然后用讨论 id 和提交调用 mark_thread_fixed：这个提交 push 后，lich 会在 GitHub 上把讨论标记为已解决并回复。" +
+			"如果它是提问，或是需要和团队讨论的问题，就什么都不要改：把它连同你的看法带给我。永远不要自己在 GitHub 上回复或解决讨论。",
+		Other: "逐一查看每个讨论。要求修改的：修改、提交，然后用这个讨论的 id 和提交调用 mark_thread_fixed，这个提交 push 后，lich 会在 GitHub 上把讨论标记为已解决并回复。" +
+			"提问或需要和团队讨论的：不要为它改任何东西，把它连同你的看法带给我。永远不要自己在 GitHub 上回复或解决讨论。",
+	},
+	IssueHead: "GitHub issue #%[1]d：%[2]s\n%[3]s",
+	BrowserNotesHead: Plural{
+		One:   "对方在你浏览器标签页的页面上留下了 %d 条备注:",
+		Other: "对方在你浏览器标签页的页面上留下了 %d 条备注:",
+	},
+	BrowserNotesItem:       "%[1]d. %[3]s 上的 %[2]s",
+	BrowserNotesNote:       "备注: %s",
+	BrowserNotesSketch:     "对方还在页面上画了草图。带有草图的截图: %s",
+	BrowserNotesSketchOnly: "对方在你浏览器标签页的页面 %[1]s 上画了草图。带有草图的截图: %[2]s",
+	BrowserNotesSelectors:  "上面每个选择器都可以直接作为 browser_click 和 browser_type 的 selector 使用。",
+
 	ThreadMarked: "已标记。拉取请求的 head 包含这个提交后，lich 会解决该讨论串，并以这个提交回复。",
 
 	CopyNotice:         "lich 已将 %s 复制到这里；原文件无法从本会话访问，修改只会保留在副本中。",

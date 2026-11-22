@@ -1,49 +1,4 @@
 {
-  "pullRequest": {
-    "conflicts": "プルリクエスト #{number}（{branch}）に {base} とのマージコンフリクトがあります。解決してください。",
-    "conflictsGitLab": "マージリクエスト !{number}（{branch}）に {base} とのマージコンフリクトがあります。解決してください。",
-    "conflictsListed": "プルリクエスト #{number}（{branch}）の次のファイルに {base} とのマージコンフリクトがあります。解決してください:\n\n{files}",
-    "conflictsListedGitLab": "マージリクエスト !{number}（{branch}）の次のファイルに {base} とのマージコンフリクトがあります。解決してください:\n\n{files}",
-    "checksUnnamed": {
-      "one": "プルリクエスト #{number}（{branch}）で CI が失敗しています。{count} 件のチェックが失敗しています。どのチェックかを特定して修正してください。",
-      "other": "プルリクエスト #{number}（{branch}）で CI が失敗しています。{count} 件のチェックが失敗しています。どのチェックかを特定して修正してください。"
-    },
-    "checksUnnamedGitLab": {
-      "one": "マージリクエスト !{number}（{branch}）で CI が失敗しています。{count} 件のチェックが失敗しています。どのチェックかを特定して修正してください。",
-      "other": "マージリクエスト !{number}（{branch}）で CI が失敗しています。{count} 件のチェックが失敗しています。どのチェックかを特定して修正してください。"
-    },
-    "checksListed": "プルリクエスト #{number}（{branch}）で CI が失敗しています。次のチェックを修正してください:\n\n{checks}",
-    "checksListedGitLab": "マージリクエスト !{number}（{branch}）で CI が失敗しています。次のチェックを修正してください:\n\n{checks}",
-    "checksOmitted": {
-      "one": "\n\n…ほかに、一覧にない失敗したチェックが {count} 件あります。",
-      "other": "\n\n…ほかに、一覧にない失敗したチェックが {count} 件あります。"
-    }
-  },
-  "reviewComments": {
-    "header": "レビューコメント:"
-  },
-  "reviewThread": {
-    "head": "pull request #{number} ({branch}) のレビュースレッド、{path}:{lines}:",
-    "headOutdated": "pull request #{number} ({branch}) のレビュースレッド、{path}:{lines}（古いコメントです。現在のコードを確認してください）:",
-    "id": "スレッド id: {id}",
-    "ask": {
-      "one": "変更を求めている場合は、変更してコミットし、スレッド id とコミットを渡して mark_thread_fixed を呼んでください。そのコミットが push されると、lich が GitHub でスレッドを解決済みにして返信します。質問やチームで話し合うべき論点の場合は、何も変更せず、あなたの見解を添えて私に伝えてください。GitHub でスレッドに返信したり解決済みにしたりは、自分では決してしないでください。",
-      "other": "スレッドを一つずつ確認してください。変更を求めるスレッドは、変更してコミットし、そのスレッドの id とコミットを渡して mark_thread_fixed を呼んでください。そのコミットが push されると、lich が GitHub でスレッドを解決済みにして返信します。質問やチームで話し合うべき論点のスレッドは、何も変更せず、あなたの見解を添えて私に伝えてください。GitHub でスレッドに返信したり解決済みにしたりは、自分では決してしないでください。"
-    }
-  },
-  "issue": {
-    "head": "GitHub issue #{number}: {title}\n{url}"
-  },
-  "browserNotes": {
-    "head": {
-      "other": "[lich] ブラウザタブのページに {count} 件のメモが残されました:"
-    },
-    "item": "{index}. {url} の {label}",
-    "note": "メモ: {note}",
-    "sketch": "ページ上にスケッチも描かれています。スケッチ入りのスクリーンショット: {path}",
-    "sketchOnly": "[lich] ブラウザタブのページ ({url}) にスケッチが描かれました。スケッチ入りのスクリーンショット: {path}",
-    "selectors": "上の各セレクタは browser_click と browser_type の selector としてそのまま使えます。"
-  },
   "schedule": {
     "checksFailed": "このプルリクエストのチェックが失敗しました。gh で確認し、原因を修正して push してください。",
     "checksFailedGitLab": "このマージリクエストのチェックが失敗しました。glab で確認し、原因を修正して push してください。",

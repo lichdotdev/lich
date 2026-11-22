@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"errors"
 	"flag"
+	"github.com/lichdotdev/lich/api"
 	"log"
 	"strconv"
 	"strings"
@@ -308,7 +309,7 @@ type worktreeRequest struct {
 	carry   bool
 	source  string
 	sandbox string
-	brief   string
+	brief   *api.RequestOptions
 	fork    *forkSource
 }
 
@@ -322,7 +323,8 @@ func (d *worktreeDialog) request(v worktreeView) worktreeRequest {
 		r.sandbox = map[bool]string{true: "on", false: "off"}[d.confined.Value]
 	}
 	if v.issue != nil {
-		r.brief = issueBrief(*v.issue)
+		brief := issueRequest(*v.issue)
+		r.brief = &brief
 	}
 	return r
 }
@@ -375,8 +377,8 @@ func (u *window) openWorktree(r worktreeRequest) {
 		d.setSubmitting(backend.ErrorText(err))
 		return
 	}
-	if r.brief != "" {
-		go u.submitAtPrompt(id, r.brief)
+	if r.brief != nil {
+		go u.submitAtPrompt(id, *r.brief)
 	}
 	d.closeAfter()
 }
@@ -477,9 +479,9 @@ func (u *window) loadSessions() error {
 	return nil
 }
 
-// submitAtPrompt sends message as the session's prompt once it sits at one.
-func (u *window) submitAtPrompt(id, message string) {
-	if err := u.handOff(id, message); err != nil {
+// submitAtPrompt hands the session req once it sits at a prompt.
+func (u *window) submitAtPrompt(id string, req api.RequestOptions) {
+	if err := u.handOff(id, req); err != nil {
 		u.toaster.Show(handoffLostToast(err))
 	}
 }
@@ -488,13 +490,14 @@ func handoffLostToast(err error) ui.Toast {
 	return ui.Toast{Variant: ui.ToastError, Title: i18n.T("sidebar.worktreeDialog.handoffLost", i18n.Args{"error": backend.ErrorText(err)})}
 }
 
-// handOff is submitAtPrompt without the toast: why message never landed, nil
+// handOff is submitAtPrompt without the toast: why req never landed, nil
 // once it did.
-func (u *window) handOff(id, message string) error {
+func (u *window) handOff(id string, req api.RequestOptions) error {
 	if !u.awaitPrompt(id) {
 		return errors.New(i18n.T("sidebar.worktreeDialog.neverPrompted"))
 	}
-	return u.client.Submit(u.ctx, id, message)
+	req.SessionID = id
+	return u.client.Request(u.ctx, req)
 }
 
 // awaitPrompt waits for the session to sit at a prompt, false when it never

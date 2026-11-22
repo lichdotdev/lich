@@ -87,13 +87,13 @@ func (v *pullView) handoffButton(gtx C, th *ui.Theme, p *pullsScreen, d backend.
 	if conflictsWithBase(d) {
 		conflicts = p.store.conflictFiles(p.project.Path, &d).val
 	}
-	label, prompt, ok := pullHandoff(d, conflicts, v.forge)
+	label, req, ok := pullHandoff(d, conflicts, v.forge)
 	if !ok {
 		return nil
 	}
 	disabled := blocked != "" || busy != ""
 	if v.handoff.Clicked(gtx) && !disabled {
-		act.session, act.handoff = &d, prompt
+		act.session, act.handoff = &d, &req
 	}
 	return func(gtx C) D {
 		b := th.Button(&v.handoff, label)

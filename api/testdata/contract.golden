@@ -233,6 +233,7 @@ relay.Focused(None) FocusedSession
 relay.Insert(InsertTextOptions) InsertedText
 relay.Peers(PeersOptions) []Peer
 relay.Reply(ReplyOptions) None
+relay.Request(RequestOptions) None
 relay.ScheduleSelf(ScheduleSelfOptions) None
 relay.Self(SelfOptions) Peer
 relay.Send(SendOptions) SendResult
@@ -1603,6 +1604,23 @@ ReplyOptions {
 	answer string
 }
 
+RequestOptions {
+	sessionId string
+	topic string
+	forge,omitempty string
+	pr,omitempty int
+	branch,omitempty string
+	base,omitempty string
+	url,omitempty string
+	image,omitempty string
+	issue,omitempty int
+	title,omitempty string
+	body,omitempty string
+	failed,omitempty int
+	items,omitempty []RequestItem
+	note,omitempty string
+}
+
 ScheduleSelfOptions {
 	from string
 	at int64
@@ -2971,6 +2989,22 @@ QuotaReset {
 	held,omitempty bool
 }
 
+RequestItem {
+	path,omitempty string
+	lines,omitempty string
+	id,omitempty string
+	outdated,omitempty bool
+	check,omitempty string
+	label,omitempty string
+	url,omitempty string
+	selector,omitempty string
+	component,omitempty string
+	source,omitempty string
+	html,omitempty string
+	text,omitempty string
+	comments,omitempty []RequestComment
+}
+
 ServiceConfig {
 	id string
 	projectId string
@@ -3136,6 +3170,11 @@ PRThreadComment {
 	diffHunk string
 	canEdit bool
 	canDelete bool
+}
+
+RequestComment {
+	author string
+	body string
 }
 
 SyntaxStyle {

@@ -1,46 +1,4 @@
 {
-  "pullRequest": {
-    "conflicts": "풀 리퀘스트 #{number}({branch})에 {base}와(과)의 병합 충돌이 있습니다. 충돌을 해결하세요.",
-    "conflictsGitLab": "병합 요청 !{number}({branch})에 {base}와(과)의 병합 충돌이 있습니다. 충돌을 해결하세요.",
-    "conflictsListed": "풀 리퀘스트 #{number}({branch})의 다음 파일에 {base}와(과)의 병합 충돌이 있습니다. 충돌을 해결하세요:\n\n{files}",
-    "conflictsListedGitLab": "병합 요청 !{number}({branch})의 다음 파일에 {base}와(과)의 병합 충돌이 있습니다. 충돌을 해결하세요:\n\n{files}",
-    "checksUnnamed": {
-      "other": "풀 리퀘스트 #{number}({branch})의 CI가 실패하고 있습니다. 실패한 체크가 {count}개 있으니, 어떤 체크인지 찾아서 고치세요."
-    },
-    "checksUnnamedGitLab": {
-      "other": "병합 요청 !{number}({branch})의 CI가 실패하고 있습니다. 실패한 체크가 {count}개 있으니, 어떤 체크인지 찾아서 고치세요."
-    },
-    "checksListed": "풀 리퀘스트 #{number}({branch})의 CI가 실패하고 있습니다. 다음 체크를 고치세요:\n\n{checks}",
-    "checksListedGitLab": "병합 요청 !{number}({branch})의 CI가 실패하고 있습니다. 다음 체크를 고치세요:\n\n{checks}",
-    "checksOmitted": {
-      "other": "\n\n…그리고 목록에 없는 실패한 체크가 {count}개 더 있습니다."
-    }
-  },
-  "reviewComments": {
-    "header": "리뷰 코멘트:"
-  },
-  "reviewThread": {
-    "head": "pull request #{number} ({branch})의 리뷰 스레드, {path}:{lines}:",
-    "headOutdated": "pull request #{number} ({branch})의 리뷰 스레드, {path}:{lines} (오래된 코멘트이니 현재 코드를 확인하세요):",
-    "id": "스레드 id: {id}",
-    "ask": {
-      "one": "변경을 요청하는 스레드라면 변경하고 커밋한 뒤 스레드 id와 커밋으로 mark_thread_fixed를 호출하세요. 그 커밋이 push되면 lich가 GitHub에서 스레드를 해결 처리하고 답글을 답니다. 질문이거나 팀과 논의할 사항이라면 아무것도 바꾸지 말고 당신의 의견과 함께 저에게 가져오세요. GitHub에서 스레드에 직접 답글을 달거나 해결 처리하지 마세요.",
-      "other": "스레드를 하나씩 살펴보세요. 변경을 요청하는 스레드는 변경하고 커밋한 뒤 그 스레드의 id와 커밋으로 mark_thread_fixed를 호출하세요. 그 커밋이 push되면 lich가 GitHub에서 스레드를 해결 처리하고 답글을 답니다. 질문이거나 팀과 논의할 사항인 스레드는 아무것도 바꾸지 말고 당신의 의견과 함께 저에게 가져오세요. GitHub에서 스레드에 직접 답글을 달거나 해결 처리하지 마세요."
-    }
-  },
-  "issue": {
-    "head": "GitHub 이슈 #{number}: {title}\n{url}"
-  },
-  "browserNotes": {
-    "head": {
-      "other": "[lich] 브라우저 탭의 페이지에 메모 {count}개가 남겨졌습니다:"
-    },
-    "item": "{index}. {url}의 {label}",
-    "note": "메모: {note}",
-    "sketch": "페이지 위에 스케치도 그려졌습니다. 스케치가 들어간 스크린샷: {path}",
-    "sketchOnly": "[lich] 브라우저 탭의 페이지({url}) 위에 스케치가 그려졌습니다. 스케치가 들어간 스크린샷: {path}",
-    "selectors": "위의 각 셀렉터는 browser_click과 browser_type의 selector로 그대로 쓸 수 있습니다."
-  },
   "schedule": {
     "checksFailed": "이 풀 리퀘스트의 체크가 실패했습니다. gh로 확인하고 원인을 고친 뒤 push하세요.",
     "checksFailedGitLab": "이 병합 요청의 체크가 실패했습니다. glab으로 확인하고 원인을 고친 뒤 push하세요.",

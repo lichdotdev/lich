@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/lichdotdev/lich/api"
 	"slices"
 	"strconv"
 	"strings"
@@ -262,60 +263,31 @@ func mergeHint(d backend.PRDetail, rules *backend.BranchRules, forge string) str
 	return i18n.T(forgeKey(forge, "pulls.pullsLogic.failing", "pulls.pullsLogic.failingGitLab"), i18n.Args{"count": d.Checks.Failed})
 }
 
-// handoffNamedChecks is how many checks the prompt names; past it the prompt
-// counts.
-const handoffNamedChecks = 8
-
-// pullHandoff finds what is wrong with an open PR, conflicts
-// first, as a button label and the prompt that hands it over; ok false when
-// nothing is. conflicts is the colliding files, nil while not yet known.
-func pullHandoff(d backend.PRDetail, conflicts []string, forge string) (label, prompt string, ok bool) {
+// pullHandoff finds what is wrong with an open PR, conflicts first, as a
+// button label and the request that hands it over; ok false when nothing is.
+// conflicts is the colliding files, nil while not yet known.
+func pullHandoff(d backend.PRDetail, conflicts []string, forge string) (label string, req api.RequestOptions, ok bool) {
 	if d.State != "OPEN" {
-		return "", "", false
+		return "", api.RequestOptions{}, false
 	}
+	req = api.RequestOptions{Forge: forge, PR: d.Number, Branch: d.HeadRefName}
 	if conflictsWithBase(d) {
-		return i18n.T("pulls.prHandoff.resolveConflicts"), conflictsPrompt(d, conflicts, forge), true
+		req.Topic, req.Base = api.RequestConflicts, d.BaseRefName
+		for _, f := range conflicts {
+			req.Items = append(req.Items, api.RequestItem{Path: f})
+		}
+		return i18n.T("pulls.prHandoff.resolveConflicts"), req, true
 	}
 	if d.Checks.Failed > 0 {
-		return i18n.T("pulls.prHandoff.fixChecks"), checksPrompt(d, forge), true
-	}
-	return "", "", false
-}
-
-func conflictsPrompt(d backend.PRDetail, files []string, forge string) string {
-	args := i18n.Args{"number": d.Number, "branch": d.HeadRefName, "base": d.BaseRefName}
-	if len(files) == 0 {
-		return i18n.Prompt(forgeKey(forge, "prompts.pullRequest.conflicts", "prompts.pullRequest.conflictsGitLab"), args)
-	}
-	args["files"] = "- " + strings.Join(files, "\n- ")
-	return i18n.Prompt(forgeKey(forge, "prompts.pullRequest.conflictsListed", "prompts.pullRequest.conflictsListedGitLab"), args)
-}
-
-func checksPrompt(d backend.PRDetail, forge string) string {
-	var failed []backend.CheckItem
-	for _, c := range d.CheckRuns {
-		if c.State == "failed" {
-			failed = append(failed, c)
+		req.Topic, req.Failed = api.RequestChecks, d.Checks.Failed
+		for _, c := range d.CheckRuns {
+			if c.State == "failed" {
+				req.Items = append(req.Items, api.RequestItem{Check: c.Name, URL: c.URL})
+			}
 		}
+		return i18n.T("pulls.prHandoff.fixChecks"), req, true
 	}
-	if len(failed) == 0 {
-		return i18n.Prompt(forgeKey(forge, "prompts.pullRequest.checksUnnamed", "prompts.pullRequest.checksUnnamedGitLab"),
-			i18n.Args{"number": d.Number, "branch": d.HeadRefName, "count": d.Checks.Failed})
-	}
-	named := failed[:min(len(failed), handoffNamedChecks)]
-	lines := make([]string, len(named))
-	for i, c := range named {
-		lines[i] = "- " + c.Name
-		if c.URL != "" {
-			lines[i] += " — " + c.URL
-		}
-	}
-	out := i18n.Prompt(forgeKey(forge, "prompts.pullRequest.checksListed", "prompts.pullRequest.checksListedGitLab"),
-		i18n.Args{"number": d.Number, "branch": d.HeadRefName, "checks": strings.Join(lines, "\n")})
-	if omitted := len(failed) - len(named); omitted > 0 {
-		out += i18n.Prompt("prompts.pullRequest.checksOmitted", i18n.Args{"count": omitted})
-	}
-	return out
+	return "", api.RequestOptions{}, false
 }
 
 // checkDuration is how long a check ran, or has run while

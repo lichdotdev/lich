@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strconv"
 	"strings"
 	"testing"
@@ -116,30 +117,32 @@ func claudeTerminals(t *testing.T, b *gateBackend) *terminals {
 	return ts
 }
 
-// A batch of review comments is sent as the session's prompt, never left
-// pasted for the user to send.
+// A batch of review comments is sent as a request the backend words and
+// submits, never left pasted for the user to send.
 func TestBatchOfCommentsIsSubmitted(t *testing.T) {
 	b := newGateBackend(t)
 	ts := claudeTerminals(t, b)
-	batch := composeReviewComments([]reviewComment{{path: "a.go", lines: "1", txt: "one"}}, "")
+	batch := reviewCommentsRequest([]reviewComment{{path: "a.go", lines: "1", txt: "one"}}, "")
 	if !ts.submitter("s")(batch, func(error) {}) {
 		t.Fatal("submit refused")
 	}
 	select {
 	case call := <-b.calls:
-		var args []api.SubmitOptions
-		body, found := strings.CutPrefix(call, "relay.Submit ")
+		var args []api.RequestOptions
+		body, found := strings.CutPrefix(call, "relay.Request ")
 		if !found {
-			t.Fatalf("called %s, want relay.Submit", call)
+			t.Fatalf("called %s, want relay.Request", call)
 		}
 		if err := json.Unmarshal([]byte(body), &args); err != nil {
 			t.Fatal(err)
 		}
-		if want := (api.SubmitOptions{SessionID: "s", Message: batch}); len(args) != 1 || args[0] != want {
-			t.Errorf("relay.Submit %+v, want [%+v]", args, want)
+		want := batch
+		want.SessionID = "s"
+		if len(args) != 1 || !reflect.DeepEqual(args[0], want) {
+			t.Errorf("relay.Request %+v, want [%+v]", args, want)
 		}
 	case <-time.After(5 * time.Second):
-		t.Fatal("no relay.Submit")
+		t.Fatal("no relay.Request")
 	}
 }
 

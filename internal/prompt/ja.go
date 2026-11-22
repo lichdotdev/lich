@@ -82,6 +82,53 @@ var ja = Catalog{
 	CheckLogCut:     "(このステップの前の %[1]d 行は省略しています。lines か lich check-log --lines N で増やせます)",
 	CheckLogNoLog:   "GitHub Actions のジョブではありません。ログは上のリンク先にしかありません。",
 
+	RequestConflictsSummary:  "コンフリクトを解決する",
+	RequestChecksSummary:     "失敗したチェックを修正する",
+	RequestChecksMoreSummary: Plural{One: "失敗したチェックを修正する（ほか %d 件は一覧にありません）", Other: "失敗したチェックを修正する（ほか %d 件は一覧にありません）"},
+	RequestThreadsSummary:    Plural{One: "%d 件のレビュースレッドに対応する", Other: "%d 件のレビュースレッドに対応する"},
+	RequestCommentsSummary:   Plural{One: "レビューコメント %d 件", Other: "レビューコメント %d 件"},
+	RequestNotesSummary:      Plural{One: "ページ上のメモ %d 件", Other: "ページ上のメモ %d 件"},
+	RequestSketchSummary:     "ページ上のスケッチ",
+	RequestIssueSummary:      "Issue #%d",
+	PRConflicts:              "プルリクエスト #%[1]d（%[2]s）に %[3]s とのマージコンフリクトがあります。解決してください。",
+	PRConflictsGitLab:        "マージリクエスト !%[1]d（%[2]s）に %[3]s とのマージコンフリクトがあります。解決してください。",
+	PRConflictsListed:        "プルリクエスト #%[1]d（%[2]s）の次のファイルに %[3]s とのマージコンフリクトがあります。解決してください:\n\n%[4]s",
+	PRConflictsListedGitLab:  "マージリクエスト !%[1]d（%[2]s）の次のファイルに %[3]s とのマージコンフリクトがあります。解決してください:\n\n%[4]s",
+	PRChecksUnnamed: Plural{
+		One:   "プルリクエスト #%[1]d（%[2]s）で CI が失敗しています。%[3]d 件のチェックが失敗しています。どのチェックかを特定して修正してください。",
+		Other: "プルリクエスト #%[1]d（%[2]s）で CI が失敗しています。%[3]d 件のチェックが失敗しています。どのチェックかを特定して修正してください。",
+	},
+	PRChecksUnnamedGitLab: Plural{
+		One:   "マージリクエスト !%[1]d（%[2]s）で CI が失敗しています。%[3]d 件のチェックが失敗しています。どのチェックかを特定して修正してください。",
+		Other: "マージリクエスト !%[1]d（%[2]s）で CI が失敗しています。%[3]d 件のチェックが失敗しています。どのチェックかを特定して修正してください。",
+	},
+	PRChecksListed:       "プルリクエスト #%[1]d（%[2]s）で CI が失敗しています。次のチェックを修正してください:\n\n%[3]s",
+	PRChecksListedGitLab: "マージリクエスト !%[1]d（%[2]s）で CI が失敗しています。次のチェックを修正してください:\n\n%[3]s",
+	PRChecksOmitted: Plural{
+		One:   "\n\n…ほかに、一覧にない失敗したチェックが %d 件あります。",
+		Other: "\n\n…ほかに、一覧にない失敗したチェックが %d 件あります。",
+	},
+	ReviewCommentsHeader:     "レビューコメント:",
+	ReviewThreadHead:         "pull request #%[1]d (%[2]s) のレビュースレッド、%[3]s:%[4]s:",
+	ReviewThreadHeadOutdated: "pull request #%[1]d (%[2]s) のレビュースレッド、%[3]s:%[4]s（古いコメントです。現在のコードを確認してください）:",
+	ReviewThreadID:           "スレッド id: %s",
+	ReviewThreadAsk: Plural{
+		One: "変更を求めている場合は、変更してコミットし、スレッド id とコミットを渡して mark_thread_fixed を呼んでください。そのコミットが push されると、lich が GitHub でスレッドを解決済みにして返信します。" +
+			"質問やチームで話し合うべき論点の場合は、何も変更せず、あなたの見解を添えて私に伝えてください。GitHub でスレッドに返信したり解決済みにしたりは、自分では決してしないでください。",
+		Other: "スレッドを一つずつ確認してください。変更を求めるスレッドは、変更してコミットし、そのスレッドの id とコミットを渡して mark_thread_fixed を呼んでください。そのコミットが push されると、lich が GitHub でスレッドを解決済みにして返信します。" +
+			"質問やチームで話し合うべき論点のスレッドは、何も変更せず、あなたの見解を添えて私に伝えてください。GitHub でスレッドに返信したり解決済みにしたりは、自分では決してしないでください。",
+	},
+	IssueHead: "GitHub issue #%[1]d: %[2]s\n%[3]s",
+	BrowserNotesHead: Plural{
+		One:   "ブラウザタブのページに %d 件のメモが残されました:",
+		Other: "ブラウザタブのページに %d 件のメモが残されました:",
+	},
+	BrowserNotesItem:       "%[1]d. %[3]s の %[2]s",
+	BrowserNotesNote:       "メモ: %s",
+	BrowserNotesSketch:     "ページ上にスケッチも描かれています。スケッチ入りのスクリーンショット: %s",
+	BrowserNotesSketchOnly: "ブラウザタブのページ (%[1]s) にスケッチが描かれました。スケッチ入りのスクリーンショット: %[2]s",
+	BrowserNotesSelectors:  "上の各セレクタは browser_click と browser_type の selector としてそのまま使えます。",
+
 	ThreadMarked: "記録しました。プルリクエストの head にこのコミットが含まれた時点で、lich がスレッドを解決し、このコミットを添えて返信します。",
 
 	CopyNotice:         "lich が %s をここにコピーしました。元のファイルはこのセッションからは届かないため、編集はコピーにだけ残ります。",

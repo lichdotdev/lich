@@ -476,13 +476,13 @@ func (u *window) sendNotes(p *browserPaneUI, session string) {
 // naming it.
 func (u *window) submitNotes(session string, sent sentNotes, sketch sentSketch) error {
 	if len(sketch.strokes) == 0 {
-		return u.client.Submit(u.ctx, session, notesMessage(sent.notes, sent.closing))
+		return u.client.Request(u.ctx, notesRequest(session, sent.notes, "", "", sent.closing))
 	}
 	path, err := u.uploadSketch(session, sketch)
 	if err != nil {
 		return err
 	}
-	return u.client.Submit(u.ctx, session, sketchedMessage(sent.notes, path, sketch.url, sent.closing))
+	return u.client.Request(u.ctx, notesRequest(session, sent.notes, path, sketch.url, sent.closing))
 }
 
 // sending is the notes a send takes: those in the tray now.

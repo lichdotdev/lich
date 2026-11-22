@@ -82,6 +82,55 @@ var ptBR = Catalog{
 	CheckLogCut:     "(%[1]d linhas anteriores deste passo não aparecem: peça mais com lines, ou lich check-log --lines N)",
 	CheckLogNoLog:   "Não é um job do GitHub Actions: o log dele só está no link acima.",
 
+	RequestConflictsSummary:  "Resolver os conflitos",
+	RequestChecksSummary:     "Corrigir os checks com falha",
+	RequestChecksMoreSummary: Plural{One: "Corrigir os checks com falha, e mais %d não listado", Other: "Corrigir os checks com falha, e mais %d não listados"},
+	RequestThreadsSummary:    Plural{One: "Tratar %d thread de revisão", Other: "Tratar %d threads de revisão"},
+	RequestCommentsSummary:   Plural{One: "%d comentário de revisão", Other: "%d comentários de revisão"},
+	RequestNotesSummary:      Plural{One: "%d nota na página", Other: "%d notas na página"},
+	RequestSketchSummary:     "Um desenho na página",
+	RequestIssueSummary:      "Issue #%d",
+	PRConflicts:              "O pull request #%[1]d (%[2]s) tem conflitos de merge com %[3]s. Resolva-os.",
+	PRConflictsGitLab:        "O merge request !%[1]d (%[2]s) tem conflitos de merge com %[3]s. Resolva-os.",
+	PRConflictsListed:        "O pull request #%[1]d (%[2]s) tem conflitos de merge com %[3]s nestes arquivos. Resolva-os:\n\n%[4]s",
+	PRConflictsListedGitLab:  "O merge request !%[1]d (%[2]s) tem conflitos de merge com %[3]s nestes arquivos. Resolva-os:\n\n%[4]s",
+	PRChecksUnnamed: Plural{
+		One:   "O CI está falhando no pull request #%[1]d (%[2]s). %[3]d check está vermelho; descubra qual e corrija.",
+		Other: "O CI está falhando no pull request #%[1]d (%[2]s). %[3]d checks estão vermelhos; descubra quais e corrija.",
+	},
+	PRChecksUnnamedGitLab: Plural{
+		One:   "O CI está falhando no merge request !%[1]d (%[2]s). %[3]d check está vermelho; descubra qual e corrija.",
+		Other: "O CI está falhando no merge request !%[1]d (%[2]s). %[3]d checks estão vermelhos; descubra quais e corrija.",
+	},
+	PRChecksListed:       "O CI está falhando no pull request #%[1]d (%[2]s). Corrija estes checks:\n\n%[3]s",
+	PRChecksListedGitLab: "O CI está falhando no merge request !%[1]d (%[2]s). Corrija estes checks:\n\n%[3]s",
+	PRChecksOmitted: Plural{
+		One:   "\n\n…e mais %d check com falha não listado.",
+		Other: "\n\n…e mais %d checks com falha não listados.",
+	},
+	ReviewCommentsHeader:     "Comentários de revisão:",
+	ReviewThreadHead:         "Thread de revisão no pull request #%[1]d (%[2]s), %[3]s:%[4]s:",
+	ReviewThreadHeadOutdated: "Thread de revisão no pull request #%[1]d (%[2]s), %[3]s:%[4]s (desatualizada, confira o código atual):",
+	ReviewThreadID:           "Id da thread: %s",
+	ReviewThreadAsk: Plural{
+		One: "Se ela pede uma mudança, faça, faça commit e chame mark_thread_fixed com o id da thread e o commit: o lich resolve a thread " +
+			"e responde no GitHub quando esse commit chegar por push. Se ela faz uma pergunta ou levanta um ponto para discutir com o time, " +
+			"não mude nada: traga para mim com a sua opinião. Nunca responda nem resolva a thread no GitHub você mesmo.",
+		Other: "Passe por cada thread. A que pede uma mudança: faça, faça commit e chame mark_thread_fixed com o id dessa thread e o commit, " +
+			"e o lich resolve a thread e responde no GitHub quando esse commit chegar por push. A que faz uma pergunta ou levanta um ponto " +
+			"para discutir com o time: não mude nada por ela e traga para mim com a sua opinião. Nunca responda nem resolva uma thread no GitHub você mesmo.",
+	},
+	IssueHead: "Issue do GitHub #%[1]d: %[2]s\n%[3]s",
+	BrowserNotesHead: Plural{
+		One:   "A pessoa deixou uma nota na página da sua aba de navegador:",
+		Other: "A pessoa deixou %d notas na página da sua aba de navegador:",
+	},
+	BrowserNotesItem:       "%[1]d. %[2]s em %[3]s",
+	BrowserNotesNote:       "Nota: %s",
+	BrowserNotesSketch:     "A pessoa também desenhou na página. A captura com o desenho: %s",
+	BrowserNotesSketchOnly: "A pessoa desenhou na página da sua aba de navegador, %[1]s. A captura com o desenho: %[2]s",
+	BrowserNotesSelectors:  "Cada seletor acima serve como o selector de browser_click e browser_type.",
+
 	ThreadMarked: "Marcado. O lich resolve a thread e responde com este commit assim que o head do pull request o contiver.",
 
 	CopyNotice:         "O lich copiou %s para cá; o original não é acessível a partir desta sessão, as edições ficam na cópia.",

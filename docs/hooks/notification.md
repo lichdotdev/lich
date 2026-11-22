@@ -2,8 +2,9 @@
 
 Everything lich hands an agent arrives in one envelope, the same on all eight
 providers: a task, a worker's result, a worker blocked on a permission, a merge,
-an errand that ran out, and every other note lich types today. It replaces the `[lich]` notes in prose and the
-`<task-notification>` the Claude Code mod rendered
+an errand that ran out, every other note lich types today, and what the person
+asks for from the window's buttons. It replaces the prose notes lich used to
+type and the `<task-notification>` the Claude Code mod rendered
 ([mod-control.md](mod-control.md), A prompt as a notification).
 
 The envelope is what lich writes; the plugin never builds one. The plugin's side
@@ -36,13 +37,17 @@ of the contract.
 |---|---|---|
 | `version` | every kind | `1` |
 | `kind` | every kind | one of the kinds below |
-| `from` | every kind but `merged` | the label of the session the notice is about (the asker on `task`, the worker otherwise; the predecessor on a `handoff` notice) |
-| `session` | every kind but `merged` | that session's lich id, which `send_to_session` and `close_session` take |
+| `from` | every kind but `merged` and `request` | the label of the session the notice is about (the asker on `task`, the worker otherwise; the predecessor on a `handoff` notice) |
+| `session` | every kind but `merged` and `request` | that session's lich id, which `send_to_session` and `close_session` take |
 | `ticket` | `task`, every `worker-*`, `expired` | the errand's ticket |
 | `answer` | `task` | how the worker's answer is taken: `last-message` (its turn's final message is the answer, nothing to call) or `reply` (call `reply_to_session` with the ticket) |
 | `truncated` | `worker-finished` | how many characters of the result were cut; absent when nothing was |
-| `pr`, `branch` | `merged`, and `notice` about a pull request | the pull request number (a GitLab merge request's `!N` number) and its branch |
-| `topic` | `notice` | what the notice is: `checks-failed`, `checks-passed`, `review`, `scheduled`, `usage-reset`, `compacted`, `unanswered`, `loop`, `handoff` |
+| `pr`, `branch` | `merged`, `notice` about a pull request, and the `request` topics `conflicts`, `checks` and `review-thread` | the pull request number (a GitLab merge request's `!N` number) and its branch |
+| `base` | `request` with topic `conflicts` | the branch the pull request merges into |
+| `url` | `request` with topic `browser-notes` or `issue` | the page the notes were left on, or the issue |
+| `image` | `request` with topic `browser-notes` | the path of the sketch the person drew on the page, when there is one |
+| `issue`, `title` | `request` with topic `issue` | the issue's number and title |
+| `topic` | `notice`, `request` | what the notice is: `checks-failed`, `checks-passed`, `review`, `scheduled`, `usage-reset`, `compacted`, `unanswered`, `loop`, `handoff`; what the request is: `conflicts`, `checks`, `review-thread`, `review-comments`, `browser-notes`, `issue` |
 
 ### Kinds
 
@@ -56,6 +61,29 @@ of the contract.
 | `expired` | the asker, when a ticket ran out unanswered | `<status>expired</status>` |
 | `merged` | every live session of the checkout, and the session that opened it | `<summary>` |
 | `notice` | the session it concerns | `<summary>`, and `<prompt>` when the notice carries a task (a scheduled prompt, a watch's prompt, the continuation after a usage reset, a handoff note's sections) |
+| `request` | the session the person acted on, as their own turn | `<summary>`: the box's title; zero or more `<item>`, one per row of the box's list; `<prompt>`: the whole text the agent acts on |
+
+`request` is what lich writes when the person clicks an action in the window:
+resolve a pull request's conflicts, fix its failing checks, address review
+threads, send a batch of review comments or browser notes, start on an issue.
+It starts the person's turn, and no ticket or answer is owed. The window sends
+what was asked (`relay.Request`); the backend words it in the prompt language,
+so one composer writes every envelope. Each `<item>` carries its row in
+attributes and its excerpt as text, and is self-closing when it has none:
+
+| Topic | Item attributes | Item text |
+|---|---|---|
+| `conflicts` | `path` | none |
+| `checks` | `check` | none |
+| `review-thread` | `path`, `lines`, `id`, and `outdated="true"` on a thread on code that moved | the thread's first comment |
+| `review-comments` | `path`, `line` | the comment |
+| `browser-notes` | `label`, `url`, `selector` | the person's note, none for an element they only marked |
+| `issue` | (no items) | |
+
+A checks request names at most eight checks; the rest are counted, in the
+summary and the prompt alike, and only the named checks are items. A
+`review-comments` or `browser-notes` request ends its prompt with the note the
+person wrote to close it, when there is one.
 
 `notice` carries every other note lich types today (`internal/prompt`): a
 pull request's checks or a new review, a scheduled prompt, a usage limit that
@@ -73,9 +101,10 @@ worker's permission from the asker is not part of version 1.
 
 ### Text
 
-- Attribute values are escaped: `&` as `&amp;`, `<` as `&lt;`, `>` as `&gt;`,
+- Attribute values are escaped, an `<item>`'s included: `&` as `&amp;`, `<` as `&lt;`, `>` as `&gt;`,
   `"` as `&quot;`.
-- Element text goes in **unescaped**, byte for byte as written. The model reads
+- Element text goes in **unescaped**, byte for byte as written, an `<item>`'s
+  included. The model reads
   the envelope as text, not through a parser, so an escaped `a && b` would reach
   it as `a &amp;&amp; b`; a `</result>` inside a worker's message still reaches
   the model as written (measured with the mod's `<task-notification>` on Claude
@@ -99,8 +128,8 @@ worker's permission from the asker is not part of version 1.
 | Terminal (TUI), every provider, Crush always | typed at the prompt by the relay, with every trap the typed-delivery ceilings describe |
 
 In a terminal, a `worker-finished` leaves `<result>` out and the envelope's
-`<summary>` says to collect it with `wait_for_answer` and the ticket, as the short
-`[lich]` note does today: a long report typed into a TUI is what the relay avoids
+`<summary>` says to collect it with `wait_for_answer` and the ticket: a long
+report typed into a TUI is what the relay avoids
 (a provider may collapse it, and on Windows a newline inside it may submit half).
 
 Several envelopes ready at once go in one message, oldest first, one blank line
@@ -140,7 +169,7 @@ checked by reading.
 - The chat drivers (`internal/chat`) take an envelope as a user message: Claude
   Code's stream-json `user` message, Codex's app-server `turn/start` input,
   ACP's `session/prompt`. The queue is the chat's own (`queued`).
-- `[lich]` notes are replaced in the same change. The Claude Code mod still
+- The prose notes are replaced in the same change. The Claude Code mod still
   carries the envelope until it is retired: a terminal session whose mod polls
   is handed the envelopes as the text of its prompt, nothing typed into its
   TUI. A subagent's report goes in whole, as the `<result>` of a

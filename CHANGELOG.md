@@ -48,6 +48,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **What a button asks a session for shows in its chat as a compact box.** Resolve conflicts, Fix CI errors, review threads and comments, browser notes and an issue each draw their title, facts and list in your own message box; the chevron opens the full text the agent read.
+- **lich installs lich-plugin 0.22.0, whose texts teach your agents the notification envelope.** lich offers it with its plugin update prompt; an older lich keeps the plugin it has.
 - **A session's pull request shows whether it is open, a draft, merged or closed, and where it lives.** It sits under a chat's message box, where a click opens it, and in the session's tooltip in the sidebar, no longer on the row. It shows the GitHub logo, the state's glyph and the number in the state's color, and a merged or closed one stays while the checkout is on its branch.
 - **A task you hand another session comes back by itself when that session's turn ends.** The worker's final message is the answer, on every agent in the chat and in a terminal on all but Cursor CLI and Crush, which still answer with reply_to_session.
 - **What lich hands a chat, a task, a worker's result or a notice, shows as a row instead of raw text.** A worker's outcome is a line with its agent's mark and its result under it, a click opens that worker's card, and a task opens the chat with the session that sent it.

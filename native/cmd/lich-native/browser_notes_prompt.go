@@ -1,55 +1,20 @@
 package main
 
-import (
-	"strconv"
-	"strings"
+import "github.com/lichdotdev/lich/api"
 
-	"github.com/lichdotdev/lich/native/i18n"
-)
-
-// notesMessage is the notes as the agent reads them: each element's label and
-// page, the selector browser_click takes, the React component that drew it,
-// its markup, and the person's note; closing, the note about all of them, ends
-// it.
-func notesMessage(notes []*browserNote, closing string) string {
-	return endedWith(append(noteLines(notes), i18n.Prompt("prompts.browserNotes.selectors")), closing)
-}
-
-// sketchedMessage is notesMessage with the sketch: its picture at path,
-// after the notes when there are any, and alone, naming the page at url, when
-// there are none.
-func sketchedMessage(notes []*browserNote, path, url, closing string) string {
-	if len(notes) == 0 {
-		return endedWith([]string{i18n.Prompt("prompts.browserNotes.sketchOnly", i18n.Args{"url": url, "path": path})}, closing)
-	}
-	lines := append(noteLines(notes), i18n.Prompt("prompts.browserNotes.sketch", i18n.Args{"path": path}), i18n.Prompt("prompts.browserNotes.selectors"))
-	return endedWith(lines, closing)
-}
-
-func noteLines(notes []*browserNote) []string {
-	lines := []string{i18n.Prompt("prompts.browserNotes.head", i18n.Args{"count": len(notes)})}
-	for i, n := range notes {
+// notesRequest is the notes as a request: each element's label, page and
+// selector, the React component that drew it, its markup and the person's
+// note, the sketch at image when there is one, drawn on the page at url, and
+// closing, the note about all of them.
+func notesRequest(session string, notes []*browserNote, image, url, closing string) api.RequestOptions {
+	req := api.RequestOptions{SessionID: session, Topic: api.RequestBrowserNotes, Image: image, URL: url, Note: closing}
+	for _, n := range notes {
 		el := n.el
-		lines = append(lines, i18n.Prompt("prompts.browserNotes.item", i18n.Args{"index": strconv.Itoa(i + 1), "label": el.Label, "url": el.URL}),
-			"   "+el.Selector)
-		if el.Component != "" {
-			react := "   React: " + el.Component
-			if el.Source != "" {
-				react += " (" + el.Source + ")"
-			}
-			lines = append(lines, react)
-		}
-		lines = append(lines, "   "+el.HTML)
-		if text := strings.TrimSpace(n.text); text != "" {
-			lines = append(lines, "   "+i18n.Prompt("prompts.browserNotes.note", i18n.Args{"note": strings.ReplaceAll(text, "\n", " ")}))
-		}
+		req.Items = append(req.Items, api.RequestItem{Label: el.Label, URL: el.URL, Selector: el.Selector,
+			Component: el.Component, Source: el.Source, HTML: el.HTML, Text: n.text})
 	}
-	return lines
-}
-
-func endedWith(lines []string, closing string) string {
-	if closing = strings.TrimSpace(closing); closing != "" {
-		lines = append(lines, "", closing)
+	if req.URL == "" && len(notes) > 0 {
+		req.URL = notes[0].el.URL
 	}
-	return strings.Join(lines, "\n")
+	return req
 }

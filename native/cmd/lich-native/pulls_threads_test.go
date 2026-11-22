@@ -1,39 +1,31 @@
 package main
 
 import (
+	"reflect"
 	"testing"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
 )
 
-func TestThreadsPromptNamesWhereAndWhatWasSaid(t *testing.T) {
+// The window hands the backend each thread where it sits, its link and its
+// comments; the backend words them and the ask (internal/relay, threadsText).
+func TestThreadsRequestCarriesWhereAndWhatWasSaid(t *testing.T) {
 	d := backend.PRDetail{Number: 933, HeadRefName: "fix/kiro-paste", URL: "https://github.com/o/r/pull/933"}
 	threads := []backend.PRReviewThread{
 		{ID: "PRRT_1", Path: "internal/relay/submit.go", StartLine: 41, Line: 58, Comments: []backend.PRThreadComment{
-			{ID: 2201, Author: "reviewer", Body: "Wait for the echo?\nOnly on Kiro."},
-			{ID: 2202, Body: "Agreed."},
+			{ID: 2201, Author: "reviewer", Body: "Wait for the echo?"}, {ID: 2202, Body: "Agreed."},
 		}},
 		{ID: "PRRT_2", Path: "pulls.go", Line: 112, IsOutdated: true, Comments: []backend.PRThreadComment{{ID: 3301, Author: "reviewer", Body: "Duplicated rule."}}},
 	}
-	want := "Review thread on pull request #933 (fix/kiro-paste), internal/relay/submit.go:41-58:\n" +
-		"Thread id: PRRT_1\n" +
-		"https://github.com/o/r/pull/933#discussion_r2201\n\n" +
-		"- @reviewer: Wait for the echo?\n  Only on Kiro.\n" +
-		"- @ghost: Agreed.\n\n" +
-		"Review thread on pull request #933 (fix/kiro-paste), pulls.go:112 (outdated, check the current code):\n" +
-		"Thread id: PRRT_2\n" +
-		"https://github.com/o/r/pull/933#discussion_r3301\n\n" +
-		"- @reviewer: Duplicated rule.\n\n" +
-		"Go through each thread. One that asks for a change: make it, commit it and call mark_thread_fixed with that thread's id and the commit, " +
-		"and lich resolves the thread and replies on GitHub once that commit is pushed. One that asks a question or raises a point for the team: " +
-		"change nothing for it, and bring it to me with your view. Never reply to or resolve a thread on GitHub yourself."
-	if got := threadsPrompt(d, threads); got != want {
-		t.Errorf("threadsPrompt =\n%s\nwant\n%s", got, want)
-	}
-	one := threadsPrompt(d, threads[1:])
-	if wantTail := "If it asks a question or raises a point for the team, change nothing: bring it to me with your view. " +
-		"Never reply to or resolve the thread on GitHub yourself."; one[len(one)-len(wantTail):] != wantTail {
-		t.Errorf("one thread's ask = %q", one)
+	want := api.RequestOptions{Topic: api.RequestReviewThread, PR: 933, Branch: "fix/kiro-paste", Items: []api.RequestItem{
+		{Path: "internal/relay/submit.go", Lines: "41-58", ID: "PRRT_1", URL: "https://github.com/o/r/pull/933#discussion_r2201",
+			Comments: []api.RequestComment{{Author: "reviewer", Body: "Wait for the echo?"}, {Body: "Agreed."}}},
+		{Path: "pulls.go", Lines: "112", ID: "PRRT_2", Outdated: true, URL: "https://github.com/o/r/pull/933#discussion_r3301",
+			Comments: []api.RequestComment{{Author: "reviewer", Body: "Duplicated rule."}}},
+	}}
+	if got := threadsRequest(d, threads); !reflect.DeepEqual(got, want) {
+		t.Errorf("threadsRequest = %+v\nwant %+v", got, want)
 	}
 }
 

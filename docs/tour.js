@@ -697,7 +697,7 @@
     await leaveNote(wait, lead, "p", 2, "Drop this line, the heading says it");
     await press(wait, pkTray.querySelector(".pk-send"));
     resetNotes();
-    browserTerm.submit("[lich] The person left 2 notes on the page…");
+    browserTerm.submit("[Pasted text #1 +15 lines]");
     setRing(0, "busy");
     await browserTerm.stream(wait, ["● Update(src/SignupForm.tsx)", "  ⎿  " + bad("- &lt;h1>Create your account&lt;/h1>"), "  ⎿  " + ok("+ &lt;h1>Start your free trial&lt;/h1>"),
       "  ⎿  " + bad("- &lt;p>Start a 14-day trial. No card needed.&lt;/p>")]);

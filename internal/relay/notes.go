@@ -58,13 +58,17 @@ func waitingRequest(lang prompt.Lang, st api.SessionStatus) string {
 }
 
 // EnvelopeLine is the one line an envelope means, for where a conversation is
-// named by its first message: a task's prompt, else what its first child
-// says. False for a message that is no envelope.
+// named by its first message: a request's summary, a task's prompt, else what
+// its first child says. False for a message that is no envelope.
 func EnvelopeLine(message string) (string, bool) {
 	if !strings.HasPrefix(message, envelopeOpen) {
 		return "", false
 	}
-	for _, tag := range []string{"prompt", "summary", "result", "error", "request"} {
+	tags := []string{"prompt", "summary", "result", "error", "request"}
+	if head, _, _ := strings.Cut(message, "\n"); strings.Contains(head, ` kind="`+KindRequest+`"`) {
+		tags = []string{"summary"}
+	}
+	for _, tag := range tags {
 		if _, rest, ok := strings.Cut(message, "\n<"+tag+">"); ok {
 			line, _, _ := strings.Cut(rest, "\n")
 			return strings.TrimSuffix(line, "</"+tag+">"), true
