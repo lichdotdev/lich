@@ -13,7 +13,6 @@ import (
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
 	"gioui.org/unit"
-	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
 )
@@ -37,11 +36,6 @@ func (s *sidebar) card(gtx C, th *ui.Theme, sv *sessionView, active bool, folder
 	}
 	if clickable(s.mothers, sv.ID).Clicked(gtx) {
 		act.fold = motherKey(sv.ID)
-	}
-	prChip := clickable(s.prChips, sv.ID)
-	if prChip.Clicked(gtx) && sv.pr != nil {
-		act.activate = sv.ID
-		act.openPR, act.openPRURL = prTarget(sv.pr, sv.shown, sv.path)
 	}
 	lit := click.Hovered()
 	fill := cardFill(th, sv.Color, active, lit)
@@ -96,7 +90,7 @@ func (s *sidebar) card(gtx C, th *ui.Theme, sv *sessionView, active bool, folder
 		})
 	}
 	d := th.ContextMenuLazy(s.root, menu, entries).Layout(gtx, func(gtx C) D {
-		return tooltip.Layout(gtx, func(gtx C) D { return s.cardFace(gtx, th, sv, click, prChip, moreButton, more.Opened(), paint) })
+		return tooltip.Layout(gtx, func(gtx C) D { return s.cardFace(gtx, th, sv, click, moreButton, more.Opened(), paint) })
 	})
 	if s.renamed.id == sv.ID {
 		act.rename, s.renamed = s.renamed, sessionRename{}
@@ -117,12 +111,12 @@ func (s *sidebar) newSessionHere(sv *sessionView, act *sidebarAction) ui.MenuEnt
 }
 
 // cardFace is the card itself, under its tooltip.
-func (s *sidebar) cardFace(gtx C, th *ui.Theme, sv *sessionView, click, prChip *ui.Clickable, more layout.Widget, moreOpen bool, fill color.NRGBA) D {
+func (s *sidebar) cardFace(gtx C, th *ui.Theme, sv *sessionView, click *ui.Clickable, more layout.Widget, moreOpen bool, fill color.NRGBA) D {
 	return click.Layout(gtx, func(gtx C) D {
 		return layout.Background{}.Layout(gtx,
 			func(gtx C) D { return treeRowFill(gtx, fill, sv.place) },
 			func(gtx C) D {
-				return s.cardBody(gtx, th, sv, prChip, more, click.Hovered() || moreOpen)
+				return s.cardBody(gtx, th, sv, more, click.Hovered() || moreOpen)
 			},
 		)
 	})
@@ -172,9 +166,9 @@ func (s *sidebar) renaming(id string) bool {
 }
 
 // cardBody is the card's one line: its place in the tree, the title row, a
-// folded mother's count, the pull request and the checkout's changes
+// folded mother's count and the checkout's changes
 // unless a checkout row above shows them, then the corner slot.
-func (s *sidebar) cardBody(gtx C, th *ui.Theme, sv *sessionView, prChip *ui.Clickable, more layout.Widget, hovered bool) D {
+func (s *sidebar) cardBody(gtx C, th *ui.Theme, sv *sessionView, more layout.Widget, hovered bool) D {
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 	sv.place.hot = hovered && sv.place.kids > 0
 	row := append(treeLead(sv.place), s.titleRow(th, sv)...)
@@ -188,9 +182,6 @@ func (s *sidebar) cardBody(gtx C, th *ui.Theme, sv *sessionView, prChip *ui.Clic
 			gtx.Constraints.Max.X = min(gtx.Constraints.Max.X, most)
 			return th.Text(ui.TextXS, b).Muted().Mono().Layout(gtx)
 		}))
-	}
-	if sv.pr != nil {
-		row = append(row, ui.Gap(1.5), layout.Rigid(func(gtx C) D { return prChipLayout(gtx, th, prChip, sv.pr) }))
 	}
 	return s.cardLine(gtx, th, sv, more, hovered, row)
 }
@@ -278,16 +269,6 @@ var cardSlotSize = 2 * sessionTreeRingR
 // branchShare is the most of a row's width, in percent, its branch takes: the
 // label is what the row is scanned for.
 const branchShare = 35
-
-// prChipLayout is the row's pull request badge, a button whose logo brightens
-// on hover.
-func prChipLayout(gtx C, th *ui.Theme, click *ui.Clickable, pr *backend.PullRequest) D {
-	logo := th.MutedForeground
-	if click.Hovered() {
-		logo = th.Foreground
-	}
-	return click.Layout(gtx, func(gtx C) D { return prBadge(gtx, th, pr, logo) })
-}
 
 // statusRing is SessionStatusIcon: the provider mark (the agent live in the
 // PTY, else the session's kind) in a ring that spins while busy, is amber

@@ -275,6 +275,16 @@ func (u *window) chatPRBadge(gtx C, th *ui.Theme, sv sessionView) (layout.Widget
 	return func(gtx C) D { call.Add(gtx.Ops); return d }, d.Size.X + gtx.Dp(ui.Space(chatCrumbStatGap))
 }
 
+// prChipLayout is the composer's pull request badge, a button whose logo
+// brightens on hover.
+func prChipLayout(gtx C, th *ui.Theme, click *ui.Clickable, pr *backend.PullRequest) D {
+	logo := th.MutedForeground
+	if click.Hovered() {
+		logo = th.Foreground
+	}
+	return click.Layout(gtx, func(gtx C) D { return prBadge(gtx, th, pr, logo) })
+}
+
 // crumb is a footer item drawn as a line of text under a tooltip, muted and
 // lit on hover when it is a link.
 func (f *footer) crumb(gtx C, th *ui.Theme, id string, ic icons.Glyph, s footerSlot, link bool, size unit.Sp) D {

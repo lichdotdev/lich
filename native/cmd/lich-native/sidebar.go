@@ -39,7 +39,6 @@ type sidebar struct {
 	checkoutRows map[string]*ui.Clickable
 	// mothers are the chevrons that fold a mother's children.
 	mothers  map[string]*ui.Clickable
-	prChips  map[string]*ui.Clickable
 	icPin    *icons.Icon
 	icShield *icons.Icon
 	started  time.Time
@@ -79,7 +78,6 @@ func newSidebar(root *ui.Root) *sidebar {
 		tips:         map[string]*ui.Tooltip{},
 		menus:        map[string]*ui.MenuState{},
 		renames:      map[string]*ui.InlineEdit{},
-		prChips:      map[string]*ui.Clickable{},
 		icPin:        icons.Lucide("pin"),
 		icShield:     icons.Lucide("shield"),
 		started:      time.Now(),

@@ -57,41 +57,71 @@ func TestOnlyMergedAndClosedPRsAreNotOpen(t *testing.T) {
 	}
 }
 
-// The row and the tooltip draw every state with its number, and no two states
-// alike.
-func TestRowAndTooltipDrawEachPRState(t *testing.T) {
-	places := map[string]func(sv *sessionView) func(C, *ui.Theme){
-		"row": func(sv *sessionView) func(C, *ui.Theme) {
-			s, chip := newSidebar(&ui.Root{}), new(ui.Clickable)
-			more := func(gtx C) D { return D{Size: image.Pt(16, 16)} }
-			return func(gtx C, th *ui.Theme) { s.cardBody(gtx, th, sv, chip, more, false) }
-		},
-		"tooltip": func(sv *sessionView) func(C, *ui.Theme) {
-			return func(gtx C, th *ui.Theme) { sessionTooltip(th, sv)(gtx) }
-		},
-	}
-	for place, draw := range places {
-		paints := map[string]string{}
-		for _, c := range prCases() {
-			if c.name == "no state" {
-				continue
-			}
-			sv := sessionView{ID: "s1", Label: "Docs", shown: "/repo", git: backend.DiffStats{Branch: "feat"}, pr: &c.pr}
-			r := newFrameRig(image.Pt(400, 120), draw(&sv))
-			drawn, _ := r.frame()
-			if !r.shows(c.number) {
-				t.Errorf("%s %s: no %q drawn:\n%s", place, c.name, c.number, drawn)
-			}
-			paint, _, _ := strings.Cut(drawn, "\n")
-			if other, ok := paints[paint]; ok {
-				t.Errorf("%s: %s draws the same as %s", place, c.name, other)
-			}
-			paints[paint] = c.name
-		}
+// The session's row carries no pull request: it lives in the tooltip and on
+// the chat composer's line.
+func TestTheRowDrawsNoPullRequest(t *testing.T) {
+	sv := sessionView{ID: "s1", Label: "Docs", shown: "/repo", git: backend.DiffStats{Branch: "feat"},
+		pr: &backend.PullRequest{Number: 990, State: "MERGED", Forge: api.ForgeGitHub}}
+	s := newSidebar(&ui.Root{})
+	more := func(gtx C) D { return D{Size: image.Pt(16, 16)} }
+	r := newFrameRig(image.Pt(300, 40), func(gtx C, th *ui.Theme) { s.cardBody(gtx, th, &sv, more, false) })
+	r.frame()
+	if r.shows("#990") {
+		t.Error("the row drew its pull request")
 	}
 }
 
-// Hovering the row's badge brightens its logo and leaves the state's glyph and
+// The tooltip draws every state with its number, and no two states alike.
+func TestTheTooltipDrawsEachPRState(t *testing.T) {
+	paints := map[string]string{}
+	for _, c := range prCases() {
+		if c.name == "no state" {
+			continue
+		}
+		sv := sessionView{ID: "s1", Label: "Docs", shown: "/repo", git: backend.DiffStats{Branch: "feat"}, pr: &c.pr}
+		r := newFrameRig(image.Pt(400, 120), func(gtx C, th *ui.Theme) { sessionTooltip(th, &sv)(gtx) })
+		drawn, _ := r.frame()
+		if !r.shows(c.number) {
+			t.Errorf("%s: no %q drawn:\n%s", c.name, c.number, drawn)
+		}
+		paint, _, _ := strings.Cut(drawn, "\n")
+		if other, ok := paints[paint]; ok {
+			t.Errorf("%s draws the same as %s", c.name, other)
+		}
+		paints[paint] = c.name
+	}
+}
+
+const longBranch = "feat/sidebar-pull-request-badge-closed-state-and-then-some-more-words-past-the-edge"
+
+// A branch longer than the tooltip is wide wraps on a line of its own, and
+// the pull request and the changes stand whole on the line under it.
+func TestTheTooltipKeepsTheBranchWholeOnItsLine(t *testing.T) {
+	width := 240
+	// drop is how far under the branch's first line the pull request stands
+	drop := func(branch string) (image.Rectangle, image.Rectangle) {
+		sv := sessionView{ID: "s1", Label: "Docs", shown: "/repo", git: backend.DiffStats{Branch: branch, Files: 2, Added: 10, Deleted: 3},
+			pr: &backend.PullRequest{Number: 1199, State: "CLOSED", Forge: api.ForgeGitHub}}
+		r := newFrameRig(image.Pt(width, 300), func(gtx C, th *ui.Theme) { sessionTooltip(th, &sv)(gtx) })
+		r.frame()
+		number, added := labelBox(t, r, "#1199"), labelBox(t, r, "+10")
+		if added.Min.Y != number.Min.Y || added.Min.X <= number.Min.X {
+			t.Errorf("%s: +10 at %v, want the changes after #1199 (%v) on its line", branch, added, number)
+		}
+		if number.Min.X > width/2 {
+			t.Errorf("%s: #1199 at %v, want it at the start of its line", branch, number)
+		}
+		return labelBox(t, r, branch), number
+	}
+	shortBranch, shortNumber := drop("feat")
+	longBranchBox, longNumber := drop(longBranch)
+	one := shortNumber.Min.Y - shortBranch.Min.Y
+	if got := longNumber.Min.Y - longBranchBox.Min.Y; got < 2*one {
+		t.Errorf("under a long branch #1199 stands %dpx down, under a short one %dpx: want the long one wrapped onto more lines", got, one)
+	}
+}
+
+// Hovering the composer's badge brightens its logo and leaves the state's glyph and
 // number in their tone.
 func TestHoverBrightensOnlyTheLogo(t *testing.T) {
 	pr := backend.PullRequest{Number: 990, State: "MERGED", Forge: api.ForgeGitHub}
@@ -110,23 +140,6 @@ func TestHoverBrightensOnlyTheLogo(t *testing.T) {
 	}
 	if d := inkShift(rest, hovered, tinted); d != 0 {
 		t.Errorf("hover moved the glyph or the number by %d", d)
-	}
-}
-
-const longBranch = "feat/sidebar-pull-request-badge-closed-state"
-
-// Beside a branch that fills the tooltip's width, the pull request still
-// shows whole.
-func TestTheTooltipNeverCutsThePullRequest(t *testing.T) {
-	sv := sessionView{ID: "s1", Label: "Docs", shown: "/repo", git: backend.DiffStats{Branch: longBranch, Files: 2, Added: 10, Deleted: 3},
-		pr: &backend.PullRequest{Number: 1199, State: "CLOSED", Forge: api.ForgeGitHub}}
-	width := 230
-	r := newFrameRig(image.Pt(width, 200), func(gtx C, th *ui.Theme) { sessionTooltip(th, &sv)(gtx) })
-	r.frame()
-	// on a line of its own the number starts near the left, after the two icons
-	branch, number := labelBox(t, r, longBranch), labelBox(t, r, "#1199")
-	if number.Min.Y <= branch.Min.Y || number.Min.X > width/2 {
-		t.Errorf("#1199 at %v, branch at %v: want it on its own line under the branch", number, branch)
 	}
 }
 

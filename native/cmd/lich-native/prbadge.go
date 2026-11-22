@@ -63,8 +63,8 @@ func prLookOf(th *ui.Theme, pr *backend.PullRequest) prLook {
 	return l
 }
 
-// prBadge draws pr on a session's row and in its tooltip; logo is the ink of
-// the forge's logo, which the row brightens on hover.
+// prBadge draws pr in a session's tooltip and on its chat composer's line;
+// logo is the ink of the forge's logo, which the composer brightens on hover.
 func prBadge(gtx C, th *ui.Theme, pr *backend.PullRequest, logo color.NRGBA) D {
 	l := prLookOf(th, pr)
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,

@@ -960,12 +960,14 @@ Every row is one line, 34dp tall: `Space(1.5)` above and below a 22px node. Rows
 (`cardGap` is 0).
 
 - **A session row**: the provider's mark, the shield and fork glyphs it earns, its name, its branch in
-  `TextXS` mono `MutedForeground` (at most `branchShare`, 35%, of the line, so the name keeps the room), its
-  pull request, and the corner slot. The checkout's changes are not on the line.
-- **A pull request on a row** (`prBadge`; the row's tooltip draws it on a line of its own under the branch, and
-  the chat composer's line after the branch, which truncates first so the badge is never cut): the forge's logo at 12px in
-  `MutedForeground`, `Foreground` on hover, then the state's glyph at 12px and the number in `TextXS`, both in the
-  state's tone: open `git-pull-request` in `TonePass`, draft `git-pull-request-draft` muted, merged `git-merge` in
+  `TextXS` mono `MutedForeground` (at most `branchShare`, 35%, of the line, so the name keeps the room), and
+  the corner slot. Neither the checkout's changes nor its pull request is on the line: the row's width belongs
+  to the name.
+- **A row's tooltip** keeps the branch on a line of its own, whole (it wraps, never cut), and under it the
+  pull request and then the changes.
+- **A pull request** (`prBadge`, in a row's tooltip and on the chat composer's line): the forge's logo at 12px in
+  `MutedForeground` (`Foreground` on hover where it is a link), then the state's glyph at 12px and the number in
+  `TextXS`, both in the state's tone: open `git-pull-request` in `TonePass`, draft `git-pull-request-draft` muted, merged `git-merge` in
   `ToneMerged`, closed `git-pull-request-closed` in `Destructive`. A merged or closed one stays while the
   checkout is on its branch. A forge the reader did not name draws `git-pull-request-arrow` for the logo.
 - **The provider's mark** is its book's medallion in pixel art (`grimoire.Mark`), 1dp a pixel, in the
