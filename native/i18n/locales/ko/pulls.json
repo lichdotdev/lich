@@ -242,6 +242,7 @@
     "goToSession": "세션으로 이동",
     "openInSession": "세션에서 열기",
     "forkBlocked": "헤드 브랜치가 메인테이너의 수정을 허용하지 않는 포크에 있어서 커밋을 다시 푸시할 수 없습니다",
+    "forkBlockedGitLab": "소스 브랜치가 이 프로젝트 멤버의 커밋을 허용하지 않는 포크에 있어서 커밋을 다시 푸시할 수 없습니다",
     "runningRemoval": {
       "removeAnyway": "그래도 삭제"
     }

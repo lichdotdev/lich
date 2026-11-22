@@ -247,6 +247,7 @@
     "goToSession": "Go to session",
     "openInSession": "Open in Session",
     "forkBlocked": "The head branch lives on a fork that does not allow edits by maintainers, so its commits could not be pushed back",
+    "forkBlockedGitLab": "The source branch lives on a fork that does not allow commits from members of this project, so its commits could not be pushed back",
     "runningRemoval": {
       "removeAnyway": "Remove anyway"
     }

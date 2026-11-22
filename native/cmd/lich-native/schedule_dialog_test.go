@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"image"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -134,5 +135,21 @@ func TestTheDialogOpensWithTheFieldFocused(t *testing.T) {
 	}
 	if !rig.router.Source().Focused(&d.when) {
 		t.Fatal("the When field does not have the keyboard")
+	}
+}
+
+// A GitLab checkout is not offered a review watch, which would never fire,
+// unless it already holds one.
+func TestAGitLabCheckoutIsNotOfferedAReviewWatch(t *testing.T) {
+	d := &scheduleDialog{forge: api.ForgeGitLab, kind: scheduleAtTime}
+	if slices.Contains(d.kinds(), api.WatchReview) {
+		t.Errorf("GitLab offers %v, want no review watch", d.kinds())
+	}
+	d.kind = api.WatchReview
+	if !slices.Contains(d.kinds(), api.WatchReview) {
+		t.Error("an armed review watch went missing")
+	}
+	if github := (&scheduleDialog{forge: api.ForgeGitHub}).kinds(); !slices.Equal(github, scheduleKinds) {
+		t.Errorf("GitHub offers %v, want every kind", github)
 	}
 }

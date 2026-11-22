@@ -246,6 +246,7 @@
     "goToSession": "セッションへ移動",
     "openInSession": "セッションで開く",
     "forkBlocked": "head ブランチのあるフォークがメンテナーによる編集を許可していないため、コミットをプッシュできませんでした",
+    "forkBlockedGitLab": "ソースブランチのあるフォークがこのプロジェクトのメンバーからのコミットを許可していないため、コミットをプッシュできませんでした",
     "runningRemoval": {
       "removeAnyway": "それでも削除"
     }

@@ -247,6 +247,7 @@
     "goToSession": "Ir a la sesión",
     "openInSession": "Abrir en una sesión",
     "forkBlocked": "La rama de origen está en un fork que no permite ediciones de los mantenedores, así que no se pudieron enviar sus commits de vuelta",
+    "forkBlockedGitLab": "La rama de origen está en un fork que no permite commits de los miembros de este proyecto, así que no se pudieron enviar sus commits de vuelta",
     "runningRemoval": {
       "removeAnyway": "Eliminar de todos modos"
     }

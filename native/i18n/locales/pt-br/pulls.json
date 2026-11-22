@@ -247,6 +247,7 @@
     "goToSession": "Ir para a sessão",
     "openInSession": "Abrir em sessão",
     "forkBlocked": "A branch de origem está em um fork que não permite edições dos mantenedores, então os commits não poderiam ser enviados de volta",
+    "forkBlockedGitLab": "A branch de origem está em um fork que não permite commits de membros deste projeto, então os commits não poderiam ser enviados de volta",
     "runningRemoval": {
       "removeAnyway": "Remover mesmo assim"
     }

@@ -26,7 +26,7 @@ func (v *pullView) actions(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDeta
 	busy := v.busyNow()
 	blocked := ""
 	if d.IsCrossRepository && !d.MaintainerCanModify {
-		blocked = i18n.T("pulls.pulls.forkBlocked")
+		blocked = i18n.T(forgeKey(p.forge(), "pulls.pulls.forkBlocked", "pulls.pulls.forkBlockedGitLab"))
 	}
 	if v.session.Clicked(gtx) && blocked == "" {
 		act.session = &d

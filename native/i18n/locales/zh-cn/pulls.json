@@ -246,6 +246,7 @@
     "goToSession": "前往会话",
     "openInSession": "在会话中打开",
     "forkBlocked": "源分支位于不允许维护者编辑的分叉上，提交无法推送回去",
+    "forkBlockedGitLab": "源分支位于不允许本项目成员提交的分叉上，提交无法推送回去",
     "runningRemoval": {
       "removeAnyway": "仍然移除"
     }
