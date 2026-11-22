@@ -208,3 +208,24 @@ func TestARelayedMessageWaitsBehindAQuestion(t *testing.T) {
 	r.turnEnd(0)
 	r.eventually("the relayed message after the turn", func() bool { return strings.Contains(r.fakeLog(), `"content":"relayed note"`) })
 }
+
+// LastAnswer is the final message of the chat's last turn, which a worker's
+// errand is answered by.
+func TestLastAnswerIsTheLastTurnsFinalMessage(t *testing.T) {
+	r := newRig(t, providers.Claude)
+	if err := r.setView(api.ViewChat); err != nil {
+		t.Fatalf("SetView: %v", err)
+	}
+	r.prompt("question")
+	q := r.waitingQuestion()
+	if err := r.reply(q.ID, api.ChatQReplied{Declined: true}); err != nil {
+		t.Fatalf("Reply: %v", err)
+	}
+	r.turnEnd(0)
+	if got := r.svc.LastAnswer("s1"); got != "declined" {
+		t.Errorf("LastAnswer = %q, want the turn's final message", got)
+	}
+	if got := r.svc.LastAnswer("nobody"); got != "" {
+		t.Errorf("LastAnswer of no chat = %q", got)
+	}
+}

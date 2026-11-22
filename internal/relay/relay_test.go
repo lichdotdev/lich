@@ -89,6 +89,9 @@ type fakeTerminal struct {
 	// attaching is whether that session's mod may still make its first poll
 	// (see viamod_test.go).
 	attaching map[string]bool
+	// finals is the final message of each session's last turn, standing in for
+	// a chat driver or a transcript (see turnanswer_test.go).
+	finals map[string]string
 }
 
 func newFakeTerminal(live ...string) *fakeTerminal {

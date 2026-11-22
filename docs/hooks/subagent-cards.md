@@ -199,9 +199,10 @@ inside the session as they always did:
 - The task reaches the worker as a `task` envelope. A worker drawn as a chat
   gets `answer="last-message"`: its chat driver sees the turn end and answers
   the errand with the turn's final message. A worker in a terminal gets
-  `answer="last-message"` when `terminal.LastTurnSaid` reads its provider (every
-  one but Cursor) and lich answers at its `done` report; otherwise
-  `answer="reply"` and the ticket.
+  `answer="last-message"` when `terminal.LastTurnSaid` reads its provider and
+  the provider reports its `done` (every one but Cursor, whose transcript lich
+  cannot read, and Crush, which reports no turn end) and lich answers at that
+  report; otherwise `answer="reply"` and the ticket.
 - The worker's outcome reaches the asker as a `worker-*` envelope
   ([notification.md](notification.md)), in the asker's chat queue or typed.
 - The parked-worker, depth and stop rules of today's subagent cards

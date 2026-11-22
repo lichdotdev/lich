@@ -234,6 +234,10 @@ type Terminal interface {
 	// Chat is whether that session is drawn as a chat, which takes a message
 	// whole as its next user message (docs/hooks/notification.md, Delivery).
 	Chat(id string) bool
+	// FinalMessage is the final message of that session's last turn, whole,
+	// and whether lich can read one for it at all: its chat driver, or its
+	// provider's transcript in a terminal.
+	FinalMessage(id string) (string, bool)
 }
 
 type Peer = api.Peer
@@ -297,6 +301,12 @@ type ticket struct {
 	// subagent is a ticket sent with SendSubagent: its worker is the sender's
 	// subagent, and its errand lives as long as the worker does.
 	subagent bool
+	// turnAnswers is an errand its worker answers by finishing its turn: the
+	// turn's final message is the answer (answerByTurn). saidBefore is that
+	// session's final message when the task was handed over, which a turn that
+	// wrote nothing new still reads back.
+	turnAnswers bool
+	saidBefore  string
 	// stoppedBy is the label of the session that closed the worker, empty when
 	// the window did.
 	stoppedBy string
@@ -444,6 +454,9 @@ type Service struct {
 	// modAckWait bounds the wait on a mod's ack for a delivery that carries no
 	// ticket (defaultModAckWait). A field for the same reason.
 	modAckWait time.Duration
+	// finalSettle bounds how long a turn's end waits for its final message to
+	// reach the transcript (answerByTurn).
+	finalSettle time.Duration
 	// plugins answers what a provider's sessions can do, which depends on state
 	// this package has none of: whether the companion plugin is installed there,
 	// and whether it is new enough to carry lich's own operations. Nil — the
@@ -519,6 +532,7 @@ func New(sessions Sessions, term Terminal, events Events) *Service {
 		nudgeDelay:      defaultNudgeDelay,
 		settleLimit:     defaultSettleLimit,
 		modAckWait:      defaultModAckWait,
+		finalSettle:     defaultFinalSettle,
 	}
 }
 

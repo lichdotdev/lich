@@ -83,8 +83,9 @@ func (*wiredTerminal) SubmitPrompt(string, string, *relay.Notification) (relay.H
 func (*wiredTerminal) ModAttached(string) bool  { return false }
 func (*wiredTerminal) ModAttaching(string) bool { return false }
 
-func (*wiredTerminal) ModAnswers(string) bool { return false }
-func (*wiredTerminal) Chat(string) bool       { return false }
+func (*wiredTerminal) ModAnswers(string) bool             { return false }
+func (*wiredTerminal) Chat(string) bool                   { return false }
+func (*wiredTerminal) FinalMessage(string) (string, bool) { return "", false }
 
 func (w *wiredTerminal) Write(_ context.Context, opts api.WriteOptions) (api.None, error) {
 	w.mu.Lock()

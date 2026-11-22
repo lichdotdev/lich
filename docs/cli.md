@@ -1501,9 +1501,11 @@ A workflow that fans work out to lich sessions therefore:
 
 A caller with no session of its own — the CLI run from a script or a plain
 shell — leaves `from` and `session` out, and an extension's task names the
-extension in `from`. `answer` is `last-message` for a Claude Code subagent whose
-mod answers for it (its turn's final message is the answer) and `reply`
-otherwise. A `reply` task's summary names the `reply_to_session` tool where the
+extension in `from`. `answer` is `last-message` wherever lich reads the
+worker's final message when its turn ends (any session drawn as a chat, and a
+terminal of every provider but Cursor CLI and Crush, once its plugin reports
+the turn's end): its turn's final message is the answer, with nothing to call.
+It is `reply` elsewhere. A `reply` task's summary names the `reply_to_session` tool where the
 target has lich's tools and `"$LICH_BIN" reply <ticket> "<your answer>"` where
 it does not, since a session pointed at a tool it does not have loses the turn
 to an error; the spawn briefing and lich's MCP instructions say the same once,

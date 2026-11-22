@@ -830,6 +830,16 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   still be lost. The reminder is typed when the compaction's closing report arrives: after a mid-turn
   auto-compaction that report is `busy`, and the reminder queues behind the running turn, so an errand that turn
   ends unanswered is reminded after it is already closed, where only a late answer by its ticket still lands.
+- **A delegated task comes back by itself only where lich reads the worker's final message**
+  (`internal/relay/workeranswer.go`, `answerByTurn`; `terminal.FinalMessage`; docs/hooks/notification.md, Which
+  errands use it): a task is answered by its worker's last message when the turn ends, read from the chat's driver
+  in a chat and from the provider's conversation in a terminal at its `done`. A terminal of Cursor CLI (no
+  conversation lich can read) and of Crush (no turn end reported), or of any provider whose plugin is not installed,
+  gets `answer="reply"` and has to call `reply_to_session`. A turn whose final message is word for word the one on
+  record when the task went in reads as a turn that wrote nothing and ends `unanswered`; a final message that
+  reaches the transcript more than 1.5 s after the `done` (`defaultFinalSettle`, not measured per provider) does too,
+  and either can still be answered late by the ticket. A turn that could have been either of two open errands
+  answers neither, as before.
 - **Codex and Kiro CLI sessions get the spawn briefing, not lich's MCP instructions** (`internal/cli/mcp.go`,
   `mcpInstructions`; `internal/terminal/command.go`, `codexBriefingArgs`, `briefingEnv`): both initialize the
   server, list its tools and never hand its initialize `instructions` to the model (measured 2026-11-07 on

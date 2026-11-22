@@ -3,6 +3,8 @@ package relay
 import (
 	"context"
 	"log/slog"
+	"strings"
+	"time"
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/events"
@@ -16,15 +18,22 @@ import (
 // taskMessage composes a ticket's task envelope for the target it is handed to
 // now. A subagent errand at a worker whose mod answers it is answered by the
 // worker's last message, and is marked so a turn ending without the answer
-// does not end it; every other worker answers by its ticket.
+// does not end it. Any other errand at a worker whose turn's end lich sees and
+// whose final message it reads is answered by that message (answerByTurn);
+// the rest answer by their ticket.
 func (s *Service) taskMessage(id string, t *ticket, kind string) string {
 	answer := AnswerReply
-	if t.subagent && s.term.ModAnswers(t.targetID) {
-		s.mu.Lock()
-		t.modAnswers = true
-		s.mu.Unlock()
-		answer = AnswerLastMessage
+	said, readable := s.term.FinalMessage(t.targetID)
+	byTurn := readable && (s.term.Chat(t.targetID) || s.reportsTurnEnd(kind))
+	byMod := t.subagent && s.term.ModAnswers(t.targetID)
+	s.mu.Lock()
+	switch {
+	case byMod:
+		t.modAnswers, answer = true, AnswerLastMessage
+	case byTurn:
+		t.turnAnswers, t.saidBefore, answer = true, said, AnswerLastMessage
 	}
+	s.mu.Unlock()
 	message := taskEnvelope(s.lang(), id, t, answer, s.offersTools(kind)).String()
 	if t.loop {
 		message += "\n\n" + loopEnvelope(s.lang(), t).String()
@@ -110,8 +119,22 @@ func (s *Service) WorkerUnanswered(workerID, reason string) {
 		s.mu.Unlock()
 		return
 	}
+	s.mu.Unlock()
+	s.lapseUnanswered(id, t, unansweredWhy(s.lang(), reason))
+}
+
+// lapseUnanswered ends errand id as unanswered, the way a turn ending without
+// a reply ends one, unless it ended meanwhile: it stays answerable by its
+// ticket (lapseLocked), and an errand nobody is attending goes to the sender's
+// inbox with why.
+func (s *Service) lapseUnanswered(id string, t *ticket, why string) {
+	s.mu.Lock()
+	if s.tickets[id] != t {
+		s.mu.Unlock()
+		return
+	}
 	delete(s.tickets, id)
-	t.why = unansweredWhy(s.lang(), reason)
+	t.why = why
 	close(t.stalled)
 	s.lapseLocked(id, t, StatusUnanswered)
 	unattended := t.attended == 0
@@ -276,4 +299,47 @@ func (s *Service) SessionClosed(sessionID, closerID string) {
 	s.mu.Unlock()
 	s.clearAll(stopped)
 	s.announceInboxAll(told)
+}
+
+// answerByTurn answers errand e, which workerID's turn that just ended was,
+// with that turn's final message (docs/hooks/notification.md, Which errands
+// use it), by the path Reply takes: an answer that came first by the ticket or
+// the mod wins, and this one is dropped. A turn that wrote nothing new, read
+// back as the message on record when the task went in, ends the errand
+// unanswered as a turn without a reply always has.
+func (s *Service) answerByTurn(workerID string, e endedErrand) {
+	text := s.newFinalMessage(workerID, e.t.saidBefore)
+	if text == "" {
+		s.lapseUnanswered(e.id, e.t, "")
+		return
+	}
+	if _, err := s.Reply(context.Background(), ReplyOptions{From: workerID, Ticket: e.id, Answer: text}); err != nil {
+		slog.Debug("relay: a turn's final message was not taken", "session", workerID, "err", err)
+		return
+	}
+	s.finishIfTurnEnded(workerID)
+}
+
+// defaultFinalSettle is how long a turn's end rereads a worker's final message
+// before it takes the turn as one that wrote nothing: a provider's done hook
+// can run before its transcript holds the last words.
+const defaultFinalSettle = 1500 * time.Millisecond
+
+// finalPoll is how often that wait rereads.
+const finalPoll = 100 * time.Millisecond
+
+// newFinalMessage is workerID's final message once it differs from before,
+// "" when it is blank or never moved off before within finalSettle.
+func (s *Service) newFinalMessage(workerID, before string) string {
+	deadline := s.now().Add(s.finalSettle)
+	for {
+		text, _ := s.term.FinalMessage(workerID)
+		if strings.TrimSpace(text) != "" && text != before {
+			return text
+		}
+		if !s.now().Before(deadline) {
+			return ""
+		}
+		time.Sleep(finalPoll)
+	}
 }
