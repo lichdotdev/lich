@@ -15,9 +15,8 @@ import (
 // before it is asked again.
 const forgeRetry = 10 * time.Second
 
-// forgeStore is the window's forge of each checkout. The forge comes from the
-// remote and no event announces a change to it, so each path is read once,
-// the first time something asks, and kept while the window lives.
+// forgeStore is the window's forge of each checkout: read the first time
+// something asks, then changed only by api.ForgeEvent.
 type forgeStore struct {
 	client     *backend.Client
 	invalidate func()
@@ -46,6 +45,14 @@ func (f *forgeStore) of(path string) (forge string, known bool) {
 		}
 		return forge, true
 	})
+}
+
+// set is path's forge as api.ForgeEvent announced it.
+func (f *forgeStore) set(path, forge string) {
+	f.mu.Lock()
+	f.forges.put(path, forge)
+	f.mu.Unlock()
+	f.invalidate()
 }
 
 // peek is path's forge as already read, "" while it is not; it starts no

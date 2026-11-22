@@ -39,7 +39,7 @@ func TestForgeStoreReadsEachCheckoutOnce(t *testing.T) {
 	f.of("/repo")
 	f.gitLab("/repo")
 	if got := stub.calls("project.Forge"); got != 1 {
-		t.Errorf("reads = %d, want 1: a remote announces no change", got)
+		t.Errorf("reads = %d, want 1: a change arrives as an event", got)
 	}
 }
 
@@ -227,5 +227,20 @@ func TestPullsScreenOnGitLabWaitsForTheForgeAndNeverAsksGitHub(t *testing.T) {
 		if got := stub.calls(m); got != 0 {
 			t.Errorf("%s called %d times on a GitLab checkout", m, got)
 		}
+	}
+}
+
+// A checkout read as GitHub turns GitLab when the backend announces it, as
+// after `glab auth login` on a self-hosted host, with no read of its own.
+func TestAForgeEventTurnsACheckoutGitLab(t *testing.T) {
+	stub := &rpcStub{answer: forgeAnswer(api.ForgeGitHub)}
+	m := newTestModel(stub.client(t))
+	waitFor(t, "the first read", func() bool { return m.forgeOf(checkout) == api.ForgeGitHub })
+	send(m, api.ForgeEvent.Name, api.ForgeChange{Path: checkout, Forge: api.ForgeGitLab})
+	if got := m.forgeOf(checkout); got != api.ForgeGitLab {
+		t.Errorf("forge after the event = %q, want gitlab", got)
+	}
+	if got := stub.calls("project.Forge"); got != 1 {
+		t.Errorf("reads = %d, want the first alone", got)
 	}
 }
