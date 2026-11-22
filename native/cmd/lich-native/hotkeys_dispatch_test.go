@@ -231,3 +231,23 @@ func TestSteppedTextSizeClampsAndResets(t *testing.T) {
 		}
 	}
 }
+
+// The chat's Ctrl+B takes New worktree's default chord, outside macOS where
+// that chord is Cmd+B, and leaves a rebound one alone.
+func TestTheChatsCtrlBTakesTheChordItShares(t *testing.T) {
+	for _, c := range []struct {
+		combo combo
+		goos  string
+		want  bool
+	}{
+		{modChord("b"), "linux", true},
+		{modChord("b"), "windows", true},
+		{modChord("b"), "darwin", false},
+		{shiftChord("b"), "linux", false},
+		{modChord("n"), "linux", false},
+	} {
+		if got := takesBackgroundKey(c.combo, c.goos, false); got != c.want {
+			t.Errorf("%+v on %s: %v, want %v", c.combo, c.goos, got, c.want)
+		}
+	}
+}
