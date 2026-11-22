@@ -562,9 +562,32 @@ draws none while it grows in, because the room above the rows is measured in the
   muted and the description muted on the rest of the line, lit on `Accent` under the cursor. Typing filters it,
   names that start with what was typed first; the arrows walk it, Enter or Tab put the command in place of what
   was typed, with a space, unsent, and Escape shuts it until the start changes. A path, a slash mid-line or a
-  start that matches nothing opens nothing, so Enter sends. lich's own `/new` leads the list: sent, it starts an
-  empty conversation in the card (`chat.New`) instead of reaching the agent, and the conversation it replaces
-  leaves at once, with no row playing out.
+  start that matches nothing opens nothing, so Enter sends. An Enter or Tab that comes in the same frame as the
+  last keys typed waits for the editor to hold them before it picks, so "/mcp" typed fast never leaves "cp"
+  behind. lich's own commands lead the list: `/new` (and Claude Code's `/clear` and `/reset`, read as it) starts
+  an empty conversation in the card (`chat.New`) instead of reaching the agent, the conversation it replaces
+  leaving at once with no row playing out; `/mcp`, `/skills`, `/plugin`, `/permissions`, `/hooks`, `/memory` and
+  `/agents`, where the provider reports what they open (Claude Code, Codex), open a panel instead of being sent.
+  The lists and the panels take the room above the box: on the start screen, where the box stands mid-pane,
+  only what is above it there.
+- **A panel over the composer** (`chat_tools*.go`, `chat_plugins*.go`, `chat_permissions*.go`, `chat_hooks.go`,
+  `chat_memory*.go`) stands where the slash list does, on the same popover surface, as wide as the box and
+  `Space(2)` above it, up to 460px and the room above, scrolling past it. It is the provider's own TUI screen for
+  the command, drawn as rows: a head with the title in `TextSM` semibold and the count muted beside it (and a
+  ghost `SizeXS` control at its end, a sort or nothing), tabs as ghost pills under it where the screen has tabs,
+  then the rows grouped under `TextXS` semibold group labels with their file muted beside them. A row is the
+  model picker's 32px row: a state glyph (a check in `TonePass` for on or connected, `circle-dashed` muted for
+  connecting, a cross in `Destructive` for failed, `circle-alert` in `ToneWait` for a sign-in it needs, an empty
+  circle muted for off), the name, and its facts muted at the right, a description under the name when the row
+  has one. A search is a bare row of the panel (`Input` with `Bare` and the row's height), the model picker's
+  search, never a filled box inside the panel: the panel is already the box, and two stacked rows of different
+  heights side by side break the hairlines. A click or Enter opens a row's detail in the panel: Back, a ghost
+  `SizeXS` button with a chevron, and the name; label and value lines, the label column `Space(32)` muted, a file
+  or a command in mono and a word in the body font; then a hairline and its actions as `SizeSM` secondary
+  buttons. The keys stay on the box (a panel never takes the focus: rows of a focused non-editor tag drop out of
+  the semantic tree), the arrows walk the rows, Escape goes back from a detail and then shuts the panel, and
+  typing in the box shuts it. A provider that reports nothing for the command says so in one muted line. lich's
+  own server, plugin and the like show no action that would cut lich off.
   `@` at the start of a word opens the checkout's folders and files in the same place, on the same surface and
   rows (`chat_mention.go`): a folder's glyph or the file's icon, the name in medium and the folder it sits in
   muted on the rest of the line, so a deep path cuts its folder and never its name. It ranks as Claude Code does,
@@ -580,6 +603,31 @@ draws none while it grows in, because the room above the rows is measured in the
   size. The person's message shows its cards the same way, without the ×, at the column's right over the text.
   These cards are the chat's one exception to rows over boxes: a thumbnail needs an edge to read as a file, and
   Claude's web composer, which the person asked for, draws them so.
+  Ctrl+V with an image and no text on the clipboard makes a card the same way.
+- **What has not reached the agent yet stands over the box**, in the box's column, before the text: a message
+  written while the turn runs waits in the queue (`chat_queue.go`), one muted `TextSM` line per message with a
+  `clock` glyph, truncated, the kit's hover fill under the pointer, and Force (a ghost `SizeXS` button) and × (a
+  `SizeIconXS` ghost button) shown only on hover; a click on the line takes it back into the box, and "↑ edits
+  the queue" stands muted in the box's foot while there is one. Above the queue, the agent's task list
+  (`chat_plan.go`) is one compact line: a list glyph, "Tasks 2/5" muted and the task in progress shimmering as
+  the live line's verb does; a click unfolds it, done tasks struck and muted, the running one lit, the pending
+  ones muted, capped in height and scrolling, and a second click folds it. It never takes the live line's place
+  and goes when every task is done. A message sent waits 2s in the window before it reaches the agent
+  (`chat_hold.go`), drawn sent with its turn running from Enter, so the wait does not show; Esc or Stop in that
+  time takes it back.
+- **Shell mode**: a line that starts with `!` turns the box's edge and fill toward `ToneWait`, the tone of a mode
+  that runs unchecked, and the box's foot shows "Shell mode · Enter runs the command" in that tone in the chips'
+  place, which do not apply to a command; Send stays at the right. The command's call is a row of its own under
+  the person's message, hung by the connector, its output whole in mono under it, 20 lines and "Show N more
+  lines". Shift+Tab walks the mode chip's choices in the provider's order, never onto a `Danger` one.
+- **Background shells** (`chat_shells*.go`): while one runs, a chip in the box's foot says "2 shells · 1 monitor";
+  it and `/tasks` open a panel of them in the panel's place, each row a state glyph, the command in mono and its
+  running time, the detail its output tail in mono and Stop. While the turn waits on a command Claude Code can
+  move, the live line ends in a muted "· Ctrl+B to run in background", and Ctrl+B in the box moves it: the box
+  holds that chord ahead of the window hotkey bound to it.
+- **The end of plan mode** is a question card (`chat_proposal.go`): the plan in Markdown over it in the
+  conversation, the card's header "PLAN" and the question, and the choices as the card's rows, the last a field
+  for what to change.
   The box has no focus ring: its 1px border is the same with the keyboard and without (`TextareaStyle.Steady`; the
   kit's inputs keep their `ring-3`). The blinking caret already says where the keyboard is, and in a chat the
   composer is nearly always the focused thing, so a ring around the biggest box on the screen only reads as a
