@@ -154,6 +154,7 @@ project.EditReviewBody(PRReviewBodyOptions) None
 project.EditReviewComment(PRCommentBodyOptions) None
 project.Exists(PathOptions) bool
 project.FileLines(FileLinesOptions) []string
+project.Forge(PathOptions) string
 project.GitAuthors(GitAuthorsOptions) []string
 project.GitBlame(CheckoutFileOptions) GitBlame
 project.GitBranchOnly(GitBranchOptions) int

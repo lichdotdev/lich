@@ -37,6 +37,7 @@ var (
 	ProjectWorktreeAdopted          = define[PathOptions, bool]("project.WorktreeAdopted")
 	ProjectGitHubAccounts           = define[None, []string]("project.GitHubAccounts")
 	ProjectGitHubAccountOf          = define[PathOptions, GitHubAccountState]("project.GitHubAccountOf")
+	ProjectForge                    = define[PathOptions, string]("project.Forge")
 	ProjectIssue                    = define[NumberOptions, Issue]("project.Issue")
 	ProjectRecheckPullRequest       = define[PathOptions, None]("project.RecheckPullRequest")
 	ProjectListPullRequests         = define[ListPullRequestsOptions, []PRSummary]("project.ListPullRequests")
@@ -59,6 +60,14 @@ var (
 	ProjectDeleteReviewComment      = define[PRCommentOptions, None]("project.DeleteReviewComment")
 	ProjectReplyToReviewThread      = define[PRCommentBodyOptions, None]("project.ReplyToReviewThread")
 	ProjectResolveReviewThread      = define[ResolveThreadOptions, None]("project.ResolveReviewThread")
+)
+
+// The forge a checkout's remote points at, as ProjectForge answers it. Every
+// pull request RPC keeps GitHub's names and vocabulary on both; a GitLab
+// merge request arrives mapped onto them.
+const (
+	ForgeGitHub = "github"
+	ForgeGitLab = "gitlab"
 )
 
 // PathOptions names a checkout, or a directory, by its path.
