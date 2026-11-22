@@ -13,18 +13,17 @@ import (
 )
 
 const (
-	vcsToolsKey     = "vcs.tools" // no backend key: the row only reads the machine
-	vcsAccountKey   = "vcs.account"
-	vcsGitBin       = "git"
-	vcsGhBin        = "gh"
-	vcsGlabBin      = "glab"
-	vcsGitLabel     = "git"
-	vcsGhLabel      = "GitHub CLI (gh)"
-	vcsGlabLabel    = "GitLab CLI (glab)"
-	vcsGitURL       = "https://git-scm.com/downloads"
-	vcsGhURL        = "https://cli.github.com"
-	vcsGlabURL      = "https://gitlab.com/gitlab-org/cli"
-	vcsWithoutInset = 6.5 // ml-6.5: under the label, past the icon and its gap
+	vcsToolsKey   = "vcs.tools" // no backend key: the row only reads the machine
+	vcsAccountKey = "vcs.account"
+	vcsGitBin     = "git"
+	vcsGhBin      = "gh"
+	vcsGlabBin    = "glab"
+	vcsGitLabel   = "git"
+	vcsGhLabel    = "GitHub CLI"
+	vcsGlabLabel  = "GitLab CLI"
+	vcsGitURL     = "https://git-scm.com/downloads"
+	vcsGhURL      = "https://cli.github.com"
+	vcsGlabURL    = "https://gitlab.com/gitlab-org/cli"
 )
 
 var (
@@ -196,7 +195,7 @@ func (s *settingsScreen) vcsToolsBlock(gtx C, th *ui.Theme, r settingRow, first 
 		failed := false
 		for i, t := range vcsTools {
 			if i > 0 {
-				children = append(children, ui.VGap(1))
+				children = append(children, layout.Rigid(th.Separator))
 			}
 			children = append(children, layout.Rigid(func(gtx C) D { return s.vcsToolRow(gtx, th, t) }))
 			failed = failed || v.failed(t.bin)

@@ -2,6 +2,7 @@ package main
 
 import (
 	"slices"
+	"strings"
 	"testing"
 
 	"github.com/lichdotdev/lich/native/backend"
@@ -94,7 +95,8 @@ func TestVersionControlRowsFollowTheScope(t *testing.T) {
 
 // Each tool's row says what it lacks and offers the command that fixes it:
 // the package manager's for a missing one, the sign-in for a CLI with no
-// account, the form for git without a global name or email.
+// account, the form for git without a global name or email; a tool with all
+// of it is ready, and says who it runs as.
 func TestToolRowsOfferWhatEachToolLacks(t *testing.T) {
 	v := &vcsSettings{checks: map[string]backend.BinaryCheck{
 		vcsGitBin:  {Path: "/usr/bin/git", Status: backend.CheckOK},
@@ -102,23 +104,24 @@ func TestToolRowsOfferWhatEachToolLacks(t *testing.T) {
 		vcsGlabBin: {Path: "/usr/bin/glab", Status: backend.CheckOK},
 	}}
 	v.setup.installs = map[string]string{vcsGhBin: "sudo pacman -S --needed github-cli"}
+	v.setup.versions = map[string]string{vcsGitBin: "2.47.1"}
 	v.setup.glabAccounts = []string{}
 	v.setup.global = &backend.CommitIdentity{Name: "Ana"}
-	if st := v.toolState(vcsGh); !st.gone || st.install != "sudo pacman -S --needed github-cli" {
+	if st := v.toolState(vcsGh); !st.gone || st.tone != vcsToneMissing || st.install != "sudo pacman -S --needed github-cli" {
 		t.Errorf("missing gh: %+v", st)
 	}
-	if st := v.toolState(vcsGlab); st.signIn != vcsGlabSignIn || !st.alarm {
+	if st := v.toolState(vcsGlab); st.ready || st.signIn != vcsGlabSignIn || st.tone != vcsToneSetUp {
 		t.Errorf("glab with no account: %+v", st)
 	}
-	if st := v.toolState(vcsGit); !st.identity || st.resolved != "/usr/bin/git" {
+	if st := v.toolState(vcsGit); !st.identity || st.ready || st.version != "2.47.1" || st.resolved != "/usr/bin/git" {
 		t.Errorf("git with no email: %+v", st)
 	}
 	v.setup.glabAccounts = []string{"gitlab.com/ana.souza"}
 	v.setup.global = &backend.CommitIdentity{Name: "Ana", Email: "ana@example.dev"}
-	if st := v.toolState(vcsGlab); st.status != "ana.souza" || st.signIn != "" || st.alarm {
+	if st := v.toolState(vcsGlab); !st.ready || !strings.Contains(st.detail, "ana.souza") || st.tone != vcsToneMuted {
 		t.Errorf("glab signed in: %+v", st)
 	}
-	if st := v.toolState(vcsGit); st.identity || st.status != "Ana · ana@example.dev" {
+	if st := v.toolState(vcsGit); st.identity || !st.ready || !strings.Contains(st.detail, "ana@example.dev") {
 		t.Errorf("git with an identity: %+v", st)
 	}
 }

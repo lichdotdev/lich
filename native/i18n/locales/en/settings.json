@@ -345,7 +345,6 @@
     "title": "Command-line tools",
     "searchWords": "git gh glab install",
     "description": "lich drives git, the GitHub CLI and the GitLab CLI. Everything on this screen runs through them.",
-    "notOnPath": "Not on $PATH",
     "install": "Install",
     "website": "Website",
     "runsInTerminal": "Opens a terminal running {command}.",
@@ -355,7 +354,13 @@
     "name": "Name",
     "email": "Email",
     "save": "Save",
-    "savedGlobally": "Saved with git config --global."
+    "savedGlobally": "Saved with git config --global.",
+    "notInstalled": "Not installed",
+    "commitsAs": "Commits as {name} · {email}",
+    "signedInAs": "Signed in as {login} · {host}",
+    "editIdentity": "Edit identity",
+    "otherAccount": "Sign in with another account",
+    "openSite": "Open website"
   },
   "versionControlSettings": {
     "account": "GitHub account",

@@ -353,7 +353,6 @@
     "title": "Утилиты командной строки",
     "searchWords": "git gh glab установка install",
     "description": "lich работает с git, GitHub CLI и GitLab CLI, и всё на этом экране делается через них.",
-    "notOnPath": "Нет в $PATH",
     "install": "Установить",
     "website": "Сайт",
     "runsInTerminal": "Открывает терминал с командой {command}.",
@@ -363,7 +362,13 @@
     "name": "Имя",
     "email": "Почта",
     "save": "Сохранить",
-    "savedGlobally": "Сохраняется через git config --global."
+    "savedGlobally": "Сохраняется через git config --global.",
+    "notInstalled": "Не установлен",
+    "commitsAs": "Коммиты от {name} · {email}",
+    "signedInAs": "Вход выполнен как {login} · {host}",
+    "editIdentity": "Изменить имя и почту",
+    "otherAccount": "Войти в другой аккаунт",
+    "openSite": "Открыть сайт"
   },
   "versionControlSettings": {
     "account": "Аккаунт GitHub",

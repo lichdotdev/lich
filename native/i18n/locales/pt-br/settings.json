@@ -345,7 +345,6 @@
     "title": "Ferramentas de linha de comando",
     "searchWords": "git gh glab instalar",
     "description": "O lich usa o git e as CLIs do GitHub e do GitLab. Tudo nesta tela passa por elas.",
-    "notOnPath": "Fora do $PATH",
     "install": "Instalar",
     "website": "Site",
     "runsInTerminal": "Abre um terminal rodando {command}.",
@@ -355,7 +354,13 @@
     "name": "Nome",
     "email": "E-mail",
     "save": "Salvar",
-    "savedGlobally": "Fica salvo com git config --global."
+    "savedGlobally": "Fica salvo com git config --global.",
+    "notInstalled": "Não instalado",
+    "commitsAs": "Commits como {name} · {email}",
+    "signedInAs": "Conectado como {login} · {host}",
+    "editIdentity": "Editar identidade",
+    "otherAccount": "Entrar com outra conta",
+    "openSite": "Abrir site"
   },
   "versionControlSettings": {
     "account": "Conta do GitHub",
