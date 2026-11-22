@@ -205,6 +205,11 @@
       "one": "{count} shell",
       "other": "{count} shells"
     },
+    "monitors": {
+      "one": "{count} monitor",
+      "other": "{count} monitores"
+    },
+    "monitor": "monitor",
     "title": "Shells en segundo plano",
     "back": "Shells",
     "none": "Ningún shell se ejecuta en segundo plano",

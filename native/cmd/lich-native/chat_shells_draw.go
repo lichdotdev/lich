@@ -20,15 +20,22 @@ import (
 // draws.
 const shellTailLines = 200
 
-// shellsChip is the chip that counts the shells running, lit while their
-// panel is open; none while none runs.
+// shellsChip is the chip that counts the shells running and the monitors,
+// lit while their panel is open; none while none runs.
 func (u *window) shellsChip(gtx C, th *ui.Theme, p *chatPane, sv sessionView) D {
-	n := runningShells(u.model.chat.shellsOf(sv.ID))
-	if n == 0 {
+	n, monitors := runningShells(u.model.chat.shellsOf(sv.ID))
+	if n+monitors == 0 {
 		return D{}
 	}
 	p.shellsChip.pressed = p.tools.kind == chatShellsPanel
-	label := i18n.T("chat.shells.count", i18n.Args{"count": n})
+	var counts []string
+	if n > 0 {
+		counts = append(counts, i18n.T("chat.shells.count", i18n.Args{"count": n}))
+	}
+	if monitors > 0 {
+		counts = append(counts, i18n.T("chat.shells.monitors", i18n.Args{"count": monitors}))
+	}
+	label := strings.Join(counts, " · ")
 	return footerButton(gtx, th, &u.root, &p.shellsChip, i18n.T("chat.shells.title"), true, false, glyphText(icToolRun, label))
 }
 
@@ -55,13 +62,18 @@ func shellTook(gtx C, s backend.ChatShell) string {
 	return chatElapsed(time.UnixMilli(s.Ended).Sub(start))
 }
 
-// shellMeta is what a shell's line says at its end: how long it has run, and
-// how it ended once it has; the glyph already says it runs.
+// shellMeta is what a shell's line says at its end: a monitor named one, how
+// long it has run, and how it ended once it has; the glyph already says it
+// runs.
 func shellMeta(gtx C, s backend.ChatShell, state string) string {
-	if s.State == api.ShellRunning {
-		return shellTook(gtx, s)
+	meta := []string{shellTook(gtx, s)}
+	if s.State != api.ShellRunning {
+		meta = append([]string{state}, meta...)
 	}
-	return state + " · " + shellTook(gtx, s)
+	if s.Monitor {
+		meta = append([]string{i18n.T("chat.shells.monitor")}, meta...)
+	}
+	return strings.Join(meta, " · ")
 }
 
 func (u *window) shellsView(gtx C, th *ui.Theme, p *chatPane, sv sessionView) D {

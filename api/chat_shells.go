@@ -28,11 +28,13 @@ const (
 
 // ChatShell is one background shell. Command is what it runs, Description
 // the agent's words for it; Started and Ended are in unix milliseconds,
-// Ended 0 while it runs.
+// Ended 0 while it runs. Monitor marks a command the agent watches, each line
+// it prints reaching the agent, which Claude Code counts apart from shells.
 type ChatShell struct {
 	ID          string `json:"id"`
 	Command     string `json:"command"`
 	Description string `json:"description,omitempty"`
+	Monitor     bool   `json:"monitor,omitempty"`
 	State       string `json:"state"`
 	Started     int64  `json:"started"`
 	Ended       int64  `json:"ended,omitempty"`

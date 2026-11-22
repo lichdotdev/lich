@@ -61,6 +61,26 @@ func TestShellsChipOpensTheShellsAndStopStopsOne(t *testing.T) {
 	}
 }
 
+// A Monitor's watch is counted apart from the shells, as Claude Code's TUI
+// counts it, and named a monitor in the list.
+func TestMonitorsAreCountedApartAndNamed(t *testing.T) {
+	u, r, _, _ := shellsFrames(t)
+	start := r.now.Add(-5 * time.Second).UnixMilli()
+	u.model.chat.setShells("s1", append(u.model.chat.shellsOf("s1"),
+		backend.ChatShell{ID: "m1", Command: "tail -f build.log", State: api.ShellRunning, Started: start, Monitor: true}))
+	r.frames(2)
+	r.click(t, r.at(t, "2 shells · 1 monitor"))
+	if !r.shows("tail -f build.log") || !strings.Contains(r.drawn(), `"monitor · `) {
+		t.Fatalf("the monitor is not named in the list:\n%s", r.drawn())
+	}
+	u.model.chat.setShells("s1", []backend.ChatShell{{ID: "m1", Command: "tail -f build.log", State: api.ShellRunning, Started: start, Monitor: true}})
+	r.press(key.NameEscape)
+	r.frames(2)
+	if !r.shows("1 monitor") || r.shows("shell") {
+		t.Errorf("a monitor alone is not counted as one:\n%s", r.drawn())
+	}
+}
+
 // A shell that ended offers no Stop, and with none running there is no chip.
 func TestEndedShellsHaveNoStopAndNoChip(t *testing.T) {
 	u, r, _, _ := shellsFrames(t)
@@ -103,6 +123,23 @@ func TestTypingShutsTheShells(t *testing.T) {
 	typeIn(r, p, "!")
 	if p.tools.opened() {
 		t.Error("typing left the panel open")
+	}
+}
+
+// A shell the agent leaves running after its turn ends reaches the chip
+// through /events, the way the backend sends it.
+func TestShellsEventThroughTheStreamShowsTheChip(t *testing.T) {
+	u, r, _ := chatFrames(t, api.ViewChat)
+	u.model.chat.history("s1", []backend.ChatItem{{ID: "u1", Kind: api.ItemUser, Turn: 1, Text: "go"}})
+	events := make(chan backend.Event, 1)
+	events <- chatEventOf(t, api.ChatShellsEvent, api.ChatShellsUpdate{SessionID: "s1", Shells: []backend.ChatShell{
+		{ID: "bkjocc3vb", Command: "sleep 300", State: api.ShellRunning, Started: r.now.UnixMilli()},
+	}})
+	close(events)
+	u.model.follow(t.Context(), events)
+	r.frames(2)
+	if !r.shows("1 shell") {
+		t.Errorf("no chip for the shell the event brought:\n%s", r.drawn())
 	}
 }
 

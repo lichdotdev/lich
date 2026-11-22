@@ -757,6 +757,7 @@ ChatShell {
 	id string
 	command string
 	description,omitempty string
+	monitor,omitempty bool
 	state string
 	started int64
 	ended,omitempty int64

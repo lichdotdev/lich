@@ -194,6 +194,10 @@
     "count": {
       "other": "{count} 个 shell"
     },
+    "monitors": {
+      "other": "{count} 个监控"
+    },
+    "monitor": "监控",
     "title": "后台 shell",
     "back": "Shell",
     "none": "没有在后台运行的 shell",
