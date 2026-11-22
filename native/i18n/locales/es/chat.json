@@ -111,7 +111,9 @@
     "new": "Empieza una conversación nueva en esta sesión",
     "mcp": "Gestiona los servidores MCP",
     "skills": "Activa o desactiva skills",
-    "plugin": "Instala y gestiona plugins"
+    "plugin": "Instala y gestiona plugins",
+    "memory": "Editar archivos de instrucciones y ajustes de memoria",
+    "agents": "Ver y añadir subagentes"
   },
   "start": {
     "lines": "¿Qué conjuramos en {project}?|¿Qué invocamos para {project}?|¿Qué canalizamos hacia {project}?|¿Qué se cuece en {project}?|¿Qué quieres adivinar en {project}?|¿Qué inscribimos hoy en {project}?|¿Qué tejemos en {project}?|¿Qué levantamos en {project}?"
@@ -302,5 +304,38 @@
     "restart": "Actualizado. El chat usa la versión nueva cuando se reinicia.",
     "current": "Ya es la versión más reciente.",
     "fixed": "lich instala y actualiza este plugin por su cuenta."
+  },
+  "memory": {
+    "title": "Memoria",
+    "fileCount": {
+      "one": "{count} archivo",
+      "other": "{count} archivos"
+    },
+    "none": "{provider} no le dice a lich qué archivos de instrucciones carga.",
+    "user": "Instrucciones del usuario",
+    "project": "Instrucciones del proyecto",
+    "missing": "aún sin crear",
+    "saved": "Memorias guardadas",
+    "auto": "Memoria automática",
+    "dream": "Auto-dream",
+    "on": "activada",
+    "off": "desactivada"
+  },
+  "agents": {
+    "title": "Subagentes",
+    "count": {
+      "one": "{count} subagente",
+      "other": "{count} subagentes"
+    },
+    "none": "{provider} no le dice a lich sus subagentes.",
+    "group": {
+      "plugin": "Plugin",
+      "managed": "Gestionados",
+      "builtIn": "Integrados"
+    },
+    "name": "Nombre",
+    "description": "Cuándo usarlo",
+    "addProject": "Añadir a este proyecto",
+    "addUser": "Añadir a todos los proyectos"
   }
 }

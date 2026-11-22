@@ -43,21 +43,26 @@ browser.TabNav(BrowserTabOptions) None
 browser.Tabs(SessionIDOptions) []BrowserTab
 browser.Text(BrowserTextOptions) None
 browser.Type(BrowserTypeOptions) None
+chat.Agents(SessionIDOptions) ChatAgentList
 chat.Answer(ChatAnswerOptions) None
 chat.Background(SessionIDOptions) None
 chat.Cancel(SessionIDOptions) None
 chat.Commands(SessionIDOptions) []ChatCommand
+chat.CreateMemory(ChatPathOptions) None
 chat.History(SessionIDOptions) []ChatItem
 chat.Kinds(None) []string
 chat.MCP(SessionIDOptions) ChatMCPList
 chat.MCPAct(ChatMCPActOptions) ChatMCPActResult
+chat.Memory(SessionIDOptions) ChatMemoryList
 chat.New(SessionIDOptions) None
+chat.NewAgent(ChatNewAgentOptions) ChatNewAgentResult
 chat.Options(SessionIDOptions) []ChatOption
 chat.PluginAct(ChatPluginActOptions) ChatPluginActResult
 chat.Plugins(SessionIDOptions) ChatPluginList
 chat.Prompt(ChatPromptOptions) None
 chat.Reply(ChatReplyOptions) None
 chat.RunShell(ChatRunShellOptions) None
+chat.SetMemory(ChatSetMemoryOptions) None
 chat.SetOption(ChatSetOptionOptions) None
 chat.SetSkill(ChatSetSkillOptions) None
 chat.SetView(ChatViewOptions) None
@@ -643,6 +648,12 @@ BrowserTypeOptions {
 	...BrowserTarget
 }
 
+ChatAgentList {
+	reported bool
+	agents,omitempty []ChatAgent
+	create,omitempty []string
+}
+
 ChatAnswerOptions {
 	id string
 	itemId string
@@ -654,6 +665,11 @@ ChatCommand {
 	description,omitempty string
 	hint,omitempty string
 	skill,omitempty bool
+}
+
+ChatPathOptions {
+	id string
+	path string
 }
 
 ChatItem {
@@ -685,6 +701,25 @@ ChatMCPActOptions {
 
 ChatMCPActResult {
 	authUrl,omitempty string
+}
+
+ChatMemoryList {
+	reported bool
+	files,omitempty []ChatMemoryFile
+	memories,omitempty []ChatMemoryNote
+	autoMemory,omitempty *ChatMemoryToggle
+	autoDream,omitempty *ChatMemoryToggle
+}
+
+ChatNewAgentOptions {
+	id string
+	scope string
+	name string
+	description string
+}
+
+ChatNewAgentResult {
+	path string
 }
 
 ChatOption {
@@ -730,6 +765,12 @@ ChatReplyOptions {
 ChatRunShellOptions {
 	id string
 	command string
+}
+
+ChatSetMemoryOptions {
+	id string
+	setting string
+	enabled bool
 }
 
 ChatSetOptionOptions {
@@ -2522,6 +2563,16 @@ BrowserNewTabText {
 	recent string
 }
 
+ChatAgent {
+	name string
+	description,omitempty string
+	model,omitempty string
+	source string
+	path,omitempty string
+	tools,omitempty []string
+	readOnly,omitempty bool
+}
+
 ChatToolCall {
 	name string
 	title,omitempty string
@@ -2560,6 +2611,26 @@ ChatMCPServer {
 	auth,omitempty string
 	fixed,omitempty bool
 	tools,omitempty []ChatMCPTool
+}
+
+ChatMemoryFile {
+	kind string
+	path string
+	imported,omitempty bool
+	exists bool
+}
+
+ChatMemoryNote {
+	name string
+	path string
+	description,omitempty string
+	type,omitempty string
+}
+
+ChatMemoryToggle {
+	enabled bool
+	locked,omitempty bool
+	detail,omitempty string
 }
 
 ChatChoice {

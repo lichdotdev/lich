@@ -129,7 +129,7 @@ func (c *fakeCodex) serveTools(id any, method string, params map[string]any) {
 		}
 		c.reply(id, map[string]any{"data": fakeCodexMCP[2:], "nextCursor": nil})
 	case "config/read":
-		c.reply(id, map[string]any{"config": map[string]any{"model": "gpt-a", "mcp_servers": fakeCodexConfig, "marketplaces": fakeCodexMarketplaces}, "origins": map[string]any{}})
+		c.reply(id, map[string]any{"config": map[string]any{"model": "gpt-a", "mcp_servers": fakeCodexConfig, "marketplaces": fakeCodexMarketplaces, "agents": fakeCodexAgents}, "origins": map[string]any{}})
 	case "config/value/write":
 		c.reply(id, map[string]any{"status": "ok", "version": "sha256:x", "filePath": "/x/config.toml"})
 	case "config/mcpServer/reload":

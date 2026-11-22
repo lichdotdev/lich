@@ -53,7 +53,7 @@ func (f *fake) claudeControl(run *fakeClaude, m map[string]any) {
 	}
 	switch str(m, "request", "subtype") {
 	case "initialize":
-		ok(map[string]any{"models": fakeClaudeModels, "current_permission_mode": run.mode, "commands": fakeClaudeCommands})
+		ok(map[string]any{"models": fakeClaudeModels, "current_permission_mode": run.mode, "commands": fakeClaudeCommands, "agents": fakeClaudeAgents})
 	case "get_settings":
 		ok(map[string]any{"applied": map[string]any{"model": run.model, "effort": run.effort}})
 	case "set_model":
@@ -80,7 +80,7 @@ func (f *fake) claudeControl(run *fakeClaude, m map[string]any) {
 		fail := func(msg string) {
 			f.send(map[string]any{"type": "control_response", "response": map[string]any{"subtype": "error", "request_id": id, "error": msg}})
 		}
-		if !f.claudeTools(str(m, "request", "subtype"), m, ok, fail) && !f.claudeShellControl(str(m, "request", "subtype"), m, ok, fail) {
+		if !f.claudeTools(str(m, "request", "subtype"), m, ok, fail) && !f.claudeShellControl(str(m, "request", "subtype"), m, ok, fail) && !f.claudeMemory(str(m, "request", "subtype"), ok, fail) {
 			ok(map[string]any{})
 		}
 	}

@@ -111,7 +111,9 @@
     "new": "Start a new conversation in this session",
     "mcp": "Manage the MCP servers",
     "skills": "Turn skills on or off",
-    "plugin": "Install and manage plugins"
+    "plugin": "Install and manage plugins",
+    "memory": "Edit instruction files and memory settings",
+    "agents": "See and add subagents"
   },
   "start": {
     "lines": "What shall we conjure in {project}?|What should we summon for {project}?|What are we channeling into {project}?|What's brewing in {project}?|What do you want to scry in {project}?|What are we inscribing in {project} today?|What shall we weave into {project}?|What are we raising in {project}?"
@@ -302,5 +304,38 @@
     "restart": "Updated. The chat runs the new version once restarted.",
     "current": "This is already the latest version.",
     "fixed": "lich installs and updates this plugin itself."
+  },
+  "memory": {
+    "title": "Memory",
+    "fileCount": {
+      "one": "{count} file",
+      "other": "{count} files"
+    },
+    "none": "{provider} does not tell lich which instruction files it loads.",
+    "user": "User instructions",
+    "project": "Project instructions",
+    "missing": "not created yet",
+    "saved": "Saved memories",
+    "auto": "Auto-memory",
+    "dream": "Auto-dream",
+    "on": "on",
+    "off": "off"
+  },
+  "agents": {
+    "title": "Subagents",
+    "count": {
+      "one": "{count} subagent",
+      "other": "{count} subagents"
+    },
+    "none": "{provider} does not tell lich its subagents.",
+    "group": {
+      "plugin": "Plugin",
+      "managed": "Managed",
+      "builtIn": "Built-in"
+    },
+    "name": "Name",
+    "description": "When to use it",
+    "addProject": "Add to this project",
+    "addUser": "Add to all projects"
   }
 }

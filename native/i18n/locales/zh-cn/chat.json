@@ -105,7 +105,9 @@
     "new": "在此会话中开始新对话",
     "mcp": "管理 MCP 服务器",
     "skills": "开启或关闭技能",
-    "plugin": "安装和管理插件"
+    "plugin": "安装和管理插件",
+    "memory": "编辑指令文件和记忆设置",
+    "agents": "查看和添加子代理"
   },
   "start": {
     "lines": "要在 {project} 里炼成什么？|要为 {project} 召唤些什么？|要往 {project} 里注入什么？|{project} 的坩埚里要熬点什么？|想在 {project} 里占卜些什么？|今天要在 {project} 上刻下什么？|要往 {project} 里织进什么？|要在 {project} 里唤醒什么？"
@@ -284,5 +286,36 @@
     "restart": "已更新。重启聊天后运行新版本。",
     "current": "已经是最新版本。",
     "fixed": "lich 会自己安装和更新这个插件。"
+  },
+  "memory": {
+    "title": "记忆",
+    "fileCount": {
+      "other": "{count} 个文件"
+    },
+    "none": "{provider} 不会告诉 lich 它加载了哪些指令文件。",
+    "user": "用户指令",
+    "project": "项目指令",
+    "missing": "尚未创建",
+    "saved": "已保存的记忆",
+    "auto": "自动记忆",
+    "dream": "Auto-dream",
+    "on": "开",
+    "off": "关"
+  },
+  "agents": {
+    "title": "子代理",
+    "count": {
+      "other": "{count} 个子代理"
+    },
+    "none": "{provider} 不会告诉 lich 它的子代理。",
+    "group": {
+      "plugin": "插件",
+      "managed": "托管",
+      "builtIn": "内置"
+    },
+    "name": "名称",
+    "description": "何时使用",
+    "addProject": "添加到此项目",
+    "addUser": "添加到所有项目"
   }
 }

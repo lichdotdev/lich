@@ -105,7 +105,9 @@
     "new": "이 세션에서 새 대화를 시작",
     "mcp": "MCP 서버 관리",
     "skills": "스킬 켜기 또는 끄기",
-    "plugin": "플러그인 설치 및 관리"
+    "plugin": "플러그인 설치 및 관리",
+    "memory": "지침 파일과 메모리 설정 편집",
+    "agents": "서브에이전트 보기 및 추가"
   },
   "start": {
     "lines": "{project}에서 무엇을 빚어 볼까요?|{project}에 무엇을 소환할까요?|{project}에 무엇을 불어넣을까요?|{project}의 가마솥에서 무엇을 끓여 볼까요?|{project}에서 무엇을 점쳐 볼까요?|오늘은 {project}에 무엇을 새길까요?|{project}에 무엇을 엮어 넣을까요?|{project}에서 무엇을 되살려 볼까요?"
@@ -284,5 +286,36 @@
     "restart": "업데이트했습니다. 채팅을 다시 시작하면 새 버전으로 실행됩니다.",
     "current": "이미 최신 버전입니다.",
     "fixed": "이 플러그인은 lich가 직접 설치하고 업데이트합니다."
+  },
+  "memory": {
+    "title": "메모리",
+    "fileCount": {
+      "other": "파일 {count}개"
+    },
+    "none": "{provider}은(는) 불러오는 지침 파일을 lich에 알려 주지 않습니다.",
+    "user": "사용자 지침",
+    "project": "프로젝트 지침",
+    "missing": "아직 만들지 않음",
+    "saved": "저장된 메모리",
+    "auto": "자동 메모리",
+    "dream": "Auto-dream",
+    "on": "켜짐",
+    "off": "꺼짐"
+  },
+  "agents": {
+    "title": "서브에이전트",
+    "count": {
+      "other": "서브에이전트 {count}개"
+    },
+    "none": "{provider}은(는) 서브에이전트를 lich에 알려 주지 않습니다.",
+    "group": {
+      "plugin": "플러그인",
+      "managed": "관리형",
+      "builtIn": "기본 제공"
+    },
+    "name": "이름",
+    "description": "사용할 때",
+    "addProject": "이 프로젝트에 추가",
+    "addUser": "모든 프로젝트에 추가"
   }
 }

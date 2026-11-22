@@ -43,6 +43,7 @@ func (u *window) chatToolsPanel(gtx C, th *ui.Theme, p *chatPane, sv sessionView
 	u.pollTools(gtx, p, sv.ID)
 	t.mu.Lock()
 	mcp, skills, plugins, loaded := t.mcp, t.skills, t.plugins, t.loaded
+	memory, agents := t.mem.list, t.mem.agents
 	t.mu.Unlock()
 	g := gtx
 	g.Constraints = layout.Constraints{Max: image.Pt(gtx.Constraints.Max.X, max(min(gtx.Dp(toolsMaxH), room), 0))}
@@ -57,6 +58,10 @@ func (u *window) chatToolsPanel(gtx C, th *ui.Theme, p *chatPane, sv sessionView
 			return u.mcpView(gtx, th, p, sv, mcp)
 		case t.kind == chatPluginCommand:
 			return u.pluginsView(gtx, th, p, sv, plugins)
+		case t.kind == chatMemoryCommand:
+			return u.memoryView(gtx, th, p, sv, memory)
+		case t.kind == chatAgentsCommand:
+			return u.agentsView(gtx, th, p, sv, agents)
 		}
 		return u.skillsView(gtx, th, p, sv, skills)
 	})

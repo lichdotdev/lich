@@ -89,8 +89,8 @@ func isNewCommand(text string) bool {
 }
 
 // slashCommands is what the list offers: lich's own commands first, /mcp,
-// /skills and /plugin where provider kind reports what they open, then the
-// provider's, less those they would shadow.
+// /skills, /plugin, /memory and /agents where provider kind reports what they
+// open, then the provider's, less those they would shadow.
 func slashCommands(provider []backend.ChatCommand, kind string) []backend.ChatCommand {
 	own := []backend.ChatCommand{{Text: chatNewCommand, Description: i18n.T("chat.slash.new")}}
 	if slices.Contains(chatToolKinds, kind) {
@@ -98,6 +98,11 @@ func slashCommands(provider []backend.ChatCommand, kind string) []backend.ChatCo
 			backend.ChatCommand{Text: chatMCPCommand, Description: i18n.T("chat.slash.mcp")},
 			backend.ChatCommand{Text: chatSkillsCommand, Description: i18n.T("chat.slash.skills")},
 			backend.ChatCommand{Text: chatPluginCommand, Description: i18n.T("chat.slash.plugin")})
+	}
+	if slices.Contains(chatMemoryKinds, kind) {
+		own = append(own,
+			backend.ChatCommand{Text: chatMemoryCommand, Description: i18n.T("chat.slash.memory")},
+			backend.ChatCommand{Text: chatAgentsCommand, Description: i18n.T("chat.slash.agents")})
 	}
 	shadowed := func(c backend.ChatCommand) bool {
 		return slices.ContainsFunc(own, func(o backend.ChatCommand) bool { return o.Text == c.Text })

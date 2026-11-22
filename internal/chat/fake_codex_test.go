@@ -76,6 +76,7 @@ func (c *fakeCodex) threadAnswer(params map[string]any) map[string]any {
 	return map[string]any{
 		"thread": map[string]any{"id": c.thread, "path": codexRolloutPath(c.thread)},
 		"model":  c.model, "reasoningEffort": c.effort, "approvalPolicy": "on-request", "sandbox": map[string]any{"type": c.sandbox},
+		"instructionSources": fakeCodexSources(),
 	}
 }
 

@@ -105,7 +105,9 @@
     "new": "このセッションで新しい会話を始める",
     "mcp": "MCP サーバーを管理する",
     "skills": "スキルをオンまたはオフにする",
-    "plugin": "プラグインをインストールして管理する"
+    "plugin": "プラグインをインストールして管理する",
+    "memory": "指示ファイルとメモリ設定を編集",
+    "agents": "サブエージェントを表示・追加"
   },
   "start": {
     "lines": "{project}で何を錬成しましょうか？|{project}に何を召喚しましょうか？|{project}に何を注ぎ込みましょうか？|{project}の大鍋で何を煮込みましょうか？|{project}の何を占いましょうか？|今日は{project}に何を刻みましょうか？|{project}に何を織り込みましょうか？|{project}で何を蘇らせましょうか？"
@@ -284,5 +286,36 @@
     "restart": "更新しました。チャットを再起動すると新しいバージョンで動きます。",
     "current": "すでに最新のバージョンです。",
     "fixed": "このプラグインは lich が自分でインストールして更新します。"
+  },
+  "memory": {
+    "title": "メモリ",
+    "fileCount": {
+      "other": "{count} 件のファイル"
+    },
+    "none": "{provider} は読み込む指示ファイルを lich に伝えません。",
+    "user": "ユーザーの指示",
+    "project": "プロジェクトの指示",
+    "missing": "未作成",
+    "saved": "保存されたメモリ",
+    "auto": "自動メモリ",
+    "dream": "Auto-dream",
+    "on": "オン",
+    "off": "オフ"
+  },
+  "agents": {
+    "title": "サブエージェント",
+    "count": {
+      "other": "{count} 件のサブエージェント"
+    },
+    "none": "{provider} はサブエージェントを lich に伝えません。",
+    "group": {
+      "plugin": "プラグイン",
+      "managed": "管理対象",
+      "builtIn": "組み込み"
+    },
+    "name": "名前",
+    "description": "使う場面",
+    "addProject": "このプロジェクトに追加",
+    "addUser": "すべてのプロジェクトに追加"
   }
 }

@@ -86,7 +86,7 @@ func newRig(t *testing.T, kind string) *rig {
 		r.mu.Unlock()
 	})
 	env := []string{fakeEnv + "=1", fakeLogEnv + "=" + r.log, "PATH=" + os.Getenv("PATH"), "HOME=" + home}
-	for _, key := range []string{"LICH_CHAT_FAKE_NOLOAD", fakeLegacyEnv, fakeKiroCommandsEnv, fakeNoSkillsEnv, claudeChildEnv} {
+	for _, key := range []string{"LICH_CHAT_FAKE_NOLOAD", fakeLegacyEnv, fakeKiroCommandsEnv, fakeNoSkillsEnv, fakeNoMemoryEnv, claudeChildEnv} {
 		if v := os.Getenv(key); v != "" {
 			env = append(env, key+"="+v)
 		}
