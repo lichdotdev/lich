@@ -150,8 +150,8 @@ func TestMCPDuringATurnOpensThePanel(t *testing.T) {
 	}
 }
 
-// The slash list offers /mcp, /skills and /plugin only where the provider
-// reports what they open.
+// The slash list offers /mcp, /skills, /plugin, /memory and /agents only
+// where the provider reports what they open.
 func TestTheSlashListOffersTheToolsWhereTheyOpen(t *testing.T) {
 	texts := func(kind string) []string {
 		var out []string
@@ -160,7 +160,7 @@ func TestTheSlashListOffersTheToolsWhereTheyOpen(t *testing.T) {
 		}
 		return out
 	}
-	if got := texts("claude"); !slices.Equal(got, []string{"/new", "/mcp", "/skills", "/plugin", "/review"}) {
+	if got := texts("claude"); !slices.Equal(got, []string{"/new", "/mcp", "/skills", "/plugin", "/memory", "/agents", "/review"}) {
 		t.Errorf("claude lists %q", got)
 	}
 	if got := texts("opencode"); !slices.Equal(got, []string{"/new", "/mcp", "/review"}) {
