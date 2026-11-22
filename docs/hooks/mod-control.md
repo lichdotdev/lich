@@ -73,7 +73,7 @@ it is withdrawn at once, so the caller is never told it is still coming.
 {"id": "m7", "kind": "command", "name": "compact", "args": "keep the test plan"}
 {"id": "m8", "kind": "command", "name": "clear"}
 {"id": "m9", "kind": "ask",     "question": "what are you working on?"}
-{"id": "m10", "kind": "prompt", "text": "[lich] Session \"docs\" finished ...",
+{"id": "m10", "kind": "prompt", "text": "<lich-notification version=\"1\" kind=\"worker-finished\" ...",
  "notification": {"status": "completed", "summary": "lich session \"docs\" finished"}}
 ```
 

@@ -1,49 +1,4 @@
 {
-  "pullRequest": {
-    "conflicts": "拉取请求 #{number}（{branch}）与 {base} 存在合并冲突。请解决这些冲突。",
-    "conflictsGitLab": "合并请求 !{number}（{branch}）与 {base} 存在合并冲突。请解决这些冲突。",
-    "conflictsListed": "拉取请求 #{number}（{branch}）的以下文件与 {base} 存在合并冲突。请解决这些冲突：\n\n{files}",
-    "conflictsListedGitLab": "合并请求 !{number}（{branch}）的以下文件与 {base} 存在合并冲突。请解决这些冲突：\n\n{files}",
-    "checksUnnamed": {
-      "one": "拉取请求 #{number}（{branch}）的 CI 失败了。有 {count} 项检查未通过，请找出是哪些并修复。",
-      "other": "拉取请求 #{number}（{branch}）的 CI 失败了。有 {count} 项检查未通过，请找出是哪些并修复。"
-    },
-    "checksUnnamedGitLab": {
-      "one": "合并请求 !{number}（{branch}）的 CI 失败了。有 {count} 项检查未通过，请找出是哪些并修复。",
-      "other": "合并请求 !{number}（{branch}）的 CI 失败了。有 {count} 项检查未通过，请找出是哪些并修复。"
-    },
-    "checksListed": "拉取请求 #{number}（{branch}）的 CI 失败了。请修复以下检查：\n\n{checks}",
-    "checksListedGitLab": "合并请求 !{number}（{branch}）的 CI 失败了。请修复以下检查：\n\n{checks}",
-    "checksOmitted": {
-      "one": "\n\n…另有 {count} 项失败的检查未列出。",
-      "other": "\n\n…另有 {count} 项失败的检查未列出。"
-    }
-  },
-  "reviewComments": {
-    "header": "审查评论："
-  },
-  "reviewThread": {
-    "head": "pull request #{number} ({branch}) 的审查讨论，{path}:{lines}：",
-    "headOutdated": "pull request #{number} ({branch}) 的审查讨论，{path}:{lines}（已过时，请对照当前代码）：",
-    "id": "讨论 id：{id}",
-    "ask": {
-      "one": "如果它要求修改，就修改、提交，然后用讨论 id 和提交调用 mark_thread_fixed：这个提交 push 后，lich 会在 GitHub 上把讨论标记为已解决并回复。如果它是提问，或是需要和团队讨论的问题，就什么都不要改：把它连同你的看法带给我。永远不要自己在 GitHub 上回复或解决讨论。",
-      "other": "逐一查看每个讨论。要求修改的：修改、提交，然后用这个讨论的 id 和提交调用 mark_thread_fixed，这个提交 push 后，lich 会在 GitHub 上把讨论标记为已解决并回复。提问或需要和团队讨论的：不要为它改任何东西，把它连同你的看法带给我。永远不要自己在 GitHub 上回复或解决讨论。"
-    }
-  },
-  "issue": {
-    "head": "GitHub issue #{number}，{title}\n{url}"
-  },
-  "browserNotes": {
-    "head": {
-      "other": "[lich] 对方在你浏览器标签页的页面上留下了 {count} 条备注:"
-    },
-    "item": "{index}. {url} 上的 {label}",
-    "note": "备注: {note}",
-    "sketch": "对方还在页面上画了草图。带有草图的截图: {path}",
-    "sketchOnly": "[lich] 对方在你浏览器标签页的页面 {url} 上画了草图。带有草图的截图: {path}",
-    "selectors": "上面每个选择器都可以直接作为 browser_click 和 browser_type 的 selector 使用。"
-  },
   "schedule": {
     "checksFailed": "此拉取请求的检查失败了。用 gh 查看，修复原因并推送。",
     "checksFailedGitLab": "此合并请求的检查失败了。用 glab 查看，修复原因并推送。",

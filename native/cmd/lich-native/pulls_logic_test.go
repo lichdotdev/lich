@@ -141,29 +141,19 @@ func TestPullHandoffConflictsFirstThenChecks(t *testing.T) {
 	d := detail("OPEN", "CONFLICTING", "DIRTY", "")
 	d.Number, d.HeadRefName = 7, "feat/x"
 	d.Checks.Failed = 1
-	label, prompt, ok := pullHandoff(d, nil, api.ForgeGitHub)
-	if !ok || label != "Resolve conflicts" || !strings.Contains(prompt, "conflicts with main") {
-		t.Fatalf("conflict handoff = %q %q %v", label, prompt, ok)
+	label, req, ok := pullHandoff(d, nil, api.ForgeGitHub)
+	if !ok || label != "Resolve conflicts" || req.Topic != api.RequestConflicts || req.PR != 7 || req.Branch != "feat/x" || req.Base != "main" {
+		t.Fatalf("conflict handoff = %q %+v %v", label, req, ok)
 	}
-	if _, prompt, _ = pullHandoff(d, []string{"go.mod", "a/b.go"}, api.ForgeGitHub); !strings.HasSuffix(prompt, "\n\n- go.mod\n- a/b.go") {
-		t.Errorf("conflict handoff names no files: %q", prompt)
+	if _, req, _ = pullHandoff(d, []string{"go.mod", "a/b.go"}, api.ForgeGitHub); len(req.Items) != 2 || req.Items[1].Path != "a/b.go" {
+		t.Errorf("conflict handoff names no files: %+v", req)
 	}
 	d.Mergeable, d.MergeStateStatus = "MERGEABLE", "UNSTABLE"
-	runs := make([]backend.CheckItem, handoffNamedChecks+2)
-	for i := range runs {
-		runs[i] = backend.CheckItem{Name: "job", State: "failed", URL: "https://ci"}
-	}
-	d.CheckRuns = runs
-	label, prompt, _ = pullHandoff(d, nil, api.ForgeGitHub)
-	if label != "Fix CI errors" || strings.Count(prompt, "- job — https://ci") != handoffNamedChecks {
-		t.Errorf("checks handoff = %q %q", label, prompt)
-	}
-	if !strings.HasSuffix(prompt, "…and 2 more failing checks not listed.") {
-		t.Errorf("omitted tail missing: %q", prompt)
-	}
-	d.CheckRuns = nil
-	if _, prompt, _ = pullHandoff(d, nil, api.ForgeGitHub); !strings.Contains(prompt, "1 check is red") {
-		t.Errorf("unnamed prompt = %q", prompt)
+	d.CheckRuns = []backend.CheckItem{{Name: "job", State: "failed", URL: "https://ci"}, {Name: "ok", State: "passed"}}
+	label, req, _ = pullHandoff(d, nil, api.ForgeGitHub)
+	if label != "Fix CI errors" || req.Topic != api.RequestChecks || req.Failed != 1 ||
+		len(req.Items) != 1 || req.Items[0].Check != "job" || req.Items[0].URL != "https://ci" {
+		t.Errorf("checks handoff = %q %+v", label, req)
 	}
 	if _, _, ok := pullHandoff(detail("OPEN", "MERGEABLE", "CLEAN", ""), nil, api.ForgeGitHub); ok {
 		t.Error("a healthy PR has nothing to hand off")

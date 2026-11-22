@@ -24,7 +24,17 @@ var envelopeAttr = regexp.MustCompile(`([a-z-]+)="([^"]*)"`)
 
 type envelope struct {
 	kind, topic, from, session, ticket string
-	text                               map[string]string
+	// attrs is every attribute of the root, unescaped, the ones above included.
+	attrs map[string]string
+	text  map[string]string
+	items []envelopeItem
+}
+
+// envelopeItem is one <item> of a request: its attributes, unescaped, and its
+// text, empty for a self-closing one.
+type envelopeItem struct {
+	attrs map[string]string
+	text  string
 }
 
 // parseEnvelopes reads a message that is one envelope or several one blank line
@@ -52,7 +62,7 @@ func parseEnvelope(chunk string) (envelope, bool) {
 	if !ok {
 		return envelope{}, false
 	}
-	env := envelope{text: map[string]string{}}
+	env := envelope{text: map[string]string{}, attrs: attrsOf(head)}
 	for _, m := range envelopeAttr.FindAllStringSubmatch(head, -1) {
 		value := html.UnescapeString(m[2])
 		switch m[1] {
@@ -69,6 +79,7 @@ func parseEnvelope(chunk string) (envelope, bool) {
 		}
 	}
 	body = "\n" + body
+	env.items = parseItems(body)
 	type child struct {
 		tag   string
 		start int
@@ -91,4 +102,41 @@ func parseEnvelope(chunk string) (envelope, bool) {
 		}
 	}
 	return env, env.kind != ""
+}
+
+func attrsOf(head string) map[string]string {
+	attrs := map[string]string{}
+	for _, m := range envelopeAttr.FindAllStringSubmatch(head, -1) {
+		attrs[m[1]] = html.UnescapeString(m[2])
+	}
+	return attrs
+}
+
+// parseItems reads the <item> rows between a request's summary and its
+// prompt. An attribute value is escaped, so the first > ends an item's tag;
+// its text runs to the last </item> before the next row.
+func parseItems(body string) []envelopeItem {
+	start := strings.Index(body, "</summary>")
+	if start < 0 {
+		return nil
+	}
+	end := strings.Index(body[start:], "\n<prompt>")
+	if end < 0 {
+		end = len(body) - start
+	}
+	var items []envelopeItem
+	for i, chunk := range strings.Split(body[start:start+end], "\n<item") {
+		head, rest, ok := strings.Cut(chunk, ">")
+		if i == 0 || !ok {
+			continue
+		}
+		it := envelopeItem{attrs: attrsOf(head)}
+		if !strings.HasSuffix(head, "/") {
+			if cut := strings.LastIndex(rest, "</item>"); cut >= 0 {
+				it.text = rest[:cut]
+			}
+		}
+		items = append(items, it)
+	}
+	return items
 }

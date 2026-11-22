@@ -79,6 +79,53 @@ var ko = Catalog{
 	CheckLogCut:     "(이 단계의 앞선 %[1]d줄은 생략했습니다. lines 또는 lich check-log --lines N으로 더 볼 수 있습니다)",
 	CheckLogNoLog:   "GitHub Actions 작업이 아닙니다. 로그는 위 링크에만 있습니다.",
 
+	RequestConflictsSummary:  "충돌 해결",
+	RequestChecksSummary:     "실패한 체크 고치기",
+	RequestChecksMoreSummary: Plural{One: "실패한 체크 고치기, 목록에 없는 %d개 포함", Other: "실패한 체크 고치기, 목록에 없는 %d개 포함"},
+	RequestThreadsSummary:    Plural{One: "리뷰 스레드 %d개 처리", Other: "리뷰 스레드 %d개 처리"},
+	RequestCommentsSummary:   Plural{One: "리뷰 코멘트 %d개", Other: "리뷰 코멘트 %d개"},
+	RequestNotesSummary:      Plural{One: "페이지의 메모 %d개", Other: "페이지의 메모 %d개"},
+	RequestSketchSummary:     "페이지 위의 스케치",
+	RequestIssueSummary:      "이슈 #%d",
+	PRConflicts:              "풀 리퀘스트 #%[1]d(%[2]s)에 %[3]s와(과)의 병합 충돌이 있습니다. 충돌을 해결하세요.",
+	PRConflictsGitLab:        "병합 요청 !%[1]d(%[2]s)에 %[3]s와(과)의 병합 충돌이 있습니다. 충돌을 해결하세요.",
+	PRConflictsListed:        "풀 리퀘스트 #%[1]d(%[2]s)의 다음 파일에 %[3]s와(과)의 병합 충돌이 있습니다. 충돌을 해결하세요:\n\n%[4]s",
+	PRConflictsListedGitLab:  "병합 요청 !%[1]d(%[2]s)의 다음 파일에 %[3]s와(과)의 병합 충돌이 있습니다. 충돌을 해결하세요:\n\n%[4]s",
+	PRChecksUnnamed: Plural{
+		One:   "풀 리퀘스트 #%[1]d(%[2]s)의 CI가 실패하고 있습니다. 실패한 체크가 %[3]d개 있으니, 어떤 체크인지 찾아서 고치세요.",
+		Other: "풀 리퀘스트 #%[1]d(%[2]s)의 CI가 실패하고 있습니다. 실패한 체크가 %[3]d개 있으니, 어떤 체크인지 찾아서 고치세요.",
+	},
+	PRChecksUnnamedGitLab: Plural{
+		One:   "병합 요청 !%[1]d(%[2]s)의 CI가 실패하고 있습니다. 실패한 체크가 %[3]d개 있으니, 어떤 체크인지 찾아서 고치세요.",
+		Other: "병합 요청 !%[1]d(%[2]s)의 CI가 실패하고 있습니다. 실패한 체크가 %[3]d개 있으니, 어떤 체크인지 찾아서 고치세요.",
+	},
+	PRChecksListed:       "풀 리퀘스트 #%[1]d(%[2]s)의 CI가 실패하고 있습니다. 다음 체크를 고치세요:\n\n%[3]s",
+	PRChecksListedGitLab: "병합 요청 !%[1]d(%[2]s)의 CI가 실패하고 있습니다. 다음 체크를 고치세요:\n\n%[3]s",
+	PRChecksOmitted: Plural{
+		One:   "\n\n…그리고 목록에 없는 실패한 체크가 %d개 더 있습니다.",
+		Other: "\n\n…그리고 목록에 없는 실패한 체크가 %d개 더 있습니다.",
+	},
+	ReviewCommentsHeader:     "리뷰 코멘트:",
+	ReviewThreadHead:         "pull request #%[1]d (%[2]s)의 리뷰 스레드, %[3]s:%[4]s:",
+	ReviewThreadHeadOutdated: "pull request #%[1]d (%[2]s)의 리뷰 스레드, %[3]s:%[4]s (오래된 코멘트이니 현재 코드를 확인하세요):",
+	ReviewThreadID:           "스레드 id: %s",
+	ReviewThreadAsk: Plural{
+		One: "변경을 요청하는 스레드라면 변경하고 커밋한 뒤 스레드 id와 커밋으로 mark_thread_fixed를 호출하세요. 그 커밋이 push되면 lich가 GitHub에서 스레드를 해결 처리하고 답글을 답니다. " +
+			"질문이거나 팀과 논의할 사항이라면 아무것도 바꾸지 말고 당신의 의견과 함께 저에게 가져오세요. GitHub에서 스레드에 직접 답글을 달거나 해결 처리하지 마세요.",
+		Other: "스레드를 하나씩 살펴보세요. 변경을 요청하는 스레드는 변경하고 커밋한 뒤 그 스레드의 id와 커밋으로 mark_thread_fixed를 호출하세요. 그 커밋이 push되면 lich가 GitHub에서 스레드를 해결 처리하고 답글을 답니다. " +
+			"질문이거나 팀과 논의할 사항인 스레드는 아무것도 바꾸지 말고 당신의 의견과 함께 저에게 가져오세요. GitHub에서 스레드에 직접 답글을 달거나 해결 처리하지 마세요.",
+	},
+	IssueHead: "GitHub 이슈 #%[1]d: %[2]s\n%[3]s",
+	BrowserNotesHead: Plural{
+		One:   "브라우저 탭의 페이지에 메모 %d개가 남겨졌습니다:",
+		Other: "브라우저 탭의 페이지에 메모 %d개가 남겨졌습니다:",
+	},
+	BrowserNotesItem:       "%[1]d. %[3]s의 %[2]s",
+	BrowserNotesNote:       "메모: %s",
+	BrowserNotesSketch:     "페이지 위에 스케치도 그려졌습니다. 스케치가 들어간 스크린샷: %s",
+	BrowserNotesSketchOnly: "브라우저 탭의 페이지(%[1]s) 위에 스케치가 그려졌습니다. 스케치가 들어간 스크린샷: %[2]s",
+	BrowserNotesSelectors:  "위의 각 셀렉터는 browser_click과 browser_type의 selector로 그대로 쓸 수 있습니다.",
+
 	ThreadMarked: "표시했습니다. 풀 리퀘스트의 head에 이 커밋이 들어가면 lich가 스레드를 해결하고 이 커밋으로 답글을 답니다.",
 
 	CopyNotice:         "lich가 %s을(를) 여기에 복사했습니다. 이 세션에서는 원본에 접근할 수 없으며, 수정 사항은 사본에만 남습니다.",

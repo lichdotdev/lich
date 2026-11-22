@@ -87,6 +87,55 @@ var en = Catalog{
 	CheckLogCut:     "(%[1]d earlier lines of this step not shown: ask for more with lines, or lich check-log --lines N)",
 	CheckLogNoLog:   "Not a GitHub Actions job: its log is only at the link above.",
 
+	RequestConflictsSummary:  "Resolve the conflicts",
+	RequestChecksSummary:     "Fix the failing checks",
+	RequestChecksMoreSummary: Plural{One: "Fix the failing checks, and %d more not listed", Other: "Fix the failing checks, and %d more not listed"},
+	RequestThreadsSummary:    Plural{One: "Address %d review thread", Other: "Address %d review threads"},
+	RequestCommentsSummary:   Plural{One: "%d review comment", Other: "%d review comments"},
+	RequestNotesSummary:      Plural{One: "%d note on the page", Other: "%d notes on the page"},
+	RequestSketchSummary:     "A drawing on the page",
+	RequestIssueSummary:      "Issue #%d",
+	PRConflicts:              "Pull request #%[1]d (%[2]s) has merge conflicts with %[3]s. Resolve them.",
+	PRConflictsGitLab:        "Merge request !%[1]d (%[2]s) has merge conflicts with %[3]s. Resolve them.",
+	PRConflictsListed:        "Pull request #%[1]d (%[2]s) has merge conflicts with %[3]s in these files. Resolve them:\n\n%[4]s",
+	PRConflictsListedGitLab:  "Merge request !%[1]d (%[2]s) has merge conflicts with %[3]s in these files. Resolve them:\n\n%[4]s",
+	PRChecksUnnamed: Plural{
+		One:   "CI is failing on pull request #%[1]d (%[2]s). %[3]d check is red; find out which and fix it.",
+		Other: "CI is failing on pull request #%[1]d (%[2]s). %[3]d checks are red; find out which and fix them.",
+	},
+	PRChecksUnnamedGitLab: Plural{
+		One:   "CI is failing on merge request !%[1]d (%[2]s). %[3]d check is red; find out which and fix it.",
+		Other: "CI is failing on merge request !%[1]d (%[2]s). %[3]d checks are red; find out which and fix them.",
+	},
+	PRChecksListed:       "CI is failing on pull request #%[1]d (%[2]s). Fix these checks:\n\n%[3]s",
+	PRChecksListedGitLab: "CI is failing on merge request !%[1]d (%[2]s). Fix these checks:\n\n%[3]s",
+	PRChecksOmitted: Plural{
+		One:   "\n\n…and %d more failing check not listed.",
+		Other: "\n\n…and %d more failing checks not listed.",
+	},
+	ReviewCommentsHeader:     "Review comments:",
+	ReviewThreadHead:         "Review thread on pull request #%[1]d (%[2]s), %[3]s:%[4]s:",
+	ReviewThreadHeadOutdated: "Review thread on pull request #%[1]d (%[2]s), %[3]s:%[4]s (outdated, check the current code):",
+	ReviewThreadID:           "Thread id: %s",
+	ReviewThreadAsk: Plural{
+		One: "If it asks for a change, make it, commit it and call mark_thread_fixed with the thread id and the commit: lich resolves the thread " +
+			"and replies on GitHub once that commit is pushed. If it asks a question or raises a point for the team, change nothing: bring it " +
+			"to me with your view. Never reply to or resolve the thread on GitHub yourself.",
+		Other: "Go through each thread. One that asks for a change: make it, commit it and call mark_thread_fixed with that thread's id and the " +
+			"commit, and lich resolves the thread and replies on GitHub once that commit is pushed. One that asks a question or raises a point " +
+			"for the team: change nothing for it, and bring it to me with your view. Never reply to or resolve a thread on GitHub yourself.",
+	},
+	IssueHead: "GitHub issue #%[1]d: %[2]s\n%[3]s",
+	BrowserNotesHead: Plural{
+		One:   "The person left a note on the page in your browser tab:",
+		Other: "The person left %d notes on the page in your browser tab:",
+	},
+	BrowserNotesItem:       "%[1]d. %[2]s on %[3]s",
+	BrowserNotesNote:       "Note: %s",
+	BrowserNotesSketch:     "The person also drew on the page. The screenshot with their drawing: %s",
+	BrowserNotesSketchOnly: "The person drew on the page in your browser tab, %[1]s. The screenshot with their drawing: %[2]s",
+	BrowserNotesSelectors:  "Each selector above works as the selector of browser_click and browser_type.",
+
 	ThreadMarked: "Marked. lich resolves the thread and replies with this commit once the pull request's head holds it.",
 
 	CopyNotice:         "lich copied %s here; the original is not reachable from this session, edits stay in the copy.",

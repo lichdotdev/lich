@@ -16,7 +16,74 @@ var (
 	RelaySetShown      = define[ShownSessionOptions, None]("relay.SetShown")
 	RelayAnnounceMerge = define[AnnounceMergeOptions, None]("relay.AnnounceMerge")
 	RelaySubmit        = define[SubmitOptions, None]("relay.Submit")
+	RelayRequest       = define[RequestOptions, None]("relay.Request")
 )
+
+// The topics of a request (RequestOptions.Topic).
+const (
+	RequestConflicts      = "conflicts"
+	RequestChecks         = "checks"
+	RequestReviewThread   = "review-thread"
+	RequestReviewComments = "review-comments"
+	RequestBrowserNotes   = "browser-notes"
+	RequestIssue          = "issue"
+)
+
+// RequestOptions is an action the person took in the window, which lich hands
+// the session as a request envelope it words in the prompt language
+// (docs/hooks/notification.md): the window says what was asked, the backend
+// writes it. The fields a topic does not use stay empty.
+type RequestOptions struct {
+	SessionID string `json:"sessionId"`
+	Topic     string `json:"topic"`
+	// Forge is ForgeGitHub or ForgeGitLab, the words a pull request topic is
+	// written in; "" reads as GitHub.
+	Forge  string `json:"forge,omitempty"`
+	PR     int    `json:"pr,omitempty"`
+	Branch string `json:"branch,omitempty"`
+	Base   string `json:"base,omitempty"`
+	// URL is the page browser notes were left on or the issue's.
+	URL string `json:"url,omitempty"`
+	// Image is the sketch drawn on the page, a path the session can read.
+	Image string `json:"image,omitempty"`
+	Issue int    `json:"issue,omitempty"`
+	// Title and Body are the issue's.
+	Title string `json:"title,omitempty"`
+	Body  string `json:"body,omitempty"`
+	// Failed is how many checks failed, counted when no item names one.
+	Failed int           `json:"failed,omitempty"`
+	Items  []RequestItem `json:"items,omitempty"`
+	// Note is what the person wrote to close the request, empty for none.
+	Note string `json:"note,omitempty"`
+}
+
+// RequestItem is one row of a request: a conflicting file, a failing check, a
+// review thread or comment, a note on a page.
+type RequestItem struct {
+	Path     string `json:"path,omitempty"`
+	Lines    string `json:"lines,omitempty"`
+	ID       string `json:"id,omitempty"`
+	Outdated bool   `json:"outdated,omitempty"`
+	Check    string `json:"check,omitempty"`
+	Label    string `json:"label,omitempty"`
+	// URL is a check's run, a thread's discussion or the page a note is on.
+	URL      string `json:"url,omitempty"`
+	Selector string `json:"selector,omitempty"`
+	// Component, Source and HTML are what a browser note's element is.
+	Component string `json:"component,omitempty"`
+	Source    string `json:"source,omitempty"`
+	HTML      string `json:"html,omitempty"`
+	// Text is a review comment or a browser note.
+	Text string `json:"text,omitempty"`
+	// Comments are a review thread's, oldest first.
+	Comments []RequestComment `json:"comments,omitempty"`
+}
+
+// RequestComment is one comment of a review thread.
+type RequestComment struct {
+	Author string `json:"author"`
+	Body   string `json:"body"`
+}
 
 // AnnounceMergeOptions is a pull request merged through lich: the checkout its
 // branch was in and what the notice tells the agents working there.

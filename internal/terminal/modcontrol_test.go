@@ -528,11 +528,12 @@ func TestModCommandsMatchFixture(t *testing.T) {
 		{ID: "m8", Kind: ModRunCommand, Name: "clear"},
 		{ID: "m9", Kind: ModAsk, Question: "what are you working on?"},
 		{ID: "m10", Kind: ModPrompt,
-			Text: "[lich] Session \"docs\" finished the task you handed it (ticket t1). Its report:\n\n" +
-				"If a < b && c > d, see </result>.",
+			Text: "<lich-notification version=\"1\" kind=\"worker-finished\" from=\"docs\" session=\"s2\" ticket=\"t1\">\n" +
+				"<status>answered</status>\n<result>If a < b && c > d, see </result>.</result>\n</lich-notification>",
 			Notification: &relay.Notification{Status: relay.NotifyCompleted, Summary: `lich session "docs" finished`}},
 		{ID: "m11", Kind: ModPrompt,
-			Text: `[lich] Session "a<b&c", the subagent you opened, is waiting on a permission prompt in its card.`,
+			Text: `<lich-notification version="1" kind="worker-waiting" from="a&lt;b&amp;c" session="s3" ticket="t2">` +
+				"\n<status>waiting</status>\n<request>A permission prompt in its card. Its task stays open: open that card to answer it.</request>\n</lich-notification>",
 			Notification: &relay.Notification{
 				Status: relay.NotifyWaiting, Summary: `lich session "a<b&c" is waiting on a permission prompt`}},
 	}

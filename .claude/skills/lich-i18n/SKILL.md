@@ -52,7 +52,7 @@ Then, in the same PR:
    `internal/prompt/<lang>.go`. `TestEveryLocaleMatchesEnglish` fails on a missing key or placeholder;
    `TestCatalogParity` fails on an empty Go field or mismatched verbs.
    Translate from English, never from another translation.
-3. **Literal in every locale:** `[lich]`, the `lich-notification` tag with its attributes and values, tool and CLI names (`send_to_session`, `wait_for_answer`,
+3. **Literal in every locale:** the `lich-notification` tag with its attributes and values, tool and CLI names (`send_to_session`, `wait_for_answer`,
    `reply_to_session`, `open_session`, `close_session`, `list_worktrees`, `"$LICH_BIN" reply|wait`,
    `lich send`, `gh pr create`), ticket ids, status enums (`pending`, `answered`, `unread`, ...),
    parameter names, product names, key names, `{placeholders}` and Go format verbs.

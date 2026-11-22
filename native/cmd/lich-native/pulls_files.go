@@ -69,7 +69,7 @@ type filesTree struct {
 type filesInput struct {
 	activeID  string
 	injector  func(id string) func(string) bool
-	submitter func(id string) func(string, func(error)) bool
+	submitter func(id string) func(api.RequestOptions, func(error)) bool
 	light     bool
 	code      godemirror.Theme
 }

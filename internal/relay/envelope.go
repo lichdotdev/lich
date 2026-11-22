@@ -19,6 +19,7 @@ const (
 	KindExpired        = "expired"
 	KindMerged         = "merged"
 	KindNotice         = "notice"
+	KindRequest        = "request"
 )
 
 // The topics a notice carries.
@@ -62,14 +63,33 @@ type Envelope struct {
 	Answer    string
 	Truncated int
 	PR        int
+	Issue     int
 	Branch    string
+	Base      string
+	URL       string
+	Image     string
+	Title     string
 	Body      []Element
+	// Items are a request's rows, written before its prompt.
+	Items []Item
 }
 
 // Element is one child of an envelope.
 type Element struct {
 	Tag  string
 	Text string
+}
+
+// Item is one <item> of a request: its attributes in order, empty ones left
+// out, and its text, self-closing when there is none.
+type Item struct {
+	Attrs []Attr
+	Text  string
+}
+
+// Attr is one attribute of an item.
+type Attr struct {
+	Name, Value string
 }
 
 var attrEscaper = strings.NewReplacer("&", "&amp;", "<", "&lt;", ">", "&gt;", `"`, "&quot;")
@@ -99,10 +119,36 @@ func (e Envelope) String() string {
 	attr("answer", e.Answer)
 	attr("truncated", number(e.Truncated))
 	attr("pr", number(e.PR))
+	attr("issue", number(e.Issue))
 	attr("branch", e.Branch)
+	attr("base", e.Base)
+	attr("url", e.URL)
+	attr("image", e.Image)
+	attr("title", e.Title)
 	b.WriteString(">\n")
+	items := false
+	writeItems := func() {
+		for _, it := range e.Items {
+			b.WriteString("<item")
+			for _, a := range it.Attrs {
+				attr(a.Name, a.Value)
+			}
+			if it.Text == "" {
+				b.WriteString("/>\n")
+				continue
+			}
+			b.WriteString(">" + it.Text + "</item>\n")
+		}
+		items = true
+	}
 	for _, el := range e.Body {
+		if el.Tag == "prompt" && !items {
+			writeItems()
+		}
 		b.WriteString("<" + el.Tag + ">" + el.Text + "</" + el.Tag + ">\n")
+	}
+	if !items {
+		writeItems()
 	}
 	b.WriteString("</lich-notification>")
 	return b.String()

@@ -9,6 +9,7 @@ package main
 
 import (
 	"context"
+	"github.com/lichdotdev/lich/api"
 	"hash/maphash"
 	"image"
 	"log"
@@ -78,7 +79,7 @@ type reviewPanel struct {
 	resolveNext string
 	checkout    string
 	inject      func(string) bool
-	submit      func(string, func(error)) bool
+	submit      func(api.RequestOptions, func(error)) bool
 	shown       *diffRead
 	splitOK     bool
 	// git is the checkout's status from the window's store: the merge in

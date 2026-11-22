@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"github.com/lichdotdev/lich/api"
 	"testing"
 
 	"github.com/lichdotdev/lich/native/i18n"
@@ -45,10 +46,9 @@ func TestPromptsFollowThePromptLanguage(t *testing.T) {
 	i18n.SetPromptLanguage(i18n.PtBR)
 	defer i18n.SetCurrent(i18n.EN)
 	defer i18n.SetPromptLanguage(i18n.EN)
-	got := composeReviewComments([]reviewComment{{txt: "x"}}, "")
-	want := i18n.In(i18n.PtBR, "prompts.reviewComments.header") + "\n\n- x"
-	if got != want {
-		t.Errorf("composeReviewComments = %q, want %q", got, want)
+	got := schedulePromptFor(api.WatchReview, api.ForgeGitHub)
+	if want := i18n.In(i18n.PtBR, "prompts.schedule.review"); got != want {
+		t.Errorf("schedulePromptFor = %q, want %q", got, want)
 	}
 }
 

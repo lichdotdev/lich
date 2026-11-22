@@ -65,6 +65,13 @@ func TestEnvelopesMatchTheFixture(t *testing.T) {
 		t.Fatal(err)
 	}
 	built := fixtureEnvelopes()
+	for name, opts := range requestCases() {
+		env, err := requestEnvelope(prompt.English, opts)
+		if err != nil {
+			t.Fatalf("%s: %v", name, err)
+		}
+		built[name] = env.String()
+	}
 	if len(built) != len(fixture.Cases) {
 		t.Fatalf("built %d cases, the fixture has %d", len(built), len(fixture.Cases))
 	}

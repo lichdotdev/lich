@@ -2,7 +2,10 @@ package main
 
 import (
 	"errors"
+	"reflect"
 	"testing"
+
+	"github.com/lichdotdev/lich/api"
 
 	"github.com/lichdotdev/lich/native/ui"
 )
@@ -35,17 +38,18 @@ func TestCommentBatchRemovesOneAndClearsAll(t *testing.T) {
 	}
 }
 
-func TestComposedBatchIsTheWebsPrompt(t *testing.T) {
+// The batch goes to the backend as a request, each comment where it was
+// written, a note with no line as it is; the backend words it
+// (internal/relay, commentsText).
+func TestTheBatchIsARequest(t *testing.T) {
 	var s commentStore
 	s.add("/repo", "internal/a.go", "12-30", "split this\nin two")
 	s.addNote("/repo", "and test it")
-	got := composeReviewComments(s.list("/repo"), "  ship after  ")
-	want := "Review comments:\n\n" +
-		"- internal/a.go:12-30 — split this\n  in two\n" +
-		"- and test it\n" +
-		"- ship after"
-	if got != want {
-		t.Fatalf("prompt =\n%q\nwant\n%q", got, want)
+	got := reviewCommentsRequest(s.list("/repo"), "  ship after  ")
+	want := api.RequestOptions{Topic: api.RequestReviewComments, Note: "  ship after  ", Items: []api.RequestItem{
+		{Path: "internal/a.go", Lines: "12-30", Text: "split this\nin two"}, {Text: "and test it"}}}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("request = %+v\nwant %+v", got, want)
 	}
 }
 
@@ -69,7 +73,7 @@ func TestRefusedBatchKeepsTheComments(t *testing.T) {
 	var s commentStore
 	s.add("/repo", "main.go", "12", "rename this")
 	var b commentBatch
-	b.sendBatch(&s, "/repo", func(_ string, done func(error)) bool {
+	b.sendBatch(&s, "/repo", func(_ api.RequestOptions, done func(error)) bool {
 		done(errors.New("the session was stopped"))
 		return true
 	}, func(ui.Toast) {})
@@ -86,7 +90,7 @@ func TestTakenBatchDropsOnlyWhatWasSent(t *testing.T) {
 	s.add("/repo", "main.go", "12", "rename this")
 	var b commentBatch
 	var done func(error)
-	b.sendBatch(&s, "/repo", func(_ string, d func(error)) bool {
+	b.sendBatch(&s, "/repo", func(_ api.RequestOptions, d func(error)) bool {
 		done = d
 		return true
 	}, func(ui.Toast) {})

@@ -114,6 +114,13 @@ func (c *Client) Submit(ctx context.Context, id, message string) error {
 	return err
 }
 
+// Request hands session id what the person asked for in the window, which
+// the backend words as a request envelope and submits.
+func (c *Client) Request(ctx context.Context, opts api.RequestOptions) error {
+	_, err := callMethod(ctx, c, api.RelayRequest, opts)
+	return err
+}
+
 type ReviewComment = api.ReviewComment
 
 // SubmitReview sends a review: event is approve|comment|request_changes,

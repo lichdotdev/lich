@@ -2,16 +2,12 @@ package main
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
 )
-
-// ghostAuthor is the login GitHub shows for an account deleted since.
-const ghostAuthor = "ghost"
 
 // canSendThreads is whether the PR's threads may go to a session: it is open,
 // and its branch is one lich can check out and push to.
@@ -50,36 +46,21 @@ func (p *pullsScreen) sendableThreads(c *backend.PRConversation) []backend.PRRev
 	return out
 }
 
-// threadsPrompt is what a session gets for threads: each one where it is and
-// what was said in it, then the ask.
-func threadsPrompt(d backend.PRDetail, threads []backend.PRReviewThread) string {
-	parts := make([]string, 0, len(threads)+1)
+// threadsRequest is what a session is handed for threads: each one where it
+// is, its link and what was said in it; the backend words the ask.
+func threadsRequest(d backend.PRDetail, threads []backend.PRReviewThread) api.RequestOptions {
+	req := api.RequestOptions{Topic: api.RequestReviewThread, PR: d.Number, Branch: d.HeadRefName}
 	for _, t := range threads {
-		parts = append(parts, threadBlock(d, t))
-	}
-	parts = append(parts, i18n.Prompt("prompts.reviewThread.ask", i18n.Args{"count": len(threads)}))
-	return strings.Join(parts, "\n\n")
-}
-
-func threadBlock(d backend.PRDetail, t backend.PRReviewThread) string {
-	args := i18n.Args{"number": d.Number, "branch": d.HeadRefName, "path": t.Path, "lines": threadLines(t)}
-	head := i18n.Prompt("prompts.reviewThread.head", args)
-	if t.IsOutdated {
-		head = i18n.Prompt("prompts.reviewThread.headOutdated", args)
-	}
-	lines := []string{head, i18n.Prompt("prompts.reviewThread.id", i18n.Args{"id": t.ID})}
-	if d.URL != "" && len(t.Comments) > 0 {
-		lines = append(lines, fmt.Sprintf("%s#discussion_r%d", d.URL, t.Comments[0].ID))
-	}
-	lines = append(lines, "")
-	for _, c := range t.Comments {
-		author := c.Author
-		if author == "" {
-			author = ghostAuthor
+		item := api.RequestItem{Path: t.Path, Lines: threadLines(t), ID: t.ID, Outdated: t.IsOutdated}
+		if d.URL != "" && len(t.Comments) > 0 {
+			item.URL = fmt.Sprintf("%s#discussion_r%d", d.URL, t.Comments[0].ID)
 		}
-		lines = append(lines, "- @"+author+": "+continuation(strings.TrimSpace(c.Body)))
+		for _, c := range t.Comments {
+			item.Comments = append(item.Comments, api.RequestComment{Author: c.Author, Body: c.Body})
+		}
+		req.Items = append(req.Items, item)
 	}
-	return strings.Join(lines, "\n")
+	return req
 }
 
 // threadLines is the line ("19") or the span ("12-30") a thread sits on.
@@ -102,7 +83,7 @@ func (u *window) sendThreads(project backend.Project, d backend.PRDetail, thread
 		return
 	}
 	u.model.invalidate()
-	if !u.handOffPR(project.ID, id, threadsPrompt(d, threads)) {
+	if !u.handOffPR(project.ID, id, threadsRequest(d, threads)) {
 		return
 	}
 	for _, t := range threads {

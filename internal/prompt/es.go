@@ -82,6 +82,55 @@ var es = Catalog{
 	CheckLogCut:     "(%[1]d líneas anteriores de este paso no se muestran: pide más con lines, o lich check-log --lines N)",
 	CheckLogNoLog:   "No es un job de GitHub Actions: su log solo está en el enlace de arriba.",
 
+	RequestConflictsSummary:  "Resolver los conflictos",
+	RequestChecksSummary:     "Corregir las comprobaciones fallidas",
+	RequestChecksMoreSummary: Plural{One: "Corregir las comprobaciones fallidas, y %d más sin listar", Other: "Corregir las comprobaciones fallidas, y %d más sin listar"},
+	RequestThreadsSummary:    Plural{One: "Atender %d hilo de revisión", Other: "Atender %d hilos de revisión"},
+	RequestCommentsSummary:   Plural{One: "%d comentario de revisión", Other: "%d comentarios de revisión"},
+	RequestNotesSummary:      Plural{One: "%d nota en la página", Other: "%d notas en la página"},
+	RequestSketchSummary:     "Un dibujo en la página",
+	RequestIssueSummary:      "Issue #%d",
+	PRConflicts:              "El pull request #%[1]d (%[2]s) tiene conflictos de fusión con %[3]s. Resuélvelos.",
+	PRConflictsGitLab:        "El merge request !%[1]d (%[2]s) tiene conflictos de fusión con %[3]s. Resuélvelos.",
+	PRConflictsListed:        "El pull request #%[1]d (%[2]s) tiene conflictos de fusión con %[3]s en estos archivos. Resuélvelos:\n\n%[4]s",
+	PRConflictsListedGitLab:  "El merge request !%[1]d (%[2]s) tiene conflictos de fusión con %[3]s en estos archivos. Resuélvelos:\n\n%[4]s",
+	PRChecksUnnamed: Plural{
+		One:   "El CI está fallando en el pull request #%[1]d (%[2]s). %[3]d comprobación está en rojo; averigua cuál es y corrígela.",
+		Other: "El CI está fallando en el pull request #%[1]d (%[2]s). %[3]d comprobaciones están en rojo; averigua cuáles son y corrígelas.",
+	},
+	PRChecksUnnamedGitLab: Plural{
+		One:   "El CI está fallando en el merge request !%[1]d (%[2]s). %[3]d comprobación está en rojo; averigua cuál es y corrígela.",
+		Other: "El CI está fallando en el merge request !%[1]d (%[2]s). %[3]d comprobaciones están en rojo; averigua cuáles son y corrígelas.",
+	},
+	PRChecksListed:       "El CI está fallando en el pull request #%[1]d (%[2]s). Corrige estas comprobaciones:\n\n%[3]s",
+	PRChecksListedGitLab: "El CI está fallando en el merge request !%[1]d (%[2]s). Corrige estas comprobaciones:\n\n%[3]s",
+	PRChecksOmitted: Plural{
+		One:   "\n\n…y %d comprobación fallida más sin listar.",
+		Other: "\n\n…y %d comprobaciones fallidas más sin listar.",
+	},
+	ReviewCommentsHeader:     "Comentarios de revisión:",
+	ReviewThreadHead:         "Hilo de revisión en el pull request #%[1]d (%[2]s), %[3]s:%[4]s:",
+	ReviewThreadHeadOutdated: "Hilo de revisión en el pull request #%[1]d (%[2]s), %[3]s:%[4]s (desactualizado, revisa el código actual):",
+	ReviewThreadID:           "Id del hilo: %s",
+	ReviewThreadAsk: Plural{
+		One: "Si pide un cambio, hazlo, haz commit y llama a mark_thread_fixed con el id del hilo y el commit: lich resuelve el hilo " +
+			"y responde en GitHub cuando ese commit llegue con un push. Si hace una pregunta o plantea algo para discutir con el equipo, " +
+			"no cambies nada: tráemelo con tu opinión. Nunca respondas ni resuelvas el hilo en GitHub tú mismo.",
+		Other: "Revisa cada hilo. El que pide un cambio: hazlo, haz commit y llama a mark_thread_fixed con el id de ese hilo y el commit, " +
+			"y lich resuelve el hilo y responde en GitHub cuando ese commit llegue con un push. El que hace una pregunta o plantea algo " +
+			"para discutir con el equipo: no cambies nada por él y tráemelo con tu opinión. Nunca respondas ni resuelvas un hilo en GitHub tú mismo.",
+	},
+	IssueHead: "Issue de GitHub #%[1]d: %[2]s\n%[3]s",
+	BrowserNotesHead: Plural{
+		One:   "La persona dejó una nota en la página de tu pestaña del navegador:",
+		Other: "La persona dejó %d notas en la página de tu pestaña del navegador:",
+	},
+	BrowserNotesItem:       "%[1]d. %[2]s en %[3]s",
+	BrowserNotesNote:       "Nota: %s",
+	BrowserNotesSketch:     "La persona también dibujó sobre la página. La captura con su dibujo: %s",
+	BrowserNotesSketchOnly: "La persona dibujó sobre la página de tu pestaña del navegador, %[1]s. La captura con su dibujo: %[2]s",
+	BrowserNotesSelectors:  "Cada selector de arriba sirve como el selector de browser_click y browser_type.",
+
 	ThreadMarked: "Marcado. lich resuelve el hilo y responde con este commit en cuanto el head del pull request lo contenga.",
 
 	CopyNotice:         "lich copió %s aquí; el original no es accesible desde esta sesión, las ediciones se quedan en la copia.",

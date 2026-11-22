@@ -20,8 +20,9 @@ var chatNoteIndent = ui.Space(7)
 // box naming who sent it, a worker's outcome as a row, anything else as a
 // muted line.
 //
-// A task stands as the person's message does, with its time and copy button
-// under it, copying the box's words rather than the envelope's tags. Note rows
+// A task or a request stands as the person's message does, with its time and
+// copy button under it, copying the box's words rather than the envelope's
+// tags. Note rows
 // carry no such line: one under each would space them unevenly against the
 // rows of the same message.
 func (u *window) chatEnvelopes(gtx C, th *ui.Theme, p *chatPane, it backend.ChatItem, envs []envelope) D {
@@ -36,7 +37,7 @@ func (u *window) chatEnvelopes(gtx C, th *ui.Theme, p *chatPane, it backend.Chat
 		}
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
 	}
-	if len(envs) != 1 || envs[0].kind != "task" {
+	if len(envs) != 1 || (envs[0].kind != "task" && envs[0].kind != "request") {
 		return rows(gtx)
 	}
 	readable := it
@@ -60,6 +61,8 @@ func envelopesText(envs []envelope) string {
 	for _, env := range envs {
 		var lines []string
 		switch env.kind {
+		case "request":
+			lines = append(lines, env.text["prompt"])
 		case "task":
 			if env.from != "" {
 				lines = append(lines, i18n.T("chat.notification.from", i18n.Args{"label": env.from}))
@@ -98,6 +101,8 @@ func (u *window) chatEnvelope(gtx C, th *ui.Theme, p *chatPane, key string, env 
 		return chatUserFrom(gtx, th, from, env.text["prompt"])
 	case "worker-finished", "worker-failed", "worker-stopped", "worker-waiting", "expired":
 		return u.chatWorkerNote(gtx, th, p, key, env)
+	case "request":
+		return u.chatRequest(gtx, th, p, key, env)
 	}
 	line := layout.Rigid(th.Text(ui.TextSM, env.text["summary"]).Muted().Wrapped().Layout)
 	if env.text["prompt"] == "" {

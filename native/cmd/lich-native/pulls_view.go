@@ -40,9 +40,9 @@ var pullsTitleMinWidth = unit.Dp(320)
 
 // pullsAction is what the screen asks of the window this frame.
 type pullsAction struct {
-	session  *backend.PRDetail // open (or go to) a session on its branch
-	handoff  string            // ... and write this at its prompt
-	merge    string            // a method to merge with
+	session  *backend.PRDetail   // open (or go to) a session on its branch
+	handoff  *api.RequestOptions // ... and hand it this request
+	merge    string              // a method to merge with
 	admin    bool
 	approve  bool
 	refresh  bool

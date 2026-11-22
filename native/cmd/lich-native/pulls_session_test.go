@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/lichdotdev/lich/api"
 	"strings"
 	"testing"
 
@@ -43,10 +44,10 @@ func prWindow(t *testing.T) (*window, *gateBackend) {
 
 func TestHandoffLeavesThePullsScreenUp(t *testing.T) {
 	u, b := prWindow(t)
-	u.openPRSession(u.model.projects[0], backend.PRDetail{Number: 7, HeadRefName: "feat"}, "fix it")
+	u.openPRSession(u.model.projects[0], backend.PRDetail{Number: 7, HeadRefName: "feat"}, &api.RequestOptions{Topic: api.RequestChecks, PR: 7})
 	b.await(t, "terminal.Start")
-	if args := b.await(t, "relay.Submit"); !strings.Contains(args, `"fix it"`) {
-		t.Fatalf("submitted %s, want the handoff prompt", args)
+	if args := b.await(t, "relay.Request"); !strings.Contains(args, `"topic":"checks"`) || !strings.Contains(args, `"sessionId":"s1"`) {
+		t.Fatalf("requested %s, want the handoff request", args)
 	}
 	if !u.pulls.open {
 		t.Fatal("the handoff took the Pulls screen down")
@@ -58,7 +59,7 @@ func TestHandoffLeavesThePullsScreenUp(t *testing.T) {
 
 func TestOpenSessionBringsTheSessionUp(t *testing.T) {
 	u, _ := prWindow(t)
-	u.openPRSession(u.model.projects[0], backend.PRDetail{Number: 7, HeadRefName: "feat"}, "")
+	u.openPRSession(u.model.projects[0], backend.PRDetail{Number: 7, HeadRefName: "feat"}, nil)
 	if u.pulls.open {
 		t.Fatal("Open session left the Pulls screen up")
 	}
@@ -72,7 +73,7 @@ func TestSendThreadsLeavesThePullsScreenUp(t *testing.T) {
 	thread := backend.PRReviewThread{ID: "T1", Path: "main.go", Line: 3, Comments: []backend.PRThreadComment{{ID: 9, Author: "rev", Body: "nit"}}}
 	u.sendThreads(u.model.projects[0], backend.PRDetail{Number: 7, HeadRefName: "feat", State: "OPEN"}, []backend.PRReviewThread{thread})
 	b.await(t, "terminal.Start")
-	b.await(t, "relay.Submit")
+	b.await(t, "relay.Request")
 	if args := b.await(t, "project.AwaitThreadFix"); !strings.Contains(args, `"T1"`) {
 		t.Fatalf("awaited %s, want thread T1", args)
 	}

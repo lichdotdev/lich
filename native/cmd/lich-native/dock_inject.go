@@ -7,6 +7,7 @@ package main
 
 import (
 	"context"
+	"github.com/lichdotdev/lich/api"
 	"log"
 	"strconv"
 	"strings"
@@ -69,13 +70,14 @@ func (ts *terminals) injector(id string) func(string) bool {
 // session to take it: a shell's Enter would run the text as a command. The
 // send runs off the UI goroutine; done gets its outcome, and what the backend
 // refuses (a session that stopped) is also told in a toast.
-func (ts *terminals) submitter(id string) func(string, func(error)) bool {
-	return func(text string, done func(error)) bool {
+func (ts *terminals) submitter(id string) func(api.RequestOptions, func(error)) bool {
+	return func(req api.RequestOptions, done func(error)) bool {
 		if id == "" || ts.kindOf(id) == "shell" {
 			return false
 		}
+		req.SessionID = id
 		go func() {
-			err := ts.client.Submit(context.Background(), id, text)
+			err := ts.client.Request(context.Background(), req)
 			if err != nil {
 				ts.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("diff.commentBatch.sendFailed"), Description: backend.ErrorText(err)})
 			}

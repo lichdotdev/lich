@@ -7,8 +7,6 @@ import (
 	"testing"
 
 	"gioui.org/f32"
-
-	"github.com/lichdotdev/lich/api"
 )
 
 func TestStrokeSegmentsFollowTheDragBounds(t *testing.T) {
@@ -86,31 +84,6 @@ func TestASketchPictureKeepsAFrameAlreadySmall(t *testing.T) {
 	frame := image.NewRGBA(image.Rect(0, 0, 800, 600))
 	if size := sketchPicture(frame, nil, 800).Bounds().Size(); size != image.Pt(800, 600) {
 		t.Fatalf("picture is %v, want the frame's 800x600", size)
-	}
-}
-
-func TestTheSketchFollowsTheNotesInTheMessage(t *testing.T) {
-	notes := []*browserNote{{el: api.BrowserElement{Label: "nav", Selector: "nav", HTML: "<nav></nav>", URL: "http://localhost:5173/"}, text: "taller"}}
-	got := sketchedMessage(notes, "/drops/s1/sketch.png", "http://localhost:5173/", "before the demo")
-	want := `[lich] The person left a note on the page in your browser tab:
-1. nav on http://localhost:5173/
-   nav
-   <nav></nav>
-   Note: taller
-The person also drew on the page. The screenshot with their drawing: /drops/s1/sketch.png
-Each selector above works as the selector of browser_click and browser_type.
-
-before the demo`
-	if got != want {
-		t.Fatalf("message:\n%s\nwant:\n%s", got, want)
-	}
-}
-
-func TestASketchAloneNamesItsPage(t *testing.T) {
-	got := sketchedMessage(nil, "/drops/s1/sketch.png", "http://localhost:5173/pricing", "")
-	want := "[lich] The person drew on the page in your browser tab, http://localhost:5173/pricing. The screenshot with their drawing: /drops/s1/sketch.png"
-	if got != want {
-		t.Fatalf("message:\n%s\nwant:\n%s", got, want)
 	}
 }
 

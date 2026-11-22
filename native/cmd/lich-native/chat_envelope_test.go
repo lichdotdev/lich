@@ -55,6 +55,19 @@ func TestParseEnvelopesReadsTheFixture(t *testing.T) {
 	if len(two) != 2 || two[0].kind != "worker-finished" || two[1].kind != "expired" || two[1].text["status"] != "expired" {
 		t.Errorf("two = %+v", two)
 	}
+	conflicts := read["request: resolve conflicts"][0]
+	if conflicts.kind != "request" || conflicts.attrs["base"] != "main" || len(conflicts.items) != 2 ||
+		conflicts.items[1].attrs["path"] != "internal/relay/relay.go" || conflicts.items[1].text != "" {
+		t.Errorf("conflicts = %+v", conflicts)
+	}
+	tricky := read["request: escaping, attributes escaped and item text verbatim"][0]
+	if len(tricky.items) != 1 || tricky.items[0].attrs["path"] != `a "b" & <c>.go` || tricky.items[0].text != "Use a && b, then check that </item> stays text." {
+		t.Errorf("escaping request = %+v", tricky.items)
+	}
+	threads := read["request: review threads"][0]
+	if len(threads.items) != 2 || threads.items[1].attrs["outdated"] != "true" || threads.items[0].text != "This retries forever." {
+		t.Errorf("threads = %+v", threads.items)
+	}
 	notice := read["notice: scheduled prompt"][0]
 	if notice.topic != "scheduled" || notice.text["prompt"] != "Rebase on main and run the gate." {
 		t.Errorf("notice = %+v", notice)
