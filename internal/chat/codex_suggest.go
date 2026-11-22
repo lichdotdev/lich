@@ -29,10 +29,12 @@ var errNoFork = errors.New("Codex forked no thread")
 
 // codexForkParams are thread/fork's: ephemeral (no rollout, not in
 // thread/list), and with no tool that runs anything, which read-only alone does
-// not stop (measured on 0.170.0: the model ran ls).
+// not stop (measured on 0.170.0: the model ran ls). No excludeTurns: without
+// the experimental API it is refused (measured on 0.170.0), so the answer
+// carries the conversation's turns, which lich does not read.
 func codexForkParams(thread, model string) map[string]any {
 	params := map[string]any{
-		"threadId": thread, "ephemeral": true, "excludeTurns": true,
+		"threadId": thread, "ephemeral": true,
 		"sandbox": "read-only", "approvalPolicy": codexApprovalNever,
 		"config": map[string]any{"features.shell_tool": false, "features.unified_exec": false},
 	}
