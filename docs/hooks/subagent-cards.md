@@ -25,6 +25,7 @@ X-Lich-Plugin: <plugin release>
 {"session_id": "<LICH_SESSION_ID>",
  "provider_session_id": "<the conversation that called the tool>",
  "nested": false,
+ "call": "spawn",
  "tool": "spawn_agent",
  "tool_use_id": "exec-2cb201ef-3cca-4785-8c49-cc0de8ca01db",
  "tasks": [{"title": "List the files", "prompt": "List the files in the current workspace...",
@@ -44,9 +45,11 @@ X-Lich-Plugin: <plugin release>
   a child `sessionID` on opencode, a child `conversationId` on Antigravity). lich
   allows those: a native subagent it did not convert has no card to hang a child
   from.
+- `call`: `spawn` for a call that starts subagents, `wait` for a call that waits
+  on them (Codex's `collaborationwait_agent`). A `wait` carries no `tasks`.
 - `tool`: the provider's tool name, as the hook received it.
 - `tool_use_id`: the provider's id for this call, empty when it gives none.
-- `tasks`: one entry per subagent the call starts, never empty. Most tools start
+- `tasks`: one entry per subagent a `spawn` starts, never empty on a `spawn`. Most tools start
   one; oh-my-pi's `task` and Kiro's `use_subagent` take a list, and each entry
   becomes a session. `title` is the short name the call gives (empty when it
   gives none), `prompt` the task, `type` the subagent type (empty when the tool
@@ -88,6 +91,11 @@ running half of it.
   tells the model to hand the same task to lich's `open_session` tool, whose
   `prompt` it writes in clear, and that call is an ordinary errand
   ([notification.md](notification.md), Which errands use it).
+- A `wait` is answered `deny` while every `spawn` lich saw from that
+  conversation was answered `deny` in time, so no native subagent can be
+  running: `reason` says the reports arrive as envelopes and to end the turn.
+  Any `spawn` from it that lich allowed, or whose client gave up before the
+  answer, makes every later `wait` an `allow`.
 - `allow`: lich did nothing, and the native subagent runs. lich allows a call
   from a nested conversation, a session already as deep as cards nest
   (`maxSubagentDepth`), a type the provider's row below keeps native, a session
@@ -139,7 +147,7 @@ X" with a link to the card instead of as a failure.
 | Provider | Hook | Tool | Fields → `tasks` | Veto the client returns | The model reads |
 |---|---|---|---|---|---|
 | Claude Code | `PreToolUse` | `Agent` | `description` → title, `prompt`, `subagent_type` → type | `{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":R}}` | `PreToolUse:Agent hook error: R` |
-| Codex | `PreToolUse` | `spawn_agent` (multi-agent v1) and `collaborationspawn_agent` (v2, the default) | v1: `message` → prompt, `agent_type` → type; v2: `task_name` → title, `sealed: true` (the `message` is encrypted) | same JSON as Claude Code | `Tool call blocked by PreToolUse hook: R` |
+| Codex | `PreToolUse` | `spawn_agent` (multi-agent v1) and `collaborationspawn_agent` (v2, the default); `collaborationwait_agent` as a `wait` | v1: `message` → prompt, `agent_type` → type; v2: `task_name` → title, `sealed: true` (the `message` is encrypted) | same JSON as Claude Code | `Tool call blocked by PreToolUse hook: R` |
 | opencode | plugin `tool.execute.before` | `task` | `description`, `prompt`, `subagent_type` | `throw new Error(R)` | `R` |
 | oh-my-pi | extension `tool_call` | `task` | each of `tasks[]`: `name` → title, `task` → prompt, `agent` → type; `context` prepended to each prompt | `return {block: true, reason: R}` | `R` |
 | Antigravity | `PreToolUse` | `invoke_subagent` | `Prompt`, `TypeName` → type | stdout `{"decision":"deny","reason":R}` | `tool call denied by pre-tool hook: R` |
@@ -157,7 +165,7 @@ Measured on 2026-11-22, with cheap models and one or two samples per row:
 | oh-my-pi | 18.8.9 | `omp -p` and `omp acp` |
 | Antigravity | 1.5.11 | print mode and ACP |
 | Kiro CLI | 2.21.0 | classic chat (`use_subagent`) and ACP (`subagent`), one sample each |
-| Crush | 0.100.0 | against a stand-in model: hook, veto and text, not a real model's behaviour |
+| Crush | 0.100.0 | `crush run`, gpt-6-luna, 3 samples after two turns of work: none retried |
 | Cursor CLI | 2026.10.19 | `cursor-agent -p` only; its ACP runs no hooks |
 
 Where measured, the veto lands before any permission question.
@@ -240,13 +248,12 @@ routes never run in one session.
   lich answers it with the redirect above. Measured on gpt-5.6-terra, 3 samples
   after two turns of work: every one called `open_session` with the whole task
   in clear and wrote nothing itself; two then called `wait_agent` a few times
-  for a native subagent that does not exist before ending the turn waiting,
-  which costs time and nothing else.
+  for a native subagent that does not exist before ending the turn waiting.
+  With the `wait` answered `deny` as well (3 more samples), two tried
+  `wait_agent` once and ended the turn on its veto.
 - **oh-my-pi's ACP server takes no flags** and loads extensions only from
   `$PI_CODING_AGENT_DIR/extensions/` (`.js` or `.ts`), so the plugin's extension
   must be there for the chat.
-- **Crush was measured against a stand-in model**: the hook, the veto and the
-  text are measured; whether a real model then stops was not.
 - **The reason is all that holds the model back**: a reason that does not say
   where the work went made Cursor's model retry the tool once. lich's text has
   to name the session and the envelope that will come.
