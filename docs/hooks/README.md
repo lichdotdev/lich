@@ -189,6 +189,17 @@ no lich release ships yet, which they read at the commit that merged it.
   errands it is part of (owed, open, ready to collect) for its status line,
   without collecting anything.
 
+- [subagent-cards.md](subagent-cards.md): a provider's own subagent call
+  becomes a lich session. The plugin's pre-tool hook asks lich, which opens the
+  task as a card and answers with a veto the hook turns into the provider's own
+  refusal. Replaces the mod's agent-cards and [mod-answer.md](mod-answer.md).
+
+- [notification.md](notification.md): the envelope every task, result and note
+  lich hands an agent arrives in, the same on every provider. lich writes it;
+  the plugin's side is the briefing that explains it.
+
 Each has a fixture file of the same name in [`fixtures/`](fixtures/); the format
 is documented there. mod-control has a second one, `mod-commands.json`, for the
-responses lich sends; mod-status has only a response, `mod-status.json`.
+responses lich sends; mod-status has only a response, `mod-status.json`, and notification only the
+envelopes lich writes, `notification.json`. subagent-cards' fixture lands with
+its endpoint.
