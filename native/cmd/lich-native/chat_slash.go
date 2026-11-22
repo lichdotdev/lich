@@ -49,6 +49,10 @@ type chatSlash struct {
 	moved     bool
 	// blocked keeps the list shut while the keys belong to something else.
 	blocked bool
+	// picking is an Enter or Tab taken before the editor read the keys of
+	// its frame: refresh picks once the text holds them ("/m" picked out of
+	// "/mcp" typed fast left "cp" behind).
+	picking bool
 }
 
 // slashQuery is the command being typed at the caret of text: what runs from
@@ -149,10 +153,12 @@ func (s *chatSlash) refresh(gtx C, ed *widget.Editor, cmds []backend.ChatCommand
 		s.dismissed = ""
 	}
 	if !ok || s.blocked || len(cmds) == 0 || slashSigil+query == s.dismissed {
+		s.picking = false
 		return
 	}
 	shown := slashMatches(cmds, query)
 	if len(shown) == 0 {
+		s.picking = false
 		return
 	}
 	if query != s.query || !was {
@@ -163,7 +169,17 @@ func (s *chatSlash) refresh(gtx C, ed *widget.Editor, cmds []backend.ChatCommand
 	if len(s.rows) < len(shown) {
 		s.rows = make([]ui.Clickable, len(shown))
 	}
+	s.flush(ed)
 	s.keys(gtx, ed)
+	s.flush(ed)
+}
+
+// flush picks the command under the cursor for an Enter or Tab taken earlier.
+func (s *chatSlash) flush(ed *widget.Editor) {
+	if s.picking && len(s.shown) > 0 {
+		s.pick(ed, s.cursor)
+	}
+	s.picking = false
 }
 
 func (s *chatSlash) keys(gtx C, ed *widget.Editor) {
@@ -188,7 +204,7 @@ func (s *chatSlash) keys(gtx C, ed *widget.Editor) {
 		case key.NameEscape:
 			s.dismissed, s.shown = slashSigil+s.query, nil
 		default:
-			s.pick(ed, s.cursor)
+			s.picking = true
 		}
 	}
 }

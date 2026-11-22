@@ -228,3 +228,17 @@ func TestClearStartsAConversationAsNewDoes(t *testing.T) {
 		}
 	}
 }
+
+// Keys typed in the frame that also takes Enter count: the list reads Enter
+// before the editor reads its keys, so "/comp" typed fast after the list
+// opened on "/co" completes to /compact, not "/compact mp".
+func TestEnterAfterFastTypingCompletesWhatWasTyped(t *testing.T) {
+	_, r, _, p := slashFrames(t)
+	typeIn(r, p, "/co")
+	p.editor.SetText("/comp")
+	p.editor.SetCaret(5, 5)
+	r.press(key.NameReturn)
+	if got := p.editor.Text(); got != "/compact " {
+		t.Errorf("box %q, want /compact and a space", got)
+	}
+}
