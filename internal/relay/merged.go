@@ -38,7 +38,7 @@ func (s *Service) AnnounceMerge(ctx context.Context, opts api.AnnounceMergeOptio
 		return api.None{}, nil
 	}
 	lang := s.lang()
-	message := mergeNotice(lang, opts.Number, opts.Title, opts.Branch, opts.Base)
+	message := mergedEnvelope(lang, opts.Number, opts.Title, opts.Branch, opts.Base).String()
 	summary := fmt.Sprintf(prompt.For(lang).MergeSummary, opts.Number, opts.Base)
 	note := &Notification{Status: NotifyCompleted, Summary: summary}
 	for _, sess := range s.mergeAudience(projects, opts.Checkout) {
@@ -119,12 +119,4 @@ func sessionCwd(sessionPath, projectPath string) string {
 		return projectPath
 	}
 	return sessionPath
-}
-
-// mergeNotice is what the agent reads. It says the work is done and asks for
-// nothing beyond keeping its record straight: a notice that read as a task would
-// start one (deleting the branch, pulling the base) in a checkout the user may
-// be about to remove.
-func mergeNotice(lang prompt.Lang, number int, title, branch, base string) string {
-	return fmt.Sprintf(prompt.For(lang).MergeNotice, number, sanitize(title), branch, base)
 }

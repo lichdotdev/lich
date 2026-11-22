@@ -99,7 +99,8 @@ In a terminal, a `worker-finished` leaves `<result>` out and the envelope's
 (a provider may collapse it, and on Windows a newline inside it may submit half).
 
 Several envelopes ready at once go in one message, oldest first, one blank line
-apart. A `task` is never batched with another kind.
+apart. A `task` is never batched with another kind, but for the `loop` notice
+that warns about it, which rides behind it in the same message.
 
 ## Which errands use it
 
@@ -129,8 +130,12 @@ checked by reading.
 - The chat drivers (`internal/chat`) take an envelope as a user message: Claude
   Code's stream-json `user` message, Codex's app-server `turn/start` input,
   ACP's `session/prompt`. The queue is the chat's own (`queued`).
-- `[lich]` notes and the mod's `<task-notification>` route are removed in the
-  same change.
+- `[lich]` notes are replaced in the same change. The Claude Code mod still
+  carries the envelope until it is retired: a terminal session whose mod polls
+  is handed the envelopes as the text of its prompt, nothing typed into its
+  TUI. A subagent's report goes in whole, as the `<result>` of a
+  `<task-notification>` ([mod-control.md](mod-control.md), A prompt as a
+  notification); any other result is left out with its `<summary>`, as typed.
 
 ## Known ceilings
 

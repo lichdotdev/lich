@@ -400,5 +400,16 @@
     "description": "使う場面",
     "addProject": "このプロジェクトに追加",
     "addUser": "すべてのプロジェクトに追加"
+  },
+  "notification": {
+    "from": "{label} から",
+    "finished": "{label} が完了しました",
+    "answered": "回答済み",
+    "failed": "{label} が失敗しました",
+    "stopped": "{label} は閉じられました",
+    "stoppedBy": "{label} が閉じました",
+    "stoppedByYou": "あなたが閉じました",
+    "waiting": "{label} が待っています",
+    "expired": "{label} は時間内に回答しませんでした"
   }
 }

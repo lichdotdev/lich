@@ -422,5 +422,16 @@
     "description": "Cuándo usarlo",
     "addProject": "Añadir a este proyecto",
     "addUser": "Añadir a todos los proyectos"
+  },
+  "notification": {
+    "from": "De {label}",
+    "finished": "{label} terminó",
+    "answered": "respondió",
+    "failed": "{label} falló",
+    "stopped": "{label} se cerró",
+    "stoppedBy": "por {label}",
+    "stoppedByYou": "por ti",
+    "waiting": "{label} está esperando",
+    "expired": "{label} no respondió a tiempo"
   }
 }

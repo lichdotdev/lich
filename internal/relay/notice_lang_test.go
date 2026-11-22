@@ -18,40 +18,31 @@ func other(lang prompt.Lang) prompt.Lang {
 	return prompt.English
 }
 
-// Every notice renders in every language with its arguments in place and the
-// [lich] token its readers match on.
+// Every notice renders in every language with its arguments in place.
 func TestEveryNoticeRendersInEveryLanguage(t *testing.T) {
 	t.Parallel()
 	for _, lang := range prompt.Langs {
-		entry := &inboxEntry{target: "docs", ticket: "t1", answer: "all done"}
 		notices := map[string]string{
-			"report":         subagentReport(lang, entry, "feat/x"),
-			"report no tree": subagentReport(lang, entry, ""),
-			"blocked":        blockedNotice(lang, "docs"),
-			"merge":          mergeNotice(lang, 42, "Title", "feat/x", "main"),
-			"late":           lateNotice(lang, 1000, 1000+3600),
-			"resume":         prompt.For(lang).ResumePrompt,
+			"blocked":  waitingEnvelope(&ticket{target: "docs"}, "t1", prompt.For(lang).WaitingOnPermission).String(),
+			"merge":    mergedEnvelope(lang, 42, "Title", "feat/x", "main").String(),
+			"late":     scheduledEnvelope(lang, 1000, 1000+3600, "go").String(),
+			"on time":  scheduledEnvelope(lang, 1000, 1000, "go").String(),
+			"unblank":  unansweredWhy(lang, UnansweredBlank),
+			"unerror":  unansweredWhy(lang, UnansweredError),
+			"unrefuse": unansweredWhy(lang, UnansweredRefusal),
 		}
 		for name, notice := range notices {
-			if strings.Contains(notice, "%!") {
+			if notice == "" || strings.Contains(notice, "%!") {
 				t.Errorf("%s %s: a format argument is off:\n%s", lang, name, notice)
 			}
-			if !strings.HasPrefix(notice, "[lich] ") {
-				t.Errorf("%s %s: the [lich] token is missing:\n%s", lang, name, notice)
-			}
 		}
-		for _, literal := range []string{`"docs"`, "t1", "all done", "feat/x"} {
-			if !strings.Contains(notices["report"], literal) {
-				t.Errorf("%s: the report lost %q", lang, literal)
-			}
-		}
-		if strings.Contains(notices["report no tree"], "feat/x") {
-			t.Errorf("%s: the report names a branch it was not given", lang)
-		}
-		for _, literal := range []string{"#42", `"Title"`, "feat/x", "main"} {
+		for _, literal := range []string{"#42", `"Title"`, `branch="feat/x"`, "main"} {
 			if !strings.Contains(notices["merge"], literal) {
 				t.Errorf("%s: the merge notice lost %q", lang, literal)
 			}
+		}
+		if notices["late"] == notices["on time"] {
+			t.Errorf("%s: a late prompt reads as one on time", lang)
 		}
 		summaries := []string{
 			reportNotification(lang, []*inboxEntry{{target: "docs"}}).Summary,

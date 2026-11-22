@@ -3,6 +3,7 @@ package relay
 import (
 	"fmt"
 	"log/slog"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -15,19 +16,20 @@ import (
 // leaves it alone while the worker runs (workerHolds), and the worker is
 // finished once it reported and its turn ended (finishedWorkerLocked).
 
-// tellNews delivers one flush's news to fromID. With no subagent report among
-// it that is the nudge, as ever. With one, the report goes to the sender's mod
-// whole, beside the nudge for whatever else waits: the model reads it the way it
-// reads a native subagent's result, without a collect call. A sender whose mod
-// does not take it is typed the short nudge instead and the reports go back to
-// the inbox for the collect it names: typing a long report into a TUI is what
-// the mod route exists to avoid.
+// tellNews delivers one flush's news to fromID, one envelope per outcome in
+// one message. Where the sender's chat or mod takes it, a result goes in whole:
+// the model reads it the way it reads a native subagent's result, without a
+// collect call. A sender whose mod does not take it is typed the same
+// envelopes with each result left out, and the results go back to the inbox
+// for the collect they name: typing a long report into a TUI is what the mod
+// route exists to avoid.
 func (s *Service) tellNews(fromID string, n news, hasTools bool) error {
-	nudge := nudgeNotice(s.lang(), n.count, n.labels, hasTools)
-	if len(n.reports) == 0 {
-		return s.deliver(fromID, nudge, nil)
+	lang := s.lang()
+	var note *Notification
+	if len(n.results) > 0 {
+		note = reportNotification(lang, n.results)
 	}
-	handled, err := s.handToMod(fromID, s.reportNote(n, hasTools), reportNotification(s.lang(), n.reports))
+	handled, err := s.handToMod(fromID, newsMessage(lang, n.entries, n.results, hasTools), note)
 	if err != nil {
 		return err
 	}
@@ -36,12 +38,22 @@ func (s *Service) tellNews(fromID string, n news, hasTools bool) error {
 		return nil
 	}
 	s.mu.Lock()
-	s.restoreReportsLocked(n.reports)
+	s.restoreReportsLocked(n.results)
 	s.mu.Unlock()
-	return s.typeIn(fromID, nudge)
+	return s.typeIn(fromID, newsMessage(lang, n.entries, nil, hasTools))
 }
 
-// restoreReportsLocked puts reports takeNewsLocked moved to held back in the
+// newsMessage is one envelope per entry, in order, with the result in for each
+// entry of whole.
+func newsMessage(lang prompt.Lang, entries, whole []*inboxEntry, hasTools bool) string {
+	envs := make([]Envelope, len(entries))
+	for i, e := range entries {
+		envs[i] = outcomeEnvelope(lang, e, slices.Contains(whole, e), hasTools)
+	}
+	return joinEnvelopes(envs)
+}
+
+// restoreReportsLocked puts results takeNewsLocked moved to held back in the
 // inbox, unless a Wait on their ticket took them meanwhile. Called under s.mu.
 func (s *Service) restoreReportsLocked(reports []*inboxEntry) {
 	for _, e := range reports {
@@ -52,45 +64,17 @@ func (s *Service) restoreReportsLocked(reports []*inboxEntry) {
 	}
 }
 
-// reportNote is the reports of one flush, whole, followed by the nudge for the
-// results that are not reports, if any wait.
-func (s *Service) reportNote(n news, hasTools bool) string {
-	parts := make([]string, 0, len(n.reports)+1)
-	for _, e := range n.reports {
-		parts = append(parts, subagentReport(s.lang(), e, s.sessions.SessionBranch(e.targetID)))
-	}
-	if rest := n.count - len(n.reports); rest > 0 {
-		parts = append(parts, nudgeNotice(s.lang(), rest, n.others, hasTools))
-	}
-	return strings.Join(parts, "\n\n")
-}
-
-// reportNotification is how the caller's screen sums up one flush's reports:
-// the line Claude Code shows for a background agent of its own that finished.
-func reportNotification(lang prompt.Lang, reports []*inboxEntry) *Notification {
-	names := make([]string, len(reports))
-	for i, e := range reports {
+// reportNotification is how the caller's screen sums up the results one flush
+// hands over whole: the line Claude Code shows for a background agent of its
+// own that finished.
+func reportNotification(lang prompt.Lang, entries []*inboxEntry) *Notification {
+	names := make([]string, len(entries))
+	for i, e := range entries {
 		names[i] = strconv.Quote(e.target)
 	}
 	text := prompt.For(lang)
 	summary := fmt.Sprintf(text.Pick(len(names), text.ReportSummary), strings.Join(names, ", "))
 	return &Notification{Status: NotifyCompleted, Summary: summary}
-}
-
-// subagentReport is one worker's report as its sender reads it: who wrote it,
-// on which branch, under which ticket, and then the report itself.
-func subagentReport(lang prompt.Lang, e *inboxEntry, branch string) string {
-	text := prompt.For(lang)
-	on := ""
-	if branch != "" {
-		on = fmt.Sprintf(text.SubagentReportBranch, branch)
-	}
-	return fmt.Sprintf(text.SubagentReport, e.target, on, e.ticket, e.answer)
-}
-
-// blockedNotice is what a sender is told when its subagent waits on a person.
-func blockedNotice(lang prompt.Lang, target string) string {
-	return fmt.Sprintf(prompt.For(lang).BlockedNotice, target)
 }
 
 // blockedNotification sums up blockedNotice in the one line the caller sees.
@@ -106,17 +90,17 @@ func blockedNotification(lang prompt.Lang, target string) *Notification {
 // yet. A busy or done report ends the block (unblockLocked). Called under s.mu,
 // before recordState, while s.state still says whether a turn is running: a
 // waiting outside one is a prompt at rest, not a block.
-func (s *Service) blockedSendersLocked(sessionID string) []*ticket {
+func (s *Service) blockedSendersLocked(sessionID string) []endedErrand {
 	if s.state[sessionID] != stateBusy {
 		return nil
 	}
-	var told []*ticket
-	for _, t := range s.tickets {
+	var told []endedErrand
+	for id, t := range s.tickets {
 		if t.targetID != sessionID || !t.subagent || !t.submitted || t.blockNoted {
 			continue
 		}
 		t.blockNoted = true
-		told = append(told, t)
+		told = append(told, endedErrand{id, t})
 	}
 	return told
 }

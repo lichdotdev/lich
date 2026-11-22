@@ -110,7 +110,7 @@ type mcpTool struct {
 // session a task.
 const privateToolUsage = "Set this when you are a subagent or workflow step running inside " +
 	"a session rather than the session's own agent. The result is then yours alone: no " +
-	"[lich] note announces it, and wait_for_answer without a ticket never returns it — " +
+	"lich-notification announces it, and wait_for_answer without a ticket never returns it — " +
 	"wait on this ticket to get it."
 
 // mcpInstructions is the server's own briefing, injected into the client's
@@ -515,8 +515,9 @@ var mcpTools = append([]mcpTool{
 		Description: "Give another lich session a task. The task is put at that session's prompt " +
 			"as if typed there, or held and delivered when it gets to one rather than " +
 			"being lost. Returns the answer when it comes back quickly; for anything " +
-			"slower you get a ticket and carry on — when the result is ready, a short note " +
-			"arrives at your own prompt and wait_for_answer collects it, so you never poll. " +
+			"slower you get a ticket and carry on — when the result is ready, a lich-notification " +
+			"block arrives at your prompt, with the result in it or a line saying to collect it " +
+			"with wait_for_answer and the ticket, so you never poll. " +
 			"Sessions are addressed by the label on their lich card — call list_sessions for " +
 			"the labels. If you were given a name like `myrepo-a1b2`, that is a peer-roster " +
 			"name from your own cross-session messaging, not a lich label: reach it with your " +
@@ -552,9 +553,9 @@ var mcpTools = append([]mcpTool{
 		Name: relay.ToolCollect,
 		Description: "Collect the results of tasks you sent with send_to_session. Without a " +
 			"ticket it returns every result that is ready — the one call to make when a " +
-			"[lich] note says results are waiting — and, when none is, holds the line for " +
+			"lich-notification says a result is waiting — and, when none is, holds the line for " +
 			"the next one. With no_wait it returns at once instead, with what is ready and " +
-			"who still owes one: the look to take mid-turn, where the note cannot reach you, " +
+			"who still owes one: the look to take mid-turn, where a notification cannot reach you, " +
 			"at the points where an answer would change your next step: before delegating " +
 			"more, after a long validation, before the final synthesis. Once per such point; " +
 			"if nothing is ready, carry on, never call it again in a loop. With a ticket it " +
@@ -752,12 +753,13 @@ var mcpTools = append([]mcpTool{
 	},
 	{
 		Name: relay.ToolReply,
-		Description: "Answer a task another session gave you. Call this when a message at your prompt " +
-			"came from lich and carried a ticket; whoever asked is blocked until you do. " +
+		Description: "Answer a task another session gave you. Call this when a lich-notification " +
+			"of kind task says answer=\"reply\"; whoever asked is blocked on its ticket until you do. " +
+			"One that says answer=\"last-message\" is answered by your turn's final message instead. " +
 			"It is the only route back — a peer message does not reach them, because they are " +
 			"waiting on the ticket and reading nothing else.",
 		Schema: schema(map[string]any{
-			"ticket": property("string", "The ticket from the message you were given. "+
+			"ticket": property("string", "The ticket attribute of the task you were given. "+
 				"Leave it out only if that message is no longer in your context — then the one "+
 				"request open against this session is answered. With two open the call is "+
 				"refused, naming each ticket and what it asked, because nothing in an answer "+

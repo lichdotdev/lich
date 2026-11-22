@@ -419,8 +419,8 @@ func TestANudgeReachesASenderThroughItsMod(t *testing.T) {
 	if !awaitPrompts(term, "s1", 1) {
 		t.Fatal("the sender's mod was never handed the nudge")
 	}
-	if prompt := term.promptsTo("s1")[0]; !strings.Contains(prompt, "[lich]") {
-		t.Errorf("nudge = %q, want the [lich] note", prompt)
+	if prompt := term.promptsTo("s1")[0]; !strings.Contains(prompt, "<lich-notification") {
+		t.Errorf("nudge = %q, want the envelope", prompt)
 	}
 	if note := term.notesTo("s1")[0]; note != nil {
 		t.Errorf("the nudge was handed as a notification %+v, want an ordinary prompt", note)
@@ -459,7 +459,7 @@ func TestANudgeNoPollCollectedIsTyped(t *testing.T) {
 	if _, err := svc.Reply(t.Context(), ReplyOptions{Ticket: "t1", Answer: "all green"}); err != nil {
 		t.Fatalf("Reply: %v", err)
 	}
-	if !awaitWritten(term, "s1", "[lich]") {
+	if !awaitWritten(term, "s1", "<lich-notification") {
 		t.Fatalf("a nudge no poll collected was never typed: %q", term.writesTo("s1"))
 	}
 }

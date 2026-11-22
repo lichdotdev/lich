@@ -14,6 +14,13 @@ func (f *fakeTerminal) ModAnswers(id string) bool {
 	return f.answering[id]
 }
 
+// Chat answers with the sessions the fake draws as a chat.
+func (f *fakeTerminal) Chat(id string) bool {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.chats[id]
+}
+
 // answerByMod gives a session a mod that answers its subagent errands itself
 // (docs/hooks/mod-answer.md), polling with receipts as attachMod does.
 func (f *fakeTerminal) answerByMod(id string, receipts ...PromptReceipt) {
@@ -41,9 +48,10 @@ func sendSubagentTask(t *testing.T, svc *Service) Result {
 	return got
 }
 
-// A worker whose mod answers for it is handed the task the way a native
-// subagent is: no ticket, no reply command, only who asked.
-func TestATaskForAWorkerWhoseModAnswersCarriesNoTicket(t *testing.T) {
+// A worker whose mod answers for it is told its last message is the answer
+// (answer="last-message"); the ticket stays on the envelope as a reference, as
+// the contract's fixture writes it.
+func TestATaskForAWorkerWhoseModAnswersIsAnsweredByItsLastMessage(t *testing.T) {
 	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	term.answerByMod("s2", ackedOK)
@@ -54,13 +62,9 @@ func TestATaskForAWorkerWhoseModAnswersCarriesNoTicket(t *testing.T) {
 		t.Fatal("the worker's mod was never handed the task")
 	}
 	task := term.promptsTo("s2")[0]
-	if !strings.Contains(task, "write the docs") || !strings.Contains(task, `"sender"`) {
-		t.Errorf("task = %q, want the prompt under a line naming the caller", task)
-	}
-	for _, unwanted := range []string{got.Ticket, "reply", ToolReply} {
-		if strings.Contains(task, unwanted) {
-			t.Errorf("task carries %q:\n%s", unwanted, task)
-		}
+	want := `kind="task" from="sender" session="s1" ticket="` + got.Ticket + `" answer="last-message"`
+	if !strings.Contains(task, want) || !strings.Contains(task, "<prompt>write the docs</prompt>") {
+		t.Errorf("task = %q, want %s and the prompt", task, want)
 	}
 }
 
@@ -76,8 +80,8 @@ func TestATaskForAWorkerWhoseModDoesNotAnswerKeepsTheTicket(t *testing.T) {
 	if !awaitPrompts(term, "s2", 1) {
 		t.Fatal("the worker's mod was never handed the task")
 	}
-	if task := term.promptsTo("s2")[0]; !strings.Contains(task, "reply "+got.Ticket) {
-		t.Errorf("task = %q, want the reply command naming ticket %s", task, got.Ticket)
+	if task := term.promptsTo("s2")[0]; !strings.Contains(task, `ticket="`+got.Ticket+`" answer="reply"`) {
+		t.Errorf("task = %q, want it answered by ticket %s", task, got.Ticket)
 	}
 }
 
@@ -96,8 +100,8 @@ func TestAnOrdinaryTaskToAWorkerWhoseModAnswersKeepsTheTicket(t *testing.T) {
 	if !awaitPrompts(term, "s2", 1) {
 		t.Fatal("the mod was never handed the task")
 	}
-	if task := term.promptsTo("s2")[0]; !strings.Contains(task, "reply "+got.Ticket) {
-		t.Errorf("task = %q, want the reply command naming ticket %s", task, got.Ticket)
+	if task := term.promptsTo("s2")[0]; !strings.Contains(task, `ticket="`+got.Ticket+`" answer="reply"`) {
+		t.Errorf("task = %q, want it answered by ticket %s", task, got.Ticket)
 	}
 }
 

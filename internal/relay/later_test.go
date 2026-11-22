@@ -133,8 +133,9 @@ func TestDeliverDueTypesAnOverduePrompt(t *testing.T) {
 }
 
 // A prompt found within one pass of its time is on time by every measure this
-// package can take, so it arrives as the user wrote it and nothing else.
-func TestDeliverDueTypesAnOnTimePromptBare(t *testing.T) {
+// package can take, so its notice says when it was due and nothing about late
+// (docs/hooks/notification.md: a scheduled notice is late or on time).
+func TestDeliverDueTypesAnOnTimePromptAsOnTime(t *testing.T) {
 	t.Parallel()
 	for name, now := range map[string]int64{
 		"to the second": 1000,
@@ -147,8 +148,9 @@ func TestDeliverDueTypesAnOnTimePromptBare(t *testing.T) {
 
 			svc.deliverDue()
 
-			if got := term.written("s1"); strings.Contains(got, "[lich]") {
-				t.Fatalf("typed at s1 = %q, want the prompt with no notice on it", got)
+			got := term.written("s1")
+			if !strings.Contains(got, `topic="scheduled"`) || !strings.Contains(got, "<prompt>ship it</prompt>") || strings.Contains(got, "late") {
+				t.Fatalf("typed at s1 = %q, want the prompt under an on-time notice", got)
 			}
 		})
 	}
@@ -177,9 +179,6 @@ func TestLateNoticeWordsTheDelay(t *testing.T) {
 			got := lateNotice(prompt.English, 1000, 1000+tc.late)
 			if !strings.Contains(got, "delivered "+tc.want+" late.") {
 				t.Fatalf("lateNotice = %q, want it %s late", got, tc.want)
-			}
-			if !strings.HasSuffix(got, "\n\n") {
-				t.Fatalf("lateNotice = %q, want the prompt on its own line under it", got)
 			}
 		})
 	}

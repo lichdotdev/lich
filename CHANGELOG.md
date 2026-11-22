@@ -46,6 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **What lich hands a chat, a task, a worker's result or a notice, shows as a row instead of raw text.** A worker's outcome is a line with its agent's mark and its result under it, a click opens that worker's card, and a task opens the chat with the session that sent it.
 - **Plan usage moved from the footer to the account row at the foot of the sidebar.** The row now shows with a single login, and for agents without profiles, with the five-hour reading beside the name; click it for every window. The footer keeps attach, changes, branch and context, and its PR, path and clock items are gone: the card shows the pull request and the tab names the project.
 - **The keyboard shortcuts are now the ones editors and terminals use, and a terminal keeps its own Ctrl keys.** A shortcut is Ctrl and a letter, Ctrl+Shift and the letter while a terminal has the keys, and Command and the letter on macOS: N starts a session, T opens a terminal, W closes it, P opens the palette, D and E split, Ctrl+Tab moves between sessions and F1 lists the rest. A shortcut you recorded yourself in Settings › Hotkeys stays as it was.
 - **Add and edit a service in a dialog, wherever you are.** New service in the sidebar's Services footer, Edit in a service's menu and a row in Settings › Services all open it, with the name beside the command and Start with lich as a switch.

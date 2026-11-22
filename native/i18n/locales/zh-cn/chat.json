@@ -400,5 +400,16 @@
     "description": "何时使用",
     "addProject": "添加到此项目",
     "addUser": "添加到所有项目"
+  },
+  "notification": {
+    "from": "来自 {label}",
+    "finished": "{label} 已完成",
+    "answered": "已回复",
+    "failed": "{label} 失败了",
+    "stopped": "{label} 已被关闭",
+    "stoppedBy": "由 {label} 关闭",
+    "stoppedByYou": "由你关闭",
+    "waiting": "{label} 正在等待",
+    "expired": "{label} 未按时回复"
   }
 }

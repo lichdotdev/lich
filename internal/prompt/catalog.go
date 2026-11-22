@@ -5,7 +5,8 @@ package prompt
 // each locale has it with the same format verbs.
 //
 // Untranslated in every locale, because agents and tools match them literally:
-// the [lich] token, tool and CLI names, ticket ids, and tool parameters.
+// the lich-notification tag and its attributes and values, tool and CLI names,
+// ticket ids, and tool parameters.
 type Catalog struct {
 	isOne func(int) bool
 	// isFew and isMany are nil in a language whose CLDR rule has no few or
@@ -27,39 +28,42 @@ type Catalog struct {
 	// page, a tool name or a command, never translated.
 	BriefingArtifacts string
 
-	// internal/relay: compose, origin and replyInstruction.
-	RelayMessage      string
-	OriginCLI         string
-	OriginSession     string
-	OriginExtension   string
-	ReplyCommand      string
-	ReplyRouteCLI     string
-	ReplyRouteTools   string
-	ReplyOnlyWayBack  string
-	PingPongWarning   string
-	WorkerTask        string
-	PickTicketNudge   string
-	CompactReminder   Plural
-	NudgeResultsReady Plural
-	NudgeRouteCLI     string
-	NudgeRouteTools   string
-	NudgeNotice       string
+	// BriefingEnvelope explains the notification envelope
+	// (docs/hooks/notification.md) to every route, its own leading space
+	// included where the language separates sentences with one. It names the
+	// block without angle brackets and the attribute values without quotes.
+	// %[1]s is how to reply and %[2]s how to collect, a tool name or a
+	// command, never translated.
+	BriefingEnvelope string
 
-	// internal/relay: a subagent's report and block, a merge notice, a late
-	// scheduled prompt and the continuation parked at a usage limit.
-	SubagentReport       string
-	SubagentReportBranch string
-	BlockedNotice        string
-	ReportSummary        Plural
-	BlockedSummary       string
-	MergeNotice          string
-	MergeSummary         string
-	LateNotice           string
+	// internal/relay: the text inside a notification envelope. Tags,
+	// attributes and their enumerated values stay English in every locale.
+	PingPongWarning     string
+	PickTicketNudge     string
+	CompactReminder     Plural
+	CollectWithTool     string
+	CollectWithCLI      string
+	WaitingOnPermission string
+	WorkerEndedBlank    string
+	WorkerEndedError    string
+	WorkerEndedRefusal  string
+
+	// internal/relay: the one line a Claude Code mod shows for a notification
+	// (docs/hooks/mod-control.md, A prompt as a notification).
+	ReportSummary  Plural
+	BlockedSummary string
+	MergeSummary   string
+
+	MergeNotice string
+	// LateNotice and OnTimeNotice sum up a scheduled prompt come due: %[1]s is
+	// when it was parked for, %[2]s how late it is.
+	LateNotice   string
+	OnTimeNotice string
 	// ResumePrompt is stored in the sessions table as a parked prompt, marked
 	// as lich's (store SetLichSchedule); never recognise it by comparing text.
 	ResumePrompt string
-	// The line in front of a watch's prompt, naming what was met. %[1]d is the
-	// pull request; %[2]s, where it appears, the commit.
+	// What a watch met, above its prompt. %[1]d is the pull request; %[2]s,
+	// where it appears, the commit.
 	WatchChecksFailed string
 	WatchChecksPassed string
 	WatchReview       string
