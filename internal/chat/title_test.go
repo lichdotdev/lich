@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/lichdotdev/lich/api"
+	"github.com/lichdotdev/lich/internal/providers"
 )
 
 func TestCleanTitle(t *testing.T) {
@@ -62,5 +63,41 @@ func TestNoTitleAfterEnvelope(t *testing.T) {
 	r.settled()
 	if got := r.titles(); len(got) != 0 {
 		t.Errorf("titles = %q, want none", got)
+	}
+}
+
+// TestTitleOnOtherProviders: oh-my-pi is named by its own print mode; opencode's
+// session is deleted once its JSON events are read; Kiro CLI is out, and its
+// chat is asked nothing.
+func TestTitleOnOtherProviders(t *testing.T) {
+	for _, tc := range []struct {
+		kind string
+		want []string
+	}{
+		{providers.OMP, []string{"Fake title"}},
+		{providers.OpenCode, []string{"Fake title"}},
+		{providers.Kiro, nil},
+	} {
+		t.Run(tc.kind, func(t *testing.T) {
+			r := newRig(t, tc.kind)
+			if err := r.setView(api.ViewChat); err != nil {
+				t.Fatalf("SetView: %v", err)
+			}
+			r.prompt("hi")
+			if tc.want == nil {
+				r.settled()
+				if got := r.titles(); len(got) != 0 {
+					t.Fatalf("titles = %q, want none", got)
+				}
+				return
+			}
+			r.eventually("title", func() bool { return len(r.titles()) == 1 })
+			if got := r.titles(); got[0] != tc.want[0] {
+				t.Errorf("titles = %q, want %q", got, tc.want)
+			}
+			if tc.kind == providers.OpenCode {
+				r.eventually("the session deleted", func() bool { return strings.Contains(r.fakeLog(), "session delete ses_fake") })
+			}
+		})
 	}
 }

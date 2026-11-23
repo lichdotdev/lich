@@ -69,11 +69,30 @@ func runFake(args []string) {
 		f.codex()
 		return
 	}
-	if slices.Contains(args, "--no-session-persistence") {
+	if slices.Contains(args, "--no-session-persistence") || slices.Contains(args, "--no-title") {
 		f.claudeTitle()
 		return
 	}
+	if len(args) > 1 && args[0] == "session" && args[1] == "delete" {
+		return
+	}
+	if len(args) > 1 && args[0] == "run" && slices.Contains(args, "--format") {
+		f.openCodeTitle()
+		return
+	}
 	f.claude(args)
+}
+
+// openCodeTitle answers `opencode run --format json`: the events of a call that
+// made a session and wrote its reply, with the stray lines a log adds.
+func (f *fake) openCodeTitle() {
+	if os.Getenv("LICH_SESSION_ID") != "" {
+		fmt.Println(`{"type":"text","sessionID":"ses_leak","part":{"text":"leak"}}`)
+		return
+	}
+	fmt.Println(`not json`)
+	fmt.Println(`{"type":"step_start","sessionID":"ses_fake","part":{}}`)
+	fmt.Println(`{"type":"text","sessionID":"ses_fake","part":{"text":"\"Fake title.\""}}`)
 }
 
 // claudeTitle answers the print-mode call that names a chat, a quoted title with a

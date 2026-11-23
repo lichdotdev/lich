@@ -218,7 +218,7 @@ distinto.
 | En el chat, Ctrl+B pasa a segundo plano un comando que el agente está esperando, que sigue ejecutándose mientras el agente continúa | sí; la línea que muestra al agente trabajando avisa cuándo se puede | no | no | no | no | sin chat | no | no |
 | En el chat, una imagen que adjuntas llega al agente como imagen, y cualquier otro archivo como su ruta en tu mensaje | sí | enviada como imagen; sin verificar que el agente la vea | enviada como imagen; sin verificar que el agente la vea | enviada como imagen; sin verificar que el agente la vea | enviada como imagen; sin verificar que el agente la vea | no | sin verificar | enviada como imagen; sin verificar que el agente la vea |
 | En el chat, cuando termina un turno que empezaste, la caja de mensaje vacía sugiere lo que escribirías a continuación, y Tab la pone en la caja | sí | sí; lich se lo pide al mismo modelo con esfuerzo bajo, lo que gasta un poco de tu plan | no | no | no | sin chat | no | no |
-| En el chat, cuando se responde tu primer mensaje, la sesión toma nombre de él, con una llamada al mismo agente con esfuerzo bajo, lo que gasta un poco de tu plan | sí | sí; sin verificar en una cuenta real | no | no | no | sin chat | no | no |
+| En el chat, cuando se responde tu primer mensaje, la sesión toma nombre de él, con una llamada al mismo agente con esfuerzo bajo, lo que gasta un poco de tu plan | sí | sí; sin verificar en una cuenta real | no: dejaría una conversación en su historial | sí; solo opencode 1, y su sesión desechable se borra | sí; sin verificar en una cuenta real | sin chat | no: dejaría un chat en su historial y cambiaría tu modelo por defecto | no: dejaría una conversación en su historial |
 
 </details>
 
