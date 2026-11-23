@@ -114,6 +114,24 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   took is its result's time in a Claude Code transcript, and otherwise the moment lich first saw it ended live: a
   conversation read back from Codex or an ACP server carries no end, so its calls show no time. A call the
   provider left running when its turn ended (interrupted) ends at the turn's end, live; read back, it has no end.
+- **A chat draws a compaction only where its provider reports one, or where the person typed the provider's own
+  command for it** (`internal/chat/compaction.go`, `claude_compact.go`, `codex_compact.go`, `acp_compact.go`):
+  Claude Code (2.1.330) and Codex (0.170.0) report a compaction's start and end, typed or automatic, with the
+  tokens on each side (Claude Code's `compact_boundary`, Codex's token usage before and after). Kiro CLI (2.21.0)
+  reports it in `_kiro.dev/compaction/status`, with no token count: its metadata gives a percentage alone. lich
+  advertises ACP's `session.compaction` and reads `compaction_update`, but no agent it runs sends one yet.
+  Antigravity (1.5.14), opencode (1.19.4) and oh-my-pi (18.8.9) say nothing of a compaction: a /compact the person
+  types (or opencode's /summarize), where the agent lists it, makes its turn the compaction, done when the turn
+  ends, its tokens the agent's `usage_update` before and after where it sends one; a compaction they run on their
+  own draws nothing, and oh-my-pi's "Compaction complete" reply stays a message. Cursor CLI gets the same for a
+  /summarize its command list offers, not measured. Crush has no chat, and its card does not say it compacts
+  either: lich-plugin does not wire its PreCompact and PostCompact hooks. Read back, a Claude Code compaction comes
+  from the transcript's boundary and summary, and a Codex one from its `contextCompaction` item, typed when its
+  turn holds no message of the person's; an ACP agent draws one only where its replay sends `compaction_update`.
+  Not measured, read from the source or the binary: that Codex runs `thread/compact/start` as a turn of its own
+  (`turn/started` to `turn/completed`), Claude Code's live order of those lines, its live `post_tokens`, and that it
+  lists /compact at initialize. A compaction in a chat reaches neither the card's compacting state nor the relay's
+  reminder after one: both still come from the terminal's hooks.
 - **A new session is born as a chat only where its provider is in `chat.Kinds`, and a fork never is**
   (`internal/store/sessionview.go`, `internal/spawn`): the store writes the view with the row, a chat unless the
   global `session.view` (Settings › Providers › New sessions open as) asks for the terminal, so the window, the
