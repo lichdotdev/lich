@@ -185,7 +185,10 @@ func (d *codexDriver) forkNotification(thread, method string, params json.RawMes
 	}
 }
 
-// endFork lets the next suggestion be made, and has Codex unload the fork.
+// endFork lets the next suggestion be made, and lets Codex unload the fork:
+// 0.170.0 has no thread/close, refuses archive and delete for an ephemeral
+// thread, and unloads one about a minute after its last subscriber left, its
+// MCP servers exiting with it (measured: 62s).
 func (d *codexDriver) endFork(thread string) {
 	d.mu.Lock()
 	d.fork = codexFork{}

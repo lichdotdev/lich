@@ -141,7 +141,7 @@ func TestCodexSuggestionFork(t *testing.T) {
 	if !strings.Contains(forkTurn, `"effort":"low"`) || !strings.Contains(forkTurn, `"model":"gpt-a"`) || !strings.Contains(forkTurn, "SUGGESTION MODE") {
 		t.Errorf("fork turn/start = %q", forkTurn)
 	}
-	r.eventually("the fork unloaded", func() bool { return strings.Contains(r.fakeLog(), `"thread/unsubscribe"`) })
+	r.eventually("the fork let go", func() bool { return r.unsubscribed("codex-fork-suggest") })
 	for _, it := range r.history() {
 		if strings.Contains(it.Text, "run the tests") || strings.Contains(it.Text, "SUGGESTION") {
 			t.Errorf("the fork reached the chat: %+v", it)
@@ -160,6 +160,16 @@ func TestCodexSuggestionFork(t *testing.T) {
 	if effort != "medium" || mode != codexWorkspace || turn == "fork-turn" {
 		t.Errorf("the fork moved the session: effort %q, mode %q, turn %q", effort, mode, turn)
 	}
+}
+
+// unsubscribed is whether lich let go of thread, which Codex then unloads.
+func (r *rig) unsubscribed(thread string) bool {
+	for line := range strings.Lines(r.fakeLog()) {
+		if strings.Contains(line, `"thread/unsubscribe"`) && strings.Contains(line, `"threadId":"`+thread+`"`) {
+			return true
+		}
+	}
+	return false
 }
 
 // turnEnds counts the turns the window was told ended.
@@ -192,7 +202,7 @@ func TestCodexNewTurnDropsFork(t *testing.T) {
 	r.prompt("hi")
 	r.turnEnd(1)
 	r.eventually("the fork interrupted", func() bool {
-		return strings.Contains(r.fakeLog(), `"turn/interrupt"`) && strings.Contains(r.fakeLog(), `"thread/unsubscribe"`)
+		return strings.Contains(r.fakeLog(), `"turn/interrupt"`) && r.unsubscribed("codex-fork-suggest-slow")
 	})
 	r.noSuggestion()
 }
