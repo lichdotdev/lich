@@ -395,6 +395,9 @@ func (u *window) chatActs(gtx C, p *chatPane, sv sessionView, keys, working bool
 	}
 	p.unsent = chatMessage{}
 	p.mu.Unlock()
+	// Before the composer, which holds the keyboard and reads Ctrl+C and
+	// Escape: with text selected in the conversation, those are the selection's.
+	p.md.SelectionKeys(gtx)
 	if typed := u.chats.takeTyped(sv.ID); typed != "" {
 		p.editor.Insert(typed)
 	}

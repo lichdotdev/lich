@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"image/color"
 	"strings"
+	"unicode/utf8"
 
 	"gioui.org/font"
 	"gioui.org/x/richtext"
@@ -130,7 +131,7 @@ func (w *spanWriter) emit(s string) {
 	if w.linkIcon != nil {
 		// The mark stands in a room of its own before the link's first words.
 		w.spans[len(w.spans)-1].Content = linkIconRoom + w.spans[len(w.spans)-1].Content
-		d.icon, d.tone, w.linkIcon = w.linkIcon, iconLink, nil
+		d.icon, d.tone, d.lead, w.linkIcon = w.linkIcon, iconLink, utf8.RuneCountInString(linkIconRoom), nil
 	}
 	w.decor = append(w.decor, d)
 	w.itemStart = false
@@ -240,8 +241,10 @@ func (w *spanWriter) codeSpan(entering bool) {
 			d.icon, d.tone, d.path = icon, iconMuted, code.String()
 		}
 		w.spans[w.codeStart].Content = prefix + w.spans[w.codeStart].Content
+		w.decor[w.codeStart].lead += utf8.RuneCountInString(prefix)
 		last := len(w.spans) - 1
 		w.spans[last].Content += "\u00a0"
+		w.decor[last].trail++
 	}
 	w.inlineCode = false
 }

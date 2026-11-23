@@ -63,6 +63,7 @@ func (c *markdownCell) unmarkUnlinked(link func(string) bool) {
 			continue
 		}
 		d.icon, d.path = nil, ""
+		d.lead--
 		c.spans[i].Content = "\u00a0" + strings.TrimPrefix(c.spans[i].Content, codeIconRoom)
 	}
 }
@@ -72,20 +73,24 @@ func (c *markdownCell) unmarkUnlinked(link func(string) bool) {
 type pathPointer struct {
 	over bool
 	mods key.Modifiers
+	// pressed is a shortcut press on the path not yet let go: the path
+	// opens on its release, unless the press became a selection.
+	pressed bool
 }
 
 // followPath gives span i, a path size big, the pointer: it opens on a
-// shortcut click, and reports whether it shows as a link this frame.
+// shortcut click that selected nothing, and reports whether it shows as a
+// link this frame.
 func (c *markdownCell) followPath(gtx C, i int, size image.Point, paths *Paths) bool {
 	if len(c.paths) != len(c.decor) {
 		c.paths = make([]pathPointer, len(c.decor))
 	}
 	p := &c.paths[i]
 	kinds := pointer.Enter | pointer.Leave | pointer.Cancel | pointer.Move
-	if paths.Held {
+	if paths.Held || p.pressed {
 		// Taken only while it opens, so the span is no click target to
 		// anything that reads them otherwise.
-		kinds |= pointer.Press
+		kinds |= pointer.Press | pointer.Release
 	}
 	for {
 		ev, ok := gtx.Event(pointer.Filter{Target: p, Kinds: kinds})
@@ -100,12 +105,17 @@ func (c *markdownCell) followPath(gtx C, i int, size image.Point, paths *Paths) 
 		switch e.Kind {
 		case pointer.Enter, pointer.Move:
 			p.over = true
-		case pointer.Leave, pointer.Cancel:
+		case pointer.Leave:
 			p.over = false
+		case pointer.Cancel:
+			p.over, p.pressed = false, false
 		case pointer.Press:
-			if e.Buttons.Contain(pointer.ButtonPrimary) && e.Modifiers.Contain(key.ModShortcut) {
+			p.pressed = e.Buttons.Contain(pointer.ButtonPrimary) && e.Modifiers.Contain(key.ModShortcut)
+		case pointer.Release:
+			if p.pressed && !c.dragged() {
 				paths.Open(c.decor[i].path)
 			}
+			p.pressed = false
 		}
 	}
 	defer clip.Rect{Max: size}.Push(gtx.Ops).Pop()

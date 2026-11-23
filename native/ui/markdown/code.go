@@ -31,7 +31,7 @@ func (c *markdownCell) layoutPanel(gtx C, th *ui.Theme, l Links, button *codeCop
 	inner := gtx
 	inner.Constraints.Max.X = max(width-3*pad-side, 0)
 	stack := op.Offset(image.Pt(pad, pad)).Push(gtx.Ops)
-	d := c.layout(inner, th, l)
+	d := c.layout(inner, th.On(codeFill(th)), l)
 	stack.Pop()
 	text := macro.Stop()
 	size := image.Pt(width, d.Size.Y+2*pad)
