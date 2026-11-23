@@ -50,11 +50,11 @@ var (
 )
 
 // chatCrumbStatGap is the room between the branch and its line counts.
-const chatCrumbStatGap = 1.5
+const chatCrumbStatGap = 3
 
 // chatCrumbPRGap is the room before the pull request: wider than the branch
 // keeps to its own counts, so the badge does not read as part of the name.
-const chatCrumbPRGap = 3
+const chatCrumbPRGap = 4.5
 
 // chatCrumbSpread is the room between the project and the checkout, which
 // sit apart with no separator (centre-mix mockup's 20px).
