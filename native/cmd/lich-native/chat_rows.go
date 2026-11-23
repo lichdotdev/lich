@@ -16,6 +16,7 @@ const (
 	chatRowItem  chatRowKind = iota // one item as it is
 	chatRowWork                     // a turn's tool calls, folded into one line
 	chatRowShell                    // the call of the person's shell command, its output under it
+	chatRowEdit                     // a call that changed a file, its diff under it, out of the turn's fold
 	chatRowLive                     // the turn in flight, unless a permission or a question says it waits
 	chatRowDay                      // the day a turn starts on, when it is not the day of the turn before
 	chatRowDone                     // the line that closes a finished turn
@@ -24,7 +25,7 @@ const (
 // chatRow is one line of the chat view.
 type chatRow struct {
 	kind chatRowKind
-	item backend.ChatItem // chatRowItem, chatRowShell
+	item backend.ChatItem // chatRowItem, chatRowShell, chatRowEdit
 	// day is a day row's moment, unix ms: when the turn it starts began.
 	day int64
 	// lead marks the first answer of a turn, which opens with who speaks. When
@@ -95,7 +96,9 @@ func chatRows(items []backend.ChatItem, kind string, running bool, now time.Time
 			sp.began = it.At
 		}
 		if it.Kind == api.ItemTool && !shell[it.ID] {
-			sp.tools = append(sp.tools, it)
+			if !isEdit(it) {
+				sp.tools = append(sp.tools, it)
+			}
 			if it.Tool != nil {
 				sp.end = max(sp.end, it.Tool.Ended)
 			}
@@ -149,6 +152,10 @@ func chatRows(items []backend.ChatItem, kind string, running bool, now time.Time
 		}
 		if shell[it.ID] {
 			rows = append(rows, chatRow{kind: chatRowShell, item: it, turn: it.Turn, live: running && it.Turn == last && callRunning(it)})
+			continue
+		}
+		if isEdit(it) {
+			rows = append(rows, chatRow{kind: chatRowEdit, item: it, turn: it.Turn, live: running && it.Turn == last && callRunning(it)})
 			continue
 		}
 		if folded[it.Turn] {
@@ -205,6 +212,10 @@ func markAnswerRuns(rows []chatRow) {
 		i = j + 1
 	}
 }
+
+// isEdit is whether it is a call that changed a file, whatever the provider
+// names it: every provider's chat gives such a call a Diff, and only it.
+func isEdit(it backend.ChatItem) bool { return it.Tool != nil && it.Tool.Diff != "" }
 
 // isPlan is whether it is the agent's task list, drawn over the composer
 // (chat_plan.go) and not in the conversation.

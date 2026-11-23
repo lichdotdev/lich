@@ -66,6 +66,8 @@ func (u *window) chatRow(gtx C, th *ui.Theme, p *chatPane, sv sessionView, r cha
 		return u.chatWork(gtx, th, p, p.fold("work:"+strconv.Itoa(r.turn)), sv, r)
 	case chatRowShell:
 		return chatBranch(gtx, th, true, func(gtx C) D { return chatShellCall(gtx, th, p.fold("out:"+r.item.ID), r.item, r.live) })
+	case chatRowEdit:
+		return chatTool(gtx, th, r.item, r.live)
 	case chatRowLive:
 		if r.compacting {
 			return chatCompacting(gtx, th, r)
