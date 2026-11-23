@@ -415,9 +415,7 @@
   },
   "codexHook": {
     "title": "Codex が lich のフックを無視しているため、サブエージェントはネイティブで動いています",
-    "how": "信頼し直す方法",
-    "howTitle": "Codex で lich のフックを信頼し直す",
-    "howSteps": "セッションをターミナル（TUI）で開き、/hooks と入力して lich-plugin の PreToolUse フックを信頼してください。内容が変わったフックは、信頼し直すまで Codex が飛ばします。",
-    "open": "セッションを開く"
+    "steps": "内容が変わったフックは、再び信頼するまで Codex に飛ばされます。このセッションの /hooks で lich-plugin の PreToolUse フックを信頼してください。",
+    "review": "/hooks を開く"
   }
 }

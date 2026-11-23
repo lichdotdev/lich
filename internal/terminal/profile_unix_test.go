@@ -394,9 +394,13 @@ func TestACodexSpawnRunsInItsProfile(t *testing.T) {
 	if _, err := svc.Start(t.Context(), api.StartOptions{ID: "s1", ProjectID: "p1", Cwd: t.TempDir(), Kind: providers.Codex, Cols: 80, Rows: 24}); err != nil {
 		t.Fatal(err)
 	}
-	waitFor(t, func() bool { return len(spawnLines(t, log)) == 1 }, "the spawn")
-	if got := spawnLines(t, log)[0]; !strings.HasPrefix(got, cw.Dir+"||") {
-		t.Errorf("spawn %q, want the profile's CODEX_HOME and no OPENAI_API_KEY", got)
+	// The TUI and the short-lived app-server that reads its hooks' trust
+	// (codexhook.go) both run in the profile.
+	waitFor(t, func() bool { return len(spawnLines(t, log)) == 2 }, "the spawn and its hook check")
+	for _, got := range spawnLines(t, log) {
+		if !strings.HasPrefix(got, cw.Dir+"||") {
+			t.Errorf("spawn %q, want the profile's CODEX_HOME and no OPENAI_API_KEY", got)
+		}
 	}
 	if got := svc.CodexProfileSessions(cw.Slug); got != 1 {
 		t.Errorf("the profile counts %d sessions, want 1", got)

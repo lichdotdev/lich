@@ -91,13 +91,14 @@ const (
 	// RouteSessions is every session whose subagents stay inside its harness and
 	// that may open lich sessions to fan out.
 	RouteSessions SubagentRoute = iota
-	// RouteCards is a Claude Code session whose lich-plugin mod runs a
-	// general-purpose subagent as one of those cards. There the agent's own
+	// RouteCards is a session whose provider's lich-plugin hook asks /subagent,
+	// which runs a subagent as one of those cards (an exploration type the
+	// provider keeps native stays inside the session). There the agent's own
 	// Agent tool is the better route (in the background, its report back on its
 	// own, stopped with TaskStop), so the briefing sends it there and keeps
 	// lich's own route for what a subagent cannot be.
 	RouteCards
-	// RouteNative is a Claude Code card whose own subagents stay native, because
+	// RouteNative is a card whose own subagents stay native, because
 	// it runs as deep as lich nests cards. lich's server instructions still say
 	// a subagent becomes a card in a session with the plugin, so the briefing
 	// says it does not here, and keeps the fan-out under this card rather than

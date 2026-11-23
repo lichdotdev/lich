@@ -437,9 +437,7 @@
   },
   "codexHook": {
     "title": "Codex is ignoring lich's hook, so its subagents run natively",
-    "how": "How to trust it",
-    "howTitle": "Trust lich's hook in Codex again",
-    "howSteps": "Open the session in its terminal (TUI), type /hooks and trust lich-plugin's PreToolUse hook. Codex skips a hook whose content changed until you trust it again.",
-    "open": "Open session"
+    "steps": "Codex skips a hook whose content changed until you trust it again. Trust lich-plugin's PreToolUse hook in this session's /hooks.",
+    "review": "Open /hooks"
   }
 }

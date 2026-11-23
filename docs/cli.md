@@ -572,8 +572,8 @@ It answers to "auth-fix" and to "auth-fix-9f8e". Its agent may still be starting
     permission** prompt in its card.
   - runs **one level below the caller**, recorded on its row and handed to the
     plugin as `LICH_SUBAGENT_DEPTH` on every start, a resume included. A
-    Claude Code worker one level down still turns its own general-purpose
-    subagents into cards (lich-plugin 0.19.0 or later); one two levels down, a
+    worker one level down still turns its own subagents into cards (a Claude
+    Code one under lich-plugin 0.19.0 or later); one two levels down, a
     card a card opened, keeps them inside its CLI (lich answers its
     `/subagent` call with allow, and a plugin older than 0.22.0 is told
     `LICH_SUBAGENT_CARDS=off`), and its briefing says so. Under a plugin older

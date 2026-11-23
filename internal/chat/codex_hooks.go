@@ -9,7 +9,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/lichdotdev/lich/api"
-	"github.com/lichdotdev/lich/internal/events"
+	"github.com/lichdotdev/lich/internal/codexhooks"
 )
 
 // A Codex chat's hooks, as measured on 0.170.0: hooks/list gives each hook
@@ -32,39 +32,12 @@ var codexHookSources = map[string]string{
 	"sessionFlags": api.SettingsFlag, "unknown": api.SettingsOther,
 }
 
-type codexHook struct {
-	Key       string `json:"key"`
-	Event     string `json:"eventName"`
-	Type      string `json:"handlerType"`
-	Matcher   string `json:"matcher"`
-	Command   string `json:"command"`
-	Timeout   int    `json:"timeoutSec"`
-	Status    string `json:"statusMessage"`
-	Source    string `json:"source"`
-	Plugin    string `json:"pluginId"`
-	Enabled   bool   `json:"enabled"`
-	IsManaged bool   `json:"isManaged"`
-	Hash      string `json:"currentHash"`
-	Trust     string `json:"trustStatus"`
-}
-
-// codexHookList is hooks/list's answer.
-type codexHookList struct {
-	Data []struct {
-		Hooks  []codexHook `json:"hooks"`
-		Errors []struct {
-			Message string `json:"message"`
-			Path    string `json:"path"`
-		} `json:"errors"`
-	} `json:"data"`
-}
-
-func (d *codexDriver) hookList(ctx context.Context) (codexHookList, error) {
+func (d *codexDriver) hookList(ctx context.Context) (codexhooks.List, error) {
 	raw, err := d.call(ctx, "hooks/list", map[string]any{"cwds": []string{d.c.cwd}})
 	if err != nil {
-		return codexHookList{}, err
+		return codexhooks.List{}, err
 	}
-	var body codexHookList
+	var body codexhooks.List
 	err = json.Unmarshal(raw, &body)
 	return body, err
 }
@@ -86,7 +59,7 @@ func (d *codexDriver) hooks(ctx context.Context) (api.ChatHookList, error) {
 	return list, nil
 }
 
-func codexChatHook(h codexHook) api.ChatHook {
+func codexChatHook(h codexhooks.Hook) api.ChatHook {
 	source, ok := codexHookSources[h.Source]
 	if !ok {
 		source = api.SettingsManaged
@@ -127,31 +100,12 @@ func (d *codexDriver) hookAct(ctx context.Context, opts api.ChatHookActOptions) 
 	return err
 }
 
-// lichPluginID is how hooks/list names lich-plugin's hooks (measured on
-// 0.170.0: "lich@lich-plugin", source "plugin").
-const lichPluginID = "lich@lich-plugin"
-
-// lichHookTrust is the trust of a lich-plugin PreToolUse hook Codex is not
-// running because its content changed or was never trusted, "" when every one
-// is trusted or none is installed. Codex runs such a hook not at all and says
-// nothing (docs/hooks/subagent-cards.md, Known ceilings), so its subagents
-// stay native.
-func lichHookTrust(list codexHookList) string {
-	for _, entry := range list.Data {
-		for _, h := range entry.Hooks {
-			if h.Plugin == lichPluginID && h.Event == "preToolUse" && (h.Trust == api.HookModified || h.Trust == api.HookUntrusted) {
-				return h.Trust
-			}
-		}
-	}
-	return ""
-}
-
 // checkLichHook tells the window once per run that Codex skips lich-plugin's
-// PreToolUse hook, from the first Codex chat that reads hooks/list: one whose
-// read failed leaves the check to the next.
+// PreToolUse hook (terminal.ReportCodexHook), read from a Codex chat's own
+// hooks/list: one whose read failed leaves the check to the next session.
 func (d *codexDriver) checkLichHook(ctx context.Context) {
-	if d.c.svc.lichHookChecked.Load() {
+	term := d.c.svc.term
+	if term.CodexHookChecked() {
 		return
 	}
 	list, err := d.hookList(ctx)
@@ -159,10 +113,5 @@ func (d *codexDriver) checkLichHook(ctx context.Context) {
 		slog.Debug("chat: read Codex hooks", "session", d.c.id, "err", err)
 		return
 	}
-	if !d.c.svc.lichHookChecked.CompareAndSwap(false, true) {
-		return
-	}
-	if trust := lichHookTrust(list); trust != "" {
-		events.Send(d.c.svc.hub.Emit, api.CodexHookUntrustedEvent, api.CodexHookUntrusted{SessionID: d.c.id, Trust: trust})
-	}
+	term.ReportCodexHook(d.c.id, codexhooks.LichTrust(list))
 }

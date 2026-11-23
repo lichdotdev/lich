@@ -94,6 +94,8 @@ type model struct {
 	editorTouched func(checkout string)
 	// focusSession brings a session's card up, as `lich focus` asks.
 	focusSession func(projectID, id string)
+	// reviewHooks brings a session up with its chat's /hooks panel open.
+	reviewHooks func(projectID, id string)
 	// showToast puts a toast up.
 	showToast func(ui.Toast)
 	// raise brings the window forward, as the tray asks.

@@ -1002,19 +1002,26 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   card; in a terminal it does.
 - **Codex skips a changed lich hook in silence**: Codex trusts a hook by its hash and runs one whose content changed
   not at all, with no warning (measured on 0.170.0), so its subagents run natively until the person trusts lich's
-  hook again. The first Codex chat lich opens reads the app-server's `hooks/list`, and when lich-plugin's
-  PreToolUse entry is `modified` or `untrusted` a toast says so and points to Codex's own `/hooks` in the
-  session's terminal; lich does not trust the hook itself. A Codex terminal session is not read, and a lich that
-  opens no Codex chat says nothing.
+  hook again. The first Codex session of a lich run reads `hooks/list` (`internal/codexhooks`): a chat through its
+  own app-server, a terminal session through a short-lived `codex app-server` started on the session's binary,
+  directory and `CODEX_HOME`, under a second (measured on 0.170.0), which only reads. When lich-plugin's PreToolUse
+  entry is `modified` or `untrusted` a toast says so and opens that session's chat `/hooks` panel, switching a
+  terminal session to its chat first; the person trusts the hook there, lich never does. One check per run: a hook
+  changed while lich runs is told on the next start.
+- **Codex runs every lich MCP tool without asking** (`internal/terminal/command.go`, `mcpArgs`): a Codex session
+  is spawned with `-c mcp_servers.lich.default_tools_approval_mode="approve"`, so the `open_session` a vetoed or
+  sealed subagent call is sent to never waits on an approval, and neither does any other lich tool. The tools only
+  reach lich's own loopback API with the session's token.
 - **Codex's default multi-agent (v2) hands lich the task encrypted**: lich opens nothing for it and its reason sends
   the model to `open_session` with the task in clear, which is an ordinary errand; a `wait_agent` after it is vetoed
   too while no native subagent can be running (docs/hooks/subagent-cards.md).
 - **oh-my-pi's chat loads the plugin's extension only from `$PI_CODING_AGENT_DIR/extensions/`**: its ACP server
   takes no flags, so without the extension there a chat's subagent runs natively.
 - **A vetoed call is drawn as opened only where the chat's tool item carries the hook's `tool_use_id`**
-  (`native/cmd/lich-native/chat_veto.go`): Claude Code's chat does (its item id is the `toolu_` id); Codex's and
-  the ACP chats' item ids were not measured against their hooks' ids, and where they differ the call is still drawn
-  as the failed call the provider reports.
+  (`native/cmd/lich-native/chat_veto.go`): Claude Code's chat does (its item id is the `toolu_` id). Codex's
+  app-server chat draws no item at all for a vetoed spawn, so nothing there is drawn as failed, and the redirect's
+  `open_session` item carries the hook's id (`exec-…`) (measured). The ACP chats' item ids were not measured against
+  their hooks' ids; where they differ the call is still drawn as the failed call the provider reports.
 - **A managed plugin can hide the Stop a worker's answer waits on**: on a machine with managed settings, Claude
   Code's builtin `cc-plugin-sec-default` sends `classic.Stop` on past the plugins a person installs (measured on
   2.1.306), and no mod call says so. The worker's mod then answers from `turn.complete` alone, held back only while

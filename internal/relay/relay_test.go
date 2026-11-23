@@ -3083,15 +3083,15 @@ func TestSpawnBriefingNamesTheRouteThisSpawnGave(t *testing.T) {
 	}
 }
 
-// TestSpawnBriefingSendsCardsToTheAgentTool pins the Claude Code case where the
-// lich-plugin mod turns a general-purpose subagent into a lich card: there the
-// agent's own Agent tool is the better way to fan out (in the background, its
+// TestSpawnBriefingSendsCardsToTheAgentTool pins the case where a provider's
+// lich-plugin hook turns its own subagent into a lich card: there the agent's
+// own subagent tool is the better way to fan out (in the background, its
 // report back on its own), so the briefing points at it instead of drawing a
 // line against it, and keeps open_session for what a subagent cannot be.
 func TestSpawnBriefingSendsCardsToTheAgentTool(t *testing.T) {
 	t.Parallel()
 	cards := SpawnBriefing(prompt.English, true, RouteCards)
-	for _, want := range []string{"Agent tool", "card", "isolation", "tools in your list"} {
+	for _, want := range []string{"subagent tool", "card", "worktree", "exploration", "tools in your list"} {
 		if !strings.Contains(cards, want) {
 			t.Errorf("the card briefing is missing %q:\n%s", want, cards)
 		}
@@ -3106,13 +3106,13 @@ func TestSpawnBriefingSendsCardsToTheAgentTool(t *testing.T) {
 	}
 }
 
-// A card as deep as lich nests them is told its Agent tool stays inside it, and
+// A card as deep as lich nests them is told its subagent tool stays inside it, and
 // is not sent to open sessions instead, which would nest cards by another door.
 func TestSpawnBriefingKeepsANativeCardsFanOutUnderIt(t *testing.T) {
 	t.Parallel()
 	for _, hasTools := range []bool{true, false} {
 		native := SpawnBriefing(prompt.English, hasTools, RouteNative)
-		for _, want := range []string{"Agent tool", "inside this session", "rather than with new lich sessions"} {
+		for _, want := range []string{"subagent tool", "inside this session", "rather than with new lich sessions"} {
 			if !strings.Contains(native, want) {
 				t.Errorf("the native briefing is missing %q:\n%s", want, native)
 			}

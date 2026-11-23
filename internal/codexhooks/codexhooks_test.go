@@ -1,4 +1,4 @@
-package chat
+package codexhooks
 
 import (
 	"encoding/json"
@@ -10,8 +10,8 @@ import (
 // Only a lich-plugin PreToolUse hook Codex skips counts: the shape below is
 // hooks/list's on 0.170.0, measured.
 func TestLichHookTrustFindsTheSkippedHook(t *testing.T) {
-	list := func(entries string) codexHookList {
-		var l codexHookList
+	list := func(entries string) List {
+		var l List
 		if err := json.Unmarshal([]byte(`{"data":[{"hooks":[`+entries+`]}]}`), &l); err != nil {
 			t.Fatal(err)
 		}
@@ -32,8 +32,8 @@ func TestLichHookTrustFindsTheSkippedHook(t *testing.T) {
 		"someone else's hook":      {other, ""},
 		"no lich-plugin installed": {"", ""},
 	} {
-		if got := lichHookTrust(list(c.entries)); got != c.want {
-			t.Errorf("%s: lichHookTrust = %q, want %q", name, got, c.want)
+		if got := LichTrust(list(c.entries)); got != c.want {
+			t.Errorf("%s: LichTrust = %q, want %q", name, got, c.want)
 		}
 	}
 }

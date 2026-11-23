@@ -436,10 +436,8 @@
     "expired": "{label} no respondió a tiempo"
   },
   "codexHook": {
-    "title": "Codex está ignorando el hook de lich, así que sus subagentes corren de forma nativa",
-    "how": "Cómo confiar en él",
-    "howTitle": "Vuelve a confiar en el hook de lich en Codex",
-    "howSteps": "Abre la sesión en su terminal (TUI), escribe /hooks y confía en el hook PreToolUse de lich-plugin. Codex se salta un hook cuyo contenido cambió hasta que vuelvas a confiar en él.",
-    "open": "Abrir sesión"
+    "title": "Codex está ignorando el hook de lich, así que sus subagentes se ejecutan de forma nativa",
+    "steps": "Codex se salta un hook cuyo contenido cambió hasta que vuelvas a confiar en él. Confía en el hook PreToolUse de lich-plugin en el /hooks de esta sesión.",
+    "review": "Abrir /hooks"
   }
 }

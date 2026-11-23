@@ -101,9 +101,12 @@ func windowClass(getenv func(string) string) string {
 }
 
 type window struct {
-	ctx       context.Context
-	client    *backend.Client
-	backdrops backdrops
+	// hooksOnChat is the session whose /hooks panel opens once its chat is
+	// drawn (reviewHooks).
+	hooksOnChat string
+	ctx         context.Context
+	client      *backend.Client
+	backdrops   backdrops
 	// covers are where the window's floating layers draw over everything in
 	// the frame being laid out, in the window's pixels (coverPages).
 	covers []image.Rectangle
@@ -380,6 +383,7 @@ func run(w *app.Window, rt backend.Runtime) error {
 	u.model.diffTouched = u.review.feed.touched
 	u.model.editorTouched = u.editors.touched
 	u.model.focusSession = u.focusSession
+	u.model.reviewHooks = u.reviewHooks
 	u.model.showToast = u.showToast
 	u.model.raise = func() { w.Activate("") }
 	u.model.leave = u.leave

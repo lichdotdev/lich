@@ -15,6 +15,7 @@ import (
 	"slices"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/lichdotdev/lich/api"
@@ -179,9 +180,12 @@ type Store interface {
 
 // Service manages PTY-backed shell sessions keyed by session ID.
 type Service struct {
-	mu       sync.Mutex
-	sessions map[string]*session
-	store    Store
+	// codexHookChecked is whether a Codex session already read whether Codex
+	// runs lich-plugin's PreToolUse hook (codexhook.go): once per run.
+	codexHookChecked atomic.Bool
+	mu               sync.Mutex
+	sessions         map[string]*session
+	store            Store
 	// hub pushes app events to the window over /events; see internal/events.
 	hub *events.Hub
 	// env is the environment every spawned session inherits: the launch

@@ -35,7 +35,7 @@ func TestSubagentCardsOnFollowsTheDepth(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			withClaudePlugin(t, c.plugin)
-			if got := subagentCardsOn("", c.bins.SessionSubagentDepth("s1")); got != c.wantOn {
+			if got := subagentCardsOn(providers.Claude, "", c.bins.SessionSubagentDepth("s1")); got != c.wantOn {
 				t.Errorf("subagentCardsOn = %v, want %v", got, c.wantOn)
 			}
 		})
@@ -60,7 +60,7 @@ func TestForkOfASubagentKeepsItsDepth(t *testing.T) {
 	if got := store.inheritedSubagent["s2"]; got != subagent.MaxDepth {
 		t.Errorf("the fork's row is %d deep, want the worker's %d", got, subagent.MaxDepth)
 	}
-	if subagentCardsOn("", store.SessionSubagentDepth("s2")) {
+	if subagentCardsOn(providers.Claude, "", store.SessionSubagentDepth("s2")) {
 		t.Error("the fork of a worker at the limit opens cards, want its subagents native")
 	}
 }
@@ -85,10 +85,10 @@ func claudeProfileWithPlugin(t *testing.T, version string) string {
 func TestSubagentCardsOnReadsTheProfilesPlugin(t *testing.T) {
 	withClaudePlugin(t, "0.19.0")
 	profile := claudeProfileWithPlugin(t, "0.18.4")
-	if !subagentCardsOn("", 1) {
+	if !subagentCardsOn(providers.Claude, "", 1) {
 		t.Error("Personal on 0.19.0: want a worker's cards on")
 	}
-	if subagentCardsOn(profile, 1) {
+	if subagentCardsOn(providers.Claude, profile, 1) {
 		t.Error("a profile on 0.18.4 beside a Personal on 0.19.0: want a worker's subagents native")
 	}
 }
@@ -99,10 +99,10 @@ func TestSubagentRouteReadsTheProfilesPlugin(t *testing.T) {
 	withClaudePlugin(t, "0.19.0")
 	profile := claudeProfileWithPlugin(t, "0.14.0")
 
-	if got := subagentRoute(providers.Claude, "", 0, true); got != relay.RouteCards {
+	if got := subagentRoute(providers.Claude, "", "", 0, true); got != relay.RouteCards {
 		t.Errorf("Personal on 0.19.0: subagentRoute = %v, want the cards route", got)
 	}
-	if got := subagentRoute(providers.Claude, profile, 0, true); got != relay.RouteSessions {
+	if got := subagentRoute(providers.Claude, "", profile, 0, true); got != relay.RouteSessions {
 		t.Errorf("a profile on 0.14.0 beside a Personal on 0.19.0: subagentRoute = %v, want the sessions route", got)
 	}
 }

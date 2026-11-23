@@ -3,6 +3,7 @@ package terminal
 import (
 	"strconv"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/agentplugin"
 	"github.com/lichdotdev/lich/internal/providers"
 	"github.com/lichdotdev/lich/internal/relay"
@@ -28,11 +29,15 @@ func subagentEnv(env []string, kind string, depth int, cardsOn, asksLich bool) [
 }
 
 // subagentRoute is where this spawn's briefing sends the agent to fan work out
-// (relay.SubagentRoute): its own Agent tool, as cards, where a plugin release
-// that does that is installed; the same tool kept native in a card that does
-// not open cards; and lich sessions everywhere else.
-func subagentRoute(kind, profileDir string, depth int, cardsOn bool) relay.SubagentRoute {
-	if kind != providers.Claude || !agentplugin.ClaudeRunsSubagentCards(profileDir) {
+// (relay.SubagentRoute): its own subagent tool, as cards, wherever the
+// provider's hooks ask /subagent; the same tool kept native in a card that does
+// not open cards; and lich sessions where no hook runs: Cursor CLI's chat, and
+// a Claude Code plugin older than the cards.
+func subagentRoute(kind, view, profileDir string, depth int, cardsOn bool) relay.SubagentRoute {
+	if kind == providers.Cursor && view == api.ViewChat {
+		return relay.RouteSessions
+	}
+	if kind == providers.Claude && !agentplugin.ClaudeRunsSubagentCards(profileDir) {
 		return relay.RouteSessions
 	}
 	if cardsOn {
@@ -45,10 +50,10 @@ func subagentRoute(kind, profileDir string, depth int, cardsOn bool) relay.Subag
 }
 
 // subagentCardsOn is whether a session at depth turns its subagents into cards:
-// a session nobody opened as a subagent, or a card above subagent.MaxDepth
-// whose plugin tells a worker by its depth. Under an older plugin a worker's
-// own subagents stay native, since that mod would stop answering for a worker
-// that opens cards.
-func subagentCardsOn(profileDir string, depth int) bool {
-	return depth == 0 || (depth < subagent.MaxDepth && agentplugin.ClaudeNestsSubagentCards(profileDir))
+// a session nobody opened as a subagent, or a card above subagent.MaxDepth.
+// Under a Claude Code plugin that does not tell a worker by its depth, a
+// worker's own subagents stay native, since that mod would stop answering for
+// a worker that opens cards.
+func subagentCardsOn(kind, profileDir string, depth int) bool {
+	return depth == 0 || (depth < subagent.MaxDepth && (kind != providers.Claude || agentplugin.ClaudeNestsSubagentCards(profileDir)))
 }
