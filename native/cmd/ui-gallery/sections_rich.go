@@ -16,6 +16,7 @@ import (
 )
 
 const richMarkdown = "## Markdown\n\nA paragraph with **bold**, *italics*, `inline code` and a [link](https://example.com).\n\n" +
+	"Paths in code wear their icon: `app.go`, `main.ts`, `README.md`, `config.json`, `notes.zzz` and `docs/`.\n\n" +
 	"- [x] a task done\n- [ ] a task to do\n  - and a nested item\n\n| Viewer | Input |\n|---|---|\n| Markdown | text |\n| Code | source and filename |\n\n" +
 	"```go\n" + richSource + "```\n"
 

@@ -130,7 +130,12 @@ func (c *markdownCell) decorate(gtx C, th *ui.Theme, paths *Paths) {
 			}
 			side := gtx.Dp(markSize)
 			at := op.Offset(image.Pt(gtx.Dp(2), (dims.Size.Y-side)/2)).Push(gtx.Ops)
-			d.icon.Layout(gtx, gtx.Metric.PxToDp(side), tone)
+			if d.icon == icFile {
+				// a file wears its language's icon, as in the Files tree
+				th.FileIcon(d.path, gtx.Metric.PxToDp(side)).Layout(gtx)
+			} else {
+				d.icon.Layout(gtx, gtx.Metric.PxToDp(side), tone)
+			}
 			at.Pop()
 		}
 	})
