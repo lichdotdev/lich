@@ -5,6 +5,8 @@ import (
 	"slices"
 	"testing"
 
+	"gioui.org/gpu/headless"
+	"gioui.org/op/paint"
 	"gioui.org/x/richtext"
 )
 
@@ -126,5 +128,58 @@ func TestAFileInCodeWearsItsLanguagesIcon(t *testing.T) {
 	plain, _ := nestedPixels(t, "Open `notes.zzz`")
 	if saturated(plain) {
 		t.Error("a file of no known language drew a colored icon")
+	}
+}
+
+// decorRows are the rows of what decorate draws for the first block of src,
+// laid out width wide, with the path mark or without it.
+func decorRows(t *testing.T, src string, width int, mark bool) *image.RGBA {
+	t.Helper()
+	size := image.Pt(width, 200)
+	win, err := headless.NewWindow(size.X, size.Y)
+	if err != nil {
+		t.Skipf("no headless GPU: %v", err)
+	}
+	defer win.Release()
+	th := markdownTheme()
+	c := renderBlocks(th, src)[0].prose
+	if !mark {
+		for i := range c.decor {
+			c.decor[i].icon = nil
+		}
+	}
+	gtx, ops := markdownFrame(size.Y)
+	gtx.Constraints.Max.X = width
+	paint.Fill(ops, th.Background)
+	c.decorate(gtx, th, nil)
+	if err := win.Frame(ops); err != nil {
+		t.Fatal(err)
+	}
+	img := image.NewRGBA(image.Rectangle{Max: size})
+	if err := win.Screenshot(img); err != nil {
+		t.Fatal(err)
+	}
+	return img
+}
+
+func TestAPathThatWrapsWearsItsMarkOnItsFirstLineOnly(t *testing.T) {
+	const src = "See `scripts/seed-homologacao-with-a-long-name.sql` now"
+	with, without := decorRows(t, src, 160, true), decorRows(t, src, 160, false)
+	first, last := -1, -1
+	for y := range with.Bounds().Dy() {
+		for x := range with.Bounds().Dx() {
+			if with.RGBAAt(x, y) != without.RGBAAt(x, y) {
+				if first < 0 {
+					first = y
+				}
+				last = y
+			}
+		}
+	}
+	if first < 0 {
+		t.Fatal("no mark drawn")
+	}
+	if last-first > int(BodySize) {
+		t.Errorf("the mark is drawn from row %d to %d, more than one line", first, last)
 	}
 }

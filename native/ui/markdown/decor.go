@@ -106,6 +106,7 @@ func (c *markdownCell) decorate(gtx C, th *ui.Theme, paths *Paths) {
 	}
 	style := styledtext.Text(th.Shaper, spans...)
 	style.LineHeightScale = c.lineHeightScale()
+	marked := -1
 	style.Layout(gtx, func(gtx layout.Context, i int, dims layout.Dimensions) {
 		if dims.Size.X == 0 || dims.Size.Y == 0 {
 			return
@@ -125,7 +126,9 @@ func (c *markdownCell) decorate(gtx C, th *ui.Theme, paths *Paths) {
 			y := dims.Size.Y - gtx.Dp(3)
 			paint.FillShape(gtx.Ops, link, clip.Rect{Min: image.Pt(0, y), Max: image.Pt(dims.Size.X, y+gtx.Dp(1))}.Op())
 		}
-		if d.icon != nil {
+		// a span that wraps is called once per line; its mark belongs to the first
+		if d.icon != nil && marked != i {
+			marked = i
 			tone := th.MutedForeground
 			if d.tone == iconLink {
 				tone = link
