@@ -77,6 +77,9 @@ func pathIcon(t string) *icons.Icon {
 		return nil
 	case strings.HasSuffix(t, "/"):
 		return icFolder
+	case strings.HasPrefix(t, "/") && !strings.Contains(t[1:], "/") && !fileExtension.MatchString(t):
+		// a slash and one bare word is how a slash command is written: /compact
+		return nil
 	case strings.Contains(t, "/") || fileExtension.MatchString(t):
 		return icFile
 	}
