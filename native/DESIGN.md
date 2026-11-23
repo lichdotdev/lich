@@ -36,8 +36,8 @@ Elements are defined by space, hover and islands, not by enclosure.
 Inside an island, a change that adds a border, a pill, a second line or a nested surface is probably wrong. Reach for spacing,
 a hover state or the tooltip first. The folder tray is the one nested surface, and the reason is written
 under it; the dock's tab pill reuses its fill, for the same reason. The footer's balloons are the pills on `Sidebar`:
-they float over the terminal and need a ground of their own to read on it. The extension catalog is
-the one screen of cards, and the reason is written under it.
+they float over the terminal and need a ground of their own to read on it. The extension and theme
+catalogs, their Installed tabs included, are the screens of cards, and the reason is written under them.
 
 ## Foundations
 
@@ -335,6 +335,11 @@ composer (see The chat view), and the chat takes the band back. A layout keeps t
 balloons and the band while it holds an agent's terminal, whichever pane has the focus, a chat's included, so
 moving the focus resizes no pane; a layout of chats carries none. Settings, Pulls and an
 extension's screen cover the stage and carry none either. A project with no session keeps them, since its branch is the click into the Git panel.
+
+The footer's items are the readings of the session under it and the ways into the screens it opens: by
+default attach and the changes on the left, the branch and the context on the right; the model, the cost and
+the hands-on time wait in the editor's pool. A fact another place already shows is no item: the pull request
+is the card's chip, the project the tab, the plan's usage the sidebar's account row.
 
 The Git panel and an extension's panel rise from the stage's foot over the band: while one is up the balloons
 are not drawn and the terminal takes the band back, in the one resize the panel's slide already makes.
@@ -847,11 +852,23 @@ at rest so nothing on the line moves.
 #### Appearance, Hotkeys and the rest
 
 - **Theme.** Interface has no Theme row: choosing, trying and installing a theme live on the Themes page alone.
+- **Interface** is Zoom, the interface font and Chat width, a segmented control of Comfortable (the chat's
+  960px column), Wide (1280px) and Full (the pane less its edges), which the chat's messages, its composer and
+  its start screen follow (`chatColumnWidth`).
+- **Version Control.** A tool is a row (`settings_vcs_setup.go`): its brand mark on a `Muted` square of 36px
+  at `RadiusMD`, the name in semibold with its version in muted mono, and one detail line: who commits land as,
+  or the account the CLI is signed in as, muted; what is left to set up (no account, no name or email) in
+  `ToneWait`; a missing tool in `Destructive`. A ready tool ends on a `TonePass` check and a `⋯` (Edit identity,
+  or Sign in with another account, then Open website); one with something left ends on its one Primary action:
+  Install, which runs the package manager's command in a shell card with Website beside it as a ghost, or Sign
+  in, which runs its auth login there. The path is the name's tooltip. Git's identity form opens under its row,
+  inset to the text. The rows stand on seams.
 - **Footer.** The preview is a stage on `Background` with the two balloons at its foot, each side's items read
   with example values and left out past the room, as over a session (`previewBalloon`). The editor's zones and
   chips stay as they are: dragging is the editor.
 - **Hotkeys.** The chord is a `KeyCap` that records a new one on a click; recording, it is a bordered box in the
-  ring. Reset is a ghost icon button only while the chord is not the default, and the row's `⋯` holds Record a
+  ring. A key cap's edge leans from `Border` toward the foreground (`keyCapEdgeMix`), so it stays an edge in a
+  theme whose `Border` is its `Muted`, as Dark's is. Reset is a ghost icon button only while the chord is not the default, and the row's `⋯` holds Record a
   new shortcut and Unassign.
 - **Sandbox.** The machine's answer is a line, not a box: a shield in `TonePass` (a crossed one muted when it
   cannot confine), the sentence in medium and the backend in muted mono.
@@ -883,8 +900,10 @@ each a `Card` fill at `RadiusLG` with a 16:10 cover, and a click opens the listi
 under its card. Both break rules above on purpose. The catalog is a shop window: the cover and the
 screenshots are what someone chooses by, a row has no room for a picture, and an inline detail would push
 the rest of the grid out of sight while it is read. The site and the window drawing it the same way also
-teaches it once. Keep the exception to the catalog: a list of things you have, the installed extensions
-on the tab beside it included, stays rows, and an action anchored on a row still opens beside it.
+teaches it once. The installed extensions on the tab beside it are cards of the same grid, as the installed
+themes are: the cover is how a listed one is known, and the tab reads as the catalog it came from. Keep the
+exception to these two screens; a list of things you have anywhere else stays rows, and an action anchored on
+a row still opens beside it.
 
 The catalog is what the screen opens on, every time. What is not the catalog stays off its page: the
 installed extensions are a second tab, on a line of `TabsVariantLine` tabs over a `th.Separator`, with the
@@ -899,7 +918,18 @@ the text sizes and the buttons are the window's.
 The detail is sized by the window's height, not a dialog width: a screenshot at 16:10 across it takes about
 45% of the window, so a tall or ultrawide window gets a wider detail. It is never narrower than the site's
 736. An installed extension the catalog lists opens the same detail from its
-row on the Installed tab.
+card on the Installed tab.
+
+An installed extension's card (`settings_extensions_list.go`) is the listing's cover, or its icon on the
+empty cover's ground when the catalog has none, then its name and version in mono with the `⋯` at the line's
+end, two lines of description (or why the catalog took it down, in `Destructive`), and at the foot its status,
+the dot and its word with the source, the error and the permissions in the tooltip, with Restart, Remove or
+Update at the right as `SizeXS` outline buttons. The foot keeps a button's height with no button in it, so the
+cards on a line stand as tall.
+
+A card's press sits under its buttons, never around them: the card lays out first, its click and hover areas
+go under the content, and a press on Update or the `⋯` is theirs alone. Wrapping the buttons in the card's
+clickable makes one press do both, as it once chose a theme while updating it.
 
 ### The theme catalog
 
@@ -927,7 +957,7 @@ repository URL, a file, the template).
   at its foot (`settings_themes_installed.go`). Under Other themes, every other theme is a card of the catalog's
   grid, one per theme (a theme, not a pack, is what is worn): its cover, its name, the pack and version in mono
   ("imported from a file" for one with no repository), Update while a newer version waits and the `⋯` holding
-  Remove, which asks first. A click on a card wears the theme. The imported themes come first, then System and
+  Remove, which asks first. A click on a card wears the theme; its press sits under Update and the `⋯`. The imported themes come first, then System and
   the bundled ones; the themes that cannot load end the page. Check for updates stands at the right of the tabs'
   line while this tab shows, and the tab wears a dot while an update or a broken theme waits on it.
 
