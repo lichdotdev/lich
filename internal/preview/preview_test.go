@@ -317,3 +317,51 @@ func TestArtifactURLPrefersTheWindowAboveTheCheckoutsPreview(t *testing.T) {
 		t.Fatalf("listened on %v, want [26000]", asked)
 	}
 }
+
+func TestArtifactServerAnswersTheFaviconWithLichsMark(t *testing.T) {
+	s := newTestService(t)
+	artifacts := t.TempDir()
+	u, _, err := s.ArtifactURL(artifacts, 24001, artifacts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp, err := http.Get(u + "favicon.ico")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.StatusCode != http.StatusOK || resp.Header.Get("Content-Type") != "image/svg+xml" || string(body) != string(mark) {
+		t.Fatalf("GET favicon.ico = %d %q, %d bytes", resp.StatusCode, resp.Header.Get("Content-Type"), len(body))
+	}
+}
+
+func TestArtifactFoldersOwnFaviconWins(t *testing.T) {
+	s := newTestService(t)
+	artifacts := t.TempDir()
+	if err := os.WriteFile(filepath.Join(artifacts, "favicon.ico"), []byte("own icon"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	u, _, err := s.ArtifactURL(artifacts, 24001, artifacts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if code, body := get(t, u+"favicon.ico"); code != http.StatusOK || body != "own icon" {
+		t.Fatalf("GET favicon.ico = %d %q", code, body)
+	}
+}
+
+func TestCheckoutPreviewHasNoFaviconOfLichs(t *testing.T) {
+	s := newTestService(t)
+	dir := checkout(t)
+	u, err := s.URL(dir, 24001, dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if code, _ := get(t, u+"favicon.ico"); code != http.StatusNotFound {
+		t.Fatalf("GET favicon.ico = %d, want 404", code)
+	}
+}
