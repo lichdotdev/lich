@@ -370,26 +370,18 @@
   },
   "updatesSettings": {
     "applicationTitle": "Aplicación",
-    "applicationSearchWords": "versión actualizar version upgrade",
-    "applicationDescription": "lich {version}. Busca actualizaciones al iniciar y cada hora.",
+    "applicationSearchWords": "versión actualizar version upgrade changelog notas de la versión release notes",
     "checkForUpdates": "Buscar actualizaciones",
     "available": "lich {version} está disponible. Sigue las indicaciones.",
     "upToDate": "Tienes la última versión.",
     "checkFailed": "No se pudo comprobar. ¿Tienes conexión?",
-    "whatsNewTitle": "Novedades",
-    "whatsNewSearchWords": "changelog notas de la versión release notes",
-    "patchNotesFor": "Notas de la versión v{version}.",
-    "noPatchNotes": "No hay notas de la versión para esta compilación.",
-    "viewPatchNotes": "Ver las notas de la versión"
+    "whatsNewTitle": "Novedades"
   },
   "pluginSetting": {
     "title": "Plugin de lich",
     "searchWords": "hooks instalar install",
-    "description": "Estado de la sesión, títulos, actualización de git y reanudación, dentro de las CLI de proveedor que pueden ejecutarlo.",
     "installed": "Plugin instalado. Reinicia tus sesiones para aplicarlo.",
     "updated": "Plugin actualizado. Reinicia tus sesiones para aplicarlo.",
-    "checked": "Comprobado.",
-    "checkFailed": "No se pudo comprobar. ¿Tienes conexión?",
     "cliMissing": "La CLI no está instalada",
     "notInstalled": "Plugin no instalado",
     "unsupported": "v{version}, no compatible con este lich",
@@ -397,8 +389,7 @@
     "updateTo": "Actualizar a la v{version}",
     "updateAll": "Actualizar todos",
     "reregister": "Registrar los hooks de nuevo",
-    "installVersion": "Instalar la v{version}",
-    "checkForUpdates": "Buscar actualizaciones"
+    "installVersion": "Instalar la v{version}"
   },
   "helpSettings": {
     "bugTitle": "Informar de un error",

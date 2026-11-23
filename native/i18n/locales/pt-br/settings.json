@@ -370,26 +370,18 @@
   },
   "updatesSettings": {
     "applicationTitle": "Aplicativo",
-    "applicationSearchWords": "versão atualizar upgrade",
-    "applicationDescription": "lich {version}. Procura atualizações ao iniciar e a cada hora.",
+    "applicationSearchWords": "versão atualizar upgrade changelog notas de versão novidades",
     "checkForUpdates": "Buscar atualizações",
     "available": "O lich {version} está disponível. Siga o aviso.",
     "upToDate": "Você está na versão mais recente.",
     "checkFailed": "A verificação falhou. Você está online?",
-    "whatsNewTitle": "Novidades",
-    "whatsNewSearchWords": "changelog notas de versão novidades",
-    "patchNotesFor": "Notas da v{version}.",
-    "noPatchNotes": "Sem notas de versão para esta build.",
-    "viewPatchNotes": "Ver notas da versão"
+    "whatsNewTitle": "Novidades"
   },
   "pluginSetting": {
     "title": "Plugin do lich",
     "searchWords": "hooks instalar",
-    "description": "Status da sessão, títulos, atualização do git e retomada, dentro das CLIs de provedor que conseguem rodá-lo.",
     "installed": "Plugin instalado. Reinicie suas sessões para aplicar.",
     "updated": "Plugin atualizado. Reinicie suas sessões para aplicar.",
-    "checked": "Verificado.",
-    "checkFailed": "A verificação falhou. Você está online?",
     "cliMissing": "CLI não instalada",
     "notInstalled": "Plugin não instalado",
     "unsupported": "v{version}, não suportada por este lich",
@@ -397,8 +389,7 @@
     "updateTo": "Atualizar para v{version}",
     "updateAll": "Atualizar todos",
     "reregister": "Registrar os hooks de novo",
-    "installVersion": "Instalar v{version}",
-    "checkForUpdates": "Buscar atualizações"
+    "installVersion": "Instalar v{version}"
   },
   "helpSettings": {
     "bugTitle": "Relatar um bug",

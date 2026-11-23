@@ -366,26 +366,18 @@
   },
   "updatesSettings": {
     "applicationTitle": "애플리케이션",
-    "applicationSearchWords": "버전 업그레이드",
-    "applicationDescription": "lich {version}. 시작할 때와 매시간 업데이트를 확인합니다.",
+    "applicationSearchWords": "버전 업그레이드 변경 내역 릴리스 노트 changelog",
     "checkForUpdates": "업데이트 확인",
     "available": "lich {version} 버전을 사용할 수 있습니다. 안내를 따르세요.",
     "upToDate": "최신 버전입니다.",
     "checkFailed": "확인 실패. 인터넷에 연결되어 있나요?",
-    "whatsNewTitle": "새로운 기능",
-    "whatsNewSearchWords": "변경 내역 릴리스 노트 changelog",
-    "patchNotesFor": "v{version} 패치 노트.",
-    "noPatchNotes": "이 빌드에는 패치 노트가 없습니다.",
-    "viewPatchNotes": "패치 노트 보기"
+    "whatsNewTitle": "새로운 기능"
   },
   "pluginSetting": {
     "title": "lich 플러그인",
     "searchWords": "hook 설치 plugin",
-    "description": "플러그인을 실행할 수 있는 프로바이더 CLI 안에서 세션 상태, 제목, git 새로 고침, 재개를 제공합니다.",
     "installed": "플러그인을 설치했습니다. 적용하려면 세션을 다시 시작하세요.",
     "updated": "플러그인을 업데이트했습니다. 적용하려면 세션을 다시 시작하세요.",
-    "checked": "확인했습니다.",
-    "checkFailed": "확인 실패. 인터넷에 연결되어 있나요?",
     "cliMissing": "CLI가 설치되지 않음",
     "notInstalled": "플러그인이 설치되지 않음",
     "unsupported": "v{version}, 이 lich에서 지원하지 않음",
@@ -393,8 +385,7 @@
     "updateTo": "v{version} 버전으로 업데이트",
     "updateAll": "모두 업데이트",
     "reregister": "훅 다시 등록",
-    "installVersion": "v{version} 설치",
-    "checkForUpdates": "업데이트 확인"
+    "installVersion": "v{version} 설치"
   },
   "helpSettings": {
     "bugTitle": "버그 신고",
