@@ -1,6 +1,7 @@
 package markdown
 
 import (
+	"image"
 	"slices"
 	"testing"
 
@@ -100,5 +101,30 @@ func TestTheMarkHasRoomBeforeItsText(t *testing.T) {
 	}
 	if link != linkIconRoom+"repo" || code != codeIconRoom+"x/y.go\u00a0" {
 		t.Errorf("link %q, code %q: want the room before each", link, code)
+	}
+}
+
+// A file in code wears its language's icon, as the Files tree draws it: a Go
+// file paints color where a file of no known language stays gray.
+func TestAFileInCodeWearsItsLanguagesIcon(t *testing.T) {
+	saturated := func(img *image.RGBA) bool {
+		for y := range img.Bounds().Dy() {
+			for x := range img.Bounds().Dx() {
+				p := img.RGBAAt(x, y)
+				hi, lo := max(p.R, p.G, p.B), min(p.R, p.G, p.B)
+				if int(hi)-int(lo) > 60 {
+					return true
+				}
+			}
+		}
+		return false
+	}
+	gofile, _ := nestedPixels(t, "Open `main.go`")
+	if !saturated(gofile) {
+		t.Error("main.go drew no colored icon")
+	}
+	plain, _ := nestedPixels(t, "Open `notes.zzz`")
+	if saturated(plain) {
+		t.Error("a file of no known language drew a colored icon")
 	}
 }

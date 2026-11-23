@@ -154,7 +154,7 @@ func (b *Bitmap) render(px int, c color.NRGBA) image.Image {
 }
 
 // LookupDevicon is the devicon of that name, as devicon.dev spells it ("go",
-// "typescript", "css3"), or the PNG's own name ("GoOriginal"), for a name from
+// "typescript", "css3"), or the PNG's own name ("GoOriginalWordmark"), for a name from
 // outside lich: it reports a name the set lacks instead of panicking.
 func LookupDevicon(name string) (*Bitmap, bool) {
 	want := strings.ToLower(name)
@@ -181,7 +181,7 @@ func LookupDevicon(name string) (*Bitmap, bool) {
 // or without the variant gen.sh appends.
 func deviconNamed(stem, want string) bool {
 	lower := strings.ToLower(stem)
-	for _, variant := range []string{"original", "plain"} {
+	for _, variant := range []string{"originalwordmark", "original", "plain"} {
 		if base, ok := strings.CutSuffix(lower, variant); ok && base == want {
 			return true
 		}
