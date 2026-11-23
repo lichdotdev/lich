@@ -11,7 +11,7 @@ import (
 func controlled(state, action, value string) string {
 	out, _ := json.Marshal(spawn.Controlled{
 		ID: "s2", Project: "lich", Label: "auth-fix", Action: action, Value: value,
-		CommandID: "m7", State: state,
+		State: state,
 	})
 	return string(out)
 }
@@ -31,7 +31,7 @@ func TestControlPostsTheActionAndItsArguments(t *testing.T) {
 	if got := optionsOf[spawn.ControlOptions](t, call); got != want {
 		t.Errorf("options = %+v, want %+v", got, want)
 	}
-	if stdout != "\"auth-fix\" ran /compact.\n" {
+	if stdout != "\"auth-fix\" started a turn on /compact.\n" {
 		t.Errorf("stdout = %q", stdout)
 	}
 }
@@ -48,11 +48,9 @@ func TestControlSaysHowFarTheCommandGot(t *testing.T) {
 		{spawn.ControlDone, "prompt", "run the tests", 0, `"auth-fix" started a turn on the prompt.`},
 		{spawn.ControlDone, "abort", "", 0, `"auth-fix" stopped its turn.`},
 		{spawn.ControlDone, "model", "opus", 0, `"auth-fix" uses opus from its next request on.`},
-		{spawn.ControlDone, "model", "", 0, `"auth-fix" is back on its own model.`},
 		{spawn.ControlDone, "effort", "high", 0, `"auth-fix" runs at high effort from its next request on.`},
-		{spawn.ControlDone, "effort", "", 0, `"auth-fix" is back on its own effort level.`},
-		{spawn.ControlDelivered, "command", "compact", ExitPending, "id m7) and has not confirmed it yet"},
-		{spawn.ControlEnded, "prompt", "go", ExitNoAnswer, `"auth-fix" ended before confirming the command (prompt, id m7)`},
+		{spawn.ControlDelivered, "command", "compact", ExitPending, "waits behind the turn it is running"},
+		{spawn.ControlEnded, "prompt", "go", ExitNoAnswer, `"auth-fix" ended before its turn on the prompt started.`},
 	}
 	for _, tc := range tests {
 		t.Run(tc.state+" "+tc.action+" "+tc.value, func(t *testing.T) {
@@ -83,7 +81,7 @@ func TestControlJSONKeepsTheExitCode(t *testing.T) {
 	if err := json.Unmarshal([]byte(stdout), &got); err != nil {
 		t.Fatalf("stdout %q is not JSON: %v", stdout, err)
 	}
-	if got["state"] != "delivered" || got["command_id"] != "m7" || got["label"] != "auth-fix" {
+	if got["state"] != "delivered" || got["label"] != "auth-fix" {
 		t.Errorf("json = %v", got)
 	}
 }
@@ -106,13 +104,13 @@ func TestControlRefusesAMalformedCall(t *testing.T) {
 
 func TestControlReportsTheRefusal(t *testing.T) {
 	t.Parallel()
-	f := newFakeLich(t, `{"error":"\"codex-run\" runs codex, and only a Claude Code session can be controlled"}`)
+	f := newFakeLich(t, `{"error":"\"crush-run\" runs Crush, which lich cannot draw as a chat"}`)
 	f.status = 400
-	code, stdout, stderr := run(t, f, "control", "codex-run", "abort")
+	code, stdout, stderr := run(t, f, "control", "crush-run", "abort")
 	if code != 1 || stdout != "" {
 		t.Fatalf("exit = %d, stdout = %q; want 1 and nothing on stdout", code, stdout)
 	}
-	if !strings.HasPrefix(stderr, "lich: ") || !strings.Contains(stderr, "only a Claude Code session") {
+	if !strings.HasPrefix(stderr, "lich: ") || !strings.Contains(stderr, "cannot draw as a chat") {
 		t.Errorf("stderr = %q", stderr)
 	}
 }

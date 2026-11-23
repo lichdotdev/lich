@@ -84,13 +84,3 @@ func TestSubagentWithNoDeciderAllows(t *testing.T) {
 		t.Errorf("GET = %d, want 405", rec.Code)
 	}
 }
-
-// A mod answers a worker's errand from the release that answers until the one
-// whose /subagent hook retired that answer; past it lich reads the turn's end.
-func TestModAnswersUntilTheHookRelease(t *testing.T) {
-	for version, want := range map[string]bool{"0.16.9": false, "0.17.0": true, "0.21.5": true, "0.22.0": false, "": false} {
-		if got := modAnswersRelease(version); got != want {
-			t.Errorf("modAnswersRelease(%q) = %v, want %v", version, got, want)
-		}
-	}
-}

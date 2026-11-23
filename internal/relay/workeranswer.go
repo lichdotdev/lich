@@ -8,32 +8,23 @@ import (
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/events"
-	"github.com/lichdotdev/lich/internal/prompt"
 )
 
-// A subagent worker whose mod answers for it (docs/hooks/mod-answer.md) and a
-// worker its caller closed: the two ways a subagent errand ends that a native
-// subagent has, its last message coming back as its result and TaskStop.
+// A worker its caller closed: the way a subagent errand ends that a native
+// subagent has in TaskStop.
 
 // taskMessage composes a ticket's task envelope for the target it is handed to
-// now. A subagent errand at a worker whose mod answers it is answered by the
-// worker's last message, and is marked so a turn ending without the answer
-// does not end it. Any other errand at a worker whose turn's end lich sees and
-// whose final message it reads is answered by that message (answerByTurn);
-// the rest answer by their ticket.
+// now. An errand at a worker whose turn's end lich sees and whose final message
+// it reads is answered by that message (answerByTurn); the rest answer by
+// their ticket.
 func (s *Service) taskMessage(id string, t *ticket, kind string) string {
 	answer := AnswerReply
 	said, readable := s.term.FinalMessage(t.targetID)
-	byTurn := readable && (s.term.Chat(t.targetID) || s.reportsTurnEnd(kind))
-	byMod := t.subagent && s.term.ModAnswers(t.targetID)
-	s.mu.Lock()
-	switch {
-	case byMod:
-		t.modAnswers, answer = true, AnswerLastMessage
-	case byTurn:
+	if readable && (s.term.Chat(t.targetID) || s.reportsTurnEnd(kind)) {
+		s.mu.Lock()
 		t.turnAnswers, t.saidBefore, answer = true, said, AnswerLastMessage
+		s.mu.Unlock()
 	}
-	s.mu.Unlock()
 	message := taskEnvelope(s.lang(), id, t, answer, s.offersTools(kind)).String()
 	if t.loop {
 		message += "\n\n" + loopEnvelope(s.lang(), t).String()
@@ -41,105 +32,22 @@ func (s *Service) taskMessage(id string, t *ticket, kind string) string {
 	return message
 }
 
-// WorkerAnswered answers the one subagent errand open at workerID with text,
-// the final message its mod reported, by the same path as Reply. A session with
-// no subagent errand open, or with two, is ignored: the mod cannot tell a worker
-// from a session whose subagents the user kept native, and nothing in the text
-// says which of two errands it answers. An errand answered already keeps its
-// first answer.
-//
-// A worker still awaiting an outcome of its own (awaitsOutcomeLocked) is
-// ignored too. The mod reports a turn that left nothing in Claude Code's
-// background list, and an errand the worker sent to another session is not in
-// that list, so the text is "I handed it off" rather than the result. The
-// outcome reaching the worker starts the turn whose report is the answer.
-func (s *Service) WorkerAnswered(workerID, text string) {
-	s.mu.Lock()
-	id, ok := s.subagentErrandLocked(workerID)
-	awaiting := s.awaitsOutcomeLocked(workerID)
-	s.mu.Unlock()
-	if !ok {
-		return
-	}
-	if awaiting {
-		slog.Debug("relay: a worker reported while an errand of its own is unread", "session", workerID)
-		return
-	}
-	if _, err := s.Reply(context.Background(), ReplyOptions{From: workerID, Ticket: id, Answer: text}); err != nil {
-		slog.Debug("relay: a worker's answer was not taken", "session", workerID, "err", err)
-		return
-	}
-	s.finishIfTurnEnded(workerID)
-}
-
-// The reasons a worker's mod gives for a turn that ended with nothing left
-// running and no answer (docs/hooks/mod-answer.md, Unanswered turns).
-const (
-	UnansweredBlank   = "blank"
-	UnansweredError   = "error"
-	UnansweredRefusal = "refusal"
-)
-
-// unansweredWhy is what the caller reads about each reason, in the place a
-// report would be.
-func unansweredWhy(lang prompt.Lang, reason string) string {
-	text := prompt.For(lang)
-	switch reason {
-	case UnansweredBlank:
-		return text.WorkerEndedBlank
-	case UnansweredError:
-		return text.WorkerEndedError
-	case UnansweredRefusal:
-		return text.WorkerEndedRefusal
-	}
-	return ""
-}
-
-// IsUnansweredReason is whether reason is one the contract names.
-func IsUnansweredReason(reason string) bool {
-	return unansweredWhy(prompt.English, reason) != ""
-}
-
-// WorkerUnanswered ends the one subagent errand open at workerID as
-// unanswered, the way a turn ending without a reply ends an ordinary errand:
-// its mod reported a turn that left nothing running and had no answer, so
-// nothing else ever would end it while the worker runs. It is ignored where
-// WorkerAnswered is, for an errand that already ended, and for an API error
-// while a usage limit's continuation is parked at the worker, since that
-// continuation is the turn that answers.
-//
-// The errand stays answerable by its ticket (lapseLocked) and the worker is not
-// finished: its user can still steer it to an answer from its card.
-func (s *Service) WorkerUnanswered(workerID, reason string) {
-	s.mu.Lock()
-	id, ok := s.subagentErrandLocked(workerID)
-	t := s.tickets[id]
-	resumes := reason == UnansweredError && s.resumes[workerID]
-	if !ok || t == nil || resumes || s.awaitsOutcomeLocked(workerID) {
-		s.mu.Unlock()
-		return
-	}
-	s.mu.Unlock()
-	s.lapseUnanswered(id, t, unansweredWhy(s.lang(), reason))
-}
-
 // lapseUnanswered ends errand id as unanswered, the way a turn ending without
 // a reply ends one, unless it ended meanwhile: it stays answerable by its
 // ticket (lapseLocked), and an errand nobody is attending goes to the sender's
-// inbox with why.
-func (s *Service) lapseUnanswered(id string, t *ticket, why string) {
+// inbox.
+func (s *Service) lapseUnanswered(id string, t *ticket) {
 	s.mu.Lock()
 	if s.tickets[id] != t {
 		s.mu.Unlock()
 		return
 	}
 	delete(s.tickets, id)
-	t.why = why
 	close(t.stalled)
 	s.lapseLocked(id, t, StatusUnanswered)
 	unattended := t.attended == 0
 	if unattended {
-		s.stashLocked(id, t, StatusUnanswered, t.why)
+		s.stashLocked(id, t, StatusUnanswered, "")
 	}
 	s.mu.Unlock()
 
@@ -150,26 +58,6 @@ func (s *Service) lapseUnanswered(id string, t *ticket, why string) {
 	if unattended {
 		s.announceInbox(t.fromID)
 	}
-}
-
-// subagentErrandLocked is the single subagent errand at workerID that an answer
-// can still close: open and handed over, or lapsed. Called under s.mu.
-func (s *Service) subagentErrandLocked(workerID string) (string, bool) {
-	var found []string
-	for id, t := range s.tickets {
-		if t.targetID == workerID && t.subagent && t.submitted {
-			found = append(found, id)
-		}
-	}
-	for id, t := range s.lapsed {
-		if t.targetID == workerID && t.subagent {
-			found = append(found, id)
-		}
-	}
-	if len(found) != 1 {
-		return "", false
-	}
-	return found[0], true
 }
 
 // owesSubagentAnswerLocked is whether a subagent errand still waits on
@@ -230,8 +118,8 @@ func (s *Service) seeNewsLocked(sessionID string) {
 }
 
 // finishIfTurnEnded finishes a worker whose answer landed after the turn it
-// answered in had already ended: the mod reports from Stop, and the done report
-// of the same Stop races it. One landing mid-turn is finished by that done
+// answered in had already ended: the final message is read after the done
+// report. One landing mid-turn is finished by that done
 // (finishedWorkerLocked).
 func (s *Service) finishIfTurnEnded(workerID string) {
 	s.mu.Lock()
@@ -264,8 +152,7 @@ func (s *Service) errandOpenAtLocked(sessionID string) bool {
 // ticket stays waitable as stopped. Anyone else's close ends work the caller
 // never stopped, so the stop is filed in the caller's inbox with a nudge, as is
 // one for a caller that is itself a worker somebody waits on
-// (owesSubagentAnswerLocked), whose answer waits for this outcome
-// (WorkerAnswered). The terminal calls this before the process dies
+// (owesSubagentAnswerLocked), whose answer waits for this outcome. The terminal calls this before the process dies
 // (terminal.SetSessionClosed), so the SessionEnd its CLI reports on the way out
 // finds nothing to call unanswered. Errands of any other kind end as they
 // always did. The session's reported state goes too: the same id reopened is
@@ -303,14 +190,14 @@ func (s *Service) SessionClosed(sessionID, closerID string) {
 
 // answerByTurn answers errand e, which workerID's turn that just ended was,
 // with that turn's final message (docs/hooks/notification.md, Which errands
-// use it), by the path Reply takes: an answer that came first by the ticket or
-// the mod wins, and this one is dropped. A turn that wrote nothing new, read
+// use it), by the path Reply takes: an answer that came first by the ticket
+// wins, and this one is dropped. A turn that wrote nothing new, read
 // back as the message on record when the task went in, ends the errand
 // unanswered as a turn without a reply always has.
 func (s *Service) answerByTurn(workerID string, e endedErrand) {
 	text := s.newFinalMessage(workerID, e.t.saidBefore)
 	if text == "" {
-		s.lapseUnanswered(e.id, e.t, "")
+		s.lapseUnanswered(e.id, e.t)
 		return
 	}
 	if _, err := s.Reply(context.Background(), ReplyOptions{From: workerID, Ticket: e.id, Answer: text}); err != nil {

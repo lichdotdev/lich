@@ -144,15 +144,6 @@ func TestScopedTokenReportsForItsOwnSessionOnly(t *testing.T) {
 	if status, _ := post(t, tr, "/hook", token, `{"session_id":"other","state":"busy"}`); status != http.StatusForbidden {
 		t.Fatalf("another session's report: status = %d, want 403", status)
 	}
-	url := fmt.Sprintf("http://127.0.0.1:%d/mod/commands?token=%s&session_id=other", tr.port, token)
-	resp, err := http.Get(url)
-	if err != nil {
-		t.Fatalf("get: %v", err)
-	}
-	_ = resp.Body.Close()
-	if resp.StatusCode != http.StatusForbidden {
-		t.Fatalf("another session's poll: status = %d, want 403", resp.StatusCode)
-	}
 	select {
 	case req := <-got:
 		if req.SessionID != "mine" {

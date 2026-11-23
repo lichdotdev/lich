@@ -87,7 +87,6 @@ inside a turn, the card's tool line keeps naming the call that started it.
 | `Notification`     | `PermissionRequest` | —                | any `*.asked`            | —              | —          | —                  | —                  | `waiting` + `reason` |
 | `Stop`, `StopFailure` | `Stop`              | `Stop`           | `session.status` (`idle`) | `session_stop` | —          | `Stop`             | `stop`             | `done`    |
 | `SessionEnd`       | —                   | —                | —                        | —              | —          | `SessionEnd`       | —                  | `idle`    |
-| mod `session.compact` | —                | —                | —                        | —              | —          | —                  | —                  | `compacting` |
 
 **Kiro closes four of the six rows and neither of the other two.** It has no
 permission event, so a Kiro session waiting on a confirmation reads as `busy`
@@ -203,34 +202,26 @@ is: the client reports it when the compaction starts, and when it settles
 (finished or failed) reports the state the session is back in. That closing
 report is what clears it, like any later state would.
 
-Only Claude Code sends it, from the plugin's mod, on `session.compact`. The
-closing report is the turn's state, not the trigger's: `busy` while a turn is
-open, `done` when none is. The first two rows were measured on Claude Code
-2.1.295 at a real PTY against a stub listener; the third was seen on 2.1.300:
+No provider hook sends it. lich reports it itself for a session drawn as a
+chat, where the provider's protocol says a compaction started, once per
+compaction however often the provider repeats it, and never for one read back
+from the conversation's history:
 
-| `e.trigger` | When it runs                                   | Took | Report that closes it |
-|-------------|------------------------------------------------|------|-----------------------|
-| `manual`    | `/compact`, at an idle prompt                  | ~6s  | `done`                |
-| `auto`      | mid-turn, after `UserPromptSubmit`, before the model call | ~14s | `busy`       |
-| `auto`      | at an idle prompt, before the prompt cache expires ("Compacted while idle") | — | `done` |
+| Chat         | What starts it                                          |
+|--------------|---------------------------------------------------------|
+| Claude Code  | `system/status` with `status: "compacting"`             |
+| Codex        | a `contextCompaction` item started                      |
+| Kiro CLI     | `_kiro.dev/compaction/status` with type `started`       |
+| any chat     | the person's `/compact` or `/summarize`, where the provider lists it |
 
-The idle compaction is why the trigger cannot decide the closing report: its
-summary is prepared under a `precompute` trigger and applied through the same
-path as a mid-turn one, so it reaches the mod as `auto` with no turn open and no
-`Stop` to follow. Closing it with `busy` left the card on the spinner until the
-next prompt.
+opencode, oh-my-pi, Antigravity and Cursor CLI report only the typed one: none
+sends ACP's `compaction_update` yet. The report that closes it is `busy` when
+the compaction ends inside a running turn, and the turn's own `done` otherwise.
+A session in its terminal reports no compaction on any provider.
 
-Without it the card says the wrong thing in both cases: a `/compact` raises no
-prompt event, so the card sits on the finished turn's check the whole time, and
-an auto-compaction is a bare spinner with no tool line for as long as it takes.
-The mod's handler awaits `next(e)`, which resolves only once the compaction is
-done (PreCompact, the summary, `SessionStart` with `source: compact`,
-PostCompact all run inside it), so the start and the end are the two edges of
-one call.
-
-No other harness has a start-of-compaction event wired, so the column for each
-of them is empty in the table above, and their cards show what they did before: whatever state
-the compaction began in.
+lich still accepts `compacting` on `/hook`: a lich-plugin older than its mod's
+removal sends it from that mod's `session.compact`, closed by the turn's state
+(`busy` while a turn is open, `done` when none is).
 
 lich reads `compacting` as a bracket everywhere it keeps turn accounting: it
 neither opens nor closes a turn. Three consequences a client can rely on:
@@ -441,8 +432,10 @@ it. The limits and the record lifetime are in `docs/ceilings.md`.
   compaction types the errands the session still owes back at its prompt, each
   ticket with what it asked and its `lich reply` line, because a relayed task is
   a turn of the conversation and the summary may have folded its ticket away.
-  Once per compaction, nothing when none is owed, and never an errand its mod
-  answers.
+  Once per compaction, nothing when none is owed, and never an errand the
+  session answers by finishing its turn. That is every errand at a chat, and on
+  purpose: an answer that is the turn's final message needs no ticket
+  remembered, so a chat is never reminded.
 - **Store** — `statusStore` (`native/cmd/lich-native/status.go`): fed by the
   window's one `/events` subscription, it keeps the last state of every session,
   keyed by id. The card cannot hold it: the sidebar only draws cards for the
@@ -585,13 +578,12 @@ it. The limits and the record lifetime are in `docs/ceilings.md`.
   and a 30ms read look identical. Nothing reports a tool finishing on its own:
   `PostToolUse` says `busy` with no tool, which by the rule above changes
   nothing.
-- **Only Claude Code says it is compacting.** It is the one harness whose
-  start-of-compaction event is wired (the mod's `session.compact`); on the other
-  seven, and on a Claude Code session without the mod, a compaction looks like
-  whatever state it started in: a finished turn's check for a `/compact`, a bare
-  spinner for one mid-turn.
-- **A compaction the mod never closes holds the card on "Compacting…"** until the
-  next report. The mod closes it when `next(e)` settles either way, so the window
-  is a mod killed mid-compaction, and the session's next turn clears it.
+- **Only a chat says it is compacting.** A session in its terminal, on every
+  provider, looks like whatever state the compaction started in: a finished
+  turn's check for a `/compact`, a bare spinner for one mid-turn. Of the chats,
+  opencode, oh-my-pi, Antigravity and Cursor CLI say so only for a compaction the
+  person typed.
+- **A compaction typed in an ACP chat holds the card on "Compacting…"** until the
+  turn ends: nothing the agent sends says the compaction itself is over.
 - Adding another state beyond `busy`/`done`/`waiting`/`idle`/`compacting` is a contract
   change — see the versioning note in the README.

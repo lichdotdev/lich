@@ -28,7 +28,7 @@ func merging() fakeSessions {
 func TestAnnounceMergeTellsTheAgentsInTheMergedCheckout(t *testing.T) {
 	t.Parallel()
 	term := newFakeTerminal("root", "agent", "modded", "shell", "other")
-	term.attachMod("modded", ackedOK)
+	term.openChat("modded", acked)
 	svc := newRelay(merging(), term, nil)
 
 	if _, err := svc.AnnounceMerge(t.Context(), api.AnnounceMergeOptions{Checkout: "/wt/feat", Number: 42, Title: "Add merge notice", Branch: "feat/merge", Base: "main"}); err != nil {
@@ -39,14 +39,13 @@ func TestAnnounceMergeTellsTheAgentsInTheMergedCheckout(t *testing.T) {
 		t.Fatalf("typed at agent = %q, want the merge notice", term.written("agent"))
 	}
 	if !awaitPrompts(term, "modded", 1) {
-		t.Fatal("modded's mod was handed nothing, want the merge notice")
+		t.Fatal("modded's chat was handed nothing, want the merge notice")
 	}
-	notes := term.notesTo("modded")
-	if len(notes) != 1 || notes[0] == nil || notes[0].Summary != "Pull request #42 merged into main" {
-		t.Fatalf("notes to modded = %+v, want one merge notification", notes)
+	if got := term.promptsTo("modded")[0]; !strings.Contains(got, "#42") {
+		t.Fatalf("modded's chat was handed %q, want the merge notice", got)
 	}
 	if got := term.written("modded"); got != "" {
-		t.Fatalf("typed at modded = %q, want nothing: its mod took the notice", got)
+		t.Fatalf("typed at modded = %q, want nothing: its chat took the notice", got)
 	}
 	// Who hears it is decided before AnnounceMerge returns; only the delivery
 	// itself runs behind it.

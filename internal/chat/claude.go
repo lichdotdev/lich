@@ -294,7 +294,10 @@ func (d *claudeDriver) handle(raw []byte) {
 		}
 		d.running(line.Model, line.PermissionMode)
 	case "result":
+		d.reportUsage(raw)
 		d.result(line)
+	case "rate_limit_event":
+		d.reportRateLimits(raw)
 	case "prompt_suggestion":
 		d.c.suggest(d.c.offered(), strings.TrimSpace(line.Suggestion))
 	default:

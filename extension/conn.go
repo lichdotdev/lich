@@ -118,11 +118,6 @@ func (c *Conn) SendToSession(ctx context.Context, params SendParams) (SendResult
 	return Call(ctx, c, SendToSession, params)
 }
 
-// Ask calls AskSession.
-func (c *Conn) Ask(ctx context.Context, params AskParams) (AskResult, error) {
-	return Call(ctx, c, AskSession, params)
-}
-
 // Answer calls CollectAnswer.
 func (c *Conn) Answer(ctx context.Context, params AnswerParams) (SendResult, error) {
 	return Call(ctx, c, CollectAnswer, params)

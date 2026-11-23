@@ -114,9 +114,6 @@ type session struct {
 	// service's mu. See startgate.go.
 	awaitsStart bool
 	started     bool
-	// modDue is when this session's mod should have polled, zero for a
-	// session that loads none. Guarded by the service's mu. See ModAttaching.
-	modDue time.Time
 	// service is set on a PTY StartService spawned, nil on a session's.
 	service *ServiceCommand
 	// progScan, prog and progReplies read and answer OSC 7501 off this PTY's
@@ -299,9 +296,9 @@ type Service struct {
 	// artifactDir holds every session's artifact directory (internal/artifact).
 	// Wired at startup; empty spawns sessions without one. See SetArtifactDir.
 	artifactDir string
-	// usageReports is the latest figures each Claude Code session measured
-	// about itself (docs/hooks/mod-usage.md), which the footer's readout
-	// prefers to what lich derives. rateLimitReports is where their rate
+	// usageReports is the latest figures each Claude Code chat read off its
+	// stream-json (ReportChatUsage), which the footer's readout prefers to
+	// what lich derives. rateLimitReports is where their rate
 	// limits go, wired by SetRateLimitReports and guarded by rateLimitsMu.
 	usageReports     usageReports
 	rateLimitsMu     sync.Mutex
@@ -408,8 +405,6 @@ func New(store Store, env []string, hub *events.Hub) *Service {
 		ws.plugins.setOnIncompatible(func(id, version string) {
 			events.Send(s.hub.Emit, api.PluginIncompatibleEvent, pluginEvent{ID: id, Version: version})
 		})
-		ws.setModAborted(s.noteInterrupt)
-		ws.setUsageReported(s.onUsageReport)
 		ws.setTyped(s.programTyped)
 	}
 	return s
@@ -897,12 +892,9 @@ func (s *Service) endProcess(id, closerID string) error {
 	if ok {
 		err = sess.pty.Close()
 	}
-	// After the process is gone: until then its mod is alive, and the contract
-	// has it re-poll at once after the [] that forget releases it with, which
-	// would attach the closed session again.
+	// After the process is gone: until then its hooks may still report.
 	if s.ws != nil {
 		s.ws.plugins.forget(id)
-		s.ws.mods.forget(id)
 		s.ws.revokeScoped(id)
 	}
 	return err

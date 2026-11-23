@@ -53,7 +53,7 @@ func TestReadyHoldsASessionWhoseQuietWasAlreadyLatched(t *testing.T) {
 		t.Fatal("a settled session was not ready")
 	}
 
-	svc.holdForStart("s1", sess, true, time.Time{})
+	svc.holdForStart("s1", sess, true)
 
 	if svc.ready("s1") {
 		t.Error("a latched quiet let work through before the provider reported start")
@@ -139,7 +139,7 @@ func TestHoldForStartIgnoresASessionThatWasReplaced(t *testing.T) {
 	old := quietSession(svc, "s1", false)
 	quietSession(svc, "s1", false)
 
-	svc.holdForStart("s1", old, true, time.Time{})
+	svc.holdForStart("s1", old, true)
 
 	if !svc.ready("s1") {
 		t.Error("a hold meant for the replaced session landed on its successor")
@@ -214,31 +214,5 @@ func TestStartDoesNotHoldACursorSessionInAFolderItTrusts(t *testing.T) {
 	time.Sleep(readySettle + 100*time.Millisecond)
 	if !svc.ready("s1") {
 		t.Error("a settled Cursor CLI session in a trusted folder was held for a start report")
-	}
-}
-
-// Start expects a mod only in a Claude Code session whose plugin is installed.
-func TestStartExpectsAModOnlyFromClaudeCodeWithThePlugin(t *testing.T) {
-	tests := []struct {
-		kind      string
-		installed bool
-		want      bool
-	}{
-		{providers.Claude, true, true},
-		{providers.Claude, false, false},
-		{providers.Cursor, true, false},
-	}
-	for _, tc := range tests {
-		svc := New(stubBins{bin: echoBin(t)}, nil, events.New())
-		svc.SetStartReports(func(string) bool { return tc.installed })
-		if _, err := svc.Start(t.Context(), api.StartOptions{ID: "s1", ProjectID: "p1", Cwd: t.TempDir(), Kind: tc.kind, Cols: 80, Rows: 24}); err != nil {
-			t.Fatalf("start: %v", err)
-		}
-		if got := svc.ModAttaching("s1"); got != tc.want {
-			t.Errorf("%s with the plugin installed %v: ModAttaching = %v, want %v", tc.kind, tc.installed, got, tc.want)
-		}
-		if _, err := svc.Close(t.Context(), api.SessionIDOptions{ID: "s1"}); err != nil {
-			t.Fatalf("close: %v", err)
-		}
 	}
 }

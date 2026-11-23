@@ -59,7 +59,7 @@ func (s *Service) Opened(id string) bool {
 
 // Take sends text as session id's next message: now when no turn runs, after
 // the turns before it otherwise (terminal.ChatSink). Its receipt is acked when
-// the turn carrying it starts, as a mod's is.
+// the turn carrying it starts.
 func (s *Service) Take(id, text string) (relay.HandedPrompt, error) {
 	c := s.running(id)
 	if c == nil || !s.Opened(id) {
@@ -74,14 +74,13 @@ func (s *Service) Take(id, text string) (relay.HandedPrompt, error) {
 		Await: func(ctx context.Context) relay.PromptReceipt {
 			select {
 			case <-began:
-				return relay.PromptReceipt{State: relay.PromptAcked, OK: true}
+				return relay.PromptReceipt{State: relay.PromptAcked}
 			case <-c.exited:
 				return relay.PromptReceipt{State: relay.PromptEnded}
 			case <-ctx.Done():
 				return relay.PromptReceipt{State: relay.PromptDelivered}
 			}
 		},
-		Collected: func() bool { return true },
 	}, nil
 }
 

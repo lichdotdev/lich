@@ -9,14 +9,14 @@ import (
 )
 
 // ChatSink is the chat service (internal/chat) as the relay reaches a session
-// drawn as a chat: its process has no terminal to type at and no mod, so a
-// prompt goes to the chat as its next message.
+// drawn as a chat: its process has no terminal to type at, so a prompt goes to
+// the chat as its next message.
 type ChatSink interface {
 	// Opened is whether session id's chat has opened its conversation, before
 	// which a message would land mid-handshake.
 	Opened(id string) bool
 	// Take sends text as session id's next message, at once or after the turn
-	// running, and waits on that turn's start the way a mod's ack is waited on.
+	// running, and waits on that turn's start.
 	Take(id, text string) (relay.HandedPrompt, error)
 	// LastAnswer is the final message of session id's last turn, "" when that
 	// turn wrote none.
@@ -30,9 +30,25 @@ func (s *Service) SetChat(c ChatSink) {
 	s.chat = c
 }
 
-// chatSink is the chat service when session id runs as a chat, nil otherwise.
 // Chat is whether session id is drawn as a chat (relay.Terminal).
 func (s *Service) Chat(id string) bool { return s.chatSink(id) != nil }
+
+// ChatPrompt hands text to session id's chat as its next message
+// (relay.Terminal): relay.ErrNoChat for a session not drawn as one.
+func (s *Service) ChatPrompt(id, text string) (relay.HandedPrompt, error) {
+	sink := s.chatSink(id)
+	if sink == nil {
+		return relay.HandedPrompt{}, relay.ErrNoChat
+	}
+	return sink.Take(id, text)
+}
+
+// ChatOpened is whether session id's chat has opened its conversation
+// (relay.Terminal), before which a message would land mid-handshake.
+func (s *Service) ChatOpened(id string) bool {
+	sink := s.chatSink(id)
+	return sink != nil && sink.Opened(id)
+}
 
 // FinalMessage is the final message of session id's last turn, whole, and
 // whether lich can read one for it (relay.Terminal): a chat's driver has it;
@@ -57,6 +73,7 @@ func (s *Service) FinalMessage(id string) (string, bool) {
 	return s.recap.said(id, src), true
 }
 
+// chatSink is the chat service when session id runs as a chat, nil otherwise.
 func (s *Service) chatSink(id string) ChatSink {
 	if !s.spawnOf(id).chat {
 		return nil

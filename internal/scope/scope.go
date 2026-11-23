@@ -69,7 +69,6 @@ var allowed = map[string]string{
 	"spawn.Close":        "from",
 	"spawn.CloseProject": "from",
 	"spawn.Control":      "from",
-	"spawn.Ask":          "from",
 	"spawn.Worktrees":    "from",
 	"spawn.Folders":      "from",
 	"spawn.File":         "from",

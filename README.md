@@ -157,8 +157,7 @@ what lich can read back out of it, since each CLI records different things.
 | A program in the agent's terminal can set the card (OSC 7501) while the agent runs | no | no | no | no | no | yes | no | no |
 | Back at a shell without prompt marks after you quit the agent, a program can set the card again | yes | no | no | no | no | yes | yes | no |
 | The tray lists the sessions waiting on you and the ones working, and its icon takes a dot | yes | yes | working only | yes | working only | no | working only | working only |
-| The card says when the conversation is being compacted | yes | no | no | no | no | no | no | no |
-| After a compaction, the agent is reminded of the tasks other sessions sent it that still wait on its answer | yes | no | no | no | no | no | no | no |
+| The card says when the conversation is being compacted | in a chat | in a chat | only a /compact you type in a chat | only a /compact or /summarize you type in a chat | only a /compact you type in a chat | no | not verified | in a chat |
 | Sidebar filter by state: Waiting, Running, Unread | yes | yes | no Waiting | yes | no Waiting | no, always Idle | no Waiting | no Waiting |
 | Run by your agent inside another session (`claude -p`, `cursor-agent -p`), it stays out of that session's card | yes | yes | yes | yes | yes | yes | yes | no |
 | Besides the tools for reaching your other sessions, the agent is told when to use them (hand work to a session on its own worktree) | yes | yes, unless your `config.toml` sets `developer_instructions` | yes | yes | yes | yes | not measured | yes |
@@ -177,12 +176,9 @@ what lich can read back out of it, since each CLI records different things.
 | A folder you trusted in your main account opens without the "trust this folder?" question in every other profile | yes | yes | no profiles | asks nothing | asks nothing | not measured | yes | asks nothing |
 | A sandboxed session opens without the "trust this folder?" question | yes | yes | yes | asks nothing | asks nothing | yes, and it no longer asks to initialize the project | yes | asks nothing |
 | A worktree of a folder you trusted opens without the "trust this folder?" question | yes | yes | yes | asks nothing | asks nothing | yes, and it no longer asks to initialize the project | yes | asks nothing |
-| Drive a running session from `lich control` or an agent: prompt, stop, model, effort, slash command | yes | no | no | no | no | no | no | no |
-| A message from another session arrives without being typed into the terminal | yes | no | no | no | no | no | no | no |
+| Drive a session shown as a chat from `lich control` or an agent: prompt, stop, model, effort, slash command; a session in its terminal is refused | yes | yes; a model or effort applies from your next message | yes | yes | yes | no chat | not verified | yes, no effort, and a model only between turns |
 | A subagent the agent starts runs as a lich session with its own card, in the asking session's checkout, hands its full report back and closes once done; its own subagents get cards too, one level down | yes | yes | yes | yes | yes | yes | in a terminal; its chat runs no hooks | yes |
-| Ask a running session a side question without stopping it (`lich ask`) | yes | no | no | no | no | no | no | no |
-| Context, cost and plan usage as the CLI measured them itself | yes | no | no | no | no | no | no | no |
-| The terminal's status line shows who the session owes an answer, who it is waiting on, and answers ready to collect | yes | no | no | no | no | no | no | no |
+| Context, cost and plan usage as the CLI measured them itself | in a chat | no | no | no | no | no | no | no |
 | Delegate privately from a subagent or workflow step | yes | yes | yes | yes | yes | yes | yes | yes |
 | A resumed session keeps the model and effort it was on | model only | yes | no | model | yes | no | model | model; effort untested |
 | A result still waits for you after you interrupt a wait for it | yes | yes | yes | yes | no | yes | yes | yes |

@@ -7,8 +7,7 @@ import (
 )
 
 // Terminal exposes the terminal service as api declares it. A close on behalf
-// of another session and the mod's command queue stay out: they skip the
-// checks spawn.Close and spawn.Control make.
+// of another session stays out: it skips the checks spawn.Close makes.
 func Terminal(d *rpc.Handler, s *terminal.Service) {
 	rpc.Handle(d, api.TerminalStart, s.Start)
 	rpc.Handle(d, api.TerminalClose, s.Close)

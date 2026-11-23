@@ -86,7 +86,7 @@ func addSessionSubagent(tx *sql.Tx) error {
 
 // addCostReported is version 6: whether a ledger row holds a figure its
 // provider reported rather than one lich priced (ReplaceConversationCost). A
-// Claude Code session is priced from its transcripts until its mod reports what
+// Claude Code session is priced from its transcripts until its chat reports what
 // Claude Code measured, so the rung is a fact of the row there, not of the
 // provider (providers.CostSourceOf).
 func addCostReported(tx *sql.Tx) error {

@@ -4,8 +4,8 @@
 // this works the same for all five.
 //
 // The delivery is deliberately dumb: lich hands the message to the target's
-// mod where one runs (Claude Code with lich-plugin), and otherwise types it at
-// the target's prompt and submits it, exactly as the user would. What it never
+// chat where it is drawn as one, and otherwise types it at the target's prompt
+// and submits it, exactly as the user would. What it never
 // does is read the answer off the terminal — a TUI's output is boxes, spinners
 // and ANSI, and parsing it would mean a parser per provider, each hostage to a
 // release. Instead the message it delivers asks the agent to report back by
@@ -218,19 +218,12 @@ type Terminal interface {
 	// afterwards. The returned release is called once the Enter is through
 	// (see typeIn).
 	HoldInput(id string) func()
-	// SubmitPrompt hands text to the session's Claude Code mod as a prompt of
-	// its own, submitted as a notification when note is not nil; ErrNoMod when
-	// no mod polls from that session.
-	SubmitPrompt(id, text string, note *Notification) (HandedPrompt, error)
-	// ModAttached is whether a Claude Code mod polls from that session, which
-	// takes a prompt without touching the line its user is typing.
-	ModAttached(id string) bool
-	// ModAttaching is whether that session loads a mod whose first poll may
-	// still be coming.
-	ModAttaching(id string) bool
-	// ModAnswers is whether that session's mod answers a subagent errand with
-	// its turn's final message (docs/hooks/mod-answer.md).
-	ModAnswers(id string) bool
+	// ChatPrompt hands text to the session's chat as its next message;
+	// ErrNoChat when that session is not drawn as one.
+	ChatPrompt(id, text string) (HandedPrompt, error)
+	// ChatOpened is whether that session's chat has opened its conversation,
+	// which takes a prompt without touching anything its user is typing.
+	ChatOpened(id string) bool
 	// Chat is whether that session is drawn as a chat, which takes a message
 	// whole as its next user message (docs/hooks/notification.md, Delivery).
 	Chat(id string) bool
@@ -282,8 +275,8 @@ type ticket struct {
 	// it runs to PromptLimit, and what a reader needs is the line they recognise.
 	asked string
 	// prompt is the task itself, composed into the message when it is handed
-	// over (handOff): whether the target's mod answers for it is known only
-	// then.
+	// over (handOff): whether the target answers by its turn's final message
+	// is known only then.
 	prompt string
 	done   chan struct{}
 	answer string
@@ -313,10 +306,6 @@ type ticket struct {
 	// loop is a task that continues a ping-pong streak: the loop notice rides
 	// behind it (checkPingPong).
 	loop bool
-	// modAnswers is a subagent errand handed to a worker whose mod answers it
-	// (WorkerAnswered). A turn ending without that answer handed work to the
-	// background, so it does not end the errand (turnCandidates).
-	modAnswers bool
 	// blockNoted is whether the sender was already told its subagent waits on a
 	// permission in the block running now. A busy or done report ends the block.
 	blockNoted bool
@@ -355,9 +344,6 @@ type ticket struct {
 	lapsed time.Time
 	// lapsedAs is the status the errand ended with: unanswered or unread.
 	lapsedAs string
-	// why is what an errand that ended unanswered says about it, when its
-	// worker's mod named the reason (WorkerUnanswered); empty otherwise.
-	why string
 	// undelivered closes when the message never got into the target's PTY at
 	// all. See queueDelivery.
 	undelivered chan struct{}
@@ -369,10 +355,6 @@ type ticket struct {
 	// message handed to a busy session is answered a turn later — and the ending
 	// of the turn in progress says nothing about this request.
 	skipTurns int
-	// collected reports whether a poll carried the message to the target's mod;
-	// nil for a typed one. Until then nothing in that session has it, so a turn
-	// ending there is not its turn (turnCandidates).
-	collected func() bool
 }
 
 // Service relays prompts between sessions. Tickets live in memory only: one
@@ -451,9 +433,9 @@ type Service struct {
 	// settleLimit caps the wait for a target to finish taking a paste in
 	// (defaultSettleLimit). A field for the same reason.
 	settleLimit time.Duration
-	// modAckWait bounds the wait on a mod's ack for a delivery that carries no
-	// ticket (defaultModAckWait). A field for the same reason.
-	modAckWait time.Duration
+	// chatTurnWait bounds the wait on a chat's turn starting for a delivery
+	// that carries no ticket (defaultChatTurnWait). A field for the same reason.
+	chatTurnWait time.Duration
 	// finalSettle bounds how long a turn's end waits for its final message to
 	// reach the transcript (answerByTurn).
 	finalSettle time.Duration
@@ -531,7 +513,7 @@ func New(sessions Sessions, term Terminal, events Events) *Service {
 		deliveryLimit:   defaultDeliveryLimit,
 		nudgeDelay:      defaultNudgeDelay,
 		settleLimit:     defaultSettleLimit,
-		modAckWait:      defaultModAckWait,
+		chatTurnWait:    defaultChatTurnWait,
 		finalSettle:     defaultFinalSettle,
 	}
 }
@@ -604,7 +586,7 @@ func (s *Service) SendPrivate(ctx context.Context, opts SendOptions) (Result, er
 
 // SendSubagent is Send for a worker opened as the sender's subagent (`lich open
 // --subagent`), so the errand behaves like the subagent it replaces: the report
-// reaches the sender whole where its mod takes it (flushNudge), the errand is not
+// reaches the sender whole where its chat takes it (flushNudge), the errand is not
 // dropped by ticketTTL while the worker lives (sweep), and the sender hears once
 // when the worker blocks on a permission (Observe). It needs a sending session:
 // there is nobody else to report to.
@@ -738,30 +720,24 @@ func (s *Service) send(ctx context.Context, opts SendOptions, mode errandMode, w
 	return result, nil
 }
 
-// handOff composes a ticket's message, hands it to the target's mod, or types
-// it where no mod takes it, and starts everything that watches what becomes of
+// handOff composes a ticket's message, hands it to the target's chat, or types
+// it where no chat takes it, and starts everything that watches what becomes of
 // it. Called either on the caller's goroutine or, for a target that was not at
 // a prompt yet, on the one holding the message back; and once more from
 // watchReceipt, when the first write reached a terminal nothing was reading.
 func (s *Service) handOff(id string, t *ticket, kind string) error {
 	message := s.taskMessage(id, t, kind)
-	// Stamped before the mod is handed it too: its session's busy report can
+	// Stamped before the chat is handed it too: its session's busy report can
 	// arrive milliseconds after the prompt is queued.
 	busy := s.stampDelivery(t)
-	handed, err := s.term.SubmitPrompt(t.targetID, message, nil)
-	if errors.Is(err, ErrNoMod) {
+	if _, err := s.term.ChatPrompt(t.targetID, message); errors.Is(err, ErrNoChat) {
 		return s.typeTask(id, t, kind, message, busy)
-	}
-	if err != nil {
+	} else if err != nil {
 		return fmt.Errorf("deliver to %q: %w", t.target, err)
 	}
-	s.mu.Lock()
-	t.collected = handed.Collected
-	s.mu.Unlock()
-	// Queued for the mod is submitted the way an Enter typed into a busy
-	// session is: the agent reads it once its prompt is free.
+	// Queued for the chat is submitted the way an Enter typed into a busy
+	// session is: the agent reads it once its turn is free.
 	s.markSubmitted(id, t)
-	go s.watchModReceipt(id, t, kind, message, busy, handed.Await)
 	return nil
 }
 

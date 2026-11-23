@@ -109,7 +109,7 @@ func markedNew(th *ui.Theme, line layout.Widget) layout.Widget {
 
 func permissionTone(th *ui.Theme, p string) color.NRGBA {
 	switch extension.Permission(p) {
-	case extension.PermissionSessionsWrite, extension.PermissionSessionsAsk, extension.PermissionServicesWrite, extension.PermissionWindow:
+	case extension.PermissionSessionsWrite, extension.PermissionServicesWrite, extension.PermissionWindow:
 		return th.ToneWait
 	}
 	return th.Foreground
@@ -127,8 +127,6 @@ func permissionText(p string) string {
 		return i18n.T("settings.extensionsSettings.permission.sessionsWrite")
 	case extension.PermissionSessionEvents:
 		return i18n.T("settings.extensionsSettings.permission.sessionEvents")
-	case extension.PermissionSessionsAsk:
-		return i18n.T("settings.extensionsSettings.permission.sessionsAsk")
 	case extension.PermissionServicesRead:
 		return i18n.T("settings.extensionsSettings.permission.servicesRead")
 	case extension.PermissionServicesWrite:

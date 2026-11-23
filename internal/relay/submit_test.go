@@ -19,20 +19,20 @@ func TestSubmitPastesAndSendsAtAnAgentsPrompt(t *testing.T) {
 	}
 }
 
-func TestSubmitHandsItToTheModWhereOneIsAttached(t *testing.T) {
+func TestSubmitHandsItToAChat(t *testing.T) {
 	t.Parallel()
 	term := newFakeTerminal("modded")
-	term.attachMod("modded", ackedOK)
+	term.openChat("modded", acked)
 	svc := newRelay(merging(), term, nil)
 
 	if _, err := svc.Submit(t.Context(), api.SubmitOptions{SessionID: "modded", Message: "resolve the conflicts"}); err != nil {
 		t.Fatalf("Submit = %v, want nil", err)
 	}
 	if !awaitPrompts(term, "modded", 1) {
-		t.Fatal("modded's mod was handed nothing, want the message")
+		t.Fatal("modded's chat was handed nothing, want the message")
 	}
 	if got := term.written("modded"); got != "" {
-		t.Errorf("typed at modded = %q, want nothing: its mod took it", got)
+		t.Errorf("typed at modded = %q, want nothing: its chat took it", got)
 	}
 }
 
@@ -61,22 +61,5 @@ func TestSubmitRefusesWhatCannotTakeAPrompt(t *testing.T) {
 	}
 	if got := term.written("shell"); got != "" {
 		t.Errorf("typed at shell = %q, want nothing", got)
-	}
-}
-
-// Claude Code's mod refuses a prompt once the user stopped the session, until
-// someone types at it: the window's sender is that someone, so it types.
-func TestSubmitTypesWhatTheModRefused(t *testing.T) {
-	t.Parallel()
-	term := newFakeTerminal("modded")
-	term.attachMod("modded", PromptReceipt{State: PromptAcked, Reason: "the session was stopped and nobody has sent input since"})
-	svc := newRelay(merging(), term, nil)
-
-	if _, err := svc.Submit(t.Context(), api.SubmitOptions{SessionID: "modded", Message: "fix the button"}); err != nil {
-		t.Fatalf("Submit = %v, want nil", err)
-	}
-	writes := term.writesTo("modded")
-	if len(writes) != 2 || writes[0] != "\x1b[200~fix the button\x1b[201~" || writes[1] != "\r" {
-		t.Errorf("writes = %q, want the paste and then Enter", writes)
 	}
 }

@@ -52,6 +52,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **`lich control` drives a chat on every agent that has one.** It sends a prompt or a slash command as the chat's next message, stops its turn, and sets a model or effort its picker offers; a session in its terminal, and Crush, are refused.
+- **A Claude Code chat shows the context window, cost and plan usage Claude Code measured itself.** The footer and the plan usage take them from the chat at the end of each turn.
+- **A chat's card says Compacting… while its conversation is compacted.** Claude Code, Codex and Kiro CLI say so for every compaction, the other agents for a /compact you type.
 - **Files show the icons of Material Icon Theme, drawn for dark backgrounds.** The Files tree, search, the chat's @ list and file names in Markdown code pick one by the file's name, then its extension, as VS Code's Material Icon Theme does, with its light variants in a light theme.
 - **A subagent your agent starts becomes a lich card on every agent, and the setting that turned it off is gone.** Cursor CLI's chat is the exception, since it runs no hooks; the call shows as opened in its card, and a toast says when Codex is skipping lich's hook.
 - **What a button asks a session for shows in its chat as a compact box.** Resolve conflicts, Fix CI errors, review threads and comments, browser notes and an issue each draw their title, facts and list in your own message box; the chevron opens the full text the agent read.
@@ -84,6 +87,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+- **`lich ask` and the `ask_session` tool are gone, and so is `sessions.ask` in the extension SDK.** Extension SDK v0.4.0 drops the method and its `sessions:ask` permission; an installed extension that still asks for it keeps loading, granted nothing for it.
+- **lich no longer reaches a Claude Code terminal through lich-plugin's mod.** A message from another session is typed at its prompt as on every other agent, and its status line no longer lists the errands; to drive it with `lich control`, or to see the context, cost and plan usage Claude Code measured itself, switch it to GUI.
 - **Find in a file with Ctrl+F is gone for now.** Files open in the new editor, which has no find yet; the Code tab's Text search still finds across the checkout.
 
 ### Fixed

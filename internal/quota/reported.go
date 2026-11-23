@@ -8,8 +8,8 @@ import (
 	"github.com/lichdotdev/lich/internal/providers"
 )
 
-// ReportedLimit is one rate-limit window as a Claude Code session measured it
-// for itself (docs/hooks/mod-usage.md): its kind, the share of it spent (0–100,
+// ReportedLimit is one rate-limit window as a Claude Code chat read it off its
+// stream-json (terminal.ChatUsage): its kind, the share of it spent (0–100,
 // past 100 on an exceeded spend limit) and when it resets, RFC 3339.
 type ReportedLimit struct {
 	Kind        string
