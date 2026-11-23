@@ -1,3 +1,7 @@
+// stubBins lives in the Unix-only suite (terminal_test.go), so this rides the
+// same tag.
+//go:build !windows
+
 package terminal
 
 import "testing"
