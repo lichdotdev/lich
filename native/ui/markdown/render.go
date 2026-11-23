@@ -172,7 +172,23 @@ func (w *spanWriter) visit(n ast.Node, entering bool) (ast.WalkStatus, error) {
 			w.codeBlock(n)
 		}
 		return ast.WalkSkipChildren, nil
-	case *ast.HTMLBlock, *ast.RawHTML:
+	case *ast.RawHTML:
+		// HTML is never rendered and is left out, as it always was; a tag
+		// that is no HTML is text an agent wrote (<lich-notification>), shown
+		// as written, as its own TUI does.
+		if entering {
+			for i := range n.Segments.Len() {
+				seg := n.Segments.At(i)
+				if raw := seg.Value(w.source); !isHTMLTag(raw) {
+					w.emit(string(raw))
+				}
+			}
+		}
+		return ast.WalkSkipChildren, nil
+	case *ast.HTMLBlock:
+		if entering {
+			w.htmlBlock(n)
+		}
 		return ast.WalkSkipChildren, nil
 	case *ast.CodeSpan:
 		w.codeSpan(entering)
@@ -356,4 +372,25 @@ func expandTabs(line string) string {
 		column += pad
 	}
 	return out.String()
+}
+
+// htmlBlock leaves a block of HTML out, and draws one that opens on a tag
+// no HTML has as the text it is, its closing line included.
+func (w *spanWriter) htmlBlock(n *ast.HTMLBlock) {
+	lines := n.Lines()
+	if lines.Len() == 0 {
+		return
+	}
+	if first := lines.At(0); isHTMLTag(first.Value(w.source)) {
+		return
+	}
+	var b strings.Builder
+	for i := range lines.Len() {
+		seg := lines.At(i)
+		b.Write(seg.Value(w.source))
+	}
+	if n.HasClosure() {
+		b.Write(n.ClosureLine.Value(w.source))
+	}
+	w.emit(strings.TrimRight(b.String(), "\n"))
 }

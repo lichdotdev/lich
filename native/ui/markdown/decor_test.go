@@ -46,6 +46,10 @@ func TestCodeThatSpellsAPathWearsAFileOrFolderMark(t *testing.T) {
 		"Use `a b/c`":                   "",
 		"Fetch `https://example.com/a`": "",
 		"Call `foo.bar()`":              "",
+		"Type `/compact` in the chat":   "",
+		"Run `/model opus`":             "",
+		"See `/usr/bin/lich`":           "file",
+		"Read `/README.md`":             "file",
 	} {
 		marks, _ := iconsOf(t, src)
 		got := ""

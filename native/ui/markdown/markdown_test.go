@@ -125,9 +125,9 @@ func TestMarkdownUpdatesWhenInterfaceAndEditorFontsChange(t *testing.T) {
 	th.Sans, th.Mono = "Interface A", "Editor A"
 	cache := Cache{}
 	src := "## Heading\n\n- Text `code` after\n\n| Header |\n|---|\n| `cell` |"
-	cache.text(th, "body", src).heights[0] = 42
+	cache.text(th, "body", src, nil).heights[0] = 42
 	th.Sans, th.Mono = "Interface B", "Editor B"
-	updated := cache.text(th, "body", src)
+	updated := cache.text(th, "body", src, nil)
 	if updated.heights[0] != 0 || updated.blocks[0].prose.spans[0].Font.Typeface != th.Sans {
 		t.Fatal("heading retained the old interface font or its measurements")
 	}
@@ -147,7 +147,7 @@ func TestMarkdownUpdatesWhenInterfaceAndEditorFontsChange(t *testing.T) {
 	}
 	updated.heights[0] = 42
 	th.Shaper = text.NewShaper(text.WithCollection(gofont.Collection()))
-	if cache.text(th, "body", src).heights[0] != 0 {
+	if cache.text(th, "body", src, nil).heights[0] != 0 {
 		t.Fatal("shaper change retained the old measurements")
 	}
 }
@@ -210,5 +210,24 @@ func TestAFencedCodeBlockSitsInAPanel(t *testing.T) {
 	}
 	if panel.Size.Y-bare.Size.Y != 2*gtx.Dp(codePanelPad) {
 		t.Errorf("a code panel is %d tall and its text %d, want the padding around it", panel.Size.Y, bare.Size.Y)
+	}
+}
+
+// A tag an agent writes in prose is text: it reads as written, as in the
+// provider's own TUI, and never vanishes from the sentence.
+func TestATagInProseReadsAsWritten(t *testing.T) {
+	for src, want := range map[string]string{
+		"lich sends a <lich-notification> envelope": "lich sends a <lich-notification> envelope",
+		"a line<br>break":                    "a linebreak",
+		"done <!-- a template note --> here": "done  here",
+	} {
+		blocks := renderBlocks(markdownTheme(), src)
+		if got := proseText(blocks[0]); got != want {
+			t.Errorf("%q drew %q", src, got)
+		}
+	}
+	blocks := renderBlocks(markdownTheme(), "<system-reminder>\nkeep this\n</system-reminder>")
+	if len(blocks) == 0 || blocks[0].prose == nil || !strings.Contains(proseText(blocks[0]), "<system-reminder>") || !strings.Contains(proseText(blocks[0]), "keep this") {
+		t.Errorf("an HTML block vanished: %d blocks", len(blocks))
 	}
 }

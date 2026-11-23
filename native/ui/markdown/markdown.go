@@ -50,6 +50,8 @@ type markdownText struct {
 	// heights is each block's height as last laid out, 0 for one never laid
 	// out.
 	heights []int
+	// linked is the Paths.Version the path marks were checked against.
+	linked any
 }
 
 // markdownBlock is prose, a GFM table, or a list with individually laid-out items.
@@ -118,7 +120,7 @@ func (m Cache) LayoutLinks(gtx C, th *ui.Theme, key, src string, l Links) D {
 }
 
 func (m Cache) layout(gtx C, th *ui.Theme, key, src string, l Links, window Window) D {
-	t := m.text(th, key, src)
+	t := m.text(th, key, src, l.Paths)
 	gap, estimate := gtx.Dp(ui.Space(BlockGap)), t.estimate(gtx)
 	y, width := 0, gtx.Constraints.Min.X
 	for i, b := range t.blocks {
@@ -145,8 +147,9 @@ func (m Cache) layout(gtx C, th *ui.Theme, key, src string, l Links, window Wind
 	return D{Size: image.Pt(width, y)}
 }
 
-// text is the cache's entry for key, parsed again when src or the theme changes.
-func (m Cache) text(th *ui.Theme, key, src string) *markdownText {
+// text is the cache's entry for key, parsed again when src, the theme or
+// the listing paths looks paths up in changes.
+func (m Cache) text(th *ui.Theme, key, src string, paths *Paths) *markdownText {
 	t, ok := m[key]
 	if !ok {
 		t = new(markdownText)
@@ -154,9 +157,16 @@ func (m Cache) text(th *ui.Theme, key, src string) *markdownText {
 	}
 	fg := [3]color.NRGBA{markdownProseColor(th), th.Foreground, th.TonePass}
 	fonts := [2]font.Typeface{th.Sans, th.Mono}
-	if t.src != src || t.fg != fg || t.fonts != fonts || t.shaper != th.Shaper || t.blocks == nil {
+	var linked any
+	if paths != nil {
+		linked = paths.Version
+	}
+	if t.src != src || t.fg != fg || t.fonts != fonts || t.shaper != th.Shaper || t.blocks == nil || t.linked != linked {
 		t.src, t.fg, t.fonts, t.shaper, t.blocks = src, fg, fonts, th.Shaper, renderBlocks(th, src)
-		t.heights = make([]int, len(t.blocks))
+		t.heights, t.linked = make([]int, len(t.blocks)), linked
+		if paths != nil {
+			unmarkUnlinked(t.blocks, paths.Link)
+		}
 	}
 	return t
 }
