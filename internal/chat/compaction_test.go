@@ -250,6 +250,22 @@ func TestCodexCompacts(t *testing.T) {
 	}
 }
 
+// TestCodexCompactionThatFailsEndsWithItsTurn: signed out, Codex never
+// completes the item; the failed turn ends the compaction with its reason.
+func TestCodexCompactionThatFailsEndsWithItsTurn(t *testing.T) {
+	r := newChat(t, providers.Codex)
+	r.prompt("sign out")
+	r.turnEnd(0)
+	r.prompt("/compact")
+	if end := r.turnEnd(1); end.StopReason != stopError {
+		t.Errorf("the compaction's turn ended %q", end.StopReason)
+	}
+	r.wantKinds("user:sign out", "user:/compact", "compaction:failed")
+	if cc := r.onlyCompaction(); !strings.Contains(cc.Error, "401 Unauthorized") {
+		t.Errorf("the compaction failed for %q", cc.Error)
+	}
+}
+
 // TestCodexCompactionReadBack: a compaction in a turn the person opened is
 // Codex's own; one in a turn with no message of theirs was their /compact.
 func TestCodexCompactionReadBack(t *testing.T) {

@@ -35,6 +35,8 @@ type fakeCodex struct {
 	effort  string
 	sandbox string
 	turns   int
+	// signedOut makes a compaction fail as Codex's does with no account.
+	signedOut bool
 	// off are the skills skills/config/write set, by path: true when off.
 	off map[string]bool
 }

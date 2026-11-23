@@ -128,9 +128,9 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   either: lich-plugin does not wire its PreCompact and PostCompact hooks. Read back, a Claude Code compaction comes
   from the transcript's boundary and summary, and a Codex one from its `contextCompaction` item, typed when its
   turn holds no message of the person's; an ACP agent draws one only where its replay sends `compaction_update`.
-  Not measured, read from the source or the binary: that Codex runs `thread/compact/start` as a turn of its own
-  (`turn/started` to `turn/completed`), Claude Code's live order of those lines, its live `post_tokens`, and that it
-  lists /compact at initialize. A compaction in a chat reaches neither the card's compacting state nor the relay's
+  Codex runs `thread/compact/start` as a turn of its own (measured on 0.170.0): a failed one never completes its
+  item, and the failed turn ends it with its reason. Not measured, read from the binary: Claude Code's live order
+  of its compaction lines, its live `post_tokens`, and that it lists /compact at initialize. A compaction in a chat reaches neither the card's compacting state nor the relay's
   reminder after one: both still come from the terminal's hooks.
 - **A new session is born as a chat only where its provider is in `chat.Kinds`, and a fork never is**
   (`internal/store/sessionview.go`, `internal/spawn`): the store writes the view with the row, a chat unless the

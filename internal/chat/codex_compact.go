@@ -10,7 +10,8 @@ import (
 )
 
 // Codex compacts as a turn of its own, with a contextCompaction item started
-// and completed in it (0.170.0 schema). Its TUI's /compact is the client's
+// and completed in it; a failed one never completes the item, and its turn
+// fails with the reason (measured on 0.170.0). Its TUI's /compact is the client's
 // thread/compact/start, which app-server lists nowhere: lich routes the typed
 // command itself.
 const (

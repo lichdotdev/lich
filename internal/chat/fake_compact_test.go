@@ -61,8 +61,9 @@ func (f *fake) claudeCompactTurn(msg func(string, map[string]any), text string) 
 	return true
 }
 
-// codexCompact answers thread/compact/start as app-server does: a turn of
-// its own around a contextCompaction item (0.170.0 schema).
+// codexCompact answers thread/compact/start as app-server does (measured on
+// 0.170.0): a turn of its own around a contextCompaction item; signed out,
+// the item never completes and the turn fails with the reason.
 func (c *fakeCodex) compact(id any) {
 	if c.turns == 0 {
 		c.send(map[string]any{"id": id, "error": map[string]any{"code": -32600, "message": "the thread has nothing to compact"}})
@@ -73,6 +74,12 @@ func (c *fakeCodex) compact(id any) {
 	turn := "turn-compact"
 	c.notify("turn/started", map[string]any{"threadId": c.thread, "turn": map[string]any{"id": turn}})
 	c.item("item/started", map[string]any{"type": "contextCompaction", "id": "cc1"})
+	if c.signedOut {
+		c.notify("error", map[string]any{"error": map[string]any{"message": "Reconnecting... 1/2"}})
+		c.notify("turn/completed", map[string]any{"threadId": c.thread, "turn": map[string]any{"id": turn, "status": "failed",
+			"error": map[string]any{"message": "Error running remote compact task: unexpected status 401 Unauthorized"}}})
+		return
+	}
 	c.item("item/completed", map[string]any{"type": "contextCompaction", "id": "cc1"})
 	c.usage(turn, 9000)
 	c.notify("thread/compacted", map[string]any{"threadId": c.thread, "turnId": turn})
@@ -90,6 +97,8 @@ func (c *fakeCodex) codexCompactTurn(turn, text string) bool {
 	case "big":
 		c.usage(turn, 182000)
 		c.say("big-"+turn, "lots")
+	case "sign out":
+		c.signedOut = true
 	case "autocompact":
 		c.say("pre-"+turn, "working")
 		c.item("item/started", map[string]any{"type": "contextCompaction", "id": "cc2"})
