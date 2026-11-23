@@ -396,6 +396,7 @@
     "install": "安装",
     "updateTo": "更新到 v{version}",
     "updateAll": "全部更新",
+    "reregister": "重新注册钩子",
     "installVersion": "安装 v{version}",
     "checkForUpdates": "检查更新"
   },
@@ -670,7 +671,6 @@
       "sessionsRead": "查看你的会话以及每个会话在做什么",
       "sessionsWrite": "打开会话并向其中输入提示词",
       "sessionEvents": "跟踪每个会话的状态变化",
-      "sessionsAsk": "向你的 Claude Code 会话额外提问并读取回答",
       "servicesRead": "查看你项目的服务及其输出",
       "servicesWrite": "启动、停止和重启你项目的服务",
       "gitRead": "查看每个检出的分支、更改和拉取请求",

@@ -178,7 +178,8 @@ func (s *Service) crushRegisteredCommand() (string, bool) {
 }
 
 // crushRewrite rewrites lich's block at the version it already carries, so the
-// repair moves the binary and nothing else: no release lookup, no new scripts.
+// repair moves the binary, and the touched report's event to what the Crush
+// installed now has: no release lookup, no new scripts.
 func (s *Service) crushRewrite(lichBin string) error {
 	version, ok := s.crushInstalledVersion()
 	if !ok {
@@ -195,8 +196,10 @@ func (s *Service) crushRewrite(lichBin string) error {
 	if _, errOld := os.Stat(filepath.Join(legacy, filepath.Base(crushHooks[0].script))); errNew != nil && errOld == nil {
 		dir = legacy
 	}
-	// The registrations stay the ones the block has: a block without the state
-	// reports was written with no scripts for them on disk.
+	// The registrations stay the ones the block has, the touched report's event
+	// included: a block without the state reports was written with no scripts
+	// for them on disk, so the version is read off the block, never off
+	// `crush --version`.
 	crush := ""
 	if s.crushReportsState() {
 		crush = crushEventsVersion

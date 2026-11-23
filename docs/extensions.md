@@ -68,7 +68,8 @@ release tag, or the folder, it came from. Do not ship a file by that name.
   theme's colors as `icon` is, so export a black one to have it follow the theme. Keep `icon` set beside it: a
   lich older than `iconFile` draws that one.
 - `permissions` lists what the extension's [calls](#calling-lich) use, each one of `extension.Permissions`. A name
-  this lich does not know makes the manifest invalid.
+  this lich does not know makes the manifest invalid, except `sessions:ask`: a manifest built against an SDK before
+  v0.4.0 that still lists it loads, and that permission grants nothing.
 
 An extension that fails these checks is listed with its error and never started.
 
@@ -211,7 +212,6 @@ own" project or provider.
 | `sessions.open` | `sessions:write` | `open_session` | `{project, worktree, provider, prompt}`, project required | `{id, projectId, project, label, name, kind, path, confined, task, taskError}` |
 | `sessions.send` | `sessions:write` | `send_to_session` | `{session, project, prompt, waitSeconds}` | `{ticket, target, status, answer}` |
 | `sessions.answer` | `sessions:write` | `wait_for_answer` with a ticket | `{ticket, waitSeconds}` | `{ticket, target, status, answer}` |
-| `sessions.ask` | `sessions:ask` | `ask_session` | `{session, project, question}` | `{id, project, label, answer}` |
 | `services.list` | `services:read` | `list_services` | `{project}`, required | `[{id, name, command, startWithLich, state, exitCode, startedAt, stoppedAt}]` |
 | `services.start` | `services:write` | `start_service` | `{project, service}` | the service, as listed |
 | `services.stop` | `services:write` | `stop_service` | `{project, service}` | the service, as listed |
@@ -230,11 +230,6 @@ does, holding 20 seconds, and reports a hand-over that failed in `taskError` bes
 either way. `sessions.answer` waits on such a ticket the same way, up to 90 seconds, and comes back `pending` again
 while the session still works. It takes only a ticket this extension's own `sessions.send` or `sessions.open`
 returned `pending`; any other ticket is refused, and one is spent once its outcome is anything but `pending`.
-
-`sessions.ask` puts a side question to a running Claude Code session, which answers from its own conversation
-without stopping its turn, as `ask_session` does: other providers are refused, and so is a session without the
-lich-plugin mod. It waits up to 90 seconds and has no ticket: a session that has not answered by then is an error,
-and its later answer is dropped. Ask for a brief answer.
 
 A service is named by its project and its name, matched ignoring case; an action answers with the service as it
 is right after, so `services.stop` may still read `stopping`. `services.output` is one read of the console, terminal
@@ -261,7 +256,6 @@ restarted extension starts with no subscriptions.
 | `projects:read` | `projects.list`, `worktrees.list` |
 | `sessions:read` | `sessions.list` |
 | `sessions:write` | `sessions.open`, `sessions.send`, `sessions.answer` |
-| `sessions:ask` | `sessions.ask` |
 | `events:session` | subscribing to `session.status` |
 | `services:read` | `services.list`, `services.output`, subscribing to `service.status` |
 | `services:write` | `services.start`, `services.stop`, `services.restart` |
@@ -312,16 +306,7 @@ for msg := range conn.Messages() {
 }
 ```
 
-The manifest of this one lists `sessions:read`, `sessions:write` and `events:session`. Asking a session and printing its
-answer needs only `sessions:ask`:
-
-```go
-answer, err := conn.Ask(ctx, extension.AskParams{Session: "api-3", Question: "Are the tests green? One line."})
-if err != nil {
-	log.Fatal(err)
-}
-fmt.Println(answer.Label, "says:", answer.Answer)
-```
+The manifest of this one lists `sessions:read`, `sessions:write` and `events:session`.
 
 `extension.Call(ctx, conn, method, params)` calls any declared method; the helpers on `Conn` are that call for each one.
 

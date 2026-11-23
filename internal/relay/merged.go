@@ -6,7 +6,6 @@ import (
 	"log/slog"
 
 	"github.com/lichdotdev/lich/api"
-	"github.com/lichdotdev/lich/internal/prompt"
 	"github.com/lichdotdev/lich/internal/providers"
 	"github.com/lichdotdev/lich/internal/store"
 )
@@ -38,13 +37,10 @@ func (s *Service) AnnounceMerge(ctx context.Context, opts api.AnnounceMergeOptio
 		return api.None{}, nil
 	}
 	lang := s.lang()
-	text := prompt.For(lang)
 	message := mergedEnvelope(lang, opts.Forge, opts.Number, opts.Title, opts.Branch, opts.Base).String()
-	summary := fmt.Sprintf(forgeText(opts.Forge, text.MergeSummary, text.MergeSummaryGitLab), opts.Number, opts.Base)
-	note := &Notification{Status: NotifyCompleted, Summary: summary}
 	for _, sess := range s.mergeAudience(projects, opts.Checkout) {
 		go func(id, label string) {
-			if err := s.deliver(id, message, note); err != nil {
+			if err := s.deliver(id, message); err != nil {
 				slog.Warn("relay: merge notice not delivered", "session", label, "err", err)
 			}
 		}(sess.ID, sess.Label)

@@ -159,8 +159,8 @@ func (s *Service) status() []Status {
 			version, installed = s.installedVersion(id)
 		}
 		st := computeStatus(id, available, installed, version, latest)
-		if id == providers.Crush && installed && s.crushBlockBehind() {
-			st.UpdateAvailable = true
+		if id == providers.Crush && installed && !st.UpdateAvailable && s.crushBlockBehind() {
+			st.UpdateAvailable, st.Reregister = true, true
 		}
 		out = append(out, st)
 	}

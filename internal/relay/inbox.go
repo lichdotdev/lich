@@ -283,8 +283,8 @@ func (s *Service) announceInboxAll(senders []string) {
 }
 
 // flushNudge types one nudge naming everything waiting for fromID, if any of
-// it has not been nudged before, and hands a subagent's report over whole where
-// the sender's mod takes it (tellNews). Ran by the debounce timer and by Observe when
+// it has not been nudged before, and hands the results over whole where the
+// sender's chat takes them (tellNews). Ran by the debounce timer and by Observe when
 // the sender's turn ends — a delivery mid-turn would queue as its own turn,
 // which is the cost this whole path exists to avoid. The two triggers can land
 // on the same fromID close together, so the whole attempt is serialized per
@@ -351,8 +351,8 @@ type news struct {
 // named yet, and takes the results it hands over whole out of the inbox into
 // held, so a collect racing the hand-over cannot return them a second time.
 // held is where Wait still finds them by ticket. A chat takes every result
-// whole; a terminal's mod takes a subagent's report whole, the one result the
-// mod route existed for before the envelope. Called under s.mu.
+// whole, and a subagent's report is offered whole to a terminal too, which
+// tellNews takes back when no chat took it. Called under s.mu.
 func (s *Service) takeNewsLocked(fromID string, chat bool) news {
 	var found news
 	for id, e := range s.ready {

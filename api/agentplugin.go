@@ -31,4 +31,9 @@ type PluginStatus struct {
 	// land where they parse; UpdateAvailable then offers LatestVersion, a
 	// downgrade included.
 	Compatible bool `json:"compatible"`
+	// Reregister is an update that moves no version: the hooks lich wrote for
+	// this CLI predate the release of it installed now (a Crush upgraded past
+	// the lifecycle events), and only writing them again picks the new events
+	// up. UpdateAvailable is true beside it.
+	Reregister bool `json:"reregister"`
 }

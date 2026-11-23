@@ -21,7 +21,6 @@ import (
 
 	"github.com/coder/websocket"
 	"github.com/lichdotdev/lich/internal/providers"
-	"github.com/lichdotdev/lich/internal/relay"
 	"github.com/lichdotdev/lich/internal/restart"
 )
 
@@ -61,7 +60,8 @@ const (
 	statusWaiting = "waiting"
 	statusIdle    = "idle"
 	// statusCompacting is the agent folding its conversation into a summary,
-	// reported only by Claude Code's mod. It brackets the compaction rather than
+	// reported by a chat that sees one live (ReportChatState), and by an older
+	// lich-plugin's Claude Code mod. It brackets the compaction rather than
 	// replacing a turn state: the report that closes it restates where the
 	// session stands (busy for an auto-compaction mid-turn, done for a /compact
 	// at the prompt), so every consumer that keeps turn accounting skips it.
@@ -150,26 +150,12 @@ type transport struct {
 	fallback func(id string, data []byte)
 	// plugins is the plugin release each session's hooks report from.
 	plugins pluginVersions
-	// mods is each session's queue of commands for its Claude Code mod, and
-	// modAborted is told about a turn the mod aborted (modcontrol.go). Guarded
-	// by mu and wired by setModAborted, like restart.
-	mods       modQueue
-	modAborted func(id string)
-	// usageReported receives a session's own measurements (modusage.go).
-	// Guarded by mu and wired by setUsageReported, like modAborted.
-	usageReported func(usageReport)
 	// decideSubagent answers /subagent (subagent.go). Guarded by mu and wired
 	// by SetSubagent.
 	decideSubagent subagentDecider
-	// workerAnswered receives a worker's reported answer (modanswer.go).
-	// Guarded by mu and wired by setWorkerAnswered, like modAborted.
-	workerAnswered func(id, text string)
-	// workerUnanswered receives why a worker's turn ended without an answer
-	// (modanswer.go). Guarded by mu and wired by setWorkerUnanswered.
-	workerUnanswered func(id, reason string)
-	// errandStatus reads a session's relay errands (modstatus.go). Guarded by
-	// mu and wired by setErrandStatus, like modAborted.
-	errandStatus func(id string) relay.Status
+	// editNote answers a /session-touched call with its edit-overlap note
+	// (touched.go). Guarded by mu and wired by SetEditNotes.
+	editNote editNoter
 }
 
 // newTransport starts the listener on a random loopback port. input receives
@@ -211,7 +197,6 @@ func newTransport(
 		linkSession: linkSession,
 		setTitle:    setTitle,
 		touched:     touched,
-		mods:        modQueue{wait: modPollWait, now: time.Now},
 	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("/ws", t.handle)
@@ -222,11 +207,6 @@ func newTransport(
 	mux.HandleFunc("/session-title", t.sessionTitle)
 	mux.HandleFunc("/session-touched", t.sessionTouched)
 	mux.HandleFunc("/restart", t.restartApp)
-	mux.HandleFunc("/mod/commands", t.modCommands)
-	mux.HandleFunc("/mod/acks", t.modAck)
-	mux.HandleFunc("/mod/usage", t.modUsage)
-	mux.HandleFunc("/mod/answer", t.modAnswer)
-	mux.HandleFunc("/mod/status", t.modStatus)
 	mux.HandleFunc("/subagent", t.subagentHook)
 	t.mux = mux
 	t.srv = &http.Server{Handler: mux}
@@ -456,56 +436,61 @@ func servePost[T hookBody](
 	parse func([]byte) (T, error),
 	apply func(T) error,
 ) {
-	servePostLimited(t, w, r, hookBodyLimit, parse, apply)
-}
-
-// servePostLimited is servePost for an endpoint whose body outgrows
-// hookBodyLimit. A body over limit is cut, fails to parse, and is a 400.
-func servePostLimited[T hookBody](
-	t *transport,
-	w http.ResponseWriter,
-	r *http.Request,
-	limit int64,
-	parse func([]byte) (T, error),
-	apply func(T) error,
-) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-	c, ok := t.callerOf(r)
+	parsed, ok := readPost(t, w, r, hookBodyLimit, parse)
 	if !ok {
-		http.Error(w, "invalid token", http.StatusUnauthorized)
 		return
 	}
 	plugin := r.Header.Get(pluginVersionHeader)
-	body, err := io.ReadAll(io.LimitReader(r.Body, limit))
-	if err != nil {
-		http.Error(w, "failed to read body", http.StatusBadRequest)
-		return
-	}
-	parsed, err := parse(body)
-	if err != nil {
-		// The hook client ignores responses, so the log is the only place a
-		// bad payload ever surfaces. The plugin release is what tells a value
-		// this lich predates from a broken script.
-		slog.Warn("hook: bad payload", "path", r.URL.Path, "plugin", pluginLabel(plugin), "err", err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	// A session's token reports for that session alone: a confined agent
-	// posting another card's state would drive a spinner it does not own.
-	if !c.ownSession(parsed.session()) {
-		http.Error(w, "the token belongs to another session", http.StatusForbidden)
-		return
-	}
-	t.plugins.note(parsed.session(), plugin)
 	if err := apply(parsed); err != nil {
 		slog.Warn("hook: apply failed", "path", r.URL.Path, "plugin", pluginLabel(plugin), "err", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// readPost is servePost up to the apply, with its own body limit: the request
+// checked, read and parsed, or false with the error already written.
+func readPost[T hookBody](
+	t *transport,
+	w http.ResponseWriter,
+	r *http.Request,
+	limit int64,
+	parse func([]byte) (T, error),
+) (T, bool) {
+	var zero T
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return zero, false
+	}
+	c, ok := t.callerOf(r)
+	if !ok {
+		http.Error(w, "invalid token", http.StatusUnauthorized)
+		return zero, false
+	}
+	plugin := r.Header.Get(pluginVersionHeader)
+	body, err := io.ReadAll(io.LimitReader(r.Body, limit))
+	if err != nil {
+		http.Error(w, "failed to read body", http.StatusBadRequest)
+		return zero, false
+	}
+	parsed, err := parse(body)
+	if err != nil {
+		// Most hook clients ignore responses, so the log is the only place a
+		// bad payload ever surfaces. The plugin release is what tells a value
+		// this lich predates from a broken script.
+		slog.Warn("hook: bad payload", "path", r.URL.Path, "plugin", pluginLabel(plugin), "err", err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return zero, false
+	}
+	// A session's token reports for that session alone: a confined agent
+	// posting another card's state would drive a spinner it does not own.
+	if !c.ownSession(parsed.session()) {
+		http.Error(w, "the token belongs to another session", http.StatusForbidden)
+		return zero, false
+	}
+	t.plugins.note(parsed.session(), plugin)
+	return parsed, true
 }
 
 // hookRequest is a status POST body. Tool and Detail are the optional pair a
@@ -688,38 +673,6 @@ func parseSessionTitle(body []byte) (titleRequest, error) {
 	req.Title = strings.TrimSpace(req.Title)
 	if req.Title == "" {
 		return titleRequest{}, errors.New("session-title missing title")
-	}
-	return req, nil
-}
-
-// touchedRequest is a touched POST body.
-type touchedRequest struct {
-	SessionID string `json:"session_id"`
-}
-
-// sessionTouched receives a POST from a provider's hook when a session likely
-// changed files on disk (a file-mutating tool ran) and forwards the session id
-// via the touched callback, which nudges an immediate git-status refresh. It is
-// a best-effort latency optimization over the window's steady poll, so a
-// failure is harmless — the poll still catches the change.
-func (t *transport) sessionTouched(w http.ResponseWriter, r *http.Request) {
-	servePost(t, w, r, parseSessionTouched, func(req touchedRequest) error {
-		if t.touched != nil {
-			t.touched(req.SessionID)
-		}
-		return nil
-	})
-}
-
-// parseSessionTouched validates a touched POST body: just a non-empty lich
-// session id.
-func parseSessionTouched(body []byte) (touchedRequest, error) {
-	var req touchedRequest
-	if err := json.Unmarshal(body, &req); err != nil {
-		return touchedRequest{}, fmt.Errorf("invalid session-touched body: %w", err)
-	}
-	if req.SessionID == "" {
-		return touchedRequest{}, errors.New("session-touched missing session_id")
 	}
 	return req, nil
 }

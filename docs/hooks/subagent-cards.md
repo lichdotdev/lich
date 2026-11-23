@@ -253,14 +253,15 @@ ceiling in `internal/agentplugin/compat.go`, and both sides test against
 answer). A plugin older than this contract still carries the mod's agent-cards,
 which converts Claude Code calls by the old route; the release carrying this
 contract removes it, so the two routes never run in one session. lich keeps
-speaking the old route (`LICH_SUBAGENT_CARDS`, `/mod/answer`) until its floor
-moves to 0.22.0, a later change.
+exporting `LICH_SUBAGENT_CARDS` to such a plugin until its floor moves to
+0.22.0, once that release is out.
 
 ## Retired with this contract
 
-- The mod's agent-cards and worker answer ([mod-answer.md](mod-answer.md),
-  `/mod/answer`), in the plugin release that carries the hook; lich keeps
-  answering them for older releases until its floor moves.
+- The mod's agent-cards and worker answer (`/mod/answer`), in the plugin
+  release that carries the hook. lich no longer serves `/mod/answer` to any
+  release: a worker's errand is answered by its turn's final message where lich
+  reads it, and by its ticket otherwise.
 - `LICH_SUBAGENT_CARDS` as the plugin's switch: lich decides at `/subagent`,
   and exports the variable only to a plugin older than the hook.
 

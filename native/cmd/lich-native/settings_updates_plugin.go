@@ -51,6 +51,8 @@ func pluginAction(st backend.PluginStatus) (label string, variant ui.Variant, ok
 	switch {
 	case st.Available && !st.Installed:
 		return i18n.T("settings.pluginSetting.install"), ui.VariantDefault, true
+	case st.Installed && st.Reregister:
+		return i18n.T("settings.pluginSetting.reregister"), ui.VariantOutline, true
 	case st.Installed && st.UpdateAvailable && st.Compatible:
 		return i18n.T("settings.pluginSetting.updateTo", i18n.Args{"version": st.LatestVersion}), ui.VariantOutline, true
 	case st.Installed && st.UpdateAvailable:

@@ -36,7 +36,9 @@ type hookFixtureCase struct {
 	// Answer, Before, Depth and Kind belong to a hook whose answer is the
 	// decision (subagent-cards.jsonl): the 200 body, the requests made before
 	// this one, and the asker's subagent depth and provider. internal/subagent
-	// asserts them; here the endpoint only has to answer 200.
+	// asserts them; here the endpoint only has to answer 200. Answer and Before
+	// also pin session-touched.jsonl's edit notes, which internal/relay asserts;
+	// here no relay is wired, so every touch answers 204.
 	Answer json.RawMessage   `json:"answer"`
 	Before []json.RawMessage `json:"before"`
 	Depth  int               `json:"depth"`
@@ -78,15 +80,6 @@ var hookContracts = []hookContract{
 	}, false},
 	{"session-touched.jsonl", "/session-touched", func(b []byte) (any, error) {
 		return parseSessionTouched(b)
-	}, false},
-	{"mod-control.jsonl", "/mod/acks", func(b []byte) (any, error) {
-		return parseModAck(b)
-	}, false},
-	{"mod-usage.jsonl", "/mod/usage", func(b []byte) (any, error) {
-		return parseModUsage(b)
-	}, false},
-	{"mod-answer.jsonl", "/mod/answer", func(b []byte) (any, error) {
-		return parseModAnswer(b)
 	}, false},
 	{"subagent-cards.jsonl", "/subagent", func(b []byte) (any, error) {
 		return parseSubagentRequest(b)

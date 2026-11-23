@@ -3,6 +3,8 @@
     "updateAvailable": "lich プラグイン {version} が利用可能です",
     "update": "更新",
     "later": "後で",
+    "reregisterNeeded": "lich が {names} 用に書き込むフックを、インストールした新しいバージョン向けに登録し直す必要があります。",
+    "reregister": "登録し直す",
     "installVersion": "v{version} をインストール",
     "updated": "プラグインを更新しました。反映するにはセッションを再起動してください。",
     "installed": "プラグインをインストールしました。反映するにはセッションを再起動してください。",

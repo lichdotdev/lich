@@ -166,23 +166,13 @@ var commands = []command{
 	{
 		name: "control",
 		args: "[--project <name-or-path>] [--json] <session>\n" +
-			"            prompt <text> | abort | model [<model>] | effort [<level>] |\n" +
+			"            prompt <text> | abort | model <model> | effort <level> |\n" +
 			"            command <name> [<args>]",
-		about: "Drive a running Claude Code session: type a prompt into it, stop its\n" +
-			"turn, set the model or effort its next requests use (none given goes\n" +
-			"back to its own), or run one of its slash commands. Waits up to 10\n" +
-			"seconds (60 for a slash command) for the session to confirm. One it\n" +
-			"took and has not confirmed prints its id and exits 2: it still goes\n" +
-			"through. One it never took is withdrawn, and fails: nothing ran.\n" +
-			"Experimental: may change outside semver.",
-	},
-	{
-		name: "ask",
-		args: "[--project <name-or-path>] [--json] <session> <question...>",
-		about: "Ask a running Claude Code session a side question and print its answer.\n" +
-			"It answers from its own conversation without stopping its turn, and\n" +
-			"neither the question nor the answer enters that conversation. Waits up\n" +
-			"to 90 seconds; an answer that comes later is dropped.\n" +
+		about: "Drive a session drawn as a chat: send it a prompt, stop its turn, set\n" +
+			"its model or effort to one its chat offers, or run one of its slash\n" +
+			"commands. Works on every agent with a chat, not on a session in its\n" +
+			"terminal. Waits up to 10 seconds for a prompt's turn to start; one\n" +
+			"queued behind the running turn exits 2, and still goes through.\n" +
 			"Experimental: may change outside semver.",
 	},
 	{

@@ -396,6 +396,7 @@
     "install": "インストール",
     "updateTo": "v{version} に更新",
     "updateAll": "すべて更新",
+    "reregister": "フックを登録し直す",
     "installVersion": "v{version} をインストール",
     "checkForUpdates": "アップデートを確認"
   },
@@ -671,7 +672,6 @@
       "sessionsRead": "セッションとそれぞれの作業内容を見る",
       "sessionsWrite": "セッションを開き、プロンプトを入力する",
       "sessionEvents": "各セッションの状態の変化を追う",
-      "sessionsAsk": "Claude Code セッションに横から質問し、その答えを読む",
       "servicesRead": "プロジェクトのサービスとその出力を見る",
       "servicesWrite": "プロジェクトのサービスを起動・停止・再起動する",
       "gitRead": "各チェックアウトのブランチ、変更、プルリクエストを見る",

@@ -10,6 +10,7 @@ import (
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/prompt"
+	"github.com/lichdotdev/lich/internal/store"
 )
 
 // fixtureEnvelopes builds every case of docs/hooks/fixtures/notification.json
@@ -35,8 +36,7 @@ func fixtureEnvelopes() map[string]string {
 		"worker finished, result in a chat":                                   outcomeEnvelope(en, fixed, true, true).String(),
 		"worker finished, result cut in a chat":                               cut.String(),
 		"worker finished, terminal leaves the result out":                     outcomeEnvelope(en, fixed, false, true).String(),
-		"worker failed": outcomeEnvelope(en, entry(StatusUnanswered,
-			"The turn ended with an API error: overloaded."), true, true).String(),
+		"worker failed":                     outcomeEnvelope(en, entry(StatusUnanswered, ""), true, true).String(),
 		"worker stopped by the user":        outcomeEnvelope(en, entry(StatusStopped, ""), true, true).String(),
 		"worker stopped by another session": outcomeEnvelope(en, stoppedBySession, true, true).String(),
 		"worker waiting on a permission": waitingEnvelope(&ticket{target: "Fix #412", targetID: "c41f"}, "4b9bc94e",
@@ -47,6 +47,8 @@ func fixtureEnvelopes() map[string]string {
 			api.PRRead{Number: 1210, Head: "3f2a9c1"}, "fix-412-handshake").String(),
 		"notice: scheduled prompt": noticeEnvelope(TopicScheduled,
 			fmt.Sprintf(prompt.For(en).LateNotice, "09:00", lateBy(en, 4*time.Minute)), "Rebase on main and run the gate.").String(),
+		"notice: edit overlap": editEnvelope(en, store.Session{ID: "c41f", Label: "Docs sweep"},
+			editGroup{paths: []string{"/src/lich/internal/relay/conn.go"}, newest: time.Unix(0, 0)}, "send_to_session", time.Unix(240, 0)).String(),
 		"escaping: attributes escaped, element text verbatim":              outcomeEnvelope(en, escaped, true, true).String(),
 		"two envelopes in one message, oldest first, one blank line apart": newsMessage(en, []*inboxEntry{fixed, entry(StatusExpired, "")}, []*inboxEntry{fixed}, true),
 	}

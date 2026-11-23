@@ -20,7 +20,10 @@ import (
 const (
 	pluginInstallDismissedKey = "lich.pluginInstallDismissed"
 	pluginUpdateDismissedKey  = "lich.pluginUpdateDismissed"
-	pluginDismissedFlag       = "1"
+	// pluginReregisterDismissedKey is apart from the update's: the two carry the
+	// same version, and declining one is not declining the other.
+	pluginReregisterDismissedKey = "lich.pluginReregisterDismissed"
+	pluginDismissedFlag          = "1"
 	// pluginNoReportProvider runs Claude Code's plugin and reports its
 	// version; the fix is offered on Claude Code's row.
 	pluginNoReportProvider = "cursor"
@@ -33,6 +36,7 @@ const (
 	pluginActionIncompatible
 	pluginActionInstall
 	pluginActionUpdate
+	pluginActionReregister
 )
 
 type pluginGateAction struct {
@@ -43,9 +47,9 @@ type pluginGateAction struct {
 
 // decidePluginAction picks what to offer: an incompatible install wins and
 // ignores every dismissal; a CLI missing the plugin comes before an update.
-func decidePluginAction(statuses []backend.PluginStatus, installDismissed bool, updateDismissed string) pluginGateAction {
+func decidePluginAction(statuses []backend.PluginStatus, installDismissed bool, updateDismissed, reregisterDismissed string) pluginGateAction {
 	available := slices.DeleteFunc(slices.Clone(statuses), func(s backend.PluginStatus) bool { return !s.Available })
-	var incompatible, missing, outdated []backend.PluginStatus
+	var incompatible, missing, outdated, behind []backend.PluginStatus
 	for _, s := range available {
 		switch {
 		case s.Installed && !s.Compatible && s.Provider != pluginNoReportProvider:
@@ -53,7 +57,10 @@ func decidePluginAction(statuses []backend.PluginStatus, installDismissed bool, 
 		case !s.Installed:
 			missing = append(missing, s)
 		}
-		if s.Installed && s.UpdateAvailable {
+		switch {
+		case s.Installed && s.Reregister:
+			behind = append(behind, s)
+		case s.Installed && s.UpdateAvailable:
 			outdated = append(outdated, s)
 		}
 	}
@@ -65,6 +72,9 @@ func decidePluginAction(statuses []backend.PluginStatus, installDismissed bool, 
 	}
 	if len(outdated) > 0 && updateDismissed != outdated[0].LatestVersion {
 		return pluginGateAction{pluginActionUpdate, outdated[0].LatestVersion, outdated}
+	}
+	if len(behind) > 0 && reregisterDismissed != behind[0].LatestVersion {
+		return pluginGateAction{pluginActionReregister, behind[0].LatestVersion, behind}
 	}
 	return pluginGateAction{}
 }
@@ -131,7 +141,12 @@ func (u *window) checkPlugin() {
 		log.Printf("plugin gate: %v", err)
 		return
 	}
-	a := decidePluginAction(statuses, installDismissed == pluginDismissedFlag, updateDismissed)
+	reregisterDismissed, err := u.client.GetSetting(u.ctx, pluginReregisterDismissedKey, "")
+	if err != nil {
+		log.Printf("plugin gate: %v", err)
+		return
+	}
+	a := decidePluginAction(statuses, installDismissed == pluginDismissedFlag, updateDismissed, reregisterDismissed)
 	switch a.kind {
 	case pluginActionIncompatible:
 		t := ui.Toast{ID: api.PluginIncompatibleEvent.Name, Variant: ui.ToastWarning,
@@ -148,6 +163,8 @@ func (u *window) checkPlugin() {
 		u.win.Invalidate()
 	case pluginActionUpdate:
 		u.toaster.Show(u.pluginUpdateToast(a))
+	case pluginActionReregister:
+		u.toaster.Show(u.pluginReregisterToast(a))
 	}
 }
 
@@ -156,6 +173,18 @@ func (u *window) pluginUpdateToast(a pluginGateAction) ui.Toast {
 	return ui.Toast{Title: i18n.T("shell.agentPluginGate.updateAvailable", i18n.Args{"version": a.version}), Duration: ui.ToastForever,
 		Action: &ui.ToastButton{Label: i18n.T("shell.agentPluginGate.update"), OnClick: func() { go u.updatePlugins(a.providers) }},
 		Cancel: &ui.ToastButton{Label: i18n.T("shell.agentPluginGate.later"), OnClick: func() { u.writePref(pluginUpdateDismissedKey, a.version) }}}
+}
+
+// pluginReregisterToast offers writing a's hooks again for the CLI release
+// installed now, Later remembering it was declined.
+func (u *window) pluginReregisterToast(a pluginGateAction) ui.Toast {
+	names := make([]string, len(a.providers))
+	for i, p := range a.providers {
+		names[i] = p.Name
+	}
+	return ui.Toast{Title: i18n.T("shell.agentPluginGate.reregisterNeeded", i18n.Args{"names": strings.Join(names, ", ")}), Duration: ui.ToastForever,
+		Action: &ui.ToastButton{Label: i18n.T("shell.agentPluginGate.reregister"), OnClick: func() { go u.updatePlugins(a.providers) }},
+		Cancel: &ui.ToastButton{Label: i18n.T("shell.agentPluginGate.later"), OnClick: func() { u.writePref(pluginReregisterDismissedKey, a.version) }}}
 }
 
 // updatePlugins runs one update per provider in order, stopping at the first

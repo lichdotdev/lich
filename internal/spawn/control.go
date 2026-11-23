@@ -4,132 +4,210 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/relay"
 	"github.com/lichdotdev/lich/internal/scope"
 	"github.com/lichdotdev/lich/internal/store"
-	"github.com/lichdotdev/lich/internal/terminal"
 )
 
-// A few seconds cover an abort, a model or an effort, which the mod applies the
-// moment it collects them, and a prompt to an idle session; past that the
-// session is busy and the answer is minutes away. A slash command runs only once
-// the session is idle and then takes as long as it takes: the longer wait is for
-// /compact on an idle session. Both stay under the 90 seconds an MCP call may
-// block (cli.mcpMaxWait).
+// The actions Control takes.
 const (
-	ackWait        = 10 * time.Second
-	commandAckWait = 60 * time.Second
-	// ControlWaitLimit is the longest Control waits for a session to confirm.
-	ControlWaitLimit = commandAckWait
+	ControlPrompt  = "prompt"
+	ControlAbort   = "abort"
+	ControlModel   = "model"
+	ControlEffort  = "effort"
+	ControlCommand = "command"
 )
+
+// promptWait bounds the wait for a prompt's turn to start: an idle chat starts
+// it at once, and past that the session is busy and the prompt waits behind
+// the turn running.
+const promptWait = 10 * time.Second
+
+// ControlWaitLimit is the longest Control takes: a model a chat takes only by
+// restarting resumes its conversation first. It stays under the 90 seconds an
+// MCP call may block (cli.mcpMaxWait).
+const ControlWaitLimit = 60 * time.Second
 
 // How far a command Control handed a session got by the time it answered.
 const (
 	ControlDone      = "done"
-	ControlDelivered = terminal.ModDelivered
-	ControlEnded     = terminal.ModEnded
+	ControlDelivered = "delivered"
+	ControlEnded     = "ended"
 )
+
+// defaultWritingCommands maps the slash commands that save their value as the
+// default for every new session (measured on Claude Code 2.1.288's TUI) to the
+// action that sets the same thing for this session only. Refused everywhere:
+// whether a chat's own /model writes the default was not measured.
+var defaultWritingCommands = map[string]string{"model": ControlModel, "effort": ControlEffort}
 
 type Controlled = api.ControlledSession
 
 type ControlOptions = api.ControlSessionOptions
 
-// Control gives a running Claude Code session one command through its mod
-// (docs/hooks/mod-control.md) and waits a bounded time for the mod to confirm
-// it. action is one of the mod's kinds, value what that kind carries, and args
-// what follows a slash command's name. A wait that ends after the session took
-// the command is not an error: State says it was delivered and still goes
-// through, or that the session ended. A command the session never took is
-// withdrawn and is the error, and so is an ack that says the command failed,
-// each naming the session.
+// Control gives a session drawn as a chat one command, the way its person
+// would in the chat: a prompt or a slash command as its next message, an abort
+// as Stop, a model or an effort through its picker. A prompt waits a bounded
+// time for its turn to start; one still queued behind a running turn is not an
+// error, and State says so. A terminal session is refused on every provider:
+// lich has no channel into a TUI but typing.
 func (s *Service) Control(ctx context.Context, opts ControlOptions) (Controlled, error) {
-	fromID, target, projectName := opts.From, opts.Target, opts.Project
 	action, value, args := opts.Action, opts.Value, opts.Args
-	cmd, err := modCommandFor(action, value, args)
+	text, err := controlText(action, value, args)
 	if err != nil {
 		return Controlled{}, err
 	}
-	found, err := s.claudeTarget(target, projectName, "control", "controlled")
+	found, err := s.chatTarget(opts.Target, opts.Project)
 	if err != nil {
 		return Controlled{}, err
 	}
-	if err := scope.Target(ctx, found.session.Label, found.session.Sandbox == store.SessionConfined); err != nil {
+	label := found.session.Label
+	if err := scope.Target(ctx, label, found.session.Sandbox == store.SessionConfined); err != nil {
 		return Controlled{}, err
 	}
 	// model and effort are the exception: they only change what the session's
 	// next requests carry, which the asking turn survives.
-	if found.session.ID == fromID && action != terminal.ModModel && action != terminal.ModEffort {
+	if found.session.ID == opts.From && action != ControlModel && action != ControlEffort {
 		return Controlled{}, fmt.Errorf(
 			"%q is this session, and a session cannot control itself: an abort would end the "+
 				"turn asking for it, and a prompt or a slash command would only run once that "+
-				"turn is over", found.session.Label)
+				"turn is over", label)
 	}
-
-	label, bound := found.session.Label, ackWaitFor(action)
-	wait, cancel := context.WithTimeout(ctx, bound)
+	ctx, cancel := context.WithTimeout(ctx, ControlWaitLimit)
 	defer cancel()
-	out, err := s.term.RunModCommand(wait, found.session.ID, cmd)
+	state, err := s.runControl(ctx, found.session.ID, label, action, value, text)
 	if err != nil {
-		return Controlled{}, fmt.Errorf("%q: %w", label, err)
-	}
-	if out.State == terminal.ModWithdrawn {
-		return Controlled{}, fmt.Errorf(
-			"%q did not take the %s within %d seconds, so lich withdrew it and nothing ran: its mod stopped "+
-				"polling (Claude Code frozen, or the mod reloading). It is safe to send again",
-			label, action, int(bound/time.Second))
-	}
-	if out.State == terminal.ModAcked && !out.OK {
-		return Controlled{}, fmt.Errorf("%q refused the %s: %s", label, action, out.Error)
-	}
-	state := out.State
-	if state == terminal.ModAcked {
-		state = ControlDone
+		return Controlled{}, err
 	}
 	return Controlled{
-		ID: found.session.ID, Project: found.project.Name, Label: found.session.Label,
-		Action: action, Value: value, CommandID: out.ID, State: state,
+		ID: found.session.ID, Project: found.project.Name, Label: label,
+		Action: action, Value: value, State: state,
 	}, nil
 }
 
-func modCommandFor(action, value, args string) (terminal.ModCommand, error) {
-	cmd := terminal.ModCommand{Kind: action}
+func (s *Service) runControl(ctx context.Context, id, label, action, value, text string) (string, error) {
+	var err error
 	switch action {
-	case terminal.ModPrompt:
-		if strings.TrimSpace(value) == "" {
-			return terminal.ModCommand{}, errors.New("a prompt needs its text, and none was given")
-		}
-		cmd.Text = value
-	case terminal.ModAbort:
-		if value != "" {
-			return terminal.ModCommand{}, errors.New("an abort takes nothing after it")
-		}
-	case terminal.ModModel:
-		cmd.Model = value
-	case terminal.ModEffort:
-		cmd.Effort = value
-	case terminal.ModRunCommand:
-		cmd.Name, cmd.Args = value, args
+	case ControlAbort:
+		_, err = s.chat.Cancel(ctx, api.SessionIDOptions{ID: id})
+	case ControlModel, ControlEffort:
+		err = s.setChoice(ctx, id, label, action, value)
 	default:
-		return terminal.ModCommand{}, fmt.Errorf(
-			"%q is not something lich control does: the actions are prompt, abort, model, effort and command",
-			action)
+		return s.takePrompt(ctx, id, label, text)
 	}
-	if args != "" && action != terminal.ModRunCommand {
-		return terminal.ModCommand{}, fmt.Errorf("only a command takes arguments, and %s does not", action)
+	if err != nil {
+		return "", named(label, err)
 	}
-	return cmd, nil
+	return ControlDone, nil
 }
 
-// claudeTarget finds the session target names, refusing one that does not run
-// Claude Code: lich reaches a session through its Claude Code mod. verb and
-// participle word the refusals for the caller's action.
-func (s *Service) claudeTarget(target, projectName, verb, participle string) (located, error) {
+// controlText validates an action and words what it sends as a message: the
+// prompt, or the slash command with its arguments. Empty for the actions that
+// send none.
+func controlText(action, value, args string) (string, error) {
+	if args != "" && action != ControlCommand {
+		return "", fmt.Errorf("only a command takes arguments, and %s does not", action)
+	}
+	switch action {
+	case ControlPrompt:
+		if strings.TrimSpace(value) == "" {
+			return "", errors.New("a prompt needs its text, and none was given")
+		}
+		return value, nil
+	case ControlAbort:
+		if value != "" {
+			return "", errors.New("an abort takes nothing after it")
+		}
+		return "", nil
+	case ControlModel, ControlEffort:
+		if strings.TrimSpace(value) == "" {
+			return "", fmt.Errorf("%s needs the %s to set, and none was given", action, action)
+		}
+		return "", nil
+	case ControlCommand:
+		return slashCommand(value, args)
+	}
+	return "", fmt.Errorf(
+		"%q is not something lich control does: the actions are prompt, abort, model, effort and command",
+		action)
+}
+
+// slashCommand is the message a command sends, or why lich will not send it.
+// The refusal reads the first word with every leading slash gone, so no
+// spelling of /model or /effort gets through.
+func slashCommand(name, args string) (string, error) {
+	name = strings.TrimLeft(strings.TrimSpace(name), "/")
+	if name == "" {
+		return "", errors.New("a command needs the name of a slash command, and none was given")
+	}
+	first := strings.ToLower(strings.Fields(name)[0])
+	if action, refused := defaultWritingCommands[first]; refused {
+		return "", fmt.Errorf(
+			"/%s is refused as a command: Claude Code saves what it sets as the default for every "+
+				"new session. The %s action changes this session only", first, action)
+	}
+	return strings.TrimSpace("/" + name + " " + args), nil
+}
+
+// takePrompt sends text as the chat's next message and waits for the turn
+// carrying it to start.
+func (s *Service) takePrompt(ctx context.Context, id, label, text string) (string, error) {
+	if err := s.chat.Open(ctx, id); err != nil {
+		return "", named(label, err)
+	}
+	handed, err := s.chat.Take(id, text)
+	if err != nil {
+		return "", named(label, err)
+	}
+	wait, cancel := context.WithTimeout(ctx, promptWait)
+	defer cancel()
+	switch handed.Await(wait).State {
+	case relay.PromptAcked:
+		return ControlDone, nil
+	case relay.PromptEnded:
+		return ControlEnded, nil
+	}
+	return ControlDelivered, nil
+}
+
+// setChoice sets the chat's model or effort to value, one of the choices its
+// picker offers.
+func (s *Service) setChoice(ctx context.Context, id, label, action, value string) error {
+	opts, err := s.chat.Options(ctx, api.SessionIDOptions{ID: id})
+	if err != nil {
+		return err
+	}
+	category := map[string]string{ControlModel: api.OptionModel, ControlEffort: api.OptionEffort}[action]
+	i := slices.IndexFunc(opts, func(o api.ChatOption) bool { return o.Category == category })
+	if i < 0 {
+		return fmt.Errorf("%q has no %s to set: its agent offers none", label, action)
+	}
+	o := opts[i]
+	ids := make([]string, 0, len(o.Choices))
+	for _, ch := range o.Choices {
+		ids = append(ids, ch.ID)
+	}
+	if !slices.Contains(ids, value) {
+		return fmt.Errorf("%q offers no %s %q: it offers %s", label, action, value, strings.Join(ids, ", "))
+	}
+	_, err = s.chat.SetOption(ctx, api.ChatSetOptionOptions{ID: id, OptionID: o.ID, Value: value})
+	return err
+}
+
+func named(label string, err error) error { return fmt.Errorf("%q: %w", label, err) }
+
+// chatTarget finds the session target names, refusing one that does not run
+// as a chat: lich drives a session through its chat, and a TUI has no channel
+// in but typing.
+func (s *Service) chatTarget(target, projectName string) (located, error) {
 	if strings.TrimSpace(target) == "" {
-		return located{}, fmt.Errorf("name the session to %s", verb)
+		return located{}, errors.New("name the session to control")
 	}
 	projects, err := s.sessions.LoadState(context.Background(), api.None{})
 	if err != nil {
@@ -139,18 +217,15 @@ func (s *Service) claudeTarget(target, projectName, verb, participle string) (lo
 	if err != nil {
 		return located{}, err
 	}
-	if found.session.Kind != providers.Claude {
+	label, kind := found.session.Label, found.session.Kind
+	switch {
+	case kind == providers.Crush:
 		return located{}, fmt.Errorf(
-			"%q runs %s, and only a Claude Code session can be %s: lich drives one "+
-				"through a Claude Code mod, which no other CLI has", found.session.Label,
-			kindName(found.session.Kind), participle)
+			"%q runs %s, which lich cannot draw as a chat, so lich control cannot reach it", label, kindName(kind))
+	case s.chat == nil || !s.chat.Drawn(found.session.ID):
+		return located{}, fmt.Errorf(
+			"%q runs in a terminal, and lich control drives only a session drawn as a chat: switch "+
+				"it to GUI first", label)
 	}
 	return found, nil
-}
-
-func ackWaitFor(action string) time.Duration {
-	if action == terminal.ModRunCommand {
-		return commandAckWait
-	}
-	return ackWait
 }

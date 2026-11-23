@@ -37,13 +37,16 @@ const (
 	crushMinVersion = "0.88.0"
 
 	// crushEventsVersion is the first Crush release with the lifecycle events
-	// (v0.99.0, read off its source; measured on v0.100.0). The block written
-	// for an older one stays as it was.
+	// (v0.99.0, read off its source; measured on v0.100.0), PostToolUse among
+	// them. The block written for an older one stays as it was.
 	crushEventsVersion = "0.99.0"
 
 	// crushHookEvent is the event a hook rides when it names none, and the only
 	// one a Crush below crushEventsVersion has.
 	crushHookEvent = "PreToolUse"
+	// crushPostEvent fires after the tool; the touched report moves to it
+	// (crushHooksFor).
+	crushPostEvent = "PostToolUse"
 	// crushTurnEndEvent is the event whose registration says a block reports
 	// state (blockReportsState).
 	crushTurnEndEvent = "TurnEnd"
@@ -77,7 +80,7 @@ const (
 // every tool).
 var crushHooks = []crushHook{
 	{script: "hooks/report-session-start.sh", arg: providers.Crush, name: "lich-session-id", timeout: crushHookTimeout},
-	{script: "hooks/report-touched.sh", name: "lich-touched", matcher: crushWriteTools, timeout: crushHookTimeout},
+	{script: crushTouchedScript, name: "lich-touched", matcher: crushWriteTools, timeout: crushHookTimeout},
 }
 
 // crushStateHooks is what a Crush with crushEventsVersion registers. The
@@ -90,8 +93,8 @@ var crushStateHooks = []crushHook{
 	{event: "TurnStart", script: crushSessionStartScript, arg: providers.Crush, name: "lich-session-id-turn", timeout: crushHookTimeout},
 	{event: "TurnStart", script: crushStateScript, arg: "busy", name: "lich-turn-start", timeout: crushHookTimeout},
 	{script: "hooks/report-tool.sh", name: "lich-tool", timeout: crushHookTimeout},
-	{script: "hooks/report-touched.sh", name: "lich-touched", matcher: crushWriteTools, timeout: crushHookTimeout},
-	{event: "PostToolUse", script: crushStateScript, arg: "busy", name: "lich-tool-done", timeout: crushHookTimeout},
+	{script: crushTouchedScript, name: "lich-touched", matcher: crushWriteTools, timeout: crushHookTimeout},
+	{event: crushPostEvent, script: crushStateScript, arg: "busy", name: "lich-tool-done", timeout: crushHookTimeout},
 	{event: "PostToolUseFailure", script: crushStateScript, arg: "busy", name: "lich-tool-failed", timeout: crushHookTimeout},
 	{event: "PermissionRequest", script: crushStateScript, arg: "waiting", name: "lich-waiting", timeout: crushHookTimeout},
 	{event: crushTurnEndEvent, script: crushStateScript, arg: "done", name: "lich-turn-end", timeout: crushHookTimeout},
@@ -102,6 +105,7 @@ var crushStateHooks = []crushHook{
 const (
 	crushSessionStartScript = "hooks/report-session-start.sh"
 	crushStateScript        = "hooks/report-state.sh"
+	crushTouchedScript      = "hooks/report-touched.sh"
 )
 
 type crushHook struct {
@@ -115,17 +119,28 @@ type crushHook struct {
 }
 
 // crushHooksFor is what version's crushrc registers on crush, the Crush release
-// ("" when unread): the reports that Crush has events for, and from
-// SubagentHookRelease the veto on Crush's one subagent tool.
+// ("" when unread): the reports that Crush has events for, from
+// SubagentHookRelease the veto on Crush's one subagent tool, and from
+// EditNoteRelease the touched report after the tool where that Crush has the
+// event, so its paths are written and its note reaches the model
+// (docs/hooks/session-touched.md).
 func crushHooksFor(version, crush string) []crushHook {
-	hooks := crushHooks
+	hooks := slices.Clone(crushHooks)
 	if crushHasEvents(crush) {
-		hooks = crushStateHooks
+		hooks = slices.Clone(crushStateHooks)
 	}
-	if !asksSubagentHook(version) {
+	if asksSubagentHook(version) {
+		hooks = append(hooks, crushHook{script: vetoScript, arg: providers.Crush, name: "lich-subagent-cards", matcher: "^agent$", timeout: crushVetoTimeout})
+	}
+	if !notesEdits(version) || !crushHasEvents(crush) {
 		return hooks
 	}
-	return append(slices.Clone(hooks), crushHook{script: vetoScript, arg: providers.Crush, name: "lich-subagent-cards", matcher: "^agent$", timeout: crushVetoTimeout})
+	for i := range hooks {
+		if hooks[i].script == crushTouchedScript {
+			hooks[i].event = crushPostEvent
+		}
+	}
+	return hooks
 }
 
 // crushSourcedScripts are the files the registered scripts source rather than

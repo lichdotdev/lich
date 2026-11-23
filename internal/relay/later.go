@@ -87,7 +87,7 @@ func (s *Service) deliverDue() {
 				continue
 			}
 			// Cleared before the write, not after: deliver blocks while the paste
-			// settles or the mod acks, and a pass slow enough to overlap the next one
+			// settles or the chat's turn starts, and a pass slow enough to overlap the next one
 			// would deliver the same prompt twice. A write that then fails costs a prompt the user can
 			// still see on their own screen and retype; two unasked-for turns cannot
 			// be taken back.
@@ -102,7 +102,7 @@ func (s *Service) deliverDue() {
 			if parkedByLich(sess) {
 				text = noticeEnvelope(TopicUsageReset, prompt.For(s.lang()).UsageReset, sess.ScheduledPrompt).String()
 			}
-			if err := s.deliver(sess.ID, text, nil); err != nil {
+			if err := s.deliver(sess.ID, text); err != nil {
 				slog.Warn("relay: scheduled prompt not delivered", "session", sess.Label, "err", err)
 			}
 		}

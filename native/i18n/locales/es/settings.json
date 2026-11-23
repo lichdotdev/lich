@@ -396,6 +396,7 @@
     "install": "Instalar",
     "updateTo": "Actualizar a la v{version}",
     "updateAll": "Actualizar todos",
+    "reregister": "Registrar los hooks de nuevo",
     "installVersion": "Instalar la v{version}",
     "checkForUpdates": "Buscar actualizaciones"
   },
@@ -671,7 +672,6 @@
       "sessionsRead": "Ver tus sesiones y lo que hace cada una",
       "sessionsWrite": "Abrir sesiones y escribir prompts en ellas",
       "sessionEvents": "Seguir el estado de cada sesión cuando cambia",
-      "sessionsAsk": "Hacer preguntas aparte a tus sesiones de Claude Code y leer sus respuestas",
       "servicesRead": "Ver los servicios de tus proyectos y lo que imprimen",
       "servicesWrite": "Iniciar, detener y reiniciar los servicios de tus proyectos",
       "gitRead": "Ver la rama, los cambios y el pull request de cada checkout",

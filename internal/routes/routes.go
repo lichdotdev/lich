@@ -6,10 +6,9 @@
 // A service method nothing here routes cannot be reached over /rpc/, and the
 // ones kept out are kept out on purpose: they exist for Go callers inside the
 // process. Startup wiring (the Set* setters, store.Close) would rewire or end
-// what the app runs on; the hooks' state stream and a worker's answer arrive
-// over /hook and /mod/*, and called here would act for another session;
-// terminal.CloseBy, the mod's command queue and terminal.SubmitPrompt skip the
-// checks spawn.Close, spawn.Control and the relay make; terminal.SessionAccount
+// what the app runs on; the hooks' state stream arrives over /hook, and called
+// here would act for another session; terminal.CloseBy and terminal.ChatPrompt
+// skip the checks spawn.Close, spawn.Control and the relay make; terminal.SessionAccount
 // returns a session's credentials; and a dropped file's bytes go to /drop,
 // outside the JSON envelope.
 package routes
@@ -47,7 +46,6 @@ func Spawn(d *rpc.Handler, s *spawn.Service) {
 	rpc.Handle(d, api.SpawnClose, s.Close)
 	rpc.Handle(d, api.SpawnCloseProject, s.CloseProject)
 	rpc.Handle(d, api.SpawnControl, s.Control)
-	rpc.Handle(d, api.SpawnAsk, s.Ask)
 	rpc.Handle(d, api.SpawnWorktrees, s.Worktrees)
 	rpc.Handle(d, api.SpawnFolders, s.Folders)
 	rpc.Handle(d, api.SpawnFile, s.File)

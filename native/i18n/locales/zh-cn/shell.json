@@ -3,6 +3,8 @@
     "updateAvailable": "lich 插件 {version} 可用",
     "update": "更新",
     "later": "稍后",
+    "reregisterNeeded": "lich 为 {names} 写入的钩子需要针对你安装的新版本重新注册。",
+    "reregister": "重新注册",
     "installVersion": "安装 v{version}",
     "updated": "插件已更新，重启会话后生效。",
     "installed": "插件已安装，重启会话后生效。",

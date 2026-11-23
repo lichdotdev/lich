@@ -6,6 +6,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -348,6 +349,19 @@ func TestAManifestNamingAnUnknownPermissionIsInvalid(t *testing.T) {
 	m.Permissions = []extension.Permission{"sessions:delete"}
 	if err := validate(m, "ext", "1.2.3"); err == nil || !strings.Contains(err.Error(), `"sessions:delete"`) {
 		t.Errorf("got %v", err)
+	}
+}
+
+// An extension built against an SDK that still had sessions.ask keeps
+// loading, with the permission dropped rather than granted.
+func TestAManifestNamingARetiredPermissionLoadsWithoutIt(t *testing.T) {
+	m := validManifest("ext", "ext")
+	m.Permissions = withoutRetired([]extension.Permission{"sessions:ask", extension.PermissionSessionsRead})
+	if err := validate(m, "ext", "1.2.3"); err != nil {
+		t.Fatalf("validate: %v", err)
+	}
+	if !slices.Equal(m.Permissions, []extension.Permission{extension.PermissionSessionsRead}) {
+		t.Errorf("permissions = %v, want sessions:ask dropped", m.Permissions)
 	}
 }
 

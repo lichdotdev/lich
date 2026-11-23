@@ -396,6 +396,7 @@
     "install": "Install",
     "updateTo": "Update to v{version}",
     "updateAll": "Update all",
+    "reregister": "Re-register hooks",
     "installVersion": "Install v{version}",
     "checkForUpdates": "Check for updates"
   },
@@ -671,7 +672,6 @@
       "sessionsRead": "See your sessions and what each one is doing",
       "sessionsWrite": "Open sessions and type prompts into them",
       "sessionEvents": "Follow each session's status as it changes",
-      "sessionsAsk": "Ask your Claude Code sessions side questions and read their answers",
       "servicesRead": "See your projects' services and what they print",
       "servicesWrite": "Start, stop and restart your projects' services",
       "gitRead": "See each checkout's branch, changes and pull request",

@@ -20,7 +20,6 @@ import (
 	"github.com/lichdotdev/lich/internal/rpc"
 	"github.com/lichdotdev/lich/internal/spawn"
 	"github.com/lichdotdev/lich/internal/store"
-	"github.com/lichdotdev/lich/internal/terminal"
 )
 
 // The tests above answer the CLI with canned JSON, which proves what it prints
@@ -75,15 +74,12 @@ func (*wiredTerminal) Status(string) api.SessionStatus { return api.SessionStatu
 // Nobody is typing at these sessions, so the hold has nothing to keep back.
 func (*wiredTerminal) HoldInput(string) func() { return func() {} }
 
-// No mod polls from these sessions, so every message is typed and recorded.
-func (*wiredTerminal) SubmitPrompt(string, string, *relay.Notification) (relay.HandedPrompt, error) {
-	return relay.HandedPrompt{}, relay.ErrNoMod
+// No session here is drawn as a chat, so every message is typed and recorded.
+func (*wiredTerminal) ChatPrompt(string, string) (relay.HandedPrompt, error) {
+	return relay.HandedPrompt{}, relay.ErrNoChat
 }
 
-func (*wiredTerminal) ModAttached(string) bool  { return false }
-func (*wiredTerminal) ModAttaching(string) bool { return false }
-
-func (*wiredTerminal) ModAnswers(string) bool             { return false }
+func (*wiredTerminal) ChatOpened(string) bool             { return false }
 func (*wiredTerminal) Chat(string) bool                   { return false }
 func (*wiredTerminal) FinalMessage(string) (string, bool) { return "", false }
 
@@ -468,19 +464,36 @@ type spawnTerminal struct {
 	kind   string
 	cwd    string
 	closed string
-	// ran is the last command handed to a session's mod, and ranOn that
+	// took is the last message handed to a session's chat, and tookOn that
 	// session.
-	ran   terminal.ModCommand
-	ranOn string
+	took   string
+	tookOn string
 }
 
-func (s *spawnTerminal) RunModCommand(
-	_ context.Context, id string, cmd terminal.ModCommand,
-) (terminal.ModOutcome, error) {
+// spawnTerminal is the chat too: auth-fix (s2) is drawn as one.
+func (*spawnTerminal) Drawn(id string) bool { return id == "s2" }
+
+func (*spawnTerminal) Open(context.Context, string) error { return nil }
+
+func (s *spawnTerminal) Take(id, text string) (relay.HandedPrompt, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.ran, s.ranOn = cmd, id
-	return terminal.ModOutcome{ID: "m1", State: terminal.ModAcked, OK: true}, nil
+	s.took, s.tookOn = text, id
+	return relay.HandedPrompt{Await: func(context.Context) relay.PromptReceipt {
+		return relay.PromptReceipt{State: relay.PromptAcked}
+	}}, nil
+}
+
+func (*spawnTerminal) Cancel(context.Context, api.SessionIDOptions) (api.None, error) {
+	return api.None{}, nil
+}
+
+func (*spawnTerminal) Options(context.Context, api.SessionIDOptions) ([]api.ChatOption, error) {
+	return nil, nil
+}
+
+func (*spawnTerminal) SetOption(context.Context, api.ChatSetOptionOptions) (api.None, error) {
+	return api.None{}, nil
 }
 
 func (s *spawnTerminal) Start(_ context.Context, opts api.StartOptions) (api.None, error) {
@@ -510,7 +523,9 @@ func wiredSpawn(t *testing.T, git *spawnGit) (func(string) string, *spawnStore, 
 	rows := &spawnStore{}
 	term := &spawnTerminal{}
 	dispatcher := rpc.New()
-	routes.Spawn(dispatcher, spawn.New(rows, git, term, nil))
+	svc := spawn.New(rows, git, term, nil)
+	svc.SetChat(term)
+	routes.Spawn(dispatcher, svc)
 
 	server := httptest.NewServer(dispatcher)
 	t.Cleanup(server.Close)
@@ -694,29 +709,11 @@ func TestControlOverTheRealDispatcher(t *testing.T) {
 	if code := Run(args, "test", env, &stdout, &stderr); code != 0 {
 		t.Fatalf("exit = %d, stderr = %q", code, stderr.String())
 	}
-	want := terminal.ModCommand{Kind: terminal.ModRunCommand, Name: "/compact", Args: "keep the plan"}
-	if term.ranOn != "s2" || term.ran != want {
-		t.Errorf("ran %+v on %q, want %+v on s2", term.ran, term.ranOn, want)
+	if term.tookOn != "s2" || term.took != "/compact keep the plan" {
+		t.Errorf("took %q on %q, want the command and its arguments on s2", term.took, term.tookOn)
 	}
-	if stdout.String() != "\"auth-fix\" ran /compact.\n" {
+	if stdout.String() != "\"auth-fix\" started a turn on /compact.\n" {
 		t.Errorf("stdout = %q", stdout.String())
-	}
-}
-
-// TestAskOverTheRealDispatcher proves the options `lich ask` posts land on
-// spawn.Ask's fields: the target, the project and the question are strings side
-// by side.
-func TestAskOverTheRealDispatcher(t *testing.T) {
-	t.Parallel()
-	env, _, term := wiredSpawn(t, &spawnGit{})
-
-	var stdout, stderr bytes.Buffer
-	if code := Run([]string{"ask", "--project", "lich", "auth-fix", "why?"}, "test", env, &stdout, &stderr); code != 0 {
-		t.Fatalf("exit = %d, stderr = %q", code, stderr.String())
-	}
-	want := terminal.ModCommand{Kind: terminal.ModAsk, Question: "why?"}
-	if term.ranOn != "s2" || term.ran != want {
-		t.Errorf("ran %+v on %q, want %+v on s2", term.ran, term.ranOn, want)
 	}
 }
 
@@ -889,14 +886,7 @@ func TestSpawnCallsAcrossVersions(t *testing.T) {
 			"spawn.Control",
 			`[{"from":"s1","target":"auth-fix","project":"lich","action":"command","value":"/compact","optionFromTheFuture":true}]`,
 			func(_ *spawnStore, term *spawnTerminal, _ string) bool {
-				return term.ranOn == "s2" && term.ran.Name == "/compact"
-			},
-		},
-		{
-			"spawn.Ask",
-			`[{"from":"s1","target":"auth-fix","project":"lich","question":"why?","optionFromTheFuture":true}]`,
-			func(_ *spawnStore, term *spawnTerminal, _ string) bool {
-				return term.ranOn == "s2" && term.ran.Question == "why?"
+				return term.tookOn == "s2" && term.took == "/compact"
 			},
 		},
 		{
@@ -940,7 +930,9 @@ func TestSpawnCallsAcrossVersions(t *testing.T) {
 		t.Run(tc.method, func(t *testing.T) {
 			rows, term := &spawnStore{}, &spawnTerminal{}
 			dispatcher := rpc.New()
-			routes.Spawn(dispatcher, spawn.New(rows, &spawnGit{}, term, nil))
+			svc := spawn.New(rows, &spawnGit{}, term, nil)
+			svc.SetChat(term)
+			routes.Spawn(dispatcher, svc)
 
 			answer := postRaw(t, dispatcher, tc.method, tc.body)
 			if !tc.landed(rows, term, answer) {

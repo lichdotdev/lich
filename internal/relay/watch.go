@@ -117,7 +117,7 @@ func (s *Service) fireWatch(sess store.Session, w api.SessionWatch, mark string,
 		return
 	}
 	go func() {
-		if err := s.deliver(sess.ID, text, nil); err != nil {
+		if err := s.deliver(sess.ID, text); err != nil {
 			slog.Warn("relay: watch prompt not delivered", "session", sess.Label, "err", err)
 		}
 	}()

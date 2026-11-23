@@ -3,6 +3,8 @@
     "updateAvailable": "O plugin do lich {version} está disponível",
     "update": "Atualizar",
     "later": "Depois",
+    "reregisterNeeded": "Os hooks que o lich escreve para o {names} precisam ser registrados de novo para a versão mais nova que você instalou.",
+    "reregister": "Registrar de novo",
     "installVersion": "Instalar v{version}",
     "updated": "Plugin atualizado. Reinicie suas sessões para aplicar.",
     "installed": "Plugin instalado. Reinicie suas sessões para aplicar.",

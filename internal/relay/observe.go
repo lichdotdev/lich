@@ -66,19 +66,18 @@ func (s *Service) Observe(sessionID, state string) {
 	for _, e := range quiet {
 		s.announceInbox(e.t.fromID)
 	}
-	// Both deliveries run off the reporter's goroutine: a mod's ack for them can
-	// wait on that report's own response (the mod applies an aborted turn's ack
-	// first), and the reporter may be the keyboard of every card.
+	// Both deliveries run off the reporter's goroutine: a chat's delivery waits
+	// on its turn starting, and the reporter may be the keyboard of every card.
 	if notice != "" {
-		go s.deliverNotice(sessionID, notice, nil)
+		go s.deliverNotice(sessionID, notice)
 	}
 	if reminder != "" {
-		go s.deliverNotice(sessionID, reminder, nil)
+		go s.deliverNotice(sessionID, reminder)
 	}
 	for _, e := range blocked {
 		go func() {
 			request := waitingRequest(s.lang(), s.term.Status(e.t.targetID))
-			s.deliverNotice(e.t.fromID, waitingEnvelope(e.t, e.id, request).String(), blockedNotification(s.lang(), e.t.target))
+			s.deliverNotice(e.t.fromID, waitingEnvelope(e.t, e.id, request).String())
 		}()
 	}
 	if byTurn != nil {
@@ -115,8 +114,8 @@ func (s *Service) noteBlockLocked(sessionID, state string) []endedErrand {
 	return nil
 }
 
-func (s *Service) deliverNotice(sessionID, notice string, note *Notification) {
-	if err := s.deliver(sessionID, notice, note); err != nil {
+func (s *Service) deliverNotice(sessionID, notice string) {
+	if err := s.deliver(sessionID, notice); err != nil {
 		slog.Warn("relay: ticket request not delivered", "session", sessionID, "err", err)
 	}
 }
@@ -197,8 +196,9 @@ func (s *Service) forgetStateLocked(sessionID string) {
 // there was no compaction or nothing is owed. Called under s.mu, after
 // endedErrands, so an errand that report ended is not listed.
 //
-// An errand the worker's mod answers is left out: it is answered by the
-// worker's last message, never by a ticket.
+// An errand its worker answers by finishing its turn is left out: it is
+// answered by the worker's last message, never by a ticket. That is every
+// errand at a chat, whose driver always reads the last message.
 func (s *Service) compactReminderLocked(sessionID string) string {
 	if !s.compacted[sessionID] {
 		return ""
@@ -206,7 +206,7 @@ func (s *Service) compactReminderLocked(sessionID string) string {
 	delete(s.compacted, sessionID)
 	var owed []string
 	for id, t := range s.tickets {
-		if t.targetID == sessionID && t.submitted && !t.modAnswers && !t.turnAnswers {
+		if t.targetID == sessionID && t.submitted && !t.turnAnswers {
 			owed = append(owed, id)
 		}
 	}
@@ -319,11 +319,7 @@ func (s *Service) turnCandidates(sessionID string) []string {
 			t.sawBusy = false
 			continue
 		}
-		// Queued for a mod that has not collected it: the turn was somebody
-		// else's, and the message may still be withdrawn and typed. An errand
-		// the worker's mod answers is not ended by a turn without that answer:
-		// the turn handed work to the background and resumes later.
-		if !t.sawBusy || (t.collected != nil && !t.collected()) || t.modAnswers {
+		if !t.sawBusy {
 			continue
 		}
 		candidates = append(candidates, id)

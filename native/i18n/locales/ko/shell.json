@@ -3,6 +3,8 @@
     "updateAvailable": "lich 플러그인 {version} 버전을 사용할 수 있습니다",
     "update": "업데이트",
     "later": "나중에",
+    "reregisterNeeded": "lich가 {names}용으로 작성하는 훅을 설치한 새 버전에 맞게 다시 등록해야 합니다.",
+    "reregister": "다시 등록",
     "installVersion": "v{version} 설치",
     "updated": "플러그인을 업데이트했습니다. 적용하려면 세션을 다시 시작하세요.",
     "installed": "플러그인을 설치했습니다. 적용하려면 세션을 다시 시작하세요.",

@@ -66,6 +66,8 @@ func TestPluginRowsSayWhatTheMachineHas(t *testing.T) {
 	unsupported := outdated
 	unsupported.InstalledVersion, unsupported.Compatible = "0.14.0", false
 	missing := backend.PluginStatus{Provider: "codex"}
+	behind := installed
+	behind.UpdateAvailable, behind.Reregister = true, true
 
 	for _, tc := range []struct {
 		name    string
@@ -79,6 +81,7 @@ func TestPluginRowsSayWhatTheMachineHas(t *testing.T) {
 		{"installed", installed, "v0.9.0", "", ui.VariantDefault},
 		{"outdated", outdated, "v0.8.0", "Update to v0.9.0", ui.VariantOutline},
 		{"unsupported", unsupported, "v0.14.0, not supported by this lich", "Install v0.9.0", ui.VariantOutline},
+		{"hooks behind the CLI", behind, "v0.9.0", "Re-register hooks", ui.VariantOutline},
 	} {
 		if got := pluginVersionText(tc.st); got != tc.text {
 			t.Errorf("%s: text = %q, want %q", tc.name, got, tc.text)

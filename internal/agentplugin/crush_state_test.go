@@ -204,13 +204,13 @@ func TestCrushStatusOffersTheUpdateOnceCrushHasTheEvents(t *testing.T) {
 	}
 
 	t.Setenv(fakeCLIVersion, "0.100.0")
-	if !statusOf(t, s.status(), providers.Crush).UpdateAvailable {
-		t.Error("a block behind the Crush installed offered no update")
+	if st := statusOf(t, s.status(), providers.Crush); !st.UpdateAvailable || !st.Reregister {
+		t.Errorf("a block behind the Crush installed: %+v, want an update that re-registers", st)
 	}
 	if _, err := s.Update(t.Context(), api.PluginProviderOptions{Provider: providers.Crush}); err != nil {
 		t.Fatalf("Update: %v", err)
 	}
-	if statusOf(t, s.status(), providers.Crush).UpdateAvailable {
-		t.Error("the update left the block behind")
+	if st := statusOf(t, s.status(), providers.Crush); st.UpdateAvailable || st.Reregister {
+		t.Errorf("the update left the block behind: %+v", st)
 	}
 }

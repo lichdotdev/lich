@@ -4,8 +4,7 @@ Everything lich hands an agent arrives in one envelope, the same on all eight
 providers: a task, a worker's result, a worker blocked on a permission, a merge,
 an errand that ran out, every other note lich types today, and what the person
 asks for from the window's buttons. It replaces the prose notes lich used to
-type and the `<task-notification>` the Claude Code mod rendered
-([mod-control.md](mod-control.md), A prompt as a notification).
+type and the `<task-notification>` the Claude Code mod rendered.
 
 The envelope is what lich writes; the plugin never builds one. The plugin's side
 is the briefing: the text each provider is handed at spawn says what the
@@ -47,7 +46,7 @@ of the contract.
 | `url` | `request` with topic `browser-notes` or `issue` | the page the notes were left on, or the issue |
 | `image` | `request` with topic `browser-notes` | the path of the sketch the person drew on the page, when there is one |
 | `issue`, `title` | `request` with topic `issue` | the issue's number and title |
-| `topic` | `notice`, `request` | what the notice is: `checks-failed`, `checks-passed`, `review`, `scheduled`, `usage-reset`, `compacted`, `unanswered`, `loop`, `handoff`; what the request is: `conflicts`, `checks`, `review-thread`, `review-comments`, `browser-notes`, `issue` |
+| `topic` | `notice`, `request` | what the notice is: `checks-failed`, `checks-passed`, `review`, `scheduled`, `usage-reset`, `compacted`, `unanswered`, `loop`, `handoff`, `edit-overlap`; what the request is: `conflicts`, `checks`, `review-thread`, `review-comments`, `browser-notes`, `issue` |
 
 ### Kinds
 
@@ -55,7 +54,7 @@ of the contract.
 |---|---|---|
 | `task` | a worker, when its task is handed over | `<summary>` when `answer` is `reply`: one line saying to answer with `reply_to_session` and this ticket (`"$LICH_BIN" reply <ticket>` where the session has no lich MCP tools); then `<prompt>` |
 | `worker-finished` | the asker | `<status>answered</status>`, then `<result>` in a chat or `<summary>` in a terminal (see Delivery) |
-| `worker-failed` | the asker | `<status>failed</status>`, `<error>`: the API error, refusal or empty final turn that ended it |
+| `worker-failed` | the asker | `<status>failed</status>`, `<error>`: that the worker's turn ended without an answer, and that what it produced is read in its card |
 | `worker-stopped` | the asker, when someone other than the asker closed the worker | `<status>stopped</status>`, `<by>`: the label of who closed it, or `user` |
 | `worker-waiting` | the asker, once per block | `<status>waiting</status>`, `<request>`: what the worker is blocked on (a permission, a question) |
 | `expired` | the asker, when a ticket ran out unanswered | `<status>expired</status>` |
@@ -88,8 +87,10 @@ person wrote to close it, when there is one.
 `notice` carries every other note lich types today (`internal/prompt`): a
 pull request's checks or a new review, a scheduled prompt, a usage limit that
 reset, the errands a compaction may have summarised away, a turn that ended with
-requests unanswered, a loop warning between two sessions, and the note a session
-hands its successor (`handoff`: a notice and not a task, since nothing is owed
+requests unanswered, a loop warning between two sessions, a file another
+session wrote minutes before this one did (`edit-overlap`, the answer of a
+[session-touched](session-touched.md) report rather than a typed note), and the
+note a session hands its successor (`handoff`: a notice and not a task, since nothing is owed
 back to a session done with the work). A scheduled prompt gets its envelope
 whether it is late or on time: its summary says when it was due, and how late
 when it is.
@@ -108,7 +109,7 @@ worker's permission from the asker is not part of version 1.
   the envelope as text, not through a parser, so an escaped `a && b` would reach
   it as `a &amp;&amp; b`; a `</result>` inside a worker's message still reaches
   the model as written (measured with the mod's `<task-notification>` on Claude
-  Code 2.1.289, [mod-control.md](mod-control.md)). The envelope is therefore
+  Code 2.1.289). The envelope is therefore
   not well-formed XML by design, and nothing should parse it as XML.
 - Tabs and newlines stay as they are; nothing is wrapped in CDATA.
 - `<result>` holds the worker's final message, cut at 4000 characters, the cut
@@ -148,8 +149,8 @@ Paseo's `notifyOnFinish` works. `reply_to_session` stays for the worker lich
 cannot read (Cursor in a terminal, and a Crush below 0.99.0, which reports no
 turn end) and
 for answering before the turn ends. The first answer wins: a
-`reply_to_session`, the mod's `/mod/answer` and the turn's end each close the
-errand by the same path, and the later ones are dropped. A turn that ends
+`reply_to_session` and the turn's end each close the errand by the same path,
+and the later one is dropped. A turn that ends
 while an errand of the worker's own is still out answers nothing; the turn its
 outcome starts is the one that answers.
 
@@ -158,7 +159,7 @@ outcome starts is the one that answers.
 [`fixtures/notification.json`](fixtures/notification.json) holds the envelopes
 lich writes, byte for byte, one per kind and view, with the escaping and the
 batching cases, in English (the prompt language's source). lich's composer is
-asserted against it, as its `/mod/status` body is against `mod-status.json`.
+asserted against it.
 The plugin builds no envelope, so it has no side to test; its briefing is
 checked by reading.
 
@@ -170,12 +171,6 @@ checked by reading.
 - The chat drivers (`internal/chat`) take an envelope as a user message: Claude
   Code's stream-json `user` message, Codex's app-server `turn/start` input,
   ACP's `session/prompt`. The queue is the chat's own (`queued`).
-- The prose notes are replaced in the same change. The Claude Code mod still
-  carries the envelope until it is retired: a terminal session whose mod polls
-  is handed the envelopes as the text of its prompt, nothing typed into its
-  TUI. A subagent's report goes in whole, as the `<result>` of a
-  `<task-notification>` ([mod-control.md](mod-control.md), A prompt as a
-  notification); any other result is left out with its `<summary>`, as typed.
 
 ## Known ceilings
 
