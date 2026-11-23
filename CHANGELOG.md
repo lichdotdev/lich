@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **A new session starts on the model you last picked for its provider.** Choose a model in any chat and the next session of that agent opens on it instead of the provider's default; the choice is remembered per provider, not per project.
 - **An agent that edits a file another lich session edited minutes earlier is told which session it was, on every agent.** It hears the session's name and how to reach it right after its edit; on Kiro CLI, with your next message.
 - **Settings › Version Control installs, signs in and sets up git, the GitHub CLI and the GitLab CLI for you.** A missing tool's Install opens a terminal running your package manager's command, a CLI with no account offers Sign in, and git without a name or email for commits asks for them right in its row.
 - **When a turn you started ends, the chat's empty message box suggests what you might write next.** Tab puts it in the box to edit or send. Not offered for Antigravity, opencode, oh-my-pi, Cursor CLI or Kiro CLI.
@@ -54,6 +55,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **A turn's tool calls stay folded until you open the line that counts them.** In a chat, a click on that line shows each call, and it stays as you left it while the turn carries on.
 - **A page an agent writes for you wears lich's mark on its browser tab instead of a blank square.** A page with an icon of its own keeps it.
 - **Crush cards show when a turn runs, ends or waits on you, and name themselves after the conversation.** It needs Crush 0.99.0 or newer: install or update the lich plugin for Crush in Settings › Updates after upgrading Crush, and a task you hand a Crush session then comes back by itself when its turn ends.
 - **`lich control` drives a chat on every agent that has one.** It sends a prompt or a slash command as the chat's next message, stops its turn, and sets a model or effort its picker offers; a session in its terminal, and Crush, are refused.

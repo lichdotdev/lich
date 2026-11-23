@@ -149,25 +149,12 @@ type chatFold struct {
 	enter ui.Presence
 	// turned is when the fold last opened or shut.
 	turned time.Time
-	// calling is whether the group's turn was in a run of tool calls the
-	// frame before.
-	calling bool
 }
 
 // shut reports whether the fold is folded and done folding, so what it
 // hides need not be laid out.
 func (f *chatFold) shut(now time.Time) bool {
 	return !f.open && now.Sub(f.turned) >= ui.CollapseDuration
-}
-
-// follow opens a group as its turn starts a run of tool calls and shuts it
-// as the run ends, when the model writes text or the turn is over. Only the
-// run's edges move it, so a click in between holds until the run ends.
-func (f *chatFold) follow(now time.Time, calling bool) {
-	if calling != f.calling {
-		f.open, f.turned = calling, now
-	}
-	f.calling = calling
 }
 
 type chatAnswer struct{ item, option string }

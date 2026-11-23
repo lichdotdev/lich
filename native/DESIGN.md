@@ -439,16 +439,14 @@ draws none while it grows in, because the room above the rows is measured in the
   "Worked for 41s · 6 tools · 09:15": how long the turn took, how many calls, when it ended (without the time
   when the history has none). Open, each call is a 28px row hung under the line by a connector, a 1px
   `Border` line under the fold's chevron with a stub into the row, ending at the last row as the sidebar's
-  tree does. A row is its tool's glyph (a Lucide mark by tool name, Claude Code's own names and ACP's kinds,
+  tree does. The line starts shut, whether the turn is in flight or ended, and only a click opens it, which
+  holds as the person left it. A row is its tool's glyph (a Lucide mark by tool name, Claude Code's own names and ACP's kinds,
   one generic wrench for the rest), its name in medium, what it acted on in mono, then at the right the time it
   ran in muted mono and how it ended: nothing while it runs, then a check in `TonePass` or a cross in
   `Destructive` with the output's first line. A time that stands still reads in milliseconds under a second
   ("476ms"), the line's "Worked for" too; a call whose end nobody reported (most histories) shows no time. Its
-  diff stands under it as a thread's hunk is drawn. While the model is in a run of calls (in the turn in flight,
-  the last call or text it wrote is a call; a thought, a permission or a question in between does not end it) the
-  group stands open with every call of the run, ended and running, so none leaves between one and the next; it
-  shuts when the model writes text again or the turn ends, and stays shut for the person to open. A group read
-  back from an ended turn starts shut. A click during the run holds until the run ends (`chatFold.follow`). Only
+  diff stands under it as a thread's hunk is drawn. While a call of the turn in flight runs, the line shimmers
+  with its count; the group never opens on its own. Only
   the turn in flight is alive: a call an ended turn left running (interrupted) stops with it, its time up to the
   turn's end, or none where nobody saw it.
 - **A turn's closing line** stands once, after the last item of the conversation's last turn, when that turn
@@ -476,8 +474,8 @@ draws none while it grows in, because the room above the rows is measured in the
 - **What is alive moves.** The text of a live step shimmers: a light band crosses it from left to right once
   every 1.6s (`Label.Shimmer`, looping frames only while it is drawn), and the time it has run counts beside
   it, "6s", "1m 12s", redrawn each second and not each frame. That is "Thinking" for the thought being
-  thought, "2 tool calls" for the turn's line while a call runs, and the name and target of each call that runs,
-  its time counting from when it was asked for, a wait on a permission included. A running call's name is muted
+  thought, "2 tool calls" for the turn's line while a call runs, and, in a group the person opened, the name
+  and target of each call that runs, its time counting from when it was asked for, a wait on a permission included. A running call's name is muted
   under the band, which lights toward `Foreground` and would not show on it; ended, it is `Foreground` again. The
   answer being written ends in a caret that stays lit while its text grows and blinks every half second once
   it has rested 600ms (`chatStreamHold`); the text itself comes in dry. A row new to the conversation enters

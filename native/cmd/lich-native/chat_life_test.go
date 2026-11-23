@@ -325,34 +325,36 @@ func TestAGroupTookUntilItsLastCallEnded(t *testing.T) {
 	}
 }
 
-// While the model is in a run of tool calls its group stands open with every
-// call of it, ended and running alike; once it writes text again, or the turn
-// is over, the group is shut, and one read back from an ended turn starts so.
-func TestAGroupShowsEveryCallWhileTheModelCallsTools(t *testing.T) {
+// A group of calls stands shut while they run, and a click on its line opens
+// it with every call of it, ended and running alike; it stays as the person
+// left it once text comes or the turn is over.
+func TestAGroupStaysShutUntilItsLineIsClicked(t *testing.T) {
 	items := []backend.ChatItem{
 		{ID: "u1", Kind: api.ItemUser, Turn: 1, At: novDay(18, 17, 58), Text: "go"},
 		{ID: "k1", Kind: api.ItemTool, Turn: 1, At: novDay(18, 17, 58), Tool: &backend.ChatToolCall{Name: "Read", Title: "a.go", State: api.ToolDone}},
 		{ID: "k2", Kind: api.ItemTool, Turn: 1, At: novDay(18, 17, 59), Tool: &backend.ChatToolCall{Name: "Bash", Title: "go test", State: api.ToolRunning}},
 		{ID: "k3", Kind: api.ItemTool, Turn: 1, At: novDay(18, 17, 59), Tool: &backend.ChatToolCall{Name: "Grep", Title: "TODO", State: api.ToolDone}},
 	}
-	_, r := lifeFrames(t, items, true)
+	u, r := lifeFrames(t, items, true)
 	r.frame()
 	for _, label := range []string{"Read", "Bash", "go test", "Grep", "TODO"} {
-		if !r.shows(label) {
-			t.Errorf("no %q under the group of the run in flight:\n%s", label, r.drawn())
+		if r.shows(label) {
+			t.Errorf("%q stands under a group nobody opened:\n%s", label, r.drawn())
 		}
 	}
-	answered := append(slices.Clone(items), backend.ChatItem{ID: "a1", Kind: api.ItemAgent, Turn: 1, At: novDay(18, 17, 59), Text: "done"})
-	for name, c := range map[string]struct {
-		items   []backend.ChatItem
-		running bool
-	}{"text after the run": {answered, true}, "an ended turn": {items, false}} {
-		_, r = lifeFrames(t, c.items, c.running)
-		r.frame()
-		for _, label := range []string{"Read", "Bash", "Grep"} {
-			if r.shows(label) {
-				t.Errorf("%s: %q stands under a group whose run is over:\n%s", name, label, r.drawn())
-			}
+	r.queueClick(r.at(t, i18n.T("chat.view.toolCalls", i18n.Args{"count": 3})))
+	r.play(15)
+	for _, label := range []string{"Read", "Bash", "go test", "Grep", "TODO"} {
+		if !r.shows(label) {
+			t.Errorf("no %q under the group a click opened:\n%s", label, r.drawn())
+		}
+	}
+	u.model.chat.apply(api.ChatItemUpdate{SessionID: "s1", Item: backend.ChatItem{ID: "a1", Kind: api.ItemAgent, Turn: 1, At: novDay(18, 17, 59), Text: "done"}})
+	r.now = r.now.Add(frameStep)
+	r.frame()
+	for _, label := range []string{"Read", "Bash", "Grep"} {
+		if !r.shows(label) {
+			t.Errorf("%q left a group the person opened once text came:\n%s", label, r.drawn())
 		}
 	}
 }
