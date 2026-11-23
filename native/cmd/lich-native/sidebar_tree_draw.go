@@ -229,6 +229,17 @@ func checkoutNode(gtx C, th *ui.Theme, glyph *icons.Icon, entry treeEntry) D {
 	return ui.CenteredIcon(gtx, glyph, 12, ui.Alpha(th.MutedForeground, 1-entry.glyph))
 }
 
+// editorFileNode is an editor's node: its file's icon, as the Files tree draws
+// it, in the node's box and faded as checkoutNode's glyph is.
+func editorFileNode(gtx C, th *ui.Theme, rel string, entry treeEntry) D {
+	side := gtx.Dp(sessionTreeRingR) * 2
+	gtx.Constraints = layout.Exact(image.Pt(side, side))
+	if a := 1 - entry.glyph; a < 1 {
+		defer paint.PushOpacity(gtx.Ops, a).Pop()
+	}
+	return layout.Center.Layout(gtx, th.FileIcon(rel, 12).Layout)
+}
+
 // nodeGround is the surface under a node of b's rows: its tray in a folder,
 // else the sidebar the theme is on.
 func nodeGround(th *ui.Theme, b blockView) color.NRGBA {

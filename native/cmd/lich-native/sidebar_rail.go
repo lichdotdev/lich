@@ -419,7 +419,7 @@ func (r *sidebarRail) editorNode(gtx C, th *ui.Theme, s *sidebar, it railItem, a
 				}
 				return ui.SquareFace(gtx, bg, func(gtx C) D {
 					return railSmall(gtx, it.small, func(gtx C) D {
-						return checkoutNode(gtx, onGround(th, railGround(th, it)), icEditorFile, it.entry())
+						return editorFileNode(gtx, onGround(th, railGround(th, it)), it.editor.rel, it.entry())
 					})
 				})
 			})
