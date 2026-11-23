@@ -19,7 +19,8 @@ Content-Type: application/json
 {"session_id": "<LICH_SESSION_ID>", "state": "<busy|done|waiting|idle|compacting>",
  "tool": "<tool name>", "detail": "<what it acts on>",
  "reason": "<what the agent is blocked on>",
- "provider_session_id": "<the conversation that reported>"}
+ "provider_session_id": "<the conversation that reported>",
+ "background": true}
 ```
 
 States: `busy`, `done`, `waiting`, `idle`, `compacting`. lich rejects anything else — the
@@ -36,6 +37,19 @@ trimmed, capped at 120, and belonging to the `waiting` report alone — it says
 what the agent is blocked on, and no other state is a question. A `reason` on
 any other state is dropped, and one that is absent, empty or over-long is never
 a reason to refuse the report: the bell has to land either way.
+
+`background` is optional and belongs to the `done` report alone: `true` says the
+turn ended with work the agent started still running in the background, a
+command or a subagent, which starts a turn of its own when it ends. lich then
+answers no errand by that turn's end; the next `done` without it does
+([notification.md](notification.md), Which errands use it). Claude Code's `Stop`
+payload lists that work in `background_tasks` (measured on 2.1.330: entries of
+`type` `shell` or `subagent` with `status` `running`, `[]` on the turn that
+leaves none), so its hook sends `background: true` when the list is not empty.
+Antigravity's `Stop` says the same as `fullyIdle` false (read in its embedded Stop
+contract, not forwarded yet); oh-my-pi needs no field, holding its `session_stop`
+until its async work is done; the rest name none (docs/ceilings.md). On any other
+state it is dropped, and an absent one is `false`.
 
 `provider_session_id` is optional: the provider's own id for the conversation
 that fired the hook, the same id `/session-start` reports (the stdin payload's

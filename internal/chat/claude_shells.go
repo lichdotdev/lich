@@ -324,3 +324,36 @@ func outputTail(text string, cut bool) string {
 	}
 	return strings.Join(lines, "\n")
 }
+
+// backgroundTasks reads background_tasks_changed: n tasks run in the
+// background, shells, monitors and subagents alike (measured on 2.1.330).
+func (d *claudeDriver) backgroundTasks(n int) {
+	idle := !d.c.turnRunning()
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	if n < d.bgTasks && idle {
+		d.wake = true
+	}
+	d.bgTasks = n
+}
+
+// backgroundWork is whether tasks still run in the background.
+func (d *claudeDriver) backgroundWork() bool {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	return d.bgTasks > 0
+}
+
+// claudeWake opens the turn Claude Code starts on its own when a background
+// task ends after the turn that started it (its prompt a task notification,
+// measured on 2.1.330): no message of lich's begins it, and without a turn of
+// the chat's its end would reach neither the card nor the relay.
+func (d *claudeDriver) claudeWake() {
+	d.mu.Lock()
+	wake := d.wake
+	d.wake = false
+	d.mu.Unlock()
+	if wake && d.c.beginTurn() == nil {
+		d.c.markStart()
+	}
+}

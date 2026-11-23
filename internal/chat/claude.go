@@ -49,6 +49,11 @@ type claudeDriver struct {
 	agentList []claudeAgent
 	tasks     *claudeTasks
 	shells    claudeShells
+	// bgTasks is how many tasks the last background_tasks_changed listed,
+	// and wake whether one ended with no turn running: the system/init that
+	// follows opens the turn Claude Code starts on its own (claudeWake).
+	bgTasks int
+	wake    bool
 }
 
 type claudeControl struct {
@@ -89,6 +94,8 @@ type claudeLine struct {
 	// the user line a compaction's summary is, live and in the transcript
 	LiveCompactSummary bool `json:"is_compact_summary"`
 	CompactSummary     bool `json:"isCompactSummary"`
+	// system/background_tasks_changed, the whole list
+	Tasks []json.RawMessage `json:"tasks"`
 	// system/init
 	Skills           []string `json:"skills"`
 	TerminalCommands []string `json:"terminal_slash_commands"`
@@ -282,11 +289,14 @@ func (d *claudeDriver) handle(raw []byte) {
 			d.mu.Unlock()
 			d.c.bind(line.SessionID, expected)
 			d.markCommands(line.Skills, line.TerminalCommands)
+			d.claudeWake()
 		}
 		if strings.HasPrefix(line.Subtype, "task_") {
 			d.shellTask(line.Subtype, raw)
 		}
 		switch line.Subtype {
+		case "background_tasks_changed":
+			d.backgroundTasks(len(line.Tasks))
 		case "status":
 			d.compactStatus(line)
 		case claudeCompactBound:

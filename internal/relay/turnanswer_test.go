@@ -16,6 +16,24 @@ func (f *fakeTerminal) FinalMessage(id string) (string, bool) {
 	return text, ok
 }
 
+// BackgroundWork answers with what background recorded.
+func (f *fakeTerminal) BackgroundWork(id string) bool {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.background[id]
+}
+
+// runInBackground records whether id's agent has work running in the
+// background as its turn ends.
+func (f *fakeTerminal) runInBackground(id string, running bool) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if f.background == nil {
+		f.background = map[string]bool{}
+	}
+	f.background[id] = running
+}
+
 // say records the final message of id's last turn.
 func (f *fakeTerminal) say(id, text string) {
 	f.mu.Lock()
@@ -207,6 +225,98 @@ func TestAWorkerWithAnErrandOutDoesNotAnswerEarly(t *testing.T) {
 	svc.Observe("s2", stateDone)
 	if r := awaitResult(t, results); r.Status != StatusAnswered || r.Answer != "Done, api fixed it." {
 		t.Errorf("result = %+v, want the answer of the turn the outcome started", r)
+	}
+}
+
+// A worker that ends its turn with a command still running in the background
+// has not answered: its words are the interim ones. The turn the command's end
+// starts is the one that answers (the gate run in the background, observed).
+func TestATurnEndingWithBackgroundWorkDoesNotAnswer(t *testing.T) {
+	t.Parallel()
+	term := newFakeTerminal("s1", "s2")
+	term.say("s2", "")
+	svc := newRelay(workspace(), term, nil)
+	svc.SetPlugins(fakePlugins{installed: true})
+
+	results := sendAsync(svc)
+	waitForTicket(svc)
+	svc.Observe("s2", stateBusy)
+	term.say("s2", "Gate running; waiting on the result.")
+	term.runInBackground("s2", true)
+	svc.Observe("s2", stateDone)
+	time.Sleep(20 * time.Millisecond)
+	select {
+	case r := <-results:
+		t.Fatalf("answered while its background work ran: %+v", r)
+	default:
+	}
+
+	term.runInBackground("s2", false)
+	svc.Observe("s2", stateBusy)
+	term.say("s2", "Gate green; committed.")
+	svc.Observe("s2", stateDone)
+	if r := awaitResult(t, results); r.Status != StatusAnswered || r.Answer != "Gate green; committed." {
+		t.Errorf("result = %+v, want the answer of the turn that left no background work", r)
+	}
+}
+
+// An errand answered by its ticket is not ended unanswered by a turn that left
+// background work running either: the worker is still on it.
+func TestBackgroundWorkKeepsATicketErrandOpen(t *testing.T) {
+	t.Parallel()
+	term := newFakeTerminal("s1", "s2")
+	svc := newRelay(workspace(), term, nil)
+	svc.SetPlugins(fakePlugins{installed: true})
+
+	results := sendAsync(svc)
+	ticket := waitForTicket(svc)
+	svc.Observe("s2", stateBusy)
+	term.runInBackground("s2", true)
+	svc.Observe("s2", stateDone)
+	time.Sleep(20 * time.Millisecond)
+	select {
+	case r := <-results:
+		t.Fatalf("ended while its background work ran: %+v", r)
+	default:
+	}
+
+	if _, err := svc.Reply(context.Background(), ReplyOptions{From: "s2", Ticket: ticket, Answer: "replied by ticket"}); err != nil {
+		t.Fatalf("Reply: %v", err)
+	}
+	if r := awaitResult(t, results); r.Status != StatusAnswered || r.Answer != "replied by ticket" {
+		t.Errorf("result = %+v, want the reply", r)
+	}
+}
+
+// A reply by ticket while the background work runs is the answer, and the
+// turn its end starts does not answer a second time.
+func TestAReplyDuringBackgroundWorkIsTheAnswer(t *testing.T) {
+	t.Parallel()
+	term := newFakeTerminal("s1", "s2")
+	term.say("s2", "")
+	svc := newRelay(workspace(), term, nil)
+	svc.SetPlugins(fakePlugins{installed: true})
+
+	results := sendAsync(svc)
+	ticket := waitForTicket(svc)
+	svc.Observe("s2", stateBusy)
+	term.say("s2", "Gate running.")
+	term.runInBackground("s2", true)
+	svc.Observe("s2", stateDone)
+	if _, err := svc.Reply(context.Background(), ReplyOptions{From: "s2", Ticket: ticket, Answer: "replied by ticket"}); err != nil {
+		t.Fatalf("Reply: %v", err)
+	}
+	term.runInBackground("s2", false)
+	svc.Observe("s2", stateBusy)
+	term.say("s2", "Gate green.")
+	svc.Observe("s2", stateDone)
+
+	if r := awaitResult(t, results); r.Status != StatusAnswered || r.Answer != "replied by ticket" {
+		t.Errorf("result = %+v, want the reply that came first", r)
+	}
+	time.Sleep(20 * time.Millisecond)
+	if got, err := svc.Wait(context.Background(), WaitOptions{Ticket: ticket}); err == nil && got.Answer == "Gate green." {
+		t.Errorf("the turn's end answered a second time: %+v", got)
 	}
 }
 

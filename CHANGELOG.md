@@ -105,6 +105,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Clicks in the session browser keep waiting for their requests when the system clock changes.**
 - **The window startup error now points to the native window log.** That log contains the window process's error when it exits before opening.
 - **A message to a Claude Code session that just opened is no longer left unsent on its prompt.**
+- **A Claude Code worker that leaves a command or a subagent running in the background no longer answers its task with its interim words.** The answer is the turn that leaves nothing running, in the chat and, with lich-plugin's next release, in the terminal.
 - **Changing the advisor model, fast mode, thinking or ultracode in one Claude Code account no longer changes it in your other accounts.** Each profile now keeps these alongside its own default model and effort, as well as whether to switch models when safeguards flag a message.
 - **Typing in the command palette opened over a browser page no longer piles every letter at the start.** The page took the keyboard back on each frame; now the palette, and any field over the page, keeps it until it closes.
 

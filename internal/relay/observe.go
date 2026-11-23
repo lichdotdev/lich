@@ -32,6 +32,9 @@ func (s *Service) Observe(sessionID, state string) {
 		s.mu.Unlock()
 		return
 	}
+	// Asked outside the lock: the terminal reads it off the chat or the hook
+	// report, and either may be the one reporting this state.
+	background := state == stateDone && s.term.BackgroundWork(sessionID)
 	s.mu.Lock()
 	blocked := s.noteBlockLocked(sessionID, state)
 	finished := s.finishedWorkerLocked(sessionID, state)
@@ -40,7 +43,7 @@ func (s *Service) Observe(sessionID, state string) {
 	if state == stateBusy {
 		s.seeNewsLocked(sessionID)
 	}
-	ended, notice, byTurn := s.endedErrands(sessionID, state)
+	ended, notice, byTurn := s.endedErrands(sessionID, state, background)
 	reminder := s.compactReminderLocked(sessionID)
 	// A waiter still holding the line carries the news out through its own
 	// select; an errand nobody is attending is stashed for the sender instead,
@@ -227,8 +230,9 @@ func (s *Service) compactReminderLocked(sessionID string) string {
 // errands, the notice asking the worker to name the ticket next time, for
 // Observe to type outside the lock; and for a turn that was the one errand its
 // worker answers by finishing its turn, that errand, left open for
-// answerByTurn to read the answer of.
-func (s *Service) endedErrands(sessionID, state string) ([]endedErrand, string, *endedErrand) {
+// answerByTurn to read the answer of. background is whether the turn ended
+// with work of its own still running in the background (turnCandidates).
+func (s *Service) endedErrands(sessionID, state string, background bool) ([]endedErrand, string, *endedErrand) {
 	var ended []endedErrand
 	var byTurn *endedErrand
 	notice := ""
@@ -254,7 +258,7 @@ func (s *Service) endedErrands(sessionID, state string) ([]endedErrand, string, 
 			}
 		}
 	case stateDone:
-		candidates := s.turnCandidates(sessionID)
+		candidates := s.turnCandidates(sessionID, background)
 		// Worded before the tickets go, because it is read off them — and only
 		// where the turn could have been either: with one candidate there is
 		// nothing to pick between.
@@ -302,11 +306,14 @@ func (s *Service) endedErrands(sessionID, state string) ([]endedErrand, string, 
 // arrives inside the first's turn is attributable rather than ambiguous.
 //
 // A turn the target ended awaiting an outcome of its own (awaitsOutcomeLocked)
-// has no candidate either.
+// has no candidate either, nor one it ended with background work still running:
+// a command or a subagent of the provider's own. Its words are the interim
+// ones ("the gate is running"), and the turn its work's end starts is the one
+// that answers (docs/hooks/notification.md, Which errands use it).
 //
 // Called under s.mu. It consumes the skip counts and clears the busy marks, so
 // one turn ending is read exactly once and the next starts clean.
-func (s *Service) turnCandidates(sessionID string) []string {
+func (s *Service) turnCandidates(sessionID string, background bool) []string {
 	var candidates []string
 	for id, t := range s.tickets {
 		if t.targetID != sessionID || t.delivered.IsZero() {
@@ -332,7 +339,7 @@ func (s *Service) turnCandidates(sessionID string) []string {
 	// A target awaiting an outcome of its own ended this turn to wait for it, a
 	// subagent of its own in the background: the outcome reaching its prompt
 	// resumes it, and that turn is the one that answers.
-	if s.awaitsOutcomeLocked(sessionID) {
+	if background || s.awaitsOutcomeLocked(sessionID) {
 		return nil
 	}
 	sort.Slice(candidates, func(i, j int) bool {

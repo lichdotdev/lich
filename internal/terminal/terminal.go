@@ -269,6 +269,10 @@ type Service struct {
 	// under mu for the reason spawns is not: it is read on every hook report,
 	// which must never queue behind a PTY spawn.
 	unread sync.Map
+	// background is whether each terminal session's last `done` said its agent
+	// left work running in the background (BackgroundWork). Not under mu for
+	// the reason unread is not.
+	background sync.Map
 	// hands is how long each session has been worked on, measured off the same
 	// three signals the card is already drawing — a state report, a keystroke,
 	// output while the agent is busy (see handsOn). It carries its own lock for
@@ -492,6 +496,12 @@ func (s *Service) applyState(req hookRequest) {
 		if watch := s.toolWatcher(); watch != nil {
 			watch(req.SessionID, req.Tool, req.Detail)
 		}
+	}
+	switch req.State {
+	case statusDone:
+		s.background.Store(req.SessionID, req.Background)
+	case statusIdle:
+		s.background.Delete(req.SessionID)
 	}
 	// The relay reads the stream raw: it keeps its own turn accounting,
 	// and a report held back from the window still moves an errand.

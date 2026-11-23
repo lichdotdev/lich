@@ -231,6 +231,11 @@ type Terminal interface {
 	// and whether lich can read one for it at all: its chat driver, or its
 	// provider's transcript in a terminal.
 	FinalMessage(id string) (string, bool)
+	// BackgroundWork is whether that session's agent ended its last turn with
+	// work of its own still running in the background, a command or a
+	// subagent, where its provider says so; false where it cannot tell
+	// (docs/ceilings.md).
+	BackgroundWork(id string) bool
 }
 
 type Peer = api.Peer

@@ -151,6 +151,7 @@ what lich can read back out of it, since each CLI records different things.
 | The card names itself after the conversation | yes | after your first prompt | after your first prompt | yes | yes, from the second turn | once the first turn ends, from Crush 0.99.0 | yes, once the first turn ends | after your first prompt, once the first turn ends |
 | A pull request the agent opens shows on its card when the turn ends | yes | yes | yes | yes | yes | from Crush 0.99.0; before it, once the window regains focus | yes | yes |
 | A task you hand an agent comes back by itself when its turn ends | yes | yes | yes | yes | yes | from Crush 0.99.0; before it, it answers with reply_to_session | in the chat; in a terminal it answers with reply_to_session | yes |
+| A task waits for the commands and subagents the agent left running in the background, instead of coming back with its interim words | in a chat; in a terminal from lich-plugin's next release | no | no | no | in a terminal | no | background commands, in a chat | no |
 | Repaints in the new look when you switch lich between a light and a dark theme | yes | no | no | yes | yes | no | yes | no |
 | Bell when the agent is blocked on you | yes | yes | no | yes | no | from Crush 0.99.0 | no | no |
 | Ctrl+Shift+I jumps to the next session waiting on you | yes | yes | no | yes | no | from Crush 0.99.0 | no | no |

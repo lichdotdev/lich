@@ -152,7 +152,15 @@ for answering before the turn ends. The first answer wins: a
 `reply_to_session` and the turn's end each close the errand by the same path,
 and the later one is dropped. A turn that ends
 while an errand of the worker's own is still out answers nothing; the turn its
-outcome starts is the one that answers.
+outcome starts is the one that answers. So does a turn that ends with work of
+the worker's own still running in the background, a command (the gate run in
+the background while it waits) or a native subagent: its last words are the
+interim ones, and the turn the work's end starts is the one that answers. lich
+knows of that work only where the provider says so: Claude Code's chat
+(`background_tasks_changed`) and its `Stop` hook (`background_tasks`, sent as the
+`done` report's `background`, [session-state.md](session-state.md)); oh-my-pi in
+a terminal and Cursor CLI's chat hold the turn's end themselves until the work is
+done. Everywhere else a turn's end answers as before (docs/ceilings.md).
 
 ## Fixtures
 
