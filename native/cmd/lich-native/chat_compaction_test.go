@@ -180,11 +180,21 @@ func TestCompactionShots(t *testing.T) {
 		compactItem("compaction-1", 1, api.ChatCompaction{State: api.CompactionDone, Auto: true, Before: 196000, After: 11000}),
 		{ID: "a2", Kind: api.ItemAgent, Turn: 1, Text: "Carrying on with the callers."},
 	}
+	// A conversation read back from a Claude Code transcript that compacted
+	// twice, as the backend reads it: the person's /compact and its marker,
+	// then an automatic one mid-turn.
+	resumed := append(typedCompact(api.ChatCompaction{State: api.CompactionDone, Before: 35043, After: 13792, Summary: compactSummary}),
+		backend.ChatItem{ID: "u3", Kind: api.ItemUser, Turn: 3, Text: "and now the writer"},
+		backend.ChatItem{ID: "a3", Kind: api.ItemAgent, Turn: 3, Text: "Reading the writer's callers."},
+		compactItem("compaction-2", 3, api.ChatCompaction{State: api.CompactionDone, Auto: true, Before: 196000, After: 11000}),
+		backend.ChatItem{ID: "a4", Kind: api.ItemAgent, Turn: 3, Text: "The writer escapes commas too now."},
+	)
 	for _, light := range []bool{false, true} {
 		scheme := map[bool]string{false: "dark", true: "light"}[light]
 		writeShot(t, compactShot(t, typedCompact(api.ChatCompaction{State: api.CompactionRunning}), true, light), "shot-live-"+scheme+".png")
 		writeShot(t, compactShot(t, typedCompact(api.ChatCompaction{State: api.CompactionDone, Before: 182000, After: 9000, Summary: compactSummary}), false, light), "shot-done-"+scheme+".png")
 		writeShot(t, compactShot(t, failed, false, light), "shot-failed-"+scheme+".png")
 		writeShot(t, compactShot(t, auto, true, light), "shot-auto-"+scheme+".png")
+		writeShot(t, compactShot(t, resumed, false, light), "shot-resumed-"+scheme+".png")
 	}
 }
