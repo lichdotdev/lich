@@ -348,6 +348,14 @@ var (
 	// accepted it. With no window attached it is dropped, like every event.
 	ExtensionMessageEvent = defineEvent[ExtensionMessage]("extension-message")
 
+	// SubagentVetoEvent carries a tool call /subagent answered deny, once the
+	// answer was written, for the asker's chat to draw it as opened.
+	SubagentVetoEvent = defineEvent[SubagentVeto]("subagent-veto")
+
+	// CodexHookUntrustedEvent tells the window Codex is skipping lich-plugin's
+	// PreToolUse hook, read from a Codex chat's hooks/list once per run.
+	CodexHookUntrustedEvent = defineEvent[CodexHookUntrusted]("codex-hook-untrusted")
+
 	// WindowCloseEvent asks the native window to close, lich quitting.
 	WindowCloseEvent = defineEvent[None]("window-close")
 

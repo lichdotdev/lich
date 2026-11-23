@@ -298,11 +298,6 @@
     "descriptionNextPaste": "Un pegado que {provider} plegaría en un marcador llega como el texto completo, para que puedas editarlo antes de enviarlo. Se aplica desde el próximo pegado, en todas las sesiones de {provider}.",
     "descriptionNextSession": "Un pegado que {provider} plegaría en un marcador llega como el texto completo, para que puedas editarlo antes de enviarlo. Se aplica a las sesiones abiertas después de cambiarlo."
   },
-  "subagentCardsSetting": {
-    "title": "Subagentes como sesiones de lich",
-    "searchWords": "agente subagente tarjeta worktree delegar segundo plano agent subagent card delegate background",
-    "description": "Un subagente general-purpose abre su propia tarjeta y worktree en lugar de ejecutarse oculto dentro de {provider}. Se aplica a las sesiones abiertas después de cambiarlo."
-  },
   "ultracodeSetting": {
     "title": "Ultracode",
     "searchWords": "workflow orquestación multiagente esfuerzo orchestration multi-agent effort",

@@ -37,7 +37,8 @@
       "few": "Работал {duration} · {count} инструмента · {time}",
       "many": "Работал {duration} · {count} инструментов · {time}",
       "other": "Работал {duration} · {count} инструмента · {time}"
-    }
+    },
+    "openedAs": "открыта как {label}"
   },
   "done": {
     "done": "Готово",
@@ -477,5 +478,12 @@
     "stoppedByYou": "закрыли вы",
     "waiting": "{label}: ждёт",
     "expired": "{label}: не ответила вовремя"
+  },
+  "codexHook": {
+    "title": "Codex игнорирует хук lich, поэтому его субагенты работают нативно",
+    "how": "Как снова доверить",
+    "howTitle": "Снова доверьте хуку lich в Codex",
+    "howSteps": "Откройте сессию в терминале (TUI), введите /hooks и доверьте хуку PreToolUse из lich-plugin. Codex пропускает хук с изменённым содержимым, пока вы снова ему не доверите.",
+    "open": "Открыть сессию"
   }
 }

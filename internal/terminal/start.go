@@ -230,7 +230,7 @@ func (s *Service) prepareSpawnLocked(opts api.StartOptions, profileDir, name str
 	skipPermissions := s.store.SkipPermissions(opts.Kind, opts.ProjectID, opts.Cwd)
 	ultracode := s.store.Ultracode(opts.Kind) || s.store.SessionUltracode(opts.ID)
 	depth := s.store.SessionSubagentDepth(opts.ID)
-	cardsOn := s.subagentCardsOn(opts.Kind, profileDir, depth)
+	cardsOn := subagentCardsOn(profileDir, depth)
 	// The model and effort are read from the row rather than passed in, so every
 	// spawn that starts a conversation of its own gets them: the window's first
 	// view and a restart. A resume leaves them to the provider (modelArgs).
@@ -239,7 +239,7 @@ func (s *Service) prepareSpawnLocked(opts api.StartOptions, profileDir, name str
 		unfold = opencode2PasteUnfoldEnv
 	}
 	env, err := unfold(
-		subagentEnv(s.sessionEnv(opts.ID, opts.ProjectID, opts.Cwd), opts.Kind, depth, cardsOn), opts.Kind, s.store.PasteUnfold(opts.Kind),
+		subagentEnv(s.sessionEnv(opts.ID, opts.ProjectID, opts.Cwd), opts.Kind, depth, cardsOn, agentplugin.ClaudeAsksSubagentHook(profileDir)), opts.Kind, s.store.PasteUnfold(opts.Kind),
 	)
 	if err != nil {
 		return spawnLaunch{}, err

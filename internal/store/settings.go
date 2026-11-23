@@ -177,20 +177,6 @@ func (s *Service) Ultracode(providerID string) bool {
 	return err == nil && value == "true"
 }
 
-// subagentCardsKey is the settings key that runs a provider's general-purpose
-// subagents as lich sessions. Global only, and off only for the literal
-// "false": the cards are on until the user turns them off.
-func subagentCardsKey(providerID string) string {
-	return "provider." + providerID + ".subagentCards"
-}
-
-// SubagentCards reports whether this provider's general-purpose subagents run
-// as lich sessions.
-func (s *Service) SubagentCards(providerID string) bool {
-	value, err := s.GetSetting(context.Background(), api.GetSettingOptions{Key: subagentCardsKey(providerID), ProjectID: globalScope})
-	return err != nil || value != "false"
-}
-
 // pasteUnfoldKey is the settings key that makes a long paste land as the full
 // text in a provider that folds it. Global only, and on only for the literal
 // "true".

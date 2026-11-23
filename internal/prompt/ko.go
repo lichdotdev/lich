@@ -126,6 +126,12 @@ var ko = Catalog{
 	BrowserNotesSketchOnly: "브라우저 탭의 페이지(%[1]s) 위에 스케치가 그려졌습니다. 스케치가 들어간 스크린샷: %[2]s",
 	BrowserNotesSelectors:  "위의 각 셀렉터는 browser_click과 browser_type의 selector로 그대로 쓸 수 있습니다.",
 
+	SubagentOpened:        "lich가 이 작업을 세션 %[1]q(티켓 %[2]s)로 열었습니다. 그 보고는 <lich-notification kind=\"worker-finished\">로 도착합니다. 도구를 다시 시도하지 말고 작업을 직접 하지도 마세요.",
+	SubagentOpenedSession: "%[1]q(티켓 %[2]s)",
+	SubagentOpenedMany:    "lich가 이 작업들을 세션 %[1]s(으)로 열었습니다. 보고는 <lich-notification kind=\"worker-finished\"> 블록으로 도착합니다. 도구를 다시 시도하지 말고 작업을 직접 하지도 마세요.",
+	SubagentSealed:        "lich는 이 작업을 읽을 수 없습니다. 이 도구는 작업을 암호화해서 넘깁니다. 대신 같은 작업을 lich의 open_session 도구에 프롬프트를 빠짐없이 적어 넘기세요. 보고는 <lich-notification kind=\"worker-finished\">로 도착합니다. 이 도구를 다시 시도하지 마세요.",
+	SubagentWait:          "실행 중인 네이티브 서브에이전트는 없습니다. lich가 각 작업을 별도 세션으로 열었고, 각 보고는 <lich-notification kind=\"worker-finished\">로 프롬프트에 도착합니다. 여기서 기다리지 말고 턴을 끝내세요.",
+
 	ThreadMarked: "표시했습니다. 풀 리퀘스트의 head에 이 커밋이 들어가면 lich가 스레드를 해결하고 이 커밋으로 답글을 답니다.",
 
 	CopyNotice:         "lich가 %s을(를) 여기에 복사했습니다. 이 세션에서는 원본에 접근할 수 없으며, 수정 사항은 사본에만 남습니다.",

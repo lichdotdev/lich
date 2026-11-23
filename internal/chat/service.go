@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"slices"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/lichdotdev/lich/api"
@@ -45,6 +46,9 @@ type Service struct {
 	mu        sync.Mutex
 	sessions  map[string]*chatSession
 	switching map[string]bool
+	// lichHookChecked is whether a Codex chat already read whether Codex runs
+	// lich-plugin's PreToolUse hook (codex_hooks.go): once per run.
+	lichHookChecked atomic.Bool
 }
 
 // New is a chat service running its providers through term, and the way the

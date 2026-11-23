@@ -500,9 +500,6 @@ func (s *settingsScreen) providerScreenRows(th *ui.Theme, values scopedValues, m
 	if supportsUltracode(p.id) {
 		add(i18n.T("settings.ultracodeSetting.title"), func(gtx C, first bool) D { return s.ultracodeRow(gtx, th, values, p, first) })
 	}
-	if supportsSubagentCards(p.id) {
-		add(i18n.T("settings.subagentCardsSetting.title"), func(gtx C, first bool) D { return s.subagentRow(gtx, th, values, p, first) })
-	}
 	if hasPasteUnfold(p.id) {
 		add(i18n.T("settings.pasteUnfoldSetting.title"), func(gtx C, first bool) D { return s.pasteRow(gtx, th, values, p, first) })
 	}
@@ -534,12 +531,6 @@ func (s *settingsScreen) switchRow(gtx C, th *ui.Theme, values scopedValues, fir
 func (s *settingsScreen) ultracodeRow(gtx C, th *ui.Theme, values scopedValues, p providerInfo, first bool) D {
 	key := providerUltracodeKey(p.id)
 	return s.switchRow(gtx, th, values, first, "settings.ultracodeSetting.title", key, i18n.T("settings.ultracodeSetting.description", i18n.Args{"provider": p.name}), &s.providers.ultra, func(m providersMachine) bool { return m.globals[key] == "true" })
-}
-
-// subagentRow is on until turned off, so only a stored "false" reads as off.
-func (s *settingsScreen) subagentRow(gtx C, th *ui.Theme, values scopedValues, p providerInfo, first bool) D {
-	key := providerSubagentKey(p.id)
-	return s.switchRow(gtx, th, values, first, "settings.subagentCardsSetting.title", key, i18n.T("settings.subagentCardsSetting.description", i18n.Args{"provider": p.name}), &s.providers.agents, func(m providersMachine) bool { return m.globals[key] != "false" })
 }
 
 func (s *settingsScreen) pasteRow(gtx C, th *ui.Theme, values scopedValues, p providerInfo, first bool) D {

@@ -213,3 +213,44 @@ func TestALateTranscriptStillAnswers(t *testing.T) {
 		t.Errorf("result = %+v, want the words written after the done", r)
 	}
 }
+
+// HandSubagent opens the errand and comes back at once with its ticket, the
+// task handed over or held for the worker's prompt; the outcome reaches the
+// asker later, as a subagent's report does.
+func TestHandSubagentWaitsForNothing(t *testing.T) {
+	t.Parallel()
+	term := newFakeTerminal("s1", "s2")
+	svc := newRelay(workspace(), term, nil)
+	start := time.Now()
+	res, err := svc.HandSubagent(context.Background(), SendOptions{From: "s1", Target: "docs", Prompt: "write the docs"})
+	if err != nil || res.Ticket == "" || res.Status != StatusPending || time.Since(start) > time.Second {
+		t.Fatalf("HandSubagent = %+v, %v after %s", res, err, time.Since(start))
+	}
+	svc.mu.Lock()
+	tk := svc.tickets[res.Ticket]
+	svc.mu.Unlock()
+	if tk == nil || !tk.subagent {
+		t.Fatalf("ticket %+v, want an open subagent errand", tk)
+	}
+	if _, err := svc.HandSubagent(context.Background(), SendOptions{Target: "docs", Prompt: "x"}); err == nil {
+		t.Error("a subagent errand from no session was accepted")
+	}
+}
+
+// ErrandOpen is true while an errand waits on its worker and false once it
+// was answered.
+func TestErrandOpenFollowsTheAnswer(t *testing.T) {
+	t.Parallel()
+	term := newFakeTerminal("s1", "s2")
+	svc := newRelay(workspace(), term, nil)
+	res, err := svc.HandSubagent(context.Background(), SendOptions{From: "s1", Target: "docs", Prompt: "write the docs"})
+	if err != nil || !svc.ErrandOpen(res.Ticket) {
+		t.Fatalf("a fresh errand reads closed: %+v %v", res, err)
+	}
+	if _, err := svc.Reply(context.Background(), ReplyOptions{From: "s2", Ticket: res.Ticket, Answer: "done"}); err != nil {
+		t.Fatal(err)
+	}
+	if svc.ErrandOpen(res.Ticket) {
+		t.Error("an answered errand still reads open")
+	}
+}

@@ -14,8 +14,8 @@ const (
 	// install says which release a report comes from.
 	PluginVersionFloor = "0.13.0"
 	// PluginVersionCeiling is the first release past the newest contract this
-	// lich implements (0.22, whose texts describe the notification envelope),
-	// and the first one it cannot vouch for.
+	// lich implements (0.22, whose texts describe the notification envelope and
+	// whose pre-tool hook asks /subagent), and the first one it cannot vouch for.
 	PluginVersionCeiling = "0.23.0"
 	// ModAnswerRelease is the first release whose mod answers a subagent
 	// worker's errand itself (docs/hooks/mod-answer.md).

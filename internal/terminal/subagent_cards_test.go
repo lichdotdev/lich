@@ -31,29 +31,31 @@ func withClaudePlugin(t *testing.T, version string) {
 }
 
 // The lich-plugin mod reads LICH_SUBAGENT_DEPTH on every Claude Code session to
-// tell a worker, and LICH_SUBAGENT_CARDS=off only where its subagents stay
-// native, so a session whose subagents become cards carries no off at all.
+// tell a worker. A mod older than the subagent hook also reads
+// LICH_SUBAGENT_CARDS=off where its subagents stay native; a newer one has
+// lich decide at /subagent and is told nothing more.
 func TestSubagentEnv(t *testing.T) {
 	t.Parallel()
 	base := []string{"A=1"}
 	cases := []struct {
-		name    string
-		kind    string
-		depth   int
-		cardsOn bool
-		want    []string
+		name     string
+		kind     string
+		depth    int
+		cardsOn  bool
+		asksLich bool
+		want     []string
 	}{
-		{"claude with cards on", providers.Claude, 0, true, []string{"A=1", "LICH_SUBAGENT_DEPTH=0"}},
-		{"claude with cards off", providers.Claude, 0, false,
-			[]string{"A=1", "LICH_SUBAGENT_DEPTH=0", "LICH_SUBAGENT_CARDS=off"}},
-		{"a worker that opens cards", providers.Claude, 1, true, []string{"A=1", "LICH_SUBAGENT_DEPTH=1"}},
-		{"a worker kept native", providers.Claude, 2, false,
+		{"claude with cards on", providers.Claude, 0, true, false, []string{"A=1", "LICH_SUBAGENT_DEPTH=0"}},
+		{"a worker that opens cards", providers.Claude, 1, true, false, []string{"A=1", "LICH_SUBAGENT_DEPTH=1"}},
+		{"a worker kept native under an older mod", providers.Claude, 2, false, false,
 			[]string{"A=1", "LICH_SUBAGENT_DEPTH=2", "LICH_SUBAGENT_CARDS=off"}},
-		{"another provider", providers.Codex, 1, false, []string{"A=1"}},
+		{"a worker kept native under a mod that asks lich", providers.Claude, 2, false, true,
+			[]string{"A=1", "LICH_SUBAGENT_DEPTH=2"}},
+		{"another provider", providers.Codex, 1, false, false, []string{"A=1"}},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			got := subagentEnv(slices.Clone(base), c.kind, c.depth, c.cardsOn)
+			got := subagentEnv(slices.Clone(base), c.kind, c.depth, c.cardsOn, c.asksLich)
 			if !slices.Equal(got, c.want) {
 				t.Errorf("subagentEnv = %v, want %v", got, c.want)
 			}

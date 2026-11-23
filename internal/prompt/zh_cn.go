@@ -123,6 +123,12 @@ var zhCN = Catalog{
 	BrowserNotesSketchOnly: "对方在你浏览器标签页的页面 %[1]s 上画了草图。带有草图的截图: %[2]s",
 	BrowserNotesSelectors:  "上面每个选择器都可以直接作为 browser_click 和 browser_type 的 selector 使用。",
 
+	SubagentOpened:        "lich 已把这个任务开成会话 %[1]q（工单 %[2]s）。它的报告会以 <lich-notification kind=\"worker-finished\"> 的形式送达你。不要重试这个工具，也不要自己做这个任务。",
+	SubagentOpenedSession: "%[1]q（工单 %[2]s）",
+	SubagentOpenedMany:    "lich 已把这些任务开成会话 %[1]s。它们的报告会以 <lich-notification kind=\"worker-finished\"> 块的形式送达你。不要重试这个工具，也不要自己做这些任务。",
+	SubagentSealed:        "lich 读不到这个任务：该工具以加密形式交出它。请改用 lich 的 open_session 工具交出同一个任务，并完整写出它的提示词；它的报告会以 <lich-notification kind=\"worker-finished\"> 的形式送达你。不要重试这个工具。",
+	SubagentWait:          "没有原生子代理在运行：lich 已把每个任务开成单独的会话，每份报告都会以 <lich-notification kind=\"worker-finished\"> 的形式送到你的提示处。请结束这一轮，不要在这里等待。",
+
 	ThreadMarked: "已标记。拉取请求的 head 包含这个提交后，lich 会解决该讨论串，并以这个提交回复。",
 
 	CopyNotice:         "lich 已将 %s 复制到这里；原文件无法从本会话访问，修改只会保留在副本中。",

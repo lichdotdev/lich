@@ -298,11 +298,6 @@
     "descriptionNextPaste": "A paste {provider} would fold into a placeholder lands as the full text, so you can edit it before sending. Applies to the next paste, in every {provider} session.",
     "descriptionNextSession": "A paste {provider} would fold into a placeholder lands as the full text, so you can edit it before sending. Applies to sessions opened after you change it."
   },
-  "subagentCardsSetting": {
-    "title": "Subagents as lich sessions",
-    "searchWords": "agent subagent card worktree delegate background",
-    "description": "A general-purpose subagent opens its own card and worktree instead of running hidden inside {provider}. Applies to sessions opened after you change it."
-  },
   "ultracodeSetting": {
     "title": "Ultracode",
     "searchWords": "workflow orchestration multi-agent effort",

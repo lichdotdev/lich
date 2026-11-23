@@ -29,7 +29,8 @@
     "workedAt": {
       "one": "Trabajó {duration} · {count} herramienta · {time}",
       "other": "Trabajó {duration} · {count} herramientas · {time}"
-    }
+    },
+    "openedAs": "abierta como {label}"
   },
   "done": {
     "done": "Hecho",
@@ -433,5 +434,12 @@
     "stoppedByYou": "por ti",
     "waiting": "{label} está esperando",
     "expired": "{label} no respondió a tiempo"
+  },
+  "codexHook": {
+    "title": "Codex está ignorando el hook de lich, así que sus subagentes corren de forma nativa",
+    "how": "Cómo confiar en él",
+    "howTitle": "Vuelve a confiar en el hook de lich en Codex",
+    "howSteps": "Abre la sesión en su terminal (TUI), escribe /hooks y confía en el hook PreToolUse de lich-plugin. Codex se salta un hook cuyo contenido cambió hasta que vuelvas a confiar en él.",
+    "open": "Abrir sesión"
   }
 }

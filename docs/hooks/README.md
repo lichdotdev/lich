@@ -75,13 +75,15 @@ project's own scripts and for commands typed in a card
 the agent in the PTY calls to reach the sessions beside it. That surface has its
 own contract in [cli.md](../cli.md).
 
-`LICH_SUBAGENT_CARDS=off` is the fifth, and the only one set from a setting: a
-Claude Code session gets it when its subagents stay native, which is when the
-user turned "Subagents as lich sessions" off, and in a session opened with
-`lich open --subagent` that runs as deep as lich nests cards (two levels: a card
-a card opened) or whose installed plugin is older than 0.19.0, since such a mod
-tells a worker only by this variable. The plugin's agent-cards mod then leaves
-every subagent native. It is absent otherwise, which the mod reads as on.
+`LICH_SUBAGENT_CARDS=off` is the fifth, kept for lich-plugin releases older
+than 0.22.0, whose agent-cards mod still converts subagents itself: a Claude
+Code session opened with `lich open --subagent` that runs as deep as lich nests
+cards (two levels: a card a card opened), or whose installed plugin is older
+than 0.19.0, gets it, since such a mod tells a worker only by this variable,
+and the mod then leaves every subagent native. It is absent otherwise, which
+the mod reads as on. From 0.22.0 the plugin's pre-tool hook asks
+[`/subagent`](subagent-cards.md) instead, and lich decides there; there is no
+setting.
 
 `LICH_SUBAGENT_DEPTH` is the sixth, set on every Claude Code session lich
 starts: `0` for one nobody opened as a subagent, `n` for a worker opened `n`

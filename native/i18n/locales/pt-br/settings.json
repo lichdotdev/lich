@@ -298,11 +298,6 @@
     "descriptionNextPaste": "Uma colagem que o {provider} dobraria num placeholder entra como o texto inteiro, para você editar antes de enviar. Vale a partir da próxima colagem, em todas as sessões do {provider}.",
     "descriptionNextSession": "Uma colagem que o {provider} dobraria num placeholder entra como o texto inteiro, para você editar antes de enviar. Vale para as sessões abertas depois da mudança."
   },
-  "subagentCardsSetting": {
-    "title": "Subagentes como sessões do lich",
-    "searchWords": "agente subagente card worktree delegar segundo plano",
-    "description": "Um subagente de uso geral abre o próprio card e a própria worktree em vez de rodar escondido dentro de {provider}. Vale para as sessões abertas depois da mudança."
-  },
   "ultracodeSetting": {
     "title": "Ultracode",
     "searchWords": "fluxo de trabalho orquestração multiagente esforço",

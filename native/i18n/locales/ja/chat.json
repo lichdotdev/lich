@@ -25,7 +25,8 @@
     },
     "workedAt": {
       "other": "{duration}作業 · ツール{count}件 · {time}"
-    }
+    },
+    "openedAs": "{label} として開きました"
   },
   "done": {
     "done": "完了",
@@ -411,5 +412,12 @@
     "stoppedByYou": "あなたが閉じました",
     "waiting": "{label} が待っています",
     "expired": "{label} は時間内に回答しませんでした"
+  },
+  "codexHook": {
+    "title": "Codex が lich のフックを無視しているため、サブエージェントはネイティブで動いています",
+    "how": "信頼し直す方法",
+    "howTitle": "Codex で lich のフックを信頼し直す",
+    "howSteps": "セッションをターミナル（TUI）で開き、/hooks と入力して lich-plugin の PreToolUse フックを信頼してください。内容が変わったフックは、信頼し直すまで Codex が飛ばします。",
+    "open": "セッションを開く"
   }
 }

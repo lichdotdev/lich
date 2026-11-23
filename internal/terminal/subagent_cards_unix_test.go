@@ -11,13 +11,15 @@ import (
 	"github.com/lichdotdev/lich/internal/events"
 	"github.com/lichdotdev/lich/internal/providers"
 	"github.com/lichdotdev/lich/internal/relay"
+	"github.com/lichdotdev/lich/internal/subagent"
 )
 
 // Unix-only with the stubBins it reads, which live in the PTY suite.
 
-// A worker opens cards one level down, and only under a plugin that tells a
-// worker by its depth; a card at maxSubagentDepth keeps its own subagents
-// native whatever the setting says.
+// A session nobody opened as a subagent opens cards, which are no longer
+// optional; a worker opens them one level down, and only under a plugin that
+// tells a worker by its depth; a card at subagent.MaxDepth keeps its own
+// subagents native.
 func TestSubagentCardsOnFollowsTheDepth(t *testing.T) {
 	cases := []struct {
 		name   string
@@ -25,19 +27,15 @@ func TestSubagentCardsOnFollowsTheDepth(t *testing.T) {
 		plugin string
 		wantOn bool
 	}{
-		{"setting on", stubBins{}, "0.19.0", true},
-		{"setting off", stubBins{subagentCardsOff: true}, "0.19.0", false},
+		{"a session", stubBins{}, "0.19.0", true},
 		{"a worker", stubBins{subagentDepth: 1}, "0.19.0", true},
 		{"a worker under an older plugin", stubBins{subagentDepth: 1}, "0.18.4", false},
-		{"a worker with the setting off", stubBins{subagentDepth: 1, subagentCardsOff: true}, "0.19.0", false},
 		{"a worker's worker", stubBins{subagentDepth: 2}, "0.19.0", false},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			withClaudePlugin(t, c.plugin)
-			svc := New(c.bins, nil, events.New())
-			depth := c.bins.SessionSubagentDepth("s1")
-			if got := svc.subagentCardsOn(providers.Claude, "", depth); got != c.wantOn {
+			if got := subagentCardsOn("", c.bins.SessionSubagentDepth("s1")); got != c.wantOn {
 				t.Errorf("subagentCardsOn = %v, want %v", got, c.wantOn)
 			}
 		})
@@ -50,7 +48,7 @@ func TestForkOfASubagentKeepsItsDepth(t *testing.T) {
 	withClaudePlugin(t, "0.19.0")
 	store := stubBins{
 		bin:               stayAliveBin(t),
-		subagentParents:   map[string]int{"conv-worker": maxSubagentDepth},
+		subagentParents:   map[string]int{"conv-worker": subagent.MaxDepth},
 		inheritedSubagent: map[string]int{},
 	}
 	svc := New(store, nil, events.New())
@@ -59,10 +57,10 @@ func TestForkOfASubagentKeepsItsDepth(t *testing.T) {
 	if _, err := svc.Start(t.Context(), api.StartOptions{ID: "s2", ProjectID: "p1", Cwd: t.TempDir(), Kind: providers.Claude, Resume: "conv-worker", Fork: true, Cols: 80, Rows: 24}); err != nil {
 		t.Fatalf("Start = %v, want nil", err)
 	}
-	if got := store.inheritedSubagent["s2"]; got != maxSubagentDepth {
-		t.Errorf("the fork's row is %d deep, want the worker's %d", got, maxSubagentDepth)
+	if got := store.inheritedSubagent["s2"]; got != subagent.MaxDepth {
+		t.Errorf("the fork's row is %d deep, want the worker's %d", got, subagent.MaxDepth)
 	}
-	if svc.subagentCardsOn(providers.Claude, "", store.SessionSubagentDepth("s2")) {
+	if subagentCardsOn("", store.SessionSubagentDepth("s2")) {
 		t.Error("the fork of a worker at the limit opens cards, want its subagents native")
 	}
 }
@@ -87,12 +85,10 @@ func claudeProfileWithPlugin(t *testing.T, version string) string {
 func TestSubagentCardsOnReadsTheProfilesPlugin(t *testing.T) {
 	withClaudePlugin(t, "0.19.0")
 	profile := claudeProfileWithPlugin(t, "0.18.4")
-	svc := New(stubBins{subagentDepth: 1}, nil, events.New())
-
-	if !svc.subagentCardsOn(providers.Claude, "", 1) {
+	if !subagentCardsOn("", 1) {
 		t.Error("Personal on 0.19.0: want a worker's cards on")
 	}
-	if svc.subagentCardsOn(providers.Claude, profile, 1) {
+	if subagentCardsOn(profile, 1) {
 		t.Error("a profile on 0.18.4 beside a Personal on 0.19.0: want a worker's subagents native")
 	}
 }

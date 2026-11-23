@@ -25,7 +25,8 @@
     },
     "workedAt": {
       "other": "工作了 {duration} · {count} 个工具 · {time}"
-    }
+    },
+    "openedAs": "已开成 {label}"
   },
   "done": {
     "done": "完成",
@@ -411,5 +412,12 @@
     "stoppedByYou": "由你关闭",
     "waiting": "{label} 正在等待",
     "expired": "{label} 未按时回复"
+  },
+  "codexHook": {
+    "title": "Codex 正在忽略 lich 的钩子，所以它的子代理以原生方式运行",
+    "how": "如何重新信任",
+    "howTitle": "在 Codex 中重新信任 lich 的钩子",
+    "howSteps": "在终端视图（TUI）中打开该会话，输入 /hooks，然后信任 lich-plugin 的 PreToolUse 钩子。钩子内容变化后，Codex 会一直跳过它，直到你再次信任。",
+    "open": "打开会话"
   }
 }

@@ -136,6 +136,12 @@ var en = Catalog{
 	BrowserNotesSketchOnly: "The person drew on the page in your browser tab, %[1]s. The screenshot with their drawing: %[2]s",
 	BrowserNotesSelectors:  "Each selector above works as the selector of browser_click and browser_type.",
 
+	SubagentOpened:        "lich opened this task as the session %[1]q (ticket %[2]s). Its report reaches you as a <lich-notification kind=\"worker-finished\">. Do not retry the tool and do not do the task yourself.",
+	SubagentOpenedSession: "%[1]q (ticket %[2]s)",
+	SubagentOpenedMany:    "lich opened these tasks as the sessions %[1]s. Their reports reach you as <lich-notification kind=\"worker-finished\"> blocks. Do not retry the tool and do not do the tasks yourself.",
+	SubagentSealed:        "lich cannot read this task: the tool hands it over encrypted. Hand the same task to lich's open_session tool instead, writing its prompt in full; its report reaches you as a <lich-notification kind=\"worker-finished\">. Do not retry this tool.",
+	SubagentWait:          "No native subagent is running: lich opened every task as a session of its own, and each report reaches you as a <lich-notification kind=\"worker-finished\"> at your prompt. End your turn instead of waiting here.",
+
 	ThreadMarked: "Marked. lich resolves the thread and replies with this commit once the pull request's head holds it.",
 
 	CopyNotice:         "lich copied %s here; the original is not reachable from this session, edits stay in the copy.",

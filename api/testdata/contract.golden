@@ -297,6 +297,7 @@ store.SetSessionFolder(SessionFolderOptions) None
 store.SetSessionPinned(SessionPinnedOptions) None
 store.SetSessionUnread(SessionUnreadOptions) None
 store.SetSetting(SetSettingOptions) None
+subagent.Vetoed(None) []SubagentVeto
 system.AttachNative(AttachNativeOptions) None
 system.Diagnostics(None) Diagnostics
 system.Notify(NotifyOptions) None
@@ -355,6 +356,7 @@ event chat-options ChatOptionsUpdate
 event chat-shells ChatShellsUpdate
 event chat-turn ChatTurn
 event claude-profile-login ProfileLogin
+event codex-hook-untrusted CodexHookUntrusted
 event codex-profile-login ProfileLogin
 event extension-catalog ExtensionCatalog
 event extension-message ExtensionMessage
@@ -402,6 +404,7 @@ event session-watch-stopped SessionWatchStopped
 event sessions-colored SessionsColored
 event sessions-filed SessionsFiled
 event show-code ShowCode
+event subagent-veto SubagentVeto
 event terminal:data:<id> string
 event terminal:exit:<id> SessionExit
 event theme-catalog ThemeCatalog
@@ -2093,6 +2096,12 @@ SetSettingOptions {
 	value string
 }
 
+SubagentVeto {
+	sessionId string
+	toolUseId string
+	sessions []SubagentOpened
+}
+
 AttachNativeOptions {
 	executable string
 }
@@ -2363,6 +2372,11 @@ ProfileLogin {
 	cancelled,omitempty bool
 	error,omitempty string
 	pluginError,omitempty string
+}
+
+CodexHookUntrusted {
+	sessionId string
+	trust string
 }
 
 ExtensionMessage {
@@ -3043,6 +3057,12 @@ SessionWatch {
 	runs int
 	pr int
 	seen string
+}
+
+SubagentOpened {
+	id string
+	label string
+	ticket string
 }
 
 ThemeCatalogPack {

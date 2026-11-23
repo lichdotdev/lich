@@ -53,7 +53,6 @@ type stubBins struct {
 	ghAccount         string
 	skipPerms         bool
 	ultracode         bool
-	subagentCardsOff  bool
 	pasteUnfold       bool
 	subagentDepth     int
 	subagentParents   map[string]int
@@ -131,7 +130,6 @@ func (s stubBins) ProjectPath(_ string) string         { return s.projectPath }
 func (s stubBins) SessionModel(_ string) string        { return s.model }
 func (s stubBins) SessionEffort(_ string) string       { return s.effort }
 func (s stubBins) Ultracode(_ string) bool             { return s.ultracode }
-func (s stubBins) SubagentCards(_ string) bool         { return !s.subagentCardsOff }
 func (s stubBins) PasteUnfold(_ string) bool           { return s.pasteUnfold }
 func (s stubBins) SessionView(id string) string        { return s.views[id] }
 func (s stubBins) SessionFilesKey(id string) string {
@@ -1367,9 +1365,12 @@ func TestProviderArgsRegistersTheMCPServer(t *testing.T) {
 	}
 
 	codex := providerArgs(providers.Codex, "", "", "", "", bin, "", false, false, false, relay.RouteSessions, prompt.English)
+	// The tools approve without asking, so a /subagent redirect's open_session
+	// never waits on an approval (docs/hooks/subagent-cards.md).
 	want := []string{
 		"-c", `mcp_servers.lich.command="/usr/bin/lich"`,
 		"-c", `mcp_servers.lich.args=["mcp"]`,
+		"-c", `mcp_servers.lich.default_tools_approval_mode="approve"`,
 	}
 	if !slices.Equal(codex, want) {
 		t.Errorf("codex args = %v, want %v", codex, want)

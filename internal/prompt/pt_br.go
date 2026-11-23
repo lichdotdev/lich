@@ -131,6 +131,12 @@ var ptBR = Catalog{
 	BrowserNotesSketchOnly: "A pessoa desenhou na página da sua aba de navegador, %[1]s. A captura com o desenho: %[2]s",
 	BrowserNotesSelectors:  "Cada seletor acima serve como o selector de browser_click e browser_type.",
 
+	SubagentOpened:        "O lich abriu esta tarefa como a sessão %[1]q (ticket %[2]s). O relatório dela chega até você como um <lich-notification kind=\"worker-finished\">. Não tente a ferramenta de novo e não faça a tarefa você mesmo.",
+	SubagentOpenedSession: "%[1]q (ticket %[2]s)",
+	SubagentOpenedMany:    "O lich abriu estas tarefas como as sessões %[1]s. Os relatórios delas chegam até você como blocos <lich-notification kind=\"worker-finished\">. Não tente a ferramenta de novo e não faça as tarefas você mesmo.",
+	SubagentSealed:        "O lich não consegue ler esta tarefa: a ferramenta a entrega criptografada. Entregue a mesma tarefa à ferramenta open_session do lich, escrevendo o prompt inteiro; o relatório chega até você como um <lich-notification kind=\"worker-finished\">. Não tente esta ferramenta de novo.",
+	SubagentWait:          "Nenhum subagente nativo está rodando: o lich abriu cada tarefa como uma sessão própria, e cada relatório chega ao seu prompt como um <lich-notification kind=\"worker-finished\">. Encerre o seu turno em vez de esperar aqui.",
+
 	ThreadMarked: "Marcado. O lich resolve a thread e responde com este commit assim que o head do pull request o contiver.",
 
 	CopyNotice:         "O lich copiou %s para cá; o original não é acessível a partir desta sessão, as edições ficam na cópia.",

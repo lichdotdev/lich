@@ -29,7 +29,8 @@
     "workedAt": {
       "one": "Worked for {duration} · {count} tool · {time}",
       "other": "Worked for {duration} · {count} tools · {time}"
-    }
+    },
+    "openedAs": "opened as {label}"
   },
   "done": {
     "done": "Done",
@@ -433,5 +434,12 @@
     "stoppedByYou": "by you",
     "waiting": "{label} is waiting",
     "expired": "{label} did not answer in time"
+  },
+  "codexHook": {
+    "title": "Codex is ignoring lich's hook, so its subagents run natively",
+    "how": "How to trust it",
+    "howTitle": "Trust lich's hook in Codex again",
+    "howSteps": "Open the session in its terminal (TUI), type /hooks and trust lich-plugin's PreToolUse hook. Codex skips a hook whose content changed until you trust it again.",
+    "open": "Open session"
   }
 }

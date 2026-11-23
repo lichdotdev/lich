@@ -298,11 +298,6 @@
     "descriptionNextPaste": "原本会被 {provider} 折叠成占位符的粘贴内容，将以完整文本贴入，方便你在发送前编辑。从下一次粘贴起，对所有 {provider} 会话生效。",
     "descriptionNextSession": "原本会被 {provider} 折叠成占位符的粘贴内容，将以完整文本贴入，方便你在发送前编辑。对更改后打开的会话生效。"
   },
-  "subagentCardsSetting": {
-    "title": "子智能体作为 lich 会话",
-    "searchWords": "智能体 子智能体 卡片 工作树 委派 后台",
-    "description": "通用子智能体会打开自己的卡片和工作树，不再隐藏在 {provider} 内部运行。对更改后打开的会话生效。"
-  },
   "ultracodeSetting": {
     "title": "Ultracode",
     "searchWords": "工作流 编排 多智能体 强度",

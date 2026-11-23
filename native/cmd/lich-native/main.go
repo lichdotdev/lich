@@ -511,6 +511,9 @@ func (u *window) connect() error {
 	if err := u.model.services.load(u.ctx, u.client); err != nil {
 		return err
 	}
+	if err := u.model.vetoes.load(u.ctx, u.client); err != nil {
+		log.Printf("load subagent vetoes: %v", err)
+	}
 	if err := u.model.threadFixes.load(u.ctx, u.client); err != nil {
 		return err
 	}

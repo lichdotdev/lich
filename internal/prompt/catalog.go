@@ -136,6 +136,15 @@ type Catalog struct {
 	BrowserNotesSketchOnly   string // %[1]s URL, %[2]s path
 	BrowserNotesSelectors    string
 
+	// internal/subagent: the reason a /subagent deny gives the model. %[1]q is
+	// the session opened, %[2]s its ticket; SubagentOpenedMany lists
+	// SubagentOpenedSession for each.
+	SubagentOpened        string
+	SubagentOpenedSession string
+	SubagentOpenedMany    string
+	SubagentSealed        string
+	SubagentWait          string
+
 	// mark_thread_fixed's answer.
 	ThreadMarked string
 

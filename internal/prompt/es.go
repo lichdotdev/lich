@@ -131,6 +131,12 @@ var es = Catalog{
 	BrowserNotesSketchOnly: "La persona dibujó sobre la página de tu pestaña del navegador, %[1]s. La captura con su dibujo: %[2]s",
 	BrowserNotesSelectors:  "Cada selector de arriba sirve como el selector de browser_click y browser_type.",
 
+	SubagentOpened:        "lich abrió esta tarea como la sesión %[1]q (ticket %[2]s). Su informe te llega como un <lich-notification kind=\"worker-finished\">. No vuelvas a intentar la herramienta ni hagas la tarea tú mismo.",
+	SubagentOpenedSession: "%[1]q (ticket %[2]s)",
+	SubagentOpenedMany:    "lich abrió estas tareas como las sesiones %[1]s. Sus informes te llegan como bloques <lich-notification kind=\"worker-finished\">. No vuelvas a intentar la herramienta ni hagas las tareas tú mismo.",
+	SubagentSealed:        "lich no puede leer esta tarea: la herramienta la entrega cifrada. Entrega la misma tarea a la herramienta open_session de lich, escribiendo el prompt completo; su informe te llega como un <lich-notification kind=\"worker-finished\">. No vuelvas a intentar esta herramienta.",
+	SubagentWait:          "No hay ningún subagente nativo en marcha: lich abrió cada tarea como una sesión propia, y cada informe llega a tu prompt como un <lich-notification kind=\"worker-finished\">. Termina tu turno en lugar de esperar aquí.",
+
 	ThreadMarked: "Marcado. lich resuelve el hilo y responde con este commit en cuanto el head del pull request lo contenga.",
 
 	CopyNotice:         "lich copió %s aquí; el original no es accesible desde esta sesión, las ediciones se quedan en la copia.",

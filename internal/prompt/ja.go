@@ -129,6 +129,12 @@ var ja = Catalog{
 	BrowserNotesSketchOnly: "ブラウザタブのページ (%[1]s) にスケッチが描かれました。スケッチ入りのスクリーンショット: %[2]s",
 	BrowserNotesSelectors:  "上の各セレクタは browser_click と browser_type の selector としてそのまま使えます。",
 
+	SubagentOpened:        "lich はこのタスクをセッション %[1]q（チケット %[2]s）として開きました。その報告は <lich-notification kind=\"worker-finished\"> として届きます。このツールを再試行せず、タスクを自分で行わないでください。",
+	SubagentOpenedSession: "%[1]q（チケット %[2]s）",
+	SubagentOpenedMany:    "lich はこれらのタスクをセッション %[1]s として開きました。報告は <lich-notification kind=\"worker-finished\"> ブロックとして届きます。このツールを再試行せず、タスクを自分で行わないでください。",
+	SubagentSealed:        "lich はこのタスクを読めません。このツールはタスクを暗号化して渡します。代わりに同じタスクを lich の open_session ツールに、プロンプトを省略せずに書いて渡してください。報告は <lich-notification kind=\"worker-finished\"> として届きます。このツールを再試行しないでください。",
+	SubagentWait:          "ネイティブのサブエージェントは動いていません。lich は各タスクを独自のセッションとして開き、それぞれの報告は <lich-notification kind=\"worker-finished\"> としてプロンプトに届きます。ここで待たずにターンを終えてください。",
+
 	ThreadMarked: "記録しました。プルリクエストの head にこのコミットが含まれた時点で、lich がスレッドを解決し、このコミットを添えて返信します。",
 
 	CopyNotice:         "lich が %s をここにコピーしました。元のファイルはこのセッションからは届かないため、編集はコピーにだけ残ります。",
