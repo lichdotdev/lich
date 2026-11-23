@@ -50,6 +50,31 @@ type textSelection struct {
 	// selection unless it lands in bounds, the cell's area.
 	elsewhere struct{ _ byte }
 	bounds    image.Rectangle
+	// index is the cell's place among the body's cells, and group what the
+	// cells of the body share while a drag runs across them.
+	index int
+	group *selectGroup
+	// press is where the last press anywhere in the window was, in this
+	// cell's pixels, and pressStamp when: two cells' presses at one stamp
+	// are one point, which gives where the cells stand to each other.
+	press      f32.Point
+	pressStamp time.Duration
+	// seen is the group version the cell last followed.
+	seen int
+}
+
+// selectGroup is a drag that began in one cell and may end in another. The
+// cells' places are only known to each other through the press all of them
+// heard, so the pointer travels in the anchor cell's pixels and each cell
+// finds itself in them.
+type selectGroup struct {
+	anchor  int
+	pressAt f32.Point
+	stamp   time.Duration
+	// pos is the pointer in the anchor cell's pixels; version counts its moves.
+	pos     f32.Point
+	version int
+	active  bool
 }
 
 func (s *textSelection) empty() bool { return s == nil || s.anchor == s.caret }
@@ -104,8 +129,14 @@ func (c *markdownCell) selectEvents(gtx C, th *ui.Theme) {
 		if !ok {
 			break
 		}
-		if e, ok := ev.(pointer.Event); ok && !e.Position.Round().In(s.bounds) {
+		e, ok := ev.(pointer.Event)
+		if !ok {
+			continue
+		}
+		s.press, s.pressStamp = e.Position, e.Time
+		if !e.Position.Round().In(s.bounds) {
 			s.clear()
+			s.seen = s.group.version
 		}
 	}
 	for {
@@ -117,7 +148,7 @@ func (c *markdownCell) selectEvents(gtx C, th *ui.Theme) {
 			c.selectPointer(gtx, th, e)
 		}
 	}
-	c.selectKeys(gtx)
+	c.followGroup(gtx, th)
 }
 
 func (c *markdownCell) selectPointer(gtx C, th *ui.Theme, e pointer.Event) {
@@ -134,6 +165,7 @@ func (c *markdownCell) selectPointer(gtx C, th *ui.Theme, e pointer.Event) {
 			s.clicks = 1
 		}
 		s.pressed, s.dragged, s.pid, s.pressAt, s.pressedAt = true, false, e.PointerID, e.Position, e.Time
+		*s.group = selectGroup{anchor: s.index, pressAt: e.Position, stamp: e.Time, version: s.group.version}
 		g := c.geometry(gtx, th.Shaper)
 		switch s.clicks {
 		case 1:
@@ -156,7 +188,10 @@ func (c *markdownCell) selectPointer(gtx C, th *ui.Theme, e pointer.Event) {
 			s.dragged = true
 			gtx.Execute(pointer.GrabCmd{Tag: s, ID: e.PointerID})
 		}
-		s.caret = c.geometry(gtx, th.Shaper).hit(e.Position, false)
+		s.caret = c.caretAt(gtx, th, e.Position)
+		s.group.active, s.group.pos = true, e.Position
+		s.group.version++
+		gtx.Execute(op.InvalidateCmd{})
 	case pointer.Release, pointer.Cancel:
 		s.pressed = false
 	}
@@ -167,12 +202,71 @@ func slop(gtx C) float32 {
 	return d * d
 }
 
-// selectKeys copies the selection on Ctrl+C (Cmd+C on macOS) and drops it on
-// Escape. Both are asked for only while there is one, so the keys reach a
-// focused field otherwise.
-func (c *markdownCell) selectKeys(gtx C) {
+// caretAt is the rune a drag from this cell reaches at p: the cell's end for
+// a pointer under it and its start for one over it, since the cells it holds
+// are not the only ones the drag can select.
+func (c *markdownCell) caretAt(gtx C, th *ui.Theme, p f32.Point) int {
+	switch c.relate(p) {
+	case after:
+		return utf8.RuneCountInString(c.cellText())
+	case before:
+		return 0
+	}
+	return c.geometry(gtx, th.Shaper).hit(p, false)
+}
+
+// where is a pointer's place against a cell, in reading order.
+type where int
+
+const (
+	before where = iota
+	inside
+	after
+)
+
+func (c *markdownCell) relate(p f32.Point) where {
+	switch b := c.sel.bounds; {
+	case int(p.Y) < b.Min.Y:
+		return before
+	case int(p.Y) >= b.Max.Y:
+		return after
+	}
+	return inside
+}
+
+// followGroup selects the part of the cell that lies between a drag's anchor,
+// in another cell, and the pointer.
+func (c *markdownCell) followGroup(gtx C, th *ui.Theme) {
 	s := c.sel
-	for !s.empty() {
+	g := s.group
+	if !g.active || s.seen == g.version || s.index == g.anchor {
+		return
+	}
+	s.seen = g.version
+	s.clear()
+	if s.pressStamp != g.stamp {
+		return
+	}
+	p := g.pos.Sub(g.pressAt.Sub(s.press))
+	n := utf8.RuneCountInString(c.cellText())
+	rel := c.relate(p)
+	switch {
+	case s.index > g.anchor && rel == after:
+		s.caret = n
+	case s.index > g.anchor && rel == inside:
+		s.caret = c.geometry(gtx, th.Shaper).hit(p, false)
+	case s.index < g.anchor && rel == before:
+		s.caret = n
+	case s.index < g.anchor && rel == inside:
+		s.anchor, s.caret = c.geometry(gtx, th.Shaper).hit(p, false), n
+	}
+}
+
+// selectKeys copies the selected text of every cell of t on Ctrl+C (Cmd+C on
+// macOS) and drops the selection on Escape. Both are asked for only while
+// there is one, so the keys reach a focused field otherwise.
+func (t *markdownText) selectKeys(gtx C) {
+	for t.selected() {
 		ev, ok := gtx.Event(key.Filter{Name: "C", Required: key.ModShortcut}, key.Filter{Name: key.NameEscape})
 		if !ok {
 			return
@@ -182,12 +276,29 @@ func (c *markdownCell) selectKeys(gtx C) {
 			continue
 		}
 		if e.Name == key.NameEscape {
-			s.clear()
+			for _, c := range t.cells {
+				c.sel.clear()
+			}
 			return
 		}
-		from, to := s.span()
-		gtx.Execute(clipboard.WriteCmd{Type: "application/text", Data: io.NopCloser(strings.NewReader(c.visibleText(from, to)))})
+		var parts []string
+		for _, c := range t.cells {
+			if !c.sel.empty() {
+				from, to := c.sel.span()
+				parts = append(parts, c.visibleText(from, to))
+			}
+		}
+		gtx.Execute(clipboard.WriteCmd{Type: "application/text", Data: io.NopCloser(strings.NewReader(strings.Join(parts, "\n")))})
 	}
+}
+
+func (t *markdownText) selected() bool {
+	for _, c := range t.cells {
+		if !c.sel.empty() {
+			return true
+		}
+	}
+	return false
 }
 
 // SelectionKeys reads Ctrl+C and Escape for a selection in m. A screen whose
@@ -195,9 +306,7 @@ func (c *markdownCell) selectKeys(gtx C) {
 // selection gets them: the chat's composer always holds the keyboard.
 func (m Cache) SelectionKeys(gtx C) {
 	for _, t := range m {
-		for _, c := range t.cells {
-			c.selectKeys(gtx)
-		}
+		t.selectKeys(gtx)
 	}
 }
 
@@ -236,11 +345,9 @@ func (c *markdownCell) selectArea(gtx C, size image.Point, text op.CallOp) {
 	beam.Pop()
 	text.Add(gtx.Ops)
 	area.Pop()
-	if c.sel.empty() {
-		return
-	}
 	// Deferred, the area is laid over the whole window, past the clips of
-	// whatever the cell is drawn in, and passes every press on.
+	// whatever the cell is drawn in, and passes every press on. Every cell
+	// hears it, selected or not: the press is how cells find each other.
 	m := op.Record(gtx.Ops)
 	whole := clip.Rect{Min: image.Pt(-markdownUnbounded, -markdownUnbounded), Max: image.Pt(markdownUnbounded, markdownUnbounded)}.Push(gtx.Ops)
 	pass := pointer.PassOp{}.Push(gtx.Ops)
@@ -291,7 +398,7 @@ func (t *markdownText) keepSelections() {
 			t.sels = append(t.sels, new(textSelection))
 		}
 		s := t.sels[i]
-		c.sel = s
+		c.sel, s.index, s.group = s, i, &t.group
 		if s.empty() {
 			continue
 		}

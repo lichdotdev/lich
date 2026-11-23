@@ -61,6 +61,7 @@ type markdownText struct {
 	// they are written, and sels the selection of each.
 	sels  []*textSelection
 	cells []*markdownCell
+	group selectGroup
 }
 
 // markdownBlock is prose, a GFM table, or a list with individually laid-out items.
@@ -141,6 +142,7 @@ func (m Cache) LayoutLinksWindow(gtx C, th *ui.Theme, key, src string, l Links, 
 
 func (m Cache) layout(gtx C, th *ui.Theme, key, src string, l Links, window Window) D {
 	t := m.text(th, key, src, l.Paths)
+	t.selectKeys(gtx)
 	gap, estimate := gtx.Dp(ui.Space(BlockGap)), t.estimate(gtx)
 	y, width := 0, gtx.Constraints.Min.X
 	for i, b := range t.blocks {

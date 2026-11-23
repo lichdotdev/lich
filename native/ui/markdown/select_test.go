@@ -427,3 +427,55 @@ func TestADragSurvivesTheAnswerGrowing(t *testing.T) {
 		t.Errorf("selected %q, want %q", got, "Run the ")
 	}
 }
+
+const acrossCells = "First paragraph here.\n\n- one item\n- two item\n\nLast paragraph."
+
+// bodyHeight is how tall the rig's body stands.
+func (r *selectRig) bodyHeight() float32 {
+	l := Links{Paths: r.paths}
+	return float32(r.cache.LayoutLinks(r.gtx(new(op.Ops)), r.th(), "k", r.src, l).Size.Y)
+}
+
+func TestADragRunsOnAcrossParagraphsAndListItems(t *testing.T) {
+	r := newSelectRig(t, acrossCells)
+	r.drag(r.edgeOf(6), f32.Pt(40, r.bodyHeight()-2))
+	want := []string{"paragraph here.", "one item", "two item"}
+	for i, w := range want {
+		if got := r.selected(i); got != w {
+			t.Errorf("cell %d: selected %q, want %q", i, got, w)
+		}
+	}
+	if got := r.selected(3); got == "" || !strings.HasPrefix("Last paragraph.", got) {
+		t.Errorf("last cell: selected %q, want the start of Last paragraph.", got)
+	}
+	if got := r.copied(); !strings.HasPrefix(got, "paragraph here.\none item\ntwo item\nLast") {
+		t.Errorf("Ctrl+C copied %q", got)
+	}
+}
+
+func TestADragUpwardRunsOnAcrossCellsToo(t *testing.T) {
+	r := newSelectRig(t, acrossCells)
+	r.drag(f32.Pt(40, r.bodyHeight()-2), r.edgeOf(6))
+	if got := r.selected(0); got != "paragraph here." {
+		t.Errorf("first cell: selected %q", got)
+	}
+	for i, w := range []string{"one item", "two item"} {
+		if got := r.selected(i + 1); got != w {
+			t.Errorf("cell %d: selected %q, want %q", i+1, got, w)
+		}
+	}
+	if got := r.selected(3); got == "" || !strings.HasPrefix("Last paragraph.", got) {
+		t.Errorf("last cell: selected %q, want the start of Last paragraph., up to the press", got)
+	}
+}
+
+func TestADragBackIntoTheFirstCellLetsTheOthersGo(t *testing.T) {
+	r := newSelectRig(t, acrossCells)
+	r.send(pointer.Press, r.edgeOf(0), 0)
+	r.send(pointer.Move, f32.Pt(40, r.bodyHeight()-2), 0)
+	r.send(pointer.Move, r.edgeOf(5), 0)
+	r.send(pointer.Release, r.edgeOf(5), 0)
+	if got := r.copied(); got != "First" {
+		t.Errorf("Ctrl+C copied %q, want First", got)
+	}
+}
