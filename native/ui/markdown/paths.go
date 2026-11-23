@@ -2,6 +2,7 @@ package markdown
 
 import (
 	"image"
+	"strings"
 
 	"gioui.org/io/event"
 	"gioui.org/io/key"
@@ -24,6 +25,46 @@ type Paths struct {
 	Link func(path string) bool
 	Open func(path string)
 	Held bool
+	// Version is what Link answers from, a comparable value such as the
+	// listing's pointer: a body checks its path marks again when it changes.
+	Version any
+}
+
+// unmarkUnlinked takes the file or folder mark off code that Link does not
+// find and gives its room back: with a listing to look in, only code that
+// names something there wears one, not a branch, a repository or a dotted
+// name that only looks like a path.
+func unmarkUnlinked(blocks []markdownBlock, link func(string) bool) {
+	for i := range blocks {
+		b := &blocks[i]
+		if b.prose != nil {
+			b.prose.unmarkUnlinked(link)
+		}
+		if b.table != nil {
+			for _, row := range b.table.rows {
+				for _, c := range row {
+					c.unmarkUnlinked(link)
+				}
+			}
+		}
+		if b.list != nil {
+			for j := range b.list.items {
+				unmarkUnlinked(b.list.items[j].blocks, link)
+			}
+		}
+		unmarkUnlinked(b.blocks, link)
+	}
+}
+
+func (c *markdownCell) unmarkUnlinked(link func(string) bool) {
+	for i := range c.decor {
+		d := &c.decor[i]
+		if d.path == "" || link(d.path) {
+			continue
+		}
+		d.icon, d.path = nil, ""
+		c.spans[i].Content = "\u00a0" + strings.TrimPrefix(c.spans[i].Content, codeIconRoom)
+	}
 }
 
 // pathPointer is whether the pointer is over a path's span, and the

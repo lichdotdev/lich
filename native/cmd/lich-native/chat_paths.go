@@ -81,8 +81,9 @@ func (u *window) chatPaths(p *chatPane, sv sessionView, items int) *markdown.Pat
 	p.files.want(key, checkout, func(ctx context.Context) (*chatFiles, error) { return readChatFiles(ctx, u.client, checkout) })
 	files, _, _ := p.files.get()
 	return &markdown.Paths{
-		Held: u.terms.linkKeyHeld,
-		Link: func(written string) bool { return files != nil && files.links(checkout, written) },
+		Held:    u.terms.linkKeyHeld,
+		Version: files,
+		Link:    func(written string) bool { return files != nil && files.links(checkout, written) },
 		Open: func(written string) {
 			if rel, ok := codeRefRel(checkout, written); ok && files.dirs[rel] {
 				u.unfoldFolder(sv, rel)

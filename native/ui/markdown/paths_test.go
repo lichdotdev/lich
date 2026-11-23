@@ -2,6 +2,7 @@ package markdown
 
 import (
 	"image"
+	"strings"
 	"testing"
 	"time"
 
@@ -91,4 +92,56 @@ func TestAPathThatNamesNothingIsNoLink(t *testing.T) {
 	if len(r.opened) > 0 {
 		t.Errorf("a path that names nothing opened %q", r.opened)
 	}
+}
+
+// With a listing to look in, only code that names something there wears a
+// path's mark; a branch, a repository and a dotted name give the room back.
+func TestOnlyCodeTheListingFindsWearsAPathMark(t *testing.T) {
+	listed := map[string]bool{"src/main.go": true, "docs/": true}
+	paths := &Paths{Link: func(p string) bool { return listed[p] }, Version: 1}
+	for src, want := range map[string]string{
+		"See `src/main.go` now":         "file",
+		"Look in `docs/`":               "folder",
+		"Push `origin/main`":            "",
+		"Fork `lichdotdev/gio`":         "",
+		"Read `api.PullRequest` again":  "",
+		"Open `github.com` in a tab":    "",
+		"Key `chat.slash.new` is wrong": "",
+	} {
+		cache := Cache{}
+		c := cache.text(markdownTheme(), "k", src, paths).blocks[0].prose
+		got := ""
+		for i, d := range c.decor {
+			switch d.icon {
+			case icFile:
+				got = "file"
+			case icFolder:
+				got = "folder"
+			}
+			if d.icon == nil && strings.HasPrefix(c.spans[i].Content, codeIconRoom) {
+				t.Errorf("%q: span %d keeps the mark's room with no mark", src, i)
+			}
+		}
+		if got != want {
+			t.Errorf("%q: mark %q, want %q", src, got, want)
+		}
+	}
+	// A listing that changes checks the marks again.
+	cache := Cache{}
+	src := "Push `origin/main`"
+	cache.text(markdownTheme(), "k", src, paths)
+	listed["origin/main"] = true
+	paths.Version = 2
+	if !hasMark(cache.text(markdownTheme(), "k", src, paths).blocks[0].prose) {
+		t.Error("a path the new listing finds did not get its mark")
+	}
+}
+
+func hasMark(c *markdownCell) bool {
+	for _, d := range c.decor {
+		if d.icon == icFile || d.icon == icFolder {
+			return true
+		}
+	}
+	return false
 }
