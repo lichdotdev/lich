@@ -14,11 +14,10 @@ const (
 	// install says which release a report comes from.
 	PluginVersionFloor = "0.13.0"
 	// PluginVersionCeiling is the first release past the newest contract this
-	// lich implements (0.22, whose texts describe the notification envelope,
-	// whose pre-tool hook asks /subagent and whose touched report names its
-	// paths and reads the edit-overlap note), and the first one it cannot vouch
-	// for.
-	PluginVersionCeiling = "0.23.0"
+	// lich implements (0.23, whose done report says the turn left background
+	// work running, docs/hooks/session-state.md), and the first one it cannot
+	// vouch for.
+	PluginVersionCeiling = "0.24.0"
 )
 
 // Compatible reports whether a plugin release speaks the contract this lich
