@@ -15,7 +15,7 @@
     "hanFontFailed": "Não foi possível baixar a fonte {font}: {error}"
   },
   "settings": {
-    "search": "Buscar configurações",
+    "search": "Buscar",
     "resultCount": {
       "one": "{count} configuração",
       "other": "{count} configurações"
