@@ -91,6 +91,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **A Markdown artifact opens rendered, on the stage.** Clicking a `.md` file in the dock's Artifacts tab shows it formatted in the editor, read only, instead of its source in the browser. It stays in the tree as the checkout's editor node until you close it from the node's menu.
 - **Review threads sent to a session are resolved only when the agent fixed them.** A question or a point for the team comes back to you in the session instead of getting "Fixing this" on GitHub. A thread the agent fixed is resolved, with a reply naming its commit, once that commit is pushed.
 - **Project tabs and split panes float on the canvas as islands of their own.** The active tab is a filled pill instead of growing out of the terminal, and each pane of a split or of a session beside its browser is its own rounded island. In a split, the footer's balloons sit at the foot of the stage, under the panes.
+- **Project tabs line their names up and show status where the close button goes.** A tab's busy, waiting or done mark sits at its right end, the × takes its place on hover and on the active tab, and the tabs are a little narrower with a brighter name when idle.
 - **A split's pane has the same header as a session alone.** It names the provider and the session in the same type, with GUI | TUI beside them; only zoom and close are added at its right. In a split of sessions from more than one project, each pane names its project first.
 
 ### Removed
