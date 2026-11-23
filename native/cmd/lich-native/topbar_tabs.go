@@ -8,6 +8,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
+	"gioui.org/unit"
 
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
@@ -17,14 +18,16 @@ import (
 // The project tab, from the approved mockup: browser-style tabs of a fixed
 // width that shrinks evenly to a floor before the strip scrolls.
 var (
-	tabWidthMax  = ui.Space(41)   // 164px
-	tabWidthMin  = ui.Space(29.5) // 118px
-	tabHeight    = ui.Space(8)    // 32px, the pill, from 6px under the band's top
-	tabTop       = ui.Space(1.5)
-	tabRadius    = ui.RadiusLG
-	tabPadLeft   = ui.Space(3.5)
-	tabPadRight  = ui.Space(2.5)
-	tabGlyph     = ui.Space(3.5)
+	tabWidthMax = ui.Space(41)   // 164px
+	tabWidthMin = ui.Space(29.5) // 118px
+	tabHeight   = ui.Space(8)    // 32px, the pill, from 6px under the band's top
+	tabTop      = ui.Space(1.5)
+	tabRadius   = ui.RadiusLG
+	tabPadLeft  = ui.Space(3.5)
+	tabPadRight = ui.Space(2.5)
+	tabGlyph    = ui.Space(3.5)
+	// tabSlot is the box at a tab's end that holds the × or the status badge.
+	tabSlot      = unit.Dp(16)
 	tabSeparator = ui.Space(4) // the hairline between the pinned tabs and the rest, centred on the pill
 )
 
@@ -252,13 +255,17 @@ func (t *topbar) tabContent(gtx C, on *ui.Theme, tab projectTab, st *tabState, f
 		}),
 		layout.Rigid(func(gtx C) D {
 			if !tab.pinned {
+				// Stands where the slot at the end stands, so the name sits in the middle of the tab.
+				if !tab.layout {
+					return D{Size: image.Pt(gtx.Dp(tabSlot)+gtx.Dp(ui.Space(2)), 0)}
+				}
 				return D{}
 			}
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx, layout.Rigid(func(gtx C) D { return icTabPin.Layout(gtx, tabGlyph, fg) }), ui.Gap(2))
 		}),
 		layout.Flexed(1, func(gtx C) D {
 			if !st.rename.Active() {
-				return on.Text(tabTextSize, tab.Name).Leading(tabTextLeading).In(fg).Weight(weight).Layout(gtx)
+				return on.Text(tabTextSize, tab.Name).Leading(tabTextLeading).In(fg).Weight(weight).Centered().Layout(gtx)
 			}
 			d, res := on.InlineEdit(&st.rename, tabTextSize).Weight(weight).Layout(gtx)
 			if res.Outcome == ui.InlineEditCommitted {
@@ -269,7 +276,7 @@ func (t *topbar) tabContent(gtx C, on *ui.Theme, tab projectTab, st *tabState, f
 		ui.Gap(2),
 		layout.Rigid(func(gtx C) D {
 			if !showClose || tab.pinned {
-				slot := image.Pt(gtx.Dp(16), gtx.Dp(16))
+				slot := image.Pt(gtx.Dp(tabSlot), gtx.Dp(tabSlot))
 				gtx.Constraints = layout.Exact(slot)
 				return layout.Center.Layout(gtx, func(gtx C) D { return t.tabBadge(gtx, on, tab.status) })
 			}
