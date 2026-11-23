@@ -97,6 +97,9 @@ type browserPaneUI struct {
 	// what the page was last told to draw over itself (overlayScript).
 	nativeSize  image.Point
 	overlaySent string
+	// notesTool is whether Select or Draw was on over the native page in the
+	// last layout.
+	notesTool bool
 }
 
 // agentPress is what the agent's cursor does on the toolbar, from at: the

@@ -211,17 +211,20 @@ func (u *window) locateIn(ctx context.Context, page *webview.Page, session strin
 // notes need: the pointer while picking or drawing, which the page lets
 // through then, and the notes' keys. The page takes everything else itself.
 func (u *window) nativeNotesInput(gtx C, p *browserPaneUI, session string, scale float32) {
-	if p.notes.picking || p.notes.drawing {
+	tool := p.notes.picking || p.notes.drawing
+	if tool {
 		p.native.PointerToWindow()
-		// Esc and the notes' other keys come to the pane while it picks or
-		// draws.
-		if !p.notes.open && !gtx.Focused(&p.tag) {
+		// Esc and the notes' other keys come to the pane when Select or Draw
+		// turns on, the page having held the keyboard. Only then: taken every
+		// frame, no other field in the window could keep it.
+		if !p.notesTool && !p.notes.open && !gtx.Focused(&p.tag) {
 			u.layoutStage.focus = browserPaneOf(session)
 			gtx.Execute(key.FocusCmd{Tag: &p.tag})
 		}
 	} else {
 		p.native.PointerToPage()
 	}
+	p.notesTool = tool
 	filters := []event.Filter{
 		pointer.Filter{Target: &p.tag, Kinds: pointer.Press | pointer.Drag | pointer.Release | pointer.Cancel | pointer.Move | pointer.Leave | pointer.Scroll,
 			ScrollX: pointer.ScrollRange{Min: -1 << 20, Max: 1 << 20}, ScrollY: pointer.ScrollRange{Min: -1 << 20, Max: 1 << 20}},
