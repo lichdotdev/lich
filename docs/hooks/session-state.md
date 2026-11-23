@@ -584,6 +584,9 @@ it. The limits and the record lifetime are in `docs/ceilings.md`.
   opencode, oh-my-pi, Antigravity and Cursor CLI say so only for a compaction the
   person typed.
 - **A compaction typed in an ACP chat holds the card on "Compacting…"** until the
-  turn ends: nothing the agent sends says the compaction itself is over.
+  turn ends: nothing the agent sends says the compaction itself is over. One
+  that starts and ends with no turn running gets no closing report at all and
+  holds it until the next turn; whether Claude Code compacts while idle over
+  stream-json, as its TUI does, was not measured.
 - Adding another state beyond `busy`/`done`/`waiting`/`idle`/`compacting` is a contract
   change — see the versioning note in the README.

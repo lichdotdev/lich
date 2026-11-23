@@ -652,6 +652,9 @@ work when nobody knows it and that the call site never shows. The mechanism and 
     `model` and `effort` actions are the per-session route.
   - A session cannot control itself past `model` and `effort`: an abort would end the asking turn, and a prompt or
     a slash command would only run after it.
+  - A slash command reaches the agent as the text of a message, never the window: the commands the chat's own
+    box answers itself (`/new`, `/clear`, `/reset`, and the `/mcp`, `/memory`, `/permissions` panels) are
+    sent to the agent as typed, and what each agent makes of them in its structured mode was not measured.
 - **A program's own status (OSC 7501) is a second source, and the hook outranks it** (`internal/terminal/progwire.go`):
   from the first hook state the window hears until a hook reports `idle` or the shell starts a prompt (OSC 133 A),
   the program's records are kept and the card is the hook's. Only Claude Code and Cursor CLI report `idle`, so
@@ -714,7 +717,10 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   and several models ran it names no window, so the readout keeps the one named from the model. The reports live
   in memory: a lich restarted before a chat's next turn scans that conversation's transcript again until one
   lands. A Claude Code session in its terminal reports nothing, so its window is guessed from the model name and
-  its cost is the transcript scan.
+  its cost is the transcript scan. A chat switched to its terminal keeps the last cost its chat reported, frozen
+  while the terminal works on, until the chat reports again or lich restarts: the reported row replaced the
+  scan's place in the transcript, so the scan cannot pick up where the report left off without counting the
+  conversation twice.
 - **An opencode database can hold two generations, and each conversation is read from the newer one it is in**
   (`internal/terminal/sessiondb.go`, `opencode2Session`): opencode 2 copies a 1.x conversation into `session_v2`
   the first time it touches it and stops writing the 1.x tables, which it leaves in place (measured on 2.2.5

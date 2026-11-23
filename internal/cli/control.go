@@ -94,7 +94,7 @@ var controlTools = []mcpTool{
 		Name: "control_session",
 		Description: "Drive another lich session drawn as a chat, on any agent with one: send it a " +
 			"prompt, stop the turn it is running, set the model or reasoning effort its chat offers, or " +
-			"run one of its slash commands, such as compact or clear. A prompt or a command waits up " +
+			"run one of its slash commands, such as compact. A prompt or a command waits up " +
 			"to 10 seconds for its turn to start; a result saying it waits behind the running turn is " +
 			"not a failure, and it still goes through. A session in its terminal is refused, and so " +
 			"is Crush, which has no chat. Your own session takes model and effort, never the other " +
