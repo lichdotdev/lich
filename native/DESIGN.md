@@ -451,7 +451,7 @@ draws none while it grows in, because the room above the rows is measured in the
   ran in muted mono and how it ended: nothing while it runs, then a check in `TonePass` or a cross in
   `Destructive` with the output's first line. A time that stands still reads in milliseconds under a second
   ("476ms"), the line's "Worked for" too; a call whose end nobody reported (most histories) shows no time. Its
-  diff stands under it as a thread's hunk is drawn. While a call of the turn in flight runs, the line shimmers
+  diff stands under it as a window: `RadiusMD`, a 1px `Border` hairline, the file's name in mono medium with `+a -d` over a hairline, then the hunks drawn as a thread's are, without the `---` and `+++` lines. While a call of the turn in flight runs, the line shimmers
   with its count; the group never opens on its own. Only
   the turn in flight is alive: a call an ended turn left running (interrupted) stops with it, its time up to the
   turn's end, or none where nobody saw it.
