@@ -4,7 +4,6 @@ import (
 	"image/color"
 	"slices"
 	"strings"
-	"time"
 
 	"gioui.org/font"
 	"gioui.org/layout"
@@ -53,14 +52,7 @@ func shellState(th *ui.Theme, s backend.ChatShell) (*icons.Icon, color.NRGBA, st
 }
 
 // shellTook is how long s has run, or ran.
-func shellTook(gtx C, s backend.ChatShell) string {
-	start := time.UnixMilli(s.Started)
-	if s.Ended == 0 {
-		chatTick(gtx, start)
-		return chatElapsed(gtx.Now.Sub(start))
-	}
-	return chatElapsed(time.UnixMilli(s.Ended).Sub(start))
-}
+func shellTook(gtx C, s backend.ChatShell) string { return took(gtx, s.Started, s.Ended) }
 
 // shellMeta is what a shell's line says at its end: a monitor named one, how
 // long it has run, and how it ended once it has; the glyph already says it

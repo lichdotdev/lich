@@ -118,6 +118,7 @@ type chatView struct {
 	// queueSend is the queue's Send now.
 	queueSend ui.Clickable
 	plan      chatPlanState
+	workflow  chatWorkflowState
 	// slash is the list of the provider's commands over the composer, which
 	// may grow over the conversation up to slashRoom, the pane's height (on
 	// the start screen, what is above its composer and the composer).
@@ -619,6 +620,7 @@ func (u *window) chatComposer(gtx C, th *ui.Theme, p *chatPane, sv sessionView, 
 		ft.attach, ft.context = nil, nil
 	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+		layout.Rigid(func(gtx C) D { return u.chatWorkflow(gtx, th, p, sv.ID) }),
 		layout.Rigid(func(gtx C) D { return u.chatPlan(gtx, th, &p.plan, sv.ID, working) }),
 		layout.Rigid(func(gtx C) D { return u.chatQueue(gtx, th, p, sv.ID) }),
 		layout.Rigid(func(gtx C) D {

@@ -228,6 +228,31 @@
       "stopped": "detenido"
     }
   },
+  "workflow": {
+    "count": "{name} {done}/{total}",
+    "progress": "{done}/{total}",
+    "failed": "falló",
+    "agents": {
+      "one": "{count} agente",
+      "other": "{count} agentes"
+    },
+    "started": "empezó a las {time}",
+    "back": "Agentes",
+    "calls": {
+      "one": "{count} llamada a herramienta",
+      "other": "{count} llamadas a herramientas"
+    },
+    "tokens": "{n} tokens",
+    "fact": {
+      "phase": "Fase",
+      "model": "Modelo",
+      "time": "Tiempo",
+      "now": "Ahora",
+      "last": "Última llamada",
+      "task": "Tarea",
+      "result": "Resultado"
+    }
+  },
   "attach": {
     "remove": "Quitar",
     "pasteNeedsTool": "Para pegar una imagen hace falta wl-paste (wl-clipboard) o xclip"

@@ -19,6 +19,7 @@ type (
 	ChatChoice     = api.ChatChoice
 	ChatCommand    = api.ChatCommand
 	ChatShell      = api.ChatShell
+	ChatWorkflow   = api.ChatWorkflow
 )
 
 // ChatKinds is the providers whose sessions can be drawn as a chat.
@@ -82,6 +83,11 @@ func (c *Client) ChatCommands(ctx context.Context, id string) ([]ChatCommand, er
 // ChatShells is session id's background shells, running and ended.
 func (c *Client) ChatShells(ctx context.Context, id string) ([]ChatShell, error) {
 	return callMethod(ctx, c, api.ChatShells, api.SessionIDOptions{ID: id})
+}
+
+// ChatWorkflows is session id's workflows, running and ended.
+func (c *Client) ChatWorkflows(ctx context.Context, id string) ([]ChatWorkflow, error) {
+	return callMethod(ctx, c, api.ChatWorkflows, api.SessionIDOptions{ID: id})
 }
 
 // ChatShellOutput is the end of shell's output in session id's chat.

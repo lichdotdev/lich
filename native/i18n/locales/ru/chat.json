@@ -252,6 +252,35 @@
       "stopped": "остановлена"
     }
   },
+  "workflow": {
+    "count": "{name} {done}/{total}",
+    "progress": "{done}/{total}",
+    "failed": "ошибка",
+    "agents": {
+      "one": "{count} агент",
+      "few": "{count} агента",
+      "many": "{count} агентов",
+      "other": "{count} агента"
+    },
+    "started": "запущен в {time}",
+    "back": "Агенты",
+    "calls": {
+      "one": "{count} вызов инструмента",
+      "few": "{count} вызова инструментов",
+      "many": "{count} вызовов инструментов",
+      "other": "{count} вызова инструментов"
+    },
+    "tokens": "{n} токенов",
+    "fact": {
+      "phase": "Этап",
+      "model": "Модель",
+      "time": "Время",
+      "now": "Сейчас",
+      "last": "Последний вызов",
+      "task": "Задача",
+      "result": "Результат"
+    }
+  },
   "attach": {
     "remove": "Убрать",
     "pasteNeedsTool": "Чтобы вставить изображение, нужен wl-paste (wl-clipboard) или xclip"

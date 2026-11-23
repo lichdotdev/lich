@@ -49,6 +49,7 @@ type claudeDriver struct {
 	agentList []claudeAgent
 	tasks     *claudeTasks
 	shells    claudeShells
+	workflows claudeWorkflows
 	// bgTasks is how many tasks the last background_tasks_changed listed,
 	// and wake whether one ended with no turn running: the system/init that
 	// follows opens the turn Claude Code starts on its own (claudeWake).
@@ -293,6 +294,7 @@ func (d *claudeDriver) handle(raw []byte) {
 		}
 		if strings.HasPrefix(line.Subtype, "task_") {
 			d.shellTask(line.Subtype, raw)
+			d.workflowTask(line.Subtype, raw)
 		}
 		switch line.Subtype {
 		case "background_tasks_changed":

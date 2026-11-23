@@ -216,6 +216,29 @@
       "stopped": "停止済み"
     }
   },
+  "workflow": {
+    "count": "{name} {done}/{total}",
+    "progress": "{done}/{total}",
+    "failed": "失敗",
+    "agents": {
+      "other": "エージェント {count} 件"
+    },
+    "started": "{time} に開始",
+    "back": "エージェント",
+    "calls": {
+      "other": "ツール呼び出し {count} 回"
+    },
+    "tokens": "{n} トークン",
+    "fact": {
+      "phase": "フェーズ",
+      "model": "モデル",
+      "time": "時間",
+      "now": "実行中",
+      "last": "最後の呼び出し",
+      "task": "タスク",
+      "result": "結果"
+    }
+  },
   "attach": {
     "remove": "外す",
     "pasteNeedsTool": "画像を貼り付けるには wl-paste (wl-clipboard) か xclip が必要です"
