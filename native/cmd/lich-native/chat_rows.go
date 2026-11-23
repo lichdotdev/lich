@@ -36,8 +36,9 @@ type chatRow struct {
 	// answer being written, a turn's tool calls while one of them runs.
 	// calling marks a work row whose turn is in a run of tool calls: in the
 	// turn in flight, the last call or text the model wrote is a call.
-	// movable marks a live row whose turn waits on a command Ctrl+B moves.
-	live, calling, movable bool
+	// movable marks a live row whose turn waits on a command Ctrl+B moves,
+	// and compacting one whose turn is compacting.
+	live, calling, movable, compacting bool
 	// ended is when a work row's turn last did something, unix ms.
 	ended int64
 	// turn, tools and took are a work row's: its tool calls and how long the
@@ -117,6 +118,9 @@ func chatRows(items []backend.ChatItem, kind string, running bool, now time.Time
 			}
 			turnDay = day
 		}
+		if it.Kind == api.ItemCompaction && !drawnCompaction(it) {
+			continue
+		}
 		if it.Kind != api.ItemTool {
 			r := chatRow{kind: chatRowItem, item: it, live: it.ID == liveID && (it.Kind == api.ItemAgent || it.Kind == api.ItemThought)}
 			if it.Kind == api.ItemAgent && !led[it.Turn] {
@@ -151,13 +155,14 @@ func chatRows(items []backend.ChatItem, kind string, running bool, now time.Time
 		rows = append(rows, work)
 	}
 	// The conversation's last turn, once it has ended, closes with a line of
-	// its own; the person's next message takes it away. A question still
+	// its own, unless it was the person's compaction, whose marker closes it;
+	// the person's next message takes it away. A question still
 	// waiting holds the turn open, whatever a window opened mid-turn heard.
-	if !running && len(items) > 0 && asked[last] && questionWaiting(items) == nil {
+	if !running && len(items) > 0 && asked[last] && questionWaiting(items) == nil && !compactTurn(items, last) {
 		rows = append(rows, chatRow{kind: chatRowDone, turn: last})
 	}
 	if running && permissionWaiting(items) == nil && questionWaiting(items) == nil {
-		live := chatRow{kind: chatRowLive, turn: last, movable: movable(items)}
+		live := chatRow{kind: chatRowLive, turn: last, movable: movable(items), compacting: compactRunning(items)}
 		if sp := spans[last]; sp != nil && sp.start > 0 && !now.IsZero() {
 			live.took = time.Duration(max(now.UnixMilli()-sp.start, 0)) * time.Millisecond
 		}

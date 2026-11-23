@@ -411,5 +411,12 @@
     "stoppedByYou": "あなたが閉じました",
     "waiting": "{label} が待っています",
     "expired": "{label} は時間内に回答しませんでした"
+  },
+  "compaction": {
+    "running": "会話を圧縮しています",
+    "done": "会話を圧縮しました",
+    "auto": "会話を自動で圧縮しました",
+    "failed": "圧縮できませんでした",
+    "tokens": "{before} → {after} トークン"
   }
 }

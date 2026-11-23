@@ -433,5 +433,12 @@
     "stoppedByYou": "por ti",
     "waiting": "{label} está esperando",
     "expired": "{label} no respondió a tiempo"
+  },
+  "compaction": {
+    "running": "Compactando la conversación",
+    "done": "Conversación compactada",
+    "auto": "Conversación compactada automáticamente",
+    "failed": "No se pudo compactar",
+    "tokens": "{before} → {after} tokens"
   }
 }

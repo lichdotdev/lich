@@ -67,6 +67,9 @@ func (u *window) chatRow(gtx C, th *ui.Theme, p *chatPane, sv sessionView, r cha
 	case chatRowShell:
 		return chatBranch(gtx, th, true, func(gtx C) D { return chatShellCall(gtx, th, p.fold("out:"+r.item.ID), r.item, r.live) })
 	case chatRowLive:
+		if r.compacting {
+			return chatCompacting(gtx, th, r)
+		}
 		return chatLive(gtx, th, sv.ID, r)
 	case chatRowDone:
 		if p.swap.key == chatRowKey(r) && p.swap.playing(gtx.Now) {
@@ -100,6 +103,8 @@ func (u *window) chatRow(gtx C, th *ui.Theme, p *chatPane, sv sessionView, r cha
 		})
 	case api.ItemAgent:
 		return u.chatAgent(gtx, th, p, sv, r)
+	case api.ItemCompaction:
+		return u.chatCompaction(gtx, th, p, it)
 	case api.ItemThought:
 		return chatThought(gtx, th, p.fold(it.ID), it, r.live)
 	case api.ItemPermission:

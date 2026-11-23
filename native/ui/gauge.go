@@ -4,6 +4,7 @@ import (
 	"image"
 	"image/color"
 	"math"
+	"time"
 
 	"gioui.org/f32"
 	"gioui.org/layout"
@@ -149,5 +150,49 @@ func (th *Theme) SegmentedBar(gtx C, percent, count int, tone color.NRGBA) D {
 		x := i * (seg + gap)
 		paint.FillShape(gtx.Ops, c, clip.UniformRRect(image.Rectangle{Min: image.Pt(x, 0), Max: image.Pt(x+seg, h)}, h/2).Op(gtx.Ops))
 	}
+	return D{Size: image.Pt(count*seg+(count-1)*gap, h)}
+}
+
+// A WaveBar's wave, the mockup's: each segment lights 80ms after the one
+// before, rising over 12% of a 1.6s lap and fading by 30% of it, so the lit
+// head sweeps across, rests, and starts over.
+const (
+	waveLap  = 1600 * time.Millisecond
+	waveStep = 80 * time.Millisecond
+	waveRise = 0.12
+	waveFall = 0.30
+)
+
+// WaveLevel is how lit segment i of a WaveBar is at now, 0 on the track and 1
+// in full tone.
+func WaveLevel(now time.Time, i int) float64 {
+	at := (time.Duration(now.UnixNano()) - time.Duration(i)*waveStep) % waveLap
+	if at < 0 {
+		at += waveLap
+	}
+	phase := float64(at) / float64(waveLap)
+	switch {
+	case phase < waveRise:
+		return phase / waveRise
+	case phase < waveFall:
+		return 1 - (phase-waveRise)/(waveFall-waveRise)
+	}
+	return 0
+}
+
+// WaveBar is a SegmentedBar for work with no share to tell: never filling,
+// a lit wave sweeps its segments toward tone. It asks for the next frame while
+// it is drawn.
+func (th *Theme) WaveBar(gtx C, count int, tone color.NRGBA) D {
+	h := gtx.Dp(Space(1.5))
+	gap := gtx.Dp(segmentedGap)
+	seg := max((gtx.Constraints.Max.X-gap*(count-1))/count, 1)
+	track := th.Over(th.Border)
+	for i := range count {
+		c := MixOKLab(track, tone, WaveLevel(gtx.Now, i))
+		x := i * (seg + gap)
+		paint.FillShape(gtx.Ops, c, clip.UniformRRect(image.Rectangle{Min: image.Pt(x, 0), Max: image.Pt(x+seg, h)}, h/2).Op(gtx.Ops))
+	}
+	th.Loop(gtx)
 	return D{Size: image.Pt(count*seg+(count-1)*gap, h)}
 }

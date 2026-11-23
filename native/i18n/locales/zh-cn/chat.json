@@ -411,5 +411,12 @@
     "stoppedByYou": "由你关闭",
     "waiting": "{label} 正在等待",
     "expired": "{label} 未按时回复"
+  },
+  "compaction": {
+    "running": "正在压缩对话",
+    "done": "对话已压缩",
+    "auto": "对话已自动压缩",
+    "failed": "无法压缩",
+    "tokens": "{before} → {after} token"
   }
 }
