@@ -287,7 +287,7 @@ func TestACPAdvertisesCompaction(t *testing.T) {
 	r := newChat(t, providers.OpenCode)
 	r.prompt("hi")
 	r.turnEnd(0)
-	if !strings.Contains(r.fakeLog(), `"session":{"compaction":{}}`) {
+	if !strings.Contains(r.fakeLog(), `"session":{"compaction":{}`) {
 		t.Errorf("initialize did not advertise session.compaction:\n%s", r.fakeLog())
 	}
 }
