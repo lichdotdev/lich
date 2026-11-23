@@ -52,6 +52,10 @@ var (
 // chatCrumbStatGap is the room between the branch and its line counts.
 const chatCrumbStatGap = 1.5
 
+// chatCrumbPRGap is the room before the pull request: wider than the branch
+// keeps to its own counts, so the badge does not read as part of the name.
+const chatCrumbPRGap = 3
+
 // chatCrumbSpread is the room between the project and the checkout, which
 // sit apart with no separator (centre-mix mockup's 20px).
 const chatCrumbSpread = 5
@@ -256,23 +260,26 @@ func (u *window) chatCrumbs(gtx C, th *ui.Theme, sv sessionView, in footerInput,
 // crumbsTail is what follows the branch, the changes' line counts and the pull
 // request, laid out ahead of it, and the room they take with their gaps.
 func (u *window) crumbsTail(gtx C, th *ui.Theme, sv sessionView, in footerInput, ft chatFooter, followed bool, size unit.Sp) ([]layout.FlexChild, int) {
-	var items []layout.Widget
+	type crumbItem struct {
+		gap  float32
+		draw layout.Widget
+	}
+	var items []crumbItem
 	if ft.changes != nil {
-		items = append(items, func(gtx C) D { return u.footer.crumbChanges(gtx, th, *ft.changes, in.git, followed, size) })
+		items = append(items, crumbItem{chatCrumbStatGap, func(gtx C) D { return u.footer.crumbChanges(gtx, th, *ft.changes, in.git, followed, size) }})
 	}
 	if sv.pr != nil && sv.forge != "" {
-		items = append(items, func(gtx C) D { return u.chatPRBadge(gtx, th, sv, followed, size) })
+		items = append(items, crumbItem{chatCrumbPRGap, func(gtx C) D { return u.chatPRBadge(gtx, th, sv, followed, size) }})
 	}
 	gtx.Constraints.Min = image.Point{}
-	gap := gtx.Dp(ui.Space(chatCrumbStatGap))
 	var tail []layout.FlexChild
 	room := 0
 	for i, item := range items {
 		m := op.Record(gtx.Ops)
-		d := item(gtx)
+		d := item.draw(gtx)
 		call := m.Stop()
 		if i > 0 || ft.checkout != nil {
-			tail, room = append(tail, ui.Gap(chatCrumbStatGap)), room+gap
+			tail, room = append(tail, ui.Gap(item.gap)), room+gtx.Dp(ui.Space(item.gap))
 		}
 		tail, room = append(tail, layout.Rigid(func(gtx C) D { call.Add(gtx.Ops); return d })), room+d.Size.X
 	}

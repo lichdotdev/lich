@@ -2,6 +2,7 @@ package main
 
 import (
 	"image"
+	"image/color"
 	"strings"
 	"testing"
 	"time"
@@ -222,5 +223,50 @@ func TestHoverBrightensOnlyTheLogo(t *testing.T) {
 	}
 	if d := inkShift(rest, hovered, tinted); d != 0 {
 		t.Errorf("hover moved the glyph or the number by %d", d)
+	}
+}
+
+// The pull request stands apart from the branch it follows: a wider gap than
+// the one that keeps the branch's own line counts beside it.
+func TestTheComposerPullRequestStandsApartFromTheBranch(t *testing.T) {
+	pr := backend.PullRequest{Number: 1190, State: "MERGED"}
+	u, r, _ := composerWithPR(t, rigWindow, pr, api.ForgeGitHub, "s1")
+	m := u.model
+	path := m.shownPath(m.projects[0], m.projects[0].Sessions[0])
+	g := m.git[path]
+	g.Files = 0
+	m.git[path] = g
+	r.settle(t)
+	branch, number := labelBox(t, r, longBranch), labelBox(t, r, "#1190")
+	img := renderRig(t, r)
+	// the line's text rows, and the color most of them leave bare
+	top, bottom := number.Min.Y, number.Min.Y+14
+	counts := map[color.RGBA]int{}
+	for x := branch.Min.X; x < number.Min.X; x++ {
+		counts[img.RGBAAt(x, top+7)]++
+	}
+	var bg color.RGBA
+	for c, n := range counts {
+		if n > counts[bg] {
+			bg = c
+		}
+	}
+	// the widest run of bare columns between the branch and the number is the
+	// gap before the badge: the badge's own gaps are narrower
+	widest, run := 0, 0
+	for x := branch.Min.X; x < number.Min.X; x++ {
+		bare := true
+		for y := top; y < bottom && bare; y++ {
+			bare = img.RGBAAt(x, y) == bg
+		}
+		if bare {
+			run++
+			widest = max(widest, run)
+		} else {
+			run = 0
+		}
+	}
+	if want := int(ui.Space(chatCrumbPRGap)); widest < want { // the rig draws at 1px a dp
+		t.Errorf("the widest gap before #1190 is %dpx, want at least %dpx", widest, want)
 	}
 }

@@ -574,7 +574,8 @@ draws none while it grows in, because the room above the rows is measured in the
   pointer, which stands `Space(1.5)` by `Space(1)` (`chatChangesPadX`, `chatChangesPadY`) round the text and grows
   outward from it: the item takes the room of its text alone, so the text ends `chatFootPad` in from the box's
   right edge, as the left side starts, and the fill reaches the edge. A click opens Review. It is never drawn pressed, as the footer's button is while the dock shows Review:
-  on this line a lit item reads as a button switched on for no reason. Last, `chatCrumbStatGap` after the changes,
+  on this line a lit item reads as a button switched on for no reason. Last, `chatCrumbPRGap` (`Space(3)`, twice the
+  room the branch keeps to its counts, so the badge does not read as part of the name) after the branch or the changes,
   the branch's pull request (`prBadge` in the line's size): a click opens it on Pulls or in the browser
   (`prTarget`), its title in a tooltip; it shows with no checkout or changes, and the branch truncates first, so
   neither it nor the changes is ever cut. Attach, changes and the branch show only when the user's footer layout has them, and
