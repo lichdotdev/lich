@@ -40,7 +40,7 @@ func (s *Service) Wait(ctx context.Context, opts WaitOptions) (Result, error) {
 		s.mu.Unlock()
 		s.clearAll(expired)
 		s.announceInboxAll(senders)
-		return Result{Ticket: ticketID, Target: late.target, Status: late.lapsedAs, Answer: late.why, Private: late.private}, nil
+		return Result{Ticket: ticketID, Target: late.target, Status: late.lapsedAs, Private: late.private}, nil
 	}
 	if gone, ok := s.expired[ticketID]; ok {
 		s.mu.Unlock()
@@ -253,7 +253,7 @@ func (s *Service) await(ctx context.Context, id string, t *ticket, wait time.Dur
 		return Result{Ticket: id, Target: t.target, Status: StatusAnswered, Answer: t.answer}
 	case <-t.stalled:
 		s.leave(t)
-		return Result{Ticket: id, Target: t.target, Status: stalledStatus(t), Answer: t.why}
+		return Result{Ticket: id, Target: t.target, Status: stalledStatus(t)}
 	case <-t.unread:
 		s.leave(t)
 		return Result{Ticket: id, Target: t.target, Status: StatusUnread}

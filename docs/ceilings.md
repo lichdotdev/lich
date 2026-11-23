@@ -130,8 +130,10 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   turn holds no message of the person's; an ACP agent draws one only where its replay sends `compaction_update`.
   Codex runs `thread/compact/start` as a turn of its own (measured on 0.170.0): a failed one never completes its
   item, and the failed turn ends it with its reason. Not measured, read from the binary: Claude Code's live order
-  of its compaction lines, its live `post_tokens`, and that it lists /compact at initialize. A compaction in a chat reaches neither the card's compacting state nor the relay's
-  reminder after one: both still come from the terminal's hooks.
+  of its compaction lines, its live `post_tokens`, and that it lists /compact at initialize. A compaction a chat
+  draws live reaches the card and the relay as `compacting`, once per compaction, and as `busy` again when it ends
+  inside a running turn (docs/hooks/session-state.md); one read back reaches neither, and a session in its
+  terminal reports no compaction on any provider.
 - **A new session is born as a chat only where its provider is in `chat.Kinds`, and a fork never is**
   (`internal/store/sessionview.go`, `internal/spawn`): the store writes the view with the row, a chat unless the
   global `session.view` (Settings › Providers › New sessions open as) asks for the terminal, so the window, the
@@ -141,11 +143,10 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   conversation, it cannot branch one. The setting decides the birth only: a resumed or restored session keeps
   the view it had.
 - **A session drawn as a chat takes the relay's tasks and notes as its next message, and nothing that needs its
-  terminal** (`internal/chat/relay.go`, `internal/terminal/chatprompt.go`): `SubmitPrompt` hands the text to the
+  terminal** (`internal/chat/relay.go`, `internal/terminal/chatprompt.go`): `ChatPrompt` hands the text to the
   chat, which sends it at once or queues it, oldest first, behind the turn running; the receipt is acked when its
-  turn starts, as a mod's is. What still needs a terminal or the Claude Code mod refuses a chat with an error
-  rather than writing nothing: `lich ask` / `ask_session` and every action of `control_session` go through the
-  mod, and Insert types at a prompt a chat does not have. A chat is reachable only while its process runs: the
+  turn starts. What still needs a terminal refuses a chat with an error rather than writing nothing: Insert types
+  at a prompt a chat does not have. A chat is reachable only while its process runs: the
   window starts every session drawn as a chat when it attaches, and a spawn starts one at its birth, so a
   headless lich restarted with no window attached leaves those sessions out of the roster until one does. An ACP
   chat opens its conversation with no MCP servers of its own (`mcpServers: []`), so whether its agent answers a
@@ -587,8 +588,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
 - **An interrupted turn is read off the keystrokes, not from the provider** (`internal/terminal/draft.go`,
   `hookstate.go`, `Service.noteInterrupt`): Claude Code, Codex and oh-my-pi all skip the hook that ends a turn when
   the user stops one, so lich publishes `interrupted` itself when a lone Ctrl+C or Escape reaches a session it knows
-  is mid-turn. It is also raised with no keystroke, when a Claude Code mod acks an abort sent from lich and when a
-  usage limit ends a Codex turn (`internal/terminal/limit.go`). It is a guess made from bytes, and it has three
+  is mid-turn. It is also raised with no keystroke when a usage limit ends a Codex turn (`internal/terminal/limit.go`). It is a guess made from bytes, and it has three
   edges. A provider session running a tool that owns the terminal — an editor opened through a shell command — takes
   Escape as the interrupt and clears the ring while the turn is still running; the next report from the provider
   puts it back. A provider that reports its own abort as the turn finishing wears the solid ring a completed turn
@@ -633,36 +633,28 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   row keeps the old id and a restart resumes the conversation the card opened with (each provider's version:
   `docs/providers/`, Hooks). Reopening from lich itself is not this gap: every door through `store.reopen`
   focuses the card that holds the conversation.
-- **Only a Claude Code session whose mod polls can be driven, asked, or report for itself** (`spawn.Control`,
-  `spawn.Ask`, `internal/terminal/modcontrol.go`, `modusage.go`, `modstatus.go`; each contract in `docs/hooks/`,
-  mod-control, mod-usage, mod-status and session-state, has its own Known ceilings): mods are a Claude Code
-  feature, from 2.1.280 and only with the lich-plugin mod loaded, 0.15.0 or newer. The other seven providers, and
-  a Claude Code session without the mod, have nothing that runs inside them and polls. So `lich control` and
-  `lich ask` refuse them by provider before anything is queued (no other CLI exposes a fork of its own
-  conversation to anything running inside it), their readout stays the one lich derives, their errands show only
-  in the card's tooltip and inbox mark, and a compaction keeps the finished turn's check or is a spinner with no
-  tool line, which reads as a stuck turn. The traps a caller walks into:
-  - `/model` and `/effort` are refused as slash commands: run through a mod they write `~/.claude/settings.json`,
-    the default for every new session (2.1.288). The `model` and `effort` actions are the per-session route.
-  - A slash command that opens a dialog (`/cost`) holds that session's later slash commands until someone
-    presses Esc in its terminal; lich cannot tell such a command apart before running it.
-  - A session cannot ask itself, nor control itself past `model` and `effort`: an abort would end the asking turn,
-    a prompt or a slash command would only run after it, and a question would ride the request it is waiting on.
-  - An ask knows the conversation only as of the last finished model response, cannot be cancelled (past lich's
-    90 seconds the fork runs on, billed, and its answer is dropped), never reaches the session's cost, and is cut
-    at 16,000 characters (2.1.289).
-  - A reported readout wins over the derived one, so two sessions on the same model can disagree by the requests
-    no transcript records (2.7% and 3.1% of a session's cost on 2.1.289). Its cost replaces the conversation's
-    ledger row and drops its sub-agent rows, so a lich restarted before the session's first report re-scans that
-    conversation from the transcript until the report lands again. Only a long-lived token login's plan gauge
-    uses the reported rate limits: a credentials login keeps its usage route, which names the plan, the account
-    and the model-scoped caps a report does not carry.
-  - An errand sent privately (a subagent or workflow step inside the session) never shows on the status line,
-    since the session's own collect never reaches it.
-  - A message to a Claude Code session with lich-plugin installed waits for its mod's first poll, up to 20 seconds
-    from the spawn and 10 from its session-start (`modFirstPoll`, `internal/terminal/startgate.go`): typed before
-    that poll, it was left on the prompt with its Enter lost (2.1.326). A session with mods off, or a Claude Code
-    older than 2.1.280, gets its first message that much later.
+- **Only a session drawn as a chat can be driven, so Crush never can** (`spawn.Control`,
+  `internal/spawn/control.go`): `lich control` and `control_session` act through the chat of Claude Code, Codex,
+  Antigravity, opencode, oh-my-pi, Cursor CLI and Kiro CLI, the way the person would there: a prompt or a slash
+  command goes in as the chat's next message, an abort is the chat's Stop, and a model or an effort is set through
+  the chat's own picker. A session on its terminal is refused on every provider until it is switched to GUI, since
+  lich has no way into a TUI but typing, and Crush has no chat, so it is always refused. The traps a caller walks
+  into:
+  - A prompt or a slash command queues behind a running turn, and the call waits up to 10 seconds (`promptWait`)
+    for its turn to start: past that it reports `delivered` (exit 2) and the message still goes in when the turn
+    ends. An abort with no turn running is refused.
+  - A model or an effort must be one of the choices that chat's picker offers, and the error lists them. A value
+    is required: there is no going back to the session's own. Codex applies the change from the next message.
+    Kiro CLI's chat offers no effort and takes a model only by restarting its process, which is refused while a
+    turn runs. Cursor CLI's chat is not verified.
+  - `/model` and `/effort` are refused as slash commands: Claude Code's TUI writes them to
+    `~/.claude/settings.json`, the default for every new session (2.1.288), and a chat's was not measured. The
+    `model` and `effort` actions are the per-session route.
+  - A session cannot control itself past `model` and `effort`: an abort would end the asking turn, and a prompt or
+    a slash command would only run after it.
+  - A slash command reaches the agent as the text of a message, never the window: the commands the chat's own
+    box answers itself (`/new`, `/clear`, `/reset`, and the `/mcp`, `/memory`, `/permissions` panels) are
+    sent to the agent as typed, and what each agent makes of them in its structured mode was not measured.
 - **A program's own status (OSC 7501) is a second source, and the hook outranks it** (`internal/terminal/progwire.go`):
   from the first hook state the window hears until a hook reports `idle` or the shell starts a prompt (OSC 133 A),
   the program's records are kept and the card is the hook's. Only Claude Code and Cursor CLI report `idle`, so
@@ -707,13 +699,28 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   session's number. A conversation branched inside the PTY bills each response once by the provider's id for it
   (`billedResponses`), so the copy is billed again wherever the figure carries no such id: a Codex rollout,
   priced from the running total a fork carries forward (measured on 0.153.4) rather than its per-response
-  records; an oh-my-pi turn written without a `responseId` (40 of 1,585 measured); and a Claude Code session
-  whose mod reports a cost, which is not scanned at all: the report replaces the transcript, sub-agents included. That once is per session, because a fork lich spawns is
+  records; an oh-my-pi turn written without a `responseId` (40 of 1,585 measured); and a Claude Code chat
+  whose stream-json reports a cost, which is not scanned at all: the report replaces the transcript and its
+  sub-agents' rows. That once is per session, because a fork lich spawns is
   netted by its fork offset instead (`SaveForkCostOffset`): skipping a response billed in another session would
   take that history off twice. A withheld number is marked `$—` on the footer
   only when the reason is standing (`costMiss.spoken` in `internal/terminal/usage_cost.go`): a transcript that
   merely could not be read this turn says nothing and keeps the last figure, so a reader cannot tell that
   absence from a session still on its first turn.
+- **A Claude Code chat reports its own cost and window only at a turn's end, and a terminal session not at all**
+  (`internal/chat/claude_usage.go`, `internal/terminal/chatusage.go`): Claude Code's stream-json (measured on
+  2.1.330) carries the conversation's whole cost (`total_cost_usd`, carried over a resume) and each model's
+  `contextWindow` in its `result`, and the plan's five-hour and seven-day windows in a `rate_limit_event` sent once
+  per process, not per turn. lich puts that cost in place of the transcript scan for the conversation and that
+  window under the footer's readout. Nothing in it lands mid-turn, it gives no context percentage or token count
+  of its own (the tokens stay the transcript's), and when the session's model alias matches no `modelUsage` key
+  and several models ran it names no window, so the readout keeps the one named from the model. The reports live
+  in memory: a lich restarted before a chat's next turn scans that conversation's transcript again until one
+  lands. A Claude Code session in its terminal reports nothing, so its window is guessed from the model name and
+  its cost is the transcript scan. A chat switched to its terminal keeps the last cost its chat reported, frozen
+  while the terminal works on, until the chat reports again or lich restarts: the reported row replaced the
+  scan's place in the transcript, so the scan cannot pick up where the report left off without counting the
+  conversation twice.
 - **An opencode database can hold two generations, and each conversation is read from the newer one it is in**
   (`internal/terminal/sessiondb.go`, `opencode2Session`): opencode 2 copies a 1.x conversation into `session_v2`
   the first time it touches it and stops writing the 1.x tables, which it leaves in place (measured on 2.2.5
@@ -865,19 +872,28 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   (`internal/quota/claude.go`): the usage route refuses a `claude setup-token` token, so the gauge reads that
   account the way Claude Code reads it for itself, with one message (`docs/providers/claude.md`, Account).
   Reading the gauge therefore spends quota (negligibly) and appears in the account's own usage, once per cache
-  window. A session on that login whose mod reports (docs/hooks/mod-usage.md) stands in for the request until one
-  of its windows resets, so the request is only spent for an account no such session has spoken for since.
+  window. A Claude Code chat on that login stands in for the request with the windows its stream-json reports
+  (`internal/quota/reported.go`) until one of them resets, so the request is only spent for an account no chat
+  has spoken for since, though that path was not measured on a token login. A session in its
+  terminal reports nothing, so a token login worked from terminals pays the request every cache window, where
+  the lich-plugin mod's report used to spare it. A credentials login never uses a report: its usage route also
+  names the plan, the account and the model-scoped caps a report does not carry.
 
 ## Relay, errands and subagents
 
-- **Only a Claude Code session with the mod is reminded of its errands after a compaction**
-  (`internal/relay/observe.go`, `compactReminderLocked`; docs/hooks/session-state.md): a relayed task is a turn of
-  the worker's conversation, and a compaction may summarise its ticket away. With two errands open an answer that
-  names none is refused, so the worker cannot answer either. The mod's `session.compact` is the only compaction
-  lich hears (`compacting`), so on the other seven providers, and on Claude Code without the mod, the ticket can
-  still be lost. The reminder is typed when the compaction's closing report arrives: after a mid-turn
-  auto-compaction that report is `busy`, and the reminder queues behind the running turn, so an errand that turn
-  ends unanswered is reminded after it is already closed, where only a late answer by its ticket still lands.
+- **A compaction can cost a terminal worker its ticket, and nothing reminds it** (`internal/relay/observe.go`,
+  `compactReminderLocked`; docs/hooks/session-state.md): a relayed task is a turn of the worker's conversation,
+  and a compaction may summarise its ticket away; with two errands open an answer that names none is refused, so
+  the worker cannot answer either. The reminder after a compaction lists only the errands answered by their
+  ticket. A chat is never reminded, and that is intended: every errand there is answered by the turn's final
+  message, so there is no ticket to remember. Claude Code, Codex and Kiro CLI chats report each compaction they
+  run live; Antigravity, opencode, oh-my-pi and Cursor CLI report only a /compact or /summarize the person types
+  where the provider lists it. A session in its terminal reports no compaction on any provider, so a terminal
+  worker answered by its ticket (Cursor CLI, Crush, a provider without the plugin) can lose it to a compaction
+  with nothing to remind it, and its card keeps the finished turn's check or shows a spinner with no tool line
+  while it compacts, which reads as a stuck turn. A Claude Code terminal under a lich-plugin older than 0.22.0
+  still has its mod post `compacting` to `/hook`, which lich takes, but lich reads that terminal's final message,
+  so it has no ticket errand to be reminded of either.
 - **A delegated task comes back by itself only where lich reads the worker's final message**
   (`internal/relay/workeranswer.go`, `answerByTurn`; `terminal.FinalMessage`; docs/hooks/notification.md, Which
   errands use it): a task is answered by its worker's last message when the turn ends, read from the chat's driver
@@ -911,7 +927,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   session through its own messaging or by the card's label. A `/rename` or a fork puts a name on record, and from
   then on lich answers to it; a fork pays for it with its `ai-title`.
 - **A prompt in use is recognised from the bytes going in, never from the line itself**
-  (`internal/terminal/draft.go`; typed deliveries only, a Claude Code session with its mod is handed the message, see below): a relayed message pastes at the prompt and sends an Enter behind it, so lich
+  (`internal/terminal/draft.go`; typed deliveries only, a session drawn as a chat takes the message as its next one): a relayed message pastes at the prompt and sends an Enter behind it, so lich
   holds the delivery back while the user has unsent input there. What it counts is printable input since the last
   Enter, escape sequences skipped — it cannot see the line, so an edit that leaves it empty by another route
   (Ctrl+W, a click into the middle of it) reads as a draft that is still there, and a delivery waits out
@@ -920,7 +936,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   invisible to every part of this.
 - **`lich insert` pastes and leaves it, so what the person sees is the provider's own paste handling**
   (`internal/relay/insert.go`, `internal/terminal` `AtPrompt`): it types a bracketed paste at the PTY of all eight
-  providers alike, a Claude Code session with the mod included, and presses nothing. The same gaps as a typed
+  providers alike and presses nothing. The same gaps as a typed
   delivery apply and are not closed here. On Windows (ConPTY) the paste markers are dropped, so a multi-line
   selection reaches the TUI as typed characters and each provider's burst heuristic decides whether a newline
   inside it submits the line — measured on none of them, since there is no Windows hardware here. A provider that
@@ -954,7 +970,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   A private result is announced nowhere, so only its ticket recovers it, and when the ticket's hour runs out only a
   wait on that ticket hears it expired: one that comes back after another hour, or never, is told nothing. It covers tickets, not ownership: the sessions and worktrees a step opens still come from the session, their
   marks and stalled toasts land on its card, and closing them is the workflow's own job.
-- **A relayed Enter is timed against silence, not against the target** (`internal/relay`, `awaitSettled`; typed deliveries only, a Claude Code session with its mod is handed the message, see below): lich
+- **A relayed Enter is timed against silence, not against the target** (`internal/relay`, `awaitSettled`; typed deliveries only, a session drawn as a chat takes the message as its next one): lich
   presses Enter once the target's PTY has been quiet for `defaultSubmitDelay`, because nothing here can read a TUI's
   screen to know it has taken the paste in. The window that opens on the target's own keyboard is closed rather
   than lived with: from the paste to the Enter its keystrokes are held and written at the prompt the Enter leaves
@@ -964,17 +980,15 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   events rather than bytes, the bracketed paste markers do not survive, and every provider TUI then guesses at where
   a paste ends from timing alone. A target that repaints on a timer of its own never goes quiet and gets its Enter
   at `defaultSettleLimit` regardless, which is the case this cannot tell from a paste still arriving.
-- **A relayed message reaches a Claude Code session through its mod, and every other session by typing**
-  (`internal/relay`, `deliver` and `handOff`; `terminal.SubmitPrompt`): the other seven providers have no mod
-  system, so a task, a result and a scheduled prompt, each in its notification envelope (docs/hooks/notification.md),
-  are typed at them with every trap the typed-delivery bullets above describe; a session drawn as a chat takes the
-  envelope as its next message instead. A Claude Code session is typed at too while no mod polls from it: lich-plugin older than 0.14.0, mods
-  off, a folder not trusted yet, or a session so new its mod has not polled. A session whose mod polls is handed
-  the message while its user is mid-sentence, since nothing is typed into that line. Delivery through the mod is at
-  most once: a prompt no poll collected is typed instead, one a poll collected is never typed again, so a collected
-  prompt lost on the way (the mod reloading as the response lands) is reported unread, not sent twice. A hook that
-  drops the prompt is reported undelivered with its reason, except at a session that was mid-turn, whose ack lich
-  stops waiting for after the receipt window.
+- **A relayed message reaches a session drawn as a chat as its next message, and every terminal by typing**
+  (`internal/relay`, `deliver`, `handOff` and `handToChat`; `terminal.ChatPrompt`): a task, a result and a
+  scheduled prompt, each in its notification envelope (docs/hooks/notification.md), are typed at a terminal
+  session of every provider, Claude Code's TUI included, with every trap the typed-delivery bullets above
+  describe; a session drawn as a chat takes the envelope as its next message instead. A Claude Code TUI is typed
+  at once it is ready, with nothing inside it waited for. A lich-plugin older than 0.22.0 still loads
+  that mod, and a message typed while the mod attached was measured left on the prompt with its Enter lost
+  (2.1.326): under such a plugin a new session's first message can be left on its prompt unsent, and updating
+  the plugin is the fix.
 - **A merge is announced only to a card running at that moment, and one made outside lich up to a minute late**
   (`internal/relay`, `AnnounceMerge`; called from the Pulls screen's merge and by the pull request watch,
   `internal/project` `RunBranchPRWatch`): a merge on github.com, with `gh` in a terminal or by an agent is found by
@@ -997,37 +1011,25 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   filed with the asker (in the asker's folder, or one named after it that the asker is filed under too), its
   errand is kept past `ticketTTL` for as long as the worker runs,
   the asker hears once per block when the worker waits on a permission, and the report comes back in a
-  `worker-finished` envelope (docs/hooks/notification.md) through the asker's chat or mod, cut at 4000 characters
-  with `truncated` saying how much waits on the ticket. The worker's own mod
-  answers for it (docs/hooks/mod-answer.md), so its task envelope says `answer="last-message"` and its last message
-  is its report; a worker whose mod had not polled when the task went in (4 of 84 workers measured on 2026-10-09),
-  or runs a lich-plugin older than 0.17.0, gets `answer="reply"` and answers by the ticket instead. A final turn that ends blank
-  ends the errand `unanswered` (`relay.WorkerUnanswered`), once the plugin posts it (docs/hooks/mod-answer.md,
-  Unanswered turns). A turn ended by an API error or a refusal fires `StopFailure`, which carries no background
-  list, and no `Stop` (measured on Claude Code 2.1.296), so the plugin cannot tell it from a turn whose background
-  work will resume the worker and posts nothing: that errand, like one whose turn was aborted with Esc, stays open
-  with nothing reported while the worker runs, kept past `ticketTTL` rather than ending at a deadline, until a later
-  turn answers or the worker is closed. A worker's report,
+  `worker-finished` envelope (docs/hooks/notification.md), whole as the asker's next chat message, cut at 4000
+  characters with `truncated` saying how much waits on the ticket. At an asker in its terminal the envelope is
+  typed without its `<result>`, and the report waits for `wait_for_answer`. The worker answers by its turn's final
+  message wherever lich reads one, so its task envelope says `answer="last-message"`, and by the ticket elsewhere
+  (the delegated-task bullet above). A worker's report,
   and a turn end that would call a ticket-carrying errand unanswered (`relay.turnCandidates`), wait for the
-  errands it sent itself (`relay.awaitsOutcomeLocked`), since Claude Code does not list them as
-  background work; one of those that ages out on `ticketTTL` is filed in the worker's inbox as `expired`
+  errands it sent itself (`relay.awaitsOutcomeLocked`); one of those that ages out on `ticketTTL` is filed in the worker's inbox as `expired`
   (`relay.sweep`, run on the scheduled-prompt tick, so it lands up to 30 seconds late), and that notice starts
   the turn whose report is the answer. Closing a worker
   ends its errand (`relay.SessionClosed`, wired before the PTY is killed so the SessionEnd its CLI reports finds
   nothing to call unanswered) without a word to an asker that closed it itself, as TaskStop does; closed from
   its card or by another session, the asker is told it `stopped`. Who closed it is the session `lich close` runs
-  in (`terminal.CloseBy`), so a TaskStop run from anywhere but the asker's own process reads as someone else's. Both reach the asker the way Claude Code's own background agent's
-  completion does, one `● lich session "…" finished` line on screen and the envelope whole in the model's context
-  (docs/hooks/mod-control.md, A prompt as a notification), through a render path Claude Code does not document:
-  a Claude Code that drops it shows the raw XML as a prompt, and a lich-plugin older than 0.16.0 shows the note as
-  a prompt from the plugin. Without a mod polling there the envelope is typed without its `<result>` and the report waits
-  for `wait_for_answer`, because typing a long report into a TUI is what the mod route exists to avoid. A worker in
+  in (`terminal.CloseBy`), so a TaskStop run from anywhere but the asker's own process reads as someone else's. A worker in
   the asker's checkout is parked once it answered and the turn it answered in ended (`relay.SetWorkerFinished`,
   `spawn.CloseFinishedWorker`) with nothing it sent still out, so typing into its card after its report means resuming it from the history; one
   on its own worktree, pinned, stopped with Esc, holding another errand, or whose asker is gone stays open. Esc in
   the asker leaves its workers running, as it leaves Claude Code's own background agents (measured on 2.1.289);
-  the mod's TaskStop stops one, Claude Code's `ctrl+x ctrl+k` does not, and the asker's status line counts them
-  from `lich sessions --json` every 5 seconds. Cards
+  under a lich-plugin older than 0.22.0 the mod's TaskStop stops one and Claude Code's `ctrl+x ctrl+k` does not.
+  Cards
   nest two levels deep (`subagent.MaxDepth`): a worker turns its own subagents into cards,
   and a worker it opened spawns with `LICH_SUBAGENT_CARDS=off`, so that one's stay native, and is briefed to fan
   out with them rather than with new lich sessions; nothing but that briefing stops it opening plain sessions
@@ -1074,13 +1076,6 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   app-server chat draws no item at all for a vetoed spawn, so nothing there is drawn as failed, and the redirect's
   `open_session` item carries the hook's id (`exec-…`) (measured). The ACP chats' item ids were not measured against
   their hooks' ids; where they differ the call is still drawn as the failed call the provider reports.
-- **A managed plugin can hide the Stop a worker's answer waits on**: on a machine with managed settings, Claude
-  Code's builtin `cc-plugin-sec-default` sends `classic.Stop` on past the plugins a person installs (measured on
-  2.1.306), and no mod call says so. The worker's mod then answers from `turn.complete` alone, held back only while
-  `$.agent.list()` shows a subagent at work (lich-plugin's `docs/mod-answer.md`). A turn that handed a background
-  shell, monitor or workflow off answers with what it said when it did, and the errand takes that first answer, so
-  the report of the turn that resumes later is lost. A lich-plugin older than the release carrying that fallback
-  never answers such a worker, and its errand stays open until the worker is closed.
 - **The ping-pong breaker knows a turn did no work only from the tools its hooks named** (`internal/relay/pingpong.go`):
   a message between the same two sessions counts toward the streak only when the sending turn reported tools through
   `PreToolUse` and every one was a relay tool (`send_to_session`, `reply_to_session`, `wait_for_answer`,
@@ -1090,10 +1085,9 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   (`lich send`, `"$LICH_BIN" reply`) ran a shell tool, which reads as work, so an exchange held that way is not caught
   either. A report that reaches lich after the send it precedes reads the same way: the breaker errs toward letting a
   message through. Only `send_to_session` and `lich send` count as hops; a reply closes an errand and is never
-  refused, and `ask_session` never enters the other conversation. The streak ends when either session messages a
+  refused. The streak ends when either session messages a
   third one, when a person sends a line at either prompt from the window, or when either session runs anything but a
-  relay tool, so a worker's work between a coordinator's tasks ends it; a prompt a Claude Code mod submits is not a
-  line typed there.
+  relay tool, so a worker's work between a coordinator's tasks ends it.
 - **The chain limit follows a message only through the errand it was sent on** (`internal/relay/chain.go`): a
   message is one deeper than the deepest relayed task its sender still owes an answer to, and the fifth in a chain is
   refused. That is read off the relay's own tickets, so it is the same on all eight providers. A session that replies
@@ -1583,7 +1577,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   `lich` CLI says so. The relay stays, held to one more rule where each method resolves its target
   (`scope.Target`, called from `internal/relay` and `internal/spawn`, never from the transport, which cannot
   turn a label into a row): a confined session speaks to confined sessions and answers anyone. `relay.Send`,
-  `SendPrivate`, `SendSubagent`, `Insert`, `Submit`, `spawn.Control` and `spawn.Ask` put text at the target's
+  `SendPrivate`, `SendSubagent`, `Insert`, `Submit` and `spawn.Control` put text at the target's
   prompt, and the receiving agent carries it out as its task, so a target whose row is not confined is refused
   by label with the reason; `relay.Reply` reaches any ticket, since a reply is read as a result, and it is how a
   confined worker reports to the unconfined session that opened it. `spawn.Close` refuses `force` from the
@@ -1912,13 +1906,6 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   other; an extension cannot read another's answers, nor a session's, by guessing a ticket. A ticket is spent
   once its outcome is not `pending`. The tickets are kept in memory: a lich restart forgets them, and the relay
   with them.
-- **An extension with `sessions:ask` reads what a Claude Code session knows** (`internal/extensions/methods.go`,
-  `spawn.Ask`): a side question is answered from that session's whole conversation, so the extension can learn
-  anything said in it, and the answer arrives with nobody at the session told. It carries `ask_session`'s gaps
-  unchanged: only a Claude Code session with the lich-plugin mod loaded answers (every other provider is
-  refused before anything is queued, the Provider support table's `lich ask` row), the wait is 90 seconds with
-  no ticket and a later answer dropped, the fork runs on and is billed past it, and the answer is cut at 16,000
-  characters (the mod ceiling above).
 - **An extension with `services:write` runs the commands a project saved, and `services:read` reads what they
   print** (`internal/extensions/methods_services.go`): it starts, stops and restarts any saved service of any
   open project, as the service tools do for an agent, but cannot create, edit or delete one. A console read may

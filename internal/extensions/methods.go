@@ -151,14 +151,6 @@ func (s *Service) collectAnswer(ctx context.Context, x *installed, params extens
 	return sendResult(result), nil
 }
 
-func (s *Service) askSession(ctx context.Context, _ *installed, params extension.AskParams) (extension.AskResult, error) {
-	answer, err := s.lich.Ask(ctx, api.AskSessionOptions{Target: params.Session, Project: params.Project, Question: params.Question})
-	if err != nil {
-		return extension.AskResult{}, err
-	}
-	return extension.AskResult{ID: answer.ID, Project: answer.Project, Label: answer.Label, Answer: answer.Answer}, nil
-}
-
 func sendResult(r api.SendResult) extension.SendResult {
 	return extension.SendResult{Ticket: r.Ticket, Target: r.Target, Status: r.Status, Answer: r.Answer}
 }

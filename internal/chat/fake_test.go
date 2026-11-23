@@ -203,6 +203,20 @@ func (f *fake) claudeTurn(run *fakeClaude, text string) {
 		text = "suggest"
 	}
 	switch text {
+	case "usage":
+		// 2.1.330's own figures: the plan's windows once per process, then a
+		// result with the conversation's cost and each model's window.
+		f.send(map[string]any{"type": "rate_limit_event", "session_id": "claude-new", "rate_limit_info": map[string]any{
+			"status": "allowed", "unifiedWindows": map[string]any{
+				"seven_day": map[string]any{"utilization": 0.55, "resetsAt": 1795446000, "status": "allowed"},
+				"five_hour": map[string]any{"utilization": 0.42, "resetsAt": 1795437000, "status": "allowed"},
+			}}})
+		msg("m11", map[string]any{"type": "text", "text": "counted"})
+		f.send(map[string]any{"type": "result", "subtype": "success", "is_error": false, "terminal_reason": "completed", "result": "counted",
+			"session_id": "claude-new", "total_cost_usd": 0.25, "modelUsage": map[string]any{
+				"claude-haiku-5-5": map[string]any{"costUSD": 0.01, "contextWindow": 1000000},
+				run.model:          map[string]any{"costUSD": 0.24, "contextWindow": 200000},
+			}})
 	case "suggest":
 		msg("m10", map[string]any{"type": "text", "text": "Fixed."})
 		f.claudeResult(false, "completed", "Fixed.")

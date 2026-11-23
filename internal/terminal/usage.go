@@ -79,7 +79,7 @@ func (s *Service) transcriptSource(id string) (usageSource, bool) {
 func (s *Service) usageFrom(id string, src usageSource) (usageEvent, bool) {
 	u, ok, supported := contextUsageFor(src)
 	if report, reported := s.usageReports.of(id, src.id); ok && reported {
-		u = reportedContextUsage(u, report.Context)
+		u = reportedContextUsage(u, report.Window)
 	}
 	// A provider whose window lich can read but has not read yet — a transcript
 	// still being written, a conversation before its first assistant line — keeps

@@ -117,9 +117,6 @@ type Terminal interface {
 	// SuggestProfile offers the person a profile for a session, moving nothing,
 	// and answers why it cannot apply when it cannot.
 	SuggestProfile(id, slug string) error
-	// RunModCommand queues cmd for the session's Claude Code mod and waits,
-	// until ctx ends, for the mod to confirm it.
-	RunModCommand(ctx context.Context, id string, cmd terminal.ModCommand) (terminal.ModOutcome, error)
 }
 
 // Events is where an opened session is announced to the window. A nil one leaves
@@ -158,6 +155,15 @@ type Chat interface {
 	// Open starts session id's chat and returns once its conversation is
 	// open, so a task sent right after is queued, not lost.
 	Open(ctx context.Context, id string) error
+	// Take sends text as session id's next message, after the turn running
+	// if one is, and waits on that turn's start.
+	Take(id, text string) (relay.HandedPrompt, error)
+	// Cancel stops the turn session id's chat is running.
+	Cancel(ctx context.Context, opts api.SessionIDOptions) (api.None, error)
+	// Options lists what session id's chat can be set to.
+	Options(ctx context.Context, opts api.SessionIDOptions) ([]api.ChatOption, error)
+	// SetOption sets one of them, the way the chat's picker does.
+	SetOption(ctx context.Context, opts api.ChatSetOptionOptions) (api.None, error)
 }
 
 // SetChat wires the chat service. Without it every session starts its
@@ -180,8 +186,8 @@ func (s *Service) Open(ctx context.Context, opts OpenOptions) (Session, error) {
 type OpenSubagentOptions = api.OpenSubagentOptions
 
 // OpenSubagent opens a session as the subagent of the session From runs in
-// (`lich open --subagent`), the way lich-plugin's mod turns Claude Code's own
-// subagent call into a card. It is Open with three differences, each of which
+// (`lich open --subagent`), the way lich-plugin's hook turns a provider's own
+// subagent call into a card (docs/hooks/subagent-cards.md). It is Open with three differences, each of which
 // makes the card behave like the subagent it replaces:
 //
 //   - without a worktree it opens in the caller's checkout — its worktree, or

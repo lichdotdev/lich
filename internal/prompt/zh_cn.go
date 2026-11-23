@@ -35,17 +35,7 @@ var zhCN = Catalog{
 	PermissionToRun:     "请求运行的权限：%[1]s",
 	TaskReplyTool:       "用 reply_to_session 和工单 %[1]s 回答，这是回到提问方的唯一途径。",
 	TaskReplyCLI:        "运行 \"$LICH_BIN\" reply %[1]s \"<你的回答>\" 来回答，这是回到提问方的唯一途径。",
-	WorkerEndedBlank:    "工作会话的最后一轮结束时没有消息。",
-	WorkerEndedError:    "工作会话的最后一轮因 API 错误而结束。",
-	WorkerEndedRefusal:  "工作会话的最后一轮以拒绝告终。",
 
-	ReportSummary: Plural{
-		One:   "lich 会话 %s 已完成",
-		Other: "lich 会话 %s 已完成",
-	},
-	BlockedSummary:          "lich 会话 %q 正在等待权限确认",
-	MergeSummary:            "拉取请求 #%[1]d 已合并到 %[2]s",
-	MergeSummaryGitLab:      "合并请求 !%[1]d 已合并到 %[2]s",
 	MergeNotice:             "拉取请求 #%[1]d %[2]q 已合并到 %[3]s。",
 	MergeNoticeGitLab:       "合并请求 !%[1]d %[2]q 已合并到 %[3]s。",
 	LateNotice:              "原定于 %[1]s 发送，延迟 %[2]s 送达。",

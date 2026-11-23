@@ -5,6 +5,7 @@ package chat
 import (
 	"slices"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/lichdotdev/lich/api"
@@ -389,5 +390,75 @@ func TestContentText(t *testing.T) {
 	}
 	if got := reasonText([]byte(`{"message":"why"}`)); got != "why" {
 		t.Errorf("reasonText of an object = %q", got)
+	}
+}
+
+// stateLog records every state a chat reports, as the relay hears them.
+type stateLog struct {
+	mu     sync.Mutex
+	states []string
+}
+
+func listenStates(r *rig) *stateLog {
+	l := &stateLog{}
+	r.term.SetSessionState(func(id, state string) {
+		if id == "s1" {
+			l.mu.Lock()
+			l.states = append(l.states, state)
+			l.mu.Unlock()
+		}
+	})
+	return l
+}
+
+func (l *stateLog) seen() []string {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return slices.Clone(l.states)
+}
+
+// A compaction a chat sees live reaches the relay as compacting, once however
+// often the provider repeats it, and one that ends inside a running turn is
+// closed by a busy, as a TUI's report did; the turn's end closes the rest.
+func TestALiveCompactionIsReportedAsCompacting(t *testing.T) {
+	for _, tc := range []struct {
+		kind, typed string
+		want        []string
+	}{
+		{providers.Claude, "/compact", []string{stateBusy, stateCompacting, stateBusy, stateDone}},
+		{providers.Claude, "auto", []string{stateBusy, stateCompacting, stateBusy, stateDone}},
+		{providers.Codex, "autocompact", []string{stateBusy, stateCompacting, stateBusy, stateDone}},
+	} {
+		t.Run(tc.kind+" "+tc.typed, func(t *testing.T) {
+			r := newChat(t, tc.kind)
+			states := listenStates(r)
+			r.prompt(tc.typed)
+			r.turnEnd(0)
+			r.eventually("the turn's end", func() bool { return slices.Contains(states.seen(), stateDone) })
+			if got := states.seen(); !slices.Equal(got, tc.want) {
+				t.Errorf("states = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
+
+// A compaction read back from the conversation's history happened long ago:
+// nothing is compacting now.
+func TestAResumedCompactionIsNotReported(t *testing.T) {
+	r := newRig(t, providers.Claude)
+	states := listenStates(r)
+	_ = r.db.SetProviderSession("s1", "conv-1")
+	r.writeClaudeTranscript("conv-1", claudeCompactedTranscript...)
+	if err := r.setView(api.ViewChat); err != nil {
+		t.Fatalf("SetView: %v", err)
+	}
+	r.wantKinds(
+		"user:fix the parser", "agent:fixed",
+		"user:/compact", "compaction:done",
+		"user:and now?", "agent:now this",
+		"compaction:done", "agent:carried on",
+	)
+	if got := states.seen(); slices.Contains(got, stateCompacting) {
+		t.Errorf("states = %q, want no compacting for the history", got)
 	}
 }

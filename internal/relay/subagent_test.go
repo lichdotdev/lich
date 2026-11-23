@@ -5,8 +5,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/lichdotdev/lich/internal/prompt"
 )
 
 // plantSubagent is plant for an errand handed over with SendSubagent, already
@@ -51,13 +49,13 @@ func TestSendSubagentNeedsACallingSession(t *testing.T) {
 	}
 }
 
-// Through the caller's mod the whole report goes, so the model reads it the
+// Through the caller's chat the whole report goes, so the model reads it the
 // way it reads a native subagent's result, with no collect call.
-func TestASubagentReportReachesItsCallerWholeThroughTheMod(t *testing.T) {
+func TestASubagentReportReachesItsCallerWholeThroughTheChat(t *testing.T) {
 	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
-	term.attachMod("s1", ackedOK)
-	svc := viaMod(term, nil)
+	term.openChat("s1", acked)
+	svc := viaChat(term, nil)
 	svc.sessions = branched()
 	plantSubagent(svc, "t1", "s1", "s2", "docs")
 
@@ -66,17 +64,13 @@ func TestASubagentReportReachesItsCallerWholeThroughTheMod(t *testing.T) {
 		t.Fatalf("Reply: %v", err)
 	}
 	if !awaitPrompts(term, "s1", 1) {
-		t.Fatal("the caller's mod was never handed the report")
+		t.Fatal("the caller's chat was never handed the report")
 	}
 	note := term.promptsTo("s1")[0]
 	for _, want := range []string{"<result>" + report + "</result>", `kind="worker-finished" from="docs" session="s2" ticket="t1"`} {
 		if !strings.Contains(note, want) {
 			t.Errorf("note is missing %.60q:\n%.300s", want, note)
 		}
-	}
-	want := Notification{Status: NotifyCompleted, Summary: `lich session "docs" finished`}
-	if got := term.notesTo("s1")[0]; got == nil || *got != want {
-		t.Errorf("the report was handed as %+v, want the notification %+v", got, want)
 	}
 	assertNotTyped(t, term, "s1")
 
@@ -94,8 +88,8 @@ func TestASubagentReportReachesItsCallerWholeThroughTheMod(t *testing.T) {
 }
 
 // With nothing but a prompt to type at, the report is not typed: a long text
-// typed into a TUI is what the mod route exists to avoid.
-func TestASubagentReportIsNotTypedAtACallerWithoutAMod(t *testing.T) {
+// typed into a TUI is pasted text its person has to wade through.
+func TestASubagentReportIsNotTypedAtACallerInATerminal(t *testing.T) {
 	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	svc := newRelay(branched(), term, nil)
@@ -116,36 +110,12 @@ func TestASubagentReportIsNotTypedAtACallerWithoutAMod(t *testing.T) {
 	}
 }
 
-// A mod that never collected the note leaves the report in the inbox, and the
-// caller hears the short note typed instead.
-func TestASubagentReportNoPollCollectedStaysCollectable(t *testing.T) {
-	t.Parallel()
-	term := newFakeTerminal("s1", "s2")
-	term.attachMod("s1", withdrawn)
-	svc := viaMod(term, nil)
-	plantSubagent(svc, "t1", "s1", "s2", "docs")
-
-	if _, err := svc.Reply(t.Context(), ReplyOptions{Ticket: "t1", Answer: "the long report"}); err != nil {
-		t.Fatalf("Reply: %v", err)
-	}
-	if !awaitWritten(term, "s1", "<lich-notification") {
-		t.Fatal("the short note was never typed")
-	}
-	if strings.Contains(term.written("s1"), "the long report") {
-		t.Errorf("the report was typed: %q", term.written("s1"))
-	}
-	collected, err := svc.CollectNow(t.Context(), CollectNowOptions{From: "s1"})
-	if err != nil || len(collected.Results) != 1 {
-		t.Errorf("collect = %+v, %v; want the report still waiting", collected, err)
-	}
-}
-
 // A report the caller collected first is not delivered a second time.
 func TestASubagentReportCollectedFirstIsNotAlsoDelivered(t *testing.T) {
 	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
-	term.attachMod("s1", ackedOK)
-	svc := viaMod(term, nil)
+	term.openChat("s1", acked)
+	svc := viaChat(term, nil)
 	svc.Observe("s1", stateBusy)
 	plantSubagent(svc, "t1", "s1", "s2", "docs")
 
@@ -160,43 +130,6 @@ func TestASubagentReportCollectedFirstIsNotAlsoDelivered(t *testing.T) {
 	svc.flushNudge("s1")
 	if prompts := term.promptsTo("s1"); len(prompts) != 0 {
 		t.Errorf("handed %q after the report was collected", prompts)
-	}
-}
-
-// Results that are not subagent reports ride the same message, each in its
-// envelope with the result left to collect: a terminal's mod takes only a
-// report whole.
-func TestASubagentReportCarriesTheNudgeForTheRest(t *testing.T) {
-	t.Parallel()
-	term := newFakeTerminal("s1", "s2", "s3")
-	term.attachMod("s1", ackedOK)
-	svc := viaMod(term, nil)
-	svc.Observe("s1", stateBusy)
-	plantSubagent(svc, "t1", "s1", "s2", "docs")
-	plant(svc, "t2", "s1", "s3", "api")
-
-	for ticket, answer := range map[string]string{"t1": "the report", "t2": "the other answer"} {
-		if _, err := svc.Reply(t.Context(), ReplyOptions{Ticket: ticket, Answer: answer}); err != nil {
-			t.Fatalf("Reply %s: %v", ticket, err)
-		}
-	}
-	svc.Observe("s1", stateDone)
-	if !awaitPrompts(term, "s1", 1) {
-		t.Fatal("nothing reached the caller")
-	}
-	note := term.promptsTo("s1")[0]
-	if !strings.Contains(note, "the report") || strings.Contains(note, "the other answer") {
-		t.Errorf("note = %q, want the report inline and the other answer left to collect", note)
-	}
-	if !strings.Contains(note, `from="api" session="s3" ticket="t2">`+"\n<status>answered</status>\n<summary>") {
-		t.Errorf("note = %q, want api's envelope saying where to collect it", note)
-	}
-	if got := term.notesTo("s1")[0]; got == nil || got.Summary != `lich session "docs" finished` {
-		t.Errorf("the reports were handed as %+v, want them summed up by the worker that finished", got)
-	}
-	collected, _ := svc.CollectNow(t.Context(), CollectNowOptions{From: "s1"})
-	if len(collected.Results) != 1 || collected.Results[0].Ticket != "t2" {
-		t.Errorf("collect = %+v, want only the other answer", collected)
 	}
 }
 
@@ -264,24 +197,20 @@ func TestAWorkerBlockedOnAPermissionTellsItsCallerOncePerBlock(t *testing.T) {
 	}
 }
 
-func TestABlockedWorkerReachesACallerWithAModAsANotification(t *testing.T) {
+func TestABlockedWorkerReachesACallerInAChat(t *testing.T) {
 	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
-	term.attachMod("s1", ackedOK)
-	svc := viaMod(term, nil)
+	term.openChat("s1", acked)
+	svc := viaChat(term, nil)
 	plantSubagent(svc, "t1", "s1", "s2", "docs")
 
 	svc.Observe("s2", stateBusy)
 	svc.Observe("s2", stateWaiting)
 	if !awaitPrompts(term, "s1", 1) {
-		t.Fatal("the caller's mod was never told its worker is blocked")
+		t.Fatal("the caller's chat was never told its worker is blocked")
 	}
 	if note := term.promptsTo("s1")[0]; !strings.Contains(note, `"docs"`) || !strings.Contains(note, "permission") {
 		t.Errorf("note = %q, want the worker and the permission named", note)
-	}
-	want := Notification{Status: NotifyWaiting, Summary: `lich session "docs" is waiting on a permission prompt`}
-	if got := term.notesTo("s1")[0]; got == nil || *got != want {
-		t.Errorf("the notice was handed as %+v, want the notification %+v", got, want)
 	}
 	assertNotTyped(t, term, "s1")
 }
@@ -411,13 +340,4 @@ func TestAWorkerWithMoreToDoIsNotFinished(t *testing.T) {
 		svc.Observe("s2", stateInterrupted)
 		expectNoneFinished(t, finished)
 	})
-}
-
-func TestReportsOfOneFlushAreSummedUpByEveryWorker(t *testing.T) {
-	t.Parallel()
-	got := reportNotification(prompt.English, []*inboxEntry{{target: "docs"}, {target: "api"}})
-	want := Notification{Status: NotifyCompleted, Summary: `lich sessions "docs", "api" finished`}
-	if *got != want {
-		t.Errorf("notification = %+v, want %+v", *got, want)
-	}
 }

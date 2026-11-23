@@ -100,8 +100,8 @@ it, so an outcome that is neither done nor failed has a code of its own:
 |------|---------|
 | 0 | Done. For `send` and `wait`: an answer is in hand. |
 | 1 | Failed. The `lich: …` line on stderr says why. |
-| 2 | `send` / `wait` / `control` only: **the wait ran out and a ticket came back.** Nothing failed and the errand is still open: `lich wait <ticket>` picks the answer up later. For `control`: the session took the command and has not confirmed it yet; its id is printed, and it still goes through. |
-| 3 | `send` / `wait` / `control` only: **the errand is over and no answer is coming through lich**: never read, never delivered, answered somewhere else, a subagent worker closed before it answered (`stopped`), or nobody answered within the ticket's hour (`expired`). Retrying the wait is pointless; the output says what to do instead. For `control`: the session ended before confirming the command. |
+| 2 | `send` / `wait` / `control` only: **the wait ran out and a ticket came back.** Nothing failed and the errand is still open: `lich wait <ticket>` picks the answer up later. For `control`: the session's chat took the prompt or command, which waits behind the turn it is running, and still goes through. |
+| 3 | `send` / `wait` / `control` only: **the errand is over and no answer is coming through lich**: never read, never delivered, answered somewhere else, a subagent worker closed before it answered (`stopped`), or nobody answered within the ticket's hour (`expired`). Retrying the wait is pointless; the output says what to do instead. For `control`: the session's chat ended before its turn on the prompt or command started. |
 
 2 and 3 print their prose (or `--json`) on stdout like an answer does and write
 nothing on stderr: they are outcomes, not failures. No other command has an
@@ -134,7 +134,7 @@ guess at the one it resembles, and exit 1 — a typo does not open a window.
 Arguments the app itself takes still do: bare `lich`, and `lich --no-window`
 (the backend with no window, which `lich native` starts).
 
-`--json` on `sessions`, `whoami`, `send`, `insert`, `focus`, `wait`, `open`, `handoff`, `close`, `rename`, `control`, `ask`, `worktrees`, `folders`, `file`,
+`--json` on `sessions`, `whoami`, `send`, `insert`, `focus`, `wait`, `open`, `handoff`, `close`, `rename`, `control`, `worktrees`, `folders`, `file`,
 `rename-folder`, `color-folder`, `cost` and `version`
 replaces the prose with one JSON line: the peer array, the result object and the session
 object exactly as this document describes them. An empty roster is `[]`, never
@@ -201,18 +201,16 @@ auth-fix	lich	claude	lich-a1b2	busy	0b9c…
 
 `--json` prints one object in the `sessions` shape,
 `{"label","name","project","kind","state","id","path","projectPath","tool","detail","reason"}`. It is how a caller learns its
-own label and id without guessing: lich-plugin's Claude Code mod reads it to
-tell that a `control` aimed at a label is aimed at its own session. Run outside
+own label and id without guessing. Run outside
 a lich session (`LICH_SESSION_ID` unset) it is an error, exit 1.
 
 ### `lich send [--project <name>] [--timeout <seconds>] [--private] [--json] <session> <prompt>`
 
 Types `<prompt>` at `<session>`'s prompt, submits it, and waits.
 
-A Claude Code session running the lich-plugin mod is not typed at: it receives
-the task as a message from the plugin, so whatever its user was typing at its
-prompt is left alone and the task does not wait for them to finish it. A task the mod collected is never typed again; one no poll
-collected is typed as usual.
+A session drawn as a chat is not typed at: it receives the task as its next
+message, after the turn it is running, so whatever its user was typing in it is
+left alone and the task does not wait for them to finish it.
 
 - `<session>` is the label on the card, **or** the roster name that session
   answers to (`myrepo-a1b2`, lich's own for most providers; for Claude Code the
@@ -255,9 +253,7 @@ collected is typed as usual.
   and the output sends a person to that card: nothing is queued, so the task has
   to be sent again once the screen is clear. Exit 3. Only reported for providers that
   report their state at all (the plugin, `docs/hooks/`) — silence has to mean
-  something before it can be read as anything. A task handed to a Claude Code
-  session's mod is never typed again: one its mod collected and the session never
-  started on is reported here too.
+  something before it can be read as anything.
 - **Never delivered**: the task was held for a session that never reached a
   prompt — it ended, or whatever had its terminal outlasted the queue (5
   minutes). The ticket is dropped rather than left to expire, and the output
@@ -346,9 +342,7 @@ plugins call.
   sent.`; `--json` prints `{"id","label","project","kind","bytes"}`. Exit 1 when
   nothing was inserted.
 
-It types at the terminal for every provider, a Claude Code session with the
-lich-plugin mod included: the mod takes prompts to submit, not text to leave on
-a line.
+It types at the terminal for every provider.
 
 ### `lich focus [--project <name-or-path>] [--json] <session>`
 
@@ -521,7 +515,8 @@ It answers to "auth-fix" and to "auth-fix-9f8e". Its agent may still be starting
   `--private` hands it over the way `lich send --private` does, and is refused
   without `--prompt`, before anything is opened.
 - `--subagent` opens the session as the **calling session's subagent**, the way
-  lich-plugin's mod turns Claude Code's own `Agent` call into a card.
+  lich-plugin's hook turns a provider's own subagent call into a card
+  ([subagent-cards](hooks/subagent-cards.md)).
   **Experimental**: it may change outside semver
   ([stability.md](stability.md#what-is-experimental)). It needs
   `--prompt` and a calling session (`LICH_SESSION_ID`), and refuses `--project`,
@@ -535,20 +530,19 @@ It answers to "auth-fix" and to "auth-fix-9f8e". Its agent may still be starting
     named after the caller's label, created if none is, and the caller is
     filed there too.
   - hands its **report back whole**: when it answers and nobody is holding the
-    line, the note that reaches the caller through its Claude Code mod carries
-    the worker's label, its branch, the ticket and the full report, so the
-    model uses it without a collect call (see
+    line, the note that reaches a caller drawn as a chat carries the worker's
+    label, its branch, the ticket and the full report, so the model uses it
+    without a collect call (see
     [The answer is announced, and collected](#the-answer-is-announced-and-collected)).
-  - **answers by itself** where its own Claude Code mod does (lich-plugin
-    0.17.0 or later, polling when the task goes in): it is handed the task
-    under one line naming the caller, with no ticket and no reply command, and
-    the final message of a turn that ends with nothing left running in the
-    background is its answer, as a native subagent's last message is its
-    result ([mod-answer](hooks/mod-answer.md)). A turn that hands work to the
-    background does not end the errand; the turn Claude Code resumes in when
-    that work finishes answers it. A worker that still calls
-    `reply_to_session` itself is answered once: the first answer wins. Any
-    other worker is handed the ticket and answers through it.
+    A caller in its terminal is typed the note without the report, which waits
+    for its collect.
+  - **answers by itself** where lich reads its final message when its turn
+    ends: drawn as a chat, or in a terminal on every provider but Cursor CLI and
+    Crush. Its task envelope says `answer="last-message"`, and the final message
+    of the turn it works in is its answer, as a native subagent's last message
+    is its result. A worker that still calls `reply_to_session` itself is
+    answered once: the first answer wins. Any other worker is handed the ticket
+    and answers through it.
   - is **not dropped by the ticket's one-hour TTL** while its session runs.
   - **ends its errand when it is closed**. Closed by its own caller (TaskStop
     runs `lich close` there), it ends in silence: the caller stopped the work
@@ -558,7 +552,7 @@ It answers to "auth-fix" and to "auth-fix-9f8e". Its agent may still be starting
     way, and so does a caller that is itself a worker somebody waits on,
     through its inbox: its own report waits for this outcome.
   - **reports only after the work it handed off is back**: while an errand it
-    sent is open, or a result for it is unread, its mod's report is ignored,
+    sent is open, or a result for it is unread, a turn it ends does not answer,
     and the turn that outcome starts is the one that answers. An errand it
     sent that nobody answers within the hour comes back to it as `expired`.
   - **closes once it is done** when it runs in the caller's checkout: after it
@@ -834,80 +828,47 @@ Renamed "auth-fix" to "the login bug".
 
 ### `lich control [--project <name-or-path>] [--json] <session> <action> [<value>] [<args>]`
 
-Drives a running Claude Code session from outside its terminal, through the
-lich-plugin mod inside it (`docs/hooks/mod-control.md`). **Experimental**: it may
-change outside semver ([stability.md](stability.md#what-is-experimental)).
+Drives a session drawn as a chat from outside it, the way its person would in
+the chat. **Experimental**: it may change outside semver
+([stability.md](stability.md#what-is-experimental)).
 
 ```
 $ lich control auth-fix prompt "run the tests again"
 "auth-fix" started a turn on the prompt.
 $ lich control auth-fix command compact "keep the test plan"
-"auth-fix" ran /compact.
+"auth-fix" started a turn on /compact.
 ```
 
 | Action | Value | Done means |
 |--------|-------|------------|
 | `prompt <text>` | the prompt, required | a turn started on it |
-| `abort` | none | the running turn stopped |
-| `model [<model>]` | a model name; none goes back to the session's own | its next requests use it |
-| `effort [<level>]` | `low`, `medium`, `high`, `xhigh` or `max`; none goes back to its own | its next requests use it |
-| `command <name> [<args>]` | a slash command's name, with or without the slash, and what follows it | the command ran |
+| `abort` | none | the running turn stopped, as the chat's Stop does |
+| `model <model>` | a model the chat's picker offers, by its id, required | its next requests use it |
+| `effort <level>` | an effort level the chat's picker offers, required | its next requests use it |
+| `command <name> [<args>]` | a slash command's name, with or without the slash, and what follows it | a turn started on it |
 
-- **It waits for the session to confirm**: up to 10 seconds, or 60 for a slash
-  command, which runs only once the session is idle. A command the session took
-  but has not confirmed by then prints its id and exits 2, and still goes
-  through: a prompt sent to a busy session starts its turn when the current one
-  ends. A command the session never took in that time (its mod stopped polling)
-  is withdrawn and exits 1: nothing ran, so it is safe to send again. A session
-  that ends first exits 3. A session that says the command failed (an abort with
-  no turn running, a slash command it does not have) exits 1 with its reason, as
-  does one that is not running.
-- **`model` and `effort` change that session only**, from its next request on.
-  The slash commands `/model` and `/effort` are refused: run this way, Claude Code
-  saves what they set as your default for every new session.
-- **A slash command that opens a dialog (`/cost`) holds the session's later slash
-  commands until someone presses Esc in its terminal.** `abort`, `model` and
-  `effort` still apply.
-- **Claude Code 2.1.280 or later, with lich-plugin 0.15.0 or later, in a trusted
-  folder.** Any other session is refused: another CLI has nothing inside it lich
-  could hand a command to, and a Claude Code session without the mod polling is
-  refused as one that cannot take commands, naming what to fix. A mod older than
-  0.15.0 runs everything but `command`, which it refuses with
-  "update lich-plugin to 0.15.0 or later".
-- **A session cannot control itself.** An abort would end the turn asking for
-  it, and a prompt or a slash command would only run once that turn is over.
+- **A prompt or a command is the chat's next message**, sent after the turn it
+  is running. It waits up to 10 seconds for that turn to start; one still
+  waiting behind the running turn exits 2, and still goes through. A chat that
+  ends first exits 3. `abort` with no turn running exits 1 with the chat's
+  reason, as does any other refusal.
+- **`model` and `effort` take one of the choices the chat offers**, the same
+  picker the window shows; one it does not offer is refused, listing those it
+  does. There is no value that goes back to the session's own: name one.
+  Codex applies the change from the next message; Kiro CLI takes a model only
+  by restarting its chat, between turns, and offers no effort.
+  The slash commands `/model` and `/effort` are refused: in Claude Code's
+  terminal they save what they set as your default for every new session.
+- **Every agent with a chat**: Claude Code, Codex, Antigravity, opencode,
+  oh-my-pi, Cursor CLI (not verified) and Kiro CLI. A session on its terminal is
+  refused on every provider, naming the switch to GUI; Crush has no chat and is
+  always refused.
+- **A session cannot control itself**, except for `model` and `effort`. An
+  abort would end the turn asking for it, and a prompt or a slash command would
+  only run once that turn is over.
 
-`--json` prints
-`{"id","project","label","action","value","command_id","state"}`, `value` absent
-when the action carried none; `state` is `done`, `delivered` or `ended`.
-
-### `lich ask [--project <name-or-path>] [--json] <session> <question...>`
-
-Asks a running Claude Code session a side question and prints its answer. The
-session answers from its own conversation while its turn goes on, through the
-lich-plugin mod (`docs/hooks/mod-control.md`); neither the question nor the
-answer enters that conversation. **Experimental**: it may change outside semver
-([stability.md](stability.md#what-is-experimental)).
-
-```
-$ lich ask auth-fix what are you working on
-Fixing the flaky login test: the fixture user expires before the assertion.
-```
-
-- **It waits up to 90 seconds** for the answer. A short one takes seconds. An
-  answer that comes later is dropped, and the command exits 1; so does every
-  other way it ends without one: a session with no conversation yet (new, or
-  just cleared), an API error, a session that ended.
-- **The answer knows the conversation as of the session's last finished model
-  response**: it cannot say what the session is doing this very second (a prompt
-  it is still writing its first reply to is not in it either), and it cannot run
-  tools to find out more.
-- **It costs tokens on the asked session's account and never shows in its
-  cost.** The prompt cache serves the conversation while it is warm.
-- **Claude Code 2.1.280 or later, with lich-plugin 0.15.0 or later, in a trusted
-  folder**, as for `lich control`, and never the session running the command.
-
-`--json` prints `{"id","project","label","answer"}`.
+`--json` prints `{"id","project","label","action","value","state"}`, `value`
+absent when the action carried none; `state` is `done`, `delivered` or `ended`.
 
 ### `lich worktrees [--project <name-or-path>] [--json]`
 
@@ -1030,7 +991,7 @@ from two kinds of accounting and reads identically either way: `priced` is
 lich's own arithmetic over the token counts Claude Code and Codex write down,
 `reported` is the figure oh-my-pi, opencode or Crush computed themselves and
 handed over, with the omission their own accounting has. A Claude Code session
-whose mod reported the cost Claude Code measured (`docs/hooks/mod-usage.md`) is
+drawn as a chat, whose stream-json reports the cost Claude Code measured, is
 `reported` too: that figure is Claude Code's arithmetic, not lich's. A row that ran both
 reads `mixed`, and a total that mixes them adds the line above the last one,
 splitting the counted sessions between the two. A row with no money to
@@ -1168,8 +1129,7 @@ at lich.
 | `stop_all_services` | optional `project`; answers with the project's services. `lich service stop-all`. |
 | `read_service_output` | `service`, optional `project`: the console as it is now, a running one's so far or a stopped one's last run. `lich service output`. |
 | `rename_session` | `label`, optional `session` (omitted renames the caller's own) and `project` — `lich rename`. |
-| `control_session` | Experimental. `session`, `action` (`prompt`, `abort`, `model`, `effort`, `command`), optional `value`, `args` (`command` only) and `project`. `lich control`. Delivered is a result, not an error; a command the session never took is withdrawn and fails. |
-| `ask_session` | Experimental. `session`, `question`, optional `project`. `lich ask`: the answer is the result, and every way it ends without one is an error. |
+| `control_session` | Experimental. `session` (drawn as a chat), `action` (`prompt`, `abort`, `model`, `effort`, `command`), optional `value`, `args` (`command` only) and `project`. `lich control`. A prompt waiting behind the running turn is a result, not an error. |
 | `list_worktrees` | optional `project` — the checkouts, as JSON. |
 | `show_code` | `path` (relative to the session's checkout, or absolute inside it), optional `line`, `end_line` and `comment` (plain text under the lines, up to 360 characters): opens the file in the stage editor of the session's checkout, the lines selected and the comment over the code. A missing file, a path outside the checkout or a line past the end is an error. |
 | `mark_thread_fixed` | `thread_id`, `commit`: marks a review thread the Pulls screen sent to the session as fixed by that commit. lich resolves the thread and replies with the commit once the pull request's head holds it. A thread never sent from the Pulls screen, or a commit the repository does not hold, is an error. |
@@ -1451,16 +1411,10 @@ waits on the ticket; that result then leaves the inbox.
 A caller that *is* still waiting carries the result out itself and nothing is
 typed — delivering both would deliver twice.
 
-**A subagent's report goes whole through a terminal's mod too**
-(`lich open --subagent`). Where the sender's Claude Code mod takes the message,
-the report's envelope carries its `<result>`, beside the envelopes of anything
-else waiting: that is what a native subagent's result looks like to the model,
-and the mod hands it over as its own prompt without touching what the user is
-typing. The report then leaves the inbox: `wait_for_answer` with no ticket does
-not return it again, while `lich wait <ticket>` still does. A sender whose mod
-does not take it (no mod polls, or none collected the message) is typed the
-envelopes without results and collects the report as usual. A report collected
-before the message goes out is not delivered again.
+**A subagent's report is never typed** (`lich open --subagent`). A sender in its
+terminal is typed the envelopes without results and collects the report as
+usual: a long report pasted into a TUI is text its person has to wade through. A
+report collected before the message goes out is not delivered again.
 
 A sender that is not a session — the `lich` command from a script — is never
 nudged: its result waits in the inbox for `lich wait <ticket>`, or expires.
@@ -1533,7 +1487,7 @@ reads nothing else, so an answer sent over a peer channel is lost.
   new card **without focusing it**: an agent opening three workers must not drag
   the view along three times.
 - **Relay** — `internal/relay`: resolves a label to a live session, composes the
-  message above, hands it to the target's Claude Code mod when one is polling and
+  message above, hands it to the target's chat when it is drawn as one and
   types it through the terminal service otherwise, and holds the ticket the
   answer comes back on. Tickets live in memory: one exists for as long as its
   errand does, and a lich that restarted has no PTY left to answer into.

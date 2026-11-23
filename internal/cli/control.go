@@ -9,8 +9,8 @@ import (
 	"github.com/lichdotdev/lich/internal/spawn"
 )
 
-// controlCall bounds `lich control`: the longest wait spawn.Control holds, plus
-// the trip back.
+// controlCall bounds `lich control`: the longest spawn.Control takes, plus the
+// trip back.
 const controlCall = spawn.ControlWaitLimit + callSlack
 
 // control takes the session, the action, and up to two words more: the value
@@ -58,63 +58,57 @@ func controlOutcome(state string) error {
 }
 
 // controlledText words a control outcome for the command line and for an agent
-// alike. A delivered command says it goes through, so neither reads it as a
-// failure and sends it again.
+// alike. A queued prompt says it goes through, so neither reads it as a failure
+// and sends it again.
 func controlledText(out spawn.Controlled) string {
+	what := "the prompt"
+	if out.Action == spawn.ControlCommand {
+		what = "/" + strings.TrimLeft(strings.TrimSpace(out.Value), "/")
+	}
 	switch out.State {
 	case spawn.ControlDone:
-		return doneText(out)
+		return doneText(out, what)
 	case spawn.ControlEnded:
-		return fmt.Sprintf("%q ended before confirming the command (%s, id %s).", out.Label, out.Action, out.CommandID)
+		return fmt.Sprintf("%q ended before its turn on %s started.", out.Label, what)
 	default:
-		return fmt.Sprintf("%q took the command (%s, id %s) and has not confirmed it yet: a prompt or "+
-			"a slash command runs only once the session is idle. It still goes through.",
-			out.Label, out.Action, out.CommandID)
+		return fmt.Sprintf("%q took %s, which waits behind the turn it is running. It still goes through.",
+			out.Label, what)
 	}
 }
 
-func doneText(out spawn.Controlled) string {
-	switch {
-	case out.Action == "prompt":
-		return fmt.Sprintf("%q started a turn on the prompt.", out.Label)
-	case out.Action == "abort":
+func doneText(out spawn.Controlled, what string) string {
+	switch out.Action {
+	case spawn.ControlAbort:
 		return fmt.Sprintf("%q stopped its turn.", out.Label)
-	case out.Action == "model" && out.Value == "":
-		return fmt.Sprintf("%q is back on its own model.", out.Label)
-	case out.Action == "model":
+	case spawn.ControlModel:
 		return fmt.Sprintf("%q uses %s from its next request on.", out.Label, out.Value)
-	case out.Action == "effort" && out.Value == "":
-		return fmt.Sprintf("%q is back on its own effort level.", out.Label)
-	case out.Action == "effort":
+	case spawn.ControlEffort:
 		return fmt.Sprintf("%q runs at %s effort from its next request on.", out.Label, out.Value)
-	default:
-		return fmt.Sprintf("%q ran /%s.", out.Label, strings.TrimPrefix(strings.TrimSpace(out.Value), "/"))
 	}
+	return fmt.Sprintf("%q started a turn on %s.", out.Label, what)
 }
 
 // controlTools is `lich control` as an MCP tool, appended to mcpTools.
 var controlTools = []mcpTool{
 	{
 		Name: "control_session",
-		Description: "Drive another running Claude Code session in lich: type a prompt into it, stop the " +
-			"turn it is running, set the model or reasoning effort its next requests use, or run one " +
-			"of its slash commands, such as compact or clear. It waits up to 10 seconds (60 for a " +
-			"slash command) for the session to confirm. A result saying delivered, with an id, is " +
-			"not a failure: the command still goes through. One the session never took fails, and " +
-			"nothing ran. Claude Code sessions only. Your own session takes model and effort, " +
-			"never the other actions. model and effort change that session only; the slash commands /model " +
-			"and /effort are refused because Claude Code would save them as the user's default for " +
-			"every new session. " +
+		Description: "Drive another lich session drawn as a chat, on any agent with one: send it a " +
+			"prompt, stop the turn it is running, set the model or reasoning effort its chat offers, or " +
+			"run one of its slash commands, such as compact. A prompt or a command waits up " +
+			"to 10 seconds for its turn to start; a result saying it waits behind the running turn is " +
+			"not a failure, and it still goes through. A session in its terminal is refused, and so " +
+			"is Crush, which has no chat. Your own session takes model and effort, never the other " +
+			"actions. The slash commands /model and /effort are refused because Claude Code would " +
+			"save them as the user's default for every new session; use the model and effort actions. " +
 			"Experimental: may change outside semver.",
 		Schema: schema(map[string]any{
 			"session": property("string",
 				"The session to drive, by the label on its card, the name it answers to or its lich id."),
 			"action": property("string", "One of prompt, abort, model, effort, command."),
 			"value": property("string",
-				"prompt: the text (required). model: the model name, or omit to go back to the "+
-					"session's own. effort: low, medium, high, xhigh or max, or omit likewise. "+
-					"command: the slash command's name, with or without the slash (required). "+
-					"abort: omit."),
+				"prompt: the text. model: a model the session's chat offers, by its id. effort: "+
+					"one of the effort levels its chat offers. command: the slash command's name, "+
+					"with or without the slash. abort: omit."),
 			"args": property("string", "command only: what follows the command's name, as typed."),
 			"project": property("string",
 				"Project to narrow to, by name or by directory path, when the same label "+

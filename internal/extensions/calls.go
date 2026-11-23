@@ -41,7 +41,6 @@ type Lich struct {
 	Open      func(context.Context, api.OpenSessionOptions) (api.OpenedSession, error)
 	Send      func(context.Context, api.SendOptions) (api.SendResult, error)
 	Wait      func(context.Context, api.WaitOptions) (api.SendResult, error)
-	Ask       func(context.Context, api.AskSessionOptions) (api.SessionAnswer, error)
 
 	Project        func(context.Context, api.ProjectRefOptions) (api.ProjectRef, error)
 	Services       func(context.Context, api.None) ([]api.Service, error)
@@ -100,7 +99,6 @@ func (s *Service) routes() map[string]route {
 	add(handle(extension.ListWorktrees, s.listWorktrees))
 	add(handle(extension.OpenSession, s.openSession))
 	add(handle(extension.SendToSession, s.sendToSession))
-	add(handle(extension.AskSession, s.askSession))
 	add(handle(extension.CollectAnswer, s.collectAnswer))
 	add(handle(extension.ListServices, s.listServices))
 	add(handle(extension.StartService, s.serviceAction(func(l Lich) serviceAct { return l.StartService })))

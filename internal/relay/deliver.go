@@ -10,11 +10,10 @@ import (
 	"time"
 )
 
-// deliver hands a message that carries no ticket to the session's mod, as a
-// notification when note is not nil, and types it where no mod takes it (see
-// handToMod).
-func (s *Service) deliver(sessionID, message string, note *Notification) error {
-	handled, err := s.handToMod(sessionID, message, note)
+// deliver hands a message that carries no ticket to the session's chat, and
+// types it where no chat takes it (see handToChat).
+func (s *Service) deliver(sessionID, message string) error {
+	handled, err := s.handToChat(sessionID, message)
 	if handled || err != nil {
 		return err
 	}

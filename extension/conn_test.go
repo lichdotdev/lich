@@ -230,7 +230,6 @@ func TestEachHelperCallsItsMethod(t *testing.T) {
 	})
 	ctx := within(t)
 	helpers := map[string]func() error{
-		AskSession.Name:    func() error { _, err := conn.Ask(ctx, AskParams{Session: "a", Question: "q"}); return err },
 		CollectAnswer.Name: func() error { _, err := conn.Answer(ctx, AnswerParams{Ticket: "t"}); return err },
 		ListServices.Name:  func() error { _, err := conn.Services(ctx, "lich"); return err },
 		StartService.Name:  func() error { _, err := conn.StartService(ctx, ServiceParams{Service: "web"}); return err },

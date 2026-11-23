@@ -88,9 +88,10 @@ setting.
 `LICH_SUBAGENT_DEPTH` is the sixth, set on every Claude Code session lich
 starts: `0` for one nobody opened as a subagent, `n` for a worker opened `n`
 `--subagent` levels down, on every spawn of it including a resume and a fork.
-The mod reads a depth above 0 as "this session is a worker" and reports its
-turns' answers ([mod-answer.md](mod-answer.md)); lich ignores the report from a
-session with no subagent errand open. A plugin from 0.19.0 that finds it absent
+A plugin older than 0.22.0 reads a depth above 0 in its mod as "this session is
+a worker" and posts its turns' answers to `/mod/answer`, which lich no longer
+serves: the 404 is dropped, and the errand is answered by the worker's last
+message or its ticket like any other. A plugin from 0.19.0 that finds it absent
 is under an older lich, and falls back to reading `LICH_SUBAGENT_CARDS=off` as
 both "leave subagents native" and "this session may be a worker", the way every
 release before it did.
@@ -174,34 +175,20 @@ no lich release ships yet, which they read at the commit that merged it.
   applied as the session card's label.
 - [session-touched.md](session-touched.md) — a session changed files, so its
   git status refreshes immediately instead of on the next poll.
-- [mod-control.md](mod-control.md): lich drives (`lich control`,
-  `control_session`) and asks (`lich ask`, `ask_session`) a Claude Code session
-  through a lich-plugin mod (Claude Code 2.1.280 or later). Its client is a mod
-  that long-polls for commands and acknowledges them, not a hook script.
-
-- [mod-usage.md](mod-usage.md): a Claude Code session reports the context
-  window, rate limits and cost it measured itself, through the same mod in a
-  module of its own. lich prefers those to what it derives.
-
-- [mod-answer.md](mod-answer.md): a Claude Code subagent worker answers the
-  task it was handed with its turn's final message, through the same mod, the
-  way a native subagent's last message is its result.
-
-- [mod-status.md](mod-status.md): a Claude Code session's mod reads the relay
-  errands it is part of (owed, open, ready to collect) for its status line,
-  without collecting anything.
-
 - [subagent-cards.md](subagent-cards.md): a provider's own subagent call
   becomes a lich session. The plugin's pre-tool hook asks lich, which opens the
   task as a card and answers with a veto the hook turns into the provider's own
-  refusal. Replaces the mod's agent-cards and [mod-answer.md](mod-answer.md).
+  refusal. Replaces the mod's agent-cards and its worker answer.
 
 - [notification.md](notification.md): the envelope every task, result and note
   lich hands an agent arrives in, the same on every provider. lich writes it;
   the plugin's side is the briefing that explains it.
 
 Each has a fixture file of the same name in [`fixtures/`](fixtures/); the format
-is documented there. mod-control has a second one, `mod-commands.json`, for the
-responses lich sends; mod-status has only a response, `mod-status.json`, and notification only the
-envelopes lich writes, `notification.json`. subagent-cards' fixture lands with
-its endpoint.
+is documented there. notification has only the envelopes lich writes,
+`notification.json`.
+
+lich-plugin's Claude Code mod once had contracts of its own here, under
+`/mod/commands`, `/mod/acks`, `/mod/usage`, `/mod/answer` and `/mod/status`.
+lich no longer serves them: a plugin that still loads its mod gets a 404 from
+each, which the mod reads as a lich without the endpoint, and stops calling it.

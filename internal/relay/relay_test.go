@@ -79,16 +79,13 @@ type fakeTerminal struct {
 	// whether the whole paste-to-Enter window was covered.
 	holding map[string]bool
 	inHold  map[string][]string
-	// mods is the Claude Code mod polling from each session, if any (see
-	// viamod_test.go). A session with none is typed at, as every test outside
+	// takes is the chat taking each session's prompts, if any (see
+	// viachat_test.go). A session with none is typed at, as every test outside
 	// that file expects.
-	mods map[string]*fakeMod
-	// answering is whether that session's mod answers its subagent errands
-	// itself (see workeranswer_test.go).
-	answering map[string]bool
-	// attaching is whether that session's mod may still make its first poll
-	// (see viamod_test.go).
-	attaching map[string]bool
+	takes map[string]*fakeChat
+	// opening is whether that session's chat has yet to open its
+	// conversation (see viachat_test.go).
+	opening map[string]bool
 	// finals is the final message of each session's last turn, standing in for
 	// a chat driver or a transcript (see turnanswer_test.go).
 	finals map[string]string
@@ -101,7 +98,7 @@ func newFakeTerminal(live ...string) *fakeTerminal {
 		noisy: map[string]int{}, drained: map[string]int{},
 		names: map[string]string{}, statuses: map[string]api.SessionStatus{},
 		holding: map[string]bool{}, inHold: map[string][]string{},
-		mods: map[string]*fakeMod{}, answering: map[string]bool{}, attaching: map[string]bool{},
+		takes: map[string]*fakeChat{}, opening: map[string]bool{},
 	}
 	for _, id := range live {
 		t.live[id] = true

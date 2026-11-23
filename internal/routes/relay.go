@@ -7,8 +7,8 @@ import (
 )
 
 // Relay exposes the relay service as api declares it. The hooks' state
-// stream and a worker's answer stay out: they arrive over /hook and
-// /mod/answer, and called here would act for another session.
+// stream stays out: it arrives over /hook, and called here would act for
+// another session.
 func Relay(d *rpc.Handler, s *relay.Service) {
 	rpc.Handle(d, api.RelayPeers, s.Peers)
 	rpc.Handle(d, api.RelaySelf, s.Self)

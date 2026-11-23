@@ -32,6 +32,9 @@ type conversation struct {
 	// to (compaction.go), "" for none; compactions counts them.
 	compacting  string
 	compactions int
+	// compactMoved hears a compaction start running live, true, and stop
+	// running, false (chatSession.compactMoved). Never for a replayed one.
+	compactMoved func(running bool)
 	// quiet holds the window's copy back while a resumed conversation is
 	// replayed: those items are the history, which the window asks for once.
 	quiet bool

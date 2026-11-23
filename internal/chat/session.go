@@ -21,9 +21,10 @@ import (
 // The states a chat reports to the card, the hooks' own words
 // (docs/hooks/session-state.md).
 const (
-	stateBusy    = "busy"
-	stateDone    = "done"
-	stateWaiting = "waiting"
+	stateBusy       = "busy"
+	stateDone       = "done"
+	stateWaiting    = "waiting"
+	stateCompacting = "compacting"
 )
 
 // The stop reasons a turn ends with, ACP's own.

@@ -3,12 +3,15 @@
 package chat
 
 import (
+	"math"
+	"slices"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/quota"
 )
 
 // TestClaudeSwitchRoundTrip: a terminal switched to a chat stops first,
@@ -273,4 +276,48 @@ func TestClaudeToolEndsAtItsResult(t *testing.T) {
 		return
 	}
 	t.Fatal("no b1 in the history")
+}
+
+// A Claude Code chat's stream-json says what the mod's status line used to:
+// the plan's windows reach the gauge, and the conversation's cost and its
+// model's context window reach the footer's readout.
+func TestClaudeChatReportsItsOwnUsage(t *testing.T) {
+	r := newRig(t, providers.Claude)
+	limits := make(chan []quota.ReportedLimit, 1)
+	r.term.SetRateLimitReports(func(id string, got []quota.ReportedLimit) {
+		if id == "s1" {
+			limits <- got
+		}
+	})
+	r.writeClaudeTranscript("claude-new",
+		`{"type":"assistant","message":{"id":"a1","model":"claude-opus-5-5","usage":{"input_tokens":10,"cache_read_input_tokens":99990,"output_tokens":5}}}`)
+	if err := r.setView(api.ViewChat); err != nil {
+		t.Fatalf("SetView(chat): %v", err)
+	}
+
+	r.prompt("usage")
+	r.turnEnd(0)
+
+	select {
+	case got := <-limits:
+		want := []quota.ReportedLimit{
+			{Kind: "five_hour", PercentUsed: 42, ResetsAt: "2026-11-23T12:30:00Z"},
+			{Kind: "seven_day", PercentUsed: 55, ResetsAt: "2026-11-23T15:00:00Z"},
+		}
+		if !slices.EqualFunc(got, want, func(a, b quota.ReportedLimit) bool {
+			return a.Kind == b.Kind && a.ResetsAt == b.ResetsAt && math.Abs(a.PercentUsed-b.PercentUsed) < 1e-9
+		}) {
+			t.Errorf("rate limits = %+v, want %+v", got, want)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("the gauge never heard the rate limits")
+	}
+	r.eventually("the readout on the reported window", func() bool {
+		for _, e := range r.snapshot() {
+			if u, ok := e.data.(api.SessionUsage); ok && u.ID == "s1" && u.Window == 200_000 && u.Tokens == 100_000 && u.Percent == 50 {
+				return true
+			}
+		}
+		return false
+	})
 }

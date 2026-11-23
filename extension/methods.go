@@ -1,7 +1,7 @@
 package extension
 
 // The methods and events mirror the tools lich's MCP server gives agents
-// (list_sessions, list_worktrees, open_session, send_to_session, ask_session,
+// (list_sessions, list_worktrees, open_session, send_to_session,
 // wait_for_answer, the service tools, show_code, browser_open) and mean what
 // they mean there. A call comes from no session, as the lich command line run
 // outside one does: nothing defaults to "your own" project or provider.
@@ -16,9 +16,6 @@ var (
 	OpenSession = method[OpenSessionParams, OpenedSession]("sessions.open", PermissionSessionsWrite)
 	// SendToSession gives a session a task, as send_to_session does.
 	SendToSession = method[SendParams, SendResult]("sessions.send", PermissionSessionsWrite)
-	// AskSession puts a side question to a Claude Code session and waits for
-	// its answer, as ask_session does.
-	AskSession = method[AskParams, AskResult]("sessions.ask", PermissionSessionsAsk)
 	// CollectAnswer waits on a ticket this extension's own sessions.send or
 	// sessions.open returned pending, as wait_for_answer does with a ticket.
 	CollectAnswer = method[AnswerParams, SendResult]("sessions.answer", PermissionSessionsWrite)
@@ -178,25 +175,6 @@ type SessionStatusData struct {
 	Tool   string `json:"tool,omitempty"`
 	Detail string `json:"detail,omitempty"`
 	Reason string `json:"reason,omitempty"`
-}
-
-// AskParams asks Session, its label, name or id, Question. Project narrows
-// the search when two projects share the label. Only a Claude Code session
-// whose lich-plugin mod is loaded answers; every other is refused.
-type AskParams struct {
-	Session  string `json:"session"`
-	Project  string `json:"project,omitempty"`
-	Question string `json:"question"`
-}
-
-// AskResult is the session's answer: its id, project and label, and what it
-// said. A session that does not answer within 90 seconds is an error, and an
-// answer that comes later is dropped: an ask has no ticket.
-type AskResult struct {
-	ID      string `json:"id"`
-	Project string `json:"project"`
-	Label   string `json:"label"`
-	Answer  string `json:"answer"`
 }
 
 // AnswerParams waits on Ticket for WaitSeconds, at most 90, which is also

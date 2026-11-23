@@ -34,6 +34,9 @@ func (c *conversation) compactOpen(fn func(*api.ChatCompaction)) {
 	cc := &api.ChatCompaction{State: api.CompactionRunning}
 	fn(cc)
 	c.put(api.ChatItem{ID: id, Kind: api.ItemCompaction, Compaction: cc}, true)
+	if cc.State == api.CompactionRunning {
+		c.moved(true)
+	}
 }
 
 // compaction changes the open compaction through fn, beginning one where none
@@ -53,14 +56,43 @@ func (c *conversation) compaction(fn func(*api.ChatCompaction)) {
 // change rewrites compaction item id through fn, on a copy: the window may
 // still hold the one sent before.
 func (c *conversation) change(id string, fn func(*api.ChatCompaction)) {
+	ended := false
 	c.update(id, api.ItemCompaction, true, func(it *api.ChatItem) {
 		cc := api.ChatCompaction{State: api.CompactionRunning}
 		if it.Compaction != nil {
 			cc = *it.Compaction
 		}
+		was := cc.State
 		fn(&cc)
+		ended = was == api.CompactionRunning && cc.State != api.CompactionRunning
 		it.Compaction = &cc
 	})
+	if ended {
+		c.moved(false)
+	}
+}
+
+// moved tells compactMoved, unless the conversation is being replayed.
+func (c *conversation) moved(running bool) {
+	c.mu.Lock()
+	fn, quiet := c.compactMoved, c.quiet
+	c.mu.Unlock()
+	if fn != nil && !quiet {
+		fn(running)
+	}
+}
+
+// compactMoved reports a live compaction to the card and the relay as
+// compacting (docs/hooks/session-state.md), and one that ended inside a
+// running turn as busy again, the report that closes it: the turn's own end
+// closes the rest.
+func (c *chatSession) compactMoved(running bool) {
+	switch {
+	case running:
+		c.svc.term.ReportChatState(c.id, stateCompacting, "", "")
+	case c.turnRunning():
+		c.svc.term.ReportChatState(c.id, stateBusy, "", "")
+	}
 }
 
 // openCompaction is the compaction what the provider says next belongs to,

@@ -5,9 +5,6 @@
 package terminal
 
 import (
-	"fmt"
-	"net/http"
-	"strings"
 	"testing"
 	"time"
 
@@ -16,8 +13,8 @@ import (
 	"github.com/lichdotdev/lich/internal/quota"
 )
 
-func reportOf(conversation string, window int) usageReport {
-	return usageReport{SessionID: "s1", ConversationID: conversation, Context: reportedContext{Window: window}}
+func reportOf(conversation string, window int) ChatUsage {
+	return ChatUsage{Conversation: conversation, Window: window}
 }
 
 // TestAReportedCostReplacesTheTranscriptScan is the point of the contract: the
@@ -36,7 +33,7 @@ func TestAReportedCostReplacesTheTranscriptScan(t *testing.T) {
 
 	report := reportOf("uuid-cost", 200_000)
 	report.CostUSD = new(2.5)
-	svc.usageReports.set(report)
+	svc.usageReports.set("s1", report)
 
 	for range 2 {
 		got, ok := svc.sessionUsage("s1")
@@ -58,7 +55,7 @@ func TestAReportAboutAnotherConversationIsNotApplied(t *testing.T) {
 	svc.prices = testRate
 	report := reportOf("uuid-before-clear", 200_000)
 	report.CostUSD = new(float64(9))
-	svc.usageReports.set(report)
+	svc.usageReports.set("s1", report)
 
 	got, ok := svc.sessionUsage("s1")
 
@@ -75,22 +72,33 @@ func TestAReportAboutAnotherConversationIsNotApplied(t *testing.T) {
 
 // TestTheReportedWindowReplacesTheGuess is the ceiling a report closes: the
 // transcript names the model but not its window, and an Opus run at 200k read
-// as 1M. While the tokens agree, the percentage is Claude Code's own rounding.
+// as 1M.
 func TestTheReportedWindowReplacesTheGuess(t *testing.T) {
 	writeTranscript(t, "uuid-abc", assistantLine(modelOpus, 2, 43590, 0)+"\n")
 	svc := New(stubBins{providerSession: "uuid-abc"}, nil, events.New())
-	report := reportOf("uuid-abc", 200_000)
-	report.Context.Tokens, report.Context.Percent = new(43592), new(22)
-	svc.usageReports.set(report)
+	svc.usageReports.set("s1", reportOf("uuid-abc", 200_000))
 
 	got, ok := svc.sessionUsage("s1")
 
 	if !ok {
 		t.Fatal("sessionUsage: want ok")
 	}
-	if got.Window != 200_000 || got.Tokens != 43592 || got.Percent != 22 {
-		t.Errorf("usage = %d/%d at %d%%, want 43592/200000 at Claude Code's 22%%",
-			got.Tokens, got.Window, got.Percent)
+	if got.Window != 200_000 || got.Tokens != 43592 || got.Percent != 21 {
+		t.Errorf("usage = %d/%d at %d%%, want 43592/200000 at 21%%", got.Tokens, got.Window, got.Percent)
+	}
+}
+
+// A report that names no window, a model whose stream-json said none, leaves
+// the transcript's reading as it was.
+func TestAReportWithNoWindowKeepsTheTranscripts(t *testing.T) {
+	writeTranscript(t, "uuid-abc", assistantLine(modelOpus, 2, 43590, 0)+"\n")
+	svc := New(stubBins{providerSession: "uuid-abc"}, nil, events.New())
+	svc.usageReports.set("s1", reportOf("uuid-abc", 0))
+
+	got, _ := svc.sessionUsage("s1")
+
+	if got.Window != 1_000_000 {
+		t.Errorf("Window = %d, want the transcript's 1000000", got.Window)
 	}
 }
 
@@ -100,9 +108,7 @@ func TestTheReportedWindowReplacesTheGuess(t *testing.T) {
 func TestTranscriptTokensNewerThanTheReportKeepMoving(t *testing.T) {
 	writeTranscript(t, "uuid-abc", assistantLine(modelOpus, 2, 99998, 0)+"\n")
 	svc := New(stubBins{providerSession: "uuid-abc"}, nil, events.New())
-	report := reportOf("uuid-abc", 200_000)
-	report.Context.Tokens, report.Context.Percent = new(43592), new(22)
-	svc.usageReports.set(report)
+	svc.usageReports.set("s1", reportOf("uuid-abc", 200_000))
 
 	got, _ := svc.sessionUsage("s1")
 
@@ -111,45 +117,32 @@ func TestTranscriptTokensNewerThanTheReportKeepMoving(t *testing.T) {
 	}
 }
 
-// TestModUsageEndpointHandsRateLimitsToTheGauge drives the wire: a report
-// POSTed to /mod/usage is kept for its session and its rate limits reach the
-// plan gauge's reader.
-func TestModUsageEndpointHandsRateLimitsToTheGauge(t *testing.T) {
+// TestAChatsReportReachesTheGaugeAndTheReadout drives ReportChatUsage: the
+// figures are kept for the session's conversation and its rate limits reach
+// the plan gauge's reader; a report of rate limits alone keeps the figures.
+func TestAChatsReportReachesTheGaugeAndTheReadout(t *testing.T) {
 	t.Parallel()
 	svc := New(stubBins{}, nil, events.New())
-	if svc.ws == nil {
-		t.Fatalf("transport: %v", svc.wsErr)
-	}
 	got := make(chan []quota.ReportedLimit, 1)
 	svc.SetRateLimitReports(func(sessionID string, limits []quota.ReportedLimit) {
 		if sessionID == "s1" {
 			got <- limits
 		}
 	})
-	body := `{"session_id":"s1","conversation_id":"c1","context":{"window":200000},` +
-		`"rate_limits":[{"kind":"five_hour","percent_used":14,"resets_at":"2026-10-05T00:30:00.000Z"}]}`
-	url := fmt.Sprintf("http://127.0.0.1:%d/mod/usage?token=%s", svc.ws.port, svc.ws.token)
+	svc.ReportChatUsage("s1", ChatUsage{Conversation: "c1", Window: 200_000, CostUSD: new(0.5)})
+	limits := []quota.ReportedLimit{{Kind: "five_hour", PercentUsed: 42, ResetsAt: "2026-11-23T10:30:00Z"}}
+	svc.ReportChatUsage("s1", ChatUsage{RateLimits: limits})
 
-	resp, err := http.Post(url, "application/json", strings.NewReader(body))
-	if err != nil {
-		t.Fatal(err)
-	}
-	_ = resp.Body.Close()
-
-	if resp.StatusCode != http.StatusNoContent {
-		t.Fatalf("status = %d, want 204", resp.StatusCode)
-	}
 	select {
-	case limits := <-got:
-		want := quota.ReportedLimit{Kind: "five_hour", PercentUsed: 14, ResetsAt: "2026-10-05T00:30:00.000Z"}
-		if len(limits) != 1 || limits[0] != want {
-			t.Errorf("limits = %+v, want [%+v]", limits, want)
+	case reported := <-got:
+		if len(reported) != 1 || reported[0] != limits[0] {
+			t.Errorf("limits = %+v, want %+v", reported, limits)
 		}
 	case <-time.After(time.Second):
 		t.Fatal("the gauge's reader never got the rate limits")
 	}
-	if _, ok := svc.usageReports.of("s1", "c1"); !ok {
-		t.Error("the report was not kept for its session")
+	if r, ok := svc.usageReports.of("s1", "c1"); !ok || r.Window != 200_000 {
+		t.Errorf("report = %+v, %v; want the figures kept past a report of rate limits alone", r, ok)
 	}
 }
 
@@ -158,7 +151,7 @@ func TestModUsageEndpointHandsRateLimitsToTheGauge(t *testing.T) {
 func TestAClosedSessionDropsItsReport(t *testing.T) {
 	t.Parallel()
 	svc := New(stubBins{}, nil, events.New())
-	svc.usageReports.set(reportOf("c1", 200_000))
+	svc.usageReports.set("s1", reportOf("c1", 200_000))
 
 	if _, err := svc.Close(t.Context(), api.SessionIDOptions{ID: "s1"}); err != nil {
 		t.Fatal(err)

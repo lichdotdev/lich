@@ -54,9 +54,9 @@ func TestAChatWorkerAnswersByItsLastMessage(t *testing.T) {
 	t.Parallel()
 	term := newFakeTerminal("s1")
 	term.chats = map[string]bool{"s2": true}
-	term.attachMod("s2", ackedOK)
+	term.openChat("s2", acked)
 	term.say("s2", "an older answer")
-	svc := viaMod(term, nil)
+	svc := viaChat(term, nil)
 
 	results := sendAsync(svc)
 	if !awaitPrompts(term, "s2", 1) {

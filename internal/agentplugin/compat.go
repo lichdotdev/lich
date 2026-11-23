@@ -17,9 +17,6 @@ const (
 	// lich implements (0.22, whose texts describe the notification envelope and
 	// whose pre-tool hook asks /subagent), and the first one it cannot vouch for.
 	PluginVersionCeiling = "0.23.0"
-	// ModAnswerRelease is the first release whose mod answers a subagent
-	// worker's errand itself (docs/hooks/mod-answer.md).
-	ModAnswerRelease = "0.17.0"
 )
 
 // Compatible reports whether a plugin release speaks the contract this lich

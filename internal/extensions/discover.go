@@ -104,6 +104,7 @@ func readManifest(root, dirName, lichVersion string) (extension.Manifest, string
 	if err := json.Unmarshal(raw, &m); err != nil {
 		return m, "", fmt.Errorf("parse %s: %w", extension.ManifestFile, err)
 	}
+	m.Permissions = withoutRetired(m.Permissions)
 	if err := validate(m, dirName, lichVersion); err != nil {
 		return m, "", err
 	}
@@ -146,6 +147,17 @@ func checkDescription(description string) error {
 		return errors.New("description must be one line with no control characters")
 	}
 	return nil
+}
+
+// retiredPermissions are names an SDK release no longer has, with the method
+// they granted: sessions:ask went with sessions.ask in SDK v0.4.0. A manifest
+// built against an older SDK still loads, granted nothing for them.
+var retiredPermissions = []extension.Permission{"sessions:ask"}
+
+func withoutRetired(permissions []extension.Permission) []extension.Permission {
+	return slices.DeleteFunc(permissions, func(p extension.Permission) bool {
+		return slices.Contains(retiredPermissions, p)
+	})
 }
 
 func checkPermissions(permissions []extension.Permission) error {

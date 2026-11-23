@@ -167,21 +167,6 @@
     }
   },
   {
-    "method": "sessions.ask",
-    "params": {
-      "session": "session",
-      "project": "project",
-      "question": "question"
-    },
-    "permission": "sessions:ask",
-    "result": {
-      "id": "id",
-      "project": "project",
-      "label": "label",
-      "answer": "answer"
-    }
-  },
-  {
     "method": "sessions.list",
     "params": {},
     "permission": "sessions:read",
