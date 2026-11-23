@@ -74,6 +74,7 @@ type Doctor struct {
 	store    func() (io.Closer, error)
 	sandbox  func() (string, error)
 	lookPath func(string) (string, error)
+	install  func(tool string) string
 	getenv   func(string) string
 }
 
@@ -91,6 +92,7 @@ func New(configDir string, getenv func(string) string) *Doctor {
 		store:     func() (io.Closer, error) { return store.New() },
 		sandbox:   sandbox.Probe,
 		lookPath:  exec.LookPath,
+		install:   toolInstall,
 		getenv:    getenv,
 	}
 }
@@ -116,6 +118,7 @@ func (d *Doctor) Run() []Check {
 		{"git", func() (Status, string) { return d.checkTool("git", gitWithout) }},
 		{"gh", func() (Status, string) { return d.checkTool("gh", ghWithout) }},
 		{"glab", func() (Status, string) { return d.checkTool("glab", glabWithout) }},
+		{"jq", func() (Status, string) { return d.checkTool("jq", d.jqWithout()) }},
 	}
 
 	checks := make([]Check, 0, len(steps))
@@ -292,6 +295,21 @@ const (
 	ghWithout   = "pull requests, checks and PR checkouts are unavailable"
 	glabWithout = "GitLab merge requests, pipelines and MR checkouts are unavailable"
 )
+
+// jqDownload is jq's own install page, for a machine with no package manager
+// lich knows to ask.
+const jqDownload = "https://jqlang.org/download/"
+
+// jqWithout is what a machine loses without jq and how to get it. The plugin's
+// subagent veto (hooks/veto-subagent.sh in lich-plugin) reads its payload with
+// jq and lets every call through when jq is missing.
+func (d *Doctor) jqWithout() string {
+	const lost = "subagents run inside the agent instead of opening as lich sessions"
+	if command := d.install("jq"); command != "" {
+		return lost + "; install it with " + command
+	}
+	return lost + "; get it from " + jqDownload
+}
 
 // checkTool resolves one of the command-line tools lich shells out to. Never a
 // Fail: lich opens and every session spawns without either of them — what goes

@@ -36,6 +36,7 @@ func healthy(t *testing.T) *Doctor {
 	d.store = func() (io.Closer, error) { return io.NopCloser(nil), nil }
 	d.sandbox = func() (string, error) { return "bubblewrap", nil }
 	d.lookPath = func(name string) (string, error) { return "/usr/bin/" + name, nil }
+	d.install = func(string) string { return "" }
 	return d
 }
 
@@ -54,7 +55,7 @@ func TestAHealthyMachineWalksTheWholeBoot(t *testing.T) {
 	for _, c := range checks {
 		names = append(names, c.Name)
 	}
-	want := []string{"home", "log", "listener", "store", "window", "providers", "sandbox", "git", "gh", "glab"}
+	want := []string{"home", "log", "listener", "store", "window", "providers", "sandbox", "git", "gh", "glab", "jq"}
 	if strings.Join(names, ",") != strings.Join(want, ",") {
 		t.Errorf("checks ran as %v, want the boot order %v", names, want)
 	}
@@ -96,6 +97,39 @@ func TestAMissingVersionControlToolWarnsWithoutStoppingTheLaunch(t *testing.T) {
 				t.Errorf("a missing %s is reported as launch-stopping", tc.name)
 			}
 		})
+	}
+}
+
+func TestAMissingJqWarnsThatSubagentsStayInsideTheAgent(t *testing.T) {
+	for _, tc := range []struct{ install, want string }{
+		{"sudo apt install jq", "install it with sudo apt install jq"},
+		{"", "get it from https://jqlang.org/download/"},
+	} {
+		d := healthy(t)
+		d.lookPath = func(name string) (string, error) {
+			if name == "jq" {
+				return "", exec.ErrNotFound
+			}
+			return "/usr/bin/" + name, nil
+		}
+		d.install = func(tool string) string {
+			if tool != "jq" {
+				t.Errorf("asked how to install %q, want jq", tool)
+			}
+			return tc.install
+		}
+
+		checks := d.Run()
+		got := statuses(checks)["jq"]
+
+		if got.Status != Warn || Failed(checks) {
+			t.Errorf("jq = %s (%s), want a warn that stops nothing", got.Status, got.Detail)
+		}
+		for _, part := range []string{"subagents run inside the agent instead of opening as lich sessions", tc.want} {
+			if !strings.Contains(got.Detail, part) {
+				t.Errorf("detail %q does not say %q", got.Detail, part)
+			}
+		}
 	}
 }
 

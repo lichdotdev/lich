@@ -30,6 +30,8 @@ func TestToolInstallAsksTheFirstPackageManagerThatHasTheTool(t *testing.T) {
 		{[]string{"winget"}, "git", "winget install --exact --id Git.Git"},
 		{nil, "git", ""},
 		{[]string{"pacman"}, "svn", ""},
+		{[]string{"zypper"}, "jq", "sudo zypper install jq"},
+		{[]string{"winget"}, "jq", "winget install --exact --id jqlang.jq"},
 	}
 	for _, c := range cases {
 		s := &Service{lookPath: onPath(c.path...)}

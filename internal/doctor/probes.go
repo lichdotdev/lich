@@ -53,3 +53,15 @@ func Instance(configDir string) (*singleton.Info, bool) {
 	}
 	return info, singleton.Ping(info.Port, info.Token)
 }
+
+// toolInstall is the command that installs tool with the first package manager
+// on PATH that has it, the same answer Settings › Version Control's Install
+// runs; "" when none does. ToolInstall has no error to return: it is an RPC
+// method, and the shape asks for one.
+func toolInstall(tool string) string {
+	command, err := providers.New().ToolInstall(context.Background(), api.BinaryOptions{Bin: tool})
+	if err != nil {
+		panic(err)
+	}
+	return command
+}

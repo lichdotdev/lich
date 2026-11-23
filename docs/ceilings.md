@@ -1063,9 +1063,10 @@ work when nobody knows it and that the call site never shows. The mechanism and 
 - **Codex's default multi-agent (v2) hands lich the task encrypted**: lich opens nothing for it and its reason sends
   the model to `open_session` with the task in clear, which is an ordinary errand; a `wait_agent` after it is vetoed
   too while no native subagent can be running (docs/hooks/subagent-cards.md).
-- **The subagent veto needs jq, and nothing checks for it**: `hooks/veto-subagent.sh` lets every call run
-  natively when `jq` is missing, as the reports already go silent without it, and no install step or doctor check
-  of lich's looks for it, so a machine without jq never sees a card for an agent's own subagent.
+- **The subagent veto needs jq, and only `lich doctor` checks for it**: `hooks/veto-subagent.sh` lets every call
+  run natively when `jq` is missing, as the reports already go silent without it. No install step brings jq and the
+  window says nothing, so a machine without jq sees no card for an agent's own subagent; `lich doctor` warns and
+  names the command that installs it.
 - **oh-my-pi's chat loads the plugin's extension only from `$PI_CODING_AGENT_DIR/extensions/`**: its ACP server
   takes no flags, so without the extension there a chat's subagent runs natively.
 - **A vetoed call is drawn as opened only where the chat's tool item carries the hook's `tool_use_id`**

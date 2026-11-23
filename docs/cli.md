@@ -1307,6 +1307,7 @@ lich v0.25.0 — linux/amd64
   ok    git          <1ms  /usr/bin/git
   ok    gh           <1ms  /usr/bin/gh
   ok    glab         <1ms  /usr/bin/glab
+  ok    jq           <1ms  /usr/bin/jq
         total        17ms
 
 lich starts here — nothing is in the way.
@@ -1326,6 +1327,7 @@ The checks are in boot order, and each carries its own verdict:
 | `git` | Never. | Not on PATH: branches, diffs and worktrees stay empty. |
 | `gh` | Never. | Not on PATH: pull requests, checks and PR checkouts are unavailable. |
 | `glab` | Never. | Not on PATH: GitLab merge requests, pipelines and MR checkouts are unavailable. |
+| `jq` | Never. | Not on PATH: subagents run inside the agent instead of opening as lich sessions, as lich-plugin's subagent veto reads its payload with jq. The line names the install command of the first package manager on PATH that has jq, else jq's download page. |
 
 A `fail` exits 1 and a clean run exits 0, which is the automation surface here —
 there is no `--json`. It needs no TTY, no running instance and no network.
