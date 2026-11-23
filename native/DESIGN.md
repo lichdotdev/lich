@@ -113,6 +113,9 @@ their text with the tone itself.
   long descriptions than `TextBase`.
 - In Markdown a blockquote is `MutedForeground` text `Space(4)` behind a `Space(1)` bar in `Border`, and a code
   block sits across the body on the inline code's fill, `RadiusSM`, `Space(2)` padding (`ui/markdown`).
+  Its copy button is a ghost `SizeIconXS` one (Lucide `copy`, a check for 1.5s after a click) shown only while the
+  pointer is over the block, as a message's copy is, with no tooltip; it stands on the first line inside the
+  right padding, and the code wraps short of it, so it never covers text and nothing moves when it shows.
 - Text a person reads goes through `i18n.T`; nothing literal (see the `lich-i18n` skill).
 - Text from the outside world (a diff hunk, a PR body, a commit message) is cleaned before it is shaped:
   tabs become four spaces, because the fonts have no glyph for a tab and draw a missing-glyph box.

@@ -16,7 +16,8 @@ import (
 )
 
 const richMarkdown = "## Markdown\n\nA paragraph with **bold**, *italics*, `inline code` and a [link](https://example.com).\n\n" +
-	"- [x] a task done\n- [ ] a task to do\n  - and a nested item\n\n| Viewer | Input |\n|---|---|\n| Markdown | text |\n| Code | source and filename |\n"
+	"- [x] a task done\n- [ ] a task to do\n  - and a nested item\n\n| Viewer | Input |\n|---|---|\n| Markdown | text |\n| Code | source and filename |\n\n" +
+	"```go\nfunc main() {\n\tfmt.Println(\"hello\")\n}\n```\n"
 
 // richState holds what the rich content viewers keep between frames.
 type richState struct {

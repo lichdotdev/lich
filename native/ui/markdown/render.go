@@ -59,7 +59,7 @@ func renderBlock(th *ui.Theme, source []byte, n ast.Node, fg color.NRGBA) (markd
 	case *ast.FencedCodeBlock, *ast.CodeBlock:
 		cell := renderNode(th, source, n, fg)
 		cell.lineHeight = markdownCodeLineHeightScale
-		return markdownBlock{prose: cell, panel: true}, len(cell.spans) > 0
+		return markdownBlock{prose: cell, panel: true, code: rawCode(source, n), copy: new(codeCopy)}, len(cell.spans) > 0
 	default:
 		cell := renderNode(th, source, n, fg)
 		return markdownBlock{prose: cell}, len(cell.spans) > 0
