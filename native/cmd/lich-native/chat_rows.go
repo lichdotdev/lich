@@ -127,6 +127,16 @@ func chatRows(items []backend.ChatItem, kind string, running bool, now time.Time
 		}
 		if it.Kind != api.ItemTool {
 			r := chatRow{kind: chatRowItem, item: it, live: it.ID == liveID && (it.Kind == api.ItemAgent || it.Kind == api.ItemThought)}
+			// Thoughts back to back read as one: the first keeps its id, so
+			// its fold stays put while the rest streams into its text.
+			if it.Kind == api.ItemThought && len(rows) > 0 {
+				prev := &rows[len(rows)-1]
+				if prev.kind == chatRowItem && prev.item.Kind == api.ItemThought && prev.item.Turn == it.Turn {
+					prev.item.Text += "\n\n" + it.Text
+					prev.live = r.live
+					continue
+				}
+			}
 			if it.Kind == api.ItemAgent && !led[it.Turn] {
 				led[it.Turn], r.lead = true, true
 				r.bare = opener[it.Turn] == "work"

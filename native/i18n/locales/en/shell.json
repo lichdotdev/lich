@@ -65,7 +65,8 @@
     "tokens": "Tokens",
     "modelWindow": "Model window",
     "cache": "Cache",
-    "cacheHitShort": "{percent}% hit"
+    "cacheHitShort": "{percent}% hit",
+    "cacheReads": "Cache reads"
   },
   "gitMissingGate": {
     "title": "git is not installed",

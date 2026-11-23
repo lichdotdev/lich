@@ -1016,8 +1016,8 @@ for an account with none, the disc is `Accent` with the initial in `MutedForegro
 
 The sidebar is the window's reference list; its geometry lives in `sidebar_card.go` and
 `sidebar_tree_draw.go`. It is a list, not a tree of worktrees: the sessions filed nowhere come first, with no
-header, then the folders, and inside each the sessions stand in status order, waiting on you, running, a turn
-nobody read, then idle (`phaseRank`), whatever checkout they run in.
+header, then the folders, and inside each the sessions stand in their stored order, whatever checkout they run
+in and whatever their status: a row never moves because its session changed phase.
 
 ### A row
 

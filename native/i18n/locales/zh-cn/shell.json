@@ -65,7 +65,8 @@
     "tokens": "Token",
     "modelWindow": "模型窗口",
     "cache": "缓存",
-    "cacheHitShort": "命中 {percent}%"
+    "cacheHitShort": "命中 {percent}%",
+    "cacheReads": "缓存读取"
   },
   "gitMissingGate": {
     "title": "未安装 git",

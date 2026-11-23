@@ -17,7 +17,7 @@ import (
 // The project tab, from the approved mockup: browser-style tabs of a fixed
 // width that shrinks evenly to a floor before the strip scrolls.
 var (
-	tabWidthMax  = ui.Space(49)   // 196px
+	tabWidthMax  = ui.Space(41)   // 164px
 	tabWidthMin  = ui.Space(29.5) // 118px
 	tabHeight    = ui.Space(8)    // 32px, the pill, from 6px under the band's top
 	tabTop       = ui.Space(1.5)
@@ -33,6 +33,9 @@ const (
 	tabTextLeading = 20
 	// tabHoverFill is the mockup's --hover-faint, the foreground at 4%.
 	tabHoverFill = 0.04
+	// tabRestMix lifts a resting tab's name from MutedForeground toward
+	// Foreground, which alone read too faint on the canvas.
+	tabRestMix = 0.4
 )
 
 var (
@@ -205,7 +208,8 @@ func (t *topbar) tab(gtx C, th *ui.Theme, f topbarFrame, i, w int, dragEnded boo
 
 // tabFace draws a tab: a pill of Accent when active or carried, a faint
 // fill when hovered, the hairline where the pinned tabs end, then the badge,
-// the name and the ×, shown on hover and on the active tab.
+// the name and, at the right, the × on hover and on the active tab, else the
+// badge.
 func (t *topbar) tabFace(gtx C, th *ui.Theme, f topbarFrame, i int, st *tabState, act *topbarAction) D {
 	tab := f.tabs[i]
 	active := tab.ID == f.active
@@ -226,7 +230,7 @@ func (t *topbar) tabFace(gtx C, th *ui.Theme, f topbarFrame, i int, st *tabState
 		paint.FillShape(gtx.Ops, th.Over(th.Border), clip.Rect{Min: image.Pt(0, top), Max: image.Pt(gtx.Dp(1), top+gtx.Dp(tabSeparator))}.Op())
 	}
 	on := th.On(bg)
-	fg, weight := on.MutedForeground, font.Normal
+	fg, weight := ui.MixOKLab(on.MutedForeground, on.Foreground, tabRestMix), font.Normal
 	if active {
 		fg, weight = on.Foreground, font.Medium
 	}
@@ -237,7 +241,7 @@ func (t *topbar) tabFace(gtx C, th *ui.Theme, f topbarFrame, i int, st *tabState
 	return D{Size: pill}
 }
 
-// tabContent is the badge, the name and the × in a row.
+// tabContent is the name and, in the slot at its end, the × or the badge.
 func (t *topbar) tabContent(gtx C, on *ui.Theme, tab projectTab, st *tabState, fg color.NRGBA, weight font.Weight, showClose bool, act *topbarAction) D {
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
@@ -252,7 +256,6 @@ func (t *topbar) tabContent(gtx C, on *ui.Theme, tab projectTab, st *tabState, f
 			}
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx, layout.Rigid(func(gtx C) D { return icTabPin.Layout(gtx, tabGlyph, fg) }), ui.Gap(2))
 		}),
-		layout.Rigid(func(gtx C) D { return t.tabBadge(gtx, on, tab.status) }),
 		layout.Flexed(1, func(gtx C) D {
 			if !st.rename.Active() {
 				return on.Text(tabTextSize, tab.Name).Leading(tabTextLeading).In(fg).Weight(weight).Layout(gtx)
@@ -266,15 +269,16 @@ func (t *topbar) tabContent(gtx C, on *ui.Theme, tab projectTab, st *tabState, f
 		ui.Gap(2),
 		layout.Rigid(func(gtx C) D {
 			if !showClose || tab.pinned {
-				return D{Size: image.Pt(gtx.Dp(16), gtx.Dp(16))}
+				slot := image.Pt(gtx.Dp(16), gtx.Dp(16))
+				gtx.Constraints = layout.Exact(slot)
+				return layout.Center.Layout(gtx, func(gtx C) D { return t.tabBadge(gtx, on, tab.status) })
 			}
 			return on.CornerButton(&st.close, icTabClose, false).Layout(gtx)
 		}),
 	)
 }
 
-// tabBadge is ProjectTab's status glyph and the gap after it, nothing for a
-// tab with nothing to say.
+// tabBadge is ProjectTab's status glyph, nothing for a tab with nothing to say.
 func (t *topbar) tabBadge(gtx C, th *ui.Theme, status string) D {
 	var draw func(gtx C) D
 	switch status {
@@ -287,7 +291,7 @@ func (t *topbar) tabBadge(gtx C, th *ui.Theme, status string) D {
 	default:
 		return D{}
 	}
-	return layout.Flex{Alignment: layout.Middle}.Layout(gtx, layout.Rigid(draw), ui.Gap(2))
+	return draw(gtx)
 }
 
 // tabTooltip is ProjectTab's card tooltip: the name, and the path in mono.

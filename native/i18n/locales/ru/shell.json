@@ -67,7 +67,8 @@
     "tokens": "Токены",
     "modelWindow": "Окно модели",
     "cache": "Кэш",
-    "cacheHitShort": "{percent}% попаданий"
+    "cacheHitShort": "{percent}% попаданий",
+    "cacheReads": "Чтений кэша"
   },
   "gitMissingGate": {
     "title": "git не установлен",

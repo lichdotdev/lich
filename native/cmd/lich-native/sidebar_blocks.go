@@ -139,9 +139,6 @@ func (m *model) dressBlock(p backend.Project, b sessionBlock, pending []pendingS
 	if collapsed {
 		v.mark = collapsedMark(pending, ids)
 	}
-	slices.SortStableFunc(v.sessions, func(a, b sessionView) int {
-		return phaseRank(phaseOf(a.status, a.unread)) - phaseRank(phaseOf(b.status, b.unread))
-	})
 	v.motherFolds = map[string]bool{}
 	for _, sv := range v.sessions {
 		if m.folds[foldKey(p.ID, motherKey(sv.ID))] {
