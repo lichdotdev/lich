@@ -77,21 +77,18 @@ func selectorLeft(t *testing.T, r *frameRig) (int, bool) {
 
 func TestTheStripNamesTheProviderAndTheSessionAtTheLeft(t *testing.T) {
 	_, r := stripFrames(t, 800, "Cart totals a cent off")
-	var provider, name image.Rectangle
+	var name image.Rectangle
 	for _, n := range r.nodes() {
-		switch n.Desc.Label {
-		case "Claude Code · ":
-			provider = n.Desc.Bounds
-		case "Cart totals a cent off":
+		if n.Desc.Label == "Cart totals a cent off" {
 			name = n.Desc.Bounds
 		}
 	}
 	left, ok := selectorLeft(t, r)
-	if provider.Empty() || name.Empty() || !ok {
+	if name.Empty() || !ok {
 		t.Fatalf("the strip lacks a part:\n%s", r.drawn())
 	}
-	if provider.Min.X != int(balloonInset) || name.Min.X <= provider.Min.X || name.Min.X >= left {
-		t.Errorf("provider at %d, name at %d, selector at %d: want the island's edge, then the provider, the name, the selector", provider.Min.X, name.Min.X, left)
+	if name.Min.X <= int(balloonInset) || name.Min.X >= left {
+		t.Errorf("name at %d, selector at %d: want the island's edge, then the provider's mark, the name, the selector", name.Min.X, left)
 	}
 }
 

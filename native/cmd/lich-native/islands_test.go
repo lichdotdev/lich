@@ -274,9 +274,9 @@ func headerParts(r *frameRig, labels ...string) map[string]image.Rectangle {
 	return parts
 }
 
-// A pane's header is the lone session's: the provider and the name at the
-// same places, the selector on the same line and the same size, only moved
-// left by the pane's own controls, and no hairline under it.
+// A pane's header is the lone session's: the name at the same place, the
+// selector on the same line and the same size, only moved left by the pane's
+// own controls, and no hairline under it.
 func TestAPanesHeaderIsTheLoneSessionsHeader(t *testing.T) {
 	const w, label = 800, "Cart totals a cent off"
 	gui, tui := i18n.T("chat.switch.gui"), i18n.T("chat.switch.tui")
@@ -298,17 +298,15 @@ func TestAPanesHeaderIsTheLoneSessionsHeader(t *testing.T) {
 	}
 	lone.settle(t)
 	pane.settle(t)
-	a := headerParts(lone, "Claude Code · ", label, gui, tui)
-	b := headerParts(pane, "Claude Code · ", label, gui, tui)
-	for _, l := range []string{"Claude Code · ", label, gui, tui} {
+	a := headerParts(lone, label, gui, tui)
+	b := headerParts(pane, label, gui, tui)
+	for _, l := range []string{label, gui, tui} {
 		if a[l].Empty() || b[l].Empty() {
 			t.Fatalf("%q drawn at %v alone and %v in a pane", l, a[l], b[l])
 		}
 	}
-	for _, l := range []string{"Claude Code · ", label} {
-		if a[l].Min != b[l].Min {
-			t.Errorf("%q at %v alone, %v in a pane", l, a[l], b[l])
-		}
+	if a[label].Min != b[label].Min {
+		t.Errorf("%q at %v alone, %v in a pane", label, a[label], b[label])
 	}
 	for _, l := range []string{gui, tui} {
 		if a[l].Min.Y != b[l].Min.Y || b[l].Min.X >= a[l].Min.X {
@@ -423,12 +421,12 @@ func TestAMixedLayoutsPaneNamesItsProject(t *testing.T) {
 		})
 	}
 	r.settle(t)
-	if !r.shows("Claude Code · ") || r.shows("lich · Claude Code · ") {
+	if !r.shows(label) || r.shows("lich · ") {
 		t.Fatalf("a layout of one project names it:\n%s", r.drawn())
 	}
 	v.projectNames = map[string]string{sv.projectID: "lich"}
 	r.settle(t)
-	if !r.shows("lich · Claude Code · ") {
+	if !r.shows("lich · ") {
 		t.Fatalf("a layout of several projects does not name the pane's:\n%s", r.drawn())
 	}
 	if !r.shows(label) {
