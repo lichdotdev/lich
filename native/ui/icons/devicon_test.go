@@ -103,7 +103,7 @@ func TestInkOnlyTellsBlackMarksFromColoredOnes(t *testing.T) {
 }
 
 func TestLookupDeviconTakesTheDeviconNameOrTheFile(t *testing.T) {
-	for _, name := range []string{"go", "GO", "GoOriginal", "graphql", "database"} {
+	for _, name := range []string{"go", "GO", "GoOriginalWordmark", "graphql", "database"} {
 		if _, ok := LookupDevicon(name); !ok {
 			t.Errorf("LookupDevicon(%q) found nothing", name)
 		}
