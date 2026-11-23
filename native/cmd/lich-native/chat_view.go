@@ -290,7 +290,8 @@ func (u *window) chatScreen(gtx C, sv sessionView, keys bool) {
 	list := func(gtx C) D {
 		shown := p.enter(gtx.Now, rows, u.model.chat.holds(sv.ID))
 		p.runToEnd(gtx, len(shown))
-		atEnd := !p.list.Position.BeforeEnd
+		beforePos := p.list.Position
+		atEnd := !beforePos.BeforeEnd
 		drawList := func(lead int) (D, op.CallOp) {
 			m := op.Record(gtx.Ops)
 			d := th.ThinScrollArea(&p.list).Layout(gtx, len(shown), func(gtx C, i int) D {
@@ -324,9 +325,16 @@ func (u *window) chatScreen(gtx C, sv sessionView, keys bool) {
 		// A row that comes in at no height at the list's end makes Gio
 		// count the list as scrolled up, and it would no longer follow the end
 		// as the row grows: a list that was at its end stays there while its
-		// rows move.
-		if atEnd && p.rows.Moving() {
+		// rows move, unless the person scrolled away from the end. The list is
+		// laid out before this reads it, so a shorter First is the wheel
+		// moving the person up in this very frame.
+		up := p.list.Position.First < beforePos.First
+		dragged := p.list.List.Dragging() || p.list.Scrollbar.Dragging()
+		if atEnd && p.rows.Moving() && !up && p.list.Position.OffsetLast >= 0 && !dragged {
 			p.list.Position.BeforeEnd = false
+		}
+		if up || dragged {
+			p.run = chatToEnd{}
 		}
 		// Once the conversation outgrows the view, where nobody could have
 		// scrolled it, it goes to its end and stays there until scrolled up.

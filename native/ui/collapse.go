@@ -91,6 +91,11 @@ func (p *Presence) Update(now time.Time, live []string) []string {
 			delete(p.items, k)
 		}
 	}
+	for _, it := range p.items {
+		if !it.leaving && !it.motion.start.IsZero() && now.Sub(it.motion.start) >= it.motion.duration {
+			it.motion.from = it.motion.to
+		}
+	}
 	p.settled = true
 	p.drawn = p.withLeaving(live)
 	// A copy: the caller may filter what it gets back, and p.drawn is what

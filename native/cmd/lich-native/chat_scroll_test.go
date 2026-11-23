@@ -3,6 +3,8 @@ package main
 import (
 	"testing"
 
+	"gioui.org/f32"
+	"gioui.org/io/pointer"
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
 )
@@ -52,5 +54,49 @@ func TestAConversationTallerThanTheViewDrawsTheScrollbar(t *testing.T) {
 	r.settle(t)
 	if !barShows(p) {
 		t.Errorf("no scrollbar over a conversation taller than the view: %+v", p.list.Position)
+	}
+}
+
+// When a person scrolls up while a new row is entering or moving, the scroll
+// stays where the person scrolled and does not force the list back to its end,
+// whether the wheel moved it past a row's edge or by a few pixels inside one.
+func TestScrollingUpWhileRowsAreMovingStaysScrolled(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		scroll float32
+	}{
+		{"a notch", -40},
+		{"a page", -300},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			u, r := stampFrames(t)
+			u.model.chat.history("s1", userTurns(60))
+			r.settle(t)
+			p := u.chats.pane("s1")
+			if p.list.Position.BeforeEnd {
+				t.Fatalf("conversation should start at end: %+v", p.list.Position)
+			}
+
+			// An item arrives at the end with motion.
+			u.model.chat.apply(api.ChatItemUpdate{SessionID: "s1", Item: backend.ChatItem{ID: "new1", Kind: api.ItemUser, Turn: 61, Text: "incoming", At: novDay(18, 18, 0)}})
+			r.frame()
+			if !p.rows.Moving() {
+				t.Fatal("expected row to be moving")
+			}
+
+			// While the row is moving, the person scrolls up.
+			r.router.Queue(pointer.Event{Kind: pointer.Scroll, Source: pointer.Mouse, Position: f32.Pt(300, 300), Scroll: f32.Pt(0, tc.scroll)})
+			r.frame()
+			scrolledFirst := p.list.Position.First
+			if !p.list.Position.BeforeEnd {
+				t.Errorf("list did not scroll up: %+v", p.list.Position)
+			}
+
+			// In the next frame, the list must NOT be snapped back to the bottom.
+			r.frame()
+			if !p.list.Position.BeforeEnd || p.list.Position.First > scrolledFirst {
+				t.Errorf("list snapped back to end on subsequent frame: %+v", p.list.Position)
+			}
+		})
 	}
 }

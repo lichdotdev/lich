@@ -231,6 +231,27 @@ func TestPresenceIsMovingOnlyWhileAnItemEntersOrLeaves(t *testing.T) {
 	}
 }
 
+// An item scrolled out of view mid-entry is never laid out again, so its
+// motion has to stop by the clock alone: otherwise a list that asks Moving to
+// follow the end is told a finished motion is still going.
+func TestPresenceStopsMovingAnItemThatIsNoLongerDrawn(t *testing.T) {
+	var r motionRig
+	var p Presence
+	p.Update(r.now, []string{"a"})
+	r.frame(func(gtx C) D { p.Layout(gtx, "a", func(gtx C) D { return D{Size: image.Pt(50, 20)} }); return D{} })
+	p.Update(r.now, []string{"a", "b"})
+	r.at(time.Millisecond, func(gtx C) D { p.Layout(gtx, "b", func(gtx C) D { return D{Size: image.Pt(50, 20)} }); return D{} })
+	if !p.Moving() {
+		t.Fatal("an item entering is not moving")
+	}
+	// b is scrolled away: updated every frame, but never laid out again.
+	r.now = r.now.Add(presenceEnter + time.Millisecond)
+	p.Update(r.now, []string{"a", "b"})
+	if p.Moving() {
+		t.Error("an item whose time is up still moves")
+	}
+}
+
 // LayoutFlat grows an arriving item in its height and opacity alone: half way
 // in, the item already spans its whole width, where Layout's scale still
 // draws it narrower about its middle.
