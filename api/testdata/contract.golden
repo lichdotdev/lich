@@ -75,6 +75,7 @@ chat.Shells(SessionIDOptions) []ChatShell
 chat.Skills(SessionIDOptions) ChatSkillList
 chat.Steer(ChatPromptOptions) None
 chat.StopShell(ChatShellOptions) None
+chat.Workflows(SessionIDOptions) []ChatWorkflow
 claudeprofile.CancelLogin(ProfileSlugOptions) None
 claudeprofile.CreateProfile(CreateProfileOptions) Profile
 claudeprofile.DeleteProfile(ProfileSlugOptions) None
@@ -355,6 +356,7 @@ event chat-options ChatOptionsUpdate
 event chat-shells ChatShellsUpdate
 event chat-suggestion ChatSuggestion
 event chat-turn ChatTurn
+event chat-workflows ChatWorkflowsUpdate
 event claude-profile-login ProfileLogin
 event codex-hook-untrusted CodexHookUntrusted
 event codex-profile-login ProfileLogin
@@ -861,6 +863,15 @@ ChatShell {
 ChatSkillList {
 	reported bool
 	skills,omitempty []ChatSkill
+}
+
+ChatWorkflow {
+	id string
+	name string
+	state string
+	started int64
+	ended,omitempty int64
+	agents []ChatWorkflowAgent
 }
 
 ProfileSlugOptions {
@@ -2354,6 +2365,11 @@ ChatTurn {
 	changes,omitempty *ChatTurnChanges
 }
 
+ChatWorkflowsUpdate {
+	sessionId string
+	workflows []ChatWorkflow
+}
+
 ProfileLogin {
 	profile string
 	output,omitempty string
@@ -2799,6 +2815,23 @@ ChatSkill {
 	tokens,omitempty int
 	state string
 	locked,omitempty string
+}
+
+ChatWorkflowAgent {
+	index int
+	label string
+	phase,omitempty string
+	model,omitempty string
+	state string
+	started,omitempty int64
+	ended,omitempty int64
+	tokens,omitempty int
+	toolCalls,omitempty int
+	tool,omitempty string
+	toolInput,omitempty string
+	prompt,omitempty string
+	result,omitempty string
+	error,omitempty string
 }
 
 ProfileUpdate {

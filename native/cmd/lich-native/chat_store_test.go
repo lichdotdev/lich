@@ -298,12 +298,14 @@ func TestLoadChatsReadsOnlyChatsTheStoreDoesNotHold(t *testing.T) {
 	}
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	// A chat's options, commands and background shells are read with its
-	// history, since the contract gave a chat all three for the window to show.
-	if len(f.calls) != 4 || !strings.HasPrefix(f.calls[1], "chat.Options ") || !strings.Contains(f.calls[1], `"id":"s3"`) ||
+	// A chat's options, commands, background shells and workflows are read
+	// with its history, since the contract gave a chat all four for the window
+	// to show.
+	if len(f.calls) != 5 || !strings.HasPrefix(f.calls[1], "chat.Options ") || !strings.Contains(f.calls[1], `"id":"s3"`) ||
 		!strings.HasPrefix(f.calls[2], "chat.Commands ") || !strings.Contains(f.calls[2], `"id":"s3"`) ||
-		!strings.HasPrefix(f.calls[3], "chat.Shells ") || !strings.Contains(f.calls[3], `"id":"s3"`) {
-		t.Errorf("calls %v, want s3's history, options, commands and shells alone", f.calls)
+		!strings.HasPrefix(f.calls[3], "chat.Shells ") || !strings.Contains(f.calls[3], `"id":"s3"`) ||
+		!strings.HasPrefix(f.calls[4], "chat.Workflows ") || !strings.Contains(f.calls[4], `"id":"s3"`) {
+		t.Errorf("calls %v, want s3's history, options, commands, shells and workflows alone", f.calls)
 	}
 }
 

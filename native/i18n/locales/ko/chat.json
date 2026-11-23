@@ -216,6 +216,29 @@
       "stopped": "중지됨"
     }
   },
+  "workflow": {
+    "count": "{name} {done}/{total}",
+    "progress": "{done}/{total}",
+    "failed": "실패",
+    "agents": {
+      "other": "에이전트 {count}개"
+    },
+    "started": "{time}에 시작",
+    "back": "에이전트",
+    "calls": {
+      "other": "도구 호출 {count}회"
+    },
+    "tokens": "토큰 {n}개",
+    "fact": {
+      "phase": "단계",
+      "model": "모델",
+      "time": "시간",
+      "now": "지금",
+      "last": "마지막 호출",
+      "task": "작업",
+      "result": "결과"
+    }
+  },
   "attach": {
     "remove": "빼기",
     "pasteNeedsTool": "이미지를 붙여 넣으려면 wl-paste (wl-clipboard) 또는 xclip이 필요합니다"

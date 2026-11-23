@@ -4,6 +4,7 @@ package chat
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -270,6 +271,11 @@ func (f *fake) claudeTurn(run *fakeClaude, text string) {
 		f.claudeMovedTurn(msg)
 	case "wake":
 		f.claudeWakeTurn(msg)
+	case "workflow":
+		for line := range bytes.Lines(claudeWorkflowLines) {
+			f.send(json.RawMessage(bytes.TrimSpace(line)))
+		}
+		f.claudeResult(false, "completed", "")
 	case "todos":
 		msg("m2", map[string]any{"type": "tool_use", "id": "toolu_t", "name": "TodoWrite", "input": map[string]any{"todos": []any{
 			map[string]any{"content": "Read the parser", "status": "completed", "activeForm": "Reading the parser"},

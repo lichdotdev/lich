@@ -94,6 +94,7 @@ type chatSession struct {
 	opts      []api.ChatOption
 	cmds      []api.ChatCommand
 	shells    []api.ChatShell
+	workflows []api.ChatWorkflow
 	// next are the messages for the turns after this one, oldest first: one a
 	// provider that takes none during a turn is sent once the turn ends, and
 	// those the relay delivered while it ran.
@@ -165,12 +166,15 @@ func (c *chatSession) died() {
 		c.failure(exitNotice(c.proc.Stderr()))
 		c.endTurn(stopError)
 	}
-	// the shells ran in the process: they are gone with it
+	// the shells and workflows ran in the process: they are gone with it
 	c.mu.Lock()
-	had := len(c.shells) > 0
+	had, hadWorkflows := len(c.shells) > 0, len(c.workflows) > 0
 	c.mu.Unlock()
 	if had {
 		c.setShells([]api.ChatShell{})
+	}
+	if hadWorkflows {
+		c.setWorkflows([]api.ChatWorkflow{})
 	}
 	close(c.exited)
 	c.svc.forget(c)

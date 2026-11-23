@@ -52,6 +52,8 @@ func (u *window) chatToolsPanel(gtx C, th *ui.Theme, p *chatPane, sv sessionView
 		switch {
 		case t.kind == chatShellsPanel:
 			return u.shellsView(gtx, th, p, sv)
+		case t.kind == chatWorkflowsPanel:
+			return u.workflowsView(gtx, th, p, sv)
 		case !loaded:
 			return toolsNote(gtx, th, i18n.T("chat.tools.loading"))
 		case t.kind == chatMCPCommand:

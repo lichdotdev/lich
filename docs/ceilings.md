@@ -240,6 +240,21 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   (`thread/backgroundTerminals/list`, 0.170.0's schema), with no event and no output, and lich opens Codex on the
   stable one; ACP has no such report, its `terminal/*` methods being the client running commands for the agent,
   which lich does not offer (`terminal: false`). Their chats show no shells. Crush has no chat.
+- **A chat shows a running workflow only on Claude Code, and only to watch it**
+  (`internal/chat/claude_workflows.go`, `native/cmd/lich-native/chat_workflows.go`): Claude Code 2.1.330 reports
+  its Workflow tool as a `local_workflow` task (measured): `system/task_started` with `workflow_name`, then
+  `task_progress` whose `workflow_progress` lists the script's agents by index (label, phase, model, state
+  start/done/error, start, tokens, tool calls, last call, the start of the prompt and of the result), a line
+  sometimes carrying only part of them, and `task_updated` and `task_notification` on its end. None of it is a
+  contract: a field renamed in a later release leaves the line empty, not wrong. The workflow's agents are no
+  cards and lich cannot stop one: they run inside Claude Code, where no hook converts them
+  (`docs/hooks/subagent-cards.md`), and the panel only shows them. One workflow is drawn at a time, the newest
+  running; a failed one stays until the person's next message, a completed or stopped one leaves at once. They
+  run in the chat's process and end with it, as the shells do. A terminal session shows Claude Code's own view of
+  the workflow and lich draws nothing over it. A background `Agent` call (`local_agent`) is not read, so it stays
+  out of sight in a chat. No other provider has a workflow tool, and the background subagents some of them run
+  (Codex's spawned agents, opencode's behind `OPENCODE_EXPERIMENTAL_BACKGROUND_SUBAGENTS`, Kiro CLI's delegates)
+  are not shown in their chats either.
 - **Ctrl+B moves a running command to the background only in a Claude Code chat** (`internal/chat/claude_shells.go`,
   `native/cmd/lich-native/chat_shells.go`). Read in Claude Code 2.1.330's code: its Bash and PowerShell tools
   register a foreground command as a `local_bash` task once it has run 2000ms, and offer Ctrl+B from then on,

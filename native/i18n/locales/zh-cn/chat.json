@@ -216,6 +216,29 @@
       "stopped": "已停止"
     }
   },
+  "workflow": {
+    "count": "{name} {done}/{total}",
+    "progress": "{done}/{total}",
+    "failed": "失败",
+    "agents": {
+      "other": "{count} 个智能体"
+    },
+    "started": "{time} 开始",
+    "back": "智能体",
+    "calls": {
+      "other": "{count} 次工具调用"
+    },
+    "tokens": "{n} 个 token",
+    "fact": {
+      "phase": "阶段",
+      "model": "模型",
+      "time": "用时",
+      "now": "正在调用",
+      "last": "最后一次调用",
+      "task": "任务",
+      "result": "结果"
+    }
+  },
   "attach": {
     "remove": "移除",
     "pasteNeedsTool": "粘贴图片需要 wl-paste（wl-clipboard）或 xclip"

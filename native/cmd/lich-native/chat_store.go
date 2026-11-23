@@ -22,6 +22,7 @@ type chatStore struct {
 	options   map[string][]backend.ChatOption
 	commands  map[string][]backend.ChatCommand
 	shells    map[string][]backend.ChatShell
+	workflows map[string][]backend.ChatWorkflow
 	switching map[string]string
 	// queue is each session's messages written while its turn ran, sent
 	// together once it ends (chatQueue).
@@ -161,6 +162,24 @@ func (s *chatStore) shellsOf(id string) []backend.ChatShell {
 	return s.shells[id]
 }
 
+// setWorkflows takes session id's workflows whole, as ChatWorkflows or the
+// workflows event left them.
+func (s *chatStore) setWorkflows(id string, workflows []backend.ChatWorkflow) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.workflows == nil {
+		s.workflows = map[string][]backend.ChatWorkflow{}
+	}
+	s.workflows[id] = slices.Clone(workflows)
+}
+
+// workflowsOf is session id's workflows, in the order they started.
+func (s *chatStore) workflowsOf(id string) []backend.ChatWorkflow {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.workflows[id]
+}
+
 // commandsOf is what session id's provider takes typed at its prompt.
 func (s *chatStore) commandsOf(id string) []backend.ChatCommand {
 	s.mu.Lock()
@@ -260,6 +279,10 @@ func (m *model) chatEvent(ctx context.Context, ev backend.Event) {
 		if u, err := backend.Decode(ev, api.ChatShellsEvent); err == nil {
 			m.chat.setShells(u.SessionID, u.Shells)
 		}
+	case api.ChatWorkflowsEvent.Name:
+		if u, err := backend.Decode(ev, api.ChatWorkflowsEvent); err == nil {
+			m.chat.setWorkflows(u.SessionID, u.Workflows)
+		}
 	case api.ChatSuggestionEvent.Name:
 		if u, err := backend.Decode(ev, api.ChatSuggestionEvent); err == nil {
 			m.chat.suggest(u)
@@ -340,4 +363,10 @@ func (m *model) loadChat(ctx context.Context, id string) {
 		return
 	}
 	m.chat.setShells(id, shells)
+	workflows, err := m.client.ChatWorkflows(ctx, id)
+	if err != nil {
+		log.Printf("chat workflows of %s: %v", id, err)
+		return
+	}
+	m.chat.setWorkflows(id, workflows)
 }
