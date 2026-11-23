@@ -25,7 +25,7 @@ type fakeSettings struct {
 	failing bool
 }
 
-func (f *fakeSettings) client(t *testing.T) *backend.Client {
+func (f *fakeSettings) client(t testing.TB) *backend.Client {
 	t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var args []api.SetSettingOptions

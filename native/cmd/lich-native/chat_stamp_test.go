@@ -19,7 +19,7 @@ func novDay(day int, hour, min int) int64 {
 // stampFrames is a chat in view at 18:00 on 2026-11-18, local time, which the
 // footer's clock reads too: its minute tick must not be already behind the
 // frame's.
-func stampFrames(t *testing.T) (*window, *frameRig) {
+func stampFrames(t testing.TB) (*window, *frameRig) {
 	t.Helper()
 	in := busySession()
 	in.now = time.Date(2026, 11, 18, 18, 0, 0, 0, time.Local)

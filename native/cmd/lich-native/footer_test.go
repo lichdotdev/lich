@@ -108,7 +108,7 @@ type footerRig struct {
 	changed  chan struct{}
 }
 
-func newFooterRig(t *testing.T, values map[string]string) *footerRig {
+func newFooterRig(t testing.TB, values map[string]string) *footerRig {
 	t.Helper()
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)

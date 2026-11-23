@@ -127,6 +127,11 @@ func (m Cache) LayoutLinks(gtx C, th *ui.Theme, key, src string, l Links) D {
 	return m.layout(gtx, th, key, src, l, whole)
 }
 
+// LayoutLinksWindow is LayoutLinks drawing only the blocks within window.
+func (m Cache) LayoutLinksWindow(gtx C, th *ui.Theme, key, src string, l Links, window Window) D {
+	return m.layout(gtx, th, key, src, l, window)
+}
+
 func (m Cache) layout(gtx C, th *ui.Theme, key, src string, l Links, window Window) D {
 	t := m.text(th, key, src, l.Paths)
 	gap, estimate := gtx.Dp(ui.Space(BlockGap)), t.estimate(gtx)
