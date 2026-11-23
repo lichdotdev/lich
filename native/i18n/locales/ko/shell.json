@@ -65,7 +65,8 @@
     "tokens": "토큰",
     "modelWindow": "모델 윈도우",
     "cache": "캐시",
-    "cacheHitShort": "적중 {percent}%"
+    "cacheHitShort": "적중 {percent}%",
+    "cacheReads": "캐시 읽기"
   },
   "gitMissingGate": {
     "title": "git이 설치되어 있지 않습니다",

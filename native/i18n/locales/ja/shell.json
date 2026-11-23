@@ -65,7 +65,8 @@
     "tokens": "トークン",
     "modelWindow": "モデルのウィンドウ",
     "cache": "キャッシュ",
-    "cacheHitShort": "ヒット率 {percent}%"
+    "cacheHitShort": "ヒット率 {percent}%",
+    "cacheReads": "キャッシュ読み取り"
   },
   "gitMissingGate": {
     "title": "git がインストールされていません",

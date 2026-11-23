@@ -141,6 +141,7 @@ distinto.
 | Iniciar sesión desde la bienvenida | sí | sí | no, en su primera ejecución | en una terminal, con un proyecto abierto | en una terminal, con un proyecto abierto | no, en su primera ejecución | en una terminal, con un proyecto abierto; no en macOS | en una terminal, con un proyecto abierto; solo Linux |
 | Ventana de contexto en el pie de ventana | sí | sí | no | no | no | no | no | sí |
 | Cuánto del último turno salió de la caché de prompts, en el pie de ventana | sí | sí | no | en el tooltip del costo | en el tooltip del costo | no | no | no |
+| Cuántos tokens ha releído la sesión de la caché de prompts en todas sus llamadas, en el tooltip de contexto | sí | no | no | no | no | no | no | no |
 | El tooltip de la tarjeta nombra el modelo en uso, y con cuál se abrió si cambió | sí | sí | no | no | no | no | no | sí |
 | Costo en el pie de ventana | sí | sí | no | sí | sí | sí | no | créditos |
 | Una conversación bifurcada dentro de la propia terminal del agente cobra una sola vez el historial que copia | sí, salvo cuando el costo es el que midió el propio Claude Code | no | sin lectura de costo | sí | sí, salvo un turno guardado sin id de respuesta | no se puede bifurcar | sin lectura de costo | sin lectura de costo |

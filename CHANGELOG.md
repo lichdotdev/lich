@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **The context tooltip shows how many tokens a session has read back from the prompt cache.** A long conversation is read again on every call, and the Cache reads line is what that adds up to, so a session that is spending your plan stands out even while its context bar is low. Claude Code only.
 - **A new session starts on the model you last picked for its provider.** Choose a model in any chat and the next session of that agent opens on it instead of the provider's default; the choice is remembered per provider, not per project.
 - **An agent that edits a file another lich session edited minutes earlier is told which session it was, on every agent.** It hears the session's name and how to reach it right after its edit; on Kiro CLI, with your next message.
 - **Settings › Version Control installs, signs in and sets up git, the GitHub CLI and the GitLab CLI for you.** A missing tool's Install opens a terminal running your package manager's command, a CLI with no account offers Sign in, and git without a name or email for commits asks for them right in its row.

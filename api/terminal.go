@@ -121,6 +121,11 @@ type SessionUsage struct {
 	CostUSD  *float64      `json:"costUsd,omitempty"`
 	CostMiss string        `json:"costMiss,omitempty"`
 	Cache    *SessionCache `json:"cache,omitempty"`
+	// CacheReadTotal is the tokens every call of the session read back from the
+	// prompt cache, sub-agents included: a long context is paid again on each
+	// call, and this is what that adds up to. Claude Code only, and omitted
+	// while zero.
+	CacheReadTotal int `json:"cacheReadTotal,omitempty"`
 }
 
 // SessionCache splits one turn's input tokens three ways: Read came from the

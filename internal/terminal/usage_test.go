@@ -79,7 +79,7 @@ func TestSessionUsageReportsTheTranscriptTail(t *testing.T) {
 	}
 	want := usageEvent{
 		ID: "s1", Percent: 6, Tokens: 64800, Window: 1_000_000, Model: modelOpus,
-		Cache: &api.SessionCache{Read: 64798, Uncached: 2},
+		Cache: &api.SessionCache{Read: 64798, Uncached: 2}, CacheReadTotal: 64798,
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("sessionUsage = %+v, want %+v", got, want)
