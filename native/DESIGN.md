@@ -417,7 +417,8 @@ draws none while it grows in, because the room above the rows is measured in the
 
 - **The person's message** is a box in `Accent`, `RadiusLG`, against the column's right edge, at most 78% of
   it. It breaks "rows, not cards" on purpose: a turn starts where a message does, and the eye finds it by the
-  box faster than by a rule.
+  box faster than by a rule. Its text is Markdown as the agent's is, at `TextSM` (the renderer's sp scaled
+  down), every line the person broke kept broken.
 - **The agent's text** is Markdown at the prose size (`ui/markdown`). A link is underlined, in its color; a link to github.com, a path
   in code (a folder when it ends in a slash, else a file) wears a 13px mark before it, GitHub's, a folder's or a file's
   (`decor.go`). A path the checkout's listing holds, from the checkout or as the tail of a file the way a

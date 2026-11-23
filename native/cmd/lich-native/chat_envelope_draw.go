@@ -98,7 +98,7 @@ func (u *window) chatEnvelope(gtx C, th *ui.Theme, p *chatPane, key string, env 
 		if env.from != "" {
 			from = i18n.T("chat.notification.from", i18n.Args{"label": env.from})
 		}
-		return chatUserFrom(gtx, th, from, env.text["prompt"])
+		return u.chatUserFrom(gtx, th, p, key, from, env.text["prompt"])
 	case "worker-finished", "worker-failed", "worker-stopped", "worker-waiting", "expired":
 		return u.chatWorkerNote(gtx, th, p, key, env)
 	case "request":
@@ -109,7 +109,7 @@ func (u *window) chatEnvelope(gtx C, th *ui.Theme, p *chatPane, key string, env 
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, line)
 	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, line, ui.VGap(2),
-		layout.Rigid(func(gtx C) D { return chatUser(gtx, th, env.text["prompt"]) }))
+		layout.Rigid(func(gtx C) D { return u.chatUser(gtx, th, p, key, env.text["prompt"]) }))
 }
 
 // chatWorkerNote is a worker's outcome: its agent's mark, what happened and
