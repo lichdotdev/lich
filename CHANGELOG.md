@@ -54,6 +54,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **A page an agent writes for you wears lich's mark on its browser tab instead of a blank square.** A page with an icon of its own keeps it.
 - **Crush cards show when a turn runs, ends or waits on you, and name themselves after the conversation.** It needs Crush 0.99.0 or newer: install or update the lich plugin for Crush in Settings › Updates after upgrading Crush, and a task you hand a Crush session then comes back by itself when its turn ends.
 - **`lich control` drives a chat on every agent that has one.** It sends a prompt or a slash command as the chat's next message, stops its turn, and sets a model or effort its picker offers; a session in its terminal, and Crush, are refused.
 - **A Claude Code chat shows the context window, cost and plan usage Claude Code measured itself.** The footer and the plan usage take them from the chat at the end of each turn.

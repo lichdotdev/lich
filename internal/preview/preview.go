@@ -7,8 +7,10 @@
 package preview
 
 import (
+	_ "embed"
 	"errors"
 	"fmt"
+	"io/fs"
 	"log/slog"
 	"net"
 	"net/http"
@@ -90,7 +92,7 @@ func (s *Service) URL(dir string, devPort int, raw string) (string, error) {
 	if !ok {
 		return "", fmt.Errorf("%q is outside this session's checkout %q", path, dir)
 	}
-	port, err := s.serve(dir, portBase, devPort+portOffset)
+	port, err := s.serve(dir, portBase, devPort+portOffset, rootHandler(dir))
 	if err != nil {
 		return "", err
 	}
@@ -118,7 +120,7 @@ func (s *Service) ArtifactURL(dir string, devPort int, raw string) (string, bool
 	if devPort != 0 {
 		first = devPort + artifactPortOffset
 	}
-	port, err := s.serve(dir, artifactPortBase, first)
+	port, err := s.serve(dir, artifactPortBase, first, artifactHandler(dir))
 	if err != nil {
 		return "", true, err
 	}
@@ -166,7 +168,7 @@ func localPath(raw string) (string, error) {
 	return filepath.Clean(path), nil
 }
 
-func (s *Service) serve(dir string, base, port int) (int, error) {
+func (s *Service) serve(dir string, base, port int, h http.Handler) (int, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if srv, ok := s.servers[dir]; ok {
@@ -175,7 +177,7 @@ func (s *Service) serve(dir string, base, port int) (int, error) {
 	if info, err := os.Stat(dir); err != nil || !info.IsDir() {
 		return 0, fmt.Errorf("%q is not a directory: %w", dir, err)
 	}
-	return s.startLocked(dir, base, port, rootHandler(dir))
+	return s.startLocked(dir, base, port, h)
 }
 
 // startLocked opens the listener that serves h, kept under key.
@@ -226,6 +228,31 @@ func rootHandler(dir string) http.Handler {
 		// Chrome reuses one for a tenth of its age without asking.
 		w.Header().Set("Cache-Control", "no-cache")
 		http.FileServerFS(root.FS()).ServeHTTP(w, r)
+	})
+}
+
+// mark is a copy of docs/media/appicon.svg, the site's favicon: go:embed
+// cannot reach the docs.
+//
+//go:embed appicon.svg
+var mark []byte
+
+// artifactHandler serves dir, and lich's mark as its /favicon.ico when dir has
+// none, so the tab of a page the agent wrote shows an icon. A checkout's
+// preview gets none: that is the user's project, with its own icon or none.
+func artifactHandler(dir string) http.Handler {
+	files := rootHandler(dir)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/favicon.ico" {
+			if _, err := os.Lstat(filepath.Join(dir, "favicon.ico")); errors.Is(err, fs.ErrNotExist) {
+				w.Header().Set("Content-Type", "image/svg+xml")
+				if _, err := w.Write(mark); err != nil {
+					slog.Warn("preview: write lich's mark", "dir", dir, "err", err)
+				}
+				return
+			}
+		}
+		files.ServeHTTP(w, r)
 	})
 }
 
