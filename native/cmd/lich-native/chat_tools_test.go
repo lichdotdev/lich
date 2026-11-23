@@ -168,3 +168,15 @@ func TestTheSlashListOffersTheToolsWhereTheyOpen(t *testing.T) {
 		t.Errorf("opencode lists %q, want its own /mcp", got)
 	}
 }
+
+func TestSplitDiffNamesTheFileAndKeepsTheHunks(t *testing.T) {
+	diff := "--- a//repo/CHANGELOG.md\n+++ b//repo/CHANGELOG.md\n@@ -1,2 +1,3 @@\n-### Changed\n--- a rule\n+### Changed\n+\n ctx\n"
+	name, added, deleted, body := splitDiff(diff)
+	if name != "CHANGELOG.md" || added != 2 || deleted != 2 {
+		t.Fatalf("got %q +%d -%d", name, added, deleted)
+	}
+	want := []string{"@@ -1,2 +1,3 @@", "-### Changed", "--- a rule", "+### Changed", "+", " ctx"}
+	if !slices.Equal(body, want) {
+		t.Fatalf("body %q", body)
+	}
+}
