@@ -18,8 +18,7 @@ return the clipboard as «class PNGf»`
 // with no PNG.
 func clipboardImage(ctx context.Context) (clipImage, error) {
 	out, err := execClip(ctx, clipReadTimeout, []string{"osascript", "-e", macClipScript})
-	var exit *exec.ExitError
-	if errors.As(err, &exit) {
+	if _, ok := errors.AsType[*exec.ExitError](err); ok {
 		return clipImage{}, nil
 	}
 	if err != nil {
