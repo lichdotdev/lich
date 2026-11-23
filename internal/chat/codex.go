@@ -333,8 +333,8 @@ type codexTurnEvent struct {
 // as a userMessage item, which lich already showed; an `error` is followed by
 // the turn/completed that carries it, or is retried.
 func (d *codexDriver) notification(method string, params json.RawMessage) {
-	if d.isFork(params) {
-		d.forkNotification(method, params)
+	if thread, other := d.otherThread(params); other {
+		d.forkNotification(thread, method, params)
 		return
 	}
 	switch method {

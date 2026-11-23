@@ -28,6 +28,10 @@ func (c *fakeCodex) forkStart(id any) {
 		c.notify(method, params)
 	}
 	on("turn/started", map[string]any{"turn": map[string]any{"id": turn}})
+	// a thread that is neither the session's nor the fork's says its own
+	// answer first, which lich must not take for the fork's
+	c.notify("item/completed", map[string]any{"threadId": "codex-stray", "item": map[string]any{"type": "agentMessage", "id": "sx1", "text": "stray"}})
+	c.notify("turn/completed", map[string]any{"threadId": "codex-stray", "turn": map[string]any{"id": "stray-turn", "status": "completed"}})
 	on("thread/settings/updated", map[string]any{"threadSettings": map[string]any{"model": "gpt-b", "effort": "low", "sandboxPolicy": map[string]any{"type": "readOnly"}}})
 	switch c.last {
 	case "suggest-slow":

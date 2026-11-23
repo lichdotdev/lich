@@ -120,6 +120,9 @@ func TestCodexSuggestionFork(t *testing.T) {
 	r := newCodexChat(t)
 	r.prompt("suggest")
 	r.waitSuggestion("run the tests")
+	if slices.Contains(r.suggestions(), "stray") {
+		t.Errorf("another thread's answer became the suggestion: %q", r.suggestions())
+	}
 	var fork, forkTurn string
 	for line := range strings.Lines(r.fakeLog()) {
 		switch {

@@ -127,10 +127,10 @@ func (d *codexDriver) interruptFork() {
 	}
 }
 
-// isFork is whether params belong to a thread other than the session's: the
-// fork, whose notifications go to forkNotification, never to the chat. A
-// notification naming no thread is the session's.
-func (d *codexDriver) isFork(params json.RawMessage) bool {
+// otherThread is the thread params belong to when it is not the session's:
+// the fork's notifications go to forkNotification, and no other thread's
+// reaches the chat. A notification naming no thread is the session's.
+func (d *codexDriver) otherThread(params json.RawMessage) (string, bool) {
 	var p struct {
 		ThreadID string `json:"threadId"`
 		Thread   struct {
@@ -143,12 +143,18 @@ func (d *codexDriver) isFork(params json.RawMessage) bool {
 		id = p.Thread.ID
 	}
 	main := d.threadID()
-	return id != "" && main != "" && id != main
+	return id, id != "" && main != "" && id != main
 }
 
 // forkNotification reads the fork's answer: its messages, and whether it
-// tried a tool, which makes no suggestion.
-func (d *codexDriver) forkNotification(method string, params json.RawMessage) {
+// tried a tool, which makes no suggestion. Another thread's is dropped.
+func (d *codexDriver) forkNotification(thread, method string, params json.RawMessage) {
+	d.mu.Lock()
+	ours := thread == d.fork.thread
+	d.mu.Unlock()
+	if !ours {
+		return
+	}
 	switch method {
 	case "item/completed":
 		var e codexItemEvent

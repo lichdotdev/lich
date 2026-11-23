@@ -261,31 +261,33 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   It is drawn sent with its turn running from Enter, so the wait does not show, and a window closed inside it
   loses the message. Written in the wait, Enter and Ctrl+Enter queue: steered, the text would reach the agent
   before it. A message sent while the agent's questions wait goes at once, since Esc there declines them.
-- **A chat suggests the next message only on Claude Code and Codex, and only in the chat** (`internal/chat/suggest.go`,
-  `internal/chat/codex_suggest.go`, `native/cmd/lich-native/chat_suggest.go`). Claude Code writes `prompt_suggestion`
-  right after `result` once initialize asks for `promptSuggestions` (2.1.330, measured 1.0 to 1.9s after the turn
-  ends); it writes none before its second answer (`early_conversation` in its code) and stays silent when the next
-  step is not obvious: in a ten-turn rig session it wrote three. Codex has no such message, so lich forks the
-  thread (`thread/fork`, ephemeral, read-only, approval never, `features.shell_tool` and `features.unified_exec`
-  off, since read-only alone let the model run `ls`) and asks Claude Code's suggestion prompt once, on the model
-  that answered last, at low effort. Measured on 0.170.0: the suggestion 2.0 to 2.6s after the turn ends, about
-  15.4k input tokens and 7 output per suggestion, none of them cached, because turning the tools off changes the
-  prompt's prefix (with them on, about 95% came from the cache). Those tokens count against the plan; lich's cost
-  readout never sees them, as it reads the rollout an ephemeral fork never writes, and thread/list never lists the
-  fork. `excludeTurns` is refused without the experimental API, so the fork's answer carries the conversation's
-  turns, and after `thread/unsubscribe` answers `unsubscribed` the fork is still in `thread/loaded/list`. An ACP
-  agent's suggestion shows only when the agent sends ACP's unstable `prompt_suggestions_update` (schema v1.34.1),
-  which lich asks for in initialize (`clientCapabilities.session.promptSuggestions`) and which none sends yet
-  (opencode 1.19.4, oh-my-pi 18.8.9, Antigravity 1.5.14, Kiro CLI 2.21.0 and Cursor CLI, read in their code, not
-  run). lich makes none for them: opencode and oh-my-pi have `session/fork`, but the fork is saved and listed among
-  their sessions (opencode's ACP closes a session, never deletes it); Antigravity, Kiro CLI and Cursor CLI have no
-  fork, and their one-shot modes (`agy -p --conversation`, `kiro-cli chat --no-interactive --resume-id`,
-  `cursor-agent -p --resume`) write into the real conversation. Crush has no chat. No suggestion follows a turn lich's relay opened (its message is an envelope) or a `!` shell command, and
-  none comes in a worker (a session another opened, or a subagent card) until the person writes in it: that mark
-  is the backend's memory, so after lich restarts a worker waits for them again. Claude Code is sent
-  `set_prompt_suggestions_paused` for a worker, which 2.1.330 acknowledges and ignores (its own description says
-  a build where it is not enabled keeps generating), so lich drops what it writes. A suggestion is no part of the
-  history: a window that connects again shows none until the next turn ends.
+- **A chat suggests the next message only on Claude Code and Codex, or an ACP agent that sends its own, and only
+  in the chat** (`internal/chat/suggest.go`, `internal/chat/codex_suggest.go`,
+  `native/cmd/lich-native/chat_suggest.go`). Claude Code writes `prompt_suggestion` right after `result` once
+  initialize asks for `promptSuggestions` (2.1.330, measured 1.0 to 1.9s after the turn ends); it writes none
+  before its second answer (`early_conversation` in its code) and stays silent when the next step is not obvious:
+  in a ten-turn rig session it wrote three. Codex has no such message, so lich forks the thread (`thread/fork`,
+  ephemeral, read-only, approval never, `features.shell_tool` and `features.unified_exec` off, since read-only
+  alone let the model run `ls`) and asks Claude Code's suggestion prompt once, on the model that answered last, at
+  low effort. Measured on 0.170.0 (0.144.5 and 0.147.0 refuse the fork's `excludeTurns`, as they refuse it on
+  `thread/resume`, without the experimental API): the suggestion 1.7 to 2.4s after the turn ends, about 22.5k
+  input tokens per suggestion of which about 16.4k came from the cache, and a handful of output tokens; with the
+  tools left on it was 20.2k with 16.1k cached. Those tokens count against the plan; lich's cost readout never
+  sees them, as it reads the rollout an ephemeral fork never writes, and thread/list never lists the fork. After
+  `thread/unsubscribe` answers `unsubscribed` the fork is still in `thread/loaded/list`. An ACP agent's suggestion
+  shows only when the agent sends ACP's unstable `prompt_suggestions_update` (schema v1.34.1), which lich asks for
+  in initialize (`clientCapabilities.session.promptSuggestions`) and which none sends yet (opencode 1.19.4,
+  oh-my-pi 18.8.9, Antigravity 1.5.14, Kiro CLI 2.21.0 and Cursor CLI, read in their code, not run). lich makes
+  none for them: opencode and oh-my-pi have `session/fork`, but the fork is saved and listed among their sessions
+  (opencode's ACP closes a session, never deletes it); Antigravity, Kiro CLI and Cursor CLI have no fork, and
+  their one-shot modes (`agy -p --conversation`, `kiro-cli chat --no-interactive --resume-id`, `cursor-agent -p
+  --resume`) write into the real conversation. Crush has no chat. No suggestion follows a turn lich's relay opened
+  (its message is an envelope) or a `!` shell command, and none comes in a worker (a session another opened, or a
+  subagent card) until the person writes in it: that mark is the backend's memory, so after lich restarts a worker
+  waits for them again. Claude Code is sent `set_prompt_suggestions_paused` for a worker, which 2.1.330
+  acknowledges and ignores (its own description says a build where it is not enabled keeps generating), so lich
+  drops what it writes. A suggestion is no part of the history: a window that connects again shows none until the
+  next turn ends.
 - **A chat turn's count of changes is a difference of two numstat readings, not a record of what the agent did**
   (`internal/chat/changes.go`, `internal/project/lines.go`): lich reads `git diff --numstat HEAD` and the untracked
   files before the message goes out and again when the turn ends, and counts the files whose numbers differ. It

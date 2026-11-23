@@ -36,7 +36,7 @@ const (
 )
 
 func (d *codexDriver) request(m acpMessage) {
-	if d.isFork(m.Params) {
+	if _, other := d.otherThread(m.Params); other {
 		d.refuse(m)
 		return
 	}
