@@ -1035,7 +1035,7 @@ Every row is one line, 34dp tall: `Space(1.5)` above and below a 22px node. Rows
 - **A browser row**: a session's running browser, under it: the globe, the page's title as its name (its host
   while it has none), the corner slot. The name is `MutedForeground` while the page is off the stage. A
   folded mother shows a globe on her own row instead.
-- **An editor row**: the file a session's checkout holds in the stage editor, under the session working in
+- **An editor row**: the file a session's checkout holds in the stage editor, its node the file's icon (`th.FileIcon`, as the Files tree), under the session working in
   that checkout (the active one, else the first drawn), after its browser row.
 - **A session in a layout** carries the columns glyph before its corner slot in its project's sidebar. The
   layout's own sidebar draws none: every card there is in it.

@@ -8,15 +8,12 @@ import (
 
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
-	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
 // A checkout's editor is a node of the tree, the last row under the
 // checkout for as long as the editor holds a file: a click puts it on the
 // stage, and its menu is the only way to close it. It is no session, so it
 // files nowhere and a drag leaves it where it was.
-
-var icEditorFile = icons.Lucide("file")
 
 // editorDirtyDot is the unsaved mark beside the file's name, the size the
 // editor's header draws it.
@@ -38,9 +35,9 @@ func editorTooltip(th *ui.Theme, n editorNode) layout.Widget {
 	return func(gtx C) D { return ui.Stack(1.5, sections...)(gtx) }
 }
 
-// editorRow is a checkout's editor in the tree: the file glyph in a neutral
-// ring and the file's name in mono, lit while the editor is on the stage,
-// with the unsaved dot after the name.
+// editorRow is a checkout's editor in the tree: the file's icon and its name
+// in mono, lit while the editor is on the stage, with the unsaved dot after
+// the name.
 func (s *sidebar) editorRow(gtx C, th *ui.Theme, r sessionRow, b blockView, act *sidebarAction, tree, dragEnded bool) D {
 	n := r.editor
 	tip, ok := s.tips[r.key]
@@ -63,7 +60,7 @@ func (s *sidebar) editorRow(gtx C, th *ui.Theme, r sessionRow, b blockView, act 
 	line := func(gtx C) D {
 		gtx.Constraints.Min.X = gtx.Constraints.Max.X
 		row := append(treeLead(p),
-			layout.Rigid(func(gtx C) D { return checkoutNode(gtx, onGround(th, p.ground), icEditorFile, p.entry) }),
+			layout.Rigid(func(gtx C) D { return editorFileNode(gtx, onGround(th, p.ground), n.rel, p.entry) }),
 			ui.Gap(1.5),
 			layout.Flexed(1, func(gtx C) D {
 				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,

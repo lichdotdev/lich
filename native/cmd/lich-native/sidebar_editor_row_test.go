@@ -184,3 +184,28 @@ func active(m *model) string {
 	sv, _ := m.activeSession()
 	return sv.ID
 }
+
+// An editor's node is its file's icon, as the Files tree draws it: a Go file
+// paints its color where a file of no known language stays gray.
+func TestAnEditorsNodeWearsItsFilesIcon(t *testing.T) {
+	colored := func(rel string) bool {
+		r := newFrameRig(image.Pt(40, 40), func(gtx C, th *ui.Theme) { editorFileNode(gtx, th, rel, treeEntry{}) })
+		r.frame()
+		img := renderRig(t, r)
+		for y := range img.Bounds().Dy() {
+			for x := range img.Bounds().Dx() {
+				p := img.RGBAAt(x, y)
+				if int(max(p.R, p.G, p.B))-int(min(p.R, p.G, p.B)) > 60 {
+					return true
+				}
+			}
+		}
+		return false
+	}
+	if !colored("cmd/preview.go") {
+		t.Error("preview.go's node drew no colored icon")
+	}
+	if colored("notes.zzz") {
+		t.Error("a file of no known language drew a colored node")
+	}
+}
