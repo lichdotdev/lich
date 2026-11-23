@@ -507,6 +507,9 @@ type hookRequest struct {
 	Detail            string `json:"detail"`
 	Reason            string `json:"reason"`
 	ProviderSessionID string `json:"provider_session_id"`
+	// Background is a `done` saying the agent left work running in the
+	// background, which starts a turn of its own when it ends.
+	Background bool `json:"background"`
 }
 
 // hookTextLimit bounds the free text a report may carry, in runes.
@@ -556,6 +559,7 @@ func parseHookRequest(body []byte) (hookRequest, error) {
 	if req.State != statusWaiting {
 		req.Reason = ""
 	}
+	req.Background = req.Background && req.State == statusDone
 	return req, nil
 }
 

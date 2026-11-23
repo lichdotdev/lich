@@ -154,6 +154,7 @@ o lich consegue ler de volta, porque cada CLI registra coisas diferentes.
 | O card ganha o nome da conversa | sim | pelo seu primeiro prompt | pelo seu primeiro prompt | sim | sim, a partir do segundo turno | quando o primeiro turno termina, a partir do Crush 0.99.0 | sim, quando o primeiro turno termina | pelo seu primeiro prompt, quando o primeiro turno termina |
 | Um pull request aberto pelo agente aparece no card quando o turno termina | sim | sim | sim | sim | sim | a partir do Crush 0.99.0; nas versões anteriores, só quando a janela volta ao foco | sim | sim |
 | Uma tarefa que você entrega a um agente volta sozinha quando o turno dele termina | sim | sim | sim | sim | sim | a partir do Crush 0.99.0; nas versões anteriores, ele responde com reply_to_session | no chat; no terminal ele responde com reply_to_session | sim |
+| Uma tarefa espera os comandos e subagentes que o agente deixou rodando em segundo plano, em vez de voltar com uma resposta pela metade | no chat; no terminal a partir da próxima versão do lich-plugin | não | não | não | no terminal | não | comandos em segundo plano, no chat | não |
 | Se redesenha com o novo visual quando você troca o lich entre tema claro e escuro | sim | não | não | sim | sim | não | sim | não |
 | Sino quando o agente depende de você para continuar | sim | sim | não | sim | não | a partir do Crush 0.99.0 | não | não |
 | Ctrl+Shift+I pula para a próxima sessão esperando por você | sim | sim | não | sim | não | a partir do Crush 0.99.0 | não | não |

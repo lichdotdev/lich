@@ -106,3 +106,30 @@ func TestACPChatHasNoShells(t *testing.T) {
 		t.Errorf("Background = %v, want %v", err, errNoShells)
 	}
 }
+
+// A turn that leaves a command running in the background is not the agent's
+// last word: the chat says so to the relay, and the turn Claude Code starts on
+// its own when the command ends is a turn of the chat's, reported busy and
+// done, whose answer is the session's last.
+func TestClaudeTurnClaudeStartsAfterItsBackgroundWorkIsATurn(t *testing.T) {
+	r := newChat(t, providers.Claude)
+	r.prompt("wake")
+	r.turnEnd(0)
+	if !r.svc.BackgroundWork("s1") {
+		t.Fatal("the turn ended with a shell running and the chat says no background work")
+	}
+	if got := r.svc.LastAnswer("s1"); got != "Gate running." {
+		t.Fatalf("last answer = %q", got)
+	}
+	r.shells("the gate shell", func(s []api.ChatShell) bool { return len(s) == 1 })
+	if _, err := r.svc.StopShell(t.Context(), api.ChatShellOptions{ID: "s1", Shell: "bgate"}); err != nil {
+		t.Fatalf("StopShell: %v", err)
+	}
+	r.turnEnd(1)
+	if r.svc.BackgroundWork("s1") {
+		t.Error("background work still reported once the list emptied")
+	}
+	if got := r.svc.LastAnswer("s1"); got != "Gate green." {
+		t.Errorf("last answer = %q, want the words of the turn Claude Code started", got)
+	}
+}

@@ -21,6 +21,9 @@ type ChatSink interface {
 	// LastAnswer is the final message of session id's last turn, "" when that
 	// turn wrote none.
 	LastAnswer(id string) string
+	// BackgroundWork is whether session id's agent has work of its own
+	// running in the background, where its protocol says so.
+	BackgroundWork(id string) bool
 }
 
 // SetChat wires the chat service the relay's prompts reach a chat through.
@@ -71,6 +74,17 @@ func (s *Service) FinalMessage(id string) (string, bool) {
 		return "", true
 	}
 	return s.recap.said(id, src), true
+}
+
+// BackgroundWork is whether session id's agent ended its last turn with work
+// still running in the background (relay.Terminal): its chat's driver says so,
+// and in a terminal its last `done` report did.
+func (s *Service) BackgroundWork(id string) bool {
+	if sink := s.chatSink(id); sink != nil {
+		return sink.BackgroundWork(id)
+	}
+	running, _ := s.background.Load(id)
+	return running == true
 }
 
 // chatSink is the chat service when session id runs as a chat, nil otherwise.

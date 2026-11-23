@@ -155,6 +155,7 @@ distinto.
 | La tarjeta toma el nombre de la conversación | sí | por tu primer prompt | por tu primer prompt | sí | sí, desde el segundo turno | cuando termina el primer turno, desde Crush 0.99.0 | sí, cuando termina el primer turno | por tu primer prompt, cuando termina el primer turno |
 | Un pull request que abre el agente aparece en su tarjeta al terminar el turno | sí | sí | sí | sí | sí | desde Crush 0.99.0; en versiones anteriores, cuando la ventana recupera el foco | sí | sí |
 | Una tarea que le das a un agente vuelve sola cuando termina su turno | sí | sí | sí | sí | sí | desde Crush 0.99.0; en versiones anteriores, responde con reply_to_session | en el chat; en una terminal responde con reply_to_session | sí |
+| Una tarea espera a los comandos y subagentes que el agente dejó corriendo en segundo plano, en lugar de volver con una respuesta a medias | en el chat; en una terminal desde la próxima versión de lich-plugin | no | no | no | en una terminal | no | comandos en segundo plano, en el chat | no |
 | Se repinta con el aspecto nuevo al cambiar lich entre un tema claro y uno oscuro | sí | no | no | sí | sí | no | sí | no |
 | Campana cuando el agente está bloqueado esperándote | sí | sí | no | sí | no | desde Crush 0.99.0 | no | no |
 | Ctrl+Shift+I salta a la siguiente sesión que te espera | sí | sí | no | sí | no | desde Crush 0.99.0 | no | no |

@@ -28,6 +28,29 @@ func (f *fake) claudeShellTurn(msg func(string, map[string]any)) {
 	f.claudeResult(false, "completed", "")
 }
 
+// claudeWakeTurn is a turn that ends with a command still in the background,
+// and the turn Claude Code starts on its own once it ends, as 2.1.330 writes
+// them (measured): background_tasks_changed listing the shell, the turn's
+// result; then, here once the test stops the shell, its notification, the
+// list emptied, and system/init opening a turn no message started.
+func (f *fake) claudeWakeTurn(msg func(string, map[string]any)) {
+	msg("m2", map[string]any{"type": "tool_use", "id": "toolu_gate", "name": "Bash", "input": map[string]any{"command": "task gate", "run_in_background": true}})
+	f.send(map[string]any{"type": "system", "subtype": "background_tasks_changed", "tasks": []any{map[string]any{"task_id": "bgate", "task_type": "local_bash", "description": "Run the gate"}}})
+	f.send(map[string]any{"type": "system", "subtype": "task_started", "task_id": "bgate", "tool_use_id": "toolu_gate", "description": "Run the gate", "is_backgrounded": true, "task_type": "local_bash"})
+	msg("m3", map[string]any{"type": "text", "text": "Gate running."})
+	f.claudeResult(false, "completed", "Gate running.")
+	m := f.next()
+	if str(m, "request", "subtype") != "stop_task" {
+		return
+	}
+	f.send(map[string]any{"type": "control_response", "response": map[string]any{"subtype": "success", "request_id": str(m, "request_id"), "response": map[string]any{}}})
+	f.send(map[string]any{"type": "system", "subtype": "task_notification", "task_id": "bgate", "status": "completed"})
+	f.send(map[string]any{"type": "system", "subtype": "background_tasks_changed", "tasks": []any{}})
+	f.send(map[string]any{"type": "system", "subtype": "init", "session_id": "claude-new"})
+	msg("m4", map[string]any{"type": "text", "text": "Gate green."})
+	f.claudeResult(false, "completed", "Gate green.")
+}
+
 // claudeMovedTurn is a foreground command the person moves to the
 // background, as 2.1.330 wrote it (measured): its task_started once it has
 // run 2s, and on background_tasks the patch, the answer, the call's result

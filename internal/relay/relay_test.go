@@ -89,6 +89,9 @@ type fakeTerminal struct {
 	// finals is the final message of each session's last turn, standing in for
 	// a chat driver or a transcript (see turnanswer_test.go).
 	finals map[string]string
+	// background is whether each session's agent has work running in the
+	// background, standing in for its chat or its turn-end hook.
+	background map[string]bool
 }
 
 func newFakeTerminal(live ...string) *fakeTerminal {
@@ -1945,7 +1948,7 @@ func TestErrandOrderSurvivesAClockThatCannotTellThemApart(t *testing.T) {
 			"second": {fromID: "s3", targetID: "s2", delivered: tick, deliverySeq: 2, sawBusy: true},
 			"first":  {fromID: "s1", targetID: "s2", delivered: tick, deliverySeq: 1, sawBusy: true},
 		}
-		got := svc.turnCandidates("s2")
+		got := svc.turnCandidates("s2", false)
 		if len(got) != 2 || got[0] != "first" {
 			t.Fatalf("candidates = %v, want the first delivered at the front", got)
 		}

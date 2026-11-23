@@ -104,6 +104,18 @@ func (s *Service) LastAnswer(id string) string {
 	return ""
 }
 
+// BackgroundWork is whether session id's agent has work running in the
+// background (terminal.ChatSink): only Claude Code's chat reports it
+// (docs/ceilings.md).
+func (s *Service) BackgroundWork(id string) bool {
+	c := s.running(id)
+	if c == nil {
+		return false
+	}
+	d, ok := c.drv.(*claudeDriver)
+	return ok && d.backgroundWork()
+}
+
 // take sends m in a turn of its own, after the turn running if one is, and
 // answers a channel that closes once the turn carrying it has started. A
 // question the agent waits on is left for the person: the relay's message is

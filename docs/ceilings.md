@@ -234,7 +234,8 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   seen. The move of a foreground command to the background is measured: `task_updated` patching
   `is_backgrounded` to true. The shells run in the chat's process, so a switch to TUI, /new or a switch to YOLO mode,
   which start a new one, stops them, and a conversation read back has none. A shell that ends after the turn
-  makes Claude Code answer on its own (measured): that answer reaches the chat with no turn running in lich.
+  makes Claude Code answer on its own (measured): `background_tasks_changed` empties and a `system/init` opens a
+  turn no message started, which the chat runs as a turn of its own (`claudeWake`), busy and done on the card.
   Codex lists its background terminals only on its experimental app-server API
   (`thread/backgroundTerminals/list`, 0.170.0's schema), with no event and no output, and lich opens Codex on the
   stable one; ACP has no such report, its `terminal/*` methods being the client running commands for the agent,
@@ -922,6 +923,27 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   reaches the transcript more than 1.5 s after the `done` (`defaultFinalSettle`, not measured per provider) does too,
   and either can still be answered late by the ticket. A turn that could have been either of two open errands
   answers neither, as before.
+- **A worker's background work holds its answer only on Claude Code, oh-my-pi in a terminal and Cursor CLI's
+  chat** (`internal/relay/observe.go`, `turnCandidates`; `terminal.BackgroundWork`; `internal/chat/claude_shells.go`,
+  `claudeWake`; docs/hooks/session-state.md, `background`): a turn that ends with a command or a subagent of the
+  provider's own still running answers no errand, and the turn the work's end starts does. Claude Code 2.1.330
+  (measured, shell and background subagent): its chat lists the work in `background_tasks_changed` and its `Stop`
+  in `background_tasks`, and the work's end starts a turn whose prompt is a task notification; in a terminal the
+  `done` carries it as `background` only from the lich-plugin release that forwards `background_tasks`, and
+  answers early until then. oh-my-pi holds its `session_stop` while async work is pending (read in its source,
+  not measured), and Cursor CLI's chat holds `session/prompt` open on the shells it watches, running the follow-up
+  turns itself (read in its bundle; background subagents only with the `subagents` client capability, which lich
+  does not send). Everywhere else a turn's end answers with the interim words, for one of two reasons. Codex
+  (measured on 0.170.0: a unified-exec command and a spawned agent both outlive the turn) starts no turn when
+  either ends, so holding the errand would hold it forever: its turn's end stays the answer, the honest one,
+  since the agent never learns the work finished either; its stable app-server API and its closed `Stop` schema
+  name no background work. The rest start a turn lich cannot tell from a finished one: opencode (background
+  subagents, behind `OPENCODE_EXPERIMENTAL_BACKGROUND_SUBAGENTS`; its `session.status` goes idle with the child
+  busy), Crush (`TurnEnd` carries only the last message), Kiro CLI (a delegate's result waits for the next
+  prompt; its chat's `_kiro.dev/subagent/list_update` is not read), Antigravity (its `Stop` has `fullyIdle`, which
+  lich-plugin does not forward) and Cursor CLI's terminal (its `stop` names none); in a chat the ACP providers'
+  self-started turn arrives as updates with no `session/prompt` running, which the ACP driver does not run as a
+  turn. All read from shipped binaries, not measured.
 - **Codex and Kiro CLI sessions get the spawn briefing, not lich's MCP instructions** (`internal/cli/mcp.go`,
   `mcpInstructions`; `internal/terminal/command.go`, `codexBriefingArgs`, `briefingEnv`): both initialize the
   server, list its tools and never hand its initialize `instructions` to the model (measured 2026-11-07 on
