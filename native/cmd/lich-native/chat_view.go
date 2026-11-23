@@ -8,8 +8,10 @@ import (
 	"time"
 
 	"gioui.org/io/key"
+	"gioui.org/io/semantic"
 	"gioui.org/layout"
 	"gioui.org/op"
+	"gioui.org/op/clip"
 	"gioui.org/unit"
 	"gioui.org/widget"
 
@@ -632,12 +634,14 @@ func (u *window) chatComposer(gtx C, th *ui.Theme, p *chatPane, sv sessionView, 
 }
 
 // chatUser is the person's message, in an Accent box against the column's
-// right edge.
-func chatUser(gtx C, th *ui.Theme, text string) D { return chatUserFrom(gtx, th, "", text) }
+// right edge, its text Markdown as the answers' is; key names it in p's cache.
+func (u *window) chatUser(gtx C, th *ui.Theme, p *chatPane, key, text string) D {
+	return u.chatUserFrom(gtx, th, p, key, "", text)
+}
 
 // chatUserFrom is chatUser with a muted line over the text naming who sent it,
 // none when from is empty.
-func chatUserFrom(gtx C, th *ui.Theme, from, text string) D {
+func (u *window) chatUserFrom(gtx C, th *ui.Theme, p *chatPane, key, from, text string) D {
 	maxW := int(float32(gtx.Constraints.Max.X) * chatUserShare)
 	on := th.On(th.Accent)
 	return layout.E.Layout(gtx, func(gtx C) D {
@@ -647,7 +651,7 @@ func chatUserFrom(gtx C, th *ui.Theme, from, text string) D {
 			func(gtx C) D { return ui.Fill(gtx, th.Accent, ui.RadiusLG) },
 			func(gtx C) D {
 				return layout.Inset{Top: ui.Space(2), Bottom: ui.Space(2), Left: ui.Space(3), Right: ui.Space(3)}.Layout(gtx, func(gtx C) D {
-					body := on.Text(ui.TextSM, expandTabs(text)).Wrapped().Layout
+					body := func(gtx C) D { return u.userMarkdown(gtx, on, p, key, text) }
 					if from == "" {
 						return body(gtx)
 					}
@@ -659,6 +663,39 @@ func chatUserFrom(gtx C, th *ui.Theme, from, text string) D {
 				})
 			})
 	})
+}
+
+// userMarkdown is the person's text as Markdown at the box's TextSM: the
+// renderer sets prose at markdown.BodySize, so the sp are scaled to match.
+// Every line they broke stays broken, as they typed it.
+func (u *window) userMarkdown(gtx C, th *ui.Theme, p *chatPane, key, text string) D {
+	gtx.Metric.PxPerSp *= float32(ui.TextSM) / float32(markdown.BodySize)
+	notify := func(t ui.Toast) { u.toaster.Show(t) }
+	links := markdown.Links{Open: func(url string) { openLink(u.client, notify, url) }, Paths: p.paths}
+	dims := p.md.LayoutLinks(gtx, th, "user:"+key, hardBreaks(text), links)
+	// the message as typed, for whoever reads the window without seeing it
+	defer clip.Rect{Max: dims.Size}.Push(gtx.Ops).Pop()
+	semantic.LabelOp(text).Add(gtx.Ops)
+	return dims
+}
+
+// hardBreaks ends every line of text that another follows in a Markdown
+// hard break, two spaces, except inside a fenced code block: a chat message's
+// newline is a new line, where Markdown would fold it into a space.
+func hardBreaks(text string) string {
+	lines := strings.Split(text, "\n")
+	fenced := false
+	for i, line := range lines {
+		if strings.HasPrefix(strings.TrimSpace(line), "```") {
+			fenced = !fenced
+			continue
+		}
+		if fenced || i == len(lines)-1 || line == "" || lines[i+1] == "" || strings.HasPrefix(strings.TrimSpace(lines[i+1]), "```") {
+			continue
+		}
+		lines[i] = line + "  "
+	}
+	return strings.Join(lines, "\n")
 }
 
 // startsTurn is whether row r starts a turn after row prev: the person's

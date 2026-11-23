@@ -93,7 +93,7 @@ func (u *window) chatRow(gtx C, th *ui.Theme, p *chatPane, sv sessionView, r cha
 					if it.Text == "" {
 						return D{}
 					}
-					return chatUser(gtx, th, it.Text)
+					return u.chatUser(gtx, th, p, it.ID, it.Text)
 				}),
 				ui.VGap(1),
 				layout.Rigid(func(gtx C) D {
