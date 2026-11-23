@@ -10,14 +10,17 @@
 //     uses.
 //   - Sonner (sonner.emilkowal.ski, MIT): the four type icons its toasts
 //     draw, Heroicons solid paths sonner 2.0.7 ships in its bundle.
-//   - Devicons (devicon.dev via devicons-react 1.5.0, MIT): the language marks
-//     the file tree draws, rendered to PNG by devicon/gen.sh since they are
+//   - Material Icon Theme (github.com/material-extensions/vscode-material-icon-theme
+//     5.40.0, MIT): the file icons, every one its manifest gives a file name
+//     or extension, rendered to PNG by material/gen.sh since they are
 //     multi-colored.
+//   - Devicons (devicon.dev via devicons-react 1.5.0, MIT): the language marks
+//     an extension names as "devicon:name", rendered to PNG by devicon/gen.sh.
 //   - Bibata (github.com/ful1e5/Bibata_Cursor, GPL-3.0): the arrow of Bibata
 //     Modern, the agent's pointer over its browser page.
 //
 // Each set's license sits beside it (lucide/LICENSE, lobe/LICENSE,
-// sonner/LICENSE, devicon/LICENSE, bibata/LICENSE) and must travel with any copy, the binary's third-party
+// sonner/LICENSE, material/LICENSE, devicon/LICENSE, bibata/LICENSE) and must travel with any copy, the binary's third-party
 // notices included.
 package icons
 

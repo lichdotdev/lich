@@ -185,6 +185,7 @@ func paletteOf(def backend.Theme) (ui.Palette, error) {
 	p.Canvas = ui.MixOKLab(p.Background, color.NRGBA{A: 255}, darken)
 	p.GraphLanes = ui.GraphLanesFor(def.Scheme == themeSchemeLight)
 	p.ToneMerged = ui.ToneMergedFor(def.Scheme == themeSchemeLight)
+	p.FileIcons = ui.FileIconsFor(def.Scheme == themeSchemeLight)
 	return p, nil
 }
 

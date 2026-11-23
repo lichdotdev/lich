@@ -52,6 +52,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Files show the icons of Material Icon Theme, drawn for dark backgrounds.** The Files tree, search, the chat's @ list and file names in Markdown code pick one by the file's name, then its extension, as VS Code's Material Icon Theme does, with its light variants in a light theme.
 - **A subagent your agent starts becomes a lich card on every agent, and the setting that turned it off is gone.** Cursor CLI's chat is the exception, since it runs no hooks; the call shows as opened in its card, and a toast says when Codex is skipping lich's hook.
 - **What a button asks a session for shows in its chat as a compact box.** Resolve conflicts, Fix CI errors, review threads and comments, browser notes and an issue each draw their title, facts and list in your own message box; the chevron opens the full text the agent read.
 - **lich installs lich-plugin 0.22.0, whose texts teach your agents the notification envelope and whose hook turns their subagents into cards.** lich offers it with its plugin update prompt; an older lich keeps the plugin it has.

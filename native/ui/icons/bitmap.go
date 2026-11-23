@@ -3,15 +3,12 @@ package icons
 import (
 	"bytes"
 	"embed"
-	"encoding/json"
 	"fmt"
 	"image"
 	"image/color"
 	"image/draw"
 	"image/png"
-	"path"
 	"strings"
-	"sync"
 
 	"gioui.org/layout"
 	"gioui.org/op/paint"
@@ -19,12 +16,12 @@ import (
 	xdraw "golang.org/x/image/draw"
 )
 
-//go:embed devicon/*.png devicon/devicons.json
-var deviconFiles embed.FS
+//go:embed devicon/*.png material/*.png
+var bitmapFiles embed.FS
 
 // Bitmap is a multi-colored mark, kept as a picture rather than outlines: the
-// devicons draw with gradients, clip paths and evenodd fills the vector kit
-// does not carry.
+// devicons and Material's file icons draw with a color per shape, gradients,
+// clip paths and evenodd fills the vector kit does not carry.
 type Bitmap struct {
 	src *image.NRGBA
 	// mono marks ship with no fill of their own and take the color passed to
@@ -38,72 +35,28 @@ type bitmapKey struct {
 	c  color.NRGBA
 }
 
-// deviconManifest is devicon/devicons.json: the icon for a file, by its
-// lowercased base name first, then by its lowercased extension.
-type deviconManifest struct {
-	Extensions map[string]string `json:"extensions"`
-	Names      map[string]string `json:"names"`
-}
+var bitmaps = map[string]*Bitmap{}
 
-var devicons = sync.OnceValues(func() (deviconManifest, error) {
-	var m deviconManifest
-	data, err := deviconFiles.ReadFile("devicon/devicons.json")
-	if err != nil {
-		return m, err
-	}
-	if err := json.Unmarshal(data, &m); err != nil {
-		return m, fmt.Errorf("devicons.json: %w", err)
-	}
-	return m, nil
-})
-
-var deviconBitmaps = map[string]*Bitmap{}
-
-// DeviconFor returns the icon devicons.json gives the file at p, or nil when
-// it gives none. It panics when the manifest names an icon with no PNG, so a
-// manifest out of step with gen.sh fails on the first file of that kind.
-func DeviconFor(p string) *Bitmap {
-	m, err := devicons()
-	if err != nil {
-		panic(err)
-	}
-	base := strings.ToLower(path.Base(p))
-	name, ok := m.Names[base]
-	if !ok {
-		name, ok = m.Extensions[extension(base)]
-	}
-	if !ok {
-		return nil
-	}
-	if b, ok := deviconBitmaps[name]; ok {
+// bitmap is the PNG at file in bitmapFiles, decoded on first use. It panics
+// on a file the set lacks, so a manifest out of step with its gen.sh fails on
+// the first file of that kind.
+func bitmap(file string) *Bitmap {
+	if b, ok := bitmaps[file]; ok {
 		return b
 	}
-	b := loadDevicon(name)
-	deviconBitmaps[name] = b
-	return b
-}
-
-// extension is base's extension without the dot, "" for none or a dotfile.
-func extension(base string) string {
-	dot := strings.LastIndexByte(base, '.')
-	if dot <= 0 {
-		return ""
-	}
-	return base[dot+1:]
-}
-
-func loadDevicon(name string) *Bitmap {
-	data, err := deviconFiles.ReadFile("devicon/" + name + ".png")
+	data, err := bitmapFiles.ReadFile(file)
 	if err != nil {
-		panic(fmt.Sprintf("icons: no devicon %q", name))
+		panic(fmt.Sprintf("icons: no bitmap %q", file))
 	}
 	img, err := png.Decode(bytes.NewReader(data))
 	if err != nil {
-		panic(fmt.Sprintf("icons: devicon %q: %v", name, err))
+		panic(fmt.Sprintf("icons: %s: %v", file, err))
 	}
 	src := image.NewNRGBA(img.Bounds())
 	draw.Draw(src, src.Bounds(), img, img.Bounds().Min, draw.Src)
-	return &Bitmap{src: src, mono: inkOnly(src), scaled: map[bitmapKey]paint.ImageOp{}}
+	b := &Bitmap{src: src, mono: inkOnly(src), scaled: map[bitmapKey]paint.ImageOp{}}
+	bitmaps[file] = b
+	return b
 }
 
 // inkBlack is the brightest channel a pixel may have and still count as the
@@ -158,7 +111,7 @@ func (b *Bitmap) render(px int, c color.NRGBA) image.Image {
 // outside lich: it reports a name the set lacks instead of panicking.
 func LookupDevicon(name string) (*Bitmap, bool) {
 	want := strings.ToLower(name)
-	entries, err := deviconFiles.ReadDir("devicon")
+	entries, err := bitmapFiles.ReadDir("devicon")
 	if err != nil || want == "" {
 		return nil, false
 	}
@@ -167,12 +120,7 @@ func LookupDevicon(name string) (*Bitmap, bool) {
 		if !ok || !deviconNamed(stem, want) {
 			continue
 		}
-		if b, ok := deviconBitmaps[stem]; ok {
-			return b, true
-		}
-		b := loadDevicon(stem)
-		deviconBitmaps[stem] = b
-		return b, true
+		return bitmap("devicon/" + e.Name()), true
 	}
 	return nil, false
 }

@@ -15,6 +15,7 @@ import (
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
+	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
 // bundledTheme reads themes/<id>.json, the file the backend serves the
@@ -55,6 +56,18 @@ func TestBundledThemesReadIntoTheIndexCSSPalettes(t *testing.T) {
 		if got != want {
 			t.Errorf("%s:\n got %+v\nwant %+v", id, got, want)
 		}
+	}
+}
+
+func TestALightCustomThemeTakesMaterialsLightFileIcons(t *testing.T) {
+	th := customTheme("day", "Day")
+	th.Scheme = themeSchemeLight
+	p, err := paletteOf(th)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if p.FileIcons != icons.LightFileIcons {
+		t.Errorf("FileIcons = %v, want the light ones", p.FileIcons)
 	}
 }
 

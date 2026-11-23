@@ -630,8 +630,8 @@ func (g *gallery) iconVariantsSection(gtx C, th *ui.Theme) D {
 	for _, name := range []string{"success", "info", "warning", "error"} {
 		sonner = append(sonner, labeled(th, name, glyph(icons.Sonner(name), ui.Space(5), tones[name], false)))
 	}
-	for _, name := range []string{"main.go", "package.json", "Dockerfile", "index.html", "style.css", "README.md", ".gitignore", "notes.zzz"} {
-		files = append(files, g.deviconFile(th, name))
+	for _, name := range []string{"go", "typescript", "python", "rust", "markdown", "docker", "database", "nope"} {
+		files = append(files, deviconNamed(th, name))
 	}
 	mark := icons.LichMark()
 	return ui.Stack(4,
@@ -642,7 +642,7 @@ func (g *gallery) iconVariantsSection(gtx C, th *ui.Theme) D {
 		ui.Row(4, sonner...),
 		caption(th, "icons.LichMark at 4, 6 and 10"),
 		ui.Row(4, glyph(mark, ui.Space(4), th.Foreground, false), glyph(mark, ui.Space(6), th.Foreground, false), glyph(mark, ui.Space(10), th.Foreground, false)),
-		caption(th, "icons.DeviconFor, by file name; nil when it has none"),
+		caption(th, "icons.LookupDevicon, the devicon:name an extension gives; none for a name the set lacks"),
 		func(gtx C) D {
 			return ui.Wrap{GapX: ui.Space(4), GapY: ui.Space(3)}.Layout(gtx, wrapItems(files)...)
 		},
@@ -657,11 +657,11 @@ func wrapItems(ws []layout.Widget) []ui.WrapChild {
 	return kids
 }
 
-func (g *gallery) deviconFile(th *ui.Theme, name string) layout.Widget {
+func deviconNamed(th *ui.Theme, name string) layout.Widget {
 	mark := func(gtx C) D {
-		b := icons.DeviconFor(name)
-		if b == nil {
-			return th.Text(ui.TextXS, "nil").Muted().Mono().Layout(gtx)
+		b, ok := icons.LookupDevicon(name)
+		if !ok {
+			return th.Text(ui.TextXS, "none").Muted().Mono().Layout(gtx)
 		}
 		return b.Layout(gtx, ui.Space(5), th.Foreground)
 	}

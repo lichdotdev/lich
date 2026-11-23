@@ -214,12 +214,27 @@ func (g *gallery) scrollAreas(th *ui.Theme) []layout.Widget {
 }
 
 func (g *gallery) fileIcons(th *ui.Theme) []layout.Widget {
-	entry := func(path string, size unit.Dp) layout.Widget {
-		return ui.Row(1.5, th.FileIcon(path, size).Layout, th.Text(ui.TextXS, path).Muted().Mono().Layout)
+	paths := []string{"main.go", "go.mod", "Dockerfile", "package.json", "index.d.ts", "app.test.ts", "README.md", "schema.sql", "main.hcl", "no-icon.xyz"}
+	entries := func(th *ui.Theme, size unit.Dp) layout.Widget {
+		ws := make([]layout.Widget, len(paths))
+		for i, p := range paths {
+			ws[i] = ui.Row(1.5, th.FileIcon(p, size).Layout, th.Text(ui.TextXS, p).Muted().Mono().Layout)
+		}
+		return func(gtx C) D {
+			return ui.Wrap{GapX: ui.Space(4), GapY: ui.Space(3)}.Layout(gtx, wrapItems(ws)...)
+		}
 	}
+	light := th.On(ui.Light.Background)
+	light.Palette = ui.Light
 	return []layout.Widget{
-		caption(th, "FileIcon: devicon by path; muted file glyph without one"),
-		ui.Row(4, entry("main.go", ui.Space(3.5)), entry("app.tsx", ui.Space(3.5)), entry("schema.sql", ui.Space(3.5))),
-		ui.Row(4, entry("no-icon.xyz", ui.Space(3.5)), entry("Makefile", ui.Space(4))),
+		caption(th, "FileIcon at 3.5 and 4: by name, then longest extension; muted glyph without one"),
+		entries(th, ui.Space(3.5)),
+		entries(th, ui.Space(4)),
+		caption(th, "FileIcon on the Light palette takes Material's light variants (main.hcl)"),
+		func(gtx C) D {
+			return layout.Background{}.Layout(gtx,
+				func(gtx C) D { return ui.Fill(gtx, ui.Light.Background, ui.RadiusMD) },
+				func(gtx C) D { return layout.UniformInset(ui.Space(3)).Layout(gtx, entries(light, ui.Space(3.5))) })
+		},
 	}
 }
