@@ -36,6 +36,8 @@ var (
 	inputClearInset    = inputGroupAddonPad - inputGroupButtonPull
 	inputClearPadRight = inputClearInset + buttonSizes[SizeIconXS].height + inputGroupControlNear
 	inputClearIcon     = icons.Lucide("x")
+	// inputTrailingInset is the Trailing widget's room from the right edge.
+	inputTrailingInset = Space(2)
 )
 
 // The dark-mode alphas of shadcn's input: dark:bg-input/30, focus-visible:ring-ring/50,
@@ -120,7 +122,12 @@ type InputStyle struct {
 	// Clear, when set, is a ghost X at the right edge while the field has
 	// text: pressing it empties the field, as an undo step, and leaves the
 	// focus in it.
-	Clear    *Clickable
+	Clear *Clickable
+	// Trailing, when set, is drawn at the right edge while the field is
+	// empty, the placeholder kept clear of it: the key cap of a field a
+	// shortcut focuses. It yields to the placeholder, drawing nothing where
+	// both do not fit whole.
+	Trailing layout.Widget
 	Disabled bool
 	Invalid  bool
 	theme    *Theme
@@ -155,6 +162,10 @@ func (s InputStyle) Layout(gtx C) D {
 	if showClear {
 		field.padRight = inputClearPadRight
 	}
+	trailing, tsize := s.trailing(gtx, field)
+	if trailing != nil {
+		field.padRight = gtx.Metric.PxToDp(tsize.X) + inputTrailingInset + inputGroupControlNear
+	}
 	st := inputState{invalid: s.Invalid, disabled: s.Disabled, bare: s.Bare}
 	return inputFrame(gtx, s.theme, s.Editor, st, s.Borderless, func(gtx C) D {
 		d := field.layout(gtx, h)
@@ -162,8 +173,31 @@ func (s InputStyle) Layout(gtx C) D {
 		if showClear {
 			s.layoutClear(gtx, h)
 		}
+		if trailing != nil {
+			off := op.Offset(image.Pt(gtx.Constraints.Max.X-gtx.Dp(inputTrailingInset)-tsize.X, (h-tsize.Y)/2)).Push(gtx.Ops)
+			trailing.Add(gtx.Ops)
+			off.Pop()
+		}
 		return d
 	})
+}
+
+// trailing is the Trailing widget recorded and its size, nil while the field
+// has text or where the placeholder and it do not fit whole.
+func (s InputStyle) trailing(gtx C, field inputText) (*op.CallOp, image.Point) {
+	if s.Trailing == nil || s.Editor.Len() > 0 {
+		return nil, image.Point{}
+	}
+	tg := gtx
+	tg.Constraints.Min = image.Point{}
+	macro := op.Record(gtx.Ops)
+	d := s.Trailing(tg)
+	call := macro.Stop()
+	room := gtx.Constraints.Max.X - gtx.Dp(field.padLeft) - d.Size.X - gtx.Dp(inputTrailingInset+inputGroupControlNear)
+	if field.hintWidth(gtx) > room {
+		return nil, image.Point{}
+	}
+	return &call, d.Size
 }
 
 // clearEditor empties editor the way select-all and Backspace would. The
@@ -300,6 +334,15 @@ func (f inputText) missingLeading(gtx C) int {
 	line := widget.Label{MaxLines: 1, LineHeight: leading, LineHeightScale: 1}.Layout(gtx, f.theme.Shaper, f.font, f.size, "Mg", op.CallOp{})
 	macro.Stop()
 	return max(gtx.Sp(leading)-line.Size.Y, 0)
+}
+
+// hintWidth is the placeholder's width on one line, untruncated.
+func (f inputText) hintWidth(gtx C) int {
+	gtx.Constraints = layout.Constraints{Max: image.Pt(1<<20, 1<<20)}
+	macro := op.Record(gtx.Ops)
+	d := widget.Label{MaxLines: 1}.Layout(gtx, f.theme.Shaper, f.font, f.size, f.placeholder, op.CallOp{})
+	macro.Stop()
+	return d.Size.X
 }
 
 // layoutEditor is material.EditorStyle's recipe: the placeholder is measured
