@@ -699,6 +699,15 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   - **Unverified on Windows.** The PTY opens ConPTY without passthrough (`internal/terminal/pty_windows.go`), which
     may drop an OSC it does not know before lich reads it. Nobody has measured it there, so a report may simply never
     arrive.
+- **The edit-overlap note forgets on restart, and on Kiro CLI it waits for the next prompt**
+  (`internal/relay/editnote.go`, `docs/hooks/session-touched.md`). Who last wrote each path is kept in memory for the
+  10-minute window, so a lich restart forgets every edit and every held note, and the first edit after one tells
+  nobody. Kiro shows the model nothing a `postToolUse` hook prints, so its note is held and handed over by the next
+  `userPromptSubmit`: an agent mid-turn learns of the other session only when someone next sends it a message, and
+  not at all when that comes after the other session's edit left the window. Antigravity's `PostToolUse` output is
+  not read either, but its `PreInvocation` runs before every model call, so there the note arrives before the next
+  step. Crush older than v0.99.0 has no `PostToolUse` and gets no note. Edits made through a shell tool name no
+  path and are never seen.
 
 ## Transcripts, cost and plan usage
 

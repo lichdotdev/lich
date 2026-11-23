@@ -141,6 +141,15 @@ func asksSubagentHook(version string) bool {
 	return !semver.Less(version, SubagentHookRelease)
 }
 
+// EditNoteRelease is the first lich-plugin release whose touched report names
+// the paths it wrote and hands lich's edit-overlap note to the model
+// (docs/hooks/session-touched.md).
+const EditNoteRelease = "0.22.0"
+
+func notesEdits(version string) bool {
+	return !semver.Less(version, EditNoteRelease)
+}
+
 // vetoScript is the hook that asks /subagent for the harnesses lich installs by
 // files (Antigravity, Kiro CLI, Crush), from SubagentHookRelease on; it sources
 // conversation-id.sh, which every one of them already ships.

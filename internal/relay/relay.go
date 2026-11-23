@@ -487,6 +487,9 @@ type Service struct {
 	// idle hops in a row per pair of sessions (pingpong.go).
 	turnTools map[string]turnTools
 	streaks   map[sessionPair]int
+	// edits is who last edited each path, for the edit-overlap notice
+	// (editnote.go).
+	edits edits
 }
 
 // Plugins is what the relay needs to know about the companion plugin
@@ -522,6 +525,7 @@ func New(sessions Sessions, term Terminal, events Events) *Service {
 		compacted:       make(map[string]bool),
 		turnTools:       make(map[string]turnTools),
 		streaks:         make(map[sessionPair]int),
+		edits:           edits{last: make(map[string]edit), held: make(map[string][]overlap)},
 		sessions:        sessions,
 		term:            term,
 		events:          events,

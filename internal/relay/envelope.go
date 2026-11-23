@@ -33,6 +33,7 @@ const (
 	TopicUnanswered   = "unanswered"
 	TopicLoop         = "loop"
 	TopicHandoff      = "handoff"
+	TopicEditOverlap  = "edit-overlap"
 )
 
 // How a task's answer is taken.

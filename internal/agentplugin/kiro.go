@@ -44,6 +44,8 @@ import (
 // what lich spawns — are these.
 var kiroWriteTools = []string{"write", "shell"}
 
+const kiroTouchedScript = "hooks/report-touched.sh"
+
 // kiroSubagentTools are the two tools a Kiro subagent starts through, ACP's
 // `subagent` and the classic chat's `use_subagent` (docs/hooks/subagent-cards.md),
 // each vetoed by its own entry, bare names for the reason kiroWriteTools are.
@@ -150,7 +152,7 @@ func kiroScripts(version string) []string {
 		seen[hook.script] = true
 		out = append(out, hook.script)
 	}
-	out = append(out, "hooks/report-touched.sh", "hooks/conversation-id.sh", "hooks/detail.jq")
+	out = append(out, kiroTouchedScript, "hooks/conversation-id.sh", "hooks/detail.jq")
 	if asksSubagentHook(version) {
 		out = append(out, vetoScript)
 	}
@@ -183,9 +185,18 @@ func kiroAgentFile(version, scriptDir string) ([]byte, error) {
 			Matcher: hook.matcher,
 		})
 	}
+	// From EditNoteRelease the touched report holds its edit-overlap note, since
+	// Kiro shows nothing a postToolUse hook prints, and the next prompt collects
+	// it: userPromptSubmit is the one hook whose output reaches the model
+	// (docs/hooks/session-touched.md, Kiro CLI).
+	touchedArg := ""
+	if notesEdits(version) {
+		touchedArg = "hold"
+		hooks["userPromptSubmit"] = append(hooks["userPromptSubmit"], kiroHook{Command: kiroCommand(scriptDir, kiroTouchedScript, "collect")})
+	}
 	for _, tool := range kiroWriteTools {
 		hooks["postToolUse"] = append(hooks["postToolUse"], kiroHook{
-			Command: kiroCommand(scriptDir, "hooks/report-touched.sh", ""),
+			Command: kiroCommand(scriptDir, kiroTouchedScript, touchedArg),
 			Matcher: tool,
 		})
 	}

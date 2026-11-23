@@ -75,6 +75,13 @@ type Catalog struct {
 	LateMinutes Plural
 	LateHours   Plural
 	LateDays    Plural
+	// EditOverlap is an edit-overlap notice (docs/hooks/session-touched.md):
+	// %[1]s is the other session's label, %[2]s the paths, %[3]s EditAgo or
+	// EditJustNow, %[4]s how to reach it, a tool name or a command.
+	EditOverlap string
+	// EditAgo is %s, a LateMinutes count, said as time past.
+	EditAgo     string
+	EditJustNow string
 	// UsageReset sums up the notice that carries ResumePrompt.
 	UsageReset string
 	// ResumePrompt is stored in the sessions table as a parked prompt, marked

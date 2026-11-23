@@ -47,7 +47,7 @@ of the contract.
 | `url` | `request` with topic `browser-notes` or `issue` | the page the notes were left on, or the issue |
 | `image` | `request` with topic `browser-notes` | the path of the sketch the person drew on the page, when there is one |
 | `issue`, `title` | `request` with topic `issue` | the issue's number and title |
-| `topic` | `notice`, `request` | what the notice is: `checks-failed`, `checks-passed`, `review`, `scheduled`, `usage-reset`, `compacted`, `unanswered`, `loop`, `handoff`; what the request is: `conflicts`, `checks`, `review-thread`, `review-comments`, `browser-notes`, `issue` |
+| `topic` | `notice`, `request` | what the notice is: `checks-failed`, `checks-passed`, `review`, `scheduled`, `usage-reset`, `compacted`, `unanswered`, `loop`, `handoff`, `edit-overlap`; what the request is: `conflicts`, `checks`, `review-thread`, `review-comments`, `browser-notes`, `issue` |
 
 ### Kinds
 
@@ -88,8 +88,10 @@ person wrote to close it, when there is one.
 `notice` carries every other note lich types today (`internal/prompt`): a
 pull request's checks or a new review, a scheduled prompt, a usage limit that
 reset, the errands a compaction may have summarised away, a turn that ended with
-requests unanswered, a loop warning between two sessions, and the note a session
-hands its successor (`handoff`: a notice and not a task, since nothing is owed
+requests unanswered, a loop warning between two sessions, a file another
+session wrote minutes before this one did (`edit-overlap`, the answer of a
+[session-touched](session-touched.md) report rather than a typed note), and the
+note a session hands its successor (`handoff`: a notice and not a task, since nothing is owed
 back to a session done with the work). A scheduled prompt gets its envelope
 whether it is late or on time: its summary says when it was due, and how late
 when it is.

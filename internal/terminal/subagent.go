@@ -77,7 +77,7 @@ func checkSubagentTasks(req api.SubagentRequest) error {
 type subagentDecider func(context.Context, api.SubagentRequest) (api.SubagentAnswer, func(written bool))
 
 // subagentHook answers a provider's own subagent call with lich's decision,
-// 200 and JSON whatever it is: the one hook whose answer the client reads.
+// 200 and JSON whatever it is.
 // A deny that never reached the client, because its request ended first or
 // the write failed, is committed as unwritten, which closes what it opened.
 func (t *transport) subagentHook(w http.ResponseWriter, r *http.Request) {

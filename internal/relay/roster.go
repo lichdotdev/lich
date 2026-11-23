@@ -170,14 +170,7 @@ func (s *Service) sessionOf(id string) (store.Session, bool) {
 	if err != nil {
 		return store.Session{}, false
 	}
-	for _, p := range projects {
-		for _, sess := range p.Sessions {
-			if sess.ID == id {
-				return sess, true
-			}
-		}
-	}
-	return store.Session{}, false
+	return findSession(projects, id)
 }
 
 // labelOf names the sending session for the message it is about to deliver.

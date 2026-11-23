@@ -567,6 +567,7 @@ func registerServices(db *store.Service, term *terminal.Service, chats *chat.Ser
 	term.SetSessionState(rl.Observe)
 	term.SetToolUse(rl.ObserveTool)
 	term.SetUserTyped(rl.UserTyped)
+	term.SetEditNotes(rl.Touched)
 	// A worker's mod reports its answer, and a closed worker's errand ends
 	// without a word to its caller.
 	term.SetWorkerAnswer(rl.WorkerAnswered)

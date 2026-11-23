@@ -832,7 +832,7 @@ func TestCrushrcBlockSurvivesAPathWithSpaces(t *testing.T) {
 		}
 	}
 
-	block := crushrcBlock("1.2.3", dir, "/opt/lich/lich")
+	block := crushrcBlock("1.2.3", "", dir, "/opt/lich/lich")
 	for _, hook := range crushHooks {
 		command, ok := commandOf(block, hook.name)
 		if !ok {
@@ -886,7 +886,7 @@ func TestVersionOf(t *testing.T) {
 // Claude Code and Codex do.
 
 func TestCrushrcRegistersLichsMCPServer(t *testing.T) {
-	block := crushrcBlock("1.2.3", "/plugins/lich", "/opt/lich/lich")
+	block := crushrcBlock("1.2.3", "", "/plugins/lich", "/opt/lich/lich")
 
 	line, ok := lineWith(block, "mcp add")
 	if !ok {
@@ -906,7 +906,7 @@ func TestCrushrcRegistersLichsMCPServer(t *testing.T) {
 // A path with a space is the case that decides whether the line survives the
 // shell that reads crushrc.
 func TestCrushrcQuotesTheBinaryPath(t *testing.T) {
-	block := crushrcBlock("1.2.3", "/plugins/lich", "/home/some one/lich")
+	block := crushrcBlock("1.2.3", "", "/plugins/lich", "/home/some one/lich")
 
 	line, ok := lineWith(block, "mcp add")
 	if !ok {
@@ -920,7 +920,7 @@ func TestCrushrcQuotesTheBinaryPath(t *testing.T) {
 // An unresolvable executable must not write a command that cannot run: the
 // hooks are what make the install worth having, and they do not need it.
 func TestCrushrcWithoutABinaryStillRegistersTheHooks(t *testing.T) {
-	block := crushrcBlock("1.2.3", "/plugins/lich", "")
+	block := crushrcBlock("1.2.3", "", "/plugins/lich", "")
 
 	if _, ok := lineWith(block, "mcp add"); ok {
 		t.Errorf("registered a server with no binary to run:\n%s", block)
@@ -933,7 +933,7 @@ func TestCrushrcWithoutABinaryStillRegistersTheHooks(t *testing.T) {
 // The registration lives inside the markers, so an update replaces it and an
 // uninstall takes it away — the same rule every other line here answers to.
 func TestTheMCPRegistrationIsInsideLichsBlock(t *testing.T) {
-	block := crushrcBlock("1.2.3", "/plugins/lich", "/opt/lich/lich")
+	block := crushrcBlock("1.2.3", "", "/plugins/lich", "/opt/lich/lich")
 	existing := "# mine\nmodel add something\n"
 
 	updated := replaceBlock(existing, block)

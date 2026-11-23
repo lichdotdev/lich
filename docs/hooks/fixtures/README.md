@@ -49,8 +49,9 @@ One JSON object per line:
 | `raw`    | The request body as a **string**, for bodies that are not valid JSON. |
 | `accept` | lich accepts it (`204`, or `200` where the hook reads an answer). The field values it holds *after* parsing. |
 | `reject` | lich rejects it (`400`). Why, in prose.                              |
-| `answer` | Only where the hook reads lich's answer (`subagent-cards.jsonl`): the `200` body, as JSON, compared whole. |
-| `before` | Optional, with `answer`: the bodies of requests made first, in order, for an answer that depends on them (a repeat, a `wait`). |
+| `answer` | Only where the hook reads lich's answer (`subagent-cards.jsonl`, `session-touched.jsonl`): the `200` body, as JSON, compared whole. In `session-touched.jsonl` an accept case without one is answered `204`. |
+| `before` | Optional, where the hook reads lich's answer: the bodies of requests made first, in order, for an answer that depends on them (a repeat, a `wait`, another session's edit). |
+| `minutes` | Optional, in `session-touched.jsonl`: the minutes lich's clock moves between the last `before` request and the `body`, `0` when absent. |
 | `depth`  | Optional, with `answer`: the asking session's subagent depth, `0` when absent. |
 | `kind`   | Optional, with `answer`: the asking session's provider, `claude` when absent. |
 
@@ -76,6 +77,11 @@ and change freely; what the fixture fixes is *that* the payload is refused.
   workspace where the asker runs `kind` at `depth` and each session opened is,
   in order, `w1` "Fix #412" (ticket `4b9bc94e`) and `w2` "Docs sweep" (ticket
   `7c1d2e3f`), and compares the answer whole.
+- **lich's edit notes**: `internal/relay` replays each accepted
+  `session-touched.jsonl` case the same way, `before`, then `minutes`, then
+  `body`, in one checkout where `s1` "Relay fixes" (Claude Code), `s2` "Docs
+  sweep" (Codex, without lich's tools) and `s3` "Auth fix" (opencode) run and
+  `s4` "Old branch" is closed, in English, and compares the answer whole.
 - **The plugin (client side)** — the payload a script builds must match an
   `accept` case's `body` for the shape it sends. Vendor the files or read them
   from this repo at

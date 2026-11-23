@@ -178,7 +178,8 @@ func (s *Service) crushRegisteredCommand() (string, bool) {
 }
 
 // crushRewrite rewrites lich's block at the version it already carries, so the
-// repair moves the binary and nothing else: no release lookup, no new scripts.
+// repair moves the binary, and the touched report's event to what the Crush
+// installed now has: no release lookup, no new scripts.
 func (s *Service) crushRewrite(lichBin string) error {
 	version, ok := s.crushInstalledVersion()
 	if !ok {
@@ -195,7 +196,13 @@ func (s *Service) crushRewrite(lichBin string) error {
 	if _, errOld := os.Stat(filepath.Join(legacy, filepath.Base(crushHooks[0].script))); errNew != nil && errOld == nil {
 		dir = legacy
 	}
-	return s.writeCrushrc(version, dir, lichBin)
+	// The event of the touched report follows the Crush installed now, which a
+	// version that cannot be read leaves on PreToolUse.
+	crush, err := s.crushSupportsHooks()
+	if err != nil {
+		slog.Warn("agentplugin: read the Crush version for the repair", "err", err)
+	}
+	return s.writeCrushrc(version, crush, dir, lichBin)
 }
 
 // ompMCPPath is the document omp reads its servers from.

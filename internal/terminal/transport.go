@@ -161,6 +161,9 @@ type transport struct {
 	// decideSubagent answers /subagent (subagent.go). Guarded by mu and wired
 	// by SetSubagent.
 	decideSubagent subagentDecider
+	// editNote answers a /session-touched call with its edit-overlap note
+	// (touched.go). Guarded by mu and wired by SetEditNotes.
+	editNote editNoter
 	// workerAnswered receives a worker's reported answer (modanswer.go).
 	// Guarded by mu and wired by setWorkerAnswered, like modAborted.
 	workerAnswered func(id, text string)
@@ -469,43 +472,61 @@ func servePostLimited[T hookBody](
 	parse func([]byte) (T, error),
 	apply func(T) error,
 ) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-	c, ok := t.callerOf(r)
+	parsed, ok := readPost(t, w, r, limit, parse)
 	if !ok {
-		http.Error(w, "invalid token", http.StatusUnauthorized)
 		return
 	}
 	plugin := r.Header.Get(pluginVersionHeader)
-	body, err := io.ReadAll(io.LimitReader(r.Body, limit))
-	if err != nil {
-		http.Error(w, "failed to read body", http.StatusBadRequest)
-		return
-	}
-	parsed, err := parse(body)
-	if err != nil {
-		// The hook client ignores responses, so the log is the only place a
-		// bad payload ever surfaces. The plugin release is what tells a value
-		// this lich predates from a broken script.
-		slog.Warn("hook: bad payload", "path", r.URL.Path, "plugin", pluginLabel(plugin), "err", err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	// A session's token reports for that session alone: a confined agent
-	// posting another card's state would drive a spinner it does not own.
-	if !c.ownSession(parsed.session()) {
-		http.Error(w, "the token belongs to another session", http.StatusForbidden)
-		return
-	}
-	t.plugins.note(parsed.session(), plugin)
 	if err := apply(parsed); err != nil {
 		slog.Warn("hook: apply failed", "path", r.URL.Path, "plugin", pluginLabel(plugin), "err", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// readPost is servePostLimited up to the apply: the request checked, read and
+// parsed, or false with the error already written.
+func readPost[T hookBody](
+	t *transport,
+	w http.ResponseWriter,
+	r *http.Request,
+	limit int64,
+	parse func([]byte) (T, error),
+) (T, bool) {
+	var zero T
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return zero, false
+	}
+	c, ok := t.callerOf(r)
+	if !ok {
+		http.Error(w, "invalid token", http.StatusUnauthorized)
+		return zero, false
+	}
+	plugin := r.Header.Get(pluginVersionHeader)
+	body, err := io.ReadAll(io.LimitReader(r.Body, limit))
+	if err != nil {
+		http.Error(w, "failed to read body", http.StatusBadRequest)
+		return zero, false
+	}
+	parsed, err := parse(body)
+	if err != nil {
+		// Most hook clients ignore responses, so the log is the only place a
+		// bad payload ever surfaces. The plugin release is what tells a value
+		// this lich predates from a broken script.
+		slog.Warn("hook: bad payload", "path", r.URL.Path, "plugin", pluginLabel(plugin), "err", err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return zero, false
+	}
+	// A session's token reports for that session alone: a confined agent
+	// posting another card's state would drive a spinner it does not own.
+	if !c.ownSession(parsed.session()) {
+		http.Error(w, "the token belongs to another session", http.StatusForbidden)
+		return zero, false
+	}
+	t.plugins.note(parsed.session(), plugin)
+	return parsed, true
 }
 
 // hookRequest is a status POST body. Tool and Detail are the optional pair a
@@ -688,38 +709,6 @@ func parseSessionTitle(body []byte) (titleRequest, error) {
 	req.Title = strings.TrimSpace(req.Title)
 	if req.Title == "" {
 		return titleRequest{}, errors.New("session-title missing title")
-	}
-	return req, nil
-}
-
-// touchedRequest is a touched POST body.
-type touchedRequest struct {
-	SessionID string `json:"session_id"`
-}
-
-// sessionTouched receives a POST from a provider's hook when a session likely
-// changed files on disk (a file-mutating tool ran) and forwards the session id
-// via the touched callback, which nudges an immediate git-status refresh. It is
-// a best-effort latency optimization over the window's steady poll, so a
-// failure is harmless — the poll still catches the change.
-func (t *transport) sessionTouched(w http.ResponseWriter, r *http.Request) {
-	servePost(t, w, r, parseSessionTouched, func(req touchedRequest) error {
-		if t.touched != nil {
-			t.touched(req.SessionID)
-		}
-		return nil
-	})
-}
-
-// parseSessionTouched validates a touched POST body: just a non-empty lich
-// session id.
-func parseSessionTouched(body []byte) (touchedRequest, error) {
-	var req touchedRequest
-	if err := json.Unmarshal(body, &req); err != nil {
-		return touchedRequest{}, fmt.Errorf("invalid session-touched body: %w", err)
-	}
-	if req.SessionID == "" {
-		return touchedRequest{}, errors.New("session-touched missing session_id")
 	}
 	return req, nil
 }

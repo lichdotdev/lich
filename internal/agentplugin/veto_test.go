@@ -44,17 +44,17 @@ func TestKiroAgentRegistersTheVetoFromTheHookRelease(t *testing.T) {
 func TestCrushrcRegistersTheVetoFromTheHookRelease(t *testing.T) {
 	command := shquote.Quote(shquote.Quote(filepath.Join("/opt/lich/hooks", "veto-subagent.sh")) + " crush")
 	veto := "hook add PreToolUse --name lich-subagent-cards --matcher '^agent$' --command " + command + " --timeout 15"
-	if rc := crushrcBlock(SubagentHookRelease, "/opt/lich/hooks", ""); !strings.Contains(rc, veto) {
+	if rc := crushrcBlock(SubagentHookRelease, "", "/opt/lich/hooks", ""); !strings.Contains(rc, veto) {
 		t.Errorf("crushrc does not run the veto as the contract says:\n%s", rc)
 	}
-	if rc := crushrcBlock(preVetoRelease, "/opt/lich/hooks", ""); strings.Contains(rc, "veto-subagent") {
+	if rc := crushrcBlock(preVetoRelease, "", "/opt/lich/hooks", ""); strings.Contains(rc, "veto-subagent") {
 		t.Errorf("crushrc of a release without the veto runs it:\n%s", rc)
 	}
 }
 
 func TestCrushInstallWritesTheVeto(t *testing.T) {
 	files := map[string]string{}
-	for _, hook := range crushHooksFor(SubagentHookRelease) {
+	for _, hook := range crushHooksFor(SubagentHookRelease, "") {
 		files[taggedAt(SubagentHookRelease, hook.script)] = "#!/bin/sh\nexit 0\n"
 	}
 	for _, script := range crushSourcedScripts {
