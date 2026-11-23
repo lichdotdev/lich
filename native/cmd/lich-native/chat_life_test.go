@@ -612,3 +612,25 @@ func TestAnAnswerNamesWhatItsItemKnows(t *testing.T) {
 		}
 	}
 }
+
+func TestThoughtsBackToBackAreOneRowThatKeepsTheFirstID(t *testing.T) {
+	items := []backend.ChatItem{
+		{ID: "u1", Kind: api.ItemUser, Turn: 1},
+		{ID: "t1", Kind: api.ItemThought, Turn: 1, Text: "one"},
+		{ID: "t2", Kind: api.ItemThought, Turn: 1, Text: "two"},
+		{ID: "k1", Kind: api.ItemTool, Turn: 1, Tool: &backend.ChatToolCall{Name: "Bash", State: api.ToolDone}},
+		{ID: "t3", Kind: api.ItemThought, Turn: 1, Text: "three"},
+	}
+	var thoughts []chatRow
+	for _, r := range chatRows(items, claudeKind, true, time.Time{}) {
+		if r.kind == chatRowItem && r.item.Kind == api.ItemThought {
+			thoughts = append(thoughts, r)
+		}
+	}
+	if len(thoughts) != 2 || thoughts[0].item.ID != "t1" || thoughts[0].item.Text != "one\n\ntwo" || thoughts[0].live {
+		t.Fatalf("thoughts %+v, want t1 holding \"one\\n\\ntwo\" then t3 after the call", thoughts)
+	}
+	if thoughts[1].item.ID != "t3" || !thoughts[1].live {
+		t.Errorf("last thought %+v, want t3 alive", thoughts[1])
+	}
+}
