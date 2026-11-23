@@ -158,3 +158,18 @@ func TestTheSamePromptAfterTheWorkerAnsweredOpensAgain(t *testing.T) {
 		t.Errorf("opened %d, want a second card", len(w.opened))
 	}
 }
+
+// "inherit" (Cursor CLI's Task tool sends it) and an empty model both mean the
+// provider's default: no model reaches the open, so no --model is spawned.
+func TestInheritIsTheProvidersDefaultModel(t *testing.T) {
+	for _, model := range []string{"inherit", " Inherit ", "", "  "} {
+		svc, w, _ := newFake(Asker{Kind: "cursor"})
+		req := spawnReq("toolu_1")
+		req.Model = model
+		_, commit := svc.Decide(context.Background(), req)
+		commit(true)
+		if got := w.opened[0].Model; got != "" {
+			t.Errorf("model %q opened with %q, want the provider's default", model, got)
+		}
+	}
+}

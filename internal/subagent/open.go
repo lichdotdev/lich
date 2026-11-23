@@ -52,6 +52,20 @@ func (s *Service) open(ctx context.Context, req api.SubagentRequest, asker Asker
 
 // openAll opens and hands over each task in turn, returning what it opened
 // so far with the first failure.
+// inheritModel is how Cursor CLI's Task tool spells "the asker's own model",
+// which a --model flag would take as a model named inherit.
+const inheritModel = "inherit"
+
+// workerModel is the model a worker is spawned with, "" for the provider's
+// default.
+func workerModel(model string) string {
+	model = strings.TrimSpace(model)
+	if strings.EqualFold(model, inheritModel) {
+		return ""
+	}
+	return model
+}
+
 func (s *Service) openAll(ctx context.Context, req api.SubagentRequest) ([]api.SubagentOpened, error) {
 	var opened []api.SubagentOpened
 	for _, t := range req.Tasks {
@@ -62,7 +76,7 @@ func (s *Service) openAll(ctx context.Context, req api.SubagentRequest) ([]api.S
 		if req.Isolation == "worktree" {
 			worktree = worktreeName(t)
 		}
-		sess, err := s.spawner.OpenSubagentNow(ctx, api.OpenSubagentOptions{From: req.SessionID, Worktree: worktree, Model: strings.TrimSpace(req.Model)})
+		sess, err := s.spawner.OpenSubagentNow(ctx, api.OpenSubagentOptions{From: req.SessionID, Worktree: worktree, Model: workerModel(req.Model)})
 		if err != nil {
 			return opened, err
 		}

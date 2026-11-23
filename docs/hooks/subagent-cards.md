@@ -56,7 +56,9 @@ X-Lich-Plugin: <plugin release>
   has none).
 - `model`: the model the call asked for (Claude Code's `model`), empty for the
   provider's default. The worker runs on the asker's provider, so this is that
-  provider's spelling, handed to `spawn.OpenSubagent` as `Model`.
+  provider's spelling, handed to `spawn.OpenSubagent` as `Model`. `inherit`, in
+  any case (what Cursor CLI's `Task` sends), is the provider's default too and is
+  never passed on as a model.
 - `sealed`: the provider hands the hook the task encrypted, so lich cannot read
   it (Codex's multi-agent v2). `tasks[].prompt` is then empty and lich answers
   with a redirect (below).
