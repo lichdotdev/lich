@@ -158,6 +158,9 @@ type transport struct {
 	// usageReported receives a session's own measurements (modusage.go).
 	// Guarded by mu and wired by setUsageReported, like modAborted.
 	usageReported func(usageReport)
+	// decideSubagent answers /subagent (subagent.go). Guarded by mu and wired
+	// by SetSubagent.
+	decideSubagent subagentDecider
 	// workerAnswered receives a worker's reported answer (modanswer.go).
 	// Guarded by mu and wired by setWorkerAnswered, like modAborted.
 	workerAnswered func(id, text string)
@@ -224,6 +227,7 @@ func newTransport(
 	mux.HandleFunc("/mod/usage", t.modUsage)
 	mux.HandleFunc("/mod/answer", t.modAnswer)
 	mux.HandleFunc("/mod/status", t.modStatus)
+	mux.HandleFunc("/subagent", t.subagentHook)
 	t.mux = mux
 	t.srv = &http.Server{Handler: mux}
 	// Serve returning before close is abnormal: the window just lost RPC and

@@ -298,11 +298,6 @@
     "descriptionNextPaste": "{provider} がプレースホルダーに折りたたむような貼り付けを全文のまま入力するので、送信前に編集できます。次の貼り付けから、すべての {provider} セッションに適用されます。",
     "descriptionNextSession": "{provider} がプレースホルダーに折りたたむような貼り付けを全文のまま入力するので、送信前に編集できます。変更後に開いたセッションに適用されます。"
   },
-  "subagentCardsSetting": {
-    "title": "サブエージェントを lich セッションとして実行",
-    "searchWords": "エージェント サブエージェント カード ワークツリー 委任 バックグラウンド",
-    "description": "汎用サブエージェントを {provider} の内部で見えないまま動かさず、専用のカードとワークツリーで開きます。変更後に開いたセッションに適用されます。"
-  },
   "ultracodeSetting": {
     "title": "Ultracode",
     "searchWords": "ワークフロー オーケストレーション マルチエージェント エフォート",

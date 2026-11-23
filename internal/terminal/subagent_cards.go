@@ -3,41 +3,41 @@ package terminal
 import (
 	"strconv"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/agentplugin"
 	"github.com/lichdotdev/lich/internal/providers"
 	"github.com/lichdotdev/lich/internal/relay"
+	"github.com/lichdotdev/lich/internal/subagent"
 )
-
-// maxSubagentDepth is how many levels of subagent cards lich nests: a session
-// opens cards, and so does a card it opened; a card one level further keeps its
-// own subagents native. Every level multiplies the cards on screen and the
-// sessions a report climbs back through, and two let a worker split its own
-// task once more, which is the case nesting was asked for.
-const maxSubagentDepth = 2
 
 // subagentEnv tells a Claude Code session's lich-plugin mod how deep it runs as
 // a subagent (LICH_SUBAGENT_DEPTH, 0 for a session nobody opened as one), which
-// the mod's worker-answer.js reads to tell a worker, and to leave its subagents
-// native (LICH_SUBAGENT_CARDS=off, read by agent-cards.js) when they do not
-// become cards. The second is absent while they do, which is also what a
-// session spawned by an older lich sees, so the mod's default stays the cards.
-func subagentEnv(env []string, kind string, depth int, cardsOn bool) []string {
+// the mod's worker-answer.js reads to tell a worker. A mod older than the
+// subagent hook still converts subagents itself, so a session past the depth
+// cards nest to is also told to leave them native (LICH_SUBAGENT_CARDS=off,
+// read by that mod's agent-cards.js); a newer one has lich decide at
+// /subagent, and is told nothing.
+func subagentEnv(env []string, kind string, depth int, cardsOn, asksLich bool) []string {
 	if kind != providers.Claude {
 		return env
 	}
 	env = append(env, "LICH_SUBAGENT_DEPTH="+strconv.Itoa(depth))
-	if cardsOn {
+	if cardsOn || asksLich {
 		return env
 	}
 	return append(env, "LICH_SUBAGENT_CARDS=off")
 }
 
 // subagentRoute is where this spawn's briefing sends the agent to fan work out
-// (relay.SubagentRoute): its own Agent tool, as cards, where a plugin release
-// whose mod does that is installed; the same tool kept native in a card that
-// does not open cards; and lich sessions everywhere else.
-func subagentRoute(kind, profileDir string, depth int, cardsOn bool) relay.SubagentRoute {
-	if kind != providers.Claude || !agentplugin.ClaudeRunsSubagentCards(profileDir) {
+// (relay.SubagentRoute): its own subagent tool, as cards, wherever the
+// provider's hooks ask /subagent; the same tool kept native in a card that does
+// not open cards; and lich sessions where no hook runs: Cursor CLI's chat, and
+// a Claude Code plugin older than the cards.
+func subagentRoute(kind, view, profileDir string, depth int, cardsOn bool) relay.SubagentRoute {
+	if kind == providers.Cursor && view == api.ViewChat {
+		return relay.RouteSessions
+	}
+	if kind == providers.Claude && !agentplugin.ClaudeRunsSubagentCards(profileDir) {
 		return relay.RouteSessions
 	}
 	if cardsOn {
@@ -50,13 +50,10 @@ func subagentRoute(kind, profileDir string, depth int, cardsOn bool) relay.Subag
 }
 
 // subagentCardsOn is whether a session at depth turns its subagents into cards:
-// the user's setting, a session nobody opened as a subagent, or a card above
-// maxSubagentDepth whose plugin tells a worker by its depth. Under an older
-// plugin a worker's own subagents stay native, since that mod would stop
-// answering for a worker that opens cards.
-func (s *Service) subagentCardsOn(kind, profileDir string, depth int) bool {
-	if !s.store.SubagentCards(kind) {
-		return false
-	}
-	return depth == 0 || (depth < maxSubagentDepth && agentplugin.ClaudeNestsSubagentCards(profileDir))
+// a session nobody opened as a subagent, or a card above subagent.MaxDepth.
+// Under a Claude Code plugin that does not tell a worker by its depth, a
+// worker's own subagents stay native, since that mod would stop answering for
+// a worker that opens cards.
+func subagentCardsOn(kind, profileDir string, depth int) bool {
+	return depth == 0 || (depth < subagent.MaxDepth && (kind != providers.Claude || agentplugin.ClaudeNestsSubagentCards(profileDir)))
 }

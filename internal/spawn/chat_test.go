@@ -38,3 +38,33 @@ func TestOpenStartsTheViewTheSessionWasBornIn(t *testing.T) {
 		}
 	}
 }
+
+// blockingChat is a chat whose handshake does not finish until released.
+type blockingChat struct {
+	release chan struct{}
+	started chan string
+}
+
+func (b *blockingChat) Drawn(string) bool { return true }
+
+func (b *blockingChat) Open(_ context.Context, id string) error {
+	<-b.release
+	b.started <- id
+	return nil
+}
+
+// OpenSubagentNow answers once the session exists, with its chat still
+// starting behind it, which then starts.
+func TestOpenSubagentNowAnswersBeforeTheAgentIsUp(t *testing.T) {
+	svc, _, _, _, _ := newService(t)
+	chat := &blockingChat{release: make(chan struct{}), started: make(chan string, 1)}
+	svc.SetChat(chat)
+	opened, err := svc.OpenSubagentNow(t.Context(), OpenSubagentOptions{From: "s1"})
+	if err != nil || opened.ID == "" {
+		t.Fatalf("OpenSubagentNow = %+v, %v", opened, err)
+	}
+	close(chat.release)
+	if got := <-chat.started; got != opened.ID {
+		t.Errorf("started %q, want the session opened %q", got, opened.ID)
+	}
+}

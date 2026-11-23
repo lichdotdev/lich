@@ -102,6 +102,7 @@ func (d *codexDriver) open(ctx context.Context, resume string) (string, error) {
 		d.c.conv.notice("Codex did not list its models: " + err.Error())
 	}
 	d.listSkills(ctx)
+	d.checkLichHook(ctx)
 	if resume == "" {
 		return d.start(ctx)
 	}

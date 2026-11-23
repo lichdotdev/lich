@@ -179,7 +179,7 @@ what lich can read back out of it, since each CLI records different things.
 | A worktree of a folder you trusted opens without the "trust this folder?" question | yes | yes | yes | asks nothing | asks nothing | yes, and it no longer asks to initialize the project | yes | asks nothing |
 | Drive a running session from `lich control` or an agent: prompt, stop, model, effort, slash command | yes | no | no | no | no | no | no | no |
 | A message from another session arrives without being typed into the terminal | yes | no | no | no | no | no | no | no |
-| A subagent the agent starts runs as a lich session with its own card, in the asking session's checkout, hands its full report back and closes once done; its own subagents get cards too, one level down | yes | no | no | no | no | no | no | no |
+| A subagent the agent starts runs as a lich session with its own card, in the asking session's checkout, hands its full report back and closes once done; its own subagents get cards too, one level down | yes | yes | yes | yes | yes | yes | in a terminal; its chat runs no hooks | yes |
 | Ask a running session a side question without stopping it (`lich ask`) | yes | no | no | no | no | no | no | no |
 | Context, cost and plan usage as the CLI measured them itself | yes | no | no | no | no | no | no | no |
 | The terminal's status line shows who the session owes an answer, who it is waiting on, and answers ready to collect | yes | no | no | no | no | no | no | no |

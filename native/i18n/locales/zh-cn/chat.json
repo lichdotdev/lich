@@ -25,7 +25,8 @@
     },
     "workedAt": {
       "other": "工作了 {duration} · {count} 个工具 · {time}"
-    }
+    },
+    "openedAs": "已开成 {label}"
   },
   "done": {
     "done": "完成",
@@ -418,5 +419,10 @@
     "auto": "对话已自动压缩",
     "failed": "无法压缩",
     "tokens": "{before} → {after} token"
+  },
+  "codexHook": {
+    "title": "Codex 正在忽略 lich 的钩子，所以它的子代理以原生方式运行",
+    "steps": "内容变化过的钩子，在你重新信任之前 Codex 会跳过它。请在本会话的 /hooks 中信任 lich-plugin 的 PreToolUse 钩子。",
+    "review": "打开 /hooks"
   }
 }

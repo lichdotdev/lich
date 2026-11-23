@@ -306,11 +306,6 @@
     "descriptionNextPaste": "Вставка, которую {provider} свернул бы в заглушку, попадает полным текстом, и её можно отредактировать перед отправкой. Действует со следующей вставки в каждой сессии {provider}.",
     "descriptionNextSession": "Вставка, которую {provider} свернул бы в заглушку, попадает полным текстом, и её можно отредактировать перед отправкой. Действует для сессий, открытых после изменения."
   },
-  "subagentCardsSetting": {
-    "title": "Субагенты как сессии lich",
-    "searchWords": "агент субагент карточка worktree делегировать фон agent subagent card delegate background",
-    "description": "Универсальный субагент открывает собственную карточку и worktree вместо того, чтобы работать скрыто внутри {provider}. Действует для сессий, открытых после изменения."
-  },
   "ultracodeSetting": {
     "title": "Ultracode",
     "searchWords": "воркфлоу оркестрация мультиагентный усилие workflow orchestration multi-agent effort",

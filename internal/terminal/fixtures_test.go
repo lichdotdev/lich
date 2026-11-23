@@ -33,6 +33,14 @@ type hookFixtureCase struct {
 	Raw    *string         `json:"raw"`
 	Accept map[string]any  `json:"accept"`
 	Reject string          `json:"reject"`
+	// Answer, Before, Depth and Kind belong to a hook whose answer is the
+	// decision (subagent-cards.jsonl): the 200 body, the requests made before
+	// this one, and the asker's subagent depth and provider. internal/subagent
+	// asserts them; here the endpoint only has to answer 200.
+	Answer json.RawMessage   `json:"answer"`
+	Before []json.RawMessage `json:"before"`
+	Depth  int               `json:"depth"`
+	Kind   string            `json:"kind"`
 }
 
 // payload is the exact request body a client sends for this case.
@@ -50,6 +58,9 @@ type hookContract struct {
 	file  string
 	path  string
 	parse func([]byte) (any, error)
+	// answered is a contract whose accepted request gets 200 and a body to
+	// read rather than 204.
+	answered bool
 }
 
 // hookContracts is the full set. A contract missing from here, or a fixture
@@ -58,25 +69,28 @@ type hookContract struct {
 var hookContracts = []hookContract{
 	{"session-state.jsonl", "/hook", func(b []byte) (any, error) {
 		return parseHookRequest(b)
-	}},
+	}, false},
 	{"session-start.jsonl", "/session-start", func(b []byte) (any, error) {
 		return parseSessionStart(b)
-	}},
+	}, false},
 	{"session-title.jsonl", "/session-title", func(b []byte) (any, error) {
 		return parseSessionTitle(b)
-	}},
+	}, false},
 	{"session-touched.jsonl", "/session-touched", func(b []byte) (any, error) {
 		return parseSessionTouched(b)
-	}},
+	}, false},
 	{"mod-control.jsonl", "/mod/acks", func(b []byte) (any, error) {
 		return parseModAck(b)
-	}},
+	}, false},
 	{"mod-usage.jsonl", "/mod/usage", func(b []byte) (any, error) {
 		return parseModUsage(b)
-	}},
+	}, false},
 	{"mod-answer.jsonl", "/mod/answer", func(b []byte) (any, error) {
 		return parseModAnswer(b)
-	}},
+	}, false},
+	{"subagent-cards.jsonl", "/subagent", func(b []byte) (any, error) {
+		return parseSubagentRequest(b)
+	}, true},
 }
 
 // loadHookFixtures reads one fixture file, skipping blank lines.
@@ -247,7 +261,10 @@ func TestHookFixturesMatchEndpoints(t *testing.T) {
 			for _, c := range loadHookFixtures(t, contract.file) {
 				t.Run(c.Name, func(t *testing.T) {
 					want := http.StatusBadRequest
-					if c.Accept != nil {
+					switch {
+					case c.Accept != nil && contract.answered:
+						want = http.StatusOK
+					case c.Accept != nil:
 						want = http.StatusNoContent
 					}
 					assertPostStatus(t, url, c.payload(), want)

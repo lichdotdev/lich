@@ -527,9 +527,13 @@ func mcpArgs(kind, lichBin string) []string {
 		}
 		return []string{claudeMCPFlag, config}
 	case providers.Codex:
+		// The tools approve without asking: the open_session a /subagent
+		// redirect asks for must not wait on an approval nobody watches
+		// (measured on 0.170.0: with it no mcpServer/elicitation/request is sent).
 		return []string{
 			codexConfigFlag, fmt.Sprintf("mcp_servers.%s.command=%q", relay.MCPServerName, lichBin),
 			codexConfigFlag, fmt.Sprintf("mcp_servers.%s.args=[%q]", relay.MCPServerName, relay.MCPSubcommand),
+			codexConfigFlag, fmt.Sprintf("mcp_servers.%s.default_tools_approval_mode=%q", relay.MCPServerName, "approve"),
 		}
 	}
 	return nil

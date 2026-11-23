@@ -6,15 +6,8 @@ var es = Catalog{
 	BriefingIntro: "Estás ejecutándote dentro de lich, que corre sesiones de agentes de código lado a lado y " +
 		"puede abrir más junto a esta: cada una es una tarjeta que el usuario sigue y puede asumir " +
 		"a mitad de la tarea, en su propia git worktree cuando el trabajo necesita su propio checkout. ",
-	BriefingCards: "Aquí tu propia herramienta Agent las abre: un subagente general-purpose corre como " +
-		"una de esas tarjetas, en este checkout salvo que pidas isolation 'worktree', en segundo " +
-		"plano, y su informe te llega solo. Reparte el trabajo con ella. Abre tú mismo una " +
-		"sesión solo para lo que un subagente no puede ser: otro tipo de agente, una rama que " +
-		"el usuario nombró, o un trabajo que debe sobrevivir a esta sesión. ",
-	BriefingNative: "Esta sesión es en sí misma una tarjeta de subagente que abrió otra sesión, y aquí tu " +
-		"propia herramienta Agent corre un subagente dentro de esta sesión en lugar de como tarjeta. " +
-		"Reparte el trabajo con ella y no con nuevas sesiones de lich: tu mensaje final es el " +
-		"informe que espera la sesión que te abrió.",
+	BriefingCards:  "Aquí tu propia herramienta de subagentes las abre: un subagente que inicias corre como una de esas tarjetas, en este checkout salvo que la llamada pida una worktree, en segundo plano, y su informe te llega solo. Un tipo de exploración de solo lectura se queda dentro de esta sesión. Reparte el trabajo con ella. Abre tú mismo una sesión solo para lo que un subagente no puede ser: otro tipo de agente, una rama que el usuario nombró, o un trabajo que debe sobrevivir a esta sesión. ",
+	BriefingNative: "Esta sesión es en sí misma una tarjeta de subagente que abrió otra sesión, y aquí tu propia herramienta de subagentes corre un subagente dentro de esta sesión en lugar de como tarjeta. Reparte el trabajo con ella y no con nuevas sesiones de lich: tu mensaje final es el informe que espera la sesión que te abrió.",
 	BriefingSessions: "Cuando haya que repartir el trabajo (varias tareas a la vez, una por rama o " +
 		"checkout), esas sesiones son las que debes abrir, no los subagentes de tu propio " +
 		"harness: un subagente no tiene checkout, ni tarjeta, ni nada que el usuario pueda " +
@@ -131,6 +124,12 @@ var es = Catalog{
 	BrowserNotesSketchOnly: "La persona dibujó sobre la página de tu pestaña del navegador, %[1]s. La captura con su dibujo: %[2]s",
 	BrowserNotesSelectors:  "Cada selector de arriba sirve como el selector de browser_click y browser_type.",
 
+	SubagentOpened:        "lich abrió esta tarea como la sesión %[1]q (ticket %[2]s). Su informe te llega como un <lich-notification kind=\"worker-finished\">. No vuelvas a intentar la herramienta ni hagas la tarea tú mismo.",
+	SubagentOpenedSession: "%[1]q (ticket %[2]s)",
+	SubagentOpenedMany:    "lich abrió estas tareas como las sesiones %[1]s. Sus informes te llegan como bloques <lich-notification kind=\"worker-finished\">. No vuelvas a intentar la herramienta ni hagas las tareas tú mismo.",
+	SubagentSealed:        "lich no puede leer esta tarea: la herramienta la entrega cifrada. Entrega la misma tarea a la herramienta open_session de lich, escribiendo el prompt completo; su informe te llega como un <lich-notification kind=\"worker-finished\">. No vuelvas a intentar esta herramienta.",
+	SubagentWait:          "No hay ningún subagente nativo en marcha: lich abrió cada tarea como una sesión propia, y cada informe llega a tu prompt como un <lich-notification kind=\"worker-finished\">. Termina tu turno en lugar de esperar aquí.",
+
 	ThreadMarked: "Marcado. lich resuelve el hilo y responde con este commit en cuanto el head del pull request lo contenga.",
 
 	CopyNotice:         "lich copió %s aquí; el original no es accesible desde esta sesión, las ediciones se quedan en la copia.",
@@ -138,7 +137,7 @@ var es = Catalog{
 
 	MCPInstructions: `lich corre sesiones de agentes de código lado a lado en una ventana; estas herramientas son la forma en que esta sesión trabaja con las demás.
 
-Delega en paralelo: para el trabajo que puede correr junto al tuyo, abre una sesión de trabajo en su propia git worktree (open_session con worktree) para que tenga su propio checkout y luego entrégale la tarea con send_to_session. Consulta list_worktrees antes: una rama que ya está en checkout se abre, no se crea. Las sesiones de trabajo son sesiones completas en la pantalla del usuario: visibles, guiables y tuyas para cerrar (close_session) cuando el trabajo termina. Esa es la diferencia con los subagentes que corre tu propio harness, y es lo que el usuario pide cuando dice que repartas el trabajo entre ramas o worktrees: un subagente no tiene checkout propio ni una tarjeta que el usuario pueda abrir, leer o asumir a mitad de la tarea. Usa uno de ellos para leer algo y descartarlo, no para correr la implementación que alguien pidió ver. La excepción es una sesión de Claude Code cuyo lich-plugin convierte un subagente general-purpose en una de esas tarjetas: ahí tu herramienta Agent abre la sesión de trabajo, en segundo plano, y su informe te llega solo, así que reparte el trabajo con ella y abre sesiones aquí para lo que un subagente no puede ser.
+Delega en paralelo: para el trabajo que puede correr junto al tuyo, abre una sesión de trabajo en su propia git worktree (open_session con worktree) para que tenga su propio checkout y luego entrégale la tarea con send_to_session. Consulta list_worktrees antes: una rama que ya está en checkout se abre, no se crea. Las sesiones de trabajo son sesiones completas en la pantalla del usuario: visibles, guiables y tuyas para cerrar (close_session) cuando el trabajo termina. Esa es la diferencia con los subagentes que corre tu propio harness, y es lo que el usuario pide cuando dice que repartas el trabajo entre ramas o worktrees: un subagente no tiene checkout propio ni una tarjeta que el usuario pueda abrir, leer o asumir a mitad de la tarea. Usa uno de ellos para leer algo y descartarlo, no para correr la implementación que alguien pidió ver. La excepción es una sesión cuyo hook de lich-plugin convierte el subagente del propio agente en una de esas tarjetas, lo que vale para todo agente cuyos hooks se ejecutan (el chat de Cursor CLI no ejecuta ninguno); un tipo de exploración de solo lectura sigue corriendo dentro de la sesión. Ahí tu herramienta de subagentes abre la sesión de trabajo, en segundo plano, y su informe te llega solo, así que reparte el trabajo con ella y abre sesiones aquí para lo que un subagente no puede ser.
 
 Todo lo que lich entrega a esta sesión llega como un bloque lich-notification, y su atributo kind dice qué es: una tarea por hacer, el desenlace de una sesión de trabajo (worker-finished, worker-failed, worker-stopped, worker-waiting, expired), una fusión o un aviso. Solo una tarea, o un bloque que trae un prompt, es trabajo; lo demás son novedades. Pueden llegar varios en un solo mensaje.
 

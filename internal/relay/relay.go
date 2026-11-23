@@ -590,7 +590,7 @@ type SendOptions = api.SendOptions
 // (see queueDelivery). ctx is the caller's: one that hangs up mid-wait hears
 // nothing, and the errand's outcome goes to its inbox as if its wait had run out.
 func (s *Service) Send(ctx context.Context, opts SendOptions) (Result, error) {
-	return s.send(ctx, opts, errandShared)
+	return s.send(ctx, opts, errandShared, waitFor(opts.WaitSeconds))
 }
 
 // SendPrivate is Send for a caller that runs inside the sender session without
@@ -599,7 +599,7 @@ func (s *Service) Send(ctx context.Context, opts SendOptions) (Result, error) {
 // itself — the outcome is collected by its ticket alone, and nothing is typed at
 // the session's prompt or counted on its card about it.
 func (s *Service) SendPrivate(ctx context.Context, opts SendOptions) (Result, error) {
-	return s.send(ctx, opts, errandPrivate)
+	return s.send(ctx, opts, errandPrivate, waitFor(opts.WaitSeconds))
 }
 
 // SendSubagent is Send for a worker opened as the sender's subagent (`lich open
@@ -612,7 +612,27 @@ func (s *Service) SendSubagent(ctx context.Context, opts SendOptions) (Result, e
 	if opts.From == "" {
 		return Result{}, fmt.Errorf("a subagent reports to the session that asked for it, and this call came from no session")
 	}
-	return s.send(ctx, opts, errandSubagent)
+	return s.send(ctx, opts, errandSubagent, waitFor(opts.WaitSeconds))
+}
+
+// ErrandOpen is whether errand ticket is still waiting on its worker's
+// answer.
+func (s *Service) ErrandOpen(ticket string) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	_, open := s.tickets[ticket]
+	return open
+}
+
+// HandSubagent is SendSubagent that waits for nothing: the errand is opened
+// and its task handed over, or held until the worker is at a prompt, and the
+// ticket comes back at once, its outcome reaching the asker as an envelope.
+// /subagent answers in the time a hook waits, long before any worker could.
+func (s *Service) HandSubagent(ctx context.Context, opts SendOptions) (Result, error) {
+	if opts.From == "" {
+		return Result{}, fmt.Errorf("a subagent reports to the session that asked for it, and this call came from no session")
+	}
+	return s.send(ctx, opts, errandSubagent, 0)
 }
 
 // errandMode is who an errand's outcome is for: the sending session (Send), the
@@ -626,8 +646,8 @@ const (
 	errandSubagent
 )
 
-func (s *Service) send(ctx context.Context, opts SendOptions, mode errandMode) (Result, error) {
-	fromID, target, project, prompt, waitSeconds := opts.From, opts.Target, opts.Project, opts.Prompt, opts.WaitSeconds
+func (s *Service) send(ctx context.Context, opts SendOptions, mode errandMode, wait time.Duration) (Result, error) {
+	fromID, target, project, prompt := opts.From, opts.Target, opts.Project, opts.Prompt
 	prompt = sanitize(prompt)
 	if strings.TrimSpace(prompt) == "" {
 		return Result{}, fmt.Errorf("nothing to send: the prompt is empty")
@@ -713,7 +733,7 @@ func (s *Service) send(ctx context.Context, opts SendOptions, mode errandMode) (
 	// outlives it either way, and blocking past what was asked would run past
 	// the HTTP client's own budget (internal/cli, waitBudget) and report a
 	// timeout on an errand that is running perfectly well.
-	result := s.await(ctx, id, t, waitFor(waitSeconds))
+	result := s.await(ctx, id, t, wait)
 	result.Private = t.private
 	return result, nil
 }

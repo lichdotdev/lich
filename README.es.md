@@ -183,7 +183,7 @@ distinto.
 | Un worktree de una carpeta en la que confiaste se abre sin la pregunta "trust this folder?" | sí | sí | sí | no pregunta nada | no pregunta nada | sí, y ya no pregunta si inicializar el proyecto | sí | no pregunta nada |
 | Dirigir una sesión en ejecución desde `lich control` o un agente: prompt, detener, modelo, esfuerzo, slash command | sí | no | no | no | no | no | no | no |
 | Un mensaje de otra sesión llega sin escribirse en la terminal | sí | no | no | no | no | no | no | no |
-| Un subagente que inicia el agente se ejecuta como una sesión de lich con su propia tarjeta, en el checkout de la sesión que lo pidió, entrega su informe completo y se cierra al terminar; sus propios subagentes también reciben tarjeta, un nivel más abajo | sí | no | no | no | no | no | no | no |
+| Un subagente que inicia el agente se ejecuta como una sesión de lich con su propia tarjeta, en el checkout de la sesión que lo pidió, entrega su informe completo y se cierra al terminar; sus propios subagentes también reciben tarjeta, un nivel más abajo | sí | sí | sí | sí | sí | sí | en una terminal; su chat no ejecuta hooks | sí |
 | Hacer una pregunta lateral a una sesión en ejecución sin detenerla (`lich ask`) | sí | no | no | no | no | no | no | no |
 | Contexto, costo y uso del plan tal como los midió el propio CLI | sí | no | no | no | no | no | no | no |
 | La línea de estado de la terminal muestra a quién le debe una respuesta la sesión, de quién espera una y qué respuestas están listas para recoger | sí | no | no | no | no | no | no | no |

@@ -25,7 +25,8 @@
     },
     "workedAt": {
       "other": "{duration}作業 · ツール{count}件 · {time}"
-    }
+    },
+    "openedAs": "{label} として開きました"
   },
   "done": {
     "done": "完了",
@@ -418,5 +419,10 @@
     "auto": "会話を自動で圧縮しました",
     "failed": "圧縮できませんでした",
     "tokens": "{before} → {after} トークン"
+  },
+  "codexHook": {
+    "title": "Codex が lich のフックを無視しているため、サブエージェントはネイティブで動いています",
+    "steps": "内容が変わったフックは、再び信頼するまで Codex に飛ばされます。このセッションの /hooks で lich-plugin の PreToolUse フックを信頼してください。",
+    "review": "/hooks を開く"
   }
 }

@@ -98,8 +98,14 @@ running half of it.
   answer, makes every later `wait` an `allow`.
 - `allow`: lich did nothing, and the native subagent runs. lich allows a call
   from a nested conversation, a session already as deep as cards nest
-  (`maxSubagentDepth`), a type the provider's row below keeps native, a session
-  whose user turned subagent cards off, and any call it cannot open in time.
+  (`subagent.MaxDepth`), a type the provider's row below keeps native (a call
+  with one such task among others is allowed whole, since a veto is the call's),
+  a `wait` from a conversation lich saw no `spawn` from (lich keeps that record
+  in memory, so a restart forgets it), and any call it cannot open in time.
+  Subagent cards are not optional: there is no setting to turn them off.
+- A `sealed` deny counts as a deny in time for the `wait` rule, and lich checks
+  `nested` and the depth before it, so a sealed call from a nested conversation
+  or a deep card is allowed.
 
 Other responses: `401` invalid token · `400` invalid body · `405` not a POST.
 The client reads every one of them, and any failure to get an answer, as
@@ -189,7 +195,9 @@ inside the session as they always did:
   confinement (`internal/scope`).
 - A `deny` opens each task with the path `lich open --subagent` takes
   (`spawn.OpenSubagent`): in the asker's checkout, or a worktree of its own for
-  `isolation: worktree`, filed with the asker, `OriginSessionID` set. The
+  `isolation: worktree` (`subagent/<its title's first words>-<4 hex>`, removed
+  with the card when lich closes one whose hook gave up), filed with the asker,
+  `OriginSessionID` set. The
   provider is the asker's; the errand is a subagent errand
   (`relay.SendSubagent`), kept past `ticketTTL` while the worker runs.
 - A Codex session is spawned with
@@ -217,15 +225,18 @@ ceiling in `internal/agentplugin/compat.go`, and both sides test against
 `fixtures/subagent-cards.jsonl` (requests accepted and refused, and each kind of
 answer). A plugin older than this contract still carries the mod's agent-cards,
 which converts Claude Code calls by the old route; the release carrying this
-contract removes it, and lich moves its floor to that release, so the two
-routes never run in one session.
+contract removes it, so the two routes never run in one session. lich keeps
+speaking the old route (`LICH_SUBAGENT_CARDS`, `/mod/answer`) until its floor
+moves to 0.22.0, a later change.
 
 ## Retired with this contract
 
 - The mod's agent-cards and worker answer ([mod-answer.md](mod-answer.md),
-  `/mod/answer`).
-- `LICH_SUBAGENT_DEPTH` and `LICH_SUBAGENT_CARDS` as the plugin's switches: lich
-  decides, so a setting change needs no variable and reaches running sessions.
+  `/mod/answer`), in the plugin release that carries the hook; lich keeps
+  answering them for older releases until its floor moves.
+- `LICH_SUBAGENT_CARDS` as the plugin's switch: lich decides at `/subagent`,
+  and exports the variable only to a plugin older than the hook.
+
 
 ## Known ceilings
 

@@ -124,6 +124,23 @@ func nestsSubagentCards(version string) bool {
 	return !semver.Less(version, NestedSubagentCardsRelease)
 }
 
+// SubagentHookRelease is the first lich-plugin release whose pre-tool hook asks
+// /subagent (docs/hooks/subagent-cards.md) and whose mod no longer converts
+// subagents itself, so LICH_SUBAGENT_CARDS no longer means anything to it.
+const SubagentHookRelease = "0.22.0"
+
+// ClaudeAsksSubagentHook reports whether the Claude Code plugin installed in
+// profileDir ("" for Personal) is a release whose hook asks lich. It reads
+// Claude Code's plugin state on each call.
+func ClaudeAsksSubagentHook(profileDir string) bool {
+	version, ok := claudeInstalledVersionFor(profileDir)
+	return ok && asksSubagentHook(version)
+}
+
+func asksSubagentHook(version string) bool {
+	return !semver.Less(version, SubagentHookRelease)
+}
+
 // claudeInstalledVersionFor is the installed version in profileDir, or in
 // Personal's plugin state when profileDir is "".
 func claudeInstalledVersionFor(profileDir string) (string, bool) {

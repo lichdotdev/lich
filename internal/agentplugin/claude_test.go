@@ -59,3 +59,11 @@ func TestClaudeNestsSubagentCardsAnswersForTheProfile(t *testing.T) {
 		t.Error("a profile with no plugin: want cards not to nest")
 	}
 }
+
+func TestAsksSubagentHookFromTheHookRelease(t *testing.T) {
+	for version, want := range map[string]bool{"0.21.9": false, "0.22.0": true, "0.23.1": true, "": false} {
+		if got := asksSubagentHook(version); got != want {
+			t.Errorf("asksSubagentHook(%q) = %v, want %v", version, got, want)
+		}
+	}
+}

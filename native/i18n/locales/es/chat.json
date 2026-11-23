@@ -29,7 +29,8 @@
     "workedAt": {
       "one": "Trabajó {duration} · {count} herramienta · {time}",
       "other": "Trabajó {duration} · {count} herramientas · {time}"
-    }
+    },
+    "openedAs": "abierta como {label}"
   },
   "done": {
     "done": "Hecho",
@@ -440,5 +441,10 @@
     "auto": "Conversación compactada automáticamente",
     "failed": "No se pudo compactar",
     "tokens": "{before} → {after} tokens"
+  },
+  "codexHook": {
+    "title": "Codex está ignorando el hook de lich, así que sus subagentes se ejecutan de forma nativa",
+    "steps": "Codex se salta un hook cuyo contenido cambió hasta que vuelvas a confiar en él. Confía en el hook PreToolUse de lich-plugin en el /hooks de esta sesión.",
+    "review": "Abrir /hooks"
   }
 }

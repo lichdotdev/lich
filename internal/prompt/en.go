@@ -7,15 +7,8 @@ var en = Catalog{
 	BriefingIntro: "You are running inside lich, which runs coding-agent sessions side by side and can " +
 		"open more of them beside this one — each a card the user watches and can take over " +
 		"mid-task, in its own git worktree when the work needs its own checkout. ",
-	BriefingCards: "Here your own Agent tool opens them: a general-purpose subagent runs as " +
-		"one of those cards, in this checkout unless you ask for isolation 'worktree', " +
-		"in the background, and its report comes back to you on its own. Fan work out with " +
-		"it. Open a session yourself only for what a subagent cannot be: another agent " +
-		"kind, a branch the user named, or work that must outlive this session. ",
-	BriefingNative: "This session is itself a subagent card another session opened, and here " +
-		"your own Agent tool runs a subagent inside this session rather than as a card. Fan " +
-		"work out with it rather than with new lich sessions: your final message is the " +
-		"report the session that opened you is waiting for.",
+	BriefingCards:  "Here your own subagent tool opens them: a subagent you start runs as one of those cards, in this checkout unless the call asks for a worktree, in the background, and its report comes back to you on its own. A read-only exploration type stays inside this session. Fan work out with it. Open a session yourself only for what a subagent cannot be: another agent kind, a branch the user named, or work that must outlive this session. ",
+	BriefingNative: "This session is itself a subagent card another session opened, and here your own subagent tool runs a subagent inside this session rather than as a card. Fan work out with it rather than with new lich sessions: your final message is the report the session that opened you is waiting for.",
 	BriefingSessions: "When work is " +
 		"to be fanned out — several tasks at once, one per branch or checkout — those sessions " +
 		"are what to open, not the subagents your own harness runs: a subagent has no checkout, " +
@@ -136,6 +129,12 @@ var en = Catalog{
 	BrowserNotesSketchOnly: "The person drew on the page in your browser tab, %[1]s. The screenshot with their drawing: %[2]s",
 	BrowserNotesSelectors:  "Each selector above works as the selector of browser_click and browser_type.",
 
+	SubagentOpened:        "lich opened this task as the session %[1]q (ticket %[2]s). Its report reaches you as a <lich-notification kind=\"worker-finished\">. Do not retry the tool and do not do the task yourself.",
+	SubagentOpenedSession: "%[1]q (ticket %[2]s)",
+	SubagentOpenedMany:    "lich opened these tasks as the sessions %[1]s. Their reports reach you as <lich-notification kind=\"worker-finished\"> blocks. Do not retry the tool and do not do the tasks yourself.",
+	SubagentSealed:        "lich cannot read this task: the tool hands it over encrypted. Hand the same task to lich's open_session tool instead, writing its prompt in full; its report reaches you as a <lich-notification kind=\"worker-finished\">. Do not retry this tool.",
+	SubagentWait:          "No native subagent is running: lich opened every task as a session of its own, and each report reaches you as a <lich-notification kind=\"worker-finished\"> at your prompt. End your turn instead of waiting here.",
+
 	ThreadMarked: "Marked. lich resolves the thread and replies with this commit once the pull request's head holds it.",
 
 	CopyNotice:         "lich copied %s here; the original is not reachable from this session, edits stay in the copy.",
@@ -143,7 +142,7 @@ var en = Catalog{
 
 	MCPInstructions: `lich runs coding-agent sessions side by side in one window; these tools are how this session works with the others.
 
-Delegate in parallel: for work that can run beside yours, open a worker session in its own git worktree (open_session with worktree) so it gets its own checkout, then hand it the task with send_to_session. Check list_worktrees first — a branch already checked out is opened, not created. Workers are full sessions on the user's screen: visible, steerable, and yours to close (close_session) when the work is done. That is the difference from the subagents your own harness runs, and it is what the user is asking for when they say to fan work out across branches or worktrees: a subagent has no checkout of its own and no card they can open, read or take over mid-task. Reach for one of those to read something and throw it away, not to run the implementation somebody asked to see. The exception is a Claude Code session whose lich-plugin turns a general-purpose subagent into one of these cards: there your Agent tool opens the worker, in the background, and its report comes back on its own, so fan out with it and open sessions here for what a subagent cannot be.
+Delegate in parallel: for work that can run beside yours, open a worker session in its own git worktree (open_session with worktree) so it gets its own checkout, then hand it the task with send_to_session. Check list_worktrees first — a branch already checked out is opened, not created. Workers are full sessions on the user's screen: visible, steerable, and yours to close (close_session) when the work is done. That is the difference from the subagents your own harness runs, and it is what the user is asking for when they say to fan work out across branches or worktrees: a subagent has no checkout of its own and no card they can open, read or take over mid-task. Reach for one of those to read something and throw it away, not to run the implementation somebody asked to see. The exception is a session whose lich-plugin hook turns its agent's own subagent into one of those cards, which holds for every agent whose hooks run (Cursor CLI's chat runs none); a read-only exploration type still runs inside the session. There your subagent tool opens the worker, in the background, and its report comes back on its own, so fan out with it and open sessions here for what a subagent cannot be.
 
 Whatever lich hands this session arrives as a lich-notification block, its kind attribute saying what it is: a task to do, a worker's outcome (worker-finished, worker-failed, worker-stopped, worker-waiting, expired), a merge, or a notice. Only a task, or a block carrying a prompt, is work; the rest is news. Several can arrive in one message.
 

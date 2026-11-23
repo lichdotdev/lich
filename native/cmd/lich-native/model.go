@@ -94,6 +94,8 @@ type model struct {
 	editorTouched func(checkout string)
 	// focusSession brings a session's card up, as `lich focus` asks.
 	focusSession func(projectID, id string)
+	// reviewHooks brings a session up with its chat's /hooks panel open.
+	reviewHooks func(projectID, id string)
 	// showToast puts a toast up.
 	showToast func(ui.Toast)
 	// raise brings the window forward, as the tray asks.
@@ -134,6 +136,8 @@ type model struct {
 	services servicesStore
 	// threadFixes is the review threads waiting for a push.
 	threadFixes threadFixStore
+	// vetoes is the provider subagent calls lich opened as cards.
+	vetoes vetoStore
 	// artifacts is every open session's artifact list.
 	artifacts artifactStore
 	// chat is every chat session's conversation (chat_store.go). toTerminal
@@ -420,6 +424,14 @@ func (m *model) follow(ctx context.Context, events <-chan backend.Event) {
 		case api.ThreadFixesEvent.Name:
 			if list, err := backend.Decode(ev, api.ThreadFixesEvent); err == nil {
 				m.threadFixes.set(list)
+			}
+		case api.SubagentVetoEvent.Name:
+			if v, err := backend.Decode(ev, api.SubagentVetoEvent); err == nil {
+				m.vetoes.add(v)
+			}
+		case api.CodexHookUntrustedEvent.Name:
+			if h, err := backend.Decode(ev, api.CodexHookUntrustedEvent); err == nil && m.showToast != nil {
+				m.showToast(m.codexHookToast(h.SessionID))
 			}
 		case api.ArtifactsEvent.Name:
 			if a, err := backend.Decode(ev, api.ArtifactsEvent); err == nil {

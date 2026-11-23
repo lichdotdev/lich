@@ -47,6 +47,7 @@ import (
 	"github.com/lichdotdev/lich/internal/singleton"
 	"github.com/lichdotdev/lich/internal/spawn"
 	"github.com/lichdotdev/lich/internal/store"
+	"github.com/lichdotdev/lich/internal/subagent"
 	"github.com/lichdotdev/lich/internal/system"
 	"github.com/lichdotdev/lich/internal/terminal"
 	"github.com/lichdotdev/lich/internal/themes"
@@ -629,6 +630,12 @@ func registerServices(db *store.Service, term *terminal.Service, chats *chat.Ser
 	// its turn ended, the way a native subagent ends with its result.
 	rl.SetWorkerFinished(spawner.CloseFinishedWorker)
 	routes.Spawn(dispatcher, spawner)
+	// A provider's own subagent call asks /subagent first, which opens it as a
+	// card and tells the asker's chat which call it vetoed.
+	cards := subagent.New(subagent.Workspace{Load: db.LoadState, Depth: db.SessionSubagentDepth},
+		spawner, rl, db.PromptLanguage, func(v api.SubagentVeto) { events.Send(hub.Emit, api.SubagentVetoEvent, v) })
+	term.SetSubagent(cards.Decide)
+	routes.Subagent(dispatcher, cards)
 	// An extension's calls reach what lich's MCP tools reach.
 	exts.SetLich(extensions.Lich{
 		Projects: db.LoadState, Peers: rl.Peers, Worktrees: spawner.Worktrees, Open: spawner.Open, Send: rl.Send,

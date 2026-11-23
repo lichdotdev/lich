@@ -959,9 +959,10 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   too, wherever it runs, but only that one: the session that opened the opener does not. The notice also lands as
   a delivery like any other, so a cleanup clicked in the second before it starts a turn finds no session mid-turn,
   asks nothing, and removes the checkout with the notice still on its way.
-- **Only a Claude Code subagent becomes a lich card** (lich-plugin's `hooks/agent-cards.js`, its
-  `docs/agent-cards.md`): the plugin's mod takes the model's general-purpose `Agent` call and runs it as a lich
-  session with `lich open --subagent --prompt`, in the background. The card opens in the asking session's checkout
+- **A provider's own subagent becomes a lich card only where its hooks run** (`internal/subagent`;
+  docs/hooks/subagent-cards.md; before lich-plugin 0.22.0, the Claude Code mod's `hooks/agent-cards.js`): the
+  plugin's pre-tool hook asks `/subagent` before the provider's subagent tool runs, and lich opens a
+  general-purpose task as a lich session and vetoes the native call. The card opens in the asking session's checkout
   (`spawn.OpenSubagent`), unless the call asked for worktree isolation, which opens a worktree of its own; it is
   filed with the asker (in the asker's folder, or one named after it that the asker is filed under too), its
   errand is kept past `ticketTTL` for as long as the worker runs,
@@ -997,20 +998,48 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   the asker leaves its workers running, as it leaves Claude Code's own background agents (measured on 2.1.289);
   the mod's TaskStop stops one, Claude Code's `ctrl+x ctrl+k` does not, and the asker's status line counts them
   from `lich sessions --json` every 5 seconds. Cards
-  nest two levels deep (`maxSubagentDepth`, internal/terminal): a worker turns its own subagents into cards,
+  nest two levels deep (`subagent.MaxDepth`): a worker turns its own subagents into cards,
   and a worker it opened spawns with `LICH_SUBAGENT_CARDS=off`, so that one's stay native, and is briefed to fan
   out with them rather than with new lich sessions; nothing but that briefing stops it opening plain sessions
   with `lich open`. A worker needs lich-plugin 0.19.0 to nest, since an older mod tells a worker only by
   `LICH_SUBAGENT_CARDS=off`; under one every worker keeps its subagents native. A nested card's report climbs
   back through each worker above it, and each answers only once its own outcomes are in, so a card stopped deep
   in the tree reaches its asker as a stop, not as silence. Closing a worker leaves the cards it opened running,
-  as it leaves its own. The other seven
-  providers have no mod system, so nothing can take a subagent call from them, and their subagents stay inside their CLI. On Claude
-  Code too, a typed agent (Explore, Plan, a plugin's), a workflow step, another plugin's spawn, a remote one and the
-  subagents of a worker two levels down stay native, and the worker is reached with `send_to_session` or `lich send`, never with
-  Claude Code's `SendMessage`. Settings › Providers › Claude Code turns it off with "Subagents as lich sessions"
-  (`store.SubagentCards`), which reaches the mod as `LICH_SUBAGENT_CARDS=off` at spawn, so a session already
-  running keeps the value it started with.
+  as it leaves its own. Under a lich-plugin older than 0.22.0 only Claude Code's mod converts a call, and the other
+  seven providers' subagents stay inside their CLI. Each provider keeps its read-only exploration type native
+  (Claude Code every type but general-purpose, Codex `explorer`, opencode `explore`, oh-my-pi `scout`, Antigravity
+  `research`, Cursor CLI `explore`), and a call that mixes one with other tasks stays native as a whole, since a
+  veto is the call's; so do a workflow step, another plugin's spawn, a call from inside a native subagent and the
+  subagents of a worker two levels down, and the worker is reached with `send_to_session` or `lich send`, never with
+  the provider's own message tool. Subagent cards are not optional: there is no setting, and a plugin older than
+  the hook still reads `LICH_SUBAGENT_CARDS=off`, which lich exports only to a worker past the depth cards nest to.
+  A call lich cannot open within 5 s runs natively, and what it opened after that is closed; so is a call whose
+  hook gave up before lich answered.
+- **Cursor CLI's chat runs no hooks** (docs/hooks/subagent-cards.md, Known ceilings): `cursor-agent acp` runs
+  neither Cursor's hooks nor the Claude Code install's, so a Cursor chat's subagent runs natively and never becomes a
+  card; in a terminal it does.
+- **Codex skips a changed lich hook in silence**: Codex trusts a hook by its hash and runs one whose content changed
+  not at all, with no warning (measured on 0.170.0), so its subagents run natively until the person trusts lich's
+  hook again. The first Codex session of a lich run reads `hooks/list` (`internal/codexhooks`): a chat through its
+  own app-server, a terminal session through a short-lived `codex app-server` started on the session's binary,
+  directory and `CODEX_HOME`, under a second (measured on 0.170.0), which only reads. When lich-plugin's PreToolUse
+  entry is `modified` or `untrusted` a toast says so and opens that session's chat `/hooks` panel, switching a
+  terminal session to its chat first; the person trusts the hook there, lich never does. One check per run: a hook
+  changed while lich runs is told on the next start.
+- **Codex runs every lich MCP tool without asking** (`internal/terminal/command.go`, `mcpArgs`): a Codex session
+  is spawned with `-c mcp_servers.lich.default_tools_approval_mode="approve"`, so the `open_session` a vetoed or
+  sealed subagent call is sent to never waits on an approval, and neither does any other lich tool. The tools only
+  reach lich's own loopback API with the session's token.
+- **Codex's default multi-agent (v2) hands lich the task encrypted**: lich opens nothing for it and its reason sends
+  the model to `open_session` with the task in clear, which is an ordinary errand; a `wait_agent` after it is vetoed
+  too while no native subagent can be running (docs/hooks/subagent-cards.md).
+- **oh-my-pi's chat loads the plugin's extension only from `$PI_CODING_AGENT_DIR/extensions/`**: its ACP server
+  takes no flags, so without the extension there a chat's subagent runs natively.
+- **A vetoed call is drawn as opened only where the chat's tool item carries the hook's `tool_use_id`**
+  (`native/cmd/lich-native/chat_veto.go`): Claude Code's chat does (its item id is the `toolu_` id). Codex's
+  app-server chat draws no item at all for a vetoed spawn, so nothing there is drawn as failed, and the redirect's
+  `open_session` item carries the hook's id (`exec-…`) (measured). The ACP chats' item ids were not measured against
+  their hooks' ids; where they differ the call is still drawn as the failed call the provider reports.
 - **A managed plugin can hide the Stop a worker's answer waits on**: on a machine with managed settings, Claude
   Code's builtin `cc-plugin-sec-default` sends `classic.Stop` on past the plugins a person installs (measured on
   2.1.306), and no mod call says so. The worker's mod then answers from `turn.complete` alone, held back only while

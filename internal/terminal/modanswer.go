@@ -94,7 +94,13 @@ func (s *Service) SetWorkerUnanswered(fn func(id, reason string)) {
 }
 
 // ModAnswers is whether running session id's mod answers a subagent errand
-// with its turn's final message: it polls, from a plugin release that does.
+// with its turn's final message: it polls, from a plugin release that does
+// and before the one whose /subagent hook retired that answer (lich then
+// reads the turn's end itself).
 func (s *Service) ModAnswers(id string) bool {
-	return s.modAttached(id) && !semver.Less(s.ws.plugins.of(id), agentplugin.ModAnswerRelease)
+	return s.modAttached(id) && modAnswersRelease(s.ws.plugins.of(id))
+}
+
+func modAnswersRelease(version string) bool {
+	return !semver.Less(version, agentplugin.ModAnswerRelease) && semver.Less(version, agentplugin.SubagentHookRelease)
 }

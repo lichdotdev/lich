@@ -26,6 +26,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"log/slog"
 	"slices"
 	"strings"
 	"sync"
@@ -203,12 +204,26 @@ func (s *Service) OpenSubagent(ctx context.Context, opts OpenSubagentOptions) (S
 	})
 }
 
+// OpenSubagentNow is OpenSubagent answering once the session exists, its row
+// and label, and starting its agent in the background: /subagent answers in
+// the time a hook waits, and a chat's handshake can outlast it. A start that
+// fails is logged and shows on the card; the task waiting for its prompt ends
+// undelivered, as any errand to a session that never comes up.
+func (s *Service) OpenSubagentNow(ctx context.Context, opts OpenSubagentOptions) (Session, error) {
+	return s.openSession(ctx, request{
+		fromID: opts.From, kind: opts.Kind, worktree: opts.Worktree, base: opts.Base,
+		model: opts.Model, effort: opts.Effort, ultracode: opts.Ultracode, subagent: true, detach: true,
+	})
+}
+
 // request is one Open, OpenSubagent or Handoff call. subagent selects
 // OpenSubagent's placement, folder and row depth; handoff selects Handoff's
 // placement, folder and the caller's settings (inheritCaller).
 type request struct {
 	fromID, projectName, kind, worktree, base, model, effort, folder, profile string
 	ultracode, subagent, handoff                                              bool
+	// detach starts the agent in the background (OpenSubagentNow).
+	detach bool
 }
 
 // ctx says who is asking (scope.Session): a session opened from inside the
@@ -326,17 +341,35 @@ func (s *Service) openSession(ctx context.Context, req request) (Session, error)
 	}
 	callerErr := s.fileCaller(target, callerToFile, folder)
 	markErr := s.markSubagent(id, label, req)
-	if s.chat != nil && s.chat.Drawn(id) {
-		if err := s.chat.Open(context.Background(), id); err != nil {
-			return Session{}, fmt.Errorf("session %q was created but its chat did not start: %w", label, err)
-		}
-	} else if _, err := s.term.Start(context.Background(), api.StartOptions{ID: id, ProjectID: target.ID, Cwd: cwd, Kind: kind, Cols: startCols, Rows: startRows}); err != nil {
-		return Session{}, fmt.Errorf("session %q was created but its terminal did not start: %w", label, err)
+	start := func() error { return s.startAgent(id, label, target.ID, cwd, kind) }
+	if req.detach {
+		go func() {
+			if err := start(); err != nil {
+				slog.Warn("spawn: start a subagent card", "session", label, "err", err)
+			}
+		}()
+	} else if err := start(); err != nil {
+		return Session{}, err
 	}
 	if err := errors.Join(callerErr, overrideErr, colorErr, markErr); err != nil {
 		return Session{}, err
 	}
 	return opened, nil
+}
+
+// startAgent starts session id's agent: its chat when it is drawn as one,
+// else its terminal.
+func (s *Service) startAgent(id, label, projectID, cwd, kind string) error {
+	if s.chat != nil && s.chat.Drawn(id) {
+		if err := s.chat.Open(context.Background(), id); err != nil {
+			return fmt.Errorf("session %q was created but its chat did not start: %w", label, err)
+		}
+		return nil
+	}
+	if _, err := s.term.Start(context.Background(), api.StartOptions{ID: id, ProjectID: projectID, Cwd: cwd, Kind: kind, Cols: startCols, Rows: startRows}); err != nil {
+		return fmt.Errorf("session %q was created but its terminal did not start: %w", label, err)
+	}
+	return nil
 }
 
 // besideCaller is the caller's own checkout as a placement: where it runs,

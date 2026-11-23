@@ -29,7 +29,8 @@
     "workedAt": {
       "one": "Worked for {duration} · {count} tool · {time}",
       "other": "Worked for {duration} · {count} tools · {time}"
-    }
+    },
+    "openedAs": "opened as {label}"
   },
   "done": {
     "done": "Done",
@@ -440,5 +441,10 @@
     "auto": "Conversation compacted automatically",
     "failed": "Couldn't compact",
     "tokens": "{before} → {after} tokens"
+  },
+  "codexHook": {
+    "title": "Codex is ignoring lich's hook, so its subagents run natively",
+    "steps": "Codex skips a hook whose content changed until you trust it again. Trust lich-plugin's PreToolUse hook in this session's /hooks.",
+    "review": "Open /hooks"
   }
 }

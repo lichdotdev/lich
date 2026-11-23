@@ -118,6 +118,10 @@ func (u *window) enterChat(id string) {
 	u.terms.drop(id)
 	u.gate.forget(id)
 	u.toaster.Dismiss(exitToastID(id))
+	if u.hooksOnChat == id {
+		u.hooksOnChat = ""
+		u.openTools(u.chats.pane(id), id, chatHooksCommand)
+	}
 	u.model.invalidate()
 }
 

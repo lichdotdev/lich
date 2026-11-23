@@ -88,10 +88,9 @@ func pasteUnfoldTiming(kind string) uint8 {
 	return pasteNone
 }
 
-// supportsUltracode and supportsSubagentCards are terminal.SupportsUltracode
-// and the lich-plugin mod: Claude Code is the only provider with either.
-func supportsUltracode(kind string) bool     { return kind == "claude" }
-func supportsSubagentCards(kind string) bool { return kind == "claude" }
+// supportsUltracode is terminal.SupportsUltracode: Claude Code is the only
+// provider with it.
+func supportsUltracode(kind string) bool { return kind == "claude" }
 
 func canResume(kind string) bool { return slices.Contains(resumableKinds, kind) }
 
@@ -143,7 +142,6 @@ func providerEntries() []settingEntry {
 		{titleKey: "settings.providerBinary.title", alsoKey: "settings.providerBinary.searchWords", perProvider: true},
 		{titleKey: "settings.providerBinSettings.skipTitle", alsoKey: "settings.providerBinSettings.skipSearchWords", perProvider: true, onlyFor: kindsWhere(hasSkipFlag)},
 		{titleKey: "settings.ultracodeSetting.title", alsoKey: "settings.ultracodeSetting.searchWords", perProvider: true, onlyFor: kindsWhere(supportsUltracode)},
-		{titleKey: "settings.subagentCardsSetting.title", alsoKey: "settings.subagentCardsSetting.searchWords", perProvider: true, onlyFor: kindsWhere(supportsSubagentCards)},
 		{titleKey: "settings.pasteUnfoldSetting.title", alsoKey: "settings.pasteUnfoldSetting.searchWords", perProvider: true, onlyFor: kindsWhere(hasPasteUnfold)},
 		{titleKey: "settings.restoreSetting.title", alsoKey: "settings.restoreSetting.searchWords", perProvider: true, onlyFor: kindsWhere(canResume)},
 	}...)
@@ -182,8 +180,6 @@ func providerSkipKey(kind string, worktree bool) string {
 
 func providerUltracodeKey(kind string) string { return "provider." + kind + ".ultracode" }
 
-func providerSubagentKey(kind string) string { return "provider." + kind + ".subagentCards" }
-
 func providerPasteKey(kind string) string { return "provider." + kind + ".pasteUnfold" }
 
 // providerGlobalKeys are the global values a provider's screen and row
@@ -198,9 +194,6 @@ func providerGlobalKeys(kind string) []string {
 	}
 	if supportsUltracode(kind) {
 		keys = append(keys, providerUltracodeKey(kind))
-	}
-	if supportsSubagentCards(kind) {
-		keys = append(keys, providerSubagentKey(kind))
 	}
 	if hasPasteUnfold(kind) {
 		keys = append(keys, providerPasteKey(kind))
@@ -433,7 +426,7 @@ type providerSettings struct {
 	xdg                map[string]*profileSettings
 
 	skip, restore  ui.Enum
-	ultra, agents  ui.SwitchState
+	ultra          ui.SwitchState
 	unfold, header ui.SwitchState
 
 	// change is the rung climb the dialog asks about while asking; it stays

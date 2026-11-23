@@ -50,11 +50,12 @@ func TestEveryProviderHasASkipFlagAndResumes(t *testing.T) {
 	}
 }
 
-func TestOnlyClaudeHasUltracodeAndSubagentCards(t *testing.T) {
+// The subagent cards switch is gone (they are no longer optional), so
+// ultracode is the one Claude-only switch left.
+func TestOnlyClaudeHasUltracode(t *testing.T) {
 	for _, kind := range providerKinds() {
-		want := kind == "claude"
-		if supportsUltracode(kind) != want || supportsSubagentCards(kind) != want {
-			t.Errorf("%s: ultracode %v, subagent cards %v", kind, supportsUltracode(kind), supportsSubagentCards(kind))
+		if want := kind == "claude"; supportsUltracode(kind) != want {
+			t.Errorf("%s: ultracode %v", kind, supportsUltracode(kind))
 		}
 	}
 }

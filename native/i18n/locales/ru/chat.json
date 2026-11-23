@@ -37,7 +37,8 @@
       "few": "Работал {duration} · {count} инструмента · {time}",
       "many": "Работал {duration} · {count} инструментов · {time}",
       "other": "Работал {duration} · {count} инструмента · {time}"
-    }
+    },
+    "openedAs": "открыта как {label}"
   },
   "done": {
     "done": "Готово",
@@ -484,5 +485,10 @@
     "auto": "Разговор сжат автоматически",
     "failed": "Не удалось сжать",
     "tokens": "{before} → {after} токенов"
+  },
+  "codexHook": {
+    "title": "Codex игнорирует хук lich, поэтому его субагенты работают нативно",
+    "steps": "Codex пропускает хук с изменённым содержимым, пока вы снова ему не доверитесь. Доверьтесь хуку PreToolUse из lich-plugin в /hooks этой сессии.",
+    "review": "Открыть /hooks"
   }
 }

@@ -63,7 +63,7 @@ const chatClock = "15:04"
 func (u *window) chatRow(gtx C, th *ui.Theme, p *chatPane, sv sessionView, r chatRow) D {
 	switch r.kind {
 	case chatRowWork:
-		return u.chatWork(gtx, th, p.fold("work:"+strconv.Itoa(r.turn)), sv, r)
+		return u.chatWork(gtx, th, p, p.fold("work:"+strconv.Itoa(r.turn)), sv, r)
 	case chatRowShell:
 		return chatBranch(gtx, th, true, func(gtx C) D { return chatShellCall(gtx, th, p.fold("out:"+r.item.ID), r.item, r.live) })
 	case chatRowLive:
@@ -274,7 +274,7 @@ func chatThought(gtx C, th *ui.Theme, f *chatFold, it backend.ChatItem, live boo
 // long the turn took, how many calls it made and when it ended. It stands
 // open while its turn is in a run of calls and shuts when the run ends; a
 // shell command's is a row of its own.
-func (u *window) chatWork(gtx C, th *ui.Theme, f *chatFold, sv sessionView, r chatRow) D {
+func (u *window) chatWork(gtx C, th *ui.Theme, p *chatPane, f *chatFold, sv sessionView, r chatRow) D {
 	f.follow(gtx.Now, r.calling)
 	f.update(gtx)
 	label := func(gtx C, fg color.NRGBA) D {
@@ -301,13 +301,13 @@ func (u *window) chatWork(gtx C, th *ui.Theme, f *chatFold, sv sessionView, r ch
 		layout.Flexed(1, func(gtx C) D { return chatHairline(gtx, th) }),
 	)
 	children := []layout.FlexChild{layout.Rigid(func(gtx C) D { return layout.Flex{Alignment: layout.Middle}.Layout(gtx, line...) })}
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, append(children, chatCalls(gtx, th, f, r)...)...)
+	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, append(children, chatCalls(gtx, th, f, r, u.vetoOutcome(p, sv))...)...)
 }
 
 // chatCalls are a group's calls, each in a fold of its own that opens and
 // shuts with the group. A call that comes once the group is drawn enters as a
 // row does.
-func chatCalls(gtx C, th *ui.Theme, f *chatFold, r chatRow) []layout.FlexChild {
+func chatCalls(gtx C, th *ui.Theme, f *chatFold, r chatRow, outcome func(backend.ChatItem) layout.Widget) []layout.FlexChild {
 	ids := make([]string, len(r.tools))
 	for i, it := range r.tools {
 		ids[i] = it.ID
@@ -327,7 +327,7 @@ func chatCalls(gtx C, th *ui.Theme, f *chatFold, r chatRow) []layout.FlexChild {
 						top = ui.Space(1)
 					}
 					return layout.Inset{Top: top}.Layout(gtx, func(gtx C) D {
-						return chatBranch(gtx, th, i == len(r.tools)-1, func(gtx C) D { return chatTool(gtx, th, it, r.live) })
+						return chatBranch(gtx, th, i == len(r.tools)-1, func(gtx C) D { return chatToolWith(gtx, th, it, r.live, outcome(it)) })
 					})
 				})
 			})
@@ -433,6 +433,12 @@ func chatNothing(C) D { return D{} }
 // live turn its name and target shimmer and its time counts; once it ends the
 // time stands still, and a call whose end nobody reported shows none.
 func chatTool(gtx C, th *ui.Theme, it backend.ChatItem, live bool) D {
+	return chatToolWith(gtx, th, it, live, nil)
+}
+
+// chatToolWith is chatTool with how it ended drawn by outcome, the row's own
+// check or cross when nil.
+func chatToolWith(gtx C, th *ui.Theme, it backend.ChatItem, live bool, outcome layout.Widget) D {
 	t := it.Tool
 	if t == nil {
 		return D{}
@@ -461,7 +467,12 @@ func chatTool(gtx C, th *ui.Theme, it backend.ChatItem, live bool) D {
 					return d
 				}),
 				layout.Rigid(func(gtx C) D { return chatToolTime(gtx, th, it, running) }),
-				layout.Rigid(func(gtx C) D { return chatToolOutcome(gtx, th, t) }),
+				layout.Rigid(func(gtx C) D {
+					if outcome != nil {
+						return outcome(gtx)
+					}
+					return chatToolOutcome(gtx, th, t)
+				}),
 			)
 		})
 	}
