@@ -330,6 +330,45 @@ func TestSessionModelRoundTrips(t *testing.T) {
 	}
 }
 
+// TestNewSessionStartsOnTheProvidersLastModel pins what a new session of a
+// provider is born on after one of its chats picked a model: that model, not
+// the provider's own default, and only for that provider.
+func TestNewSessionStartsOnTheProvidersLastModel(t *testing.T) {
+	svc := newTestStore(t)
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	add := func(id, kind string, seq int) {
+		t.Helper()
+		if _, err := svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: id, Label: id, Kind: kind, NextSeq: seq}); err != nil {
+			t.Fatalf("AddSession(%s): %v", id, err)
+		}
+	}
+
+	add("oc1", providers.OpenCode, 2)
+	if err := svc.SetSessionModel("oc1", "anthropic/claude-sonnet"); err != nil {
+		t.Fatalf("SetSessionModel: %v", err)
+	}
+	add("oc2", providers.OpenCode, 3)
+	if got := svc.SessionModel("oc2"); got != "anthropic/claude-sonnet" {
+		t.Errorf("new opencode session model = %q, want the last picked", got)
+	}
+	add("cc1", providers.Claude, 4)
+	if got := svc.SessionModel("cc1"); got != "" {
+		t.Errorf("new claude session model = %q, want the provider's default", got)
+	}
+
+	if err := svc.SetSessionModel("cc1", "opus"); err != nil {
+		t.Fatalf("SetSessionModel: %v", err)
+	}
+	add("cc2", providers.Claude, 5)
+	if got := svc.SessionModel("cc2"); got != "opus" {
+		t.Errorf("new claude session model = %q, want opus", got)
+	}
+	add("oc3", providers.OpenCode, 6)
+	if got := svc.SessionModel("oc3"); got != "anthropic/claude-sonnet" {
+		t.Errorf("new opencode session model = %q, want opencode's own last pick", got)
+	}
+}
+
 // TestSessionEffortRoundTrips pins the effort the same way: what was written is
 // what a spawn reads back, and no effort or no row reads "".
 func TestSessionEffortRoundTrips(t *testing.T) {

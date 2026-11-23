@@ -68,6 +68,35 @@ func (s *Service) DeleteGlobalSetting(key string) error {
 	return nil
 }
 
+// modelKey is the settings key holding the model last picked in a chat of this
+// provider, global because the choice is about the provider rather than about
+// one project or one session.
+func modelKey(providerID string) string {
+	return "provider." + providerID + ".model"
+}
+
+// ProviderModel is the model a new session of providerID starts on: the one
+// last picked in any of its chats, "" for none or on a read failure. An empty
+// answer leaves the provider on its own default, as SessionModel's does.
+func (s *Service) ProviderModel(providerID string) string {
+	value, err := s.GetSetting(context.Background(), api.GetSettingOptions{Key: modelKey(providerID)})
+	if err != nil {
+		return ""
+	}
+	return value
+}
+
+// rememberProviderModel records model as what a new session of providerID
+// starts on. A model cleared this way is remembered as none, so the next
+// session goes back to the provider's own default.
+func (s *Service) rememberProviderModel(providerID, model string) error {
+	if model == "" {
+		return s.DeleteGlobalSetting(modelKey(providerID))
+	}
+	_, err := s.SetSetting(context.Background(), api.SetSettingOptions{Key: modelKey(providerID), Value: model})
+	return err
+}
+
 // ProviderEnabled reports whether the user turned providerID on, read the way
 // the windows read provider.<id>.enabled: Claude is on unless switched off,
 // since it was always offered before providers could be chosen, and every
