@@ -46,7 +46,7 @@ func (u *window) bandedSession(gtx C, sv sessionView, band int, bg color.NRGBA, 
 }
 
 // sessionHeader is a session's header, alone on the stage and as a layout's
-// pane alike: the provider and the session's name floating at the left, with
+// pane alike: the provider's mark and the session's name floating at the left, with
 // no ground, cut with "…" when the room is short, then the selector and
 // controls, a pane's own, which take their room first. project, when set,
 // leads the name; ink is the name's color.
@@ -66,25 +66,19 @@ func (u *window) sessionHeader(gtx C, th *ui.Theme, sv sessionView, project stri
 	})
 }
 
-// sessionName is "Claude Code · Cart totals a cent off": the project when
-// set and the provider as the window names it, then the card's label in
-// semibold, the one cut first when the room is short, all in ink: the
-// backdrop's dots run behind them, and a muted name would sink into it.
+// sessionName is the provider's mark and then "Cart totals a cent off": the
+// project leads the name when set, and the card's label is in semibold, the
+// one cut first when the room is short, all in ink: the backdrop's dots run
+// behind them, and a muted name would sink into it.
 func (u *window) sessionName(gtx C, th *ui.Theme, sv sessionView, project string, ink color.NRGBA) D {
 	gtx.Constraints.Min.X = 0
-	name := layout.Flexed(1, th.Text(ui.TextSM, sv.Label).In(ink).Weight(font.SemiBold).Truncated().Layout)
-	prefix := ""
+	row := []layout.FlexChild{
+		layout.Rigid(func(gtx C) D { return providerIcon(sv.Kind).Layout(gtx, ui.Space(3.5), ink) }),
+		ui.Gap(2),
+	}
 	if project != "" {
-		prefix = project + " · "
+		row = append(row, layout.Rigid(th.Text(ui.TextSM, project+" · ").In(ink).Truncated().Layout))
 	}
-	if p, ok := u.model.providers.find(sv.Kind); ok {
-		prefix += p.name + " · "
-	}
-	if prefix == "" {
-		return layout.Flex{Alignment: layout.Middle}.Layout(gtx, name)
-	}
-	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-		layout.Rigid(th.Text(ui.TextSM, prefix).In(ink).Truncated().Layout),
-		name,
-	)
+	row = append(row, layout.Flexed(1, th.Text(ui.TextSM, sv.Label).In(ink).Weight(font.SemiBold).Truncated().Layout))
+	return layout.Flex{Alignment: layout.Middle}.Layout(gtx, row...)
 }
