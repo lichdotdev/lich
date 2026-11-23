@@ -19,8 +19,9 @@ func TestACodeBlockInAnAnswerCopiesItsCode(t *testing.T) {
 	})
 	r.settle(t)
 	// The answer's text has no labels to find it by: walk the pointer down
-	// from its header until the block's button, at the column's right, shows.
-	top := labelTop(t, r, "claude")
+	// the column, from under the person's message and its time, until the
+	// block's button, at the column's right, shows.
+	top := labelTop(t, r, clockFor(r, novDay(18, 14, 32))) + 24
 	right := image.Rect(r.size.X/2, top, r.size.X, composerBox(t, r).Min.Y)
 	for y := top; clickablesIn(r, right) == 0; y += 8 {
 		if y > right.Max.Y {

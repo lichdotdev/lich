@@ -431,17 +431,12 @@ draws none while it grows in, because the room above the rows is measured in the
   terminal's path:line is found, is a link the terminal's way: while Ctrl (Cmd on macOS) is held the hovered one
   is underlined in its color and takes the hand, and a click with it opens a file in the stage editor
   (`followCodeRef`) and a folder in the dock's Code tab, unfolded down to it (`chat_paths.go`). A path it does not
-  hold stays text. Anything else in code is plain. The first answer of each turn opens
-  with who speaks: the provider's mark at 20px on a `RadiusMD` square, in the session's card color (the
-  agent cursor's color, `Primary` for a card with none; the window keeps no brand color per provider) over
-  a fill of that color mixed 22% into the surface, then the provider's name in medium, then muted
-  "· model · effort" as the answer's own item says them (`ChatItem.Model`, `Effort`: what wrote it, not what the
-  chat is set to now; the options are never read for it, so changing the model leaves old answers as they were; an
-  empty effort leaves it out, and with neither the header is the name alone). A thought is a muted fold, closed, with the
+  hold stays text. Anything else in code is plain. An answer has no header: who wrote it is the
+  foot's (see A message's time), and the provider's avatar stands only on the tool-call line that opens a turn. A thought is a muted fold, closed, with the
   sparkles before its label.
 - **A turn's tool calls** fold into one muted line where the first of them came, with a 1px `Border` hairline
   running from its label to the column's edge. When the line opens the turn (no answer before it) it starts with
-  the provider's avatar, and the answer's header that follows leaves the avatar out, keeping name and model. Finished, it reads
+  the provider's avatar. Finished, it reads
   "Worked for 41s · 6 tools · 09:15": how long the turn took, how many calls, when it ended (without the time
   when the history has none). Open, each call is a 28px row hung under the line by a connector, a 1px
   `Border` line under the fold's chevron with a stub into the row, ending at the last row as the sidebar's
@@ -674,8 +669,7 @@ draws none while it grows in, because the room above the rows is measured in the
   composer is nearly always the focused thing, so a ring around the biggest box on the screen only reads as a
   loud frame that never goes away.
 - **Copy** is an icon-only button that shows only while the pointer is over a message, on the line of its time and
-  beside it: at the left of the time for the person's message, so it sits at the right, at the right of the time
-  for an answer, so it sits at the left. It copies the item's whole text, an answer's Markdown source, through the
+  at the left of it: for the person's message the line is at the right edge, for an answer at the left. It copies the item's whole text, an answer's Markdown source, through the
   window's clipboard path, and becomes a check for 1.5s. It has no tooltip: the glyph says it. The line is as tall with it as
   without (`chatCopySlot`), so it pushes nothing; the button is a little larger than the line and reaches past it. Texts the
   agent writes one after another in a turn, nothing between them, read as one answer: only the last keeps the
@@ -683,8 +677,11 @@ draws none while it grows in, because the room above the rows is measured in the
 - **A message's time** is a `TextXS` muted line, the window's short clock ("14:32") under a tooltip that holds
   the footer clock's full date: under the person's box at the right edge, always, led by its day when that is
   not today ("Nov 17 · 23:05", the year too past this one); under an answer's text at the
-  left, its foot, only while the pointer is over the answer (with the copy button beside it; the line is there at
-  rest, empty, so nothing moves).
+  left, its foot, only while the pointer is over the answer (with the copy button before it; the line is there at
+  rest, empty, so nothing moves). The foot reads "Sonnet 5.5 · high · 14:32": the model and effort that wrote the
+  answer as its own item says them (`ChatItem.Model`, `Effort`; the options are never read for it, so changing the
+  model leaves old answers as they were; an empty one is left out), then the time. Its tooltip is the provider's
+  name before the full date.
   Between two turns that start on different days a muted, centred line names the later day: Today, Yesterday,
   else its date, with the year when it is not this one. A message with no time draws none.
 

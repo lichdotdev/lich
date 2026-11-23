@@ -28,11 +28,9 @@ type chatRow struct {
 	item backend.ChatItem // chatRowItem, chatRowShell, chatRowEdit
 	// day is a day row's moment, unix ms: when the turn it starts began.
 	day int64
-	// lead marks the first answer of a turn, which opens with who speaks. When
-	// a work row came before it in the turn, the avatar is on that row and
-	// bare says the answer's header leaves it out; avatar marks the work row
-	// that carries it.
-	lead, bare, avatar bool
+	// avatar marks the work row that opens its turn, which carries the
+	// provider's mark.
+	avatar bool
 	// more marks an answer's text another follows in the turn, with nothing
 	// between them: the run reads as one answer, so only its last text keeps
 	// the time and copy line, and runText is what that copy takes, every text
@@ -108,7 +106,6 @@ func chatRows(items []backend.ChatItem, kind string, running bool, now time.Time
 	}
 	var rows []chatRow
 	folded := map[int]bool{}
-	led := map[int]bool{}
 	// opener is what first speaks in a turn, "work" or "agent".
 	opener := map[int]string{}
 	var turnDay time.Time
@@ -140,12 +137,8 @@ func chatRows(items []backend.ChatItem, kind string, running bool, now time.Time
 					continue
 				}
 			}
-			if it.Kind == api.ItemAgent && !led[it.Turn] {
-				led[it.Turn], r.lead = true, true
-				r.bare = opener[it.Turn] == "work"
-				if opener[it.Turn] == "" {
-					opener[it.Turn] = "agent"
-				}
+			if it.Kind == api.ItemAgent && opener[it.Turn] == "" {
+				opener[it.Turn] = "agent"
 			}
 			rows = append(rows, r)
 			continue

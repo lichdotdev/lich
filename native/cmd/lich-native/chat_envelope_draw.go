@@ -48,7 +48,9 @@ func (u *window) chatEnvelopes(gtx C, th *ui.Theme, p *chatPane, it backend.Chat
 			layout.Rigid(rows),
 			ui.VGap(1),
 			layout.Rigid(func(gtx C) D {
-				return layout.E.Layout(gtx, func(gtx C) D { return u.chatStampRow(gtx, th, p, c, readable, over, true) })
+				return layout.E.Layout(gtx, func(gtx C) D {
+					return u.chatStampRow(gtx, th, c, readable.Text, func(gtx C) D { return u.chatDatedStamp(gtx, th, p, readable) }, over, true)
+				})
 			}),
 		)
 	})

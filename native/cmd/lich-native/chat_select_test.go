@@ -32,8 +32,8 @@ func selectFrames(t *testing.T) (*window, *frameRig) {
 	return u, r
 }
 
-// textStart is the first point under the who line, left to right, where the
-// pointer takes the text cursor: the answer's first glyph.
+// textStart is the first point from a, left to right and down, where the
+// pointer takes the text cursor: the first glyph under it.
 func textStart(t *testing.T, r *frameRig, from image.Point) f32.Point {
 	t.Helper()
 	for y := from.Y; y < from.Y+60; y += 4 {
@@ -76,7 +76,9 @@ func (r *frameRig) copiedText() string {
 // while the composer holds the keyboard; Escape lets the selection go first.
 func TestADragOverAnAnswerSelectsTextCtrlCCopies(t *testing.T) {
 	u, r := selectFrames(t)
-	start := textStart(t, r, r.glyph(t, "claude").Add(image.Pt(0, 16)))
+	// the answer rests on the composer: two lines, its foot and the turn's end
+	// stand between its first glyph and the box
+	start := textStart(t, r, image.Pt(composerBox(t, r).Min.X+48, composerBox(t, r).Min.Y-140))
 	// from the first word, across "the bold part" and the inline code, to
 	// the second line
 	r.dragAcross(start, start.Add(f32.Pt(120, 36)))

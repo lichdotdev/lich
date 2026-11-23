@@ -79,14 +79,15 @@ func TestTheLinkKeyIsHeardOverTheComposer(t *testing.T) {
 	}
 }
 
-// handOver is a point of the answer's first line, under the who line and
-// over the copy button, where the pointer takes a hand, the link key held: a
-// path that links. Prose has no semantics to find it by.
+// handOver is a point of the answer, the one resting above the composer, where
+// the pointer takes a hand, the link key held: a path that links. Prose has no
+// semantics to find it by, so it walks up from the composer, over the answer's
+// foot, whose copy button takes a hand of its own.
 func handOver(t *testing.T, r *frameRig, mods key.Modifiers) (f32.Point, bool) {
 	t.Helper()
-	who := r.glyph(t, "claude")
-	for y := who.Y + 16; y < who.Y+48; y += 6 {
-		for x := who.X - 48; x < who.X+480; x += 6 {
+	box := composerBox(t, r)
+	for y := box.Min.Y - 50; y > box.Min.Y-150; y -= 6 {
+		for x := box.Min.X; x < box.Min.X+480; x += 6 {
 			at := f32.Pt(float32(x), float32(y))
 			r.router.Queue(pointer.Event{Kind: pointer.Move, Source: pointer.Mouse, Position: at, Modifiers: mods})
 			r.frame()

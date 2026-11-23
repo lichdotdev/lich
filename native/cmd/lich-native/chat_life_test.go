@@ -90,7 +90,7 @@ func TestEachToolWearsTheGlyphOfItsKind(t *testing.T) {
 	}
 }
 
-func TestOnlyTheFirstAnswerOfATurnIsLeadAndOnlyWhileRunningIsAnythingLive(t *testing.T) {
+func TestOnlyWhileRunningIsAnythingLive(t *testing.T) {
 	items := []backend.ChatItem{
 		{ID: "u1", Kind: api.ItemUser, Turn: 1},
 		{ID: "t1", Kind: api.ItemThought, Turn: 1},
@@ -100,13 +100,9 @@ func TestOnlyTheFirstAnswerOfATurnIsLeadAndOnlyWhileRunningIsAnythingLive(t *tes
 		{ID: "u2", Kind: api.ItemUser, Turn: 2},
 		{ID: "a3", Kind: api.ItemAgent, Turn: 2},
 	}
-	lead, live := map[string]bool{}, map[string]bool{}
+	live := map[string]bool{}
 	for _, r := range chatRows(items, claudeKind, true, time.Time{}) {
-		key := chatRowKey(r)
-		lead[key], live[key] = r.lead, r.live
-	}
-	if !lead["a1"] || lead["a2"] || !lead["a3"] {
-		t.Errorf("lead %v, want a1 and a3 alone", lead)
+		live[chatRowKey(r)] = r.live
 	}
 	// The first turn's call was left running, but that turn is over: only the
 	// turn in flight comes alive.
@@ -405,7 +401,7 @@ func TestAStillTimeUnderASecondReadsInMilliseconds(t *testing.T) {
 	}
 }
 
-func TestTheFirstAnswerOfATurnIsIntroducedOnceWithTheModelThatWroteIt(t *testing.T) {
+func TestEachAnswerNamesItsModelInItsFootAndNoHeaderNamesTheProvider(t *testing.T) {
 	u, r := lifeFrames(t, []backend.ChatItem{
 		{ID: "u1", Kind: api.ItemUser, Turn: 1, At: novDay(18, 17, 58), Text: "go"},
 		{ID: "a1", Kind: api.ItemAgent, Turn: 1, At: novDay(18, 17, 58), Text: "one", Model: "Haiku 5.5", Effort: "Medium"},
@@ -414,18 +410,11 @@ func TestTheFirstAnswerOfATurnIsIntroducedOnceWithTheModelThatWroteIt(t *testing
 	}, false)
 	u.model.chat.setOptions("s1", chatOptions())
 	r.settle(t)
-	count := 0
-	for _, n := range r.nodes() {
-		if n.Desc.Label == "claude" {
-			count++
-		}
+	if r.shows("claude") {
+		t.Errorf("an answer is introduced by the provider's name:\n%s", r.drawn())
 	}
-	if count != 1 {
-		t.Errorf("the provider is named %d times in a turn of two answers, want once", count)
-	}
-	if !r.shows("· Haiku 5.5 · Medium") {
-		t.Errorf("the model in force is not beside the name:\n%s", r.drawn())
-	}
+	overAnswer(r, t, "Haiku 5.5 · Medium · "+clockFor(r, novDay(18, 17, 58)))
+	overAnswer(r, t, clockFor(r, novDay(18, 17, 59)))
 }
 
 func TestAnAnswerBeingWrittenEndsInACaretAndFinishedOnesDoNot(t *testing.T) {
@@ -486,31 +475,23 @@ func TestAListAtItsEndFollowsRowsThatComeIn(t *testing.T) {
 	}
 }
 
-// Whichever of the group's line and the first answer opens a turn carries the
-// avatar; the other leaves it out.
-func TestTheAvatarIsOnTheLineThatOpensTheTurn(t *testing.T) {
+// The group's line carries the avatar only when it opens its turn.
+func TestTheAvatarIsOnTheLineOnlyWhenItOpensTheTurn(t *testing.T) {
 	tool := backend.ChatItem{ID: "k1", Kind: api.ItemTool, Turn: 1, Tool: &backend.ChatToolCall{Name: "Read", State: api.ToolDone}}
 	answer := backend.ChatItem{ID: "a1", Kind: api.ItemAgent, Turn: 1}
-	flags := func(items ...backend.ChatItem) (work, agent chatRow) {
+	avatar := func(items ...backend.ChatItem) bool {
 		for _, r := range chatRows(items, claudeKind, false, time.Time{}) {
-			switch r.kind {
-			case chatRowWork:
-				work = r
-			case chatRowItem:
-				if r.item.Kind == api.ItemAgent {
-					agent = r
-				}
+			if r.kind == chatRowWork {
+				return r.avatar
 			}
 		}
-		return work, agent
+		return false
 	}
-	work, agent := flags(tool, answer)
-	if !work.avatar || !agent.bare || !agent.lead {
-		t.Errorf("work first: line avatar %v, answer bare %v lead %v; want the line to carry it and the answer's header to leave it out", work.avatar, agent.bare, agent.lead)
+	if !avatar(tool, answer) {
+		t.Error("work first: the line does not carry the avatar")
 	}
-	work, agent = flags(answer, tool)
-	if work.avatar || agent.bare || !agent.lead {
-		t.Errorf("answer first: line avatar %v, answer bare %v; want the answer's header to carry it", work.avatar, agent.bare)
+	if avatar(answer, tool) {
+		t.Error("answer first: the line carries the avatar, but it does not open the turn")
 	}
 }
 
@@ -574,39 +555,38 @@ func TestChangingTheModelLeavesTheNamesOfOldAnswersAlone(t *testing.T) {
 	}, false)
 	u.model.chat.setOptions("s1", chatOptions())
 	r.settle(t)
-	if !r.shows("· Haiku 5.5 · medium") {
-		t.Fatalf("the answer does not name its model:\n%s", r.drawn())
-	}
+	foot := "Haiku 5.5 · medium · " + clockFor(r, novDay(18, 17, 58))
+	overAnswer(r, t, foot)
 	switched := chatOptions()
 	switched[0].Current, switched[1].Current = "opus", "low"
 	u.model.chat.setOptions("s1", switched)
 	r.settle(t)
-	if !r.shows("· Haiku 5.5 · medium") || r.shows("· Opus 5.5") || r.shows("· Opus 5.5 · Low") {
+	overAnswer(r, t, foot)
+	if r.shows("Opus 5.5 · low · "+clockFor(r, novDay(18, 17, 58))) || r.shows("Opus 5.5") {
 		t.Errorf("the answer follows the model the chat is set to now:\n%s", r.drawn())
 	}
 }
 
 func TestAnAnswerNamesWhatItsItemKnows(t *testing.T) {
 	for name, c := range map[string]struct {
-		model, effort, want string
+		model, effort, lead string
 		absent              []string
 	}{
-		"both":       {"Haiku 5.5", "medium", "· Haiku 5.5 · medium", nil},
-		"model only": {"Haiku 5.5", "", "· Haiku 5.5", []string{"· Haiku 5.5 · "}},
-		"neither":    {"", "", "", []string{"· Haiku 5.5", "· Opus 5.5", "· Medium"}},
+		"both":       {"Haiku 5.5", "medium", "Haiku 5.5 · medium · ", nil},
+		"model only": {"Haiku 5.5", "", "Haiku 5.5 · ", []string{"Haiku 5.5 · medium · "}},
+		"neither":    {"", "", "", []string{"Haiku 5.5", "Opus 5.5", "Medium"}},
 	} {
 		u, r := lifeFrames(t, []backend.ChatItem{
 			{ID: "u1", Kind: api.ItemUser, Turn: 1, At: novDay(18, 17, 58), Text: "go"},
 			{ID: "a1", Kind: api.ItemAgent, Turn: 1, At: novDay(18, 17, 58), Text: "one", Model: c.model, Effort: c.effort},
 		}, false)
-		// The chat is set to a model, which a header must not borrow.
+		// The chat is set to a model, which the foot must not borrow.
 		u.model.chat.setOptions("s1", chatOptions())
 		r.settle(t)
-		if c.want != "" && !r.shows(c.want) {
-			t.Errorf("%s: no %q:\n%s", name, c.want, r.drawn())
-		}
+		clock := clockFor(r, novDay(18, 17, 58))
+		overAnswer(r, t, c.lead+clock)
 		for _, a := range c.absent {
-			if r.shows(a) {
+			if r.shows(a) || r.shows(a+clock) {
 				t.Errorf("%s: %q is drawn:\n%s", name, a, r.drawn())
 			}
 		}

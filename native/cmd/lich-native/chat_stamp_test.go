@@ -77,7 +77,7 @@ func TestEachMessageShowsItsTimeAtTheEdgeItIsAlignedTo(t *testing.T) {
 		{ID: "a1", Kind: api.ItemAgent, Turn: 1, At: agentAt, Text: "hello"},
 	})
 	r.settle(t)
-	overAnswer(r, t) // an answer's time shows under the pointer
+	overAnswer(r, t, agent) // an answer's time shows under the pointer
 	for _, label := range []string{user, agent} {
 		if !r.shows(label) {
 			t.Fatalf("no time %q:\n%s", label, r.drawn())
@@ -96,7 +96,7 @@ func TestEachMessageShowsItsTimeAtTheEdgeItIsAlignedTo(t *testing.T) {
 	r.now = r.now.Add(time.Second)
 	r.frame()
 	r.settle(t)
-	if want := clockText(time.UnixMilli(agentAt).In(r.now.Location())); !r.shows(want) {
+	if want := "claude · " + clockText(time.UnixMilli(agentAt).In(r.now.Location())); !r.shows(want) {
 		t.Errorf("no tooltip %q over the time:\n%s", want, r.drawn())
 	}
 }

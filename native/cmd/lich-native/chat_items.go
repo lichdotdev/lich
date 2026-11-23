@@ -6,7 +6,6 @@ import (
 	"image"
 	"image/color"
 	"path"
-	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -100,7 +99,9 @@ func (u *window) chatRow(gtx C, th *ui.Theme, p *chatPane, sv sessionView, r cha
 				}),
 				ui.VGap(1),
 				layout.Rigid(func(gtx C) D {
-					return layout.E.Layout(gtx, func(gtx C) D { return u.chatStampRow(gtx, th, p, c, it, over, true) })
+					return layout.E.Layout(gtx, func(gtx C) D {
+						return u.chatStampRow(gtx, th, c, it.Text, func(gtx C) D { return u.chatDatedStamp(gtx, th, p, it) }, over, true)
+					})
 				}),
 			)
 		})
@@ -162,32 +163,42 @@ func datedClock(t, now time.Time) string {
 	return t.Format("Jan 2, 2006 · " + chatClock)
 }
 
-// chatStampRow is the line under a message: its time, and while the pointer is
-// over the message the copy button beside it (the person's message keeps its
-// time at rest; an answer shows both only under the pointer), on the side of the time that
-// faces the middle (at the left of a message the time is at the right). The line
-// is as tall with the button as without it.
-func (u *window) chatStampRow(gtx C, th *ui.Theme, p *chatPane, c *chatCopy, it backend.ChatItem, over, copyFirst bool) D {
-	stamp := u.chatStamp
-	if copyFirst {
-		stamp = u.chatDatedStamp
-	}
+// chatStampRow is the line under a message: the stamp, and while the pointer is
+// over the message the copy button at its left. The person's message keeps its
+// time at rest; an answer shows both only under the pointer. The line is as
+// tall with the button as without it.
+func (u *window) chatStampRow(gtx C, th *ui.Theme, c *chatCopy, text string, stamp func(C) D, over, atRest bool) D {
 	gtx.Constraints.Min.Y = gtx.Dp(chatCopySlot)
-	if !over && !copyFirst {
-		// An answer's foot, its time and its copy button, shows only under the
-		// pointer; the line it stands on is there either way.
+	if !over && !atRest {
 		return D{Size: image.Pt(gtx.Constraints.Min.X, gtx.Constraints.Min.Y)}
 	}
-	row := []layout.FlexChild{layout.Rigid(func(gtx C) D { return stamp(gtx, th, p, it) })}
+	var row []layout.FlexChild
 	if over {
-		button := layout.Rigid(func(gtx C) D { return c.button(gtx, th, it.Text) })
-		if copyFirst {
-			row = append([]layout.FlexChild{button, ui.Gap(1)}, row...)
-		} else {
-			row = append(row, ui.Gap(1), button)
+		row = append(row, layout.Rigid(func(gtx C) D { return c.button(gtx, th, text) }), ui.Gap(1))
+	}
+	row = append(row, layout.Rigid(stamp))
+	return layout.Flex{Alignment: layout.Middle}.Layout(gtx, row...)
+}
+
+// chatAnswerStamp is the line under an answer: the model and effort that wrote
+// it, as the item says them (never the chat's options now), and its time, muted.
+// The provider's name is the tooltip's, ahead of the full date.
+func (u *window) chatAnswerStamp(gtx C, th *ui.Theme, p *chatPane, it backend.ChatItem, provider string) D {
+	var parts []string
+	for _, part := range []string{it.Model, it.Effort} {
+		if part != "" {
+			parts = append(parts, part)
 		}
 	}
-	return layout.Flex{Alignment: layout.Middle}.Layout(gtx, row...)
+	tip := provider
+	if it.At > 0 {
+		t := time.UnixMilli(it.At).In(gtx.Now.Location())
+		parts, tip = append(parts, t.Format(chatClock)), tip+" · "+clockText(t)
+	}
+	if len(parts) == 0 {
+		return D{}
+	}
+	return th.Tooltip(&u.root, p.stamp(it.ID), tip).Layout(gtx, th.Text(ui.TextXS, strings.Join(parts, " · ")).Muted().Layout)
 }
 
 // dayLabel names a day against now: Today, Yesterday, else its date, with the
@@ -720,9 +731,8 @@ func chatLive(gtx C, th *ui.Theme, session string, r chatRow) D {
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx, row...)
 }
 
-// chatAgent is an answer's text with its time under it, and over it, for the
-// first one of a turn, who is speaking. The one being written ends in a blinking
-// caret.
+// chatAgent is an answer's text with its model, effort and time under it. The
+// one being written ends in a blinking caret.
 func (u *window) chatAgent(gtx C, th *ui.Theme, p *chatPane, sv sessionView, r chatRow) D {
 	it := r.item
 	// The caret stays lit while the text grows, and blinks once it rests.
@@ -731,17 +741,13 @@ func (u *window) chatAgent(gtx C, th *ui.Theme, p *chatPane, sv sessionView, r c
 		src = chatSource(gtx, it.Text, r.live)
 	}
 	notify := func(t ui.Toast) { u.toaster.Show(t) }
-	var children []layout.FlexChild
-	if r.lead {
-		children = append(children, layout.Rigid(func(gtx C) D { return u.chatWho(gtx, th, sv, it, r.bare) }), ui.VGap(1.5))
-	}
 	c := p.copyOf(it.ID)
 	return c.hover(gtx, func(gtx C, over bool) D {
-		body := append(slices.Clone(children),
+		body := []layout.FlexChild{
 			layout.Rigid(func(gtx C) D {
 				return p.md.LayoutLinksWindow(gtx, th, it.ID, src, markdown.Links{Open: func(url string) { openLink(u.client, notify, url) }, Paths: p.paths}, p.window)
 			}),
-		)
+		}
 		// a text another follows reads on into it: the run's last one keeps
 		// the time and the copy, which takes the whole run
 		if !r.more {
@@ -750,39 +756,13 @@ func (u *window) chatAgent(gtx C, th *ui.Theme, p *chatPane, sv sessionView, r c
 				stamped.Text = r.runText
 			}
 			body = append(body, ui.VGap(1), layout.Rigid(func(gtx C) D {
-				return layout.W.Layout(gtx, func(gtx C) D { return u.chatStampRow(gtx, th, p, c, stamped, over, false) })
+				return layout.W.Layout(gtx, func(gtx C) D {
+					return u.chatStampRow(gtx, th, c, stamped.Text, func(gtx C) D { return u.chatAnswerStamp(gtx, th, p, stamped, u.providerName(sv)) }, over, false)
+				})
 			}))
 		}
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, body...)
 	})
-}
-
-// chatWho is who speaks: the provider's mark in the color of the session's
-// card, on a fill of that color mixed into the surface, its name, and muted the
-// model and effort that wrote the answer, as the item says. The session's
-// options are never read here: they are what the chat is set to now, and an
-// answer written before a change keeps the model that wrote it.
-func (u *window) chatWho(gtx C, th *ui.Theme, sv sessionView, it backend.ChatItem, bare bool) D {
-	tint, mark, _ := u.agentLook(sv.ID)
-	name := sv.Kind
-	if info, ok := u.model.providers.find(sv.Kind); ok && info.name != "" {
-		name = info.name
-	}
-	var running []string
-	for _, part := range []string{it.Model, it.Effort} {
-		if part != "" {
-			running = append(running, part)
-		}
-	}
-	var row []layout.FlexChild
-	if !bare {
-		row = append(row, layout.Rigid(func(gtx C) D { return chatAvatar(gtx, th, tint, mark) }), ui.Gap(2))
-	}
-	row = append(row, layout.Rigid(th.Text(ui.TextSM, name).Weight(font.Medium).Layout))
-	if len(running) > 0 {
-		row = append(row, ui.Gap(2), layout.Rigid(th.Text(ui.TextSM, "· "+strings.Join(running, " · ")).Muted().Layout))
-	}
-	return layout.Flex{Alignment: layout.Middle}.Layout(gtx, row...)
 }
 
 // chatAvatar is the provider's mark in tint on a rounded square of tint mixed

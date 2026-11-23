@@ -46,9 +46,9 @@ func TestTheConversationSitsInsideTheBoxByTheTextInset(t *testing.T) {
 		{ID: "a1", Kind: api.ItemAgent, Turn: 1, At: novDay(18, 14, 35), Text: "hello"},
 	})
 	r.settle(t)
-	overAnswer(r, t)
+	overAnswer(r, t, clockFor(r, novDay(18, 14, 35)))
 	box := composerBox(t, r)
-	if left, want := labelLeft(t, r, clockFor(r, novDay(18, 14, 35))), box.Min.X+16; left != want {
+	if left, want := copyLeft(t, r, clockFor(r, novDay(18, 14, 35))), box.Min.X+16; left != want {
 		t.Errorf("an answer's text starts at x=%d, want %d: 16px inside the box's left edge", left, want)
 	}
 	// The person's message is against the column's right edge, so its time
@@ -90,7 +90,7 @@ func TestTheConversationEndsTwentyFourPixelsAboveTheBox(t *testing.T) {
 	}
 	u.model.chat.history("s1", []backend.ChatItem{{ID: "a1", Kind: api.ItemAgent, Turn: 1, At: at, Text: "short"}})
 	r.settle(t)
-	overAnswer(r, t)
+	overAnswer(r, t, clockFor(r, novDay(18, 14, 35)))
 	if g := gap(); g != 24 {
 		t.Errorf("a short conversation ends %dpx above the box, want 24", g)
 	}
@@ -98,7 +98,7 @@ func TestTheConversationEndsTwentyFourPixelsAboveTheBox(t *testing.T) {
 	items = append(items, backend.ChatItem{ID: "a2", Kind: api.ItemAgent, Turn: 61, At: at, Text: "last"})
 	u.model.chat.history("s1", items)
 	r.settle(t)
-	overAnswer(r, t)
+	overAnswer(r, t, clockFor(r, novDay(18, 14, 35)))
 	if g := gap(); g != 24 {
 		t.Errorf("a long conversation, pinned, ends %dpx above the box, want 24", g)
 	}
