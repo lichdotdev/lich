@@ -31,8 +31,9 @@ require (
 // lichdotdev/gio, branch lich, carries what gioui.org lacks: app.DropEvent
 // (external file drop), Window.Activate (raising the window on Wayland), word
 // deletion with Ctrl off macOS, Wayland fixes for EGL vsync, clipboard reads (a
-// read the clipboard refuses answered empty on X11 too) and a high-resolution
-// wheel's fractions of a notch scaled like whole notches,
+// read the clipboard refuses answered empty on X11 too), a high-resolution
+// wheel's fractions of a notch scaled like whole notches and a notch on X11
+// scrolling as far as on Wayland,
 // pointer.Leave and the cursor (cursor-shape-v1), an undecorated window that
 // moves, resizes and maximizes on Wayland and X11, app.TrafficLights (macOS's
 // buttons on an undecorated window), the Editor's scroll offset (the
@@ -56,7 +57,7 @@ require (
 // NVIDIA's driver), and input.KeepOp with Source.Queued (input and frame
 // requests still reaching the widgets of a subtree a frame replays from a
 // cache). Every patch of ours lands on that branch.
-replace gioui.org => github.com/lichdotdev/gio v0.0.0-20261123002555-ab7660666dbd
+replace gioui.org => github.com/lichdotdev/gio v0.0.0-20261123003655-1236d2fc53a5
 
 replace github.com/lichdotdev/lich => ../
 
