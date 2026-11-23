@@ -21,7 +21,6 @@ import (
 
 	"github.com/coder/websocket"
 	"github.com/lichdotdev/lich/internal/providers"
-	"github.com/lichdotdev/lich/internal/relay"
 	"github.com/lichdotdev/lich/internal/restart"
 )
 
@@ -61,7 +60,8 @@ const (
 	statusWaiting = "waiting"
 	statusIdle    = "idle"
 	// statusCompacting is the agent folding its conversation into a summary,
-	// reported only by Claude Code's mod. It brackets the compaction rather than
+	// reported by a chat that sees one live (ReportChatState), and by an older
+	// lich-plugin's Claude Code mod. It brackets the compaction rather than
 	// replacing a turn state: the report that closes it restates where the
 	// session stands (busy for an auto-compaction mid-turn, done for a /compact
 	// at the prompt), so every consumer that keeps turn accounting skips it.
@@ -150,29 +150,12 @@ type transport struct {
 	fallback func(id string, data []byte)
 	// plugins is the plugin release each session's hooks report from.
 	plugins pluginVersions
-	// mods is each session's queue of commands for its Claude Code mod, and
-	// modAborted is told about a turn the mod aborted (modcontrol.go). Guarded
-	// by mu and wired by setModAborted, like restart.
-	mods       modQueue
-	modAborted func(id string)
-	// usageReported receives a session's own measurements (modusage.go).
-	// Guarded by mu and wired by setUsageReported, like modAborted.
-	usageReported func(usageReport)
 	// decideSubagent answers /subagent (subagent.go). Guarded by mu and wired
 	// by SetSubagent.
 	decideSubagent subagentDecider
 	// editNote answers a /session-touched call with its edit-overlap note
 	// (touched.go). Guarded by mu and wired by SetEditNotes.
 	editNote editNoter
-	// workerAnswered receives a worker's reported answer (modanswer.go).
-	// Guarded by mu and wired by setWorkerAnswered, like modAborted.
-	workerAnswered func(id, text string)
-	// workerUnanswered receives why a worker's turn ended without an answer
-	// (modanswer.go). Guarded by mu and wired by setWorkerUnanswered.
-	workerUnanswered func(id, reason string)
-	// errandStatus reads a session's relay errands (modstatus.go). Guarded by
-	// mu and wired by setErrandStatus, like modAborted.
-	errandStatus func(id string) relay.Status
 }
 
 // newTransport starts the listener on a random loopback port. input receives
@@ -214,7 +197,6 @@ func newTransport(
 		linkSession: linkSession,
 		setTitle:    setTitle,
 		touched:     touched,
-		mods:        modQueue{wait: modPollWait, now: time.Now},
 	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("/ws", t.handle)
@@ -225,11 +207,6 @@ func newTransport(
 	mux.HandleFunc("/session-title", t.sessionTitle)
 	mux.HandleFunc("/session-touched", t.sessionTouched)
 	mux.HandleFunc("/restart", t.restartApp)
-	mux.HandleFunc("/mod/commands", t.modCommands)
-	mux.HandleFunc("/mod/acks", t.modAck)
-	mux.HandleFunc("/mod/usage", t.modUsage)
-	mux.HandleFunc("/mod/answer", t.modAnswer)
-	mux.HandleFunc("/mod/status", t.modStatus)
 	mux.HandleFunc("/subagent", t.subagentHook)
 	t.mux = mux
 	t.srv = &http.Server{Handler: mux}
@@ -459,20 +436,7 @@ func servePost[T hookBody](
 	parse func([]byte) (T, error),
 	apply func(T) error,
 ) {
-	servePostLimited(t, w, r, hookBodyLimit, parse, apply)
-}
-
-// servePostLimited is servePost for an endpoint whose body outgrows
-// hookBodyLimit. A body over limit is cut, fails to parse, and is a 400.
-func servePostLimited[T hookBody](
-	t *transport,
-	w http.ResponseWriter,
-	r *http.Request,
-	limit int64,
-	parse func([]byte) (T, error),
-	apply func(T) error,
-) {
-	parsed, ok := readPost(t, w, r, limit, parse)
+	parsed, ok := readPost(t, w, r, hookBodyLimit, parse)
 	if !ok {
 		return
 	}
@@ -485,8 +449,8 @@ func servePostLimited[T hookBody](
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// readPost is servePostLimited up to the apply: the request checked, read and
-// parsed, or false with the error already written.
+// readPost is servePost up to the apply, with its own body limit: the request
+// checked, read and parsed, or false with the error already written.
 func readPost[T hookBody](
 	t *transport,
 	w http.ResponseWriter,

@@ -48,21 +48,7 @@ var ru = Catalog{
 	PermissionToRun:     "Разрешение на запуск: %[1]s",
 	TaskReplyTool:       "Ответьте через reply_to_session с тикетом %[1]s: это единственный путь обратно к тому, кто спросил.",
 	TaskReplyCLI:        "Ответьте, выполнив \"$LICH_BIN\" reply %[1]s \"<ваш ответ>\": это единственный путь обратно к тому, кто спросил.",
-	WorkerEndedBlank:    "Последний ход рабочей сессии закончился без сообщения.",
-	WorkerEndedError:    "Последний ход рабочей сессии закончился ошибкой API.",
-	WorkerEndedRefusal:  "Последний ход рабочей сессии закончился отказом.",
 
-	// ReportSummary gets no count, and Russian's one form also covers 21, 31...:
-	// every form is worded so that it reads right for any number of names.
-	ReportSummary: Plural{
-		One:   "Работа завершена в lich: %s",
-		Few:   "Работа завершена в lich: %s",
-		Many:  "Работа завершена в lich: %s",
-		Other: "Работа завершена в lich: %s",
-	},
-	BlockedSummary:          "Сессия lich %q ждёт подтверждения разрешения",
-	MergeSummary:            "Pull request #%[1]d слит в %[2]s",
-	MergeSummaryGitLab:      "Merge request !%[1]d слит в %[2]s",
 	MergeNotice:             "Pull request #%[1]d %[2]q слит в %[3]s.",
 	MergeNoticeGitLab:       "Merge request !%[1]d %[2]q слит в %[3]s.",
 	LateNotice:              "Запланировано на %[1]s, доставлено с опозданием на %[2]s.",

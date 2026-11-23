@@ -161,8 +161,7 @@ distinto.
 | Un programa en la terminal del agente puede fijar la tarjeta (OSC 7501) mientras el agente corre | no | no | no | no | no | sí | no | no |
 | De vuelta en un shell sin marcas de prompt tras salir del agente, un programa puede volver a fijar la tarjeta | sí | no | no | no | no | sí | sí | no |
 | La bandeja lista las sesiones que te esperan y las que trabajan, y su icono lleva un punto | sí | sí | solo las que trabajan | sí | solo las que trabajan | no | solo las que trabajan | solo las que trabajan |
-| La tarjeta avisa cuando la conversación se está compactando | sí | no | no | no | no | no | no | no |
-| Tras una compactación, al agente se le recuerdan las tareas que otras sesiones le enviaron y que siguen esperando su respuesta | sí | no | no | no | no | no | no | no |
+| La tarjeta avisa cuando la conversación se está compactando | en el chat | en el chat | en el chat: solo un /compact que escribes | en el chat: solo un /compact o /summarize que escribes | en el chat: solo un /compact que escribes | no | sin verificar | en el chat |
 | Filtro de la barra lateral por estado: En espera, En ejecución, Sin leer | sí | sí | no En espera | sí | no En espera | no, siempre Inactiva | no En espera | no En espera |
 | Si tu agente lo ejecuta dentro de otra sesión (`claude -p`, `cursor-agent -p`), no aparece en la tarjeta de esa sesión | sí | sí | sí | sí | sí | sí | sí | no |
 | Además de las herramientas para llegar a tus otras sesiones, al agente se le indica cuándo usarlas (pasar trabajo a una sesión en su propio worktree) | sí | sí, salvo que tu `config.toml` defina `developer_instructions` | sí | sí | sí | sí | no medido | sí |
@@ -182,12 +181,9 @@ distinto.
 | Una carpeta en la que confiaste en tu cuenta principal se abre sin la pregunta "trust this folder?" en todos los demás perfiles | sí | sí | sin perfiles | no pregunta nada | no pregunta nada | no medido | sí | no pregunta nada |
 | Una sesión en sandbox se abre sin la pregunta "trust this folder?" | sí | sí | sí | no pregunta nada | no pregunta nada | sí, y ya no pregunta si inicializar el proyecto | sí | no pregunta nada |
 | Un worktree de una carpeta en la que confiaste se abre sin la pregunta "trust this folder?" | sí | sí | sí | no pregunta nada | no pregunta nada | sí, y ya no pregunta si inicializar el proyecto | sí | no pregunta nada |
-| Dirigir una sesión en ejecución desde `lich control` o un agente: prompt, detener, modelo, esfuerzo, slash command | sí | no | no | no | no | no | no | no |
-| Un mensaje de otra sesión llega sin escribirse en la terminal | sí | no | no | no | no | no | no | no |
+| Dirigir una sesión mostrada como chat desde `lich control` o un agente: prompt, detener, modelo, esfuerzo, slash command; una sesión en su terminal se rechaza | sí | sí; el modelo o el esfuerzo vale desde tu próximo mensaje | sí | sí | sí | sin chat | sin verificar | sí, sin esfuerzo, y el modelo solo entre turnos |
 | Un subagente que inicia el agente se ejecuta como una sesión de lich con su propia tarjeta, en el checkout de la sesión que lo pidió, entrega su informe completo y se cierra al terminar; sus propios subagentes también reciben tarjeta, un nivel más abajo | sí | sí | sí | sí | sí | sí | en una terminal; su chat no ejecuta hooks | sí |
-| Hacer una pregunta lateral a una sesión en ejecución sin detenerla (`lich ask`) | sí | no | no | no | no | no | no | no |
-| Contexto, costo y uso del plan tal como los midió el propio CLI | sí | no | no | no | no | no | no | no |
-| La línea de estado de la terminal muestra a quién le debe una respuesta la sesión, de quién espera una y qué respuestas están listas para recoger | sí | no | no | no | no | no | no | no |
+| Contexto, costo y uso del plan tal como los midió el propio CLI | en un chat | no | no | no | no | no | no | no |
 | Delegar en privado desde un subagente o un paso de workflow | sí | sí | sí | sí | sí | sí | sí | sí |
 | Una sesión reanudada conserva el modelo y el esfuerzo que tenía | solo el modelo | sí | no | modelo | sí | no | modelo | modelo; esfuerzo sin probar |
 | Un resultado te sigue esperando después de interrumpir la espera | sí | sí | sí | sí | no | sí | sí | sí |

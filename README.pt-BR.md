@@ -160,8 +160,7 @@ o lich consegue ler de volta, porque cada CLI registra coisas diferentes.
 | Um programa no terminal do agente pode definir o card (OSC 7501) enquanto o agente roda | não | não | não | não | não | sim | não | não |
 | De volta a um shell sem marcas de prompt depois de sair do agente, um programa pode definir o card de novo | sim | não | não | não | não | sim | sim | não |
 | A bandeja lista as sessões esperando por você e as que estão trabalhando, e o ícone ganha um ponto | sim | sim | só as que trabalham | sim | só as que trabalham | não | só as que trabalham | só as que trabalham |
-| O card avisa quando a conversa está sendo compactada | sim | não | não | não | não | não | não | não |
-| Depois de uma compactação, o agente é lembrado das tarefas que outras sessões mandaram e que ainda esperam a resposta dele | sim | não | não | não | não | não | não | não |
+| O card avisa quando a conversa está sendo compactada | no chat | no chat | no chat: só um /compact que você digita | no chat: só um /compact ou /summarize que você digita | no chat: só um /compact que você digita | não | não verificado | no chat |
 | Filtro da barra lateral por estado: Aguardando, Rodando, Não lidas | sim | sim | sem Aguardando | sim | sem Aguardando | não, sempre Ociosas | sem Aguardando | sem Aguardando |
 | Rodado pelo seu agente dentro de outra sessão (`claude -p`, `cursor-agent -p`), não aparece no card dessa sessão | sim | sim | sim | sim | sim | sim | sim | não |
 | Além das ferramentas para falar com as suas outras sessões, o agente é avisado de quando usá-las (passar trabalho para uma sessão na própria worktree) | sim | sim, a não ser que o seu `config.toml` defina `developer_instructions` | sim | sim | sim | sim | não medido | sim |
@@ -181,12 +180,9 @@ o lich consegue ler de volta, porque cada CLI registra coisas diferentes.
 | Uma pasta que você marcou como confiável na conta principal abre sem a pergunta "trust this folder?" em todos os outros perfis | sim | sim | sem perfis | não pergunta nada | não pergunta nada | não medido | sim | não pergunta nada |
 | Uma sessão na sandbox abre sem a pergunta "trust this folder?" | sim | sim | sim | não pergunta nada | não pergunta nada | sim, e não pede mais para inicializar o projeto | sim | não pergunta nada |
 | Uma worktree de uma pasta confiável abre sem a pergunta "trust this folder?" | sim | sim | sim | não pergunta nada | não pergunta nada | sim, e não pede mais para inicializar o projeto | sim | não pergunta nada |
-| Controlar uma sessão em execução por `lich control` ou por um agente: prompt, parar, modelo, esforço, slash command | sim | não | não | não | não | não | não | não |
-| Uma mensagem de outra sessão chega sem ser digitada no terminal | sim | não | não | não | não | não | não | não |
+| Controlar uma sessão em chat por `lich control` ou por um agente: prompt, parar, modelo, esforço, slash command; uma sessão no terminal é recusada | sim | sim; o modelo ou o esforço vale a partir da sua próxima mensagem | sim | sim | sim | sem chat | não verificado | sim, sem esforço, e o modelo só entre um turno e outro |
 | Um subagente iniciado pelo agente roda como sessão do lich com card próprio, no checkout da sessão que pediu, entrega o relatório completo e fecha ao terminar; os subagentes dele também ganham card, um nível abaixo | sim | sim | sim | sim | sim | sim | no terminal; o chat dele não roda hooks | sim |
-| Fazer uma pergunta paralela a uma sessão em execução sem interromper (`lich ask`) | sim | não | não | não | não | não | não | não |
-| Contexto, custo e uso do plano medidos pela própria CLI | sim | não | não | não | não | não | não | não |
-| A status line do terminal mostra a quem a sessão deve resposta, de quem ela está esperando e as respostas prontas para coletar | sim | não | não | não | não | não | não | não |
+| Contexto, custo e uso do plano medidos pela própria CLI | no chat | não | não | não | não | não | não | não |
 | Delegar em privado a partir de um subagente ou etapa de workflow | sim | sim | sim | sim | sim | sim | sim | sim |
 | Uma sessão retomada mantém o modelo e o esforço que estava usando | só o modelo | sim | não | modelo | sim | não | modelo | modelo; esforço sem teste |
 | Um resultado continua esperando por você mesmo se você interromper a espera | sim | sim | sim | sim | não | sim | sim | sim |

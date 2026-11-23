@@ -23,8 +23,6 @@ func (r hookRequest) session() string  { return r.SessionID }
 func (r startRequest) session() string { return r.SessionID }
 func (r titleRequest) session() string { return r.SessionID }
 
-func (r modAckRequest) session() string { return r.SessionID }
-
 // pluginVersions remembers the plugin release each session's hooks last named,
 // so a mismatch is warned about once per session and release rather than once
 // per report. A session's hooks can change release mid-life: a harness that

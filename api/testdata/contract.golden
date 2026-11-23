@@ -254,7 +254,6 @@ services.Start(ServiceIDOptions) None
 services.StartAll(ProjectIDOptions) None
 services.Stop(ServiceIDOptions) None
 services.StopAll(ProjectIDOptions) None
-spawn.Ask(AskSessionOptions) SessionAnswer
 spawn.Close(CloseSessionOptions) ClosedSession
 spawn.CloseProject(CloseProjectOptions) ClosedProject
 spawn.ColorFolder(ColorFolderOptions) ColoredFolder
@@ -1698,20 +1697,6 @@ SaveServiceOptions {
 	startWithLich bool
 }
 
-AskSessionOptions {
-	from string
-	target string
-	project string
-	question string
-}
-
-SessionAnswer {
-	id string
-	project string
-	label string
-	answer string
-}
-
 CloseSessionOptions {
 	from string
 	target string
@@ -1772,7 +1757,6 @@ ControlledSession {
 	label string
 	action string
 	value,omitempty string
-	command_id string
 	state string
 }
 

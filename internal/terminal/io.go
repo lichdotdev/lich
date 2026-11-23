@@ -75,11 +75,6 @@ func (s *Service) stream(id string, sess *session) {
 		// The awake release this may run waits milliseconds for a child to
 		// exit, well under what the spawn itself holds mu for.
 		s.forgetTurn(id)
-		// The mod died with the process: refuse commands now rather than
-		// after the attach window runs out, and release its parked poll.
-		if s.ws != nil {
-			s.ws.mods.forget(id)
-		}
 	}
 	s.mu.Unlock()
 

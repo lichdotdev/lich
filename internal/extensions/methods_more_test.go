@@ -15,7 +15,6 @@ import (
 // moreLich records the second batch's calls. Its services are web, running,
 // and db, stopped, in project p1; s3 is the one live session.
 type moreLich struct {
-	asks     []api.AskSessionOptions
 	waits    []api.WaitOptions
 	acts     []string
 	reads    []string
@@ -45,10 +44,6 @@ func (f *fakeLich) wire(l *Lich) {
 			f.record(func() { m.reads = append(m.reads, kind+" "+opts.ID) })
 			return []byte(kind + " output"), nil
 		}
-	}
-	l.Ask = func(_ context.Context, opts api.AskSessionOptions) (api.SessionAnswer, error) {
-		f.record(func() { m.asks = append(m.asks, opts) })
-		return api.SessionAnswer{ID: "s3", Project: "lich", Label: "api-3", Answer: "it is green"}, nil
 	}
 	l.Wait = func(_ context.Context, opts api.WaitOptions) (api.SendResult, error) {
 		f.record(func() { m.waits = append(m.waits, opts) })
@@ -98,7 +93,6 @@ func (f *fakeLich) wire(l *Lich) {
 
 func TestEachNewMethodIsRefusedWithoutItsPermission(t *testing.T) {
 	calls := map[extension.Permission]extension.Message{
-		extension.PermissionSessionsAsk:   extension.AskSession.Call("1", extension.AskParams{Session: "api-3", Question: "q"}),
 		extension.PermissionServicesRead:  extension.ListServices.Call("1", extension.ServicesParams{Project: "lich"}),
 		extension.PermissionServicesWrite: extension.StartService.Call("1", extension.ServiceParams{Project: "lich", Service: "db"}),
 		extension.PermissionGitRead:       extension.GitStatus.Call("1", extension.GitParams{Path: "/src/lich"}),
@@ -114,7 +108,7 @@ func TestEachNewMethodIsRefusedWithoutItsPermission(t *testing.T) {
 				t.Errorf("got %+v, want a refusal naming %s", res, p)
 			}
 			m := f.more
-			if len(m.asks)+len(m.acts)+len(m.notes)+len(m.opened) > 0 {
+			if len(m.acts)+len(m.notes)+len(m.opened) > 0 {
 				t.Error("a refused call reached a service")
 			}
 		})
@@ -140,18 +134,6 @@ func allBut(p extension.Permission) []extension.Permission {
 		}
 	}
 	return out
-}
-
-func TestAskSpeaksAsNoSession(t *testing.T) {
-	f := &fakeLich{}
-	s, x := apiService(t, f, extension.PermissionSessionsAsk)
-	got, err := call(t, s, x, extension.AskSession, extension.AskParams{Session: "api-3", Project: "lich", Question: "green?"})
-	if err != nil || got != (extension.AskResult{ID: "s3", Project: "lich", Label: "api-3", Answer: "it is green"}) {
-		t.Errorf("got %+v, %v", got, err)
-	}
-	if f.more.asks[0] != (api.AskSessionOptions{Target: "api-3", Project: "lich", Question: "green?"}) {
-		t.Errorf("asked with %+v", f.more.asks[0])
-	}
 }
 
 func TestAnExtensionCollectsOnlyItsOwnPendingTickets(t *testing.T) {

@@ -7,7 +7,6 @@ var (
 	SpawnClose        = define[CloseSessionOptions, ClosedSession]("spawn.Close")
 	SpawnCloseProject = define[CloseProjectOptions, ClosedProject]("spawn.CloseProject")
 	SpawnControl      = define[ControlSessionOptions, ControlledSession]("spawn.Control")
-	SpawnAsk          = define[AskSessionOptions, SessionAnswer]("spawn.Ask")
 	SpawnWorktrees    = define[WorktreesOptions, []WorktreeCheckout]("spawn.Worktrees")
 	SpawnFolders      = define[FoldersOptions, []SessionFolder]("spawn.Folders")
 	SpawnFile         = define[FileSessionOptions, FiledSession]("spawn.File")
@@ -184,32 +183,14 @@ type ControlSessionOptions struct {
 }
 
 // ControlledSession is what a caller is told about a command it gave a session. Value
-// is the prompt, model, effort or slash command's name the action carried, and
-// CommandID the id the session's mod acks it under.
+// is the prompt, model, effort or slash command's name the action carried.
 type ControlledSession struct {
-	ID        string `json:"id"`
-	Project   string `json:"project"`
-	Label     string `json:"label"`
-	Action    string `json:"action"`
-	Value     string `json:"value,omitempty"`
-	CommandID string `json:"command_id"`
-	State     string `json:"state"`
-}
-
-// AskSessionOptions is one Ask call, an object for the reason CloseOptions is one.
-type AskSessionOptions struct {
-	From     string `json:"from"`
-	Target   string `json:"target"`
-	Project  string `json:"project"`
-	Question string `json:"question"`
-}
-
-// SessionAnswer is a session's answer to a side question.
-type SessionAnswer struct {
 	ID      string `json:"id"`
 	Project string `json:"project"`
 	Label   string `json:"label"`
-	Answer  string `json:"answer"`
+	Action  string `json:"action"`
+	Value   string `json:"value,omitempty"`
+	State   string `json:"state"`
 }
 
 // WorktreesOptions is one Worktrees call, an object for the reason CloseOptions

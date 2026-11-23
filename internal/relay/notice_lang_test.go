@@ -29,9 +29,6 @@ func TestEveryNoticeRendersInEveryLanguage(t *testing.T) {
 			"merge gitlab": mergedEnvelope(lang, api.ForgeGitLab, 42, "Title", "feat/x", "main").String(),
 			"late":         scheduledEnvelope(lang, 1000, 1000+3600, "go").String(),
 			"on time":      scheduledEnvelope(lang, 1000, 1000, "go").String(),
-			"unblank":      unansweredWhy(lang, UnansweredBlank),
-			"unerror":      unansweredWhy(lang, UnansweredError),
-			"unrefuse":     unansweredWhy(lang, UnansweredRefusal),
 		}
 		for name, notice := range notices {
 			if notice == "" || strings.Contains(notice, "%!") {
@@ -45,16 +42,6 @@ func TestEveryNoticeRendersInEveryLanguage(t *testing.T) {
 		}
 		if notices["late"] == notices["on time"] {
 			t.Errorf("%s: a late prompt reads as one on time", lang)
-		}
-		summaries := []string{
-			reportNotification(lang, []*inboxEntry{{target: "docs"}}).Summary,
-			reportNotification(lang, []*inboxEntry{{target: "docs"}, {target: "api"}}).Summary,
-			blockedNotification(lang, "docs").Summary,
-		}
-		for _, summary := range summaries {
-			if strings.Contains(summary, "%!") || !strings.Contains(summary, `"docs"`) {
-				t.Errorf("%s: summary %q is off", lang, summary)
-			}
 		}
 	}
 }

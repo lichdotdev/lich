@@ -2,21 +2,60 @@ package spawn
 
 import (
 	"context"
+	"strings"
 	"testing"
+	"time"
+
+	"github.com/lichdotdev/lich/api"
+	"github.com/lichdotdev/lich/internal/relay"
 )
 
 // fakeChat stands in for the chat service: drawn says which sessions the
-// store drew as a chat, opened records each one started.
+// store drew as a chat, but those terminal names, and opened records each one
+// started. calls is what control asked of it, answered with receipt, options
+// and err; deadline is the bound a prompt's wait was given.
 type fakeChat struct {
-	drawn  bool
-	opened []string
+	drawn    bool
+	terminal map[string]bool
+	opened   []string
+
+	calls    []string
+	receipt  relay.PromptReceipt
+	options  []api.ChatOption
+	err      error
+	deadline time.Time
 }
 
-func (f *fakeChat) Drawn(string) bool { return f.drawn }
+func (f *fakeChat) Drawn(id string) bool { return f.drawn && !f.terminal[id] }
 
 func (f *fakeChat) Open(_ context.Context, id string) error {
 	f.opened = append(f.opened, id)
 	return nil
+}
+
+func (f *fakeChat) Take(id, text string) (relay.HandedPrompt, error) {
+	f.calls = append(f.calls, "take "+id+" "+text)
+	if f.err != nil {
+		return relay.HandedPrompt{}, f.err
+	}
+	return relay.HandedPrompt{Await: func(ctx context.Context) relay.PromptReceipt {
+		f.deadline, _ = ctx.Deadline()
+		return f.receipt
+	}}, nil
+}
+
+func (f *fakeChat) Cancel(_ context.Context, opts api.SessionIDOptions) (api.None, error) {
+	f.calls = append(f.calls, "cancel "+opts.ID)
+	return api.None{}, f.err
+}
+
+func (f *fakeChat) Options(context.Context, api.SessionIDOptions) ([]api.ChatOption, error) {
+	return f.options, nil
+}
+
+func (f *fakeChat) SetOption(_ context.Context, opts api.ChatSetOptionOptions) (api.None, error) {
+	f.calls = append(f.calls, "set "+opts.ID+" "+strings.Join([]string{opts.OptionID, opts.Value}, "="))
+	return api.None{}, f.err
 }
 
 // A session born drawn as a chat starts its chat and no terminal; one born on
@@ -41,6 +80,7 @@ func TestOpenStartsTheViewTheSessionWasBornIn(t *testing.T) {
 
 // blockingChat is a chat whose handshake does not finish until released.
 type blockingChat struct {
+	fakeChat
 	release chan struct{}
 	started chan string
 }

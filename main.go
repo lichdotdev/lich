@@ -568,10 +568,7 @@ func registerServices(db *store.Service, term *terminal.Service, chats *chat.Ser
 	term.SetToolUse(rl.ObserveTool)
 	term.SetUserTyped(rl.UserTyped)
 	term.SetEditNotes(rl.Touched)
-	// A worker's mod reports its answer, and a closed worker's errand ends
-	// without a word to its caller.
-	term.SetWorkerAnswer(rl.WorkerAnswered)
-	term.SetWorkerUnanswered(rl.WorkerUnanswered)
+	// A closed worker's errand ends without a word to its caller.
 	term.SetSessionClosed(func(id, closerID string) {
 		rl.SessionClosed(id, closerID)
 	})
@@ -583,7 +580,6 @@ func registerServices(db *store.Service, term *terminal.Service, chats *chat.Ser
 		rl.SessionExited(id)
 		closeSessionBrowser(brows, id)
 	})
-	term.SetErrandStatus(rl.Status)
 	// Both questions the relay asks about a provider — whether its sessions
 	// report at all, and whether they can answer with a tool — are about what
 	// the plugin put there.
@@ -640,7 +636,7 @@ func registerServices(db *store.Service, term *terminal.Service, chats *chat.Ser
 	// An extension's calls reach what lich's MCP tools reach.
 	exts.SetLich(extensions.Lich{
 		Projects: db.LoadState, Peers: rl.Peers, Worktrees: spawner.Worktrees, Open: spawner.Open, Send: rl.Send,
-		Wait: rl.Wait, Ask: spawner.Ask, Project: spawner.Project,
+		Wait: rl.Wait, Project: spawner.Project,
 		Services: svcs.List, StartService: svcs.Start, StopService: svcs.Stop, RestartService: svcs.Restart,
 		Output: svcs.Output, LiveOutput: svcs.LiveOutput,
 		Diff: proj.Diff, BaseStatus: proj.BaseStatus, Upstream: proj.UpstreamCounts, PullRequest: proj.OpenPullRequest,

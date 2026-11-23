@@ -19,19 +19,11 @@ whichever side moved first.
 | `session-start.jsonl`  | [session-start.md](../session-start.md)      | `/session-start`   |
 | `session-title.jsonl`  | [session-title.md](../session-title.md)      | `/session-title`   |
 | `session-touched.jsonl`| [session-touched.md](../session-touched.md)  | `/session-touched` |
-| `mod-control.jsonl`    | [mod-control.md](../mod-control.md)          | `/mod/acks`        |
-| `mod-commands.json`    | [mod-control.md](../mod-control.md)          | `/mod/commands`    |
-| `mod-usage.jsonl`      | [mod-usage.md](../mod-usage.md)              | `/mod/usage`       |
-| `mod-answer.jsonl`     | [mod-answer.md](../mod-answer.md)            | `/mod/answer`      |
-| `mod-status.json`      | [mod-status.md](../mod-status.md)            | `/mod/status`      |
 | `subagent-cards.jsonl` | [subagent-cards.md](../subagent-cards.md)    | `/subagent`        |
 | `notification.json`    | [notification.md](../notification.md)        | none: what lich writes to an agent |
 
-`mod-commands.json`, `mod-status.json` and `notification.json` are the files that are not cases:
-each is a response body lich sends, to `GET /mod/commands` (one command of every
-shape) and `GET /mod/status` (every list and every value a field takes), which
-lich asserts its encoding against and the mod asserts it can read.
-`notification.json` is the envelopes lich hands an agent, one per kind and view
+`notification.json` is the file that is not cases: the envelopes lich hands an
+agent, one per kind and view
 (`chat` or `terminal`), byte for byte; only lich asserts against it, since the
 plugin builds none.
 

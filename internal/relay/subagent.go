@@ -1,11 +1,8 @@
 package relay
 
 import (
-	"fmt"
 	"log/slog"
 	"slices"
-	"strconv"
-	"strings"
 
 	"github.com/lichdotdev/lich/internal/prompt"
 )
@@ -17,19 +14,15 @@ import (
 // finished once it reported and its turn ended (finishedWorkerLocked).
 
 // tellNews delivers one flush's news to fromID, one envelope per outcome in
-// one message. Where the sender's chat or mod takes it, a result goes in whole:
-// the model reads it the way it reads a native subagent's result, without a
-// collect call. A sender whose mod does not take it is typed the same
-// envelopes with each result left out, and the results go back to the inbox
-// for the collect they name: typing a long report into a TUI is what the mod
-// route exists to avoid.
+// one message. Where the sender's chat takes it, a result goes in whole: the
+// model reads it the way it reads a native subagent's result, without a
+// collect call. A sender in its terminal is typed the same envelopes with each
+// result left out, and the results go back to the inbox for the collect they
+// name: a long report typed into a TUI is pasted text the person has to wade
+// through.
 func (s *Service) tellNews(fromID string, n news, hasTools bool) error {
 	lang := s.lang()
-	var note *Notification
-	if len(n.results) > 0 {
-		note = reportNotification(lang, n.results)
-	}
-	handled, err := s.handToMod(fromID, newsMessage(lang, n.entries, n.results, hasTools), note)
+	handled, err := s.handToChat(fromID, newsMessage(lang, n.entries, n.results, hasTools))
 	if err != nil {
 		return err
 	}
@@ -61,27 +54,6 @@ func (s *Service) restoreReportsLocked(reports []*inboxEntry) {
 			delete(s.held, e.ticket)
 			s.ready[e.ticket] = e
 		}
-	}
-}
-
-// reportNotification is how the caller's screen sums up the results one flush
-// hands over whole: the line Claude Code shows for a background agent of its
-// own that finished.
-func reportNotification(lang prompt.Lang, entries []*inboxEntry) *Notification {
-	names := make([]string, len(entries))
-	for i, e := range entries {
-		names[i] = strconv.Quote(e.target)
-	}
-	text := prompt.For(lang)
-	summary := fmt.Sprintf(text.Pick(len(names), text.ReportSummary), strings.Join(names, ", "))
-	return &Notification{Status: NotifyCompleted, Summary: summary}
-}
-
-// blockedNotification sums up blockedNotice in the one line the caller sees.
-func blockedNotification(lang prompt.Lang, target string) *Notification {
-	return &Notification{
-		Status:  NotifyWaiting,
-		Summary: fmt.Sprintf(prompt.For(lang).BlockedSummary, target),
 	}
 }
 

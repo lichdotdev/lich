@@ -50,21 +50,11 @@ type Catalog struct {
 	// TaskReplyTool and TaskReplyCLI are a task's summary when it is answered
 	// by its ticket, %[1]s: the tool for a session with lich's MCP tools, the
 	// command for the rest.
-	TaskReplyTool      string
-	TaskReplyCLI       string
-	WorkerEndedBlank   string
-	WorkerEndedError   string
-	WorkerEndedRefusal string
+	TaskReplyTool string
+	TaskReplyCLI  string
 
-	// internal/relay: the one line a Claude Code mod shows for a notification
-	// (docs/hooks/mod-control.md, A prompt as a notification).
-	ReportSummary  Plural
-	BlockedSummary string
-	MergeSummary   string
-	// MergeSummaryGitLab and MergeNoticeGitLab say the same of a GitLab merge
-	// request, which GitLab numbers !N.
-	MergeSummaryGitLab string
-
+	// MergeNoticeGitLab says MergeNotice of a GitLab merge request, which
+	// GitLab numbers !N.
 	MergeNotice       string
 	MergeNoticeGitLab string
 	// LateNotice and OnTimeNotice sum up a scheduled prompt come due: %[1]s is

@@ -39,17 +39,7 @@ var ja = Catalog{
 	PermissionToRun:     "実行の許可: %[1]s",
 	TaskReplyTool:       "reply_to_session とチケット %[1]s で回答してください。依頼した側への唯一の返信経路です。",
 	TaskReplyCLI:        "\"$LICH_BIN\" reply %[1]s \"<回答>\" を実行して回答してください。依頼した側への唯一の返信経路です。",
-	WorkerEndedBlank:    "ワーカーの最後のターンは、メッセージなしで終わりました。",
-	WorkerEndedError:    "ワーカーの最後のターンは、API エラーで終わりました。",
-	WorkerEndedRefusal:  "ワーカーの最後のターンは、拒否で終わりました。",
 
-	ReportSummary: Plural{
-		One:   "lich セッション %s が完了しました",
-		Other: "lich セッション %s が完了しました",
-	},
-	BlockedSummary:          "lich セッション %q が権限の確認を待っています",
-	MergeSummary:            "プルリクエスト #%[1]d が %[2]s にマージされました",
-	MergeSummaryGitLab:      "マージリクエスト !%[1]d が %[2]s にマージされました",
 	MergeNotice:             "プルリクエスト #%[1]d %[2]q が %[3]s にマージされました。",
 	MergeNoticeGitLab:       "マージリクエスト !%[1]d %[2]q が %[3]s にマージされました。",
 	LateNotice:              "%[1]s に予定されていたものが、%[2]s 遅れて届きました。",

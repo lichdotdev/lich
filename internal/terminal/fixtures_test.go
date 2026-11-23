@@ -81,15 +81,6 @@ var hookContracts = []hookContract{
 	{"session-touched.jsonl", "/session-touched", func(b []byte) (any, error) {
 		return parseSessionTouched(b)
 	}, false},
-	{"mod-control.jsonl", "/mod/acks", func(b []byte) (any, error) {
-		return parseModAck(b)
-	}, false},
-	{"mod-usage.jsonl", "/mod/usage", func(b []byte) (any, error) {
-		return parseModUsage(b)
-	}, false},
-	{"mod-answer.jsonl", "/mod/answer", func(b []byte) (any, error) {
-		return parseModAnswer(b)
-	}, false},
 	{"subagent-cards.jsonl", "/subagent", func(b []byte) (any, error) {
 		return parseSubagentRequest(b)
 	}, true},

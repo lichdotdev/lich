@@ -39,17 +39,7 @@ var es = Catalog{
 	PermissionToRun:     "Permiso para ejecutar: %[1]s",
 	TaskReplyTool:       "Responde con reply_to_session y el ticket %[1]s, el único camino de vuelta a quien lo pidió.",
 	TaskReplyCLI:        "Responde ejecutando \"$LICH_BIN\" reply %[1]s \"<tu respuesta>\", el único camino de vuelta a quien lo pidió.",
-	WorkerEndedBlank:    "El último turno de la sesión de trabajo terminó sin mensaje.",
-	WorkerEndedError:    "El último turno de la sesión de trabajo terminó con un error de la API.",
-	WorkerEndedRefusal:  "El último turno de la sesión de trabajo terminó con una negativa.",
 
-	ReportSummary: Plural{
-		One:   "la sesión de lich %s terminó",
-		Other: "las sesiones de lich %s terminaron",
-	},
-	BlockedSummary:          "la sesión de lich %q está esperando una confirmación de permiso",
-	MergeSummary:            "Pull request #%[1]d fusionado en %[2]s",
-	MergeSummaryGitLab:      "Merge request !%[1]d fusionado en %[2]s",
 	MergeNotice:             "El pull request #%[1]d %[2]q se fusionó en %[3]s.",
 	MergeNoticeGitLab:       "El merge request !%[1]d %[2]q se fusionó en %[3]s.",
 	LateNotice:              "Programado para %[1]s, entregado con %[2]s de retraso.",

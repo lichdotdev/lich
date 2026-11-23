@@ -12,8 +12,8 @@ old form keeps working, with a visible warning, for at least one minor release b
   `--json` output, the columns of `--csv` output, and exit codes. [cli.md](cli.md) is the reference for each of them.
 - **MCP tools**, except the experimental ones below. The tool names and input schemas that `lich mcp` serves
   (`internal/cli/mcp.go`).
-- **The hook contract** with [`lichdotdev/lich-plugin`](https://github.com/lichdotdev/lich-plugin), except the parts
-  listed as experimental below: the endpoints and payloads written down in [hooks/](hooks/README.md). Which plugin
+- **The hook contract** with [`lichdotdev/lich-plugin`](https://github.com/lichdotdev/lich-plugin): the endpoints and
+  payloads written down in [hooks/](hooks/README.md). Which plugin
   releases a lich supports, and how the plugin's version number marks a contract change, is under [Versioning](hooks/README.md#versioning).
 - **Themes.** The theme JSON format and the `lich-theme.json` pack manifest, as described in [themes.md](themes.md).
 - **Project files.** `.worktreeinclude`.
@@ -27,21 +27,13 @@ These work, but they rest on another product's undocumented internals, which lic
 or stop working in any release, minor or patch, outside semver, and lich marks them where you meet them: in
 `lich help`, in [cli.md](cli.md) and in the MCP tool descriptions. Build on them knowing that.
 
-- **`lich control` and `lich ask`**, and the MCP tools `control_session` and `ask_session`. Claude Code only: they
-  run through lich-plugin's mod inside the Claude Code process, and an ask is a fork of the session's conversation
-  made from there. What they can do, and the traps listed in
-  [mod-control.md](hooks/mod-control.md#known-ceilings), are behaviour measured on specific Claude Code releases,
-  not a contract Claude Code publishes.
-- **A Claude Code subagent opening as a lich card**, and `lich open --subagent`, which it runs on: lich-plugin's mod
-  takes Claude Code's own `Agent` call, and the worker's report comes back to the asking session as a Claude Code
-  task notification, through a render path Claude Code does not document (see
-  [ceilings.md](ceilings.md)). A Claude Code that drops that path shows the report as a typed prompt instead.
-- **The hook contract parts that carry those features:** `/mod/commands` ([mod-control.md](hooks/mod-control.md))
-  and `/mod/answer` ([mod-answer.md](hooks/mod-answer.md)). Their shape follows what the features above need from
-  Claude Code, so it moves with them. The relayed tasks and notes `/mod/commands` also carries fall back to being
-  typed at the terminal, so `lich send` and `send_to_session` stay covered. `/mod/status` and `/mod/usage` stay
-  covered too: one reads lich's own errands, the other reports the figures Claude Code hands its status line, and
-  neither depends on how Claude Code forks or renders a conversation.
+- **`lich control`**, and the MCP tool `control_session`. They drive a session drawn as a chat through that
+  chat's own protocol (Claude Code's stream-json, Codex's app-server, ACP for the rest). What each chat takes,
+  which models and efforts its picker offers and when a change applies, is behaviour measured on specific
+  releases of each provider ([ceilings.md](ceilings.md)).
+- **A Claude Code subagent opening as a lich card**, and `lich open --subagent`, which it runs on: since
+  lich-plugin 0.22.0 the plugin's pre-tool hook asks lich at `/subagent` before Claude Code's own `Agent` call
+  runs, and lich opens the task as a session and vetoes the call ([subagent-cards.md](hooks/subagent-cards.md)).
 
 ## What is internal
 

@@ -129,12 +129,8 @@ func stoppedBy(label string) string {
 	return label
 }
 
-// failure is what ended an errand with no answer: the reason a worker's mod
-// gave, or what the relay saw.
+// failure is what ended an errand with no answer, as the relay saw it.
 func failure(text *prompt.Catalog, e *inboxEntry) string {
-	if e.answer != "" {
-		return e.answer
-	}
 	switch e.status {
 	case StatusUnread:
 		return fmt.Sprintf(text.OutcomeUnread, e.target)

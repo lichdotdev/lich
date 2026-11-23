@@ -257,7 +257,6 @@ func TestEachPermissionHasLichsOwnLine(t *testing.T) {
 		extension.PermissionSessionsRead:  "See your sessions and what each one is doing",
 		extension.PermissionSessionsWrite: "Open sessions and type prompts into them",
 		extension.PermissionSessionEvents: "Follow each session's status as it changes",
-		extension.PermissionSessionsAsk:   "Ask your Claude Code sessions side questions and read their answers",
 		extension.PermissionServicesRead:  "See your projects' services and what they print",
 		extension.PermissionServicesWrite: "Start, stop and restart your projects' services",
 		extension.PermissionGitRead:       "See each checkout's branch, changes and pull request",
@@ -277,7 +276,7 @@ func TestEachPermissionHasLichsOwnLine(t *testing.T) {
 func TestOnlyThePermissionsThatActAreInTheWaitTone(t *testing.T) {
 	th := testTheme()
 	acting := []extension.Permission{
-		extension.PermissionSessionsWrite, extension.PermissionSessionsAsk, extension.PermissionServicesWrite, extension.PermissionWindow,
+		extension.PermissionSessionsWrite, extension.PermissionServicesWrite, extension.PermissionWindow,
 	}
 	for _, p := range extension.Permissions {
 		want := th.Foreground

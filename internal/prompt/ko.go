@@ -37,17 +37,7 @@ var ko = Catalog{
 	PermissionToRun:     "실행 권한 요청: %[1]s",
 	TaskReplyTool:       "reply_to_session과 티켓 %[1]s로 답하세요. 요청한 쪽으로 돌아가는 유일한 경로입니다.",
 	TaskReplyCLI:        "\"$LICH_BIN\" reply %[1]s \"<답변>\"을 실행해 답하세요. 요청한 쪽으로 돌아가는 유일한 경로입니다.",
-	WorkerEndedBlank:    "워커의 마지막 턴이 메시지 없이 끝났습니다.",
-	WorkerEndedError:    "워커의 마지막 턴이 API 오류로 끝났습니다.",
-	WorkerEndedRefusal:  "워커의 마지막 턴이 거부로 끝났습니다.",
 
-	ReportSummary: Plural{
-		One:   "lich 세션 %s 완료",
-		Other: "lich 세션 %s 완료",
-	},
-	BlockedSummary:          "lich 세션 %q이(가) 권한 확인을 기다리는 중",
-	MergeSummary:            "풀 리퀘스트 #%[1]d이(가) %[2]s에 병합됨",
-	MergeSummaryGitLab:      "병합 요청 !%[1]d이(가) %[2]s에 병합됨",
 	MergeNotice:             "풀 리퀘스트 #%[1]d %[2]q이(가) %[3]s에 병합되었습니다.",
 	MergeNoticeGitLab:       "병합 요청 !%[1]d %[2]q이(가) %[3]s에 병합되었습니다.",
 	LateNotice:              "%[1]s에 예약되었고, %[2]s 늦게 전달되었습니다.",

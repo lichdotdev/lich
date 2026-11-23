@@ -3,7 +3,6 @@ package terminal
 import (
 	"log/slog"
 	"os"
-	"time"
 
 	"github.com/lichdotdev/lich/internal/agentplugin"
 	"github.com/lichdotdev/lich/internal/claudeprofile"
@@ -26,20 +25,6 @@ var startsAtPrompt = map[string]bool{
 	providers.OMP:    true,
 	providers.Kiro:   true,
 }
-
-// How long a Claude Code session that loads lich's mod waits for that mod's
-// first poll before a message is typed at it instead: modFirstPoll from its
-// spawn, and at least modPollAfterStart from its session-start, which a trust
-// question can hold back past the first. Measured on Claude Code 2.1.326, the
-// poll comes 0.6 s after session-start on a fresh session (2.3 s from spawn)
-// and 1.6 s after it on a resumed 16 MB transcript (5.2 s); the margins are for
-// a loaded machine opening several cards at once. Past them, a session whose
-// mod never polled (mods off, a Claude Code older than modFirstClaudeCode) is
-// typed at as before.
-const (
-	modFirstPoll      = 20 * time.Second
-	modPollAfterStart = 10 * time.Second
-)
 
 // SetStartReports wires the question of whether a provider's sessions run
 // lich's hooks at all. Without them no session-start ever arrives, so a session
@@ -101,14 +86,12 @@ func trustAnswered(kind, cwd, profileDir string) bool {
 }
 
 // holdForStart records on a just-spawned session whether it waits for its
-// session-start before being given work, and until when its mod's first poll
-// is waited for.
-func (s *Service) holdForStart(id string, sess *session, awaits bool, modDue time.Time) {
+// session-start before being given work.
+func (s *Service) holdForStart(id string, sess *session, awaits bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.sessions[id] == sess {
 		sess.awaitsStart = awaits
-		sess.modDue = modDue
 	}
 }
 
@@ -123,7 +106,4 @@ func (s *Service) markStarted(id string) {
 		return
 	}
 	sess.started = true
-	if afterStart := time.Now().Add(modPollAfterStart); !sess.modDue.IsZero() && sess.modDue.Before(afterStart) {
-		sess.modDue = afterStart
-	}
 }
