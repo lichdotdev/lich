@@ -109,14 +109,40 @@ func TestOutdatedPluginsSkipsWhatIsNotInstalled(t *testing.T) {
 	}
 }
 
-func TestPluginOutcomeReadsTheLastCheck(t *testing.T) {
+func TestPluginNeedsLineOnlyForWhatTheUserDoes(t *testing.T) {
+	ok := backend.PluginStatus{Provider: "claude", Available: true, Installed: true, Compatible: true}
+	outdated := ok
+	outdated.UpdateAvailable = true
+	notInstalled := backend.PluginStatus{Provider: "kiro", Available: true}
+	cliMissing := backend.PluginStatus{Provider: "crush"}
+	codex := ok
+	codex.Provider = "codex"
+	codexMissing := backend.PluginStatus{Provider: "codex"}
 	for _, tc := range []struct {
-		checked, failed bool
-		want            string
-	}{{false, true, ""}, {true, false, "Checked."}, {true, true, "Check failed. Are you online?"}} {
-		if got := pluginOutcome(tc.checked, tc.failed); got != tc.want {
-			t.Errorf("pluginOutcome(%v, %v) = %q, want %q", tc.checked, tc.failed, got, tc.want)
+		name string
+		st   backend.PluginStatus
+		want bool
+	}{
+		{"up to date", ok, false},
+		{"outdated", outdated, true},
+		{"not installed", notInstalled, true},
+		{"cli missing", cliMissing, false},
+		{"codex installed asks for /hooks", codex, true},
+		{"codex missing asks nothing", codexMissing, false},
+	} {
+		if got := pluginNeedsLine(tc.st); got != tc.want {
+			t.Errorf("%s: pluginNeedsLine = %v, want %v", tc.name, got, tc.want)
 		}
+	}
+}
+
+func TestPluginTitleNamesTheReleaseOnceRead(t *testing.T) {
+	if got := pluginTitle(nil); got != "lich plugin" {
+		t.Errorf("unread title = %q, want %q", got, "lich plugin")
+	}
+	statuses := []backend.PluginStatus{{Provider: "codex"}, {Provider: "claude", LatestVersion: "0.23.0"}}
+	if got := pluginTitle(statuses); got != "lich plugin v0.23.0" {
+		t.Errorf("title = %q, want %q", got, "lich plugin v0.23.0")
 	}
 }
 

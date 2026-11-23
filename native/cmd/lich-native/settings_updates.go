@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"strings"
 	"sync"
 
 	"gioui.org/layout"
@@ -13,7 +14,6 @@ import (
 
 const (
 	updatesAppKey       = "updates.app" // no backend key: the rows only act
-	updatesNotesKey     = "updates.notes"
 	updatesPluginKey    = "updates.plugin"
 	updatesReleaseTagAt = "/releases/tag/v"
 )
@@ -29,8 +29,7 @@ type updatesSettings struct {
 	startupNotes  bool // startupPatchNotes found a release to show
 	plugins       []backend.PluginStatus
 	pluginsFailed bool
-	busy          bool // a plugin action or check is in flight
-	checked       bool // the user asked for a plugin check since Settings opened
+	busy          bool // a plugin action is in flight
 	checkingApp   bool
 	appResult     string
 
@@ -43,7 +42,7 @@ type updatesSettings struct {
 // to the last visit, as unmounting the pane does.
 func (u *updatesSettings) revalidate() {
 	u.mu.Lock()
-	u.loaded, u.checked, u.appResult = false, false, ""
+	u.loaded, u.appResult = false, ""
 	u.mu.Unlock()
 	u.patch.open = false
 }
@@ -102,26 +101,20 @@ func (s *settingsScreen) updatesRow(gtx C, th *ui.Theme, e settingEntry, r setti
 	case updatesAppKey:
 		u.ensure(s)
 		if u.checkApp.Clicked(gtx) {
-			go u.runAppCheck(s)
+			go u.runCheck(s)
 		}
-		r.description = i18n.T("settings.updatesSettings.applicationDescription", i18n.Args{"version": u.version()})
-		return r.layout(gtx, th, first, func(gtx C, th *ui.Theme) D { return u.appControl(gtx, th) }), true
-	case updatesNotesKey:
-		u.ensure(s)
 		notes := u.patchNotes()
 		if u.viewNotes.Clicked(gtx) && hasPatchNotes(notes) {
 			u.patch.show()
 			s.invalidate() // the dialog is laid out before the pane, a frame behind the click
 		}
-		r.description = i18n.T("settings.updatesSettings.noPatchNotes")
+		r.title = strings.TrimSpace("lich " + u.version())
 		if hasPatchNotes(notes) {
-			r.description = i18n.T("settings.updatesSettings.patchNotesFor", i18n.Args{"version": notes.Version})
+			r.sample = func(gtx C) D {
+				return th.HoverLink(gtx, &u.viewNotes, i18n.T("settings.updatesSettings.whatsNewTitle"))
+			}
 		}
-		return r.layout(gtx, th, first, func(gtx C, th *ui.Theme) D {
-			b := th.Button(&u.viewNotes, i18n.T("settings.updatesSettings.viewPatchNotes"))
-			b.Size, b.Variant, b.Disabled = ui.SizeSM, ui.VariantOutline, !hasPatchNotes(notes)
-			return b.Layout(gtx)
-		}), true
+		return r.layout(gtx, th, first, func(gtx C, th *ui.Theme) D { return u.appControl(gtx, th) }), true
 	case updatesPluginKey:
 		u.ensure(s)
 		return u.pluginBlock(gtx, th, s, r, first), true
@@ -134,7 +127,7 @@ func (u *updatesSettings) appControl(gtx C, th *ui.Theme) D {
 	checking, result := u.checkingApp, u.appResult
 	u.mu.Unlock()
 	b := th.Button(&u.checkApp, i18n.T("settings.updatesSettings.checkForUpdates"))
-	b.Size, b.Disabled = ui.SizeSM, checking
+	b.Size, b.Variant, b.Disabled = ui.SizeSM, ui.VariantOutline, checking
 	children := []layout.FlexChild{layout.Rigid(func(gtx C) D {
 		if checking {
 			return th.SpinnerBeside(gtx, b.Layout)
@@ -147,15 +140,20 @@ func (u *updatesSettings) appControl(gtx C, th *ui.Theme) D {
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
 }
 
-// runAppCheck is the manual check of AppUpdateGate: the verdict beside the
-// button and, for a newer release, the prompt, even for a version Later was
+// runCheck is the one check of the pane: the release, as AppUpdateGate asks
+// for it, and the plugin rows read again. The verdict sits beside the button
+// and, for a newer release, the prompt opens, even for a version Later was
 // clicked for.
-func (u *updatesSettings) runAppCheck(s *settingsScreen) {
+func (u *updatesSettings) runCheck(s *settingsScreen) {
 	u.mu.Lock()
 	u.checkingApp, u.appResult = true, ""
 	u.mu.Unlock()
 	s.invalidate()
 	st, err := s.client.AppUpdateStatus(s.ctx)
+	u.readPlugins(s)
+	u.mu.Lock()
+	pluginsFailed := u.pluginsFailed
+	u.mu.Unlock()
 	result := i18n.T("settings.updatesSettings.upToDate")
 	switch {
 	case err != nil:
@@ -166,6 +164,8 @@ func (u *updatesSettings) runAppCheck(s *settingsScreen) {
 		if s.promptUpdate != nil {
 			s.promptUpdate(st)
 		}
+	case pluginsFailed:
+		result = i18n.T("settings.updatesSettings.checkFailed")
 	}
 	u.mu.Lock()
 	u.checkingApp, u.appResult = false, result

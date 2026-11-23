@@ -370,26 +370,18 @@
   },
   "updatesSettings": {
     "applicationTitle": "アプリケーション",
-    "applicationSearchWords": "バージョン アップグレード",
-    "applicationDescription": "lich {version}。起動時と 1 時間ごとにアップデートを確認します。",
+    "applicationSearchWords": "バージョン アップグレード 変更履歴 リリースノート",
     "checkForUpdates": "アップデートを確認",
     "available": "lich {version} を利用できます。表示される案内に従ってください。",
     "upToDate": "最新バージョンです。",
     "checkFailed": "確認に失敗しました。ネットワーク接続を確認してください。",
-    "whatsNewTitle": "新機能",
-    "whatsNewSearchWords": "変更履歴 リリースノート",
-    "patchNotesFor": "v{version} のパッチノートです。",
-    "noPatchNotes": "このビルドのパッチノートはありません。",
-    "viewPatchNotes": "パッチノートを表示"
+    "whatsNewTitle": "新機能"
   },
   "pluginSetting": {
     "title": "lich プラグイン",
     "searchWords": "フック インストール",
-    "description": "プラグインに対応したプロバイダー CLI の中で、セッションの状態とタイトル、git の更新、再開を提供します。",
     "installed": "プラグインをインストールしました。適用するにはセッションを再起動してください。",
     "updated": "プラグインを更新しました。適用するにはセッションを再起動してください。",
-    "checked": "確認しました。",
-    "checkFailed": "確認に失敗しました。ネットワーク接続を確認してください。",
     "cliMissing": "CLI がインストールされていません",
     "notInstalled": "プラグインがインストールされていません",
     "unsupported": "v{version}、この lich ではサポートされていません",
@@ -397,8 +389,7 @@
     "updateTo": "v{version} に更新",
     "updateAll": "すべて更新",
     "reregister": "フックを登録し直す",
-    "installVersion": "v{version} をインストール",
-    "checkForUpdates": "アップデートを確認"
+    "installVersion": "v{version} をインストール"
   },
   "helpSettings": {
     "bugTitle": "バグを報告",

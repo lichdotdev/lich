@@ -378,26 +378,18 @@
   },
   "updatesSettings": {
     "applicationTitle": "Приложение",
-    "applicationSearchWords": "версия обновление version upgrade",
-    "applicationDescription": "lich {version}. Обновления проверяются при запуске и каждый час.",
+    "applicationSearchWords": "версия обновление version upgrade список изменений заметки о релизе changelog release notes",
     "checkForUpdates": "Проверить обновления",
     "available": "Доступен lich {version}. Следуйте подсказке.",
     "upToDate": "У вас последняя версия.",
     "checkFailed": "Не удалось проверить. Есть ли подключение к сети?",
-    "whatsNewTitle": "Что нового",
-    "whatsNewSearchWords": "список изменений заметки о релизе changelog release notes",
-    "patchNotesFor": "Заметки к v{version}.",
-    "noPatchNotes": "Для этой сборки заметок нет.",
-    "viewPatchNotes": "Показать заметки"
+    "whatsNewTitle": "Что нового"
   },
   "pluginSetting": {
     "title": "Плагин lich",
     "searchWords": "хуки установка hooks install",
-    "description": "Статус сессий, названия, обновление git и возобновление. Работает в тех CLI провайдеров, которые могут его запускать.",
     "installed": "Плагин установлен. Чтобы изменения вступили в силу, перезапустите сессии.",
     "updated": "Плагин обновлён. Чтобы изменения вступили в силу, перезапустите сессии.",
-    "checked": "Проверено.",
-    "checkFailed": "Не удалось проверить. Есть ли подключение к сети?",
     "cliMissing": "CLI не установлен",
     "notInstalled": "Плагин не установлен",
     "unsupported": "v{version}, не поддерживается этой версией lich",
@@ -405,8 +397,7 @@
     "updateTo": "Обновить до v{version}",
     "updateAll": "Обновить все",
     "reregister": "Зарегистрировать хуки заново",
-    "installVersion": "Установить v{version}",
-    "checkForUpdates": "Проверить обновления"
+    "installVersion": "Установить v{version}"
   },
   "helpSettings": {
     "bugTitle": "Сообщить об ошибке",

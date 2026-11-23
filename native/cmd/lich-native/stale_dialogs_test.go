@@ -70,7 +70,7 @@ func TestViewPatchNotesOpensThemInTheFrameAfterTheClick(t *testing.T) {
 	s, r := settingsFrames(t, sectionUpdates)
 	s.updates.loaded = true
 	s.updates.notes = &backend.PatchNotes{Version: "1.4.0", Groups: []backend.PatchNotesGroup{}}
-	_, next := r.clickLabel(t, i18n.T("settings.updatesSettings.viewPatchNotes"))
+	_, next := r.clickLabel(t, i18n.T("settings.updatesSettings.whatsNewTitle"))
 	if !strings.Contains(next, i18n.T("shell.patchNotesDialog.gotIt")) {
 		t.Errorf("the patch notes never came up:\n%s", next)
 	}

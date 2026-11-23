@@ -60,6 +60,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Settings › Updates shows only what needs you.** One Check for updates looks at lich and the plugin together, and each agent whose plugin is up to date is a mark beside the plugin's version, with what it cannot do in its tooltip; an agent gets its own line only when it has an install, an update or a step for you.
 - **A turn's tool calls stay folded until you open the line that counts them.** In a chat, a click on that line shows each call, and it stays as you left it while the turn carries on.
 - **A page an agent writes for you wears lich's mark on its browser tab instead of a blank square.** A page with an icon of its own keeps it.
 - **Crush cards show when a turn runs, ends or waits on you, and name themselves after the conversation.** It needs Crush 0.99.0 or newer: install or update the lich plugin for Crush in Settings › Updates after upgrading Crush, and a task you hand a Crush session then comes back by itself when its turn ends.

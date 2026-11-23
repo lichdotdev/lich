@@ -370,26 +370,18 @@
   },
   "updatesSettings": {
     "applicationTitle": "应用程序",
-    "applicationSearchWords": "版本 升级",
-    "applicationDescription": "lich {version}，启动时以及每小时检查一次更新。",
+    "applicationSearchWords": "版本 升级 更新日志 发行说明",
     "checkForUpdates": "检查更新",
     "available": "lich {version} 可用，请按提示操作。",
     "upToDate": "你使用的已是最新版本。",
     "checkFailed": "检查失败，是否已联网？",
-    "whatsNewTitle": "新功能",
-    "whatsNewSearchWords": "更新日志 发行说明",
-    "patchNotesFor": "v{version} 的更新说明。",
-    "noPatchNotes": "此构建没有更新说明。",
-    "viewPatchNotes": "查看更新说明"
+    "whatsNewTitle": "新功能"
   },
   "pluginSetting": {
     "title": "lich 插件",
     "searchWords": "钩子 安装",
-    "description": "在支持运行它的提供商 CLI 中提供会话状态、标题、git 刷新和恢复。",
     "installed": "插件已安装，重启会话后生效。",
     "updated": "插件已更新，重启会话后生效。",
-    "checked": "已检查。",
-    "checkFailed": "检查失败，是否已联网？",
     "cliMissing": "未安装 CLI",
     "notInstalled": "未安装插件",
     "unsupported": "v{version}，此 lich 不支持",
@@ -397,8 +389,7 @@
     "updateTo": "更新到 v{version}",
     "updateAll": "全部更新",
     "reregister": "重新注册钩子",
-    "installVersion": "安装 v{version}",
-    "checkForUpdates": "检查更新"
+    "installVersion": "安装 v{version}"
   },
   "helpSettings": {
     "bugTitle": "报告问题",

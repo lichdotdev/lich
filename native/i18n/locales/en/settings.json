@@ -370,26 +370,18 @@
   },
   "updatesSettings": {
     "applicationTitle": "Application",
-    "applicationSearchWords": "version upgrade",
-    "applicationDescription": "lich {version}. Checks for updates on startup and hourly.",
+    "applicationSearchWords": "version upgrade changelog release notes",
     "checkForUpdates": "Check for updates",
     "available": "lich {version} is available. Follow the prompt.",
     "upToDate": "You're on the latest version.",
     "checkFailed": "Check failed. Are you online?",
-    "whatsNewTitle": "What's new",
-    "whatsNewSearchWords": "changelog release notes",
-    "patchNotesFor": "Patch notes for v{version}.",
-    "noPatchNotes": "No patch notes for this build.",
-    "viewPatchNotes": "View patch notes"
+    "whatsNewTitle": "What's new"
   },
   "pluginSetting": {
     "title": "lich plugin",
     "searchWords": "hooks install",
-    "description": "Session status, titles, git refresh and resume, inside the provider CLIs that can run it.",
     "installed": "Plugin installed. Restart your sessions to apply.",
     "updated": "Plugin updated. Restart your sessions to apply.",
-    "checked": "Checked.",
-    "checkFailed": "Check failed. Are you online?",
     "cliMissing": "CLI not installed",
     "notInstalled": "Plugin not installed",
     "unsupported": "v{version}, not supported by this lich",
@@ -397,8 +389,7 @@
     "updateTo": "Update to v{version}",
     "updateAll": "Update all",
     "reregister": "Re-register hooks",
-    "installVersion": "Install v{version}",
-    "checkForUpdates": "Check for updates"
+    "installVersion": "Install v{version}"
   },
   "helpSettings": {
     "bugTitle": "Report a bug",

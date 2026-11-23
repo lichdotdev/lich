@@ -4,7 +4,9 @@ import (
 	"log"
 	"slices"
 
+	"gioui.org/font"
 	"gioui.org/layout"
+	"gioui.org/op/paint"
 	"gioui.org/unit"
 
 	"github.com/lichdotdev/lich/native/backend"
@@ -16,20 +18,48 @@ import (
 // drawing a spinner; the button's own spinner stands in for them.
 const pluginProviderIcon = 15 // ProviderIcon size={15}
 
-// pluginHints are the catalog keys of the notes under a provider's row, shown
-// while its plugin is installed.
+// pluginHints are the catalog keys of what a provider's plugin cannot do,
+// in its mark's tooltip while the plugin is installed.
 var pluginHints = map[string]string{
-	"codex":       "settings.settingsUpdatesPlugin.hint.codex",
 	"crush":       "settings.settingsUpdatesPlugin.hint.crush",
 	"omp":         "settings.settingsUpdatesPlugin.hint.omp",
 	"antigravity": "settings.settingsUpdatesPlugin.hint.antigravity",
 	"cursor":      "settings.settingsUpdatesPlugin.hint.cursor",
 }
 
-// pluginControls are the plugin block's buttons: one action per provider row.
+// pluginTodos are the catalog keys of a step the user takes in the provider
+// itself, under its own line while the plugin is installed: lich cannot tell
+// whether it was taken.
+var pluginTodos = map[string]string{
+	"codex": "settings.settingsUpdatesPlugin.hint.codex",
+}
+
+// pluginControls are the plugin block's buttons, one action per provider
+// line, and the tooltips of the marks that need none.
 type pluginControls struct {
-	check, updateAll ui.Clickable
-	actions          map[string]*ui.Clickable
+	updateAll ui.Clickable
+	actions   map[string]*ui.Clickable
+	tips      map[string]*ui.Tooltip
+}
+
+// pluginNeedsLine is a provider with something for the user to do: an
+// action to press or a step to take; the rest stand as marks in the title.
+func pluginNeedsLine(st backend.PluginStatus) bool {
+	_, _, act := pluginAction(st)
+	_, todo := pluginTodos[st.Provider]
+	return act || (todo && st.Installed)
+}
+
+// pluginTitle is the block's title with the release the rows install, the
+// name alone until they are read.
+func pluginTitle(statuses []backend.PluginStatus) string {
+	title := i18n.T("settings.pluginSetting.title")
+	for _, st := range statuses {
+		if st.LatestVersion != "" {
+			return title + " v" + st.LatestVersion
+		}
+	}
+	return title
 }
 
 // pluginVersionText is what a row says about the plugin in that CLI.
@@ -124,20 +154,6 @@ func (u *updatesSettings) updateAllOutdated(s *settingsScreen) {
 	}, "settings.pluginSetting.updated", "settings.settingsUpdatesPlugin.updateFailed")
 }
 
-// check re-reads the rows on request; the outcome is what the read left in
-// pluginsFailed, so a later failure cannot sit under an older "Checked.".
-func (u *updatesSettings) check(s *settingsScreen) {
-	u.setBusy(s, true)
-	defer u.setBusy(s, false)
-	u.mu.Lock()
-	u.checked = false
-	u.mu.Unlock()
-	u.readPlugins(s)
-	u.mu.Lock()
-	u.checked = true
-	u.mu.Unlock()
-}
-
 // run is the action behind a toast, which says how it ended; done and failed
 // are catalog keys, failed taking the error. The rows are read again after a
 // success so the next visit shows what it changed.
@@ -150,55 +166,110 @@ func (u *updatesSettings) run(s *settingsScreen, call func() error, done, failed
 	u.readPlugins(s)
 }
 
-// pluginBlock is PluginSetting: a row per provider CLI, each with its note
-// while its plugin is installed, and the check.
+// pluginBlock is PluginSetting: the title with the marks of the providers
+// that need nothing, and a line under it for each one that does.
 func (u *updatesSettings) pluginBlock(gtx C, th *ui.Theme, s *settingsScreen, r settingRow, first bool) D {
-	r.description = i18n.T("settings.pluginSetting.description")
 	c := &u.plugin
-	if c.check.Clicked(gtx) {
-		go u.check(s)
-	}
 	if c.updateAll.Clicked(gtx) {
 		go u.updateAllOutdated(s)
 	}
 	u.mu.Lock()
-	statuses, busy, failed, checked := u.plugins, u.busy, u.pluginsFailed, u.checked
+	statuses, busy := u.plugins, u.busy
 	u.mu.Unlock()
 	if c.actions == nil {
-		c.actions = map[string]*ui.Clickable{}
+		c.actions, c.tips = map[string]*ui.Clickable{}, map[string]*ui.Tooltip{}
 	}
 	for _, st := range statuses {
 		if clickableOf(c.actions, st.Provider).Clicked(gtx) {
 			go u.act(s, st.Provider)
 		}
 	}
-	return r.layoutBlock(gtx, th, first, func(gtx C, th *ui.Theme) D {
-		var children []layout.FlexChild
-		for _, st := range statuses {
-			children = append(children, layout.Rigid(func(gtx C) D { return c.row(gtx, th, st, busy) }))
+	r.title = pluginTitle(statuses)
+	var lines []layout.FlexChild
+	for _, st := range statuses {
+		if pluginNeedsLine(st) {
+			lines = append(lines, layout.Rigid(func(gtx C) D { return c.row(gtx, th, st, busy) }))
 		}
-		children = append(children, ui.VGap(1), layout.Rigid(func(gtx C) D {
-			return layout.Inset{Top: ui.Space(1)}.Layout(gtx, func(gtx C) D {
-				return c.footer(gtx, th, len(outdatedPlugins(statuses)) > 1, busy, pluginOutcome(checked, failed))
-			})
-		}))
-		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
+	}
+	marks := func(gtx C, th *ui.Theme) D {
+		return c.marks(gtx, th, s.root, statuses, len(outdatedPlugins(statuses)) > 1, busy)
+	}
+	return r.frame(gtx, th, first, func(gtx C, th *ui.Theme) D {
+		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+			layout.Rigid(func(gtx C) D { return r.content(gtx, th, marks) }),
+			layout.Rigid(func(gtx C) D {
+				if len(lines) == 0 {
+					return D{}
+				}
+				return layout.Inset{Left: rowPadX, Right: rowPadX, Top: -rowPadY / 2, Bottom: rowPadY}.Layout(gtx, func(gtx C) D {
+					return layout.Flex{Axis: layout.Vertical}.Layout(gtx, lines...)
+				})
+			}),
+		)
 	})
 }
 
-// pluginOutcome is what the last check says, "" until one was asked for.
-func pluginOutcome(checked, failed bool) string {
-	switch {
-	case !checked:
-		return ""
-	case failed:
-		return i18n.T("settings.pluginSetting.checkFailed")
+// marks are the providers that need nothing, each mark's tooltip naming it
+// with its version, and Update all for more than one outdated plugin. A CLI
+// that is not installed stands faded.
+func (c *pluginControls) marks(gtx C, th *ui.Theme, root *ui.Root, statuses []backend.PluginStatus, offerAll, busy bool) D {
+	var children []layout.FlexChild
+	for _, st := range statuses {
+		if pluginNeedsLine(st) {
+			continue
+		}
+		tip := c.tips[st.Provider]
+		if tip == nil {
+			tip = &ui.Tooltip{}
+			c.tips[st.Provider] = tip
+		}
+		children = append(children, ui.Gap(1.5), layout.Rigid(func(gtx C) D {
+			return th.TooltipCard(root, tip, pluginTip(th.On(th.Popover), st)).Layout(gtx, func(gtx C) D {
+				if !st.Available {
+					defer paint.PushOpacity(gtx.Ops, rowOffOpacity).Pop()
+				}
+				return providerGlyph(gtx, th, st.Provider, unit.Dp(pluginProviderIcon), markPixel)
+			})
+		}))
 	}
-	return i18n.T("settings.pluginSetting.checked")
+	if offerAll {
+		all := th.Button(&c.updateAll, i18n.T("settings.pluginSetting.updateAll"))
+		all.Size, all.Disabled = ui.SizeSM, busy
+		children = append(children, ui.Gap(3), layout.Rigid(func(gtx C) D {
+			if busy {
+				return th.SpinnerBeside(gtx, all.Layout)
+			}
+			return all.Layout(gtx)
+		}))
+	}
+	return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
 }
 
-// row is one provider CLI: its mark and name, what it has installed, and the
-// action that closes the gap.
+// pluginTip is a mark's tooltip: the provider, what it has installed and,
+// while installed, what its plugin cannot do.
+func pluginTip(th *ui.Theme, st backend.PluginStatus) layout.Widget {
+	return func(gtx C) D {
+		head := func(gtx C) D {
+			return layout.Flex{Alignment: layout.Baseline}.Layout(gtx,
+				layout.Rigid(th.Text(ui.TextXS, st.Name).Weight(font.Medium).Layout),
+				ui.Gap(1.5),
+				layout.Rigid(th.Text(ui.TextXS, pluginVersionText(st)).Muted().Layout),
+			)
+		}
+		hint, ok := pluginHints[st.Provider]
+		if !ok || !st.Installed {
+			return head(gtx)
+		}
+		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+			layout.Rigid(head),
+			ui.VGap(1),
+			layout.Rigid(th.Text(ui.TextXS, i18n.T(hint)).Muted().Wrapped().Layout),
+		)
+	}
+}
+
+// row is one provider CLI that needs something: its mark and name, what it
+// has installed, the action that closes the gap and the step it asks for.
 func (c *pluginControls) row(gtx C, th *ui.Theme, st backend.PluginStatus, busy bool) D {
 	children := []layout.FlexChild{
 		layout.Rigid(func(gtx C) D {
@@ -224,7 +295,7 @@ func (c *pluginControls) row(gtx C, th *ui.Theme, st backend.PluginStatus, busy 
 		gtx.Constraints.Min.X = gtx.Constraints.Max.X
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
 	}
-	hint, ok := pluginHints[st.Provider]
+	todo, ok := pluginTodos[st.Provider]
 	return layout.Inset{Top: ui.Space(1), Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
 		if !ok || !st.Installed {
 			return line(gtx)
@@ -235,33 +306,11 @@ func (c *pluginControls) row(gtx C, th *ui.Theme, st backend.PluginStatus, busy 
 			layout.Rigid(line),
 			layout.Rigid(func(gtx C) D {
 				return layout.Inset{Left: indent, Top: ui.Space(0.5)}.Layout(gtx, func(gtx C) D {
-					return th.Text(ui.TextXS, i18n.T(hint)).Muted().Wrapped().Layout(gtx)
+					return th.Text(ui.TextXS, i18n.T(todo)).Muted().Wrapped().Layout(gtx)
 				})
 			}),
 		)
 	})
-}
-
-// footer is the check, the update-all for more than one outdated plugin, and
-// the outcome.
-func (c *pluginControls) footer(gtx C, th *ui.Theme, offerAll, busy bool, outcome string) D {
-	check := th.Button(&c.check, i18n.T("settings.pluginSetting.checkForUpdates"))
-	check.Size, check.Variant, check.Disabled = ui.SizeSM, ui.VariantOutline, busy
-	children := []layout.FlexChild{layout.Rigid(check.Layout)}
-	if offerAll {
-		all := th.Button(&c.updateAll, i18n.T("settings.pluginSetting.updateAll"))
-		all.Size, all.Disabled = ui.SizeSM, busy
-		children = append(children, ui.Gap(3), layout.Rigid(func(gtx C) D {
-			if busy {
-				return th.SpinnerBeside(gtx, all.Layout)
-			}
-			return all.Layout(gtx)
-		}))
-	}
-	if outcome != "" {
-		children = append(children, ui.Gap(3), layout.Rigid(th.Text(ui.TextXS, outcome).Muted().Layout))
-	}
-	return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
 }
 
 // pluginProfilesFailed raises a toast per profile a pass could not bring to
