@@ -5,6 +5,7 @@ import (
 	"hash/fnv"
 	"image"
 	"image/color"
+	"path"
 	"slices"
 	"strconv"
 	"strings"
@@ -544,20 +545,72 @@ func cleanLine(s string) string {
 // expandTabs is s with its tabs as spaces: the fonts have no glyph for one.
 func expandTabs(s string) string { return strings.ReplaceAll(s, "\t", hunkTab) }
 
-// chatDiff is a tool's whole diff on the window's background, each added or
-// removed line in its tone, as a thread's hunk is (hunkTail).
+// chatDiff is a tool's diff as a small window on the window's background: the
+// file's name and its +added -deleted over a hairline, then the hunks, each
+// added or removed line in its tone, as a thread's hunk is (hunkTail).
 func chatDiff(gtx C, th *ui.Theme, diff string) D {
-	var children []layout.FlexChild
-	for line := range strings.SplitSeq(strings.TrimRight(diff, "\n"), "\n") {
-		children = append(children, layout.Rigid(func(gtx C) D { return hunkLine(gtx, th, line) }))
+	name, added, deleted, body := splitDiff(diff)
+	children := make([]layout.FlexChild, 0, len(body)+2)
+	if name != "" {
+		children = append(children, layout.Rigid(func(gtx C) D { return chatDiffHead(gtx, th, name, added, deleted) }))
 	}
-	return layout.Background{}.Layout(gtx,
-		func(gtx C) D { return ui.Fill(gtx, th.Background, ui.RadiusSM) },
-		func(gtx C) D {
-			return layout.UniformInset(ui.Space(2)).Layout(gtx, func(gtx C) D {
-				return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
-			})
+	children = append(children, layout.Rigid(func(gtx C) D {
+		return layout.Inset{Top: ui.Space(1.5), Bottom: ui.Space(1.5)}.Layout(gtx, func(gtx C) D {
+			rows := make([]layout.FlexChild, len(body))
+			for i, line := range body {
+				rows[i] = layout.Rigid(func(gtx C) D { return hunkLine(gtx, th, line) })
+			}
+			return layout.Flex{Axis: layout.Vertical}.Layout(gtx, rows...)
 		})
+	}))
+	d := layout.Background{}.Layout(gtx,
+		func(gtx C) D { return ui.Fill(gtx, th.Background, ui.RadiusMD) },
+		func(gtx C) D { return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...) })
+	ui.InsetBorder(gtx, d.Size, gtx.Dp(ui.RadiusMD), th.Over(th.Border))
+	return d
+}
+
+func chatDiffHead(gtx C, th *ui.Theme, name string, added, deleted int) D {
+	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+		layout.Rigid(func(gtx C) D {
+			return layout.Inset{Left: ui.Space(3), Right: ui.Space(3), Top: ui.Space(1.5), Bottom: ui.Space(1.5)}.Layout(gtx, func(gtx C) D {
+				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+					layout.Flexed(1, th.Text(ui.TextXS, name).Mono().Weight(font.Medium).Truncated().Layout),
+					ui.Gap(2),
+					layout.Rigid(th.DiffStat(added, deleted).Layout),
+				)
+			})
+		}),
+		layout.Rigid(func(gtx C) D {
+			h := gtx.Dp(1)
+			gtx.Constraints.Min = image.Pt(gtx.Constraints.Max.X, h)
+			return ui.Fill(gtx, th.Over(th.Border), 0)
+		}),
+	)
+}
+
+// splitDiff is a unified diff's file name, its added and deleted lines and the
+// lines under the file header. A "---" or "+++" is a header only before the
+// first hunk; after it the line is the file's own.
+func splitDiff(diff string) (name string, added, deleted int, body []string) {
+	inHunk := false
+	for line := range strings.SplitSeq(strings.TrimRight(diff, "\n"), "\n") {
+		switch {
+		case !inHunk && strings.HasPrefix(line, "--- "):
+		case !inHunk && strings.HasPrefix(line, "+++ "):
+			name = path.Base(strings.TrimSpace(line[4:]))
+		default:
+			inHunk = inHunk || strings.HasPrefix(line, "@@")
+			switch {
+			case strings.HasPrefix(line, "+"):
+				added++
+			case strings.HasPrefix(line, "-"):
+				deleted++
+			}
+			body = append(body, line)
+		}
+	}
+	return name, added, deleted, body
 }
 
 // permitLabel is the provider's words for a permission's answer, or, for one
