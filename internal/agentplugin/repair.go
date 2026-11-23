@@ -195,7 +195,13 @@ func (s *Service) crushRewrite(lichBin string) error {
 	if _, errOld := os.Stat(filepath.Join(legacy, filepath.Base(crushHooks[0].script))); errNew != nil && errOld == nil {
 		dir = legacy
 	}
-	return s.writeCrushrc(version, dir, lichBin)
+	// The registrations stay the ones the block has: a block without the state
+	// reports was written with no scripts for them on disk.
+	crush := ""
+	if s.crushReportsState() {
+		crush = crushEventsVersion
+	}
+	return s.writeCrushrc(version, crush, dir, lichBin)
 }
 
 // ompMCPPath is the document omp reads its servers from.

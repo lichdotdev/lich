@@ -150,30 +150,30 @@ o lich consegue ler de volta, porque cada CLI registra coisas diferentes.
 | Um turno interrompido pelo limite de uso do plano continua quando o limite renova | sim | sim | não | retenta sozinho | retenta sozinho | não | não | não |
 | Se outro perfil seu ainda tem cota, um aviso oferece continuar nele na hora | sim | sim | não | não | não | não | não | não |
 | Ao passar o trabalho, um agente pode sugerir um perfil seu para a sucessora, e um aviso deixa você decidir se ela muda | sim | sim | não | não | sim | não | Linux e Windows | só Linux |
-| Spinner enquanto o turno roda, anel quando termina | sim | sim | sim | sim | sim | não | sim | sim |
-| O card ganha o nome da conversa | sim | pelo seu primeiro prompt | pelo seu primeiro prompt | sim | sim, a partir do segundo turno | não | sim, quando o primeiro turno termina | pelo seu primeiro prompt, quando o primeiro turno termina |
-| Um pull request aberto pelo agente aparece no card quando o turno termina | sim | sim | sim | sim | sim | não, só quando a janela volta ao foco | sim | sim |
-| Uma tarefa que você entrega a um agente volta sozinha quando o turno dele termina | sim | sim | sim | sim | sim | não, ele responde com reply_to_session | no chat; no terminal ele responde com reply_to_session | sim |
+| Spinner enquanto o turno roda, anel quando termina | sim | sim | sim | sim | sim | a partir do Crush 0.99.0 | sim | sim |
+| O card ganha o nome da conversa | sim | pelo seu primeiro prompt | pelo seu primeiro prompt | sim | sim, a partir do segundo turno | quando o primeiro turno termina, a partir do Crush 0.99.0 | sim, quando o primeiro turno termina | pelo seu primeiro prompt, quando o primeiro turno termina |
+| Um pull request aberto pelo agente aparece no card quando o turno termina | sim | sim | sim | sim | sim | a partir do Crush 0.99.0; nas versões anteriores, só quando a janela volta ao foco | sim | sim |
+| Uma tarefa que você entrega a um agente volta sozinha quando o turno dele termina | sim | sim | sim | sim | sim | a partir do Crush 0.99.0; nas versões anteriores, ele responde com reply_to_session | no chat; no terminal ele responde com reply_to_session | sim |
 | Se redesenha com o novo visual quando você troca o lich entre tema claro e escuro | sim | não | não | sim | sim | não | sim | não |
-| Sino quando o agente depende de você para continuar | sim | sim | não | sim | não | não | não | não |
-| Ctrl+Shift+I pula para a próxima sessão esperando por você | sim | sim | não | sim | não | não | não | não |
-| Um programa no terminal do agente pode definir o card (OSC 7501) enquanto o agente roda | não | não | não | não | não | sim | não | não |
+| Sino quando o agente depende de você para continuar | sim | sim | não | sim | não | a partir do Crush 0.99.0 | não | não |
+| Ctrl+Shift+I pula para a próxima sessão esperando por você | sim | sim | não | sim | não | a partir do Crush 0.99.0 | não | não |
+| Um programa no terminal do agente pode definir o card (OSC 7501) enquanto o agente roda | não | não | não | não | não | antes do Crush 0.99.0 | não | não |
 | De volta a um shell sem marcas de prompt depois de sair do agente, um programa pode definir o card de novo | sim | não | não | não | não | sim | sim | não |
-| A bandeja lista as sessões esperando por você e as que estão trabalhando, e o ícone ganha um ponto | sim | sim | só as que trabalham | sim | só as que trabalham | não | só as que trabalham | só as que trabalham |
+| A bandeja lista as sessões esperando por você e as que estão trabalhando, e o ícone ganha um ponto | sim | sim | só as que trabalham | sim | só as que trabalham | a partir do Crush 0.99.0 | só as que trabalham | só as que trabalham |
 | O card avisa quando a conversa está sendo compactada | sim | não | não | não | não | não | não | não |
 | Depois de uma compactação, o agente é lembrado das tarefas que outras sessões mandaram e que ainda esperam a resposta dele | sim | não | não | não | não | não | não | não |
-| Filtro da barra lateral por estado: Aguardando, Rodando, Não lidas | sim | sim | sem Aguardando | sim | sem Aguardando | não, sempre Ociosas | sem Aguardando | sem Aguardando |
+| Filtro da barra lateral por estado: Aguardando, Rodando, Não lidas | sim | sim | sem Aguardando | sim | sem Aguardando | a partir do Crush 0.99.0; nas versões anteriores, sempre Ociosas | sem Aguardando | sem Aguardando |
 | Rodado pelo seu agente dentro de outra sessão (`claude -p`, `cursor-agent -p`), não aparece no card dessa sessão | sim | sim | sim | sim | sim | sim | sim | não |
 | Além das ferramentas para falar com as suas outras sessões, o agente é avisado de quando usá-las (passar trabalho para uma sessão na própria worktree) | sim | sim, a não ser que o seu `config.toml` defina `developer_instructions` | sim | sim | sim | sim | não medido | sim |
-| Impede a máquina de suspender por inatividade enquanto um turno roda | sim | sim | sim | sim | sim | não | sim | sim |
-| Sessões trocando mensagens sem trabalho entre elas, duas ou num ciclo de várias, são paradas | sim | sim | sim | sim | sim | não | sim | sim |
+| Impede a máquina de suspender por inatividade enquanto um turno roda | sim | sim | sim | sim | sim | a partir do Crush 0.99.0 | sim | sim |
+| Sessões trocando mensagens sem trabalho entre elas, duas ou num ciclo de várias, são paradas | sim | sim | sim | sim | sim | a partir do Crush 0.99.0 | sim | sim |
 | **Último turno** na aba Revisão, com o resumo do agente | sim | sim | sim | sim | sim | não | sim | sim |
 | Buscar na conversa pela paleta | sim | sim | sim | sim | sim | sim | não | sim |
 | Retomar, pela aba Histórico da paleta, uma conversa iniciada fora do lich | sim | sim | sim | sim | sim | Linux; macOS e Windows sem teste | sim | sim |
 | Um paste longo pode entrar como texto editável em vez de um placeholder recolhido (Configurações › Provedores, desligado por padrão) | sim | não | não | sim | não medido | não, vira o anexo `paste_N.txt` | não | sim |
 | Fazer fork de uma conversa para uma nova worktree, ou no mesmo checkout | sim | sim | não | sim | não | não | não | não |
 | Um fork fica pendurado na sessão de origem, na árvore da barra lateral | sim | sim | não | sim | não | não | não | não |
-| Aviso quando você retoma, pelo app do próprio agente, uma conversa que já está aberta em outro card | sim | no seu próximo prompt | no seu próximo prompt, sem teste | não | sim | na próxima chamada de tool | não | sim |
+| Aviso quando você retoma, pelo app do próprio agente, uma conversa que já está aberta em outro card | sim | no seu próximo prompt | no seu próximo prompt, sem teste | não | sim | no seu próximo prompt a partir do Crush 0.99.0; nas versões anteriores, na próxima chamada de tool | não | sim |
 | Abrir uma sessão com o esforço de raciocínio escolhido | sim | sim | sim | não | sim | não | no nome do modelo | sim |
 | Abrir uma sessão com ultracode ligado | sim | não | não | não | não | não | não | não |
 | Várias contas lado a lado como perfis, cada uma com login completo próprio, e uma sessão que muda de conta continua no mesmo card (Configurações › Provedores) | sim, com plugins, modelo e esforço padrão próprios em cada perfil e as demais configurações do Pessoal compartilhadas por todos | sim, com plugins, modelo e esforço padrão próprios em cada perfil e as demais configurações do Pessoal compartilhadas por todos | não | sim, com login feito num card de terminal; a sessão não muda de perfil, porque as conversas ficam no mesmo banco que guarda o login; o último modelo escolhido vira o padrão de todos os perfis | sim, com login feito num card de terminal, modelos padrão próprios em cada perfil e as demais configurações compartilhadas por todos os perfis | não medido | Linux e Windows (no macOS o login fica no Keychain), com login feito num card de terminal e `mcp.json`, hooks e skills compartilhados por todos os perfis | só Linux (o macOS guarda o login no Keychain, e no Windows nada consegue mudá-lo de lugar), com login feito num card de terminal e as conversas e o modelo padrão compartilhados por todos os perfis |

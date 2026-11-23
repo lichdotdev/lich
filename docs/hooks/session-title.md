@@ -30,7 +30,7 @@ Both sides test against the payloads in
 
 | Claude Code hook          | Codex hook                | Antigravity hook          | opencode event    | oh-my-pi event                | Crush hook | Cursor CLI hook | Kiro CLI hook | action                                           |
 |---------------------------|---------------------------|---------------------------|-------------------|-------------------------------|------------|-----------------|---------------|--------------------------------------------------|
-| `PostToolUse` + `Stop`    | `PostToolUse` + `Stop`    | `PreInvocation` + `Stop`  | `session.updated` | `session_stop` + `turn_start` | —          | `Stop`‡         | `stop`†        | set the session label to `title` (if still auto) |
+| `PostToolUse` + `Stop`    | `PostToolUse` + `Stop`    | `PreInvocation` + `Stop`  | `session.updated` | `session_stop` + `turn_start` | `TurnEnd`§ | `Stop`‡         | `stop`†        | set the session label to `title` (if still auto) |
 
 † **Kiro registers no title report, and lich reads its title instead.** The
 report is a *script that reads a transcript path off the hook's own stdin*, and
@@ -52,6 +52,16 @@ words, as `title` in the `meta.json` beside the chat's `store.db`
 (`chats/<md5 of the checkout>/<chat id>/`), seconds into the first turn
 (measured on 2026.10.16), and lich reads it on the `stop` report the same way.
 A `cursor-agent -p` run never writes one, which leaves it nothing to read.
+
+§ **Crush is read the same way, from Crush 0.99.0.** None of its 13 hook
+payloads carries a path (measured on 0.100.0). Its small model generates a title
+into the `title` column of the conversation's `sessions` row in
+`<cwd>/.crush/crush.db`, already there at the first `TurnEnd` in every run
+measured, and lich reads it on the `done` that event reports. Before the title
+call lands, Crush names the session itself: `New Session` in the TUI,
+`Untitled Session` or `non-interactive` from `crush run`. Those are skipped as
+silence. Below 0.99.0 Crush raises no turn end, and its card keeps the name lich
+gave it.
 
 The `ai-title` is an internal Haiku summary of the first prompt. It does not
 exist at `SessionStart`, but it lands long before the turn it belongs to ends:
@@ -126,9 +136,7 @@ included, and the plugin forwards it when it changed. oh-my-pi hands it over too
 — off the session manager every event carries — but writes it asynchronously
 after the turn, which is why the client reads it again on the next `turn_start`
 and sends only what changed. It arrives more than once
-per turn, which the idempotence above already covers. **Crush has no title to
-report** — its only event is `PreToolUse`, whose payload is about the tool — so a
-Crush card keeps the name lich gave it.
+per turn, which the idempotence above already covers.
 
 **Cursor now runs this path for the first time, and still reports nothing.** lich
 installs no plugin there; the CLI executes the Claude Code registration, and of
@@ -149,7 +157,7 @@ being debugged.
   `UPDATE sessions SET label = ? WHERE id = ? AND label_auto = 1`. A user
   `RenameSession` clears `label_auto`, so a manual name is never stomped.
   Returns whether the label actually changed.
-- **Kiro's and Cursor's own read**: `internal/terminal/title_filed.go`,
+- **Kiro's, Cursor's and Crush's own read**: `internal/terminal/title_filed.go`,
   `Service.filedTitle`, the titles lich reads rather than receives (see the
   footnotes above), taken
   off the `done` report and handed to the same guarded write.
@@ -176,19 +184,21 @@ being debugged.
   was `1+1 is?` keeps the name lich gave it, correctly, since the prompt would
   fit on the card anyway. Absence there is the CLI's behaviour, not a broken
   hook, and it is the first thing to rule out before debugging one.
-- **A Kiro or Cursor card is named at the turn's end, never during it.** Every
+- **A Kiro, Cursor or Crush card is named at the turn's end, never during it.** Every
   other harness reports in-turn, which is what stops a ten-minute first turn
   showing `Session 3` for all ten minutes; their titles are read off the `stop`
   report, because reading them on each `busy` would cost a file read per tool
   call to learn the same name. So these cards wear the name lich gave them for
   the whole of their first turn, where the other harnesses rename theirs seconds
   in, and a first turn that never reaches a `stop` never renames one at all.
-- **A Crush card is never titled.** Crush does generate one, into the `title`
-  column of `.crush/crush.db`, but it raises no hook at a turn's end, and the
+- **A Crush card below 0.99.0 is never titled.** Crush files a title in its
+  database there too, but it raises no hook at a turn's end, and the
   conversation id reaches lich only on the first tool call, before the title is
-  sure to be there. A read at that call would title some cards and miss others
-  with nothing to say which; the day Crush ships `Stop`, the read Kiro and
-  Cursor get is the one to add.
+  sure to be there.
+- **A Crush title is only as good as the small model that writes it.** A run on
+  gpt-6-luna filed its own instruction, "Generate a concise title for the
+  following content", as the title (measured on 0.100.0), and lich applies it
+  as written: nothing tells a bad title from a good one.
 - **A Claude Code session spawned with `--name` is never titled.** The flag
   marks the name as the user's, and Claude Code then writes no `ai-title` at all
   (measured on 2.1.306). lich passes it only to a fork, which is why a forked

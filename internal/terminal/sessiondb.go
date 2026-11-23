@@ -162,9 +162,12 @@ const (
 		AND json_extract(c.value, '$.type') = 'text'
 		ORDER BY m.seq DESC, c.key DESC LIMIT 1`
 
+	// A compaction's summary is an assistant message too, filed after the
+	// answer of the turn it ends, so it is skipped by its own flag.
 	crushSaidQuery = `SELECT json_extract(part.value, '$.data.text')
 		FROM messages, json_each(messages.parts) AS part
 		WHERE messages.session_id = ? AND messages.role = 'assistant'
+		AND messages.is_summary_message = 0
 		AND json_extract(part.value, '$.type') = 'text'
 		ORDER BY messages.created_at DESC, part.key DESC LIMIT 1`
 

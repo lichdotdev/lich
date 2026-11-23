@@ -199,14 +199,14 @@ func TestRepairRepointsCrushsBlock(t *testing.T) {
 	crushCLI(t, s, configDir, "0.88.1")
 	old := "/opt/it's here/lich"
 	rc := filepath.Join(configDir, "crushrc")
-	writeDoc(t, rc, "set theme dark\n\n"+crushrcBlock(testVersion, scripts, old))
+	writeDoc(t, rc, "set theme dark\n\n"+crushrcBlock(testVersion, "", scripts, old))
 
 	if got, ok := s.crushRegisteredCommand(); !ok || got != old {
 		t.Fatalf("crushRegisteredCommand = (%q, %v), want (%q, true)", got, ok, old)
 	}
 	s.RepairRegistrations()
 
-	want := "set theme dark\n\n" + crushrcBlock(testVersion, scripts, freshLich)
+	want := "set theme dark\n\n" + crushrcBlock(testVersion, "", scripts, freshLich)
 	if got := readFile(t, rc); got != want {
 		t.Errorf("crushrc =\n%s\nwant\n%s", got, want)
 	}
@@ -222,11 +222,11 @@ func TestRepairKeepsCrushsPre044ScriptDir(t *testing.T) {
 	writeDoc(t, filepath.Join(flat, filepath.Base(crushHooks[0].script)), "#!/bin/sh\n")
 	crushCLI(t, s, configDir, "0.88.1")
 	rc := filepath.Join(configDir, "crushrc")
-	writeDoc(t, rc, crushrcBlock(testVersion, flat, "/opt/old/lich"))
+	writeDoc(t, rc, crushrcBlock(testVersion, "", flat, "/opt/old/lich"))
 
 	s.RepairRegistrations()
 
-	if got, want := readFile(t, rc), crushrcBlock(testVersion, flat, freshLich); got != want {
+	if got, want := readFile(t, rc), crushrcBlock(testVersion, "", flat, freshLich); got != want {
 		t.Errorf("crushrc =\n%s\nwant\n%s", got, want)
 	}
 }
@@ -239,7 +239,7 @@ func TestRepairLeavesACrushBlockWithoutTheServer(t *testing.T) {
 	scripts := filepath.Join(lichConfigHome(t), "lich", "plugin", "hooks", providers.Crush)
 	crushCLI(t, s, configDir, "0.88.1")
 	rc := filepath.Join(configDir, "crushrc")
-	body := crushrcBlock(testVersion, scripts, "")
+	body := crushrcBlock(testVersion, "", scripts, "")
 	writeDoc(t, rc, body)
 
 	s.RepairRegistrations()

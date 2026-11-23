@@ -235,7 +235,8 @@ stdout.
   the errand with the turn's final message. A worker in a terminal gets
   `answer="last-message"` when `terminal.LastTurnSaid` reads its provider and
   the provider reports its `done` (every one but Cursor, whose transcript lich
-  cannot read, and Crush, which reports no turn end) and lich answers at that
+  cannot read, and a Crush below 0.99.0, which reports no turn end) and lich
+  answers at that
   report; otherwise `answer="reply"` and the ticket.
 - The worker's outcome reaches the asker as a `worker-*` envelope
   ([notification.md](notification.md)), in the asker's chat queue or typed.

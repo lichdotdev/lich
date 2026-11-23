@@ -24,7 +24,7 @@ import (
 func (s *Service) taskMessage(id string, t *ticket, kind string) string {
 	answer := AnswerReply
 	said, readable := s.term.FinalMessage(t.targetID)
-	byTurn := readable && (s.term.Chat(t.targetID) || s.reportsTurnEnd(kind))
+	byTurn := readable && (s.term.Chat(t.targetID) || s.reportsState(kind))
 	byMod := t.subagent && s.term.ModAnswers(t.targetID)
 	s.mu.Lock()
 	switch {

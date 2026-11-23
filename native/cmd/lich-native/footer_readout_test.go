@@ -144,29 +144,17 @@ func TestHandsOnReadoutFigure(t *testing.T) {
 		14*3600 + 5*60: "14h05m", 100 * 3600: "100h00m",
 	}
 	for seconds, want := range cases {
-		r, ok := handsOnReadout(seconds, nil, "claude")
+		r, ok := handsOnReadout(seconds, nil)
 		if ok != (want != "") || r.Text != want {
 			t.Errorf("handsOnReadout(%d) = %q, %v; want %q", seconds, r.Text, ok, want)
 		}
 	}
-	r, _ := handsOnReadout(3600+12*60, nil, "crush")
-	if r.Detail[0] != "1h 12m" || r.Detail[1] != handsOnDetail("crush") {
+	r, _ := handsOnReadout(3600+12*60, nil)
+	if r.Detail[0] != "1h 12m" || r.Detail[1] != handsOnDetail() {
 		t.Errorf("tooltip: %q", r.Detail)
 	}
-	if r, ok := handsOnReadout(0, errors.New("down"), ""); !ok || r.Text != "—" {
+	if r, ok := handsOnReadout(0, errors.New("down")); !ok || r.Text != "—" {
 		t.Errorf("a failed read: %+v, %v", r, ok)
-	}
-}
-
-func TestHandsOnDetailByRung(t *testing.T) {
-	turn := handsOnDetail("claude")
-	for _, kind := range []string{"", "shell", "codex", "kiro"} {
-		if handsOnDetail(kind) != turn {
-			t.Errorf("%q does not use the turn wording", kind)
-		}
-	}
-	if handsOnDetail("crush") == turn {
-		t.Error("crush, a tool-rung provider, uses the turn wording")
 	}
 }
 

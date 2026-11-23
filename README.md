@@ -147,30 +147,30 @@ what lich can read back out of it, since each CLI records different things.
 | A turn your plan's usage limit stopped picks up again once the limit resets | yes | yes | no | its own retries | its own retries | no | no | no |
 | When another of your profiles still has quota, a notice offers to continue there at once | yes | yes | no | no | no | no | no | no |
 | When handing off, an agent can suggest one of your profiles for its successor, and a notice lets you choose to move it | yes | yes | no | no | yes | no | Linux and Windows | Linux only |
-| Spinner while a turn runs, ring when it ends | yes | yes | yes | yes | yes | no | yes | yes |
-| The card names itself after the conversation | yes | after your first prompt | after your first prompt | yes | yes, from the second turn | no | yes, once the first turn ends | after your first prompt, once the first turn ends |
-| A pull request the agent opens shows on its card when the turn ends | yes | yes | yes | yes | yes | no, once the window regains focus | yes | yes |
-| A task you hand an agent comes back by itself when its turn ends | yes | yes | yes | yes | yes | no, it answers with reply_to_session | in the chat; in a terminal it answers with reply_to_session | yes |
+| Spinner while a turn runs, ring when it ends | yes | yes | yes | yes | yes | from Crush 0.99.0 | yes | yes |
+| The card names itself after the conversation | yes | after your first prompt | after your first prompt | yes | yes, from the second turn | once the first turn ends, from Crush 0.99.0 | yes, once the first turn ends | after your first prompt, once the first turn ends |
+| A pull request the agent opens shows on its card when the turn ends | yes | yes | yes | yes | yes | from Crush 0.99.0; before it, once the window regains focus | yes | yes |
+| A task you hand an agent comes back by itself when its turn ends | yes | yes | yes | yes | yes | from Crush 0.99.0; before it, it answers with reply_to_session | in the chat; in a terminal it answers with reply_to_session | yes |
 | Repaints in the new look when you switch lich between a light and a dark theme | yes | no | no | yes | yes | no | yes | no |
-| Bell when the agent is blocked on you | yes | yes | no | yes | no | no | no | no |
-| Ctrl+Shift+I jumps to the next session waiting on you | yes | yes | no | yes | no | no | no | no |
-| A program in the agent's terminal can set the card (OSC 7501) while the agent runs | no | no | no | no | no | yes | no | no |
+| Bell when the agent is blocked on you | yes | yes | no | yes | no | from Crush 0.99.0 | no | no |
+| Ctrl+Shift+I jumps to the next session waiting on you | yes | yes | no | yes | no | from Crush 0.99.0 | no | no |
+| A program in the agent's terminal can set the card (OSC 7501) while the agent runs | no | no | no | no | no | before Crush 0.99.0 | no | no |
 | Back at a shell without prompt marks after you quit the agent, a program can set the card again | yes | no | no | no | no | yes | yes | no |
-| The tray lists the sessions waiting on you and the ones working, and its icon takes a dot | yes | yes | working only | yes | working only | no | working only | working only |
+| The tray lists the sessions waiting on you and the ones working, and its icon takes a dot | yes | yes | working only | yes | working only | from Crush 0.99.0 | working only | working only |
 | The card says when the conversation is being compacted | yes | no | no | no | no | no | no | no |
 | After a compaction, the agent is reminded of the tasks other sessions sent it that still wait on its answer | yes | no | no | no | no | no | no | no |
-| Sidebar filter by state: Waiting, Running, Unread | yes | yes | no Waiting | yes | no Waiting | no, always Idle | no Waiting | no Waiting |
+| Sidebar filter by state: Waiting, Running, Unread | yes | yes | no Waiting | yes | no Waiting | from Crush 0.99.0; before it, always Idle | no Waiting | no Waiting |
 | Run by your agent inside another session (`claude -p`, `cursor-agent -p`), it stays out of that session's card | yes | yes | yes | yes | yes | yes | yes | no |
 | Besides the tools for reaching your other sessions, the agent is told when to use them (hand work to a session on its own worktree) | yes | yes, unless your `config.toml` sets `developer_instructions` | yes | yes | yes | yes | not measured | yes |
-| Machine kept out of idle sleep while a turn runs | yes | yes | yes | yes | yes | no | yes | yes |
-| Sessions trading messages with no work in between, two of them or round a loop of several, are stopped | yes | yes | yes | yes | yes | no | yes | yes |
+| Machine kept out of idle sleep while a turn runs | yes | yes | yes | yes | yes | from Crush 0.99.0 | yes | yes |
+| Sessions trading messages with no work in between, two of them or round a loop of several, are stopped | yes | yes | yes | yes | yes | from Crush 0.99.0 | yes | yes |
 | Review tab's **Last turn**, with the agent's recap | yes | yes | yes | yes | yes | no | yes | yes |
 | Search the conversation from the palette | yes | yes | yes | yes | yes | yes | no | yes |
 | Resume a conversation started outside lich, from the palette's History tab | yes | yes | yes | yes | yes | Linux; macOS and Windows untested | yes | yes |
 | A long paste can land as editable text instead of a folded placeholder (Settings › Providers, off by default) | yes | no | no | yes | not measured | no, it becomes a `paste_N.txt` attachment | no | yes |
 | Fork a conversation into a new worktree, or in its own checkout | yes | yes | no | yes | no | no | no | no |
 | A fork hangs from its source session in the sidebar's tree | yes | yes | no | yes | no | no | no | no |
-| Warned when you resume, from the agent's own app, a conversation another card has open | yes | on your next prompt | on your next prompt, untested | no | yes | at its next tool call | no | yes |
+| Warned when you resume, from the agent's own app, a conversation another card has open | yes | on your next prompt | on your next prompt, untested | no | yes | on your next prompt from Crush 0.99.0; before it, at its next tool call | no | yes |
 | Open a session at a chosen reasoning effort | yes | yes | yes | no | yes | no | in the model name | yes |
 | Open a session with ultracode on | yes | no | no | no | no | no | no | no |
 | Several accounts side by side as profiles, each with its own full login, and a session moved to another account carrying on in the same card (Settings › Providers) | yes, with its own plugins, default model and effort in each profile and Personal's other settings shared by all of them | yes, with its own plugins, default model and effort in each profile and Personal's other settings shared by all of them | no | yes, logged in from a terminal card; a session cannot move to another profile, since its conversations sit in the database that holds the login; the model picked last is every profile's default | yes, logged in from a terminal card, with its own default models in each profile and its other settings shared by every profile | not measured | Linux and Windows (on macOS its login is in the Keychain), logged in from a terminal card, with `mcp.json`, hooks and skills shared by every profile | Linux only (macOS keeps its login in the Keychain, and on Windows nothing moves it), logged in from a terminal card, with its conversations and default model shared by every profile |

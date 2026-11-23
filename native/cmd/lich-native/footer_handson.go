@@ -9,14 +9,6 @@ import (
 	"github.com/lichdotdev/lich/native/i18n"
 )
 
-// handsOnRung says which signals beat a provider's hands-on clock: a "turn"
-// provider's hooks open a turn, a "tool" one is heard only through its tool
-// calls. Every provider is spelled out so a new one has to pick a side.
-var handsOnRung = map[string]string{
-	"claude": "turn", "codex": "turn", "antigravity": "turn", "opencode": "turn",
-	"omp": "turn", "crush": "tool", "cursor": "turn", "kiro": "turn",
-}
-
 // handsOn reads the active session's hands-on time, re-read on every turn of
 // the wall clock.
 type handsOn struct {
@@ -98,7 +90,7 @@ func (h *handsOn) refresh() {
 
 // handsOnReadout is the hands-on time readout. False under a minute: "0m" reads
 // as a broken readout rather than a new session.
-func handsOnReadout(seconds int64, err error, provider string) (footerReadout, bool) {
+func handsOnReadout(seconds int64, err error) (footerReadout, bool) {
 	label := i18n.T("shell.footerSession.handsOnTime")
 	if err != nil {
 		return footerReadout{Label: label, Text: "—", Detail: []string{i18n.T("shell.footerSession.handsOnFailed")}}, true
@@ -110,7 +102,7 @@ func handsOnReadout(seconds int64, err error, provider string) (footerReadout, b
 	return footerReadout{
 		Label:  label,
 		Text:   hours + minutes,
-		Detail: []string{joinNonEmpty(" ", hours, minutes), handsOnDetail(provider)},
+		Detail: []string{joinNonEmpty(" ", hours, minutes), handsOnDetail()},
 	}, true
 }
 
@@ -128,12 +120,8 @@ func handsOnParts(seconds int64) (hours, minutes string, ok bool) {
 	return fmt.Sprintf("%dh", m/60), fmt.Sprintf("%02dm", m%60), true
 }
 
-// handsOnDetail is the tooltip's sentence on what the clock listened to. A
-// plain shell keeps the turn wording. The 15 minutes is handsOnIdleGap in
-// internal/terminal/handson.go.
-func handsOnDetail(provider string) string {
-	if handsOnRung[provider] == "tool" {
-		return i18n.T("session.handsOn.detailTool")
-	}
+// handsOnDetail is the tooltip's sentence on what the clock listened to. The 15
+// minutes is handsOnIdleGap in internal/terminal/handson.go.
+func handsOnDetail() string {
 	return i18n.T("session.handsOn.detailTurn")
 }

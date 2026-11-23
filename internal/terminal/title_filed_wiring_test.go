@@ -119,6 +119,27 @@ func TestKiroTitleResolution(t *testing.T) {
 	}
 }
 
+// A Crush session's title is read from its checkout's database on the done
+// TurnEnd raises.
+func TestCrushTitlePublishedOnDone(t *testing.T) {
+	const id = "crush-uuid"
+	cwd := plantCrushTitle(t, id, "Fix the bug in calc.py")
+	store := &titleStore{providerSession: id, titles: make(chan string, 1)}
+	svc := New(store, nil, events.New())
+	svc.spawns.Store("s1", spawn{kind: providers.Crush, cwd: cwd})
+
+	svc.onHookState(hookRequest{SessionID: "s1", State: statusDone})
+
+	select {
+	case got := <-store.titles:
+		if got != "Fix the bug in calc.py" {
+			t.Errorf("title = %q, want %q", got, "Fix the bug in calc.py")
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("the turn ended and no title reached the store")
+	}
+}
+
 // plantCursorChat writes one chat's store.db, and its meta.json when meta is not
 // empty, where cursorChatStore looks for them, and returns the checkout the
 // chat ran in.

@@ -23,17 +23,39 @@ nothing before its first turn, so the start gate has only a quiet screen to read
 
 ## Hooks
 
-Crush reports no session state at all (the mapping table is in
-[`../hooks/session-state.md`](../hooks/session-state.md)), so no turn ever opens or closes there. Two things
-follow. A waiting card sends no reason and keeps the generic "Waiting on you"
-(`statusRung` in `native/cmd/lich-native/statusrung.go`), which means the harness never spoke and not that the block
-is trivial. And keep-awake has nothing to listen to (`internal/awake`, `turnLog.onOpen`): a Crush session left
-working behind a locked screen sleeps as it always did, and no card says so.
+Crush has 13 hook events from 0.99.0 (read off its source; measured on 0.100.0 in the TUI and in `crush run`,
+which fire the same ones). lich registers the state reports, the session id and the tool line on them, and the
+mapping is in [`../hooks/session-state.md`](../hooks/session-state.md). Every payload carries `session_id` and
+`cwd`, and the environment carries `CRUSH_EVENT`, `CRUSH_SESSION_ID`, `CRUSH_CWD`, `CRUSH_PROJECT_DIR`, and on a tool
+event `CRUSH_TOOL_NAME` plus `CRUSH_TOOL_INPUT_COMMAND` or `CRUSH_TOOL_INPUT_FILE_PATH`. Only the tool events and
+`PreCompact` read a hook's output; the rest observe.
 
-Its only hook event, `PreToolUse`, fires once per tool call (measured 2026-09-03 against Crush 0.88.0: three tool
-calls in one turn, three POSTs), each a `/session-start`, which is how hands-on time hears a Crush turn at all. A
-resume typed inside Crush (v0.98.1) is reported with its next tool call, so a turn may already have run in both
-cards before the two-cards-one-conversation warning arrives.
+| Event | Fires | Payload beyond the id | lich registers |
+| --- | --- | --- | --- |
+| `SessionStart` | the first prompt of a new conversation, not at launch | `source` (`startup`, `resume` from `crush run --continue`) | session id |
+| `TurnStart` | every prompt, before any tool | — | session id, `busy` |
+| `PreToolUse` | before each tool | `tool_name`, `tool_input`, `tool_use_id` | tool line, touched, subagent veto |
+| `PostToolUse` | after a tool that succeeded | the same, `tool_response` | `busy` |
+| `PostToolUseFailure` | after a tool that failed or was denied | the same, `error` | `busy` |
+| `PermissionRequest` | a permission prompt shown | `tool_name`, `tool_input` | `waiting` |
+| `PermissionResult` | that prompt answered | the same, `decision` | nothing: it runs beside the tool and can land after `TurnEnd` |
+| `TurnEnd` | the turn finished | `last_assistant_message` | `done` |
+| `StopFailure` | the turn ended on a provider error, instead of `TurnEnd` | `error` | `done` |
+| `Interrupt` | the user stopped the turn, instead of `TurnEnd` | — | nothing: lich reads the key itself |
+| `PreCompact` | before a compaction | `trigger` (`manual`, `auto`) | nothing (session-state.md, compaction) |
+| `PostCompact` | after it | `trigger` | nothing |
+| `SessionEnd` | Crush exits | `reason` (`exit`) | `idle` |
+
+Subagents fire none of the tool or turn events, only the outer `agent` call does. A resume typed inside Crush is
+reported at its next prompt, so a turn may already have run in both cards before the two-cards-one-conversation
+warning arrives.
+
+Below 0.99.0 `PreToolUse` is the only event, and the block lich writes there is the one it always wrote: the
+session id rides every tool call, and the card carries no state. A waiting card would send no reason, keep-awake
+has nothing to listen to, and a turn that calls no tool reaches lich not at all. The block lich wrote for an older
+Crush stays until the plugin is installed again, so a Crush upgraded to 0.99.0 reports state from the next install
+or update, not before; the Crush row in Settings › Updates offers that update once `crush --version` reads 0.99.0 or
+newer, with or without a newer plugin release (`crushBlockBehind`).
 
 ## Transcript & cost
 
@@ -50,7 +72,8 @@ conversation.
 Crush has no plugin CLI, so lich writes the released files itself (`internal/agentplugin`). Crush records nothing
 about what is installed, so the version lives in a marker line lich wrote: edit the file by hand and lich reads
 it as not installed. Crush below 0.88.0 ignores those lines in silence, which is why the install asks its version
-first.
+first, and the same answer decides whether the lifecycle events are registered. The relay takes a Crush session's
+silence as meaningful only when lich's block registers `TurnEnd`.
 
 ## MCP
 

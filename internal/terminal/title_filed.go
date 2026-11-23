@@ -12,15 +12,17 @@ import (
 
 // The providers lich reads a session title for itself, rather than being sent
 // one. The report every other harness sends is a hook script reading a
-// transcript path off its own stdin (docs/hooks/session-title.md), and neither
+// transcript path off its own stdin (docs/hooks/session-title.md), and none
 // of these hands its hooks a file the title is in. Kiro passes a path on none of
 // its five events, and files a `title`, derived from the first prompt, into the
 // session metadata transcript.go resolves (kiroSessionPath), the same `.json` the
 // context readout is read from. Cursor CLI hands the plugin a transcript that
 // holds no title, and files a generated one into the `meta.json` beside the
 // chat's store.db (cursorChatStore), seconds into the first turn of an
-// interactive session (measured on 2026.10.16; a `-p` run never writes one). So
-// the turn's end is where lich goes and reads it.
+// interactive session (measured on 2026.10.16; a `-p` run never writes one).
+// Crush passes no path either, and files a generated title in the `sessions`
+// row of the checkout's database, there by the first TurnEnd (measured on
+// v0.100.0). So the turn's end is where lich goes and reads it.
 
 // cursorChatMeta is the file Cursor CLI keeps a chat's metadata in, beside its
 // store.db.
@@ -47,18 +49,42 @@ func metadataTitle(path string) (string, bool) {
 	return title, title != ""
 }
 
+// crushTitleQuery reads a Crush conversation's title, skipping the names Crush
+// gives a session before its title call lands: the TUI's, agent.DefaultSessionName
+// and a client-mode `crush run`'s (v0.100.0 source).
+const crushTitleQuery = `SELECT title FROM sessions WHERE id = ?
+	AND title NOT IN ('New Session', 'Untitled Session', 'non-interactive')`
+
+// crushTitle is the title Crush filed for one conversation, false on every
+// absence metadataTitle treats as silence.
+func crushTitle(providerSessionID, cwd string) (string, bool) {
+	path, ok := crushSessionDB(cwd)
+	if !ok {
+		return "", false
+	}
+	texts := sessionDBTexts(path, crushTitleQuery, providerSessionID)
+	if len(texts) == 0 {
+		return "", false
+	}
+	title := strings.TrimSpace(texts[0])
+	return title, title != ""
+}
+
 // filedTitle resolves the title the provider filed for the conversation running
 // in session id. ok is false when the session runs a provider that files none
 // lich reads, when no conversation is linked to it yet, and on every absence
 // above.
 func (s *Service) filedTitle(id string) (string, bool) {
 	started := s.spawnOf(id)
-	if started.kind != providers.Kiro && started.kind != providers.Cursor {
+	if started.kind != providers.Kiro && started.kind != providers.Cursor && started.kind != providers.Crush {
 		return "", false
 	}
 	providerSessionID, err := s.store.ProviderSession(id)
 	if err != nil || providerSessionID == "" {
 		return "", false
+	}
+	if started.kind == providers.Crush {
+		return crushTitle(providerSessionID, started.cwd)
 	}
 	path, ok := filedTitlePath(started.kind, providerSessionID, started.cwd)
 	if !ok {

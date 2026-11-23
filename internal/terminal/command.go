@@ -212,9 +212,10 @@ func SupportsUltracode(kind string) bool {
 // What could ask, if the gap is ever worth closing, is the plugin's own hooks —
 // they run code and can read LICH_SESSION_ID. opencode has somewhere to put it:
 // its plugin API has `experimental.chat.system.transform`, which mutates the
-// system messages (1.18.18). Crush does not: `PreToolUse` is its only event
-// (0.88.0), so its briefing would arrive at the first tool call, and a turn that
-// answers without one would never see it at all.
+// system messages (1.18.18). Crush does not: only its tool events take a hook's
+// context, SessionStart and TurnStart observe (0.100.0), so its briefing would
+// arrive at the first tool call, and a turn that answers without one would never
+// see it at all.
 var briefingFlags = map[string]string{
 	providers.Claude: "--append-system-prompt",
 	providers.OMP:    "--append-system-prompt",

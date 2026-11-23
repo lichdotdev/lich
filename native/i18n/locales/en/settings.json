@@ -495,7 +495,7 @@
   "settingsUpdatesPlugin": {
     "hint": {
       "codex": "Run /hooks in a Codex session to trust the plugin's hooks.",
-      "crush": "Reports its session id and refreshes git status. It has no end-of-turn event, so its cards show no status and keep their own name.",
+      "crush": "Reports its status, name and git changes. A Crush older than 0.99.0 has no end-of-turn event, so there it only reports its session id and refreshes git status.",
       "omp": "Reports its status, name and git changes. It has no observed approval event, so a session waiting on your permission shows a spinner rather than a bell.",
       "antigravity": "Reports its status, name and git changes. It has no observed approval event, so a session waiting on your permission shows a spinner rather than a bell.",
       "cursor": "Runs the plugin installed in Claude Code, so it reports what that version reports and updates with it. lich adds only its own tools here. It raises no approval event either, so a session waiting on your permission shows a spinner rather than a bell."

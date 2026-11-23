@@ -96,6 +96,23 @@ func TestATerminalWorkerAnswersAtDone(t *testing.T) {
 	}
 }
 
+// A Crush worker whose plugin reports state ends its turn where lich hears it,
+// so it answers by its last message like the rest (docs/hooks/session-state.md).
+func TestACrushWorkerReportingStateAnswersByItsLastMessage(t *testing.T) {
+	t.Parallel()
+	term := newFakeTerminal("s1", "s5")
+	term.say("s5", "")
+	svc := newRelay(workspace(), term, nil)
+	svc.SetPlugins(fakePlugins{installed: true})
+
+	go func() {
+		_, _ = svc.Send(context.Background(), SendOptions{From: "s1", Target: "api", Project: "revu", Prompt: "fix it", WaitSeconds: 1})
+	}()
+	if !awaitWritten(term, "s5", `answer="last-message"`) {
+		t.Fatalf("typed at s5 = %q, want a task answered by the last message", term.written("s5"))
+	}
+}
+
 // Where lich cannot read the final message the task is answered by its ticket.
 func TestAWorkerLichCannotReadIsAnsweredByItsTicket(t *testing.T) {
 	t.Parallel()

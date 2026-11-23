@@ -3,8 +3,6 @@ package relay
 import (
 	"fmt"
 	"strings"
-
-	"github.com/lichdotdev/lich/internal/providers"
 )
 
 // Thresholds of the ping-pong breaker, taken from clowder-ai's F167: a pair of
@@ -24,7 +22,7 @@ var relayTools = []string{ToolSend, ToolReply, ToolCollect, ToolList}
 // turnTools is what one session's open turn has reported running.
 type turnTools struct {
 	// any is whether a tool was reported at all. A provider that reports none
-	// (Crush) gives no evidence of an idle turn, so its hops never count.
+	// gives no evidence of an idle turn, so its hops never count.
 	any bool
 	// work is whether one of them was something other than a relay tool.
 	work bool
@@ -106,11 +104,10 @@ func (s *Service) noteHop(fromID, toID string) int {
 	return streak
 }
 
-// reportsTools is whether a session of that kind tells lich what it runs. Crush
-// has the plugin and still reports no state (docs/hooks/session-state.md). A
-// nil s.plugins is a test that does not care, so only an answer of no counts.
+// reportsTools is whether a session of that kind tells lich what it runs. A nil
+// s.plugins is a test that does not care, so only an answer of no counts.
 func (s *Service) reportsTools(kind string) bool {
-	return kind != providers.Crush && (s.plugins == nil || s.plugins.Installed(kind))
+	return s.plugins == nil || s.plugins.Installed(kind)
 }
 
 // dropHopStreaks ends every streak either session of a hop is part of.

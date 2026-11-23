@@ -17,8 +17,7 @@
     "unpricedModel": "Aún no hay precio para este modelo. lich necesita conexión a la red para obtenerlo."
   },
   "handsOn": {
-    "detailTurn": "Cuánto tiempo se ha trabajado en esta sesión: escribiéndole, informando o ejecutando un turno. Una pausa de más de 15 minutos cuenta como tiempo de ausencia.",
-    "detailTool": "Cuánto tiempo se ha trabajado en esta sesión: escribiéndole o informando de una llamada a una herramienta. Una pausa de más de 15 minutos cuenta como tiempo de ausencia."
+    "detailTurn": "Cuánto tiempo se ha trabajado en esta sesión: escribiéndole, informando o ejecutando un turno. Una pausa de más de 15 minutos cuenta como tiempo de ausencia."
   },
   "spawnGate": {
     "checkoutGone": "La worktree de esta sesión ya no existe, así que la sesión se cerró. Vuelve a crear la worktree para retomarla.",

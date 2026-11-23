@@ -81,12 +81,12 @@ inside a turn, the card's tool line keeps naming the call that started it.
 
 | Claude Code hook   | Codex hook          | Antigravity hook | opencode event           | oh-my-pi event | Crush hook | Cursor CLI hook    | Kiro CLI hook      | state     |
 |--------------------|---------------------|------------------|--------------------------|----------------|------------|--------------------|--------------------|-----------|
-| `UserPromptSubmit` | `UserPromptSubmit`  | `PreInvocation`  | `session.status` (`busy`) | `input`        | —          | `UserPromptSubmit` | `userPromptSubmit` | `busy`    |
-| `PreToolUse`       | `PreToolUse`        | `PreToolUse`     | `tool.execute.before`    | `tool_call`    | —          | `PreToolUse`       | `preToolUse`       | `busy` + `tool` |
-| `PostToolUse`      | `PostToolUse`       | —                | `tool.execute.after`     | `turn_start`   | —          | `PostToolUse`      | `postToolUse`      | `busy`    |
-| `Notification`     | `PermissionRequest` | —                | any `*.asked`            | —              | —          | —                  | —                  | `waiting` + `reason` |
-| `Stop`, `StopFailure` | `Stop`              | `Stop`           | `session.status` (`idle`) | `session_stop` | —          | `Stop`             | `stop`             | `done`    |
-| `SessionEnd`       | —                   | —                | —                        | —              | —          | `SessionEnd`       | —                  | `idle`    |
+| `UserPromptSubmit` | `UserPromptSubmit`  | `PreInvocation`  | `session.status` (`busy`) | `input`        | `TurnStart` | `UserPromptSubmit` | `userPromptSubmit` | `busy`    |
+| `PreToolUse`       | `PreToolUse`        | `PreToolUse`     | `tool.execute.before`    | `tool_call`    | `PreToolUse` | `PreToolUse`       | `preToolUse`       | `busy` + `tool` |
+| `PostToolUse`      | `PostToolUse`       | —                | `tool.execute.after`     | `turn_start`   | `PostToolUse`, `PostToolUseFailure` | `PostToolUse`      | `postToolUse`      | `busy`    |
+| `Notification`     | `PermissionRequest` | —                | any `*.asked`            | —              | `PermissionRequest` | —                  | —                  | `waiting` + `reason` |
+| `Stop`, `StopFailure` | `Stop`              | `Stop`           | `session.status` (`idle`) | `session_stop` | `TurnEnd`, `StopFailure` | `Stop`             | `stop`             | `done`    |
+| `SessionEnd`       | —                   | —                | —                        | —              | `SessionEnd` | `SessionEnd`       | —                  | `idle`    |
 | mod `session.compact` | —                | —                | —                        | —              | —          | —                  | —                  | `compacting` |
 
 **Kiro closes four of the six rows and neither of the other two.** It has no
@@ -164,12 +164,43 @@ generation, `aborted` then `error`, about 60ms apart. lich drops a Cursor `done`
 that finds no turn open (`terminal.repeatedEnding`), because the second one would
 ring the card again and close an errand the relay delivered in between.
 
-**Crush reports no state at all.** Its only hook event is `PreToolUse`, and a
-`busy` with nothing that can end it would leave a spinner on the card until the
-next turn — a state that is wrong for longer than it is right. So the plugin
-registers this contract on the harnesses that can close it, and a Crush
-card carries no indicator. The day Crush ships `Stop` (its `docs/hooks/FUTURE.md`
-tracks the request, not the event), the column fills in from the existing script.
+**Crush reports state from 0.99.0, the release that added its lifecycle
+events.** Below it `PreToolUse` is the only event, a `busy` with nothing that can
+end it would leave a spinner on the card until the next turn, and lich registers
+none of this contract: the card carries no indicator. From 0.99.0 the install
+writes the column above into lich's block in crushrc, and only from it, since the
+block lich wrote for an older Crush stays as it was until the next install
+(`internal/agentplugin/crush.go`). Measured on 0.100.0 in the TUI, the mode lich
+spawns, against a probe on all 13 events:
+
+- `TurnStart` fires once per prompt, before any tool, and carries the
+  conversation id, so the session-start report rides it as well as
+  `SessionStart`. A session resumed with `--session` or picked in Crush's own
+  session list fires no `SessionStart`, only `TurnStart`. Crush runs one
+  event's hooks in parallel, so the start and the `busy` on it reach lich in
+  either order. A new conversation (first prompt, Ctrl+N) is bound by
+  `SessionStart` before `TurnStart` runs. A conversation picked in Crush's list
+  is not: when its `busy` lands first it is dropped as another conversation's
+  (`internal/terminal/nested.go`), the start then rebinds, since no turn is
+  open, and the card spins only from the turn's first tool report. A turn
+  there that calls no tool shows no spinner at all, only its end.
+- `PermissionRequest` carries `tool_name` and `tool_input`, so the reason is the
+  tool and its detail, as on Codex.
+- **`PermissionResult` is not registered.** Crush fires the two permission
+  events on a goroutine of their own, beside the tool's flow: after a denial its
+  `PermissionResult` started 35 ms before `TurnEnd`, so a `busy` there can reach
+  lich after the turn's `done` and leave the card spinning. The tool events
+  re-arm the card instead: `PostToolUse` after a grant, `PostToolUseFailure`
+  (`User denied permission`) after a denial, and both fire before `TurnEnd`.
+- **`Interrupt` is not registered.** It replaces `TurnEnd` when the user stops a
+  turn, and the only word the contract has for it is `done`, which would draw a
+  finished turn; lich reads the keystroke itself (below).
+- `StopFailure` replaces `TurnEnd` on a provider error, reported `done` like
+  Claude Code's.
+- Subagents fire no tool or turn event at all, so no report needs the
+  `agent_id` filter.
+
+Compaction is the one pair left out; see "A conversation being compacted".
 
 `Notification` fires when Claude needs a permission decision **or** when the
 session has simply been sitting at its prompt with nothing to do. Only the first
@@ -231,6 +262,16 @@ one call.
 No other harness has a start-of-compaction event wired, so the column for each
 of them is empty in the table above, and their cards show what they did before: whatever state
 the compaction began in.
+
+Crush has the events, `PreCompact` and `PostCompact`, and lich still registers
+neither. A Crush hook outside the tool events takes no matcher, so one script
+with one fixed state would have to close all three shapes measured on 0.100.0:
+a `/compact` at the prompt (`trigger: manual`), which nothing follows and which
+closes as `done`; an auto-compaction cut into a turn with tool calls pending
+(`trigger: auto`), which Crush continues as a new `TurnStart` with no `TurnEnd`
+between; and one at the turn's last step, followed by `TurnEnd`. A `done` on
+`PostCompact` would end the second kind mid-task, the end of turn a relayed task
+is answered at; a `busy` would leave the first spinning.
 
 lich reads `compacting` as a bracket everywhere it keeps turn accounting: it
 neither opens nor closes a turn. Three consequences a client can rely on:
@@ -299,8 +340,9 @@ which is the list of servers that session's own spawn found registered with its
 provider — read from the harness's own config documents and the session's
 directory, recorded on its row (`store.Session`'s `mcpServers`) and announced as
 `session-mcp`. The card takes the longest server name the tool name spells, and
-leaves a name no server claims whole. Crush is absent because it reports no tool
-(see above).
+leaves a name no server claims whole. Crush is not in the table: the name its
+MCP tools reach `PreToolUse` with was not measured (its own docs match them with
+`^mcp_`), and the card shows whatever arrives.
 
 `detail` is whatever identifies the call at a glance — the command line, the
 file path, the pattern, and on Antigravity the MCP tool its step name does not
@@ -341,7 +383,7 @@ was written to be read this way:
 | opencode    | `permission.v2.asked`  | `action`, `resources`                              | `action`                  |
 | opencode    | `question(.v2).asked`  | `questions[]` of `question` / `header` / `options` | `questions[0].header` — the ≤30-char label the question already carries for narrow surfaces |
 | oh-my-pi    | —                      | —                                                  | — (reports no `waiting` at all) |
-| Crush       | —                      | —                                                  | — (reports no state at all) |
+| Crush       | `PermissionRequest`    | `tool_name`, `tool_input`                          | `tool_name`, qualified from `tool_input` the way `detail` already is |
 
 Read off what each harness ships rather than off its documentation: Claude Code
 2.1.240's own hook-input builder, the `permission-request.command.input` schema
@@ -570,9 +612,10 @@ it. The limits and the record lifetime are in `docs/ceilings.md`.
 - **Only Claude Code says what it is waiting for in words.** Codex's
   `PermissionRequest` and opencode's `.asked` events carry the thing being asked
   about (`tool_name`, `permission`, `action`) and no sentence, so those cards read
-  a bare `Bash` or `edit` where a Claude card reads why. oh-my-pi and Crush send
-  no `reason` at all, because neither reports `waiting` in the first place (see
-  the two bullets above), so their cards keep today's "Waiting on you".
+  a bare `Bash` or `edit` where a Claude card reads why; Crush's
+  `PermissionRequest` is the same shape. oh-my-pi sends no `reason` at all,
+  because it reports no `waiting` in the first place (see the two bullets above),
+  so its card keeps today's "Waiting on you".
 - **A reason is only as fresh as the report that carried it.** It lives beside the
   state in the window's status store, so it clears when the state leaves `waiting`.
   A window that attaches to a session already blocked takes the reason from the

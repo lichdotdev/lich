@@ -158,7 +158,11 @@ func (s *Service) status() []Status {
 		if available {
 			version, installed = s.installedVersion(id)
 		}
-		out = append(out, computeStatus(id, available, installed, version, latest))
+		st := computeStatus(id, available, installed, version, latest)
+		if id == providers.Crush && installed && s.crushBlockBehind() {
+			st.UpdateAvailable = true
+		}
+		out = append(out, st)
 	}
 	return out
 }
@@ -217,12 +221,15 @@ func registersServerAtInstall(provider string) bool {
 // and oh-my-pi, a CLI call for Codex and Crush — so it is not for a hot path. The
 // relay asks it once per errand, and HasTools once more before that; neither
 // question is cached, so each one pays for itself.
+//
+// A Crush block written for a Crush without the lifecycle events reports no
+// state, so it reads as not installed here (crushReportsState).
 func (s *Service) Installed(provider string) bool {
 	if !slices.Contains(supported, provider) || !s.available(provider) {
 		return false
 	}
 	_, installed := s.installedVersion(provider)
-	return installed
+	return installed && (provider != providers.Crush || s.crushReportsState())
 }
 
 // computeStatus is the pure decision: an update needs the plugin installed, a

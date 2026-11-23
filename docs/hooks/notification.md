@@ -145,7 +145,8 @@ envelope. `answer="last-message"` applies to all of them wherever lich can read
 the worker's final message (its chat driver, or `terminal.LastTurnSaid` in a
 terminal), so a worker on any provider answers by finishing its turn, the way
 Paseo's `notifyOnFinish` works. `reply_to_session` stays for the worker lich
-cannot read (Cursor in a terminal, and Crush, which reports no turn end) and
+cannot read (Cursor in a terminal, and a Crush below 0.99.0, which reports no
+turn end) and
 for answering before the turn ends. The first answer wins: a
 `reply_to_session`, the mod's `/mod/answer` and the turn's end each close the
 errand by the same path, and the later ones are dropped. A turn that ends

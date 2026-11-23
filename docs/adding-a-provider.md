@@ -126,8 +126,8 @@ harness and not by lich:
 
 Register only the reports that harness can actually close. A `busy` with no
 end-of-turn event behind it pins a spinner to the card until the next turn — a
-state that is wrong for longer than it is right, which is why Crush registers
-two of the four reports and not four.
+state that is wrong for longer than it is right, which is why a Crush below
+0.99.0, whose only event is `PreToolUse`, registers no state report at all.
 
 **The fixtures are the handshake, and lich moves first.**
 [`docs/hooks/fixtures/`](hooks/fixtures/) is every contract as bytes, and the

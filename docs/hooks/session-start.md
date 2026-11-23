@@ -42,7 +42,7 @@ defaulted `provider`.
 
 | Claude Code hook | Codex hook     | Antigravity hook | opencode event     | oh-my-pi event  | Crush hook    | Cursor CLI hook | Kiro CLI hook | action                                    |
 |------------------|----------------|------------------|--------------------|-----------------|---------------|-----------------|---------------|-------------------------------------------|
-| `SessionStart`   | `SessionStart` | `PreInvocation`  | `session.created`  | `session_start` | `PreToolUse`  | `SessionStart`  | `agentSpawn`  | store `provider_session_id` on the lich   |
+| `SessionStart`   | `SessionStart` | `PreInvocation`  | `session.created`  | `session_start` | `SessionStart`, `TurnStart`† | `SessionStart`  | `agentSpawn`  | store `provider_session_id` on the lich   |
 |                  |                |                  |                    |                 |               |                 |               | session row, and mark the card as running |
 |                  |                |                  |                    |                 |               |                 |               | `provider` (the `session-agent` app event)|
 
@@ -79,12 +79,18 @@ other field it carries. opencode raises `session.created` when the conversation
 is created, before the first turn, so it lands as early as `SessionStart` does; oh-my-pi's
 `session_start` fires before the first turn too, and the id is read off the
 session manager the event hands the extension — omp puts nothing about the
-session in the environment. **Crush has only
-`PreToolUse`**, whose payload carries the same `session_id` every other harness
-reports on stdin — so a Crush session announces itself when it first reaches for
-a tool, and a conversation that answers without one never announces itself at
-all. That is a late report, not a wrong one: nothing downstream of this contract
-cares when the id arrived, only which conversation it names.
+session in the environment.
+
+† **Crush reports from its first prompt, never before it.** Its TUI fires nothing
+at launch: `SessionStart` comes with the first prompt, when the conversation is
+created, and a conversation resumed with `--session` or picked in Crush's own
+session list fires none at all (measured on 0.100.0). `TurnStart` fires on every
+prompt with the same `session_id`, so the report rides both and repeats
+harmlessly. Below Crush 0.99.0 neither event exists, and the report rides
+`PreToolUse` instead: a Crush session there announces itself when it first
+reaches for a tool, and a conversation that answers without one never announces
+itself at all. That is a late report, not a wrong one: nothing downstream of
+this contract cares when the id arrived, only which conversation it names.
 
 **Kiro's `agentSpawn` fires once per session, before the first prompt**, and its
 payload carries `session_id` — the same id `kiro-cli --resume-id` takes, and the

@@ -125,7 +125,8 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   ends, its tokens the agent's `usage_update` before and after where it sends one; a compaction they run on their
   own draws nothing, and oh-my-pi's "Compaction complete" reply stays a message. Cursor CLI gets the same for a
   /summarize its command list offers, not measured. Crush has no chat, and its card does not say it compacts
-  either: lich-plugin does not wire its PreCompact and PostCompact hooks. Read back, a Claude Code compaction comes
+  either: its PreCompact and PostCompact take no matcher, and one fixed closing state cannot tell a `/compact`
+  at the prompt from an auto-compaction mid-turn (`docs/hooks/session-state.md`, compaction). Read back, a Claude Code compaction comes
   from the transcript's boundary and summary, and a Codex one from its `contextCompaction` item, typed when its
   turn holds no message of the person's; an ACP agent draws one only where its replay sends `compaction_update`.
   Codex runs `thread/compact/start` as a turn of its own (measured on 0.170.0): a failed one never completes its
@@ -566,7 +567,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
 - **The sidebar's state chips read the ring, nothing more** (`native/cmd/lich-native/sidebar_filter.go`):
   Waiting, Running and Unread are the card's amber, spinning and unread green ring, and Idle is everything
   else, a read turn included. A provider that cannot raise a state cannot be filtered into it: Crush
-  reports no turn at all and always sits under Idle; Antigravity, oh-my-pi, Kiro CLI and Cursor CLI raise no
+  below 0.99.0 reports no turn at all and always sits under Idle; Antigravity, oh-my-pi, Kiro CLI and Cursor CLI raise no
   permission event, so they never reach Waiting (a Kiro or Cursor session blocked on a confirmation counts as
   Running).
   There is no error chip: no provider reports one, and a process that exited is known only to its terminal,
@@ -593,7 +594,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   Escape as the interrupt and clears the ring while the turn is still running; the next report from the provider
   puts it back. A provider that reports its own abort as the turn finishing wears the solid ring a completed turn
   does, because the provider's own word outranks the keystroke (opencode, `docs/providers/opencode.md`), and one
-  that reports no state at all has no turn to end (Crush). And an errand the relay delivered survives an interrupt
+  that reports no state at all has no turn to end (Crush below 0.99.0). And an errand the relay delivered survives an interrupt
   on purpose: stopping a turn is not answering the request, so the sender keeps waiting for the target's next turn
   rather than being told the work is over.
 - **A finished turn is unread until its own card is watched** (`native/cmd/lich-native/cardstate.go`,
@@ -601,23 +602,30 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   fades only for the session whose terminal is on screen **while the window has focus**. A card left focused in a
   background window keeps its ring solid until the window is touched again, which is the point, but it also means
   a desktop that reports focus oddly never fades one.
-- **Crush raises no hook at a turn's end, so nothing that waits for `done` fires there** (its only event is
-  `PreToolUse`, 0.98.1; `docs/hooks/session-state.md`). A task handed to a Crush session that ends its turn
-  without answering waits out its ticket (`internal/relay/observe.go`, `turnCandidates`): its database does mark
-  the end (`finish.reason` other than `tool_use` in `.crush/crush.db`), but the conversation id reaches lich only
-  on the first tool call, so a turn that calls no tool has nothing to read, and the asker hears nothing until the
-  ticket's deadline. A Crush card is never named after its conversation either: Crush files a title in that same
-  database, and nothing tells lich when to read it (`docs/hooks/session-title.md`). The day Crush ships `Stop`,
-  the existing `report-state.sh done` closes the first, and a read like Kiro's and Cursor's (`internal/terminal`,
-  `title_filed.go`) the second.
+- **Crush reports state only from 0.99.0, and only from a block written for one** (`internal/agentplugin/crush.go`,
+  `crushEventsVersion`; `docs/hooks/session-state.md`, Crush). Below it `PreToolUse` is Crush's only event, so
+  nothing that waits for `done` fires: a task handed to such a session gets `answer="reply"` and waits out its
+  ticket if the agent never calls `reply_to_session`, and its card is never named after the conversation. The
+  install reads `crush --version` and writes the lifecycle hooks only when it answers 0.99.0 or newer, and a block
+  is rewritten only by an install or a plugin update: a Crush upgraded past 0.99.0 under an existing block keeps
+  reporting nothing until then, though its Settings › Updates row offers the update at once (`crushBlockBehind`
+  asks `crush --version` on every read of the rows), and the relay reads it that way (`Installed` asks whether lich's block registers
+  `TurnEnd`). A Crush downgraded under a block written for 0.99.0 is the other way round: the events it does not
+  know are recorded and never fire (0.98.1's `hook add` takes any name), so the relay waits for a `done` that does
+  not come until the ticket's deadline. A conversation picked in Crush's own session list is bound by
+  the `TurnStart` that also carries its first `busy`, and Crush runs the two hooks in parallel: when the `busy`
+  lands first it is dropped as another conversation's, so that turn spins only from its first tool report.
+  Of the 13 events lich leaves three out on purpose: `PermissionResult`,
+  which runs beside the tool's flow and can land after the turn's `done`; `Interrupt`, whose only contract word
+  would be `done`; and the compaction pair.
 - **A CLI run as a tool inside a session is told apart by conversation id, and Kiro has none to tell by**
   (`internal/terminal/nested.go`, docs/hooks/session-state.md "Nested agent CLIs"): a `claude -p` the agent runs
   inherits the card's `LICH_*` env and reports as it. A state report naming another conversation is dropped, and a
   session-start naming one is dropped while the card's turn is open. A scripted Kiro CLI run (`--no-interactive`, how
   an agent runs one) carries no id in any hook payload (measured on 2.21.0), so a nested `kiro-cli` still reports
   as its host. The
-  start guard reads lich's own turn, so a host lich never sees open cannot use it: a Crush session reports no turn
-  at all, so a nested CLI's start can still move what its card resumes. A plugin older than 0.20 sends no id on state reports, which are then taken as
+  start guard reads lich's own turn, so a host lich never sees open cannot use it: a Crush session below 0.99.0
+  reports no turn at all, so a nested CLI's start can still move what its card resumes. A plugin older than 0.20 sends no id on state reports, which are then taken as
   before.
 - **Keep-awake follows the session-state report, and only that** (`internal/awake`, `turnLog.onOpen`): the
   machine is held out of idle sleep while a hook says a turn is open, so what a provider reports decides whether
@@ -665,10 +673,10 @@ work when nobody knows it and that the call site never shows. The mechanism and 
     older than 2.1.280, gets its first message that much later.
 - **A program's own status (OSC 7501) is a second source, and the hook outranks it** (`internal/terminal/progwire.go`):
   from the first hook state the window hears until a hook reports `idle` or the shell starts a prompt (OSC 133 A),
-  the program's records are kept and the card is the hook's. Only Claude Code and Cursor CLI report `idle`, so
-  in a session lich spawned as any other provider, and in a shell lich does not integrate where one of them ran, a
-  program never drives the card again (Provider support table, README). Crush reports no state, so a program in a
-  Crush session drives the card throughout. A command an agent runs through its shell tool usually writes to a pipe
+  the program's records are kept and the card is the hook's. Only Claude Code, Cursor CLI and Crush from 0.99.0
+  report `idle`, so in a session lich spawned as any other provider, and in a shell lich does not integrate where one of them ran, a
+  program never drives the card again (Provider support table, README). Crush below 0.99.0 reports no state, so a
+  program in such a Crush session drives the card throughout. A command an agent runs through its shell tool usually writes to a pipe
   the agent reads, not to the PTY, so its report never reaches lich at all.
   - A `working`, `blocked` or `idle` record ends at a shell prompt (OSC 133 A, which lich's shell integration marks
     for bash, zsh and fish), at the next report, at a full reset (RIS) or when the session's process exits. There
@@ -757,18 +765,18 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   equal once both are shortened (`formatModel`), or the birth model is the family alias of the running id
   (`opus` against `claude-opus-5-5`, a `[1m]` suffix dropped). Any other alias the CLI accepts (`default`,
   `opusplan`) reads as a change, and so does a `/model` the user typed, which is intended.
-- **Hands-on time on a Crush card misses every turn that calls no tool**
+- **Hands-on time on a Crush card below 0.99.0 misses every turn that calls no tool**
   (`internal/terminal/handson.go`, `noteOutput`): the figure beside the cost counts the gap between consecutive
   signs of life in a session — any hook report naming it, a keystroke at its PTY, or its own output while a turn
   is open — and drops any gap longer than `handsOnIdleGap`. The output signal is gated on the provider having
   reported `busy`, because a `tail -f`, a dev server or a TUI repainting would otherwise bill hours nobody
-  worked. Crush opens no turn (`docs/hooks/session-state.md`) and is counted only through the reports its tool
-  calls fire (`docs/providers/crush.md`), so a long answer written straight out, with no keystroke and no report
-  between the prompt and the reply, is worth only the gap the prompt itself closed. The trap is reading the
-  number as exactly comparable across cards — a toolless turn is time on a Claude Code card and nothing on a
-  Crush one. The tooltip under the figure says which the session listened to, a turn or a tool call
-  (`handsOnDetail`, `native/cmd/lich-native/footer_handson.go`), and not how much that cost the figure. A plain
-  shell session is keystrokes-only by design and not a gap: there is no agent in it whose work could be missed.
+  worked. A Crush below 0.99.0 opens no turn (`docs/hooks/session-state.md`) and is counted only through the
+  reports its tool calls fire (`docs/providers/crush.md`), so a long answer written straight out, with no
+  keystroke and no report between the prompt and the reply, is worth only the gap the prompt itself closed. The
+  tooltip under the figure still says the session listened to a turn (`handsOnDetail`,
+  `native/cmd/lich-native/footer_handson.go`): the window reads it per provider and cannot see which Crush the
+  block was written for. A plain shell session is keystrokes-only by design and not a gap: there is no agent in
+  it whose work could be missed.
 - **The plan gauge answers to undocumented routes, and three providers have none** (`internal/quota`; each route
   is in `docs/providers/`, Account): every route is what a provider's own CLI or dashboard polls, and none is
   published API. oh-my-pi, Crush and Kiro CLI report no plan lich can read, and opencode reports one only for an
@@ -882,7 +890,8 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   (`internal/relay/workeranswer.go`, `answerByTurn`; `terminal.FinalMessage`; docs/hooks/notification.md, Which
   errands use it): a task is answered by its worker's last message when the turn ends, read from the chat's driver
   in a chat and from the provider's conversation in a terminal at its `done`. A terminal of Cursor CLI (no
-  conversation lich can read) and of Crush (no turn end reported), or of any provider whose plugin is not installed,
+  conversation lich can read) and of Crush below 0.99.0 (no turn end reported), or of any provider whose plugin is not
+  installed,
   gets `answer="reply"` and has to call `reply_to_session`. A turn whose final message is word for word the one on
   record when the task went in reads as a turn that wrote nothing and ends `unanswered`; a final message that
   reaches the transcript more than 1.5 s after the `done` (`defaultFinalSettle`, not measured per provider) does too,
@@ -1084,9 +1093,9 @@ work when nobody knows it and that the call site never shows. The mechanism and 
 - **The ping-pong breaker knows a turn did no work only from the tools its hooks named** (`internal/relay/pingpong.go`):
   a message between the same two sessions counts toward the streak only when the sending turn reported tools through
   `PreToolUse` and every one was a relay tool (`send_to_session`, `reply_to_session`, `wait_for_answer`,
-  `list_sessions`). The second such message in a row carries a warning and the fourth is refused. Crush reports no
-  tools, and neither does a provider without the plugin installed, so a message from or to such a session never
-  counts: it may be working unseen. A turn that reaches the relay through the command line
+  `list_sessions`). The second such message in a row carries a warning and the fourth is refused. Crush below 0.99.0
+  reports no tools, and neither does a provider without the plugin installed, so a message from or to such a
+  session never counts: it may be working unseen. A turn that reaches the relay through the command line
   (`lich send`, `"$LICH_BIN" reply`) ran a shell tool, which reads as work, so an exchange held that way is not caught
   either. A report that reaches lich after the send it precedes reads the same way: the breaker errs toward letting a
   message through. Only `send_to_session` and `lich send` count as hops; a reply closes an errand and is never
@@ -1098,8 +1107,8 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   message is one deeper than the deepest relayed task its sender still owes an answer to, and the fifth in a chain is
   refused. That is read off the relay's own tickets, so it is the same on all eight providers. A session that replies
   to its task before passing it on, or whose turn ended and closed the errand unanswered, owes nothing and starts
-  the chain over, and so does a turn that worked, on the ping-pong breaker's rule and with its gaps (Crush is never
-  counted). A turn the user started while an errand is still owed keeps that errand's depth.
+  the chain over, and so does a turn that worked, on the ping-pong breaker's rule and with its gaps (Crush below 0.99.0 is
+  never counted). A turn the user started while an errand is still owed keeps that errand's depth.
 - **A session's watch reads only what the pull request of its branch says** (`internal/relay/watch.go`,
   `internal/project/branchpr.go`). GitHub only, through `gh`, and the window cannot tell a remote gh does not
   speak to: such a session's dialog says "no pull request yet" for good. Checks count once none is pending, so
@@ -1807,7 +1816,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   services' count says how many run, a "more" line counts the sessions past the slots, and the window lists
   them all. The menu and the icon's badge are read every five seconds, not on each report, so a badge can be
   that late. A session sorts into Needs you or Working by the state its provider's hooks report, the one its
-  card draws: a provider that reports none for a turn (Crush reports no `busy`) counts as idle there too. A
+  card draws: a provider that reports none for a turn (Crush below 0.99.0 reports no `busy`) counts as idle there too. A
   finished turn leaves Needs you only once its card is read in the window. The badge's dot is drawn in the
   window's dark-theme tones whatever the bar's colour. The tray's host draws the menu at its own width and cuts a long
   line there, and a menu entry has no tooltip on Linux (dbusmenu carries none) or Windows: the full lines go

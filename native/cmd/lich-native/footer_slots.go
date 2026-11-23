@@ -142,7 +142,7 @@ func sessionSlot(s footerSlot, in footerInput) (footerSlot, bool) {
 		if in.sessionID == "" {
 			return s, false
 		}
-		s.Readout, ok = handsOnReadout(in.handsOn, in.handsOnErr, in.provider)
+		s.Readout, ok = handsOnReadout(in.handsOn, in.handsOnErr)
 	}
 	return s, ok
 }

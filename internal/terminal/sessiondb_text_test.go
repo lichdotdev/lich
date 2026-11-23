@@ -81,6 +81,8 @@ func crushMessageDB(t *testing.T) string {
 			  {"type":"tool_call","data":{"name":"bash","input":"grep worktree"}}]',3)`,
 		`INSERT INTO messages VALUES ('m4','crush-other','assistant',
 			'[{"type":"text","data":{"text":"another worktree session"}}]',4)`,
+		// Added the way Crush's own migration adds it (20250810, before 0.88.0).
+		`ALTER TABLE messages ADD COLUMN is_summary_message INTEGER DEFAULT 0 NOT NULL`,
 	)
 }
 
@@ -93,6 +95,28 @@ func TestSaidReadsTheCrushDatabase(t *testing.T) {
 	src := usageSource{kind: providers.Crush, path: crushMessageDB(t), id: "crush-1"}
 	if got := new(saidCursors).said("s1", src); got != "The worktree port is a hash." {
 		t.Errorf("said = %q, want the newest assistant text part", got)
+	}
+}
+
+// Crush files a compaction's summary as an assistant message after the turn's
+// answer (measured on 0.100.0), and an auto-compaction runs before TurnEnd, so
+// the newest assistant text at the turn's end is the summary. It is Crush's
+// note to itself, not what the agent said.
+func TestSaidSkipsCrushsCompactionSummary(t *testing.T) {
+	t.Parallel()
+	path := crushMessageDB(t)
+	db, err := sql.Open("sqlite", path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = db.Exec(`INSERT INTO messages (id, session_id, role, parts, created_at, is_summary_message)
+		VALUES ('m5','crush-1','assistant','[{"type":"text","data":{"text":"## Current State"}}]',5,1)`)
+	if closeErr := db.Close(); err != nil || closeErr != nil {
+		t.Fatal(err, closeErr)
+	}
+	src := usageSource{kind: providers.Crush, path: path, id: "crush-1"}
+	if got := new(saidCursors).said("s1", src); got != "The worktree port is a hash." {
+		t.Errorf("said = %q, want the answer before the summary", got)
 	}
 }
 

@@ -516,8 +516,8 @@ func (s *Service) applyState(req hookRequest) {
 		// the read has to have happened before the turn ends.
 		go s.emitReadouts(req.SessionID)
 	}
-	// A Kiro or Cursor session's name is read here rather than reported,
-	// because neither hands its hooks a file the title is in while each files
+	// A Kiro, Cursor or Crush session's name is read here rather than reported,
+	// because none hands its hooks a file the title is in while each files
 	// one of its own (title_filed.go). `done` is the turn end they raise, and
 	// the read is off-thread for the same reason the usage one is.
 	if req.State == statusDone {

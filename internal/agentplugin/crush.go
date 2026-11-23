@@ -24,8 +24,10 @@ import (
 // other line — and every comment — exactly as the user wrote it. Rewriting the
 // JSON would reformat a file lich does not own.
 //
-// Only two of the four reports are registered, because `PreToolUse` is the only
-// event Crush has (docs/hooks/).
+// What is registered depends on the Crush installed: below crushEventsVersion
+// `PreToolUse` is the only event it has, so only the session id and the touched
+// report ride it; from there on the state reports ride the lifecycle events too
+// (docs/hooks/session-state.md, Crush).
 
 const (
 	// crushMinVersion is the first Crush release whose crushrc understands
@@ -34,8 +36,17 @@ const (
 	// version is checked before anything is written.
 	crushMinVersion = "0.88.0"
 
-	// crushHookEvent is Crush's single event; every hook here rides it.
+	// crushEventsVersion is the first Crush release with the lifecycle events
+	// (v0.99.0, read off its source; measured on v0.100.0). The block written
+	// for an older one stays as it was.
+	crushEventsVersion = "0.99.0"
+
+	// crushHookEvent is the event a hook rides when it names none, and the only
+	// one a Crush below crushEventsVersion has.
 	crushHookEvent = "PreToolUse"
+	// crushTurnEndEvent is the event whose registration says a block reports
+	// state (blockReportsState).
+	crushTurnEndEvent = "TurnEnd"
 	// crushWriteTools matches the tools that change files, anchored because
 	// Crush's tool names are whole lower-case words.
 	crushWriteTools = "^(edit|write|multiedit|bash)$"
@@ -60,15 +71,42 @@ const (
 	blockClose = shComment + " <<< " + markerName + " <<<"
 )
 
-// crushHooks is what lich registers, one entry per report Crush can honour:
-// the script from the plugin repository, the argument it takes, the name the
-// hook is stored under, and the tools it matches ("" for every tool).
+// crushHooks is what a Crush below crushEventsVersion registers, one entry per
+// report it can honour: the script from the plugin repository, the argument it
+// takes, the name the hook is stored under, and the tools it matches ("" for
+// every tool).
 var crushHooks = []crushHook{
 	{script: "hooks/report-session-start.sh", arg: providers.Crush, name: "lich-session-id", timeout: crushHookTimeout},
 	{script: "hooks/report-touched.sh", name: "lich-touched", matcher: crushWriteTools, timeout: crushHookTimeout},
 }
 
+// crushStateHooks is what a Crush with crushEventsVersion registers. The
+// session id rides TurnStart as well as SessionStart because a session resumed
+// with --session or picked in Crush's own list fires no SessionStart (measured
+// on v0.100.0). PermissionResult, Interrupt and the compaction pair are left
+// out on purpose (docs/hooks/session-state.md, Crush).
+var crushStateHooks = []crushHook{
+	{event: "SessionStart", script: crushSessionStartScript, arg: providers.Crush, name: "lich-session-id", timeout: crushHookTimeout},
+	{event: "TurnStart", script: crushSessionStartScript, arg: providers.Crush, name: "lich-session-id-turn", timeout: crushHookTimeout},
+	{event: "TurnStart", script: crushStateScript, arg: "busy", name: "lich-turn-start", timeout: crushHookTimeout},
+	{script: "hooks/report-tool.sh", name: "lich-tool", timeout: crushHookTimeout},
+	{script: "hooks/report-touched.sh", name: "lich-touched", matcher: crushWriteTools, timeout: crushHookTimeout},
+	{event: "PostToolUse", script: crushStateScript, arg: "busy", name: "lich-tool-done", timeout: crushHookTimeout},
+	{event: "PostToolUseFailure", script: crushStateScript, arg: "busy", name: "lich-tool-failed", timeout: crushHookTimeout},
+	{event: "PermissionRequest", script: crushStateScript, arg: "waiting", name: "lich-waiting", timeout: crushHookTimeout},
+	{event: crushTurnEndEvent, script: crushStateScript, arg: "done", name: "lich-turn-end", timeout: crushHookTimeout},
+	{event: "StopFailure", script: crushStateScript, arg: "done", name: "lich-turn-failed", timeout: crushHookTimeout},
+	{event: "SessionEnd", script: crushStateScript, arg: "idle", name: "lich-session-end", timeout: crushHookTimeout},
+}
+
+const (
+	crushSessionStartScript = "hooks/report-session-start.sh"
+	crushStateScript        = "hooks/report-state.sh"
+)
+
 type crushHook struct {
+	// event is crushHookEvent when empty.
+	event   string
 	script  string
 	arg     string
 	name    string
@@ -76,22 +114,28 @@ type crushHook struct {
 	timeout int
 }
 
-// crushHooksFor is what version's crushrc registers: the reports, and from
+// crushHooksFor is what version's crushrc registers on crush, the Crush release
+// ("" when unread): the reports that Crush has events for, and from
 // SubagentHookRelease the veto on Crush's one subagent tool.
-func crushHooksFor(version string) []crushHook {
-	if !asksSubagentHook(version) {
-		return crushHooks
+func crushHooksFor(version, crush string) []crushHook {
+	hooks := crushHooks
+	if crushHasEvents(crush) {
+		hooks = crushStateHooks
 	}
-	return append(slices.Clone(crushHooks), crushHook{script: vetoScript, arg: providers.Crush, name: "lich-subagent-cards", matcher: "^agent$", timeout: crushVetoTimeout})
+	if !asksSubagentHook(version) {
+		return hooks
+	}
+	return append(slices.Clone(hooks), crushHook{script: vetoScript, arg: providers.Crush, name: "lich-subagent-cards", matcher: "^agent$", timeout: crushVetoTimeout})
 }
 
 // crushSourcedScripts are the files the registered scripts source rather than
 // run: no hook names them, but report-session-start reports nothing without
-// them beside it.
-var crushSourcedScripts = []string{"hooks/conversation-id.sh"}
+// them beside it, and the state reports read a tool's detail from detail.jq.
+var crushSourcedScripts = []string{"hooks/conversation-id.sh", "hooks/detail.jq"}
 
 func (s *Service) crushInstall() error {
-	if err := s.crushSupportsHooks(); err != nil {
+	crush, err := s.crushSupportsHooks()
+	if err != nil {
 		return err
 	}
 	version, err := s.releaseVersion()
@@ -106,8 +150,10 @@ func (s *Service) crushInstall() error {
 		return fmt.Errorf("create %s: %w", dir, err)
 	}
 	scripts := slices.Clone(crushSourcedScripts)
-	for _, hook := range crushHooksFor(version) {
-		scripts = append(scripts, hook.script)
+	for _, hook := range crushHooksFor(version, crush) {
+		if !slices.Contains(scripts, hook.script) {
+			scripts = append(scripts, hook.script)
+		}
 	}
 	for _, script := range scripts {
 		data, err := s.fetchFile(version, script)
@@ -127,12 +173,12 @@ func (s *Service) crushInstall() error {
 	if err := s.installSkills(version, skills); err != nil {
 		return err
 	}
-	return s.writeCrushrc(version, dir, s.lichBin())
+	return s.writeCrushrc(version, crush, dir, s.lichBin())
 }
 
 // writeCrushrc replaces lich's block in Crush's crushrc, creating the file when
 // it is not there yet. Everything outside the markers is carried over verbatim.
-func (s *Service) writeCrushrc(version, scriptDir, lichBin string) error {
+func (s *Service) writeCrushrc(version, crush, scriptDir, lichBin string) error {
 	path, err := s.crushrcPath()
 	if err != nil {
 		return err
@@ -144,18 +190,18 @@ func (s *Service) writeCrushrc(version, scriptDir, lichBin string) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return fmt.Errorf("create %s: %w", filepath.Dir(path), err)
 	}
-	body := replaceBlock(string(existing), crushrcBlock(version, scriptDir, lichBin))
+	body := replaceBlock(string(existing), crushrcBlock(version, crush, scriptDir, lichBin))
 	return writeFile(path, []byte(body), 0o644)
 }
 
 // crushrcBlock is the block lich owns: its markers, a line saying who wrote it,
 // one `hook add` per report, and the `mcp add` that gives the session the tools
 // to drive the others.
-func crushrcBlock(version, scriptDir, lichBin string) string {
+func crushrcBlock(version, crush, scriptDir, lichBin string) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, blockOpen+"\n", version)
 	fmt.Fprintf(&b, "%s Managed by lich. Edit through Settings, not by hand.\n", shComment)
-	for _, hook := range crushHooksFor(version) {
+	for _, hook := range crushHooksFor(version, crush) {
 		// Two layers of quoting, and both are load-bearing: the inner one makes
 		// the script path survive as one word inside the command Crush runs, the
 		// outer one makes that whole command survive as one argument to the
@@ -164,7 +210,11 @@ func crushrcBlock(version, scriptDir, lichBin string) string {
 		if hook.arg != "" {
 			command += " " + hook.arg
 		}
-		fmt.Fprintf(&b, "hook add %s --name %s", crushHookEvent, hook.name)
+		event := hook.event
+		if event == "" {
+			event = crushHookEvent
+		}
+		fmt.Fprintf(&b, "hook add %s --name %s", event, hook.name)
 		if hook.matcher != "" {
 			fmt.Fprintf(&b, " --matcher %s", shquote.Quote(hook.matcher))
 		}
@@ -307,20 +357,58 @@ func (s *Service) crushInstalledVersion() (string, bool) {
 	return versionOf(data, shComment+" >>>")
 }
 
+// crushReportsState reports whether lich's block in crushrc registers the state
+// reports, which only one written for a Crush with crushEventsVersion does.
+func (s *Service) crushReportsState() bool {
+	path, err := s.crushrcPath()
+	if err != nil {
+		return false
+	}
+	data, err := os.ReadFile(path)
+	return err == nil && blockReportsState(string(data))
+}
+
+// crushBlockBehind reports whether the Crush installed now has the lifecycle
+// events and lich's block registers none of them: a Crush upgraded under an
+// install that was current for the old one, which only writing the block again
+// moves.
+func (s *Service) crushBlockBehind() bool {
+	crush, err := s.crushSupportsHooks()
+	return err == nil && crushHasEvents(crush) && !s.crushReportsState()
+}
+
+// crushHasEvents is whether a Crush release ("" when unread) has the lifecycle
+// events.
+func crushHasEvents(crush string) bool {
+	return crush != "" && !semver.Less(crush, crushEventsVersion)
+}
+
+// blockReportsState is crushReportsState's reading of one crushrc: a turn-end
+// registration inside lich's markers. A user's own TurnEnd hook outside them is
+// not lich's report.
+func blockReportsState(rc string) bool {
+	start := indexOfOpenMarker(rc)
+	if start < 0 {
+		return false
+	}
+	block, _, _ := strings.Cut(rc[start:], blockClose)
+	return strings.Contains(block, "hook add "+crushTurnEndEvent+" ")
+}
+
 // crushSupportsHooks refuses an install onto a Crush too old to read the lines
-// it would write. A version lich cannot read at all is allowed through: a
-// refusal there would be lich guessing, and the failure it prevents is one the
-// user can see and undo.
-func (s *Service) crushSupportsHooks() error {
+// it would write, and returns its version. A version lich cannot read at all is
+// allowed through as "": a refusal there would be lich guessing, and the
+// failure it prevents is one the user can see and undo.
+func (s *Service) crushSupportsHooks() (string, error) {
 	out, err := s.read(providers.Crush, "--version")
 	if err != nil {
-		return fmt.Errorf("crush --version: %w: %s", err, strings.TrimSpace(out))
+		return "", fmt.Errorf("crush --version: %w: %s", err, strings.TrimSpace(out))
 	}
 	version := parseCrushVersion(out)
 	if version == "" || !semver.Less(version, crushMinVersion) {
-		return nil
+		return version, nil
 	}
-	return fmt.Errorf(
+	return "", fmt.Errorf(
 		"Crush %s cannot load hooks from crushrc — update to %s or newer",
 		version, crushMinVersion)
 }

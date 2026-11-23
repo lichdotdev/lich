@@ -53,6 +53,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Crush cards show when a turn runs, ends or waits on you, and name themselves after the conversation.** It needs Crush 0.99.0 or newer: install or update the lich plugin for Crush in Settings › Updates after upgrading Crush, and a task you hand a Crush session then comes back by itself when its turn ends.
 - **Files show the icons of Material Icon Theme, drawn for dark backgrounds.** The Files tree, search, the chat's @ list and file names in Markdown code pick one by the file's name, then its extension, as VS Code's Material Icon Theme does, with its light variants in a light theme.
 - **A subagent your agent starts becomes a lich card on every agent, and the setting that turned it off is gone.** Cursor CLI's chat is the exception, since it runs no hooks; the call shows as opened in its card, and a toast says when Codex is skipping lich's hook.
 - **What a button asks a session for shows in its chat as a compact box.** Resolve conflicts, Fix CI errors, review threads and comments, browser notes and an issue each draw their title, facts and list in your own message box; the chevron opens the full text the agent read.

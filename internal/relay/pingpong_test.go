@@ -205,20 +205,24 @@ func delegateTo(t *testing.T, svc *Service) error {
 	return err
 }
 
-// Crush reports no tools, so a worker there can work without lich hearing of
-// it: its silence is no evidence of an idle exchange.
-func TestACoordinatorDelegatingToACrushWorkerIsNeverWarned(t *testing.T) {
+// Crush is counted on its plugin's word like every other provider: a block that
+// reports state reports its tools, so idle delegation to it is warned, and one
+// written for a Crush without the events reports nothing, so it never counts.
+func TestACrushWorkerCountsOnItsPluginsWord(t *testing.T) {
 	t.Parallel()
-	term := newFakeTerminal("s1", "s5")
-	svc := newRelay(workspace(), term, nil)
+	for _, reports := range []bool{true, false} {
+		term := newFakeTerminal("s1", "s5")
+		svc := newRelay(workspace(), term, nil)
+		svc.SetPlugins(fakePlugins{installed: reports})
 
-	for task := range 5 {
-		if err := delegateTo(t, svc); err != nil {
-			t.Fatalf("task %d: %v", task+1, err)
+		for task := range 5 {
+			if err := delegateTo(t, svc); err != nil && reports && task < 3 {
+				t.Fatalf("task %d: %v", task+1, err)
+			}
 		}
-	}
-	if warned(term, "s5") {
-		t.Errorf("a worker that cannot report tools was warned:\n%s", term.written("s5"))
+		if warned(term, "s5") != reports {
+			t.Errorf("plugin reports state = %v: warned = %v:\n%s", reports, !reports, term.written("s5"))
+		}
 	}
 }
 
