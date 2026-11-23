@@ -536,6 +536,9 @@ draws none while it grows in, because the room above the rows is measured in the
   `RadiusLG` box, three lines of text tall at least, growing with the text to a ceiling and scrolling past it.
   Its text and its placeholder, "Ask {provider} about this project", are in the interface font at the body size
   and leading of the messages (15sp at 1.5), `Space(4)` in from the left and `Space(3.5)` down from the top.
+  A suggested next message takes the placeholder's place, in its muted ink and at its spot, with no key hint
+  drawn, only while the box is idle (empty, no file, no turn, nothing queued or waiting to go); Tab puts it in
+  the box as text, and typing anything drops it (`chat_suggest.go`).
   Inside the box stand only the provider's controls, one line under the text: the footer's attach as a "+",
   the model with its effort in one chip ("Opus 5.5 · high") and the mode, each a ghost chip with a chevron.
   After them the footer's context ring with its percentage, the same readout as the terminal's balloon, when the

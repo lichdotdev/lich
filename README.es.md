@@ -218,6 +218,7 @@ distinto.
 | En el chat, un chip en la caja de mensaje cuenta los comandos que el agente dejó corriendo en segundo plano, y los abre para leer su salida y detener uno | sí; se detienen con el proceso del chat, al pasar a TUI, con /new o al pasar al modo YOLO | no | no | no | no | sin chat | no | no |
 | En el chat, Ctrl+B pasa a segundo plano un comando que el agente está esperando, que sigue ejecutándose mientras el agente continúa | sí; la línea que muestra al agente trabajando avisa cuándo se puede | no | no | no | no | sin chat | no | no |
 | En el chat, una imagen que adjuntas llega al agente como imagen, y cualquier otro archivo como su ruta en tu mensaje | sí | enviada como imagen; sin verificar que el agente la vea | enviada como imagen; sin verificar que el agente la vea | enviada como imagen; sin verificar que el agente la vea | enviada como imagen; sin verificar que el agente la vea | no | sin verificar | enviada como imagen; sin verificar que el agente la vea |
+| En el chat, cuando termina un turno que empezaste, la caja de mensaje vacía sugiere lo que escribirías a continuación, y Tab la pone en la caja | sí | sí; lich se lo pide al mismo modelo con esfuerzo bajo, lo que gasta un poco de tu plan | no | no | no | sin chat | no | no |
 
 </details>
 

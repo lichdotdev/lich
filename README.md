@@ -214,6 +214,7 @@ what lich can read back out of it, since each CLI records different things.
 | In the chat, a chip in the message box counts the commands the agent left running in the background, and opens them to read their output and stop one | yes; they stop when the chat's process does, at a switch to TUI, /new or a switch to YOLO mode | no | no | no | no | no chat | no | no |
 | In the chat, Ctrl+B moves a command the agent is waiting on to the background, where it keeps running while the agent carries on | yes; the line that shows the agent at work says when you can | no | no | no | no | no chat | no | no |
 | In the chat, an image you attach reaches the agent as an image, and any other file as its path in your message | yes | sent as an image; whether the agent sees it not verified | sent as an image; whether the agent sees it not verified | sent as an image; whether the agent sees it not verified | sent as an image; whether the agent sees it not verified | no | not verified | sent as an image; whether the agent sees it not verified |
+| In the chat, when a turn you started ends, the empty message box suggests what you might write next, and Tab puts it in the box | yes | yes; lich asks the same model at low effort, which uses a little of your plan | no | no | no | no chat | no | no |
 
 </details>
 
