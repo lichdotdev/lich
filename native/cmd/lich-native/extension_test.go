@@ -312,13 +312,13 @@ func TestAPlainShortcutWaitsWhileAFieldTypesAndACtrlChordDoesNot(t *testing.T) {
 	r := new(shortcutRig)
 	r.frame(list, false)
 	r.frame(list, false)
-	r.router.Queue(chord("R", 0), chord("K", key.ModCtrl), chord("G", key.ModShift))
+	r.router.Queue(chord("R", 0), chord("K", key.ModShortcut), chord("G", key.ModShift))
 	if got := r.frame(list, false); !slices.Equal(got, []extension.Handler{"refresh", "palette", "bottom"}) {
 		t.Errorf("with nothing focused fired %v, want all three", got)
 	}
 	r.frame(list, true)
 	r.frame(list, true)
-	r.router.Queue(chord("R", 0), chord("K", key.ModCtrl), chord("G", key.ModShift))
+	r.router.Queue(chord("R", 0), chord("K", key.ModShortcut), chord("G", key.ModShift))
 	if got := r.frame(list, true); !slices.Equal(got, []extension.Handler{"palette"}) {
 		t.Errorf("while a field types fired %v, want only the ctrl chord", got)
 	}
