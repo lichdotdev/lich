@@ -6,6 +6,8 @@ import (
 	"gioui.org/font"
 	"gioui.org/text"
 	"gioui.org/unit"
+
+	"github.com/lichdotdev/godemirror"
 )
 
 // Palette is the color tokens of an app theme.
@@ -149,6 +151,9 @@ type Theme struct {
 	// Overlays is the window's, kept across On: how many dialogs and menus
 	// are on screen.
 	Overlays *OverlayCount
+	// Code is the code views' palette, which a Markdown code block is
+	// highlighted with so it matches them; with no Highlight, blocks stay plain.
+	Code godemirror.Theme
 }
 
 // On returns a copy of th drawing on surface, for the children of a widget

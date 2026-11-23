@@ -13,6 +13,7 @@ import (
 	"gioui.org/text"
 	"gioui.org/unit"
 	"gioui.org/x/richtext"
+	"github.com/lichdotdev/godemirror"
 
 	"github.com/lichdotdev/lich/native/ui"
 )
@@ -52,6 +53,10 @@ type markdownText struct {
 	heights []int
 	// linked is the Paths.Version the path marks were checked against.
 	linked any
+	// highlight is the style the code blocks were highlighted with.
+	highlight *godemirror.HighlightStyle
+	// copies is each code block's copy button, in the order they are written.
+	copies []*codeCopy
 }
 
 // markdownBlock is prose, a GFM table, or a list with individually laid-out items.
@@ -65,6 +70,9 @@ type markdownBlock struct {
 	// quote draws the prose behind a bar, a blockquote; panel draws it on a
 	// fill of its own, a code block.
 	quote, panel bool
+	// code is a panel's code as written, and copy its copy button.
+	code string
+	copy *codeCopy
 	// blocks is what a quote holds when that is more than paragraphs, each
 	// drawn as it is outside one; the quote then has no prose.
 	blocks []markdownBlock
@@ -161,9 +169,10 @@ func (m Cache) text(th *ui.Theme, key, src string, paths *Paths) *markdownText {
 	if paths != nil {
 		linked = paths.Version
 	}
-	if t.src != src || t.fg != fg || t.fonts != fonts || t.shaper != th.Shaper || t.blocks == nil || t.linked != linked {
+	if t.src != src || t.fg != fg || t.fonts != fonts || t.shaper != th.Shaper || t.blocks == nil || t.linked != linked || t.highlight != th.Code.Highlight {
 		t.src, t.fg, t.fonts, t.shaper, t.blocks = src, fg, fonts, th.Shaper, renderBlocks(th, src)
-		t.heights, t.linked = make([]int, len(t.blocks)), linked
+		t.heights, t.linked, t.highlight = make([]int, len(t.blocks)), linked, th.Code.Highlight
+		t.keepCopies()
 		if paths != nil {
 			unmarkUnlinked(t.blocks, paths.Link)
 		}
@@ -202,7 +211,7 @@ func (b markdownBlock) layout(gtx C, th *ui.Theme, l Links) D {
 		})
 	}
 	if b.panel {
-		return b.prose.layoutPanel(gtx, th, l)
+		return b.prose.layoutPanel(gtx, th, l, b.copy, b.code)
 	}
 	if b.rule {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,

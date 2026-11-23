@@ -170,7 +170,7 @@ func (u *window) paintTheme(e themeEntry) {
 	u.light, u.code = e.light(), e.code
 	u.extension.setCodeTheme(e.code)
 	p := e.palette
-	u.theme.Palette, u.theme.Surface = p, p.Canvas
+	u.theme.Palette, u.theme.Surface, u.theme.Code = p, p.Canvas, e.code
 	u.th.Fg, u.th.Bg = p.Foreground, p.Background
 	u.terms.setColors(e.terminal)
 }
