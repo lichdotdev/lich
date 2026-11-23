@@ -10,7 +10,7 @@ require (
 	github.com/coder/websocket v1.8.14
 	github.com/creack/pty v1.1.24
 	github.com/ebitengine/purego v0.11.2
-	github.com/lichdotdev/godemirror v0.10.0
+	github.com/lichdotdev/godemirror v0.11.0
 	github.com/lichdotdev/lich/extension v0.0.0
 	github.com/ncruces/zenity v0.10.14
 	golang.org/x/image v0.47.0

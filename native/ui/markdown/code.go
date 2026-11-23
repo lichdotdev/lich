@@ -23,12 +23,13 @@ func codeFill(th *ui.Theme) color.NRGBA {
 var codePanelPad = ui.Space(2)
 
 // layoutPanel draws the cell as a code block: across the body, on a fill of
-// its own.
-func (c *markdownCell) layoutPanel(gtx C, th *ui.Theme, l Links) D {
-	pad, width := gtx.Dp(codePanelPad), gtx.Constraints.Max.X
+// its own, with room at its right for the copy button, which stands on the
+// first line.
+func (c *markdownCell) layoutPanel(gtx C, th *ui.Theme, l Links, button *codeCopy, code string) D {
+	pad, width, side := gtx.Dp(codePanelPad), gtx.Constraints.Max.X, gtx.Dp(codeCopySide)
 	macro := op.Record(gtx.Ops)
 	inner := gtx
-	inner.Constraints.Max.X = max(width-2*pad, 0)
+	inner.Constraints.Max.X = max(width-3*pad-side, 0)
 	stack := op.Offset(image.Pt(pad, pad)).Push(gtx.Ops)
 	d := c.layout(inner, th, l)
 	stack.Pop()
@@ -36,6 +37,8 @@ func (c *markdownCell) layoutPanel(gtx C, th *ui.Theme, l Links) D {
 	size := image.Pt(width, d.Size.Y+2*pad)
 	paint.FillShape(gtx.Ops, codeFill(th), clip.UniformRRect(image.Rectangle{Max: size}, gtx.Dp(ui.RadiusSM)).Op(gtx.Ops))
 	text.Add(gtx.Ops)
+	line := int(float32(gtx.Sp(BodySize)) * markdownCodeLineHeightScale)
+	button.layout(gtx, th, code, size, image.Pt(width-pad-side, pad+(line-side)/2))
 	return D{Size: size}
 }
 
