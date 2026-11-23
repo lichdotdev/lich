@@ -236,8 +236,9 @@ func (d *claudeDriver) cancel() error {
 }
 
 // pauseSuggestions stops or resumes the prompt_suggestion Claude Code writes
-// after each turn. Sent without waiting for its response, as cancel is: what
-// Claude Code still writes while it takes effect is dropped by suggest.
+// after each turn. Sent without waiting for its response, as cancel is.
+// 2.1.330 acknowledges it and keeps writing (measured), so offerAfter, not
+// this, is what keeps a worker's suggestions off the box.
 func (d *claudeDriver) pauseSuggestions(paused bool) {
 	d.mu.Lock()
 	d.next++

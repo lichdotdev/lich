@@ -3,6 +3,7 @@
 package chat
 
 import (
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -26,12 +27,7 @@ func (r *rig) suggestions() []string {
 func (r *rig) waitSuggestion(text string) {
 	r.t.Helper()
 	r.eventually("suggestion "+text, func() bool {
-		for _, s := range r.suggestions() {
-			if s == text {
-				return true
-			}
-		}
-		return false
+		return slices.Contains(r.suggestions(), text)
 	})
 }
 
@@ -247,4 +243,34 @@ func TestCleanSuggestion(t *testing.T) {
 			t.Errorf("cleanSuggestion(%q) = %q, want %q", in, got, want)
 		}
 	}
+}
+
+func newACPChat(t *testing.T) *rig {
+	t.Helper()
+	r := newRig(t, providers.OMP)
+	if err := r.setView(api.ViewChat); err != nil {
+		t.Fatalf("SetView: %v", err)
+	}
+	return r
+}
+
+// TestACPAgentSuggestion: lich asks an ACP agent for its own suggestions, and
+// the first of a prompt_suggestions_update heard during the turn shows once
+// the turn ends.
+func TestACPAgentSuggestion(t *testing.T) {
+	r := newACPChat(t)
+	if log := r.fakeLog(); !strings.Contains(log, `"promptSuggestions":{}`) {
+		t.Errorf("initialize did not ask for suggestions: %q", log)
+	}
+	r.prompt("suggest")
+	r.waitSuggestion("run the tests")
+}
+
+// TestACPNoSuggestionAfterEnvelope: the agent's suggestion after a turn lich's
+// relay opened is dropped, as every provider's is.
+func TestACPNoSuggestionAfterEnvelope(t *testing.T) {
+	r := newACPChat(t)
+	r.take(testEnvelope)
+	r.turnEnd(0)
+	r.noSuggestion()
 }

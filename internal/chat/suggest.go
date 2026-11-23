@@ -48,11 +48,11 @@ func (c *chatSession) offered() int {
 	return c.offer
 }
 
-// suggest shows text in the box as the person's likely next message, unless
-// another turn began since the turn it was made for ended.
+// suggest shows text in the box as the person's likely next message, "" to
+// withdraw it, unless another turn began since the turn it was made for ended.
 func (c *chatSession) suggest(turn int, text string) {
 	c.mu.Lock()
-	ok := text != "" && turn != 0 && c.offer == turn && !c.running
+	ok := turn != 0 && c.offer == turn && !c.running
 	c.mu.Unlock()
 	if ok {
 		events.Send(c.svc.hub.Emit, api.ChatSuggestionEvent, api.ChatSuggestion{SessionID: c.id, Text: text})

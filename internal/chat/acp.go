@@ -41,6 +41,9 @@ type acpDriver struct {
 	// replayed counts the items session/load reproduced.
 	replayed int
 	settings acpSettings
+	// suggested is the agent's suggestion heard during the turn, shown once
+	// it ends.
+	suggested string
 	// images is whether the agent takes an image in a prompt, as its
 	// initialize says (promptCapabilities.image).
 	images bool
@@ -114,11 +117,12 @@ func (d *acpDriver) open(ctx context.Context, resume string) (string, error) {
 		// lich serves neither fs nor terminal: a file the agent asked lich to
 		// write would be written outside the session's sandbox. A form
 		// elicitation is the agent's question to the person (acp_question.go);
-		// a compaction is drawn as it runs and ends (acp_compact.go).
+		// a compaction is drawn as it runs and ends (acp_compact.go), and
+		// promptSuggestions takes the agent's own suggestions (acp_suggest.go).
 		"clientCapabilities": map[string]any{
 			"fs":       map[string]bool{"readTextFile": false, "writeTextFile": false},
 			"terminal": false, "elicitation": map[string]any{"form": map[string]any{}},
-			"session": map[string]any{"compaction": map[string]any{}},
+			"session": map[string]any{"compaction": map[string]any{}, "promptSuggestions": map[string]any{}},
 		},
 		"clientInfo": map[string]string{"name": "lich", "version": "1"},
 	})
@@ -246,6 +250,7 @@ func (d *acpDriver) prompt(m message) error {
 			done.Stop = stopEndTurn
 		}
 		d.c.endTurn(done.Stop)
+		d.suggestHeld()
 	}()
 	return nil
 }
@@ -435,6 +440,8 @@ func (d *acpDriver) update(params json.RawMessage) {
 		d.compactionChunk(p.Update)
 	case "usage_update":
 		d.usageUpdate(p.Update)
+	case "prompt_suggestions_update":
+		d.suggestions(p.Update)
 	}
 }
 

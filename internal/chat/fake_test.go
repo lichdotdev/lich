@@ -350,7 +350,17 @@ func (f *fake) acpTurn(id any, text string) {
 	if f.acpCompactTurn(id, text) {
 		return
 	}
+	// an envelope plays as "suggest" does: lich drops its suggestion
+	if strings.HasPrefix(text, "<lich-notification ") {
+		text = "suggest"
+	}
 	switch text {
+	case "suggest":
+		f.update(chunk("agent_message_chunk", "Fixed."))
+		f.update(map[string]any{"sessionUpdate": "prompt_suggestions_update", "suggestions": []any{
+			map[string]any{"prompt": []any{map[string]any{"type": "text", "text": " run the tests "}}},
+			map[string]any{"prompt": []any{map[string]any{"type": "text", "text": "commit it"}}},
+		}})
 	case "hi":
 		f.update(chunk("user_message_chunk", "hi"))
 		f.update(chunk("agent_thought_chunk", "hmm"))
