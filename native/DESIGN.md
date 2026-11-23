@@ -673,7 +673,9 @@ draws none while it grows in, because the room above the rows is measured in the
   beside it: at the left of the time for the person's message, so it sits at the right, at the right of the time
   for an answer, so it sits at the left. It copies the item's whole text, an answer's Markdown source, through the
   window's clipboard path, and becomes a check for 1.5s. It has no tooltip: the glyph says it. The line is as tall with it as
-  without (`chatCopySlot`), so it pushes nothing; the button is a little larger than the line and reaches past it.
+  without (`chatCopySlot`), so it pushes nothing; the button is a little larger than the line and reaches past it. Texts the
+  agent writes one after another in a turn, nothing between them, read as one answer: only the last keeps the
+  time and copy line, and its copy takes the whole run, so the texts stand a row gap apart, not a line apart.
 - **A message's time** is a `TextXS` muted line, the window's short clock ("14:32") under a tooltip that holds
   the footer clock's full date: under the person's box at the right edge, always, led by its day when that is
   not today ("Nov 17 · 23:05", the year too past this one); under an answer's text at the
