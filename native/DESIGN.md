@@ -348,7 +348,7 @@ are not drawn and the terminal takes the band back, in the one resize the panel'
 
 The context ring's tooltip is one component for the balloon and the chat's composer (`footer_context.go`): a
 card with "Context" at the left and the share used at the right in medium, a bar of twenty rounded segments
-(`SegmentedBar`) whose lit ones are `Foreground` up to 70%, `ToneWait` up to 90% and `Destructive` past it, then
+(`SegmentedBar`; `WaveBar` is its form for work with no share to tell) whose lit ones are `Foreground` up to 70%, `ToneWait` up to 90% and `Destructive` past it, then
 lines of a muted label at the left and its value at the right: Tokens (compact, "585.7K", the window muted after
 it), Model window, Cache with its hit rate and Session cost, each only when the report has it. Numbers are
 compact with the locale's decimal mark. There is no line for compactions or for what is left before one: lich
@@ -455,6 +455,18 @@ draws none while it grows in, because the room above the rows is measured in the
   is; older turns have none, in a history read back too. A turn whose checkout lich could not read (not a
   repository, or a commit made during the turn) says its word alone, and so does one read back with the
   history, whose end nobody reported to the window: the line never invents a count.
+- **A compaction** (`chat_compaction.go`). While the turn compacts, the live line says "Compacting the
+  conversation" in place of the verb, shimmering with its clock, and the `fold-vertical` glyph stands in the
+  flame's place, squeezing to 0.55 of its height every 1.4s; under the words, indented to them, a `WaveBar` of
+  11 segments at most 220dp wide in `MutedForeground`, a lit wave sweeping it: it never fills, since no provider
+  says how far along a compaction is. Once over, a marker stands where it happened, between two 1px `Border`
+  hairlines: the glyph, the title in `TextSM` medium `Foreground` ("Conversation compacted", "Conversation
+  compacted automatically" for one the provider ran on its own), then muted "· 182K → 9K tokens" when both
+  counts are known. A failure reads "Couldn't compact" in `Destructive` with the provider's reason muted. The
+  person's /compact ends its turn in the marker, with no closing line and none of the command's output; an
+  automatic one leaves its turn to carry on and close as any other. What the compaction's hooks printed is the
+  marker's tooltip, and its summary opens under it on a click, a chevron at the marker's end saying so. A cancelled
+  compaction draws nothing.
 - **What is alive moves.** The text of a live step shimmers: a light band crosses it from left to right once
   every 1.6s (`Label.Shimmer`, looping frames only while it is drawn), and the time it has run counts beside
   it, "6s", "1m 12s", redrawn each second and not each frame. That is "Thinking" for the thought being

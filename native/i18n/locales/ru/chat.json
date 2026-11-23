@@ -477,5 +477,12 @@
     "stoppedByYou": "закрыли вы",
     "waiting": "{label}: ждёт",
     "expired": "{label}: не ответила вовремя"
+  },
+  "compaction": {
+    "running": "Сжатие разговора",
+    "done": "Разговор сжат",
+    "auto": "Разговор сжат автоматически",
+    "failed": "Не удалось сжать",
+    "tokens": "{before} → {after} токенов"
   }
 }

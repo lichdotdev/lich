@@ -196,6 +196,9 @@ func textInput(text string) []map[string]any {
 // prompt starts a turn, carrying what the person set since the last one:
 // turn/start's overrides hold for the turns after it too (measured).
 func (d *codexDriver) prompt(m message) error {
+	if codexCompactTyped(m) {
+		return d.compact()
+	}
 	params := map[string]any{"threadId": d.threadID(), "input": d.input(m)}
 	staged := d.staged()
 	maps.Copy(params, staged.params())
@@ -336,6 +339,8 @@ func (d *codexDriver) notification(method string, params json.RawMessage) {
 		if json.Unmarshal(params, &e) == nil {
 			d.item(e.Item, method == "item/completed")
 		}
+	case "thread/tokenUsage/updated":
+		d.tokenUsage(params)
 	case "item/agentMessage/delta":
 		d.delta(params, api.ItemAgent)
 	case "item/reasoning/summaryTextDelta":
@@ -367,7 +372,7 @@ func (d *codexDriver) completed(params json.RawMessage) {
 		d.c.endTurn(stopCancelled)
 	case "failed":
 		if e.Turn.Error != nil && e.Turn.Error.Message != "" {
-			d.c.conv.notice(e.Turn.Error.Message)
+			d.c.failure(e.Turn.Error.Message)
 		}
 		d.c.endTurn(stopError)
 	default:
@@ -389,6 +394,10 @@ func (d *codexDriver) delta(params json.RawMessage, kind string) {
 
 // item shows one item as it starts or completes, live.
 func (d *codexDriver) item(it codexItem, done bool) {
+	if it.Type == codexCompactItem {
+		d.compactItem(done)
+		return
+	}
 	model, effort := d.producer()
 	ci, ok := it.under(d.c.cwd).chatItem(done)
 	// A message or a reasoning that has only begun is empty: its deltas fill

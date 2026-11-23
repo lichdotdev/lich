@@ -254,8 +254,12 @@ func (d *codexDriver) readHistory(ctx context.Context, t codexThread) error {
 func (d *codexDriver) replayTurn(turn codexTurn, p codexProducer) {
 	model := d.modelName(p.Model)
 	for _, it := range turn.Items {
-		if it.Type == "userMessage" {
+		switch it.Type {
+		case "userMessage":
 			d.c.conv.userMessage(it.userText(), nil)
+			continue
+		case codexCompactItem:
+			d.replayCompaction(turn)
 			continue
 		}
 		ci, ok := it.under(d.c.cwd).chatItem(true)

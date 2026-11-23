@@ -78,6 +78,16 @@ type claudeLine struct {
 	// system/init and system/status
 	Model          string `json:"model"`
 	PermissionMode string `json:"permissionMode"`
+	// system/status
+	Status        string `json:"status"`
+	CompactResult string `json:"compact_result"`
+	CompactError  string `json:"compact_error"`
+	// system/compact_boundary, live and in the transcript
+	CompactMeta      *claudeCompactMeta `json:"compact_metadata"`
+	SavedCompactMeta *claudeCompactMeta `json:"compactMetadata"`
+	// the user line a compaction's summary is, live and in the transcript
+	LiveCompactSummary bool `json:"is_compact_summary"`
+	CompactSummary     bool `json:"isCompactSummary"`
 	// system/init
 	Skills           []string `json:"skills"`
 	TerminalCommands []string `json:"terminal_slash_commands"`
@@ -254,6 +264,12 @@ func (d *claudeDriver) handle(raw []byte) {
 		if strings.HasPrefix(line.Subtype, "task_") {
 			d.shellTask(line.Subtype, raw)
 		}
+		switch line.Subtype {
+		case "status":
+			d.compactStatus(line)
+		case claudeCompactBound:
+			readClaudeBoundary(d.c, line, false)
+		}
 		d.running(line.Model, line.PermissionMode)
 	case "result":
 		d.result(line)
@@ -278,9 +294,17 @@ func readClaudeMessage(c *chatSession, line claudeLine, history bool) {
 			d.stream(line)
 		}
 	case "assistant":
+		if history {
+			// the lines a compaction is read back from have all come
+			c.conv.compactClose(api.CompactionDone)
+		}
 		readClaudeAssistant(c, d, line, history)
 	case "user":
 		readClaudeUser(c, line, history)
+	case "system":
+		if history && line.Subtype == claudeCompactBound {
+			readClaudeBoundary(c, line, true)
+		}
 	}
 }
 
@@ -369,9 +393,12 @@ func isInterruptMarker(text string) bool {
 }
 
 func readClaudeUser(c *chatSession, line claudeLine, history bool) {
+	if claudeCompactSummary(c, line) {
+		return
+	}
 	var text string
 	if json.Unmarshal(line.Message.Content, &text) == nil {
-		if claudeShellLine(c, text, history) || localCommand(c, text) {
+		if claudeShellLine(c, text, history) || claudeCompactLine(c, text) || localCommand(c, text) {
 			return
 		}
 		// Live, the person's message is already an item: lich wrote it.
@@ -408,7 +435,7 @@ func readClaudeUser(c *chatSession, line claudeLine, history bool) {
 				it.Tool.Output = shorten(blockText(b.Content))
 				it.Tool.Ended = stamp(line.Timestamp)
 			})
-		case b.Type == "text" && (claudeShellLine(c, b.Text, history) || localCommand(c, b.Text)):
+		case b.Type == "text" && (claudeShellLine(c, b.Text, history) || claudeCompactLine(c, b.Text) || localCommand(c, b.Text)):
 		case b.Type == "text" && history && !isInterruptMarker(b.Text):
 			c.conv.userMessage(b.Text, nil)
 		}
@@ -439,14 +466,16 @@ func (d *claudeDriver) result(line claudeLine) {
 	interrupted := d.interrupted
 	d.interrupted = false
 	d.mu.Unlock()
+	text := strings.TrimSpace(strings.Join(append([]string{line.Result}, line.Errors...), "\n"))
 	switch {
 	case !line.IsError:
+		d.compactResult(text)
 		d.c.endTurn(stopEndTurn)
 	case interrupted || line.Terminal == "aborted_streaming":
 		d.c.endTurn(stopCancelled)
 	default:
-		if text := strings.TrimSpace(strings.Join(append([]string{line.Result}, line.Errors...), "\n")); text != "" {
-			d.c.conv.notice(text)
+		if text != "" {
+			d.c.failure(text)
 		}
 		d.c.endTurn(stopError)
 	}

@@ -35,6 +35,8 @@ type fakeCodex struct {
 	effort  string
 	sandbox string
 	turns   int
+	// signedOut makes a compaction fail as Codex's does with no account.
+	signedOut bool
 	// off are the skills skills/config/write set, by path: true when off.
 	off map[string]bool
 }
@@ -106,6 +108,8 @@ func (c *fakeCodex) serve(m map[string]any) {
 		c.reply(id, map[string]any{})
 	case "thread/shellCommand":
 		c.shell(id, str(params, "command"))
+	case "thread/compact/start":
+		c.compact(id)
 	default:
 		c.serveTools(id, str(m, "method"), params)
 	}
@@ -192,6 +196,9 @@ func asJSON(v any) string {
 
 // turn plays the turn text asks for and returns how it ended.
 func (c *fakeCodex) turn(turn, text string) (status, message string) {
+	if c.codexCompactTurn(turn, text) {
+		return "completed", ""
+	}
 	switch text {
 	case "hi":
 		c.item("item/started", map[string]any{"type": "reasoning", "id": "rs1", "summary": []any{}})

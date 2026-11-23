@@ -110,6 +110,15 @@ const (
 	ItemQuestion   = "question"   // the agent asking the person to choose or write
 	ItemNotice     = "notice"     // something lich or the provider says about the session: an error, a resume
 	ItemPlan       = "plan"       // the agent's task list as it stands, whole, drawn over the composer and not in the conversation
+	ItemCompaction = "compaction" // the agent folding the conversation into a summary, while it runs and once it ended
+)
+
+// The states of a compaction item. A cancelled one is not drawn.
+const (
+	CompactionRunning   = "running"
+	CompactionDone      = "done"
+	CompactionFailed    = "failed"
+	CompactionCancelled = "cancelled"
 )
 
 // The states of a plan entry, Claude Code's and ACP's own.
@@ -143,6 +152,7 @@ type ChatItem struct {
 	Permission *ChatPermission `json:"permission,omitempty"`
 	Question   *ChatQuestion   `json:"question,omitempty"`
 	Plan       *ChatPlan       `json:"plan,omitempty"`
+	Compaction *ChatCompaction `json:"compaction,omitempty"`
 	// At is when the item began, in unix milliseconds.
 	At int64 `json:"at"`
 	// Model and Effort are what produced the item, as the person reads them:
@@ -168,6 +178,22 @@ type ChatToolCall struct {
 	Diff    string `json:"diff,omitempty"`
 	Ended   int64  `json:"ended,omitempty"`
 	Movable bool   `json:"movable,omitempty"`
+}
+
+// ChatCompaction is the agent folding the conversation into a summary. Auto
+// marks one the provider started on its own, mid-turn, where the person typed
+// none. Before and After are the conversation's tokens on each side, 0 where
+// the provider did not say; Error is its reason for a failed one, Summary what
+// the conversation was folded into and Hooks what the compaction's hooks
+// printed, each "" for none.
+type ChatCompaction struct {
+	State   string `json:"state"`
+	Auto    bool   `json:"auto,omitempty"`
+	Before  int    `json:"before,omitempty"`
+	After   int    `json:"after,omitempty"`
+	Error   string `json:"error,omitempty"`
+	Summary string `json:"summary,omitempty"`
+	Hooks   string `json:"hooks,omitempty"`
 }
 
 // ChatPlan is the agent's task list, in its order. A turn's plan item holds

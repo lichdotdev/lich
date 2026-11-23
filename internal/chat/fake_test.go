@@ -194,6 +194,9 @@ func (f *fake) claudeTurn(run *fakeClaude, text string) {
 		f.claudeResult(false, "completed", "The command ran.")
 		return
 	}
+	if f.claudeCompactTurn(msg, text) {
+		return
+	}
 	switch text {
 	case "hi":
 		f.send(map[string]any{"type": "stream_event", "api_message_id": "m0", "event": map[string]any{"type": "content_block_delta", "index": 0, "delta": map[string]any{"type": "thinking_delta", "thinking": ""}}})
@@ -335,6 +338,9 @@ func (f *fake) acpLoad(id any, session string, opts *fakeACP) {
 }
 
 func (f *fake) acpTurn(id any, text string) {
+	if f.acpCompactTurn(id, text) {
+		return
+	}
 	switch text {
 	case "hi":
 		f.update(chunk("user_message_chunk", "hi"))
