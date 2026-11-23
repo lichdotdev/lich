@@ -624,6 +624,10 @@ func (s *Service) onTitle(id, title string) error {
 	return nil
 }
 
+// SetTitle names session id after title the way a provider's reported one does:
+// only while the name is still automatic.
+func (s *Service) SetTitle(id, title string) error { return s.onTitle(id, title) }
+
 // onTouched is the transport's callback for a hook that names a session and
 // reports nothing else.
 func (s *Service) onTouched(id string) {

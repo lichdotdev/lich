@@ -108,6 +108,8 @@ type chatSession struct {
 	// gets none (unsuggested).
 	turns, offer int
 	noOffer      bool
+	// titled is set once the session's name was asked for (titleAfter).
+	titled bool
 }
 
 // pending is a message waiting for a turn of its own. began, when set, closes
@@ -240,6 +242,7 @@ func (c *chatSession) endTurn(reason string) {
 	followed := len(c.next) > 0
 	c.mu.Unlock()
 	c.offerAfter(reason, followed)
+	c.titleAfter(reason)
 	c.dismissPermissions()
 	c.conv.stopCalls()
 	c.conv.compactClose(compactState(reason))

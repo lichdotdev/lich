@@ -249,4 +249,9 @@ Fique em silêncio se o próximo passo não for óbvio pelo que o usuário disse
 Fique em silêncio se a sugestão puder ser insegura ou inadequada, incluindo qualquer tema sensível (incidentes de segurança, credenciais, danos, dados privados). Mesmo quando o usuário faz um trabalho legítimo de segurança ou cibersegurança, não preveja ações potencialmente inseguras.
 Formato: de 2 a 12 palavras, no estilo do usuário. Ou nada.
 Responda SÓ com a sugestão, sem aspas nem explicação.`,
+	ChatTitlePrompt: `Escreva um título de no máximo 5 palavras para um chat que começa com a mensagem abaixo, no idioma dessa mensagem.
+Responda SÓ com o título: sem aspas, sem ponto final, sem explicação.
+
+Mensagem:
+%s`,
 }

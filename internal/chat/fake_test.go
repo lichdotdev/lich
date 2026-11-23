@@ -69,7 +69,21 @@ func runFake(args []string) {
 		f.codex()
 		return
 	}
+	if slices.Contains(args, "--no-session-persistence") {
+		f.claudeTitle()
+		return
+	}
 	f.claude(args)
+}
+
+// claudeTitle answers the print-mode call that names a chat, a quoted title with a
+// stop as a model writes one, or "leak" if the hooks' variables reached it.
+func (f *fake) claudeTitle() {
+	if os.Getenv("LICH_SESSION_ID") != "" {
+		fmt.Println("leak")
+		return
+	}
+	fmt.Println(`"Fake title."`)
 }
 
 func (f *fake) send(v any) {

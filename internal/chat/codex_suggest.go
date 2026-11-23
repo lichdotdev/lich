@@ -202,3 +202,20 @@ func (d *codexDriver) endFork(thread string) {
 		slog.Debug("chat: unload Codex's suggestion fork", "session", d.c.id, "err", err)
 	}
 }
+
+// titleArgs is `codex exec` ephemeral, read-only and at low effort, on the
+// model that answered last. Written from `codex exec --help`: the account it
+// was built on refused every model, so it has not answered once.
+func (d *codexDriver) titleArgs(prompt string) []string {
+	d.mu.Lock()
+	model := d.run.on.Model
+	if model == "" {
+		model = d.run.model
+	}
+	d.mu.Unlock()
+	args := []string{"exec", "--ephemeral", "--skip-git-repo-check", "-s", "read-only", "-c", "model_reasoning_effort=low"}
+	if model != "" {
+		args = append(args, "-m", model)
+	}
+	return append(args, "--", prompt)
+}

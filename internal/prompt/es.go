@@ -249,4 +249,9 @@ Quédate en silencio si el siguiente paso no es obvio por lo que dijo el usuario
 Quédate en silencio si la sugerencia pudiera ser insegura o inapropiada, incluido cualquier tema sensible (incidentes de seguridad, credenciales, daños, datos privados). Aunque el usuario haga un trabajo legítimo de seguridad o ciberseguridad, no predigas acciones potencialmente inseguras.
 Formato: de 2 a 12 palabras, con el estilo del usuario. O nada.
 Responde SOLO con la sugerencia, sin comillas ni explicación.`,
+	ChatTitlePrompt: `Escribe un título de 5 palabras como máximo para un chat que empieza con el mensaje de abajo, en el idioma de ese mensaje.
+Responde SOLO con el título: sin comillas, sin punto final, sin explicación.
+
+Mensaje:
+%s`,
 }

@@ -264,6 +264,18 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   It is drawn sent with its turn running from Enter, so the wait does not show, and a window closed inside it
   loses the message. Written in the wait, Enter and Ctrl+Enter queue: steered, the text would reach the agent
   before it. A message sent while the agent's questions wait goes at once, since Esc there declines them.
+- **A chat names its session only on Claude Code and Codex** (`internal/chat/title.go`, `claude_tools.go` and
+  `codex_suggest.go` `titleArgs`). As the first turn of a conversation lich did not replay ends, and only when it
+  opened with a message the person wrote, lich runs the provider's print mode once (`claude -p`, `codex exec`),
+  ephemeral, no tools, at low effort, with `LICH_PORT`, `LICH_TOKEN` and `LICH_SESSION_ID` removed from its
+  environment: every hook reads those, and a call that kept them would report a turn and a title as the session
+  itself (measured: `codex exec` ran lich's `UserPromptSubmit` hook). The card takes the first line of the reply
+  through the guarded write a reported title takes, so a name the person chose stays. A failure is silence and is
+  not retried: the call is made once per chat process, and a conversation reopened with turns already in it
+  is never asked. The Codex call was written from
+  `codex exec --help` and never answered: the account it was built on refused every model, its own default
+  included. Antigravity, opencode, oh-my-pi, Cursor CLI and Kiro CLI are out: their print modes were not measured
+  for the hooks they would run or the conversation they would leave in the provider's history. Crush has no chat.
 - **A chat suggests the next message only on Claude Code and Codex, or an ACP agent that sends its own, and only
   in the chat** (`internal/chat/suggest.go`, `internal/chat/codex_suggest.go`,
   `native/cmd/lich-native/chat_suggest.go`). Claude Code writes `prompt_suggestion` right after `result` once

@@ -221,4 +221,6 @@ type Catalog struct {
 	// person's likely next message: Claude Code's own prompt for its
 	// prompt_suggestion (2.1.330), with Claude named as the assistant.
 	ChatSuggestPrompt string
+	// ChatTitlePrompt asks for a chat's title from its first message (%s).
+	ChatTitlePrompt string
 }

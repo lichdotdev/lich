@@ -237,3 +237,9 @@ func (d *claudeDriver) editSkillOverride(ctx context.Context, name, state string
 	}
 	return nil
 }
+
+// titleArgs is Claude Code's print mode with nothing it would load or keep:
+// no tools, MCP servers or skills, and no session on disk (measured on 2.1.x).
+func (d *claudeDriver) titleArgs(prompt string) []string {
+	return []string{"-p", "--effort", "low", "--no-session-persistence", "--tools", "", "--strict-mcp-config", "--disable-slash-commands", "--", prompt}
+}
