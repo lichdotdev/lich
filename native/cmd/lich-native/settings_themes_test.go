@@ -273,3 +273,23 @@ func TestEscapeRevertsATrial(t *testing.T) {
 		t.Fatal("Escape kept the trial")
 	}
 }
+
+// A card's Update is its own: the press that updates the pack does not also
+// choose the theme under it, while a press on the rest of the card does.
+func TestUpdatingAnInstalledThemeDoesNotChooseIt(t *testing.T) {
+	s, r, f := themesFrames(t)
+	rose := customTheme("rose-test", "Rose Test")
+	rose.Source = &backend.ThemeSource{URL: "https://github.com/o/rose-lich", Version: "1.0.0"}
+	rose.Latest = &backend.ThemeLatest{Version: "1.1.0"}
+	f.themes = append(f.themes, rose)
+	if err := s.theme.look.load(); err != nil {
+		t.Fatal(err)
+	}
+	r.clickLabel(t, i18n.T("settings.themesPage.installedTab"))
+	r.clickLabel(t, i18n.T("settings.themesPage.update"))
+	if got := f.get(themeSettingKey + "@"); got == "rose-test" {
+		t.Error("Update chose the theme it updated")
+	}
+	r.clickLabel(t, "Rose Test")
+	waitForSetting(t, f, themeSettingKey+"@", "rose-test")
+}

@@ -4,8 +4,10 @@ import (
 	"image"
 
 	"gioui.org/font"
+	"gioui.org/gesture"
 	"gioui.org/layout"
 	"gioui.org/op"
+	"gioui.org/op/clip"
 	"gioui.org/unit"
 
 	"github.com/lichdotdev/lich/native/backend"
@@ -29,6 +31,7 @@ const themeHeroName = unit.Sp(20)
 // ⋯ with its menu.
 type themeRowState struct {
 	card, update, more ui.Clickable
+	hover              gesture.Hover
 	menu               ui.MenuState
 	moreTip            ui.Tooltip
 }
@@ -219,24 +222,34 @@ func (s *settingsScreen) installedCard(gtx C, th *ui.Theme, t installedTheme) D 
 		// The view laid out before the card took the click.
 		gtx.Execute(op.InvalidateCmd{})
 	}
-	return st.card.Layout(gtx, func(gtx C) D {
-		bg := th.Card
-		if st.card.Hovered() {
-			bg = ui.MixOKLab(th.Card, th.Over(th.Accent), catalogHoverMix)
-		}
-		on := th.On(bg)
-		return catalogCardSurface(gtx, bg, func(gtx C) D { return themeCover(gtx, on, t.look) }, func(gtx C) D {
-			name := []layout.FlexChild{layout.Flexed(1, on.Text(ui.TextSM, t.name).Weight(font.SemiBold).Leading(themeNameLeading).Truncated().Layout)}
-			name = append(name, s.installedActionsOf(on, t)...)
-			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-				layout.Rigid(func(gtx C) D {
-					gtx.Constraints.Min.Y = gtx.Dp(ui.Space(8))
-					return layout.Flex{Alignment: layout.Middle}.Layout(gtx, name...)
-				}),
-				layout.Rigid(on.Text(ui.TextXS, t.line).Mono().Muted().Leading(themeMetaLeading).Truncated().Layout),
-			)
-		})
+	bg := th.Card
+	if st.hover.Update(gtx.Source) || st.menu.Opened() {
+		bg = ui.MixOKLab(th.Card, th.Over(th.Accent), catalogHoverMix)
+	}
+	on := th.On(bg)
+	// The card's press sits under its Update and ⋯ rather than around them,
+	// so a press on either is theirs alone.
+	macro := op.Record(gtx.Ops)
+	d := catalogCardSurface(gtx, bg, func(gtx C) D { return themeCover(gtx, on, t.look) }, func(gtx C) D {
+		name := []layout.FlexChild{layout.Flexed(1, on.Text(ui.TextSM, t.name).Weight(font.SemiBold).Leading(themeNameLeading).Truncated().Layout)}
+		name = append(name, s.installedActionsOf(on, t)...)
+		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+			layout.Rigid(func(gtx C) D {
+				gtx.Constraints.Min.Y = gtx.Dp(ui.Space(8))
+				return layout.Flex{Alignment: layout.Middle}.Layout(gtx, name...)
+			}),
+			layout.Rigid(on.Text(ui.TextXS, t.line).Mono().Muted().Leading(themeMetaLeading).Truncated().Layout),
+		)
 	})
+	call := macro.Stop()
+	area := clip.Rect{Max: d.Size}.Push(gtx.Ops)
+	st.hover.Add(gtx.Ops)
+	area.Pop()
+	box := gtx
+	box.Constraints = layout.Exact(d.Size)
+	st.card.Layout(box, func(gtx C) D { return D{Size: gtx.Constraints.Min} })
+	call.Add(gtx.Ops)
+	return d
 }
 
 // installedActionsOf is Update while a newer version waits, then an imported
