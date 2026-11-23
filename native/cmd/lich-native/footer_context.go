@@ -83,8 +83,8 @@ type contextRow struct {
 }
 
 // contextRows is the tooltip's lines for a report: tokens against the window,
-// the window, the cache's hit rate and the session's cost, the last two only
-// when the report has them. The number of times the session was compacted is
+// the window, the cache's hit rate, the tokens the session read from the cache
+// and its cost, the last three only when the report has them. The number of times the session was compacted is
 // not here: lich does not keep it.
 func contextRows(u sessionUsage, l i18n.Locale) []contextRow {
 	rows := []contextRow{
@@ -93,6 +93,9 @@ func contextRows(u sessionUsage, l i18n.Locale) []contextRow {
 	}
 	if hit, ok := cacheHit(u.Cache); ok {
 		rows = append(rows, contextRow{label: i18n.T("shell.footerSession.cache"), value: i18n.T("shell.footerSession.cacheHitShort", i18n.Args{"percent": hit})})
+	}
+	if u.CacheReads > 0 {
+		rows = append(rows, contextRow{label: i18n.T("shell.footerSession.cacheReads"), value: compactCount(u.CacheReads, l)})
 	}
 	if u.CostUSD != nil {
 		rows = append(rows, contextRow{label: i18n.T("shell.footerSession.sessionCost"), value: formatCost(*u.CostUSD)})

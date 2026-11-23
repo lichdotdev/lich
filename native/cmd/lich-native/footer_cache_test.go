@@ -52,3 +52,21 @@ func TestCacheHit(t *testing.T) {
 		}
 	}
 }
+
+func TestFooterUsageCacheReads(t *testing.T) {
+	base := `"id":"s1","percent":10,"tokens":1,"window":2,"model":"m","effort":""`
+	for extra, want := range map[string]int{
+		`,"cacheReadTotal":124600000`: 124_600_000,
+		``:                            0,
+		`,"cacheReadTotal":"x"`:       0, // unusable reads as absent
+		`,"cacheReadTotal":-5`:        0,
+	} {
+		f := newFooterUsage()
+		if _, err := f.apply(footerEvent("session-usage", "{"+base+extra+"}")); err != nil {
+			t.Fatal(err)
+		}
+		if u, _ := f.get("s1"); u.CacheReads != want {
+			t.Errorf("%s: cache reads %d, want %d", extra, u.CacheReads, want)
+		}
+	}
+}

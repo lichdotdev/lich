@@ -100,6 +100,10 @@ func (s *Service) usageFrom(id string, src usageSource) (usageEvent, bool) {
 	if !supported {
 		event.Cache = lastTurnCache(src)
 	}
+	if src.kind == providers.Claude {
+		paths := append([]string{src.path}, claudeSubagentPaths(src.id)...)
+		event.CacheReadTotal = s.reread.total(id, paths)
+	}
 	cost, miss, priced := s.sessionCost(id, src)
 	switch {
 	case priced:

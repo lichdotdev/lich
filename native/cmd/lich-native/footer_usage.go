@@ -27,21 +27,25 @@ type sessionUsage struct {
 	CostUSD  *float64
 	CostMiss string
 	Cache    *api.SessionCache
+	// CacheReads is the tokens every call of the session read from the prompt
+	// cache; 0 when the provider does not report it.
+	CacheReads int
 }
 
 // usageEvent is the session-usage payload (internal/terminal usageEvent).
 // Pointers tell a missing context field apart from a zero one; the cost and
 // cache fields stay raw so a malformed one reads as absent, not as a bad payload.
 type usageEvent struct {
-	ID       string          `json:"id"`
-	Percent  *int            `json:"percent"`
-	Tokens   *int            `json:"tokens"`
-	Window   *int            `json:"window"`
-	Model    *string         `json:"model"`
-	Effort   *string         `json:"effort"`
-	CostUSD  json.RawMessage `json:"costUsd"`
-	CostMiss json.RawMessage `json:"costMiss"`
-	Cache    json.RawMessage `json:"cache"`
+	ID         string          `json:"id"`
+	Percent    *int            `json:"percent"`
+	Tokens     *int            `json:"tokens"`
+	Window     *int            `json:"window"`
+	Model      *string         `json:"model"`
+	Effort     *string         `json:"effort"`
+	CostUSD    json.RawMessage `json:"costUsd"`
+	CostMiss   json.RawMessage `json:"costMiss"`
+	Cache      json.RawMessage `json:"cache"`
+	CacheReads json.RawMessage `json:"cacheReadTotal"`
 }
 
 // footerUsage keeps the last usage report of every session: retained while the
@@ -151,6 +155,10 @@ func decodeUsage(data json.RawMessage) (id string, u sessionUsage, ok bool, err 
 	var cache *api.SessionCache
 	if json.Unmarshal(e.Cache, &cache) == nil && cache != nil && cache.Read >= 0 && cache.Write >= 0 && cache.Uncached >= 0 {
 		u.Cache = cache
+	}
+	var reads int
+	if json.Unmarshal(e.CacheReads, &reads) == nil && reads > 0 {
+		u.CacheReads = reads
 	}
 	return e.ID, u, true, nil
 }

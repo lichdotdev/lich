@@ -305,6 +305,7 @@ type Service struct {
 	// what lich derives. rateLimitReports is where their rate
 	// limits go, wired by SetRateLimitReports and guarded by rateLimitsMu.
 	usageReports     usageReports
+	reread           rereadCounts
 	rateLimitsMu     sync.Mutex
 	rateLimitReports func(sessionID string, limits []quota.ReportedLimit)
 	// statuses is the last session-status payload of each live session, which
@@ -898,6 +899,7 @@ func (s *Service) endProcess(id, closerID string) error {
 	s.FlushHandsOn()
 	s.hands.forget(id)
 	s.usageReports.forget(id)
+	s.reread.forget(id)
 	var err error
 	if ok {
 		err = sess.pty.Close()

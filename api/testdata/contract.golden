@@ -2557,6 +2557,7 @@ SessionUsage {
 	costUsd,omitempty *float64
 	costMiss,omitempty string
 	cache,omitempty *SessionCache
+	cacheReadTotal,omitempty int
 }
 
 SessionView {

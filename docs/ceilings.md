@@ -759,7 +759,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   they record for a free model and for a subscription. The last turn's cache line (`api.SessionCache`) sits in the context
   tooltip on Claude Code and Codex, and in the cost tooltip on oh-my-pi and opencode, which record the split but
   no window. Crush folds its cache counts into the prompt and completion totals, Kiro files every token count as
-  zero, and Cursor and Antigravity have no usage reader, so the four show none. Codex is the one provider lich prices itself, from a slice of
+  zero, and Cursor and Antigravity have no usage reader, so the four show none. The context tooltip's Cache reads line, the tokens every call of the session read back from the cache, is Claude Code only: it is summed from the transcript and its sub-agents' (`internal/terminal/usage_reread.go`), in memory and not in the cost ledger, so it works with the cost readout off and a restart of lich rescans each transcript once. A conversation branched inside the session's terminal opens with a copy of its parent's responses, and they are summed again. Codex is the one provider lich prices itself, from a slice of
   rates baked into the release (`internal/pricing/prices.json`), so an offline Codex session shows a cost at the
   rate that shipped — **stale by however long it has been since the release**, until the refresh
   (`internal/pricing/pricing.go`) lands and overrides it. What is left with no price at all is a model newer than

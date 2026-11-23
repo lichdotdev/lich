@@ -140,6 +140,7 @@ o lich consegue ler de volta, porque cada CLI registra coisas diferentes.
 | Entrar pela tela de boas-vindas | sim | sim | não, na primeira execução | num terminal, com um projeto aberto | num terminal, com um projeto aberto | não, na primeira execução | num terminal, com um projeto aberto; não no macOS | num terminal, com um projeto aberto; só Linux |
 | Janela de contexto no rodapé | sim | sim | não | não | não | não | não | sim |
 | Quanto do último turno veio do cache de prompt, no rodapé | sim | sim | não | no tooltip de custo | no tooltip de custo | não | não | não |
+| Quantos tokens a sessão leu de volta do cache de prompt em todas as chamadas, no tooltip de contexto | sim | não | não | não | não | não | não | não |
 | O tooltip do card mostra o modelo em uso, e com qual abriu se ele mudou | sim | sim | não | não | não | não | não | sim |
 | Custo no rodapé | sim | sim | não | sim | sim | sim | não | créditos |
 | Uma conversa com fork feito dentro do próprio terminal do agente cobra uma vez só o histórico que copia | sim, a não ser quando o custo é o que o próprio Claude Code mediu | não | sem leitura de custo | sim | sim, menos um turno gravado sem id de resposta | não faz fork | sem leitura de custo | sem leitura de custo |

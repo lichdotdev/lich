@@ -137,6 +137,7 @@ what lich can read back out of it, since each CLI records different things.
 | Sign in from the Welcome | yes | yes | no, on its first run | in a terminal, with a project open | in a terminal, with a project open | no, on its first run | in a terminal, with a project open; not on macOS | in a terminal, with a project open; Linux only |
 | Context window in the footer | yes | yes | no | no | no | no | no | yes |
 | How much of the last turn came from the prompt cache, in the footer | yes | yes | no | in the cost tooltip | in the cost tooltip | no | no | no |
+| How many tokens the session has read back from the prompt cache across all its calls, in the context tooltip | yes | no | no | no | no | no | no | no |
 | The card's tooltip names the model running, and the one it opened on if it changed | yes | yes | no | no | no | no | no | yes |
 | Cost in the footer | yes | yes | no | yes | yes | yes | no | credits |
 | A conversation branched inside the agent's own terminal is billed once for the history it copies | yes, unless the cost is the one Claude Code measured itself | no | no cost readout | yes | yes, except a turn saved without a response id | cannot branch | no cost readout | no cost readout |

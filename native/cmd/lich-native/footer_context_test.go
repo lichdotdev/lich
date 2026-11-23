@@ -54,13 +54,17 @@ func TestTheContextTooltipHasLinesOnlyForWhatItKnows(t *testing.T) {
 		t.Errorf("tokens %+v, window %+v", rows[0], rows[1])
 	}
 	u.Cache = &api.SessionCache{Read: 100}
+	u.CacheReads = 124_600_000
 	u.CostUSD = new(11.39)
 	rows = contextRows(u, i18n.EN)
-	if got := labels(rows); len(got) != 4 || got[2] != "Cache" || got[3] != "Session cost" {
-		t.Fatalf("lines %v with cache and cost", got)
+	if got := labels(rows); len(got) != 5 || got[2] != "Cache" || got[3] != "Cache reads" || got[4] != "Session cost" {
+		t.Fatalf("lines %v with cache, cache reads and cost", got)
 	}
-	if rows[2].value != "100% hit" || rows[3].value != "$11.39" {
-		t.Errorf("cache %q, cost %q", rows[2].value, rows[3].value)
+	if rows[3].value != "124.6M" {
+		t.Fatalf("cache reads %q, want 124.6M", rows[3].value)
+	}
+	if rows[2].value != "100% hit" || rows[4].value != "$11.39" {
+		t.Errorf("cache %q, cost %q", rows[2].value, rows[4].value)
 	}
 }
 
