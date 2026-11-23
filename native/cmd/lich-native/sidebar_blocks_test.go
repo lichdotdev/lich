@@ -71,7 +71,7 @@ func TestAFoldersCardsHangFromNoCheckout(t *testing.T) {
 	}
 }
 
-func TestABlocksSessionsGoInStatusOrder(t *testing.T) {
+func TestABlocksSessionsKeepTheirOrderWhateverTheirStatus(t *testing.T) {
 	m, _ := sidebarModel(t, ss("idle", "done", "busy", "wait"))
 	reportStatus(m, "done", "done")
 	reportStatus(m, "busy", "busy")
@@ -80,8 +80,8 @@ func TestABlocksSessionsGoInStatusOrder(t *testing.T) {
 	for _, sv := range m.sidebarBlocks(sidebarFilter{}).blocks[0].sessions {
 		ids = append(ids, sv.ID)
 	}
-	if want := []string{"wait", "busy", "done", "idle"}; !slices.Equal(ids, want) {
-		t.Fatalf("order %v, want %v: waiting, running, unread, idle", ids, want)
+	if want := []string{"idle", "done", "busy", "wait"}; !slices.Equal(ids, want) {
+		t.Fatalf("order %v, want %v: the stored order, status moves nothing", ids, want)
 	}
 }
 

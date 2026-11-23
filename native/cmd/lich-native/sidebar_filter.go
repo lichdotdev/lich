@@ -2,7 +2,6 @@ package main
 
 import (
 	"maps"
-	"slices"
 	"strings"
 
 	"github.com/lichdotdev/lich/native/backend"
@@ -22,9 +21,6 @@ const (
 // sessionPhases is the chips' drawn order: what blocks the user, what is
 // moving, what is new, the rest.
 var sessionPhases = []sessionPhase{phaseWaiting, phaseRunning, phaseUnread, phaseIdle}
-
-// phaseRank is where p sorts in a block: the chips' order.
-func phaseRank(p sessionPhase) int { return slices.Index(sessionPhases, p) }
 
 // phaseNoticeLabel is a phase named inside the empty-filter sentence, lower
 // case, where the chip's label starts a capital.
