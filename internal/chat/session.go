@@ -154,7 +154,7 @@ func (c *chatSession) died() {
 	running := c.running
 	c.mu.Unlock()
 	if running {
-		c.conv.notice(exitNotice(c.proc.Stderr()))
+		c.failure(exitNotice(c.proc.Stderr()))
 		c.endTurn(stopError)
 	}
 	// the shells ran in the process: they are gone with it
@@ -253,7 +253,7 @@ func (c *chatSession) send(m message) error {
 	c.markStart()
 	c.compactTyped(m.text)
 	if err := c.drv.prompt(m); err != nil {
-		c.conv.notice(err.Error())
+		c.failure(err.Error())
 		c.endTurn(stopError)
 		return err
 	}

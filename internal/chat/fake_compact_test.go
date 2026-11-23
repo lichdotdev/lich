@@ -3,7 +3,9 @@
 package chat
 
 import (
+	"fmt"
 	"maps"
+	"os"
 )
 
 // The fake's compactions, in the lines each provider writes for one.
@@ -40,6 +42,10 @@ func (f *fake) claudeCompactTurn(msg func(string, map[string]any), text string) 
 		status(map[string]any{"status": "compacting"})
 		status(map[string]any{"compact_result": "failed"})
 		user("<local-command-stderr>Error: Not enough messages to compact.</local-command-stderr>")
+	case "/compact die":
+		status(map[string]any{"status": "compacting"})
+		fmt.Fprintln(os.Stderr, "compact boom")
+		os.Exit(3)
 	case "/compact silent":
 		// neither a result nor a boundary: the turn's end finds it running
 	case "auto":
@@ -58,6 +64,10 @@ func (f *fake) claudeCompactTurn(msg func(string, map[string]any), text string) 
 // codexCompact answers thread/compact/start as app-server does: a turn of
 // its own around a contextCompaction item (0.170.0 schema).
 func (c *fakeCodex) compact(id any) {
+	if c.turns == 0 {
+		c.send(map[string]any{"id": id, "error": map[string]any{"code": -32600, "message": "the thread has nothing to compact"}})
+		return
+	}
 	c.reply(id, map[string]any{})
 	c.turns++
 	turn := "turn-compact"

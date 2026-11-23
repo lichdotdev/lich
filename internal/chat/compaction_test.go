@@ -178,6 +178,41 @@ func TestClaudeCompactionFailures(t *testing.T) {
 	}
 }
 
+// TestACompactionThatCouldNotRunSaysWhy: a /compact whose request failed
+// gives its reason to the marker, not a notice.
+func TestACompactionThatCouldNotRunSaysWhy(t *testing.T) {
+	r := newChat(t, providers.Codex)
+	if _, err := r.svc.Prompt(t.Context(), api.ChatPromptOptions{ID: "s1", Text: "/compact"}); err == nil {
+		t.Error("a /compact Codex refused was taken")
+	}
+	r.wantKinds("user:/compact", "compaction:failed")
+	if cc := r.onlyCompaction(); !strings.Contains(cc.Error, "the thread has nothing to compact") {
+		t.Errorf("the compaction failed for %q", cc.Error)
+	}
+
+}
+
+// TestACompactionItsProcessDiedUnderSaysWhy: the provider's last words are
+// the marker's reason.
+func TestACompactionItsProcessDiedUnderSaysWhy(t *testing.T) {
+	r := newChat(t, providers.Claude)
+	r.prompt("/compact die")
+	r.turnEnd(0)
+	// The chat is gone with its process: the window's copy is what it said.
+	var last *api.ChatCompaction
+	for _, e := range r.snapshot() {
+		if u, ok := e.data.(api.ChatItemUpdate); ok && u.Item.Compaction != nil {
+			last = u.Item.Compaction
+		}
+	}
+	if last == nil || last.State != api.CompactionFailed || !strings.Contains(last.Error, "compact boom") {
+		t.Errorf("the window last heard the compaction as %+v", last)
+	}
+	if r.sent(api.ItemNotice, "compact boom") {
+		t.Error("the death was said in a notice too")
+	}
+}
+
 // TestClaudeCompactsOnItsOwnMidTurn: an automatic compaction is placed where
 // it happened, and the turn carries on after it.
 func TestClaudeCompactsOnItsOwnMidTurn(t *testing.T) {
