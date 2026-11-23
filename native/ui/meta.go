@@ -38,6 +38,10 @@ func (p PillStyle) Layout(gtx C) D {
 
 const keyCapSize unit.Sp = 10 // text-[0.625rem]
 
+// keyCapEdgeMix is how far a key cap's edge leans from Border toward the
+// foreground.
+const keyCapEdgeMix = 0.12
+
 // KeyCapStyle is Keys: rounded, a hairline border with a thicker bottom one,
 // on bg-muted, 10px mono text.
 type KeyCapStyle struct {
@@ -57,7 +61,9 @@ func (k KeyCapStyle) Layout(gtx C) D {
 	box := gtx
 	box.Constraints = layout.Exact(d.Size)
 	Fill(box, th.Over(th.Palette.Muted), RadiusSM)
-	border := th.Over(th.Border)
+	// A theme whose Border is its Muted, as Dark's is, would lose the cap's
+	// edge into its fill: the edge leans toward the text to stay one.
+	border := MixOKLab(th.Over(th.Border), th.Foreground, keyCapEdgeMix)
 	InsetBorder(gtx, d.Size, gtx.Dp(RadiusSM), border)
 	r := gtx.Dp(RadiusSM)
 	paint.FillShape(gtx.Ops, border, clip.Rect{Min: image.Pt(r, d.Size.Y-2*gtx.Dp(1)), Max: image.Pt(d.Size.X-r, d.Size.Y-gtx.Dp(1))}.Op())
