@@ -91,19 +91,69 @@ func TestShortcutEnterSteersIntoTheTurn(t *testing.T) {
 	}
 }
 
-// Force sends one queued message into the turn running and takes it out of
-// the queue.
-func TestForceSendsAQueuedMessageIntoTheTurn(t *testing.T) {
+// Send now sends the whole queue into the turn running in one message and
+// empties it. (It replaced a Force per message: the contract changed.)
+func TestSendNowSendsTheWholeQueueIntoTheTurn(t *testing.T) {
 	u, r, f, _ := queueFrames(t)
 	u.model.chat.enqueue("s1", chatMessage{text: "first"})
 	u.model.chat.enqueue("s1", chatMessage{text: "second"})
 	r.frame()
-	r.click(t, r.at(t, "Force"))
-	if body := f.waitCall(t, api.ChatSteer.Name); !strings.Contains(body, "first") {
-		t.Errorf("Force steered %s, want the first queued message", body)
+	if !r.showsAll("2 queued", "Send now") {
+		t.Fatalf("no queue head:\n%s", r.drawn())
 	}
-	if q := u.model.chat.queued("s1"); !slices.Equal(queuedTexts(q), []string{"second"}) {
-		t.Errorf("queue %q, want the other one left", q)
+	writeShot(t, r, "queue-send-now.png")
+	r.click(t, r.at(t, "Send now"))
+	if body := f.waitCall(t, api.ChatSteer.Name); !strings.Contains(body, `first\n\nsecond`) {
+		t.Errorf("Send now steered %s, want the whole queue in one", body)
+	}
+	if q := u.model.chat.queued("s1"); len(q) != 0 {
+		t.Errorf("queue %q after Send now", q)
+	}
+}
+
+// Ctrl+Enter with an empty box sends the queue into the turn, and with text
+// in the box sends the queue and the text after it.
+func TestShortcutEnterSendsTheQueueAndTheBox(t *testing.T) {
+	u, r, f, p := queueFrames(t)
+	u.model.chat.enqueue("s1", chatMessage{text: "first"})
+	r.frame()
+	r.pressWith(key.NameReturn, key.ModShortcut)
+	if body := f.waitCall(t, api.ChatSteer.Name); !strings.Contains(body, `"first"`) {
+		t.Errorf("Ctrl+Enter on an empty box steered %s, want the queue", body)
+	}
+	u.model.chat.enqueue("s1", chatMessage{text: "second"})
+	r.frame()
+	typeIn(r, p, "use cents")
+	r.pressWith(key.NameReturn, key.ModShortcut)
+	deadline := time.Now().Add(2 * time.Second)
+	for f.callsOf(api.ChatSteer.Name) < 2 && time.Now().Before(deadline) {
+		time.Sleep(5 * time.Millisecond)
+	}
+	f.mu.Lock()
+	last := f.calls[len(f.calls)-1]
+	f.mu.Unlock()
+	if !strings.Contains(last, `second\n\nuse cents`) {
+		t.Errorf("Ctrl+Enter with text steered %s, want the queue then the text", last)
+	}
+	if q := u.model.chat.queued("s1"); len(q) != 0 || p.editor.Len() != 0 {
+		t.Errorf("queue %q and box %q left after Ctrl+Enter", q, p.editor.Text())
+	}
+}
+
+// After a stopped turn the kept queue goes as the next message on Ctrl+Enter.
+func TestShortcutEnterSendsAKeptQueueAsTheNextMessage(t *testing.T) {
+	u, r, f, _ := queueFrames(t)
+	u.model.chat.enqueue("s1", chatMessage{text: "first"})
+	u.model.chat.turn(api.ChatTurn{SessionID: "s1", StopReason: stopCancelled})
+	r.frame()
+	r.pressWith(key.NameReturn, key.ModShortcut)
+	r.now = r.now.Add(chatSendHold + time.Second)
+	r.frame()
+	if body := f.waitCall(t, api.ChatPrompt.Name); !strings.Contains(body, "first") {
+		t.Errorf("Ctrl+Enter after a stop sent %s, want the kept queue", body)
+	}
+	if n := f.callsOf(api.ChatSteer.Name); n != 0 {
+		t.Errorf("a turn not running was steered %d times", n)
 	}
 }
 

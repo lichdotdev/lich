@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"runtime"
 	"slices"
 
 	"gioui.org/io/event"
@@ -18,12 +19,13 @@ import (
 
 // A message written while the agent works waits in the session's queue, over
 // the composer, as Claude Code's prompt does: once the turn ends the queue goes
-// in one message, Force sends one of them into the turn running, and ↑ on an
-// empty box takes the queue back to edit.
+// in one message, Send now (or Ctrl+Enter) sends all of it into the turn
+// running, and ↑ on an empty box takes the queue back to edit.
 
 var (
 	icQueued    = icons.Lucide("clock")
 	icQueueDrop = icons.Lucide("x")
+	icQueueSend = icons.Lucide("arrow-up")
 )
 
 // chatQueueJoin is what the queued messages are joined with into the one the
@@ -129,6 +131,36 @@ func (u *window) steerChat(id string, m chatMessage) {
 	}()
 }
 
+// sendQueueNow sends session id's queue, and what the box holds after it,
+// in one message: into the turn running, or as the next one when none runs
+// (a stopped turn keeps its queue). A box in shell mode keeps its command.
+func (u *window) sendQueueNow(p *chatPane, id string) bool {
+	if len(u.model.chat.queued(id)) == 0 {
+		return false
+	}
+	q := u.model.chat.takeQueue(id)
+	if !u.model.chat.isRunning(id) {
+		p.restore(joinMessages(q))
+		return u.sendChat(p, id)
+	}
+	if m := p.composed(); !m.empty() && !u.inShellMode(p, id) {
+		q = append(q, m)
+		p.clearComposer()
+	}
+	u.steerChat(id, joinMessages(q))
+	return true
+}
+
+// inShellMode is whether session id's box runs its line as a shell command.
+func (u *window) inShellMode(p *chatPane, id string) bool {
+	sv, ok := u.model.sessionViewOf(id)
+	if !ok {
+		return false
+	}
+	_, shell := p.shellLine(sv.Kind)
+	return shell
+}
+
 // editQueue takes session id's whole queue into the empty composer.
 func (u *window) editQueue(p *chatPane, id string) {
 	q := u.model.chat.takeQueue(id)
@@ -139,21 +171,20 @@ func (u *window) editQueue(p *chatPane, id string) {
 }
 
 // chatQueueRow is one queued message's controls: the row, which takes it back
-// to the box, Force and ×.
+// to the box, and ×.
 type chatQueueRow struct {
-	edit, force, drop ui.Clickable
-	dropTip           ui.Tooltip
+	edit, drop ui.Clickable
+	dropTip    ui.Tooltip
 }
 
 // queueActs runs the queue rows' clicks.
 func (u *window) queueActs(gtx C, p *chatPane, id string) {
+	if p.queueSend.Clicked(gtx) && u.sendQueueNow(p, id) {
+		p.toEnd(gtx.Now)
+	}
 	for i := range p.queueRows {
 		r := &p.queueRows[i]
 		switch {
-		case r.force.Clicked(gtx):
-			if m, ok := u.model.chat.unqueue(id, i); ok {
-				u.steerChat(id, m)
-			}
 		case r.drop.Clicked(gtx):
 			u.model.chat.unqueue(id, i)
 		case r.edit.Clicked(gtx):
@@ -165,8 +196,9 @@ func (u *window) queueActs(gtx C, p *chatPane, id string) {
 	}
 }
 
-// chatQueue draws session id's queue over the composer: a muted line per
-// message, its Force and × shown while the pointer is on it.
+// chatQueue draws session id's queue over the composer: a head with the count
+// and Send now, which sends it all into the turn as Ctrl+Enter does, then a
+// muted line per message, its × shown while the pointer is on it.
 func (u *window) chatQueue(gtx C, th *ui.Theme, p *chatPane, id string) D {
 	q := u.model.chat.queued(id)
 	if len(q) == 0 {
@@ -175,25 +207,43 @@ func (u *window) chatQueue(gtx C, th *ui.Theme, p *chatPane, id string) D {
 	if len(p.queueRows) < len(q) {
 		p.queueRows = append(p.queueRows, make([]chatQueueRow, len(q)-len(p.queueRows))...)
 	}
-	rows := make([]layout.FlexChild, len(q))
+	rows := make([]layout.FlexChild, 0, len(q)+1)
+	rows = append(rows, layout.Rigid(func(gtx C) D { return u.chatQueueHead(gtx, th, p, len(q)) }))
 	for i, m := range q {
 		r := &p.queueRows[i]
-		rows[i] = layout.Rigid(func(gtx C) D { return u.chatQueueLine(gtx, th, r, m.line()) })
+		rows = append(rows, layout.Rigid(func(gtx C) D { return u.chatQueueLine(gtx, th, r, m.line()) }))
 	}
 	return layout.Inset{Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, rows...)
 	})
 }
 
+// chatQueueHead is the queue's head line: the clock glyph and the count muted,
+// and at its end Send now with the chord that does the same.
+func (u *window) chatQueueHead(gtx C, th *ui.Theme, p *chatPane, n int) D {
+	gtx.Constraints.Min.X = gtx.Constraints.Max.X
+	send := th.Button(&p.queueSend, i18n.T("chat.queue.sendNow"))
+	send.Icon, send.Variant, send.Size = icQueueSend, ui.VariantGhost, ui.SizeXS
+	chord := formatCombo(combo{Mod: true, Key: "Enter"}, runtime.GOOS == "darwin")
+	return layout.Inset{Left: ui.Space(2), Right: ui.Space(1), Bottom: ui.Space(0.5)}.Layout(gtx, func(gtx C) D {
+		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+			layout.Rigid(func(gtx C) D { return icQueued.Layout(gtx, chatCrumbGlyph, th.MutedForeground) }),
+			ui.Gap(2),
+			layout.Flexed(1, th.Text(ui.TextXS, i18n.T("chat.queue.count", i18n.Args{"count": n})).Muted().Layout),
+			layout.Rigid(send.Layout),
+			ui.Gap(1),
+			layout.Rigid(th.KeyCap(chord).Layout),
+		)
+	})
+}
+
 func (u *window) chatQueueLine(gtx C, th *ui.Theme, r *chatQueueRow, text string) D {
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
-	shown := r.edit.Hovered() || r.force.Hovered() || r.drop.Hovered()
+	shown := r.edit.Hovered() || r.drop.Hovered()
 	ink := th.MutedForeground
 	if shown {
 		ink = th.Foreground
 	}
-	force := th.Button(&r.force, i18n.T("chat.queue.force"))
-	force.Variant, force.Size = ui.VariantGhost, ui.SizeXS
 	drop := th.Button(&r.drop, "")
 	drop.Icon, drop.Variant, drop.Size = icQueueDrop, ui.VariantGhost, ui.SizeIconXS
 	return layout.Stack{}.Layout(gtx,
@@ -207,10 +257,10 @@ func (u *window) chatQueueLine(gtx C, th *ui.Theme, r *chatQueueRow, text string
 			gtx.Constraints.Min.X = gtx.Constraints.Max.X
 			return layout.Inset{Left: ui.Space(2), Right: ui.Space(1)}.Layout(gtx, func(gtx C) D {
 				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-					layout.Rigid(func(gtx C) D { return icQueued.Layout(gtx, chatCrumbGlyph, ink) }),
+					// the head's glyph stands for every line: the text starts under its count
+					layout.Rigid(layout.Spacer{Width: chatCrumbGlyph}.Layout),
 					ui.Gap(2),
 					layout.Flexed(1, th.Text(ui.TextSM, text).In(ink).Truncated().Layout),
-					layout.Rigid(func(gtx C) D { return revealed(gtx, shown, force.Layout) }),
 					layout.Rigid(func(gtx C) D {
 						return th.Tooltip(&u.root, &r.dropTip, i18n.T("chat.queue.drop")).Layout(gtx, func(gtx C) D { return revealed(gtx, shown, drop.Layout) })
 					}),
@@ -230,8 +280,8 @@ func revealed(gtx C, shown bool, w layout.Widget) D {
 }
 
 // composerKeys runs the queue's keys in the composer: Ctrl+Enter (Cmd+Enter
-// on macOS) sends the text into the turn running, or as a message when none
-// runs, ↑ on an empty box takes the queue back to edit, and otherwise the
+// on macOS) sends the queue and the text after it into the turn running, or
+// the text alone when nothing is queued, or as a message when none runs, ↑ on an empty box takes the queue back to edit, and otherwise the
 // arrows walk the messages sent. Shift+Tab cycles the mode, as in Claude
 // Code's prompt; held here, it never moves the focus off the box. Tab takes
 // the suggestion the idle box shows, and is held only while it shows one.
@@ -273,6 +323,10 @@ func (u *window) composerKeys(gtx C, p *chatPane, id string, sent []string, keys
 			continue
 		case e.Name == key.NameTab:
 			u.cycleMode(id)
+			continue
+		}
+		if u.sendQueueNow(p, id) {
+			p.toEnd(gtx.Now)
 			continue
 		}
 		m := p.composed()

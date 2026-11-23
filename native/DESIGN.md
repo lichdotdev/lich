@@ -638,9 +638,12 @@ draws none while it grows in, because the room above the rows is measured in the
   Claude's web composer, which the person asked for, draws them so.
   Ctrl+V with an image and no text on the clipboard makes a card the same way.
 - **What has not reached the agent yet stands over the box**, in the box's column, before the text: a message
-  written while the turn runs waits in the queue (`chat_queue.go`), one muted `TextSM` line per message with a
-  `clock` glyph, truncated, the kit's hover fill under the pointer, and Force (a ghost `SizeXS` button) and × (a
-  `SizeIconXS` ghost button) shown only on hover; a click on the line takes it back into the box, and "↑ edits
+  written while the turn runs waits in the queue (`chat_queue.go`): a head line, the `clock` glyph and "2 queued"
+  in muted `TextXS`, with Send now (a ghost `SizeXS` button with `arrow-up`) and the Ctrl+Enter key cap at its end,
+  always shown while there is a queue; Send now and Ctrl+Enter send the whole queue, and what the box holds after
+  it, into the turn in one message. Under it one muted `TextSM` line per message, its text under the head's count,
+  truncated, the kit's hover fill under the pointer, and × (a `SizeIconXS` ghost button) shown only on hover; a
+  click on the line takes it back into the box, and "↑ edits
   the queue" stands muted in the box's foot while there is one. Above the queue, the agent's task list
   (`chat_plan.go`) is one compact line: a list glyph, "Tasks 2/5" muted and the task in progress shimmering as
   the live line's verb does; a click unfolds it, done tasks struck and muted, the running one lit, the pending

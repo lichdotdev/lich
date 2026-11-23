@@ -107,6 +107,8 @@ type chatView struct {
 	start chatStart
 	// queueRows are the controls of the session's queued messages.
 	queueRows []chatQueueRow
+	// queueSend is the queue's Send now.
+	queueSend ui.Clickable
 	plan      chatPlanState
 	// slash is the list of the provider's commands over the composer, which
 	// may grow over the conversation up to slashRoom, the pane's height (on
