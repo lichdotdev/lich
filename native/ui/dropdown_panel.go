@@ -56,11 +56,16 @@ type DropdownPanelStyle struct {
 	// scrolls inside it if it asks for more.
 	MaxHeight unit.Dp
 	above     bool
+	span      bool
 	theme     *Theme
 }
 
 // Above makes the panel prefer the room above its trigger to the room below.
 func (p DropdownPanelStyle) Above() DropdownPanelStyle { p.above = true; return p }
+
+// Spanning makes the panel as wide as its trigger, on the same left and right
+// edges and following it as it resizes; Width is then ignored.
+func (p DropdownPanelStyle) Spanning() DropdownPanelStyle { p.span = true; return p }
 
 func (th *Theme) DropdownPanel(root *Root, state *DropdownPanelState, width unit.Dp, content func(gtx C, th *Theme) D) DropdownPanelStyle {
 	return DropdownPanelStyle{Root: root, State: state, Width: width, Content: content, theme: th}
@@ -114,6 +119,9 @@ func (p DropdownPanelStyle) overlay(gtx C) {
 	if s.focus {
 		gtx.Execute(key.FocusCmd{Tag: &s.backdrop})
 		s.focus = false
+	}
+	if p.span {
+		p.Width = gtx.Metric.PxToDp(s.anchor.Dx())
 	}
 	core := menuCore{th: p.theme}
 	on := p.theme.On(p.theme.Popover)

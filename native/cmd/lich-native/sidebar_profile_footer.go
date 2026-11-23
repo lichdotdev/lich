@@ -213,7 +213,7 @@ func (pf *profileFooter) layout(gtx C, th *ui.Theme, root *ui.Root, m *model, a 
 				pf.reset.pending = ""
 			}
 			pf.reset.act, pf.reset.profile, pf.reset.key = act, effectiveProfile(f.choice.shown), a.key
-			panel := th.DropdownPanel(root, &pf.panel, profilePanelW, func(gtx C, th *ui.Theme) D { return pf.panelBody(gtx, th, m, a, act) }).Above()
+			panel := th.DropdownPanel(root, &pf.panel, 0, func(gtx C, th *ui.Theme) D { return pf.panelBody(gtx, th, m, a, act) }).Above().Spanning()
 			return panel.Layout(gtx, row)
 		}),
 	)

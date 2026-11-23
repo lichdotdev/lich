@@ -8,10 +8,6 @@ import (
 	"github.com/lichdotdev/lich/native/ui"
 )
 
-// profilePanelW is the footer panel's width: the context tooltip's bar, the
-// panel's padding and the room for a profile's name beside its usage.
-var profilePanelW = contextTipWide + ui.Space(2)
-
 // panelBody is what the account row opens: the usage of its account, then,
 // while the provider has logins to switch between, a separator and what the
 // footer's menu always held (the logins, and the other providers').
