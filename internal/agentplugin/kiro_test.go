@@ -233,7 +233,7 @@ func TestKiroAgentWritesNoTimeout(t *testing.T) {
 // detail filter the tool report reads — which no kiroHooks row names — are
 // fetched at all.
 func TestKiroScriptsAreFetchedOnce(t *testing.T) {
-	got := kiroScripts()
+	got := kiroScripts(testVersion)
 	want := []string{
 		"hooks/report-session-start.sh",
 		"hooks/report-state.sh",
@@ -332,7 +332,7 @@ func TestKiroInstallWritesTheToolDetailFilter(t *testing.T) {
 // Kiro install fetches.
 func kiroFiles() map[string]string {
 	files := map[string]string{}
-	for _, script := range kiroScripts() {
+	for _, script := range kiroScripts(testVersion) {
 		files[tagged(script)] = "#!/bin/sh\n# " + script + "\nexit 0\n"
 	}
 	return files
@@ -370,7 +370,7 @@ func TestKiroInstallWritesTheAgentAndTheScripts(t *testing.T) {
 		t.Fatalf("installed agent is not JSON: %v", err)
 	}
 	scriptDir := filepath.Join(configDir, "lich", "plugin", "hooks", providers.Kiro)
-	for _, script := range kiroScripts() {
+	for _, script := range kiroScripts(testVersion) {
 		installed := filepath.Join(scriptDir, filepath.Base(script))
 		info, err := os.Stat(installed)
 		if err != nil {

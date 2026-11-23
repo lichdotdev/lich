@@ -44,6 +44,11 @@ import (
 // what lich spawns — are these.
 var kiroWriteTools = []string{"write", "shell"}
 
+// kiroSubagentTools are the two tools a Kiro subagent starts through, ACP's
+// `subagent` and the classic chat's `use_subagent` (docs/hooks/subagent-cards.md),
+// each vetoed by its own entry, bare names for the reason kiroWriteTools are.
+var kiroSubagentTools = []string{"subagent", "use_subagent"}
+
 // kiroBriefingScript is the one hook meant to print, and it is lich's rather than
 // the plugin repository's: its output is the session's briefing, which Kiro feeds
 // the model as context, and it prints nothing in a Kiro that lich did not spawn
@@ -93,7 +98,7 @@ func (s *Service) kiroInstall() error {
 		return err
 	}
 	scripts := map[string][]byte{}
-	for _, name := range kiroScripts() {
+	for _, name := range kiroScripts(version) {
 		data, err := s.fetchFile(version, name)
 		if err != nil {
 			return err
@@ -133,9 +138,9 @@ func (s *Service) kiroInstall() error {
 	return s.kiroRegisterMCP()
 }
 
-// kiroScripts is every file the registration runs, sources or reads, deduplicated —
-// report-state is named by three events and fetched once.
-func kiroScripts() []string {
+// kiroScripts is every file version's registration runs, sources or reads,
+// deduplicated: report-state is named by three events and fetched once.
+func kiroScripts(version string) []string {
 	seen := map[string]bool{}
 	var out []string
 	for _, hook := range kiroHooks {
@@ -145,7 +150,11 @@ func kiroScripts() []string {
 		seen[hook.script] = true
 		out = append(out, hook.script)
 	}
-	return append(out, "hooks/report-touched.sh", "hooks/conversation-id.sh", "hooks/detail.jq")
+	out = append(out, "hooks/report-touched.sh", "hooks/conversation-id.sh", "hooks/detail.jq")
+	if asksSubagentHook(version) {
+		out = append(out, vetoScript)
+	}
+	return out
 }
 
 // kiroAgentFile is the agent lich writes: the hooks, and the least configuration
@@ -179,6 +188,11 @@ func kiroAgentFile(version, scriptDir string) ([]byte, error) {
 			Command: kiroCommand(scriptDir, "hooks/report-touched.sh", ""),
 			Matcher: tool,
 		})
+	}
+	if asksSubagentHook(version) {
+		for _, tool := range kiroSubagentTools {
+			hooks["preToolUse"] = append(hooks["preToolUse"], kiroHook{Command: kiroCommand(scriptDir, vetoScript, providers.Kiro), Matcher: tool})
+		}
 	}
 	hooks["agentSpawn"] = append(hooks["agentSpawn"], kiroHook{Command: kiroCommand(scriptDir, kiroBriefingScript, "")})
 	body, err := json.MarshalIndent(kiroAgent{

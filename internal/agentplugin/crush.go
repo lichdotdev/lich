@@ -48,6 +48,9 @@ const (
 	// end.
 	crushHookTimeout = 5
 	crushMCPTimeout  = 10
+	// crushVetoTimeout is longer: the veto waits on lich's answer, which may
+	// open a session first (docs/hooks/subagent-cards.md, Registration).
+	crushVetoTimeout = 15
 
 	// shComment is how the marker lines hide from the shell that runs crushrc.
 	shComment = "#"
@@ -60,14 +63,26 @@ const (
 // crushHooks is what lich registers, one entry per report Crush can honour:
 // the script from the plugin repository, the argument it takes, the name the
 // hook is stored under, and the tools it matches ("" for every tool).
-var crushHooks = []struct {
+var crushHooks = []crushHook{
+	{script: "hooks/report-session-start.sh", arg: providers.Crush, name: "lich-session-id", timeout: crushHookTimeout},
+	{script: "hooks/report-touched.sh", name: "lich-touched", matcher: crushWriteTools, timeout: crushHookTimeout},
+}
+
+type crushHook struct {
 	script  string
 	arg     string
 	name    string
 	matcher string
-}{
-	{script: "hooks/report-session-start.sh", arg: providers.Crush, name: "lich-session-id"},
-	{script: "hooks/report-touched.sh", name: "lich-touched", matcher: crushWriteTools},
+	timeout int
+}
+
+// crushHooksFor is what version's crushrc registers: the reports, and from
+// SubagentHookRelease the veto on Crush's one subagent tool.
+func crushHooksFor(version string) []crushHook {
+	if !asksSubagentHook(version) {
+		return crushHooks
+	}
+	return append(slices.Clone(crushHooks), crushHook{script: vetoScript, arg: providers.Crush, name: "lich-subagent-cards", matcher: "^agent$", timeout: crushVetoTimeout})
 }
 
 // crushSourcedScripts are the files the registered scripts source rather than
@@ -91,7 +106,7 @@ func (s *Service) crushInstall() error {
 		return fmt.Errorf("create %s: %w", dir, err)
 	}
 	scripts := slices.Clone(crushSourcedScripts)
-	for _, hook := range crushHooks {
+	for _, hook := range crushHooksFor(version) {
 		scripts = append(scripts, hook.script)
 	}
 	for _, script := range scripts {
@@ -140,7 +155,7 @@ func crushrcBlock(version, scriptDir, lichBin string) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, blockOpen+"\n", version)
 	fmt.Fprintf(&b, "%s Managed by lich. Edit through Settings, not by hand.\n", shComment)
-	for _, hook := range crushHooks {
+	for _, hook := range crushHooksFor(version) {
 		// Two layers of quoting, and both are load-bearing: the inner one makes
 		// the script path survive as one word inside the command Crush runs, the
 		// outer one makes that whole command survive as one argument to the
@@ -153,7 +168,7 @@ func crushrcBlock(version, scriptDir, lichBin string) string {
 		if hook.matcher != "" {
 			fmt.Fprintf(&b, " --matcher %s", shquote.Quote(hook.matcher))
 		}
-		fmt.Fprintf(&b, " --command %s --timeout %d\n", shquote.Quote(command), crushHookTimeout)
+		fmt.Fprintf(&b, " --command %s --timeout %d\n", shquote.Quote(command), hook.timeout)
 	}
 	if lichBin != "" {
 		// The operations Claude Code and Codex are handed on their own command

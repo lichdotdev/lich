@@ -141,6 +141,11 @@ func asksSubagentHook(version string) bool {
 	return !semver.Less(version, SubagentHookRelease)
 }
 
+// vetoScript is the hook that asks /subagent for the harnesses lich installs by
+// files (Antigravity, Kiro CLI, Crush), from SubagentHookRelease on; it sources
+// conversation-id.sh, which every one of them already ships.
+const vetoScript = "hooks/veto-subagent.sh"
+
 // claudeInstalledVersionFor is the installed version in profileDir, or in
 // Personal's plugin state when profileDir is "".
 func claudeInstalledVersionFor(profileDir string) (string, bool) {

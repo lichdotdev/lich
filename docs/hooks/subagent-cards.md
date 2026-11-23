@@ -189,6 +189,30 @@ inside the session as they always did:
 | Cursor CLI | `explore`, where the account's catalog offers it |
 | Kiro CLI, Crush | none: no exploration type |
 
+### Registration lich writes
+
+Kiro CLI and Crush keep their hooks in config lich writes, and lich installs the
+files for Antigravity, Kiro CLI and Crush from the release by a list
+(`internal/agentplugin`). All of it starts at the release the hook ships in
+(`SubagentHookRelease`): an older release has no `hooks/veto-subagent.sh` to
+fetch, so its install registers and fetches no veto, and its subagents run
+natively.
+
+| Harness | Event | Matcher | Command | Timeout |
+|---|---|---|---|---|
+| Kiro CLI | `preToolUse` | `subagent` | `"<plugin>/hooks/veto-subagent.sh" kiro` | none written |
+| Kiro CLI | `preToolUse` | `use_subagent` | `"<plugin>/hooks/veto-subagent.sh" kiro` | none written |
+| Crush | `PreToolUse` | `^agent$` | `"<plugin>/hooks/veto-subagent.sh" crush` | 15 |
+| Antigravity | `PreToolUse` | as the plugin's `hooks.json` ships it | as shipped | as shipped |
+
+Each ships `hooks/veto-subagent.sh` and the `hooks/conversation-id.sh` it
+sources. Kiro gets no timeout because it enforces none: a hook sleeping four
+seconds ran to the end under both `timeout_ms: 1000` and `timeout: 1` (2.21.0),
+so the script's own 10 s request limit is what bounds the call. lich writes no
+Windows wrapper for a Kiro or Crush hook, and the veto needs none of
+`hooks/win-veto.cmd`'s: both read the veto from the exit code and stderr, not
+stdout.
+
 ## lich server side
 
 - `/subagent` is a hook endpoint like `/hook`: the session's token, the same

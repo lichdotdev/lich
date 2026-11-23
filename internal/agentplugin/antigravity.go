@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 
 	"github.com/lichdotdev/lich/internal/providers"
 	"github.com/lichdotdev/lich/internal/relay"
@@ -59,6 +60,15 @@ var antigravityScripts = []string{
 	"hooks/conversation-id.sh",
 }
 
+// antigravityScriptsFor is version's list: from SubagentHookRelease its
+// hooks.json also runs the subagent veto.
+func antigravityScriptsFor(version string) []string {
+	if !asksSubagentHook(version) {
+		return antigravityScripts
+	}
+	return append(slices.Clone(antigravityScripts), vetoScript)
+}
+
 func (s *Service) antigravityInstall() error {
 	version, err := s.releaseVersion()
 	if err != nil {
@@ -72,8 +82,8 @@ func (s *Service) antigravityInstall() error {
 	if err != nil {
 		return err
 	}
-	scripts := make(map[string][]byte, len(antigravityScripts))
-	for _, source := range antigravityScripts {
+	scripts := make(map[string][]byte, len(antigravityScriptsFor(version)))
+	for _, source := range antigravityScriptsFor(version) {
 		data, err := s.fetchFile(version, source)
 		if err != nil {
 			return err
