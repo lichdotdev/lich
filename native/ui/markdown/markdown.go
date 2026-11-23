@@ -57,6 +57,10 @@ type markdownText struct {
 	highlight *godemirror.HighlightStyle
 	// copies is each code block's copy button, in the order they are written.
 	copies []*codeCopy
+	// cells are the blocks' cells a selection can be made in, in the order
+	// they are written, and sels the selection of each.
+	sels  []*textSelection
+	cells []*markdownCell
 }
 
 // markdownBlock is prose, a GFM table, or a list with individually laid-out items.
@@ -90,6 +94,9 @@ type markdownCell struct {
 	state richtext.InteractiveText
 	// lineHeight is the line height scale, LineHeightScale when 0.
 	lineHeight float32
+	// sel is the cell's selection, nil for text no selection is made in.
+	sel *textSelection
+	geo *cellGeometry
 }
 
 // Cache keeps each body's markdownText by a key of the caller's, so
@@ -181,6 +188,7 @@ func (m Cache) text(th *ui.Theme, key, src string, paths *Paths) *markdownText {
 		if paths != nil {
 			unmarkUnlinked(t.blocks, paths.Link)
 		}
+		t.keepSelections()
 	}
 	return t
 }
@@ -229,20 +237,29 @@ func (b markdownBlock) layout(gtx C, th *ui.Theme, l Links) D {
 }
 
 func (c *markdownCell) layout(gtx C, th *ui.Theme, l Links) D {
+	c.selectEvents(gtx, th)
 	for {
 		span, ev, ok := c.state.Update(gtx)
 		if !ok {
 			break
 		}
-		if url, isLink := span.Get(markdownURL).(string); isLink && url != "" && ev.Type == richtext.Click && l.Open != nil {
+		if url, isLink := span.Get(markdownURL).(string); isLink && url != "" && ev.Type == richtext.Click && l.Open != nil && !c.dragged() {
 			l.Open(url)
 		}
 	}
 	style := richtext.Text(&c.state, th.Shaper, c.spans...)
 	style.LineHeightScale = c.lineHeightScale()
+	m := op.Record(gtx.Ops)
 	c.decorate(gtx, th, l.Paths)
-	return style.Layout(gtx)
+	c.paintSelection(gtx, th)
+	dims := style.Layout(gtx)
+	c.selectArea(gtx, dims.Size, m.Stop())
+	return dims
 }
+
+// dragged is whether the press the cell last took became a selection, which
+// opens nothing.
+func (c *markdownCell) dragged() bool { return c.sel != nil && c.sel.dragged }
 
 func (c *markdownCell) lineHeightScale() float32 {
 	if c.lineHeight != 0 {

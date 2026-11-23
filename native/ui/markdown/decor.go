@@ -27,12 +27,14 @@ const (
 
 // decoration is what a span is drawn with besides its text: an underline, for a
 // link, and a mark in room the text leaves before it. path is the path the
-// span's code spells, "" for any other span.
+// span's code spells, "" for any other span. lead and trail are the runes of
+// room the renderer added at the span's ends, which are no text to copy.
 type decoration struct {
-	underline bool
-	icon      *icons.Icon
-	tone      iconTone
-	path      string
+	underline   bool
+	icon        *icons.Icon
+	tone        iconTone
+	path        string
+	lead, trail int
 }
 
 const (

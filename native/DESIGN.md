@@ -118,6 +118,12 @@ their text with the tone itself.
   Its copy button is a ghost `SizeIconXS` one (Lucide `copy`, a check for 1.5s after a click) shown only while the
   pointer is over the block, as a message's copy is, with no tooltip; it stands on the first line inside the
   right padding, and the code wraps short of it, so it never covers text and nothing moves when it shows.
+- Markdown text is selectable inside one cell (a paragraph, a heading, a list item's text, a table cell, a code
+  block): a drag past 3dp selects by character, a double click a word, a triple click the cell, and the text
+  cursor shows over it. The selection fills each rune's glyph box, not the line's leading, in the code views'
+  `Theme.Code.Selection` composited on the surface, under the glyphs. A plain click still opens a link, a
+  Ctrl+click a path; a press that becomes a drag selects instead. Ctrl+C copies what is read (no room around
+  inline code or before a mark), Escape or a press anywhere else lets go, and the composer keeps the keyboard.
 - Text a person reads goes through `i18n.T`; nothing literal (see the `lich-i18n` skill).
 - Text from the outside world (a diff hunk, a PR body, a commit message) is cleaned before it is shaped:
   tabs become four spaces, because the fonts have no glyph for a tab and draw a missing-glyph box.
