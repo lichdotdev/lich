@@ -102,6 +102,11 @@ type chatSession struct {
 	// opened is set once the conversation is open, before which a message
 	// would land mid-handshake.
 	opened bool
+	// turns counts the turns begun, offer is the one whose end is open to a
+	// suggestion (0 for none), and noOffer is set when the turn in flight
+	// gets none (unsuggested).
+	turns, offer int
+	noOffer      bool
 }
 
 // pending is a message waiting for a turn of its own. began, when set, closes
@@ -194,8 +199,10 @@ func (c *chatSession) beginTurn() error {
 		return errTurnRunning
 	}
 	c.running, c.since, c.before = true, time.Now(), nil
+	c.turns, c.offer = c.turns+1, 0
 	c.mu.Unlock()
 	events.Send(c.svc.hub.Emit, api.ChatTurnEvent, api.ChatTurn{SessionID: c.id, Running: true})
+	events.Send(c.svc.hub.Emit, api.ChatSuggestionEvent, api.ChatSuggestion{SessionID: c.id})
 	c.svc.term.ReportChatState(c.id, stateBusy, "", "")
 	return nil
 }
@@ -229,7 +236,9 @@ func (c *chatSession) endTurn(reason string) {
 	}
 	c.running = false
 	took := time.Since(c.since).Milliseconds()
+	followed := len(c.next) > 0
 	c.mu.Unlock()
+	c.offerAfter(reason, followed)
 	c.dismissPermissions()
 	c.conv.stopCalls()
 	c.conv.compactClose(compactState(reason))
@@ -250,6 +259,7 @@ func (c *chatSession) endTurn(reason string) {
 
 // send hands m to the agent in the turn just begun.
 func (c *chatSession) send(m message) error {
+	c.unsuggested(isEnvelope(m.text))
 	c.markStart()
 	c.compactTyped(m.text)
 	if err := c.drv.prompt(m); err != nil {

@@ -29,6 +29,9 @@ type chatStore struct {
 	// held is each session's message waiting to go (chatHold), or gone and
 	// not yet heard back.
 	held map[string]*chatHeld
+	// suggestion is each session's likely next message, drawn in its idle
+	// box (chat_suggest.go).
+	suggestion map[string]string
 }
 
 func (s *chatStore) loadKinds(ctx context.Context, client *backend.Client) error {
@@ -61,6 +64,7 @@ func (s *chatStore) history(id string, items []backend.ChatItem) {
 	}
 	s.items[id] = slices.Clone(items)
 	s.forgetSent(id)
+	delete(s.suggestion, id)
 	// The turns' numbers are the conversation's own, and a history read back
 	// may number them anew: an end kept from before would close another turn.
 	delete(s.ends, id)
@@ -229,6 +233,7 @@ func (s *chatStore) switched(id string) {
 	defer s.mu.Unlock()
 	delete(s.switching, id)
 	delete(s.running, id)
+	delete(s.suggestion, id)
 }
 
 // chatEvent applies the chat events and a session's view landing.
@@ -254,6 +259,10 @@ func (m *model) chatEvent(ctx context.Context, ev backend.Event) {
 	case api.ChatShellsEvent.Name:
 		if u, err := backend.Decode(ev, api.ChatShellsEvent); err == nil {
 			m.chat.setShells(u.SessionID, u.Shells)
+		}
+	case api.ChatSuggestionEvent.Name:
+		if u, err := backend.Decode(ev, api.ChatSuggestionEvent); err == nil {
+			m.chat.suggest(u)
 		}
 	case api.SessionViewEvent.Name:
 		if v, err := backend.Decode(ev, api.SessionViewEvent); err == nil {

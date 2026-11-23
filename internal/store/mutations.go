@@ -846,6 +846,18 @@ func (s *Service) SessionSubagentDepth(sessionID string) int {
 	return depth
 }
 
+// SessionWorker is whether another session opened this one, or it runs as a
+// subagent card. A read failure answers false.
+func (s *Service) SessionWorker(sessionID string) bool {
+	var worker bool
+	if err := s.db.QueryRow(
+		`SELECT origin_session_id <> '' OR subagent > 0 FROM sessions WHERE id = ?`, sessionID,
+	).Scan(&worker); err != nil {
+		return false
+	}
+	return worker
+}
+
 // InheritSubagent gives a fork the subagent depth of the session that ran the
 // conversation it branches, forkedFrom, when that one was a subagent. The
 // fork's row is a fresh insert, so without this a copy of a worker would open

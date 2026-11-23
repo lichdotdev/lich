@@ -35,6 +35,9 @@ type codexDriver struct {
 	skills map[string]string
 	// sources are the instruction files the thread loaded.
 	sources []string
+	fork    codexFork
+	// forked is the last turn a suggestion was asked for.
+	forked int
 }
 
 func newCodexDriver(c *chatSession) *codexDriver {
@@ -197,6 +200,7 @@ func textInput(text string) []map[string]any {
 // prompt starts a turn, carrying what the person set since the last one:
 // turn/start's overrides hold for the turns after it too (measured).
 func (d *codexDriver) prompt(m message) error {
+	d.dropFork()
 	if codexCompactTyped(m) {
 		return d.compact()
 	}
@@ -226,6 +230,7 @@ func (d *codexDriver) runsShell() bool { return true }
 // starts and ends, with the thread's shell, unsandboxed; the agent sees it
 // on its next turn (measured on 0.170.0).
 func (d *codexDriver) shell(command string) error {
+	d.dropFork()
 	ctx, cancel := context.WithTimeout(context.Background(), callTimeout)
 	defer cancel()
 	_, err := d.call(ctx, "thread/shellCommand", map[string]any{"threadId": d.threadID(), "command": command})
@@ -244,6 +249,7 @@ func (d *codexDriver) setTurn(id string) {
 // follow adds the message to the turn running, turn/steer's job; a turn the
 // decline already ended takes it as a new one.
 func (d *codexDriver) follow(m message) error {
+	d.dropFork()
 	turn := d.turnID()
 	if turn == "" {
 		go d.c.sendNext(pending{msg: m})
@@ -328,6 +334,10 @@ type codexTurnEvent struct {
 // as a userMessage item, which lich already showed; an `error` is followed by
 // the turn/completed that carries it, or is retried.
 func (d *codexDriver) notification(method string, params json.RawMessage) {
+	if thread, other := d.otherThread(params); other {
+		d.forkNotification(thread, method, params)
+		return
+	}
 	switch method {
 	case "turn/started":
 		var e codexTurnEvent
@@ -378,6 +388,9 @@ func (d *codexDriver) completed(params json.RawMessage) {
 		d.c.endTurn(stopError)
 	default:
 		d.c.endTurn(stopEndTurn)
+		if turn := d.c.offered(); turn != 0 {
+			go d.suggestAfter(turn)
+		}
 	}
 }
 

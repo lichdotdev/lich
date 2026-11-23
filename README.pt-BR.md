@@ -217,6 +217,7 @@ o lich consegue ler de volta, porque cada CLI registra coisas diferentes.
 | No chat, um chip na caixa de mensagem conta os comandos que o agente deixou rodando em segundo plano e os abre para ler a saída e parar um | sim; eles param com o processo do chat, ao trocar para TUI, no /new ou ao passar para o modo YOLO | não | não | não | não | sem chat | não | não |
 | No chat, Ctrl+B manda para segundo plano um comando que o agente está esperando, que segue rodando enquanto o agente continua | sim; a linha que mostra o agente trabalhando avisa quando dá | não | não | não | não | sem chat | não | não |
 | No chat, a imagem que você anexa chega ao agente como imagem, e qualquer outro arquivo como o caminho dele na mensagem | sim | vai como imagem; não verificado se o agente a vê | vai como imagem; não verificado se o agente a vê | vai como imagem; não verificado se o agente a vê | vai como imagem; não verificado se o agente a vê | não | não verificado | vai como imagem; não verificado se o agente a vê |
+| No chat, quando um turno que você começou termina, a caixa de mensagem vazia sugere o que você escreveria em seguida, e Tab põe a sugestão na caixa | sim | sim; o lich pergunta ao mesmo modelo com esforço baixo, o que gasta um pouco do seu plano | não | não | não | sem chat | não | não |
 
 </details>
 

@@ -59,6 +59,10 @@ var (
 	// ChatCommandsEvent carries a chat session's commands whole, each time
 	// the provider lists them anew.
 	ChatCommandsEvent = defineEvent[ChatCommandsUpdate]("chat-commands")
+	// ChatSuggestionEvent carries what the person is likely to type next, once
+	// a turn they opened ends; an empty Text, sent as the next turn starts,
+	// clears it.
+	ChatSuggestionEvent = defineEvent[ChatSuggestion]("chat-suggestion")
 	// SessionViewEvent carries a session's view once the switch is done: the
 	// new process is up, not merely asked for. A chat resumed in a new process
 	// for an option sends it too, and its history is read again.
@@ -251,6 +255,12 @@ type ChatTurn struct {
 	// Changes is what the turn changed in the session's checkout, on its end
 	// alone; nil where lich could not read the checkout.
 	Changes *ChatTurnChanges `json:"changes,omitempty"`
+}
+
+// ChatSuggestion is the payload of ChatSuggestionEvent.
+type ChatSuggestion struct {
+	SessionID string `json:"sessionId"`
+	Text      string `json:"text"`
 }
 
 // ChatTurnChanges is the checkout's diff against HEAD at a turn's end less the

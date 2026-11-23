@@ -220,4 +220,8 @@ type Catalog struct {
 	// they want (%s): either keeps it in plan mode.
 	ChatPlanDeclined string
 	ChatPlanFeedback string
+	// ChatSuggestPrompt asks a throwaway fork of a Codex chat for the
+	// person's likely next message: Claude Code's own prompt for its
+	// prompt_suggestion (2.1.330), with Claude named as the assistant.
+	ChatSuggestPrompt string
 }

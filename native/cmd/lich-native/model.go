@@ -465,7 +465,7 @@ func (m *model) follow(ctx context.Context, events <-chan backend.Event) {
 			api.SessionWatchStoppedEvent.Name, api.ScheduleForfeitedEvent.Name:
 			m.scheduleEvent(ev)
 		case api.ChatItemEvent.Name, api.ChatTurnEvent.Name, api.ChatOptionsEvent.Name, api.ChatCommandsEvent.Name, api.ChatShellsEvent.Name,
-			api.SessionViewEvent.Name:
+			api.ChatSuggestionEvent.Name, api.SessionViewEvent.Name:
 			m.chatEvent(ctx, ev)
 		case api.SessionConversationEvent.Name:
 			if c, err := backend.Decode(ev, api.SessionConversationEvent); err == nil {

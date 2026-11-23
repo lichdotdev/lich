@@ -354,6 +354,7 @@ event chat-commands ChatCommandsUpdate
 event chat-item ChatItemUpdate
 event chat-options ChatOptionsUpdate
 event chat-shells ChatShellsUpdate
+event chat-suggestion ChatSuggestion
 event chat-turn ChatTurn
 event claude-profile-login ProfileLogin
 event codex-hook-untrusted CodexHookUntrusted
@@ -2353,6 +2354,11 @@ ChatOptionsUpdate {
 ChatShellsUpdate {
 	sessionId string
 	shells []ChatShell
+}
+
+ChatSuggestion {
+	sessionId string
+	text string
 }
 
 ChatTurn {

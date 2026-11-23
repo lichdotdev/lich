@@ -234,4 +234,26 @@ Esta sesión tiene un navegador propio (herramientas browser_*). Corre sin venta
 	ChatQuestionDeclined: "La persona no respondió estas preguntas. No supongas una respuesta: sigue sin ella o vuelve a preguntar.",
 	ChatPlanDeclined:     "La persona no aprobó el plan y quiere seguir planificando. Detente aquí y espera a que diga qué cambiar.",
 	ChatPlanFeedback:     "La persona no aprobó el plan y quiere seguir planificando. Pidió este cambio: %s",
+	ChatSuggestPrompt: `[MODO SUGERENCIA: sugiere lo que el usuario escribiría a continuación en este chat.]
+PRIMERO: lee los mensajes recientes del usuario y su petición original.
+Tu tarea es predecir lo que ÉL escribiría, no lo que tú crees que debería hacer.
+LA PRUEBA: ¿pensaría "justo iba a escribir eso"?
+EJEMPLOS:
+El usuario pidió "arregla el bug y pasa los tests", el bug está arreglado → "pasa los tests"
+Después de escribir código → "pruébalo"
+El asistente ofrece opciones → sugiere la que el usuario elegiría, según la conversación
+El asistente pregunta si sigue → "sí" o "adelante"
+Tarea terminada, siguiente paso obvio → "haz el commit" o "haz push"
+Tras un error o un malentendido → silencio (deja que lo evalúe y corrija)
+Sé concreto: "pasa los tests" es mejor que "sigue".
+NUNCA SUGIERAS:
+- Valoraciones ("se ve bien", "gracias")
+- Preguntas ("¿y si...?")
+- La voz del asistente ("Voy a...", "Déjame...", "Aquí tienes...")
+- Ideas nuevas que no pidió
+- Más de una frase
+Quédate en silencio si el siguiente paso no es obvio por lo que dijo el usuario.
+Quédate en silencio si la sugerencia pudiera ser insegura o inapropiada, incluido cualquier tema sensible (incidentes de seguridad, credenciales, daños, datos privados). Aunque el usuario haga un trabajo legítimo de seguridad o ciberseguridad, no predigas acciones potencialmente inseguras.
+Formato: de 2 a 12 palabras, con el estilo del usuario. O nada.
+Responde SOLO con la sugerencia, sin comillas ni explicación.`,
 }

@@ -45,12 +45,14 @@ type Service struct {
 	mu        sync.Mutex
 	sessions  map[string]*chatSession
 	switching map[string]bool
+	// typed are the sessions the person wrote in (suggestionsPaused).
+	typed map[string]bool
 }
 
 // New is a chat service running its providers through term, and the way the
 // relay's prompts reach a session term runs as a chat.
 func New(term *terminal.Service, db *store.Service, hub *events.Hub, lang func() prompt.Lang) *Service {
-	s := &Service{term: term, store: db, hub: hub, lang: lang, sessions: map[string]*chatSession{}, switching: map[string]bool{}}
+	s := &Service{term: term, store: db, hub: hub, lang: lang, sessions: map[string]*chatSession{}, switching: map[string]bool{}, typed: map[string]bool{}}
 	term.SetChat(s)
 	return s
 }
@@ -276,6 +278,7 @@ func (s *Service) Prompt(ctx context.Context, opts api.ChatPromptOptions) (api.N
 	if s.term.TurnOpen(opts.ID) && !c.turnRunning() {
 		return api.None{}, errBusy
 	}
+	s.typedIn(c)
 	// A message written while the agent waits on its questions answers none
 	// of them, and goes to the agent after.
 	if c.declineQuestions() {
@@ -305,6 +308,7 @@ func (s *Service) Steer(ctx context.Context, opts api.ChatPromptOptions) (api.No
 	if err != nil {
 		return api.None{}, err
 	}
+	s.typedIn(c)
 	c.conv.userMessage(opts.Text, filePaths(opts.Attachments))
 	return api.None{}, c.drv.follow(m)
 }

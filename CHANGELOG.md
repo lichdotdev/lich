@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **Settings › Version Control installs, signs in and sets up git, the GitHub CLI and the GitLab CLI for you.** A missing tool's Install opens a terminal running your package manager's command, a CLI with no account offers Sign in, and git without a name or email for commits asks for them right in its row.
+- **When a turn you started ends, the chat's empty message box suggests what you might write next.** Tab puts it in the box to edit or send. Not offered for Antigravity, opencode, oh-my-pi, Cursor CLI or Kiro CLI.
 - **See and merge GitLab merge requests in Pulls, on gitlab.com or a GitLab of your own.** Sign the GitLab CLI (glab) in to it, and a checkout whose remote is there gets the branch badge, the list, the diff, the pipeline's jobs, merge, create on GitLab and a session on a merge request. Reviews and comments stay GitHub only.
 - **Browse and install themes from a catalog in Settings › Appearance › Themes.** Each theme is drawn in its own colors before you install it, Try wears it on the whole window until you keep or revert it, and the Installed tab opens on the theme in use and switches, updates and removes the rest.
 - **Choose how wide a chat grows on a wide window.** Settings › Appearance › Interface › Chat width keeps it Comfortable, makes it Wide or lets it take the Full pane.
