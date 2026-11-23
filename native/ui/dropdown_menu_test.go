@@ -357,3 +357,28 @@ func TestDropdownMenuTallerThanTheRoomScrolls(t *testing.T) {
 	frame()
 	c.only(t, "R2")
 }
+
+// A panel that spans its trigger stands as wide as it, whatever width it was
+// given, so a trigger that resizes (the sidebar's account row) keeps its
+// panel on the same left and right edges.
+func TestDropdownPanelSpanningStandsAsWideAsItsTrigger(t *testing.T) {
+	g, th := &menuRig{size: image.Pt(400, 400)}, testTheme()
+	var s DropdownPanelState
+	frame := func() {
+		g.frame(func(gtx C, trigger layout.Widget) D {
+			return th.DropdownPanel(&g.root, &s, dropdownWidth, func(gtx C, th *Theme) D {
+				return D{Size: image.Pt(gtx.Constraints.Max.X, 20)}
+			}).Spanning().Layout(gtx, trigger)
+		})
+	}
+	frame()
+	g.click(pointer.ButtonPrimary, triggerAt.Add(image.Pt(10, 10)))
+	frame()
+	frame()
+	if !s.Opened() {
+		t.Fatal("press on the trigger did not open the panel")
+	}
+	if box := s.Box(); box.Min.X != triggerAt.X || box.Dx() != triggerSize.X {
+		t.Errorf("panel spans x %d..%d, want the trigger's %d..%d", box.Min.X, box.Max.X, triggerAt.X, triggerAt.X+triggerSize.X)
+	}
+}
