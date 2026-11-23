@@ -1,7 +1,6 @@
 package main
 
 import (
-	"image"
 	"runtime"
 	"strings"
 
@@ -9,7 +8,6 @@ import (
 	"gioui.org/io/event"
 	"gioui.org/io/key"
 	"gioui.org/layout"
-	"gioui.org/op"
 	"gioui.org/unit"
 	"gioui.org/widget"
 
@@ -118,11 +116,8 @@ func (s *settingsScreen) navLayout(gtx C, th *ui.Theme, values scopedValues) D {
 				return layout.Inset{Bottom: ui.Space(1.5)}.Layout(gtx, func(gtx C) D {
 					field := th.Input(&n.query, i18n.T("settings.settings.search"))
 					field.Leading, field.LeadingSize, field.Height, field.TextSize, field.Clear = icNavSearch, unit.Dp(15), ui.Space(8), 13, &n.clear
-					d := field.Layout(gtx)
-					if n.query.Len() == 0 {
-						searchKeyHint(gtx, th, d.Size)
-					}
-					return d
+					field.Trailing = th.KeyCap(formatCombo(searchShortcut, runtime.GOOS == "darwin")).Layout
+					return field.Layout(gtx)
 				})
 			}),
 			layout.Flexed(1, func(gtx C) D {
@@ -151,17 +146,6 @@ func (s *settingsScreen) focusSearchKey(gtx C) {
 			gtx.Execute(key.FocusCmd{Tag: &s.nav.query})
 		}
 	}
-}
-
-// searchKeyHint is searchShortcut's key cap at the right end of the empty
-// search field, whose size is size.
-func searchKeyHint(gtx C, th *ui.Theme, size image.Point) {
-	macro := op.Record(gtx.Ops)
-	gtx.Constraints.Min = image.Point{}
-	d := th.KeyCap(formatCombo(searchShortcut, runtime.GOOS == "darwin")).Layout(gtx)
-	call := macro.Stop()
-	defer op.Offset(image.Pt(size.X-gtx.Dp(ui.Space(2))-d.Size.X, (size.Y-d.Size.Y)/2)).Push(gtx.Ops).Pop()
-	call.Add(gtx.Ops)
 }
 
 // searchKeys is onSearchKey: the arrows move through the results, Enter

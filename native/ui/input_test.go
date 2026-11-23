@@ -316,3 +316,28 @@ func TestInputGroupClearEmptiesTheDenseField(t *testing.T) {
 		t.Errorf("the X left %q in the field", ed.Text())
 	}
 }
+
+// A trailing key cap keeps the placeholder clear of it, and gives way where
+// the two do not fit whole or the field has text.
+func TestTrailingYieldsToThePlaceholder(t *testing.T) {
+	th := testTheme()
+	cap := func(gtx layout.Context) layout.Dimensions { return layout.Dimensions{Size: image.Pt(40, 16)} }
+	shown := func(width int, typed string) bool {
+		ed := new(widget.Editor)
+		ed.SetText(typed)
+		s := th.Input(ed, "Search settings")
+		s.Leading, s.Trailing = icons.Lucide("search"), cap
+		gtx := layout.Context{Ops: new(op.Ops), Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}, Constraints: layout.Exact(image.Pt(width, 32))}
+		call, _ := s.trailing(gtx, s.field(inputLeadingPadX))
+		return call != nil
+	}
+	if !shown(400, "") {
+		t.Error("a wide empty field drops its key cap")
+	}
+	if shown(120, "") {
+		t.Error("the key cap stands over a placeholder it cuts")
+	}
+	if shown(400, "theme") {
+		t.Error("the key cap stays over typed text")
+	}
+}

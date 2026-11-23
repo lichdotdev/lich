@@ -15,7 +15,7 @@
     "hanFontFailed": "Не удалось скачать шрифт {font}: {error}"
   },
   "settings": {
-    "search": "Поиск настроек",
+    "search": "Поиск",
     "resultCount": {
       "one": "{count} настройка",
       "few": "{count} настройки",
