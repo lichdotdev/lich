@@ -30,7 +30,7 @@ type chatBackend struct {
 	answers map[string]any
 }
 
-func newChatBackend(t *testing.T) (*chatBackend, *backend.Client) {
+func newChatBackend(t testing.TB) (*chatBackend, *backend.Client) {
 	t.Helper()
 	f := new(chatBackend)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -73,7 +73,7 @@ func chatFrames(t *testing.T, view string) (*window, *frameRig, *chatBackend) {
 }
 
 // chatFramesIn is chatFrames on a stage of size, its footer reading in.
-func chatFramesIn(t *testing.T, view string, size image.Point, in footerInput) (*window, *frameRig, *chatBackend) {
+func chatFramesIn(t testing.TB, view string, size image.Point, in footerInput) (*window, *frameRig, *chatBackend) {
 	t.Helper()
 	r := newFrameRig(size, nil)
 	f, client := newChatBackend(t)
@@ -269,5 +269,22 @@ func TestTheChatRestsOnTheComposerAndFollowsItsEnd(t *testing.T) {
 	r.settle(t)
 	if labelTop(t, r, "last one") < 0 {
 		t.Errorf("the newest message is off screen:\n%s", r.drawn())
+	}
+}
+
+// A row's top is the list's own position, walked over the heights its rows
+// last measured, so a long answer's Markdown can window itself.
+func TestRowTopFollowsTheListsPositionAndMeasuredHeights(t *testing.T) {
+	v := &chatView{heights: map[string]int{"a": 10, "b": 20, "c": 30}}
+	v.list.Position.First, v.list.Position.Offset = 1, 5
+	shown := []string{"a", "b", "c"}
+	if got := v.rowTop(shown, 1); got != -5 {
+		t.Errorf("the first visible row's top = %d, want -5", got)
+	}
+	if got := v.rowTop(shown, 2); got != 15 {
+		t.Errorf("the row under it = %d, want 15", got)
+	}
+	if got := v.rowTop(shown, 0); got != -15 {
+		t.Errorf("the row above the viewport = %d, want -15", got)
 	}
 }

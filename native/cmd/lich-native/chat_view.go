@@ -2,6 +2,7 @@ package main
 
 import (
 	"image"
+	"math"
 	"slices"
 	"strings"
 	"sync"
@@ -95,6 +96,11 @@ type chatView struct {
 	optionMenus map[string]*ui.MenuState
 	answers     map[chatAnswer]*ui.Clickable
 	md          markdown.Cache
+	// heights is each row's height as last laid out, and window the stretch
+	// of the row being laid out that the viewport can show: a long answer's
+	// Markdown skips the blocks above and below it.
+	heights map[string]int
+	window  markdown.Window
 	// files is the checkout's listing the paths in answers are looked up in,
 	// and paths what makes them links this frame.
 	files remote[*chatFiles]
@@ -165,6 +171,8 @@ func newChatPane() *chatPane {
 	p.cardList.Axis = layout.Horizontal
 	p.editor.Submit = true
 	p.md = markdown.Cache{}
+	p.heights = map[string]int{}
+	p.window = markdown.Window{Top: math.MinInt, Bottom: math.MaxInt}
 	p.folds = map[string]*chatFold{}
 	p.answers = map[chatAnswer]*ui.Clickable{}
 	p.cards = map[string]chatCard{}
@@ -240,6 +248,24 @@ func lastKey(keys []string) string {
 	return keys[len(keys)-1]
 }
 
+// rowTop is where row i of shown sits in the viewport, from the list's
+// position and the heights its rows last measured.
+func (v *chatView) rowTop(shown []string, i int) int {
+	pos := v.list.Position
+	y := -pos.Offset
+	for j := pos.First; j < i; j++ {
+		if j >= 0 && j < len(shown) {
+			y += v.heights[shown[j]]
+		}
+	}
+	for j := i; j < pos.First; j++ {
+		if j >= 0 && j < len(shown) {
+			y -= v.heights[shown[j]]
+		}
+	}
+	return y
+}
+
 // call is the fold of the group's call id.
 func (f *chatFold) call(id string) *ui.Collapse {
 	if f.calls == nil {
@@ -292,8 +318,11 @@ func (u *window) chatScreen(gtx C, sv sessionView, keys bool) {
 		p.runToEnd(gtx, len(shown))
 		beforePos := p.list.Position
 		atEnd := !beforePos.BeforeEnd
+		resized := false
 		drawList := func(lead int) (D, op.CallOp) {
 			m := op.Record(gtx.Ops)
+			resized = false
+			viewport := gtx.Constraints.Max.Y
 			d := th.ThinScrollArea(&p.list).Layout(gtx, len(shown), func(gtx C, i int) D {
 				top := chatRowGap
 				switch {
@@ -303,9 +332,17 @@ func (u *window) chatScreen(gtx C, sv sessionView, keys bool) {
 					top = chatTurnGap
 				}
 				key := shown[i]
-				return p.rows.LayoutFlat(gtx, key, func(gtx C) D {
+				// The row's Markdown draws only the blocks this row's
+				// stretch of the viewport can show, one viewport either side
+				// so a scroll lands on drawn blocks.
+				p.window = markdown.ViewportWindow(-p.rowTop(shown, i), viewport)
+				dims := p.rows.LayoutFlat(gtx, key, func(gtx C) D {
 					return chatColumn(gtx, u.chatWidth, top, 0, chatTextInset, func(gtx C) D { return u.chatRow(gtx, th, p, sv, p.seen[key]) })
 				})
+				moved := dims.Size.Y - p.heights[key]
+				resized = resized || max(moved, -moved) > viewport
+				p.heights[key] = dims.Size.Y
+				return dims
 			})
 			return d, m.Stop()
 		}
@@ -322,6 +359,12 @@ func (u *window) chatScreen(gtx C, sv sessionView, keys bool) {
 			}
 		}
 		call.Add(gtx.Ops)
+		// A row's window was placed by the height it had before, with a
+		// viewport of margin: a row that grew or shrank by more, as an
+		// answer's unmeasured blocks do, is drawn again where it now stands.
+		if resized {
+			gtx.Execute(op.InvalidateCmd{})
+		}
 		// A row that comes in at no height at the list's end makes Gio
 		// count the list as scrolled up, and it would no longer follow the end
 		// as the row grows: a list that was at its end stays there while its
@@ -667,7 +710,7 @@ func (u *window) userMarkdown(gtx C, th *ui.Theme, p *chatPane, key, text string
 	gtx.Metric.PxPerSp *= float32(ui.TextSM) / float32(markdown.BodySize)
 	notify := func(t ui.Toast) { u.toaster.Show(t) }
 	links := markdown.Links{Open: func(url string) { openLink(u.client, notify, url) }, Paths: p.paths}
-	dims := p.md.LayoutLinks(gtx, th, "user:"+key, hardBreaks(text), links)
+	dims := p.md.LayoutLinksWindow(gtx, th, "user:"+key, hardBreaks(text), links, p.window)
 	// the message as typed, for whoever reads the window without seeing it
 	defer clip.Rect{Max: dims.Size}.Push(gtx.Ops).Pop()
 	semantic.LabelOp(text).Add(gtx.Ops)

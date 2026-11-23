@@ -70,7 +70,9 @@ func (p *Presence) Update(now time.Time, live []string) []string {
 	if p.items == nil {
 		p.items = map[string]*presenceItem{}
 	}
+	alive := make(map[string]bool, len(live))
 	for _, k := range live {
+		alive[k] = true
 		it, ok := p.items[k]
 		if !ok {
 			it = &presenceItem{}
@@ -82,7 +84,7 @@ func (p *Presence) Update(now time.Time, live []string) []string {
 		it.leaving = false
 	}
 	for i, k := range p.drawn {
-		if it := p.items[k]; !it.leaving && !slices.Contains(live, k) {
+		if it := p.items[k]; !it.leaving && !alive[k] {
 			it.leaving, it.leftAt, it.slot = true, now, i
 		}
 	}
