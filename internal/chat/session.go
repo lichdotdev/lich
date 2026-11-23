@@ -97,6 +97,8 @@ type chatSession struct {
 	// provider that takes none during a turn is sent once the turn ends, and
 	// those the relay delivered while it ran.
 	next []pending
+	// tokens is the provider's last count of the conversation's tokens.
+	tokens int
 	// opened is set once the conversation is open, before which a message
 	// would land mid-handshake.
 	opened bool
@@ -230,6 +232,7 @@ func (c *chatSession) endTurn(reason string) {
 	c.mu.Unlock()
 	c.dismissPermissions()
 	c.conv.stopCalls()
+	c.conv.compactClose(compactState(reason))
 	c.conv.flush()
 	c.svc.term.ReportChatState(c.id, stateDone, "", "")
 	events.Send(c.svc.hub.Emit, api.ChatTurnEvent, api.ChatTurn{SessionID: c.id, StopReason: reason, DurationMs: took, Changes: changes})
@@ -248,6 +251,7 @@ func (c *chatSession) endTurn(reason string) {
 // send hands m to the agent in the turn just begun.
 func (c *chatSession) send(m message) error {
 	c.markStart()
+	c.compactTyped(m.text)
 	if err := c.drv.prompt(m); err != nil {
 		c.conv.notice(err.Error())
 		c.endTurn(stopError)

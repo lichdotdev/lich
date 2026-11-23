@@ -693,6 +693,7 @@ ChatItem {
 	permission,omitempty *ChatPermission
 	question,omitempty *ChatQuestion
 	plan,omitempty *ChatPlan
+	compaction,omitempty *ChatCompaction
 	at int64
 	model,omitempty string
 	effort,omitempty string
@@ -2673,6 +2674,16 @@ ChatQuestion {
 
 ChatPlan {
 	entries []ChatPlanEntry
+}
+
+ChatCompaction {
+	state string
+	auto,omitempty bool
+	before,omitempty int
+	after,omitempty int
+	error,omitempty string
+	summary,omitempty string
+	hooks,omitempty string
 }
 
 ChatHook {

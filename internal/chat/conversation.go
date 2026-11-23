@@ -28,6 +28,10 @@ type conversation struct {
 	// command is the notice of the last local command, which its output
 	// completes if it comes next; any other item ends it.
 	command string
+	// compacting is the compaction item what the provider says next belongs
+	// to (compaction.go), "" for none; compactions counts them.
+	compacting  string
+	compactions int
 	// quiet holds the window's copy back while a resumed conversation is
 	// replayed: those items are the history, which the window asks for once.
 	quiet bool

@@ -44,6 +44,8 @@ type acpDriver struct {
 	// images is whether the agent takes an image in a prompt, as its
 	// initialize says (promptCapabilities.image).
 	images bool
+	// compactID is the compaction the agent last named (acp_compact.go).
+	compactID string
 }
 
 type acpMessage struct {
@@ -111,10 +113,12 @@ func (d *acpDriver) open(ctx context.Context, resume string) (string, error) {
 		"protocolVersion": 1,
 		// lich serves neither fs nor terminal: a file the agent asked lich to
 		// write would be written outside the session's sandbox. A form
-		// elicitation is the agent's question to the person (acp_question.go).
+		// elicitation is the agent's question to the person (acp_question.go);
+		// a compaction is drawn as it runs and ends (acp_compact.go).
 		"clientCapabilities": map[string]any{
 			"fs":       map[string]bool{"readTextFile": false, "writeTextFile": false},
 			"terminal": false, "elicitation": map[string]any{"form": map[string]any{}},
+			"session": map[string]any{"compaction": map[string]any{}},
 		},
 		"clientInfo": map[string]string{"name": "lich", "version": "1"},
 	})
@@ -150,6 +154,8 @@ func (d *acpDriver) load(ctx context.Context, id string) bool {
 	d.setSession(id)
 	raw, err := d.call(ctx, "session/load", map[string]any{"sessionId": id, "cwd": d.c.cwd, "mcpServers": []any{}})
 	d.endRun()
+	// A compaction the replay left running ended with the process that ran it.
+	d.c.conv.compactClose(api.CompactionCancelled)
 	d.c.conv.setQuiet(false)
 	if err != nil {
 		d.c.conv.notice("The conversation did not come back: " + err.Error())
@@ -228,7 +234,7 @@ func (d *acpDriver) prompt(m message) error {
 			return // the chat's death ends the turn, saying why (died)
 		}
 		if err != nil {
-			d.c.conv.notice(err.Error())
+			d.c.failure(err.Error())
 			d.c.endTurn(stopError)
 			return
 		}
@@ -300,6 +306,8 @@ func (d *acpDriver) handle(raw []byte) {
 		d.update(m.Params)
 	case m.Method == kiroCommands:
 		d.kiroCommandsAvailable(m.Params)
+	case m.Method == kiroCompaction:
+		d.kiroCompactionStatus(m.Params)
 	case m.Method == "" && len(m.ID) > 0:
 		d.reply(m)
 	}
@@ -421,6 +429,12 @@ func (d *acpDriver) update(params json.RawMessage) {
 		d.modeChanged(u.Mode)
 	case "available_commands_update":
 		d.commandsAvailable(p.Update)
+	case "compaction_update":
+		d.compactionUpdate(p.Update)
+	case "compaction_summary_chunk":
+		d.compactionChunk(p.Update)
+	case "usage_update":
+		d.usageUpdate(p.Update)
 	}
 }
 
