@@ -109,6 +109,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **A long chat stays smooth.** A conversation of hundreds of turns, or one answer many screens tall, draws only what is in view and a screen around it, instead of slowing every frame as it grows.
 - **Scrolling up in a chat no longer snaps back to the newest message while a row is still appearing.** The wheel, the scrollbar and a drag stay where you put them, and the chat still follows its end when you are there and still glides back to it after you send.
+- **The window no longer goes black after you resize it on a Wayland desktop.** It drew nothing until the next click or key press when XWayland was slower than the resize.
 - **The mouse wheel scrolls lists at full speed again on a Wayland desktop.** The window opens through XWayland for the built-in browser, where a wheel notch scrolled a fifteenth as far as before, so the chat and every list crawled.
 - **A session you open goes on screen even from Pulls, Settings or an extension's screen.** It used to open behind them; now they close, as when you click a session in the sidebar.
 - **A browser, delegates or a pane shown beside a session open wherever the layout has room, not only at its right.** When the pane is too narrow to halve, the new one goes under it, or the other panes give way; the "No room for another pane" message is left for a layout that cannot fit one more.
