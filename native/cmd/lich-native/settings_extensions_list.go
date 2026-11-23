@@ -1,6 +1,7 @@
 package main
 
 import (
+	"image"
 	"image/color"
 
 	"gioui.org/font"
@@ -14,10 +15,9 @@ import (
 	"github.com/lichdotdev/lich/native/ui"
 )
 
-var (
-	extensionRowPadY  = ui.Space(2.5)
-	extensionIconSize = ui.Space(4)
-)
+// extensionFootH is a card's foot, as tall as its buttons whether it has
+// any or not.
+var extensionFootH = ui.Space(6)
 
 // extensionsPaneRows is the pane under its title line: the tabs, then the view
 // the selected one names.
@@ -37,23 +37,25 @@ func (s *settingsScreen) extensionsPaneRows(th *ui.Theme) []layout.Widget {
 	return rows
 }
 
-// installedRows is a row per extension, or the line saying there is none.
+// installedRows is the installed extensions as cards of the catalog's grid,
+// or the line saying there is none.
 func (s *settingsScreen) installedRows(th *ui.Theme, list []backend.Extension) []layout.Widget {
 	if len(list) == 0 {
 		return []layout.Widget{func(gtx C) D {
 			return layout.Inset{Left: rowPadX}.Layout(gtx, th.Text(ui.TextSM, i18n.T("settings.extensionsSettings.installedEmpty")).Muted().Layout)
 		}}
 	}
-	rows := make([]layout.Widget, len(list))
-	for i, e := range list {
-		rows[i] = func(gtx C) D { return s.extensionRow(gtx, th, e) }
-	}
-	return rows
+	return []layout.Widget{func(gtx C) D {
+		return catalogCards(gtx, len(list), func(gtx C, i int) D { return s.extensionCard(gtx, th, list[i]) })
+	}}
 }
 
-// extensionRow is one extension: hover fills it, the right press and the ⋯
+// extensionCard is one installed extension as the catalog draws a listing:
+// its cover, its name and version with the ⋯, two lines of description, and
+// its status with what fixes it at the foot. A click on it opens the
+// catalog's detail while the catalog lists it; the right press and the ⋯
 // open its menu, and an error from its menu lands on a line under it.
-func (s *settingsScreen) extensionRow(gtx C, th *ui.Theme, e backend.Extension) D {
+func (s *settingsScreen) extensionCard(gtx C, th *ui.Theme, e backend.Extension) D {
 	p := &s.extensions
 	r := p.row(e.ID)
 	if r.restart.Clicked(gtx) {
@@ -61,7 +63,7 @@ func (s *settingsScreen) extensionRow(gtx C, th *ui.Theme, e backend.Extension) 
 	}
 	if r.update.Clicked(gtx) {
 		s.updateExtension(e)
-		// The dialogs were laid out before the row took the click.
+		// The dialogs were laid out before the card took the click.
 		gtx.Execute(op.InvalidateCmd{})
 	}
 	if r.remove.Clicked(gtx) {
@@ -74,64 +76,112 @@ func (s *settingsScreen) extensionRow(gtx C, th *ui.Theme, e backend.Extension) 
 		gtx.Execute(op.InvalidateCmd{})
 	}
 	entries := func() []ui.MenuEntry { return s.extensionMenu(e) }
-	gtx.Constraints.Min.X = gtx.Constraints.Max.X
-	row := func(gtx C) D {
+	card := func(gtx C) D {
 		return th.ContextMenuLazy(s.root, &r.context, entries).Layout(gtx, func(gtx C) D {
-			return s.extensionRowBody(gtx, th, e, r, entries, listed)
+			return s.extensionCardBody(gtx, th, e, r, entries, listed)
 		})
 	}
-	return withErrorLine(gtx, th, p.snapshot().errorAt(errAtRow(e.ID)), rowPadX, row)
+	return withErrorLine(gtx, th, p.snapshot().errorAt(errAtRow(e.ID)), catalogTextX, card)
 }
 
-// extensionRowBody is the row's line on its hover fill. A press on the row
-// outside its buttons opens the catalog's detail while the catalog lists it.
-func (s *settingsScreen) extensionRowBody(gtx C, th *ui.Theme, e backend.Extension, r *extensionRowState, entries func() []ui.MenuEntry, listed bool) D {
+// extensionCardBody is the card on its fill. Its press sits under the card's
+// buttons rather than around them, so a press on the ⋯ or Update is theirs
+// alone.
+func (s *settingsScreen) extensionCardBody(gtx C, th *ui.Theme, e backend.Extension, r *extensionRowState, entries func() []ui.MenuEntry, listed bool) D {
 	hovered := r.hover.Update(gtx.Source) || r.menu.Opened() || r.context.Opened()
-	bg := th.Surface
+	bg := th.Card
 	if hovered {
-		bg = th.Over(ui.Alpha(th.Accent, hoverFill))
+		bg = ui.MixOKLab(th.Card, th.Over(th.Accent), catalogHoverMix)
 	}
 	on := th.On(bg)
 	macro := op.Record(gtx.Ops)
-	d := layout.Inset{Left: rowPadX, Right: rowPadX, Top: extensionRowPadY, Bottom: extensionRowPadY}.Layout(gtx, func(gtx C) D {
-		children := []layout.FlexChild{
-			layout.Rigid(func(gtx C) D { return s.extensions.extensionIcon(e).Layout(gtx, extensionIconSize, on.MutedForeground) }),
-			ui.Gap(3),
-			layout.Flexed(1, func(gtx C) D { return extensionDetails(gtx, on, e) }),
-			ui.Gap(3),
-			layout.Rigid(func(gtx C) D { return s.extensionStatus(gtx, on, e, r) }),
-			ui.Gap(3),
-		}
-		switch {
-		case e.Revoked != "":
-			b := on.Button(&r.remove, i18n.T("settings.extensionsSettings.removeMenuItem"))
-			b.Variant, b.Size = ui.VariantOutline, ui.SizeSM
-			children = append(children, layout.Rigid(b.Layout), ui.Gap(1))
-		case e.Status == api.ExtensionFailed:
-			b := on.Button(&r.restart, i18n.T("settings.extensionsSettings.restart"))
-			b.Variant, b.Size = ui.VariantOutline, ui.SizeSM
-			children = append(children, layout.Rigid(b.Layout), ui.Gap(1))
-		}
-		if e.Latest != "" {
-			children = append(children, layout.Rigid(s.extensions.updateButton(on, e, r)), ui.Gap(1))
-		}
-		children = append(children, layout.Rigid(func(gtx C) D { return s.extensionMore(gtx, on, e, r, entries()) }))
-		return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
+	d := catalogCardSurface(gtx, bg, func(gtx C) D { return s.extensionCover(gtx, on, e) }, func(gtx C) D {
+		return s.extensionCardText(gtx, on, e, r, entries)
 	})
 	call := macro.Stop()
 	area := clip.Rect{Max: d.Size}.Push(gtx.Ops)
 	r.hover.Add(gtx.Ops)
 	area.Pop()
-	box := gtx
-	box.Constraints = layout.Exact(d.Size)
-	if hovered {
-		ui.Fill(box, bg, ui.RadiusMD)
-	}
 	if listed {
+		box := gtx
+		box.Constraints = layout.Exact(d.Size)
 		r.open.Layout(box, func(gtx C) D { return D{Size: gtx.Constraints.Min} })
 	}
 	call.Add(gtx.Ops)
 	return d
+}
+
+// extensionCover is the listing's cover while the catalog lists the
+// extension with one, else its icon on the empty cover's ground.
+func (s *settingsScreen) extensionCover(gtx C, th *ui.Theme, e backend.Extension) D {
+	if s.extensions.catalog != nil {
+		if cat, _ := s.extensions.catalog.read(); cat != nil {
+			if entry, ok := detailEntry(cat, e.ID); ok && entry.Cover != "" {
+				return s.catalogCover(gtx, th, entry)
+			}
+		}
+	}
+	w := gtx.Constraints.Max.X
+	gtx.Constraints = layout.Exact(image.Pt(w, w*catalogCoverH/catalogCoverW))
+	ui.Fill(gtx, ui.MixOKLab(th.Surface, th.Background, catalogCoverMix), 0)
+	return layout.Center.Layout(gtx, func(gtx C) D {
+		return s.extensions.extensionIcon(e).Layout(gtx, catalogGlyphSize, th.MutedForeground)
+	})
+}
+
+// extensionCardText is the card under its cover. The description always
+// holds its two lines and the foot its button's height, so every card in the
+// grid stands as tall as the next.
+func (s *settingsScreen) extensionCardText(gtx C, th *ui.Theme, e backend.Extension, r *extensionRowState, entries func() []ui.MenuEntry) D {
+	name := []layout.FlexChild{layout.Flexed(1, func(gtx C) D {
+		line := []layout.FlexChild{layout.Rigid(th.Text(catalogNameSize, extensionName(e)).Weight(font.SemiBold).Leading(catalogNameLeading).Truncated().Layout)}
+		if e.Version != "" {
+			line = append(line, ui.Gap(2), layout.Rigid(th.Text(ui.TextXS, e.Version).Mono().Muted().Layout))
+		}
+		return layout.Flex{Alignment: layout.Baseline}.Layout(gtx, line...)
+	})}
+	name = append(name, layout.Rigid(func(gtx C) D { return s.extensionMore(gtx, th, e, r, entries()) }))
+	desc := extensionSecondLine(th, e).Leading(catalogDescLeading)
+	desc.MaxLines = catalogDescLines
+	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+		layout.Rigid(func(gtx C) D { return layout.Flex{Alignment: layout.Middle}.Layout(gtx, name...) }),
+		ui.VGap(1),
+		layout.Rigid(func(gtx C) D {
+			d := desc.Layout(gtx)
+			d.Size.Y = max(d.Size.Y, catalogDescLines*gtx.Sp(catalogDescLeading))
+			return d
+		}),
+		layout.Rigid(layout.Spacer{Height: catalogMetaAbove}.Layout),
+		layout.Rigid(func(gtx C) D { return s.extensionCardFoot(gtx, th, e, r) }),
+	)
+}
+
+// extensionCardFoot is the status on the left and, on the right, Remove for
+// a revoked extension, Restart for a failed one and Update while a newer
+// release waits.
+func (s *settingsScreen) extensionCardFoot(gtx C, th *ui.Theme, e backend.Extension, r *extensionRowState) D {
+	children := []layout.FlexChild{
+		layout.Rigid(func(gtx C) D { return s.extensionStatus(gtx, th, e, r) }),
+		layout.Flexed(1, func(gtx C) D { return D{Size: image.Pt(gtx.Constraints.Min.X, 0)} }),
+	}
+	button := func(c *ui.Clickable, key string) {
+		children = append(children, ui.Gap(1), layout.Rigid(func(gtx C) D {
+			b := th.Button(c, i18n.T(key))
+			b.Variant, b.Size = ui.VariantOutline, ui.SizeXS
+			return b.Layout(gtx)
+		}))
+	}
+	switch {
+	case e.Revoked != "":
+		button(&r.remove, "settings.extensionsSettings.removeMenuItem")
+	case e.Status == api.ExtensionFailed:
+		button(&r.restart, "settings.extensionsSettings.restart")
+	}
+	if e.Latest != "" {
+		children = append(children, ui.Gap(1), layout.Rigid(s.extensions.updateButton(th, e, r)))
+	}
+	gtx.Constraints.Min.Y = gtx.Dp(extensionFootH)
+	return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
 }
 
 // listed is whether the catalog lists id, whose installed row then opens the
@@ -156,21 +206,8 @@ func (p *extensionsSettings) updateButton(th *ui.Theme, e backend.Extension, r *
 	if installing == errAtRow(e.ID) {
 		b.Text = i18n.T("settings.extensionsSettings.updating")
 	}
-	b.Variant, b.Size, b.Disabled = ui.VariantOutline, ui.SizeSM, installing != ""
+	b.Variant, b.Size, b.Disabled = ui.VariantOutline, ui.SizeXS, installing != ""
 	return b.Layout
-}
-
-// extensionDetails is the name and version over the second line.
-func extensionDetails(gtx C, th *ui.Theme, e backend.Extension) D {
-	name := []layout.FlexChild{layout.Rigid(th.Text(ui.TextSM, extensionName(e)).Weight(font.Medium).Layout)}
-	if e.Version != "" {
-		name = append(name, ui.Gap(2), layout.Rigid(th.Text(ui.TextXS, e.Version).Mono().Muted().Layout))
-	}
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(func(gtx C) D { return layout.Flex{Alignment: layout.Baseline}.Layout(gtx, name...) }),
-		ui.VGap(0.5),
-		layout.Rigid(extensionSecondLine(th, e).Truncated().Layout),
-	)
 }
 
 // extensionSecondLine is why the catalog took a revoked extension down, else
@@ -269,13 +306,13 @@ func extensionDot(gtx C, th *ui.Theme, status string) D {
 	return ui.HollowDot(gtx, th.MutedForeground)
 }
 
-// extensionMore is the row's ⋯ and the menu it opens.
+// extensionMore is the card's ⋯ and the menu it opens.
 func (s *settingsScreen) extensionMore(gtx C, th *ui.Theme, e backend.Extension, r *extensionRowState, entries []ui.MenuEntry) D {
 	hint := i18n.T("settings.extensionsSettings.rowOptions", i18n.Args{"name": extensionName(e)})
 	return th.DropdownMenu(s.root, &r.menu, entries).Layout(gtx, func(gtx C) D {
 		return th.Tooltip(s.root, &r.moreTip, hint).Layout(gtx, func(gtx C) D {
 			b := th.Button(&r.more, "")
-			b.Icon, b.Variant, b.Size = icExtensionMore, ui.VariantGhost, ui.SizeIconSM
+			b.Icon, b.Variant, b.Size = icExtensionMore, ui.VariantGhost, ui.SizeIconXS
 			return b.Layout(gtx)
 		})
 	})

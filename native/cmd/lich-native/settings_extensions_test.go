@@ -462,9 +462,9 @@ func TestARowActionsErrorLandsUnderThatRow(t *testing.T) {
 }
 
 // The contract changed: the pane opens on the catalog and the installed
-// extensions are a tab of their own; the install rows left the pane for the
-// Install from… panel.
-func TestTheInstalledViewIsARowEachOrOneLineSayingThereIsNone(t *testing.T) {
+// extensions are a tab of their own, one grid of cards; the install rows left
+// the pane for the Install from… panel.
+func TestTheInstalledViewIsAGridOfCardsOrOneLineSayingThereIsNone(t *testing.T) {
 	s := extensionsScreen(t, &extensionBackend{})
 	th := testTheme()
 	const head = 1 // the tabs
@@ -474,8 +474,8 @@ func TestTheInstalledViewIsARowEachOrOneLineSayingThereIsNone(t *testing.T) {
 		t.Errorf("rows = %d on the catalog with no catalog store, want %d: the installed stay on their tab", got, head)
 	}
 	s.extensions.view.Selected = extensionsViewInstalled
-	if got := len(s.extensionsPaneRows(th)); got != head+2 {
-		t.Errorf("rows = %d with two extensions, want %d: a row each", got, head+2)
+	if got := len(s.extensionsPaneRows(th)); got != head+1 {
+		t.Errorf("rows = %d with two extensions, want %d: the grid", got, head+1)
 	}
 	s.extensions.store = new(extensionStore)
 	if got := len(s.extensionsPaneRows(th)); got != head+1 {

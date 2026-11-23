@@ -365,19 +365,18 @@ func TestTheStatusTooltipStartsWithWhereItCameFrom(t *testing.T) {
 	}
 }
 
-// pressRow lays an installed row out 600 wide, presses it x from its left
-// edge, halfway down, and lays it out again, as two frames of a window would.
-func pressRow(s *settingsScreen, e backend.Extension, x float32) {
+// pressCard lays an installed card out 600 wide, presses it at, and lays it
+// out again, as two frames of a window would.
+func pressCard(s *settingsScreen, e backend.Extension, at f32.Point) {
 	th := shapingTheme()
 	th.Surface = th.Background
 	router := new(input.Router)
 	frame := func() {
-		gtx := layout.Context{Ops: new(op.Ops), Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}, Constraints: layout.Constraints{Max: image.Pt(600, 200)}, Source: router.Source()}
-		s.extensionRow(gtx, th, e)
+		gtx := layout.Context{Ops: new(op.Ops), Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}, Constraints: layout.Constraints{Max: image.Pt(600, 800)}, Source: router.Source()}
+		s.extensionCard(gtx, th, e)
 		router.Frame(gtx.Ops)
 	}
 	frame()
-	at := f32.Pt(x, 26)
 	router.Queue(
 		pointer.Event{Kind: pointer.Press, Source: pointer.Mouse, Buttons: pointer.ButtonPrimary, Position: at},
 		pointer.Event{Kind: pointer.Release, Source: pointer.Mouse, Position: at},
@@ -385,22 +384,25 @@ func pressRow(s *settingsScreen, e backend.Extension, x float32) {
 	frame()
 }
 
-func TestAnInstalledRowOpensItsListingsDetail(t *testing.T) {
+func TestAnInstalledCardOpensItsListingsDetail(t *testing.T) {
+	// The ⋯ sits at the end of the name's line, the first under the cover.
+	cover := float32(600 * catalogCoverH / catalogCoverW)
+	more := f32.Pt(600-float32(catalogTextX)-12, cover+float32(catalogTextTop)+11)
 	for _, c := range []struct {
 		name string
 		id   string
-		x    float32
+		at   f32.Point
 		want string
 		menu bool
 	}{
-		{"a listed extension", "notes", 100, "notes", false},
-		{"one the catalog does not list", "local", 100, "", false},
-		{"a press on its ⋯", "notes", 575, "", true},
+		{"a listed extension", "notes", f32.Pt(100, 100), "notes", false},
+		{"one the catalog does not list", "local", f32.Pt(100, 100), "", false},
+		{"a press on its ⋯", "notes", more, "", true},
 	} {
 		s := catalogScreen(t, &extensionBackend{}, testCatalog())
 		e := backend.Extension{ID: c.id, Name: c.id, Status: api.ExtensionRunning}
 		s.extensions.store.setStatus(e)
-		pressRow(s, e, c.x)
+		pressCard(s, e, c.at)
 		if got, menu := s.extensions.grid.detail.id, s.extensions.row(c.id).menu.Opened(); got != c.want || menu != c.menu {
 			t.Errorf("%s: detail %q and menu %v, want %q and %v", c.name, got, menu, c.want, c.menu)
 		}
