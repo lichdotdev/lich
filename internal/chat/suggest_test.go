@@ -129,7 +129,7 @@ func TestCodexSuggestionFork(t *testing.T) {
 			forkTurn = line
 		}
 	}
-	for _, want := range []string{`"ephemeral":true`, `"sandbox":"read-only"`, `"approvalPolicy":"never"`,
+	for _, want := range []string{`"ephemeral":true`, `"excludeTurns":true`, `"sandbox":"read-only"`, `"approvalPolicy":"never"`,
 		`"features.shell_tool":false`, `"features.unified_exec":false`, `"model":"gpt-a"`, `"threadId":"codex-new"`} {
 		if !strings.Contains(fork, want) {
 			t.Errorf("thread/fork = %q, want %s", fork, want)
