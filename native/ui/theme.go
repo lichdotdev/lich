@@ -8,6 +8,8 @@ import (
 	"gioui.org/unit"
 
 	"github.com/lichdotdev/godemirror"
+
+	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
 // Palette is the color tokens of an app theme.
@@ -26,10 +28,11 @@ type Palette struct {
 	Sidebar, SidebarForeground             color.NRGBA
 	SidebarAccent, SidebarAccentForeground color.NRGBA
 	SidebarBorder                          color.NRGBA
-	// GraphLanes and ToneMerged are scheme colors a theme file does not set: a
-	// new required token would refuse every theme already published.
+	// GraphLanes, ToneMerged and FileIcons follow the scheme, not a theme file:
+	// a new required token would refuse every theme already published.
 	GraphLanes [6]color.NRGBA
 	ToneMerged color.NRGBA
+	FileIcons  icons.FileIcons
 }
 
 var graphLanesDark = [6]color.NRGBA{
@@ -63,6 +66,14 @@ func GraphLanesFor(light bool) [6]color.NRGBA {
 		return graphLanesLight
 	}
 	return graphLanesDark
+}
+
+// FileIconsFor is the file icons of a theme's scheme.
+func FileIconsFor(light bool) icons.FileIcons {
+	if light {
+		return icons.LightFileIcons
+	}
+	return icons.DarkFileIcons
 }
 
 // Dark is the dark theme (themes/dark.json).
@@ -129,6 +140,7 @@ var Light = Palette{
 	SidebarBorder:           OKLCH(0.888, 0.004, 286.32, 1),
 	GraphLanes:              graphLanesLight,
 	ToneMerged:              toneMergedLight,
+	FileIcons:               icons.LightFileIcons,
 }
 
 // Theme is what every primitive draws with: the palette, the shaper, the
