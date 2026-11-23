@@ -686,11 +686,18 @@ func (u *window) chatAgent(gtx C, th *ui.Theme, p *chatPane, sv sessionView, r c
 			layout.Rigid(func(gtx C) D {
 				return p.md.LayoutLinks(gtx, th, it.ID, src, markdown.Links{Open: func(url string) { openLink(u.client, notify, url) }, Paths: p.paths})
 			}),
-			ui.VGap(1),
-			layout.Rigid(func(gtx C) D {
-				return layout.W.Layout(gtx, func(gtx C) D { return u.chatStampRow(gtx, th, p, c, it, over, false) })
-			}),
 		)
+		// a text another follows reads on into it: the run's last one keeps
+		// the time and the copy, which takes the whole run
+		if !r.more {
+			stamped := it
+			if r.runText != "" {
+				stamped.Text = r.runText
+			}
+			body = append(body, ui.VGap(1), layout.Rigid(func(gtx C) D {
+				return layout.W.Layout(gtx, func(gtx C) D { return u.chatStampRow(gtx, th, p, c, stamped, over, false) })
+			}))
+		}
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, body...)
 	})
 }

@@ -32,6 +32,12 @@ type chatRow struct {
 	// bare says the answer's header leaves it out; avatar marks the work row
 	// that carries it.
 	lead, bare, avatar bool
+	// more marks an answer's text another follows in the turn, with nothing
+	// between them: the run reads as one answer, so only its last text keeps
+	// the time and copy line, and runText is what that copy takes, every text
+	// of the run joined; empty for a text alone.
+	more    bool
+	runText string
 	// live marks the row's item as alive: the thought being thought, the
 	// answer being written, a turn's tool calls while one of them runs.
 	// movable marks a live row whose turn waits on a command Ctrl+B moves,
@@ -165,7 +171,29 @@ func chatRows(items []backend.ChatItem, kind string, running bool, now time.Time
 		}
 		rows = append(rows, live)
 	}
+	markAnswerRuns(rows)
 	return rows
+}
+
+// markAnswerRuns sets more and runText on each run of answer texts that follow
+// one another in a turn.
+func markAnswerRuns(rows []chatRow) {
+	answer := func(r chatRow) bool { return r.kind == chatRowItem && r.item.Kind == api.ItemAgent }
+	for i := 0; i < len(rows); {
+		j := i
+		for j+1 < len(rows) && answer(rows[j]) && answer(rows[j+1]) && rows[j+1].item.Turn == rows[j].item.Turn {
+			j++
+		}
+		if j > i {
+			texts := make([]string, 0, j-i+1)
+			for k := i; k <= j; k++ {
+				texts = append(texts, rows[k].item.Text)
+				rows[k].more = k < j
+			}
+			rows[j].runText = strings.Join(texts, "\n\n")
+		}
+		i = j + 1
+	}
 }
 
 // isPlan is whether it is the agent's task list, drawn over the composer
