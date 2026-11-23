@@ -19,6 +19,7 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 
+	"github.com/lichdotdev/godemirror"
 	"github.com/lichdotdev/lich/native/internal/shot"
 	"github.com/lichdotdev/lich/native/ui"
 	"github.com/lichdotdev/lich/native/ui/icons"
@@ -63,6 +64,7 @@ func run(w *app.Window) error {
 		Sans:    "Go",
 		Mono:    "Go Mono",
 		Surface: ui.Dark.Background,
+		Code:    godemirror.DarkTheme,
 	})
 	g.toaster.Invalidate = w.Invalidate
 	if *flagToasts {

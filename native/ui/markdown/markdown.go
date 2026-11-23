@@ -13,6 +13,7 @@ import (
 	"gioui.org/text"
 	"gioui.org/unit"
 	"gioui.org/x/richtext"
+	"github.com/lichdotdev/godemirror"
 
 	"github.com/lichdotdev/lich/native/ui"
 )
@@ -52,6 +53,8 @@ type markdownText struct {
 	heights []int
 	// linked is the Paths.Version the path marks were checked against.
 	linked any
+	// highlight is the style the code blocks were highlighted with.
+	highlight *godemirror.HighlightStyle
 	// copies is each code block's copy button, in the order they are written.
 	copies []*codeCopy
 }
@@ -166,9 +169,9 @@ func (m Cache) text(th *ui.Theme, key, src string, paths *Paths) *markdownText {
 	if paths != nil {
 		linked = paths.Version
 	}
-	if t.src != src || t.fg != fg || t.fonts != fonts || t.shaper != th.Shaper || t.blocks == nil || t.linked != linked {
+	if t.src != src || t.fg != fg || t.fonts != fonts || t.shaper != th.Shaper || t.blocks == nil || t.linked != linked || t.highlight != th.Code.Highlight {
 		t.src, t.fg, t.fonts, t.shaper, t.blocks = src, fg, fonts, th.Shaper, renderBlocks(th, src)
-		t.heights, t.linked = make([]int, len(t.blocks)), linked
+		t.heights, t.linked, t.highlight = make([]int, len(t.blocks)), linked, th.Code.Highlight
 		t.keepCopies()
 		if paths != nil {
 			unmarkUnlinked(t.blocks, paths.Link)

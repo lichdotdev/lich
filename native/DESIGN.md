@@ -113,6 +113,8 @@ their text with the tone itself.
   long descriptions than `TextBase`.
 - In Markdown a blockquote is `MutedForeground` text `Space(4)` behind a `Space(1)` bar in `Border`, and a code
   block sits across the body on the inline code's fill, `RadiusSM`, `Space(2)` padding (`ui/markdown`).
+  A block whose fence names a language the code views know is highlighted with their palette (`ui.Theme.Code`),
+  so it reads as the editor does; one with no language, or one they leave plain, stays in prose's code color.
   Its copy button is a ghost `SizeIconXS` one (Lucide `copy`, a check for 1.5s after a click) shown only while the
   pointer is over the block, as a message's copy is, with no tooltip; it stands on the first line inside the
   right padding, and the code wraps short of it, so it never covers text and nothing moves when it shows.
