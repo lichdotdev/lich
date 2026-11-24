@@ -49,7 +49,7 @@ catalogs, their Installed tabs included, are the screens of cards, and the reaso
 - Text sizes are `ui.Text2XS` (10.5), `ui.TextXS` (12), `ui.TextSM` (14) and `ui.TextBase` (16). A size off
   the scale is a named `unit.Sp` constant beside the screen that uses it (`pullsTitleSize`, `settingsTitle`),
   declared once: a second constant of the same value for the same role is a bug.
-- Radius is `ui.RadiusSM` (4), `ui.RadiusMD` (6), `ui.RadiusLG` (8); dialogs alone use 12. Controls and
+- Radius is `ui.RadiusSM` (4), `ui.RadiusMD` (6), `ui.RadiusLG` (8); `ui.RadiusXL` (12) is the dialogs' and the person's message's alone. Controls and
   rows are `RadiusMD`; islands and the folder tray are `RadiusLG`.
 - A screen's geometry lives in one `var` block at the top of its file, each value named and, when it comes
   from a mockup or a Tailwind class, saying which. Never a bare number inside a layout.
@@ -425,8 +425,8 @@ view stays pinned to its end while items arrive, until the person scrolls up. Th
 The list's scrollbar shows only while the rows outgrow the view: a message sent into a conversation that fits
 draws none while it grows in, because the room above the rows is measured in the frame that draws them.
 
-- **The person's message** is a box in `Accent`, `RadiusLG`, against the column's right edge, at most 78% of
-  it. It breaks "rows, not cards" on purpose: a turn starts where a message does, and the eye finds it by the
+- **The person's message** is a balloon in `Accent` against the column's right edge, at most 70% of it:
+  `RadiusXL` but for the corner by that edge, `RadiusSM`, its tail; `Space(4)`×`Space(3)` inside. It breaks "rows, not cards" on purpose: a turn starts where a message does, and the eye finds it by the
   box faster than by a rule. Its text is Markdown as the agent's is, at `TextSM` (the renderer's sp scaled
   down), every line the person broke kept broken.
 - **The agent's text** is Markdown at the prose size (`ui/markdown`). A link is underlined, in its color; a link to github.com, a path

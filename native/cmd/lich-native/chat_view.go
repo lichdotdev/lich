@@ -13,6 +13,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/op/clip"
+	"gioui.org/op/paint"
 	"gioui.org/unit"
 	"gioui.org/widget"
 
@@ -43,7 +44,7 @@ var (
 	chatTopPad = 2*balloonInset + chatSwitchItem
 	// chatUserShare is how much of the column the person's message may take,
 	// mockup A's max-w-[78%].
-	chatUserShare   = float32(0.78)
+	chatUserShare   = float32(0.70)
 	chatComposerMax = ui.Space(48)
 	// chatComposerMin is the text's floor: three body lines (15sp at 1.5) and
 	// the field's padding above and under them.
@@ -676,8 +677,8 @@ func (u *window) chatComposer(gtx C, th *ui.Theme, p *chatPane, sv sessionView, 
 	)
 }
 
-// chatUser is the person's message, in an Accent box against the column's
-// right edge, its text Markdown as the answers' is; key names it in p's cache.
+// chatUser is the person's message, in an Accent balloon against the column's
+// right edge, its corner by that edge tighter than the others, its text Markdown as the answers' is; key names it in p's cache.
 func (u *window) chatUser(gtx C, th *ui.Theme, p *chatPane, key, text string) D {
 	return u.chatUserFrom(gtx, th, p, key, "", text)
 }
@@ -691,9 +692,14 @@ func (u *window) chatUserFrom(gtx C, th *ui.Theme, p *chatPane, key, from, text 
 		gtx.Constraints.Min = image.Point{}
 		gtx.Constraints.Max.X = maxW
 		return layout.Background{}.Layout(gtx,
-			func(gtx C) D { return ui.Fill(gtx, th.Accent, ui.RadiusLG) },
 			func(gtx C) D {
-				return layout.Inset{Top: ui.Space(2), Bottom: ui.Space(2), Left: ui.Space(3), Right: ui.Space(3)}.Layout(gtx, func(gtx C) D {
+				r, tip := gtx.Dp(ui.RadiusXL), gtx.Dp(ui.RadiusSM)
+				box := clip.RRect{Rect: image.Rectangle{Max: gtx.Constraints.Min}, NW: r, NE: r, SW: r, SE: tip}
+				paint.FillShape(gtx.Ops, th.Accent, box.Op(gtx.Ops))
+				return D{Size: gtx.Constraints.Min}
+			},
+			func(gtx C) D {
+				return layout.Inset{Top: ui.Space(3), Bottom: ui.Space(3), Left: ui.Space(4), Right: ui.Space(4)}.Layout(gtx, func(gtx C) D {
 					body := func(gtx C) D { return u.userMarkdown(gtx, on, p, key, text) }
 					if from == "" {
 						return body(gtx)

@@ -23,7 +23,7 @@ import (
 // The classes of shadcn's DialogOverlay and DialogContent.
 const (
 	dialogTransition  = 100 * time.Millisecond // duration-100
-	dialogRadius      = unit.Dp(12)            // rounded-xl
+	dialogRadius      = RadiusXL               // rounded-xl
 	dialogRingOpacity = 0.1                    // ring-foreground/10
 	dialogScrim       = 0.1                    // bg-black/10
 )

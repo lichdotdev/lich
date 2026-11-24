@@ -204,4 +204,5 @@ const (
 	RadiusSM unit.Dp = 4
 	RadiusMD unit.Dp = 6
 	RadiusLG unit.Dp = 8
+	RadiusXL unit.Dp = 12
 )
