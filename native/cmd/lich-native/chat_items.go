@@ -43,14 +43,7 @@ var (
 	// chatBranchX where the connector runs: under the fold's chevron.
 	chatBranchGutter = ui.Space(6)
 	chatBranchX      = ui.Space(1.75)
-	// chatAvatarSize and chatAvatarMark are mockup's 20px avatar and its mark.
-	chatAvatarSize = ui.Space(5)
-	chatAvatarMark = ui.Space(3)
 )
-
-// chatAvatarMix is how much of the provider's color the avatar's fill takes,
-// the mockup's 22%.
-const chatAvatarMix = 0.22
 
 // chatClock is the short time under a message, the 24-hour layout the window's
 // other clocks (the Git graph, a stopped console) use.
@@ -845,19 +838,6 @@ func (u *window) chatAgent(gtx C, th *ui.Theme, p *chatPane, sv sessionView, r c
 		}
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, body...)
 	})
-}
-
-// chatAvatar is the provider's mark in tint on a rounded square of tint mixed
-// into the surface.
-func chatAvatar(gtx C, th *ui.Theme, tint color.NRGBA, mark *icons.Icon) D {
-	px := gtx.Dp(chatAvatarSize)
-	size := image.Pt(px, px)
-	paint.FillShape(gtx.Ops, ui.MixOKLab(th.Background, tint, chatAvatarMix), clip.UniformRRect(image.Rectangle{Max: size}, gtx.Dp(ui.RadiusMD)).Op(gtx.Ops))
-	inner := gtx.Dp(chatAvatarMark)
-	off := op.Offset(image.Pt((px-inner)/2, (px-inner)/2)).Push(gtx.Ops)
-	mark.Layout(gtx, chatAvatarMark, tint)
-	off.Pop()
-	return D{Size: size}
 }
 
 // chatElapsed is a running time in the window's own units: "6s", "1m 12s",

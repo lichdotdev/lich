@@ -13,9 +13,6 @@ import (
 	"github.com/lichdotdev/lich/native/ui/markdown"
 )
 
-// chatNoteIndent puts a worker's result under its title, past the avatar.
-var chatNoteIndent = ui.Space(7)
-
 // chatEnvelopes draws a message lich handed the agent: a task as the person's
 // box naming who sent it, a worker's outcome as a row, anything else as a
 // muted line.
@@ -133,11 +130,7 @@ func (u *window) chatWorkerNote(gtx C, th *ui.Theme, p *chatPane, key string, en
 	case "worker-failed":
 		tone = th.Destructive
 	}
-	tint, mark, _ := u.agentLook(env.session)
-	row := []layout.FlexChild{
-		layout.Rigid(func(gtx C) D { return chatAvatar(gtx, th, tint, mark) }), ui.Gap(2),
-		layout.Rigid(th.Text(ui.TextSM, title).Weight(font.Medium).In(tone).Layout),
-	}
+	row := []layout.FlexChild{layout.Rigid(th.Text(ui.TextSM, title).Weight(font.Medium).In(tone).Layout)}
 	if meta != "" {
 		row = append(row, ui.Gap(2), layout.Rigid(th.Text(ui.TextSM, meta).Muted().Layout))
 	}
@@ -147,14 +140,12 @@ func (u *window) chatWorkerNote(gtx C, th *ui.Theme, p *chatPane, key string, en
 	})}
 	if result := env.text["result"]; result != "" {
 		children = append(children, ui.VGap(1), layout.Rigid(func(gtx C) D {
-			return layout.Inset{Left: chatNoteIndent}.Layout(gtx, func(gtx C) D {
-				notify := func(t ui.Toast) { u.toaster.Show(t) }
-				return p.md.LayoutLinks(gtx, th, key, result, markdown.Links{Open: func(url string) { openLink(u.client, notify, url) }, Paths: p.paths})
-			})
+			notify := func(t ui.Toast) { u.toaster.Show(t) }
+			return p.md.LayoutLinks(gtx, th, key, result, markdown.Links{Open: func(url string) { openLink(u.client, notify, url) }, Paths: p.paths})
 		}))
 	} else if body != "" {
 		children = append(children, ui.VGap(1), layout.Rigid(func(gtx C) D {
-			return layout.Inset{Left: chatNoteIndent}.Layout(gtx, th.Text(ui.TextSM, body).Muted().Wrapped().Layout)
+			return th.Text(ui.TextSM, body).Muted().Wrapped().Layout(gtx)
 		}))
 	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)

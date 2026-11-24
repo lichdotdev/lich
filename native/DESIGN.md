@@ -436,7 +436,7 @@ draws none while it grows in, because the room above the rows is measured in the
   is underlined in its color and takes the hand, and a click with it opens a file in the stage editor
   (`followCodeRef`) and a folder in the dock's Code tab, unfolded down to it (`chat_paths.go`). A path it does not
   hold stays text. Anything else in code is plain. An answer has no header: who wrote it is the
-  foot's (see A message's time); the provider's avatar marks no answer, call or closing line. A thought is a muted fold, closed, with the
+  foot's (see A message's time); the provider's avatar marks no row of the chat: no answer, call, notification or closing line. A thought is a muted fold, closed, with the
   sparkles before its label.
 - **A turn's tool calls** fold by run: the calls between two of the agent's texts (or the person's message and
   the first text) fold into one muted line where the first of them came. One line for the whole turn stood where
