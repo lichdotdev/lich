@@ -29,18 +29,18 @@ func TestAMarkdownArtifactOpensOnTheStageRenderedInTheSessionsCheckoutEditor(t *
 	}
 	n, _ := m.editorOf("/repo")
 	f := u.editors.byCheckout["/repo"]
-	if n.name() != "notes.md" || f.dir != "/art" || f.rel != "notes.md" || !f.md.rendering {
-		t.Fatalf("node %q, editor %q in %q rendering %v; want notes.md of /art, rendered", n.name(), f.rel, f.dir, f.md.rendering)
+	if n.name() != "notes.md" || f.dir != "/art" || f.rel != "notes.md" || f.md.mode != mdRendered {
+		t.Fatalf("node %q, editor %q in %q mode %d; want notes.md of /art, rendered", n.name(), f.rel, f.dir, f.md.mode)
 	}
 }
 
-func TestACheckoutMarkdownStillOpensAsSourceAfterAnArtifact(t *testing.T) {
+func TestACheckoutMarkdownOpensInTheCheckoutAfterAnArtifact(t *testing.T) {
 	u, _ := artifactWindow(t)
 	u.openArtifactInEditor("a2", backend.Artifact{Name: "notes.md", Path: "/art/notes.md"})
 	u.openInEditor("/repo", "notes.md", 0, 0, agentNote{})
 	f := u.editors.byCheckout["/repo"]
-	if f.dir != "" || f.md.rendering {
-		t.Fatalf("checkout's notes.md opened in %q rendering %v, want its source in the checkout", f.dir, f.md.rendering)
+	if f.dir != "" || f.md.mode != mdRendered {
+		t.Fatalf("checkout's notes.md opened in %q mode %d, want it rendered in the checkout", f.dir, f.md.mode)
 	}
 }
 
@@ -52,7 +52,7 @@ func TestAnArtifactIsReadOnly(t *testing.T) {
 	if err := f.setText("one\ntwo\n"); err != nil {
 		t.Fatal(err)
 	}
-	f.md.rendering = false
+	f.md.mode = mdSource
 	typeAt(t, f, 0, "x")
 	if f.dirty || f.ed.State().Doc() != "one\ntwo\n" {
 		t.Fatalf("dirty %v, text %q after typing; want the text untouched and no unsaved mark", f.dirty, f.ed.State().Doc())
