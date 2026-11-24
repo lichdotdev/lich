@@ -67,7 +67,7 @@ func (u *window) chatRow(gtx C, th *ui.Theme, p *chatPane, sv sessionView, r cha
 	case chatRowShell:
 		return chatBranch(gtx, th, true, func(gtx C) D { return chatShellCall(gtx, th, p.fold("out:"+r.item.ID), r.item, r.live) })
 	case chatRowEdit:
-		return chatTool(gtx, th, r.item, r.live)
+		return u.chatEdit(gtx, th, p, sv, r)
 	case chatRowLive:
 		if r.compacting {
 			return chatCompacting(gtx, th, r)
@@ -565,20 +565,27 @@ func chatDiff(gtx C, th *ui.Theme, diff string) D {
 	if name != "" {
 		children = append(children, layout.Rigid(func(gtx C) D { return chatDiffHead(gtx, th, name, added, deleted) }))
 	}
-	children = append(children, layout.Rigid(func(gtx C) D {
-		return layout.Inset{Top: ui.Space(1.5), Bottom: ui.Space(1.5)}.Layout(gtx, func(gtx C) D {
-			rows := make([]layout.FlexChild, len(body))
-			for i, line := range body {
-				rows[i] = layout.Rigid(func(gtx C) D { return hunkLine(gtx, th, line) })
-			}
-			return layout.Flex{Axis: layout.Vertical}.Layout(gtx, rows...)
-		})
-	}))
+	children = append(children, layout.Rigid(func(gtx C) D { return chatDiffLines(gtx, th, body) }))
 	d := layout.Background{}.Layout(gtx,
 		func(gtx C) D { return ui.Fill(gtx, th.Background, ui.RadiusMD) },
 		func(gtx C) D { return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...) })
 	ui.InsetBorder(gtx, d.Size, gtx.Dp(ui.RadiusMD), th.Over(th.Border))
 	return d
+}
+
+// chatDiffLines is a diff's lines, added and removed ones in their tones;
+// the hunks' "@@" headers are left out, the lines alone tell the change.
+func chatDiffLines(gtx C, th *ui.Theme, body []string) D {
+	return layout.Inset{Top: ui.Space(1.5), Bottom: ui.Space(1.5)}.Layout(gtx, func(gtx C) D {
+		rows := make([]layout.FlexChild, 0, len(body))
+		for _, line := range body {
+			if strings.HasPrefix(line, "@@") {
+				continue
+			}
+			rows = append(rows, layout.Rigid(func(gtx C) D { return hunkLine(gtx, th, line) }))
+		}
+		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, rows...)
+	})
 }
 
 func chatDiffHead(gtx C, th *ui.Theme, name string, added, deleted int) D {
