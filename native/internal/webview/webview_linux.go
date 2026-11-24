@@ -113,6 +113,8 @@ type Page struct {
 	// onLoad hears the page's loads, on the GTK thread.
 	onLoad func(Load)
 	self   cgo.Handle
+	// drawing is touched only on the GTK thread.
+	drawing latest
 }
 
 // Open makes a page showing url, out of sight until it is placed. onLoad
@@ -353,6 +355,32 @@ func (p *Page) Run(script string) {
 		defer C.free(unsafe.Pointer(s))
 		C.lich_webview_run(p.page, s)
 	})
+}
+
+// Draw runs script in the page to draw over it, a newer drawing taking the
+// place of one not yet sent while the page still runs the last.
+func (p *Page) Draw(script string) {
+	onGTK(func() {
+		if !p.closed && p.drawing.offer(script) {
+			p.sendDrawing(script)
+		}
+	})
+}
+
+func (p *Page) sendDrawing(script string) {
+	s := C.CString(script)
+	defer C.free(unsafe.Pointer(s))
+	C.lich_webview_draw(p.page, s, C.uintptr_t(cgo.NewHandle(p)))
+}
+
+//export lichWebviewDrawn
+func lichWebviewDrawn(handle C.uintptr_t) {
+	h := cgo.Handle(handle)
+	p := h.Value().(*Page)
+	h.Delete()
+	if script, ok := p.drawing.done(); ok && !p.closed {
+		p.sendDrawing(script)
+	}
 }
 
 // SetZoom draws the page at scale device pixels per CSS pixel.

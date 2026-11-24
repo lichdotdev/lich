@@ -95,7 +95,7 @@ func (u *window) cutNativePages() {
 		o.Cursor = p.pageCursor
 		if script := overlayScript(o); script != p.overlaySent {
 			p.overlaySent = script
-			p.native.Run(script)
+			p.native.Draw(script)
 		}
 	}
 }
