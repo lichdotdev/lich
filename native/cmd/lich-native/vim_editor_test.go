@@ -1,11 +1,17 @@
 package main
 
 import (
+	"image"
+	"image/color"
 	"os/exec"
 	"testing"
 	"time"
 
+	"gioui.org/io/input"
 	"gioui.org/io/key"
+	"gioui.org/layout"
+	"gioui.org/op"
+	"gioui.org/unit"
 	"github.com/neovim/go-client/nvim"
 
 	"github.com/lichdotdev/lich/native/ui"
@@ -153,5 +159,47 @@ func TestVimThatFailsToStartLeavesTheEditorItsKeys(t *testing.T) {
 	f.syncVim()
 	if len(told) != 1 {
 		t.Fatal("the failure was told twice")
+	}
+}
+
+func TestVimCursorWearsTheThemesCaretColor(t *testing.T) {
+	srv, d := diskBackend(t)
+	f := loadedEditor(t, srv, d, "one\n")
+	f.env.code.Cursor = color.NRGBA{R: 0xff, A: 0xff}
+	f.env.vim = newVimHost(func() {})
+	f.ed.Theme = vimHideCaret(f.env.code)
+	if got := f.vimCursorColor(vimCursor{shape: "vertical", percent: 25}); got != f.env.code.Cursor {
+		t.Fatalf("Vim's cursor drawn in %v, want the theme's caret %v", got, f.env.code.Cursor)
+	}
+}
+
+func TestAFocusedVimEditorKeepsTheControlKeys(t *testing.T) {
+	srv, d := diskBackend(t)
+	f := loadedEditor(t, srv, d, "one\n")
+	f.env.vim = newVimHost(func() {})
+	s := stageEditors{byCheckout: map[string]*fileEditor{"/c": f}}
+	var router input.Router
+	var ops op.Ops
+	frame := func() C {
+		ops.Reset()
+		gtx := layout.Context{Ops: &ops, Source: router.Source(), Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}, Constraints: layout.Exact(image.Pt(400, 300))}
+		if _, err := f.ed.Layout(gtx); err != nil {
+			t.Fatal(err)
+		}
+		router.Frame(&ops)
+		return gtx
+	}
+	gtx := frame()
+	if s.vimHasKeys(gtx) {
+		t.Fatal("an editor without the keyboard kept the control keys")
+	}
+	f.ed.Focus(gtx)
+	frame()
+	if !s.vimHasKeys(layout.Context{Source: router.Source()}) {
+		t.Fatal("the focused Vim editor left Ctrl+letter to the window's shortcuts")
+	}
+	f.env.vim = nil
+	if s.vimHasKeys(layout.Context{Source: router.Source()}) {
+		t.Fatal("the editor kept the control keys with Vim off")
 	}
 }

@@ -2560,8 +2560,10 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   the first key, every editor holds a buffer in it named as its file (so the filetype and its settings apply,
   and the person's plugins and LSP attach as they would), and keys go there through `nvim_input`; lich only draws
   what Neovim reports. It needs Neovim 0.10 or newer on the PATH (`getregionpos`), and the row stays disabled
-  without it. What that costs: lich's own shortcuts win, since they are read before the editor (Ctrl+S, the
-  hotkeys of Settings › Hotkeys), so a Vim mapping on one of them never fires; Neovim's grid is never drawn, so a
+  without it. While the editor has the keyboard it keeps Ctrl+letter as a focused terminal does: a Ctrl+letter
+  hotkey of Settings › Hotkeys answers to Ctrl+Shift+letter there (the row's hint still says "in a terminal"),
+  and the other shortcuts, Ctrl+S included, are read before the editor, so a Vim mapping on one of them never
+  fires; on macOS the hotkeys are Command and win as they do everywhere. Neovim's grid is never drawn, so a
   floating window, a completion menu or a plugin's UI does not show, and only the command line, the last message,
   the mode and the partial command reach the strip under the code; the cursor takes 'guicursor''s shape but not
   its blink or colors; `:w` saves through lich (`BufWriteCmd`), and `:q` closes Neovim's window, never the editor,

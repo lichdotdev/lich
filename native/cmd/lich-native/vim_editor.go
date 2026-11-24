@@ -50,6 +50,17 @@ func (b *vimBuffer) held() (buf, gen, opens int) {
 	return b.buf, b.gen, b.opens
 }
 
+// vimHasKeys is whether an editor Vim runs has the keyboard, which the
+// window's Ctrl+letter shortcuts then leave to it, as to a focused terminal.
+func (s *stageEditors) vimHasKeys(gtx C) bool {
+	for _, f := range s.byCheckout {
+		if f.vimOn() && f.ed.HasFocus(gtx) {
+			return true
+		}
+	}
+	return false
+}
+
 // vimOn is whether Neovim runs the editor's keys now: not when it failed to
 // start, which leaves the editor its own keys until Vim is turned on again.
 func (f *fileEditor) vimOn() bool {

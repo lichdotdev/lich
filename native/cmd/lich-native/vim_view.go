@@ -71,11 +71,17 @@ func (f *fileEditor) paintVimCursor(gtx C) {
 	}
 	g := f.ed.Geometry()
 	defer clip.Rect(image.Rect(g.GutterWidth, 0, gtx.Constraints.Max.X, gtx.Constraints.Max.Y)).Push(gtx.Ops).Pop()
-	col := f.ed.Theme.Cursor
+	paint.FillShape(gtx.Ops, f.vimCursorColor(c), clip.Rect(r).Op())
+}
+
+// vimCursorColor is the theme's caret color, a block's laid translucent over
+// its character: the theme's, not the editor's, whose caret Vim mode hides.
+func (f *fileEditor) vimCursorColor(c vimCursor) color.NRGBA {
+	col := f.env.code.Cursor
 	if c.shape == "block" || c.shape == "" {
 		col = ui.Alpha(col, vimBlockAlpha)
 	}
-	paint.FillShape(gtx.Ops, col, clip.Rect(r).Op())
+	return col
 }
 
 // vimStatus is the strip under the code while Vim runs the editor: the
