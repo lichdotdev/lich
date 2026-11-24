@@ -20,6 +20,43 @@ local function regions(mode)
   return out
 end
 
+-- searched is the pattern Vim highlights now: the one being typed after / or
+-- ? with 'incsearch', else the last search while 'hlsearch' shows it.
+local function searched()
+  local t = vim.fn.getcmdtype()
+  if (t == '/' or t == '?') and vim.o.incsearch then
+    return vim.fn.getcmdline()
+  end
+  if vim.v.hlsearch == 1 and vim.o.hlsearch then
+    return vim.fn.getreg('/')
+  end
+  return ''
+end
+
+-- matches are the visible matches of the highlighted search, as row, byte
+-- column and byte length.
+local function matches(buf)
+  local pat = searched()
+  if pat == '' then
+    return {}
+  end
+  -- matchbufline follows 'ignorecase' but not 'smartcase', which a search does.
+  if vim.o.ignorecase and vim.o.smartcase and pat:find('%u') then
+    pat = '\\C' .. pat
+  end
+  local ok, found = pcall(vim.fn.matchbufline, buf, pat, vim.fn.line('w0'), vim.fn.line('w$'))
+  if not ok then
+    return {}
+  end
+  local out = {}
+  for _, m in ipairs(found) do
+    if #m.text > 0 then
+      out[#out + 1] = { m.lnum, m.byteidx, #m.text }
+    end
+  end
+  return out
+end
+
 local function state()
   local buf = api.nvim_get_current_buf()
   if not owned[buf] then
@@ -27,14 +64,63 @@ local function state()
   end
   local mode = api.nvim_get_mode().mode
   local cur = api.nvim_win_get_cursor(0)
-  vim.rpcnotify(chan, 'lich_state', buf, mode, cur[1], cur[2], vim.fn.line('w0'), regions(mode))
+  vim.rpcnotify(chan, 'lich_state', buf, mode, cur[1], cur[2], vim.fn.line('w0'), regions(mode), matches(buf))
 end
 
 local group = api.nvim_create_augroup('lich_editor', { clear = true })
-api.nvim_create_autocmd({ 'CursorMoved', 'CursorMovedI', 'ModeChanged', 'WinScrolled', 'BufEnter', 'TextChanged', 'TextChangedI' }, {
+api.nvim_create_autocmd({ 'CursorMoved', 'CursorMovedI', 'ModeChanged', 'WinScrolled', 'BufEnter', 'TextChanged', 'TextChangedI', 'CmdlineChanged' }, {
   group = group,
-  callback = function() state() end,
+  -- Scheduled: ModeChanged leaves the command line before its command runs,
+  -- and :nohlsearch has to have run for the matches to go.
+  callback = function() vim.schedule(state) end,
 })
+
+-- The commands that leave a file, and whether each writes it first.
+local quits = { quit = false, qall = false, wq = true, wqall = true, xit = true, xall = true, exit = true }
+
+-- A quit typed in lich's buffer closes the file in lich instead of Neovim,
+-- which stays up for the other editors: the command line is swapped for
+-- lich_editor.quit before it runs.
+api.nvim_create_autocmd('CmdlineLeave', {
+  group = group,
+  callback = function()
+    if vim.fn.getcmdtype() ~= ':' or vim.v.event.abort or not owned[api.nvim_get_current_buf()] then
+      return
+    end
+    local ok, cmd = pcall(api.nvim_parse_cmd, vim.fn.getcmdline(), {})
+    if ok and quits[cmd.cmd] ~= nil then
+      vim.fn.setcmdline(string.format('lua lich_editor.quit(%s, %s)', tostring(quits[cmd.cmd]), tostring(cmd.bang)))
+    end
+  end,
+})
+
+local function fail(msg)
+  if not pcall(api.nvim_echo, { { msg, 'ErrorMsg' } }, true, { err = true }) then
+    api.nvim_err_writeln(msg)
+  end
+end
+
+-- quit closes the file in lich: written first when write, refused as Vim
+-- refuses it while it holds changes not written, unless bang drops them.
+function M.quit(write, bang)
+  local buf = api.nvim_get_current_buf()
+  if not write and not bang and vim.bo[buf].modified then
+    fail('E37: No write since last change (add ! to override)')
+    return
+  end
+  if write then
+    vim.cmd('write')
+  end
+  vim.rpcnotify(chan, 'lich_quit', buf, bang and not write)
+end
+
+-- saved hears that lich wrote lines to the file: the buffer is unmodified
+-- unless it changed since.
+function M.saved(buf, lines)
+  if api.nvim_buf_is_valid(buf) and vim.deep_equal(api.nvim_buf_get_lines(buf, 0, -1, false), lines) then
+    vim.bo[buf].modified = false
+  end
+end
 
 -- open makes the buffer for path holding lines: named as the file, so the
 -- filetype and the person's settings for it apply, but written by lich.
@@ -59,6 +145,8 @@ function M.open(path, lines, wrap)
       vim.rpcnotify(chan, 'lich_write', buf)
     end,
   })
+  vim.keymap.set('n', 'ZZ', function() M.quit(true, false) end, { buffer = buf })
+  vim.keymap.set('n', 'ZQ', function() M.quit(false, true) end, { buffer = buf })
   api.nvim_set_current_buf(buf)
   vim.cmd('filetype detect')
   vim.wo.wrap = wrap

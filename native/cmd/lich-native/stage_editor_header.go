@@ -161,6 +161,7 @@ func (f *fileEditor) takeSave() {
 	f.gen++
 	f.setDirty(f.ed.State().Doc() != f.base)
 	f.onSaved()
+	f.vimSaved(s.doc)
 	if next {
 		f.startSave(nextDo, false)
 	}

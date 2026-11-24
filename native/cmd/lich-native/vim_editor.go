@@ -185,6 +185,8 @@ func (f *fileEditor) vimApply(ev vimEvent) {
 	case ev.state != nil:
 		f.vim.state = ev.state
 		f.vimSelect(*ev.state)
+	case ev.quit:
+		f.onQuit(ev.discard)
 	case ev.write:
 		// The lines before the :w reach dirty only at the editor's next
 		// Layout; the save cannot wait for it.
@@ -279,4 +281,14 @@ func (f *fileEditor) vimResize(size image.Point) {
 		return
 	}
 	f.env.vim.resize(max(size.Y/row.Dy(), 1), max((size.X-g.TextX)/g.CellWidth, 1))
+}
+
+// vimSaved tells Neovim that lich wrote doc, which clears 'modified' when
+// the buffer still holds it, so a :q after an auto-save closes as Vim's does.
+func (f *fileEditor) vimSaved(doc string) {
+	if !f.vimOn() {
+		return
+	}
+	lines, _ := vimLinesOf(doc)
+	f.vimFeed("lich_editor.saved(...)", lines)
 }

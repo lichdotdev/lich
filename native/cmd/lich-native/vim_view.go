@@ -23,6 +23,11 @@ import (
 // its character, which stays readable under it.
 const vimBlockAlpha = 0.6
 
+// vimMatchAlpha and vimCurrentMatchAlpha are how much of the wait tone a
+// search match lays over its text, the one under the cursor more, as Vim's
+// Search and CurSearch groups tell them apart.
+const vimMatchAlpha, vimCurrentMatchAlpha = 0.3, 0.6
+
 // vimCaretWidth is the command line's caret.
 const vimCaretWidth = unit.Dp(1.5)
 
@@ -54,15 +59,23 @@ func vimCursorRect(ed *godemirror.Editor, s vimState, c vimCursor) (image.Rectan
 	return r, true
 }
 
-// paintVimCursor draws Neovim's cursor over the code while the editor's
-// buffer is the one Neovim shows.
+// paintVimCursor draws the search's matches and Neovim's cursor over the
+// code while the editor's buffer is the one Neovim shows.
 func (f *fileEditor) paintVimCursor(gtx C) {
 	if !f.vimOn() || f.vim.state == nil {
 		return
 	}
 	buf, _, _ := f.vim.held()
 	u, current := f.env.vim.status(buf)
-	if !current || u.cmdline != nil {
+	if !current {
+		return
+	}
+	g := f.ed.Geometry()
+	defer clip.Rect(image.Rect(g.GutterWidth, 0, gtx.Constraints.Max.X, gtx.Constraints.Max.Y)).Push(gtx.Ops).Pop()
+	f.paintVimMatches(gtx, *f.vim.state)
+	if u.cmdline != nil {
+		// The command line has the caret; the matches of a search being
+		// typed still show.
 		return
 	}
 	c := u.cursor()
@@ -70,9 +83,38 @@ func (f *fileEditor) paintVimCursor(gtx C) {
 	if !ok {
 		return
 	}
-	g := f.ed.Geometry()
-	defer clip.Rect(image.Rect(g.GutterWidth, 0, gtx.Constraints.Max.X, gtx.Constraints.Max.Y)).Push(gtx.Ops).Pop()
 	paint.FillShape(gtx.Ops, f.vimCursorColor(c), clip.Rect(r).Op())
+}
+
+// paintVimMatches lays the highlighted search's matches over their text.
+func (f *fileEditor) paintVimMatches(gtx C, s vimState) {
+	st := f.ed.State()
+	cursor := vimPos(st, s.row, s.col)
+	for _, m := range s.matches {
+		r, ok := vimMatchRect(f.ed, vimPos(st, m[0], m[1]), m[2])
+		if !ok {
+			continue
+		}
+		alpha := float32(vimMatchAlpha)
+		if from := vimPos(st, m[0], m[1]); cursor >= from && cursor < from+m[2] {
+			alpha = vimCurrentMatchAlpha
+		}
+		paint.FillShape(gtx.Ops, ui.Alpha(f.th.ToneWait, alpha), clip.Rect(r).Op())
+	}
+}
+
+// vimMatchRect is where a match of n bytes at from shows, false for one off
+// screen or broken over a wrapped row.
+func vimMatchRect(ed *godemirror.Editor, from, n int) (image.Rectangle, bool) {
+	a, ok := ed.CoordsAtPos(from, 1)
+	if !ok {
+		return image.Rectangle{}, false
+	}
+	b, ok := ed.CoordsAtPos(from+n, -1)
+	if !ok || b.Min.Y != a.Min.Y || b.Min.X <= a.Min.X {
+		return image.Rectangle{}, false
+	}
+	return image.Rect(a.Min.X, a.Min.Y, b.Min.X, a.Max.Y), true
 }
 
 // vimCursorColor is the theme's caret color, a block's laid translucent over

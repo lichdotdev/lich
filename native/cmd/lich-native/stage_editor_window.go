@@ -28,8 +28,11 @@ type stageEditors struct {
 	size       unit.Sp
 	// dirty hears an editor start or stop holding unsaved changes, and saved
 	// a save that landed, each with the editor's checkout.
-	dirty      func(checkout string, dirty bool)
-	saved      func(checkout string)
+	dirty func(checkout string, dirty bool)
+	saved func(checkout string)
+	// quit closes checkout's editor, dropping what it has not saved when
+	// discard.
+	quit       func(checkout string, discard bool)
 	byCheckout map[string]*fileEditor
 	ask        unsavedAsk
 	// shown is the checkout whose editor was on the stage last frame.
@@ -61,6 +64,7 @@ func (s *stageEditors) of(checkout string) *fileEditor {
 	f := newFileEditor(s.client, s.invalidate, s.family, s.size, checkout)
 	f.onDirty = func() { s.dirty(checkout, f.dirty) }
 	f.onSaved = func() { s.saved(checkout) }
+	f.onQuit = func(discard bool) { s.quit(checkout, discard) }
 	s.byCheckout[checkout] = f
 	return f
 }
@@ -233,21 +237,27 @@ func (u *window) applyEditor(act sidebarAction) {
 		u.model.invalidate()
 	}
 	if c := act.editorClose; c != "" {
-		f, ok := u.editors.byCheckout[c]
-		closeIt := func() {
-			delete(u.editors.byCheckout, c)
-			u.model.closeEditor(c)
-			u.model.invalidate()
-		}
-		if !ok {
-			closeIt()
-			return
-		}
-		u.editors.saveThen(f, func() {
-			f.vimOff()
-			closeIt()
-		})
+		u.closeEditor(c, false)
 	}
+}
+
+// closeEditor closes checkout's editor, asking first about unsaved changes,
+// or dropping them when discard.
+func (u *window) closeEditor(checkout string, discard bool) {
+	f, ok := u.editors.byCheckout[checkout]
+	closeIt := func() {
+		if ok {
+			f.vimOff()
+		}
+		delete(u.editors.byCheckout, checkout)
+		u.model.closeEditor(checkout)
+		u.model.invalidate()
+	}
+	if !ok || discard {
+		closeIt()
+		return
+	}
+	u.editors.saveThen(f, closeIt)
 }
 
 // editorIsland draws checkout's editor over the island, its code on the

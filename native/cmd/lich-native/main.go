@@ -376,7 +376,8 @@ func run(w *app.Window, rt backend.Runtime) error {
 	u.pulls.view.files.pr = &prFiles{ticks: map[string]*ui.Bool{}}
 	u.editors = stageEditors{client: client, invalidate: invalidate, family: *flagFont, size: unit.Sp(*flagSize),
 		dirty: func(checkout string, dirty bool) { u.model.markEditorDirty(checkout, dirty); u.model.invalidate() },
-		saved: func(checkout string) { go u.model.checkoutWritten(u.ctx, checkout) }}
+		saved: func(checkout string) { go u.model.checkoutWritten(u.ctx, checkout) },
+		quit:  u.closeEditor}
 	code := newCodeTab(client, invalidate, comments, notify, func(checkout, rel string, line int) {
 		u.openInEditor(checkout, rel, line, 0, agentNote{})
 	})

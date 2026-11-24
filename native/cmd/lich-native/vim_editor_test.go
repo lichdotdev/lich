@@ -4,6 +4,8 @@ import (
 	"image"
 	"image/color"
 	"os/exec"
+	"slices"
+	"strings"
 	"testing"
 	"time"
 
@@ -202,4 +204,67 @@ func TestAFocusedVimEditorKeepsTheControlKeys(t *testing.T) {
 	if s.vimHasKeys(layout.Context{Source: router.Source()}) {
 		t.Fatal("the editor kept the control keys with Vim off")
 	}
+}
+
+func TestVimSearchShowsItsMatches(t *testing.T) {
+	f, _ := vimEditor(t, "one two\ntwo one one\n")
+	want := [][3]int{{1, 0, 3}, {2, 4, 3}, {2, 8, 3}}
+	matches := func() [][3]int {
+		if f.vim.state == nil {
+			return nil
+		}
+		return f.vim.state.matches
+	}
+	vimType(f, "/one")
+	vimUntil(t, f, "the matches while the pattern is typed", func() bool { return slices.Equal(matches(), want) })
+	vimPress(f, key.NameReturn, 0)
+	vimType(f, "n")
+	vimUntil(t, f, "the matches stay after Enter", func() bool { return f.vim.state.row == 2 && slices.Equal(matches(), want) })
+	vimType(f, ":noh")
+	vimPress(f, key.NameReturn, 0)
+	vimUntil(t, f, ":noh clear them", func() bool { return f.vim.state.mode == "n" && len(matches()) == 0 })
+}
+
+// vimCommand types :cmd and Enter.
+func vimCommand(f *fileEditor, cmd string) {
+	vimType(f, ":"+cmd)
+	vimPress(f, key.NameReturn, 0)
+}
+
+func TestVimQuitClosesTheFileAndKeepsNeovim(t *testing.T) {
+	f, d := vimEditor(t, "one\n")
+	var quits []bool
+	f.onQuit = func(discard bool) { quits = append(quits, discard) }
+	vimCommand(f, "q")
+	vimUntil(t, f, ":q close the file", func() bool { return slices.Equal(quits, []bool{false}) })
+
+	vimType(f, "x")
+	vimUntil(t, f, "the edit", func() bool { return f.ed.State().Doc() == "ne\n" })
+	vimCommand(f, "qa")
+	vimUntil(t, f, "E37 refuse :qa over unwritten changes", func() bool {
+		buf, _, _ := f.vim.held()
+		u, _ := f.env.vim.status(buf)
+		return u.msgError && strings.HasPrefix(u.msg, "E37")
+	})
+	if len(quits) != 1 {
+		t.Fatalf(":qa over unwritten changes quit: %v", quits)
+	}
+	vimCommand(f, "q!")
+	vimUntil(t, f, ":q! close it, dropping the change", func() bool { return slices.Equal(quits, []bool{false, true}) })
+
+	vimCommand(f, "wq")
+	vimUntil(t, f, ":wq write and close", func() bool {
+		f.saving.mu.Lock()
+		done := f.saving.done != nil
+		f.saving.mu.Unlock()
+		if done {
+			f.takeSave()
+		}
+		return slices.Equal(quits, []bool{false, true, false}) && !f.dirty
+	})
+	if w := <-d.writes; w.Content != "ne\n" {
+		t.Fatalf(":wq wrote %q", w.Content)
+	}
+	vimType(f, "x")
+	vimUntil(t, f, "Neovim still run the keys", func() bool { return f.ed.State().Doc() == "e\n" })
 }

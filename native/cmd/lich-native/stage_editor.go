@@ -47,9 +47,11 @@ type fileEditor struct {
 	// subagent file of the chat's /memory and /agents panels.
 	dir      string
 	writable bool
-	// onDirty hears the editor start or stop holding unsaved changes, and
-	// onSaved a save that landed.
+	// onDirty hears the editor start or stop holding unsaved changes, onSaved
+	// a save that landed, and onQuit Vim's :q, discard set when its changes
+	// are to be dropped.
 	onDirty, onSaved func()
+	onQuit           func(discard bool)
 
 	rel   string
 	kind  blobKind
@@ -106,7 +108,7 @@ type editorEnv struct {
 
 func newFileEditor(client *backend.Client, invalidate func(), family string, size unit.Sp, checkout string) *fileEditor {
 	f := &fileEditor{client: client, invalidate: invalidate, family: family, size: size, checkout: checkout,
-		image: newBlobView(invalidate), onDirty: func() {}, onSaved: func() {}, now: time.Now}
+		image: newBlobView(invalidate), onDirty: func() {}, onSaved: func() {}, onQuit: func(bool) {}, now: time.Now}
 	f.file.invalidate, f.disk.read.invalidate, f.blame.read.invalidate = invalidate, invalidate, invalidate
 	f.scroll.Axis = layout.Vertical
 	f.md.rendered = markdown.Cache{}

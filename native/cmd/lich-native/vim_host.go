@@ -54,11 +54,13 @@ type vimHost struct {
 }
 
 // vimEvent is what Neovim reported of one buffer: its lines from first to
-// last replaced by lines, at tick; its cursor and mode; or a :w.
+// last replaced by lines, at tick; its cursor and mode; a :w; or a :q.
 type vimEvent struct {
 	lines *vimLines
 	state *vimState
 	write bool
+	// quit is a :q and its kin; discard drops what is not saved.
+	quit, discard bool
 }
 
 type vimLines struct {
@@ -74,6 +76,9 @@ type vimState struct {
 	row, col int
 	top      int
 	regions  [][4]int
+	// matches are the highlighted search's visible matches: row, byte
+	// column, byte length.
+	matches [][3]int
 }
 
 func newVimHost(invalidate func()) *vimHost {
@@ -151,6 +156,7 @@ func (h *vimHost) start() (*nvim.Nvim, error) {
 		"lich_lines": h.onLines,
 		"lich_state": h.onState,
 		"lich_write": func(buf int) { h.push(buf, vimEvent{write: true}) },
+		"lich_quit":  func(buf int, discard bool) { h.push(buf, vimEvent{quit: true, discard: discard}) },
 	}
 	for name, fn := range handlers {
 		if err := v.RegisterHandler(name, fn); err != nil {
@@ -209,11 +215,16 @@ func (h *vimHost) onLines(buf int, tick, first, last int, lines []string) {
 	h.push(buf, vimEvent{lines: &vimLines{tick: tick, first: first, last: last, lines: lines}})
 }
 
-func (h *vimHost) onState(buf int, mode string, row, col, top int, regions [][]int) {
+func (h *vimHost) onState(buf int, mode string, row, col, top int, regions, matches [][]int) {
 	st := &vimState{mode: mode, row: row, col: col, top: top}
 	for _, r := range regions {
 		if len(r) == 4 {
 			st.regions = append(st.regions, [4]int{r[0], r[1], r[2], r[3]})
+		}
+	}
+	for _, m := range matches {
+		if len(m) == 3 {
+			st.matches = append(st.matches, [3]int{m[0], m[1], m[2]})
 		}
 	}
 	h.mu.Lock()

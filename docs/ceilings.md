@@ -2567,9 +2567,13 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   floating window, a completion menu or a plugin's UI (a statusline among them) does not show, and only the mode,
   named in Vim's own English whatever 'showmode' says, the command line, the last message and the partial command
   reach the strip under the code; the cursor takes 'guicursor''s shape but not
-  its blink or colors; `:w` saves through lich (`BufWriteCmd`), and `:q` closes Neovim's window, never the editor,
-  so a `:q` that quits Neovim restarts it at the next key with the buffers rebuilt from the editors' text, losing
-  undo, registers and marks; a click moves Vim's cursor and a drag starts a characterwise Visual selection, but
+  its blink or colors; `:w` saves through lich (`BufWriteCmd`); `:q`, `:qa`, `:wq`, `:x`, `:xa`, `ZZ` and `ZQ`
+  close the file in lich instead of quitting Neovim (the command line is swapped for lich's at `CmdlineLeave`),
+  `:qa` closing only that file, and a `:q` over changes not yet saved fails with E37 as Vim's does (an
+  auto-save clears 'modified'); a Neovim that quits anyway (`:cq`, a plugin) restarts at the next key with the
+  buffers rebuilt from the editors' text, losing undo, registers and marks; the search's matches ('hlsearch',
+  'incsearch') are laid over the text on the visible lines only, and one broken over a wrapped row is not;
+  a click moves Vim's cursor and a drag starts a characterwise Visual selection, but
   the wheel only sets the top line, and with wrap off a long line never scrolls sideways to the cursor. A key
   typed while Neovim is still starting is lost.
 
