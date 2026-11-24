@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"gioui.org/f32"
+	"gioui.org/io/pointer"
 	"gioui.org/layout"
 	"gioui.org/op/paint"
 	"gioui.org/unit"
@@ -52,9 +53,25 @@ func laidOf(t *testing.T, bar *topbar, id string) image.Rectangle {
 	return image.Rectangle{}
 }
 
+func dragTab(t *testing.T, bar *topbar, r *frameRig, id string, dx float32) f32.Point {
+	t.Helper()
+	tab := laidOf(t, bar, id)
+	from := f32.Pt(float32(tab.Min.X+tab.Dx()/2), float32(tab.Min.Y+tab.Dy()/2))
+	r.hover(from)
+	r.router.Queue(pointer.Event{Kind: pointer.Press, Source: pointer.Mouse, Buttons: pointer.ButtonPrimary, Position: from})
+	r.frame()
+	to := from.Add(f32.Pt(dx, 0))
+	r.router.Queue(pointer.Event{Kind: pointer.Move, Source: pointer.Mouse, Buttons: pointer.ButtonPrimary, Position: to})
+	r.frame()
+	if got := bar.sort.Dragging(); got != id {
+		t.Fatalf("dragging %q, want %q", got, id)
+	}
+	return to
+}
+
 // Every tab is a pill on the canvas, a gutter clear of the islands: the
-// active one in Accent, a hovered one at the foreground's 4%, and a hairline
-// only where the pinned tabs end.
+// active one uses the Sidebar surface and Border, a hovered one gets the
+// foreground's 4% fill, and one hairline marks where pinned tabs end.
 func TestTabsArePillsOnTheCanvas(t *testing.T) {
 	bar, r := tabsFrames(t)
 	r.settle(t)
@@ -65,30 +82,89 @@ func TestTabsArePillsOnTheCanvas(t *testing.T) {
 	th := r.theme
 	top, pill := gtx1(tabTop), gtx1(tabHeight)
 	p, a, b, d := laidOf(t, bar, "p"), laidOf(t, bar, "a"), laidOf(t, bar, "b"), laidOf(t, bar, "d")
-	if b.Min.Y != top || p.Max.X != a.Min.X {
-		t.Fatalf("tabs laid at %v, %v and %v: want them from y=%d, edge to edge", p, a, b, top)
+	margin, separatorWidth := gtx1(tabGroupMargin), gtx1(tabSeparatorWidth)
+	if b.Min.Y != top || a.Min.X-p.Max.X != 2*margin+separatorWidth {
+		t.Fatalf("tabs laid at %v, %v and %v: want the pinned-group separator to have %dpx side margins", p, a, b, margin)
+	}
+	if b.Min.X-a.Max.X != gtx1(tabGap) {
+		t.Fatalf("tabs a and b are %dpx apart, want %dpx", b.Min.X-a.Max.X, gtx1(tabGap))
 	}
 	mid, cmid := b.Min.X+b.Dx()/2, c.Min.X+c.Dx()/2
+	separatorX := a.Min.X - margin - separatorWidth
 	hover := th.Over(ui.Alpha(th.Foreground, tabHoverFill))
+	activeBorder := th.On(th.Sidebar).Over(th.Border)
 	for _, c := range []struct {
 		name string
 		x, y int
 		want color.NRGBA
 	}{
-		{"the active pill", mid, top + 3, th.Accent},
-		{"the active pill's foot", mid, top + pill - 2, th.Accent},
+		{"the active pill", mid, top + pill/2, th.Sidebar},
+		{"the active pill's top border", mid, top, activeBorder},
 		{"the gutter under the active pill", mid, top + pill + 2, th.Canvas},
 		{"the active pill's rounded corner", b.Min.X, top, th.Canvas},
 		{"a tab at rest", a.Min.X + a.Dx()/2, top + 3, th.Canvas},
 		{"the hovered pill", cmid, top + 3, hover},
 		{"the gutter under the hovered pill", cmid, top + pill + 2, th.Canvas},
 		{"between two tabs at rest", d.Min.X, top + pill/2, th.Canvas},
-		{"the pinned group's hairline", a.Min.X, top + pill/2, th.Over(th.Border)},
-		{"over the hairline's top", a.Min.X, top + 4, th.Canvas},
+		{"before the pinned group's hairline", separatorX - 1, top + pill/2, th.Canvas},
+		{"the pinned group's hairline", separatorX, top + pill/2, th.Over(th.Border)},
+		{"after the pinned group's hairline", separatorX + 2, top + pill/2, th.Canvas},
+		{"over the hairline's top", separatorX, top + 4, th.Canvas},
 	} {
 		if got := img.RGBAAt(c.x, c.y); !inkNear(got, c.want) {
 			t.Errorf("%s at (%d,%d): %v, want %v", c.name, c.x, c.y, got, c.want)
 		}
+	}
+}
+
+func TestDraggedActiveTabUsesAccentAndBorder(t *testing.T) {
+	bar, r := tabsFrames(t)
+	r.settle(t)
+	center := dragTab(t, bar, r, "b", 120)
+	img := renderRig(t, r)
+	th := r.theme
+	activeBorder := th.On(th.Accent).Over(th.Border)
+	top := gtx1(tabTop)
+	for _, c := range []struct {
+		name string
+		x, y int
+		want color.NRGBA
+	}{
+		{"dragged active tab", int(center.X), top + gtx1(tabHeight)/2, th.Accent},
+		{"dragged active tab border", int(center.X), top, activeBorder},
+	} {
+		if got := img.RGBAAt(c.x, c.y); !inkNear(got, c.want) {
+			t.Errorf("%s at (%d,%d): %v, want %v", c.name, c.x, c.y, got, c.want)
+		}
+	}
+}
+
+func TestPinnedGroupSeparatorStaysAtTheGroupBoundaryDuringDrag(t *testing.T) {
+	bar, r := tabsFrames(t)
+	r.settle(t)
+	dragTab(t, bar, r, "a", 120)
+	img := renderRig(t, r)
+	th := r.theme
+	pill := gtx1(tabHeight)
+	top := gtx1(tabTop)
+	p, a := laidOf(t, bar, "p"), laidOf(t, bar, "a")
+	separatorX := a.Min.X - gtx1(tabGroupMargin) - gtx1(tabSeparatorWidth)
+	if got, want := img.RGBAAt(separatorX, top+pill/2), th.Over(th.Border); !inkNear(got, want) {
+		t.Errorf("group separator moved with tab a: pixel at (%d,%d) is %v, want %v (pinned tab %v, normal tab slot %v)", separatorX, top+pill/2, got, want, p, a)
+	}
+}
+
+func TestTabMarginsRoundSeparatelyAtFractionalScale(t *testing.T) {
+	gtx := C{Metric: unit.Metric{PxPerDp: 1.31, PxPerSp: 1.31}}
+	tabs := []projectTab{{ID: "p", pinned: true}, {ID: "a"}, {ID: "b"}}
+	left, right := tabMarginPixels(gtx, tabs, 1)
+	wantLeft := gtx.Dp(tabGroupMargin + tabSeparatorWidth)
+	wantRight := gtx.Dp(tabGap)
+	if left != wantLeft || right != wantRight || left+right != wantLeft+wantRight {
+		t.Fatalf("fractional tab margins = %d + %d px, want separately rounded %d + %d px", left, right, wantLeft, wantRight)
+	}
+	if left+right == gtx.Dp(tabGroupMargin+tabSeparatorWidth+tabGap) {
+		t.Fatalf("test scale no longer distinguishes separate rounding from a combined conversion: margins %d + %d", left, right)
 	}
 }
 

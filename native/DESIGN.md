@@ -21,15 +21,20 @@ Elements are defined by space, hover and islands, not by enclosure.
   just inside its `RadiusLG` edge (`ui.InsetBorder`, `ui.IslandBorder`): the one outline in the window that
   wraps a surface rather than a field. A layout has no stage island: each of its panes is an island of its
   own on `Canvas`, a gutter apart, running to the stage's edges (`layoutPanes`). The top bar sits on the
-  canvas itself, unboxed: a project tab is a pill a gutter clear of the islands, `Accent` when active, the
-  foreground at 4% on hover, taking hover and clicks on the pill alone, with one `Border` hairline where the
-  pinned tabs end and none between the others. The footer is two balloons over the stage (see below).
+  canvas itself, unboxed: a project tab is a pill a gutter clear of the islands, `Sidebar` with a 1px `Border`
+  hairline when active, the foreground at 4% with a `Border` hairline on hover, and `Accent` with a `Border`
+  hairline while dragged. It takes hover and clicks on the pill alone, with one `Border` hairline where the pinned
+  tabs end, with 5px of space on either side; other adjacent tabs have a 5px gap. Close controls hide while any
+  tab is being dragged.
+  The footer is two balloons over the stage (see below).
 - **Hairlines are seams inside an island, and its edge.** `th.Separator` splits a panel's own parts (a screen's header
   from its body, two panes, a folder header from its rule). It never wraps a list item, a badge or a button
   at rest. Inputs are the one exception: a field needs an edge to read as editable.
 - **Badges are text and glyph**, never a filled pill: a pull request is its forge's logo, its state's glyph and
   `#N` (`!N` on GitLab), a diff is `+a -d` in the tones.
-- **State is fill, not chrome.** Selection is a flat `Accent` fill: no side bar, no ring, no shadow.
+- **State is fill, not chrome.** Selection uses a flat fill without a side bar or shadow. Project tabs are the
+  exception: the active tab uses `Sidebar` with a 1px `Border` hairline, and hover and drag add the same hairline
+  to their fills; other selections use flat `Accent`.
 - **What does not fit the line goes to the tooltip.** A row carries what you scan for; the rest (path,
   model, the tool a turn runs, how long) is one hover away, never a second line.
 

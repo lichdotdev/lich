@@ -30,8 +30,11 @@ var (
 	tabPadRight = ui.Space(2.5)
 	tabGlyph    = ui.Space(3.5)
 	// tabSlot is the box at a tab's end that holds the × or the status badge.
-	tabSlot      = unit.Dp(16)
-	tabSeparator = ui.Space(4) // the hairline between the pinned tabs and the rest, centred on the pill
+	tabSlot           = unit.Dp(16)
+	tabSeparator      = ui.Space(4)
+	tabSeparatorWidth = unit.Dp(1)
+	tabGap            = unit.Dp(5)
+	tabGroupMargin    = unit.Dp(5)
 )
 
 const (
@@ -102,6 +105,21 @@ func tabWidths(room int, natural []int, floor int) []int {
 	return out
 }
 
+func tabMargins(tabs []projectTab, i int) (left, right unit.Dp) {
+	if i > 0 && tabs[i-1].pinned != tabs[i].pinned {
+		left = tabGroupMargin + tabSeparatorWidth
+	}
+	if i+1 < len(tabs) {
+		right = tabGap
+	}
+	return left, right
+}
+
+func tabMarginPixels(gtx C, tabs []projectTab, i int) (left, right int) {
+	l, r := tabMargins(tabs, i)
+	return gtx.Dp(l), gtx.Dp(r)
+}
+
 // tabNatural is the width a tab wants: its padding, glyphs, name and the slot
 // at its end, capped at tabWidthMax. The name is measured in the active
 // weight so a tab does not grow when it is picked.
@@ -131,11 +149,14 @@ func (t *topbar) strip(gtx C, th *ui.Theme, f topbarFrame, act *topbarAction) D 
 	}
 	dragEnded := before != "" && t.sort.Dragging() == ""
 	plus := gtx.Dp(ui.BarButtonSize) + gtx.Dp(barGap)
+	totalMargins := 0
 	natural := make([]int, len(f.tabs))
 	for i, tab := range f.tabs {
 		natural[i] = t.tabNatural(gtx, th, tab)
+		left, right := tabMarginPixels(gtx, f.tabs, i)
+		totalMargins += left + right
 	}
-	w := tabWidths(gtx.Constraints.Max.X-plus, natural, gtx.Dp(tabWidthMin))
+	w := tabWidths(gtx.Constraints.Max.X-plus-totalMargins, natural, gtx.Dp(tabWidthMin))
 	t.lay(gtx, f, w)
 	ids := make([]string, len(f.tabs))
 	for i, tab := range f.tabs {
@@ -150,13 +171,15 @@ func (t *topbar) strip(gtx C, th *ui.Theme, f topbarFrame, act *topbarAction) D 
 	t.list.Layout(content, 1, func(gtx C, _ int) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
-				// The pills stand a gutter clear of the islands under them, as
-				// they are of each other; the gutter takes no hover nor click.
-				return layout.Inset{Top: tabTop, Bottom: gutter}.Layout(gtx, func(gtx C) D {
+				// The pills stand a gutter clear of the islands under them;
+				// tabs have a 5px gap and the group break has its own margins.
+				d := layout.Inset{Top: tabTop, Bottom: gutter}.Layout(gtx, func(gtx C) D {
 					return t.sort.List(gtx, ui.SortList{Horizontal: true, Within: true}, ids, func(gtx C, i int) D {
 						return t.tab(gtx, th, f, i, w, dragEnded, act)
 					})
 				})
+				t.drawSeparator(gtx, th, f)
+				return d
 			}),
 			ui.Gap(1),
 			// Centred on the band, which puts the "+" on the tabs' label line.
@@ -180,11 +203,26 @@ func (t *topbar) lay(gtx C, f topbarFrame, widths []int) {
 	top := gtx.Dp(tabTop)
 	strip := image.Rect(f.stripX, 0, f.stripX+gtx.Constraints.Max.X, gtx.Constraints.Max.Y)
 	x := f.stripX - t.list.Position.Offset
+	t.separator = image.Rectangle{}
 	for i, tab := range f.tabs {
+		left, right := tabMarginPixels(gtx, f.tabs, i)
+		if i > 0 && f.tabs[i-1].pinned != tab.pinned {
+			top := gtx.Dp(tabTop) + (gtx.Dp(tabHeight)-gtx.Dp(tabSeparator))/2
+			t.separator = image.Rect(x, top, x+gtx.Dp(tabSeparatorWidth), top+gtx.Dp(tabSeparator)).Intersect(strip)
+		}
+		x += left
 		r := image.Rect(x, top, x+widths[i], top+gtx.Dp(tabHeight)).Intersect(strip)
 		t.laid = append(t.laid, laidTab{id: tab.ID, rect: r})
-		x += widths[i]
+		x += widths[i] + right
 	}
+}
+
+func (t *topbar) drawSeparator(gtx C, th *ui.Theme, f topbarFrame) {
+	if t.separator.Empty() {
+		return
+	}
+	r := t.separator.Sub(image.Pt(f.stripX, 0))
+	paint.FillShape(gtx.Ops, th.Over(th.Border), clip.Rect{Min: r.Min, Max: r.Max}.Op())
 }
 
 // tabAt is the strip tab at window point p, "" for none.
@@ -217,7 +255,10 @@ func (t *topbar) tab(gtx C, th *ui.Theme, f topbarFrame, i int, widths []int, dr
 	case clicked && !dragEnded && tab.ID != f.active:
 		act.show = tab.ID
 	}
-	gtx.Constraints = layout.Exact(image.Pt(widths[i], gtx.Dp(tabHeight)))
+	left, right := tabMargins(f.tabs, i)
+	leftPx, rightPx := tabMarginPixels(gtx, f.tabs, i)
+	size := image.Pt(widths[i], gtx.Dp(tabHeight))
+	gtx.Constraints = layout.Exact(image.Pt(size.X+leftPx+rightPx, size.Y))
 	entries := []ui.MenuEntry{
 		{Label: i18n.T("tabs.topbarTabs.pinProject"), Icon: icTabPin, OnClick: func() { act.pinProject, act.pin = tab.ID, !tab.pinned }},
 		{Kind: ui.MenuSeparator},
@@ -235,48 +276,52 @@ func (t *topbar) tab(gtx C, th *ui.Theme, f topbarFrame, i int, widths []int, dr
 			{Label: i18n.T("layouts.tab.close"), Icon: icMenuClose, OnClick: func() { act.ask = tab.ID }},
 		}
 	}
-	return t.sort.Item(gtx, tab.ID, func(gtx C) D {
-		return th.ContextMenu(t.root, &st.menu, entries).Layout(gtx, func(gtx C) D {
-			tip := th.TooltipCard(t.root, &st.tip, tabTooltip(th.On(th.Popover), tab))
-			tip.Side = ui.SideBottom
-			return tip.Layout(gtx, func(gtx C) D {
-				return st.click.Layout(gtx, func(gtx C) D { return t.tabFace(gtx, th, f, i, st, act) })
+	return layout.Inset{Left: left, Right: right}.Layout(gtx, func(gtx C) D {
+		gtx.Constraints = layout.Exact(size)
+		return t.sort.Item(gtx, tab.ID, func(gtx C) D {
+			return th.ContextMenu(t.root, &st.menu, entries).Layout(gtx, func(gtx C) D {
+				tip := th.TooltipCard(t.root, &st.tip, tabTooltip(th.On(th.Popover), tab))
+				tip.Side = ui.SideBottom
+				return tip.Layout(gtx, func(gtx C) D {
+					return st.click.Layout(gtx, func(gtx C) D { return t.tabFace(gtx, th, f, i, st, act) })
+				})
 			})
-		})
-	}, nil)
+		}, nil)
+	})
 }
 
-// tabFace draws a tab: a pill of Accent when active or carried, a faint
-// fill when hovered, the hairline where the pinned tabs end, then the badge,
-// the name and, at the right, the × on hover and on the active tab, else the
-// badge.
+// tabFace draws a tab: the Sidebar surface and a Border hairline when active,
+// Accent on a carried tab, a faint fill when hovered, and the pinned-group hairline.
 func (t *topbar) tabFace(gtx C, th *ui.Theme, f topbarFrame, i int, st *tabState, act *topbarAction) D {
 	tab := f.tabs[i]
 	active := tab.ID == f.active
+	dragging := t.sort.Dragging() == tab.ID
 	hovered := st.click.Hovered() || st.close.Hovered()
 	pill := gtx.Constraints.Min
 	bg := th.Surface
 	switch {
-	case active || t.sort.Dragging() == tab.ID:
+	case dragging:
 		bg = th.Accent
+	case active:
+		bg = th.Sidebar
 	case hovered:
 		bg = th.Over(ui.Alpha(th.Foreground, tabHoverFill))
 	}
 	if bg != th.Surface {
 		paint.FillShape(gtx.Ops, bg, clip.UniformRRect(image.Rectangle{Max: pill}, gtx.Dp(tabRadius)).Op(gtx.Ops))
 	}
-	if i > 0 && f.tabs[i-1].pinned != tab.pinned {
-		top := (pill.Y - gtx.Dp(tabSeparator)) / 2
-		paint.FillShape(gtx.Ops, th.Over(th.Border), clip.Rect{Min: image.Pt(0, top), Max: image.Pt(gtx.Dp(1), top+gtx.Dp(tabSeparator))}.Op())
-	}
 	on := th.On(bg)
+	if active || hovered || dragging {
+		ui.InsetBorder(gtx, pill, gtx.Dp(tabRadius), on.Over(on.Border))
+	}
 	fg, weight := ui.MixOKLab(on.MutedForeground, on.Foreground, tabRestMix), font.Normal
 	if active {
 		fg, weight = on.Foreground, font.Medium
 	}
+	showClose := t.sort.Dragging() == "" && (active || hovered)
 	gtx.Constraints = layout.Exact(pill)
 	layout.Inset{Left: tabPadLeft, Right: tabPadRight}.Layout(gtx, func(gtx C) D {
-		return layout.W.Layout(gtx, func(gtx C) D { return t.tabContent(gtx, on, tab, st, fg, weight, active || hovered, act) })
+		return layout.W.Layout(gtx, func(gtx C) D { return t.tabContent(gtx, on, tab, st, fg, weight, showClose, act) })
 	})
 	return D{Size: pill}
 }

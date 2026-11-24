@@ -62,6 +62,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Project tabs show a one-pixel border when selected, hovered or dragged.** The selected tab uses the sidebar surface; close controls hide while dragging, tabs have a 5px gap, including 5px of space on either side of the divider between pinned and regular tabs.
 - **A tooltip on a button wears the theme's popover colors.** It was the theme's text color as a background, a white bubble on a dark theme; it is now a popover with a visible border, the same on the longer tooltips.
 - **A project tab is as wide as its name.** It stops at a limit, keeps room for the spinner, status mark and ×, and when the tabs do not all fit only the longest names shrink.
 - **Your messages in the chat are rounder, roomier balloons.** The corner by the right edge stays tight, pointing at you, and long messages wrap sooner.
