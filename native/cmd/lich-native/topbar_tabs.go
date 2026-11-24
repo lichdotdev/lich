@@ -3,9 +3,11 @@ package main
 import (
 	"image"
 	"image/color"
+	"sort"
 
 	"gioui.org/font"
 	"gioui.org/layout"
+	"gioui.org/op"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
 	"gioui.org/unit"
@@ -15,8 +17,9 @@ import (
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
-// The project tab, from the approved mockup: browser-style tabs of a fixed
-// width that shrinks evenly to a floor before the strip scrolls.
+// The project tab, from the approved mockup: a pill as wide as its name, up
+// to a ceiling; when they do not all fit the widest give way evenly to a floor
+// before the strip scrolls.
 var (
 	tabWidthMax = ui.Space(41)   // 164px
 	tabWidthMin = ui.Space(29.5) // 118px
@@ -32,6 +35,8 @@ var (
 )
 
 const (
+	// tabNameGap, in Space steps, keeps the name off the slot at its end.
+	tabNameGap     = 3
 	tabTextSize    = 13
 	tabTextLeading = 20
 	// tabHoverFill is the mockup's --hover-faint, the foreground at 4%.
@@ -78,14 +83,41 @@ func (t *topbar) tabState(id string) *tabState {
 	return st
 }
 
-// tabWidth is each tab's width: the widest while count of them fit in
-// room, else room shared evenly, never under the narrowest, past which the
-// strip scrolls.
-func tabWidth(room, count, widest, narrowest int) int {
-	if count == 0 {
-		return widest
+// tabWidths is each tab's width: its natural one, except that when they
+// together overflow room the widest are cut to a shared cap, never under
+// floor, past which the strip scrolls.
+func tabWidths(room int, natural []int, floor int) []int {
+	order := make([]int, len(natural))
+	for i := range order {
+		order[i] = i
 	}
-	return min(widest, max(narrowest, room/count))
+	sort.Slice(order, func(a, b int) bool { return natural[order[a]] < natural[order[b]] })
+	out := make([]int, len(natural))
+	left := room
+	for k, i := range order {
+		share := max(floor, left/(len(order)-k))
+		out[i] = min(natural[i], share)
+		left -= out[i]
+	}
+	return out
+}
+
+// tabNatural is the width a tab wants: its padding, glyphs, name and the slot
+// at its end, capped at tabWidthMax. The name is measured in the active
+// weight so a tab does not grow when it is picked.
+func (t *topbar) tabNatural(gtx C, th *ui.Theme, tab projectTab) int {
+	m := op.Record(gtx.Ops)
+	gtx.Constraints = layout.Constraints{Max: image.Pt(1<<24, gtx.Constraints.Max.Y)}
+	name := th.Text(tabTextSize, tab.Name).Leading(tabTextLeading).Weight(font.Medium).Layout(gtx).Size.X
+	m.Stop()
+	w := gtx.Dp(tabPadLeft) + name + gtx.Dp(ui.Space(tabNameGap)) + gtx.Dp(tabSlot) + gtx.Dp(tabPadRight)
+	if tab.layout {
+		w += gtx.Dp(tabGlyph) + gtx.Dp(ui.Space(2))
+	}
+	if tab.pinned {
+		w += gtx.Dp(tabGlyph) + gtx.Dp(ui.Space(2))
+	}
+	return min(w, gtx.Dp(tabWidthMax))
 }
 
 // strip is the scrolling row of tabs with the open-project button right after
@@ -99,7 +131,11 @@ func (t *topbar) strip(gtx C, th *ui.Theme, f topbarFrame, act *topbarAction) D 
 	}
 	dragEnded := before != "" && t.sort.Dragging() == ""
 	plus := gtx.Dp(ui.BarButtonSize) + gtx.Dp(barGap)
-	w := tabWidth(gtx.Constraints.Max.X-plus, len(f.tabs), gtx.Dp(tabWidthMax), gtx.Dp(tabWidthMin))
+	natural := make([]int, len(f.tabs))
+	for i, tab := range f.tabs {
+		natural[i] = t.tabNatural(gtx, th, tab)
+	}
+	w := tabWidths(gtx.Constraints.Max.X-plus, natural, gtx.Dp(tabWidthMin))
 	t.lay(gtx, f, w)
 	ids := make([]string, len(f.tabs))
 	for i, tab := range f.tabs {
@@ -137,16 +173,17 @@ type laidTab struct {
 	rect image.Rectangle
 }
 
-// lay records where each tab of the strip, w wide and scrolled as the list
-// is, sits in the window, cut to the strip's own width.
-func (t *topbar) lay(gtx C, f topbarFrame, w int) {
+// lay records where each tab of the strip, widths[i] wide and scrolled as the
+// list is, sits in the window, cut to the strip's own width.
+func (t *topbar) lay(gtx C, f topbarFrame, widths []int) {
 	t.laid = t.laid[:0]
 	top := gtx.Dp(tabTop)
 	strip := image.Rect(f.stripX, 0, f.stripX+gtx.Constraints.Max.X, gtx.Constraints.Max.Y)
+	x := f.stripX - t.list.Position.Offset
 	for i, tab := range f.tabs {
-		x := f.stripX + i*w - t.list.Position.Offset
-		r := image.Rect(x, top, x+w, top+gtx.Dp(tabHeight)).Intersect(strip)
+		r := image.Rect(x, top, x+widths[i], top+gtx.Dp(tabHeight)).Intersect(strip)
 		t.laid = append(t.laid, laidTab{id: tab.ID, rect: r})
+		x += widths[i]
 	}
 }
 
@@ -160,7 +197,7 @@ func (t *topbar) tabAt(p image.Point) string {
 	return ""
 }
 
-func (t *topbar) tab(gtx C, th *ui.Theme, f topbarFrame, i, w int, dragEnded bool, act *topbarAction) D {
+func (t *topbar) tab(gtx C, th *ui.Theme, f topbarFrame, i int, widths []int, dragEnded bool, act *topbarAction) D {
 	tab := f.tabs[i]
 	st := t.tabState(tab.ID)
 	closed, clicked := st.close.Clicked(gtx), false
@@ -180,7 +217,7 @@ func (t *topbar) tab(gtx C, th *ui.Theme, f topbarFrame, i, w int, dragEnded boo
 	case clicked && !dragEnded && tab.ID != f.active:
 		act.show = tab.ID
 	}
-	gtx.Constraints = layout.Exact(image.Pt(w, gtx.Dp(tabHeight)))
+	gtx.Constraints = layout.Exact(image.Pt(widths[i], gtx.Dp(tabHeight)))
 	entries := []ui.MenuEntry{
 		{Label: i18n.T("tabs.topbarTabs.pinProject"), Icon: icTabPin, OnClick: func() { act.pinProject, act.pin = tab.ID, !tab.pinned }},
 		{Kind: ui.MenuSeparator},
@@ -255,17 +292,13 @@ func (t *topbar) tabContent(gtx C, on *ui.Theme, tab projectTab, st *tabState, f
 		}),
 		layout.Rigid(func(gtx C) D {
 			if !tab.pinned {
-				// Stands where the slot at the end stands, so the name sits in the middle of the tab.
-				if !tab.layout {
-					return D{Size: image.Pt(gtx.Dp(tabSlot)+gtx.Dp(ui.Space(2)), 0)}
-				}
 				return D{}
 			}
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx, layout.Rigid(func(gtx C) D { return icTabPin.Layout(gtx, tabGlyph, fg) }), ui.Gap(2))
 		}),
 		layout.Flexed(1, func(gtx C) D {
 			if !st.rename.Active() {
-				return on.Text(tabTextSize, tab.Name).Leading(tabTextLeading).In(fg).Weight(weight).Centered().Layout(gtx)
+				return on.Text(tabTextSize, tab.Name).Leading(tabTextLeading).In(fg).Weight(weight).Layout(gtx)
 			}
 			d, res := on.InlineEdit(&st.rename, tabTextSize).Weight(weight).Layout(gtx)
 			if res.Outcome == ui.InlineEditCommitted {
@@ -273,7 +306,7 @@ func (t *topbar) tabContent(gtx C, on *ui.Theme, tab projectTab, st *tabState, f
 			}
 			return d
 		}),
-		ui.Gap(2),
+		ui.Gap(tabNameGap),
 		layout.Rigid(func(gtx C) D {
 			if !showClose || tab.pinned {
 				slot := image.Pt(gtx.Dp(tabSlot), gtx.Dp(tabSlot))
