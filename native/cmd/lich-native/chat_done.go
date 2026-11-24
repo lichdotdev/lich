@@ -37,13 +37,13 @@ func chatChangesText(c api.ChatTurnChanges) string {
 	return i18n.T("chat.done.files", i18n.Args{"count": c.Files})
 }
 
-// chatDone is the line that closes a finished turn: the provider's avatar, the
-// word that says how it ended and, muted, what the turn changed in the checkout,
+// chatDone is the line that closes a finished turn: the word that says how it
+// ended and, muted, what the turn changed in the checkout,
 // with a hairline to the column's edge as the turn's tool calls have. The count
 // of files and lines is the click: it opens Review, where the footer's changes
 // item does. A turn with no count to give (the checkout could not be read, or
-// the turn was read back with the history) says its word alone. The avatar,
-// word and count are drawn at opacity shown, and the hairline over share rule
+// the turn was read back with the history) says its word alone. The word and
+// count are drawn at opacity shown, and the hairline over share rule
 // of its room from its left end: both 1 at rest, less while the live line
 // turns into this one.
 func (u *window) chatDone(gtx C, th *ui.Theme, p *chatPane, sv sessionView, r chatRow, shown, rule float32) D {
@@ -52,7 +52,6 @@ func (u *window) chatDone(gtx C, th *ui.Theme, p *chatPane, sv sessionView, r ch
 	if f.click.Clicked(gtx) {
 		u.dock.show(dockReview)
 	}
-	tint, mark, _ := u.agentLook(sv.ID)
 	word := th.Text(ui.TextSM, chatDoneWord(end.StopReason)).Weight(font.Medium)
 	if end.StopReason == stopError {
 		word = word.In(th.Destructive)
@@ -66,11 +65,7 @@ func (u *window) chatDone(gtx C, th *ui.Theme, p *chatPane, sv sessionView, r ch
 			return w(gtx)
 		})
 	}
-	line := []layout.FlexChild{
-		faded(func(gtx C) D { return chatAvatar(gtx, th, tint, mark) }),
-		ui.Gap(2),
-		faded(word.Layout),
-	}
+	line := []layout.FlexChild{faded(word.Layout)}
 	if len(r.tools) > 0 {
 		work := i18n.T("chat.view.toolCalls", i18n.Args{"count": len(r.tools)}) + " · " + chatTook(r.took)
 		line = append(line, ui.Gap(2), faded(th.Text(ui.TextSM, "·").Muted().Layout), ui.Gap(2), faded(th.Text(ui.TextSM, work).Muted().Layout))

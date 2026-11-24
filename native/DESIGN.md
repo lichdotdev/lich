@@ -436,7 +436,7 @@ draws none while it grows in, because the room above the rows is measured in the
   is underlined in its color and takes the hand, and a click with it opens a file in the stage editor
   (`followCodeRef`) and a folder in the dock's Code tab, unfolded down to it (`chat_paths.go`). A path it does not
   hold stays text. Anything else in code is plain. An answer has no header: who wrote it is the
-  foot's (see A message's time); the provider's avatar is on the closing line, never on a tool call. A thought is a muted fold, closed, with the
+  foot's (see A message's time); the provider's avatar marks no answer, call or closing line. A thought is a muted fold, closed, with the
   sparkles before its label.
 - **A turn's tool calls** fold by run: the calls between two of the agent's texts (or the person's message and
   the first text) fold into one muted line where the first of them came. One line for the whole turn stood where
@@ -465,7 +465,7 @@ draws none while it grows in, because the room above the rows is measured in the
   the turn in flight is alive: a call an ended turn left running (interrupted) stops with it, its time up to the
   turn's end, or none where nobody saw it.
 - **A turn's closing line** stands once, after the last item of the conversation's last turn, when that turn
-  has ended: the provider's avatar as the tool-call line opens a turn with, "Done" in `TextSM` medium
+  has ended: "Done" in `TextSM` medium, with no avatar,
   `Foreground`, then, when it ran any, muted "· 34 tool calls · 6m 4s", all its runs' calls and how long the turn
   took, then muted "· no changes" or "· 3 files" and the lines the turn added in `TonePass` and removed
   in `Destructive` ("+12 −4"), as the diffs draw them, and a 1px `Border` hairline to the column's edge.
@@ -500,7 +500,7 @@ draws none while it grows in, because the room above the rows is measured in the
   opens, or after it, or drawn again after the TUI, does not play as arrivals. A list at its end stays at its
   end while rows grow in.
 - **A row that becomes another changes in its slot** (`chat_motion.go`). A turn ending turns the live line into
-  the closing line where it stood: the flame, verb and clock fade out in 120ms ease-in, then the avatar, word
+  the closing line where it stood: the flame, verb and clock fade out in 120ms ease-in, then the word
   and count fade in by 280ms and the hairline runs from the word to the column's edge by 360ms, both ease-out;
   the slot eases to the closing line's height in 160ms, since the two differ by a few pixels. Neither row
   plays its own entry or exit. A question answered leaves the composer at once, and its answer enters the

@@ -155,7 +155,7 @@ func TestAnEmptyConversationDraws(t *testing.T) {
 // The turn ending turns the live line into the closing line in its slot:
 // Done stands where the live line's verb was in every frame of the change,
 // never under it, and the slot only eases from one line's height to the
-// other's (at 1x the flame's 11 rows of 2px are 22px, the avatar 20px).
+// other's (at 1x the flame's 11 rows of 2px are 22px, the word's line less).
 func TestTheLiveLineTurnsIntoDoneInItsSlot(t *testing.T) {
 	items := []backend.ChatItem{{ID: "u1", Kind: api.ItemUser, Turn: 1, At: novDay(18, 17, 59), Text: "go"}}
 	u, r := lifeFrames(t, items, true)

@@ -17,7 +17,7 @@ import (
 // The chat view): a row that becomes another plays the change in its slot.
 const (
 	// The live line turning into the closing line: the flame, verb and clock
-	// go by chatSwapOut, the avatar, word and count come in up to chatSwapIn,
+	// go by chatSwapOut, the word and count come in up to chatSwapIn,
 	// the hairline runs out to the edge up to chatSwapRule, and the slot takes
 	// the closing line's height over chatSwapHeight.
 	chatSwapOut    = 120 * time.Millisecond
