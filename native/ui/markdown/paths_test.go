@@ -109,7 +109,7 @@ func TestOnlyCodeTheListingFindsWearsAPathMark(t *testing.T) {
 		"Key `chat.slash.new` is wrong": "",
 	} {
 		cache := Cache{}
-		c := cache.text(markdownTheme(), "k", src, paths).blocks[0].prose
+		c := cache.text(markdownTheme(), "k", src, paths, inlineLook).blocks[0].prose
 		got := ""
 		for i, d := range c.decor {
 			switch d.icon {
@@ -129,10 +129,10 @@ func TestOnlyCodeTheListingFindsWearsAPathMark(t *testing.T) {
 	// A listing that changes checks the marks again.
 	cache := Cache{}
 	src := "Push `origin/main`"
-	cache.text(markdownTheme(), "k", src, paths)
+	cache.text(markdownTheme(), "k", src, paths, inlineLook)
 	listed["origin/main"] = true
 	paths.Version = 2
-	if !hasMark(cache.text(markdownTheme(), "k", src, paths).blocks[0].prose) {
+	if !hasMark(cache.text(markdownTheme(), "k", src, paths, inlineLook).blocks[0].prose) {
 		t.Error("a path the new listing finds did not get its mark")
 	}
 }

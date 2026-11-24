@@ -25,8 +25,6 @@ type (
 
 const (
 	BodySize        = unit.Sp(15)
-	markdownH1      = unit.Sp(20)
-	markdownH2      = unit.Sp(18)
 	LineHeightScale = 1.5
 	// markdownHeadingLineHeightScale is GitHub's line-height for headings,
 	// which keeps an h1 or h2's rule close to its text.
@@ -48,6 +46,7 @@ type markdownText struct {
 	fonts  [2]font.Typeface
 	shaper *text.Shaper
 	blocks []markdownBlock
+	look   look
 	// heights is each block's height as last laid out, 0 for one never laid
 	// out.
 	heights []int
@@ -69,9 +68,11 @@ type markdownBlock struct {
 	prose *markdownCell
 	table *markdownTable
 	list  *markdownList
-	// rule underlines the prose across the body's width, GitHub's border
-	// under an h1 or h2.
-	rule bool
+	// heading is a heading's prose, which sits closer to what it opens than
+	// to what is above it.
+	heading bool
+	// props is a document's frontmatter, drawn in place of prose.
+	props []property
 	// quote draws the prose behind a bar, a blockquote; panel draws it on a
 	// fill of its own, a code block.
 	quote, panel bool
@@ -130,6 +131,12 @@ func (m Cache) LayoutWindow(gtx C, th *ui.Theme, key, src string, open func(url 
 	return m.layout(gtx, th, key, src, Links{Open: open}, window)
 }
 
+// LayoutDocumentWindow is LayoutWindow for a file opened to read: a reading
+// column, its frontmatter as properties, headings a size up.
+func (m Cache) LayoutDocumentWindow(gtx C, th *ui.Theme, key, src string, open func(url string), window Window) D {
+	return m.layoutAs(gtx, th, key, src, Links{Open: open}, window, documentLook)
+}
+
 // LayoutLinks is layout handing what src links to, paths included, to l.
 func (m Cache) LayoutLinks(gtx C, th *ui.Theme, key, src string, l Links) D {
 	return m.layout(gtx, th, key, src, l, whole)
@@ -141,13 +148,20 @@ func (m Cache) LayoutLinksWindow(gtx C, th *ui.Theme, key, src string, l Links, 
 }
 
 func (m Cache) layout(gtx C, th *ui.Theme, key, src string, l Links, window Window) D {
-	t := m.text(th, key, src, l.Paths)
+	return m.layoutAs(gtx, th, key, src, l, window, inlineLook)
+}
+
+func (m Cache) layoutAs(gtx C, th *ui.Theme, key, src string, l Links, window Window, lk look) D {
+	t := m.text(th, key, src, l.Paths, lk)
 	t.selectKeys(gtx)
-	gap, estimate := gtx.Dp(ui.Space(BlockGap)), t.estimate(gtx)
-	y, width := 0, gtx.Constraints.Min.X
+	estimate := t.estimate(gtx)
+	y, width, left := 0, gtx.Constraints.Min.X, 0
+	if column := gtx.Dp(lk.column); column > 0 && gtx.Constraints.Max.X > column {
+		left, gtx.Constraints.Max.X = (gtx.Constraints.Max.X-column)/2, column
+	}
 	for i, b := range t.blocks {
 		if i > 0 {
-			y += gap
+			y += gtx.Dp(ui.Space(lk.gapBefore(t.blocks, i)))
 		}
 		h := t.heights[i]
 		if h == 0 {
@@ -159,19 +173,19 @@ func (m Cache) layout(gtx C, th *ui.Theme, key, src string, l Links, window Wind
 		}
 		g := gtx
 		g.Constraints.Min = image.Point{}
-		stack := op.Offset(image.Pt(0, y)).Push(gtx.Ops)
+		stack := op.Offset(image.Pt(left, y)).Push(gtx.Ops)
 		dims := b.layout(g, th, l)
 		stack.Pop()
 		t.heights[i] = dims.Size.Y
 		y += dims.Size.Y
-		width = max(width, dims.Size.X)
+		width = max(width, left+dims.Size.X)
 	}
 	return D{Size: image.Pt(width, y)}
 }
 
 // text is the cache's entry for key, parsed again when src, the theme or
 // the listing paths looks paths up in changes.
-func (m Cache) text(th *ui.Theme, key, src string, paths *Paths) *markdownText {
+func (m Cache) text(th *ui.Theme, key, src string, paths *Paths, lk look) *markdownText {
 	t, ok := m[key]
 	if !ok {
 		t = new(markdownText)
@@ -183,8 +197,8 @@ func (m Cache) text(th *ui.Theme, key, src string, paths *Paths) *markdownText {
 	if paths != nil {
 		linked = paths.Version
 	}
-	if t.src != src || t.fg != fg || t.fonts != fonts || t.shaper != th.Shaper || t.blocks == nil || t.linked != linked || t.highlight != th.Code.Highlight {
-		t.src, t.fg, t.fonts, t.shaper, t.blocks = src, fg, fonts, th.Shaper, renderBlocks(th, src)
+	if t.src != src || t.fg != fg || t.fonts != fonts || t.shaper != th.Shaper || t.blocks == nil || t.linked != linked || t.highlight != th.Code.Highlight || t.look != lk {
+		t.src, t.fg, t.fonts, t.shaper, t.look, t.blocks = src, fg, fonts, th.Shaper, lk, renderLook(th, src, lk)
 		t.heights, t.linked, t.highlight = make([]int, len(t.blocks)), linked, th.Code.Highlight
 		t.keepCopies()
 		if paths != nil {
@@ -228,12 +242,8 @@ func (b markdownBlock) layout(gtx C, th *ui.Theme, l Links) D {
 	if b.panel {
 		return b.prose.layoutPanel(gtx, th, l, b.copy, b.code)
 	}
-	if b.rule {
-		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-			layout.Rigid(func(gtx C) D { return b.prose.layout(gtx, th, l) }),
-			ui.VGap(1),
-			layout.Rigid(th.Separator),
-		)
+	if b.props != nil {
+		return layoutProps(gtx, th, b.props)
 	}
 	return b.prose.layout(gtx, th, l)
 }

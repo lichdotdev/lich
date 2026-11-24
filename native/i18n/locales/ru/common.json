@@ -22,10 +22,5 @@
   },
   "stepper": {
     "default": "По умолчанию"
-  },
-  "pickerDialog": {
-    "navigate": "навигация",
-    "filter": "фильтр",
-    "close": "закрыть"
   }
 }
