@@ -34,6 +34,9 @@ type diskWatch struct {
 	read  remote[string]
 	nudge int
 	seen  string
+	// saves counts the editor's writes that landed: a read asked for before
+	// one holds the text the write replaced.
+	saves int
 	// theirs is the disk's text since the editor read the file, while the
 	// user holds changes of their own; nil while there is none.
 	theirs       *string
@@ -57,15 +60,18 @@ func (f *fileEditor) watchDisk(gtx C) {
 	gtx.Execute(op.InvalidateCmd{At: tick.Add(editorDiskTick)})
 	key := fmt.Sprintf("%s\x00%d\x00%d", f.fileKey(), tick.Unix(), f.disk.nudge)
 	client, root, rel := f.client, f.root(), f.rel
-	f.disk.read.want(key, f.fileKey(), func(ctx context.Context) (string, error) { return client.ReadFile(ctx, root, rel) })
+	f.disk.read.want(key, fmt.Sprintf("%s\x00%d", f.fileKey(), f.disk.saves), func(ctx context.Context) (string, error) { return client.ReadFile(ctx, root, rel) })
 	if f.disk.reload.Clicked(gtx) && f.disk.theirs != nil {
 		f.reloadFrom(*f.disk.theirs)
 	}
 	if f.disk.keep.Clicked(gtx) && f.disk.theirs != nil {
 		f.keepMine()
 	}
+	f.saving.mu.Lock()
+	saving := f.saving.busy
+	f.saving.mu.Unlock()
 	text, loading, err := f.disk.read.get()
-	if loading || err != nil || text == f.disk.seen {
+	if saving || loading || err != nil || text == f.disk.seen {
 		return
 	}
 	f.disk.seen = text

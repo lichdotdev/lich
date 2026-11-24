@@ -371,3 +371,21 @@ func TestAFailedSaveAsksAndItsAnswersHoldOrLeave(t *testing.T) {
 		t.Fatalf("after Save ran %d dirty %v; want the text written and what was asked for done", ran, f.dirty)
 	}
 }
+
+func TestADiskReadFromBeforeASaveNeverUndoesIt(t *testing.T) {
+	f, _, now := clockedEditor(t, "one\n")
+	for deadline := time.Now().Add(5 * time.Second); f.disk.seen != "one\n"; time.Sleep(time.Millisecond) {
+		if time.Now().After(deadline) {
+			t.Fatal("the disk was never read")
+		}
+		f.watchDisk(frameCtx())
+	}
+	typeAt(t, f, 0, "a")
+	*now = now.Add(autoSaveDelay)
+	f.autoSave(frameCtx())
+	waitSave(t, f)
+	f.watchDisk(frameCtx())
+	if doc := f.ed.State().Doc(); doc != "aone\n" || f.disk.theirs != nil {
+		t.Fatalf("editor holds %q, warning %v; want the saved text kept, no warning", doc, f.disk.theirs != nil)
+	}
+}
