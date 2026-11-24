@@ -20,10 +20,5 @@
   },
   "stepper": {
     "default": "默认"
-  },
-  "pickerDialog": {
-    "navigate": "导航",
-    "filter": "筛选",
-    "close": "关闭"
   }
 }

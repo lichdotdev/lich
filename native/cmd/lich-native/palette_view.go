@@ -10,8 +10,6 @@ import (
 	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/op"
-	"gioui.org/op/clip"
-	"gioui.org/op/paint"
 	"gioui.org/unit"
 
 	"github.com/lichdotdev/lich/native/i18n"
@@ -29,33 +27,38 @@ const (
 	paletteScrim = 0.5
 	// paletteMaxHeight is the popup's height cap, in percent of the window.
 	paletteMaxHeight = 70
-	// paletteHintBarFill is the opacity of the hint bar's black fill.
-	paletteHintBarFill = 0.1
 	// paletteEmptyWidth is the widest the empty hint grows, in dp.
 	paletteEmptyWidth     unit.Dp = 330
 	paletteInputSize      unit.Sp = 15
 	paletteTabSize        unit.Sp = 13
 	paletteTinySize       unit.Sp = ui.TinyTextSize
 	paletteTinyLeading    unit.Sp = ui.TinyTextLeading
-	paletteInputRow               = 11.5 // 12px of padding around a 22.5px line
+	paletteInputHeight    unit.Dp = 42 // the field of the mockup the palette was redrawn from
 	paletteGlyphSize              = 16
-	paletteEnterSize              = 14
-	paletteTabGap                 = 4.5 // between two filter tabs
-	paletteTabUnderline   unit.Dp = 1.5 // under the current filter tab
 	paletteDimOpacity             = 0.4 // a tab with nothing in it
 	paletteCountOpacity           = 0.7 // the count's
 	paletteSnippetOpacity         = 0.8 // the snippet's
 	paletteQueryOpacity           = 0.8 // the query's
 )
 
+// The filter tabs are the dock's tab pill: a faint accent tray, the current
+// tab filled in it.
+var (
+	paletteTrayPad  = ui.Space(1)
+	paletteTrayGap  = ui.Space(0.5)
+	paletteTabPadX  = ui.Space(2.5)
+	paletteTabPadY  = ui.Space(0.75)
+	paletteTrayDrop = ui.Space(2) // between the field and the tray
+)
+
 var (
 	icPaletteSearch     = icons.Lucide("search")
+	icPaletteScopeClear = icons.Lucide("x")
 	icPaletteFolder     = icons.Lucide("folder")
 	icPaletteFolderGone = icons.Lucide("folder-x")
 	icPaletteBranch     = icons.Lucide("git-branch")
 	icPaletteMessage    = icons.Lucide("message-square-text")
 	icPaletteAction     = icons.Lucide("chevron-right")
-	icPaletteEnter      = icons.Lucide("corner-down-left")
 )
 
 // paletteRing draws a session's status mark: the provider's glyph in the ring
@@ -91,39 +94,37 @@ func (r recorded) place(gtx C, y int) {
 // of the window, and no more than its rows need, so the panel is as tall as its
 // content.
 func (p *commandPalette) panel(gtx C, th *ui.Theme, v *paletteView, ring paletteRing, now time.Time) D {
-	width := gtx.Constraints.Max.X
-	gtx.Constraints.Min = image.Pt(width, 0)
-	limit := gtx.Constraints.Max.Y * paletteMaxHeight / 100
-	head := record(gtx, func(gtx C) D { return p.header(gtx, th, v) })
-	foot := record(gtx, func(gtx C) D { return p.footer(gtx, th, v) })
-	room := gtx
-	room.Constraints.Max.Y = max(limit-head.size.Y-foot.size.Y, 0)
-	listed := record(room, func(gtx C) D { return p.body(gtx, th, v, ring, now) })
-	head.place(gtx, 0)
-	listed.place(gtx, head.size.Y)
-	foot.place(gtx, head.size.Y+listed.size.Y)
-	return D{Size: image.Pt(width, head.size.Y+listed.size.Y+foot.size.Y)}
+	return layout.UniformInset(ui.Space(2)).Layout(gtx, func(gtx C) D {
+		width := gtx.Constraints.Max.X
+		gtx.Constraints.Min = image.Pt(width, 0)
+		limit := gtx.Constraints.Max.Y * paletteMaxHeight / 100
+		head := record(gtx, func(gtx C) D { return p.header(gtx, th, v) })
+		room := gtx
+		room.Constraints.Max.Y = max(limit-head.size.Y, 0)
+		listed := record(room, func(gtx C) D { return p.body(gtx, th, v, ring, now) })
+		head.place(gtx, 0)
+		listed.place(gtx, head.size.Y)
+		return D{Size: image.Pt(width, head.size.Y+listed.size.Y)}
+	})
 }
 
-// header is the query field over its hairline, and the filter tabs over
-// theirs: an action search has no kinds to filter, so no tabs.
+// header is the query field over the filter tray: an action search has no
+// kinds to filter, so no tray.
 func (p *commandPalette) header(gtx C, th *ui.Theme, v *paletteView) D {
-	children := []layout.FlexChild{
-		layout.Rigid(func(gtx C) D { return p.field(gtx, th) }),
-		layout.Rigid(th.Separator),
-	}
+	children := []layout.FlexChild{layout.Rigid(func(gtx C) D { return p.field(gtx, th) })}
 	if !v.actionMode {
-		children = append(children,
-			layout.Rigid(func(gtx C) D { return p.filters(gtx, th, v) }),
-			layout.Rigid(th.Separator),
-		)
+		children = append(children, layout.Rigid(func(gtx C) D {
+			return layout.Inset{Top: paletteTrayDrop}.Layout(gtx, func(gtx C) D { return p.filters(gtx, th, v) })
+		}))
 	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
 }
 
-// field is a search glyph and the bare input.
+// field is the search glyph and the bare input in a box with the input's
+// edge but not its focus ring: the field never loses the focus, so the ring
+// would be on for as long as the palette is.
 func (p *commandPalette) field(gtx C, th *ui.Theme) D {
-	return layout.Inset{Left: ui.Space(4), Right: ui.Space(4)}.Layout(gtx, func(gtx C) D {
+	d := layout.Inset{Left: ui.Space(3.5), Right: ui.Space(3.5)}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Rigid(func(gtx C) D { return icPaletteSearch.Layout(gtx, ui.Space(4), th.MutedForeground) }),
 			// The input carries its own 10px of horizontal padding; the gap
@@ -131,112 +132,103 @@ func (p *commandPalette) field(gtx C, th *ui.Theme) D {
 			ui.Gap(0.5),
 			layout.Flexed(1, func(gtx C) D {
 				in := th.Input(&p.query, i18n.T("palette.commandPalette.placeholder"))
-				in.Bare, in.TextSize, in.Height = true, paletteInputSize, ui.Space(paletteInputRow)
+				in.Bare, in.TextSize, in.Height = true, paletteInputSize, paletteInputHeight
 				return in.Layout(gtx)
 			}),
 		)
 	})
+	ui.InsetBorder(gtx, d.Size, gtx.Dp(ui.RadiusMD), th.Over(th.Palette.Input))
+	return d
 }
 
-// filters is the tab row. A tab with no match is dimmed rather than dropped:
+// filters is the tab tray. A tab with no match is dimmed rather than dropped:
 // a row of tabs that reshuffles as the query changes costs more to aim at than
 // the space it saves.
 func (p *commandPalette) filters(gtx C, th *ui.Theme, v *paletteView) D {
+	tray := th.Over(ui.Alpha(th.Accent, folderTrayAlpha))
+	on := th.On(tray)
 	var children []layout.FlexChild
 	for i, tab := range paletteTabs {
 		if i > 0 {
-			children = append(children, ui.Gap(paletteTabGap))
+			children = append(children, layout.Rigid(layout.Spacer{Width: paletteTrayGap}.Layout))
 		}
-		children = append(children, layout.Rigid(func(gtx C) D { return p.filterTab(gtx, th, v, tab) }))
+		children = append(children, layout.Rigid(func(gtx C) D { return p.filterTab(gtx, on, v, tab) }))
 	}
-	return layout.Inset{Left: ui.Space(4), Right: ui.Space(4)}.Layout(gtx, func(gtx C) D {
-		return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
-	})
-}
-
-// filterTab is one filter: its name and count, the current one in the foreground
-// and underlined, a hovered one brought up to the foreground.
-func (p *commandPalette) filterTab(gtx C, th *ui.Theme, v *paletteView, tab paletteTab) D {
-	click := p.tabClick(tab)
-	count, counted := v.counts[tab]
-	current := tab == p.tab
-	return click.Layout(gtx, func(gtx C) D {
-		fg := th.MutedForeground
-		switch {
-		case current, click.Hovered():
-			fg = th.Foreground
-		case counted && count == 0:
-			fg = th.Over(ui.Alpha(fg, paletteDimOpacity))
-		}
-		d := layout.Inset{Top: ui.Space(2), Bottom: ui.Space(2)}.Layout(gtx, func(gtx C) D {
-			children := []layout.FlexChild{layout.Rigid(th.Text(paletteTabSize, tab.label()).In(fg).Leading(20).Layout)}
-			if counted {
-				num := th.Text(paletteTinySize, fmt.Sprint(count)).Leading(paletteTinyLeading).Mono().In(th.Over(ui.Alpha(fg, paletteCountOpacity)))
-				children = append(children, ui.Gap(1), layout.Rigid(num.Layout))
-			}
-			return layout.Flex{Alignment: layout.Baseline}.Layout(gtx, children...)
-		})
-		if current {
-			line := gtx.Dp(paletteTabUnderline)
-			paint.FillShape(gtx.Ops, th.Foreground, clip.Rect{Min: image.Pt(0, d.Size.Y-line), Max: d.Size}.Op())
-		}
-		return d
-	})
-}
-
-// footer is the hint bar: what the arrows, Enter, Tab and Escape do, on
-// a faint black fill under its own hairline.
-func (p *commandPalette) footer(gtx C, th *ui.Theme, v *paletteView) D {
-	action := i18n.T("palette.palette.verbOpen")
-	if at := p.active(len(v.rows)); at < len(v.rows) {
-		action = rowVerb(v.rows[at])
+	trayed := func(gtx C) D {
+		return layout.Background{}.Layout(gtx,
+			func(gtx C) D { return ui.Fill(gtx, tray, ui.RadiusLG) },
+			func(gtx C) D {
+				return layout.UniformInset(paletteTrayPad).Layout(gtx, func(gtx C) D {
+					return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
+				})
+			})
 	}
-	fill := th.Over(ui.Alpha(color.NRGBA{A: 0xff}, paletteHintBarFill))
-	on := th.On(fill)
-	hints := []layout.Widget{
-		paletteHint(on, i18n.T("common.pickerDialog.navigate"), "↑", "↓"),
-		paletteHint(on, action, "↵"),
+	if v.scope == "" {
+		return trayed(gtx)
 	}
-	if !v.actionMode {
-		hints = append(hints, paletteHint(on, i18n.T("common.pickerDialog.filter"), "⇥"))
-	}
-	hints = append(hints, paletteHint(on, i18n.T("common.pickerDialog.close"), "esc"))
-	var children []layout.FlexChild
-	for i, h := range hints {
-		if i > 0 {
-			children = append(children, ui.Gap(4))
-		}
-		children = append(children, layout.Rigid(h))
-	}
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(th.Separator),
+	gtx.Constraints.Min.X = gtx.Constraints.Max.X
+	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+		layout.Rigid(trayed),
+		layout.Flexed(1, func(gtx C) D { return D{Size: image.Pt(gtx.Constraints.Min.X, 0)} }),
 		layout.Rigid(func(gtx C) D {
-			gtx.Constraints.Min.X = gtx.Constraints.Max.X
-			return layout.Background{}.Layout(gtx,
-				func(gtx C) D { return ui.Fill(gtx, fill, 0) },
-				func(gtx C) D {
-					return layout.Inset{Left: ui.Space(4), Right: ui.Space(4), Top: ui.Space(2), Bottom: ui.Space(2)}.Layout(gtx, func(gtx C) D {
-						return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
-					})
-				},
-			)
+			return layout.Inset{Right: ui.Space(3)}.Layout(gtx, func(gtx C) D { return p.scopeChip(gtx, th, v.scope) })
 		}),
 	)
 }
 
-// paletteHint is the key caps and then what they do.
-func paletteHint(th *ui.Theme, label string, keys ...string) layout.Widget {
-	return func(gtx C) D {
-		var children []layout.FlexChild
-		for i, k := range keys {
-			if i > 0 {
-				children = append(children, ui.Gap(1))
-			}
-			children = append(children, layout.Rigid(func(gtx C) D { return th.KeyCap(k).Layout(gtx) }))
+// scopeChip is the project History is narrowed to, at the row's end; a click
+// widens it to every project.
+func (p *commandPalette) scopeChip(gtx C, th *ui.Theme, name string) D {
+	return p.scopeClear.Layout(gtx, func(gtx C) D {
+		fg := th.MutedForeground
+		if p.scopeClear.Hovered() {
+			fg = th.Foreground
 		}
-		children = append(children, ui.Gap(1.5), layout.Rigid(th.Text(ui.TextXS, label).Muted().Layout))
-		return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
+		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+			layout.Rigid(func(gtx C) D { return icPaletteFolder.Layout(gtx, ui.Space(3.5), fg) }),
+			ui.Gap(1),
+			layout.Rigid(th.Text(paletteTabSize, name).In(fg).Leading(20).Layout),
+			ui.Gap(1),
+			layout.Rigid(func(gtx C) D { return icPaletteScopeClear.Layout(gtx, ui.Space(3.5), fg) }),
+		)
+	})
+}
+
+// filterTab is one filter: its name and count, the current one filled with the
+// accent, a hovered one with the hover fill.
+func (p *commandPalette) filterTab(gtx C, th *ui.Theme, v *paletteView, tab paletteTab) D {
+	click := p.tabClick(tab)
+	count, counted := v.counts[tab]
+	current := tab == p.tab
+	fill := color.NRGBA{}
+	switch {
+	case current:
+		fill = th.Accent
+	case click.Hovered():
+		fill = ui.Alpha(th.Accent, hoverFill)
 	}
+	on := th.On(th.Over(fill))
+	fg := on.MutedForeground
+	switch {
+	case current, click.Hovered():
+		fg = on.Foreground
+	case counted && count == 0:
+		fg = on.Over(ui.Alpha(fg, paletteDimOpacity))
+	}
+	return click.Layout(gtx, func(gtx C) D {
+		return layout.Background{}.Layout(gtx,
+			func(gtx C) D { return ui.Fill(gtx, th.Over(fill), ui.RadiusMD) },
+			func(gtx C) D {
+				return layout.Inset{Left: paletteTabPadX, Right: paletteTabPadX, Top: paletteTabPadY, Bottom: paletteTabPadY}.Layout(gtx, func(gtx C) D {
+					children := []layout.FlexChild{layout.Rigid(on.Text(paletteTabSize, tab.label()).In(fg).Leading(20).Layout)}
+					if counted {
+						num := on.Text(paletteTinySize, fmt.Sprint(count)).Leading(paletteTinyLeading).Mono().In(on.Over(ui.Alpha(fg, paletteCountOpacity)))
+						children = append(children, ui.Gap(1), layout.Rigid(num.Layout))
+					}
+					return layout.Flex{Alignment: layout.Baseline}.Layout(gtx, children...)
+				})
+			})
+	})
 }
 
 // paletteItem is one line of the list: a group's heading, or one of its rows.
@@ -267,14 +259,12 @@ func (p *commandPalette) body(gtx C, th *ui.Theme, v *paletteView, ring paletteR
 	items := paletteItems(v)
 	p.keepInView(items, v)
 	gtx.Constraints.Min.Y = 0
-	return layout.UniformInset(ui.Space(1.5)).Layout(gtx, func(gtx C) D {
-		return th.ScrollArea(&p.list).Layout(gtx, len(items), func(gtx C, i int) D {
-			it := items[i]
-			if it.row < 0 {
-				return p.heading(gtx, th, v.groups[it.group])
-			}
-			return p.row(gtx, th, v, it.row, ring, now)
-		})
+	return th.ScrollArea(&p.list).Layout(gtx, len(items), func(gtx C, i int) D {
+		it := items[i]
+		if it.row < 0 {
+			return p.heading(gtx, th, v.groups[it.group])
+		}
+		return p.row(gtx, th, v, it.row, ring, now)
 	})
 }
 
@@ -362,8 +352,8 @@ func (p *commandPalette) empty(gtx C, th *ui.Theme, v *paletteView) D {
 	})
 }
 
-// row is one result, accent while the cursor is on it, and the corner arrow
-// that says Enter will run it.
+// row is one result, accent while the cursor is on it, with what Enter does to
+// it at its end.
 func (p *commandPalette) row(gtx C, th *ui.Theme, v *paletteView, i int, ring paletteRing, now time.Time) D {
 	row := v.rows[i]
 	click := &p.rows[i]
@@ -387,18 +377,25 @@ func (p *commandPalette) row(gtx C, th *ui.Theme, v *paletteView, i int, ring pa
 					if face.trailing != nil {
 						children = append(children, ui.Gap(3), layout.Rigid(face.trailing))
 					}
-					children = append(children, ui.Gap(3), layout.Rigid(func(gtx C) D {
-						size := gtx.Dp(paletteEnterSize)
-						if selected {
-							return icPaletteEnter.Layout(gtx, paletteEnterSize, on.MutedForeground)
-						}
-						return D{Size: image.Pt(size, size)}
-					}))
+					if selected {
+						children = append(children, ui.Gap(3), layout.Rigid(paletteEnterHint(on, rowVerb(row))))
+					}
 					return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
 				})
 			},
 		)
 	})
+}
+
+// paletteEnterHint is the selected row's verb and the Enter key cap.
+func paletteEnterHint(th *ui.Theme, verb string) layout.Widget {
+	return func(gtx C) D {
+		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+			layout.Rigid(th.Text(ui.TextXS, verb).Muted().Layout),
+			ui.Gap(1.5),
+			layout.Rigid(func(gtx C) D { return th.KeyCap("↵").Layout(gtx) }),
+		)
+	}
 }
 
 // paletteFace is what a row says of itself: its leading mark, its lines and

@@ -20,10 +20,5 @@
   },
   "stepper": {
     "default": "デフォルト"
-  },
-  "pickerDialog": {
-    "navigate": "移動",
-    "filter": "絞り込み",
-    "close": "閉じる"
   }
 }

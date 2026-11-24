@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Type /resume in a chat to pick one of its project's conversations to resume.** It opens the palette's History narrowed to that project, with the sessions you closed and the conversations started outside lich; click the project's name over the list to see every project.
 - **A message you write while the agent works reaches it in the same turn, as soon as it starts its next tool.** It waits over the message box, still yours to edit or drop, until then. Antigravity, opencode, oh-my-pi, Cursor CLI and Kiro CLI still get it when the turn ends.
 - **A file the agent edits or writes shows in the chat as its own line, with its path and how many lines it added and removed.** Click the line to read the diff under it, or Ctrl+click it to open the file. A file changed by a shell command the agent ran shows the same way, right after the command, on every agent.
 - **A workflow Claude Code leaves running in a chat stays in sight, with each of its agents.** A line over the message box says how many of its agents are done and which are running, even after the turn that started it has ended; click it to list them by phase and open one for its model, time and last call.
@@ -63,6 +64,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **The command palette matches the rest of the window.** Its filters sit in a tray like the dock's tabs, and the key hints at its foot are gone: the selected row says what Enter does, and Tab still walks the filters.
+- **A Markdown file reads like a document in the editor's preview and in Review.** Its frontmatter shows as a table of properties instead of a bold line, headings sit closer to the text they open, and lines stop at a reading width on a wide pane. Chat and Pulls keep their size, with the same spacing under headings and lighter list markers.
 - **A tooltip on a button wears the theme's popover colors.** It was the theme's text color as a background, a white bubble on a dark theme; it is now a popover with a visible border, the same on the longer tooltips.
 - **A project tab is as wide as its name.** It stops at a limit, keeps room for the spinner, status mark and ×, and when the tabs do not all fit only the longest names shrink.
 - **The chat says what the agent's tool calls did.** A run of calls reads as "Ran 4 commands, read 2 files" with how many failed, a single call shows the command or file it acted on, and a running run names the call in progress; open, each call is one row with its verb and target, and only a failure says more.

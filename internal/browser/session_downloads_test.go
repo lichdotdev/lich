@@ -161,10 +161,10 @@ func TestAReloadThatLandsReleasesTheHoldOnTheNextAction(t *testing.T) {
 	}
 	go func() {
 		time.Sleep(100 * time.Millisecond)
-		p.onReload(true)
+		p.onReload(reloadStarted)
 		time.Sleep(100 * time.Millisecond)
 		landed.Store(true)
-		p.onReload(false)
+		p.onReload(reloadReady)
 	}()
 	if _, err := s.ClickAt(t.Context(), target); err != nil {
 		t.Fatal(err)
@@ -185,7 +185,7 @@ func TestAReloadInFlightHoldsAnActionPastTheStartupUntilItsDocument(t *testing.T
 	if _, err := s.ClickAt(t.Context(), target); err != nil {
 		t.Fatal(err)
 	}
-	p.onReload(true)
+	p.onReload(reloadStarted)
 	var ready atomic.Bool
 	p.onClick = func() {
 		if !ready.Load() {
@@ -195,7 +195,7 @@ func TestAReloadInFlightHoldsAnActionPastTheStartupUntilItsDocument(t *testing.T
 	go func() {
 		time.Sleep(100 * time.Millisecond)
 		ready.Store(true)
-		p.onReload(false)
+		p.onReload(reloadReady)
 	}()
 	if _, err := s.ClickAt(t.Context(), target); err != nil {
 		t.Fatal(err)
@@ -213,7 +213,7 @@ func TestAReloadThatNeverLandsHoldsAnActionOnlyForReloadWait(t *testing.T) {
 	if _, err := s.ClickAt(t.Context(), target); err != nil {
 		t.Fatal(err)
 	}
-	p.onReload(true)
+	p.onReload(reloadStarted)
 	start := time.Now()
 	if _, err := s.ClickAt(t.Context(), target); err != nil {
 		t.Fatal(err)

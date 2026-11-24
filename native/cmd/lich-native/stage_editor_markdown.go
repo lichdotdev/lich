@@ -80,7 +80,7 @@ func (p *fileEditor) markdownBody(gtx C, th *ui.Theme) D {
 	return th.ScrollArea(&p.md.scroll).Layout(gtx, 1, func(gtx C, _ int) D {
 		window := markdown.ViewportWindow(p.md.scroll.Position.Offset-gtx.Dp(inset), viewport)
 		return layout.UniformInset(inset).Layout(gtx, func(gtx C) D {
-			return p.md.rendered.LayoutWindow(gtx, th, p.rel, text, func(url string) { openLink(p.client, p.env.notify, url) }, window)
+			return p.md.rendered.LayoutDocumentWindow(gtx, th, p.rel, text, func(url string) { openLink(p.client, p.env.notify, url) }, window)
 		})
 	})
 }

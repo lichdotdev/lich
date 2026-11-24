@@ -238,6 +238,12 @@ func (p *Page) Navigate(url string) {
 	})
 }
 
+// Reload loads the page again, past the cache, as the window's own load.
+func (p *Page) Reload() {
+	p.loads.ask(p.loads.url())
+	onGTK(func() { C.lich_webview_reload(p.page) })
+}
+
 // Close ends the page.
 func (p *Page) Close() {
 	onGTK(func() {

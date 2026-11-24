@@ -78,7 +78,7 @@ func (c *fileCard) markdownBody(gtx C, p *reviewPanel) D {
 	inset := layout.Inset{Left: ui.Space(9), Right: ui.Space(9), Top: ui.Space(3), Bottom: ui.Space(4)}
 	window := markdown.ViewportWindow(-(p.itemTop(p.laying) + c.headerHeight + gtx.Dp(inset.Top)), p.viewport)
 	return inset.Layout(gtx, func(gtx C) D {
-		return c.md.rendered.LayoutWindow(gtx, p.th, c.git.path, src, func(url string) { openLink(p.client, p.notify, url) }, window)
+		return c.md.rendered.LayoutDocumentWindow(gtx, p.th, c.git.path, src, func(url string) { openLink(p.client, p.notify, url) }, window)
 	})
 }
 

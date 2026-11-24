@@ -125,9 +125,9 @@ func TestMarkdownUpdatesWhenInterfaceAndEditorFontsChange(t *testing.T) {
 	th.Sans, th.Mono = "Interface A", "Editor A"
 	cache := Cache{}
 	src := "## Heading\n\n- Text `code` after\n\n| Header |\n|---|\n| `cell` |"
-	cache.text(th, "body", src, nil).heights[0] = 42
+	cache.text(th, "body", src, nil, inlineLook).heights[0] = 42
 	th.Sans, th.Mono = "Interface B", "Editor B"
-	updated := cache.text(th, "body", src, nil)
+	updated := cache.text(th, "body", src, nil, inlineLook)
 	if updated.heights[0] != 0 || updated.blocks[0].prose.spans[0].Font.Typeface != th.Sans {
 		t.Fatal("heading retained the old interface font or its measurements")
 	}
@@ -147,19 +147,19 @@ func TestMarkdownUpdatesWhenInterfaceAndEditorFontsChange(t *testing.T) {
 	}
 	updated.heights[0] = 42
 	th.Shaper = text.NewShaper(text.WithCollection(gofont.Collection()))
-	if cache.text(th, "body", src, nil).heights[0] != 0 {
+	if cache.text(th, "body", src, nil, inlineLook).heights[0] != 0 {
 		t.Fatal("shaper change retained the old measurements")
 	}
 }
 
-func TestMarkdownRulesUnderTopHeadingsOnly(t *testing.T) {
+func TestMarkdownMarksEveryHeading(t *testing.T) {
 	blocks := renderBlocks(markdownTheme(), "# One\n\n## Two\n\n### Three\n\nText")
 	var got []bool
 	for _, b := range blocks {
-		got = append(got, b.rule)
+		got = append(got, b.heading)
 	}
-	if want := []bool{true, true, false, false}; !slices.Equal(got, want) {
-		t.Errorf("rules = %v, want %v", got, want)
+	if want := []bool{true, true, true, false}; !slices.Equal(got, want) {
+		t.Errorf("headings = %v, want %v", got, want)
 	}
 }
 
@@ -229,5 +229,12 @@ func TestATagInProseReadsAsWritten(t *testing.T) {
 	blocks := renderBlocks(markdownTheme(), "<system-reminder>\nkeep this\n</system-reminder>")
 	if len(blocks) == 0 || blocks[0].prose == nil || !strings.Contains(proseText(blocks[0]), "<system-reminder>") || !strings.Contains(proseText(blocks[0]), "keep this") {
 		t.Errorf("an HTML block vanished: %d blocks", len(blocks))
+	}
+}
+
+func TestMarkdownKeepsThematicBreak(t *testing.T) {
+	blocks := renderBlocks(markdownTheme(), "One\n\n---\n\nTwo")
+	if len(blocks) != 3 || !blocks[1].rule {
+		t.Fatalf("blocks = %+v, want a rule between two paragraphs", blocks)
 	}
 }

@@ -37,7 +37,7 @@ func renderList(th *ui.Theme, source []byte, list *ast.List, fg color.NRGBA) *ma
 			index++
 		}
 		entry := markdownListItem{marker: markdownCell{spans: []richtext.SpanStyle{{
-			Font: font.Font{Typeface: th.Sans}, Size: BodySize, Color: fg, Content: marker,
+			Font: font.Font{Typeface: th.Sans}, Size: BodySize, Color: th.MutedForeground, Content: marker,
 		}}}}
 		if box := taskCheckBox(item); box != nil {
 			entry.task = ui.BoolOf(box.IsChecked)
@@ -68,9 +68,12 @@ func (l *markdownList) layout(gtx C, th *ui.Theme, links Links) D {
 	for i := range l.items {
 		markerWidth = max(markerWidth, l.items[i].markerWidth(gtx, th))
 	}
-	children := make([]layout.FlexChild, 0, len(l.items))
+	children := make([]layout.FlexChild, 0, 2*len(l.items))
 	for i := range l.items {
 		item := &l.items[i]
+		if i > 0 {
+			children = append(children, ui.VGap(listItemGap))
+		}
 		children = append(children, layout.Rigid(func(gtx C) D {
 			return item.layout(gtx, th, links, markerWidth)
 		}))

@@ -89,7 +89,7 @@ func (u *window) layoutPalette(gtx C, th *ui.Theme) {
 	}
 	v := p.last
 	dlg := th.Dialog(&p.dialog, p.open, "", "")
-	dlg.MaxWidth, dlg.Top, dlg.Scrim = paletteWidth, paletteTop, paletteScrim
+	dlg.MaxWidth, dlg.Top, dlg.Scrim, dlg.Radius = paletteWidth, paletteTop, paletteScrim, ui.RadiusLG
 	dlg.Raw = func(gtx C) D {
 		if p.focus || !gtx.Focused(&p.query) {
 			gtx.Execute(key.FocusCmd{Tag: &p.query})
@@ -110,6 +110,9 @@ func (u *window) paletteFrame(gtx C, p *commandPalette) paletteView {
 		if p.tabClick(tab).Clicked(gtx) {
 			p.tab = tab
 		}
+	}
+	if p.scopeClear.Clicked(gtx) {
+		p.scope = paletteProject{}
 	}
 	enter := p.keys(gtx)
 	w := u.model.paletteWorld()

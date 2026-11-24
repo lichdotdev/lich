@@ -30,16 +30,33 @@ const markdownURL = "url"
 
 var markdownParser = goldmark.New(goldmark.WithExtensions(extension.Table, extension.Linkify, extension.TaskList)).Parser()
 
-// renderBlocks parses src once, so a reference link resolves wherever its
-// definition sits, and renders each top-level node as its own block.
+// renderBlocks is renderLook for Markdown inside a screen.
 func renderBlocks(th *ui.Theme, src string) []markdownBlock {
+	return renderLook(th, src, inlineLook)
+}
+
+// renderLook parses src once, so a reference link resolves wherever its
+// definition sits, and renders each top-level node as its own block, its
+// headings at lk's sizes.
+func renderLook(th *ui.Theme, src string, lk look) []markdownBlock {
+	var out []markdownBlock
+	if lk.frontmatter {
+		var props []property
+		if props, src = splitFrontmatter(src); props != nil {
+			out = append(out, markdownBlock{props: props})
+		}
+	}
 	source := []byte(src)
 	doc := markdownParser.Parse(text.NewReader(source))
-	var out []markdownBlock
 	for n := doc.FirstChild(); n != nil; n = n.NextSibling() {
-		if block, ok := renderBlock(th, source, n, markdownProseColor(th)); ok {
-			out = append(out, block)
+		block, ok := renderBlock(th, source, n, markdownProseColor(th))
+		if !ok {
+			continue
 		}
+		if h, isHeading := n.(*ast.Heading); isHeading {
+			block.prose.resize(lk.headingSize(h.Level))
+		}
+		out = append(out, block)
 	}
 	return out
 }
@@ -54,9 +71,11 @@ func renderBlock(th *ui.Theme, source []byte, n ast.Node, fg color.NRGBA) (markd
 	case *ast.Heading:
 		cell := renderNode(th, source, n, fg)
 		cell.lineHeight = markdownHeadingLineHeightScale
-		return markdownBlock{prose: cell, rule: n.Level <= 2}, len(cell.spans) > 0
+		return markdownBlock{prose: cell, heading: true}, len(cell.spans) > 0
 	case *ast.Blockquote:
 		return renderQuote(th, source, n)
+	case *ast.ThematicBreak:
+		return markdownBlock{rule: true}, true
 	case *ast.FencedCodeBlock, *ast.CodeBlock:
 		cell := highlightCode(th, source, n)
 		if cell == nil {
@@ -261,14 +280,7 @@ func (w *spanWriter) heading(n *ast.Heading, entering bool) {
 	w.headingWeight = font.Bold
 	w.cur.Font.Weight = w.headingWeight
 	w.cur.Color = w.th.Foreground
-	switch n.Level {
-	case 1:
-		w.cur.Size = markdownH1
-	case 2:
-		w.cur.Size = markdownH2
-	default:
-		w.cur.Size = ui.TextBase
-	}
+	w.cur.Size = inlineLook.headingSize(n.Level)
 }
 
 func (w *spanWriter) list(n *ast.List, entering bool) {

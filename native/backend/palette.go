@@ -28,9 +28,10 @@ func (c *Client) ClosedProjectCountMatching(ctx context.Context, term string) (i
 
 // ClosedSessions searches the parked sessions by name, project, path, branch
 // and conversation; an empty term is the plain history, newest close first.
-// A non-empty term also starts indexing any conversation not indexed yet.
-func (c *Client) ClosedSessions(ctx context.Context, term string) (ClosedHistory, error) {
-	return callMethod(ctx, c, api.StoreClosedSessions, api.SearchTermOptions{Term: term})
+// A non-empty term also starts indexing any conversation not indexed yet, and
+// a projectID other than "" keeps that project's alone.
+func (c *Client) ClosedSessions(ctx context.Context, term, projectID string) (ClosedHistory, error) {
+	return callMethod(ctx, c, api.StoreClosedSessions, api.ClosedSessionsOptions{Term: term, ProjectID: projectID})
 }
 
 // ExternalSessions lists the conversations started outside lich in a known
