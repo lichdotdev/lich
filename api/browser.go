@@ -139,6 +139,11 @@ type BrowserState struct {
 	// it, and nobody used it for the idle window. It stays until browser.Close,
 	// browser.Keep or a use answers it; the browser stays open meanwhile.
 	Idle bool `json:"idle,omitempty"`
+	// Reloads counts the loads of the page at the URL it was already at: a
+	// reload, the agent's, the toolbar's or the page's own, or the agent
+	// opening that URL again. The window's own page follows only a URL that
+	// changed, so it loads again when this rises.
+	Reloads int `json:"reloads,omitempty"`
 }
 
 // BrowserFrame is one screencast frame: Data is the base64 JPEG, Tab the

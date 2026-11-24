@@ -27,6 +27,7 @@ void lich_webview_shape(Display *x, unsigned long child, int width, int height, 
 void lich_webview_pointer_to_window(LichPage *page);
 void lich_webview_pointer_to_page(LichPage *page);
 void lich_webview_navigate(LichPage *page, const char *url);
+void lich_webview_reload(LichPage *page);
 void lich_webview_close(LichPage *page);
 void lich_webview_keyboard_to_window(void);
 void lich_webview_set_ground(unsigned long color);

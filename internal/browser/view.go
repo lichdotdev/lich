@@ -427,6 +427,20 @@ func (s *Service) emitState(sess *session, open bool) {
 	events.Send(s.emit, api.BrowserStateEvent, state)
 }
 
+// reloadShown has the window load its own page again: owner's page loaded the
+// URL it was already at.
+func (s *Service) reloadShown(owner string) error {
+	sess, err := s.live(owner)
+	if err != nil {
+		return err
+	}
+	s.mu.Lock()
+	sess.reloadsAsked++
+	s.mu.Unlock()
+	s.emitState(sess, true)
+	return nil
+}
+
 // agentActed tells the window the agent acted on sess's page, and keeps the
 // point it acted at for its next scroll.
 func (s *Service) agentActed(sess *session, act api.BrowserAgentAct) {
@@ -455,7 +469,7 @@ func (s *Service) agentPoint(owner string) *point {
 func (s *session) stateLocked(open bool) api.BrowserState {
 	state := api.BrowserState{
 		Owner: s.owner, Open: open, Headed: s.headed, ByAgent: s.byAgent, URL: s.url, Title: s.title,
-		Dialog: s.dialog, Tabs: slices.Clone(s.paneTabs), Idle: s.asked,
+		Dialog: s.dialog, Tabs: slices.Clone(s.paneTabs), Idle: s.asked, Reloads: s.reloadsAsked,
 	}
 	for i := range state.Tabs {
 		state.Tabs[i].Loading = state.Tabs[i].Loading || s.nativeLoading && state.Tabs[i].Front && !state.Tabs[i].DevTools

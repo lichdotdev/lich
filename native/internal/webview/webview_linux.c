@@ -279,6 +279,8 @@ void lich_webview_hide(LichPage *page) {
 
 void lich_webview_navigate(LichPage *page, const char *url) { webkit_web_view_load_uri(WEBKIT_WEB_VIEW(page->view), url); }
 
+void lich_webview_reload(LichPage *page) { webkit_web_view_reload_bypass_cache(WEBKIT_WEB_VIEW(page->view)); }
+
 void lich_webview_close(LichPage *page) {
 	if (keyed == page) {
 		keyed = NULL;

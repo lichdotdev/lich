@@ -621,6 +621,7 @@ BrowserState {
 	dialog,omitempty *BrowserDialog
 	tabs,omitempty []BrowserTab
 	idle,omitempty bool
+	reloads,omitempty int
 }
 
 BrowserScreenshotOptions {
