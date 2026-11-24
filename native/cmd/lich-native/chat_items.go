@@ -313,20 +313,44 @@ func (u *window) chatWork(gtx C, th *ui.Theme, p *chatPane, f *chatFold, sv sess
 		layout.Flexed(1, func(gtx C) D { return chatHairline(gtx, th) }),
 	)
 	children := []layout.FlexChild{layout.Rigid(func(gtx C) D { return layout.Flex{Alignment: layout.Middle}.Layout(gtx, line...) })}
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, append(children, chatCalls(gtx, th, f, r, u.vetoOutcome(p, sv))...)...)
+	earlier := p.fold("earlier:" + strconv.Itoa(r.turn))
+	earlier.update(gtx)
+	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, append(children, chatCalls(gtx, th, f, earlier, r, u.vetoOutcome(p, sv))...)...)
 }
 
+// chatCallsShown is how many of a group's last calls show when it opens: a
+// turn of fifty calls would run past the view; the rest are a click away.
+const chatCallsShown = 5
+
 // chatCalls are a group's calls, each in a fold of its own that opens and
-// shuts with the group. A call that comes once the group is drawn enters as a
-// row does.
-func chatCalls(gtx C, th *ui.Theme, f *chatFold, r chatRow, outcome func(backend.ChatItem) layout.Widget) []layout.FlexChild {
+// shuts with the group: its last chatCallsShown, under a line that shows the
+// earlier ones until earlier is opened. A call that comes once the group is
+// drawn enters as a row does.
+func chatCalls(gtx C, th *ui.Theme, f, earlier *chatFold, r chatRow, outcome func(backend.ChatItem) layout.Widget) []layout.FlexChild {
 	ids := make([]string, len(r.tools))
 	for i, it := range r.tools {
 		ids[i] = it.ID
 	}
 	f.enter.Update(gtx.Now, ids)
-	children := make([]layout.FlexChild, 0, len(r.tools))
+	hidden := max(len(r.tools)-chatCallsShown, 0)
+	children := make([]layout.FlexChild, 0, len(r.tools)+1)
+	if hidden > 0 {
+		children = append(children, layout.Rigid(func(gtx C) D {
+			fold := f.call("earlier")
+			if f.shut(gtx.Now) {
+				return fold.Layout(gtx, false, chatNothing)
+			}
+			return fold.Layout(gtx, f.open, func(gtx C) D {
+				return layout.Inset{Top: ui.Space(1)}.Layout(gtx, func(gtx C) D {
+					return chatBranch(gtx, th, false, func(gtx C) D { return chatEarlierCalls(gtx, th, earlier, hidden) })
+				})
+			})
+		}))
+	}
 	for i, it := range r.tools {
+		if i < hidden && !earlier.open {
+			continue
+		}
 		children = append(children, layout.Rigid(func(gtx C) D {
 			return f.enter.LayoutFlat(gtx, it.ID, func(gtx C) D {
 				fold := f.call(it.ID)
@@ -335,7 +359,7 @@ func chatCalls(gtx C, th *ui.Theme, f *chatFold, r chatRow, outcome func(backend
 				}
 				return fold.Layout(gtx, f.open, func(gtx C) D {
 					var top unit.Dp
-					if i == 0 {
+					if i == 0 && hidden == 0 {
 						top = ui.Space(1)
 					}
 					return layout.Inset{Top: top}.Layout(gtx, func(gtx C) D {
@@ -403,6 +427,25 @@ func chatShellMore(gtx C, th *ui.Theme, more *chatFold, hidden int) D {
 				fg = th.Foreground
 			}
 			return th.Text(ui.TextXS, text).In(fg).Layout(gtx)
+		})
+	})
+}
+
+// chatEarlierCalls shows a group's calls before its last chatCallsShown, or
+// hides them again, a row on the group's branch.
+func chatEarlierCalls(gtx C, th *ui.Theme, earlier *chatFold, hidden int) D {
+	text := i18n.T("chat.view.earlierCalls", i18n.Args{"count": hidden})
+	if earlier.open {
+		text = i18n.T("chat.view.shellLess")
+	}
+	gtx.Constraints.Min.Y = gtx.Dp(chatToolRow)
+	return earlier.click.Layout(gtx, func(gtx C) D {
+		fg := th.MutedForeground
+		if earlier.click.Hovered() {
+			fg = th.Foreground
+		}
+		return layout.W.Layout(gtx, func(gtx C) D {
+			return layout.Inset{Left: ui.Space(2)}.Layout(gtx, th.Text(ui.TextXS, text).In(fg).Layout)
 		})
 	})
 }

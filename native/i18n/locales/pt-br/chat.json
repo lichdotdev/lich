@@ -18,6 +18,10 @@
       "one": "Mostrar mais {count} linha",
       "other": "Mostrar mais {count} linhas"
     },
+    "earlierCalls": {
+      "one": "Mostrar {count} chamada anterior",
+      "other": "Mostrar {count} chamadas anteriores"
+    },
     "shellLess": "Mostrar menos",
     "answered": "{tool} · {choice}",
     "verbs": "Conjurando|Invocando|Canalizando|Destilando|Vislumbrando|Inscrevendo|Tecendo|Erguendo",

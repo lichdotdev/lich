@@ -445,7 +445,9 @@ draws none while it grows in, because the room above the rows is measured in the
   when the history has none). Open, each call is a 28px row hung under the line by a connector, a 1px
   `Border` line under the fold's chevron with a stub into the row, ending at the last row as the sidebar's
   tree does. The line starts shut, whether the turn is in flight or ended, and only a click opens it, which
-  holds as the person left it. A row is its tool's glyph (a Lucide mark by tool name, Claude Code's own names and ACP's kinds,
+  holds as the person left it. Open, it shows only its last 5 calls (`chatCallsShown`): a turn can run fifty,
+  which would push the view past its height. The rest wait behind a first row on the branch, muted `TextXS`
+  "Show 12 earlier calls", lit on hover, whose click shows them all and turns it into "Show less". A row is its tool's glyph (a Lucide mark by tool name, Claude Code's own names and ACP's kinds,
   one generic wrench for the rest), its name in medium, what it acted on in mono, then at the right the time it
   ran in muted mono and how it ended: nothing while it runs, then a check in `TonePass` or a cross in
   `Destructive` with the output's first line. A time that stands still reads in milliseconds under a second

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strconv"
 	"testing"
 
 	"github.com/lichdotdev/lich/api"
@@ -82,4 +83,36 @@ func TestAGroupFoldedByHandStaysFolded(t *testing.T) {
 	if r.shows("Edit") || r.shows("Bash") {
 		t.Errorf("the group opened once the run was over:\n%s", r.drawn())
 	}
+}
+
+// An open group of more than chatCallsShown calls shows its last ones under a
+// line that counts the rest; a click on it shows them all, and Show less
+// hides them again.
+func TestAnOpenGroupShowsItsLastCallsFirst(t *testing.T) {
+	items := []backend.ChatItem{{ID: "u1", Kind: api.ItemUser, Turn: 1, At: novDay(18, 17, 58), Text: "go"}}
+	for i := range 8 {
+		items = append(items, backend.ChatItem{ID: "c" + strconv.Itoa(i), Kind: api.ItemTool, Turn: 1, At: novDay(18, 17, 59),
+			Tool: &backend.ChatToolCall{Name: "Grep", Title: "call-" + strconv.Itoa(i), State: api.ToolDone}})
+	}
+	u, r := lifeFrames(t, items, false)
+	r.play(15)
+	u.chats.pane("s1").fold("work:1").open = true
+	r.play(15)
+	shown := func(from int) {
+		t.Helper()
+		for i := range 8 {
+			if got := r.shows("call-" + strconv.Itoa(i)); got != (i >= from) {
+				t.Errorf("call %d drawn %v with calls from %d shown:\n%s", i, got, from, r.drawn())
+			}
+		}
+	}
+	shown(3)
+	writeShot(t, r, "group-earlier.png")
+	more := i18n.T("chat.view.earlierCalls", i18n.Args{"count": 3})
+	r.queueClick(r.at(t, more))
+	r.play(15)
+	shown(0)
+	r.queueClick(r.at(t, i18n.T("chat.view.shellLess")))
+	r.play(15)
+	shown(3)
 }

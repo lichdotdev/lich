@@ -16,6 +16,9 @@
     "shellMore": {
       "other": "再显示 {count} 行"
     },
+    "earlierCalls": {
+      "other": "显示之前的 {count} 次调用"
+    },
     "shellLess": "收起",
     "answered": "{tool} · {choice}",
     "verbs": "施法中|召唤中|引导魔力中|熬制中|占卜中|铭刻中|编织中|唤醒中",
