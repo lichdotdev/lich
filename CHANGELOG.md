@@ -64,6 +64,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **A session's status in the sidebar is one 3x3 of pixels that moves from state to state.** A snake runs through it while the agent works, circles its border in amber while it waits on you and fills it green when a turn ends unread; the chat's running turn shows the same snake, and a project's tab says the same with three dots that run, go back and forth, or light up.
 - **Sessions that share a checkout sit together in the sidebar, under its branch.** When two or more sessions run in the same worktree, a thin label with the branch heads them and their rows drop the branch; what a session opened, a child or a terminal, still hangs under it.
 - **A folder in the sidebar shows its name as you typed it, and counts the work in it.** The name is no longer in small capitals with a rule after it, and the count leaves out the children and terminals that hang under a session.
 - **The command palette matches the rest of the window.** Its filters sit in a tray like the dock's tabs, and the key hints at its foot are gone: the selected row says what Enter does, and Tab still walks the filters.

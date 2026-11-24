@@ -113,16 +113,16 @@ func scopeName(th *ui.Theme, name, line string, weight font.Weight) layout.Widge
 	}
 }
 
-// scopeLive is what runs in a project: the souls while one of its agents
+// scopeLive is what runs in a project: the spinner while one of its agents
 // works, then each provider open there by its pixel mark.
 func scopeLive(th *ui.Theme, p settingsProject) layout.Widget {
 	return func(gtx C) D {
 		var children []layout.FlexChild
 		if p.working {
 			children = append(children, layout.Rigid(func(gtx C) D {
-				side := gtx.Dp(soulsSize)
+				side := gtx.Dp(spriteSize)
 				gtx.Constraints = layout.Exact(image.Pt(side, side))
-				return soulsSpinner(gtx, th)
+				return pixelSpinner(gtx, th)
 			}))
 		}
 		for i, kind := range p.agents {

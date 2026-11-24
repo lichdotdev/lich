@@ -53,6 +53,7 @@ type sidebar struct {
 	sort     ui.Sortable // the blocks, by their headers
 	carry    ui.SortCarry
 	blocks   map[string]*blockState
+	corners  map[string]*corner
 	motion   blockPresence
 	naming   folderNaming
 	schedule scheduleDialog
@@ -85,6 +86,7 @@ func newSidebar(root *ui.Root) *sidebar {
 		open:         true,
 		hints:        map[string]*ui.Tooltip{},
 		blocks:       map[string]*blockState{},
+		corners:      map[string]*corner{},
 		rail:         sidebarRail{cards: map[string]*ui.Clickable{}, tips: map[string]*ui.Tooltip{}, menus: map[string]*ui.MenuState{}},
 		services:     newServicesFooter(),
 	}

@@ -796,12 +796,12 @@ func chatVerb(session string, turn int) string {
 	return verbs[int(h.Sum32()%uint32(len(verbs)))]
 }
 
-// chatLive is the turn in flight: a flame, then a verb of the turn shimmering
+// chatLive is the turn in flight: the spinner, then a verb of the turn shimmering
 // with the time it has run, and Claude Code's Ctrl+B hint while the turn
 // waits on a command it moves.
 func chatLive(gtx C, th *ui.Theme, session string, r chatRow) D {
 	row := []layout.FlexChild{
-		layout.Rigid(func(gtx C) D { return chatFlame(gtx, th) }),
+		layout.Rigid(func(gtx C) D { return chatSpinner(gtx, th) }),
 		ui.Gap(2),
 		layout.Rigid(func(gtx C) D {
 			// A turn with no start to count from has no clock.

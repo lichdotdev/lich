@@ -310,6 +310,6 @@ func TestAProjectTabNamesEachProviderItsSessionsRunOnceAndWhetherOneWorks(t *tes
 	}
 	report(t, m, "s2", statusWaiting)
 	if tabs, _ := m.projectTabs(); tabs[0].working {
-		t.Error("a session waiting on the user counts as working; the souls are for a turn running")
+		t.Error("a session waiting on the user counts as working; the spinner is for a turn running")
 	}
 }
