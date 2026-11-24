@@ -50,19 +50,6 @@ func TestARunningTimeReadsInTheWindowsUnits(t *testing.T) {
 	}
 }
 
-func TestTheCaretBlinksEveryHalfSecondAndWakesOnlyThen(t *testing.T) {
-	start := time.UnixMilli(10_000) // a whole half second, an even one
-	var on, off string
-	at, _ := wakeAfter(start.Add(100*time.Millisecond), func(gtx C) { on = chatCaret(gtx) })
-	if !at.Equal(start.Add(500 * time.Millisecond)) {
-		t.Errorf("the caret woke at %v, want the next half second", at)
-	}
-	wakeAfter(start.Add(600*time.Millisecond), func(gtx C) { off = chatCaret(gtx) })
-	if on != chatCaretGlyph || off != "" {
-		t.Errorf("caret %q then %q, want it shown then gone", on, off)
-	}
-}
-
 func TestEachToolWearsTheGlyphOfItsKind(t *testing.T) {
 	cases := map[string]string{
 		"Read": "read", "read": "Read", "Edit": "Write", "MultiEdit": "edit", "Bash": "execute",
@@ -415,16 +402,6 @@ func TestEachAnswerNamesItsModelInItsFootAndNoHeaderNamesTheProvider(t *testing.
 	}
 	overAnswer(r, t, "Haiku 5.5 · Medium · "+clockFor(r, novDay(18, 17, 58)))
 	overAnswer(r, t, clockFor(r, novDay(18, 17, 59)))
-}
-
-func TestAnAnswerBeingWrittenEndsInACaretAndFinishedOnesDoNot(t *testing.T) {
-	var live, done string
-	wakeAfter(time.UnixMilli(10_100), func(gtx C) {
-		live, done = chatSource(gtx, "streaming", true), chatSource(gtx, "streaming", false)
-	})
-	if live != "streaming"+chatCaretGlyph || done != "streaming" {
-		t.Errorf("live %q, finished %q", live, done)
-	}
 }
 
 func TestANewItemEntersWithMotionAndAHistoryReadLaterDoesNot(t *testing.T) {

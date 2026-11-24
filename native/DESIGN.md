@@ -484,8 +484,8 @@ draws none while it grows in, because the room above the rows is measured in the
   thought, "2 tool calls" for the turn's line while a call runs, and, in a group the person opened, the name
   and target of each call that runs, its time counting from when it was asked for, a wait on a permission included. A running call's name is muted
   under the band, which lights toward `Foreground` and would not show on it; ended, it is `Foreground` again. The
-  answer being written ends in a caret that stays lit while its text grows and blinks every half second once
-  it has rested 600ms (`chatStreamHold`); the text itself comes in dry. A row new to the conversation enters
+  answer being written is its text alone, coming in dry: no caret at its end, which blinked through every pause
+  and read as noise; the live line under it already says the agent is writing. A row new to the conversation enters
   with `ui.Presence.LayoutFlat`, its height and opacity rising with no scale (160ms ease-out, out in 180ms
   ease-in), so its text and the flame never draw at a fractional size; the conversation read when the pane
   opens, or after it, or drawn again after the TUI, does not play as arrivals. A list at its end stays at its

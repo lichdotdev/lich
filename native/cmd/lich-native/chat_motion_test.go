@@ -145,75 +145,11 @@ func TestAChatRowLeavesByHeightAndOpacityWithoutScale(t *testing.T) {
 	judgeInk(t, gpu, midInk, restInk, "60ms into the exit the verb")
 }
 
-// The caret's hold, which needs no GPU to judge: lit while the text grows
-// and for chatStreamHold after, not once it rests.
-func TestTheCaretHoldsAfterEachChunk(t *testing.T) {
-	var s chatStream
-	it := backend.ChatItem{ID: "a1", Text: "Hel"}
-	at := func(d time.Duration) bool {
-		var got bool
-		wakeAfter(time.Unix(1000, 0).Add(d), func(gtx C) { got = s.streaming(gtx, it) })
-		return got
-	}
-	if !at(0) || !at(chatStreamHold-time.Millisecond) {
-		t.Error("the caret does not hold after the first chunk")
-	}
-	if at(chatStreamHold) {
-		t.Error("the caret still holds once the text rested")
-	}
-	it.Text += "lo"
-	if !at(2 * chatStreamHold) {
-		t.Error("a new chunk does not light the caret again")
-	}
-}
-
 // A conversation read with nothing in it draws, a new session's chat.
 func TestAnEmptyConversationDraws(t *testing.T) {
 	u, r := stampFrames(t)
 	u.model.chat.history("s1", nil)
 	r.settle(t)
-}
-
-// While chunks of the answer arrive the caret stays lit, even on the half
-// seconds it would blink off; once they stop it blinks again. The caret is
-// read off the pixels: the answer drawn live against the same text drawn
-// finished, which never has one.
-func TestTheCaretStaysLitWhileChunksArrive(t *testing.T) {
-	u, _ := stampFrames(t)
-	sv, _ := u.model.sessionViewOf("s1")
-	text := "Hel"
-	answer := func(p *chatPane, live bool) *frameRig {
-		row := chatRow{kind: chatRowItem, live: live}
-		return newFrameRig(image.Pt(400, 120), func(gtx C, th *ui.Theme) {
-			u.theme = th
-			row.item = backend.ChatItem{ID: "a1", Kind: api.ItemAgent, Turn: 1, Text: text}
-			u.chatAgent(gtx, th, p, sv, row)
-		})
-	}
-	live, done := answer(newChatPane(), true), answer(newChatPane(), false)
-	lit := func(now time.Time) bool {
-		live.now, done.now = now, now
-		live.frame()
-		done.frame()
-		return inkShift(renderRig(t, live), renderRig(t, done), image.Rectangle{Max: live.size}) > 0
-	}
-	// 18:00:00.750, a half second the caret would blink off on.
-	now := time.Date(2026, 11, 18, 18, 0, 0, 0, time.Local).Add(750 * time.Millisecond)
-	for i := range 8 {
-		text += "lo"
-		now = now.Add(250 * time.Millisecond)
-		if !lit(now) {
-			t.Fatalf("chunk %d at %v: no caret while the answer is being written", i, now)
-		}
-	}
-	var off bool
-	for range 20 {
-		now = now.Add(100 * time.Millisecond)
-		off = off || !lit(now)
-	}
-	if !off {
-		t.Error("two seconds after the last chunk the caret never blinked off")
-	}
 }
 
 // The turn ending turns the live line into the closing line in its slot:

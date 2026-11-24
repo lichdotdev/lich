@@ -53,9 +53,6 @@ var (
 // the mockup's 22%.
 const chatAvatarMix = 0.22
 
-// chatCaretGlyph is the caret of an answer being written.
-const chatCaretGlyph = "▍"
-
 // chatClock is the short time under a message, the 24-hour layout the window's
 // other clocks (the Git graph, a stopped console) use.
 const chatClock = "15:04"
@@ -781,15 +778,10 @@ func chatLive(gtx C, th *ui.Theme, session string, r chatRow) D {
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx, row...)
 }
 
-// chatAgent is an answer's text with its model, effort and time under it. The
-// one being written ends in a blinking caret.
+// chatAgent is an answer's text with its model, effort and time under it.
 func (u *window) chatAgent(gtx C, th *ui.Theme, p *chatPane, sv sessionView, r chatRow) D {
 	it := r.item
-	// The caret stays lit while the text grows, and blinks once it rests.
-	src := it.Text + chatCaretGlyph
-	if !r.live || !p.stream.streaming(gtx, it) {
-		src = chatSource(gtx, it.Text, r.live)
-	}
+	src := it.Text
 	notify := func(t ui.Toast) { u.toaster.Show(t) }
 	c := p.copyOf(it.ID)
 	return c.hover(gtx, func(gtx C, over bool) D {
@@ -826,27 +818,6 @@ func chatAvatar(gtx C, th *ui.Theme, tint color.NRGBA, mark *icons.Icon) D {
 	mark.Layout(gtx, chatAvatarMark, tint)
 	off.Pop()
 	return D{Size: size}
-}
-
-// chatSource is an answer's text as drawn: while it is being written, ending
-// in the caret.
-func chatSource(gtx C, text string, live bool) string {
-	if !live {
-		return text
-	}
-	return text + chatCaret(gtx)
-}
-
-// chatCaret is the caret that ends the answer being written: there for half a
-// second and gone for the next, asking for a frame at each change and not
-// between them.
-func chatCaret(gtx C) string {
-	const half = 500 * time.Millisecond
-	gtx.Execute(op.InvalidateCmd{At: gtx.Now.Truncate(half).Add(half)})
-	if gtx.Now.UnixMilli()/half.Milliseconds()%2 == 0 {
-		return chatCaretGlyph
-	}
-	return ""
 }
 
 // chatElapsed is a running time in the window's own units: "6s", "1m 12s",

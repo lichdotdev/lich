@@ -77,12 +77,10 @@ type chatView struct {
 	rows ui.Presence
 	seen map[string]chatRow
 	// keys are the rows of the frame before, swap the live line turning into
-	// the closing line, stream the answer the caret follows, and run the
-	// list's way back to its end.
-	keys   []string
-	swap   chatSwap
-	stream chatStream
-	run    chatToEnd
+	// the closing line, and run the list's way back to its end.
+	keys []string
+	swap chatSwap
+	run  chatToEnd
 	// stamps are the tooltips of the time under each message, by item id.
 	stamps map[string]*ui.Tooltip
 	// notes are the clicks on a notification's row, by item id and place.

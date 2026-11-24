@@ -10,16 +10,12 @@ import (
 	"gioui.org/op/paint"
 
 	"github.com/lichdotdev/lich/api"
-	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
 // The chat's own motions, past its rows coming and going (native/DESIGN.md ›
 // The chat view): a row that becomes another plays the change in its slot.
 const (
-	// chatStreamHold is how long the caret stays lit after the answer's text
-	// last grew, before it blinks again.
-	chatStreamHold = 600 * time.Millisecond
 	// The live line turning into the closing line: the flame, verb and clock
 	// go by chatSwapOut, the avatar, word and count come in up to chatSwapIn,
 	// the hairline runs out to the edge up to chatSwapRule, and the slot takes
@@ -49,27 +45,6 @@ func chatPhase(gtx C, start time.Time, from, to time.Duration, curve func(float3
 		return 0
 	}
 	return curve(float32(e-from) / float32(to-from))
-}
-
-// chatStream is the answer being written as the caret last saw it: when its
-// text last changed.
-type chatStream struct {
-	id, text string
-	at       time.Time
-}
-
-// streaming reports whether the text of it, the answer being written, grew
-// less than chatStreamHold ago, asking for the frame the hold ends at.
-func (s *chatStream) streaming(gtx C, it backend.ChatItem) bool {
-	if it.ID != s.id || it.Text != s.text {
-		*s = chatStream{id: it.ID, text: it.Text, at: gtx.Now}
-	}
-	end := s.at.Add(chatStreamHold)
-	if !gtx.Now.Before(end) {
-		return false
-	}
-	gtx.Execute(op.InvalidateCmd{At: end})
-	return true
 }
 
 // chatSwap is the live line turning into the closing line key in its slot,
