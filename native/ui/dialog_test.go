@@ -303,3 +303,32 @@ func TestOverlayCountSeesADialogUntilItHasFaded(t *testing.T) {
 		t.Fatal("a faded dialog still counts")
 	}
 }
+
+// A native window over the content, a browser page, sees the dialog's panel
+// only where it leaves itself out of Boxes.
+func TestOverlayCountBoxesTheSettledPanel(t *testing.T) {
+	r := newDialogRig()
+	r.th.Overlays = &OverlayCount{}
+	r.open = true
+	r.th.Overlays.Frame()
+	r.frame()
+	r.now = r.now.Add(dialogTransition)
+	r.th.Overlays.Frame()
+	r.frame()
+	boxes := r.th.Overlays.Boxes()
+	if len(boxes) != 1 {
+		t.Fatalf("boxes %v, want the one panel", boxes)
+	}
+	b := boxes[0]
+	if b.Dx() != int(DialogWidthMD) || b.Min.X+b.Max.X != dialogTestWindow.X || b.Min.Y+b.Max.Y != dialogTestWindow.Y {
+		t.Errorf("box %v, want %v wide and centered in %v", b, DialogWidthMD, dialogTestWindow)
+	}
+	r.open = false
+	r.frame()
+	r.now = r.now.Add(dialogTransition)
+	r.th.Overlays.Frame()
+	r.frame()
+	if boxes := r.th.Overlays.Boxes(); len(boxes) != 0 {
+		t.Errorf("a faded dialog still boxes %v", boxes)
+	}
+}

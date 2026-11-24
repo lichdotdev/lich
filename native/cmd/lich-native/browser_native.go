@@ -111,7 +111,7 @@ func pageCuts(r image.Rectangle, own, covers []image.Rectangle) []image.Rectangl
 }
 
 // floatingBoxes are where the collapsed sidebar and dock float over the
-// stage this frame, and the toasts, menus and tooltips over everything, in
+// stage this frame, and the toasts, dialogs, menus and tooltips over everything, in
 // window pixels. A page is a window of the system's
 // that nothing the window draws covers, so these are what a page under them
 // has to cut out of itself (cutNativePages).
@@ -122,6 +122,7 @@ func (u *window) floatingBoxes() []image.Rectangle {
 			boxes = append(boxes, b)
 		}
 	}
+	boxes = append(boxes, u.theme.Overlays.Boxes()...)
 	return append(boxes, u.root.Popups()...)
 }
 
