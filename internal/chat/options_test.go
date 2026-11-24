@@ -242,6 +242,20 @@ func TestChatOpensOnItsStoredModelAndEffort(t *testing.T) {
 	r.current(api.OptionEffort, "low")
 }
 
+// TestAnEffortTypedInTheChatIsRecorded: /effort typed in a chat changes the
+// effort on no line Claude Code writes; lich asks again once the command has
+// printed, shows the new level and records it for the chat's next open.
+func TestAnEffortTypedInTheChatIsRecorded(t *testing.T) {
+	r := newRig(t, providers.Claude)
+	if err := r.setView(api.ViewChat); err != nil {
+		t.Fatalf("SetView: %v", err)
+	}
+	r.current(api.OptionEffort, "high")
+	r.prompt("/effort low")
+	r.current(api.OptionEffort, "low")
+	r.eventually("the effort recorded", func() bool { return r.db.SessionEffort("s1") == "low" })
+}
+
 // TestACPConfigOptions: an ACP chat offers the config options of the three
 // categories, follows the whole list a server sends back, and sets each over
 // session/set_config_option.

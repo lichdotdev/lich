@@ -68,9 +68,10 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   `/effort` typed inside the session is the user's decision and re-sending the birth value would undo it. A pick
   in the session's chat replaces the recorded model and effort, which a new conversation reads, and which a chat
   sets again over the protocol each time it opens, a lich restart included (`internal/chat/options.go`,
-  `storedCarry`): only a pick in the chat or the birth is recorded, so a `/model` or `/effort` typed in the
-  terminal, or typed as a slash command in the chat, is undone by the recorded value the next time the chat
-  opens. A terminal's resume still leaves them to the provider. Claude
+  `storedCarry`): the birth, a pick in the chat and any change the open chat hears of are recorded, a `/model` or
+  `/effort` typed in it included (Claude Code says neither on a line, so lich asks `get_settings` again after each
+  of its local commands; not measured against a real Claude Code), but a `/model` or `/effort` typed in the
+  terminal is not, and the recorded value undoes it the next time the chat opens. A terminal's resume still leaves them to the provider. Claude
   Code's effort and all of Antigravity resume on the saved default rather than on the conversation's (each
   measurement in `docs/providers/`, Spawn), so a change made inside the session survives while a level or model
   lich set at birth falls back to that default. Cursor CLI also writes whatever model a spawn or resume runs on into

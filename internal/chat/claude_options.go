@@ -3,6 +3,7 @@ package chat
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
 	"slices"
 	"strings"
 
@@ -89,6 +90,25 @@ func (d *claudeDriver) readApplied(ctx context.Context) error {
 	d.run.model, d.run.effort = settings.Applied.Model, settings.Applied.Effort
 	d.mu.Unlock()
 	return nil
+}
+
+// rereadAfterCommand asks a live Claude Code chat again what it runs on once
+// a command of its own printed its output: /effort changes the effort and
+// says so on no line lich reads, and /model is read the same way.
+func rereadAfterCommand(c *chatSession, text string, history bool) {
+	d, ok := c.drv.(*claudeDriver)
+	if _, out := parseStdout(text); !ok || !out || history {
+		return
+	}
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), callTimeout)
+		defer cancel()
+		if err := d.readApplied(ctx); err != nil {
+			slog.Warn("chat: read the settings after a command", "session", c.id, "err", err)
+			return
+		}
+		d.publish()
+	}()
 }
 
 // running updates what the chat runs on from a line Claude Code wrote, and

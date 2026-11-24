@@ -438,6 +438,7 @@ func readClaudeUser(c *chatSession, line claudeLine, history bool) {
 	var text string
 	if json.Unmarshal(line.Message.Content, &text) == nil {
 		if claudeShellLine(c, text, history) || claudeCompactLine(c, text) || localCommand(c, text) {
+			rereadAfterCommand(c, text, history)
 			return
 		}
 		// Live, the person's message is already an item: lich wrote it.
@@ -475,6 +476,7 @@ func readClaudeUser(c *chatSession, line claudeLine, history bool) {
 				it.Tool.Ended = stamp(line.Timestamp)
 			})
 		case b.Type == "text" && (claudeShellLine(c, b.Text, history) || claudeCompactLine(c, b.Text) || localCommand(c, b.Text)):
+			rereadAfterCommand(c, b.Text, history)
 		case b.Type == "text" && history && !isInterruptMarker(b.Text):
 			c.conv.userMessage(b.Text, nil)
 		}

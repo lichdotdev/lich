@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"reflect"
 	"slices"
 
@@ -149,10 +150,35 @@ func (c *chatSession) applyCarry(ctx context.Context, carry map[string]string) {
 func (c *chatSession) setOptions(opts []api.ChatOption) {
 	c.mu.Lock()
 	same := reflect.DeepEqual(c.opts, opts)
+	was, opened := c.opts, c.opened
 	c.opts = opts
 	c.mu.Unlock()
-	if !same {
-		events.Send(c.svc.hub.Emit, api.ChatOptionsEvent, api.ChatOptionsUpdate{SessionID: c.id, Options: opts})
+	if same {
+		return
+	}
+	events.Send(c.svc.hub.Emit, api.ChatOptionsEvent, api.ChatOptionsUpdate{SessionID: c.id, Options: opts})
+	if opened {
+		c.recordChanges(was, opts)
+	}
+}
+
+// recordChanges records a model or effort the open chat moved to however it
+// moved, a /model or /effort typed in it included, for its next open to set
+// again (storedCarry). The chat's open is left out: what it starts on is the
+// provider's resume, which storedCarry is there to correct.
+func (c *chatSession) recordChanges(was, now []api.ChatOption) {
+	current := func(opts []api.ChatOption, category string) string {
+		if i := slices.IndexFunc(opts, func(o api.ChatOption) bool { return o.Category == category }); i >= 0 {
+			return opts[i].Current
+		}
+		return ""
+	}
+	for _, category := range []string{api.OptionModel, api.OptionEffort} {
+		if value := current(now, category); value != "" && value != current(was, category) {
+			if err := c.svc.remember(c.id, category, value); err != nil {
+				slog.Warn("chat: record the setting", "session", c.id, "category", category, "err", err)
+			}
+		}
 	}
 }
 

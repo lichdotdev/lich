@@ -231,6 +231,15 @@ func (f *fake) claudeTurn(run *fakeClaude, text string) {
 	if f.claudeCompactTurn(msg, text) {
 		return
 	}
+	// /effort is a command Claude Code runs itself: it writes the command and
+	// what it printed as user lines, and get_settings answers the new level.
+	if level, ok := strings.CutPrefix(text, "/effort "); ok {
+		run.effort = level
+		f.send(map[string]any{"type": "user", "message": map[string]any{"content": "<command-name>/effort</command-name>\n<command-message>effort</command-message>\n<command-args>" + level + "</command-args>"}})
+		f.send(map[string]any{"type": "user", "message": map[string]any{"content": "<local-command-stdout>Set effort level to " + level + "</local-command-stdout>"}})
+		f.claudeResult(false, "completed", "")
+		return
+	}
 	// an envelope plays as "suggest" does: lich, not the fake, drops its
 	// suggestion
 	if strings.HasPrefix(text, "<lich-notification ") {
