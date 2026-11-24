@@ -257,7 +257,7 @@ func (s *sidebar) cardSlot(gtx C, th *ui.Theme, sv *sessionView, more layout.Wid
 	case hovered && more != nil && !s.renaming(sv.ID):
 		return layout.Center.Layout(gtx, more)
 	case !hovered:
-		if d, ok := statusCorner(gtx, th, sv); ok {
+		if d, ok := s.statusCorner(gtx, th, sv); ok {
 			return d
 		}
 	}

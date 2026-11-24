@@ -295,7 +295,7 @@ func serviceCorner(gtx C, th *ui.Theme, root *ui.Root, v backend.Service, more *
 			})
 		})
 	case v.State == api.ServiceStopping:
-		return soulsSpinner(gtx, th)
+		return pixelSpinner(gtx, th)
 	}
 	return D{Size: gtx.Constraints.Min}
 }
