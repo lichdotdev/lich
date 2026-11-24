@@ -142,3 +142,34 @@ func intOf(v any) int {
 	}
 	return 0
 }
+
+// vimModeNames are Vim's modes by nvim_get_mode's spelling, as Vim's own
+// statusline plugins name them; the longest spelling that starts the mode wins.
+var vimModeNames = []struct{ prefix, name string }{
+	{"no", "O-PENDING"}, {"n", "NORMAL"},
+	{"v", "VISUAL"}, {"V", "V-LINE"}, {"\x16", "V-BLOCK"},
+	{"s", "SELECT"}, {"S", "S-LINE"}, {"\x13", "S-BLOCK"},
+	{"i", "INSERT"}, {"Rv", "V-REPLACE"}, {"R", "REPLACE"},
+	{"c", "COMMAND"}, {"r", "PROMPT"}, {"!", "SHELL"}, {"t", "TERMINAL"},
+}
+
+// vimModeLabel is mode as the strip names it, "" for one Vim has no name for.
+func vimModeLabel(mode string) string {
+	for _, m := range vimModeNames {
+		if strings.HasPrefix(mode, m.prefix) {
+			return m.name
+		}
+	}
+	return ""
+}
+
+// vimShowmodeRest is what 'showmode' says past the mode the label already
+// names: "-- INSERT --recording @q" keeps "recording @q".
+func vimShowmodeRest(s string) string {
+	if rest, ok := strings.CutPrefix(s, "-- "); ok {
+		if i := strings.Index(rest, " --"); i >= 0 {
+			return strings.TrimSpace(rest[i+len(" --"):])
+		}
+	}
+	return s
+}

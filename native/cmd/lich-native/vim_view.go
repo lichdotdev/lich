@@ -9,6 +9,7 @@ import (
 	"image/color"
 	"unicode/utf8"
 
+	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
@@ -84,9 +85,10 @@ func (f *fileEditor) vimCursorColor(c vimCursor) color.NRGBA {
 	return col
 }
 
-// vimStatus is the strip under the code while Vim runs the editor: the
-// command line being typed, else the last message, else the mode's message,
-// and the partial command at the right.
+// vimStatus is the strip under the code while Vim runs the editor: the mode
+// by name, whatever 'showmode' says, then the command line being typed, else
+// the last message, else what 'showmode' adds to the mode (a recording), and
+// the partial command at the right.
 func (f *fileEditor) vimStatus(gtx C, th *ui.Theme) D {
 	if !f.vimOn() {
 		return D{}
@@ -107,7 +109,11 @@ func (f *fileEditor) vimStatus(gtx C, th *ui.Theme) D {
 			}
 			return l.Layout(gtx)
 		}
-		return th.Text(ui.TextSM, u.showmode).Mono().Muted().Truncated().Layout(gtx)
+		return th.Text(ui.TextSM, vimShowmodeRest(u.showmode)).Mono().Muted().Truncated().Layout(gtx)
+	}
+	mode := ""
+	if current && f.vim.state != nil {
+		mode = vimModeLabel(f.vim.state.mode)
 	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(th.Separator),
@@ -115,6 +121,8 @@ func (f *fileEditor) vimStatus(gtx C, th *ui.Theme) D {
 			return layout.Inset{Left: ui.Space(3), Right: ui.Space(3), Top: ui.Space(1), Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
 				gtx.Constraints.Min.X = gtx.Constraints.Max.X
 				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+					layout.Rigid(th.Text(ui.TextSM, mode).Mono().Weight(font.Bold).Layout),
+					ui.Gap(3),
 					layout.Flexed(1, left),
 					layout.Rigid(th.Text(ui.TextSM, u.showcmd).Mono().Muted().Layout),
 				)

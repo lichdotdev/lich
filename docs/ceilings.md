@@ -2564,8 +2564,9 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   hotkey of Settings › Hotkeys answers to Ctrl+Shift+letter there (the row's hint still says "in a terminal"),
   and the other shortcuts, Ctrl+S included, are read before the editor, so a Vim mapping on one of them never
   fires; on macOS the hotkeys are Command and win as they do everywhere. Neovim's grid is never drawn, so a
-  floating window, a completion menu or a plugin's UI does not show, and only the command line, the last message,
-  the mode and the partial command reach the strip under the code; the cursor takes 'guicursor''s shape but not
+  floating window, a completion menu or a plugin's UI (a statusline among them) does not show, and only the mode,
+  named in Vim's own English whatever 'showmode' says, the command line, the last message and the partial command
+  reach the strip under the code; the cursor takes 'guicursor''s shape but not
   its blink or colors; `:w` saves through lich (`BufWriteCmd`), and `:q` closes Neovim's window, never the editor,
   so a `:q` that quits Neovim restarts it at the next key with the buffers rebuilt from the editors' text, losing
   undo, registers and marks; a click moves Vim's cursor and a drag starts a characterwise Visual selection, but

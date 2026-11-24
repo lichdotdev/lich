@@ -37,3 +37,30 @@ func TestVimUIKeepsTheLastMessageAndMarksErrors(t *testing.T) {
 		t.Fatalf("message %q, mode %q after a clear", u.msg, u.showmode)
 	}
 }
+
+func TestVimModeLabelNamesEveryMode(t *testing.T) {
+	for mode, want := range map[string]string{
+		"n": "NORMAL", "niI": "NORMAL", "no": "O-PENDING", "nov": "O-PENDING",
+		"v": "VISUAL", "V": "V-LINE", "\x16": "V-BLOCK", "vs": "VISUAL",
+		"i": "INSERT", "ic": "INSERT", "R": "REPLACE", "Rv": "V-REPLACE",
+		"c": "COMMAND", "cv": "COMMAND", "s": "SELECT", "?": "",
+	} {
+		if got := vimModeLabel(mode); got != want {
+			t.Errorf("%q = %q, want %q", mode, got, want)
+		}
+	}
+}
+
+func TestVimShowmodeRestDropsWhatTheLabelSays(t *testing.T) {
+	for in, want := range map[string]string{
+		"-- INSERT --":             "",
+		"-- VISUAL LINE --":        "",
+		"-- INSERT --recording @q": "recording @q",
+		"recording @q":             "recording @q",
+		"":                         "",
+	} {
+		if got := vimShowmodeRest(in); got != want {
+			t.Errorf("%q = %q, want %q", in, got, want)
+		}
+	}
+}
