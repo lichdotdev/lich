@@ -84,7 +84,8 @@ func (f *fileEditor) keepMine() {
 	f.base, f.disk.theirs = *f.disk.theirs, nil
 	f.gen++
 	f.blame.gen++
-	f.setDirty(f.ed.State().Doc() != f.base)
+	doc, _ := f.savedText()
+	f.setDirty(doc != f.base)
 	f.startSave(nil, true)
 }
 

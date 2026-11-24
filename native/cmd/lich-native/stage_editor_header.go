@@ -106,8 +106,8 @@ func (f *fileEditor) startSave(then func(), overwrite bool) {
 	}
 	f.saving.busy = true
 	f.saving.mu.Unlock()
-	st := f.ed.State()
-	doc, content, base := st.Doc(), st.SliceDoc(0, len(st.Doc())), f.base
+	doc, content := f.savedText()
+	base := f.base
 	client, root, rel, opens := f.client, f.root(), f.rel, f.opens
 	go func() {
 		saved := &editorSaved{doc: doc, opens: opens, then: then}
@@ -159,7 +159,8 @@ func (f *fileEditor) takeSave() {
 	}
 	f.base, f.disk.seen, f.disk.theirs = s.doc, s.doc, nil
 	f.gen++
-	f.setDirty(f.ed.State().Doc() != f.base)
+	doc, _ := f.savedText()
+	f.setDirty(doc != f.base)
 	f.onSaved()
 	f.vimSaved(s.doc)
 	if next {

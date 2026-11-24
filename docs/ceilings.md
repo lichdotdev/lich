@@ -2572,7 +2572,11 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   `:qa` closing only that file, and a `:q` over changes not yet saved fails with E37 as Vim's does (an
   auto-save clears 'modified'); a Neovim that quits anyway (`:cq`, a plugin) restarts at the next key with the
   buffers rebuilt from the editors' text, losing undo, registers and marks; the search's matches ('hlsearch',
-  'incsearch') are laid over the text on the visible lines only, and one broken over a wrapped row is not;
+  'incsearch'), a `:s`'s pattern and its 'inccommand' preview (run by Neovim on a scratch copy of the visible
+  lines, so `~` and `:&` take the last preview's replacement once one is abandoned), the matchparen pair and, when
+  the person's config lights yanks itself, a yank's flash are laid over the text on the visible lines only, and
+  one broken over a wrapped row is not; a message of many lines (`:ls`, `:reg`, `:messages`) shows its last
+  15 in the strip, with no pager;
   a click moves Vim's cursor and a drag starts a characterwise Visual selection, but
   the wheel only sets the top line, and with wrap off a long line never scrolls sideways to the cursor. A key
   typed while Neovim is still starting is lost.

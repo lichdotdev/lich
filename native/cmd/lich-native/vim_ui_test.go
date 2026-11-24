@@ -1,6 +1,9 @@
 package main
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func chunks(text string) []any { return []any{[]any{int64(0), text, int64(0)}} }
 
@@ -79,5 +82,27 @@ func TestVimModeBadgesTellTheModesApart(t *testing.T) {
 		if _, lane := vimModeLabel(mode); lane != visual {
 			t.Fatalf("%q wears lane %d, apart from VISUAL's %d", mode, lane, visual)
 		}
+	}
+}
+
+func TestVimUIStacksAListAndShowsItsTail(t *testing.T) {
+	var u vimUI
+	for _, line := range []string{"  1 %a \"a.go\"", "  2    \"b.go\""} {
+		u.apply([]any{"msg_show", []any{"list_cmd", chunks(line), false}})
+	}
+	if u.msg != "  1 %a \"a.go\"\n  2    \"b.go\"" {
+		t.Fatalf(":ls shows %q", u.msg)
+	}
+	u.apply([]any{"msg_show", []any{"", chunks("written"), true}})
+	if u.msg != "written" {
+		t.Fatalf("a replacing message left %q", u.msg)
+	}
+	u.apply([]any{"msg_history_show", []any{[]any{[]any{"", chunks("first")}, []any{"emsg", chunks("E492: x")}}}})
+	if u.msg != "first\nE492: x" {
+		t.Fatalf(":messages shows %q", u.msg)
+	}
+	long := strings.Repeat("line\n", vimMessageLines+5) + "last"
+	if tail := vimMessageTail(long); strings.Count(tail, "\n") != vimMessageLines-1 || !strings.HasSuffix(tail, "last") {
+		t.Fatalf("a long message kept %d lines", strings.Count(tail, "\n")+1)
 	}
 }

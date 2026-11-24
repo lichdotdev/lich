@@ -9,7 +9,10 @@ package main
 import (
 	"image"
 	"path/filepath"
+	"slices"
+	"strings"
 	"sync"
+	"time"
 
 	"gioui.org/io/event"
 	"gioui.org/io/key"
@@ -41,6 +44,19 @@ type vimBuffer struct {
 	skip    int
 	top     int
 	state   *vimState
+	// shown is the :s preview laid in the editor, nil for none.
+	shown *vimShown
+	// yank is the last yank's text, lit until yankUntil.
+	yank      []godemirror.SelectionRange
+	yankUntil time.Time
+}
+
+// vimShown is a :s preview in the editor: bytes from..to of the text are
+// the preview's, standing where original was.
+type vimShown struct {
+	from, to int
+	original string
+	preview  vimPreview
 }
 
 // held is the buffer and the process and open it belongs to, 0 for none.
@@ -105,6 +121,7 @@ func (f *fileEditor) syncVim() {
 func (f *fileEditor) vimOff() {
 	if f.ed != nil {
 		f.ed.OnKey, f.ed.OnScroll = nil, nil
+		f.vimUnpreview()
 	}
 	if buf, _, _ := f.vim.held(); buf == 0 && !f.vim.opening {
 		return
@@ -175,6 +192,7 @@ func (f *fileEditor) vimApply(ev vimEvent) {
 		if f.vim.setting || ev.lines.tick <= f.vim.skip {
 			return
 		}
+		f.vimUnpreview()
 		doc := f.ed.State().Doc()
 		if ch, ok := vimChange(doc, vimSplice(doc, ev.lines.first, ev.lines.last, ev.lines.lines)); ok {
 			_ = f.ed.Dispatch(godemirror.TransactionSpec{Changes: []godemirror.ChangeSpec{ch}, UserEvent: "input.vim"})
@@ -184,13 +202,18 @@ func (f *fileEditor) vimApply(ev vimEvent) {
 		}
 	case ev.state != nil:
 		f.vim.state = ev.state
+		f.vimPreview(ev.state.preview)
 		f.vimSelect(*ev.state)
+	case ev.yank != nil:
+		f.vim.yank = vimSelection(f.ed.State(), *ev.yank).Ranges()
+		f.vim.yankUntil = f.now().Add(vimYankFlash)
 	case ev.quit:
 		f.onQuit(ev.discard)
 	case ev.write:
 		// The lines before the :w reach dirty only at the editor's next
 		// Layout; the save cannot wait for it.
-		f.setDirty(f.ed.State().Doc() != f.base)
+		doc, _ := f.savedText()
+		f.setDirty(doc != f.base)
 		f.startSave(nil, false)
 	}
 }
@@ -291,4 +314,68 @@ func (f *fileEditor) vimSaved(doc string) {
 	}
 	lines, _ := vimLinesOf(doc)
 	f.vimFeed("lich_editor.saved(...)", lines)
+}
+
+// vimPreview lays the :s being typed into the editor, as 'inccommand' shows
+// it, out of the history and of what the editor saves; nil takes it out.
+func (f *fileEditor) vimPreview(p *vimPreview) {
+	if p == nil {
+		f.vimUnpreview()
+		return
+	}
+	if f.vim.shown != nil && f.vim.shown.preview.first == p.first && f.vim.shown.preview.last == p.last &&
+		slices.Equal(f.vim.shown.preview.lines, p.lines) {
+		return
+	}
+	f.vimUnpreview()
+	doc := f.ed.State().Doc()
+	ch, changed := vimChange(doc, vimSplice(doc, p.first, p.last, p.lines))
+	f.vim.shown = &vimShown{from: ch.From, to: ch.From + len(ch.Insert), original: doc[ch.From:ch.To], preview: *p}
+	if changed {
+		f.vimPreviewDispatch(ch)
+	}
+}
+
+// vimUnpreview puts back the text a :s preview stood over.
+func (f *fileEditor) vimUnpreview() {
+	s := f.vim.shown
+	if s == nil {
+		return
+	}
+	f.vim.shown = nil
+	if s.from != s.to || s.original != "" {
+		f.vimPreviewDispatch(godemirror.ChangeSpec{From: s.from, To: s.to, Insert: s.original})
+	}
+}
+
+// vimPreviewEvent names a preview's transactions, which the editor's edits
+// leave out.
+const vimPreviewEvent = "preview.vim"
+
+func (f *fileEditor) vimPreviewDispatch(ch godemirror.ChangeSpec) {
+	_ = f.ed.Dispatch(godemirror.TransactionSpec{Changes: []godemirror.ChangeSpec{ch}, UserEvent: vimPreviewEvent, SkipHistory: true})
+}
+
+// vimOnlyPreview is whether u's changes are a :s preview's alone.
+func vimOnlyPreview(u godemirror.Update) bool {
+	for _, t := range u.Transactions {
+		if !t.Changes.Empty() && !t.IsUserEvent(vimPreviewEvent) {
+			return false
+		}
+	}
+	return true
+}
+
+// savedText is the text a save writes, in the editor's lines and in the
+// file's: the editor's, with a :s preview's text put back.
+func (f *fileEditor) savedText() (doc, content string) {
+	st := f.ed.State()
+	doc = st.Doc()
+	if s := f.vim.shown; s != nil {
+		doc = doc[:s.from] + s.original + doc[s.to:]
+	}
+	if f.sep != "" && f.sep != "\n" {
+		return doc, strings.ReplaceAll(doc, "\n", f.sep)
+	}
+	return doc, doc
 }
