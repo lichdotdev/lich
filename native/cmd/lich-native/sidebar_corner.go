@@ -220,11 +220,15 @@ func (c *corner) alphas(now time.Time) cellAlphas {
 
 // color is the corner's tone at now, crossing from the last status's.
 func (c *corner) color(th *ui.Theme, now time.Time) color.NRGBA {
-	to := cornerColor(th, c.tone)
-	if c.toneFrom == c.tone {
-		return to
+	return blendTone(th, c.toneFrom, c.tone, now.Sub(c.toneAt))
+}
+
+// blendTone is the color of a status crossing from from's to to's, since into the crossing.
+func blendTone(th *ui.Theme, from, to cornerMode, since time.Duration) color.NRGBA {
+	if from == to {
+		return cornerColor(th, to)
 	}
-	return ui.MixOKLab(cornerColor(th, c.toneFrom), to, float64(treeEase(float32(now.Sub(c.toneAt))/float32(toneBlend))))
+	return ui.MixOKLab(cornerColor(th, from), cornerColor(th, to), float64(treeEase(float32(since)/float32(toneBlend))))
 }
 
 // cornerColor is a status's color: the theme's Primary while it works,

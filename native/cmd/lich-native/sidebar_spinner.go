@@ -67,11 +67,16 @@ func (l cellLevels) faded() cellAlphas {
 
 // glide is from moved toward to's levels for since.
 func glide(from cellAlphas, to cellLevels, since time.Duration) cellAlphas {
-	g := 1 - float32(math.Exp(-float64(since)/float64(cellGlide)))
 	for c := range from {
-		from[c] += (cellFade[to[c]] - from[c]) * g
+		from[c] = glideCell(from[c], to[c], since)
 	}
 	return from
+}
+
+// glideCell is a cell's brightness moved from toward level for since.
+func glideCell(from float32, level uint8, since time.Duration) float32 {
+	g := 1 - float32(math.Exp(-float64(since)/float64(cellGlide)))
+	return from + (cellFade[level]-from)*g
 }
 
 // lightTrail lights trail, newest first, from the head's level down; -1 is no
