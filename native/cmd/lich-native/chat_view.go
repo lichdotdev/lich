@@ -324,7 +324,7 @@ func (u *window) chatScreen(gtx C, sv sessionView, keys bool) {
 			m := op.Record(gtx.Ops)
 			resized = false
 			viewport := gtx.Constraints.Max.Y
-			d := th.ThinScrollArea(&p.list).Layout(gtx, len(shown), func(gtx C, i int) D {
+			d := p.list.List.Layout(gtx, len(shown), func(gtx C, i int) D {
 				top := chatRowGap
 				switch {
 				case i == 0:
@@ -360,6 +360,7 @@ func (u *window) chatScreen(gtx C, sv sessionView, keys bool) {
 			}
 		}
 		call.Add(gtx.Ops)
+		p.scrollbar(gtx, th, shown, d)
 		// A row's window was placed by the height it had before, with a
 		// viewport of margin: a row that grew or shrank by more, as an
 		// answer's unmeasured blocks do, is drawn again where it now stands.
@@ -398,6 +399,27 @@ func (u *window) chatScreen(gtx C, sv sessionView, keys bool) {
 		return
 	}
 	layout.Flex{Axis: layout.Vertical}.Layout(gtx, layout.Flexed(1, list), layout.Rigid(composer))
+}
+
+// scrollbar is drawn from the heights the rows measured, not layout.List's
+// estimate: a one-line question beside a long answer swings that estimate,
+// and the thumb with it, at every scroll.
+func (v *chatView) scrollbar(gtx C, th *ui.Theme, shown []string, d D) {
+	px := make([]int, len(shown))
+	for i, key := range shown {
+		px[i] = v.heights[key]
+	}
+	pos := v.list.Position
+	start, end, total := scrollSpan(px, pos.First, pos.Offset, d.Size.Y)
+	gtx.Constraints.Min = d.Size
+	layout.E.Layout(gtx, func(gtx C) D {
+		return th.ThinScrollArea(&v.list).ScrollbarStyle.Layout(gtx, layout.Vertical, start, end)
+	})
+	if delta := v.list.ScrollDistance(); delta != 0 {
+		v.list.Position.Offset += int(delta * float32(total))
+		v.list.Position.BeforeEnd = true
+		gtx.Execute(op.InvalidateCmd{})
+	}
 }
 
 // chatColumn centres w on the pane's axis, as wide as the composer's box,
