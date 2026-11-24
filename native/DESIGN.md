@@ -445,8 +445,8 @@ draws none while it grows in, because the room above the rows is measured in the
   one generic wrench for the rest), its name in medium, what it acted on in mono, then at the right the time it
   ran in muted mono and how it ended: nothing while it runs, then a check in `TonePass` or a cross in
   `Destructive` with the output's first line. A time that stands still reads in milliseconds under a second
-  ("476ms"), the line's "Worked for" too; a call whose end nobody reported (most histories) shows no time. Its
-  diff stands under it as a window: `RadiusMD`, a 1px `Border` hairline, the file's name in mono medium with `+a -d` over a hairline, then the hunks drawn as a thread's are, without the `---` and `+++` lines. While a call of the turn in flight runs, the line shimmers
+  ("476ms"), the line's "Worked for" too; a call whose end nobody reported (most histories) shows no time. A
+  call that changed a file is not in the fold: it is an edit, a line of its own (see An edit). While a call of the turn in flight runs, the line shimmers
   with its count; the group never opens on its own. Only
   the turn in flight is alive: a call an ended turn left running (interrupted) stops with it, its time up to the
   turn's end, or none where nobody saw it.
@@ -488,9 +488,8 @@ draws none while it grows in, because the room above the rows is measured in the
   the closing line where it stood: the flame, verb and clock fade out in 120ms ease-in, then the avatar, word
   and count fade in by 280ms and the hairline runs from the word to the column's edge by 360ms, both ease-out;
   the slot eases to the closing line's height in 160ms, since the two differ by a few pixels. Neither row
-  plays its own entry or exit. A question answered turns its card into its answer lines: the card fades out in
-  120ms, the lines fade in from 80ms to 200ms, and the row's height runs down to theirs in 200ms. A fold, a
-  thought's text or a group's calls, opens and shuts with `ui.Collapse`, 200ms, its first draw landing where it
+  plays its own entry or exit. A question answered leaves the composer at once, and its answer enters the
+  conversation as a new row does. A fold, a thought's text, a group's calls or an edit's diff, opens and shuts with `ui.Collapse`, 200ms, its first draw landing where it
   stands, and a group opens and shuts that way at the edges of its run of calls; a call that comes into an open
   group enters as a row does. Sending a message while the list is scrolled up runs it back
   to its end in 220ms ease-out and pins it there. Switching between GUI and TUI fades the view that comes in
@@ -500,22 +499,38 @@ draws none while it grows in, because the room above the rows is measured in the
 - **A permission** is a box on `Sidebar`, `RadiusMD`, `Space(3)` padding (see Boxes inside a screen): the tool,
   its diff, and a `SizeSM` button per answer the provider offers, the first allow filled. Enter takes the first
   allow and Esc the first reject. Answered, it shrinks to a muted line naming the answer.
-- **A question** (`chat_question.go`, `chat_question_draw.go`) is the same box where the agent stopped, in
-  Claude Code's AskUserQuestion shape, which every provider's request for input is read into. Its head is the
-  ask's header in small capitals on a `Muted` fill, then the question in `TextSM` medium, and "multiple" muted
-  at the right when it takes several; several asks turn the headers into steps along the top (the one on show on
-  `SidebarAccent`, an answered one with a check, each a click back to it; an ask with no header shows its number) with "2 of 3" muted at the right, and
-  the question under them. Each option is a row, a keycap with its number (a checkbox when it takes several), the
-  label in medium and the description muted, the row the keys stand on lit on `SidebarAccent`; the last row is
-  always "Other…", a field for the person's own words. An ask with no options is a textarea alone. When the
-  options carry a preview, the list takes the left half and the highlighted one's preview stands at the right in
-  mono on `Background`. A single choice answers on a click, its digit or Enter on the lit row; several are marked
-  with a click or Space and go with Send, a `SizeSM` secondary button dimmed until something is marked or written,
-  beside "2 marked"; the last of several asks leads to a summary, a line per ask, and Send all. The keys go to
-  the card while it waits, Esc declines, and the composer stays clickable: a message sent from it declines the
-  questions and reaches the agent. While it waits the flame is left out, as for a permission. Answered, it is a
-  `TextXS` line per ask after a 1px `Border` hairline, the header muted and the answer in medium, the person's
-  own words in quotes; declined, a muted "Not answered".
+- **An edit** (`chat_edit.go`), a call that changed a file, is a line of its own out of the turn's fold, on
+  `Card` in `RadiusMD` with a 1px `Border` hairline: the file's icon (`th.FileIcon`), its folder muted and its
+  name in mono `TextXS`, the path relative to the checkout, then `+a -d` (`th.DiffStat`). No tool name, glyph
+  or time: the line is the file. While the call runs its path shimmers and no counts show; failed, "failed" in
+  `Destructive` stands in their place. Hover fills it with the kit's hover; a chevron at its right shows on
+  hover and while open. A click unfolds the diff under a hairline, inside the same box, and a second folds it;
+  a Ctrl+click opens the file in the editor instead. A diff, here and in a permission, draws its lines in their
+  tones without the `---`, `+++` and `@@` lines: the lines alone tell the change.
+- **A question** (`chat_question.go`, `chat_question_draw.go`) waits over the composer, not where the agent
+  stopped: it is what holds the turn, so it stands where the person types and does not scroll away. It is
+  Claude Code's AskUserQuestion shape, which every provider's request for input is read into, in a box on
+  `Sidebar`, `RadiusLG` with a 1px `Border` hairline as the composer has, `Space(2)` over the composer. Its
+  head is the ask's header, muted `TextXS` in its own case on no fill, and a ghost `SizeIconXS` × at the right
+  that declines; several asks turn the headers into tabs (the one on show in `Foreground` medium over a 2dp
+  `Primary` rule, an answered one with a `TonePass` check, each a click back to it; an ask with no header shows
+  its number), with no count. Under it the question in `TextSM` medium. Each option is a row: a keycap with its
+  number (a checkbox when it takes several), the label in `TextSM` regular and the description muted under it;
+  the row the keys stand on is lit on `Accent`, `RadiusMD`. A label ending in Claude Code's "(Recommended)"
+  is drawn without it, a `Primary` `TextXS` "Recommended" beside it; the reply keeps the label as it came.
+  The last option row is "Other…", a bare field whose placeholder reads as its label. There is no Send button
+  and no summary, as in Claude Code's terminal: a single choice answers on a click, its digit or Enter on the
+  lit row, and that row carries Enter's keycap (↵) at its right; several are marked with a click, Space or
+  Enter, and a last row, an arrow and "Continue" with "2 marked" muted, sends them, muted until something is
+  marked or written. Answering an ask moves to the first one left, and answering the last one left sends them
+  all. An ask with no options is a textarea with "Enter sends · Esc declines" muted under it. When the options
+  carry a preview, the list takes the left half and the highlighted one's preview stands at the right in mono
+  on `Background`. The keys go to the card while it waits, Esc declines, and the composer stays clickable: a
+  message sent from it declines the questions and reaches the agent. While it waits the flame is left out, as
+  for a permission. A plan's question waits over the composer too, the plan itself staying in the
+  conversation. Answered, it is the person's own message at the column's right, the bubble of what they type:
+  a `TextSM` line per ask, the header muted and the answer, their own words in quotes; declined, a muted
+  "Not answered" at the right.
 - **A notice** is a muted line; the turn in flight ends the column with a pixel flame (`chat_flame.go`: an 11x14 sprite of 1.5dp pixels, drawn as rectangles, in 16 frames of 100ms; only its 11 bottom rows take the line, the tips and sparks burning over the line above; a window without focus looks in at `StillFrame` instead) and a verb of the turn, shimmering like "Thinking" with the time it has run beside it; the verb is picked from the language's own list (`chat.view.verbs`, `|`-separated, each language writes its own length) by the session and the turn, so it holds for the whole turn; left out
   while a permission or a question waits: its box already says so.
   The flame's colors are tokens, never a fixed hue: the core is `Primary` halfway to the lighter of `Foreground` and
