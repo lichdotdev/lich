@@ -23,7 +23,7 @@ func TestPaletteCallsSendTheirOptions(t *testing.T) {
 			return err
 		}},
 		{"ClosedSessions", "store.ClosedSessions", `{"term":"relay"}`, ClosedHistory{}, func(c *Client) error {
-			_, err := c.ClosedSessions(ctx, "relay")
+			_, err := c.ClosedSessions(ctx, "relay", "")
 			return err
 		}},
 		{"ExternalSessions", "store.ExternalSessions", ``, []ExternalSession{}, func(c *Client) error {

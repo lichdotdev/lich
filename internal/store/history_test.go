@@ -432,6 +432,36 @@ func TestClosedSessionsSearchesByName(t *testing.T) {
 	}
 }
 
+// TestClosedSessionsOfOneProject is the chat's /resume: a ProjectID keeps that
+// project's parked sessions alone, with or without a term.
+func TestClosedSessionsOfOneProject(t *testing.T) {
+	svc := searchStore(t)
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p2", Name: "beta", Path: "/tmp/beta"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p2", SessionID: "keep2", Label: "Session 1", Kind: "claude", NextSeq: 1})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p2", SessionID: "b1", Label: "relay in beta", Kind: "codex", Path: "/wt/b1"})
+	atClock(t, time.Unix(1_700_000_400, 0), func() {
+		_, _ = svc.CloseSession(t.Context(), api.ParkSessionOptions{ProjectID: "p2", SessionID: "b1", ActiveID: "keep2"})
+	})
+	for _, c := range []struct {
+		project, term string
+		want          []string
+		total         int
+	}{
+		{"", "relay", []string{"b1", "s2", "s1"}, 3},
+		{"p1", "relay", []string{"s2", "s1"}, 2},
+		{"p1", "", []string{"s3", "s2", "s1"}, 3},
+		{"p2", "", []string{"b1"}, 1},
+	} {
+		h, err := svc.ClosedSessions(t.Context(), api.ClosedSessionsOptions{Term: c.term, ProjectID: c.project})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got := ids(h.Sessions); !slices.Equal(got, c.want) || h.Total != c.total {
+			t.Errorf("ClosedSessions(%q in %q) = %v of %d, want %v of %d", c.term, c.project, got, h.Total, c.want, c.total)
+		}
+	}
+}
+
 // TestClosedSessionsSearchesEveryWord pins the term's reading against the
 // palette's own filter, which requires every word and not the phrase.
 func TestClosedSessionsSearchesEveryWord(t *testing.T) {
@@ -545,7 +575,7 @@ func TestEscapeLike(t *testing.T) {
 // and not about the count beside them.
 func mustClosed(t *testing.T, svc *Service, term string) []ClosedSession {
 	t.Helper()
-	history, err := svc.ClosedSessions(t.Context(), api.SearchTermOptions{Term: term})
+	history, err := svc.ClosedSessions(t.Context(), api.ClosedSessionsOptions{Term: term})
 	if err != nil {
 		t.Fatalf("ClosedSessions(%q): %v", term, err)
 	}
@@ -637,7 +667,7 @@ func TestClosedSessionsCountsTheWholeMatch(t *testing.T) {
 	}
 	park(t, svc, "odd", "something else", 1_700_100_000)
 
-	history, err := svc.ClosedSessions(t.Context(), api.SearchTermOptions{Term: "work"})
+	history, err := svc.ClosedSessions(t.Context(), api.ClosedSessionsOptions{Term: "work"})
 	if err != nil {
 		t.Fatalf("ClosedSessions: %v", err)
 	}
@@ -649,12 +679,12 @@ func TestClosedSessionsCountsTheWholeMatch(t *testing.T) {
 	}
 
 	// A match that fits reports itself, so the list has nothing to say was cut.
-	fits, _ := svc.ClosedSessions(t.Context(), api.SearchTermOptions{Term: "something"})
+	fits, _ := svc.ClosedSessions(t.Context(), api.ClosedSessionsOptions{Term: "something"})
 	if len(fits.Sessions) != 1 || fits.Total != 1 {
 		t.Errorf("small match = %d rows, Total %d; want 1 and 1", len(fits.Sessions), fits.Total)
 	}
 	// And an empty history counts nothing rather than the page it did not fill.
-	none, _ := svc.ClosedSessions(t.Context(), api.SearchTermOptions{Term: "nothing-matches-this"})
+	none, _ := svc.ClosedSessions(t.Context(), api.ClosedSessionsOptions{Term: "nothing-matches-this"})
 	if len(none.Sessions) != 0 || none.Total != 0 {
 		t.Errorf("empty match = %d rows, Total %d; want 0 and 0", len(none.Sessions), none.Total)
 	}

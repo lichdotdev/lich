@@ -253,3 +253,19 @@ func TestOnlyAWaitingSessionTrailsTheWaitingChip(t *testing.T) {
 		}
 	}
 }
+
+// A chat's /resume narrows History to its project: the conversations outside
+// lich of another project leave, and the chip names the one kept.
+func TestPaletteHistoryOfOneProject(t *testing.T) {
+	p := newCommandPalette(func() {})
+	p.showHistory(nil, paletteProject{ID: "p1", Name: "lich"})
+	p.external.data = paletteOutside
+	v := p.view(workspaceForView(), defaultHotkeys(), false, func(hotkeyID) bool { return true })
+	equal(t, "rows", rowKeys(v.groups), []string{"external:c1"})
+	if v.scope != "lich" {
+		t.Errorf("scope = %q, want the project's name for the chip", v.scope)
+	}
+	p.scope = paletteProject{}
+	v = p.view(workspaceForView(), defaultHotkeys(), false, func(hotkeyID) bool { return true })
+	equal(t, "rows without the scope", rowKeys(v.groups), []string{"external:c1", "external:k1"})
+}
