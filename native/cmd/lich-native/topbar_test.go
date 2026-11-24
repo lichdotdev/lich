@@ -2,6 +2,7 @@ package main
 
 import (
 	"image"
+	"slices"
 	"testing"
 
 	"gioui.org/f32"
@@ -16,16 +17,22 @@ import (
 	"github.com/lichdotdev/lich/native/ui"
 )
 
-func TestTabWidthShrinksEvenlyToItsFloor(t *testing.T) {
-	cases := []struct{ room, count, want int }{
-		{1000, 3, 196}, // room to spare: the fixed width
-		{800, 5, 160},  // shared evenly
-		{800, 8, 118},  // the floor; the strip scrolls past it
-		{800, 0, 196},
+func TestTabWidthsCutOnlyTheWidestToTheirFloor(t *testing.T) {
+	cases := []struct {
+		name    string
+		room    int
+		natural []int
+		want    []int
+	}{
+		{"room to spare", 1000, []int{60, 164, 100}, []int{60, 164, 100}},
+		{"widest give way, the short keep theirs", 300, []int{60, 164, 164}, []int{60, 120, 120}},
+		{"the floor; the strip scrolls past it", 200, []int{164, 164, 164}, []int{118, 118, 118}},
+		{"none", 200, nil, []int{}},
 	}
 	for _, c := range cases {
-		if got := tabWidth(c.room, c.count, 196, 118); got != c.want {
-			t.Errorf("tabWidth(%d, %d) = %d, want %d", c.room, c.count, got, c.want)
+		got := tabWidths(c.room, c.natural, 118)
+		if !slices.Equal(got, c.want) {
+			t.Errorf("%s: tabWidths = %v, want %v", c.name, got, c.want)
 		}
 	}
 }
