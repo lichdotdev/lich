@@ -105,7 +105,7 @@ func (c *markdownCell) decorate(gtx C, th *ui.Theme, paths *Paths) {
 		spans[i] = styledtext.SpanStyle{Font: span.Font, Size: span.Size, Color: color.NRGBA{}, Content: span.Content}
 	}
 	style := styledtext.Text(th.Shaper, spans...)
-	style.LineHeightScale = c.lineHeightScale()
+	style.LineHeight, style.LineHeightScale = c.lineSize(), c.lineHeightScale()
 	marked := -1
 	style.Layout(gtx, func(gtx layout.Context, i int, dims layout.Dimensions) {
 		if dims.Size.X == 0 || dims.Size.Y == 0 {

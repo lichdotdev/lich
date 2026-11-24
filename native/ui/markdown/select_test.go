@@ -3,6 +3,7 @@ package markdown
 import (
 	"image"
 	"image/color"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -151,7 +152,7 @@ func styledFrom(th *ui.Theme, cell *markdownCell) styledtext.TextStyle {
 		spans[i] = styledtext.SpanStyle{Font: s.Font, Size: s.Size, Color: s.Color, Content: s.Content}
 	}
 	style := styledtext.Text(th.Shaper, spans...)
-	style.LineHeightScale = cell.lineHeightScale()
+	style.LineHeight, style.LineHeightScale = cell.lineSize(), cell.lineHeightScale()
 	return style
 }
 
@@ -477,5 +478,31 @@ func TestADragBackIntoTheFirstCellLetsTheOthersGo(t *testing.T) {
 	r.send(pointer.Release, r.edgeOf(5), 0)
 	if got := r.copied(); got != "First" {
 		t.Errorf("Ctrl+C copied %q, want First", got)
+	}
+}
+
+// A body line is BodySize times LineHeightScale apart from the next, the
+// composer's leading, whatever the font's ascent and descent: styledtext
+// scaled the glyph height instead, which put lines about 2.25 times the size
+// apart.
+func TestBodyLinesStandALineHeightApart(t *testing.T) {
+	th := markdownTheme()
+	cell := renderBlocks(th, wrapped)[0].prose
+	gtx := layout.Context{Ops: new(op.Ops), Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}, Constraints: layout.Constraints{Max: image.Pt(selectWidth, 400)}}
+	var tops []int
+	for _, b := range cell.geometry(gtx, th.Shaper).boxes {
+		if !slices.Contains(tops, b.top) {
+			tops = append(tops, b.top)
+		}
+	}
+	slices.Sort(tops)
+	if len(tops) < 2 {
+		t.Fatalf("the paragraph laid out on %d lines, want it wrapped", len(tops))
+	}
+	want := int(float32(gtx.Sp(BodySize)) * LineHeightScale)
+	for i := 1; i < len(tops); i++ {
+		if got := tops[i] - tops[i-1]; got != want {
+			t.Errorf("line %d stands %dpx under the one before, want %d", i, got, want)
+		}
 	}
 }

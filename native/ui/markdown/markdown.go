@@ -250,7 +250,7 @@ func (c *markdownCell) layout(gtx C, th *ui.Theme, l Links) D {
 		}
 	}
 	style := richtext.Text(&c.state, th.Shaper, c.spans...)
-	style.LineHeightScale = c.lineHeightScale()
+	style.LineHeight, style.LineHeightScale = c.lineSize(), c.lineHeightScale()
 	m := op.Record(gtx.Ops)
 	c.decorate(gtx, th, l.Paths)
 	c.paintSelection(gtx, th)
@@ -262,6 +262,18 @@ func (c *markdownCell) layout(gtx C, th *ui.Theme, l Links) D {
 // dragged is whether the press the cell last took became a selection, which
 // opens nothing.
 func (c *markdownCell) dragged() bool { return c.sel != nil && c.sel.dragged }
+
+// lineSize is what the cell's line height scales: its largest span's size.
+// styledtext otherwise scales each line's glyph height, ascent plus descent,
+// which is already past the size and differs by font: a body line came to
+// about 2.25 times its size, against the composer's 1.5.
+func (c *markdownCell) lineSize() unit.Sp {
+	var size unit.Sp
+	for _, s := range c.spans {
+		size = max(size, s.Size)
+	}
+	return size
+}
 
 func (c *markdownCell) lineHeightScale() float32 {
 	if c.lineHeight != 0 {

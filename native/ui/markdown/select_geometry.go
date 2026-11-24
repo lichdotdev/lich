@@ -75,7 +75,7 @@ func (c *markdownCell) geometry(gtx C, shaper *text.Shaper) *cellGeometry {
 			line.add(res)
 		}
 		if res.multiLine || res.endedWithNewline || k == len(spans)-1 || force {
-			g.boxes = line.end(g.boxes, c.lineHeightScale())
+			g.boxes = line.end(g.boxes, gtx.Sp(c.lineSize()), c.lineHeightScale())
 		}
 		switch {
 		case res.multiLine && !force:
@@ -112,8 +112,9 @@ func (l *lineRunes) add(res shapedPiece) {
 }
 
 // end appends the line's runes to boxes, each piece standing on the line's
-// top as tall as its tallest, and starts the next line under it.
-func (l *lineRunes) end(boxes []runeBox, scale float32) []runeBox {
+// top as tall as its tallest, and starts the next line one line height,
+// size scaled, under it, as styledtext does.
+func (l *lineRunes) end(boxes []runeBox, size int, scale float32) []runeBox {
 	for _, b := range l.boxes {
 		if b.top == 0 {
 			b.height = l.h
@@ -122,7 +123,7 @@ func (l *lineRunes) end(boxes []runeBox, scale float32) []runeBox {
 		boxes = append(boxes, b)
 	}
 	l.boxes = l.boxes[:0]
-	l.y += int(float32(l.h) * scale)
+	l.y += int(float32(size) * scale)
 	l.x, l.h = 0, 0
 	return boxes
 }
@@ -143,6 +144,7 @@ func (c *markdownCell) shapeSpan(gtx C, shaper *text.Shaper, maxWidth int, q que
 		Truncator:       "\u200b",
 		Locale:          gtx.Locale,
 		WrapPolicy:      text.WrapWords,
+		LineHeight:      fixed.I(gtx.Sp(c.lineSize())),
 		LineHeightScale: c.lineHeightScale(),
 	}, q.content)
 	res := readPiece(shaper, image.Rectangle{Max: gtx.Constraints.Max})
