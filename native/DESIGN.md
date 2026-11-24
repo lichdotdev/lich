@@ -110,7 +110,11 @@ their text with the tone itself.
 - Body is `TextSM`, meta and paths `TextXS`, a group's uppercase label `Text2XS` semibold; headings
   named per screen.
 - Markdown prose is 15sp: larger than interface body text for sustained reading, while leaving more room for
-  long descriptions than `TextBase`.
+  long descriptions than `TextBase`. A line of it stands its size times 1.5 under the last (22.5 for 15sp, the
+  composer's leading), a person's message at `TextSM` 21, a heading 1.25 and a code block 1.3. The leading is set
+  from the cell's largest span size (`LineHeight`), never left to styledtext, which scales the glyph's ascent
+  plus descent instead and put lines about 2.25 times the size apart, the extra all under each line, so a
+  message's bubble sat lower in its box than it should.
 - In Markdown a blockquote is `MutedForeground` text `Space(4)` behind a `Space(1)` bar in `Border`, and a code
   block sits across the body on the inline code's fill, `RadiusSM`, `Space(2)` padding (`ui/markdown`).
   A block whose fence names a language the code views know is highlighted with their palette (`ui.Theme.Code`),
