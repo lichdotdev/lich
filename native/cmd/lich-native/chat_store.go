@@ -261,6 +261,7 @@ func (m *model) chatEvent(ctx context.Context, ev backend.Event) {
 	case api.ChatItemEvent.Name:
 		if u, err := backend.Decode(ev, api.ChatItemEvent); err == nil {
 			m.chat.apply(u)
+			m.steerQueue(ctx, u)
 		}
 	case api.ChatTurnEvent.Name:
 		if t, err := backend.Decode(ev, api.ChatTurnEvent); err == nil {

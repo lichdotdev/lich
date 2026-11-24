@@ -18,9 +18,10 @@ import (
 )
 
 // A message written while the agent works waits in the session's queue, over
-// the composer, as Claude Code's prompt does: once the turn ends the queue goes
-// in one message, Send now (or Ctrl+Enter) sends all of it into the turn
-// running, and ↑ on an empty box takes the queue back to edit.
+// the composer, as Claude Code's prompt does: it goes in one message into the
+// turn when a tool starts (steerQueue) or else once the turn ends, Send now (or
+// Ctrl+Enter) sends all of it into the turn running at once, and ↑ on an empty
+// box takes the queue back to edit.
 
 var (
 	icQueued    = icons.Lucide("clock")
@@ -98,6 +99,36 @@ func (m *model) flushQueue(ctx context.Context, t api.ChatTurn) {
 		if err := m.client.ChatPrompt(ctx, t.SessionID, joined.text, joined.files); err != nil {
 			log.Printf("chat queue of %s: %v", t.SessionID, err)
 			m.chat.requeue(t.SessionID, q)
+			m.invalidate()
+		}
+	}()
+}
+
+// chatSteerKinds are the providers that read a message written mid-turn at
+// their next tool boundary, as Claude Code's own queue does (measured on
+// 2.1.331), where ACP would stop the turn for it.
+var chatSteerKinds = []string{claudeKind, codexKind}
+
+// steerQueue sends session u.SessionID's queue into its turn once a tool
+// starts: the agent reads it as that tool ends. Until then it stays editable.
+// A refused steer puts it back, for the turn's end.
+func (m *model) steerQueue(ctx context.Context, u api.ChatItemUpdate) {
+	t := u.Item.Tool
+	if u.Item.Kind != api.ItemTool || t == nil || t.State != api.ToolRunning || m.chat.holding(u.SessionID) {
+		return
+	}
+	if sv, ok := m.sessionViewOf(u.SessionID); !ok || !slices.Contains(chatSteerKinds, sv.Kind) {
+		return
+	}
+	q := m.chat.takeQueue(u.SessionID)
+	if len(q) == 0 {
+		return
+	}
+	joined := joinMessages(q)
+	go func() {
+		if err := m.client.ChatSteer(ctx, u.SessionID, joined.text, joined.files); err != nil {
+			log.Printf("chat queue of %s: %v", u.SessionID, err)
+			m.chat.requeue(u.SessionID, q)
 			m.invalidate()
 		}
 	}()
