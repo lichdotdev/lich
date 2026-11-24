@@ -73,8 +73,7 @@
       }
     },
     "latest": "最新へ",
-    "newActivity": "新しい動き",
-    "openedAs": "{label} として開きました"
+    "newActivity": "新しい動き"
   },
   "done": {
     "done": "完了",

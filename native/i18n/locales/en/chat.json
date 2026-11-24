@@ -86,8 +86,7 @@
       }
     },
     "latest": "Latest",
-    "newActivity": "New activity",
-    "openedAs": "opened as {label}"
+    "newActivity": "New activity"
   },
   "done": {
     "done": "Done",

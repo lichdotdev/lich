@@ -10,7 +10,7 @@ import (
 )
 
 // A provider subagent call lich opened as a card is drawn as opened, its
-// label a click to the card, never as the failed call the provider reports.
+// card a pill that opens it, never as the failed call the provider reports.
 func TestAVetoedCallIsDrawnAsOpened(t *testing.T) {
 	failed := "PreToolUse:Agent hook error: lich opened this task as the session \"Fix #412\" (ticket 4b9bc94e)."
 	items := []backend.ChatItem{
@@ -29,7 +29,7 @@ func TestAVetoedCallIsDrawnAsOpened(t *testing.T) {
 		r.now = r.now.Add(20 * time.Millisecond)
 		r.frame()
 	}
-	if !r.shows("opened as Fix #412") {
+	if !r.shows("Fix #412") {
 		t.Fatalf("the vetoed call is not drawn as opened:\n%s", r.drawn())
 	}
 	if strings.Contains(r.drawn(), "hook error") {
@@ -39,7 +39,7 @@ func TestAVetoedCallIsDrawnAsOpened(t *testing.T) {
 		t.Errorf("a call lich did not veto lost its own failure:\n%s", r.drawn())
 	}
 	writeShot(t, r, "vetoed-call.png")
-	r.clickLabel(t, "opened as Fix #412")
+	r.clickLabel(t, "Fix #412")
 	if sv, ok := u.model.activeSession(); !ok || sv.ID != "s2" {
 		t.Errorf("active session = %q, want the card s2", sv.ID)
 	}
