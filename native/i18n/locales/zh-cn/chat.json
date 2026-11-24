@@ -6,6 +6,16 @@
     "pending": "正在切换…",
     "failed": "无法切换视图"
   },
+  "children": {
+    "title": "从这里打开的会话",
+    "count": {
+      "other": "{count} 个会话"
+    },
+    "waiting": {
+      "other": "{count} 个等待中"
+    },
+    "ended": "{time}前完成"
+  },
   "view": {
     "failed": "聊天请求失败",
     "thought": "思考",

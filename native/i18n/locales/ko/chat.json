@@ -6,6 +6,16 @@
     "pending": "전환 중…",
     "failed": "보기를 전환하지 못했습니다"
   },
+  "children": {
+    "title": "여기서 연 세션",
+    "count": {
+      "other": "세션 {count}개"
+    },
+    "waiting": {
+      "other": "{count}개 대기 중"
+    },
+    "ended": "{time} 전 완료"
+  },
   "view": {
     "failed": "채팅 요청이 실패했습니다",
     "thought": "생각",

@@ -6,6 +6,18 @@
     "pending": "Switching…",
     "failed": "Could not switch the view"
   },
+  "children": {
+    "title": "Sessions opened here",
+    "count": {
+      "one": "{count} session",
+      "other": "{count} sessions"
+    },
+    "waiting": {
+      "one": "{count} waiting",
+      "other": "{count} waiting"
+    },
+    "ended": "done {time} ago"
+  },
   "view": {
     "failed": "The chat request failed",
     "thought": "Thought",

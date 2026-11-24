@@ -6,6 +6,22 @@
     "pending": "Переключаем…",
     "failed": "Не удалось переключить вид"
   },
+  "children": {
+    "title": "Сессии, открытые отсюда",
+    "count": {
+      "one": "{count} сессия",
+      "few": "{count} сессии",
+      "many": "{count} сессий",
+      "other": "{count} сессии"
+    },
+    "waiting": {
+      "one": "{count} ждёт",
+      "few": "{count} ждут",
+      "many": "{count} ждут",
+      "other": "{count} ждут"
+    },
+    "ended": "завершена {time} назад"
+  },
   "view": {
     "failed": "Запрос к чату не выполнен",
     "thought": "Рассуждение",

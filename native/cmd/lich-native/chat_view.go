@@ -133,8 +133,10 @@ type chatView struct {
 	tools chatTools
 	// shellsChip is the composer's chip of the shells running.
 	shellsChip footerWidgets
-	search     chatSearch
-	history    chatHistory
+	// childrenChip is the composer's chip of the sessions this one opened.
+	childrenChip footerWidgets
+	search       chatSearch
+	history      chatHistory
 	// attached are the files the next message carries, drawn as cards over
 	// the text in cardList; fileCards are the cards' controls, by path in the
 	// composer and by item and path in a sent message.
@@ -488,6 +490,7 @@ func (u *window) chatActs(gtx C, p *chatPane, sv sessionView, keys, working bool
 	}
 	if keys {
 		u.shellsChipActs(gtx, p)
+		u.childrenChipActs(gtx, p)
 		u.toolsActs(gtx, p, sv.ID)
 	}
 	// The model panel's search holds the keys while the panel is open.

@@ -267,6 +267,8 @@ func (u *window) toolsActs(gtx C, p *chatPane, id string) {
 		rows, enter = u.agentsActs(gtx, p, sv, agents)
 	case t.kind == chatShellsPanel:
 		rows, enter = u.shellActs(gtx, p, id)
+	case t.kind == chatChildrenPanel:
+		rows, enter = u.childrenActs(gtx, p, id)
 	case t.kind == chatWorkflowsPanel:
 		rows, enter = u.workflowActs(gtx, p, id)
 	case t.kind == chatPluginCommand:

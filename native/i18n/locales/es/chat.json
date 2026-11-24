@@ -6,6 +6,18 @@
     "pending": "Cambiando…",
     "failed": "No se pudo cambiar la vista"
   },
+  "children": {
+    "title": "Sesiones abiertas desde aquí",
+    "count": {
+      "one": "{count} sesión",
+      "other": "{count} sesiones"
+    },
+    "waiting": {
+      "one": "{count} esperando",
+      "other": "{count} esperando"
+    },
+    "ended": "terminó hace {time}"
+  },
   "view": {
     "failed": "La petición al chat falló",
     "thought": "Razonamiento",

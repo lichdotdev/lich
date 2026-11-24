@@ -583,7 +583,12 @@ draws none while it grows in, because the room above the rows is measured in the
   Inside the box stand only the provider's controls, one line under the text: the footer's attach as a "+",
   the model with its effort in one chip ("Opus 5.5 · high") and the mode, each a ghost chip with a chevron.
   After them the footer's context ring with its percentage, the same readout as the terminal's balloon, when the
-  session reports a window.
+  session reports a window. Last, while the session has open sessions it opened (`OriginSessionID`, the sidebar
+  tree's), a wide ghost chip of them (`chat_children.go`, Paseo's "subagents" chip, made to say more): up to three
+  of their providers' pixel marks, "3 sessions" and, in `ToneWait`, "· 1 waiting". It opens a panel the shells'
+  way: a row per child, its mark with a dot of its state on the corner (`ToneWait` waiting, `Primary` working,
+  `TonePass` done), its name, "provider · model · branch · 4m" muted and, while it waits, what on in `ToneWait`;
+  those waiting first, then those working, then the rest under a hairline, muted. A row opens its session.
   The mode's menu lists the provider's choices, the current one checked, and picking one sets it
   (`ChatSetOption`). It is a `DropdownMenu` on `Popover`, the surface of the model panel and every other menu;
   a theme whose `popover` sits darker than `background` makes both look sunken, and the fix is the theme's token.

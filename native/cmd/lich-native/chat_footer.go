@@ -112,6 +112,7 @@ func (u *window) chatChips(th *ui.Theme, p *chatPane, sv sessionView, working bo
 	if ft.context != nil {
 		chips = append(chips, *ft.context)
 	}
+	chips = append(chips, footerSlot{ID: chipChildren})
 	return func(gtx C) D {
 		pad, gap, itemH := gtx.Dp(chatFootPad), gtx.Dp(balloonGap), gtx.Dp(balloonItemHeight)
 		width := gtx.Constraints.Max.X
@@ -140,6 +141,8 @@ func (u *window) chatChips(th *ui.Theme, p *chatPane, sv sessionView, working bo
 				return u.modeChip(gtx, th, p, sv, working)
 			case chipShells:
 				return u.shellsChip(gtx, th, p, sv)
+			case chipChildren:
+				return u.childrenChip(gtx, th, p, sv)
 			}
 			return f.slot(gtx, th, s, in)
 		}
