@@ -436,26 +436,32 @@ draws none while it grows in, because the room above the rows is measured in the
   is underlined in its color and takes the hand, and a click with it opens a file in the stage editor
   (`followCodeRef`) and a folder in the dock's Code tab, unfolded down to it (`chat_paths.go`). A path it does not
   hold stays text. Anything else in code is plain. An answer has no header: who wrote it is the
-  foot's (see A message's time), and the provider's avatar stands only on the tool-call line that opens a turn. A thought is a muted fold, closed, with the
+  foot's (see A message's time); the provider's avatar is on the closing line, never on a tool call. A thought is a muted fold, closed, with the
   sparkles before its label.
 - **A turn's tool calls** fold by run: the calls between two of the agent's texts (or the person's message and
-  the first text) fold into one muted line where the first of them came, with a 1px `Border` hairline running
-  from its label to the column's edge. One line for the whole turn stood where the turn began while the agent
-  went on working minutes below it; a run's line stands where its calls ran. A thought does not end a run.
-  Only the turn's first line starts with the provider's avatar, when it opens the turn (no answer before it). It
-  reads "6 tool calls" and, muted, how long the run took, from its first call to its last call's end (a
-  running one counts to now, shimmering); the turn's total is on its closing line. Open, each call is a 28px row hung under the line by a connector, a 1px
-  `Border` line under the fold's chevron with a stub into the row, ending at the last row as the sidebar's
-  tree does. The line starts shut, whether the turn is in flight or ended, and only a click opens it, which
+  the first text) fold into one muted line where the first of them came. One line for the whole turn stood where
+  the turn began while the agent went on working minutes below it; a run's line stands where its calls ran. A
+  thought does not end a run. No avatar and no hairline: every ADE surveyed (Paseo, Orca, Sikemux, Cursor,
+  Codex and Claude Code desktop) leaves the agent's mark off its calls. A run of one call is no fold: it is that
+  call's row, its target in view, the complaint most heard of the apps that fold it. Several read as what they
+  did, a clause per kind in one sentence ("Ran 4 commands, read 2 files", `chat_calls.go`: edited, ran, read,
+  searched, fetched, then "used N other tools"), then, muted, how long the run took, from its first call to its
+  last call's end, and "· 1 failed" in `Destructive` when one did (a call lich opened as a card is not a
+  failure); the turn's total is on its closing line. While a call runs the line is that call instead, its
+  running verb and target shimmering ("Running go test ./…", cut at 60 characters), the run's time counting,
+  and "· 3 tool calls" muted. Open, each call is a 28px row under the line, indented past its chevron, with no
+  connector. The line starts shut, whether the turn is in flight or ended, and only a click opens it, which
   holds as the person left it. Open, it shows only its last 5 calls (`chatCallsShown`): a turn can run fifty,
-  which would push the view past its height. The rest wait behind a first row on the branch, muted `TextXS`
-  "Show 12 earlier calls", lit on hover, whose click shows them all and turns it into "Show less". A row is its tool's glyph (a Lucide mark by tool name, Claude Code's own names and ACP's kinds,
-  one generic wrench for the rest), its name in medium, what it acted on in mono, then at the right the time it
-  ran in muted mono and how it ended: nothing while it runs, then a check in `TonePass` or a cross in
-  `Destructive` with the output's first line. A time that stands still reads in milliseconds under a second
-  ("476ms"), the line's own time too; a call whose end nobody reported (most histories) shows no time. A
-  call that changed a file is not in the fold: it is an edit, a line of its own (see An edit). While a call of the turn in flight runs, the line shimmers
-  with its count; the group never opens on its own. Only
+  which would push the view past its height. The rest wait behind a first row, muted `TextXS`
+  "Show 12 earlier calls", lit on hover, whose click shows them all and turns it into "Show less". A row is its
+  tool's glyph muted (a Lucide mark by tool name, Claude Code's, Codex's, ACP's kinds and the names Antigravity
+  and Kiro CLI put in their place, one generic wrench for the rest), its verb muted (the tool's own name, an MCP
+  tool's without its server, when it has no kind) in a column as wide as the run's widest verb, up to
+  `Space(24)`, so the targets line up, what it acted on in mono, then at the right the time it ran in muted mono.
+  A call that went well says nothing more; a failed one turns its glyph and verb `Destructive` and shows the
+  output's first line in it. A time that stands still reads in milliseconds under a second ("476ms"), the line's
+  own time too; a call whose end nobody reported (most histories) shows no time. A call that changed a file is
+  not in the fold: it is an edit, a line of its own (see An edit). The group never opens on its own. Only
   the turn in flight is alive: a call an ended turn left running (interrupted) stops with it, its time up to the
   turn's end, or none where nobody saw it.
 - **A turn's closing line** stands once, after the last item of the conversation's last turn, when that turn

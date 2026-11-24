@@ -28,9 +28,6 @@ type chatRow struct {
 	item backend.ChatItem // chatRowItem, chatRowShell, chatRowEdit
 	// day is a day row's moment, unix ms: when the turn it starts began.
 	day int64
-	// avatar marks the work row that opens its turn, which carries the
-	// provider's mark.
-	avatar bool
 	// more marks an answer's text another follows in the turn, with nothing
 	// between them: the run reads as one answer, so only its last text keeps
 	// the time and copy line, and runText is what that copy takes, every text
@@ -126,8 +123,6 @@ func chatRows(items []backend.ChatItem, kind string, running bool, now time.Time
 	}
 	var rows []chatRow
 	folded := map[string]bool{}
-	// opener is what first speaks in a turn, "work" or "agent".
-	opener := map[int]string{}
 	var turnDay time.Time
 	// The item being produced is the conversation's last, while it runs.
 	liveID := ""
@@ -157,9 +152,6 @@ func chatRows(items []backend.ChatItem, kind string, running bool, now time.Time
 					continue
 				}
 			}
-			if it.Kind == api.ItemAgent && opener[it.Turn] == "" {
-				opener[it.Turn] = "agent"
-			}
 			rows = append(rows, r)
 			continue
 		}
@@ -184,11 +176,8 @@ func chatRows(items []backend.ChatItem, kind string, running bool, now time.Time
 		if live {
 			end = now.UnixMilli()
 		}
-		work := chatRow{kind: chatRowWork, avatar: opener[it.Turn] == "", turn: it.Turn, run: id, tools: run.tools, ended: run.end, live: live,
+		work := chatRow{kind: chatRowWork, turn: it.Turn, run: id, tools: run.tools, ended: run.end, live: live,
 			took: time.Duration(max(end-run.start, 0)) * time.Millisecond}
-		if opener[it.Turn] == "" {
-			opener[it.Turn] = "work"
-		}
 		rows = append(rows, work)
 		rows = append(rows, fileRows(it)...)
 	}

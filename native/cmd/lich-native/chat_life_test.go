@@ -162,28 +162,35 @@ func TestAThoughtBeingThoughtShimmersAndCountsItsTime(t *testing.T) {
 	}
 }
 
+// A group names the call running while it runs, beside how many calls it
+// holds; once over it says what its calls did and how long they ran.
 func TestARunningGroupCountsItsCallsAndAFinishedOneSaysHowLongTheyRan(t *testing.T) {
-	call := func(state string) []backend.ChatItem {
+	calls := func(state string) []backend.ChatItem {
 		return []backend.ChatItem{
 			{ID: "u1", Kind: api.ItemUser, Turn: 1, At: novDay(18, 17, 59), Text: "go"},
-			{ID: "k1", Kind: api.ItemTool, Turn: 1, At: novDay(18, 17, 59), Tool: &backend.ChatToolCall{Name: "Bash", Title: "go test", State: state}},
+			{ID: "k1", Kind: api.ItemTool, Turn: 1, At: novDay(18, 17, 59), Tool: &backend.ChatToolCall{Name: "Read", Title: "a.go", State: api.ToolDone}},
+			{ID: "k2", Kind: api.ItemTool, Turn: 1, At: novDay(18, 17, 59), Tool: &backend.ChatToolCall{Name: "Bash", Title: "go test", State: state}},
 		}
 	}
-	_, r := lifeFrames(t, call(api.ToolRunning), true)
+	_, r := lifeFrames(t, calls(api.ToolRunning), true)
 	r.frame()
-	if !r.shows(i18n.T("chat.view.toolCalls", i18n.Args{"count": 1})) {
-		t.Errorf("no live group line:\n%s", r.drawn())
+	for _, s := range []string{"Running go test", "· " + i18n.T("chat.view.toolCalls", i18n.Args{"count": 2})} {
+		if !r.shows(s) {
+			t.Errorf("no %q on the live group's line:\n%s", s, r.drawn())
+		}
 	}
-	_, r = lifeFrames(t, call(api.ToolDone), false)
+	_, r = lifeFrames(t, calls(api.ToolDone), false)
 	r.frame()
-	for _, s := range []string{i18n.T("chat.view.toolCalls", i18n.Args{"count": 1}), chatTook(0)} {
+	for _, s := range []string{"Ran 1 command, read 1 file", chatTook(0)} {
 		if !r.shows(s) {
 			t.Errorf("no %q:\n%s", s, r.drawn())
 		}
 	}
 }
 
-func TestAnOpenGroupLinksItsCallsAndShowsHowEachEnded(t *testing.T) {
+// An open group lists its calls under its line, past its chevron, each with
+// its verb and target; a failed one says why, one that went well nothing more.
+func TestAnOpenGroupListsItsCallsAndOnlyAFailureSpeaks(t *testing.T) {
 	u, r := lifeFrames(t, []backend.ChatItem{
 		{ID: "u1", Kind: api.ItemUser, Turn: 1, At: novDay(18, 17, 58), Text: "go"},
 		{ID: "k1", Kind: api.ItemTool, Turn: 1, At: novDay(18, 17, 58), Tool: &backend.ChatToolCall{Name: "Read", Title: "a.go", State: api.ToolDone, Output: "84 lines"}},
@@ -191,19 +198,19 @@ func TestAnOpenGroupLinksItsCallsAndShowsHowEachEnded(t *testing.T) {
 	}, false)
 	u.chats.pane("s1").fold("work:k1").open = true
 	r.settle(t)
-	for _, label := range []string{"Read", "Bash", "84 lines", i18n.T("chat.view.toolFailed")} {
+	for _, label := range []string{"Read", "a.go", "Ran", "go test", i18n.T("chat.view.toolFailed")} {
 		if !r.shows(label) {
 			t.Errorf("no %q:\n%s", label, r.drawn())
 		}
 	}
-	// The group's line opens the turn, so it starts with the avatar at the
-	// column's edge and the calls hang under it, past the connector.
-	edge := composerBox(t, r).Min.X + 6
-	if tool := labelLeft(t, r, "Read"); tool-edge < 24 {
-		t.Errorf("a call's name at x=%d, the column's edge at x=%d: the calls hang under the line, past the connector", tool, edge)
+	if r.shows("84 lines") {
+		t.Errorf("a call that went well speaks:\n%s", r.drawn())
 	}
-	if line := labelLeft(t, r, i18n.T("chat.view.toolCalls", i18n.Args{"count": 2})); line-edge < 20 {
-		t.Errorf("the group's line starts at x=%d: the avatar is not before it (column edge %d)", line, edge)
+	if line, verb := labelLeft(t, r, "Ran 1 command, read 1 file"), labelLeft(t, r, "Read"); verb <= line {
+		t.Errorf("a call's verb at x=%d, the group's line at x=%d: the calls do not hang under it", verb, line)
+	}
+	if read, ran := labelLeft(t, r, "a.go"), labelLeft(t, r, "go test"); read != ran {
+		t.Errorf("the targets start at x=%d and x=%d: the verbs are not one column", read, ran)
 	}
 }
 
@@ -224,7 +231,7 @@ func TestARunningCallShimmersAndCountsAndAnEndedOneStandsStill(t *testing.T) {
 		t.Errorf("a running call asked for its next frame at %v (asked %v): it does not shimmer", at, ok)
 	}
 	r.frame()
-	for _, label := range []string{"Bash", "go test", chatElapsed(2 * time.Second)} {
+	for _, label := range []string{"Running", "go test", chatElapsed(2 * time.Second)} {
 		if !r.shows(label) {
 			t.Errorf("no %q:\n%s", label, r.drawn())
 		}
@@ -257,7 +264,7 @@ func TestARunningCallShimmersAndCountsAndAnEndedOneStandsStill(t *testing.T) {
 	}
 }
 
-// The band crosses a running call's name and its target, and an ended call's
+// The band crosses a running call's verb and its target, and an ended call's
 // row stays as it was drawn.
 func TestTheBandCrossesARunningCallsNameAndTarget(t *testing.T) {
 	// time.Unix(1000, 0) starts a lap, the band left of the text; half a lap
@@ -284,10 +291,14 @@ func TestTheBandCrossesARunningCallsNameAndTarget(t *testing.T) {
 		after := renderRig(t, r)
 		// A label's bounds run to the row's end, so the name's stop where the
 		// target's start.
+		verb := "Ran"
+		if tc.state == api.ToolRunning {
+			verb = "Running"
+		}
 		target := labelBox(t, r, "go test ./internal/...")
-		name := labelBox(t, r, "Bash")
+		name := labelBox(t, r, verb)
 		name.Max.X = target.Min.X
-		for label, box := range map[string]image.Rectangle{"Bash": name, "go test ./internal/...": target} {
+		for label, box := range map[string]image.Rectangle{verb: name, "go test ./internal/...": target} {
 			if shift := inkShift(before, after, box); (shift >= visibleShift) != tc.moves {
 				t.Errorf("%s call: %q shifted by %d between the two frames, moving = %v, want %v", tc.state, label, shift, shift >= visibleShift, tc.moves)
 			}
@@ -322,14 +333,14 @@ func TestAGroupStaysShutUntilItsLineIsClicked(t *testing.T) {
 	}
 	u, r := lifeFrames(t, items, true)
 	r.frame()
-	for _, label := range []string{"Read", "Bash", "go test", "Grep", "TODO"} {
+	for _, label := range []string{"a.go", "go test", "TODO"} {
 		if r.shows(label) {
 			t.Errorf("%q stands under a group nobody opened:\n%s", label, r.drawn())
 		}
 	}
-	r.queueClick(r.at(t, i18n.T("chat.view.toolCalls", i18n.Args{"count": 3})))
+	r.queueClick(r.at(t, "Running go test"))
 	r.play(15)
-	for _, label := range []string{"Read", "Bash", "go test", "Grep", "TODO"} {
+	for _, label := range []string{"Read", "a.go", "Running", "go test", "Searched", "TODO"} {
 		if !r.shows(label) {
 			t.Errorf("no %q under the group a click opened:\n%s", label, r.drawn())
 		}
@@ -337,7 +348,7 @@ func TestAGroupStaysShutUntilItsLineIsClicked(t *testing.T) {
 	u.model.chat.apply(api.ChatItemUpdate{SessionID: "s1", Item: backend.ChatItem{ID: "a1", Kind: api.ItemAgent, Turn: 1, At: novDay(18, 17, 59), Text: "done"}})
 	r.now = r.now.Add(frameStep)
 	r.frame()
-	for _, label := range []string{"Read", "Bash", "Grep"} {
+	for _, label := range []string{"a.go", "go test", "TODO"} {
 		if !r.shows(label) {
 			t.Errorf("%q left a group the person opened once text came:\n%s", label, r.drawn())
 		}
@@ -451,26 +462,6 @@ func TestAListAtItsEndFollowsRowsThatComeIn(t *testing.T) {
 	play(30)
 	if later := labelTop(t, r, "fresh"); later < 0 || later >= first {
 		t.Errorf("the message at y=%d, then y=%d after a row came in under it: the list stopped following its end", first, later)
-	}
-}
-
-// The group's line carries the avatar only when it opens its turn.
-func TestTheAvatarIsOnTheLineOnlyWhenItOpensTheTurn(t *testing.T) {
-	tool := backend.ChatItem{ID: "k1", Kind: api.ItemTool, Turn: 1, Tool: &backend.ChatToolCall{Name: "Read", State: api.ToolDone}}
-	answer := backend.ChatItem{ID: "a1", Kind: api.ItemAgent, Turn: 1}
-	avatar := func(items ...backend.ChatItem) bool {
-		for _, r := range chatRows(items, claudeKind, false, time.Time{}) {
-			if r.kind == chatRowWork {
-				return r.avatar
-			}
-		}
-		return false
-	}
-	if !avatar(tool, answer) {
-		t.Error("work first: the line does not carry the avatar")
-	}
-	if avatar(answer, tool) {
-		t.Error("answer first: the line carries the avatar, but it does not open the turn")
 	}
 }
 

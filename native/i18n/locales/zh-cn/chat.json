@@ -26,6 +26,42 @@
     "toolCalls": {
       "other": "{count} 次工具调用"
     },
+    "call": {
+      "ran": "运行",
+      "read": "读取",
+      "edited": "编辑",
+      "searched": "搜索",
+      "fetched": "获取",
+      "running": "正在运行",
+      "reading": "正在读取",
+      "editing": "正在编辑",
+      "searching": "正在搜索",
+      "fetching": "正在获取"
+    },
+    "calls": {
+      "sep": "，",
+      "edited": {
+        "other": "编辑了 {count} 个文件"
+      },
+      "ran": {
+        "other": "运行了 {count} 条命令"
+      },
+      "read": {
+        "other": "读取了 {count} 个文件"
+      },
+      "searched": {
+        "other": "搜索了 {count} 次"
+      },
+      "fetched": {
+        "other": "获取了 {count} 个页面"
+      },
+      "others": {
+        "other": "使用了 {count} 个其他工具"
+      },
+      "failed": {
+        "other": "{count} 个失败"
+      }
+    },
     "openedAs": "已开成 {label}"
   },
   "done": {

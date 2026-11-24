@@ -168,15 +168,15 @@ func TestAToolFoldOpensInTheFrameThatTookTheClick(t *testing.T) {
 	u, r, _ := chatFrames(t, api.ViewChat)
 	u.model.chat.history("s1", []backend.ChatItem{
 		{ID: "u1", Kind: api.ItemUser, Turn: 1, At: 0, Text: "look"},
+		{ID: "t0", Kind: api.ItemTool, Turn: 1, At: 2000, Tool: &backend.ChatToolCall{Name: "Read", Title: "tax.go", State: api.ToolDone}},
 		{ID: "t1", Kind: api.ItemTool, Turn: 1, At: 3000, Tool: &backend.ChatToolCall{Name: "Grep", Title: "roundTax", State: api.ToolDone, Output: "4 results"}},
 	})
-	worked := i18n.T("chat.view.toolCalls", i18n.Args{"count": 1})
-	r.clickLabel(t, worked)
+	r.clickLabel(t, "Read 1 file, searched 1 time")
 	// The fold opens over ui.Collapse's 200ms, from the frame that took the
 	// click: half way through, its call is already drawn.
 	r.now = r.now.Add(100 * time.Millisecond)
 	r.frame()
-	if !r.shows("4 results") {
+	if !r.shows("roundTax") {
 		t.Errorf("the fold did not open:\n%s", r.drawn())
 	}
 }

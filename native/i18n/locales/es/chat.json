@@ -30,6 +30,49 @@
       "one": "{count} llamada a herramienta",
       "other": "{count} llamadas a herramientas"
     },
+    "call": {
+      "ran": "Ejecutó",
+      "read": "Leyó",
+      "edited": "Editó",
+      "searched": "Buscó",
+      "fetched": "Obtuvo",
+      "running": "Ejecutando",
+      "reading": "Leyendo",
+      "editing": "Editando",
+      "searching": "Buscando",
+      "fetching": "Obteniendo"
+    },
+    "calls": {
+      "sep": ", ",
+      "edited": {
+        "one": "editó {count} archivo",
+        "other": "editó {count} archivos"
+      },
+      "ran": {
+        "one": "ejecutó {count} comando",
+        "other": "ejecutó {count} comandos"
+      },
+      "read": {
+        "one": "leyó {count} archivo",
+        "other": "leyó {count} archivos"
+      },
+      "searched": {
+        "one": "buscó {count} vez",
+        "other": "buscó {count} veces"
+      },
+      "fetched": {
+        "one": "obtuvo {count} página",
+        "other": "obtuvo {count} páginas"
+      },
+      "others": {
+        "one": "usó {count} herramienta más",
+        "other": "usó {count} herramientas más"
+      },
+      "failed": {
+        "one": "{count} falló",
+        "other": "{count} fallaron"
+      }
+    },
     "openedAs": "abierta como {label}"
   },
   "done": {
