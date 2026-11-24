@@ -69,9 +69,11 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   in the session's chat replaces the recorded model and effort, which a new conversation reads, and which a chat
   sets again over the protocol each time it opens, a lich restart included (`internal/chat/options.go`,
   `storedCarry`): the birth, a pick in the chat and any change the open chat hears of are recorded, a `/model` or
-  `/effort` typed in it included (Claude Code says neither on a line, so lich asks `get_settings` again after each
-  of its local commands; not measured against a real Claude Code), but a `/model` or `/effort` typed in the
-  terminal is not, and the recorded value undoes it the next time the chat opens. A terminal's resume still leaves them to the provider. Claude
+  `/effort` typed in it included, on every provider as it reports one: Codex in `thread/settings/updated`, the ACP
+  servers (Antigravity, opencode, oh-my-pi, Crush, Cursor CLI, Kiro CLI) in `config_option_update`, and Claude Code
+  on no line, so lich asks `get_settings` again after each of its local commands (not measured against a real
+  Claude Code). A provider that offers no effort (opencode's TUI, Crush, Cursor CLI) records none. A `/model` or
+  `/effort` typed in the terminal is not heard, and the recorded value undoes it the next time the chat opens. A terminal's resume still leaves them to the provider. Claude
   Code's effort and all of Antigravity resume on the saved default rather than on the conversation's (each
   measurement in `docs/providers/`, Spawn), so a change made inside the session survives while a level or model
   lich set at birth falls back to that default. Cursor CLI also writes whatever model a spawn or resume runs on into

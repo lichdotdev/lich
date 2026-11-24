@@ -112,7 +112,10 @@ Non-negotiable rules. A violation means the work is not done.
    but the gap must be deliberate and written down in the same PR, in both places: a `docs/ceilings.md` bullet
    naming which providers are out and why, and a row in the Provider support table of `README.md` and each
    `README.<lang>.md`, written in what the user sees. A feature that silently works on a single provider is not
-   done, and neither is one whose gap only a contributor can find.
+   done, and neither is one whose gap only a contributor can find. This holds for every fix too, and the default
+   is all eight: a bug reported on Claude Code is checked on the others' paths before it is called fixed (the chat
+   has three, `claude*.go`, `codex*.go` and `acp*.go`, which the five other providers share), the fix goes where
+   they meet when it can, and its test is a table over the providers the rig fakes, never Claude Code alone.
 
 ## Releases
 

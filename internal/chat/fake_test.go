@@ -383,6 +383,14 @@ func (f *fake) acp(args []string) {
 		case "session/prompt":
 			blocks, _ := params["prompt"].([]any)
 			first, _ := blocks[0].(map[string]any)
+			// A command the server runs itself moves its effort and says so
+			// in a config_option_update, as a set does.
+			if level, ok := strings.CutPrefix(str(first, "text"), "/effort "); ok {
+				opts.effort = level
+				f.update(map[string]any{"sessionUpdate": "config_option_update", "configOptions": opts.config()})
+				f.result(id, map[string]any{"stopReason": "end_turn"})
+				continue
+			}
 			f.acpTurn(id, str(first, "text"))
 		}
 	}

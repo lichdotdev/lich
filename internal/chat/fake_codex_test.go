@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // The fake's Codex app-server, spawned with app-server: the shapes measured on
@@ -216,6 +217,15 @@ func asJSON(v any) string {
 // turn plays the turn text asks for and returns how it ended.
 func (c *fakeCodex) turn(turn, text string) (status, message string) {
 	if c.codexCompactTurn(turn, text) {
+		return "completed", ""
+	}
+	// The thread moving its own effort, which Codex says in
+	// thread/settings/updated.
+	if level, ok := strings.CutPrefix(text, "/effort "); ok {
+		c.effort = level
+		c.notify("thread/settings/updated", map[string]any{"threadId": c.thread, "threadSettings": map[string]any{
+			"model": c.model, "effort": c.effort, "sandboxPolicy": map[string]any{"type": c.sandbox},
+		}})
 		return "completed", ""
 	}
 	switch text {

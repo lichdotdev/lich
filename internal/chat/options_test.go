@@ -232,28 +232,41 @@ func TestChatOpensOnItsStoredMode(t *testing.T) {
 // conversation but takes the effort from its settings.json, so a chat set to
 // medium came back on high after lich restarted.
 func TestChatOpensOnItsStoredModelAndEffort(t *testing.T) {
-	r := newRig(t, providers.Claude)
-	_ = r.db.SetSessionModel("s1", "haiku")
-	_ = r.db.SetSessionEffort("s1", "low")
-	if err := r.setView(api.ViewChat); err != nil {
-		t.Fatalf("SetView: %v", err)
+	for _, tc := range []struct{ kind, model, effort string }{
+		{providers.Claude, "haiku", "low"},
+		{providers.Codex, "gpt-a", "low"},
+		{providers.OMP, "m1", "low"},
+	} {
+		t.Run(tc.kind, func(t *testing.T) {
+			r := newRig(t, tc.kind)
+			_ = r.db.SetSessionModel("s1", tc.model)
+			_ = r.db.SetSessionEffort("s1", tc.effort)
+			if err := r.setView(api.ViewChat); err != nil {
+				t.Fatalf("SetView: %v", err)
+			}
+			r.current(api.OptionModel, tc.model)
+			r.current(api.OptionEffort, tc.effort)
+		})
 	}
-	r.current(api.OptionModel, "haiku")
-	r.current(api.OptionEffort, "low")
 }
 
-// TestAnEffortTypedInTheChatIsRecorded: /effort typed in a chat changes the
-// effort on no line Claude Code writes; lich asks again once the command has
-// printed, shows the new level and records it for the chat's next open.
-func TestAnEffortTypedInTheChatIsRecorded(t *testing.T) {
-	r := newRig(t, providers.Claude)
-	if err := r.setView(api.ViewChat); err != nil {
-		t.Fatalf("SetView: %v", err)
+// TestAnEffortTheProviderMovesIsRecorded: an effort the chat moves to without
+// lich's picker, a /effort typed in it, is recorded for its next open, on
+// each way a provider says so: Codex in thread/settings/updated, an ACP server
+// in config_option_update, and Claude Code on no line at all, so lich asks
+// get_settings again once one of its commands has printed.
+func TestAnEffortTheProviderMovesIsRecorded(t *testing.T) {
+	for _, kind := range []string{providers.Claude, providers.Codex, providers.OMP} {
+		t.Run(kind, func(t *testing.T) {
+			r := newRig(t, kind)
+			if err := r.setView(api.ViewChat); err != nil {
+				t.Fatalf("SetView: %v", err)
+			}
+			r.prompt("/effort low")
+			r.current(api.OptionEffort, "low")
+			r.eventually("the effort recorded", func() bool { return r.db.SessionEffort("s1") == "low" })
+		})
 	}
-	r.current(api.OptionEffort, "high")
-	r.prompt("/effort low")
-	r.current(api.OptionEffort, "low")
-	r.eventually("the effort recorded", func() bool { return r.db.SessionEffort("s1") == "low" })
 }
 
 // TestACPConfigOptions: an ACP chat offers the config options of the three
