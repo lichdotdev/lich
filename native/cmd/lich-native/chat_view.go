@@ -77,13 +77,11 @@ type chatView struct {
 	rows ui.Presence
 	seen map[string]chatRow
 	// keys are the rows of the frame before, swap the live line turning into
-	// the closing line, stream the answer the caret follows, cards the
-	// questions drawn waiting, by item id, and run the list's way back to
-	// its end.
+	// the closing line, stream the answer the caret follows, and run the
+	// list's way back to its end.
 	keys   []string
 	swap   chatSwap
 	stream chatStream
-	cards  map[string]chatCard
 	run    chatToEnd
 	// stamps are the tooltips of the time under each message, by item id.
 	stamps map[string]*ui.Tooltip
@@ -176,7 +174,6 @@ func newChatPane() *chatPane {
 	p.window = markdown.Window{Top: math.MinInt, Bottom: math.MaxInt}
 	p.folds = map[string]*chatFold{}
 	p.answers = map[chatAnswer]*ui.Clickable{}
-	p.cards = map[string]chatCard{}
 	return p
 }
 
@@ -620,6 +617,7 @@ func (u *window) chatComposer(gtx C, th *ui.Theme, p *chatPane, sv sessionView, 
 		ft.attach, ft.context = nil, nil
 	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+		layout.Rigid(func(gtx C) D { return u.chatAsking(gtx, th, p, sv) }),
 		layout.Rigid(func(gtx C) D { return u.chatWorkflow(gtx, th, p, sv.ID) }),
 		layout.Rigid(func(gtx C) D { return u.chatPlan(gtx, th, &p.plan, sv.ID, working) }),
 		layout.Rigid(func(gtx C) D { return u.chatQueue(gtx, th, p, sv.ID) }),

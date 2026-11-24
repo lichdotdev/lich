@@ -28,13 +28,6 @@ const (
 	chatSwapIn     = 280 * time.Millisecond
 	chatSwapRule   = 360 * time.Millisecond
 	chatSwapHeight = 160 * time.Millisecond
-	// A question's card turning into its answer lines: the card goes by
-	// chatReplyOut, the lines come in from chatReplyFrom to chatReplyIn, and
-	// the slot takes their height over chatReplyHeight.
-	chatReplyOut    = 120 * time.Millisecond
-	chatReplyFrom   = 80 * time.Millisecond
-	chatReplyIn     = 200 * time.Millisecond
-	chatReplyHeight = 200 * time.Millisecond
 	// chatToEndRun is the list's run back to its end when a message is sent
 	// from above it.
 	chatToEndRun = 220 * time.Millisecond
@@ -100,39 +93,6 @@ func (u *window) chatSwapLine(gtx C, th *ui.Theme, p *chatPane, sv sessionView, 
 	return chatCrossfade(gtx, layout.W, height, out, 1,
 		func(gtx C) D { return chatLive(gtx, th, sv.ID, s.live) },
 		func(gtx C) D { return u.chatDone(gtx, th, p, sv, r, in, rule) })
-}
-
-// chatCard is a waiting question as it was last drawn, and from when its
-// reply came in, zero while it waits.
-type chatCard struct {
-	item backend.ChatItem
-	quiz *chatQuiz
-	at   time.Time
-}
-
-// chatQuestionReply is question it, answered, turning from the card it was
-// drawn as into its answer lines; one answered before it was drawn is the
-// lines alone.
-func chatQuestionReply(gtx C, th *ui.Theme, p *chatPane, it backend.ChatItem) D {
-	lines := func(gtx C) D { return chatQuestionAnswered(gtx, th, it.Question.Questions, it.Question.Reply) }
-	c, ok := p.cards[it.ID]
-	if !ok {
-		return lines(gtx)
-	}
-	if c.at.IsZero() {
-		c.at = gtx.Now
-		p.cards[it.ID] = c
-	}
-	if gtx.Now.Sub(c.at) >= chatReplyHeight {
-		delete(p.cards, it.ID)
-		return lines(gtx)
-	}
-	out := 1 - chatPhase(gtx, c.at, 0, chatReplyOut, paneEaseIn)
-	in := chatPhase(gtx, c.at, chatReplyFrom, chatReplyIn, paneEaseOut)
-	height := chatPhase(gtx, c.at, 0, chatReplyHeight, paneEaseOut)
-	return chatCrossfade(gtx, layout.NW, height, out, in,
-		func(gtx C) D { return chatQuestionCard(gtx, th, c.quiz, c.item.Question.Questions) },
-		lines)
 }
 
 // chatCrossfade draws out leaving and in arriving in one slot, each placed in

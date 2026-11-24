@@ -86,18 +86,17 @@
     "default": "Default"
   },
   "question": {
-    "multi": "multiple",
-    "step": "{n} of {total}",
-    "sendAll": "Send all",
     "freeHint": "Enter sends · Esc declines",
     "marked": {
       "one": "{count} marked",
       "other": "{count} marked"
     },
-    "write": "Other… write your own answer",
+    "write": "Other…",
     "declined": "Not answered",
     "label": "{header}:",
-    "own": "“{text}”"
+    "own": "“{text}”",
+    "recommended": "Recommended",
+    "continue": "Continue"
   },
   "proposal": {
     "header": "Plan",

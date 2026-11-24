@@ -96,9 +96,6 @@
     "default": "По умолчанию"
   },
   "question": {
-    "multi": "несколько",
-    "step": "{n} из {total}",
-    "sendAll": "Отправить всё",
     "freeHint": "Enter отправляет · Esc отказывает",
     "marked": {
       "one": "Отмечен {count}",
@@ -106,10 +103,12 @@
       "many": "Отмечено {count}",
       "other": "Отмечено {count}"
     },
-    "write": "Другое… напишите свой ответ",
+    "write": "Другое…",
     "declined": "Без ответа",
     "label": "{header}:",
-    "own": "«{text}»"
+    "own": "«{text}»",
+    "recommended": "Рекомендуется",
+    "continue": "Продолжить"
   },
   "proposal": {
     "header": "План",

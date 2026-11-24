@@ -253,39 +253,6 @@ func TestTheLiveLineTurnsIntoDoneInItsSlot(t *testing.T) {
 
 func abs(n int) int { return max(n, -n) }
 
-// A question answered turns from its card into its answer lines in its
-// slot, the row's height running down from the card's to the lines'.
-func TestAnAnsweredQuestionTurnsIntoItsLines(t *testing.T) {
-	asks := []api.ChatAsk{{Header: "Scope", Text: "Which files?", Options: []api.ChatOffer{{Label: "All"}, {Label: "Some"}}}}
-	it := backend.ChatItem{ID: "q1", Kind: api.ItemQuestion, Question: &backend.ChatQuestion{Questions: asks}}
-	p := newChatPane()
-	var height int
-	r := newFrameRig(image.Pt(600, 400), func(gtx C, th *ui.Theme) {
-		gtx.Constraints.Min = image.Point{}
-		height = chatQuestion(gtx, th, p, it).Size.Y
-	})
-	r.settle(t)
-	card := height
-	it.Question = &backend.ChatQuestion{Questions: asks, Reply: &api.ChatQReplied{Answers: []api.ChatAskAnswer{{Picked: []string{"All"}}}}}
-	r.frame()
-	if height != card || !r.shows("Which files?") {
-		t.Errorf("the frame the reply came in: height %d (the card's %d), card drawn %v", height, card, r.shows("Which files?"))
-	}
-	r.now = r.now.Add(100 * time.Millisecond)
-	r.frame()
-	mid := height
-	if !r.shows("Which files?") || !r.shows("All") {
-		t.Errorf("100ms in: want the card fading over the lines:\n%s", r.drawn())
-	}
-	r.settle(t)
-	if mid >= card || mid <= height {
-		t.Errorf("height %d, %d at 100ms, %d at rest: want it running down from the card's to the lines'", card, mid, height)
-	}
-	if r.shows("Which files?") {
-		t.Error("the card is still drawn once answered")
-	}
-}
-
 // A message sent while the list is scrolled up takes the list back to its
 // end over a run, not a jump, and pins it there.
 func TestSendingFromAboveTheEndRunsTheListBackToIt(t *testing.T) {

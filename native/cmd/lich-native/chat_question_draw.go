@@ -9,11 +9,13 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
+	"gioui.org/unit"
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
+	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
 // chatPreviewShare is how much of the card the option list takes beside a
@@ -23,152 +25,159 @@ const chatPreviewShare = 0.5
 // chatAnswerJoin joins the options picked for one ask in the answered card.
 const chatAnswerJoin = ", "
 
-// chatQuestion is the agent asking the person: a box with the ask on show and
-// its options, or, answered, a muted line per ask.
-func chatQuestion(gtx C, th *ui.Theme, p *chatPane, it backend.ChatItem) D {
+// chatRecommended ends the label of the option the agent recommends: Claude
+// Code's AskUserQuestion prompt tells the model to add it.
+const chatRecommended = "(Recommended)"
+
+// chatTabRule is the line under the ask on show among several.
+const chatTabRule = 2
+
+// The "Other…" field is laid out over its row's line: chatOtherPadX is
+// ui.Input's own inner padding, pulled back so its text starts where the
+// labels do, and chatOtherHeight its height, chatOtherPadY of it above and
+// under the line.
+var (
+	chatOtherPadX   = ui.Space(2.5)
+	chatOtherPadY   = ui.Space(1)
+	chatOtherHeight = ui.Space(7)
+)
+
+// chatRowLine is a label's line in an option row, TextSM's leading
+// (text-sm/5): Continue's arrow centres on it.
+const chatRowLine unit.Sp = 20
+
+var (
+	icQuestionDecline  = icons.Lucide("x")
+	icQuestionContinue = icons.Lucide("arrow-right")
+)
+
+// chatAsking is the waiting question's card, over the composer, a gap under
+// it; nothing while none waits.
+func (u *window) chatAsking(gtx C, th *ui.Theme, p *chatPane, sv sessionView) D {
+	waiting := questionWaiting(u.model.chat.of(sv.ID))
+	if waiting == nil {
+		return D{}
+	}
+	it := *waiting
 	if it.Question.Proposal != nil {
 		it = proposalShown(it)
 	}
-	if it.Question.Reply != nil {
-		return chatQuestionReply(gtx, th, p, it)
-	}
 	q := p.quiz(it.ID, it.Question.Questions)
 	q.proposal = it.Question.Proposal != nil
-	p.cards[it.ID] = chatCard{item: it, quiz: q}
-	return chatQuestionCard(gtx, th, q, it.Question.Questions)
+	return layout.Inset{Bottom: ui.Space(2)}.Layout(gtx, func(gtx C) D {
+		return chatQuestionCard(gtx, th, q, it.Question.Questions)
+	})
+}
+
+// asksInComposer is whether it is a question the composer holds while it
+// waits, instead of the conversation: all but a plan, which stays in it.
+func asksInComposer(it backend.ChatItem) bool {
+	return it.Kind == api.ItemQuestion && it.Question != nil && it.Question.Reply == nil && it.Question.Proposal == nil
+}
+
+// chatQuestion is a question in the conversation: once answered, the answer
+// as the person's own message; nothing while it waits over the composer.
+func chatQuestion(gtx C, th *ui.Theme, it backend.ChatItem) D {
+	if it.Question.Reply == nil {
+		return D{}
+	}
+	if it.Question.Proposal != nil {
+		it = proposalShown(it)
+	}
+	return chatQuestionAnswered(gtx, th, it.Question.Questions, it.Question.Reply)
 }
 
 // chatQuestionCard is the box of a question waiting, its card q.
 func chatQuestionCard(gtx C, th *ui.Theme, q *chatQuiz, asks []api.ChatAsk) D {
 	box := th.On(th.Sidebar)
-	return layout.Background{}.Layout(gtx,
-		func(gtx C) D { return ui.Fill(gtx, th.Sidebar, ui.RadiusMD) },
+	d := layout.Background{}.Layout(gtx,
+		func(gtx C) D { return ui.Fill(gtx, th.Sidebar, ui.RadiusLG) },
 		func(gtx C) D {
-			return layout.UniformInset(ui.Space(3)).Layout(gtx, func(gtx C) D {
+			gtx.Constraints.Min.X = gtx.Constraints.Max.X
+			return layout.Inset{Top: ui.Space(1.5), Bottom: ui.Space(1.5), Left: ui.Space(1.5), Right: ui.Space(1.5)}.Layout(gtx, func(gtx C) D {
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 					layout.Rigid(func(gtx C) D { return chatQuestionHead(gtx, box, q, asks) }),
-					ui.VGap(2.5),
+					layout.Rigid(func(gtx C) D {
+						return layout.Inset{Left: ui.Space(2), Right: ui.Space(2), Bottom: ui.Space(1.5)}.Layout(gtx,
+							box.Text(ui.TextSM, asks[q.step].Text).Weight(font.Medium).Wrapped().Layout)
+					}),
 					layout.Rigid(func(gtx C) D { return chatQuestionBody(gtx, box, q, asks) }),
 				)
 			})
 		})
+	ui.InsetBorder(gtx, d.Size, gtx.Dp(ui.RadiusLG), th.Border)
+	return d
 }
 
-// chatQuestionHead is the ask's header and text, or the steps of several.
+// chatQuestionHead is the ask's header, or a tab per ask of several, and the
+// ✕ that declines.
 func chatQuestionHead(gtx C, th *ui.Theme, q *chatQuiz, asks []api.ChatAsk) D {
+	tabs := make([]layout.FlexChild, 0, 2*len(asks)+2)
 	if len(asks) == 1 {
-		a := asks[0]
-		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-			layout.Rigid(func(gtx C) D { return chatAskHeader(gtx, th, a.Header, false) }),
-			ui.Gap(2),
-			layout.Flexed(1, th.Text(ui.TextSM, a.Text).Weight(font.Medium).Wrapped().Layout),
-			layout.Rigid(func(gtx C) D {
-				if !a.Multi {
-					return D{}
-				}
-				return th.Text(ui.TextXS, i18n.T("chat.question.multi")).Muted().Layout(gtx)
-			}),
-		)
-	}
-	steps := make([]layout.FlexChild, 0, 2*len(asks)+1)
-	for i, a := range asks {
-		steps = append(steps, layout.Rigid(func(gtx C) D {
-			return q.steps[i].Layout(gtx, func(gtx C) D {
-				label := a.Header
-				if label == "" {
-					label = strconv.Itoa(i + 1)
-				}
-				if q.done[i] {
-					label = "✓ " + label
-				}
-				return chatAskHeader(gtx, th, label, i == q.step)
-			})
-		}), ui.Gap(1.5))
-	}
-	shown := min(q.step+1, len(asks))
-	steps = append(steps, layout.Flexed(1, func(gtx C) D {
-		return layout.E.Layout(gtx, th.Text(ui.TextXS, i18n.T("chat.question.step", i18n.Args{"n": shown, "total": len(asks)})).Muted().Layout)
-	}))
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(func(gtx C) D { return layout.Flex{Alignment: layout.Middle}.Layout(gtx, steps...) }),
-		layout.Rigid(func(gtx C) D {
-			if q.step == len(asks) {
-				return D{}
-			}
-			return layout.Inset{Top: ui.Space(2)}.Layout(gtx, th.Text(ui.TextSM, asks[q.step].Text).Weight(font.Medium).Wrapped().Layout)
-		}),
-	)
-}
-
-// chatAskHeader is an ask's short label, in small capitals on a muted fill;
-// lit, it is the step on show.
-func chatAskHeader(gtx C, th *ui.Theme, label string, lit bool) D {
-	if label == "" {
-		return D{}
-	}
-	fill, text := th.Over(th.Muted), th.Text(ui.TextXS, strings.ToUpper(label)).Muted()
-	if lit {
-		fill, text = th.Over(th.SidebarAccent), text.In(th.Foreground).Weight(font.Medium)
-	}
-	return layout.Background{}.Layout(gtx,
-		func(gtx C) D { return ui.Fill(gtx, fill, ui.RadiusSM) },
-		func(gtx C) D {
-			return layout.Inset{Left: ui.Space(1.5), Right: ui.Space(1.5), Top: ui.Space(0.5), Bottom: ui.Space(0.5)}.Layout(gtx, text.Layout)
-		})
-}
-
-// chatQuestionBody is the ask on show: its options, a field when it has
-// none, or the summary of several with Send all.
-func chatQuestionBody(gtx C, th *ui.Theme, q *chatQuiz, asks []api.ChatAsk) D {
-	if q.step == len(asks) {
-		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-			layout.Rigid(func(gtx C) D { return chatAnswerLines(gtx, th, asks, q.answers) }),
-			ui.VGap(2.5),
-			layout.Rigid(func(gtx C) D { return chatQuestionFoot(gtx, th, q, "", i18n.T("chat.question.sendAll"), true) }),
-		)
-	}
-	a := asks[q.step]
-	if len(a.Options) == 0 {
-		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-			layout.Rigid(th.Textarea(&q.others[q.step], "").Layout),
-			ui.VGap(2),
-			layout.Rigid(func(gtx C) D {
-				return chatQuestionFoot(gtx, th, q, i18n.T("chat.question.freeHint"), i18n.T("chat.composer.send"), q.others[q.step].Len() > 0)
-			}),
-		)
-	}
-	list := func(gtx C) D { return chatOffers(gtx, th, q, a) }
-	if hasPreview(a) {
-		list = func(gtx C) D { return chatOptionsWithPreview(gtx, th, q, a) }
-	}
-	if !a.Multi {
-		return list(gtx)
-	}
-	_, any := q.draft(a)
-	marked := 0
-	for _, m := range q.marks[q.step] {
-		if m.Value {
-			marked++
+		tabs = append(tabs, layout.Rigid(th.Text(ui.TextXS, asks[0].Header).Muted().Layout))
+	} else {
+		for i, a := range asks {
+			tabs = append(tabs, layout.Rigid(func(gtx C) D {
+				return q.steps[i].Layout(gtx, func(gtx C) D { return chatAskTab(gtx, th, a.Header, i, q.done[i], i == q.step) })
+			}), ui.Gap(3.5))
 		}
 	}
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(list),
-		ui.VGap(2),
-		layout.Rigid(func(gtx C) D {
-			return chatQuestionFoot(gtx, th, q, i18n.T("chat.question.marked", i18n.Args{"count": marked}), i18n.T("chat.composer.send"), any)
-		}),
-	)
+	decline := th.Button(&q.decline, "")
+	decline.Icon, decline.Variant, decline.Size = icQuestionDecline, ui.VariantGhost, ui.SizeIconXS
+	tabs = append(tabs, layout.Flexed(1, func(gtx C) D { return D{Size: image.Pt(gtx.Constraints.Min.X, 0)} }), layout.Rigid(decline.Layout))
+	return layout.Inset{Left: ui.Space(2), Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
+		return layout.Flex{Alignment: layout.Middle}.Layout(gtx, tabs...)
+	})
 }
 
-// chatQuestionFoot is a muted hint at the left and the card's send button at
-// the right, dimmed until there is something to send.
-func chatQuestionFoot(gtx C, th *ui.Theme, q *chatQuiz, hint, send string, ready bool) D {
-	b := th.Button(&q.send, send)
-	b.Size, b.Variant, b.Disabled = ui.SizeSM, ui.VariantSecondary, !ready
-	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-		layout.Flexed(1, th.Text(ui.TextXS, hint).Muted().Layout),
-		layout.Rigid(b.Layout),
-	)
+// chatAskTab is ask i's tab among several: its header (its number without
+// one), a check once answered, and a rule under the one on show.
+func chatAskTab(gtx C, th *ui.Theme, label string, i int, done, shown bool) D {
+	if label == "" {
+		label = strconv.Itoa(i + 1)
+	}
+	text := th.Text(ui.TextXS, label).Muted()
+	if done || shown {
+		text = text.In(th.Foreground)
+	}
+	if shown {
+		text = text.Weight(font.Medium)
+	}
+	d := layout.Inset{Top: ui.Space(1), Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
+		return layout.Flex{Alignment: layout.Baseline}.Layout(gtx,
+			layout.Rigid(func(gtx C) D {
+				if !done {
+					return D{}
+				}
+				return layout.Inset{Right: ui.Space(1)}.Layout(gtx, th.Text(ui.TextXS, "✓").In(th.TonePass).Layout)
+			}),
+			layout.Rigid(text.Layout),
+		)
+	})
+	if shown {
+		rule := gtx.Dp(chatTabRule)
+		paint.FillShape(gtx.Ops, th.Primary, clip.Rect{Min: image.Pt(0, d.Size.Y-rule), Max: d.Size}.Op())
+	}
+	return d
+}
+
+// chatQuestionBody is the ask on show: its options, or a field when it has
+// none.
+func chatQuestionBody(gtx C, th *ui.Theme, q *chatQuiz, asks []api.ChatAsk) D {
+	a := asks[q.step]
+	if len(a.Options) == 0 {
+		return layout.Inset{Left: ui.Space(2), Right: ui.Space(2), Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
+			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+				layout.Rigid(th.Textarea(&q.others[q.step], "").Layout),
+				ui.VGap(2),
+				layout.Rigid(th.Text(ui.TextXS, i18n.T("chat.question.freeHint")).Muted().Layout),
+			)
+		})
+	}
+	if hasPreview(a) {
+		return chatOptionsWithPreview(gtx, th, q, a)
+	}
+	return chatOffers(gtx, th, q, a)
 }
 
 func hasPreview(a api.ChatAsk) bool {
@@ -180,13 +189,17 @@ func hasPreview(a api.ChatAsk) bool {
 	return false
 }
 
-// chatOffers is an ask's options, a row each, then its "Other…" field.
+// chatOffers is an ask's options, a row each, then its "Other…" field and,
+// on one that takes several, Continue.
 func chatOffers(gtx C, th *ui.Theme, q *chatQuiz, a api.ChatAsk) D {
-	rows := make([]layout.FlexChild, 0, len(a.Options)+1)
+	rows := make([]layout.FlexChild, 0, len(a.Options)+2)
 	for j, o := range a.Options {
 		rows = append(rows, layout.Rigid(func(gtx C) D { return chatOptionRow(gtx, th, q, a, j, o, !hasPreview(a)) }))
 	}
 	rows = append(rows, layout.Rigid(func(gtx C) D { return chatOtherRow(gtx, th, q, a) }))
+	if a.Multi {
+		rows = append(rows, layout.Rigid(func(gtx C) D { return chatContinueRow(gtx, th, q, a) }))
+	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, rows...)
 }
 
@@ -211,8 +224,16 @@ func chatOptionsWithPreview(gtx C, th *ui.Theme, q *chatQuiz, a api.ChatAsk) D {
 	)
 }
 
-// chatOptionRow is option j: its key (a box to mark, for several), its label
-// and its description; the one the keys stand on is lit.
+// recommended is label without the mark the agent ends it with to recommend
+// it, and whether it had it.
+func recommended(label string) (string, bool) {
+	rest, ok := strings.CutSuffix(strings.TrimSpace(label), chatRecommended)
+	return strings.TrimSpace(rest), ok
+}
+
+// chatOptionRow is option j: its key (a box to mark, for several), its label,
+// the recommendation and its description; the one the keys stand on is lit,
+// with Enter's cap when Enter answers with it.
 func chatOptionRow(gtx C, th *ui.Theme, q *chatQuiz, a api.ChatAsk, j int, o api.ChatOffer, described bool) D {
 	click := &q.rows[q.step][j]
 	return click.Layout(gtx, func(gtx C) D {
@@ -222,9 +243,21 @@ func chatOptionRow(gtx C, th *ui.Theme, q *chatQuiz, a api.ChatAsk, j int, o api
 			// the option and the row's click unmark it, in the same press.
 			lead = func(gtx C) D { return th.Checkbox(&q.marks[q.step][j]).Layout(gtx.Disabled()) }
 		}
-		return chatQuizRow(gtx, th, q.hot == j || click.Hovered(), lead, func(gtx C) D {
+		lit := q.hot == j
+		label, rec := recommended(o.Label)
+		return chatQuizRow(gtx, th, lit || click.Hovered(), lit && !a.Multi, lead, func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-				layout.Rigid(th.Text(ui.TextSM, o.Label).Weight(font.Medium).Layout),
+				layout.Rigid(func(gtx C) D {
+					return layout.Flex{Alignment: layout.Baseline}.Layout(gtx,
+						layout.Rigid(th.Text(ui.TextSM, label).Layout),
+						layout.Rigid(func(gtx C) D {
+							if !rec {
+								return D{}
+							}
+							return layout.Inset{Left: ui.Space(2)}.Layout(gtx, th.Text(ui.TextXS, i18n.T("chat.question.recommended")).In(th.Primary).Layout)
+						}),
+					)
+				}),
 				layout.Rigid(func(gtx C) D {
 					if !described || o.Description == "" {
 						return D{}
@@ -236,9 +269,11 @@ func chatOptionRow(gtx C, th *ui.Theme, q *chatQuiz, a api.ChatAsk, j int, o api
 	})
 }
 
-// chatOtherRow is the person's own answer, a field after the options.
+// chatOtherRow is the person's own answer, a bare field after the options
+// whose placeholder reads as the row's label.
 func chatOtherRow(gtx C, th *ui.Theme, q *chatQuiz, a api.ChatAsk) D {
 	n := len(a.Options)
+	field := &q.others[q.step]
 	lead := func(gtx C) D { return th.KeyCap(strconv.Itoa(n + 1)).Layout(gtx) }
 	if a.Multi {
 		lead = func(gtx C) D { return D{Size: image.Pt(gtx.Dp(ui.Space(4)), 0)} }
@@ -247,22 +282,53 @@ func chatOtherRow(gtx C, th *ui.Theme, q *chatQuiz, a api.ChatAsk) D {
 	if q.proposal {
 		hint = i18n.T("chat.proposal.change")
 	}
-	return chatQuizRow(gtx, th, q.hot == n, lead, func(gtx C) D {
-		in := th.Input(&q.others[q.step], hint)
-		in.Height = ui.Space(8)
-		return in.Layout(gtx)
+	lit := q.hot == n || gtx.Focused(field)
+	return chatQuizRow(gtx, th, lit, lit && field.Len() > 0, lead, func(gtx C) D {
+		in := th.Input(field, hint)
+		in.Bare, in.Height = true, chatOtherHeight
+		return layout.Inset{Left: -chatOtherPadX, Top: -chatOtherPadY, Bottom: -chatOtherPadY}.Layout(gtx, in.Layout)
 	})
 }
 
-// chatQuizRow is one row of options: lead, then content, on SidebarAccent
-// while lit.
-func chatQuizRow(gtx C, th *ui.Theme, lit bool, lead, content layout.Widget) D {
+// chatContinueRow sends the marks of an ask that takes several, with their
+// count; muted while nothing is marked or written.
+func chatContinueRow(gtx C, th *ui.Theme, q *chatQuiz, a api.ChatAsk) D {
+	_, ready := q.draft(a)
+	marked := 0
+	for _, m := range q.marks[q.step] {
+		if m.Value {
+			marked++
+		}
+	}
+	lit := q.hot == len(a.Options)+1
+	return q.send.Layout(gtx, func(gtx C) D {
+		ink := th.MutedForeground
+		if ready {
+			ink = th.Foreground
+		}
+		lead := func(gtx C) D {
+			gtx.Constraints.Min = image.Pt(gtx.Dp(ui.Space(4)), gtx.Sp(chatRowLine))
+			return ui.CenteredIcon(gtx, icQuestionContinue, ui.Space(4), ink)
+		}
+		return chatQuizRow(gtx, th, lit || q.send.Hovered(), lit && ready, lead, func(gtx C) D {
+			return layout.Flex{Alignment: layout.Baseline}.Layout(gtx,
+				layout.Rigid(th.Text(ui.TextSM, i18n.T("chat.question.continue")).In(ink).Layout),
+				ui.Gap(2),
+				layout.Rigid(th.Text(ui.TextXS, i18n.T("chat.question.marked", i18n.Args{"count": marked})).Muted().Layout),
+			)
+		})
+	})
+}
+
+// chatQuizRow is one row of options: lead, then content, on Accent while lit,
+// and Enter's cap at its end when enter says Enter answers with it.
+func chatQuizRow(gtx C, th *ui.Theme, lit, enter bool, lead, content layout.Widget) D {
 	return layout.Background{}.Layout(gtx,
 		func(gtx C) D {
 			if !lit {
 				return D{Size: gtx.Constraints.Min}
 			}
-			return ui.Fill(gtx, th.Over(th.SidebarAccent), ui.RadiusSM)
+			return ui.Fill(gtx, th.Over(th.Accent), ui.RadiusMD)
 		},
 		func(gtx C) D {
 			gtx.Constraints.Min.X = gtx.Constraints.Max.X
@@ -271,20 +337,37 @@ func chatQuizRow(gtx C, th *ui.Theme, lit bool, lead, content layout.Widget) D {
 					layout.Rigid(lead),
 					ui.Gap(2.5),
 					layout.Flexed(1, content),
+					layout.Rigid(func(gtx C) D {
+						if !enter {
+							return D{}
+						}
+						return layout.Inset{Left: ui.Space(2)}.Layout(gtx, th.KeyCap("↵").Layout)
+					}),
 				)
 			})
 		})
 }
 
-// chatQuestionAnswered is a question once answered: a line per ask, its
-// header and its answer, after a hairline; declined, a muted word.
+// chatQuestionAnswered is a question once answered, as the person's message
+// at the column's right: a line per ask, its header and its answer; declined,
+// a muted word there.
 func chatQuestionAnswered(gtx C, th *ui.Theme, asks []api.ChatAsk, r *api.ChatQReplied) D {
 	if r.Declined {
-		return th.Text(ui.TextXS, i18n.T("chat.question.declined")).Muted().Layout(gtx)
+		return layout.E.Layout(gtx, th.Text(ui.TextXS, i18n.T("chat.question.declined")).Muted().Layout)
 	}
-	d := layout.Inset{Left: ui.Space(3)}.Layout(gtx, func(gtx C) D { return chatAnswerLines(gtx, th, asks, r.Answers) })
-	paint.FillShape(gtx.Ops, th.Border, clip.Rect{Max: image.Pt(gtx.Dp(1), d.Size.Y)}.Op())
-	return d
+	maxW := int(float32(gtx.Constraints.Max.X) * chatUserShare)
+	on := th.On(th.Accent)
+	return layout.E.Layout(gtx, func(gtx C) D {
+		gtx.Constraints.Min = image.Point{}
+		gtx.Constraints.Max.X = maxW
+		return layout.Background{}.Layout(gtx,
+			func(gtx C) D { return ui.Fill(gtx, th.Accent, ui.RadiusLG) },
+			func(gtx C) D {
+				return layout.Inset{Top: ui.Space(2), Bottom: ui.Space(2), Left: ui.Space(3), Right: ui.Space(3)}.Layout(gtx, func(gtx C) D {
+					return chatAnswerLines(gtx, on, asks, r.Answers)
+				})
+			})
+	})
 }
 
 // chatAnswerLines is a muted header and its answer, a line per ask.
@@ -300,9 +383,9 @@ func chatAnswerLines(gtx C, th *ui.Theme, asks []api.ChatAsk, answers []api.Chat
 		}
 		lines = append(lines, layout.Rigid(func(gtx C) D {
 			return layout.Flex{Alignment: layout.Baseline}.Layout(gtx,
-				layout.Rigid(th.Text(ui.TextXS, i18n.T("chat.question.label", i18n.Args{"header": label})).Muted().Layout),
-				ui.Gap(1),
-				layout.Flexed(1, th.Text(ui.TextXS, answerText(answers[i])).Weight(font.Medium).Wrapped().Layout),
+				layout.Rigid(th.Text(ui.TextSM, i18n.T("chat.question.label", i18n.Args{"header": label})).Muted().Layout),
+				ui.Gap(1.5),
+				layout.Rigid(th.Text(ui.TextSM, answerText(answers[i])).Wrapped().Layout),
 			)
 		}))
 	}

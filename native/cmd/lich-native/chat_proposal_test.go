@@ -47,7 +47,7 @@ func TestAProposalShowsThePlanAndClaudeCodesChoices(t *testing.T) {
 	if !drewPlan(u) {
 		t.Error("the plan was not drawn")
 	}
-	for _, s := range []string{"PLAN", i18n.T("chat.proposal.ask"), i18n.T("chat.proposal.acceptEdits"),
+	for _, s := range []string{i18n.T("chat.proposal.header"), i18n.T("chat.proposal.ask"), i18n.T("chat.proposal.acceptEdits"),
 		i18n.T("chat.proposal.manual"), i18n.T("chat.proposal.change")} {
 		if !r.shows(s) {
 			t.Errorf("the plan card lacks %q:\n%s", s, r.drawn())

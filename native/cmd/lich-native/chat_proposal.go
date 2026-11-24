@@ -30,7 +30,7 @@ func (u *window) chatProposal(gtx C, th *ui.Theme, p *chatPane, it backend.ChatI
 				return p.md.LayoutLinks(gtx, th, it.ID, plan, markdown.Links{Open: func(url string) { openLink(u.client, notify, url) }, Paths: p.paths})
 			})
 		}),
-		layout.Rigid(func(gtx C) D { return chatQuestion(gtx, th, p, it) }),
+		layout.Rigid(func(gtx C) D { return chatQuestion(gtx, th, it) }),
 	)
 }
 

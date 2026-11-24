@@ -86,18 +86,17 @@
     "default": "Predeterminado"
   },
   "question": {
-    "multi": "varias",
-    "step": "{n} de {total}",
-    "sendAll": "Enviar todo",
     "freeHint": "Enter envía · Esc rechaza",
     "marked": {
       "one": "{count} marcada",
       "other": "{count} marcadas"
     },
-    "write": "Otra… escribe tu respuesta",
+    "write": "Otra…",
     "declined": "Sin respuesta",
     "label": "{header}:",
-    "own": "«{text}»"
+    "own": "«{text}»",
+    "recommended": "Recomendada",
+    "continue": "Continuar"
   },
   "proposal": {
     "header": "Plan",

@@ -81,17 +81,16 @@
     "default": "默认"
   },
   "question": {
-    "multi": "多选",
-    "step": "{n} / {total}",
-    "sendAll": "全部发送",
     "freeHint": "Enter 发送 · Esc 拒绝",
     "marked": {
       "other": "已选 {count} 项"
     },
-    "write": "其他… 写下你的回答",
+    "write": "其他…",
     "declined": "未回答",
     "label": "{header}：",
-    "own": "“{text}”"
+    "own": "“{text}”",
+    "recommended": "推荐",
+    "continue": "继续"
   },
   "proposal": {
     "header": "计划",

@@ -122,7 +122,7 @@ func chatRows(items []backend.ChatItem, kind string, running bool, now time.Time
 			}
 			turnDay = day
 		}
-		if it.Kind == api.ItemCompaction && !drawnCompaction(it) {
+		if it.Kind == api.ItemCompaction && !drawnCompaction(it) || asksInComposer(it) {
 			continue
 		}
 		if it.Kind != api.ItemTool {

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"gioui.org/f32"
+	"gioui.org/io/input"
 	"gioui.org/io/key"
 
 	"github.com/lichdotdev/lich/api"
@@ -61,7 +62,7 @@ func wantReply(t *testing.T, f *chatBackend, parts ...string) {
 
 func TestClickingASingleChoiceAnswersAtOnce(t *testing.T) {
 	_, r, f := questionFrames(t, nil, askFruit)
-	for _, s := range []string{"FRUIT", "Which fruit?", "Crisp and red", i18n.T("chat.question.write")} {
+	for _, s := range []string{"Fruit", "Which fruit?", "Crisp and red", i18n.T("chat.question.write")} {
 		if !r.shows(s) {
 			t.Errorf("the card lacks %q:\n%s", s, r.drawn())
 		}
@@ -103,15 +104,21 @@ func TestOtherTakesTheirOwnWords(t *testing.T) {
 
 func TestSeveralChoicesMarkThenSend(t *testing.T) {
 	_, r, f := questionFrames(t, nil, askColors)
-	if !r.shows(i18n.T("chat.question.multi")) {
-		t.Error("a multiple choice does not say so")
-	}
 	r.pressKeys(key.NameSpace, key.NameDownArrow, key.NameDownArrow, key.NameSpace)
 	if !r.shows(i18n.T("chat.question.marked", i18n.Args{"count": 2})) {
 		t.Errorf("the count of marks is not drawn:\n%s", r.drawn())
 	}
-	r.click(t, r.at(t, i18n.T("chat.composer.send")))
+	writeShot(t, r, "question-multi.png")
+	r.click(t, r.at(t, i18n.T("chat.question.continue")))
 	wantReply(t, f, `"picked":["Red","Blue"]`)
+}
+
+// Enter on an option of several marks it, and on Continue, the last row,
+// sends the marks.
+func TestSeveralChoicesEnterMarksThenContinues(t *testing.T) {
+	_, r, f := questionFrames(t, nil, askColors)
+	r.pressKeys(key.NameDownArrow, key.NameReturn, key.NameUpArrow, key.NameUpArrow, key.NameReturn)
+	wantReply(t, f, `"picked":["Green"]`)
 }
 
 func TestSeveralChoicesSendNothingUnmarked(t *testing.T) {
@@ -133,27 +140,63 @@ func TestAnOpenQuestionTakesText(t *testing.T) {
 	wantReply(t, f, `"other":"billing-worker"`)
 }
 
-func TestSeveralQuestionsStepThenSendAll(t *testing.T) {
+// Answering an ask moves to the next one left, and answering the last one
+// left sends them all: there is no summary to send from.
+func TestSeveralQuestionsStepThenSendWithTheLast(t *testing.T) {
 	u, r, f := questionFrames(t, nil, askFruit, askColors)
-	if !r.shows(i18n.T("chat.question.step", i18n.Args{"n": 1, "total": 2})) {
-		t.Errorf("no step count:\n%s", r.drawn())
-	}
 	r.press("2")
 	if !r.shows("Which colors?") || r.shows("Which fruit?") {
 		t.Fatalf("answering did not move to the next question:\n%s", r.drawn())
 	}
-	r.pressKeys("1", key.NameReturn)
-	if !r.shows(i18n.T("chat.question.sendAll")) {
-		t.Fatalf("no summary after the last question:\n%s", r.drawn())
-	}
+	writeShot(t, r, "question-steps.png")
 	// A step already answered can be gone back to.
-	r.click(t, r.at(t, "✓ FRUIT"))
+	r.click(t, r.at(t, "Fruit"))
 	if q := u.chats.pane("s1").quizzes["q1"]; q.step != 0 {
 		t.Errorf("the step click went to %d", q.step)
 	}
 	r.press("1")
-	r.pressKeys(key.NameReturn)
+	if !r.shows("Which colors?") {
+		t.Fatalf("answering again did not move to the ask left:\n%s", r.drawn())
+	}
+	r.press("1")
+	r.click(t, r.at(t, i18n.T("chat.question.continue")))
 	wantReply(t, f, `"answers":[{"picked":["Apple"]},{"picked":["Red"]}]`)
+}
+
+func TestTheCrossDeclinesTheQuestion(t *testing.T) {
+	_, r, f := questionFrames(t, nil, askFruit)
+	// The ✕ is the header's last click, at the right of its line.
+	y := -1
+	for _, n := range r.nodes() {
+		if n.Desc.Label == "Fruit" {
+			y = n.Desc.Bounds.Min.Y + 2
+		}
+	}
+	var cross image.Rectangle
+	for _, n := range r.nodes() {
+		b := n.Desc.Bounds
+		if n.Desc.Gestures&input.ClickGesture != 0 && b.Min.Y <= y && y < b.Max.Y && b.Dx() < 40 && b.Min.X > cross.Min.X {
+			cross = b
+		}
+	}
+	if cross.Empty() {
+		t.Fatalf("no ✕ on the header's line:\n%s", r.drawn())
+	}
+	r.click(t, centre(cross))
+	wantReply(t, f, `"declined":true`)
+}
+
+// The mark Claude Code's model ends a recommended label with is drawn apart
+// from the label, and the answer still carries the label as it came.
+func TestARecommendedOptionIsMarkedApart(t *testing.T) {
+	ask := api.ChatAsk{Header: "Fix", Text: "How?", Options: []api.ChatOffer{{Label: "Draw on the page (Recommended)"}, {Label: "Cut a hole"}}}
+	_, r, f := questionFrames(t, nil, ask)
+	if !r.shows("Draw on the page") || !r.shows(i18n.T("chat.question.recommended")) || r.shows("Draw on the page (Recommended)") {
+		t.Errorf("the recommendation is not drawn apart:\n%s", r.drawn())
+	}
+	writeShot(t, r, "question-single.png")
+	r.press("1")
+	wantReply(t, f, `"picked":["Draw on the page (Recommended)"]`)
 }
 
 func TestAPreviewFollowsTheHighlightedOption(t *testing.T) {
@@ -177,6 +220,7 @@ func TestAnAnsweredQuestionIsALinePerAsk(t *testing.T) {
 	if r.shows("Which fruit?") {
 		t.Error("an answered question still asks")
 	}
+	writeShot(t, r, "question-answered.png")
 	_, r, _ = questionFrames(t, &api.ChatQReplied{Declined: true}, askFruit)
 	if !r.shows(i18n.T("chat.question.declined")) {
 		t.Errorf("a declined question does not say so:\n%s", r.drawn())

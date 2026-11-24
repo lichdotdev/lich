@@ -19,9 +19,10 @@ import (
 // show, the option the keys stand on, and what the person answered so far. The
 // quiz itself is the tag the card's keys go to.
 type chatQuiz struct {
-	// step is the ask on show; len(asks) is the summary of several.
+	// step is the ask on show.
 	step int
-	// hot is the option the keys stand on; len(options) is "Other…".
+	// hot is the row the keys stand on: an option, then "Other…" at
+	// len(options), then Continue past it on an ask that takes several.
 	hot     int
 	answers []api.ChatAskAnswer
 	done    []bool
@@ -30,6 +31,7 @@ type chatQuiz struct {
 	others  []widget.Editor
 	steps   []ui.Clickable
 	send    ui.Clickable
+	decline ui.Clickable
 	// moved asks for the focus to follow the step.
 	moved bool
 	// sent holds the card back from a second reply while the first is on its
@@ -146,6 +148,10 @@ func (u *window) questionActs(gtx C, p *chatPane, sv sessionView, it *backend.Ch
 		return
 	}
 	reply := func(r api.ChatQReplied) { u.replyChat(sv.ID, it.ID, q, r) }
+	if q.decline.Clicked(gtx) {
+		reply(api.ChatQReplied{Declined: true})
+		return
+	}
 	for i := range asks {
 		u.questionFieldActs(gtx, q, asks, i, reply)
 	}
@@ -153,10 +159,6 @@ func (u *window) questionActs(gtx C, p *chatPane, sv sessionView, it *backend.Ch
 		if q.steps[i].Clicked(gtx) && (q.done[i] || i == q.step) {
 			q.step, q.hot, q.moved = i, 0, true
 		}
-	}
-	if q.step == len(asks) {
-		u.summaryActs(gtx, q, reply)
-		return
 	}
 	// An answer moves the card on mid-frame: the rest of the frame's clicks
 	// and keys belong to the ask that was on show, and are dropped with it.
@@ -201,31 +203,12 @@ func (u *window) questionFieldActs(gtx C, q *chatQuiz, asks []api.ChatAsk, i int
 	}
 }
 
-func (u *window) summaryActs(gtx C, q *chatQuiz, reply func(api.ChatQReplied)) {
-	if q.send.Clicked(gtx) {
-		reply(api.ChatQReplied{Answers: q.answers})
-	}
-	for {
-		ev, ok := gtx.Event(key.Filter{Focus: q, Name: key.NameReturn}, key.Filter{Focus: q, Name: key.NameEnter}, key.Filter{Focus: q, Name: key.NameEscape})
-		if !ok {
-			return
-		}
-		if e, ok := ev.(key.Event); ok && e.State == key.Press {
-			if e.Name == key.NameEscape {
-				reply(api.ChatQReplied{Declined: true})
-			} else {
-				reply(api.ChatQReplied{Answers: q.answers})
-			}
-		}
-	}
-}
-
 // chatQuizDigits is how many options a digit key reaches: 1 to 9.
 const chatQuizDigits = 9
 
 // keys runs the card's own keys on ask a: a digit picks its option, the
-// arrows walk them, Space marks one of several, Enter takes the one the keys
-// stand on (or sends the marks), Esc declines.
+// arrows walk the rows, Space marks one of several, Enter takes the row the
+// keys stand on, Esc declines.
 func (q *chatQuiz) keys(gtx C, asks []api.ChatAsk, reply func(api.ChatQReplied)) {
 	step := q.step
 	a := asks[step]
@@ -254,12 +237,12 @@ func (q *chatQuiz) keys(gtx C, asks []api.ChatAsk, reply func(api.ChatQReplied))
 }
 
 func (q *chatQuiz) key(gtx C, name key.Name, a api.ChatAsk, asks []api.ChatAsk, reply func(api.ChatQReplied)) {
-	n := len(a.Options)
+	n, rows := len(a.Options), quizRows(a)
 	switch name {
 	case key.NameUpArrow:
-		q.hot = (q.hot + n) % (n + 1)
+		q.hot = (q.hot + rows - 1) % rows
 	case key.NameDownArrow:
-		q.hot = (q.hot + 1) % (n + 1)
+		q.hot = (q.hot + 1) % rows
 	case key.NameEscape:
 		reply(api.ChatQReplied{Declined: true})
 	case key.NameSpace:
@@ -268,12 +251,12 @@ func (q *chatQuiz) key(gtx C, name key.Name, a api.ChatAsk, asks []api.ChatAsk, 
 		}
 	case key.NameReturn, key.NameEnter:
 		switch {
-		case a.Multi:
-			q.submit(asks, reply)
 		case q.hot < n:
 			q.pick(asks, q.hot, reply)
-		default:
+		case q.hot == n:
 			gtx.Execute(key.FocusCmd{Tag: &q.others[q.step]})
+		default:
+			q.submit(asks, reply)
 		}
 	default:
 		d, _ := strconv.Atoi(string(name))
@@ -284,6 +267,15 @@ func (q *chatQuiz) key(gtx C, name key.Name, a api.ChatAsk, asks []api.ChatAsk, 
 		}
 		q.pick(asks, q.hot, reply)
 	}
+}
+
+// quizRows is how many rows the keys walk on ask a: its options, "Other…",
+// and Continue on one that takes several.
+func quizRows(a api.ChatAsk) int {
+	if a.Multi {
+		return len(a.Options) + 2
+	}
+	return len(a.Options) + 1
 }
 
 // pick takes option j of the ask on show: one of several is marked, a single
@@ -300,10 +292,6 @@ func (q *chatQuiz) pick(asks []api.ChatAsk, j int, reply func(api.ChatQReplied))
 // submit answers the ask on show with its marks and its field, when either
 // holds something.
 func (q *chatQuiz) submit(asks []api.ChatAsk, reply func(api.ChatQReplied)) {
-	if q.step == len(asks) {
-		reply(api.ChatQReplied{Answers: q.answers})
-		return
-	}
 	if ans, ok := q.draft(asks[q.step]); ok {
 		q.answer(asks, ans, reply)
 	}
@@ -321,17 +309,14 @@ func (q *chatQuiz) draft(a api.ChatAsk) (api.ChatAskAnswer, bool) {
 	return ans, len(ans.Picked) > 0 || ans.Other != ""
 }
 
-// answer records the ask on show and moves on: the one ask of a question is
-// sent at once; of several, the next one left comes, then the summary.
+// answer records the ask on show and moves on to the first one left; the
+// last one left sends them all.
 func (q *chatQuiz) answer(asks []api.ChatAsk, ans api.ChatAskAnswer, reply func(api.ChatQReplied)) {
 	q.answers[q.step], q.done[q.step] = ans, true
-	if len(asks) == 1 {
-		reply(api.ChatQReplied{Answers: q.answers})
-		return
-	}
 	next := slices.Index(q.done, false)
 	if next < 0 {
-		next = len(asks)
+		reply(api.ChatQReplied{Answers: q.answers})
+		return
 	}
 	q.step, q.hot, q.moved = next, 0, true
 }
