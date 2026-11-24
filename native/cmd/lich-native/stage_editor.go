@@ -128,7 +128,7 @@ func (f *fileEditor) openArtifact(dir, name string) {
 // in place.
 func (f *fileEditor) openOutside(dir, name string) {
 	f.openFrom(dir, name, 0, 0, agentNote{})
-	f.writable, f.md.rendering = true, false
+	f.writable, f.md.mode = true, mdSource
 }
 
 // readOnly is whether the open file is one the editor only shows.
@@ -142,7 +142,7 @@ func (f *fileEditor) openFrom(dir, rel string, line, end int, note agentNote) {
 	if !f.holds(dir, rel) {
 		f.dir, f.rel, f.kind = dir, rel, previewKindOf(rel)
 		f.opens++
-		f.md.rendering = dir != "" && isMarkdown(rel)
+		f.md.mode = markdownModeFor(rel, line, note)
 		f.composer.close()
 		f.disk.read.stop()
 		f.disk.seen, f.disk.theirs = "", nil
@@ -342,7 +342,7 @@ func (f *fileEditor) layout(gtx C, th *ui.Theme, env editorEnv) error {
 
 // editable is a text file in the editor, which Undo and Save act on.
 func (f *fileEditor) editable() bool {
-	return f.kind == blobNone && f.ed != nil && f.loaded == f.opens && !f.md.rendering && !f.readOnly()
+	return f.kind == blobNone && f.ed != nil && f.loaded == f.opens && f.md.mode != mdRendered && !f.readOnly()
 }
 
 func (f *fileEditor) body(gtx C, th *ui.Theme) (D, error) {
@@ -356,7 +356,7 @@ func (f *fileEditor) body(gtx C, th *ui.Theme) (D, error) {
 	}
 	_, loading, err := f.file.get()
 	switch {
-	case f.loaded == f.opens && f.md.rendering:
+	case f.loaded == f.opens && f.md.mode == mdRendered:
 		return f.markdownBody(gtx, th), nil
 	case f.loaded == f.opens:
 	case err != nil:
@@ -364,6 +364,24 @@ func (f *fileEditor) body(gtx C, th *ui.Theme) (D, error) {
 	case loading || f.loaded != f.opens:
 		return th.Notice(i18n.T("dock.filesPanel.loading")).Layout(gtx), nil
 	}
+	if f.md.mode != mdSplit {
+		return f.source(gtx, th)
+	}
+	var viewErr error
+	d := layout.Flex{}.Layout(gtx,
+		layout.Flexed(1, func(gtx C) D {
+			var d D
+			d, viewErr = f.source(gtx, th)
+			return d
+		}),
+		layout.Rigid(th.VerticalRule),
+		layout.Flexed(1, func(gtx C) D { return f.markdownBody(gtx, th) }),
+	)
+	return d, viewErr
+}
+
+// source is the text in the editor, with its menu when it is the checkout's.
+func (f *fileEditor) source(gtx C, th *ui.Theme) (D, error) {
 	var viewErr error
 	code := func(gtx C) D {
 		gtx.Constraints.Min = gtx.Constraints.Max

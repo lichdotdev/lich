@@ -19,7 +19,7 @@ type agentNote struct {
 // opens. Both sit over the code rather than under their lines: godemirror's
 // Editor, unlike its read-only View, hangs no block under a line.
 func (f *fileEditor) notes(gtx C, th *ui.Theme) D {
-	if f.kind != blobNone || f.md.rendering || (f.note.text == "" && !f.composer.isOpen()) {
+	if f.kind != blobNone || f.md.mode == mdRendered || (f.note.text == "" && !f.composer.isOpen()) {
 		return D{}
 	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,

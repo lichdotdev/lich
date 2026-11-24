@@ -175,7 +175,7 @@ func (f *fileEditor) mustAsk() bool {
 }
 
 // header is the strip over the code: the folder muted and the file's name
-// in the foreground, the unsaved dot, then the Markdown toggle.
+// in the foreground, the unsaved dot, then the Markdown toggles.
 func (f *fileEditor) header(gtx C, th *ui.Theme) D {
 	gtx.Constraints = layout.Exact(image.Pt(gtx.Constraints.Max.X, gtx.Dp(ui.Space(10))))
 	return layout.Inset{Left: ui.Space(3), Right: ui.Space(2)}.Layout(gtx, func(gtx C) D {
@@ -183,7 +183,7 @@ func (f *fileEditor) header(gtx C, th *ui.Theme) D {
 			gtx.Constraints.Min.X = gtx.Constraints.Max.X
 			children := []layout.FlexChild{layout.Flexed(1, func(gtx C) D { return f.title(gtx, th) })}
 			if isMarkdown(f.rel) && f.kind == blobNone {
-				children = append(children, layout.Rigid(func(gtx C) D { return f.markdownToggle(gtx, th, f.env.root) }), ui.Gap(1.5))
+				children = append(children, layout.Rigid(func(gtx C) D { return f.markdownToggles(gtx, th, f.env.root) }), ui.Gap(1.5))
 			}
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
 		})

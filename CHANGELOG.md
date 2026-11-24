@@ -58,6 +58,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **A new browser tab opens on a page of what the session already has, not a blank one.** It lists the project's running services and the checkout's dev-server port, the session's artifacts and the pages its browser visited last, and has an address field that loads like the toolbar's. It follows the window's theme and language.
 - **The dock's Files tree colors each changed file by its state in git.** A modified file reads amber with an M, an untracked, added or renamed one green with U, A or R, and a conflicted one red with an !; a folder takes the color of what changed inside it and shows a dot.
 - **`lich doctor` warns when jq is missing, since without it an agent's own subagents never open as lich sessions.** The line names the command that installs jq with your package manager, or jq's download page.
+- **A Markdown file opens in the editor rendered, and you can edit it with the preview beside the source.** The book button in the editor's header switches to the source and back, and the columns button splits the two; a file opened on a line or with an agent's note still opens as source.
 
 ### Changed
 
