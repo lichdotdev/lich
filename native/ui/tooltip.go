@@ -16,15 +16,6 @@ import (
 	"gioui.org/unit"
 )
 
-// TooltipVariant is the tooltip's variant: Label names a control in a few
-// words, Card carries several lines about the thing under the pointer.
-type TooltipVariant uint8
-
-const (
-	TooltipLabel TooltipVariant = iota
-	TooltipCard
-)
-
 const (
 	// base-ui's OPEN_DELAY and closeDelay: lich mounts no TooltipProvider,
 	// so every trigger waits the full delay and closes at once.
@@ -38,6 +29,9 @@ const (
 	// The arrow's translate-y calc(-50%-2px) sinks its center this far into
 	// the bubble on the top and bottom sides.
 	tooltipArrowSink unit.Dp = 2
+	// The border's share of PopoverForeground: the popover's own fill is the
+	// panel's, so the theme's 10% Border does not set the bubble apart.
+	tooltipBorderMix = 0.2
 )
 
 var (
@@ -48,7 +42,7 @@ var (
 	tooltipSlide              = Space(2)   // slide-in-from-*-2
 	tooltipArrowSize          = Space(2.5) // size-2.5
 	tooltipArrowSide          = Space(1)   // -left-1 / -right-1 on the left and right sides
-	tooltipBorder     unit.Dp = 1          // card's border
+	tooltipBorder     unit.Dp = 1          // the bubble's border
 )
 
 // Tooltip is the caller-owned state of one trigger's tooltip.
@@ -100,31 +94,30 @@ func (t *Tooltip) update(gtx C) {
 
 // TooltipStyle draws a shadcn Tooltip over a trigger widget.
 type TooltipStyle struct {
-	State   *Tooltip
-	Root    *Root
-	Variant TooltipVariant
-	Side    Side
+	State *Tooltip
+	Root  *Root
+	Side  Side
 	// Content is the bubble's body, at most max-w-xs wide inside the
 	// padding; nil draws the trigger bare, as Hint does for an empty label.
 	Content layout.Widget
 	theme   *Theme
 }
 
-// Tooltip is Hint: a label-variant tooltip on top of the trigger.
+// Tooltip is Hint: a few words on a popover bubble on top of the trigger.
 func (th *Theme) Tooltip(root *Root, state *Tooltip, label string) TooltipStyle {
 	t := TooltipStyle{State: state, Root: root, theme: th}
 	if label != "" {
-		text := th.On(th.Foreground).Text(TextXS, label).In(th.Background)
+		text := th.On(th.Popover).Text(TextXS, label)
 		text.MaxLines = 0
 		t.Content = text.Layout
 	}
 	return t
 }
 
-// TooltipCard is a card-variant tooltip; content draws its own text, in
+// TooltipCard is a tooltip with several lines; content draws its own text, in
 // PopoverForeground at TextXS to match, with th.On(th.Popover).
 func (th *Theme) TooltipCard(root *Root, state *Tooltip, content layout.Widget) TooltipStyle {
-	return TooltipStyle{State: state, Root: root, Variant: TooltipCard, Content: content, theme: th}
+	return TooltipStyle{State: state, Root: root, Content: content, theme: th}
 }
 
 // Layout draws trigger, then the bubble deferred above everything else.
@@ -148,14 +141,11 @@ func (t TooltipStyle) Layout(gtx C, trigger layout.Widget) D {
 }
 
 func (t TooltipStyle) colors() (bg, border color.NRGBA) {
-	if t.Variant == TooltipCard {
-		return t.theme.Popover, t.theme.On(t.theme.Popover).Over(t.theme.Border)
-	}
-	return t.theme.Foreground, color.NRGBA{}
+	return t.theme.Popover, MixOKLab(t.theme.Popover, t.theme.PopoverForeground, tooltipBorderMix)
 }
 
 func (t TooltipStyle) drawBubble(gtx C, triggerSize image.Point, progress float32) {
-	m := tooltipMetricsFor(gtx, t.Variant)
+	m := tooltipMetricsFor(gtx)
 	inset := image.Pt(m.border+gtx.Dp(tooltipPadX), m.border+gtx.Dp(tooltipPadY))
 	cgtx := gtx
 	cgtx.Constraints = layout.Constraints{Max: image.Pt(gtx.Dp(tooltipMaxWidth)-2*inset.X, t.Root.window.Y)}
@@ -203,17 +193,15 @@ type tooltipMetrics struct {
 	offset, arrowPad, arrowHalf, arrowSink, arrowSide, border int
 }
 
-func tooltipMetricsFor(gtx C, v TooltipVariant) tooltipMetrics {
+func tooltipMetricsFor(gtx C) tooltipMetrics {
 	m := tooltipMetrics{
 		offset:    gtx.Dp(tooltipSideOffset),
 		arrowPad:  gtx.Dp(tooltipArrowPadding),
 		arrowHalf: gtx.Dp(tooltipArrowSize) / 2,
 		arrowSink: gtx.Dp(tooltipArrowSink),
+		border:    gtx.Dp(tooltipBorder),
 	}
 	m.arrowSide = m.arrowHalf - gtx.Dp(tooltipArrowSide)
-	if v == TooltipCard {
-		m.border = gtx.Dp(tooltipBorder)
-	}
 	return m
 }
 
