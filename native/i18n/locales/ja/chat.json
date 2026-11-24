@@ -6,6 +6,16 @@
     "pending": "切り替え中…",
     "failed": "表示を切り替えられませんでした"
   },
+  "children": {
+    "title": "ここから開いたセッション",
+    "count": {
+      "other": "{count} セッション"
+    },
+    "waiting": {
+      "other": "{count} 件待機中"
+    },
+    "ended": "{time}前に完了"
+  },
   "view": {
     "failed": "チャットへのリクエストに失敗しました",
     "thought": "思考",
@@ -26,7 +36,44 @@
     "toolCalls": {
       "other": "ツール呼び出し{count}件"
     },
-    "openedAs": "{label} として開きました"
+    "call": {
+      "ran": "実行",
+      "read": "読込",
+      "edited": "編集",
+      "searched": "検索",
+      "fetched": "取得",
+      "running": "実行中",
+      "reading": "読込中",
+      "editing": "編集中",
+      "searching": "検索中",
+      "fetching": "取得中"
+    },
+    "calls": {
+      "sep": "、",
+      "edited": {
+        "other": "ファイル {count} 件を編集"
+      },
+      "ran": {
+        "other": "コマンド {count} 件を実行"
+      },
+      "read": {
+        "other": "ファイル {count} 件を読込"
+      },
+      "searched": {
+        "other": "検索 {count} 回"
+      },
+      "fetched": {
+        "other": "ページ {count} 件を取得"
+      },
+      "others": {
+        "other": "ほかのツール {count} 件を使用"
+      },
+      "failed": {
+        "other": "{count} 件失敗"
+      }
+    },
+    "latest": "最新へ",
+    "newActivity": "新しい動き"
   },
   "done": {
     "done": "完了",
@@ -103,6 +150,7 @@
   },
   "slash": {
     "new": "このセッションで新しい会話を始める",
+    "resume": "このプロジェクトの会話を再開する",
     "mcp": "MCP サーバーを管理する",
     "skills": "スキルをオンまたはオフにする",
     "plugin": "プラグインをインストールして管理する",

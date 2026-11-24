@@ -50,18 +50,36 @@ func (s *Service) holdForStartup(sess *session) {
 	}
 }
 
-// reloadSink records when the page starts a reload and when its document is
-// ready.
-func (s *Service) reloadSink(sess *session) func(started bool) {
-	return func(started bool) {
+// reloadStep is a step of the front tab's reload. A reload past the cache is
+// the agent's or the toolbar's (Page.Reload); a plain one is a script's
+// location.reload() or the one Chrome starts in a young browser.
+type reloadStep int
+
+const (
+	reloadStarted reloadStep = iota
+	reloadPastCacheStarted
+	reloadReady
+)
+
+// reloadSink records when the page starts a plain reload and when its
+// document is ready, and has the window's own page reload with any reload of
+// the page: it only follows a URL that changed.
+func (s *Service) reloadSink(sess *session) func(reloadStep) {
+	return func(step reloadStep) {
 		s.mu.Lock()
-		defer s.mu.Unlock()
 		switch {
-		case started:
+		case step == reloadStarted:
 			sess.reloading = true
+			sess.reloadsAsked++
+		case step == reloadPastCacheStarted:
+			sess.reloadsAsked++
 		case sess.reloading:
 			sess.reloading = false
 			sess.reloads++
+		}
+		s.mu.Unlock()
+		if step != reloadReady {
+			s.emitState(sess, true)
 		}
 	}
 }

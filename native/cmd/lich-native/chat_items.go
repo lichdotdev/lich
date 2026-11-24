@@ -43,14 +43,7 @@ var (
 	// chatBranchX where the connector runs: under the fold's chevron.
 	chatBranchGutter = ui.Space(6)
 	chatBranchX      = ui.Space(1.75)
-	// chatAvatarSize and chatAvatarMark are mockup's 20px avatar and its mark.
-	chatAvatarSize = ui.Space(5)
-	chatAvatarMark = ui.Space(3)
 )
-
-// chatAvatarMix is how much of the provider's color the avatar's fill takes,
-// the mockup's 22%.
-const chatAvatarMix = 0.22
 
 // chatClock is the short time under a message, the 24-hour layout the window's
 // other clocks (the Git graph, a stopped console) use.
@@ -278,56 +271,79 @@ func chatThought(gtx C, th *ui.Theme, f *chatFold, it backend.ChatItem, live boo
 	)
 }
 
-// chatWork is a turn's tool calls folded into one line, opening on a line per
-// call under a connector. While a call runs the line shimmers, with the
-// number of calls and the time the turn has run; once it is over it says how
-// long the turn took, how many calls it made and when it ended. It stands
-// shut until a click opens it; a shell command's is a row of its own.
+// chatWork is a run of tool calls between the agent's texts: one call alone
+// is its own row; several fold into a line saying what they did, a clause per
+// kind with the time they took and how many failed, opening on a row per call.
+// While a call runs the line is that call, shimmering, beside the count.
 func (u *window) chatWork(gtx C, th *ui.Theme, p *chatPane, f *chatFold, sv sessionView, r chatRow) D {
+	outcome := u.vetoOutcome(p, sv)
+	if len(r.tools) == 1 {
+		return chatToolWith(gtx, th, r.tools[0], r.live, outcome(r.tools[0]), 0)
+	}
 	f.update(gtx)
-	label := func(gtx C, fg color.NRGBA) D {
-		if r.live {
-			return chatLiveLabel(gtx, th, i18n.T("chat.view.toolCalls", i18n.Args{"count": len(r.tools)}), fg, gtx.Now.Add(-r.took))
-		}
-		return layout.Flex{Alignment: layout.Baseline}.Layout(gtx,
-			layout.Rigid(th.Text(ui.TextSM, i18n.T("chat.view.toolCalls", i18n.Args{"count": len(r.tools)})).In(fg).Layout),
-			ui.Gap(1.5),
-			layout.Rigid(th.Text(ui.TextSM, chatTook(r.took)).Muted().Layout),
-		)
-	}
-	// The line carries who works when it opens the turn, and a hairline runs
-	// from it to the column's edge.
-	var line []layout.FlexChild
-	if r.avatar {
-		tint, mark, _ := u.agentLook(sv.ID)
-		line = append(line, layout.Rigid(func(gtx C) D { return chatAvatar(gtx, th, tint, mark) }), ui.Gap(2))
-	}
-	line = append(line,
-		layout.Rigid(func(gtx C) D { return chatFoldLine(gtx, th, f, nil, label) }),
-		ui.Gap(3),
-		layout.Flexed(1, func(gtx C) D { return chatHairline(gtx, th) }),
-	)
-	children := []layout.FlexChild{layout.Rigid(func(gtx C) D { return layout.Flex{Alignment: layout.Middle}.Layout(gtx, line...) })}
+	vetoed := func(it backend.ChatItem) bool { return outcome(it) != nil }
+	label := func(gtx C, fg color.NRGBA) D { return chatWorkLabel(gtx, th, r, vetoed, fg) }
 	earlier := p.fold("earlier:" + r.run)
 	earlier.update(gtx)
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, append(children, chatCalls(gtx, th, f, earlier, r, u.vetoOutcome(p, sv))...)...)
+	children := []layout.FlexChild{layout.Rigid(func(gtx C) D { return chatFoldLine(gtx, th, f, nil, label) })}
+	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, append(children, chatCalls(gtx, th, f, earlier, r, outcome)...)...)
+}
+
+// chatWorkLabel is a fold of calls' line: the call running, or what the run
+// did once it is over.
+func chatWorkLabel(gtx C, th *ui.Theme, r chatRow, vetoed func(backend.ChatItem) bool, fg color.NRGBA) D {
+	if now, ok := runningCall(r.tools); r.live && ok {
+		words := callVerb(now.Tool, true)
+		if target := cleanLine(now.Tool.Title); target != "" {
+			words += " " + chatShort(target)
+		}
+		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+			layout.Rigid(func(gtx C) D { return chatLiveLabel(gtx, th, words, fg, gtx.Now.Add(-r.took)) }),
+			ui.Gap(1.5),
+			layout.Rigid(th.Text(ui.TextSM, "· "+i18n.T("chat.view.toolCalls", i18n.Args{"count": len(r.tools)})).Muted().Layout),
+		)
+	}
+	label, failed := callSummary(r.tools, vetoed)
+	row := []layout.FlexChild{
+		layout.Rigid(th.Text(ui.TextSM, label).In(fg).Layout),
+		ui.Gap(1.5),
+		layout.Rigid(th.Text(ui.TextSM, chatTook(r.took)).Muted().Layout),
+	}
+	if failed != "" {
+		row = append(row, ui.Gap(1.5), layout.Rigid(th.Text(ui.TextSM, "· "+failed).In(th.Destructive).Layout))
+	}
+	return layout.Flex{Alignment: layout.Baseline}.Layout(gtx, row...)
+}
+
+// chatShortRunes is as much of a running call's target as the fold's line
+// shows: a long command would push the count off the line.
+const chatShortRunes = 60
+
+// chatShort is s cut to chatShortRunes with an ellipsis.
+func chatShort(s string) string {
+	if r := []rune(s); len(r) > chatShortRunes {
+		return string(r[:chatShortRunes]) + "…"
+	}
+	return s
 }
 
 // chatCallsShown is how many of a group's last calls show when it opens: a
 // turn of fifty calls would run past the view; the rest are a click away.
 const chatCallsShown = 5
 
-// chatCalls are a group's calls, each in a fold of its own that opens and
+// chatCalls are a group's calls, under the line and indented past its
+// chevron, each in a fold of its own that opens and
 // shuts with the group: its last chatCallsShown, under a line that shows the
 // earlier ones until earlier is opened. A call that comes once the group is
 // drawn enters as a row does.
-func chatCalls(gtx C, th *ui.Theme, f, earlier *chatFold, r chatRow, outcome func(backend.ChatItem) layout.Widget) []layout.FlexChild {
+func chatCalls(gtx C, th *ui.Theme, f, earlier *chatFold, r chatRow, outcome func(backend.ChatItem) *chatOpened) []layout.FlexChild {
 	ids := make([]string, len(r.tools))
 	for i, it := range r.tools {
 		ids[i] = it.ID
 	}
 	f.enter.Update(gtx.Now, ids)
 	hidden := max(len(r.tools)-chatCallsShown, 0)
+	verbW := chatVerbWidth(gtx, th, r.tools, r.live)
 	children := make([]layout.FlexChild, 0, len(r.tools)+1)
 	if hidden > 0 {
 		children = append(children, layout.Rigid(func(gtx C) D {
@@ -337,7 +353,7 @@ func chatCalls(gtx C, th *ui.Theme, f, earlier *chatFold, r chatRow, outcome fun
 			}
 			return fold.Layout(gtx, f.open, func(gtx C) D {
 				return layout.Inset{Top: ui.Space(1)}.Layout(gtx, func(gtx C) D {
-					return chatBranch(gtx, th, false, func(gtx C) D { return chatEarlierCalls(gtx, th, earlier, hidden) })
+					return layout.Inset{Left: chatBranchGutter}.Layout(gtx, func(gtx C) D { return chatEarlierCalls(gtx, th, earlier, hidden) })
 				})
 			})
 		}))
@@ -358,7 +374,7 @@ func chatCalls(gtx C, th *ui.Theme, f, earlier *chatFold, r chatRow, outcome fun
 						top = ui.Space(1)
 					}
 					return layout.Inset{Top: top}.Layout(gtx, func(gtx C) D {
-						return chatBranch(gtx, th, i == len(r.tools)-1, func(gtx C) D { return chatToolWith(gtx, th, it, r.live, outcome(it)) })
+						return layout.Inset{Left: chatBranchGutter}.Layout(gtx, func(gtx C) D { return chatToolWith(gtx, th, it, r.live, outcome(it), verbW) })
 					})
 				})
 			})
@@ -478,17 +494,18 @@ func chatBranch(gtx C, th *ui.Theme, last bool, w layout.Widget) D {
 // chatNothing stands in for what a shut fold hides.
 func chatNothing(C) D { return D{} }
 
-// chatTool is one call: its glyph, name, what it acted on, the time it has
-// run, and how it ended, with the diff it made under it. While it runs in a
-// live turn its name and target shimmer and its time counts; once it ends the
+// chatTool is one call: its glyph, its verb (chatVerb), what it acted on and
+// the time it has run, and why it failed when it did; a call that went well
+// says nothing more. The diff it made, if any, is under it. While it runs in a
+// live turn its verb and target shimmer and its time counts; once it ends the
 // time stands still, and a call whose end nobody reported shows none.
 func chatTool(gtx C, th *ui.Theme, it backend.ChatItem, live bool) D {
-	return chatToolWith(gtx, th, it, live, nil)
+	return chatToolWith(gtx, th, it, live, nil, 0)
 }
 
-// chatToolWith is chatTool with how it ended drawn by outcome, the row's own
-// check or cross when nil.
-func chatToolWith(gtx C, th *ui.Theme, it backend.ChatItem, live bool, outcome layout.Widget) D {
+// chatToolWith is chatTool drawn as the card it was opened as when opened is
+// not nil, and its verb at least verbW wide, so a group's targets line up.
+func chatToolWith(gtx C, th *ui.Theme, it backend.ChatItem, live bool, opened *chatOpened, verbW int) D {
 	t := it.Tool
 	if t == nil {
 		return D{}
@@ -497,18 +514,34 @@ func chatToolWith(gtx C, th *ui.Theme, it backend.ChatItem, live bool, outcome l
 	line := func(gtx C) D {
 		h := gtx.Dp(chatToolRow)
 		gtx.Constraints.Min.Y, gtx.Constraints.Max.Y = h, h
-		return layout.Inset{Left: ui.Space(2), Right: ui.Space(2)}.Layout(gtx, func(gtx C) D {
-			name := th.Text(ui.TextXS, t.Name).Weight(font.Medium)
-			target := th.Text(ui.TextXS, cleanLine(t.Title)).Mono().Muted()
+		return layout.Inset{Right: ui.Space(2)}.Layout(gtx, func(gtx C) D {
+			ink := th.MutedForeground
+			if t.State == api.ToolFailed {
+				ink = th.Destructive
+			}
+			verb := th.Text(ui.TextXS, callVerb(t, running)).In(ink).Truncated()
+			target := th.Text(ui.TextXS, cleanLine(t.Title)).Mono()
 			if running {
-				// The band lights toward Foreground, so the name runs muted to show it.
-				name, target = name.Muted().Shimmer(), target.Shimmer()
+				// The band lights toward Foreground, so the target runs muted to show it.
+				verb, target = verb.Shimmer(), target.Muted().Shimmer()
 			}
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-				layout.Rigid(func(gtx C) D { return toolIcon(t.Name).Layout(gtx, ui.Space(3.5), th.MutedForeground) }),
+				layout.Rigid(func(gtx C) D {
+					if opened != nil && opened.mark != nil {
+						return opened.mark(gtx)
+					}
+					return toolIcon(t.Name).Layout(gtx, ui.Space(3.5), ink)
+				}),
 				ui.Gap(2),
-				layout.Rigid(name.Layout),
-				ui.Gap(2.5),
+				layout.Rigid(func(gtx C) D {
+					if verbW > 0 {
+						gtx.Constraints.Max.X = verbW
+					}
+					d := verb.Layout(gtx)
+					d.Size.X = max(d.Size.X, verbW)
+					return d
+				}),
+				ui.Gap(2),
 				layout.Flexed(1, func(gtx C) D {
 					// The text's own width, not the room's: the band sweeps the words.
 					gtx.Constraints.Min.X = 0
@@ -516,12 +549,14 @@ func chatToolWith(gtx C, th *ui.Theme, it backend.ChatItem, live bool, outcome l
 					d.Size.X = gtx.Constraints.Max.X
 					return d
 				}),
-				layout.Rigid(func(gtx C) D { return chatToolTime(gtx, th, it, running) }),
 				layout.Rigid(func(gtx C) D {
-					if outcome != nil {
-						return outcome(gtx)
+					if opened != nil {
+						return opened.links(gtx)
 					}
-					return chatToolOutcome(gtx, th, t)
+					return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+						layout.Rigid(func(gtx C) D { return chatToolTime(gtx, th, it, running) }),
+						layout.Rigid(func(gtx C) D { return chatToolOutcome(gtx, th, t) }),
+					)
 				}),
 			)
 		})
@@ -533,6 +568,25 @@ func chatToolWith(gtx C, th *ui.Theme, it backend.ChatItem, live bool, outcome l
 		layout.Rigid(line),
 		layout.Rigid(func(gtx C) D { return chatDiff(gtx, th, t.Diff) }),
 	)
+}
+
+// chatVerbMax caps a group's verb column: a tool's own name can run long.
+var chatVerbMax = ui.Space(24)
+
+// chatVerbWidth is the widest of tools' verbs, up to chatVerbMax.
+func chatVerbWidth(gtx C, th *ui.Theme, tools []backend.ChatItem, live bool) int {
+	w := 0
+	gtx.Constraints.Min.X = 0
+	for _, it := range tools {
+		if it.Tool == nil {
+			continue
+		}
+		m := op.Record(gtx.Ops)
+		d := th.Text(ui.TextXS, callVerb(it.Tool, live && callRunning(it))).Layout(gtx)
+		m.Stop()
+		w = max(w, d.Size.X)
+	}
+	return min(w, gtx.Dp(chatVerbMax))
 }
 
 // chatToolTime is the time a call has run, counting while running, standing
@@ -559,30 +613,17 @@ func chatToolTime(gtx C, th *ui.Theme, it backend.ChatItem, running bool) D {
 	return layout.Inset{Left: ui.Space(2.5)}.Layout(gtx, th.Text(ui.TextXS, text).Mono().Muted().Layout)
 }
 
-// chatToolOutcome is how a call ended: nothing while it runs, then a check in
-// TonePass or a cross in Destructive with the first line of its output.
+// chatToolOutcome is why a call failed, the first line of its output in
+// Destructive; a call that runs or went well shows nothing.
 func chatToolOutcome(gtx C, th *ui.Theme, t *backend.ChatToolCall) D {
-	out := cleanLine(t.Output)
-	mark := func(ic *icons.Icon, c color.NRGBA) layout.FlexChild {
-		return layout.Rigid(func(gtx C) D {
-			return layout.Inset{Left: ui.Space(2.5)}.Layout(gtx, func(gtx C) D { return ic.Layout(gtx, ui.Space(3.5), c) })
-		})
-	}
-	switch t.State {
-	case api.ToolPending, api.ToolRunning:
+	if t.State != api.ToolFailed {
 		return D{}
-	case api.ToolFailed:
-		if out == "" {
-			out = i18n.T("chat.view.toolFailed")
-		}
-		return layout.Flex{Alignment: layout.Middle}.Layout(gtx, mark(icChatFail, th.Destructive), ui.Gap(1.5),
-			layout.Rigid(th.Text(ui.TextXS, out).Mono().In(th.Destructive).Layout))
 	}
-	row := []layout.FlexChild{mark(icCheck, th.TonePass)}
-	if out != "" {
-		row = append(row, ui.Gap(1.5), layout.Rigid(th.Text(ui.TextXS, out).Mono().Muted().Layout))
+	out := cleanLine(t.Output)
+	if out == "" {
+		out = i18n.T("chat.view.toolFailed")
 	}
-	return layout.Flex{Alignment: layout.Middle}.Layout(gtx, row...)
+	return layout.Inset{Left: ui.Space(2.5)}.Layout(gtx, th.Text(ui.TextXS, out).Mono().In(th.Destructive).Layout)
 }
 
 // cleanLine is the first line of s, tabs expanded: a row has room for one.
@@ -755,12 +796,12 @@ func chatVerb(session string, turn int) string {
 	return verbs[int(h.Sum32()%uint32(len(verbs)))]
 }
 
-// chatLive is the turn in flight: a flame, then a verb of the turn shimmering
+// chatLive is the turn in flight: the spinner, then a verb of the turn shimmering
 // with the time it has run, and Claude Code's Ctrl+B hint while the turn
 // waits on a command it moves.
 func chatLive(gtx C, th *ui.Theme, session string, r chatRow) D {
 	row := []layout.FlexChild{
-		layout.Rigid(func(gtx C) D { return chatFlame(gtx, th) }),
+		layout.Rigid(func(gtx C) D { return chatSpinner(gtx, th) }),
 		ui.Gap(2),
 		layout.Rigid(func(gtx C) D {
 			// A turn with no start to count from has no clock.
@@ -804,19 +845,6 @@ func (u *window) chatAgent(gtx C, th *ui.Theme, p *chatPane, sv sessionView, r c
 		}
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, body...)
 	})
-}
-
-// chatAvatar is the provider's mark in tint on a rounded square of tint mixed
-// into the surface.
-func chatAvatar(gtx C, th *ui.Theme, tint color.NRGBA, mark *icons.Icon) D {
-	px := gtx.Dp(chatAvatarSize)
-	size := image.Pt(px, px)
-	paint.FillShape(gtx.Ops, ui.MixOKLab(th.Background, tint, chatAvatarMix), clip.UniformRRect(image.Rectangle{Max: size}, gtx.Dp(ui.RadiusMD)).Op(gtx.Ops))
-	inner := gtx.Dp(chatAvatarMark)
-	off := op.Offset(image.Pt((px-inner)/2, (px-inner)/2)).Push(gtx.Ops)
-	mark.Layout(gtx, chatAvatarMark, tint)
-	off.Pop()
-	return D{Size: size}
 }
 
 // chatElapsed is a running time in the window's own units: "6s", "1m 12s",

@@ -41,7 +41,7 @@ type fakePage struct {
 	onDownload     func(guid string, d api.BrowserDownload)
 	onConsoleError func(text string)
 	onDialog       func(*api.BrowserDialog)
-	onReload       func(started bool)
+	onReload       func(reloadStep)
 	answers        []answer
 	// onClick runs after a click, as what the page does in answer to it;
 	// onNavigate as a navigation starts.
@@ -221,10 +221,15 @@ func (p *fakePage) AnnotatedScreenshot(ctx context.Context, dest string) (w, h i
 	return p.Screenshot(ctx, dest)
 }
 
+// Reload starts a reload past the cache, as Chrome's Page.Reload does.
 func (p *fakePage) Reload(context.Context) error {
 	p.mu.Lock()
-	defer p.mu.Unlock()
 	p.reloads++
+	onReload := p.onReload
+	p.mu.Unlock()
+	if onReload != nil {
+		onReload(reloadPastCacheStarted)
+	}
 	return nil
 }
 
@@ -280,7 +285,7 @@ func (p *fakePage) Listen(onFrame func(tab, data string), onInfo func(url, title
 	p.onTabs = onTabs
 }
 
-func (p *fakePage) OnReload(onReload func(bool)) {
+func (p *fakePage) OnReload(onReload func(reloadStep)) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	p.onReload = onReload

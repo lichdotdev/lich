@@ -15,7 +15,7 @@ import (
 )
 
 func TestAnEditorHangsUnderTheSessionThatHoldsIt(t *testing.T) {
-	b := blockView{sessions: []sessionView{treeSession("a", "", "/repo"), treeSession("b", "", "/repo")},
+	b := blockView{sessions: []sessionView{treeSession("a", "", "/repo"), treeSession("b", "", "/repo/wt/b")},
 		editors: map[string]editorNode{"a": {rel: "src/total.ts"}}}
 	rows := blockRows(b, b.sessions)
 	want := []string{"0:a", "1:__editor__:a.", "0:b."}
@@ -172,6 +172,16 @@ func TestTheEditorNodesMenuClosesIt(t *testing.T) {
 	r.clickLabel(t, i18n.T("sidebar.editorRow.close"))
 	if act.editorClose != "/repo" {
 		t.Fatalf("act %+v, want /repo's editor closed", *act)
+	}
+}
+
+func TestTheEditorNodesCornerClosesIt(t *testing.T) {
+	_, r, act := editorFrames(t)
+	r.settle(t)
+	r.hover(r.at(t, "a.go"))
+	r.click(t, r.controlOf(t, "a.go"))
+	if act.editorClose != "/repo" {
+		t.Fatalf("act %+v, want /repo's editor closed by the row's corner", *act)
 	}
 }
 

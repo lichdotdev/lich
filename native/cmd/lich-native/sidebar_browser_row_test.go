@@ -17,7 +17,7 @@ func TestABrowserHangsFirstUnderItsSession(t *testing.T) {
 	sessions := []sessionView{
 		browsing(treeSession("mother", "", "/repo")),
 		treeSession("child", "mother", "/repo"),
-		browsing(treeSession("solo", "", "/repo")),
+		browsing(treeSession("solo", "", "/repo/wt/solo")),
 	}
 	rows := sessionRows(sessions, func(string) bool { return false }, nil)
 	want := []string{"0:mother", "1:__browser__:mother", "1:child.", "0:solo.", "1:__browser__:solo."}
@@ -36,7 +36,7 @@ func TestAFoldedMotherHidesHerBrowserAndAStaleFoldDoesNot(t *testing.T) {
 	sessions := []sessionView{
 		browsing(treeSession("mother", "", "/repo")),
 		treeSession("child", "mother", "/repo"),
-		browsing(treeSession("solo", "", "/repo")),
+		browsing(treeSession("solo", "", "/repo/wt/solo")),
 	}
 	rows := sessionRows(sessions, func(string) bool { return true }, nil)
 	want := []string{"0:mother", "0:solo.", "1:__browser__:solo."}
@@ -46,7 +46,7 @@ func TestAFoldedMotherHidesHerBrowserAndAStaleFoldDoesNot(t *testing.T) {
 }
 
 func TestACarriedCardLeavesItsBrowserOutOfTheList(t *testing.T) {
-	b := blockView{sessions: []sessionView{browsing(treeSession("a", "", "/repo")), browsing(treeSession("b", "", "/repo"))}}
+	b := blockView{sessions: []sessionView{browsing(treeSession("a", "", "/repo")), browsing(treeSession("b", "", "/repo/wt/b"))}}
 	rows := blockRows(carriedFold(b, "a"), b.sessions)
 	want := []string{"0:a", "0:b.", "1:__browser__:b."}
 	if got := rowShape(rows); !slices.Equal(got, want) {

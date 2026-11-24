@@ -164,8 +164,12 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   and Codex** (`internal/chat/service.go` `Steer`, each driver's `follow`): Claude Code reads a user message
   written mid-turn, and Codex takes it as `turn/steer`. ACP takes no message during a turn, so on Antigravity,
   opencode, oh-my-pi, Cursor CLI and Kiro CLI forcing stops the turn and sends the message as the next one. The
-  queue itself is the window's (`native/cmd/lich-native/chat_queue.go`): it is sent, joined, when the turn ends
-  as anything but stopped, and lost if the window closes before. Crush has no chat.
+  queue itself is the window's (`native/cmd/lich-native/chat_queue.go`): on Claude Code and Codex it is steered,
+  joined, into the turn when a tool starts (`steerQueue`), which the agent reads as that tool ends, as Claude
+  Code's own queue does (measured on 2.1.331); a fast tool can end before the steer lands, and the message then
+  waits for the next tool or becomes the next turn. Steered, it is shown in the chat at once and can no longer
+  be edited or dropped. Elsewhere, and with no tool in the turn, it is sent, joined, when the turn ends as
+  anything but stopped, and lost if the window closes before. Crush has no chat.
 - **A chat runs a line that starts with `!` as the person's own shell command only on Claude Code, Codex and
   opencode 1, and has no `#` memory line on any** (`internal/chat/shell.go`, `claude_shell.go`, `codex.go`
   `shell`, `opencode_shell.go`, `native/cmd/lich-native/chat_shell.go`): each runs it the way its TUI's `!` does,
@@ -2367,7 +2371,9 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   and the agent's own open and new tab with no URL stay `about:blank`. A note waiting in the tray is hidden while
   the new-tab page is in front, and comes back with the page it belongs to.
 - **The pane's DevTools is Chrome's front-end drawn as frames** (`internal/browser/chrome_devtools.go`,
-  `docs/browser-tab.md`): a target lich creates in a headless window of its own, loading the browser's own
+  `docs/browser-tab.md`), where the pane draws the screencast. Over a WebKitGTK page the button opens WebKit's
+  Web Inspector on that page instead, in a window of its own, never attached: the page's window is sized and
+  cut to the page alone. Chrome's DevTools would inspect the agent's page, not the one on screen. In Chrome, a target lich creates in a headless window of its own, loading the browser's own
   DevTools from its debugging port, screencast like a page. It has no device toolbar (it emulates on the
   page's own target, which the pane does not show as a device), no DevTools extensions, the arrow for every
   cursor, and Chrome's colors, not lich's theme. It draws its first frame about 2 s after the button on a warm

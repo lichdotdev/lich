@@ -6,6 +6,18 @@
     "pending": "Switching…",
     "failed": "Could not switch the view"
   },
+  "children": {
+    "title": "Sessions opened here",
+    "count": {
+      "one": "{count} session",
+      "other": "{count} sessions"
+    },
+    "waiting": {
+      "one": "{count} waiting",
+      "other": "{count} waiting"
+    },
+    "ended": "done {time} ago"
+  },
   "view": {
     "failed": "The chat request failed",
     "thought": "Thought",
@@ -30,7 +42,51 @@
       "one": "{count} tool call",
       "other": "{count} tool calls"
     },
-    "openedAs": "opened as {label}"
+    "call": {
+      "ran": "Ran",
+      "read": "Read",
+      "edited": "Edited",
+      "searched": "Searched",
+      "fetched": "Fetched",
+      "running": "Running",
+      "reading": "Reading",
+      "editing": "Editing",
+      "searching": "Searching",
+      "fetching": "Fetching"
+    },
+    "calls": {
+      "sep": ", ",
+      "edited": {
+        "one": "edited {count} file",
+        "other": "edited {count} files"
+      },
+      "ran": {
+        "one": "ran {count} command",
+        "other": "ran {count} commands"
+      },
+      "read": {
+        "one": "read {count} file",
+        "other": "read {count} files"
+      },
+      "searched": {
+        "one": "searched {count} time",
+        "other": "searched {count} times"
+      },
+      "fetched": {
+        "one": "fetched {count} page",
+        "other": "fetched {count} pages"
+      },
+      "others": {
+        "one": "used {count} other tool",
+        "other": "used {count} other tools"
+      },
+      "failed": {
+        "one": "{count} failed",
+        "other": "{count} failed"
+      }
+    },
+    "latest": "Latest",
+    "newActivity": "New activity"
   },
   "done": {
     "done": "Done",
@@ -109,6 +165,7 @@
   },
   "slash": {
     "new": "Start a new conversation in this session",
+    "resume": "Resume a conversation of this project",
     "mcp": "Manage the MCP servers",
     "skills": "Turn skills on or off",
     "plugin": "Install and manage plugins",

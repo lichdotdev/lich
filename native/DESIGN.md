@@ -441,30 +441,40 @@ draws none while it grows in, because the room above the rows is measured in the
   is underlined in its color and takes the hand, and a click with it opens a file in the stage editor
   (`followCodeRef`) and a folder in the dock's Code tab, unfolded down to it (`chat_paths.go`). A path it does not
   hold stays text. Anything else in code is plain. An answer has no header: who wrote it is the
-  foot's (see A message's time), and the provider's avatar stands only on the tool-call line that opens a turn. A thought is a muted fold, closed, with the
+  foot's (see A message's time); the provider's avatar marks no row of the chat: no answer, call, notification or closing line. A thought is a muted fold, closed, with the
   sparkles before its label.
 - **A turn's tool calls** fold by run: the calls between two of the agent's texts (or the person's message and
-  the first text) fold into one muted line where the first of them came, with a 1px `Border` hairline running
-  from its label to the column's edge. One line for the whole turn stood where the turn began while the agent
-  went on working minutes below it; a run's line stands where its calls ran. A thought does not end a run.
-  Only the turn's first line starts with the provider's avatar, when it opens the turn (no answer before it). It
-  reads "6 tool calls" and, muted, how long the run took, from its first call to its last call's end (a
-  running one counts to now, shimmering); the turn's total is on its closing line. Open, each call is a 28px row hung under the line by a connector, a 1px
-  `Border` line under the fold's chevron with a stub into the row, ending at the last row as the sidebar's
-  tree does. The line starts shut, whether the turn is in flight or ended, and only a click opens it, which
+  the first text) fold into one muted line where the first of them came. One line for the whole turn stood where
+  the turn began while the agent went on working minutes below it; a run's line stands where its calls ran. A
+  thought does not end a run. No avatar and no hairline: every ADE surveyed (Paseo, Orca, Sikemux, Cursor,
+  Codex and Claude Code desktop) leaves the agent's mark off its calls. A run of one call is no fold: it is that
+  call's row, its target in view, the complaint most heard of the apps that fold it. Several read as what they
+  did, a clause per kind in one sentence ("Ran 4 commands, read 2 files", `chat_calls.go`: edited, ran, read,
+  searched, fetched, then "used N other tools"), then, muted, how long the run took, from its first call to its
+  last call's end, and "· 1 failed" in `Destructive` when one did (a call lich opened as a card is not a
+  failure); the turn's total is on its closing line. While a call runs the line is that call instead, its
+  running verb and target shimmering ("Running go test ./…", cut at 60 characters), the run's time counting,
+  and "· 3 tool calls" muted. Open, each call is a 28px row under the line, indented past its chevron, with no
+  connector. The line starts shut, whether the turn is in flight or ended, and only a click opens it, which
   holds as the person left it. Open, it shows only its last 5 calls (`chatCallsShown`): a turn can run fifty,
-  which would push the view past its height. The rest wait behind a first row on the branch, muted `TextXS`
-  "Show 12 earlier calls", lit on hover, whose click shows them all and turns it into "Show less". A row is its tool's glyph (a Lucide mark by tool name, Claude Code's own names and ACP's kinds,
-  one generic wrench for the rest), its name in medium, what it acted on in mono, then at the right the time it
-  ran in muted mono and how it ended: nothing while it runs, then a check in `TonePass` or a cross in
-  `Destructive` with the output's first line. A time that stands still reads in milliseconds under a second
-  ("476ms"), the line's own time too; a call whose end nobody reported (most histories) shows no time. A
-  call that changed a file is not in the fold: it is an edit, a line of its own (see An edit). While a call of the turn in flight runs, the line shimmers
-  with its count; the group never opens on its own. Only
+  which would push the view past its height. The rest wait behind a first row, muted `TextXS`
+  "Show 12 earlier calls", lit on hover, whose click shows them all and turns it into "Show less". A row is its
+  tool's glyph muted (a Lucide mark by tool name, Claude Code's, Codex's, ACP's kinds and the names Antigravity
+  and Kiro CLI put in their place, one generic wrench for the rest), its verb muted (the tool's own name, an MCP
+  tool's without its server, when it has no kind) in a column as wide as the run's widest verb, up to
+  `Space(24)`, so the targets line up, what it acted on in mono, then at the right the time it ran in muted mono.
+  A call that went well says nothing more; a failed one turns its glyph and verb `Destructive` and shows the
+  output's first line in it. A call lich opened as a card (`chat_veto.go`) keeps that `Destructive` verb, the
+  tone the provider's veto has always worn, but trades the glyph for the card's provider mark and the time and
+  output for a pill per card at the right: the card's state dot, its name and `arrow-up-right` in
+  `Destructive`, on a 8% fill of it with a 35% edge, both lit on hover (18% and full), and a click opens the
+  card. The veto's own milliseconds are the hook answering, not work, so they are not shown. A time that stands still reads in milliseconds under a second ("476ms"), the line's
+  own time too; a call whose end nobody reported (most histories) shows no time. A call that changed a file is
+  not in the fold: it is an edit, a line of its own (see An edit). The group never opens on its own. Only
   the turn in flight is alive: a call an ended turn left running (interrupted) stops with it, its time up to the
   turn's end, or none where nobody saw it.
 - **A turn's closing line** stands once, after the last item of the conversation's last turn, when that turn
-  has ended: the provider's avatar as the tool-call line opens a turn with, "Done" in `TextSM` medium
+  has ended: "Done" in `TextSM` medium, with no avatar,
   `Foreground`, then, when it ran any, muted "· 34 tool calls · 6m 4s", all its runs' calls and how long the turn
   took, then muted "· no changes" or "· 3 files" and the lines the turn added in `TonePass` and removed
   in `Destructive` ("+12 −4"), as the diffs draw them, and a 1px `Border` hairline to the column's edge.
@@ -499,14 +509,18 @@ draws none while it grows in, because the room above the rows is measured in the
   opens, or after it, or drawn again after the TUI, does not play as arrivals. A list at its end stays at its
   end while rows grow in.
 - **A row that becomes another changes in its slot** (`chat_motion.go`). A turn ending turns the live line into
-  the closing line where it stood: the flame, verb and clock fade out in 120ms ease-in, then the avatar, word
+  the closing line where it stood: the flame, verb and clock fade out in 120ms ease-in, then the word
   and count fade in by 280ms and the hairline runs from the word to the column's edge by 360ms, both ease-out;
   the slot eases to the closing line's height in 160ms, since the two differ by a few pixels. Neither row
   plays its own entry or exit. A question answered leaves the composer at once, and its answer enters the
   conversation as a new row does. A fold, a thought's text, a group's calls or an edit's diff, opens and shuts with `ui.Collapse`, 200ms, its first draw landing where it
   stands, and a group opens and shuts that way at the edges of its run of calls; a call that comes into an open
-  group enters as a row does. Sending a message while the list is scrolled up runs it back
-  to its end in 220ms ease-out and pins it there. Switching between GUI and TUI fades the view that comes in
+  group enters as a row does. Sending a message while the list is scrolled up, queued or steered
+  into a turn too, runs it back to its end in 220ms ease-out and pins it there. Scrolled up from the end it
+  follows, the list carries a pill centred `Space(3)` over its foot (`chat_jump.go`): `Popover` with a
+  `Border` hairline, fully rounded, an arrow down and muted `TextXS` "Latest", lit on hover; while the agent
+  works, a `Primary` dot leads it and the words read "New activity", shimmering. Its click runs the list to its
+  end as a send does, and it is gone there; Paseo and Orca carry the same. Switching between GUI and TUI fades the view that comes in
   from the background in 150ms ease-out, from the first frame that draws it; the one that leaves goes at once.
   The chevrons, the option highlight, the Send and Stop swap, the composer's height, a tool's state, the copy
   check and the footer's changes stay dry.
@@ -532,9 +546,9 @@ draws none while it grows in, because the room above the rows is measured in the
   Claude Code's AskUserQuestion shape, which every provider's request for input is read into, in a box on
   `Sidebar`, `RadiusLG` with a 1px `Border` hairline as the composer has, `Space(2)` over the composer. Its
   head is the ask's header, muted `TextXS` in its own case on no fill, and a ghost `SizeIconXS` × at the right
-  that declines; several asks turn the headers into tabs (the one on show in `Foreground` medium over a 2dp
-  `Primary` rule, an answered one with a `TonePass` check, each a click back to it; an ask with no header shows
-  its number), with no count. Under it the question in `TextSM` medium. Each option is a row: a keycap with its
+  that declines; several asks turn the headers into pill tabs, as a project tab is (the one on show filled in
+  `Accent`, each led by its muted number, which a `TonePass` check replaces once answered, each a click back to
+  it; the pill's padding lines its text up with the question's), with no count. Under it the question in `TextSM` medium. Each option is a row: a keycap with its
   number (a checkbox when it takes several), the label in `TextSM` regular and the description muted under it;
   the row the keys stand on is lit on `Accent`, `RadiusMD`. A label ending in Claude Code's "(Recommended)"
   is drawn without it, a `Primary` `TextXS` "Recommended" beside it; the reply keeps the label as it came.
@@ -578,7 +592,12 @@ draws none while it grows in, because the room above the rows is measured in the
   Inside the box stand only the provider's controls, one line under the text: the footer's attach as a "+",
   the model with its effort in one chip ("Opus 5.5 · high") and the mode, each a ghost chip with a chevron.
   After them the footer's context ring with its percentage, the same readout as the terminal's balloon, when the
-  session reports a window.
+  session reports a window. Last, while the session has open sessions it opened (`OriginSessionID`, the sidebar
+  tree's), a wide ghost chip of them (`chat_children.go`, Paseo's "subagents" chip, made to say more): up to three
+  of their providers' pixel marks, "3 sessions" and, in `ToneWait`, "· 1 waiting". It opens a panel the shells'
+  way: a row per child, its mark with a dot of its state on the corner (`ToneWait` waiting, `Primary` working,
+  `TonePass` done), its name, "provider · model · branch · 4m" muted and, while it waits, what on in `ToneWait`;
+  those waiting first, then those working, then the rest under a hairline, muted. A row opens its session.
   The mode's menu lists the provider's choices, the current one checked, and picking one sets it
   (`ChatSetOption`). It is a `DropdownMenu` on `Popover`, the surface of the model panel and every other menu;
   a theme whose `popover` sits darker than `background` makes both look sunken, and the fix is the theme's token.

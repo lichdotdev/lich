@@ -22,28 +22,32 @@ func runCall(i int, state string) backend.ChatItem {
 	return backend.ChatItem{ID: c.id, Kind: api.ItemTool, Turn: 1, At: novDay(18, 17, 59), Tool: &backend.ChatToolCall{Name: c.name, Title: c.title, State: state}}
 }
 
-// A run of three calls keeps its group shut in every frame, calls coming in
-// included, until the person clicks its line.
+// A call alone stands as its own row; once a second comes the run folds into
+// a group that stays shut in every frame, calls coming in included, until the
+// person clicks its line.
 func TestARunOfCallsKeepsItsGroupShutUntilClicked(t *testing.T) {
 	u, r := lifeFrames(t, []backend.ChatItem{{ID: "u1", Kind: api.ItemUser, Turn: 1, At: novDay(18, 17, 58), Text: "go"}}, true)
 	r.frames(2)
 	u.model.chat.apply(api.ChatItemUpdate{SessionID: "s1", Item: runCall(0, api.ToolRunning)})
 	r.play(15)
-	if r.shows("Edit") {
-		t.Fatalf("the run's first call stands under a group nobody opened:\n%s", r.drawn())
+	if !r.shows("a.go") {
+		t.Fatalf("a call alone does not stand as its own row:\n%s", r.drawn())
 	}
-	r.queueClick(r.at(t, i18n.T("chat.view.toolCalls", i18n.Args{"count": 1})))
+	u.model.chat.apply(api.ChatItemUpdate{SessionID: "s1", Item: runCall(1, api.ToolRunning)})
 	r.play(15)
-	if !r.shows("Edit") {
+	if r.shows("a.go") || r.shows("go test") {
+		t.Fatalf("the run's calls stand under a group nobody opened:\n%s", r.drawn())
+	}
+	r.queueClick(r.at(t, "Running go test"))
+	r.play(15)
+	if !r.shows("a.go") || !r.shows("go test") {
 		t.Fatalf("the group did not open on a click:\n%s", r.drawn())
 	}
-	for i := 1; i < len(callRun); i++ {
-		u.model.chat.apply(api.ChatItemUpdate{SessionID: "s1", Item: runCall(i, api.ToolRunning)})
-		r.play(15)
-		for _, j := range []int{0, i} {
-			if !r.shows(callRun[j].name) {
-				t.Errorf("%q left the group a click opened:\n%s", callRun[j].name, r.drawn())
-			}
+	u.model.chat.apply(api.ChatItemUpdate{SessionID: "s1", Item: runCall(2, api.ToolRunning)})
+	r.play(15)
+	for _, c := range callRun {
+		if !r.shows(c.title) {
+			t.Errorf("%q left the group a click opened:\n%s", c.title, r.drawn())
 		}
 	}
 	for i := range callRun {
@@ -51,8 +55,8 @@ func TestARunOfCallsKeepsItsGroupShutUntilClicked(t *testing.T) {
 	}
 	r.play(15)
 	for _, c := range callRun {
-		if !r.shows(c.name) {
-			t.Errorf("%q left the group once its run was over:\n%s", c.name, r.drawn())
+		if !r.shows(c.title) {
+			t.Errorf("%q left the group once its run was over:\n%s", c.title, r.drawn())
 		}
 	}
 }
@@ -62,27 +66,28 @@ func TestARunOfCallsKeepsItsGroupShutUntilClicked(t *testing.T) {
 func TestAGroupFoldedByHandStaysFolded(t *testing.T) {
 	u, r := lifeFrames(t, []backend.ChatItem{
 		{ID: "u1", Kind: api.ItemUser, Turn: 1, At: novDay(18, 17, 58), Text: "go"},
-		runCall(0, api.ToolRunning),
+		runCall(0, api.ToolDone),
+		runCall(1, api.ToolRunning),
 	}, true)
 	r.frames(2)
-	label := i18n.T("chat.view.toolCalls", i18n.Args{"count": 1})
+	label := "Running go test"
 	r.queueClick(r.at(t, label))
 	r.play(15)
-	if !r.shows("Edit") {
+	if !r.shows("a.go") {
 		t.Fatalf("the group did not open on a click:\n%s", r.drawn())
 	}
 	r.queueClick(r.at(t, label))
 	r.play(15)
-	u.model.chat.apply(api.ChatItemUpdate{SessionID: "s1", Item: runCall(1, api.ToolRunning)})
+	u.model.chat.apply(api.ChatItemUpdate{SessionID: "s1", Item: runCall(2, api.ToolRunning)})
 	r.play(15)
-	if r.shows("Edit") || r.shows("Bash") {
+	if r.shows("a.go") || r.shows("go test") || r.shows("TODO") {
 		t.Errorf("the group folded by hand opened again for a call:\n%s", r.drawn())
 	}
-	u.model.chat.apply(api.ChatItemUpdate{SessionID: "s1", Item: runCall(0, api.ToolDone)})
 	u.model.chat.apply(api.ChatItemUpdate{SessionID: "s1", Item: runCall(1, api.ToolDone)})
+	u.model.chat.apply(api.ChatItemUpdate{SessionID: "s1", Item: runCall(2, api.ToolDone)})
 	u.model.chat.apply(api.ChatItemUpdate{SessionID: "s1", Item: backend.ChatItem{ID: "a1", Kind: api.ItemAgent, Turn: 1, At: novDay(18, 17, 59), Text: "ok"}})
 	r.play(15)
-	if r.shows("Edit") || r.shows("Bash") {
+	if r.shows("a.go") || r.shows("go test") || r.shows("TODO") {
 		t.Errorf("the group opened once the run was over:\n%s", r.drawn())
 	}
 }
@@ -148,8 +153,5 @@ func TestATurnFoldsEachRunOfCallsWhereItRan(t *testing.T) {
 	want := []string{"u", "work:k1=2", "a1", "th", "work:k3=1", "a2"}
 	if !slices.Equal(got, want) || done != 3 {
 		t.Errorf("rows %v and %d calls at the end, want %v and 3", got, done, want)
-	}
-	if rows := chatRows(items, claudeKind, false, time.Time{}); !rows[1].avatar || rows[4].avatar {
-		t.Error("the avatar is not on the turn's first line alone")
 	}
 }

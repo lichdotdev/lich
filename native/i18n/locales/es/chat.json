@@ -6,6 +6,18 @@
     "pending": "Cambiando…",
     "failed": "No se pudo cambiar la vista"
   },
+  "children": {
+    "title": "Sesiones abiertas desde aquí",
+    "count": {
+      "one": "{count} sesión",
+      "other": "{count} sesiones"
+    },
+    "waiting": {
+      "one": "{count} esperando",
+      "other": "{count} esperando"
+    },
+    "ended": "terminó hace {time}"
+  },
   "view": {
     "failed": "La petición al chat falló",
     "thought": "Razonamiento",
@@ -30,7 +42,51 @@
       "one": "{count} llamada a herramienta",
       "other": "{count} llamadas a herramientas"
     },
-    "openedAs": "abierta como {label}"
+    "call": {
+      "ran": "Ejecutó",
+      "read": "Leyó",
+      "edited": "Editó",
+      "searched": "Buscó",
+      "fetched": "Obtuvo",
+      "running": "Ejecutando",
+      "reading": "Leyendo",
+      "editing": "Editando",
+      "searching": "Buscando",
+      "fetching": "Obteniendo"
+    },
+    "calls": {
+      "sep": ", ",
+      "edited": {
+        "one": "editó {count} archivo",
+        "other": "editó {count} archivos"
+      },
+      "ran": {
+        "one": "ejecutó {count} comando",
+        "other": "ejecutó {count} comandos"
+      },
+      "read": {
+        "one": "leyó {count} archivo",
+        "other": "leyó {count} archivos"
+      },
+      "searched": {
+        "one": "buscó {count} vez",
+        "other": "buscó {count} veces"
+      },
+      "fetched": {
+        "one": "obtuvo {count} página",
+        "other": "obtuvo {count} páginas"
+      },
+      "others": {
+        "one": "usó {count} herramienta más",
+        "other": "usó {count} herramientas más"
+      },
+      "failed": {
+        "one": "{count} falló",
+        "other": "{count} fallaron"
+      }
+    },
+    "latest": "Lo último",
+    "newActivity": "Novedades"
   },
   "done": {
     "done": "Hecho",
@@ -109,6 +165,7 @@
   },
   "slash": {
     "new": "Empieza una conversación nueva en esta sesión",
+    "resume": "Retoma una conversación de este proyecto",
     "mcp": "Gestiona los servidores MCP",
     "skills": "Activa o desactiva skills",
     "plugin": "Instala y gestiona plugins",

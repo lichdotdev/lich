@@ -77,6 +77,9 @@ type DialogStyle struct {
 	Raw   layout.Widget
 	Top   float32
 	Scrim float64
+	// Radius, when set, replaces the dialog's rounded-xl: the command palette
+	// is an island, RadiusLG like the window's others.
+	Radius unit.Dp
 	// Root is the window's, for a dropdown or tooltip in the dialog: drawn
 	// deferred, the dialog is no descendant of the Root's pointer area, so it
 	// reports its presses to the Root itself.
@@ -221,10 +224,11 @@ func (d DialogStyle) panel(gtx C) D {
 	call := macro.Stop()
 	size := content.Size
 
+	radius := gtx.Dp(d.radius())
 	ringWidth := gtx.Dp(1)
-	outer := clip.UniformRRect(image.Rectangle{Min: image.Pt(-ringWidth, -ringWidth), Max: size.Add(image.Pt(ringWidth, ringWidth))}, gtx.Dp(dialogRadius)+ringWidth)
+	outer := clip.UniformRRect(image.Rectangle{Min: image.Pt(-ringWidth, -ringWidth), Max: size.Add(image.Pt(ringWidth, ringWidth))}, radius+ringWidth)
 	paint.FillShape(gtx.Ops, ring, outer.Op(gtx.Ops))
-	surface := clip.UniformRRect(image.Rectangle{Max: size}, gtx.Dp(dialogRadius)).Push(gtx.Ops)
+	surface := clip.UniformRRect(image.Rectangle{Max: size}, radius).Push(gtx.Ops)
 	paint.ColorOp{Color: d.theme.Popover}.Add(gtx.Ops)
 	paint.PaintOp{}.Add(gtx.Ops)
 	event.Op(gtx.Ops, &d.State.panel)
@@ -234,6 +238,13 @@ func (d DialogStyle) panel(gtx C) D {
 	}
 	surface.Pop()
 	return content
+}
+
+func (d DialogStyle) radius() unit.Dp {
+	if d.Radius > 0 {
+		return d.Radius
+	}
+	return dialogRadius
 }
 
 // scrim is the backdrop's opacity: Scrim, else the dialog's bg-black/10.

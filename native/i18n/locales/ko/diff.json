@@ -61,8 +61,7 @@
     "revertFailed": "{name}의 줄을 되돌리지 못했습니다",
     "notRepository": "git 저장소가 아닙니다",
     "loading": "불러오는 중…",
-    "noChanges": "커밋하지 않은 변경 사항 없음",
-    "squeezed": "분할 보기에는 더 넓은 패널이 필요합니다"
+    "noChanges": "커밋하지 않은 변경 사항 없음"
   },
   "reviewSlots": {
     "forSession": "세션용 · {lines}",

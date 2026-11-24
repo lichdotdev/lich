@@ -93,6 +93,8 @@ type browserPaneUI struct {
 	// and the pane draws the screencast; nativeURL is what it was last sent.
 	native    *webview.Page
 	nativeURL string
+	// nativeReloads is the BrowserState.Reloads the page last loaded at.
+	nativeReloads int
 	// nativeSize is the page area's size in the last layout; overlaySent is
 	// what the page was last told to draw over itself (overlayScript).
 	nativeSize  image.Point
@@ -193,7 +195,7 @@ func (u *window) browserPaneAt(gtx C, v stageView, session string, r image.Recta
 	cardArea := cardShape.Push(gtx.Ops)
 	// Unlike a terminal, the page is not dimmed out of focus: the person keeps
 	// the session's prompt in focus nearly always, and watches the page.
-	u.browserPage(page, p, session, st.URL, frame, focused)
+	u.browserPage(page, p, session, st, frame, focused)
 	u.spot(page, tourBrowserPage, func(C) D { return D{Size: page.Constraints.Max} })
 	// DevTools in the page's place: the notes and the agent's cursor are the
 	// page's.
@@ -277,7 +279,7 @@ func (u *window) browserToolbar(gtx C, p *browserPaneUI, session string, st api.
 		p.notes.setDrawing(false)
 	}
 	if p.devtools.Click.Clicked(gtx) {
-		u.openDevTools(session)
+		u.openDevTools(p, session)
 	}
 	for {
 		ev, ok := p.url.Update(gtx)
@@ -364,12 +366,12 @@ func (u *window) addressPill(field ui.InputStyle) layout.Widget {
 
 // browserPage draws the page's last frame over gtx's area, keeps the
 // backend's page the area's size, and passes the pointer and keys on.
-func (u *window) browserPage(gtx C, p *browserPaneUI, session, url string, frame browserFrame, focused bool) {
+func (u *window) browserPage(gtx C, p *browserPaneUI, session string, st api.BrowserState, frame browserFrame, focused bool) {
 	size := gtx.Constraints.Max
 	scale := u.pageScale(gtx)
 	p.notes.cuts, p.notes.rings = p.notes.cuts[:0], p.notes.rings[:0]
 	paint.FillShape(gtx.Ops, u.theme.Background, clip.Rect{Max: size}.Op())
-	native := u.placeNativePage(gtx, p, session, url)
+	native := u.placeNativePage(gtx, p, session, st.URL, st.Reloads)
 	want := api.BrowserViewOptions{ID: session, W: int(float32(size.X) / scale), H: int(float32(size.Y) / scale), Scale: float64(scale), Drawn: native}
 	if want.W > 0 && want.H > 0 && want != p.view {
 		attach := p.view.ID == ""

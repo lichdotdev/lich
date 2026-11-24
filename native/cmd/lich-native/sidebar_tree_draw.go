@@ -33,6 +33,8 @@ type treePlace struct {
 	folded bool
 	mark   string
 	entry  treeEntry
+	// branchSaid is sessionRow's: the card leaves its branch out.
+	branchSaid bool
 }
 
 // sessionRowLinks are the lines a row draws (sessionRow's fields of the same
@@ -56,7 +58,7 @@ func (r sessionRow) place(tree bool) treePlace {
 	p := treePlace{
 		tree:  tree,
 		depth: r.depth, lanes: r.lanes, tail: r.tail, stub: r.stub,
-		kids: r.kids, folded: r.folded, mark: r.mark,
+		kids: r.kids, folded: r.folded, mark: r.mark, branchSaid: r.branchSaid,
 	}
 	if r.motion != nil {
 		p.sweep, p.entry = &r.motion.sweep, r.motion.entry

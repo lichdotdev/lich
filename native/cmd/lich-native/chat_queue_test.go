@@ -197,3 +197,41 @@ func queuedTexts(q []chatMessage) []string {
 	}
 	return texts
 }
+
+// A tool starting is the turn's next chance to read a message: the queue goes
+// into the turn then on a provider that takes one mid-turn, and waits for the
+// turn's end on one that would stop for it (ACP).
+func TestAToolStartingSteersTheQueueIntoTheTurn(t *testing.T) {
+	tool := func(state string) api.ChatItemUpdate {
+		return api.ChatItemUpdate{SessionID: "s1", Item: api.ChatItem{ID: "t1", Kind: api.ItemTool, Tool: &api.ChatToolCall{Name: "Bash", State: state}}}
+	}
+	for _, c := range []struct {
+		kind  string
+		steer bool
+	}{{"claude", true}, {"codex", true}, {"opencode", false}} {
+		t.Run(c.kind, func(t *testing.T) {
+			u, _, f, _ := queueFrames(t)
+			u.model.projects[0].Sessions[0].Kind = c.kind
+			u.model.chat.enqueue("s1", chatMessage{text: "first"})
+			u.model.chat.enqueue("s1", chatMessage{text: "second"})
+			u.model.steerQueue(context.Background(), tool(api.ToolDone))
+			if q := u.model.chat.queued("s1"); len(q) != 2 {
+				t.Fatalf("a tool that ended took the queue: %q left", q)
+			}
+			u.model.steerQueue(context.Background(), tool(api.ToolRunning))
+			if !c.steer {
+				time.Sleep(20 * time.Millisecond)
+				if n := f.callsOf(api.ChatSteer.Name); n != 0 || len(u.model.chat.queued("s1")) != 2 {
+					t.Errorf("%s steered %d times, want the queue kept for the turn's end", c.kind, n)
+				}
+				return
+			}
+			if body := f.waitCall(t, api.ChatSteer.Name); !strings.Contains(body, `first\n\nsecond`) {
+				t.Errorf("the tool's start steered %s, want both messages in one", body)
+			}
+			if q := u.model.chat.queued("s1"); len(q) != 0 {
+				t.Errorf("queue %q after it was steered", q)
+			}
+		})
+	}
+}

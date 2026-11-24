@@ -473,3 +473,33 @@ func TestAFramePastTheWindowsSocketLimitIsNotSent(t *testing.T) {
 		t.Fatalf("frames after one that fits = %v, want that one", frames)
 	}
 }
+
+func TestALoadAtTheSameURLTellsTheWindowToLoadItsPageAgain(t *testing.T) {
+	s, launch, out := viewService(t)
+	if _, err := s.Open("s", "https://example.com/a"); err != nil {
+		t.Fatal(err)
+	}
+	reloads := func() int {
+		states := out.states()
+		return states[len(states)-1].Reloads
+	}
+	steps := []struct {
+		name string
+		run  func() error
+		want int
+	}{
+		{"agent reload", func() error { return s.Reload("s") }, 1},
+		{"toolbar reload", func() error { return s.Nav("s", "reload", "") }, 2},
+		{"script reload", func() error { launch.pages[0].onReload(reloadStarted); return nil }, 3},
+		{"agent opens the same URL", func() error { _, err := s.Open("s", "https://example.com/a"); return err }, 4},
+		{"agent opens another URL", func() error { _, err := s.Open("s", "https://example.com/b"); return err }, 4},
+	}
+	for _, step := range steps {
+		if err := step.run(); err != nil {
+			t.Fatalf("%s: %v", step.name, err)
+		}
+		if got := reloads(); got != step.want {
+			t.Fatalf("after %s: Reloads = %d, want %d", step.name, got, step.want)
+		}
+	}
+}

@@ -24,7 +24,7 @@ import (
 // placeNativePage shows the session's page in a web view the window holds
 // itself, over the pane's page area, and says whether it does: where the
 // system gives the window none, the pane draws the screencast.
-func (u *window) placeNativePage(gtx C, p *browserPaneUI, session, url string) bool {
+func (u *window) placeNativePage(gtx C, p *browserPaneUI, session, url string, reloads int) bool {
 	if url == "" {
 		url = "about:blank"
 	}
@@ -33,7 +33,7 @@ func (u *window) placeNativePage(gtx C, p *browserPaneUI, session, url string) b
 		if err != nil {
 			return false
 		}
-		p.native, p.nativeURL = page, url
+		p.native, p.nativeURL, p.nativeReloads = page, url, reloads
 	}
 	// A page the person took elsewhere is followed by the backend, whose
 	// URL then arrives where the page already is.
@@ -42,7 +42,10 @@ func (u *window) placeNativePage(gtx C, p *browserPaneUI, session, url string) b
 		if url != p.native.URL() {
 			p.native.Navigate(url)
 		}
+	} else if reloads != p.nativeReloads {
+		p.native.Reload()
 	}
+	p.nativeReloads = reloads
 	p.nativeSize = gtx.Constraints.Max
 	p.native.SetZoom(float64(u.pageScale(gtx)))
 	webview.SetGround(u.theme.Background)

@@ -6,6 +6,16 @@
     "pending": "전환 중…",
     "failed": "보기를 전환하지 못했습니다"
   },
+  "children": {
+    "title": "여기서 연 세션",
+    "count": {
+      "other": "세션 {count}개"
+    },
+    "waiting": {
+      "other": "{count}개 대기 중"
+    },
+    "ended": "{time} 전 완료"
+  },
   "view": {
     "failed": "채팅 요청이 실패했습니다",
     "thought": "생각",
@@ -26,7 +36,44 @@
     "toolCalls": {
       "other": "도구 호출 {count}개"
     },
-    "openedAs": "{label}(으)로 열림"
+    "call": {
+      "ran": "실행",
+      "read": "읽기",
+      "edited": "편집",
+      "searched": "검색",
+      "fetched": "가져오기",
+      "running": "실행 중",
+      "reading": "읽는 중",
+      "editing": "편집 중",
+      "searching": "검색 중",
+      "fetching": "가져오는 중"
+    },
+    "calls": {
+      "sep": ", ",
+      "edited": {
+        "other": "파일 {count}개 편집"
+      },
+      "ran": {
+        "other": "명령 {count}개 실행"
+      },
+      "read": {
+        "other": "파일 {count}개 읽음"
+      },
+      "searched": {
+        "other": "검색 {count}회"
+      },
+      "fetched": {
+        "other": "페이지 {count}개 가져옴"
+      },
+      "others": {
+        "other": "다른 도구 {count}개 사용"
+      },
+      "failed": {
+        "other": "{count}개 실패"
+      }
+    },
+    "latest": "최신으로",
+    "newActivity": "새 활동"
   },
   "done": {
     "done": "완료",
@@ -103,6 +150,7 @@
   },
   "slash": {
     "new": "이 세션에서 새 대화를 시작",
+    "resume": "이 프로젝트의 대화 재개",
     "mcp": "MCP 서버 관리",
     "skills": "스킬 켜기 또는 끄기",
     "plugin": "플러그인 설치 및 관리",

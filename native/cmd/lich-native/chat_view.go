@@ -82,6 +82,8 @@ type chatView struct {
 	keys []string
 	swap chatSwap
 	run  chatToEnd
+	// jump is the pill that runs the list back to its end.
+	jump ui.Clickable
 	// stamps are the tooltips of the time under each message, by item id.
 	stamps map[string]*ui.Tooltip
 	// notes are the clicks on a notification's row, by item id and place.
@@ -131,8 +133,10 @@ type chatView struct {
 	tools chatTools
 	// shellsChip is the composer's chip of the shells running.
 	shellsChip footerWidgets
-	search     chatSearch
-	history    chatHistory
+	// childrenChip is the composer's chip of the sessions this one opened.
+	childrenChip footerWidgets
+	search       chatSearch
+	history      chatHistory
 	// attached are the files the next message carries, drawn as cards over
 	// the text in cardList; fileCards are the cards' controls, by path in the
 	// composer and by item and path in a sent message.
@@ -361,6 +365,7 @@ func (u *window) chatScreen(gtx C, sv sessionView, keys bool) {
 		}
 		call.Add(gtx.Ops)
 		p.scrollbar(gtx, th, shown, d)
+		p.jumpToLatest(gtx, th, d.Size.Y, u.model.chat.isRunning(sv.ID))
 		// A row's window was placed by the height it had before, with a
 		// viewport of margin: a row that grew or shrank by more, as an
 		// answer's unmeasured blocks do, is drawn again where it now stands.
@@ -485,6 +490,7 @@ func (u *window) chatActs(gtx C, p *chatPane, sv sessionView, keys, working bool
 	}
 	if keys {
 		u.shellsChipActs(gtx, p)
+		u.childrenChipActs(gtx, p)
 		u.toolsActs(gtx, p, sv.ID)
 	}
 	// The model panel's search holds the keys while the panel is open.
@@ -540,6 +546,7 @@ func (u *window) submitChat(gtx C, p *chatPane, id string, working bool, waiting
 		u.answerChat(id, waiting.ID, permitOption(waiting.Permission, api.PermitAllowOnce, api.PermitAllowAlways))
 	case asking == nil && u.model.chat.isRunning(id):
 		u.queueChat(p, id)
+		p.toEnd(gtx.Now)
 	case !working || asking != nil:
 		if u.sendChat(p, id) {
 			p.toEnd(gtx.Now)
@@ -575,8 +582,8 @@ func (u *window) escapeChat(gtx C, p *chatPane, id string, waiting, asking *back
 
 // sendChat hands the composer's message to the agent, once it waited
 // chatSendHold, and reports whether it had any; a refused one goes back into
-// the composer. /new alone starts an empty conversation instead, and a "!"
-// line runs in the shell.
+// the composer. /new alone starts an empty conversation instead, /resume
+// alone opens the palette on the History of its project, and a "!" line runs in the shell.
 func (u *window) sendChat(p *chatPane, id string) bool {
 	if u.takeShell(p, id) {
 		return true
@@ -586,6 +593,11 @@ func (u *window) sendChat(p *chatPane, id string) bool {
 		return false
 	}
 	p.clearComposer()
+	if m.text == chatResumeCommand && len(m.files) == 0 {
+		w := u.model.paletteWorld()
+		u.palette.showHistory(turnsAmong(w.sessions), projectOfSession(w.sessions, id))
+		return true
+	}
 	if isNewCommand(m.text) && len(m.files) == 0 {
 		go func() { u.chatFailed(u.client.ChatNew(u.ctx, id)) }()
 		return true

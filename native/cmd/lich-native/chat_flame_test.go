@@ -3,40 +3,11 @@ package main
 import (
 	"image"
 	"image/color"
-	"strings"
 	"testing"
 	"time"
 
 	"github.com/lichdotdev/lich/native/ui"
 )
-
-func TestEveryFlameFrameIsAGridOfElevenByFourteenOfKnownSymbols(t *testing.T) {
-	if len(chatFlameFrames) != 16 {
-		t.Fatalf("%d frames, want 16", len(chatFlameFrames))
-	}
-	for i, frame := range chatFlameFrames {
-		rows := strings.Split(frame, " | ")
-		if len(rows) != chatFlameRows {
-			t.Errorf("frame %d has %d rows, want %d", i, len(rows), chatFlameRows)
-		}
-		for y, row := range rows {
-			if len(row) != chatFlameCols || strings.Trim(row, ".1234") != "" {
-				t.Errorf("frame %d row %d is %q, want %d of . 1 2 3 4", i, y, row, chatFlameCols)
-			}
-		}
-	}
-}
-
-func TestTheFlamesCoreIsTheSameInEveryFrame(t *testing.T) {
-	for i, frame := range chatFlameFrames {
-		rows := strings.Split(frame, " | ")
-		for y := 10; y <= 12; y++ {
-			if rows[y][5] != '4' {
-				t.Errorf("frame %d: column 5 of row %d is %q, want the core", i, y, rows[y][5])
-			}
-		}
-	}
-}
 
 func TestTheFlameTakesItsColorsFromTheThemesTokens(t *testing.T) {
 	th := &ui.Theme{Palette: ui.Dark}
@@ -58,28 +29,8 @@ func TestTheFlameTakesItsColorsFromTheThemesTokens(t *testing.T) {
 	}
 }
 
-func TestTheFlameAdvancesAFrameEveryStepAndLoops(t *testing.T) {
-	start := time.Unix(1000, 0)
-	seen := map[int]bool{}
-	for i := range 2 * len(chatFlameFrames) {
-		now := start.Add(time.Duration(i) * chatFlameStep)
-		frame, next := chatFlameFrame(now)
-		seen[frame] = true
-		if wait := next.Sub(now); wait <= 0 || wait > chatFlameStep {
-			t.Fatalf("at step %d the next frame is %v away, want within one step", i, wait)
-		}
-		if again, _ := chatFlameFrame(now.Add(chatFlameStep / 4)); again != frame {
-			t.Fatalf("step %d moved to frame %d inside its step", i, again)
-		}
-	}
-	if len(seen) != len(chatFlameFrames) {
-		t.Errorf("%d frames shown, want all %d", len(seen), len(chatFlameFrames))
-	}
-}
-
-// The flame is taller than the line it burns on: only its foot takes room, so
-// the turn's line is as tall as the foot and the verb sits at the foot's middle.
-func TestTheFlamesFootCentersOnTheVerbAndTheLineIsNoTaller(t *testing.T) {
+// The turn's line is as tall as the spinner and the verb sits at its middle.
+func TestTheSpinnerCentersOnTheVerbAndTheLineIsNoTaller(t *testing.T) {
 	var line, label D
 	r := newFrameRig(image.Pt(400, 200), func(gtx C, th *ui.Theme) {
 		gtx.Constraints.Min = image.Point{}
@@ -89,10 +40,10 @@ func TestTheFlamesFootCentersOnTheVerbAndTheLineIsNoTaller(t *testing.T) {
 	r.frame()
 	const foot = 22 // 11 rows of 1.5dp pixels, two device pixels each at 1x
 	if line.Size.Y != foot {
-		t.Fatalf("the line is %dpx tall, want the flame's foot, %dpx", line.Size.Y, foot)
+		t.Fatalf("the line is %dpx tall, want the spinner's, %dpx", line.Size.Y, foot)
 	}
 	// Both verbs are drawn from the top of the screen: the bare one, then the
-	// line's, which the foot pushes down by half of what it is taller.
+	// line's, which the spinner pushes down by half of what it is taller.
 	var tops []int
 	for _, n := range r.nodes() {
 		if n.Desc.Label == chatVerb("s1", 1) {
@@ -103,6 +54,6 @@ func TestTheFlamesFootCentersOnTheVerbAndTheLineIsNoTaller(t *testing.T) {
 		t.Fatalf("%d verbs drawn, want the bare one and the line's:\n%s", len(tops), r.drawn())
 	}
 	if got, want := tops[1]-tops[0], (foot-label.Size.Y)/2; got != want {
-		t.Errorf("the verb sits %dpx down the line, want %dpx, the middle of the foot", got, want)
+		t.Errorf("the verb sits %dpx down the line, want %dpx, the middle of the spinner", got, want)
 	}
 }

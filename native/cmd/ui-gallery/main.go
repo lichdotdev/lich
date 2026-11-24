@@ -235,6 +235,7 @@ func (g *gallery) content(gtx C) D {
 					g.section("IconAction, CornerButton, BarIconButton", g.iconButtonsSection),
 					g.section("DiffStat, MetaGlyph, Pill, KeyCap", g.metaSection),
 					g.section("Markdown", g.markdownSection),
+					g.section("Markdown document", g.markdownDocumentSection),
 					g.section("Code view", g.codeSection),
 					g.section("Diff view", g.diffSection),
 					g.section("File tree", g.treeSection),

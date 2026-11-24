@@ -43,11 +43,6 @@ func TestTreeFileClickBringsItsCardToTheTop(t *testing.T) {
 	if p.list.Position.First != 2 || p.list.Position.Offset != 0 {
 		t.Errorf("position = %+v, want c.go's card first", p.list.Position)
 	}
-	p.split = true
-	p.scrollToFile("b.go")
-	if p.list.Position.First != 2 {
-		t.Errorf("squeezed split position = %+v, want past the notice row", p.list.Position)
-	}
 }
 
 func TestViewedOnACardScrolledIntoBringsTheNextFileUnderIt(t *testing.T) {

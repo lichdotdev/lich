@@ -239,10 +239,8 @@ func TestAShellCommandsOutputIsShownWhole(t *testing.T) {
 		t.Errorf("the command's output is not shown whole:\n%s", r.drawn())
 	}
 	writeShot(t, r, "chat-shell-output.png")
-	r.clickLabel(t, i18n.T("chat.view.toolCalls", i18n.Args{"count": 1}))
-	r.frames(3)
-	if r.shows("nothing to commit") {
-		t.Errorf("an agent's call shows more than its line:\n%s", r.drawn())
+	if !r.shows("git status") || r.shows("nothing to commit") {
+		t.Errorf("an agent's call alone is not its one line:\n%s", r.drawn())
 	}
 }
 

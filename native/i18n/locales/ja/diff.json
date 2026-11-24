@@ -63,8 +63,7 @@
     "revertFailed": "{name} の行を元に戻せませんでした",
     "notRepository": "git リポジトリではありません",
     "loading": "読み込み中…",
-    "noChanges": "コミットされていない変更はありません",
-    "squeezed": "分割表示にはパネルの幅が足りません"
+    "noChanges": "コミットされていない変更はありません"
   },
   "reviewSlots": {
     "forSession": "セッションへ · {lines}",

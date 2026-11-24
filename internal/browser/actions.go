@@ -240,8 +240,16 @@ func (s *Service) Navigate(id, rawURL string) (Handle, error) {
 
 // goTo is the agent loading u in sess's page.
 func (s *Service) goTo(sess *session, u string) error {
+	s.mu.Lock()
+	again := sess.url == u
+	s.mu.Unlock()
 	if err := s.loadURL(sess, u); err != nil {
 		return err
+	}
+	if again {
+		if err := s.reloadShown(sess.owner); err != nil {
+			return err
+		}
 	}
 	s.agentActed(sess, api.BrowserAgentAct{Action: "navigate", URL: u})
 	return nil

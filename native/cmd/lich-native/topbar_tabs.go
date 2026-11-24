@@ -64,6 +64,8 @@ type tabState struct {
 	menu  ui.MenuState
 	// rename is a layout tab's name as a field, while it is renamed.
 	rename ui.InlineEdit
+	// dots is the tab's status while it has one.
+	dots *tabDots
 }
 
 // holdsKeys reports whether a tab's name is being edited, which keeps the
@@ -356,27 +358,11 @@ func (t *topbar) tabContent(gtx C, on *ui.Theme, tab projectTab, st *tabState, f
 			if !showClose || tab.pinned {
 				slot := image.Pt(gtx.Dp(tabSlot), gtx.Dp(tabSlot))
 				gtx.Constraints = layout.Exact(slot)
-				return layout.Center.Layout(gtx, func(gtx C) D { return t.tabBadge(gtx, on, tab.status) })
+				return layout.Center.Layout(gtx, func(gtx C) D { return t.tabBadge(gtx, on, st, tab.status) })
 			}
 			return on.CornerButton(&st.close, icTabClose, false).Layout(gtx)
 		}),
 	)
-}
-
-// tabBadge is ProjectTab's status glyph, nothing for a tab with nothing to say.
-func (t *topbar) tabBadge(gtx C, th *ui.Theme, status string) D {
-	var draw func(gtx C) D
-	switch status {
-	case statusBusy, statusCompacting:
-		draw = func(gtx C) D { return th.Spinner(gtx, tabGlyph, th.MutedForeground) }
-	case statusWaiting:
-		draw = func(gtx C) D { return icTabWaiting.Layout(gtx, tabGlyph, th.ToneWait) }
-	case statusDone:
-		draw = func(gtx C) D { return icTabDone.Layout(gtx, tabGlyph, th.TonePass) }
-	default:
-		return D{}
-	}
-	return draw(gtx)
 }
 
 // tabTooltip is ProjectTab's card tooltip: the name, and the path in mono.

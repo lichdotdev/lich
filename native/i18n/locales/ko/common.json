@@ -19,10 +19,5 @@
   },
   "stepper": {
     "default": "기본값"
-  },
-  "pickerDialog": {
-    "navigate": "이동",
-    "filter": "필터",
-    "close": "닫기"
   }
 }

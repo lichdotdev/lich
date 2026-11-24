@@ -47,7 +47,7 @@ func TestACarriedCardLetsGoOfItsLineAndJoinsWhereItLands(t *testing.T) {
 
 func snapBlock() blockView {
 	return blockView{key: "/repo", kind: blockLoose, sessions: []sessionView{
-		treeSession("mother", "", "/repo"), treeSession("child", "mother", "/repo"), treeSession("solo", "", "/repo"),
+		treeSession("mother", "", "/repo"), treeSession("child", "mother", "/repo"), treeSession("solo", "", "/repo/wt/solo"),
 	}}
 }
 
