@@ -505,7 +505,9 @@ draws none while it grows in, because the room above the rows is measured in the
 - **A permission** is a box on `Sidebar`, `RadiusMD`, `Space(3)` padding (see Boxes inside a screen): the tool,
   its diff, and a `SizeSM` button per answer the provider offers, the first allow filled. Enter takes the first
   allow and Esc the first reject. Answered, it shrinks to a muted line naming the answer.
-- **An edit** (`chat_edit.go`), a call that changed a file, is a line of its own out of the turn's fold, on
+- **An edit** (`chat_edit.go`), a call that changed a file, is a line of its own out of the turn's fold, and so
+  is each file a call with no diff of its own changed (a shell command's `sed`, a script), right after that
+  call (`ChatToolCall.Files`, `fileRows`). It stands on
   `Card` in `RadiusMD` with a 1px `Border` hairline: the file's icon (`th.FileIcon`), its folder muted and its
   name in mono `TextXS`, the path relative to the checkout, then `+a -d` (`th.DiffStat`). No tool name, glyph
   or time: the line is the file. While the call runs its path shimmers and no counts show; failed, "failed" in

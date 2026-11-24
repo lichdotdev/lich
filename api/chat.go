@@ -182,6 +182,18 @@ type ChatToolCall struct {
 	Diff    string `json:"diff,omitempty"`
 	Ended   int64  `json:"ended,omitempty"`
 	Movable bool   `json:"movable,omitempty"`
+	// Files are the files the checkout changed while a call with no Diff of
+	// its own ran, a shell command's edits among them, as lich read them
+	// from git once it ended; nil for none, and on a call read back from
+	// history.
+	Files []ChatFileChange `json:"files,omitempty"`
+}
+
+// ChatFileChange is one file a call changed: its path, relative to the
+// session's checkout, and its unified diff against the checkout's HEAD.
+type ChatFileChange struct {
+	Path string `json:"path"`
+	Diff string `json:"diff"`
 }
 
 // ChatCompaction is the agent folding the conversation into a summary. Auto

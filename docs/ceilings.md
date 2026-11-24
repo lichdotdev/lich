@@ -339,6 +339,15 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   more than five seconds. The window then shows the turn's end without a count. The count is not kept: a chat
   read back from the provider's history shows its turns as done with none. A session opened in a subdirectory
   counts only that subdirectory. Every provider with a chat reads it the same way.
+- **The files a shell command or any call with no diff of its own changed are the same numstat reading, taken when
+  each call ends** (`internal/chat/files.go`, `ChatToolCall.Files`): every call that ends reads the checkout once and
+  takes the files whose counts moved since the reading before (the turn's start for the first), each with its
+  `git diff HEAD`. So a file's diff is its whole change against HEAD, not only that call's part; an edit that leaves
+  a file's counts as they were is missed, as in the turn's count; calls that run side by side hand a file to the
+  first to end, whichever wrote it; and a person's edit or a build landing mid-call is the call's. A call with a
+  diff of its own (Edit, Write, a patch) shows that diff and is handed none. The files are lich's, not the
+  provider's: a chat read back from history shows the calls without them. Every provider reads them the same way,
+  one `git` reading per call, bounded at five seconds.
 - **An answer names the model and effort that wrote it only as far as its provider says** (`ChatItem.Model`,
   `Effort`; `internal/chat/claude.go`, `claude_options.go`, `acp_options.go`, `codex_items.go`): Claude Code puts `message.model` on
   every message, live and in the transcript, which lich names with the display name of the `initialize` model that

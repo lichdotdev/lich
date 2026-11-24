@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **A file the agent edits or writes shows in the chat as its own line, with its path and how many lines it added and removed.** Click the line to read the diff under it, or Ctrl+click it to open the file; it no longer hides inside the turn's folded tool calls, on every agent.
+- **A file the agent edits or writes shows in the chat as its own line, with its path and how many lines it added and removed.** Click the line to read the diff under it, or Ctrl+click it to open the file. A file changed by a shell command the agent ran shows the same way, right after the command, on every agent.
 - **A workflow Claude Code leaves running in a chat stays in sight, with each of its agents.** A line over the message box says how many of its agents are done and which are running, even after the turn that started it has ended; click it to list them by phase and open one for its model, time and last call.
 - **A chat names its session once your first message is answered.** The card takes a short title from that message, unless you named it yourself. Not offered for Antigravity, Cursor CLI or Kiro CLI, and on opencode 1 only.
 - **The context tooltip shows how many tokens a session has read back from the prompt cache.** A long conversation is read again on every call, and the Cache reads line is what that adds up to, so a session that is spending your plan stands out even while its context bar is low. Claude Code only.

@@ -195,6 +195,7 @@ func (s *Service) start(ctx context.Context, id, projectID, kind, cwd string, ca
 		events.Send(s.hub.Emit, api.ChatItemEvent, api.ChatItemUpdate{SessionID: id, Item: it})
 	})
 	c.conv.compactMoved = c.compactMoved
+	c.conv.ended = c.callEnded
 	switch kind {
 	case providers.Claude:
 		c.drv = newClaudeDriver(c, s.lang())

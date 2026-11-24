@@ -1,6 +1,7 @@
 package main
 
 import (
+	"slices"
 	"testing"
 	"time"
 
@@ -85,5 +86,31 @@ func TestEditPath(t *testing.T) {
 				t.Errorf("editPath = %q, want %q", got, tc.want)
 			}
 		})
+	}
+}
+
+// The files a call changed with no diff of its own, a shell command's edits,
+// stand after it as edit rows, one a file, as an edit tool's do.
+func TestAShellCommandsFilesStandAsEdits(t *testing.T) {
+	items := []backend.ChatItem{
+		{ID: "u", Kind: api.ItemUser, Turn: 1, Text: "go"},
+		{ID: "b", Kind: api.ItemTool, Turn: 1, Tool: &backend.ChatToolCall{Name: "Bash", Title: "sed -i s/a/b/ x.go y.go", State: api.ToolDone,
+			Files: []api.ChatFileChange{{Path: "x.go", Diff: "+b"}, {Path: "y.go", Diff: "-a"}}}},
+		{ID: "a", Kind: api.ItemAgent, Turn: 1, Text: "done"},
+	}
+	var got []string
+	for _, r := range chatRows(items, claudeKind, false, time.Time{}) {
+		switch r.kind {
+		case chatRowWork:
+			got = append(got, "work")
+		case chatRowEdit:
+			got = append(got, r.item.ID+":"+r.item.Tool.Diff)
+		case chatRowItem:
+			got = append(got, r.item.ID)
+		}
+	}
+	want := []string{"u", "work", "b#x.go:+b", "b#y.go:-a", "a"}
+	if !slices.Equal(got, want) {
+		t.Errorf("rows %v, want %v", got, want)
 	}
 }

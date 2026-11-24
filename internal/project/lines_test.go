@@ -80,3 +80,31 @@ func TestReadLinesWhereGitCannotAnswer(t *testing.T) {
 		t.Error("ReadLines under a done context reported an answer")
 	}
 }
+
+// FileDiff is one file's change against HEAD, a new untracked file as all
+// added, and nothing for a file git has no change for.
+func TestFileDiff(t *testing.T) {
+	t.Parallel()
+	repo, _ := initRepo(t)
+	if err := os.WriteFile(filepath.Join(repo, "a.txt"), []byte("uno\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(repo, "new.txt"), []byte("x\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	lines, ok := ReadLines(t.Context(), repo)
+	if !ok {
+		t.Fatal("ReadLines failed")
+	}
+	for name, want := range map[string][]string{"a.txt": {"-one", "+uno"}, "new.txt": {"+x"}} {
+		diff := FileDiff(t.Context(), repo, lines, name)
+		for _, w := range want {
+			if !strings.Contains(diff, w) {
+				t.Errorf("%s: diff lacks %q:\n%s", name, w, diff)
+			}
+		}
+	}
+	if diff := FileDiff(t.Context(), repo, lines, "none.txt"); diff != "" {
+		t.Errorf("a file with no change diffs %q", diff)
+	}
+}

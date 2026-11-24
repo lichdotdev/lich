@@ -86,7 +86,9 @@ type chatSession struct {
 	since   time.Time
 	// before is the checkout as the turn in flight found it, nil where it
 	// could not be read.
-	before    *project.Lines
+	before *project.Lines
+	// files tells each call of the turn the files it changed.
+	files     fileWatch
 	perms     map[string]permission
 	questions map[string]question
 	exited    chan struct{}
@@ -221,6 +223,7 @@ func (c *chatSession) markStart() {
 	c.mu.Lock()
 	c.before = before
 	c.mu.Unlock()
+	c.files.start(before)
 }
 
 // endTurn closes the turn in flight, answering no to whatever it still asks.

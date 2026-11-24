@@ -335,6 +335,16 @@ func (f *fake) claudeTurn(run *fakeClaude, text string) {
 	case "plan":
 		f.send(map[string]any{"type": "system", "subtype": "status", "permissionMode": "plan"})
 		f.claudeResult(false, "completed", "")
+	case "sed":
+		// A shell command that edits a.txt and writes c.txt, then a Read
+		// that changes nothing, each reported done before the next starts.
+		msg("m2", map[string]any{"type": "tool_use", "id": "toolu_sed", "name": "Bash", "input": map[string]any{"command": "sed -i s/x/z/ a.txt"}})
+		_ = os.WriteFile("a.txt", []byte("z\n"), 0o644)
+		_ = os.WriteFile("c.txt", []byte("new\n"), 0o644)
+		f.send(map[string]any{"type": "user", "message": map[string]any{"content": []any{map[string]any{"type": "tool_result", "tool_use_id": "toolu_sed", "content": "ok"}}}})
+		msg("m3", map[string]any{"type": "tool_use", "id": "toolu_read", "name": "Read", "input": map[string]any{"file_path": "a.txt"}})
+		f.send(map[string]any{"type": "user", "message": map[string]any{"content": []any{map[string]any{"type": "tool_result", "tool_use_id": "toolu_read", "content": "z"}}}})
+		f.claudeResult(false, "completed", "")
 	case "write":
 		f.claudeEdit(false)
 	case "commit":

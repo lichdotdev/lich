@@ -64,3 +64,16 @@ func parseNumstat(out string, files map[string]FileLines) {
 		files[path] = FileLines{Added: added, Removed: removed, Binary: errA != nil || errR != nil}
 	}
 }
+
+// FileDiff is rel's unified diff in path against the commit l was read on, an
+// untracked file as all added; "" where git has nothing to show for it.
+func FileDiff(ctx context.Context, path string, l Lines, rel string) string {
+	base := l.Head
+	if base == "" {
+		base = emptyTreeHash
+	}
+	if out, ok := gitQuietContext(ctx, path, "diff", "--relative", base, "--", rel); ok && out != "" {
+		return displayDiff(out)
+	}
+	return displayDiff(untrackedDiff(path, rel))
+}

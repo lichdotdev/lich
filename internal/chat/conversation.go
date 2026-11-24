@@ -38,6 +38,9 @@ type conversation struct {
 	// quiet holds the window's copy back while a resumed conversation is
 	// replayed: those items are the history, which the window asks for once.
 	quiet bool
+	// ended hears a tool call end live, once, after the item is stored
+	// (chatSession.callEnded). Never for a replayed one.
+	ended func(api.ChatItem)
 
 	emit    func(api.ChatItem)
 	now     func() time.Time
@@ -107,6 +110,12 @@ func (c *conversation) update(id, kind string, final bool, fn func(*api.ChatItem
 		it = api.ChatItem{ID: id, Kind: kind}
 	}
 	c.mu.Unlock()
+	// fn changes a copy of the call: on the stored one, put would find the
+	// change already made and miss the call ending.
+	if it.Tool != nil {
+		t := *it.Tool
+		it.Tool = &t
+	}
 	fn(&it)
 	c.put(it, final)
 }
@@ -114,11 +123,21 @@ func (c *conversation) update(id, kind string, final bool, fn func(*api.ChatItem
 // put stores item, keeping the turn and start time an earlier copy set, and
 // tells the window now or once the gap is up.
 func (c *conversation) put(item api.ChatItem, final bool) {
+	if c.putLocked(item, final) && c.ended != nil {
+		c.ended(item)
+	}
+}
+
+// putLocked is put under the lock, reporting whether item is a call seen
+// ending live for the first time.
+func (c *conversation) putLocked(item api.ChatItem, final bool) bool {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	ends := !c.quiet && toolEnded(item) && !c.endedBefore(item.ID)
 	c.stampEnd(&item)
 	if i, ok := c.index[item.ID]; ok {
 		item.Turn, item.At = c.items[i].Turn, c.items[i].At
+		keepFiles(&item, c.items[i])
 		c.items[i] = item
 	} else {
 		item.Turn = c.turn
@@ -130,12 +149,12 @@ func (c *conversation) put(item api.ChatItem, final bool) {
 		c.items = append(c.items, item)
 	}
 	if c.quiet {
-		return
+		return ends
 	}
 	wait := itemGap - c.now().Sub(c.sent[item.ID])
 	if final || wait <= 0 {
 		c.sendLocked(item.ID)
-		return
+		return ends
 	}
 	if _, queued := c.pending[item.ID]; !queued {
 		id := item.ID
@@ -147,6 +166,7 @@ func (c *conversation) put(item api.ChatItem, final bool) {
 			}
 		})
 	}
+	return ends
 }
 
 // sendLocked tells the window item id as it stands now. Called with mu held,
@@ -168,6 +188,41 @@ func (c *conversation) flush() {
 	for _, id := range slices.Sorted(maps.Keys(c.pending)) {
 		c.sendLocked(id)
 	}
+}
+
+// toolEnded is whether item is a tool call that has ended.
+func toolEnded(item api.ChatItem) bool {
+	return item.Tool != nil && (item.Tool.State == api.ToolDone || item.Tool.State == api.ToolFailed)
+}
+
+// endedBefore is whether the stored copy of item id had already ended.
+func (c *conversation) endedBefore(id string) bool {
+	i, ok := c.index[id]
+	return ok && toolEnded(c.items[i])
+}
+
+// keepFiles carries the files lich found a call changed over a copy of it the
+// provider sends again, which knows nothing of them.
+func keepFiles(item *api.ChatItem, stored api.ChatItem) {
+	if item.Tool == nil || item.Tool.Files != nil || stored.Tool == nil || stored.Tool.Files == nil {
+		return
+	}
+	t := *item.Tool
+	t.Files = stored.Tool.Files
+	item.Tool = &t
+}
+
+// attachFiles sets the files call id changed and tells the window; a call
+// no longer in the conversation is left alone.
+func (c *conversation) attachFiles(id string, files []api.ChatFileChange) {
+	it, ok := c.get(id)
+	if !ok || it.Tool == nil {
+		return
+	}
+	t := *it.Tool
+	t.Files = files
+	it.Tool = &t
+	c.put(it, true)
 }
 
 // stampEnd sets when a tool call ended, the first time it is seen ended live

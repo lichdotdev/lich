@@ -145,6 +145,7 @@ func chatRows(items []backend.ChatItem, kind string, running bool, now time.Time
 		}
 		if shell[it.ID] {
 			rows = append(rows, chatRow{kind: chatRowShell, item: it, turn: it.Turn, live: running && it.Turn == last && callRunning(it)})
+			rows = append(rows, fileRows(it)...)
 			continue
 		}
 		if isEdit(it) {
@@ -152,6 +153,7 @@ func chatRows(items []backend.ChatItem, kind string, running bool, now time.Time
 			continue
 		}
 		if folded[it.Turn] {
+			rows = append(rows, fileRows(it)...)
 			continue
 		}
 		folded[it.Turn] = true
@@ -166,6 +168,7 @@ func chatRows(items []backend.ChatItem, kind string, running bool, now time.Time
 			opener[it.Turn] = "work"
 		}
 		rows = append(rows, work)
+		rows = append(rows, fileRows(it)...)
 	}
 	// The conversation's last turn, once it has ended, closes with a line of
 	// its own, unless it was the person's compaction, whose marker closes it;
@@ -209,6 +212,22 @@ func markAnswerRuns(rows []chatRow) {
 // isEdit is whether it is a call that changed a file, whatever the provider
 // names it: every provider's chat gives such a call a Diff, and only it.
 func isEdit(it backend.ChatItem) bool { return it.Tool != nil && it.Tool.Diff != "" }
+
+// fileRows are the files call it changed with no diff of its own, a shell
+// command's edits among them, each an edit row of its own after the call, as
+// an edit tool's are: the call's id and the path name it.
+func fileRows(it backend.ChatItem) []chatRow {
+	if it.Tool == nil || len(it.Tool.Files) == 0 {
+		return nil
+	}
+	rows := make([]chatRow, 0, len(it.Tool.Files))
+	for _, f := range it.Tool.Files {
+		file := backend.ChatItem{ID: it.ID + "#" + f.Path, Kind: api.ItemTool, Turn: it.Turn, At: it.At,
+			Tool: &backend.ChatToolCall{Name: it.Tool.Name, Title: f.Path, State: api.ToolDone, Diff: f.Diff}}
+		rows = append(rows, chatRow{kind: chatRowEdit, item: file, turn: it.Turn})
+	}
+	return rows
+}
 
 // isPlan is whether it is the agent's task list, drawn over the composer
 // (chat_plan.go) and not in the conversation.

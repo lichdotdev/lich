@@ -2680,6 +2680,7 @@ ChatToolCall {
 	diff,omitempty string
 	ended,omitempty int64
 	movable,omitempty bool
+	files,omitempty []ChatFileChange
 }
 
 ChatPermission {
@@ -3163,6 +3164,11 @@ SessionCache {
 	read int
 	write int
 	uncached int
+}
+
+ChatFileChange {
+	path string
+	diff string
 }
 
 ChatPermitOption {
