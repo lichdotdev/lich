@@ -59,14 +59,14 @@ func TestEveryClickableShowsTheHand(t *testing.T) {
 				r.router.Queue(pointer.Event{Kind: pointer.Move, Source: pointer.Mouse, Position: p})
 				r.frame()
 				want := pointer.CursorPointer
-				if n.Desc.Disabled {
+				if n.Desc.Disabled || disabledAtRest[fmt.Sprint(name, n.Desc.Bounds)] {
 					want = pointer.CursorDefault
 				}
 				got := r.router.Cursor()
 				if got != pointer.CursorDefault && got != pointer.CursorPointer {
 					continue // a text field, a resize or a drag area: its own cursor is the right one
 				}
-				if got != want && !disabledAtRest[fmt.Sprint(name, n.Desc.Bounds)] {
+				if got != want {
 					missing = append(missing, fmt.Sprintf("%s: %q %q at %v: cursor %v, want %v", name, n.Desc.Label, n.Desc.Description, n.Desc.Bounds, got, want))
 				}
 			}
@@ -86,7 +86,8 @@ var disabledAtRest = map[string]bool{
 	"dock code tab(10,758)-(42,790)":     true,
 	"dock artifacts(10,758)-(42,790)":    true,
 	"git(895,758)-(978,790)":             true, // the pull request, with none
-	"settings editor(961,166)-(993,198)": true, // the font stepper's minus, at its minimum
+	"settings editor(961,165)-(993,197)": true, // the font stepper's minus, at its minimum
+	"settings editor(961,166)-(993,198)": true, // same button at the other text rounding
 }
 
 // trackWidth is the widest a scrollbar's track or a resize edge is, in px.

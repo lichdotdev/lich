@@ -129,10 +129,7 @@ func TestChangesBalloonOpensTheReviewTabInTheFrameThatTookTheClick(t *testing.T)
 	// finds Review's diff on hand, not a read that lands after the frame.
 	r.waitFor(t, "No uncommitted changes")
 	u.dock.tab = dockCode
-	r.settle(t)
-	if !r.shows(i18n.T("dock.filesPanel.empty")) {
-		t.Fatalf("the Code tab is not on screen:\n%s", r.drawn())
-	}
+	r.waitFor(t, i18n.T("dock.filesPanel.empty"))
 	took, _ := r.clickLabel(t, "2")
 	if u.dock.tab != dockReview {
 		t.Fatalf("the click missed Review changes: dock on %v", u.dock.tab)
