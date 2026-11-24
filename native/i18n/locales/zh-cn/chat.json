@@ -173,7 +173,8 @@
     "failed": "没有匹配的消息"
   },
   "plan": {
-    "count": "任务 {done}/{total}"
+    "count": "{done}/{total}",
+    "more": "另 {more} 项 · 已完成 {done}/{total}"
   },
   "tools": {
     "loading": "加载中…",

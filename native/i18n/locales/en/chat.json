@@ -188,7 +188,8 @@
     "failed": "No message matches"
   },
   "plan": {
-    "count": "Tasks {done}/{total}"
+    "count": "{done}/{total}",
+    "more": "+{more} more · {done} of {total} done"
   },
   "tools": {
     "loading": "Loading…",

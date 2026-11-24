@@ -695,9 +695,14 @@ draws none while it grows in, because the room above the rows is measured in the
   truncated, the kit's hover fill under the pointer, and × (a `SizeIconXS` ghost button) shown only on hover; a
   click on the line takes it back into the box, and "↑ edits
   the queue" stands muted in the box's foot while there is one. Above the queue, the agent's task list
-  (`chat_plan.go`) is one compact line: a list glyph, "Tasks 2/5" muted and the task in progress shimmering as
-  the live line's verb does; a click unfolds it, done tasks struck and muted, the running one lit, the pending
-  ones muted, capped in height and scrolling, and a second click folds it. It never takes the live line's place
+  (`chat_plan.go`) is one compact line at the conversation's inset: the task in progress behind a 14dp 3x3, in
+  semibold `Foreground` and shimmering as the live line's verb does, then "2/5" in muted `TextXS` and the
+  chevron right after its words; a click unfolds the task before it and the next, the chevron staying on the
+  running one, and a muted `TextXS` line under them counting the rest ("+2 more · 2 of 5 done"), and a second
+  click folds it. The 3x3 is the sidebar's, drawn with `drawCells` at one side so a zoom keeps it whole: a
+  block in `TonePass` done, with no strike, a diagonal wave in `Primary` running (110ms a step, the snake's
+  fade and glide), the waiting ring still in `ToneWait` once the turn stops with it open, and faint cells
+  pending. It never takes the live line's place
   and goes when every task is done. A message sent waits 2s in the window before it reaches the agent
   (`chat_hold.go`), drawn sent with its turn running from Enter, so the wait does not show; Esc or Stop in that
   time takes it back.

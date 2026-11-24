@@ -173,7 +173,8 @@
     "failed": "一致するメッセージはありません"
   },
   "plan": {
-    "count": "タスク {done}/{total}"
+    "count": "{done}/{total}",
+    "more": "他 {more} 件 · {done}/{total} 完了"
   },
   "tools": {
     "loading": "読み込み中…",

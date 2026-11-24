@@ -21,7 +21,10 @@ import (
 // chatWorkflowsPanel is the panel's kind in chatTools.
 const chatWorkflowsPanel = "workflows"
 
-var icWorkflow = icons.Lucide("workflow")
+var (
+	icWorkflow    = icons.Lucide("workflow")
+	icPlanPending = icons.Lucide("circle")
+)
 
 // chatWorkflowState is the line's click and hover.
 type chatWorkflowState struct {

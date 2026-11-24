@@ -188,7 +188,8 @@
     "failed": "Nenhuma mensagem corresponde"
   },
   "plan": {
-    "count": "Tarefas {done}/{total}"
+    "count": "{done}/{total}",
+    "more": "mais {more} · {done} de {total} concluídas"
   },
   "tools": {
     "loading": "Carregando…",

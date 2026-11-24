@@ -218,7 +218,8 @@
     "failed": "Нет подходящих сообщений"
   },
   "plan": {
-    "count": "Задачи {done}/{total}"
+    "count": "{done}/{total}",
+    "more": "ещё {more} · выполнено {done} из {total}"
   },
   "tools": {
     "loading": "Загрузка…",

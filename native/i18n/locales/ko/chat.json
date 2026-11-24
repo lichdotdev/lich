@@ -173,7 +173,8 @@
     "failed": "일치하는 메시지가 없습니다"
   },
   "plan": {
-    "count": "작업 {done}/{total}"
+    "count": "{done}/{total}",
+    "more": "외 {more}개 · {done}/{total} 완료"
   },
   "tools": {
     "loading": "불러오는 중…",

@@ -54,30 +54,63 @@ func planFramesRunning(t *testing.T, items []backend.ChatItem, running bool) *fr
 	return r
 }
 
-// The folded line shows the count and the task running, in its words for
-// while it runs, and none of the other tasks.
+// The folded line shows the task running, in its words for while it runs,
+// and the count, and none of the other tasks.
 func TestThePlanLineShowsTheCountAndTheTaskRunning(t *testing.T) {
 	r := planFrames(t, planItems(1, fivePlan...))
-	if !r.showsAll("Tasks 2/5", "Accepting +hh:mm and Z") {
+	if !r.showsAll("2/5", "Accepting +hh:mm and Z") {
 		t.Fatalf("the plan line is not drawn:\n%s", r.drawn())
 	}
-	if r.shows("Update the README") {
-		t.Errorf("the folded line drew the whole list:\n%s", r.drawn())
+	if r.shows("Accept a date with no offset") || r.shows("Cover the cases in tests") {
+		t.Errorf("the folded line drew more than the task running:\n%s", r.drawn())
 	}
 	writeShot(t, r, "plan-folded.png")
 }
 
-// A click unfolds the whole list and a second folds it back.
+// A click unfolds the task before the one running, it and the next, and
+// counts the rest; a second click folds it back.
 func TestAClickUnfoldsThePlanAndASecondFoldsIt(t *testing.T) {
 	r := planFrames(t, planItems(1, fivePlan...))
-	r.click(t, r.at(t, "Tasks 2/5"))
-	if !r.showsAll("Read the parser", "Accepting +hh:mm and Z", "Cover the cases in tests", "Update the README") {
+	r.click(t, r.at(t, "2/5"))
+	if !r.showsAll("Accept a date with no offset", "Accepting +hh:mm and Z", "Cover the cases in tests", "+2 more · 2 of 5 done") {
 		t.Fatalf("the click did not unfold the list:\n%s", r.drawn())
 	}
+	if r.shows("Read the parser") || r.shows("Update the README") {
+		t.Errorf("the unfolded list drew past the task after the one running:\n%s", r.drawn())
+	}
 	writeShot(t, r, "plan-open.png")
-	r.click(t, r.at(t, "Tasks 2/5"))
-	if r.shows("Update the README") {
+	r.click(t, r.at(t, "Accepting +hh:mm and Z"))
+	if r.shows("Cover the cases in tests") {
 		t.Errorf("a second click left the list open:\n%s", r.drawn())
+	}
+}
+
+// The unfolded list keeps three tasks where the list has them, sliding back
+// from its end and starting at its first.
+func TestThePlanWindowKeepsThreeTasks(t *testing.T) {
+	at := func(statuses ...string) []api.ChatPlanEntry {
+		var es []api.ChatPlanEntry
+		for _, s := range statuses {
+			es = append(es, api.ChatPlanEntry{Status: s})
+		}
+		return es
+	}
+	done, run, todo := api.PlanCompleted, api.PlanInProgress, api.PlanPending
+	cases := []struct {
+		name     string
+		entries  []api.ChatPlanEntry
+		from, to int
+	}{
+		{"first running", at(run, todo, todo, todo), 0, 3},
+		{"middle running", at(done, done, run, todo, todo), 1, 4},
+		{"last running", at(done, done, done, run), 1, 4},
+		{"none running", at(done, todo, todo, todo), 0, 3},
+		{"two tasks", at(done, run), 0, 2},
+	}
+	for _, c := range cases {
+		if from, to := planWindow(c.entries); from != c.from || to != c.to {
+			t.Errorf("%s: window %d..%d, want %d..%d", c.name, from, to, c.from, c.to)
+		}
 	}
 }
 
@@ -93,7 +126,7 @@ func TestThePlanGoesWhenNothingIsLeftOrTheTurnMovesOn(t *testing.T) {
 	for name, items := range cases {
 		t.Run(name, func(t *testing.T) {
 			r := planFrames(t, items)
-			if r.shows("Tasks 0/1") || r.shows("Tasks 1/1") || r.shows("Tasks 2/5") || r.shows("Tasks 0/0") {
+			if r.shows("0/1") || r.shows("1/1") || r.shows("2/5") || r.shows("0/0") {
 				t.Errorf("the plan is drawn:\n%s", r.drawn())
 			}
 		})
@@ -101,11 +134,11 @@ func TestThePlanGoesWhenNothingIsLeftOrTheTurnMovesOn(t *testing.T) {
 }
 
 // A list left with tasks once the turn ended stays, still: nothing shimmers
-// and the window asks for no frames.
+// or waves and the window asks for no frames.
 func TestAPlanLeftAfterTheTurnStaysStill(t *testing.T) {
 	r := planFramesRunning(t, planItems(1, fivePlan...), false)
 	r.settle(t)
-	if !r.showsAll("Tasks 2/5", "Accepting +hh:mm and Z") {
+	if !r.showsAll("2/5", "Accepting +hh:mm and Z") {
 		t.Fatalf("the plan line is not drawn after the turn:\n%s", r.drawn())
 	}
 }

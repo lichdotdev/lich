@@ -188,7 +188,8 @@
     "failed": "Ningún mensaje coincide"
   },
   "plan": {
-    "count": "Tareas {done}/{total}"
+    "count": "{done}/{total}",
+    "more": "{more} más · {done} de {total} hechas"
   },
   "tools": {
     "loading": "Cargando…",
