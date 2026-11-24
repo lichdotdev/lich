@@ -16,7 +16,7 @@ var (
 	StoreReopenSession         = define[ReopenSessionOptions, *Session]("store.ReopenSession")
 	StoreReopenWorktreeSession = define[ReopenWorktreeSessionOptions, *Session]("store.ReopenWorktreeSession")
 	StorePurgeWorktreeSessions = define[WorktreeSessionsOptions, None]("store.PurgeWorktreeSessions")
-	StoreClosedSessions        = define[SearchTermOptions, ClosedHistory]("store.ClosedSessions")
+	StoreClosedSessions        = define[ClosedSessionsOptions, ClosedHistory]("store.ClosedSessions")
 	StoreExternalSessions      = define[None, []ExternalSession]("store.ExternalSessions")
 	StoreAdoptExternalSession  = define[AdoptExternalSessionOptions, None]("store.AdoptExternalSession")
 	StoreForgetSession         = define[SessionIDOptions, None]("store.ForgetSession")
@@ -52,6 +52,13 @@ type ReorderProjectsOptions struct {
 // SearchTermOptions narrows a listing to what matches Term, "" for all of it.
 type SearchTermOptions struct {
 	Term string `json:"term"`
+}
+
+// ClosedSessionsOptions narrows the parked sessions to what matches Term and,
+// when ProjectID is set, to that project's.
+type ClosedSessionsOptions struct {
+	Term      string `json:"term"`
+	ProjectID string `json:"projectId,omitempty"`
 }
 
 // AddSessionOptions stores a new session of project ProjectID. NextSeq is the

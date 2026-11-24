@@ -161,10 +161,10 @@ func TestTheSlashListOffersTheToolsWhereTheyOpen(t *testing.T) {
 		}
 		return out
 	}
-	if got := texts("claude"); !slices.Equal(got, []string{"/new", "/mcp", "/skills", "/plugin", "/permissions", "/hooks", "/memory", "/agents", "/review"}) {
+	if got := texts("claude"); !slices.Equal(got, []string{"/new", "/resume", "/mcp", "/skills", "/plugin", "/permissions", "/hooks", "/memory", "/agents", "/review"}) {
 		t.Errorf("claude lists %q", got)
 	}
-	if got := texts("opencode"); !slices.Equal(got, []string{"/new", "/mcp", "/review"}) {
+	if got := texts("opencode"); !slices.Equal(got, []string{"/new", "/resume", "/mcp", "/review"}) {
 		t.Errorf("opencode lists %q, want its own /mcp", got)
 	}
 }

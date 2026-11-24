@@ -50,6 +50,7 @@ const (
 
 var (
 	icPaletteSearch     = icons.Lucide("search")
+	icPaletteScopeClear = icons.Lucide("x")
 	icPaletteFolder     = icons.Lucide("folder")
 	icPaletteFolderGone = icons.Lucide("folder-x")
 	icPaletteBranch     = icons.Lucide("git-branch")
@@ -149,8 +150,30 @@ func (p *commandPalette) filters(gtx C, th *ui.Theme, v *paletteView) D {
 		}
 		children = append(children, layout.Rigid(func(gtx C) D { return p.filterTab(gtx, th, v, tab) }))
 	}
+	if v.scope != "" {
+		children = append(children, layout.Flexed(1, func(gtx C) D { return D{Size: image.Pt(gtx.Constraints.Min.X, 0)} }),
+			layout.Rigid(func(gtx C) D { return p.scopeChip(gtx, th, v.scope) }))
+	}
 	return layout.Inset{Left: ui.Space(4), Right: ui.Space(4)}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
+	})
+}
+
+// scopeChip is the project History is narrowed to, at the row's end; a click
+// widens it to every project.
+func (p *commandPalette) scopeChip(gtx C, th *ui.Theme, name string) D {
+	return p.scopeClear.Layout(gtx, func(gtx C) D {
+		fg := th.MutedForeground
+		if p.scopeClear.Hovered() {
+			fg = th.Foreground
+		}
+		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+			layout.Rigid(func(gtx C) D { return icPaletteFolder.Layout(gtx, ui.Space(3.5), fg) }),
+			ui.Gap(1),
+			layout.Rigid(th.Text(paletteTabSize, name).In(fg).Leading(20).Layout),
+			ui.Gap(1),
+			layout.Rigid(func(gtx C) D { return icPaletteScopeClear.Layout(gtx, ui.Space(3.5), fg) }),
+		)
 	})
 }
 

@@ -575,8 +575,8 @@ func (u *window) escapeChat(gtx C, p *chatPane, id string, waiting, asking *back
 
 // sendChat hands the composer's message to the agent, once it waited
 // chatSendHold, and reports whether it had any; a refused one goes back into
-// the composer. /new alone starts an empty conversation instead, and a "!"
-// line runs in the shell.
+// the composer. /new alone starts an empty conversation instead, /resume
+// alone opens the palette on the History of its project, and a "!" line runs in the shell.
 func (u *window) sendChat(p *chatPane, id string) bool {
 	if u.takeShell(p, id) {
 		return true
@@ -586,6 +586,11 @@ func (u *window) sendChat(p *chatPane, id string) bool {
 		return false
 	}
 	p.clearComposer()
+	if m.text == chatResumeCommand && len(m.files) == 0 {
+		w := u.model.paletteWorld()
+		u.palette.showHistory(turnsAmong(w.sessions), projectOfSession(w.sessions, id))
+		return true
+	}
 	if isNewCommand(m.text) && len(m.files) == 0 {
 		go func() { u.chatFailed(u.client.ChatNew(u.ctx, id)) }()
 		return true

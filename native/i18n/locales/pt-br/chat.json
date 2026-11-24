@@ -109,6 +109,7 @@
   },
   "slash": {
     "new": "Começa uma conversa nova nesta sessão",
+    "resume": "Retoma uma conversa deste projeto",
     "mcp": "Gerencia os servidores MCP",
     "skills": "Liga e desliga skills",
     "plugin": "Instala e gerencia plugins",

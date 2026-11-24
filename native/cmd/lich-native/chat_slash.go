@@ -83,16 +83,25 @@ const chatNewCommand = "/new"
 // so lich starts its own, for every provider alike.
 var chatNewAliases = []string{"/clear", "/reset"}
 
+// chatResumeCommand opens the palette's History, where every provider's
+// conversations are resumed: a provider's own /resume is a picker of its TUI,
+// which none of the chat's structured modes draws.
+const chatResumeCommand = "/resume"
+
 // isNewCommand is whether text asks for an empty conversation.
 func isNewCommand(text string) bool {
 	return text == chatNewCommand || slices.Contains(chatNewAliases, text)
 }
 
-// slashCommands is what the list offers: lich's own commands first, /mcp,
+// slashCommands is what the list offers: lich's own commands first, /new and
+// /resume always, /mcp,
 // /skills, /plugin, /permissions, /hooks, /memory and /agents where provider
 // kind reports what they open, then the provider's, less those they would shadow.
 func slashCommands(provider []backend.ChatCommand, kind string) []backend.ChatCommand {
-	own := []backend.ChatCommand{{Text: chatNewCommand, Description: i18n.T("chat.slash.new")}}
+	own := []backend.ChatCommand{
+		{Text: chatNewCommand, Description: i18n.T("chat.slash.new")},
+		{Text: chatResumeCommand, Description: i18n.T("chat.slash.resume")},
+	}
 	if slices.Contains(chatToolKinds, kind) {
 		own = append(own,
 			backend.ChatCommand{Text: chatMCPCommand, Description: i18n.T("chat.slash.mcp")},

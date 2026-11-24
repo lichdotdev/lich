@@ -170,7 +170,7 @@ func TestBackfillIndexesSessionsParkedBeforeTheIndex(t *testing.T) {
 	// looks like: a session with a conversation on disk and no index row.
 	parkWithConversation(t, svc, "s-a", "Session 4", "uuid-a")
 
-	history, err := svc.ClosedSessions(t.Context(), api.SearchTermOptions{Term: "adoption"})
+	history, err := svc.ClosedSessions(t.Context(), api.ClosedSessionsOptions{Term: "adoption"})
 	if err != nil {
 		t.Fatalf("ClosedSessions: %v", err)
 	}
@@ -181,7 +181,7 @@ func TestBackfillIndexesSessionsParkedBeforeTheIndex(t *testing.T) {
 	indexed(t, svc, map[string]string{"uuid-a": "we traced the worktree adoption guard"})
 	deadline := time.Now().Add(10 * time.Second)
 	for {
-		history, err = svc.ClosedSessions(t.Context(), api.SearchTermOptions{Term: "adoption"})
+		history, err = svc.ClosedSessions(t.Context(), api.ClosedSessionsOptions{Term: "adoption"})
 		if err != nil {
 			t.Fatalf("ClosedSessions: %v", err)
 		}
@@ -212,7 +212,7 @@ func TestBackfillMarksASessionItCannotRead(t *testing.T) {
 		t.Fatalf("CloseSession: %v", err)
 	}
 
-	history, err := svc.ClosedSessions(t.Context(), api.SearchTermOptions{Term: "anything"})
+	history, err := svc.ClosedSessions(t.Context(), api.ClosedSessionsOptions{Term: "anything"})
 	if err != nil {
 		t.Fatalf("ClosedSessions: %v", err)
 	}
@@ -260,7 +260,7 @@ func TestClosedSessionsSurvivesATermOfPunctuation(t *testing.T) {
 	parkWithConversation(t, svc, "s-a", "Session 4", "uuid-a")
 
 	for _, term := range []string{`"`, `*`, `(worktree`, `NOT`, `adoption OR ceilings`} {
-		if _, err := svc.ClosedSessions(t.Context(), api.SearchTermOptions{Term: term}); err != nil {
+		if _, err := svc.ClosedSessions(t.Context(), api.ClosedSessionsOptions{Term: term}); err != nil {
 			t.Errorf("ClosedSessions(%q): %v", term, err)
 		}
 	}
@@ -546,7 +546,7 @@ func TestCloseWaitsOutTheBackfill(t *testing.T) {
 		<-release
 		return "we traced the worktree adoption guard", false
 	})
-	if _, err := svc.ClosedSessions(t.Context(), api.SearchTermOptions{Term: "adoption"}); err != nil {
+	if _, err := svc.ClosedSessions(t.Context(), api.ClosedSessionsOptions{Term: "adoption"}); err != nil {
 		t.Fatalf("ClosedSessions: %v", err)
 	}
 	<-reading
@@ -638,7 +638,7 @@ func BenchmarkClosedSessionsSnippets(b *testing.B) {
 	parkConversations(b, svc, 200, conversationOfSize(434*1024))
 
 	for b.Loop() {
-		if _, err := svc.ClosedSessions(b.Context(), api.SearchTermOptions{Term: "session"}); err != nil {
+		if _, err := svc.ClosedSessions(b.Context(), api.ClosedSessionsOptions{Term: "session"}); err != nil {
 			b.Fatalf("ClosedSessions: %v", err)
 		}
 	}

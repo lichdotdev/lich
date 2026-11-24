@@ -276,7 +276,7 @@ store.AdoptExternalSession(AdoptExternalSessionOptions) None
 store.CloseProject(ProjectIDOptions) None
 store.CloseSession(ParkSessionOptions) None
 store.ClosedProjectCount(SearchTermOptions) int
-store.ClosedSessions(SearchTermOptions) ClosedHistory
+store.ClosedSessions(ClosedSessionsOptions) ClosedHistory
 store.CostTotals(CostTotalsOptions) CostReport
 store.ExternalSessions(None) []ExternalSession
 store.ForgetSession(SessionIDOptions) None
@@ -1944,6 +1944,11 @@ ParkSessionOptions {
 
 SearchTermOptions {
 	term string
+}
+
+ClosedSessionsOptions {
+	term string
+	projectId,omitempty string
 }
 
 ClosedHistory {

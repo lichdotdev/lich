@@ -74,7 +74,8 @@ func (r *frameRig) showsAll(labels ...string) bool {
 func TestTheSlashListOpensFiltersAndCompletes(t *testing.T) {
 	u, r, f, p := slashFrames(t)
 	typeIn(r, p, "/")
-	if !r.showsAll("/new", "/review", "[pr]", "/deploy", "/compact", "Ship it") {
+	// lich's own commands lead, so /compact, last, is past the list's height.
+	if !r.showsAll("/new", "/resume", "/review", "[pr]", "/deploy", "Ship it") {
 		t.Fatalf("no list of commands on /:\n%s", r.drawn())
 	}
 	typeIn(r, p, "/co")
@@ -89,10 +90,10 @@ func TestTheSlashListOpensFiltersAndCompletes(t *testing.T) {
 	if r.shows("Compact the conversation") {
 		t.Error("the list stays open once the command is in")
 	}
-	// lich's own /new, /mcp, /skills, /plugin, /permissions, /hooks, /memory
+	// lich's own /new, /resume, /mcp, /skills, /plugin, /permissions, /hooks, /memory
 	// and /agents lead the provider's commands.
 	typeIn(r, p, "/")
-	for range 9 {
+	for range 10 {
 		r.press(key.NameDownArrow)
 	}
 	r.press(key.NameReturn)
