@@ -438,11 +438,13 @@ draws none while it grows in, because the room above the rows is measured in the
   hold stays text. Anything else in code is plain. An answer has no header: who wrote it is the
   foot's (see A message's time), and the provider's avatar stands only on the tool-call line that opens a turn. A thought is a muted fold, closed, with the
   sparkles before its label.
-- **A turn's tool calls** fold into one muted line where the first of them came, with a 1px `Border` hairline
-  running from its label to the column's edge. When the line opens the turn (no answer before it) it starts with
-  the provider's avatar. Finished, it reads
-  "Worked for 41s · 6 tools · 09:15": how long the turn took, how many calls, when it ended (without the time
-  when the history has none). Open, each call is a 28px row hung under the line by a connector, a 1px
+- **A turn's tool calls** fold by run: the calls between two of the agent's texts (or the person's message and
+  the first text) fold into one muted line where the first of them came, with a 1px `Border` hairline running
+  from its label to the column's edge. One line for the whole turn stood where the turn began while the agent
+  went on working minutes below it; a run's line stands where its calls ran. A thought does not end a run.
+  Only the turn's first line starts with the provider's avatar, when it opens the turn (no answer before it). It
+  reads "6 tool calls" and, muted, how long the run took, from its first call to its last call's end (a
+  running one counts to now, shimmering); the turn's total is on its closing line. Open, each call is a 28px row hung under the line by a connector, a 1px
   `Border` line under the fold's chevron with a stub into the row, ending at the last row as the sidebar's
   tree does. The line starts shut, whether the turn is in flight or ended, and only a click opens it, which
   holds as the person left it. Open, it shows only its last 5 calls (`chatCallsShown`): a turn can run fifty,
@@ -451,14 +453,15 @@ draws none while it grows in, because the room above the rows is measured in the
   one generic wrench for the rest), its name in medium, what it acted on in mono, then at the right the time it
   ran in muted mono and how it ended: nothing while it runs, then a check in `TonePass` or a cross in
   `Destructive` with the output's first line. A time that stands still reads in milliseconds under a second
-  ("476ms"), the line's "Worked for" too; a call whose end nobody reported (most histories) shows no time. A
+  ("476ms"), the line's own time too; a call whose end nobody reported (most histories) shows no time. A
   call that changed a file is not in the fold: it is an edit, a line of its own (see An edit). While a call of the turn in flight runs, the line shimmers
   with its count; the group never opens on its own. Only
   the turn in flight is alive: a call an ended turn left running (interrupted) stops with it, its time up to the
   turn's end, or none where nobody saw it.
 - **A turn's closing line** stands once, after the last item of the conversation's last turn, when that turn
   has ended: the provider's avatar as the tool-call line opens a turn with, "Done" in `TextSM` medium
-  `Foreground`, then muted "· no changes" or "· 3 files" and the lines the turn added in `TonePass` and removed
+  `Foreground`, then, when it ran any, muted "· 34 tool calls · 6m 4s", all its runs' calls and how long the turn
+  took, then muted "· no changes" or "· 3 files" and the lines the turn added in `TonePass` and removed
   in `Destructive` ("+12 −4"), as the diffs draw them, and a 1px `Border` hairline to the column's edge.
   "Stopped" stands for a turn the person cancelled, and "Failed" in `Destructive` for one that ended in an
   error. The files and lines are the click: they open Review as the footer's changes item does. The line

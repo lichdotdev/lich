@@ -7,6 +7,7 @@ import (
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
+	"github.com/lichdotdev/lich/native/i18n"
 )
 
 // A provider subagent call lich opened as a card is drawn as opened, its
@@ -21,7 +22,7 @@ func TestAVetoedCallIsDrawnAsOpened(t *testing.T) {
 	u, r := envelopeRig(t, items)
 	u.model.vetoes.add(api.SubagentVeto{SessionID: "s1", ToolUseID: "toolu_1", Sessions: []api.SubagentOpened{{ID: "s2", Label: "Fix #412", Ticket: "4b9bc94e"}}})
 	r.frame()
-	r.clickLabel(t, "Worked for 0ms · 2 tools")
+	r.clickLabel(t, i18n.T("chat.view.toolCalls", i18n.Args{"count": 2}))
 	for range 30 {
 		r.now = r.now.Add(20 * time.Millisecond)
 		r.frame()

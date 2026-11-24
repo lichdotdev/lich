@@ -14,7 +14,7 @@ type chatRowKind uint8
 
 const (
 	chatRowItem  chatRowKind = iota // one item as it is
-	chatRowWork                     // a turn's tool calls, folded into one line
+	chatRowWork                     // a run of tool calls between the agent's words, folded into one line
 	chatRowShell                    // the call of the person's shell command, its output under it
 	chatRowEdit                     // a call that changed a file, its diff under it, out of the turn's fold
 	chatRowLive                     // the turn in flight, unless a permission or a question says it waits
@@ -44,11 +44,21 @@ type chatRow struct {
 	live, movable, compacting bool
 	// ended is when a work row's turn last did something, unix ms.
 	ended int64
-	// turn, tools and took are a work row's: its tool calls and how long the
-	// turn has run; a live row has the turn and how long it has run.
+	// turn, tools and took are a work row's: its tool calls and how long they
+	// ran; a live row has the turn and how long it has run, and a done row the
+	// turn's calls and how long the turn took.
 	turn  int
 	tools []backend.ChatItem
 	took  time.Duration
+	// run names a work row: its first call's id.
+	run string
+}
+
+// chatRun is one run of a turn's tool calls, from one of the agent's texts to
+// the next: the calls, and when the first began and the last ended, unix ms.
+type chatRun struct {
+	tools      []backend.ChatItem
+	start, end int64
 }
 
 type chatTurnSpan struct {
@@ -79,6 +89,12 @@ func chatRows(items []backend.ChatItem, kind string, running bool, now time.Time
 	runsShell := slices.Contains(chatRunShellKinds, kind)
 	var prev backend.ChatItem
 	last := 0
+	// runs are the work rows by their first call's id, runOf each call's run
+	// and open the run each turn's next call joins, none once the agent or
+	// the person speaks.
+	runs := map[string]*chatRun{}
+	runOf := map[string]string{}
+	open := map[int]string{}
 	for _, it := range items {
 		if runsShell && it.Kind == api.ItemTool && prev.Kind == api.ItemUser && prev.Turn == it.Turn && strings.HasPrefix(prev.Text, chatShellMark) {
 			shell[it.ID] = true
@@ -96,16 +112,20 @@ func chatRows(items []backend.ChatItem, kind string, running bool, now time.Time
 		if it.Kind == api.ItemTool && !shell[it.ID] {
 			if !isEdit(it) {
 				sp.tools = append(sp.tools, it)
+				joinRun(runs, runOf, open, it)
 			}
 			if it.Tool != nil {
 				sp.end = max(sp.end, it.Tool.Ended)
 			}
 		}
+		if it.Kind == api.ItemAgent || it.Kind == api.ItemUser {
+			delete(open, it.Turn)
+		}
 		asked[it.Turn] = asked[it.Turn] || it.Kind == api.ItemUser
 		last = max(last, it.Turn)
 	}
 	var rows []chatRow
-	folded := map[int]bool{}
+	folded := map[string]bool{}
 	// opener is what first speaks in a turn, "work" or "agent".
 	opener := map[int]string{}
 	var turnDay time.Time
@@ -152,18 +172,20 @@ func chatRows(items []backend.ChatItem, kind string, running bool, now time.Time
 			rows = append(rows, chatRow{kind: chatRowEdit, item: it, turn: it.Turn, live: running && it.Turn == last && callRunning(it)})
 			continue
 		}
-		if folded[it.Turn] {
+		id := runOf[it.ID]
+		if folded[id] {
 			rows = append(rows, fileRows(it)...)
 			continue
 		}
-		folded[it.Turn] = true
-		sp := spans[it.Turn]
-		end := sp.end
-		if running && it.Turn == last {
+		folded[id] = true
+		run := runs[id]
+		live := running && it.Turn == last && toolRunning(run.tools)
+		end := run.end
+		if live {
 			end = now.UnixMilli()
 		}
-		work := chatRow{kind: chatRowWork, avatar: opener[it.Turn] == "", turn: it.Turn, tools: sp.tools, ended: sp.end, live: running && it.Turn == last && toolRunning(sp.tools),
-			took: time.Duration(max(end-sp.start, 0)) * time.Millisecond}
+		work := chatRow{kind: chatRowWork, avatar: opener[it.Turn] == "", turn: it.Turn, run: id, tools: run.tools, ended: run.end, live: live,
+			took: time.Duration(max(end-run.start, 0)) * time.Millisecond}
 		if opener[it.Turn] == "" {
 			opener[it.Turn] = "work"
 		}
@@ -175,7 +197,8 @@ func chatRows(items []backend.ChatItem, kind string, running bool, now time.Time
 	// the person's next message takes it away. A question still
 	// waiting holds the turn open, whatever a window opened mid-turn heard.
 	if !running && len(items) > 0 && asked[last] && questionWaiting(items) == nil && !compactTurn(items, last) {
-		rows = append(rows, chatRow{kind: chatRowDone, turn: last})
+		sp := spans[last]
+		rows = append(rows, chatRow{kind: chatRowDone, turn: last, tools: sp.tools, took: time.Duration(max(sp.end-sp.start, 0)) * time.Millisecond})
 	}
 	if running && permissionWaiting(items) == nil && questionWaiting(items) == nil {
 		live := chatRow{kind: chatRowLive, turn: last, movable: movable(items), compacting: compactRunning(items)}
@@ -186,6 +209,23 @@ func chatRows(items []backend.ChatItem, kind string, running bool, now time.Time
 	}
 	markAnswerRuns(rows)
 	return rows
+}
+
+// joinRun puts call it in its turn's open run, or opens one with it.
+func joinRun(runs map[string]*chatRun, runOf map[string]string, open map[int]string, it backend.ChatItem) {
+	id, ok := open[it.Turn]
+	if !ok {
+		id = it.ID
+		open[it.Turn] = id
+		runs[id] = &chatRun{start: it.At, end: it.At}
+	}
+	run := runs[id]
+	run.tools = append(run.tools, it)
+	run.start, run.end = min(run.start, it.At), max(run.end, it.At)
+	if it.Tool != nil {
+		run.end = max(run.end, it.Tool.Ended)
+	}
+	runOf[it.ID] = id
 }
 
 // markAnswerRuns sets more and runText on each run of answer texts that follow
@@ -260,7 +300,7 @@ const chatLiveKey = "live"
 func chatRowKey(r chatRow) string {
 	switch r.kind {
 	case chatRowWork:
-		return "work:" + strconv.Itoa(r.turn)
+		return "work:" + r.run
 	case chatRowDay:
 		return "day:" + strconv.Itoa(r.turn)
 	case chatRowDone:

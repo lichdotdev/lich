@@ -9,9 +9,6 @@
   "view": {
     "failed": "채팅 요청이 실패했습니다",
     "thought": "생각",
-    "worked": {
-      "other": "{duration} 작업 · 도구 {count}개"
-    },
     "toolFailed": "실패",
     "shellMore": {
       "other": "{count}줄 더 보기"
@@ -25,9 +22,6 @@
     "thinking": "생각 중",
     "toolCalls": {
       "other": "도구 호출 {count}개"
-    },
-    "workedAt": {
-      "other": "{duration} 작업 · 도구 {count}개 · {time}"
     },
     "openedAs": "{label}(으)로 열림"
   },

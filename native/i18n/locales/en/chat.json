@@ -9,10 +9,6 @@
   "view": {
     "failed": "The chat request failed",
     "thought": "Thought",
-    "worked": {
-      "one": "Worked for {duration} · {count} tool",
-      "other": "Worked for {duration} · {count} tools"
-    },
     "toolFailed": "failed",
     "shellMore": {
       "one": "Show {count} more line",
@@ -29,10 +25,6 @@
     "toolCalls": {
       "one": "{count} tool call",
       "other": "{count} tool calls"
-    },
-    "workedAt": {
-      "one": "Worked for {duration} · {count} tool · {time}",
-      "other": "Worked for {duration} · {count} tools · {time}"
     },
     "openedAs": "opened as {label}"
   },

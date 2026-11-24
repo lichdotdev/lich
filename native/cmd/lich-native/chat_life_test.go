@@ -93,7 +93,7 @@ func TestOnlyWhileRunningIsAnythingLive(t *testing.T) {
 	}
 	// The first turn's call was left running, but that turn is over: only the
 	// turn in flight comes alive.
-	if live["t1"] || live["a1"] || live["a2"] || !live["a3"] || live["work:1"] {
+	if live["t1"] || live["a1"] || live["a2"] || !live["a3"] || live["work:k1"] {
 		t.Errorf("live %v, want the answer being written alone", live)
 	}
 	running := append(slices.Clone(items), backend.ChatItem{ID: "k2", Kind: api.ItemTool, Turn: 2, Tool: &backend.ChatToolCall{Name: "Bash", State: api.ToolRunning}})
@@ -162,7 +162,7 @@ func TestAThoughtBeingThoughtShimmersAndCountsItsTime(t *testing.T) {
 	}
 }
 
-func TestARunningGroupCountsItsCallsAndAFinishedOneSaysWhenItEnded(t *testing.T) {
+func TestARunningGroupCountsItsCallsAndAFinishedOneSaysHowLongTheyRan(t *testing.T) {
 	call := func(state string) []backend.ChatItem {
 		return []backend.ChatItem{
 			{ID: "u1", Kind: api.ItemUser, Turn: 1, At: novDay(18, 17, 59), Text: "go"},
@@ -176,9 +176,10 @@ func TestARunningGroupCountsItsCallsAndAFinishedOneSaysWhenItEnded(t *testing.T)
 	}
 	_, r = lifeFrames(t, call(api.ToolDone), false)
 	r.frame()
-	ended := i18n.T("chat.view.workedAt", i18n.Args{"duration": chatTook(0), "count": 1, "time": clockFor(r, novDay(18, 17, 59))})
-	if !r.shows(ended) {
-		t.Errorf("no %q:\n%s", ended, r.drawn())
+	for _, s := range []string{i18n.T("chat.view.toolCalls", i18n.Args{"count": 1}), chatTook(0)} {
+		if !r.shows(s) {
+			t.Errorf("no %q:\n%s", s, r.drawn())
+		}
 	}
 }
 
@@ -188,7 +189,7 @@ func TestAnOpenGroupLinksItsCallsAndShowsHowEachEnded(t *testing.T) {
 		{ID: "k1", Kind: api.ItemTool, Turn: 1, At: novDay(18, 17, 58), Tool: &backend.ChatToolCall{Name: "Read", Title: "a.go", State: api.ToolDone, Output: "84 lines"}},
 		{ID: "k2", Kind: api.ItemTool, Turn: 1, At: novDay(18, 17, 59), Tool: &backend.ChatToolCall{Name: "Bash", Title: "go test", State: api.ToolFailed}},
 	}, false)
-	u.chats.pane("s1").fold("work:1").open = true
+	u.chats.pane("s1").fold("work:k1").open = true
 	r.settle(t)
 	for _, label := range []string{"Read", "Bash", "84 lines", i18n.T("chat.view.toolFailed")} {
 		if !r.shows(label) {
@@ -201,7 +202,7 @@ func TestAnOpenGroupLinksItsCallsAndShowsHowEachEnded(t *testing.T) {
 	if tool := labelLeft(t, r, "Read"); tool-edge < 24 {
 		t.Errorf("a call's name at x=%d, the column's edge at x=%d: the calls hang under the line, past the connector", tool, edge)
 	}
-	if line := labelLeft(t, r, i18n.T("chat.view.workedAt", i18n.Args{"duration": chatElapsed(time.Minute), "count": 2, "time": clockFor(r, novDay(18, 17, 59))})); line-edge < 20 {
+	if line := labelLeft(t, r, i18n.T("chat.view.toolCalls", i18n.Args{"count": 2})); line-edge < 20 {
 		t.Errorf("the group's line starts at x=%d: the avatar is not before it (column edge %d)", line, edge)
 	}
 }
@@ -294,7 +295,8 @@ func TestTheBandCrossesARunningCallsNameAndTarget(t *testing.T) {
 	}
 }
 
-// A turn ran until its last call ended, past the last item that began.
+// A run of calls ran from its first call until its last call ended, past the
+// last item that began.
 func TestAGroupTookUntilItsLastCallEnded(t *testing.T) {
 	start := novDay(18, 17, 58)
 	items := []backend.ChatItem{
@@ -302,8 +304,8 @@ func TestAGroupTookUntilItsLastCallEnded(t *testing.T) {
 		{ID: "k1", Kind: api.ItemTool, Turn: 1, At: start + 1000, Tool: &backend.ChatToolCall{Name: "Bash", State: api.ToolDone, Ended: start + 9000}},
 	}
 	for _, r := range chatRows(items, claudeKind, false, time.Time{}) {
-		if r.kind == chatRowWork && (r.took != 9*time.Second || r.ended != start+9000) {
-			t.Errorf("the group took %v and ended at %d, want 9s and %d", r.took, r.ended, start+9000)
+		if r.kind == chatRowWork && (r.took != 8*time.Second || r.ended != start+9000) {
+			t.Errorf("the group took %v and ended at %d, want 8s and %d", r.took, r.ended, start+9000)
 		}
 	}
 }

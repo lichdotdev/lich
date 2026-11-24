@@ -168,9 +168,7 @@ func TestAToolFoldOpensInTheFrameThatTookTheClick(t *testing.T) {
 		{ID: "u1", Kind: api.ItemUser, Turn: 1, At: 0, Text: "look"},
 		{ID: "t1", Kind: api.ItemTool, Turn: 1, At: 3000, Tool: &backend.ChatToolCall{Name: "Grep", Title: "roundTax", State: api.ToolDone, Output: "4 results"}},
 	})
-	// A finished turn's line names how long it took, how many calls it made and
-	// when it ended.
-	worked := i18n.T("chat.view.workedAt", i18n.Args{"duration": chatElapsed(3 * time.Second), "count": 1, "time": clockFor(r, 3000)})
+	worked := i18n.T("chat.view.toolCalls", i18n.Args{"count": 1})
 	r.clickLabel(t, worked)
 	// The fold opens over ui.Collapse's 200ms, from the frame that took the
 	// click: half way through, its call is already drawn.

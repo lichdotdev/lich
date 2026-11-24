@@ -1,8 +1,10 @@
 package main
 
 import (
+	"slices"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
@@ -96,7 +98,7 @@ func TestAnOpenGroupShowsItsLastCallsFirst(t *testing.T) {
 	}
 	u, r := lifeFrames(t, items, false)
 	r.play(15)
-	u.chats.pane("s1").fold("work:1").open = true
+	u.chats.pane("s1").fold("work:c0").open = true
 	r.play(15)
 	shown := func(from int) {
 		t.Helper()
@@ -115,4 +117,39 @@ func TestAnOpenGroupShowsItsLastCallsFirst(t *testing.T) {
 	r.queueClick(r.at(t, i18n.T("chat.view.shellLess")))
 	r.play(15)
 	shown(3)
+}
+
+// A turn's calls fold into one line per run, a run ending where the agent
+// speaks, each line where its run began; the turn's end counts them all.
+func TestATurnFoldsEachRunOfCallsWhereItRan(t *testing.T) {
+	call := func(id string) backend.ChatItem {
+		return backend.ChatItem{ID: id, Kind: api.ItemTool, Turn: 1, Tool: &backend.ChatToolCall{Name: "Grep", State: api.ToolDone}}
+	}
+	items := []backend.ChatItem{
+		{ID: "u", Kind: api.ItemUser, Turn: 1, Text: "go"},
+		call("k1"), call("k2"),
+		{ID: "a1", Kind: api.ItemAgent, Turn: 1, Text: "reading"},
+		{ID: "th", Kind: api.ItemThought, Turn: 1, Text: "hm"},
+		call("k3"),
+		{ID: "a2", Kind: api.ItemAgent, Turn: 1, Text: "done"},
+	}
+	var got []string
+	done := 0
+	for _, r := range chatRows(items, claudeKind, false, time.Time{}) {
+		switch r.kind {
+		case chatRowWork:
+			got = append(got, chatRowKey(r)+"="+strconv.Itoa(len(r.tools)))
+		case chatRowItem:
+			got = append(got, r.item.ID)
+		case chatRowDone:
+			done = len(r.tools)
+		}
+	}
+	want := []string{"u", "work:k1=2", "a1", "th", "work:k3=1", "a2"}
+	if !slices.Equal(got, want) || done != 3 {
+		t.Errorf("rows %v and %d calls at the end, want %v and 3", got, done, want)
+	}
+	if rows := chatRows(items, claudeKind, false, time.Time{}); !rows[1].avatar || rows[4].avatar {
+		t.Error("the avatar is not on the turn's first line alone")
+	}
 }

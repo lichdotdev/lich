@@ -9,12 +9,6 @@
   "view": {
     "failed": "Запрос к чату не выполнен",
     "thought": "Рассуждение",
-    "worked": {
-      "one": "Работал {duration} · {count} инструмент",
-      "few": "Работал {duration} · {count} инструмента",
-      "many": "Работал {duration} · {count} инструментов",
-      "other": "Работал {duration} · {count} инструмента"
-    },
     "toolFailed": "ошибка",
     "shellMore": {
       "one": "Показать ещё {count} строку",
@@ -37,12 +31,6 @@
       "few": "{count} вызова инструмента",
       "many": "{count} вызовов инструмента",
       "other": "{count} вызова инструмента"
-    },
-    "workedAt": {
-      "one": "Работал {duration} · {count} инструмент · {time}",
-      "few": "Работал {duration} · {count} инструмента · {time}",
-      "many": "Работал {duration} · {count} инструментов · {time}",
-      "other": "Работал {duration} · {count} инструмента · {time}"
     },
     "openedAs": "открыта как {label}"
   },

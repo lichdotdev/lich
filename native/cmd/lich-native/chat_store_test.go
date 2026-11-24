@@ -140,7 +140,8 @@ func TestOffersOnlyTheBackendsKindsAndNeverAShell(t *testing.T) {
 	}
 }
 
-func TestChatRowsFoldEachTurnsToolsWhereItsFirstWas(t *testing.T) {
+// Each run of calls between the agent's texts folds where its first call was.
+func TestChatRowsFoldEachRunOfToolsWhereItsFirstWas(t *testing.T) {
 	tool := func(id string, turn int, at int64) backend.ChatItem {
 		return backend.ChatItem{ID: id, Kind: api.ItemTool, Turn: turn, At: at, Tool: &backend.ChatToolCall{Name: "Read", State: api.ToolDone}}
 	}
@@ -166,14 +167,13 @@ func TestChatRowsFoldEachTurnsToolsWhereItsFirstWas(t *testing.T) {
 			got = append(got, "live")
 		}
 	}
-	if want := []string{"u1", "a1", "work", "a2", "a3", "u2", "work", "live"}; !reflect.DeepEqual(got, want) {
+	if want := []string{"u1", "a1", "work", "a2", "work", "a3", "u2", "work", "live"}; !reflect.DeepEqual(got, want) {
 		t.Fatalf("rows = %v, want %v", got, want)
 	}
-	if w := rows[2]; len(w.tools) != 2 || w.took != 12*time.Second {
-		t.Errorf("turn 1: %d tools in %v, want 2 in 12s", len(w.tools), w.took)
-	}
-	if w := rows[6]; len(w.tools) != 1 || w.took != 30*time.Second {
-		t.Errorf("turn 2 in flight: %d tools in %v, want 1 in 30s to now", len(w.tools), w.took)
+	for _, i := range []int{2, 4, 7} {
+		if w := rows[i]; len(w.tools) != 1 || w.took != 0 {
+			t.Errorf("row %d: %d tools in %v, want 1 that ran no time anybody saw", i, len(w.tools), w.took)
+		}
 	}
 }
 

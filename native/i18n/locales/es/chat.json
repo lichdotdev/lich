@@ -9,10 +9,6 @@
   "view": {
     "failed": "La petición al chat falló",
     "thought": "Razonamiento",
-    "worked": {
-      "one": "Trabajó {duration} · {count} herramienta",
-      "other": "Trabajó {duration} · {count} herramientas"
-    },
     "toolFailed": "falló",
     "shellMore": {
       "one": "Mostrar {count} línea más",
@@ -29,10 +25,6 @@
     "toolCalls": {
       "one": "{count} llamada a herramienta",
       "other": "{count} llamadas a herramientas"
-    },
-    "workedAt": {
-      "one": "Trabajó {duration} · {count} herramienta · {time}",
-      "other": "Trabajó {duration} · {count} herramientas · {time}"
     },
     "openedAs": "abierta como {label}"
   },

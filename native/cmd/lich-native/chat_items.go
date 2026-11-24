@@ -6,7 +6,6 @@ import (
 	"image"
 	"image/color"
 	"path"
-	"strconv"
 	"strings"
 	"time"
 
@@ -60,7 +59,7 @@ const chatClock = "15:04"
 func (u *window) chatRow(gtx C, th *ui.Theme, p *chatPane, sv sessionView, r chatRow) D {
 	switch r.kind {
 	case chatRowWork:
-		return u.chatWork(gtx, th, p, p.fold("work:"+strconv.Itoa(r.turn)), sv, r)
+		return u.chatWork(gtx, th, p, p.fold("work:"+r.run), sv, r)
 	case chatRowShell:
 		return chatBranch(gtx, th, true, func(gtx C) D { return chatShellCall(gtx, th, p.fold("out:"+r.item.ID), r.item, r.live) })
 	case chatRowEdit:
@@ -290,12 +289,11 @@ func (u *window) chatWork(gtx C, th *ui.Theme, p *chatPane, f *chatFold, sv sess
 		if r.live {
 			return chatLiveLabel(gtx, th, i18n.T("chat.view.toolCalls", i18n.Args{"count": len(r.tools)}), fg, gtx.Now.Add(-r.took))
 		}
-		args := i18n.Args{"duration": chatTook(r.took), "count": len(r.tools)}
-		key := "chat.view.worked"
-		if r.ended > 0 {
-			key, args["time"] = "chat.view.workedAt", time.UnixMilli(r.ended).In(gtx.Now.Location()).Format(chatClock)
-		}
-		return th.Text(ui.TextSM, i18n.T(key, args)).In(fg).Layout(gtx)
+		return layout.Flex{Alignment: layout.Baseline}.Layout(gtx,
+			layout.Rigid(th.Text(ui.TextSM, i18n.T("chat.view.toolCalls", i18n.Args{"count": len(r.tools)})).In(fg).Layout),
+			ui.Gap(1.5),
+			layout.Rigid(th.Text(ui.TextSM, chatTook(r.took)).Muted().Layout),
+		)
 	}
 	// The line carries who works when it opens the turn, and a hairline runs
 	// from it to the column's edge.
@@ -310,7 +308,7 @@ func (u *window) chatWork(gtx C, th *ui.Theme, p *chatPane, f *chatFold, sv sess
 		layout.Flexed(1, func(gtx C) D { return chatHairline(gtx, th) }),
 	)
 	children := []layout.FlexChild{layout.Rigid(func(gtx C) D { return layout.Flex{Alignment: layout.Middle}.Layout(gtx, line...) })}
-	earlier := p.fold("earlier:" + strconv.Itoa(r.turn))
+	earlier := p.fold("earlier:" + r.run)
 	earlier.update(gtx)
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, append(children, chatCalls(gtx, th, f, earlier, r, u.vetoOutcome(p, sv))...)...)
 }

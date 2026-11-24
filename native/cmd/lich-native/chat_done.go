@@ -71,6 +71,10 @@ func (u *window) chatDone(gtx C, th *ui.Theme, p *chatPane, sv sessionView, r ch
 		ui.Gap(2),
 		faded(word.Layout),
 	}
+	if len(r.tools) > 0 {
+		work := i18n.T("chat.view.toolCalls", i18n.Args{"count": len(r.tools)}) + " · " + chatTook(r.took)
+		line = append(line, ui.Gap(2), faded(th.Text(ui.TextSM, "·").Muted().Layout), ui.Gap(2), faded(th.Text(ui.TextSM, work).Muted().Layout))
+	}
 	if c := end.Changes; c != nil {
 		line = append(line, ui.Gap(2), faded(th.Text(ui.TextSM, "·").Muted().Layout), ui.Gap(2), faded(func(gtx C) D { return u.chatDoneCount(gtx, th, f, *c) }))
 	}

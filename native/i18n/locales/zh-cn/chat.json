@@ -9,9 +9,6 @@
   "view": {
     "failed": "聊天请求失败",
     "thought": "思考",
-    "worked": {
-      "other": "工作了 {duration} · {count} 个工具"
-    },
     "toolFailed": "失败",
     "shellMore": {
       "other": "再显示 {count} 行"
@@ -25,9 +22,6 @@
     "thinking": "思考中",
     "toolCalls": {
       "other": "{count} 次工具调用"
-    },
-    "workedAt": {
-      "other": "工作了 {duration} · {count} 个工具 · {time}"
     },
     "openedAs": "已开成 {label}"
   },

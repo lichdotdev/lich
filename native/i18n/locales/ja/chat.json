@@ -9,9 +9,6 @@
   "view": {
     "failed": "チャットへのリクエストに失敗しました",
     "thought": "思考",
-    "worked": {
-      "other": "{duration}作業 · ツール{count}件"
-    },
     "toolFailed": "失敗",
     "shellMore": {
       "other": "残り{count}行を表示"
@@ -25,9 +22,6 @@
     "thinking": "思考中",
     "toolCalls": {
       "other": "ツール呼び出し{count}件"
-    },
-    "workedAt": {
-      "other": "{duration}作業 · ツール{count}件 · {time}"
     },
     "openedAs": "{label} として開きました"
   },
