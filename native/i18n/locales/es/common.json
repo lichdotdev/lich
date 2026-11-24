@@ -20,10 +20,5 @@
   },
   "stepper": {
     "default": "Predeterminado"
-  },
-  "pickerDialog": {
-    "navigate": "navegar",
-    "filter": "filtrar",
-    "close": "cerrar"
   }
 }

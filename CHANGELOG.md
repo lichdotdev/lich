@@ -62,6 +62,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **The command palette matches the rest of the window.** Its filters sit in a tray like the dock's tabs, and the key hints at its foot are gone: the selected row says what Enter does, and Tab still walks the filters.
 - **A tooltip on a button wears the theme's popover colors.** It was the theme's text color as a background, a white bubble on a dark theme; it is now a popover with a visible border, the same on the longer tooltips.
 - **A project tab is as wide as its name.** It stops at a limit, keeps room for the spinner, status mark and ×, and when the tabs do not all fit only the longest names shrink.
 - **Your messages in the chat are rounder, roomier balloons.** The corner by the right edge stays tight, pointing at you, and long messages wrap sooner.
