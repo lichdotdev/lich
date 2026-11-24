@@ -226,8 +226,8 @@ func TestHoverBrightensOnlyTheLogo(t *testing.T) {
 	}
 }
 
-// The pull request stands apart from the branch it follows: a wider gap than
-// the one that keeps the branch's own line counts beside it.
+// The pull request stands apart from the branch it follows by the line's gap,
+// wider than the badge's own.
 func TestTheComposerPullRequestStandsApartFromTheBranch(t *testing.T) {
 	pr := backend.PullRequest{Number: 1190, State: "MERGED"}
 	u, r, _ := composerWithPR(t, rigWindow, pr, api.ForgeGitHub, "s1")
@@ -266,7 +266,7 @@ func TestTheComposerPullRequestStandsApartFromTheBranch(t *testing.T) {
 			run = 0
 		}
 	}
-	if want := int(ui.Space(chatCrumbPRGap)); widest < want { // the rig draws at 1px a dp
+	if want := int(ui.Space(chatCrumbGap)); widest < want { // the rig draws at 1px a dp
 		t.Errorf("the widest gap before #1190 is %dpx, want at least %dpx", widest, want)
 	}
 }

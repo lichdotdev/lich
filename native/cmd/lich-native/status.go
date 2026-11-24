@@ -239,6 +239,16 @@ func (s *statusStore) age(id string, now time.Time) (time.Duration, bool) {
 	return max(0, now.Sub(e.since)), true
 }
 
+// idle is how long a finished turn has been over at now, false when the window
+// never saw it end (a done turn restored from the database has no clock).
+func (s *statusStore) idle(id string, now time.Time) (time.Duration, bool) {
+	e, ok := s.entries[id]
+	if !ok || e.status != statusDone || e.since.IsZero() {
+		return 0, false
+	}
+	return max(0, now.Sub(e.since)), true
+}
+
 // markSeen records that the session's status was read. It answers true when
 // that read a finished turn: the caller then takes down the backend's unread
 // mark, the one edge only the window can see.

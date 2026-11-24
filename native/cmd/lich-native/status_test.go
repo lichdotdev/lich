@@ -208,6 +208,22 @@ func TestStatusStoreAgeClampsBackwardsClock(t *testing.T) {
 	}
 }
 
+func TestStatusStoreIdleCountsFromTheTurnEnd(t *testing.T) {
+	s := newStatusStore()
+	replay(t, s, []step{{0, statusEvent{ID: "a", State: "busy"}}, {5, statusEvent{ID: "a", State: "done"}}})
+	if idle, ok := s.idle("a", t0.Add(65*time.Second)); idle != time.Minute || !ok {
+		t.Errorf("idle = %v %v, want 1m true", idle, ok)
+	}
+	replay(t, s, []step{{70, statusEvent{ID: "a", State: "busy"}}})
+	if _, ok := s.idle("a", t0.Add(71*time.Second)); ok {
+		t.Error("a running session has an idle clock")
+	}
+	s.restoreUnread([]string{"b"})
+	if _, ok := s.idle("b", t0); ok {
+		t.Error("a done turn the window never saw end has an idle clock")
+	}
+}
+
 func TestStatusStoreApplyErrors(t *testing.T) {
 	s := newStatusStore()
 	if changed, err := s.apply(backend.Event{Name: "session-cwd", Data: []byte(`{"id":"a"}`)}, t0); changed || err != nil {
