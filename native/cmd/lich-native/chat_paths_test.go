@@ -1,6 +1,7 @@
 package main
 
 import (
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -61,7 +62,7 @@ func (r *frameRig) holdLinkKey(held bool) {
 	if held {
 		state, mods = key.Press, key.ModShortcut
 	}
-	r.router.Queue(key.Event{Name: linkKey("linux"), State: state, Modifiers: mods})
+	r.router.Queue(key.Event{Name: linkKey(runtime.GOOS), State: state, Modifiers: mods})
 	r.frame()
 }
 

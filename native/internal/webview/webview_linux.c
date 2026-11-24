@@ -10,6 +10,7 @@
 
 extern void lichWebviewRun(uintptr_t handle);
 extern void lichWebviewLoad(uintptr_t owner, int step, char *uri);
+extern void lichWebviewDrawn(uintptr_t handle);
 extern void lichWebviewEvaluated(uintptr_t handle, char *json, char *error);
 extern void lichWebviewSnapshot(uintptr_t handle, unsigned char *data, int width, int height, int stride, char *error);
 
@@ -228,6 +229,20 @@ void lich_webview_eval(LichPage *page, const char *script, uintptr_t handle) {
 // lich_webview_run runs script in the page's own world for what it does.
 void lich_webview_run(LichPage *page, const char *script) {
 	webkit_web_view_evaluate_javascript(WEBKIT_WEB_VIEW(page->view), script, -1, NULL, NULL, NULL, NULL, NULL);
+}
+
+static void drawn(GObject *view, GAsyncResult *result, gpointer handle) {
+	GError *error = NULL;
+	JSCValue *value = webkit_web_view_evaluate_javascript_finish(WEBKIT_WEB_VIEW(view), result, &error);
+	if (value) g_object_unref(value);
+	if (error) g_error_free(error);
+	lichWebviewDrawn((uintptr_t)handle);
+}
+
+// lich_webview_draw runs script like lich_webview_run, telling the handle
+// once the page ran it.
+void lich_webview_draw(LichPage *page, const char *script, uintptr_t handle) {
+	webkit_web_view_evaluate_javascript(WEBKIT_WEB_VIEW(page->view), script, -1, NULL, NULL, NULL, drawn, (gpointer)handle);
 }
 
 static void snapshotted(GObject *view, GAsyncResult *result, gpointer handle) {

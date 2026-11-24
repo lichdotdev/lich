@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"image"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -96,9 +97,11 @@ func TestOnlyTheProvidersDefaultByIdWithoutThatNameIsMarkedDefault(t *testing.T)
 
 func TestTheModelChipOpensOnePanelWithBothColumns(t *testing.T) {
 	_, r, _ := openPicker(t, manyModels())
+	isMac := runtime.GOOS == "darwin"
 	for _, label := range []string{
 		i18n.T("chat.model.search", i18n.Args{"provider": "claude"}), i18n.T("chat.option.effort"),
-		"Model 1" + "", "Model 2", "Low", "High", "Ctrl+1", "Ctrl+4",
+		"Model 1" + "", "Model 2", "Low", "High",
+		formatCombo(combo{Mod: true, Key: "1"}, isMac), formatCombo(combo{Mod: true, Key: "4"}, isMac),
 		i18n.T("chat.model.showMore"), i18n.T("chat.model.default"),
 	} {
 		if label == "Model 1" {
@@ -108,7 +111,7 @@ func TestTheModelChipOpensOnePanelWithBothColumns(t *testing.T) {
 			t.Errorf("the panel lacks %q:\n%s", label, r.drawn())
 		}
 	}
-	if r.shows("Ctrl+5") || r.shows("Model 7") {
+	if r.shows(formatCombo(combo{Mod: true, Key: "5"}, isMac)) || r.shows("Model 7") {
 		t.Error("the panel shows past four shortcuts or six models")
 	}
 }
