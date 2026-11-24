@@ -153,6 +153,7 @@ func (f *fileEditor) takeSave() {
 		return
 	}
 	f.saving.failed = false
+	f.disk.saves++
 	if s.doc != f.base {
 		f.blame.gen++
 	}
