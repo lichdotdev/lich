@@ -66,14 +66,14 @@ func (u *window) sessionHeader(gtx C, th *ui.Theme, sv sessionView, project stri
 	})
 }
 
-// sessionName is the provider's mark and then "Cart totals a cent off": the
+// sessionName is the provider's mark, in its brand color as in the sidebar, and then "Cart totals a cent off": the
 // project leads the name when set, and the card's label is in semibold, the
 // one cut first when the room is short, all in ink: the backdrop's dots run
 // behind them, and a muted name would sink into it.
 func (u *window) sessionName(gtx C, th *ui.Theme, sv sessionView, project string, ink color.NRGBA) D {
 	gtx.Constraints.Min.X = 0
 	row := []layout.FlexChild{
-		layout.Rigid(func(gtx C) D { return providerIcon(sv.Kind).Layout(gtx, ui.Space(3.5), ink) }),
+		layout.Rigid(func(gtx C) D { return providerGlyph(gtx, th, sv.Kind, ui.Space(3.5), markPixel) }),
 		ui.Gap(2),
 	}
 	if project != "" {
