@@ -459,7 +459,11 @@ draws none while it grows in, because the room above the rows is measured in the
   tool's without its server, when it has no kind) in a column as wide as the run's widest verb, up to
   `Space(24)`, so the targets line up, what it acted on in mono, then at the right the time it ran in muted mono.
   A call that went well says nothing more; a failed one turns its glyph and verb `Destructive` and shows the
-  output's first line in it. A time that stands still reads in milliseconds under a second ("476ms"), the line's
+  output's first line in it. A call lich opened as a card (`chat_veto.go`) keeps that `Destructive` verb, the
+  tone the provider's veto has always worn, but trades the glyph for the card's provider mark and the time and
+  output for a pill per card at the right: the card's state dot, its name and `arrow-up-right` in
+  `Destructive`, on a 8% fill of it with a 35% edge, both lit on hover (18% and full), and a click opens the
+  card. The veto's own milliseconds are the hook answering, not work, so they are not shown. A time that stands still reads in milliseconds under a second ("476ms"), the line's
   own time too; a call whose end nobody reported (most histories) shows no time. A call that changed a file is
   not in the fold: it is an edit, a line of its own (see An edit). The group never opens on its own. Only
   the turn in flight is alive: a call an ended turn left running (interrupted) stops with it, its time up to the

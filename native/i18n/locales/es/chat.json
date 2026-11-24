@@ -86,8 +86,7 @@
       }
     },
     "latest": "Lo último",
-    "newActivity": "Novedades",
-    "openedAs": "abierta como {label}"
+    "newActivity": "Novedades"
   },
   "done": {
     "done": "Hecho",

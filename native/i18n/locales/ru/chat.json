@@ -112,8 +112,7 @@
       }
     },
     "latest": "К последнему",
-    "newActivity": "Новые события",
-    "openedAs": "открыта как {label}"
+    "newActivity": "Новые события"
   },
   "done": {
     "done": "Готово",

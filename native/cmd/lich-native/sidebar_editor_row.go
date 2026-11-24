@@ -49,12 +49,15 @@ func (s *sidebar) editorRow(gtx C, th *ui.Theme, r sessionRow, b blockView, act 
 	tooltip.Side = ui.SideRight
 	entries := func() []ui.MenuEntry { return editorMenu(r.path, act) }
 	menu := s.menuState(s.menus, r.key)
-	more := s.menuState(s.moreMenus, r.key)
+	closer := clickable(s.moreClicks, r.key)
+	if closer.Clicked(gtx) {
+		act.editorClose = r.path
+	}
 	hover := clickable(s.checkoutRows, r.key)
-	if hover.Clicked(gtx) && !dragEnded && !clickable(s.moreClicks, r.key).Hovered() {
+	if hover.Clicked(gtx) && !dragEnded && !closer.Hovered() {
 		act.editor = r.path
 	}
-	hovered := hover.Hovered() || more.Opened()
+	hovered := hover.Hovered() || closer.Hovered()
 	p := r.place(tree)
 	p.ground = nodeGround(th, b)
 	line := func(gtx C) D {
@@ -84,11 +87,7 @@ func (s *sidebar) editorRow(gtx C, th *ui.Theme, r sessionRow, b blockView, act 
 				if !hovered {
 					return D{Size: gtx.Constraints.Min}
 				}
-				return layout.Center.Layout(gtx, func(gtx C) D {
-					return th.DropdownMenu(s.root, more, entries()).Layout(gtx, func(gtx C) D {
-						return th.CornerButton(clickable(s.moreClicks, r.key), icGroupMore, more.Opened()).Layout(gtx)
-					})
-				})
+				return layout.Center.Layout(gtx, th.CornerButton(closer, icTabClose, false).Layout)
 			}),
 		)
 		return layout.Inset{Top: ui.Space(1.5), Bottom: ui.Space(1.5), Left: rowInset, Right: ui.Space(1)}.Layout(gtx, func(gtx C) D {

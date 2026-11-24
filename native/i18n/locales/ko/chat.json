@@ -73,8 +73,7 @@
       }
     },
     "latest": "최신으로",
-    "newActivity": "새 활동",
-    "openedAs": "{label}(으)로 열림"
+    "newActivity": "새 활동"
   },
   "done": {
     "done": "완료",

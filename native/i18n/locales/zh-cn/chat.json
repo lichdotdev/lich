@@ -73,8 +73,7 @@
       }
     },
     "latest": "最新",
-    "newActivity": "新动态",
-    "openedAs": "已开成 {label}"
+    "newActivity": "新动态"
   },
   "done": {
     "done": "完成",

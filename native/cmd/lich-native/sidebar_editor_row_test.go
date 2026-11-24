@@ -175,6 +175,16 @@ func TestTheEditorNodesMenuClosesIt(t *testing.T) {
 	}
 }
 
+func TestTheEditorNodesCornerClosesIt(t *testing.T) {
+	_, r, act := editorFrames(t)
+	r.settle(t)
+	r.hover(r.at(t, "a.go"))
+	r.click(t, r.controlOf(t, "a.go"))
+	if act.editorClose != "/repo" {
+		t.Fatalf("act %+v, want /repo's editor closed by the row's corner", *act)
+	}
+}
+
 // active is the session the sidebar lights: none while the editor is on the
 // stage, as sidebarActive has it.
 func active(m *model) string {
