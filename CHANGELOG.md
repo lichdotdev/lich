@@ -65,6 +65,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **Sessions that share a checkout sit together in the sidebar, under its branch.** When two or more sessions run in the same worktree, a thin label with the branch heads them and their rows drop the branch; what a session opened, a child or a terminal, still hangs under it.
+- **A folder in the sidebar shows its name as you typed it, and counts the work in it.** The name is no longer in small capitals with a rule after it, and the count leaves out the children and terminals that hang under a session.
 - **The command palette matches the rest of the window.** Its filters sit in a tray like the dock's tabs, and the key hints at its foot are gone: the selected row says what Enter does, and Tab still walks the filters.
 - **A Markdown file reads like a document in the editor's preview and in Review.** Its frontmatter shows as a table of properties instead of a bold line, headings sit closer to the text they open, and lines stop at a reading width on a wide pane. Chat and Pulls keep their size, with the same spacing under headings and lighter list markers.
 - **A tooltip on a button wears the theme's popover colors.** It was the theme's text color as a background, a white bubble on a dark theme; it is now a popover with a visible border, the same on the longer tooltips.
