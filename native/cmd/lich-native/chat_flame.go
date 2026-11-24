@@ -19,9 +19,9 @@ const (
 	chatFlameCore = 0.5
 )
 
-// chatSpinnerPixel is one sprite pixel's side: 1.5dp, which is two device
-// pixels at 1x and three at 2x, a whole number at the scales a window runs at.
-const chatSpinnerPixel unit.Dp = 1.5
+// chatSpinnerSize is the spinner's side. It scales as a whole: rounding each
+// of its eleven sprite pixels first halved it at a 90% zoom.
+const chatSpinnerSize unit.Dp = 22
 
 // chatFlameColor is the color of a sprite symbol: the flame burns in the
 // theme's Primary, as the spinner does, around a core of the same hue,
@@ -46,7 +46,7 @@ func chatFlameColor(th *ui.Theme, symbol byte) (color.NRGBA, bool) {
 func chatSpinner(gtx C, th *ui.Theme) D {
 	a, next := spinnerAt(gtx.Now)
 	nextFrame(gtx, th, next.Sub(gtx.Now))
-	side := spriteCells * max(gtx.Dp(chatSpinnerPixel), 1)
+	side := max(spriteCells, gtx.Dp(chatSpinnerSize))
 	drawCells(gtx, side, th.Background, th.Primary, a)
 	return D{Size: image.Pt(side, side)}
 }

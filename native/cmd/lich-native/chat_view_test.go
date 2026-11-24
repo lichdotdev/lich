@@ -82,6 +82,7 @@ func chatFramesIn(t testing.TB, view string, size image.Point, in footerInput) (
 	foot.dock, foot.git = new(dock), new(gitPanel)
 	u := &window{ctx: t.Context(), client: client, model: chatModel(view), footer: foot, terms: &terminals{byID: map[string]*termView{}, invalidate: r.invalidate},
 		editors: stageEditors{family: fonts.SystemMono, size: 13}}
+	u.sidebar = newSidebar(&u.root)
 	u.model.invalidate = r.invalidate
 	u.model.chat.kinds = []string{"claude"}
 	r.draw = func(gtx C, th *ui.Theme) {

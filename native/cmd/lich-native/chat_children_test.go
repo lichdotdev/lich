@@ -43,7 +43,7 @@ func TestTheComposerListsTheSessionsThisOneOpened(t *testing.T) {
 		t.Fatalf("no chip counting the children:\n%s", r.drawn())
 	}
 	r.click(t, r.at(t, count))
-	r.settle(t)
+	r.frames(3)
 	writeShot(t, r, "children-open.png")
 	for _, s := range []string{"Fix #417: menu bar icon", "Fix #412: relay handshake", "Fix #421: stale Docker docs", "Permission to run: go test ./..."} {
 		if !r.shows(s) {
@@ -57,7 +57,7 @@ func TestTheComposerListsTheSessionsThisOneOpened(t *testing.T) {
 		t.Errorf("the child waiting at y=%d is not over the one working at y=%d", a, b)
 	}
 	r.click(t, r.at(t, "Fix #412: relay handshake"))
-	r.settle(t)
+	r.frames(3)
 	if sv, ok := u.model.activeSession(); !ok || sv.ID != "k2" {
 		t.Errorf("active session %q, want the row's k2", sv.ID)
 	}

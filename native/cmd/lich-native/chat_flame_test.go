@@ -3,8 +3,13 @@ package main
 import (
 	"image"
 	"image/color"
+	"math"
 	"testing"
 	"time"
+
+	"gioui.org/layout"
+	"gioui.org/op"
+	"gioui.org/unit"
 
 	"github.com/lichdotdev/lich/native/ui"
 )
@@ -38,7 +43,7 @@ func TestTheSpinnerCentersOnTheVerbAndTheLineIsNoTaller(t *testing.T) {
 		line = chatLive(gtx, th, "s1", chatRow{turn: 1})
 	})
 	r.frame()
-	const foot = 22 // 11 rows of 1.5dp pixels, two device pixels each at 1x
+	const foot = 22 // chatSpinnerSize at 1x
 	if line.Size.Y != foot {
 		t.Fatalf("the line is %dpx tall, want the spinner's, %dpx", line.Size.Y, foot)
 	}
@@ -55,5 +60,17 @@ func TestTheSpinnerCentersOnTheVerbAndTheLineIsNoTaller(t *testing.T) {
 	}
 	if got, want := tops[1]-tops[0], (foot-label.Size.Y)/2; got != want {
 		t.Errorf("the verb sits %dpx down the line, want %dpx, the middle of the spinner", got, want)
+	}
+}
+
+// The spinner follows the window's zoom in proportion: rounding each sprite
+// pixel before multiplying by eleven halved it at 90%.
+func TestTheSpinnerScalesWithTheZoom(t *testing.T) {
+	for _, zoom := range []float32{0.8, 0.9, 1, 1.1, 1.25, 1.5, 2} {
+		gtx := layout.Context{Ops: new(op.Ops), Metric: unit.Metric{PxPerDp: zoom}, Now: time.Unix(0, 0)}
+		got := chatSpinner(gtx, &ui.Theme{}).Size.X
+		if want := 22 * zoom; math.Abs(float64(got)-float64(want)) > 1 {
+			t.Errorf("at %v the spinner is %dpx, want about %.1fpx", zoom, got, want)
+		}
 	}
 }
