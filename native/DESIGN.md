@@ -527,9 +527,9 @@ draws none while it grows in, because the room above the rows is measured in the
   Claude Code's AskUserQuestion shape, which every provider's request for input is read into, in a box on
   `Sidebar`, `RadiusLG` with a 1px `Border` hairline as the composer has, `Space(2)` over the composer. Its
   head is the ask's header, muted `TextXS` in its own case on no fill, and a ghost `SizeIconXS` × at the right
-  that declines; several asks turn the headers into tabs (the one on show in `Foreground` medium over a 2dp
-  `Primary` rule, an answered one with a `TonePass` check, each a click back to it; an ask with no header shows
-  its number), with no count. Under it the question in `TextSM` medium. Each option is a row: a keycap with its
+  that declines; several asks turn the headers into pill tabs, as a project tab is (the one on show filled in
+  `Accent`, each led by its muted number, which a `TonePass` check replaces once answered, each a click back to
+  it; the pill's padding lines its text up with the question's), with no count. Under it the question in `TextSM` medium. Each option is a row: a keycap with its
   number (a checkbox when it takes several), the label in `TextSM` regular and the description muted under it;
   the row the keys stand on is lit on `Accent`, `RadiusMD`. A label ending in Claude Code's "(Recommended)"
   is drawn without it, a `Primary` `TextXS` "Recommended" beside it; the reply keeps the label as it came.

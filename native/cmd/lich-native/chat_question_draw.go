@@ -7,8 +7,6 @@ import (
 
 	"gioui.org/font"
 	"gioui.org/layout"
-	"gioui.org/op/clip"
-	"gioui.org/op/paint"
 	"gioui.org/unit"
 
 	"github.com/lichdotdev/lich/api"
@@ -28,9 +26,6 @@ const chatAnswerJoin = ", "
 // chatRecommended ends the label of the option the agent recommends: Claude
 // Code's AskUserQuestion prompt tells the model to add it.
 const chatRecommended = "(Recommended)"
-
-// chatTabRule is the line under the ask on show among several.
-const chatTabRule = 2
 
 // The "Other…" field is laid out over its row's line: chatOtherPadX is
 // ui.Input's own inner padding, pulled back so its text starts where the
@@ -119,46 +114,50 @@ func chatQuestionHead(gtx C, th *ui.Theme, q *chatQuiz, asks []api.ChatAsk) D {
 		for i, a := range asks {
 			tabs = append(tabs, layout.Rigid(func(gtx C) D {
 				return q.steps[i].Layout(gtx, func(gtx C) D { return chatAskTab(gtx, th, a.Header, i, q.done[i], i == q.step) })
-			}), ui.Gap(3.5))
+			}), ui.Gap(1))
 		}
 	}
 	decline := th.Button(&q.decline, "")
 	decline.Icon, decline.Variant, decline.Size = icQuestionDecline, ui.VariantGhost, ui.SizeIconXS
 	tabs = append(tabs, layout.Flexed(1, func(gtx C) D { return D{Size: image.Pt(gtx.Constraints.Min.X, 0)} }), layout.Rigid(decline.Layout))
-	return layout.Inset{Left: ui.Space(2), Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
+	// A pill's own padding lines its text up with the question's.
+	left := ui.Space(2)
+	if len(asks) > 1 {
+		left = 0
+	}
+	return layout.Inset{Left: left, Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx, tabs...)
 	})
 }
 
-// chatAskTab is ask i's tab among several: its header (its number without
-// one), a check once answered, and a rule under the one on show.
+// chatAskTab is ask i's tab among several, a pill as a project tab is: its
+// number, a check in its place once answered, and its header; the one on show
+// is filled in Accent.
 func chatAskTab(gtx C, th *ui.Theme, label string, i int, done, shown bool) D {
-	if label == "" {
-		label = strconv.Itoa(i + 1)
+	mark := th.Text(ui.TextXS, strconv.Itoa(i+1)).Muted()
+	if done {
+		mark = th.Text(ui.TextXS, "✓").In(th.TonePass)
 	}
 	text := th.Text(ui.TextXS, label).Muted()
 	if done || shown {
 		text = text.In(th.Foreground)
 	}
-	if shown {
-		text = text.Weight(font.Medium)
-	}
-	d := layout.Inset{Top: ui.Space(1), Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
-		return layout.Flex{Alignment: layout.Baseline}.Layout(gtx,
-			layout.Rigid(func(gtx C) D {
-				if !done {
-					return D{}
+	return layout.Background{}.Layout(gtx,
+		func(gtx C) D {
+			if !shown {
+				return D{Size: gtx.Constraints.Min}
+			}
+			return ui.Fill(gtx, th.Accent, gtx.Metric.PxToDp(gtx.Constraints.Min.Y/2))
+		},
+		func(gtx C) D {
+			return layout.Inset{Left: ui.Space(2), Right: ui.Space(2), Top: ui.Space(0.75), Bottom: ui.Space(0.75)}.Layout(gtx, func(gtx C) D {
+				row := []layout.FlexChild{layout.Rigid(mark.Layout)}
+				if label != "" {
+					row = append(row, ui.Gap(1.5), layout.Rigid(text.Layout))
 				}
-				return layout.Inset{Right: ui.Space(1)}.Layout(gtx, th.Text(ui.TextXS, "✓").In(th.TonePass).Layout)
-			}),
-			layout.Rigid(text.Layout),
-		)
-	})
-	if shown {
-		rule := gtx.Dp(chatTabRule)
-		paint.FillShape(gtx.Ops, th.Primary, clip.Rect{Min: image.Pt(0, d.Size.Y-rule), Max: d.Size}.Op())
-	}
-	return d
+				return layout.Flex{Alignment: layout.Baseline}.Layout(gtx, row...)
+			})
+		})
 }
 
 // chatQuestionBody is the ask on show: its options, or a field when it has
