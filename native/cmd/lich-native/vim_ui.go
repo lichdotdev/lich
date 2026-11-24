@@ -143,24 +143,41 @@ func intOf(v any) int {
 	return 0
 }
 
+// The graph lanes a mode's badge takes, so its colors follow the scheme as
+// the git graph's do: blue, green, amber, purple, cyan, red.
+const (
+	vimLaneNormal  = 0
+	vimLaneInsert  = 1
+	vimLaneCommand = 2
+	vimLaneVisual  = 3
+	vimLaneOther   = 4
+	vimLaneReplace = 5
+)
+
 // vimModeNames are Vim's modes by nvim_get_mode's spelling, as Vim's own
-// statusline plugins name them; the longest spelling that starts the mode wins.
-var vimModeNames = []struct{ prefix, name string }{
-	{"no", "O-PENDING"}, {"n", "NORMAL"},
-	{"v", "VISUAL"}, {"V", "V-LINE"}, {"\x16", "V-BLOCK"},
-	{"s", "SELECT"}, {"S", "S-LINE"}, {"\x13", "S-BLOCK"},
-	{"i", "INSERT"}, {"Rv", "V-REPLACE"}, {"R", "REPLACE"},
-	{"c", "COMMAND"}, {"r", "PROMPT"}, {"!", "SHELL"}, {"t", "TERMINAL"},
+// statusline plugins name them, and the lane their badge wears; the first
+// spelling that starts the mode wins.
+var vimModeNames = []struct {
+	prefix, name string
+	lane         int
+}{
+	{"no", "O-PENDING", vimLaneOther}, {"n", "NORMAL", vimLaneNormal},
+	{"v", "VISUAL", vimLaneVisual}, {"V", "V-LINE", vimLaneVisual}, {"\x16", "V-BLOCK", vimLaneVisual},
+	{"s", "SELECT", vimLaneVisual}, {"S", "S-LINE", vimLaneVisual}, {"\x13", "S-BLOCK", vimLaneVisual},
+	{"i", "INSERT", vimLaneInsert}, {"Rv", "V-REPLACE", vimLaneReplace}, {"R", "REPLACE", vimLaneReplace},
+	{"c", "COMMAND", vimLaneCommand}, {"r", "PROMPT", vimLaneOther}, {"!", "SHELL", vimLaneOther},
+	{"t", "TERMINAL", vimLaneOther},
 }
 
-// vimModeLabel is mode as the strip names it, "" for one Vim has no name for.
-func vimModeLabel(mode string) string {
+// vimModeLabel is mode as the strip names it and the lane its badge wears,
+// "" for one Vim has no name for.
+func vimModeLabel(mode string) (string, int) {
 	for _, m := range vimModeNames {
 		if strings.HasPrefix(mode, m.prefix) {
-			return m.name
+			return m.name, m.lane
 		}
 	}
-	return ""
+	return "", 0
 }
 
 // vimShowmodeRest is what 'showmode' says past the mode the label already

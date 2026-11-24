@@ -45,7 +45,7 @@ func TestVimModeLabelNamesEveryMode(t *testing.T) {
 		"i": "INSERT", "ic": "INSERT", "R": "REPLACE", "Rv": "V-REPLACE",
 		"c": "COMMAND", "cv": "COMMAND", "s": "SELECT", "?": "",
 	} {
-		if got := vimModeLabel(mode); got != want {
+		if got, _ := vimModeLabel(mode); got != want {
 			t.Errorf("%q = %q, want %q", mode, got, want)
 		}
 	}
@@ -61,6 +61,23 @@ func TestVimShowmodeRestDropsWhatTheLabelSays(t *testing.T) {
 	} {
 		if got := vimShowmodeRest(in); got != want {
 			t.Errorf("%q = %q, want %q", in, got, want)
+		}
+	}
+}
+
+func TestVimModeBadgesTellTheModesApart(t *testing.T) {
+	lanes := map[int]string{}
+	for _, mode := range []string{"n", "i", "v", "R", "c"} {
+		name, lane := vimModeLabel(mode)
+		if other, taken := lanes[lane]; taken {
+			t.Fatalf("%s and %s wear the same lane %d", other, name, lane)
+		}
+		lanes[lane] = name
+	}
+	_, visual := vimModeLabel("v")
+	for _, mode := range []string{"V", "\x16", "s"} {
+		if _, lane := vimModeLabel(mode); lane != visual {
+			t.Fatalf("%q wears lane %d, apart from VISUAL's %d", mode, lane, visual)
 		}
 	}
 }
