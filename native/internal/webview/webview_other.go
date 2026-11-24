@@ -43,4 +43,5 @@ func (*Page) SetZoom(float64)                               {}
 func (*Page) Hide()                                         {}
 func (*Page) Navigate(string)                               {}
 func (*Page) Reload()                                       {}
+func (*Page) Inspect()                                      {}
 func (*Page) Close()                                        {}

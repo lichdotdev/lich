@@ -2371,7 +2371,9 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   and the agent's own open and new tab with no URL stay `about:blank`. A note waiting in the tray is hidden while
   the new-tab page is in front, and comes back with the page it belongs to.
 - **The pane's DevTools is Chrome's front-end drawn as frames** (`internal/browser/chrome_devtools.go`,
-  `docs/browser-tab.md`): a target lich creates in a headless window of its own, loading the browser's own
+  `docs/browser-tab.md`), where the pane draws the screencast. Over a WebKitGTK page the button opens WebKit's
+  Web Inspector on that page instead, in a window of its own, never attached: the page's window is sized and
+  cut to the page alone. Chrome's DevTools would inspect the agent's page, not the one on screen. In Chrome, a target lich creates in a headless window of its own, loading the browser's own
   DevTools from its debugging port, screencast like a page. It has no device toolbar (it emulates on the
   page's own target, which the pane does not show as a device), no DevTools extensions, the arrow for every
   cursor, and Chrome's colors, not lich's theme. It draws its first frame about 2 s after the button on a warm

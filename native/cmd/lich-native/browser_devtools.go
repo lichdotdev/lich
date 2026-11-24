@@ -27,7 +27,13 @@ func devtoolsOf(tabs []api.BrowserTab) (open, shown bool) {
 	return false, false
 }
 
-// openDevTools opens or selects the DevTools of session's front tab.
-func (u *window) openDevTools(session string) {
+// openDevTools opens the inspector of the page the person sees: WebKit's for
+// the page the window draws itself, Chrome's DevTools of session's front tab
+// otherwise, which inspects the backend's page.
+func (u *window) openDevTools(p *browserPaneUI, session string) {
+	if p.native != nil {
+		p.native.Inspect()
+		return
+	}
 	u.sendBrowser(session, "devtools", func(ctx context.Context) error { return u.client.BrowserDevTools(ctx, session) })
 }
