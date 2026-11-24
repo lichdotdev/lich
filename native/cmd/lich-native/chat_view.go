@@ -88,6 +88,8 @@ type chatView struct {
 	// copies are the copy buttons of the messages, by item id.
 	copies map[string]*chatCopy
 	folds  map[string]*chatFold
+	// diffCells measures the rows of the edits' diffs.
+	diffCells chatDiffCells
 	// optionMenus are the menus of the option chips, by category.
 	optionMenus map[string]*ui.MenuState
 	answers     map[chatAnswer]*ui.Clickable
@@ -152,6 +154,8 @@ type chatFold struct {
 	enter ui.Presence
 	// turned is when the fold last opened or shut.
 	turned time.Time
+	// diff is an edit's diff once it was opened.
+	diff *chatEditDiff
 }
 
 // shut reports whether the fold is folded and done folding, so what it

@@ -18,6 +18,10 @@
       "one": "Show {count} earlier call",
       "other": "Show {count} earlier calls"
     },
+    "moreLines": {
+      "one": "Show {count} more line",
+      "other": "Show {count} more lines"
+    },
     "shellLess": "Show less",
     "answered": "{tool} · {choice}",
     "verbs": "Conjuring|Summoning|Channeling|Brewing|Scrying|Inscribing|Weaving|Raising",

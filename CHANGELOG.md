@@ -64,7 +64,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **A tooltip on a button wears the theme's popover colors.** It was the theme's text color as a background, a white bubble on a dark theme; it is now a popover with a visible border, the same on the longer tooltips.
 - **A project tab is as wide as its name.** It stops at a limit, keeps room for the spinner, status mark and ×, and when the tabs do not all fit only the longest names shrink.
-- **A file's diff in the chat is a small window.** It has a border, the file's name with its added and removed lines on top, and the changes below.
+- **A file's diff in the chat reads like the Review panel's.** Open a changed file's line to see line numbers, the code in its colors and the words that changed, with only the lines that changed and a few around them; a long diff shows its first 20 lines and Show more for the rest.
 - **Settings › Updates shows only what needs you.** One Check for updates looks at lich and the plugin together, and each agent whose plugin is up to date is a mark beside the plugin's version, with what it cannot do in its tooltip; an agent gets its own line only when it has an install, an update or a step for you.
 - **A turn's tool calls stay folded until you open the line that counts them.** In a chat, a click on that line shows each call, and it stays as you left it while the turn carries on.
 - **A page an agent writes for you wears lich's mark on its browser tab instead of a blank square.** A page with an icon of its own keeps it.

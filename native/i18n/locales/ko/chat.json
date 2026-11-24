@@ -16,6 +16,9 @@
     "earlierCalls": {
       "other": "이전 호출 {count}개 보기"
     },
+    "moreLines": {
+      "other": "{count}줄 더 보기"
+    },
     "shellLess": "접기",
     "answered": "{tool} · {choice}",
     "verbs": "주문 외우는 중|소환하는 중|마력을 모으는 중|달이는 중|들여다보는 중|새기는 중|엮는 중|일으키는 중",

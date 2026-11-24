@@ -104,30 +104,6 @@ func shortenTo(text string, limit int) string {
 	return text[:cut] + "…"
 }
 
-// unifiedDiff is old against new as one hunk spanning both.
-//
-// shortcut: every line is shown removed and added rather than only the ones
-// that changed; compute a real diff when the window draws long edits.
-func unifiedDiff(path, old, next string) string {
-	if old == next {
-		return ""
-	}
-	before, after := diffLines(old), diffLines(next)
-	from, to := "a/"+path, "b/"+path
-	if old == "" {
-		from = "/dev/null"
-	}
-	var b strings.Builder
-	fmt.Fprintf(&b, "--- %s\n+++ %s\n@@ -%s +%s @@\n", from, to, hunkRange(len(before)), hunkRange(len(after)))
-	for _, line := range before {
-		b.WriteString("-" + line + "\n")
-	}
-	for _, line := range after {
-		b.WriteString("+" + line + "\n")
-	}
-	return b.String()
-}
-
 func diffLines(text string) []string {
 	if text == "" {
 		return nil

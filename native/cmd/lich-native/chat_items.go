@@ -655,6 +655,7 @@ func splitDiff(diff string) (name string, added, deleted int, body []string) {
 		case !inHunk && strings.HasPrefix(line, "--- "):
 		case !inHunk && strings.HasPrefix(line, "+++ "):
 			name = path.Base(strings.TrimSpace(line[4:]))
+		case !inHunk && !strings.HasPrefix(line, "@@"):
 		default:
 			inHunk = inHunk || strings.HasPrefix(line, "@@")
 			switch {

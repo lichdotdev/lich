@@ -512,12 +512,16 @@ draws none while it grows in, because the room above the rows is measured in the
   is each file a call with no diff of its own changed (a shell command's `sed`, a script), right after that
   call (`ChatToolCall.Files`, `fileRows`). It stands on
   `Card` in `RadiusMD` with a 1px `Border` hairline: the file's icon (`th.FileIcon`), its folder muted and its
-  name in mono `TextXS`, the path relative to the checkout, then `+a -d` (`th.DiffStat`). No tool name, glyph
+  name in mono `TextSM`, the chat's own size, with a `Space(4)` icon in a `Space(3)`×`Space(2)` inset, the path
+  relative to the checkout, then `+a -d` (`th.DiffStat`). No tool name, glyph
   or time: the line is the file. While the call runs its path shimmers and no counts show; failed, "failed" in
   `Destructive` stands in their place. Hover fills it with the kit's hover; a chevron at its right shows on
   hover and while open. A click unfolds the diff under a hairline, inside the same box, and a second folds it;
-  a Ctrl+click opens the file in the editor instead. A diff, here and in a permission, draws its lines in their
-  tones without the `---`, `+++` and `@@` lines: the lines alone tell the change.
+  a Ctrl+click opens the file in the editor instead. The open diff is the Review panel's code view
+  (`chat_edit_diff.go`, `ui/diffview`), unified, in the editors' code font on `Background`: line numbers, the
+  code's colors, the words that changed, a bare separator between hunks, never git's header lines. It shows
+  `chatDiffShown` (20) rows and a muted "Show N more lines" under them for the rest. A diff the code view
+  cannot read, and a permission's, draws its lines in their tones without the header and `@@` lines.
 - **A question** (`chat_question.go`, `chat_question_draw.go`) waits over the composer, not where the agent
   stopped: it is what holds the turn, so it stands where the person types and does not scroll away. It is
   Claude Code's AskUserQuestion shape, which every provider's request for input is read into, in a box on

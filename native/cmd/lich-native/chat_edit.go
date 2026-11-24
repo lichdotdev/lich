@@ -47,7 +47,7 @@ func (u *window) chatEdit(gtx C, th *ui.Theme, p *chatPane, sv sessionView, r ch
 				},
 				func(gtx C) D {
 					gtx.Constraints.Min.X = gtx.Constraints.Max.X
-					return layout.Inset{Left: ui.Space(2.5), Right: ui.Space(2.5), Top: ui.Space(1.5), Bottom: ui.Space(1.5)}.Layout(gtx, func(gtx C) D {
+					return layout.Inset{Left: ui.Space(3), Right: ui.Space(3), Top: ui.Space(2), Bottom: ui.Space(2)}.Layout(gtx, func(gtx C) D {
 						return chatEditLine(gtx, th, f, t, file, running, added, deleted, len(body) > 0)
 					})
 				})
@@ -68,7 +68,7 @@ func (u *window) chatEdit(gtx C, th *ui.Theme, p *chatPane, sv sessionView, r ch
 								gtx.Constraints.Min = image.Pt(gtx.Constraints.Max.X, gtx.Dp(1))
 								return ui.Fill(gtx, th.Over(th.Border), 0)
 							}),
-							layout.Rigid(func(gtx C) D { return chatDiffLines(gtx, th.On(th.Background), body) }),
+							layout.Rigid(func(gtx C) D { return u.chatEditDiff(gtx, th.On(th.Background), p, f, t.Diff, body) }),
 						)
 					})
 				}),
@@ -87,12 +87,12 @@ const chatEditHover = 0.6
 // a diff to show and the pointer is on it or it is open.
 func chatEditLine(gtx C, th *ui.Theme, f *chatFold, t *backend.ChatToolCall, file string, running bool, added, deleted int, diff bool) D {
 	dir, name := path.Split(file)
-	folder, base := th.Text(ui.TextXS, dir).Mono().Muted(), th.Text(ui.TextXS, name).Mono()
+	folder, base := th.Text(ui.TextSM, dir).Mono().Muted(), th.Text(ui.TextSM, name).Mono()
 	if running {
 		folder, base = folder.Shimmer(), base.Muted().Shimmer()
 	}
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-		layout.Rigid(th.FileIcon(file, ui.Space(3.5)).Layout),
+		layout.Rigid(th.FileIcon(file, ui.Space(4)).Layout),
 		ui.Gap(2),
 		layout.Rigid(folder.Layout),
 		layout.Rigid(base.Layout),
@@ -102,7 +102,7 @@ func chatEditLine(gtx C, th *ui.Theme, f *chatFold, t *backend.ChatToolCall, fil
 			case running:
 				return D{}
 			case t.State == api.ToolFailed:
-				return th.Text(ui.TextXS, i18n.T("chat.view.toolFailed")).In(th.Destructive).Layout(gtx)
+				return th.Text(ui.TextSM, i18n.T("chat.view.toolFailed")).In(th.Destructive).Layout(gtx)
 			}
 			return th.DiffStat(added, deleted).Layout(gtx)
 		}),
@@ -115,9 +115,23 @@ func chatEditLine(gtx C, th *ui.Theme, f *chatFold, t *backend.ChatToolCall, fil
 			if f.open {
 				ic = icChatOpen
 			}
-			return ic.Layout(gtx, ui.Space(3.5), th.MutedForeground)
+			return ic.Layout(gtx, ui.Space(4), th.MutedForeground)
 		}),
 	)
+}
+
+// chatEditDiff is the open edit's diff as the Review panel draws it, in the
+// editors' code font; a diff it cannot read is its lines as they came.
+func (u *window) chatEditDiff(gtx C, th *ui.Theme, p *chatPane, f *chatFold, diff string, body []string) D {
+	if f.diff == nil {
+		f.diff = new(chatEditDiff)
+	}
+	f.diff.build(diff, u.editors.family, u.editors.size)
+	cell, err := p.diffCells.height(gtx, u.editors.family, u.editors.size)
+	if err != nil || f.diff.fail {
+		return chatDiffLines(gtx, th, body)
+	}
+	return f.diff.layout(gtx, th, th.Code, cell)
 }
 
 // editPath is the file call t changed, as the chat names it: the diff's own

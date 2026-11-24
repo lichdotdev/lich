@@ -16,6 +16,9 @@
     "earlierCalls": {
       "other": "前の呼び出し {count} 件を表示"
     },
+    "moreLines": {
+      "other": "さらに {count} 行を表示"
+    },
     "shellLess": "折りたたむ",
     "answered": "{tool} · {choice}",
     "verbs": "詠唱中|召喚中|魔力を注ぎ中|調合中|占い中|刻印中|紡ぎ中|蘇らせ中",

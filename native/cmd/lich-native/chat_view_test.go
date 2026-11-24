@@ -17,6 +17,7 @@ import (
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
+	"github.com/lichdotdev/lich/native/fonts"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
 )
@@ -79,7 +80,8 @@ func chatFramesIn(t testing.TB, view string, size image.Point, in footerInput) (
 	f, client := newChatBackend(t)
 	foot := newFooterRig(t, nil).f
 	foot.dock, foot.git = new(dock), new(gitPanel)
-	u := &window{ctx: t.Context(), client: client, model: chatModel(view), footer: foot, terms: &terminals{byID: map[string]*termView{}, invalidate: r.invalidate}}
+	u := &window{ctx: t.Context(), client: client, model: chatModel(view), footer: foot, terms: &terminals{byID: map[string]*termView{}, invalidate: r.invalidate},
+		editors: stageEditors{family: fonts.SystemMono, size: 13}}
 	u.model.invalidate = r.invalidate
 	u.model.chat.kinds = []string{"claude"}
 	r.draw = func(gtx C, th *ui.Theme) {

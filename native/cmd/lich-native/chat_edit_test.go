@@ -1,10 +1,13 @@
 package main
 
 import (
+	"fmt"
 	"slices"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/lichdotdev/godemirror"
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
 )
@@ -40,10 +43,11 @@ func TestAnEditStandsOutsideTheFold(t *testing.T) {
 
 const editDiff = "--- a/app/page.tsx\n+++ b/app/page.tsx\n@@ -1,3 +1,4 @@\n import x from 'y'\n+const a = 1\n-const c = 3\n+const b = 2\n"
 
-// An edit is one line naming the file and its counts; a click shows its
-// lines, without the hunk's "@@" header, and a second one folds them.
+// An edit is one line naming the file and its counts; a click opens its diff
+// in the Review panel's code view under it, and a second one folds it.
 func TestAnEditIsALineThatOpensItsDiff(t *testing.T) {
 	u, r, _ := chatFrames(t, api.ViewChat)
+	r.theme.Code = godemirror.DarkTheme
 	u.model.chat.history("s1", []backend.ChatItem{
 		{ID: "u1", Kind: api.ItemUser, Turn: 1, Text: "go"},
 		{ID: "e1", Kind: api.ItemTool, Turn: 1, Tool: &backend.ChatToolCall{Name: "Edit", Title: "/repo/app/page.tsx", State: api.ToolDone, Diff: editDiff}},
@@ -55,19 +59,83 @@ func TestAnEditIsALineThatOpensItsDiff(t *testing.T) {
 			t.Errorf("the edit line lacks %q:\n%s", s, r.drawn())
 		}
 	}
-	if r.shows("+const a = 1") || r.shows("Edit") {
-		t.Fatalf("the edit shows its diff or its tool's name before a click:\n%s", r.drawn())
+	if r.shows("Edit") {
+		t.Fatalf("the edit shows its tool's name:\n%s", r.drawn())
 	}
 	r.click(t, r.at(t, "page.tsx"))
 	r.settle(t)
 	writeShot(t, r, "edit-open.png")
-	if !r.shows("+const a = 1") || r.shows("@@ -1,3 +1,4 @@") {
-		t.Errorf("the open edit lacks its lines or shows the hunk header:\n%s", r.drawn())
+	f := u.chats.pane("s1").fold("edit:e1")
+	if !f.open || f.diff == nil || f.diff.fail || len(f.diff.files) != 1 || f.diff.files[0].rows != 4 {
+		t.Fatalf("the open edit's diff = %+v, want one file of 4 rows in the code view", f.diff)
+	}
+	if r.shows("+const a = 1") {
+		t.Errorf("the open edit drew its lines as text, not in the code view:\n%s", r.drawn())
 	}
 	r.click(t, r.at(t, "page.tsx"))
 	r.settle(t)
-	if r.shows("+const a = 1") {
-		t.Errorf("a second click left the diff open:\n%s", r.drawn())
+	if f.open {
+		t.Errorf("a second click left the diff open")
+	}
+}
+
+// A long edit shows its first chatDiffShown rows and the way to the rest.
+func TestALongEditShowsItsFirstRowsAndTheWayToTheRest(t *testing.T) {
+	u, r, _ := chatFrames(t, api.ViewChat)
+	r.theme.Code = godemirror.DarkTheme
+	var b strings.Builder
+	b.WriteString("--- /dev/null\n+++ b/a.go\n@@ -0,0 +1,50 @@\n")
+	for i := range 50 {
+		fmt.Fprintf(&b, "+line %d\n", i)
+	}
+	u.model.chat.history("s1", []backend.ChatItem{
+		{ID: "u1", Kind: api.ItemUser, Turn: 1, Text: "go"},
+		{ID: "e1", Kind: api.ItemTool, Turn: 1, Tool: &backend.ChatToolCall{Name: "Write", Title: "/repo/a.go", State: api.ToolDone, Diff: b.String()}},
+	})
+	r.settle(t)
+	r.click(t, r.at(t, "a.go"))
+	r.settle(t)
+	writeShot(t, r, "edit-long.png")
+	if !r.shows("Show 30 more lines") {
+		t.Fatalf("the long edit lacks the way to its last 30 rows:\n%s", r.drawn())
+	}
+	r.click(t, r.at(t, "Show 30 more lines"))
+	r.settle(t)
+	if r.shows("Show 30 more lines") || !u.chats.pane("s1").fold("edit:e1").diff.whole {
+		t.Errorf("the edit still holds rows back after the click:\n%s", r.drawn())
+	}
+}
+
+func TestGitPatch(t *testing.T) {
+	for name, tc := range map[string]struct{ diff, want string }{
+		"a provider's diff gets git's line": {
+			"--- a/x.go\n+++ b/x.go\n@@ -1 +1 @@\n-a\n+b\n",
+			"diff --git a/x.go b/x.go\n--- a/x.go\n+++ b/x.go\n@@ -1 +1 @@\n-a\n+b\n"},
+		"a new file is named by its new side": {
+			"--- /dev/null\n+++ b/x.go\n@@ -0,0 +1 @@\n+a\n",
+			"diff --git a/x.go b/x.go\n--- /dev/null\n+++ b/x.go\n@@ -0,0 +1 @@\n+a\n"},
+		"a removed line reading --- stays in its hunk": {
+			"--- a/x.md\n+++ b/x.md\n@@ -1,2 +1,2 @@\n--- a\n+++ b\n",
+			"diff --git a/x.md b/x.md\n--- a/x.md\n+++ b/x.md\n@@ -1,2 +1,2 @@\n--- a\n+++ b\n"},
+		"each file of a patch gets its own": {
+			"--- a/x\n+++ b/x\n@@ -1 +1 @@\n-a\n+b\n--- a/y\n+++ /dev/null\n@@ -1 +0,0 @@\n-c\n",
+			"diff --git a/x b/x\n--- a/x\n+++ b/x\n@@ -1 +1 @@\n-a\n+b\ndiff --git a/y b/y\n--- a/y\n+++ /dev/null\n@@ -1 +0,0 @@\n-c\n"},
+		"git's own is left alone": {
+			"diff --git a/x b/x\nindex 1..2 100644\n--- a/x\n+++ b/x\n",
+			"diff --git a/x b/x\nindex 1..2 100644\n--- a/x\n+++ b/x\n"},
+	} {
+		if got := gitPatch(tc.diff); got != tc.want {
+			t.Errorf("%s: gitPatch = %q, want %q", name, got, tc.want)
+		}
+	}
+}
+
+// git's lines over a file's first hunk are not the file's: a diff that falls
+// back to its lines as they came leaves them out.
+func TestSplitDiffLeavesGitsHeaderOut(t *testing.T) {
+	_, added, deleted, body := splitDiff("diff --git a/x b/x\nindex 1..2 100644\n--- a/x\n+++ b/x\n@@ -1 +1 @@\n-a\n+b\n")
+	if added != 1 || deleted != 1 || len(body) != 3 || body[0] != "@@ -1 +1 @@" {
+		t.Errorf("splitDiff = +%d -%d %q, want +1 -1 and the hunk alone", added, deleted, body)
 	}
 }
 
