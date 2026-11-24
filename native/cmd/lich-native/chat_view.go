@@ -82,6 +82,8 @@ type chatView struct {
 	keys []string
 	swap chatSwap
 	run  chatToEnd
+	// jump is the pill that runs the list back to its end.
+	jump ui.Clickable
 	// stamps are the tooltips of the time under each message, by item id.
 	stamps map[string]*ui.Tooltip
 	// notes are the clicks on a notification's row, by item id and place.
@@ -361,6 +363,7 @@ func (u *window) chatScreen(gtx C, sv sessionView, keys bool) {
 		}
 		call.Add(gtx.Ops)
 		p.scrollbar(gtx, th, shown, d)
+		p.jumpToLatest(gtx, th, d.Size.Y, u.model.chat.isRunning(sv.ID))
 		// A row's window was placed by the height it had before, with a
 		// viewport of margin: a row that grew or shrank by more, as an
 		// answer's unmeasured blocks do, is drawn again where it now stands.
@@ -540,6 +543,7 @@ func (u *window) submitChat(gtx C, p *chatPane, id string, working bool, waiting
 		u.answerChat(id, waiting.ID, permitOption(waiting.Permission, api.PermitAllowOnce, api.PermitAllowAlways))
 	case asking == nil && u.model.chat.isRunning(id):
 		u.queueChat(p, id)
+		p.toEnd(gtx.Now)
 	case !working || asking != nil:
 		if u.sendChat(p, id) {
 			p.toEnd(gtx.Now)

@@ -73,6 +73,8 @@
         "other": "{count} failed"
       }
     },
+    "latest": "Latest",
+    "newActivity": "New activity",
     "openedAs": "opened as {label}"
   },
   "done": {

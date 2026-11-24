@@ -506,8 +506,12 @@ draws none while it grows in, because the room above the rows is measured in the
   plays its own entry or exit. A question answered leaves the composer at once, and its answer enters the
   conversation as a new row does. A fold, a thought's text, a group's calls or an edit's diff, opens and shuts with `ui.Collapse`, 200ms, its first draw landing where it
   stands, and a group opens and shuts that way at the edges of its run of calls; a call that comes into an open
-  group enters as a row does. Sending a message while the list is scrolled up runs it back
-  to its end in 220ms ease-out and pins it there. Switching between GUI and TUI fades the view that comes in
+  group enters as a row does. Sending a message while the list is scrolled up, queued or steered
+  into a turn too, runs it back to its end in 220ms ease-out and pins it there. Scrolled up from the end it
+  follows, the list carries a pill centred `Space(3)` over its foot (`chat_jump.go`): `Popover` with a
+  `Border` hairline, fully rounded, an arrow down and muted `TextXS` "Latest", lit on hover; while the agent
+  works, a `Primary` dot leads it and the words read "New activity", shimmering. Its click runs the list to its
+  end as a send does, and it is gone there; Paseo and Orca carry the same. Switching between GUI and TUI fades the view that comes in
   from the background in 150ms ease-out, from the first frame that draws it; the one that leaves goes at once.
   The chevrons, the option highlight, the Send and Stop swap, the composer's height, a tool's state, the copy
   check and the footer's changes stay dry.

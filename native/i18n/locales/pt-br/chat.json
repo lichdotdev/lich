@@ -73,6 +73,8 @@
         "other": "{count} falharam"
       }
     },
+    "latest": "Mais recente",
+    "newActivity": "Novidades",
     "openedAs": "aberta como {label}"
   },
   "done": {

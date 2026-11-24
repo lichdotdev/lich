@@ -373,5 +373,6 @@ func (u *window) composerKeys(gtx C, p *chatPane, id string, sent []string, keys
 		}
 		p.clearComposer()
 		u.steerChat(id, m)
+		p.toEnd(gtx.Now)
 	}
 }

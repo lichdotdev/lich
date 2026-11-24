@@ -95,6 +95,8 @@
         "other": "{count} с ошибкой"
       }
     },
+    "latest": "К последнему",
+    "newActivity": "Новые события",
     "openedAs": "открыта как {label}"
   },
   "done": {

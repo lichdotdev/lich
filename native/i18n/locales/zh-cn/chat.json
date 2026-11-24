@@ -62,6 +62,8 @@
         "other": "{count} 个失败"
       }
     },
+    "latest": "最新",
+    "newActivity": "新动态",
     "openedAs": "已开成 {label}"
   },
   "done": {

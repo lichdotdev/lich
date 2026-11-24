@@ -62,6 +62,8 @@
         "other": "{count} 件失敗"
       }
     },
+    "latest": "最新へ",
+    "newActivity": "新しい動き",
     "openedAs": "{label} として開きました"
   },
   "done": {
