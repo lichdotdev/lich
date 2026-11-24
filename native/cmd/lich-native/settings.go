@@ -447,7 +447,8 @@ func (u *window) loadSettings() error {
 
 // takeEditorPref is Settings › Editor's change reaching the diff panels:
 // whitespace at once, the layout as each panel's split, which its header
-// toggle goes on flipping from there.
+// toggle goes on flipping from there. Vim turned off ends the editors'
+// Neovim; the editors take their keys back on their next frame.
 func (u *window) takeEditorPref(key string, prefs editorPrefs) {
 	if key == diffLayoutKey {
 		u.git.detail.split = prefs.split()
@@ -459,6 +460,9 @@ func (u *window) takeEditorPref(key string, prefs editorPrefs) {
 		case diffLayoutKey:
 			panel.split = prefs.split()
 		}
+	}
+	if key == vimKey && !prefs.vim && u.vim != nil {
+		u.vim.close()
 	}
 }
 

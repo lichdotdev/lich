@@ -418,7 +418,9 @@
     "sectionEditor": "Редактор",
     "hideWhitespaceTitle": "Скрывать пробелы в изменениях",
     "hideWhitespaceSearchWords": "пробелы отступы ревью игнорировать space indentation review ignore",
-    "interfaceGroup": "Интерфейс"
+    "interfaceGroup": "Интерфейс",
+    "vimTitle": "Режим Vim",
+    "vimSearchWords": "vim neovim nvim модальный клавиши сочетания"
   },
   "settingsNav": {
     "scopeLabel": "Область",
@@ -468,7 +470,9 @@
     "editorSizeReset": "Сбросить размер текста в редакторе"
   },
   "settingsEditor": {
-    "hideWhitespaceDescription": "Не показывать на вкладке «Ревью» изменения, которые затрагивают только пробелы."
+    "hideWhitespaceDescription": "Не показывать на вкладке «Ревью» изменения, которые затрагивают только пробелы.",
+    "vimDescription": "Правьте файлы клавишами самого Vim: их исполняет ваш Neovim с вашим конфигом.",
+    "vimMissing": "Нужен Neovim 0.10 или новее в PATH."
   },
   "settingsTheme": {
     "autoLightDark": "Авто светлая/тёмная"

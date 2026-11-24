@@ -116,7 +116,10 @@ type window struct {
 	terms   *terminals
 	review  *reviewPanel
 	// comments is the review batch every surface shares.
-	comments    commentStore
+	comments commentStore
+	// vim is the Neovim the editors run in while Settings › Editor › Vim
+	// is on, started at the first key.
+	vim         *vimHost
 	editors     stageEditors
 	commentEdit commentEditDialog
 	dock        *dock

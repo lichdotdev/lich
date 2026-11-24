@@ -54,6 +54,7 @@
     "noteOn": "{author} on lines {lines}",
     "blame": "{author}, {age} · {summary}",
     "blameUncommitted": "You · Uncommitted changes",
-    "artifactReadOnly": "From the agent · read only"
+    "artifactReadOnly": "From the agent · read only",
+    "vimFailed": "Neovim did not start, so the editor takes its own keys"
   }
 }

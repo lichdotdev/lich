@@ -406,7 +406,9 @@
     "sectionEditor": "에디터",
     "hideWhitespaceTitle": "diff에서 공백 숨기기",
     "hideWhitespaceSearchWords": "공백 들여쓰기 리뷰 무시 whitespace",
-    "interfaceGroup": "인터페이스"
+    "interfaceGroup": "인터페이스",
+    "vimTitle": "Vim 모드",
+    "vimSearchWords": "vim neovim nvim 모달 키 단축키"
   },
   "settingsNav": {
     "scopeLabel": "범위",
@@ -456,7 +458,9 @@
     "editorSizeReset": "에디터 글자 크기 초기화"
   },
   "settingsEditor": {
-    "hideWhitespaceDescription": "리뷰 탭에서 공백만 바뀐 변경 사항을 뺍니다."
+    "hideWhitespaceDescription": "리뷰 탭에서 공백만 바뀐 변경 사항을 뺍니다.",
+    "vimDescription": "Vim 본래의 키로 파일을 편집합니다. 내 Neovim과 그 설정으로 실행됩니다.",
+    "vimMissing": "PATH에 Neovim 0.10 이상이 있어야 합니다."
   },
   "settingsTheme": {
     "autoLightDark": "자동 라이트/다크"

@@ -243,7 +243,10 @@ func (u *window) applyEditor(act sidebarAction) {
 			closeIt()
 			return
 		}
-		u.editors.saveThen(f, closeIt)
+		u.editors.saveThen(f, func() {
+			f.vimOff()
+			closeIt()
+		})
 	}
 }
 
@@ -267,7 +270,18 @@ func (u *window) editorIsland(gtx C, v stageView) error {
 	if id := u.model.referenceTarget(v.editor); id != "" {
 		inject = u.injector(id)
 	}
-	return f.layout(gtx, th, editorEnv{root: &u.root, code: code, inject: inject, comments: &u.comments, notify: func(t ui.Toast) { u.toaster.Show(t) }})
+	return f.layout(gtx, th, editorEnv{root: &u.root, code: code, inject: inject, comments: &u.comments, notify: func(t ui.Toast) { u.toaster.Show(t) }, vim: u.vimHost()})
+}
+
+// vimHost is the Neovim behind the editors, nil while Vim is off.
+func (u *window) vimHost() *vimHost {
+	if !u.settings.editor.prefs.vim {
+		return nil
+	}
+	if u.vim == nil {
+		u.vim = newVimHost(u.editors.invalidate)
+	}
+	return u.vim
 }
 
 // editorWouldAsk is whether opening t would ask about unsaved changes to

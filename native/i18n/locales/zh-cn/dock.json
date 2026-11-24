@@ -54,6 +54,7 @@
     "noteOn": "{author} 关于第 {lines} 行",
     "blame": "{author}，{age} · {summary}",
     "blameUncommitted": "你 · 未提交的更改",
-    "artifactReadOnly": "来自智能体 · 只读"
+    "artifactReadOnly": "来自智能体 · 只读",
+    "vimFailed": "Neovim 未能启动，编辑器改用自带的按键"
   }
 }

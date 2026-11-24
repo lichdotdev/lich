@@ -1,10 +1,14 @@
 package main
 
 import (
+	"image"
 	"image/color"
 	"time"
 
 	"gioui.org/op"
+	"gioui.org/op/clip"
+	"gioui.org/op/paint"
+	"gioui.org/unit"
 
 	"github.com/lichdotdev/lich/native/ui"
 )
@@ -275,10 +279,21 @@ func cornerWant(sv *sessionView) (cornerMode, bool) {
 // status, so a change plays out of what was on screen; one first drawn shows
 // its status at once.
 func (s *sidebar) statusCorner(gtx C, th *ui.Theme, sv *sessionView) (D, bool) {
+	c, ok := s.cornerAt(gtx, th, sv)
+	if !ok {
+		return D{}, false
+	}
+	return drawCorner(gtx, th.Surface, c.color(th, gtx.Now), c.alphas(gtx.Now)), true
+}
+
+// cornerAt is the session's corner advanced to the frame, false for a status
+// it has nothing for. The card and the rail's badge share it, so a session
+// keeps its motion across the morph.
+func (s *sidebar) cornerAt(gtx C, th *ui.Theme, sv *sessionView) (*corner, bool) {
 	want, ok := cornerWant(sv)
 	if !ok {
 		delete(s.corners, sv.ID)
-		return D{}, false
+		return nil, false
 	}
 	c := s.corners[sv.ID]
 	if c == nil {
@@ -289,8 +304,34 @@ func (s *sidebar) statusCorner(gtx C, th *ui.Theme, sv *sessionView) (D, bool) {
 	if at, ok := c.due(gtx.Now); ok {
 		nextFrame(gtx, th, at.Sub(gtx.Now))
 	}
-	return drawCorner(gtx, th.Surface, c.color(th, gtx.Now), c.alphas(gtx.Now)), true
+	return c, true
 }
+
+// railBadge is the session's corner on a rail node's bottom right, at
+// railBadgeSize on a plate of the node's ground that cuts it off the
+// provider mark under it.
+func (s *sidebar) railBadge(gtx C, th *ui.Theme, sv *sessionView, ground color.NRGBA) D {
+	box := gtx.Constraints.Min
+	c, ok := s.cornerAt(gtx, th, sv)
+	if !ok {
+		return D{Size: box}
+	}
+	side := gtx.Dp(railBadgeSize)
+	plate := side + 2*gtx.Dp(railBadgePlate)
+	at := box.Sub(image.Pt(plate, plate))
+	defer op.Offset(at).Push(gtx.Ops).Pop()
+	paint.FillShape(gtx.Ops, ground, clip.UniformRRect(image.Rectangle{Max: image.Pt(plate, plate)}, gtx.Dp(railBadgePlate)*2).Op(gtx.Ops))
+	defer op.Offset(image.Pt(gtx.Dp(railBadgePlate), gtx.Dp(railBadgePlate))).Push(gtx.Ops).Pop()
+	drawCells(gtx, side, ground, c.color(th, gtx.Now), c.alphas(gtx.Now))
+	return D{Size: box}
+}
+
+// railBadgeSize is the rail's corner: small enough to leave the provider
+// mark readable, large enough that the snake still reads as one.
+var (
+	railBadgeSize  = unit.Dp(12)
+	railBadgePlate = unit.Dp(1.5)
+)
 
 // nextFrame asks for the frame after left, or a still window's slower look.
 func nextFrame(gtx C, th *ui.Theme, left time.Duration) {

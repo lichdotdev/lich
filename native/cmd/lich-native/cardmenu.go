@@ -37,7 +37,6 @@ func cardMenu(sv *sessionView, folders []string, act *sidebarAction, startRename
 		pin = ui.MenuEntry{Label: i18n.T("sidebar.sessionCard.unpin"), Icon: icMenuUnpin, OnClick: func() { act.pin, act.pinTo = sv.ID, false }}
 	}
 	var entries []ui.MenuEntry
-	// The rail draws no name to edit, so it passes no rename.
 	if startRename != nil {
 		entries = append(entries, ui.MenuEntry{Label: i18n.T("sidebar.sessionCard.rename"), Icon: icMenuRename, OnClick: startRename})
 	}

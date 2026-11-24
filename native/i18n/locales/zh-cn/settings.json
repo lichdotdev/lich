@@ -410,7 +410,9 @@
     "sectionEditor": "编辑器",
     "hideWhitespaceTitle": "在差异中隐藏空白",
     "hideWhitespaceSearchWords": "空格 缩进 审查 忽略",
-    "interfaceGroup": "界面"
+    "interfaceGroup": "界面",
+    "vimTitle": "Vim 模式",
+    "vimSearchWords": "vim neovim nvim 模态 按键 快捷键"
   },
   "settingsNav": {
     "scopeLabel": "范围",
@@ -460,7 +462,9 @@
     "editorSizeReset": "重置编辑器文字大小"
   },
   "settingsEditor": {
-    "hideWhitespaceDescription": "在审查标签页中忽略仅改动空白的变更。"
+    "hideWhitespaceDescription": "在审查标签页中忽略仅改动空白的变更。",
+    "vimDescription": "用 Vim 原生的按键编辑文件，由你的 Neovim 及其配置运行。",
+    "vimMissing": "需要 PATH 中有 Neovim 0.10 或更高版本。"
   },
   "settingsTheme": {
     "autoLightDark": "自动浅色/深色"

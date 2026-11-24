@@ -73,8 +73,10 @@ func init() {
 // then the ones the command palette picked.
 func (u *window) pollHotkeys(gtx C) []hotkeyID {
 	inTerminal, picking := u.terms.focused(gtx), u.chats.pickerHasKeys(gtx)
-	chatKeeps := u.chatKeeps(gtx, runtime.GOOS, inTerminal)
-	fired := pollChords(gtx, &u.settings.hotkeys, runtime.GOOS, inTerminal, func(id hotkeyID) bool {
+	// Vim spends Ctrl+letter as a terminal program does.
+	controlCodes := inTerminal || u.editors.vimHasKeys(gtx)
+	chatKeeps := u.chatKeeps(gtx, runtime.GOOS, controlCodes)
+	fired := pollChords(gtx, &u.settings.hotkeys, runtime.GOOS, controlCodes, func(id hotkeyID) bool {
 		handler, ok := hotkeyHandlers[id]
 		return ok && (handler.ready == nil || handler.ready(u)) && !leftToFocus(id, inTerminal, picking) && !chatKeeps(id)
 	})

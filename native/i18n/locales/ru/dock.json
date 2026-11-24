@@ -56,6 +56,7 @@
     "noteOn": "{author} о строках {lines}",
     "blame": "{author}, {age} · {summary}",
     "blameUncommitted": "Вы · Незакоммиченные изменения",
-    "artifactReadOnly": "От агента · только чтение"
+    "artifactReadOnly": "От агента · только чтение",
+    "vimFailed": "Neovim не запустился, поэтому редактор работает со своими клавишами"
   }
 }

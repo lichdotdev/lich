@@ -54,6 +54,7 @@
     "noteOn": "{author} · {lines}행",
     "blame": "{author}, {age} · {summary}",
     "blameUncommitted": "나 · 커밋하지 않은 변경 사항",
-    "artifactReadOnly": "에이전트 파일 · 읽기 전용"
+    "artifactReadOnly": "에이전트 파일 · 읽기 전용",
+    "vimFailed": "Neovim이 시작되지 않아 편집기가 자체 키를 사용합니다"
   }
 }

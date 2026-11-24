@@ -54,6 +54,7 @@
     "noteOn": "{author} sobre las líneas {lines}",
     "blame": "{author}, {age} · {summary}",
     "blameUncommitted": "Tú · Cambios sin confirmar",
-    "artifactReadOnly": "Del agente · solo lectura"
+    "artifactReadOnly": "Del agente · solo lectura",
+    "vimFailed": "Neovim no se inició, así que el editor usa sus propias teclas"
   }
 }

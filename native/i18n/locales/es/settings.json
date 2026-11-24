@@ -410,7 +410,9 @@
     "sectionEditor": "Editor",
     "hideWhitespaceTitle": "Ocultar espacios en blanco en los diffs",
     "hideWhitespaceSearchWords": "espacio sangría revisión ignorar",
-    "interfaceGroup": "Interfaz"
+    "interfaceGroup": "Interfaz",
+    "vimTitle": "Modo Vim",
+    "vimSearchWords": "vim neovim nvim modal teclas atajos"
   },
   "settingsNav": {
     "scopeLabel": "Ámbito",
@@ -460,7 +462,9 @@
     "editorSizeReset": "Restablecer el tamaño del texto del editor"
   },
   "settingsEditor": {
-    "hideWhitespaceDescription": "Omite los cambios que solo afectan al espaciado en la pestaña Revisión."
+    "hideWhitespaceDescription": "Omite los cambios que solo afectan al espaciado en la pestaña Revisión.",
+    "vimDescription": "Edita archivos con las teclas del propio Vim, ejecutadas por tu Neovim y su configuración.",
+    "vimMissing": "Necesita Neovim 0.10 o posterior en el PATH."
   },
   "settingsTheme": {
     "autoLightDark": "Claro/oscuro automático"

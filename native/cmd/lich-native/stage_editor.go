@@ -80,6 +80,7 @@ type fileEditor struct {
 	focus   bool
 	disk    diskWatch
 	saving  editorSaving
+	vim     vimBuffer
 	// editedAt is the last edit, which autoSave counts from on now's clock.
 	editedAt time.Time
 	now      func() time.Time
@@ -100,6 +101,7 @@ type editorEnv struct {
 	inject   func(string) bool
 	comments *commentStore
 	notify   func(ui.Toast)
+	vim      *vimHost
 }
 
 func newFileEditor(client *backend.Client, invalidate func(), family string, size unit.Sp, checkout string) *fileEditor {
@@ -230,6 +232,7 @@ func (f *fileEditor) setText(text string) error {
 	f.gen++
 	f.blame.gen++
 	f.setDirty(false)
+	f.vimSet()
 	return err
 }
 
@@ -250,6 +253,7 @@ func (f *fileEditor) landLines() {
 // updated follows the user's edits: whether the text is still the disk's,
 // and the marks on the lines that are not.
 func (f *fileEditor) updated(u godemirror.Update) {
+	f.vimPointer(u)
 	if !u.DocChanged() {
 		return
 	}
@@ -315,6 +319,7 @@ func (f *fileEditor) layout(gtx C, th *ui.Theme, env editorEnv) error {
 		return err
 	}
 	f.takeSave()
+	f.syncVim()
 	f.actions(gtx)
 	f.autoSave(gtx)
 	f.watchDisk(gtx)
@@ -336,6 +341,7 @@ func (f *fileEditor) layout(gtx C, th *ui.Theme, env editorEnv) error {
 			d, err = f.body(gtx, th)
 			return d
 		}),
+		layout.Rigid(func(gtx C) D { return f.vimStatus(gtx, th) }),
 	)
 	return err
 }
@@ -386,10 +392,15 @@ func (f *fileEditor) source(gtx C, th *ui.Theme) (D, error) {
 	code := func(gtx C) D {
 		gtx.Constraints.Min = gtx.Constraints.Max
 		f.ed.Theme = f.env.code
+		if f.vimOn() {
+			f.ed.Theme = vimHideCaret(f.ed.Theme)
+		}
 		d, err := f.ed.Layout(gtx)
 		viewErr = err
 		if err == nil {
 			paint.FillShape(gtx.Ops, th.Over(th.Border), clip.Rect(gutterRule(f.ed.Geometry(), d.Size.Y)).Op())
+			f.paintVimCursor(gtx)
+			f.vimResize(d.Size)
 		}
 		return d
 	}

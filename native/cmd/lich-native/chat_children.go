@@ -9,9 +9,6 @@ import (
 	"time"
 
 	"gioui.org/layout"
-	"gioui.org/op/clip"
-	"gioui.org/op/paint"
-	"gioui.org/unit"
 
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
@@ -28,7 +25,8 @@ const (
 var (
 	chatChildMark    = ui.Space(4.5)
 	chatChildMarkGap = ui.Space(1)
-	chatChildDot     = ui.Space(2.5)
+	// chatChildBadge is the room past the mark the rail's badge overhangs.
+	chatChildBadge = ui.Space(1.5)
 )
 
 // childrenOf are the open sessions session id opened, in every project:
@@ -161,9 +159,8 @@ func (u *window) childrenView(gtx C, th *ui.Theme, p *chatPane, sv sessionView) 
 	return t.scrolled(gtx, th, head, lines, nil)
 }
 
-// childRow is a child: its provider's mark with its state's dot on the
-// corner, its name, the provider, model, branch and how long it has been in
-// its state, and what it waits on in ToneWait. One no longer working reads
+// childRow is a child: its provider's mark with its status corner, its
+// name, the provider, model, branch and how long it has been in its state, and what it waits on in ToneWait. One no longer working reads
 // muted.
 func (u *window) childRow(gtx C, th *ui.Theme, k sessionView) D {
 	ink := th.Foreground
@@ -179,7 +176,7 @@ func (u *window) childRow(gtx C, th *ui.Theme, k sessionView) D {
 	}
 	return layout.Inset{Top: ui.Space(1.5), Bottom: ui.Space(1.5)}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{}.Layout(gtx,
-			layout.Rigid(func(gtx C) D { return childMark(gtx, th, k) }),
+			layout.Rigid(func(gtx C) D { return u.childMark(gtx, th, k) }),
 			ui.Gap(2.5),
 			layout.Flexed(1, func(gtx C) D { return layout.Flex{Axis: layout.Vertical}.Layout(gtx, lines...) }),
 		)
@@ -209,14 +206,12 @@ func (u *window) childMeta(k sessionView) string {
 	return strings.Join(parts, " · ")
 }
 
-// childMark is k's provider mark with its state's dot on the lower right
-// corner, ringed in the row's surface.
-func childMark(gtx C, th *ui.Theme, k sessionView) D {
-	box := gtx.Dp(chatChildMark)
-	d := providerGlyph(gtx, th, childKind(k), chatChildMark, markPixel)
-	dot, ring := gtx.Dp(chatChildDot), gtx.Dp(unit.Dp(1.5))
-	at := image.Pt(box-dot+ring, box-dot+ring)
-	paint.FillShape(gtx.Ops, th.Surface, clip.Ellipse{Min: at.Sub(image.Pt(ring, ring)), Max: at.Add(image.Pt(dot+ring, dot+ring))}.Op(gtx.Ops))
-	paint.FillShape(gtx.Ops, childDot(th, k), clip.Ellipse{Min: at, Max: at.Add(image.Pt(dot, dot))}.Op(gtx.Ops))
-	return D{Size: image.Pt(d.Size.X+gtx.Dp(chatChildMarkGap), d.Size.Y)}
+// childMark is k's provider mark with the sidebar's status corner
+// (railBadge) on its lower right, so a child reads as it does in the rail.
+func (u *window) childMark(gtx C, th *ui.Theme, k sessionView) D {
+	box := gtx.Dp(chatChildMark + chatChildBadge)
+	gtx.Constraints = layout.Exact(image.Pt(box, box))
+	providerGlyph(gtx, th, childKind(k), chatChildMark, markPixel)
+	u.sidebar.railBadge(gtx, th, &k, th.Surface)
+	return D{Size: image.Pt(box+gtx.Dp(chatChildMarkGap), box)}
 }
