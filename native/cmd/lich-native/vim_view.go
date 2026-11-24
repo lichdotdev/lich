@@ -111,9 +111,9 @@ func (f *fileEditor) vimStatus(gtx C, th *ui.Theme) D {
 		}
 		return th.Text(ui.TextSM, vimShowmodeRest(u.showmode)).Mono().Muted().Truncated().Layout(gtx)
 	}
-	mode := ""
+	mode, lane := "", 0
 	if current && f.vim.state != nil {
-		mode = vimModeLabel(f.vim.state.mode)
+		mode, lane = vimModeLabel(f.vim.state.mode)
 	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(th.Separator),
@@ -121,7 +121,7 @@ func (f *fileEditor) vimStatus(gtx C, th *ui.Theme) D {
 			return layout.Inset{Left: ui.Space(3), Right: ui.Space(3), Top: ui.Space(1), Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
 				gtx.Constraints.Min.X = gtx.Constraints.Max.X
 				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-					layout.Rigid(th.Text(ui.TextSM, mode).Mono().Weight(font.Bold).Layout),
+					layout.Rigid(func(gtx C) D { return vimModeBadge(gtx, th, mode, th.GraphLanes[lane]) }),
 					ui.Gap(3),
 					layout.Flexed(1, left),
 					layout.Rigid(th.Text(ui.TextSM, u.showcmd).Mono().Muted().Layout),
@@ -129,6 +129,19 @@ func (f *fileEditor) vimStatus(gtx C, th *ui.Theme) D {
 			})
 		}),
 	)
+}
+
+// vimModeBadge is the mode's name in bold on its lane's color.
+func vimModeBadge(gtx C, th *ui.Theme, mode string, bg color.NRGBA) D {
+	if mode == "" {
+		return D{}
+	}
+	return layout.Background{}.Layout(gtx,
+		func(gtx C) D { return ui.Fill(gtx, bg, ui.RadiusSM) },
+		func(gtx C) D {
+			return layout.Inset{Left: ui.Space(2), Right: ui.Space(2)}.Layout(gtx,
+				th.On(bg).Text(ui.TextSM, mode).Mono().Weight(font.Bold).In(th.Background).Layout)
+		})
 }
 
 // vimCmdlineLayout is the command line with its caret at pos.
