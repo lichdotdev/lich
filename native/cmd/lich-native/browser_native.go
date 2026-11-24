@@ -91,7 +91,9 @@ func (u *window) cutNativePages() {
 		if r := p.native.Placed(); !r.Empty() {
 			p.native.Place(r, pageCuts(r, p.notes.cuts, u.covers))
 		}
-		if script := overlayScript(pageOverlayOf(&p.notes)); script != p.overlaySent {
+		o := pageOverlayOf(&p.notes)
+		o.Cursor = p.pageCursor
+		if script := overlayScript(o); script != p.overlaySent {
 			p.overlaySent = script
 			p.native.Run(script)
 		}

@@ -13,6 +13,7 @@ import (
 	"gioui.org/op"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
+	"gioui.org/unit"
 
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
@@ -278,6 +279,30 @@ var cursorArrow = icons.BibataArrow()
 
 const cursorArrowSize = 24
 
+// The arrow's and the badge's look, which the page draws too
+// (pageCursorOf): in dp, the badge's text in sp.
+const (
+	cursorArrowOutline   = 1.6
+	cursorChevronOutline = 4.4
+	cursorChevronLine    = 2.6
+	cursorBadgeHeight    = 20
+	cursorBadgeOutline   = 1.5
+	cursorBadgeText      = ui.TextXS
+)
+
+var (
+	cursorBadgePadLeft  = ui.Space(1.25)
+	cursorBadgePadRight = ui.Space(2)
+	cursorBadgeIcon     = ui.Space(3)
+)
+
+// cursorBadgeGap is the badge's gap between icon and text, in ui.Space steps.
+const cursorBadgeGap = 1
+
+// cursorBadgeX and cursorBadgeY are where the badge stands from the arrow's
+// tip.
+const cursorBadgeX, cursorBadgeY unit.Dp = 12, 15
+
 // cursorTip is the arrow's hotspot, the point of its fill, in the arrow's own
 // units.
 var cursorTip = f32.Pt(52.5, 27)
@@ -301,14 +326,10 @@ func (u *window) drawAgentCursor(gtx C, c *agentCursor, tint, outline color.NRGB
 	for _, r := range c.rings {
 		drawCursorRing(gtx, r.at, now.Sub(r.start), r.span, tint)
 	}
-	dipFor := c.span(cursorDip)
 	if c.scroll == 0 {
 		drawCursorRing(gtx, at, landed, c.span(cursorRing), tint)
 	}
-	s := float32(1)
-	if c.scroll == 0 && landed >= 0 && landed < dipFor {
-		s -= cursorDipScale * float32(math.Sin(math.Pi*float64(progress(landed, dipFor))))
-	}
+	s := c.dipScale(landed)
 	unit := float32(gtx.Dp(1))
 	scale := unit * cursorArrowSize / icons.BibataArrowBox
 	arrow := cursorArrow.Outline(scale)
@@ -317,10 +338,10 @@ func (u *window) drawAgentCursor(gtx C, c *agentCursor, tint, outline color.NRGB
 	paint.FillShape(gtx.Ops, cursorShadow, clip.Outline{Path: arrow}.Op())
 	shadow.Pop()
 	paint.FillShape(gtx.Ops, tint, clip.Outline{Path: arrow}.Op())
-	paint.FillShape(gtx.Ops, outline, clip.Stroke{Path: arrow, Width: 1.6 * unit}.Op())
+	paint.FillShape(gtx.Ops, outline, clip.Stroke{Path: arrow, Width: cursorArrowOutline * unit}.Op())
 	place.Pop()
 	if verb, shown := cursorVerb(c.action), c.badgeAlpha(now); verb != "" && shown > 0 {
-		badge := op.Offset(image.Pt(int(at.X)+gtx.Dp(12), int(at.Y)+gtx.Dp(15))).Push(gtx.Ops)
+		badge := op.Offset(image.Pt(int(at.X)+gtx.Dp(cursorBadgeX), int(at.Y)+gtx.Dp(cursorBadgeY))).Push(gtx.Ops)
 		fade := paint.PushOpacity(gtx.Ops, shown)
 		u.cursorBadge(gtx, tint, outline, verb, icon)
 		fade.Pop()
@@ -351,28 +372,51 @@ func (c *agentCursor) askFrames(gtx C) {
 
 // drawCursorRing draws a click's ring at at, since into its span.
 func drawCursorRing(gtx C, at f32.Point, since, span time.Duration, tint color.NRGBA) {
-	if since < 0 || since >= span {
+	grown, alpha, ok := ringMotion(since, span)
+	if !ok {
 		return
 	}
-	p := progress(since, span)
-	r := float32(gtx.Dp(17)) * cursorEase(p)
+	r := float32(gtx.Dp(1)) * grown
 	ring := clip.Ellipse{Min: image.Pt(int(at.X-r), int(at.Y-r)), Max: image.Pt(int(at.X+r), int(at.Y+r))}
-	paint.FillShape(gtx.Ops, ui.Alpha(tint, 0.95*(1-p)), clip.Stroke{Path: ring.Path(gtx.Ops), Width: float32(gtx.Dp(2))}.Op())
+	paint.FillShape(gtx.Ops, ui.Alpha(tint, alpha), clip.Stroke{Path: ring.Path(gtx.Ops), Width: float32(gtx.Dp(cursorRingWidth))}.Op())
+}
+
+// cursorRingRadius and cursorRingWidth are a click's ring at its widest and
+// its line, in dp.
+const (
+	cursorRingRadius = 17
+	cursorRingWidth  = 2
+)
+
+// ringMotion is a click's ring since into its span: its radius in dp and its
+// opacity, and false before it starts and once it is gone.
+func ringMotion(since, span time.Duration) (r, alpha float32, ok bool) {
+	if since < 0 || since >= span {
+		return 0, 0, false
+	}
+	p := progress(since, span)
+	return cursorRingRadius * cursorEase(p), 0.95 * (1 - p), true
+}
+
+// dipScale is the arrow's scale landed after its glide: a click dips it.
+func (c *agentCursor) dipScale(landed time.Duration) float32 {
+	dipFor := c.span(cursorDip)
+	if c.scroll != 0 || landed < 0 || landed >= dipFor {
+		return 1
+	}
+	return 1 - cursorDipScale*float32(math.Sin(math.Pi*float64(progress(landed, dipFor))))
 }
 
 // drawScrollChevrons slides two chevrons under the arrow at at in the scroll's
 // direction, fading in and out, for span after the glide landed.
 func drawScrollChevrons(gtx C, at f32.Point, landed, span time.Duration, dir int, tint, outline color.NRGBA) {
-	if landed < 0 || landed >= span {
+	shiftDp, alpha, ok := chevronMotion(landed, span, dir)
+	if !ok {
 		return
 	}
-	p := progress(landed, span)
-	// in until a third of the way, then out, as the mockup's keyframes
-	alpha := min(p/0.35, (1-p)/0.65)
 	unit := float32(gtx.Dp(1))
 	d := float32(dir)
-	shift := (-6 + 16*p) * d * unit
-	center := at.Add(f32.Pt(0, 30*unit+shift))
+	center := at.Add(f32.Pt(0, (cursorChevronsBelow+shiftDp)*unit))
 	chevron := func(dy float32) clip.PathSpec {
 		var path clip.Path
 		path.Begin(gtx.Ops)
@@ -383,9 +427,24 @@ func drawScrollChevrons(gtx C, at f32.Point, landed, span time.Duration, dir int
 	}
 	defer paint.PushOpacity(gtx.Ops, alpha).Pop()
 	for _, dy := range []float32{-5, 5} {
-		paint.FillShape(gtx.Ops, outline, clip.Stroke{Path: chevron(dy), Width: 4.4 * unit}.Op())
-		paint.FillShape(gtx.Ops, tint, clip.Stroke{Path: chevron(dy), Width: 2.6 * unit}.Op())
+		paint.FillShape(gtx.Ops, outline, clip.Stroke{Path: chevron(dy), Width: cursorChevronOutline * unit}.Op())
+		paint.FillShape(gtx.Ops, tint, clip.Stroke{Path: chevron(dy), Width: cursorChevronLine * unit}.Op())
 	}
+}
+
+// cursorChevronsBelow is how far under the arrow's tip the scroll's
+// chevrons ride, in dp.
+const cursorChevronsBelow = 30
+
+// chevronMotion is the scroll's chevrons landed into their span: how far
+// they slid in dir, in dp, and their opacity, and false outside the span.
+func chevronMotion(landed, span time.Duration, dir int) (shift, alpha float32, ok bool) {
+	if landed < 0 || landed >= span {
+		return 0, 0, false
+	}
+	p := progress(landed, span)
+	// in until a third of the way, then out, as the mockup's keyframes
+	return (-6 + 16*p) * float32(dir), min(p/0.35, (1-p)/0.65), true
 }
 
 // cursorBadge is the pill beside the arrow: the provider's icon and what the
@@ -395,18 +454,18 @@ func (u *window) cursorBadge(gtx C, tint, outline color.NRGBA, verb string, icon
 	fg := inkOn(tint, outline)
 	gtx.Constraints.Min = image.Point{}
 	rec := op.Record(gtx.Ops)
-	d := layout.Inset{Left: ui.Space(1.25), Right: ui.Space(2)}.Layout(gtx, func(gtx C) D {
-		gtx.Constraints.Min.Y = gtx.Dp(20)
+	d := layout.Inset{Left: cursorBadgePadLeft, Right: cursorBadgePadRight}.Layout(gtx, func(gtx C) D {
+		gtx.Constraints.Min.Y = gtx.Dp(cursorBadgeHeight)
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-			layout.Rigid(func(gtx C) D { return icon.Layout(gtx, ui.Space(3), fg) }),
-			ui.Gap(1),
-			layout.Rigid(th.Text(ui.TextXS, verb).In(fg).Weight(font.Medium).Layout),
+			layout.Rigid(func(gtx C) D { return icon.Layout(gtx, cursorBadgeIcon, fg) }),
+			ui.Gap(cursorBadgeGap),
+			layout.Rigid(th.Text(cursorBadgeText, verb).In(fg).Weight(font.Medium).Layout),
 		)
 	})
 	call := rec.Stop()
 	pill := clip.UniformRRect(image.Rectangle{Max: d.Size}, d.Size.Y/2)
 	paint.FillShape(gtx.Ops, tint, pill.Op(gtx.Ops))
-	paint.FillShape(gtx.Ops, outline, clip.Stroke{Path: pill.Path(gtx.Ops), Width: float32(gtx.Dp(1.5))}.Op())
+	paint.FillShape(gtx.Ops, outline, clip.Stroke{Path: pill.Path(gtx.Ops), Width: float32(gtx.Dp(cursorBadgeOutline))}.Op())
 	call.Add(gtx.Ops)
 }
 

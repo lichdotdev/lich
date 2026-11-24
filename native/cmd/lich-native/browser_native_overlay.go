@@ -37,6 +37,8 @@ type pageOverlay struct {
 	// Hold keeps the wheel from scrolling the page while strokes stand on
 	// it: they point at what was on screen.
 	Hold bool `json:"hold"`
+	// Cursor is the agent's, nil while it is not up.
+	Cursor *pageCursor `json:"cursor"`
 }
 
 // pageStroke is a sketch stroke: its color and opacity, and the lines it
@@ -101,6 +103,7 @@ func cssColor(c color.NRGBA) string {
 // user's display, 24 blank frames in 20 s of drawing). It builds with DOM
 // calls rather than markup, which a page enforcing Trusted Types refuses.
 const pageOverlayScript = `((o, trail, ring) => {
+	` + pageCursorScript + `
 	const id = 'lich-note-rings';
 	let host = document.getElementById(id);
 	window.__lichHold = o.hold;
@@ -108,7 +111,7 @@ const pageOverlayScript = `((o, trail, ring) => {
 		window.__lichWheel = true;
 		addEventListener('wheel', e => { if (window.__lichHold) e.preventDefault(); }, {passive: false, capture: true});
 	}
-	if (!o.rings.length && !o.strokes.length && !o.trail.length && !o.eraser) {
+	if (!o.rings.length && !o.strokes.length && !o.trail.length && !o.eraser && !o.cursor) {
 		if (host) host.remove();
 		return;
 	}
@@ -138,7 +141,9 @@ const pageOverlayScript = `((o, trail, ring) => {
 		const page = el('svg', {width: '100%', height: '100%', style: 'left:0;top:0'}, root);
 		const lines = document.createElementNS(ns, 'g');
 		page.appendChild(lines);
-		host.__lich = {style, rings, lines,
+		const cur = document.createElement('div');
+		root.appendChild(cur);
+		host.__lich = {style, rings, lines, cur,
 			trail: el('polygon', {display: 'none'}, page),
 			ring: el('circle', {display: 'none', 'stroke-width': 1.5}, page)};
 		document.documentElement.appendChild(host);
@@ -174,7 +179,93 @@ const pageOverlayScript = `((o, trail, ring) => {
 	else set(s.trail, {display: 'none'});
 	if (o.eraser) set(s.ring, {display: 'inline', cx: o.eraser.x, cy: o.eraser.y, r: o.eraser.r, fill: ring[0], 'fill-opacity': ring[1], stroke: ring[2], 'stroke-opacity': ring[3]});
 	else set(s.ring, {display: 'none'});
+	drawCursor(s, o.cursor, el, set, ns);
 })`
+
+// pageCursorScript draws the agent's cursor (pageCursor) as drawAgentCursor
+// does, in the layer's cur, changing it in place as the overlay does.
+const pageCursorScript = `const drawCursor = (s, c, el, set, ns) => {
+	const k = s.cur;
+	if (!c) {
+		k.style.display = 'none';
+		return;
+	}
+	const u = c.unit, L = c.look;
+	if (!k.__c) {
+		const svg = el('svg', {width: '100%', height: '100%', style: 'position:fixed;left:0;top:0;overflow:visible'}, k);
+		const chev = el('g', {}, svg);
+		const lines = [];
+		for (let i = 0; i < 4; i++) lines.push(el('polyline', {fill: 'none', 'stroke-linejoin': 'bevel'}, chev));
+		const rings = el('g', {}, svg);
+		const arrow = el('g', {}, svg);
+		const shadow = el('path', {}, arrow), fill = el('path', {}, arrow), edge = el('path', {fill: 'none'}, arrow);
+		const badge = document.createElement('div');
+		badge.style.cssText = 'position:fixed;display:flex;align-items:center;box-sizing:border-box;white-space:nowrap;line-height:1';
+		k.appendChild(badge);
+		const icon = el('svg', {style: 'position:static;flex:none'}, badge);
+		const text = document.createElement('span');
+		badge.appendChild(text);
+		k.__c = {chev, lines, rings, shadow, fill, edge, badge, icon, text};
+	}
+	const e = k.__c;
+	k.style.display = '';
+	k.style.opacity = c.alpha;
+	const d = L.arrow.map(p => p.d).join(' ');
+	const kk = u * L.arrowSize / L.arrowBox;
+	const place = (dy) => 'translate(' + c.x + ' ' + (c.y + dy) + ') scale(' + (c.scale * kk) + ') translate(' + (-L.tip[0]) + ' ' + (-L.tip[1]) + ')';
+	set(e.shadow, {d, transform: place(u), fill: '#000', 'fill-opacity': c.shadow});
+	set(e.fill, {d, transform: place(0), fill: c.tint});
+	set(e.edge, {d, transform: place(0), stroke: c.outline, 'stroke-width': L.outline * u / kk});
+	let n = 0;
+	for (const r of c.rings) {
+		const attrs = {cx: r.x, cy: r.y, r: r.r * u, fill: 'none', stroke: c.tint, 'stroke-opacity': r.alpha, 'stroke-width': L.ringWidth * u};
+		const ring = e.rings.children[n];
+		if (ring) set(ring, attrs); else el('circle', attrs, e.rings);
+		n++;
+	}
+	while (e.rings.children.length > n) e.rings.lastChild.remove();
+	if (c.chevrons) {
+		const h = c.chevrons, cx = c.x, cy = c.y + (L.below + h.shift) * u;
+		set(e.chev, {display: 'inline', opacity: h.alpha});
+		[-5, 5].forEach((dy, i) => {
+			const pt = (x, y) => (cx + x * u) + ',' + (cy + y * h.dir * u);
+			const points = [pt(-6, dy - 3), pt(0, dy + 3), pt(6, dy - 3)].join(' ');
+			set(e.lines[2 * i], {points, stroke: c.outline, 'stroke-width': L.chevOutline * u});
+			set(e.lines[2 * i + 1], {points, stroke: c.tint, 'stroke-width': L.chevLine * u});
+		});
+	} else {
+		set(e.chev, {display: 'none'});
+	}
+	const b = c.badge;
+	if (!b) {
+		e.badge.style.display = 'none';
+		return;
+	}
+	const st = e.badge.style;
+	st.display = 'flex';
+	st.opacity = b.alpha;
+	st.left = (c.x + L.badgeAt[0] * u) + 'px';
+	st.top = (c.y + L.badgeAt[1] * u) + 'px';
+	st.height = L.badgeHeight * u + 'px';
+	st.padding = '0 ' + L.padRight * u + 'px 0 ' + L.padLeft * u + 'px';
+	st.gap = L.gap * u + 'px';
+	st.borderRadius = L.badgeHeight * u / 2 + 'px';
+	st.background = c.tint;
+	st.outline = L.badgeLine * u + 'px solid ' + c.outline;
+	st.outlineOffset = (-L.badgeLine * u / 2) + 'px';
+	st.color = b.ink;
+	st.font = '500 ' + L.text * u + 'px ' + L.font;
+	if (e.text.textContent !== b.text) e.text.textContent = b.text;
+	set(e.icon, {width: L.iconSize * u, height: L.iconSize * u, viewBox: '0 0 ' + L.iconBox + ' ' + L.iconBox});
+	const ik = JSON.stringify([b.icon, b.ink]);
+	if (e.icon.__k !== ik) {
+		e.icon.__k = ik;
+		e.icon.replaceChildren();
+		for (const p of b.icon) {
+			el('path', {d: p.d, fill: p.fill ? b.ink : 'none', stroke: p.stroke ? b.ink : 'none', 'stroke-width': L.iconStroke, 'stroke-linecap': 'round', 'stroke-linejoin': 'round'}, e.icon);
+		}
+	}
+};`
 
 // overlayScript is the call that draws o over the page, the same text for
 // the same overlay, so a page is told only of a change.

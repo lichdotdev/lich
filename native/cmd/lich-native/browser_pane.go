@@ -97,6 +97,9 @@ type browserPaneUI struct {
 	// what the page was last told to draw over itself (overlayScript).
 	nativeSize  image.Point
 	overlaySent string
+	// pageCursor is the agent's cursor for the native page to draw this
+	// frame, nil while it is not up.
+	pageCursor *pageCursor
 	// notesTool is whether Select or Draw was on over the native page in the
 	// last layout.
 	notesTool bool
@@ -203,8 +206,9 @@ func (u *window) browserPaneAt(gtx C, v stageView, session string, r image.Recta
 	cardArea.Pop()
 	paint.FillShape(gtx.Ops, line, clip.Stroke{Path: cardShape.Path(gtx.Ops), Width: float32(gtx.Dp(1))}.Op())
 	off.Pop()
+	p.pageCursor = nil
 	if !inspecting {
-		u.paintAgentCursor(gtx, p, session)
+		u.paintAgentCursor(gtx, p, session, card)
 	}
 	u.paneFocusTarget(gtx, pane)
 	area.Pop()
@@ -680,12 +684,15 @@ func toolbarPoint(gtx C, action string, head, bar int) f32.Point {
 }
 
 // paintAgentCursor draws the agent's cursor over the whole pane.
-func (u *window) paintAgentCursor(gtx C, p *browserPaneUI, session string) {
+func (u *window) paintAgentCursor(gtx C, p *browserPaneUI, session string, card image.Rectangle) {
 	if !p.cursor.shown {
 		return
 	}
 	tint, icon, busy := u.agentLook(session)
 	p.cursor.observe(gtx.Now, busy)
+	if p.native != nil {
+		p.pageCursor = pageCursorOf(gtx, &p.cursor, tint, u.theme.PrimaryForeground, icon, card, u.pageScale(gtx))
+	}
 	u.drawAgentCursor(gtx, &p.cursor, tint, u.theme.PrimaryForeground, icon)
 }
 
