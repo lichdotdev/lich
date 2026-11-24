@@ -205,6 +205,9 @@ func (a *sidebarAction) takeCard(c sidebarAction) {
 			*dst = src
 		}
 	}
+	if c.launch.kind != "" {
+		a.launch = c.launch
+	}
 	pick(&a.activate, c.activate)
 	pick(&a.close, c.close)
 	if c.openPR != 0 {

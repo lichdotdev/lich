@@ -28,14 +28,14 @@ jobs:
           go-version-file: native/go.mod
           cache-dependency-path: native/go.sum
 
-      # Gio's Linux headers (gioui.org/doc/install), fontconfig for the glyph
-      # rasterizer, and Mesa's llvmpipe under Xvfb so the headless render tests
-      # draw on the CPU instead of skipping for want of a GPU.
+      # Gio and WebKitGTK headers, fontconfig for the glyph rasterizer, and
+      # Mesa's llvmpipe under Xvfb so the headless render tests draw on the CPU.
       - name: System packages
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
-            gcc pkg-config libwayland-dev libx11-dev libx11-xcb-dev libxkbcommon-x11-dev \
+            gcc pkg-config libgtk-3-dev libwebkit2gtk-4.1-dev libxext-dev \
+            libwayland-dev libx11-dev libx11-xcb-dev libxkbcommon-x11-dev \
             libgles2-mesa-dev libegl1-mesa-dev libffi-dev libxcursor-dev libvulkan-dev \
             libgl1-mesa-dri libegl-mesa0 xvfb fontconfig fonts-dejavu-core fonts-noto-color-emoji \
             cmake nasm

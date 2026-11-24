@@ -183,9 +183,9 @@ func TestFilterToggleAndEscape(t *testing.T) {
 
 func TestTakeCardKeepsTheFramesWrites(t *testing.T) {
 	act := sidebarAction{fold: "k", saveOpen: true}
-	act.takeCard(sidebarAction{activate: "s1", pin: "s1", pinTo: true, file: fileRequest{ids: []string{"s1"}, folder: "Apps"}})
+	act.takeCard(sidebarAction{activate: "s1", pin: "s1", pinTo: true, launch: launchRequest{kind: "shell", dir: "/wt/feature", folder: "Apps"}, file: fileRequest{ids: []string{"s1"}, folder: "Apps"}})
 	act.takeCard(sidebarAction{})
-	if act.activate != "s1" || act.pin != "s1" || !act.pinTo || act.fold != "k" || !act.saveOpen || act.file.folder != "Apps" {
+	if act.activate != "s1" || act.pin != "s1" || !act.pinTo || act.fold != "k" || !act.saveOpen || act.file.folder != "Apps" || act.launch != (launchRequest{kind: "shell", dir: "/wt/feature", folder: "Apps"}) {
 		t.Errorf("act = %+v", act)
 	}
 }
