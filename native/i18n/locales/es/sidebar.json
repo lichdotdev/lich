@@ -60,8 +60,7 @@
     "collapse": "Contraer la barra lateral"
   },
   "sidebarRail": {
-    "expand": "Expandir la barra lateral",
-    "newSession": "Nueva sesión"
+    "expand": "Expandir la barra lateral"
   },
   "sessionPhaseChips": {
     "all": "Todas",

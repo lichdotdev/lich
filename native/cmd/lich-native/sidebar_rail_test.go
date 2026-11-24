@@ -1,6 +1,7 @@
 package main
 
 import (
+	"image"
 	"slices"
 	"testing"
 	"time"
@@ -8,7 +9,6 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op"
 
-	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -112,30 +112,41 @@ func TestRailForgetsWhatChangedWhileTheSidebarWasOpen(t *testing.T) {
 	}
 }
 
-func TestRailMenusMatchTheOpenSidebarsLessRename(t *testing.T) {
+func TestTheRailBadgeKeepsTheCardsCornerAndDropsItAtRest(t *testing.T) {
 	s := newSidebar(&ui.Root{})
-	blocks := []blockView{{key: folderKey("Later"), kind: blockFolder, folder: "Later", title: "Later", sessions: []sessionView{
-		treeSession("mother", "", "/wt/a"), treeSession("child", "mother", "/wt/a"),
-	}}}
-	s.rail.view = sidebarView{blocks: blocks, folders: []string{"Later"}}
-	var act sidebarAction
-	labels := func(id string) []string {
-		var out []string
-		for _, it := range railItems(blocks) {
-			if it.id == id {
-				for _, e := range s.rail.entries(&ui.Theme{Palette: ui.Dark}, s, it, &act) {
-					out = append(out, e.Label)
-				}
-			}
-		}
-		return out
+	sv := treeSession("a", "", "/repo")
+	sv.status = statusWaiting
+	draw := func() string {
+		r := newFrameRig(image.Pt(32, 32), func(gtx C, th *ui.Theme) { s.railBadge(gtx, th, &sv, th.Surface) })
+		drawn, _ := r.frame()
+		return drawn
 	}
-	mother := labels("mother")
-	if slices.Contains(mother, i18n.T("sidebar.sessionCard.rename")) || !slices.Contains(mother, i18n.T("sidebar.sessionGroupHeader.collapse", i18n.Args{"name": ""})) {
-		t.Errorf("mother's menu = %v, want no rename and her fold", mother)
+	waiting := draw()
+	if s.corners["a"] == nil {
+		t.Fatal("a waiting session's badge keeps no corner, want the one the card draws")
 	}
-	head := labels("head:" + folderKey("Later"))
-	if !slices.Contains(head, i18n.T("sidebar.checkoutRow.newSessionHere")) || slices.Contains(head, i18n.T("sidebar.sessionGroupHeader.renameFolder")) {
-		t.Errorf("folder's menu = %v, want a new session and no rename", head)
+	sv.status = statusDone
+	sv.unread = false
+	if draw() == waiting || s.corners["a"] != nil {
+		t.Errorf("a read session's badge still draws or keeps its corner, want none")
+	}
+}
+
+func TestTheRailServicesBadgeCountsOnlyAProjectWithServices(t *testing.T) {
+	draw := func(tally servicesTally) string {
+		r := newFrameRig(image.Pt(16, 16), func(gtx C, th *ui.Theme) {
+			gtx.Constraints.Min = gtx.Constraints.Max
+			railServicesBadge(gtx, th, tally)
+		})
+		drawn, _ := r.frame()
+		return drawn
+	}
+	none, idle, up := draw(servicesTally{}), draw(servicesTally{total: 3}), draw(servicesTally{up: 2, total: 3})
+	empty := draw(servicesTally{})
+	if none != empty {
+		t.Fatal("drawing nothing differs frame to frame")
+	}
+	if idle == none || up == idle {
+		t.Errorf("badges for 0/3 and 2/3 look the same as no services or as each other, want a count each")
 	}
 }

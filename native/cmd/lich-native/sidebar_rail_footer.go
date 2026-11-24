@@ -1,11 +1,15 @@
 package main
 
 import (
+	"image"
 	"image/color"
 	"strconv"
 
+	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/op"
+	"gioui.org/op/clip"
+	"gioui.org/op/paint"
 	"gioui.org/unit"
 
 	"github.com/lichdotdev/lich/native/backend"
@@ -13,45 +17,37 @@ import (
 	"github.com/lichdotdev/lich/native/ui"
 )
 
-// railServicesWidth is the services panel's width off the rail: the open
-// footer's, so a row reads the same in both.
-const railServicesWidth unit.Dp = 256
+// railPanelWidth is the width of a panel off the rail: the open footer's, so
+// a row reads the same in both.
+const railPanelWidth unit.Dp = 256
 
 // railFooter is the rail's last two buttons, what the open panel's footer
 // shows: the project's services, as a panel of the same rows, and the
-// profile, as the same menu.
+// account, as the same panel.
 type railFooter struct {
 	services      ui.Clickable
 	servicesPanel ui.DropdownPanelState
 	profile       ui.Clickable
-	profileMenu   ui.MenuState
-	search        ui.Clickable
-	searchPanel   ui.DropdownPanelState
 }
 
 func (r *sidebarRail) holdsKeys() bool {
-	return r.foot.servicesPanel.Opened() || r.foot.profileMenu.Opened() || r.foot.searchPanel.Opened()
+	return r.foot.servicesPanel.Opened()
 }
 
-// footer lays the rail's footer out: a hairline, a new session, then, with a
-// project on screen, Services and the profile when its provider has two
-// logins to pick from. New session sits here, not at the top, so the rail's
-// tree starts where the open sidebar's does.
+// footer lays the rail's footer out with a project on screen: a hairline,
+// Services, and the account when the open footer shows its row.
 func (r *sidebarRail) footer(gtx C, th *ui.Theme, s *sidebar, m *model, act *sidebarAction) D {
+	p, ok := m.project()
+	if !ok {
+		return D{}
+	}
+	list, console := m.services.of(p.ID), m.consoleShown()
 	children := []layout.FlexChild{
 		layout.Rigid(func(gtx C) D { return th.RailHairline(gtx) }),
-		layout.Rigid(func(gtx C) D { return r.searchButton(gtx, th, s) }),
-		ui.VGap(1),
-		// New session is not named for the morph: the open sidebar's sits at
-		// its top, and flying it corner to corner reads as a jump.
-		layout.Rigid(r.button(th, s, &r.add, icPlus, i18n.T("sidebar.sidebarRail.newSession"), "")),
+		layout.Rigid(func(gtx C) D { return r.servicesButton(gtx, th, s, p.ID, list, console, act) }),
 	}
-	if p, ok := m.project(); ok {
-		list, console := m.services.of(p.ID), m.consoleShown()
-		children = append(children, ui.VGap(1), layout.Rigid(func(gtx C) D { return r.servicesButton(gtx, th, s, p.ID, list, console, act) }))
-		if f, ok := m.focusedProfile(); ok {
-			children = append(children, ui.VGap(1), layout.Rigid(func(gtx C) D { return r.profileButton(gtx, th, s, m, f, act) }))
-		}
+	if a, ok := s.profile.account(m); ok {
+		children = append(children, ui.VGap(1), layout.Rigid(func(gtx C) D { return r.profileButton(gtx, th, s, m, a, act) }))
 	}
 	return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx, children...)
 }
@@ -60,7 +56,7 @@ func (r *sidebarRail) servicesButton(gtx C, th *ui.Theme, s *sidebar, projectID 
 	t := tallyServices(list)
 	tip := th.Tooltip(s.root, s.hint("rail:services"), railServicesHint(t))
 	tip.Side = ui.SideRight
-	panel := th.DropdownPanel(s.root, &r.foot.servicesPanel, railServicesWidth, func(gtx C, th *ui.Theme) D {
+	panel := th.DropdownPanel(s.root, &r.foot.servicesPanel, railPanelWidth, func(gtx C, th *ui.Theme) D {
 		d := s.services.panelContent(gtx, th, s.root, projectID, list, console, act)
 		if act.service.op != serviceNone {
 			r.foot.servicesPanel.Close()
@@ -95,18 +91,44 @@ func railServicesHint(t servicesTally) string {
 	return i18n.T("sidebar.services.railHint", i18n.Args{"up": strconv.Itoa(t.up), "total": strconv.Itoa(t.total)})
 }
 
-// railServicesBadge is the dot on the icon's corner: red when one failed,
-// the running tone while one runs, none otherwise. It carries a ring of the
-// button's fill so it reads off the icon's stroke under it.
+// railServicesBadge is the open footer's count, up/total, on the icon's
+// bottom right: red when one failed, the running tone while one runs, muted
+// otherwise, none with no service. It sits on a plate of the button's fill so
+// it reads off the icon's stroke under it, and runs past the icon's box.
 func railServicesBadge(gtx C, th *ui.Theme, t servicesTally) D {
+	box := gtx.Constraints.Min
+	if t.total == 0 {
+		return D{Size: box}
+	}
+	c := th.MutedForeground
 	switch {
 	case t.failed:
-		return th.CornerDot(gtx, th.Destructive)
-	case t.up == 0:
-		return D{Size: gtx.Constraints.Min}
+		c = th.Destructive
+	case t.up > 0:
+		c = th.TonePass
 	}
-	return th.PulsingCornerDot(gtx, th.TonePass)
+	label := th.Text(ui.Text2XS, strconv.Itoa(t.up)+"/"+strconv.Itoa(t.total)).Mono().In(c).Weight(font.SemiBold)
+	lgtx := gtx
+	lgtx.Constraints = layout.Constraints{Max: image.Pt(gtx.Dp(ui.Space(8)), gtx.Dp(ui.Space(4)))}
+	m := op.Record(gtx.Ops)
+	d := label.Layout(lgtx)
+	call := m.Stop()
+	pad := gtx.Dp(railCountPad)
+	plate := d.Size.Add(image.Pt(2*pad, 0))
+	at := box.Add(image.Pt(gtx.Dp(railCountOut), gtx.Dp(railCountOut))).Sub(plate)
+	defer op.Offset(at).Push(gtx.Ops).Pop()
+	paint.FillShape(gtx.Ops, th.Surface, clip.UniformRRect(image.Rectangle{Max: plate}, gtx.Dp(ui.RadiusSM)).Op(gtx.Ops))
+	defer op.Offset(image.Pt(pad, 0)).Push(gtx.Ops).Pop()
+	call.Add(gtx.Ops)
+	return D{Size: box}
 }
+
+// railCountOut is how far the count runs past the icon's corner, and
+// railCountPad the plate's room on either side of it.
+var (
+	railCountOut = unit.Dp(6)
+	railCountPad = unit.Dp(2)
+)
 
 // railFill is a rail button's fill: accent while its popup is open, the
 // rail's hover while hovered.
@@ -120,16 +142,28 @@ func railFill(th *ui.Theme, open, hovered bool) color.NRGBA {
 	return th.Surface
 }
 
-func (r *sidebarRail) profileButton(gtx C, th *ui.Theme, s *sidebar, m *model, f profileFocus, act *sidebarAction) D {
-	look := f.book.look(f.choice.shown)
-	tip := th.Tooltip(s.root, s.hint("rail:profile"), f.book.nameOf(f.choice.shown))
+// profileButton is the account row's avatar, or its provider's glyph with no
+// profiles, opening the panel the row opens.
+func (r *sidebarRail) profileButton(gtx C, th *ui.Theme, s *sidebar, m *model, a sidebarAccount, act *sidebarAction) D {
+	f := a.profile
+	name := a.plan.Name
+	if f.book != nil {
+		name = f.book.nameOf(f.choice.shown)
+	}
+	tip := th.Tooltip(s.root, s.hint("rail:profile"), name)
 	tip.Side = ui.SideRight
-	menu := th.DropdownMenu(s.root, &r.foot.profileMenu, m.footerEntries(th, f, act))
+	panel := s.profile.dropdown(th, s.root, m, a, act, railPanelWidth)
 	return tip.Layout(gtx, func(gtx C) D {
-		return menu.Layout(gtx, func(gtx C) D {
+		return panel.Layout(gtx, func(gtx C) D {
 			return r.foot.profile.Layout(gtx, func(gtx C) D {
-				bg := railFill(th, r.foot.profileMenu.Opened(), r.foot.profile.Hovered())
-				return ui.SquareFace(gtx, bg, func(gtx C) D { return profileAvatar(gtx, th.On(bg), look, ui.Space(4)) })
+				bg := railFill(th, s.profile.panel.Opened(), r.foot.profile.Hovered())
+				on := th.On(bg)
+				return ui.SquareFace(gtx, bg, func(gtx C) D {
+					if f.book == nil {
+						return providerIcon(a.kind).Layout(gtx, ui.Space(4), on.MutedForeground)
+					}
+					return profileAvatar(gtx, on, f.book.look(f.choice.shown), ui.Space(4))
+				})
 			})
 		})
 	})
@@ -169,66 +203,4 @@ func (f *servicesFooter) panelHeader(gtx C, th *ui.Theme, root *ui.Root, t servi
 		gtx.Constraints.Min.Y = h
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
 	})
-}
-
-// railSearchWidth is the filter panel's width off the rail: the open
-// sidebar's field and chips at the width they wrap at there.
-const railSearchWidth unit.Dp = 256
-
-// searchButton is the rail's filter: the open sidebar's field and phase chips
-// in a panel off the rail, filtering the rail as they filter the open
-// sidebar. The filter outlives the panel, which a lit button with a dot
-// says; it ends where the open one does, Escape on an empty field.
-func (r *sidebarRail) searchButton(gtx C, th *ui.Theme, s *sidebar) D {
-	h := &s.header
-	tip := th.Tooltip(s.root, s.hint("rail:filter"), i18n.T("sidebar.sessionSidebar.filter"))
-	tip.Side = ui.SideRight
-	panel := th.DropdownPanel(s.root, &r.foot.searchPanel, railSearchWidth, func(gtx C, th *ui.Theme) D {
-		return s.filterRow(gtx, th, r.view)
-	})
-	was := r.foot.searchPanel.Opened()
-	d := tip.Layout(gtx, func(gtx C) D {
-		return panel.Layout(gtx, func(gtx C) D {
-			return r.foot.search.Layout(gtx, func(gtx C) D {
-				narrows := h.filter().narrows()
-				bg := railFill(th, r.foot.searchPanel.Opened() || narrows, r.foot.search.Hovered())
-				return ui.SquareFace(gtx, bg, func(gtx C) D {
-					return layout.Stack{}.Layout(gtx,
-						layout.Stacked(func(gtx C) D { return icSearch.Layout(gtx, ui.Space(4), th.MutedForeground) }),
-						layout.Expanded(func(gtx C) D {
-							if !narrows || r.foot.searchPanel.Opened() {
-								return D{Size: gtx.Constraints.Min}
-							}
-							on := th.On(bg)
-							return on.CornerDot(gtx, on.Foreground)
-						}),
-					)
-				})
-			})
-		})
-	})
-	r.searchOpened(gtx, h, was)
-	return d
-}
-
-// searchOpened follows the panel opening and closing: opening it opens the
-// filter with the field focused, closing it on an empty filter closes the
-// filter, and an Escape that closed the filter closes the panel.
-func (r *sidebarRail) searchOpened(gtx C, h *sidebarHeader, was bool) {
-	open := r.foot.searchPanel.Opened()
-	switch {
-	case open && !was && !h.open:
-		h.toggle()
-		gtx.Execute(op.InvalidateCmd{})
-	case open && !was:
-		h.focusQuery = true
-		gtx.Execute(op.InvalidateCmd{})
-	case open && !h.open:
-		r.foot.searchPanel.Close()
-	case !open && was && !h.filter().narrows():
-		h.open = false
-	}
-	if !open {
-		h.searchFocused = false
-	}
 }

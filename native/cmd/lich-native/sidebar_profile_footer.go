@@ -208,13 +208,16 @@ func (pf *profileFooter) layout(gtx C, th *ui.Theme, root *ui.Root, m *model, a 
 			return ui.Fill(gtx, th.Over(th.Border), 0)
 		}),
 		ui.VGap(1.5),
-		layout.Rigid(func(gtx C) D {
-			if !pf.panel.Opened() {
-				pf.reset.pending = ""
-			}
-			pf.reset.act, pf.reset.profile, pf.reset.key = act, effectiveProfile(f.choice.shown), a.key
-			panel := th.DropdownPanel(root, &pf.panel, 0, func(gtx C, th *ui.Theme) D { return pf.panelBody(gtx, th, m, a, act) }).Above().Spanning()
-			return panel.Layout(gtx, row)
-		}),
+		layout.Rigid(func(gtx C) D { return pf.dropdown(th, root, m, a, act, 0).Above().Spanning().Layout(gtx, row) }),
 	)
+}
+
+// dropdown is the account's panel, width wide: the row's, or the rail's
+// profile button's, which open the same one.
+func (pf *profileFooter) dropdown(th *ui.Theme, root *ui.Root, m *model, a sidebarAccount, act *sidebarAction, width unit.Dp) ui.DropdownPanelStyle {
+	if !pf.panel.Opened() {
+		pf.reset.pending = ""
+	}
+	pf.reset.act, pf.reset.profile, pf.reset.key = act, effectiveProfile(a.profile.choice.shown), a.key
+	return th.DropdownPanel(root, &pf.panel, width, func(gtx C, th *ui.Theme) D { return pf.panelBody(gtx, th, m, a, act) })
 }
