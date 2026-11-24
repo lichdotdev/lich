@@ -476,7 +476,6 @@ func (u *window) chatActs(gtx C, p *chatPane, sv sessionView, keys, working bool
 	u.escapeChat(gtx, p, sv.ID, waiting, asking)
 	if p.editor.Len() > 0 || len(p.attached) > 0 {
 		waiting = nil
-		u.model.chat.dropSuggestion(sv.ID)
 	}
 	u.queueActs(gtx, p, sv.ID)
 	u.composerKeys(gtx, p, sv.ID, sent, keys && asking == nil && !p.search.open)
