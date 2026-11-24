@@ -101,12 +101,18 @@ func (s *Service) remember(id, category, value string) error {
 	return nil
 }
 
-// storedCarry is what a chat that is not a relaunch opens on: the mode the
-// person last picked in it, which Claude Code resumes only as of the last turn
-// and oh-my-pi not at all. The model and effort are the provider's to bring
-// back with the conversation, as a terminal's resume leaves them.
+// storedCarry is what a chat that is not a relaunch opens on: the model,
+// effort and mode last recorded for it, its birth's or the person's last pick
+// in its chat. A provider's resume does not bring them all back: Claude Code
+// takes the effort from its settings.json, not the conversation, and resumes
+// the mode only as of the last turn; oh-my-pi drops the mode. applyCarry
+// leaves alone whatever the resume already set right.
 func (s *Service) storedCarry(id string) map[string]string {
-	return map[string]string{api.OptionMode: s.store.SessionChatMode(id)}
+	return map[string]string{
+		api.OptionModel:  s.store.SessionModel(id),
+		api.OptionEffort: s.store.SessionEffort(id),
+		api.OptionMode:   s.store.SessionChatMode(id),
+	}
 }
 
 // launchFor is what a chat of kind opening on carry needs on its argv.

@@ -227,6 +227,21 @@ func TestChatOpensOnItsStoredMode(t *testing.T) {
 	}
 }
 
+// TestChatOpensOnItsStoredModelAndEffort: a chat comes back on the model and
+// effort the person last picked in it. Claude Code resumes the model with the
+// conversation but takes the effort from its settings.json, so a chat set to
+// medium came back on high after lich restarted.
+func TestChatOpensOnItsStoredModelAndEffort(t *testing.T) {
+	r := newRig(t, providers.Claude)
+	_ = r.db.SetSessionModel("s1", "haiku")
+	_ = r.db.SetSessionEffort("s1", "low")
+	if err := r.setView(api.ViewChat); err != nil {
+		t.Fatalf("SetView: %v", err)
+	}
+	r.current(api.OptionModel, "haiku")
+	r.current(api.OptionEffort, "low")
+}
+
 // TestACPConfigOptions: an ACP chat offers the config options of the three
 // categories, follows the whole list a server sends back, and sets each over
 // session/set_config_option.

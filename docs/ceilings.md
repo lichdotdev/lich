@@ -66,7 +66,11 @@ work when nobody knows it and that the call site never shows. The mechanism and 
 - **A model or effort is a birth value, and some providers forget it on resume** (`internal/terminal/command.go`,
   `modelArgs`, `effortArgs`): lich passes neither when it resumes or forks a conversation, because a `/model` or
   `/effort` typed inside the session is the user's decision and re-sending the birth value would undo it. A pick
-  in the session's chat replaces the recorded model and effort, which only a new conversation reads. Claude
+  in the session's chat replaces the recorded model and effort, which a new conversation reads, and which a chat
+  sets again over the protocol each time it opens, a lich restart included (`internal/chat/options.go`,
+  `storedCarry`): only a pick in the chat or the birth is recorded, so a `/model` or `/effort` typed in the
+  terminal, or typed as a slash command in the chat, is undone by the recorded value the next time the chat
+  opens. A terminal's resume still leaves them to the provider. Claude
   Code's effort and all of Antigravity resume on the saved default rather than on the conversation's (each
   measurement in `docs/providers/`, Spawn), so a change made inside the session survives while a level or model
   lich set at birth falls back to that default. Cursor CLI also writes whatever model a spawn or resume runs on into
