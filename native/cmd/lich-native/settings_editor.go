@@ -14,6 +14,7 @@ import (
 const (
 	hideWhitespaceKey = "editor.hideWhitespace"
 	diffLayoutKey     = "editor.diffLayout"
+	vimKey            = "editor.vim"
 	diffUnified       = "unified"
 	diffSplit         = "split"
 )
@@ -22,6 +23,7 @@ const (
 type editorPrefs struct {
 	hideWhitespace bool
 	diffLayout     string
+	vim            bool
 }
 
 func (p editorPrefs) split() bool { return p.diffLayout == diffSplit }
@@ -40,7 +42,11 @@ func loadEditorPrefs(ctx context.Context, c *backend.Client) (editorPrefs, error
 		return editorPrefs{}, err
 	}
 	layout, err := c.GetSetting(ctx, diffLayoutKey, "")
-	return editorPrefs{hideWhitespace: hide, diffLayout: parseDiffLayout(layout)}, err
+	if err != nil {
+		return editorPrefs{}, err
+	}
+	vim, err := c.GetSetting(ctx, vimKey, "")
+	return editorPrefs{hideWhitespace: hide, diffLayout: parseDiffLayout(layout), vim: vim == "true"}, err
 }
 
 // editorSettings is the Editor section's controls over prefs.
@@ -48,6 +54,10 @@ type editorSettings struct {
 	prefs  editorPrefs
 	hide   ui.SwitchState
 	layout ui.Enum
+	vim    ui.SwitchState
+	// nvim is whether a Neovim the editor runs is on the PATH, asked the
+	// first time the row shows.
+	nvim remote[struct{}]
 }
 
 // row answers the description and the control of the Editor row for key.
@@ -57,6 +67,8 @@ func (e *editorSettings) row(gtx C, key string, s *settingsScreen) (string, func
 		return i18n.T("settings.settingsEditor.hideWhitespaceDescription"), func(gtx C, th *ui.Theme) D { return e.hideControl(gtx, th, s) }
 	case diffLayoutKey:
 		return i18n.T("settings.diffLayoutSetting.description"), func(gtx C, th *ui.Theme) D { return e.layoutControl(gtx, th, s) }
+	case vimKey:
+		return e.vimDescription(s), func(gtx C, th *ui.Theme) D { return e.vimControl(gtx, th, s) }
 	}
 	panic("settings: no Editor row for " + key)
 }
@@ -80,6 +92,34 @@ func (e *editorSettings) layoutControl(gtx C, th *ui.Theme, s *settingsScreen) D
 		ui.ToggleItem{Value: diffUnified, Text: i18n.T("settings.diffLayoutSetting.layout.unified")},
 		ui.ToggleItem{Value: diffSplit, Text: i18n.T("settings.diffLayoutSetting.layout.split")},
 	).Layout(gtx)
+}
+
+// vimFound is whether Neovim is on the PATH, false until the check lands.
+func (e *editorSettings) vimFound(s *settingsScreen) (found, checking bool) {
+	e.nvim.invalidate = s.invalidate
+	e.nvim.want("nvim", "nvim", func(context.Context) (struct{}, error) { return struct{}{}, vimAvailable() })
+	_, loading, err := e.nvim.get()
+	return !loading && err == nil, loading
+}
+
+func (e *editorSettings) vimDescription(s *settingsScreen) string {
+	if found, checking := e.vimFound(s); !found && !checking {
+		return i18n.T("settings.settingsEditor.vimMissing")
+	}
+	return i18n.T("settings.settingsEditor.vimDescription")
+}
+
+func (e *editorSettings) vimControl(gtx C, th *ui.Theme, s *settingsScreen) D {
+	if e.vim.Update(gtx) {
+		e.prefs.vim = e.vim.Value
+		e.commit(s, vimKey, strconv.FormatBool(e.vim.Value))
+	}
+	e.vim.Value = e.prefs.vim
+	sw := th.Switch(&e.vim)
+	found, _ := e.vimFound(s)
+	// Vim left on with Neovim gone still turns off.
+	sw.Disabled = !found && !e.prefs.vim
+	return sw.Layout(gtx)
 }
 
 // commit hands the change to the review panel at once and stores it.

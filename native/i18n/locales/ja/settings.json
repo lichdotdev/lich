@@ -410,7 +410,9 @@
     "sectionEditor": "エディター",
     "hideWhitespaceTitle": "差分で空白の変更を隠す",
     "hideWhitespaceSearchWords": "空白 スペース インデント レビュー 無視",
-    "interfaceGroup": "インターフェース"
+    "interfaceGroup": "インターフェース",
+    "vimTitle": "Vim モード",
+    "vimSearchWords": "vim neovim nvim モーダル キー キーバインド"
   },
   "settingsNav": {
     "scopeLabel": "スコープ",
@@ -460,7 +462,9 @@
     "editorSizeReset": "エディターの文字サイズをリセット"
   },
   "settingsEditor": {
-    "hideWhitespaceDescription": "レビュータブで、空白だけに関わる変更を除外します。"
+    "hideWhitespaceDescription": "レビュータブで、空白だけに関わる変更を除外します。",
+    "vimDescription": "Vim 本来のキーでファイルを編集します。あなたの Neovim とその設定で動きます。",
+    "vimMissing": "PATH に Neovim 0.10 以降が必要です。"
   },
   "settingsTheme": {
     "autoLightDark": "ライト/ダークを自動切り替え"

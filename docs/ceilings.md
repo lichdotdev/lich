@@ -2555,6 +2555,20 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   opened, saved or reloaded, never on a timer, so a commit made meanwhile shows at the next of those. Its
   room counts the line's runes as cells, so a line with tabs or wide characters cuts it at the code area's
   edge without the "…".
+- **Vim mode is the person's own Neovim behind the editor, not an emulation** (`native/cmd/lich-native/vim*.go`,
+  Settings › Editor › Vim mode, off by default): the window starts one `nvim --embed` with the person's config at
+  the first key, every editor holds a buffer in it named as its file (so the filetype and its settings apply,
+  and the person's plugins and LSP attach as they would), and keys go there through `nvim_input`; lich only draws
+  what Neovim reports. It needs Neovim 0.10 or newer on the PATH (`getregionpos`), and the row stays disabled
+  without it. What that costs: lich's own shortcuts win, since they are read before the editor (Ctrl+S, the
+  hotkeys of Settings › Hotkeys), so a Vim mapping on one of them never fires; Neovim's grid is never drawn, so a
+  floating window, a completion menu or a plugin's UI does not show, and only the command line, the last message,
+  the mode and the partial command reach the strip under the code; the cursor takes 'guicursor''s shape but not
+  its blink or colors; `:w` saves through lich (`BufWriteCmd`), and `:q` closes Neovim's window, never the editor,
+  so a `:q` that quits Neovim restarts it at the next key with the buffers rebuilt from the editors' text, losing
+  undo, registers and marks; a click moves Vim's cursor and a drag starts a characterwise Visual selection, but
+  the wheel only sets the top line, and with wrap off a long line never scrolls sideways to the cursor. A key
+  typed while Neovim is still starting is lost.
 
 ## Languages
 

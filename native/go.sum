@@ -29,8 +29,10 @@ github.com/lichdotdev/gio v0.0.0-20261123233932-67c6422e7129 h1:r6kPVP+pSqRqoONz
 github.com/lichdotdev/gio v0.0.0-20261123233932-67c6422e7129/go.mod h1:x8MAOooc/v4UUaB5o6BS/FpYdxnzh3LBvZlTBmYpnlQ=
 github.com/lichdotdev/gio-driver v0.0.0-20261111143827-fb7064d51698 h1:F0uUKZW1r+ZtfLzWZqkUwy0AvW4Xmh3/jyQdd1Ic3L0=
 github.com/lichdotdev/gio-driver v0.0.0-20261111143827-fb7064d51698/go.mod h1:oMHgzM+KvxqOH0rwg2uS66YLAMfM2ZCzT+YW2H2Hmsw=
-github.com/lichdotdev/godemirror v0.11.0 h1:31z+Vi0d2hNI3zVT+xm9TGT4jdmIoxHzSjMEzLDqHSw=
-github.com/lichdotdev/godemirror v0.11.0/go.mod h1:Bpzw5JlSRuXiEVRcX2gD+nsP0ix8cDpy9TTH5Q3n3XY=
+github.com/lichdotdev/godemirror v0.11.1-0.20261124204757-b51d727f7e7b h1:SCQ/tVbgPFIG7NgRAc2gi5YJGenvdFRpUvpCLKRYrVE=
+github.com/lichdotdev/godemirror v0.11.1-0.20261124204757-b51d727f7e7b/go.mod h1:Bpzw5JlSRuXiEVRcX2gD+nsP0ix8cDpy9TTH5Q3n3XY=
+github.com/neovim/go-client v1.2.1 h1:kl3PgYgbnBfvaIoGYi3ojyXH0ouY6dJY/rYUCssZKqI=
+github.com/neovim/go-client v1.2.1/go.mod h1:EeqCP3z1vJd70JTaH/KXz9RMZ/nIgEFveX83hYnh/7c=
 github.com/yuin/goldmark v1.4.13 h1:fVcFKWvrslecOb/tg+Cc05dkeYx540o0FuFt3nUVDoE=
 github.com/yuin/goldmark v1.4.13/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5taEt/CY=
 golang.org/x/exp v0.0.0-20250408133849-7e4ce0ab07d0 h1:R84qjqJb5nVJMxqWYb3np9L5ZsaDtB+a39EqjV0JSUM=

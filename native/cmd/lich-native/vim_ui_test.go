@@ -1,0 +1,39 @@
+package main
+
+import "testing"
+
+func chunks(text string) []any { return []any{[]any{int64(0), text, int64(0)}} }
+
+func TestVimUIFollowsTheModesCursorAndTheCommandLine(t *testing.T) {
+	var u vimUI
+	u.apply([]any{"mode_info_set", []any{true, []any{
+		map[string]any{"name": "normal", "cursor_shape": "block", "cell_percentage": int64(0)},
+		map[string]any{"name": "insert", "cursor_shape": "vertical", "cell_percentage": int64(25)},
+	}}})
+	u.apply([]any{"mode_change", []any{"insert", int64(1)}})
+	if c := u.cursor(); c.shape != "vertical" || c.percent != 25 {
+		t.Fatalf("insert mode's cursor = %+v; want the 'guicursor' ver25", c)
+	}
+	u.apply([]any{"cmdline_show", []any{chunks("s/a/b"), int64(5), ":", "", int64(0), int64(1)}})
+	u.apply([]any{"cmdline_pos", []any{int64(2), int64(1)}})
+	if u.cmdline == nil || u.cmdline.text != ":s/a/b" || u.cmdline.pos != 3 {
+		t.Fatalf("command line = %+v; want :s/a/b with the caret after s/", u.cmdline)
+	}
+	u.apply([]any{"cmdline_hide", []any{int64(1), false}})
+	if u.cmdline != nil {
+		t.Fatal("the command line stayed after it closed")
+	}
+}
+
+func TestVimUIKeepsTheLastMessageAndMarksErrors(t *testing.T) {
+	var u vimUI
+	u.apply([]any{"msg_show", []any{"emsg", chunks("E492: Not an editor command: foo"), false}})
+	if u.msg != "E492: Not an editor command: foo" || !u.msgError {
+		t.Fatalf("message = %q, error %v", u.msg, u.msgError)
+	}
+	u.apply([]any{"msg_showmode", []any{chunks("-- INSERT --")}})
+	u.apply([]any{"msg_clear", []any{}})
+	if u.msg != "" || u.showmode != "-- INSERT --" {
+		t.Fatalf("message %q, mode %q after a clear", u.msg, u.showmode)
+	}
+}

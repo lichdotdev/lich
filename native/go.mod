@@ -10,9 +10,10 @@ require (
 	github.com/go-text/typesetting v0.3.5
 	github.com/godbus/dbus/v5 v5.2.2
 	github.com/lichdotdev/gio-driver v0.0.0-20261111143827-fb7064d51698
-	github.com/lichdotdev/godemirror v0.11.0
+	github.com/lichdotdev/godemirror v0.11.1-0.20261124204757-b51d727f7e7b
 	github.com/lichdotdev/lich v0.0.0
 	github.com/lichdotdev/lich/extension v0.0.0
+	github.com/neovim/go-client v1.2.1
 	github.com/yuin/goldmark v1.4.13
 	golang.org/x/exp/shiny v0.0.0-20261009195045-ca0d7ba23607
 	golang.org/x/image v0.47.0
