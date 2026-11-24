@@ -2,6 +2,7 @@ package main
 
 import (
 	"image"
+	"slices"
 	"testing"
 
 	"gioui.org/io/input"
@@ -65,6 +66,19 @@ func TestDockFullScreenFillsTheRowInTheFrameAfterTheClick(t *testing.T) {
 	r.click(t, r.smallestClickIn(t, image.Rect(rigWindow.X-36, 0, rigWindow.X, 48)))
 	if !u.dock.fullscreen {
 		t.Fatal("the click missed full screen")
+	}
+}
+
+// A native browser page is a window of the system's, which nothing the
+// window draws covers: the full-screen dock cuts it across the whole row.
+func TestDockFullScreenCutsTheBrowserPageUnderIt(t *testing.T) {
+	u, r := stageFrames(t, dockReview)
+	r.waitFor(t, "No uncommitted changes")
+	r.click(t, r.smallestClickIn(t, image.Rect(rigWindow.X-36, 0, rigWindow.X, 48)))
+	u.covers = u.covers[:0]
+	r.frames(1)
+	if want := (image.Rectangle{Max: rigWindow}); !slices.Contains(u.covers, want) {
+		t.Fatalf("covers %v, want %v", u.covers, want)
 	}
 }
 
