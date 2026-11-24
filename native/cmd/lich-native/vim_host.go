@@ -181,7 +181,7 @@ func (h *vimHost) start() (*nvim.Nvim, error) {
 	h.mu.Lock()
 	rows, cols := h.rows, h.cols
 	h.mu.Unlock()
-	if err := v.AttachUI(cols, rows, map[string]any{"ext_linegrid": true, "ext_messages": true, "ext_cmdline": true, "rgb": true}); err != nil {
+	if err := v.AttachUI(cols, rows, map[string]any{"ext_linegrid": true, "ext_messages": true, "ext_cmdline": true, "ext_popupmenu": true, "rgb": true}); err != nil {
 		_ = v.Close()
 		return nil, err
 	}

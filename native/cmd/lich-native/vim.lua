@@ -253,6 +253,13 @@ function M.quit(write, bang)
   vim.rpcnotify(chan, 'lich_quit', buf, bang and not write)
 end
 
+-- pick chooses item i of the completion menu, as a click on it.
+function M.pick(buf, i)
+  if api.nvim_get_current_buf() == buf then
+    pcall(api.nvim_select_popupmenu_item, i, true, false, {})
+  end
+end
+
 -- saved hears that lich wrote lines to the file: the buffer is unmodified
 -- unless it changed since.
 function M.saved(buf, lines)

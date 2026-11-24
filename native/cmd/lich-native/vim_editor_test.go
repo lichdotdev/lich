@@ -324,3 +324,21 @@ func TestVimFlashesAYankOnlyWhenTheConfigLightsYanks(t *testing.T) {
 		return len(f.vim.yank) == 1 && f.vim.yank[0].From() == 4 && f.vim.yank[0].To() == 8
 	})
 }
+
+func TestVimCompletionMenuShowsAndPicks(t *testing.T) {
+	f, _ := vimEditor(t, "alphabet alpine\n")
+	vimType(f, "oal")
+	vimPress(f, "N", key.ModCtrl)
+	pum := func() *vimPum {
+		u, _ := f.env.vim.status(func() int { b, _, _ := f.vim.held(); return b }())
+		return u.pum
+	}
+	vimUntil(t, f, "the completion menu", func() bool {
+		p := pum()
+		return p != nil && len(p.items) == 2 && p.items[0].word == "alphabet" && p.selected == 0
+	})
+	f.vimFeed("lich_editor.pick(...)", 1)
+	vimUntil(t, f, "a pick put the word in", func() bool { return f.ed.State().Doc() == "alphabet alpine\nalpine\n" })
+	vimPress(f, key.NameEscape, 0)
+	vimUntil(t, f, "the menu close", func() bool { return pum() == nil })
+}

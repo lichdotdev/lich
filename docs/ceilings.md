@@ -2576,7 +2576,9 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   lines, so `~` and `:&` take the last preview's replacement once one is abandoned), the matchparen pair and, when
   the person's config lights yanks itself, a yank's flash are laid over the text on the visible lines only, and
   one broken over a wrapped row is not; a message of many lines (`:ls`, `:reg`, `:messages`) shows its last
-  15 in the strip, with no pager;
+  15 in the strip, with no pager; the completion menu is Neovim's popupmenu (Ctrl-N, Ctrl-X Ctrl-O, which an
+  attached LSP fills, and the built-in LSP completion), drawn by lich under the word; a plugin that draws its own
+  floating windows (nvim-cmp, blink.cmp) shows no menu, and the command line's completion is not drawn;
   a click moves Vim's cursor and a drag starts a characterwise Visual selection, but
   the wheel only sets the top line, and with wrap off a long line never scrolls sideways to the cursor. A key
   typed while Neovim is still starting is lost.

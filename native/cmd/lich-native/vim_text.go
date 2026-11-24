@@ -52,7 +52,7 @@ func vimChange(from, to string) (godemirror.ChangeSpec, bool) {
 	for pre < len(from) && pre < len(to) && from[pre] == to[pre] {
 		pre++
 	}
-	for pre > 0 && !utf8.RuneStart(from[pre]) {
+	for pre > 0 && pre < len(from) && !utf8.RuneStart(from[pre]) {
 		pre--
 	}
 	suf := 0
