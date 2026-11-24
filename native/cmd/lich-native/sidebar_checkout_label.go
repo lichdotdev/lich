@@ -1,8 +1,6 @@
 package main
 
 import (
-	"path/filepath"
-
 	"gioui.org/layout"
 	"github.com/lichdotdev/lich/native/ui"
 )
@@ -13,7 +11,7 @@ import (
 func checkoutLabelRow(gtx C, th *ui.Theme, r sessionRow) D {
 	name := r.sv.git.Branch
 	if name == "" {
-		name = filepath.Base(r.path)
+		name = baseName(r.path)
 	}
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 	return layout.Inset{Top: ui.Space(2), Bottom: ui.Space(1), Left: rowInset, Right: rowInset}.Layout(gtx, func(gtx C) D {

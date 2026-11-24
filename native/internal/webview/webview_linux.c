@@ -122,6 +122,10 @@ static void load_changed(WebKitWebView *view, WebKitLoadEvent step, gpointer pag
 	lichWebviewLoad(((LichPage *)page)->owner, step, (char *)webkit_web_view_get_uri(view));
 }
 
+// keep_detached refuses the inspector a place inside the page's own window,
+// which the pane sizes and cuts to the page alone.
+static gboolean keep_detached(WebKitWebInspector *inspector, gpointer data) { return TRUE; }
+
 LichPage *lich_webview_open(unsigned long parent, const char *url, uintptr_t owner) {
 	GdkDisplay *display = gdk_display_get_default();
 	Display *x = gdk_x11_display_get_xdisplay(display);
@@ -140,6 +144,8 @@ LichPage *lich_webview_open(unsigned long parent, const char *url, uintptr_t own
 	WebKitWebContext *context = webkit_web_context_new_ephemeral();
 	GtkWidget *view = webkit_web_view_new_with_context(context);
 	g_object_unref(context);
+	webkit_settings_set_enable_developer_extras(webkit_web_view_get_settings(WEBKIT_WEB_VIEW(view)), TRUE);
+	g_signal_connect(webkit_web_view_get_inspector(WEBKIT_WEB_VIEW(view)), "attach", G_CALLBACK(keep_detached), NULL);
 	gtk_container_add(GTK_CONTAINER(holder), view);
 	gtk_widget_show_all(holder);
 
@@ -159,8 +165,13 @@ LichPage *lich_webview_open(unsigned long parent, const char *url, uintptr_t own
 	return page;
 }
 
+// lich_webview_place takes the window's pixels; GTK lays out in its own units,
+// scale factor device pixels each (GNOME's XWayland scale, GDK_SCALE), and a
+// page given device pixels there drew twice its window's size, cut to the top
+// left.
 void lich_webview_place(LichPage *page, int x, int y, int width, int height) {
-	GtkAllocation area = {0, 0, width, height};
+	int scale = gtk_widget_get_scale_factor(page->holder);
+	GtkAllocation area = {0, 0, (width + scale - 1) / scale, (height + scale - 1) / scale};
 	gtk_widget_size_allocate(page->holder, &area);
 	gtk_widget_size_allocate(page->view, &area);
 	XMoveResizeWindow(page->x, page->child, x, y, width, height);
@@ -280,6 +291,8 @@ void lich_webview_hide(LichPage *page) {
 void lich_webview_navigate(LichPage *page, const char *url) { webkit_web_view_load_uri(WEBKIT_WEB_VIEW(page->view), url); }
 
 void lich_webview_reload(LichPage *page) { webkit_web_view_reload_bypass_cache(WEBKIT_WEB_VIEW(page->view)); }
+
+void lich_webview_inspect(LichPage *page) { webkit_web_inspector_show(webkit_web_view_get_inspector(WEBKIT_WEB_VIEW(page->view))); }
 
 void lich_webview_close(LichPage *page) {
 	if (keyed == page) {

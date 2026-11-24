@@ -279,7 +279,7 @@ func (u *window) browserToolbar(gtx C, p *browserPaneUI, session string, st api.
 		p.notes.setDrawing(false)
 	}
 	if p.devtools.Click.Clicked(gtx) {
-		u.openDevTools(session)
+		u.openDevTools(p, session)
 	}
 	for {
 		ev, ok := p.url.Update(gtx)

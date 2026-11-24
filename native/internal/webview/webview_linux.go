@@ -244,6 +244,15 @@ func (p *Page) Reload() {
 	onGTK(func() { C.lich_webview_reload(p.page) })
 }
 
+// Inspect opens WebKit's Web Inspector on the page, in a window of its own.
+func (p *Page) Inspect() {
+	onGTK(func() {
+		if !p.closed {
+			C.lich_webview_inspect(p.page)
+		}
+	})
+}
+
 // Close ends the page.
 func (p *Page) Close() {
 	onGTK(func() {

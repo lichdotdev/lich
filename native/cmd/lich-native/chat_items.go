@@ -336,7 +336,7 @@ const chatCallsShown = 5
 // shuts with the group: its last chatCallsShown, under a line that shows the
 // earlier ones until earlier is opened. A call that comes once the group is
 // drawn enters as a row does.
-func chatCalls(gtx C, th *ui.Theme, f, earlier *chatFold, r chatRow, outcome func(backend.ChatItem) layout.Widget) []layout.FlexChild {
+func chatCalls(gtx C, th *ui.Theme, f, earlier *chatFold, r chatRow, outcome func(backend.ChatItem) *chatOpened) []layout.FlexChild {
 	ids := make([]string, len(r.tools))
 	for i, it := range r.tools {
 		ids[i] = it.ID
@@ -503,9 +503,9 @@ func chatTool(gtx C, th *ui.Theme, it backend.ChatItem, live bool) D {
 	return chatToolWith(gtx, th, it, live, nil, 0)
 }
 
-// chatToolWith is chatTool with how it ended drawn by outcome, the row's own
-// when nil, and its verb at least verbW wide, so a group's targets line up.
-func chatToolWith(gtx C, th *ui.Theme, it backend.ChatItem, live bool, outcome layout.Widget, verbW int) D {
+// chatToolWith is chatTool drawn as the card it was opened as when opened is
+// not nil, and its verb at least verbW wide, so a group's targets line up.
+func chatToolWith(gtx C, th *ui.Theme, it backend.ChatItem, live bool, opened *chatOpened, verbW int) D {
 	t := it.Tool
 	if t == nil {
 		return D{}
@@ -526,7 +526,12 @@ func chatToolWith(gtx C, th *ui.Theme, it backend.ChatItem, live bool, outcome l
 				verb, target = verb.Shimmer(), target.Muted().Shimmer()
 			}
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-				layout.Rigid(func(gtx C) D { return toolIcon(t.Name).Layout(gtx, ui.Space(3.5), ink) }),
+				layout.Rigid(func(gtx C) D {
+					if opened != nil && opened.mark != nil {
+						return opened.mark(gtx)
+					}
+					return toolIcon(t.Name).Layout(gtx, ui.Space(3.5), ink)
+				}),
 				ui.Gap(2),
 				layout.Rigid(func(gtx C) D {
 					if verbW > 0 {
@@ -544,12 +549,14 @@ func chatToolWith(gtx C, th *ui.Theme, it backend.ChatItem, live bool, outcome l
 					d.Size.X = gtx.Constraints.Max.X
 					return d
 				}),
-				layout.Rigid(func(gtx C) D { return chatToolTime(gtx, th, it, running) }),
 				layout.Rigid(func(gtx C) D {
-					if outcome != nil {
-						return outcome(gtx)
+					if opened != nil {
+						return opened.links(gtx)
 					}
-					return chatToolOutcome(gtx, th, t)
+					return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+						layout.Rigid(func(gtx C) D { return chatToolTime(gtx, th, it, running) }),
+						layout.Rigid(func(gtx C) D { return chatToolOutcome(gtx, th, t) }),
+					)
 				}),
 			)
 		})
@@ -789,12 +796,12 @@ func chatVerb(session string, turn int) string {
 	return verbs[int(h.Sum32()%uint32(len(verbs)))]
 }
 
-// chatLive is the turn in flight: a flame, then a verb of the turn shimmering
+// chatLive is the turn in flight: the spinner, then a verb of the turn shimmering
 // with the time it has run, and Claude Code's Ctrl+B hint while the turn
 // waits on a command it moves.
 func chatLive(gtx C, th *ui.Theme, session string, r chatRow) D {
 	row := []layout.FlexChild{
-		layout.Rigid(func(gtx C) D { return chatFlame(gtx, th) }),
+		layout.Rigid(func(gtx C) D { return chatSpinner(gtx, th) }),
 		ui.Gap(2),
 		layout.Rigid(func(gtx C) D {
 			// A turn with no start to count from has no clock.

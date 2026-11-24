@@ -18,11 +18,12 @@ import (
 // ui.Text2XS sets no line height, so a 16px line is taken for the row.
 const text2XSLeading unit.Sp = 16
 
-// The header's tints: the title's opacity, the count's, the drop target's
-// fill and a refusing header's opacity.
+// The header's tints: the title's opacity, a folder's name's, the count's,
+// the drop target's fill and a refusing header's opacity.
 const (
 	headerTitleOpacity  = 0.7
 	headerCountOpacity  = 0.6
+	folderTitleOpacity  = 0.85
 	headerDropFill      = 0.15
 	headerRefuseOpacity = 0.45
 )
@@ -147,8 +148,9 @@ func (s *sidebar) headerMenu(gtx C, th *ui.Theme, state *ui.MenuState, click *ui
 	})
 }
 
-// titleButton is the header's title button: the chevron, a folder's glyph and
-// count, the folded block's mark, then the rule to the row's end.
+// titleButton is the header's title button: the chevron, a folder's glyph,
+// name and count, the folded block's mark, then, past the pinned block's
+// title, the rule to the row's end.
 func (s *sidebar) titleButton(gtx C, th *ui.Theme, b blockView, st *blockState, refuses bool) D {
 	hint := i18n.T("sidebar.sessionGroupHeader.collapse", i18n.Args{"name": b.title})
 	if b.collapsed {
@@ -198,19 +200,39 @@ func (s *sidebar) titleContent(gtx C, th *ui.Theme, b blockView, hovered, refuse
 			})
 		})
 	}), ui.Gap(1.5)}
-	kids = append(kids, layout.Rigid(th.Text(ui.Text2XS, strings.ToUpper(b.title)).Leading(text2XSLeading).In(fg).Weight(font.SemiBold).Layout))
-	if b.kind == blockFolder {
-		count := th.Text(ui.Text2XS, strconv.Itoa(len(b.sessions))).Leading(text2XSLeading).In(fade(th.MutedForeground, headerCountOpacity)).Weight(font.Medium)
-		kids = append(kids, ui.Gap(1.5), layout.Rigid(count.Layout))
-	}
-	if dot, ok := markColor(th, b); ok {
-		kids = append(kids, ui.Gap(1.5), layout.Rigid(func(gtx C) D { return ui.MarkDot(gtx, fade(dot, 1)) }))
-	}
-	kids = append(kids, ui.Gap(1.5), layout.Flexed(1, th.Separator))
+	kids = append(kids, headerWords(th, b, hovered, fg, fade)...)
 	// The line is a row's height already (headerLine); the content centres in it.
 	return layout.Inset{Left: rowInset, Right: ui.Space(1)}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx, kids...)
 	})
+}
+
+// headerWords follow the header's glyph: a folder's name as typed and its
+// count, or the pinned block's title in capitals, then the folded block's
+// mark. A folder's tray already marks where it runs, so only the pinned
+// block's title draws a rule after it.
+func headerWords(th *ui.Theme, b blockView, hovered bool, fg color.NRGBA, fade func(color.NRGBA, float32) color.NRGBA) []layout.FlexChild {
+	var words []layout.FlexChild
+	if b.kind == blockFolder {
+		name := fade(th.Foreground, folderTitleOpacity)
+		if hovered {
+			name = fade(th.Foreground, 1)
+		}
+		words = append(words, layout.Rigid(th.Text(ui.TextXS, b.title).In(name).Weight(font.Medium).Layout))
+		count := th.Text(ui.Text2XS, strconv.Itoa(rootCount(b.sessions))).Leading(text2XSLeading).In(fade(th.MutedForeground, headerCountOpacity)).Weight(font.Medium)
+		words = append(words, ui.Gap(1.5), layout.Rigid(count.Layout))
+	} else {
+		words = append(words, layout.Rigid(th.Text(ui.Text2XS, strings.ToUpper(b.title)).Leading(text2XSLeading).In(fg).Weight(font.SemiBold).Layout))
+	}
+	if dot, ok := markColor(th, b); ok {
+		words = append(words, ui.Gap(1.5), layout.Rigid(func(gtx C) D { return ui.MarkDot(gtx, fade(dot, 1)) }))
+	}
+	if b.kind == blockFolder {
+		words = append(words, layout.Flexed(1, func(gtx C) D { return D{Size: image.Pt(gtx.Constraints.Min.X, 0)} }))
+	} else {
+		words = append(words, ui.Gap(1.5), layout.Flexed(1, th.Separator))
+	}
+	return words
 }
 
 // markColor is the folded block's dot: amber for a session waiting on the
@@ -274,4 +296,21 @@ func headGlyphTone(th *ui.Theme, tint string) (color.NRGBA, float32) {
 // the morph draw the glyph.
 func headGlyphColor(th *ui.Theme, tint string) color.NRGBA {
 	return th.Over(ui.Alpha(headGlyphTone(th, tint)))
+}
+
+// rootCount is how many pieces of work a folder holds: its sessions that hang
+// under none of the others in it, a child or a terminal a session opened left
+// out.
+func rootCount(sessions []sessionView) int {
+	in := make(map[string]bool, len(sessions))
+	for _, sv := range sessions {
+		in[sv.ID] = true
+	}
+	n := 0
+	for _, sv := range sessions {
+		if up := sv.OriginSessionID; !in[up] || up == sv.ID {
+			n++
+		}
+	}
+	return n
 }
