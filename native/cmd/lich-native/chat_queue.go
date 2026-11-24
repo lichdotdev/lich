@@ -39,6 +39,7 @@ func (s *chatStore) enqueue(id string, m chatMessage) {
 		s.queue = map[string][]chatMessage{}
 	}
 	s.queue[id] = append(s.queue[id], m)
+	delete(s.suggestion, id)
 }
 
 // queued is session id's queue, a copy.

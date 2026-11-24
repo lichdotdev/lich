@@ -31,6 +31,7 @@ type chatHeld struct {
 func (s *chatStore) hold(id string, m chatMessage, now time.Time) *chatHeld {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	delete(s.suggestion, id)
 	turn := 0
 	for _, it := range s.items[id] {
 		turn = max(turn, it.Turn)

@@ -13,8 +13,9 @@ func (s *chatStore) suggest(u api.ChatSuggestion) {
 	s.suggestion[u.SessionID] = u.Text
 }
 
-// dropSuggestion forgets session id's suggestion: the person wrote something
-// else, or took it.
+// dropSuggestion forgets session id's suggestion once the person took it.
+// Typing only hides it: a box emptied again shows it back, until a message
+// goes (hold, enqueue).
 func (s *chatStore) dropSuggestion(id string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()

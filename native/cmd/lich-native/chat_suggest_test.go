@@ -103,13 +103,31 @@ func TestEnterOnTheEmptyBoxDoesNotSendTheSuggestion(t *testing.T) {
 	}
 }
 
-func TestTypingDropsTheSuggestion(t *testing.T) {
-	_, r, _, p := suggestFrames(t)
-	r.typeText(p, "x")
-	p.editor.SetText("")
-	r.frame()
-	if r.shows(testSuggestion) || !r.shows(placeholderText()) {
-		t.Errorf("emptied again, the box shows the suggestion instead of its placeholder:\n%s", r.drawn())
+// Typing hides the suggestion and erasing brings it back: a start given up
+// does not cost it. A message that goes, sent or queued, does.
+func TestTheSuggestionOutlivesTypingButNotAMessage(t *testing.T) {
+	u, r, _, p := suggestFrames(t)
+	for range 3 {
+		r.typeText(p, "x")
+		r.frame()
+		if r.shows(testSuggestion) {
+			t.Fatalf("the box shows the suggestion over its text:\n%s", r.drawn())
+		}
+		p.editor.SetText("")
+		r.frame()
+		if !shownInstead(r) {
+			t.Fatalf("emptied again, the box lost the suggestion:\n%s", r.drawn())
+		}
+	}
+	for name, send := range map[string]func(){
+		"sent":   func() { u.model.chat.hold("s1", chatMessage{text: "go"}, time.Now()) },
+		"queued": func() { u.model.chat.enqueue("s1", chatMessage{text: "next"}) },
+	} {
+		u.model.chat.suggest(api.ChatSuggestion{SessionID: "s1", Text: testSuggestion})
+		send()
+		if got := u.model.chat.suggestionOf("s1"); got != "" {
+			t.Errorf("a message %s kept the suggestion %q", name, got)
+		}
 	}
 }
 
