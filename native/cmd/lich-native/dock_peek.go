@@ -148,7 +148,7 @@ func (u *window) dockPeek(gtx C, v stageView) error {
 	}
 	// It slides in as the expanded dock does (stageRow), over the stage
 	// rather than beside it.
-	w := d.width(gtx)
+	w := d.peekWidth(gtx, size.X)
 	x := size.X - int(share*float32(w+gtx.Dp(gutter))) + gtx.Dp(gutter)
 	p.box = image.Rectangle{Min: image.Pt(x, 0), Max: image.Pt(max(min(x+w, size.X), x), size.Y)}.Add(u.islandAt)
 	defer clip.Rect{Max: size}.Push(gtx.Ops).Pop()

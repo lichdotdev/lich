@@ -99,6 +99,24 @@ func (a *Buttons) Revert(chunk godemirror.Chunk, onClick func()) layout.Widget {
 	}
 }
 
+// RevertIcon is Revert as the icon alone, the size of a gutter's number.
+func (a *Buttons) RevertIcon(chunk godemirror.Chunk, onClick func()) layout.Widget {
+	c := clickable(a.revert, chunk.OldStart)
+	return func(gtx C) D {
+		for c.Clicked(gtx) {
+			onClick()
+		}
+		th := a.theme
+		bg := th.Over(th.Border)
+		if c.Hovered() {
+			bg = th.Over(th.Accent)
+		}
+		return a.button(gtx, c, bg, color.NRGBA{}, func(gtx C) D {
+			return icRevertBlock.Layout(gtx, affordanceIcon, th.Foreground)
+		})
+	}
+}
+
 // button lays content out padded on a rounded background with an optional
 // 1px border, as c's target, with the hand cursor.
 func (a *Buttons) button(gtx C, c *ui.Clickable, bg, edge color.NRGBA, content layout.Widget) D {

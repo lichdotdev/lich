@@ -68,6 +68,9 @@ const (
 	dockMinRem     = 20
 	dockMaxRem     = 60
 	dockDefaultRem = 28
+	// reviewPeekShare is the stage share the Review tab takes out over it
+	// (the approved narrow-diff mockup).
+	reviewPeekShare = 0.6
 	// dockHeaderHeight is the strip the actions sit in, 8dp from the top and
 	// from the Separator under it, the inset the sidebar's header keeps.
 	dockHeaderHeight = unit.Dp(44)
@@ -205,6 +208,19 @@ func (d *dock) width(gtx C) int {
 	return gtx.Dp(unit.Dp(max(d.widthRem, d.minRem) * remDp))
 }
 
+// peekWidth is the dock's width out over the stage, whose width is stage px.
+// Review comes out at reviewPeekShare of it and at least as wide as a split
+// needs, within the stage and the dock's widest, and never narrower than the
+// dock beside the terminal.
+func (d *dock) peekWidth(gtx C, stage int) int {
+	w := d.width(gtx)
+	if d.tab != dockReview {
+		return w
+	}
+	share := max(int(reviewPeekShare*float32(stage)), gtx.Dp(reviewSplitMinWidth))
+	return max(w, min(share, stage, gtx.Dp(unit.Dp(dockMaxRem*remDp))))
+}
+
 // layout draws the dock in gtx.Constraints.Max: its column beside the
 // terminal, or the whole row in full screen. It reports
 // whether a drag of its width ended, the moment to persist it.
@@ -220,13 +236,16 @@ func (d *dock) layout(gtx C, th *ui.Theme, root *ui.Root, in dockInput) (saveWid
 			d.tab = dockReview
 		}
 	}
-	if !d.fullscreen {
+	// The Review peek, wider than the dock, has no edge to drag: a drag would
+	// start from the dock's width, not the one on screen.
+	resizes := !d.fullscreen && gtx.Constraints.Max.X == d.width(gtx)
+	if resizes {
 		w, released := d.resize.Update(gtx, unit.Dp(max(d.widthRem, d.minRem)*remDp), unit.Dp(d.minRem*remDp), dockMaxRem*remDp)
 		d.widthRem, saveWidth = float64(w)/remDp, released
 	}
 	size := gtx.Constraints.Max
 	gtx.Constraints = layout.Exact(size)
-	if !d.fullscreen {
+	if resizes {
 		// In the gap between the stage and the dock, outside the dock's own
 		// clip.
 		d.resize.LayoutGap(gtx, gtx.Dp(gutter))

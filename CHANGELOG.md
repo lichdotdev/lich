@@ -64,6 +64,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Review reads in a narrow dock: long lines wrap, the diff has one column of line numbers and Revert sits in it.** Point at a change to turn its first line number into the revert button. Collapsed, the dock comes out on Review at 60% of the stage, and from 820 px wide Review offers Split.
 - **Sessions that share a checkout sit together in the sidebar, under its branch.** When two or more sessions run in the same worktree, a thin label with the branch heads them and their rows drop the branch; what a session opened, a child or a terminal, still hangs under it.
 - **The command palette matches the rest of the window.** Its filters sit in a tray like the dock's tabs, and the key hints at its foot are gone: the selected row says what Enter does, and Tab still walks the filters.
 - **A Markdown file reads like a document in the editor's preview and in Review.** Its frontmatter shows as a table of properties instead of a bold line, headings sit closer to the text they open, and lines stop at a reading width on a wide pane. Chat and Pulls keep their size, with the same spacing under headings and lighter list markers.
