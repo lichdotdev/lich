@@ -63,8 +63,7 @@
     "revertFailed": "无法还原 {name} 中的行",
     "notRepository": "不是 git 仓库",
     "loading": "正在加载…",
-    "noChanges": "没有未提交的更改",
-    "squeezed": "分栏视图需要更宽的面板"
+    "noChanges": "没有未提交的更改"
   },
   "reviewSlots": {
     "forSession": "发给会话 · {lines}",

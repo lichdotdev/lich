@@ -41,7 +41,8 @@ type reviewActions struct {
 
 // layoutActions is the Review tab's part of the dock header: the
 // unified/split toggle, which starts from Settings › Editor's diff layout and
-// then holds per panel, and collapse/expand all.
+// then holds per panel, shown only while the panel is wide enough to split,
+// and collapse/expand all.
 func (p *reviewPanel) layoutActions(gtx C, th *ui.Theme) D {
 	a := &p.actions
 	for a.bulk.Click.Clicked(gtx) {
@@ -58,10 +59,14 @@ func (p *reviewPanel) layoutActions(gtx C, th *ui.Theme) D {
 	if p.split {
 		splitLabel = i18n.T("diff.dockReviewBody.unified")
 	}
+	bulk := layout.Rigid(func(gtx C) D { return th.IconAction(p.root, &a.bulk, bulkIcon, bulkLabel, false).Layout(gtx) })
+	if !p.splitOK {
+		return layout.Flex{Alignment: layout.Middle}.Layout(gtx, bulk)
+	}
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 		layout.Rigid(func(gtx C) D { return th.IconAction(p.root, &a.split, icSplit, splitLabel, p.split).Layout(gtx) }),
 		ui.Gap(1),
-		layout.Rigid(func(gtx C) D { return th.IconAction(p.root, &a.bulk, bulkIcon, bulkLabel, false).Layout(gtx) }),
+		bulk,
 	)
 }
 
@@ -85,28 +90,14 @@ func (p *reviewPanel) panelBody(gtx C, th *ui.Theme) {
 	}
 }
 
-// fileList lays out the cards, each after the first set off by a top border,
-// and the note when a split does not fit.
+// fileList lays out the cards, each after the first set off by a top border.
 func (p *reviewPanel) fileList(gtx C, th *ui.Theme) {
-	p.splitOK = gtx.Constraints.Max.X-2*gtx.Dp(ui.Space(2)) >= gtx.Dp(splitMinWidth)
+	p.splitOK = gtx.Constraints.Max.X >= gtx.Dp(reviewSplitMinWidth)
 	heights := map[string]cardSpan{}
-	squeezed := p.split && !p.splitOK
-	count := len(p.order)
-	if squeezed {
-		count++
-	}
-	p.scrollArea(gtx, th, count, func(gtx C, i int) D {
-		if squeezed {
-			if i == 0 {
-				return p.squeezedNote(gtx, th)
-			}
-			i--
-		}
+	p.scrollArea(gtx, th, len(p.order), func(gtx C, i int) D {
 		return p.cardItem(gtx, i, heights)
 	})
-	if !squeezed {
-		p.layoutSticky(gtx, heights)
-	}
+	p.layoutSticky(gtx, heights)
 }
 
 func (p *reviewPanel) cardItem(gtx C, i int, heights map[string]cardSpan) D {
@@ -137,16 +128,6 @@ func (p *reviewPanel) cardItem(gtx C, i int, heights map[string]cardSpan) D {
 				heights[p.order[i]] = cardSpan{top: top, height: dims.Size.Y, header: c.headerHeight}
 				return dims
 			}),
-		)
-	})
-}
-
-func (p *reviewPanel) squeezedNote(gtx C, th *ui.Theme) D {
-	return layout.Inset{Left: ui.Space(3), Right: ui.Space(3), Top: ui.Space(2), Bottom: ui.Space(0.5)}.Layout(gtx, func(gtx C) D {
-		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-			layout.Rigid(func(gtx C) D { return icSplit.Layout(gtx, ui.Space(3.5), th.MutedForeground) }),
-			ui.Gap(1.5),
-			layout.Rigid(th.Text(ui.Text2XS, i18n.T("diff.reviewPanel.squeezed")).Muted().Layout),
 		)
 	})
 }

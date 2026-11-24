@@ -62,8 +62,7 @@
     "collapse": "Свернуть боковую панель"
   },
   "sidebarRail": {
-    "expand": "Развернуть боковую панель",
-    "newSession": "Новая сессия"
+    "expand": "Развернуть боковую панель"
   },
   "sessionPhaseChips": {
     "all": "Все",

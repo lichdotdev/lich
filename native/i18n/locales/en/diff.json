@@ -63,8 +63,7 @@
     "revertFailed": "Couldn't revert lines in {name}",
     "notRepository": "Not a git repository",
     "loading": "Loading…",
-    "noChanges": "No uncommitted changes",
-    "squeezed": "Split needs a wider panel"
+    "noChanges": "No uncommitted changes"
   },
   "reviewSlots": {
     "forSession": "for the session · {lines}",

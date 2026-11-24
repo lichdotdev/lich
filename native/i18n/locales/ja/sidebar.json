@@ -60,8 +60,7 @@
     "collapse": "サイドバーを折りたたむ"
   },
   "sidebarRail": {
-    "expand": "サイドバーを展開",
-    "newSession": "新しいセッション"
+    "expand": "サイドバーを展開"
   },
   "sessionPhaseChips": {
     "all": "すべて",

@@ -60,8 +60,7 @@
     "collapse": "折叠侧边栏"
   },
   "sidebarRail": {
-    "expand": "展开侧边栏",
-    "newSession": "新建会话"
+    "expand": "展开侧边栏"
   },
   "sessionPhaseChips": {
     "all": "全部",

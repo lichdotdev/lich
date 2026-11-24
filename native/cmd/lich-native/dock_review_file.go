@@ -52,6 +52,9 @@ type fileCard struct {
 	afford       *diffview.Buttons
 	blocks       diffview.Blocks
 	headerHeight int
+	// wrapped is the diff's measured height and what it was measured for:
+	// wrapped lines are counted by measuring every one, so not every frame.
+	wrapped wrappedHeight
 
 	toggle          ui.Clickable
 	attach, discard ui.IconActionState
@@ -269,16 +272,17 @@ var reviewDiffLabels = diffview.Labels{
 // diff lays the editor out exactly as tall as its rows and the composer
 // open under them, so the panel scrolls and the editor never does.
 func (c *fileCard) diff(gtx C, p *reviewPanel, view *diffview.View) D {
-	split := p.splitShown(gtx)
-	dims, changed, err := view.Layout(gtx, diffview.Frame{
+	f := diffview.Frame{
 		Theme:  p.th,
 		Code:   p.code,
 		Patch:  c.patch,
-		Split:  split,
-		Height: diffRows(c.shown, split, c.filled) * p.cellHeight(gtx),
+		Split:  p.splitShown(gtx),
+		Wrap:   true,
 		Blocks: &c.blocks,
 		Items:  c.cardBlocks(p),
-	})
+	}
+	f.Height = c.wrappedHeight(gtx, p, view, f)
+	dims, changed, err := view.Layout(gtx, f)
 	if err != nil && !c.viewFail {
 		c.viewFail = true
 		log.Printf("review %s: %v", c.git.path, err)
@@ -287,6 +291,32 @@ func (c *fileCard) diff(gtx C, p *reviewPanel, view *diffview.View) D {
 		p.invalidate()
 	}
 	return dims
+}
+
+// wrappedHeight is what a wrapped diff's height is measured for: the
+// version drawn, its rows unwrapped (which move as gaps fill), the layout and
+// the room.
+type wrappedHeight struct {
+	gen, rows, width, cell int
+	split                  bool
+	height                 int
+}
+
+// wrappedHeight is f's rows wrapped at the card's width, measured again only
+// when what they depend on changed.
+func (c *fileCard) wrappedHeight(gtx C, p *reviewPanel, view *diffview.View, f diffview.Frame) int {
+	key := wrappedHeight{gen: c.gen, rows: diffRows(c.shown, f.Split, c.filled), width: gtx.Constraints.Max.X, cell: p.cellHeight(gtx), split: f.Split}
+	if key.height = c.wrapped.height; key == c.wrapped {
+		return key.height
+	}
+	h, err := view.Height(gtx, f, key.width)
+	if err != nil {
+		log.Printf("review %s: %v", c.git.path, err)
+		return key.rows * key.cell
+	}
+	key.height = h
+	c.wrapped = key
+	return h
 }
 
 // ensureView builds the card's editor on first need, and again when a merge
@@ -302,7 +332,9 @@ func (c *fileCard) ensureView(p *reviewPanel) *diffview.View {
 		return c.view
 	}
 	opts := diffview.Options{Buttons: c.afford,
-		Expand: func(g godemirror.Gap) { p.expand(c, c.gen, g) }}
+		Expand:   func(g godemirror.Gap) { p.expand(c, c.gen, g) },
+		Gutter:   godemirror.OneColumnGutter,
+		RevertAt: godemirror.RevertInGutter}
 	if reverts {
 		opts.Revert = func(ch godemirror.Chunk) { p.revert(c.git.path, lichdiff.RevertLines(ch)) }
 	}

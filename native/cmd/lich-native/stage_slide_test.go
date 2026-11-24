@@ -156,7 +156,7 @@ func TestDockPeekSlidesOverTheStageAsTheExpandDoes(t *testing.T) {
 	u, r, tv := slideFrames(t)
 	wide := settledCols(t, r, tv)
 	gtx := layout.Context{Metric: unit.Metric{PxPerDp: 1}}
-	g, w := gtx.Dp(gutter), u.dock.width(gtx)
+	g := gtx.Dp(gutter)
 	row := rigWindow.X - g
 	left := func() int {
 		if end := stageEnd(t, u, "s"); end != row {
@@ -168,7 +168,11 @@ func TestDockPeekSlidesOverTheStageAsTheExpandDoes(t *testing.T) {
 		}
 		return u.dock.peek.box.Min.X
 	}
-	at := func(share float32) int { return row - int(share*float32(w+g)) + g }
+	// Review comes out wider than the dock, at its share of the stage.
+	at := func(share float32) int {
+		w := u.dock.peekWidth(gtx, row-u.islandAt.X)
+		return row - int(share*float32(w+g)) + g
+	}
 	edges, cols := slide(t, r, tv, pointTo(r, edgePoint), &u.dock.peek.slide, left)
 	onCurve(t, "out", edges, true, at)
 	edges, more := slide(t, r, tv, pointTo(r, f32.Pt(100, 300)), &u.dock.peek.slide, left)

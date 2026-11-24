@@ -41,6 +41,11 @@ const revertUndoFor = 10 * time.Second
 // under ~35 columns of code.
 const splitMinWidth = unit.Dp(560)
 
+// reviewSplitMinWidth is the Review panel's width from which it offers a
+// split (the approved narrow-diff mockup): under it each side wraps most lines
+// of code, so the panel shows only the unified diff.
+const reviewSplitMinWidth = unit.Dp(820)
+
 // reviewPanel is the Review tab. Every field is the UI goroutine's but the
 // gap answers, which arrive from the backend.
 type reviewPanel struct {
@@ -332,8 +337,7 @@ func (p *reviewPanel) cellHeight(gtx C) int {
 	return p.cells.CellH()
 }
 
-// scrollToFile brings path's card to the top of the list, past the squeezed
-// note when it is drawn.
+// scrollToFile brings path's card to the top of the list.
 func (p *reviewPanel) scrollToFile(path string) {
 	if i, ok := p.itemOf(path); ok {
 		p.list.Position.First, p.list.Position.Offset = i, 0
@@ -343,13 +347,9 @@ func (p *reviewPanel) scrollToFile(path string) {
 // itemOf is the list item path's card is drawn in.
 func (p *reviewPanel) itemOf(path string) (int, bool) {
 	for i, f := range p.order {
-		if f != path {
-			continue
+		if f == path {
+			return i, true
 		}
-		if p.split && !p.splitOK {
-			i++
-		}
-		return i, true
 	}
 	return 0, false
 }
@@ -370,7 +370,7 @@ func (p *reviewPanel) fold(c *fileCard) {
 	}
 }
 
-// splitShown is shownLayout: side by side only once the cards are wide
+// splitShown is shownLayout: side by side only once the panel is wide
 // enough.
 func (p *reviewPanel) splitShown(gtx C) bool { return p.split && p.splitOK }
 

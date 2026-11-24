@@ -59,8 +59,7 @@
     "collapse": "사이드바 접기"
   },
   "sidebarRail": {
-    "expand": "사이드바 펼치기",
-    "newSession": "새 세션"
+    "expand": "사이드바 펼치기"
   },
   "sessionPhaseChips": {
     "all": "전체",

@@ -63,8 +63,7 @@
     "revertFailed": "No se pudieron revertir las líneas en {name}",
     "notRepository": "No es un repositorio git",
     "loading": "Cargando…",
-    "noChanges": "No hay cambios sin confirmar",
-    "squeezed": "El modo dividido necesita un panel más ancho"
+    "noChanges": "No hay cambios sin confirmar"
   },
   "reviewSlots": {
     "forSession": "para la sesión · {lines}",

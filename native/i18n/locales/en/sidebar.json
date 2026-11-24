@@ -60,8 +60,7 @@
     "collapse": "Collapse sidebar"
   },
   "sidebarRail": {
-    "expand": "Expand sidebar",
-    "newSession": "New session"
+    "expand": "Expand sidebar"
   },
   "sessionPhaseChips": {
     "all": "All",
