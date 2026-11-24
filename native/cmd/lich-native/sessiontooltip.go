@@ -23,7 +23,6 @@ var (
 	icSandboxed = icons.Lucide("shield")
 	icConflict  = icons.Lucide("triangle-alert")
 	icBranch    = icons.Lucide("git-branch")
-	icModel     = icons.Lucide("cpu")
 )
 
 // sessionTooltip is what the card's one line has no room for: the full label,
@@ -174,7 +173,7 @@ func modelSection(th *ui.Theme, requested, running string) layout.Widget {
 			}
 			children = append(children, layout.Rigid(l.Layout))
 		}
-		return ui.IconLine(gtx, icModel, th.MutedForeground, children...)
+		return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
 	}
 }
 

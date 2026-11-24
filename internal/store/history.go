@@ -31,7 +31,8 @@ func escapeLike(term string) string {
 	return strings.ReplaceAll(term, "_", likeEscape+"_")
 }
 
-// ClosedSessions returns the parked sessions (is_open = 0) matching opts.Term, the
+// ClosedSessions returns the parked sessions (is_open = 0) matching opts.Term, of
+// opts.ProjectID alone when it is set, the
 // last one closed first, up to closedSessionLimit of them. An empty opts.Term is the
 // plain history: the most recently closed, whatever they are named. Sessions of
 // closed projects answer too: a project hidden from the tab strip still owns the
@@ -63,7 +64,7 @@ func escapeLike(term string) string {
 // rowid is the tiebreak, not the order, for RecentProjects' reason twice over:
 // it dates the insert, and a resumed session is reinserted — so rows parked
 // before closed_at existed all carry 0 and fall back to it together.
-func (s *Service) ClosedSessions(_ context.Context, opts api.SearchTermOptions) (ClosedHistory, error) {
+func (s *Service) ClosedSessions(_ context.Context, opts api.ClosedSessionsOptions) (ClosedHistory, error) {
 	if strings.TrimSpace(opts.Term) != "" {
 		// Started on any term, not only one the index can be asked about: the
 		// count of what is still unindexed goes back with every answer, and a
@@ -72,6 +73,10 @@ func (s *Service) ClosedSessions(_ context.Context, opts api.SearchTermOptions) 
 		s.backfill()
 	}
 	match := closedSessionsMatch(opts.Term)
+	if opts.ProjectID != "" {
+		match.where += " AND s.project_id = ?"
+		match.args = append(match.args, opts.ProjectID)
+	}
 
 	// Counted before the rows are asked for, never while they are being walked:
 	// the store holds a single connection, and a second query opened inside the

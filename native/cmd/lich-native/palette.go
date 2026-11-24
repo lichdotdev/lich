@@ -98,6 +98,11 @@ type commandPalette struct {
 	closedTerm string
 	closedOff  bool
 
+	// scope is the project History is narrowed to, by a chat's /resume, until
+	// the palette closes or its chip is clicked; zero for every project.
+	scope      paletteProject
+	scopeClear ui.Clickable
+
 	history  remote[historyAnswer]
 	external remote[[]backend.ExternalSession]
 	said     remote[[]backend.TranscriptMatch]
@@ -139,6 +144,12 @@ func (p *commandPalette) showBeside(turns map[string]string, target string, edge
 	p.tab, p.beside = tabSessions, &besideRequest{target: target, edge: edge}
 }
 
+// showHistory opens the palette on the History of project.
+func (p *commandPalette) showHistory(turns map[string]string, project paletteProject) {
+	p.show(turns)
+	p.tab, p.scope = tabHistory, project
+}
+
 // hide closes the palette; the next one opens on the plain list again.
 func (p *commandPalette) hide() {
 	p.open, p.beside = false, nil
@@ -147,7 +158,7 @@ func (p *commandPalette) hide() {
 
 func (p *commandPalette) reset() {
 	p.query.SetText("")
-	p.tab, p.cursor, p.reveal = tabAll, 0, true
+	p.tab, p.cursor, p.reveal, p.scope = tabAll, 0, true, paletteProject{}
 	p.polls, p.pollAt = 0, time.Time{}
 }
 
@@ -226,10 +237,11 @@ func (p *commandPalette) ask(gtx C, c *backend.Client, typed string, searching, 
 	if !next.IsZero() {
 		gtx.Execute(op.InvalidateCmd{At: next})
 	}
-	search := "q:" + term
+	scope := p.scope.ID
+	search := "q:" + term + "@" + scope
 	p.closedTerm, p.closedOff = term, false
 	p.history.want(search+"#"+strconv.Itoa(p.pollHistory(gtx.Now, term)), reset, func(ctx context.Context) (historyAnswer, error) {
-		return fetchHistory(ctx, c, term)
+		return fetchHistory(ctx, c, term, scope)
 	})
 	if onHistory {
 		p.external.want("external", reset, c.ExternalSessions)
@@ -283,8 +295,8 @@ func (p *commandPalette) wake(gtx C) {
 	}
 }
 
-func fetchHistory(ctx context.Context, c *backend.Client, term string) (historyAnswer, error) {
-	h, err := c.ClosedSessions(ctx, term)
+func fetchHistory(ctx context.Context, c *backend.Client, term, projectID string) (historyAnswer, error) {
+	h, err := c.ClosedSessions(ctx, term, projectID)
 	if err != nil {
 		return historyAnswer{}, err
 	}
@@ -324,6 +336,8 @@ type paletteView struct {
 	// emptyHistory is the History tab of a workspace that has closed nothing,
 	// which says so rather than that a query found nothing.
 	emptyHistory bool
+	// scope is the name of the project History is narrowed to, "" for none.
+	scope        string
 	missing      map[string]bool
 	sessionCount map[string]int
 	query        string
@@ -334,7 +348,7 @@ type paletteView struct {
 func (p *commandPalette) view(w paletteWorld, bound hotkeyBindings, isMac bool, available func(hotkeyID) bool) paletteView {
 	query := p.query.Text()
 	closed, history, external, said := p.answers()
-	v := paletteView{query: strings.TrimSpace(query), missing: closed.missing, sessionCount: w.counts, counts: map[paletteTab]int{}}
+	v := paletteView{query: strings.TrimSpace(query), scope: p.scope.Name, missing: closed.missing, sessionCount: w.counts, counts: map[paletteTab]int{}}
 	all := rankSessions(w.sessions, p.turns)
 	rows := history.rows
 	total := history.total
@@ -346,6 +360,9 @@ func (p *commandPalette) view(w paletteWorld, bound hotkeyBindings, isMac bool, 
 			}
 			return false
 		})
+	}
+	if p.scope.ID != "" {
+		external = slices.DeleteFunc(slices.Clone(external), func(e backend.ExternalSession) bool { return e.ProjectID != p.scope.ID })
 	}
 	results := filterPalette(query, all, w.projects, closed.rows, rows, closed.total, external)
 	messages := paletteMessagesOf(said, all)

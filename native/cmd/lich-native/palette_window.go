@@ -111,6 +111,9 @@ func (u *window) paletteFrame(gtx C, p *commandPalette) paletteView {
 			p.tab = tab
 		}
 	}
+	if p.scopeClear.Clicked(gtx) {
+		p.scope = paletteProject{}
+	}
 	enter := p.keys(gtx)
 	w := u.model.paletteWorld()
 	query := p.query.Text()

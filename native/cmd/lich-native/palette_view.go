@@ -53,6 +53,7 @@ var (
 
 var (
 	icPaletteSearch     = icons.Lucide("search")
+	icPaletteScopeClear = icons.Lucide("x")
 	icPaletteFolder     = icons.Lucide("folder")
 	icPaletteFolderGone = icons.Lucide("folder-x")
 	icPaletteBranch     = icons.Lucide("git-branch")
@@ -153,13 +154,44 @@ func (p *commandPalette) filters(gtx C, th *ui.Theme, v *paletteView) D {
 		}
 		children = append(children, layout.Rigid(func(gtx C) D { return p.filterTab(gtx, on, v, tab) }))
 	}
-	return layout.Background{}.Layout(gtx,
-		func(gtx C) D { return ui.Fill(gtx, tray, ui.RadiusLG) },
-		func(gtx C) D {
-			return layout.UniformInset(paletteTrayPad).Layout(gtx, func(gtx C) D {
-				return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
+	trayed := func(gtx C) D {
+		return layout.Background{}.Layout(gtx,
+			func(gtx C) D { return ui.Fill(gtx, tray, ui.RadiusLG) },
+			func(gtx C) D {
+				return layout.UniformInset(paletteTrayPad).Layout(gtx, func(gtx C) D {
+					return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
+				})
 			})
-		})
+	}
+	if v.scope == "" {
+		return trayed(gtx)
+	}
+	gtx.Constraints.Min.X = gtx.Constraints.Max.X
+	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+		layout.Rigid(trayed),
+		layout.Flexed(1, func(gtx C) D { return D{Size: image.Pt(gtx.Constraints.Min.X, 0)} }),
+		layout.Rigid(func(gtx C) D {
+			return layout.Inset{Right: ui.Space(3)}.Layout(gtx, func(gtx C) D { return p.scopeChip(gtx, th, v.scope) })
+		}),
+	)
+}
+
+// scopeChip is the project History is narrowed to, at the row's end; a click
+// widens it to every project.
+func (p *commandPalette) scopeChip(gtx C, th *ui.Theme, name string) D {
+	return p.scopeClear.Layout(gtx, func(gtx C) D {
+		fg := th.MutedForeground
+		if p.scopeClear.Hovered() {
+			fg = th.Foreground
+		}
+		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+			layout.Rigid(func(gtx C) D { return icPaletteFolder.Layout(gtx, ui.Space(3.5), fg) }),
+			ui.Gap(1),
+			layout.Rigid(th.Text(paletteTabSize, name).In(fg).Leading(20).Layout),
+			ui.Gap(1),
+			layout.Rigid(func(gtx C) D { return icPaletteScopeClear.Layout(gtx, ui.Space(3.5), fg) }),
+		)
+	})
 }
 
 // filterTab is one filter: its name and count, the current one filled with the

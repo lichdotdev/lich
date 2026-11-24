@@ -163,6 +163,16 @@ func paletteSessionsOf(projects []backend.Project) []paletteSession {
 // historyRows joins the parked rows to what git says about their checkouts. A
 // path with no branch and a path in missing are different failures, not a
 // repository versus not there at all, but the row only acts on the second.
+// projectOfSession is the project session id is in, zero when none holds it.
+func projectOfSession(sessions []paletteSession, id string) paletteProject {
+	for _, s := range sessions {
+		if s.sessionID == id {
+			return paletteProject{ID: s.projectID, Name: s.projectName}
+		}
+	}
+	return paletteProject{}
+}
+
 func historyRows(closed []backend.ClosedSession, branches map[string]string, missing map[string]bool) []paletteHistory {
 	rows := make([]paletteHistory, len(closed))
 	for i, s := range closed {

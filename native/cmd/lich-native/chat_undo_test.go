@@ -117,3 +117,23 @@ func TestSendingForgetsTheHistory(t *testing.T) {
 	r.chord("Y", key.ModShortcut)
 	wantComposer(t, p, "", 0, "redo after sending")
 }
+
+func TestResumeOpensTheHistoryInsteadOfSending(t *testing.T) {
+	u, r, p := composerRig(t)
+	u.palette = newCommandPalette(func() {})
+	r.typeText(p, "/resume ")
+	if !u.sendChat(p, "s1") {
+		t.Fatal("/resume was not taken")
+	}
+	if !u.palette.open || u.palette.tab != tabHistory {
+		t.Errorf("palette open %v on %s, want History", u.palette.open, u.palette.tab)
+	}
+	if want := projectOfSession(u.model.paletteWorld().sessions, "s1"); want.ID == "" || u.palette.scope != want {
+		t.Errorf("History narrowed to %+v, want the project of s1 (%+v)", u.palette.scope, want)
+	}
+	u.palette.hide()
+	if u.palette.scope != (paletteProject{}) {
+		t.Errorf("the next opening keeps the scope %+v", u.palette.scope)
+	}
+	wantComposer(t, p, "", 0, "after /resume")
+}
