@@ -165,8 +165,13 @@ LichPage *lich_webview_open(unsigned long parent, const char *url, uintptr_t own
 	return page;
 }
 
+// lich_webview_place takes the window's pixels; GTK lays out in its own units,
+// scale factor device pixels each (GNOME's XWayland scale, GDK_SCALE), and a
+// page given device pixels there drew twice its window's size, cut to the top
+// left.
 void lich_webview_place(LichPage *page, int x, int y, int width, int height) {
-	GtkAllocation area = {0, 0, width, height};
+	int scale = gtk_widget_get_scale_factor(page->holder);
+	GtkAllocation area = {0, 0, (width + scale - 1) / scale, (height + scale - 1) / scale};
 	gtk_widget_size_allocate(page->holder, &area);
 	gtk_widget_size_allocate(page->view, &area);
 	XMoveResizeWindow(page->x, page->child, x, y, width, height);
