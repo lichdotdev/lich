@@ -63,6 +63,9 @@ const (
 	// rowEditor is a checkout's file in the stage editor, the last row under
 	// the checkout.
 	rowEditor
+	// rowCheckout is the label over the roots of a block that share a
+	// checkout, when there are two or more of them.
+	rowCheckout
 )
 
 // sessionRow is one line of a block's tree.
@@ -83,6 +86,9 @@ type sessionRow struct {
 	kids   int // sessions under a mother, drawn or folded
 	folded bool
 	mark   string // a folded mother's markWait / markDone
+	// branchSaid is a card whose branch a row above already shows: its
+	// checkout's label, or its mother in the same checkout.
+	branchSaid bool
 	// motion is the row's share of a run opening or closing it, nil at rest.
 	motion *rowMotion
 }
@@ -106,10 +112,38 @@ func sessionRows(sessions []sessionView, folded func(id string) bool, editors ma
 		roots = append(roots, sv)
 	}
 	t := tree{children: children, folded: folded, editors: editors}
+	roots = byCheckout(roots)
+	shared := map[string]int{}
+	for _, root := range roots {
+		shared[root.path]++
+	}
 	for i, root := range roots {
-		t.walk(root, 0, nil, i == len(roots)-1, map[string]bool{})
+		grouped := shared[root.path] > 1
+		if grouped && (i == 0 || roots[i-1].path != root.path) {
+			t.rows = append(t.rows, sessionRow{kind: rowCheckout, key: checkoutRowPrefix + root.path, sv: root, path: root.path})
+		}
+		t.walk(root, 0, nil, i == len(roots)-1, grouped, map[string]bool{})
 	}
 	return t.rows
+}
+
+const checkoutRowPrefix = "__checkout__:"
+
+// byCheckout is roots with each checkout's sessions brought together where
+// the first of them stands, in stored order otherwise.
+func byCheckout(roots []sessionView) []sessionView {
+	at := map[string]int{}
+	var groups [][]sessionView
+	for _, sv := range roots {
+		i, ok := at[sv.path]
+		if !ok {
+			i = len(groups)
+			at[sv.path] = i
+			groups = append(groups, nil)
+		}
+		groups[i] = append(groups[i], sv)
+	}
+	return slices.Concat(groups...)
 }
 
 const editorRowPrefix = "__editor__:"
@@ -162,15 +196,16 @@ func (t *tree) descendants(id string, seen map[string]bool) []sessionView {
 }
 
 // walk adds sv at depth and, unless it is folded, its browser and its group
-// under it. seen guards against an origin cycle.
-func (t *tree) walk(sv sessionView, depth int, lanes []bool, tail bool, seen map[string]bool) {
+// under it. branchSaid is a row above showing sv's branch already. seen
+// guards against an origin cycle.
+func (t *tree) walk(sv sessionView, depth int, lanes []bool, tail, branchSaid bool, seen map[string]bool) {
 	if seen[sv.ID] {
 		return
 	}
 	seen[sv.ID] = true
 	all := t.descendants(sv.ID, maps.Clone(seen))
 	row := sessionRow{kind: rowCard, key: sv.ID, sv: sv, depth: depth, lanes: lanes, tail: tail, kids: len(all),
-		folded: len(all) > 0 && t.folded(sv.ID)}
+		folded: len(all) > 0 && t.folded(sv.ID), branchSaid: branchSaid}
 	if row.folded {
 		row.mark = treeMark(all)
 	}
@@ -204,7 +239,7 @@ func childLanes(r sessionRow) []bool {
 func (t *tree) group(mother sessionView, depth int, lanes []bool, seen map[string]bool) {
 	kids := t.children[mother.ID]
 	for i, sv := range kids {
-		t.walk(sv, depth, lanes, i == len(kids)-1, seen)
+		t.walk(sv, depth, lanes, i == len(kids)-1, sv.path == mother.path, seen)
 	}
 }
 

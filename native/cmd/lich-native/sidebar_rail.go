@@ -187,7 +187,7 @@ func railRows(b blockView) []railItem {
 	const base = 0
 	var items []railItem
 	for _, r := range blockRows(b, b.sessions) {
-		if r.kind == rowBrowser {
+		if r.kind == rowBrowser || r.kind == rowCheckout {
 			continue
 		}
 		if r.kind == rowEditor {

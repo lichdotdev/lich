@@ -176,7 +176,7 @@ func (s *sidebar) cardBody(gtx C, th *ui.Theme, sv *sessionView, more layout.Wid
 		row = append(row, ui.Gap(1.5))
 		row = append(row, foldedCount(th, sv.place.kids, sv.place.mark)...)
 	}
-	if b := sv.git.Branch; b != "" {
+	if b := sv.git.Branch; b != "" && !sv.place.branchSaid {
 		most := gtx.Constraints.Max.X * branchShare / 100
 		row = append(row, ui.Gap(1.5), layout.Rigid(func(gtx C) D {
 			gtx.Constraints.Max.X = min(gtx.Constraints.Max.X, most)

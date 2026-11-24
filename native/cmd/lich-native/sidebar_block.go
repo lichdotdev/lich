@@ -318,8 +318,8 @@ func (s *sidebar) blockCards(gtx C, th *ui.Theme, b blockView, st *blockState, f
 	return d
 }
 
-// blockRow is one row in its motion: a checkout a mother's children run in,
-// a session's browser, or a card. Every card drags, but a reorder only moves it among the stored
+// blockRow is one row in its motion: the label of a checkout two roots
+// share, a session's browser, an editor, or a card. Every card drags, but a reorder only moves it among the stored
 // order: the tree is read off the origins, so a child stays under its mother.
 func (s *sidebar) blockRow(gtx C, th *ui.Theme, st *blockState, b blockView, r sessionRow, tree bool, f blockFrame, dragEnded bool) D {
 	if r.kind == rowBrowser {
@@ -328,6 +328,13 @@ func (s *sidebar) blockRow(gtx C, th *ui.Theme, st *blockState, b blockView, r s
 				return s.browserRow(gtx, th, r, b, f.act, tree, r.sv.ID == f.active, dragEnded)
 			})
 		}
+		if r.motion != nil {
+			return moveRow(gtx, r, row)
+		}
+		return st.presence.Layout(gtx, r.key, row)
+	}
+	if r.kind == rowCheckout {
+		row := func(gtx C) D { return checkoutLabelRow(gtx, th, r) }
 		if r.motion != nil {
 			return moveRow(gtx, r, row)
 		}

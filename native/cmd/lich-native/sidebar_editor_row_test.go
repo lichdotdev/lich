@@ -15,7 +15,7 @@ import (
 )
 
 func TestAnEditorHangsUnderTheSessionThatHoldsIt(t *testing.T) {
-	b := blockView{sessions: []sessionView{treeSession("a", "", "/repo"), treeSession("b", "", "/repo")},
+	b := blockView{sessions: []sessionView{treeSession("a", "", "/repo"), treeSession("b", "", "/repo/wt/b")},
 		editors: map[string]editorNode{"a": {rel: "src/total.ts"}}}
 	rows := blockRows(b, b.sessions)
 	want := []string{"0:a", "1:__editor__:a.", "0:b."}

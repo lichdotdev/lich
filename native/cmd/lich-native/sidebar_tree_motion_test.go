@@ -27,7 +27,7 @@ func motionTree() []sessionView {
 		treeSession("a", "mother", "/repo"),
 		treeSession("a1", "a", "/repo"),
 		treeSession("b", "mother", "/repo"),
-		treeSession("solo", "", "/repo"),
+		treeSession("solo", "", "/repo/wt/solo"),
 	}
 }
 
@@ -124,7 +124,7 @@ func TestTreeMotionOpensANewRoot(t *testing.T) {
 	sessions, now := motionTree(), time.Now()
 	var m treeMotion
 	m.update(now, motionRows(sessions))
-	more := append([]sessionView{treeSession("root", "", "/repo")}, sessions...)
+	more := append([]sessionView{treeSession("root", "", "/repo/wt/root")}, sessions...)
 	if !m.update(now, motionRows(more)) || len(m.runs) != 1 || m.runs[0].after != "" {
 		t.Fatalf("runs = %+v, want the new root opening at the top", m.runs)
 	}

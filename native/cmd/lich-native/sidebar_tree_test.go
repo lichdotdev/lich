@@ -26,7 +26,7 @@ func rowShape(rows []sessionRow) []string {
 func TestSessionRowsNestEachGeneration(t *testing.T) {
 	sessions := []sessionView{
 		treeSession("mother", "", "/repo"),
-		treeSession("solo", "", "/repo"),
+		treeSession("solo", "", "/repo/wt/solo"),
 		treeSession("child", "mother", "/repo"),
 		treeSession("grandchild", "child", "/repo"),
 		treeSession("second", "mother", "/repo"),
@@ -127,7 +127,7 @@ func TestFilterKeepsTheMotherOfAMatchedChild(t *testing.T) {
 	}
 }
 
-func TestAFoldersRowsAreItsTreesWithNoCheckoutRow(t *testing.T) {
+func TestAFoldersRootsSharingACheckoutGatherUnderItsLabel(t *testing.T) {
 	b := blockView{key: "__folder__:Later"}
 	sessions := []sessionView{
 		treeSession("a", "", "/repo/wt/a"),
@@ -135,8 +135,42 @@ func TestAFoldersRowsAreItsTreesWithNoCheckoutRow(t *testing.T) {
 		treeSession("a-child", "a", "/repo/wt/c"),
 		treeSession("a2", "", "/repo/wt/a"),
 	}
-	want := []string{"0:a", "1:a-child.", "0:b", "0:a2."}
+	want := []string{"0:__checkout__:/repo/wt/a", "0:a", "1:a-child.", "0:a2", "0:b."}
 	if got := rowShape(blockRows(b, sessions)); !slices.Equal(got, want) {
 		t.Errorf("rows = %v, want %v", got, want)
+	}
+}
+
+func TestACheckoutWithOneRootHasNoLabel(t *testing.T) {
+	sessions := []sessionView{
+		treeSession("mother", "", "/repo/wt/a"),
+		treeSession("shell", "mother", "/repo/wt/a"),
+		treeSession("other", "", "/repo/wt/b"),
+	}
+	want := []string{"0:mother", "1:shell.", "0:other."}
+	if got := rowShape(sessionRows(sessions, func(string) bool { return false }, nil)); !slices.Equal(got, want) {
+		t.Errorf("rows = %v, want %v: children do not count toward a label", got, want)
+	}
+}
+
+func TestTheLabelOrTheMotherSaysTheBranch(t *testing.T) {
+	sessions := []sessionView{
+		treeSession("polish", "", "/repo/wt/a"),
+		treeSession("shell", "polish", "/repo/wt/a"),
+		treeSession("sweep", "polish", "/repo/wt/s"),
+		treeSession("docs", "", "/repo"),
+		treeSession("spacing", "", "/repo/wt/a"),
+	}
+	said := map[string]bool{}
+	for _, r := range sessionRows(sessions, func(string) bool { return false }, nil) {
+		if r.kind == rowCard {
+			said[r.key] = r.branchSaid
+		}
+	}
+	want := map[string]bool{"polish": true, "shell": true, "sweep": false, "spacing": true, "docs": false}
+	for id, w := range want {
+		if said[id] != w {
+			t.Errorf("%s branchSaid = %v, want %v", id, said[id], w)
+		}
 	}
 }
