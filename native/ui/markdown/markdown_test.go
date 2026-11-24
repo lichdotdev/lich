@@ -231,3 +231,10 @@ func TestATagInProseReadsAsWritten(t *testing.T) {
 		t.Errorf("an HTML block vanished: %d blocks", len(blocks))
 	}
 }
+
+func TestMarkdownKeepsThematicBreak(t *testing.T) {
+	blocks := renderBlocks(markdownTheme(), "One\n\n---\n\nTwo")
+	if len(blocks) != 3 || !blocks[1].rule {
+		t.Fatalf("blocks = %+v, want a rule between two paragraphs", blocks)
+	}
+}

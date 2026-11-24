@@ -74,6 +74,8 @@ func renderBlock(th *ui.Theme, source []byte, n ast.Node, fg color.NRGBA) (markd
 		return markdownBlock{prose: cell, heading: true}, len(cell.spans) > 0
 	case *ast.Blockquote:
 		return renderQuote(th, source, n)
+	case *ast.ThematicBreak:
+		return markdownBlock{rule: true}, true
 	case *ast.FencedCodeBlock, *ast.CodeBlock:
 		cell := highlightCode(th, source, n)
 		if cell == nil {

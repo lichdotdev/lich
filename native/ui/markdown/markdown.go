@@ -73,6 +73,8 @@ type markdownBlock struct {
 	heading bool
 	// props is a document's frontmatter, drawn in place of prose.
 	props []property
+	// rule is a thematic break, drawn as a line across the body.
+	rule bool
 	// quote draws the prose behind a bar, a blockquote; panel draws it on a
 	// fill of its own, a code block.
 	quote, panel bool
@@ -244,6 +246,9 @@ func (b markdownBlock) layout(gtx C, th *ui.Theme, l Links) D {
 	}
 	if b.props != nil {
 		return layoutProps(gtx, th, b.props)
+	}
+	if b.rule {
+		return th.Separator(gtx)
 	}
 	return b.prose.layout(gtx, th, l)
 }
