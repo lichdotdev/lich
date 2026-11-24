@@ -704,6 +704,8 @@ type sessionView struct {
 	turn      statusTurn    // the last status change, which the ring plays
 	age       time.Duration // how long status has lasted, while aged
 	aged      bool          // status has a clock (busy, compacting, waiting)
+	idle      time.Duration // how long the last turn has been over, while idled
+	idled     bool          // the last turn ended in this window and nothing runs since
 	agent     string        // provider CLI live in the PTY, "" for none
 	sandbox   sandboxEvent
 	browser   bool         // a browser of this session runs
@@ -736,6 +738,7 @@ type sessionView struct {
 func (m *model) viewOf(p backend.Project, s backend.Session, now time.Time) sessionView {
 	shown := m.shownPath(p, s)
 	age, aged := m.status.age(s.ID, now)
+	idle, idled := m.status.idle(s.ID, now)
 	tool, _ := m.status.tool(s.ID)
 	usage, _ := m.usage.get(s.ID)
 	st, page := m.browsers.states[s.ID], m.pages[s.ID]
@@ -746,7 +749,7 @@ func (m *model) viewOf(p backend.Project, s backend.Session, now time.Time) sess
 	}
 	return sessionView{
 		Session: s, projectID: p.ID, path: sessionPath(p, s), shown: shown, host: m.cwd[s.ID].Host, web: web,
-		status: m.status.status(s.ID), unread: m.status.unread(s.ID), turn: m.status.turn(s.ID), age: age, aged: aged,
+		status: m.status.status(s.ID), unread: m.status.unread(s.ID), turn: m.status.turn(s.ID), age: age, aged: aged, idle: idle, idled: idled,
 		agent: m.agent[s.ID], sandbox: m.sandbox[s.ID], git: m.git[shown],
 		base: m.base[shown], pr: m.prs[shown].pr, forge: m.forges.peek(shown),
 		relay: m.relay[s.ID], tool: tool, reason: m.status.reason(s.ID), browser: m.browsers.states[s.ID].Open,

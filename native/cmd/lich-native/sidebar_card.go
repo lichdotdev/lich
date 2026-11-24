@@ -183,6 +183,12 @@ func (s *sidebar) cardBody(gtx C, th *ui.Theme, sv *sessionView, more layout.Wid
 			return th.Text(ui.TextXS, b).Muted().Mono().Layout(gtx)
 		}))
 	}
+	if sv.idled {
+		row = append(row, ui.Gap(1.5), layout.Rigid(func(gtx C) D {
+			gtx.Execute(op.InvalidateCmd{At: gtx.Now.Add(nextAgeChange(sv.idle))})
+			return th.Text(ui.TextXS, formatAge(sv.idle)).Muted().Mono().Layout(gtx)
+		}))
+	}
 	return s.cardLine(gtx, th, sv, more, hovered, row)
 }
 
