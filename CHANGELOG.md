@@ -63,6 +63,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **A Markdown file reads like a document in the editor's preview and in Review.** Its frontmatter shows as a table of properties instead of a bold line, headings sit closer to the text they open, and lines stop at a reading width on a wide pane. Chat and Pulls keep their size, with the same spacing under headings and lighter list markers.
 - **A tooltip on a button wears the theme's popover colors.** It was the theme's text color as a background, a white bubble on a dark theme; it is now a popover with a visible border, the same on the longer tooltips.
 - **A project tab is as wide as its name.** It stops at a limit, keeps room for the spinner, status mark and ×, and when the tabs do not all fit only the longest names shrink.
 - **Your messages in the chat are rounder, roomier balloons.** The corner by the right edge stays tight, pointing at you, and long messages wrap sooner.

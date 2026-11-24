@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"image"
+	"math"
 
 	"gioui.org/layout"
 
@@ -41,6 +42,17 @@ func (g *gallery) markdownSection(gtx C, th *ui.Theme) D {
 		g.rich.md = markdown.Cache{}
 	}
 	return g.rich.md.Layout(gtx, th, "gallery", richMarkdown, nil)
+}
+
+const richDocument = "---\nname: lich-ux-declutter\ndescription: Cut a native window screen down to what a visit needs, from a screenshot of it. Use before calling any UI change done in `native/`, after adding or moving a control, a label, a row or a dialog, and whenever you look at a shot of your own UI.\n---\n\n" +
+	"# Declutter a screen\n\n`native/DESIGN.md` says how to draw. This skill says what to cut.\n\n## 1. Shoot it\n\nTake a `-shot` of the screen in its common state.\n\n" +
+	"## 2. Inventory\n\nPut each one through four questions:\n\n1. **Remove?** Does it earn its place?\n2. **Merge?** Is the same fact shown twice?\n3. **Shrink?** Can a value sit at the end of its row?\n"
+
+func (g *gallery) markdownDocumentSection(gtx C, th *ui.Theme) D {
+	if g.rich.md == nil {
+		g.rich.md = markdown.Cache{}
+	}
+	return g.rich.md.LayoutDocumentWindow(gtx, th, "gallery-document", richDocument, nil, markdown.Window{Top: math.MinInt, Bottom: math.MaxInt})
 }
 
 const richSource = `// Package demo is what the code view draws in the gallery.
