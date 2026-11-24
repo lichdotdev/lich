@@ -1127,7 +1127,9 @@ func (u *window) stageRow(gtx C, v stageView) error {
 		return u.dockPeek(gtx, v)
 	}
 	at, w := 0, size.X
-	if !d.fullscreen {
+	if d.fullscreen {
+		u.coverPages(image.Rectangle{Max: size}.Add(u.islandAt))
+	} else {
 		w = d.width(gtx)
 		at = size.X - slot + gtx.Dp(gutter)
 	}

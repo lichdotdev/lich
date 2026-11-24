@@ -146,10 +146,10 @@ func TestSwatchHintOpensAboveTheCell(t *testing.T) {
 	// The swatch's edge is 8px off the cell's center and the bubble sits
 	// sideOffset 4px beyond it, so 6px further is inside the bubble.
 	above, below := img.At(cell.X, cell.Y-8-4-6), img.At(cell.X, cell.Y+8+4+6)
-	if !near(color.NRGBAModel.Convert(above).(color.NRGBA), th.Foreground) {
-		t.Errorf("above the swatch is %v, want the bubble's %v", above, th.Foreground)
+	if !near(color.NRGBAModel.Convert(above).(color.NRGBA), th.Popover) {
+		t.Errorf("above the swatch is %v, want the bubble's %v", above, th.Popover)
 	}
-	if near(color.NRGBAModel.Convert(below).(color.NRGBA), th.Foreground) {
+	if near(color.NRGBAModel.Convert(below).(color.NRGBA), th.Popover) {
 		t.Errorf("below the swatch is the bubble's %v, want it above", below)
 	}
 }

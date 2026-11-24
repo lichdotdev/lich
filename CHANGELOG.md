@@ -61,6 +61,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **A tooltip on a button wears the theme's popover colors.** It was the theme's text color as a background, a white bubble on a dark theme; it is now a popover with a visible border, the same on the longer tooltips.
 - **A project tab is as wide as its name.** It stops at a limit, keeps room for the spinner, status mark and ×, and when the tabs do not all fit only the longest names shrink.
 - **A file's diff in the chat is a small window.** It has a border, the file's name with its added and removed lines on top, and the changes below.
 - **Settings › Updates shows only what needs you.** One Check for updates looks at lich and the plugin together, and each agent whose plugin is up to date is a mark beside the plugin's version, with what it cannot do in its tooltip; an agent gets its own line only when it has an install, an update or a step for you.
