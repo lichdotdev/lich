@@ -16,20 +16,45 @@ const shadowStep unit.Dp = 2
 // Elevation is a floating surface's shadow, its BoxShadows painted in order.
 // The window has three, by how high the surface stands (DESIGN.md, Elevation):
 // a tooltip low, what opens over a screen (menus, popovers, the composer's
-// panels, toasts) in the middle, and a dialog high.
-type Elevation []BoxShadow
+// panels, toasts) in the middle, and a dialog high. A light theme takes
+// lighter shadows, so a surface reads as high on either ground.
+type Elevation struct {
+	dark, light []BoxShadow
+}
 
 var (
-	ElevationLow  = Elevation{{Y: 2, Blur: 6, Alpha: 0.3}}
-	ElevationMid  = Elevation{{Y: 12, Blur: 32, Alpha: 0.45}, {Y: 2, Blur: 6, Alpha: 0.3}}
-	ElevationHigh = Elevation{{Y: 24, Blur: 56, Alpha: 0.55}, {Y: 4, Blur: 12, Alpha: 0.35}}
+	ElevationLow = Elevation{
+		dark:  []BoxShadow{{Y: 2, Blur: 6, Alpha: 0.3}},
+		light: []BoxShadow{{Y: 2, Blur: 6, Alpha: 0.08}},
+	}
+	ElevationMid = Elevation{
+		dark:  []BoxShadow{{Y: 12, Blur: 32, Alpha: 0.45}, {Y: 2, Blur: 6, Alpha: 0.3}},
+		light: []BoxShadow{{Y: 10, Blur: 28, Alpha: 0.14}, {Y: 2, Blur: 6, Alpha: 0.08}},
+	}
+	ElevationHigh = Elevation{
+		dark:  []BoxShadow{{Y: 24, Blur: 56, Alpha: 0.55}, {Y: 4, Blur: 12, Alpha: 0.35}},
+		light: []BoxShadow{{Y: 20, Blur: 48, Alpha: 0.2}, {Y: 4, Blur: 12, Alpha: 0.1}},
+	}
 )
 
-// Paint paints each shadow under a box of size with corners of radius.
-func (e Elevation) Paint(gtx C, size image.Point, radius int) {
-	for _, s := range e {
+// lightGroundL is the OKLab lightness of a Background past which a theme
+// reads as light.
+const lightGroundL = 0.6
+
+// Paint paints the shadows th's ground takes under a box of size with
+// corners of radius.
+func (e Elevation) Paint(gtx C, th *Theme, size image.Point, radius int) {
+	for _, s := range e.on(th) {
 		s.Paint(gtx, size, radius)
 	}
+}
+
+// on is the shadows th's ground takes: the light ones on a light theme.
+func (e Elevation) on(th *Theme) []BoxShadow {
+	if toOKLab(th.Background)[0] > lightGroundL {
+		return e.light
+	}
+	return e.dark
 }
 
 // FloatRingOpacity is the 1px ring in Foreground every floating surface
@@ -41,7 +66,7 @@ const FloatRingOpacity = menuRingOpacity
 // surface standing over something it must not darken keeps clear.
 func (e Elevation) Reach() unit.Dp {
 	var r unit.Dp
-	for _, s := range e {
+	for _, s := range e.dark {
 		r = max(r, s.Y+s.Blur/2)
 	}
 	return r

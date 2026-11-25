@@ -4,10 +4,12 @@ package extension
 type NoProps struct{}
 
 var (
-	Box       = component[BoxProps]("box")
-	Scroll    = component[ScrollProps]("scroll")
-	Wrap      = component[WrapProps]("wrap")
-	WrapItem  = component[WrapItemProps]("wrapItem")
+	Box      = component[BoxProps]("box")
+	Scroll   = component[ScrollProps]("scroll")
+	Wrap     = component[WrapProps]("wrap")
+	WrapItem = component[WrapItemProps]("wrapItem")
+	// Separator sets what comes before it apart from what follows by space,
+	// as the window sets its own parts; it draws no rule.
 	Separator = component[NoProps]("separator")
 
 	Label     = component[LabelProps]("label")

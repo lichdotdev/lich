@@ -177,9 +177,14 @@ func drawWrapItem(r *Renderer, gtx C, th *ui.Theme, n extension.Node, id string)
 	return r.body(th, n, id)(gtx)
 }
 
-func drawSeparator(_ *Renderer, gtx C, th *ui.Theme, _ extension.Node, _ string) D {
-	return th.Separator(gtx)
+// drawSeparator is space, as the window sets its own parts apart; the name
+// stays so no extension written for the rule breaks.
+func drawSeparator(_ *Renderer, gtx C, _ *ui.Theme, _ extension.Node, _ string) D {
+	return layout.Spacer{Height: separatorRoom}.Layout(gtx)
 }
+
+// separatorRoom is the room a Separator leaves, a menu group's gap.
+var separatorRoom = ui.Space(2)
 
 func drawFormLabel(_ *Renderer, gtx C, th *ui.Theme, n extension.Node, _ string) D {
 	p := props[extension.FormLabelProps](n)

@@ -194,7 +194,7 @@ func (u *window) dialogCardAt(gtx C, p *browserPaneUI, session string, origin im
 	defer d.motion.push(gtx, size, size.X/2)()
 	shape := clip.UniformRRect(image.Rectangle{Max: size}, gtx.Dp(dialogCardRadius))
 	// over a website, often a light one: the dialogs' elevation
-	ui.ElevationHigh.Paint(gtx, size, gtx.Dp(dialogCardRadius))
+	ui.ElevationHigh.Paint(gtx, th, size, gtx.Dp(dialogCardRadius))
 	paint.FillShape(gtx.Ops, th.Popover, shape.Op(gtx.Ops))
 	area := shape.Push(gtx.Ops)
 	// The card takes the pointer from the page under it.

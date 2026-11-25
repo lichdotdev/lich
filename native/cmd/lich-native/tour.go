@@ -250,7 +250,7 @@ func (u *window) tourPopover(gtx C, s driver.StepState) D {
 	gtx.Constraints = layout.Constraints{Min: image.Pt(width, 0), Max: image.Pt(width, gtx.Constraints.Max.Y)}
 	return layout.Stack{}.Layout(gtx,
 		layout.Expanded(func(gtx C) D {
-			ui.ElevationMid.Paint(gtx, gtx.Constraints.Min, gtx.Dp(ui.RadiusLG))
+			ui.ElevationMid.Paint(gtx, th, gtx.Constraints.Min, gtx.Dp(ui.RadiusLG))
 			ui.Fill(gtx, th.Popover, ui.RadiusLG)
 			ui.InsetBorder(gtx, gtx.Constraints.Min, gtx.Dp(ui.RadiusLG), th.Over(ui.Alpha(th.Foreground, ui.FloatRingOpacity)))
 			return D{Size: gtx.Constraints.Min}

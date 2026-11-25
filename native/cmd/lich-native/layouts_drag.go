@@ -414,7 +414,7 @@ func (u *window) dropHighlight(gtx C, r image.Rectangle, text string) {
 	on := th.On(th.Popover)
 	d := layout.Background{}.Layout(lgtx,
 		func(gtx C) D {
-			ui.ElevationLow.Paint(gtx, gtx.Constraints.Min, gtx.Dp(ui.RadiusMD))
+			ui.ElevationLow.Paint(gtx, th, gtx.Constraints.Min, gtx.Dp(ui.RadiusMD))
 			return ui.Fill(gtx, th.Popover, ui.RadiusMD)
 		},
 		func(gtx C) D {

@@ -285,7 +285,7 @@ func (u *window) notePopover(gtx C, p *browserPaneUI, scale float32) {
 	defer op.Offset(at).Push(gtx.Ops).Pop()
 	defer noteEnter(gtx, n.openedAt, el.Sub(at), d.Size)()
 	radius := gtx.Dp(ui.RadiusLG)
-	ui.ElevationMid.Paint(gtx, d.Size, radius)
+	ui.ElevationMid.Paint(gtx, th, d.Size, radius)
 	shape := clip.UniformRRect(image.Rectangle{Max: d.Size}, radius)
 	paint.FillShape(gtx.Ops, th.Popover, shape.Op(gtx.Ops))
 	area := shape.Push(gtx.Ops)
@@ -482,7 +482,7 @@ func (u *window) notesTray(gtx C, p *browserPaneUI, session string) {
 	defer noteEnter(gtx, n.trayShown, image.Rect(size.X/2, size.Y, size.X/2, size.Y+1), size)()
 	gtx.Constraints = layout.Exact(size)
 	shape := clip.UniformRRect(image.Rectangle{Max: size}, gtx.Dp(paneRadius))
-	ui.ElevationMid.Paint(gtx, size, gtx.Dp(paneRadius))
+	ui.ElevationMid.Paint(gtx, th, size, gtx.Dp(paneRadius))
 	paint.FillShape(gtx.Ops, th.Popover, shape.Op(gtx.Ops))
 	area := shape.Push(gtx.Ops)
 	// The tray takes the pointer from the page under it.

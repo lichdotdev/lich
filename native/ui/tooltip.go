@@ -168,7 +168,7 @@ func (t TooltipStyle) drawBubble(gtx C, triggerSize image.Point, progress float3
 	op.Affine(motion).Add(gtx.Ops)
 	t.cover(gtx, m, motion, pl, size)
 	opacity := paint.PushOpacity(gtx.Ops, progress)
-	ElevationLow.Paint(gtx, size, gtx.Dp(RadiusMD))
+	ElevationLow.Paint(gtx, t.theme, size, gtx.Dp(RadiusMD))
 	rect := clip.UniformRRect(image.Rectangle{Max: size}, gtx.Dp(RadiusMD))
 	paint.FillShape(gtx.Ops, bg, rect.Op(gtx.Ops))
 	if m.border > 0 {

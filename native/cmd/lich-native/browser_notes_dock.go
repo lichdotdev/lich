@@ -163,7 +163,7 @@ func (u *window) notesChip(gtx C, n *browserNotes, lift int, radius unit.Dp, bod
 	if lift == 0 {
 		shape.SE, shape.SW = 0, 0
 	}
-	ui.ElevationLow.Paint(gtx, d.Size, r)
+	ui.ElevationLow.Paint(gtx, th, d.Size, r)
 	paint.FillShape(gtx.Ops, th.Popover, shape.Op(gtx.Ops))
 	area := shape.Push(gtx.Ops)
 	event.Op(gtx.Ops, &n.dock)

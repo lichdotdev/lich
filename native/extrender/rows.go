@@ -256,8 +256,9 @@ func drawMenuSeparator(_ *Renderer, gtx C, th *ui.Theme, _ extension.Node, _ str
 	return th.MenuSeparator(gtx)
 }
 
-func drawRailHairline(_ *Renderer, gtx C, th *ui.Theme, _ extension.Node, _ string) D {
-	return th.RailHairline(gtx)
+// drawRailHairline is space, as a separator is.
+func drawRailHairline(_ *Renderer, gtx C, _ *ui.Theme, _ extension.Node, _ string) D {
+	return layout.Spacer{Height: 3 * separatorRoom / 2}.Layout(gtx)
 }
 
 func drawCaptionDivider(_ *Renderer, gtx C, th *ui.Theme, n extension.Node, _ string) D {

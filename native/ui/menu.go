@@ -671,7 +671,7 @@ func (m menuCore) scrolled(lv *menuLevel, rows []menuRow, pad, view, height int)
 // fill covers, leaving 1px outside the box as a box-shadow ring does, over the
 // surface under the menu.
 func (m menuCore) drawSurface(gtx C, size image.Point) {
-	ElevationMid.Paint(gtx, size, gtx.Dp(RadiusMD))
+	ElevationMid.Paint(gtx, m.th, size, gtx.Dp(RadiusMD))
 	rr := clip.UniformRRect(image.Rectangle{Max: size}, gtx.Dp(RadiusMD))
 	ring := clip.Stroke{Path: rr.Path(gtx.Ops), Width: float32(2 * gtx.Dp(1))}.Op()
 	paint.FillShape(gtx.Ops, m.th.Over(Alpha(m.th.Foreground, menuRingOpacity)), ring)

@@ -104,7 +104,7 @@ func trialBar(gtx C, th *ui.Theme, b *themeTrialBar, name string, busy bool) {
 	defer b.motion.push(gtx, d.Size, d.Size.X/2)()
 	box := gtx
 	box.Constraints = layout.Exact(d.Size)
-	ui.ElevationMid.Paint(gtx, d.Size, gtx.Dp(ui.RadiusLG))
+	ui.ElevationMid.Paint(gtx, th, d.Size, gtx.Dp(ui.RadiusLG))
 	ui.Fill(box, th.Popover, ui.RadiusLG)
 	ui.InsetBorder(gtx, d.Size, gtx.Dp(ui.RadiusLG), on.Over(ui.Alpha(on.Foreground, ui.FloatRingOpacity)))
 	call.Add(gtx.Ops)

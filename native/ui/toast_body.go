@@ -182,7 +182,7 @@ func (s ToasterStyle) measure(gtx C, e *toastEntry, inner int) {
 func (s ToasterStyle) drawBox(gtx C, v *toastView) {
 	th := s.theme
 	r := gtx.Dp(RadiusLG)
-	ElevationMid.Paint(gtx, v.boxSize, r)
+	ElevationMid.Paint(gtx, th, v.boxSize, r)
 	rect := clip.UniformRRect(image.Rectangle{Max: v.boxSize}, r)
 	paint.FillShape(gtx.Ops, th.Popover, rect.Op(gtx.Ops))
 	border := th.On(th.Popover).Over(Alpha(th.Foreground, menuRingOpacity))

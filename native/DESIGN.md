@@ -183,6 +183,10 @@ The balloons and a layout's drop label stand on their ground with no ring; the d
 box a shadow falls: the toast stack stands `ElevationMid.Reach()` above the balloons, so a toast's shadow never
 darkens them.
 
+Each elevation has a dark and a light set of shadows, picked by the theme's `Background` (OKLab lightness past
+0.6 reads as light): the light set is a third as dark, so a surface reads as high on either ground. An extension
+draws by the same rules: its `separator` and `railHairline` leave space, no rule (`extrender`).
+
 ## Controls
 
 ### Buttons

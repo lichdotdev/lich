@@ -296,7 +296,7 @@ func (t *topbar) tabFace(gtx C, th *ui.Theme, f topbarFrame, i int, st *tabState
 		bg = th.Over(ui.Alpha(th.Foreground, tabHoverFill))
 	}
 	if dragging {
-		ui.ElevationLow.Paint(gtx, pill, gtx.Dp(tabRadius))
+		ui.ElevationLow.Paint(gtx, th, pill, gtx.Dp(tabRadius))
 	}
 	if bg != th.Surface {
 		paint.FillShape(gtx.Ops, bg, clip.UniformRRect(image.Rectangle{Max: pill}, gtx.Dp(tabRadius)).Op(gtx.Ops))

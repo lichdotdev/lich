@@ -69,7 +69,7 @@ func chatJumpPill(gtx C, th *ui.Theme, hovered, live bool) D {
 	})
 	content := m.Stop()
 	r := d.Size.Y / 2
-	ui.ElevationLow.Paint(gtx, d.Size, r)
+	ui.ElevationLow.Paint(gtx, th, d.Size, r)
 	paint.FillShape(gtx.Ops, th.Popover, clip.UniformRRect(image.Rectangle{Max: d.Size}, r).Op(gtx.Ops))
 	ui.InsetBorder(gtx, d.Size, r, th.Over(ui.Alpha(th.Foreground, ui.FloatRingOpacity)))
 	content.Add(gtx.Ops)

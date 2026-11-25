@@ -25,7 +25,9 @@ var (
 
 	// MenuDivider is the "menuSeparator" component, named apart from the
 	// MenuSeparator entry kind.
-	MenuDivider    = component[NoProps]("menuSeparator")
+	MenuDivider = component[NoProps]("menuSeparator")
+	// RailHairline sets two blocks of a rail apart by space; it draws no
+	// rule.
 	RailHairline   = component[NoProps]("railHairline")
 	CaptionDivider = component[CaptionDividerProps]("captionDivider")
 

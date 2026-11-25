@@ -226,7 +226,7 @@ func (d DialogStyle) panel(gtx C) D {
 	size := content.Size
 
 	radius := gtx.Dp(d.radius())
-	ElevationHigh.Paint(gtx, size, radius)
+	ElevationHigh.Paint(gtx, d.theme, size, radius)
 	ringWidth := gtx.Dp(1)
 	outer := clip.UniformRRect(image.Rectangle{Min: image.Pt(-ringWidth, -ringWidth), Max: size.Add(image.Pt(ringWidth, ringWidth))}, radius+ringWidth)
 	paint.FillShape(gtx.Ops, ring, outer.Op(gtx.Ops))
