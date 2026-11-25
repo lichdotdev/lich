@@ -192,9 +192,8 @@
   "tools": {
     "loading": "Carregando…",
     "keys": {
-      "move": "mover",
-      "open": "abrir",
-      "close": "fechar"
+      "close": "fechar",
+      "back": "voltar"
     },
     "mcpTitle": "Servidores MCP",
     "serverCount": {
@@ -283,9 +282,17 @@
     "noOutput": "Ainda sem saída",
     "stop": "Parar",
     "state": {
-      "completed": "concluído",
       "failed": "falhou",
       "stopped": "parado"
+    },
+    "exit": "saída {code}",
+    "running": {
+      "one": "{count} rodando",
+      "other": "{count} rodando"
+    },
+    "group": {
+      "running": "Rodando",
+      "ended": "Encerrados"
     }
   },
   "workflow": {

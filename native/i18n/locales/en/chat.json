@@ -192,9 +192,8 @@
   "tools": {
     "loading": "Loading…",
     "keys": {
-      "move": "move",
-      "open": "open",
-      "close": "close"
+      "close": "close",
+      "back": "back"
     },
     "mcpTitle": "MCP servers",
     "serverCount": {
@@ -283,9 +282,17 @@
     "noOutput": "No output yet",
     "stop": "Stop",
     "state": {
-      "completed": "done",
       "failed": "failed",
       "stopped": "stopped"
+    },
+    "exit": "exit {code}",
+    "running": {
+      "one": "{count} running",
+      "other": "{count} running"
+    },
+    "group": {
+      "running": "Running",
+      "ended": "Ended"
     }
   },
   "workflow": {

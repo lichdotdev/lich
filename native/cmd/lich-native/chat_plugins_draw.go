@@ -101,7 +101,7 @@ func (t *chatTools) pluginLines(th *ui.Theme, plugins []api.ChatPlugin, grouped 
 			lines = append(lines, toolsGroupLine(th, market, ""))
 		}
 		lines = append(lines, func(gtx C) D {
-			return pickerRow(gtx, th, &t.rows[i], i == t.cursor, func(gtx C, th *ui.Theme) D { return chatPluginRow(gtx, th, pl) })
+			return toolsPick(gtx, th, &t.rows[i], i == t.cursor, func(gtx C, th *ui.Theme) D { return chatPluginRow(gtx, th, pl) })
 		})
 	}
 	return lines
@@ -177,7 +177,7 @@ func (t *chatTools) marketLines(th *ui.Theme, markets []api.ChatMarketplace) []l
 	lines := make([]layout.Widget, len(markets))
 	for i, m := range markets {
 		lines[i] = func(gtx C) D {
-			return pickerRow(gtx, th, &t.rows[i], i == t.cursor, func(gtx C, th *ui.Theme) D {
+			return toolsPick(gtx, th, &t.rows[i], i == t.cursor, func(gtx C, th *ui.Theme) D {
 				glyph := func(gtx C) D { return icMarket.Layout(gtx, toolsGlyph, th.MutedForeground) }
 				count := th.Text(ui.TextXS, i18n.T("chat.plugins.pluginCount", i18n.Args{"count": m.Plugins})).Muted().Layout
 				return descRow(gtx, th, glyph, th.Text(ui.TextSM, m.Name).Truncated().Layout, m.Source, []layout.FlexChild{layout.Rigid(count)})

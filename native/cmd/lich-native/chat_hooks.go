@@ -97,7 +97,7 @@ func (u *window) hooksView(gtx C, th *ui.Theme, p *chatPane, sv sessionView) D {
 			lines = append(lines, hookEventLine(th, h))
 		}
 		lines = append(lines, func(gtx C) D {
-			return pickerRow(gtx, th, &t.rows[i], i == t.cursor, func(gtx C, th *ui.Theme) D { return hookRow(gtx, th, h) })
+			return toolsPick(gtx, th, &t.rows[i], i == t.cursor, func(gtx C, th *ui.Theme) D { return hookRow(gtx, th, h) })
 		})
 	}
 	if len(l.Hooks) == 0 {

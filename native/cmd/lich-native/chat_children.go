@@ -138,7 +138,7 @@ func (u *window) childrenView(gtx C, th *ui.Theme, p *chatPane, sv sessionView) 
 	lines := make([]layout.Widget, len(kids))
 	for i, k := range kids {
 		row := func(gtx C) D {
-			return pickerRow(gtx, th, &t.rows[i], i == t.cursor, func(gtx C, th *ui.Theme) D { return u.childRow(gtx, th, k) })
+			return toolsPick(gtx, th, &t.rows[i], i == t.cursor, func(gtx C, th *ui.Theme) D { return u.childRow(gtx, th, k) })
 		}
 		lines[i] = row
 		if childRank(k) == 2 && i > 0 && childRank(kids[i-1]) < 2 {

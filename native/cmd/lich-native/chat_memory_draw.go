@@ -36,7 +36,7 @@ func (u *window) memoryView(gtx C, th *ui.Theme, p *chatPane, sv sessionView, l 
 			lines = append(lines, toolsGroupLine(th, i18n.T("chat.memory.saved"), ""))
 		}
 		lines = append(lines, func(gtx C) D {
-			return pickerRow(gtx, th, &t.rows[i], i == t.cursor, func(gtx C, th *ui.Theme) D { return memoryRowView(gtx, th, sv.path, r) })
+			return toolsPick(gtx, th, &t.rows[i], i == t.cursor, func(gtx C, th *ui.Theme) D { return memoryRowView(gtx, th, sv.path, r) })
 		})
 	}
 	head := func(gtx C) D {
@@ -134,7 +134,7 @@ func (u *window) agentsView(gtx C, th *ui.Theme, p *chatPane, sv sessionView, l 
 			lines = append(lines, toolsGroupLine(th, agentGroupLabel(g), agentGroupDir(sv.path, g, a.Path)))
 		}
 		lines = append(lines, func(gtx C) D {
-			return pickerRow(gtx, th, &t.rows[i], i == t.cursor, func(gtx C, th *ui.Theme) D { return agentRow(gtx, th, a) })
+			return toolsPick(gtx, th, &t.rows[i], i == t.cursor, func(gtx C, th *ui.Theme) D { return agentRow(gtx, th, a) })
 		})
 	}
 	head := func(gtx C) D {

@@ -105,7 +105,7 @@ func (u *window) workflowsView(gtx C, th *ui.Theme, p *chatPane, sv sessionView)
 			lines = append(lines, toolsGroupLine(th, a.Phase, ""))
 		}
 		lines = append(lines, func(gtx C) D {
-			return pickerRow(gtx, th, &t.rows[i], i == t.cursor, func(gtx C, th *ui.Theme) D { return workflowAgentRow(gtx, th, a) })
+			return toolsPick(gtx, th, &t.rows[i], i == t.cursor, func(gtx C, th *ui.Theme) D { return workflowAgentRow(gtx, th, a) })
 		})
 	}
 	head := func(gtx C) D {

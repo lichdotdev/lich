@@ -712,6 +712,11 @@ never makes the Latest pill show.
   the semantic tree), the arrows walk the rows, Escape goes back from a detail and then shuts the panel, and
   typing in the box shuts it. A provider that reports nothing for the command says so in one muted line. lich's
   own server, plugin and the like show no action that would cut lich off.
+  The head ends in a ghost `SizeIconXS` × that shuts the panel, from a detail too (`toolsClose`, laid over the
+  view, so every head keeps `toolsCloseRoom` free at its end). The panel's foot is set apart by `Space(3)` and no
+  rule (`withKeys`): Escape's key hint, "close" on a list and "back" in a detail, at the right, or at the left
+  with the view's one action at the right (a running shell's Stop). The arrows' hint is gone: the row under the
+  cursor carries `↵` in a key cap at its end (`toolsPick`), the key where it acts.
   `@` at the start of a word opens the checkout's folders and files in the same place, on the same surface and
   rows (`chat_mention.go`): a folder's glyph or the file's icon, the name in medium and the folder it sits in
   muted on the rest of the line, so a deep path cuts its folder and never its name. It ranks as Claude Code does,
@@ -776,8 +781,11 @@ never makes the Latest pill show.
   the person's message, hung by the connector, its output whole in mono under it, 20 lines and "Show N more
   lines". Shift+Tab walks the mode chip's choices in the provider's order, never onto a `Danger` one.
 - **Background shells** (`chat_shells*.go`): while one runs, a chip in the box's foot says "2 shells · 1 monitor";
-  it and `/tasks` open a panel of them in the panel's place, each row a state glyph, the command in mono and its
-  running time, the detail its output tail in mono and Stop. While the turn waits on a command Claude Code can
+  it and `/tasks` open a panel of them in the panel's place, "N running" beside the title, the running ones
+  under a Running group label and the ended ones under Ended. A row is a state glyph, the command in mono and its
+  running time; a completed one says no word, the glyph says it, and a failed one says "exit 3" in `Destructive`
+  ("failed" where the provider named no code). The detail is its output tail in mono, and Stop on the foot's line
+  while it runs: no key presses it, since a letter typed in the box would stop a shell. While the turn waits on a command Claude Code can
   move, the live line ends in a muted "· Ctrl+B to run in background", and Ctrl+B in the box moves it: the box
   holds that chord ahead of the window hotkey bound to it.
 - **The end of plan mode** is a question card (`chat_proposal.go`): the plan in Markdown over it in the

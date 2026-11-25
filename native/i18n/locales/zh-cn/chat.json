@@ -178,9 +178,8 @@
   "tools": {
     "loading": "加载中…",
     "keys": {
-      "move": "移动",
-      "open": "打开",
-      "close": "关闭"
+      "close": "关闭",
+      "back": "返回"
     },
     "mcpTitle": "MCP 服务器",
     "serverCount": {
@@ -263,9 +262,16 @@
     "noOutput": "暂无输出",
     "stop": "停止",
     "state": {
-      "completed": "已完成",
       "failed": "失败",
       "stopped": "已停止"
+    },
+    "exit": "退出码 {code}",
+    "running": {
+      "other": "{count} 个运行中"
+    },
+    "group": {
+      "running": "运行中",
+      "ended": "已结束"
     }
   },
   "workflow": {

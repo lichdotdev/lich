@@ -220,9 +220,8 @@
   "tools": {
     "loading": "Загрузка…",
     "keys": {
-      "move": "перейти",
-      "open": "открыть",
-      "close": "закрыть"
+      "close": "закрыть",
+      "back": "назад"
     },
     "mcpTitle": "Серверы MCP",
     "serverCount": {
@@ -323,9 +322,19 @@
     "noOutput": "Вывода пока нет",
     "stop": "Остановить",
     "state": {
-      "completed": "завершена",
       "failed": "ошибка",
       "stopped": "остановлена"
+    },
+    "exit": "код {code}",
+    "running": {
+      "one": "{count} работает",
+      "few": "{count} работают",
+      "many": "{count} работают",
+      "other": "{count} работают"
+    },
+    "group": {
+      "running": "Работают",
+      "ended": "Завершены"
     }
   },
   "workflow": {
