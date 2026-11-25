@@ -144,6 +144,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **A Claude Code worker that leaves a command or a subagent running in the background no longer answers its task with its interim words.** The answer is the turn that leaves nothing running, in the chat and, with lich-plugin 0.23.0, in the terminal.
 - **Changing the advisor model, fast mode, thinking or ultracode in one Claude Code account no longer changes it in your other accounts.** Each profile now keeps these alongside its own default model and effort, as well as whether to switch models when safeguards flag a message.
 - **Typing in the command palette opened over a browser page no longer piles every letter at the start.** The page took the keyboard back on each frame; now the palette, and any field over the page, keeps it until it closes.
+- **The subagents Claude Code 2.1.331 starts open their own card again.** Its default subagent ran out of view inside the session.
 
 ## [0.92.0] - 2026-11-16
 

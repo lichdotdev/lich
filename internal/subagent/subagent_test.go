@@ -8,7 +8,47 @@ import (
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/prompt"
+	"github.com/lichdotdev/lich/internal/providers"
 )
+
+// Every provider's work types open a card and its exploration type stays
+// native. Claude Code 2.1.331 names its catch-all claude, not general-purpose.
+func TestEachProvidersTypesDecideTheCard(t *testing.T) {
+	cases := []struct {
+		kind, typ string
+		want      string
+	}{
+		{providers.Claude, "", api.SubagentDeny},
+		{providers.Claude, "general-purpose", api.SubagentDeny},
+		{providers.Claude, "claude", api.SubagentDeny},
+		{providers.Claude, "Explore", api.SubagentAllow},
+		{providers.Claude, "Plan", api.SubagentAllow},
+		{providers.Codex, "", api.SubagentDeny},
+		{providers.Codex, "explorer", api.SubagentAllow},
+		{providers.OpenCode, "general", api.SubagentDeny},
+		{providers.OpenCode, "explore", api.SubagentAllow},
+		{providers.OMP, "task", api.SubagentDeny},
+		{providers.OMP, "scout", api.SubagentAllow},
+		{providers.Antigravity, "", api.SubagentDeny},
+		{providers.Antigravity, "research", api.SubagentAllow},
+		{providers.Cursor, "", api.SubagentDeny},
+		{providers.Cursor, "explore", api.SubagentAllow},
+		{providers.Kiro, "", api.SubagentDeny},
+		{providers.Kiro, "explore", api.SubagentDeny},
+		{providers.Crush, "", api.SubagentDeny},
+	}
+	for _, c := range cases {
+		t.Run(c.kind+"/"+c.typ, func(t *testing.T) {
+			svc, _, _ := newFake(Asker{Kind: c.kind})
+			task := api.SubagentTask{Title: "Fix the handshake race", Prompt: "Fix #412.", Type: c.typ}
+			got, commit := svc.Decide(context.Background(), spawnReq("toolu_1", task))
+			commit(true)
+			if got.Decision != c.want {
+				t.Errorf("decision = %q, want %q", got.Decision, c.want)
+			}
+		})
+	}
+}
 
 func spawnReq(id string, tasks ...api.SubagentTask) api.SubagentRequest {
 	if len(tasks) == 0 {

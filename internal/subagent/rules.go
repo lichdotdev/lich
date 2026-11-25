@@ -10,10 +10,11 @@ import (
 	"github.com/lichdotdev/lich/internal/relay"
 )
 
-// claudeCardType is the one Claude Code subagent type that becomes a card;
-// every other type is a read-only exploration that runs inside the session,
-// as the mod's agent-cards had it. A call naming none runs as this one.
-const claudeCardType = "general-purpose"
+// claudeCardTypes are the Claude Code subagent types that become a card: its
+// catch-alls, general-purpose and claude (the default in 2.1.331), and no type,
+// which runs as a catch-all. Every other type is a read-only exploration that
+// runs inside the session, as the mod's agent-cards had it.
+var claudeCardTypes = map[string]bool{"": true, "general-purpose": true, "claude": true}
 
 // nativeTypes is the exploration type each provider keeps native
 // (docs/hooks/subagent-cards.md, Types kept native). Kiro CLI and Crush have
@@ -32,7 +33,7 @@ var nativeTypes = map[string]string{
 func keepsNative(kind string, tasks []api.SubagentTask) bool {
 	for _, t := range tasks {
 		if kind == providers.Claude {
-			if t.Type != "" && t.Type != claudeCardType {
+			if !claudeCardTypes[t.Type] {
 				return true
 			}
 			continue

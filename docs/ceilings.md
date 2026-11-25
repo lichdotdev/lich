@@ -1141,7 +1141,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   in the tree reaches its asker as a stop, not as silence. Closing a worker leaves the cards it opened running,
   as it leaves its own. Under a lich-plugin older than 0.22.0 only Claude Code's mod converts a call, and the other
   seven providers' subagents stay inside their CLI. Each provider keeps its read-only exploration type native
-  (Claude Code every type but general-purpose, Codex `explorer`, opencode `explore`, oh-my-pi `scout`, Antigravity
+  (Claude Code every type but general-purpose and claude, Codex `explorer`, opencode `explore`, oh-my-pi `scout`, Antigravity
   `research`, Cursor CLI `explore`), and a call that mixes one with other tasks stays native as a whole, since a
   veto is the call's; so do a workflow step, another plugin's spawn, a call from inside a native subagent and the
   subagents of a worker two levels down, and the worker is reached with `send_to_session` or `lich send`, never with

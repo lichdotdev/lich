@@ -183,7 +183,7 @@ inside the session as they always did:
 
 | Provider | Kept native |
 |---|---|
-| Claude Code | every `subagent_type` but `general-purpose` (as the mod did) |
+| Claude Code | every `subagent_type` but the catch-alls `general-purpose` and `claude` (as the mod did) |
 | Codex | `explorer` (v1; v2 has no type) |
 | opencode | `explore` |
 | oh-my-pi | `scout` |
