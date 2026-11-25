@@ -253,9 +253,9 @@ func resolveEnv() (launchEnv, env []string) {
 // runs anywhere else.
 func registerServices(db *store.Service, term *terminal.Service, chats *chat.Service, svcs *services.Service, exts *extensions.Service, hub *events.Hub,
 	configDir, logPath string, env, launchEnv []string, coord *restart.Coordinator) (*system.Service, func()) {
-	// One Chromium per session, closed with the card and with the process.
-	// Never the lich window: this is a second browser the agent drives.
-	brows := browser.New(hub.Emit)
+	// One page per session, closed with the card and with the process: in
+	// lich-browser, or a Chromium, never the lich window's own.
+	brows := browser.New(hub.Emit, filepath.Join(configDir, "lich"))
 	previews := preview.New()
 	artifacts := artifact.Dir(configDir)
 	artifactURL := func(session, raw string) (string, bool, error) {

@@ -325,7 +325,7 @@ func agentTabs(pane []api.BrowserTab) []api.BrowserTab {
 	out := make([]api.BrowserTab, 0, len(pane))
 	for _, t := range pane {
 		if !t.DevTools {
-			t.Icon = ""
+			t.Icon, t.XID = "", 0
 			out = append(out, t)
 			continue
 		}
