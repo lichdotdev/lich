@@ -31,7 +31,8 @@ Elements are defined by space, hover and islands, not by enclosure.
   from its body, two panes, a folder header from its rule). It never wraps a list item, a badge or a button
   at rest. Inputs are the one exception: a field needs an edge to read as editable.
 - **Badges are text and glyph**, never a filled pill: a pull request is its forge's logo, its state's glyph and
-  `#N` (`!N` on GitLab), a diff is `+a -d` in the tones.
+  `#N` (`!N` on GitLab), with Lucide's `link` before `#N` when the person linked it by hand (`prbadge.go`), a
+  diff is `+a -d` in the tones.
 - **State is fill, not chrome.** Selection uses a flat fill without a side bar or shadow. Project tabs are the
   exception: the active tab uses `Sidebar` with a 1px `Border` hairline, and hover and drag add the same hairline
   to their fills; other selections use flat `Accent`.
@@ -421,14 +422,25 @@ A session whose view is chat draws its conversation in place of the terminal, on
 layout's pane alike (`chat_view.go`, `chat_items.go`). The composer's box takes the pane's width less `Space(6)`
 each side, up to 960px (`chatPadX`, `chatBoxMax`): wide enough for a long line of code, and no wider than a
 paragraph can be read in. The conversation is a column on the same axis, `Space(4)` (16px, `chatTextInset`)
-narrower each side, so its text lines up inside the box and not with its border. Its rows are `Space(3.5)` apart, and a turn starts after `Space(9)` (`chatTurnGap`), in the person's
-message or the day line over it, so turns read as groups.
+narrower each side, so its text lines up inside the box and not with its border. Its rows are `Space(3.5)` apart.
+The answer starts max(32, 1.8×B) under the person's message and its time (`chatAnswerGapMin`,
+`chatAnswerGapLines`), and the next turn max(48, 2.8×B) under the last row (`chatTurnGapMin`,
+`chatTurnGapLines`), in the person's message or the day line over it, B the prose size: at the default size 32
+and 48, and both grow with the text. Each gap belongs to one row, so two never stack. Rounds are told apart by
+that space alone, never by a rule.
 A conversation shorter than the view rests on the composer, its newest message at the bottom and the older
 ones above, and a new one comes in under them and pushes them up, as in a messaging app; one taller than the
 view stays pinned to its end while items arrive, until the person scrolls up. The list ends `Space(6)`
 (24px, `chatComposerGap`) above the composer's box in both cases, so the last message and its time never touch it.
 The list's scrollbar shows only while the rows outgrow the view: a message sent into a conversation that fits
 draws none while it grows in, because the room above the rows is measured in the frame that draws them.
+A message that starts a turn (the agent idle, not a `!` command, `/new` or `/resume`) in a conversation taller
+than the view rises to `chatSendPeek` (100dp) under the view's top, the end of what came before showing over it
+(`chat_anchor.go`): the list keeps scroll room past its last row, drawn as nothing, that the answer fills, and
+once the answer fills it the list follows its end as before. The room enters with the send's 220ms run.
+Scrolling up gives it up for the rest of the turn; a message taller than the view shows from its end; a
+conversation that still fits rests on the composer; a message queued or steered leaves the view alone. The room
+never makes the Latest pill show.
 
 - **The person's message** is a balloon in `Accent` against the column's right edge, at most 70% of it:
   `RadiusXL` but for the corner by that edge, `RadiusSM`, its tail; `Space(4)`×`Space(3)` inside. It breaks "rows, not cards" on purpose: a turn starts where a message does, and the eye finds it by the
@@ -476,14 +488,14 @@ draws none while it grows in, because the room above the rows is measured in the
 - **A turn's closing line** stands once, after the last item of the conversation's last turn, when that turn
   has ended: "Done" in `TextSM` medium, with no avatar,
   `Foreground`, then, when it ran any, muted "· 34 tool calls · 6m 4s", all its runs' calls and how long the turn
-  took, then muted "· no changes" or "· 3 files" and the lines the turn added in `TonePass` and removed
-  in `Destructive` ("+12 −4"), as the diffs draw them, and a 1px `Border` hairline to the column's edge.
-  "Stopped" stands for a turn the person cancelled, and "Failed" in `Destructive` for one that ended in an
-  error. The files and lines are the click: they open Review as the footer's changes item does. The line
+  took, then muted "· no changes" when the turn changed nothing. No files, no lines and no rule: the turn's
+  edits already say them, in their group (see An edit), whose head opens Review. "Stopped" stands for a turn
+  the person cancelled, and "Failed" in `Destructive` for one that ended in an error. The line
   leaves when the person's next message begins a turn, and none stands while a turn runs, where the live line
   is; older turns have none, in a history read back too. A turn whose checkout lich could not read (not a
   repository, or a commit made during the turn) says its word alone, and so does one read back with the
-  history, whose end nobody reported to the window: the line never invents a count.
+  history, whose end nobody reported to the window: the line never invents a count. The theme preview in
+  Settings › Appearance closes its turn the same way (`previewDone`).
 - **A compaction** (`chat_compaction.go`). While the turn compacts, the live line says "Compacting the
   conversation" in place of the verb, shimmering with its clock, and the `fold-vertical` glyph stands in the
   flame's place, squeezing to 0.55 of its height every 1.4s; under the words, indented to them, a `WaveBar` of
@@ -525,15 +537,29 @@ draws none while it grows in, because the room above the rows is measured in the
   The chevrons, the option highlight, the Send and Stop swap, the composer's height, a tool's state, the copy
   check and the footer's changes stay dry.
 - **A permission** is a box on `Sidebar`, `RadiusMD`, `Space(3)` padding (see Boxes inside a screen): the tool,
-  its diff, and a `SizeSM` button per answer the provider offers, the first allow filled. Enter takes the first
-  allow and Esc the first reject. Answered, it shrinks to a muted line naming the answer.
+  its diff, and a `SizeSM` button per answer the provider offers, each with its digit's key cap inside
+  (`ButtonStyle.Keys`), and a muted "Esc denies" at the row's right when the provider offers a one-time reject
+  (`chat_permit.go`). **Enter never answers it**, on the box or on an empty composer under it: an Enter meant
+  for a message could land as the box comes. Digits 1..9 answer the nth option and Esc takes the first one-time
+  reject (nothing when there is none). The filled button is the suggestion: the first one-time allow, never an
+  "always"; on an ask the provider marks default-no (Claude Code's `default_to_no`) it is the first one-time
+  reject, no digit answers and the buttons carry no key caps, as Claude Code's own prompt takes none
+  (`docs/ceilings.md`). The keys go where the question card's do: to the box when it comes on an empty
+  composer, to the composer while a message is being typed, and back to the composer on a click in it.
+  Answered, it shrinks to a muted line naming the answer.
 - **An edit** (`chat_edit.go`), a call that changed a file, is a line of its own out of the turn's fold, and so
   is each file a call with no diff of its own changed (a shell command's `sed`, a script), right after that
-  call (`ChatToolCall.Files`, `fileRows`). It stands on
-  `Card` in `RadiusMD` with a 1px `Border` hairline: the file's icon (`th.FileIcon`), its folder muted and its
-  name in mono `TextSM`, the chat's own size, with a `Space(4)` icon in a `Space(3)`×`Space(2)` inset, the path
-  relative to the checkout, then `+a -d` (`th.DiffStat`). No tool name, glyph
-  or time: the line is the file. While the call runs its path shimmers and no counts show; failed, "failed" in
+  call (`ChatToolCall.Files`, `fileRows`). Edit lines that follow one another with nothing between them are one
+  group on one ground: `Card` mixed `chatEditTint` (0.3) toward `Background`, `RadiusLG` at the group's outer
+  corners, no hairline and no box per file, because the turn's evidence must never weigh more than the answer
+  around it. A group of two files or more opens with a head row, "Edited 3 files" in `TextSM` medium (the files
+  are distinct paths) and the summed `+a -d` at its right, leaving out running and failed edits; a click on the
+  head opens Review as the footer's changes item does. A lone edit is the same ground with no head. A line is the
+  file's icon (`th.FileIcon`), its name in mono `TextSM` medium, then its folder in mono `TextXS` muted without
+  its slash, the part cut first, with a `Space(4)` icon in a `Space(3)`×`Space(2)` inset, the path relative to
+  the checkout, then `+a -d` (`th.DiffStat`) at the right, room for the hover chevron always kept so the counts
+  never move. The name leads because it is what the eye looks for. No tool name, glyph or time: the line is
+  the file. While the call runs its path shimmers and no counts show; failed, "failed" in
   `Destructive` stands in their place. Hover fills it with the kit's hover; a chevron at its right shows on
   hover and while open. A click unfolds the diff under a hairline, inside the same box, and a second folds it;
   a Ctrl+click opens the file in the editor instead. The open diff is the Review panel's code view
@@ -692,6 +718,14 @@ draws none while it grows in, because the room above the rows is measured in the
   These cards are the chat's one exception to rows over boxes: a thumbnail needs an edge to read as a file, and
   Claude's web composer, which the person asked for, draws them so.
   Ctrl+V with an image and no text on the clipboard makes a card the same way.
+  **A quote** (`chat_quote.go`): Markdown selected in an answer or in the person's message shows, once the press
+  is let go, a floating Quote over the selection's first word, a ghost `SizeXS` button with Lucide's `quote` on
+  `ui.PopoverPanel`, out of the layout so nothing moves. A click puts the text over the composer's text, under any
+  file cards, as a block: `Accent` fill, `RadiusMD`, a `Space(1)` bar in the blockquote's `Border` at its left,
+  the text in `TextSM` muted cut at two lines, and a ghost `SizeIconXS` × at its right that removes it whole;
+  quotes stack in the order they were made, and the composer takes the keyboard. Sent, each quote becomes
+  blockquote lines ("> ") before the typed text, the same plain text on every send path and every provider, so
+  the person's bubble draws it as a blockquote. A box holding only quotes counts as not empty.
 - **What has not reached the agent yet stands over the box**, in the box's column, before the text: a message
   written while the turn runs waits in the queue (`chat_queue.go`): a head line, the `clock` glyph and "2 queued"
   in muted `TextXS`, with Send now (a ghost `SizeXS` button with `arrow-up`) and the Ctrl+Enter key cap at its end,
@@ -734,6 +768,15 @@ draws none while it grows in, because the room above the rows is measured in the
   without (`chatCopySlot`), so it pushes nothing; the button is a little larger than the line and reaches past it. Texts the
   agent writes one after another in a turn, nothing between them, read as one answer: only the last keeps the
   time and copy line, and its copy takes the whole run, so the texts stand a row gap apart, not a line apart.
+  A right click on a message, the person's or an answer, opens its menu (`chat_copy_menu.go`, opened through
+  `MenuState.OpenFrom` from the message's hover area, since a `ContextMenu` trigger clips its content and would cut
+  the floating Quote): Copy, what the hover button takes; Copy conversation up to here; and, under a separator,
+  Quote while text in that message is selected. The conversation is Markdown built from the rows the chat
+  draws, never past the clicked message: each message under "## You" or "## <Provider> (<model>)", a run of
+  calls as its fold's sentence, an edit as its path and lines, files by name with a line saying their bytes
+  were not copied, a compaction as one line, and "(incomplete)" closing a turn still running. Thoughts,
+  notices, questions and permissions stay out. Its words are the interface language's: lich types none of it
+  into a session. Both copies answer with the copy button's check, no toast.
 - **A message's time** is a `TextXS` muted line, the window's short clock ("14:32") under a tooltip that holds
   the footer clock's full date: under the person's box at the right edge, always, led by its day when that is
   not today ("Nov 17 · 23:05", the year too past this one); under an answer's text at the
@@ -794,12 +837,41 @@ to the chrome takes the same gap rather than a number of its own.
   the sidebar.
 - **The page** is a card `Space(2)` under the toolbar and from the pane's left, right and bottom, `RadiusLG`, its edge the 1px
   `Border` hairline. The notes bar floats over it, as before, except on the new-tab page.
+- **A note's popover** (`browser_notes_view.go`) opens beside the picked element, 280dp wide, on `Popover` in
+  `RadiusLG` with the 1px `Border` hairline and a drop shadow (`noteShadows`, through `ui.BoxShadow`, the toast's
+  and the menus' shadow): it floats over a website, often a light one, where a hairline alone is lost. Its head
+  is the note's number tab, then "Note" ("Note 2" while editing one) in `TextSM` semibold over the element in
+  mono `TextXS` muted, cut with an ellipsis, and a ghost `SizeIconXS` × at the right. The field is at least
+  80dp tall. The buttons stand at the right, Cancel (ghost) then the primary, Add note with a plus or Save,
+  disabled while the field is blank, so Enter keeps nothing then either; Delete (ghost) stands at the left end
+  while a note is edited.
 - **The new-tab page** is the backend's HTML, drawn with the window's tokens sent over `browser.NewTabPage`
   (`browser_newtab.go`): `Background` for the page, `Card` for the address field, `Accent` for a hovered row,
   `Border` for the field's edge and `MutedForeground` for the section labels, the commands and the ages. One
   column, 560px wide, centered, with nothing over it: the address field (42px, 9px radius, an inset `Border`) 104px
   under the page's top, then the sections, each a 10.5px uppercase `MutedForeground` label over 34px rows with no fill until hovered. The
   tab is named New tab, the toolbar's address is empty, and there is no Select and Draw bar.
+
+### Pulls: Files and Commits
+
+- **Viewed is kept** (`pulls_viewed.go`): a file ticked comes back ticked and folded after a restart while its diff
+  is the same. One whose diff moved comes back unticked and open, "changed since your review" in `TextXS`
+  `ToneWait` after its path, and the Files bar's left says "2 files changed since your review on Nov 24", muted
+  `TextXS`, only while there is one. There is no switch between "all changes" and "since my review": the moved
+  files open by themselves, the rest stay folded.
+- **A run of commits** (`pulls_commit_range.go`): a ghost `SizeXS` chip at the Files bar's left, "All commits",
+  "1 commit" or "3 commits", opens a dropdown panel: All commits with the count, a separator, then each commit
+  oldest first, a check in a `Space(4)` column, the short oid in mono muted, the title and its age at the right,
+  and muted "Shift+click picks a range" at the foot. A click picks one commit and shuts the panel, Shift+click
+  stretches a contiguous run and keeps it open. While a run is shown the bar says, muted, which run and that
+  comments and Viewed are off, and the line menu offers only adding the file to a session: the run's lines are
+  not the pull request's. On a Commits row, a ghost "View changes" shows under the pointer and opens Files on
+  that commit alone; the row's click still opens its body.
+- **A pull request linked by hand** (`linkpr_panel.go`): the session's card menu has Link pull request…, a
+  `DropdownPanel` (`Space(75)` wide) with one field for `#N` or a GitHub or GitLab URL, Cancel (ghost) and a
+  primary Link disabled while the field is empty, not a dialog. The linked pull request wears the `link` glyph
+  on every badge of the session; the same card menu holds Unlink pull request (Unlink merge request on GitLab),
+  which hides the branch's own as well, until it is linked again.
 
 ### The editor
 

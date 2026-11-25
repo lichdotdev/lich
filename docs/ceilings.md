@@ -340,6 +340,15 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   2.1.330 acknowledges and ignores (its own description says a build where it is not enabled keeps generating), so
   lich drops what it writes. A suggestion is no part of the history: a window that connects again shows none until
   the next turn ends.
+- **A chat permission suggests Deny, and takes no digit, only on Claude Code** (`internal/chat/claude.go`
+  `default_to_no`, `native/cmd/lich-native/chat_permit.go`). Claude Code's `can_use_tool` carries
+  `default_to_no` (measured on 2.1.331) for an ask no stray key may allow: the box then fills the first one-time
+  reject and answers to no digit, as Claude Code's own prompt takes none, and Esc still rejects. Codex's approvals
+  and ACP's `session/request_permission` (`options{optionId,name,kind}`) carry no such field, so on Codex and the
+  five ACP agents (Antigravity, opencode, oh-my-pi, Cursor CLI, Kiro CLI) the suggestion is always the first
+  one-time allow and every digit answers. Crush has no chat. On every provider Enter answers nothing and an
+  "always" option is never the suggestion; a digit typed on an empty composer the instant the box comes still
+  answers, since nothing holds the keys for a moment after it shows.
 - **A chat turn's count of changes is a difference of two numstat readings, not a record of what the agent did**
   (`internal/chat/changes.go`, `internal/project/lines.go`): lich reads `git diff --numstat HEAD` and the untracked
   files before the message goes out and again when the turn ends, and counts the files whose numbers differ. It
