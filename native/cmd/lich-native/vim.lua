@@ -7,6 +7,8 @@ _G.lich_editor = M
 
 local api = vim.api
 local owned = {}
+-- seen is the last click or wheel of lich's carried out, sent with every state.
+local seen = 0
 -- state, defined below, is what lich hears of the current buffer.
 local state
 
@@ -272,7 +274,7 @@ function state()
   local sub = substitution(buf) or {}
   local preview = sub.lines and { sub.first, sub.last, sub.lines } or {}
   vim.rpcnotify(chan, 'lich_state', buf, mode, cur[1], cur[2], vim.fn.line('w0'), regions(mode),
-    sub.matches or matches(buf), preview, parens(), lsp(buf))
+    sub.matches or matches(buf), preview, parens(), lsp(buf), seen)
 end
 
 local group = api.nvim_create_augroup('lich_editor', { clear = true })
@@ -429,31 +431,46 @@ function M.close(buf)
   end
 end
 
--- click is the pointer in lich's editor: the cursor to row, col, or a
--- characterwise selection from the anchor to it.
-function M.click(buf, row, col, arow, acol)
+-- mark is the last click or wheel of lich's, seq, that Neovim has carried out:
+-- what it reported before is older than what the editor shows, and lich drops
+-- it.
+function M.mark(seq)
+  seen = seq
+  state()
+end
+
+-- click is the pointer in lich's editor, its seq'th: the cursor to row, col,
+-- or a characterwise selection from the anchor to it.
+function M.click(buf, seq, row, col, arow, acol)
   M.focus(buf)
   local mode = api.nvim_get_mode().mode
   local to = string.format('<Cmd>call cursor(%d,%d)<CR>', row, col + 1)
+  local done = string.format('<Cmd>lua lich_editor.mark(%d)<CR>', seq)
   if arow == nil then
     if mode:match('^[vV\22]') then
       to = '<Esc>' .. to
     end
-    api.nvim_input(to)
+    api.nvim_input(to .. done)
     return
   end
   local from = string.format('<Cmd>call cursor(%d,%d)<CR>', arow, acol + 1)
   local leave = mode == 'n' and '' or '<Esc>'
-  api.nvim_input(leave .. from .. 'v' .. to)
+  api.nvim_input(leave .. from .. 'v' .. to .. done)
 end
 
--- scroll is the wheel in lich's editor: line top at the window's top, the
--- cursor kept inside the window as Vim keeps it.
-function M.scroll(buf, top)
+-- scroll is the wheel in lich's editor, its seq'th: line top at the window's
+-- top, the cursor kept inside the window as Vim keeps it.
+function M.scroll(buf, seq, top)
   if api.nvim_get_current_buf() == buf and vim.fn.line('w0') ~= top then
-    vim.fn.winrestview({ topline = top })
-    state()
+    -- The cursor comes along inside 'scrolloff', as the wheel brings it in
+    -- Vim; left outside the window, Vim would scroll back to it.
+    local height = api.nvim_win_get_height(0)
+    local so = math.min(vim.wo.scrolloff, math.floor((height - 1) / 2))
+    local last = math.min(top + height - 1, api.nvim_buf_line_count(buf))
+    local lnum = math.min(math.max(vim.fn.line('.'), top + so), math.max(last - so, top))
+    vim.fn.winrestview({ topline = top, lnum = lnum })
   end
+  M.mark(seq)
 end
 
 -- extra is the grid's lines the window does not get, the status line's and
