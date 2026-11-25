@@ -50,6 +50,9 @@ const (
 	Files     = "files"
 	Inspect   = "inspect"
 	Clock     = "clock"
+	PopOut    = "popOut"
+	PopIn     = "popIn"
+	Raise     = "raise"
 )
 
 // Events.
@@ -62,6 +65,7 @@ const (
 	EventFiles    = "files"
 	EventDownload = "download"
 	EventCrashed  = "crashed"
+	EventClosed   = "closed"
 )
 
 type HelloResult struct {
@@ -83,6 +87,8 @@ type OpenParams struct {
 	Scale float64 `json:"scale"`
 	W     int     `json:"w"`
 	H     int     `json:"h"`
+	// Downloads is the directory the page's downloads land in.
+	Downloads string `json:"downloads"`
 }
 
 type TabParams struct {
@@ -100,6 +106,7 @@ type EvalParams struct {
 	Script string `json:"script"`
 }
 
+// EvalResult's JSON is empty for undefined.
 type EvalResult struct {
 	JSON string `json:"json"`
 }
@@ -129,10 +136,11 @@ const (
 )
 
 type MouseParams struct {
-	Page   string  `json:"page"`
-	Kind   string  `json:"kind"`
-	X      float64 `json:"x"`
-	Y      float64 `json:"y"`
+	Page string  `json:"page"`
+	Kind string  `json:"kind"`
+	X    float64 `json:"x"`
+	Y    float64 `json:"y"`
+	// Button is the DOM's: 0 left, 1 middle, 2 right.
 	Button int     `json:"button,omitempty"`
 	Clicks int     `json:"clicks,omitempty"`
 	Mods   Mods    `json:"mods,omitempty"`
@@ -218,13 +226,32 @@ type LoadEvent struct {
 	Step string `json:"step"`
 	URL  string `json:"url"`
 	At   int64  `json:"at"`
+	// Error is WebKit's text for a failed load.
+	Error string `json:"error,omitempty"`
+	// Download is a navigation that turned into a download.
+	Download bool `json:"download,omitempty"`
 }
 
-// RequestEvent is a subresource request of the front tab starting, or
-// finishing however it ended.
+// Request types.
+const (
+	RequestFetch      = "fetch"
+	RequestXHR        = "xhr"
+	RequestDocument   = "document"
+	RequestScript     = "script"
+	RequestStylesheet = "stylesheet"
+	RequestImage      = "image"
+	RequestFont       = "font"
+	RequestMedia      = "media"
+	RequestOther      = "other"
+)
+
+// RequestEvent is a request of the front tab starting, or finishing however
+// it ended: Finished names the ID that started.
 type RequestEvent struct {
 	Page     string `json:"page"`
 	Tab      string `json:"tab"`
+	ID       string `json:"id"`
+	Type     string `json:"type"`
 	Started  bool   `json:"started,omitempty"`
 	Finished bool   `json:"finished,omitempty"`
 	At       int64  `json:"at"`
