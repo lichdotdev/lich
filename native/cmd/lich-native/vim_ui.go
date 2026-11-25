@@ -47,6 +47,10 @@ type vimUI struct {
 	cmdline  *vimCmdline
 	msg      string
 	msgError bool
+	// batched is whether a message came in the redraw not yet flushed: what
+	// one command writes a line at a time (:ls, :reg) piles up, and the next
+	// command's message replaces it.
+	batched bool
 }
 
 // cursor is the shape the current mode draws, a block when Neovim named none.
@@ -108,13 +112,14 @@ func (u *vimUI) applyOne(name string, args []any) {
 		if kind == "return_prompt" || text == "" {
 			return
 		}
-		// Messages pile up until Neovim clears them, as :ls or :reg write
-		// theirs a line at a time.
-		if replace, _ := argAt(args, 2).(bool); replace || u.msg == "" {
+		if replace, _ := argAt(args, 2).(bool); replace || !u.batched || u.msg == "" {
 			u.msg, u.msgError = text, vimErrorKinds[kind]
 		} else {
 			u.msg, u.msgError = u.msg+"\n"+text, u.msgError || vimErrorKinds[kind]
 		}
+		u.batched = true
+	case "flush":
+		u.batched = false
 	case "msg_history_show":
 		u.msg, u.msgError = vimHistoryText(argAt(args, 0)), false
 	case "popupmenu_show":

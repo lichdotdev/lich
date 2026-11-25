@@ -130,3 +130,14 @@ func TestVimWordStartIsWhereTheCompletedWordBegins(t *testing.T) {
 		t.Fatalf("word starts at %d, want 10", got)
 	}
 }
+
+func TestVimUIKeepsOnlyTheLastCommandsMessages(t *testing.T) {
+	var u vimUI
+	for _, msg := range []string{"3 fewer lines", "Already at oldest change", "3 more lines"} {
+		u.apply([]any{"msg_show", []any{"", chunks(msg), false}})
+		u.apply([]any{"flush", []any{}})
+	}
+	if u.msg != "3 more lines" {
+		t.Fatalf("separate commands left %q; want the last message alone", u.msg)
+	}
+}

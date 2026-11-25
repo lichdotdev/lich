@@ -443,3 +443,18 @@ func TestVimConfigFileIsTheOneThatExists(t *testing.T) {
 		t.Fatalf("with init.vim: %q", got)
 	}
 }
+
+func TestVimMessagesKeepTheLastCommandsLines(t *testing.T) {
+	f, _ := vimEditor(t, "one\n")
+	msg := func() string {
+		buf, _, _ := f.vim.held()
+		u, _ := f.env.vim.status(buf)
+		return u.msg
+	}
+	vimCommand(f, `echo "first"`)
+	vimUntil(t, f, "the first message", func() bool { return msg() == "first" })
+	vimCommand(f, `echo "a" | echo "b"`)
+	vimUntil(t, f, "one command's two lines, alone", func() bool { return msg() == "a\nb" })
+	vimCommand(f, `echo "last"`)
+	vimUntil(t, f, "the next command's message replace them", func() bool { return msg() == "last" })
+}
