@@ -89,6 +89,35 @@ func (s *Service) relaunch(ctx context.Context, c *chatSession, category, value 
 	return nil
 }
 
+// Relaunch answers terminal.ChatSink: Continue in moving session id's
+// conversation to another profile while its chat is closed. A failed move
+// still opens the chat again, where the conversation stayed.
+func (s *Service) Relaunch(ctx context.Context, id string, move func() error) error {
+	c := s.running(id)
+	if c == nil {
+		return move()
+	}
+	release, err := s.claim(id)
+	if err != nil {
+		return err
+	}
+	defer release()
+	if s.running(id) != c {
+		return errors.New("the chat restarted meanwhile; ask again")
+	}
+	if c.turnRunning() || s.term.TurnOpen(id) {
+		return errBusy
+	}
+	carry := c.currents()
+	c.stop()
+	moved := move()
+	if _, err := s.start(ctx, id, c.projectID, c.kind, c.cwd, carry); err != nil {
+		return errors.Join(moved, err)
+	}
+	events.Send(s.hub.Emit, api.SessionViewEvent, api.SessionView{ID: id, View: api.ViewChat})
+	return moved
+}
+
 // remember records a choice where the session's later spawns read it.
 func (s *Service) remember(id, category, value string) error {
 	switch category {
