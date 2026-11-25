@@ -270,7 +270,8 @@ func (f *fileEditor) paintVimRanges(gtx C, ranges []godemirror.SelectionRange, c
 }
 
 // vimLspText is what the strip says of the file's language servers: their
-// names, or the one lich knows for it and could not find.
+// names, the one lich knows for it and could not find, or the one it started
+// that exited at once.
 func (f *fileEditor) vimLspText(current bool) string {
 	s := f.vim.state
 	switch {
@@ -280,6 +281,8 @@ func (f *fileEditor) vimLspText(current bool) string {
 		return strings.Join(s.lsp, ", ")
 	case s.missing != "":
 		return i18n.T("dock.editor.vimLspMissing", i18n.Args{"name": s.missing})
+	case s.failed != "":
+		return i18n.T("dock.editor.vimLspFailed", i18n.Args{"name": s.failed})
 	}
 	return ""
 }

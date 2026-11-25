@@ -7,6 +7,8 @@ _G.lich_editor = M
 
 local api = vim.api
 local owned = {}
+-- state, defined below, is what lich hears of the current buffer.
+local state
 
 local function regions(mode)
   local kind = mode:sub(1, 1)
@@ -207,8 +209,10 @@ local function serverFor(ft)
   return first, false
 end
 
--- started are the clients lich started, which it turns completion on for.
+-- started are the clients lich started, which it turns completion on for,
+-- and failed the server each buffer's ended with an error before attaching.
 local started = {}
+local failed = {}
 
 -- How long a file waits for the person's config to attach a server before
 -- lich starts its own: lspconfig and vim.lsp.enable attach on FileType.
@@ -227,6 +231,12 @@ local function autoLsp(buf)
       name = s.name,
       cmd = s.cmd,
       root_dir = vim.fs.root(buf, s.root) or vim.fs.dirname(api.nvim_buf_get_name(buf)),
+      on_exit = function(code)
+        if code ~= 0 and #vim.lsp.get_clients({ bufnr = buf }) == 0 then
+          failed[buf] = s.cmd[1]
+          vim.schedule(state)
+        end
+      end,
     }, { bufnr = buf })
     if id then
       started[id] = true
@@ -234,8 +244,9 @@ local function autoLsp(buf)
   end, attachWait)
 end
 
--- lsp is what the strip says of the buffer's servers: the names attached, or
--- the server lich knows for its filetype and could not find.
+-- lsp is what the strip says of the buffer's servers: the names attached,
+-- the server lich knows for its filetype and could not find, or the one it
+-- started that exited at once.
 local function lsp(buf)
   local names = {}
   for _, c in ipairs(vim.lsp.get_clients({ bufnr = buf })) do
@@ -248,10 +259,10 @@ local function lsp(buf)
       missing = s.cmd[1]
     end
   end
-  return { names, missing }
+  return { names, missing, #names == 0 and failed[buf] or '' }
 end
 
-local function state()
+function state()
   local buf = api.nvim_get_current_buf()
   if not owned[buf] then
     return

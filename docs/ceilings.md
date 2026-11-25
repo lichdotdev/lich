@@ -2626,8 +2626,9 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   short table (gopls, typescript-language-server, basedpyright or pyright, rust-analyzer, clangd,
   lua-language-server, jdtls) gets it started by lich, with completion as you type, when the person's config has
   attached none 1.5 s after the file opens, and the strip names the servers attached or the one not on the PATH;
-  a command on the PATH that exits at once (a version manager's shim with no version for the folder) leaves the
-  strip silent, its error only in Neovim's lsp.log; Settings › Editor › Vim mode › Edit config opens init.lua or
+  a server lich started that exits before attaching (a version manager's shim with no version for the folder)
+  shows as "failed to start", its error only in Neovim's lsp.log, while one the person's config started and lost
+  leaves the strip silent; Settings › Editor › Vim mode › Edit config opens init.lua or
   init.vim of the config folder Neovim reports (NVIM_APPNAME and XDG_CONFIG_HOME followed), writing an empty
   init.lua where there is none, and saving any file under that folder restarts Neovim, as Restart Neovim in the
   palette does;

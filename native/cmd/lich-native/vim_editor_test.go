@@ -458,3 +458,17 @@ func TestVimMessagesKeepTheLastCommandsLines(t *testing.T) {
 	vimCommand(f, `echo "last"`)
 	vimUntil(t, f, "the next command's message replace them", func() bool { return msg() == "last" })
 }
+
+func TestVimNamesTheLanguageServerThatFailedToStart(t *testing.T) {
+	bin := t.TempDir()
+	if err := os.WriteFile(filepath.Join(bin, "gopls"), []byte("#!/bin/sh\necho 'no version for this folder' >&2\nexit 1\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+	dir := t.TempDir()
+	f, _ := vimEditorOf(t, dir, "main.go", "package main\n")
+	vimUntil(t, f, "the failed server named", func() bool {
+		f.vimFeed("lich_editor.focus(...)")
+		return f.vimLspText(true) == "gopls failed to start"
+	})
+}

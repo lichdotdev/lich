@@ -57,6 +57,7 @@
     "artifactReadOnly": "Do agente · somente leitura",
     "vimFailed": "O Neovim não iniciou, então o editor usa as próprias teclas",
     "vimLspMissing": "{name} não encontrado",
-    "vimConfigFailed": "Não foi possível abrir a config do Neovim"
+    "vimConfigFailed": "Não foi possível abrir a config do Neovim",
+    "vimLspFailed": "{name} não iniciou"
   }
 }

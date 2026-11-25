@@ -94,6 +94,9 @@ type vimState struct {
 	// one lich knows for its filetype but found no command for.
 	lsp     []string
 	missing string
+	// failed is the server lich started for the buffer that exited before
+	// attaching.
+	failed string
 }
 
 // vimPreview is the buffer lines first..last, 0-based and last excluded, as
@@ -252,7 +255,7 @@ func (h *vimHost) onLines(buf int, tick, first, last int, lines []string) {
 
 func (h *vimHost) onState(buf int, mode string, row, col, top int, regions, matches [][]int, preview []any, parens [][]int, lsp []any) {
 	st := &vimState{mode: mode, row: row, col: col, top: top, preview: vimPreviewOf(preview), parens: vimTriples(parens)}
-	st.lsp, st.missing = vimLspOf(lsp)
+	st.lsp, st.missing, st.failed = vimLspOf(lsp)
 	for _, r := range regions {
 		if len(r) == 4 {
 			st.regions = append(st.regions, [4]int{r[0], r[1], r[2], r[3]})
@@ -354,10 +357,10 @@ func (h *vimHost) onYank(buf int, kind string, regions [][]int) {
 	}
 }
 
-// vimLspOf reads vim.lua's {names, missing}.
-func vimLspOf(raw []any) (names []string, missing string) {
-	if len(raw) != 2 {
-		return nil, ""
+// vimLspOf reads vim.lua's {names, missing, failed}.
+func vimLspOf(raw []any) (names []string, missing, failed string) {
+	if len(raw) != 3 {
+		return nil, "", ""
 	}
 	list, _ := raw[0].([]any)
 	for _, n := range list {
@@ -366,7 +369,8 @@ func vimLspOf(raw []any) (names []string, missing string) {
 		}
 	}
 	missing, _ = raw[1].(string)
-	return names, missing
+	failed, _ = raw[2].(string)
+	return names, missing, failed
 }
 
 // restart ends the running Neovim and starts another at once, which reads
