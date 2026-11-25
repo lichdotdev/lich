@@ -55,6 +55,8 @@
     "zoom": "페이지 확대/축소",
     "zoomReset": "100%로 재설정",
     "notePlaceholder": "여기서 무엇을 바꿔야 하나요?",
+    "noteTitle": "메모",
+    "noteTitleNumbered": "메모 {number}",
     "closingPlaceholder": "전체에 대한 메모…",
     "addNote": "메모 추가",
     "saveNote": "저장",

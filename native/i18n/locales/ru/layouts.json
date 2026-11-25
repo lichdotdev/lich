@@ -61,6 +61,8 @@
     "zoom": "Масштаб страницы",
     "zoomReset": "Сбросить до 100%",
     "notePlaceholder": "Что здесь изменить?",
+    "noteTitle": "Заметка",
+    "noteTitleNumbered": "Заметка {number}",
     "closingPlaceholder": "Заметка ко всем сразу…",
     "addNote": "Добавить заметку",
     "saveNote": "Сохранить",

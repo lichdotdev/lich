@@ -220,7 +220,7 @@ func (th *Theme) PopoverPanel(gtx C, content func(gtx C, th *Theme) D) D {
 // and without the shadow it reads as part of it.
 func (th *Theme) popoverSurface(gtx C, size image.Point) {
 	r := gtx.Dp(RadiusLG)
-	toastShadow(gtx, size, r)
+	toastShadow.Paint(gtx, size, r)
 	rr := clip.UniformRRect(image.Rectangle{Max: size}, r)
 	ring := clip.Stroke{Path: rr.Path(gtx.Ops), Width: float32(2 * gtx.Dp(1))}.Op()
 	paint.FillShape(gtx.Ops, th.Over(Alpha(th.Foreground, menuRingOpacity)), ring)

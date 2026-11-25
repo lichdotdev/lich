@@ -40,20 +40,13 @@ const (
 	toastLineGap     unit.Dp = 2
 	toastLineIcon    unit.Dp = 12
 	toastLineIconGap unit.Dp = 4
-	// box-shadow: 0 4px 12px rgba(0,0,0,.1).
-	toastShadowY      unit.Dp = 4
-	toastShadowBlur   unit.Dp = 12
-	toastShadowAlpha          = 0.1
-	toastShadowLayers         = 6
 	// cancel's background: rgba(0,0,0,.08), or rgba(255,255,255,.3) dark.
 	toastCancelLight = 0.08
 	toastCancelDark  = 0.3
 )
 
-// toastShadowLayerAlpha is one of the stacked rings that stand in for the
-// shadow's blur, so that all of them together are black at 10%, compensated
-// for the linear-light blend as dialogScrimOpacity is.
-var toastShadowLayerAlpha = float32(1 - math.Pow(math.Pow(1-toastShadowAlpha, 2.4), 1.0/toastShadowLayers))
+// toastShadow is sonner's box-shadow: 0 4px 12px rgba(0,0,0,.1).
+var toastShadow = BoxShadow{Y: 4, Blur: 12, Alpha: 0.1}
 
 // The description's color is sonner's own, not a token: #3f3f3f, and
 // hsl(0, 0%, 91%) dark.
@@ -192,7 +185,7 @@ func (s ToasterStyle) measure(gtx C, e *toastEntry, inner int) {
 func (s ToasterStyle) drawBox(gtx C, v *toastView) {
 	th := s.theme
 	r := gtx.Dp(RadiusLG)
-	toastShadow(gtx, v.boxSize, r)
+	toastShadow.Paint(gtx, v.boxSize, r)
 	rect := clip.UniformRRect(image.Rectangle{Max: v.boxSize}, r)
 	paint.FillShape(gtx.Ops, th.Popover, rect.Op(gtx.Ops))
 	border := th.On(th.Popover).Over(th.Border)
@@ -203,20 +196,6 @@ func (s ToasterStyle) drawBox(gtx C, v *toastView) {
 	defer paint.PushOpacity(gtx.Ops, v.inside).Pop()
 	defer op.Offset(v.bodyAt).Push(gtx.Ops).Pop()
 	v.body.Add(gtx.Ops)
-}
-
-// toastShadow stands in for the blur with rings growing from half the blur
-// inside the box to half outside it. The shadow lands on whatever the window
-// holds, not a known surface, so it stays translucent.
-func toastShadow(gtx C, size image.Point, radius int) {
-	blur := float32(gtx.Dp(toastShadowBlur))
-	down := gtx.Dp(toastShadowY)
-	shade := Alpha(black, toastShadowLayerAlpha)
-	for i := range toastShadowLayers {
-		grow := int(blur*(float32(i)+0.5)/toastShadowLayers - blur/2)
-		box := image.Rect(-grow, down-grow, size.X+grow, size.Y+down+grow)
-		paint.FillShape(gtx.Ops, shade, clip.UniformRRect(box, max(radius+grow, 0)).Op(gtx.Ops))
-	}
 }
 
 // recorded is a widget drawn once to be measured and placed after.
