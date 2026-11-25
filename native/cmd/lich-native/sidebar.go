@@ -57,6 +57,7 @@ type sidebar struct {
 	motion   blockPresence
 	naming   folderNaming
 	schedule scheduleDialog
+	linkPR   linkPRPanel
 	rail     sidebarRail
 	morph    sidebarMorph
 	peek     sidebarPeek
@@ -99,7 +100,7 @@ func newSidebar(root *ui.Root) *sidebar {
 // otherwise takes: the filter field holds focus, a card or a folder is being
 // renamed, a menu is open, or the new folder dialog is up.
 func (s *sidebar) holdsKeys() bool {
-	if s.header.searchFocused || s.naming.open || s.schedule.open {
+	if s.header.searchFocused || s.naming.open || s.schedule.open || s.linkPR.panel.Opened() {
 		return true
 	}
 	for _, r := range s.renames {
@@ -151,6 +152,8 @@ type sidebarAction struct {
 	// The session to fork, in its own checkout or into a new worktree.
 	forkHere, forkWorktree string
 	schedule               string // the session whose Schedule prompt… was picked
+	linkPR                 string // the session whose Link pull request… was picked
+	unlinkPR               prUnlink
 	service                serviceRequest
 	copyText               string // text the card menu asked to put on the clipboard
 	sidebarWrites
@@ -195,6 +198,9 @@ type blockReorder struct {
 	ids []string
 }
 
+// prUnlink hides the pull request at url from session id; id "" for none.
+type prUnlink struct{ id, url string }
+
 // sessionRename is a label typed into a card.
 type sessionRename struct{ id, label string }
 
@@ -223,6 +229,10 @@ func (a *sidebarAction) takeCard(c sidebarAction) {
 	pick(&a.forkHere, c.forkHere)
 	pick(&a.forkWorktree, c.forkWorktree)
 	pick(&a.schedule, c.schedule)
+	pick(&a.linkPR, c.linkPR)
+	if c.unlinkPR.id != "" {
+		a.unlinkPR = c.unlinkPR
+	}
 	pick(&a.fold, c.fold)
 	pick(&a.copyText, c.copyText)
 	if c.pin != "" {

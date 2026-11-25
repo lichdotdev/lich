@@ -69,6 +69,9 @@ type Service struct {
 	// fixes keeps the review threads handed to a session (threadfix.go); nil
 	// keeps nothing.
 	fixes threadFixStore
+	// links keeps the pull requests linked to a session by hand
+	// (sessionpr.go); nil keeps nothing.
+	links sessionPRStore
 	// prs is the pull request watch's last reads (branchpr.go). Zero value
 	// ready.
 	prs branchPRs

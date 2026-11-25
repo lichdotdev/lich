@@ -37,6 +37,18 @@ func (s *DropdownPanelState) Box() image.Rectangle { return s.box }
 // Opened reports whether the panel is showing.
 func (s *DropdownPanelState) Opened() bool { return s.open }
 
+// OpenAtPointer opens a panel whose Layout sits at the window's origin where
+// the pointer is, for a panel asked for by something other than its trigger.
+func (s *DropdownPanelState) OpenAtPointer(root *Root) { s.OpenAt(root.pointer.Round()) }
+
+// OpenAt opens a panel whose Layout sits at the window's origin under at, as
+// OpenAtPointer does: a still frame of it for -shot, which has no pointer.
+func (s *DropdownPanelState) OpenAt(at image.Point) {
+	s.open, s.focus, s.origin = true, true, image.Point{}
+	s.anchor = image.Rectangle{Min: at, Max: at}
+	s.panel = menuLevel{}
+}
+
 // Close hides the panel, as a row of its content does once chosen.
 func (s *DropdownPanelState) Close() { s.open = false }
 

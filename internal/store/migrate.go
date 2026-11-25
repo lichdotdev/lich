@@ -37,6 +37,7 @@ var migrations = []func(*sql.Tx) error{
 	addSessionView,
 	addSessionChatMode,
 	addViewedFiles,
+	addSessionPullRequests,
 }
 
 // addSessionEffort is version 2: the reasoning effort a session was opened at,
@@ -309,6 +310,27 @@ CREATE TABLE viewed_files (
     hash      TEXT    NOT NULL,
     viewed_at INTEGER NOT NULL,
     PRIMARY KEY (pr_url, path)
+) WITHOUT ROWID`)
+	return err
+}
+
+// addSessionPullRequests is version 21: the pull requests linked to or
+// unlinked from a session by hand (SaveSessionPullRequest), the latest word
+// on each URL. The key is deferred because a resume re-keys a session by
+// deleting its row, and the links move to the new id before that delete
+// would cascade them away (reopen).
+func addSessionPullRequests(tx *sql.Tx) error {
+	_, err := tx.Exec(`
+CREATE TABLE session_pull_requests (
+    session_id TEXT    NOT NULL REFERENCES sessions(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
+    pr_url     TEXT    NOT NULL,
+    linked     INTEGER NOT NULL,
+    at         INTEGER NOT NULL,
+    forge      TEXT    NOT NULL,
+    here       INTEGER NOT NULL,
+    pr         TEXT    NOT NULL DEFAULT '',
+    error      TEXT    NOT NULL DEFAULT '',
+    PRIMARY KEY (session_id, pr_url)
 ) WITHOUT ROWID`)
 	return err
 }
