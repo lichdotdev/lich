@@ -293,7 +293,9 @@
   },
   "attach": {
     "remove": "빼기",
-    "pasteNeedsTool": "이미지를 붙여 넣으려면 wl-paste (wl-clipboard) 또는 xclip이 필요합니다"
+    "pasteNeedsTool": "이미지를 붙여 넣으려면 wl-paste (wl-clipboard) 또는 xclip이 필요합니다",
+    "add": "파일 첨부",
+    "drop": "놓아서 첨부"
   },
   "quote": {
     "add": "인용",

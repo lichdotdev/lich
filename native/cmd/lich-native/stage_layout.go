@@ -224,14 +224,14 @@ func (u *window) paneAt(gtx C, v stageView, id string, r image.Rectangle, severa
 }
 
 // paneDrop takes a file dragged over the pane's terminal or chat, at at in
-// the island.
+// the island; a chat shows the drag in its composer, not the hint.
 func (u *window) paneDrop(gtx C, th *ui.Theme, sv sessionView, at image.Point) {
 	if !u.terms.has(sv.ID) && sv.View != api.ViewChat {
 		return
 	}
 	corner := u.islandAt.Add(at)
 	u.drop.add(sv.ID, image.Rectangle{Min: corner, Max: corner.Add(gtx.Constraints.Max)})
-	if u.drop.hinting(sv.ID) || *flagDropHint {
+	if sv.View != api.ViewChat && (u.drop.hinting(sv.ID) || *flagDropHint) {
 		dropHintFor(th, sv.Label, sv.sandbox.Confined).Layout(gtx)
 	}
 }

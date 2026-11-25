@@ -293,7 +293,9 @@
   },
   "attach": {
     "remove": "外す",
-    "pasteNeedsTool": "画像を貼り付けるには wl-paste (wl-clipboard) か xclip が必要です"
+    "pasteNeedsTool": "画像を貼り付けるには wl-paste (wl-clipboard) か xclip が必要です",
+    "add": "ファイルを添付",
+    "drop": "ドロップして添付"
   },
   "quote": {
     "add": "引用",

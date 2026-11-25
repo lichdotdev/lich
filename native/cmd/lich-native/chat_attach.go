@@ -10,10 +10,12 @@ import (
 	"strings"
 
 	"gioui.org/font"
+	"gioui.org/io/semantic"
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
+	"gioui.org/unit"
 	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/backend"
@@ -39,6 +41,13 @@ var (
 	chatCardRemoveInset = ui.Space(1.5)
 	// chatCardNameLines is how many lines a file's name wraps to.
 	chatCardNameLines = 3
+	// chatStripPadBottom is the room between the cards and the hairline
+	// under them.
+	chatStripPadBottom = ui.Space(3)
+	// chatGhostOpacity is a ghost card's ink, and chatDragRingWidth the
+	// dashes of the ghost and of the box while a file is dragged.
+	chatGhostOpacity  = float32(0.55)
+	chatDragRingWidth = unit.Dp(1.5)
 )
 
 // chatMessage is what the composer sends: its text and the files attached.
@@ -155,13 +164,37 @@ func (c *chatScreens) attachIn(id string, files []backend.Attachment) {
 	c.attached[id] = append(c.attached[id], files...)
 }
 
-// takeAttached is what was handed session id's composer, now taken.
-func (c *chatScreens) takeAttached(id string) []backend.Attachment {
+// land marks a drop on session id's composer as resolving.
+func (c *chatScreens) land(id string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.landing == nil {
+		c.landing = map[string]bool{}
+	}
+	c.landing[id] = true
+}
+
+// landed hands session id's composer the files a drop resolved to, in the
+// same step that ends its landing, so no frame draws neither the ghost nor
+// the cards.
+func (c *chatScreens) landed(id string, files []backend.Attachment) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	delete(c.landing, id)
+	if c.attached == nil {
+		c.attached = map[string][]backend.Attachment{}
+	}
+	c.attached[id] = append(c.attached[id], files...)
+}
+
+// takeAttached is what was handed session id's composer, now taken, and
+// whether a drop on it is still resolving.
+func (c *chatScreens) takeAttached(id string) ([]backend.Attachment, bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	files := c.attached[id]
 	delete(c.attached, id)
-	return files
+	return files, c.landing[id]
 }
 
 // thumb is the decoded image at path, read off the frame once; nil while it
@@ -199,20 +232,95 @@ func (p *chatPane) cardActs(gtx C) {
 	p.attached = slices.DeleteFunc(p.attached, func(f backend.Attachment) bool { return p.card(f.Path).remove.Clicked(gtx) })
 }
 
-// composerCards is the row of the composer's cards over its text, nothing
-// without any.
-func (u *window) composerCards(gtx C, th *ui.Theme, p *chatPane, fill color.NRGBA) D {
-	if len(p.attached) == 0 {
+// attachActs runs the chips' "+" and the add square: each opens the file
+// picker for the pane's own session, as the footer's attach does for the
+// followed one.
+func (u *window) attachActs(gtx C, p *chatPane, sv sessionView) {
+	pick, add := p.attachPick.Clicked(gtx), p.addCard.Clicked(gtx)
+	if pick || add {
+		go u.footer.attach(footerInput{sessionID: sv.ID, checkout: sv.path, sandboxed: sv.sandbox.Confined})
+	}
+}
+
+// composerStrip is the strip of the composer's cards over its text, then a
+// hairline across the box: the cards, a ghost card while a file is dragged
+// over the session or a drop on it resolves, and the add square. Nothing
+// without a card or a ghost.
+func (u *window) composerStrip(gtx C, th *ui.Theme, p *chatPane, fill color.NRGBA) D {
+	ghost := p.dragging || p.landing
+	if len(p.attached) == 0 && !ghost {
 		return D{}
 	}
 	files := p.attached
-	return layout.Inset{Top: chatComposerPadY, Left: chatComposerPadX, Right: chatComposerPadX}.Layout(gtx, func(gtx C) D {
-		return p.cardList.Layout(gtx, len(files), func(gtx C, i int) D {
-			return layout.Inset{Right: chatCardGap}.Layout(gtx, func(gtx C) D {
-				return u.fileCard(gtx, th, p.card(files[i].Path), files[i].Path, fill, true)
+	n := len(files) + 1
+	if ghost {
+		n++
+	}
+	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+		layout.Rigid(func(gtx C) D {
+			return layout.Inset{Top: chatComposerPadY, Bottom: chatStripPadBottom, Left: chatComposerPadX, Right: chatComposerPadX}.Layout(gtx, func(gtx C) D {
+				return p.cardList.Layout(gtx, n, func(gtx C, i int) D {
+					card := func(gtx C) D {
+						switch {
+						case i < len(files):
+							return u.fileCard(gtx, th, p.card(files[i].Path), files[i].Path, fill, true)
+						case ghost && i == len(files):
+							return ghostCard(gtx, th)
+						}
+						return addCard(gtx, th, &p.addCard)
+					}
+					if i == n-1 {
+						return card(gtx)
+					}
+					return layout.Inset{Right: chatCardGap}.Layout(gtx, card)
+				})
 			})
-		})
+		}),
+		layout.Rigid(func(gtx C) D {
+			size := image.Pt(gtx.Constraints.Max.X, gtx.Dp(1))
+			paint.FillShape(gtx.Ops, th.Over(th.Border), clip.Rect{Max: size}.Op())
+			return D{Size: size}
+		}),
+	)
+}
+
+// ghostCard is where a dragged file will stand: a dashed card at
+// chatGhostOpacity with a file's glyph. Gio hands the drag's files over only
+// on the drop, so the ghost names none and stands for them all.
+func ghostCard(gtx C, th *ui.Theme) D {
+	side := gtx.Dp(chatCardSize)
+	size := image.Pt(side, side)
+	gtx.Constraints = layout.Exact(size)
+	defer paint.PushOpacity(gtx.Ops, chatGhostOpacity).Pop()
+	ui.DashedRing(gtx, image.Rectangle{Max: size}.Inset(gtx.Dp(1)), ui.RadiusLG, chatDragRingWidth, th.Foreground, color.NRGBA{})
+	layout.Center.Layout(gtx, func(gtx C) D { return icArtifactFile.Layout(gtx, ui.Space(6), th.MutedForeground) })
+	return D{Size: size}
+}
+
+// addCard is the square that ends the strip: no fill, the hairline and a
+// muted "+", the kit's hover fill under the pointer.
+func addCard(gtx C, th *ui.Theme, click *ui.Clickable) D {
+	side := gtx.Dp(chatCardSize)
+	size := image.Pt(side, side)
+	gtx.Constraints = layout.Exact(size)
+	radius := gtx.Dp(ui.RadiusLG)
+	return click.Layout(gtx, func(gtx C) D {
+		semantic.DescriptionOp(i18n.T("chat.attach.add")).Add(gtx.Ops)
+		ink := th.MutedForeground
+		if click.Hovered() {
+			paint.FillShape(gtx.Ops, th.Over(ui.Alpha(th.Accent, ui.GhostHoverFill)), clip.UniformRRect(image.Rectangle{Max: size}, radius).Op(gtx.Ops))
+			ink = th.Foreground
+		}
+		ui.InsetBorder(gtx, size, radius, th.Over(th.Border))
+		layout.Center.Layout(gtx, func(gtx C) D { return icPlus.Layout(gtx, ui.Space(6), ink) })
+		return D{Size: size}
 	})
+}
+
+// dragRing is the composer's box edge while a file is dragged over the
+// session: dashed, in the foreground.
+func dragRing(gtx C, th *ui.Theme, size image.Point) {
+	ui.DashedRing(gtx, image.Rectangle{Max: size}.Inset(gtx.Dp(1)), ui.RadiusLG, chatDragRingWidth, th.Foreground, color.NRGBA{})
 }
 
 // sentCards is the row of cards a person's message attached, at the

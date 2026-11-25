@@ -155,6 +155,14 @@ type chatView struct {
 	attached  []backend.Attachment
 	cardList  layout.List
 	fileCards map[string]*chatFileCard
+	// attachPick is the chips' "+" and addCard the square that ends the
+	// cards, both the file picker.
+	attachPick, addCard ui.Clickable
+	attachTip           ui.Tooltip
+	// dragging is whether a file drag is over the session, and landing
+	// whether a drop on it is still resolving: either draws a ghost card at
+	// the end of the cards.
+	dragging, landing bool
 	// quotes are the texts quoted from the conversation the next message
 	// opens with, in the order they were taken, drawn under the cards with
 	// quoteRows' ×; quoteSel is Quote over a selection.
@@ -498,7 +506,10 @@ func (u *window) chatActs(gtx C, p *chatPane, sv sessionView, keys, working bool
 	if typed := u.chats.takeTyped(sv.ID); typed != "" {
 		p.editor.Insert(typed)
 	}
-	p.attached = addFiles(p.attached, u.chats.takeAttached(sv.ID))
+	files, landing := u.chats.takeAttached(sv.ID)
+	p.attached, p.landing = addFiles(p.attached, files), landing
+	p.dragging = u.drop.hinting(sv.ID) || *flagDropHint
+	u.attachActs(gtx, p, sv)
 	p.cardActs(gtx)
 	p.quoteActs(gtx)
 	p.dropQuizzes(asking)
@@ -667,14 +678,14 @@ func (u *window) chatFailed(err error) {
 // chatComposer is the message field with the provider's chips and Send, or
 // Stop while a turn runs, inside its box, and the project and branch with the
 // changes under it. Every pane has its own line; only the session the footer
-// follows has the attach "+" and the context ring.
+// follows has the context ring.
 func (u *window) chatComposer(gtx C, th *ui.Theme, p *chatPane, sv sessionView, working bool) D {
 	name := sv.Kind
 	if info, ok := u.model.providers.find(sv.Kind); ok && info.name != "" {
 		name = info.name
 	}
 	// The line under the box is the session's own, followed by the footer or
-	// not. The attach "+" and the context ring belong to the followed one.
+	// not. The context ring belongs to the followed one.
 	in := u.footer.shown
 	followed := in.sessionID == sv.ID
 	if !followed {
@@ -683,7 +694,7 @@ func (u *window) chatComposer(gtx C, th *ui.Theme, p *chatPane, sv sessionView, 
 	l, _ := u.footer.snapshot()
 	ft := chatFootSlots(l, in)
 	if !followed {
-		ft.attach, ft.context = nil, nil
+		ft.context = nil
 	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D { return u.chatAsking(gtx, th, p, sv) }),
@@ -717,7 +728,7 @@ func (u *window) chatComposer(gtx C, th *ui.Theme, p *chatPane, sv sessionView, 
 			// box's ceiling rather than taking from the text's room
 			m := op.Record(gtx.Ops)
 			head := layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-				layout.Rigid(func(gtx C) D { return u.composerCards(gtx, th, p, tinted.Palette.Input) }),
+				layout.Rigid(func(gtx C) D { return u.composerStrip(gtx, th, p, tinted.Palette.Input) }),
 				layout.Rigid(func(gtx C) D { return u.composerQuotes(gtx, th, p) }),
 			)
 			headCall := m.Stop()
@@ -728,7 +739,11 @@ func (u *window) chatComposer(gtx C, th *ui.Theme, p *chatPane, sv sessionView, 
 			}
 			ta.Foot = u.chatChips(th, p, sv, working, ft)
 			d := ta.Layout(gtx)
-			ui.InsetBorder(gtx, d.Size, gtx.Dp(ui.RadiusLG), th.Over(ui.MixOKLab(th.Palette.Input, lean, chatComposerTint)))
+			if p.dragging {
+				dragRing(gtx, th, d.Size)
+			} else {
+				ui.InsetBorder(gtx, d.Size, gtx.Dp(ui.RadiusLG), th.Over(ui.MixOKLab(th.Palette.Input, lean, chatComposerTint)))
+			}
 			p.slash.refresh(gtx, &p.editor, slashCommands(u.model.chat.commandsOf(sv.ID), sv.Kind))
 			gtx.Constraints.Max.X = d.Size.X
 			p.slash.layout(gtx, th, p.slashRoom-d.Size.Y-gtx.Dp(2*chatComposerGap))

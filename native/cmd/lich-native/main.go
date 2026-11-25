@@ -52,7 +52,7 @@ var (
 	flagAfter    = flag.Duration("shot-after", 3*time.Second, "when to take -shot")
 	flagTab      = flag.String("tab", "terminal", "what opens at start beside the terminal: terminal (the dock on its stored tab), the dock on code, review or artifacts, git for the Git panel, or ext:<extension>/<surface> for an extension's dock or panel surface")
 	flagWindow   = flag.String("window", "1400x900", "the window's size in dp, WxH, for -shot")
-	flagDropHint = flag.Bool("drop-hint", false, "draw the file-drop hint over the terminal as if a drag were over it, for -shot")
+	flagDropHint = flag.Bool("drop-hint", false, "draw the file-drop hint over the terminal, or a chat's drag preview, as if a drag were over it, for -shot")
 )
 
 func main() {
@@ -1021,7 +1021,7 @@ func (u *window) loneSession(gtx C, v stageView, fill color.NRGBA, termWidth, te
 	u.paneDropZones(gtx, v.active.ID, image.Rectangle{Max: size}, image.Rectangle{Max: size}.Add(u.islandAt), true)
 	if u.terms.has(v.active.ID) || v.active.View == api.ViewChat {
 		u.drop.add(v.active.ID, image.Rectangle{Min: u.islandAt, Max: u.islandAt.Add(size)})
-		if u.drop.hinting(v.active.ID) || *flagDropHint {
+		if v.active.View != api.ViewChat && (u.drop.hinting(v.active.ID) || *flagDropHint) {
 			dropHintFor(u.theme.On(fill), v.active.Label, v.active.sandbox.Confined).Layout(gtx)
 		}
 	}

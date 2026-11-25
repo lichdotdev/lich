@@ -74,6 +74,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **A chat's message box keeps its files in a strip of their own over the text, and shows where a file you drag will land.** The strip ends with a square that opens the file picker, as does the "+" that now always starts the box's controls. Drag a file over the chat and a dashed card waits at the end of the strip until you drop it.
 - **Enter no longer answers a permission in a chat, so a message you meant to send can't allow a tool.** Press the number on a button to answer with it, or Esc to deny it once; the filled button is the suggestion and is never an Always.
 - **Project tabs show a one-pixel border when selected, hovered or dragged.** The selected tab uses the sidebar surface; close controls hide while dragging, tabs have a 5px gap, including 5px of space on either side of the divider between pinned and regular tabs.
 - **Review reads in a narrow dock: long lines wrap, the diff has one column of line numbers and Revert sits in it.** Point at a change to turn its first line number into the revert button. Collapsed, the dock comes out on Review at 60% of the stage, and from 820 px wide Review offers Split.

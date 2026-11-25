@@ -315,7 +315,9 @@
   },
   "attach": {
     "remove": "Remove",
-    "pasteNeedsTool": "Pasting an image needs wl-paste (wl-clipboard) or xclip"
+    "pasteNeedsTool": "Pasting an image needs wl-paste (wl-clipboard) or xclip",
+    "add": "Attach files",
+    "drop": "Drop to attach"
   },
   "quote": {
     "add": "Quote",

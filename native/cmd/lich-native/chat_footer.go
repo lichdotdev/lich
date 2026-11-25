@@ -25,11 +25,13 @@ var (
 	icDanger = icons.Lucide("zap")
 )
 
-// The chips inside the box are the provider's: the attach "+", the model with
-// its effort, the mode. A slot with one of these ids is drawn by chatChips.
+// The chips inside the box are the attach "+" and the provider's: the model
+// with its effort, the mode. A slot with one of these ids is drawn by
+// chatChips.
 const (
-	chipModel = "option:model"
-	chipMode  = "option:mode"
+	chipAttach = "chat:attach"
+	chipModel  = "option:model"
+	chipMode   = "option:mode"
 )
 
 var (
@@ -70,19 +72,16 @@ func (c *chatStore) optionSlots(id string) []footerSlot {
 }
 
 // chatFooter is the footer's items a chat shows of the user's layout: the
-// attach "+" and the context ring inside the box, the checkout and the changes
-// under it. The rest
+// context ring inside the box, the checkout and the changes under it. The rest
 // of the footer is not drawn in a chat.
 type chatFooter struct {
-	attach, changes, checkout, context *footerSlot
+	changes, checkout, context *footerSlot
 }
 
 func chatFootSlots(l footerLayout, in footerInput) chatFooter {
 	var f chatFooter
 	for _, s := range footerSlots(append(slices.Clone(l.Left), l.Right...), in) {
 		switch s.ID {
-		case "attach":
-			f.attach = &s
 		case "changes":
 			f.changes = &s
 		case "checkout":
@@ -94,18 +93,14 @@ func chatFootSlots(l footerLayout, in footerInput) chatFooter {
 	return f
 }
 
-// chatChips is the foot of the composer's box: the attach "+" when the footer
-// has it, then the provider's chips, on one line, and Send or Stop at the
-// right. A chip that does not fit is left out with the ones after it. In
+// chatChips is the foot of the composer's box: the attach "+", then the
+// provider's chips, on one line, and Send or Stop at the right. A chip that
+// does not fit is left out with the ones after it. In
 // shell mode the chips, which do not apply to a command, give their place to
 // the mode's name.
 func (u *window) chatChips(th *ui.Theme, p *chatPane, sv sessionView, working bool, ft chatFooter) func(gtx C) D {
 	f, in := u.footer, u.footer.shown
-	var chips []footerSlot
-	if ft.attach != nil {
-		chips = append(chips, *ft.attach)
-	}
-	chips = append(chips, u.model.chat.optionSlots(sv.ID)...)
+	chips := append([]footerSlot{{ID: chipAttach}}, u.model.chat.optionSlots(sv.ID)...)
 	if ft.context != nil {
 		chips = append(chips, *ft.context)
 	}
@@ -116,21 +111,30 @@ func (u *window) chatChips(th *ui.Theme, p *chatPane, sv sessionView, working bo
 		m := op.Record(gtx.Ops)
 		action := u.chatAction(gtx, th, p, working)
 		actionCall := m.Stop()
-		// while messages wait in the queue the way back to them is named
-		// before the action
+		// a file dragged over the session, or messages waiting in the queue,
+		// are named before the action
 		var hint D
 		var hintCall op.CallOp
 		_, shell := p.shellLine(sv.Kind)
-		if !shell && len(u.model.chat.queued(sv.ID)) > 0 {
+		switch {
+		case p.dragging:
+			m = op.Record(gtx.Ops)
+			hint = th.Text(ui.TextXS, i18n.T("chat.attach.drop")).Layout(gtx)
+			hintCall = m.Stop()
+		case !shell && len(u.model.chat.queued(sv.ID)) > 0:
 			m = op.Record(gtx.Ops)
 			hint = th.Text(ui.TextXS, i18n.T("chat.queue.edit")).Muted().Layout(gtx)
 			hintCall = m.Stop()
+		}
+		if hint.Size.X > 0 {
 			hint.Size.X += gap
 		}
 		draw := func(gtx C, s footerSlot) D {
 			switch s.ID {
-			case "attach":
-				return f.attachButton(gtx, th, in, icPlus)
+			case chipAttach:
+				b := th.Button(&p.attachPick, "")
+				b.Icon, b.Variant, b.Size = icPlus, ui.VariantGhost, ui.SizeIconXS
+				return th.Tooltip(&u.root, &p.attachTip, i18n.T("chat.attach.add")).Layout(gtx, b.Layout)
 			case chipModel:
 				return u.modelChip(gtx, th, p, sv, working)
 			case chipMode:

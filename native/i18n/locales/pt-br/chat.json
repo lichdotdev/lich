@@ -315,7 +315,9 @@
   },
   "attach": {
     "remove": "Remover",
-    "pasteNeedsTool": "Para colar uma imagem, instale o wl-paste (wl-clipboard) ou o xclip"
+    "pasteNeedsTool": "Para colar uma imagem, instale o wl-paste (wl-clipboard) ou o xclip",
+    "add": "Anexar arquivos",
+    "drop": "Solte para anexar"
   },
   "quote": {
     "add": "Citar",

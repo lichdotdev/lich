@@ -315,7 +315,9 @@
   },
   "attach": {
     "remove": "Quitar",
-    "pasteNeedsTool": "Para pegar una imagen hace falta wl-paste (wl-clipboard) o xclip"
+    "pasteNeedsTool": "Para pegar una imagen hace falta wl-paste (wl-clipboard) o xclip",
+    "add": "Adjuntar archivos",
+    "drop": "Suelta para adjuntar"
   },
   "quote": {
     "add": "Citar",

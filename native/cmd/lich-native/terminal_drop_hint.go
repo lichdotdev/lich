@@ -52,6 +52,7 @@ func (u *window) onDrag(e app.DropEvent, invalidate func()) {
 	invalidate()
 	target := dropTarget{sessionID: sv.ID, checkout: sv.path, confined: sv.sandbox.Confined}
 	if sv.View == api.ViewChat {
+		u.chats.land(id)
 		go u.dropInChat(target, paths)
 		return
 	}
@@ -65,12 +66,11 @@ func (u *window) dropFiles(target dropTarget, paths []string) {
 	}
 }
 
-// dropInChat resolves a drop into cards in the chat's composer.
+// dropInChat resolves a drop into cards in the chat's composer, where its
+// ghost card waits for them.
 func (u *window) dropInChat(target dropTarget, paths []string) {
-	if r := u.resolved(target, paths); len(r.files) > 0 {
-		u.chats.attachIn(target.sessionID, r.files)
-		u.model.invalidate()
-	}
+	u.chats.landed(target.sessionID, u.resolved(target, paths).files)
+	u.model.invalidate()
 }
 
 // attachAtPrompt puts file a at session id's prompt: a card in its chat's
