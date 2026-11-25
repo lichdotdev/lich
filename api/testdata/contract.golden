@@ -867,6 +867,7 @@ ChatShell {
 	state string
 	started int64
 	ended,omitempty int64
+	exitCode,omitempty *int
 }
 
 ChatSkillList {

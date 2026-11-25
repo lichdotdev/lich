@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -37,6 +39,8 @@ const (
 	claudeShellTail = 16 << 10
 )
 
+var claudeExitCodeAt = regexp.MustCompile(`failed with exit code (-?\d+)$`)
+
 type claudeShell struct {
 	api.ChatShell
 	toolUse, path string
@@ -59,6 +63,7 @@ type claudeTaskLine struct {
 	Backgrounded *bool  `json:"is_backgrounded"`
 	Status       string `json:"status"`
 	OutputFile   string `json:"output_file"`
+	Summary      string `json:"summary"`
 	Patch        struct {
 		Status       string `json:"status"`
 		EndTime      int64  `json:"end_time"`
@@ -113,6 +118,9 @@ func (s *claudeShells) task(subtype string, raw []byte, tool func(toolUse string
 			sh.Ended = now.UnixMilli()
 		}
 	}
+	if code, ok := claudeExitCode(t.Summary); ok {
+		sh.ExitCode = &code
+	}
 	if !sh.background && sh.State != api.ShellRunning {
 		s.drop(sh.ID)
 	}
@@ -131,6 +139,18 @@ func claudeShellState(status string) string {
 		return api.ShellStopped
 	}
 	return ""
+}
+
+// claudeExitCode is the exit code a task_notification's summary names, which
+// 2.1.332 writes only in prose: "Background command \"...\" failed with exit
+// code 3".
+func claudeExitCode(summary string) (int, bool) {
+	m := claudeExitCodeAt.FindStringSubmatch(summary)
+	if m == nil {
+		return 0, false
+	}
+	code, err := strconv.Atoi(m[1])
+	return code, err == nil
 }
 
 // result reads the output file off the Bash call's result.
