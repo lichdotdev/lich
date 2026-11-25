@@ -81,10 +81,12 @@ type chatView struct {
 	rows ui.Presence
 	seen map[string]chatRow
 	// keys are the rows of the frame before, swap the live line turning into
-	// the closing line, and run the list's way back to its end.
-	keys []string
-	swap chatSwap
-	run  chatToEnd
+	// the closing line, run the list's way back to its end, and anchored the
+	// message that started the turn, held near the top of the view.
+	keys     []string
+	swap     chatSwap
+	run      chatToEnd
+	anchored chatAnchor
 	// jump is the pill that runs the list back to its end.
 	jump ui.Clickable
 	// stamps are the tooltips of the time under each message, by item id.
@@ -333,7 +335,12 @@ func (u *window) chatScreen(gtx C, sv sessionView, keys bool) {
 	p.slashRoom = gtx.Constraints.Max.Y
 	list := func(gtx C) D {
 		shown := p.enter(gtx.Now, rows, u.model.chat.holds(sv.ID))
-		p.runToEnd(gtx, len(shown))
+		room := p.room(gtx, shown, gtx.Constraints.Max.Y)
+		n := len(shown)
+		if room > 0 {
+			n++
+		}
+		p.runToEnd(gtx, n)
 		beforePos := p.list.Position
 		atEnd := !beforePos.BeforeEnd
 		resized := false
@@ -341,7 +348,10 @@ func (u *window) chatScreen(gtx C, sv sessionView, keys bool) {
 			m := op.Record(gtx.Ops)
 			resized = false
 			viewport := gtx.Constraints.Max.Y
-			d := p.list.List.Layout(gtx, len(shown), func(gtx C, i int) D {
+			d := p.list.List.Layout(gtx, n, func(gtx C, i int) D {
+				if i == len(shown) {
+					return D{Size: image.Pt(gtx.Constraints.Max.X, room)}
+				}
 				top := chatTopPad + gtx.Metric.PxToDp(lead)
 				if i > 0 {
 					top = chatRowTop(gtx, p.seen[shown[i]], p.seen[shown[i-1]])
@@ -374,7 +384,7 @@ func (u *window) chatScreen(gtx C, sv sessionView, keys bool) {
 			}
 		}
 		call.Add(gtx.Ops)
-		p.scrollbar(gtx, th, shown, d)
+		p.scrollbar(gtx, th, shown, room, d)
 		p.jumpToLatest(gtx, th, d.Size.Y, u.model.chat.isRunning(sv.ID))
 		// A row's window was placed by the height it had before, with a
 		// viewport of margin: a row that grew or shrank by more, as an
@@ -395,6 +405,10 @@ func (u *window) chatScreen(gtx C, sv sessionView, keys bool) {
 		}
 		if up || dragged {
 			p.run = chatToEnd{}
+		}
+		// Scrolled up, the room under a message sent is given up for its turn.
+		if p.list.Position.BeforeEnd && p.run.at.IsZero() {
+			p.anchored = chatAnchor{}
 		}
 		// Once the conversation outgrows the view, where nobody could have
 		// scrolled it, it goes to its end and stays there until scrolled up.
@@ -418,11 +432,14 @@ func (u *window) chatScreen(gtx C, sv sessionView, keys bool) {
 
 // scrollbar is drawn from the heights the rows measured, not layout.List's
 // estimate: a one-line question beside a long answer swings that estimate,
-// and the thumb with it, at every scroll.
-func (v *chatView) scrollbar(gtx C, th *ui.Theme, shown []string, d D) {
-	px := make([]int, len(shown))
+// and the thumb with it, at every scroll. The room past the last row counts.
+func (v *chatView) scrollbar(gtx C, th *ui.Theme, shown []string, room int, d D) {
+	px := make([]int, len(shown), len(shown)+1)
 	for i, key := range shown {
 		px[i] = v.heights[key]
+	}
+	if room > 0 {
+		px = append(px, room)
 	}
 	pos := v.list.Position
 	start, end, total := scrollSpan(px, pos.First, pos.Offset, d.Size.Y)
@@ -537,7 +554,7 @@ func (u *window) chatActs(gtx C, p *chatPane, sv sessionView, keys, working bool
 		u.submitChat(gtx, p, sv.ID, working, waiting, asking)
 	}
 	if p.send.Clicked(gtx) && !working && !p.search.open && u.sendChat(p, sv.ID) {
-		p.toEnd(gtx.Now)
+		u.sent(gtx, p, sv.ID, working)
 	}
 	if p.stop.Clicked(gtx) && !u.unholdChat(p, sv.ID) {
 		id := sv.ID
@@ -561,7 +578,7 @@ func (u *window) submitChat(gtx C, p *chatPane, id string, working bool, waiting
 		p.toEnd(gtx.Now)
 	case !working || asking != nil:
 		if u.sendChat(p, id) {
-			p.toEnd(gtx.Now)
+			u.sent(gtx, p, id, working)
 		}
 	}
 }

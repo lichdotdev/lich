@@ -46,11 +46,16 @@ func (s *chatStore) hold(id string, m chatMessage, now time.Time) *chatHeld {
 }
 
 // holding is whether session id has a message waiting to go.
-func (s *chatStore) holding(id string) bool {
+func (s *chatStore) holding(id string) bool { return s.heldID(id) != "" }
+
+// heldID is the item of session id's message waiting to go, "" for none.
+func (s *chatStore) heldID(id string) string {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	h := s.held[id]
-	return h != nil && !h.sent
+	if h := s.held[id]; h != nil && !h.sent {
+		return h.item.ID
+	}
+	return ""
 }
 
 // unhold takes session id's waiting message back, false once it went.
