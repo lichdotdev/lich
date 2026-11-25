@@ -1,8 +1,6 @@
 package ui
 
 import (
-	"image"
-
 	"gioui.org/io/pointer"
 	"gioui.org/layout"
 )
@@ -46,8 +44,7 @@ func (c ContextMenuStyle) Layout(gtx C, trigger layout.Widget) D {
 	s := c.State
 	dims := menuLayoutTrigger(gtx, &s.trigger, trigger)
 	if at, ok := menuTriggerPress(gtx, &s.trigger, pointer.ButtonSecondary); ok && !s.open {
-		pointerAt := c.Root.pointer.Round()
-		s.menuOpen(image.Rectangle{Min: pointerAt, Max: pointerAt}, c.Root.origin(at))
+		s.OpenFrom(c.Root, at)
 	}
 	entries := c.Entries
 	if c.build != nil && s.open {

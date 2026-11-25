@@ -320,6 +320,19 @@
     "add": "Citar",
     "remove": "Remover"
   },
+  "copy": {
+    "menu": {
+      "copy": "Copiar",
+      "upToHere": "Copiar a conversa até aqui"
+    },
+    "you": "Você",
+    "edited": "Editou {path} (+{added} −{deleted})",
+    "attachments": {
+      "one": "O arquivo anexado não foi copiado, só o nome dele.",
+      "other": "Os arquivos anexados não foram copiados, só os nomes deles."
+    },
+    "incomplete": "(incompleto)"
+  },
   "plugins": {
     "title": "Plugins",
     "installedCount": {

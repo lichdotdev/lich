@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"gioui.org/f32"
 	"gioui.org/io/clipboard"
 	"gioui.org/io/event"
 	"gioui.org/io/pointer"
@@ -29,11 +30,17 @@ var (
 const chatCopiedFor = 1500 * time.Millisecond
 
 // chatCopy is one message's copy button and the pointer over it, kept across
-// frames.
+// frames, and its right-click menu with the selection the menu's Quote takes.
 type chatCopy struct {
 	click    ui.Clickable
 	hovered  bool
 	copiedAt time.Time
+	menu     ui.MenuState
+	quoted   string
+	// rightAt is where a right press over the message landed this frame,
+	// rightPressed whether one did.
+	rightAt      f32.Point
+	rightPressed bool
 }
 
 func (v *chatView) copyOf(id string) *chatCopy {
@@ -49,7 +56,8 @@ func (v *chatView) copyOf(id string) *chatCopy {
 }
 
 // hover reads the pointer over the area w is drawn in and lays w out knowing
-// whether it is there. The area passes every press on to what is under it.
+// whether it is there, noting a right press for the message's menu. The area
+// passes every press on to what is under it.
 func (c *chatCopy) hover(gtx C, w func(gtx C, over bool) D) D {
 	for {
 		ev, ok := gtx.Event(pointer.Filter{Target: &c.hovered, Kinds: pointer.Enter | pointer.Leave | pointer.Cancel})
@@ -58,6 +66,15 @@ func (c *chatCopy) hover(gtx C, w func(gtx C, over bool) D) D {
 		}
 		if e, ok := ev.(pointer.Event); ok {
 			c.hovered = e.Kind == pointer.Enter
+		}
+	}
+	for {
+		ev, ok := gtx.Event(pointer.Filter{Target: &c.rightAt, Kinds: pointer.Press})
+		if !ok {
+			break
+		}
+		if e, ok := ev.(pointer.Event); ok && e.Buttons.Contain(pointer.ButtonSecondary) {
+			c.rightAt, c.rightPressed = e.Position, true
 		}
 	}
 	macro := op.Record(gtx.Ops)
@@ -69,6 +86,7 @@ func (c *chatCopy) hover(gtx C, w func(gtx C, over bool) D) D {
 	area := clip.Rect{Max: d.Size}.Push(gtx.Ops)
 	pass := pointer.PassOp{}.Push(gtx.Ops)
 	event.Op(gtx.Ops, &c.hovered)
+	event.Op(gtx.Ops, &c.rightAt)
 	pass.Pop()
 	area.Pop()
 	return d

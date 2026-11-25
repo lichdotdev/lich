@@ -298,6 +298,18 @@
     "add": "引用",
     "remove": "外す"
   },
+  "copy": {
+    "menu": {
+      "copy": "コピー",
+      "upToHere": "ここまでの会話をコピー"
+    },
+    "you": "あなた",
+    "edited": "{path} を編集 (+{added} −{deleted})",
+    "attachments": {
+      "other": "添付ファイルの中身はコピーされず、名前だけが入っています。"
+    },
+    "incomplete": "(未完了)"
+  },
   "plugins": {
     "title": "プラグイン",
     "installedCount": {
