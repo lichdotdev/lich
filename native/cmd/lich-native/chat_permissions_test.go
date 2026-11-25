@@ -71,7 +71,9 @@ func TestPermissionsOpenOnTheAllowRules(t *testing.T) {
 func TestARuleIsAddedToTheFilePicked(t *testing.T) {
 	_, r, f, p := permFrames(t, chatPermissionsCommand)
 	r.press(key.NameReturn)
-	if !r.showsAll("New allow rule", "Save in", "This checkout only, not shared", ".claude/settings.local.json", "Everyone in the project, checked in") {
+	// Group labels are uppercase since the composer panels share the palette's
+	// group heading (contract changed).
+	if !r.showsAll("New allow rule", "SAVE IN", "This checkout only, not shared", ".claude/settings.local.json", "Everyone in the project, checked in") {
 		t.Fatalf("the add form is not drawn:\n%s", r.drawn())
 	}
 	p.tools.set.rule.SetText("WebFetch(domain:go.dev)")

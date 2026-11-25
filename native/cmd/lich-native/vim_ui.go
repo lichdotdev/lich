@@ -24,7 +24,21 @@ type vimCmdline struct {
 	lead int
 }
 
+// vimPum is Neovim's completion menu: its items and the one chosen, -1 for
+// none.
+type vimPum struct {
+	items    []vimPumItem
+	selected int
+}
+
+// vimPumItem is a completion: the word it puts in, and its kind as the
+// source names it ("func", "v").
+type vimPumItem struct {
+	word, kind string
+}
+
 type vimUI struct {
+	pum      *vimPum
 	buf      int
 	cursors  []vimCursor
 	mode     int
@@ -94,7 +108,28 @@ func (u *vimUI) applyOne(name string, args []any) {
 		if kind == "return_prompt" || text == "" {
 			return
 		}
-		u.msg, u.msgError = text, vimErrorKinds[kind]
+		// Messages pile up until Neovim clears them, as :ls or :reg write
+		// theirs a line at a time.
+		if replace, _ := argAt(args, 2).(bool); replace || u.msg == "" {
+			u.msg, u.msgError = text, vimErrorKinds[kind]
+		} else {
+			u.msg, u.msgError = u.msg+"\n"+text, u.msgError || vimErrorKinds[kind]
+		}
+	case "msg_history_show":
+		u.msg, u.msgError = vimHistoryText(argAt(args, 0)), false
+	case "popupmenu_show":
+		// The command line's completion (grid -1) is not drawn.
+		if intOf(argAt(args, 4)) == -1 {
+			u.pum = nil
+			return
+		}
+		u.pum = &vimPum{items: vimPumItems(argAt(args, 0)), selected: intOf(argAt(args, 1))}
+	case "popupmenu_select":
+		if u.pum != nil {
+			u.pum.selected = intOf(argAt(args, 0))
+		}
+	case "popupmenu_hide":
+		u.pum = nil
 	case "msg_clear":
 		u.msg, u.msgError = "", false
 	}
@@ -189,4 +224,42 @@ func vimShowmodeRest(s string) string {
 		}
 	}
 	return s
+}
+
+// vimHistoryText is :messages' entries, one per line.
+func vimHistoryText(raw any) string {
+	entries, _ := raw.([]any)
+	lines := make([]string, 0, len(entries))
+	for _, e := range entries {
+		if parts, ok := e.([]any); ok && len(parts) > 1 {
+			lines = append(lines, chunksText(parts[1]))
+		}
+	}
+	return strings.Join(lines, "\n")
+}
+
+// vimMessageLines is how many lines of a long message the strip shows, the
+// last ones, as Vim's pager ends on them.
+const vimMessageLines = 15
+
+// vimMessageTail is msg cut to its last vimMessageLines lines.
+func vimMessageTail(msg string) string {
+	lines := strings.Split(msg, "\n")
+	if len(lines) <= vimMessageLines {
+		return msg
+	}
+	return strings.Join(lines[len(lines)-vimMessageLines:], "\n")
+}
+
+// vimPumItems reads popupmenu_show's [word, kind, menu, info] items.
+func vimPumItems(raw any) []vimPumItem {
+	items, _ := raw.([]any)
+	out := make([]vimPumItem, 0, len(items))
+	for _, it := range items {
+		parts, _ := it.([]any)
+		word, _ := argAt(parts, 0).(string)
+		kind, _ := argAt(parts, 1).(string)
+		out = append(out, vimPumItem{word: word, kind: kind})
+	}
+	return out
 }

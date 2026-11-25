@@ -55,10 +55,13 @@ func TestPluginOpensOnTheInstalledOnes(t *testing.T) {
 		t.Fatal("/plugin read no plugins")
 	}
 	r, _, _ = pluginFrames(t)
+	// Group labels are uppercase since the composer panels share the palette's
+	// group heading (contract changed).
 	if !r.showsAll("Plugins", "3 installed", "Discover", "Installed", "Marketplaces", "ponytail", "Lazy senior developer",
-		"update", "user · ~640 tokens", "official", "project · ~120 tokens") {
+		"update", "user · ~640 tokens", "OFFICIAL", "project · ~120 tokens") {
 		t.Errorf("the installed plugins are not drawn:\n%s", r.drawn())
 	}
+	writeShot(t, r, "plugins-installed.png")
 	if r.shows("frontend-design") {
 		t.Error("a plugin on offer is among the installed")
 	}
@@ -191,8 +194,10 @@ func TestARunningUpdateSpinsAndTheButtonsWait(t *testing.T) {
 	p.tools.mu.Unlock()
 	toolsSettle(r)
 	writeShot(t, r, "plugin-update-busy.png")
-	r.click(t, r.at(t, "Turn off"))
-	r.click(t, r.at(t, "Update"))
+	// The buttons are disabled, with no clickable for at to aim at: the press
+	// goes on their glyph, inside the panel, not on the conversation behind it.
+	r.click(t, r.glyphAt(t, "Turn off"))
+	r.click(t, r.glyphAt(t, "Update"))
 	time.Sleep(20 * time.Millisecond)
 	if n := f.callsOf(api.ChatPluginAct.Name); n != 0 {
 		t.Errorf("the buttons took %d actions while one ran", n)

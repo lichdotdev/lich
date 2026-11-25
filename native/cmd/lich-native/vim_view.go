@@ -7,10 +7,12 @@ package main
 import (
 	"image"
 	"image/color"
+	"time"
 	"unicode/utf8"
 
 	"gioui.org/font"
 	"gioui.org/layout"
+	"gioui.org/op"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
 	"gioui.org/unit"
@@ -27,6 +29,13 @@ const vimBlockAlpha = 0.6
 // search match lays over its text, the one under the cursor more, as Vim's
 // Search and CurSearch groups tell them apart.
 const vimMatchAlpha, vimCurrentMatchAlpha = 0.3, 0.6
+
+// vimParenAlpha is how much of the text color the matchparen pair lays over
+// its brackets, and vimYankAlpha how much of the wait tone a yank flashes.
+const vimParenAlpha, vimYankAlpha = 0.25, 0.4
+
+// vimYankFlash is how long a yank stays lit, vim.hl.on_yank's default.
+const vimYankFlash = 150 * time.Millisecond
 
 // vimCaretWidth is the command line's caret.
 const vimCaretWidth = unit.Dp(1.5)
@@ -73,6 +82,8 @@ func (f *fileEditor) paintVimCursor(gtx C) {
 	g := f.ed.Geometry()
 	defer clip.Rect(image.Rect(g.GutterWidth, 0, gtx.Constraints.Max.X, gtx.Constraints.Max.Y)).Push(gtx.Ops).Pop()
 	f.paintVimMatches(gtx, *f.vim.state)
+	f.paintVimRanges(gtx, f.vimParens(), ui.Alpha(f.th.Foreground, vimParenAlpha))
+	f.paintVimYank(gtx)
 	if u.cmdline != nil {
 		// The command line has the caret; the matches of a search being
 		// typed still show.
@@ -84,6 +95,7 @@ func (f *fileEditor) paintVimCursor(gtx C) {
 		return
 	}
 	paint.FillShape(gtx.Ops, f.vimCursorColor(c), clip.Rect(r).Op())
+	f.paintVimPum(gtx, u)
 }
 
 // paintVimMatches lays the highlighted search's matches over their text.
@@ -145,7 +157,7 @@ func (f *fileEditor) vimStatus(gtx C, th *ui.Theme) D {
 		case u.cmdline != nil:
 			return vimCmdlineLayout(gtx, th, *u.cmdline)
 		case u.msg != "":
-			l := th.Text(ui.TextSM, u.msg).Mono().Truncated()
+			l := th.Text(ui.TextSM, vimMessageTail(u.msg)).Mono().Wrapped()
 			if u.msgError {
 				l = l.In(th.Destructive)
 			}
@@ -205,4 +217,50 @@ func vimCmdlineLayout(gtx C, th *ui.Theme, c vimCmdline) D {
 func vimHideCaret(t godemirror.Theme) godemirror.Theme {
 	t.Cursor = color.NRGBA{}
 	return t
+}
+
+// vimParens is the matchparen pair as editor ranges.
+func (f *fileEditor) vimParens() []godemirror.SelectionRange {
+	st := f.ed.State()
+	var out []godemirror.SelectionRange
+	for _, p := range f.vim.state.parens {
+		from := vimPos(st, p[0], p[1])
+		out = append(out, godemirror.Range(from, from+p[2]))
+	}
+	return out
+}
+
+// paintVimYank flashes the last yank's text until vimYankFlash is over.
+func (f *fileEditor) paintVimYank(gtx C) {
+	if len(f.vim.yank) == 0 {
+		return
+	}
+	if now := f.now(); now.After(f.vim.yankUntil) {
+		f.vim.yank = nil
+		return
+	}
+	gtx.Execute(op.InvalidateCmd{At: f.vim.yankUntil})
+	f.paintVimRanges(gtx, f.vim.yank, ui.Alpha(f.th.ToneWait, vimYankAlpha))
+}
+
+// paintVimRanges lays col over each range's text, a line at a time; an empty
+// line takes one cell, and a stretch broken over a wrapped row is left out.
+func (f *fileEditor) paintVimRanges(gtx C, ranges []godemirror.SelectionRange, col color.NRGBA) {
+	st := f.ed.State()
+	for _, r := range ranges {
+		for n := st.LineAt(r.From()).Number; n <= st.Lines(); n++ {
+			line := st.Line(n)
+			if line.From > r.To() || (line.From == r.To() && r.To() > r.From()) {
+				break
+			}
+			from, to := max(r.From(), line.From), min(r.To(), line.To)
+			rect, ok := vimMatchRect(f.ed, from, to-from)
+			if to == from {
+				rect, ok = vimCursorRect(f.ed, vimState{row: n, col: from - line.From}, vimCursor{shape: "block", percent: 100})
+			}
+			if ok {
+				paint.FillShape(gtx.Ops, col, clip.Rect(rect).Op())
+			}
+		}
+	}
 }

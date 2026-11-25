@@ -61,6 +61,8 @@ type vimEvent struct {
 	write bool
 	// quit is a :q and its kin; discard drops what is not saved.
 	quit, discard bool
+	// yank is the yanked text's region, as a visual one is spelled.
+	yank *vimState
 }
 
 type vimLines struct {
@@ -79,6 +81,17 @@ type vimState struct {
 	// matches are the highlighted search's visible matches: row, byte
 	// column, byte length.
 	matches [][3]int
+	// preview is the :s being typed, as 'inccommand' shows it; nil for none.
+	preview *vimPreview
+	// parens is the bracket pair matchparen lights, as matches are spelled.
+	parens [][3]int
+}
+
+// vimPreview is the buffer lines first..last, 0-based and last excluded, as
+// the :s being typed would make them.
+type vimPreview struct {
+	first, last int
+	lines       []string
 }
 
 func newVimHost(invalidate func()) *vimHost {
@@ -157,6 +170,7 @@ func (h *vimHost) start() (*nvim.Nvim, error) {
 		"lich_state": h.onState,
 		"lich_write": func(buf int) { h.push(buf, vimEvent{write: true}) },
 		"lich_quit":  func(buf int, discard bool) { h.push(buf, vimEvent{quit: true, discard: discard}) },
+		"lich_yank":  h.onYank,
 	}
 	for name, fn := range handlers {
 		if err := v.RegisterHandler(name, fn); err != nil {
@@ -167,7 +181,7 @@ func (h *vimHost) start() (*nvim.Nvim, error) {
 	h.mu.Lock()
 	rows, cols := h.rows, h.cols
 	h.mu.Unlock()
-	if err := v.AttachUI(cols, rows, map[string]any{"ext_linegrid": true, "ext_messages": true, "ext_cmdline": true, "rgb": true}); err != nil {
+	if err := v.AttachUI(cols, rows, map[string]any{"ext_linegrid": true, "ext_messages": true, "ext_cmdline": true, "ext_popupmenu": true, "rgb": true}); err != nil {
 		_ = v.Close()
 		return nil, err
 	}
@@ -215,18 +229,14 @@ func (h *vimHost) onLines(buf int, tick, first, last int, lines []string) {
 	h.push(buf, vimEvent{lines: &vimLines{tick: tick, first: first, last: last, lines: lines}})
 }
 
-func (h *vimHost) onState(buf int, mode string, row, col, top int, regions, matches [][]int) {
-	st := &vimState{mode: mode, row: row, col: col, top: top}
+func (h *vimHost) onState(buf int, mode string, row, col, top int, regions, matches [][]int, preview []any, parens [][]int) {
+	st := &vimState{mode: mode, row: row, col: col, top: top, preview: vimPreviewOf(preview), parens: vimTriples(parens)}
 	for _, r := range regions {
 		if len(r) == 4 {
 			st.regions = append(st.regions, [4]int{r[0], r[1], r[2], r[3]})
 		}
 	}
-	for _, m := range matches {
-		if len(m) == 3 {
-			st.matches = append(st.matches, [3]int{m[0], m[1], m[2]})
-		}
-	}
+	st.matches = vimTriples(matches)
 	h.mu.Lock()
 	h.ui.buf = buf
 	h.mu.Unlock()
@@ -280,4 +290,44 @@ func fitUI(v *nvim.Nvim, rows, cols int) error {
 		return err
 	}
 	return v.TryResizeUI(cols, rows+extra)
+}
+
+// vimPreviewOf reads vim.lua's {first, last, lines}, nil for {}.
+func vimPreviewOf(raw []any) *vimPreview {
+	if len(raw) != 3 {
+		return nil
+	}
+	lines, _ := raw[2].([]any)
+	p := &vimPreview{first: intOf(raw[0]), last: intOf(raw[1]), lines: make([]string, 0, len(lines))}
+	for _, l := range lines {
+		s, _ := l.(string)
+		p.lines = append(p.lines, s)
+	}
+	return p
+}
+
+// vimTriples reads vim.lua's {row, col, len} lists.
+func vimTriples(raw [][]int) [][3]int {
+	var out [][3]int
+	for _, m := range raw {
+		if len(m) == 3 {
+			out = append(out, [3]int{m[0], m[1], m[2]})
+		}
+	}
+	return out
+}
+
+// onYank is a yank to flash: its region in the mode its register holds it,
+// "v", "V" or a block, which vimSelection draws as a Visual one.
+func (h *vimHost) onYank(buf int, kind string, regions [][]int) {
+	st := &vimState{mode: kind}
+	for _, r := range regions {
+		if len(r) == 4 {
+			st.regions = append(st.regions, [4]int{r[0], r[1], r[2], r[3]})
+		}
+	}
+	if len(st.regions) > 0 {
+		st.row, st.col = st.regions[0][0], st.regions[0][1]-1
+		h.push(buf, vimEvent{yank: st})
+	}
 }

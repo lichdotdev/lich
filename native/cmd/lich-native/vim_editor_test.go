@@ -268,3 +268,77 @@ func TestVimQuitClosesTheFileAndKeepsNeovim(t *testing.T) {
 	vimType(f, "x")
 	vimUntil(t, f, "Neovim still run the keys", func() bool { return f.ed.State().Doc() == "e\n" })
 }
+
+func TestVimSubstitutePreviewsAsItIsTyped(t *testing.T) {
+	f, _ := vimEditor(t, "one two\ntwo one\n")
+	matches := func() [][3]int {
+		if f.vim.state == nil {
+			return nil
+		}
+		return f.vim.state.matches
+	}
+	vimType(f, ":%s/one")
+	vimUntil(t, f, "the pattern's matches before the replacement", func() bool {
+		return slices.Equal(matches(), [][3]int{{1, 0, 3}, {2, 4, 3}})
+	})
+	vimType(f, "/ONE")
+	vimUntil(t, f, "the preview in the editor", func() bool { return f.ed.State().Doc() == "ONE two\ntwo ONE\n" })
+	if f.dirty {
+		t.Fatal("a preview marked the file unsaved")
+	}
+	if doc, _ := f.savedText(); doc != "one two\ntwo one\n" {
+		t.Fatalf("a save during the preview would write %q", doc)
+	}
+	if !slices.Equal(matches(), [][3]int{{1, 0, 3}, {2, 4, 3}}) {
+		t.Fatalf("the replaced text lights %v", matches())
+	}
+	vimPress(f, key.NameEscape, 0)
+	vimUntil(t, f, "Esc put the text back", func() bool { return f.ed.State().Doc() == "one two\ntwo one\n" && f.vim.shown == nil })
+	vimCommand(f, "%s/one/ONE/")
+	vimUntil(t, f, "Enter make it a change", func() bool { return f.ed.State().Doc() == "ONE two\ntwo ONE\n" && f.dirty })
+	vimType(f, "u")
+	vimUntil(t, f, "u take it back", func() bool { return f.ed.State().Doc() == "one two\ntwo one\n" })
+}
+
+func TestVimLightsTheMatchparenPair(t *testing.T) {
+	f, _ := vimEditor(t, "(a [b] c)\n")
+	vimType(f, "l")
+	vimType(f, "h")
+	vimUntil(t, f, "the pair around the cursor", func() bool {
+		return slices.Equal(f.vim.state.parens, [][3]int{{1, 0, 1}, {1, 8, 1}})
+	})
+	vimType(f, "l")
+	vimUntil(t, f, "the pair go off a letter", func() bool { return len(f.vim.state.parens) == 0 })
+}
+
+func TestVimFlashesAYankOnlyWhenTheConfigLightsYanks(t *testing.T) {
+	f, _ := vimEditor(t, "one\ntwo\n")
+	vimType(f, "yy")
+	vimUntil(t, f, "the yank land", func() bool { return f.vim.state != nil })
+	if len(f.vim.yank) != 0 {
+		t.Fatal("a yank flashed with no TextYankPost of the person's own")
+	}
+	vimCommand(f, "autocmd TextYankPost * lua vim.hl.on_yank()")
+	vimType(f, "jyy")
+	vimUntil(t, f, "the yank's line lit", func() bool {
+		return len(f.vim.yank) == 1 && f.vim.yank[0].From() == 4 && f.vim.yank[0].To() == 8
+	})
+}
+
+func TestVimCompletionMenuShowsAndPicks(t *testing.T) {
+	f, _ := vimEditor(t, "alphabet alpine\n")
+	vimType(f, "oal")
+	vimPress(f, "N", key.ModCtrl)
+	pum := func() *vimPum {
+		u, _ := f.env.vim.status(func() int { b, _, _ := f.vim.held(); return b }())
+		return u.pum
+	}
+	vimUntil(t, f, "the completion menu", func() bool {
+		p := pum()
+		return p != nil && len(p.items) == 2 && p.items[0].word == "alphabet" && p.selected == 0
+	})
+	f.vimFeed("lich_editor.pick(...)", 1)
+	vimUntil(t, f, "a pick put the word in", func() bool { return f.ed.State().Doc() == "alphabet alpine\nalpine\n" })
+	vimPress(f, key.NameEscape, 0)
+	vimUntil(t, f, "the menu close", func() bool { return pum() == nil })
+}

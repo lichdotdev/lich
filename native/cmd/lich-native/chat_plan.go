@@ -15,14 +15,14 @@ import (
 	"github.com/lichdotdev/lich/native/ui"
 )
 
-// The agent's task list stands over the composer, in the queue's place, while
-// the latest turn's list has a task left: folded, the task running behind the
-// sidebar's 3x3; unfolded, the one before it and the next too, and a line
-// counting the rest.
+// The agent's task list stands in the activity strip over the composer while
+// the latest turn's list has a task left: the task running behind the
+// sidebar's 3x3 and the count. A click opens every task in a panel over the
+// composer, in the slash list's place.
 
 const (
-	// planShown is how many tasks the list draws; the rest go into its count.
-	planShown = 3
+	// chatPlanPanel is the task list's panel's kind in chatTools.
+	chatPlanPanel = "plan"
 	// planGlyphSize is the 3x3's side. It scales as a whole, as the chat's
 	// spinner does (chatSpinnerSize), so a zoom keeps its proportions.
 	planGlyphSize unit.Dp = 14
@@ -66,13 +66,6 @@ func planCurrent(entries []api.ChatPlanEntry) int {
 	return slices.IndexFunc(entries, planLeft)
 }
 
-// planWindow is the tasks drawn: the one before the current, it and the
-// next, slid back from the end so there are planShown where the list has them.
-func planWindow(entries []api.ChatPlanEntry) (from, to int) {
-	from = max(0, min(planCurrent(entries)-1, len(entries)-planShown))
-	return from, min(len(entries), from+planShown)
-}
-
 func planWords(e api.ChatPlanEntry) string {
 	if e.Status == api.PlanInProgress && e.ActiveForm != "" {
 		return e.ActiveForm
@@ -80,70 +73,123 @@ func planWords(e api.ChatPlanEntry) string {
 	return e.Content
 }
 
-// chatPlanState is the list's fold.
+// chatPlanState is the strip's task line.
 type chatPlanState struct {
 	toggle ui.Clickable
-	open   bool
 }
 
-// chatPlan draws session id's task list over the composer: folded, the task
-// running and the count; a click unfolds the tasks around it. The task running
+// chatPlan draws the task running of session id's list and the count, lit
+// while its panel is open; nothing while no task is left. The task running
 // waves and shimmers only while the turn runs.
-func (u *window) chatPlan(gtx C, th *ui.Theme, s *chatPlanState, id string, working bool) D {
+func (u *window) chatPlan(gtx C, th *ui.Theme, p *chatPane, id string, working bool) D {
 	entries := chatPlanOf(u.model.chat.of(id))
 	if len(entries) == 0 {
-		s.open = false
 		return D{}
 	}
-	if s.toggle.Clicked(gtx) {
-		s.open = !s.open
-	}
+	s, open := &p.plan, p.tools.kind == chatPlanPanel
 	cur := planCurrent(entries)
-	from, to := cur, cur+1
-	if s.open {
-		from, to = planWindow(entries)
-	}
-	rows := make([]layout.FlexChild, 0, planShown+1)
-	for i := from; i < to; i++ {
-		tail := layout.Widget(nil)
-		if i == cur {
-			tail = func(gtx C) D { return chatPlanTail(gtx, th, s, entries) }
-		}
-		rows = append(rows, layout.Rigid(func(gtx C) D { return chatPlanRow(gtx, th, entries[i], i == cur, working, tail) }))
-	}
-	if more := len(entries) - (to - from); s.open && more > 0 {
-		rows = append(rows, layout.Rigid(func(gtx C) D { return chatPlanMore(gtx, th, entries, more) }))
-	}
-	return layout.Inset{Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
-		return s.toggle.Layout(gtx, func(gtx C) D {
-			gtx.Constraints.Min.X = gtx.Constraints.Max.X
-			return layout.Inset{Left: chatTextInset, Right: ui.Space(1), Top: ui.Space(0.5), Bottom: ui.Space(0.5)}.Layout(gtx, func(gtx C) D {
-				return layout.Flex{Axis: layout.Vertical}.Layout(gtx, rows...)
-			})
-		})
+	return s.toggle.Layout(gtx, func(gtx C) D {
+		gtx.Constraints.Min.X = gtx.Constraints.Max.X
+		gtx.Constraints.Min.Y = gtx.Dp(ui.Space(8))
+		return layout.Background{}.Layout(gtx,
+			func(gtx C) D {
+				if !open && !s.toggle.Hovered() {
+					return D{Size: gtx.Constraints.Min}
+				}
+				return ui.Fill(gtx, th.Accent, ui.RadiusMD)
+			},
+			func(gtx C) D {
+				return layout.Inset{Left: ui.Space(2), Right: ui.Space(2)}.Layout(gtx, func(gtx C) D {
+					gtx.Constraints.Min.Y = gtx.Dp(ui.Space(8))
+					return layout.W.Layout(gtx, func(gtx C) D {
+						tail := func(gtx C) D { return chatPlanTail(gtx, th, s, open, entries) }
+						return chatPlanRow(gtx, th, entries[cur], working, tail)
+					})
+				})
+			},
+		)
 	})
 }
 
 // chatPlanTail ends the running task's line, right after its words: the count
-// while folded, and the chevron, lit under the pointer.
-func chatPlanTail(gtx C, th *ui.Theme, s *chatPlanState, entries []api.ChatPlanEntry) D {
+// and the chevron, lit under the pointer or while the panel is open.
+func chatPlanTail(gtx C, th *ui.Theme, s *chatPlanState, open bool, entries []api.ChatPlanEntry) D {
 	fg := th.MutedForeground
-	if s.toggle.Hovered() {
+	if s.toggle.Hovered() || open {
 		fg = th.Foreground
 	}
 	chevron := icChatClosed
-	if s.open {
+	if open {
 		chevron = icChatOpen
 	}
+	count := i18n.T("chat.plan.count", i18n.Args{"done": planDone(entries), "total": len(entries)})
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			if s.open {
-				return D{}
-			}
-			count := i18n.T("chat.plan.count", i18n.Args{"done": planDone(entries), "total": len(entries)})
 			return layout.Inset{Right: ui.Space(2)}.Layout(gtx, th.Text(ui.TextXS, count).In(fg).Layout)
 		}),
 		layout.Rigid(func(gtx C) D { return chevron.Layout(gtx, ui.Space(3.5), fg) }),
+	)
+}
+
+// planActs opens or shuts the task list's panel on a click of its line, and
+// shuts it once no task is left.
+func (u *window) planActs(gtx C, p *chatPane, id string) {
+	if len(chatPlanOf(u.model.chat.of(id))) == 0 {
+		if p.tools.kind == chatPlanPanel {
+			p.tools.shut()
+		}
+		return
+	}
+	if !p.plan.toggle.Clicked(gtx) {
+		return
+	}
+	if p.tools.kind == chatPlanPanel {
+		p.tools.shut()
+		return
+	}
+	p.openPanel(chatPlanPanel)
+}
+
+// planView is every task of the list, each behind its 3x3, and how many are
+// done.
+func (u *window) planView(gtx C, th *ui.Theme, p *chatPane, id string, working bool) D {
+	t := &p.tools
+	entries := chatPlanOf(u.model.chat.of(id))
+	cur := planCurrent(entries)
+	lines := make([]layout.Widget, len(entries))
+	for i, e := range entries {
+		lines[i] = func(gtx C) D {
+			gtx.Constraints.Min.X = gtx.Constraints.Max.X
+			return layout.Inset{Left: ui.Space(2), Right: ui.Space(2)}.Layout(gtx, func(gtx C) D {
+				gtx.Constraints.Min.Y = gtx.Dp(pickerRowH)
+				return layout.W.Layout(gtx, func(gtx C) D { return chatPlanTask(gtx, th, e, i == cur, working) })
+			})
+		}
+	}
+	head := func(gtx C) D {
+		done := i18n.T("chat.plan.done", i18n.Args{"done": planDone(entries), "total": len(entries)})
+		return toolsHead(gtx, th, i18n.T("chat.plan.title"), done, nil)
+	}
+	return t.scrolled(gtx, th, head, lines, nil)
+}
+
+// chatPlanTask is a task of the panel: the one running as the strip draws
+// it, one done muted and one pending in the foreground.
+func chatPlanTask(gtx C, th *ui.Theme, e api.ChatPlanEntry, current, working bool) D {
+	if current {
+		return chatPlanRow(gtx, th, e, working, nil)
+	}
+	label := th.Text(ui.TextSM, planWords(e)).Truncated()
+	if e.Status == api.PlanCompleted {
+		label = label.Muted()
+	}
+	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+		layout.Rigid(func(gtx C) D { return planGlyph(gtx, th, e, working) }),
+		ui.Gap(2),
+		layout.Flexed(1, func(gtx C) D {
+			gtx.Constraints.Min.X = 0
+			return label.Layout(gtx)
+		}),
 	)
 }
 
@@ -157,13 +203,12 @@ func planDone(entries []api.ChatPlanEntry) int {
 	return done
 }
 
-func chatPlanRow(gtx C, th *ui.Theme, e api.ChatPlanEntry, current, working bool, tail layout.Widget) D {
-	label := th.Text(ui.TextSM, planWords(e)).Muted().Truncated()
-	if current {
-		label = label.In(th.Foreground).Weight(font.SemiBold)
-		if working {
-			label = label.Shimmer()
-		}
+// chatPlanRow is the task running: its words in semibold Foreground,
+// shimmering while the turn runs, behind its 3x3, and tail after them.
+func chatPlanRow(gtx C, th *ui.Theme, e api.ChatPlanEntry, working bool, tail layout.Widget) D {
+	label := th.Text(ui.TextSM, planWords(e)).Truncated().In(th.Foreground).Weight(font.SemiBold)
+	if working {
+		label = label.Shimmer()
 	}
 	return layout.Inset{Top: ui.Space(0.5), Bottom: ui.Space(0.5)}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
@@ -181,13 +226,6 @@ func chatPlanRow(gtx C, th *ui.Theme, e api.ChatPlanEntry, current, working bool
 			}),
 		)
 	})
-}
-
-// chatPlanMore counts the tasks the list leaves out, under the tasks' words,
-// with how many of all are done.
-func chatPlanMore(gtx C, th *ui.Theme, entries []api.ChatPlanEntry, more int) D {
-	text := i18n.T("chat.plan.more", i18n.Args{"more": more, "done": planDone(entries), "total": len(entries)})
-	return layout.Inset{Left: planGlyphSize + ui.Space(2)}.Layout(gtx, th.Text(ui.TextXS, text).Muted().Truncated().Layout)
 }
 
 // planGlyph is a task's 3x3: a block in TonePass done, the wave in Primary

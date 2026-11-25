@@ -102,7 +102,7 @@ func (u *window) workflowsView(gtx C, th *ui.Theme, p *chatPane, sv sessionView)
 	for i, a := range wf.Agents {
 		if a.Phase != phase {
 			phase = a.Phase
-			lines = append(lines, workflowPhaseLine(th, a.Phase))
+			lines = append(lines, toolsGroupLine(th, a.Phase, ""))
 		}
 		lines = append(lines, func(gtx C) D {
 			return pickerRow(gtx, th, &t.rows[i], i == t.cursor, func(gtx C, th *ui.Theme) D { return workflowAgentRow(gtx, th, a) })
@@ -112,13 +112,6 @@ func (u *window) workflowsView(gtx C, th *ui.Theme, p *chatPane, sv sessionView)
 		return toolsHead(gtx, th, wf.Name, i18n.T("chat.workflow.progress", i18n.Args{"done": workflowDone(wf), "total": len(wf.Agents)}), nil)
 	}
 	return t.scrolled(gtx, th, head, lines, nil)
-}
-
-// workflowPhaseLine is a phase's label over its agents.
-func workflowPhaseLine(th *ui.Theme, phase string) layout.Widget {
-	return func(gtx C) D {
-		return layout.Inset{Left: ui.Space(2), Top: ui.Space(2), Bottom: ui.Space(0.5)}.Layout(gtx, th.Text(ui.TextXS, phase).Weight(font.SemiBold).Layout)
-	}
 }
 
 func workflowAgentRow(gtx C, th *ui.Theme, a api.ChatWorkflowAgent) D {
@@ -141,18 +134,7 @@ func workflowAgentRow(gtx C, th *ui.Theme, a api.ChatWorkflowAgent) D {
 // why it failed.
 func agentDetail(gtx C, th *ui.Theme, t *chatTools, a api.ChatWorkflowAgent) D {
 	head := func(gtx C) D {
-		back := th.Button(&t.back, i18n.T("chat.workflow.back"))
-		back.Icon, back.Variant, back.Size = icToolsBack, ui.VariantGhost, ui.SizeXS
-		ic, ink := agentState(th, a)
-		return layout.Inset{Left: ui.Space(1), Right: ui.Space(2), Top: ui.Space(1), Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
-			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-				layout.Rigid(back.Layout),
-				ui.Gap(2),
-				layout.Rigid(func(gtx C) D { return ic.Layout(gtx, toolsGlyph, ink) }),
-				ui.Gap(1.5),
-				layout.Flexed(1, th.Text(ui.TextSM, a.Label).Weight(font.SemiBold).Truncated().Layout),
-			)
-		})
+		return toolsBackHead(gtx, th, &t.back, i18n.T("chat.workflow.back"), th.Text(ui.TextSM, a.Label).Weight(font.SemiBold), took(gtx, a.Started, a.Ended), nil)
 	}
 	return t.scrolled(gtx, th, head, agentFacts(gtx, th, a), nil)
 }

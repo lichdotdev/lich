@@ -57,6 +57,122 @@ local function matches(buf)
   return out
 end
 
+-- subParts splits a :s argument, "/pat/rep/flags", at its unescaped
+-- delimiters: the pattern alone while the replacement is not typed yet.
+local function subParts(args)
+  local d = args:sub(1, 1)
+  if d == '' or d:match('[%w%s\\"|]') then
+    return nil
+  end
+  local parts, cur, i = {}, '', 2
+  while i <= #args do
+    local c = args:sub(i, i)
+    if c == '\\' then
+      cur, i = cur .. args:sub(i, i + 1), i + 2
+    elseif c == d and #parts < 2 then
+      parts[#parts + 1], cur, i = cur, '', i + 1
+    else
+      cur, i = cur .. c, i + 1
+    end
+  end
+  parts[#parts + 1] = cur
+  return parts, d
+end
+
+local scratch
+
+-- changedSpan is the bytes of new that old lacks on one line: what lies
+-- between their common start and common end.
+local function changedSpan(old, new)
+  local pre = 0
+  while pre < #old and pre < #new and old:byte(pre + 1) == new:byte(pre + 1) do
+    pre = pre + 1
+  end
+  local suf = 0
+  while suf < #old - pre and suf < #new - pre and old:byte(#old - suf) == new:byte(#new - suf) do
+    suf = suf + 1
+  end
+  return pre, #new - suf - pre
+end
+
+-- substitution is the :s being typed, as 'inccommand' shows it: on the
+-- visible lines of its range, the matches of its pattern while the
+-- replacement is not typed, else the lines it would make, run by Vim on a copy
+-- and laid in place of first..last (0-based, last excluded), with the bytes
+-- they changed. The buffer is never touched.
+local function substitution(buf)
+  if vim.fn.getcmdtype() ~= ':' or not vim.o.incsearch then
+    return nil
+  end
+  local ok, cmd = pcall(api.nvim_parse_cmd, vim.fn.getcmdline(), {})
+  if not ok or cmd.cmd ~= 'substitute' then
+    return nil
+  end
+  local parts, d = subParts(cmd.args[1] or '')
+  if not parts or parts[1] == '' then
+    return nil
+  end
+  local range = cmd.range or {}
+  local first = range[1] or vim.fn.line('.')
+  local top, bot = math.max(first, vim.fn.line('w0')), math.min(range[2] or first, vim.fn.line('w$'))
+  if top > bot then
+    return nil
+  end
+  if #parts == 1 or vim.o.inccommand == '' then
+    local pat = parts[1]
+    if vim.o.ignorecase and vim.o.smartcase and pat:find('%u') then
+      pat = '\\C' .. pat
+    end
+    local ok2, found = pcall(vim.fn.matchbufline, buf, pat, top, bot)
+    local out = {}
+    for _, m in ipairs(ok2 and found or {}) do
+      if #m.text > 0 then
+        out[#out + 1] = { m.lnum, m.byteidx, #m.text }
+      end
+    end
+    return { matches = out }
+  end
+  local old = api.nvim_buf_get_lines(buf, top - 1, bot, false)
+  scratch = scratch and api.nvim_buf_is_valid(scratch) and scratch or api.nvim_create_buf(false, true)
+  api.nvim_buf_set_lines(scratch, 0, -1, false, old)
+  -- c would ask at every match; the preview shows them all.
+  local flags = (parts[3] or ''):gsub('c', '')
+  api.nvim_buf_call(scratch, function()
+    vim.cmd('silent! keeppatterns keepjumps %s' .. d .. parts[1] .. d .. parts[2] .. d .. flags)
+  end)
+  local new = api.nvim_buf_get_lines(scratch, 0, -1, false)
+  local out = {}
+  for i, line in ipairs(new) do
+    local col, len = 0, #line
+    if #new == #old then
+      col, len = changedSpan(old[i], line)
+    elseif line == old[i] then
+      len = 0
+    end
+    if len > 0 then
+      out[#out + 1] = { top + i - 1, col, len }
+    end
+  end
+  return { first = top - 1, last = bot, lines = new, matches = out }
+end
+
+-- parens is the pair the matchparen plugin lights around the cursor, as
+-- row, byte column and byte length; none while the plugin is off.
+local function parens()
+  local out = {}
+  for _, m in ipairs(vim.fn.getmatches()) do
+    if m.group == 'MatchParen' then
+      for k = 1, 8 do
+        local p = m['pos' .. k]
+        if p then
+          out[#out + 1] = { p[1], p[2] - 1, p[3] or 1 }
+        end
+      end
+    end
+  end
+  return out
+end
+
 local function state()
   local buf = api.nvim_get_current_buf()
   if not owned[buf] then
@@ -64,7 +180,10 @@ local function state()
   end
   local mode = api.nvim_get_mode().mode
   local cur = api.nvim_win_get_cursor(0)
-  vim.rpcnotify(chan, 'lich_state', buf, mode, cur[1], cur[2], vim.fn.line('w0'), regions(mode), matches(buf))
+  local sub = substitution(buf) or {}
+  local preview = sub.lines and { sub.first, sub.last, sub.lines } or {}
+  vim.rpcnotify(chan, 'lich_state', buf, mode, cur[1], cur[2], vim.fn.line('w0'), regions(mode),
+    sub.matches or matches(buf), preview, parens())
 end
 
 local group = api.nvim_create_augroup('lich_editor', { clear = true })
@@ -73,6 +192,26 @@ api.nvim_create_autocmd({ 'CursorMoved', 'CursorMovedI', 'ModeChanged', 'WinScro
   -- Scheduled: ModeChanged leaves the command line before its command runs,
   -- and :nohlsearch has to have run for the matches to go.
   callback = function() vim.schedule(state) end,
+})
+
+-- A yank flashes its text when the person's config lights yanks itself (a
+-- TextYankPost of their own, as vim.hl.on_yank), whose highlight lich cannot
+-- draw.
+api.nvim_create_autocmd('TextYankPost', {
+  group = group,
+  callback = function()
+    local buf = api.nvim_get_current_buf()
+    if not owned[buf] or #api.nvim_get_autocmds({ event = 'TextYankPost' }) < 2 then
+      return
+    end
+    local kind = vim.v.event.regtype:sub(1, 1)
+    local out = {}
+    local ok, found = pcall(vim.fn.getregionpos, vim.fn.getpos("'["), vim.fn.getpos("']"), { type = kind })
+    for _, r in ipairs(ok and found or {}) do
+      out[#out + 1] = { r[1][2], r[1][3], r[2][2], r[2][3] }
+    end
+    vim.rpcnotify(chan, 'lich_yank', buf, kind, out)
+  end,
 })
 
 -- The commands that leave a file, and whether each writes it first.
@@ -112,6 +251,13 @@ function M.quit(write, bang)
     vim.cmd('write')
   end
   vim.rpcnotify(chan, 'lich_quit', buf, bang and not write)
+end
+
+-- pick chooses item i of the completion menu, as a click on it.
+function M.pick(buf, i)
+  if api.nvim_get_current_buf() == buf then
+    pcall(api.nvim_select_popupmenu_item, i, true, false, {})
+  end
 end
 
 -- saved hears that lich wrote lines to the file: the buffer is unmodified

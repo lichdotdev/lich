@@ -174,10 +174,16 @@
   },
   "plan": {
     "count": "{done}/{total}",
-    "more": "외 {more}개 · {done}/{total} 완료"
+    "title": "작업",
+    "done": "{done}/{total} 완료"
   },
   "tools": {
     "loading": "불러오는 중…",
+    "keys": {
+      "move": "이동",
+      "open": "열기",
+      "close": "닫기"
+    },
     "mcpTitle": "MCP 서버",
     "serverCount": {
       "other": "서버 {count}개"

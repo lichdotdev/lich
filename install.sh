@@ -22,11 +22,11 @@ detect_family() {
   [ -r /etc/os-release ] || fail "cannot read /etc/os-release — unsupported system"
   # shellcheck disable=SC1091
   . /etc/os-release
-  for id in ${ID:-} ${ID_LIKE:-}; do
-    case "$id" in
-      debian | ubuntu) echo deb; return ;;
-      fedora | rhel | centos) echo rpm; return ;;
-      arch) echo arch; return ;;
+    for id in ${ID:-} ${ID_LIKE:-}; do
+        case "$id" in
+        debian | ubuntu) echo deb; return ;;
+        fedora | rhel | centos) echo rpm; return ;;
+        arch) echo arch; return ;;
     esac
   done
   fail "unsupported distro '${ID:-unknown}': grab a package or the tarball from https://github.com/${REPO}/releases"

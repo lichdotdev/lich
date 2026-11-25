@@ -227,7 +227,7 @@ func (f *fileEditor) take() error {
 
 // setText puts text in the editor from its top, as what the disk holds.
 func (f *fileEditor) setText(text string) error {
-	f.sep = lineBreak(text)
+	f.sep, f.vim.shown = lineBreak(text), nil
 	err := f.ed.SetState(godemirror.EditorStateConfig{Doc: text, Filename: f.rel, LineSeparator: f.sep,
 		StyleTags: codeview.StyleTags, AllowMultipleSelections: true})
 	f.base = f.ed.State().Doc()
@@ -256,7 +256,7 @@ func (f *fileEditor) landLines() {
 // and the marks on the lines that are not.
 func (f *fileEditor) updated(u godemirror.Update) {
 	f.vimPointer(u)
-	if !u.DocChanged() {
+	if !u.DocChanged() || vimOnlyPreview(u) {
 		return
 	}
 	if f.readOnly() {

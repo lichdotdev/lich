@@ -58,6 +58,12 @@ func TestVimChangeIsTheSpanBetweenWhatBothShare(t *testing.T) {
 	if ch, _ := vimChange("é", "è"); ch.From != 0 || ch.To != 2 || ch.Insert != "è" {
 		t.Fatalf("a change inside a character split it: %+v", ch)
 	}
+	if ch, ok := vimChange("one\n", "one\ntwo\n"); !ok || ch.From != 4 || ch.To != 4 || ch.Insert != "two\n" {
+		t.Fatalf("text added at the end: %+v, %v", ch, ok)
+	}
+	if ch, ok := vimChange("one\ntwo\n", "one\n"); !ok || ch.From != 4 || ch.To != 8 || ch.Insert != "" {
+		t.Fatalf("text cut at the end: %+v, %v", ch, ok)
+	}
 	if _, ok := vimChange("same", "same"); ok {
 		t.Fatal("no change reported one")
 	}

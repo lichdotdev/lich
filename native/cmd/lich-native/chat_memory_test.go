@@ -55,7 +55,9 @@ func memoryFrames(t *testing.T, command string) (*window, *frameRig, *chatBacken
 // instead of reaching the agent.
 func TestMemoryOpensTheFilesInsteadOfSending(t *testing.T) {
 	u, r, f, _ := memoryFrames(t, "/memory")
-	if !r.showsAll("Memory", "User instructions", "not created yet", "Project instructions", "docs/rules.md", "Auto-memory", "Saved memories", "lich-uses-pnpm", "frontend is pnpm") {
+	// Group labels are uppercase since the composer panels share the palette's
+	// group heading (contract changed).
+	if !r.showsAll("Memory", "User instructions", "not created yet", "Project instructions", "docs/rules.md", "Auto-memory", "SAVED MEMORIES", "lich-uses-pnpm", "frontend is pnpm") {
 		t.Errorf("the memory is not drawn:\n%s", r.drawn())
 	}
 	if u.model.chat.isRunning("s1") || f.callsOf(api.ChatPrompt.Name) != 0 {
@@ -93,9 +95,12 @@ func TestMemoryRowsOpenCreateAndTurn(t *testing.T) {
 // it, a plugin's read only, and the fields add a new one.
 func TestAgentsListOpenAndAdd(t *testing.T) {
 	u, r, f, p := memoryFrames(t, "/agents")
-	if !r.showsAll("Subagents", "Project", "User", "~/.claude/agents", "Built-in", "reviewer", "sonnet · 2 tools", "Plugin", "Add to this project", "Add to all projects") {
+	// Group labels are uppercase since the composer panels share the palette's
+	// group heading (contract changed).
+	if !r.showsAll("Subagents", "PROJECT", "USER", "~/.claude/agents", "BUILT-IN", "reviewer", "sonnet · 2 tools", "PLUGIN", "Add to this project", "Add to all projects") {
 		t.Fatalf("the subagents are not drawn:\n%s", r.drawn())
 	}
+	writeShot(t, r, "agents-list.png")
 	r.click(t, r.at(t, "plug-agent"))
 	if ed := u.editors.byCheckout["/repo"]; ed == nil || ed.dir != "/home/me/.claude/plugins/p/agents" || ed.writable {
 		t.Fatalf("the plugin's agent did not open read only: %+v", ed)

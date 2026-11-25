@@ -74,6 +74,9 @@ type chatTools struct {
 	sortBtn   ui.Clickable
 	acts      map[string]*ui.Clickable
 	list      widget.List
+	// outside are the tags of the presses around the open panel, one per
+	// band.
+	outside [4]int
 }
 
 func (t *chatTools) open(kind string) {
@@ -123,7 +126,7 @@ func (u *window) openTools(p *chatPane, id, text string) bool {
 	p.editor.SetText("")
 	p.undo.Reset()
 	if kind == chatShellsPanel {
-		p.openShells()
+		p.openPanel(chatShellsPanel)
 		return true
 	}
 	p.tools.open(kind)
@@ -250,6 +253,7 @@ func (t *chatTools) shownSkills(all []api.ChatSkill) []api.ChatSkill {
 // server, the sort and the skills.
 func (u *window) toolsActs(gtx C, p *chatPane, id string) {
 	t := &p.tools
+	u.outsideActs(gtx, p)
 	if !t.opened() {
 		return
 	}

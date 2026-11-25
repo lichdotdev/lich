@@ -345,7 +345,7 @@ func pickerRow(gtx C, th *ui.Theme, click *ui.Clickable, cursor bool, content fu
 		}
 		gtx.Constraints.Min.Y = gtx.Dp(pickerRowH)
 		return layout.Background{}.Layout(gtx,
-			func(gtx C) D { return ui.Fill(gtx, bg, ui.RadiusSM) },
+			func(gtx C) D { return ui.Fill(gtx, bg, ui.RadiusMD) },
 			func(gtx C) D {
 				return layout.Inset{Left: ui.Space(2), Right: ui.Space(2)}.Layout(gtx, func(gtx C) D {
 					gtx.Constraints.Min.Y = gtx.Dp(pickerRowH)

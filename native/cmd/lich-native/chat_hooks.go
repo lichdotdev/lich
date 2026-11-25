@@ -153,7 +153,7 @@ func hookRow(gtx C, th *ui.Theme, h api.ChatHook) D {
 		name = name.Muted()
 	}
 	end := []layout.FlexChild{layout.Rigid(th.Text(ui.TextXS, hookSourceLabel(h)).Muted().Layout)}
-	return twoLineRow(gtx, th, glyph, name.Layout, h.Matcher, end)
+	return descRow(gtx, th, glyph, name.Truncated().Layout, h.Matcher, end)
 }
 
 func hookSourceLabel(h api.ChatHook) string {
