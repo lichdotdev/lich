@@ -115,6 +115,7 @@ type chatView struct {
 	// last one the keys were handed to.
 	quizzes map[string]*chatQuiz
 	asked   string
+	permit  chatPermit
 	// undo is the composer's undo and redo, forgotten when a message is sent.
 	undo ui.EditHistory
 	// start is the start screen of the chat while it has nothing in it.
@@ -477,9 +478,9 @@ func chatColumnWidth(gtx C, full int, choice string) int {
 }
 
 // chatActs runs the view's keys and clicks before it is drawn: Enter sends,
-// and on an empty editor answers a waiting permission with its allow, Esc
-// with its reject. A waiting question takes the keys to its card, and a
-// message sent past it declines it.
+// and Esc on an empty editor rejects a waiting permission. A waiting question
+// or permission takes the keys to its card, and a message sent past a
+// question declines it.
 func (u *window) chatActs(gtx C, p *chatPane, sv sessionView, keys, working bool, waiting, asking *backend.ChatItem) {
 	p.mu.Lock()
 	if !p.unsent.empty() {
@@ -500,6 +501,8 @@ func (u *window) chatActs(gtx C, p *chatPane, sv sessionView, keys, working bool
 	p.dropQuizzes(asking)
 	if asking != nil {
 		u.questionActs(gtx, p, sv, asking)
+	} else if waiting != nil {
+		u.permitActs(gtx, p, sv.ID, waiting)
 	}
 	// Typing in the box shuts the panel, and so does a click back in it while
 	// a field of the panel has the keys, as one outside a popover does.
@@ -527,13 +530,12 @@ func (u *window) chatActs(gtx C, p *chatPane, sv sessionView, keys, working bool
 	case !keys || p.picker.panel.Opened() || p.tools.opened() || p.search.open:
 	case asking != nil:
 		p.focusQuestion(gtx, asking, p.quiz(asking.ID, asking.Question.Questions))
+	case waiting != nil:
+		p.focusPermit(gtx, waiting)
 	case !gtx.Focused(&p.editor):
 		gtx.Execute(key.FocusCmd{Tag: &p.editor})
 	}
 	u.escapeChat(gtx, p, sv.ID, waiting, asking)
-	if p.editor.Len() > 0 || len(p.attached) > 0 || len(p.quotes) > 0 {
-		waiting = nil
-	}
 	u.queueActs(gtx, p, sv.ID)
 	u.composerKeys(gtx, p, sv.ID, sent, keys && asking == nil && !p.search.open)
 	if keys && asking == nil {
@@ -547,11 +549,11 @@ func (u *window) chatActs(gtx C, p *chatPane, sv sessionView, keys, working bool
 			break
 		}
 		if _, ok := ev.(widget.SubmitEvent); ok {
-			u.submitChat(gtx, p, sv.ID, working, waiting, asking)
+			u.submitChat(gtx, p, sv.ID, working, asking)
 		}
 	}
 	if submit {
-		u.submitChat(gtx, p, sv.ID, working, waiting, asking)
+		u.submitChat(gtx, p, sv.ID, working, asking)
 	}
 	if p.send.Clicked(gtx) && !working && !p.search.open && u.sendChat(p, sv.ID) {
 		u.sent(gtx, p, sv.ID, working)
@@ -567,12 +569,11 @@ func (u *window) chatActs(gtx C, p *chatPane, sv sessionView, keys, working bool
 	}
 }
 
-// submitChat is Enter in the box: it allows a waiting permission on an empty
-// box, queues the text while a turn runs, and otherwise sends it.
-func (u *window) submitChat(gtx C, p *chatPane, id string, working bool, waiting, asking *backend.ChatItem) {
+// submitChat is Enter in the box: it queues the text while a turn runs, and
+// otherwise sends it. It never answers a waiting permission: an Enter meant
+// for a message, landing as the box comes, would allow the tool.
+func (u *window) submitChat(gtx C, p *chatPane, id string, working bool, asking *backend.ChatItem) {
 	switch {
-	case waiting != nil:
-		u.answerChat(id, waiting.ID, permitOption(waiting.Permission, api.PermitAllowOnce, api.PermitAllowAlways))
 	case asking == nil && u.model.chat.isRunning(id):
 		u.queueChat(p, id)
 		p.toEnd(gtx.Now)

@@ -97,7 +97,8 @@
   "permit": {
     "allowOnce": "許可",
     "allowAlways": "常に許可",
-    "rejectOnce": "拒否"
+    "rejectOnce": "拒否",
+    "escDenies": "で拒否"
   },
   "choice": {
     "manual": "手動",

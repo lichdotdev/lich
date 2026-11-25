@@ -320,8 +320,8 @@ func (f *fake) claudeTurn(run *fakeClaude, text string) {
 		f.send(map[string]any{"type": "user", "message": map[string]any{"content": []any{map[string]any{"type": "text", "text": "[Request interrupted by user for tool use]"}}}})
 		msg("m5", map[string]any{"type": "text", "text": "stopped"})
 		f.claudeResult(false, "completed", "")
-	case "perm":
-		f.send(map[string]any{"type": "control_request", "request_id": "r1", "request": map[string]any{"subtype": "can_use_tool", "tool_name": "Write", "input": map[string]any{"file_path": "n.txt", "content": "ok"}, "permission_suggestions": []any{map[string]any{"type": "setMode"}}, "tool_use_id": "toolu_w"}})
+	case "perm", "perm-no":
+		f.send(map[string]any{"type": "control_request", "request_id": "r1", "request": map[string]any{"subtype": "can_use_tool", "tool_name": "Write", "input": map[string]any{"file_path": "n.txt", "content": "ok"}, "permission_suggestions": []any{map[string]any{"type": "setMode"}}, "tool_use_id": "toolu_w", "default_to_no": text == "perm-no"}})
 		reply := f.next()
 		msg("m4", map[string]any{"type": "text", "text": str(reply, "response", "response", "behavior")})
 		f.claudeResult(false, "completed", "")

@@ -63,8 +63,9 @@ type driver interface {
 
 // permission is a question the agent asked and nobody has answered yet.
 type permission struct {
-	options []api.ChatPermitOption
-	reply   func(api.ChatPermitOption) error
+	options   []api.ChatPermitOption
+	defaultNo bool
+	reply     func(api.ChatPermitOption) error
 	// dismiss answers it no, for a turn that ended under it.
 	dismiss func()
 }
@@ -358,7 +359,7 @@ func (c *chatSession) ask(itemID string, tool api.ChatToolCall, p permission) {
 	c.mu.Lock()
 	c.perms[itemID] = p
 	c.mu.Unlock()
-	c.conv.put(api.ChatItem{ID: itemID, Kind: api.ItemPermission, Permission: &api.ChatPermission{Tool: tool, Options: p.options}}, true)
+	c.conv.put(api.ChatItem{ID: itemID, Kind: api.ItemPermission, Permission: &api.ChatPermission{Tool: tool, Options: p.options, DefaultNo: p.defaultNo}}, true)
 	c.svc.term.ReportChatState(c.id, stateWaiting, tool.Name, tool.Title)
 }
 

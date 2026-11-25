@@ -110,7 +110,8 @@
   "permit": {
     "allowOnce": "Permitir",
     "allowAlways": "Permitir siempre",
-    "rejectOnce": "Denegar"
+    "rejectOnce": "Denegar",
+    "escDenies": "deniega"
   },
   "choice": {
     "manual": "Manual",

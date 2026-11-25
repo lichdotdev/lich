@@ -97,7 +97,8 @@
   "permit": {
     "allowOnce": "允许",
     "allowAlways": "始终允许",
-    "rejectOnce": "拒绝"
+    "rejectOnce": "拒绝",
+    "escDenies": "拒绝"
   },
   "choice": {
     "manual": "手动",

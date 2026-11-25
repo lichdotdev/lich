@@ -228,11 +228,13 @@ type ChatPlanEntry struct {
 }
 
 // ChatPermission is the agent asking to run Tool. Chosen is the option the
-// person picked, "" while it waits.
+// person picked, "" while it waits. DefaultNo is the provider asking that no
+// single key allow it.
 type ChatPermission struct {
-	Tool    ChatToolCall       `json:"tool"`
-	Options []ChatPermitOption `json:"options"`
-	Chosen  string             `json:"chosen,omitempty"`
+	Tool      ChatToolCall       `json:"tool"`
+	Options   []ChatPermitOption `json:"options"`
+	Chosen    string             `json:"chosen,omitempty"`
+	DefaultNo bool               `json:"defaultNo,omitempty"`
 }
 
 // The kinds of permission option, ACP's own.

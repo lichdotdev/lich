@@ -97,7 +97,8 @@
   "permit": {
     "allowOnce": "허용",
     "allowAlways": "항상 허용",
-    "rejectOnce": "거부"
+    "rejectOnce": "거부",
+    "escDenies": "거부"
   },
   "choice": {
     "manual": "수동",

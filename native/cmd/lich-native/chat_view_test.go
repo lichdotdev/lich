@@ -184,17 +184,21 @@ func TestAToolFoldOpensInTheFrameThatTookTheClick(t *testing.T) {
 
 func permissionFrames(t *testing.T) (*window, *frameRig, *chatBackend) {
 	t.Helper()
+	return permitFrames(t, backend.ChatPermission{Options: []api.ChatPermitOption{
+		{ID: "always", Label: "Always allow", Kind: api.PermitAllowAlways},
+		{ID: "yes", Label: "Allow", Kind: api.PermitAllowOnce},
+		{ID: "no", Label: "Deny", Kind: api.PermitRejectOnce},
+	}})
+}
+
+// permitFrames is session s1 running with perm waiting on an Edit.
+func permitFrames(t *testing.T, perm backend.ChatPermission) (*window, *frameRig, *chatBackend) {
+	t.Helper()
 	u, r, f := chatFrames(t, api.ViewChat)
+	perm.Tool = backend.ChatToolCall{Name: "Edit", Title: "src/total.ts", State: api.ToolPending}
 	u.model.chat.history("s1", []backend.ChatItem{
 		{ID: "u1", Kind: api.ItemUser, Turn: 1, Text: "fix it"},
-		{ID: "p1", Kind: api.ItemPermission, Turn: 1, Permission: &backend.ChatPermission{
-			Tool: backend.ChatToolCall{Name: "Edit", Title: "src/total.ts", State: api.ToolPending},
-			Options: []api.ChatPermitOption{
-				{ID: "always", Label: "Always allow", Kind: api.PermitAllowAlways},
-				{ID: "yes", Label: "Allow", Kind: api.PermitAllowOnce},
-				{ID: "no", Label: "Deny", Kind: api.PermitRejectOnce},
-			},
-		}},
+		{ID: "p1", Kind: api.ItemPermission, Turn: 1, Permission: &perm},
 	})
 	u.model.chat.turn(api.ChatTurn{SessionID: "s1", Running: true})
 	r.frame()
@@ -205,16 +209,6 @@ func permissionFrames(t *testing.T) (*window, *frameRig, *chatBackend) {
 func (r *frameRig) press(name key.Name) {
 	r.router.Queue(key.Event{Name: name, State: key.Press}, key.Event{Name: name, State: key.Release})
 	r.frame()
-}
-
-func TestEnterAllowsOnceAndEscRejectsAWaitingPermission(t *testing.T) {
-	for name, want := range map[key.Name]string{key.NameReturn: `"optionId":"yes"`, key.NameEscape: `"optionId":"no"`} {
-		_, r, f := permissionFrames(t)
-		r.press(name)
-		if body := f.waitCall(t, api.ChatAnswer.Name); !strings.Contains(body, want) {
-			t.Errorf("%s answered %s, want %s", name, body, want)
-		}
-	}
 }
 
 func TestEnterOverADraftAnswersNothing(t *testing.T) {
