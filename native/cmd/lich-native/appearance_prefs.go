@@ -38,6 +38,7 @@ const (
 	windowButtonsKey    = "window.buttons"
 	chatWidthKey        = "lich.chat.width"
 	chatVerbsKey        = "lich.chat.verbs"
+	backdropKey         = "lich.appearance.backdrop"
 )
 
 // Bounds and steps for the zoom and the font sizes.
@@ -76,6 +77,12 @@ const (
 	chatWidthFull        = "full"
 )
 
+// The values the backdrop setting takes.
+const (
+	backdropGrain = "grain"
+	backdropNone  = "none"
+)
+
 // chatBoxWide is Wide's cap on the chat column, a third past Comfortable's
 // chatBoxMax.
 const chatBoxWide = unit.Dp(1280)
@@ -97,6 +104,7 @@ type appearancePrefs struct {
 	windowButtons  string
 	chatWidth      string
 	chatVerbs      string // "" is the interface language's
+	backdrop       string
 }
 
 // clampZoom bounds a zoom and snaps it to one decimal.
@@ -171,6 +179,15 @@ func chatWidthOf(stored string) string {
 	return chatWidthComfortable
 }
 
+// backdropOf reads the stored backdrop: nothing stored, or a value from a
+// newer lich, is Grain.
+func backdropOf(stored string) string {
+	if stored == backdropNone {
+		return stored
+	}
+	return backdropGrain
+}
+
 // chatBox is the widest the chat column grows under choice, 0 for no cap.
 func chatBox(choice string) unit.Dp {
 	switch choice {
@@ -194,7 +211,7 @@ func parseNumber(raw string, fallback float64) float64 {
 // loadAppearancePrefs reads the stored values.
 func loadAppearancePrefs(ctx context.Context, c *backend.Client) (appearancePrefs, error) {
 	raw := map[string]string{}
-	for _, key := range []string{zoomKey, browserZoomKey, terminalFontSizeKey, terminalFontKey, editorFontSizeKey, editorFontKey, uiFontKey, costBudgetKey, closeActionKey, copyOnSelectKey, windowButtonsKey, chatWidthKey, chatVerbsKey} {
+	for _, key := range []string{zoomKey, browserZoomKey, terminalFontSizeKey, terminalFontKey, editorFontSizeKey, editorFontKey, uiFontKey, costBudgetKey, closeActionKey, copyOnSelectKey, windowButtonsKey, chatWidthKey, chatVerbsKey, backdropKey} {
 		v, err := c.GetSetting(ctx, key, "")
 		if err != nil {
 			return appearancePrefs{}, err
@@ -215,6 +232,7 @@ func loadAppearancePrefs(ctx context.Context, c *backend.Client) (appearancePref
 		windowButtons:  windowButtonsOf(raw[windowButtonsKey]),
 		chatWidth:      chatWidthOf(raw[chatWidthKey]),
 		chatVerbs:      raw[chatVerbsKey],
+		backdrop:       backdropOf(raw[backdropKey]),
 	}
 	return p, nil
 }
@@ -239,7 +257,7 @@ func fontFailure(title string) ui.Toast {
 // applyAppearance puts p on screen: the interface and page zooms, the terminals'
 // font, and the ceiling the cost readout colours against.
 func (u *window) applyAppearance(p appearancePrefs) {
-	u.zoom, u.browserZoom, u.chatWidth, u.chatVerbs = p.zoom, p.browserZoom, p.chatWidth, p.chatVerbs
+	u.zoom, u.browserZoom, u.chatWidth, u.chatVerbs, u.backdropStyle = p.zoom, p.browserZoom, p.chatWidth, p.chatVerbs, p.backdrop
 	if u.caption.Load().leftReserve > 0 {
 		u.win.Option(app.TrafficLights(trafficLightsBar(p)))
 	}

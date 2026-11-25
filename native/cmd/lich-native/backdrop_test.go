@@ -110,6 +110,19 @@ func TestBackdropBandEndsAtTheMiddle(t *testing.T) {
 	}
 }
 
+// None draws no pane's backdrop.
+func TestBackdropNonePaintsNothing(t *testing.T) {
+	u, r, _ := besideFrames(t, image.Pt(1200, 800), func(m *model) {
+		m.splitBeside(context.Background(), "orch", "wa", edgeRight, false)
+	})
+	u.backdropStyle = backdropNone
+	u.backdrops = backdrops{}
+	r.frame()
+	if len(u.backdrops.byID) != 0 || u.backdrops.painted != 0 {
+		t.Fatalf("None drew %d backdrops, painted %d", len(u.backdrops.byID), u.backdrops.painted)
+	}
+}
+
 // Two stirred panes paint their field once per step of their clock: frames
 // in between reuse it, the next step paints both again, and the frame asks
 // for that step.

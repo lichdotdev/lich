@@ -58,11 +58,13 @@ const (
 	// betaInstallScript is installScript pinned to a pre-release with
 	// install.sh's LICH_TAG, since releases/latest never names one.
 	betaInstallScript = "curl -fsSL https://raw.githubusercontent.com/" + repo + "/main/install.sh | LICH_TAG=v%s sh"
-	// betaPKGBUILD builds the AUR package from the PKGBUILD a pre-release ships,
-	// which the AUR never receives. The package keeps the AUR's name, so pacman
-	// takes it as an upgrade of lich-bin and the next stable release as the
-	// one after it (vercmp orders 0.93.0rc15 before 0.93.0).
-	betaPKGBUILD = `d="$(mktemp -d)" && curl -fsSL -o "$d/PKGBUILD" ` + releaseBase + `v%s/PKGBUILD && (cd "$d" && makepkg -si --noconfirm)`
+	// betaPKGBUILD builds the package from the PKGBUILD a pre-release ships,
+	// which the AUR never receives. LICH_PKGNAME keeps the installed package's
+	// name — lich-bin from the AUR, lich from install.sh — so pacman takes it
+	// as an upgrade; a different name is a conflict it refuses under
+	// --noconfirm, and the next stable release is the one after it (vercmp
+	// orders 0.93.0rc15 before 0.93.0).
+	betaPKGBUILD = `d="$(mktemp -d)" && curl -fsSL -o "$d/PKGBUILD" ` + releaseBase + `v%s/PKGBUILD && (cd "$d" && LICH_PKGNAME=%s makepkg -si --noconfirm)`
 	// restartChain relaunches lich after an install that, unlike install.sh, does
 	// not know how. It POSTs the same /restart endpoint using the
 	// LICH_PORT/LICH_TOKEN every lich PTY session exports. The token stays a
@@ -282,7 +284,7 @@ func (s *Service) installCommand(latest string) string {
 		return ""
 	}
 	data, _ := os.ReadFile(s.osReleasePath) // missing/unreadable → not arch → install.sh
-	if isArch(string(data)) {
+	if isArch(string(data)) && archPackage(s.exePath) == aurPackage {
 		// Assumes yay, the common AUR helper; a paru user edits the one word,
 		// since the command is pasted for review and never auto-run.
 		return "yay -S " + aurPackage + restartChain
@@ -326,7 +328,7 @@ func (s *Service) betaInstallCommand(latest string) string {
 	}
 	data, _ := os.ReadFile(s.osReleasePath) // missing/unreadable → not arch → install.sh
 	if isArch(string(data)) {
-		return fmt.Sprintf(betaPKGBUILD, latest) + restartChain
+		return fmt.Sprintf(betaPKGBUILD, latest, archPackage(s.exePath)) + restartChain
 	}
 	return fmt.Sprintf(betaInstallScript, latest)
 }
@@ -338,6 +340,16 @@ func (s *Service) betaInstallCommand(latest string) string {
 func packaged(exePath string) bool {
 	dir := filepath.ToSlash(filepath.Dir(exePath))
 	return strings.HasSuffix(dir, "/usr/bin") || strings.HasSuffix(dir, "/usr/local/bin")
+}
+
+// archPackage is the pacman name lich was installed under, which a pre-release
+// must keep to replace it: install.sh installs nfpm's lich into /usr/local/bin,
+// the AUR's is lich-bin in /usr/bin.
+func archPackage(exePath string) string {
+	if strings.HasSuffix(filepath.ToSlash(filepath.Dir(exePath)), "/usr/local/bin") {
+		return "lich"
+	}
+	return "lich-bin"
 }
 
 // isArch reports whether os-release content describes Arch or an Arch

@@ -252,6 +252,12 @@
     "wide": "ワイド",
     "full": "全幅"
   },
+  "backdropSetting": {
+    "title": "背景",
+    "searchWords": "背景 バックドロップ ドット 粒子 グレイン テクスチャ なし",
+    "none": "なし",
+    "grain": "粒子"
+  },
   "chatVerbsSetting": {
     "title": "作業中の言葉",
     "searchWords": "作業中 言葉 動詞 考え中 ターン スピナー",

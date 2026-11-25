@@ -293,7 +293,9 @@
   },
   "attach": {
     "remove": "移除",
-    "pasteNeedsTool": "粘贴图片需要 wl-paste（wl-clipboard）或 xclip"
+    "pasteNeedsTool": "粘贴图片需要 wl-paste（wl-clipboard）或 xclip",
+    "add": "附加文件",
+    "drop": "松开即可附加"
   },
   "quote": {
     "add": "引用",

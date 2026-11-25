@@ -359,7 +359,9 @@
   },
   "attach": {
     "remove": "Убрать",
-    "pasteNeedsTool": "Чтобы вставить изображение, нужен wl-paste (wl-clipboard) или xclip"
+    "pasteNeedsTool": "Чтобы вставить изображение, нужен wl-paste (wl-clipboard) или xclip",
+    "add": "Прикрепить файлы",
+    "drop": "Отпустите, чтобы прикрепить"
   },
   "quote": {
     "add": "Цитировать",

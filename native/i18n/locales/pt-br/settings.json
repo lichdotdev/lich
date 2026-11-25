@@ -252,6 +252,12 @@
     "wide": "Larga",
     "full": "Total"
   },
+  "backdropSetting": {
+    "title": "Fundo",
+    "searchWords": "fundo plano de fundo campo pontos grão granulado textura nenhum painel",
+    "none": "Nenhum",
+    "grain": "Granulado"
+  },
   "chatVerbsSetting": {
     "title": "Palavras do turno",
     "searchWords": "palavras verbos pensando trabalhando turno spinner",

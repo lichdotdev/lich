@@ -40,6 +40,13 @@ var chatWidthChoices = []struct{ value, labelKey string }{
 	{chatWidthFull, "settings.chatWidthSetting.full"},
 }
 
+// backdropChoices are the backdrop setting's answers with the keys of their
+// labels.
+var backdropChoices = []struct{ value, labelKey string }{
+	{backdropNone, "settings.backdropSetting.none"},
+	{backdropGrain, "settings.backdropSetting.grain"},
+}
+
 var (
 	icZoomOut = icons.Lucide("zoom-out")
 	icZoomIn  = icons.Lucide("zoom-in")
@@ -66,6 +73,7 @@ type appearanceControls struct {
 	copy       ui.SwitchState
 	buttons    ui.Enum
 	chatWidth  ui.Enum
+	backdrop   ui.Enum
 	verbs      widget.Editor
 	verbsTyped bool // the working words field holds the user's text
 	verbsReset ui.Clickable
@@ -129,6 +137,8 @@ func (s *settingsScreen) appearanceRow(gtx C, th *ui.Theme, e settingEntry, r se
 	case chatWidthKey:
 		r.description = i18n.T("settings.chatWidthSetting.description")
 		control = s.chatWidthControl
+	case backdropKey:
+		control = s.backdropControl
 	case chatVerbsKey:
 		r.description = i18n.T("settings.chatVerbsSetting.description")
 		return r.layoutBlock(gtx, th, first, s.chatVerbsControl), true
@@ -358,4 +368,19 @@ func (s *settingsScreen) commitChatVerbs(verbs string) {
 	p := s.look.prefs
 	p.chatVerbs = verbs
 	s.commitAppearance(p, chatVerbsKey, verbs)
+}
+
+func (s *settingsScreen) backdropControl(gtx C, th *ui.Theme) D {
+	g := &s.look.backdrop
+	if g.Update(gtx) {
+		p := s.look.prefs
+		p.backdrop = backdropOf(g.Value)
+		s.commitAppearance(p, backdropKey, p.backdrop)
+	}
+	g.Value = s.look.prefs.backdrop
+	items := make([]ui.ToggleItem, len(backdropChoices))
+	for i, c := range backdropChoices {
+		items[i] = ui.ToggleItem{Value: c.value, Text: i18n.T(c.labelKey)}
+	}
+	return th.ToggleGroup(g, items...).Layout(gtx)
 }

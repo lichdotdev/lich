@@ -16,7 +16,7 @@ func fileURI(path string) string {
 
 // A file and an image dropped on a session drawn as a chat land in its
 // composer as cards, in drop order, leaving the text as it was; the drag over
-// it shows the terminal's hint.
+// it is followed, for the composer to show.
 func TestFilesDroppedOnAChatLandInItsComposer(t *testing.T) {
 	u, r, _ := chatFrames(t, api.ViewChat)
 	r.settle(t)
@@ -28,7 +28,7 @@ func TestFilesDroppedOnAChatLandInItsComposer(t *testing.T) {
 	u.drop.add("s1", image.Rectangle{Max: r.size})
 	u.onDrag(enter(300, 300, uriListMIME), r.invalidate)
 	if !u.drop.hinting("s1") {
-		t.Error("a file dragged over the chat does not light the drop hint")
+		t.Error("a file dragged over the chat is not followed")
 	}
 	u.onDrag(drop(300, 300, fileURI(file)+fileURI(shot)), r.invalidate)
 	waitCards(t, r, p, file, shot)
@@ -36,6 +36,6 @@ func TestFilesDroppedOnAChatLandInItsComposer(t *testing.T) {
 		t.Errorf("the composer reads %q, want the text it had", p.editor.Text())
 	}
 	if u.drop.hinting("s1") {
-		t.Error("the hint stays up after the drop")
+		t.Error("the drag is still followed after the drop")
 	}
 }

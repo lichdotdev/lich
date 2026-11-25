@@ -248,6 +248,12 @@
     "wide": "넓게",
     "full": "전체"
   },
+  "backdropSetting": {
+    "title": "배경",
+    "searchWords": "배경 백드롭 점 그레인 질감 없음",
+    "none": "없음",
+    "grain": "그레인"
+  },
   "chatVerbsSetting": {
     "title": "작업 중 문구",
     "searchWords": "작업 중 문구 동사 생각 중 턴 스피너",

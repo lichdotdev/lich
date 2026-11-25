@@ -453,7 +453,7 @@ never makes the Latest pill show.
   is underlined in its color and takes the hand, and a click with it opens a file in the stage editor
   (`followCodeRef`) and a folder in the dock's Code tab, unfolded down to it (`chat_paths.go`). A path it does not
   hold stays text. Anything else in code is plain. An answer has no header: who wrote it is the
-  foot's (see A message's time); the provider's avatar marks no row of the chat: no answer, call, notification or closing line. A thought is a muted fold, closed, with the
+  foot's (see A message's time); the provider's avatar marks no row of the chat: no answer, call, notification of lich's or closing line, the harness's own notes about its background work alone excepted (see A harness's background note). A thought is a muted fold, closed, with the
   sparkles before its label.
 - **A turn's tool calls** fold by run: the calls between two of the agent's texts (or the person's message and
   the first text) fold into one muted line where the first of them came. One line for the whole turn stood where
@@ -598,6 +598,14 @@ never makes the Latest pill show.
   `Primary` at 0.65 over `Background`, and the base and the sparks going out `Primary` at 0.35. The flame burns in
   the theme's own color, as the sidebar's souls do. It does not use `ToneWait`: the turn running is not the
   turn waiting on the person, and that tone already says the second.
+- **A harness's background note** (`chat_tasknote.go`), a `<task-notification>` Claude Code writes into the
+  conversation when a subagent, a background command or a Monitor moves, is a row of its own: the provider's
+  pixel mark (`Space(3.5)`), the note's summary in `TextSM` medium in the harness's own words, untranslated,
+  `Destructive` when its status is failed, and a hairline to the column's edge. The mark is the one exception
+  to the chat's rule against provider avatars: without it the row reads as a worker's note lich wrote. A note
+  that carries text (a subagent's result as Markdown, a Monitor's event muted) ends in a muted chevron and
+  opens closed, its text unfolding under the summary; a command's note has neither. Notes under each other
+  start no turn.
 - **An empty chat** (its conversation read and holding nothing: a new session, or after `/new`) draws its start
   screen (`chat_start.go`): lich's mark in pixel art, the Welcome screen's still frame (48x68, pixels of 1.5dp,
   its five tones from the tokens: `Foreground`, a mix of it and `MutedForeground`, `MutedForeground`, and two
@@ -615,8 +623,9 @@ never makes the Latest pill show.
   drawn, only while the box is idle (empty, no file, no turn, nothing queued or waiting to go); Tab puts it in
   the box as text; typing hides it and an emptied box shows it back, until a message is sent or queued
   (`chat_suggest.go`).
-  Inside the box stand only the provider's controls, one line under the text: the footer's attach as a "+",
-  the model with its effort in one chip ("Opus 5.5 · high") and the mode, each a ghost chip with a chevron.
+  Inside the box stand only the provider's controls, one line under the text: first the attach "+", a ghost
+  `SizeIconXS` button with Lucide's `plus` and "Attach files" in its tooltip, always there whatever the footer's
+  layout holds, which opens the file picker for that pane's own session; then the model with its effort in one chip ("Opus 5.5 · high") and the mode, each a ghost chip with a chevron.
   After them the footer's context ring with its percentage, the same readout as the terminal's balloon, when the
   session reports a window. Last, while the session has open sessions it opened (`OriginSessionID`, the sidebar
   tree's), a wide ghost chip of them (`chat_children.go`, Paseo's "subagents" chip, made to say more): up to three
@@ -659,10 +668,11 @@ never makes the Latest pill show.
   on this line a lit item reads as a button switched on for no reason. Last, after the branch or the changes,
   the branch's pull request (`prBadge` in the line's size): a click opens it on Pulls or in the browser
   (`prTarget`), its title in a tooltip; it shows with no checkout or changes, and the branch truncates first, so
-  neither it nor the changes is ever cut. Attach, changes and the branch show only when the user's footer layout has them, and
+  neither it nor the changes is ever cut. Changes and the branch show only when the user's footer layout has them, and
   in every pane, each for its own session (its checkout, branch and changes, with or without the focus, but only the
-  followed pane's items take a click); the attach "+" and the context ring are the followed session's alone, so another
-  chat pane of a layout has the provider's chips and Send.
+  followed pane's items take a click); the context ring is the followed session's alone, so another chat pane of a
+  layout has the "+", the provider's chips and Send. The footer's own attach item stays the footer's, for a session
+  in its terminal.
   Ctrl+Z (Cmd+Z on macOS) undoes the last step of the text, bringing back the caret and selection it started from,
   and Ctrl+Shift+Z or Ctrl+Y redoes it (`ui.EditHistory`, which takes the keys from Gio's editor: its own undo is one
   keystroke a step and cannot be cleared). A run of characters typed or deleted side by side, less than a second
@@ -707,10 +717,14 @@ never makes the Latest pill show.
   muted on the rest of the line, so a deep path cuts its folder and never its name. It ranks as Claude Code does,
   its 15 best; Enter puts `@path ` in, Tab first puts in what every path shown shares and keeps the list open on
   it, and Escape shuts it until the word changes. An `@` mid-word, as in an email, opens nothing.
-  A file dragged over a session drawn as a chat lights the terminal's drop hint over the whole session, and
-  dropped, or picked with the attach "+", it stands over the text inside the box as a card (`chat_attach.go`): a
+  A file dropped on a session drawn as a chat, or picked with the attach "+", stands as a card in a strip of its
+  own at the top of the box (`chat_attach.go`), `chatComposerPadY` from the box's top edge and `Space(3)` over a
+  1px `Border` hairline across the box's full width; the quotes and the text come under the hairline. A box with
+  no file has neither strip nor hairline. A card is a
   `Space(30)` square, `RadiusLG`, the box's fill and a `Border` hairline, `Space(2)` apart in a row that scrolls
-  sideways. An image is its thumbnail, covering the card; any other file its name without the extension,
+  sideways. The strip ends with the add square: a card's size with no fill, the `Border` hairline and a muted
+  `plus` centered, the kit's hover fill (`Accent` at `GhostHoverFill`) and the hand under the pointer, and a
+  click opens the same picker the "+" does: a repeat of the "+" on purpose, where the eye already is. An image is its thumbnail, covering the card; any other file its name without the extension,
   `TextXS` up to three lines, over its type in `Text2XS` semibold muted capitals at the card's foot. The ×, a
   `SizeIconXS` secondary button `Space(1.5)` in from the top right corner, shows while the pointer is on the card,
   and a click on the card opens a dialog with the file's name over its path and the image whole, or the file's
@@ -718,10 +732,21 @@ never makes the Latest pill show.
   These cards are the chat's one exception to rows over boxes: a thumbnail needs an edge to read as a file, and
   Claude's web composer, which the person asked for, draws them so.
   Ctrl+V with an image and no text on the clipboard makes a card the same way.
+  **A file dragged over the session** (anywhere on it, not only the box) shows where it will land, in a chat only;
+  a session in its terminal keeps the drop hint, since there the file becomes a pasted path. The box's edge turns
+  to `Foreground` dashes (`ui.DashedRing`, 1.5dp), a ghost card stands at the end of the strip, before the add
+  square, and "Drop to attach" in `TextXS` `Foreground` sits on the chips' line before Send, in the queue hint's
+  place. With no file yet the strip and its hairline open for the drag. The ghost is a card's size at 55%
+  opacity, dashed in `Foreground`, with Lucide's `file` muted at its center: Gio hands a drag's files over only
+  on the drop (`app.DropEvent` carries `Types` on enter and the `text/uri-list` only on `DropDrop`), so one ghost
+  stands for every file dragged, with no name, type or thumbnail. Dropped, the ghost holds its place while the
+  drop resolves (a confined session's upload) and the files' cards take it in the same frame, the first where the
+  ghost stood, so nothing in the strip moves; a drag that leaves the session takes the ghost along and closes a
+  strip it opened.
   **A quote** (`chat_quote.go`): Markdown selected in an answer or in the person's message shows, once the press
   is let go, a floating Quote over the selection's first word, a ghost `SizeXS` button with Lucide's `quote` on
-  `ui.PopoverPanel`, out of the layout so nothing moves. A click puts the text over the composer's text, under any
-  file cards, as a block: `Accent` fill, `RadiusMD`, a `Space(1)` bar in the blockquote's `Border` at its left,
+  `ui.PopoverPanel`, out of the layout so nothing moves. A click puts the text over the composer's text, under the
+  cards' strip and its hairline, as a block: `Accent` fill, `RadiusMD`, a `Space(1)` bar in the blockquote's `Border` at its left,
   the text in `TextSM` muted cut at two lines, and a ghost `SizeIconXS` × at its right that removes it whole;
   quotes stack in the order they were made, and the composer takes the keyboard. Sent, each quote becomes
   blockquote lines ("> ") before the typed text, the same plain text on every send path and every provider, so

@@ -140,6 +140,9 @@ type chatScreens struct {
 	// attached is what a drop, the attach "+" or an artifact handed each
 	// session's composer as cards, as typed is for text.
 	attached map[string][]backend.Attachment
+	// landing is the sessions a drop is resolving for: their ghost card stays
+	// until the files take its place.
+	landing map[string]bool
 	// thumbs are the images the cards draw, by path, read once.
 	thumbs map[string]*remote[*previewImage]
 	// readImage reads the clipboard's image for a paste, nil for no read;

@@ -22,8 +22,9 @@ import (
 // Ctrl+R searches them in a list over the composer, the box as its query.
 
 // sentHistory is the messages sent in items, newest first, each as the chat
-// shows it: a task lich handed over is its prompt, and the other notes lich
-// handed the agent are left out, since nobody sent them to send again.
+// shows it: a task lich handed over is its prompt, and the other notes lich or
+// the harness handed the agent are left out, since nobody sent them to send
+// again.
 func sentHistory(items []backend.ChatItem) []string {
 	var sent []string
 	for _, it := range slices.Backward(items) {
@@ -36,6 +37,9 @@ func sentHistory(items []backend.ChatItem) []string {
 			if len(envs) == 1 && envs[0].kind == "task" {
 				text = envs[0].text["prompt"]
 			}
+		}
+		if _, ok := parseTaskNotes(text); ok {
+			text = ""
 		}
 		if strings.TrimSpace(text) != "" {
 			sent = append(sent, text)

@@ -44,6 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **A chat shows a compaction while it runs and marks where it happened.** The live line says the conversation is being compacted, and a line left in the conversation then says how many tokens it went from and to, or why it could not compact; click it to read the summary. Antigravity, opencode, oh-my-pi and Cursor CLI show only a /compact you type.
 - **Type / in a chat to pick one of the agent's commands or skills.** The list opens over the message box and narrows as you type; arrows and Enter or Tab put the command in, and Escape closes it.
 - **See and stop the commands Claude Code left running in the background of a chat.** A pill over the message box counts them while they run ("2 shells", a Monitor's watch apart as "1 monitor"), and a click on it, or /tasks, lists each with its running time; open one to read the end of its output and Stop it.
+- **Claude Code's notes about its background work show in a chat as one folded line each, with its mark.** A finished subagent, a background command or a Monitor's event reads as its summary, red when it failed; click the line to read what a subagent reported. Claude Code only.
 - **Type /permissions or /hooks in a chat to see the agent's permission rules and hooks.** /permissions lists Claude Code's allow, ask and deny rules and adds or removes one in the settings file you pick, and lists Codex's modes; /hooks lists the hooks by event, and on Codex trusts one or turns it off.
 - **Press Ctrl+B in a Claude Code chat to move the command the agent is waiting on to the background.** The line that shows the agent at work says when you can; the agent carries on, and the command keeps running in the shells pill.
 - **Type @ in a chat to put the path of one of the project's files or folders in your message.** The list opens over the message box at the start of a word and narrows as you type, the likeliest files first; arrows and Enter or Tab put the path in, and Escape closes it.
@@ -60,7 +61,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Click an installed extension to see its catalog page.** In Settings › Extensions › Installed, a row the catalog lists opens the same detail its card does, with Update when there is a newer release.
 - **A browser tab shows its page's icon.** The icon the site declares, or its /favicon.ico, takes the place of the gray square; a page without one keeps the square.
 - **A browser tab shows a spinner while its page loads.** It turns where the tab's icon sits, from a navigation, a reload or a clicked link until the page has loaded or failed.
-- **Session panes wear a field of dots that drifts slowly from their top to their middle.** Bands of dots in the color of the theme's buttons flow behind the terminal's text, and a chat with nothing in it yet shows the whole field, calm behind its question, with lich's mark drawn in its dots and the message box in the theme's color. It moves while the agent works or you type, and holds still ten seconds after.
+- **Session panes wear a field of dots that drifts slowly from their top to their middle.** Bands of dots in the color of the theme's buttons flow behind the terminal's text, and a chat with nothing in it yet shows the whole field, calm behind its question, with lich's mark drawn in its dots and the message box in the theme's color. It moves while the agent works or you type, and holds still ten seconds after; None in Settings › Appearance › Backdrop turns it off.
 - **Write to a chat while its agent works: the message waits in a queue and goes when the turn ends.** Send now over the queue, or Ctrl+Enter, sends all of it into the turn running instead, with what you are typing after it, and ↑ on an empty box takes the queue back to edit.
 - **A chat shows the agent's task list over the message box, on one line that names the task it is doing.** Click the line to see every task and how many are done; it goes once every task is done.
 - **Type /mcp, /skills or /plugin in a Claude Code or Codex chat to manage its MCP servers, skills and plugins.** /mcp lists each server with its state and tools, and opens one to reconnect it, sign in or turn it off in the project; /skills turns skills on and off; /plugin finds plugins to install, updates, turns off or uninstalls the installed ones and adds marketplaces. Elsewhere the commands still go to the agent.
@@ -74,6 +75,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **A chat's message box keeps its files in a strip of their own over the text, and shows where a file you drag will land.** The strip ends with a square that opens the file picker, as does the "+" that now always starts the box's controls. Drag a file over the chat and a dashed card waits at the end of the strip until you drop it.
 - **Enter no longer answers a permission in a chat, so a message you meant to send can't allow a tool.** Press the number on a button to answer with it, or Esc to deny it once; the filled button is the suggestion and is never an Always.
 - **Project tabs show a one-pixel border when selected, hovered or dragged.** The selected tab uses the sidebar surface; close controls hide while dragging, tabs have a 5px gap, including 5px of space on either side of the divider between pinned and regular tabs.
 - **Review reads in a narrow dock: long lines wrap, the diff has one column of line numbers and Revert sits in it.** Point at a change to turn its first line number into the revert button. Collapsed, the dock comes out on Review at 60% of the stage, and from 820 px wide Review offers Split.
@@ -137,6 +139,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Switching between stable and beta on Arch is an ordinary package upgrade, with no removal by hand.** The update keeps the name of the package you installed, `lich` from install.sh or `lich-bin` from the AUR.
 - **A site whose server leaves out part of its certificate chain opens in the built-in browser on Linux, as it does in Chrome.** It showed "Unacceptable TLS certificate"; lich now fetches the missing certificate the way Chrome does and still refuses one that fails any other check.
 - **New session here opens a session in the selected checkout.** The card menu now carries the launch action through to the window, including its worktree and folder.
 
