@@ -749,7 +749,7 @@
       "official": "공식",
       "notFor": "{os} 미지원",
       "installed": "설치됨",
-      "installedVersion": "설치됨 · {version}",
+      "installedVersion": "{version}",
       "version": "버전",
       "released": "출시일",
       "license": "라이선스",

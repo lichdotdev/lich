@@ -144,8 +144,7 @@
   },
   "shortcutsOverlay": {
     "title": "Atajos de teclado",
-    "rebind": "Reasígnalos en Ajustes › Atajos",
-    "close": "cerrar"
+    "rebind": "Reasígnalos en Ajustes › Atajos"
   },
   "tray": {
     "show": "Mostrar lich",
@@ -245,7 +244,6 @@
   "welcome": {
     "title": "Te damos la bienvenida a\n{name}",
     "tagline": "Instala tus agentes y elige con cuál empiezan las sesiones nuevas.",
-    "escCloses": "Esc cierra",
     "continue": "Continuar",
     "notInstalled": "No instalado",
     "installing": "Instalando…",

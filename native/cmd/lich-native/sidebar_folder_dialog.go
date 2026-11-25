@@ -77,7 +77,7 @@ func (s *sidebar) layoutFolderDialog(gtx C, th *ui.Theme, existing []string) fil
 		label = i18n.T("sidebar.newFolderDialog.moveHere")
 	}
 	create := on.Button(&n.create, label)
-	create.Disabled = !ok
+	create.Disabled, create.Keys = !ok, "↵"
 	d := th.Dialog(&n.dialog, n.open, i18n.T("sidebar.newFolderDialog.title"), folderDescription(len(n.ids)))
 	d.Body = func(gtx C) D { return folderField(gtx, on, &n.name, name, known) }
 	d.Actions = []layout.Widget{cancel.Layout, create.Layout}

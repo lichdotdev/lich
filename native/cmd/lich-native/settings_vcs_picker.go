@@ -5,8 +5,6 @@ import (
 	"log"
 
 	"gioui.org/layout"
-	"gioui.org/op/clip"
-	"gioui.org/op/paint"
 
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
@@ -123,10 +121,8 @@ func (s *settingsScreen) setAccount(projectID, account string) {
 	}()
 }
 
-// identityRow is the line under a top border saying who commits land as,
-// the email in mono.
+// identityRow is the line saying who commits land as, the email in mono.
 func identityRow(gtx C, th *ui.Theme, l identityLine) D {
-	paint.FillShape(gtx.Ops, th.Over(th.Border), clip.Rect{Max: image.Pt(gtx.Constraints.Max.X, gtx.Dp(1))}.Op())
 	lead := th.Text(ui.TextXS, l.lead).Muted()
 	if l.email == "" {
 		lead = th.Text(ui.TextXS, l.lead)

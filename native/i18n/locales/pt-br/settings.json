@@ -754,7 +754,7 @@
       "official": "Oficial",
       "notFor": "Indisponível no {os}",
       "installed": "Instalada",
-      "installedVersion": "Instalada · {version}",
+      "installedVersion": "{version}",
       "version": "Versão",
       "released": "Lançamento",
       "license": "Licença",

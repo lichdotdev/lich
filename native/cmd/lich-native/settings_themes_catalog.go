@@ -2,6 +2,8 @@ package main
 
 import (
 	"cmp"
+	"gioui.org/io/semantic"
+	"gioui.org/op/clip"
 	"image"
 	"slices"
 	"strconv"
@@ -251,7 +253,8 @@ func themeCardText(gtx C, th *ui.Theme, pack themePack, state int) D {
 	)
 }
 
-// themeCardName is the name, and In use or Installed with a check at its right.
+// themeCardName is the name, and a check at its right for In use (bright) or
+// Installed (muted), its word for screen readers.
 func themeCardName(gtx C, th *ui.Theme, name string, state int) D {
 	line := []layout.FlexChild{layout.Flexed(1, th.Text(ui.TextSM, name).Weight(font.SemiBold).Leading(themeNameLeading).Truncated().Layout)}
 	if state != packListed {
@@ -260,9 +263,12 @@ func themeCardName(gtx C, th *ui.Theme, name string, state int) D {
 			words, ink = i18n.T("settings.themesPage.inUse"), th.Foreground
 		}
 		line = append(line, ui.Gap(2),
-			layout.Rigid(func(gtx C) D { return icCatalogCheck.Layout(gtx, ui.Space(3), ink) }),
-			ui.Gap(1),
-			layout.Rigid(th.Text(ui.TextXS, words).In(ink).Layout),
+			layout.Rigid(func(gtx C) D {
+				d := icCatalogCheck.Layout(gtx, ui.Space(3), ink)
+				defer clip.Rect{Max: d.Size}.Push(gtx.Ops).Pop()
+				semantic.LabelOp(words).Add(gtx.Ops)
+				return d
+			}),
 		)
 	}
 	gtx.Constraints.Min.Y = gtx.Sp(themeNameLeading)

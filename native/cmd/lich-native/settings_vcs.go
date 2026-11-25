@@ -192,7 +192,7 @@ func (s *settingsScreen) vcsToolsBlock(gtx C, th *ui.Theme, r settingRow, first 
 		failed := false
 		for i, t := range vcsTools {
 			if i > 0 {
-				children = append(children, layout.Rigid(th.Separator))
+				children = append(children, ui.VGap(2))
 			}
 			children = append(children, layout.Rigid(func(gtx C) D { return s.vcsToolRow(gtx, th, t) }))
 			failed = failed || v.failed(t.bin)

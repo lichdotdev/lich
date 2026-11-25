@@ -360,7 +360,6 @@ func (s *settingsScreen) globalElsewhere(th *ui.Theme, all bool) layout.Widget {
 		}
 		return layout.Inset{Top: ui.Space(6)}.Layout(gtx, func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-				layout.Rigid(th.Separator),
 				ui.VGap(3.5),
 				layout.Rigid(func(gtx C) D {
 					return layout.Inset{Left: rowPadX, Right: rowPadX}.Layout(gtx, func(gtx C) D {

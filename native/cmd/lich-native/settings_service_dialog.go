@@ -64,7 +64,7 @@ func (s *settingsScreen) layoutServiceDialog(gtx C, th *ui.Theme) {
 	var actions []layout.Widget
 	if v.ID != "" && !serviceUp(v) {
 		del := on.Button(&p.del, i18n.T("sidebar.services.delete"))
-		del.Variant = ui.VariantGhost
+		del.Variant = ui.VariantDestructive
 		actions = append(actions, func(gtx C) D { return del.Layout(gtx) })
 	}
 	d := th.Dialog(&p.dialog, p.open, title, p.projectName)

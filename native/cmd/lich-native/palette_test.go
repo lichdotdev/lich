@@ -242,14 +242,16 @@ func TestRowVerbNamesWhatEnterDoes(t *testing.T) {
 	}
 }
 
-func TestOnlyAWaitingSessionTrailsTheWaitingChip(t *testing.T) {
+// A session's ring says it waits, in its tone: no row trails a chip that
+// repeats it (contract changed: a waiting session trailed "Waiting").
+func TestNoSessionTrailsAWaitingChip(t *testing.T) {
 	th := &ui.Theme{Palette: ui.Dark, Surface: ui.Dark.Popover}
 	ring := func(gtx C, th *ui.Theme, sv *sessionView) D { return D{} }
 	for _, status := range []string{statusWaiting, statusBusy, statusDone, ""} {
 		row := paletteRow{kind: rowSession, session: paletteSession{sessionID: "s1", label: "Claude 20", status: status}}
 		face := paletteFaceOf(th, &paletteView{}, row, th.Foreground, ring, time.Time{})
-		if got, want := face.trailing != nil, status == statusWaiting; got != want {
-			t.Errorf("status %q: trailing chip %v, want %v", status, got, want)
+		if face.trailing != nil {
+			t.Errorf("status %q trails a chip", status)
 		}
 	}
 }

@@ -144,8 +144,7 @@
   },
   "shortcutsOverlay": {
     "title": "Keyboard shortcuts",
-    "rebind": "Rebind in Settings › Hotkeys",
-    "close": "close"
+    "rebind": "Rebind in Settings › Hotkeys"
   },
   "tray": {
     "show": "Show lich",
@@ -245,7 +244,6 @@
   "welcome": {
     "title": "Welcome to\n{name}",
     "tagline": "Install your agents and choose the one new sessions start with.",
-    "escCloses": "Esc closes",
     "continue": "Continue",
     "notInstalled": "Not installed",
     "installing": "Installing…",

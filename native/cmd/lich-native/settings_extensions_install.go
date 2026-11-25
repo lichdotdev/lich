@@ -80,7 +80,7 @@ func (s *settingsScreen) installSources(gtx C, th *ui.Theme) D {
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D { return git.layout(gtx, th) }),
 		layout.Rigid(func(gtx C) D {
-			return layout.Inset{Top: extensionSourceGap, Bottom: extensionSourceGap}.Layout(gtx, th.Separator)
+			return layout.Spacer{Height: 2 * extensionSourceGap}.Layout(gtx)
 		}),
 		layout.Rigid(func(gtx C) D { return dir.layout(gtx, th) }),
 	)

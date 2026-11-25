@@ -753,7 +753,7 @@
       "official": "官方",
       "notFor": "不支持 {os}",
       "installed": "已安装",
-      "installedVersion": "已安装 · {version}",
+      "installedVersion": "{version}",
       "version": "版本",
       "released": "发布日期",
       "license": "许可证",

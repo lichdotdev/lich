@@ -282,10 +282,7 @@ func (s *settingsScreen) profileListRow(gtx C, th *ui.Theme, c *profileSettings,
 		area.Pop()
 		return d
 	}
-	if first {
-		return row(gtx)
-	}
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, layout.Rigid(th.Separator), layout.Rigid(row))
+	return row(gtx)
 }
 
 // profileText is a row's name and the line under it.

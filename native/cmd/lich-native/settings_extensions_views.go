@@ -47,7 +47,6 @@ func (s *settingsScreen) extensionsViews(th *ui.Theme, list []backend.Extension)
 			return withErrorLine(gtx, th, p.snapshot().errorAt(errAtFolder), rowPadX, func(gtx C) D {
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 					layout.Rigid(func(gtx C) D { return layout.Flex{Alignment: layout.Middle}.Layout(gtx, line...) }),
-					layout.Rigid(th.Separator),
 					ui.VGap(1),
 				)
 			})

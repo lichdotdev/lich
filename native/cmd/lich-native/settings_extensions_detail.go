@@ -152,10 +152,7 @@ func (s *settingsScreen) detailPanel(gtx C, th *ui.Theme, cat *backend.Extension
 	width := gtx.Constraints.Max.X
 	gtx.Constraints.Min = image.Point{}
 	macro := op.Record(gtx.Ops)
-	foot := layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(th.Separator),
-		layout.Rigid(func(gtx C) D { return s.detailFooter(gtx, th, cat, e, installed, t) }),
-	)
+	foot := s.detailFooter(gtx, th, cat, e, installed, t)
 	footCall := macro.Stop()
 	body := gtx
 	body.Constraints.Max.Y = max(0, gtx.Constraints.Max.Y-gtx.Dp(detailMargin)-foot.Size.Y)
@@ -179,7 +176,7 @@ func (s *settingsScreen) detailPanel(gtx C, th *ui.Theme, cat *backend.Extension
 	stack.Pop()
 	closeAt := op.Offset(image.Pt(width-gtx.Dp(detailCloseInset)-gtx.Dp(ui.Space(8)), gtx.Dp(detailCloseInset))).Push(gtx.Ops)
 	b := th.Button(&d.close, "")
-	b.Icon, b.Variant, b.Size = icDetailClose, ui.VariantGhost, ui.SizeIconSM
+	b.Icon, b.Variant, b.Size = icDetailClose, ui.VariantGhost, ui.SizeIconXS
 	b.Layout(gtx)
 	closeAt.Pop()
 	return D{Size: image.Pt(width, bd.Size.Y+foot.Size.Y)}
@@ -367,7 +364,7 @@ func (s *settingsScreen) detailAction(th *ui.Theme, cat *backend.ExtensionCatalo
 			return note, nil
 		}
 		b := th.Button(&d.update, i18n.T("settings.extensionsSettings.updateTo", i18n.Args{"version": installed.Latest}))
-		b.Variant, b.Size, b.Disabled = ui.VariantOutline, ui.SizeSM, t.installing != ""
+		b.Size, b.Disabled = ui.SizeSM, t.installing != ""
 		return note, b.Layout
 	case !built:
 		return th.Text(settingsDescSize, i18n.T("settings.extensionsSettings.catalog.noBuild", i18n.Args{"platform": platformName(cat.Platform)})).Muted().Wrapped().Layout, nil

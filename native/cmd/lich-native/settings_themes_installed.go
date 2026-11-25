@@ -1,6 +1,7 @@
 package main
 
 import (
+	"gioui.org/io/semantic"
 	"image"
 
 	"gioui.org/font"
@@ -179,9 +180,12 @@ func (s *settingsScreen) themeHero(gtx C, th *ui.Theme, v appearanceView, t inst
 func (s *settingsScreen) themeHeroText(gtx C, th *ui.Theme, v appearanceView, t installedTheme) D {
 	p := s.theme
 	head := []layout.FlexChild{
-		layout.Rigid(func(gtx C) D { return icCatalogCheck.Layout(gtx, ui.Space(3.5), th.Foreground) }),
-		ui.Gap(1),
-		layout.Rigid(th.Text(ui.TextXS, i18n.T("settings.themesPage.inUse")).Layout),
+		layout.Rigid(func(gtx C) D {
+			d := icCatalogCheck.Layout(gtx, ui.Space(3.5), th.Foreground)
+			defer clip.Rect{Max: d.Size}.Push(gtx.Ops).Pop()
+			semantic.LabelOp(i18n.T("settings.themesPage.inUse")).Add(gtx.Ops)
+			return d
+		}),
 		layout.Flexed(1, func(gtx C) D { return D{Size: image.Pt(gtx.Constraints.Max.X, 0)} }),
 	}
 	head = append(head, s.installedActionsOf(th, t)...)
@@ -265,7 +269,7 @@ func (s *settingsScreen) installedActionsOf(th *ui.Theme, t installedTheme) []la
 				p.updateTheme(t.id)
 			}
 			b := th.Button(&st.update, i18n.T("settings.themesPage.update"))
-			b.Variant, b.Size, b.Icon, b.Disabled = ui.VariantOutline, ui.SizeXS, icRefresh, busy != ""
+			b.Size, b.Icon, b.Disabled = ui.SizeXS, icRefresh, busy != ""
 			return b.Layout(gtx)
 		}))
 	}

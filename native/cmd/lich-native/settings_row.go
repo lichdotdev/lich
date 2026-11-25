@@ -7,8 +7,6 @@ import (
 	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/op"
-	"gioui.org/op/clip"
-	"gioui.org/op/paint"
 	"gioui.org/unit"
 
 	"github.com/lichdotdev/lich/native/i18n"
@@ -91,9 +89,6 @@ func (r settingRow) frame(gtx C, th *ui.Theme, first bool, content func(gtx C, t
 	macro := op.Record(gtx.Ops)
 	d := content(gtx, th.On(bg))
 	call := macro.Stop()
-	if !first {
-		paint.FillShape(gtx.Ops, th.Over(th.Border), clip.Rect{Max: image.Pt(d.Size.X, gtx.Dp(1))}.Op())
-	}
 	if r.lit > 0 {
 		lit := gtx
 		lit.Constraints = layout.Exact(d.Size)

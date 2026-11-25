@@ -144,8 +144,7 @@
   },
   "shortcutsOverlay": {
     "title": "키보드 단축키",
-    "rebind": "설정 › 단축키에서 다시 지정",
-    "close": "닫기"
+    "rebind": "설정 › 단축키에서 다시 지정"
   },
   "tray": {
     "show": "lich 보기",
@@ -242,7 +241,6 @@
   "welcome": {
     "title": "{name}에 오신 것을\n환영합니다",
     "tagline": "에이전트를 설치하고 새 세션이 시작할 에이전트를 고르세요.",
-    "escCloses": "Esc로 닫기",
     "continue": "계속",
     "notInstalled": "설치 안 됨",
     "installing": "설치 중…",

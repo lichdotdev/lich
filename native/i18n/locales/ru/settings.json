@@ -764,7 +764,7 @@
       "official": "Официальное",
       "notFor": "Нет для {os}",
       "installed": "Установлено",
-      "installedVersion": "Установлено · {version}",
+      "installedVersion": "{version}",
       "version": "Версия",
       "released": "Выпущено",
       "license": "Лицензия",

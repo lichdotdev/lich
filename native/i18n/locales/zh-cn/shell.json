@@ -144,8 +144,7 @@
   },
   "shortcutsOverlay": {
     "title": "键盘快捷键",
-    "rebind": "在设置 › 快捷键中重新绑定",
-    "close": "关闭"
+    "rebind": "在设置 › 快捷键中重新绑定"
   },
   "tray": {
     "show": "显示 lich",
@@ -245,7 +244,6 @@
   "welcome": {
     "title": "欢迎使用\n{name}",
     "tagline": "安装你的智能体，并选择新会话默认使用哪一个。",
-    "escCloses": "按 Esc 关闭",
     "continue": "继续",
     "notInstalled": "未安装",
     "installing": "正在安装…",

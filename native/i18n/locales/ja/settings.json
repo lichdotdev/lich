@@ -754,7 +754,7 @@
       "official": "公式",
       "notFor": "{os} 非対応",
       "installed": "インストール済み",
-      "installedVersion": "インストール済み · {version}",
+      "installedVersion": "{version}",
       "version": "バージョン",
       "released": "公開日",
       "license": "ライセンス",

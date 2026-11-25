@@ -223,7 +223,7 @@ func (s *settingsScreen) sectionList(gtx C, th *ui.Theme, values scopedValues, f
 }
 
 // navHeading is a group's label over its entries: small, muted and
-// uppercase, a hairline running from it to the nav's edge.
+// uppercase.
 func navHeading(th *ui.Theme, label string, first bool) layout.Widget {
 	inset := layout.Inset{Left: navRowPadX, Right: navRowPadX, Top: ui.Space(2.5), Bottom: ui.Space(1)}
 	if first {
@@ -231,20 +231,15 @@ func navHeading(th *ui.Theme, label string, first bool) layout.Widget {
 	}
 	return func(gtx C) D {
 		return inset.Layout(gtx, func(gtx C) D {
-			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-				layout.Rigid(th.Text(ui.Text2XS, strings.ToUpper(label)).Muted().Weight(font.SemiBold).Layout),
-				ui.Gap(2),
-				layout.Flexed(1, th.Separator),
-			)
+			return th.Text(ui.Text2XS, strings.ToUpper(label)).Muted().Weight(font.SemiBold).Layout(gtx)
 		})
 	}
 }
 
-// navFooter is the footer group: a separator, then Updates and Help.
+// navFooter is the footer group, Updates and Help, set apart by space.
 func (s *settingsScreen) navFooter(gtx C, th *ui.Theme, values scopedValues) D {
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(th.Separator),
-		ui.VGap(1.5),
+		ui.VGap(2.5),
 		layout.Rigid(func(gtx C) D { return s.sectionList(gtx, th, values, true) }),
 	)
 }

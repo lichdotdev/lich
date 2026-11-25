@@ -53,8 +53,8 @@ func (s *settingsScreen) notifyRow(gtx C, key string) (string, func(gtx C, th *u
 	return desc, func(gtx C, th *ui.Theme) D { return th.Switch(sw).Layout(gtx) }, true
 }
 
-// groupHeading is SettingGroup's label: small, muted and uppercase, the gap
-// above it dropped for the section's first group.
+// groupHeading is SettingGroup's label: small, muted and uppercase, set apart
+// by the gap above it, dropped for the section's first group.
 func groupHeading(th *ui.Theme, label string, first bool) layout.Widget {
 	inset := layout.Inset{Left: rowPadX, Top: groupGapAbove, Bottom: groupGapBelow}
 	if first {
@@ -62,11 +62,7 @@ func groupHeading(th *ui.Theme, label string, first bool) layout.Widget {
 	}
 	return func(gtx C) D {
 		return inset.Layout(gtx, func(gtx C) D {
-			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-				layout.Rigid(th.Text(ui.Text2XS, strings.ToUpper(label)).Muted().Weight(font.SemiBold).Layout),
-				ui.Gap(2),
-				layout.Flexed(1, th.Separator),
-			)
+			return th.Text(ui.Text2XS, strings.ToUpper(label)).Muted().Weight(font.SemiBold).Layout(gtx)
 		})
 	}
 }

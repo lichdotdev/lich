@@ -129,9 +129,7 @@ func (s *settingsScreen) providerListRows(th *ui.Theme, values scopedValues, m p
 			s.scrollToBlock(sessionViewEntry.titleText(), base+len(rows))
 			rows = append(rows, func(gtx C) D { return s.sessionViewRow(gtx, th, values, false) })
 		}
-		rows = append(rows, func(gtx C) D {
-			return layout.Flex{Axis: layout.Vertical}.Layout(gtx, layout.Rigid(th.Separator), ui.VGap(4))
-		})
+		rows = append(rows, func(gtx C) D { return layout.Spacer{Height: ui.Space(6)}.Layout(gtx) })
 	}
 	for _, p := range enabled {
 		rows = append(rows, func(gtx C) D { return s.providerListRow(gtx, th, values, m, p) })
@@ -389,10 +387,7 @@ func (s *settingsScreen) providerToggleRow(gtx C, th *ui.Theme, p providerInfo, 
 			)
 		})
 	}
-	if first {
-		return row(gtx)
-	}
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, layout.Rigid(th.Separator), layout.Rigid(row))
+	return row(gtx)
 }
 
 // providerHeader is ProviderDetail's head: the way back, then the provider's
@@ -442,11 +437,8 @@ func (s *settingsScreen) providerHeader(th *ui.Theme, p providerInfo) []layout.W
 				docs = &d
 			}
 			toggle := record(loose, func(gtx C) D {
-				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-					layout.Rigid(th.Text(ui.TextXS, i18n.T("settings.providerDetail.enabled")).Muted().Layout),
-					ui.Gap(2),
-					layout.Rigid(th.Switch(&pr.header).Layout),
-				)
+				// the switch says whether it is on; its name is its tooltip
+				return th.Tooltip(s.root, &pr.headerTip, i18n.T("settings.providerDetail.enabled")).Layout(gtx, th.Switch(&pr.header).Layout)
 			})
 			return providerTitleRow(gtx, name, docs, toggle)
 		})

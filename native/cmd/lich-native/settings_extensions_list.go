@@ -1,6 +1,7 @@
 package main
 
 import (
+	"gioui.org/io/semantic"
 	"image"
 	"image/color"
 
@@ -164,18 +165,19 @@ func (s *settingsScreen) extensionCardFoot(gtx C, th *ui.Theme, e backend.Extens
 		layout.Rigid(func(gtx C) D { return s.extensionStatus(gtx, th, e, r) }),
 		layout.Flexed(1, func(gtx C) D { return D{Size: image.Pt(gtx.Constraints.Min.X, 0)} }),
 	}
-	button := func(c *ui.Clickable, key string) {
+	button := func(c *ui.Clickable, key string, v ui.Variant) {
 		children = append(children, ui.Gap(1), layout.Rigid(func(gtx C) D {
 			b := th.Button(c, i18n.T(key))
-			b.Variant, b.Size = ui.VariantOutline, ui.SizeXS
+			b.Variant, b.Size = v, ui.SizeXS
 			return b.Layout(gtx)
 		}))
 	}
 	switch {
 	case e.Revoked != "":
-		button(&r.remove, "settings.extensionsSettings.removeMenuItem")
+		button(&r.remove, "settings.extensionsSettings.removeMenuItem", ui.VariantDestructive)
 	case e.Status == api.ExtensionFailed:
-		button(&r.restart, "settings.extensionsSettings.restart")
+		// a restart mends the failure: the row's filled action
+		button(&r.restart, "settings.extensionsSettings.restart", ui.VariantDefault)
 	}
 	if e.Latest != "" {
 		children = append(children, ui.Gap(1), layout.Rigid(s.extensions.updateButton(th, e, r)))
@@ -206,7 +208,7 @@ func (p *extensionsSettings) updateButton(th *ui.Theme, e backend.Extension, r *
 	if installing == errAtRow(e.ID) {
 		b.Text = i18n.T("settings.extensionsSettings.updating")
 	}
-	b.Variant, b.Size, b.Disabled = ui.VariantOutline, ui.SizeXS, installing != ""
+	b.Size, b.Disabled = ui.SizeXS, installing != ""
 	return b.Layout
 }
 
@@ -232,12 +234,22 @@ func rowStatus(e backend.Extension) string {
 	return e.Status
 }
 
-// extensionStatus is the dot and its word, the source, the error and the
-// permissions one hover away.
+// extensionStatus is the dot, its word only where the dot cannot say it (a
+// failure, an invalid one, a restart) and for screen readers always, the
+// source, the error and the permissions one hover away.
 func (s *settingsScreen) extensionStatus(gtx C, th *ui.Theme, e backend.Extension, r *extensionRowState) D {
 	status := rowStatus(e)
 	word := th.Text(ui.TextXS, extensionStatusText(status)).In(extensionStatusTone(th, status))
 	line := func(gtx C) D {
+		dot := func(gtx C) D {
+			d := extensionDot(gtx, th, status)
+			defer clip.Rect{Max: d.Size}.Push(gtx.Ops).Pop()
+			semantic.LabelOp(extensionStatusText(status)).Add(gtx.Ops)
+			return d
+		}
+		if status == api.ExtensionRunning || status == api.ExtensionStopped {
+			return dot(gtx)
+		}
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Rigid(func(gtx C) D { return extensionDot(gtx, th, status) }),
 			ui.Gap(1.5),
