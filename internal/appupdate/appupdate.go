@@ -41,6 +41,12 @@ const (
 	// brewPackage is the tap-qualified name Homebrew users update through; brew
 	// owns its copy, so lich never swaps it itself.
 	brewPackage = brewTap + "/lich"
+	// brewBetaPackage is the cask the beta channel installs: the newest
+	// release, pre-release or not. It and brewPackage install the same
+	// Lich.app, so moving between channels swaps one for the other.
+	brewBetaPackage = brewTap + "/lich@beta"
+	// brewBetaToken is brewBetaPackage's directory under a Caskroom.
+	brewBetaToken = "lich@beta"
 	// brewTap is tapped before every upgrade: an install from the old
 	// omartelo/tap is redirected here by its tap_migrations.json, but Homebrew
 	// refuses to add a third-party tap on its own, so the upgrade fails until
@@ -85,6 +91,9 @@ const (
 	downloadTimeout = 5 * time.Minute
 )
 
+// defaultCaskrooms are Homebrew's Caskroom on Apple Silicon and on Intel.
+var defaultCaskrooms = []string{"/opt/homebrew/Caskroom", "/usr/local/Caskroom"}
+
 // Service reports lich's own update state and applies self-updates where the
 // binary is writable.
 type Service struct {
@@ -117,6 +126,9 @@ type Service struct {
 	// beta reports whether the user picked the beta channel, read on every
 	// lookup so a switch takes effect on the next check; nil is stable.
 	beta func() bool
+	// caskrooms are where Homebrew keeps its installed casks, Apple Silicon's
+	// prefix and Intel's; a field so tests point them at a temp dir.
+	caskrooms []string
 
 	// seen guards last, the status of the latest lookup, and checkedAt, when it
 	// ran. Apart from mu, which Apply holds for a whole download.
@@ -143,6 +155,7 @@ func New(version string, install func(string) error, emit func(name string, data
 		downloadBase:  releaseBase,
 		tagBase:       releaseTagBase,
 		osReleasePath: defaultOSRelease,
+		caskrooms:     defaultCaskrooms,
 		beta:          beta,
 	}
 }
@@ -260,7 +273,7 @@ func (s *Service) installCommand(latest string) string {
 		return s.betaInstallCommand(latest)
 	}
 	if bundled(s.exePath) {
-		return "brew tap " + brewTap + " && brew upgrade --cask " + brewPackage + restartChain
+		return s.brewCommand()
 	}
 	if scoopOwned(s.exePath) {
 		return "scoop update " + scoopPackage + restartChainPwsh
@@ -277,10 +290,38 @@ func (s *Service) installCommand(latest string) string {
 	return installScript
 }
 
-// betaInstallCommand is installCommand for a pre-release, which reaches
-// neither Homebrew nor Scoop: those installs get the release page.
+// brewCommand updates a cask install on its channel's cask, swapping the
+// cask first when the install is on the other channel's.
+func (s *Service) brewCommand() string {
+	want, other := brewPackage, brewBetaPackage
+	if s.beta != nil && s.beta() {
+		want, other = brewBetaPackage, brewPackage
+	}
+	onBeta := s.betaCaskInstalled()
+	if onBeta == (want == brewBetaPackage) {
+		return "brew tap " + brewTap + " && brew upgrade --cask " + want + restartChain
+	}
+	return "brew tap " + brewTap + " && brew uninstall --cask " + other + " && brew install --cask " + want + restartChain
+}
+
+// betaCaskInstalled reports whether Homebrew holds lich through the beta cask.
+func (s *Service) betaCaskInstalled() bool {
+	for _, room := range s.caskrooms {
+		if _, err := os.Stat(filepath.Join(room, brewBetaToken)); err == nil {
+			return true
+		}
+	}
+	return false
+}
+
+// betaInstallCommand is installCommand for a pre-release, which Homebrew
+// gets through the beta cask and Scoop not at all: that install gets the
+// release page.
 func (s *Service) betaInstallCommand(latest string) string {
-	if bundled(s.exePath) || scoopOwned(s.exePath) || s.goos != "linux" || !packaged(s.exePath) {
+	if bundled(s.exePath) {
+		return s.brewCommand()
+	}
+	if scoopOwned(s.exePath) || s.goos != "linux" || !packaged(s.exePath) {
 		return ""
 	}
 	data, _ := os.ReadFile(s.osReleasePath) // missing/unreadable → not arch → install.sh

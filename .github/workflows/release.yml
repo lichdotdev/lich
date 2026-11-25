@@ -574,12 +574,12 @@ jobs:
   # repository and never expires, so a release years from now still publishes.
   homebrew:
     needs: [release]
-    if: ${{ !contains(github.ref_name, '-') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
 
-      - name: Render cask
+      # lich@beta follows every release and pre-release; lich, the releases only.
+      - name: Render casks
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -596,13 +596,19 @@ jobs:
             cat checksums.txt >&2
             exit 1
           fi
-          sed -e "s/@VERSION@/${version}/g" \
-              -e "s/@SHA_ARM64@/${arm64}/" \
-              -e "s/@SHA_AMD64@/${amd64}/" \
-              build/darwin/homebrew/lich.rb.tpl > lich.rb
-          cat lich.rb
+          mkdir casks
+          render() {
+            sed -e "s/@TOKEN@/$1/" -e "s/@OTHER@/$2/" \
+                -e "s/@VERSION@/${version}/g" \
+                -e "s/@SHA_ARM64@/${arm64}/" \
+                -e "s/@SHA_AMD64@/${amd64}/" \
+                build/darwin/homebrew/lich.rb.tpl > "casks/$1.rb"
+            cat "casks/$1.rb"
+          }
+          render lich@beta lich
+          case "$GITHUB_REF_NAME" in *-*) ;; *) render lich lich@beta ;; esac
 
-      - name: Publish lich to the tap
+      - name: Publish the casks to the tap
         env:
           SSH_KEY: ${{ secrets.HOMEBREW_TAP_SSH_KEY }}
         run: |
@@ -616,14 +622,14 @@ jobs:
           export GIT_SSH_COMMAND="ssh -i $key -o IdentitiesOnly=yes -o UserKnownHostsFile=$known"
           git clone --depth 1 git@github.com:lichdotdev/homebrew-tap.git tap
           mkdir -p tap/Casks
-          cp lich.rb tap/Casks/lich.rb
+          cp casks/*.rb tap/Casks/
           cd tap
           git config user.name omartelo
           git config user.email meopedevts@proton.me
-          git add Casks/lich.rb
-          # A re-run of the same tag renders an identical cask; nothing to push.
+          git add Casks
+          # A re-run of the same tag renders identical casks; nothing to push.
           if git diff --cached --quiet; then
-            echo "cask already up to date"
+            echo "casks already up to date"
             exit 0
           fi
           git commit -m "lich: update to ${GITHUB_REF_NAME}"

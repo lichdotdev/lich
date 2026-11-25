@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **A Homebrew install follows the beta channel through the `lich@beta` cask.** Pick Beta in Settings › Updates › Channel, and the update command swaps the cask for you.
 - **See the diff of one commit, or of a run of commits, of a pull request.** In Pulls, the chip over Files picks them, Shift+click extends the pick, and View changes on a row of Commits opens that commit; comments and Viewed are off while a pick is shown. On GitLab, only commits your clone holds.
 - **Link a pull request to a session by hand, and unlink one that does not belong.** Pick Link pull request… in the session's menu and type #N or the pull request's URL; it shows with a link glyph wherever the session's pull request does, and Unlink pull request hides it, the branch's own included.
 - **Edit files with Vim's own keys, run by your Neovim and its config.** Turn it on in Settings › Editor › Vim mode, which needs Neovim 0.10 or newer and opens your config with Edit config. A file whose language server is on your PATH gets it, with completion as you type, even when your config starts none.

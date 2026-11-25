@@ -247,8 +247,8 @@ func TestInstallCommand(t *testing.T) {
 	}
 }
 
-// A pre-release reaches no package manager: Linux installs it from the
-// release's own assets, and Homebrew and Scoop get the release page.
+// A pre-release reaches no package manager but Homebrew's beta cask: Linux
+// installs it from the release's own assets, and Scoop gets the release page.
 func TestBetaInstallCommand(t *testing.T) {
 	pkgbuild := `d="$(mktemp -d)" && curl -fsSL -o "$d/PKGBUILD" https://github.com/lichdotdev/lich/releases/download/v0.93.0-rc.15/PKGBUILD && (cd "$d" && makepkg -si --noconfirm)` + restartChain
 	script := "curl -fsSL https://raw.githubusercontent.com/lichdotdev/lich/main/install.sh | LICH_TAG=v0.93.0-rc.15 sh"
@@ -265,7 +265,6 @@ func TestBetaInstallCommand(t *testing.T) {
 		{"debian pins install.sh to the tag", "linux", packagedExe(t), "ID=debian\n", script},
 		{"missing os-release pins install.sh", "linux", packagedExe(t), "", script},
 		{"linux tarball", "linux", filepath.Join(t.TempDir(), "lich"), "ID=debian\n", ""},
-		{"cask install gets the release page", "darwin", bundleExe(t), "", ""},
 		{"scoop install gets the release page", "windows", scoopExe(t), "", ""},
 		{"windows self-apply", "windows", "", "", ""},
 	}
@@ -639,5 +638,44 @@ func TestRequiredUpdateLooksNothingUpForADevBuild(t *testing.T) {
 	}
 	if got := hits.Load(); got != 0 {
 		t.Fatalf("lookups = %d, want none", got)
+	}
+}
+
+// A cask install updates on its channel's cask, and moving channels swaps the
+// installed cask for the other one: both install the same Lich.app.
+func TestBrewCommand(t *testing.T) {
+	upgrade := func(cask string) string {
+		return "brew tap lichdotdev/tap && brew upgrade --cask " + cask + restartChain
+	}
+	swap := func(from, to string) string {
+		return "brew tap lichdotdev/tap && brew uninstall --cask " + from + " && brew install --cask " + to + restartChain
+	}
+	const stable, beta = "lichdotdev/tap/lich", "lichdotdev/tap/lich@beta"
+	tests := []struct {
+		name         string
+		betaChannel  bool
+		betaCask     bool
+		latest, want string
+	}{
+		{"stable on the stable cask", false, false, "0.94.0", upgrade(stable)},
+		{"beta on the beta cask, a pre-release", true, true, "0.94.0-rc.2", upgrade(beta)},
+		{"beta on the beta cask, a release", true, true, "0.94.0", upgrade(beta)},
+		{"beta still on the stable cask", true, false, "0.94.0-rc.2", swap(stable, beta)},
+		{"back on stable from the beta cask", false, true, "0.94.0", swap(beta, stable)},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			room := t.TempDir()
+			if tc.betaCask {
+				if err := os.MkdirAll(filepath.Join(room, "lich@beta", "0.94.0-rc.1"), 0o755); err != nil {
+					t.Fatal(err)
+				}
+			}
+			s := &Service{goos: "darwin", exePath: bundleExe(t), caskrooms: []string{filepath.Join(t.TempDir(), "none"), room}}
+			s.beta = func() bool { return tc.betaChannel }
+			if got := s.installCommand(tc.latest); got != tc.want {
+				t.Errorf("installCommand() = %q, want %q", got, tc.want)
+			}
+		})
 	}
 }

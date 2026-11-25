@@ -15,8 +15,9 @@ where an RC differs from the stable flow in `CLAUDE.md` › Releases.
 - `CHANGELOG.md` stays as it is: no new `## [X.Y.Z]` section and no `changelog/<locale>.md` translation.
   The release notes are the `[Unreleased]` section at the tag. A section cut early would ship as the
   stable release's notes.
-- The AUR, the Homebrew tap and the Scoop manifest. The `aur` and `homebrew` jobs skip any tag with a `-`,
-  and `releases/latest`, which `install.sh` and Scoop read, never names a pre-release.
+- The AUR, the Scoop manifest and the tap's `lich` cask. The `aur` job skips any tag with a `-`, the
+  `homebrew` job updates only `lich@beta` for one, and `releases/latest`, which `install.sh` and Scoop read,
+  never names a pre-release.
 - Alert blocks. A `> [!CAUTION]` in `[Unreleased]` would make the RC a required update for every beta
   install. Alerts are written when the stable section is cut.
 
@@ -41,6 +42,8 @@ where an RC differs from the stable flow in `CLAUDE.md` › Releases.
    `lich-vX.Y.Z-rc.N-` + each of `amd64.deb`, `x86_64.rpm`, `x86_64.pkg.tar.zst`, `linux-amd64.tar.zst`,
    `windows-amd64.zip`, `windows-amd64-setup.exe`, `darwin-amd64.zip`, `darwin-arm64.zip`. Also run
    `gh release view --json tagName` with no tag: it must still name the last stable release.
+   The tap's `Casks/lich@beta.rb` names the RC's version:
+   `gh api repos/lichdotdev/homebrew-tap/contents/Casks/lich@beta.rb -q .content | base64 -d | grep version`.
 
 ## How beta installs take it
 
@@ -51,7 +54,8 @@ From `internal/appupdate`, for the record when a tester asks:
 | Windows installer | The prompt's button runs the RC's `setup.exe` |
 | deb, rpm | `install.sh` pinned with `LICH_TAG=vX.Y.Z-rc.N` |
 | Arch | `makepkg -si` on the RC's `PKGBUILD`, under the AUR's `lich-bin` name |
-| Homebrew, Scoop, tarball | The release page only |
+| Homebrew | `brew upgrade --cask lichdotdev/tap/lich@beta`, swapping `lich` for it the first time |
+| Scoop, tarball | The release page only |
 
 ## When the run fails
 
