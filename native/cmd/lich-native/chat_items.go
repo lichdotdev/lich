@@ -77,6 +77,9 @@ func (u *window) chatRow(gtx C, th *ui.Theme, p *chatPane, sv sessionView, r cha
 		if envs, ok := parseEnvelopes(it.Text); ok {
 			return u.chatEnvelopes(gtx, th, p, it, envs)
 		}
+		if notes, ok := parseTaskNotes(it.Text); ok {
+			return u.chatTaskNotes(gtx, th, p, sv.Kind, it, notes)
+		}
 		c := p.copyOf(it.ID)
 		return u.messageMenu(gtx, th, p, sv, c, it.ID, "user:"+it.ID, it.Text, func(gtx C) D { return u.chatUserRow(gtx, th, p, c, it) })
 	case api.ItemAgent:
