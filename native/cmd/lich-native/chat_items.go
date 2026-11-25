@@ -6,6 +6,7 @@ import (
 	"image"
 	"image/color"
 	"path"
+	"strconv"
 	"strings"
 	"time"
 
@@ -729,8 +730,9 @@ func permitLabel(o api.ChatPermitOption) string {
 }
 
 // chatPermission is the agent asking before a tool runs: a box with the
-// tool, its diff and a button per answer the provider offers, the first
-// allow filled. Answered, it is a muted line with the answer.
+// tool, its diff and a button per answer the provider offers, each with the
+// digit that takes it, the suggested one filled, and Esc's hint when it has a
+// one-time reject. Answered, it is a muted line with the answer.
 func chatPermission(gtx C, th *ui.Theme, p *chatPane, it backend.ChatItem) D {
 	perm := it.Permission
 	tool := strings.TrimSpace(perm.Tool.Name + " " + cleanLine(perm.Tool.Title))
@@ -744,7 +746,7 @@ func chatPermission(gtx C, th *ui.Theme, p *chatPane, it backend.ChatItem) D {
 		return th.Text(ui.TextXS, i18n.T("chat.view.answered", i18n.Args{"tool": tool, "choice": choice})).Muted().Layout(gtx)
 	}
 	box := th.On(th.Sidebar)
-	primary := permitOption(perm, api.PermitAllowOnce, api.PermitAllowAlways)
+	primary := permitSuggested(perm)
 	var buttons []layout.FlexChild
 	for i, o := range perm.Options {
 		if i > 0 {
@@ -752,10 +754,17 @@ func chatPermission(gtx C, th *ui.Theme, p *chatPane, it backend.ChatItem) D {
 		}
 		b := box.Button(p.answer(it.ID, o.ID), permitLabel(o))
 		b.Size, b.Variant = ui.SizeSM, ui.VariantOutline
+		if i < permitDigits(perm) {
+			b.Keys = strconv.Itoa(i + 1)
+		}
 		if o.ID == primary {
 			b.Variant = ui.VariantDefault
 		}
 		buttons = append(buttons, layout.Rigid(b.Layout))
+	}
+	if permitOption(perm, api.PermitRejectOnce) != "" {
+		buttons = append(buttons, layout.Flexed(1, func(gtx C) D { return D{Size: gtx.Constraints.Min} }),
+			layout.Rigid(box.KeyHint("Esc", i18n.T("chat.permit.escDenies")).Layout))
 	}
 	return layout.Background{}.Layout(gtx,
 		func(gtx C) D { return ui.Fill(gtx, th.Sidebar, ui.RadiusMD) },

@@ -2717,6 +2717,7 @@ ChatPermission {
 	tool ChatToolCall
 	options []ChatPermitOption
 	chosen,omitempty string
+	defaultNo,omitempty bool
 }
 
 ChatQuestion {

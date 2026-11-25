@@ -73,6 +73,8 @@ func TestEscTakesAWaitingMessageBackBeforeStopping(t *testing.T) {
 func TestEscRejectsAPermissionRatherThanStopping(t *testing.T) {
 	u, r, f := permissionFrames(t)
 	p := u.chats.pane("s1")
+	// the keys are the box's until a click hands them back to the composer
+	r.router.Source().Execute(key.FocusCmd{Tag: &p.editor})
 	typeIn(r, p, "wait")
 	r.press(key.NameEscape)
 	noCancel(t, f)

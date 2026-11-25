@@ -76,6 +76,7 @@ type ButtonStyle struct {
 	Click    *Clickable
 	Text     string
 	Icon     *icons.Icon // leading, optional
+	Keys     string      // a key cap leading the text, the key that presses it
 	Variant  Variant
 	Size     Size
 	Disabled bool
@@ -185,8 +186,10 @@ func (b ButtonStyle) content(gtx C, geo buttonGeometry, fg color.NRGBA) D {
 		children = append(children, layout.Rigid(func(gtx C) D { return b.theme.Spinner(gtx, geo.icon, fg) }))
 	case b.Icon != nil:
 		children = append(children, layout.Rigid(func(gtx C) D { return b.Icon.Layout(gtx, geo.icon, fg) }))
+	case b.Keys != "":
+		children = append(children, layout.Rigid(b.theme.KeyCap(b.Keys).Layout))
 	}
-	if (b.Busy || b.Icon != nil) && b.Text != "" {
+	if (b.Busy || b.Icon != nil || b.Keys != "") && b.Text != "" {
 		children = append(children, layout.Rigid(layout.Spacer{Width: geo.gap}.Layout))
 	}
 	if b.Text != "" {

@@ -343,8 +343,7 @@ func permissionWaiting(items []backend.ChatItem) *backend.ChatItem {
 	return nil
 }
 
-// permitOption is p's option of the first of kinds it offers, "" for none:
-// Enter allows once before always, Esc rejects.
+// permitOption is p's option of the first of kinds it offers, "" for none.
 func permitOption(p *backend.ChatPermission, kinds ...string) string {
 	for _, k := range kinds {
 		if i := slices.IndexFunc(p.Options, func(o api.ChatPermitOption) bool { return o.Kind == k }); i >= 0 {

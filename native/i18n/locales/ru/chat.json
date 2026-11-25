@@ -136,7 +136,8 @@
   "permit": {
     "allowOnce": "Разрешить",
     "allowAlways": "Всегда разрешать",
-    "rejectOnce": "Запретить"
+    "rejectOnce": "Запретить",
+    "escDenies": "запрещает"
   },
   "choice": {
     "manual": "Ручной",

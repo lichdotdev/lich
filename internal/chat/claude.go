@@ -528,6 +528,8 @@ type claudeAsk struct {
 	Input       json.RawMessage   `json:"input"`
 	Suggestions []json.RawMessage `json:"permission_suggestions"`
 	ToolUseID   string            `json:"tool_use_id"`
+	// DefaultNo is an ask no stray key may allow (measured on 2.1.331).
+	DefaultNo bool `json:"default_to_no"`
 }
 
 // request answers what Claude Code asks of lich: can_use_tool becomes a
@@ -567,7 +569,8 @@ func (d *claudeDriver) request(id string, raw json.RawMessage) {
 	tool := claudeTool(ask.Tool, ask.Input)
 	tool.State = api.ToolPending
 	d.c.ask("perm-"+id, tool, permission{
-		options: options,
+		options:   options,
+		defaultNo: ask.DefaultNo,
 		reply: func(o api.ChatPermitOption) error {
 			switch o.Kind {
 			case api.PermitAllowOnce:

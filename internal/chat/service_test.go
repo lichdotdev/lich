@@ -99,3 +99,30 @@ func TestShutdownStopsEveryChat(t *testing.T) {
 		t.Fatal("Shutdown returned with a chat running")
 	}
 }
+
+// TestPermissionDefaultNo: a permission is default-no only when its provider
+// asks that no single key allow it, which Claude Code's default_to_no does
+// and Codex's and ACP's requests have no field for.
+func TestPermissionDefaultNo(t *testing.T) {
+	for name, tc := range map[string]struct {
+		provider string
+		prompt   string
+		want     bool
+	}{
+		"claude":            {providers.Claude, "perm", false},
+		"claude default no": {providers.Claude, "perm-no", true},
+		"codex":             {providers.Codex, "perm", false},
+		"acp":               {providers.OMP, "perm", false},
+	} {
+		t.Run(name, func(t *testing.T) {
+			r := newRig(t, tc.provider)
+			if err := r.setView(api.ViewChat); err != nil {
+				t.Fatalf("SetView: %v", err)
+			}
+			r.prompt(tc.prompt)
+			if got := r.waitPermission().Permission.DefaultNo; got != tc.want {
+				t.Errorf("DefaultNo = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
