@@ -1,8 +1,10 @@
 # Maintainer: omartelo <meopedevts@proton.me>
-# Rendered by .github/workflows/release.yml (@VERSION@ -> tag, checksums via
-# updpkgsums) and pushed to the AUR — edit this template, never the AUR copy.
+# Rendered by .github/workflows/release.yml (the tag, the pkgver pacman can
+# read and the checksums) and pushed to the AUR, or attached to a pre-release
+# for the beta channel — edit this template, never the AUR copy.
 pkgname=lich-bin
-pkgver=@VERSION@
+pkgver=@PKGVER@
+_tag=@VERSION@
 pkgrel=1
 pkgdesc="Run your coding agents side by side, each on its own branch"
 arch=('x86_64')
@@ -15,9 +17,9 @@ conflicts=('lich')
 depends=('glibc' 'libglvnd' 'wayland' 'libxkbcommon' 'libxkbcommon-x11' 'libx11'
          'libxcursor' 'libxfixes' 'fontconfig')
 optdepends=('zenity: native folder picker')
-source=("lich-v${pkgver}-linux-amd64.tar.zst::${url}/releases/download/v${pkgver}/lich-v${pkgver}-linux-amd64.tar.zst"
-        "lich-${pkgver}.desktop::https://raw.githubusercontent.com/lichdotdev/lich/v${pkgver}/build/linux/lich.desktop"
-        "lich-${pkgver}.png::https://raw.githubusercontent.com/lichdotdev/lich/v${pkgver}/build/appicon.png")
+source=("lich-v${_tag}-linux-amd64.tar.zst::${url}/releases/download/v${_tag}/lich-v${_tag}-linux-amd64.tar.zst"
+        "lich-${pkgver}.desktop::https://raw.githubusercontent.com/lichdotdev/lich/v${_tag}/build/linux/lich.desktop"
+        "lich-${pkgver}.png::https://raw.githubusercontent.com/lichdotdev/lich/v${_tag}/build/appicon.png")
 sha256sums=('SKIP'
             'SKIP'
             'SKIP')

@@ -3,8 +3,6 @@ package appupdate
 import (
 	"fmt"
 	"time"
-
-	"github.com/lichdotdev/lich/internal/semver"
 )
 
 // staleAfter is how old the last lookup may be before RequiredUpdate runs one
@@ -19,7 +17,7 @@ const staleAfter = 2 * time.Hour
 // required, as it reports no update, and a build that is not a release is
 // never asked to update, so it looks nothing up.
 func (s *Service) RequiredUpdate() error {
-	if !semver.IsRelease(s.version) {
+	if !checksUpdates(s.version) {
 		return nil
 	}
 	s.seen.Lock()

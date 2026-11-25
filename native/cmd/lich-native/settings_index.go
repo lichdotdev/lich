@@ -123,6 +123,7 @@ var settingsSections = []settingsSection{
 	}},
 	{id: sectionUpdates, labelKey: "settings.settings.section.updates", icon: icons.Lucide("download"), footer: true, rows: []settingEntry{
 		{titleKey: "settings.updatesSettings.applicationTitle", alsoKey: "settings.updatesSettings.applicationSearchWords", key: updatesAppKey},
+		{titleKey: "settings.updatesSettings.channelTitle", alsoKey: "settings.updatesSettings.channelSearchWords", key: updateChannelKey},
 		{titleKey: "settings.updatesSettings.whatsNewTitle", alsoKey: "settings.updatesSettings.whatsNewSearchWords", key: updatesNotesKey},
 		{titleKey: "settings.pluginSetting.title", alsoKey: "settings.pluginSetting.searchWords", key: updatesPluginKey},
 	}},
