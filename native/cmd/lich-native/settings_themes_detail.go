@@ -1,8 +1,6 @@
 package main
 
 import (
-	"gioui.org/io/semantic"
-	"gioui.org/op/clip"
 	"image"
 	"math"
 	"strconv"
@@ -244,10 +242,7 @@ func (s *settingsScreen) themeDetailActions(gtx C, th *ui.Theme, pack themePack,
 	d := &p.grid.detail
 	v := p.look.view()
 	if look.def.ID == v.selected {
-		d := icCatalogCheck.Layout(gtx, ui.Space(3.5), th.MutedForeground)
-		defer clip.Rect{Max: d.Size}.Push(gtx.Ops).Pop()
-		semantic.LabelOp(i18n.T("settings.themesPage.inUse")).Add(gtx.Ops)
-		return d
+		return labeledGlyph(gtx, i18n.T("settings.themesPage.inUse"), func(gtx C) D { return icCatalogCheck.Layout(gtx, ui.Space(3.5), th.MutedForeground) })
 	}
 	var main layout.Widget
 	if _, ok := themeByID(v.themes, look.def.ID); ok {

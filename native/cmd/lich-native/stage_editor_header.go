@@ -6,8 +6,6 @@ package main
 
 import (
 	"context"
-	"gioui.org/io/semantic"
-	"gioui.org/op/clip"
 	"github.com/lichdotdev/lich/native/ui/icons"
 	"image"
 	"path"
@@ -218,10 +216,7 @@ func (f *fileEditor) title(gtx C, th *ui.Theme) D {
 	if f.readOnly() {
 		// a lock says it; its word is for screen readers
 		children = append(children, ui.Gap(3), layout.Rigid(func(gtx C) D {
-			d := icEditorLock.Layout(gtx, ui.Space(3.5), th.MutedForeground)
-			defer clip.Rect{Max: d.Size}.Push(gtx.Ops).Pop()
-			semantic.LabelOp(i18n.T("dock.editor.artifactReadOnly")).Add(gtx.Ops)
-			return d
+			return labeledGlyph(gtx, i18n.T("dock.editor.artifactReadOnly"), func(gtx C) D { return icEditorLock.Layout(gtx, ui.Space(3.5), th.MutedForeground) })
 		}))
 	}
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)

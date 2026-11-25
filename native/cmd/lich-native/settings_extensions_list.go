@@ -1,7 +1,6 @@
 package main
 
 import (
-	"gioui.org/io/semantic"
 	"image"
 	"image/color"
 
@@ -242,10 +241,7 @@ func (s *settingsScreen) extensionStatus(gtx C, th *ui.Theme, e backend.Extensio
 	word := th.Text(ui.TextXS, extensionStatusText(status)).In(extensionStatusTone(th, status))
 	line := func(gtx C) D {
 		dot := func(gtx C) D {
-			d := extensionDot(gtx, th, status)
-			defer clip.Rect{Max: d.Size}.Push(gtx.Ops).Pop()
-			semantic.LabelOp(extensionStatusText(status)).Add(gtx.Ops)
-			return d
+			return labeledGlyph(gtx, extensionStatusText(status), func(gtx C) D { return extensionDot(gtx, th, status) })
 		}
 		if status == api.ExtensionRunning || status == api.ExtensionStopped {
 			return dot(gtx)

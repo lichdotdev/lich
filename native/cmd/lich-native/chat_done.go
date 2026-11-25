@@ -1,9 +1,7 @@
 package main
 
 import (
-	"gioui.org/io/semantic"
 	"gioui.org/layout"
-	"gioui.org/op/clip"
 	"gioui.org/op/paint"
 	"github.com/lichdotdev/lich/native/ui/icons"
 	"image/color"
@@ -54,10 +52,7 @@ func (u *window) chatDone(gtx C, th *ui.Theme, sv sessionView, r chatRow, shown 
 	end, _ := u.model.chat.endOf(sv.ID, r.turn)
 	ic, ink := chatDoneGlyph(th, end.StopReason)
 	word := func(gtx C) D {
-		d := ic.Layout(gtx, ui.Space(4), ink)
-		defer clip.Rect{Max: d.Size}.Push(gtx.Ops).Pop()
-		semantic.LabelOp(chatDoneWord(end.StopReason)).Add(gtx.Ops)
-		return d
+		return labeledGlyph(gtx, chatDoneWord(end.StopReason), func(gtx C) D { return ic.Layout(gtx, ui.Space(4), ink) })
 	}
 	faded := func(w layout.Widget) layout.FlexChild {
 		if shown == 1 {

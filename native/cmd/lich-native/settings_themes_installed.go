@@ -1,7 +1,6 @@
 package main
 
 import (
-	"gioui.org/io/semantic"
 	"image"
 
 	"gioui.org/font"
@@ -181,10 +180,7 @@ func (s *settingsScreen) themeHeroText(gtx C, th *ui.Theme, v appearanceView, t 
 	p := s.theme
 	head := []layout.FlexChild{
 		layout.Rigid(func(gtx C) D {
-			d := icCatalogCheck.Layout(gtx, ui.Space(3.5), th.Foreground)
-			defer clip.Rect{Max: d.Size}.Push(gtx.Ops).Pop()
-			semantic.LabelOp(i18n.T("settings.themesPage.inUse")).Add(gtx.Ops)
-			return d
+			return labeledGlyph(gtx, i18n.T("settings.themesPage.inUse"), func(gtx C) D { return icCatalogCheck.Layout(gtx, ui.Space(3.5), th.Foreground) })
 		}),
 		layout.Flexed(1, func(gtx C) D { return D{Size: image.Pt(gtx.Constraints.Max.X, 0)} }),
 	}

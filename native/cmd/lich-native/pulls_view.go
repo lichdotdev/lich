@@ -2,8 +2,6 @@ package main
 
 import (
 	"fmt"
-	"gioui.org/io/semantic"
-	"gioui.org/op/clip"
 	"image"
 	"image/color"
 	"sync"
@@ -387,10 +385,7 @@ func pullStat(gtx C, th *ui.Theme, ic *icons.Icon, text string, fg color.NRGBA) 
 // pullState is a state the glyph says alone: ic in fg, word its name for
 // screen readers.
 func pullState(gtx C, th *ui.Theme, ic *icons.Icon, word string, fg color.NRGBA) D {
-	d := pullGlyph(gtx, th, ic, ui.Space(3.5), fg)
-	defer clip.Rect{Max: d.Size}.Push(gtx.Ops).Pop()
-	semantic.LabelOp(word).Add(gtx.Ops)
-	return d
+	return labeledGlyph(gtx, word, func(gtx C) D { return pullGlyph(gtx, th, ic, ui.Space(3.5), fg) })
 }
 
 // pullGlyph is ic at size, icPullRunning drawn as a BusyRing.

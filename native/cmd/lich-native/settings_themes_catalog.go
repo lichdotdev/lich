@@ -2,8 +2,6 @@ package main
 
 import (
 	"cmp"
-	"gioui.org/io/semantic"
-	"gioui.org/op/clip"
 	"image"
 	"slices"
 	"strconv"
@@ -264,10 +262,7 @@ func themeCardName(gtx C, th *ui.Theme, name string, state int) D {
 		}
 		line = append(line, ui.Gap(2),
 			layout.Rigid(func(gtx C) D {
-				d := icCatalogCheck.Layout(gtx, ui.Space(3), ink)
-				defer clip.Rect{Max: d.Size}.Push(gtx.Ops).Pop()
-				semantic.LabelOp(words).Add(gtx.Ops)
-				return d
+				return labeledGlyph(gtx, words, func(gtx C) D { return icCatalogCheck.Layout(gtx, ui.Space(3), ink) })
 			}),
 		)
 	}

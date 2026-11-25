@@ -1,7 +1,6 @@
 package main
 
 import (
-	"gioui.org/io/semantic"
 	"image"
 	"image/color"
 	"strconv"
@@ -344,10 +343,7 @@ func catalogMeta(gtx C, th *ui.Theme, cat *backend.ExtensionCatalog, e extension
 	}
 	if installed {
 		add(func(gtx C) D {
-			d := icCatalogCheck.Layout(gtx, ui.Space(3), th.TonePass)
-			defer clip.Rect{Max: d.Size}.Push(gtx.Ops).Pop()
-			semantic.LabelOp(i18n.T("settings.extensionsSettings.catalog.installed")).Add(gtx.Ops)
-			return d
+			return labeledGlyph(gtx, i18n.T("settings.extensionsSettings.catalog.installed"), func(gtx C) D { return icCatalogCheck.Layout(gtx, ui.Space(3), th.TonePass) })
 		})
 	}
 	if _, ok := e.Builds[cat.Platform]; !ok {

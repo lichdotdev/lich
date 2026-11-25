@@ -1,7 +1,6 @@
 package main
 
 import (
-	"gioui.org/io/semantic"
 	"image"
 	"image/color"
 	"image/draw"
@@ -218,10 +217,7 @@ func welcomeStatus(gtx C, th *ui.Theme, root *ui.Root, t *tome, s tomeState, f t
 	switch s {
 	case tomeReady:
 		// the check says it is ready; its word is for screen readers
-		d := icCheck.Layout(gtx, ui.Space(3.5), th.TonePass)
-		defer clip.Rect{Max: d.Size}.Push(gtx.Ops).Pop()
-		semantic.LabelOp(welcomeStatusText(s)).Add(gtx.Ops)
-		return d
+		return labeledGlyph(gtx, welcomeStatusText(s), func(gtx C) D { return icCheck.Layout(gtx, ui.Space(3.5), th.TonePass) })
 	case tomeFailed:
 		l = th.Text(welcomeStatusSize, f.install.failure).In(th.Destructive).Truncated()
 		return th.Tooltip(root, &t.tip, f.install.failure).Layout(gtx, l.Layout)
