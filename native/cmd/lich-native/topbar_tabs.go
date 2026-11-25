@@ -223,7 +223,8 @@ func (t *topbar) drawSeparator(gtx C, th *ui.Theme, f topbarFrame) {
 	if t.separator.Empty() {
 		return
 	}
-	r := t.separator.Sub(image.Pt(f.stripX, 0))
+	// separator is in window pixels, and the list already draws shifted by its scroll.
+	r := t.separator.Sub(image.Pt(f.stripX-t.list.Position.Offset, 0))
 	paint.FillShape(gtx.Ops, th.Over(th.Border), clip.Rect{Min: r.Min, Max: r.Max}.Op())
 }
 

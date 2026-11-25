@@ -154,6 +154,34 @@ func TestPinnedGroupSeparatorStaysAtTheGroupBoundaryDuringDrag(t *testing.T) {
 	}
 }
 
+func TestPinnedGroupSeparatorScrollsWithTheTabs(t *testing.T) {
+	r := newFrameRig(image.Pt(900, 120), nil)
+	bar := newTopbar(&ui.Root{})
+	f := topbarFrame{brandWidth: 200, stripX: 240, active: "b"}
+	for i, id := range []string{"p", "q", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j"} {
+		f.tabs = append(f.tabs, projectTab{ID: id, Name: id, pinned: i < 2})
+	}
+	r.draw = func(gtx C, th *ui.Theme) {
+		th.Surface = th.Canvas
+		paint.Fill(gtx.Ops, th.Canvas)
+		bar.layout(gtx, th, f)
+	}
+	r.settle(t)
+	const scrolled = 40
+	bar.list.Position.Offset, bar.list.Position.BeforeEnd = scrolled, true
+	r.frame()
+	r.frame()
+	if got := bar.list.Position.Offset; got != scrolled {
+		t.Fatalf("the strip scrolled %dpx, want %d", got, scrolled)
+	}
+	img := renderRig(t, r)
+	x := laidOf(t, bar, "a").Min.X - gtx1(tabGroupMargin) - gtx1(tabSeparatorWidth)
+	y := gtx1(tabTop) + gtx1(tabHeight)/2
+	if got, want := img.RGBAAt(x, y), r.theme.Over(r.theme.Border); !inkNear(got, want) {
+		t.Errorf("group separator of a scrolled strip at (%d,%d): %v, want %v", x, y, got, want)
+	}
+}
+
 func TestTabMarginsRoundSeparatelyAtFractionalScale(t *testing.T) {
 	gtx := C{Metric: unit.Metric{PxPerDp: 1.31, PxPerSp: 1.31}}
 	tabs := []projectTab{{ID: "p", pinned: true}, {ID: "a"}, {ID: "b"}}
