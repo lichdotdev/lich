@@ -1,4 +1,4 @@
-package webview
+package main
 
 import (
 	"context"
@@ -24,7 +24,7 @@ const (
 	issuerTimeout  = 10 * time.Second
 )
 
-var errNoLeaf = errors.New("webview: no certificate in the chain")
+var errNoLeaf = errors.New("no certificate in the chain")
 
 // completeChain verifies the PEM chain a server sent for host, fetching the
 // issuers it left out, and answers the leaf as PEM once the chain reaches a
@@ -58,7 +58,7 @@ func completeChain(ctx context.Context, client *http.Client, roots *x509.CertPoo
 	}
 	_, err = leaf.Verify(opts)
 	if err == nil {
-		err = errors.New("webview: the chain verifies without fetching")
+		err = errors.New("the chain verifies without fetching")
 	}
 	return nil, err
 }
@@ -98,7 +98,7 @@ func fetchIssuer(ctx context.Context, client *http.Client, url string) (*x509.Ce
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("webview: issuer %s: %s", url, resp.Status)
+		return nil, fmt.Errorf("issuer %s: %s", url, resp.Status)
 	}
 	body, err := io.ReadAll(io.LimitReader(resp.Body, maxIssuerBytes))
 	if err != nil {
