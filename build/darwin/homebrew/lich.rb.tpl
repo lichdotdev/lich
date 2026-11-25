@@ -1,11 +1,13 @@
 # Rendered by .github/workflows/release.yml (@VERSION@ -> tag, checksums from the
-# release's checksums.txt) and pushed to the lichdotdev/homebrew-tap repository as
-# Casks/lich.rb — edit this template, never the tap copy.
+# release's checksums.txt) and pushed to the lichdotdev/homebrew-tap repository
+# twice: Casks/lich.rb, every release, and Casks/lich@beta.rb, every release and
+# pre-release, the cask the beta channel updates through. Edit this template,
+# never the tap copies.
 #
 # A cask, not a formula: only a cask installs an .app into /Applications, which
 # is what puts lich in Launchpad, in Spotlight and behind its own icon. The
 # binary stanza keeps `lich` on PATH, so the one install still serves both.
-cask "lich" do
+cask "@TOKEN@" do
   arch arm: "arm64", intel: "amd64"
 
   version "@VERSION@"
@@ -17,6 +19,8 @@ cask "lich" do
   homepage "https://github.com/lichdotdev/lich"
 
   depends_on macos: ">= :ventura"
+  # Both casks install the same Lich.app.
+  conflicts_with cask: "@OTHER@"
 
   app "Lich.app"
   binary "#{appdir}/Lich.app/Contents/MacOS/lich"
