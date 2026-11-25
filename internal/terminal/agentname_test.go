@@ -1,6 +1,8 @@
 package terminal
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -79,5 +81,43 @@ func TestClaudeAgentNameReadsTheLastRecord(t *testing.T) {
 				t.Errorf("claudeAgentName = %q, want %q", got, tt.want)
 			}
 		})
+	}
+}
+
+// TestAgentNameKeepsTheNameAcrossAppendsWithoutOne walks one transcript the way
+// the roster reads it, call after call: each read sees only what was appended
+// since, so a turn that writes no name record keeps the one on record, a
+// /rename replaces it, and a turn larger than the tail bound loses nothing.
+func TestAgentNameKeepsTheNameAcrossAppendsWithoutOne(t *testing.T) {
+	t.Parallel()
+	path := filepath.Join(t.TempDir(), "conversation.jsonl")
+	write := func(text string) {
+		t.Helper()
+		f, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o600)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer f.Close()
+		if _, err := f.WriteString(text); err != nil {
+			t.Fatal(err)
+		}
+	}
+	turn := `{"type":"assistant","message":{"content":[{"type":"text","text":"done"}]}}`
+	var names nameCursors
+	steps := []struct {
+		name, append, want string
+	}{
+		{"named at birth", `{"type":"agent-name","agentName":"lich-4f2a"}` + "\n" + turn + "\n", "lich-4f2a"},
+		{"a turn with no record", turn + "\n" + turn + "\n", "lich-4f2a"},
+		{"a rename", `{"type":"agent-name","agentName":"reviewer"}` + "\n", "reviewer"},
+		{"a turn past the tail bound", `{"type":"user","text":"` + strings.Repeat("x", searchTailBytes) + `"}` + "\n" + turn + "\n", "reviewer"},
+		{"half a record still being written", `{"type":"agent-name","agentName":"shi`, "reviewer"},
+		{"the rest of that record", `pper"}` + "\n", "shipper"},
+	}
+	for _, step := range steps {
+		write(step.append)
+		if got := names.agentName("s1", path); got != step.want {
+			t.Fatalf("after %s: agentName = %q, want %q", step.name, got, step.want)
+		}
 	}
 }
