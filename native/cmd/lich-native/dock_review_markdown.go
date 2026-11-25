@@ -5,6 +5,7 @@ package main
 
 import (
 	"context"
+	"path/filepath"
 	"strings"
 
 	"gioui.org/layout"
@@ -111,4 +112,17 @@ func openLink(client *backend.Client, notify func(ui.Toast), url string) {
 			notify(ui.Toast{Variant: ui.ToastError, Title: i18n.T("diff.binaryState.openFailed", i18n.Args{"name": url}), Description: backend.ErrorText(err)})
 		}
 	}()
+}
+
+// openChatLink sends an absolute local link through the session's preview
+// browser, which serves checkout files and artifacts over HTTP.
+func (u *window) openChatLink(session string, notify func(ui.Toast), url string) {
+	if !filepath.IsAbs(url) {
+		openLink(u.client, notify, url)
+		return
+	}
+	u.sendBrowser(session, "open link", func(ctx context.Context) error {
+		return u.client.OpenBrowserURL(ctx, session, url)
+	})
+	u.openBrowser(session)
 }
