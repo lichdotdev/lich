@@ -83,7 +83,7 @@ import; this table is what each one does.
 |---|---|---|---|
 | `hello` | | `version` | first request; a version the backend does not know ends the process |
 | `window` | `xid` | | the window's X window, 0 once it closed |
-| `open` | `page`, `url`, `scale`, `w`, `h` | | a page with one tab on `url`, laid out at `w`×`h` CSS pixels drawn at `scale` while no window shows it |
+| `open` | `page`, `url`, `scale`, `w`, `h`, `downloads` | | a page with one tab on `url`, laid out at `w`×`h` CSS pixels drawn at `scale` while no window shows it. Its cookies and storage are its own and end with it. Downloads land in the `downloads` directory under the name the server suggests, made unique there as Chrome makes it (`name (1).ext`) |
 | `close` | `page` | | ends the page and its tabs |
 | `newTab` | `page` | | a blank tab in front |
 | `selectTab` | `page`, `tab` | | brings `tab` to the front |
@@ -91,8 +91,8 @@ import; this table is what each one does.
 | `navigate` | `page`, `url` | | loads `url` in the front tab |
 | `reload` | `page` | | reloads past the cache |
 | `back`, `forward` | `page` | | history |
-| `eval` | `page`, `script` | `json` | runs `script` in the page's world, awaiting a promise; a throw is the error, its message as the page has it |
-| `mouse` | `page`, `kind` (`move`, `down`, `up`, `wheel`), `x`, `y`, `button`, `clicks`, `mods`, `dx`, `dy` | | a native pointer event: the page sees `isTrusted` |
+| `eval` | `page`, `script` | `json` | runs `script` in the page's world as the DevTools console does: the value of its last expression, top-level `await` allowed, a `let` or `const` declared again by a later eval allowed; a promise is awaited. `json` is the value as JSON, empty for `undefined`; a throw is the error, its message as the page has it |
+| `mouse` | `page`, `kind` (`move`, `down`, `up`, `wheel`), `x`, `y`, `button`, `clicks`, `mods`, `dx`, `dy` | | a native pointer event: the page sees `isTrusted`. `button` is the DOM's, 0 left, 1 middle, 2 right |
 | `key` | `page`, `kind` (`down`, `up`), `key`, `code`, `mods` | | a native key event |
 | `text` | `page`, `text` | | commits `text` as an input method does |
 | `snapshot` | `page` | `png`, `w`, `h` | what the front tab shows, at `scale` image pixels per CSS pixel; `w`, `h` its viewport |
@@ -101,6 +101,9 @@ import; this table is what each one does.
 | `dialog` | `page`, `accept`, `text` | | answers the open JavaScript dialog |
 | `files` | `page`, `paths` | | answers the open file chooser; none cancels it |
 | `inspect` | `page` | | WebKit's inspector on the front tab, in a window of its own |
+| `popOut` | `page` | | the page in a window of its own, as Open in a window: same page, nothing reloads; its tabs' `xid` go 0 while it is out |
+| `popIn` | `page` | | the page back out of its own window, for the pane to embed again |
+| `raise` | `page` | | brings a popped-out page's window to the front |
 | `clock` | | `ns` | the monotonic clock every event's `at` reads |
 
 ### Events
@@ -108,13 +111,14 @@ import; this table is what each one does.
 | event | params | when |
 |---|---|---|
 | `tabs` | `page`, `tabs` (`id`, `url`, `title`, `loading`, `front`, `xid`, `icon`) | a tab opens, closes, comes to the front, or changes URL, title, icon or loading |
-| `load` | `page`, `tab`, `step` (`started`, `committed`, `finished`, `failed`), `url`, `at` | each main-frame load step |
-| `request` | `page`, `tab`, `started` or `finished`, `at` | each subresource request of the front tab, for `Settle` |
+| `load` | `page`, `tab`, `step` (`started`, `committed`, `finished`, `failed`), `url`, `at`, `error`, `download` | each main-frame load step; `failed` carries WebKit's error text in `error`, and `download` when the navigation turned into a download instead |
+| `request` | `page`, `tab`, `id`, `type` (`fetch`, `xhr`, `document`, `script`, `stylesheet`, `image`, `font`, `media`, `other`), `started` or `finished`, `at` | each request of the front tab, for `Settle`: `finished` names the `id` that started, however it ended |
 | `console` | `page`, `text` | an error the page's console shows, or one it did not catch |
 | `dialog` | `page`, `dialog` (`type`, `message`, `default`), null once closed | a JavaScript dialog, `beforeunload` included |
 | `files` | `page`, `multiple` | a file input asks for files |
 | `download` | `page`, `guid`, `url`, `name`, `path`, `state`, `received`, `total` | each step of a download |
 | `crashed` | `page` | the page's web process died |
+| `closed` | `page` | the person closed a popped-out page's window, which ends the page |
 
 ## What stays Chrome's until the end
 
