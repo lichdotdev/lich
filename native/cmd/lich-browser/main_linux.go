@@ -18,7 +18,6 @@ import (
 	"runtime"
 	"runtime/cgo"
 	"syscall"
-	"unsafe"
 
 	"github.com/lichdotdev/lich/browserwire"
 )
@@ -37,15 +36,6 @@ func main() {
 	if C.lich_browser_init() == 0 {
 		log.Fatal("GTK cannot open the X display")
 	}
-	downloads, err := os.MkdirTemp("", "lich-browser-downloads-")
-	if err != nil {
-		log.Fatalf("downloads: %v", err)
-	}
-	defer os.RemoveAll(downloads)
-	dir := C.CString(downloads)
-	C.lich_browser_set_downloads(dir)
-	C.free(unsafe.Pointer(dir))
-
 	the = newBrowser(newWire(out))
 	go func() {
 		if err := the.wire.read(os.Stdin, func(req browserwire.Request) { onGTK(func() { the.handle(req) }) }); err != nil {

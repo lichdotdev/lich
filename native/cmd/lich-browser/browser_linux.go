@@ -27,6 +27,8 @@ type browser struct {
 	byKey map[uintptr]*page
 	tabs  map[uintptr]*tab
 	keys  uintptr
+	// requests counts the requests told, each one's id.
+	requests int
 	// inputs are the input requests not answered yet, the first one acting.
 	inputs []func(next func())
 }

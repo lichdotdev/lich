@@ -1,21 +1,24 @@
 #include "browser_linux.h"
 
 #include <glib/gstdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 extern void lichLoad(uintptr_t key, int step, char *uri);
-extern void lichLoadFailed(uintptr_t key, char *uri);
+extern void lichLoadFailed(uintptr_t key, char *uri, char *error, int download);
 extern void lichTLS(uintptr_t key, char *uri, char *chain);
 extern void lichTabChanged(uintptr_t key, int icon);
 extern uintptr_t lichTabCreate(uintptr_t parent);
 extern void lichTabCreated(uintptr_t key, LichTab *tab);
 extern void lichTabClosing(uintptr_t key);
-extern int lichRequest(uintptr_t key, int started);
+extern int lichRequestStarted(uintptr_t key, char *uri, char *accept, int document);
+extern void lichRequestFinished(uintptr_t key, int id);
 extern void lichCrashed(uintptr_t key);
 extern int lichDialog(uintptr_t key, WebKitScriptDialog *dialog, int type, char *message, char *text);
 extern void lichFiles(uintptr_t key, WebKitFileChooserRequest *request, int multiple);
 extern void lichConsole(uintptr_t page, char *text);
 extern void lichInputSeen(uintptr_t page, char *type);
+extern char *lichDownloadPath(uintptr_t page, char *suggested);
 extern void lichDownload(uintptr_t page, int guid, char *url, char *name, char *path, int state, gint64 received,
                          gint64 total);
 
@@ -23,8 +26,11 @@ static void load_changed(WebKitWebView *view, WebKitLoadEvent step, gpointer tab
 	lichLoad(((LichTab *)tab)->key, step, (char *)webkit_web_view_get_uri(view));
 }
 
+// A navigation WebKit turns into a download fails the load by a policy
+// change, which is how the wire tells it.
 static gboolean load_failed(WebKitWebView *view, WebKitLoadEvent step, char *uri, GError *error, gpointer tab) {
-	lichLoadFailed(((LichTab *)tab)->key, uri);
+	int download = g_error_matches(error, WEBKIT_POLICY_ERROR, WEBKIT_POLICY_ERROR_FRAME_LOAD_INTERRUPTED_BY_POLICY_CHANGE);
+	lichLoadFailed(((LichTab *)tab)->key, uri, error->message, download);
 	return FALSE;
 }
 
@@ -33,7 +39,6 @@ static gboolean load_failed(WebKitWebView *view, WebKitLoadEvent step, char *uri
 // shows its error page meanwhile.
 static gboolean tls_failed(WebKitWebView *view, char *uri, GTlsCertificate *cert, GTlsCertificateFlags errors,
                            gpointer tab) {
-	lichLoadFailed(((LichTab *)tab)->key, uri);
 	if (errors != G_TLS_CERTIFICATE_UNKNOWN_CA) {
 		return FALSE;
 	}
@@ -71,15 +76,33 @@ static GtkWidget *create(WebKitWebView *view, WebKitNavigationAction *action, gp
 
 static void closing(WebKitWebView *view, gpointer tab) { lichTabClosing(((LichTab *)tab)->key); }
 
-static void resource_finished(WebKitWebResource *resource, gpointer key) { lichRequest((uintptr_t)key, 0); }
+// told is a request the wire was told of, which its finish names.
+typedef struct {
+	uintptr_t tab;
+	int id;
+} Told;
+
+static void resource_finished(WebKitWebResource *resource, gpointer data) {
+	Told *t = data;
+	lichRequestFinished(t->tab, t->id);
+}
+
+static void told_free(gpointer data, GClosure *closure) { g_free(data); }
 
 static void resource_started(WebKitWebView *view, WebKitWebResource *resource, WebKitURIRequest *request,
                              gpointer data) {
 	LichTab *tab = data;
-	if (resource == webkit_web_view_get_main_resource(view) || !lichRequest(tab->key, 1)) {
+	SoupMessageHeaders *headers = webkit_uri_request_get_http_headers(request);
+	const char *accept = headers ? soup_message_headers_get_one(headers, "Accept") : NULL;
+	int document = resource == webkit_web_view_get_main_resource(view);
+	int id = lichRequestStarted(tab->key, (char *)webkit_uri_request_get_uri(request), (char *)(accept ? accept : ""), document);
+	if (!id) {
 		return;
 	}
-	g_signal_connect(resource, "finished", G_CALLBACK(resource_finished), (gpointer)tab->key);
+	Told *t = g_new0(Told, 1);
+	t->tab = tab->key;
+	t->id = id;
+	g_signal_connect_data(resource, "finished", G_CALLBACK(resource_finished), t, told_free, 0);
 }
 
 static void terminated(WebKitWebView *view, WebKitWebProcessTerminationReason reason, gpointer tab) {
@@ -167,10 +190,7 @@ typedef struct {
 
 enum { IN_PROGRESS, COMPLETED, CANCELED };
 
-static char *downloads_dir;
 static int downloads;
-
-void lich_browser_set_downloads(const char *dir) { downloads_dir = g_strdup(dir); }
 
 static void fetch_free(gpointer data) {
 	Fetch *f = data;
@@ -187,18 +207,23 @@ static void report(WebKitDownload *d, Fetch *f, int state) {
 	             (gint64)webkit_download_get_received_data_length(d), total);
 }
 
-// decide puts each download in a folder of its own, so two of one name
-// both land; the backend moves it where the person finds it.
+// decide lands the download where Go reserved it, the file Go made empty
+// there so a second download of one name takes another: WebKit then has to
+// overwrite it.
 static gboolean decide(WebKitDownload *d, char *suggested, gpointer data) {
 	Fetch *f = data;
-	char *dir = g_strdup_printf("%s/%d", downloads_dir, f->guid);
-	g_mkdir_with_parents(dir, 0700);
-	f->name = g_path_get_basename(suggested && *suggested ? suggested : "download");
-	f->path = g_build_filename(dir, f->name, NULL);
+	char *path = lichDownloadPath(f->page, suggested);
+	if (!path) {
+		webkit_download_cancel(d);
+		return TRUE;
+	}
+	f->path = g_strdup(path);
+	f->name = g_path_get_basename(path);
+	free(path);
 	char *uri = g_filename_to_uri(f->path, NULL, NULL);
+	webkit_download_set_allow_overwrite(d, TRUE);
 	webkit_download_set_destination(d, uri);
 	g_free(uri);
-	g_free(dir);
 	report(d, f, IN_PROGRESS);
 	return TRUE;
 }

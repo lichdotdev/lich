@@ -22,7 +22,10 @@ const pageScript = `(() => {
 		post('Uncaught ' + (e.error != null ? word(e.error) : e.message) + where);
 	});
 	addEventListener('unhandledrejection', e => post('Uncaught (in promise) ' + word(e.reason)));
-	const seen = e => { if (e.isTrusted) try { webkit.messageHandlers.lichInput.postMessage(e.type); } catch {} };
+	// Told a task later, once the event's default action ran: a key's
+	// editing lands after its keydown, and told at the keydown the wire's next
+	// request read the field before it.
+	const seen = e => { if (e.isTrusted) setTimeout(() => { try { webkit.messageHandlers.lichInput.postMessage(e.type); } catch {} }); };
 	for (const type of ['mousedown', 'mouseup', 'keydown', 'keyup', 'wheel']) {
 		addEventListener(type, seen, {capture: true, passive: true});
 	}

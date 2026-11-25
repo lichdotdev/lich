@@ -126,8 +126,6 @@ func (b *browser) eval(o browserwire.EvalParams, done func(any, error)) {
 		done(nil, err)
 		return
 	}
-	script := C.CString(o.Script)
-	defer C.free(unsafe.Pointer(script))
 	answer := func(r evaluated) {
 		if r.err != nil {
 			done(nil, r.err)
@@ -135,7 +133,28 @@ func (b *browser) eval(o browserwire.EvalParams, done func(any, error)) {
 		}
 		done(browserwire.EvalResult{JSON: r.json}, nil)
 	}
-	C.lich_tab_eval(p.front.c, script, C.uintptr_t(cgo.NewHandle(answer)))
+	run, ok := consoleForm(o.Script, jsParses)
+	if !ok {
+		run = consoleRun{program: o.Script}
+	}
+	program, body := cOrNil(run.program, !run.async), cOrNil(run.body, run.body != "")
+	defer C.free(unsafe.Pointer(program))
+	defer C.free(unsafe.Pointer(body))
+	C.lich_tab_eval(p.front.c, program, body, C.uintptr_t(cgo.NewHandle(answer)))
+}
+
+// cOrNil is s for C, NULL unless set.
+func cOrNil(s string, set bool) *C.char {
+	if !set {
+		return nil
+	}
+	return C.CString(s)
+}
+
+func jsParses(code string) bool {
+	c := C.CString(code)
+	defer C.free(unsafe.Pointer(c))
+	return C.lich_js_parses(c) != 0
 }
 
 //export lichEvaluated

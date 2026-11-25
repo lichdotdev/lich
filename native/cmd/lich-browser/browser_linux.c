@@ -270,7 +270,7 @@ void lich_tab_allow(LichTab *tab, const char *leaf, const char *host, const char
 
 typedef struct {
 	WebKitWebView *view;
-	char *script;
+	char *body;
 	uintptr_t handle;
 } Eval;
 
@@ -288,51 +288,78 @@ static const char *page_message(const char *message) {
 	return rest ? rest + 2 : message;
 }
 
+// evaluated answers the wire: undefined as no JSON at all, as the wire has it.
 static void evaluated(Eval *e, JSCValue *value, GError *error) {
-	if (value) {
-		char *json = jsc_value_to_json(value, 0);
-		lichEvaluated(e->handle, json ? json : "null", NULL);
-		g_free(json);
-		g_object_unref(value);
-	} else {
+	if (!value) {
 		lichEvaluated(e->handle, NULL, (char *)page_message(error->message));
 		g_error_free(error);
+	} else {
+		char *json = jsc_value_is_undefined(value) ? NULL : jsc_value_to_json(value, 0);
+		lichEvaluated(e->handle, json ? json : "", NULL);
+		g_free(json);
+		g_object_unref(value);
 	}
 	g_object_unref(e->view);
-	g_free(e->script);
+	g_free(e->body);
 	g_free(e);
 }
 
-static void as_program(GObject *view, GAsyncResult *result, gpointer data) {
+static void as_body(GObject *view, GAsyncResult *result, gpointer data) {
 	GError *error = NULL;
-	JSCValue *value = webkit_web_view_evaluate_javascript_finish(WEBKIT_WEB_VIEW(view), result, &error);
+	JSCValue *value = webkit_web_view_call_async_javascript_function_finish(WEBKIT_WEB_VIEW(view), result, &error);
 	evaluated(data, value, error);
 }
 
-static void as_expression(GObject *view, GAsyncResult *result, gpointer data) {
-	Eval *e = data;
-	GError *error = NULL;
-	JSCValue *value = webkit_web_view_call_async_javascript_function_finish(WEBKIT_WEB_VIEW(view), result, &error);
-	if (!value && g_str_has_prefix(page_message(error->message), "SyntaxError")) {
-		g_error_free(error);
-		webkit_web_view_evaluate_javascript(e->view, e->script, -1, NULL, EVAL_SOURCE, NULL, as_program, e);
-		return;
-	}
-	evaluated(e, value, error);
+static void run_body(Eval *e) {
+	webkit_web_view_call_async_javascript_function(e->view, e->body, -1, NULL, NULL, EVAL_SOURCE, NULL, as_body, e);
 }
 
-// lich_tab_eval runs script in the page's own world. As an expression first,
-// in an async function, so a promise it makes is awaited; one that is not an
-// expression (statements, declarations) runs as a program, its completion
-// value the answer, as the console gives it.
-void lich_tab_eval(LichTab *tab, const char *script, uintptr_t handle) {
+// as_program reads the program's [0, value], or runs the body for [1]
+// (consoleRun in repl.go).
+static void as_program(GObject *view, GAsyncResult *result, gpointer data) {
+	Eval *e = data;
+	GError *error = NULL;
+	JSCValue *value = webkit_web_view_evaluate_javascript_finish(WEBKIT_WEB_VIEW(view), result, &error);
+	if (!value || !e->body || !jsc_value_is_array(value)) {
+		evaluated(e, value, error);
+		return;
+	}
+	JSCValue *pending = jsc_value_object_get_property_at_index(value, 0);
+	int thenable = jsc_value_to_int32(pending) == 1;
+	g_object_unref(pending);
+	if (thenable) {
+		g_object_unref(value);
+		run_body(e);
+		return;
+	}
+	JSCValue *answer = jsc_value_object_get_property_at_index(value, 1);
+	g_object_unref(value);
+	evaluated(e, answer, NULL);
+}
+
+// lich_tab_eval runs program in the page's own world, then body as an async
+// function's, whose value the wire gets; either may be NULL (repl.go).
+void lich_tab_eval(LichTab *tab, const char *program, const char *body, uintptr_t handle) {
 	Eval *e = g_new0(Eval, 1);
 	e->view = g_object_ref(WEBKIT_WEB_VIEW(tab->view));
-	e->script = g_strdup(script);
+	e->body = g_strdup(body);
 	e->handle = handle;
-	char *body = g_strdup_printf("return (%s\n);", script);
-	webkit_web_view_call_async_javascript_function(e->view, body, -1, NULL, NULL, EVAL_SOURCE, NULL, as_expression, e);
-	g_free(body);
+	if (!program) {
+		run_body(e);
+		return;
+	}
+	webkit_web_view_evaluate_javascript(e->view, program, -1, NULL, EVAL_SOURCE, NULL, as_program, e);
+}
+
+// lich_js_parses is whether code is a script JavaScript parses, by JSC's own
+// parser in a context of lich-browser's.
+int lich_js_parses(const char *code) {
+	static JSCContext *js;
+	if (!js) {
+		js = jsc_context_new();
+	}
+	return jsc_context_check_syntax(js, code, -1, JSC_CHECK_SYNTAX_MODE_SCRIPT, "lich", 1, NULL) ==
+	       JSC_CHECK_SYNTAX_RESULT_SUCCESS;
 }
 
 static void snapshotted(GObject *view, GAsyncResult *result, gpointer handle) {

@@ -35,7 +35,6 @@ int lich_browser_init(void);
 void lich_browser_main(void);
 void lich_browser_quit(void);
 void lich_browser_set_app(unsigned long xid);
-void lich_browser_set_downloads(const char *dir);
 
 LichPage *lich_page_new(uintptr_t key, const char *script);
 void lich_page_free(LichPage *page);
@@ -50,7 +49,8 @@ void lich_tab_back(LichTab *tab);
 void lich_tab_forward(LichTab *tab);
 void lich_tab_inspect(LichTab *tab);
 void lich_tab_allow(LichTab *tab, const char *leaf, const char *host, const char *uri);
-void lich_tab_eval(LichTab *tab, const char *script, uintptr_t handle);
+void lich_tab_eval(LichTab *tab, const char *program, const char *body, uintptr_t handle);
+int lich_js_parses(const char *code);
 void lich_tab_snapshot(LichTab *tab, uintptr_t handle);
 const char *lich_tab_uri(LichTab *tab);
 const char *lich_tab_title(LichTab *tab);

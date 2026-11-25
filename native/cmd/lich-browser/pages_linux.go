@@ -19,6 +19,8 @@ import (
 
 const blankPage = "about:blank"
 
+var errNoDownloads = errors.New("open needs the directory downloads land in")
+
 var errLastTab = errors.New("a page keeps its last tab: close the page instead")
 
 // page is one of the backend's browsers: its tabs, the front one first in
@@ -33,6 +35,8 @@ type page struct {
 	// at while no window holds it.
 	scale float64
 	w, h  int
+	// downloads is the directory its downloads land in.
+	downloads string
 	// dialog and chooser are what the page waits on an answer for.
 	dialog  *C.WebKitScriptDialog
 	chooser *C.WebKitFileChooserRequest
@@ -74,7 +78,10 @@ func (b *browser) open(o browserwire.OpenParams) (any, error) {
 	if b.pages[o.Page] != nil {
 		return nil, fmt.Errorf("page %s is open already", o.Page)
 	}
-	p := &page{id: o.Page, key: b.newKey(), scale: o.Scale, w: o.W, h: o.H}
+	if o.Downloads == "" {
+		return nil, errNoDownloads
+	}
+	p := &page{id: o.Page, key: b.newKey(), scale: o.Scale, w: o.W, h: o.H, downloads: o.Downloads}
 	if p.scale <= 0 {
 		p.scale = 1
 	}

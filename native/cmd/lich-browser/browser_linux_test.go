@@ -75,8 +75,15 @@ func TestEvalAnswersAsTheConsoleDoes(t *testing.T) {
 		name, script, want, err string
 	}{
 		{"an expression", "document.title", `"Hi"`, ""},
-		{"statements, by their completion value", "const a = 1; a + 1", "2", ""},
+		{"statements, by their last expression", "const a = 1; a + 1", "2", ""},
+		{"a const declared again by a later eval", "const a = 5\na * 2", "10", ""},
+		{"a let one eval declares, read by the next", "let kept = 7", "", ""},
+		{"what the eval before declared", "kept", "7", ""},
+		{"an expression over lines", "kept\n+ 1", "8", ""},
+		{"top-level await", "const t = await Promise.resolve(document.title); t + '!'", `"Hi!"`, ""},
 		{"a promise, awaited", "new Promise(r => setTimeout(() => r([1, 2]), 10))", "[1,2]", ""},
+		{"undefined, as no JSON", "undefined", "", ""},
+		{"a class declared again", "class K {}; class K { static v = 3 }; K.v", "3", ""},
 		{"a throw, as the page words it", `throw new TypeError("nope")`, "", "TypeError: nope"},
 		{"a rejection", `Promise.reject(new Error("later"))`, "", "Error: later"},
 		{"no script", "(1", "", "SyntaxError"},
@@ -254,6 +261,10 @@ func TestADownloadLandsAndIsToldStepByStep(t *testing.T) {
 	c.open("b1", s.URL, 400, 300, 1)
 	from := c.mark()
 	c.must(browserwire.Navigate, browserwire.NavigateParams{Page: "b1", URL: s.URL + "/file"}, nil)
+	c.event(from, browserwire.EventLoad, func(raw json.RawMessage) bool {
+		var l browserwire.LoadEvent
+		return json.Unmarshal(raw, &l) == nil && l.Step == browserwire.LoadFailed && l.Download
+	})
 	var d browserwire.DownloadEvent
 	c.event(from, browserwire.EventDownload, func(raw json.RawMessage) bool {
 		return json.Unmarshal(raw, &d) == nil && d.State != browserwire.DownloadInProgress
@@ -286,32 +297,47 @@ func TestTheConsoleTellsErrorsAndWhatNothingCaught(t *testing.T) {
 	}
 }
 
-func TestSubresourcesOfTheFrontTabAreToldForSettle(t *testing.T) {
+func TestEachRequestOfTheFrontTabIsToldWithItsTypeAndFinish(t *testing.T) {
 	c := start(t)
 	s := site(t)
-	from := c.mark()
 	c.open("b1", s.URL+"/images", 400, 300, 1)
-	var started, finished int
-	for range 2 {
-		_, from = c.event(from, browserwire.EventRequest, func(raw json.RawMessage) bool {
-			var r browserwire.RequestEvent
-			json.Unmarshal(raw, &r)
-			if r.Started {
-				started++
-			}
-			return r.Started
-		})
-	}
-	c.event(from, browserwire.EventRequest, func(raw json.RawMessage) bool {
+	started, finished := map[string]string{}, map[string]bool{}
+	from := 0
+	for len(started) < 3 || len(finished) < len(started) {
+		raw, next := c.event(from, browserwire.EventRequest, nil)
+		from = next
 		var r browserwire.RequestEvent
 		json.Unmarshal(raw, &r)
-		if r.Finished {
-			finished++
+		if r.Started {
+			started[r.ID] = r.Type
+		} else if _, ok := started[r.ID]; !ok || !r.Finished {
+			t.Fatalf("request event %s names no request that started", raw)
+		} else {
+			finished[r.ID] = true
 		}
-		return r.Finished
+	}
+	types := map[string]int{}
+	for _, kind := range started {
+		types[kind]++
+	}
+	if types[browserwire.RequestDocument] != 1 || types[browserwire.RequestImage] < 2 {
+		t.Fatalf("requests by type %v, want the page's document and both its images", types)
+	}
+}
+
+func TestALoadThatFailsSaysWhy(t *testing.T) {
+	c := start(t)
+	s := httptest.NewTLSServer(http.NotFoundHandler())
+	t.Cleanup(s.Close)
+	c.open("b1", "data:text/html,", 400, 300, 1)
+	from := c.mark()
+	c.must(browserwire.Navigate, browserwire.NavigateParams{Page: "b1", URL: s.URL}, nil)
+	var l browserwire.LoadEvent
+	c.event(from, browserwire.EventLoad, func(raw json.RawMessage) bool {
+		return json.Unmarshal(raw, &l) == nil && l.Step == browserwire.LoadFailed
 	})
-	if started < 2 || finished < 1 {
-		t.Fatalf("%d starts and %d finishes, want both images' starts and a finish", started, finished)
+	if l.Error == "" || l.Download {
+		t.Fatalf("a load refused for its certificate failed with %+v, want WebKit's reason and no download", l)
 	}
 }
 

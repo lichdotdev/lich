@@ -182,7 +182,7 @@ func (c *client) mark() int {
 func (c *client) open(id, url string, w, h int, scale float64) {
 	c.t.Helper()
 	from := c.mark()
-	c.must(browserwire.Open, browserwire.OpenParams{Page: id, URL: url, Scale: scale, W: w, H: h}, nil)
+	c.must(browserwire.Open, browserwire.OpenParams{Page: id, URL: url, Scale: scale, W: w, H: h, Downloads: c.t.TempDir()}, nil)
 	c.loaded(from, id)
 }
 

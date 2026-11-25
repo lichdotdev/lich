@@ -7,6 +7,7 @@ package main
 import "C"
 
 import (
+	"log"
 	"strconv"
 	"unsafe"
 
@@ -45,13 +46,16 @@ func lichLoad(key C.uintptr_t, step C.int, uri *C.char) {
 }
 
 //export lichLoadFailed
-func lichLoadFailed(key C.uintptr_t, uri *C.char) {
+func lichLoadFailed(key C.uintptr_t, uri, message *C.char, download C.int) {
 	t := the.tabs[uintptr(key)]
 	if t == nil || t.failed {
 		return
 	}
 	t.failed = true
-	t.sendLoad(browserwire.LoadFailed, C.GoString(uri))
+	the.wire.event(browserwire.EventLoad, browserwire.LoadEvent{
+		Page: t.page.id, Tab: t.id, Step: browserwire.LoadFailed, URL: C.GoString(uri), At: the.at(),
+		Error: C.GoString(message), Download: download != 0,
+	})
 }
 
 func (t *tab) sendLoad(step, url string) {
@@ -108,20 +112,35 @@ func lichTabClosing(key C.uintptr_t) {
 	}
 }
 
-// lichRequest tells a subresource request of key's tab starting or
-// finishing, and whether it was told: only the front tab's start is, and
-// only the finish of one told.
+// lichRequestStarted tells a request of key's front tab starting, and
+// answers the id its finish names, 0 for one of a tab not in front, which is
+// not told.
 //
-//export lichRequest
-func lichRequest(key C.uintptr_t, started C.int) C.int {
+//export lichRequestStarted
+func lichRequestStarted(key C.uintptr_t, uri, accept *C.char, document C.int) C.int {
 	t := the.tabs[uintptr(key)]
-	if t == nil || (started != 0 && t != t.page.front) {
+	if t == nil || t != t.page.front {
 		return 0
 	}
+	kind := browserwire.RequestDocument
+	if document == 0 {
+		kind = requestType(C.GoString(uri), C.GoString(accept))
+	}
+	the.requests++
+	id := the.requests
 	the.wire.event(browserwire.EventRequest, browserwire.RequestEvent{
-		Page: t.page.id, Tab: t.id, Started: started != 0, Finished: started == 0, At: the.at(),
+		Page: t.page.id, Tab: t.id, ID: strconv.Itoa(id), Type: kind, Started: true, At: the.at(),
 	})
-	return 1
+	return C.int(id)
+}
+
+//export lichRequestFinished
+func lichRequestFinished(key C.uintptr_t, id C.int) {
+	if t := the.tabs[uintptr(key)]; t != nil {
+		the.wire.event(browserwire.EventRequest, browserwire.RequestEvent{
+			Page: t.page.id, Tab: t.id, ID: strconv.Itoa(int(id)), Finished: true, At: the.at(),
+		})
+	}
 }
 
 //export lichCrashed
@@ -136,6 +155,23 @@ func lichConsole(key C.uintptr_t, text *C.char) {
 	if p := the.byKey[uintptr(key)]; p != nil {
 		the.wire.event(browserwire.EventConsole, browserwire.ConsoleEvent{Page: p.id, Text: C.GoString(text)})
 	}
+}
+
+// lichDownloadPath is where a download of the page's lands, reserved, NULL
+// to cancel it.
+//
+//export lichDownloadPath
+func lichDownloadPath(key C.uintptr_t, suggested *C.char) *C.char {
+	p := the.byKey[uintptr(key)]
+	if p == nil {
+		return nil
+	}
+	path, err := reserve(p.downloads, C.GoString(suggested))
+	if err != nil {
+		log.Printf("download: %v", err)
+		return nil
+	}
+	return C.CString(path)
 }
 
 var downloadStates = [...]string{browserwire.DownloadInProgress, browserwire.DownloadCompleted, browserwire.DownloadCanceled}
