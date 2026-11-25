@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"gioui.org/unit"
+
 	"github.com/lichdotdev/godemirror"
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
@@ -54,13 +56,16 @@ func TestAnEditIsALineThatOpensItsDiff(t *testing.T) {
 	})
 	r.settle(t)
 	writeShot(t, r, "edit-shut.png")
-	for _, s := range []string{"app/", "page.tsx", "+2", "-1"} {
+	for _, s := range []string{"app", "page.tsx", "+2", "-1"} {
 		if !r.shows(s) {
 			t.Errorf("the edit line lacks %q:\n%s", s, r.drawn())
 		}
 	}
-	if r.shows("Edit") {
-		t.Fatalf("the edit shows its tool's name:\n%s", r.drawn())
+	if r.shows("Edit") || r.shows(chatEditsLabel(1)) {
+		t.Fatalf("the edit shows its tool's name or a group's head:\n%s", r.drawn())
+	}
+	if name, folder := labelBox(t, r, "page.tsx").Min, labelBox(t, r, "app").Min; folder.X <= name.X || abs(folder.Y-name.Y) > 4 {
+		t.Errorf("the folder starts at %v and the name at %v: the name comes first on the line", folder, name)
 	}
 	r.click(t, r.at(t, "page.tsx"))
 	r.settle(t)
@@ -180,5 +185,114 @@ func TestAShellCommandsFilesStandAsEdits(t *testing.T) {
 	want := []string{"u", "work", "b#x.go:+b", "b#y.go:-a", "a"}
 	if !slices.Equal(got, want) {
 		t.Errorf("rows %v, want %v", got, want)
+	}
+}
+
+// Edit rows one after another, an edit tool's or a shell command's files,
+// read as one group; a row between them ends it.
+func TestEditsOneAfterAnotherShareAGroup(t *testing.T) {
+	edit := func(id string) backend.ChatItem {
+		return backend.ChatItem{ID: id, Kind: api.ItemTool, Turn: 1, Tool: &backend.ChatToolCall{Name: "Edit", State: api.ToolDone, Diff: "+a"}}
+	}
+	items := []backend.ChatItem{
+		{ID: "u", Kind: api.ItemUser, Turn: 1, Text: "go"},
+		edit("e1"), edit("e2"),
+		{ID: "a", Kind: api.ItemAgent, Turn: 1, Text: "and"},
+		edit("e3"),
+		{ID: "b", Kind: api.ItemTool, Turn: 1, Tool: &backend.ChatToolCall{Name: "Bash", State: api.ToolDone,
+			Files: []api.ChatFileChange{{Path: "x.go", Diff: "+b"}, {Path: "y.go", Diff: "-a"}}}},
+	}
+	var got []string
+	for _, r := range chatRows(items, claudeKind, false, time.Time{}) {
+		if r.kind != chatRowEdit {
+			continue
+		}
+		var ids []string
+		for _, it := range r.edits {
+			ids = append(ids, it.ID)
+		}
+		got = append(got, fmt.Sprintf("%s above=%v below=%v head=%v", r.item.ID, r.editAbove, r.editBelow, ids))
+	}
+	want := []string{
+		"e1 above=false below=true head=[e1 e2]",
+		"e2 above=true below=false head=[]",
+		"e3 above=false below=false head=[]",
+		"b#x.go above=false below=true head=[b#x.go b#y.go]",
+		"b#y.go above=true below=false head=[]",
+	}
+	if !slices.Equal(got, want) {
+		t.Errorf("edit rows\n%v\nwant\n%v", strings.Join(got, "\n"), strings.Join(want, "\n"))
+	}
+}
+
+// A group of edits heads its rows with how many files they changed and all
+// their lines, and the head opens Review; each row still opens its own diff.
+func TestAGroupOfEditsHeadsItsFilesAndOpensReview(t *testing.T) {
+	u, r, _ := chatFrames(t, api.ViewChat)
+	u.dock = new(dock)
+	r.theme.Code = godemirror.DarkTheme
+	edit := func(id, file string, add, del int) backend.ChatItem {
+		var b strings.Builder
+		fmt.Fprintf(&b, "--- a/%s\n+++ b/%s\n@@ -1,%d +1,%d @@\n", file, file, del, add)
+		for i := range del {
+			fmt.Fprintf(&b, "-old %d\n", i)
+		}
+		for i := range add {
+			fmt.Fprintf(&b, "+new %d\n", i)
+		}
+		return backend.ChatItem{ID: id, Kind: api.ItemTool, Turn: 1, Tool: &backend.ChatToolCall{Name: "Edit", Title: "/repo/" + file, State: api.ToolDone, Diff: b.String()}}
+	}
+	u.model.chat.history("s1", []backend.ChatItem{
+		{ID: "u1", Kind: api.ItemUser, Turn: 1, Text: "The flake in TestDownloads is back on macOS. Find the cause and fix it."},
+		{ID: "r1", Kind: api.ItemTool, Turn: 1, Tool: &backend.ChatToolCall{Name: "Bash", Title: "go test ./internal/browser/", State: api.ToolDone}},
+		{ID: "r2", Kind: api.ItemTool, Turn: 1, Tool: &backend.ChatToolCall{Name: "Read", Title: "internal/browser/downloads.go", State: api.ToolDone}},
+		{ID: "a1", Kind: api.ItemAgent, Turn: 1, Text: "The download finishes before the listener is attached, so the first event is lost on a fast disk."},
+		edit("e1", "internal/browser/downloads.go", 18, 6),
+		edit("e2", "internal/browser/downloads_test.go", 21, 2),
+		edit("e3", "docs/ceilings.md", 1, 4),
+		{ID: "a2", Kind: api.ItemAgent, Turn: 1, Text: "Attached the listener before navigating. 200 runs, 0 failures (was 3/200)."},
+	})
+	r.settle(t)
+	writeShot(t, r, "edit-group.png")
+	for _, s := range []string{chatEditsLabel(3), "+40", "-12", "downloads.go", "internal/browser", "+18", "ceilings.md", "docs"} {
+		if !r.shows(s) {
+			t.Errorf("the group lacks %q:\n%s", s, r.drawn())
+		}
+	}
+	r.clickLabel(t, chatEditsLabel(3))
+	if u.dock.tab != dockReview {
+		t.Errorf("the group's head opened tab %v, want Review", u.dock.tab)
+	}
+	r.clickLabel(t, "ceilings.md")
+	r.settle(t)
+	if f := u.chats.pane("s1").fold("edit:e3"); !f.open {
+		t.Error("a click on a row of the group left its diff shut")
+	}
+}
+
+// The answer starts 32dp under the person's message and the next turn 48dp
+// under the last, more as the prose grows; a group's rows touch.
+func TestTheTurnsRhythmFollowsTheProse(t *testing.T) {
+	user := chatRow{kind: chatRowItem, item: backend.ChatItem{Kind: api.ItemUser}}
+	answer := chatRow{kind: chatRowItem, item: backend.ChatItem{Kind: api.ItemAgent}}
+	work := chatRow{kind: chatRowWork}
+	joined := chatRow{kind: chatRowEdit, editAbove: true}
+	for _, c := range []struct {
+		sp      float32
+		r, prev chatRow
+		want    unit.Dp
+		what    string
+	}{
+		{1, work, user, 32, "an answer's first row"},
+		{1, user, answer, 48, "a turn's start"},
+		{1, answer, work, chatRowGap, "a row inside a turn"},
+		{1, joined, answer, 0, "an edit joining its group"},
+		{2, answer, user, 54, "an answer's first row at twice the prose"},
+		{2, user, answer, 84, "a turn's start at twice the prose"},
+	} {
+		gtx := C{Metric: unit.Metric{PxPerDp: 1, PxPerSp: c.sp}}
+		if got := chatRowTop(gtx, c.r, c.prev); got != c.want {
+			t.Errorf("%s: %v, want %v", c.what, got, c.want)
+		}
 	}
 }

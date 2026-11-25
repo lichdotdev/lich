@@ -35,10 +35,13 @@ var (
 	// edges, so its text lines up inside the box rather than with its border.
 	chatTextInset = ui.Space(4)
 	chatRowGap    = ui.Space(3.5)
-	// chatTurnGap is the room before a turn starts, in the person's message or
-	// the day line over it: more than between a turn's own rows, so turns read
-	// as groups.
-	chatTurnGap = ui.Space(9)
+	// The room before an answer's first row, under the person's message, and
+	// before a turn starts, in the person's message or the day line over it:
+	// the turn's rhythm approved in review (2026-11), max(32, 1.8×B) and
+	// max(48, 2.8×B) with B the prose size, so the room grows with the font
+	// and turns read as groups.
+	chatAnswerGapMin = ui.Space(8)
+	chatTurnGapMin   = ui.Space(12)
 	// chatTopPad keeps the first row clear of the selector floating over the
 	// column's top-right corner.
 	chatTopPad = 2*balloonInset + chatSwitchItem
@@ -333,12 +336,9 @@ func (u *window) chatScreen(gtx C, sv sessionView, keys bool) {
 			resized = false
 			viewport := gtx.Constraints.Max.Y
 			d := p.list.List.Layout(gtx, len(shown), func(gtx C, i int) D {
-				top := chatRowGap
-				switch {
-				case i == 0:
-					top = chatTopPad + gtx.Metric.PxToDp(lead)
-				case startsTurn(p.seen[shown[i]], p.seen[shown[i-1]]):
-					top = chatTurnGap
+				top := chatTopPad + gtx.Metric.PxToDp(lead)
+				if i > 0 {
+					top = chatRowTop(gtx, p.seen[shown[i]], p.seen[shown[i-1]])
 				}
 				key := shown[i]
 				// The row's Markdown draws only the blocks this row's
@@ -787,6 +787,27 @@ func hardBreaks(text string) string {
 		lines[i] = line + "  "
 	}
 	return strings.Join(lines, "\n")
+}
+
+// The prose sizes in chatAnswerGapMin's and chatTurnGapMin's rhythm.
+const (
+	chatAnswerGapLines = 1.8
+	chatTurnGapLines   = 2.8
+)
+
+// chatRowTop is the room over row r, prev the row above it; each gap is r's
+// alone, so two never stack.
+func chatRowTop(gtx C, r, prev chatRow) unit.Dp {
+	body := gtx.Metric.PxToDp(gtx.Sp(markdown.BodySize))
+	switch {
+	case startsTurn(r, prev):
+		return max(chatTurnGapMin, chatTurnGapLines*body)
+	case r.editAbove:
+		return 0
+	case prev.kind == chatRowItem && prev.item.Kind == api.ItemUser && (r.kind != chatRowItem || r.item.Kind != api.ItemUser):
+		return max(chatAnswerGapMin, chatAnswerGapLines*body)
+	}
+	return chatRowGap
 }
 
 // startsTurn is whether row r starts a turn after row prev: the person's

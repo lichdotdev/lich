@@ -24,15 +24,15 @@ func TestADoneLineNamesHowTheTurnEnded(t *testing.T) {
 	}
 }
 
-func TestATurnsChangesReadAsItsFiles(t *testing.T) {
-	for count, want := range map[int]string{1: "1 file", 3: "3 files"} {
-		if got := chatChangesText(api.ChatTurnChanges{Files: count}); got != want {
+func TestAGroupOfEditsReadsAsTheFilesItChanged(t *testing.T) {
+	for count, want := range map[int]string{1: "Edited 1 file", 3: "Edited 3 files"} {
+		if got := chatEditsLabel(count); got != want {
 			t.Errorf("%d files read %q, want %q", count, got, want)
 		}
 	}
 	defer i18n.SetCurrent(i18n.EN)
 	i18n.SetCurrent(i18n.RU)
-	if got := chatChangesText(api.ChatTurnChanges{Files: 2}); got != "2 файла" {
+	if got := chatEditsLabel(2); got != "Изменено 2 файла" {
 		t.Errorf("two files in Russian read %q, want its few form", got)
 	}
 }
@@ -112,16 +112,17 @@ func endedTurn(t *testing.T, end api.ChatTurn) (*window, *frameRig) {
 	return u, r
 }
 
-func TestTheDoneLineShowsWhatTheTurnChangedAndTheCountOpensReview(t *testing.T) {
-	u, r := endedTurn(t, api.ChatTurn{StopReason: "end_turn", Changes: &api.ChatTurnChanges{Files: 3, Added: 12, Removed: 4}})
-	for _, label := range []string{"Done", "3 files", "+12", "\u22124"} {
-		if !r.shows(label) {
-			t.Fatalf("no %q:\n%s", label, r.drawn())
-		}
+// What the turn changed is on its edits' rows, which open Review
+// (TestAGroupOfEditsHeadsItsFilesAndOpensReview), not on its closing line.
+func TestTheDoneLineLeavesTheTurnsChangesToItsEdits(t *testing.T) {
+	_, r := endedTurn(t, api.ChatTurn{StopReason: "end_turn", Changes: &api.ChatTurnChanges{Files: 3, Added: 12, Removed: 4}})
+	if !r.shows("Done") {
+		t.Fatalf("no Done:\n%s", r.drawn())
 	}
-	r.clickLabel(t, "3 files")
-	if u.dock.tab != dockReview {
-		t.Errorf("the count opened tab %v, want Review", u.dock.tab)
+	for _, label := range []string{"3 files", "+12", "\u22124", "no changes"} {
+		if r.shows(label) {
+			t.Errorf("the closing line shows %q:\n%s", label, r.drawn())
+		}
 	}
 }
 
@@ -139,7 +140,7 @@ func TestTheDoneLineOfATurnThatChangedNothingIsNotAClick(t *testing.T) {
 func TestTheDoneLineOfAStoppedAndAFailedTurn(t *testing.T) {
 	for reason, want := range map[string]string{"cancelled": "Stopped", "error": "Failed"} {
 		_, r := endedTurn(t, api.ChatTurn{StopReason: reason, Changes: &api.ChatTurnChanges{Files: 1, Added: 1}})
-		if !r.shows(want) || r.shows("Done") || !r.shows("1 file") {
+		if !r.shows(want) || r.shows("Done") {
 			t.Errorf("a turn that stopped for %q:\n%s", reason, r.drawn())
 		}
 	}

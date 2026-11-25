@@ -79,10 +79,7 @@
     "done": "완료",
     "stopped": "중지됨",
     "failed": "실패",
-    "noChanges": "변경 사항 없음",
-    "files": {
-      "other": "파일 {count}개"
-    }
+    "noChanges": "변경 사항 없음"
   },
   "composer": {
     "placeholder": "이 프로젝트에 대해 {provider}에게 물어보세요",

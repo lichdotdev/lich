@@ -49,6 +49,12 @@ type chatRow struct {
 	took  time.Duration
 	// run names a work row: its first call's id.
 	run string
+	// Edit rows one after another with nothing between them read as one
+	// group: edits holds the group's calls on its first row, when there are
+	// two or more, and editAbove and editBelow mark a row that has another
+	// edit right above or under it.
+	edits                []backend.ChatItem
+	editAbove, editBelow bool
 }
 
 // chatRun is one run of a turn's tool calls, from one of the agent's texts to
@@ -197,7 +203,27 @@ func chatRows(items []backend.ChatItem, kind string, running bool, now time.Time
 		rows = append(rows, live)
 	}
 	markAnswerRuns(rows)
+	markEditRuns(rows)
 	return rows
+}
+
+// markEditRuns sets edits, editAbove and editBelow on each run of edit rows
+// that follow one another.
+func markEditRuns(rows []chatRow) {
+	for i := 0; i < len(rows); {
+		j := i
+		for rows[j].kind == chatRowEdit && j+1 < len(rows) && rows[j+1].kind == chatRowEdit {
+			rows[j].editBelow, rows[j+1].editAbove = true, true
+			j++
+		}
+		if j > i {
+			rows[i].edits = make([]backend.ChatItem, 0, j-i+1)
+			for k := i; k <= j; k++ {
+				rows[i].edits = append(rows[i].edits, rows[k].item)
+			}
+		}
+		i = j + 1
+	}
 }
 
 // joinRun puts call it in its turn's open run, or opens one with it.
