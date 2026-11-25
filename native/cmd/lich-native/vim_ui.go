@@ -35,6 +35,9 @@ type vimPum struct {
 // source names it ("func", "v").
 type vimPumItem struct {
 	word, kind string
+	// detail is the item's menu field, an LSP item's detail (its signature);
+	// info its info field, an LSP item's documentation.
+	detail, info string
 }
 
 type vimUI struct {
@@ -264,7 +267,9 @@ func vimPumItems(raw any) []vimPumItem {
 		parts, _ := it.([]any)
 		word, _ := argAt(parts, 0).(string)
 		kind, _ := argAt(parts, 1).(string)
-		out = append(out, vimPumItem{word: word, kind: kind})
+		detail, _ := argAt(parts, 2).(string)
+		info, _ := argAt(parts, 3).(string)
+		out = append(out, vimPumItem{word: word, kind: kind, detail: detail, info: info})
 	}
 	return out
 }

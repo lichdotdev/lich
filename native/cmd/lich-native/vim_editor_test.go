@@ -11,10 +11,12 @@ import (
 	"testing"
 	"time"
 
+	"gioui.org/font/gofont"
 	"gioui.org/io/input"
 	"gioui.org/io/key"
 	"gioui.org/layout"
 	"gioui.org/op"
+	"gioui.org/text"
 	"gioui.org/unit"
 
 	"github.com/lichdotdev/godemirror"
@@ -531,4 +533,24 @@ func TestVimBlockCursorOnATabTakesItsLastCell(t *testing.T) {
 	if start, _ := f.ed.CoordsAtPos(0, 1); bar.Min.X != start.Min.X {
 		t.Fatalf("insert's bar on a tab at %d, want the tab's start %d", bar.Min.X, start.Min.X)
 	}
+}
+
+func TestVimCompletionMenuLaysOutItsWordsInLineWithTheWord(t *testing.T) {
+	f, _ := vimEditor(t, "    restart.Re\n")
+	f.th = &ui.Theme{Palette: ui.Dark, Shaper: text.NewShaper(text.WithCollection(gofont.Collection())), Surface: ui.Dark.Canvas}
+	vimCommand(f, `call cursor(1, 15) | startinsert!`)
+	vimType(f, "")
+	f.vimFeed("lich_editor.focus(...)")
+	f.env.vim.do(func(v *nvim.Nvim, _ int) error {
+		return v.Command(`call complete(13, [{'word': 'Relaunch', 'kind': 'Function', 'menu': 'func() error', 'info': 'Relaunch restarts.'}, {'word': 'Requested', 'kind': 'Function'}])`)
+	})
+	vimUntil(t, f, "the menu with its detail", func() bool {
+		buf, _, _ := f.vim.held()
+		u, _ := f.env.vim.status(buf)
+		return u.pum != nil && len(u.pum.items) == 2 && u.pum.items[0].detail == "func() error"
+	})
+	buf, _, _ := f.vim.held()
+	u, _ := f.env.vim.status(buf)
+	layOut(t, f)
+	f.paintVimPum(frameCtx(), u)
 }
