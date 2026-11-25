@@ -389,6 +389,11 @@
   "updatesSettings": {
     "applicationTitle": "Application",
     "applicationSearchWords": "version upgrade changelog release notes",
+    "channelTitle": "Channel",
+    "channelSearchWords": "beta stable release candidate pre-release",
+    "channelDescription": "Beta offers each release candidate as soon as it is out, before the stable release.",
+    "channelStable": "Stable",
+    "channelBeta": "Beta",
     "checkForUpdates": "Check for updates",
     "available": "lich {version} is available. Follow the prompt.",
     "upToDate": "You're on the latest version.",

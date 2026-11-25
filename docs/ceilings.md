@@ -1547,6 +1547,13 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   release page for a tarball, and lich never runs it. The prompt has no Later, comes back when swiped away,
   and every hourly check raises it again once its action closed it. `lich.appUpdateDismissed` is not read for
   a required release.
+- **The beta channel reaches neither Homebrew nor Scoop** (`internal/appupdate`, `betaInstallCommand`): a
+  pre-release is published on GitHub only, never to the AUR, the tap or the Scoop manifest, so a cask or Scoop
+  install on beta gets the release page instead of a command. The Windows installer updates from the button as
+  on stable; a deb or rpm install pins `install.sh` to the tag (`LICH_TAG`), and Arch builds the PKGBUILD the
+  pre-release ships, under the AUR's own `lich-bin` name, so the next stable release from the AUR replaces it.
+  Back on stable, a pre-release build is never moved down: it waits for the release it precedes. Only tags
+  shaped `X.Y.Z-label.N` count as pre-releases (`semver.IsPreRelease`); a build between tags never updates.
 
 ## Profiles
 

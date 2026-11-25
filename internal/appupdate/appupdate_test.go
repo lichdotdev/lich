@@ -240,15 +240,95 @@ func TestInstallCommand(t *testing.T) {
 				}
 				s.osReleasePath = path
 			}
-			if got := s.installCommand(); got != tc.want {
+			if got := s.installCommand("0.9.0"); got != tc.want {
 				t.Errorf("installCommand() = %q, want %q", got, tc.want)
 			}
 		})
 	}
 }
 
+// A pre-release reaches no package manager: Linux installs it from the
+// release's own assets, and Homebrew and Scoop get the release page.
+func TestBetaInstallCommand(t *testing.T) {
+	pkgbuild := `d="$(mktemp -d)" && curl -fsSL -o "$d/PKGBUILD" https://github.com/lichdotdev/lich/releases/download/v0.93.0-rc.15/PKGBUILD && (cd "$d" && makepkg -si --noconfirm)` + restartChain
+	script := "curl -fsSL https://raw.githubusercontent.com/lichdotdev/lich/main/install.sh | LICH_TAG=v0.93.0-rc.15 sh"
+
+	tests := []struct {
+		name      string
+		goos      string
+		exePath   string
+		osRelease string
+		want      string
+	}{
+		{"arch builds the release's PKGBUILD", "linux", packagedExe(t), "ID=arch\n", pkgbuild},
+		{"arch derivative", "linux", packagedExe(t), "ID=cachyos\nID_LIKE=arch\n", pkgbuild},
+		{"debian pins install.sh to the tag", "linux", packagedExe(t), "ID=debian\n", script},
+		{"missing os-release pins install.sh", "linux", packagedExe(t), "", script},
+		{"linux tarball", "linux", filepath.Join(t.TempDir(), "lich"), "ID=debian\n", ""},
+		{"cask install gets the release page", "darwin", bundleExe(t), "", ""},
+		{"scoop install gets the release page", "windows", scoopExe(t), "", ""},
+		{"windows self-apply", "windows", "", "", ""},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			s := &Service{goos: tc.goos, exePath: tc.exePath, osReleasePath: filepath.Join("/nonexistent-abc123", "os-release")}
+			if tc.osRelease != "" {
+				path := filepath.Join(t.TempDir(), "os-release")
+				if err := os.WriteFile(path, []byte(tc.osRelease), 0o600); err != nil {
+					t.Fatal(err)
+				}
+				s.osReleasePath = path
+			}
+			if got := s.installCommand("0.93.0-rc.15"); got != tc.want {
+				t.Errorf("installCommand() = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestStatusChannel(t *testing.T) {
+	list := `[{"tag_name":"v0.93.0-rc.15","prerelease":true},{"tag_name":"v0.93.0-rc.9","prerelease":true},{"tag_name":"v0.92.0"}]`
+	tests := []struct {
+		name, version string
+		beta          bool
+		wantLatest    string
+		wantAvailable bool
+	}{
+		{"stable never sees a pre-release", "0.92.0", false, "0.92.0", false},
+		{"beta sees the newest pre-release", "0.92.0", true, "0.93.0-rc.15", true},
+		{"beta orders pre-releases by number", "0.93.0-rc.9", true, "0.93.0-rc.15", true},
+		{"beta on the newest pre-release", "0.93.0-rc.15", true, "0.93.0-rc.15", false},
+		// Back on stable, a pre-release build waits for its release instead
+		// of being moved down to the last one.
+		{"stable on a pre-release never goes back", "0.93.0-rc.15", false, "0.92.0", false},
+		{"a describe build after a pre-release never updates", "0.93.0-rc.9-3-gabc123", true, "0.93.0-rc.15", false},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			s := serveBody(t, http.StatusOK, list)
+			s.version = tc.version
+			s.beta = func() bool { return tc.beta }
+			got := s.status()
+			if got.LatestVersion != tc.wantLatest || got.UpdateAvailable != tc.wantAvailable {
+				t.Fatalf("status() = latest %q available %v, want %q %v", got.LatestVersion, got.UpdateAvailable, tc.wantLatest, tc.wantAvailable)
+			}
+		})
+	}
+}
+
+// The final release lands for a pre-release build on either channel.
+func TestStatusPreReleaseBuildGetsItsRelease(t *testing.T) {
+	for _, beta := range []bool{false, true} {
+		s := serveBody(t, http.StatusOK, `[{"tag_name":"v0.93.0"},{"tag_name":"v0.93.0-rc.15","prerelease":true}]`)
+		s.version, s.beta = "0.93.0-rc.15", func() bool { return beta }
+		if got := s.status(); !got.UpdateAvailable || got.LatestVersion != "0.93.0" {
+			t.Errorf("beta %v: status() = %+v, want 0.93.0 available", beta, got)
+		}
+	}
+}
+
 func TestApplyRejectedWhenNotSelfApply(t *testing.T) {
-	s := New("0.7.0", nil, nil)
+	s := New("0.7.0", nil, nil, nil)
 	s.exePath = "" // forces canSelfApply false regardless of platform
 	if _, err := s.Apply(t.Context(), api.None{}); err == nil {
 		t.Fatal("Apply() = nil, want an error when self-apply is unsupported")
@@ -384,7 +464,7 @@ func TestFetchChecksum(t *testing.T) {
 }
 
 func TestNewResolvesExe(t *testing.T) {
-	s := New("0.7.0", nil, nil)
+	s := New("0.7.0", nil, nil, nil)
 	if s.version != "0.7.0" {
 		t.Fatalf("version = %q", s.version)
 	}

@@ -13,8 +13,13 @@ import (
 )
 
 const (
-	updatesAppKey       = "updates.app" // no backend key: the rows only act
-	updatesPluginKey    = "updates.plugin"
+	updatesAppKey    = "updates.app" // no backend key: the rows only act
+	updatesPluginKey = "updates.plugin"
+	// updateChannelKey is the backend's (store.BetaUpdates): the release
+	// channel the update check follows.
+	updateChannelKey    = "update.channel"
+	updateChannelStable = "stable"
+	updateChannelBeta   = "beta"
 	updatesReleaseTagAt = "/releases/tag/v"
 )
 
@@ -32,8 +37,10 @@ type updatesSettings struct {
 	busy          bool // a plugin action is in flight
 	checkingApp   bool
 	appResult     string
+	channel       string // "" until read
 
 	checkApp, viewNotes ui.Clickable
+	channelPick         ui.Enum
 	plugin              pluginControls
 	patch               patchNotesView
 }
@@ -59,6 +66,27 @@ func (u *updatesSettings) ensure(s *settingsScreen) {
 	}
 	go u.readNotes(s)
 	go u.readPlugins(s)
+	go u.readChannel(s)
+}
+
+func (u *updatesSettings) readChannel(s *settingsScreen) {
+	raw, err := s.client.GetSetting(s.ctx, updateChannelKey, "")
+	if err != nil {
+		log.Printf("settings: update channel: %v", err)
+		return
+	}
+	u.mu.Lock()
+	u.channel = parseUpdateChannel(raw)
+	u.mu.Unlock()
+	s.invalidate()
+}
+
+// parseUpdateChannel is store.BetaUpdates: stable until beta is chosen.
+func parseUpdateChannel(raw string) string {
+	if raw == updateChannelBeta {
+		return updateChannelBeta
+	}
+	return updateChannelStable
 }
 
 func (u *updatesSettings) readNotes(s *settingsScreen) {
@@ -115,6 +143,10 @@ func (s *settingsScreen) updatesRow(gtx C, th *ui.Theme, e settingEntry, r setti
 			}
 		}
 		return r.layout(gtx, th, first, func(gtx C, th *ui.Theme) D { return u.appControl(gtx, th) }), true
+	case updateChannelKey:
+		u.ensure(s)
+		r.description = i18n.T("settings.updatesSettings.channelDescription")
+		return r.layout(gtx, th, first, func(gtx C, th *ui.Theme) D { return u.channelControl(gtx, th, s) }), true
 	case updatesPluginKey:
 		u.ensure(s)
 		return u.pluginBlock(gtx, th, s, r, first), true
@@ -138,6 +170,35 @@ func (u *updatesSettings) appControl(gtx C, th *ui.Theme) D {
 		children = append(children, ui.Gap(3), layout.Rigid(th.Text(ui.TextXS, result).Muted().Layout))
 	}
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
+}
+
+// channelControl stores a new channel and checks against it at once, so a
+// switch to beta finds the pre-release without waiting for the hourly poll.
+func (u *updatesSettings) channelControl(gtx C, th *ui.Theme, s *settingsScreen) D {
+	if u.channelPick.Update(gtx) {
+		channel := parseUpdateChannel(u.channelPick.Value)
+		u.mu.Lock()
+		u.channel = channel
+		u.mu.Unlock()
+		go func() {
+			if err := s.client.SetSetting(s.ctx, updateChannelKey, "", channel); err != nil {
+				log.Printf("settings: save %s: %v", updateChannelKey, err)
+				return
+			}
+			u.runCheck(s)
+		}()
+	}
+	u.mu.Lock()
+	channel := u.channel
+	u.mu.Unlock()
+	if channel == "" {
+		return D{}
+	}
+	u.channelPick.Value = channel
+	return th.ToggleGroup(&u.channelPick,
+		ui.ToggleItem{Value: updateChannelStable, Text: i18n.T("settings.updatesSettings.channelStable")},
+		ui.ToggleItem{Value: updateChannelBeta, Text: i18n.T("settings.updatesSettings.channelBeta")},
+	).Layout(gtx)
 }
 
 // runCheck is the one check of the pane: the release, as AppUpdateGate asks

@@ -24,10 +24,17 @@ func TestLess(t *testing.T) {
 		{"1.0.0-rc1", "0.9.9", false},
 		{"1.0.0-rc1", "1.0.0-rc1", false},
 
-		// Ordering between two distinct pre-releases is not resolved; they
-		// compare equal, so neither is "less" than the other.
-		{"1.0.0-rc1", "1.0.0-rc2", false},
+		// SemVer §11.4: two pre-releases order identifier by identifier, so
+		// the beta channel sees rc.10 after rc.9.
+		{"1.0.0-rc1", "1.0.0-rc2", true},
 		{"1.0.0-rc2", "1.0.0-rc1", false},
+		{"0.93.0-rc.9", "0.93.0-rc.10", true},
+		{"0.93.0-rc.10", "0.93.0-rc.9", false},
+		{"v0.93.0-rc.15", "0.93.0-rc.15", false},
+		{"1.0.0-rc", "1.0.0-rc.1", true},     // a prefix sorts first
+		{"1.0.0-1", "1.0.0-alpha", true},     // numeric before alphanumeric
+		{"1.0.0-beta.2", "1.0.0-rc.1", true}, // alphanumeric as text
+		{"1.0.0-rc.15+b.2", "1.0.0-rc.15", false},
 
 		// Build metadata carries no precedence (SemVer §10).
 		{"1.0.0+build.5", "1.0.0", false},
@@ -37,8 +44,8 @@ func TestLess(t *testing.T) {
 		// Garbage a git tag never produces, kept sane: a separator at index 0
 		// strips to empty numeric components rather than mis-parsing the digits
 		// after it (pins the IndexByte boundary — the '+' and '-' at position 0).
-		{"+5", "0.0.1", true},    // "+5" → build meta stripped → 0.0.0 < 0.0.1
-		{"-5", "0.0.0-x", false}, // "-5" → leading pre-release marker → 0.0.0-pre, equal
+		{"+5", "0.0.1", true},   // "+5" → build meta stripped → 0.0.0 < 0.0.1
+		{"-5", "0.0.0-x", true}, // "-5" → leading pre-release marker → 0.0.0-5, numeric before "x"
 	}
 	for _, tc := range tests {
 		if got := Less(tc.a, tc.b); got != tc.want {
@@ -70,6 +77,31 @@ func TestIsRelease(t *testing.T) {
 	for _, tc := range tests {
 		if got := IsRelease(tc.v); got != tc.want {
 			t.Errorf("IsRelease(%q) = %v, want %v", tc.v, got, tc.want)
+		}
+	}
+}
+
+func TestIsPreRelease(t *testing.T) {
+	tests := []struct {
+		v    string
+		want bool
+	}{
+		{"0.93.0-rc.15", true},
+		{"v0.93.0-rc.15", true},
+		{"0.68.0-pre.1", true},
+		{"0.93.0-rc.15+local.2", true},
+		{"0.93.0", false},
+		{"dev", false},
+		{"0.93.0-5-gabc123", false},       // git describe between tags
+		{"0.93.0-rc.15-3-gabc123", false}, // git describe after a pre-release
+		{"0.93.0-rc", false},
+		{"0.93.0-rc.x", false},
+		{"0.93.0-.1", false},
+		{"0.93-rc.1", false},
+	}
+	for _, tc := range tests {
+		if got := IsPreRelease(tc.v); got != tc.want {
+			t.Errorf("IsPreRelease(%q) = %v, want %v", tc.v, got, tc.want)
 		}
 	}
 }

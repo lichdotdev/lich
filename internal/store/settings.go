@@ -241,6 +241,20 @@ func (s *Service) PasteUnfold(providerID string) bool {
 	return err == nil && value == "true"
 }
 
+// updateChannelKey is the release channel the app update check follows,
+// written by Settings › Updates. Global only, and beta only for the literal
+// updateChannelBeta: every other value is the stable channel.
+const (
+	updateChannelKey  = "update.channel"
+	updateChannelBeta = "beta"
+)
+
+// BetaUpdates reports whether the app update check offers pre-releases.
+func (s *Service) BetaUpdates() bool {
+	value, err := s.GetSetting(context.Background(), api.GetSettingOptions{Key: updateChannelKey, ProjectID: globalScope})
+	return err == nil && value == updateChannelBeta
+}
+
 // Sandbox rungs, ordered by how much of the machine a session can reach. They
 // are the stored spelling of the control in Settings › Providers, and anything
 // this list does not name reads as SandboxOff — an unknown value must never be

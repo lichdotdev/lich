@@ -37,9 +37,6 @@ func (m Manifest) validate(lichVersion string) error {
 	if utf8.RuneCountInString(m.Name) > themeNameMaxLength {
 		return fmt.Errorf("manifest name cannot exceed %d characters", themeNameMaxLength)
 	}
-	// Update compares versions with semver.Less, which orders no two distinct
-	// pre-releases — a pack that versioned itself "1.2.0-rc1" would never be
-	// seen as newer than "1.2.0-rc2".
 	if !semver.IsRelease(m.Version) {
 		return fmt.Errorf("manifest version %q must be MAJOR.MINOR.PATCH", m.Version)
 	}
