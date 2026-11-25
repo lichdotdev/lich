@@ -79,10 +79,7 @@
     "done": "完了",
     "stopped": "停止",
     "failed": "失敗",
-    "noChanges": "変更なし",
-    "files": {
-      "other": "{count} 個のファイル"
-    }
+    "noChanges": "変更なし"
   },
   "composer": {
     "placeholder": "このプロジェクトについて{provider}に質問",

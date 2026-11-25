@@ -92,11 +92,7 @@
     "done": "Done",
     "stopped": "Stopped",
     "failed": "Failed",
-    "noChanges": "no changes",
-    "files": {
-      "one": "{count} file",
-      "other": "{count} files"
-    }
+    "noChanges": "no changes"
   },
   "composer": {
     "placeholder": "Ask {provider} about this project",

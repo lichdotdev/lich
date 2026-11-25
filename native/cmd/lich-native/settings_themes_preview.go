@@ -3,6 +3,7 @@ package main
 import (
 	"image"
 	"image/color"
+	"time"
 
 	"gioui.org/font"
 	"gioui.org/layout"
@@ -210,23 +211,20 @@ func previewCode(t themeLook) [][]inkSpan {
 	}
 }
 
-// previewDone is the turn's end: Done, the files and the lines in the tones,
-// and a rule to the edge.
+// The preview turn's calls and how long it took.
+const (
+	previewCalls = 14
+	previewTook  = 6*time.Minute + 4*time.Second
+)
+
+// previewDone is the turn's end as the chat closes it: Done, then its calls
+// and time muted.
 func previewDone(gtx C, th *ui.Theme, p ui.Palette) D {
+	work := i18n.T("chat.view.toolCalls", i18n.Args{"count": previewCalls}) + " · " + chatTook(previewTook)
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 		layout.Rigid(th.Text(previewText, i18n.T("chat.done.done")).In(p.Foreground).Weight(font.Medium).Layout),
 		ui.Gap(2),
-		layout.Rigid(th.Text(previewText, "· "+i18n.T("chat.done.files", i18n.Args{"count": 2})).In(p.MutedForeground).Layout),
-		ui.Gap(2),
-		layout.Rigid(th.Text(previewText, "+18").In(p.TonePass).Layout),
-		ui.Gap(1.5),
-		layout.Rigid(th.Text(previewText, "−4").In(p.Destructive).Layout),
-		ui.Gap(2),
-		layout.Flexed(1, func(gtx C) D {
-			size := image.Pt(gtx.Constraints.Max.X, gtx.Dp(1))
-			paint.FillShape(gtx.Ops, p.Border, clip.Rect{Max: size}.Op())
-			return D{Size: size}
-		}),
+		layout.Rigid(th.Text(previewText, "· "+work).In(p.MutedForeground).Layout),
 	)
 }
 

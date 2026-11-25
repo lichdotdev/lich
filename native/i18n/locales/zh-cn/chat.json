@@ -79,10 +79,7 @@
     "done": "完成",
     "stopped": "已停止",
     "failed": "失败",
-    "noChanges": "没有更改",
-    "files": {
-      "other": "{count} 个文件"
-    }
+    "noChanges": "没有更改"
   },
   "composer": {
     "placeholder": "向 {provider} 询问有关此项目的问题",

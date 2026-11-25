@@ -92,11 +92,7 @@
     "done": "Concluído",
     "stopped": "Interrompido",
     "failed": "Falhou",
-    "noChanges": "sem alterações",
-    "files": {
-      "one": "{count} arquivo",
-      "other": "{count} arquivos"
-    }
+    "noChanges": "sem alterações"
   },
   "composer": {
     "placeholder": "Pergunte ao {provider} sobre este projeto",

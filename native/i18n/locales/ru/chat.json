@@ -118,13 +118,7 @@
     "done": "Готово",
     "stopped": "Остановлено",
     "failed": "Сбой",
-    "noChanges": "без изменений",
-    "files": {
-      "one": "{count} файл",
-      "few": "{count} файла",
-      "many": "{count} файлов",
-      "other": "{count} файла"
-    }
+    "noChanges": "без изменений"
   },
   "composer": {
     "placeholder": "Спросите {provider} об этом проекте",
