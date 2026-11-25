@@ -107,6 +107,15 @@ func packagedExe(t *testing.T) string {
 	return filepath.Join(root, "usr", "bin", "lich")
 }
 
+// nfpmExe returns the layout install.sh installs: <root>/usr/local/bin/lich,
+// the nfpm package named lich, with the window beside it.
+func nfpmExe(t *testing.T) string {
+	t.Helper()
+	root := t.TempDir()
+	touch(t, filepath.Join(root, "usr", "local", "bin", "lich-native"))
+	return filepath.Join(root, "usr", "local", "bin", "lich")
+}
+
 // serveBody points a Service's releases endpoint at a test server.
 func serveBody(t *testing.T, status int, body string) *Service {
 	t.Helper()
@@ -223,6 +232,7 @@ func TestInstallCommand(t *testing.T) {
 		{"scoop install", "windows", scoopExe(t), "", "scoop update lich" + restartChainPwsh},
 		{"scoop version dir", "windows", filepath.Join("C:", "scoop", "apps", "lich", "0.47.0", "lich.exe"), "", "scoop update lich" + restartChainPwsh},
 		{"arch by ID", "linux", packagedExe(t), "ID=arch\n", arch},
+		{"arch install.sh package", "linux", nfpmExe(t), "ID=arch\n", installScript},
 		{"arch quoted ID", "linux", packagedExe(t), "ID=\"arch\"\n", arch},
 		{"arch derivative via ID_LIKE", "linux", packagedExe(t), "ID=manjaro\nID_LIKE=arch\n", arch},
 		{"debian uses install.sh", "linux", packagedExe(t), "ID=debian\n", installScript},
@@ -250,7 +260,8 @@ func TestInstallCommand(t *testing.T) {
 // A pre-release reaches no package manager but Homebrew's beta cask: Linux
 // installs it from the release's own assets, and Scoop gets the release page.
 func TestBetaInstallCommand(t *testing.T) {
-	pkgbuild := `d="$(mktemp -d)" && curl -fsSL -o "$d/PKGBUILD" https://github.com/lichdotdev/lich/releases/download/v0.93.0-rc.15/PKGBUILD && (cd "$d" && makepkg -si --noconfirm)` + restartChain
+	pkgbuild := `d="$(mktemp -d)" && curl -fsSL -o "$d/PKGBUILD" https://github.com/lichdotdev/lich/releases/download/v0.93.0-rc.15/PKGBUILD && (cd "$d" && LICH_PKGNAME=lich-bin makepkg -si --noconfirm)` + restartChain
+	nfpmBuild := `d="$(mktemp -d)" && curl -fsSL -o "$d/PKGBUILD" https://github.com/lichdotdev/lich/releases/download/v0.93.0-rc.15/PKGBUILD && (cd "$d" && LICH_PKGNAME=lich makepkg -si --noconfirm)` + restartChain
 	script := "curl -fsSL https://raw.githubusercontent.com/lichdotdev/lich/main/install.sh | LICH_TAG=v0.93.0-rc.15 sh"
 
 	tests := []struct {
@@ -261,6 +272,7 @@ func TestBetaInstallCommand(t *testing.T) {
 		want      string
 	}{
 		{"arch builds the release's PKGBUILD", "linux", packagedExe(t), "ID=arch\n", pkgbuild},
+		{"install.sh package keeps its name", "linux", nfpmExe(t), "ID=arch\n", nfpmBuild},
 		{"arch derivative", "linux", packagedExe(t), "ID=cachyos\nID_LIKE=arch\n", pkgbuild},
 		{"debian pins install.sh to the tag", "linux", packagedExe(t), "ID=debian\n", script},
 		{"missing os-release pins install.sh", "linux", packagedExe(t), "", script},

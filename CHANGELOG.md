@@ -139,6 +139,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Switching between stable and beta on Arch is an ordinary package upgrade, with no removal by hand.** The update keeps the name of the package you installed, `lich` from install.sh or `lich-bin` from the AUR.
 - **A site whose server leaves out part of its certificate chain opens in the built-in browser on Linux, as it does in Chrome.** It showed "Unacceptable TLS certificate"; lich now fetches the missing certificate the way Chrome does and still refuses one that fails any other check.
 - **New session here opens a session in the selected checkout.** The card menu now carries the launch action through to the window, including its worktree and folder.
 
