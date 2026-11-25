@@ -453,7 +453,7 @@ never makes the Latest pill show.
   is underlined in its color and takes the hand, and a click with it opens a file in the stage editor
   (`followCodeRef`) and a folder in the dock's Code tab, unfolded down to it (`chat_paths.go`). A path it does not
   hold stays text. Anything else in code is plain. An answer has no header: who wrote it is the
-  foot's (see A message's time); the provider's avatar marks no row of the chat: no answer, call, notification or closing line. A thought is a muted fold, closed, with the
+  foot's (see A message's time); the provider's avatar marks no row of the chat: no answer, call, notification of lich's or closing line, the harness's own notes about its background work alone excepted (see A harness's background note). A thought is a muted fold, closed, with the
   sparkles before its label.
 - **A turn's tool calls** fold by run: the calls between two of the agent's texts (or the person's message and
   the first text) fold into one muted line where the first of them came. One line for the whole turn stood where
@@ -598,6 +598,14 @@ never makes the Latest pill show.
   `Primary` at 0.65 over `Background`, and the base and the sparks going out `Primary` at 0.35. The flame burns in
   the theme's own color, as the sidebar's souls do. It does not use `ToneWait`: the turn running is not the
   turn waiting on the person, and that tone already says the second.
+- **A harness's background note** (`chat_tasknote.go`), a `<task-notification>` Claude Code writes into the
+  conversation when a subagent, a background command or a Monitor moves, is a row of its own: the provider's
+  pixel mark (`Space(3.5)`), the note's summary in `TextSM` medium in the harness's own words, untranslated,
+  `Destructive` when its status is failed, and a hairline to the column's edge. The mark is the one exception
+  to the chat's rule against provider avatars: without it the row reads as a worker's note lich wrote. A note
+  that carries text (a subagent's result as Markdown, a Monitor's event muted) ends in a muted chevron and
+  opens closed, its text unfolding under the summary; a command's note has neither. Notes under each other
+  start no turn.
 - **An empty chat** (its conversation read and holding nothing: a new session, or after `/new`) draws its start
   screen (`chat_start.go`): lich's mark in pixel art, the Welcome screen's still frame (48x68, pixels of 1.5dp,
   its five tones from the tokens: `Foreground`, a mix of it and `MutedForeground`, `MutedForeground`, and two
