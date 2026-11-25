@@ -47,10 +47,13 @@ func (c *chatSession) reply(itemID string, r api.ChatQReplied) error {
 		c.mu.Unlock()
 		return fmt.Errorf("question %q asks %d questions, and %d answers came", itemID, len(q.asks), len(r.Answers))
 	}
+	// Recorded before it is sent: the provider's own record of the answer (a
+	// Claude Code transcript's tool result) can be read back before this
+	// returns, and the first record of a question is the one that stays.
+	c.replied(itemID, r)
 	if err := q.reply(r); err != nil {
 		return err
 	}
-	c.replied(itemID, r)
 	c.svc.term.ReportChatState(c.id, stateBusy, "", "")
 	return nil
 }
