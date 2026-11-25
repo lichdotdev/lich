@@ -72,7 +72,7 @@ func route(s *Service) string {
 	if canSelfApply(s.goos, s.goarch, s.exePath) {
 		return "installer"
 	}
-	if cmd := s.installCommand(); cmd != "" {
+	if cmd := s.installCommand("0.9.0"); cmd != "" {
 		return "paste " + cmd
 	}
 	return "release page"

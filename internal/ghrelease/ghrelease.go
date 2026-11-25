@@ -41,8 +41,19 @@ func Get(client *http.Client, url string) (*http.Response, error) {
 
 // Releases GETs a GitHub releases list URL and returns its published releases,
 // newest first as GitHub lists them. Drafts and pre-releases are left out:
-// neither is something lich installs. Any failure yields nil.
+// neither is something lich installs on its stable channel. Any failure yields
+// nil.
 func Releases(client *http.Client, url string) []Release {
+	return published(client, url, false)
+}
+
+// ReleasesWithPre is Releases with the pre-releases kept, what the beta
+// channel installs.
+func ReleasesWithPre(client *http.Client, url string) []Release {
+	return published(client, url, true)
+}
+
+func published(client *http.Client, url string, keepPre bool) []Release {
 	data := read(client, url, ListLimit)
 	if data == nil {
 		return nil
@@ -58,7 +69,7 @@ func Releases(client *http.Client, url string) []Release {
 	}
 	releases := make([]Release, 0, len(docs))
 	for _, d := range docs {
-		if !d.Draft && !d.Prerelease && d.TagName != "" {
+		if !d.Draft && (keepPre || !d.Prerelease) && d.TagName != "" {
 			releases = append(releases, Release{Tag: strings.TrimPrefix(d.TagName, "v"), Body: d.Body})
 		}
 	}

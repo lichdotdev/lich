@@ -219,8 +219,8 @@ func vimModeLabel(mode string) (string, int) {
 // names: "-- INSERT --recording @q" keeps "recording @q".
 func vimShowmodeRest(s string) string {
 	if rest, ok := strings.CutPrefix(s, "-- "); ok {
-		if i := strings.Index(rest, " --"); i >= 0 {
-			return strings.TrimSpace(rest[i+len(" --"):])
+		if _, after, ok := strings.Cut(rest, " --"); ok {
+			return strings.TrimSpace(after)
 		}
 	}
 	return s

@@ -385,6 +385,11 @@
   "updatesSettings": {
     "applicationTitle": "애플리케이션",
     "applicationSearchWords": "버전 업그레이드 변경 내역 릴리스 노트 changelog",
+    "channelTitle": "채널",
+    "channelSearchWords": "베타 안정 릴리스 후보 프리릴리스 beta stable",
+    "channelDescription": "베타에서는 정식 버전보다 먼저 릴리스 후보를 나오는 대로 받습니다.",
+    "channelStable": "안정",
+    "channelBeta": "베타",
     "checkForUpdates": "업데이트 확인",
     "available": "lich {version} 버전을 사용할 수 있습니다. 안내를 따르세요.",
     "upToDate": "최신 버전입니다.",

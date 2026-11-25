@@ -389,6 +389,11 @@
   "updatesSettings": {
     "applicationTitle": "Aplicativo",
     "applicationSearchWords": "versão atualizar upgrade changelog notas de versão novidades",
+    "channelTitle": "Canal",
+    "channelSearchWords": "beta estável release candidate pré-lançamento",
+    "channelDescription": "No Beta, cada release candidate chega assim que sai, antes da versão estável.",
+    "channelStable": "Estável",
+    "channelBeta": "Beta",
     "checkForUpdates": "Buscar atualizações",
     "available": "O lich {version} está disponível. Siga o aviso.",
     "upToDate": "Você está na versão mais recente.",

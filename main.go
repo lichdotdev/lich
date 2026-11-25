@@ -429,7 +429,7 @@ func registerServices(db *store.Service, term *terminal.Service, chats *chat.Ser
 		)
 		routes.Profiles(dispatcher, api.XDGProfiles[provider.ID], profiles)
 	}
-	updates := appupdate.New(version, coord.Install, hub.Emit)
+	updates := appupdate.New(version, coord.Install, hub.Emit, db.BetaUpdates)
 	db.SetSessionGate(updates.RequiredUpdate)
 	// A new session is drawn as a chat where its provider has one.
 	db.SetChatKinds(func(kind string) bool { return slices.Contains(chat.Kinds, kind) })

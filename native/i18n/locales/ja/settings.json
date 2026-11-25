@@ -389,6 +389,11 @@
   "updatesSettings": {
     "applicationTitle": "アプリケーション",
     "applicationSearchWords": "バージョン アップグレード 変更履歴 リリースノート",
+    "channelTitle": "チャンネル",
+    "channelSearchWords": "ベータ 安定版 リリース候補 プレリリース beta stable",
+    "channelDescription": "ベータでは、安定版より先にリリース候補を公開と同時に受け取れます。",
+    "channelStable": "安定版",
+    "channelBeta": "ベータ",
     "checkForUpdates": "アップデートを確認",
     "available": "lich {version} を利用できます。表示される案内に従ってください。",
     "upToDate": "最新バージョンです。",
