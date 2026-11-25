@@ -2309,7 +2309,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   could compile or run without a Mac. The BSDs read no scheme and draw dark.
 
 - **A session's browser is a second Chromium, one per card, drawn from frames** (`internal/browser`,
-  `docs/browser-tab.md`): a headless Chrome, Edge, Chromium, Brave, Vivaldi or Helium already installed,
+  `docs/browser-tab.md`), wherever lich-browser does not hold it (the bullet after this one): a headless Chrome, Edge, Chromium, Brave, Vivaldi or Helium already installed,
   whose page reaches the session's page pane as a JPEG screencast over `/events`, at the page's own frame
   rate; a window slower to decode skips to the newest frame. A HiDPI pane gets frames drawn at 1.5x at most
   (`frameScale`): 2x halved a busy page's frame rate. The browser draws at a scale forced at its launch, the one
@@ -2370,6 +2370,20 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   Ubuntu 23.10 and later AppArmor refuses it the user namespace unless the browser ships an AppArmor profile,
   as the distribution's Chrome, Edge and Brave do: one unpacked from a tarball fails to start with "No usable
   sandbox!", which the agent reads as the browser's error.
+- **A page in lich-browser is driven from what the wire tells, which is less than CDP did**
+  (`internal/browser/webkit*.go`, `docs/lich-browser.md`): on Linux with an X display and `lich-browser` beside
+  `lich`, every page lives there and Chrome is never started. A `request` event names no request and no type, so
+  an action's settle waits for every subresource of the front tab, images and scripts too, not only fetches, and a
+  request that finishes takes the latest one begun off the count: a long poll begun before the action never holds
+  it, but one begun after it can end the wait early when an older request lands first. A `load` that fails carries
+  no error text, so a page that did not load reads "did not load" instead of Chrome's `net::` reason, and every
+  failed navigation is first waited on as a download for `downloadNotice`, as Chrome's aborted one is. The agent's
+  `browser_eval` runs as lich-browser evaluates a script, not in Chrome's REPL mode, so whether top-level `await`
+  and redeclaring a `let` work is the engine's. Open in a window is refused: the page has no window of its own.
+  Downloads land where lich-browser saves them, named by it. Pages are in one process: when it exits, every
+  session's browser closes and the next one starts it again; when one page's web process crashes, that browser
+  alone closes. The window's pointer, keys and text never pass through the backend (`browser.Mouse`, `.Key`,
+  `.Text` do nothing there), and `browser.NativeLoad` has nothing to follow once the window embeds the page.
 - **A layer the window floats over the content shows over a page it draws itself only where it says so**
   (`coverPages` in `native/cmd/lich-native/browser_native.go`): the page is a native child window over the pane,
   above anything the window draws, so a layer that floats over the content (a dock or sidebar sliding in, and later
