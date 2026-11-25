@@ -55,6 +55,8 @@
     "zoom": "页面缩放",
     "zoomReset": "重置为 100%",
     "notePlaceholder": "这里应该改成什么？",
+    "noteTitle": "备注",
+    "noteTitleNumbered": "备注 {number}",
     "closingPlaceholder": "针对全部备注的说明…",
     "addNote": "添加备注",
     "saveNote": "保存",

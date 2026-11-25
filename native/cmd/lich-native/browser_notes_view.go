@@ -43,9 +43,15 @@ var (
 
 var (
 	notePopoverWidth = unit.Dp(280)
-	noteRowHeight    = ui.Space(6.5)
-	noteTrayHead     = ui.Space(9)
-	noteTrayPad      = ui.Space(2)
+	// noteFieldMin is the mockup's min-height: 80px, so the field reads as one.
+	noteFieldMin = ui.Space(20)
+	// noteShadows is the mockup's 0 12px 32px rgba(0,0,0,.45), 0 2px 6px
+	// rgba(0,0,0,.3): the popover floats over a website, where a hairline alone
+	// is lost on a light page.
+	noteShadows   = []ui.BoxShadow{{Y: 12, Blur: 32, Alpha: 0.45}, {Y: 2, Blur: 6, Alpha: 0.3}}
+	noteRowHeight = ui.Space(6.5)
+	noteTrayHead  = ui.Space(9)
+	noteTrayPad   = ui.Space(2)
 	// noteRowsShown is how many notes the tray shows before it scrolls.
 	noteRowsShown = 3
 	// noteClosingMax is the closing note's ceiling; a longer one scrolls.
@@ -254,7 +260,7 @@ func (u *window) notePopover(gtx C, p *browserPaneUI, scale float32) {
 	if n.add.Clicked(gtx) {
 		n.commit()
 	}
-	if n.cancel.Clicked(gtx) {
+	if n.cancel.Clicked(gtx) || n.dismiss.Clicked(gtx) {
 		n.open = false
 	}
 	if n.del.Clicked(gtx) && n.editing >= 0 {
@@ -281,8 +287,12 @@ func (u *window) notePopover(gtx C, p *browserPaneUI, scale float32) {
 	n.cut(image.Rectangle{Min: at, Max: at.Add(d.Size)}, gtx.Dp(ui.RadiusMD), gtx.Dp(ui.RadiusMD))
 	defer op.Offset(at).Push(gtx.Ops).Pop()
 	defer noteEnter(gtx, n.openedAt, el.Sub(at), d.Size)()
-	shape := clip.UniformRRect(image.Rectangle{Max: d.Size}, gtx.Dp(ui.RadiusMD))
-	paint.FillShape(gtx.Ops, th.Sidebar, shape.Op(gtx.Ops))
+	radius := gtx.Dp(ui.RadiusLG)
+	for _, s := range noteShadows {
+		s.Paint(gtx, d.Size, radius)
+	}
+	shape := clip.UniformRRect(image.Rectangle{Max: d.Size}, radius)
+	paint.FillShape(gtx.Ops, th.Popover, shape.Op(gtx.Ops))
 	area := shape.Push(gtx.Ops)
 	// The popover takes the pointer from the page under it.
 	event.Op(gtx.Ops, &n.draft)
@@ -293,7 +303,7 @@ func (u *window) notePopover(gtx C, p *browserPaneUI, scale float32) {
 	}
 	call.Add(gtx.Ops)
 	area.Pop()
-	paint.FillShape(gtx.Ops, th.Over(th.Border), clip.Stroke{Path: shape.Path(gtx.Ops), Width: float32(gtx.Dp(1))}.Op())
+	paint.FillShape(gtx.Ops, th.On(th.Popover).Over(th.Border), clip.Stroke{Path: shape.Path(gtx.Ops), Width: float32(gtx.Dp(1))}.Op())
 }
 
 // noteEnterDuration and noteZoomFrom are a lich menu's animate-in, slowed a
@@ -347,55 +357,74 @@ func notePopoverAt(r image.Rectangle, size, page image.Point, gap int) image.Poi
 }
 
 // notePopoverBody is the review's comment box (commentComposer) for a note:
-// a muted line naming the element, the field, then Add and Cancel; a note
-// being edited adds Delete.
+// its number, a title over a muted line naming the element and a ×, the
+// field, then Cancel and Add; a note being edited adds Delete at the left.
 func (u *window) notePopoverBody(gtx C, n *browserNotes) D {
-	on := u.theme.On(u.theme.Sidebar)
-	num := len(n.list) + 1
-	if n.editing >= 0 {
-		num = n.editing + 1
-	}
-	heading := n.draft.Label
-	if n.draft.Component != "" {
-		heading += " · " + n.draft.Component
-	}
-	return layout.Inset{Left: ui.Space(3), Right: ui.Space(3), Top: ui.Space(2.5), Bottom: ui.Space(2.5)}.Layout(gtx, func(gtx C) D {
+	on := u.theme.On(u.theme.Popover)
+	return layout.UniformInset(ui.Space(3)).Layout(gtx, func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-			layout.Rigid(func(gtx C) D {
-				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-					layout.Rigid(func(gtx C) D { return u.noteTab(gtx, num, false, false) }),
-					ui.Gap(2),
-					layout.Flexed(1, on.Text(ui.TextXS, heading).Mono().Muted().Layout),
-				)
-			}),
-			ui.VGap(3),
+			layout.Rigid(func(gtx C) D { return u.notePopoverHead(gtx, on, n) }),
+			ui.VGap(2.5),
 			layout.Rigid(func(gtx C) D {
 				gtx.Constraints.Max.Y = min(gtx.Constraints.Max.Y, gtx.Dp(ui.Space(64)))
-				return on.Textarea(&n.editor, i18n.T("layouts.browser.notePlaceholder")).Layout(gtx)
+				ta := on.Textarea(&n.editor, i18n.T("layouts.browser.notePlaceholder"))
+				ta.MinHeight = noteFieldMin
+				return ta.Layout(gtx)
 			}),
-			ui.VGap(2),
+			ui.VGap(2.5),
 			layout.Rigid(func(gtx C) D { return u.notePopoverButtons(gtx, on, n) }),
 		)
 	})
 }
 
-func (u *window) notePopoverButtons(gtx C, th *ui.Theme, n *browserNotes) D {
-	label := i18n.T("layouts.browser.addNote")
+func (u *window) notePopoverHead(gtx C, th *ui.Theme, n *browserNotes) D {
+	num := len(n.list) + 1
+	title := i18n.T("layouts.browser.noteTitle")
 	if n.editing >= 0 {
-		label = i18n.T("layouts.browser.saveNote")
+		num = n.editing + 1
+		title = i18n.T("layouts.browser.noteTitleNumbered", i18n.Args{"number": num})
 	}
-	add := th.Button(&n.add, label)
-	add.Size = ui.SizeSM
+	element := n.draft.Label
+	if n.draft.Component != "" {
+		element += " · " + n.draft.Component
+	}
+	dismiss := th.Button(&n.dismiss, "")
+	dismiss.Icon, dismiss.Variant, dismiss.Size = icNoteRemove, ui.VariantGhost, ui.SizeIconXS
+	return layout.Flex{}.Layout(gtx,
+		// Centered on the title's line: TextSM's 20 over the tab's 16.
+		layout.Rigid(func(gtx C) D {
+			return layout.Inset{Top: ui.Space(0.5)}.Layout(gtx, func(gtx C) D { return u.noteTab(gtx, num, false, false) })
+		}),
+		ui.Gap(2),
+		layout.Flexed(1, func(gtx C) D {
+			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+				layout.Rigid(th.Text(ui.TextSM, title).Weight(font.SemiBold).Layout),
+				layout.Rigid(th.Text(ui.TextXS, element).Mono().Muted().Layout),
+			)
+		}),
+		ui.Gap(2),
+		layout.Rigid(dismiss.Layout),
+	)
+}
+
+func (u *window) notePopoverButtons(gtx C, th *ui.Theme, n *browserNotes) D {
+	add := th.Button(&n.add, i18n.T("layouts.browser.addNote"))
+	add.Icon = icPlus
+	if n.editing >= 0 {
+		add = th.Button(&n.add, i18n.T("layouts.browser.saveNote"))
+	}
+	add.Size, add.Disabled = ui.SizeSM, !n.written()
 	cancel := th.Button(&n.cancel, i18n.T("common.action.cancel"))
 	cancel.Size, cancel.Variant = ui.SizeSM, ui.VariantGhost
-	buttons := []layout.FlexChild{layout.Rigid(add.Layout), ui.Gap(2), layout.Rigid(cancel.Layout)}
+	var buttons []layout.FlexChild
 	if n.editing >= 0 {
 		del := th.Button(&n.del, i18n.T("layouts.browser.deleteNote"))
 		del.Size, del.Variant = ui.SizeSM, ui.VariantGhost
-		buttons = append(buttons,
-			layout.Flexed(1, func(gtx C) D { return D{Size: image.Pt(gtx.Constraints.Min.X, 0)} }),
-			layout.Rigid(del.Layout))
+		buttons = append(buttons, layout.Rigid(del.Layout))
 	}
+	buttons = append(buttons,
+		layout.Flexed(1, func(gtx C) D { return D{Size: image.Pt(gtx.Constraints.Min.X, 0)} }),
+		layout.Rigid(cancel.Layout), ui.Gap(1.5), layout.Rigid(add.Layout))
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx, buttons...)
 }
 

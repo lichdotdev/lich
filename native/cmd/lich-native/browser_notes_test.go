@@ -59,7 +59,19 @@ func TestNotesKeepEditsAndDrops(t *testing.T) {
 	n.editor.SetText("first")
 	n.commit()
 	n.openNote(api.BrowserElement{Label: "b", Selector: "b"}, -1)
+	n.editor.SetText(" \n ")
 	n.commit()
+	if len(n.list) != 1 || !n.open {
+		t.Fatalf("a blank note was kept: %d notes, open %v", len(n.list), n.open)
+	}
+	n.editor.SetText("second")
+	n.commit()
+	n.openNote(n.list[0].el, 0)
+	n.editor.SetText("")
+	n.commit()
+	if n.list[0].text != "first" || !n.open {
+		t.Fatalf("blanking note 1 saved %q, open %v", n.list[0].text, n.open)
+	}
 	n.openNote(n.list[0].el, 0)
 	if n.editor.Text() != "first" {
 		t.Fatalf("editing note 1 opened with %q", n.editor.Text())

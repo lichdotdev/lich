@@ -6,6 +6,7 @@ import (
 	"image"
 	"math"
 	"slices"
+	"strings"
 	"time"
 
 	"gioui.org/f32"
@@ -120,6 +121,7 @@ type browserNotes struct {
 	// closingHeight is how tall closing stood last frame, for the tray's height.
 	closingHeight    int
 	add, cancel, del ui.Clickable
+	dismiss          ui.Clickable
 	clear, send      ui.Clickable
 	list             []*browserNote
 	rows             layout.List
@@ -263,8 +265,15 @@ func (n *browserNotes) draftBox() api.BrowserRect {
 	return n.draft.Box
 }
 
-// commit keeps the popover's note, replacing the one it edits.
+// written is whether the popover holds a note to keep: blank is not one.
+func (n *browserNotes) written() bool { return strings.TrimSpace(n.editor.Text()) != "" }
+
+// commit keeps the popover's note, replacing the one it edits; a blank one
+// stays open.
 func (n *browserNotes) commit() {
+	if !n.written() {
+		return
+	}
 	text := n.editor.Text()
 	if n.editing >= 0 && n.editing < len(n.list) {
 		n.list[n.editing].text = text
