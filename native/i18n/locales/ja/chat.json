@@ -14,7 +14,7 @@
     "waiting": {
       "other": "{count} 件待機中"
     },
-    "ended": "{time}前に完了"
+    "ended": "{time}前"
   },
   "view": {
     "failed": "チャットへのリクエストに失敗しました",
@@ -182,9 +182,6 @@
       "back": "戻る"
     },
     "mcpTitle": "MCP サーバー",
-    "serverCount": {
-      "other": "{count} 件のサーバー"
-    },
     "toolCount": {
       "other": "ツール {count} 個"
     },
@@ -193,7 +190,9 @@
       "project": "プロジェクト",
       "local": "ローカル",
       "claudeai": "claude.ai",
-      "misc": "その他"
+      "misc": "その他",
+      "running": "実行中",
+      "ended": "終了"
     },
     "status": {
       "connected": "接続済み",
@@ -245,7 +244,28 @@
       "policy": "ポリシーでロック",
       "any": "ロック中"
     },
-    "pluginSkills": "プラグインのスキルは /plugin で管理します。"
+    "pluginSkills": "プラグインのスキルは /plugin で管理します。",
+    "running": {
+      "other": "{count} 件実行中"
+    },
+    "skillsOn": "{on} 件オン · 全 {count} 件",
+    "statusCount": {
+      "connected": {
+        "other": "{count} 件接続済み"
+      },
+      "pending": {
+        "other": "{count} 件接続中"
+      },
+      "failed": {
+        "other": "{count} 件失敗"
+      },
+      "needsAuth": {
+        "other": "{count} 件サインインが必要"
+      },
+      "disabled": {
+        "other": "{count} 件オフ"
+      }
+    }
   },
   "shells": {
     "move": "Ctrl+B でバックグラウンド実行",
@@ -265,14 +285,7 @@
       "failed": "失敗",
       "stopped": "停止済み"
     },
-    "exit": "終了コード {code}",
-    "running": {
-      "other": "{count} 件実行中"
-    },
-    "group": {
-      "running": "実行中",
-      "ended": "終了"
-    }
+    "exit": "終了コード {code}"
   },
   "workflow": {
     "count": "{name} {done}/{total}",
@@ -333,7 +346,6 @@
     "none": "{provider} はプラグインを lich に伝えません。TUI に切り替えて、{provider} 自身の /plugin を使ってください。",
     "noneFound": "一致するプラグインはありません。",
     "noneInstalled": "ここにはプラグインがインストールされていません。",
-    "updateChip": "更新あり",
     "scope": {
       "user": "ユーザー",
       "project": "プロジェクト",
@@ -388,7 +400,11 @@
     "sourceHint": "owner/repo、URL またはパス",
     "restart": "更新しました。チャットを再起動すると新しいバージョンで動きます。",
     "current": "すでに最新のバージョンです。",
-    "fixed": "このプラグインは lich が自分でインストールして更新します。"
+    "fixed": "このプラグインは lich が自分でインストールして更新します。",
+    "updateCount": {
+      "other": "更新 {count} 件"
+    },
+    "versionTo": "{version} → {latest}"
   },
   "permissions": {
     "title": "権限",

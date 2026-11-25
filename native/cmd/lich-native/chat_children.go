@@ -47,7 +47,7 @@ func (m *model) childrenOf(id string, now time.Time) []sessionView {
 }
 
 // childRank orders a child: waiting on the person, working, then the rest,
-// which the list shows below a rule.
+// which the list shows under Ended.
 func childRank(sv sessionView) int {
 	switch sv.status {
 	case statusWaiting:
@@ -135,23 +135,33 @@ func (u *window) childrenView(gtx C, th *ui.Theme, p *chatPane, sv sessionView) 
 	t := &p.tools
 	kids := u.model.childrenOf(sv.ID, gtx.Now)
 	t.ensureRows(len(kids))
-	lines := make([]layout.Widget, len(kids))
+	running, waiting := 0, 0
+	var lines []layout.Widget
 	for i, k := range kids {
-		row := func(gtx C) D {
+		if childRank(k) < 2 {
+			running++
+		}
+		if k.status == statusWaiting {
+			waiting++
+		}
+		switch {
+		case i == 0 && childRank(k) < 2:
+			lines = append(lines, toolsGroupLine(th, i18n.T("chat.tools.group.running"), ""))
+		case childRank(k) == 2 && (i == 0 || childRank(kids[i-1]) < 2):
+			lines = append(lines, toolsGroupLine(th, i18n.T("chat.tools.group.ended"), ""))
+		}
+		lines = append(lines, func(gtx C) D {
 			return toolsPick(gtx, th, &t.rows[i], i == t.cursor, func(gtx C, th *ui.Theme) D { return u.childRow(gtx, th, k) })
-		}
-		lines[i] = row
-		if childRank(k) == 2 && i > 0 && childRank(kids[i-1]) < 2 {
-			lines[i] = func(gtx C) D {
-				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-					layout.Rigid(func(gtx C) D {
-						return layout.Inset{Top: ui.Space(1), Bottom: ui.Space(1), Left: ui.Space(2), Right: ui.Space(2)}.Layout(gtx, func(gtx C) D { return chatHairline(gtx, th) })
-					}),
-					layout.Rigid(row))
-			}
-		}
+		})
 	}
-	head := func(gtx C) D { return toolsHead(gtx, th, i18n.T("chat.children.title"), "", nil) }
+	var count []toned
+	if running > 0 {
+		count = append(count, toned{text: i18n.T("chat.tools.running", i18n.Args{"count": running})})
+	}
+	if waiting > 0 {
+		count = append(count, toned{text: i18n.T("chat.children.waiting", i18n.Args{"count": waiting}), ink: th.ToneWait})
+	}
+	head := func(gtx C) D { return toolsHeadTones(gtx, th, i18n.T("chat.children.title"), count, nil) }
 	return t.scrolled(gtx, th, head, lines, nil)
 }
 

@@ -56,9 +56,10 @@ func TestPluginOpensOnTheInstalledOnes(t *testing.T) {
 	}
 	r, _, _ = pluginFrames(t)
 	// Group labels are uppercase since the composer panels share the palette's
-	// group heading (contract changed).
-	if !r.showsAll("Plugins", "3 installed", "Discover", "Installed", "Marketplaces", "ponytail", "Lazy senior developer",
-		"update", "user · ~640 tokens", "OFFICIAL", "project · ~120 tokens") {
+	// group heading (contract changed). An update is its versions in the row and
+	// a count in the head, no chip (contract changed).
+	if !r.showsAll("Plugins", "3 installed", " · 1 update", "Discover", "Installed", "Marketplaces", "ponytail", "Lazy senior developer",
+		"1.8.0 → 1.9.0", " · user · ~640 tokens", "OFFICIAL", "project · ~120 tokens") {
 		t.Errorf("the installed plugins are not drawn:\n%s", r.drawn())
 	}
 	writeShot(t, r, "plugins-installed.png")

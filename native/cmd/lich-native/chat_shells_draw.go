@@ -89,10 +89,10 @@ func (u *window) shellsView(gtx C, th *ui.Theme, p *chatPane, sv sessionView) D 
 	var lines []layout.Widget
 	for i, s := range shells {
 		if i == 0 && running > 0 {
-			lines = append(lines, toolsGroupLine(th, i18n.T("chat.shells.group.running"), ""))
+			lines = append(lines, toolsGroupLine(th, i18n.T("chat.tools.group.running"), ""))
 		}
 		if i == running {
-			lines = append(lines, toolsGroupLine(th, i18n.T("chat.shells.group.ended"), ""))
+			lines = append(lines, toolsGroupLine(th, i18n.T("chat.tools.group.ended"), ""))
 		}
 		lines = append(lines, func(gtx C) D {
 			return toolsPick(gtx, th, &t.rows[i], i == t.cursor, func(gtx C, th *ui.Theme) D { return shellRow(gtx, th, s) })
@@ -100,7 +100,7 @@ func (u *window) shellsView(gtx C, th *ui.Theme, p *chatPane, sv sessionView) D 
 	}
 	count := ""
 	if running > 0 {
-		count = i18n.T("chat.shells.running", i18n.Args{"count": running})
+		count = i18n.T("chat.tools.running", i18n.Args{"count": running})
 	}
 	head := func(gtx C) D {
 		return toolsHead(gtx, th, i18n.T("chat.shells.title"), count, nil)

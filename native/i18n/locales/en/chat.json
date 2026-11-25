@@ -16,7 +16,7 @@
       "one": "{count} waiting",
       "other": "{count} waiting"
     },
-    "ended": "done {time} ago"
+    "ended": "{time} ago"
   },
   "view": {
     "failed": "The chat request failed",
@@ -196,10 +196,6 @@
       "back": "back"
     },
     "mcpTitle": "MCP servers",
-    "serverCount": {
-      "one": "{count} server",
-      "other": "{count} servers"
-    },
     "toolCount": {
       "one": "{count} tool",
       "other": "{count} tools"
@@ -209,7 +205,9 @@
       "project": "Project",
       "local": "Local",
       "claudeai": "claude.ai",
-      "misc": "Other"
+      "misc": "Other",
+      "running": "Running",
+      "ended": "Ended"
     },
     "status": {
       "connected": "connected",
@@ -263,7 +261,34 @@
       "policy": "locked by policy",
       "any": "locked"
     },
-    "pluginSkills": "Plugin skills are managed with /plugin."
+    "pluginSkills": "Plugin skills are managed with /plugin.",
+    "running": {
+      "one": "{count} running",
+      "other": "{count} running"
+    },
+    "skillsOn": "{on} on · {count}",
+    "statusCount": {
+      "connected": {
+        "one": "{count} connected",
+        "other": "{count} connected"
+      },
+      "pending": {
+        "one": "{count} connecting",
+        "other": "{count} connecting"
+      },
+      "failed": {
+        "one": "{count} failed",
+        "other": "{count} failed"
+      },
+      "needsAuth": {
+        "one": "{count} needs sign-in",
+        "other": "{count} need sign-in"
+      },
+      "disabled": {
+        "one": "{count} off",
+        "other": "{count} off"
+      }
+    }
   },
   "shells": {
     "move": "Ctrl+B to run in background",
@@ -285,15 +310,7 @@
       "failed": "failed",
       "stopped": "stopped"
     },
-    "exit": "exit {code}",
-    "running": {
-      "one": "{count} running",
-      "other": "{count} running"
-    },
-    "group": {
-      "running": "Running",
-      "ended": "Ended"
-    }
+    "exit": "exit {code}"
   },
   "workflow": {
     "count": "{name} {done}/{total}",
@@ -358,7 +375,6 @@
     "none": "{provider} does not tell lich its plugins. Switch to TUI and use its own /plugin.",
     "noneFound": "No plugin matches.",
     "noneInstalled": "No plugin is installed here.",
-    "updateChip": "update",
     "scope": {
       "user": "user",
       "project": "project",
@@ -418,7 +434,12 @@
     "sourceHint": "owner/repo, URL or path",
     "restart": "Updated. The chat runs the new version once restarted.",
     "current": "This is already the latest version.",
-    "fixed": "lich installs and updates this plugin itself."
+    "fixed": "lich installs and updates this plugin itself.",
+    "updateCount": {
+      "one": "{count} update",
+      "other": "{count} updates"
+    },
+    "versionTo": "{version} → {latest}"
   },
   "permissions": {
     "title": "Permissions",

@@ -20,7 +20,7 @@
       "many": "{count} ждут",
       "other": "{count} ждут"
     },
-    "ended": "завершена {time} назад"
+    "ended": "{time} назад"
   },
   "view": {
     "failed": "Запрос к чату не выполнен",
@@ -224,12 +224,6 @@
       "back": "назад"
     },
     "mcpTitle": "Серверы MCP",
-    "serverCount": {
-      "one": "{count} сервер",
-      "few": "{count} сервера",
-      "many": "{count} серверов",
-      "other": "{count} сервера"
-    },
     "toolCount": {
       "one": "{count} инструмент",
       "few": "{count} инструмента",
@@ -241,7 +235,9 @@
       "project": "Проекта",
       "local": "Локальные",
       "claudeai": "claude.ai",
-      "misc": "Другие"
+      "misc": "Другие",
+      "running": "Работают",
+      "ended": "Завершены"
     },
     "status": {
       "connected": "подключён",
@@ -299,7 +295,46 @@
       "policy": "заблокирован политикой",
       "any": "заблокирован"
     },
-    "pluginSkills": "Навыками плагинов управляют через /plugin."
+    "pluginSkills": "Навыками плагинов управляют через /plugin.",
+    "running": {
+      "one": "{count} работает",
+      "few": "{count} работают",
+      "many": "{count} работают",
+      "other": "{count} работают"
+    },
+    "skillsOn": "включено {on} из {count}",
+    "statusCount": {
+      "connected": {
+        "one": "{count} подключён",
+        "few": "{count} подключено",
+        "many": "{count} подключено",
+        "other": "{count} подключено"
+      },
+      "pending": {
+        "one": "{count} подключается",
+        "few": "{count} подключаются",
+        "many": "{count} подключаются",
+        "other": "{count} подключаются"
+      },
+      "failed": {
+        "one": "{count} с ошибкой",
+        "few": "{count} с ошибкой",
+        "many": "{count} с ошибкой",
+        "other": "{count} с ошибкой"
+      },
+      "needsAuth": {
+        "one": "{count} ждёт входа",
+        "few": "{count} ждут входа",
+        "many": "{count} ждут входа",
+        "other": "{count} ждут входа"
+      },
+      "disabled": {
+        "one": "{count} выключен",
+        "few": "{count} выключено",
+        "many": "{count} выключено",
+        "other": "{count} выключено"
+      }
+    }
   },
   "shells": {
     "move": "Ctrl+B, чтобы перевести в фон",
@@ -325,17 +360,7 @@
       "failed": "ошибка",
       "stopped": "остановлена"
     },
-    "exit": "код {code}",
-    "running": {
-      "one": "{count} работает",
-      "few": "{count} работают",
-      "many": "{count} работают",
-      "other": "{count} работают"
-    },
-    "group": {
-      "running": "Работают",
-      "ended": "Завершены"
-    }
+    "exit": "код {code}"
   },
   "workflow": {
     "count": "{name} {done}/{total}",
@@ -408,7 +433,6 @@
     "none": "{provider} не сообщает lich свои плагины. Переключитесь в TUI и используйте его /plugin.",
     "noneFound": "Ни один плагин не подходит.",
     "noneInstalled": "Здесь не установлено ни одного плагина.",
-    "updateChip": "обновление",
     "scope": {
       "user": "пользователь",
       "project": "проект",
@@ -478,7 +502,14 @@
     "sourceHint": "владелец/репозиторий, URL или путь",
     "restart": "Обновлено. Чат запустит новую версию после перезапуска.",
     "current": "Это уже последняя версия.",
-    "fixed": "lich сам устанавливает и обновляет этот плагин."
+    "fixed": "lich сам устанавливает и обновляет этот плагин.",
+    "updateCount": {
+      "one": "{count} обновление",
+      "few": "{count} обновления",
+      "many": "{count} обновлений",
+      "other": "{count} обновлений"
+    },
+    "versionTo": "{version} → {latest}"
   },
   "permissions": {
     "title": "Доступ",

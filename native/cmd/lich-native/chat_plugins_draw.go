@@ -44,11 +44,18 @@ func (u *window) pluginsView(gtx C, th *ui.Theme, p *chatPane, sv sessionView, l
 }
 
 func (t *chatTools) pluginsHead(gtx C, th *ui.Theme, l api.ChatPluginList, search bool) D {
-	installed := 0
+	installed, updates := 0, 0
 	for _, pl := range l.Plugins {
 		if pl.Installed {
 			installed++
 		}
+		if pl.Installed && pl.Latest != "" {
+			updates++
+		}
+	}
+	count := []toned{{text: i18n.T("chat.plugins.installedCount", i18n.Args{"count": installed})}}
+	if updates > 0 {
+		count = append(count, toned{text: i18n.T("chat.plugins.updateCount", i18n.Args{"count": updates}), ink: th.ToneWait})
 	}
 	tabs := th.Tabs(&t.plug.tabs,
 		ui.TabsTrigger{Text: i18n.T("chat.plugins.tab.discover")},
@@ -58,7 +65,7 @@ func (t *chatTools) pluginsHead(gtx C, th *ui.Theme, l api.ChatPluginList, searc
 	tabs.Variant = ui.TabsVariantGhost
 	rows := []layout.FlexChild{
 		layout.Rigid(func(gtx C) D {
-			return toolsHead(gtx, th, i18n.T("chat.plugins.title"), i18n.T("chat.plugins.installedCount", i18n.Args{"count": installed}), nil)
+			return toolsHeadTones(gtx, th, i18n.T("chat.plugins.title"), count, nil)
 		}),
 		layout.Rigid(func(gtx C) D {
 			gtx.Constraints.Min.X = 0
@@ -82,7 +89,6 @@ func (t *chatTools) pluginsHead(gtx C, th *ui.Theme, l api.ChatPluginList, searc
 			return in.Layout(gtx)
 		}))
 	}
-	rows = append(rows, layout.Rigid(th.Separator))
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, rows...)
 }
 
@@ -151,10 +157,15 @@ func chatPluginRow(gtx C, th *ui.Theme, pl api.ChatPlugin) D {
 		name = name.Muted()
 	}
 	end := []layout.FlexChild{}
+	meta := pluginMeta(pl)
 	if pl.Latest != "" {
-		end = append(end, layout.Rigid(th.TinyChip(i18n.T("chat.plugins.updateChip"), th.ToneWait).Layout), ui.Gap(1.5))
+		if meta != "" {
+			meta = " · " + meta
+		}
+		update := i18n.T("chat.plugins.versionTo", i18n.Args{"version": pl.Version, "latest": pl.Latest})
+		end = append(end, layout.Rigid(th.Text(ui.TextXS, update).In(th.ToneWait).Layout))
 	}
-	end = append(end, layout.Rigid(th.Text(ui.TextXS, pluginMeta(pl)).Muted().Layout))
+	end = append(end, layout.Rigid(th.Text(ui.TextXS, meta).Muted().Layout))
 	return descRow(gtx, th, pluginGlyph(th, pl), name.Truncated().Layout, pl.Description, end)
 }
 

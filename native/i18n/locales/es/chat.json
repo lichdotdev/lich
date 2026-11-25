@@ -16,7 +16,7 @@
       "one": "{count} esperando",
       "other": "{count} esperando"
     },
-    "ended": "terminó hace {time}"
+    "ended": "hace {time}"
   },
   "view": {
     "failed": "La petición al chat falló",
@@ -196,10 +196,6 @@
       "back": "volver"
     },
     "mcpTitle": "Servidores MCP",
-    "serverCount": {
-      "one": "{count} servidor",
-      "other": "{count} servidores"
-    },
     "toolCount": {
       "one": "{count} herramienta",
       "other": "{count} herramientas"
@@ -209,7 +205,9 @@
       "project": "Del proyecto",
       "local": "Locales",
       "claudeai": "claude.ai",
-      "misc": "Otros"
+      "misc": "Otros",
+      "running": "En curso",
+      "ended": "Terminados"
     },
     "status": {
       "connected": "conectado",
@@ -263,7 +261,34 @@
       "policy": "bloqueada por política",
       "any": "bloqueada"
     },
-    "pluginSkills": "Las skills de un plugin se gestionan con /plugin."
+    "pluginSkills": "Las skills de un plugin se gestionan con /plugin.",
+    "running": {
+      "one": "{count} en curso",
+      "other": "{count} en curso"
+    },
+    "skillsOn": "{on} activas · {count}",
+    "statusCount": {
+      "connected": {
+        "one": "{count} conectado",
+        "other": "{count} conectados"
+      },
+      "pending": {
+        "one": "{count} conectando",
+        "other": "{count} conectando"
+      },
+      "failed": {
+        "one": "{count} falló",
+        "other": "{count} fallaron"
+      },
+      "needsAuth": {
+        "one": "{count} sin sesión",
+        "other": "{count} sin sesión"
+      },
+      "disabled": {
+        "one": "{count} desactivado",
+        "other": "{count} desactivados"
+      }
+    }
   },
   "shells": {
     "move": "Ctrl+B para ejecutar en segundo plano",
@@ -285,15 +310,7 @@
       "failed": "falló",
       "stopped": "detenido"
     },
-    "exit": "salida {code}",
-    "running": {
-      "one": "{count} en curso",
-      "other": "{count} en curso"
-    },
-    "group": {
-      "running": "En curso",
-      "ended": "Terminados"
-    }
+    "exit": "salida {code}"
   },
   "workflow": {
     "count": "{name} {done}/{total}",
@@ -358,7 +375,6 @@
     "none": "{provider} no le dice a lich cuáles son sus plugins. Cambia a TUI y usa su propio /plugin.",
     "noneFound": "Ningún plugin coincide.",
     "noneInstalled": "No hay ningún plugin instalado aquí.",
-    "updateChip": "actualización",
     "scope": {
       "user": "usuario",
       "project": "proyecto",
@@ -418,7 +434,12 @@
     "sourceHint": "dueño/repo, URL o ruta",
     "restart": "Actualizado. El chat usa la versión nueva cuando se reinicia.",
     "current": "Ya es la versión más reciente.",
-    "fixed": "lich instala y actualiza este plugin por su cuenta."
+    "fixed": "lich instala y actualiza este plugin por su cuenta.",
+    "updateCount": {
+      "one": "{count} actualización",
+      "other": "{count} actualizaciones"
+    },
+    "versionTo": "{version} → {latest}"
   },
   "permissions": {
     "title": "Permisos",

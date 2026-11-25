@@ -14,7 +14,7 @@
     "waiting": {
       "other": "{count} 个等待中"
     },
-    "ended": "{time}前完成"
+    "ended": "{time}前"
   },
   "view": {
     "failed": "聊天请求失败",
@@ -182,9 +182,6 @@
       "back": "返回"
     },
     "mcpTitle": "MCP 服务器",
-    "serverCount": {
-      "other": "{count} 个服务器"
-    },
     "toolCount": {
       "other": "{count} 个工具"
     },
@@ -193,7 +190,9 @@
       "project": "项目",
       "local": "本地",
       "claudeai": "claude.ai",
-      "misc": "其他"
+      "misc": "其他",
+      "running": "运行中",
+      "ended": "已结束"
     },
     "status": {
       "connected": "已连接",
@@ -245,7 +244,28 @@
       "policy": "已被策略锁定",
       "any": "已锁定"
     },
-    "pluginSkills": "插件的技能通过 /plugin 管理。"
+    "pluginSkills": "插件的技能通过 /plugin 管理。",
+    "running": {
+      "other": "{count} 个运行中"
+    },
+    "skillsOn": "已开启 {on} 个 · 共 {count} 个",
+    "statusCount": {
+      "connected": {
+        "other": "{count} 个已连接"
+      },
+      "pending": {
+        "other": "{count} 个连接中"
+      },
+      "failed": {
+        "other": "{count} 个失败"
+      },
+      "needsAuth": {
+        "other": "{count} 个需要登录"
+      },
+      "disabled": {
+        "other": "{count} 个已关闭"
+      }
+    }
   },
   "shells": {
     "move": "Ctrl+B 转到后台运行",
@@ -265,14 +285,7 @@
       "failed": "失败",
       "stopped": "已停止"
     },
-    "exit": "退出码 {code}",
-    "running": {
-      "other": "{count} 个运行中"
-    },
-    "group": {
-      "running": "运行中",
-      "ended": "已结束"
-    }
+    "exit": "退出码 {code}"
   },
   "workflow": {
     "count": "{name} {done}/{total}",
@@ -333,7 +346,6 @@
     "none": "{provider} 不会告诉 lich 它的插件。切换到 TUI，使用它自己的 /plugin。",
     "noneFound": "没有匹配的插件。",
     "noneInstalled": "这里没有安装任何插件。",
-    "updateChip": "可更新",
     "scope": {
       "user": "用户",
       "project": "项目",
@@ -388,7 +400,11 @@
     "sourceHint": "owner/repo、URL 或路径",
     "restart": "已更新。重启聊天后运行新版本。",
     "current": "已经是最新版本。",
-    "fixed": "lich 会自己安装和更新这个插件。"
+    "fixed": "lich 会自己安装和更新这个插件。",
+    "updateCount": {
+      "other": "{count} 个可更新"
+    },
+    "versionTo": "{version} → {latest}"
   },
   "permissions": {
     "title": "权限",

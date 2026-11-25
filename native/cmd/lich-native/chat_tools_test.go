@@ -56,7 +56,9 @@ func toolsSettle(r *frameRig) {
 // /mcp opens the servers over the box instead of reaching the agent.
 func TestMCPOpensTheServersInsteadOfSending(t *testing.T) {
 	u, r, f, p := toolsFrames(t, "/mcp")
-	if !r.showsAll("MCP servers", "ai-memory", "2 tools", "needs sign-in", "~/.claude.json") {
+	// A server's state is its glyph, and the head counts the states (contract
+	// changed: "needs sign-in" left the row).
+	if !r.showsAll("MCP servers", "ai-memory", "2 tools", " · 1 needs sign-in", "~/.claude.json") {
 		t.Errorf("the servers are not drawn:\n%s", r.drawn())
 	}
 	if u.model.chat.isRunning("s1") || f.callsOf(api.ChatPrompt.Name) != 0 {

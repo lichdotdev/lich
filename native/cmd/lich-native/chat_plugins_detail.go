@@ -22,38 +22,84 @@ func (u *window) pluginDetailView(gtx C, th *ui.Theme, t *chatTools, l api.ChatP
 				mcpFact(th, i18n.T("chat.plugins.fact.source"), th.Text(ui.TextXS, m.Source).Mono().Truncated().Layout),
 				mcpFact(th, i18n.T("chat.plugins.fact.plugins"), th.Text(ui.TextSM, i18n.T("chat.plugins.pluginCount", i18n.Args{"count": m.Plugins})).Layout),
 			}
-			return t.pluginDetail(gtx, th, i18n.T("chat.plugins.backMarkets"), m.Name, "", lines, marketActions(m, l), m.Fixed)
+			return t.pluginDetail(gtx, th, i18n.T("chat.plugins.backMarkets"), m.Name, "", lines, m.Fixed)
 		}
 	} else if pl, ok := chatPluginShown(l.Plugins, t.detail); ok {
-		return t.pluginDetail(gtx, th, i18n.T("chat.plugins.back"), pl.Name, pl.Marketplace, pluginFacts(th, pl), chatPluginActions(pl, l), pl.Fixed)
+		return t.pluginDetail(gtx, th, i18n.T("chat.plugins.back"), pl.Name, pl.Marketplace, pluginFacts(th, pl), pl.Fixed)
 	}
 	return D{}
 }
 
-// pluginDetail is a detail's head, its lines and its buttons, with what the
-// last action left to say, or why lich's own takes none.
-func (t *chatTools) pluginDetail(gtx C, th *ui.Theme, back, name, sub string, lines []layout.Widget, acts []chatPluginAction, fixed bool) D {
+// pluginDetail is a detail's head and its lines, with what the last action
+// left to say, or why lich's own takes none; its actions stand on the keys'
+// line (pluginFoot).
+func (t *chatTools) pluginDetail(gtx C, th *ui.Theme, back, name, sub string, lines []layout.Widget, fixed bool) D {
 	head := func(gtx C) D {
 		return toolsBackHead(gtx, th, &t.back, back, th.Text(ui.TextSM, name).Weight(font.SemiBold), sub, nil)
 	}
 	t.mu.Lock()
-	note, running := t.plug.note, t.plug.running
+	note := t.plug.note
 	t.mu.Unlock()
 	if fixed {
 		note = i18n.T("chat.plugins.fixed")
 	}
-	foot := func(gtx C) D {
-		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-			layout.Rigid(func(gtx C) D { return t.pluginButtons(gtx, th, acts, running) }),
-			layout.Rigid(func(gtx C) D {
-				if note == "" {
-					return D{}
-				}
-				return toolsFootNote(th, note)(gtx)
-			}),
-		)
+	var foot layout.Widget
+	if note != "" {
+		foot = toolsFootNote(th, note)
 	}
 	return t.scrolled(gtx, th, head, lines, foot)
+}
+
+// pluginShownActs is the actions of the plugin or marketplace the detail
+// shows, false when it shows none.
+func (t *chatTools) pluginShownActs(l api.ChatPluginList) ([]chatPluginAction, *api.ChatPlugin, bool) {
+	if t.detail == "" {
+		return nil, nil, false
+	}
+	if t.plug.tabs.Selected == pluginTabMarkets {
+		i := slices.IndexFunc(l.Marketplaces, func(m api.ChatMarketplace) bool { return m.Name == t.detail })
+		if i < 0 {
+			return nil, nil, false
+		}
+		return marketActions(l.Marketplaces[i], l), nil, true
+	}
+	pl, ok := chatPluginShown(l.Plugins, t.detail)
+	if !ok {
+		return nil, nil, false
+	}
+	return chatPluginActions(pl, l), &pl, true
+}
+
+// pluginFoot is the detail's actions for the keys' line: what removes it
+// first, in Destructive, then the rest, an update there is filled at
+// the end.
+func (t *chatTools) pluginFoot(th *ui.Theme, l api.ChatPluginList) layout.Widget {
+	acts, pl, ok := t.pluginShownActs(l)
+	if !ok || len(acts) == 0 {
+		return nil
+	}
+	t.mu.Lock()
+	running := t.plug.running
+	t.mu.Unlock()
+	button := func(a chatPluginAction, v ui.Variant) layout.FlexChild {
+		b := th.Button(t.act(a.key()), a.label)
+		b.Variant, b.Size = v, ui.SizeSM
+		b.Busy = running == a.key()
+		b.Disabled = running != "" && !b.Busy
+		return layout.Rigid(b.Layout)
+	}
+	var first, rest, last []layout.FlexChild
+	for _, a := range acts {
+		switch {
+		case a.removes():
+			first = append(first, button(a, ui.VariantDestructive))
+		case a.action == api.PluginUpdate && pl != nil && pl.Latest != "":
+			last = append(last, button(a, ui.VariantDefault))
+		default:
+			rest = append(rest, button(a, ui.VariantSecondary))
+		}
+	}
+	return footButtons(append(append(first, rest...), last...))
 }
 
 func (t *chatTools) pluginButtons(gtx C, th *ui.Theme, acts []chatPluginAction, running string) D {
@@ -90,11 +136,12 @@ func pluginFacts(th *ui.Theme, pl api.ChatPlugin) []layout.Widget {
 			lines = append(lines, mcpFact(th, label, th.Text(ui.TextSM, value).Truncated().Layout))
 		}
 	}
-	version := pl.Version
 	if pl.Latest != "" {
-		version = i18n.T("chat.plugins.versionNewer", i18n.Args{"version": pl.Version, "latest": pl.Latest})
+		version := i18n.T("chat.plugins.versionNewer", i18n.Args{"version": pl.Version, "latest": pl.Latest})
+		lines = append(lines, mcpFact(th, i18n.T("chat.plugins.fact.version"), th.Text(ui.TextSM, version).In(th.ToneWait).Truncated().Layout))
+	} else {
+		text(i18n.T("chat.plugins.fact.version"), pl.Version)
 	}
-	text(i18n.T("chat.plugins.fact.version"), version)
 	if !pl.Installed {
 		if pl.Installs > 0 {
 			text(i18n.T("chat.plugins.fact.installs"), pluginInstalls(pl.Installs))
